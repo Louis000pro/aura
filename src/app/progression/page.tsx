@@ -1257,17 +1257,28 @@ function dedupeRowArt(list: MergedSession[]): Map<string, string> {
    le violet est déjà pris : dans le système D, il veut dire « action ».
    Si l'un des deux change un jour, les deux changent ensemble. */
 const PREMIUM_PUCE = "linear-gradient(120deg,#FFD34E,#F5B120)";
-/* Le trait doré qui tient la carte, exactement celui du bloc de l'accueil.
-   ⚠️ C'EST UNE VRAIE BORDURE, PLUS UN CADRE EN DÉGRADÉ. La carte était
-   dessinée par un fond dégradé de 1 px de padding : entre le rayon extérieur
-   (20) et celui de la photo (17), l'or ressortait en coins épais sous le
-   bandeau, et l'anneau plein saturé faisait une surbrillance autour de
-   chaque carte. Une bordure + `overflow: hidden` donne un filet régulier
-   partout, et les enfants n'ont plus à porter de rayon du tout. */
+/* ⚠️ SUR UNE CARTE, L'OR EST UN FILET ET UNE ENCRE. JAMAIS UNE SURFACE.
+   Deux tentatives de surface dorée ont été refusées par Louis, et c'est la
+   même cause les deux fois : une carte fait 150 px de large.
+   1. Le cadre en dégradé (fond doré + 1 px de padding) : entre le rayon
+      extérieur (20) et celui de la photo (17), l'or ressortait en coins
+      épais sous le bandeau. « L'or dépasse un peu sur les cartes. »
+   2. Le lavis or → magenta du bandeau : sur une ligne de missions large de
+      330 px il s'éteint avant le bord et se lit comme une lumière ; sur une
+      carte, la partie la plus dense occupe toute la largeur, donc ce n'est
+      plus un lavis mais un **aplat crème** de 28 px, et ses deux coins
+      contre la photo sombre virent au jaune sale. « Ces coins qui font
+      jaune pisse, ça déborde à l'œil. »
+   Ce qui reste : ce filet de 1 px (celui du bloc de l'accueil), le mot en
+   `--or-encre`, l'étincelle, et le cachet « + ». Le bandeau porte la
+   surface de l'app, comme n'importe quelle autre barre de titre.
+   `overflow: hidden` sur le conteneur suffit à tout arrondir : les enfants
+   ne portent AUCUN rayon, et c'est ce qui empêche les coins de revenir. */
 const PREMIUM_TRAIT = "1px solid rgba(245,177,32,0.34)";
-/* Le lavis des lignes Premium de l'accueil. ⚠️ Exactement horizontal :
-   incliné, deux cartes voisines montrent deux tranches différentes du
-   dégradé et la rangée se coupe en morceaux. */
+/* Le lavis or → magenta des lignes Premium de l'accueil. ⚠️ Il ne sert que
+   sur des surfaces LARGES (la feuille d'aperçu), jamais sur une carte du
+   carrousel : voir `PREMIUM_TRAIT` pour la raison. Exactement horizontal,
+   comme sur les missions. */
 const PREMIUM_LAVIS = "linear-gradient(90deg,rgba(245,177,32,0.17),rgba(193,59,193,0.09) 62%,transparent)";
 /* L'étincelle de la marque, telle qu'elle est dessinée sur l'affiche
    Premium de l'accueil (`.brandSpark`) : violet → or, deux barres. */
@@ -1333,20 +1344,16 @@ function SessionTile({ session, onStart, onManage, onPremium, canAccessPremium, 
         boxShadow: "0 12px 28px -16px rgba(198,140,20,0.5)",
       } : undefined}
     >
-      {/* Le bandeau dit le MOT, ce qu'aucune couleur ne fait seule, et il le
-          dit exactement comme l'accueil : l'étincelle de la marque, puis
-          « Premium » en or, sur le lavis pâle des lignes Premium. Pas un
-          aplat : sur une rangée entière, un bandeau jaune plein hurle et
-          écrase la photo, alors que le lavis laisse la photo respirer et se
-          lit quand même du premier coup.
-          L'ancienne version était violet → or avec du texte blanc : une
-          seconde écriture de Premium (le violet dit « action » ailleurs), et
-          du blanc sur #FFD34E, qui ne se lit pas. Le signe « incluse dans ton
-          offre » a disparu avec elle : chez un abonné, une séance Premium est
-          simplement une séance, on ne lui revend pas ce qu'il paie déjà. */}
+      {/* Le bandeau dit le MOT, ce qu'aucune couleur ne fait seule : l'étincelle
+          de la marque, puis « Premium » en or. La surface est celle de l'app et
+          le filet doré fait la séparation ; deux fonds dorés ont été essayés
+          puis refusés avant celui-là, le raisonnement est sur PREMIUM_TRAIT.
+          Le signe « incluse dans ton offre » est parti avec eux : chez un
+          abonné, une séance Premium est simplement une séance, on ne lui
+          revend pas ce qu'il paie déjà. */}
       {isPremium && (
         <div className="h-7 px-2.5 flex items-center gap-[6px]"
-          style={{ background: `${PREMIUM_LAVIS},rgb(var(--surface-rgb))` }}>
+          style={{ background: "rgb(var(--surface-rgb))", borderBottom: "1px solid rgba(245,177,32,0.22)" }}>
           <EtincellePremium />
           <span className="text-[9px] font-black uppercase tracking-[0.15em]" style={{ color: "var(--or-encre)" }}>
             Premium
