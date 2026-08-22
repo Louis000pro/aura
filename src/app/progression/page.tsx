@@ -1257,8 +1257,9 @@ function dedupeRowArt(list: MergedSession[]): Map<string, string> {
    le violet est déjà pris : dans le système D, il veut dire « action ».
    Si l'un des deux change un jour, les deux changent ensemble. */
 const PREMIUM_PUCE = "linear-gradient(120deg,#FFD34E,#F5B120)";
-/* ⚠️ SUR UNE CARTE, L'OR EST UN FILET ET UNE ENCRE. JAMAIS UNE SURFACE.
-   Deux tentatives de surface dorée ont été refusées par Louis, et c'est la
+/* ⚠️ SUR UNE CARTE, L'OR NE S'ÉTALE PAS. Il a le droit d'être saturé, mais
+   sur une petite forme : un filet, une encre, une puce, un cachet. Deux
+   tentatives de GRANDE surface dorée ont été refusées par Louis, et c'est la
    même cause les deux fois : une carte fait 150 px de large.
    1. Le cadre en dégradé (fond doré + 1 px de padding) : entre le rayon
       extérieur (20) et celui de la photo (17), l'or ressortait en coins
@@ -1269,12 +1270,15 @@ const PREMIUM_PUCE = "linear-gradient(120deg,#FFD34E,#F5B120)";
       plus un lavis mais un **aplat crème** de 28 px, et ses deux coins
       contre la photo sombre virent au jaune sale. « Ces coins qui font
       jaune pisse, ça déborde à l'œil. »
-   Ce qui reste : ce filet de 1 px (celui du bloc de l'accueil), le mot en
-   `--or-encre`, l'étincelle, et le cachet « + ». Le bandeau porte la
-   surface de l'app, comme n'importe quelle autre barre de titre.
+   Ce qui reste, et qui suffit à séparer une carte payante d'une gratuite :
+   ce filet de 1 px, la puce dorée du bandeau, l'étincelle et le cachet
+   « + ». Tout tenir en encre (le mot en `--or-encre` sur fond blanc) a été
+   essayé aussi, et Louis l'a trouvé trop pâle : « il n'y a presque plus de
+   couleurs pour les différencier des gratuites ». Le bandeau garde donc la
+   surface de l'app et c'est la PUCE qui porte l'or.
    `overflow: hidden` sur le conteneur suffit à tout arrondir : les enfants
    ne portent AUCUN rayon, et c'est ce qui empêche les coins de revenir. */
-const PREMIUM_TRAIT = "1px solid rgba(245,177,32,0.34)";
+const PREMIUM_TRAIT = "1px solid rgba(245,177,32,0.55)";
 /* Le lavis or → magenta des lignes Premium de l'accueil. ⚠️ Il ne sert que
    sur des surfaces LARGES (la feuille d'aperçu), jamais sur une carte du
    carrousel : voir `PREMIUM_TRAIT` pour la raison. Exactement horizontal,
@@ -1352,10 +1356,15 @@ function SessionTile({ session, onStart, onManage, onPremium, canAccessPremium, 
           abonné, une séance Premium est simplement une séance, on ne lui
           revend pas ce qu'il paie déjà. */}
       {isPremium && (
-        <div className="h-7 px-2.5 flex items-center gap-[6px]"
+        <div className="h-7 px-2 flex items-center gap-[6px]"
           style={{ background: "rgb(var(--surface-rgb))", borderBottom: "1px solid rgba(245,177,32,0.22)" }}>
           <EtincellePremium />
-          <span className="text-[9px] font-black uppercase tracking-[0.15em]" style={{ color: "var(--or-encre)" }}>
+          {/* La couleur revient par la PUCE, pas par le fond : c'est la
+              `.tagPremium` des missions, à sa vraie taille. Un or saturé de
+              50 px se lit comme un bijou ; le même étalé sur 150 px se lit
+              comme une tache. */}
+          <span className="px-[5px] py-[2px] rounded-[5px] text-[8px] font-black uppercase tracking-[0.1em]"
+            style={{ background: PREMIUM_PUCE, color: "#3A2402" }}>
             Premium
           </span>
         </div>
