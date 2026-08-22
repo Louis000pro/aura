@@ -7,6 +7,7 @@ import { VisageGuide } from "@/components/AssistantMark";
 import {
   MISSIONS_JOUR,
   MISSIONS_PREMIUM,
+  MISSIONS_PREMIUM_SEMAINE,
   MISSIONS_SEMAINE,
   PLAFOND_JOUR_GRATUIT,
   PLAFOND_JOUR_PREMIUM,
@@ -25,6 +26,12 @@ import styles from "./AccueilSignature.module.css";
    la base crédite. Recopier un nombre ici, c'est promettre à l'écran ce que le
    serveur ne donnera pas : l'ancienne version le faisait pour les cinq
    missions Premium, et deux d'entre elles avaient déjà divergé. */
+
+/* Les nombres de cette page se disent en toutes lettres. Féminin, parce
+   qu'ils comptent toujours des missions. */
+const LETTRES = ["zéro", "une", "deux", "trois", "quatre", "cinq", "six", "sept", "huit", "neuf"];
+const enLettres = (n: number) => LETTRES[n] ?? String(n);
+const majuscule = (phrase: string) => phrase.charAt(0).toUpperCase() + phrase.slice(1);
 
 export default function AccueilSignature({
   greeting,
@@ -72,6 +79,20 @@ export default function AccueilSignature({
   /* Ce que le coffre ajoute en une journée. Calculé, jamais écrit : le jour où
      une mission Premium change de valeur, ce chiffre suit tout seul. */
   const expPremiumJour = MISSIONS_PREMIUM.reduce((total, m) => total + m.exp, 0);
+
+  /* Combien de missions Premium en tout. Compté, jamais écrit : « Quatre »
+     était posé à la main et ne parlait que du jour, alors que « Semaine
+     régulière » en est une cinquième, marquée Premium au milieu des missions
+     de la semaine. Un nombre en dur, c'est une divergence qui attend son
+     tour. */
+  const nbPremiumJour = MISSIONS_PREMIUM.length;
+  const nbPremiumSemaine = MISSIONS_PREMIUM_SEMAINE.length;
+  const nbPremiumTotal = nbPremiumJour + nbPremiumSemaine;
+  const offrePremium = majuscule(
+    `${enLettres(nbPremiumTotal)} mission${nbPremiumTotal > 1 ? "s" : ""} Premium : ` +
+      `${enLettres(nbPremiumJour)} chaque jour, ${enLettres(nbPremiumSemaine)} dans la semaine. ` +
+      `Jusqu'à ${PLAFOND_JOUR_PREMIUM} EXP par jour.`
+  );
 
   return (
     <div className={styles.home}>
@@ -220,7 +241,7 @@ export default function AccueilSignature({
             <p>
               {premiumUnlocked
                 ? "Missions Premium actives sur ton compte."
-                : `Quatre missions du jour en plus, et un palier de plus dans la semaine : jusqu'à ${PLAFOND_JOUR_PREMIUM} EXP par jour.`}
+                : offrePremium}
             </p>
             {!premiumUnlocked && (
               <button type="button" onClick={() => onNavigate("/premium")}>

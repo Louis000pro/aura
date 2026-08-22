@@ -329,6 +329,7 @@ export const MISSIONS: Mission[] = [
 export const MISSIONS_JOUR = MISSIONS.filter((m) => m.periode === "jour" && !m.premium);
 export const MISSIONS_PREMIUM = MISSIONS.filter((m) => m.periode === "jour" && m.premium);
 export const MISSIONS_SEMAINE = MISSIONS.filter((m) => m.periode === "semaine");
+export const MISSIONS_PREMIUM_SEMAINE = MISSIONS_SEMAINE.filter((m) => m.premium);
 
 /** Les missions qui VALIDENT la journée. La connexion n'en fait pas partie. */
 export const ACTIONS_UTILES: MissionId[] = ["seance", "repas"];
