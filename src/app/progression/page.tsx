@@ -1257,28 +1257,30 @@ function dedupeRowArt(list: MergedSession[]): Map<string, string> {
    le violet est déjà pris : dans le système D, il veut dire « action ».
    Si l'un des deux change un jour, les deux changent ensemble. */
 const PREMIUM_PUCE = "linear-gradient(120deg,#FFD34E,#F5B120)";
-/* ⚠️ SUR UNE CARTE, L'OR NE S'ÉTALE PAS. Il a le droit d'être saturé, mais
-   sur une petite forme : un filet, une encre, une puce, un cachet. Deux
-   tentatives de GRANDE surface dorée ont été refusées par Louis, et c'est la
-   même cause les deux fois : une carte fait 150 px de large.
-   1. Le cadre en dégradé (fond doré + 1 px de padding) : entre le rayon
-      extérieur (20) et celui de la photo (17), l'or ressortait en coins
-      épais sous le bandeau. « L'or dépasse un peu sur les cartes. »
-   2. Le lavis or → magenta du bandeau : sur une ligne de missions large de
-      330 px il s'éteint avant le bord et se lit comme une lumière ; sur une
-      carte, la partie la plus dense occupe toute la largeur, donc ce n'est
-      plus un lavis mais un **aplat crème** de 28 px, et ses deux coins
-      contre la photo sombre virent au jaune sale. « Ces coins qui font
-      jaune pisse, ça déborde à l'œil. »
-   Ce qui reste, et qui suffit à séparer une carte payante d'une gratuite :
-   ce filet de 1 px, la puce dorée du bandeau, l'étincelle et le cachet
-   « + ». Tout tenir en encre (le mot en `--or-encre` sur fond blanc) a été
-   essayé aussi, et Louis l'a trouvé trop pâle : « il n'y a presque plus de
-   couleurs pour les différencier des gratuites ». Le bandeau garde donc la
-   surface de l'app et c'est la PUCE qui porte l'or.
-   `overflow: hidden` sur le conteneur suffit à tout arrondir : les enfants
-   ne portent AUCUN rayon, et c'est ce qui empêche les coins de revenir. */
-const PREMIUM_TRAIT = "1px solid rgba(245,177,32,0.55)";
+/* Le cadre de la carte : le liseré or → magenta des missions, en anneau.
+   ⚠️ SON ÉPAISSEUR ET LE RAYON INTÉRIEUR SONT LIÉS : `PREMIUM_RAYON` doit
+   TOUJOURS valoir 20 (le rayon extérieur) moins `PREMIUM_CADRE_PX`, sinon
+   l'anneau est plus épais dans les angles que sur les côtés, et c'est
+   exactement le défaut que Louis a vu la première fois (« l'or dépasse un
+   peu sur les cartes ») : le cadre était dessiné pour 3 px mais posé avec
+   1 px de padding, donc les coins gardaient leur épaisseur d'origine.
+   3 px n'est pas non plus un choix esthétique libre : en dessous, le
+   dégradé n'a pas la place de se voir, surtout sur fond clair, et l'anneau
+   redevient un filet uni. C'est la largeur du liseré des missions.
+
+   ⚠️ ET L'OR NE S'ÉTALE PAS POUR AUTANT : il est saturé sur des formes
+   étroites (cet anneau, la puce du bandeau, le cachet « + »), jamais en
+   grande surface. Deux fonds dorés ont été refusés, même cause les deux
+   fois, une carte ne fait que 150 px de large : la puce des missions
+   étirée en aplat sur toute la largeur (« c'est nul »), puis le lavis
+   or → magenta, qui sur une ligne large de 330 px s'éteint avant le bord
+   mais qui sur une carte n'en montre que sa tranche la plus dense, donc un
+   aplat crème dont les coins virent au jaune sale. Le bandeau porte la
+   surface de l'app ; tout mettre en encre a été essayé aussi et manquait
+   de couleur, d'où la puce. */
+const PREMIUM_CADRE_PX = 3;
+const PREMIUM_RAYON = 20 - PREMIUM_CADRE_PX;
+const PREMIUM_CADRE = "linear-gradient(180deg,#FFD34E,#F5B120 38%,#C13BC1)";
 /* Le lavis or → magenta des lignes Premium de l'accueil. ⚠️ Il ne sert que
    sur des surfaces LARGES (la feuille d'aperçu), jamais sur une carte du
    carrousel : voir `PREMIUM_TRAIT` pour la raison. Exactement horizontal,
@@ -1344,8 +1346,9 @@ function SessionTile({ session, onStart, onManage, onPremium, canAccessPremium, 
       animate={{ opacity: 1, y: 0 }}
       className={`relative ${isPremium ? "rounded-[20px] overflow-hidden" : ""}`}
       style={isPremium ? {
-        border: PREMIUM_TRAIT,
-        boxShadow: "0 12px 28px -16px rgba(198,140,20,0.5)",
+        padding: PREMIUM_CADRE_PX,
+        background: PREMIUM_CADRE,
+        boxShadow: "0 12px 28px -14px rgba(198,140,20,0.55)",
       } : undefined}
     >
       {/* Le bandeau dit le MOT, ce qu'aucune couleur ne fait seule : l'étincelle
@@ -1357,7 +1360,12 @@ function SessionTile({ session, onStart, onManage, onPremium, canAccessPremium, 
           revend pas ce qu'il paie déjà. */}
       {isPremium && (
         <div className="h-7 px-2 flex items-center gap-[6px]"
-          style={{ background: "rgb(var(--surface-rgb))", borderBottom: "1px solid rgba(245,177,32,0.22)" }}>
+          style={{
+            background: "rgb(var(--surface-rgb))",
+            borderBottom: "1px solid rgba(245,177,32,0.22)",
+            borderTopLeftRadius: PREMIUM_RAYON,
+            borderTopRightRadius: PREMIUM_RAYON,
+          }}>
           <EtincellePremium />
           {/* La couleur revient par la PUCE, pas par le fond : c'est la
               `.tagPremium` des missions, à sa vraie taille. Un or saturé de
@@ -1377,7 +1385,13 @@ function SessionTile({ session, onStart, onManage, onPremium, canAccessPremium, 
         whileTap={{ scale: 0.97 }}
         onClick={() => premiumLocked ? onPremium(session) : onStart(session)}
         className={`w-full overflow-hidden relative cursor-pointer border-none p-0 block ${isPremium ? "" : "rounded-[18px]"}`}
-        style={{ aspectRatio: "3 / 4", boxShadow: "0 10px 26px rgba(0,0,0,0.2)" }}
+        style={{
+          aspectRatio: "3 / 4",
+          boxShadow: "0 10px 26px rgba(0,0,0,0.2)",
+          // Le bas de la carte Premium épouse l'anneau ; le haut est droit,
+          // c'est le bandeau qui porte les deux coins hauts.
+          ...(isPremium ? { borderBottomLeftRadius: PREMIUM_RAYON, borderBottomRightRadius: PREMIUM_RAYON } : null),
+        }}
         aria-label={premiumLocked
           ? `${session.title} — réservé à Premium`
           : advice ? `Lire : ${session.title}` : `Lancer : ${session.title}`}
