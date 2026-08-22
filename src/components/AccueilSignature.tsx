@@ -397,7 +397,7 @@ function LigneMission({
           height={42}
           className={styles.dailyMissionImage}
         />
-        {premium && !debloquee && <PlusPremium />}
+        {premium && !debloquee && <Cadenas />}
       </span>
       <span className={styles.missionCopy}>
         <strong>
@@ -436,29 +436,32 @@ function LigneMission({
   );
 }
 
-/* Le « + » doré posé sur le coin du pictogramme, pour un compte qui n'a
-   pas encore Premium.
+/* Le cadenas doré posé sur le coin du pictogramme, pour un compte qui n'a
+   pas encore Premium. Le même dessin est repris sur les cartes du catalogue
+   (`Cadenas` dans progression/page.tsx) : un seul signe de verrou dans
+   toute l'app.
 
    ⚠️ IL NE S'AFFICHE QUE POUR QUI N'Y A PAS DROIT. Il a existé une version
-   qui le posait sur les missions d'un abonné : elle lui vendait ce qu'il a
-   déjà payé. Chez un abonné, une mission Premium est simplement une
-   mission, et elle ne porte aucune pastille.
+   qui posait une étincelle sur les missions d'un abonné : elle lui vendait
+   ce qu'il a déjà payé. Chez un abonné, une mission Premium est simplement
+   une mission, et elle ne porte aucune pastille.
 
-   ⚠️ ET C'EST UN « + », PAS UN CADENAS (choix de Louis, 2026-08-22). Les
-   deux disent la même chose et se posent au même endroit, mais pas dans le
-   même sens : un cadenas dit ce qu'on ne peut pas faire, un « + » dit ce
-   qu'il y a à prendre. Sur une ligne qui existe justement pour donner
-   envie de s'abonner, c'est l'invitation qu'on veut, pas le mur. Ne pas
-   remettre le verrou.
+   ⚠️ UN « + » A REMPLACÉ CE CADENAS PENDANT UNE JOURNÉE, PUIS LOUIS EST
+   REVENU AU VERROU (2026-08-22). L'idée était qu'un cadenas dit ce qu'on ne
+   peut pas faire quand un « + » dit ce qu'il y a à prendre. À l'écran, le
+   « + » ne se reconnaissait pas : il ne donnait ni l'envie ni même l'idée
+   qu'on pouvait toucher. Le verrou, lui, se lit sans apprentissage. Ne pas
+   refaire l'aller-retour.
 
    ⚠️ Il déborde du pictogramme, donc `.sigil` ne peut pas porter
    `overflow: hidden`. Ce n'est pas une perte : les WebP arrivent déjà avec
    leurs coins arrondis découpés en transparence. */
-function PlusPremium() {
+function Cadenas() {
   return (
     <span className={styles.cachet} aria-hidden="true">
-      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.4" strokeLinecap="round">
-        <path d="M12 3.5v17M3.5 12h17" />
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round">
+        <rect x="4" y="10.5" width="16" height="11" rx="2.6" fill="currentColor" stroke="none" />
+        <path d="M8.2 10.5V7.6a3.8 3.8 0 0 1 7.6 0v2.9" />
       </svg>
     </span>
   );

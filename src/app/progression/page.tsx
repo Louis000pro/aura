@@ -1269,8 +1269,8 @@ const PREMIUM_PUCE = "linear-gradient(120deg,#FFD34E,#F5B120)";
    redevient un filet uni. C'est la largeur du liseré des missions.
 
    ⚠️ ET L'OR NE S'ÉTALE PAS POUR AUTANT : il est saturé sur des formes
-   étroites (cet anneau, la puce du bandeau, le cachet « + »), jamais en
-   grande surface. Deux fonds dorés ont été refusés, même cause les deux
+   étroites (cet anneau, la puce du bandeau, le cachet du cadenas), jamais
+   en grande surface. Deux fonds dorés ont été refusés, même cause les deux
    fois, une carte ne fait que 150 px de large : la puce des missions
    étirée en aplat sur toute la largeur (« c'est nul »), puis le lavis
    or → magenta, qui sur une ligne large de 330 px s'éteint avant le bord
@@ -1300,23 +1300,26 @@ function EtincellePremium({ taille = 11 }: { taille?: number }) {
   );
 }
 
-/* Le « + » doré, posé là où vit le ⋯ des autres cartes, et seulement sur
-   une séance qu'on n'a pas encore. C'est le même cachet que sur les
-   missions de l'accueil (`PlusPremium` dans AccueilSignature.tsx), pour la
-   même raison : un cadenas dit ce qu'on ne peut pas faire, un « + » dit ce
-   qu'il y a à prendre. Sur une carte dont le métier est de donner envie de
-   s'abonner, on veut l'invitation, pas le mur.
+/* Le cadenas doré, posé là où vit le ⋯ des autres cartes, et seulement sur
+   une séance ou un cours qu'on n'a pas encore. C'est le même cachet que sur
+   les missions de l'accueil (`Cadenas` dans AccueilSignature.tsx) : un seul
+   signe de verrou dans toute l'app, appris une fois.
+
+   ⚠️ Un « + » a tenu la place pendant une journée, puis Louis est revenu au
+   verrou : il ne se reconnaissait pas et ne donnait pas l'idée qu'on
+   pouvait toucher. Ne pas refaire l'aller-retour.
 
    Il ne se touche pas : la carte entière ouvre déjà l'aperçu Premium, et
    deux boutons superposés au même endroit ne donneraient pas deux
    destinations, juste une cible à moitié fiable. */
-function PlusPremium() {
+function Cadenas() {
   return (
     <span aria-hidden
       className="absolute bottom-2 right-2 w-7 h-7 rounded-full flex items-center justify-center pointer-events-none"
       style={{ background: PREMIUM_PUCE, color: "#3A2402", boxShadow: "0 3px 10px rgba(84,52,2,0.42)" }}>
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.4" strokeLinecap="round">
-        <path d="M12 3.5v17M3.5 12h17" />
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round">
+        <rect x="4" y="10.5" width="16" height="11" rx="2.6" fill="currentColor" stroke="none" />
+        <path d="M8.2 10.5V7.6a3.8 3.8 0 0 1 7.6 0v2.9" />
       </svg>
     </span>
   );
@@ -1435,7 +1438,7 @@ function SessionTile({ session, onStart, onManage, onPremium, canAccessPremium, 
         <div className="absolute inset-x-0 bottom-0 pl-2.5 pb-3 pt-12 flex flex-col items-start text-left"
           style={{
             // On dégage le coin quand une pastille l'occupe : le ⋯ des séances
-            // à soi, le « + » d'une séance qu'on n'a pas encore.
+            // à soi, le cadenas d'une séance qu'on n'a pas encore.
             paddingRight: session.perso || premiumLocked ? 34 : 10,
             background: "linear-gradient(to top, rgba(6,5,10,0.9) 32%, rgba(6,5,10,0.4) 66%, transparent)",
             forcedColorAdjust: "none",
@@ -1477,10 +1480,10 @@ function SessionTile({ session, onStart, onManage, onPremium, canAccessPremium, 
         </motion.button>
       )}
 
-      {/* Le coin que le ⋯ laisse vide sur une séance verrouillée. Il ne
-          restait rien à cet endroit, alors qu'il pouvait dire ce qu'il y a
-          à gagner. */}
-      {premiumLocked && <PlusPremium />}
+      {/* Le coin que le ⋯ laisse vide sur une carte verrouillée. Il ne
+          restait rien à cet endroit, alors qu'il pouvait dire d'un coup
+          d'œil que la carte est fermée. */}
+      {premiumLocked && <Cadenas />}
     </motion.div>
   );
 }

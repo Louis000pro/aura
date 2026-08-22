@@ -504,9 +504,10 @@
   border-radius: 14px;
 }
 
-/* Le cachet posé sur le coin du pictogramme : un « + » doré, et seulement
+/* Le cachet posé sur le coin du pictogramme : un cadenas doré, et seulement
    pour un compte qui n'a pas encore Premium. Le raisonnement est dans
-   `PlusPremium` (AccueilSignature.tsx).
+   `Cadenas` (AccueilSignature.tsx), y compris l'aller-retour par le « + »
+   qu'il ne faut pas refaire.
 
    ⚠️ Il déborde du pictogramme, donc `.sigil` ne peut pas porter
    `overflow: hidden`. Ce n'est pas une perte : les WebP
