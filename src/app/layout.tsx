@@ -5,7 +5,8 @@ import Navigation from "@/components/Navigation";
 import MainWrapper from "@/components/MainWrapper";
 import { AuthProvider } from "@/context/AuthContext";
 import { GuidedTourProvider } from "@/context/GuidedTourContext";
-import OnboardingWrapper from "@/components/OnboardingWrapper";
+import RappelProfil from "@/components/RappelProfil";
+import GardeGuide from "@/components/GardeGuide";
 import GuidedTour from "@/components/GuidedTour/GuidedTour";
 import PWARegister from "@/components/PWARegister";
 import SplashIntro from "@/components/SplashIntro";
@@ -283,9 +284,17 @@ export default function RootLayout({
           <AssistantProvider>
             <WorkoutLaunchProvider>
               <GuidedTourProvider>
+                {/* ⚠️ LA GARDE, montée le 2026-08-22 (phase 1C). Elle
+                    n'envoie vers `/bienvenue` que sur l'état « aucun »,
+                    c'est-à-dire quand la base a bel et bien répondu que
+                    personne n'a choisi de Guide. « inconnu » (colonne pas
+                    encore là, hors ligne) ne redirige jamais : c'est ce qui
+                    empêche d'enfermer quelqu'un dans un écran qui a besoin
+                    du réseau pour en sortir. */}
+                <GardeGuide />
                 <Navigation />
                 <MainWrapper>{children}</MainWrapper>
-                <OnboardingWrapper />
+                <RappelProfil />
                 <GuidedTour />
                 {/* Le récap de mise à jour : une fois par compte, puis dans
                     Paramètres. Il vit DANS le fournisseur de la visite guidée

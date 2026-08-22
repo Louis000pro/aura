@@ -46,21 +46,15 @@ import { useGuidedTour } from "@/context/GuidedTourContext";
 import { createClient } from "@/lib/supabase";
 import { lockBodyModal } from "@/lib/bodyModal";
 import { destinationDepuisUrl } from "@/lib/destinationInterne";
-import { enregistrerProfil } from "@/lib/profilOnboarding";
+import { enregistrerProfil, PROFIL_VIDE, type OnboardingData } from "@/lib/profilOnboarding";
 import { modeRevue } from "@/lib/modeRevue";
 import { loadLieu, persistLieu } from "@/lib/planning";
 import { voix } from "@/lib/guides";
 import type { GuideId } from "@/lib/guides";
-import type { OnboardingData } from "@/components/OnboardingModal";
 import ChoixGuide from "./ChoixGuide";
 import EtapesProfil, { ORDRE, SECTIONS, champsManquants, type Entrainement, type Section } from "./EtapesProfil";
 import PortraitGuide from "./PortraitGuide";
 import s from "./bienvenue.module.css";
-
-const VIDE: OnboardingData = {
-  age: "", height: "", weight: "", gender: "",
-  goals: [], level: "", sessionsPerWeek: "", mealsPerDay: "", diet: "",
-};
 
 const NOM: Record<GuideId, string> = { nora: "Nora", sasha: "Sasha" };
 
@@ -82,7 +76,7 @@ export default function ParcoursBienvenue() {
      jamais dans un effet, et la règle « où commence-t-on » n'existe
      qu'à un seul endroit. */
   const [etapeChoisie, setEtape] = useState<Etape | null>(null);
-  const [data, setDataBrut] = useState<OnboardingData>(VIDE);
+  const [data, setDataBrut] = useState<OnboardingData>(PROFIL_VIDE);
   const [entrainement, setEntrainementBrut] = useState<Entrainement>({ location: null, equip: null });
   /** `null` = pas encore lu. Décide de la bifurcation compte neuf / compte connu. */
   const [dejaConfigure, setDejaConfigure] = useState<boolean | null>(null);
@@ -141,7 +135,7 @@ export default function ParcoursBienvenue() {
         .maybeSingle();
       if (annule) return;
       const t = (v: unknown) => (v === null || v === undefined ? "" : String(v));
-      let lu: OnboardingData = VIDE;
+      let lu: OnboardingData = PROFIL_VIDE;
       if (p) {
         const r = p as Record<string, unknown>;
         lu = {
@@ -173,6 +167,19 @@ export default function ParcoursBienvenue() {
   const profilLu: boolean | null = dejaConfigure !== null ? dejaConfigure
     : (revue && !user ? false : null);
 
+  /* ⚠️ LA BASE NE SAIT PAS RÉPONDRE (état « inconnu » : colonne pas
+     encore là, réseau coupé, profil illisible). On ne pose alors PAS la
+     question du Guide : `choisirGuide` échouerait, et l'écran 0 est le
+     seul dont on ne peut pas sortir sans réussir à écrire. Le
+     questionnaire, lui, écrit d'autres colonnes et fonctionne très bien :
+     on va donc droit aux questions, sans portrait ni prénom, avec la
+     formulation commune. C'est exactement ce que fait déjà `VisageGuide`
+     ailleurs quand aucun Guide n'est résolu.
+
+     C'est ce qui garantit qu'aucune porte de l'app ne mène à un mur : la
+     ligne des Paramètres, le rappel et la garde envoient tous ici. */
+  const guideIndisponible = !revue && etat === "inconnu";
+
   /* En revue, on joue TOUJOURS le parcours d'un compte neuf : c'est tout
      l'intérêt du mode, et la bifurcation « compte existant → conclusion »
      se teste en enlevant `review=1`. */
@@ -182,7 +189,7 @@ export default function ParcoursBienvenue() {
   /* Un Guide déjà connu à l'arrivée : on ne repose pas la question, et on
      reprend là où ça a du sens. Un compte déjà configuré n'a que la
      conclusion à voir ; un compte neuf entre dans le questionnaire. */
-  const debut: Etape = !revue && etat === "actif" && profilLu !== null
+  const debut: Etape = (!revue && etat === "actif" && profilLu !== null) || guideIndisponible
     ? (profilLu ? "pret" : ORDRE[0])
     : "guide";
   const etapeVoulue: Etape = etapeChoisie ?? debut;
@@ -193,7 +200,8 @@ export default function ParcoursBienvenue() {
      même, on ne bricole pas un portrait par défaut et on n'affiche pas un
      écran amputé : on repose la question. Un Guide que personne n'a choisi
      est un bug, pas une valeur. */
-  const etape: Etape = etapeVoulue !== "guide" && !guideAffiche ? "guide" : etapeVoulue;
+  const etape: Etape = etapeVoulue !== "guide" && !guideAffiche && !guideIndisponible
+    ? "guide" : etapeVoulue;
 
   const setData = useCallback((patch: Partial<OnboardingData>) => setDataBrut((d) => ({ ...d, ...patch })), []);
   const setEntrainement = useCallback((patch: Partial<Entrainement>) => setEntrainementBrut((e) => ({ ...e, ...patch })), []);
@@ -245,7 +253,7 @@ export default function ParcoursBienvenue() {
     setNoteRevue(null);
     setEtape(null);
     const depart = departRef.current;
-    setDataBrut(depart ? depart.data : VIDE);
+    setDataBrut(depart ? depart.data : PROFIL_VIDE);
     setEntrainementBrut(depart ? depart.entrainement : { location: null, equip: null });
   };
 
@@ -358,7 +366,7 @@ export default function ParcoursBienvenue() {
           <ChoixGuide onChoisir={(g) => { void choisir(g); }} enCours={enCours} erreur={erreur} />
         )}
 
-        {etape !== "guide" && etape !== "pret" && guideAffiche && (
+        {etape !== "guide" && etape !== "pret" && (guideAffiche || guideIndisponible) && (
           <>
             {/* ⚠️ LE GUIDE CONDUIT L'ÉTAPE, il ne la décore pas.
                 Buste + prénom + une phrase à la première personne, dans un
@@ -375,15 +383,23 @@ export default function ParcoursBienvenue() {
                 Pas de bulle, pas de pointe, pas de personnage qui flotte
                 au-dessus des champs : ce n'est pas une conversation, c'est
                 quelqu'un qui mène un questionnaire. */}
-            <div className={s.presence}>
-              <PortraitGuide guide={guideAffiche} forme="presence" anime={!reduit} />
-              <div className={s.presenceMots}>
-                <div className={s.presenceNom}>{nomGuide}</div>
-                <p className={s.presencePhrase}>
-                  {voix(guideAffiche, SECTIONS[etape as Section].voix)}
-                </p>
+            {guideAffiche ? (
+              <div className={s.presence}>
+                <PortraitGuide guide={guideAffiche} forme="presence" anime={!reduit} />
+                <div className={s.presenceMots}>
+                  <div className={s.presenceNom}>{nomGuide}</div>
+                  <p className={s.presencePhrase}>
+                    {voix(guideAffiche, SECTIONS[etape as Section].voix)}
+                  </p>
+                </div>
               </div>
-            </div>
+            ) : (
+              /* Sans Guide résolu : la phrase reste, à la formulation
+                 commune, et personne ne la prononce. On ne met pas un
+                 portrait par défaut, ce serait donner un visage à
+                 quelqu'un qui n'a pas été choisi. */
+              <p className={s.presencePhrase}>{voix(null, SECTIONS[etape as Section].voix)}</p>
+            )}
 
             <div className={s.jauge}>
               <div className={s.jaugeBarre} style={{ width: `${((index + 1) / ORDRE.length) * 100}%` }} />
@@ -456,12 +472,12 @@ export default function ParcoursBienvenue() {
           </>
         )}
 
-        {etape === "pret" && guideAffiche && (
+        {etape === "pret" && (guideAffiche || guideIndisponible) && (
           <div className={s.fin}>
             {/* Le Guide donne son identité à la conclusion aussi : sans
                 lui, cet écran redevient une page de confirmation. */}
-            <PortraitGuide guide={guideAffiche} forme="fin" />
-            <p className={s.finNom}>{nomGuide}</p>
+            {guideAffiche && <PortraitGuide guide={guideAffiche} forme="fin" />}
+            {guideAffiche && <p className={s.finNom}>{nomGuide}</p>}
             <p className={s.finPhrase}>
               {voix(guideAffiche, dejaVu ? "bienvenue.fin_retour" : "bienvenue.fin")}
             </p>

@@ -14,13 +14,15 @@
    Le Guide ouvre l'étape puis se tait pendant qu'on répond. Pas un mot
    après chaque clic : ce serait un commentateur, pas un guide.
 
-   Les options viennent de `OnboardingModal`, où elles vivaient déjà :
-   deux écrans qui remplissent les mêmes colonnes doivent proposer les
-   mêmes valeurs, sinon la même personne n'a pas le même profil selon la
-   porte qu'elle a prise.
+   Les options viennent de `lib/profilOnboarding`, avec l'écriture. Il y
+   a eu jusqu'à quatre écrans pour remplir ces colonnes, chacun avec sa
+   propre liste : ils n'écrivaient pas les mêmes valeurs dans la même
+   colonne, donc la même personne n'avait pas le même profil selon la
+   porte qu'elle avait prise. Il n'y a plus qu'un questionnaire, et plus
+   qu'un vocabulaire.
    ════════════════════════════════════════════════════════════════════ */
 
-import { GOALS, LEVELS, GENDERS, SESSIONS, MEALS, DIETS, type OnboardingData } from "@/components/OnboardingModal";
+import { GOALS, LEVELS, GENDERS, SESSIONS, MEALS, DIETS, type OnboardingData } from "@/lib/profilOnboarding";
 import type { CleVoix } from "@/lib/guides";
 import s from "./bienvenue.module.css";
 

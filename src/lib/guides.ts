@@ -443,6 +443,16 @@ const REPLIQUES = {
     nora:   "C'est enregistré. Je reprends là où tu en étais.",
     sasha:  "C'est noté. On y va.",
   },
+  /* Le rappel quand le questionnaire a été laissé en chemin. Il dit ce
+     qui manque au Guide POUR TRAVAILLER, jamais ce que la personne a
+     omis de faire : c'est une demande, pas un reproche, et elle
+     n'annonce aucune durée (« deux minutes » se transforme en promesse
+     dès que quelqu'un met trois minutes). */
+  "bienvenue.rappel": {
+    commun: "Il manque quelques réponses pour adapter Vaiiya à toi.",
+    nora:   "Il me manque quelques réponses pour bien adapter Vaiiya à toi.",
+    sasha:  "Il me manque deux ou trois réponses, et j'adapte tout autour de toi.",
+  },
 
   /* ── Pendant la séance ──
      Ce sont les phrases que l'on voit le plus souvent de toute l'app : le

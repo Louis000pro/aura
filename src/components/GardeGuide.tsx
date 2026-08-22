@@ -3,23 +3,23 @@
 /* ════════════════════════════════════════════════════════════════════
    GardeGuide — la porte qui mène à l'écran de choix du Guide.
 
-   ⚠️ FICHIER DORMANT. Il n'est monté NULLE PART, volontairement, et il
-   ne doit pas l'être tant que les quatre conditions ne sont pas réunies :
-     1. `20260818_guide_id.sql` est collé en base ;
-     2. `/bienvenue` a été parcourue en vrai (Nora, Sasha, compte neuf,
-        compte existant, `next=`, mobile) ;
-     3. ✅ FAIT le 2026-08-19 : `<GuideProvider>` est monté dans
-        `app/layout.tsx` (il ne vivait que sur `/bienvenue`). Sans lui, la
-        garde lirait un contexte absent et resterait sur « inconnu »
-        partout. Le monter ne redirige personne : lire n'est pas garder ;
-     4. la liste d'exemptions ci-dessous a été relue une dernière fois.
+   MONTÉ dans `app/layout.tsx` depuis le 2026-08-22 (phase 1C), sous
+   `<GuideProvider>`. Il a dormi jusque-là, le temps que `/bienvenue`
+   soit réellement parcourable : se tromper ici, c'est enfermer tous les
+   comptes de la production dans un écran qui n'est pas prêt.
 
-   Un fichier dormant et documenté vaut mieux qu'une redirection qui
-   part trop tôt : ici, se tromper veut dire enfermer tous les comptes
-   de la production dans un écran qui n'existe pas encore.
+   ⚠️ IL NE REDIRIGE QUE SUR L'ÉTAT « AUCUN », c'est-à-dire quand la base
+   a répondu et que `guide_id` vaut réellement NULL. « chargement » veut
+   dire qu'on ne sait pas encore, et « inconnu » que la lecture a échoué
+   (colonne pas encore là, hors ligne, session expirée) : dans ces deux
+   cas on ne bouge pas. Tant que `20260818_guide_id.sql` n'est pas collée,
+   cette garde n'envoie donc personne nulle part, et l'app se comporte
+   exactement comme avant.
 
-   Le monter, en phase 1C, c'est une ligne dans le layout, sous
-   `<GuideProvider>`.
+   ⚠️ Et `/bienvenue` sait vivre sans lui : quand l'état est « inconnu »,
+   le parcours saute la question du Guide et pose directement celles du
+   profil, plutôt que d'offrir un choix qu'il ne pourrait pas écrire.
+   C'est ce qui garantit qu'aucune porte de l'app ne mène à un mur.
    ════════════════════════════════════════════════════════════════════ */
 
 import { useEffect } from "react";
@@ -29,8 +29,10 @@ import { useGuideActif } from "@/context/GuideContext";
 import { estSurfacePublique } from "@/lib/surfacesPubliques";
 import { destinationInterne } from "@/lib/destinationInterne";
 
-/** La route de l'écran de choix. Elle existe depuis la phase 1B, mais
- *  rien n'y envoie personne : on y va soi-même, ou pas du tout. */
+/** La route du questionnaire d'entrée : le choix du Guide, puis le
+ *  profil. C'est la SEULE porte, depuis le 2026-08-22 : la ligne « Mon
+ *  corps et mes objectifs » des Paramètres et le rappel du Guide y
+ *  mènent aussi. */
 export const ROUTE_BIENVENUE = "/bienvenue";
 
 /* Routes où la question ne doit jamais s'imposer, en plus des surfaces

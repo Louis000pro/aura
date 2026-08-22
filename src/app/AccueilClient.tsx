@@ -13,7 +13,7 @@ import LandingHero from "@/components/Landing/LandingHero";
    descend trois entiers, pour que les données ne traversent pas jusqu'ici. */
 import type { ChiffresPublics } from "@/lib/chiffresPublics";
 import { useAuth } from "@/context/AuthContext";
-import OnboardingModal, { type OnboardingData } from "@/components/OnboardingModal";
+import { type OnboardingData } from "@/lib/profilOnboarding";
 import { createClient } from "@/lib/supabase";
 import { stripMemoryTags } from "@/lib/aiMemory";
 import AccueilSignature from "@/components/AccueilSignature";
@@ -139,7 +139,7 @@ let __statsCache = { score: 0, calories: 0, burned: 0, steps: 0, sleepHours: 0, 
 function Dashboard() {
   const now = new Date();
   const hour = now.getHours();
-  const { user, isNewUser } = useAuth();
+  const { user } = useAuth();
   const router = useRouter();
   const greeting = hour < 12 ? "Bonjour" : hour < 18 ? "Bon après-midi" : "Bonsoir";
 
@@ -154,7 +154,6 @@ function Dashboard() {
   const [toast, setToast] = useState<string|null>(null);
   const [chatMessages, setChatMessages] = useState<Message[]>(initialChatMessages);
   const [aiTyping, setAiTyping] = useState(false);
-  const [showOnboarding, setShowOnboarding] = useState(false);
   const [userContext, setUserContext] = useState<OnboardingData | null>(null);
   const [showMenu, setShowMenu] = useState(false);
   const [liveStats, setLiveStatsRaw] = useState(() => __statsCache);
@@ -362,13 +361,12 @@ function Dashboard() {
       .then(({ count }) => setLiveStats(prev => ({ ...prev, sessionsWeek: count ?? 0 })));
   }, [user]);
 
-  // Onboarding : clé STABLE par ID de compte + flag "vu" → ne s'affiche QU'UNE fois.
-  // Une fois le compte créé / l'onboarding fermé, il ne réapparaît plus jamais
-  // automatiquement (on peut le rouvrir via Paramètres → ?ob=1).
+  /* Les réponses de profil relues pour le coach. Le questionnaire, lui,
+     ne vit plus ici : il n'y a qu'un seul écran qui pose ces questions,
+     `/bienvenue`, et c'est `GardeGuide` qui y envoie. L'accueil ne fait
+     donc plus que LIRE la copie locale que `enregistrerProfil` écrit. */
   useEffect(() => {
     if (!user) return;
-    const seenKey = `vaiiya_ob_seen_${user.id}`;
-    // Charge le contexte (nouvelle clé stable + anciennes clés pour compat)
     const ctxKeys = [
       `vaiiya_ob_${user.id}`,
       `aura_onboarding_${user.pseudo}`,
@@ -379,32 +377,7 @@ function Dashboard() {
       const stored = localStorage.getItem(key);
       if (stored) { try { setUserContext(JSON.parse(stored)); } catch { /* ignore */ } break; }
     }
-    // Ouverture UNIQUEMENT manuelle via Paramètres (?ob=1). L'onboarding des
-    // nouveaux comptes est géré par <OnboardingWrapper /> (évite le double modal/boucle).
-    const forced = typeof window !== "undefined" && new URLSearchParams(window.location.search).get("ob") === "1";
-    void seenKey;
-    if (forced) {
-      const t = setTimeout(() => setShowOnboarding(true), 0);
-      return () => clearTimeout(t);
-    }
-  }, [user, isNewUser]);
-
-  const markOnboardingSeen = () => {
-    if (user) localStorage.setItem(`vaiiya_ob_seen_${user.id}`, "1");
-  };
-
-  const handleOnboardingComplete = (data: OnboardingData) => {
-    if (!user) return;
-    localStorage.setItem(`vaiiya_ob_${user.id}`, JSON.stringify(data));
-    markOnboardingSeen();
-    setUserContext(data);
-    setShowOnboarding(false);
-  };
-
-  const handleOnboardingSkip = () => {
-    markOnboardingSeen();
-    setShowOnboarding(false);
-  };
+  }, [user]);
 
   const chatMessagesRef = useRef<Message[]>(initialChatMessages);
 
@@ -708,9 +681,6 @@ function Dashboard() {
 
       <AnimatePresence>
         {toast && <HomeToast key="toast" message={toast} />}
-        {showOnboarding && user && (
-          <OnboardingModal key="onboarding" pseudo={user.pseudo ?? user.name ?? ""} onComplete={handleOnboardingComplete} onSkip={handleOnboardingSkip} />
-        )}
       </AnimatePresence>
     </div>
   );
