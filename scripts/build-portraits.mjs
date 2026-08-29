@@ -76,7 +76,7 @@
                 faut un visage.
    ============================================================================ */
 
-import { mkdir, readFile, writeFile, stat } from "node:fs/promises";
+import { mkdir, readdir, readFile, writeFile, stat } from "node:fs/promises";
 import path from "node:path";
 import sharp from "sharp";
 
@@ -136,6 +136,39 @@ const ETATS_PAR_CADRAGE = {
   reflexion: ["think"],
   celebration: ["encourage"],
 };
+
+/** -- LES MOMENTS ----------------------------------------------------------
+ *  Un moment est une pose dessinee pour UN passage precis de Vaiiya, par
+ *  opposition aux cinq etats, qui sont cinq mots de conversation etendus a
+ *  vingt-et-un ecrans. Sa planche s'appelle `<guide>-<moment>.png`, ou le
+ *  moment s'ecrit avec des tirets : `nora-bienvenue-nutrition.png`.
+ *
+ *  /!\ LE SCRIPT NE TIENT AUCUNE LISTE DE MOMENTS, IL DECOUVRE. C'est ce
+ *  qui rend le dessin autonome : deposer une planche et lancer la commande
+ *  suffit, il n'y a rien a declarer ici. Est un moment tout fichier
+ *  `<guide>-*.png` dont le suffixe n'est pas une planche d'etat connue.
+ *
+ *  /!\ CHAQUE MOMENT PRODUIT SON BUSTE ET SON AVATAR, sans qu'on ait a
+ *  dire lequel sert. Une table « ce moment sert en pastille, celui-la en
+ *  grand » vivrait ici ET dans le TypeScript qui l'affiche, donc elle
+ *  divergerait. Les deux fichiers coutent une soixantaine de Ko a eux deux,
+ *  et le second est de toute facon celui dont on aura besoin le jour ou le
+ *  meme moment se montre en petit.
+ *
+ *  L'avatar est AU MIEUX : certaines poses ne se cadrent pas serre (le poing
+ *  leve d'`encourage` a deja du recevoir un cadrage a part parce qu'il
+ *  elargit la bande mesuree de la tete). On previent et on continue, plutot
+ *  que de refuser une planche dont le buste, lui, est parfait. */
+const CADRAGES_MOMENT = ["buste", "avatar"];
+
+/** Les suffixes qui appartiennent aux etats : tout le reste est un moment.
+ *  `chat` y figure parce que l'ancienne planche du chat traine peut-etre
+ *  encore dans le dossier de quelqu'un ; elle ne sert plus a rien. */
+const PLANCHES_ETAT = new Set([...Object.values(PLANCHE), "chat"]);
+
+/** Le manifeste lu par l'app. Il ne dit qu'une chose : quelles planches de
+ *  moment existent vraiment. Voir `src/lib/portraitsGuides.ts`. */
+const MANIFESTE = path.join("src", "lib", "portraitsGuides.ts");
 
 async function boiteAlpha(buf) {
   const { data, info } = await sharp(buf).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
@@ -353,6 +386,126 @@ for (const guide of GUIDES) {
   }
   console.log("");
 }
+
+/* -- LES MOMENTS ----------------------------------------------------------
+   On decouvre, on ne declare pas : tout `<guide>-*.png` dont le suffixe
+   n'est pas une planche d'etat est un moment. */
+const fichiers = await readdir(SRC);
+const moments = new Map(); // moment -> Set(guides qui l'ont)
+for (const f of fichiers) {
+  if (!f.endsWith(".png")) continue;
+  const guide = GUIDES.find((g) => f.startsWith(`${g}-`));
+  if (!guide) continue;
+  const suffixe = f.slice(guide.length + 1, -4);
+  if (PLANCHES_ETAT.has(suffixe)) continue;
+  if (!moments.has(suffixe)) moments.set(suffixe, new Set());
+  moments.get(suffixe).add(guide);
+}
+
+const disponibles = [];
+if (moments.size) {
+  console.log(`-- moments ${"-".repeat(52)}`);
+  for (const [moment, guidesDuMoment] of [...moments].sort()) {
+    for (const guide of GUIDES) {
+      if (!guidesDuMoment.has(guide)) continue;
+      const n = await normaliser(path.join(SRC, `${guide}-${moment}.png`));
+      const t = await tete(n.buf, n.boite);
+      console.log(`${guide}-${moment}`);
+      console.log(`           tete ${t.hauteur} x ${t.largeur} px, cou y ${t.cou}, translation ${n.dy >= 0 ? "+" : ""}${n.dy} px`);
+
+      for (const nom of CADRAGES_MOMENT) {
+        const cle = `${guide}-${moment}-${nom}`;
+        let f;
+        try {
+          f = await fenetre(n.buf, n.boite, t, CADRAGES[nom]);
+        } catch (e) {
+          // Le buste est le cadrage utile : s'il refuse, la planche est en
+          // cause et il faut le savoir. L'avatar est un bonus, une pose au
+          // geste large peut legitimement ne pas se cadrer serre.
+          // Le buste est le cadrage utile d'un moment : s'il refuse, la
+          // planche est en cause et il faut le savoir tout de suite.
+          // Le message dit quoi corriger : sur une pose de moment, la
+          // cause est presque toujours un GESTE QUI MONTE JUSQU'A LA
+          // TETE (une main au menton, un bras leve). La bande mesuree de
+          // la tete s'elargit alors, donc la fenetre grandit, donc l'air
+          // garanti au-dessus du crane depasse la reserve du fichier.
+          if (nom === "buste") {
+            throw new Error(
+              `${guide}-${moment} : ${e.message}
+` +
+              `           A corriger sur la PLANCHE, pas dans le script :
+` +
+              `           . garder le geste SOUS la ligne du cou (a hauteur de poitrine)
+` +
+              `           . laisser de l'air au-dessus du crane, le personnage ne touche pas le haut`,
+            );
+          }
+          console.log(`           ${nom.padEnd(10)} IGNORE  ${e.message}`);
+          continue;
+        }
+        const poids = await ecrire(f.buf, path.join(OUT, `${cle}-v1.webp`));
+        total += poids;
+        disponibles.push(cle);
+        console.log(`           ${nom.padEnd(10)} fenetre ${f.largeur} x ${f.hauteur} en (${f.left}, ${f.top}) -> ${CADRAGES[nom].l} x ${CADRAGES[nom].h}   ${ko(poids)}`);
+      }
+    }
+
+    // /!\ L'ASYMETRIE EST UN VRAI DEFAUT, PAS UN DETAIL. Nora et Sasha ont
+    // exactement les memes capacites : une pose que l'un a et pas l'autre
+    // fait deux produits differents selon le Guide choisi. On previent
+    // fort, mais on n'echoue pas : les planches se dessinent une par une,
+    // et bloquer la generation empecherait de voir la premiere.
+    const absents = GUIDES.filter((g) => !guidesDuMoment.has(g));
+    if (absents.length) {
+      console.log(`           /!\\ MANQUE POUR ${absents.join(", ")} : ${absents.map((g) => `${g}-${moment}.png`).join(", ")}`);
+    }
+  }
+  console.log("");
+}
+
+/* -- LE MANIFESTE ---------------------------------------------------------
+   L'app ne devine jamais qu'un fichier existe : elle lit cette liste.
+   Voir l'en-tete de `src/lib/portraitsGuides.ts` pour le pourquoi. */
+const lignes = disponibles.sort().map((c) => `  "${c}",`).join("\n");
+const manifeste = `/* ════════════════════════════════════════════════════════════════════
+   GÉNÉRÉ PAR \`scripts/build-portraits.mjs\` (npm run portraits).
+   NE PAS ÉDITER À LA MAIN : la prochaine génération écrase ce fichier.
+
+   Ce que ce fichier dit, et rien d'autre : QUELLES PLANCHES DE MOMENT
+   EXISTENT VRAIMENT sur le disque.
+
+   ⚠️ LE CODE NE DEVINE JAMAIS QU'UN FICHIER EXISTE. C'est toute la
+   raison d'être de ce module. Un \`<img src>\` posé au hasard sur un
+   fichier absent produit une requête 404 et un trou à l'écran, le temps
+   que le navigateur s'en aperçoive. On lit donc la disponibilité au
+   moment du rendu, sans requête et sans clignotement, et le repli est
+   choisi avant que l'image ne parte.
+
+   C'est ce qui rend le dessin autonome : déposer une planche dans
+   \`guides-src/portraits/\`, lancer \`npm run portraits\`, et la pose
+   s'allume. Aucune ligne de code à toucher, et tant que la planche
+   n'existe pas l'écran est exactement celui d'aujourd'hui.
+
+   Clé : \`<guide>-<moment>-<cadrage>\`, le nom du fichier sans \`-v1.webp\`.
+   ════════════════════════════════════════════════════════════════════ */
+
+const DISPONIBLES = new Set<string>([
+${lignes || "  // Vide tant qu'aucune planche de moment n'a été générée."}
+]);
+
+/** Cette planche existe-t-elle ? Sert à choisir entre le moment et son
+ *  repli, jamais à décider qu'un écran s'affiche ou non. */
+export function aPortrait(cle: string): boolean {
+  return DISPONIBLES.has(cle);
+}
+
+/** Tout ce qui existe, pour les scripts de vérification et la revue. */
+export function portraitsDisponibles(): string[] {
+  return [...DISPONIBLES].sort();
+}
+`;
+if (!CHECK) await writeFile(MANIFESTE, manifeste);
+console.log(`manifeste : ${disponibles.length} planche(s) de moment -> ${MANIFESTE}`);
 
 console.log(`total ecrit : ${ko(total)}`);
 if (CHECK) console.log("--check : rien n'a ete ecrit.");

@@ -52,7 +52,8 @@ import { loadLieu, persistLieu } from "@/lib/planning";
 import { voix } from "@/lib/guides";
 import type { GuideId } from "@/lib/guides";
 import ChoixGuide from "./ChoixGuide";
-import EtapesProfil, { ORDRE, SECTIONS, champsManquants, type Entrainement, type Section } from "./EtapesProfil";
+import EtapesProfil, { MOMENTS, ORDRE, SECTIONS, champsManquants, momentDe, type Entrainement, type Section } from "./EtapesProfil";
+import { prechargerMoments } from "@/components/AssistantMark";
 import PortraitGuide from "./PortraitGuide";
 import s from "./bienvenue.module.css";
 
@@ -202,6 +203,21 @@ export default function ParcoursBienvenue() {
      est un bug, pas une valeur. */
   const etape: Etape = etapeVoulue !== "guide" && !guideAffiche && !guideIndisponible
     ? "guide" : etapeVoulue;
+
+  /* ⚠️ LE PRÉCHARGEMENT REMPLACE LA TRANSITION, il ne l'accompagne pas.
+     Le portrait bascule sec d'une section à l'autre (décision de Louis :
+     pas d'animation), donc rien ne couvre le changement d'image. Un
+     fichier pas encore téléchargé laisserait un trou au milieu de
+     l'écran, exactement là où le Guide doit être.
+
+     On demande dès que le Guide est connu, c'est-à-dire pendant qu'on
+     lit encore l'écran de choix : les cinq bustes sont donc là avant la
+     première question. `prechargerMoments` ne demande que les planches
+     qui existent vraiment ; tant qu'aucune n'est dessinée, cet effet ne
+     fait aucune requête. */
+  useEffect(() => {
+    prechargerMoments(guideAffiche, MOMENTS, "buste");
+  }, [guideAffiche]);
 
   const setData = useCallback((patch: Partial<OnboardingData>) => setDataBrut((d) => ({ ...d, ...patch })), []);
   const setEntrainement = useCallback((patch: Partial<Entrainement>) => setEntrainementBrut((e) => ({ ...e, ...patch })), []);
@@ -385,7 +401,12 @@ export default function ParcoursBienvenue() {
                 quelqu'un qui mène un questionnaire. */}
             {guideAffiche ? (
               <div className={s.presence}>
-                <PortraitGuide guide={guideAffiche} forme="presence" anime={!reduit} />
+                <PortraitGuide
+                  guide={guideAffiche}
+                  forme="presence"
+                  moment={momentDe(etape as Section)}
+                  anime={!reduit}
+                />
                 <div className={s.presenceMots}>
                   <div className={s.presenceNom}>{nomGuide}</div>
                   <p className={s.presencePhrase}>

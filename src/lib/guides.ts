@@ -1113,6 +1113,49 @@ export type EtatGuide = "welcome" | "listen" | "think" | "explain" | "encourage"
  *  jour où une bulle célèbre quelque chose, elle portera ce ton. */
 export type TonGuide = Extract<EtatGuide, "listen" | "explain" | "encourage">;
 
+/* ── LES MOMENTS ───────────────────────────────────────────────────────
+   ⚠️ UN MOMENT N'EST PAS UN ÉTAT, ET C'EST TOUTE LA DIFFÉRENCE.
+
+   Les cinq états s'appellent `welcome`, `listen`, `think`, `explain`,
+   `encourage` : ce sont cinq mots de CONVERSATION. Ils ont été dessinés
+   pour le chat, puis étendus tels quels à vingt-et-un endroits dont la
+   plupart ne sont pas des conversations. Conséquence mesurée le
+   2026-08-30 : `encourage` sert à la fois pour « tu passes Diamant » et
+   pour « ton thème est appliqué », `explain` pour « voilà comment faire
+   une fente » et pour « voilà pourquoi ta semaine est équilibrée ». Le
+   mot est juste ; la POSE ne peut pas l'être pour les deux.
+
+   Un moment appartient à l'ENDROIT, pas au dialogue. Il désigne une
+   planche dessinée pour ce passage précis, et rien d'autre.
+
+   ⚠️ UN MOMENT NE PEUT PAS CASSER UN ÉCRAN, et c'est la propriété qui
+   rend tout le reste possible. Sa planche n'existe peut-être pas encore :
+   le composant essaie le fichier du moment, et retombe sur celui de
+   l'état. Déposer une planche dans `guides-src/portraits/` puis lancer
+   `npm run portraits` suffit donc à l'allumer, sans toucher une ligne de
+   code, et une planche absente rend exactement l'écran d'aujourd'hui.
+
+   La disponibilité réelle se lit dans `portraitsGuides.ts`, ÉCRIT PAR LE
+   SCRIPT : le code ne devine jamais qu'un fichier existe.
+
+   ⚠️ LE REPLI SE DÉCLARE AU POINT D'APPEL, il n'y a pas de table. C'est
+   là qu'on sait ce que le Guide est en train de faire, donc là qu'on sait
+   sur quel état retomber. Une table centrale dirait la même chose plus
+   loin de l'endroit qui la connaît, et il faudrait la tenir à jour à
+   chaque écran ajouté. */
+export type MomentGuide =
+  | "bienvenue.corps"
+  | "bienvenue.objectifs"
+  | "bienvenue.niveau"
+  | "bienvenue.entrainement"
+  | "bienvenue.nutrition";
+
+/** Le nom de fichier d'un moment. Le point du code devient un tiret sur le
+ *  disque : `bienvenue.corps` → `nora-bienvenue-corps-buste-v1.webp`. */
+export function clePortrait(guide: GuideId, moment: MomentGuide, cadrage: string): string {
+  return `${guide}-${moment.replace(".", "-")}-${cadrage}`;
+}
+
 /** Le nom affiché en tête de la conversation. Sans Guide résolu, c'est le
  *  produit qui parle, et il le dit avec sa marque. */
 export function nomGuide(guide: GuideRef): string {

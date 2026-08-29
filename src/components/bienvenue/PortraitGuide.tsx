@@ -34,7 +34,8 @@
    ════════════════════════════════════════════════════════════════════ */
 
 import { motion } from "framer-motion";
-import type { GuideId } from "@/lib/guides";
+import { fichierMoment } from "@/components/AssistantMark";
+import type { GuideId, MomentGuide } from "@/lib/guides";
 import s from "./bienvenue.module.css";
 
 const FORME = {
@@ -47,8 +48,15 @@ const FORME = {
   fin: s.pg_fin,
 } as const;
 
-/** Le fichier que chaque forme montre. Le buste a le sien, cadré sur la
- *  tête à la génération : voir l'en-tête. */
+/** Le fichier que chaque forme montre PAR DÉFAUT. Le buste a le sien,
+ *  cadré sur la tête à la génération : voir l'en-tête.
+ *
+ *  ⚠️ `presence` est la seule forme qui peut être remplacée par un
+ *  moment. La scène et l'écran de conclusion montrent le portrait ENTIER
+ *  (`master`), qui est la pose de présentation du Guide : c'est celle
+ *  qu'on choisit à l'écran 0, et la revoir à la fin ferme le parcours sur
+ *  la même image. Les cinq questions du milieu, elles, n'ont aucune
+ *  raison de la remontrer cinq fois. */
 const FICHIER: Record<keyof typeof FORME, string> = {
   scene: "master",
   presence: "buste",
@@ -58,13 +66,32 @@ const FICHIER: Record<keyof typeof FORME, string> = {
 export default function PortraitGuide({
   guide,
   forme,
+  moment,
   anime = true,
 }: {
   guide: GuideId;
   forme: keyof typeof FORME;
+  /** La pose écrite pour CE passage du questionnaire. Tant que sa planche
+   *  n'existe pas, c'est le buste historique qui s'affiche, donc l'écran
+   *  est exactement celui d'aujourd'hui. Ignoré sur `scene` et `fin`, qui
+   *  montrent volontairement le portrait entier. */
+  moment?: MomentGuide;
   /** Coupé quand le mouvement est refusé par le système. */
   anime?: boolean;
 }) {
+  /* ⚠️ LE PORTRAIT BASCULE SEC D'UNE SECTION À L'AUTRE, ET C'EST VOULU
+     (décision de Louis, 2026-08-30 : « pourquoi faire des animations
+     forcément ? »). Le titre, la phrase du Guide et les champs changent
+     tous au même instant, sans transition : donner au seul portrait une
+     arrivée à lui le singulariserait, et un mouvement à côté d'un champ
+     tire l'œil hors de la question qui vient d'être posée.
+
+     Ce qui remplace la transition, c'est `prechargerMoments` côté
+     parcours : les cinq bustes sont déjà en cache, donc le changement est
+     instantané au lieu de laisser un trou. */
+  const fichier = forme === "presence"
+    ? fichierMoment(guide, moment, "buste", FICHIER.presence)
+    : FICHIER[forme];
   /* ⚠️ PAS de transition partagée entre la scène et le buste, et c'est un
      choix, pas un oubli.
 
@@ -103,7 +130,7 @@ export default function PortraitGuide({
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           className={s.pgImage}
-          src={`/guides/${guide}-${FICHIER[forme]}-v1.webp`}
+          src={`/guides/${guide}-${fichier}-v1.webp`}
           alt=""
           decoding="async"
           fetchPriority={forme === "scene" ? "high" : "auto"}

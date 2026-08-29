@@ -42,7 +42,8 @@
    ════════════════════════════════════════════════════════════════════ */
 
 import type { CSSProperties } from "react";
-import type { EtatGuide, GuideId, GuideRef } from "@/lib/guides";
+import { clePortrait, type EtatGuide, type GuideId, type GuideRef, type MomentGuide } from "@/lib/guides";
+import { aPortrait } from "@/lib/portraitsGuides";
 
 export function AssistantSpark({ px }: { px: number }) {
   return (
@@ -89,14 +90,40 @@ const fondu = (bande: number) => `linear-gradient(to bottom, #000 calc(100% - ${
  *  `etat` choisit lequel des cinq portraits s'affiche. Il vaut `explain` par
  *  défaut, qui est le visage d'un Guide en train de répondre : c'est le cas
  *  le plus courant, et jamais un cas trompeur. */
+/** ── LE REPLI D'UN MOMENT ─────────────────────────────────────────────
+ *  Rend le fragment de nom de fichier à afficher : celui du moment si sa
+ *  planche existe, sinon celui du repli passé par l'appelant.
+ *
+ *  ⚠️ ON LIT LA DISPONIBILITÉ, ON NE LA TENTE PAS. Poser le fichier du
+ *  moment et rattraper l'échec avec `onError` produirait une requête 404
+ *  et un trou à l'écran, le temps que le navigateur s'en aperçoive. Le
+ *  manifeste `portraitsGuides.ts` est écrit par le script de génération,
+ *  donc le choix se fait avant que l'image ne parte. */
+export function fichierMoment(
+  guide: GuideId,
+  moment: MomentGuide | undefined,
+  cadrage: "avatar" | "buste",
+  repli: string,
+): string {
+  if (!moment) return repli;
+  // `Portrait` et `VisageGuide` recollent le préfixe du Guide eux-mêmes :
+  // on ne rend ici que la partie qui les suit.
+  const fragment = `${moment.replace(".", "-")}-${cadrage}`;
+  return aPortrait(clePortrait(guide, moment, cadrage)) ? fragment : repli;
+}
+
 export function VisageGuide({
   guide,
   etat = "explain",
+  moment,
   size,
   className = "",
 }: {
   guide: GuideRef;
   etat?: EtatGuide;
+  /** La pose écrite pour CE passage. Si sa planche n'existe pas encore,
+   *  c'est `etat` qui s'affiche : exactement l'écran d'aujourd'hui. */
+  moment?: MomentGuide;
   size: number;
   className?: string;
 }) {
@@ -118,7 +145,7 @@ export function VisageGuide({
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        src={`/guides/${guide}-${etat}-avatar-v1.webp`}
+        src={`/guides/${guide}-${fichierMoment(guide, moment, "avatar", `${etat}-avatar`)}-v1.webp`}
         alt=""
         width={size}
         height={size}
@@ -193,11 +220,30 @@ function Portrait({ guide, fichier, hauteur, bande }: { guide: GuideId; fichier:
 /** Le grand personnage de la feuille vide. Il remplace l'étincelle géante
  *  qui y trônait : avant le premier message, la seule chose à dire est
  *  « voilà qui te parle ». */
-export function BusteGuide({ guide, hauteur }: { guide: GuideRef; hauteur: number | string }) {
+export function BusteGuide({
+  guide,
+  moment,
+  hauteur,
+}: {
+  guide: GuideRef;
+  /** La pose écrite pour CE passage. Le repli d'un buste est TOUJOURS le
+   *  buste historique `<guide>-buste-v1.webp` : c'est le seul buste d'un
+   *  état qui existe, et c'est ce que l'app montre depuis le premier
+   *  jour. Une planche de moment absente ne change donc rien. */
+  moment?: MomentGuide;
+  hauteur: number | string;
+}) {
   // Sans Guide, la feuille retrouve exactement l'écran d'avant : l'étincelle
   // au centre, à la taille qu'elle avait.
   if (!guide) return <AssistantAvatar size={80} />;
-  return <Portrait guide={guide} fichier="buste" hauteur={hauteur} bande={30} />;
+  return (
+    <Portrait
+      guide={guide}
+      fichier={fichierMoment(guide, moment, "buste", "buste")}
+      hauteur={hauteur}
+      bande={30}
+    />
+  );
 }
 
 /** Le personnage à mi-taille, pendant que le Guide travaille. C'est le SEUL
@@ -240,4 +286,26 @@ export function prechargerGuide(guide: GuideRef) {
   for (const e of etats) new Image().src = `/guides/${guide}-${e}-avatar-v1.webp`;
   new Image().src = `/guides/${guide}-think-reflexion-v1.webp`;
   new Image().src = `/guides/${guide}-buste-v1.webp`;
+}
+
+/** Les poses d'un parcours, demandées d'avance.
+ *
+ *  ⚠️ CE N'EST PAS UN CONFORT ICI, C'EST CE QUI REMPLACE L'ANIMATION.
+ *  Le portrait du questionnaire bascule SEC d'une section à l'autre, en
+ *  même temps que le titre, la phrase et les champs : rien ne couvre le
+ *  changement. Un fichier pas encore téléchargé laisserait donc un trou
+ *  au milieu de l'écran, exactement là où le Guide doit être.
+ *
+ *  On ne demande que ce qui existe : une planche absente n'est pas une
+ *  requête à faire, c'est le buste historique déjà en cache. */
+export function prechargerMoments(
+  guide: GuideRef,
+  moments: readonly MomentGuide[],
+  cadrage: "avatar" | "buste",
+) {
+  if (!guide || typeof window === "undefined") return;
+  for (const m of moments) {
+    const cle = clePortrait(guide, m, cadrage);
+    if (aPortrait(cle)) new Image().src = `/guides/${cle}-v1.webp`;
+  }
 }

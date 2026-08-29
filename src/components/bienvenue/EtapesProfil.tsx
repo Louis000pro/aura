@@ -23,7 +23,7 @@
    ════════════════════════════════════════════════════════════════════ */
 
 import { GOALS, LEVELS, GENDERS, SESSIONS, MEALS, DIETS, type OnboardingData } from "@/lib/profilOnboarding";
-import type { CleVoix } from "@/lib/guides";
+import type { CleVoix, MomentGuide } from "@/lib/guides";
 import s from "./bienvenue.module.css";
 
 /** Le lieu et le matériel, aux seules valeurs que le reste du code sait
@@ -77,6 +77,22 @@ export const SECTIONS: Record<Section, { titre: string; voix: CleVoix; ligne?: s
 };
 
 export const ORDRE: Section[] = ["corps", "objectifs", "niveau", "entrainement", "nutrition"];
+
+/** La pose que le Guide prend pour cette section.
+ *
+ *  ⚠️ LA CLÉ SE DÉDUIT DU NOM DE LA SECTION, elle ne se déclare pas à
+ *  côté. C'est ce qui rend impossible d'ajouter une sixième section sans
+ *  lui donner sa planche : `bienvenue.<section>` doit être un
+ *  `MomentGuide`, sinon ce fichier ne compile pas. Même procédé que les
+ *  chapitres de la visite guidée et que le journal des rappels.
+ *
+ *  Tant que la planche n'existe pas, `PortraitGuide` retombe sur le buste
+ *  historique : l'écran est alors exactement celui d'avant. */
+export const momentDe = (section: Section): MomentGuide => `bienvenue.${section}`;
+
+/** Les cinq poses du questionnaire, dans l'ordre. Sert au préchargement :
+ *  le portrait bascule sec, donc les fichiers doivent déjà être là. */
+export const MOMENTS: MomentGuide[] = ORDRE.map(momentDe);
 
 /* ════════════════════════════════════════════════════════════════════
    CE QUI MANQUE POUR PASSER À LA SUITE
