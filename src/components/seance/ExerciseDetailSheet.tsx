@@ -3,6 +3,8 @@
 import { motion } from "framer-motion";
 import { X, Check, Plus, Sparkles } from "lucide-react";
 import ExerciseThumb from "./ExerciseThumb";
+import { VisageGuide } from "@/components/AssistantMark";
+import { useGuideActif } from "@/context/GuideContext";
 import { EQUIPS, libelleReps, estAnime, type LibExercise } from "@/lib/exerciseLibrary";
 
 /* ════════════════════════════════════════════════════════════════════
@@ -15,6 +17,25 @@ import { EQUIPS, libelleReps, estAnime, type LibExercise } from "@/lib/exerciseL
 
    Le seul geste possible est d'ajouter le mouvement à la sélection en
    cours, et il est réversible depuis la même fiche.
+
+   ⚠️ LA CONSIGNE ET LE BÉNÉFICE SONT SIGNÉS, ET LE TUNNEL LE FAISAIT
+   DÉJÀ. `cur.tip` s'affiche pendant la séance avec le visage du Guide
+   (« Le geste : ») ; ici, le MÊME texte s'affichait sous une étiquette en
+   capitales, sans personne derrière. C'était le même mot avec deux
+   auteurs. Le visage reprend donc la place des deux étiquettes.
+
+   ⚠️ AUCUNE PHRASE N'A ÉTÉ AJOUTÉE, ET C'EST LE POINT. Cette fiche est
+   celle des sept surfaces qui frôle le plus le bavardage : cent-deux
+   écrans d'un coup. Une phrase d'introduction du genre « voilà comment
+   je te le ferais faire » retarderait la consigne sans rien apprendre.
+   Un visage à côté d'un paragraphe dit qui parle mieux qu'une phrase qui
+   le déclare, donc rien n'entre dans `guides.ts` pour cet écran.
+
+   ⚠️ ET IL NE VA PAS PLUS LOIN. Les fiches publiques `/exercices/[slug]`
+   montrent les mêmes `tip` et `benefit` et gardent leur voix neutre :
+   elles s'adressent à quelqu'un qui n'a pas de compte, donc pas de
+   Guide. La liste dépliable des mouvements du tunnel les garde aussi :
+   c'est une liste qui défile, pas un seuil.
    ════════════════════════════════════════════════════════════════════ */
 
 export default function ExerciseDetailSheet({
@@ -31,6 +52,7 @@ export default function ExerciseDetailSheet({
   onBasculer: () => void;
   onClose: () => void;
 }) {
+  const { guide } = useGuideActif();
   const materiel = EQUIPS.find(e => e.id === exo.equip)?.label ?? "Sans matériel";
   const dosage = `${exo.sets} × ${libelleReps(exo.mode, exo.reps, exo.seconds, exo.unite)}`;
 
@@ -105,24 +127,23 @@ export default function ExerciseDetailSheet({
             </div>
           </section>
 
-          <section className="mt-5">
-            <p className="text-[9.5px] font-extrabold tracking-[0.16em] uppercase mb-1.5"
-              style={{ color: "var(--text-3)" }}>
-              Comment le faire
-            </p>
-            <p className="text-[13px] font-light leading-relaxed" style={{ color: "var(--text-2)" }}>
-              {exo.tip}
-            </p>
-          </section>
-
-          <section className="mt-5 pb-5">
-            <p className="text-[9.5px] font-extrabold tracking-[0.16em] uppercase mb-1.5"
-              style={{ color: "var(--text-3)" }}>
-              Ce que ça t’apporte
-            </p>
-            <p className="text-[13px] font-light leading-relaxed" style={{ color: "var(--text-2)" }}>
-              {exo.benefit}
-            </p>
+          {/* Ce qu'il en dit : comment le faire, puis ce que ça apporte, dans
+              le même souffle. Deux étiquettes en capitales au-dessus de deux
+              phrases de quelqu'un qui parle, c'était une mise en forme, pas
+              une explication. Un seul visage sur l'écran, donc les deux
+              paragraphes vivent sous celui-là. */}
+          <section className="mt-5 pb-5 flex gap-3 items-start">
+            <span className="flex-shrink-0 mt-0.5">
+              <VisageGuide guide={guide} etat="explain" size={34} />
+            </span>
+            <div className="min-w-0">
+              <p className="text-[13px] font-light leading-relaxed" style={{ color: "var(--text-2)" }}>
+                {exo.tip}
+              </p>
+              <p className="text-[12.5px] font-light leading-relaxed mt-2.5" style={{ color: "var(--text-3)" }}>
+                {exo.benefit}
+              </p>
+            </div>
           </section>
         </div>
 
