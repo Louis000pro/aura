@@ -90,7 +90,7 @@ export default function PortraitGuide({
      parcours : les cinq bustes sont déjà en cache, donc le changement est
      instantané au lieu de laisser un trou. */
   const fichier = forme === "presence"
-    ? fichierMoment(guide, moment, "buste", FICHIER.presence)
+    ? fichierMoment(guide, moment, "pose", FICHIER.presence)
     : FICHIER[forme];
   /* ⚠️ PAS de transition partagée entre la scène et le buste, et c'est un
      choix, pas un oubli.

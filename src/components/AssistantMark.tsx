@@ -102,7 +102,7 @@ const fondu = (bande: number) => `linear-gradient(to bottom, #000 calc(100% - ${
 export function fichierMoment(
   guide: GuideId,
   moment: MomentGuide | undefined,
-  cadrage: "avatar" | "buste",
+  cadrage: "avatar" | "pose",
   repli: string,
 ): string {
   if (!moment) return repli;
@@ -226,10 +226,17 @@ export function BusteGuide({
   hauteur,
 }: {
   guide: GuideRef;
-  /** La pose écrite pour CE passage. Le repli d'un buste est TOUJOURS le
-   *  buste historique `<guide>-buste-v1.webp` : c'est le seul buste d'un
-   *  état qui existe, et c'est ce que l'app montre depuis le premier
-   *  jour. Une planche de moment absente ne change donc rien. */
+  /** La pose écrite pour CE passage.
+   *
+   *  ⚠️ ELLE N'EST PAS CADRÉE COMME UN BUSTE, et c'est ce qui la rend
+   *  utile : un buste ne garde que 0,73 hauteur de tête sous le menton,
+   *  donc un geste des mains en sort. Le cadrage `pose` descend à 1,33,
+   *  et c'est le seul où l'on voit ce que le Guide FAIT.
+   *
+   *  Le repli, lui, reste TOUJOURS le buste historique
+   *  `<guide>-buste-v1.webp` : c'est le seul grand cadrage d'un état qui
+   *  existe, et c'est ce que l'app montre depuis le premier jour. Une
+   *  planche de moment absente ne change donc rien. */
   moment?: MomentGuide;
   hauteur: number | string;
 }) {
@@ -239,7 +246,7 @@ export function BusteGuide({
   return (
     <Portrait
       guide={guide}
-      fichier={fichierMoment(guide, moment, "buste", "buste")}
+      fichier={fichierMoment(guide, moment, "pose", "buste")}
       hauteur={hauteur}
       bande={30}
     />
@@ -301,7 +308,7 @@ export function prechargerGuide(guide: GuideRef) {
 export function prechargerMoments(
   guide: GuideRef,
   moments: readonly MomentGuide[],
-  cadrage: "avatar" | "buste",
+  cadrage: "avatar" | "pose",
 ) {
   if (!guide || typeof window === "undefined") return;
   for (const m of moments) {

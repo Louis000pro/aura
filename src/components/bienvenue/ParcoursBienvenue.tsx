@@ -216,7 +216,7 @@ export default function ParcoursBienvenue() {
      qui existent vraiment ; tant qu'aucune n'est dessinée, cet effet ne
      fait aucune requête. */
   useEffect(() => {
-    prechargerMoments(guideAffiche, MOMENTS, "buste");
+    prechargerMoments(guideAffiche, MOMENTS, "pose");
   }, [guideAffiche]);
 
   const setData = useCallback((patch: Partial<OnboardingData>) => setDataBrut((d) => ({ ...d, ...patch })), []);

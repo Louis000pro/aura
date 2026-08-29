@@ -82,7 +82,7 @@ const produits = (await readdir(OUT))
 
 /** Un fichier de moment porte au moins quatre segments :
  *  `<guide>-<moment...>-<cadrage>`. Les etats en ont deux ou trois. */
-const CADRAGES = new Set(["buste", "avatar"]);
+const CADRAGES = new Set(["pose", "avatar"]);
 const surDisque = new Set();
 for (const cle of produits) {
   const guide = GUIDES.find((g) => cle.startsWith(`${g}-`));

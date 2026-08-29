@@ -74,6 +74,25 @@
    avatar     . carre, serre sur la tete. Il vit dans une pastille de 28 a
                 36 px : a cette taille un buste entier n'est qu'une tache, il
                 faut un visage.
+   pose       . 4:5, la tete n'occupe que 40 % de la hauteur. LE CADRAGE DES
+                MOMENTS, et le seul ou un GESTE se lit.
+
+                /!\ C'EST UNE CORRECTION, PAS UNE OPTION (Louis,
+                2026-08-30 : « trop monotone et pas assez expressif »). Les
+                moments etaient d'abord cadres comme des bustes : mesure,
+                un buste ne garde que 0,73 hauteur de tete sous le menton,
+                soit 65 px sur les 175 px de la fenetre du questionnaire.
+                Le cou, les clavicules, le haut de la poitrine, et rien
+                d'autre. Une main a hauteur de taille etait donc HORS de
+                l'image finale, et cinq poses differentes rendaient cinq
+                bustes identiques.
+
+                A 40 %, on descend a 1,33 hauteur de tete sous le menton :
+                les deux bras et les avant-bras entrent. La tete passe de
+                89 a 70 px a l'ecran, ce qui est le prix a payer. 34 %
+                montrerait les mains completement mais ferait tomber la
+                tete a 59 px : trop de presence perdue pour une largeur de
+                main.
    ============================================================================ */
 
 import { mkdir, readdir, readFile, writeFile, stat } from "node:fs/promises";
@@ -120,6 +139,7 @@ const CADRAGES = {
   reflexion: { l: 320, h: 400, hauteurTete: 0.44, largeurTete: 0.62, air: 0.07 },
   celebration: { l: 448, h: 560, hauteurTete: 0.44, largeurTete: 0.70, air: 0.07 },
   avatar:    { l: 256, h: 256, hauteurTete: 0.55, largeurTete: 0.80, air: 0.10 },
+  pose:      { l: 512, h: 640, hauteurTete: 0.40, largeurTete: 0.66, air: 0.07 },
 };
 
 /** Qui recoit quoi. Un cadrage coute un fichier a telecharger : on ne genere
@@ -135,6 +155,9 @@ const ETATS_PAR_CADRAGE = {
   buste: ["welcome"],
   reflexion: ["think"],
   celebration: ["encourage"],
+  // `pose` n'appartient a aucun etat : c'est le cadrage des MOMENTS, voir
+  // CADRAGES_MOMENT plus bas. La liste vide n'est pas un oubli.
+  pose: [],
 };
 
 /** -- LES MOMENTS ----------------------------------------------------------
@@ -159,7 +182,7 @@ const ETATS_PAR_CADRAGE = {
  *  leve d'`encourage` a deja du recevoir un cadrage a part parce qu'il
  *  elargit la bande mesuree de la tete). On previent et on continue, plutot
  *  que de refuser une planche dont le buste, lui, est parfait. */
-const CADRAGES_MOMENT = ["buste", "avatar"];
+const CADRAGES_MOMENT = ["pose", "avatar"];
 
 /** Les suffixes qui appartiennent aux etats : tout le reste est un moment.
  *  `chat` y figure parce que l'ancienne planche du chat traine peut-etre
