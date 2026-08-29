@@ -69,6 +69,8 @@ export type ContexteVoix = {
   rang?: string;
   /** Le nombre de jours de la série en cours (`retour.serie`). */
   serie?: number;
+  /** Séances terminées depuis toujours (`rappel.veilleuse`). */
+  seances?: number;
 };
 
 type Rendu = string | ((c: ContexteVoix) => string);
@@ -552,6 +554,275 @@ export function voixAction(
       : "action.set_theme.auto");
   }
   return voix(guide, CLE_PAR_INTENT[action.intent] ?? "action.defaut");
+}
+
+/* ── LES RAPPELS DU SOIR ────────────────────────────────────────────
+   Une notification est le Guide qui parle, donc ses mots vivent ici,
+   comme tous les autres. Ils en étaient absents jusqu'au 2026-08-29 :
+   `rappelsProfil.ts` portait ses phrases lui-même, et c'était le dernier
+   endroit du produit où Nora et Sasha disaient exactement la même chose.
+
+   Un push n'a pas la forme d'une réplique ordinaire : il lui faut un
+   titre ET un corps, et plusieurs formulations par cas, tournées pour ne
+   pas se répéter. D'où une table à part, avec sa propre fonction de
+   lecture. La règle, elle, ne change pas : `rappelsProfil.ts` décide QUI
+   reçoit quoi et à quelle cadence, ce fichier décide des MOTS. Aucun des
+   deux ne fait le travail de l'autre.
+
+   ⚠️ LES TROIS LISTES D'UNE MÊME CLÉ ONT LE MÊME NOMBRE DE FORMULATIONS,
+   DANS LE MÊME ORDRE, ET CHAQUE RANG DIT LA MÊME CHOSE. Deux raisons.
+   La première est la règle générale : Nora et Sasha ne se distinguent que
+   par la formulation. La seconde est mécanique : le journal des envois
+   garde un INDEX de variante (`notification_rappels.variante`), qui sert
+   à ne jamais renvoyer la formulation précédente. Un index qui ne
+   désigne pas le même message d'un Guide à l'autre ferait tourner cette
+   garantie à vide le jour où quelqu'un change de Guide.
+
+   ⚠️ CE QUI RESTE HORS DE CETTE TABLE : les notifications qui ne viennent
+   pas du Guide. Le message d'un ami et le maillon franchi par un
+   équipier (`/api/notifications/message`, `/api/notifications/relais`)
+   racontent ce que QUELQU'UN D'AUTRE a fait. Les faire parler avec la
+   voix de Nora ou de Sasha, ce serait lui faire endosser les mots d'un
+   tiers.
+
+   ⚠️ L'ICÔNE DU PUSH RESTE CELLE DE VAIIYA, jamais le portrait du Guide.
+   Dans le volet de notifications d'un téléphone, l'icône sert à
+   reconnaître l'APPLICATION parmi vingt autres : y mettre un visage
+   rendrait Vaiiya méconnaissable là où elle doit l'être le plus. C'est la
+   règle générale, ✦ tient le chrome, le Guide tient l'accompagnement.
+
+   ⚠️ AUCUN ACCORD DE GENRE, comme partout ailleurs dans ce fichier. Un
+   push arrive sur un écran verrouillé, sans contexte et sans recours :
+   c'est le pire endroit pour se tromper de personne. « Tu es reparti » a
+   tenu une heure dans la veilleuse de Sasha, « c'est reparti » dit la
+   même chose et s'adresse à tout le monde. */
+
+/** Un rappel du soir : ce que la notification affiche. */
+export type PhrasePush = { title: string; body: string };
+
+type RenduPush = PhrasePush | ((c: ContexteVoix) => PhrasePush);
+
+/** Les formulations d'un même cas, dans l'ordre. Voir l'avertissement
+ *  ci-dessus : les trois listes se répondent rang par rang. */
+type RepliquePush = { commun: RenduPush[]; nora?: RenduPush[]; sasha?: RenduPush[] };
+
+const RAPPELS = {
+  /* Personne n'a encore vraiment essayé le produit. On montre ce qu'il y
+     a à voir, on ne réclame rien. */
+  "rappel.premier_pas": {
+    commun: [
+      (c) => ({
+        title: c.pseudo ? `Ta première séance, ${c.pseudo}` : "Ta première séance",
+        body: "Quinze minutes, sans matériel. Tout est déjà prêt.",
+      }),
+      { title: "102 mouvements animés t'attendent",
+        body: "Un coup d'oeil suffit pour voir à quoi ressemble une séance." },
+      { title: "On commence par quoi ?",
+        body: "Choisis une séance, je m'occupe du reste." },
+    ],
+    nora: [
+      (c) => ({
+        title: c.pseudo ? `Ta première séance, ${c.pseudo}` : "Ta première séance",
+        body: "Quinze minutes, sans matériel. Je t'explique chaque geste.",
+      }),
+      { title: "102 mouvements animés t'attendent",
+        body: "Tu peux voir comment ils se font avant de te lancer." },
+      { title: "On commence par quoi ?",
+        body: "Choisis une séance, je m'occupe du déroulé." },
+    ],
+    sasha: [
+      (c) => ({
+        title: c.pseudo ? `On commence, ${c.pseudo} ?` : "On commence ?",
+        body: "Quinze minutes, sans matériel. Tout est prêt.",
+      }),
+      { title: "102 mouvements animés t'attendent",
+        body: "Ouvre, regarde, choisis." },
+      { title: "On commence par quoi ?",
+        body: "Tu choisis, je gère le reste." },
+    ],
+  },
+
+  /* Le rang suivant est à une séance. Le chiffre est vrai, il vient de
+     `prochainRang` : on ne le dit jamais à quelqu'un pour qui il serait
+     hors de portée aujourd'hui. */
+  "rappel.rang_proche": {
+    commun: [
+      (c) => ({ title: `Plus que ${c.manque} EXP avant ${c.rang}`, body: "Une séance et tu y es." }),
+      (c) => ({ title: `${c.rang} est à ${c.manque} EXP`, body: "Ça se joue aujourd'hui si tu veux." }),
+    ],
+    nora: [
+      (c) => ({ title: `Plus que ${c.manque} EXP avant ${c.rang}`,
+                body: "Une séance suffit pour passer le cap." }),
+      (c) => ({ title: `${c.rang} est à ${c.manque} EXP`,
+                body: "Le moment est bon, si tu as un créneau." }),
+    ],
+    sasha: [
+      (c) => ({ title: `${c.manque} EXP et tu passes ${c.rang}`, body: "Une séance, et c'est fait." }),
+      (c) => ({ title: `${c.rang} est à ${c.manque} EXP`, body: "Aujourd'hui, si tu veux." }),
+    ],
+  },
+
+  /* On connaît le nom de sa séance du jour. C'est la différence entre un
+     rappel qui vient de l'app et un rappel qui vient de SA semaine. */
+  "rappel.planning": {
+    commun: [
+      (c) => ({ title: `${c.titre}, c'est aujourd'hui`, body: "Elle t'attend, prête à lancer." }),
+      (c) => ({ title: `Au programme : ${c.titre}`, body: "Quand tu veux, tout est en place." }),
+      (c) => ({ title: `${c.titre}`, body: "C'est ce que tu avais prévu pour aujourd'hui." }),
+      (c) => ({ title: `Il te reste ${c.titre}`, body: "Le temps d'une séance et ta journée est complète." }),
+    ],
+    nora: [
+      (c) => ({ title: `${c.titre}, c'est aujourd'hui`, body: "Tout est en place, tu n'as qu'à lancer." }),
+      (c) => ({ title: `Au programme : ${c.titre}`, body: "Quand tu veux, je la déroule avec toi." }),
+      (c) => ({ title: `${c.titre}`, body: "C'est ce que tu avais prévu pour aujourd'hui." }),
+      (c) => ({ title: `Il te reste ${c.titre}`, body: "Une séance, et ta journée est complète." }),
+    ],
+    sasha: [
+      (c) => ({ title: `${c.titre}, c'est aujourd'hui`, body: "Prête à lancer." }),
+      (c) => ({ title: `Au programme : ${c.titre}`, body: "Dis quand, on y va." }),
+      (c) => ({ title: `${c.titre}`, body: "Tu l'avais prévue aujourd'hui." }),
+      (c) => ({ title: `Il te reste ${c.titre}`, body: "Une séance, et ta journée est complète." }),
+    ],
+  },
+
+  /* ⚠️ La série se tient avec une ACTION UTILE, séance ou repas, depuis
+     la refonte de l'économie du 2026-08-21. Le texte disait « une séance
+     aujourd'hui » : ce n'était pas faux, mais c'était plus étroit que la
+     règle, et un rappel qui décrit mal la règle apprend la mauvaise. */
+  "rappel.serie": {
+    commun: [
+      (c) => ({ title: `Jour ${c.serie}`,
+                body: "Ta série tient. Une séance ou un repas noté, et elle continue." }),
+      (c) => ({ title: `${c.serie} jours d'affilée`, body: "Tu sais déjà quoi faire." }),
+    ],
+    nora: [
+      (c) => ({ title: `Jour ${c.serie}`,
+                body: "Ta série tient. Une séance ou un repas noté suffit pour la garder." }),
+      (c) => ({ title: `${c.serie} jours d'affilée`, body: "Tu connais le geste, il n'y a qu'à le refaire." }),
+    ],
+    sasha: [
+      (c) => ({ title: `Jour ${c.serie}`,
+                body: "Elle tient. Une séance ou un repas noté, et ça continue." }),
+      (c) => ({ title: `${c.serie} jours d'affilée`, body: "Tu sais quoi faire." }),
+    ],
+  },
+
+  /* Le repli : on n'a rien de précis à dire. Il reste court, parce qu'une
+     phrase passe-partout qui s'étale se remarque deux fois plus. */
+  "rappel.generique": {
+    commun: [
+      { title: "Ta séance t'attend", body: "Elle est prête dans Vaiiya." },
+      { title: "Un créneau aujourd'hui ?", body: "Quinze minutes suffisent pour que ça compte." },
+    ],
+    nora: [
+      { title: "Ta séance t'attend", body: "Elle est prête, il n'y a plus qu'à ouvrir." },
+      { title: "Un créneau aujourd'hui ?", body: "Quinze minutes suffisent pour que ça compte." },
+    ],
+    sasha: [
+      { title: "Ta séance t'attend", body: "Elle est prête." },
+      { title: "Un créneau aujourd'hui ?", body: "Quinze minutes, ça compte déjà." },
+    ],
+  },
+
+  /* La reprise. Aucun reproche, aucune allusion à l'absence, aucun
+     décompte de jours manqués : c'est ici que la zéro culpabilisation est
+     la plus facile à trahir, et les trois voix la tiennent pareil. */
+  "rappel.reprise": {
+    commun: [
+      (c) => ({
+        title: c.pseudo ? `Ta place est gardée, ${c.pseudo}` : "Ta place est gardée",
+        body: "Dix minutes suffisent pour reprendre. Rien n'a bougé.",
+      }),
+      { title: "On reprend quand tu veux", body: "Ta séance la plus courte fait quinze minutes." },
+    ],
+    nora: [
+      (c) => ({
+        title: c.pseudo ? `Ta place est gardée, ${c.pseudo}` : "Ta place est gardée",
+        body: "Rien n'a bougé. Dix minutes suffisent pour reprendre.",
+      }),
+      { title: "On reprend quand tu veux", body: "La plus courte fait quinze minutes." },
+    ],
+    sasha: [
+      (c) => ({
+        title: c.pseudo ? `Ta place est gardée, ${c.pseudo}` : "Ta place est gardée",
+        body: "Rien n'a bougé. Dix minutes et tu es dedans.",
+      }),
+      { title: "On reprend quand tu veux", body: "La plus courte fait quinze minutes." },
+    ],
+  },
+
+  /* La veilleuse : une fois par mois, pour quelqu'un qui n'est plus là.
+     Elle n'invite pas à « revenir » (ce qui sous-entendrait un départ à
+     justifier) et ne promet aucune nouveauté (on ne peut pas savoir ici
+     si quelque chose a changé depuis son dernier passage). */
+  "rappel.veilleuse": {
+    commun: [
+      (c) => ((c.seances ?? 0) >= 3
+        ? { title: `Tes ${c.seances} séances sont toujours là`,
+            body: "Reprendre est plus simple que commencer. Quand tu veux." }
+        : { title: "Ta place ne bouge pas",
+            body: "Quinze minutes suffisent pour t'y remettre. Quand tu veux." }),
+      { title: "Vaiiya t'attend sans compter",
+        body: "Aucun rattrapage, aucune série à récupérer. On reprend quand ça te dit." },
+      { title: "Rien ne presse", body: "La séance la plus courte fait quinze minutes, sans matériel." },
+    ],
+    nora: [
+      (c) => ((c.seances ?? 0) >= 3
+        ? { title: `Tes ${c.seances} séances sont toujours là`,
+            body: "Rien ne s'est perdu. Reprendre est plus simple que commencer." }
+        : { title: "Ta place ne bouge pas",
+            body: "Quinze minutes suffisent pour t'y remettre, quand tu veux." }),
+      { title: "Vaiiya t'attend sans compter",
+        body: "Aucun rattrapage, aucune série à récupérer. On reprend quand ça te dit." },
+      { title: "Rien ne presse", body: "La plus courte fait quinze minutes, et elle se fait sans matériel." },
+    ],
+    sasha: [
+      (c) => ((c.seances ?? 0) >= 3
+        ? { title: `Tes ${c.seances} séances sont toujours là`,
+            body: "Reprendre est plus simple que commencer. Quand tu veux." }
+        : { title: "Ta place ne bouge pas", body: "Quinze minutes, et c'est reparti. Quand tu veux." }),
+      { title: "Vaiiya t'attend sans compter",
+        body: "Rien à rattraper, aucune série à récupérer. Quand ça te dit." },
+      { title: "Rien ne presse", body: "La plus courte fait quinze minutes, sans matériel." },
+    ],
+  },
+
+  /* Le seul rappel qui ne parle pas d'entraînement. Il ne part qu'à
+     quelqu'un qui note ses repas d'habitude : sinon c'est une leçon de
+     tenue de journal, pas un rappel. */
+  "rappel.repas": {
+    commun: [
+      { title: "Et tes repas ?", body: "Séance faite, il ne manque que ce que tu as mangé." },
+      { title: "Il manque ta journée d'assiettes", body: "Deux minutes et ton suivi est complet." },
+    ],
+    nora: [
+      { title: "Et tes repas ?", body: "La séance est faite, il ne manque que ce que tu as mangé." },
+      { title: "Il manque ta journée d'assiettes", body: "Deux minutes, et ton suivi est complet." },
+    ],
+    sasha: [
+      { title: "Et tes repas ?", body: "Séance faite. Il ne manque que l'assiette." },
+      { title: "Il manque ta journée d'assiettes", body: "Deux minutes et c'est complet." },
+    ],
+  },
+} satisfies Record<string, RepliquePush>;
+
+/** Les cas de rappel existants. `rappelsProfil.ts` s'y réfère par ce
+ *  type, donc un modèle sans phrase ne compile pas. */
+export type CleRappel = keyof typeof RAPPELS;
+
+/**
+ * Les formulations de ce rappel, pour ce Guide, déjà rendues.
+ *
+ * On renvoie la LISTE et pas une phrase : c'est `rappelsProfil.ts` qui
+ * choisit l'index, parce que lui seul sait ce qui est réellement parti
+ * les jours précédents. Le contrat tient tout seul même si une liste
+ * venait à ne pas avoir la même longueur que les autres : l'index se
+ * calcule sur la liste rendue ici, jamais sur une autre.
+ */
+export function voixRappel(guide: GuideRef, cle: CleRappel, ctx: ContexteVoix = {}): PhrasePush[] {
+  const r: RepliquePush = RAPPELS[cle];
+  const liste = (guide === "nora" ? r.nora : guide === "sasha" ? r.sasha : undefined) ?? r.commun;
+  return liste.map((v) => (typeof v === "function" ? v(ctx) : v));
 }
 
 /* ── Comment le Guide se PRÉSENTE ──────────────────────────────────────

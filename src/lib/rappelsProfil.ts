@@ -24,12 +24,22 @@
       que « Ta séance du jour est dans Vaiiya », et un jour de repos au
       planning ne mérite aucun message du tout.
 
+   3. LES MOTS NE SONT PAS ICI. Ce module décide QUI reçoit un rappel, à
+      quelle cadence et sur quel sujet ; les phrases vivent dans
+      `guides.ts`, comme toute parole de Nora ou de Sasha. C'était le
+      dernier endroit du produit où les deux Guides disaient exactement
+      la même chose (corrigé le 2026-08-29). La séparation n'est pas
+      qu'une question de rangement : une règle recopiée en deux voix
+      diverge, et on se retrouverait avec un Guide qui écrit le soir ce
+      que l'autre ne dirait pas.
+
    Ce module est PUR : il ne lit rien, n'écrit rien, ne connaît ni Supabase
    ni web-push. Le cron lui apporte les faits et applique sa décision, ce
    qui rend chaque règle relisible et vérifiable sans base de données.
    ════════════════════════════════════════════════════════════════════ */
 
 import { EXP_SEANCE, RANGS } from "@/lib/aura";
+import { voixRappel, type CleRappel, type GuideRef, type PhrasePush } from "@/lib/guides";
 
 /* ── Les paliers ──────────────────────────────────────────────────── */
 
@@ -117,6 +127,12 @@ export type ContexteRappel = {
   palier: Palier;
   pseudo: string | null;
 
+  /** Le Guide de cette personne, ou `null` quand on ne le connaît pas
+   *  (choix pas encore fait, colonne absente, lecture ratée). `null` rend
+   *  la formulation commune : un rappel part toujours, il ne dépend
+   *  jamais de la disponibilité du Guide. */
+  guide: GuideRef;
+
   /** Jours depuis la dernière venue, null si jamais venu. */
   joursDepuisVenue: number | null;
 
@@ -139,12 +155,25 @@ export type ContexteRappel = {
   envois: Envoi[];
 };
 
+/* Le nom court d'un cas, tel qu'il est écrit dans le journal des envois
+   (`notification_rappels.cle`). Il est DÉDUIT des clés de `guides.ts` :
+   un modèle sans phrase, ou une phrase sans modèle, ne compile pas.
+
+   ⚠️ Le journal garde le nom court d'origine (« planning ») et non la clé
+   complète (« rappel.planning ») : les lignes déjà écrites gardent leur
+   sens, donc la rotation des formulations et le « une seule reprise »
+   continuent de fonctionner sur l'historique. */
+type Court<T> = T extends `rappel.${infer S}` ? S : never;
+type CleModele = Court<CleRappel>;
+
 type Modele = {
-  cle: string;
+  cle: CleModele;
   /** Le message s'applique-t-il à cette personne, aujourd'hui ? */
   quand: (c: ContexteRappel) => boolean;
-  /** Plusieurs formulations, tournées pour ne pas se répéter. */
-  variantes: (c: ContexteRappel) => { title: string; body: string }[];
+  /** Ce dont ses phrases ont besoin. Les MOTS, eux, vivent dans
+   *  `guides.ts` : c'est la seule façon que Nora et Sasha aient chacune
+   *  leur formulation sans que la règle soit écrite deux fois. */
+  contexte?: (c: ContexteRappel) => Parameters<typeof voixRappel>[2];
   url: string;
   /** Repli : on ne le choisit que si aucun message précis ne s'applique. */
   dernierRecours?: boolean;
@@ -179,77 +208,32 @@ export const EXP_UNE_SEANCE = EXP_SEANCE;
  * partout que si on n'a vraiment rien de mieux à dire.
  */
 const MODELES: Modele[] = [
-  {
-    cle: "premier_pas",
+  { cle: "premier_pas", url: "/progression",
     quand: (c) => c.palier === "decouverte",
-    url: "/progression",
-    variantes: (c) => [
-      {
-        title: c.pseudo ? `Ta première séance, ${c.pseudo}` : "Ta première séance",
-        body: "Quinze minutes, sans matériel. Tout est déjà prêt.",
-      },
-      {
-        title: "102 mouvements animés t'attendent",
-        body: "Un coup d'oeil suffit pour voir à quoi ressemble une séance.",
-      },
-      {
-        title: "On commence par quoi ?",
-        body: "Choisis une séance, Vaiiya s'occupe du reste.",
-      },
-    ],
-  },
-  {
-    cle: "rang_proche",
+    contexte: (c) => ({ pseudo: c.pseudo ?? undefined }) },
+
+  { cle: "rang_proche", url: "/progression",
     quand: (c) => {
       const p = prochainRang(c.exp);
       return p !== null && p.manque <= EXP_UNE_SEANCE;
     },
-    url: "/progression",
-    variantes: (c) => {
+    contexte: (c) => {
       const p = prochainRang(c.exp);
-      const manque = p?.manque ?? 0;
-      const nom = p?.nom ?? "";
-      return [
-        { title: `Plus que ${manque} EXP avant ${nom}`, body: "Une séance et tu y es." },
-        { title: `${nom} est à ${manque} EXP`, body: "Ça se joue aujourd'hui si tu veux." },
-      ];
-    },
-  },
-  {
-    cle: "planning",
+      return { manque: p?.manque ?? 0, rang: p?.nom ?? "" };
+    } },
+
+  // La séance porte son nom. C'est la différence entre un rappel qui
+  // vient de l'app et un rappel qui vient de TA semaine.
+  { cle: "planning", url: "/progression",
     quand: (c) => Boolean(c.seancePrevue),
-    url: "/progression",
-    // La séance porte son nom. C'est la différence entre un rappel qui
-    // vient de l'app et un rappel qui vient de TA semaine.
-    variantes: (c) => {
-      const titre = c.seancePrevue ?? "";
-      return [
-        { title: `${titre}, c'est aujourd'hui`, body: "Elle t'attend, prête à lancer." },
-        { title: `Au programme : ${titre}`, body: "Quand tu veux, tout est en place." },
-        { title: titre, body: "C'est ce que tu avais prévu pour aujourd'hui." },
-        { title: `Il te reste ${titre}`, body: "Le temps d'une séance et ta journée est complète." },
-      ];
-    },
-  },
-  {
-    cle: "serie",
+    contexte: (c) => ({ titre: c.seancePrevue ?? "" }) },
+
+  { cle: "serie", url: "/progression",
     quand: (c) => c.serie >= 3,
-    url: "/progression",
-    variantes: (c) => [
-      { title: `Jour ${c.serie}`, body: "Ta série tient. Une séance aujourd'hui et elle continue." },
-      { title: `${c.serie} jours d'affilée`, body: "Tu sais déjà quoi faire." },
-    ],
-  },
-  {
-    cle: "generique",
-    quand: () => true,
-    dernierRecours: true,
-    url: "/progression",
-    variantes: () => [
-      { title: "Ta séance t'attend", body: "Elle est prête dans Vaiiya." },
-      { title: "Un créneau aujourd'hui ?", body: "Quinze minutes suffisent pour que ça compte." },
-    ],
-  },
+    contexte: (c) => ({ serie: c.serie }) },
+
+  { cle: "generique", url: "/progression", dernierRecours: true,
+    quand: () => true },
 ];
 
 /**
@@ -263,18 +247,9 @@ const MODELES: Modele[] = [
  */
 const REPRISE: Modele = {
   cle: "reprise",
-  quand: (c) => c.palier === "decrochage",
   url: "/progression",
-  variantes: (c) => [
-    {
-      title: c.pseudo ? `Ta place est gardée, ${c.pseudo}` : "Ta place est gardée",
-      body: "Dix minutes suffisent pour reprendre. Rien n'a bougé.",
-    },
-    {
-      title: "On reprend quand tu veux",
-      body: "Ta séance la plus courte fait quinze minutes.",
-    },
-  ],
+  quand: (c) => c.palier === "decrochage",
+  contexte: (c) => ({ pseudo: c.pseudo ?? undefined }),
 };
 
 /**
@@ -289,42 +264,16 @@ const REPRISE: Modele = {
  */
 const VEILLEUSE: Modele = {
   cle: "veilleuse",
-  quand: (c) => c.palier === "endormi",
   url: "/progression",
-  variantes: (c) => {
-    const acquis =
-      c.seancesTotal >= 3
-        ? {
-            title: `Tes ${c.seancesTotal} séances sont toujours là`,
-            body: "Reprendre est plus simple que commencer. Quand tu veux.",
-          }
-        : {
-            title: "Ta place ne bouge pas",
-            body: "Quinze minutes suffisent pour t'y remettre. Quand tu veux.",
-          };
-    return [
-      acquis,
-      {
-        title: "Vaiiya t'attend sans compter",
-        body: "Aucun rattrapage, aucune série à récupérer. On reprend quand ça te dit.",
-      },
-      {
-        title: "Rien ne presse",
-        body: "La séance la plus courte fait quinze minutes, sans matériel.",
-      },
-    ];
-  },
+  quand: (c) => c.palier === "endormi",
+  contexte: (c) => ({ seances: c.seancesTotal }),
 };
 
 /** Le rappel nutrition, à part : il ne concerne que qui note ses repas. */
 const REPAS: Modele = {
   cle: "repas",
-  quand: (c) => c.seanceFaite && !c.repasNotes && c.noteHabituellement,
   url: "/nutrition",
-  variantes: () => [
-    { title: "Et tes repas ?", body: "Séance faite, il ne manque que ce que tu as mangé." },
-    { title: "Il manque ta journée d'assiettes", body: "Deux minutes et ton suivi est complet." },
-  ],
+  quand: (c) => c.seanceFaite && !c.repasNotes && c.noteHabituellement,
 };
 
 /* ── La décision ──────────────────────────────────────────────────── */
@@ -421,7 +370,11 @@ export function rappelPour(c: ContexteRappel): Rappel | null {
  * cadence : jamais deux fois d'affilée la même phrase pour une même clé.
  */
 function habiller(modele: Modele, c: ContexteRappel): Rappel {
-  const variantes = modele.variantes(c);
+  const variantes: PhrasePush[] = voixRappel(
+    c.guide,
+    `rappel.${modele.cle}` as CleRappel,
+    modele.contexte?.(c) ?? {},
+  );
   const n = variantes.length;
   const jours = Math.floor(new Date(c.aujourdHui + "T12:00:00Z").getTime() / 86_400_000);
 

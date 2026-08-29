@@ -7,8 +7,10 @@
  * par an au changement d'heure. L'entrée qui tombe à côté sort en no-op.
  *
  * Cette route ne DÉCIDE rien : elle rassemble les faits, les donne à
- * `rappelsProfil.ts` (qui porte les règles de cadence et les textes), et
- * exécute. Tout ce qu'on peut relire sans base de données vit là-bas.
+ * `rappelsProfil.ts` (qui porte les règles de cadence et de sujet), et
+ * exécute. Tout ce qu'on peut relire sans base de données vit là-bas, et
+ * les MOTS vivent encore ailleurs, dans `guides.ts`, parce qu'ils changent
+ * selon le Guide de la personne.
  *
  * Ce qu'elle garantit, elle :
  *  · un seul push par personne et par soir, le relais passant avant ;
@@ -34,6 +36,7 @@ import {
   type Envoi,
   type Rappel,
 } from "@/lib/rappelsProfil";
+import type { GuideRef } from "@/lib/guides";
 import { ANNOUNCEMENTS, JOURS_ANNONCE_POUSSABLE, type Announcement } from "@/lib/announcements";
 
 const VAPID_PUBLIC_KEY  = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? "";
@@ -150,8 +153,29 @@ type Portrait = {
   jourDeRepos: boolean;
   exp: number | null;
   pseudo: string | null;
+  guide: GuideRef;
   envois: Envoi[];
 };
+
+/**
+ * Le profil, avec le Guide quand la colonne existe.
+ *
+ * ⚠️ Deux requêtes plutôt qu'une seule, et seulement quand il le faut.
+ * `guide_id` n'arrive qu'avec `20260818_guide_id.sql`, une migration qui
+ * se colle à la main : tant qu'elle n'est pas passée, demander la colonne
+ * fait échouer la requête ENTIÈRE, donc on perdrait aussi le pseudo, et
+ * tous les rappels du soir se mettraient à tutoyer un inconnu. On retente
+ * donc sans elle, et l'absence de Guide se contente de rendre la voix
+ * commune. Le cas normal (colonne présente) ne coûte qu'une requête.
+ */
+async function lireProfils(admin: ReturnType<typeof createAdminClient>, ids: string[]) {
+  const avec = await admin.from("profiles").select("id, pseudo, guide_id").in("id", ids);
+  if (!avec.error) return { data: avec.data, guideLisible: true };
+
+  console.warn("[reminders] guide_id illisible, voix commune :", avec.error.message);
+  const sans = await admin.from("profiles").select("id, pseudo").in("id", ids);
+  return { data: sans.data, guideLisible: false };
+}
 
 /**
  * Tout le monde en sept requêtes, au lieu de trois PAR PERSONNE en série.
@@ -178,7 +202,7 @@ async function portraits(
       admin.from("planning_days").select("user_id, type, title, exercise_list, status").in("user_id", ids).eq("date", today),
       admin.from("aura_mission_credits").select("user_id, points").in("user_id", ids),
       admin.from("notification_rappels").select("user_id, jour, cle, variante").in("user_id", ids).gte("jour", debutJournal).order("jour", { ascending: false }),
-      admin.from("profiles").select("id, pseudo").in("id", ids),
+      lireProfils(admin, ids),
     ]);
 
   const carte = new Map<string, Portrait>();
@@ -186,7 +210,7 @@ async function portraits(
     carte.set(id, {
       seancesTotal: 0, seances28: 0, presences28: 0, joursDepuisVenue: null,
       seanceFaite: false, repasNotes: false, noteHabituellement: false, serie: 0,
-      seancePrevue: null, jourDeRepos: false, exp: null, pseudo: null, envois: [],
+      seancePrevue: null, jourDeRepos: false, exp: null, pseudo: null, guide: null, envois: [],
     });
   }
 
@@ -259,7 +283,13 @@ async function portraits(
 
   for (const pr of profilsRes.data ?? []) {
     const p = carte.get(pr.id as string);
-    if (p) p.pseudo = (pr.pseudo as string) ?? null;
+    if (!p) continue;
+    p.pseudo = (pr.pseudo as string) ?? null;
+    // La colonne peut valoir NULL (personne qui n'a pas encore choisi) ou
+    // manquer (migration pas collée) : les deux mènent à la voix commune,
+    // ce qui est exactement le repli voulu.
+    const g = "guide_id" in pr ? (pr as { guide_id?: string | null }).guide_id : null;
+    p.guide = g === "nora" || g === "sasha" ? g : null;
   }
 
   /* Deux filets, et ils tirent dans des sens OPPOSÉS, à dessein.
@@ -391,6 +421,7 @@ export async function GET(req: NextRequest) {
         aujourdHui: today,
         palier,
         pseudo: p.pseudo,
+        guide: p.guide,
         joursDepuisVenue: signaux.joursDepuisVenue,
         seancePrevue: p.seancePrevue,
         jourDeRepos: p.jourDeRepos,
