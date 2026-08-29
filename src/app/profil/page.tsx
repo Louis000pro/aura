@@ -15,6 +15,7 @@ import { perfDataToShare } from "@/lib/perfShareExport";
 import VideoPlayer from "@/components/VideoPlayer";
 import Image from "next/image";
 import GemmeRang from "@/components/GemmeRang";
+import EtatVideGuide from "@/components/EtatVideGuide";
 import RangsModal from "@/components/rang/RangsModal";
 import { AvatarRang, PseudoRang, TitreRang } from "@/components/rang/IdentiteRang";
 import { calculerAura, cosmetiquesDuRang, RANGS, type EtatAura } from "@/lib/aura";
@@ -1136,20 +1137,15 @@ export default function ProfilPage() {
             className="px-5 md:px-8 max-w-3xl mx-auto"
           >
             {workoutSessions.length === 0 ? (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.96 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="flex flex-col items-center justify-center py-16 gap-5 rounded-3xl"
-                style={{ background: "linear-gradient(135deg,rgba(var(--surface-rgb),0.85) 0%,rgba(var(--tint-violet-rgb),0.5) 100%)", border: "1.5px dashed rgba(var(--accent-rgb),0.25)" }}
-              >
-                <div className="w-20 h-20 rounded-3xl flex items-center justify-center" style={{ background: "linear-gradient(135deg,rgba(var(--violet-mid-rgb),0.4) 0%,rgba(var(--cream-mid-rgb),0.35) 100%)", boxShadow: "0 8px 32px rgba(var(--accent-rgb),0.15)", border: "1px solid rgba(var(--violet-mid-rgb),0.3)" }}>
-                  <Dumbbell size={28} strokeWidth={1.5} style={{ color: "var(--accent)" }} />
-                </div>
-                <div className="text-center px-8">
-                  <p className="text-[17px] font-black tracking-tight" style={{ color: "var(--text-1)" }}>Aucune séance</p>
-                  <p className="text-[13px] font-light mt-2 leading-relaxed" style={{ color: "var(--text-3)" }}>Tes séances terminées apparaîtront ici, chacune vaut +30 EXP.</p>
-                </div>
-              </motion.div>
+              /* Le Guide prend la place du texte gris : c'est lui qui
+                 ouvre la porte, et il n'en ouvre qu'une. Le « +30 EXP »
+                 d'avant a disparu avec le cadre : sur un écran vide, un
+                 barème n'apprend rien à quelqu'un qui cherche par où
+                 commencer. */
+              <EtatVideGuide
+                cle="vide.seances"
+                action={{ libelle: "Voir les séances", onClick: () => router.push("/progression") }}
+              />
             ) : (
               <div className="flex flex-col gap-3">
                 {workoutSessions.map((session) => {
@@ -1225,25 +1221,10 @@ export default function ProfilPage() {
                   animate={{ rotate: 360 }} transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }} />
               </div>
             ) : amis.length === 0 ? (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.96 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="flex flex-col items-center justify-center py-16 gap-5 rounded-3xl"
-                style={{ background: "linear-gradient(135deg,rgba(var(--surface-rgb),0.85) 0%,rgba(var(--tint-violet-rgb),0.5) 100%)", border: "1.5px dashed rgba(var(--accent-rgb),0.25)" }}
-              >
-                <div className="w-20 h-20 rounded-3xl flex items-center justify-center" style={{ background: "linear-gradient(135deg,rgba(var(--violet-mid-rgb),0.4) 0%,rgba(var(--cream-mid-rgb),0.35) 100%)", boxShadow: "0 8px 32px rgba(var(--accent-rgb),0.15)", border: "1px solid rgba(var(--violet-mid-rgb),0.3)" }}>
-                  <Users size={28} strokeWidth={1.5} style={{ color: "var(--accent)" }} />
-                </div>
-                <div className="text-center px-8">
-                  <p className="text-[17px] font-black tracking-tight" style={{ color: "var(--text-1)" }}>Aucun ami pour l&apos;instant</p>
-                  <p className="text-[13px] font-light mt-2 leading-relaxed" style={{ color: "var(--text-3)" }}>Lance un relais à deux pour t&apos;entourer.</p>
-                </div>
-                <motion.button whileTap={{ scale: 0.95 }} onClick={() => router.push("/communaute")}
-                  className="px-6 py-2.5 rounded-2xl text-[13px] font-semibold cursor-pointer"
-                  style={{ background: "linear-gradient(135deg,var(--violet-mid),var(--accent))", color: "#fff", boxShadow: "0 6px 20px rgba(var(--accent-rgb),0.3)" }}>
-                  Ouvrir la communauté
-                </motion.button>
-              </motion.div>
+              <EtatVideGuide
+                cle="vide.amis"
+                action={{ libelle: "Ouvrir la communauté", onClick: () => router.push("/communaute") }}
+              />
             ) : (
               <div className="grid grid-cols-4 gap-x-2 gap-y-5">
                 {amis.map((ami) => (

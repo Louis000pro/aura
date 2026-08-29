@@ -15,8 +15,9 @@
    ── ÉTAT ACTUEL ──
    Le parcours d'entrée (`bienvenue.*`), TOUTE la conversation
    (`action.*`, `question.*`, `impasse.*`, `accueil.*`, `memoire.*`,
-   `attente.*`), la séance (`seance.*`) et l'arrivée sur l'accueil
-   (`retour.*`) sont différenciés. Restent
+   `attente.*`), la séance (`seance.*`), l'arrivée sur l'accueil
+   (`retour.*`), les rappels du soir (`RAPPELS`), la visite guidée
+   (`visite.*`) et les écrans vides (`vide.*`) sont différenciés. Restent
    volontairement communes : les `panne.*`, parce qu'une personnalité posée
    sur un mécanisme cassé serait déplacée.
 
@@ -90,6 +91,8 @@ type Replique = { commun: Rendu; nora?: Rendu; sasha?: Rendu };
      attente.*  ce qu'il dit pendant qu'il travaille
      panne.*    quand la réponse ne vient pas
      seance.*   pendant l'entraînement
+     visite.*   les chapitres de la visite guidée
+     vide.*     ce qu'il dit quand un écran n'a rien à montrer
    ------------------------------------------------------------------ */
 const REPLIQUES = {
   /* ── Les cartes ──
@@ -502,6 +505,93 @@ const REPLIQUES = {
     commun: "Séance bouclée. Rien lâché.",
     nora:   "Tu l'as menée jusqu'au bout, et ça se lit dans ces chiffres. Belle séance.",
     sasha:  "Séance bouclée, rien lâché. Ça, c'est fait.",
+  },
+
+  /* ── La visite guidée ──
+     Le mot « guidée » était dans le nom depuis toujours, et pourtant les
+     neuf chapitres parlaient d'une voix qui n'appartenait à personne :
+     on venait de choisir Nora, elle posait cinq écrans de questions, puis
+     un narrateur anonyme prenait la parole pour présenter le produit.
+
+     ⚠️ LE FOND NE CHANGE PAS D'UN CHAPITRE À L'AUTRE, SEULE LA BOUCHE
+     CHANGE. `commun` est le texte exact d'avant ce chantier : sans Guide
+     résolu (choix pas fait, SQL pas collé, hors ligne), la visite est
+     rigoureusement celle que Louis a validée.
+
+     ⚠️ LA CLÉ EST DÉRIVÉE DE L'ID DU CHAPITRE (`visite.<id>`, cf.
+     `chapitres.tsx`). Un chapitre sans phrase ne compile pas, et une
+     phrase sans chapitre se voit tout de suite : c'est ce qui empêche la
+     visite de repartir avec un texte en dur dans l'écran. */
+  "visite.ouverture": {
+    commun: "Une minute pour voir ce que Vaiiya sait faire. Tu peux passer, la visite t'attendra dans tes paramètres.",
+    nora:   "Je te fais le tour en une minute, le temps de voir ce que Vaiiya sait faire. Si tu préfères plus tard, la visite t'attendra dans tes paramètres.",
+    sasha:  "Une minute, je te montre ce que Vaiiya sait faire. Tu peux passer, ça reste dans tes paramètres.",
+  },
+  "visite.seance": {
+    commun: "Le mouvement s'anime à l'écran, le compte à rebours part, le repos s'enchaîne. Tu n'as qu'à suivre. Cent-deux mouvements sont dessinés, pas un seul n'est une photo prise au hasard.",
+    nora:   "Regarde bien : le mouvement s'anime, le compte à rebours part, le repos s'enchaîne tout seul. Tu n'as qu'à suivre, je m'occupe du reste. Cent-deux mouvements sont dessinés un par un.",
+    sasha:  "Le mouvement s'anime, le compte à rebours part, le repos s'enchaîne. Tu suis, je gère le reste. Cent-deux mouvements dessinés un par un.",
+  },
+  "visite.catalogue": {
+    commun: "Sans matériel, à la salle, mobilité, cardio, récupération. Vingt-six mini-cours pour comprendre ce que tu fais. Et si rien ne te va, tu pioches parmi les mouvements animés pour composer la tienne.",
+    nora:   "Sans matériel, à la salle, mobilité, cardio, récupération, plus vingt-six mini-cours pour comprendre ce que tu fais. Et si rien ne te va, dis-le-moi : on compose la tienne à partir des mouvements animés.",
+    sasha:  "Sans matériel, salle, mobilité, cardio, récupération. Vingt-six mini-cours en plus. Rien ne te va ? Dis-le-moi, on compose la tienne.",
+  },
+  "visite.assistant": {
+    commun: "Demande-lui de poser une séance jeudi, de noter ton repas, de refaire ta semaine : elle le prépare dans la foulée. Rien ne s'enregistre tant que tu n'as pas touché la carte.",
+    nora:   "C'est là qu'on se parle. Demande-moi de poser une séance jeudi, de noter ton repas, de refaire ta semaine : je le prépare dans la foulée. Rien ne s'enregistre tant que tu n'as pas touché la carte.",
+    sasha:  "C'est là qu'on se parle. Une séance jeudi, un repas à noter, la semaine à refaire : je prépare, tu valides. Rien ne s'enregistre sans ton clic.",
+  },
+  "visite.nutrition": {
+    commun: "Pas de tableau à remplir : on te demande simplement où tu manges. À la maison, au resto, ou un sandwich acheté en chemin. Une photo de ton assiette suffit à estimer le reste.",
+    nora:   "Pas de tableau à remplir : je te demande simplement où tu manges. À la maison, au resto, ou un sandwich acheté en chemin. Une photo de ton assiette me suffit pour estimer le reste.",
+    sasha:  "Pas de tableau à remplir. Je demande juste où tu manges : maison, resto, ou sandwich en chemin. Une photo de l'assiette, j'estime le reste.",
+  },
+  "visite.rang": {
+    commun: "Une présence, une séance, un repas : tout se transforme en EXP et fait monter ta gemme. On mesure ta constance, jamais ton corps, et il n'y a aucun classement.",
+    nora:   "Une présence, une séance, un repas : tout se transforme en EXP et fait monter ta gemme. Je compte ta constance, jamais ton corps, et il n'y a aucun classement.",
+    sasha:  "Présence, séance, repas : tout devient de l'EXP et fait monter ta gemme. Je compte ta constance, jamais ton corps. Aucun classement.",
+  },
+  "visite.relais": {
+    commun: "Invite quelqu'un, un maillon chacun son tour. À chaque séance l'image se dévoile un peu plus, jusqu'à être entière. Aucun score, et on ne nomme jamais celui qui a lâché.",
+    nora:   "Invite quelqu'un, et vous prenez un maillon chacun votre tour. À chaque séance l'image se dévoile un peu plus, jusqu'à être entière. Aucun score, et on ne nomme jamais celui qui a lâché.",
+    sasha:  "Invite quelqu'un, un maillon chacun son tour. Chaque séance dévoile un bout de l'image. Aucun score, et personne n'est montré du doigt.",
+  },
+  "visite.repere": {
+    commun: "Ton accueil, tes entraînements, ta nutrition, tes discussions. Et l'étincelle au centre, disponible depuis n'importe quel écran.",
+    nora:   "Ton accueil, tes entraînements, ta nutrition, tes discussions. Et l'étincelle au centre : c'est par là que tu me trouves, depuis n'importe quel écran.",
+    sasha:  "Accueil, entraînements, nutrition, discussions. L'étincelle au centre : c'est par là que tu me trouves, depuis n'importe quel écran.",
+  },
+  "visite.final": {
+    commun: "Commence par ce que tu veux. Si tu ne sais pas, touche l'étincelle et dis-lui simplement ce que tu as envie de faire aujourd'hui.",
+    nora:   "Commence par ce que tu veux. Et si tu ne sais pas, touche l'étincelle et dis-moi simplement ce que tu as envie de faire aujourd'hui.",
+    sasha:  "Commence par ce que tu veux. Si tu ne sais pas, touche l'étincelle et dis-moi ce que tu as envie de faire.",
+  },
+
+  /* ── Les états vides ──
+     Un écran vide tombe précisément sur quelqu'un qui ne sait pas quoi
+     faire, et il lui répondait par un texte gris dans un cadre en
+     pointillés. C'est le seul endroit de l'app où la troisième condition
+     du Guide (« rien ne le dit mieux ») est remplie par construction :
+     il n'y a rien d'autre à lire.
+
+     ⚠️ UNE PORTE, JAMAIS DEUX. La phrase propose une seule suite, et le
+     bouton de l'écran ouvre exactement celle-là. Deux propositions, c'est
+     de nouveau un choix à faire pour quelqu'un qui n'en avait déjà pas.
+
+     ⚠️ AUCUN REPROCHE, AUCUN DÉCOMPTE. On ne dit pas ce qui n'a pas été
+     fait, on dit ce qu'il y a à faire. « et c'est normal » fait beaucoup
+     de travail dans ces phrases : il désamorce l'idée qu'un écran vide
+     serait un manquement. */
+  "vide.seances": {
+    commun: "Rien ici pour l'instant, et c'est normal. Une séance courte suffit à ouvrir la liste.",
+    nora:   "Rien ici pour l'instant, et c'est normal. Prends une séance courte, je te la déroule pas à pas.",
+    sasha:  "Rien ici pour l'instant. Prends une séance courte, je te la déroule.",
+  },
+  "vide.amis": {
+    commun: "Personne ici pour l'instant. Le relais se joue à deux : on invite quelqu'un, et chacun avance à son tour.",
+    nora:   "Personne ici pour l'instant. Si tu veux quelqu'un à côté de toi, le relais se joue à deux : tu invites, et vous avancez chacun votre tour.",
+    sasha:  "Personne ici pour l'instant. Le relais se joue à deux : tu invites, vous avancez chacun votre tour.",
   },
 } satisfies Record<string, Replique>;
 

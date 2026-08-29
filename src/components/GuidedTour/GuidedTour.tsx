@@ -10,7 +10,14 @@
       visite braquait un projecteur sur des écrans sans rien dedans ;
     · les ancres DOM mouraient à chaque refonte, sans bruit.
 
-   La coque ne connaît que le nombre de chapitres. Contenu = chapitres.tsx.
+   La coque ne connaît que le nombre de chapitres. Contenu = chapitres.tsx
+   pour la structure, `guides.ts` pour les mots : c'est le Guide qui fait
+   la visite, et la coque ne fait que lui donner la parole.
+
+   Sans Guide résolu (choix pas fait, `20260818_guide_id.sql` pas collée,
+   hors ligne), la visite est EXACTEMENT celle d'avant : le trait doré
+   devant le surtitre, la marque Vaiiya à l'ouverture, les textes
+   communs. Aucune branche n'invente d'écran intermédiaire.
 
    Avancer : bouton, glissement horizontal, flèches du clavier.
    Reculer : chevron, glissement inverse, flèche gauche.
@@ -23,6 +30,9 @@ import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { ArrowRight, ChevronLeft, X } from "lucide-react";
 import { useGuidedTour } from "@/context/GuidedTourContext";
 import { useAuth } from "@/context/AuthContext";
+import { useGuideActif } from "@/context/GuideContext";
+import { VisageGuide, prechargerGuide } from "@/components/AssistantMark";
+import { voix, type CleVoix } from "@/lib/guides";
 import { CHAPITRES } from "@/components/GuidedTour/chapitres";
 
 const EASE = [0.22, 1, 0.36, 1] as const;
@@ -106,6 +116,7 @@ const POUSSIERE = Array.from({ length: 14 }, (_, i) => ({
 export default function GuidedTour() {
   const { isOpen, stepIndex, totalSteps, next, prev, close } = useGuidedTour();
   const { user } = useAuth();
+  const { guide } = useGuideActif();
   const reduce = useReducedMotion();
   const [sens, setSens] = useState(1);
   const precedent = useRef(stepIndex);
@@ -115,6 +126,13 @@ export default function GuidedTour() {
     setSens(stepIndex >= precedent.current ? 1 : -1);
     precedent.current = stepIndex;
   }, [stepIndex]);
+
+  /* Les neuf chapitres défilent vite, et le visage change entre eux. Sans
+     préchargement, le premier passage d'un état à l'autre viderait la
+     pastille le temps du téléchargement, en plein milieu d'une phrase. */
+  useEffect(() => {
+    if (isOpen) prechargerGuide(guide);
+  }, [isOpen, guide]);
 
   /* La page derrière ne défile pas pendant la visite (elle est masquée). */
   useEffect(() => {
@@ -256,7 +274,7 @@ export default function GuidedTour() {
               texte et le bouton gardent donc leur place, et c'est la SCÈNE
               qui se met à la taille de ce qui reste (cf. SceneAjustee). */}
           <SceneAjustee cle={chapitre.id}>
-            <Scene pseudo={pseudo} />
+            <Scene pseudo={pseudo} guide={guide} />
           </SceneAjustee>
 
           <div
@@ -268,16 +286,27 @@ export default function GuidedTour() {
               {/* Le surtitre dit DE QUOI on parle : il doit se lire avant le
                   titre, pas se chercher après. D'où sa taille et son trait. */}
               {chapitre.surtitre && (
-                <div className="flex items-center" style={{ gap: 9, margin: "0 0 11px" }}>
-                  <span
-                    aria-hidden
-                    style={{
-                      width: 22,
-                      height: 2,
-                      borderRadius: 99,
-                      background: `linear-gradient(90deg, ${chapitre.accent[0]}, ${chapitre.accent[1]})`,
-                    }}
-                  />
+                <div className="flex items-center" style={{ gap: guide ? 10 : 9, margin: "0 0 11px" }}>
+                  {/* Le visage PREND LA PLACE du trait, il ne s'ajoute pas à
+                      lui : la visite change de bouche, pas de mise en page.
+                      Son état est déclaré par le chapitre (cf. chapitres.tsx)
+                      et ne se devine jamais dans le texte. L'ouverture et le
+                      final n'ont pas de surtitre, donc pas de pastille : le
+                      Guide y est déjà en grand, et l'✦ garde la sortie parce
+                      que c'est justement le bouton qu'on montre. */}
+                  {guide ? (
+                    <VisageGuide guide={guide} etat={chapitre.visage} size={32} />
+                  ) : (
+                    <span
+                      aria-hidden
+                      style={{
+                        width: 22,
+                        height: 2,
+                        borderRadius: 99,
+                        background: `linear-gradient(90deg, ${chapitre.accent[0]}, ${chapitre.accent[1]})`,
+                      }}
+                    />
+                  )}
                   <p
                     style={{
                       margin: 0,
@@ -316,7 +345,7 @@ export default function GuidedTour() {
                   color: BLANC(0.7),
                 }}
               >
-                {chapitre.texte}
+                {voix(guide, `visite.${chapitre.id}` as CleVoix, { pseudo })}
               </p>
             </div>
           </div>

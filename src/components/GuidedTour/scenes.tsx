@@ -26,7 +26,8 @@ import { motion, useReducedMotion } from "framer-motion";
 import { Home, Dumbbell, Utensils, MessageCircle, Check, Plus, Flame } from "lucide-react";
 import ExerciseGuide from "@/components/ExerciseGuide";
 import GemmeRang from "@/components/GemmeRang";
-import { AssistantSpark } from "@/components/AssistantMark";
+import { AssistantSpark, BusteGuide } from "@/components/AssistantMark";
+import type { GuideRef } from "@/lib/guides";
 import { RANGS } from "@/lib/aura";
 
 /* ── Les 3 rôles de couleur du système D, en version nuit ── */
@@ -85,47 +86,71 @@ function Mention({ children, color = BLANC(0.42) }: { children: React.ReactNode;
 
 /* ═══════════════════ 0 · OUVERTURE ═══════════════════ */
 
-export function SceneOuverture({ pseudo }: { pseudo: string }) {
+export function SceneOuverture({ pseudo, guide }: { pseudo: string; guide: GuideRef }) {
   const reduce = useReducedMotion();
   return (
     <div className="flex flex-col items-center">
-      <motion.div
-        className="relative flex items-center justify-center"
-        style={{ width: 168, height: 168 }}
-        initial={{ opacity: 0, scale: 0.86 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-      >
-        <motion.span
-          aria-hidden
-          className="absolute rounded-full"
-          style={{
-            width: 168,
-            height: 168,
-            background: `radial-gradient(circle, rgba(139,92,246,0.5) 0%, rgba(245,230,163,0.22) 46%, transparent 72%)`,
-            filter: "blur(28px)",
-          }}
-          animate={reduce ? undefined : { opacity: [0.5, 0.95, 0.5], scale: [0.92, 1.06, 0.92] }}
-          transition={{ duration: 4.4, repeat: Infinity, ease: "easeInOut" }}
-        />
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <motion.img
-          src="/marque/marque-blanc.png"
-          alt="Vaiiya"
-          draggable={false}
-          className="relative select-none"
-          style={{ width: 132, height: 132, objectFit: "contain" }}
-          animate={reduce ? undefined : { y: [0, -6, 0] }}
-          transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-        />
-      </motion.div>
+      {guide ? (
+        /* Le Guide ouvre sa propre visite. NI CARTE, NI CADRE, NI
+           PASTILLE : son bas se dissout dans le fond de nuit, et
+           « Bienvenue » s'écrit dans cette dissolution, exactement comme
+           sur /bienvenue et dans la feuille de chat. La marque Vaiiya n'a
+           rien à faire ici : on est déjà dedans, et la seule chose à dire
+           au premier écran, c'est qui t'accompagne. */
+        <motion.div
+          className="relative flex items-end justify-center"
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+          style={{ marginBottom: -30 }}
+        >
+          <BusteGuide guide={guide} hauteur={204} />
+        </motion.div>
+      ) : (
+        <motion.div
+          className="relative flex items-center justify-center"
+          style={{ width: 168, height: 168 }}
+          initial={{ opacity: 0, scale: 0.86 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+        >
+          <motion.span
+            aria-hidden
+            className="absolute rounded-full"
+            style={{
+              width: 168,
+              height: 168,
+              background: `radial-gradient(circle, rgba(139,92,246,0.5) 0%, rgba(245,230,163,0.22) 46%, transparent 72%)`,
+              filter: "blur(28px)",
+            }}
+            animate={reduce ? undefined : { opacity: [0.5, 0.95, 0.5], scale: [0.92, 1.06, 0.92] }}
+            transition={{ duration: 4.4, repeat: Infinity, ease: "easeInOut" }}
+          />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <motion.img
+            src="/marque/marque-blanc.png"
+            alt="Vaiiya"
+            draggable={false}
+            className="relative select-none"
+            style={{ width: 132, height: 132, objectFit: "contain" }}
+            animate={reduce ? undefined : { y: [0, -6, 0] }}
+            transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+          />
+        </motion.div>
+      )}
 
       <motion.p
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2, duration: 0.5 }}
-        className="mt-7 text-center"
-        style={{ margin: "26px 0 0", fontSize: 15, fontWeight: 300, color: BLANC(0.6) }}
+        className="text-center"
+        style={{
+          position: "relative",
+          margin: `${guide ? 4 : 26}px 0 0`,
+          fontSize: 15,
+          fontWeight: 300,
+          color: BLANC(0.6),
+        }}
       >
         Bienvenue,
       </motion.p>
@@ -135,6 +160,7 @@ export function SceneOuverture({ pseudo }: { pseudo: string }) {
         transition={{ delay: 0.32, duration: 0.55 }}
         className="text-center"
         style={{
+          position: "relative",
           margin: "2px 0 0",
           fontSize: "clamp(30px, 8vw, 40px)",
           fontWeight: 300,
