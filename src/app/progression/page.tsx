@@ -36,6 +36,9 @@ import {
 } from "@/lib/exerciseLibrary";
 import { useAuth } from "@/context/AuthContext";
 import { useAssistant } from "@/context/AssistantContext";
+import { useGuideActif } from "@/context/GuideContext";
+import { VisageGuide } from "@/components/AssistantMark";
+import { voix } from "@/lib/guides";
 import { createClient } from "@/lib/supabase";
 import { lockBodyModal } from "@/lib/bodyModal";
 import { PLANS } from "@/lib/plans";
@@ -2694,6 +2697,23 @@ function ImproviseSheet({ defaultPlace, defaultHalteres, difficulty, onClose, on
    navigation entre semaines, actions par jour déléguées à l'IA (décaler /
    remplacer / repos) — cohérent avec le héros. Le drag direct viendra en
    phase 3.
+
+   ⚠️ LE VERDICT A UN JUGE DEPUIS LE 2026-08-29. « Équilibrée ✦ » et
+   « Ciblée » étaient une appréciation sur le travail de quelqu'un, signée
+   d'une marque, et qui ne disait pas POURQUOI. Le Guide l'explique en une
+   phrase au-dessus des pastilles, et l'✦ QUITTE la pastille pour revenir
+   sur celui qui parle : deux signatures pour une seule opinion, c'était
+   une de trop.
+
+   ⚠️ LE CALCUL NE BOUGE PAS D'UNE LIGNE. `buckets` et `verdict` sont
+   exactement ceux d'avant ; le Guide lit ce que l'écran a compté, il ne
+   recompte rien. Une deuxième règle d'équilibre serait une deuxième
+   vérité sur la même semaine.
+
+   ⚠️ « Refais ma semaine » GARDE SON LIBELLÉ. C'est un mot de l'app, pas
+   une parole de Guide (même règle que partout ailleurs) : ce qui le
+   transforme en proposition plutôt qu'en commande adressée à une machine,
+   c'est la phrase juste au-dessus, pas un nouveau texte sur le bouton.
    ════════════════════════════════════════════════════════════════════ */
 const DAY_ABBR = ["LUN", "MAR", "MER", "JEU", "VEN", "SAM", "DIM"];
 const MAX_WEEK_AHEAD = 6;
@@ -2714,6 +2734,7 @@ function SemaineSheet({ week, todayIdx, fetchWeekAt, onClose, onStartDay, onAsk,
   onAddSession: () => void;
   onMove: (a: PlanningDay, b: PlanningDay, msg: string) => Promise<void>;
 }) {
+  const { guide } = useGuideActif();
   const [offset, setOffset] = useState(0);
   const [days, setDays] = useState<PlanningDay[] | null>(week);
   const [loading, setLoading] = useState(false);
@@ -2785,7 +2806,14 @@ function SemaineSheet({ week, todayIdx, fetchWeekAt, onClose, onStartDay, onAsk,
     const b = BALANCE_BUCKET[resolveArt({ title: `${d.title} ${d.type}` }).fam];
     buckets.set(b, (buckets.get(b) ?? 0) + 1);
   }
-  const verdict = seances.length === 0 ? null : buckets.size >= 3 ? "Équilibrée ✦" : "Ciblée";
+  const verdict = seances.length === 0 ? null : buckets.size >= 3 ? "Équilibrée" : "Ciblée";
+  /* La phrase du Guide DÉCOULE du verdict déjà calculé : elle l'explique,
+     elle ne le décide pas. Semaine vide comprise, qui est le seul cas où
+     il n'y a rien à expliquer et tout à proposer (visage `listen`, il
+     laisse la main). */
+  const cleVerdict = seances.length === 0
+    ? "semaine.vide" as const
+    : buckets.size >= 3 ? "semaine.equilibree" as const : "semaine.ciblee" as const;
 
   return (
     <Sheet onClose={onClose} height="90vh">
@@ -2808,6 +2836,16 @@ function SemaineSheet({ week, todayIdx, fetchWeekAt, onClose, onStartDay, onAsk,
             <ChevronRight size={15} strokeWidth={2.4} style={{ color: "var(--accent)" }} />
           </button>
         </div>
+      </div>
+
+      {/* Ce que le Guide lit dans la semaine, puis les pastilles qu'il
+          commente. Sans Guide résolu, l'étincelle ✦ reprend la pastille et
+          la phrase reste la version commune. */}
+      <div className="px-5 pb-3 flex items-start gap-2.5 flex-shrink-0">
+        <VisageGuide guide={guide} etat={verdict ? "explain" : "listen"} size={32} />
+        <p className="text-[12.5px] font-light leading-snug pt-0.5" style={{ color: "var(--text-2)" }}>
+          {voix(guide, cleVerdict, { seances: seances.length })}
+        </p>
       </div>
 
       {/* Verdict d'équilibre + charge */}

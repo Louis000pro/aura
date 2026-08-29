@@ -8,11 +8,26 @@
    la BANQUE DE RECETTES curée (src/lib/recipeBank.ts → RecipeSheet). « À finir »
    GÉNÈRE une recette à partir de tes restes via /api/nutrition/recipe (fiche
    sans image = GeneratedRecipeSheet). Voir [[nutrition-onmangeou-redesign]].
+
+   ⚠️ C'EST LE GUIDE QUI POSE LA QUESTION (2026-08-29). La nutrition était
+   le seul pilier où Nora et Sasha n'existaient nulle part, alors que son
+   point d'entrée est la question la plus humaine du produit. Son visage
+   `listen` (celui qui attend une réponse) remplace la puce violette qui
+   précédait « Dis-moi où », et cette phrase vit maintenant dans
+   `guides.ts`. Les trois cartes ne bougent pas d'un pixel, et le titre
+   « On mange où ? » non plus : c'est un mot de l'app.
+
+   ⚠️ IL NE PARLE QU'À LA RACINE. Une fois entré dans « Maison » ou
+   « Resto », on navigue dans des listes : ce n'est plus un seuil, et le
+   Guide s'y tairait pour rien.
    ════════════════════════════════════════════════════════════════════ */
 
 import { useState, useRef, useEffect } from "react";
 import { aiFetch } from "@/lib/aiFetch";
 import { motion, AnimatePresence } from "framer-motion";
+import { VisageGuide } from "@/components/AssistantMark";
+import { useGuideActif } from "@/context/GuideContext";
+import { voix } from "@/lib/guides";
 import {
   Home, UtensilsCrossed, Sandwich, Sparkles, Heart, Camera, Barcode,
   Plus, BookOpen, ShoppingBag, ChevronLeft, ChevronRight, Carrot,
@@ -153,6 +168,7 @@ export default function MealSituationHero({
   name, userId, goals, consumed, eatenToday, onPhoto, onBarcode, onManual, onMenuScan, onSkip,
   classics, onQuickAdd, onLogIdea,
 }: Props) {
+  const { guide } = useGuideActif();
   const [sit, setSit] = useState<SituationKey | null>(null);
   const [screen, setScreen] = useState<Screen>("menu");
 
@@ -450,11 +466,19 @@ export default function MealSituationHero({
           <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "var(--text-3)" }}>
             {hello}{name ? ` ${name}` : ""} · {moment}
           </p>
-          <h2 className="text-2xl font-light mt-1" style={{ color: "var(--text-1)" }}>On mange où&nbsp;?</h2>
-          <p className="text-[11.5px] mt-1.5 flex items-center gap-1.5" style={{ color: "var(--text-3)" }}>
-            <span className="inline-block w-[7px] h-[7px] rounded-full flex-shrink-0" style={{ background: "#8B5CF6" }} />
-            Dis-moi où, je m&apos;occupe du reste.
-          </p>
+          {/* Le visage prend la place de la puce violette : la question
+              change de bouche, pas de mise en page. Sans Guide résolu,
+              `VisageGuide` retombe sur l'étincelle ✦ et la phrase reste
+              exactement celle d'avant. */}
+          <div className="flex items-center gap-2.5 mt-1">
+            <VisageGuide guide={guide} etat="listen" size={36} />
+            <div className="min-w-0">
+              <h2 className="text-2xl font-light leading-none" style={{ color: "var(--text-1)" }}>On mange où&nbsp;?</h2>
+              <p className="text-[11.5px] mt-1.5" style={{ color: "var(--text-3)" }}>
+                {voix(guide, "nutrition.question")}
+              </p>
+            </div>
+          </div>
         </>
       ) : (
         <div className="flex items-center gap-2.5">

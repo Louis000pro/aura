@@ -17,7 +17,9 @@
    (`action.*`, `question.*`, `impasse.*`, `accueil.*`, `memoire.*`,
    `attente.*`), la séance (`seance.*`), l'arrivée sur l'accueil
    (`retour.*`), les rappels du soir (`RAPPELS`), la visite guidée
-   (`visite.*`) et les écrans vides (`vide.*`) sont différenciés. Restent
+   (`visite.*`), les écrans vides (`vide.*`), l'entrée de la nutrition
+   (`nutrition.*`) et la lecture de la semaine (`semaine.*`) sont
+   différenciés. Restent
    volontairement communes : les `panne.*`, parce qu'une personnalité posée
    sur un mécanisme cassé serait déplacée.
 
@@ -70,9 +72,21 @@ export type ContexteVoix = {
   rang?: string;
   /** Le nombre de jours de la série en cours (`retour.serie`). */
   serie?: number;
-  /** Séances terminées depuis toujours (`rappel.veilleuse`). */
+  /** Un nombre de séances. `rappel.veilleuse` : depuis toujours.
+   *  `semaine.*` : posées sur la semaine qu'on regarde. */
   seances?: number;
 };
+
+/** « Une séance posée », « Trois séances posées ». Le nombre s'écrit en
+ *  lettres, parce qu'une semaine n'en porte jamais plus de sept et qu'un
+ *  chiffre isolé au milieu d'une phrase se lit comme une statistique, pas
+ *  comme quelqu'un qui parle. L'accord du singulier se fait ici, une
+ *  fois, plutôt que dans chacune des six variantes. */
+function seancesPosees(n = 0): string {
+  const mots = ["Aucune", "Une", "Deux", "Trois", "Quatre", "Cinq", "Six", "Sept"];
+  const mot = mots[n] ?? String(n);
+  return n === 1 ? "Une séance posée" : `${mot} séances posées`;
+}
 
 type Rendu = string | ((c: ContexteVoix) => string);
 
@@ -93,6 +107,8 @@ type Replique = { commun: Rendu; nora?: Rendu; sasha?: Rendu };
      seance.*   pendant l'entraînement
      visite.*   les chapitres de la visite guidée
      vide.*     ce qu'il dit quand un écran n'a rien à montrer
+     nutrition.* la question d'entrée du pilier nutrition
+     semaine.*  ce qu'il lit dans la semaine qu'on regarde
    ------------------------------------------------------------------ */
 const REPLIQUES = {
   /* ── Les cartes ──
@@ -592,6 +608,60 @@ const REPLIQUES = {
     commun: "Personne ici pour l'instant. Le relais se joue à deux : on invite quelqu'un, et chacun avance à son tour.",
     nora:   "Personne ici pour l'instant. Si tu veux quelqu'un à côté de toi, le relais se joue à deux : tu invites, et vous avancez chacun votre tour.",
     sasha:  "Personne ici pour l'instant. Le relais se joue à deux : tu invites, vous avancez chacun votre tour.",
+  },
+
+  /* ── La question d'entrée de la nutrition ──
+     « On mange où ? » est la question la plus humaine du produit, et
+     personne ne la posait. La phrase juste en dessous était déjà à la
+     première personne (« Dis-moi où ») : c'était donc déjà de la parole,
+     mais de la parole sans bouche. Elle passe ici, et le visage `listen`
+     prend la place de la puce violette qui la précédait.
+
+     ⚠️ LE TITRE « On mange où ? » NE BOUGE PAS et n'entre pas dans cette
+     couche. C'est l'en-tête de l'écran, il est identique pour les deux
+     Guides, et le déplacer ici laisserait croire qu'il peut varier. */
+  "nutrition.question": {
+    commun: "Dis-moi où, je m'occupe du reste.",
+    nora:   "Dis-moi juste où tu manges, je m'occupe du reste.",
+    sasha:  "Dis-moi où tu manges. Je m'occupe du reste.",
+  },
+
+  /* ── La lecture de la semaine ──
+     « Ma semaine » affichait un verdict tout seul, « Équilibrée ✦ » ou
+     « Ciblée » : une appréciation sur le travail de quelqu'un, signée
+     d'une marque, et qui ne disait pas POURQUOI. Le Guide la dit en une
+     phrase, et sa phrase explique le verdict au lieu de l'assener.
+
+     ⚠️ LE CALCUL NE CHANGE PAS, ET LES PASTILLES NON PLUS. Le Guide lit
+     ce que l'écran a déjà compté (les familles regroupées en zones), il
+     ne juge rien de son côté. Une deuxième règle d'équilibre ailleurs
+     serait une deuxième vérité sur la même semaine.
+
+     ⚠️ « Ciblée » N'EST JAMAIS UN REPROCHE, et la phrase le dit en toutes
+     lettres : quelqu'un qui prépare un objectif précis a une semaine
+     ciblée, et c'est exactement ce qu'il veut. */
+  "semaine.equilibree": {
+    // « Équilibrée » demande trois zones distinctes, donc au moins trois
+    // séances : le pluriel est vrai par construction.
+    commun: (c) => `${seancesPosees(c.seances)}, et elles ne tapent pas au même endroit.`,
+    nora:   (c) => `${seancesPosees(c.seances)}, et elles ne tapent pas au même endroit. C'est ce qui rend une semaine tenable.`,
+    sasha:  (c) => `${seancesPosees(c.seances)}, et jamais deux fois la même zone. Ta semaine tient debout.`,
+  },
+  "semaine.ciblee": {
+    commun: (c) => (c.seances === 1
+      ? "Une seule séance posée, et elle donne déjà une direction. C'est un choix, pas un défaut."
+      : `${seancesPosees(c.seances)}, et elles couvrent peu de zones différentes. C'est un choix, pas un défaut.`),
+    nora:   (c) => (c.seances === 1
+      ? "Une seule séance posée, et elle donne déjà une direction. Ciblée, ce n'est pas un défaut."
+      : `${seancesPosees(c.seances)}, et elles couvrent peu de zones différentes. Si c'est voulu, garde-la comme ça.`),
+    sasha:  (c) => (c.seances === 1
+      ? "Une séance posée. Une direction claire, et ça suffit."
+      : `${seancesPosees(c.seances)}, peu de zones différentes. Ciblée, c'est un choix.`),
+  },
+  "semaine.vide": {
+    commun: "Rien de posé cette semaine, et c'est normal. Dis-le-moi, je te la remplis d'un coup.",
+    nora:   "Rien de posé cette semaine, et c'est normal. Dis-le-moi et je te la remplis d'un coup.",
+    sasha:  "Rien de posé cette semaine. Dis-le-moi, je te la remplis.",
   },
 } satisfies Record<string, Replique>;
 
