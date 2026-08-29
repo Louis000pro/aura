@@ -267,8 +267,6 @@ export default function RootLayout({
         <SplashIntro />
         <AuthProvider>
           <PresenceDuJour />
-          {/* Le rang peut monter n'importe où : la célébration vit au-dessus de tout. */}
-          <CelebrationRang />
           {/* ⚠️ `GuideProvider` ENGLOBE `AssistantProvider`, et l'ordre n'est
               pas décoratif : c'est le cerveau de l'assistant qui lit le
               Guide pour choisir ses phrases, donc il doit être à
@@ -281,6 +279,13 @@ export default function RootLayout({
               redirige personne et ne change aucun texte : l'app se
               comporte exactement comme avant. */}
           <GuideProvider>
+          {/* Le rang peut monter n'importe où : la célébration vit au-dessus
+              de tout (elle se rend dans un portail vers `document.body`, donc
+              sa place dans l'arbre ne change rien à son empilement).
+              ⚠️ Elle est DANS `GuideProvider` : c'est le Guide qui te tend la
+              récompense, et hors du fournisseur il serait « inconnu » pour
+              tout le monde. */}
+          <CelebrationRang />
           <AssistantProvider>
             <WorkoutLaunchProvider>
               <GuidedTourProvider>

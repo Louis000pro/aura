@@ -18,7 +18,8 @@
    `attente.*`), la séance (`seance.*`), l'arrivée sur l'accueil
    (`retour.*`), les rappels du soir (`RAPPELS`), la visite guidée
    (`visite.*`), les écrans vides (`vide.*`), l'entrée de la nutrition
-   (`nutrition.*`) et la lecture de la semaine (`semaine.*`) sont
+   (`nutrition.*`), la lecture de la semaine (`semaine.*`), la montée de
+   rang (`rang.*`) et l'écran de sa mémoire (`memoire.*`) sont
    différenciés. Restent
    volontairement communes : les `panne.*`, parce qu'une personnalité posée
    sur un mécanisme cassé serait déplacée.
@@ -75,6 +76,8 @@ export type ContexteVoix = {
   /** Un nombre de séances. `rappel.veilleuse` : depuis toujours.
    *  `semaine.*` : posées sur la semaine qu'on regarde. */
   seances?: number;
+  /** L'EXP du palier qu'on vient d'atteindre (`rang.montee`). */
+  exp?: number;
 };
 
 /** « Une séance posée », « Trois séances posées ». Le nombre s'écrit en
@@ -101,7 +104,7 @@ type Replique = { commun: Rendu; nora?: Rendu; sasha?: Rendu };
      impasse.*  ce qu'il répond quand il ne peut pas agir
      accueil.*  la feuille de chat vide
      retour.*   ce qu'il dit en arrivant sur l'accueil de l'app
-     memoire.*  ce qu'il dit de sa propre mémoire
+     memoire.*  ce qu'il dit de sa propre mémoire, et sur son écran
      attente.*  ce qu'il dit pendant qu'il travaille
      panne.*    quand la réponse ne vient pas
      seance.*   pendant l'entraînement
@@ -109,6 +112,7 @@ type Replique = { commun: Rendu; nora?: Rendu; sasha?: Rendu };
      vide.*     ce qu'il dit quand un écran n'a rien à montrer
      nutrition.* la question d'entrée du pilier nutrition
      semaine.*  ce qu'il lit dans la semaine qu'on regarde
+     rang.*     ce qu'il dit au moment où un rang se gagne
    ------------------------------------------------------------------ */
 const REPLIQUES = {
   /* ── Les cartes ──
@@ -370,6 +374,20 @@ const REPLIQUES = {
     commun: "Je m'en souviendrai 🧠",
     nora:   "Je le garde en tête pour la suite 🧠",
     sasha:  "Je m'en souviens 🧠",
+  },
+  /* L'écran de sa mémoire. Le titre « Ce que je retiens de toi » reste un
+     en-tête d'écran, donc il vit dans le composant : c'est le même
+     arbitrage que « On mange où ? ». Ici il n'y a que ses deux vraies
+     phrases, la promesse et l'invitation. */
+  "memoire.ecran": {
+    commun: "J'oublie tout de suite ce que tu retires. Rien de tout ça ne sort d'ici.",
+    nora:   "J'oublie tout de suite ce que tu retires, et rien de tout ça ne sort d'ici.",
+    sasha:  "Tu retires, j'oublie. Et rien ne sort d'ici.",
+  },
+  "memoire.vide": {
+    commun: "Je n'ai encore rien retenu. Parle-moi normalement et dis-moi ce qui compte : une blessure, ce que tu ne manges pas, tes horaires. Je m'en servirai à chaque fois qu'on se parle.",
+    nora:   "Je n'ai encore rien retenu de toi. Parle-moi normalement et dis-moi ce qui compte : une blessure, ce que tu ne manges pas, tes horaires. Je m'en servirai à chaque fois qu'on se parle.",
+    sasha:  "Rien de retenu pour l'instant. Dis-moi ce qui compte : une blessure, ce que tu ne manges pas, tes horaires. Je m'en sers dès la prochaine fois.",
   },
 
   /* ── Ce qu'il dit pendant qu'il travaille ──
@@ -662,6 +680,25 @@ const REPLIQUES = {
     commun: "Rien de posé cette semaine, et c'est normal. Dis-le-moi, je te la remplis d'un coup.",
     nora:   "Rien de posé cette semaine, et c'est normal. Dis-le-moi et je te la remplis d'un coup.",
     sasha:  "Rien de posé cette semaine. Dis-le-moi, je te la remplis.",
+  },
+
+  /* ── La montée de rang ──
+     Il tend la récompense, il ne commente pas la scène : la gemme dit
+     déjà le rang, la carte du dessous dit déjà ce qui est débloqué. Ce
+     qui manquait, c'est quelqu'un pour te la donner.
+     ⚠️ Le palier à zéro (Bronze, ou une célébration rejouée par un
+     admin) a sa propre phrase : « 0 EXP » sous une gemme se lirait comme
+     une erreur de calcul. */
+  "rang.montee": {
+    commun: (c) => (c.exp
+      ? `Te voilà ${c.rang}. ${c.exp} EXP, posés une action après l'autre.`
+      : `Te voilà ${c.rang}. C'est le début, et il compte déjà.`),
+    nora:   (c) => (c.exp
+      ? `Te voilà ${c.rang}. ${c.exp} EXP, posés une action après l'autre. Tu as tenu, et ça se voit.`
+      : `Te voilà ${c.rang}. C'est le début, et il compte déjà.`),
+    sasha:  (c) => (c.exp
+      ? `${c.rang}. ${c.exp} EXP, une action après l'autre. Tu l'as pris.`
+      : `${c.rang}. C'est le début, et il compte.`),
   },
 } satisfies Record<string, Replique>;
 

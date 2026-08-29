@@ -5,6 +5,9 @@ import { createPortal } from "react-dom";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useAuth } from "@/context/AuthContext";
 import GemmeRang from "@/components/GemmeRang";
+import { VisageGuide } from "@/components/AssistantMark";
+import { useGuideActif } from "@/context/GuideContext";
+import { voix } from "@/lib/guides";
 import ApercuRecompense from "@/components/rang/ApercuRecompense";
 import { EVENEMENT_RANG_MONTE, type DetailRangMonte } from "@/lib/celebrationRang";
 import { RANGS, RECOMPENSE_RANG, type Rang } from "@/lib/aura";
@@ -21,9 +24,22 @@ import { RANGS, RECOMPENSE_RANG, type Rang } from "@/lib/aura";
  *
  * Aucun réseau, aucune écriture serveur : `noterRang` (lib/celebrationRang.ts)
  * a déjà tout tranché avant d'émettre l'évènement.
+ *
+ * ⚠️ LA GEMME RESTE LE HÉROS. Le Guide ne recouvre pas la scène, il te
+ * tend la récompense : visage de 34 px sur le côté de sa phrase, contre
+ * 116 px pour la gemme. Un portrait de la même taille ferait deux ronds
+ * l'un sous l'autre, c'est-à-dire deux héros ; c'est exactement
+ * l'arbitrage déjà rendu en fin de séance, où la coche teal est passée de
+ * médaillon à sceau.
+ *
+ * ⚠️ ET IL N'EN DIT PAS PLUS. La phrase remplace « Tu as tenu, ça se voit
+ * maintenant. », elle ne s'ajoute pas à elle : la gemme dit déjà le rang,
+ * la carte du dessous dit déjà ce qui est débloqué. Sans Guide résolu,
+ * `VisageGuide` retombe sur l'étincelle ✦ et `voix` sur le texte commun.
  */
 export default function CelebrationRang() {
   const { user } = useAuth();
+  const { guide } = useGuideActif();
   const reduce = useReducedMotion();
   const [rang, setRang] = useState<Rang | null>(null);
   const [monte, setMonte] = useState(false);
@@ -117,9 +133,14 @@ export default function CelebrationRang() {
             >
               {rang.nom}
             </h2>
-            <p className="mt-2 text-[13px] leading-snug" style={{ color: "var(--text-soft)" }}>
-              Tu as tenu, ça se voit maintenant.
-            </p>
+            {/* Celui qui te la tend. `encourage` est le seul état qui vaille
+                ici : quelque chose vient d'aboutir. */}
+            <div className="mx-auto mt-3 flex max-w-[300px] items-start gap-2.5 text-left">
+              <VisageGuide guide={guide} etat="encourage" size={34} />
+              <p className="pt-0.5 text-[13px] leading-snug" style={{ color: "var(--text-soft)" }}>
+                {voix(guide, "rang.montee", { rang: rang.nom, exp: rang.min })}
+              </p>
+            </div>
 
             {/* Ce qui est débloqué, montré pour de vrai (pas une promesse). */}
             {reco && (
