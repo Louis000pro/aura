@@ -19,9 +19,10 @@ import { type PerformanceData } from "@/components/PerformanceCard";
 import { AvatarRang, PseudoRang, TitreRang } from "@/components/rang/IdentiteRang";
 import { calculerAura, cosmetiquesDuRang, etatDepuisExp, RANGS, type EtatAura } from "@/lib/aura";
 import { chargerRang } from "@/lib/rangsPublics";
-import { SERIES, imageEtat, type SerieSlug } from "@/lib/defi";
+import { SERIES, imageEtat, relaisPartage, type SerieSlug, type RelaisPartage } from "@/lib/defi";
 import { chargerBadges } from "@/lib/messagerie";
 import EtagereBadges from "@/components/profil/EtagereBadges";
+import LigneEnsemble from "@/components/profil/LigneEnsemble";
 
 type Profile = {
   id: string;
@@ -80,6 +81,24 @@ export default function PublicProfilePage() {
   const [profileTab, setProfileTab] = useState<"sillages" | "seances">("sillages");
   const [aura, setAura] = useState<EtatAura | null>(null);
   const [badgeSlugs, setBadgeSlugs] = useState<Set<string>>(new Set());
+  // ⚠️ La réponse porte le profil qu'elle décrit. Remettre l'état à zéro
+  // dans l'effet serait un setState synchrone (et un avertissement React) ;
+  // et ne rien remettre laisserait, le temps d'une requête, la ligne d'un
+  // ami sur le profil du suivant. On compare, on ne réinitialise pas.
+  const [ensemble, setEnsemble] = useState<{ pour: string; data: RelaisPartage | null } | null>(null);
+
+  // Ce que vous avez fait ensemble. Effet séparé : le profil visité et ma
+  // session n'arrivent pas au même moment, et l'effet du profil ne se
+  // rejoue pas quand la session se résout.
+  useEffect(() => {
+    if (!user || !profile) return;
+    let vivant = true;
+    const pour = profile.id;
+    void relaisPartage(user.id, pour)
+      .then((r) => { if (vivant) setEnsemble({ pour, data: r }); })
+      .catch(() => {});
+    return () => { vivant = false; };
+  }, [user, profile]);
 
   // Sticky mini-header
   const [showStickyHeader, setShowStickyHeader] = useState(false);
@@ -611,6 +630,12 @@ export default function PublicProfilePage() {
           ))}
         </div>
       </motion.div>
+
+      {/* Ce que vous avez fait ensemble. Muette si vous n'avez jamais
+          joué à deux, donc invisible sur le profil d'un inconnu. */}
+      {profile && ensemble?.pour === profile.id && ensemble.data && (
+        <LigneEnsemble serie={ensemble.data.serie} nombre={ensemble.data.nombre} />
+      )}
 
       {/* ── Tab switcher Posts / Séances ── */}
       <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="mt-6 mb-4">

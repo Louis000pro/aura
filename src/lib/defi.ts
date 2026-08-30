@@ -398,6 +398,60 @@ export async function chargerRelaisAccueil(userId: string): Promise<RelaisAccuei
   };
 }
 
+/* ── Ce que vous avez fait ensemble ───────────────────────────
+   Le relais est la seule chose de l'app qui se fasse à deux, et le
+   profil d'un ami n'en disait pas un mot : on y voyait SES affiches,
+   son rang, ses séances, jamais les vôtres.
+
+   ⚠️ AUCUNE MIGRATION, ET C'EST LA RLS QUI FAIT LE TRAVAIL. La policy
+   de `challenge_run_members` est `est_membre_run(run_id, auth.uid())` :
+   demander les lignes de quelqu'un d'autre ne rend donc QUE les runs
+   où je suis aussi. Le filtre « ensemble » n'est pas écrit dans la
+   requête, il est écrit dans la base, et il ne peut pas fuir.
+
+   ⚠️ ON TRIE SUR `ends_on`, PAS SUR `fini_le`. La colonne `fini_le`
+   date du 2026-08-30 ; `ends_on` existe depuis juillet et vaut sur
+   tous les runs. Une lecture d'affichage n'a pas à dépendre d'une
+   migration collée à la main.
+
+   ⚠️ Pas d'alias sur la relation intégrée : le filtre `.eq()` doit
+   porter le MÊME nom que l'embed (même piège que `chargerRelaisAccueil`). */
+export type RelaisPartage = {
+  /** La dernière affiche dévoilée ensemble. */
+  serie: SerieSlug;
+  /** Combien vous en avez dévoilées ensemble. Au moins 1. */
+  nombre: number;
+};
+
+export async function relaisPartage(moi: string, autre: string): Promise<RelaisPartage | null> {
+  // Sur son propre profil la question n'a pas de sens, et la requête
+  // rendrait tous mes relais gagnés comme s'ils étaient « ensemble ».
+  if (!moi || !autre || moi === autre) return null;
+
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("challenge_run_members")
+    .select("challenge_runs!inner(id, serie, statut, ends_on)")
+    .eq("user_id", autre)
+    .eq("challenge_runs.statut", "reussi");
+
+  if (error) return null;
+
+  type Gagne = { id: string; serie: string | null; ends_on: string };
+  const runs = (data ?? [])
+    .map((ligne) => {
+      const lie = (ligne as unknown as { challenge_runs?: Gagne | Gagne[] }).challenge_runs;
+      return Array.isArray(lie) ? lie[0] : lie;
+    })
+    .filter((r): r is Gagne => !!r)
+    .sort((a, b) => b.ends_on.localeCompare(a.ends_on));
+
+  if (!runs.length) return null;
+
+  const serie = (runs[0].serie ?? "sillage") as SerieSlug;
+  return { serie: serie in SERIES ? serie : "sillage", nombre: runs.length };
+}
+
 type Reponse = { ok: boolean; raison?: string; [k: string]: unknown };
 
 export async function creerDefi(): Promise<Reponse> {
