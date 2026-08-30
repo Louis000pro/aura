@@ -684,6 +684,31 @@ const REPLIQUES = {
     sasha:  "Rien de posé cette semaine. Dis-le-moi, je te la remplis.",
   },
 
+  /* ── Le seuil du relais ──
+     Les règles du relais n'étaient écrites nulle part où l'on puisse
+     revenir : la visite guidée les résume une fois, au tout premier
+     jour, avant même d'avoir un ami. Ensuite « quatre jours sur sept »,
+     « jamais deux jours de suite » et « dix minutes » n'apparaissaient
+     qu'en creux, dans une phrase d'état, et seulement quand c'était
+     ton tour.
+
+     ⚠️ ICI ET NULLE PART AILLEURS. « Avec qui ? » est le seul endroit
+     où quelqu'un est sur le point de s'engager et n'a encore rien
+     lancé : c'est le moment où la question se pose. Un écran d'aide de
+     plus serait un écran que personne n'ouvre.
+
+     ⚠️ CETTE PHRASE REMPLACE « Le relais se joue à deux, une semaine. »
+     Cette ligne disait déjà une règle, sans bouche et sans les deux
+     autres. On remplace, on n'empile pas.
+
+     Trois phrases, et les trois règles qui décident si un jour compte.
+     Pas de quatrième : le reste s'apprend en jouant. */
+  "relais.avecqui": {
+    commun: "Le relais se joue à deux, sur une semaine. Il faut quatre jours validés sur sept, jamais deux de suite par la même personne, et une séance d'au moins dix minutes. À chaque maillon, l'affiche se dévoile un peu.",
+    nora:   "Le relais se joue à deux, sur une semaine. Il vous faut quatre jours validés sur sept, jamais deux d'affilée par la même personne, et une séance d'au moins dix minutes pour que le jour compte. À chaque maillon franchi, l'affiche se dévoile un peu plus.",
+    sasha:  "Le relais se joue à deux, sur une semaine. Quatre jours validés sur sept, jamais deux de suite par la même personne, dix minutes minimum pour qu'un jour compte. Chaque maillon dévoile un peu l'affiche.",
+  },
+
   /* ── La montée de rang ──
      Il tend la récompense, il ne commente pas la scène : la gemme dit
      déjà le rang, la carte du dessous dit déjà ce qui est débloqué. Ce

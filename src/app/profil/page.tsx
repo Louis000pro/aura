@@ -6,12 +6,11 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   X, Check, Lock, Crown, Camera, ChevronRight,
-  Pencil, Dumbbell, Play, Users, Sparkles, Settings, Trash2, Shield,
+  Pencil, Dumbbell, Play, Users, Sparkles, Settings, Trash2, Shield, Share2,
 } from "lucide-react";
 import PerformanceCard, { type PerformanceData } from "@/components/PerformanceCard";
-import PerfShareButton from "@/components/PerfShareButton";
 import PerfShareCard from "@/components/PerfShareCard";
-import { perfDataToShare } from "@/lib/perfShareExport";
+import { perfDataToShare, type PerfShareData } from "@/lib/perfShareExport";
 import VideoPlayer from "@/components/VideoPlayer";
 import Image from "next/image";
 import GemmeRang from "@/components/GemmeRang";
@@ -23,6 +22,8 @@ import { noterRang } from "@/lib/celebrationRang";
 import { SERIES, imageEtat, type SerieSlug } from "@/lib/defi";
 import { chargerBadges } from "@/lib/messagerie";
 import EtagereBadges from "@/components/profil/EtagereBadges";
+import AvecQui from "@/components/communaute/AvecQui";
+import EnvoyerAffiche from "@/components/communaute/EnvoyerAffiche";
 
 /* ─────────────── Tab data types ─────────────── */
 type UserPost = {
@@ -516,9 +517,11 @@ function PrivacyModal({ onClose }: { onClose: () => void }) {
 
 /* ─────────────── Main Page ─────────────── */
 export default function ProfilPage() {
-  const { user, refreshProfile } = useAuth();
+  const { user, session, refreshProfile } = useAuth();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<"sillages" | "seances" | "amis">("sillages");
+  const [avecQui, setAvecQui] = useState(false);
+  const [afficheAEnvoyer, setAfficheAEnvoyer] = useState<PerfShareData | null>(null);
   const [aura, setAura] = useState<EtatAura | null>(null);
   const [amis, setAmis] = useState<{ id: string; pseudo: string; avatar_url?: string }[] | null>(null);
   const [badgeSlugs, setBadgeSlugs] = useState<Set<string>>(new Set());
@@ -1034,10 +1037,21 @@ export default function ProfilPage() {
               {(Object.keys(SERIES) as SerieSlug[]).map((slug) => {
                 const serie = SERIES[slug];
                 const gagnee = badgeSlugs.has(`serie-${slug}`);
+                // ⚠️ C'est l'affiche VERROUILLÉE qui s'ouvre, pas celle qu'on a
+                // gagnée : la galerie arrête d'être une vitrine et devient une
+                // porte, exactement comme une carte Premium verrouillée ouvre
+                // l'aperçu au lieu de ne rien faire. Une affiche déjà gagnée n'a
+                // rien à ouvrir, elle reste donc inerte et sans affordance.
+                const Cadre = gagnee ? "div" : "button";
                 return (
-                  <div
+                  <Cadre
                     key={slug}
-                    className="relative rounded-2xl overflow-hidden"
+                    {...(gagnee ? {} : {
+                      type: "button" as const,
+                      onClick: () => setAvecQui(true),
+                      "aria-label": `Lancer un relais pour dévoiler ${serie.nom}`,
+                    })}
+                    className={`relative rounded-2xl overflow-hidden w-full text-left${gagnee ? "" : " cursor-pointer"}`}
                     style={{ aspectRatio: "9/16", border: "1px solid rgba(255,255,255,0.06)", boxShadow: "0 10px 26px -12px rgba(0,0,0,0.5)" }}
                   >
                     <Image
@@ -1061,7 +1075,7 @@ export default function ProfilPage() {
                         <Lock size={22} strokeWidth={2} style={{ color: "rgba(255,255,255,0.55)" }} />
                       </div>
                     )}
-                  </div>
+                  </Cadre>
                 );
               })}
             </div>
@@ -1397,17 +1411,23 @@ export default function ProfilPage() {
                     </div>
                   ) : null}
 
-                  {/* Télécharger la carte de perf (posts workout) */}
+                  {/* Envoyer l'affiche. La même feuille et les mêmes deux
+                      sorties qu'en fin de séance : une discussion, ou le
+                      dehors. Une affiche gardée doit rester envoyable, sinon
+                      elle n'est partageable que pendant les trente secondes
+                      qui suivent la séance. */}
                   {selectedPost.type === "workout" && selectedPost.performance_data && (
                     <div className="px-4 pb-3">
-                      <PerfShareButton
-                        data={perfDataToShare(selectedPost.performance_data as PerformanceData, { user: displayPseudo })}
-                        label="Télécharger la carte"
-                        iconSize={16}
-                        ariaLabel="Télécharger la carte de perf"
+                      <motion.button
+                        whileTap={{ scale: 0.97 }}
+                        onClick={() => setAfficheAEnvoyer(
+                          perfDataToShare(selectedPost.performance_data as PerformanceData, { user: displayPseudo })
+                        )}
                         className="w-full py-3 rounded-2xl flex items-center justify-center gap-2 text-sm font-semibold cursor-pointer"
                         style={{ background: "rgba(139,92,246,0.1)", color: "var(--accent)", border: "1px solid rgba(139,92,246,0.3)" }}
-                      />
+                      >
+                        <Share2 size={16} strokeWidth={2} /> Envoyer à quelqu&apos;un
+                      </motion.button>
                     </div>
                   )}
 
@@ -1572,6 +1592,31 @@ export default function ProfilPage() {
               )}
             </motion.div>
           </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* La porte du relais, ouverte depuis une affiche verrouillée.
+          C'est la MÊME feuille que dans la communauté, pas une seconde
+          écrite ici : elle vit dans `components/communaute/AvecQui`. */}
+      <AnimatePresence>
+        {afficheAEnvoyer && user && (
+          <EnvoyerAffiche
+            data={afficheAEnvoyer}
+            moi={user.id}
+            accessToken={session?.access_token}
+            onFermer={() => setAfficheAEnvoyer(null)}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {avecQui && user && (
+          <AvecQui
+            moi={user.id}
+            onFermer={() => setAvecQui(false)}
+            onFil={(id) => { setAvecQui(false); router.push(`/communaute/${id}`); }}
+            onLien={() => { setAvecQui(false); router.push("/defi"); }}
+          />
         )}
       </AnimatePresence>
 

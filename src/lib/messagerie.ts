@@ -750,6 +750,9 @@ export async function envoyerPhoto(
   fichier: File,
   repondA?: string | null,
   accessToken?: string,
+  /** Ce que la liste des conversations affichera en aperçu. « Photo »
+   *  convient à une photo ; une affiche de séance mérite son nom. */
+  legende = "Photo",
 ) {
   try {
     const supabase = createClient();
@@ -772,7 +775,7 @@ export async function envoyerPhoto(
       .insert({
         conversation_id: convId,
         user_id: userId,
-        contenu: "Photo",
+        contenu: legende,
         type: "image",
         repond_a: repondA ?? null,
         media_path: chemin,

@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { aiFetch } from "@/lib/aiFetch";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Pause, Play, Share2, BookmarkCheck, ChevronDown, ChevronRight, Check, Plus } from "lucide-react";
+import { X, Pause, Play, Share2, Bookmark, BookmarkCheck, ChevronDown, ChevronRight, Check, Plus } from "lucide-react";
 import { AssistantSpark, VisageGuide, CelebrationGuide } from "@/components/AssistantMark";
 import { voix, type CleVoix } from "@/lib/guides";
 import { useGuideActif } from "@/context/GuideContext";
@@ -20,7 +20,7 @@ import { calculerAura } from "@/lib/aura";
 import { noterRang } from "@/lib/celebrationRang";
 import { useAuth } from "@/context/AuthContext";
 import { useAssistant } from "@/context/AssistantContext";
-import PerfShareButton from "@/components/PerfShareButton";
+import EnvoyerAffiche from "@/components/communaute/EnvoyerAffiche";
 import PerfShareCard from "@/components/PerfShareCard";
 import type { PerfShareData } from "@/lib/perfShareExport";
 import { GUIDE_SECTIONS, sectionSessionId } from "@/lib/guideSections";
@@ -786,6 +786,7 @@ export default function WorkoutGuideModal({
   const [introOpen,     setIntroOpen]     = useState<number | null>(null); // exo déplié dans la liste "Au programme"
   const [shareStatus,   setShareStatus]   = useState<"idle" | "saving" | "done" | "error">("idle");
   const [sessionSaved,  setSessionSaved]  = useState(false);
+  const [envoiAffiche, setEnvoiAffiche] = useState(false);
   /* La série APRÈS cette séance, lue en base une fois l'enregistrement fait.
      `null` tant qu'on ne la connaît pas : on ne montre jamais un compteur
      provisoire qui se corrigerait sous les yeux. */
@@ -797,7 +798,7 @@ export default function WorkoutGuideModal({
   const [maillon,       setMaillon]       = useState<MaillonFranchi | null>(null);
   const [garde,         setGarde]         = useState<"idle" | "gardee" | "refusee">("idle");
 
-  const { user } = useAuth();
+  const { user, session } = useAuth();
 
   const pausedAtRef = useRef<number>(0);
 
@@ -854,7 +855,17 @@ export default function WorkoutGuideModal({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase]);
 
-  /* ── Partager la séance comme publication permanente ── */
+  /* ── Garder l'affiche dans son profil ──
+     ⚠️ CE BOUTON NE PARTAGE RIEN, ET NE L'A JAMAIS FAIT. Il écrivait
+     `audience: "friends"`, alors que la policy de `posts` est
+     `audience = 'public' OR auth.uid() = user_id` : le mot « friends »
+     ne donnait accès à personne, la rangée « Ses affiches de perf » d'un
+     profil public était vide par construction, et l'app annonçait quand
+     même « visible par tes amis ».
+
+     Le mot devient donc `private`, qui décrit ce qui se passe vraiment :
+     l'affiche entre dans TA galerie. Envoyer l'affiche à quelqu'un est
+     une autre intention, et c'est le second bouton. */
   const shareAsPost = useCallback(async () => {
     if (!user) return;
     setShareStatus("saving");
@@ -865,7 +876,7 @@ export default function WorkoutGuideModal({
       user_id:  user.id,
       type:     "workout",
       caption:  "",
-      audience: "friends",
+      audience: "private",
       performance_data: {
         type:      "workout",
         title,
@@ -1688,28 +1699,29 @@ export default function WorkoutGuideModal({
                   >
                     {shareStatus === "saving"
                       ? <><motion.span animate={{ rotate: 360 }} transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }} style={{ display: "inline-block" }}>⏳</motion.span> Publication…</>
-                      : <><Share2 size={15} strokeWidth={2} /> Partager la séance</>
+                      : <><Bookmark size={15} strokeWidth={2} /> Garder cette affiche</>
                     }
                   </motion.button>
                 )}
-                <PerfShareButton
-                  data={perfShareData}
-                  label="Partager ma carte"
-                  iconSize={15}
-                  ariaLabel="Partager la carte de perf"
+                {/* ⚠️ « Partager ma carte » n'avait qu'une sortie, le partage
+                    natif du téléphone. La feuille en propose deux : une de tes
+                    discussions, ou le dehors. Le mot dit enfin la vérité. */}
+                <motion.button whileTap={{ scale: 0.97 }} onClick={() => setEnvoiAffiche(true)}
                   className="w-full py-3.5 rounded-2xl flex items-center justify-center gap-2 font-bold text-sm cursor-pointer"
                   style={{ background: "rgba(139,92,246,0.12)", color: TUN.lav, border: "1px solid rgba(139,92,246,0.4)" }}
-                />
+                >
+                  <Share2 size={15} strokeWidth={2} /> Envoyer à quelqu&apos;un
+                </motion.button>
                 {shareStatus === "done" && (
                   <div className="w-full py-3 rounded-2xl flex items-center justify-center gap-2 text-sm font-medium"
                     style={{ background: "rgba(43,212,160,0.1)", color: TUN.teal, border: "1px solid rgba(43,212,160,0.25)" }}
                   >
-                    ✓ Séance publiée — visible par tes amis
+                    ✓ Affiche gardée dans ton profil
                   </div>
                 )}
                 {shareStatus === "error" && (
                   <button onClick={() => setShareStatus("idle")} className="text-xs cursor-pointer py-2" style={{ color: "#F87171" }}>
-                    Erreur — réessayer
+                    Erreur, réessayer
                   </button>
                 )}
                 <button onClick={onClose}
@@ -1724,6 +1736,20 @@ export default function WorkoutGuideModal({
           </AnimatePresence>
         </div>
         )}
+
+        {/* La feuille d'envoi. Elle vit au-dessus du tunnel (z-[90]/[91]
+            posés par `Sheet`), et elle n'existe que si on a un compte :
+            envoyer suppose un fil, et un fil suppose quelqu'un. */}
+        <AnimatePresence>
+          {envoiAffiche && user && (
+            <EnvoyerAffiche
+              data={perfShareData}
+              moi={user.id}
+              accessToken={session?.access_token}
+              onFermer={() => setEnvoiAffiche(false)}
+            />
+          )}
+        </AnimatePresence>
       </motion.div>
     </motion.div>
   );

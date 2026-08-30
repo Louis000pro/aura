@@ -13,14 +13,16 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { motion, AnimatePresence } from "framer-motion";
+import { AnimatePresence } from "framer-motion";
 import {
   Plus, Loader2, PenLine, Check, X, Search, MoreHorizontal,
-  Pin, Volume2, VolumeX, Archive, ArchiveRestore, UserPlus, Link2, ChevronRight,
+  Pin, Volume2, VolumeX, Archive, ArchiveRestore, UserPlus,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import NotificationBell from "@/components/NotificationBell";
 import ConversationAvatar, { PersonAvatar } from "@/components/communaute/ConversationAvatar";
+import Sheet from "@/components/communaute/Sheet";
+import AvecQui from "@/components/communaute/AvecQui";
 import FriendshipSheets, { type VueAmis } from "@/components/communaute/FriendshipSheets";
 import { PseudoRang } from "@/components/rang/IdentiteRang";
 import { useRangs } from "@/lib/rangsPublics";
@@ -31,8 +33,6 @@ import {
   creerConversation, reglerConversation, heureCourte, prechargerFil,
   type Conversation, type Personne,
 } from "@/lib/messagerie";
-import { creerDefi, lancerRelaisAvec } from "@/lib/defi";
-import { refusRelais, type RefusRelais } from "@/lib/defiErreurs";
 
 export default function ConversationListPane({
   activeId,
@@ -657,178 +657,6 @@ function Vide({ onRelais, onDiscussion, occupe }: {
         Écrire à quelqu&apos;un
       </button>
     </div>
-  );
-}
-
-/* ─── Bottom sheet ───────────────────────────────────────────── */
-function Sheet({ children, onFermer }: { children: React.ReactNode; onFermer: () => void }) {
-  return (
-    <>
-      <motion.div
-        className="fixed inset-0 z-[90] bg-black/45"
-        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-        onClick={onFermer}
-      />
-      <motion.div
-        role="dialog"
-        aria-modal="true"
-        className="fixed inset-x-0 bottom-0 z-[91] rounded-t-[26px] px-5 pt-5 md:left-[88px] md:right-auto md:bottom-6 md:w-[440px] md:rounded-[26px]"
-        style={{
-          background: "rgb(var(--surface-rgb))",
-          paddingBottom: "calc(1.5rem + env(safe-area-inset-bottom))",
-        }}
-        initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
-        transition={{ type: "spring", damping: 32, stiffness: 320 }}
-      >
-        <div className="mx-auto mb-4 h-1 w-10 rounded-full" style={{ background: "rgba(var(--text-3-rgb), .35)" }} />
-        {children}
-      </motion.div>
-    </>
-  );
-}
-
-/* ─── « Avec qui ? » ─────────────────────────────────────────────
-   La seule porte du relais, et elle mène aux deux chemins.
-
-   ⚠️ AUCUNE CONVERSATION N'EST CRÉÉE PAR LE CHEMIN DU LIEN. Le fil
-   naît quand quelqu'un rejoint (`rejoindre_defi`), sinon on
-   fabriquait une discussion à un seul membre, que `titreConversation`
-   nommait littéralement « Moi ».
-
-   Un ami choisi : le relais démarre dans votre fil et il reçoit une
-   notification. Le lien : l'attente vit sur /defi, avec le lien en
-   grand, parce que c'est la seule chose qu'il reste à faire. */
-function AvecQui({ moi, onFermer, onFil, onLien }: {
-  moi: string;
-  onFermer: () => void;
-  onFil: (conversationId: string) => void;
-  onLien: () => void;
-}) {
-  const [gens, setGens]     = useState<Personne[]>([]);
-  const [charge, setCharge] = useState(true);
-  const [occupe, setOccupe] = useState<string | null>(null);
-  const [refus, setRefus]   = useState<RefusRelais | null>(null);
-  const rangs = useRangs(useMemo(() => gens.map((g) => g.id), [gens]));
-
-  useEffect(() => {
-    void mesRelations(moi)
-      .then(setGens)
-      .catch(() => setRefus({ texte: "Impossible de charger tes contacts." }))
-      .finally(() => setCharge(false));
-  }, [moi]);
-
-  const avec = async (ami: Personne) => {
-    setOccupe(ami.id);
-    setRefus(null);
-    const r = await lancerRelaisAvec(ami.id);
-    setOccupe(null);
-    if (r.ok && typeof r.conversation_id === "string") { onFil(r.conversation_id); return; }
-    setRefus(refusRelais(r));
-  };
-
-  const parLien = async () => {
-    setOccupe("lien");
-    setRefus(null);
-    const r = await creerDefi();
-    setOccupe(null);
-    if (r.ok) { onLien(); return; }
-    setRefus(refusRelais(r));
-  };
-
-  return (
-    <Sheet onFermer={onFermer}>
-      <div className="mb-1 flex items-center justify-between">
-        <b className="text-[17px] font-bold" style={{ color: "var(--text-0)" }}>Avec qui ?</b>
-        <button onClick={onFermer} aria-label="Fermer"><X className="h-5 w-5" style={{ color: "var(--text-3)" }} /></button>
-      </div>
-      <p className="mb-3 text-[13.5px]" style={{ color: "var(--text-2)" }}>
-        Le relais se joue à deux, une semaine.
-      </p>
-
-      <div className="max-h-[38vh] overflow-y-auto">
-        {charge ? (
-          <div className="flex justify-center py-8">
-            <Loader2 className="h-5 w-5 animate-spin" style={{ color: "var(--text-3)" }} />
-          </div>
-        ) : gens.length === 0 ? (
-          <p className="py-4 text-center text-[14px] leading-relaxed" style={{ color: "var(--text-2)" }}>
-            Tu n&apos;as encore personne dans tes contacts.<br />
-            Le lien ci-dessous te trouvera quelqu&apos;un.
-          </p>
-        ) : (
-          gens.map((p) => {
-            const rang = rangs.get(p.id);
-            return (
-              <button
-                key={p.id}
-                onClick={() => void avec(p)}
-                disabled={occupe !== null}
-                className="flex w-full items-center gap-3 rounded-xl px-1 py-2.5 text-left disabled:opacity-50"
-              >
-                <PersonAvatar personne={p} taille={38} rang={rang} />
-                {rang ? (
-                  <PseudoRang
-                    rang={rang.rang}
-                    cosmetiques={rang.cosmetiques}
-                    pseudo={p.pseudo}
-                    classNameEnveloppe="flex min-w-0 flex-1 items-center gap-1.5"
-                    className="truncate text-[14.5px] font-medium"
-                    style={{ color: "var(--text-1)" }}
-                    tailleGemme={14}
-                  />
-                ) : (
-                  <span className="flex-1 truncate text-[14.5px] font-medium" style={{ color: "var(--text-1)" }}>
-                    {p.pseudo}
-                  </span>
-                )}
-                {occupe === p.id
-                  ? <Loader2 className="h-4.5 w-4.5 flex-shrink-0 animate-spin" style={{ color: "var(--text-3)" }} />
-                  : <ChevronRight className="h-4.5 w-4.5 flex-shrink-0" style={{ color: "var(--text-3)" }} />}
-              </button>
-            );
-          })
-        )}
-      </div>
-
-      <button
-        onClick={() => void parLien()}
-        disabled={occupe !== null}
-        className="mt-3 flex w-full items-center gap-3 rounded-2xl border px-3.5 py-3 text-left disabled:opacity-50"
-        style={{ borderColor: "rgba(var(--text-3-rgb), .3)" }}
-      >
-        <span
-          className="flex h-[38px] w-[38px] flex-shrink-0 items-center justify-center rounded-full"
-          style={{ background: "rgba(var(--accent-rgb), .12)" }}
-        >
-          {occupe === "lien"
-            ? <Loader2 className="h-4.5 w-4.5 animate-spin" style={{ color: "var(--accent)" }} />
-            : <Link2 className="h-4.5 w-4.5" style={{ color: "var(--accent)" }} />}
-        </span>
-        <span className="min-w-0 flex-1">
-          <b className="block text-[14.5px] font-medium" style={{ color: "var(--text-1)" }}>
-            Quelqu&apos;un qui n&apos;a pas Vaiiya
-          </b>
-          <small className="block text-[12.5px]" style={{ color: "var(--text-3)" }}>
-            Tu obtiendras un lien à envoyer.
-          </small>
-        </span>
-      </button>
-
-      {refus && (
-        <div className="mt-3 text-center">
-          <p className="text-[13.5px] leading-snug" style={{ color: "#E8620C" }}>{refus.texte}</p>
-          {refus.ou && (
-            <button
-              onClick={() => onFil(refus.ou!)}
-              className="mt-2 text-[13.5px] font-semibold underline"
-              style={{ color: "var(--accent)" }}
-            >
-              Ouvrir ce relais
-            </button>
-          )}
-        </div>
-      )}
-    </Sheet>
   );
 }
 
