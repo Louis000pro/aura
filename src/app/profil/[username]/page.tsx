@@ -21,6 +21,7 @@ import { calculerAura, cosmetiquesDuRang, etatDepuisExp, RANGS, type EtatAura } 
 import { chargerRang } from "@/lib/rangsPublics";
 import { SERIES, imageEtat, type SerieSlug } from "@/lib/defi";
 import { chargerBadges } from "@/lib/messagerie";
+import EtagereBadges from "@/components/profil/EtagereBadges";
 
 type Profile = {
   id: string;
@@ -50,9 +51,6 @@ type DbPost = {
   performance_data: Record<string, unknown> | null;
   created_at: string;
   views?: number;
-  post_likes: { user_id: string }[];
-  post_comments: { id: string }[];
-  post_reposts: { user_id: string }[];
 };
 
 
@@ -678,6 +676,9 @@ export default function PublicProfilePage() {
               );
             })}
           </div>
+
+          {/* Un badge se voit du dehors, sinon il ne décore personne. */}
+          <EtagereBadges slugs={badgeSlugs} titre="Ses badges" />
 
           <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.14em]" style={{ color: "var(--text-3)" }}>
             Ses affiches de perf

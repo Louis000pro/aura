@@ -55,3 +55,31 @@ export function badgeParSlug(slug: string): Badge | null {
   if (slug.startsWith("serie-")) return badgeSerie(slug.slice("serie-".length));
   return null;
 }
+
+/**
+ * Les badges débloqués à poser sur l'étagère d'un profil.
+ *
+ * ⚠️ Un badge de SÉRIE en est exclu, et ce n'est pas un oubli : son visage est
+ * l'affiche, et l'affiche est déjà rendue en grand dans la grille juste
+ * au-dessus. La remontrer en pastille de 56 px dirait deux fois la même chose
+ * sur le même écran.
+ *
+ * L'étagère ne montre QUE ce qui est gagné : jamais de case vide, jamais de
+ * cadenas. Les affiches en portent déjà trois, et deux murs sur un écran, c'est
+ * un mur de trop.
+ *
+ * Un slug inconnu (badge retiré du catalogue, ligne d'une ancienne version)
+ * est ignoré au lieu de faire un trou.
+ */
+export function badgesEnEtagere(slugs: Iterable<string>): Badge[] {
+  const vus = new Set<string>();
+  const etagere: Badge[] = [];
+  for (const slug of slugs) {
+    if (vus.has(slug)) continue;
+    vus.add(slug);
+    if (slug.startsWith("serie-")) continue;
+    const badge = badgeParSlug(slug);
+    if (badge) etagere.push(badge);
+  }
+  return etagere;
+}

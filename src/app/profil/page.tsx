@@ -22,6 +22,7 @@ import { calculerAura, cosmetiquesDuRang, RANGS, type EtatAura } from "@/lib/aur
 import { noterRang } from "@/lib/celebrationRang";
 import { SERIES, imageEtat, type SerieSlug } from "@/lib/defi";
 import { chargerBadges } from "@/lib/messagerie";
+import EtagereBadges from "@/components/profil/EtagereBadges";
 
 /* ─────────────── Tab data types ─────────────── */
 type UserPost = {
@@ -1064,6 +1065,10 @@ export default function ProfilPage() {
                 );
               })}
             </div>
+
+            {/* L'étagère : ce que le relais a donné en plus des affiches.
+                Muette tant qu'on n'a rien gagné. */}
+            <EtagereBadges slugs={badgeSlugs} titre="Tes badges" />
 
             {/* Tes affiches de perf (posts séance) */}
             <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.14em]" style={{ color: "var(--text-3)" }}>

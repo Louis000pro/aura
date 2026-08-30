@@ -9,12 +9,8 @@ import { createClient } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import AnnouncementCard from "@/components/AnnouncementCard";
 import { ANNOUNCEMENTS, getUnseenAnnouncementIds, markAnnouncementsSeen } from "@/lib/announcements";
+import { TYPES_NOTIF_VIVANTS, type NotifType } from "@/lib/notifsVivantes";
 
-/* Les types VIVANTS. `like`, `comment` et `repost` ont disparu avec leurs
-   routes au grand ménage du 2026-08-11, mais d'anciennes lignes existent
-   encore en base : l'affichage doit donc rester tolérant à un type inconnu
-   plutôt que de planter sur une notification de l'an dernier. */
-type NotifType = "follow" | "mention" | "relais" | "message";
 
 type Notif = {
   id: string;
@@ -30,7 +26,6 @@ type Notif = {
 
 function notifLabel(n: Notif): string {
   switch (n.type) {
-    case "mention": return `t'a mentionné dans un commentaire`;
     case "relais":  return `a franchi son maillon`;
     case "message": return `t'a envoyé un message`;
     // « t'a ajouté à ses amis » est vrai des deux côtés : une demande est
@@ -42,7 +37,6 @@ function notifLabel(n: Notif): string {
 function NotifIcon({ type }: { type: NotifType }) {
   const cfg: Record<NotifType, { icon: React.ReactNode; bg: string; color: string }> = {
     follow:  { icon: <UserPlus size={9} />,                     bg: "rgba(var(--violet-mid-rgb),0.6)", color: "var(--accent)" },
-    mention: { icon: <MessageCircle size={9} />,                bg: "rgba(var(--violet-mid-rgb),0.6)", color: "var(--accent)" },
     relais:  { icon: <Sparkles size={9} />,                     bg: "rgba(215,166,42,0.22)", color: "#D7A62A" },
     message: { icon: <MessageCircle size={9} fill="currentColor" />, bg: "rgba(139,92,246,0.16)", color: "#8B5CF6" },
   };
@@ -101,6 +95,8 @@ export default function NotificationBell({ side = "right" }: { side?: "right" | 
         .from("notifications")
         .select("*")
         .eq("user_id", user.id)
+        // Les types morts restent en base ; on ne les lit plus.
+        .in("type", TYPES_NOTIF_VIVANTS)
         .order("created_at", { ascending: false })
         .limit(30)
     ).then(({ data, error }) => {

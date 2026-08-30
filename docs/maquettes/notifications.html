@@ -1,0 +1,1118 @@
+<title>Notifications Vaiiya</title>
+
+<style>
+  /* ── Tokens : palette claire complète sur :root nu ────────────────── */
+  :root {
+    --ground:      #F7F4FD;
+    --page:        #FFFFFF;
+    --ink:         #1C1630;
+    --ink-2:       #4A4266;
+    --ink-3:       #8A82A4;
+    --rule:        rgba(28, 22, 48, 0.13);
+    --rule-soft:   rgba(28, 22, 48, 0.07);
+    --accent:      #8B5CF6;
+    --accent-2:    #C13BC1;
+    --accent-tint: rgba(139, 92, 246, 0.09);
+    --orange:      #E8620C;
+    --teal:        #0E9E77;
+    --code-bg:     rgba(139, 92, 246, 0.08);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground:      #0F0B1A;
+      --page:        #171128;
+      --ink:         #F2EEFC;
+      --ink-2:       #B8AFD4;
+      --ink-3:       #877E9F;
+      --rule:        rgba(242, 238, 252, 0.15);
+      --rule-soft:   rgba(242, 238, 252, 0.08);
+      --accent:      #A78BFA;
+      --accent-2:    #D46BD4;
+      --accent-tint: rgba(167, 139, 250, 0.14);
+      --orange:      #F5B120;
+      --teal:        #2BD4A0;
+      --code-bg:     rgba(167, 139, 250, 0.12);
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --ground:      #0F0B1A;
+    --page:        #171128;
+    --ink:         #F2EEFC;
+    --ink-2:       #B8AFD4;
+    --ink-3:       #877E9F;
+    --rule:        rgba(242, 238, 252, 0.15);
+    --rule-soft:   rgba(242, 238, 252, 0.08);
+    --accent:      #A78BFA;
+    --accent-2:    #D46BD4;
+    --accent-tint: rgba(167, 139, 250, 0.14);
+    --orange:      #F5B120;
+    --teal:        #2BD4A0;
+    --code-bg:     rgba(167, 139, 250, 0.12);
+  }
+
+  /* ── Page ─────────────────────────────────────────────────────────── */
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, system-ui, sans-serif;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap {
+    max-width: 1120px;
+    margin: 0 auto;
+    padding: 56px 24px 96px;
+    display: flex;
+    flex-direction: column;
+    gap: 72px;
+  }
+
+  .eyebrow {
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+    font-size: 11px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    margin: 0 0 10px;
+  }
+
+  h1 {
+    font-size: clamp(30px, 4.4vw, 42px);
+    line-height: 1.12;
+    font-weight: 300;
+    letter-spacing: -0.02em;
+    text-wrap: balance;
+    margin: 0 0 16px;
+  }
+
+  h1 strong { font-weight: 600; }
+
+  h2 {
+    font-size: 21px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    text-wrap: balance;
+    margin: 0 0 8px;
+  }
+
+  .lede {
+    font-size: 16.5px;
+    color: var(--ink-2);
+    max-width: 62ch;
+    margin: 0;
+  }
+
+  .note {
+    font-size: 14.5px;
+    color: var(--ink-2);
+    max-width: 68ch;
+    margin: 0;
+  }
+
+  section { display: flex; flex-direction: column; gap: 26px; }
+
+  .head { display: flex; flex-direction: column; }
+
+  /* ── Le téléphone ─────────────────────────────────────────────────── */
+  .decks {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 40px 34px;
+    align-items: flex-start;
+  }
+
+  .deck { display: flex; flex-direction: column; gap: 14px; }
+
+  .deck-label {
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+    font-size: 11px;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .phone {
+    width: 330px;
+    max-width: 100%;
+    border-radius: 30px;
+    padding: 22px 15px 26px;
+    box-sizing: border-box;
+    font-size: 14.5px;
+    border: 1px solid transparent;
+  }
+
+  /* Les deux thèmes de l'app sont montrés littéralement : ce sont les
+     couleurs de Vaiiya, pas celles de cette page. */
+  .phone.clair {
+    background: #FAF8FF;
+    color: #2D2A3D;
+    border-color: rgba(28, 22, 48, 0.12);
+    box-shadow: 0 18px 44px rgba(139, 92, 246, 0.13);
+  }
+
+  .phone.sombre {
+    background: #120E1F;
+    color: #EFEAFB;
+    border-color: rgba(255, 255, 255, 0.09);
+    box-shadow: 0 18px 44px rgba(0, 0, 0, 0.42);
+  }
+
+  .screen-title {
+    font-size: 22px;
+    font-weight: 200;
+    letter-spacing: -0.01em;
+    padding: 0 6px;
+    margin: 0 0 22px;
+  }
+
+  .grp-title {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    padding: 0 7px;
+    margin: 0 0 8px;
+  }
+
+  .clair .grp-title { color: #8A82A4; }
+  .sombre .grp-title { color: #877E9F; }
+
+  .grp {
+    border-radius: 16px;
+    overflow: hidden;
+  }
+
+  .clair .grp {
+    background: rgba(255, 255, 255, 0.78);
+    border: 1px solid rgba(28, 22, 48, 0.13);
+  }
+
+  .sombre .grp {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.11);
+  }
+
+  .grp + .grp-title { margin-top: 24px; }
+
+  .row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 13px 14px;
+  }
+
+  .row + .row { border-top: 1px solid; }
+  .clair .row + .row { border-color: rgba(28, 22, 48, 0.11); }
+  .sombre .row + .row { border-color: rgba(255, 255, 255, 0.09); }
+
+  .row-ico { flex: 0 0 20px; display: flex; align-items: center; justify-content: center; }
+  .clair .row-ico { color: #4A4266; }
+  .sombre .row-ico { color: #B8AFD4; }
+
+  .row-text { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+
+  .row-label { font-size: 14.5px; font-weight: 500; }
+
+  .row-sub { font-size: 12px; font-weight: 300; line-height: 1.42; }
+  .clair .row-sub { color: #8A82A4; }
+  .sombre .row-sub { color: #877E9F; }
+
+  .row-value { font-size: 13px; font-weight: 300; flex: 0 0 auto; }
+  .clair .row-value { color: #8A82A4; }
+  .sombre .row-value { color: #877E9F; }
+
+  .chev { flex: 0 0 auto; opacity: 0.55; }
+
+  /* L'interrupteur : violet plein UNIQUEMENT quand il est actif. */
+  .sw {
+    flex: 0 0 auto;
+    width: 44px;
+    height: 26px;
+    border-radius: 999px;
+    position: relative;
+  }
+
+  .sw.on { background: linear-gradient(135deg, #8B5CF6, #C13BC1); }
+  .clair .sw.off { background: rgba(28, 22, 48, 0.22); }
+  .sombre .sw.off { background: rgba(255, 255, 255, 0.19); }
+
+  .sw::after {
+    content: "";
+    position: absolute;
+    top: 3px;
+    width: 20px;
+    height: 20px;
+    border-radius: 999px;
+    background: #fff;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.22);
+  }
+
+  .sw.on::after  { left: 21px; }
+  .sw.off::after { left: 3px; }
+
+  .row.eteint { opacity: 0.42; }
+
+  /* Bandeau d'explication dans l'écran */
+  .banniere {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    border-radius: 14px;
+    padding: 12px 13px;
+    font-size: 12.5px;
+    line-height: 1.48;
+    margin-top: 12px;
+  }
+
+  .clair .banniere.info { background: rgba(139, 92, 246, 0.08); color: #4A4266; }
+  .sombre .banniere.info { background: rgba(167, 139, 250, 0.13); color: #C8C0E0; }
+  .clair .banniere.alerte { background: rgba(232, 98, 12, 0.09); color: #7A4212; }
+  .sombre .banniere.alerte { background: rgba(245, 177, 32, 0.14); color: #F0C97A; }
+
+  .banniere b { font-weight: 600; }
+
+  .pied {
+    font-size: 11.5px;
+    font-weight: 300;
+    line-height: 1.5;
+    padding: 14px 8px 0;
+  }
+
+  .clair .pied { color: #8A82A4; }
+  .sombre .pied { color: #877E9F; }
+
+  /* ── Les décisions ────────────────────────────────────────────────── */
+  .decisions {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(268px, 1fr));
+    gap: 2px;
+    background: var(--rule-soft);
+    border: 1px solid var(--rule);
+    border-radius: 16px;
+    overflow: hidden;
+  }
+
+  .dec {
+    background: var(--page);
+    padding: 20px 20px 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+  }
+
+  .dec-n {
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    color: var(--accent);
+  }
+
+  .dec-t { font-size: 15px; font-weight: 600; line-height: 1.35; text-wrap: balance; }
+
+  .dec-b { font-size: 13.5px; color: var(--ink-2); margin: 0; }
+
+  code {
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+    font-size: 0.88em;
+    background: var(--code-bg);
+    padding: 1px 5px;
+    border-radius: 5px;
+  }
+
+  /* ── Tableau des paliers ──────────────────────────────────────────── */
+  .tableau {
+    overflow-x: auto;
+    border: 1px solid var(--rule);
+    border-radius: 16px;
+    background: var(--page);
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14.5px;
+    min-width: 460px;
+  }
+
+  thead th {
+    text-align: left;
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+    font-size: 10.5px;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+    font-weight: 600;
+    color: var(--ink-3);
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--rule);
+  }
+
+  tbody td {
+    padding: 13px 18px;
+    border-bottom: 1px solid var(--rule-soft);
+    color: var(--ink-2);
+    vertical-align: middle;
+  }
+
+  tbody tr:last-child td { border-bottom: 0; }
+
+  .num { text-align: right; font-variant-numeric: tabular-nums; color: var(--ink); font-weight: 500; }
+  thead .num { text-align: right; }
+
+  .chip {
+    display: inline-block;
+    font-size: 11.5px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    padding: 3px 10px;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+
+  .chip-neutre { background: var(--accent-tint);            color: var(--accent); }
+  .chip-teal   { background: rgba(43, 212, 160, 0.16);      color: var(--teal); }
+  .chip-or     { background: rgba(232, 98, 12, 0.13);       color: var(--orange); }
+
+  /* ── Les profils ──────────────────────────────────────────────────── */
+  .profils {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 18px;
+  }
+
+  .profil {
+    border: 1px solid var(--rule);
+    border-radius: 18px;
+    background: var(--page);
+    padding: 20px 20px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .profil header { display: flex; flex-direction: column; gap: 5px; align-items: flex-start; }
+
+  .profil h3 { font-size: 17px; font-weight: 600; margin: 3px 0 0; letter-spacing: -0.01em; }
+
+  .profil header p { font-size: 13px; color: var(--ink-3); margin: 0; }
+
+  .msgs { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 9px; }
+
+  .msgs li {
+    display: flex;
+    gap: 11px;
+    font-size: 13.5px;
+    align-items: baseline;
+  }
+
+  .msgs li > b {
+    flex: 0 0 30px;
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--ink-3);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .msgs li > span { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+
+  .msgs i { font-style: normal; font-weight: 600; color: var(--ink); }
+
+  .msgs li > span { color: var(--ink-2); font-size: 13px; line-height: 1.42; }
+
+  .msgs .fort {
+    background: var(--accent-tint);
+    border-radius: 10px;
+    padding: 9px 11px;
+    margin: 2px -4px;
+  }
+
+  .msgs .suite,
+  .msgs .silence {
+    font-size: 12.5px;
+    color: var(--ink-3);
+    font-style: italic;
+    padding-left: 41px;
+  }
+
+  .bilan {
+    font-size: 13px;
+    color: var(--ink-2);
+    margin: 0;
+    padding-top: 12px;
+    border-top: 1px solid var(--rule-soft);
+  }
+
+  .rappel {
+    border-left: 3px solid var(--accent);
+    padding: 4px 0 4px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .rappel p { margin: 0; }
+
+  hr {
+    border: 0;
+    border-top: 1px solid var(--rule);
+    margin: 0;
+  }
+
+  @media (max-width: 700px) {
+    .wrap { padding: 40px 18px 72px; gap: 56px; }
+  }
+</style>
+
+<div class="wrap">
+
+  <header class="head">
+    <p class="eyebrow">Maquette · à valider avant code</p>
+    <h1>Vaiiya écrit <strong>moins</strong>, et écrit <strong>à quelqu'un</strong></h1>
+    <p class="lede">
+      Le rappel du soir était le même pour tout le monde, tous les soirs. Quelqu'un qui a ouvert
+      Vaiiya une fois recevait autant de messages qu'un habitué, et le message ne savait rien de
+      lui. Deux changements : la cadence suit l'engagement, et le message parle de sa journée à
+      lui. Le moteur est codé et poussé ; il reste à relire les textes et à valider l'écran de
+      réglages.
+    </p>
+  </header>
+
+  <hr />
+
+  <!-- ══ Les paliers ══════════════════════════════════════════════════ -->
+  <section>
+    <div class="head">
+      <p class="eyebrow">1 · La cadence</p>
+      <h2>Cinq paliers, recalculés chaque soir</h2>
+      <p class="note">
+        C'est l'inverse du réflexe habituel. On n'insiste pas sur celui qui n'est pas encore
+        convaincu : insister ne le convainc pas, ça le fait partir pour de bon. C'est l'habitué
+        qui reçoit le plus, parce que chez lui un message apprend quelque chose.
+      </p>
+    </div>
+
+    <div class="tableau">
+      <table>
+        <thead>
+          <tr><th>Palier</th><th>Qui</th><th class="num">Par semaine</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="chip chip-neutre">Découverte</span></td>
+            <td>Moins de 2 séances au total</td>
+            <td class="num">1</td>
+          </tr>
+          <tr>
+            <td><span class="chip chip-neutre">Installation</span></td>
+            <td>2 à 5 séances sur 28 jours</td>
+            <td class="num">2</td>
+          </tr>
+          <tr>
+            <td><span class="chip chip-teal">Régulier</span></td>
+            <td>6 séances et plus, présent 10 jours sur 28</td>
+            <td class="num">jusqu'à 5</td>
+          </tr>
+          <tr>
+            <td><span class="chip chip-or">Décrochage</span></td>
+            <td>Absent 5 à 13 jours, après une vraie pratique</td>
+            <td class="num">1 seul, puis rien</td>
+          </tr>
+          <tr>
+            <td><span class="chip chip-neutre">Endormi</span></td>
+            <td>14 jours sans une seule venue</td>
+            <td class="num">1 par mois</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="note">
+      Et un jour de <b>repos au planning ne reçoit rien du tout</b>. Aujourd'hui Vaiiya écrit
+      « ta séance t'attend » un jour où tu n'avais rien prévu, ce qui prouve à la personne qu'on
+      ne regarde pas son programme.
+    </p>
+  </section>
+
+  <hr />
+
+  <!-- ══ Ce que chaque profil reçoit ══════════════════════════════════ -->
+  <section>
+    <div class="head">
+      <p class="eyebrow">2 · Le contenu · à relire</p>
+      <h2>Ce que chacun reçoit vraiment</h2>
+      <p class="note">
+        Ces messages sortent de la simulation du moteur, pas d'une maquette : c'est mot pour mot
+        ce qui partira. Les noms de séance sont lus dans le planning réel de la personne.
+      </p>
+    </div>
+
+    <div class="profils">
+
+      <article class="profil">
+        <header>
+          <span class="chip chip-neutre">Découverte</span>
+          <h3>Le curieux</h3>
+          <p>A installé Vaiiya, fait une séance, revient de temps en temps sans s'entraîner.</p>
+        </header>
+        <ol class="msgs">
+          <li><b>J1</b><span><i>On commence par quoi ?</i>Choisis une séance, Vaiiya s'occupe du reste.</span></li>
+          <li><b>J8</b><span><i>Ta première séance, Sam</i>Quinze minutes, sans matériel. Tout est déjà prêt.</span></li>
+          <li><b>J15</b><span><i>102 mouvements animés t'attendent</i>Un coup d'oeil suffit pour voir à quoi ressemble une séance.</span></li>
+          <li><b>J22</b><span><i>On commence par quoi ?</i>Choisis une séance, Vaiiya s'occupe du reste.</span></li>
+        </ol>
+        <p class="bilan"><b>4 messages</b> en 28 jours. Avant : 28.</p>
+      </article>
+
+      <article class="profil">
+        <header>
+          <span class="chip chip-neutre">Installation</span>
+          <h3>La débutante</h3>
+          <p>Deux séances par semaine au planning, vient un jour sur deux.</p>
+        </header>
+        <ol class="msgs">
+          <li><b>J2</b><span><i>Il te reste Full Body Débutant</i>Le temps d'une séance et ta journée est complète.</span></li>
+          <li><b>J5</b><span><i>Full Body Débutant</i>C'est ce que tu avais prévu pour aujourd'hui.</span></li>
+          <li><b>J9</b><span><i>Il te reste Full Body Débutant</i>Le temps d'une séance et ta journée est complète.</span></li>
+          <li><b>J12</b><span><i>Au programme : Full Body Débutant</i>Quand tu veux, tout est en place.</span></li>
+          <li class="suite">J23, J26 · deux autres formulations de la même famille</li>
+        </ol>
+        <p class="bilan"><b>6 messages</b> en 28 jours. Avant : 28.</p>
+      </article>
+
+      <article class="profil">
+        <header>
+          <span class="chip chip-teal">Régulier</span>
+          <h3>L'habitué</h3>
+          <p>Quatre séances par semaine, série en cours, note ses repas.</p>
+        </header>
+        <ol class="msgs">
+          <li><b>J2</b><span><i>Il te reste Jambes &amp; Fessiers</i>Le temps d'une séance et ta journée est complète.</span></li>
+          <li><b>J5</b><span><i>Jour 5</i>Ta série tient. Une séance aujourd'hui et elle continue.</span></li>
+          <li><b>J12</b><span><i>Au programme : Épaules &amp; bras</i>Quand tu veux, tout est en place.</span></li>
+          <li><b>J18</b><span><i>Il te reste Dos &amp; Biceps</i>Le temps d'une séance et ta journée est complète.</span></li>
+          <li><b>J26</b><span><i>26 jours d'affilée</i>Tu sais déjà quoi faire.</span></li>
+        </ol>
+        <p class="bilan"><b>9 messages</b> en 28 jours, aucun un jour de repos.</p>
+      </article>
+
+      <article class="profil">
+        <header>
+          <span class="chip chip-or">Décrochage</span>
+          <h3>Celui qui s'arrête</h3>
+          <p>Pratiquait trois fois par semaine, puis plus rien à partir du jour 10.</p>
+        </header>
+        <ol class="msgs">
+          <li><b>J3</b><span><i>Haut du corps au sol, c'est aujourd'hui</i>Elle t'attend, prête à lancer.</span></li>
+          <li><b>J8</b><span><i>Au programme : Haut du corps au sol</i>Quand tu veux, tout est en place.</span></li>
+          <li><b>J12</b><span><i>Haut du corps au sol</i>C'est ce que tu avais prévu pour aujourd'hui.</span></li>
+          <li class="fort"><b>J19</b><span><i>Ta place est gardée, Théo</i>Dix minutes suffisent pour reprendre. Rien n'a bougé.</span></li>
+          <li class="silence">puis un mois de silence complet</li>
+          <li><b>J49</b><span><i>Rien ne presse</i>La séance la plus courte fait quinze minutes, sans matériel.</span></li>
+          <li><b>J79</b><span><i>Tes 19 séances sont toujours là</i>Reprendre est plus simple que commencer. Quand tu veux.</span></li>
+        </ol>
+        <p class="bilan">
+          Un seul message pendant l'absence, puis la veilleuse une fois par mois. Aucun reproche,
+          aucun décompte de jours manqués.
+        </p>
+      </article>
+
+    </div>
+
+    <div class="rappel">
+      <p class="note">
+        <b>Le message du rang existe aussi</b>, mais il est rare par construction et n'est donc
+        apparu dans aucune de ces quatre simulations : il ne part que si une seule séance suffit
+        à décrocher le palier suivant. « Plus que 25 EXP avant Or » puis « Une séance et tu y
+        es. » La phrase est littéralement vraie ou elle ne part pas.
+      </p>
+    </div>
+
+    <div class="rappel">
+      <p class="note">
+        <b>La veilleuse n'invite pas à « revenir ».</b> Le mot sous-entend un départ à justifier.
+        Elle dit que rien ne s'est perdu et que rien n'est à rattraper, ce qui est exactement la
+        promesse du produit. Et elle ne promet aucune nouveauté : à cet endroit on ne peut pas
+        savoir si quelque chose a changé depuis son dernier passage, et une phrase qu'on ne peut
+        pas garantir n'a rien à faire dans un push.
+      </p>
+    </div>
+  </section>
+
+  <hr />
+
+  <!-- ══ Les grosses mises à jour ═════════════════════════════════════ -->
+  <section>
+    <div class="head">
+      <p class="eyebrow">3 · Les grosses mises à jour</p>
+      <h2>Quand Vaiiya change, tout le monde l'apprend</h2>
+      <p class="note">
+        Le soir du déploiement, une notification part à tout le monde, <b>y compris aux
+        endormis</b> : c'est la seule chose de neuf qu'on ait à leur dire, et elle ne consomme
+        pas leur veilleuse mensuelle. Le texte vient de la même source que la cloche et le récap,
+        donc il n'y a jamais deux versions du même message.
+      </p>
+    </div>
+
+    <div class="decks">
+      <div class="deck">
+        <p class="deck-label">Ce que ça donne</p>
+        <div class="phone sombre" style="padding:18px 15px 20px">
+          <div class="grp">
+            <div class="row" style="align-items:flex-start">
+              <span class="row-ico" style="margin-top:2px">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l2.1 5.6L20 10l-4.6 3.4L16.8 19 12 15.9 7.2 19l1.4-5.6L4 10l5.9-1.4Z"/></svg>
+              </span>
+              <span class="row-text">
+                <span class="row-label">Vaiiya a beaucoup changé</span>
+                <span class="row-sub" style="font-size:12.5px">
+                  102 mouvements animés, la nutrition repensée, et ton rang. Le récap t'attend.
+                </span>
+              </span>
+            </div>
+          </div>
+          <p class="pied">
+            Exemple. Le texte exact se rédige au moment de la mise à jour, à côté du récap.
+          </p>
+        </div>
+      </div>
+
+      <div class="deck" style="flex:1 1 300px;min-width:280px">
+        <p class="deck-label">Les deux garde-fous</p>
+        <div class="decisions" style="grid-template-columns:1fr">
+          <div class="dec">
+            <span class="dec-n">A</span>
+            <span class="dec-t">Rien ne part sans une décision explicite</span>
+            <p class="dec-b">
+              Une annonce ne déclenche une notification que si on lui ajoute un bloc
+              <code>push</code>. Une correction de bug se lit dans la cloche sans réveiller
+              les téléphones de tout le monde.
+            </p>
+          </div>
+          <div class="dec">
+            <span class="dec-n">B</span>
+            <span class="dec-t">Une vieille annonce ne réveille personne</span>
+            <p class="dec-b">
+              Au-delà d'une semaine, elle ne part plus. Ajouter <code>push</code> après coup sur
+              une mise à jour d'il y a un mois ne fait donc rien, ce qui évite l'accident le plus
+              probable.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr />
+
+  <!-- ══ L'écran, dans les deux thèmes ══════════════════════════════ -->
+  <section>
+    <div class="head">
+      <p class="eyebrow">4 · L'écran · à valider</p>
+      <h2>Paramètres → Notifications</h2>
+      <p class="note">
+        Même grammaire que les Paramètres refaits en juillet : cartes à filets internes,
+        valeur lisible à droite, chevron seulement quand la ligne ouvre autre chose.
+      </p>
+    </div>
+
+    <div class="decks">
+
+      <!-- ── Thème clair ── -->
+      <div class="deck">
+        <p class="deck-label">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M6.3 17.7l-1.4 1.4M19.1 4.9l-1.4 1.4"/></svg>
+          Mode clair
+        </p>
+
+        <div class="phone clair">
+          <p class="screen-title">Notifications</p>
+
+          <p class="grp-title">Sur cet appareil</p>
+          <div class="grp">
+            <div class="row">
+              <span class="row-ico">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2.5"/><path d="M11 18h2"/></svg>
+              </span>
+              <span class="row-text">
+                <span class="row-label">Recevoir sur cet appareil</span>
+                <span class="row-sub">Ce téléphone est enregistré</span>
+              </span>
+              <span class="sw on"></span>
+            </div>
+          </div>
+
+          <p class="grp-title">Ce que tu reçois</p>
+          <div class="grp">
+            <div class="row">
+              <span class="row-ico">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a7 7 0 0 0-7 7c0 5-2 6-2 6h18s-2-1-2-6a7 7 0 0 0-7-7Z"/><path d="M10.3 21a2 2 0 0 0 3.4 0"/></svg>
+              </span>
+              <span class="row-text">
+                <span class="row-label">Le rappel du soir</span>
+                <span class="row-sub">Un seul message à 19 h, et uniquement s'il te reste ta séance à faire.</span>
+              </span>
+              <span class="sw on"></span>
+            </div>
+            <div class="row">
+              <span class="row-ico">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 9 9 0 0 1-3.6-.7L3 21l1.9-5.1A8.4 8.4 0 0 1 12 3a8.4 8.4 0 0 1 9 8.5Z"/></svg>
+              </span>
+              <span class="row-text">
+                <span class="row-label">Les messages</span>
+                <span class="row-sub">Quand quelqu'un t'écrit dans une conversation.</span>
+              </span>
+              <span class="sw on"></span>
+            </div>
+            <div class="row">
+              <span class="row-ico">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg>
+              </span>
+              <span class="row-text">
+                <span class="row-label">Les amis</span>
+                <span class="row-sub">Une demande d'ami, ou quelqu'un qui t'ajoute.</span>
+              </span>
+              <span class="sw on"></span>
+            </div>
+            <div class="row">
+              <span class="row-ico">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l2.1 5.6L20 10l-4.6 3.4L16.8 19 12 15.9 7.2 19l1.4-5.6L4 10l5.9-1.4Z"/></svg>
+              </span>
+              <span class="row-text">
+                <span class="row-label">Le relais</span>
+                <span class="row-sub">Quand ton équipier franchit un maillon, et le jour décisif.</span>
+              </span>
+              <span class="sw on"></span>
+              <div class="row">
+              <span class="row-ico">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l2.1 5.6L20 10l-4.6 3.4L16.8 19 12 15.9 7.2 19l1.4-5.6L4 10l5.9-1.4Z"/></svg>
+              </span>
+              <span class="row-text">
+                <span class="row-label">Vaiiya change</span>
+                <span class="row-sub">Quelques fois par an, quand une grosse mise à jour arrive.</span>
+              </span>
+              <span class="sw on"></span>
+            </div>
+          </div>
+
+          <p class="pied">
+            Vaiiya ne t'enverra jamais de publicité. Après 14 jours sans venir, le rappel du
+            soir s'arrête tout seul : il ne reste qu'un message par mois, et il repart
+            normalement à ta prochaine visite.
+          </p>
+        </div>
+      </div>
+
+      <!-- ── Thème sombre ── -->
+      <div class="deck">
+        <p class="deck-label">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5Z"/></svg>
+          Mode sombre
+        </p>
+
+        <div class="phone sombre">
+          <p class="screen-title">Notifications</p>
+
+          <p class="grp-title">Sur cet appareil</p>
+          <div class="grp">
+            <div class="row">
+              <span class="row-ico">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2.5"/><path d="M11 18h2"/></svg>
+              </span>
+              <span class="row-text">
+                <span class="row-label">Recevoir sur cet appareil</span>
+                <span class="row-sub">Ce téléphone est enregistré</span>
+              </span>
+              <span class="sw on"></span>
+            </div>
+          </div>
+
+          <p class="grp-title">Ce que tu reçois</p>
+          <div class="grp">
+            <div class="row">
+              <span class="row-ico">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a7 7 0 0 0-7 7c0 5-2 6-2 6h18s-2-1-2-6a7 7 0 0 0-7-7Z"/><path d="M10.3 21a2 2 0 0 0 3.4 0"/></svg>
+              </span>
+              <span class="row-text">
+                <span class="row-label">Le rappel du soir</span>
+                <span class="row-sub">Un seul message à 19 h, et uniquement s'il te reste ta séance à faire.</span>
+              </span>
+              <span class="sw off"></span>
+            </div>
+            <div class="row">
+              <span class="row-ico">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 9 9 0 0 1-3.6-.7L3 21l1.9-5.1A8.4 8.4 0 0 1 12 3a8.4 8.4 0 0 1 9 8.5Z"/></svg>
+              </span>
+              <span class="row-text">
+                <span class="row-label">Les messages</span>
+                <span class="row-sub">Quand quelqu'un t'écrit dans une conversation.</span>
+              </span>
+              <span class="sw on"></span>
+            </div>
+            <div class="row">
+              <span class="row-ico">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg>
+              </span>
+              <span class="row-text">
+                <span class="row-label">Les amis</span>
+                <span class="row-sub">Une demande d'ami, ou quelqu'un qui t'ajoute.</span>
+              </span>
+              <span class="sw on"></span>
+            </div>
+            <div class="row">
+              <span class="row-ico">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l2.1 5.6L20 10l-4.6 3.4L16.8 19 12 15.9 7.2 19l1.4-5.6L4 10l5.9-1.4Z"/></svg>
+              </span>
+              <span class="row-text">
+                <span class="row-label">Le relais</span>
+                <span class="row-sub">Quand ton équipier franchit un maillon, et le jour décisif.</span>
+              </span>
+              <span class="sw on"></span>
+              <div class="row">
+              <span class="row-ico">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l2.1 5.6L20 10l-4.6 3.4L16.8 19 12 15.9 7.2 19l1.4-5.6L4 10l5.9-1.4Z"/></svg>
+              </span>
+              <span class="row-text">
+                <span class="row-label">Vaiiya change</span>
+                <span class="row-sub">Quelques fois par an, quand une grosse mise à jour arrive.</span>
+              </span>
+              <span class="sw on"></span>
+            </div>
+          </div>
+
+          <p class="pied">
+            Ici, le rappel du soir est coupé : les trois autres continuent d'arriver. C'est
+            exactement ce qui est impossible aujourd'hui.
+          </p>
+        </div>
+      </div>
+
+      <!-- ── La ligne dans Paramètres ── -->
+      <div class="deck">
+        <p class="deck-label">Et dans Paramètres</p>
+        <div class="phone clair" style="padding-top:18px">
+          <p class="grp-title">L'application</p>
+          <div class="grp">
+            <div class="row">
+              <span class="row-ico">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M6.3 17.7l-1.4 1.4M19.1 4.9l-1.4 1.4"/></svg>
+              </span>
+              <span class="row-text"><span class="row-label">Thème</span></span>
+              <span class="row-value">Auto</span>
+            </div>
+            <div class="row">
+              <span class="row-ico">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a7 7 0 0 0-7 7c0 5-2 6-2 6h18s-2-1-2-6a7 7 0 0 0-7-7Z"/><path d="M10.3 21a2 2 0 0 0 3.4 0"/></svg>
+              </span>
+              <span class="row-text">
+                <span class="row-label">Notifications</span>
+                <span class="row-sub">Ce que Vaiiya a le droit de t'envoyer</span>
+              </span>
+              <span class="row-value">4 sur 5</span>
+              <span class="chev">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+              </span>
+            </div>
+            <div class="row">
+              <span class="row-ico">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 4 6v6c0 5 3.4 9.2 8 10 4.6-.8 8-5 8-10V6Z"/></svg>
+              </span>
+              <span class="row-text"><span class="row-label">Refaire la visite</span></span>
+              <span class="chev">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+              </span>
+            </div>
+          </div>
+          <p class="pied">
+            L'interrupteur unique disparaît des Paramètres. Sa place est prise par une ligne
+            qui dit son état d'un coup d'œil, comme les autres lignes de l'écran.
+          </p>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <hr />
+
+  <!-- ══ Les deux états qui posent problème ═══════════════════════════ -->
+  <section>
+    <div class="head">
+      <p class="eyebrow">Les cas qu'on rate d'habitude</p>
+      <h2>Quand ça ne marche pas, l'écran le dit</h2>
+      <p class="note">
+        Un interrupteur qui rate en silence, c'est le bug actuel : le réglage affiche
+        « Activées » alors que plus aucune notification n'arrive.
+      </p>
+    </div>
+
+    <div class="decks">
+
+      <div class="deck">
+        <p class="deck-label">Appareil coupé</p>
+        <div class="phone clair" style="padding-top:18px">
+          <p class="grp-title">Sur cet appareil</p>
+          <div class="grp">
+            <div class="row">
+              <span class="row-ico">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2.5"/><path d="M11 18h2"/></svg>
+              </span>
+              <span class="row-text">
+                <span class="row-label">Recevoir sur cet appareil</span>
+                <span class="row-sub">Aucune notification n'arrivera ici</span>
+              </span>
+              <span class="sw off"></span>
+            </div>
+          </div>
+
+          <p class="grp-title">Ce que tu reçois</p>
+          <div class="grp">
+            <div class="row eteint">
+              <span class="row-ico">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a7 7 0 0 0-7 7c0 5-2 6-2 6h18s-2-1-2-6a7 7 0 0 0-7-7Z"/><path d="M10.3 21a2 2 0 0 0 3.4 0"/></svg>
+              </span>
+              <span class="row-text">
+                <span class="row-label">Le rappel du soir</span>
+              </span>
+              <span class="sw on"></span>
+            </div>
+            <div class="row eteint">
+              <span class="row-ico">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 9 9 0 0 1-3.6-.7L3 21l1.9-5.1A8.4 8.4 0 0 1 12 3a8.4 8.4 0 0 1 9 8.5Z"/></svg>
+              </span>
+              <span class="row-text">
+                <span class="row-label">Les messages</span>
+              </span>
+              <span class="sw on"></span>
+            </div>
+          </div>
+
+          <div class="banniere info">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" style="flex:0 0 auto;margin-top:2px"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>
+            <span>Tes choix sont gardés. Ils reprendront dès que tu réactiveras cet appareil.</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="deck">
+        <p class="deck-label">Permission refusée par le navigateur</p>
+        <div class="phone clair" style="padding-top:18px">
+          <p class="grp-title">Sur cet appareil</p>
+          <div class="grp">
+            <div class="row eteint">
+              <span class="row-ico">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2.5"/><path d="M11 18h2"/></svg>
+              </span>
+              <span class="row-text">
+                <span class="row-label">Recevoir sur cet appareil</span>
+                <span class="row-sub">Bloqué par ton navigateur</span>
+              </span>
+              <span class="sw off"></span>
+            </div>
+          </div>
+
+          <div class="banniere alerte">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" style="flex:0 0 auto;margin-top:2px"><path d="M12 3 2 20h20Z"/><path d="M12 10v4M12 17h.01"/></svg>
+            <span>
+              <b>Attention</b> · Tu as refusé les notifications pour Vaiiya. Cet interrupteur
+              ne peut pas revenir dessus : ça se rouvre dans les réglages de ton navigateur,
+              à la ligne Notifications.
+            </span>
+          </div>
+
+          <p class="pied">
+            Aucun code ne peut redemander une permission refusée. Le dire est la seule chose
+            honnête à faire, et ça évite le ticket « le bouton ne marche pas ».
+          </p>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <hr />
+
+  <!-- ══ Décisions ════════════════════════════════════════════════════ -->
+  <section>
+    <div class="head">
+      <p class="eyebrow">Ce que je propose de verrouiller</p>
+      <h2>Six décisions</h2>
+    </div>
+
+    <div class="decisions">
+      <div class="dec">
+        <span class="dec-n">01</span>
+        <span class="dec-t">Chaque famille dit ce qu'elle contient avant le clic</span>
+        <p class="dec-b">
+          « Le rappel du soir » ne veut rien dire seul. La ligne écrit ce qui arrive
+          vraiment, comme les bascules de l'administration disent ce qu'elles déclenchent.
+        </p>
+      </div>
+      <div class="dec">
+        <span class="dec-n">02</span>
+        <span class="dec-t">L'état vient de la base, pas du navigateur</span>
+        <p class="dec-b">
+          Aujourd'hui le réglage lit <code>Notification.permission</code>. Une souscription
+          expirée laisse « Activées » affiché alors que rien n'arrive plus. On lit
+          l'abonnement réel.
+        </p>
+      </div>
+      <div class="dec">
+        <span class="dec-n">03</span>
+        <span class="dec-t">Couper l'appareil grise les familles, ne les cache pas</span>
+        <p class="dec-b">
+          Les choix restent visibles et conservés. Les faire disparaître donnerait
+          l'impression qu'on les a perdus.
+        </p>
+      </div>
+      <div class="dec">
+        <span class="dec-n">04</span>
+        <span class="dec-t">Le violet ne s'allume que sur l'actif</span>
+        <p class="dec-b">
+          Système D : violet plein = l'action. Un interrupteur éteint est neutre, jamais
+          rouge ni orange, parce qu'éteindre n'est pas une erreur.
+        </p>
+      </div>
+      <div class="dec">
+        <span class="dec-n">05</span>
+        <span class="dec-t">Pas de ligne sans réglage réel</span>
+        <p class="dec-b">
+          « Notifications email » avait été retirée en juillet parce qu'elle ne faisait
+          qu'afficher « Bientôt disponible ». Aucune case ici n'est décorative : les quatre
+          filtrent déjà côté serveur.
+        </p>
+      </div>
+      <div class="dec">
+        <span class="dec-n">06</span>
+        <span class="dec-t">Le pied de page dit ce qu'on n'enverra jamais</span>
+        <p class="dec-b">
+          Le silence après 14 jours est une promesse, pas un détail technique. L'écrire là
+          où la personne s'apprête à tout couper est le seul endroit où ça compte.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <hr />
+
+  <section>
+    <div class="rappel">
+      <p class="note"><b>Ce qui reste ouvert, et que je n'ai pas touché.</b></p>
+      <p class="note">
+        L'e-mail d'ami part toujours par Gmail, avec l'ancienne identité visuelle et
+        <b>sans lien de désinscription</b>. Il respecte désormais le réglage « Les amis »,
+        donc on peut le couper, mais un e-mail non sollicité sans lien de désabonnement
+        reste un problème réglementaire tant qu'il existe. Tu ne l'as pas retenu dans les
+        chantiers : je le laisse en l'état et je le redis ici pour que ce soit un choix et
+        pas un oubli.
+      </p>
+    </div>
+  </section>
+
+</div>

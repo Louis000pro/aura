@@ -27,9 +27,9 @@ export default function robots(): MetadataRoute.Robots {
         // ni description. Une page à désindexer doit rester VISITABLE et porter
         // sa balise (voir `lib/noindexEcranApp.ts`).
         //
-        // C'est pourquoi /recherche n'est plus ici, puis /auth, /notifications,
-        // /parametres et /admin : les cinq portent désormais un vrai `noindex`,
-        // qui ne vaut que si le crawler peut le lire. /auth était le cas le plus
+        // C'est pourquoi /auth, /notifications, /parametres et /admin n'y sont
+        // plus : les quatre portent désormais un vrai `noindex`, qui ne vaut
+        // que si le crawler peut le lire. /auth était le cas le plus
         // net, puisque toutes les pages vitrine la lient (« Créer mon compte ») :
         // le moteur voyait le lien, ne pouvait pas visiter la page, et ne lisait
         // donc jamais la consigne qu'elle portait.

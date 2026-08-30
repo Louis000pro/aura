@@ -3,17 +3,14 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { MessageCircle, UserPlus, Bell, CheckCheck, AtSign, Sparkle } from "lucide-react";
+import { MessageCircle, UserPlus, Bell, CheckCheck, Sparkle } from "lucide-react";
 import { createClient } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import AnnouncementCard from "@/components/AnnouncementCard";
 import { ANNOUNCEMENTS, getUnseenAnnouncementIds, markAnnouncementsSeen } from "@/lib/announcements";
+import { TYPES_NOTIF_VIVANTS, type NotifType } from "@/lib/notifsVivantes";
 
 /* ─── Types ─────────────────────────────────────────────────── */
-/* Voir NotificationBell : `like`, `comment` et `repost` sont partis avec
-   leurs routes, mais d'anciennes lignes subsistent en base : on tolère
-   l'inconnu au lieu de planter dessus. */
-type NotifType = "follow" | "mention" | "relais" | "message";
 
 type Notification = {
   id: string;
@@ -69,7 +66,6 @@ function relativeTime(iso: string): string {
 function TypeBadge({ type }: { type: NotifType }) {
   const cfgMap = {
     follow:  { icon: <UserPlus size={9} />,                 bg: "rgba(var(--violet-mid-rgb),0.6)", color: "var(--accent)" },
-    mention: { icon: <AtSign size={9} />,                   bg: "rgba(var(--violet-mid-rgb),0.6)",  color: "var(--accent)" },
     relais:  { icon: <Sparkle size={9} />,                  bg: "rgba(215,166,42,0.22)",  color: "#D7A62A" },
     message: { icon: <MessageCircle size={9} fill="currentColor" />, bg: "rgba(139,92,246,0.16)", color: "#8B5CF6" },
   };
@@ -188,6 +184,8 @@ export default function NotificationsPage() {
       .from("notifications")
       .select("id, user_id, type, from_pseudo, from_avatar_url, from_user_id, read, created_at, post_id, lien")
       .eq("user_id", user.id)
+      // Les types morts restent en base ; on ne les lit plus.
+      .in("type", TYPES_NOTIF_VIVANTS)
       .order("created_at", { ascending: false })
       .limit(80);
 
@@ -376,9 +374,7 @@ export default function NotificationsPage() {
                       <span className="font-semibold">@{notif.from_pseudo}</span>
                       {" "}
                       <span className="font-light">
-                        {notif.type === "mention"
-                          ? "t'a mentionné dans un commentaire"
-                          : notif.type === "relais"
+                        {notif.type === "relais"
                           ? "a franchi son maillon, l'affiche s'est dévoilée"
                           : notif.type === "message"
                           ? "t'a envoyé un message"
