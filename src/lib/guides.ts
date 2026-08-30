@@ -629,6 +629,14 @@ const REPLIQUES = {
     nora:   "Personne ici pour l'instant. Si tu veux quelqu'un à côté de toi, le relais se joue à deux : tu invites, et vous avancez chacun votre tour.",
     sasha:  "Personne ici pour l'instant. Le relais se joue à deux : tu invites, vous avancez chacun votre tour.",
   },
+  /* Les affiches de perf. Elles se gagnent en TERMINANT une séance, pas en
+     publiant quoi que ce soit : la porte est donc la séance, et il n'y en a
+     qu'une. */
+  "vide.affiches": {
+    commun: "Une affiche se garde à la fin d'une séance. Termine-s'en une, et la première arrive ici.",
+    nora:   "Une affiche se garde à la fin d'une séance. Va au bout d'une seule, même courte, et la première t'attend ici.",
+    sasha:  "Une affiche se garde à la fin d'une séance. Va au bout d'une, la première arrive ici.",
+  },
 
   /* ── La question d'entrée de la nutrition ──
      « On mange où ? » est la question la plus humaine du produit, et

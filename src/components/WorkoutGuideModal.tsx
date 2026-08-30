@@ -18,6 +18,9 @@ import {
 } from "@/lib/defi";
 import { calculerAura } from "@/lib/aura";
 import { noterRang } from "@/lib/celebrationRang";
+import { noterBadges } from "@/lib/celebrationBadge";
+import { chargerBadgesAura } from "@/lib/badgesAura";
+import type { Badge } from "@/lib/badges";
 import { useAuth } from "@/context/AuthContext";
 import { useAssistant } from "@/context/AssistantContext";
 import EnvoyerAffiche from "@/components/communaute/EnvoyerAffiche";
@@ -750,6 +753,53 @@ function BandeMaillon({ maillon, onAller }: { maillon: MaillonFranchi; onAller: 
   );
 }
 
+/* ── LA BANDE DU BADGE ────────────────────────────────────────────
+   Un badge qui apparaît en silence n'existe pas : sans cette bande, on
+   ne le découvrirait qu'en allant sur son profil, c'est-à-dire jamais.
+   Elle se pose dans la même famille que « Journée validée » et
+   « Maillon franchi », au même endroit, à la suite. Aucun écran neuf :
+   c'est le geste déjà validé trois fois dans ce projet.
+
+   Elle est VIOLETTE là où les deux autres sont oranges, parce qu'un
+   badge n'est pas de l'énergie : c'est ce qu'on garde. */
+function BandeBadge({ badges, onAller }: { badges: Badge[]; onAller: () => void }) {
+  const premier = badges[0];
+  const autres = badges.length - 1;
+
+  return (
+    <motion.button
+      type="button"
+      onClick={onAller}
+      initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.9 }}
+      className="flex items-center gap-3 w-full max-w-[19rem] px-3.5 py-2.5 rounded-2xl mt-2.5 text-left"
+      style={{ background: "rgba(139,92,246,0.13)", border: "1px solid rgba(139,92,246,0.35)" }}
+    >
+      <span
+        className="relative flex-shrink-0 grid place-items-center overflow-hidden rounded-full"
+        style={{ width: 38, height: 38, background: premier.degrade, border: "2px solid #D7A62A" }}
+        aria-hidden="true"
+      >
+        {premier.image
+          // eslint-disable-next-line @next/next/no-img-element
+          ? <img src={premier.image} alt="" className="absolute inset-0 h-full w-full object-cover" />
+          : <span className="text-[14px] font-black tabular-nums" style={{ color: "#fff", letterSpacing: "-0.04em" }}>{premier.nombre ?? "\u2726"}</span>}
+      </span>
+
+      <span className="flex-1 min-w-0">
+        <strong className="block text-[12.5px] font-bold" style={{ color: "#C3AEFF" }}>
+          {autres > 0 ? `${badges.length} badges gagnés` : "Badge gagné"}
+        </strong>
+        <small className="block text-[11px]" style={{ color: "#A79FC0" }}>
+          {premier.nom}{autres > 0 ? ` et ${autres} autre${autres > 1 ? "s" : ""}` : ""}
+        </small>
+      </span>
+
+      <ChevronRight size={16} strokeWidth={2.5} style={{ color: "#C3AEFF", flexShrink: 0 }} />
+    </motion.button>
+  );
+}
+
 export default function WorkoutGuideModal({
   sessionId, title, duration, category, heroImage, onClose, onComplete, exerciseList,
   onGarder,
@@ -777,6 +827,7 @@ export default function WorkoutGuideModal({
   const [restMode,      setRestMode]      = useState<"set" | "exercise">("set");
   const [autoCountdown, setAutoCountdown] = useState(0);
   const [prep,          setPrep]          = useState(0); // décompte 3-2-1 avant un effort chronométré
+  const [badgesGagnes,  setBadgesGagnes]  = useState<Badge[]>([]);
   const [hiitSub,       setHiitSub]       = useState<HiitSub>("work");
   const [doneMap,       setDoneMap]       = useState<Record<number, Record<number, boolean>>>({});
   const [startMs,       setStartMs]       = useState(0);
@@ -849,6 +900,17 @@ export default function WorkoutGuideModal({
           if (!etat) return;
           noterRang(user.id, etat.rang);
           if (etat.jourValide) setSerieDuJour(etat.serie);
+        })
+        .catch(() => {});
+
+      /* Les badges se lisent APRÈS l'insertion : le compte de séances et le
+         crédit du jour sont déjà écrits, donc ce que le serveur rend est
+         bien l'état d'après la séance. Silencieux au premier passage et
+         quand rien n'a bougé (voir `noterBadges`). */
+      void chargerBadgesAura(user.id)
+        .then(({ slugs }) => {
+          const neufs = noterBadges(user.id, slugs);
+          if (neufs.length) setBadgesGagnes(neufs);
         })
         .catch(() => {});
     });
@@ -1535,6 +1597,15 @@ export default function WorkoutGuideModal({
                             : "/defi",
                         );
                       }}
+                    />
+                  )}
+                </AnimatePresence>
+
+                <AnimatePresence>
+                  {badgesGagnes.length > 0 && (
+                    <BandeBadge
+                      badges={badgesGagnes}
+                      onAller={() => { onClose(); router.push("/profil"); }}
                     />
                   )}
                 </AnimatePresence>

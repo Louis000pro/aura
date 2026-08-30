@@ -3,20 +3,10 @@
   flex-direction: column;
   gap: 16px;
 
-  /* ⚠️ L'EXP A SON ENCRE, ET CE N'EST PAS `--accent`.
-     Le violet de l'app, #A78BFA, donne 2,6:1 sur le blanc du mode clair,
-     sous le minimum de 3:1 pour du gros texte : en 21 px et en 900, le
-     chiffre paraissait éteint avant même d'être lu, ce qui est exactement
-     le défaut qu'on répare. Même teinte, encre plus dense, 5,8:1.
-     Le violet de l'app ne bouge nulle part ailleurs.
-     Mesuré : #6D4BD6 = 5,8:1 sur blanc · #C3AEFF = 9,4:1 sur le fond sombre. */
-  --exp-encre: #6d4bd6;
-  --exp-trait: rgba(109, 75, 214, 0.4);
-}
-
-:global([data-theme="dark"]) .home {
-  --exp-encre: #c3aeff;
-  --exp-trait: rgba(195, 174, 255, 0.42);
+  /* ⚠️ `--exp-encre` et `--exp-trait` ne sont plus définis ICI : ils ont
+     rejoint `:root` dans globals.css le 2026-08-30, parce que le profil en
+     a besoin aussi. Un même violet défini à deux étages finirait par
+     diverger. Rien ne change pour cet écran, qui en hérite. */
 }
 
 .greeting {

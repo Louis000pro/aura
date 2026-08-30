@@ -20,7 +20,8 @@ import { AvatarRang, PseudoRang, TitreRang } from "@/components/rang/IdentiteRan
 import { calculerAura, cosmetiquesDuRang, RANGS, type EtatAura } from "@/lib/aura";
 import { noterRang } from "@/lib/celebrationRang";
 import { SERIES, imageEtat, type SerieSlug } from "@/lib/defi";
-import { chargerBadges } from "@/lib/messagerie";
+import { chargerBadgesAura } from "@/lib/badgesAura";
+import type { ProgresBadges } from "@/lib/badges";
 import EtagereBadges from "@/components/profil/EtagereBadges";
 import AvecQui from "@/components/communaute/AvecQui";
 import EnvoyerAffiche from "@/components/communaute/EnvoyerAffiche";
@@ -37,7 +38,6 @@ type UserPost = {
   media_url?: string | null;
   media_type?: string | null;
   views?: number;
-  likes_count?: number;
 };
 
 type WorkoutSessionItem = {
@@ -158,7 +158,7 @@ function AvatarCropper({ src, onCancel, onCropped }: {
         {/* Viewport circulaire */}
         <div
           className="relative overflow-hidden select-none"
-          style={{ width: V, height: V, borderRadius: "50%", touchAction: "none", cursor: "grab", background: "#EEE" }}
+          style={{ width: V, height: V, borderRadius: "50%", touchAction: "none", cursor: "grab", background: "rgba(var(--text-3-rgb),0.18)" }}
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
           onPointerUp={onPointerUp}
@@ -450,70 +450,12 @@ function EditProfileModal({
 }
 
 
-/* ─────────────── Privacy Modal ─────────────── */
-function PrivacyModal({ onClose }: { onClose: () => void }) {
-  const [dataSharing, setDataSharing] = useState(false);
-
-  return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 flex items-end md:items-center justify-center px-4 pb-6 md:pb-0"
-      style={{ background: "rgba(0,0,0,0.15)", backdropFilter: "blur(8px)" }}
-      onClick={onClose}
-    >
-      <motion.div
-        initial={{ opacity: 0, y: 60, scale: 0.95 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        exit={{ opacity: 0, y: 30, scale: 0.97 }}
-        transition={{ type: "spring", bounce: 0.3, duration: 0.5 }}
-        className="w-full max-w-sm rounded-3xl p-6"
-        style={{ background: "rgba(var(--surface-rgb),0.96)", backdropFilter: "blur(10px)", border: "1px solid rgba(var(--accent-rgb),0.14)", boxShadow: "0 20px 60px rgba(var(--accent-rgb),0.15)" }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-center justify-between mb-5">
-          <div className="flex items-center gap-2">
-            <Lock size={16} strokeWidth={1.5} style={{ color: "var(--gold)" }} />
-            <h2 className="text-lg font-light" style={{ color: "var(--text-1)" }}>Confidentialité</h2>
-          </div>
-          <motion.button whileTap={{ scale: 0.9 }} onClick={onClose} className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer" style={{ background: "rgba(var(--tint-violet-rgb),0.8)" }}>
-            <X size={14} strokeWidth={2} style={{ color: "var(--text-3)" }} />
-          </motion.button>
-        </div>
-        <div className="flex flex-col gap-3">
-          {[
-            // « Analytiques » a été retiré avec PostHog le 2026-07-29 : l'interrupteur
-            // ne pilotait rien (état local jamais enregistré) et promettait une
-            // collecte qui n'existe plus.
-            { label: "Partage de données", desc: "Partager vos stats avec la communauté", state: dataSharing, toggle: () => setDataSharing(v => !v) },
-          ].map(({ label, desc, state, toggle }) => (
-            <div key={label} className="flex items-center gap-3 px-4 py-3 rounded-2xl" style={{ background: "rgba(var(--tint-violet-rgb),0.4)" }}>
-              <div className="flex-1">
-                <p className="text-sm font-medium" style={{ color: "var(--text-1)" }}>{label}</p>
-                <p className="text-[11px] font-light" style={{ color: "var(--text-3)" }}>{desc}</p>
-              </div>
-              <motion.button
-                onClick={toggle}
-                className="relative w-11 h-6 rounded-full cursor-pointer flex-shrink-0"
-                style={{ background: state ? "linear-gradient(135deg,var(--violet-mid) 0%,var(--cream-mid) 100%)" : "rgba(220,220,220,0.6)" }}
-                whileTap={{ scale: 0.95 }}
-              >
-                <motion.div
-                  animate={{ x: state ? 20 : 2 }}
-                  transition={{ type: "spring", bounce: 0.3, duration: 0.3 }}
-                  className="absolute top-1 w-4 h-4 rounded-full"
-                  style={{ background: "white", boxShadow: "0 1px 4px rgba(0,0,0,0.15)" }}
-                />
-              </motion.button>
-            </div>
-          ))}
-        </div>
-        <p className="text-[10px] mt-4 text-center" style={{ color: "var(--text-3)" }}>Conforme au RGPD · Données hébergées en France</p>
-      </motion.div>
-    </motion.div>
-  );
-}
+/* La feuille « Confidentialité » a été supprimée le 2026-08-30. Aucun
+   chemin ne pouvait l'ouvrir (`setShowPrivacy(true)` n'était appelé nulle
+   part) et son unique interrupteur, « Partage de données », n'était qu'un
+   `useState` local : il ne lisait rien, n'écrivait rien et ne pilotait rien.
+   Un réglage qui ne règle rien est pire qu'un réglage absent. Les vrais
+   réglages vivent dans /parametres. */
 
 /* ─────────────── Main Page ─────────────── */
 export default function ProfilPage() {
@@ -525,9 +467,12 @@ export default function ProfilPage() {
   const [aura, setAura] = useState<EtatAura | null>(null);
   const [amis, setAmis] = useState<{ id: string; pseudo: string; avatar_url?: string }[] | null>(null);
   const [badgeSlugs, setBadgeSlugs] = useState<Set<string>>(new Set());
+  /* Ce qu'il reste à faire pour le prochain badge. Le serveur ne le rend
+     que pour soi : sur le profil de quelqu'un d'autre, il vaut `null` et
+     l'étagère se tait là-dessus. */
+  const [progresBadges, setProgresBadges] = useState<ProgresBadges | null>(null);
   const [showEdit, setShowEdit] = useState(false);
   const [showRangs, setShowRangs] = useState(false);
-  const [showPrivacy, setShowPrivacy] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [profilePseudo, setProfilePseudo] = useState(user?.pseudo ?? "");
   const [profileAvatar, setProfileAvatar] = useState(user?.avatar ?? "");
@@ -613,7 +558,9 @@ export default function ProfilPage() {
     })().catch(() => setAmis([]));
 
     // Affiches de relais débloquées (slugs serie-<x>)
-    void chargerBadges(uid).then((slugs) => setBadgeSlugs(new Set(slugs))).catch(() => {});
+    void chargerBadgesAura(uid)
+      .then(({ slugs, progres }) => { setBadgeSlugs(slugs); setProgresBadges(progres); })
+      .catch(() => {});
   }, [user?.id]);
 
   useEffect(() => {
@@ -686,24 +633,46 @@ export default function ProfilPage() {
   const rangCourant = aura?.rang ?? RANGS[0];
   const cosmetiques = cosmetiquesDuRang(aura?.rang.id ?? "");
 
-  const refreshGoals = () => {
-    const pseudo = displayPseudo;
-    if (!pseudo) return;
-    try {
-      const raw = localStorage.getItem(`aura_onboarding_${pseudo}`);
-      if (raw) {
-        const d = JSON.parse(raw) as { goals?: string[]; level?: string };
-        setProfileGoals(Array.isArray(d.goals) ? d.goals : []);
-        setProfileLevel(d.level ?? "");
-      }
-    } catch {}
-  };
-
-  // Charge les objectifs depuis le localStorage quand le pseudo est disponible
+  /* ⚠️ Les objectifs se lisaient dans `aura_onboarding_<pseudo>`, la clé de
+     la modale d'inscription SUPPRIMÉE le 2026-08-22. Depuis ce jour-là, tout
+     compte créé répondait au questionnaire /bienvenue et voyait quand même un
+     profil muet : ni objectif, ni niveau. Il n'y a qu'un questionnaire et
+     qu'une source, `profiles.onboarding_*` (`lib/profilOnboarding.ts`).
+     La copie locale `vaiiya_ob_<id>`, écrite par le même module, sert de
+     repli hors ligne : elle est toujours à jour, mais jamais autoritaire. */
   useEffect(() => {
-    refreshGoals();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [displayPseudo]);
+    if (!user?.id) return;
+    let vivant = true;
+
+    const poser = (goals: string[], level: string) => {
+      if (!vivant) return;
+      setProfileGoals(goals);
+      setProfileLevel(level);
+    };
+
+    void createClient()
+      .from("profiles")
+      .select("onboarding_goals, onboarding_level")
+      .eq("id", user.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data && (data.onboarding_goals || data.onboarding_level)) {
+          poser(
+            Array.isArray(data.onboarding_goals) ? data.onboarding_goals : [],
+            data.onboarding_level ?? "",
+          );
+          return;
+        }
+        try {
+          const brut = localStorage.getItem(`vaiiya_ob_${user.id}`);
+          if (!brut) return;
+          const d = JSON.parse(brut) as { goals?: string[]; level?: string };
+          poser(Array.isArray(d.goals) ? d.goals : [], d.level ?? "");
+        } catch { /* rien à lire, on n'affiche rien */ }
+      });
+
+    return () => { vivant = false; };
+  }, [user?.id]);
 
   return (
     <div className="relative min-h-screen pb-28">
@@ -731,7 +700,7 @@ export default function ProfilPage() {
             whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.9 }}
             className="w-9 h-9 rounded-2xl flex items-center justify-center cursor-pointer"
             style={{
-              background: "linear-gradient(135deg,var(--accent),#7C5CFA)",
+              background: "linear-gradient(135deg,#8B5CF6,#C13BC1)",
               boxShadow: "0 2px 14px rgba(124,92,250,0.35)",
             }}
             aria-label="Vaiiya Premium"
@@ -797,14 +766,14 @@ export default function ProfilPage() {
               className="absolute inset-0 cursor-pointer rounded-full"
             >
               {/* Séparateur blanc */}
-              <div className="absolute rounded-full bg-white" style={{ inset: 0 }} />
+              <div className="absolute rounded-full" style={{ inset: 0, background: "rgb(var(--surface-rgb))" }} />
               {/* Photo */}
               <div
                 className="absolute rounded-full overflow-hidden flex items-center justify-center text-4xl"
                 style={{
                   inset: 3,
                   background: displayAvatar ? "transparent" : "linear-gradient(135deg,rgba(var(--tint-violet-rgb),1),rgba(var(--tint-cream-rgb),1))",
-                  color: "#7C5CFA",
+                  color: "var(--exp-encre)",
                   fontWeight: 300,
                   boxShadow: "0 12px 40px rgba(var(--accent-rgb),0.35)",
                 }}
@@ -825,13 +794,13 @@ export default function ProfilPage() {
               style={{
                 width: 32, height: 32,
                 bottom: -6, right: -6,
-                background: "linear-gradient(135deg,var(--violet-mid),var(--cream-mid))",
-                boxShadow: "0 3px 12px rgba(var(--accent-rgb),0.45)",
-                border: "3px solid white",
+                background: "linear-gradient(135deg,#8B5CF6,#C13BC1)",
+                boxShadow: "0 3px 12px rgba(139,92,246,0.45)",
+                border: "3px solid rgb(var(--surface-rgb))",
                 zIndex: 30,
               }}
             >
-              <Pencil size={13} strokeWidth={2.3} style={{ color: "#3D2F6B" }} />
+              <Pencil size={13} strokeWidth={2.3} style={{ color: "#fff" }} />
             </motion.button>
           </AvatarRang>
 
@@ -857,7 +826,7 @@ export default function ProfilPage() {
                 className="flex items-center justify-center rounded-full flex-shrink-0"
                 style={{
                   width: 24, height: 24,
-                  background: "linear-gradient(135deg,var(--accent),#7C5CFA)",
+                  background: "linear-gradient(135deg,#8B5CF6,#C13BC1)",
                   boxShadow: "0 2px 8px rgba(124,92,250,0.4)",
                 }}
               >
@@ -886,7 +855,7 @@ export default function ProfilPage() {
           {profileLevel && (
             <span
               className="mt-1 text-[10px] font-bold tracking-[0.1em] uppercase px-2.5 py-1 rounded-full"
-              style={{ background: "rgba(var(--violet-mid-rgb),0.3)", color: "#7C5CFA", border: "1px solid rgba(var(--accent-rgb),0.25)" }}
+              style={{ background: "rgba(var(--violet-mid-rgb),0.3)", color: "var(--exp-encre)", border: "1px solid rgba(var(--accent-rgb),0.25)" }}
             >
               {LEVELS_LIST.find((l) => l.id === profileLevel)?.label ?? profileLevel}
             </span>
@@ -955,10 +924,14 @@ export default function ProfilPage() {
           }}
         >
           {[
-            { label: "Amis", value: followingCount !== null ? String(followingCount) : "0", clickable: true, tab: "amis" as const },
-            { label: "Séances", value: sessionCount !== null ? String(sessionCount) : "0", clickable: true, tab: "seances" as const },
-            { label: "Série", value: `🔥 ${aura?.detail.streak ?? 0}`, clickable: false, tab: null },
-          ].map(({ label, value, clickable, tab }, i) => (
+            { label: "Amis", value: followingCount !== null ? String(followingCount) : "0", clickable: true, tab: "amis" as const, encre: "var(--text-0)" },
+            { label: "Séances", value: sessionCount !== null ? String(sessionCount) : "0", clickable: true, tab: "seances" as const, encre: "var(--text-0)" },
+            /* La série est le seul des trois qui porte une couleur, et c'est
+               l'orange de l'ÉNERGIE (système D). Elle était en encre normale,
+               donc la flamme était le seul signe et elle se lisait comme un
+               emoji décoratif posé devant un chiffre. */
+            { label: "Série", value: `🔥 ${aura?.detail.streak ?? 0}`, clickable: false, tab: null, encre: "var(--feu-encre)" },
+          ].map(({ label, value, clickable, tab, encre }, i) => (
             <div key={label} className="flex items-stretch flex-1">
               {i > 0 && (
                 <div className="w-px self-stretch my-3.5" style={{ background: "rgba(var(--violet-mid-rgb),0.3)" }} />
@@ -970,7 +943,7 @@ export default function ProfilPage() {
                 className="flex-1 flex flex-col items-center py-4"
                 style={{ cursor: clickable ? "pointer" : "default" }}
               >
-                <span className="text-[24px] font-black leading-none" style={{ color: "var(--text-0)", letterSpacing: "-0.03em" }}>
+                <span className="text-[24px] font-black leading-none" style={{ color: encre, letterSpacing: "-0.03em" }}>
                   {value}
                 </span>
                 <span className="text-[10px] font-bold tracking-[0.12em] uppercase mt-1.5" style={{ color: clickable ? "var(--accent)" : "var(--text-3)" }}>
@@ -1082,7 +1055,7 @@ export default function ProfilPage() {
 
             {/* L'étagère : ce que le relais a donné en plus des affiches.
                 Muette tant qu'on n'a rien gagné. */}
-            <EtagereBadges slugs={badgeSlugs} titre="Tes badges" />
+            <EtagereBadges slugs={badgeSlugs} titre="Tes badges" progres={progresBadges} />
 
             {/* Tes affiches de perf (posts séance) */}
             <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.14em]" style={{ color: "var(--text-3)" }}>
@@ -1091,28 +1064,16 @@ export default function ProfilPage() {
             {(() => {
               const posters = userPosts.filter((p) => p.type === "workout" && p.performance_data);
               return posters.length === 0 ? (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.96 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  className="flex flex-col items-center justify-center py-14 gap-4 rounded-3xl"
-                  style={{ background: "linear-gradient(135deg,rgba(var(--surface-rgb),0.85) 0%,rgba(var(--tint-violet-rgb),0.5) 100%)", border: "1.5px dashed rgba(var(--accent-rgb),0.25)" }}
-                >
-                  <div className="w-16 h-16 rounded-3xl flex items-center justify-center" style={{ background: "linear-gradient(135deg,rgba(var(--violet-mid-rgb),0.4),rgba(var(--cream-mid-rgb),0.35))" }}>
-                    <Sparkles size={24} strokeWidth={1.5} style={{ color: "var(--accent)" }} />
-                  </div>
-                  <div className="text-center px-8">
-                    <p className="text-[15px] font-black tracking-tight" style={{ color: "var(--text-1)" }}>Pas encore d&apos;affiche</p>
-                    <p className="text-[12.5px] font-light mt-1.5 leading-relaxed" style={{ color: "var(--text-3)" }}>Termine une séance pour créer ton premier sillage.</p>
-                  </div>
-                  <motion.button
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => router.push("/progression")}
-                    className="px-6 py-2.5 rounded-2xl text-[13px] font-semibold cursor-pointer"
-                    style={{ background: "linear-gradient(135deg,var(--violet-mid),var(--accent))", color: "#fff", boxShadow: "0 6px 20px rgba(var(--accent-rgb),0.3)" }}
-                  >
-                    Lancer une séance
-                  </motion.button>
-                </motion.div>
+                /* Le post-it en pointillés est parti avec les deux autres :
+                   Séances et Amis parlent déjà par la bouche du Guide, et un
+                   troisième dialecte sur le même écran, c'en était un de trop.
+                   Une porte, jamais deux : l'affiche se gagne en TERMINANT
+                   une séance, donc le bouton ouvre le catalogue et rien
+                   d'autre. */
+                <EtatVideGuide
+                  cle="vide.affiches"
+                  action={{ libelle: "Voir les séances", onClick: () => router.push("/progression") }}
+                />
               ) : (
                 <div className="grid grid-cols-2 gap-4">
                   {posters.map((post, idx) => (
@@ -1278,7 +1239,6 @@ export default function ProfilPage() {
             onClose={() => setShowEdit(false)}
           />
         )}
-        {showPrivacy && <PrivacyModal onClose={() => setShowPrivacy(false)} />}
         {toast && <Toast message={toast} />}
         {/* WorkoutGuideModal lancé depuis un post du profil */}
         {profileWorkout && (
@@ -1338,7 +1298,7 @@ export default function ProfilPage() {
                       <p className="text-sm font-semibold" style={{ color: "var(--text-1)" }}>@{displayPseudo}</p>
                       {(user?.is_certified || user?.is_admin || user?.email === "teyprox@gmail.com") && (
                         <div className="w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0"
-                          style={{ background: "linear-gradient(135deg,var(--accent),#7C5CFA)" }}>
+                          style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)" }}>
                           <svg width="8" height="8" viewBox="0 0 13 13" fill="none">
                             <path d="M2.5 6.5L5 9L10.5 4" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
                           </svg>
@@ -1361,7 +1321,7 @@ export default function ProfilPage() {
                         setEditingSelectedPost(true);
                       }}
                       className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold"
-                      style={{ background: "rgba(var(--accent-rgb),0.15)", color: "#7C5CFA" }}
+                      style={{ background: "rgba(var(--accent-rgb),0.15)", color: "var(--exp-encre)" }}
                     >
                       <Pencil size={11} strokeWidth={2} />
                       Modifier
@@ -1468,7 +1428,7 @@ export default function ProfilPage() {
                             style={{
                               background: "linear-gradient(135deg,rgba(var(--accent-rgb),0.18) 0%,rgba(var(--violet-mid-rgb),0.12) 100%)",
                               border: "1px solid rgba(var(--accent-rgb),0.28)",
-                              color: "#7C5CFA",
+                              color: "var(--exp-encre)",
                             }}
                           >
                             <Play size={14} strokeWidth={2} />
@@ -1580,8 +1540,8 @@ export default function ProfilPage() {
                       }}
                       className="flex-[2] py-3 rounded-2xl text-sm font-bold"
                       style={{
-                        background: editSaving ? "rgba(var(--violet-mid-rgb),0.5)" : "linear-gradient(135deg,var(--violet-mid) 0%,var(--cream-mid) 100%)",
-                        color: "#3D2F6B",
+                        background: editSaving ? "rgba(var(--violet-mid-rgb),0.5)" : "linear-gradient(135deg,#8B5CF6,#C13BC1)",
+                        color: "#fff",
                         boxShadow: editSaving ? "none" : "0 4px 16px rgba(var(--accent-rgb),0.3)",
                       }}
                     >

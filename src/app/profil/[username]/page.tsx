@@ -4,54 +4,39 @@ import { useState, useEffect, useLayoutEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  UserPlus, UserCheck, Dumbbell, ArrowLeft, Check, LayoutList,
-  X, Sparkles, Lock, UserMinus,
+  UserPlus, UserCheck, ArrowLeft, Check, Lock, UserMinus,
 } from "lucide-react";
 import Image from "next/image";
 import { createClient } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
-import VideoPlayer from "@/components/VideoPlayer";
 import FollowListModal from "@/components/FollowListModal";
 import GemmeRang from "@/components/GemmeRang";
-import PerfShareCard from "@/components/PerfShareCard";
-import { perfDataToShare } from "@/lib/perfShareExport";
-import { type PerformanceData } from "@/components/PerformanceCard";
 import { AvatarRang, PseudoRang, TitreRang } from "@/components/rang/IdentiteRang";
 import { calculerAura, cosmetiquesDuRang, etatDepuisExp, RANGS, type EtatAura } from "@/lib/aura";
 import { chargerRang } from "@/lib/rangsPublics";
+import { chargerProfilPublic, type ProfilPublic } from "@/lib/profilPublic";
+import { libelleObjectif, LEVELS } from "@/lib/profilOnboarding";
 import { SERIES, imageEtat, relaisPartage, type SerieSlug, type RelaisPartage } from "@/lib/defi";
-import { chargerBadges } from "@/lib/messagerie";
+import { chargerBadgesAura } from "@/lib/badgesAura";
 import EtagereBadges from "@/components/profil/EtagereBadges";
 import LigneEnsemble from "@/components/profil/LigneEnsemble";
 
+/* Les colonnes `goals` et `level` ont quitté ce type, et ce n'est pas un
+   allègement : elles n'existent dans AUCUNE migration et ne sont écrites par
+   AUCUNE ligne de code. Elles étaient demandées dans le même `select` que le
+   pseudo et l'avatar, donc le jour où PostgreSQL s'en serait plaint, c'est le
+   profil ENTIER qui aurait rendu 404.
+   Le questionnaire écrit `onboarding_goals` / `onboarding_level`
+   (`lib/profilOnboarding.ts`), et c'est la seule source. */
 type Profile = {
   id: string;
   pseudo: string;
-  name?: string;
   full_name?: string;
   bio?: string;
   avatar_url?: string;
-  level?: string;
-  goals?: string[];
+  onboarding_goals?: string[] | null;
+  onboarding_level?: string | null;
   is_admin?: boolean;
-};
-
-type DbSession = {
-  id: string;
-  title: string;
-  started_at: string;
-};
-
-type DbPost = {
-  id: string;
-  type: string;
-  caption: string | null;
-  description?: string | null;
-  media_url: string | null;
-  media_type: string | null;
-  performance_data: Record<string, unknown> | null;
-  created_at: string;
-  views?: number;
 };
 
 
@@ -68,17 +53,17 @@ export default function PublicProfilePage() {
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [followingCount, setFollowingCount] = useState(0);
-  const [sessionCount, setSessionCount] = useState(0);
-  const [recentSessions, setRecentSessions] = useState<DbSession[]>([]);
+  /* Les séances et la série viennent du SERVEUR ou ne viennent pas.
+     `workout_sessions` est en RLS propriétaire : les compter ici rendait 0
+     pour tout le monde, toujours. `null` = on ne sait pas, donc on n'affiche
+     rien ; jamais un zéro qui a l'air vrai. */
+  const [pub, setPub] = useState<ProfilPublic | null>(null);
   const [isFollowing, setIsFollowing] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
   const [showRemoveConfirm, setShowRemoveConfirm] = useState(false);
   const [showFollowList, setShowFollowList] = useState<"Abonnés" | "Abonnements" | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [certified, setCertified] = useState(false); // is_certified (fetch défensif)
-  const [userPosts, setUserPosts] = useState<DbPost[]>([]);
-  const [streak, setStreak] = useState(0);
-  const [profileTab, setProfileTab] = useState<"sillages" | "seances">("sillages");
   const [aura, setAura] = useState<EtatAura | null>(null);
   const [badgeSlugs, setBadgeSlugs] = useState<Set<string>>(new Set());
   // ⚠️ La réponse porte le profil qu'elle décrit. Remettre l'état à zéro
@@ -108,18 +93,6 @@ export default function PublicProfilePage() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  // Action bar state
-  const [selectedPost, setSelectedPost] = useState<DbPost | null>(null);
-
-  // ── Compter une vue quand on ouvre une vidéo depuis le profil d'une personne ──
-  useEffect(() => {
-    if (!selectedPost || selectedPost.media_type !== "video") return;
-    const id = selectedPost.id;
-    void createClient().rpc("increment_post_views", { p_post_id: id });
-    setUserPosts((prev) => prev.map((p) => p.id === id ? { ...p, views: (p.views ?? 0) + 1 } : p));
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedPost?.id]);
-
 
   const isOwnProfile = !!(user && profile && user.id === profile.id);
 
@@ -138,7 +111,7 @@ export default function PublicProfilePage() {
 
     supabase
       .from("profiles")
-      .select("id, pseudo, name, full_name, bio, avatar_url, level, goals, is_admin")
+      .select("id, pseudo, full_name, bio, avatar_url, onboarding_goals, onboarding_level, is_admin")
       .ilike("pseudo", username.trim())
       .maybeSingle()
       .then(async ({ data, error }) => {
@@ -153,60 +126,39 @@ export default function PublicProfilePage() {
         supabase.from("profiles").select("is_certified").eq("id", data.id).maybeSingle()
           .then(({ data: c }) => { if (c && (c as { is_certified?: boolean }).is_certified) setCertified(true); });
 
-        // Le nombre d'abonnés était compté ici sans jamais être affiché : la
-        // requête est retirée avec son état (2026-08-11). L'écran ne montre
-        // que les amis, les séances et les 3 dernières séances.
-        const [followingRes, sessionsRes, recentRes] = await Promise.all([
-          supabase.from("followers").select("following_id", { count: "exact", head: true }).eq("follower_id", data.id),
-          supabase.from("workout_sessions").select("id", { count: "exact", head: true }).eq("user_id", data.id),
-          supabase.from("workout_sessions").select("id, title, started_at").eq("user_id", data.id).order("started_at", { ascending: false }).limit(3),
-        ]);
+        // Le nombre d'amis se compte ici : `followers` est lisible de tous
+        // (`USING (true)`), c'est le seul des trois chiffres qui l'était.
+        const { count: amisCount } = await supabase
+          .from("followers")
+          .select("following_id", { count: "exact", head: true })
+          .eq("follower_id", data.id);
+        setFollowingCount(amisCount ?? 0);
 
-        setFollowingCount(followingRes.count ?? 0);
-        setSessionCount(sessionsRes.count ?? 0);
-        if (recentRes.data) setRecentSessions(recentRes.data);
-
-        // ── Posts de l'utilisateur ──
-        const { data: postsData } = await supabase
-          .from("posts")
-          .select("id, type, caption, description, media_url, media_type, performance_data, created_at, views")
-          .eq("user_id", data.id)
-          .order("created_at", { ascending: false })
-          .limit(20);
-        if (postsData) setUserPosts(postsData as unknown as DbPost[]);
-
-        // ── Streak (jours consécutifs avec séance) ──
-        const { data: streakData } = await supabase
-          .from("workout_sessions")
-          .select("started_at")
-          .eq("user_id", data.id)
-          .order("started_at", { ascending: false })
-          .limit(60);
-        if (streakData && streakData.length > 0) {
-          const days = new Set<string>(streakData.map((s: { started_at: string }) => s.started_at.slice(0, 10)));
-          let s = 0; const today = new Date();
-          for (let i = 0; i < 60; i++) {
-            const d = new Date(today); d.setDate(d.getDate() - i);
-            if (days.has(d.toISOString().slice(0, 10))) s++;
-            else if (i > 0) break;
-          }
-          setStreak(s);
-        }
-
-        // ── Rang (aura) + affiches de relais débloquées ──
-        // Le rang de QUELQU'UN D'AUTRE ne se calcule pas côté client : les tables
-        // sources sont en RLS « propriétaire seulement », donc `calculerAura`
-        // renvoyait ici Bronze pour tout le monde. On passe par `rangs_aura`, et
-        // on ne retombe sur l'ancien chemin que pour son propre profil.
-        void chargerRang(data.id)
-          .then((rangPublic) => {
+        /* Les trois chiffres, et le rang.
+           Un seul appel dans le cas normal : `profil_public` rend l'EXP, les
+           séances et la série. On ne retombe sur `rangs_aura` que si sa
+           migration n'est pas encore collée, pour que le rang continue de
+           s'afficher comme avant ; et sur `calculerAura` seulement pour son
+           propre profil, où les tables sont lisibles. */
+        void chargerProfilPublic(data.id)
+          .then(async (chiffres) => {
+            if (chiffres) {
+              setPub(chiffres);
+              setAura(etatDepuisExp(chiffres.exp));
+              return;
+            }
+            const rangPublic = await chargerRang(data.id);
             if (rangPublic) setAura(etatDepuisExp(rangPublic.exp));
             else if (user?.id === data.id) {
-              void calculerAura(supabase, data.id).then((etat) => { if (etat) setAura(etat); });
+              const etat = await calculerAura(supabase, data.id);
+              if (etat) setAura(etat);
             }
           })
           .catch(() => {});
-        void chargerBadges(data.id).then((slugs) => setBadgeSlugs(new Set(slugs))).catch(() => {});
+        /* Pas de `progres` ici : le serveur ne le rend que pour soi. Un
+           badge est fait pour se voir de l'extérieur, le détail de ce qui
+           reste à quelqu'un d'autre ne l'est pas. */
+        void chargerBadgesAura(data.id).then(({ slugs }) => setBadgeSlugs(slugs)).catch(() => {});
 
         if (user && user.id !== data.id) {
           const { data: followData } = await supabase
@@ -274,16 +226,6 @@ export default function PublicProfilePage() {
     void handleFollow();
   };
 
-  const formatDate = (iso: string) => {
-    const d = new Date(iso);
-    const now = new Date();
-    const isToday = d.toDateString() === now.toDateString();
-    const isYesterday = new Date(now.getTime() - 86400000).toDateString() === d.toDateString();
-    if (isToday) return "Aujourd'hui";
-    if (isYesterday) return "Hier";
-    return d.toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
-  };
-
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -317,8 +259,8 @@ export default function PublicProfilePage() {
           onClick={() => router.back()}
           className="px-5 py-2.5 rounded-2xl text-sm font-medium cursor-pointer"
           style={{
-            background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--accent) 100%)",
-            color: "var(--text-1)",
+            background: "linear-gradient(135deg,#8B5CF6,#C13BC1)",
+            color: "#fff",
           }}
         >
           Retour
@@ -367,7 +309,7 @@ export default function PublicProfilePage() {
             transition={{ duration: 0.2, ease: "easeOut" }}
             className="fixed top-0 left-0 right-0 z-40 flex items-center gap-3 px-5 py-3 md:left-[88px]"
             style={{
-              background: "rgba(250,248,255,0.92)",
+              background: "rgba(var(--surface-rgb),0.92)",
               backdropFilter: "blur(16px)",
               borderBottom: "1px solid rgba(var(--violet-mid-rgb),0.2)",
             }}
@@ -392,8 +334,8 @@ export default function PublicProfilePage() {
                 disabled={followLoading}
                 className="px-3 py-1.5 rounded-xl text-xs font-semibold cursor-pointer"
                 style={isFollowing
-                  ? { background: "rgba(var(--tint-violet-rgb),0.7)", color: "var(--accent)", border: "1px solid rgba(var(--accent-rgb),0.2)" }
-                  : { background: "linear-gradient(135deg,var(--violet-mid),var(--cream-mid))", color: "var(--text-1)" }
+                  ? { background: "rgba(var(--tint-violet-rgb),0.7)", color: "var(--exp-encre)", border: "1px solid rgba(var(--accent-rgb),0.2)" }
+                  : { background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", color: "#fff" }
                 }
               >
                 {isFollowing ? "Ami" : "Ajouter"}
@@ -423,8 +365,13 @@ export default function PublicProfilePage() {
         transition={{ duration: 0.5 }}
         className="rounded-3xl p-6 mb-6 relative overflow-hidden"
         style={{
-          background: "linear-gradient(135deg, #faf8ff 0%, #fffef8 100%)",
-          border: "1px solid rgba(var(--surface-rgb),0.9)",
+          /* Cette carte était peinte en dur (#faf8ff vers #fffef8). Elle porte
+             le pseudo, la bio, le rang et les chiffres, tous en `--text-0` :
+             en mode sombre, ce blanc cassé rendait un texte presque blanc sur
+             un aplat presque blanc. Le voile violet des jetons dit la même
+             chose et suit le thème. */
+          background: "linear-gradient(135deg, rgba(var(--tint-violet-rgb),0.75) 0%, rgba(var(--tint-cream-rgb),0.75) 100%)",
+          border: "1px solid rgba(var(--violet-mid-rgb),0.35)",
           boxShadow: "0 4px 32px rgba(var(--accent-rgb),0.1), inset 0 1px 0 rgba(var(--surface-rgb),0.95)",
         }}
       >
@@ -450,7 +397,7 @@ export default function PublicProfilePage() {
             >
               <div
                 className="w-full h-full rounded-full overflow-hidden flex items-center justify-center text-3xl font-semibold"
-                style={{ background: displayAvatar ? "transparent" : "linear-gradient(135deg,#F0EBFF 0%,#FFFBF0 100%)", color: "var(--text-1)" }}
+                style={{ background: displayAvatar ? "transparent" : "linear-gradient(135deg,rgba(var(--tint-violet-rgb),1) 0%,rgba(var(--tint-cream-rgb),1) 100%)", color: "var(--text-1)" }}
               >
                 {displayAvatar
                   // eslint-disable-next-line @next/next/no-img-element
@@ -477,7 +424,7 @@ export default function PublicProfilePage() {
                 transition={{ type: "spring", bounce: 0.5, delay: 0.2 }}
                 className="flex-shrink-0 flex items-center justify-center rounded-full"
                 title="Compte certifié"
-                style={{ width: 22, height: 22, background: "linear-gradient(135deg,var(--accent),#7C5CFA)", boxShadow: "0 2px 8px rgba(124,92,250,0.4)" }}
+                style={{ width: 22, height: 22, background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", boxShadow: "0 2px 8px rgba(139,92,246,0.4)" }}
               >
                 <svg width="11" height="11" viewBox="0 0 13 13" fill="none">
                   <path d="M2.5 6.5L5 9L10.5 4" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
@@ -489,10 +436,13 @@ export default function PublicProfilePage() {
           {/* Titre débloqué au Diamant */}
           <TitreRang cosmetiques={cosmetiques} />
 
-          {/* Goals / titre */}
-          {profile?.goals && profile.goals.length > 0 && (
-            <p className="text-sm mt-1.5 font-medium" style={{ color: "var(--text-2)" }}>
-              {profile.goals.join(" · ")}
+          {/* Ses objectifs. C'est de l'IDENTITÉ, pas de la donnée de santé :
+              on montre le libellé (« Prise de masse »), jamais l'âge, le poids
+              ni la taille, qui vivent dans les colonnes voisines et n'ont rien
+              à faire dehors. */}
+          {profile?.onboarding_goals && profile.onboarding_goals.length > 0 && (
+            <p className="text-[12px] font-semibold mt-1.5 max-w-[260px]" style={{ color: "var(--exp-encre)" }}>
+              {profile.onboarding_goals.map(libelleObjectif).join(" · ")}
             </p>
           )}
 
@@ -503,13 +453,13 @@ export default function PublicProfilePage() {
             </p>
           )}
 
-          {/* Level badge */}
-          {profile?.level && (
+          {/* Son niveau */}
+          {profile?.onboarding_level && (
             <span
               className="inline-block mt-2 text-[10px] font-bold tracking-[0.1em] uppercase px-2.5 py-1 rounded-full"
-              style={{ background: "rgba(var(--violet-mid-rgb),0.3)", color: "#7C5CFA", border: "1px solid rgba(var(--accent-rgb),0.25)" }}
+              style={{ background: "rgba(var(--violet-mid-rgb),0.3)", color: "var(--exp-encre)", border: "1px solid rgba(var(--accent-rgb),0.25)" }}
             >
-              {profile.level}
+              {LEVELS.find((l) => l.id === profile.onboarding_level)?.label ?? profile.onboarding_level}
             </span>
           )}
         </div>
@@ -534,9 +484,12 @@ export default function PublicProfilePage() {
                         border: "1px solid rgba(var(--accent-rgb),0.2)",
                       }
                     : {
-                        background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--accent) 100%)",
-                        color: "var(--text-1)",
-                        boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.8), 0 4px 14px rgba(var(--accent-rgb),0.25)",
+                        /* Le bouton principal de l'écran est TOUJOURS violet
+                           plein (système D). Il était en lavande pâle avec du
+                           texte sombre : il se lisait comme désactivé. */
+                        background: "linear-gradient(135deg,#8B5CF6,#C13BC1)",
+                        color: "#fff",
+                        boxShadow: "0 4px 14px rgba(139,92,246,0.32)",
                       }
                 }
               >
@@ -593,16 +546,26 @@ export default function PublicProfilePage() {
           </div>
         )}
 
-        {/* Stats */}
+        {/* Les chiffres.
+            « Amis » se compte de partout (`followers` est en `USING (true)`).
+            « Séances » et « Série » viennent du serveur : tant que
+            `profil_public` n'est pas collée, ils ne s'affichent PAS. Un chiffre
+            qu'on ne peut pas prouver n'a pas sa place à côté de deux qui sont
+            vrais : l'écran en montrait trois, dont deux valaient zéro pour tout
+            le monde depuis toujours. */}
         <div
           className="flex items-center mt-4 pt-4 relative z-10"
           style={{ borderTop: "1px solid rgba(var(--accent-rgb),0.1)" }}
         >
           {([
-            { label: "Amis", value: String(followingCount), tab: "Abonnements" },
-            { label: "Séances", value: String(sessionCount), tab: null },
-            { label: "Série", value: `🔥 ${streak}`, tab: null },
-          ] as { label: string; value: string; tab: "Abonnés" | "Abonnements" | null }[]).map(({ label, value, tab }, i) => (
+            { label: "Amis", value: String(followingCount), tab: "Abonnements" as const, encre: "var(--text-1)" },
+            ...(pub ? [
+              { label: "Séances", value: String(pub.seances), tab: null, encre: "var(--text-1)" },
+              /* La série se dit en orange partout : c'est le rôle ÉNERGIE du
+                 système D, et c'est ce qui la sépare du teal de la réussite. */
+              { label: "Série", value: `🔥 ${pub.serie}`, tab: null, encre: "var(--feu-encre)" },
+            ] : []),
+          ] as { label: string; value: string; tab: "Abonnés" | "Abonnements" | null; encre: string }[]).map(({ label, value, tab, encre }, i) => (
             <div key={label} className="flex items-center flex-1">
               {i > 0 && (
                 <div
@@ -616,12 +579,12 @@ export default function PublicProfilePage() {
                 whileHover={tab ? { backgroundColor: "rgba(var(--accent-rgb),0.07)" } : undefined}
                 className={`flex-1 flex flex-col items-center py-1 rounded-xl ${tab ? "cursor-pointer" : ""}`}
               >
-                <span className="text-xl font-light" style={{ color: "var(--text-1)" }}>
+                <span className="text-[22px] font-black leading-none" style={{ color: encre, letterSpacing: "-0.03em" }}>
                   {value}
                 </span>
                 <span
-                  className="text-[10px] font-semibold tracking-wider uppercase mt-0.5"
-                  style={{ color: "var(--text-3)" }}
+                  className="text-[10px] font-bold tracking-[0.12em] uppercase mt-1.5"
+                  style={{ color: tab ? "var(--accent)" : "var(--text-3)" }}
                 >
                   {label}
                 </span>
@@ -637,253 +600,57 @@ export default function PublicProfilePage() {
         <LigneEnsemble serie={ensemble.data.serie} nombre={ensemble.data.nombre} />
       )}
 
-      {/* ── Tab switcher Posts / Séances ── */}
-      <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="mt-6 mb-4">
-        <div className="flex gap-1 p-1 rounded-2xl" style={{ background: "rgba(var(--tint-violet-rgb),0.5)", border: "1px solid rgba(var(--accent-rgb),0.12)" }}>
-          {([
-            { key: "sillages", label: "Sillages", icon: Sparkles },
-            { key: "seances", label: "Séances", icon: LayoutList },
-          ] as const).map(({ key, label, icon: Icon }) => (
-            <motion.button key={key} whileTap={{ scale: 0.96 }} onClick={() => setProfileTab(key)}
-              className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-semibold cursor-pointer transition-all"
-              style={profileTab === key
-                ? { background: "linear-gradient(135deg,var(--violet-mid),var(--cream-mid))", color: "var(--text-1)", boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.8)" }
-                : { color: "var(--text-3)" }
-              }
+      {/* LES ONGLETS ONT DISPARU, ET IL N'EN RESTE QU'UNE PAGE.
+          « Séances » listait les trois dernières séances de la personne : la
+          requête ne rendait JAMAIS rien (RLS propriétaire), et le jour où elle
+          aurait rendu quelque chose, c'aurait été un fil d'activité, refusé
+          depuis juillet. « Ses affiches de perf » était vide par construction
+          elle aussi : depuis le 30 août une affiche s'écrit en `private`, donc
+          la policy de `posts` ne la montre qu'à son auteur.
+          Ce qui reste est ce qui se gagne à deux, ou ce qui se voit par
+          nature : son rang, ses affiches de relais, ses badges, et la ligne
+          « ensemble » juste au-dessus. */}
+      <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.14em]" style={{ color: "var(--text-3)" }}>
+        Affiches du relais
+      </p>
+      <div className="grid grid-cols-2 gap-3 mb-8">
+        {(Object.keys(SERIES) as SerieSlug[]).map((slug) => {
+          const serie = SERIES[slug];
+          const gagnee = badgeSlugs.has(`serie-${slug}`);
+          return (
+            <div
+              key={slug}
+              className="relative rounded-2xl overflow-hidden"
+              style={{ aspectRatio: "9/16", border: "1px solid rgba(255,255,255,0.06)", boxShadow: "0 10px 26px -12px rgba(0,0,0,0.5)" }}
             >
-              <Icon size={13} strokeWidth={1.8} />
-              {label}
-            </motion.button>
-          ))}
-        </div>
-      </motion.div>
-
-      <AnimatePresence mode="wait">
-
-      {/* ── Sillages : les affiches ── */}
-      {profileTab === "sillages" && (
-        <motion.div key="sillages-tab" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} transition={{ duration: 0.25 }}>
-          <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.14em]" style={{ color: "var(--text-3)" }}>
-            Affiches du relais
-          </p>
-          <div className="grid grid-cols-2 gap-3 mb-8">
-            {(Object.keys(SERIES) as SerieSlug[]).map((slug) => {
-              const serie = SERIES[slug];
-              const gagnee = badgeSlugs.has(`serie-${slug}`);
-              return (
-                <div
-                  key={slug}
-                  className="relative rounded-2xl overflow-hidden"
-                  style={{ aspectRatio: "9/16", border: "1px solid rgba(255,255,255,0.06)", boxShadow: "0 10px 26px -12px rgba(0,0,0,0.5)" }}
-                >
-                  <Image
-                    src={imageEtat(slug, 4)}
-                    alt={serie.nom}
-                    fill
-                    sizes="(max-width:768px) 45vw, 200px"
-                    className="object-cover"
-                    style={{ filter: gagnee ? "none" : "grayscale(1) brightness(0.5)" }}
-                  />
-                  <div className="absolute inset-0" style={{ background: "linear-gradient(180deg,transparent 45%,rgba(0,0,0,0.72))" }} />
-                  {gagnee && <div className="absolute top-2.5 right-3 text-[13px] font-black" style={{ color: "rgba(255,255,255,0.9)" }}>✦</div>}
-                  <div className="absolute left-3 right-3 bottom-3" style={{ color: "#fff" }}>
-                    <p className="text-[14px] font-black leading-tight">{serie.nom}</p>
-                    <p className="text-[10.5px] font-semibold mt-0.5" style={{ opacity: 0.75 }}>
-                      {gagnee ? "Dévoilée · à deux" : serie.promesse}
-                    </p>
-                  </div>
-                  {!gagnee && (
-                    <div className="absolute inset-0 grid place-items-center" style={{ background: "rgba(10,6,18,0.42)" }}>
-                      <Lock size={22} strokeWidth={2} style={{ color: "rgba(255,255,255,0.55)" }} />
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Un badge se voit du dehors, sinon il ne décore personne. */}
-          <EtagereBadges slugs={badgeSlugs} titre="Ses badges" />
-
-          <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.14em]" style={{ color: "var(--text-3)" }}>
-            Ses affiches de perf
-          </p>
-          {(() => {
-            const posters = userPosts.filter((p) => p.type === "workout" && p.performance_data);
-            return posters.length === 0 ? (
-              <div className="flex flex-col items-center py-12 gap-3">
-                <div className="text-4xl">✦</div>
-                <p className="text-sm font-light" style={{ color: "var(--text-3)" }}>Aucune affiche pour l&apos;instant</p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-2 gap-4">
-                {posters.map((post, idx) => (
-                  <motion.div
-                    key={post.id}
-                    initial={{ opacity: 0, y: 14 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.32, delay: idx * 0.05 }}
-                    className="cursor-pointer flex justify-center"
-                    whileTap={{ scale: 0.98 }}
-                    onClick={() => setSelectedPost(post)}
-                  >
-                    <PerfShareCard data={perfDataToShare(post.performance_data as PerformanceData, { user: profile?.pseudo ?? "" })} width="100%" />
-                  </motion.div>
-                ))}
-              </div>
-            );
-          })()}
-        </motion.div>
-      )}
-
-      {/* ── Séances : historique ── */}
-      {profileTab === "seances" && (
-        <motion.div key="seances-tab" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }} transition={{ duration: 0.25 }}>
-          {recentSessions.length === 0 ? (
-            <div className="flex flex-col items-center py-12 gap-3">
-              <div className="text-4xl">🏋️</div>
-              <p className="text-sm font-light" style={{ color: "var(--text-3)" }}>Aucune séance enregistrée</p>
-            </div>
-          ) : (
-            <div className="flex flex-col gap-2">
-              {recentSessions.map((s, i) => (
-                <motion.div
-                  key={s.id}
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: i * 0.07 }}
-                  className="flex items-center gap-3 px-4 py-3 rounded-2xl"
-                  style={{ background: "rgba(var(--surface-rgb),0.7)", border: "1px solid rgba(var(--surface-rgb),0.7)", boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.9)", backdropFilter: "blur(10px)" }}
-                >
-                  <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: "rgba(var(--accent-rgb),0.12)" }}>
-                    <Dumbbell size={14} strokeWidth={1.5} style={{ color: "var(--accent)" }} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate" style={{ color: "var(--text-1)" }}>{s.title}</p>
-                    <p className="text-[11px] font-light" style={{ color: "var(--text-3)" }}>{formatDate(s.started_at)}</p>
-                  </div>
-                  <span className="text-[12px] font-black flex-shrink-0" style={{ color: "#2BD4A0" }}>+30</span>
-                </motion.div>
-              ))}
-            </div>
-          )}
-        </motion.div>
-      )}
-
-      </AnimatePresence>
-
-      {/* Modal post sélectionné */}
-      <AnimatePresence>
-        {selectedPost && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-end justify-center"
-            style={{ background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)" }}
-            onClick={() => setSelectedPost(null)}
-          >
-            <motion.div
-              initial={{ y: "100%" }}
-              animate={{ y: 0 }}
-              exit={{ y: "100%" }}
-              transition={{ type: "spring", damping: 28, stiffness: 300 }}
-              className="w-full max-w-lg rounded-t-3xl overflow-hidden overflow-y-auto"
-              style={{ background: "rgba(var(--surface-rgb),0.97)", maxHeight: "90dvh" }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              {/* Drag handle */}
-              <div className="flex justify-center pt-3 pb-1">
-                <div className="w-10 h-1 rounded-full" style={{ background: "rgba(0,0,0,0.12)" }} />
-              </div>
-
-              {/* Header */}
-              <div className="flex items-center justify-between px-4 py-3">
-                <div className="flex items-center gap-3">
-                  <div
-                    className="w-9 h-9 rounded-full overflow-hidden flex items-center justify-center text-sm font-semibold"
-                    style={{
-                      background: displayAvatar
-                        ? "transparent"
-                        : "linear-gradient(135deg,var(--violet-mid),var(--cream-mid))",
-                      color: "var(--text-1)",
-                    }}
-                  >
-                    {displayAvatar
-                      // eslint-disable-next-line @next/next/no-img-element
-                      ? <img loading="lazy" decoding="async" src={displayAvatar} alt="avatar" className="w-full h-full object-cover" />
-                      : initial}
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold" style={{ color: "var(--text-1)" }}>@{displayPseudo}</p>
-                    <p className="text-[10px]" style={{ color: "var(--text-3)" }}>
-                      {(() => {
-                        const diff = Date.now() - new Date(selectedPost.created_at).getTime();
-                        const h = Math.floor(diff / 3600000);
-                        const d = Math.floor(h / 24);
-                        if (h < 1) return "À l'instant";
-                        if (h < 24) return `${h}h`;
-                        if (d < 7) return `${d}j`;
-                        return new Date(selectedPost.created_at).toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
-                      })()}
-                    </p>
-                  </div>
-                </div>
-                <motion.button
-                  whileTap={{ scale: 0.9 }}
-                  onClick={() => setSelectedPost(null)}
-                  className="w-8 h-8 rounded-full flex items-center justify-center"
-                  style={{ background: "rgba(var(--tint-violet-rgb),0.8)" }}
-                >
-                  <X size={14} strokeWidth={2} style={{ color: "var(--text-3)" }} />
-                </motion.button>
-              </div>
-
-              {/* Caption */}
-              {selectedPost.caption && (
-                <p className="px-4 pb-2 text-sm font-semibold" style={{ color: "var(--text-1)" }}>
-                  {selectedPost.caption}
+              <Image
+                src={imageEtat(slug, 4)}
+                alt={serie.nom}
+                fill
+                sizes="(max-width:768px) 45vw, 200px"
+                className="object-cover"
+                style={{ filter: gagnee ? "none" : "grayscale(1) brightness(0.5)" }}
+              />
+              <div className="absolute inset-0" style={{ background: "linear-gradient(180deg,transparent 45%,rgba(0,0,0,0.72))" }} />
+              {gagnee && <div className="absolute top-2.5 right-3 text-[13px] font-black" style={{ color: "rgba(255,255,255,0.9)" }}>&#10022;</div>}
+              <div className="absolute left-3 right-3 bottom-3" style={{ color: "#fff" }}>
+                <p className="text-[14px] font-black leading-tight">{serie.nom}</p>
+                <p className="text-[10.5px] font-semibold mt-0.5" style={{ opacity: 0.75 }}>
+                  {gagnee ? "Dévoilée · à deux" : serie.promesse}
                 </p>
-              )}
-
-              {/* Media */}
-              {selectedPost.media_url && (
-                <div className="mx-4 mb-3 rounded-2xl overflow-hidden">
-                  {selectedPost.media_type === "video"
-                    ? <VideoPlayer src={selectedPost.media_url} maxHeight={380} controls />
-                    : (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img loading="lazy" decoding="async"
-                        src={selectedPost.media_url}
-                        alt=""
-                        className="w-full object-cover rounded-2xl"
-                        style={{ maxHeight: 380 }}
-                      />
-                    )
-                  }
+              </div>
+              {!gagnee && (
+                <div className="absolute inset-0 grid place-items-center" style={{ background: "rgba(10,6,18,0.42)" }}>
+                  <Lock size={22} strokeWidth={2} style={{ color: "rgba(255,255,255,0.55)" }} />
                 </div>
               )}
+            </div>
+          );
+        })}
+      </div>
 
-              {/* Affiche de perf (posts séance) */}
-              {selectedPost.type === "workout" && selectedPost.performance_data && (
-                <div className="px-4 pb-4 flex justify-center">
-                  <PerfShareCard
-                    data={perfDataToShare(selectedPost.performance_data as PerformanceData, { user: profile?.pseudo ?? "" })}
-                    width="min(320px, 100%)"
-                  />
-                </div>
-              )}
-
-              {selectedPost.description && (
-                <p className="px-4 pb-5 text-sm font-light leading-relaxed" style={{ color: "var(--text-2)" }}>
-                  {selectedPost.description}
-                </p>
-              )}
-              <div className="pb-4" />
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* Un badge se voit du dehors, sinon il ne decore personne. */}
+      <EtagereBadges slugs={badgeSlugs} titre="Ses badges" />
 
       {/* Une relation d'amitié ne se retire jamais sur un clic accidentel. */}
       <AnimatePresence>
