@@ -23,6 +23,9 @@ import { SERIES, imageEtat, type SerieSlug } from "@/lib/defi";
 import { chargerBadgesAura } from "@/lib/badgesAura";
 import type { ProgresBadges } from "@/lib/badges";
 import EtagereBadges from "@/components/profil/EtagereBadges";
+import CourbePoids from "@/components/profil/CourbePoids";
+import CarteConstance from "@/components/profil/CarteConstance";
+import WeighInPrompt from "@/components/WeighInPrompt";
 import AvecQui from "@/components/communaute/AvecQui";
 import EnvoyerAffiche from "@/components/communaute/EnvoyerAffiche";
 
@@ -461,7 +464,7 @@ function EditProfileModal({
 export default function ProfilPage() {
   const { user, session, refreshProfile } = useAuth();
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<"sillages" | "seances" | "amis">("sillages");
+  const [activeTab, setActiveTab] = useState<"collection" | "progres" | "amis">("collection");
   const [avecQui, setAvecQui] = useState(false);
   const [afficheAEnvoyer, setAfficheAEnvoyer] = useState<PerfShareData | null>(null);
   const [aura, setAura] = useState<EtatAura | null>(null);
@@ -471,6 +474,11 @@ export default function ProfilPage() {
      que pour soi : sur le profil de quelqu'un d'autre, il vaut `null` et
      l'étagère se tait là-dessus. */
   const [progresBadges, setProgresBadges] = useState<ProgresBadges | null>(null);
+  /* La carte de constance ne remonte jamais avant l'inscription : des
+     semaines vides d'avant l'arrivée dessineraient un échec pour une
+     période où la personne ne connaissait pas Vaiiya. */
+  const [inscritLe, setInscritLe] = useState<string | null>(null);
+  const [pesee, setPesee] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
   const [showRangs, setShowRangs] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
@@ -510,7 +518,7 @@ export default function ProfilPage() {
 
     supabase
       .from("profiles")
-      .select("pseudo, avatar_url, full_name, bio")
+      .select("pseudo, avatar_url, full_name, bio, created_at")
       .eq("id", user.id)
       .maybeSingle()
       .then(({ data }) => {
@@ -519,6 +527,7 @@ export default function ProfilPage() {
           if (data.avatar_url) setProfileAvatar(data.avatar_url);
           if (data.full_name) setProfileFullName(data.full_name);
           if (data.bio) setProfileBio(data.bio);
+          if (data.created_at) setInscritLe(data.created_at as string);
         }
       });
 
@@ -925,7 +934,7 @@ export default function ProfilPage() {
         >
           {[
             { label: "Amis", value: followingCount !== null ? String(followingCount) : "0", clickable: true, tab: "amis" as const, encre: "var(--text-0)" },
-            { label: "Séances", value: sessionCount !== null ? String(sessionCount) : "0", clickable: true, tab: "seances" as const, encre: "var(--text-0)" },
+            { label: "Séances", value: sessionCount !== null ? String(sessionCount) : "0", clickable: true, tab: "progres" as const, encre: "var(--text-0)" },
             /* La série est le seul des trois qui porte une couleur, et c'est
                l'orange de l'ÉNERGIE (système D). Elle était en encre normale,
                donc la flamme était le seul signe et elle se lisait comme un
@@ -966,9 +975,9 @@ export default function ProfilPage() {
           }}
         >
           {([
-            { id: "sillages" as const, Icon: Sparkles, label: "Sillages" },
-            { id: "seances"  as const, Icon: Dumbbell, label: "Séances" },
-            { id: "amis"     as const, Icon: Users,    label: "Amis" },
+            { id: "collection" as const, Icon: Sparkles, label: "Collection" },
+            { id: "progres"    as const, Icon: Dumbbell, label: "Progrès" },
+            { id: "amis"       as const, Icon: Users,    label: "Amis" },
           ]).map(({ id, Icon, label }) => (
             <motion.button
               key={id}
@@ -993,9 +1002,9 @@ export default function ProfilPage() {
       {/* ─── Tab content ─── */}
       <AnimatePresence mode="wait">
         {/* ─── Sillages : les affiches ─── */}
-        {activeTab === "sillages" && (
+        {activeTab === "collection" && (
           <motion.div
-            key="sillages"
+            key="collection"
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
@@ -1095,16 +1104,39 @@ export default function ProfilPage() {
           </motion.div>
         )}
 
-        {/* ─── Séances : historique ─── */}
-        {activeTab === "seances" && (
+        {/* ─── Progrès : le poids, la constance, puis l'historique ───
+             L'onglet s'appelait « Séances » et ne portait qu'une liste.
+             Le poids et l'historique répondent à la même question, où
+             j'en suis, donc ils vivent ensemble plutôt que dans un
+             quatrième onglet : sur un écran de 360 px, quatre onglets
+             font 80 px chacun. ─── */}
+        {activeTab === "progres" && (
           <motion.div
-            key="seances-list"
+            key="progres"
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
             className="px-5 md:px-8 max-w-3xl mx-auto"
           >
+            {user && (
+              <div className="mb-6">
+                <CourbePoids userId={user.id} onPeser={() => setPesee(true)} />
+                <CarteConstance
+                  userId={user.id}
+                  inscritLe={inscritLe}
+                  /* La plus longue série vient de `badges_aura`, jamais d'un
+                     second calcul : c'est le même nombre qui débloque les
+                     badges de régularité, et il n'en existe qu'un. */
+                  serieRecord={progresBadges?.serie ?? null}
+                />
+              </div>
+            )}
+
+            <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.14em]" style={{ color: "var(--text-3)" }}>
+              Tes séances
+            </p>
+
             {workoutSessions.length === 0 ? (
               /* Le Guide prend la place du texte gris : c'est lui qui
                  ouvre la porte, et il n'en ouvre qu'une. Le « +30 EXP »
@@ -1216,6 +1248,11 @@ export default function ProfilPage() {
 
       {/* La galerie des rangs s'ouvre ICI (elle porte son propre portail) : la
           carte « Ton rang » renvoyait vers l'accueil, on perdait l'utilisateur. */}
+      {/* La MÊME feuille que le rendez-vous mensuel de la nutrition, pilotée
+          d'ici. Une seule porte pour se peser dans toute l'app : une seconde
+          saisie écrirait la même colonne avec ses propres règles. */}
+      <WeighInPrompt ouvert={pesee} onFermer={() => setPesee(false)} />
+
       <RangsModal
         open={showRangs}
         onClose={() => setShowRangs(false)}

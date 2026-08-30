@@ -19,9 +19,20 @@ import { localDateStr, addDaysStr, daysSince } from "@/lib/dates";
 
 const DAYS_BETWEEN = 30;
 
-export default function WeighInPrompt() {
+/* Deux usages, une seule feuille.
+   - Sans prop : le rendez-vous mensuel, qui décide lui-même de s'ouvrir.
+   - Avec `ouvert` : piloté par un écran (la courbe de poids du profil).
+   ⚠️ En mode piloté, fermer n'écrit JAMAIS le report : refermer une feuille
+   qu'on a ouverte soi-même n'a pas à repousser le rendez-vous de trois
+   jours. Une seule porte pour se peser dans toute l'app, jamais deux. */
+export default function WeighInPrompt({ ouvert, onFermer }: {
+  ouvert?: boolean;
+  onFermer?: () => void;
+} = {}) {
   const { user } = useAuth();
-  const [show, setShow] = useState(false);
+  const pilote = ouvert !== undefined;
+  const [showAuto, setShowAuto] = useState(false);
+  const show = pilote ? ouvert : showAuto;
   const [lastWeight, setLastWeight] = useState<number | null>(null);
   const [value, setValue] = useState("");
   const [saving, setSaving] = useState(false);
@@ -47,17 +58,18 @@ export default function WeighInPrompt() {
         if (cancelled) return;
         const row = data as { weight_kg: number; date: string } | null;
         if (row) setLastWeight(row.weight_kg);
-        if (!row || daysSince(row.date) >= DAYS_BETWEEN) setShow(true);
+        if (!pilote && (!row || daysSince(row.date) >= DAYS_BETWEEN)) setShowAuto(true);
       });
 
     return () => { cancelled = true; };
-  }, [user?.id]);
+  }, [user?.id, pilote]);
 
   const later = () => {
+    if (pilote) { onFermer?.(); return; }
     if (user?.id) {
       try { localStorage.setItem(`vaiiya_weighin_snooze_${user.id}`, addDaysStr(3)); } catch { /* ignore */ }
     }
-    setShow(false);
+    setShowAuto(false);
   };
 
   const save = async () => {
@@ -72,7 +84,8 @@ export default function WeighInPrompt() {
     if (!error) {
       // Prévient l'app : l'objectif se recalcule en direct (hook useNutritionGoals).
       try { window.dispatchEvent(new Event("vaiiya:weighin")); } catch { /* ignore */ }
-      setShow(false);
+      setValue("");
+      if (pilote) onFermer?.(); else setShowAuto(false);
     }
   };
 
@@ -89,8 +102,8 @@ export default function WeighInPrompt() {
             initial={{ opacity: 0, y: 80, scale: 0.96 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 40, scale: 0.97 }}
             transition={{ type: "spring", bounce: 0.28, duration: 0.5 }}
             onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-sm rounded-t-3xl md:rounded-3xl bg-white px-6 pt-7 pb-8 md:pb-7"
-            style={{ boxShadow: "0 -8px 40px rgba(var(--accent-rgb),0.18)" }}
+            className="w-full max-w-sm rounded-t-3xl md:rounded-3xl px-6 pt-7 pb-8 md:pb-7"
+            style={{ background: "rgb(var(--surface-rgb))", boxShadow: "0 -8px 40px rgba(var(--accent-rgb),0.18)" }}
           >
             <div className="flex items-center justify-between mb-1">
               <div
@@ -99,7 +112,7 @@ export default function WeighInPrompt() {
               >
                 <Scale size={22} style={{ color: "var(--accent)" }} strokeWidth={2} />
               </div>
-              <button onClick={later} aria-label="Fermer" style={{ color: "#CBD5E0" }}>
+              <button onClick={later} aria-label="Fermer" style={{ color: "var(--text-3)" }}>
                 <X size={20} />
               </button>
             </div>
@@ -117,7 +130,7 @@ export default function WeighInPrompt() {
                 value={value} onChange={(e) => setValue(e.target.value)}
                 placeholder={lastWeight ? String(lastWeight) : "70"}
                 className="flex-1 rounded-2xl px-4 py-3 text-lg outline-none"
-                style={{ border: "1.5px solid #E2E8F0", color: "var(--text-1)" }}
+                style={{ border: "1.5px solid rgba(var(--text-3-rgb),0.35)", background: "transparent", color: "var(--text-1)" }}
                 onKeyDown={(e) => { if (e.key === "Enter") save(); }}
               />
               <span className="text-sm font-semibold" style={{ color: "var(--text-3)" }}>kg</span>
@@ -127,7 +140,7 @@ export default function WeighInPrompt() {
               onClick={save}
               disabled={saving || !value}
               className="w-full rounded-2xl py-3.5 text-sm font-semibold text-white disabled:opacity-50"
-              style={{ background: "linear-gradient(135deg,var(--accent),var(--gold))", boxShadow: "0 6px 20px rgba(var(--accent-rgb),0.3)" }}
+              style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", boxShadow: "0 6px 20px rgba(139,92,246,0.3)" }}
             >
               {saving ? "..." : "Enregistrer"}
             </button>

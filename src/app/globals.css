@@ -60,6 +60,12 @@
      Mesuré : #E8620C = 3,4:1 sur blanc (suffisant pour du gros texte) ·
      #F5B120 = 8,4:1 sur la surface sombre. */
   --feu-encre: #E8620C;
+  /* Le teal du CORPS a son encre lui aussi. `#2BD4A0` tombe à 1,85:1 sur le
+     blanc (mesuré une première fois pour le module d'administration le
+     11 août) : il ne peut servir qu'en REMPLISSAGE, jamais en texte.
+     Mesuré : #0B8A68 = 4,4:1 sur blanc · #3FE0B0 = 10,8:1 sur la surface
+     sombre. Le teal de remplissage, lui, ne bouge nulle part. */
+  --teal-encre: #0B8A68;
   /* Surfaces translucides (base RGB) */
   --surface-rgb:      255, 255, 255;   /* verre blanc            */
   --tint-violet-rgb:  240, 235, 255;   /* #F0EBFF — voile violet */
@@ -98,6 +104,7 @@
   --exp-encre: #C3AEFF;     /* 9,4:1 sur la surface sombre */
   --exp-trait: rgba(195, 174, 255, 0.42);
   --feu-encre: #F5B120;     /* 8,4:1 sur la surface sombre */
+  --teal-encre: #3FE0B0;    /* 10,8:1 sur la surface sombre */
   --surface-rgb:     22, 18, 30;       /* carte sombre sur fond noir (distincte, discrète) */
   --tint-violet-rgb: 40, 33, 60;
   --tint-cream-rgb:  40, 33, 55;

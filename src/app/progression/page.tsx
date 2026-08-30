@@ -1623,7 +1623,7 @@ function PremiumPreviewSheet({ session, premiumCount, onClose, onUpgrade }: {
                 : `${premiumSubject} est inclus${advice ? "" : "e"} avec Premium.`}
             </p>
             <p className="text-[10.5px] mt-1 leading-relaxed" style={{ color: "var(--text-3)" }}>
-              Débloque toute la collection, pas seulement {advice ? "cette lecture" : "cette séance"}.
+              Débloque tout le catalogue, pas seulement {advice ? "cette lecture" : "cette séance"}.
             </p>
           </div>
 
