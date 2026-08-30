@@ -98,7 +98,7 @@ suivis, suggestions adaptées**.
 ## 7. Progression et social
 
 **Progression :** rang personnel nourri par l'EXP, missions quotidiennes et
-hebdomadaires, série de jours, poids et mesures, historique des séances.
+hebdomadaires, série de jours, poids, historique des séances.
 **Aucun classement entre utilisateurs, jamais.** Les récompenses de rang sont
 **cosmétiques uniquement**.
 
@@ -201,6 +201,8 @@ fermée.
 | « plan nutrition », « programme alimentaire » | n'existe pas, voir §6 |
 | « s'adapte automatiquement à tes résultats » | rien n'est automatique, voir §5 |
 | « photos d'évolution », « suivi avant/après » | la fonctionnalité n'existe pas |
+| « mensurations », « tour de taille », « masse grasse » | `body_measurements` n'a ni écran ni écriture |
+| « records », « PR », « charges soulevées » | aucune charge n'est enregistrée nulle part |
 | « disponible sur iOS et Android » | aucune application native |
 | « abonne-toi », « 3 jours d'essai » au présent | la vente est fermée, voir §12 |
 | « réseau social », « communauté », « fil d'actualité » | il n'y a pas de fil |

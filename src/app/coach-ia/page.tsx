@@ -49,7 +49,12 @@ export default function CoachIaPage() {
         <li><strong>Il compose une séance de musculation</strong> selon ton niveau, ton matériel et ton objectif (force, masse, sèche), puis te la présente sur une carte que tu acceptes ou non.</li>
         <li><strong>Il suit tes calories et tes macros</strong>, à partir d&apos;une photo d&apos;assiette, d&apos;un code-barres ou de ce que tu écris. Voir la <Link href="/nutrition-sportive">nutrition sportive</Link>.</li>
         <li><strong>Il réorganise ta semaine quand tu le lui demandes</strong>, par exemple s&apos;il ne te reste que deux jours d&apos;entraînement.</li>
-        <li><strong>Il suit ta progression</strong> : séances réalisées, poids et mesures, records, rang qui monte à chaque effort.</li>
+        {/* ⚠️ Cette ligne vendait « poids et mesures » et « records ». Les
+            mensurations et les records n'existent pas : `body_measurements` et
+            `personal_records` sont créées depuis le 13 mai et personne ne les
+            lit ni ne les écrit, et aucune charge soulevée n'est enregistrée
+            nulle part. On ne vend que ce qui existe (positionnement §15). */}
+        <li><strong>Il suit ta progression</strong> : séances réalisées, poids, série de jours, rang qui monte à chaque effort.</li>
         <li><strong>Il répond à tes questions</strong> sur la technique, la récupération ou l&apos;organisation, sans quitter l&apos;application.</li>
       </ul>
       <p>
