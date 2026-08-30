@@ -1,0 +1,556 @@
+<title>Le poids sur la barre</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700;12..96,800&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+:root{
+  --sol:#F6F3EE; --papier:#FFFFFF; --creux:#EBE6DE;
+  --encre:#17131E; --encre2:#4E4759; --encre3:#8A8296;
+  --filet:rgba(23,19,30,.13); --filet2:rgba(23,19,30,.07);
+  --or:#8A5A06; --or-fond:rgba(215,166,42,.16); --or-trait:rgba(215,166,42,.5);
+  --casse:#C24608; --casse-fond:rgba(232,98,12,.10); --casse-trait:rgba(232,98,12,.32);
+  --vif:#0B8A68; --vif-fond:rgba(43,212,160,.13); --vif-trait:rgba(43,212,160,.42);
+  --viol:#6238D4; --viol-fond:rgba(139,92,246,.11); --viol-trait:rgba(139,92,246,.34);
+  --a-bg:#FFFFFF; --a-surface:#F7F5FA; --a-t0:#1A202C; --a-t1:#2D3748; --a-t2:#5B5470; --a-t3:#A0AEC0;
+  --a-trait:rgba(23,19,30,.11);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --sol:#0E0B14; --papier:#171320; --creux:#211C2E;
+    --encre:#F3F0F8; --encre2:#BEB6CC; --encre3:#857D95;
+    --filet:rgba(243,240,248,.16); --filet2:rgba(243,240,248,.08);
+    --or:#F5B120; --or-fond:rgba(245,177,32,.13); --or-trait:rgba(245,177,32,.42);
+    --casse:#FF9354; --casse-fond:rgba(255,147,84,.11); --casse-trait:rgba(255,147,84,.34);
+    --vif:#3FE0B0; --vif-fond:rgba(43,212,160,.12); --vif-trait:rgba(43,212,160,.4);
+    --viol:#C3AEFF; --viol-fond:rgba(139,92,246,.16); --viol-trait:rgba(167,139,250,.36);
+    --a-bg:#0C0912; --a-surface:#161221; --a-t0:#F6F4FB; --a-t1:#ECEAF6; --a-t2:#A79FB6; --a-t3:#9E98BE;
+    --a-trait:rgba(255,255,255,.12);
+  }
+}
+:root[data-theme="dark"]{
+  --sol:#0E0B14; --papier:#171320; --creux:#211C2E;
+  --encre:#F3F0F8; --encre2:#BEB6CC; --encre3:#857D95;
+  --filet:rgba(243,240,248,.16); --filet2:rgba(243,240,248,.08);
+  --or:#F5B120; --or-fond:rgba(245,177,32,.13); --or-trait:rgba(245,177,32,.42);
+  --casse:#FF9354; --casse-fond:rgba(255,147,84,.11); --casse-trait:rgba(255,147,84,.34);
+  --vif:#3FE0B0; --vif-fond:rgba(43,212,160,.12); --vif-trait:rgba(43,212,160,.4);
+  --viol:#C3AEFF; --viol-fond:rgba(139,92,246,.16); --viol-trait:rgba(167,139,250,.36);
+  --a-bg:#0C0912; --a-surface:#161221; --a-t0:#F6F4FB; --a-t1:#ECEAF6; --a-t2:#A79FB6; --a-t3:#9E98BE;
+  --a-trait:rgba(255,255,255,.12);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--sol);color:var(--encre);
+  font-family:"Source Serif 4",Georgia,serif;font-size:17px;line-height:1.62;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1160px;margin:0 auto;padding:0 24px}
+.prose{max-width:63ch}
+h1,h2,h3,h4,.gro{font-family:"Bricolage Grotesque","Helvetica Neue",Arial,sans-serif;text-wrap:balance;letter-spacing:-.02em}
+code,.mono{font-family:"JetBrains Mono",ui-monospace,monospace;font-size:.83em}
+b{font-weight:600}
+
+header{padding:76px 0 44px;border-bottom:1px solid var(--filet)}
+.eyebrow{font-family:"JetBrains Mono",monospace;font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--or);margin:0 0 22px}
+h1{font-size:clamp(40px,7.4vw,76px);font-weight:800;line-height:.95;margin:0}
+h1 em{font-style:normal;color:var(--or)}
+.chapo{margin:26px 0 0;font-size:19px;line-height:1.62;color:var(--encre2);max-width:60ch}
+.compte{display:flex;flex-wrap:wrap;margin:40px 0 0;border-top:1px solid var(--filet)}
+.compte div{padding:18px 26px 16px 0;margin-right:26px;border-right:1px solid var(--filet2)}
+.compte div:last-child{border-right:none;margin-right:0}
+.compte b{display:block;font-family:"Bricolage Grotesque",sans-serif;font-size:34px;font-weight:800;line-height:1;font-variant-numeric:tabular-nums}
+.compte span{display:block;font-family:"JetBrains Mono",monospace;font-size:10.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--encre3);margin-top:8px}
+
+section{padding:66px 0;border-bottom:1px solid var(--filet)}
+.snum{font-family:"JetBrains Mono",monospace;font-size:11px;letter-spacing:.2em;color:var(--encre3);text-transform:uppercase;margin:0}
+h2{font-size:clamp(27px,4vw,41px);font-weight:800;margin:12px 0 22px;line-height:1.04}
+h3{font-size:21px;font-weight:700;margin:0 0 7px}
+ul{padding-left:20px;margin:12px 0;max-width:63ch}
+li{margin:8px 0;font-size:15.5px;color:var(--encre2)}
+li b{color:var(--encre)}
+
+.rail{display:flex;gap:26px;flex-wrap:wrap;margin-top:32px;align-items:flex-start}
+.tel{margin:0;flex:0 0 auto}
+.ecran{width:268px;border-radius:26px;overflow:hidden;border:1px solid var(--filet);
+  box-shadow:0 2px 4px rgba(23,16,41,.06),0 26px 54px -32px rgba(23,16,41,.55)}
+.sc{font-family:"Bricolage Grotesque",sans-serif;padding:12px 13px 18px;min-height:432px}
+.sc.nuit{--a-bg:#0C0912;--a-surface:#161221;--a-t0:#F6F4FB;--a-t1:#ECEAF6;--a-t2:#A79FB6;--a-t3:#9E98BE;
+  --a-trait:rgba(255,255,255,.12);background:#0C0912;color:#ECEAF6}
+.sc.jour{--a-bg:#FFFFFF;--a-surface:#F7F5FA;--a-t0:#1A202C;--a-t1:#2D3748;--a-t2:#5B5470;--a-t3:#A0AEC0;
+  --a-trait:rgba(23,19,30,.11);background:#FFFFFF;color:#2D3748}
+figcaption{font-family:"JetBrains Mono",monospace;font-size:10.5px;letter-spacing:.11em;text-transform:uppercase;
+  color:var(--encre3);margin-top:12px;max-width:268px;line-height:1.65}
+figcaption b{color:var(--casse);font-weight:600}
+figcaption.ok b{color:var(--vif)}
+
+.pastille{display:inline-flex;align-items:center;gap:6px;font-family:"JetBrains Mono",monospace;font-size:10px;
+  letter-spacing:.1em;text-transform:uppercase;padding:4px 9px;border-radius:5px;margin-bottom:11px}
+.p-ko{background:var(--casse-fond);color:var(--casse);border:1px solid var(--casse-trait)}
+.p-ok{background:var(--vif-fond);color:var(--vif);border:1px solid var(--vif-trait)}
+
+.carte-dure{background:linear-gradient(135deg,#faf8ff 0%,#fffef8 100%);border-radius:20px;padding:15px 13px;
+  border:1px solid rgba(255,255,255,.9)}
+.carte-jeton{background:var(--a-surface);border-radius:20px;padding:15px 13px;border:1px solid var(--a-trait)}
+.av{width:60px;height:60px;border-radius:50%;margin:0 auto 8px;display:grid;place-items:center;
+  background:linear-gradient(135deg,#D4C0FF,#F5E6A3);color:#2D3748;font-weight:700;font-size:21px}
+.pseu{text-align:center;font-size:19px;font-weight:800;letter-spacing:-.02em;color:var(--a-t0)}
+.bio{text-align:center;font-size:10.5px;color:var(--a-t2);margin:5px 0 0;line-height:1.5}
+.stats{display:flex;margin-top:12px;padding-top:10px;border-top:1px solid rgba(167,139,250,.16)}
+.stats>div{flex:1;text-align:center}
+.stats u{display:block;text-decoration:none;font-size:17px;font-weight:300;color:var(--a-t1);font-variant-numeric:tabular-nums}
+.stats span{display:block;font-size:8px;letter-spacing:.13em;text-transform:uppercase;color:var(--a-t3);margin-top:3px}
+.stats.zero u.faux{color:#C24608;font-weight:800}
+
+.onglets{display:flex;gap:4px;padding:3px;border-radius:13px;background:rgba(167,139,250,.13);margin-top:12px}
+.onglets span{flex:1;text-align:center;font-size:10.5px;font-weight:700;padding:6px 0;border-radius:10px;color:var(--a-t3)}
+.on-or{background:linear-gradient(135deg,#D4C0FF,#F5E6A3);color:#2D3748}
+.on-viol{background:linear-gradient(135deg,#8B5CF6,#C13BC1);color:#fff}
+
+.btn{display:block;text-align:center;font-size:11.5px;font-weight:700;padding:8px 0;border-radius:13px;margin:10px auto 0;width:112px}
+.btn-pale{background:linear-gradient(135deg,#D4C0FF,#A78BFA);color:#2D3748}
+.btn-plein{background:linear-gradient(135deg,#8B5CF6,#C13BC1);color:#fff}
+
+.lbl{font-size:8px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--a-t3);margin:14px 0 6px}
+.affiches{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.aff{aspect-ratio:9/16;border-radius:11px;overflow:hidden;position:relative;background:#181026}
+.aff img{width:100%;height:100%;object-fit:cover;display:block}
+.aff.lock img{filter:grayscale(1) brightness(.5)}
+.aff i{position:absolute;inset:0;display:grid;place-items:center;background:rgba(10,6,18,.42);
+  font-style:normal;font-size:15px;color:rgba(255,255,255,.55)}
+.aff b{position:absolute;left:7px;right:7px;bottom:6px;color:#fff;font-size:9.5px;font-weight:800;line-height:1.2}
+
+.etag{display:flex;gap:11px;flex-wrap:wrap;margin-top:8px}
+.bdg{width:54px;text-align:center}
+.bdg .rond{width:44px;height:44px;border-radius:50%;margin:0 auto;overflow:hidden;position:relative;
+  border:2px solid #D7A62A;background:linear-gradient(135deg,#8B5CF6,#C13BC1);display:grid;place-items:center;
+  color:#fff;font-size:13px;font-weight:800;box-shadow:0 4px 14px -6px rgba(139,92,246,.6)}
+.bdg .rond img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.bdg em{display:block;font-style:normal;font-size:8.5px;font-weight:700;color:var(--a-t1);margin-top:5px;line-height:1.25}
+.suite{font-size:9px;color:var(--a-t3);margin-top:11px;text-align:left}
+.suite b{color:var(--a-t2)}
+
+.rien{text-align:center;padding:20px 8px;color:var(--a-t3);font-size:10.5px;line-height:1.5}
+.rien .ic{font-size:21px;margin-bottom:5px}
+.postit{border:1.5px dashed rgba(167,139,250,.3);border-radius:18px;padding:20px 10px;text-align:center;
+  background:linear-gradient(135deg,rgba(247,245,250,.9),rgba(240,235,255,.6))}
+.ligne-ens{display:flex;gap:9px;align-items:center;border-radius:14px;padding:9px 10px;margin-top:11px;
+  background:rgba(167,139,250,.13);border:1px solid rgba(167,139,250,.16)}
+.ligne-ens .rond{width:34px;height:34px;border-radius:50%;overflow:hidden;border:2px solid #D7A62A;flex:0 0 auto}
+.ligne-ens .rond img{width:100%;height:100%;object-fit:cover;display:block}
+.ligne-ens p{margin:0;font-size:9.5px;line-height:1.4;color:var(--a-t2)}
+.ligne-ens p b{color:var(--a-t1);font-weight:700}
+
+.fam{margin-top:34px}
+.fam>h3{display:flex;align-items:baseline;gap:11px;flex-wrap:wrap;font-size:14px;
+  font-family:"JetBrains Mono",monospace;font-weight:600;letter-spacing:.15em;text-transform:uppercase;
+  padding-bottom:9px;border-bottom:1px solid var(--filet);margin-bottom:0;color:var(--or)}
+.fam>h3 span{font-family:"Source Serif 4",serif;font-size:14px;letter-spacing:0;text-transform:none;color:var(--encre3);font-weight:400}
+.pt{display:grid;grid-template-columns:34px 1fr;gap:0 16px;padding:19px 0;border-bottom:1px solid var(--filet2)}
+.pt>.n{font-family:"JetBrains Mono",monospace;font-size:12px;color:var(--encre3);padding-top:4px}
+.pt h4{font-size:17.5px;font-weight:700;margin:0 0 7px;line-height:1.28}
+.pt p{margin:0;font-size:15px;color:var(--encre2);max-width:66ch}
+.pt p+p{margin-top:9px}
+.preuve{font-family:"JetBrains Mono",monospace;font-size:11.5px;color:var(--encre3);
+  background:var(--creux);border-radius:5px;padding:7px 10px;margin-top:11px;display:inline-block;line-height:1.65}
+
+.enc{border-left:3px solid var(--or-trait);background:var(--or-fond);padding:15px 19px;border-radius:0 8px 8px 0;margin:22px 0;max-width:64ch}
+.enc p{margin:0;font-size:15px;color:var(--encre2)}
+.enc p+p{margin-top:9px}
+.enc b{color:var(--encre)}
+
+.swatchs{display:grid;grid-template-columns:repeat(auto-fit,minmax(236px,1fr));gap:16px;margin-top:26px}
+.sw{border:1px solid var(--filet);border-radius:12px;overflow:hidden;background:var(--papier)}
+.sw .demo{height:92px;display:grid;place-items:center;padding:14px}
+.sw .txt{padding:13px 15px 15px}
+.sw h4{font-size:14px;margin:0 0 5px;font-weight:700}
+.sw p{margin:0;font-size:13px;color:var(--encre2);line-height:1.5}
+.sw .quoi{font-family:"JetBrains Mono",monospace;font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--encre3);display:block;margin-bottom:7px}
+
+.prop{border:1px solid var(--filet);border-radius:13px;padding:24px 26px;background:var(--papier);margin-top:20px}
+.prop>h3{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;font-size:20px}
+.prop>h3 em{font-style:normal;font-family:"JetBrains Mono",monospace;font-size:11px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--encre3)}
+.prop p{font-size:15.5px;color:var(--encre2);max-width:66ch}
+.prop p:first-of-type{margin-top:12px}
+.sql{display:inline-flex;align-items:center;gap:7px;font-family:"JetBrains Mono",monospace;font-size:11px;
+  background:var(--or-fond);color:var(--or);border:1px solid var(--or-trait);padding:5px 10px;border-radius:5px;margin-top:14px}
+.nosql{display:inline-flex;align-items:center;gap:7px;font-family:"JetBrains Mono",monospace;font-size:11px;
+  background:var(--creux);color:var(--encre3);padding:5px 10px;border-radius:5px;margin-top:14px}
+
+.cat{display:grid;grid-template-columns:repeat(auto-fit,minmax(228px,1fr));margin-top:24px;
+  border:1px solid var(--filet);border-radius:12px;overflow:hidden;background:var(--papier)}
+.cat>div{padding:19px 21px;border-right:1px solid var(--filet2);border-bottom:1px solid var(--filet2)}
+.cat h4{font-family:"JetBrains Mono",monospace;font-size:10.5px;letter-spacing:.15em;text-transform:uppercase;
+  color:var(--or);margin:0 0 13px;font-weight:600}
+.cat ul{margin:0;padding-left:0;list-style:none}
+.cat li{margin:0 0 10px;font-size:14px;color:var(--encre2);display:flex;gap:9px;align-items:baseline}
+.cat li b{color:var(--encre);flex:0 0 auto}
+.cat li i{font-style:normal;font-size:11.5px;color:var(--encre3);font-family:"JetBrains Mono",monospace}
+
+.vague{border:1px solid var(--filet);border-radius:12px;padding:22px 24px;background:var(--papier);margin-top:18px}
+.vague h3{display:flex;align-items:baseline;gap:12px;font-size:19px;flex-wrap:wrap;margin-bottom:10px}
+.vague h3 em{font-style:normal;font-family:"JetBrains Mono",monospace;font-size:11px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--encre3)}
+.vague p{margin:0;font-size:15px;color:var(--encre2);max-width:66ch}
+.puces{display:flex;flex-wrap:wrap;gap:7px;margin-top:14px}
+.puce{font-family:"JetBrains Mono",monospace;font-size:11px;padding:4px 9px;border-radius:5px;background:var(--creux);color:var(--encre2)}
+footer{padding:54px 0 84px;color:var(--encre3);font-size:14.5px;max-width:64ch}
+:focus-visible{outline:2px solid var(--or);outline-offset:3px}
+@media(max-width:640px){
+  .compte div{padding-right:18px;margin-right:18px}
+  .pt{grid-template-columns:26px 1fr;gap:0 11px}
+}
+
+/* Cette maquette-ci : des ecrans plus larges (le reproche numero un de la
+   precedente etait que tout se chevauchait et que les mots se coupaient). */
+.ecran{width:296px}
+.sc{min-height:auto;padding:14px 15px 20px}
+
+.tunnel{background:#0C0912;color:#ECEAF6;--a-t0:#F6F4FB;--a-t1:#ECEAF6;--a-t2:#A79FB6;--a-t3:#8B85A3;
+  --a-surface:#171223;--a-trait:rgba(255,255,255,.10)}
+.barreprog{display:flex;gap:4px;margin-bottom:14px}
+.barreprog i{height:3px;border-radius:2px;flex:1;background:rgba(255,255,255,.13)}
+.barreprog i.ok{background:#2BD4A0}.barreprog i.now{background:#A855F7}
+.anneau{width:150px;height:150px;margin:6px auto 0;border-radius:50%;display:grid;place-items:center;
+  background:conic-gradient(#F5B120 0 72%,rgba(255,255,255,.09) 72% 100%);position:relative}
+.anneau::after{content:"";position:absolute;inset:11px;border-radius:50%;background:#0C0912}
+.anneau div{position:relative;z-index:1;text-align:center}
+.anneau b{display:block;font-size:9px;font-weight:800;letter-spacing:.2em;color:#F5B120}
+.anneau u{display:block;text-decoration:none;font-size:34px;font-weight:800;letter-spacing:-.03em;line-height:1.05;color:#fff;font-variant-numeric:tabular-nums}
+.anneau span{display:block;font-size:9.5px;color:#8B85A3}
+.deuxb{display:flex;gap:9px;margin-top:16px}
+.deuxb span{flex:1;text-align:center;font-size:11.5px;font-weight:700;padding:10px 0;border-radius:15px;
+  background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.10);color:#ECEAF6}
+.ensuite{margin-top:18px}
+.ensuite p{margin:0 0 7px;font-size:8px;font-weight:800;letter-spacing:.18em;color:#8B85A3}
+.exoligne{display:flex;gap:10px;align-items:center;background:#171223;border:1px solid rgba(255,255,255,.09);
+  border-radius:15px;padding:10px 12px}
+.exoligne em{font-style:normal;width:28px;height:28px;border-radius:9px;background:rgba(168,85,247,.20);
+  display:grid;place-items:center;font-size:12px;font-weight:800;color:#C3AEFF;flex:0 0 auto}
+.exoligne b{display:block;font-size:12.5px;font-weight:700;color:#fff;line-height:1.25}
+.exoligne small{display:block;font-size:9.5px;font-weight:700;letter-spacing:.06em;color:#8B85A3;margin-top:2px}
+
+/* LE CARNET : une LIGNE, pas un formulaire. */
+.carnet{display:flex;align-items:center;gap:10px;margin-top:16px;padding:11px 13px;border-radius:15px;
+  background:rgba(43,212,160,.07);border:1px solid rgba(43,212,160,.22)}
+.carnet .val{font-size:17px;font-weight:800;letter-spacing:-.02em;color:#3FE0B0;font-variant-numeric:tabular-nums;white-space:nowrap}
+.carnet .txt{flex:1;min-width:0;font-size:9.5px;color:#8B85A3;line-height:1.35}
+.carnet .mod{font-size:10px;font-weight:700;color:#C3AEFF;white-space:nowrap}
+.pas{display:flex;gap:8px;margin-top:10px}
+.pas div{flex:1;display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-radius:13px;
+  background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.11)}
+.pas s{text-decoration:none;font-size:15px;color:#A79FB6;width:16px;text-align:center}
+.pas b{font-size:15px;font-weight:800;color:#fff;font-variant-numeric:tabular-nums}
+.pas b i{font-style:normal;font-size:9.5px;font-weight:700;color:#8B85A3;margin-left:3px}
+.dernierefois{margin:12px 0 0;font-size:10px;color:#8B85A3}
+.dernierefois b{color:#A79FB6;font-weight:700}
+
+/* LE MUR DES DOUZE LIGNES */
+.trou{display:grid;grid-template-columns:1fr 1fr;gap:0;margin-top:28px;border:1px solid var(--filet);
+  border-radius:13px;overflow:hidden;background:var(--papier)}
+.trou>div{padding:20px 22px}
+.trou>div+div{border-left:1px solid var(--filet)}
+.trou h4{margin:0 0 15px;font-family:"JetBrains Mono",monospace;font-size:10px;letter-spacing:.16em;
+  text-transform:uppercase;font-weight:600}
+.trou ol{margin:0;padding:0;list-style:none}
+.trou li{display:flex;justify-content:space-between;gap:10px;font-family:"JetBrains Mono",monospace;
+  font-size:11.5px;padding:5px 0;border-bottom:1px solid var(--filet2);font-variant-numeric:tabular-nums}
+.trou li:last-child{border-bottom:none}
+.trou li span{color:var(--encre3)}
+.vrai h4{color:var(--vif)} .vrai li b{color:var(--vif);font-weight:600}
+.base h4{color:var(--encre3)} .base li b{color:var(--encre3);font-weight:400}
+.base li{opacity:.92}
+
+/* L'AFFICHE */
+.affiche-p{width:250px;aspect-ratio:9/16;border-radius:20px;padding:24px 22px;display:flex;flex-direction:column;
+  background:radial-gradient(120% 85% at 50% 0%,#123B33 0%,#0B1A18 55%,#080D10 100%);
+  border:1px solid rgba(43,212,160,.22);box-shadow:0 26px 54px -30px rgba(0,0,0,.8);color:#fff;
+  font-family:"Bricolage Grotesque",sans-serif}
+.affiche-p .quoi{font-size:8.5px;font-weight:800;letter-spacing:.2em;text-transform:uppercase;color:#3FE0B0;margin:0}
+.affiche-p .av{all:unset;display:block;font-size:9.5px;color:#7E9A93;margin:26px 0 2px;letter-spacing:.04em}
+.affiche-p .n1{font-size:30px;font-weight:700;letter-spacing:-.03em;line-height:1;color:#8FA9A2;font-variant-numeric:tabular-nums}
+.affiche-p .fleche{margin:12px 0 10px;height:1px;background:linear-gradient(90deg,rgba(43,212,160,.5),transparent)}
+.affiche-p .n2{font-size:54px;font-weight:800;letter-spacing:-.045em;line-height:.92;font-variant-numeric:tabular-nums}
+.affiche-p .n2 i{font-style:normal;font-size:22px;font-weight:700;margin-left:4px}
+.affiche-p .delta{margin:16px 0 0;font-size:19px;font-weight:800;color:#3FE0B0;letter-spacing:-.02em}
+.affiche-p .quand{margin:4px 0 0;font-size:10.5px;color:#7E9A93;line-height:1.45}
+.affiche-p .sign{margin-top:auto;padding-top:18px;font-size:10px;font-weight:700;color:rgba(255,255,255,.55);letter-spacing:.04em}
+
+.gros{font-size:clamp(23px,3.3vw,32px);font-weight:800;line-height:1.18;letter-spacing:-.02em;
+  margin:0;max-width:22ch;font-family:"Bricolage Grotesque",sans-serif}
+.gros em{font-style:normal;color:var(--vif)}
+.legende{font-family:"JetBrains Mono",monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--encre3);margin-top:16px;line-height:1.7;max-width:70ch}
+.legende b{color:var(--encre2);font-weight:600}
+.puces-l{margin:26px 0 0;padding:0;list-style:none;max-width:66ch}
+.puces-l li{display:grid;grid-template-columns:20px 1fr;gap:0 12px;padding:12px 0;border-top:1px solid var(--filet2);
+  font-size:15px;color:var(--encre2);margin:0}
+.puces-l li em{font-style:normal;font-family:"JetBrains Mono",monospace;font-size:11px;color:var(--encre3);padding-top:3px}
+.puces-l li b{color:var(--encre)}
+
+/* Le corps de la page ne scrolle JAMAIS de cote : les deux colonnes du
+   probleme passent l'une sous l'autre, et les listes en chasse fixe se
+   laissent retrecir. */
+@media(max-width:720px){
+  .trou{grid-template-columns:1fr}
+  .trou>div+div{border-left:none;border-top:1px solid var(--filet)}
+  .trou li{font-size:10.5px}
+  .ecran{width:min(296px,86vw)}
+  .affiche-p{width:min(250px,80vw)}
+}
+@media(max-width:420px){
+  .trou li{flex-direction:column;gap:1px;padding:6px 0}
+}
+</style>
+
+<div class="wrap">
+
+<header>
+  <p class="eyebrow">Vaiiya &middot; les records &middot; 30 ao&ucirc;t 2026</p>
+  <h1>Le poids<br>sur la <em>barre</em>.</h1>
+  <p class="chapo">
+    Tu n&rsquo;as pas compris la premi&egrave;re maquette, et tu as raison&nbsp;: elle partait des &eacute;crans,
+    et elle proposait trois choses &agrave; la fois. Celle-ci part du probl&egrave;me, et elle n&rsquo;en propose
+    <b>qu&rsquo;une seule</b>. Le probl&egrave;me tient en une image, juste en dessous.
+  </p>
+  <div class="compte">
+    <div><b>41</b><span>exercices avec une charge</span></div>
+    <div><b>0</b><span>chiffre enregistr&eacute;, jamais</span></div>
+    <div><b>1</b><span>champ &agrave; remplir</span></div>
+    <div><b>1</b><span>migration</span></div>
+  </div>
+</header>
+
+<!-- ═══════════ 01 ═══════════ -->
+<section>
+  <p class="snum">01 &middot; le probl&egrave;me</p>
+  <h2>Douze s&eacute;ances,<br>douze lignes identiques</h2>
+  <div class="prose">
+    <p>Quelqu&rsquo;un fait du d&eacute;velopp&eacute; couch&eacute; une fois par semaine depuis douze semaines. &Agrave; gauche,
+    ce qu&rsquo;il a r&eacute;ellement fait. &Agrave; droite, <b>ce que Vaiiya en a gard&eacute;</b>.</p>
+  </div>
+
+  <div class="trou">
+    <div class="vrai">
+      <h4>Ce qu&rsquo;il a fait</h4>
+      <ol><li><span>9 juin</span><b>20 kg &middot; 8·8·8</b></li><li><span>16 juin</span><b>20 kg &middot; 8·8·8</b></li><li><span>23 juin</span><b>22,5 kg &middot; 8·8·7</b></li><li><span>30 juin</span><b>22,5 kg &middot; 8·8·8</b></li><li><span>7 juil.</span><b>25 kg &middot; 8·8·8</b></li><li><span>14 juil.</span><b>25 kg &middot; 8·8·8</b></li><li><span>21 juil.</span><b>27,5 kg &middot; 8·7·7</b></li><li><span>28 juil.</span><b>27,5 kg &middot; 8·8·8</b></li><li><span>4 août</span><b>30 kg &middot; 8·8·8</b></li><li><span>11 août</span><b>30 kg &middot; 8·8·8</b></li><li><span>18 août</span><b>32,5 kg &middot; 8·8·8</b></li><li><span>25 août</span><b>35 kg &middot; 8·8·8</b></li></ol>
+    </div>
+    <div class="base">
+      <h4>Ce que Vaiiya a gard&eacute;</h4>
+      <ol><li><span>9 juin</span><b>Force Haut du Corps &middot; 42 min</b></li><li><span>16 juin</span><b>Force Haut du Corps &middot; 42 min</b></li><li><span>23 juin</span><b>Force Haut du Corps &middot; 42 min</b></li><li><span>30 juin</span><b>Force Haut du Corps &middot; 42 min</b></li><li><span>7 juil.</span><b>Force Haut du Corps &middot; 42 min</b></li><li><span>14 juil.</span><b>Force Haut du Corps &middot; 42 min</b></li><li><span>21 juil.</span><b>Force Haut du Corps &middot; 42 min</b></li><li><span>28 juil.</span><b>Force Haut du Corps &middot; 42 min</b></li><li><span>4 août</span><b>Force Haut du Corps &middot; 42 min</b></li><li><span>11 août</span><b>Force Haut du Corps &middot; 42 min</b></li><li><span>18 août</span><b>Force Haut du Corps &middot; 42 min</b></li><li><span>25 août</span><b>Force Haut du Corps &middot; 42 min</b></li></ol>
+    </div>
+  </div>
+  <p class="legende">
+    Les douze lignes de droite sont identiques. <b>Ce n&rsquo;est pas une simplification pour la maquette&nbsp;:
+    c&rsquo;est litt&eacute;ralement ce qu&rsquo;il y a en base.</b> <code>workout_sessions</code> garde un titre, une dur&eacute;e,
+    une estimation de calories et une liste de NOMS d&rsquo;exercices.
+  </p>
+
+  <div class="enc">
+    <p>Vaiiya sait qu&rsquo;il est venu douze fois. <b>Elle ne sait pas qu&rsquo;il est pass&eacute; de 20 &agrave; 35 kg.</b></p>
+    <p>C&rsquo;est pour &ccedil;a que le rang, la s&eacute;rie, les missions et les badges r&eacute;pondent tous &agrave; la m&ecirc;me
+    question, &laquo;&nbsp;est-ce que je reviens&nbsp;?&nbsp;&raquo;, et qu&rsquo;aucun ne r&eacute;pond &agrave;
+    &laquo;&nbsp;est-ce que &ccedil;a marche&nbsp;?&nbsp;&raquo;. Ce n&rsquo;est pas un &eacute;cran qui manque&nbsp;:
+    <b>m&ecirc;me si on voulait l&rsquo;afficher, il n&rsquo;y a rien &agrave; afficher.</b></p>
+  </div>
+</section>
+
+<!-- ═══════════ 02 ═══════════ -->
+<section>
+  <p class="snum">02 &middot; la proposition</p>
+  <p class="gros">On ajoute <em>un chiffre</em>, et un seul&nbsp;:<br>le poids que tu mets sur la barre.</p>
+  <div class="prose">
+    <p style="margin-top:22px">Rien d&rsquo;autre ne change. La premi&egrave;re maquette proposait aussi de te
+    <em>conseiller</em> de monter la charge&nbsp;: c&rsquo;est ce qui la rendait confuse, parce que c&rsquo;&eacute;taient
+    deux id&eacute;es dans le m&ecirc;me &eacute;cran. Cette question revient &agrave; la fin, et elle attendra.</p>
+  </div>
+</section>
+
+<!-- ═══════════ 03 ═══════════ -->
+<section>
+  <p class="snum">03 &middot; o&ugrave; &ccedil;a se passe</p>
+  <h2>Une ligne, dans le repos</h2>
+  <div class="prose">
+    <p>Le repos dure quatre-vingt-dix secondes et on n&rsquo;y fait rien&nbsp;: c&rsquo;est le seul moment de la
+    s&eacute;ance o&ugrave; ajouter quelque chose ne co&ucirc;te rien. Et ce n&rsquo;est <b>pas un formulaire</b>, c&rsquo;est une
+    phrase d&eacute;j&agrave; &eacute;crite que tu peux corriger.</p>
+  </div>
+
+  <div class="rail">
+    <figure class="tel">
+      <div class="ecran"><div class="sc tunnel">
+        <div class="barreprog"><i class="ok"></i><i class="now"></i><i></i><i></i><i></i><i></i></div>
+        <div class="anneau"><div><b>REPOS</b><u>1:04</u><span>sur 1:30</span></div></div>
+        <div class="deuxb"><span>+ 15 s</span><span>Passer le repos</span></div>
+        <div class="ensuite">
+          <p>ENSUITE</p>
+          <div class="exoligne"><em>1</em><div><b>D&eacute;velopp&eacute; couch&eacute;</b><small>S&Eacute;RIE 2 / 4</small></div></div>
+        </div>
+      </div></div>
+      <figcaption>Le repos aujourd&rsquo;hui. Un chrono, la suite, et rien &agrave; faire.</figcaption>
+    </figure>
+
+    <figure class="tel">
+      <div class="ecran"><div class="sc tunnel">
+        <div class="barreprog"><i class="ok"></i><i class="now"></i><i></i><i></i><i></i><i></i></div>
+        <div class="anneau"><div><b>REPOS</b><u>1:04</u><span>sur 1:30</span></div></div>
+        <div class="deuxb"><span>+ 15 s</span><span>Passer le repos</span></div>
+        <div class="carnet">
+          <span class="val">22,5 kg &times; 8</span>
+          <span class="txt">comme la<br>derni&egrave;re fois</span>
+          <span class="mod">Modifier</span>
+        </div>
+        <div class="ensuite">
+          <p>ENSUITE</p>
+          <div class="exoligne"><em>1</em><div><b>D&eacute;velopp&eacute; couch&eacute;</b><small>S&Eacute;RIE 2 / 4</small></div></div>
+        </div>
+      </div></div>
+      <figcaption class="ok">Le m&ecirc;me, avec le carnet. <b>Une ligne, d&eacute;j&agrave; remplie.</b> Ne rien toucher l&rsquo;enregistre telle quelle.</figcaption>
+    </figure>
+
+    <figure class="tel">
+      <div class="ecran"><div class="sc tunnel">
+        <div class="barreprog"><i class="ok"></i><i class="now"></i><i></i><i></i><i></i><i></i></div>
+        <div class="anneau"><div><b>REPOS</b><u>1:04</u><span>sur 1:30</span></div></div>
+        <div style="margin-top:16px;padding:12px 13px 13px;border-radius:15px;background:rgba(43,212,160,.07);border:1px solid rgba(43,212,160,.28)">
+          <p style="margin:0;font-size:8px;font-weight:800;letter-spacing:.18em;color:#3FE0B0">CE QUE TU VIENS DE FAIRE</p>
+          <div class="pas">
+            <div><s>&minus;</s><b>25<i>kg</i></b><s>+</s></div>
+            <div><s>&minus;</s><b>8<i>reps</i></b><s>+</s></div>
+          </div>
+          <p class="dernierefois">la derni&egrave;re fois&nbsp;: <b>22,5 kg &times; 8</b></p>
+        </div>
+        <div class="ensuite">
+          <p>ENSUITE</p>
+          <div class="exoligne"><em>1</em><div><b>D&eacute;velopp&eacute; couch&eacute;</b><small>S&Eacute;RIE 2 / 4</small></div></div>
+        </div>
+      </div></div>
+      <figcaption>Apr&egrave;s &laquo;&nbsp;Modifier&nbsp;&raquo;. Les boutons n&rsquo;apparaissent que l&agrave;, le jour o&ugrave; la r&eacute;alit&eacute; change.</figcaption>
+    </figure>
+  </div>
+
+  <ul class="puces-l">
+    <li><em>01</em><div><b>Le cas normal, c&rsquo;est z&eacute;ro geste.</b> La ligne arrive pr&eacute;-remplie avec ta derni&egrave;re fois. Tu ne la touches que le jour o&ugrave; tu changes quelque chose, c&rsquo;est-&agrave;-dire rarement.</div></li>
+    <li><em>02</em><div><b>Un seul chiffre &agrave; donner dans ta vie, par exercice&nbsp;:</b> le premier. Ensuite il se propose tout seul.</div></li>
+    <li><em>03</em><div><b>Au poids du corps, pas de kilos&nbsp;:</b> seulement des r&eacute;p&eacute;titions. Sur les 102 exercices anim&eacute;s, 41 ont une charge et 57 ont un compte.</div></li>
+    <li><em>04</em><div><b>Ne rien noter ne co&ucirc;te rien et ne dit rien.</b> &laquo;&nbsp;Passer le repos&nbsp;&raquo; marche toujours, et il n&rsquo;y a aucun rappel, aucune pastille rouge, aucun reproche. Qui ignore le carnet retrouve l&rsquo;application d&rsquo;aujourd&rsquo;hui au pixel pr&egrave;s.</div></li>
+  </ul>
+</section>
+
+<!-- ═══════════ 04 ═══════════ -->
+<section>
+  <p class="snum">04 &middot; ce que &ccedil;a rend</p>
+  <h2>Deux choses, et pas une de plus</h2>
+
+  <div class="rail" style="align-items:flex-start">
+    <figure class="tel">
+      <div class="ecran"><div class="sc tunnel">
+        <div class="barreprog"><i class="ok"></i><i class="ok"></i><i class="now"></i><i></i><i></i><i></i></div>
+        <p style="margin:14px 0 0;font-size:9px;font-weight:800;letter-spacing:.16em;color:#C3AEFF;text-align:center">EXERCICE 3 / 6</p>
+        <p style="margin:8px 0 0;font-size:23px;font-weight:800;letter-spacing:-.03em;line-height:1.1;color:#fff;text-align:center">D&eacute;velopp&eacute; couch&eacute;</p>
+        <p style="margin:11px 0 0;font-size:11px;color:#8B85A3;text-align:center">La derni&egrave;re fois&nbsp;: <b style="color:#3FE0B0;font-weight:700">22,5 kg &times; 8</b></p>
+        <div style="margin:18px auto 0;width:132px;height:96px;border-radius:14px;background:rgba(255,255,255,.04);display:grid;place-items:center;font-size:11px;color:#5C566E">le personnage</div>
+        <p style="margin:16px 0 0;font-size:40px;font-weight:800;color:#fff;text-align:center;line-height:1">8</p>
+        <p style="margin:2px 0 0;font-size:9px;font-weight:800;letter-spacing:.18em;color:#8B85A3;text-align:center">R&Eacute;P&Eacute;TITIONS</p>
+        <div style="margin-top:18px;padding:13px 0;border-radius:16px;text-align:center;font-size:13px;font-weight:800;color:#fff;background:linear-gradient(135deg,#8B5CF6,#C13BC1)">S&eacute;rie termin&eacute;e &#10003;</div>
+      </div></div>
+      <figcaption class="ok"><b>Une ligne grise</b> au d&eacute;but de l&rsquo;exercice. Pas de carte, pas de Guide, pas de d&eacute;cision &agrave; prendre avant de soulever.</figcaption>
+    </figure>
+
+    <figure class="tel" style="padding-top:6px">
+      <div class="affiche-p">
+        <p class="quoi">D&eacute;velopp&eacute; couch&eacute;</p>
+        <span class="av">Il y a douze semaines</span>
+        <div class="n1">20 kg</div>
+        <div class="fleche"></div>
+        <span class="av" style="margin-top:0">Aujourd&rsquo;hui</span>
+        <div class="n2">35<i>kg</i></div>
+        <p class="delta">+ 15 kg</p>
+        <p class="quand">en douze semaines,<br>sans rien changer d&rsquo;autre</p>
+        <p class="sign">&#10022; vaiiya</p>
+      </div>
+      <figcaption class="ok">Sur ton profil, dans la <b>Collection</b>, avec les affiches du relais. M&ecirc;me famille, m&ecirc;me feuille &laquo;&nbsp;Envoyer&nbsp;&raquo;, m&ecirc;me rendu PNG.</figcaption>
+    </figure>
+  </div>
+
+  <ul class="puces-l">
+    <li><em>01</em><div><b>Deux nombres et l&rsquo;&eacute;cart, jamais un graphique.</b> Une courbe par exercice, c&rsquo;est un tableur, et un tableur n&rsquo;&eacute;meut personne. Une phrase tous les deux mois vaut mieux qu&rsquo;un graphique disponible en permanence.</div></li>
+    <li><em>02</em><div><b>&Ccedil;a ne parle jamais du corps.</b> Ni poids, ni photo, ni mesure&nbsp;: seulement ce que tu as fait. C&rsquo;est la ligne rouge du produit, et elle tient ici aussi.</div></li>
+    <li><em>03</em><div><b>Les couleurs ne bougent pas.</b> La charge est orange (de l&rsquo;&eacute;nergie, comme les calories et le repos), la preuve est teal (du progr&egrave;s, comme le poids), le bouton reste violet. <b>Aucune couleur nouvelle&nbsp;:</b> la charge entre dans le syst&egrave;me D par une porte qui existe d&eacute;j&agrave;.</div></li>
+  </ul>
+</section>
+
+<!-- ═══════════ 05 ═══════════ -->
+<section>
+  <p class="snum">05 &middot; les refus</p>
+  <h2>Ce que &ccedil;a ne fera pas</h2>
+  <div class="refus">
+    <div>
+      <h4>Aucune EXP</h4>
+      <p>La s&eacute;rie dit &laquo;&nbsp;je reviens&nbsp;&raquo;, l&rsquo;EXP dit &laquo;&nbsp;je fais des missions&nbsp;&raquo;,
+      le rang dit &laquo;&nbsp;o&ugrave; j&rsquo;en suis&nbsp;&raquo;. Le jour o&ugrave; soulever lourd rapporte des points,
+      <b>on paie les gens pour charger la barre</b>.</p>
+    </div>
+    <div>
+      <h4>Aucun maximum estim&eacute;</h4>
+      <p>Pas de &laquo;&nbsp;1RM&nbsp;&raquo; calcul&eacute; par une formule. Ce serait un chiffre invent&eacute; qu&rsquo;on
+      prendrait pour une mesure, sur un geste que personne n&rsquo;a vu. <b>On affiche ce qui a &eacute;t&eacute; fait.</b></p>
+    </div>
+    <div>
+      <h4>Aucune comparaison</h4>
+      <p>Ni classement, ni moyenne, ni &laquo;&nbsp;les gens de ton niveau&nbsp;&raquo;. La charge est le chiffre
+      le plus intime du produit&nbsp;: <b>elle ne sort jamais du compte</b>, sauf par une affiche que tu envoies toi-m&ecirc;me.</p>
+    </div>
+    <div>
+      <h4>Aucun reproche</h4>
+      <p>Soulever moins que la fois d&rsquo;avant n&rsquo;affiche rien de sp&eacute;cial. Pas de fl&egrave;che rouge, pas de
+      &laquo;&nbsp;&minus;2,5 kg&nbsp;&raquo;&nbsp;: <b>on note, on ne juge pas.</b> C&rsquo;est la m&ecirc;me r&egrave;gle que la
+      courbe de poids.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ 06 ═══════════ -->
+<section style="border-bottom:none">
+  <p class="snum">06 &middot; ce que &ccedil;a co&ucirc;te</p>
+  <h2>Une table, un champ,<br>un fichier</h2>
+
+  <div class="vague">
+    <h3>Nouveau <em>&middot; une migration</em></h3>
+    <p><code>exercise_logs</code>&nbsp;: une ligne par s&eacute;rie not&eacute;e (compte, s&eacute;ance, nom de l&rsquo;exercice,
+    num&eacute;ro de s&eacute;rie, charge, r&eacute;p&eacute;titions), plus une lecture &laquo;&nbsp;ma derni&egrave;re fois&nbsp;&raquo;.
+    <b><code>personal_records</code> est supprim&eacute;e dans la m&ecirc;me migration</b>&nbsp;: morte depuis le 13 mai,
+    jamais &eacute;crite, jamais lue. Un record d&eacute;riv&eacute; et un record stock&eacute; finiraient par diverger, c&rsquo;est la
+    le&ccedil;on de <code>challenge_rewards</code> la semaine derni&egrave;re.</p>
+  </div>
+
+  <div class="vague">
+    <h3>Modifi&eacute; <em>&middot; deux fichiers</em></h3>
+    <p><code>WorkoutGuideModal.tsx</code> pour la ligne du repos et celle du d&eacute;but d&rsquo;exercice
+    (&#9888; fichier monolithe&nbsp;: un seul agent &agrave; la fois, en une passe courte), et
+    <code>exerciseLibrary.ts</code> pour dire lesquels des 41&nbsp;exercices portent une charge.</p>
+  </div>
+
+  <div class="vague">
+    <h3>R&eacute;utilis&eacute; <em>&middot; rien &agrave; r&eacute;&eacute;crire</em></h3>
+    <p>L&rsquo;anneau de repos, la galerie du profil, la feuille &laquo;&nbsp;Envoyer&nbsp;&raquo; et le rendu PNG des
+    affiches, tous cod&eacute;s cette semaine.</p>
+  </div>
+
+  <div class="enc">
+    <p><b>Ce que je ne mets PAS dedans, et c&rsquo;est volontaire&nbsp;: te proposer de monter la charge.</b>
+    La premi&egrave;re maquette le faisait (&laquo;&nbsp;deux s&eacute;ances pleines, on tente 25&nbsp;?&nbsp;&raquo;), et
+    c&rsquo;est exactement ce qui la rendait illisible&nbsp;: elle demandait de juger un carnet et un coach en
+    m&ecirc;me temps.</p>
+    <p>Se souvenir d&rsquo;abord. <b>Proposer de monter est un autre m&eacute;tier</b>, &ccedil;a se dessine mieux quand il
+    y a de vrais chiffres &agrave; regarder, et &ccedil;a se d&eacute;cidera sur sa propre maquette. M&ecirc;me chose pour la
+    question &laquo;&nbsp;gratuit ou Premium&nbsp;&raquo;&nbsp;: je ne la tranche pas ici.</p>
+  </div>
+</section>
+
+<footer>
+  <p>Vaiiya &middot; les records &middot; 30 ao&ucirc;t 2026. Tout ce qui est d&eacute;crit ici a &eacute;t&eacute; v&eacute;rifi&eacute; dans le
+  d&eacute;p&ocirc;t&nbsp;: le sch&eacute;ma de <code>workout_sessions</code>, l&rsquo;absence totale de champ de charge dans le
+  type <code>Exercise</code>, et le fait qu&rsquo;aucun fichier ne nomme <code>personal_records</code>.
+  Les chiffres des &eacute;crans sont invent&eacute;s.</p>
+</footer>
+
+</div>
