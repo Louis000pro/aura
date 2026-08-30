@@ -22,10 +22,14 @@ export async function POST(req: NextRequest) {
     if (!appelant) return refusAuth();
     const actor_id = appelant.id;
 
-    const { run_id } = await req.json();
+    const { run_id, evenement } = await req.json();
     if (!run_id) {
       return NextResponse.json({ error: "Paramètres manquants" }, { status: 400 });
     }
+    // « lance » : le relais vient de démarrer. Sans cette annonce, on
+    // peut engager quelqu'un sur sept jours sans qu'il l'apprenne
+    // autrement qu'en ouvrant l'app par hasard.
+    const lancement = evenement === "lance";
 
     const admin = createAdminClient();
 
@@ -63,8 +67,16 @@ export async function POST(req: NextRequest) {
     if (!cible.length) return NextResponse.json({ ok: true, envoyees: 0 });
 
     const complete = run.statut === "reussi" || faits >= (run.target_days as number);
-    const titre = complete ? "L'affiche est complète" : "L'affiche s'est dévoilée";
-    const corps = complete
+    // Le message raconte, il ne réclame pas : c'est ce qui fait ouvrir
+    // par curiosité au lieu de mettre une dette dans la poche de l'autre.
+    const titre = lancement
+      ? "Un relais commence"
+      : complete
+      ? "L'affiche est complète"
+      : "L'affiche s'est dévoilée";
+    const corps = lancement
+      ? `${pseudo} a lancé un relais avec toi. Une affiche se dévoile en ${run.target_days} jours.`
+      : complete
       ? `${pseudo} a franchi le dernier maillon. Elle est à vous.`
       : `${pseudo} a franchi son maillon. ${faits} jour${faits > 1 ? "s" : ""} sur ${run.target_days}.`;
     const lien = run.conversation_id ? `/communaute/${run.conversation_id}` : "/communaute";

@@ -1,0 +1,1043 @@
+<title>Le relais recousu</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700;12..96,800&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+:root{
+  --sol:#F6F3EE; --papier:#FFFFFF; --creux:#EBE6DE;
+  --encre:#17131E; --encre2:#4E4759; --encre3:#8A8296;
+  --filet:rgba(23,19,30,.13); --filet2:rgba(23,19,30,.07);
+  --or:#8A5A06; --or-fond:rgba(215,166,42,.16); --or-trait:rgba(215,166,42,.5);
+  --casse:#C24608; --casse-fond:rgba(232,98,12,.10);
+  --vif-encre:#0B8A68; --vif-fond:rgba(43,212,160,.13);
+  --a-bg:#FFFFFF; --a-surface:#F7F5FA; --a-t0:#17131E; --a-t1:#2C2637; --a-t2:#5B5470; --a-t3:#948CA6;
+  --a-trait:rgba(23,19,30,.11);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --sol:#0E0B14; --papier:#171320; --creux:#211C2E;
+    --encre:#F3F0F8; --encre2:#BEB6CC; --encre3:#857D95;
+    --filet:rgba(243,240,248,.16); --filet2:rgba(243,240,248,.08);
+    --or:#F5B120; --or-fond:rgba(245,177,32,.13); --or-trait:rgba(245,177,32,.42);
+    --casse:#FF9354; --casse-fond:rgba(255,147,84,.11);
+    --vif-encre:#3FE0B0; --vif-fond:rgba(43,212,160,.12);
+    --a-bg:#0C0912; --a-surface:#161221; --a-t0:#F5F2FA; --a-t1:#E3DEEC; --a-t2:#A79FB6; --a-t3:#7A7288;
+    --a-trait:rgba(255,255,255,.12);
+  }
+}
+:root[data-theme="dark"]{
+  --sol:#0E0B14; --papier:#171320; --creux:#211C2E;
+  --encre:#F3F0F8; --encre2:#BEB6CC; --encre3:#857D95;
+  --filet:rgba(243,240,248,.16); --filet2:rgba(243,240,248,.08);
+  --or:#F5B120; --or-fond:rgba(245,177,32,.13); --or-trait:rgba(245,177,32,.42);
+  --casse:#FF9354; --casse-fond:rgba(255,147,84,.11);
+  --vif-encre:#3FE0B0; --vif-fond:rgba(43,212,160,.12);
+  --a-bg:#0C0912; --a-surface:#161221; --a-t0:#F5F2FA; --a-t1:#E3DEEC; --a-t2:#A79FB6; --a-t3:#7A7288;
+  --a-trait:rgba(255,255,255,.12);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--sol);color:var(--encre);
+  font-family:"Source Serif 4",Georgia,serif;font-size:17px;line-height:1.62;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1140px;margin:0 auto;padding:0 24px}
+.prose{max-width:63ch}
+h1,h2,h3,h4,.gro{font-family:"Bricolage Grotesque","Helvetica Neue",Arial,sans-serif;text-wrap:balance;letter-spacing:-.02em}
+code,.mono{font-family:"JetBrains Mono",ui-monospace,monospace;font-size:.83em}
+
+header{padding:76px 0 44px;border-bottom:1px solid var(--filet)}
+.eyebrow{font-family:"JetBrains Mono",monospace;font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--or);margin:0 0 22px}
+h1{font-size:clamp(40px,7.4vw,76px);font-weight:800;line-height:.95;margin:0}
+h1 em{font-style:normal;color:var(--or)}
+.chapo{margin:26px 0 0;font-size:19px;line-height:1.62;color:var(--encre2);max-width:60ch}
+.compte{display:flex;flex-wrap:wrap;margin:40px 0 0;border-top:1px solid var(--filet)}
+.compte div{padding:18px 26px 4px 0;margin-right:26px;border-right:1px solid var(--filet2)}
+.compte div:last-child{border-right:none;margin-right:0}
+.compte b{display:block;font-family:"Bricolage Grotesque",sans-serif;font-size:34px;font-weight:800;line-height:1;font-variant-numeric:tabular-nums}
+.compte span{display:block;font-family:"JetBrains Mono",monospace;font-size:10.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--encre3);margin-top:8px}
+
+section{padding:66px 0;border-bottom:1px solid var(--filet)}
+.snum{font-family:"JetBrains Mono",monospace;font-size:11px;letter-spacing:.2em;color:var(--encre3);text-transform:uppercase}
+h2{font-size:clamp(27px,4vw,41px);font-weight:800;margin:12px 0 0;line-height:1.04}
+h3{font-size:22px;font-weight:700;margin:0 0 6px}
+p{margin:14px 0}
+.mini{font-size:14.5px;color:var(--encre2)}
+.note{border-left:2px solid var(--or-trait);padding-left:16px;margin:22px 0;font-size:15.5px;color:var(--encre2);max-width:60ch}
+
+.rail{display:flex;gap:20px;overflow-x:auto;padding:10px 0 22px;scroll-snap-type:x proximity}
+.rail>*{scroll-snap-align:start}
+.tel{flex:0 0 248px;width:248px}
+.ecran{height:522px;border-radius:26px;overflow:hidden;position:relative;background:var(--a-bg);color:var(--a-t0);
+  border:1px solid var(--filet);box-shadow:0 22px 48px -26px rgba(0,0,0,.5);
+  font-family:"Bricolage Grotesque","Helvetica Neue",Arial,sans-serif;font-size:12px;line-height:1.4;display:flex;flex-direction:column}
+.lg{margin-top:13px}
+.lg b{display:block;font-family:"JetBrains Mono",monospace;font-size:10px;letter-spacing:.14em;color:var(--encre3);text-transform:uppercase;margin-bottom:5px}
+.lg span{display:block;font-size:14.5px;color:var(--encre2);font-family:"Source Serif 4",serif;line-height:1.45}
+.verdict{display:inline-flex;align-items:center;gap:6px;font-family:"JetBrains Mono",monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;padding:3px 8px;border-radius:5px;white-space:nowrap;margin-bottom:7px}
+.v-casse{background:var(--casse-fond);color:var(--casse)}
+.v-ok{background:var(--vif-fond);color:var(--vif-encre)}
+.v-or{background:var(--or-fond);color:var(--or)}
+
+.sc{padding:11px 12px;display:flex;flex-direction:column;gap:9px;flex:1;min-height:0;overflow:hidden}
+.barre{display:flex;align-items:center;gap:8px;flex:0 0 auto}
+.av{width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#8B5CF6,#C13BC1);color:#fff;display:grid;place-items:center;font-size:11px;font-weight:700;flex:0 0 auto}
+.titre-app{font-size:17px;font-weight:400;font-style:italic;background:linear-gradient(135deg,#8B5CF6,#F5B120);-webkit-background-clip:text;background-clip:text;color:transparent;flex:1}
+.rond{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-size:12px;flex:0 0 auto;background:rgba(139,92,246,.14);color:#8B5CF6}
+.rond.plein{background:linear-gradient(135deg,#8B5CF6,#C13BC1);color:#fff}
+.cta{border:none;border-radius:13px;padding:10px;font:700 12.5px "Bricolage Grotesque",sans-serif;color:#fff;background:linear-gradient(135deg,#8B5CF6,#C13BC1);width:100%;text-align:center;display:block;flex:0 0 auto}
+.cta2{border:1px solid var(--a-trait);border-radius:13px;padding:9px;font:600 12px "Bricolage Grotesque",sans-serif;color:var(--a-t1);background:transparent;width:100%;text-align:center;display:block;flex:0 0 auto}
+.affiche{border-radius:6px;overflow:hidden;background:#1a1622;flex:0 0 auto}
+.affiche img{width:100%;height:100%;object-fit:cover;display:block}
+.ligne{display:flex;align-items:center;gap:9px;padding:9px 2px;border-bottom:1px solid var(--a-trait)}
+.nom{font-size:12.5px;font-weight:600;color:var(--a-t0)}
+.apercu{font-size:11px;color:var(--a-t3);margin-top:1px}
+.pastille{margin-left:auto;background:linear-gradient(135deg,#8B5CF6,#C13BC1);color:#fff;font-size:9px;font-weight:700;border-radius:9px;padding:1px 6px;flex:0 0 auto}
+.bulle{max-width:78%;padding:7px 10px;border-radius:14px 14px 14px 4px;background:var(--a-surface);border:1px solid var(--a-trait);color:var(--a-t1);font-size:11.5px}
+.bulle.moi{margin-left:auto;background:linear-gradient(135deg,#8B5CF6,#C13BC1);color:#fff;border:none;border-radius:14px 14px 4px 14px}
+.sys{margin:2px auto;font-size:10px;color:var(--a-t3);text-align:center;max-width:90%;line-height:1.35}
+.epingle{display:flex;gap:9px;align-items:center;padding:8px;border-radius:13px;border:1px solid rgba(255,255,255,.17);background:rgba(255,255,255,.09);flex:0 0 auto}
+.jauge{display:flex;gap:3px;margin-top:6px}
+.jauge i{height:3px;flex:1;border-radius:3px;background:rgba(255,255,255,.24)}
+.jauge i.on{background:#2BD4A0}
+.composer{display:flex;gap:6px;align-items:center;margin-top:auto;flex:0 0 auto}
+.champ{flex:1;border:1px solid var(--a-trait);background:var(--a-surface);border-radius:16px;padding:7px 10px;font-size:11px;color:var(--a-t3)}
+.sombre{background:#0B0813;color:#F4F1F9}
+.sombre .champ{background:rgba(255,255,255,.09);border-color:rgba(255,255,255,.15);color:#807891}
+.fond-affiche{position:absolute;inset:0;z-index:0;overflow:hidden}
+.fond-affiche img{width:100%;height:100%;object-fit:cover;filter:blur(16px) saturate(1.15);transform:scale(1.25)}
+.voile{position:absolute;inset:0;background:linear-gradient(180deg,rgba(10,7,16,.84),rgba(10,7,16,.66) 38%,rgba(10,7,16,.9))}
+.sur{position:relative;z-index:1}
+.stat{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.09);border-radius:11px;padding:7px 9px}
+.stat b{display:block;font-size:8px;letter-spacing:.16em;color:#807891;font-weight:800}
+.stat i{display:block;font-style:normal;font-size:15px;font-weight:800;margin-top:2px}
+.bande{display:flex;gap:9px;align-items:center;padding:8px 11px;border-radius:13px;flex:0 0 auto}
+.bande-or{background:rgba(245,177,32,.10);border:1px solid rgba(245,177,32,.28)}
+.bande-relais{background:rgba(215,166,42,.13);border:1px solid rgba(215,166,42,.44)}
+.chaine{display:flex;gap:4px;flex:0 0 auto}
+.chaine i{height:5px;flex:1;border-radius:4px;background:rgba(148,140,166,.22)}
+.chaine i.moi{background:#2BD4A0}
+.chaine i.lui{background:#8B5CF6}
+.chaine i.auj{outline:2px solid rgba(139,92,246,.55);outline-offset:2px}
+
+.grille{display:grid;gap:1px;background:var(--filet2);border:1px solid var(--filet);border-radius:10px;overflow:hidden;margin-top:28px}
+.fam{background:var(--creux);padding:14px 18px;display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+.fam h3{font-size:15px;margin:0}
+.fam span{font-family:"JetBrains Mono",monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--encre3)}
+.item{background:var(--papier);padding:16px 18px;display:grid;grid-template-columns:44px 1fr 128px;gap:16px;align-items:start}
+.ref{font-family:"JetBrains Mono",monospace;font-size:11.5px;font-weight:600;color:var(--or);padding-top:3px}
+.item h4{font-family:"Bricolage Grotesque",sans-serif;font-size:15px;font-weight:700;margin:0 0 5px}
+.item p{margin:0;font-size:14.5px;line-height:1.55;color:var(--encre2)}
+.ou{margin-top:8px;font-family:"JetBrains Mono",monospace;font-size:11px;color:var(--encre3);word-break:break-word;line-height:1.5}
+@media(max-width:760px){.item{grid-template-columns:34px 1fr}.item>.col3{grid-column:2}}
+
+.p{padding:36px 0;border-top:1px solid var(--filet)}
+.p-tete{display:flex;gap:14px;align-items:baseline;flex-wrap:wrap}
+.p-tete h3{font-size:clamp(20px,3vw,28px);margin:0;flex:1;min-width:240px}
+.deux{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:20px}
+@media(max-width:820px){.deux{grid-template-columns:1fr}}
+.bloc{border:1px solid var(--filet);border-radius:10px;padding:16px 18px;background:var(--papier)}
+.bloc .t{font-family:"JetBrains Mono",monospace;font-size:10px;letter-spacing:.16em;text-transform:uppercase;margin:0 0 9px}
+.avant .t{color:var(--casse)}
+.apres .t{color:var(--vif-encre)}
+.bloc p{margin:0;font-size:15px;color:var(--encre2)}
+.bloc p+p{margin-top:10px}
+ul{padding-left:20px;margin:12px 0;max-width:63ch}
+li{margin:8px 0;font-size:15.5px;color:var(--encre2)}
+li b{color:var(--encre);font-weight:600}
+.sql{display:inline-flex;align-items:center;gap:7px;font-family:"JetBrains Mono",monospace;font-size:11px;background:var(--or-fond);color:var(--or);border:1px solid var(--or-trait);padding:5px 10px;border-radius:5px;margin-top:16px}
+.vague{border:1px solid var(--filet);border-radius:12px;padding:22px 24px;background:var(--papier);margin-top:18px}
+.vague h3{display:flex;align-items:baseline;gap:12px;font-size:19px;flex-wrap:wrap}
+.vague h3 em{font-style:normal;font-family:"JetBrains Mono",monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--encre3)}
+.puces{display:flex;flex-wrap:wrap;gap:7px;margin-top:14px}
+.puce{font-family:"JetBrains Mono",monospace;font-size:11px;padding:4px 9px;border-radius:5px;background:var(--creux);color:var(--encre2)}
+footer{padding:54px 0 84px;color:var(--encre3);font-size:14.5px}
+:focus-visible{outline:2px solid var(--or);outline-offset:3px}
+</style>
+
+<div class="wrap">
+
+<header>
+  <p class="eyebrow">Vaiiya · audit du 30 août 2026</p>
+  <h1>Le relais<br>est <em>débranché</em>.</h1>
+  <p class="chapo">
+    Le code du relais est là, il est bon, et presque personne ne peut le rencontrer.
+    Tout tient dans une phrase : <b>l&rsquo;écran qui donne le plaisir n&rsquo;est jamais montré au moment
+    où le plaisir arrive.</b> Autour de ça, vingt-trois points décrochent, dont cinq qui mènent
+    littéralement à un mur. Voici le parcours réel, puis huit propositions.
+  </p>
+  <div class="compte">
+    <div><b>23</b><span>points relevés</span></div>
+    <div><b>5</b><span>impasses</span></div>
+    <div><b>1</b><span>conversation avec soi-même</span></div>
+    <div><b>2</b><span>affiches sur 3 injouables</span></div>
+    <div><b>0</b><span>entrée depuis l&rsquo;accueil</span></div>
+  </div>
+</header>
+
+<section>
+  <p class="snum">01 · le parcours réel</p>
+  <h2>Quatre écrans, et on est déjà dans le mur</h2>
+  <p class="prose">
+    Je l&rsquo;ai suivi comme quelqu&rsquo;un qui découvre : j&rsquo;ouvre Communauté, je touche le seul
+    bouton violet de l&rsquo;écran, je fais ma séance. Voilà ce que je vois, dans l&rsquo;ordre.
+  </p>
+
+  <div class="rail">
+
+    <figure class="tel" style="margin:0">
+      <div class="ecran">
+        <div class="sc">
+          <div class="barre">
+            <span class="av">L</span>
+            <span class="titre-app">Communauté</span>
+            <span class="rond">&#9906;</span>
+            <span class="rond plein">+</span>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:center;text-align:center;padding:14px 6px 0;gap:9px">
+            <div class="affiche" style="width:84px;height:149px"><img src="data:image/webp;base64,UklGRkwDAABXRUJQVlA4IEADAABwKwCdASoEAc4BPpVKnk2lo60mIHM40aASiWlu/GtvFbhsfJFjSxADFJ8ZxVWYKtl2rEXNzYkyvYbWrGioarMwVvdPdqIiNZ6tkJ0vGuqoyqTFuMHxI/q4I3C3k0DvVukWlz24Ha6ZYlJZ2kbkcES8nPU0Oui61AguMGj/PqG8IUHftwy/Yw1auRgf40Kz/v0u4Puw8HgdLm0wpz/y+oUpcIkzbcllZD2BTNf2DcwgJWtJYMeioKCnNd4ST2UeBL1PG6z/yklOz+2WxplTa/8BPlTcfJEz67sv17zh3lLXMAds9Jzm4hK+kQUMGfGmWE2A5DdP6Jinfmffk25aXSXXU42d1kqg+LToPgqRVRX575gp+B1snUSCRIsToD7SXXSaTGJwRZJlhqOe9XlAgtcArQiqpF5/RZZgQE3qzprdffdZ05NnkGpveB5y6TH/LbjS/3JuPOXSXii8ukuukuukuukjAAD++F/VuTG9qoqhUNQwET1mHpPuAHXMfkFhF1oA75EYAGrlNFDOJkBmzBnMFbzEoocJ5NVQMH2VMdCvIX4DMwONKB6WvlGCY+VtQs1VOo3DaG2XkrO846aE2xFC12trzRhfV4j6HbUixrQAA8NVadVWkE3M612VF+tG/tLokGkdvSa+7ukbP4Sx3SkHvoE9kew2Nof1xDAkIeLjviuH02H0+G4ygY5l2SBYnKJKu+iTTm77/d17s7ZbHar8X/ovalK1iuCdIMS8JB1dryRczvXC8B5aeYCq3QQj2wHugOftjiFUY8oJPLr490XTcyO99Vu0G7yvsLw6JEC3PA1gNiYifr7Y2/6f6ppxQDyIr5DuGHQGsUjPm+ohZQM6TyRDMLfUUei7OCWPCFzJ3fRvVpef/1JplMcuDSqo/A+d1SuuCKGZAJijifaPGPL+3pMoosuSO+A1HWSQNHcxzZAAodQ/zmjLK3vp4r1cqCwWuLbFTt3B7A2pcAPmN1hAIWrYevZvIDFKZbYvQBiJ6sNVki6gEAhULegw34s7bFzYupGc2gcTHbVfFNxjYqJf66iNUQO5OPOCOyyD7nntRwCoZhW0vT4FXKxFOXKhACJA+QQiAAC2FJoAAAAAAAAA" alt="Affiche Sillage vide"></div>
+            <b style="font-size:15px">Cette affiche est vide.</b>
+            <p style="margin:0;font-size:11px;color:var(--a-t2);line-height:1.45">
+              Elle se dévoile à deux, une séance à la fois. Invite quelqu&rsquo;un&nbsp;: la conversation se crée toute seule.
+            </p>
+            <span class="cta" style="margin-top:4px">Lancer un relais</span>
+            <span class="cta2">Écrire à quelqu&rsquo;un</span>
+          </div>
+        </div>
+      </div>
+      <figcaption class="lg">
+        <span class="verdict v-ok">état des lieux</span>
+        <b>1 · l&rsquo;écran vide</b>
+        <span>Correct. La promesse est claire, le bouton est le bon. Je touche.</span>
+      </figcaption>
+    </figure>
+
+    <figure class="tel" style="margin:0">
+      <div class="ecran sombre">
+        <div class="fond-affiche"><img src="data:image/webp;base64,UklGRkwDAABXRUJQVlA4IEADAABwKwCdASoEAc4BPpVKnk2lo60mIHM40aASiWlu/GtvFbhsfJFjSxADFJ8ZxVWYKtl2rEXNzYkyvYbWrGioarMwVvdPdqIiNZ6tkJ0vGuqoyqTFuMHxI/q4I3C3k0DvVukWlz24Ha6ZYlJZ2kbkcES8nPU0Oui61AguMGj/PqG8IUHftwy/Yw1auRgf40Kz/v0u4Puw8HgdLm0wpz/y+oUpcIkzbcllZD2BTNf2DcwgJWtJYMeioKCnNd4ST2UeBL1PG6z/yklOz+2WxplTa/8BPlTcfJEz67sv17zh3lLXMAds9Jzm4hK+kQUMGfGmWE2A5DdP6Jinfmffk25aXSXXU42d1kqg+LToPgqRVRX575gp+B1snUSCRIsToD7SXXSaTGJwRZJlhqOe9XlAgtcArQiqpF5/RZZgQE3qzprdffdZ05NnkGpveB5y6TH/LbjS/3JuPOXSXii8ukuukuukuukjAAD++F/VuTG9qoqhUNQwET1mHpPuAHXMfkFhF1oA75EYAGrlNFDOJkBmzBnMFbzEoocJ5NVQMH2VMdCvIX4DMwONKB6WvlGCY+VtQs1VOo3DaG2XkrO846aE2xFC12trzRhfV4j6HbUixrQAA8NVadVWkE3M612VF+tG/tLokGkdvSa+7ukbP4Sx3SkHvoE9kew2Nof1xDAkIeLjviuH02H0+G4ygY5l2SBYnKJKu+iTTm77/d17s7ZbHar8X/ovalK1iuCdIMS8JB1dryRczvXC8B5aeYCq3QQj2wHugOftjiFUY8oJPLr490XTcyO99Vu0G7yvsLw6JEC3PA1gNiYifr7Y2/6f6ppxQDyIr5DuGHQGsUjPm+ohZQM6TyRDMLfUUei7OCWPCFzJ3fRvVpef/1JplMcuDSqo/A+d1SuuCKGZAJijifaPGPL+3pMoosuSO+A1HWSQNHcxzZAAodQ/zmjLK3vp4r1cqCwWuLbFTt3B7A2pcAPmN1hAIWrYevZvIDFKZbYvQBiJ6sNVki6gEAhULegw34s7bFzYupGc2gcTHbVfFNxjYqJf66iNUQO5OPOCOyyD7nntRwCoZhW0vT4FXKxFOXKhACJA+QQiAAC2FJoAAAAAAAAA" alt=""><span class="voile"></span></div>
+        <div class="sc sur">
+          <div class="barre">
+            <span style="font-size:15px">&#8592;</span>
+            <div class="affiche" style="width:21px;height:27px"><img src="data:image/webp;base64,UklGRkwDAABXRUJQVlA4IEADAABwKwCdASoEAc4BPpVKnk2lo60mIHM40aASiWlu/GtvFbhsfJFjSxADFJ8ZxVWYKtl2rEXNzYkyvYbWrGioarMwVvdPdqIiNZ6tkJ0vGuqoyqTFuMHxI/q4I3C3k0DvVukWlz24Ha6ZYlJZ2kbkcES8nPU0Oui61AguMGj/PqG8IUHftwy/Yw1auRgf40Kz/v0u4Puw8HgdLm0wpz/y+oUpcIkzbcllZD2BTNf2DcwgJWtJYMeioKCnNd4ST2UeBL1PG6z/yklOz+2WxplTa/8BPlTcfJEz67sv17zh3lLXMAds9Jzm4hK+kQUMGfGmWE2A5DdP6Jinfmffk25aXSXXU42d1kqg+LToPgqRVRX575gp+B1snUSCRIsToD7SXXSaTGJwRZJlhqOe9XlAgtcArQiqpF5/RZZgQE3qzprdffdZ05NnkGpveB5y6TH/LbjS/3JuPOXSXii8ukuukuukuukjAAD++F/VuTG9qoqhUNQwET1mHpPuAHXMfkFhF1oA75EYAGrlNFDOJkBmzBnMFbzEoocJ5NVQMH2VMdCvIX4DMwONKB6WvlGCY+VtQs1VOo3DaG2XkrO846aE2xFC12trzRhfV4j6HbUixrQAA8NVadVWkE3M612VF+tG/tLokGkdvSa+7ukbP4Sx3SkHvoE9kew2Nof1xDAkIeLjviuH02H0+G4ygY5l2SBYnKJKu+iTTm77/d17s7ZbHar8X/ovalK1iuCdIMS8JB1dryRczvXC8B5aeYCq3QQj2wHugOftjiFUY8oJPLr490XTcyO99Vu0G7yvsLw6JEC3PA1gNiYifr7Y2/6f6ppxQDyIr5DuGHQGsUjPm+ohZQM6TyRDMLfUUei7OCWPCFzJ3fRvVpef/1JplMcuDSqo/A+d1SuuCKGZAJijifaPGPL+3pMoosuSO+A1HWSQNHcxzZAAodQ/zmjLK3vp4r1cqCwWuLbFTt3B7A2pcAPmN1hAIWrYevZvIDFKZbYvQBiJ6sNVki6gEAhULegw34s7bFzYupGc2gcTHbVfFNxjYqJf66iNUQO5OPOCOyyD7nntRwCoZhW0vT4FXKxFOXKhACJA+QQiAAC2FJoAAAAAAAAA" alt=""></div>
+            <span style="flex:1">
+              <b style="display:block;font-size:13px;color:#F4F1F9">Moi</b>
+              <i style="font-style:normal;font-size:10px;color:#A79FB6">Touche pour les infos</i>
+            </span>
+          </div>
+          <div class="epingle">
+            <div class="affiche" style="width:33px;height:46px"><img src="data:image/webp;base64,UklGRkwDAABXRUJQVlA4IEADAABwKwCdASoEAc4BPpVKnk2lo60mIHM40aASiWlu/GtvFbhsfJFjSxADFJ8ZxVWYKtl2rEXNzYkyvYbWrGioarMwVvdPdqIiNZ6tkJ0vGuqoyqTFuMHxI/q4I3C3k0DvVukWlz24Ha6ZYlJZ2kbkcES8nPU0Oui61AguMGj/PqG8IUHftwy/Yw1auRgf40Kz/v0u4Puw8HgdLm0wpz/y+oUpcIkzbcllZD2BTNf2DcwgJWtJYMeioKCnNd4ST2UeBL1PG6z/yklOz+2WxplTa/8BPlTcfJEz67sv17zh3lLXMAds9Jzm4hK+kQUMGfGmWE2A5DdP6Jinfmffk25aXSXXU42d1kqg+LToPgqRVRX575gp+B1snUSCRIsToD7SXXSaTGJwRZJlhqOe9XlAgtcArQiqpF5/RZZgQE3qzprdffdZ05NnkGpveB5y6TH/LbjS/3JuPOXSXii8ukuukuukuukjAAD++F/VuTG9qoqhUNQwET1mHpPuAHXMfkFhF1oA75EYAGrlNFDOJkBmzBnMFbzEoocJ5NVQMH2VMdCvIX4DMwONKB6WvlGCY+VtQs1VOo3DaG2XkrO846aE2xFC12trzRhfV4j6HbUixrQAA8NVadVWkE3M612VF+tG/tLokGkdvSa+7ukbP4Sx3SkHvoE9kew2Nof1xDAkIeLjviuH02H0+G4ygY5l2SBYnKJKu+iTTm77/d17s7ZbHar8X/ovalK1iuCdIMS8JB1dryRczvXC8B5aeYCq3QQj2wHugOftjiFUY8oJPLr490XTcyO99Vu0G7yvsLw6JEC3PA1gNiYifr7Y2/6f6ppxQDyIr5DuGHQGsUjPm+ohZQM6TyRDMLfUUei7OCWPCFzJ3fRvVpef/1JplMcuDSqo/A+d1SuuCKGZAJijifaPGPL+3pMoosuSO+A1HWSQNHcxzZAAodQ/zmjLK3vp4r1cqCwWuLbFTt3B7A2pcAPmN1hAIWrYevZvIDFKZbYvQBiJ6sNVki6gEAhULegw34s7bFzYupGc2gcTHbVfFNxjYqJf66iNUQO5OPOCOyyD7nntRwCoZhW0vT4FXKxFOXKhACJA+QQiAAC2FJoAAAAAAAAA" alt=""></div>
+            <span style="flex:1">
+              <b style="display:block;font-size:11.5px;color:#F4F1F9">0 jour sur 4</b>
+              <i style="font-style:normal;font-size:10px;color:#A79FB6">Touche pour voir l&rsquo;affiche en grand.</i>
+              <span class="jauge"><i></i><i></i><i></i><i></i></span>
+            </span>
+            <span style="color:#807891">&#8250;</span>
+          </div>
+          <div style="text-align:center;padding-top:30px">
+            <p style="margin:0;font-size:11px;color:#807891;line-height:1.5">Rien encore.<br>C&rsquo;est à toi d&rsquo;ouvrir.</p>
+            <span style="display:inline-block;margin-top:12px;padding:7px 14px;border-radius:99px;background:linear-gradient(135deg,#8B5CF6,#C13BC1);color:#fff;font-size:11.5px;font-weight:700">Salut l&rsquo;ami&nbsp;! &#128075;</span>
+          </div>
+          <div class="composer">
+            <span class="rond" style="background:rgba(215,166,42,.16);color:#D7A62A">&#10022;</span>
+            <span class="champ">Message&hellip;</span>
+            <span class="rond plein">&#10148;</span>
+          </div>
+        </div>
+      </div>
+      <figcaption class="lg">
+        <span class="verdict v-casse">impasse</span>
+        <b>2 · la conversation « Moi »</b>
+        <span>Le relais m&rsquo;a ouvert un fil dont je suis le seul membre. Il porte donc mon
+        propre nom&nbsp;: <code>titreConversation</code> renvoie « Moi » quand il n&rsquo;y a personne d&rsquo;autre.
+        Le lien d&rsquo;invitation, lui, est deux taps plus loin. Rien à l&rsquo;écran ne dit qu&rsquo;il existe.</span>
+      </figcaption>
+    </figure>
+
+    <figure class="tel" style="margin:0">
+      <div class="ecran sombre" style="background:#0B0813">
+        <div class="sc" style="justify-content:center;text-align:center;align-items:center;gap:7px">
+          <div style="width:56px;height:56px;border-radius:50%;border:2px solid #2BD4A0;display:grid;place-items:center;color:#2BD4A0;font-size:24px">&#10003;</div>
+          <b style="font-size:19px;text-transform:uppercase;letter-spacing:-.02em;margin-top:6px">Séance terminée</b>
+          <i style="font-style:normal;font-size:11px;color:#A79FB6">Full Body Débutant</i>
+          <div class="bande bande-or" style="margin-top:6px">
+            <span style="font-size:15px">&#128293;</span>
+            <span style="text-align:left">
+              <b style="display:block;font-size:11.5px;color:#FFD34E">Journée validée</b>
+              <i style="font-style:normal;font-size:10px;color:#A79FB6">Série de 6 jours</i>
+            </span>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;width:100%;margin-top:8px">
+            <span class="stat"><b>DURÉE</b><i style="color:#fff">24:10</i></span>
+            <span class="stat"><b>SÉRIES</b><i style="color:#2BD4A0">12</i></span>
+            <span class="stat"><b>CALORIES</b><i style="color:#F5B120">~157</i></span>
+            <span class="stat"><b>EXERCICES</b><i style="color:#2BD4A0">6</i></span>
+          </div>
+        </div>
+      </div>
+      <figcaption class="lg">
+        <span class="verdict v-casse">le trou principal</span>
+        <b>3 · le maillon franchi, en silence</b>
+        <span>Le maillon vient d&rsquo;être validé, l&rsquo;affiche vient de changer d&rsquo;état, et l&rsquo;écran
+        n&rsquo;en dit pas un mot, alors qu&rsquo;il sait afficher « Journée validée » juste à côté.
+        Le dévoilement est mis de côté dans un drapeau de session, et attend que j&rsquo;aille de
+        moi-même sur une page dont je ne connais pas l&rsquo;existence.</span>
+      </figcaption>
+    </figure>
+
+    <figure class="tel" style="margin:0">
+      <div class="ecran">
+        <div class="sc">
+          <div class="barre"><span class="rond" style="background:var(--a-surface);color:var(--a-t1)">&#8592;</span></div>
+          <div class="affiche" style="width:100%;height:236px;margin:0 auto"><img src="data:image/webp;base64,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" alt="Affiche Sillage à l&rsquo;état 2"></div>
+          <div style="display:flex;align-items:baseline;justify-content:space-between;margin-top:4px">
+            <span><b style="font-size:26px">1</b><i style="font-style:normal;font-size:12px;color:var(--a-t2)"> / 4 jours</i></span>
+            <i style="font-style:normal;font-size:10.5px;color:var(--a-t3)">7 jours restants</i>
+          </div>
+          <div class="chaine"><i class="moi"></i><i class="auj"></i><i></i><i></i><i></i><i></i><i></i></div>
+          <p style="margin:2px 0 0;font-size:11.5px;color:var(--a-t2);line-height:1.45">C&rsquo;est fait pour aujourd&rsquo;hui. Le relais repart demain.</p>
+          <div style="margin-top:auto;display:flex;flex-direction:column;gap:6px">
+            <span style="text-align:center;font-size:11px;color:var(--a-t3)">Arrêter le relais</span>
+          </div>
+        </div>
+      </div>
+      <figcaption class="lg">
+        <span class="verdict v-casse">page orpheline</span>
+        <b>4 · <code>/defi</code>, si je la trouve</b>
+        <span>Elle n&rsquo;est reliée à rien&nbsp;: pas d&rsquo;entrée sur l&rsquo;accueil, pas dans la barre.
+        Le seul raccourci permanent est une icône de chaîne dans l&rsquo;en-tête du profil, dont le
+        commentaire dit lui-même « entrée provisoire ». Et depuis ici, aucun retour vers la
+        conversation&nbsp;: le type <code>Defi</code> ne porte même pas l&rsquo;identifiant du fil.</span>
+      </figcaption>
+    </figure>
+
+  </div>
+
+  <p class="note">
+    Ce parcours n&rsquo;est pas une accumulation de petits défauts&nbsp;: c&rsquo;est une seule erreur
+    d&rsquo;architecture, répétée. <b>Le relais a été conçu comme un écran, alors qu&rsquo;il est un fil.</b>
+    Le 21 juillet, la décision a été prise que le défi vivrait dans les conversations. Le code
+    a suivi à moitié&nbsp;: l&rsquo;affiche est bien épinglée dans le fil, mais toutes les commandes
+    (lancer, inviter, arrêter, regarder) sont restées sur la vieille page isolée.
+  </p>
+</section>
+
+<section>
+  <p class="snum">02 · le relevé</p>
+  <h2>Vingt-trois points, par famille</h2>
+  <p class="prose">
+    Chaque ligne a été vérifiée dans le code, pas supposée. La colonne de droite dit ce que ça
+    coûte&nbsp;: <b>impasse</b> = l&rsquo;utilisateur ne peut plus avancer, <b>décroché</b> = ça
+    marche mais personne ne le voit, <b>finition</b> = c&rsquo;est visible et c&rsquo;est laid ou faux.
+  </p>
+
+  <div class="grille">
+
+    <div class="fam"><h3>A. Le relais n&rsquo;existe nulle part</h3><span>R1 à R4</span></div>
+
+    <div class="item">
+      <span class="ref">R1</span>
+      <div>
+        <h4>Aucune entrée depuis l&rsquo;accueil ni la barre</h4>
+        <p>Un compte sans relais ne peut pas en découvrir un. Le seul chemin permanent est
+        l&rsquo;icône chaîne du profil, marquée « provisoire » dans son propre commentaire depuis
+        le 21 juillet.</p>
+        <p class="ou">src/app/profil/page.tsx:721 · aucune occurrence dans AccueilSignature.tsx</p>
+      </div>
+      <div class="col3"><span class="verdict v-casse">décroché</span></div>
+    </div>
+
+    <div class="item">
+      <span class="ref">R2</span>
+      <div>
+        <h4>Le maillon se franchit sans un mot</h4>
+        <p>La fin de séance pose <code>CLE_DEVOILE</code> en sessionStorage et n&rsquo;affiche rien.
+        Le drapeau meurt avec la session&nbsp;: si on ne va pas sur <code>/defi</code> tout de suite,
+        l&rsquo;affiche a changé et on ne l&rsquo;a jamais vue changer.</p>
+        <p class="ou">WorkoutGuideModal.tsx:756 · l&rsquo;écran de fin affiche déjà la série ligne 1414</p>
+      </div>
+      <div class="col3"><span class="verdict v-casse">le trou principal</span></div>
+    </div>
+
+    <div class="item">
+      <span class="ref">R3</span>
+      <div>
+        <h4>Pas de retour de <code>/defi</code> vers la conversation</h4>
+        <p>Le bouton retour est un <code>router.back()</code>&nbsp;: arrivé depuis une notification
+        push, il ne mène nulle part. Et l&rsquo;équipier n&rsquo;a ni visage ni nom cliquable sur cet écran.</p>
+        <p class="ou">src/app/defi/page.tsx:436 · type Defi sans conversation_id (lib/defi.ts:88)</p>
+      </div>
+      <div class="col3"><span class="verdict v-casse">impasse</span></div>
+    </div>
+
+    <div class="item">
+      <span class="ref">R4</span>
+      <div>
+        <h4>« Lancer une séance » ouvre le catalogue entier</h4>
+        <p>Sur l&rsquo;écran où l&rsquo;on vient de dire « à toi de jouer », le bouton envoie sur
+        <code>/progression</code>, c&rsquo;est-à-dire trente-six collections. Un pas de plus, pas une séance.</p>
+        <p class="ou">src/app/defi/page.tsx:389</p>
+      </div>
+      <div class="col3"><span class="verdict v-or">finition</span></div>
+    </div>
+
+    <div class="fam"><h3>B. Le lancement par lien ouvre une conversation avec soi-même</h3><span>R5 à R8</span></div>
+
+    <div class="item">
+      <span class="ref">R5</span>
+      <div>
+        <h4>La conversation naît avant l&rsquo;équipier</h4>
+        <p><code>creer_defi_duo</code> crée le fil, s&rsquo;y met seul, puis le client y navigue.
+        Un seul membre &rarr; <code>titreConversation</code> renvoie « Moi ». Le fil s&rsquo;appelle
+        littéralement Moi, avec un bouton « Salut l&rsquo;ami&nbsp;! » qui écrit à personne.</p>
+        <p class="ou">20260721_messagerie.sql:234 · ConversationListPane.tsx:170 · messagerie.ts:140</p>
+      </div>
+      <div class="col3"><span class="verdict v-casse">impasse</span></div>
+    </div>
+
+    <div class="item">
+      <span class="ref">R6</span>
+      <div>
+        <h4>Le lien d&rsquo;invitation n&rsquo;est visible que sur <code>/defi</code></h4>
+        <p>C&rsquo;est-à-dire pas là où le lancement dépose l&rsquo;utilisateur. La seule chose qu&rsquo;il
+        reste à faire après « Lancer un relais » est donc invisible.</p>
+        <p class="ou">src/app/defi/page.tsx:236</p>
+      </div>
+      <div class="col3"><span class="verdict v-casse">impasse</span></div>
+    </div>
+
+    <div class="item">
+      <span class="ref">R7</span>
+      <div>
+        <h4>Rejoindre par lien atterrit sur <code>/defi</code>, pas dans le fil</h4>
+        <p><code>rejoindre_defi</code> renvoie pourtant <code>conversation_id</code>, et la page
+        l&rsquo;ignore. Les deux se retrouvent dans une conversation qu&rsquo;aucun n&rsquo;a vue s&rsquo;ouvrir.</p>
+        <p class="ou">src/app/rejoindre/[code]/page.tsx:39</p>
+      </div>
+      <div class="col3"><span class="verdict v-casse">décroché</span></div>
+    </div>
+
+    <div class="item">
+      <span class="ref">R8</span>
+      <div>
+        <h4>Rejoindre ne crée aucune amitié</h4>
+        <p>Aucune ligne <code>followers</code>. Après le relais, la personne n&rsquo;apparaît pas dans
+        <code>mesRelations</code>&nbsp;: impossible de lui ouvrir une autre discussion, de l&rsquo;ajouter
+        à un groupe. Le fil du relais est le seul lien, et il s&rsquo;éteindra.</p>
+        <p class="ou">20260721_messagerie.sql:262 · messagerie.ts:992</p>
+      </div>
+      <div class="col3"><span class="verdict v-casse">décroché</span></div>
+    </div>
+
+    <div class="fam"><h3>C. Des boutons qui ne peuvent pas marcher</h3><span>R9 à R12</span></div>
+
+    <div class="item">
+      <span class="ref">R9</span>
+      <div>
+        <h4>L&rsquo;étincelle du relais s&rsquo;affiche dans les groupes</h4>
+        <p>Dans le composer et dans les infos. <code>lancer_relais</code> refuse toujours
+        (<code>pas_un_duo</code>)&nbsp;: le bouton est visible, il promet, il échoue.
+        À trois personnes ou plus, il n&rsquo;a rien à faire là.</p>
+        <p class="ou">communaute/[id]/page.tsx:600 · communaute/[id]/infos/page.tsx:346</p>
+      </div>
+      <div class="col3"><span class="verdict v-casse">bouton mort</span></div>
+    </div>
+
+    <div class="item">
+      <span class="ref">R10</span>
+      <div>
+        <h4>Lancer un relais ne prévient pas l&rsquo;autre</h4>
+        <p>Une personne engage l&rsquo;autre sur sept jours&nbsp;; l&rsquo;autre l&rsquo;apprendra en ouvrant
+        l&rsquo;app. Une seule ligne système dans le fil, aucun push, aucune notification en cloche.</p>
+        <p class="ou">20260721_messagerie_v2.sql:148 (aucun appel à sendPushToUser)</p>
+      </div>
+      <div class="col3"><span class="verdict v-casse">décroché</span></div>
+    </div>
+
+    <div class="item">
+      <span class="ref">R11</span>
+      <div>
+        <h4>« L&rsquo;un de vous a déjà un relais en cours » est sans issue</h4>
+        <p>Le message ne dit pas lequel des deux bloque, et on ne peut pas arrêter le relais de
+        quelqu&rsquo;un d&rsquo;autre. La personne reste devant un refus qu&rsquo;elle ne peut pas lever.</p>
+        <p class="ou">communaute/[id]/page.tsx:344 · lancer_relais lignes 130-136</p>
+      </div>
+      <div class="col3"><span class="verdict v-casse">impasse</span></div>
+    </div>
+
+    <div class="item">
+      <span class="ref">R12</span>
+      <div>
+        <h4>Deux portes pour la même action</h4>
+        <p>« Lancer un relais » existe dans la feuille du «&nbsp;+&nbsp;», dans l&rsquo;état vide, dans
+        les infos, dans le composer et sur <code>/defi</code>, avec deux mécanismes différents
+        derrière (<code>creer_defi_duo</code> par lien, <code>lancer_relais</code> dans un fil) et
+        quatre messages d&rsquo;erreur écrits séparément.</p>
+        <p class="ou">4 copies du même bloc de traduction d&rsquo;erreurs</p>
+      </div>
+      <div class="col3"><span class="verdict v-or">finition</span></div>
+    </div>
+
+    <div class="fam"><h3>D. Le cycle de vie ne se ferme jamais</h3><span>R13 à R16</span></div>
+
+    <div class="item">
+      <span class="ref">R13</span>
+      <div>
+        <h4>Rien n&rsquo;écrit jamais le statut <code>termine</code></h4>
+        <p>Un relais dont la fenêtre est passée reste <code>en_cours</code> pour toujours&nbsp;:
+        il bloque tout nouveau relais pour les deux, le cron du soir continue de le scanner, et
+        <code>joursRestants()</code> renvoie 0 &rarr; l&rsquo;écran affiche <b>« dernier jour »</b>
+        indéfiniment. Même chose pour un <code>inscription</code> que personne n&rsquo;a rejoint&nbsp;:
+        l&rsquo;invitation expire à 14 jours, le run vit à vie.</p>
+        <p class="ou">lib/defi.ts:160 · aucun UPDATE vers 'termine' dans tout le repo</p>
+      </div>
+      <div class="col3"><span class="verdict v-casse">impasse</span></div>
+    </div>
+
+    <div class="item">
+      <span class="ref">R14</span>
+      <div>
+        <h4>Une victoire fige la conversation à vie</h4>
+        <p>Le statut <code>reussi</code> reste dans le filtre&nbsp;: le sceau garde la place de
+        l&rsquo;avatar dans la liste et le fond d&rsquo;affiche reste posé sur le fil, pour toujours. Le
+        visage de l&rsquo;ami ne revient jamais.</p>
+        <p class="ou">messagerie.ts:220 et 334 · ConversationAvatar.tsx:28</p>
+      </div>
+      <div class="col3"><span class="verdict v-or">finition</span></div>
+    </div>
+
+    <div class="item">
+      <span class="ref">R15</span>
+      <div>
+        <h4>Une troisième personne casse le relais en silence</h4>
+        <p>Ajouter quelqu&rsquo;un à un duo qui porte un relais&nbsp;: le fil devient un groupe,
+        l&rsquo;affiche reste épinglée pour trois, et la nouvelle personne ne pourra jamais franchir
+        un maillon (elle n&rsquo;est pas dans <code>challenge_run_members</code>). Aucun message.</p>
+        <p class="ou">20260725_messagerie_fiabilite.sql:198 · valider_action_defi (est_membre_run)</p>
+      </div>
+      <div class="col3"><span class="verdict v-casse">décroché</span></div>
+    </div>
+
+    <div class="item">
+      <span class="ref">R16</span>
+      <div>
+        <h4>La conversation « Moi » survit à l&rsquo;annulation</h4>
+        <p>Arrêter le relais met le run en <code>annule</code>, mais le fil solo reste dans la
+        liste, sans sceau, sans membre, sans objet.</p>
+        <p class="ou">annuler_relais ne touche pas conversations</p>
+      </div>
+      <div class="col3"><span class="verdict v-or">finition</span></div>
+    </div>
+
+    <div class="fam"><h3>E. La récompense ne se renouvelle pas</h3><span>R17 à R19</span></div>
+
+    <div class="item">
+      <span class="ref">R17</span>
+      <div>
+        <h4>Personne n&rsquo;écrit jamais <code>serie</code></h4>
+        <p>Les trois séries existent en assets et sont déclarées dans <code>SERIES</code>. La
+        colonne a <code>'sillage'</code> en défaut et aucune fonction ne la renseigne&nbsp;:
+        <b>tout le monde joue Sillage, toujours</b>. Le profil affiche donc trois affiches dont
+        deux verrouillées à vie.</p>
+        <p class="ou">public/defis/{sillage,aurore,brume} · profil/page.tsx:1044</p>
+      </div>
+      <div class="col3"><span class="verdict v-casse">décroché</span></div>
+    </div>
+
+    <div class="item">
+      <span class="ref">R18</span>
+      <div>
+        <h4>Gagner deux fois donne la même chose</h4>
+        <p>Même affiche, mêmes deux badges, gagnés au même instant. Il n&rsquo;existe aujourd&rsquo;hui
+        aucune raison de relancer un relais après le premier. C&rsquo;est le vrai plafond du
+        dispositif, plus que n&rsquo;importe quel bug de cette liste.</p>
+        <p class="ou">badgesDuDefi() rend exactement 2 badges, toujours les mêmes</p>
+      </div>
+      <div class="col3"><span class="verdict v-casse">décroché</span></div>
+    </div>
+
+    <div class="item">
+      <span class="ref">R19</span>
+      <div>
+        <h4>Le troisième maillon ne change pas l&rsquo;image</h4>
+        <p>Quatre jours projetés sur quatre états donnent 1&rarr;2&rarr;3&rarr;3&rarr;4&nbsp;: le
+        troisième jour, on franchit un maillon et l&rsquo;affiche ne bouge pas. C&rsquo;est assumé dans
+        le code, mais c&rsquo;est précisément le jour le plus dur de la semaine.</p>
+        <p class="ou">lib/defi.ts:70 (etatPoster)</p>
+      </div>
+      <div class="col3"><span class="verdict v-or">finition</span></div>
+    </div>
+
+    <div class="fam"><h3>F. Finitions</h3><span>R20 à R23</span></div>
+
+    <div class="item">
+      <span class="ref">R20</span>
+      <div>
+        <h4>La chaîne des jours n&rsquo;a pas de légende</h4>
+        <p>Teal = moi, violet = l&rsquo;autre, gris = manqué. Rien ne le dit, et c&rsquo;est le seul
+        endroit de l&rsquo;app où le teal ne veut pas dire « réussi ».</p>
+        <p class="ou">src/app/defi/page.tsx:406</p>
+      </div>
+      <div class="col3"><span class="verdict v-or">finition</span></div>
+    </div>
+
+    <div class="item">
+      <span class="ref">R21</span>
+      <div>
+        <h4>Le rappel du jour décisif est le dernier texte sans voix</h4>
+        <p>Tous les rappels du soir sont passés par <code>voixRappel</code> le 29 août. Celui du
+        relais est resté écrit en dur dans le cron, alors qu&rsquo;il te parle de toi, à toi.</p>
+        <p class="ou">api/cron/reminders/route.ts:108</p>
+      </div>
+      <div class="col3"><span class="verdict v-or">finition</span></div>
+    </div>
+
+    <div class="item">
+      <span class="ref">R22</span>
+      <div>
+        <h4><code>CURRENT_DATE + 6</code> au lieu de <code>window_days - 1</code></h4>
+        <p>Identique aujourd&rsquo;hui (la fenêtre vaut 7), faux le jour où on la change. Et les
+        deux chemins de création ne calculent pas la fin de la même façon.</p>
+        <p class="ou">20260721_messagerie_v2.sql:140</p>
+      </div>
+      <div class="col3"><span class="verdict v-or">finition</span></div>
+    </div>
+
+    <div class="item">
+      <span class="ref">R23</span>
+      <div>
+        <h4><code>/defi</code> scrolle systématiquement</h4>
+        <p>Affiche à 52&nbsp;% de la hauteur, plus compteur, chaîne, phrase, bouton, arrêt et
+        deux badges. Sur un écran de 640, la moitié de la page est sous le pli, y compris
+        le bouton d&rsquo;action les jours où c&rsquo;est à toi.</p>
+        <p class="ou">PosterDefi hauteurMax 52vh + 6 blocs empilés</p>
+      </div>
+      <div class="col3"><span class="verdict v-or">finition</span></div>
+    </div>
+
+  </div>
+</section>
+
+<section>
+  <p class="snum">03 · ce que je propose</p>
+  <h2>Huit propositions</h2>
+  <p class="prose">
+    Elles ne s&rsquo;ajoutent pas au produit, elles le recousent. Sept sur huit sont des
+    <b>remplacements</b>&nbsp;: quelque chose qui existe déjà change de place ou de moment.
+    Une seule migration SQL suffit à tout tenir.
+  </p>
+
+  <div class="p">
+    <div class="p-tete"><span class="ref">P1</span><h3>Le relais commence par une personne, jamais par un lien dans le vide</h3></div>
+    <div class="deux">
+      <div class="bloc avant">
+        <p class="t">Aujourd&rsquo;hui</p>
+        <p>« Lancer un relais » crée un run, une conversation vide, et t&rsquo;y dépose. Elle
+        s&rsquo;appelle « Moi ». Le lien qu&rsquo;il faut envoyer vit ailleurs.</p>
+      </div>
+      <div class="bloc apres">
+        <p class="t">Proposé</p>
+        <p>Le bouton ouvre d&rsquo;abord <b>« Avec qui&nbsp;? »</b>&nbsp;: tes amis, plus une ligne
+        « Quelqu&rsquo;un qui n&rsquo;a pas Vaiiya ». Un ami choisi &rarr; le relais démarre dans votre
+        fil, il reçoit une notification. Le lien &rarr; <b>aucune conversation n&rsquo;est créée</b>,
+        l&rsquo;attente vit sur <code>/defi</code> avec le lien en grand&nbsp;; le fil naît quand
+        quelqu&rsquo;un rejoint.</p>
+        <p>La conversation « Moi » disparaît par construction, pas par correctif.</p>
+      </div>
+    </div>
+    <div class="rail" style="margin-top:6px">
+      <figure class="tel" style="margin:0">
+        <div class="ecran">
+          <div class="sc">
+            <div class="barre">
+              <span class="av">L</span><span class="titre-app">Communauté</span>
+              <span class="rond">&#9906;</span><span class="rond plein">+</span>
+            </div>
+            <div style="opacity:.3;pointer-events:none">
+              <div class="ligne"><span class="av" style="width:32px;height:32px">M</span>
+                <span><b class="nom">Marc</b><i class="apercu" style="font-style:normal;display:block">Toi&nbsp;: à demain&nbsp;!</i></span></div>
+            </div>
+            <div style="flex:0 0 auto;margin-top:auto;background:var(--a-surface);border:1px solid var(--a-trait);border-radius:20px 20px 0 0;margin-left:-12px;margin-right:-12px;margin-bottom:-11px;padding:12px 13px 14px">
+              <span style="display:block;width:34px;height:3px;border-radius:3px;background:var(--a-trait);margin:0 auto 11px"></span>
+              <b style="display:block;font-size:14px">Avec qui&nbsp;?</b>
+              <i style="font-style:normal;display:block;font-size:10.5px;color:var(--a-t3);margin-top:2px">Le relais se joue à deux, une semaine.</i>
+              <div class="ligne" style="border-color:var(--a-trait)"><span class="av" style="width:30px;height:30px">M</span>
+                <span style="flex:1"><b class="nom">Marc</b></span>
+                <span style="font-size:10px;color:var(--a-t3)">Ami</span></div>
+              <div class="ligne"><span class="av" style="width:30px;height:30px">C</span>
+                <span style="flex:1"><b class="nom">Camille</b></span>
+                <span style="font-size:10px;color:var(--a-t3)">Ami</span></div>
+              <div class="ligne" style="border:none">
+                <span class="rond" style="background:rgba(215,166,42,.16);color:#D7A62A;width:30px;height:30px">&#128279;</span>
+                <span style="flex:1"><b class="nom">Quelqu&rsquo;un qui n&rsquo;a pas Vaiiya</b>
+                <i class="apercu" style="font-style:normal;display:block">Tu obtiendras un lien à envoyer.</i></span></div>
+            </div>
+          </div>
+        </div>
+        <figcaption class="lg"><span class="verdict v-ok">proposé</span><b>La feuille « Avec qui ? »</b>
+          <span>Une seule porte pour les deux chemins. Le lien devient une option parmi tes amis, pas le comportement par défaut.</span></figcaption>
+      </figure>
+
+      <figure class="tel" style="margin:0">
+        <div class="ecran sombre">
+          <div class="fond-affiche"><img src="data:image/webp;base64,UklGRkwDAABXRUJQVlA4IEADAABwKwCdASoEAc4BPpVKnk2lo60mIHM40aASiWlu/GtvFbhsfJFjSxADFJ8ZxVWYKtl2rEXNzYkyvYbWrGioarMwVvdPdqIiNZ6tkJ0vGuqoyqTFuMHxI/q4I3C3k0DvVukWlz24Ha6ZYlJZ2kbkcES8nPU0Oui61AguMGj/PqG8IUHftwy/Yw1auRgf40Kz/v0u4Puw8HgdLm0wpz/y+oUpcIkzbcllZD2BTNf2DcwgJWtJYMeioKCnNd4ST2UeBL1PG6z/yklOz+2WxplTa/8BPlTcfJEz67sv17zh3lLXMAds9Jzm4hK+kQUMGfGmWE2A5DdP6Jinfmffk25aXSXXU42d1kqg+LToPgqRVRX575gp+B1snUSCRIsToD7SXXSaTGJwRZJlhqOe9XlAgtcArQiqpF5/RZZgQE3qzprdffdZ05NnkGpveB5y6TH/LbjS/3JuPOXSXii8ukuukuukuukjAAD++F/VuTG9qoqhUNQwET1mHpPuAHXMfkFhF1oA75EYAGrlNFDOJkBmzBnMFbzEoocJ5NVQMH2VMdCvIX4DMwONKB6WvlGCY+VtQs1VOo3DaG2XkrO846aE2xFC12trzRhfV4j6HbUixrQAA8NVadVWkE3M612VF+tG/tLokGkdvSa+7ukbP4Sx3SkHvoE9kew2Nof1xDAkIeLjviuH02H0+G4ygY5l2SBYnKJKu+iTTm77/d17s7ZbHar8X/ovalK1iuCdIMS8JB1dryRczvXC8B5aeYCq3QQj2wHugOftjiFUY8oJPLr490XTcyO99Vu0G7yvsLw6JEC3PA1gNiYifr7Y2/6f6ppxQDyIr5DuGHQGsUjPm+ohZQM6TyRDMLfUUei7OCWPCFzJ3fRvVpef/1JplMcuDSqo/A+d1SuuCKGZAJijifaPGPL+3pMoosuSO+A1HWSQNHcxzZAAodQ/zmjLK3vp4r1cqCwWuLbFTt3B7A2pcAPmN1hAIWrYevZvIDFKZbYvQBiJ6sNVki6gEAhULegw34s7bFzYupGc2gcTHbVfFNxjYqJf66iNUQO5OPOCOyyD7nntRwCoZhW0vT4FXKxFOXKhACJA+QQiAAC2FJoAAAAAAAAA" alt=""><span class="voile"></span></div>
+          <div class="sc sur">
+            <div class="barre">
+              <span style="font-size:15px">&#8592;</span>
+              <span class="av" style="width:26px;height:26px">M</span>
+              <span style="flex:1"><b style="display:block;font-size:13px;color:#F4F1F9">Marc</b>
+              <i style="font-style:normal;font-size:10px;color:#A79FB6">Touche pour les infos</i></span>
+            </div>
+            <div class="epingle">
+              <div class="affiche" style="width:33px;height:46px"><img src="data:image/webp;base64,UklGRkwDAABXRUJQVlA4IEADAABwKwCdASoEAc4BPpVKnk2lo60mIHM40aASiWlu/GtvFbhsfJFjSxADFJ8ZxVWYKtl2rEXNzYkyvYbWrGioarMwVvdPdqIiNZ6tkJ0vGuqoyqTFuMHxI/q4I3C3k0DvVukWlz24Ha6ZYlJZ2kbkcES8nPU0Oui61AguMGj/PqG8IUHftwy/Yw1auRgf40Kz/v0u4Puw8HgdLm0wpz/y+oUpcIkzbcllZD2BTNf2DcwgJWtJYMeioKCnNd4ST2UeBL1PG6z/yklOz+2WxplTa/8BPlTcfJEz67sv17zh3lLXMAds9Jzm4hK+kQUMGfGmWE2A5DdP6Jinfmffk25aXSXXU42d1kqg+LToPgqRVRX575gp+B1snUSCRIsToD7SXXSaTGJwRZJlhqOe9XlAgtcArQiqpF5/RZZgQE3qzprdffdZ05NnkGpveB5y6TH/LbjS/3JuPOXSXii8ukuukuukuukjAAD++F/VuTG9qoqhUNQwET1mHpPuAHXMfkFhF1oA75EYAGrlNFDOJkBmzBnMFbzEoocJ5NVQMH2VMdCvIX4DMwONKB6WvlGCY+VtQs1VOo3DaG2XkrO846aE2xFC12trzRhfV4j6HbUixrQAA8NVadVWkE3M612VF+tG/tLokGkdvSa+7ukbP4Sx3SkHvoE9kew2Nof1xDAkIeLjviuH02H0+G4ygY5l2SBYnKJKu+iTTm77/d17s7ZbHar8X/ovalK1iuCdIMS8JB1dryRczvXC8B5aeYCq3QQj2wHugOftjiFUY8oJPLr490XTcyO99Vu0G7yvsLw6JEC3PA1gNiYifr7Y2/6f6ppxQDyIr5DuGHQGsUjPm+ohZQM6TyRDMLfUUei7OCWPCFzJ3fRvVpef/1JplMcuDSqo/A+d1SuuCKGZAJijifaPGPL+3pMoosuSO+A1HWSQNHcxzZAAodQ/zmjLK3vp4r1cqCwWuLbFTt3B7A2pcAPmN1hAIWrYevZvIDFKZbYvQBiJ6sNVki6gEAhULegw34s7bFzYupGc2gcTHbVfFNxjYqJf66iNUQO5OPOCOyyD7nntRwCoZhW0vT4FXKxFOXKhACJA+QQiAAC2FJoAAAAAAAAA" alt=""></div>
+              <span style="flex:1">
+                <b style="display:block;font-size:11.5px;color:#F4F1F9">Aurore &middot; 0 jour sur 4</b>
+                <i style="font-style:normal;font-size:10px;color:#A79FB6">À l&rsquo;un de vous deux d&rsquo;ouvrir.</i>
+                <span class="jauge"><i></i><i></i><i></i><i></i></span>
+              </span>
+              <span style="color:#807891">&#8250;</span>
+            </div>
+            <p class="sys">Le relais est lancé. 4 jours sur 7, chacun son tour.</p>
+            <div class="bulle">On commence ce soir&nbsp;?</div>
+            <div class="bulle moi">Je fais la mienne à 18h &#128170;</div>
+            <div class="composer">
+              <span class="rond" style="background:rgba(215,166,42,.16);color:#D7A62A">&#10022;</span>
+              <span class="champ">Message&hellip;</span>
+              <span class="rond plein">&#10148;</span>
+            </div>
+          </div>
+        </div>
+        <figcaption class="lg"><span class="verdict v-ok">proposé</span><b>Un ami choisi : ça démarre</b>
+          <span>Pas d&rsquo;invitation, pas d&rsquo;attente. Le fil existe déjà, l&rsquo;affiche s&rsquo;y pose, et Marc reçoit une notification (P7).</span></figcaption>
+      </figure>
+    </div>
+  </div>
+
+  <div class="p">
+    <div class="p-tete"><span class="ref">P2</span><h3>Le maillon se voit là où il se gagne</h3></div>
+    <p class="prose">
+      C&rsquo;est la proposition qui compte le plus, et c&rsquo;est la plus petite. L&rsquo;écran de fin de
+      séance sait déjà poser une bande « Journée validée &middot; Série de 6 jours » au moment
+      exact où la série se gagne. Le maillon mérite la même, juste en dessous, avec la
+      mini-affiche qui <b>bascule sous les yeux</b> de son état précédent au nouveau. Le
+      dévoilement arrête d&rsquo;attendre qu&rsquo;on aille le chercher.
+    </p>
+    <ul>
+      <li><b>Silencieux quand rien n&rsquo;a été franchi.</b> Jour déjà pris par l&rsquo;équipier, séance
+      trop courte, deux jours de suite&nbsp;: aucune bande, aucun reproche. La règle actuelle
+      de <code>validerMaillon</code> ne bouge pas d&rsquo;une ligne.</li>
+      <li><b>Un seul bouton</b>, « Voir l&rsquo;affiche », et il ouvre <b>la conversation</b>, pas
+      <code>/defi</code>&nbsp;: c&rsquo;est là que vit l&rsquo;équipier, et c&rsquo;est le moment où on a envie
+      de lui écrire.</li>
+      <li><code>CLE_DEVOILE</code> reste, pour le cas où on n&rsquo;a pas touché le bouton&nbsp;: la
+      grande affiche rejouera la bascule à la première ouverture.</li>
+      <li>Ça règle aussi <b>R19</b> au passage&nbsp;: le troisième jour, l&rsquo;image ne change pas,
+      mais « 3 jours sur 4 » et la jauge, si.</li>
+    </ul>
+    <div class="rail">
+      <figure class="tel" style="margin:0">
+        <div class="ecran sombre" style="background:#0B0813">
+          <div class="sc" style="justify-content:center;text-align:center;align-items:center;gap:7px">
+            <div style="width:52px;height:52px;border-radius:50%;border:2px solid #2BD4A0;display:grid;place-items:center;color:#2BD4A0;font-size:22px">&#10003;</div>
+            <b style="font-size:18px;text-transform:uppercase;margin-top:4px">Séance terminée</b>
+            <i style="font-style:normal;font-size:11px;color:#A79FB6">Full Body Débutant</i>
+            <div class="bande bande-or" style="margin-top:5px;width:100%">
+              <span style="font-size:15px">&#128293;</span>
+              <span style="text-align:left"><b style="display:block;font-size:11.5px;color:#FFD34E">Journée validée</b>
+              <i style="font-style:normal;font-size:10px;color:#A79FB6">Série de 6 jours</i></span>
+            </div>
+            <div class="bande bande-relais" style="width:100%">
+              <div class="affiche" style="width:26px;height:37px"><img src="data:image/webp;base64,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" alt=""></div>
+              <span style="text-align:left;flex:1"><b style="display:block;font-size:11.5px;color:#F5B120">Maillon franchi</b>
+              <i style="font-style:normal;font-size:10px;color:#A79FB6">L&rsquo;affiche se dévoile &middot; 3 jours sur 4</i></span>
+              <span style="font-size:13px;color:#D7A62A">&#8250;</span>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;width:100%;margin-top:5px">
+              <span class="stat"><b>DURÉE</b><i style="color:#fff">24:10</i></span>
+              <span class="stat"><b>SÉRIES</b><i style="color:#2BD4A0">12</i></span>
+              <span class="stat"><b>CALORIES</b><i style="color:#F5B120">~157</i></span>
+              <span class="stat"><b>EXERCICES</b><i style="color:#2BD4A0">6</i></span>
+            </div>
+          </div>
+        </div>
+        <figcaption class="lg"><span class="verdict v-ok">proposé</span><b>La bande du maillon</b>
+          <span>Même format, même hauteur, même famille que la série. La mini-affiche bascule de l&rsquo;état 2 à l&rsquo;état 3 une seule fois, à l&rsquo;arrivée.</span></figcaption>
+      </figure>
+
+      <figure class="tel" style="margin:0">
+        <div class="ecran sombre">
+          <div class="fond-affiche"><img src="data:image/webp;base64,UklGRn4PAABXRUJQVlA4IHIPAACQawCdASoEAc4BPpVKn0ylpLQoInQJcoASiWdub9Kx4pim1wT5fU5bgzQB9Rw7pGnMq9XHP2eeZvnO9W2tt2HzP+QtDmv9xBbg0DXypCe8TajwZl//wSLGlEzvJ31mcj5oAUp1EPl+B/JOunjR5L7FUUUM17ed/NYhagBo4nhhOwX1zjjEy+U7qJ9Afdb4CPUmpal14wUwocoOKILlNwVJa6XOcYfWX0dp0zh7Ab24P1O+DlsTYfwEMNIanfq7gdimdCz5hdF5JEGXjb6161Ih9Hy2Kd918CG0rKANlrP1CGhRuuxkQ8UKuVhyplaWEVFAGkAQFIp4jyIZnHERD0FV+ZY61PwtVM9rFF0NAf5eKnxd/iZ1oMYYnXMhvt6wArwEp2kVDIeEdM081k5LClruYXkKyu9Y17VL9dzh5Iwbw+oCMKK+PfwBlD+iMWaciRGrb6K0vVG5ytqXQ0dX/uO+VzEEZ2hqCqd7nI15PpRt5xDP9c07DJ7VJlwUz9WKYf9q1z7fG6hQ8xAnm1oPdLaWl0JNv7WjOfGen5i95vR1MiAxC6d8hCJmfg8w/+kFBL7KsqYkDrBIcoDbublUQv3juZ/SsB/dVogopeMG9q5FbSDkpERzxxiaJV0JUx3+epdKCtnBjpT3vBaakAIwpGfrRAh24NpnRpTS2UN2BmsvrypDMQeG9f37B6w9HSrw0/Uq4GWHVTFXNhxK6hznVe/VZhqqFtU+eb6Ix2EQIdLyomGILhDBsHurGe08m74snM+AC8wX4898gOMuGUyDg+zZtmTKF2JGPmDM1LMxq1RE+KRH/Av6iym23fiEeWVyu9OdZVJr4PzXrBF2zB3CU2+j6Oaz4CgqOQpenE5PvVtRw2ZUm9cli3FHw3EbduXDLc4gi9pZ3sEOlI+AY59k5K3I6Mb4JE82AZ5h7dP//iH0K/43dPIjl8qjPrMJfevHeKhki3WF+t32CmYhs6uA1+7ABD7XHfNn9QMO9zecwNgePL1LRRy12l8KraoF1R5oupL/nq1yBLfHEL3zlN57/BTU00HCT9lNPrY1T7sXMH/A+azKgQHGWCS7nW8r8e+6HSNSoWSQD3bt7dQrm4dzc1AHwXL6x+p7XejYgCMhIXNaQ+y0rN+VyZwZL1U6/VyZwdfssYA5gAD++ZaQiIWok4lwUVCXgQvJbAWch2g5Wy3YVu/U9jf3Qm/wm4KPxd2pteRiOUDsGl7zOoUkU7UiUkjwVc+AbMa1+lN1oklpx1WNT8H54N2ujmBIzLcA7gABLf25VlXAE/QXWsZS6s/rNkzhJNEuOgSU5vTpM7HBovoVlKQG7djYdK0Fssbycg4OmAFbDormhe5qcjK5ADNsVBDkYwprN7WeNGl514H0bG/RpnjQtNfE7j3iZCLaU9Wclxv3I/KLdD1+YkgMrwpZhLcPq5tGDDYFtX514y0kHYzr+24hTJC5gzJ5PV04yRFOwZ7gGvlUNBXKE/sP3BYAhPaSn40hkI3cIldDWZw1t4z976mQk0J7NxlmAE2tLv4FJjkcpUZz2114syd1BYAAHHYCBytVQ89BE8V4F5DtAFdln/QkivzJ3CsIMz+VoK4aSJZZsFMA9PInGnNLRZbHm/r6/d2k0onfSWSeBYKa+F3lc+8vWNL+9oOOs3H5yc418CuGF6fDwNTwdeSrwvHJhctMqVSy6zb/LhQfh54tgbL3u82yqASAY9bbuuwed5nFPQVs/od2AzNTMMwUNQsXcGgR26k4A9XmUPvNIE4OPOb7TsY0DqdR4YCPERrmCUizade6NK35RVCQVUEHNHq0bfJFcttVT0yhJP1+ewhHRLVFiqj7mkSr5VephW+wTIv3i6XvBRL4+3I6rE3wbZ34l9OKhShywmjX7bygd/NTKftei16LxUKiHgkWylfBMw6HMijny6FZZbohPW8onz5t4He35DRT7WttdfyYx908BQXUvt1ZkVyMZZHb4EAJWGwVWgW2eu83avKvS+EXQ0sMyAq9iQ3zTFJXZuKYAYUF8kcOmz9qaA5XIKUk5nAKCDgcNdFnqo0SfBuCXQB2QSAXgG8uZaizJFAbPYZzY9u3zUQsRNudeXBxwTkpYhdTUluex3xOpQd2bo1lfl3IjKeqRRUZ+AQTyVCMUrZgjiJzGSkBaPnoHgfPKxp1QEs6HeG7kEwIaAkAsBNgt3rpPwll0A8myfsvRhptzQPYJa8JtSIotLuRuv9m+FaiVFDhXAbA9m7Rp/PnAU8yFsGUzdJs7uukRvbkgYyEj6eaIs+cY6+8CG/qQBBRY2gcUIKVizHKhmH36gKtTGDD/U7f8NE2vGveuMA2wNAu2Pvk1yk3ypwZlPLodviZMkW44jF8eaBtHTDPrGoy6nqZN7CSqQaZaOmu7Q4ZL7Vs3Zz5JnUDtO5Lw3uMe0xa1XDYDqx1Qh+QxqBMQEhTguSz8nZSXQgdgKoLUopIeOxaSErDY+oDsNzYkDPSbAkfFGjkL2agh0H/EjxbIIreCczrvMB6b7x1AdTYp/8YWLDoKt8JxyL+zX2hKocv/jv7/dsResO5W02JpbU+dkdo8HB2VithS/W0A+BdWZKnNXWqOxha9AlnA3slMzr0lU/2HQY1cTspQquPsG3S0PCx/S9ueF5jiTSapoUEi4D+CEEGpZSlydKZU3A7543OmGAqO8bOCCSIwTYyeTaliThsHlmOvAg9ECeCm8XDquwcLO9K18GYEdp/STV189DMfLqkBUoIzB+8nzFx/UD4lD5f1ZOf/kMSwOSgmab6rOipUiIad7EOamazl0SsQ5Hb1lYnY9tPFcJuPie6FsHg/ePsW5KoadW5WGfjPpZNQvILn9bF9o8eC5QApfZ1BCIZjGNyMyX/8OVBuxprtzjW/erGmCNO0EMPr94VQQX1botYxX5lcCzQx62KrIjsT7OAxJhH9kYAyYO7tpm9iYGDw5tBk9yv0Dc21YsJz8Vl75RryeMYLCo13lSuKTauwdAMGYBOk/X5tHB9dl85c0UMG3Xf/kN74m9KxiRdbzEOmaqiv8lWTNlH/gPxKzULsYMGgcwJL/KfpNiEVSl+cJQQ/pNgGPMlpb87PY0EM49gu2WmXF279LurSIe6fSc57Oe4bGOOD3jMV2btio9/pAXdI6DY32sw1TCduVyB3SzjSopA/gA+petx5zWDmYNRoB1ukcKd3x/PU540Sxa+TRIdPQv/huyaMDqOYN+HGM0h3hOyRP9qJ41xnFcV30snr6XlnyvdFrFNY5ksbIxmQ9wW3YhSlUA4HUR3hASIF+SI0g50iM1iDkymXCi5H1Bw3r9yl5/wafXp8qq0Z0RO+JZDaqFBj/92G4LvB8oddH9JjMwSbm9CcSeMM7U+VOx/iNiYiPDqqsw/9jjsrX7ZMxtIcgHmhwSu2dmUA/RYN5h25xMYuNoSyLAH0T4EQdZagdCXzz9u0R2ufUiXx/UXlMwv6gcKjbALIZKcji1L8a8loG3lLBZLbGVBdm2/R4I9ke6UkqXRPMpp6X3zo0Sg4BuV8Ci5YBAuQoSSQO1HjUS7KqFWg1vedNpj0Y6fhhfDpwRxU1mWhqpwH9t6m32iIItbDWIYxyM/Y/OQe7aqjoLWz7lP+orz3kIuHYzsAFkwb+fEyGUBcM0PVeLFLAhoGSH6Fx8h/vK4bVKLl7zlwHMTcwgUj4DenbithNLc6vYlQ8TgNkXjlbfVzPbwnzFFXHr2CFahFZVN9gG9+MV6bqjWk1ozktgA9gcITDHGcDwH+Bxmy/md6fk61rK93/S2Hha9xN7C2WwU0Av8u4keAEeA5VHyRg6VCkohrW/OqK2VE1tvOxgkSFESfBIF58rg5TXUvNqrlT9tw77uOPIEzorS8ajBt5AH0auyZ/L6vSFlvdkW0uCHiVhSBSmeaKrF4U3QlSJTJpBaEcPtzXmu5LRMpM0VcYiPvXNinYjV9v0F4/sqbyFUzlgl+9ev6/vWT8z+PL7Y87EdhCP8hBmcUH1OE/ctLVWK8+5Hdz7HN6zp/gkuyk/zJsSm5zTuhdHR9r0oZ/rhroI62t0d31ftTS6dX4C+2MJD7PoxeUW+gLAMR5SPqWp+UH8MYwwctT6v7oUocAeamHs8Jbr/4zF7wPZlkOoCNtYuSWP0dxy3mrY3vsP2e3Ft6VW53zSEVeqlVlEJOua/yo9o4nXNyhigbfik91qcrPHey7XeKrcAYZHBH67dI8PDgDkSMAGwyC8firIe9Xv9CiIcK6aTTfYSUa4N/ok7amGEi5T0q/ttgYRwxRwn9jeqSopY0WXP9uV8KQw+Npf98UyEIVcRtFIfpRyy6pMul9lq2jvovQrWPk5175CCE+FbCDoFjgCU+h8l+Ahp7QqfaJm6nMw/sc2P//3+N33iB6JUmBlaX7vpbvekwpRBAvozsO930Hq8Er2FrRo0AfBjg3hCf18qaBNtrOQDPpjvK8rwjblMnDWTV48Rp+bKukdZ5HSkFykpAyIOyx5++KODSO1IfscPLQCvqSvipFVzgo76SwCUkbkn3xE8igc+McRNJvM3FsdeDUOY5ol8WJ1iWrOXzZ35alShNPaIT/WuzZHY1s1fAokwqMV1v+OOdR+I0T95guGwytCY2odrefRCxC6/wRnTqiGHdDo9XUBcrhgZ0hNEk/HgRbaNH3dpS8X2VXgU5HlIqtqXrOnq8ljmRlmu3aCmIFPxoU3ZtGUuYVV5RRkDOVJL/7dAEadcf39a14eJxWDg5RyUhRV6TqTMskbxsC6J/C7PSK/ouANoaiGr/X8y2uFHD5ZQ47ppvVzbZFufkElXlZ9eNh+K/+BEPFcxwJZItjwhctXhg7uVq7cScjtwymSlRwFxChapkoKm9nJ4PlNBnLV85xPtTJjUIHidpF1fqlocFzztaKPvng5QzVgyKw40JHOVt7XSUmbRMa09F1pX1/VYaDvr4cJU9TfOUe117Geu41fD9WuFri6b0zQwN8He4+hAQx492eNkJQS7cOkVgG63l910Knu3JArWWK65kBZ4DxPBPsY4DW9933R6hPXhQkQdizEcdFDJ9E3YXrsnSj+B5SF6Vs43DE+xKsKLHTIpfqyRKTfJnyhYwbCWXjoUw7TN21hH2kPlVdZrvnP3gA1TAkWYh7JPLaBqF4hC4KcaTUjdtULhOvliaK1nOan4OyR1Kvu8NQW4AByt+IY8hyXLXWg/9C1wI8jmyA5oqZAURcwADzTlYauGrtgvDeg7o3wUDOwUmu1EY9Fhp9FwAAAM8z6b/Vj5IoAAQ/FVAAAAAFrgAAA=" alt=""><span class="voile"></span></div>
+          <div class="sc sur">
+            <div class="barre">
+              <span style="font-size:15px">&#8592;</span>
+              <span class="av" style="width:26px;height:26px">M</span>
+              <span style="flex:1"><b style="display:block;font-size:13px;color:#F4F1F9">Marc</b>
+              <i style="font-style:normal;font-size:10px;color:#A79FB6">Touche pour les infos</i></span>
+            </div>
+            <div class="epingle">
+              <div class="affiche" style="width:33px;height:46px"><img src="data:image/webp;base64,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" alt=""></div>
+              <span style="flex:1"><b style="display:block;font-size:11.5px;color:#F4F1F9">3 jours sur 4</b>
+              <i style="font-style:normal;font-size:10px;color:#A79FB6">Il reste 2 jours. Un maillon suffit.</i>
+              <span class="jauge"><i class="on"></i><i class="on"></i><i class="on"></i><i></i></span></span>
+              <span style="color:#807891">&#8250;</span>
+            </div>
+            <div style="flex:1"></div>
+            <div class="bande" style="background:rgba(215,166,42,.14);border:1px solid rgba(215,166,42,.3);align-self:center;max-width:92%">
+              <div class="affiche" style="width:24px;height:34px"><img src="data:image/webp;base64,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" alt=""></div>
+              <i style="font-style:normal;font-size:10.5px;color:#E3DEEC;line-height:1.35">Tu as franchi le maillon du jour · 3 sur 4.</i>
+            </div>
+            <div class="bulle moi">C&rsquo;est fait &#128293;</div>
+            <div class="composer">
+              <span class="rond" style="background:rgba(215,166,42,.16);color:#D7A62A">&#10022;</span>
+              <span class="champ">Message&hellip;</span>
+              <span class="rond plein">&#10148;</span>
+            </div>
+          </div>
+        </div>
+        <figcaption class="lg"><span class="verdict v-ok">proposé</span><b>Et le bouton mène ici</b>
+          <span>La ligne système existe déjà, le fond s&rsquo;éclaircit déjà d&rsquo;un cran. Ce qui manquait, c&rsquo;est le chemin qui y mène au bon moment.</span></figcaption>
+      </figure>
+    </div>
+  </div>
+
+  <div class="p">
+    <div class="p-tete"><span class="ref">P3</span><h3>Une seule entrée, et c&rsquo;est la conversation</h3></div>
+    <div class="deux">
+      <div class="bloc avant"><p class="t">Aujourd&rsquo;hui</p>
+        <p>Cinq boutons mènent au relais, aucun n&rsquo;est sur l&rsquo;accueil, et <code>/defi</code> est
+        un cul-de-sac dont on ne ressort que par le bouton retour du navigateur.</p></div>
+      <div class="bloc apres"><p class="t">Proposé</p>
+        <p>L&rsquo;accueil porte une bande fine <b>seulement s&rsquo;il y a un relais vivant</b>,
+        même règle que le Guide&nbsp;: on ne parle que quand on a une raison. Elle ouvre la
+        <b>conversation</b>. <code>/defi</code> devient ce qu&rsquo;elle aurait dû rester&nbsp;:
+        l&rsquo;écran de l&rsquo;affiche en grand, avec un retour vers le fil et le visage de l&rsquo;équipier.
+        L&rsquo;icône chaîne « provisoire » du profil disparaît.</p></div>
+    </div>
+    <div class="rail">
+      <figure class="tel" style="margin:0">
+        <div class="ecran">
+          <div class="sc">
+            <div style="display:flex;align-items:center;gap:8px">
+              <span class="av" style="width:30px;height:30px">L</span>
+              <b style="font-size:16px">Bonjour <span style="background:linear-gradient(135deg,#8B5CF6,#F5B120);-webkit-background-clip:text;background-clip:text;color:transparent">Louis</span></b>
+            </div>
+            <div style="display:flex;gap:8px;align-items:center;padding:9px 11px;border-radius:14px;background:var(--a-surface);border:1px solid var(--a-trait)">
+              <span style="width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#8B5CF6,#C13BC1);flex:0 0 auto"></span>
+              <i style="font-style:normal;font-size:10.5px;color:var(--a-t2);line-height:1.35">Deux jours d&rsquo;affilée. Ça commence à ressembler à une habitude.</i>
+            </div>
+            <b style="font-size:11px;letter-spacing:.14em;color:var(--a-t3);margin-top:4px">TES MISSIONS DU JOUR</b>
+            <div style="display:flex;gap:9px;align-items:center;padding:8px;border-radius:13px;border:1px solid var(--a-trait)">
+              <span style="width:32px;height:32px;border-radius:10px;background:var(--a-surface);flex:0 0 auto"></span>
+              <span style="flex:1"><b style="display:block;font-size:11.5px">Terminer une séance</b>
+              <i style="font-style:normal;font-size:10px;color:var(--a-t3)">+30 EXP</i></span>
+              <span style="width:22px;height:22px;border-radius:50%;border:1.5px solid var(--a-trait)"></span>
+            </div>
+            <div style="display:flex;gap:9px;align-items:center;padding:8px;border-radius:13px;border:1px solid var(--a-trait)">
+              <span style="width:32px;height:32px;border-radius:10px;background:var(--a-surface);flex:0 0 auto"></span>
+              <span style="flex:1"><b style="display:block;font-size:11.5px">Noter un repas</b>
+              <i style="font-style:normal;font-size:10px;color:var(--a-t3)">+5 EXP</i></span>
+              <span style="width:22px;height:22px;border-radius:50%;border:1.5px solid var(--a-trait)"></span>
+            </div>
+            <div style="display:flex;gap:9px;align-items:center;padding:9px;border-radius:13px;border:1px solid rgba(215,166,42,.42);background:rgba(215,166,42,.09);margin-top:2px">
+              <div class="affiche" style="width:26px;height:37px"><img src="data:image/webp;base64,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" alt=""></div>
+              <span style="flex:1"><b style="display:block;font-size:11.5px;color:var(--a-t0)">Relais avec Marc &middot; 3 sur 4</b>
+              <i style="font-style:normal;font-size:10px;color:var(--a-t2)">Aujourd&rsquo;hui, c&rsquo;est à toi.</i></span>
+              <span style="font-size:13px;color:#D7A62A">&#8250;</span>
+            </div>
+          </div>
+        </div>
+        <figcaption class="lg"><span class="verdict v-ok">proposé</span><b>La bande de l&rsquo;accueil</b>
+          <span>Sous les missions, jamais au-dessus&nbsp;: le relais est un extra, pas le cœur du produit. Absente s&rsquo;il n&rsquo;y a pas de relais vivant.</span></figcaption>
+      </figure>
+
+      <figure class="tel" style="margin:0">
+        <div class="ecran">
+          <div class="sc">
+            <div class="barre">
+              <span class="rond" style="background:var(--a-surface);color:var(--a-t1)">&#8592;</span>
+              <span class="av" style="width:24px;height:24px">M</span>
+              <b style="font-size:12px;flex:1">Avec Marc</b>
+            </div>
+            <div class="affiche" style="width:100%;height:228px"><img src="data:image/webp;base64,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" alt=""></div>
+            <div style="display:flex;align-items:baseline;justify-content:space-between">
+              <span><b style="font-size:26px">3</b><i style="font-style:normal;font-size:12px;color:var(--a-t2)"> / 4 jours</i></span>
+              <i style="font-style:normal;font-size:10.5px;color:var(--a-t3)">2 jours restants</i>
+            </div>
+            <div class="chaine"><i class="moi"></i><i class="lui"></i><i class="moi"></i><i class="auj"></i><i></i><i></i><i></i></div>
+            <div style="display:flex;gap:11px;font-size:9.5px;color:var(--a-t3)">
+              <span><i style="display:inline-block;width:7px;height:7px;border-radius:2px;background:#2BD4A0;margin-right:4px"></i>Toi</span>
+              <span><i style="display:inline-block;width:7px;height:7px;border-radius:2px;background:#8B5CF6;margin-right:4px"></i>Marc</span>
+            </div>
+            <span class="cta" style="margin-top:auto">Lancer ma séance</span>
+          </div>
+        </div>
+        <figcaption class="lg"><span class="verdict v-ok">proposé</span><b><code>/defi</code>, resserrée</b>
+          <span>Retour vers le fil, nom de l&rsquo;équipier en tête, légende de la chaîne (R20), et le bouton reste au-dessus du pli (R23). Les badges descendent sous le pli, c&rsquo;est leur place.</span></figcaption>
+      </figure>
+    </div>
+  </div>
+
+  <div class="p">
+    <div class="p-tete"><span class="ref">P4</span><h3>Fermer le cycle, une bonne fois</h3></div>
+    <p class="prose">
+      Un relais doit pouvoir <b>finir</b>. Aujourd&rsquo;hui il n&rsquo;y a que trois sorties&nbsp;: gagner,
+      arrêter à la main, ou rester bloqué pour toujours. La troisième est celle qui arrive
+      par défaut.
+    </p>
+    <ul>
+      <li><b>Une fonction <code>fermer_relais_expires()</code></b>, appelée par le cron du soir
+      (qui scanne déjà tous les runs <code>en_cours</code>, donc zéro requête en plus) et en tête
+      de <code>lancer_relais</code>. <code>en_cours</code> + fenêtre passée &rarr; <code>termine</code>&nbsp;;
+      <code>inscription</code> + invitation expirée &rarr; <code>termine</code>.</li>
+      <li><b>L&rsquo;écran de fin de fenêtre dit ce qu&rsquo;il s&rsquo;est passé et propose la suite&nbsp;:</b>
+      « La semaine est finie. Vous êtes allés à 3 jours sur 4. » + un bouton
+      « En relancer un ». Sans reproche, sans nommer personne. C&rsquo;est la règle du 21 juillet.</li>
+      <li><b>Après une victoire, la conversation redevient une conversation.</b> Le sceau et le
+      fond d&rsquo;affiche tiennent 48&nbsp;h, puis le visage de l&rsquo;ami revient dans la liste.
+      L&rsquo;affiche, elle, est déjà dans la galerie du profil&nbsp;: elle n&rsquo;est pas perdue (R14).</li>
+      <li><b>Un fil qui porte un relais vivant refuse une troisième personne</b>, avec un mot
+      qui explique&nbsp;: « Ce fil porte un relais à deux. Arrêtez-le d&rsquo;abord, ou ouvrez un
+      autre groupe. » (R15)</li>
+    </ul>
+    <span class="sql">migration &middot; fermer_relais_expires() + garde sur ajouter_membres_conversation</span>
+  </div>
+
+  <div class="p">
+    <div class="p-tete"><span class="ref">P5</span><h3>La série tourne, et c&rsquo;est la seule vraie raison de recommencer</h3></div>
+    <div class="deux">
+      <div class="bloc avant"><p class="t">Aujourd&rsquo;hui</p>
+        <p>Trois affiches existent, une seule est jouable. Gagner une deuxième fois rend
+        exactement ce qu&rsquo;on possède déjà. La semaine 2 n&rsquo;a aucun argument.</p></div>
+      <div class="bloc apres"><p class="t">Proposé</p>
+        <p><code>lancer_relais</code> choisit la <b>première série qu&rsquo;aucun des deux n&rsquo;a
+        gagnée</b> (Sillage, puis Aurore, puis Brume) et l&rsquo;écrit dans
+        <code>challenge_runs.serie</code>. Une ligne de SQL, deux affiches déverrouillées, et
+        le profil arrête de montrer deux cadenas qu&rsquo;on ne peut pas ouvrir.</p>
+        <p>Le lancement le dit&nbsp;: <b>« Vous jouez pour Aurore. »</b> C&rsquo;est là que se gagne
+        la deuxième semaine, avant même la première séance.</p></div>
+    </div>
+    <div class="rail">
+      <figure class="tel" style="margin:0;flex:0 0 auto;width:auto">
+        <div style="display:flex;gap:12px;align-items:flex-end">
+          <div class="affiche" style="width:104px;height:185px;box-shadow:0 14px 30px -16px rgba(0,0,0,.6)"><img src="data:image/webp;base64,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" alt="Affiche Sillage complète"></div>
+          <div class="affiche" style="width:104px;height:185px;box-shadow:0 14px 30px -16px rgba(0,0,0,.6)"><img src="data:image/webp;base64,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" alt="Affiche Aurore complète"></div>
+          <div class="affiche" style="width:104px;height:185px;box-shadow:0 14px 30px -16px rgba(0,0,0,.6)"><img src="data:image/webp;base64,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" alt="Affiche Brume complète"></div>
+        </div>
+        <figcaption class="lg" style="max-width:352px"><span class="verdict v-or">déjà en production</span><b>Sillage &middot; Aurore &middot; Brume</b>
+          <span>Les douze fichiers sont dans <code>public/defis/</code> depuis juillet. Deux de ces trois affiches n&rsquo;ont jamais été montrées à personne autrement que grisées et cadenassées sur un profil.</span></figcaption>
+      </figure>
+    </div>
+    <p class="mini prose" style="margin-top:6px">
+      Question ouverte pour toi&nbsp;: quand les trois sont gagnées, on rejoue Sillage (la
+      semaine compte, l&rsquo;affiche est déjà à eux) ou on arrête de proposer le relais&nbsp;?
+      Mon avis&nbsp;: on rejoue, et la quatrième série devient un vrai sujet de contenu, comme
+      les vagues du catalogue.
+    </p>
+  </div>
+
+  <div class="p">
+    <div class="p-tete"><span class="ref">P6</span><h3>Un bouton qui ne peut pas marcher n&rsquo;existe pas</h3></div>
+    <ul>
+      <li><b>Dans un groupe, le relais disparaît</b> : l&rsquo;étincelle du composer et la ligne
+      des infos. Le test est déjà écrit côté serveur (<code>pas_un_duo</code>), il suffit de le
+      lire côté écran (R9).</li>
+      <li><b>Le refus nomme et propose.</b> « Ton relais avec Marc est en cours » + un bouton qui
+      ouvre ce fil-là. Aujourd&rsquo;hui on lit « l&rsquo;un de vous a déjà un relais » et on ne peut rien
+      en faire (R11).</li>
+      <li><b>Les quatre traductions d&rsquo;erreurs deviennent une.</b> Elles sont recopiées à
+      l&rsquo;identique dans quatre fichiers et ont déjà divergé sur deux cas (R12).</li>
+    </ul>
+  </div>
+
+  <div class="p">
+    <div class="p-tete"><span class="ref">P7</span><h3>Le relais parle, et avec la voix du Guide quand il te parle de toi</h3></div>
+    <ul>
+      <li><b>Relais lancé &rarr; l&rsquo;équipier est prévenu.</b> Aujourd&rsquo;hui, tu peux engager
+      quelqu&rsquo;un sur sept jours sans qu&rsquo;il l&rsquo;apprenne. Le message raconte, il ne réclame
+      pas&nbsp;: « Marc a lancé un relais avec toi. » (R10)</li>
+      <li><b>Le rappel du jour décisif passe par <code>guides.ts</code>.</b> C&rsquo;est le dernier
+      texte de rappel écrit en dur, et c&rsquo;est celui qui s&rsquo;adresse le plus directement à toi.
+      Nora et Sasha le disent chacun à leur manière, comme les huit autres (R21).</li>
+      <li><b>Ce qui NE change pas&nbsp;:</b> la notification du maillon franchi par l&rsquo;autre reste
+      neutre. Elle raconte ce que <em>quelqu&rsquo;un d&rsquo;autre</em> a fait&nbsp;; faire endosser ces
+      mots-là au Guide serait lui faire porter la parole d&rsquo;un tiers. C&rsquo;est déjà la règle
+      pour les messages d&rsquo;amis.</li>
+    </ul>
+  </div>
+
+  <div class="p">
+    <div class="p-tete"><span class="ref">P8</span><h3>Rejoindre par lien mène au fil, et crée l&rsquo;amitié</h3></div>
+    <div class="deux">
+      <div class="bloc avant"><p class="t">Aujourd&rsquo;hui</p>
+        <p>On rejoint, on atterrit sur <code>/defi</code>, et on n&rsquo;est l&rsquo;ami de personne. Une
+        fois le relais fini, les deux ne peuvent plus s&rsquo;écrire ailleurs.</p></div>
+      <div class="bloc apres"><p class="t">Proposé</p>
+        <p><code>rejoindre_defi</code> crée la conversation (elle n&rsquo;existe plus avant, cf. P1),
+        écrit la relation d&rsquo;amitié dans les deux sens, et la page atterrit <b>dans le fil</b>
+        avec l&rsquo;affiche épinglée et le premier message tout prêt. C&rsquo;est le seul moment où
+        quelqu&rsquo;un arrive d&rsquo;Internet dans Vaiiya&nbsp;: il doit finir dans une conversation,
+        pas devant une image.</p></div>
+    </div>
+  </div>
+
+</section>
+
+<section>
+  <p class="snum">04 · l&rsquo;ordre</p>
+  <h2>Trois vagues</h2>
+  <p class="prose">
+    Je ne toucherais pas <code>communaute/[id]/page.tsx</code> et
+    <code>ConversationListPane.tsx</code> dans deux passes différentes&nbsp;: ce sont des gros
+    fichiers, et on est plusieurs sur la branche. Une vague = une passe courte, un commit,
+    un push.
+  </p>
+
+  <div class="vague">
+    <h3>Vague 1 <em>ce qui est cassé</em></h3>
+    <p class="mini" style="margin:8px 0 0">Sans elle, le parcours ne tient pas debout. C&rsquo;est aussi la
+    seule qui demande du SQL, donc autant le coller une fois.</p>
+    <div class="puces">
+      <span class="puce">P1 · avec qui ?</span><span class="puce">P2 · la bande du maillon</span>
+      <span class="puce">P4 · fermer le cycle</span><span class="puce">P6 · boutons morts</span>
+      <span class="puce">R5</span><span class="puce">R6</span><span class="puce">R9</span>
+      <span class="puce">R11</span><span class="puce">R13</span><span class="puce">R15</span><span class="puce">R16</span>
+    </div>
+    <span class="sql">un seul fichier : 20260830_relais.sql</span>
+  </div>
+
+  <div class="vague">
+    <h3>Vague 2 <em>ce qui le rend visible</em></h3>
+    <p class="mini" style="margin:8px 0 0">Le relais existe enfin&nbsp;; là, il se voit et il se
+    rappelle à toi.</p>
+    <div class="puces">
+      <span class="puce">P3 · une entrée</span><span class="puce">P7 · il parle</span>
+      <span class="puce">P8 · rejoindre</span><span class="puce">R1</span><span class="puce">R3</span>
+      <span class="puce">R7</span><span class="puce">R8</span><span class="puce">R10</span>
+      <span class="puce">R14</span><span class="puce">R21</span>
+    </div>
+  </div>
+
+  <div class="vague">
+    <h3>Vague 3 <em>ce qui donne envie de recommencer</em></h3>
+    <p class="mini" style="margin:8px 0 0">La seule qui touche au fond du produit plutôt qu&rsquo;à sa
+    plomberie. À faire quand les deux premières tournent en vrai.</p>
+    <div class="puces">
+      <span class="puce">P5 · la série tourne</span><span class="puce">R4</span>
+      <span class="puce">R12</span><span class="puce">R17</span><span class="puce">R18</span>
+      <span class="puce">R19</span><span class="puce">R20</span><span class="puce">R22</span><span class="puce">R23</span>
+    </div>
+  </div>
+
+  <p class="note" style="margin-top:34px">
+    <b>Ce que je ne propose pas, exprès.</b> Aucun fil d&rsquo;activité, aucun classement, aucune
+    suggestion d&rsquo;inconnu, aucun « en ligne », aucun score d&rsquo;amitié. Le relais gagne des
+    entrées, pas des spectateurs. Et rien de tout ça ne demande une seule nouvelle image&nbsp;:
+    les douze affiches, les deux badges et les icônes existent déjà.
+  </p>
+</section>
+
+<footer>
+  <p>Vérifié dans le code le 30 août 2026, branche <code>simplification-code</code> :
+  <code>lib/defi.ts</code>, <code>lib/messagerie.ts</code>, <code>app/communaute/*</code>,
+  <code>app/defi</code>, <code>app/rejoindre/[code]</code>, <code>WorkoutGuideModal</code>,
+  <code>api/notifications/relais</code>, <code>api/cron/reminders</code>, et les huit migrations
+  du domaine. Aucune ligne de code n&rsquo;a été modifiée&nbsp;: cette page est une proposition.</p>
+</footer>
+
+</div>

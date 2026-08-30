@@ -32,6 +32,7 @@ import { EXP_BIENVENUE } from "@/lib/aura";
 import {
   palierDe,
   rappelPour,
+  formuler,
   JOURS_JOURNAL,
   type Envoi,
   type Rappel,
@@ -57,6 +58,15 @@ const JOURS_HABITUDE_REPAS = 7;
 const JOURS_OBSERVATION = 28;
 
 /**
+ * Ce que le relais donne au rappel : les MOTS viennent de `guides.ts`
+ * comme pour les huit autres rappels du soir, et ils ne peuvent pas être
+ * choisis ici parce qu'on ignore encore quel Guide accompagne chacun (les
+ * profils se lisent en parallèle). On rend donc les ingrédients, et la
+ * boucle principale les habille avec la bonne voix.
+ */
+type IngredientsRelais = { maillons: number; url: string };
+
+/**
  * Le rappel du relais, envoyé UNIQUEMENT au moment décisif : le jour
  * où il reste exactement autant de jours que de maillons manquants.
  * Rater ce jour-là, c'est l'affiche qui ne pourra plus être terminée.
@@ -68,8 +78,8 @@ const JOURS_OBSERVATION = 28;
 async function rappelsRelais(
   admin: ReturnType<typeof createAdminClient>,
   today: string,
-): Promise<Map<string, Rappel>> {
-  const cibles = new Map<string, Rappel>();
+): Promise<Map<string, IngredientsRelais>> {
+  const cibles = new Map<string, IngredientsRelais>();
 
   const { data: runs } = await admin
     .from("challenge_runs")
@@ -105,11 +115,8 @@ async function rappelsRelais(
       const uid = m.user_id as string;
       if (uid === bloque) continue;
       cibles.set(uid, {
-        cle:      "relais_decisif",
-        variante: 0,
-        title: "L'affiche se joue aujourd'hui",
-        body:  "Sans un maillon aujourd'hui, elle restera incomplète. Dix minutes suffisent.",
-        url:   run.conversation_id ? `/communaute/${run.conversation_id}` : "/defi",
+        maillons: manquants,
+        url: run.conversation_id ? `/communaute/${run.conversation_id}` : "/defi",
       });
     }
   }
@@ -386,7 +393,17 @@ export async function GET(req: NextRequest) {
        le relais décisif (daté, le rater coûte l'affiche), puis l'annonce de
        mise à jour (qui peut attendre un jour, et qui repartira demain), puis
        le rappel du soir. */
-    let rappel: Rappel | null = (pref.relais ? relais.get(uid) : undefined) ?? null;
+    const ingredients = pref.relais ? relais.get(uid) : undefined;
+    let rappel: Rappel | null = ingredients
+      ? formuler(
+          "relais_decisif",
+          ingredients.url,
+          p?.guide ?? null,
+          { maillons: ingredients.maillons },
+          p?.envois ?? [],
+          today,
+        )
+      : null;
     const duRelais = rappel !== null;
 
     // L'annonce part à TOUT LE MONDE, y compris aux endormis : c'est

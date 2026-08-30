@@ -821,3 +821,62 @@
     font-size: 25px;
   }
 }
+
+/* ── LA BANDE DU RELAIS ───────────────────────────────────────────────
+   Sous les missions du jour, JAMAIS au-dessus : le relais est un extra,
+   pas le cœur du produit. Et elle n'existe que s'il y a un relais vivant,
+   même règle que le Guide : on ne parle que quand on a une raison.
+
+   Or, comme partout où le relais se signe (le sceau de la liste, la
+   bande de fin de séance, l'étincelle du composer). Un seul signe pour
+   une seule chose. */
+.relais {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+  padding: 10px 12px;
+  border: 1px solid rgba(215, 166, 42, 0.3);
+  border-radius: 16px;
+  background: linear-gradient(90deg, rgba(215, 166, 42, 0.10), rgba(193, 59, 193, 0.05) 70%, transparent);
+  text-align: left;
+}
+
+.relaisAffiche {
+  position: relative;
+  overflow: hidden;
+  flex: 0 0 auto;
+  width: 30px;
+  height: 42px;
+  border-radius: 7px;
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.relaisCopy {
+  min-width: 0;
+  flex: 1;
+}
+
+.relaisCopy strong {
+  display: block;
+  overflow: hidden;
+  color: var(--text-0);
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.relaisCopy small {
+  display: block;
+  margin-top: 1px;
+  color: var(--text-2);
+  font-size: 11.5px;
+}
+
+.relaisChevron {
+  flex: 0 0 auto;
+  color: var(--or-encre);
+}

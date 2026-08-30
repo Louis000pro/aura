@@ -28,6 +28,7 @@ import ConversationAvatar from "@/components/communaute/ConversationAvatar";
 import { PseudoRang } from "@/components/rang/IdentiteRang";
 import { useRangs } from "@/lib/rangsPublics";
 import { imageEtat, etatPoster, lancerRelaisDansConversation } from "@/lib/defi";
+import { refusRelais, type RefusRelais } from "@/lib/defiErreurs";
 import {
   chargerFil, chargerMessagesAvant, chargerMessage, chargerReactions,
   envoyerMessage, envoyerPhoto, marquerLu, titreConversation, autresMembres,
@@ -80,6 +81,7 @@ export default function FilPage() {
   const [ecrivent, setEcrivent] = useState<string[]>([]);
   const [occupe, setOccupe]     = useState(false);
   const [erreur, setErreur]     = useState<string | null>(null);
+  const [refus, setRefus]       = useState<RefusRelais | null>(null);
   const [erreurChargement, setErreurChargement] = useState<string | null>(null);
 
   // Le rang de l'autre, en duo seulement : ses décorations habillent l'en-tête,
@@ -331,19 +333,20 @@ export default function FilPage() {
     if (conv.defi) { router.push("/defi"); return; }
 
     setOccupe(true);
-    setErreur(null);
+    setRefus(null);
     const r = await lancerRelaisDansConversation(convId);
     setOccupe(false);
     if (r.ok) { void recharger(); return; }
 
     const raison = String(r.raison ?? "");
-    setErreur(
-      /function|does not exist|schema cache|404/i.test(raison) ? "Le relais n'est pas encore activé côté serveur."
-      : raison === "pas_un_duo"          ? "Le relais se joue à deux. Ouvre une discussion avec une seule personne."
-      : raison === "defi_deja_en_cours"  ? "L'un de vous a déjà un relais en cours."
-      : raison === "relais_deja_ici"     ? "Il y a déjà un relais dans cette discussion."
-      :                                    "Impossible de lancer le relais pour le moment.",
-    );
+    if (/function|does not exist|schema cache|404/i.test(raison)) {
+      setRefus({ texte: "Le relais n'est pas encore activé côté serveur." });
+      return;
+    }
+    // Le refus NOMME ce qui bloque, et propose la sortie quand il y en a
+    // une : « l'un de vous a déjà un relais » était un mur sans poignée,
+    // puisqu'on ne peut pas arrêter le relais de quelqu'un d'autre.
+    setRefus(refusRelais(r));
   };
 
   const surReaction = async (m: Message, emoji: string) => {
@@ -496,6 +499,23 @@ export default function FilPage() {
         </p>
       )}
 
+      {refus && (
+        <div className="relative z-10 px-4 pb-1 text-center">
+          <p className="text-[12.5px] font-medium leading-snug" style={{ color: "#FFB27A" }}>
+            {refus.texte}
+          </p>
+          {refus.ou && (
+            <button
+              onClick={() => { setRefus(null); router.push(`/communaute/${refus.ou}`); }}
+              className="mt-1 text-[12.5px] font-semibold underline"
+              style={{ color: "#D7A62A" }}
+            >
+              Ouvrir ce relais
+            </button>
+          )}
+        </div>
+      )}
+
       {/* ─── Les messages ─── */}
       <div ref={listeRef} className="relative z-10 flex-1 overflow-y-auto px-3 py-2">
         {encoreAvant && (
@@ -608,6 +628,11 @@ export default function FilPage() {
         className="relative z-10 flex shrink-0 items-end gap-2 px-3 pt-2"
         style={{ paddingBottom: "calc(.75rem + env(safe-area-inset-bottom))" }}
       >
+        {/* ⚠️ Dans un groupe, `lancer_relais` refuse TOUJOURS (`pas_un_duo`) :
+            le bouton était visible, il promettait, il échouait. À trois
+            personnes ou plus, il n'a rien à faire là. Un relais déjà posé
+            garde son étincelle : elle ouvre l'affiche, elle ne lance rien. */}
+        {(conv.type === "duo" || conv.defi) && (
         <button
           onClick={surEtincelle}
           disabled={occupe || envoi || photoEnCours}
@@ -621,6 +646,7 @@ export default function FilPage() {
         >
           {occupe ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-[18px] w-[18px]" />}
         </button>
+        )}
 
         <input
           ref={photoRef}

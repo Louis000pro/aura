@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import { chargerRelaisAccueil, type RelaisAccueil } from "@/lib/defi";
 import { aiFetch, messageDeRefus } from "@/lib/aiFetch";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Check } from "lucide-react";
@@ -276,6 +277,25 @@ function Dashboard() {
     })();
     return () => { vivant = false; };
   }, [user, aura, auraLoaded, etatGuide, parisDay]);
+
+  /* ── Le relais, s'il y en a un de vivant ──
+     Le relais n'avait aucune entrée sur l'écran où l'on arrive. Une bande
+     fine sous les missions du jour, et seulement quand il y a un relais :
+     même règle que le Guide, on ne parle que quand on a une raison.
+
+     ⚠️ Une seule requête pour quelqu'un qui n'a jamais joué (voir
+     `chargerRelaisAccueil`) : l'accueil est l'écran le plus ouvert de
+     l'app, et `chargerDefi` en coûte six. Relu au changement de jour
+     parisien, parce que « c'est à toi » change à minuit. */
+  const [relais, setRelais] = useState<RelaisAccueil | null>(null);
+  useEffect(() => {
+    if (!user) return;
+    let vivant = true;
+    void chargerRelaisAccueil(user.id)
+      .then((r) => { if (vivant) setRelais(r); })
+      .catch(() => {});
+    return () => { vivant = false; };
+  }, [user, parisDay, statsTick]);
 
 
   // Ferme le menu au clic extérieur (vérifie les deux refs : bouton avatar + portal dropdown)
@@ -634,6 +654,7 @@ function Dashboard() {
           isAdmin={!!user?.is_admin}
           guide={guide}
           moment={motGuide}
+          relais={relais}
           onNavigate={(path) => router.push(path)}
           onOpenRangs={() => setShowRangs(true)}
         />

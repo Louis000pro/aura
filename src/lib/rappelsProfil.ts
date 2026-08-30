@@ -369,21 +369,35 @@ export function rappelPour(c: ContexteRappel): Rappel | null {
  * parti la dernière fois. La garantie devient vraie quelle que soit la
  * cadence : jamais deux fois d'affilée la même phrase pour une même clé.
  */
-function habiller(modele: Modele, c: ContexteRappel): Rappel {
-  const variantes: PhrasePush[] = voixRappel(
-    c.guide,
-    `rappel.${modele.cle}` as CleRappel,
-    modele.contexte?.(c) ?? {},
-  );
+export function formuler(
+  cle: CleModele,
+  url: string,
+  guide: GuideRef,
+  ctx: Parameters<typeof voixRappel>[2],
+  envois: Envoi[],
+  aujourdHui: string,
+): Rappel {
+  const variantes: PhrasePush[] = voixRappel(guide, `rappel.${cle}` as CleRappel, ctx);
   const n = variantes.length;
-  const jours = Math.floor(new Date(c.aujourdHui + "T12:00:00Z").getTime() / 86_400_000);
+  const jours = Math.floor(new Date(aujourdHui + "T12:00:00Z").getTime() / 86_400_000);
 
   let index = ((jours % n) + n) % n;
   // `envois` arrive du plus récent au plus ancien : le premier de cette clé
   // est donc bien le dernier message envoyé sous ce modèle.
-  const dernier = c.envois.find((e) => e.cle === modele.cle);
+  const dernier = envois.find((e) => e.cle === cle);
   if (n > 1 && dernier && dernier.variante === index) index = (index + 1) % n;
 
   const v = variantes[index];
-  return { cle: modele.cle, variante: index, title: v.title, body: v.body, url: modele.url };
+  return { cle, variante: index, title: v.title, body: v.body, url };
+}
+
+function habiller(modele: Modele, c: ContexteRappel): Rappel {
+  return formuler(
+    modele.cle,
+    modele.url,
+    c.guide,
+    modele.contexte?.(c) ?? {},
+    c.envois,
+    c.aujourdHui,
+  );
 }

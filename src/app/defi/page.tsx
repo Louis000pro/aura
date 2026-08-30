@@ -10,13 +10,14 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { ArrowLeft, Check, Copy, Share2, Dumbbell, Loader2, ImageDown } from "lucide-react";
+import { ArrowLeft, Check, Copy, Share2, Dumbbell, Loader2, ImageDown, MessageCircle } from "lucide-react";
+import Image from "next/image";
 import { useAuth } from "@/context/AuthContext";
 import PosterDefi from "@/components/defi/PosterDefi";
 import {
-  chargerDefi, creerDefi, annulerRelais, lienInvitation, etatPoster, tourDeJeu,
-  joursDeLaFenetre, joursRestants, encoreJouable, aujourdhui,
-  defiFactice, SERIES, CLE_DEVOILE, type Defi,
+  chargerDefi, annulerRelais, lienInvitation, etatPoster, tourDeJeu,
+  joursDeLaFenetre, joursRestants, encoreJouable, aujourdhui, fenetreFinie,
+  defiFactice, SERIES, CLE_DEVOILE, type Defi, type Membre,
 } from "@/lib/defi";
 import { badgesDuDefi } from "@/lib/badges";
 import { chargerBadges } from "@/lib/messagerie";
@@ -80,26 +81,6 @@ export default function DefiPage() {
     }
   }, []);
 
-  const lancer = async () => {
-    setCreation(true);
-    setErreur(null);
-    const r = await creerDefi();
-    setCreation(false);
-    if (r.ok) { void recharger(); return; }
-
-    // Un échec muet est pire qu'un message maladroit : on dit ce qui
-    // s'est passé, et on nomme le cas « migration pas encore appliquée »
-    // parce que c'est celui qu'on rencontrera le plus au lancement.
-    const raison = String(r.raison ?? "");
-    const pasDeFonction = /function|does not exist|schema cache|404/i.test(raison);
-    setErreur(
-      pasDeFonction                          ? "Le défi n'est pas encore activé côté serveur."
-    : raison === "defi_deja_en_cours"        ? "Tu as déjà un relais en cours."
-    : raison === "non_connecte"              ? "Reconnecte-toi pour lancer un relais."
-    :                                          "Impossible de lancer le relais pour le moment.",
-    );
-  };
-
   /* Arrêter depuis ICI, et pas seulement depuis les infos d'une
      conversation : un relais créé par `creer_defi_duo` n'a PAS de
      conversation (invitation envoyée par lien, jamais rejointe). Ces
@@ -144,33 +125,37 @@ export default function DefiPage() {
     );
   }
 
-  /* ── Aucun défi : l'invitation ──────────────────────────── */
+  /* ── Aucun défi ─────────────────────────────────────────────
+     ⚠️ CET ÉCRAN NE LANCE PLUS RIEN. Il y avait cinq boutons « Lancer un
+     relais » dans l'app, avec deux mécanismes derrière, et celui-ci
+     fabriquait une conversation vide où l'on atterrissait seul. Le relais
+     commence par une PERSONNE : la seule porte est la feuille « Avec
+     qui ? » des discussions, et c'est là qu'on renvoie. */
   if (!defi) {
     return (
       <Cadre>
         <div className="mx-auto w-full max-w-[360px]">
-          <PosterDefi serie="sillage" etat={1} titre={SERIES.sillage.nom} className="shadow-2xl" />
+          <PosterDefi serie="sillage" etat={1} titre={SERIES.sillage.nom} hauteurMax="40vh" className="shadow-2xl" />
 
           <h1 className="mt-7 text-[26px] font-bold leading-tight" style={{ color: "var(--text-0)" }}>
             Cette affiche est vide.
           </h1>
           <p className="mt-2 text-[15px] leading-relaxed" style={{ color: "var(--text-body)" }}>
-            Elle se dévoile à chaque séance de la semaine — mais elle ne se
+            Elle se dévoile à chaque séance de la semaine, mais elle ne se
             dévoile qu&apos;à deux. Quatre jours sur sept, chacun son tour, jamais
             deux jours de suite la même personne.
           </p>
 
           <button
-            onClick={lancer}
-            disabled={creation}
-            className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl px-5 py-4 text-[16px] font-semibold text-white transition-transform active:scale-[.98] disabled:opacity-60"
+            onClick={() => router.push("/communaute")}
+            className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl px-5 py-4 text-[16px] font-semibold text-white transition-transform active:scale-[.98]"
             style={{ background: "linear-gradient(135deg, #8B5CF6, #C13BC1)" }}
           >
-            {creation ? <Loader2 className="h-5 w-5 animate-spin" /> : null}
-            Lancer un relais
+            <MessageCircle className="h-5 w-5" />
+            Choisir avec qui
           </button>
           <p className="mt-3 text-center text-[13px]" style={{ color: "var(--text-3)" }}>
-            Tu obtiendras un lien à envoyer à la personne de ton choix.
+            Un ami, ou un lien à envoyer à quelqu&apos;un qui n&apos;a pas Vaiiya.
           </p>
 
           {erreur && (
@@ -190,6 +175,14 @@ export default function DefiPage() {
   const tour     = tourDeJeu(defi, moi);
   const restants = joursRestants(defi);
   const serie    = SERIES[defi.serie as keyof typeof SERIES] ?? SERIES.sillage;
+  const equipier = defi.membres.find((m) => m.userId !== moi) ?? null;
+  const fil      = defi.conversationId;
+
+  /* La semaine peut être passée sans que la base l'ait encore écrit :
+     `fermer_relais_expires()` tourne le soir et à chaque lancement, donc
+     entre minuit et ce moment-là le statut dit encore « en cours ».
+     L'écran ne doit dépendre d'aucune écriture pour dire la vérité. */
+  const finie = fenetreFinie(defi);
 
   /* ── En attente de l'équipier ───────────────────────────── */
   /* Le rappel discret « on arrête là », partagé par l'écran d'attente et
@@ -230,7 +223,7 @@ export default function DefiPage() {
   if (defi.statut === "inscription") {
     const lien = defi.code ? lienInvitation(defi.code) : "";
     return (
-      <Cadre>
+      <Cadre equipier={equipier} fil={fil}>
         <div className="mx-auto w-full max-w-[360px]">
           <PosterDefi serie={defi.serie} etat={1} noms={noms} titre={serie.nom} className="shadow-2xl" />
 
@@ -239,7 +232,14 @@ export default function DefiPage() {
           </h1>
           <p className="mt-2 text-[15px] leading-relaxed" style={{ color: "var(--text-body)" }}>
             Le relais démarre à la seconde où quelqu&apos;un rejoint. Envoie-lui
-            ce lien — il n&apos;a pas besoin d&apos;avoir Vaiiya pour l&apos;ouvrir.
+            ce lien, il n&apos;a pas besoin d&apos;avoir Vaiiya pour l&apos;ouvrir.
+          </p>
+
+          {/* L'affiche en jeu se nomme : c'est ce qui rend la deuxième
+              semaine désirable, puisque la série tourne d'un relais à
+              l'autre (Sillage, puis Aurore, puis Brume). */}
+          <p className="mt-3 text-[13.5px]" style={{ color: "var(--text-3)" }}>
+            Vous jouez pour <b style={{ color: "var(--or-encre)" }}>{serie.nom}</b> · {serie.promesse.toLowerCase()}.
           </p>
 
           {lien && (
@@ -274,11 +274,11 @@ export default function DefiPage() {
     );
   }
 
-  /* ── Réussi ─────────────────────────────────────────────── */
-  if (defi.statut === "reussi" || defi.statut === "termine") {
+  /* ── Fini : gagné, ou semaine passée ────────────────────── */
+  if (defi.statut === "reussi" || defi.statut === "termine" || finie) {
     const gagne = defi.statut === "reussi";
     return (
-      <Cadre>
+      <Cadre equipier={equipier} fil={fil}>
         <div className="mx-auto w-full max-w-[360px]">
           <PosterDefi
             serie={defi.serie}
@@ -297,6 +297,20 @@ export default function DefiPage() {
               ? `« ${serie.nom} » rejoint ta galerie. Tu peux la réutiliser en fond de tes prochains posters de perf.`
               : `Vous êtes allés à ${faits} jour${faits > 1 ? "s" : ""} sur ${defi.objectif}. L'affiche garde ce que vous avez dévoilé.`}
           </p>
+
+          {/* On ne reste pas devant une semaine finie : la suite est un
+              bouton, et il mène à la seule porte du relais. Sans reproche
+              et sans nommer personne, c'est la règle du 21 juillet. */}
+          {!gagne && (
+            <button
+              onClick={() => router.push("/communaute")}
+              className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl px-5 py-4 text-[16px] font-semibold text-white transition-transform active:scale-[.98]"
+              style={{ background: "linear-gradient(135deg, #8B5CF6, #C13BC1)" }}
+            >
+              <MessageCircle className="h-5 w-5" />
+              En relancer un
+            </button>
+          )}
 
           {gagne && (
             <button
@@ -345,11 +359,12 @@ export default function DefiPage() {
   :                                "À toi de jouer.";
 
   return (
-    <Cadre>
+    <Cadre equipier={equipier} fil={fil}>
       <div className="mx-auto w-full max-w-[360px]">
         <PosterDefi
           serie={defi.serie}
           etat={etat}
+          hauteurMax="38vh"
           noms={noms}
           titre={serie.nom}
           devoile={devoile}
@@ -367,11 +382,11 @@ export default function DefiPage() {
             </span>
           </div>
           <span className="text-[13px] font-medium" style={{ color: "var(--text-3)" }}>
-            {restants > 0 ? `${restants} jour${restants > 1 ? "s" : ""} restant${restants > 1 ? "s" : ""}` : "dernier jour"}
+            {restants > 1 ? `${restants} jours restants` : "dernier jour"}
           </span>
         </div>
 
-        <ChaineDesJours defi={defi} moi={moi} />
+        <ChaineDesJours defi={defi} moi={moi} equipier={equipier} />
 
         <p className="mt-4 text-[15px] leading-relaxed" style={{ color: "var(--text-body)" }}>
           {phrase}
@@ -406,12 +421,19 @@ export default function DefiPage() {
 /* ─── La chaîne des sept jours ───────────────────────────────
    Ce qui est fait est en teal, aujourd'hui est cerclé de violet.
    Un jour manqué n'est pas rouge et n'est attribué à personne :
-   on ne désigne jamais celui qui a lâché. */
-function ChaineDesJours({ defi, moi }: { defi: Defi; moi: string }) {
+   on ne désigne jamais celui qui a lâché.
+
+   ⚠️ La légende n'est pas un ornement. C'est le SEUL endroit de l'app
+   où le teal ne veut pas dire « réussi » mais « toi », et rien ne le
+   disait : trois couleurs qu'on devait deviner. */
+function ChaineDesJours({ defi, moi, equipier }: {
+  defi: Defi; moi: string; equipier: Membre | null;
+}) {
   const jours = joursDeLaFenetre(defi);
   const auj = aujourdhui();
 
   return (
+    <>
     <div className="mt-4 flex gap-1.5">
       {jours.map((j) => {
         const action = defi.actions.find((a) => a.jour === j);
@@ -437,22 +459,80 @@ function ChaineDesJours({ defi, moi }: { defi: Defi; moi: string }) {
         );
       })}
     </div>
+
+    <div className="mt-2 flex items-center gap-3.5">
+      <Pastille couleur="#2BD4A0" texte="Toi" />
+      <Pastille couleur="#8B5CF6" texte={equipier?.pseudo ?? "L'autre"} />
+      <Pastille couleur="rgba(var(--text-3-rgb), .38)" texte="Passé" />
+    </div>
+    </>
   );
 }
 
-/* ─── Cadre commun ──────────────────────────────────────────── */
-function Cadre({ children }: { children: React.ReactNode }) {
+function Pastille({ couleur, texte }: { couleur: string; texte: string }) {
+  return (
+    <span className="flex min-w-0 items-center gap-1.5">
+      <span className="h-1.5 w-4 shrink-0 rounded-full" style={{ background: couleur }} />
+      <span className="truncate text-[11.5px] font-medium" style={{ color: "var(--text-3)" }}>
+        {texte}
+      </span>
+    </span>
+  );
+}
+
+/* ─── Cadre commun ────────────────────────────────────────────
+   ⚠️ Le retour ne peut PAS être `router.back()` tout seul : on arrive
+   ici depuis une notification ou depuis la fin d'une séance, et il n'y
+   a alors rien derrière. Quand le relais a un fil, le retour y mène
+   directement, avec le visage de l'équipier : cet écran montre
+   l'affiche, la conversation est l'endroit où on se parle. */
+function Cadre({ children, equipier, fil }: {
+  children: React.ReactNode;
+  equipier?: Membre | null;
+  fil?: string | null;
+}) {
   const router = useRouter();
   return (
     <div className="px-5 pb-10 pt-4">
-      <button
-        onClick={() => router.back()}
-        aria-label="Retour"
-        className="mb-4 flex h-10 w-10 items-center justify-center rounded-full"
-        style={{ background: "rgba(var(--surface-rgb), .7)", color: "var(--text-1)" }}
-      >
-        <ArrowLeft className="h-5 w-5" />
-      </button>
+      <div className="mb-4 flex items-center gap-2.5">
+        <button
+          onClick={() => (fil ? router.push(`/communaute/${fil}`) : router.push("/communaute"))}
+          aria-label={equipier ? `Retour à la discussion avec ${equipier.pseudo}` : "Retour"}
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full"
+          style={{ background: "rgba(var(--surface-rgb), .7)", color: "var(--text-1)" }}
+        >
+          <ArrowLeft className="h-5 w-5" />
+        </button>
+
+        {equipier && (
+          <button
+            onClick={() => (fil ? router.push(`/communaute/${fil}`) : undefined)}
+            disabled={!fil}
+            className="flex min-w-0 items-center gap-2 disabled:cursor-default"
+          >
+            {equipier.avatar ? (
+              <Image
+                src={equipier.avatar}
+                alt=""
+                width={28}
+                height={28}
+                className="h-7 w-7 rounded-full object-cover"
+                unoptimized
+              />
+            ) : (
+              <span
+                className="flex h-7 w-7 items-center justify-center rounded-full text-[12px] font-bold text-white"
+                style={{ background: "linear-gradient(135deg, #8B5CF6, #C13BC1)" }}
+              >
+                {equipier.pseudo.charAt(0).toUpperCase()}
+              </span>
+            )}
+            <span className="truncate text-[14.5px] font-semibold" style={{ color: "var(--text-1)" }}>
+              Avec {equipier.pseudo}
+            </span>
+          </button>
+        )}
+      </div>
       <Bandeau />
       {children}
     </div>

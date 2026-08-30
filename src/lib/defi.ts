@@ -101,7 +101,23 @@ export type Defi = {
   actions: Action[];
   /** Le code d'invitation, seulement si c'est moi qui ai lancé le défi. */
   code: string | null;
+  /** Le fil où le relais se joue. Nul tant que personne n'a rejoint. */
+  conversationId: string | null;
+  /** Quand le relais s'est fini (gagné, expiré ou arrêté). */
+  finiLe: string | null;
 };
+
+/** Un relais fini ne s'efface pas tout de suite : deux jours pour le
+ *  regarder, puis la conversation redevient une conversation. L'affiche,
+ *  elle, est déjà dans la galerie du profil, elle n'est pas perdue. */
+export const FENETRE_SOUVENIR_MS = 48 * 60 * 60 * 1000;
+
+/** Le relais est-il encore d'actualité pour l'affichage ? */
+export function defiVisible(defi: Defi): boolean {
+  if (defi.statut === "inscription" || defi.statut === "en_cours") return true;
+  if (!defi.finiLe) return true;
+  return Date.now() - new Date(defi.finiLe).getTime() < FENETRE_SOUVENIR_MS;
+}
 
 /* ── Dates ───────────────────────────────────────────────────── */
 /** Date du jour au format YYYY-MM-DD, en heure locale (pas UTC). */
@@ -167,6 +183,20 @@ export function joursRestants(defi: Defi): number {
   return n;
 }
 
+/**
+ * La semaine est-elle passée ?
+ *
+ * On le calcule au lieu de l'attendre de la base : `fermer_relais_expires()`
+ * ferme les runs le soir et à chaque lancement, mais entre minuit et ce
+ * moment-là l'écran afficherait « dernier jour » sur une fenêtre close.
+ * L'affichage ne doit dépendre d'aucune écriture.
+ */
+export function fenetreFinie(defi: Defi): boolean {
+  if (defi.statut === "termine") return true;
+  if (defi.statut !== "en_cours" || !defi.fin) return false;
+  return aujourdhui() > defi.fin;
+}
+
 /** Le défi est-il encore mathématiquement gagnable ? */
 export function encoreJouable(defi: Defi): boolean {
   const manquants = defi.objectif - defi.actions.length;
@@ -184,12 +214,20 @@ type RunRow = {
   max_membres: number | null;
   starts_on: string | null;
   ends_on: string | null;
+  conversation_id: string | null;
+  fini_le: string | null;
 };
 
+
 /**
- * Le défi vivant de l'utilisateur (inscription ou en cours), sinon
- * le dernier réussi tant qu'il est dans sa fenêtre — c'est lui qui
- * porte l'affiche complète, on ne l'escamote pas aussitôt gagné.
+ * Le défi vivant de l'utilisateur (inscription ou en cours), sinon le
+ * dernier fini tant qu'il est dans sa fenêtre de souvenir : c'est lui
+ * qui porte l'affiche complète ou l'écran de fin de semaine, et on ne
+ * l'escamote pas à la seconde où il se termine.
+ *
+ * `termine` est dans le filtre depuis le 2026-08-30 : c'est ce statut
+ * qui porte « la semaine est finie », et sans lui l'écran ne pouvait
+ * dire que « dernier jour », indéfiniment.
  */
 export async function chargerDefi(userId: string): Promise<Defi | null> {
   const supabase = createClient();
@@ -202,15 +240,32 @@ export async function chargerDefi(userId: string): Promise<Defi | null> {
   if (!mesRuns?.length) return null;
   const ids = mesRuns.map((r) => r.run_id as string);
 
-  const { data: runs } = await supabase
+  // `fini_le` n'arrive qu'avec 20260830_relais.sql, qui se colle à la
+  // main : tant qu'elle n'est pas passée, demander la colonne ferait
+  // échouer la requête ENTIÈRE et le relais disparaîtrait de l'app. On
+  // retente donc sans elle, et le souvenir se contente de durer.
+  const avec = await supabase
     .from("challenge_runs")
-    .select("id, statut, serie, target_days, window_days, max_membres, starts_on, ends_on")
+    .select("id, statut, serie, target_days, window_days, max_membres, starts_on, ends_on, conversation_id, fini_le")
     .in("id", ids)
-    .in("statut", ["inscription", "en_cours", "reussi"])
+    .in("statut", ["inscription", "en_cours", "reussi", "termine"])
     .order("created_at", { ascending: false })
     .limit(1);
 
-  const run = (runs?.[0] as RunRow | undefined) ?? null;
+  let lignes: unknown[] = avec.data ?? [];
+
+  if (avec.error) {
+    const sans = await supabase
+      .from("challenge_runs")
+      .select("id, statut, serie, target_days, window_days, max_membres, starts_on, ends_on, conversation_id")
+      .in("id", ids)
+      .in("statut", ["inscription", "en_cours", "reussi"])
+      .order("created_at", { ascending: false })
+      .limit(1);
+    lignes = sans.data ?? [];
+  }
+
+  const run = (lignes[0] as RunRow | undefined) ?? null;
   if (!run) return null;
 
   const [membresRes, actionsRes, inviteRes] = await Promise.all([
@@ -230,7 +285,7 @@ export async function chargerDefi(userId: string): Promise<Defi | null> {
     return { userId: id, pseudo: p?.pseudo ?? "…", avatar: p?.avatar_url ?? null };
   });
 
-  return {
+  const defi: Defi = {
     runId: run.id,
     statut: run.statut,
     serie: run.serie ?? "sillage",
@@ -245,6 +300,101 @@ export async function chargerDefi(userId: string): Promise<Defi | null> {
       userId: a.user_id as string,
     })),
     code: (inviteRes.data?.code as string | undefined) ?? null,
+    conversationId: run.conversation_id ?? null,
+    finiLe: run.fini_le ?? null,
+  };
+
+  return defiVisible(defi) ? defi : null;
+}
+
+/* ── Le relais, vu de l'accueil ───────────────────────────────
+   Volontairement PAS `chargerDefi` : l'accueil est l'écran le plus
+   ouvert de l'app, et `chargerDefi` coûte six requêtes. Ici, quelqu'un
+   qui n'a jamais joué en paie UNE, et elle ne rend rien.
+
+   On ne montre QUE le relais vivant : une bande sur l'accueil se
+   justifie parce qu'il y a quelque chose à faire aujourd'hui. Un
+   relais fini n'a rien à y faire, il vit dans la conversation. */
+export type RelaisAccueil = {
+  runId: string;
+  serie: string;
+  objectif: number;
+  faits: number;
+  conversationId: string | null;
+  equipier: Membre | null;
+  /** À qui de jouer aujourd'hui, avec la vraie règle du relais. */
+  tour: TourDeJeu;
+};
+
+export async function chargerRelaisAccueil(userId: string): Promise<RelaisAccueil | null> {
+  const supabase = createClient();
+
+  // ⚠️ Pas d'alias sur la relation intégrée : le filtre `.eq()` doit porter
+  // le MÊME nom que l'embed, et le nom de table est la seule forme dont on
+  // soit certain côté PostgREST. Un alias mal accordé rend un 400, donc un
+  // relais qui disparaît de l'accueil sans que rien ne le dise.
+  const { data, error } = await supabase
+    .from("challenge_run_members")
+    .select("challenge_runs!inner(id, statut, serie, target_days, window_days, starts_on, ends_on, conversation_id)")
+    .eq("user_id", userId)
+    .eq("challenge_runs.statut", "en_cours")
+    .limit(1);
+
+  if (error) return null;
+  // Selon la cardinalité déduite, PostgREST rend un objet ou un tableau.
+  const lie = (data?.[0] as unknown as { challenge_runs?: RunRow | RunRow[] } | undefined)?.challenge_runs;
+  const run = Array.isArray(lie) ? lie[0] : lie;
+  if (!run) return null;
+
+  const [actionsRes, membresRes] = await Promise.all([
+    supabase.from("challenge_actions").select("jour, user_id").eq("run_id", run.id),
+    supabase.from("challenge_run_members").select("user_id").eq("run_id", run.id),
+  ]);
+
+  const actions: Action[] = (actionsRes.data ?? []).map((a) => ({
+    jour: a.jour as string,
+    userId: a.user_id as string,
+  }));
+
+  const autre = (membresRes.data ?? [])
+    .map((m) => m.user_id as string)
+    .find((id) => id !== userId) ?? null;
+
+  let equipier: Membre | null = null;
+  if (autre) {
+    const { data: p } = await supabase
+      .from("profiles").select("id, pseudo, avatar_url").eq("id", autre).maybeSingle();
+    equipier = { userId: autre, pseudo: (p?.pseudo as string) ?? "…", avatar: (p?.avatar_url as string) ?? null };
+  }
+
+  const partiel: Defi = {
+    runId: run.id,
+    statut: "en_cours",
+    serie: run.serie ?? "sillage",
+    objectif: run.target_days,
+    fenetre: run.window_days,
+    debut: run.starts_on,
+    fin: run.ends_on,
+    maxMembres: 2,
+    membres: equipier ? [{ userId, pseudo: "", avatar: null }, equipier] : [],
+    actions,
+    code: null,
+    conversationId: run.conversation_id ?? null,
+    finiLe: null,
+  };
+
+  // La semaine passée ne s'annonce pas sur l'accueil : il n'y a plus rien
+  // à y faire, et `fermer_relais_expires()` va la clore de toute façon.
+  if (fenetreFinie(partiel)) return null;
+
+  return {
+    runId: run.id,
+    serie: partiel.serie,
+    objectif: partiel.objectif,
+    faits: actions.length,
+    conversationId: partiel.conversationId,
+    equipier,
+    tour: tourDeJeu(partiel, userId),
   };
 }
 
@@ -264,7 +414,41 @@ export async function lancerRelaisDansConversation(convId: string): Promise<Repo
   const supabase = createClient();
   const { data, error } = await supabase.rpc("lancer_relais", { p_conv: convId });
   if (error) return { ok: false, raison: error.message };
-  return data as Reponse;
+  const reponse = data as Reponse;
+  if (reponse?.ok) prevenirLancement(String(reponse.run_id ?? ""));
+  return reponse;
+}
+
+/**
+ * Lancer un relais AVEC quelqu'un : c'est la porte normale.
+ *
+ * On ouvre (ou on retrouve) le fil duo, puis on y lance le relais.
+ * L'ordre compte : le fil existe avant le relais, donc il n'y a plus
+ * de conversation à un seul membre, celle qui s'appelait « Moi ».
+ */
+export async function lancerRelaisAvec(amiId: string): Promise<Reponse> {
+  // Import dynamique exprès : `messagerie.ts` est un gros module, et
+  // `defi.ts` est tiré par le tunnel de séance et l'accueil, qui n'ont
+  // rien à faire de la messagerie.
+  const { creerConversation } = await import("@/lib/messagerie");
+  const conv = await creerConversation([amiId]);
+  if (!conv.ok || !conv.conversation_id) {
+    return { ok: false, raison: conv.raison ?? "conversation_impossible" };
+  }
+  const r = await lancerRelaisDansConversation(conv.conversation_id);
+  return r.ok ? { ...r, conversation_id: conv.conversation_id } : r;
+}
+
+/** Prévenir l'équipier qu'un relais vient d'être lancé avec lui.
+ *  Sans ça, on peut engager quelqu'un sur sept jours sans qu'il
+ *  l'apprenne autrement qu'en ouvrant l'app. Jamais bloquant. */
+export function prevenirLancement(runId: string): void {
+  if (!runId) return;
+  void fetchAuth("/api/notifications/relais", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ run_id: runId, evenement: "lance" }),
+  }).catch(() => {});
 }
 
 /** Arrêter un relais en cours. N'importe lequel des deux peut le faire,
@@ -313,32 +497,51 @@ export async function apercuInvitation(code: string): Promise<Apercu | null> {
  * n'a pas de défi, ou si le jour est déjà franchi, il ne se passe
  * rien et surtout on ne lui reproche rien.
  */
+export type MaillonFranchi = {
+  serie: string;
+  objectif: number;
+  /** Nombre de jours franchis, celui-ci compris. */
+  faits: number;
+  reussi: boolean;
+  /** Le fil à ouvrir : c'est là que vit l'équipier. */
+  conversationId: string | null;
+  equipier: Membre | null;
+};
+
 export async function validerMaillon(
   userId: string,
   sessionId: string,
-): Promise<Reponse | null> {
+): Promise<MaillonFranchi | null> {
   const defi = await chargerDefi(userId);
-  if (!defi || defi.statut !== "en_cours") return null;
+  if (!defi || defi.statut !== "en_cours" || fenetreFinie(defi)) return null;
 
   const supabase = createClient();
   const { data, error } = await supabase.rpc("valider_action_defi", {
     p_run_id: defi.runId,
     p_session_id: sessionId,
   });
-  if (error) return { ok: false, raison: error.message };
+  if (error) return null;
 
   const reponse = data as Reponse;
+  if (!reponse?.ok) return null;
 
-  // On prévient l'équipier — sans jamais bloquer la fin de séance.
-  if (reponse?.ok) {
-    void fetchAuth("/api/notifications/relais", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ run_id: defi.runId }),
-    }).catch(() => {});
-  }
+  // On prévient l'équipier, sans jamais bloquer la fin de séance.
+  void fetchAuth("/api/notifications/relais", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ run_id: defi.runId }),
+  }).catch(() => {});
 
-  return reponse;
+  return {
+    // `serie` n'est rendue qu'après 20260830_relais.sql : avant, le
+    // défi chargé juste au-dessus la porte déjà, donc rien ne casse.
+    serie: (reponse.serie as string | undefined) ?? defi.serie,
+    objectif: Number(reponse.objectif ?? defi.objectif),
+    faits: Number(reponse.jours_faits ?? 0),
+    reussi: Boolean(reponse.reussi),
+    conversationId: defi.conversationId,
+    equipier: defi.membres.find((m) => m.userId !== userId) ?? null,
+  };
 }
 
 /* ── Aperçu ──────────────────────────────────────────────────
@@ -376,6 +579,8 @@ export function defiFactice(quoi: string, moi: string, monPseudo: string): Defi 
     ],
     actions,
     code: "APERCU00",
+    conversationId: null,
+    finiLe: gagne ? new Date().toISOString() : null,
   };
 }
 

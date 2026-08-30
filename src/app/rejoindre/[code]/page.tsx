@@ -15,6 +15,7 @@ import { Loader2, ArrowRight } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import PosterDefi from "@/components/defi/PosterDefi";
 import { apercuInvitation, rejoindreDefi, type Apercu } from "@/lib/defi";
+import { refusRelais } from "@/lib/defiErreurs";
 
 export default function RejoindrePage() {
   const params = useParams<{ code: string }>();
@@ -36,15 +37,17 @@ export default function RejoindrePage() {
   const entrer = useCallback(async () => {
     setEntree(true);
     const r = await rejoindreDefi(code);
-    if (r.ok) { router.replace("/defi"); return; }
+    // C'est le SEUL moment où quelqu'un arrive d'Internet dans Vaiiya : il
+    // doit finir dans une conversation, pas devant une image. Le fil vient
+    // de naître avec les deux dedans, l'affiche y est déjà épinglée et le
+    // premier message est tout prêt.
+    if (r.ok) {
+      const fil = typeof r.conversation_id === "string" ? r.conversation_id : null;
+      router.replace(fil ? `/communaute/${fil}` : "/defi");
+      return;
+    }
     setEntree(false);
-    setErreur(
-      r.raison === "equipe_complete"     ? "Cette équipe est déjà complète."
-    : r.raison === "defi_deja_lance"     ? "Ce relais a déjà démarré sans toi."
-    : r.raison === "defi_deja_en_cours"  ? "Tu as déjà un relais en cours."
-    : r.raison === "invitation_invalide" ? "Cette invitation n'est plus valable."
-    :                                      "Impossible de rejoindre pour le moment.",
-    );
+    setErreur(refusRelais(r).texte);
   }, [code, router]);
 
   useEffect(() => {

@@ -78,6 +78,8 @@ export type ContexteVoix = {
   seances?: number;
   /** L'EXP du palier qu'on vient d'atteindre (`rang.montee`). */
   exp?: number;
+  /** Maillons qui manquent à un relais (`rappel.relais_decisif`). */
+  maillons?: number;
 };
 
 /** « Une séance posée », « Trois séances posées ». Le nombre s'écrit en
@@ -987,6 +989,43 @@ const RAPPELS = {
   /* Le seul rappel qui ne parle pas d'entraînement. Il ne part qu'à
      quelqu'un qui note ses repas d'habitude : sinon c'est une leçon de
      tenue de journal, pas un rappel. */
+  /* Le jour décisif d'un relais : il reste exactement autant de jours que
+     de maillons manquants. Rater celui-là, c'est l'affiche qui ne pourra
+     plus être terminée. Rare par construction, donc il a le droit d'être
+     direct, mais il ne réclame RIEN à l'équipier et ne dit jamais qui a
+     laissé passer un jour : la règle du relais tient à ça. */
+  "rappel.relais_decisif": {
+    commun: [
+      (c) => ({
+        title: "L'affiche se joue aujourd'hui",
+        body: (c.maillons ?? 1) > 1
+          ? `Il reste ${c.maillons} maillons et autant de jours. Dix minutes suffisent.`
+          : "Sans un maillon aujourd'hui, elle restera incomplète. Dix minutes suffisent.",
+      }),
+      { title: "Il reste ce soir",
+        body: "Une séance de dix minutes, et l'affiche continue de se dévoiler." },
+    ],
+    nora: [
+      (c) => ({
+        title: "L'affiche se joue aujourd'hui",
+        body: (c.maillons ?? 1) > 1
+          ? `Il reste ${c.maillons} maillons et exactement autant de jours. Dix minutes suffisent.`
+          : "Sans un maillon aujourd'hui, elle restera incomplète. Dix minutes suffisent, vraiment.",
+      }),
+      { title: "Il reste ce soir",
+        body: "Une séance de dix minutes, et l'affiche continue de se dévoiler." },
+    ],
+    sasha: [
+      (c) => ({
+        title: "L'affiche se joue aujourd'hui",
+        body: (c.maillons ?? 1) > 1
+          ? `${c.maillons} maillons, autant de jours. Dix minutes suffisent.`
+          : "Un maillon aujourd'hui, sinon elle reste incomplète. Dix minutes suffisent.",
+      }),
+      { title: "Il reste ce soir", body: "Dix minutes, et l'affiche avance." },
+    ],
+  },
+
   "rappel.repas": {
     commun: [
       { title: "Et tes repas ?", body: "Séance faite, il ne manque que ce que tu as mangé." },

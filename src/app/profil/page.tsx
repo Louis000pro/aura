@@ -5,7 +5,7 @@ import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  X, Check, Lock, Crown, Link2, Camera, ChevronRight,
+  X, Check, Lock, Crown, Camera, ChevronRight,
   Pencil, Dumbbell, Play, Users, Sparkles, Settings, Trash2, Shield,
 } from "lucide-react";
 import PerformanceCard, { type PerformanceData } from "@/components/PerformanceCard";
@@ -716,23 +716,12 @@ export default function ProfilPage() {
       {/* ─── Notifs + Premium + Settings — top RIGHT ─── */}
       <div className="absolute top-4 right-4 z-40 flex items-center gap-2">
         <NotificationBell side="top" />
-        {/* Entrée provisoire vers le relais, le temps que l'accueil-parcours
-            lui donne sa vraie place. */}
-        <Link href="/defi">
-          <motion.div
-            whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.9 }}
-            className="w-9 h-9 rounded-2xl flex items-center justify-center cursor-pointer"
-            style={{
-              background: "rgba(var(--surface-rgb),0.88)",
-              backdropFilter: "blur(16px)",
-              border: "1px solid rgba(var(--violet-mid-rgb),0.45)",
-              boxShadow: "0 2px 14px rgba(var(--accent-rgb),0.15)",
-            }}
-            aria-label="Le relais"
-          >
-            <Link2 size={15} strokeWidth={1.8} style={{ color: "var(--accent)" }} />
-          </motion.div>
-        </Link>
+        {/* L'icône chaîne « provisoire » vers /defi a été retirée le
+            2026-08-30 : le relais a maintenant sa place, et c'est la
+            conversation. Cinq boutons y menaient dans l'app, aucun là où
+            l'on arrive ; celui-ci ouvrait un écran qui n'était relié à
+            rien et dont on ne ressortait que par le bouton du navigateur.
+            Les affiches gagnées, elles, restent dans la galerie ci-dessous. */}
         <Link href="/premium">
           <motion.div
             whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.9 }}

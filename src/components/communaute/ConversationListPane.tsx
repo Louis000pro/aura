@@ -16,7 +16,7 @@ import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Plus, Loader2, PenLine, Check, X, Search, MoreHorizontal,
-  Pin, Volume2, VolumeX, Archive, ArchiveRestore, UserPlus,
+  Pin, Volume2, VolumeX, Archive, ArchiveRestore, UserPlus, Link2, ChevronRight,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import NotificationBell from "@/components/NotificationBell";
@@ -31,7 +31,8 @@ import {
   creerConversation, reglerConversation, heureCourte, prechargerFil,
   type Conversation, type Personne,
 } from "@/lib/messagerie";
-import { creerDefi } from "@/lib/defi";
+import { creerDefi, lancerRelaisAvec } from "@/lib/defi";
+import { refusRelais, type RefusRelais } from "@/lib/defiErreurs";
 
 export default function ConversationListPane({
   activeId,
@@ -45,7 +46,7 @@ export default function ConversationListPane({
 
   const [convs, setConvs]     = useState<Conversation[]>([]);
   const [charge, setCharge]   = useState(true);
-  const [sheet, setSheet]     = useState<"non" | "choix" | "nouvelle" | "actions">("non");
+  const [sheet, setSheet]     = useState<"non" | "choix" | "avecqui" | "nouvelle" | "actions">("non");
   const [occupe, setOccupe]   = useState(false);
   const [erreur, setErreur]   = useState<string | null>(null);
   const [erreurChargement, setErreurChargement] = useState<string | null>(null);
@@ -157,23 +158,13 @@ export default function ConversationListPane({
     return () => window.clearTimeout(minuterie);
   }, []);
 
-  const lancerRelais = async () => {
-    setOccupe(true);
-    setErreur(null);
-    const r = await creerDefi();
-    setOccupe(false);
-    setSheet("non");
-
-    if (r.ok && r.conversation_id) { router.push(`/communaute/${r.conversation_id}`); return; }
-    if (r.ok) { void recharger(); return; }
-
-    const raison = String(r.raison ?? "");
-    setErreur(
-      /function|does not exist|schema cache|404/i.test(raison) ? "Le relais n'est pas encore activé côté serveur."
-      : raison === "defi_deja_en_cours"                        ? "Tu as déjà un relais en cours."
-      :                                                          "Impossible de lancer le relais pour le moment.",
-    );
-  };
+  /* ── Le relais commence par une PERSONNE ──
+     Avant, « Lancer un relais » créait un run, une conversation vide et
+     t'y déposait : elle s'appelait « Moi », et le lien qu'il fallait
+     envoyer vivait ailleurs. La feuille « Avec qui ? » remplace ce
+     bouton. Le lien devient une option parmi tes amis, pas le
+     comportement par défaut. */
+  const ouvrirAvecQui = () => { setErreur(null); setSheet("avecqui"); };
 
   const agirSurConversation = async (
     conversation: Conversation,
@@ -369,7 +360,7 @@ export default function ConversationListPane({
       )}
 
       {convs.length === 0
-        ? <Vide onRelais={lancerRelais} onDiscussion={() => setSheet("nouvelle")} occupe={occupe} />
+        ? <Vide onRelais={ouvrirAvecQui} onDiscussion={() => setSheet("nouvelle")} occupe={occupe} />
         : convsVisibles.length === 0
         ? (
           <div className="flex flex-1 flex-col items-center justify-center px-8 pb-16 text-center">
@@ -448,7 +439,7 @@ export default function ConversationListPane({
         {sheet === "choix" && (
           <Sheet onFermer={() => setSheet("non")}>
             <button
-              onClick={lancerRelais}
+              onClick={ouvrirAvecQui}
               disabled={occupe}
               className="flex w-full items-center justify-center gap-2 rounded-2xl px-5 py-4 text-[16px] font-semibold text-white disabled:opacity-60"
               style={{ background: "linear-gradient(135deg, #8B5CF6, #C13BC1)" }}
@@ -465,6 +456,20 @@ export default function ConversationListPane({
               Nouvelle discussion
             </button>
           </Sheet>
+        )}
+
+        {sheet === "avecqui" && user && (
+          <AvecQui
+            moi={user.id}
+            onFermer={() => setSheet("non")}
+            onFil={(id) => {
+              setSheet("non");
+              void recharger();
+              void prechargerFil(id).catch(() => {});
+              router.push(`/communaute/${id}`);
+            }}
+            onLien={() => { setSheet("non"); router.push("/defi"); }}
+          />
         )}
 
         {sheet === "nouvelle" && user && (
@@ -629,8 +634,8 @@ function Vide({ onRelais, onDiscussion, occupe }: {
         Cette affiche est vide.
       </h2>
       <p className="mt-2 max-w-[300px] text-[14.5px] leading-relaxed" style={{ color: "var(--text-body)" }}>
-        Elle se dévoile à deux, une séance à la fois. Invite quelqu&apos;un : la
-        conversation se crée toute seule.
+        Elle se dévoile à deux, une séance à la fois. Choisis avec qui : le
+        relais démarre dans votre discussion.
       </p>
 
       <button
@@ -679,6 +684,151 @@ function Sheet({ children, onFermer }: { children: React.ReactNode; onFermer: ()
         {children}
       </motion.div>
     </>
+  );
+}
+
+/* ─── « Avec qui ? » ─────────────────────────────────────────────
+   La seule porte du relais, et elle mène aux deux chemins.
+
+   ⚠️ AUCUNE CONVERSATION N'EST CRÉÉE PAR LE CHEMIN DU LIEN. Le fil
+   naît quand quelqu'un rejoint (`rejoindre_defi`), sinon on
+   fabriquait une discussion à un seul membre, que `titreConversation`
+   nommait littéralement « Moi ».
+
+   Un ami choisi : le relais démarre dans votre fil et il reçoit une
+   notification. Le lien : l'attente vit sur /defi, avec le lien en
+   grand, parce que c'est la seule chose qu'il reste à faire. */
+function AvecQui({ moi, onFermer, onFil, onLien }: {
+  moi: string;
+  onFermer: () => void;
+  onFil: (conversationId: string) => void;
+  onLien: () => void;
+}) {
+  const [gens, setGens]     = useState<Personne[]>([]);
+  const [charge, setCharge] = useState(true);
+  const [occupe, setOccupe] = useState<string | null>(null);
+  const [refus, setRefus]   = useState<RefusRelais | null>(null);
+  const rangs = useRangs(useMemo(() => gens.map((g) => g.id), [gens]));
+
+  useEffect(() => {
+    void mesRelations(moi)
+      .then(setGens)
+      .catch(() => setRefus({ texte: "Impossible de charger tes contacts." }))
+      .finally(() => setCharge(false));
+  }, [moi]);
+
+  const avec = async (ami: Personne) => {
+    setOccupe(ami.id);
+    setRefus(null);
+    const r = await lancerRelaisAvec(ami.id);
+    setOccupe(null);
+    if (r.ok && typeof r.conversation_id === "string") { onFil(r.conversation_id); return; }
+    setRefus(refusRelais(r));
+  };
+
+  const parLien = async () => {
+    setOccupe("lien");
+    setRefus(null);
+    const r = await creerDefi();
+    setOccupe(null);
+    if (r.ok) { onLien(); return; }
+    setRefus(refusRelais(r));
+  };
+
+  return (
+    <Sheet onFermer={onFermer}>
+      <div className="mb-1 flex items-center justify-between">
+        <b className="text-[17px] font-bold" style={{ color: "var(--text-0)" }}>Avec qui ?</b>
+        <button onClick={onFermer} aria-label="Fermer"><X className="h-5 w-5" style={{ color: "var(--text-3)" }} /></button>
+      </div>
+      <p className="mb-3 text-[13.5px]" style={{ color: "var(--text-2)" }}>
+        Le relais se joue à deux, une semaine.
+      </p>
+
+      <div className="max-h-[38vh] overflow-y-auto">
+        {charge ? (
+          <div className="flex justify-center py-8">
+            <Loader2 className="h-5 w-5 animate-spin" style={{ color: "var(--text-3)" }} />
+          </div>
+        ) : gens.length === 0 ? (
+          <p className="py-4 text-center text-[14px] leading-relaxed" style={{ color: "var(--text-2)" }}>
+            Tu n&apos;as encore personne dans tes contacts.<br />
+            Le lien ci-dessous te trouvera quelqu&apos;un.
+          </p>
+        ) : (
+          gens.map((p) => {
+            const rang = rangs.get(p.id);
+            return (
+              <button
+                key={p.id}
+                onClick={() => void avec(p)}
+                disabled={occupe !== null}
+                className="flex w-full items-center gap-3 rounded-xl px-1 py-2.5 text-left disabled:opacity-50"
+              >
+                <PersonAvatar personne={p} taille={38} rang={rang} />
+                {rang ? (
+                  <PseudoRang
+                    rang={rang.rang}
+                    cosmetiques={rang.cosmetiques}
+                    pseudo={p.pseudo}
+                    classNameEnveloppe="flex min-w-0 flex-1 items-center gap-1.5"
+                    className="truncate text-[14.5px] font-medium"
+                    style={{ color: "var(--text-1)" }}
+                    tailleGemme={14}
+                  />
+                ) : (
+                  <span className="flex-1 truncate text-[14.5px] font-medium" style={{ color: "var(--text-1)" }}>
+                    {p.pseudo}
+                  </span>
+                )}
+                {occupe === p.id
+                  ? <Loader2 className="h-4.5 w-4.5 flex-shrink-0 animate-spin" style={{ color: "var(--text-3)" }} />
+                  : <ChevronRight className="h-4.5 w-4.5 flex-shrink-0" style={{ color: "var(--text-3)" }} />}
+              </button>
+            );
+          })
+        )}
+      </div>
+
+      <button
+        onClick={() => void parLien()}
+        disabled={occupe !== null}
+        className="mt-3 flex w-full items-center gap-3 rounded-2xl border px-3.5 py-3 text-left disabled:opacity-50"
+        style={{ borderColor: "rgba(var(--text-3-rgb), .3)" }}
+      >
+        <span
+          className="flex h-[38px] w-[38px] flex-shrink-0 items-center justify-center rounded-full"
+          style={{ background: "rgba(var(--accent-rgb), .12)" }}
+        >
+          {occupe === "lien"
+            ? <Loader2 className="h-4.5 w-4.5 animate-spin" style={{ color: "var(--accent)" }} />
+            : <Link2 className="h-4.5 w-4.5" style={{ color: "var(--accent)" }} />}
+        </span>
+        <span className="min-w-0 flex-1">
+          <b className="block text-[14.5px] font-medium" style={{ color: "var(--text-1)" }}>
+            Quelqu&apos;un qui n&apos;a pas Vaiiya
+          </b>
+          <small className="block text-[12.5px]" style={{ color: "var(--text-3)" }}>
+            Tu obtiendras un lien à envoyer.
+          </small>
+        </span>
+      </button>
+
+      {refus && (
+        <div className="mt-3 text-center">
+          <p className="text-[13.5px] leading-snug" style={{ color: "#E8620C" }}>{refus.texte}</p>
+          {refus.ou && (
+            <button
+              onClick={() => onFil(refus.ou!)}
+              className="mt-2 text-[13.5px] font-semibold underline"
+              style={{ color: "var(--accent)" }}
+            >
+              Ouvrir ce relais
+            </button>
+          )}
+        </div>
+      )}
+    </Sheet>
   );
 }
 

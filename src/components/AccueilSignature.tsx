@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { ChevronRight } from "lucide-react";
 import GemmeRang from "@/components/GemmeRang";
 import { VisageGuide } from "@/components/AssistantMark";
 import {
@@ -18,6 +19,7 @@ import {
 } from "@/lib/aura";
 import { voix, type GuideRef } from "@/lib/guides";
 import type { MomentAccueil } from "@/lib/momentAccueil";
+import { etatPoster, imageEtat, type RelaisAccueil } from "@/lib/defi";
 import { formatPrice, PLANS, VENTE_OUVERTE } from "@/lib/plans";
 import styles from "./AccueilSignature.module.css";
 
@@ -43,6 +45,7 @@ export default function AccueilSignature({
   isAdmin,
   guide,
   moment,
+  relais,
   onNavigate,
   onOpenRangs,
 }: {
@@ -56,6 +59,9 @@ export default function AccueilSignature({
   /** Nora, Sasha, ou `null` : sans Guide résolu la marque ✦ reprend la
    *  place et la phrase reste la version commune. */
   guide: GuideRef;
+  /** Le relais VIVANT, ou `null` : la bande n'existe que s'il y a
+   *  quelque chose à faire aujourd'hui. */
+  relais: RelaisAccueil | null;
   /** Ce que le Guide a à dire en arrivant, ou `null` quand il n'a rien à
    *  dire, ce qui est le cas le plus fréquent. Décidé dans
    *  `momentAccueil.ts`, jamais ici : cet écran affiche, il ne juge pas. */
@@ -189,6 +195,7 @@ export default function AccueilSignature({
             />
           ))}
         </div>
+        {relais && <BandeRelais relais={relais} onNavigate={onNavigate} />}
       </section>
 
       <section>
@@ -302,6 +309,54 @@ function BlocSerie({
         </span>
       )}
     </section>
+  );
+}
+
+/* ── LA BANDE DU RELAIS ───────────────────────────────────────────────
+   Le relais n'avait AUCUNE entrée sur l'accueil : cinq boutons y menaient
+   dans l'app, aucun là où l'on arrive. Une bande fine, sous les missions
+   du jour, et seulement quand un relais est vivant.
+
+   Elle ouvre LA CONVERSATION, pas /defi : c'est là que vit l'équipier.
+   L'affiche en grand est à un tap de là.
+
+   Elle ne porte pas de bouton d'action. « Lancer une séance » existe déjà
+   juste au-dessus, dans la mission du jour : la dupliquer à trois
+   centimètres d'écart ne donnerait pas deux chemins, juste deux fois le
+   même. */
+function BandeRelais({ relais, onNavigate }: {
+  relais: RelaisAccueil;
+  onNavigate: (href: string) => void;
+}) {
+  const nom = relais.equipier?.pseudo;
+  const etat = etatPoster(relais.faits, relais.objectif);
+
+  // Ce que dit la bande suit la règle du relais, jamais l'humeur : la
+  // même lecture que /defi, donc les deux écrans ne se contredisent pas.
+  const phrase =
+    relais.tour.quoi === "deja_franchi"
+      ? (relais.tour.parMoi ? "C'est fait pour aujourd'hui." : "Le maillon du jour est franchi.")
+      : relais.tour.quoi === "pas_mon_tour"
+        ? `Aujourd'hui, c'est à ${relais.tour.equipier?.pseudo ?? nom ?? "l'autre"}.`
+        : "Aujourd'hui, c'est à toi.";
+
+  return (
+    <button
+      type="button"
+      className={styles.relais}
+      onClick={() => onNavigate(relais.conversationId ? `/communaute/${relais.conversationId}` : "/defi")}
+    >
+      <span className={styles.relaisAffiche}>
+        <Image src={imageEtat(relais.serie, etat)} alt="" fill sizes="30px" className="object-cover" />
+      </span>
+      <span className={styles.relaisCopy}>
+        <strong>
+          {nom ? `Relais avec ${nom}` : "Ton relais"} · {relais.faits} sur {relais.objectif}
+        </strong>
+        <small>{phrase}</small>
+      </span>
+      <ChevronRight size={16} strokeWidth={2.5} className={styles.relaisChevron} aria-hidden="true" />
+    </button>
   );
 }
 

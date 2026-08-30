@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { aiFetch } from "@/lib/aiFetch";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Pause, Play, Share2, BookmarkCheck, ChevronDown, Check, Plus } from "lucide-react";
+import { X, Pause, Play, Share2, BookmarkCheck, ChevronDown, ChevronRight, Check, Plus } from "lucide-react";
 import { AssistantSpark, VisageGuide, CelebrationGuide } from "@/components/AssistantMark";
 import { voix, type CleVoix } from "@/lib/guides";
 import { useGuideActif } from "@/context/GuideContext";
@@ -11,7 +12,10 @@ import ExerciseGuide from "@/components/ExerciseGuide";
 import ExerciseThumb from "@/components/seance/ExerciseThumb";
 import { createClient } from "@/lib/supabase";
 import { lockBodyModal } from "@/lib/bodyModal";
-import { validerMaillon, CLE_DEVOILE } from "@/lib/defi";
+import {
+  validerMaillon, CLE_DEVOILE, etatPoster, imageEtat,
+  type MaillonFranchi,
+} from "@/lib/defi";
 import { calculerAura } from "@/lib/aura";
 import { noterRang } from "@/lib/celebrationRang";
 import { useAuth } from "@/context/AuthContext";
@@ -679,10 +683,78 @@ export function resolveSessionId(title: string): string | null {
 }
 
 /* ─── Component ──────────────────────────────────────────── */
+/* ── LA BANDE DU MAILLON ──────────────────────────────────────────
+   Le dévoilement de l'affiche attendait qu'on aille le chercher sur un
+   écran que rien ne reliait au reste : on franchissait un maillon en
+   silence. Il se voit maintenant là où il se gagne, dans la même famille
+   que « Journée validée » juste au-dessus, avec la mini-affiche qui
+   bascule sous les yeux de son état précédent au nouveau.
+
+   ⚠️ Le bouton ouvre LA CONVERSATION, pas /defi : c'est là que vit
+   l'équipier, et c'est le moment où on a envie de lui écrire. L'affiche
+   en grand est à un tap de là. */
+function BandeMaillon({ maillon, onAller }: { maillon: MaillonFranchi; onAller: () => void }) {
+  const avant = etatPoster(maillon.faits - 1, maillon.objectif);
+  const apres = etatPoster(maillon.faits, maillon.objectif);
+  const [etat, setEtat] = useState(avant);
+
+  useEffect(() => {
+    if (avant === apres) return;           // le 3ᵉ jour ne change pas l'image
+    const t = setTimeout(() => setEtat(apres), 900);
+    return () => clearTimeout(t);
+  }, [avant, apres]);
+
+  // Le tunnel est toujours sombre : l'or decor y tient ses 8,4:1.
+  const or = "#F5B120";
+  const encre = "#A79FC0";
+
+  return (
+    <motion.button
+      type="button"
+      onClick={onAller}
+      initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.75 }}
+      className="flex items-center gap-3 w-full max-w-[19rem] px-3.5 py-2.5 rounded-2xl mt-2.5 text-left"
+      style={{ background: "rgba(245,177,32,0.10)", border: "1px solid rgba(245,177,32,0.28)" }}
+    >
+      <span
+        className="relative flex-shrink-0 overflow-hidden"
+        style={{ width: 32, height: 44, borderRadius: 7, background: "rgba(0,0,0,0.35)" }}
+        aria-hidden="true"
+      >
+        <AnimatePresence mode="sync">
+          <motion.img
+            key={etat}
+            src={imageEtat(maillon.serie, etat)}
+            alt=""
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            transition={{ duration: 0.55 }}
+            className="absolute inset-0 h-full w-full object-cover"
+          />
+        </AnimatePresence>
+      </span>
+
+      <span className="flex-1 min-w-0">
+        <strong className="block text-[12.5px] font-bold" style={{ color: or }}>
+          {maillon.reussi ? "L'affiche est complète" : "Maillon franchi"}
+        </strong>
+        <small className="block text-[11px]" style={{ color: encre }}>
+          {maillon.reussi
+            ? `Elle est à vous${maillon.equipier ? ` et à ${maillon.equipier.pseudo}` : ""}.`
+            : `L'affiche se dévoile · ${maillon.faits} jour${maillon.faits > 1 ? "s" : ""} sur ${maillon.objectif}`}
+        </small>
+      </span>
+
+      <ChevronRight size={16} strokeWidth={2.5} style={{ color: or, flexShrink: 0 }} />
+    </motion.button>
+  );
+}
+
 export default function WorkoutGuideModal({
   sessionId, title, duration, category, heroImage, onClose, onComplete, exerciseList,
   onGarder,
 }: WorkoutGuideModalProps) {
+  const router = useRouter();
   // On injecte un `auto` (durée) déduit des reps pour les exos chronométrés d'une
   // séance custom (gainage « 45s », tenue « 30 sec »…) qui n'en portent pas.
   const exercises = useMemo<Exercise[]>(() => {
@@ -718,6 +790,11 @@ export default function WorkoutGuideModal({
      `null` tant qu'on ne la connaît pas : on ne montre jamais un compteur
      provisoire qui se corrigerait sous les yeux. */
   const [serieDuJour, setSerieDuJour] = useState<number | null>(null);
+  /* Le maillon du relais, quand cette séance vient d'en franchir un.
+     `null` couvre TOUS les cas silencieux : pas de relais, jour déjà pris
+     par l'équipier, deux jours de suite, séance trop courte. Aucune bande,
+     aucun reproche. */
+  const [maillon,       setMaillon]       = useState<MaillonFranchi | null>(null);
   const [garde,         setGarde]         = useState<"idle" | "gardee" | "refusee">("idle");
 
   const { user } = useAuth();
@@ -754,7 +831,11 @@ export default function WorkoutGuideModal({
       // reproche rien à personne.
       if (data?.id) {
         void validerMaillon(user.id, String(data.id)).then((r) => {
-          if (r?.ok) sessionStorage.setItem(CLE_DEVOILE, "1");
+          if (!r) return;
+          // Le drapeau reste : si on quitte sans toucher la bande, la
+          // grande affiche rejouera la bascule à la première ouverture.
+          sessionStorage.setItem(CLE_DEVOILE, "1");
+          setMaillon(r);
         });
       }
       // La séance qui fait passer un rang doit se fêter ICI, pas à la prochaine
@@ -1428,6 +1509,22 @@ export default function WorkoutGuideModal({
                         </small>
                       </span>
                     </motion.div>
+                  )}
+                </AnimatePresence>
+
+                <AnimatePresence>
+                  {maillon && (
+                    <BandeMaillon
+                      maillon={maillon}
+                      onAller={() => {
+                        onClose();
+                        router.push(
+                          maillon.conversationId
+                            ? `/communaute/${maillon.conversationId}`
+                            : "/defi",
+                        );
+                      }}
+                    />
                   )}
                 </AnimatePresence>
 

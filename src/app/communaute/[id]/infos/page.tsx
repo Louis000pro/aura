@@ -22,6 +22,7 @@ import ConversationAvatar from "@/components/communaute/ConversationAvatar";
 import { AvatarRang, PseudoRang } from "@/components/rang/IdentiteRang";
 import { useRangs, type RangPublic } from "@/lib/rangsPublics";
 import { imageEtat, etatPoster, lancerRelaisDansConversation, annulerRelais } from "@/lib/defi";
+import { refusRelais } from "@/lib/defiErreurs";
 import {
   chargerFil, titreConversation, autresMembres, mesRelations, majConversation,
   ajouterMembres, quitterConversation,
@@ -139,10 +140,9 @@ export default function InfosPage() {
 
     const raison = String(r.raison ?? "");
     setErreur(
-      /function|does not exist|schema cache|404/i.test(raison) ? "Le relais n'est pas encore activé côté serveur."
-      : raison === "pas_un_duo"         ? "Le relais se joue à deux. Ouvre une discussion avec une seule personne."
-      : raison === "defi_deja_en_cours" ? "L'un de vous a déjà un relais en cours."
-      :                                   "Impossible de lancer le relais pour le moment.",
+      /function|does not exist|schema cache|404/i.test(raison)
+        ? "Le relais n'est pas encore activé côté serveur."
+        : refusRelais(r).texte,
     );
   };
 
@@ -307,6 +307,10 @@ export default function InfosPage() {
       )}
 
       {/* ─── Le relais ─── */}
+      {/* ⚠️ Rien à dire dans un groupe qui n'en porte pas : `lancer_relais`
+          refuse toujours à trois personnes ou plus, donc une carte « Le
+          relais » avec un bouton mort valait moins que pas de carte. */}
+      {(conv.defi || !groupe) && (
       <div className="mt-7 px-4">
         <p className="mb-2 pl-1 text-[10.5px] font-bold uppercase tracking-[.1em]" style={{ color: "var(--text-3)" }}>
           Le relais
@@ -365,7 +369,7 @@ export default function InfosPage() {
             </div>
           )}
 
-          {!conv.defi && (
+          {!conv.defi && !groupe && (
             <button onClick={lancer} disabled={occupe === "relais"}
               className="flex w-full items-center gap-3 p-3 text-left disabled:opacity-60">
               <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px]"
@@ -382,6 +386,7 @@ export default function InfosPage() {
           )}
         </div>
       </div>
+      )}
 
       {/* ─── Membres ─── */}
       <div className="mt-6 px-4">
@@ -519,6 +524,11 @@ function AjouterDesGens({ moi, dejaLa, convId, onFermer, onAjoute }: {
         ? "Ce groupe compte déjà cinq personnes."
         : r.raison === "relation_requise"
         ? "Tu peux ajouter uniquement une personne déjà liée à ton compte."
+        // Une troisième personne cassait le relais EN SILENCE : le fil
+        // devenait un groupe, l'affiche restait épinglée pour trois, et la
+        // nouvelle personne ne pouvait jamais franchir un maillon.
+        : r.raison === "relais_en_cours"
+        ? "Ce fil porte un relais à deux. Arrêtez-le d'abord, ou ouvrez un autre groupe."
         : "Impossible d'ajouter pour le moment.",
     );
   };

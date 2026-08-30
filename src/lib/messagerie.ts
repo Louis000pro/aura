@@ -47,6 +47,40 @@ export type DefiDuFil = {
   faits: number;
 };
 
+/* ── Le relais qu'une conversation porte ──────────────────────────
+   ⚠️ Une conversation peut porter PLUSIEURS runs dans le temps (un
+   gagné, un arrêté, un en cours) : on prend toujours le plus récent.
+
+   `termine` est dans le filtre depuis le 2026-08-30, et `fini_le`
+   avec : un relais gagné gardait le sceau à la place de l'avatar et
+   le fond d'affiche sur le fil POUR TOUJOURS, le visage de l'ami ne
+   revenait jamais. Deux jours pour le regarder, puis la conversation
+   redevient une conversation ; l'affiche, elle, reste dans la galerie
+   du profil.
+
+   La colonne `fini_le` n'arrive qu'avec 20260830_relais.sql, qui se
+   colle à la main : sans repli, la demander ferait échouer la requête
+   entière et le relais disparaîtrait des conversations. */
+const COLONNES_RUN_FIL = "id, statut, serie, target_days, fini_le";
+const COLONNES_RUN_FIL_ANCIEN = "id, statut, serie, target_days";
+const STATUTS_RUN_VISIBLES = ["inscription", "en_cours", "reussi", "termine"];
+const STATUTS_RUN_ANCIENS = ["inscription", "en_cours", "reussi"];
+
+type RunFil = {
+  id: string;
+  statut: string;
+  serie: string | null;
+  target_days: number;
+  fini_le?: string | null;
+};
+
+/** Un relais fini depuis plus de deux jours n'habille plus le fil. */
+function runEncoreVisible(run: RunFil): boolean {
+  if (run.statut === "inscription" || run.statut === "en_cours") return true;
+  if (!run.fini_le) return true;
+  return Date.now() - new Date(run.fini_le).getTime() < 48 * 60 * 60 * 1000;
+}
+
 export type Conversation = {
   id: string;
   type: "duo" | "groupe";
@@ -137,7 +171,10 @@ async function signerPhotos(
 export function titreConversation(c: Conversation, moi: string): string {
   if (c.nom) return c.nom;
   const autres = c.membres.filter((m) => m.id !== moi);
-  if (autres.length === 0) return "Moi";
+  // Plus aucun fil ne naît sans équipier depuis le 2026-08-30, mais un
+  // compte supprimé peut encore laisser une conversation à une personne :
+  // « Moi » se lisait alors comme un bug, ce qui n'en était pas un.
+  if (autres.length === 0) return "Discussion";
   if (autres.length === 1) return autres[0].pseudo;
   return autres.map((m) => m.pseudo).join(", ");
 }
@@ -214,12 +251,18 @@ export async function chargerConversations(userId: string): Promise<Conversation
     supabase.from("conversations").select("id, type, nom, image_url, last_message_at")
       .in("id", ids).order("last_message_at", { ascending: false }),
     supabase.from("conversation_members").select("conversation_id, user_id").in("conversation_id", ids),
-    // Une conversation peut porter PLUSIEURS runs dans le temps (un gagné,
-    // un arrêté, un en cours). Le plus récent d'abord : c'est lui que le
-    // `find` plus bas retiendra.
-    supabase.from("challenge_runs").select("id, conversation_id, statut, serie, target_days")
-      .in("conversation_id", ids).in("statut", ["inscription", "en_cours", "reussi"])
-      .order("created_at", { ascending: false }),
+    // Le plus récent d'abord : c'est lui que le `find` plus bas retiendra.
+    (async () => {
+      const moderne = await supabase
+        .from("challenge_runs").select(`conversation_id, ${COLONNES_RUN_FIL}`)
+        .in("conversation_id", ids).in("statut", STATUTS_RUN_VISIBLES)
+        .order("created_at", { ascending: false });
+      if (!moderne.error) return moderne;
+      return supabase
+        .from("challenge_runs").select(`conversation_id, ${COLONNES_RUN_FIL_ANCIEN}`)
+        .in("conversation_id", ids).in("statut", STATUTS_RUN_ANCIENS)
+        .order("created_at", { ascending: false });
+    })(),
   ]);
 
   const premiereErreur = convsRes.error ?? membresRes.error ?? defisRes.error;
@@ -246,7 +289,9 @@ export async function chargerConversations(userId: string): Promise<Conversation
   return (convsRes.data ?? []).map((c) => {
     const convId = c.id as string;
     const apercu = apercus.find((a) => a.conversation_id === convId);
-    const run = (defisRes.data ?? []).find((d) => d.conversation_id === convId);
+    const brut = (defisRes.data ?? []).find((d) => d.conversation_id === convId) as
+      (RunFil & { conversation_id: string }) | undefined;
+    const run = brut && runEncoreVisible(brut) ? brut : undefined;
 
     return {
       id: convId,
@@ -313,10 +358,16 @@ async function chargerFilDepuisServeur(convId: string): Promise<FilCharge> {
     })(),
     // Surtout PAS `.maybeSingle()` : dès qu'un deuxième relais est lancé
     // dans le même fil (après un gagné ou un arrêté), il y a plusieurs
-    // lignes et maybeSingle échoue — le défi disparaîtrait du fil.
-    supabase.from("challenge_runs").select("id, statut, serie, target_days")
-      .eq("conversation_id", convId).in("statut", ["inscription", "en_cours", "reussi"])
-      .order("created_at", { ascending: false }).limit(1),
+    // lignes et maybeSingle échoue, donc le défi disparaîtrait du fil.
+    (async () => {
+      const moderne = await supabase.from("challenge_runs").select(COLONNES_RUN_FIL)
+        .eq("conversation_id", convId).in("statut", STATUTS_RUN_VISIBLES)
+        .order("created_at", { ascending: false }).limit(1);
+      if (!moderne.error) return moderne;
+      return supabase.from("challenge_runs").select(COLONNES_RUN_FIL_ANCIEN)
+        .eq("conversation_id", convId).in("statut", STATUTS_RUN_ANCIENS)
+        .order("created_at", { ascending: false }).limit(1);
+    })(),
   ]);
 
   const premiereErreur = convRes.error ?? membresRes.error ?? msgsRes.error ?? defiRes.error;
@@ -334,7 +385,8 @@ async function chargerFilDepuisServeur(convId: string): Promise<FilCharge> {
     .in("id", ids.length ? ids : ["00000000-0000-0000-0000-000000000000"]);
 
   let defi: DefiDuFil | null = null;
-  const run = defiRes.data?.[0];
+  const brut = defiRes.data?.[0] as RunFil | undefined;
+  const run = brut && runEncoreVisible(brut) ? brut : undefined;
   if (run) {
     const { data: actions } = await supabase
       .from("challenge_actions").select("run_id").eq("run_id", run.id);
