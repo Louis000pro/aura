@@ -307,7 +307,7 @@ export default function CreateSessionModal({
             style={{ borderBottom: "1px solid rgba(var(--tint-violet-rgb),0.8)" }}>
             <div className="flex items-start justify-between gap-3">
               <div>
-                <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "var(--accent)" }}>
+                <p className="text-[11px] font-semiboldst" style={{ color: "var(--accent)" }}>
                   {isEdit ? "Modifier" : "Nouvelle séance"}
                 </p>
                 <h2 className="text-[19px] font-light mt-0.5 leading-tight" style={{ color: "var(--text-1)" }}>
@@ -360,7 +360,7 @@ export default function CreateSessionModal({
                   className="flex flex-col gap-6"
                 >
                   <div className="flex flex-col gap-2">
-                    <label className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "var(--text-3)" }}>
+                    <label className="text-[11px] font-semiboldst" style={{ color: "var(--text-3)" }}>
                       Le nom
                     </label>
                     <input
@@ -441,7 +441,7 @@ export default function CreateSessionModal({
 
                   {/* Type */}
                   <div className="flex flex-col gap-2.5">
-                    <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "var(--text-3)" }}>
+                    <p className="text-[11px] font-semiboldst" style={{ color: "var(--text-3)" }}>
                       Le type
                     </p>
                     <div className="grid grid-cols-4 gap-2">
@@ -468,7 +468,7 @@ export default function CreateSessionModal({
 
                   {/* Niveau */}
                   <div className="flex flex-col gap-2.5">
-                    <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "var(--text-3)" }}>
+                    <p className="text-[11px] font-semiboldst" style={{ color: "var(--text-3)" }}>
                       Le niveau
                     </p>
                     <div className="grid grid-cols-3 gap-2">
@@ -519,7 +519,7 @@ export default function CreateSessionModal({
                   ) : (
                     <>
                       <div className="flex items-center justify-between">
-                        <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "var(--accent)" }}>
+                        <p className="text-[11px] font-semiboldst" style={{ color: "var(--accent)" }}>
                           {exForms.length} exercice{exForms.length > 1 ? "s" : ""}
                         </p>
                         {animes > 0 && (
@@ -569,7 +569,7 @@ export default function CreateSessionModal({
                     }}>
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "var(--text-3)" }}>
+                        <p className="text-[11px] font-semiboldst" style={{ color: "var(--text-3)" }}>
                           Durée estimée
                         </p>
                         <p className="text-[30px] font-light leading-none mt-1" style={{ color: "var(--text-1)" }}>
@@ -577,7 +577,7 @@ export default function CreateSessionModal({
                         </p>
                       </div>
                       <div className="text-right">
-                        <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "var(--text-3)" }}>
+                        <p className="text-[11px] font-semiboldst" style={{ color: "var(--text-3)" }}>
                           Contenu
                         </p>
                         <p className="text-[13px] font-semibold mt-1.5" style={{ color: "var(--text-1)" }}>
@@ -601,7 +601,7 @@ export default function CreateSessionModal({
                   {/* Muscles déduits */}
                   <div className="flex flex-col gap-3">
                     <div>
-                      <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "var(--accent)" }}>
+                      <p className="text-[11px] font-semiboldst" style={{ color: "var(--accent)" }}>
                         Muscles ciblés
                       </p>
                       <p className="text-[11px] mt-1" style={{ color: "var(--text-3)" }}>
@@ -868,7 +868,7 @@ function Compteur({ label, valeur, onMoins, onPlus }: {
 }) {
   return (
     <div>
-      <p className="text-[9px] font-semibold tracking-widest uppercase mb-1.5 text-center" style={{ color: "var(--text-3)" }}>
+      <p className="text-[11px] font-semiboldst mb-1.5 text-center" style={{ color: "var(--text-3)" }}>
         {label}
       </p>
       <div className="flex items-center justify-between gap-1 px-2 py-2 rounded-xl"

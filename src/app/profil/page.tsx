@@ -369,7 +369,7 @@ function EditProfileModal({
         <div className="flex flex-col gap-3">
           {/* Full name */}
           <div>
-            <label className="text-[10px] font-semibold tracking-widest uppercase mb-1.5 block" style={{ color: "var(--text-3)" }}>
+            <label className="text-[11px] font-semiboldst mb-1.5 block" style={{ color: "var(--text-3)" }}>
               Nom complet
             </label>
             <input
@@ -384,7 +384,7 @@ function EditProfileModal({
 
           {/* Pseudo */}
           <div>
-            <label className="text-[10px] font-semibold tracking-widest uppercase mb-1.5 block" style={{ color: "var(--text-3)" }}>
+            <label className="text-[11px] font-semiboldst mb-1.5 block" style={{ color: "var(--text-3)" }}>
               Pseudo
             </label>
             <input
@@ -405,7 +405,7 @@ function EditProfileModal({
 
           {/* Bio */}
           <div>
-            <label className="text-[10px] font-semibold tracking-widest uppercase mb-1.5 flex items-center justify-between" style={{ color: "var(--text-3)" }}>
+            <label className="text-[11px] font-semiboldst mb-1.5 flex items-center justify-between" style={{ color: "var(--text-3)" }}>
               <span>Bio</span>
               <span>{editBio.length}/150</span>
             </label>
@@ -863,7 +863,7 @@ export default function ProfilPage() {
           {/* Niveau */}
           {profileLevel && (
             <span
-              className="mt-1 text-[10px] font-bold tracking-[0.1em] uppercase px-2.5 py-1 rounded-full"
+              className="mt-1 text-[11px] font-bold px-2.5 py-1 rounded-full"
               style={{ background: "rgba(var(--violet-mid-rgb),0.3)", color: "var(--exp-encre)", border: "1px solid rgba(var(--accent-rgb),0.25)" }}
             >
               {LEVELS_LIST.find((l) => l.id === profileLevel)?.label ?? profileLevel}
@@ -900,7 +900,7 @@ export default function ProfilPage() {
             <>
               <div className="flex-shrink-0"><GemmeRang rang={aura.rang} size={44} /></div>
               <div className="flex-1 min-w-0">
-                <span className="text-[10px] font-bold tracking-[0.12em] uppercase" style={{ color: "var(--text-3)" }}>Ton rang</span>
+                <span className="text-[11px] font-bold" style={{ color: "var(--text-3)" }}>Ton rang</span>
                 <p className="text-[19px] font-black tracking-[-0.02em] leading-tight" style={{ color: "var(--text-0)" }}>{aura.rang.nom}</p>
                 <p className="text-[12.5px] font-semibold mt-0.5" style={{ color: "var(--text-soft)" }}>
                   <span style={{ color: "var(--accent)", fontVariantNumeric: "tabular-nums" }}>{aura.exp}</span> / {aura.seuilHaut} EXP
@@ -955,7 +955,7 @@ export default function ProfilPage() {
                 <span className="text-[24px] font-black leading-none" style={{ color: encre, letterSpacing: "-0.03em" }}>
                   {value}
                 </span>
-                <span className="text-[10px] font-bold tracking-[0.12em] uppercase mt-1.5" style={{ color: clickable ? "var(--accent)" : "var(--text-3)" }}>
+                <span className="text-[11px] font-bold mt-1.5" style={{ color: clickable ? "var(--accent)" : "var(--text-3)" }}>
                   {label}
                 </span>
               </motion.button>
@@ -1012,7 +1012,7 @@ export default function ProfilPage() {
             className="px-5 md:px-8 max-w-3xl mx-auto"
           >
             {/* Affiches du relais — gagnées en clair, verrouillées en cadenas */}
-            <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.14em]" style={{ color: "var(--text-3)" }}>
+            <p className="mb-3 text-[11px] font-bold" style={{ color: "var(--text-3)" }}>
               Affiches du relais
             </p>
             <div className="grid grid-cols-2 gap-3 mb-8">
@@ -1067,7 +1067,7 @@ export default function ProfilPage() {
             <EtagereBadges slugs={badgeSlugs} titre="Tes badges" progres={progresBadges} />
 
             {/* Tes affiches de perf (posts séance) */}
-            <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.14em]" style={{ color: "var(--text-3)" }}>
+            <p className="mb-3 text-[11px] font-bold" style={{ color: "var(--text-3)" }}>
               Tes affiches de perf
             </p>
             {(() => {
@@ -1133,7 +1133,7 @@ export default function ProfilPage() {
               </div>
             )}
 
-            <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.14em]" style={{ color: "var(--text-3)" }}>
+            <p className="mb-3 text-[11px] font-bold" style={{ color: "var(--text-3)" }}>
               Tes séances
             </p>
 
@@ -1501,7 +1501,7 @@ export default function ProfilPage() {
 
                   {/* Titre */}
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] font-bold tracking-widest uppercase" style={{ color: "var(--text-3)" }}>Titre</label>
+                    <label className="text-[11px] font-boldst" style={{ color: "var(--text-3)" }}>Titre</label>
                     <input
                       type="text"
                       value={editCaption}
@@ -1516,7 +1516,7 @@ export default function ProfilPage() {
 
                   {/* Bio */}
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] font-bold tracking-widest uppercase" style={{ color: "var(--text-3)" }}>Bio</label>
+                    <label className="text-[11px] font-boldst" style={{ color: "var(--text-3)" }}>Bio</label>
                     <textarea
                       value={editBio}
                       onChange={(e) => setEditBio(e.target.value)}

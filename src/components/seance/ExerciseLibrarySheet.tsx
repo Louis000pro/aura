@@ -223,7 +223,7 @@ export default function ExerciseLibrarySheet({
                     {/* Pastille d'état, cliquable sauf quand l'exo est déjà pris */}
                     {pris ? (
                       <span className="absolute top-2 right-2 text-[8.5px] font-bold px-1.5 py-0.5 rounded-full"
-                        style={{ background: "rgba(43,212,160,0.16)", color: "#2BD4A0" }}>
+                        style={{ background: "rgba(43,212,160,0.16)", color: "var(--teal-encre)" }}>
                         Ajouté
                       </span>
                     ) : (

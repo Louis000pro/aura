@@ -474,7 +474,7 @@ function AjouterAmi({
         })}
       </div>
 
-      {message && <p className="text-center text-[13px] font-medium" style={{ color: "#2BD4A0" }}>{message}</p>}
+      {message && <p className="text-center text-[13px] font-medium" style={{ color: "var(--teal-encre)" }}>{message}</p>}
       {erreur && <p className="text-center text-[13px] font-medium" style={{ color: "#E8620C" }}>{erreur}</p>}
     </>
   );

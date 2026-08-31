@@ -108,7 +108,7 @@ export default function EnvoyerAffiche({ data, moi, accessToken, onFermer }: {
               {occupe === fil.id ? (
                 <Loader2 className="h-4.5 w-4.5 flex-shrink-0 animate-spin" style={{ color: "var(--text-3)" }} />
               ) : envoye === fil.id ? (
-                <Check className="h-4.5 w-4.5 flex-shrink-0" style={{ color: "#2BD4A0" }} />
+                <Check className="h-4.5 w-4.5 flex-shrink-0" style={{ color: "var(--teal-encre)" }} />
               ) : null}
             </button>
           ))

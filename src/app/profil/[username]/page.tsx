@@ -456,7 +456,7 @@ export default function PublicProfilePage() {
           {/* Son niveau */}
           {profile?.onboarding_level && (
             <span
-              className="inline-block mt-2 text-[10px] font-bold tracking-[0.1em] uppercase px-2.5 py-1 rounded-full"
+              className="inline-block mt-2 text-[11px] font-bold px-2.5 py-1 rounded-full"
               style={{ background: "rgba(var(--violet-mid-rgb),0.3)", color: "var(--exp-encre)", border: "1px solid rgba(var(--accent-rgb),0.25)" }}
             >
               {LEVELS.find((l) => l.id === profile.onboarding_level)?.label ?? profile.onboarding_level}
@@ -531,7 +531,7 @@ export default function PublicProfilePage() {
           >
             <div className="flex-shrink-0"><GemmeRang rang={aura.rang} size={44} /></div>
             <div className="flex-1 min-w-0">
-              <span className="text-[10px] font-bold tracking-[0.12em] uppercase" style={{ color: "var(--text-3)" }}>Rang</span>
+              <span className="text-[11px] font-bold" style={{ color: "var(--text-3)" }}>Rang</span>
               <p className="text-[19px] font-black tracking-[-0.02em] leading-tight" style={{ color: "var(--text-0)" }}>{aura.rang.nom}</p>
               <p className="text-[12.5px] font-semibold mt-0.5" style={{ color: "var(--text-soft)" }}>
                 <span style={{ color: "var(--accent)", fontVariantNumeric: "tabular-nums" }}>{aura.exp}</span> / {aura.seuilHaut} EXP
@@ -583,7 +583,7 @@ export default function PublicProfilePage() {
                   {value}
                 </span>
                 <span
-                  className="text-[10px] font-bold tracking-[0.12em] uppercase mt-1.5"
+                  className="text-[11px] font-bold mt-1.5"
                   style={{ color: tab ? "var(--accent)" : "var(--text-3)" }}
                 >
                   {label}
@@ -610,7 +610,7 @@ export default function PublicProfilePage() {
           Ce qui reste est ce qui se gagne à deux, ou ce qui se voit par
           nature : son rang, ses affiches de relais, ses badges, et la ligne
           « ensemble » juste au-dessus. */}
-      <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.14em]" style={{ color: "var(--text-3)" }}>
+      <p className="mb-3 text-[11px] font-bold" style={{ color: "var(--text-3)" }}>
         Affiches du relais
       </p>
       <div className="grid grid-cols-2 gap-3 mb-8">

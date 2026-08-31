@@ -240,13 +240,13 @@ export default function RecipeSheet({
                 return (
                   <div key={i} className="flex gap-3 items-start">
                     <div className="flex-1">
-                      <p className="text-[11px] font-semibold" style={{ color: "#8B5CF6" }}>ÉTAPE {i + 1} <span style={{ color: "var(--text-3)" }}>/ {recipe.steps.length}</span></p>
+                      <p className="text-[11px] font-semibold" style={{ color: "var(--exp-encre)" }}>Étape {i + 1} <span style={{ color: "var(--text-3)" }}>/ {recipe.steps.length}</span></p>
                       <p className="text-[13px] leading-snug mt-1" style={{ color: done ? "var(--text-3)" : "var(--text-1)", textDecoration: done ? "line-through" : "none" }}>{s}</p>
                     </div>
                     <button onClick={() => toggleStep(i)} aria-label="Étape faite"
                       className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 cursor-pointer mt-1"
                       style={{ background: done ? "rgba(43,212,160,0.18)" : "transparent", border: done ? "none" : "1.5px solid rgba(var(--violet-mid-rgb),0.5)" }}>
-                      {done && <Check size={14} strokeWidth={2.5} style={{ color: "#2BD4A0" }} />}
+                      {done && <Check size={14} strokeWidth={2.5} style={{ color: "var(--teal-encre)" }} />}
                     </button>
                   </div>
                 );

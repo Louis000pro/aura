@@ -158,7 +158,7 @@ export default function AdviceReaderSheet({
                       <ul className="space-y-2.5 pt-1">
                         {section.bullets.map((bullet) => (
                           <li key={bullet} className="flex gap-2.5 text-[14px] leading-relaxed" style={{ color: "var(--text-2)" }}>
-                            <Check size={14} strokeWidth={2.4} className="mt-1 flex-shrink-0" style={{ color: "#2BD4A0" }} aria-hidden />
+                            <Check size={14} strokeWidth={2.4} className="mt-1 flex-shrink-0" style={{ color: "var(--teal-encre)" }} aria-hidden />
                             <span>{bullet}</span>
                           </li>
                         ))}
@@ -181,7 +181,7 @@ export default function AdviceReaderSheet({
 
             <section className="mt-9 rounded-[22px] p-5"
               style={{ background: "rgba(43,212,160,0.08)", border: "1px solid rgba(43,212,160,0.18)" }}>
-              <p className="text-[9.5px] font-black uppercase tracking-[0.16em]" style={{ color: "#2BD4A0" }}>
+              <p className="text-[9.5px] font-black uppercase tracking-[0.16em]" style={{ color: "var(--teal-encre)" }}>
                 À retenir
               </p>
               <p className="text-[17px] font-black leading-snug mt-2" style={{ color: "var(--text-1)", textWrap: "balance" }}>

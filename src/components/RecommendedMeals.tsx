@@ -323,7 +323,7 @@ function DayMeals({ day, dayIndex, canEat, addedKeys, onEat }: {
                   boxShadow: added ? "none" : "inset 0 1px 0 rgba(var(--surface-rgb),0.8)",
                 }}>
                 {added
-                  ? <Check size={13} strokeWidth={2.5} style={{ color: "#2BD4A0" }} />
+                  ? <Check size={13} strokeWidth={2.5} style={{ color: "var(--teal-encre)" }} />
                   : <Plus size={13} strokeWidth={2.5} style={{ color: "var(--text-1)" }} />}
               </motion.button>
             )}

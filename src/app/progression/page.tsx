@@ -564,7 +564,7 @@ const workoutSessions: WorkoutSession[] = [
 const VIS_CONFIG = {
   private: { label: "Privée", icon: Lock,  color: "var(--text-3)" },
   friends: { label: "Amis",   icon: Users, color: "#8B5CF6" },
-  public:  { label: "Public", icon: Globe, color: "#2BD4A0" },
+  public:  { label: "Public", icon: Globe, color: "var(--teal-encre)" },
 } as const;
 type Visibility = keyof typeof VIS_CONFIG;
 const VIS_ORDER: Visibility[] = ["private", "friends", "public"];
@@ -721,12 +721,12 @@ function TodayHero({
 
       {/* Chips du haut */}
       <div className="absolute top-3.5 left-3.5 right-3.5 flex items-center justify-between z-10">
-        <span className="px-3 py-1.5 rounded-full text-[10px] font-extrabold tracking-[0.09em] uppercase"
+        <span className="px-3 py-1.5 rounded-full text-[11px] font-semibold"
           style={{ background: "rgba(10,8,18,0.42)", color: "#fff", border: "1px solid rgba(255,255,255,0.22)", backdropFilter: "blur(6px)" }}>
           {state === "setup" ? "Première fois ici" : "Aujourd’hui"}
         </span>
         {state === "seance" && (
-          <span className="px-3 py-1.5 rounded-full text-[10px] font-extrabold tracking-[0.09em] uppercase"
+          <span className="px-3 py-1.5 rounded-full text-[11px] font-semibold"
             style={{ background: "rgba(139,92,246,0.32)", color: "#E9DFFF", border: "1px solid rgba(196,168,255,0.45)", backdropFilter: "blur(6px)" }}>
             ✦ Planifié
           </span>
@@ -747,7 +747,7 @@ function TodayHero({
 
         {state === "seance" && day && (
           <>
-            <p className="text-[10px] font-extrabold tracking-[0.22em] uppercase mb-1" style={{ color: "#C9B8FF" }}>
+            <p className="text-[11px] font-semibold mb-1" style={{ color: "#C9B8FF" }}>
               {day.type}{lieuLabel(day.location) ? ` · ${lieuLabel(day.location)}` : ""}
             </p>
             <h2 className="text-[27px] leading-tight font-extralight text-white">{dayTitle(day)}</h2>
@@ -783,7 +783,7 @@ function TodayHero({
 
         {state === "repos" && (
           <>
-            <p className="text-[10px] font-extrabold tracking-[0.22em] uppercase mb-1" style={{ color: "#9FD8C6" }}>
+            <p className="text-[11px] font-semibold mb-1" style={{ color: "#9FD8C6" }}>
               Aujourd&apos;hui
             </p>
             <h2 className="text-[27px] leading-tight font-extralight text-white">Repos.</h2>
@@ -804,7 +804,7 @@ function TodayHero({
 
         {state === "done" && day && (
           <>
-            <p className="text-[10px] font-extrabold tracking-[0.22em] uppercase mb-1" style={{ color: "#7FE8C8" }}>
+            <p className="text-[11px] font-semibold mb-1" style={{ color: "#7FE8C8" }}>
               Aujourd&apos;hui · fait
             </p>
             <h2 className="text-[27px] leading-tight font-extralight text-white">C&apos;est fait.</h2>
@@ -826,7 +826,7 @@ function TodayHero({
 
         {state === "setup" && (
           <>
-            <p className="text-[10px] font-extrabold tracking-[0.22em] uppercase mb-1" style={{ color: "#C9B8FF" }}>
+            <p className="text-[11px] font-semibold mb-1" style={{ color: "#C9B8FF" }}>
               On fait connaissance
             </p>
             {/* La question n'apparaît QUE quand l'app ne sait pas — même logique que Nutrition */}
@@ -920,7 +920,7 @@ function ForkCard({ kind, count, onClick }: {
       )}
       <div className="absolute inset-x-0 bottom-0 px-3 pb-2.5 pt-8"
         style={{ background: "linear-gradient(to top, rgba(8,6,14,0.9) 25%, transparent)" }}>
-        <p className="text-[8.5px] font-extrabold tracking-[0.18em] uppercase mb-0.5" style={{ color: "#C9B8FF" }}>
+        <p className="text-[11px] font-semibold mb-0.5" style={{ color: "#C9B8FF" }}>
           {isIA ? "L’IA s’adapte" : "Mes séances"}
         </p>
         <p className="text-[16.5px] font-semibold text-white leading-tight">{isIA ? "J’improvise" : "Je choisis"}</p>
@@ -947,14 +947,14 @@ function WeekStrip({ week, todayIdx, onOrganise }: {
   let story: React.ReactNode = null;
   if (week) {
     if (todayDay?.status === "done") {
-      story = <><b style={{ color: "#8B5CF6", fontWeight: 800 }}>{doneCount} séance{doneCount > 1 ? "s" : ""} faite{doneCount > 1 ? "s" : ""}</b>, dont celle d&apos;aujourd&apos;hui. 💪</>;
+      story = <><b style={{ color: "var(--exp-encre)", fontWeight: 700 }}>{doneCount} séance{doneCount > 1 ? "s" : ""} faite{doneCount > 1 ? "s" : ""}</b>, dont celle d&apos;aujourd&apos;hui.</>;
     } else if (hasSeance(todayDay)) {
       story = doneCount > 0
-        ? <><b style={{ color: "#8B5CF6", fontWeight: 800 }}>{doneCount} séance{doneCount > 1 ? "s" : ""} faite{doneCount > 1 ? "s" : ""}</b>, la {doneCount + 1}<sup>e</sup> t&apos;attend aujourd&apos;hui.</>
+        ? <><b style={{ color: "var(--exp-encre)", fontWeight: 700 }}>{doneCount} séance{doneCount > 1 ? "s" : ""} faite{doneCount > 1 ? "s" : ""}</b>, la {doneCount + 1}<sup>e</sup> t&apos;attend aujourd&apos;hui.</>
         : <>Ta semaine commence, <b style={{ color: "var(--text-1)", fontWeight: 700 }}>première séance aujourd&apos;hui</b>.</>;
     } else {
       story = doneCount > 0
-        ? <><b style={{ color: "#8B5CF6", fontWeight: 800 }}>{doneCount} séance{doneCount > 1 ? "s" : ""} faite{doneCount > 1 ? "s" : ""}</b>, repos aujourd&apos;hui.</>
+        ? <><b style={{ color: "var(--exp-encre)", fontWeight: 700 }}>{doneCount} séance{doneCount > 1 ? "s" : ""} faite{doneCount > 1 ? "s" : ""}</b>, repos aujourd&apos;hui.</>
         : <>Repos aujourd&apos;hui, ta semaine se construit.</>;
     }
   }
@@ -1085,9 +1085,9 @@ function ElanStrip({ data, onOpen }: { data: ElanData | null; onOpen: () => void
             ))}
           </div>
           <div className="text-right">
-            <p className="text-[9.5px] font-bold tracking-[0.14em] uppercase mb-1" style={{ color: "var(--text-3)" }}>Cette semaine</p>
+            <p className="text-[11px] font-bold mb-1" style={{ color: "var(--text-3)" }}>Cette semaine</p>
             <p className="leading-none">
-              <span className="text-[22px] font-extrabold" style={{ color: "#8B5CF6" }}>{sessions}</span>
+              <span className="vy-nombre text-[26px]" style={{ color: "var(--exp-encre)" }}>{sessions}</span>
               <span className="text-[12px] font-semibold ml-1" style={{ color: "var(--text-2)" }}>séance{sessions > 1 ? "s" : ""}</span>
             </p>
             <p className="text-[11px] font-semibold mt-1.5 flex items-center justify-end gap-1.5" style={{ color: "var(--text-3)" }}>
@@ -1151,7 +1151,7 @@ function ElanSheet({ data, onClose }: { data: ElanData; onClose: () => void }) {
             {bars.map((b, i) => (
               <div key={i} className="flex flex-col items-center justify-end gap-1.5 h-full">
                 {b.min > 0 && b.min === maxMin && (
-                  <span className="text-[9.5px] font-extrabold" style={{ color: "#8B5CF6" }}>{b.min} min</span>
+                  <span className="vy-nombre text-[10px]" style={{ color: "var(--exp-encre)" }}>{b.min} min</span>
                 )}
                 <span className="w-[12px] rounded-full" style={{
                   height: barH(b.min),
@@ -1185,7 +1185,7 @@ function ElanSheet({ data, onClose }: { data: ElanData; onClose: () => void }) {
         {/* Comparaison vs semaine dernière — jamais un reproche */}
         {prevMinutes > 0 && delta > 0 && (
           <div className="flex items-center gap-2 mt-4 px-3 py-2.5 rounded-[13px] text-[11.5px] font-bold"
-            style={{ background: "rgba(139,92,246,0.09)", border: "1px solid rgba(139,92,246,0.22)", color: "#8B5CF6" }}>
+            style={{ background: "rgba(139,92,246,0.09)", border: "1px solid rgba(139,92,246,0.22)", color: "var(--exp-encre)" }}>
             ▲ +{delta} min vs la semaine dernière, ça monte.
           </div>
         )}
@@ -1377,7 +1377,7 @@ function SessionTile({ session, onStart, onManage, onPremium, canAccessPremium, 
               `.tagPremium` des missions, à sa vraie taille. Un or saturé de
               50 px se lit comme un bijou ; le même étalé sur 150 px se lit
               comme une tache. */}
-          <span className="px-[5px] py-[2px] rounded-[5px] text-[8px] font-black uppercase tracking-[0.1em]"
+          <span className="px-[5px] py-[2px] rounded-[5px] text-[11px] font-semibold"
             style={{ background: PREMIUM_PUCE, color: "#3A2402" }}>
             Premium
           </span>
@@ -1411,7 +1411,7 @@ function SessionTile({ session, onStart, onManage, onPremium, canAccessPremium, 
           <span className="absolute top-2 left-2 flex items-center gap-1 px-[7px] py-[4px] rounded-full"
             style={{ background: "rgba(8,6,14,0.38)", backdropFilter: "blur(5px)", border: "1px solid rgba(255,255,255,0.24)" }}>
             <BookOpen size={9} strokeWidth={2.4} className="flex-shrink-0 text-white" aria-hidden />
-            <span className="text-[7.5px] leading-none font-black uppercase tracking-[0.06em] text-white">
+            <span className="text-[7.5px] leading-none font-semibold text-white">
               {session.duration} min · lire
             </span>
           </span>
@@ -1446,7 +1446,7 @@ function SessionTile({ session, onStart, onManage, onPremium, canAccessPremium, 
             background: "linear-gradient(to top, rgba(6,5,10,0.9) 32%, rgba(6,5,10,0.4) 66%, transparent)",
             forcedColorAdjust: "none",
           }}>
-          <p className="text-[12.5px] font-black uppercase text-white leading-[1.12] tracking-tight"
+          <p className="text-[12.5px] font-semibold text-white leading-[1.12] tracking-tight"
             style={{
               display: "-webkit-box", WebkitLineClamp: advice ? 3 : 2, WebkitBoxOrient: "vertical", overflow: "hidden",
               textShadow: "0 2px 10px rgba(0,0,0,0.5)",
@@ -1462,7 +1462,7 @@ function SessionTile({ session, onStart, onManage, onPremium, canAccessPremium, 
             {advice?.theme ?? muscles}
           </p>
           {!session.perso && !isPremium && (
-            <span className="mt-1.5 text-[8.5px] font-bold uppercase tracking-[0.12em]"
+            <span className="mt-1.5 text-[11px] font-bold"
               style={{ color: "rgba(255,255,255,0.68)", textShadow: "0 1px 6px rgba(0,0,0,0.55)" }}>
               Incluse
             </span>
@@ -1537,7 +1537,7 @@ function PremiumPreviewSheet({ session, premiumCount, onClose, onUpgrade }: {
         <div className="h-8 px-4 flex items-center justify-center gap-2"
           style={{ background: `${PREMIUM_LAVIS},rgb(var(--surface-rgb))`, borderBottom: "1px solid rgba(245,177,32,0.2)" }}>
           <EtincellePremium taille={12} />
-          <span className="text-[9.5px] font-black uppercase tracking-[0.17em]" style={{ color: "var(--or-encre)" }}>
+          <span className="text-[11px] font-semibold" style={{ color: "var(--or-encre)" }}>
             {advice ? "Aperçu du cours Premium" : "Aperçu Premium"}
           </span>
         </div>
@@ -1546,7 +1546,7 @@ function PremiumPreviewSheet({ session, premiumCount, onClose, onUpgrade }: {
           <Photo img={advice?.image ?? art.img} pos={advice?.imagePosition ?? "center 24%"} style={{ position: "absolute", inset: 0 }} />
           <div className="absolute inset-x-0 bottom-0 px-5 pb-4 pt-16"
             style={{ background: "linear-gradient(to top,rgba(6,5,10,0.94),rgba(6,5,10,0.38),transparent)" }}>
-            <p className="text-[20px] font-black uppercase leading-[1.05] text-white"
+            <p className="text-[20px] font-semibold leading-[1.05] text-white"
               style={{ textShadow: "0 2px 12px rgba(0,0,0,0.58)" }}>
               {session.title}
             </p>
@@ -1580,7 +1580,7 @@ function PremiumPreviewSheet({ session, premiumCount, onClose, onUpgrade }: {
 
           {advice ? (
             <div className="mt-4">
-              <p className="text-[9.5px] font-black uppercase tracking-[0.15em]" style={{ color: "var(--text-3)" }}>
+              <p className="text-[11px] font-semibold" style={{ color: "var(--text-3)" }}>
                 Dans ce mini-cours
               </p>
               <p className="text-[12.5px] font-semibold leading-relaxed mt-2" style={{ color: "var(--text-2)" }}>
@@ -1598,7 +1598,7 @@ function PremiumPreviewSheet({ session, premiumCount, onClose, onUpgrade }: {
             </div>
           ) : preview.length > 0 && (
             <div className="mt-4">
-              <p className="text-[9.5px] font-black uppercase tracking-[0.15em]" style={{ color: "var(--text-3)" }}>
+              <p className="text-[11px] font-semibold" style={{ color: "var(--text-3)" }}>
                 Les premiers mouvements
               </p>
               <div className="grid grid-cols-3 gap-2 mt-2">
@@ -1772,7 +1772,7 @@ function ManageSheet({ session, week, onClose, onEdit, onDelete, onVisibilityCha
                     disabled={bloque}
                     className="w-full flex items-center gap-3 py-2.5 text-left border-none bg-transparent"
                     style={{ opacity: bloque ? 0.38 : 1, cursor: bloque ? "default" : "pointer" }}>
-                    <span className="w-[42px] text-[11px] font-extrabold uppercase flex-shrink-0"
+                    <span className="w-[42px] text-[11px] font-semibold flex-shrink-0"
                       style={{ color: i === todayIdx ? "var(--accent)" : "var(--text-2)" }}>
                       {nom.slice(0, 3)}
                     </span>
@@ -1852,7 +1852,7 @@ function ManageSheet({ session, week, onClose, onEdit, onDelete, onVisibilityCha
 
         {/* Visibilité — les 3 choix visibles d'un coup, plus de cycle mystère */}
         <div className="px-5 pt-3.5 pb-1">
-          <p className="text-[9.5px] font-extrabold tracking-[0.14em] uppercase mb-2" style={{ color: "var(--text-3)" }}>
+          <p className="text-[11px] font-semibold mb-2" style={{ color: "var(--text-3)" }}>
             Qui peut la voir ?
           </p>
           <div className="grid grid-cols-3 gap-1.5">
@@ -1932,7 +1932,7 @@ function MonEspaceBloc({ count, max, onComposer, onVoir }: {
         </div>
 
         <div className="relative px-4 py-4 sm:px-5 sm:py-5" style={{ paddingRight: 124 }}>
-          <p className="text-[9px] font-extrabold tracking-[0.18em] uppercase" style={{ color: "var(--accent)" }}>
+          <p className="text-[11px] font-semibold" style={{ color: "var(--accent)" }}>
             Ton espace
           </p>
           <h3 className="text-[19px] sm:text-[21px] font-semibold leading-tight mt-1" style={{ color: "var(--text-1)" }}>
@@ -2039,7 +2039,7 @@ function SessionRow({ label, count, children }: {
   return (
     <section className="mb-6">
       <div className="flex items-center gap-2 mb-2.5 px-0.5">
-        <span className="text-[10px] font-extrabold tracking-[0.16em] uppercase" style={{ color: "var(--text-2)" }}>{label}</span>
+        <span className="text-[11px] font-semibold" style={{ color: "var(--text-2)" }}>{label}</span>
         <span className="text-[9.5px] font-bold" style={{ color: "var(--text-3)" }}>{count}</span>
         <span aria-hidden className="flex-1 h-px" style={{ background: "rgba(var(--accent-rgb),0.1)" }} />
         {/* Flèches — desktop uniquement, discrètes */}
@@ -2121,7 +2121,7 @@ function PremiumSessionRow({ count, children, title = "Continue avec Premium", u
         </div>
         <div className="flex-shrink-0 text-right" style={{ color: "var(--or-encre)" }}>
           <p className="text-[19px] font-black leading-none tracking-[-0.02em]">{count}</p>
-          <p className="text-[9px] font-extrabold uppercase tracking-[0.06em] mt-1" style={{ opacity: 0.74 }}>
+          <p className="text-[11px] font-semibold mt-1" style={{ opacity: 0.74 }}>
             {mot}
           </p>
         </div>
@@ -2235,7 +2235,7 @@ function CatTile({ cat, count, freeCount, premiumCount, onOpen }: {
       <Photo img={cat.img} pos={cat.pos} style={{ position: "absolute", inset: 0 }} />
       <div className="absolute inset-x-0 bottom-0 px-2.5 pb-3.5 pt-14 flex flex-col items-center text-center"
         style={{ background: "linear-gradient(to top, rgba(6,5,10,0.88) 20%, rgba(6,5,10,0.35) 62%, transparent)" }}>
-        <p className="text-[14.5px] font-black uppercase text-white leading-[1.08] tracking-tight"
+        <p className="text-[14.5px] font-semibold text-white leading-[1.08] tracking-tight"
           style={{ textWrap: "balance", textShadow: "0 2px 10px rgba(0,0,0,0.5)" }}>
           {cat.name}
         </p>
@@ -2606,7 +2606,7 @@ function ImproviseSheet({ defaultPlace, defaultHalteres, difficulty, onClose, on
 
       <div className="px-5 overflow-y-auto" style={{ paddingBottom: "calc(1.25rem + env(safe-area-inset-bottom))" }}>
         {/* Temps */}
-        <p className="text-[9.5px] font-extrabold tracking-[0.2em] uppercase mt-4 mb-2" style={{ color: "var(--text-3)" }}>
+        <p className="text-[11px] font-semibold mt-4 mb-2" style={{ color: "var(--text-3)" }}>
           Tu as combien de temps ?
         </p>
         <div className="flex gap-2">
@@ -2625,7 +2625,7 @@ function ImproviseSheet({ defaultPlace, defaultHalteres, difficulty, onClose, on
         </div>
 
         {/* Lieu */}
-        <p className="text-[9.5px] font-extrabold tracking-[0.2em] uppercase mt-4 mb-2" style={{ color: "var(--text-3)" }}>
+        <p className="text-[11px] font-semibold mt-4 mb-2" style={{ color: "var(--text-3)" }}>
           Tu es où ?
         </p>
         <div className="flex gap-2">
@@ -2852,7 +2852,7 @@ function SemaineSheet({ week, todayIdx, fetchWeekAt, onClose, onStartDay, onAsk,
       {verdict && (
         <div className="px-5 pb-3 flex items-center gap-1.5 flex-wrap flex-shrink-0">
           <span className="text-[10px] font-extrabold px-2.5 py-1 rounded-full"
-            style={{ background: "rgba(43,212,160,0.12)", color: "#2BD4A0" }}>{verdict}</span>
+            style={{ background: "rgba(43,212,160,0.12)", color: "var(--teal-encre)" }}>{verdict}</span>
           {[...buckets.entries()].sort((a, b) => b[1] - a[1]).map(([b, n]) => (
             <span key={b} className="text-[10px] font-bold px-2 py-1 rounded-full"
               style={{ background: "rgba(255,255,255,0.055)", color: "var(--text-2)" }}>{n}× {b}</span>
@@ -2990,7 +2990,7 @@ function DayRow({ day, idx, abbr, isToday, open, dropHover, dimmed, registerRef,
             </div>
             {isDone ? (
               <span className="flex-shrink-0 rounded-full flex items-center justify-center" style={{ width: 18, height: 18, background: "rgba(43,212,160,0.16)", border: "1px solid rgba(43,212,160,0.5)" }}>
-                <Check size={10} strokeWidth={3.2} style={{ color: "#2BD4A0" }} />
+                <Check size={10} strokeWidth={3.2} style={{ color: "var(--teal-encre)" }} />
               </span>
             ) : isToday ? (
               <span className="flex-shrink-0 text-[9px] font-extrabold tracking-wide" style={{ backgroundImage: "linear-gradient(135deg,var(--accent),var(--gold))", WebkitBackgroundClip: "text", backgroundClip: "text", WebkitTextFillColor: "transparent", color: "transparent" }}>AUJOURD&apos;HUI</span>
@@ -3060,7 +3060,7 @@ function OrganiserSheet({ onClose }: { onClose: () => void }) {
     <Sheet onClose={onClose} maxHeight="92vh">
       <div className="px-5 pt-2 pb-3 flex items-center justify-between flex-shrink-0">
         <div>
-          <p className="text-[10px] font-semibold tracking-[0.2em] uppercase" style={{ color: "var(--text-3)" }}>
+          <p className="text-[11px] font-semibold" style={{ color: "var(--text-3)" }}>
             Piloté par l&apos;IA ✦
           </p>
           <h2 className="text-[19px] font-light mt-0.5" style={{ color: "var(--text-1)" }}>Organiser ma semaine</h2>
@@ -3677,7 +3677,7 @@ export default function ProgressionPage() {
           initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
           className="mb-5"
         >
-          <p className="text-[10px] font-semibold tracking-[0.2em] uppercase mb-1" style={{ color: "var(--text-3)" }}>
+          <p className="text-[11px] font-semibold mb-1" style={{ color: "var(--text-3)" }}>
             {dateLabel}
           </p>
           <h1 className="text-2xl font-extralight tracking-tight" style={{ color: "var(--text-1)" }}>

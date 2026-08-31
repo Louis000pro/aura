@@ -82,7 +82,7 @@ function ExerciseVideo({ exerciseName }: { exerciseName: string }) {
         <span className="inline-flex items-center justify-center w-5 h-5 rounded-md" style={{ background: "#FF0000" }}>
           <svg width="11" height="11" viewBox="0 0 24 24" fill="#fff"><path d="M8 5v14l11-7z" /></svg>
         </span>
-        <p className="text-[10px] font-bold tracking-widest uppercase" style={{ color: "var(--accent)" }}>Référence humaine</p>
+        <p className="text-[11px] font-boldst" style={{ color: "var(--accent)" }}>Référence humaine</p>
       </div>
       {state === "loading" && (
         <div className="aspect-video w-full flex items-center justify-center" style={{ background: "rgba(var(--accent-rgb),0.06)" }}>
@@ -1352,7 +1352,7 @@ export default function WorkoutGuideModal({
                   <div className="relative z-[2] flex flex-col items-center gap-3 mt-6">
                     {isHiit && (
                       <motion.span key={hiitSub} initial={{ scale: 0.85, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
-                        className="px-5 py-1.5 rounded-full text-[11px] font-bold tracking-[0.2em] uppercase"
+                        className="px-5 py-1.5 rounded-full text-[11px] font-bold"
                         style={{
                           background: hiitSub === "work" ? "rgba(245,177,32,0.12)" : "rgba(43,212,160,0.12)",
                           color:      hiitSub === "work" ? TUN.orange : TUN.teal,

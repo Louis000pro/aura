@@ -377,7 +377,7 @@ export default function InfosPage() {
                 {occupe === "relais" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
               </span>
               <span className="min-w-0 flex-1">
-                <b className="block text-[14px] font-semibold" style={{ color: "#8B5CF6" }}>Lancer un relais</b>
+                <b className="block text-[14px] font-semibold" style={{ color: "var(--exp-encre)" }}>Lancer un relais</b>
                 <span className="mt-0.5 block text-[12px]" style={{ color: "var(--text-2)" }}>
                   4 jours sur 7, chacun son tour
                 </span>
@@ -429,7 +429,7 @@ export default function InfosPage() {
               style={{ background: "rgba(139,92,246,.14)", color: "#8B5CF6" }}>
               <UserPlus className="h-4 w-4" />
             </span>
-            <b className="text-[14px] font-semibold" style={{ color: "#8B5CF6" }}>Ajouter quelqu&apos;un</b>
+            <b className="text-[14px] font-semibold" style={{ color: "var(--exp-encre)" }}>Ajouter quelqu&apos;un</b>
           </button>
 
           <button

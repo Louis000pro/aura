@@ -515,9 +515,9 @@ export default function ExerciseAnalyzer() {
       {/* Stats */}
       <div className="grid grid-cols-3 gap-3">
         {[
-          { label: "RÉPÉTITIONS", value: String(reps),       icon: TrendingUp, color: "var(--accent)" },
-          { label: "FORM SCORE",  value: `${score}%`,        icon: Target,     color: scoreColor },
-          { label: "PHASE",       value: selected === "plank" ? "—" : phase === "up" ? "HAUT" : "BAS", icon: Zap, color: "var(--gold)" },
+          { label: "Répétitions", value: String(reps),       icon: TrendingUp, color: "var(--accent)" },
+          { label: "Qualité du geste",  value: `${score}%`,        icon: Target,     color: scoreColor },
+          { label: "Phase",       value: selected === "plank" ? "—" : phase === "up" ? "HAUT" : "BAS", icon: Zap, color: "var(--gold)" },
         ].map(({ label, value, icon: Icon, color }) => (
           <div key={label} className="rounded-2xl p-3 flex flex-col gap-1.5"
             style={{ background: "rgba(var(--surface-rgb),0.9)", border: "1px solid rgba(var(--violet-mid-rgb),0.2)", boxShadow: "0 2px 8px rgba(var(--accent-rgb),0.06)" }}>

@@ -106,7 +106,7 @@ export default function ExerciseDetailSheet({
             </span>
             {estAnime(exo.name) && (
               <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full flex items-center gap-1"
-                style={{ background: "rgba(43,212,160,0.13)", color: "#2BD4A0" }}>
+                style={{ background: "rgba(43,212,160,0.13)", color: "var(--teal-encre)" }}>
                 <Sparkles size={9} strokeWidth={2.4} /> Animé
               </span>
             )}
@@ -155,7 +155,7 @@ export default function ExerciseDetailSheet({
           }}>
           {dejaDansLaSeance ? (
             <div className="w-full py-3.5 rounded-2xl text-sm font-semibold flex items-center justify-center gap-2"
-              style={{ background: "rgba(43,212,160,0.1)", color: "#2BD4A0", border: "1px solid rgba(43,212,160,0.25)" }}>
+              style={{ background: "rgba(43,212,160,0.1)", color: "var(--teal-encre)", border: "1px solid rgba(43,212,160,0.25)" }}>
               <Check size={15} strokeWidth={2.4} /> Déjà dans ta séance
             </div>
           ) : (

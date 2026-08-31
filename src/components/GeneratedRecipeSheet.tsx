@@ -77,7 +77,7 @@ export default function GeneratedRecipeSheet({
           >
             <div className="flex items-center justify-between px-5 pt-5 pb-3" style={{ borderBottom: "1px solid rgba(var(--violet-mid-rgb),0.4)" }}>
               <div>
-                <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "var(--text-3)" }}>{eyebrow}</p>
+                <p className="text-[11px] font-semiboldst" style={{ color: "var(--text-3)" }}>{eyebrow}</p>
                 <h2 className="text-base font-semibold mt-0.5" style={{ color: "var(--text-1)" }}>
                   {loading ? loadingTitle : recipe ? recipe.nom : "Recette"}
                 </h2>
@@ -144,7 +144,7 @@ export default function GeneratedRecipeSheet({
                   )}
 
                   <div>
-                    <p className="text-[10px] font-semibold tracking-widest uppercase mb-2" style={{ color: "var(--text-3)" }}>Ingrédients</p>
+                    <p className="text-[11px] font-semiboldst mb-2" style={{ color: "var(--text-3)" }}>Ingrédients</p>
                     <div className="flex flex-col gap-1.5">
                       {recipe.ingredients.map((it, i) => (
                         <div key={i} className="flex items-center justify-between text-sm">
@@ -156,7 +156,7 @@ export default function GeneratedRecipeSheet({
                   </div>
 
                   <div>
-                    <p className="text-[10px] font-semibold tracking-widest uppercase mb-2" style={{ color: "var(--text-3)" }}>Préparation</p>
+                    <p className="text-[11px] font-semiboldst mb-2" style={{ color: "var(--text-3)" }}>Préparation</p>
                     <div className="flex flex-col gap-2.5">
                       {recipe.steps.map((s, i) => (
                         <div key={i} className="flex gap-2.5">
