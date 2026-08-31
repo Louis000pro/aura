@@ -22,10 +22,19 @@ import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { PLANS, VENTE_OUVERTE } from "@/lib/plans";
 
+/* ⚠️ PAS DE LISTE DE GRAISSES ICI, ET C'EST UNE CORRECTION, PAS UN OUBLI.
+   Geist était chargé en 300, 400, 500 et 600 seulement. Or l'application
+   demande plus lourd à 362 endroits : `font-bold` 180 fois, `font-black` 65,
+   `font-extrabold` 57, plus 60 déclarations CSS au-dessus de 600 (jusqu'à 900).
+   Aucune de ces graisses n'existait dans les fichiers téléchargés : le
+   navigateur les FABRIQUAIT en épaississant le dessin du 600, ce qui donne des
+   pleins irréguliers et des contreformes bouchées. C'est invisible à nommer et
+   très visible à l'oeil : c'est une des choses qui faisaient « pas fini ».
+   Sans liste, next/font sert la version VARIABLE : un seul fichier, l'axe de
+   graisse complet, et chaque graisse enfin dessinée pour de vrai. */
 const geist = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
-  weight: ["300", "400", "500", "600"],
 });
 
 /* La police de TITRAGE. Elle n'existe que pour une raison : avant elle, tout

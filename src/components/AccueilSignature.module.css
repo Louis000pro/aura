@@ -13,20 +13,32 @@
   padding-top: 4px;
 }
 
+/* ⚠️ PLUS DE CAPITALES ÉTIRÉES ICI. C'était « BONJOUR » en 11 px, gras, avec
+   0,16 em d'interlettrage : la forme d'étiquette qu'on trouve en tête de toutes
+   les pages générées, et sur un mot français elle abîme en plus les accents,
+   qui n'ont pas la place de respirer au-dessus d'une capitale. Un sur-titre n'a
+   pas besoin de crier pour se placer avant le titre : il lui suffit d'être
+   petit et calme. */
 .greeting > p {
-  color: var(--text-3);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
+  color: var(--text-2);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0;
 }
 
+/* Le titre de l'écran le plus ouvert de l'app. Il passe au titrage et il
+   grandit : c'est lui qui doit commander la page. La graisse DESCEND en même
+   temps, de 800 à 600, et ce n'est pas une contradiction : 800 n'existait pas
+   dans les fichiers de Geist et le navigateur le fabriquait, donc le titre
+   était à la fois moins grand et moins net. */
 .greeting h1 {
   margin: 0;
   color: var(--text-0);
-  font-size: 28px;
-  font-weight: 800;
-  line-height: 1.16;
+  font-family: var(--titrage);
+  font-size: clamp(30px, 8.5vw, 36px);
+  font-weight: 600;
+  line-height: 1.08;
+  letter-spacing: -0.03em;
 }
 
 .greeting > span {
@@ -221,12 +233,19 @@
   flex: 1;
 }
 
+/* Le nombre de jours. Il était en 17 px : la même taille que trois autres
+   choses de l'écran, donc rien ne disait que c'était celui qui compte. Il
+   double presque, et il passe en chasse fixe pour ne pas se décaler d'un pixel
+   le jour où la série passe de 9 à 10. */
 .streakCopy strong {
   display: block;
   color: var(--text-0);
-  font-size: 17px;
-  font-weight: 900;
-  letter-spacing: -0.02em;
+  font-family: var(--titrage);
+  font-size: 28px;
+  font-weight: 600;
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
 }
 
 .streakCopy small {
@@ -315,17 +334,22 @@
   white-space: nowrap;
 }
 
+/* ⚠️ L'ENCRE, PAS LE VIOLET DÉCORATIF : ce bloc porte l'EXP, donc un chiffre
+   qu'on lit. `--accent` vaut 2,6:1 sur le blanc. */
 .rankExp {
   position: relative;
   flex: 0 0 auto;
-  color: var(--accent);
+  color: var(--exp-encre);
   text-align: right;
   white-space: nowrap;
 }
 
 .rankExp strong {
-  font-size: 13px;
-  font-weight: 800;
+  font-family: var(--titrage);
+  font-variant-numeric: tabular-nums;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
 }
 
 .rankExp small {
@@ -334,14 +358,20 @@
   font-size: 10.5px;
 }
 
+/* ⚠️ LE GAIN « +30 » ÉTAIT EN TEAL CODÉ EN DUR, ET DONC ILLISIBLE EN CLAIR.
+   `#2BD4A0` est le teal de REMPLISSAGE : mesuré à 1,85:1 sur le blanc, il ne
+   peut pas porter du texte. Ce chiffre apparaît une seconde et demie au moment
+   exact où l'on vient de gagner : c'est le pire endroit pour être illisible.
+   `--teal-encre` est là pour ça, et il bascule avec le thème. */
 .rankExp em {
   position: absolute;
   right: 0;
   bottom: calc(100% + 4px);
-  color: #2bd4a0;
-  font-size: 11px;
+  color: var(--teal-encre);
+  font-size: 12px;
   font-style: normal;
-  font-weight: 800;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
 }
 
 .sectionHeading {
@@ -355,8 +385,10 @@
 .sectionHeading h2 {
   margin: 0;
   color: var(--text-0);
-  font-size: 15px;
-  font-weight: 800;
+  font-family: var(--titrage);
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
 }
 
 .sectionHeading p {
@@ -365,12 +397,17 @@
   font-size: 11.5px;
 }
 
+/* ⚠️ `--exp-encre` ET PAS `--accent`. Ce span porte « 35 / 50 EXP », donc un
+   chiffre qu'on LIT. Le violet décoratif de l'app tombe à 2,6:1 sur le blanc :
+   le compte paraissait éteint avant même d'être lu. Même teinte, encre dense,
+   et elle bascule avec le thème. La règle est déjà écrite dans globals.css. */
 .sectionHeading > span {
   flex: 0 0 auto;
-  color: var(--accent);
-  font-size: 10.5px;
-  font-weight: 700;
+  color: var(--exp-encre);
+  font-size: 11px;
+  font-weight: 600;
   white-space: nowrap;
+  font-variant-numeric: tabular-nums;
 }
 
 .missionStack {

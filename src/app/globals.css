@@ -142,6 +142,17 @@
     overscroll-behavior: none;
   }
 
+  /* TOUS LES TITRES PRENNENT LA POLICE DE TITRAGE, en une règle et pas cent.
+     C'est le geste qui change le plus l'impression générale pour le moins de
+     risque : la famille change, les tailles et les couleurs déjà posées écran
+     par écran ne bougent pas. L'interlettrage se resserre légèrement, parce
+     qu'un titre garde son air de titre quand ses lettres se touchent presque,
+     et le perd quand elles flottent. */
+  h1, h2, h3 {
+    font-family: var(--titrage);
+    letter-spacing: -0.02em;
+  }
+
   ::selection { background-color: rgba(var(--tint-violet-rgb), 1); color: var(--text-1); }
 
   /* Perf scroll : le navigateur saute le rendu des cartes hors écran */
