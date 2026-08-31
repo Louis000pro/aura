@@ -400,7 +400,7 @@ export default function MealSituationHero({
       const res = await aiFetch("/api/nutrition/estimate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ description: `${dish} — ${p.phrase}` }),
+        body: JSON.stringify({ description: `${dish}, ${p.phrase}` }),
       });
       if (!res.ok) throw new Error();
       const d = await res.json();
@@ -598,7 +598,7 @@ export default function MealSituationHero({
 
             {finishMode === "cuisiner" ? (<>
               <p className="text-xs font-light leading-relaxed" style={{ color: "var(--text-2)" }}>
-                Dis-moi ce que tu as sous la main, je te trouve un plat — rien à acheter.
+                Dis-moi ce que tu as sous la main, je te trouve un plat, rien à acheter.
               </p>
               <div className="flex gap-2">
                 <input value={ingInput} onChange={(e) => setIngInput(e.target.value)}
@@ -706,7 +706,7 @@ export default function MealSituationHero({
             </>) : (<>
               {/* Saisie : nom du plat + portion imposée */}
               <p className="text-xs font-light leading-relaxed" style={{ color: "var(--text-2)" }}>
-                Un reste au frigo&nbsp;? Dis-moi lequel, je l&apos;estime — même sans le peser.
+                Un reste au frigo&nbsp;? Dis-moi lequel, je l&apos;estime, même sans le peser.
               </p>
               <div>
                 <p className="text-[10px] font-semibold tracking-widest uppercase mb-1.5" style={{ color: "var(--text-3)" }}>C&apos;était quoi&nbsp;?</p>
@@ -844,7 +844,7 @@ export default function MealSituationHero({
                   </div>
                   <div>
                     <h3 className="text-xl font-medium leading-snug" style={{ color: "var(--text-1)" }}>Qu&apos;est-ce que tu prends&nbsp;?</h3>
-                    <p className="text-xs font-light mt-1" style={{ color: "var(--text-3)" }}>Ajoute tes articles un par un — un seul suffit.</p>
+                    <p className="text-xs font-light mt-1" style={{ color: "var(--text-3)" }}>Ajoute tes articles un par un, un seul suffit.</p>
                   </div>
                   <div className="flex flex-col gap-2">
                     {articles.map((a, i) => (
@@ -1068,8 +1068,8 @@ export default function MealSituationHero({
                 onClick={(e) => e.stopPropagation()}
                 className="w-full max-w-xs rounded-3xl p-6 text-center"
                 style={{ background: "rgb(var(--surface-rgb))", border: "1px solid rgba(var(--accent-rgb),0.14)" }}>
-                <p className="text-sm" style={{ color: "var(--text-1)" }}>La banque de recettes se remplit&nbsp;!</p>
-                <p className="text-xs mt-1.5 font-light" style={{ color: "var(--text-3)" }}>Aucune recette pour ce filtre pour l&apos;instant — reviens vite.</p>
+                <p className="text-sm" style={{ color: "var(--text-1)" }}>La banque de recettes se remplit.</p>
+                <p className="text-xs mt-1.5 font-light" style={{ color: "var(--text-3)" }}>Aucune recette pour ce filtre pour l&apos;instant, reviens vite.</p>
                 <button onClick={closeRecipe}
                   className="mt-4 px-5 py-2.5 rounded-2xl text-sm font-semibold cursor-pointer"
                   style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", color: "#fff" }}>

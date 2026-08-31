@@ -148,7 +148,7 @@ export default function TastePrefsPrompt() {
             </div>
 
             <h2 className="text-xl font-light mt-3 flex-shrink-0" style={{ color: "var(--text-1)" }}>
-              On personnalise tes plats ? ✨
+              On personnalise tes plats&nbsp;?
             </h2>
             <p className="text-sm mt-1.5 mb-4 flex-shrink-0" style={{ color: "var(--text-3)", lineHeight: 1.5 }}>
               Quelques questions rapides pour te proposer des repas qui te ressemblent vraiment.
@@ -169,7 +169,7 @@ export default function TastePrefsPrompt() {
 
               <Question label="Ton top 3 des endroits ?">
                 <p className="text-[11px] -mt-1 mb-1.5" style={{ color: "var(--text-3)" }}>
-                  Tape dans l&apos;ordre — pour te conseiller quoi commander.
+                  Tape dans l&apos;ordre, pour te conseiller quoi commander.
                 </p>
                 <PlacesTop3Picker value={places} onChange={setPlaces} />
               </Question>

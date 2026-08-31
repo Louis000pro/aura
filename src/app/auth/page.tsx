@@ -345,7 +345,7 @@ export default function AuthPage() {
                 <motion.div initial={{ scale:0,rotate:-180 }} animate={{ scale:1,rotate:0 }} transition={{ type:"spring",bounce:0.5 }}>
                   <CheckCircle2 size={52} style={{ color:TEAL }} strokeWidth={1.5} />
                 </motion.div>
-                <p className="text-lg font-light" style={{ color:"var(--text-1)" }}>Bon retour !</p>
+                <p className="text-lg font-light" style={{ color:"var(--text-1)" }}>Bon retour.</p>
               </motion.div>
             )}
           </AnimatePresence>

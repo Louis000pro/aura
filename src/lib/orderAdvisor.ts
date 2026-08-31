@@ -81,7 +81,7 @@ export type AdvisorNeeds = {
 export type RankedGenre = {
   category: OrderCategory;
   profile: GenreProfile;
-  reason: string | null;    // « pourquoi ce genre » — honnête, chiffré
+  reason: string | null;    // « pourquoi ce genre », honnête, chiffré
 };
 
 /* Cible calorique du repas : la part normale de ce repas, plafonnée à ce qui

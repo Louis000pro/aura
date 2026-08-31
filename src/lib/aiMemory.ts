@@ -81,7 +81,7 @@ export function buildMemoryPrompt(memories: AiMemory[] | null | undefined): stri
     // d'en inventer une (vécu le 2026-07-30 avec un « [CARTE]…[/CARTE] »).
     .map((mm) => `- ${MEMORY_CATEGORY_LABEL[normalizeCategory(mm.category)]} : ${mm.content}`)
     .join("\n");
-  return `\n\nCE QUE TU SAIS DÉJÀ SUR CET UTILISATEUR (mémoire long terme — à respecter ABSOLUMENT dans tes conseils) :
+  return `\n\nCE QUE TU SAIS DÉJÀ SUR CET UTILISATEUR (mémoire long terme, à respecter ABSOLUMENT dans tes conseils) :
 ${lines}
 (Ne re-mémorise pas ces faits. Si l’un d’eux change, mémorise la mise à jour ; l’utilisateur peut les consulter et les supprimer dans Paramètres.)`;
 }

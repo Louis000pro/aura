@@ -51,7 +51,7 @@ export default function RecipeSheet({
 }: {
   recipe: Recipe;
   loading?: boolean;
-  fitNote?: string | null;   // « pourquoi cette idée » — honnête, selon la journée
+  fitNote?: string | null;   // « pourquoi cette idée », honnête, selon la journée
   onClose: () => void;
   onLog: (m: LoggedMeal) => void;
   onOther?: () => void;

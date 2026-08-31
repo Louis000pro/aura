@@ -58,7 +58,7 @@ export const SITE_FEATURES: SiteFeature[] = [
     title: "Analyse de posture (caméra)",
     route: "/analyse",
     summary:
-      "Outil d’analyse de mouvement en temps réel via la caméra : compte les répétitions et corrige la posture (squat, pompes, curl biceps, fente, gainage). Tourne sur l’appareil, gratuit et illimité — n’utilise pas le coach IA.",
+      "Outil d’analyse de mouvement en temps réel via la caméra : compte les répétitions et corrige la posture (squat, pompes, curl biceps, fente, gainage). Tourne sur l’appareil, gratuit et illimité, n’utilise pas le coach IA.",
     actions: [
       "lancer l’analyse de posture en temps réel",
       "corriger sa technique sur un exercice",

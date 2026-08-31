@@ -216,7 +216,7 @@ const workoutSessions: WorkoutSession[] = [
   },
   {
     id: "cardio-halteres", category: "cardio",
-    title: "Cardio & force — Haltères", subtitle: "Circuit complet · Charges · Repos courts",
+    title: "Cardio et force aux haltères", subtitle: "Circuit complet · Charges · Repos courts",
     duration: 32, difficulty: "Avancé", exercises: 6,
     muscles: ["Cardio", "Corps entier"],
     accent: "#8B5CF6", icon: Dumbbell, access: "premium",
@@ -329,7 +329,7 @@ const workoutSessions: WorkoutSession[] = [
   },
   {
     id: "salle-haut", category: "force",
-    title: "Haut du corps — Salle", subtitle: "Barre · Machines · Poulie",
+    title: "Haut du corps en salle", subtitle: "Barre · Machines · Poulie",
     duration: 50, difficulty: "Intermédiaire", exercises: 6,
     muscles: ["Pectoraux", "Dos", "Épaules"],
     accent: "#8B5CF6", icon: Dumbbell, access: "premium",
@@ -338,7 +338,7 @@ const workoutSessions: WorkoutSession[] = [
   },
   {
     id: "push-salle", category: "force",
-    title: "Push — Pectoraux & épaules", subtitle: "Barre · Haltères · Poulie",
+    title: "Push, pectoraux et épaules", subtitle: "Barre · Haltères · Poulie",
     duration: 45, difficulty: "Intermédiaire", exercises: 6,
     muscles: ["Pectoraux", "Épaules", "Triceps"],
     accent: "#8B5CF6", icon: Dumbbell, access: "premium",
@@ -347,7 +347,7 @@ const workoutSessions: WorkoutSession[] = [
   },
   {
     id: "jambes-quadriceps", category: "force",
-    title: "Jambes — Dominante quadriceps", subtitle: "Charges · Unilatéral · Machines",
+    title: "Jambes, dominante quadriceps", subtitle: "Charges · Unilatéral · Machines",
     duration: 45, difficulty: "Intermédiaire", exercises: 6,
     muscles: ["Quadriceps", "Fessiers", "Mollets"],
     accent: "#8B5CF6", icon: Dumbbell, access: "premium",
@@ -500,7 +500,7 @@ const workoutSessions: WorkoutSession[] = [
   },
   {
     id: "tractions-progression", category: "force",
-    title: "Tractions — Construire le mouvement", subtitle: "Omoplates · Tirages · Premières répétitions",
+    title: "Tractions, construire le mouvement", subtitle: "Omoplates · Tirages · Premières répétitions",
     duration: 30, difficulty: "Intermédiaire", exercises: 6,
     muscles: ["Dos", "Biceps", "Épaules"],
     accent: "#8B5CF6", icon: Sparkles, access: "premium",
@@ -518,7 +518,7 @@ const workoutSessions: WorkoutSession[] = [
   },
   {
     id: "gainage-progression", category: "fullbody",
-    title: "Gainage — Progresser", subtitle: "Stabilité · Leviers · Mouvement contrôlé",
+    title: "Gainage, progresser", subtitle: "Stabilité · Leviers · Mouvement contrôlé",
     duration: 25, difficulty: "Intermédiaire", exercises: 6,
     muscles: ["Core", "Abdominaux", "Dos"],
     accent: "#8B5CF6", icon: Sparkles, access: "premium",
@@ -527,7 +527,7 @@ const workoutSessions: WorkoutSession[] = [
   },
   {
     id: "epaules-controle", category: "force",
-    title: "Épaules — Mobilité & contrôle", subtitle: "Bouger · Stabiliser · Puis charger",
+    title: "Épaules, mobilité et contrôle", subtitle: "Bouger · Stabiliser · Puis charger",
     duration: 28, difficulty: "Intermédiaire", exercises: 6,
     muscles: ["Épaules", "Haut du dos", "Triceps"],
     accent: "#8B5CF6", icon: Sparkles, access: "premium",
@@ -536,7 +536,7 @@ const workoutSessions: WorkoutSession[] = [
   },
   {
     id: "unilateral-maitrise", category: "force",
-    title: "Unilatéral — Maîtriser les appuis", subtitle: "Droite · Gauche · Équilibre · Contrôle",
+    title: "Unilatéral, maîtriser les appuis", subtitle: "Droite · Gauche · Équilibre · Contrôle",
     duration: 28, difficulty: "Intermédiaire", exercises: 6,
     muscles: ["Jambes", "Fessiers", "Core"],
     accent: "#8B5CF6", icon: Sparkles, access: "premium",
@@ -545,7 +545,7 @@ const workoutSessions: WorkoutSession[] = [
   },
   {
     id: "tempo-controle", category: "fullbody",
-    title: "Tempo — Ralentir pour progresser", subtitle: "Descente · Pause · Contrôle · Tout le corps",
+    title: "Tempo, ralentir pour progresser", subtitle: "Descente · Pause · Contrôle · Tout le corps",
     duration: 32, difficulty: "Intermédiaire", exercises: 6,
     muscles: ["Corps entier"],
     accent: "#8B5CF6", icon: Sparkles, access: "premium",
@@ -925,7 +925,7 @@ function ForkCard({ kind, count, onClick }: {
         </p>
         <p className="text-[16.5px] font-semibold text-white leading-tight">{isIA ? "J’improvise" : "Je choisis"}</p>
         <p className="text-[10.5px] font-normal mt-0.5 leading-snug" style={{ color: "rgba(255,255,255,0.68)" }}>
-          {isIA ? "Ton temps, ton matériel — elle crée" : `${count ?? 0} séances, choisis la tienne`}
+          {isIA ? "Ton temps, ton matériel, elle crée" : `${count ?? 0} séances, choisis la tienne`}
         </p>
       </div>
     </motion.button>
@@ -947,15 +947,15 @@ function WeekStrip({ week, todayIdx, onOrganise }: {
   let story: React.ReactNode = null;
   if (week) {
     if (todayDay?.status === "done") {
-      story = <><b style={{ color: "#8B5CF6", fontWeight: 800 }}>{doneCount} séance{doneCount > 1 ? "s" : ""} faite{doneCount > 1 ? "s" : ""}</b> — dont celle d&apos;aujourd&apos;hui. 💪</>;
+      story = <><b style={{ color: "#8B5CF6", fontWeight: 800 }}>{doneCount} séance{doneCount > 1 ? "s" : ""} faite{doneCount > 1 ? "s" : ""}</b>, dont celle d&apos;aujourd&apos;hui. 💪</>;
     } else if (hasSeance(todayDay)) {
       story = doneCount > 0
-        ? <><b style={{ color: "#8B5CF6", fontWeight: 800 }}>{doneCount} séance{doneCount > 1 ? "s" : ""} faite{doneCount > 1 ? "s" : ""}</b> — la {doneCount + 1}<sup>e</sup> t&apos;attend aujourd&apos;hui.</>
-        : <>Ta semaine commence — <b style={{ color: "var(--text-1)", fontWeight: 700 }}>première séance aujourd&apos;hui</b>.</>;
+        ? <><b style={{ color: "#8B5CF6", fontWeight: 800 }}>{doneCount} séance{doneCount > 1 ? "s" : ""} faite{doneCount > 1 ? "s" : ""}</b>, la {doneCount + 1}<sup>e</sup> t&apos;attend aujourd&apos;hui.</>
+        : <>Ta semaine commence, <b style={{ color: "var(--text-1)", fontWeight: 700 }}>première séance aujourd&apos;hui</b>.</>;
     } else {
       story = doneCount > 0
-        ? <><b style={{ color: "#8B5CF6", fontWeight: 800 }}>{doneCount} séance{doneCount > 1 ? "s" : ""} faite{doneCount > 1 ? "s" : ""}</b> — repos aujourd&apos;hui.</>
-        : <>Repos aujourd&apos;hui — ta semaine se construit.</>;
+        ? <><b style={{ color: "#8B5CF6", fontWeight: 800 }}>{doneCount} séance{doneCount > 1 ? "s" : ""} faite{doneCount > 1 ? "s" : ""}</b>, repos aujourd&apos;hui.</>
+        : <>Repos aujourd&apos;hui, ta semaine se construit.</>;
     }
   }
 
@@ -986,7 +986,7 @@ function WeekStrip({ week, todayIdx, onOrganise }: {
 
           return (
             <button key={i} onClick={onOrganise}
-              aria-label={`${DAY_FULL[i]} — ${isSeance ? dayTitle(d!) : "repos"}`}
+              aria-label={`${DAY_FULL[i]}, ${isSeance ? dayTitle(d!) : "repos"}`}
               className="relative flex-1 rounded-[12px] overflow-hidden cursor-pointer border-none p-0 block"
               style={{
                 height: 60, background: "#0f0d17",
@@ -1109,7 +1109,7 @@ function ElanStrip({ data, onOpen }: { data: ElanData | null; onOpen: () => void
             ))}
           </div>
           <p className="text-[11.5px] font-medium leading-snug" style={{ color: "var(--text-3)" }}>
-            Ton élan démarre à la première séance. 💪
+            Ton élan démarre à la première séance.
           </p>
         </div>
       )}
@@ -1186,7 +1186,7 @@ function ElanSheet({ data, onClose }: { data: ElanData; onClose: () => void }) {
         {prevMinutes > 0 && delta > 0 && (
           <div className="flex items-center gap-2 mt-4 px-3 py-2.5 rounded-[13px] text-[11.5px] font-bold"
             style={{ background: "rgba(139,92,246,0.09)", border: "1px solid rgba(139,92,246,0.22)", color: "#8B5CF6" }}>
-            ▲ +{delta} min vs la semaine dernière — ça monte.
+            ▲ +{delta} min vs la semaine dernière, ça monte.
           </div>
         )}
         {prevMinutes > 0 && delta <= 0 && (
@@ -1399,7 +1399,7 @@ function SessionTile({ session, onStart, onManage, onPremium, canAccessPremium, 
           ...(isPremium ? { borderBottomLeftRadius: PREMIUM_RAYON, borderBottomRightRadius: PREMIUM_RAYON } : null),
         }}
         aria-label={premiumLocked
-          ? `${session.title} — réservé à Premium`
+          ? `${session.title}, réservé à Premium`
           : advice ? `Lire : ${session.title}` : `Lancer : ${session.title}`}
       >
         <Photo img={img} pos={advice?.imagePosition ?? "center 20%"} style={{ position: "absolute", inset: 0 }} />
@@ -2175,7 +2175,7 @@ const matchCollection = (
   s.collections ? s.collections.includes(id) : fallback(s, hay);
 
 const CATALOG: CatDef[] = [
-  { id: "tiennes", name: "Les tiennes", tag: "Tes créations — elles vivent aussi dans les autres collections.",
+  { id: "tiennes", name: "Les tiennes", tag: "Tes créations, elles vivent aussi dans les autres collections.",
     img: "cat-tiennes", match: (s) => s.perso },
   { id: "express", name: "Séances express", tag: "Peu de temps, mais une vraie séance.",
     img: "cat-express", match: matchCollection("express", (s) => s.duration <= 20) },
@@ -2189,15 +2189,15 @@ const CATALOG: CatDef[] = [
     img: "cat-cardiohiit", match: matchCollection("cardiohiit", (s, hay) => s.category === "cardio" || /cardio|hiit|fractionn|endurance|sprint|course|vélo|velo/.test(hay)) },
   { id: "abdos", name: "Abdos & gainage", tag: "Le centre qui tient tout le reste.",
     img: "cat-abdos", match: matchCollection("abdos", (_s, hay) => /abdo|gainage|core|planche|oblique|sangle|ventre/.test(hay)) },
-  { id: "jambes", name: "Jambes & fessiers", tag: "La base — on ne triche pas avec les jambes.",
+  { id: "jambes", name: "Jambes & fessiers", tag: "La base, on ne triche pas avec les jambes.",
     img: "cat-jambes", match: matchCollection("jambes", (_s, hay) => /jambe|fessier|squat|cuisse|mollet|ischio|glute|\bleg|bas du corps|fente/.test(hay)) },
-  { id: "haut", name: "Haut du corps", tag: "Dos, pecs, épaules, bras — l’armure.",
+  { id: "haut", name: "Haut du corps", tag: "Dos, pecs, épaules, bras, l’armure.",
     img: "cat-haut", match: matchCollection("haut", (_s, hay) => /pec|\bdos\b|épaule|epaule|bras|biceps|triceps|haut du corps|push|pull|tirage|traction|rowing|upper|poussé/.test(hay)) },
   { id: "fullbody", name: "Full body", tag: "Tout le corps, une seule séance.",
     img: "cat-fullbody", match: matchCollection("fullbody", (s, hay) => s.category === "fullbody" || /full|complet|corps entier|total/.test(hay)) },
-  { id: "salle", name: "À la salle", tag: "Machines, barres, charges — ton terrain.",
+  { id: "salle", name: "À la salle", tag: "Machines, barres, charges, ton terrain.",
     img: "cat-salle", match: matchCollection("salle", (_s, hay) => /salle|machine|barre|rack|poulie|banc/.test(hay)) },
-  { id: "sansmateriel", name: "Sans matériel", tag: "Ton corps suffit — partout, tout le temps.",
+  { id: "sansmateriel", name: "Sans matériel", tag: "Ton corps suffit, partout, tout le temps.",
     img: "cat-sansmateriel", match: matchCollection("sansmateriel", (_s, hay) => /sans mat|poids du corps|maison|nomade/.test(hay)) },
   { id: "debuter", name: "Débuter & reprendre", tag: "Le premier pas compte double.",
     img: "cat-debuter", match: matchCollection("debuter", (s, hay) => s.difficulty === "Débutant" || /débutant|debutant|starter|reprise|découverte|decouverte|doux/.test(hay)) },
@@ -2230,7 +2230,7 @@ function CatTile({ cat, count, freeCount, premiumCount, onOpen }: {
       whileTap={{ scale: 0.97 }} onClick={onOpen}
       className="relative w-full rounded-[18px] overflow-hidden cursor-pointer border-none p-0 block"
       style={{ aspectRatio: "3 / 4", boxShadow: "0 10px 26px rgba(0,0,0,0.22)" }}
-      aria-label={`${cat.name} — ${sub}`}
+      aria-label={`${cat.name}, ${sub}`}
     >
       <Photo img={cat.img} pos={cat.pos} style={{ position: "absolute", inset: 0 }} />
       <div className="absolute inset-x-0 bottom-0 px-2.5 pb-3.5 pt-14 flex flex-col items-center text-center"
@@ -2455,7 +2455,7 @@ function ChooseSheet({ sessions, week, loading, canAccessPremium, maxSeances, ca
             </span>
             <p className="text-[14.5px] font-semibold" style={{ color: "var(--text-1)" }}>Cette collection arrive</p>
             <p className="text-[11.5px] font-light mt-1.5 leading-relaxed max-w-[260px]" style={{ color: "var(--text-3)" }}>
-              On la remplit séance après séance. En attendant, crée la tienne — si elle colle, elle apparaîtra ici.
+              On la remplit séance après séance. En attendant, crée la tienne, si elle colle, elle apparaîtra ici.
             </p>
             <motion.button whileTap={{ scale: 0.95 }} onClick={onCreate}
               className="mt-5 px-5 h-10 rounded-full text-[12px] font-bold text-white cursor-pointer border-none"
@@ -2575,7 +2575,7 @@ function ImproviseSheet({ defaultPlace, defaultHalteres, difficulty, onClose, on
         exerciseList,
       });
     } catch {
-      setError("L’IA n’a pas répondu — réessaie.");
+      setError("L’IA n’a pas répondu, réessaie.");
       setLoading(false);
     }
   };
@@ -2652,7 +2652,7 @@ function ImproviseSheet({ defaultPlace, defaultHalteres, difficulty, onClose, on
                   ? { background: "rgba(139,92,246,0.1)", border: "1px solid rgba(139,92,246,0.4)" }
                   : { background: "rgba(43,212,160,0.1)", border: "1px solid rgba(43,212,160,0.4)" }}>
                 <span className="text-[11px] font-bold" style={{ color: halteres ? "#8B5CF6" : "#12A87E" }}>
-                  {halteres ? "J’ai des haltères" : "Sans matériel — poids du corps"}
+                  {halteres ? "J’ai des haltères" : "Sans matériel, poids du corps"}
                 </span>
                 <span className="relative block w-[26px] h-[15px] rounded-full" style={{ background: halteres ? "#8B5CF6" : "#2BD4A0" }}>
                   <span className="absolute top-[2px] w-[11px] h-[11px] rounded-full bg-white transition-all duration-150"

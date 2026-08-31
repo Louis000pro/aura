@@ -181,7 +181,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Supabase ne retourne pas d'erreur pour un email déjà utilisé,
     // mais l'utilisateur retourné aura un tableau "identities" vide.
     if (data.user?.identities?.length === 0) {
-      return { message: "Un compte existe déjà avec cet email. Connecte-toi !" };
+      return { message: "Un compte existe déjà avec cet email. Connecte-toi." };
     }
     return null;
   };

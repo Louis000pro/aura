@@ -105,7 +105,7 @@ export default function PremiumCelebration({ onClose }: { onClose: () => void })
           <motion.p className="text-sm font-light mb-6" style={{ color: "#7C6BAA" }}
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.35 }}>
             Ton essai de 3 jours est lancé 🎉<br />
-            Coach IA illimité · contenus exclusifs · zéro pub — <strong style={{ color: "#6D28D9" }}>tout est débloqué.</strong>
+            Coach IA illimité · contenus exclusifs · zéro pub. <strong style={{ color: "#6D28D9" }}>tout est débloqué.</strong>
           </motion.p>
 
           {/* Bouton avec shimmer */}
@@ -116,7 +116,7 @@ export default function PremiumCelebration({ onClose }: { onClose: () => void })
             <motion.span className="absolute top-0 bottom-0 w-1/3 pointer-events-none"
               style={{ background: "linear-gradient(105deg, transparent, rgba(255,255,255,0.55), transparent)" }}
               animate={{ left: ["-40%", "140%"] }} transition={{ duration: 1.8, repeat: Infinity, repeatDelay: 1.2, ease: "easeInOut" }} />
-            <span className="relative">Découvrir mes avantages 🚀</span>
+            <span className="relative">Voir ce qui est débloqué</span>
           </motion.button>
         </div>
       </motion.div>

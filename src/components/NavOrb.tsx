@@ -100,7 +100,7 @@ export default function NavOrb({ size = 48, glyph }: { size?: number; glyph?: nu
         onPointerLeave={endPress}
         onClick={onClick}
         onContextMenu={(e) => e.preventDefault()}
-        aria-label="Assistant Vaiiya — appuie pour écrire, maintiens pour parler"
+        aria-label="Assistant Vaiiya, appuie pour écrire, maintiens pour parler"
         className="relative cursor-pointer outline-none flex items-center justify-center"
         style={{ width: size, height: size }}
         // Anime UNIQUEMENT à l'activation (sinon parfaitement figé)

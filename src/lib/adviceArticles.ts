@@ -56,83 +56,83 @@ export type AdviceArticle = {
 
 const SOURCES = {
   acsm2026: {
-    label: "ACSM — recommandations 2026 sur la musculation",
+    label: "ACSM, recommandations 2026 sur la musculation",
     url: "https://acsm.org/resistance-training-guidelines-update-2026/",
   },
   whoActivity: {
-    label: "OMS — recommandations sur l’activité physique",
+    label: "OMS, recommandations sur l’activité physique",
     url: "https://www.who.int/publications/i/item/9789240014886",
   },
   sleep: {
-    label: "AASM & Sleep Research Society — durée de sommeil chez l’adulte",
+    label: "AASM & Sleep Research Society, durée de sommeil chez l’adulte",
     url: "https://aasm.org/resources/pdf/pressroom/adult-sleep-duration-consensus.pdf",
   },
   protein: {
-    label: "ISSN — protéines et exercice",
+    label: "ISSN, protéines et exercice",
     url: "https://pubmed.ncbi.nlm.nih.gov/28642676/",
   },
   nutrition: {
-    label: "Academy of Nutrition, Dietitians of Canada & ACSM — nutrition et performance",
+    label: "Academy of Nutrition, Dietitians of Canada & ACSM, nutrition et performance",
     url: "https://pubmed.ncbi.nlm.nih.gov/26891166/",
   },
   creatine: {
-    label: "ISSN — efficacité et sécurité de la créatine",
+    label: "ISSN, efficacité et sécurité de la créatine",
     url: "https://pubmed.ncbi.nlm.nih.gov/28615996/",
   },
   failure: {
-    label: "Grgic et al. — entraînement à l’échec ou non",
+    label: "Grgic et al., entraînement à l’échec ou non",
     url: "https://pubmed.ncbi.nlm.nih.gov/33497853/",
   },
   proximity: {
-    label: "Refalo et al. — proximité de l’échec et hypertrophie",
+    label: "Refalo et al., proximité de l’échec et hypertrophie",
     url: "https://pubmed.ncbi.nlm.nih.gov/36334240/",
   },
   rest: {
-    label: "Singer et al. — durée du repos entre les séries",
+    label: "Singer et al., durée du repos entre les séries",
     url: "https://pubmed.ncbi.nlm.nih.gov/39205815/",
   },
   soreness: {
-    label: "Damas et al. — dommages musculaires et hypertrophie",
+    label: "Damas et al., dommages musculaires et hypertrophie",
     url: "https://pubmed.ncbi.nlm.nih.gov/29282529/",
   },
   warmup: {
-    label: "Kłobuchowski et al. — échauffement, performance et prévention",
+    label: "Kłobuchowski et al., échauffement, performance et prévention",
     url: "https://pubmed.ncbi.nlm.nih.gov/42188564/",
   },
   hydration: {
-    label: "NATA — hydratation des personnes actives",
+    label: "NATA, hydratation des personnes actives",
     url: "https://pubmed.ncbi.nlm.nih.gov/28985128/",
   },
   adherence: {
-    label: "Teixeira et al. — motivation autonome et régularité",
+    label: "Teixeira et al., motivation autonome et régularité",
     url: "https://pubmed.ncbi.nlm.nih.gov/30459690/",
   },
   intentions: {
-    label: "Silva et al. — intentions concrètes et activité physique",
+    label: "Silva et al., intentions concrètes et activité physique",
     url: "https://pubmed.ncbi.nlm.nih.gov/30427874/",
   },
   bodyImage: {
-    label: "Guest et al. — interventions et image corporelle positive",
+    label: "Guest et al., interventions et image corporelle positive",
     url: "https://pubmed.ncbi.nlm.nih.gov/31077956/",
   },
   cycle: {
-    label: "McNulty et al. — cycle menstruel et performance",
+    label: "McNulty et al., cycle menstruel et performance",
     url: "https://pubmed.ncbi.nlm.nih.gov/32661839/",
   },
   frequency: {
-    label: "Schoenfeld et al. — fréquence et hypertrophie à volume égal",
+    label: "Schoenfeld et al., fréquence et hypertrophie à volume égal",
     url: "https://pubmed.ncbi.nlm.nih.gov/30558493/",
   },
   split: {
-    label: "Ramos-Campo et al. — full body ou split",
+    label: "Ramos-Campo et al., full body ou split",
     url: "https://pubmed.ncbi.nlm.nih.gov/38595233/",
   },
   periodization: {
-    label: "Moesgaard et al. — périodisation, force et hypertrophie",
+    label: "Moesgaard et al., périodisation, force et hypertrophie",
     url: "https://pubmed.ncbi.nlm.nih.gov/35044672/",
   },
   diets: {
-    label: "ISSN — alimentation et composition corporelle",
+    label: "ISSN, alimentation et composition corporelle",
     url: "https://pubmed.ncbi.nlm.nih.gov/28630601/",
   },
 } satisfies Record<string, AdviceSource>;
@@ -230,7 +230,7 @@ const ADVICE_DRAFTS: AdviceDraft[] = [
       {
         title: "Ne monte pas tout en même temps",
         paragraphs: [
-          "Si tu ajoutes du poids, des séries et de la fréquence d’un seul coup, tu ne sauras pas ce qui fonctionne — ni ce qui t’épuise. Fais évoluer une variable, puis observe pendant quelques séances.",
+          "Si tu ajoutes du poids, des séries et de la fréquence d’un seul coup, tu ne sauras pas ce qui fonctionne, ni ce qui t’épuise. Fais évoluer une variable, puis observe pendant quelques séances.",
         ],
       },
       {
@@ -570,7 +570,7 @@ const ADVICE_DRAFTS: AdviceDraft[] = [
       {
         title: "Ton objectif n’est pas d’avoir l’air avancé",
         paragraphs: [
-          "Il est de devenir un peu plus à l’aise et compétent. Prends des charges que tu contrôles, note deux repères et laisse l’assurance arriver après les répétitions — pas avant.",
+          "Il est de devenir un peu plus à l’aise et compétent. Prends des charges que tu contrôles, note deux repères et laisse l’assurance arriver après les répétitions, pas avant.",
         ],
       },
     ],
@@ -940,7 +940,7 @@ const ADVICE_DRAFTS: AdviceDraft[] = [
         ],
       },
     ],
-    takeaway: "Si tu en prends, monohydrate, dose simple, régularité — le reste est souvent surtout un emballage.",
+    takeaway: "Si tu en prends, monohydrate, dose simple, régularité, le reste est souvent surtout un emballage.",
     tryThis: "Avant d’acheter, vérifie que l’étiquette dit uniquement « créatine monohydrate » et compare le prix par dose.",
     sources: [SOURCES.creatine],
   },

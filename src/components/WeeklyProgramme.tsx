@@ -158,7 +158,7 @@ function ExerciseTutorial({ exercise, onClose }: { exercise: string; onClose: ()
           </a>
         )}
         <p className="text-[11px] font-light text-center px-5 py-3" style={{ color: "var(--text-3)" }}>
-          Inspire-toi de la technique, adapte à ton niveau 💪
+          Inspire-toi de la technique, adapte à ton niveau
         </p>
       </motion.div>
     </motion.div>,
@@ -184,7 +184,7 @@ function DayDetail({ day, onTuto, onStart }: { day: PlanningDay; onTuto: (ex: st
         <p className="text-sm font-medium leading-snug" style={{ color: "var(--text-1)" }}>{day.title}</p>
       )}
       {isRest && (
-        <p className="text-xs font-light" style={{ color: "var(--text-3)" }}>Journée de récupération — repose-toi bien 💤</p>
+        <p className="text-xs font-light" style={{ color: "var(--text-3)" }}>Journée de récupération, repose-toi bien 💤</p>
       )}
       {!isRest && day.exerciseList.length > 0 && (
         <>
@@ -277,7 +277,7 @@ function HomeEquipQuestion({ onChoose, onBack }: { onChoose: (e: "halteres" | "p
           <Dumbbell size={13} strokeWidth={1.8} style={{ color: "var(--text-1)" }} />
         </div>
         <p className="text-[13px] font-light leading-snug" style={{ color: "var(--text-1)" }}>
-          Super, à la maison ! Une dernière chose : tu as des <strong className="font-semibold">haltères</strong> ? Sinon je te fais tout au <strong className="font-semibold">poids du corps</strong> 💪
+          À la maison, noté. Tu as des <strong className="font-semibold">haltères</strong> ? Sinon je te fais tout au <strong className="font-semibold">poids du corps</strong> 💪
         </p>
       </div>
       <div className="grid grid-cols-2 gap-2.5">

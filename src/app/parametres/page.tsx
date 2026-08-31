@@ -376,7 +376,7 @@ function ChangePasswordModal({ onClose }: { onClose: () => void }) {
             <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ background: "linear-gradient(135deg, var(--violet-mid), var(--cream-mid))" }}>
               <Check size={20} strokeWidth={2.5} style={{ color: "var(--text-1)" }} />
             </div>
-            <p className="text-sm font-medium" style={{ color: "var(--text-1)" }}>Mot de passe mis à jour !</p>
+            <p className="text-sm font-medium" style={{ color: "var(--text-1)" }}>Mot de passe mis à jour.</p>
           </motion.div>
         ) : (
           <div className="flex flex-col gap-3">
@@ -615,9 +615,9 @@ export default function ParametresPage() {
         const result = await subscribeToPush();
         if (result === "granted") {
           setPushEnabled(true);
-          showToast("Notifications push activées !");
+          showToast("Notifications activées.");
         } else if (result === "denied") {
-          showToast("Permission refusée — autorise dans les réglages du navigateur");
+          showToast("Refusé par le navigateur. Autorise les notifications dans ses réglages.");
         } else if (result === "unsupported") {
           showToast("Non supporté sur ce navigateur");
         } else {

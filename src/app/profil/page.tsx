@@ -1443,7 +1443,7 @@ export default function ProfilPage() {
                         {unavailable ? (
                           <div className="w-full py-3 rounded-2xl flex flex-col items-center justify-center gap-1 text-xs"
                             style={{ background: "rgba(var(--tint-violet-rgb),0.5)", border: "1px solid rgba(var(--accent-rgb),0.15)", color: "var(--text-3)" }}>
-                            <span>Séance perso — exercices non embarqués</span>
+                            <span>Séance perso, exercices non embarqués</span>
                             <span className="text-[10px]" style={{ color: "#C4B5FD" }}>Repartage via l&apos;écran de fin pour l&apos;activer</span>
                           </div>
                         ) : (

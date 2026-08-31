@@ -1162,21 +1162,12 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
     setMessages((prev) => [...prev, userMsg, { role: "assistant", content: "", id: assistantId, streaming: true }]);
     setIsStreaming(true);
 
-    // Limite quotidienne (comptes gratuits) — admin/premium illimité
-    const isUnlimited = !!(user?.is_admin || user?.is_premium);
-    if (!isUnlimited && user) {
-      const dayKey = `vaiiya_ai_count_${user.id}_${todayISODate()}`;
-      const count = parseInt(localStorage.getItem(dayKey) || "0") || 0;
-      if (count >= 12) {
-        setMessages((prev) => prev.map((m) => m.id === assistantId
-          ? { ...m, content: "🚀 Tu as atteint ta limite gratuite de 12 messages par jour. Passe au plan supérieur pour continuer sans limite, je t’emmène voir les offres…", streaming: false }
-          : m));
-        setIsStreaming(false);
-        setTimeout(() => router.push("/premium"), 1900);
-        return;
-      }
-      try { localStorage.setItem(dayKey, String(count + 1)); } catch { /* ignore */ }
-    }
+    /* Le plafond du coach est tenu par le SERVEUR (`garderIA`), et son refus
+       est rendu par `messageDeRefus` plus bas. Il y avait ici un SECOND
+       compteur, en localStorage, qui annonçait « 12 messages par jour » quand
+       le vrai plafond gratuit en vaut 5 (`aiQuotas.ts`) : il bloquait donc
+       avant l'heure, sur un chiffre que personne d'autre ne connaissait, et il
+       se remettait à zéro en vidant son navigateur. */
 
     /* Le lieu d'entraînement n'est plus DEVINÉ ici. Deux regex tentaient de
        reconnaître qu'un message répondait à la question du tour précédent

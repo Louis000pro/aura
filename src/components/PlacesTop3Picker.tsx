@@ -34,7 +34,7 @@ export default function PlacesTop3Picker({
         return (
           <motion.button
             key={key} type="button" whileTap={{ scale: 0.94 }} onClick={() => toggle(key)}
-            aria-label={on ? `${label} — n°${rank + 1}, retirer` : `Choisir ${label}`}
+            aria-label={on ? `${label}, n°${rank + 1}, retirer` : `Choisir ${label}`}
             className="relative overflow-hidden rounded-xl cursor-pointer"
             style={{
               aspectRatio: "5 / 4",

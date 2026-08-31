@@ -114,7 +114,7 @@ export default function TasteProfileModal({ onClose, onSaved }: { onClose: () =>
               <div className="w-14 h-14 rounded-full flex items-center justify-center" style={{ background: "linear-gradient(135deg, var(--violet-mid), var(--cream-mid))" }}>
                 <Check size={24} strokeWidth={2.5} style={{ color: "var(--text-1)" }} />
               </div>
-              <p className="text-sm font-semibold" style={{ color: "var(--text-1)" }}>Goûts mis à jour !</p>
+              <p className="text-sm font-semibold" style={{ color: "var(--text-1)" }}>Goûts mis à jour.</p>
               <p className="text-xs font-light text-center" style={{ color: "var(--text-3)" }}>Ton menu de la semaine va s&apos;adapter</p>
             </motion.div>
           ) : (
@@ -131,7 +131,7 @@ export default function TasteProfileModal({ onClose, onSaved }: { onClose: () =>
 
               <Field label="Ton top 3 des endroits">
                 <p className="text-[11px] font-light -mt-1 mb-1" style={{ color: "var(--text-3)" }}>
-                  Tape dans l&apos;ordre — ils orientent les conseils livraison.
+                  Tape dans l&apos;ordre, ils orientent les conseils livraison.
                 </p>
                 <PlacesTop3Picker value={places} onChange={setPlaces} />
               </Field>

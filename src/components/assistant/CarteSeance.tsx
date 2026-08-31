@@ -125,7 +125,7 @@ export default function CarteSeance({
           </p>
           {/* Assez haut pour couper une ligne en deux : c'est ce demi-mouvement
               qui dit qu'il y en a d'autres en dessous. Une séance fait 5 à 8
-              mouvements, la liste défile — Louis, 2026-07-30 : « rien qu'un
+              mouvements, la liste défile, Louis, 2026-07-30 : « rien qu'un
               petit slide vers le bas n'est pas très dérangeant ». Le plafond
               de 200 px est une préférence, pas une garantie : sur un écran
               court la liste descend plus bas encore, mais jamais au prix du

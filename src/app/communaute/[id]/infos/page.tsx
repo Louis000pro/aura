@@ -116,7 +116,7 @@ export default function InfosPage() {
 
     if (error) {
       setOccupe(null);
-      setErreur(`La photo n’est pas passée — ${error.message}`);
+      setErreur(`La photo n’est pas passée, ${error.message}`);
       return;
     }
 

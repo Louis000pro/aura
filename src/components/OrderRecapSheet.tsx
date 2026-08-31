@@ -123,7 +123,7 @@ export default function OrderRecapSheet({
           {/* Note contextuelle + ajuster */}
           <div className="flex items-center justify-between mt-3 mb-1">
             <p className="text-[11px] font-light leading-snug flex-1" style={{ color: "var(--text-3)" }}>
-              Estimé au niveau <span style={{ color: "var(--text-2)" }}>{NIVEAU_LABEL[estimate.niveau]}</span> — {originLabel}.
+              Estimé au niveau <span style={{ color: "var(--text-2)" }}>{NIVEAU_LABEL[estimate.niveau]}</span>, {originLabel}.
             </p>
             <button onClick={() => setEdit((e) => !e)}
               className="flex items-center gap-1 text-[11px] font-medium cursor-pointer flex-shrink-0 ml-2"

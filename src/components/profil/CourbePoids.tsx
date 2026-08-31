@@ -42,7 +42,7 @@ import { createClient } from "@/lib/supabase";
 type Pesee = { date: string; kg: number };
 
 const FENETRE_JOURS  = 120;
-const AMPLITUDE_MIN  = 4;    // kg — voir la règle 1
+const AMPLITUDE_MIN  = 4;    // kg, voir la règle 1
 const LARGEUR        = 300;
 const HAUTEUR        = 84;
 

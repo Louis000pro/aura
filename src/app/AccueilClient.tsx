@@ -130,9 +130,6 @@ function LandingPage({ chiffres }: { chiffres: ChiffresPublics }) {
 }
 
 /* ─── Dashboard ─── */
-// Limite quotidienne de messages avec le coach IA pour les comptes gratuits
-// (aligné sur plans.ts free.limits.chatPerDay = 5 et l'affichage page /premium)
-const DAILY_AI_LIMIT = 5;
 // Cache module : les stats de l'accueil s'affichent instantanément au retour
 let __statsCache = { score: 0, calories: 0, burned: 0, steps: 0, sleepHours: 0, streak: 0, sessionsWeek: 0, loaded: false };
 
@@ -415,22 +412,11 @@ function Dashboard() {
     chatMessagesRef.current = newMessages;
     setChatMessages(newMessages);
 
-    // ── Limite quotidienne du coach pour les comptes gratuits (admins/premium = illimité) ──
-    const isUnlimited = !!(user?.is_admin || user?.is_premium);
-    if (!isUnlimited && user) {
-      const dayKey = `vaiiya_ai_count_${user.id}_${new Date().toISOString().slice(0, 10)}`;
-      const count = parseInt(localStorage.getItem(dayKey) || "0") || 0;
-      if (count >= DAILY_AI_LIMIT) {
-        const upMsg: Message = { id: Date.now() + 1, from: "ai", time,
-          text: `🚀 Tu as atteint ta limite gratuite de ${DAILY_AI_LIMIT} messages/jour avec le coach Vaiiya. Passe au plan supérieur pour un coach illimité — je t’emmène voir les offres…` };
-        const withUp = [...chatMessagesRef.current, upMsg];
-        chatMessagesRef.current = withUp;
-        setChatMessages(withUp);
-        setTimeout(() => router.push("/premium"), 1900);
-        return;
-      }
-      try { localStorage.setItem(dayKey, String(count + 1)); } catch { /* ignore */ }
-    }
+    /* Le plafond du coach est tenu par le SERVEUR (`garderIA`), et son refus
+       est rendu par `messageDeRefus` plus bas. Il y avait ici un SECOND
+       compteur, en localStorage : il se remettait à zéro en vidant son
+       navigateur, et il bloquait sur son propre chiffre. Deux autorités pour
+       une seule règle, c'est une de trop. */
 
     setAiTyping(true);
 
@@ -491,7 +477,7 @@ function Dashboard() {
         }));
 
         richProfile = { todayDate: todayStr, mealsDetail, nutritionWeek, workoutHistory };
-      } catch { /* ignore — l'IA marchera sans, juste moins précise */ }
+      } catch { /* ignore, l'IA marchera sans, juste moins précise */ }
     }
 
     try {
@@ -624,7 +610,7 @@ function Dashboard() {
       }
     } catch {
       setAiTyping(false);
-      const errMsg: Message = { id: Date.now() + 1, from: "ai", text: "Désolé, une erreur est survenue. Réessaie dans quelques secondes ✨", time };
+      const errMsg: Message = { id: Date.now() + 1, from: "ai", text: "Je n’ai pas réussi à répondre. Réessaie dans un instant.", time };
       chatMessagesRef.current = [...chatMessagesRef.current, errMsg];
       setChatMessages(chatMessagesRef.current);
     }

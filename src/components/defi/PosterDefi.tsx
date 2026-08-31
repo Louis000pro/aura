@@ -144,7 +144,7 @@ export default function PosterDefi({
       {/* Le bas, centré. Le nom de la série en grandes capitales
           largement espacées, les prénoms en petit dessous : c'est un
           bloc d'affiche, pas une légende de photo. Tout est en crème
-          (#FBF4E6) et non en blanc pur — le blanc pur reste en surface,
+          (#FBF4E6) et non en blanc pur, le blanc pur reste en surface,
           le crème se pose dans l'image.
 
           Les prénoms sont assez petits pour tenir sans jamais être

@@ -18,7 +18,7 @@ export type AnnouncementItem = {
 
 export type Announcement = {
   id: string;        // identifiant unique et stable (sert de clé "déjà vu")
-  date: string;      // ISO (YYYY-MM-DD) — affiché
+  date: string;      // ISO (YYYY-MM-DD), affiché
   title: string;
   intro?: string;
   items: AnnouncementItem[];

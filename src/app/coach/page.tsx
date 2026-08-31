@@ -83,11 +83,17 @@ function isProfileIncomplete(ctx: UserContext | null): boolean {
 }
 
 /* ─── Suggestion chips ───────────────────────────────────── */
+/* Ce que quelqu'un DIT en ouvrant, pas ce qu'un menu propose. Les quatre
+   entrées d'avant (« Mon plan cette semaine », « Bilan nutrition du jour »)
+   étaient des rubriques : on choisissait dans un sommaire au lieu de parler.
+   Elles sont envoyées telles quelles au coach, donc elles doivent ressembler à
+   une phrase de quelqu'un. Aucun adjectif accordé : « fatigué » aurait mis tout
+   le monde au masculin. */
 const SUGGESTIONS = [
-  "Mon plan cette semaine",
-  "Analyse mes repas d’aujourd’hui",
-  "Comment progresser plus vite ?",
-  "Bilan nutrition du jour",
+  "Ma semaine, elle donne quoi ?",
+  "Regarde ce que j’ai mangé aujourd’hui",
+  "Je stagne, je fais quoi ?",
+  "Il me reste combien de calories ?",
 ];
 
 /* ─── Unique ID helper ───────────────────────────────────── */
@@ -468,7 +474,7 @@ export default function CoachPage() {
             m.id === assistantId
               ? {
                   ...m,
-                  content: "Désolé, une erreur est survenue. Réessaie ✨",
+                  content: "Je n’ai pas réussi à répondre. Réessaie dans un instant.",
                   streaming: false,
                 }
               : m

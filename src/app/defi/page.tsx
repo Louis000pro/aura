@@ -353,9 +353,9 @@ export default function DefiPage() {
   const perdu = !encoreJouable(defi);
 
   const phrase =
-    perdu                       ? "L’affiche restera comme elle est. Ce n’est pas grave — vous en relancerez une."
+    perdu                       ? "L’affiche restera comme elle est. Ce n’est pas grave, vous en relancerez une."
   : tour.quoi === "deja_franchi" ? (tour.parMoi ? "C’est fait pour aujourd’hui. Le relais repart demain." : "Le maillon d’aujourd’hui est franchi.")
-  : tour.quoi === "pas_mon_tour" ? `Tu as franchi hier — aujourd’hui, c’est à ${tour.equipier?.pseudo ?? "l’autre"}.`
+  : tour.quoi === "pas_mon_tour" ? `Tu as franchi hier, aujourd’hui, c’est à ${tour.equipier?.pseudo ?? "l’autre"}.`
   :                                "À toi de jouer.";
 
   return (
@@ -544,7 +544,7 @@ function Bandeau() {
   const [texte, setTexte] = useState<string | null>(null);
   useEffect(() => {
     const a = new URLSearchParams(window.location.search).get("apercu");
-    if (a) setTexte(a === "gagne" ? "Aperçu — affiche terminée" : `Aperçu — ${a} jour${Number(a) > 1 ? "s" : ""} franchi${Number(a) > 1 ? "s" : ""}`);
+    if (a) setTexte(a === "gagne" ? "Aperçu, affiche terminée" : `Aperçu, ${a} jour${Number(a) > 1 ? "s" : ""} franchi${Number(a) > 1 ? "s" : ""}`);
   }, []);
   if (!texte) return null;
   return (

@@ -82,20 +82,20 @@ Calcule mentalement le total avant de repondre et verifie qu il est proche de ${
     let equipmentConstraint = "";
     if (/salle|gym|basic\s*fit/.test(lieuLc)) {
       equipmentConstraint = `
-LIEU : SALLE de sport equipee — tout le materiel est disponible (machines, barres, halteres, poulies, banc, barre de traction). Tu peux tout utiliser.`;
+LIEU : SALLE de sport equipee, tout le materiel est disponible (machines, barres, halteres, poulies, banc, barre de traction). Tu peux tout utiliser.`;
     } else if (/halt[èe]re/.test(lieuLc)) {
       equipmentConstraint = `
 MATERIEL (STRICT) : a la MAISON avec des HALTERES. Tu peux utiliser des halteres + le poids du corps UNIQUEMENT. INTERDIT : machines, poulies, barre, banc de muscu, barre de traction, kettlebell, et tout exercice de salle.`;
     } else if (/poids\s*du\s*corps|sans\s*mat|maison|chez\s*(soi|moi)|domicile/.test(lieuLc)) {
       equipmentConstraint = `
-MATERIEL (STRICT) : a la MAISON, SANS AUCUN materiel — poids du corps UNIQUEMENT. INTERDIT formellement : halteres, barre, machine, poulie, kettlebell, elastique, banc, AINSI QUE tout exercice suspendu necessitant une barre de traction (PAS de tractions, PAS de releves de jambes suspendus) ou un poids additionnel (PAS de "leste", PAS de "charge"). Uniquement des exercices au sol ou debout, faisables dans une piece.`;
+MATERIEL (STRICT) : a la MAISON, SANS AUCUN materiel, poids du corps UNIQUEMENT. INTERDIT formellement : halteres, barre, machine, poulie, kettlebell, elastique, banc, AINSI QUE tout exercice suspendu necessitant une barre de traction (PAS de tractions, PAS de releves de jambes suspendus) ou un poids additionnel (PAS de "leste", PAS de "charge"). Uniquement des exercices au sol ou debout, faisables dans une piece.`;
     }
 
     // Bonus nutrition OPTIONNEL : présent seulement si le caller a un signal clair
     // pour AUJOURD'HUI. Soft par construction — jamais une contrainte dure.
     const nutritionConstraint = (typeof nutritionNote === "string" && nutritionNote.trim())
       ? `
-NUTRITION (BONUS OPTIONNEL — jamais une contrainte) : ${nutritionNote.trim()}
+NUTRITION (BONUS OPTIONNEL, jamais une contrainte) : ${nutritionNote.trim()}
 Tu PEUX t en servir pour un LEGER ajustement (intensite, volume ou duree) ou pour enrichir un "tip". Ne reduis JAMAIS la qualite de la seance et n en fais pas le sujet.`
       : "";
 
@@ -121,7 +121,7 @@ Tu PEUX t en servir pour un LEGER ajustement (intensite, volume ou duree) ou pou
 Description : "${description}"
 Categorie : ${category ?? "force"}
 Niveau : ${difficulty ?? "Intermediaire"}${Array.isArray(muscles) && muscles.length > 0 ? `
-Muscles cibles par l utilisateur : ${muscles.join(", ")} — la seance DOIT travailler prioritairement ces muscles.` : ""}${equipmentConstraint}${nutritionConstraint}
+Muscles cibles par l utilisateur : ${muscles.join(", ")}, la seance DOIT travailler prioritairement ces muscles.` : ""}${equipmentConstraint}${nutritionConstraint}
 ${durationConstraint}
 
 Retourne un JSON avec exactement ce format :
@@ -154,7 +154,7 @@ ${listeAutorisee}
   * Intermediaire : exercices classiques bien maitrisés
   * Avance      : exercices techniques et intensites elevees
 - tip et benefit : phrases courtes (max 10 mots)
-${targetSeconds ? `- DUREE : total proche de ${targetMinutes} min (${targetSeconds}s) — joue d abord sur les series et le repos, et seulement ensuite sur le nombre d exercices` : ""}
+${targetSeconds ? `- DUREE : total proche de ${targetMinutes} min (${targetSeconds}s), joue d abord sur les series et le repos, et seulement ensuite sur le nombre d exercices` : ""}
 - Retourne UNIQUEMENT le JSON, rien d autre`,
         },
       ],

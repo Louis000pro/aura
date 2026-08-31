@@ -44,11 +44,17 @@ function libelleJour(jours: JourDispo[] | null, ymd: string | null): string {
   return (j?.label ?? "").toLowerCase();
 }
 
+/* Ce que quelqu'un DIT en ouvrant, pas ce qu'un menu propose. Les quatre
+   entrées d'avant (« Mon plan cette semaine », « Bilan nutrition du jour »)
+   étaient des rubriques : on choisissait dans un sommaire au lieu de parler.
+   Elles sont envoyées telles quelles au coach, donc elles doivent ressembler à
+   une phrase de quelqu'un. Aucun adjectif accordé : « fatigué » aurait mis tout
+   le monde au masculin. */
 const SUGGESTIONS = [
-  "Comment créer une séance ?",
-  "Où voir ma progression ?",
-  "Suivre ma nutrition",
-  "Passer en mode sombre",
+  "Fais-moi une séance jambes",
+  "J’ai 30 minutes ce soir",
+  "Je mange quoi ce midi ?",
+  "Passe en mode sombre",
 ];
 
 /* ── Rendu lisible des réponses de l'✦ ──
@@ -529,7 +535,7 @@ export default function AssistantSheet() {
 
             {/* Zone d'action ÉPINGLÉE au-dessus de la saisie : la carte reste
                 TOUJOURS entièrement visible (boutons compris), quelle que soit
-                la longueur de la conversation — elle n'est plus écrasée par le
+                la longueur de la conversation, elle n'est plus écrasée par le
                 fil de messages qui, lui, se réduit (flex-1) pour lui faire place.
                 Le plafond de 62 % est l'autre moitié de la promesse : sans lui,
                 une carte plus haute que la feuille débordait par le bas et son

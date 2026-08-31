@@ -121,7 +121,7 @@ export default function WeighInPrompt({ ouvert, onFermer }: {
               On fait le point ? 💜
             </h2>
             <p className="text-sm mt-1.5 mb-5" style={{ color: "var(--text-3)", lineHeight: 1.5 }}>
-              Ça fait un moment — tu pèses combien aujourd&apos;hui&nbsp;? Ça garde ton objectif bien ajusté à toi.
+              Ça fait un moment, tu pèses combien aujourd&apos;hui&nbsp;? Ça garde ton objectif bien ajusté à toi.
             </p>
 
             <div className="flex items-center gap-3 mb-5">

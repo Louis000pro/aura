@@ -218,7 +218,7 @@ function PhotoAnalysisModal({ onClose, onAdd, onBack }: {
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : "Erreur inconnue";
         setError(msg.includes("GROQ_API_KEY")
-          ? "Clé API manquante — ajoute GROQ_API_KEY dans Vercel."
+          ? "Clé API manquante, ajoute GROQ_API_KEY dans Vercel."
           : "Analyse impossible, essaie à nouveau.");
         setPhase("select");
       }
@@ -757,7 +757,7 @@ function BarcodeScannerModal({ onClose, onAdd }: {
         () => { /* scan attempt, ignore errors */ }
       ).catch((err: unknown) => {
         console.error("Camera error:", err);
-        setError("Caméra inaccessible — autorise l’accès à l’appareil photo.");
+        setError("Caméra inaccessible, autorise l’accès à l’appareil photo.");
       });
     });
   };
@@ -924,8 +924,8 @@ function BarcodeScannerModal({ onClose, onAdd }: {
                     <Sparkles size={15} strokeWidth={2} style={{ color: "var(--accent)", marginTop: 1, flexShrink: 0 }} />
                     <p className="text-xs font-light leading-relaxed" style={{ color: "var(--text-2)" }}>
                       {fallbackName
-                        ? "Trouvé, mais sans données nutritionnelles — décris-le, je m’occupe des chiffres."
-                        : "Pas encore dans la base — décris-le, je m’occupe des chiffres."}
+                        ? "Trouvé, mais sans données nutritionnelles. Décris-le, je m’occupe des chiffres."
+                        : "Pas encore dans la base. Décris-le, je m’occupe des chiffres."}
                     </p>
                   </div>
                 )}
@@ -964,7 +964,7 @@ function BarcodeScannerModal({ onClose, onAdd }: {
                             ? <motion.div animate={{ rotate: 360 }} transition={{ duration: 0.9, repeat: Infinity, ease: "linear" }}>
                                 <Loader2 size={13} strokeWidth={2} />
                               </motion.div>
-                            : <>✨ Estimer</>}
+                            : <>Estimer</>}
                         </motion.button>
                       </div>
                       <p className="text-[10px] mt-1.5 font-light" style={{ color: "var(--text-3)" }}>
@@ -1247,10 +1247,10 @@ function MenuScanModal({ objectiveLine, objectiveChip, goalKnown, initialResult,
           body: JSON.stringify({ image: base64, mimeType: file.type, objective: objectiveLine, goalKnown }),
         });
         if (res.status === 401) { setError("Connecte-toi pour lire une carte."); setPhase("select"); return; }
-        if (res.status === 422) { setError("Je n’ai pas réussi à lire les plats — rapproche-toi et recadre la carte."); setPhase("select"); return; }
+        if (res.status === 422) { setError("Je n’ai pas réussi à lire les plats, rapproche-toi et recadre la carte."); setPhase("select"); return; }
         if (!res.ok) throw new Error();
         const data: MenuScanResult = await res.json();
-        if (!data?.dishes?.length) { setError("Aucun plat lisible — réessaie."); setPhase("select"); return; }
+        if (!data?.dishes?.length) { setError("Aucun plat lisible, réessaie."); setPhase("select"); return; }
         setResult(data);
         onResult?.(data);          // le parent garde le classement en cache → retour depuis la photo sans re-scan
         setPhase("result");
@@ -1421,7 +1421,7 @@ function MenuScanModal({ objectiveLine, objectiveChip, goalKnown, initialResult,
                 )}
 
                 <p className="text-[11px] text-center mt-4 font-light" style={{ color: "var(--text-3)" }}>
-                  L&apos;IA lit les plats et te dit lesquels collent à ton objectif — sans chiffres inventés.
+                  L&apos;IA lit les plats et te dit lesquels collent à ton objectif, sans chiffres inventés.
                 </p>
               </motion.div>
             )}
@@ -1473,7 +1473,7 @@ function MenuScanModal({ objectiveLine, objectiveChip, goalKnown, initialResult,
                 </div>
                 <p className="flex items-start gap-1.5 text-[11px] leading-snug -mt-1" style={{ color: "var(--text-3)" }}>
                   <Sparkles size={12} style={{ color: "var(--accent)", flexShrink: 0, marginTop: 1 }} />
-                  Estimations d&apos;après la carte — le vrai compte se fera à l&apos;assiette.
+                  Estimations d&apos;après la carte, le vrai compte se fera à l&apos;assiette.
                 </p>
 
                 {/* Hero — le meilleur choix */}
@@ -1691,12 +1691,12 @@ function ManualModal({ onClose, onAdd }: {
                     <Loader2 size={13} strokeWidth={2} />
                   </motion.div>
                 ) : (
-                  <>✨ Estimer</>
+                  <>Estimer</>
                 )}
               </motion.button>
             </div>
             <p className="text-[10px] mt-1.5 font-light" style={{ color: "var(--text-3)" }}>
-              L&apos;IA calcule automatiquement les calories & macros — ou appuie sur Entrée
+              L&apos;IA calcule automatiquement les calories & macros, ou appuie sur Entrée
             </p>
           </div>
 
@@ -1716,7 +1716,7 @@ function ManualModal({ onClose, onAdd }: {
                 style={{ background: "rgba(var(--accent-rgb),0.08)", border: "1px solid rgba(var(--accent-rgb),0.15)" }}>
                 <Check size={12} strokeWidth={2.5} style={{ color: "var(--accent)" }} />
                 <span className="text-xs font-medium" style={{ color: "var(--accent)" }}>
-                  Estimation IA — vérifie et modifie si besoin
+                  Estimation IA. Vérifie et modifie si besoin
                 </span>
               </motion.div>
             )}
@@ -2289,7 +2289,7 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
       calories: meal.calories, proteins: meal.proteins, carbs: meal.carbs,
       fats: meal.fats, has_photo: meal.hasPhoto ?? false, time: meal.time,
     }).select().single();
-    if (!error && data) { setMeals(prev => [...prev, rowToMeal(data)]); showToast(`${meal.name} ajouté — ${meal.calories} kcal ✓`); }
+    if (!error && data) { setMeals(prev => [...prev, rowToMeal(data)]); showToast(`${meal.name} ajouté, ${meal.calories} kcal ✓`); }
     else showToast("Erreur lors de l’ajout");
     setShowPhoto(false);
     setPhotoFromMenu(false);
@@ -2421,7 +2421,7 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
             onBarcode={() => setShowBarcode(true)}
             onManual={() => setShowManual(true)}
             onMenuScan={() => { setMenuResult(null); setPhotoFromMenu(false); setShowMenu(true); }}
-            onSkip={() => showToast("Noté — on ne t’embête pas 👌")}
+            onSkip={() => showToast("Noté, on ne t’embête pas.")}
             classics={displayRecents}
             onQuickAdd={(r) => { void quickAddRecent(r); }}
             onLogIdea={(m) => { void addRecipeMeal(m); }}
@@ -2732,7 +2732,7 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
                   Aucun repas enregistré
                 </p>
                 <p className="text-xs mt-1 font-light max-w-xs" style={{ color: "var(--text-3)" }}>
-                  Prends une photo — l&apos;IA identifie les aliments et remplit tout automatiquement
+                  Prends une photo, l&apos;IA identifie les aliments et remplit tout automatiquement
                 </p>
               </div>
               <motion.button whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.95 }}
@@ -2865,7 +2865,7 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
           const protLeft = known ? Math.max(0, Math.round((goals?.proteins ?? 0) - totalProt)) : 0;
           const objectiveLine = known
             ? `Repas : ${mealLabel}. Il reste environ ${remaining} kcal sur la journée et ~${protLeft} g de protéines à couvrir.${dietTxt}`
-            : `Repas : ${mealLabel}. Objectif calorique inconnu — privilégie un plat équilibré et un bon apport en protéines.${dietTxt}`;
+            : `Repas : ${mealLabel}. Objectif calorique inconnu, privilégie un plat équilibré et un bon apport en protéines.${dietTxt}`;
           const objectiveChip = known ? `${cap} · ~${remaining} kcal restantes` : `${cap} · équilibre`;
           return (
             <MenuScanModal key="menu"

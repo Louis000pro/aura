@@ -207,7 +207,7 @@ export default function PublicProfilePage() {
         }).catch(() => {});
       });
       setIsFollowing(true);
-      showToast("Ami ajouté ! 🎉");
+      showToast("Ami ajouté.");
     }
 
     setFollowLoading(false);
