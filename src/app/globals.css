@@ -14,8 +14,12 @@
   --color-aura-gray-light: #A0AEC0;
   --color-aura-surface: #FAFAFA;
 
-  --font-sans: var(--font-geist-sans), system-ui, sans-serif;
-  --font-mono: var(--font-geist-mono), monospace;
+  --font-sans: var(--font-archivo), system-ui, sans-serif;
+  /* Aucune police à chasse fixe n'est chargée : Vaiiya n'en affiche nulle
+     part. Ce jeton pointait sur --font-geist-mono, jamais importé, donc sur
+     une variable vide. Une pile système est honnête ; une variable vide ne
+     l'est pas. */
+  --font-mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
 
   --shadow-aura-sm: 0 2px 16px 0 rgba(167, 139, 250, 0.08);
   --shadow-aura: 0 4px 32px 0 rgba(167, 139, 250, 0.12);
@@ -150,6 +154,7 @@
      et le perd quand elles flottent. */
   h1, h2, h3 {
     font-family: var(--titrage);
+    font-variation-settings: var(--w-voix);
     letter-spacing: -0.02em;
   }
 
@@ -619,12 +624,28 @@ html.a-session .accueil-landing { display: none; }
    reste une échelle. Pour un cas particulier, surcharger en style en ligne. */
 
 :root {
-  --titrage: var(--font-titrage), var(--font-geist-sans), system-ui, sans-serif;
+  --titrage: var(--font-archivo), system-ui, sans-serif;
+
+  /* LES TROIS LARGEURS, ET IL N'Y EN A QUE TROIS.
+     Depuis le 2026-08-31, Vaiiya n'a plus qu'une famille : la hiérarchie ne
+     vient pas d'une seconde police mais de l'axe de largeur d'Archivo. Ces
+     trois valeurs sont donc l'équivalent exact de ce qu'était « la police de
+     titrage », et elles s'utilisent de la même façon : on écrit
+     `font-variation-settings: var(--w-voix)`, jamais `"wdth" 116` en dur.
+
+     ⚠️ On ne met PAS `wght` dedans. Tant que l'axe de graisse n'est pas listé
+     ici, il reste piloté par `font-weight`, donc par les `font-bold` de
+     Tailwind déjà posés partout. L'y ajouter figerait la graisse de chaque
+     titre du site d'un coup. */
+  --w-affiche: "wdth" 122;
+  --w-voix: "wdth" 116;
+  --w-nombre: "wdth" 112;
 }
 
 /* Le chiffre ou le mot qui EST l'écran. UN SEUL par écran, jamais deux. */
 .vy-display {
   font-family: var(--titrage);
+  font-variation-settings: var(--w-affiche);
   font-size: clamp(2.375rem, 11vw, 3.25rem);
   font-weight: 700;
   line-height: 0.95;
@@ -635,6 +656,7 @@ html.a-session .accueil-landing { display: none; }
 /* Titre de page, ou titre d'une section qui porte l'écran. */
 .vy-titre {
   font-family: var(--titrage);
+  font-variation-settings: var(--w-voix);
   font-size: clamp(1.375rem, 5.5vw, 1.75rem);
   font-weight: 600;
   line-height: 1.12;
@@ -673,6 +695,7 @@ html.a-session .accueil-landing { display: none; }
    chasse fixe empêchent la ligne de sauter quand la valeur passe de 9 à 10. */
 .vy-nombre {
   font-family: var(--titrage);
+  font-variation-settings: var(--w-nombre);
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.02em;
   font-weight: 600;

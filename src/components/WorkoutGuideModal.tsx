@@ -1374,8 +1374,8 @@ export default function WorkoutGuideModal({
                         {paused
                           ? <Play size={30} strokeWidth={1.5} style={{ color: TUN.lav }} />
                           : prep > 0
-                            ? <motion.span key={prep} initial={{ scale: 1.6, opacity: 0.3 }} animate={{ scale: 1, opacity: 1 }} transition={{ duration: 0.3 }} className="text-6xl font-black tabular-nums" style={{ color: TUN.orange, fontFamily: "var(--titrage)" }}>{prep}</motion.span>
-                            : <span className="text-5xl font-black tabular-nums" style={{ color: "#fff", fontFamily: "var(--titrage)" }}>{autoCountdown}</span>}
+                            ? <motion.span key={prep} initial={{ scale: 1.6, opacity: 0.3 }} animate={{ scale: 1, opacity: 1 }} transition={{ duration: 0.3 }} className="text-6xl font-black tabular-nums" style={{ color: TUN.orange, fontFamily: "var(--titrage)", fontVariationSettings: "var(--w-nombre)" }}>{prep}</motion.span>
+                            : <span className="text-5xl font-black tabular-nums" style={{ color: "#fff", fontFamily: "var(--titrage)", fontVariationSettings: "var(--w-nombre)" }}>{autoCountdown}</span>}
                       </div>
                     </motion.button>
                     <p className="text-[11px] font-extrabold tracking-[0.2em]" style={{ color: TUN.t2 }}>SÉRIE <b style={{ color: "#fff" }}>{setIdx + 1}</b> / {cur.sets}</p>
@@ -1383,7 +1383,7 @@ export default function WorkoutGuideModal({
                 ) : (
                   <div className="relative z-[2] text-center mt-5">
                     <p className="text-[11px] font-extrabold tracking-[0.2em]" style={{ color: TUN.t2 }}>SÉRIE <b style={{ color: "#fff" }}>{setIdx + 1}</b> / {cur.sets}</p>
-                    <p className="font-black tabular-nums leading-none mt-2" style={{ fontSize: 60, color: "#fff", letterSpacing: "-0.03em", fontFamily: "var(--titrage)" }}>{repsHero}</p>
+                    <p className="font-black tabular-nums leading-none mt-2" style={{ fontSize: 60, color: "#fff", letterSpacing: "-0.03em", fontFamily: "var(--titrage)", fontVariationSettings: "var(--w-nombre)" }}>{repsHero}</p>
                     {repsSub && <p className="text-[12px] font-medium mt-1" style={{ color: TUN.t3 }}>{repsSub}</p>}
                     <div className="flex gap-2.5 justify-center mt-4">
                       {Array.from({ length: cur.sets }).map((_, i) => {
@@ -1465,7 +1465,7 @@ export default function WorkoutGuideModal({
                         ? <Play size={34} strokeWidth={1.5} style={{ color: TUN.orange }} />
                         : <>
                             <span className="text-[10px] font-extrabold tracking-[0.3em]" style={{ color: TUN.orange }}>REPOS</span>
-                            <span className="font-black tabular-nums leading-none" style={{ fontSize: 52, color: "#fff", letterSpacing: "-0.03em", fontFamily: "var(--titrage)" }}>{fmt(restCountdown)}</span>
+                            <span className="font-black tabular-nums leading-none" style={{ fontSize: 52, color: "#fff", letterSpacing: "-0.03em", fontFamily: "var(--titrage)", fontVariationSettings: "var(--w-nombre)" }}>{fmt(restCountdown)}</span>
                             <span className="text-[11px] font-medium tabular-nums" style={{ color: TUN.t3 }}>sur {fmt(restTotal)}</span>
                           </>}
                     </div>
@@ -1635,7 +1635,7 @@ export default function WorkoutGuideModal({
                   ].map(st => (
                     <div key={st.l} className="rounded-2xl px-3.5 py-3.5 text-left" style={{ background: "rgba(255,255,255,0.05)", border: `1px solid ${TUN.line}` }}>
                       <p className="text-[9px] font-extrabold tracking-[0.18em]" style={{ color: TUN.t3 }}>{st.l}</p>
-                      <p className="font-black tabular-nums mt-1" style={{ fontSize: 21, color: st.c, letterSpacing: "-0.02em", fontFamily: "var(--titrage)" }}>
+                      <p className="font-black tabular-nums mt-1" style={{ fontSize: 21, color: st.c, letterSpacing: "-0.02em", fontFamily: "var(--titrage)", fontVariationSettings: "var(--w-nombre)" }}>
                         {st.v}<small className="text-[11px] font-bold" style={{ color: TUN.t3, letterSpacing: 0 }}>{st.s}</small>
                       </p>
                     </div>

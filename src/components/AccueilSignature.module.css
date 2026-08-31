@@ -241,6 +241,7 @@
   display: block;
   color: var(--text-0);
   font-family: var(--titrage);
+  font-variation-settings: var(--w-nombre);
   font-size: 28px;
   font-weight: 600;
   line-height: 1.05;
@@ -346,6 +347,7 @@
 
 .rankExp strong {
   font-family: var(--titrage);
+  font-variation-settings: var(--w-nombre);
   font-variant-numeric: tabular-nums;
   font-size: 16px;
   font-weight: 600;

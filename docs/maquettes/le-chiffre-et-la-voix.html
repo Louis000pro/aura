@@ -1,0 +1,576 @@
+<title>Le chiffre et la voix</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@94..125,400..700&family=Fraunces:opsz,wght,SOFT,WONK@9..144,400..700,0..100,0..1&family=Golos+Text:wght@400..600&family=Schibsted+Grotesk:wght@400..700&family=Martian+Mono:wdth,wght@75..100,400..700&display=swap">
+
+<style>
+  /* ————————————————————————————————————————————————
+     Encres. Ce sont celles de Vaiiya, pas des couleurs de maquette :
+     --violet vaut --exp-encre, --teal vaut --teal-encre, --or vaut
+     --or-encre. La page est faite de la matière du produit.
+     ———————————————————————————————————————————————— */
+  :root {
+    --ground: #FBFAFC;
+    --card:   #FFFFFF;
+    --ink:    #16131C;
+    --ink-2:  #5E5769;
+    --ink-3:  #8C8599;
+    --rule:   rgba(22, 19, 28, .11);
+    --rule-2: rgba(22, 19, 28, .06);
+    --violet: #6D4BD6;
+    --teal:   #0B8A68;
+    --or:     #8A5A06;
+    --feu:    #E8620C;
+    --sombre: #131019;
+    --sombre-ink: #F4F1F8;
+    --sombre-ink2: #A9A2B6;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #131019;
+      --card:   #1B1724;
+      --ink:    #F4F1F8;
+      --ink-2:  #A9A2B6;
+      --ink-3:  #7C7589;
+      --rule:   rgba(244, 241, 248, .13);
+      --rule-2: rgba(244, 241, 248, .07);
+      --violet: #C3AEFF;
+      --teal:   #3FE0B0;
+      --or:     #F5B120;
+      --feu:    #FF9A4D;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground: #131019;
+    --card:   #1B1724;
+    --ink:    #F4F1F8;
+    --ink-2:  #A9A2B6;
+    --ink-3:  #7C7589;
+    --rule:   rgba(244, 241, 248, .13);
+    --rule-2: rgba(244, 241, 248, .07);
+    --violet: #C3AEFF;
+    --teal:   #3FE0B0;
+    --or:     #F5B120;
+    --feu:    #FF9A4D;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    /* Cette page est composée dans la direction 1. C'est une prise de
+       position, pas un défaut : le meilleur test d'une police de produit,
+       c'est de lire une page entière avec. */
+    font-family: 'Archivo', system-ui, sans-serif;
+    font-variation-settings: 'wdth' 100, 'wght' 400;
+    font-size: 16px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .page { max-width: 74rem; margin: 0 auto; padding: 4.5rem 1.5rem 7rem; }
+  @media (max-width: 640px) { .page { padding: 3rem 1.15rem 5rem; } }
+
+  /* ——— Masthead ——— */
+  .eyebrow {
+    font-size: .8125rem; font-variation-settings: 'wdth' 100, 'wght' 500;
+    letter-spacing: .01em; color: var(--ink-3); margin: 0 0 1.1rem;
+  }
+  h1 {
+    font-variation-settings: 'wdth' 120, 'wght' 700;
+    font-size: clamp(2.4rem, 7.5vw, 4.15rem);
+    line-height: .96; letter-spacing: -.035em;
+    margin: 0 0 1.4rem; text-wrap: balance;
+  }
+  .chapo {
+    font-size: clamp(1.0625rem, 2.4vw, 1.25rem);
+    line-height: 1.55; color: var(--ink-2);
+    max-width: 34rem; margin: 0 0 2.6rem;
+  }
+  .chapo strong { color: var(--ink); font-variation-settings: 'wdth' 100, 'wght' 600; }
+
+  /* ——— Le décompte ——— */
+  .compte {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr));
+    gap: 0; border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule);
+    margin: 0 0 4.5rem;
+  }
+  .compte div { padding: 1.15rem 1.15rem 1.25rem 0; }
+  .compte div + div { border-left: 1px solid var(--rule-2); padding-left: 1.15rem; }
+  .compte b {
+    display: block; font-variation-settings: 'wdth' 112, 'wght' 700;
+    font-size: 1.9rem; line-height: 1; letter-spacing: -.03em;
+    font-variant-numeric: tabular-nums; margin-bottom: .3rem;
+  }
+  .compte span { font-size: .8125rem; color: var(--ink-3); line-height: 1.35; display: block; }
+
+  /* ——— Sections ——— */
+  section { margin: 0 0 4.75rem; }
+  h2 {
+    font-variation-settings: 'wdth' 116, 'wght' 700;
+    font-size: clamp(1.5rem, 4vw, 2rem); line-height: 1.1;
+    letter-spacing: -.028em; margin: 0 0 .85rem; text-wrap: balance;
+  }
+  h3 {
+    font-variation-settings: 'wdth' 108, 'wght' 600;
+    font-size: 1.0625rem; letter-spacing: -.012em; margin: 0 0 .4rem;
+  }
+  p { margin: 0 0 1.05rem; max-width: 36rem; }
+  p.large { font-size: 1.0625rem; color: var(--ink-2); }
+  strong { font-variation-settings: 'wdth' 100, 'wght' 600; }
+  .violet { color: var(--violet); }
+
+  /* ——— Les trois rôles ——— */
+  .roles { display: grid; gap: 0; margin-top: 1.75rem; }
+  .role {
+    display: grid; grid-template-columns: 7.5rem 1fr; gap: 1.5rem;
+    padding: 1.35rem 0; border-top: 1px solid var(--rule);
+    align-items: baseline;
+  }
+  .role:last-child { border-bottom: 1px solid var(--rule); }
+  .role dt { font-variation-settings: 'wdth' 112, 'wght' 600; font-size: 1rem; }
+  .role dd { margin: 0; color: var(--ink-2); font-size: .9375rem; }
+  @media (max-width: 560px) {
+    .role { grid-template-columns: 1fr; gap: .3rem; }
+  }
+
+  /* ————————————————————————————————————————————————
+     LES TROIS CASTINGS
+     Le même balisage d'écran, trois habillages. C'est la démonstration :
+     ce n'est pas une police qu'on choisit, c'est une distribution de rôles.
+     ———————————————————————————————————————————————— */
+  .direction { border-top: 2px solid var(--ink); padding-top: 1.5rem; margin-bottom: 4.5rem; }
+  .dir-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: .9rem; margin-bottom: .3rem; }
+  .dir-num {
+    font-variation-settings: 'wdth' 118, 'wght' 700; font-size: 1rem;
+    font-variant-numeric: tabular-nums; color: var(--ink-3);
+  }
+  .dir-head h2 { margin: 0; }
+  .casting {
+    font-size: .875rem; color: var(--ink-3); margin: .35rem 0 1.6rem;
+    font-variant-numeric: tabular-nums;
+  }
+  .casting b { color: var(--ink-2); font-variation-settings: 'wdth' 100, 'wght' 600; }
+
+  /* Le rail d'écrans */
+  .rail {
+    display: flex; gap: 1rem; overflow-x: auto; padding: .25rem .25rem 1.35rem;
+    scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch;
+  }
+  .rail::-webkit-scrollbar { height: 6px; }
+  .rail::-webkit-scrollbar-thumb { background: var(--rule); border-radius: 99px; }
+
+  /* Au-delà de 900 px le rail devient une grille : les quatre écrans se
+     comparent d'un coup d'oeil au lieu qu'un quatrième reste coupé. */
+  @media (min-width: 900px) {
+    .rail {
+      display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
+      overflow: visible; padding-bottom: 1.35rem;
+    }
+    .rail .ecran { flex: none; }
+  }
+
+  .ecran {
+    flex: 0 0 15.5rem; scroll-snap-align: start;
+    background: var(--card); border: 1px solid var(--rule);
+    border-radius: 18px; padding: 1.15rem 1.15rem 1.35rem;
+    display: flex; flex-direction: column; min-height: 12.5rem;
+  }
+  .ecran.nuit { background: var(--sombre); border-color: rgba(255,255,255,.09); color: var(--sombre-ink); }
+  .ecran.nuit .ec-label, .ecran.nuit .ec-corps { color: var(--sombre-ink2); }
+
+  .ec-tag {
+    font-size: .6875rem; letter-spacing: .02em; color: var(--ink-3);
+    margin-bottom: .9rem; text-transform: none;
+  }
+  .ec-label { font-size: .75rem; color: var(--ink-3); margin-bottom: .3rem; }
+  .ec-corps { font-size: .875rem; color: var(--ink-2); line-height: 1.5; }
+  .ec-titre { line-height: 1.08; letter-spacing: -.025em; margin-bottom: .55rem; }
+  .ec-nombre { font-variant-numeric: tabular-nums; line-height: .92; letter-spacing: -.03em; }
+  .ec-push { margin-top: auto; }
+
+  .chips { display: flex; gap: .4rem; flex-wrap: wrap; margin-top: .8rem; }
+  .chip {
+    font-size: .75rem; padding: .35rem .6rem; border-radius: 999px;
+    border: 1px solid var(--rule); color: var(--ink-2);
+  }
+  .ligne-mission { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; }
+  .gain { color: var(--teal); font-variant-numeric: tabular-nums; }
+
+  /* — Direction 1 : Archivo, une seule famille — */
+  .d1 { font-family: 'Archivo', system-ui, sans-serif; font-variation-settings: 'wdth' 100, 'wght' 400; }
+  .d1 .ec-titre { font-variation-settings: 'wdth' 118, 'wght' 700; font-size: 1.6rem; }
+  .d1 .ec-nombre { font-variation-settings: 'wdth' 114, 'wght' 700; }
+  .d1 .ec-label  { font-variation-settings: 'wdth' 100, 'wght' 500; }
+  .d1 .gain      { font-variation-settings: 'wdth' 112, 'wght' 700; }
+
+  /* — Direction 2 : Fraunces + Golos Text — */
+  .d2 { font-family: 'Golos Text', system-ui, sans-serif; font-weight: 400; }
+  .d2 .ec-titre {
+    font-family: 'Fraunces', Georgia, serif; font-size: 1.6rem; font-weight: 600;
+    font-variation-settings: 'opsz' 144, 'SOFT' 40, 'WONK' 1; letter-spacing: -.015em;
+  }
+  .d2 .ec-nombre {
+    font-family: 'Fraunces', Georgia, serif; font-weight: 600;
+    font-variation-settings: 'opsz' 144, 'SOFT' 40, 'WONK' 1; letter-spacing: -.02em;
+  }
+  .d2 .ec-label { font-weight: 500; }
+  .d2 .gain { font-family: 'Fraunces', Georgia, serif; font-weight: 600; font-variation-settings: 'opsz' 144, 'SOFT' 40; }
+
+  /* — Direction 3 : Schibsted Grotesk + Martian Mono — */
+  .d3 { font-family: 'Schibsted Grotesk', system-ui, sans-serif; font-weight: 400; }
+  .d3 .ec-titre { font-weight: 700; font-size: 1.55rem; letter-spacing: -.03em; }
+  .d3 .ec-nombre {
+    font-family: 'Martian Mono', ui-monospace, monospace; font-weight: 600;
+    font-variation-settings: 'wdth' 82; letter-spacing: -.055em;
+  }
+  .d3 .ec-label { font-weight: 500; }
+  .d3 .gain { font-family: 'Martian Mono', ui-monospace, monospace; font-weight: 600; font-variation-settings: 'wdth' 82; letter-spacing: -.05em; }
+
+  /* ——— Le verdict de chaque direction ——— */
+  .verdict { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem 2.5rem; margin-top: .5rem; }
+  @media (max-width: 640px) { .verdict { grid-template-columns: 1fr; gap: 1.2rem; } }
+  .verdict h3 { color: var(--ink); }
+  .verdict p { font-size: .9375rem; color: var(--ink-2); margin: 0; max-width: none; }
+
+  /* ——— Grand spécimen ——— */
+  .specimen {
+    border: 1px solid var(--rule); border-radius: 20px;
+    padding: 1.6rem 1.5rem 1.75rem; margin: 0 0 1.75rem;
+    background: var(--card);
+  }
+  .spec-mot { line-height: .92; letter-spacing: -.04em; margin: 0 0 .5rem; overflow-wrap: anywhere; }
+  .d1 .spec-mot { font-variation-settings: 'wdth' 122, 'wght' 700; font-size: clamp(2.6rem, 11vw, 4.6rem); }
+  .d2 .spec-mot { font-family: 'Fraunces', Georgia, serif; font-weight: 600; font-variation-settings: 'opsz' 144, 'SOFT' 45, 'WONK' 1; font-size: clamp(2.7rem, 11.5vw, 4.9rem); }
+  .d3 .spec-mot { font-weight: 700; font-size: clamp(2.6rem, 11vw, 4.6rem); }
+  .spec-phrase { font-size: 1.0625rem; line-height: 1.5; color: var(--ink-2); margin: .9rem 0 0; max-width: 32rem; }
+
+  /* ——— La recommandation ——— */
+  .reco {
+    border: 2px solid var(--violet); border-radius: 22px;
+    padding: 1.9rem 1.6rem 1.75rem; background: var(--card);
+  }
+  .reco .eyebrow { color: var(--violet); font-variation-settings: 'wdth' 100, 'wght' 600; }
+  .reco h2 { margin-bottom: .7rem; }
+  .reco ol { margin: 1.2rem 0 0; padding-left: 0; list-style: none; counter-reset: r; }
+  .reco li {
+    counter-increment: r; position: relative; padding: .95rem 0 .95rem 2.4rem;
+    border-top: 1px solid var(--rule-2); color: var(--ink-2); font-size: .9375rem;
+  }
+  .reco li::before {
+    content: counter(r); position: absolute; left: 0; top: .95rem;
+    font-variation-settings: 'wdth' 118, 'wght' 700; font-variant-numeric: tabular-nums;
+    color: var(--violet); font-size: .9375rem;
+  }
+  .reco li b { color: var(--ink); font-variation-settings: 'wdth' 100, 'wght' 600; }
+
+  /* ——— Notes de bas de page ——— */
+  .notes { border-top: 1px solid var(--rule); padding-top: 1.5rem; }
+  .notes p { font-size: .875rem; color: var(--ink-3); max-width: 40rem; }
+  .notes code {
+    font-family: ui-monospace, monospace; font-size: .8125em;
+    background: var(--rule-2); padding: .1em .35em; border-radius: 4px; color: var(--ink-2);
+  }
+  .quiet { color: var(--ink-3); font-size: .875rem; }
+</style>
+
+<div class="page">
+
+  <p class="eyebrow">Vaiiya · identité typographique · 31 août 2026</p>
+  <h1>Le chiffre et la voix</h1>
+  <p class="chapo">
+    Vaiiya n’est pas une application de texte. C’est une application de <strong>chiffres</strong>,
+    entourés de phrases très courtes. Une identité typographique qui ignore ça
+    habillerait le décor et laisserait le contenu nu.
+  </p>
+
+  <div class="compte">
+    <div><b>295</b><span>fois « min » à l’écran</span></div>
+    <div><b>198</b><span>fois « reps »</span></div>
+    <div><b>70</b><span>fois « kcal »</span></div>
+    <div><b>42</b><span>fois « EXP »</span></div>
+    <div><b>26</b><span>fois « kg »</span></div>
+  </div>
+
+  <section>
+    <h2>Trois rôles, pas deux</h2>
+    <p class="large">
+      La règle habituelle dit&nbsp;: une police pour les titres, une pour le texte.
+      Elle ne suffit pas ici, parce qu’elle range le chrono, l’EXP, le poids et
+      les macros dans «&nbsp;le texte&nbsp;», là où ce sont eux qu’on regarde.
+      Vaiiya a besoin d’un troisième rôle.
+    </p>
+
+    <dl class="roles">
+      <div class="role">
+        <dt>La voix</dt>
+        <dd>Ce que Vaiiya dit. Des phrases courtes, souvent une question&nbsp;: «&nbsp;On mange où&nbsp;?&nbsp;», «&nbsp;Journée validée.&nbsp;». C’est le rôle qui porte le caractère, et il n’apparaît qu’une fois par écran.</dd>
+      </div>
+      <div class="role">
+        <dt>Le texte</dt>
+        <dd>Ce qu’on lit vraiment. Du français à 15&nbsp;px sur un téléphone. Ce rôle doit se faire oublier&nbsp;: du caractère ici, et la lecture ralentit.</dd>
+      </div>
+      <div class="role">
+        <dt>Le chiffre</dt>
+        <dd>Ce qu’on mesure. À chasse fixe, pour que la ligne ne saute pas quand la valeur passe de 9 à 10. C’est le rôle le plus spécifique à Vaiiya, et aujourd’hui il n’existe pas&nbsp;: les nombres empruntent la police des titres.</dd>
+      </div>
+    </dl>
+  </section>
+
+  <section>
+    <h2>Trois castings</h2>
+    <p class="large">
+      Le même balisage d’écran, trois distributions de rôles. Ce ne sont pas
+      trois goûts&nbsp;: ce sont trois choses différentes que Vaiiya dirait de
+      lui-même avant même qu’on ait lu un mot.
+    </p>
+  </section>
+
+  <!-- ————————————— DIRECTION 1 ————————————— -->
+  <div class="direction">
+    <div class="dir-head">
+      <span class="dir-num">01</span>
+      <h2>L’affiche</h2>
+    </div>
+    <p class="casting"><b>Archivo</b>, une seule famille. La voix en largeur 118, le texte en 100, le chiffre en 114.</p>
+
+    <div class="specimen d1">
+      <p class="spec-mot">Journée validée</p>
+      <p class="spec-phrase">
+        Le dossard, le panneau de gymnase, le maillot. La largeur est un signe
+        sportif&nbsp;: elle ne décore pas, elle situe.
+      </p>
+    </div>
+
+    <div class="rail d1">
+      <div class="ecran">
+        <p class="ec-tag">Accueil</p>
+        <p class="ec-label">Bonjour</p>
+        <p class="ec-titre">Louis</p>
+        <p class="ec-push"></p>
+        <p class="ec-nombre" style="font-size:2.35rem">1 240</p>
+        <p class="ec-label" style="margin-top:.25rem">EXP · Argent</p>
+      </div>
+      <div class="ecran nuit">
+        <p class="ec-tag" style="color:#7C7589">Le tunnel</p>
+        <p class="ec-label">Repos</p>
+        <p class="ec-nombre" style="font-size:3.4rem">00:45</p>
+        <p class="ec-corps ec-push">Ensuite&nbsp;: Gainage · 45&nbsp;s</p>
+      </div>
+      <div class="ecran">
+        <p class="ec-tag">Nutrition</p>
+        <p class="ec-titre">On mange où&nbsp;?</p>
+        <p class="ec-corps">Dis-moi où, je m’occupe du reste.</p>
+        <div class="chips"><span class="chip">Maison</span><span class="chip">Resto</span><span class="chip">Sur le pouce</span></div>
+      </div>
+      <div class="ecran">
+        <p class="ec-tag">Missions du jour</p>
+        <div class="ligne-mission" style="margin-bottom:.75rem">
+          <div><h3 style="margin:0">Terminer une séance</h3><p class="ec-label" style="margin:0">Encore 1 séance</p></div>
+          <span class="gain" style="font-size:1.35rem">+30</span>
+        </div>
+        <div class="ligne-mission" style="border-top:1px solid var(--rule-2); padding-top:.75rem">
+          <div><h3 style="margin:0">Noter un repas</h3><p class="ec-label" style="margin:0">Fait</p></div>
+          <span class="gain" style="font-size:1.35rem">+5</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="verdict">
+      <div>
+        <h3>Ce que ça dit</h3>
+        <p>Un produit physique, confiant, qui n’a pas besoin d’en rajouter. C’est la seule direction où l’identité vit dans un <strong>axe</strong> et pas dans une deuxième police&nbsp;: il n’y a donc aucun mariage à réussir.</p>
+      </div>
+      <div>
+        <h3>Ce que ça coûte</h3>
+        <p>Les titres larges mangent de la place. «&nbsp;On mange où&nbsp;?&nbsp;» tient sur 360&nbsp;px, «&nbsp;Récupération active&nbsp;» aussi&nbsp;; un titre de six mots, non. Ça oblige à écrire court, ce qui est plutôt une bonne contrainte ici.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ————————————— DIRECTION 2 ————————————— -->
+  <div class="direction">
+    <div class="dir-head">
+      <span class="dir-num">02</span>
+      <h2>Le carnet</h2>
+    </div>
+    <p class="casting"><b>Fraunces</b> pour la voix et les grands chiffres, <b>Golos&nbsp;Text</b> pour le texte.</p>
+
+    <div class="specimen d2">
+      <p class="spec-mot">Journée validée</p>
+      <p class="spec-phrase">
+        Quelqu’un t’écrit. C’est la direction qui colle le mieux à Nora et Sasha,
+        et à la règle «&nbsp;zéro culpabilisation&nbsp;»&nbsp;: un serif dessiné à
+        la main ne donne pas d’ordre.
+      </p>
+    </div>
+
+    <div class="rail d2">
+      <div class="ecran">
+        <p class="ec-tag">Accueil</p>
+        <p class="ec-label">Bonjour</p>
+        <p class="ec-titre">Louis</p>
+        <p class="ec-push"></p>
+        <p class="ec-nombre" style="font-size:2.35rem">1 240</p>
+        <p class="ec-label" style="margin-top:.25rem">EXP · Argent</p>
+      </div>
+      <div class="ecran nuit">
+        <p class="ec-tag" style="color:#7C7589">Le tunnel</p>
+        <p class="ec-label">Repos</p>
+        <p class="ec-nombre" style="font-size:3.4rem">00:45</p>
+        <p class="ec-corps ec-push">Ensuite&nbsp;: Gainage · 45&nbsp;s</p>
+      </div>
+      <div class="ecran">
+        <p class="ec-tag">Nutrition</p>
+        <p class="ec-titre">On mange où&nbsp;?</p>
+        <p class="ec-corps">Dis-moi où, je m’occupe du reste.</p>
+        <div class="chips"><span class="chip">Maison</span><span class="chip">Resto</span><span class="chip">Sur le pouce</span></div>
+      </div>
+      <div class="ecran">
+        <p class="ec-tag">Missions du jour</p>
+        <div class="ligne-mission" style="margin-bottom:.75rem">
+          <div><h3 style="margin:0">Terminer une séance</h3><p class="ec-label" style="margin:0">Encore 1 séance</p></div>
+          <span class="gain" style="font-size:1.35rem">+30</span>
+        </div>
+        <div class="ligne-mission" style="border-top:1px solid var(--rule-2); padding-top:.75rem">
+          <div><h3 style="margin:0">Noter un repas</h3><p class="ec-label" style="margin:0">Fait</p></div>
+          <span class="gain" style="font-size:1.35rem">+5</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="verdict">
+      <div>
+        <h3>Ce que ça dit</h3>
+        <p>De la chaleur et une main. C’est la direction la plus éloignée de tout ce qui ressemble à un tableau de bord, donc la plus éloignée du reproche qu’on cherche à effacer.</p>
+      </div>
+      <div>
+        <h3>Ce que ça coûte</h3>
+        <p>Deux familles à charger, et un chiffre en serif se lit plus lentement&nbsp;: acceptable pour l’EXP ou le poids, discutable pour un chrono qui bouge. Le risque nommé, c’est le cliché du bien-être&nbsp;; il ne se déclenche qu’avec une palette crème, et la nôtre est violet-teal.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ————————————— DIRECTION 3 ————————————— -->
+  <div class="direction">
+    <div class="dir-head">
+      <span class="dir-num">03</span>
+      <h2>Le chrono</h2>
+    </div>
+    <p class="casting"><b>Schibsted&nbsp;Grotesk</b> pour la voix et le texte, <b>Martian&nbsp;Mono</b> resserré à 82 pour tous les chiffres.</p>
+
+    <div class="specimen d3">
+      <p class="spec-mot">Journée validée</p>
+      <p class="spec-phrase">
+        Un instrument. Les chiffres ont leur propre voix, donc une donnée ne
+        ressemble jamais à une phrase&nbsp;: on sait ce qui est mesuré rien qu’à
+        la forme.
+      </p>
+    </div>
+
+    <div class="rail d3">
+      <div class="ecran">
+        <p class="ec-tag">Accueil</p>
+        <p class="ec-label">Bonjour</p>
+        <p class="ec-titre">Louis</p>
+        <p class="ec-push"></p>
+        <p class="ec-nombre" style="font-size:2.1rem">1 240</p>
+        <p class="ec-label" style="margin-top:.25rem">EXP · Argent</p>
+      </div>
+      <div class="ecran nuit">
+        <p class="ec-tag" style="color:#7C7589">Le tunnel</p>
+        <p class="ec-label">Repos</p>
+        <p class="ec-nombre" style="font-size:2.9rem">00:45</p>
+        <p class="ec-corps ec-push">Ensuite&nbsp;: Gainage · 45&nbsp;s</p>
+      </div>
+      <div class="ecran">
+        <p class="ec-tag">Nutrition</p>
+        <p class="ec-titre">On mange où&nbsp;?</p>
+        <p class="ec-corps">Dis-moi où, je m’occupe du reste.</p>
+        <div class="chips"><span class="chip">Maison</span><span class="chip">Resto</span><span class="chip">Sur le pouce</span></div>
+      </div>
+      <div class="ecran">
+        <p class="ec-tag">Missions du jour</p>
+        <div class="ligne-mission" style="margin-bottom:.75rem">
+          <div><h3 style="margin:0">Terminer une séance</h3><p class="ec-label" style="margin:0">Encore 1 séance</p></div>
+          <span class="gain" style="font-size:1.15rem">+30</span>
+        </div>
+        <div class="ligne-mission" style="border-top:1px solid var(--rule-2); padding-top:.75rem">
+          <div><h3 style="margin:0">Noter un repas</h3><p class="ec-label" style="margin:0">Fait</p></div>
+          <span class="gain" style="font-size:1.15rem">+5</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="verdict">
+      <div>
+        <h3>Ce que ça dit</h3>
+        <p>De la précision. C’est la direction qui traite le mieux le vrai contenu de Vaiiya, puisqu’elle donne au chiffre un rôle qu’il n’a jamais eu.</p>
+      </div>
+      <div>
+        <h3>Ce que ça coûte</h3>
+        <p>Le mono reste large même resserré&nbsp;: «&nbsp;1 240 EXP&nbsp;» prend plus de place que dans les deux autres, et le chrono du tunnel doit descendre d’un cran. Et il faut surveiller le voisinage du code&nbsp;: un mono, mal dosé, dit «&nbsp;développeur&nbsp;» avant de dire «&nbsp;sportif&nbsp;».</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ————————————— RECOMMANDATION ————————————— -->
+  <section class="reco">
+    <p class="eyebrow">Ma recommandation</p>
+    <h2>La 1, avec un emprunt à la 3</h2>
+    <p class="large" style="color:var(--ink-2)">
+      L’affiche pour la voix et le texte, et la discipline du chrono pour les
+      chiffres&nbsp;: chasse fixe partout où une valeur change sous les yeux.
+      Quatre raisons, dans l’ordre où elles pèsent.
+    </p>
+    <ol>
+      <li><b>Rien à marier.</b> L’identité vit dans l’axe de largeur d’une seule famille. Il n’y a donc pas de couple à réussir, pas de deuxième fichier, et rien qui puisse vieillir de travers d’un côté seulement.</li>
+      <li><b>C’est la langue du sport.</b> Le grotesque large vient du dossard et du panneau. Ça situe Vaiiya sans un gramme de décoration, et sans toucher au système de couleur.</li>
+      <li><b>Ça tient sur 360&nbsp;px.</b> Parce que la largeur est variable&nbsp;: la même police va en 118 pour un titre et en 100, voire 96, pour du texte. Une expansive figée aurait été injouable sur téléphone.</li>
+      <li><b>Ça retire le dernier signe.</b> Geist disparaît complètement. La recherche du chantier précédent le donnait comme l’un des marqueurs les plus cités d’une page générée&nbsp;: c’est la police par défaut de Vercel.</li>
+    </ol>
+  </section>
+
+  <section style="margin-top:4.5rem">
+    <h2>Ce que ça change, et ce que ça ne touche pas</h2>
+    <p class="large">
+      Le chantier d’hier a construit l’échelle&nbsp;: <code>.vy-display</code>,
+      <code>.vy-titre</code>, <code>.vy-sous</code>, <code>.vy-corps</code>,
+      <code>.vy-label</code>, <code>.vy-nombre</code>. Elle ne bouge pas d’un
+      pixel. Changer de direction, c’est changer <strong>deux déclarations de
+      police</strong> et les réglages d’axe&nbsp;: tout le reste hérite.
+    </p>
+    <p class="large">
+      Rien d’autre n’est touché&nbsp;: pas une couleur (le système D reste
+      verrouillé), pas une fonctionnalité, pas une requête, aucune migration
+      SQL. Et si la direction retenue déçoit une fois en vrai, on repointe les
+      deux mêmes déclarations ailleurs.
+    </p>
+  </section>
+
+  <section class="notes">
+    <h3 style="color:var(--ink)">Trois notes</h3>
+    <p>
+      <b>Bricolage Grotesque était un dépannage.</b> Elle a été posée hier pour
+      qu’il existe une voix de titrage, pas parce qu’elle disait quelque chose de
+      Vaiiya. Quelle que soit la direction retenue, elle sort.
+    </p>
+    <p>
+      <b>Un jeton mort dans <code>globals.css</code>.</b>
+      <code>--font-mono: var(--font-geist-mono)</code> est déclaré, mais
+      <code>Geist_Mono</code> n’est importé nulle part&nbsp;: la variable est
+      vide et le repli <code>monospace</code> du système s’applique en silence.
+      À supprimer, ou à remplir pour de bon si la direction 3 l’emporte.
+    </p>
+    <p>
+      <b>Les trois familles sont variables et couvrent le français.</b> Un seul
+      fichier par famille, l’axe de graisse complet, donc aucune graisse
+      fabriquée par le navigateur&nbsp;: c’est le défaut réparé hier, et il ne
+      peut pas revenir par cette porte. Le œ lié, les accents sur capitales et
+      les guillemets français sont tous dans le sous-ensemble latin.
+    </p>
+  </section>
+
+</div>

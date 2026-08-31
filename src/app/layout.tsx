@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Bricolage_Grotesque } from "next/font/google";
+import { Archivo } from "next/font/google";
 import "./globals.css";
 import Navigation from "@/components/Navigation";
 import MainWrapper from "@/components/MainWrapper";
@@ -22,36 +22,29 @@ import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { PLANS, VENTE_OUVERTE } from "@/lib/plans";
 
-/* ⚠️ PAS DE LISTE DE GRAISSES ICI, ET C'EST UNE CORRECTION, PAS UN OUBLI.
-   Geist était chargé en 300, 400, 500 et 600 seulement. Or l'application
-   demande plus lourd à 362 endroits : `font-bold` 180 fois, `font-black` 65,
-   `font-extrabold` 57, plus 60 déclarations CSS au-dessus de 600 (jusqu'à 900).
-   Aucune de ces graisses n'existait dans les fichiers téléchargés : le
-   navigateur les FABRIQUAIT en épaississant le dessin du 600, ce qui donne des
-   pleins irréguliers et des contreformes bouchées. C'est invisible à nommer et
-   très visible à l'oeil : c'est une des choses qui faisaient « pas fini ».
-   Sans liste, next/font sert la version VARIABLE : un seul fichier, l'axe de
-   graisse complet, et chaque graisse enfin dessinée pour de vrai. */
-const geist = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
+/* UNE SEULE FAMILLE POUR TOUT VAIIYA, ET C'EST LA DÉCISION D'IDENTITÉ.
+   Archivo est une grotesque à AXE DE LARGEUR variable (62 à 125). La
+   hiérarchie ne vient donc plus d'un mariage entre deux polices, mais d'un
+   réglage à l'intérieur d'une seule : la voix s'écrit large, le texte courant
+   à largeur normale. C'est ce qui donne l'allure du dossard et du panneau de
+   gymnase, sans un gramme de décoration, et ça ne touche pas au système de
+   couleur. Les trois largeurs sont nommées dans globals.css : --w-affiche,
+   --w-voix, --w-nombre. On ne pose jamais un `wdth` en dur dans un écran.
 
-/* La police de TITRAGE. Elle n'existe que pour une raison : avant elle, tout
-   Vaiiya s'écrivait dans une seule famille et une seule graisse, et un écran où
-   rien ne commande se lit comme un écran généré. Le titrage a maintenant sa
-   voix, le texte courant garde la sienne. Variable, donc un seul fichier pour
-   toutes les graisses ; accents français complets. Elle ne sert JAMAIS au corps
-   de texte ni aux libellés : voir `.vy-*` dans globals.css. */
-const titrage = Bricolage_Grotesque({
-  variable: "--font-titrage",
+   ⚠️ `axes: ["wdth"]` EST OBLIGATOIRE, ET SON ABSENCE EST SILENCIEUSE.
+   Sans lui, next/font sert la fonte figée à la largeur 100 : tout continue de
+   compiler, tout continue de s'afficher, et la hiérarchie disparaît
+   simplement. L'axe de graisse, lui, est servi d'office tant qu'on ne donne
+   pas de liste `weight` : c'est ce qui empêche le navigateur de FABRIQUER les
+   graisses au-dessus de 600, le défaut réparé le 2026-08-31.
+
+   ⚠️ PAS DE LISTE `weight` ICI, JAMAIS. Elle rétablirait des fichiers
+   statiques, donc les faux gras. */
+const archivo = Archivo({
+  variable: "--font-archivo",
   subsets: ["latin"],
   display: "swap",
-  // L'axe optique est demandé explicitement : sans lui, next/font fige la
-  // fonte sur `opsz: 14`, c'est-à-dire le dessin prévu pour du petit texte,
-  // et un titre de 52 px hérite alors d'un dessin trop large et trop lourd.
-  // Avec l'axe, le navigateur passe tout seul au dessin de titrage.
-  axes: ["opsz"],
+  axes: ["wdth"],
 });
 
 export const metadata: Metadata = {
@@ -140,7 +133,7 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="fr" translate="no" suppressHydrationWarning className={`${geist.variable} ${titrage.variable} h-full antialiased notranslate`} style={{ backgroundColor: "var(--html-bg)" }}>
+    <html lang="fr" translate="no" suppressHydrationWarning className={`${archivo.variable} h-full antialiased notranslate`} style={{ backgroundColor: "var(--html-bg)" }}>
       {/* Inline script runs before first paint — prevents dark mode flash */}
       <head>
         {/* Empêche les extensions de traduction (Google Translate, Opera) de casser React */}
