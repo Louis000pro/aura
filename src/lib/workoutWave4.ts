@@ -7,7 +7,7 @@ import type { Exercise } from "@/components/WorkoutGuideModal";
    endurance, Tabata, cardio de salle, pyramide et circuit aux haltères.
    Chaque mouvement possède déjà son personnage-guide dans
    exerciseGuides.ts ; les aperçus Premium montrent donc de vraies
-   animations avant l'achat.
+   animations avant l’achat.
    ═══════════════════════════════════════════════════════════════════ */
 
 export const WAVE_4_EXERCISES: Record<string, Exercise[]> = {
@@ -20,13 +20,13 @@ export const WAVE_4_EXERCISES: Record<string, Exercise[]> = {
     },
     {
       name: "Step up banc", sets: 3, reps: "10 par jambe", rest: 35,
-      tip: "Choisis une marche basse et pousse avec la jambe posée, sans prendre d'élan.",
+      tip: "Choisis une marche basse et pousse avec la jambe posée, sans prendre d’élan.",
       benefit: "Fait monter progressivement le rythme avec des appuis maîtrisés.",
       muscles: ["Quadriceps", "Fessiers", "Cardio"],
     },
     {
       name: "Mountain climbers", sets: 3, reps: "30 sec", rest: 25, auto: 30,
-      tip: "Avance un genou après l'autre sans saut, épaules au-dessus des mains.",
+      tip: "Avance un genou après l’autre sans saut, épaules au-dessus des mains.",
       benefit: "Active le cardio et le centre du corps avec une variante contrôlée.",
       muscles: ["Cardio", "Core"],
     },
@@ -39,7 +39,7 @@ export const WAVE_4_EXERCISES: Record<string, Exercise[]> = {
     {
       name: "Chaise au mur", sets: 3, reps: "35 sec", rest: 30, auto: 35,
       tip: "Choisis un angle que tu peux tenir en respirant sans bloquer.",
-      benefit: "Prolonge l'effort des jambes avec une position totalement silencieuse.",
+      benefit: "Prolonge l’effort des jambes avec une position totalement silencieuse.",
       muscles: ["Quadriceps"],
     },
     {
@@ -60,19 +60,19 @@ export const WAVE_4_EXERCISES: Record<string, Exercise[]> = {
     {
       name: "Tapis de course · allure facile", sets: 1, reps: "12 min", rest: 30, auto: 720,
       tip: "Garde une allure où tu peux encore prononcer une phrase courte.",
-      benefit: "Installe un effort continu et accessible pour développer l'endurance.",
+      benefit: "Installe un effort continu et accessible pour développer l’endurance.",
       muscles: ["Cardio", "Jambes"],
     },
     {
       name: "Vélo · cadence régulière", sets: 1, reps: "12 min", rest: 30, auto: 720,
       tip: "Pédale de façon fluide avec une résistance qui ne bloque jamais la cadence.",
-      benefit: "Prolonge le travail aérobie avec peu d'impact articulaire.",
+      benefit: "Prolonge le travail aérobie avec peu d’impact articulaire.",
       muscles: ["Cardio", "Quadriceps"],
     },
     {
       name: "Rameur · retour au calme", sets: 1, reps: "5 min", rest: 0, auto: 300,
       tip: "Réduis progressivement la cadence et allonge chaque expiration.",
-      benefit: "Fait redescendre le rythme sans couper brutalement l'effort.",
+      benefit: "Fait redescendre le rythme sans couper brutalement l’effort.",
       muscles: ["Cardio", "Récupération"],
     },
   ],
@@ -119,13 +119,13 @@ export const WAVE_4_EXERCISES: Record<string, Exercise[]> = {
   "cardio-salle": [
     {
       name: "Rameur", sets: 3, reps: "60 sec", rest: 25, auto: 60,
-      tip: "Pousse d'abord avec les jambes, ouvre le buste, puis termine avec les bras.",
+      tip: "Pousse d’abord avec les jambes, ouvre le buste, puis termine avec les bras.",
       benefit: "Associe jambes, dos et souffle sur un mouvement global.",
       muscles: ["Cardio", "Dos", "Jambes"],
     },
     {
       name: "Tapis de course", sets: 3, reps: "75 sec", rest: 30, auto: 75,
-      tip: "Choisis une allure vive que tu peux conserver sans t'agripper.",
+      tip: "Choisis une allure vive que tu peux conserver sans t’agripper.",
       benefit: "Apporte un bloc de course court et facile à calibrer.",
       muscles: ["Cardio", "Jambes"],
     },
@@ -137,13 +137,13 @@ export const WAVE_4_EXERCISES: Record<string, Exercise[]> = {
     },
     {
       name: "Kettlebell swing", sets: 3, reps: "15 reps", rest: 40,
-      tip: "Envoie les hanches vers l'arrière puis propulse la kettlebell avec les jambes.",
+      tip: "Envoie les hanches vers l’arrière puis propulse la kettlebell avec les jambes.",
       benefit: "Relie puissance de hanche et effort cardiovasculaire.",
       muscles: ["Fessiers", "Ischio-jambiers", "Cardio"],
     },
     {
       name: "Corde à sauter", sets: 4, reps: "45 sec", rest: 25, auto: 45,
-      tip: "Reste léger sur l'avant du pied et garde les coudes près du corps.",
+      tip: "Reste léger sur l’avant du pied et garde les coudes près du corps.",
       benefit: "Termine avec un travail rapide des appuis et de la coordination.",
       muscles: ["Cardio", "Mollets"],
     },
@@ -153,7 +153,7 @@ export const WAVE_4_EXERCISES: Record<string, Exercise[]> = {
     {
       name: "Jumping jacks", sets: 2, reps: "20 sec", rest: 15, auto: 20,
       tip: "Commence fluide : cette première marche doit te laisser de la marge.",
-      benefit: "Lance la montée d'intensité avec un geste facile à rythmer.",
+      benefit: "Lance la montée d’intensité avec un geste facile à rythmer.",
       muscles: ["Cardio", "Épaules"],
     },
     {
@@ -164,7 +164,7 @@ export const WAVE_4_EXERCISES: Record<string, Exercise[]> = {
     },
     {
       name: "Montées de genoux", sets: 2, reps: "40 sec", rest: 20, auto: 40,
-      tip: "Trouve un rythme soutenu que tu peux conserver jusqu'au signal.",
+      tip: "Trouve un rythme soutenu que tu peux conserver jusqu’au signal.",
       benefit: "Amène la pyramide vers sa zone haute avec des appuis rapides.",
       muscles: ["Cardio", "Abdominaux"],
     },
@@ -183,7 +183,7 @@ export const WAVE_4_EXERCISES: Record<string, Exercise[]> = {
     {
       name: "Sprint sur place", sets: 2, reps: "30 sec", rest: 15, auto: 30,
       tip: "Reste léger et donne le rythme avec les bras.",
-      benefit: "Conserve une intensité franche sur l'avant-dernière marche.",
+      benefit: "Conserve une intensité franche sur l’avant-dernière marche.",
       muscles: ["Cardio", "Jambes"],
     },
     {
@@ -194,8 +194,8 @@ export const WAVE_4_EXERCISES: Record<string, Exercise[]> = {
     },
     {
       name: "Cohérence cardiaque", sets: 1, reps: "90 sec", rest: 0, auto: 90,
-      tip: "Laisse l'expiration ralentir progressivement le rythme.",
-      benefit: "Crée une vraie transition entre l'effort et la fin de séance.",
+      tip: "Laisse l’expiration ralentir progressivement le rythme.",
+      benefit: "Crée une vraie transition entre l’effort et la fin de séance.",
       muscles: ["Respiration"],
     },
   ],
@@ -209,7 +209,7 @@ export const WAVE_4_EXERCISES: Record<string, Exercise[]> = {
     },
     {
       name: "Kettlebell swing", sets: 4, reps: "15 reps", rest: 40,
-      tip: "Produis l'élan avec les hanches plutôt qu'avec les bras.",
+      tip: "Produis l’élan avec les hanches plutôt qu’avec les bras.",
       benefit: "Développe une puissance répétée de la chaîne postérieure.",
       muscles: ["Fessiers", "Ischio-jambiers", "Cardio"],
     },
@@ -221,14 +221,14 @@ export const WAVE_4_EXERCISES: Record<string, Exercise[]> = {
     },
     {
       name: "Rowing buste penché haltères", sets: 4, reps: "12 reps", rest: 40,
-      tip: "Maintiens le dos long et tire les coudes vers l'arrière sans te redresser.",
+      tip: "Maintiens le dos long et tire les coudes vers l’arrière sans te redresser.",
       benefit: "Équilibre le circuit avec une traction pour le dos.",
       muscles: ["Dos", "Biceps"],
     },
     {
       name: "Soulevé de terre roumain", sets: 4, reps: "12 reps", rest: 45,
       tip: "Recule les hanches en gardant les haltères proches des jambes.",
-      benefit: "Renforce l'arrière du corps dans un format à repos courts.",
+      benefit: "Renforce l’arrière du corps dans un format à repos courts.",
       muscles: ["Ischio-jambiers", "Fessiers", "Dos"],
     },
     {

@@ -5,7 +5,7 @@ import type { Exercise } from "@/components/WorkoutGuideModal";
 
    Ici, le tunnel devient une masterclass active : peu de volume, des
    répétitions contrôlées et un repère technique précis à chaque étape.
-   L'utilisateur ne lit pas seulement un conseil, il voit puis pratique.
+   L’utilisateur ne lit pas seulement un conseil, il voit puis pratique.
    ═══════════════════════════════════════════════════════════════════ */
 
 export const WAVE_6_EXERCISES: Record<string, Exercise[]> = {
@@ -13,7 +13,7 @@ export const WAVE_6_EXERCISES: Record<string, Exercise[]> = {
     {
       name: "Squat", sets: 2, reps: "8 reps lentes", rest: 35,
       tip: "Garde tout le pied posé et laisse les genoux suivre la direction des orteils.",
-      benefit: "Découvre le mouvement de base pour s'asseoir, se relever et pousser avec les jambes.",
+      benefit: "Le mouvement de base pour s’asseoir, se relever et pousser avec les jambes.",
       muscles: ["Quadriceps", "Fessiers"],
     },
     {
@@ -30,19 +30,19 @@ export const WAVE_6_EXERCISES: Record<string, Exercise[]> = {
     },
     {
       name: "Rowing inversé", sets: 2, reps: "8 reps", rest: 40,
-      tip: "Tire la poitrine vers le support en rapprochant d'abord les omoplates.",
-      benefit: "Fait découvrir la traction horizontale et l'engagement du dos.",
+      tip: "Tire la poitrine vers le support en rapprochant d’abord les omoplates.",
+      benefit: "Fait découvrir la traction horizontale et l’engagement du dos.",
       muscles: ["Dos", "Biceps"],
     },
     {
       name: "Pont fessier", sets: 2, reps: "10 reps", rest: 30,
       tip: "Pousse dans les talons et termine en serrant les fessiers sans cambrer.",
-      benefit: "Enseigne l'extension de hanche dans une position stable au sol.",
+      benefit: "Enseigne l’extension de hanche dans une position stable au sol.",
       muscles: ["Fessiers", "Ischio-jambiers"],
     },
     {
       name: "Dead bug", sets: 2, reps: "6 par côté", rest: 30,
-      tip: "Garde le bas du dos au sol quand le bras et la jambe s'éloignent.",
+      tip: "Garde le bas du dos au sol quand le bras et la jambe s’éloignent.",
       benefit: "Pose la base du gainage : résister au mouvement plutôt que crisper tout le corps.",
       muscles: ["Core"],
     },
@@ -57,7 +57,7 @@ export const WAVE_6_EXERCISES: Record<string, Exercise[]> = {
     },
     {
       name: "Chaise au mur", sets: 2, reps: "25 sec", rest: 25, auto: 25,
-      tip: "Répartis le poids sur tout le pied et garde les genoux dans l'axe.",
+      tip: "Répartis le poids sur tout le pied et garde les genoux dans l’axe.",
       benefit: "Permet de sentir la position basse avec le dos soutenu.",
       muscles: ["Quadriceps"],
     },
@@ -75,7 +75,7 @@ export const WAVE_6_EXERCISES: Record<string, Exercise[]> = {
     },
     {
       name: "Squat bulgare", sets: 2, reps: "6 par jambe", rest: 45,
-      tip: "Place le pied avant assez loin pour descendre verticalement sans perdre l'appui.",
+      tip: "Place le pied avant assez loin pour descendre verticalement sans perdre l’appui.",
       benefit: "Vérifie le contrôle de chaque jambe séparément.",
       muscles: ["Quadriceps", "Fessiers"],
     },
@@ -91,7 +91,7 @@ export const WAVE_6_EXERCISES: Record<string, Exercise[]> = {
     {
       name: "Pompes inclinées", sets: 3, reps: "8 reps", rest: 40,
       tip: "Plus le support est haut, plus la variante est accessible.",
-      benefit: "Permet de construire le même alignement qu'une pompe au sol.",
+      benefit: "Permet de construire le même alignement qu’une pompe au sol.",
       muscles: ["Pectoraux", "Triceps"],
     },
     {
@@ -103,7 +103,7 @@ export const WAVE_6_EXERCISES: Record<string, Exercise[]> = {
     {
       name: "Pompes diamant", sets: 2, reps: "6 reps", rest: 50,
       tip: "Rapproche les mains seulement si les poignets restent confortables.",
-      benefit: "Montre comment un placement plus serré déplace l'effort vers les triceps.",
+      benefit: "Montre comment un placement plus serré déplace l’effort vers les triceps.",
       muscles: ["Triceps", "Pectoraux"],
     },
     {
@@ -117,7 +117,7 @@ export const WAVE_6_EXERCISES: Record<string, Exercise[]> = {
   "tractions-progression": [
     {
       name: "Ouverture des épaules", sets: 2, reps: "8 passages", rest: 15,
-      tip: "Bouge lentement sans pousser les côtes vers l'avant.",
+      tip: "Bouge lentement sans pousser les côtes vers l’avant.",
       benefit: "Prépare les épaules à travailler au-dessus de la tête.",
       muscles: ["Épaules", "Pectoraux"],
     },
@@ -163,7 +163,7 @@ export const WAVE_6_EXERCISES: Record<string, Exercise[]> = {
     {
       name: "Pont fessier", sets: 3, reps: "10 reps", rest: 35,
       tip: "Termine le mouvement avec les fessiers, pas avec une cambrure du bas du dos.",
-      benefit: "Fait sentir l'extension de hanche dans une position simple.",
+      benefit: "Fait sentir l’extension de hanche dans une position simple.",
       muscles: ["Fessiers", "Ischio-jambiers"],
     },
     {
@@ -174,7 +174,7 @@ export const WAVE_6_EXERCISES: Record<string, Exercise[]> = {
     },
     {
       name: "Kettlebell swing", sets: 3, reps: "12 reps", rest: 50,
-      tip: "L'élan vient de l'extension rapide des hanches, jamais d'une élévation des bras.",
+      tip: "L’élan vient de l’extension rapide des hanches, jamais d’une élévation des bras.",
       benefit: "Transforme la charnière contrôlée en mouvement dynamique.",
       muscles: ["Fessiers", "Ischio-jambiers", "Cardio"],
     },
@@ -195,7 +195,7 @@ export const WAVE_6_EXERCISES: Record<string, Exercise[]> = {
   "gainage-progression": [
     {
       name: "Dead bug", sets: 3, reps: "6 par côté", rest: 30,
-      tip: "Expire quand les membres s'éloignent et garde le bas du dos au sol.",
+      tip: "Expire quand les membres s’éloignent et garde le bas du dos au sol.",
       benefit: "Commence par le contrôle du bassin dans une position soutenue.",
       muscles: ["Core"],
     },
@@ -213,7 +213,7 @@ export const WAVE_6_EXERCISES: Record<string, Exercise[]> = {
     },
     {
       name: "Planche latérale", sets: 3, reps: "25 sec par côté", rest: 25, auto: 25,
-      tip: "Pousse l'avant-bras dans le sol et garde la hanche haute.",
+      tip: "Pousse l’avant-bras dans le sol et garde la hanche haute.",
       benefit: "Déplace le travail vers la stabilité latérale du tronc.",
       muscles: ["Obliques", "Core"],
     },
@@ -225,7 +225,7 @@ export const WAVE_6_EXERCISES: Record<string, Exercise[]> = {
     },
     {
       name: "Gainage dynamique", sets: 3, reps: "30 sec", rest: 35, auto: 30,
-      tip: "Change d'appui lentement et limite au maximum la rotation des hanches.",
+      tip: "Change d’appui lentement et limite au maximum la rotation des hanches.",
       benefit: "Termine en gardant le tronc stable pendant un mouvement des bras.",
       muscles: ["Core", "Épaules"],
     },
@@ -235,13 +235,13 @@ export const WAVE_6_EXERCISES: Record<string, Exercise[]> = {
     {
       name: "Ouverture des épaules", sets: 2, reps: "10 passages", rest: 15,
       tip: "Utilise une prise assez large pour bouger sans compenser avec le dos.",
-      benefit: "Observe l'amplitude disponible avant d'ajouter une charge.",
+      benefit: "Observe l’amplitude disponible avant d’ajouter une charge.",
       muscles: ["Épaules", "Pectoraux"],
     },
     {
       name: "Étirement pectoraux au mur", sets: 2, reps: "30 sec par côté", rest: 10, auto: 30,
-      tip: "Tourne doucement le buste en gardant l'épaule basse.",
-      benefit: "Ouvre l'avant de l'épaule avant les mouvements de poussée.",
+      tip: "Tourne doucement le buste en gardant l’épaule basse.",
+      benefit: "Ouvre l’avant de l’épaule avant les mouvements de poussée.",
       muscles: ["Pectoraux", "Épaules"],
     },
     {
@@ -259,7 +259,7 @@ export const WAVE_6_EXERCISES: Record<string, Exercise[]> = {
     {
       name: "Face pull poulie", sets: 3, reps: "12 reps", rest: 40,
       tip: "Tire vers le front et ouvre les mains de chaque côté du visage.",
-      benefit: "Équilibre la poussée avec le travail de l'arrière des épaules.",
+      benefit: "Équilibre la poussée avec le travail de l’arrière des épaules.",
       muscles: ["Haut du dos", "Épaules"],
     },
     {
@@ -280,12 +280,12 @@ export const WAVE_6_EXERCISES: Record<string, Exercise[]> = {
     {
       name: "Step up banc", sets: 3, reps: "8 par jambe", rest: 40,
       tip: "Monte grâce à la jambe posée sur le banc, sans pousser fort avec celle du sol.",
-      benefit: "Apprend à produire l'effort avec un seul appui principal.",
+      benefit: "Apprend à produire l’effort avec un seul appui principal.",
       muscles: ["Quadriceps", "Fessiers"],
     },
     {
       name: "Fentes", sets: 3, reps: "8 par jambe", rest: 45,
-      tip: "Garde le bassin face à l'avant et contrôle la pose du pied.",
+      tip: "Garde le bassin face à l’avant et contrôle la pose du pied.",
       benefit: "Travaille le déplacement et la stabilité sur deux appuis décalés.",
       muscles: ["Quadriceps", "Fessiers"],
     },
@@ -342,7 +342,7 @@ export const WAVE_6_EXERCISES: Record<string, Exercise[]> = {
     },
     {
       name: "Développé militaire haltères", sets: 3, reps: "8 reps · contrôle", rest: 50,
-      tip: "Pousse régulièrement puis ralentis la descente jusqu'aux épaules.",
+      tip: "Pousse régulièrement puis ralentis la descente jusqu’aux épaules.",
       benefit: "Termine par une poussée verticale où chaque phase reste maîtrisée.",
       muscles: ["Épaules", "Triceps"],
     },

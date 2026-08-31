@@ -4,8 +4,8 @@ import type { Exercise } from "@/components/WorkoutGuideModal";
    Vague 5 du catalogue — Récupération.
 
    Huit nouveaux tunnels complètent la séance « Récupération active » :
-   deux portes d'entrée gratuites, puis six usages Premium spécialisés.
-   Les formulations restent honnêtes — relâcher, retrouver de l'aisance,
+   deux portes d’entrée gratuites, puis six usages Premium spécialisés.
+   Les formulations restent honnêtes — relâcher, retrouver de l’aisance,
    faire redescendre le rythme — sans promesse médicale.
    ═══════════════════════════════════════════════════════════════════ */
 
@@ -14,7 +14,7 @@ export const WAVE_5_EXERCISES: Record<string, Exercise[]> = {
     {
       name: "Cohérence cardiaque", sets: 1, reps: "2 min", rest: 0, auto: 120,
       tip: "Inspire cinq secondes puis expire cinq secondes, sans chercher à remplir les poumons de force.",
-      benefit: "Crée une transition nette entre l'effort et le retour au calme.",
+      benefit: "Crée une transition nette entre l’effort et le retour au calme.",
       muscles: ["Respiration"],
     },
     {
@@ -26,13 +26,13 @@ export const WAVE_5_EXERCISES: Record<string, Exercise[]> = {
     {
       name: "Étirement chaîne postérieure", sets: 2, reps: "35 sec", rest: 10, auto: 35,
       tip: "Avance depuis les hanches et arrête-toi à une tension confortable.",
-      benefit: "Laisse l'arrière des jambes et le bas du dos retrouver de la longueur.",
+      benefit: "Laisse l’arrière des jambes et le bas du dos retrouver de la longueur.",
       muscles: ["Ischio-jambiers", "Dos"],
     },
     {
       name: "Étirement quadriceps", sets: 2, reps: "30 sec par jambe", rest: 10, auto: 30,
       tip: "Garde les genoux proches et le bassin légèrement rentré.",
-      benefit: "Relâche l'avant des cuisses après les mouvements de jambes.",
+      benefit: "Relâche l’avant des cuisses après les mouvements de jambes.",
       muscles: ["Quadriceps"],
     },
     {
@@ -53,7 +53,7 @@ export const WAVE_5_EXERCISES: Record<string, Exercise[]> = {
     {
       name: "Ouverture des épaules", sets: 2, reps: "30 sec", rest: 8, auto: 30,
       tip: "Garde les côtes basses et cherche une ouverture progressive.",
-      benefit: "Déplie le haut du corps sans demander d'effort intense.",
+      benefit: "Déplie le haut du corps sans demander d’effort intense.",
       muscles: ["Épaules", "Pectoraux"],
     },
     {
@@ -86,25 +86,25 @@ export const WAVE_5_EXERCISES: Record<string, Exercise[]> = {
     {
       name: "Étirement quadriceps", sets: 2, reps: "40 sec par jambe", rest: 10, auto: 40,
       tip: "Reste grand dans le buste et garde les genoux alignés.",
-      benefit: "Cible l'avant des cuisses après une séance de jambes.",
+      benefit: "Cible l’avant des cuisses après une séance de jambes.",
       muscles: ["Quadriceps"],
     },
     {
       name: "Étirement chaîne postérieure", sets: 2, reps: "45 sec", rest: 10, auto: 45,
       tip: "Incline le bassin avant de chercher à rapprocher le buste des jambes.",
-      benefit: "Travaille doucement l'arrière des cuisses.",
+      benefit: "Travaille doucement l’arrière des cuisses.",
       muscles: ["Ischio-jambiers", "Dos"],
     },
     {
       name: "Étirement mollet au mur", sets: 2, reps: "35 sec par côté", rest: 10, auto: 35,
-      tip: "Garde le talon posé et avance le bassin sans écraser l'appui.",
-      benefit: "Redonne de l'aisance aux mollets et aux chevilles.",
+      tip: "Garde le talon posé et avance le bassin sans écraser l’appui.",
+      benefit: "Redonne de l’aisance aux mollets et aux chevilles.",
       muscles: ["Mollets", "Chevilles"],
     },
     {
       name: "Papillon hanches", sets: 2, reps: "45 sec", rest: 10, auto: 45,
       tip: "Laisse les genoux descendre par leur propre poids.",
-      benefit: "Ajoute une ouverture douce de l'intérieur des cuisses.",
+      benefit: "Ajoute une ouverture douce de l’intérieur des cuisses.",
       muscles: ["Hanches", "Adducteurs"],
     },
     {
@@ -124,7 +124,7 @@ export const WAVE_5_EXERCISES: Record<string, Exercise[]> = {
   "recup-haut-corps": [
     {
       name: "Étirement du cou", sets: 2, reps: "30 sec par côté", rest: 8, auto: 30,
-      tip: "Garde l'épaule opposée basse pendant l'inclinaison.",
+      tip: "Garde l’épaule opposée basse pendant l’inclinaison.",
       benefit: "Commence par relâcher la zone entre la nuque et les épaules.",
       muscles: ["Nuque", "Épaules"],
     },
@@ -137,19 +137,19 @@ export const WAVE_5_EXERCISES: Record<string, Exercise[]> = {
     {
       name: "Thread the needle", sets: 2, reps: "8 par côté", rest: 10,
       tip: "Fais glisser le bras loin sous le buste sans déplacer les hanches.",
-      benefit: "Travaille la rotation du haut du dos et l'arrière de l'épaule.",
+      benefit: "Travaille la rotation du haut du dos et l’arrière de l’épaule.",
       muscles: ["Haut du dos", "Épaules"],
     },
     {
       name: "Étirement pectoraux au mur", sets: 2, reps: "35 sec par côté", rest: 10, auto: 35,
-      tip: "Tourne le buste jusqu'à sentir une ouverture douce de la poitrine.",
-      benefit: "Ouvre l'avant du haut du corps après les mouvements de poussée.",
+      tip: "Tourne le buste jusqu’à sentir une ouverture douce de la poitrine.",
+      benefit: "Ouvre l’avant du haut du corps après les mouvements de poussée.",
       muscles: ["Pectoraux", "Épaules"],
     },
     {
       name: "Ouverture des épaules", sets: 2, reps: "35 sec", rest: 10, auto: 35,
-      tip: "Garde le ventre légèrement engagé pendant l'ouverture.",
-      benefit: "Redonne de l'amplitude aux bras au-dessus de la tête.",
+      tip: "Garde le ventre légèrement engagé pendant l’ouverture.",
+      benefit: "Redonne de l’amplitude aux bras au-dessus de la tête.",
       muscles: ["Épaules", "Pectoraux"],
     },
     {
@@ -160,7 +160,7 @@ export const WAVE_5_EXERCISES: Record<string, Exercise[]> = {
     },
     {
       name: "Cohérence cardiaque", sets: 1, reps: "2 min", rest: 0, auto: 120,
-      tip: "Allonge l'expiration sans forcer l'inspiration.",
+      tip: "Allonge l’expiration sans forcer l’inspiration.",
       benefit: "Clôture la séance avec une respiration régulière.",
       muscles: ["Respiration"],
     },
@@ -181,14 +181,14 @@ export const WAVE_5_EXERCISES: Record<string, Exercise[]> = {
     },
     {
       name: "Downward dog / cobra", sets: 2, reps: "8 transitions", rest: 12,
-      tip: "Passe d'une position à l'autre avec une amplitude confortable.",
-      benefit: "Fait alterner allongement de l'arrière du corps et ouverture de l'avant.",
+      tip: "Passe d’une position à l’autre avec une amplitude confortable.",
+      benefit: "Fait alterner allongement de l’arrière du corps et ouverture de l’avant.",
       muscles: ["Dos", "Épaules", "Pectoraux"],
     },
     {
       name: "Étirement chaîne postérieure", sets: 2, reps: "40 sec", rest: 10, auto: 40,
       tip: "Garde le dos long et avance depuis les hanches.",
-      benefit: "Travaille la continuité entre l'arrière des jambes et le dos.",
+      benefit: "Travaille la continuité entre l’arrière des jambes et le dos.",
       muscles: ["Ischio-jambiers", "Dos"],
     },
     {
@@ -238,7 +238,7 @@ export const WAVE_5_EXERCISES: Record<string, Exercise[]> = {
     },
     {
       name: "Cohérence cardiaque", sets: 1, reps: "3 min", rest: 0, auto: 180,
-      tip: "Reste sur un rythme simple de cinq secondes à l'inspiration et cinq à l'expiration.",
+      tip: "Reste sur un rythme simple de cinq secondes à l’inspiration et cinq à l’expiration.",
       benefit: "Termine la routine sans mouvement, avec un souffle régulier.",
       muscles: ["Respiration"],
     },
@@ -259,25 +259,25 @@ export const WAVE_5_EXERCISES: Record<string, Exercise[]> = {
     },
     {
       name: "World's greatest stretch", sets: 2, reps: "5 par côté", rest: 15,
-      tip: "Stabilise la fente avant d'ajouter la rotation du buste.",
+      tip: "Stabilise la fente avant d’ajouter la rotation du buste.",
       benefit: "Relie hanches, jambes et haut du dos dans un seul mouvement.",
       muscles: ["Hanches", "Dos", "Ischio-jambiers"],
     },
     {
       name: "Downward dog / cobra", sets: 2, reps: "6 transitions", rest: 12,
-      tip: "Garde le mouvement continu et réduis l'amplitude si nécessaire.",
-      benefit: "Mobilise alternativement l'avant et l'arrière du corps.",
+      tip: "Garde le mouvement continu et réduis l’amplitude si nécessaire.",
+      benefit: "Mobilise alternativement l’avant et l’arrière du corps.",
       muscles: ["Dos", "Épaules", "Pectoraux"],
     },
     {
       name: "Étirement quadriceps", sets: 2, reps: "30 sec par jambe", rest: 10, auto: 30,
       tip: "Reste droit et garde le genou dirigé vers le sol.",
-      benefit: "Ajoute un temps calme pour l'avant des cuisses.",
+      benefit: "Ajoute un temps calme pour l’avant des cuisses.",
       muscles: ["Quadriceps"],
     },
     {
       name: "Ouverture des épaules", sets: 2, reps: "30 sec", rest: 10, auto: 30,
-      tip: "Cherche une ouverture douce sans pousser les côtes vers l'avant.",
+      tip: "Cherche une ouverture douce sans pousser les côtes vers l’avant.",
       benefit: "Complète la routine par le haut du corps.",
       muscles: ["Épaules", "Pectoraux"],
     },
@@ -292,7 +292,7 @@ export const WAVE_5_EXERCISES: Record<string, Exercise[]> = {
   "recup-complete": [
     {
       name: "Cohérence cardiaque", sets: 1, reps: "2 min", rest: 0, auto: 120,
-      tip: "Commence par ralentir le souffle avant de chercher de l'amplitude.",
+      tip: "Commence par ralentir le souffle avant de chercher de l’amplitude.",
       benefit: "Installe un rythme calme pour toute la routine.",
       muscles: ["Respiration"],
     },
@@ -323,12 +323,12 @@ export const WAVE_5_EXERCISES: Record<string, Exercise[]> = {
     {
       name: "Étirement quadriceps", sets: 2, reps: "35 sec par jambe", rest: 10, auto: 35,
       tip: "Garde le bassin légèrement rentré et le genou sous la hanche.",
-      benefit: "Équilibre la routine avec l'avant des cuisses.",
+      benefit: "Équilibre la routine avec l’avant des cuisses.",
       muscles: ["Quadriceps"],
     },
     {
       name: "Étirement pectoraux au mur", sets: 2, reps: "35 sec par côté", rest: 10, auto: 35,
-      tip: "Tourne lentement le buste sans pousser sur l'épaule.",
+      tip: "Tourne lentement le buste sans pousser sur l’épaule.",
       benefit: "Ouvre la poitrine après les exercices de poussée ou les écrans.",
       muscles: ["Pectoraux", "Épaules"],
     },
@@ -346,7 +346,7 @@ export const WAVE_5_EXERCISES: Record<string, Exercise[]> = {
     },
     {
       name: "Posture de l'enfant", sets: 1, reps: "2 min", rest: 0, auto: 120,
-      tip: "Ajuste l'écartement des genoux pour trouver une position vraiment confortable.",
+      tip: "Ajuste l’écartement des genoux pour trouver une position vraiment confortable.",
       benefit: "Clôture la récupération complète avec un temps long et calme.",
       muscles: ["Dos", "Hanches"],
     },

@@ -1,30 +1,30 @@
 /* ════════════════════════════════════════════════════════════════════
    Personnages-guides des exercices — le petit bonhomme mi-3D / cartoon qui
    rejoue le geste dans le « tunnel » de séance (voir ExerciseGuide.tsx,
-   affiché par WorkoutGuideModal pendant l'effort).
+   affiché par WorkoutGuideModal pendant l’effort).
 
    PIPELINE DE PROD (ChatGPT → app) — 3 gestes, pas une heure de Python
    1. Génère 1 image par exo contenant 2-3 poses du MÊME personnage côte à
       côte (départ → milieu → fin du mouvement). Même génération = même
       perso garanti. Fond uni (vert de préf.) ou transparent, et les poses
-      ne doivent pas se toucher — c'est le trou entre elles qui les sépare.
+      ne doivent pas se toucher — c’est le trou entre elles qui les sépare.
    2. Dépose la planche dans  guides-src/<clé>.png  (dossier gitignoré).
    3. `npm run guides` : détoure, découpe, met tout sur un canevas commun,
       écrit public/entrainement/guides/<clé>-<genre>-<n>.webp et te dicte la règle
-      à coller ci-dessous. L'app enchaîne les frames en fondu = le geste.
+      à coller ci-dessous. L’app enchaîne les frames en fondu = le geste.
       (voir scripts/build-guides.mjs pour les options --loop / --tol)
 
-   Exo STATIQUE (planche, gainage) = 1 seule frame → { frames: 1 } (pas d'anim).
-   Tant qu'un exo n'a AUCUNE règle ici, le tunnel affiche un halo épuré
-   (jamais de photo hors-sujet — c'est le fallback validé).
+   Exo STATIQUE (planche, gainage) = 1 seule frame → { frames: 1 } (pas d’anim).
+   Tant qu’un exo n’a AUCUNE règle ici, le tunnel affiche un halo épuré
+   (jamais de photo hors-sujet — c’est le fallback validé).
 
-   ⚠️ LES RÈGLES S'ÉCRIVENT SANS ACCENT (/developpe.*couche/i) : resolveGuide
+   ⚠️ LES RÈGLES S’ÉCRIVENT SANS ACCENT (/developpe.*couche/i) : resolveGuide
    retire les accents du nom avant de tester. Une regex accentuée ne matche
-   plus rien — et l'échec est silencieux (l'exo retombe sur le halo).
+   plus rien — et l’échec est silencieux (l’exo retombe sur le halo).
 
-   ⚠️ L'ORDRE COMPTE : la 1re regex qui matche le nom de l'exo gagne. Mettre
+   ⚠️ L’ORDRE COMPTE : la 1re regex qui matche le nom de l’exo gagne. Mettre
    les cas spécifiques AVANT les génériques (ex. /jump.?squat/ avant /squat/).
-   Un même sprite peut couvrir plusieurs variantes d'un exo (toutes les
+   Un même sprite peut couvrir plusieurs variantes d’un exo (toutes les
    déclinaisons de squat → le même « squat »).
    ════════════════════════════════════════════════════════════════════ */
 
@@ -32,12 +32,12 @@
 export type Genre = "f" | "h";
 
 /** `genres` = les versions QUI EXISTENT en fichiers, pas celles qu'on veut.
-    Aujourd'hui un seul genre par exo ; le jour où on offre le choix à
-    l'utilisateur, on ajoute la 2e planche + son genre ici, et c'est tout. */
+    Aujourd’hui un seul genre par exo ; le jour où on offre le choix à
+    l’utilisateur, on ajoute la 2e planche + son genre ici, et c’est tout. */
 export type Guide = { key: string; frames: number; genres: Genre[] };
 
 /** Le genre à afficher : celui demandé s'il existe, sinon le seul qu'on a.
-    Tant que personne ne passe `want`, ça retourne l'unique version. */
+    Tant que personne ne passe `want`, ça retourne l’unique version. */
 export function pickGenre(guide: Guide, want?: Genre): Genre {
   return want && guide.genres.includes(want) ? want : guide.genres[0];
 }
@@ -174,10 +174,10 @@ export const GUIDE_RULES: { re: RegExp; guide: Guide }[] = [
   { re: /dips?.*(chaise|banc)/i,        guide: { key: "dips",      frames: 3, genres: ["f"] } },
   { re: /bird.?dog/i,                   guide: { key: "birddog",   frames: 3, genres: ["f"] } },
   /* Les exclusions ci-dessous valent tant que l'exo n'a pas SON sprite :
-     « Gainage dorsal » et « Fentes sautées » sont d'autres mouvements, et
+     « Gainage dorsal » et « Fentes sautées » sont d’autres mouvements, et
      leur servir le ventral / la fente classique serait montrer un geste
-     faux pendant l'effort. Le halo est plus honnête. Quand leur planche
-     existe, sa règle se met AU-DESSUS et l'exclusion devient un filet. */
+     faux pendant l’effort. Le halo est plus honnête. Quand leur planche
+     existe, sa règle se met AU-DESSUS et l’exclusion devient un filet. */
   { re: /planche|plank|gainage(?!.*dorsal)/i, guide: { key: "planche", frames: 1, genres: ["f"] } },
   { re: /chaise.*mur|wall.?sit/i,       guide: { key: "chaisemur", frames: 1, genres: ["f"] } },
   /* Les variantes machine, bicycle et circle sont d'autres gestes : sans
@@ -189,10 +189,10 @@ export const GUIDE_RULES: { re: RegExp; guide: Guide }[] = [
 /** Retourne le sprite du personnage-guide pour un exo, ou null (→ halo épuré). */
 export function resolveGuide(name: string): Guide | null {
   /* Les accents tombent AVANT le test : « Développé couché » devient
-     « developpe couche ». Les règles s'écrivent donc sans accent, une
+     « developpe couche ». Les règles s’écrivent donc sans accent, une
      seule fois — sinon chacune doit épeler ses deux orthographes, et
-     c'est la variante accentuée qu'on oublie (elle ne rate jamais bruyam-
-     ment : l'exo retombe juste sur le halo, sans erreur). */
+     c’est la variante accentuée qu’on oublie (elle ne rate jamais bruyam-
+     ment : l’exo retombe juste sur le halo, sans erreur). */
   const hay = name.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
   for (const r of GUIDE_RULES) if (r.re.test(hay)) return r.guide;
   return null;

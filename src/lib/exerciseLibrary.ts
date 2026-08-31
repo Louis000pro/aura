@@ -1,11 +1,11 @@
 /* ════════════════════════════════════════════════════════════════════
-   LA BIBLIOTHÈQUE D'EXERCICES · source unique du « choisir un exercice ».
+   LA BIBLIOTHÈQUE D’EXERCICES · source unique du « choisir un exercice ».
 
    Pourquoi ce fichier : quand on créait une séance perso, on tapait le nom
-   de l'exo à la main. Un nom approximatif ne résout aucune règle de
+   de l’exo à la main. Un nom approximatif ne résout aucune règle de
    exerciseGuides.ts, donc le tunnel affichait le halo au lieu du
-   personnage animé. Résultat : les séances perso n'avaient jamais
-   d'animation, alors que le catalogue en a partout.
+   personnage animé. Résultat : les séances perso n’avaient jamais
+   d’animation, alors que le catalogue en a partout.
 
    Ici, chaque entrée porte un nom CANONIQUE qui résout vers son sprite
    (les 102 noms viennent de guideSections.ts, qui est la liste vérifiée
@@ -13,10 +13,10 @@
    dans le tunnel, plus les vraies consignes, les muscles et des réglages
    de départ crédibles.
 
-   Ajouter un exercice ici n'a de sens qu'une fois sa planche livrée
+   Ajouter un exercice ici n’a de sens qu’une fois sa planche livrée
    (`npm run guides` + sa règle dans exerciseGuides.ts). Sinon la carte
-   promet une animation qui n'existe pas : `estAnime()` le dit, et l'écran
-   range l'exo dans « sans animation ».
+   promet une animation qui n’existe pas : `estAnime()` le dit, et l’écran
+   range l’exo dans « sans animation ».
    ════════════════════════════════════════════════════════════════════ */
 
 import { resolveGuide } from "./exerciseGuides";
@@ -33,7 +33,7 @@ export type Equip = "corps" | "fonte" | "machine" | "cardio";
 export type RepMode = "reps" | "temps";
 
 /** Le rangement historique des planches, relu par guideSections.ts (galerie
-    /guides et ateliers de revue). Il ne sert pas aux filtres de l'écran. */
+    /guides et ateliers de revue). Il ne sert pas aux filtres de l’écran. */
 export type SectionGuide = "corps" | "abdos" | "machines" | "barre" | "mobilite";
 
 export type LibExercise = {
@@ -416,9 +416,9 @@ const MOBILITE: Raw[] = [
 ];
 
 /* Une seule liste, cinq rangements. La galerie /guides et les ateliers de
-   revue lisent la même chose que l'écran de création : c'est exactement ce
+   revue lisent la même chose que l’écran de création : c’est exactement ce
    que guideSections.ts avait déjà appris à ses dépens (deux copies de la
-   liste avaient divergé, l'une figée à 55 exos quand l'autre en avait 101). */
+   liste avaient divergé, l’une figée à 55 exos quand l’autre en avait 101). */
 const RAW: (Raw & { grp: SectionGuide })[] = [
   ...CORPS.map(x => ({ ...x, grp: "corps" as const })),
   ...ABDOS.map(x => ({ ...x, grp: "abdos" as const })),
@@ -484,14 +484,14 @@ export function chercherExercices(opts: { texte?: string; zone?: Zone | null; eq
 /* ── Ce que l'IA a le droit de proposer ───────────────────────────────
    Décidé le 2026-07-30 avec Louis : une séance générée ne contient QUE
    des exercices dont le personnage animé existe. Un exo sans planche
-   tombait sur le halo violet au milieu d'une carte qui montre des
-   animations partout : ça se voit tout de suite, et ça donne l'impression
-   que l'app est trouée.
+   tombait sur le halo violet au milieu d’une carte qui montre des
+   animations partout : ça se voit tout de suite, et ça donne l’impression
+   que l’app est trouée.
 
    Cette liste est donc la même que celle de la bibliothèque (102 gestes,
-   tous animés), filtrée par ce qu'on a sous la main. Le filtre `equip` ne
+   tous animés), filtrée par ce qu’on a sous la main. Le filtre `equip` ne
    suffit pas : « Tractions » ou « Dips barres parallèles » sont au poids
-   du corps mais demandent une barre, qu'on n'a pas dans un salon. */
+   du corps mais demandent une barre, qu’on n’a pas dans un salon. */
 
 /** Gestes au poids du corps qui exigent quand même un agrès (barre, barres
  *  parallèles) : possibles en salle, pas à la maison. */
@@ -520,7 +520,7 @@ export function exercicesDisponibles(ctx: "salle" | "halteres" | "poids"): LibEx
 
 /* ── Deviner la séance derrière une poignée d'exercices ────────────────
    Quand on arrive dans la création depuis la bibliothèque, les exercices
-   sont déjà là : il serait absurde de redemander « c'est quoi, du cardio
+   sont déjà là : il serait absurde de redemander « c’est quoi, du cardio
    ou de la force ? » alors que la réponse est dans la sélection. On
    propose donc un nom et un type, tous deux corrigeables. */
 

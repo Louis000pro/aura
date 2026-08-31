@@ -8,11 +8,11 @@
        le 2026-07-26 mais conservées comme source de revue.
 
    Les noms ne sont PLUS écrits ici : ils viennent de EXERCISE_LIBRARY
-   (src/lib/exerciseLibrary.ts), la bibliothèque que l'on parcourt aussi en
-   créant une séance perso. C'est la suite logique de la leçon écrite ici
+   (src/lib/exerciseLibrary.ts), la bibliothèque que l’on parcourt aussi en
+   créant une séance perso. C’est la suite logique de la leçon écrite ici
    même : ce fichier existait déjà parce que la liste avait été recopiée
    dans deux écrans et avait divergé (la galerie figée à 55 exos pendant
-   que les séances montaient à 101). Une troisième copie pour l'écran de
+   que les séances montaient à 101). Une troisième copie pour l’écran de
    création aurait refait exactement la même chose.
 
    Ajouter un sprite = `npm run guides`, sa règle dans exerciseGuides.ts,
@@ -37,7 +37,7 @@ export const GUIDE_SECTIONS: GuideSection[] = [
   {
     id: "corps",
     title: "Poids du corps & HIIT",
-    subtitle: "Sans matériel, les gestes de base et l'explosif",
+    subtitle: "Sans matériel, les gestes de base et l’explosif",
     items: nomsDe("corps"),
   },
   {
@@ -61,7 +61,7 @@ export const GUIDE_SECTIONS: GuideSection[] = [
   {
     id: "mobilite",
     title: "Mobilité & étirements",
-    subtitle: "La descente : s'ouvrir, relâcher, respirer",
+    subtitle: "La descente : s’ouvrir, relâcher, respirer",
     items: nomsDe("mobilite"),
   },
 ];
