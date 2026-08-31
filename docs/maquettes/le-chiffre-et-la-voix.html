@@ -1,7 +1,7 @@
 <title>Le chiffre et la voix</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@94..125,400..700&family=Fraunces:opsz,wght,SOFT,WONK@9..144,400..700,0..100,0..1&family=Golos+Text:wght@400..600&family=Schibsted+Grotesk:wght@400..700&family=Martian+Mono:wdth,wght@75..100,400..700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@94..125,400..700&family=Fraunces:opsz,wght,SOFT,WONK@9..144,400..700,0..100,0..1&family=Golos+Text:wght@400..600&family=Schibsted+Grotesk:wght@400..700&family=Martian+Mono:wdth,wght@75..112.5,400..700&family=Saira:wdth,wght@50..125,400..800&family=Big+Shoulders+Display:wght@400..800&display=swap">
 
 <style>
   /* ————————————————————————————————————————————————
@@ -236,6 +236,40 @@
   }
   .d3 .ec-label { font-weight: 500; }
   .d3 .gain { font-family: 'Martian Mono', ui-monospace, monospace; font-weight: 600; font-variation-settings: 'wdth' 82; letter-spacing: -.05em; }
+
+
+  /* ——— Le chiffre : les trois visages ——— */
+  .visages { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin: 1.75rem 0 1.25rem; }
+  @media (max-width: 760px) { .visages { grid-template-columns: 1fr; } }
+  .visage {
+    border: 1px solid var(--rule); border-radius: 18px; overflow: hidden;
+    background: var(--card); display: flex; flex-direction: column;
+  }
+  .visage.choisi { border-color: var(--violet); border-width: 2px; }
+  .visage .haut { background: var(--sombre); color: var(--sombre-ink); padding: 1.1rem 1.15rem 1.25rem; }
+  .visage .haut .ec-label { color: var(--sombre-ink2); }
+  .visage .bas { padding: 1rem 1.15rem 1.2rem; }
+  .visage h3 { margin: 0 0 .15rem; }
+  .visage .cout {
+    font-size: .8125rem; color: var(--ink-3); margin: 0 0 .6rem;
+    font-variant-numeric: tabular-nums;
+  }
+  .visage p.pourquoi { font-size: .875rem; color: var(--ink-2); margin: 0; max-width: none; }
+  .chrono { font-size: 2.75rem; line-height: .92; font-variant-numeric: tabular-nums; letter-spacing: -.03em; }
+  .exp { font-size: 1.5rem; font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
+
+  .n-archivo { font-variation-settings: 'wdth' 88; font-weight: 700; }
+  .n-saira   { font-family: 'Saira', sans-serif; font-variation-settings: 'wdth' 75; font-weight: 700; }
+  .n-mono    { font-family: 'Martian Mono', ui-monospace, monospace; font-variation-settings: 'wdth' 82; font-weight: 600; letter-spacing: -.05em; }
+  .n-actuel  { font-variation-settings: 'wdth' 112; font-weight: 700; }
+  .n-shoulders { font-family: 'Big Shoulders Display', sans-serif; font-weight: 700; }
+
+  .recale {
+    border: 1px solid var(--rule); border-radius: 18px; background: var(--card);
+    padding: 1.2rem 1.25rem 1.35rem; margin-top: .5rem;
+  }
+  .recale .paire { display: flex; gap: 1.5rem; align-items: baseline; margin: .6rem 0 .75rem; }
+  .recale .paire span { font-size: 2.5rem; font-variant-numeric: tabular-nums; }
 
   /* ——— Le verdict de chaque direction ——— */
   .verdict { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem 2.5rem; margin-top: .5rem; }
@@ -550,6 +584,88 @@
       <li><b>Ça tient sur 360&nbsp;px.</b> Parce que la largeur est variable&nbsp;: la même police va en 118 pour un titre et en 100, voire 96, pour du texte. Une expansive figée aurait été injouable sur téléphone.</li>
       <li><b>Ça retire le dernier signe.</b> Geist disparaît complètement. La recherche du chantier précédent le donnait comme l’un des marqueurs les plus cités d’une page générée&nbsp;: c’est la police par défaut de Vercel.</li>
     </ol>
+  </section>
+
+
+  <!-- ————————————— LE CHIFFRE : LA SUITE ————————————— -->
+  <section style="margin-top:4.5rem">
+    <h2>Le chiffre&nbsp;: la discipline, ou le visage&nbsp;?</h2>
+    <p class="large">
+      «&nbsp;L’emprunt au chrono&nbsp;» avait deux lectures, et j’en ai codé une
+      seule. Ce qui est en place, c’est la <strong>discipline</strong>&nbsp;: la
+      chasse fixe partout où une valeur change, pour que la ligne ne saute pas
+      quand la série passe de 9 à 10. Ce qui n’est pas en place, c’est le
+      <strong>visage</strong>&nbsp;: aujourd’hui les nombres sont écrits dans la
+      même fonte que les titres, un peu moins large. Ils ne se distinguent
+      presque pas, et c’est exactement ce qui manque à l’œil.
+    </p>
+    <p class="large">
+      Voilà les trois candidats, sur le chrono du tunnel et sur l’EXP de
+      l’accueil. La largeur annoncée est mesurée sur «&nbsp;00:45&nbsp;» à
+      60&nbsp;px, contre <strong>182&nbsp;px</strong> pour ce qui est en place
+      aujourd’hui.
+    </p>
+
+    <div class="visages">
+      <div class="visage">
+        <div class="haut">
+          <p class="ec-label">Repos</p>
+          <p class="chrono n-archivo">00:45</p>
+        </div>
+        <div class="bas">
+          <h3>Archivo resserré</h3>
+          <p class="cout">Une seule famille · 148&nbsp;px · −19&nbsp;%</p>
+          <p class="exp n-archivo" style="margin:0 0 .55rem">1 240</p>
+          <p class="pourquoi">Le chiffre devient un registre à part sans quitter la famille. Le plus économe, et le plus discret&nbsp;: c’est aussi son défaut, on peut le lire comme «&nbsp;Archivo, mais plus étroit&nbsp;».</p>
+        </div>
+      </div>
+
+      <div class="visage">
+        <div class="haut">
+          <p class="ec-label">Repos</p>
+          <p class="chrono n-saira">00:45</p>
+        </div>
+        <div class="bas">
+          <h3>Saira condensé</h3>
+          <p class="cout">Deux familles · 131&nbsp;px · −28&nbsp;%</p>
+          <p class="exp n-saira" style="margin:0 0 .55rem">1 240</p>
+          <p class="pourquoi">Le tableau d’affichage de stade. Le plus étroit des trois. Mais c’est une grotesque comme Archivo&nbsp;: assez proche pour se lire comme une erreur plutôt que comme une décision.</p>
+        </div>
+      </div>
+
+      <div class="visage choisi">
+        <div class="haut">
+          <p class="ec-label">Repos</p>
+          <p class="chrono n-mono">00:45</p>
+        </div>
+        <div class="bas">
+          <h3>Martian Mono <span class="retenue" style="margin-left:.35rem">Mon choix</span></h3>
+          <p class="cout">Deux familles · 173&nbsp;px · −5&nbsp;%</p>
+          <p class="exp n-mono" style="margin:0 0 .55rem">1 240</p>
+          <p class="pourquoi">L’instrument. Il vient visiblement d’un autre monde que le texte, donc on ne peut pas le prendre pour un accident. Et il est plus étroit que ce qui est en place, contrairement à ce que j’avais écrit plus haut.</p>
+        </div>
+      </div>
+    </div>
+
+    <h3 style="margin-top:2.25rem">Un quatrième candidat, éliminé à la mesure</h3>
+    <p>
+      Big Shoulders Display est dessiné pour la signalétique, et c’était le
+      candidat le plus évident pour un chrono de stade. Il est disqualifié pour
+      une raison qui ne se discute pas&nbsp;: <strong>ses chiffres n’ont pas la
+      même largeur</strong>.
+    </p>
+    <div class="recale">
+      <p class="ec-label" style="margin:0">Big Shoulders · le même chrono, deux secondes différentes</p>
+      <div class="paire">
+        <span class="n-shoulders">00:45</span>
+        <span class="n-shoulders">11:11</span>
+      </div>
+      <p class="pourquoi" style="font-size:.9375rem;color:var(--ink-2);margin:0">
+        120&nbsp;px contre 96. Sur un chrono qui tourne, la ligne sauterait à
+        chaque seconde. C’est précisément le défaut que toute la discipline de
+        chasse fixe existe pour empêcher.
+      </p>
+    </div>
   </section>
 
   <section style="margin-top:4.5rem">
