@@ -65,7 +65,7 @@ function relativeTime(iso: string): string {
 
 function TypeBadge({ type }: { type: NotifType }) {
   const cfgMap = {
-    follow:  { icon: <UserPlus size={9} />,                 bg: "rgba(var(--violet-mid-rgb),0.6)", color: "var(--accent)" },
+    follow:  { icon: <UserPlus size={9} />,                 bg: "rgba(var(--violet-mid-rgb),0.6)", color: "var(--exp-encre)" },
     relais:  { icon: <Sparkle size={9} />,                  bg: "rgba(215,166,42,0.22)",  color: "#D7A62A" },
     message: { icon: <MessageCircle size={9} fill="currentColor" />, bg: "rgba(139,92,246,0.16)", color: "#8B5CF6" },
   };
@@ -138,7 +138,7 @@ function EmptyState() {
           className="w-24 h-24 rounded-3xl flex items-center justify-center text-4xl"
           style={{ background: "linear-gradient(135deg,rgba(var(--violet-mid-rgb),0.4) 0%,rgba(var(--cream-mid-rgb),0.4) 100%)" }}
         >
-          <Bell size={38} strokeWidth={1.2} style={{ color: "var(--accent)" }} />
+          <Bell size={38} strokeWidth={1.2} style={{ color: "var(--exp-encre)" }} />
         </div>
         {/* decorative dots */}
         <span
@@ -292,7 +292,7 @@ export default function NotificationsPage() {
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-medium cursor-pointer"
                 style={{
                   background: "rgba(var(--accent-rgb),0.12)",
-                  color: "var(--accent)",
+                  color: "var(--exp-encre)",
                   border: "1px solid rgba(var(--accent-rgb),0.25)",
                 }}
               >

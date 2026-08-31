@@ -49,7 +49,7 @@ export default function MouvementsRow({ onOuvrir }: {
         </span>
         <motion.button whileTap={{ scale: 0.94 }} onClick={() => onOuvrir()}
           className="ml-auto flex items-center gap-0.5 text-[11px] font-semibold cursor-pointer flex-shrink-0"
-          style={{ color: "var(--accent)" }}>
+          style={{ color: "var(--exp-encre)" }}>
           Tout voir <ChevronRight size={12} strokeWidth={2.4} />
         </motion.button>
       </div>
@@ -92,10 +92,10 @@ export default function MouvementsRow({ onOuvrir }: {
               background: "rgba(var(--accent-rgb),0.1)",
               border: "1.5px dashed rgba(var(--accent-rgb),0.4)",
             }}>
-            <ChevronRight size={18} strokeWidth={2} style={{ color: "var(--accent)" }} />
+            <ChevronRight size={18} strokeWidth={2} style={{ color: "var(--exp-encre)" }} />
           </span>
           <span className="text-[9.5px] font-semibold leading-tight text-center"
-            style={{ color: "var(--accent)" }}>
+            style={{ color: "var(--exp-encre)" }}>
             Explorer
           </span>
         </motion.button>

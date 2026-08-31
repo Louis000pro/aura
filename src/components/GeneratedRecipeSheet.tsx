@@ -92,7 +92,7 @@ export default function GeneratedRecipeSheet({
             <div className="flex-1 min-h-0 overflow-y-auto px-5 py-4" style={{ scrollbarWidth: "none" }}>
               {loading && (
                 <div className="flex flex-col items-center justify-center gap-3 py-16">
-                  <Loader2 size={26} className="animate-spin" style={{ color: "var(--accent)" }} />
+                  <Loader2 size={26} className="animate-spin" style={{ color: "var(--exp-encre)" }} />
                   <p className="text-xs" style={{ color: "var(--text-3)" }}>{loadingHint}</p>
                 </div>
               )}
@@ -149,7 +149,7 @@ export default function GeneratedRecipeSheet({
                       {recipe.ingredients.map((it, i) => (
                         <div key={i} className="flex items-center justify-between text-sm">
                           <span style={{ color: "var(--text-1)" }}>{it.nom}</span>
-                          <span className="font-medium" style={{ color: "var(--accent)" }}>{it.quantite}</span>
+                          <span className="font-medium" style={{ color: "var(--exp-encre)" }}>{it.quantite}</span>
                         </div>
                       ))}
                     </div>

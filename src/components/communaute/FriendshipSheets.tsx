@@ -403,7 +403,7 @@ function AjouterAmi({
         style={{ borderColor: "rgba(var(--text-3-rgb), .14)", color: "var(--text-1)" }}
       >
         <span className="flex h-10 w-10 items-center justify-center rounded-full"
-          style={{ background: "rgba(var(--tint-violet-rgb), .5)", color: "var(--accent)" }}>
+          style={{ background: "rgba(var(--tint-violet-rgb), .5)", color: "var(--exp-encre)" }}>
           <Share2 className="h-4.5 w-4.5" />
         </span>
         <span className="min-w-0 flex-1">
@@ -533,14 +533,14 @@ function DemandesAmi({
       ) : erreur ? (
         <div className="py-8 text-center">
           <p className="text-[14px]" style={{ color: "#E8620C" }}>{erreur}</p>
-          <button onClick={onRecharger} className="mt-3 text-[13px] font-semibold" style={{ color: "var(--accent)" }}>
+          <button onClick={onRecharger} className="mt-3 text-[13px] font-semibold" style={{ color: "var(--exp-encre)" }}>
             Réessayer
           </button>
         </div>
       ) : demandes.length === 0 ? (
         <div className="py-10 text-center">
           <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-full"
-            style={{ background: "rgba(var(--tint-violet-rgb), .45)", color: "var(--accent)" }}>
+            style={{ background: "rgba(var(--tint-violet-rgb), .45)", color: "var(--exp-encre)" }}>
             <Users className="h-5 w-5" />
           </span>
           <p className="mt-3 text-[14px] font-medium" style={{ color: "var(--text-2)" }}>

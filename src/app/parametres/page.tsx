@@ -281,7 +281,7 @@ function GuideModal({ onClose, onChoisi }: { onClose: () => void; onChoisi: (g: 
                 <VisageGuide guide={g} size={52} />
                 <span className="flex-1 min-w-0 flex flex-col gap-0.5">
                   <span className="text-[15px] font-semibold" style={{ color: "var(--text-1)" }}>{PRENOM_GUIDE[g]}</span>
-                  <span className="text-[12px] font-medium" style={{ color: "var(--accent)" }}>{PORTRAIT_GUIDE[g].trait}</span>
+                  <span className="text-[12px] font-medium" style={{ color: "var(--exp-encre)" }}>{PORTRAIT_GUIDE[g].trait}</span>
                   <span className="text-[11.5px] font-light" style={{ color: "var(--text-3)" }}>{PORTRAIT_GUIDE[g].pour}</span>
                 </span>
                 {actif

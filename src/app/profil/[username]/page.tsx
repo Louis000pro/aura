@@ -480,7 +480,7 @@ export default function PublicProfilePage() {
                   isFollowing
                     ? {
                         background: "rgba(var(--tint-violet-rgb),0.7)",
-                        color: "var(--accent)",
+                        color: "var(--exp-encre)",
                         border: "1px solid rgba(var(--accent-rgb),0.2)",
                       }
                     : {
@@ -509,7 +509,7 @@ export default function PublicProfilePage() {
               className="px-4 py-2 rounded-2xl text-xs font-semibold cursor-pointer"
               style={{
                 background: "rgba(var(--tint-violet-rgb),0.6)",
-                color: "var(--accent)",
+                color: "var(--exp-encre)",
                 border: "1px solid rgba(var(--accent-rgb),0.15)",
               }}
             >
@@ -534,7 +534,7 @@ export default function PublicProfilePage() {
               <span className="text-[11px] font-bold" style={{ color: "var(--text-3)" }}>Rang</span>
               <p className="text-[19px] font-black tracking-[-0.02em] leading-tight" style={{ color: "var(--text-0)" }}>{aura.rang.nom}</p>
               <p className="text-[12.5px] font-semibold mt-0.5" style={{ color: "var(--text-soft)" }}>
-                <span style={{ color: "var(--accent)", fontVariantNumeric: "tabular-nums" }}>{aura.exp}</span> / {aura.seuilHaut} EXP
+                <span style={{ color: "var(--exp-encre)", fontVariantNumeric: "tabular-nums" }}>{aura.exp}</span> / {aura.seuilHaut} EXP
               </p>
               <div className="h-[7px] rounded-full mt-2 overflow-hidden" style={{ background: "rgba(var(--tint-violet-rgb),0.9)" }}>
                 <div className="h-full rounded-full" style={{

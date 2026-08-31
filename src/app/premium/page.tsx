@@ -215,27 +215,32 @@ function PremiumInner() {
         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
           className="text-center mb-4 md:mb-8 flex-shrink-0">
           {/* La pastille de marque est DANS le h1 : le titre de la page se lit
-              alors « Vaiiya Premium · Passe au niveau supérieur », donc il nomme
+              alors « Vaiiya Premium · Tout Vaiiya, sans compteur », donc il nomme
               l'offre au lieu de la sous-entendre. Rien ne bouge à l'écran. */}
           <h1 style={{ color: "var(--text-0)" }}>
             <span className={`${styles.eyebrow} inline-block text-xs font-bold tracking-[0.2em] mb-3 px-3 py-1 rounded-full`}>
               VAIIYA PREMIUM ✦
             </span>
+            {/* « Passe au niveau supérieur » aurait pu titrer n'importe quelle
+                application au monde : ça ne dit pas ce qu'on achète. Le titre nomme
+                maintenant la chose concrète que Premium retire, et c'est le
+                compteur : plus de plafond de messages au coach, plus de cadenas
+                sur le catalogue. */}
             <span className="block text-3xl md:text-5xl font-black tracking-tight leading-tight">
-              Passe au <span className={styles.titleAccent}>niveau supérieur</span>
+              Tout Vaiiya, <span className={styles.titleAccent}>sans compteur</span>
             </span>
           </h1>
           <p className="mt-3 text-sm md:text-base font-light max-w-md mx-auto" style={{ color: "var(--text-soft)" }}>
-            Coach IA <strong style={{ color: "var(--accent)" }}>sans limite</strong>, programmes exclusifs, zéro pub.
+            Le coach répond <strong style={{ color: "var(--exp-encre)" }}>sans plafond de messages</strong>, le catalogue s’ouvre en entier, et des missions en plus s’ajoutent à tes journées.
             {VENTE_OUVERTE ? (
               <>
-                <br className="hidden md:block" /> <strong style={{ color: "var(--accent)" }}>3 jours gratuits</strong>{" "}· 0 € aujourd&apos;hui · annule en 1 clic.
+                <br className="hidden md:block" /> <strong style={{ color: "var(--exp-encre)" }}>3 jours gratuits</strong>{" "}· 0 € aujourd&apos;hui · annule en 1 clic.
               </>
             ) : (
               <>
                 {/* Tant que la vente est fermée, on ne promet ni essai ni
                     « annule en 1 clic » : ce serait vendre une porte close. */}
-                <br className="hidden md:block" /> L&apos;abonnement n&apos;est <strong style={{ color: "var(--accent)" }}>pas encore ouvert</strong> à la souscription.
+                <br className="hidden md:block" /> L&apos;abonnement n&apos;est <strong style={{ color: "var(--exp-encre)" }}>pas encore ouvert</strong> à la souscription.
               </>
             )}
           </p>
@@ -243,7 +248,7 @@ function PremiumInner() {
 
         {msg && (
           <div className="max-w-md mx-auto mb-8 px-4 py-3 rounded-2xl text-center text-sm font-medium"
-            style={{ background: "rgba(167,139,250,0.12)", color: "var(--accent)", border: "1px solid rgba(167,139,250,0.25)" }}>
+            style={{ background: "rgba(167,139,250,0.12)", color: "var(--exp-encre)", border: "1px solid rgba(167,139,250,0.25)" }}>
             {msg}
           </div>
         )}
@@ -266,7 +271,7 @@ function PremiumInner() {
             return (
               <motion.div key={id} data-tier={id}
                 initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.45, delay: order.indexOf(id) * 0.08 }}
+                transition={{ duration: 0.35 }}
                 className={`${styles.cardFrame} relative rounded-[26px] p-[1.5px] snap-center shrink-0 w-[82vw] max-w-[340px] md:w-auto md:max-w-none min-h-0`}
                 style={{
                   scrollSnapAlign: "center",

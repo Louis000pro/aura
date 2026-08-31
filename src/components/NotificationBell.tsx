@@ -36,7 +36,7 @@ function notifLabel(n: Notif): string {
 
 function NotifIcon({ type }: { type: NotifType }) {
   const cfg: Record<NotifType, { icon: React.ReactNode; bg: string; color: string }> = {
-    follow:  { icon: <UserPlus size={9} />,                     bg: "rgba(var(--violet-mid-rgb),0.6)", color: "var(--accent)" },
+    follow:  { icon: <UserPlus size={9} />,                     bg: "rgba(var(--violet-mid-rgb),0.6)", color: "var(--exp-encre)" },
     relais:  { icon: <Sparkles size={9} />,                     bg: "rgba(215,166,42,0.22)", color: "#D7A62A" },
     message: { icon: <MessageCircle size={9} fill="currentColor" />, bg: "rgba(139,92,246,0.16)", color: "#8B5CF6" },
   };
@@ -249,7 +249,7 @@ export default function NotificationBell({ side = "right" }: { side?: "right" | 
               🔔 Notifications
             </span>
             {unreadNotifs > 0 && (
-              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ background: "rgba(var(--violet-mid-rgb),0.3)", color: "var(--accent)" }}>
+              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ background: "rgba(var(--violet-mid-rgb),0.3)", color: "var(--exp-encre)" }}>
                 {unreadNotifs} nouvelle{unreadNotifs > 1 ? "s" : ""}
               </span>
             )}

@@ -98,7 +98,7 @@ export default function ExerciseLibrarySheet({
         <div className="px-5 pt-5 pb-3 flex flex-col gap-3" style={{ borderBottom: "1px solid rgba(var(--tint-violet-rgb),0.8)" }}>
           <div className="flex items-start justify-between gap-3">
             <div>
-              <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "var(--accent)" }}>
+              <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "var(--exp-encre)" }}>
                 {exploration ? `${EXERCISE_LIBRARY.length} exercices animés` : "Bibliothèque"}
               </p>
               <h2 className="text-lg font-light mt-0.5" style={{ color: "var(--text-1)" }}>
@@ -154,7 +154,7 @@ export default function ExerciseLibrarySheet({
                 onClick={() => setEquip(p => p === eq.id ? null : eq.id)}
                 className="px-3 py-1 rounded-full text-[10px] font-semibold cursor-pointer flex-shrink-0"
                 style={equip === eq.id
-                  ? { background: "rgba(var(--accent-rgb),0.14)", color: "var(--accent)", border: "1px solid rgba(var(--accent-rgb),0.4)" }
+                  ? { background: "rgba(var(--accent-rgb),0.14)", color: "var(--exp-encre)", border: "1px solid rgba(var(--accent-rgb),0.4)" }
                   : { background: "transparent", color: "var(--text-3)", border: "1px solid rgba(var(--tint-violet-rgb),0.9)" }
                 }>
                 {eq.label}
@@ -174,7 +174,7 @@ export default function ExerciseLibrarySheet({
                 <motion.button whileTap={{ scale: 0.96 }}
                   onClick={() => { onAjouterLibre(texte.trim()); onClose(); }}
                   className="px-4 py-2.5 rounded-2xl text-sm font-semibold cursor-pointer"
-                  style={{ background: "rgba(var(--accent-rgb),0.12)", color: "var(--accent)", border: "1px solid rgba(var(--accent-rgb),0.35)" }}>
+                  style={{ background: "rgba(var(--accent-rgb),0.12)", color: "var(--exp-encre)", border: "1px solid rgba(var(--accent-rgb),0.35)" }}>
                   Ajouter « {texte.trim()} » quand même
                 </motion.button>
               )}
@@ -215,7 +215,7 @@ export default function ExerciseLibrarySheet({
                       <p className="text-[9.5px] leading-tight" style={{ color: "var(--text-3)" }}>
                         {e.muscles.slice(0, 2).join(" · ")}
                       </p>
-                      <p className="text-[9.5px] font-semibold" style={{ color: "var(--accent)" }}>
+                      <p className="text-[9.5px] font-semibold" style={{ color: "var(--exp-encre)" }}>
                         {e.sets} × {libelleReps(e.mode, e.reps, e.seconds, e.unite)}
                       </p>
                     </motion.button>

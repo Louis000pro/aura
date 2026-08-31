@@ -310,7 +310,7 @@ function DayMeals({ day, dayIndex, canEat, addedKeys, onEat }: {
               )}
             </div>
             {m.calories > 0 && (
-              <span className="text-[11px] font-semibold flex-shrink-0" style={{ color: "var(--accent)" }}>{m.calories} kcal</span>
+              <span className="text-[11px] font-semibold flex-shrink-0" style={{ color: "var(--exp-encre)" }}>{m.calories} kcal</span>
             )}
             {canEat && (
               <motion.button
@@ -628,7 +628,7 @@ export default function RecommendedMeals() {
 
         <div className="flex items-center justify-between">
           {menuLoading ? (
-            <span className="flex items-center gap-1 text-[9px] font-medium" style={{ color: "var(--accent)" }}>
+            <span className="flex items-center gap-1 text-[9px] font-medium" style={{ color: "var(--exp-encre)" }}>
               <RefreshCw size={9} strokeWidth={2.5} className="animate-spin" /> L&apos;IA prépare tes plats…
             </span>
           ) : <span />}

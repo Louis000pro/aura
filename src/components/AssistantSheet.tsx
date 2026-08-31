@@ -99,7 +99,7 @@ function AssistantContent({ text }: { text: string }) {
         if (bullet) {
           return (
             <span key={i} style={{ display: "flex", gap: 8, alignItems: "baseline" }}>
-              <span style={{ color: "var(--accent)", flexShrink: 0 }}>–</span>
+              <span style={{ color: "var(--exp-encre)", flexShrink: 0 }}>–</span>
               <span>{renderInline(bullet[1], `l${i}`)}</span>
             </span>
           );
@@ -109,7 +109,7 @@ function AssistantContent({ text }: { text: string }) {
         if (num) {
           return (
             <span key={i} style={{ display: "flex", gap: 8, alignItems: "baseline" }}>
-              <span style={{ color: "var(--accent)", fontWeight: 600, flexShrink: 0 }}>{num[1]}.</span>
+              <span style={{ color: "var(--exp-encre)", fontWeight: 600, flexShrink: 0 }}>{num[1]}.</span>
               <span>{renderInline(num[2], `l${i}`)}</span>
             </span>
           );
@@ -425,7 +425,7 @@ export default function AssistantSheet() {
                       « le coach » et le produit dit ✦ : trois noms pour un
                       seul interlocuteur. */}
                   <p className="text-[15px] font-semibold leading-tight truncate" style={{ color: "var(--text-0)" }}>{nomGuide(guide)}</p>
-                  <p className="text-[11px] font-medium truncate" style={{ color: "var(--accent)" }}>{roleGuide(guide)}</p>
+                  <p className="text-[11px] font-medium truncate" style={{ color: "var(--exp-encre)" }}>{roleGuide(guide)}</p>
                 </div>
                 <button onClick={close} aria-label="Fermer"
                   className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer flex-shrink-0"
@@ -517,7 +517,7 @@ export default function AssistantSheet() {
                       )}
                       {msg.streaming && msg.role === "assistant" && msg.content !== "" && (
                         <motion.span animate={{ opacity: [1, 0, 1] }} transition={{ duration: 0.8, repeat: Infinity }}
-                          style={{ color: "var(--accent)", marginLeft: 1 }}>|</motion.span>
+                          style={{ color: "var(--exp-encre)", marginLeft: 1 }}>|</motion.span>
                       )}
                     </div>
                   </motion.div>
@@ -588,7 +588,7 @@ export default function AssistantSheet() {
                       🍽️
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "var(--accent)" }}>Recette</p>
+                      <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "var(--exp-encre)" }}>Recette</p>
                       <p className="text-[15px] font-semibold leading-tight truncate" style={{ color: "var(--text-0)" }}>{pendingRecipe.nom}</p>
                     </div>
                   </div>
@@ -615,7 +615,7 @@ export default function AssistantSheet() {
                           <div key={i} className="flex items-center justify-between gap-3 py-1.5 px-3 rounded-xl"
                             style={{ background: "rgba(var(--tint-violet-rgb),0.45)" }}>
                             <span className="text-[13px] font-light truncate" style={{ color: "var(--text-1)" }}>{ing.nom}</span>
-                            <span className="text-[11px] font-semibold flex-shrink-0" style={{ color: "var(--accent)" }}>{ing.quantite}</span>
+                            <span className="text-[11px] font-semibold flex-shrink-0" style={{ color: "var(--exp-encre)" }}>{ing.quantite}</span>
                           </div>
                         ))}
                       </div>
@@ -624,7 +624,7 @@ export default function AssistantSheet() {
                       <ol className="flex flex-col gap-1.5 pl-1">
                         {pendingRecipe.steps.map((s, i) => (
                           <li key={i} className="flex gap-2 text-[12.5px] font-light leading-snug" style={{ color: "var(--text-2)" }}>
-                            <span className="flex-shrink-0 font-bold" style={{ color: "var(--accent)" }}>{i + 1}.</span>
+                            <span className="flex-shrink-0 font-bold" style={{ color: "var(--exp-encre)" }}>{i + 1}.</span>
                             <span>{s}</span>
                           </li>
                         ))}
@@ -664,7 +664,7 @@ export default function AssistantSheet() {
                       <Utensils size={16} strokeWidth={1.8} style={{ color: "#fff" }} />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "var(--accent)" }}>
+                      <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "var(--exp-encre)" }}>
                         Repas à noter · {MEAL_LABEL[pendingMeal.mealType] ?? "Repas"}
                       </p>
                       <p className="text-[15px] font-semibold leading-tight truncate" style={{ color: "var(--text-0)" }}>{pendingMeal.foodName}</p>
@@ -716,13 +716,13 @@ export default function AssistantSheet() {
                   <motion.div
                     initial={{ opacity: 0, y: 6, scale: 0.96 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 6, scale: 0.96 }}
                     className="flex items-center gap-1.5 w-fit mx-auto mb-2 px-3 py-1.5 rounded-full text-[12px] font-medium"
-                    style={{ background: "rgba(var(--accent-rgb),0.12)", color: "var(--accent)", border: "1px solid rgba(var(--accent-rgb),0.22)" }}>
+                    style={{ background: "rgba(var(--accent-rgb),0.12)", color: "var(--exp-encre)", border: "1px solid rgba(var(--accent-rgb),0.22)" }}>
                     {memoryNotice}
                   </motion.div>
                 )}
               </AnimatePresence>
               {voice.error && (
-                <p className="text-[11px] text-center mb-1.5" style={{ color: "var(--accent)" }}>{voice.error}</p>
+                <p className="text-[11px] text-center mb-1.5" style={{ color: "var(--exp-encre)" }}>{voice.error}</p>
               )}
               <form onSubmit={submit} className="flex items-end gap-2">
                 <div className="flex-1 flex items-center px-4 py-2 rounded-3xl"
@@ -755,7 +755,7 @@ export default function AssistantSheet() {
                   aria-label={voice.state === "recording" ? "Arrêter" : "Parler"}>
                   {voice.state === "recording"
                     ? <Square size={15} strokeWidth={2.4} style={{ color: "#fff" }} />
-                    : <Mic size={17} strokeWidth={2} style={{ color: "var(--accent)" }} />}
+                    : <Mic size={17} strokeWidth={2} style={{ color: "var(--exp-encre)" }} />}
                 </motion.button>
 
                 {/* Envoyer — au repos, le bouton reste PARFAITEMENT lisible :

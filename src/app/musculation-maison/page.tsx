@@ -65,8 +65,8 @@ export default function MusculationMaisonPage() {
 
       <h2>La nutrition compte autant que l&apos;entraînement</h2>
       <p>
-        Même à la maison, tes résultats dépendent de ton assiette. Découvre les bases de la{" "}
-        <Link href="/nutrition-sportive">nutrition sportive</Link> pour accompagner tes séances.
+        Même à la maison, ce que tu manges compte autant que ce que tu soulèves. Les bases de la{" "}
+        <Link href="/nutrition-sportive">nutrition sportive</Link> valent aussi sans salle.
       </p>
 
       <h2>Composer ta séance maison</h2>

@@ -139,8 +139,8 @@ export default function AvecQui({ moi, onFermer, onFil, onLien }: {
           style={{ background: "rgba(var(--accent-rgb), .12)" }}
         >
           {occupe === "lien"
-            ? <Loader2 className="h-4.5 w-4.5 animate-spin" style={{ color: "var(--accent)" }} />
-            : <Link2 className="h-4.5 w-4.5" style={{ color: "var(--accent)" }} />}
+            ? <Loader2 className="h-4.5 w-4.5 animate-spin" style={{ color: "var(--exp-encre)" }} />
+            : <Link2 className="h-4.5 w-4.5" style={{ color: "var(--exp-encre)" }} />}
         </span>
         <span className="min-w-0 flex-1">
           <b className="block text-[14.5px] font-medium" style={{ color: "var(--text-1)" }}>
@@ -159,7 +159,7 @@ export default function AvecQui({ moi, onFermer, onFil, onLien }: {
             <button
               onClick={() => onFil(refus.ou!)}
               className="mt-2 text-[13.5px] font-semibold underline"
-              style={{ color: "var(--accent)" }}
+              style={{ color: "var(--exp-encre)" }}
             >
               Ouvrir ce relais
             </button>

@@ -157,7 +157,7 @@ export default function RecipeSheet({
             {fitNote && (
               <div className="flex items-center gap-1.5 mb-1.5">
                 <Sparkles size={13} strokeWidth={2} style={{ color: "#8B5CF6" }} />
-                <span className="text-[11.5px] font-semibold" style={{ color: "var(--accent)" }}>{fitNote}</span>
+                <span className="text-[11.5px] font-semibold" style={{ color: "var(--exp-encre)" }}>{fitNote}</span>
               </div>
             )}
             <h2 className="text-lg font-medium leading-tight" style={{ color: "var(--text-1)" }}>{recipe.nom}</h2>

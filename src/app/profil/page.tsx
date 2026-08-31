@@ -748,7 +748,7 @@ export default function ProfilPage() {
               boxShadow: "0 2px 14px rgba(var(--accent-rgb),0.15)",
             }}
           >
-            <Settings size={15} strokeWidth={1.6} style={{ color: "var(--accent)" }} />
+            <Settings size={15} strokeWidth={1.6} style={{ color: "var(--exp-encre)" }} />
           </motion.div>
         </Link>
       </div>
@@ -851,7 +851,7 @@ export default function ProfilPage() {
 
           {/* Goals / titre */}
           {profileGoals.length > 0 && (
-            <p className="text-[12px] font-semibold mt-1.5 max-w-[260px]" style={{ color: "var(--accent)" }}>
+            <p className="text-[12px] font-semibold mt-1.5 max-w-[260px]" style={{ color: "var(--exp-encre)" }}>
               {profileGoals
                 .map((id) => GOALS_LIST.find((g) => g.id === id))
                 .filter(Boolean)
@@ -882,7 +882,7 @@ export default function ProfilPage() {
         <motion.button
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.45, delay: 0.06 }}
+          transition={{ duration: 0.3 }}
           whileTap={{ scale: 0.985 }}
           /* Tant que l'aura n'est pas lue, la carte montre un squelette : on
              n'ouvre pas la galerie dessus, elle annoncerait « Bronze · 0 EXP »
@@ -903,7 +903,7 @@ export default function ProfilPage() {
                 <span className="text-[11px] font-bold" style={{ color: "var(--text-3)" }}>Ton rang</span>
                 <p className="text-[19px] font-black tracking-[-0.02em] leading-tight" style={{ color: "var(--text-0)" }}>{aura.rang.nom}</p>
                 <p className="text-[12.5px] font-semibold mt-0.5" style={{ color: "var(--text-soft)" }}>
-                  <span style={{ color: "var(--accent)", fontVariantNumeric: "tabular-nums" }}>{aura.exp}</span> / {aura.seuilHaut} EXP
+                  <span style={{ color: "var(--exp-encre)", fontVariantNumeric: "tabular-nums" }}>{aura.exp}</span> / {aura.seuilHaut} EXP
                 </p>
                 <div className="h-[7px] rounded-full mt-2 overflow-hidden" style={{ background: "rgba(var(--tint-violet-rgb),0.9)" }}>
                   <div className="h-full rounded-full" style={{
@@ -923,7 +923,7 @@ export default function ProfilPage() {
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.45, delay: 0.1 }}
+          transition={{ duration: 0.3 }}
           className="flex items-stretch mb-3 rounded-3xl overflow-hidden"
           style={{
             background: "rgba(var(--surface-rgb),0.8)",
@@ -975,7 +975,7 @@ export default function ProfilPage() {
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.2 }}
+          transition={{ duration: 0.3 }}
           className="flex gap-1 mb-6 p-1 rounded-2xl"
           style={{
             background: "rgba(var(--tint-violet-rgb),0.6)",
@@ -1172,7 +1172,7 @@ export default function ProfilPage() {
                       whileTap={{ scale: 0.99 }}
                     >
                       <div className="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0" style={{ background: "linear-gradient(135deg,var(--violet-mid),var(--cream-mid))" }}>
-                        <Dumbbell size={16} strokeWidth={1.5} style={{ color: "var(--accent)" }} />
+                        <Dumbbell size={16} strokeWidth={1.5} style={{ color: "var(--exp-encre)" }} />
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-semibold truncate" style={{ color: "var(--text-0)" }}>{session.title || "Séance"}</p>
@@ -1188,8 +1188,8 @@ export default function ProfilPage() {
                         style={{ background: "rgba(var(--accent-rgb),0.10)", border: "1px solid rgba(var(--accent-rgb),0.22)" }}
                         title="Refaire cette séance"
                       >
-                        <Play size={12} strokeWidth={2.2} style={{ color: "var(--accent)" }} />
-                        <span className="text-[11.5px] font-bold" style={{ color: "var(--accent)" }}>Refaire</span>
+                        <Play size={12} strokeWidth={2.2} style={{ color: "var(--exp-encre)" }} />
+                        <span className="text-[11.5px] font-bold" style={{ color: "var(--exp-encre)" }}>Refaire</span>
                       </motion.button>
                       <motion.button
                         whileTap={{ scale: 0.85 }}
@@ -1429,7 +1429,7 @@ export default function ProfilPage() {
                           perfDataToShare(selectedPost.performance_data as PerformanceData, { user: displayPseudo })
                         )}
                         className="w-full py-3 rounded-2xl flex items-center justify-center gap-2 text-sm font-semibold cursor-pointer"
-                        style={{ background: "rgba(139,92,246,0.1)", color: "var(--accent)", border: "1px solid rgba(139,92,246,0.3)" }}
+                        style={{ background: "rgba(139,92,246,0.1)", color: "var(--exp-encre)", border: "1px solid rgba(139,92,246,0.3)" }}
                       >
                         <Share2 size={16} strokeWidth={2} /> Envoyer à quelqu&apos;un
                       </motion.button>

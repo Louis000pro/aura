@@ -530,7 +530,7 @@ export default function MealSituationHero({
               <div className="flex flex-col items-center text-center gap-2.5 py-9">
                 <div className="w-12 h-12 rounded-2xl flex items-center justify-center"
                   style={{ background: "rgba(139,92,246,0.12)", border: "1px solid rgba(139,92,246,0.28)" }}>
-                  <Heart size={20} strokeWidth={1.8} style={{ color: "var(--accent)" }} />
+                  <Heart size={20} strokeWidth={1.8} style={{ color: "var(--exp-encre)" }} />
                 </div>
                 <p className="text-xs font-light leading-relaxed max-w-[15rem]" style={{ color: "var(--text-3)" }}>
                   Tes plats habituels apparaîtront ici dès que tu en auras enregistré quelques-uns.
@@ -562,7 +562,7 @@ export default function MealSituationHero({
                       </p>
                       <span className="absolute top-2 right-2 w-5 h-5 rounded-full flex items-center justify-center"
                         style={{ background: "rgba(139,92,246,0.14)", border: "1px solid rgba(139,92,246,0.3)" }}>
-                        <Plus size={12} strokeWidth={2.5} style={{ color: "var(--accent)" }} />
+                        <Plus size={12} strokeWidth={2.5} style={{ color: "var(--exp-encre)" }} />
                       </span>
                     </motion.button>
                   );
@@ -608,7 +608,7 @@ export default function MealSituationHero({
                   style={{ background: "rgba(var(--tint-violet-rgb),0.5)", border: "1px solid rgba(var(--violet-mid-rgb),0.5)", color: "var(--text-1)" }} />
                 <motion.button whileTap={{ scale: 0.94 }} onClick={() => addIngredients(ingInput)} disabled={!ingInput.trim()}
                   className="px-3.5 rounded-xl text-sm font-semibold cursor-pointer flex-shrink-0"
-                  style={{ background: ingInput.trim() ? "rgba(var(--accent-rgb),0.16)" : "rgba(var(--tint-violet-rgb),0.4)", color: "var(--accent)" }}>
+                  style={{ background: ingInput.trim() ? "rgba(var(--accent-rgb),0.16)" : "rgba(var(--tint-violet-rgb),0.4)", color: "var(--exp-encre)" }}>
                   Ajouter
                 </motion.button>
               </div>
@@ -631,7 +631,7 @@ export default function MealSituationHero({
                       <button key={s} onClick={() => addIngredients(s)}
                         className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs cursor-pointer"
                         style={{ background: "rgba(var(--tint-violet-rgb),0.5)", color: "var(--text-2)", border: "1px solid rgba(var(--violet-mid-rgb),0.35)" }}>
-                        <Plus size={11} strokeWidth={2.5} style={{ color: "var(--accent)" }} /> {s}
+                        <Plus size={11} strokeWidth={2.5} style={{ color: "var(--exp-encre)" }} /> {s}
                       </button>
                     ))}
                   </div>
@@ -650,7 +650,7 @@ export default function MealSituationHero({
               {/* Carte résultat du reste (kcal + macros ajustables) */}
               <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium self-start"
                 style={{ background: "rgba(139,92,246,0.16)", border: "1px solid rgba(139,92,246,0.4)", color: "var(--text-1)" }}>
-                <Home size={13} strokeWidth={2} style={{ color: "var(--accent)" }} />
+                <Home size={13} strokeWidth={2} style={{ color: "var(--exp-encre)" }} />
                 Reste maison · portion {PORTIONS.find((p) => p.key === portion)?.label.toLowerCase()}
               </span>
               <div className="flex items-start justify-between gap-3">
@@ -694,7 +694,7 @@ export default function MealSituationHero({
                   <ArrowLeft size={12} strokeWidth={2} /> Corriger
                 </button>
                 <button onClick={() => setRestEdit((e) => !e)}
-                  className="flex items-center gap-1 text-[11px] font-medium cursor-pointer" style={{ color: "var(--accent)" }}>
+                  className="flex items-center gap-1 text-[11px] font-medium cursor-pointer" style={{ color: "var(--exp-encre)" }}>
                   <Pencil size={11} strokeWidth={2} /> {restEdit ? "Terminé" : "Ajuster"}
                 </button>
               </div>
@@ -838,7 +838,7 @@ export default function MealSituationHero({
                   <div>
                     <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium"
                       style={{ background: "rgba(139,92,246,0.16)", border: "1px solid rgba(139,92,246,0.4)", color: "var(--text-1)" }}>
-                      <Flame size={13} strokeWidth={2} style={{ color: "var(--accent)" }} />
+                      <Flame size={13} strokeWidth={2} style={{ color: "var(--exp-encre)" }} />
                       {enseigne.trim() ? `${enseigne.trim()} · ` : ""}{CATEGORY_LABEL[category]}
                     </span>
                   </div>
@@ -859,7 +859,7 @@ export default function MealSituationHero({
                     <div className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl"
                       style={{ border: "1px dashed rgba(var(--violet-mid-rgb),0.6)" }}>
                       <button onClick={() => addArticle(articleInput)} aria-label="Ajouter" className="cursor-pointer flex-shrink-0">
-                        <Plus size={16} strokeWidth={2.5} style={{ color: "var(--accent)" }} />
+                        <Plus size={16} strokeWidth={2.5} style={{ color: "var(--exp-encre)" }} />
                       </button>
                       <input value={articleInput} onChange={(e) => setArticleInput(e.target.value)}
                         onKeyDown={(e) => { if (e.key === "Enter") addArticle(articleInput); }}
@@ -886,7 +886,7 @@ export default function MealSituationHero({
                   <div>
                     <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium"
                       style={{ background: "rgba(139,92,246,0.16)", border: "1px solid rgba(139,92,246,0.4)", color: "var(--text-1)" }}>
-                      <Flame size={13} strokeWidth={2} style={{ color: "var(--accent)" }} />
+                      <Flame size={13} strokeWidth={2} style={{ color: "var(--exp-encre)" }} />
                       {enseigne.trim() ? `${enseigne.trim()} · ` : ""}{CATEGORY_LABEL[category]}
                     </span>
                   </div>
@@ -905,10 +905,10 @@ export default function MealSituationHero({
                             background: on ? "rgba(139,92,246,0.16)" : "rgba(var(--tint-violet-rgb),0.5)",
                             border: `1px solid ${on ? "rgba(139,92,246,0.45)" : "rgba(var(--violet-mid-rgb),0.35)"}`,
                           }}>
-                          <XIcon size={17} strokeWidth={1.8} style={{ color: "var(--accent)" }} />
+                          <XIcon size={17} strokeWidth={1.8} style={{ color: "var(--exp-encre)" }} />
                           <span className="flex-1 text-sm" style={{ color: "var(--text-1)" }}>{x.label}</span>
                           {on
-                            ? <Check size={15} strokeWidth={2.5} style={{ color: "var(--accent)" }} />
+                            ? <Check size={15} strokeWidth={2.5} style={{ color: "var(--exp-encre)" }} />
                             : <Plus size={15} strokeWidth={2} style={{ color: "var(--text-3)" }} />}
                         </button>
                       );
@@ -949,7 +949,7 @@ export default function MealSituationHero({
             className="mt-4">
             {advice.length === 0 ? (
               <div className="flex flex-col items-center text-center gap-2 py-10">
-                <Sparkles size={24} strokeWidth={1.5} style={{ color: "var(--accent)" }} />
+                <Sparkles size={24} strokeWidth={1.5} style={{ color: "var(--exp-encre)" }} />
                 <p className="text-sm font-light" style={{ color: "var(--text-3)" }}>Un instant…</p>
               </div>
             ) : (<>
@@ -987,7 +987,7 @@ export default function MealSituationHero({
                         <div className="inline-flex items-center gap-1.5 mb-2 px-2.5 py-1 rounded-full"
                           style={{ background: "rgba(139,92,246,0.12)", border: "1px solid rgba(139,92,246,0.3)" }}>
                           <Sparkles size={12} strokeWidth={2} style={{ color: "#8B5CF6" }} />
-                          <span className="text-[11px] font-semibold" style={{ color: "var(--accent)" }}>{top.reason}</span>
+                          <span className="text-[11px] font-semibold" style={{ color: "var(--exp-encre)" }}>{top.reason}</span>
                         </div>
                       )}
                       <p className="text-[16px] font-medium leading-snug" style={{ color: "var(--text-1)" }}>{p.title}</p>

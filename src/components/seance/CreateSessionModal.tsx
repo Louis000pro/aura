@@ -307,7 +307,7 @@ export default function CreateSessionModal({
             style={{ borderBottom: "1px solid rgba(var(--tint-violet-rgb),0.8)" }}>
             <div className="flex items-start justify-between gap-3">
               <div>
-                <p className="text-[11px] font-semiboldst" style={{ color: "var(--accent)" }}>
+                <p className="text-[11px] font-semiboldst" style={{ color: "var(--exp-encre)" }}>
                   {isEdit ? "Modifier" : "Nouvelle séance"}
                 </p>
                 <h2 className="text-[19px] font-light mt-0.5 leading-tight" style={{ color: "var(--text-1)" }}>
@@ -386,7 +386,7 @@ export default function CreateSessionModal({
                     }}>
                     <button onClick={() => setIaOuvert(o => !o)}
                       className="w-full px-4 py-3 flex items-center gap-2.5 cursor-pointer text-left">
-                      <Sparkles size={15} strokeWidth={2} style={{ color: "var(--accent)", flexShrink: 0 }} />
+                      <Sparkles size={15} strokeWidth={2} style={{ color: "var(--exp-encre)", flexShrink: 0 }} />
                       <span className="text-[12.5px] font-semibold flex-1" style={{ color: "var(--text-1)" }}>
                         Laisse l’✦ la construire
                       </span>
@@ -476,7 +476,7 @@ export default function CreateSessionModal({
                         <motion.button key={d} whileTap={{ scale: 0.95 }} onClick={() => setDifficulty(d)}
                           className="py-2.5 rounded-xl text-[11.5px] font-semibold cursor-pointer"
                           style={difficulty === d
-                            ? { background: "rgba(var(--accent-rgb),0.14)", color: "var(--accent)", border: "1px solid rgba(var(--accent-rgb),0.4)" }
+                            ? { background: "rgba(var(--accent-rgb),0.14)", color: "var(--exp-encre)", border: "1px solid rgba(var(--accent-rgb),0.4)" }
                             : { background: "rgba(var(--surface-rgb),0.7)", color: "var(--text-3)", border: "1px solid rgba(var(--tint-violet-rgb),0.9)" }
                           }>
                           {d}
@@ -519,7 +519,7 @@ export default function CreateSessionModal({
                   ) : (
                     <>
                       <div className="flex items-center justify-between">
-                        <p className="text-[11px] font-semiboldst" style={{ color: "var(--accent)" }}>
+                        <p className="text-[11px] font-semiboldst" style={{ color: "var(--exp-encre)" }}>
                           {exForms.length} exercice{exForms.length > 1 ? "s" : ""}
                         </p>
                         {animes > 0 && (
@@ -546,7 +546,7 @@ export default function CreateSessionModal({
 
                       <motion.button whileTap={{ scale: 0.98 }} onClick={() => setBibliotheque(true)}
                         className="w-full py-3 rounded-2xl text-[12.5px] font-semibold cursor-pointer flex items-center justify-center gap-2"
-                        style={{ background: "rgba(var(--accent-rgb),0.1)", color: "var(--accent)", border: "1px solid rgba(var(--accent-rgb),0.3)" }}>
+                        style={{ background: "rgba(var(--accent-rgb),0.1)", color: "var(--exp-encre)", border: "1px solid rgba(var(--accent-rgb),0.3)" }}>
                         <Plus size={14} strokeWidth={2.5} /> Ajouter des exercices
                       </motion.button>
                     </>
@@ -601,7 +601,7 @@ export default function CreateSessionModal({
                   {/* Muscles déduits */}
                   <div className="flex flex-col gap-3">
                     <div>
-                      <p className="text-[11px] font-semiboldst" style={{ color: "var(--accent)" }}>
+                      <p className="text-[11px] font-semiboldst" style={{ color: "var(--exp-encre)" }}>
                         Muscles ciblés
                       </p>
                       <p className="text-[11px] mt-1" style={{ color: "var(--text-3)" }}>
@@ -616,7 +616,7 @@ export default function CreateSessionModal({
                       {muscles.map(m => (
                         <motion.button key={m} whileTap={{ scale: 0.92 }} onClick={() => retirerMuscle(m)}
                           className="px-3 py-1.5 rounded-full text-[11px] font-semibold cursor-pointer flex items-center gap-1.5"
-                          style={{ background: "rgba(var(--accent-rgb),0.13)", color: "var(--accent)", border: "1px solid rgba(var(--accent-rgb),0.32)" }}>
+                          style={{ background: "rgba(var(--accent-rgb),0.13)", color: "var(--exp-encre)", border: "1px solid rgba(var(--accent-rgb),0.32)" }}>
                           {m} <X size={9} strokeWidth={3} />
                         </motion.button>
                       ))}
@@ -658,7 +658,7 @@ export default function CreateSessionModal({
                               disabled={!muscleLibre.trim()}
                               className="px-3.5 py-2 rounded-xl flex items-center justify-center cursor-pointer"
                               style={muscleLibre.trim()
-                                ? { background: "rgba(var(--accent-rgb),0.15)", color: "var(--accent)", border: "1px solid rgba(var(--accent-rgb),0.35)" }
+                                ? { background: "rgba(var(--accent-rgb),0.15)", color: "var(--exp-encre)", border: "1px solid rgba(var(--accent-rgb),0.35)" }
                                 : { background: "rgba(var(--tint-violet-rgb),0.4)", color: "var(--text-3)", border: "1px solid rgba(var(--violet-mid-rgb),0.2)" }
                               }>
                               <Plus size={13} strokeWidth={2.5} />
@@ -759,7 +759,7 @@ function LigneExercice({
             ? <ExerciseThumb name={ex.name} size={46} delay={index * 160} />
             : <div className="flex-shrink-0 rounded-xl flex items-center justify-center"
                 style={{ width: 46, height: 46, background: "rgba(var(--accent-rgb),0.1)" }}>
-                <Dumbbell size={16} strokeWidth={1.8} style={{ color: "var(--accent)" }} />
+                <Dumbbell size={16} strokeWidth={1.8} style={{ color: "var(--exp-encre)" }} />
               </div>
           }
           <div className="flex-1 min-w-0">
@@ -774,7 +774,7 @@ function LigneExercice({
 
         <button onClick={onOuvrir}
           className="text-[10px] font-semibold px-2.5 py-1.5 rounded-lg cursor-pointer flex-shrink-0"
-          style={{ background: "rgba(var(--accent-rgb),0.1)", color: "var(--accent)" }}>
+          style={{ background: "rgba(var(--accent-rgb),0.1)", color: "var(--exp-encre)" }}>
           {ouvert ? "OK" : "Régler"}
         </button>
       </div>
@@ -803,7 +803,7 @@ function LigneExercice({
                   <motion.button key={mode} whileTap={{ scale: 0.95 }} onClick={() => onChange({ mode })}
                     className="py-2 rounded-xl text-[11px] font-semibold cursor-pointer flex items-center justify-center gap-1.5"
                     style={ex.mode === mode
-                      ? { background: "rgba(var(--accent-rgb),0.14)", color: "var(--accent)", border: "1px solid rgba(var(--accent-rgb),0.4)" }
+                      ? { background: "rgba(var(--accent-rgb),0.14)", color: "var(--exp-encre)", border: "1px solid rgba(var(--accent-rgb),0.4)" }
                       : { background: "rgba(var(--surface-rgb),0.7)", color: "var(--text-3)", border: "1px solid rgba(var(--tint-violet-rgb),0.9)" }
                     }>
                     <Icone size={12} strokeWidth={2} /> {label}
@@ -832,20 +832,20 @@ function LigneExercice({
               {!dernier && (
                 <div className="flex items-center gap-2.5 px-3 py-2 rounded-xl"
                   style={{ background: "rgba(var(--accent-rgb),0.07)", border: "1px dashed rgba(var(--accent-rgb),0.28)" }}>
-                  <Clock size={11} strokeWidth={1.8} style={{ color: "var(--accent)", flexShrink: 0 }} />
-                  <span className="text-[10px] font-medium flex-1" style={{ color: "var(--accent)" }}>
+                  <Clock size={11} strokeWidth={1.8} style={{ color: "var(--exp-encre)", flexShrink: 0 }} />
+                  <span className="text-[10px] font-medium flex-1" style={{ color: "var(--exp-encre)" }}>
                     Récup avant l’exercice suivant
                   </span>
                   <div className="flex items-center gap-1.5">
                     <button onClick={() => onChange({ restAfter: Math.max(0, ex.restAfter - 15) })}
                       className="w-5 h-5 rounded flex items-center justify-center cursor-pointer text-xs font-bold"
-                      style={{ color: "var(--accent)" }}>−</button>
+                      style={{ color: "var(--exp-encre)" }}>−</button>
                     <span className="text-xs font-semibold w-8 text-center tabular-nums" style={{ color: "var(--text-1)" }}>
                       {ex.restAfter}s
                     </span>
                     <button onClick={() => onChange({ restAfter: Math.min(300, ex.restAfter + 15) })}
                       className="w-5 h-5 rounded flex items-center justify-center cursor-pointer text-xs font-bold"
-                      style={{ color: "var(--accent)" }}>+</button>
+                      style={{ color: "var(--exp-encre)" }}>+</button>
                   </div>
                 </div>
               )}
@@ -874,10 +874,10 @@ function Compteur({ label, valeur, onMoins, onPlus }: {
       <div className="flex items-center justify-between gap-1 px-2 py-2 rounded-xl"
         style={{ background: "rgba(var(--surface-rgb),0.75)", border: "1px solid rgba(var(--violet-mid-rgb),0.3)" }}>
         <button onClick={onMoins} className="w-5 h-5 rounded flex items-center justify-center cursor-pointer text-sm font-bold"
-          style={{ color: "var(--accent)" }}>−</button>
+          style={{ color: "var(--exp-encre)" }}>−</button>
         <span className="text-[12.5px] font-semibold tabular-nums" style={{ color: "var(--text-1)" }}>{valeur}</span>
         <button onClick={onPlus} className="w-5 h-5 rounded flex items-center justify-center cursor-pointer text-sm font-bold"
-          style={{ color: "var(--accent)" }}>+</button>
+          style={{ color: "var(--exp-encre)" }}>+</button>
       </div>
     </div>
   );

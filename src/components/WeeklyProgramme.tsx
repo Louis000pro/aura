@@ -120,13 +120,13 @@ function ExerciseTutorial({ exercise, onClose }: { exercise: string; onClose: ()
       >
         <div className="flex items-center justify-between px-5 pt-4 pb-3">
           <div className="min-w-0">
-            <p className="text-[10px] font-bold tracking-widest uppercase" style={{ color: "var(--accent)" }}>Tuto · démo</p>
+            <p className="text-[10px] font-bold tracking-widest uppercase" style={{ color: "var(--exp-encre)" }}>Tuto · démo</p>
             <p className="text-sm font-semibold truncate" style={{ color: "var(--text-1)" }}>{clean}</p>
           </div>
           <button type="button" onClick={onClose}
             className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 cursor-pointer"
             style={{ background: "rgba(var(--accent-rgb),0.12)" }}>
-            <X size={15} strokeWidth={2} style={{ color: "var(--accent)" }} />
+            <X size={15} strokeWidth={2} style={{ color: "var(--exp-encre)" }} />
           </button>
         </div>
 
@@ -150,7 +150,7 @@ function ExerciseTutorial({ exercise, onClose }: { exercise: string; onClose: ()
         {state === "none" && (
           <a href={ytSearch} target="_blank" rel="noopener noreferrer"
             className="aspect-video w-full flex flex-col items-center justify-center gap-2 text-center px-4"
-            style={{ background: "rgba(var(--accent-rgb),0.06)", color: "var(--accent)" }}>
+            style={{ background: "rgba(var(--accent-rgb),0.06)", color: "var(--exp-encre)" }}>
             <span className="inline-flex items-center justify-center w-12 h-12 rounded-full" style={{ background: "#FF0000" }}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="#fff"><path d="M8 5v14l11-7z" /></svg>
             </span>
@@ -203,8 +203,8 @@ function DayDetail({ day, onTuto, onStart }: { day: PlanningDay; onTuto: (ex: st
                 <span className="text-[9px] font-medium flex-shrink-0" style={{ color: "var(--text-3)" }}>{ex.sets}×{ex.reps}</span>
                 <span className="flex items-center gap-1 flex-shrink-0 rounded-full px-2 py-0.5"
                   style={{ background: "rgba(var(--accent-rgb),0.12)" }}>
-                  <Play size={9} strokeWidth={2.5} style={{ color: "var(--accent)" }} fill="currentColor" />
-                  <span className="text-[9px] font-semibold" style={{ color: "var(--accent)" }}>Tuto</span>
+                  <Play size={9} strokeWidth={2.5} style={{ color: "var(--exp-encre)" }} fill="currentColor" />
+                  <span className="text-[9px] font-semibold" style={{ color: "var(--exp-encre)" }}>Tuto</span>
                 </span>
               </button>
             ))}
@@ -247,7 +247,7 @@ function LocationQuestion({ onChoose }: { onChoose: (loc: "salle" | "maison") =>
         <motion.button whileTap={{ scale: 0.96 }} onClick={() => onChoose("salle")}
           className="flex flex-col items-center gap-1.5 py-4 rounded-2xl cursor-pointer"
           style={{ background: "rgba(var(--surface-rgb),0.8)", border: "1px solid rgba(var(--violet-mid-rgb),0.5)", boxShadow: "0 2px 12px rgba(var(--accent-rgb),0.1)" }}>
-          <Dumbbell size={20} strokeWidth={1.5} style={{ color: "var(--accent)" }} />
+          <Dumbbell size={20} strokeWidth={1.5} style={{ color: "var(--exp-encre)" }} />
           <span className="text-sm font-semibold" style={{ color: "var(--text-1)" }}>En salle</span>
           <span className="text-[10px] font-light" style={{ color: "var(--text-3)" }}>Machines & charges</span>
         </motion.button>
@@ -291,7 +291,7 @@ function HomeEquipQuestion({ onChoose, onBack }: { onChoose: (e: "halteres" | "p
         <motion.button whileTap={{ scale: 0.96 }} onClick={() => onChoose("poids")}
           className="flex flex-col items-center gap-1.5 py-4 rounded-2xl cursor-pointer"
           style={{ background: "rgba(var(--surface-rgb),0.8)", border: "1px solid rgba(var(--violet-mid-rgb),0.5)", boxShadow: "0 2px 12px rgba(var(--accent-rgb),0.1)" }}>
-          <Home size={20} strokeWidth={1.5} style={{ color: "var(--accent)" }} />
+          <Home size={20} strokeWidth={1.5} style={{ color: "var(--exp-encre)" }} />
           <span className="text-sm font-semibold" style={{ color: "var(--text-1)" }}>Non</span>
           <span className="text-[10px] font-light" style={{ color: "var(--text-3)" }}>Poids du corps uniquement</span>
         </motion.button>
@@ -505,7 +505,7 @@ export default function WeeklyProgramme() {
             className="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0"
             style={{ background: "rgba(var(--accent-rgb),0.12)" }}
           >
-            <Dumbbell size={18} strokeWidth={1.5} style={{ color: "var(--accent)" }} />
+            <Dumbbell size={18} strokeWidth={1.5} style={{ color: "var(--exp-encre)" }} />
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium mb-0.5" style={{ color: "var(--text-1)" }}>
@@ -602,7 +602,7 @@ export default function WeeklyProgramme() {
           aria-label="Semaine précédente"
           className="w-7 h-7 rounded-xl flex items-center justify-center transition-opacity"
           style={{ background: "rgba(var(--accent-rgb),0.1)", cursor: weekOffset <= 0 ? "default" : "pointer", opacity: weekOffset <= 0 ? 0.3 : 1 }}>
-          <ChevronLeft size={15} strokeWidth={2.2} style={{ color: "var(--accent)" }} />
+          <ChevronLeft size={15} strokeWidth={2.2} style={{ color: "var(--exp-encre)" }} />
         </button>
         <span className="text-[12px] font-semibold" style={{ color: "var(--text-1)" }}>{weekLabel}</span>
         <button
@@ -612,7 +612,7 @@ export default function WeeklyProgramme() {
           aria-label="Semaine suivante"
           className="w-7 h-7 rounded-xl flex items-center justify-center transition-opacity"
           style={{ background: "rgba(var(--accent-rgb),0.1)", cursor: weekOffset >= MAX_WEEK_AHEAD ? "default" : "pointer", opacity: weekOffset >= MAX_WEEK_AHEAD ? 0.3 : 1 }}>
-          <ChevronRight size={15} strokeWidth={2.2} style={{ color: "var(--accent)" }} />
+          <ChevronRight size={15} strokeWidth={2.2} style={{ color: "var(--exp-encre)" }} />
         </button>
       </div>
 
