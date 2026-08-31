@@ -60,7 +60,7 @@ export async function POST(req: Request) {
     if (diet.length) perso.push(`Regime/contraintes a respecter STRICTEMENT : ${diet.join(", ")}.`);
 
     const cible = leftovers.length
-      ? `Compose une recette qui utilise EN PRIORITE ces ingredients que l'utilisateur a DEJA sous la main : ${leftovers.join(", ")}. Tu peux ne pas tous les utiliser s'ils ne vont pas ensemble, mais construis le plat autour d'eux. N'ajoute QUE des basiques de placard (huile, sel, poivre, epices, oignon, ail) : l'utilisateur ne doit RIEN acheter d'autre.`
+      ? `Compose une recette qui utilise EN PRIORITE ces ingredients que l’utilisateur a DEJA sous la main : ${leftovers.join(", ")}. Tu peux ne pas tous les utiliser s’ils ne vont pas ensemble, mais construis le plat autour d’eux. N’ajoute QUE des basiques de placard (huile, sel, poivre, epices, oignon, ail) : l’utilisateur ne doit RIEN acheter d’autre.`
       : dish
         ? `Ecris la recette du plat suivant : "${dish}".`
         : theme

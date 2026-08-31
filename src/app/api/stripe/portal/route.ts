@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
     const clientStripe = (profil?.stripe_customer_id as string | null) ?? null;
     if (!clientStripe) {
       return NextResponse.json(
-        { error: "aucun_abonnement", message: "Aucun abonnement n'est rattaché à ce compte" },
+        { error: "aucun_abonnement", message: "Aucun abonnement n’est rattaché à ce compte" },
         { status: 404 }
       );
     }
@@ -68,7 +68,7 @@ export async function POST(req: NextRequest) {
   } catch (err) {
     console.error("[stripe/portal]", err);
     return NextResponse.json(
-      { error: "stripe_error", message: "Impossible d'ouvrir la gestion de l'abonnement" },
+      { error: "stripe_error", message: "Impossible d’ouvrir la gestion de l’abonnement" },
       { status: 500 }
     );
   }

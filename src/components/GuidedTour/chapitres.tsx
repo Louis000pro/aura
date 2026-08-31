@@ -101,7 +101,7 @@ export const CHAPITRES: Chapitre[] = [
   {
     id: "assistant",
     visage: "explain",
-    surtitre: "L'étincelle",
+    surtitre: "L’étincelle",
     titre: "Elle parle et elle agit",
     accent: [VIOLET, OR_CLAIR],
     Scene: SceneAssistant,

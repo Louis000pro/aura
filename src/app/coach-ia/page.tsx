@@ -15,7 +15,7 @@ import { CHIFFRES_PUBLICS } from "@/lib/chiffresPublics";
 export const metadata: Metadata = {
   title: "Coach sportif IA : musculation et nutrition",
   description:
-    "Vaiiya est ton coach sportif IA : il compose tes séances de musculation, suit tes calories et tes macros, et te guide pendant l'effort. Tu peux aussi construire tes séances toi-même. Gratuit pour commencer.",
+    "Vaiiya est ton coach sportif IA : il compose tes séances de musculation, suit tes calories et tes macros, et te guide pendant l’effort. Tu peux aussi construire tes séances toi-même. Gratuit pour commencer.",
   alternates: { canonical: "https://vaiiya.fr/coach-ia" },
   openGraph: {
     title: "Coach sportif IA · Vaiiya",

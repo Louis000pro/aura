@@ -102,7 +102,7 @@ const FICHES: Fiche[] = [
     id: "nora",
     nom: PRENOM_GUIDE.nora,
     ...PORTRAIT_GUIDE.nora,
-    voix: "On pose les bases, je t'explique au passage.",
+    voix: "On pose les bases, je t’explique au passage.",
     detail: [
       "Des réponses un peu plus longues, avec le raisonnement derrière la consigne.",
       "Elle récapitule avant de conclure.",
@@ -113,9 +113,9 @@ const FICHES: Fiche[] = [
     id: "sasha",
     nom: PRENOM_GUIDE.sasha,
     ...PORTRAIT_GUIDE.sasha,
-    voix: "On y va, je t'explique en route si tu veux.",
+    voix: "On y va, je t’explique en route si tu veux.",
     detail: [
-      "Des réponses courtes, la consigne d'abord.",
+      "Des réponses courtes, la consigne d’abord.",
       "Il conclut et enchaîne sur la suite.",
       "Il encourage en te projetant sur la prochaine séance.",
     ],

@@ -182,7 +182,7 @@ export default function PopupNouveautes() {
 
               <div className={styles.pad}>
 
-                <Chapitre n="01" titre="L'entraînement">
+                <Chapitre n="01" titre="L’entraînement">
                   <div className={styles.visuel}>
                     <div className={styles.trio} aria-hidden="true">
                       {TRIO.map((nom, i) => (
@@ -225,7 +225,7 @@ export default function PopupNouveautes() {
                   </p>
                 </Chapitre>
 
-                <Chapitre n="03" titre="L'étincelle">
+                <Chapitre n="03" titre="L’étincelle">
                   <p className={styles.txt}>
                     L&apos;assistant ne se contente plus de répondre, il <b>agit</b>. Il te prépare une
                     séance et te la montre avec ses mouvements, avant que tu valides. Il note un repas,

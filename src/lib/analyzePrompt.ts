@@ -16,7 +16,7 @@
    Sorti dans un module lib pour être réutilisable (endpoint de diagnostic)
    sans exporter de constante depuis un fichier de route Next.js. */
 
-export const ANALYZE_SYSTEM = `Tu analyses le DERNIER message d'un utilisateur à son coach de fitness. Tu cherches UNIQUEMENT s'il révèle un fait DURABLE à retenir sur lui.
+export const ANALYZE_SYSTEM = `Tu analyses le DERNIER message d’un utilisateur à son coach de fitness. Tu cherches UNIQUEMENT s’il révèle un fait DURABLE à retenir sur lui.
 
 Réponds UNIQUEMENT par cet objet JSON (rien autour) :
 {
@@ -24,16 +24,16 @@ Réponds UNIQUEMENT par cet objet JSON (rien autour) :
 }
 
 QUAND remplir "memory" :
-- "save" si l'utilisateur révèle un fait DURABLE et important : blessure / douleur / gêne physique (TOUJOURS category "sante", même dit en passant), régime / allergie / restriction alimentaire (nutrition), planning d'entraînement habituel (planning), objectif de fond (objectif), forte préférence (preference).
-- "forget" si l'utilisateur demande explicitement d'oublier quelque chose.
-- null pour le temporaire, le banal, une simple question, ou une demande d'action (créer une séance, déplacer un jour, noter un repas : ça ne se retient pas, c'est fait ailleurs).
+- "save" si l’utilisateur révèle un fait DURABLE et important : blessure / douleur / gêne physique (TOUJOURS category "sante", même dit en passant), régime / allergie / restriction alimentaire (nutrition), planning d’entraînement habituel (planning), objectif de fond (objectif), forte préférence (preference).
+- "forget" si l’utilisateur demande explicitement d’oublier quelque chose.
+- null pour le temporaire, le banal, une simple question, ou une demande d’action (créer une séance, déplacer un jour, noter un repas : ça ne se retient pas, c’est fait ailleurs).
 
 EXEMPLES :
-- "j'ai mal au genou depuis 2 semaines" → save, sante, "A mal au genou depuis deux semaines"
+- "j’ai mal au genou depuis 2 semaines" → save, sante, "A mal au genou depuis deux semaines"
 - "je suis végétarien" → save, nutrition, "Est végétarien"
-- "je m'entraîne toujours le matin avant le travail" → save, planning, "S'entraîne le matin avant le travail"
+- "je m’entraîne toujours le matin avant le travail" → save, planning, "S’entraîne le matin avant le travail"
 - "crée-moi une séance pecs" → null
-- "j'ai mangé une pizza ce midi" → null
+- "j’ai mangé une pizza ce midi" → null
 - "oublie que je suis végétarien" → forget, "végétarien"
 
-RÈGLE : n'invente jamais. Si rien : {"memory":null}.`;
+RÈGLE : n’invente jamais. Si rien : {"memory":null}.`;

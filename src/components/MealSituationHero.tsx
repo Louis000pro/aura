@@ -427,7 +427,7 @@ export default function MealSituationHero({
     ];
     return [
       { key: "code",       label: "Code-barres",    sub: "produit emballé", Icon: Barcode, run: onBarcode },
-      { key: "photo",      label: "Une photo",      sub: "l'IA estime",     Icon: Camera,  run: onPhoto },
+      { key: "photo",      label: "Une photo",      sub: "l’IA estime",     Icon: Camera,  run: onPhoto },
       { key: "classiques", label: "Mes classiques", sub: "mes habitudes",   Icon: Heart,   run: () => setScreen("classics") },
     ];
   };
@@ -440,7 +440,7 @@ export default function MealSituationHero({
   })();
 
   const heading =
-    screen === "finish" ? "J'ai des trucs à finir"
+    screen === "finish" ? "J’ai des trucs à finir"
     : screen === "classics" ? "Mes classiques"
     : screen === "livraison" ? "Je me fais livrer"
     : screen === "livraison-form" ? "Je sais ce que je prends"
@@ -767,7 +767,7 @@ export default function MealSituationHero({
             <PhotoCard label="Je sais ce que je prends" sub="log express" Icon={ShoppingBag}
               gradient={sitObj?.gradient ?? ""} img="/nutrition/livraison-jesais.jpg"
               onClick={() => { setFormStep(1); setScreen("livraison-form"); }} />
-            <PhotoCard label="Conseille-moi" sub="l'IA choisit" Icon={Sparkles}
+            <PhotoCard label="Conseille-moi" sub="l’IA choisit" Icon={Sparkles}
               gradient={sitObj?.gradient ?? ""} img="/nutrition/livraison-conseil.jpg"
               onClick={openAdvisor} />
           </motion.div>
@@ -822,7 +822,7 @@ export default function MealSituationHero({
                       <Store size={15} strokeWidth={1.8} style={{ color: "var(--text-3)" }} />
                       <input value={enseigne} onChange={(e) => setEnseigneSmart(e.target.value)}
                         onKeyDown={(e) => { if (e.key === "Enter") setFormStep(2); }}
-                        placeholder="McDonald's, le resto du coin…"
+                        placeholder="McDonald’s, le resto du coin…"
                         className="flex-1 bg-transparent text-sm outline-none" style={{ color: "var(--text-1)" }} />
                     </div>
                   </div>

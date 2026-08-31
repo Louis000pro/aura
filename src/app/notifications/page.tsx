@@ -45,7 +45,7 @@ function groupNotifications(list: Notification[]): Group[] {
   }
 
   return [
-    { label: "Aujourd'hui", items: today },
+    { label: "Aujourd’hui", items: today },
     { label: "Cette semaine", items: week },
     { label: "Plus tôt", items: older },
   ].filter((g) => g.items.length > 0);
@@ -53,7 +53,7 @@ function groupNotifications(list: Notification[]): Group[] {
 
 function relativeTime(iso: string): string {
   const diff = (Date.now() - new Date(iso).getTime()) / 1000;
-  if (diff < 60) return "à l'instant";
+  if (diff < 60) return "à l’instant";
   if (diff < 3600) return `${Math.floor(diff / 60)}min`;
   if (diff < 86400) return `${Math.floor(diff / 3600)}h`;
   if (diff < 604800) return `${Math.floor(diff / 86400)}j`;
@@ -375,10 +375,10 @@ export default function NotificationsPage() {
                       {" "}
                       <span className="font-light">
                         {notif.type === "relais"
-                          ? "a franchi son maillon, l'affiche s'est dévoilée"
+                          ? "a franchi son maillon, l’affiche s’est dévoilée"
                           : notif.type === "message"
-                          ? "t'a envoyé un message"
-                          : "t'a ajouté à ses amis"}
+                          ? "t’a envoyé un message"
+                          : "t’a ajouté à ses amis"}
                       </span>
                     </p>
                     <p className="text-[11px] mt-0.5" style={{ color: "var(--text-3)" }}>

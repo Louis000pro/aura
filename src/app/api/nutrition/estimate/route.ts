@@ -29,8 +29,8 @@ export async function POST(req: Request) {
       ? `Commande ${originLabel} chez « ${String(enseigne).trim()} ».
 Articles : "${description}"
 
-${niveauHint ? `L'utilisateur indique un établissement de type « ${niveauHint} » — prends-le comme référence pour le niveau.\n` : ""}Tiens compte du NIVEAU de l'établissement pour ajuster l'estimation :
-- fast-food (McDonald's, Burger King, KFC, kebab, tacos…) = plus gras, plus salé, portions généreuses ;
+${niveauHint ? `L’utilisateur indique un établissement de type « ${niveauHint} » — prends-le comme référence pour le niveau.\n` : ""}Tiens compte du NIVEAU de l’établissement pour ajuster l’estimation :
+- fast-food (McDonald’s, Burger King, KFC, kebab, tacos…) = plus gras, plus salé, portions généreuses ;
 - restaurant classique / bistro = cuisine standard, portions correctes ;
 - enseigne "healthy" (poke, salad bar, jus…) = plus léger, plus de légumes.
 

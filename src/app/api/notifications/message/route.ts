@@ -71,7 +71,7 @@ export async function POST(req: NextRequest) {
     const cibles = (membresRes.data ?? [])
       .filter((m) => m.user_id !== caller.id && !("muted" in m && m.muted))
       .map((m) => m.user_id as string);
-    const pseudo = profilRes.data?.pseudo ?? "Quelqu'un";
+    const pseudo = profilRes.data?.pseudo ?? "Quelqu’un";
     const lien = `/communaute/${message.conversation_id}`;
     const apercu = message.type === "image"
       ? "📷 Photo"
@@ -110,7 +110,7 @@ export async function POST(req: NextRequest) {
         await sendPushToUser({
           user_id: userId,
           categorie: "message",
-          title: `${pseudo} t'a écrit`,
+          title: `${pseudo} t’a écrit`,
           body: apercu || "Nouveau message",
           url: lien,
         });

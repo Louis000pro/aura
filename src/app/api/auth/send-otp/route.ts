@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
     if (!resendKey) {
       console.error("send-otp: RESEND_API_KEY manquant");
       return Response.json(
-        { error: "Le service d'envoi d'email n'est pas configuré." },
+        { error: "Le service d’envoi d’email n’est pas configuré." },
         { status: 503 }
       );
     }
@@ -45,18 +45,18 @@ export async function POST(req: NextRequest) {
       "<h1 style='margin:12px 0 2px;font-size:18px;font-weight:300;letter-spacing:0.2em;color:#2D3748'>VAIIYA</h1>" +
       "<p style='margin:0;font-size:11px;color:#A0AEC0'>Coach IA · Musculation · Nutrition</p></div>" +
       "<h2 style='text-align:center;font-size:17px;font-weight:400;color:#2D3748;margin:0 0 8px'>Code de confirmation</h2>" +
-      "<p style='text-align:center;font-size:13px;color:#718096;margin:0 0 28px'>Entre ce code dans l'application pour activer ton compte.</p>" +
+      "<p style='text-align:center;font-size:13px;color:#718096;margin:0 0 28px'>Entre ce code dans l’application pour activer ton compte.</p>" +
       "<div style='background:rgba(212,192,255,0.15);border:1.5px solid rgba(167,139,250,0.2);border-radius:16px;padding:28px 20px;text-align:center;margin-bottom:24px'>" +
       "<span style='font-family:monospace;font-size:42px;font-weight:700;letter-spacing:14px;color:#A78BFA'>" + otp + "</span></div>" +
       "<p style='text-align:center;font-size:12px;color:#A0AEC0'>Ce code expire dans <strong>10 minutes</strong>.</p>" +
-      "<p style='text-align:center;font-size:11px;color:#A0AEC0;margin-top:24px'>Si tu n'as pas demandé ce code, ignore cet email.</p>" +
+      "<p style='text-align:center;font-size:11px;color:#A0AEC0;margin-top:24px'>Si tu n’as pas demandé ce code, ignore cet email.</p>" +
       "</div></body></html>";
 
     const text =
       "Vaiiya · Code de confirmation\n\n" +
       "Ton code : " + otp + "\n\n" +
       "Ce code expire dans 10 minutes.\n" +
-      "Si tu n'as pas demandé ce code, ignore cet email.";
+      "Si tu n’as pas demandé ce code, ignore cet email.";
 
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
@@ -78,12 +78,12 @@ export async function POST(req: NextRequest) {
       console.error("Resend send error:", res.status, errBody);
       if (res.status === 422 || res.status === 403) {
         return Response.json(
-          { error: "Email non livrable. Vérifie l'adresse." },
+          { error: "Email non livrable. Vérifie l’adresse." },
           { status: 422 }
         );
       }
       return Response.json(
-        { error: "Erreur d'envoi de l'email. Réessaie dans un instant." },
+        { error: "Erreur d’envoi de l’email. Réessaie dans un instant." },
         { status: 502 }
       );
     }

@@ -125,13 +125,13 @@ const REPLIQUES = {
      donc elle ne peut pas la contredire. */
   "action.create_seance": {
     commun: "Voici une proposition de séance, regarde juste en dessous 👇",
-    nora:   "Je t'ai préparé une séance à partir de ce que tu m'as dit. Elle est juste en dessous 👇",
+    nora:   "Je t’ai préparé une séance à partir de ce que tu m’as dit. Elle est juste en dessous 👇",
     sasha:  "Une séance pour toi, juste en dessous 👇",
   },
   "action.plan_set": {
     commun: "Ça marche, je te prépare ça. Valide juste en dessous 👇",
     nora:   "Je te prépare ça pour ce jour-là. Valide juste en dessous 👇",
-    sasha:  "C'est prêt, valide juste en dessous 👇",
+    sasha:  "C’est prêt, valide juste en dessous 👇",
   },
   "action.plan_move": {
     commun: "Pas de souci, je te propose un nouveau jour. Valide en dessous 👇",
@@ -139,9 +139,9 @@ const REPLIQUES = {
     sasha:  "Nouveau jour proposé, valide en dessous 👇",
   },
   "action.plan_location": {
-    commun: "C'est noté pour le lieu. Valide la séance juste en dessous 👇",
-    nora:   "J'ai noté le lieu, la séance s'adapte. Valide-la juste en dessous 👇",
-    sasha:  "Lieu noté, la séance s'adapte. Valide en dessous 👇",
+    commun: "C’est noté pour le lieu. Valide la séance juste en dessous 👇",
+    nora:   "J’ai noté le lieu, la séance s’adapte. Valide-la juste en dessous 👇",
+    sasha:  "Lieu noté, la séance s’adapte. Valide en dessous 👇",
   },
   "action.plan_library": {
     commun: "Je te la programme, valide juste en dessous 👇",
@@ -154,49 +154,49 @@ const REPLIQUES = {
     sasha:  "Nouvelle semaine prête, valide en dessous ✦",
   },
   "action.log_meal": {
-    commun: "C'est noté, je te prépare l'ajout. Valide juste en dessous 👇",
-    nora:   "Je te prépare l'ajout à ton journal. Valide juste en dessous 👇",
-    sasha:  "Je te prépare l'ajout, valide juste en dessous 👇",
+    commun: "C’est noté, je te prépare l’ajout. Valide juste en dessous 👇",
+    nora:   "Je te prépare l’ajout à ton journal. Valide juste en dessous 👇",
+    sasha:  "Je te prépare l’ajout, valide juste en dessous 👇",
   },
   "action.create_recipe": {
-    commun: "Je t'écris ça, regarde juste en dessous 👇",
-    nora:   "Je t'écris la recette, elle est juste en dessous 👇",
+    commun: "Je t’écris ça, regarde juste en dessous 👇",
+    nora:   "Je t’écris la recette, elle est juste en dessous 👇",
     sasha:  "Recette écrite, juste en dessous 👇",
   },
   "action.open_page": {
-    commun: "Je t'emmène ✦",
-    nora:   "Je t'y emmène, c'est par là 🙂",
+    commun: "Je t’emmène ✦",
+    nora:   "Je t’y emmène, c’est par là 🙂",
     sasha:  "On y va 👉",
   },
   "action.save_lieu": {
-    commun: "C'est noté, je m'en souviens ✦",
-    nora:   "C'est noté, je m'en souviens pour la suite 🙂",
-    sasha:  "Noté, je m'en souviens 👍",
+    commun: "C’est noté, je m’en souviens ✦",
+    nora:   "C’est noté, je m’en souviens pour la suite 🙂",
+    sasha:  "Noté, je m’en souviens 👍",
   },
   /* Repli du repli : quand le modèle pose une question sans la formuler. */
   "action.ask_choice": {
-    commun: "J'ai besoin d'une précision ✦",
+    commun: "J’ai besoin d’une précision ✦",
     nora:   "Il me manque une précision avant de continuer.",
-    sasha:  "Une précision et j'y vais.",
+    sasha:  "Une précision et j’y vais.",
   },
   "action.set_theme.sombre": {
-    commun: "C'est passé en sombre ✦",
-    nora:   "C'est fait, l'app passe en sombre 🙂",
-    sasha:  "En sombre, c'est fait 👍",
+    commun: "C’est passé en sombre ✦",
+    nora:   "C’est fait, l’app passe en sombre 🙂",
+    sasha:  "En sombre, c’est fait 👍",
   },
   "action.set_theme.clair": {
     commun: "Retour en clair ✦",
-    nora:   "C'est fait, retour en clair 🙂",
+    nora:   "C’est fait, retour en clair 🙂",
     sasha:  "Retour en clair 👍",
   },
   "action.set_theme.auto": {
     commun: "Thème réglé sur automatique, il suivra ton téléphone ✦",
-    nora:   "C'est réglé sur automatique : le thème suivra ton téléphone 🙂",
+    nora:   "C’est réglé sur automatique : le thème suivra ton téléphone 🙂",
     sasha:  "Sur automatique, il suivra ton téléphone 👍",
   },
   "action.defaut": {
-    commun: "C'est noté ✦",
-    nora:   "C'est noté 🙂",
+    commun: "C’est noté ✦",
+    nora:   "C’est noté 🙂",
     sasha:  "Noté 👍",
   },
 
@@ -207,14 +207,14 @@ const REPLIQUES = {
      question. Les réponses proposées, elles, restent hors de sa voix
      (voir CHOIX_LIEU / CHOIX_EQUIP plus bas). */
   "question.lieu": {
-    commun: "Avant de te préparer ça, tu t'entraînes où ?",
-    nora:   "Avant de te préparer ça, j'ai besoin de savoir où tu t'entraînes.",
-    sasha:  "Tu t'entraînes où ? J'adapte tout de suite.",
+    commun: "Avant de te préparer ça, tu t’entraînes où ?",
+    nora:   "Avant de te préparer ça, j’ai besoin de savoir où tu t’entraînes.",
+    sasha:  "Tu t’entraînes où ? J’adapte tout de suite.",
   },
   "question.lieu_semaine": {
-    commun: "Tu t'entraînes où cette semaine ?",
-    nora:   "Pour construire ta semaine, dis-moi où tu t'entraînes.",
-    sasha:  "Tu t'entraînes où cette semaine ?",
+    commun: "Tu t’entraînes où cette semaine ?",
+    nora:   "Pour construire ta semaine, dis-moi où tu t’entraînes.",
+    sasha:  "Tu t’entraînes où cette semaine ?",
   },
   "question.equip": {
     commun: "Tu as des haltères à la maison ?",
@@ -228,7 +228,7 @@ const REPLIQUES = {
      diagnostiquer (« j'ai parlé, il ne s'est rien passé »). */
   "impasse.move_introuvable": {
     commun: "Je ne trouve pas de séance à déplacer cette semaine 🤔 Dis-moi le jour de départ, par ex. « déplace la séance de jeudi à vendredi ».",
-    nora:   "Je ne trouve pas de séance à déplacer cette semaine 🤔 Dis-moi son jour de départ et je m'en occupe, par ex. « déplace la séance de jeudi à vendredi ».",
+    nora:   "Je ne trouve pas de séance à déplacer cette semaine 🤔 Dis-moi son jour de départ et je m’en occupe, par ex. « déplace la séance de jeudi à vendredi ».",
     sasha:  "Aucune séance à déplacer cette semaine 🤔 Donne-moi le jour de départ, par ex. « déplace la séance de jeudi à vendredi ».",
   },
   "impasse.move_sans_jour": {
@@ -238,11 +238,11 @@ const REPLIQUES = {
   },
   "impasse.move_deja_prevu": {
     commun: (c: ContexteVoix) => `La séance est déjà prévue le ${c.jour ?? ""} 🙂`,
-    nora:   (c: ContexteVoix) => `La séance est déjà prévue le ${c.jour ?? ""}, il n'y a rien à changer 🙂`,
+    nora:   (c: ContexteVoix) => `La séance est déjà prévue le ${c.jour ?? ""}, il n’y a rien à changer 🙂`,
     sasha:  (c: ContexteVoix) => `Elle est déjà prévue le ${c.jour ?? ""} 🙂`,
   },
   "impasse.regen_semaine_finie": {
-    commun: "Il ne reste plus de jour modifiable cette semaine 🙂 Décale plutôt une séance précise, ou redemande-moi lundi pour la semaine d'après.",
+    commun: "Il ne reste plus de jour modifiable cette semaine 🙂 Décale plutôt une séance précise, ou redemande-moi lundi pour la semaine d’après.",
     nora:   "Il ne reste plus de jour modifiable cette semaine 🙂 On peut décaler une séance précise, ou reprendre la semaine entière lundi.",
     sasha:  "Plus de jour modifiable cette semaine 🙂 Décale une séance précise, ou redemande-moi lundi.",
   },
@@ -271,9 +271,9 @@ const REPLIQUES = {
     sasha:  (c: ContexteVoix) => `Salut${c.pseudo ? ` ${c.pseudo}` : ""} 👋`,
   },
   "accueil.invite": {
-    commun: "Demande-moi n'importe quoi, ou dis-moi où tu veux aller dans l'app.",
-    nora:   "Pose-moi ta question, ou dis-moi simplement où tu veux aller dans l'app.",
-    sasha:  "Demande-moi ce que tu veux, ou dis-moi où aller dans l'app.",
+    commun: "Demande-moi n’importe quoi, ou dis-moi où tu veux aller dans l’app.",
+    nora:   "Pose-moi ta question, ou dis-moi simplement où tu veux aller dans l’app.",
+    sasha:  "Demande-moi ce que tu veux, ou dis-moi où aller dans l’app.",
   },
 
   /* ════════════════════════════════════════════════════════════════
@@ -304,8 +304,8 @@ const REPLIQUES = {
      celui de la veilleuse : rien ne s'est perdu, rien n'est à rattraper,
      et surtout aucune promesse de nouveauté qu'on ne peut pas tenir. */
   "retour.absence.longue": {
-    commun: "Te revoilà. Rien ne s'est perdu, et il n'y a rien à rattraper.",
-    nora:   "Te revoilà. Rien ne s'est perdu de ton côté et il n'y a rien à rattraper. On repart d'où tu veux, même tout doucement.",
+    commun: "Te revoilà. Rien ne s’est perdu, et il n’y a rien à rattraper.",
+    nora:   "Te revoilà. Rien ne s’est perdu de ton côté et il n’y a rien à rattraper. On repart d’où tu veux, même tout doucement.",
     sasha:  "Te revoilà. Rien à rattraper, rien à reprendre de zéro. On repart quand tu veux.",
   },
 
@@ -313,9 +313,9 @@ const REPLIQUES = {
      Le fait qu'il y ait DÉJÀ eu des séances change la phrase : on peut
      s'appuyer dessus au lieu de tout réexpliquer. */
   "retour.absence.courte": {
-    commun: "Te revoilà. Ta place n'a pas bougé.",
-    nora:   "Te revoilà. Ta place n'a pas bougé, tes séances non plus. Dix minutes suffisent pour reprendre le fil.",
-    sasha:  "Te revoilà. Ta place n'a pas bougé. Dix minutes suffisent pour reprendre ton rythme.",
+    commun: "Te revoilà. Ta place n’a pas bougé.",
+    nora:   "Te revoilà. Ta place n’a pas bougé, tes séances non plus. Dix minutes suffisent pour reprendre le fil.",
+    sasha:  "Te revoilà. Ta place n’a pas bougé. Dix minutes suffisent pour reprendre ton rythme.",
   },
 
   /* Le palier `decouverte` : moins de deux séances au total. Le produit
@@ -323,8 +323,8 @@ const REPLIQUES = {
      d'entrée la plus basse qui existe, et rien d'autre. */
   "retour.debut": {
     commun: "On commence quand tu veux. La séance la plus courte fait quinze minutes, sans matériel.",
-    nora:   "On commence quand tu le sens. La plus courte fait quinze minutes, sans matériel, et je t'explique au fur et à mesure.",
-    sasha:  "On commence quand tu veux. Quinze minutes, sans matériel, et c'est parti.",
+    nora:   "On commence quand tu le sens. La plus courte fait quinze minutes, sans matériel, et je t’explique au fur et à mesure.",
+    sasha:  "On commence quand tu veux. Quinze minutes, sans matériel, et c’est parti.",
   },
 
   /* Un rang à portée d'une seule séance. Le chiffre vient du calcul de
@@ -333,7 +333,7 @@ const REPLIQUES = {
   "retour.palier": {
     commun: (c: ContexteVoix) => `Plus que ${c.manque ?? 0} EXP avant ${c.rang ?? ""}.`,
     nora:   (c: ContexteVoix) => `Plus que ${c.manque ?? 0} EXP avant ${c.rang ?? ""}. Une séance suffit à passer le cap.`,
-    sasha:  (c: ContexteVoix) => `${c.rang ?? ""} est à ${c.manque ?? 0} EXP. Une séance et c'est fait.`,
+    sasha:  (c: ContexteVoix) => `${c.rang ?? ""} est à ${c.manque ?? 0} EXP. Une séance et c’est fait.`,
   },
 
   /* Une série qui atteint un cap. Elle constate, elle ne met jamais en
@@ -341,7 +341,7 @@ const REPLIQUES = {
      menace est une culpabilisation déguisée. */
   "retour.serie": {
     commun: (c: ContexteVoix) => `Jour ${c.serie ?? 0}. Ta série tient.`,
-    nora:   (c: ContexteVoix) => `Jour ${c.serie ?? 0}. Ta série tient, et c'est le genre de chose qui se construit sans qu'on la voie.`,
+    nora:   (c: ContexteVoix) => `Jour ${c.serie ?? 0}. Ta série tient, et c’est le genre de chose qui se construit sans qu’on la voie.`,
     sasha:  (c: ContexteVoix) => `Jour ${c.serie ?? 0}. La série tient, on continue.`,
   },
 
@@ -352,7 +352,7 @@ const REPLIQUES = {
   "retour.jour.a": {
     commun: "Te revoilà.",
     nora:   "Te revoilà. Je suis là si tu veux y voir clair sur ta journée.",
-    sasha:  "Te revoilà. Dis-moi ce qu'on fait aujourd'hui.",
+    sasha:  "Te revoilà. Dis-moi ce qu’on fait aujourd’hui.",
   },
   "retour.jour.b": {
     commun: "Je suis là quand tu veux.",
@@ -360,36 +360,36 @@ const REPLIQUES = {
     sasha:  "Je suis là. Une question, une séance, ce que tu veux.",
   },
   "retour.jour.c": {
-    commun: "On fait quoi aujourd'hui ?",
+    commun: "On fait quoi aujourd’hui ?",
     nora:   "On regarde ta journée ensemble ?",
-    sasha:  "On fait quoi aujourd'hui ?",
+    sasha:  "On fait quoi aujourd’hui ?",
   },
 
   /* ── Sa mémoire ──
      Il parle de lui, donc c'est bien lui qui parle. */
   "memoire.oubliee": {
-    commun: "C'est noté, j'oublie ça.",
-    nora:   "C'est noté, je l'oublie.",
-    sasha:  "C'est oublié.",
+    commun: "C’est noté, j’oublie ça.",
+    nora:   "C’est noté, je l’oublie.",
+    sasha:  "C’est oublié.",
   },
   "memoire.retenue": {
-    commun: "Je m'en souviendrai 🧠",
+    commun: "Je m’en souviendrai 🧠",
     nora:   "Je le garde en tête pour la suite 🧠",
-    sasha:  "Je m'en souviens 🧠",
+    sasha:  "Je m’en souviens 🧠",
   },
   /* L'écran de sa mémoire. Le titre « Ce que je retiens de toi » reste un
      en-tête d'écran, donc il vit dans le composant : c'est le même
      arbitrage que « On mange où ? ». Ici il n'y a que ses deux vraies
      phrases, la promesse et l'invitation. */
   "memoire.ecran": {
-    commun: "J'oublie tout de suite ce que tu retires. Rien de tout ça ne sort d'ici.",
-    nora:   "J'oublie tout de suite ce que tu retires, et rien de tout ça ne sort d'ici.",
-    sasha:  "Tu retires, j'oublie. Et rien ne sort d'ici.",
+    commun: "J’oublie tout de suite ce que tu retires. Rien de tout ça ne sort d’ici.",
+    nora:   "J’oublie tout de suite ce que tu retires, et rien de tout ça ne sort d’ici.",
+    sasha:  "Tu retires, j’oublie. Et rien ne sort d’ici.",
   },
   "memoire.vide": {
-    commun: "Je n'ai encore rien retenu. Parle-moi normalement et dis-moi ce qui compte : une blessure, ce que tu ne manges pas, tes horaires. Je m'en servirai à chaque fois qu'on se parle.",
-    nora:   "Je n'ai encore rien retenu de toi. Parle-moi normalement et dis-moi ce qui compte : une blessure, ce que tu ne manges pas, tes horaires. Je m'en servirai à chaque fois qu'on se parle.",
-    sasha:  "Rien de retenu pour l'instant. Dis-moi ce qui compte : une blessure, ce que tu ne manges pas, tes horaires. Je m'en sers dès la prochaine fois.",
+    commun: "Je n’ai encore rien retenu. Parle-moi normalement et dis-moi ce qui compte : une blessure, ce que tu ne manges pas, tes horaires. Je m’en servirai à chaque fois qu’on se parle.",
+    nora:   "Je n’ai encore rien retenu de toi. Parle-moi normalement et dis-moi ce qui compte : une blessure, ce que tu ne manges pas, tes horaires. Je m’en servirai à chaque fois qu’on se parle.",
+    sasha:  "Rien de retenu pour l’instant. Dis-moi ce qui compte : une blessure, ce que tu ne manges pas, tes horaires. Je m’en sers dès la prochaine fois.",
   },
 
   /* ── Ce qu'il dit pendant qu'il travaille ──
@@ -405,14 +405,14 @@ const REPLIQUES = {
     sasha:  "Séance en préparation…",
   },
   "attente.recette": {
-    commun: "Je t'écris la recette…",
-    nora:   "Je t'écris la recette…",
+    commun: "Je t’écris la recette…",
+    nora:   "Je t’écris la recette…",
     sasha:  "Recette en cours…",
   },
   "attente.repas": {
-    commun: "J'estime ce repas…",
-    nora:   "J'estime ce que ça représente…",
-    sasha:  "J'estime ce repas…",
+    commun: "J’estime ce repas…",
+    nora:   "J’estime ce que ça représente…",
+    sasha:  "J’estime ce repas…",
   },
 
   /* ── Quand ça ne répond pas ──
@@ -424,7 +424,7 @@ const REPLIQUES = {
      par-dessus une panne se lirait comme de l'indifférence, et une
      tournure posée n'aiderait pas davantage. Le seul service à rendre
      ici, c'est de dire ce qui s'est passé et quoi faire ensuite. */
-  "panne.sans_reponse": { commun: "Je n'ai pas réussi à répondre à ce message 😕 Réessaie, ou reformule-le autrement." },
+  "panne.sans_reponse": { commun: "Je n’ai pas réussi à répondre à ce message 😕 Réessaie, ou reformule-le autrement." },
   "panne.erreur":       { commun: "Désolé, une erreur est survenue. Réessaie ✨" },
 
   /* ── Le parcours d'entrée (/bienvenue) ──
@@ -449,7 +449,7 @@ const REPLIQUES = {
      pas laisser une page muette. */
   "bienvenue.section.corps": {
     commun: "Quelques repères sur toi, pour ajuster la suite.",
-    nora:   "Je commence par quelques repères sur toi. Ils m'aideront à mieux ajuster la suite.",
+    nora:   "Je commence par quelques repères sur toi. Ils m’aideront à mieux ajuster la suite.",
     sasha:  "On commence par quelques repères sur toi, et on pourra déjà mieux ajuster la suite.",
   },
   "bienvenue.section.objectifs": {
@@ -463,26 +463,26 @@ const REPLIQUES = {
     sasha:  "On règle ton niveau et ton rythme pour partir sur quelque chose qui te correspond.",
   },
   "bienvenue.section.entrainement": {
-    commun: "Où et avec quoi tu t'entraînes le plus souvent.",
-    nora:   "Il me reste à comprendre où et avec quoi tu t'entraînes le plus souvent.",
-    sasha:  "Dis-moi où et avec quoi tu t'entraînes le plus souvent, et on adapte autour.",
+    commun: "Où et avec quoi tu t’entraînes le plus souvent.",
+    nora:   "Il me reste à comprendre où et avec quoi tu t’entraînes le plus souvent.",
+    sasha:  "Dis-moi où et avec quoi tu t’entraînes le plus souvent, et on adapte autour.",
   },
   "bienvenue.section.nutrition": {
-    commun: "Si tu utilises la nutrition, ces repères permettent de l'adapter.",
-    nora:   "Si tu utilises aussi la partie nutrition, ces quelques repères permettront de mieux l'adapter.",
+    commun: "Si tu utilises la nutrition, ces repères permettent de l’adapter.",
+    nora:   "Si tu utilises aussi la partie nutrition, ces quelques repères permettront de mieux l’adapter.",
     sasha:  "Si tu veux utiliser la nutrition aussi, on règle rapidement tes repères ici.",
   },
   "bienvenue.fin": {
-    commun: "C'est enregistré. Vaiiya est adapté à ce que tu as indiqué.",
-    nora:   "C'est enregistré. J'ai de quoi adapter Vaiiya à ce que tu m'as indiqué.",
-    sasha:  "C'est bon, on est prêts. On peut commencer.",
+    commun: "C’est enregistré. Vaiiya est adapté à ce que tu as indiqué.",
+    nora:   "C’est enregistré. J’ai de quoi adapter Vaiiya à ce que tu m’as indiqué.",
+    sasha:  "C’est bon, on est prêts. On peut commencer.",
   },
   /* Compte déjà configuré : il n'a répondu qu'au choix du Guide, donc on
      ne peut pas lui dire qu'on vient d'enregistrer ses réponses. */
   "bienvenue.fin_retour": {
-    commun: "C'est enregistré. Tu peux reprendre où tu en étais.",
-    nora:   "C'est enregistré. Je reprends là où tu en étais.",
-    sasha:  "C'est noté. On y va.",
+    commun: "C’est enregistré. Tu peux reprendre où tu en étais.",
+    nora:   "C’est enregistré. Je reprends là où tu en étais.",
+    sasha:  "C’est noté. On y va.",
   },
   /* Le rappel quand le questionnaire a été laissé en chemin. Il dit ce
      qui manque au Guide POUR TRAVAILLER, jamais ce que la personne a
@@ -492,7 +492,7 @@ const REPLIQUES = {
   "bienvenue.rappel": {
     commun: "Il manque quelques réponses pour adapter Vaiiya à toi.",
     nora:   "Il me manque quelques réponses pour bien adapter Vaiiya à toi.",
-    sasha:  "Il me manque deux ou trois réponses, et j'adapte tout autour de toi.",
+    sasha:  "Il me manque deux ou trois réponses, et j’adapte tout autour de toi.",
   },
 
   /* ── Pendant la séance ──
@@ -519,13 +519,13 @@ const REPLIQUES = {
     sasha:  "Souffle. Prochaine série, même intention.",
   },
   "seance.repos.exo": {
-    commun: "On change d'exercice juste après, prends ce temps.",
-    nora:   "On change d'exercice après cette pause. Prends vraiment ce temps-là.",
+    commun: "On change d’exercice juste après, prends ce temps.",
+    nora:   "On change d’exercice après cette pause. Prends vraiment ce temps-là.",
     sasha:  "Nouvel exercice après la pause. Récupère, on enchaîne.",
   },
   "seance.repos.fin": {
     commun: "Dernier exercice, garde le même rythme.",
-    nora:   "C'est le dernier exercice. Garde la même qualité de mouvement jusqu'au bout.",
+    nora:   "C’est le dernier exercice. Garde la même qualité de mouvement jusqu’au bout.",
     sasha:  "Dernier exercice. Même rythme, on finit propre.",
   },
   /* Le tunnel est en pause : le Guide attend, et c'est le seul moment de la
@@ -539,8 +539,8 @@ const REPLIQUES = {
      sont juste en dessous et ils ne lui appartiennent pas. */
   "seance.fin": {
     commun: "Séance bouclée. Rien lâché.",
-    nora:   "Tu l'as menée jusqu'au bout, et ça se lit dans ces chiffres. Belle séance.",
-    sasha:  "Séance bouclée, rien lâché. Ça, c'est fait.",
+    nora:   "Tu l’as menée jusqu’au bout, et ça se lit dans ces chiffres. Belle séance.",
+    sasha:  "Séance bouclée, rien lâché. Ça, c’est fait.",
   },
 
   /* ── La visite guidée ──
@@ -559,14 +559,14 @@ const REPLIQUES = {
      phrase sans chapitre se voit tout de suite : c'est ce qui empêche la
      visite de repartir avec un texte en dur dans l'écran. */
   "visite.ouverture": {
-    commun: "Une minute pour voir ce que Vaiiya sait faire. Tu peux passer, la visite t'attendra dans tes paramètres.",
-    nora:   "Je te fais le tour en une minute, le temps de voir ce que Vaiiya sait faire. Si tu préfères plus tard, la visite t'attendra dans tes paramètres.",
+    commun: "Une minute pour voir ce que Vaiiya sait faire. Tu peux passer, la visite t’attendra dans tes paramètres.",
+    nora:   "Je te fais le tour en une minute, le temps de voir ce que Vaiiya sait faire. Si tu préfères plus tard, la visite t’attendra dans tes paramètres.",
     sasha:  "Une minute, je te montre ce que Vaiiya sait faire. Tu peux passer, ça reste dans tes paramètres.",
   },
   "visite.seance": {
-    commun: "Le mouvement s'anime à l'écran, le compte à rebours part, le repos s'enchaîne. Tu n'as qu'à suivre. Cent-deux mouvements sont dessinés, pas un seul n'est une photo prise au hasard.",
-    nora:   "Regarde bien : le mouvement s'anime, le compte à rebours part, le repos s'enchaîne tout seul. Tu n'as qu'à suivre, je m'occupe du reste. Cent-deux mouvements sont dessinés un par un.",
-    sasha:  "Le mouvement s'anime, le compte à rebours part, le repos s'enchaîne. Tu suis, je gère le reste. Cent-deux mouvements dessinés un par un.",
+    commun: "Le mouvement s’anime à l’écran, le compte à rebours part, le repos s’enchaîne. Tu n’as qu’à suivre. Cent-deux mouvements sont dessinés, pas un seul n’est une photo prise au hasard.",
+    nora:   "Regarde bien : le mouvement s’anime, le compte à rebours part, le repos s’enchaîne tout seul. Tu n’as qu’à suivre, je m’occupe du reste. Cent-deux mouvements sont dessinés un par un.",
+    sasha:  "Le mouvement s’anime, le compte à rebours part, le repos s’enchaîne. Tu suis, je gère le reste. Cent-deux mouvements dessinés un par un.",
   },
   "visite.catalogue": {
     commun: "Sans matériel, à la salle, mobilité, cardio, récupération. Vingt-six mini-cours pour comprendre ce que tu fais. Et si rien ne te va, tu pioches parmi les mouvements animés pour composer la tienne.",
@@ -574,34 +574,34 @@ const REPLIQUES = {
     sasha:  "Sans matériel, salle, mobilité, cardio, récupération. Vingt-six mini-cours en plus. Rien ne te va ? Dis-le-moi, on compose la tienne.",
   },
   "visite.assistant": {
-    commun: "Demande-lui de poser une séance jeudi, de noter ton repas, de refaire ta semaine : elle le prépare dans la foulée. Rien ne s'enregistre tant que tu n'as pas touché la carte.",
-    nora:   "C'est là qu'on se parle. Demande-moi de poser une séance jeudi, de noter ton repas, de refaire ta semaine : je le prépare dans la foulée. Rien ne s'enregistre tant que tu n'as pas touché la carte.",
-    sasha:  "C'est là qu'on se parle. Une séance jeudi, un repas à noter, la semaine à refaire : je prépare, tu valides. Rien ne s'enregistre sans ton clic.",
+    commun: "Demande-lui de poser une séance jeudi, de noter ton repas, de refaire ta semaine : elle le prépare dans la foulée. Rien ne s’enregistre tant que tu n’as pas touché la carte.",
+    nora:   "C’est là qu’on se parle. Demande-moi de poser une séance jeudi, de noter ton repas, de refaire ta semaine : je le prépare dans la foulée. Rien ne s’enregistre tant que tu n’as pas touché la carte.",
+    sasha:  "C’est là qu’on se parle. Une séance jeudi, un repas à noter, la semaine à refaire : je prépare, tu valides. Rien ne s’enregistre sans ton clic.",
   },
   "visite.nutrition": {
     commun: "Pas de tableau à remplir : on te demande simplement où tu manges. À la maison, au resto, ou un sandwich acheté en chemin. Une photo de ton assiette suffit à estimer le reste.",
     nora:   "Pas de tableau à remplir : je te demande simplement où tu manges. À la maison, au resto, ou un sandwich acheté en chemin. Une photo de ton assiette me suffit pour estimer le reste.",
-    sasha:  "Pas de tableau à remplir. Je demande juste où tu manges : maison, resto, ou sandwich en chemin. Une photo de l'assiette, j'estime le reste.",
+    sasha:  "Pas de tableau à remplir. Je demande juste où tu manges : maison, resto, ou sandwich en chemin. Une photo de l’assiette, j’estime le reste.",
   },
   "visite.rang": {
-    commun: "Une présence, une séance, un repas : tout se transforme en EXP et fait monter ta gemme. On mesure ta constance, jamais ton corps, et il n'y a aucun classement.",
-    nora:   "Une présence, une séance, un repas : tout se transforme en EXP et fait monter ta gemme. Je compte ta constance, jamais ton corps, et il n'y a aucun classement.",
-    sasha:  "Présence, séance, repas : tout devient de l'EXP et fait monter ta gemme. Je compte ta constance, jamais ton corps. Aucun classement.",
+    commun: "Une présence, une séance, un repas : tout se transforme en EXP et fait monter ta gemme. On mesure ta constance, jamais ton corps, et il n’y a aucun classement.",
+    nora:   "Une présence, une séance, un repas : tout se transforme en EXP et fait monter ta gemme. Je compte ta constance, jamais ton corps, et il n’y a aucun classement.",
+    sasha:  "Présence, séance, repas : tout devient de l’EXP et fait monter ta gemme. Je compte ta constance, jamais ton corps. Aucun classement.",
   },
   "visite.relais": {
-    commun: "Invite quelqu'un, un maillon chacun son tour. À chaque séance l'image se dévoile un peu plus, jusqu'à être entière. Aucun score, et on ne nomme jamais celui qui a lâché.",
-    nora:   "Invite quelqu'un, et vous prenez un maillon chacun votre tour. À chaque séance l'image se dévoile un peu plus, jusqu'à être entière. Aucun score, et on ne nomme jamais celui qui a lâché.",
-    sasha:  "Invite quelqu'un, un maillon chacun son tour. Chaque séance dévoile un bout de l'image. Aucun score, et personne n'est montré du doigt.",
+    commun: "Invite quelqu’un, un maillon chacun son tour. À chaque séance l’image se dévoile un peu plus, jusqu’à être entière. Aucun score, et on ne nomme jamais celui qui a lâché.",
+    nora:   "Invite quelqu’un, et vous prenez un maillon chacun votre tour. À chaque séance l’image se dévoile un peu plus, jusqu’à être entière. Aucun score, et on ne nomme jamais celui qui a lâché.",
+    sasha:  "Invite quelqu’un, un maillon chacun son tour. Chaque séance dévoile un bout de l’image. Aucun score, et personne n’est montré du doigt.",
   },
   "visite.repere": {
-    commun: "Ton accueil, tes entraînements, ta nutrition, tes discussions. Et l'étincelle au centre, disponible depuis n'importe quel écran.",
-    nora:   "Ton accueil, tes entraînements, ta nutrition, tes discussions. Et l'étincelle au centre : c'est par là que tu me trouves, depuis n'importe quel écran.",
-    sasha:  "Accueil, entraînements, nutrition, discussions. L'étincelle au centre : c'est par là que tu me trouves, depuis n'importe quel écran.",
+    commun: "Ton accueil, tes entraînements, ta nutrition, tes discussions. Et l’étincelle au centre, disponible depuis n’importe quel écran.",
+    nora:   "Ton accueil, tes entraînements, ta nutrition, tes discussions. Et l’étincelle au centre : c’est par là que tu me trouves, depuis n’importe quel écran.",
+    sasha:  "Accueil, entraînements, nutrition, discussions. L’étincelle au centre : c’est par là que tu me trouves, depuis n’importe quel écran.",
   },
   "visite.final": {
-    commun: "Commence par ce que tu veux. Si tu ne sais pas, touche l'étincelle et dis-lui simplement ce que tu as envie de faire aujourd'hui.",
-    nora:   "Commence par ce que tu veux. Et si tu ne sais pas, touche l'étincelle et dis-moi simplement ce que tu as envie de faire aujourd'hui.",
-    sasha:  "Commence par ce que tu veux. Si tu ne sais pas, touche l'étincelle et dis-moi ce que tu as envie de faire.",
+    commun: "Commence par ce que tu veux. Si tu ne sais pas, touche l’étincelle et dis-lui simplement ce que tu as envie de faire aujourd’hui.",
+    nora:   "Commence par ce que tu veux. Et si tu ne sais pas, touche l’étincelle et dis-moi simplement ce que tu as envie de faire aujourd’hui.",
+    sasha:  "Commence par ce que tu veux. Si tu ne sais pas, touche l’étincelle et dis-moi ce que tu as envie de faire.",
   },
 
   /* ── Les états vides ──
@@ -620,22 +620,22 @@ const REPLIQUES = {
      de travail dans ces phrases : il désamorce l'idée qu'un écran vide
      serait un manquement. */
   "vide.seances": {
-    commun: "Rien ici pour l'instant, et c'est normal. Une séance courte suffit à ouvrir la liste.",
-    nora:   "Rien ici pour l'instant, et c'est normal. Prends une séance courte, je te la déroule pas à pas.",
-    sasha:  "Rien ici pour l'instant. Prends une séance courte, je te la déroule.",
+    commun: "Rien ici pour l’instant, et c’est normal. Une séance courte suffit à ouvrir la liste.",
+    nora:   "Rien ici pour l’instant, et c’est normal. Prends une séance courte, je te la déroule pas à pas.",
+    sasha:  "Rien ici pour l’instant. Prends une séance courte, je te la déroule.",
   },
   "vide.amis": {
-    commun: "Personne ici pour l'instant. Le relais se joue à deux : on invite quelqu'un, et chacun avance à son tour.",
-    nora:   "Personne ici pour l'instant. Si tu veux quelqu'un à côté de toi, le relais se joue à deux : tu invites, et vous avancez chacun votre tour.",
-    sasha:  "Personne ici pour l'instant. Le relais se joue à deux : tu invites, vous avancez chacun votre tour.",
+    commun: "Personne ici pour l’instant. Le relais se joue à deux : on invite quelqu’un, et chacun avance à son tour.",
+    nora:   "Personne ici pour l’instant. Si tu veux quelqu’un à côté de toi, le relais se joue à deux : tu invites, et vous avancez chacun votre tour.",
+    sasha:  "Personne ici pour l’instant. Le relais se joue à deux : tu invites, vous avancez chacun votre tour.",
   },
   /* Les affiches de perf. Elles se gagnent en TERMINANT une séance, pas en
      publiant quoi que ce soit : la porte est donc la séance, et il n'y en a
      qu'une. */
   "vide.affiches": {
-    commun: "Une affiche se garde à la fin d'une séance. Termine-s'en une, et la première arrive ici.",
-    nora:   "Une affiche se garde à la fin d'une séance. Va au bout d'une seule, même courte, et la première t'attend ici.",
-    sasha:  "Une affiche se garde à la fin d'une séance. Va au bout d'une, la première arrive ici.",
+    commun: "Une affiche se garde à la fin d’une séance. Termine-s’en une, et la première arrive ici.",
+    nora:   "Une affiche se garde à la fin d’une séance. Va au bout d’une seule, même courte, et la première t’attend ici.",
+    sasha:  "Une affiche se garde à la fin d’une séance. Va au bout d’une, la première arrive ici.",
   },
 
   /* ── La question d'entrée de la nutrition ──
@@ -649,9 +649,9 @@ const REPLIQUES = {
      couche. C'est l'en-tête de l'écran, il est identique pour les deux
      Guides, et le déplacer ici laisserait croire qu'il peut varier. */
   "nutrition.question": {
-    commun: "Dis-moi où, je m'occupe du reste.",
-    nora:   "Dis-moi juste où tu manges, je m'occupe du reste.",
-    sasha:  "Dis-moi où tu manges. Je m'occupe du reste.",
+    commun: "Dis-moi où, je m’occupe du reste.",
+    nora:   "Dis-moi juste où tu manges, je m’occupe du reste.",
+    sasha:  "Dis-moi où tu manges. Je m’occupe du reste.",
   },
 
   /* ── La lecture de la semaine ──
@@ -672,23 +672,23 @@ const REPLIQUES = {
     // « Équilibrée » demande trois zones distinctes, donc au moins trois
     // séances : le pluriel est vrai par construction.
     commun: (c) => `${seancesPosees(c.seances)}, et elles ne tapent pas au même endroit.`,
-    nora:   (c) => `${seancesPosees(c.seances)}, et elles ne tapent pas au même endroit. C'est ce qui rend une semaine tenable.`,
+    nora:   (c) => `${seancesPosees(c.seances)}, et elles ne tapent pas au même endroit. C’est ce qui rend une semaine tenable.`,
     sasha:  (c) => `${seancesPosees(c.seances)}, et jamais deux fois la même zone. Ta semaine tient debout.`,
   },
   "semaine.ciblee": {
     commun: (c) => (c.seances === 1
-      ? "Une seule séance posée, et elle donne déjà une direction. C'est un choix, pas un défaut."
-      : `${seancesPosees(c.seances)}, et elles couvrent peu de zones différentes. C'est un choix, pas un défaut.`),
+      ? "Une seule séance posée, et elle donne déjà une direction. C’est un choix, pas un défaut."
+      : `${seancesPosees(c.seances)}, et elles couvrent peu de zones différentes. C’est un choix, pas un défaut.`),
     nora:   (c) => (c.seances === 1
-      ? "Une seule séance posée, et elle donne déjà une direction. Ciblée, ce n'est pas un défaut."
-      : `${seancesPosees(c.seances)}, et elles couvrent peu de zones différentes. Si c'est voulu, garde-la comme ça.`),
+      ? "Une seule séance posée, et elle donne déjà une direction. Ciblée, ce n’est pas un défaut."
+      : `${seancesPosees(c.seances)}, et elles couvrent peu de zones différentes. Si c’est voulu, garde-la comme ça.`),
     sasha:  (c) => (c.seances === 1
       ? "Une séance posée. Une direction claire, et ça suffit."
-      : `${seancesPosees(c.seances)}, peu de zones différentes. Ciblée, c'est un choix.`),
+      : `${seancesPosees(c.seances)}, peu de zones différentes. Ciblée, c’est un choix.`),
   },
   "semaine.vide": {
-    commun: "Rien de posé cette semaine, et c'est normal. Dis-le-moi, je te la remplis d'un coup.",
-    nora:   "Rien de posé cette semaine, et c'est normal. Dis-le-moi et je te la remplis d'un coup.",
+    commun: "Rien de posé cette semaine, et c’est normal. Dis-le-moi, je te la remplis d’un coup.",
+    nora:   "Rien de posé cette semaine, et c’est normal. Dis-le-moi et je te la remplis d’un coup.",
     sasha:  "Rien de posé cette semaine. Dis-le-moi, je te la remplis.",
   },
 
@@ -712,9 +712,9 @@ const REPLIQUES = {
      Trois phrases, et les trois règles qui décident si un jour compte.
      Pas de quatrième : le reste s'apprend en jouant. */
   "relais.avecqui": {
-    commun: "Le relais se joue à deux, sur une semaine. Il faut quatre jours validés sur sept, jamais deux de suite par la même personne, et une séance d'au moins dix minutes. À chaque maillon, l'affiche se dévoile un peu.",
-    nora:   "Le relais se joue à deux, sur une semaine. Il vous faut quatre jours validés sur sept, jamais deux d'affilée par la même personne, et une séance d'au moins dix minutes pour que le jour compte. À chaque maillon franchi, l'affiche se dévoile un peu plus.",
-    sasha:  "Le relais se joue à deux, sur une semaine. Quatre jours validés sur sept, jamais deux de suite par la même personne, dix minutes minimum pour qu'un jour compte. Chaque maillon dévoile un peu l'affiche.",
+    commun: "Le relais se joue à deux, sur une semaine. Il faut quatre jours validés sur sept, jamais deux de suite par la même personne, et une séance d’au moins dix minutes. À chaque maillon, l’affiche se dévoile un peu.",
+    nora:   "Le relais se joue à deux, sur une semaine. Il vous faut quatre jours validés sur sept, jamais deux d’affilée par la même personne, et une séance d’au moins dix minutes pour que le jour compte. À chaque maillon franchi, l’affiche se dévoile un peu plus.",
+    sasha:  "Le relais se joue à deux, sur une semaine. Quatre jours validés sur sept, jamais deux de suite par la même personne, dix minutes minimum pour qu’un jour compte. Chaque maillon dévoile un peu l’affiche.",
   },
 
   /* ── La montée de rang ──
@@ -726,14 +726,14 @@ const REPLIQUES = {
      une erreur de calcul. */
   "rang.montee": {
     commun: (c) => (c.exp
-      ? `Te voilà ${c.rang}. ${c.exp} EXP, posés une action après l'autre.`
-      : `Te voilà ${c.rang}. C'est le début, et il compte déjà.`),
+      ? `Te voilà ${c.rang}. ${c.exp} EXP, posés une action après l’autre.`
+      : `Te voilà ${c.rang}. C’est le début, et il compte déjà.`),
     nora:   (c) => (c.exp
-      ? `Te voilà ${c.rang}. ${c.exp} EXP, posés une action après l'autre. Tu as tenu, et ça se voit.`
-      : `Te voilà ${c.rang}. C'est le début, et il compte déjà.`),
+      ? `Te voilà ${c.rang}. ${c.exp} EXP, posés une action après l’autre. Tu as tenu, et ça se voit.`
+      : `Te voilà ${c.rang}. C’est le début, et il compte déjà.`),
     sasha:  (c) => (c.exp
-      ? `${c.rang}. ${c.exp} EXP, une action après l'autre. Tu l'as pris.`
-      : `${c.rang}. C'est le début, et il compte.`),
+      ? `${c.rang}. ${c.exp} EXP, une action après l’autre. Tu l’as pris.`
+      : `${c.rang}. C’est le début, et il compte.`),
   },
 } satisfies Record<string, Replique>;
 
@@ -847,27 +847,27 @@ const RAPPELS = {
         title: c.pseudo ? `Ta première séance, ${c.pseudo}` : "Ta première séance",
         body: "Quinze minutes, sans matériel. Tout est déjà prêt.",
       }),
-      { title: "102 mouvements animés t'attendent",
-        body: "Un coup d'oeil suffit pour voir à quoi ressemble une séance." },
+      { title: "102 mouvements animés t’attendent",
+        body: "Un coup d’oeil suffit pour voir à quoi ressemble une séance." },
       { title: "On commence par quoi ?",
-        body: "Choisis une séance, je m'occupe du reste." },
+        body: "Choisis une séance, je m’occupe du reste." },
     ],
     nora: [
       (c) => ({
         title: c.pseudo ? `Ta première séance, ${c.pseudo}` : "Ta première séance",
-        body: "Quinze minutes, sans matériel. Je t'explique chaque geste.",
+        body: "Quinze minutes, sans matériel. Je t’explique chaque geste.",
       }),
-      { title: "102 mouvements animés t'attendent",
+      { title: "102 mouvements animés t’attendent",
         body: "Tu peux voir comment ils se font avant de te lancer." },
       { title: "On commence par quoi ?",
-        body: "Choisis une séance, je m'occupe du déroulé." },
+        body: "Choisis une séance, je m’occupe du déroulé." },
     ],
     sasha: [
       (c) => ({
         title: c.pseudo ? `On commence, ${c.pseudo} ?` : "On commence ?",
         body: "Quinze minutes, sans matériel. Tout est prêt.",
       }),
-      { title: "102 mouvements animés t'attendent",
+      { title: "102 mouvements animés t’attendent",
         body: "Ouvre, regarde, choisis." },
       { title: "On commence par quoi ?",
         body: "Tu choisis, je gère le reste." },
@@ -880,7 +880,7 @@ const RAPPELS = {
   "rappel.rang_proche": {
     commun: [
       (c) => ({ title: `Plus que ${c.manque} EXP avant ${c.rang}`, body: "Une séance et tu y es." }),
-      (c) => ({ title: `${c.rang} est à ${c.manque} EXP`, body: "Ça se joue aujourd'hui si tu veux." }),
+      (c) => ({ title: `${c.rang} est à ${c.manque} EXP`, body: "Ça se joue aujourd’hui si tu veux." }),
     ],
     nora: [
       (c) => ({ title: `Plus que ${c.manque} EXP avant ${c.rang}`,
@@ -889,8 +889,8 @@ const RAPPELS = {
                 body: "Le moment est bon, si tu as un créneau." }),
     ],
     sasha: [
-      (c) => ({ title: `${c.manque} EXP et tu passes ${c.rang}`, body: "Une séance, et c'est fait." }),
-      (c) => ({ title: `${c.rang} est à ${c.manque} EXP`, body: "Aujourd'hui, si tu veux." }),
+      (c) => ({ title: `${c.manque} EXP et tu passes ${c.rang}`, body: "Une séance, et c’est fait." }),
+      (c) => ({ title: `${c.rang} est à ${c.manque} EXP`, body: "Aujourd’hui, si tu veux." }),
     ],
   },
 
@@ -898,21 +898,21 @@ const RAPPELS = {
      rappel qui vient de l'app et un rappel qui vient de SA semaine. */
   "rappel.planning": {
     commun: [
-      (c) => ({ title: `${c.titre}, c'est aujourd'hui`, body: "Elle t'attend, prête à lancer." }),
+      (c) => ({ title: `${c.titre}, c’est aujourd’hui`, body: "Elle t’attend, prête à lancer." }),
       (c) => ({ title: `Au programme : ${c.titre}`, body: "Quand tu veux, tout est en place." }),
-      (c) => ({ title: `${c.titre}`, body: "C'est ce que tu avais prévu pour aujourd'hui." }),
-      (c) => ({ title: `Il te reste ${c.titre}`, body: "Le temps d'une séance et ta journée est complète." }),
+      (c) => ({ title: `${c.titre}`, body: "C’est ce que tu avais prévu pour aujourd’hui." }),
+      (c) => ({ title: `Il te reste ${c.titre}`, body: "Le temps d’une séance et ta journée est complète." }),
     ],
     nora: [
-      (c) => ({ title: `${c.titre}, c'est aujourd'hui`, body: "Tout est en place, tu n'as qu'à lancer." }),
+      (c) => ({ title: `${c.titre}, c’est aujourd’hui`, body: "Tout est en place, tu n’as qu’à lancer." }),
       (c) => ({ title: `Au programme : ${c.titre}`, body: "Quand tu veux, je la déroule avec toi." }),
-      (c) => ({ title: `${c.titre}`, body: "C'est ce que tu avais prévu pour aujourd'hui." }),
+      (c) => ({ title: `${c.titre}`, body: "C’est ce que tu avais prévu pour aujourd’hui." }),
       (c) => ({ title: `Il te reste ${c.titre}`, body: "Une séance, et ta journée est complète." }),
     ],
     sasha: [
-      (c) => ({ title: `${c.titre}, c'est aujourd'hui`, body: "Prête à lancer." }),
+      (c) => ({ title: `${c.titre}, c’est aujourd’hui`, body: "Prête à lancer." }),
       (c) => ({ title: `Au programme : ${c.titre}`, body: "Dis quand, on y va." }),
-      (c) => ({ title: `${c.titre}`, body: "Tu l'avais prévue aujourd'hui." }),
+      (c) => ({ title: `${c.titre}`, body: "Tu l’avais prévue aujourd’hui." }),
       (c) => ({ title: `Il te reste ${c.titre}`, body: "Une séance, et ta journée est complète." }),
     ],
   },
@@ -925,17 +925,17 @@ const RAPPELS = {
     commun: [
       (c) => ({ title: `Jour ${c.serie}`,
                 body: "Ta série tient. Une séance ou un repas noté, et elle continue." }),
-      (c) => ({ title: `${c.serie} jours d'affilée`, body: "Tu sais déjà quoi faire." }),
+      (c) => ({ title: `${c.serie} jours d’affilée`, body: "Tu sais déjà quoi faire." }),
     ],
     nora: [
       (c) => ({ title: `Jour ${c.serie}`,
                 body: "Ta série tient. Une séance ou un repas noté suffit pour la garder." }),
-      (c) => ({ title: `${c.serie} jours d'affilée`, body: "Tu connais le geste, il n'y a qu'à le refaire." }),
+      (c) => ({ title: `${c.serie} jours d’affilée`, body: "Tu connais le geste, il n’y a qu’à le refaire." }),
     ],
     sasha: [
       (c) => ({ title: `Jour ${c.serie}`,
                 body: "Elle tient. Une séance ou un repas noté, et ça continue." }),
-      (c) => ({ title: `${c.serie} jours d'affilée`, body: "Tu sais quoi faire." }),
+      (c) => ({ title: `${c.serie} jours d’affilée`, body: "Tu sais quoi faire." }),
     ],
   },
 
@@ -943,16 +943,16 @@ const RAPPELS = {
      phrase passe-partout qui s'étale se remarque deux fois plus. */
   "rappel.generique": {
     commun: [
-      { title: "Ta séance t'attend", body: "Elle est prête dans Vaiiya." },
-      { title: "Un créneau aujourd'hui ?", body: "Quinze minutes suffisent pour que ça compte." },
+      { title: "Ta séance t’attend", body: "Elle est prête dans Vaiiya." },
+      { title: "Un créneau aujourd’hui ?", body: "Quinze minutes suffisent pour que ça compte." },
     ],
     nora: [
-      { title: "Ta séance t'attend", body: "Elle est prête, il n'y a plus qu'à ouvrir." },
-      { title: "Un créneau aujourd'hui ?", body: "Quinze minutes suffisent pour que ça compte." },
+      { title: "Ta séance t’attend", body: "Elle est prête, il n’y a plus qu’à ouvrir." },
+      { title: "Un créneau aujourd’hui ?", body: "Quinze minutes suffisent pour que ça compte." },
     ],
     sasha: [
-      { title: "Ta séance t'attend", body: "Elle est prête." },
-      { title: "Un créneau aujourd'hui ?", body: "Quinze minutes, ça compte déjà." },
+      { title: "Ta séance t’attend", body: "Elle est prête." },
+      { title: "Un créneau aujourd’hui ?", body: "Quinze minutes, ça compte déjà." },
     ],
   },
 
@@ -963,21 +963,21 @@ const RAPPELS = {
     commun: [
       (c) => ({
         title: c.pseudo ? `Ta place est gardée, ${c.pseudo}` : "Ta place est gardée",
-        body: "Dix minutes suffisent pour reprendre. Rien n'a bougé.",
+        body: "Dix minutes suffisent pour reprendre. Rien n’a bougé.",
       }),
       { title: "On reprend quand tu veux", body: "Ta séance la plus courte fait quinze minutes." },
     ],
     nora: [
       (c) => ({
         title: c.pseudo ? `Ta place est gardée, ${c.pseudo}` : "Ta place est gardée",
-        body: "Rien n'a bougé. Dix minutes suffisent pour reprendre.",
+        body: "Rien n’a bougé. Dix minutes suffisent pour reprendre.",
       }),
       { title: "On reprend quand tu veux", body: "La plus courte fait quinze minutes." },
     ],
     sasha: [
       (c) => ({
         title: c.pseudo ? `Ta place est gardée, ${c.pseudo}` : "Ta place est gardée",
-        body: "Rien n'a bougé. Dix minutes et tu es dedans.",
+        body: "Rien n’a bougé. Dix minutes et tu es dedans.",
       }),
       { title: "On reprend quand tu veux", body: "La plus courte fait quinze minutes." },
     ],
@@ -993,18 +993,18 @@ const RAPPELS = {
         ? { title: `Tes ${c.seances} séances sont toujours là`,
             body: "Reprendre est plus simple que commencer. Quand tu veux." }
         : { title: "Ta place ne bouge pas",
-            body: "Quinze minutes suffisent pour t'y remettre. Quand tu veux." }),
-      { title: "Vaiiya t'attend sans compter",
+            body: "Quinze minutes suffisent pour t’y remettre. Quand tu veux." }),
+      { title: "Vaiiya t’attend sans compter",
         body: "Aucun rattrapage, aucune série à récupérer. On reprend quand ça te dit." },
       { title: "Rien ne presse", body: "La séance la plus courte fait quinze minutes, sans matériel." },
     ],
     nora: [
       (c) => ((c.seances ?? 0) >= 3
         ? { title: `Tes ${c.seances} séances sont toujours là`,
-            body: "Rien ne s'est perdu. Reprendre est plus simple que commencer." }
+            body: "Rien ne s’est perdu. Reprendre est plus simple que commencer." }
         : { title: "Ta place ne bouge pas",
-            body: "Quinze minutes suffisent pour t'y remettre, quand tu veux." }),
-      { title: "Vaiiya t'attend sans compter",
+            body: "Quinze minutes suffisent pour t’y remettre, quand tu veux." }),
+      { title: "Vaiiya t’attend sans compter",
         body: "Aucun rattrapage, aucune série à récupérer. On reprend quand ça te dit." },
       { title: "Rien ne presse", body: "La plus courte fait quinze minutes, et elle se fait sans matériel." },
     ],
@@ -1012,8 +1012,8 @@ const RAPPELS = {
       (c) => ((c.seances ?? 0) >= 3
         ? { title: `Tes ${c.seances} séances sont toujours là`,
             body: "Reprendre est plus simple que commencer. Quand tu veux." }
-        : { title: "Ta place ne bouge pas", body: "Quinze minutes, et c'est reparti. Quand tu veux." }),
-      { title: "Vaiiya t'attend sans compter",
+        : { title: "Ta place ne bouge pas", body: "Quinze minutes, et c’est reparti. Quand tu veux." }),
+      { title: "Vaiiya t’attend sans compter",
         body: "Rien à rattraper, aucune série à récupérer. Quand ça te dit." },
       { title: "Rien ne presse", body: "La plus courte fait quinze minutes, sans matériel." },
     ],
@@ -1030,47 +1030,47 @@ const RAPPELS = {
   "rappel.relais_decisif": {
     commun: [
       (c) => ({
-        title: "L'affiche se joue aujourd'hui",
+        title: "L’affiche se joue aujourd’hui",
         body: (c.maillons ?? 1) > 1
           ? `Il reste ${c.maillons} maillons et autant de jours. Dix minutes suffisent.`
-          : "Sans un maillon aujourd'hui, elle restera incomplète. Dix minutes suffisent.",
+          : "Sans un maillon aujourd’hui, elle restera incomplète. Dix minutes suffisent.",
       }),
       { title: "Il reste ce soir",
-        body: "Une séance de dix minutes, et l'affiche continue de se dévoiler." },
+        body: "Une séance de dix minutes, et l’affiche continue de se dévoiler." },
     ],
     nora: [
       (c) => ({
-        title: "L'affiche se joue aujourd'hui",
+        title: "L’affiche se joue aujourd’hui",
         body: (c.maillons ?? 1) > 1
           ? `Il reste ${c.maillons} maillons et exactement autant de jours. Dix minutes suffisent.`
-          : "Sans un maillon aujourd'hui, elle restera incomplète. Dix minutes suffisent, vraiment.",
+          : "Sans un maillon aujourd’hui, elle restera incomplète. Dix minutes suffisent, vraiment.",
       }),
       { title: "Il reste ce soir",
-        body: "Une séance de dix minutes, et l'affiche continue de se dévoiler." },
+        body: "Une séance de dix minutes, et l’affiche continue de se dévoiler." },
     ],
     sasha: [
       (c) => ({
-        title: "L'affiche se joue aujourd'hui",
+        title: "L’affiche se joue aujourd’hui",
         body: (c.maillons ?? 1) > 1
           ? `${c.maillons} maillons, autant de jours. Dix minutes suffisent.`
-          : "Un maillon aujourd'hui, sinon elle reste incomplète. Dix minutes suffisent.",
+          : "Un maillon aujourd’hui, sinon elle reste incomplète. Dix minutes suffisent.",
       }),
-      { title: "Il reste ce soir", body: "Dix minutes, et l'affiche avance." },
+      { title: "Il reste ce soir", body: "Dix minutes, et l’affiche avance." },
     ],
   },
 
   "rappel.repas": {
     commun: [
       { title: "Et tes repas ?", body: "Séance faite, il ne manque que ce que tu as mangé." },
-      { title: "Il manque ta journée d'assiettes", body: "Deux minutes et ton suivi est complet." },
+      { title: "Il manque ta journée d’assiettes", body: "Deux minutes et ton suivi est complet." },
     ],
     nora: [
       { title: "Et tes repas ?", body: "La séance est faite, il ne manque que ce que tu as mangé." },
-      { title: "Il manque ta journée d'assiettes", body: "Deux minutes, et ton suivi est complet." },
+      { title: "Il manque ta journée d’assiettes", body: "Deux minutes, et ton suivi est complet." },
     ],
     sasha: [
-      { title: "Et tes repas ?", body: "Séance faite. Il ne manque que l'assiette." },
-      { title: "Il manque ta journée d'assiettes", body: "Deux minutes et c'est complet." },
+      { title: "Et tes repas ?", body: "Séance faite. Il ne manque que l’assiette." },
+      { title: "Il manque ta journée d’assiettes", body: "Deux minutes et c’est complet." },
     ],
   },
 } satisfies Record<string, RepliquePush>;
@@ -1125,7 +1125,7 @@ export const PRENOM_GUIDE: Record<GuideId, string> = {
 export const PORTRAIT_GUIDE: Record<GuideId, { trait: string; pour: string }> = {
   nora: {
     trait: "Calme et méthodique",
-    pour: "Tu préfères comprendre avant d'agir.",
+    pour: "Tu préfères comprendre avant d’agir.",
   },
   sasha: {
     trait: "Direct et dynamique",
@@ -1237,7 +1237,7 @@ export function nomGuide(guide: GuideRef): string {
 /** La ligne sous le nom. Elle dit ce qu'est cette personne pour toi, pas
  *  ce qu'elle sait faire. */
 export function roleGuide(guide: GuideRef): string {
-  return guide ? "Ton Guide Vaiiya" : "Ton assistant, partout dans l'app";
+  return guide ? "Ton Guide Vaiiya" : "Ton assistant, partout dans l’app";
 }
 
 /* ── La variation de ton envoyée au modèle ─────────────────────────────
@@ -1262,11 +1262,11 @@ export function roleGuide(guide: GuideRef): string {
    plus étroit et plus honnête : qu'il ne se PRÉSENTE pas comme un robot,
    et qu'il ne commente pas sa propre façon de parler (« en tant que Guide
    direct, je vais… »), parce que c'est ce qui casse une conversation. */
-const TON_COMMUN = `Tu ne te présentes jamais comme un robot ou un assistant, et tu ne commentes jamais ta propre façon de parler. Bannis « champion », « machine », « warrior », « je suis fier de toi » et tout ce qui ressemble à un coach de réseau social. Tu ne culpabilises jamais : tu réagis à ce que la personne fait, tu ne lui reproches pas ce qu'elle n'a pas fait.`;
+const TON_COMMUN = `Tu ne te présentes jamais comme un robot ou un assistant, et tu ne commentes jamais ta propre façon de parler. Bannis « champion », « machine », « warrior », « je suis fier de toi » et tout ce qui ressemble à un coach de réseau social. Tu ne culpabilises jamais : tu réagis à ce que la personne fait, tu ne lui reproches pas ce qu’elle n’a pas fait.`;
 
 const TON_PAR_GUIDE: Record<GuideId, string> = {
   nora: `Tu poses le contexte en quelques mots, tu donnes la raison courte de ce que tu proposes, puis tu proposes. Tu es calme, méthodique et structurée, un peu plus explicative que la moyenne, sans jamais rallonger pour rallonger.`,
-  sasha: `Tu donnes la proposition d'abord, l'action ensuite, la précision à la fin. Tu es direct, dynamique et spontané : phrases courtes, rythmées, aucune tournure inutile.`,
+  sasha: `Tu donnes la proposition d’abord, l’action ensuite, la précision à la fin. Tu es direct, dynamique et spontané : phrases courtes, rythmées, aucune tournure inutile.`,
 };
 
 /** La PREMIÈRE ligne du prompt : qui parle.
@@ -1284,7 +1284,7 @@ export function ouvertureGuide(guide: GuideRef): string {
      masculin : « bienveillant, motivant et expert » est faux pour l'une,
      et dupliquer la phrase au féminin ferait deux prompts à tenir à jour
      au lieu d'un. Une tournure verbale règle les deux cas d'un coup. */
-  return `Tu es ${PRENOM_GUIDE[guide]}, le Guide personnel de cette personne dans Vaiiya, son app de sport et de nutrition. Tu accompagnes avec bienveillance, tu sais motiver, et tu maîtrises la nutrition, l'entraînement et le bien-être.`;
+  return `Tu es ${PRENOM_GUIDE[guide]}, le Guide personnel de cette personne dans Vaiiya, son app de sport et de nutrition. Tu accompagnes avec bienveillance, tu sais motiver, et tu maîtrises la nutrition, l’entraînement et le bien-être.`;
 }
 
 /** La MANIÈRE de parler, collée à la fin du prompt commun. Vide sans Guide
@@ -1294,7 +1294,7 @@ export function tonDuGuide(guide: GuideRef): string {
   return `
 
 TA MANIÈRE DE PARLER : ${TON_PAR_GUIDE[guide]} ${TON_COMMUN}
-⚠️ Elle ne change RIEN au fond : mêmes règles, mêmes données, mêmes recommandations, mêmes limites que ce qui est écrit plus haut. Seule la formulation t'appartient.`;
+⚠️ Elle ne change RIEN au fond : mêmes règles, mêmes données, mêmes recommandations, mêmes limites que ce qui est écrit plus haut. Seule la formulation t’appartient.`;
 }
 
 /* ── Les réponses à toucher ────────────────────────────────────────────

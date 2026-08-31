@@ -60,7 +60,7 @@ export default function EnvoyerAffiche({ data, moi, accessToken, onFermer }: {
       if (!r.ok) throw new Error(r.raison ?? "envoi_impossible");
       setEnvoye(fil.id);
     } catch {
-      setErreur("L'envoi n'a pas abouti. Réessaie.");
+      setErreur("L’envoi n’a pas abouti. Réessaie.");
     } finally {
       setOccupe(null);
     }

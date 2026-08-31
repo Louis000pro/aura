@@ -24,7 +24,7 @@ export type GeneratedRecipe = {
 
 export default function GeneratedRecipeSheet({
   open, eyebrow, loading, error, recipe,
-  loadingTitle = "L'IA écrit ta recette…",
+  loadingTitle = "L’IA écrit ta recette…",
   loadingHint = "Ingrédients, étapes et macros…",
   onClose, onRetry, onAdd, onOther,
 }: {

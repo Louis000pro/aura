@@ -107,7 +107,7 @@ export default function ConditionsPage() {
           </p>
         </Section>
 
-        <Section title="3. L'offre gratuite et l'abonnement Premium">
+        <Section title="3. L’offre gratuite et l’abonnement Premium">
           <p>
             Vaiiya s&apos;utilise gratuitement, avec les limites indiquées à l&apos;article 5.
             L&apos;abonnement <strong>{premium.name}</strong> coûte <strong>{prix} par mois</strong>, toutes
@@ -154,7 +154,7 @@ export default function ConditionsPage() {
           </p>
         </Section>
 
-        <Section title="5. Usage raisonnable des fonctions d'intelligence artificielle">
+        <Section title="5. Usage raisonnable des fonctions d’intelligence artificielle">
           <p>
             Les fonctions d&apos;IA de Vaiiya (assistant, analyse de photo, estimation de repas, génération
             de recettes et de séances, dictée) reposent sur des services payants à l&apos;usage. Nous les

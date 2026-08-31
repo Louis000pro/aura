@@ -112,7 +112,7 @@ export default function FilPage() {
       initialiseeRef.current = true;
     } catch {
       if (initialiseeRef.current) {
-        setErreur("Impossible d'actualiser la conversation. Tes messages restent affichés.");
+        setErreur("Impossible d’actualiser la conversation. Tes messages restent affichés.");
       } else {
         setErreurChargement("Impossible de charger cette conversation.");
       }
@@ -132,7 +132,7 @@ export default function FilPage() {
         );
       });
     } catch {
-      setErreur("Un nouveau message n'a pas pu être affiché. Réouvre la discussion pour réessayer.");
+      setErreur("Un nouveau message n’a pas pu être affiché. Réouvre la discussion pour réessayer.");
     }
   }, [convId]);
 
@@ -141,7 +141,7 @@ export default function FilPage() {
       const reactions = await chargerReactions(messageId);
       setMessages((actuels) => actuels.map((m) => m.id === messageId ? { ...m, reactions } : m));
     } catch {
-      setErreur("Les réactions n'ont pas pu être actualisées.");
+      setErreur("Les réactions n’ont pas pu être actualisées.");
     }
   }, []);
 
@@ -258,7 +258,7 @@ export default function FilPage() {
       setEncoreAvant(page.encoreAvant);
     } catch {
       hauteurAvant.current = null;
-      setErreur("Les messages précédents n'ont pas pu être chargés.");
+      setErreur("Les messages précédents n’ont pas pu être chargés.");
     } finally {
       setChargeAvant(false);
     }
@@ -282,7 +282,7 @@ export default function FilPage() {
       setErreur(null);
       if (r.messageId) void ajouterMessage(r.messageId);
     } else {
-      setErreur("Le message n'est pas parti. Réessaie.");
+      setErreur("Le message n’est pas parti. Réessaie.");
     }
   };
 
@@ -298,7 +298,7 @@ export default function FilPage() {
     if (!r.ok) {
       setTexte(contenu);
       setRepondA(cite ? messages.find((m) => m.id === cite) ?? null : null);
-      setErreur("Le message n'est pas parti. Ton texte est resté ici.");
+      setErreur("Le message n’est pas parti. Ton texte est resté ici.");
       return;
     }
     setErreur(null);
@@ -317,10 +317,10 @@ export default function FilPage() {
       const raison = String(r.raison ?? "");
       setErreur(
         raison === "photo_trop_lourde" ? "Cette photo est trop lourde."
-        : raison === "format_invalide" ? "Ce format d'image n'est pas pris en charge."
+        : raison === "format_invalide" ? "Ce format d’image n’est pas pris en charge."
         : /bucket|row-level security|media_path|schema cache/i.test(raison)
         ? "Les photos ne sont pas encore activées côté serveur."
-        : "La photo n'est pas partie. Réessaie.",
+        : "La photo n’est pas partie. Réessaie.",
       );
       return;
     }
@@ -340,7 +340,7 @@ export default function FilPage() {
 
     const raison = String(r.raison ?? "");
     if (/function|does not exist|schema cache|404/i.test(raison)) {
-      setRefus({ texte: "Le relais n'est pas encore activé côté serveur." });
+      setRefus({ texte: "Le relais n’est pas encore activé côté serveur." });
       return;
     }
     // Le refus NOMME ce qui bloque, et propose la sortie quand il y en a
@@ -355,7 +355,7 @@ export default function FilPage() {
     const mienne = m.reactions.find((r) => r.userIds.includes(user.id))?.emoji ?? null;
     const r = await reagir(m.id, user.id, emoji, mienne);
     if (!r.ok) {
-      setErreur("La réaction n'a pas pu être ajoutée.");
+      setErreur("La réaction n’a pas pu être ajoutée.");
       return;
     }
     void actualiserReactions(m.id);
@@ -365,7 +365,7 @@ export default function FilPage() {
     setMenu(null);
     const r = await supprimerMessage(m.id);
     if (!r.ok) {
-      setErreur("Le message n'a pas pu être supprimé.");
+      setErreur("Le message n’a pas pu être supprimé.");
       return;
     }
     setMessages((prev) => prev.filter((x) => x.id !== m.id));
@@ -544,7 +544,7 @@ export default function FilPage() {
                 un tout fait : personne n'a jamais eu honte d'un
                 « Salut l'ami ! ». */}
             <button
-              onClick={() => void envoyerTexte("Salut l'ami ! 👋")}
+              onClick={() => void envoyerTexte("Salut l’ami ! 👋")}
               disabled={envoi || photoEnCours}
               className="mt-4 rounded-full px-5 py-2.5 text-[14px] font-semibold text-white transition-transform active:scale-95 disabled:opacity-50"
               style={{ background: "linear-gradient(135deg, #8B5CF6, #C13BC1)" }}
@@ -636,7 +636,7 @@ export default function FilPage() {
         <button
           onClick={surEtincelle}
           disabled={occupe || envoi || photoEnCours}
-          aria-label={conv.defi ? "Voir l'affiche" : "Lancer un relais"}
+          aria-label={conv.defi ? "Voir l’affiche" : "Lancer un relais"}
           className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full disabled:opacity-50"
           style={{
             background: "rgba(215,166,42,.16)",
@@ -893,10 +893,10 @@ function DefiEpingle({ defi, etat, onOuvrir }: {
 
       <div className="min-w-0 flex-1">
         <b className="block text-[13.5px] font-semibold" style={{ color: "#F4F1F9" }}>
-          {gagne ? "L'affiche est à vous" : `${defi.faits} jour${defi.faits > 1 ? "s" : ""} sur ${defi.objectif}`}
+          {gagne ? "L’affiche est à vous" : `${defi.faits} jour${defi.faits > 1 ? "s" : ""} sur ${defi.objectif}`}
         </b>
         <span className="mt-0.5 block text-[12px]" style={{ color: "#A79FB6" }}>
-          {gagne ? "Elle rejoint vos profils." : "Touche pour voir l'affiche en grand."}
+          {gagne ? "Elle rejoint vos profils." : "Touche pour voir l’affiche en grand."}
         </span>
 
         <div className="mt-2 flex gap-[3px]">

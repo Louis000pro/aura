@@ -196,7 +196,7 @@ export default function PublicProfilePage() {
           { follower_id: user.id, following_id: profile.id },
           { onConflict: "follower_id,following_id", ignoreDuplicates: true }
         );
-      if (error) { console.error("follow:", error); showToast("Impossible d'ajouter, réessaie"); setFollowLoading(false); return; }
+      if (error) { console.error("follow:", error); showToast("Impossible d’ajouter, réessaie"); setFollowLoading(false); return; }
       // Notification in-app + email via route admin (insertion unique)
       void supabase.auth.getSession().then(({ data: { session } }) => {
         if (!session) return;

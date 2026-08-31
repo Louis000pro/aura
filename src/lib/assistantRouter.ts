@@ -50,7 +50,7 @@ const OUTILS = [
     function: {
       name: RIEN,
       description:
-        "Le message n'appelle AUCUNE action dans l'app : c'est une question de connaissance, un avis, une discussion, une confidence, un état ou une douleur, un salut, un remerciement, une réaction courte. C'est le cas le plus fréquent : dans le doute, appelle celui-ci.",
+        "Le message n’appelle AUCUNE action dans l’app : c’est une question de connaissance, un avis, une discussion, une confidence, un état ou une douleur, un salut, un remerciement, une réaction courte. C’est le cas le plus fréquent : dans le doute, appelle celui-ci.",
       parameters: { type: "object", properties: {} },
     },
   },
@@ -59,8 +59,8 @@ const OUTILS = [
 
 /* Court EXPRÈS : c'est toute la raison d'être de ce fichier. Avant d'ajouter
    une ligne ici, rappelle-toi que la fiabilité s'écroule avec la longueur. */
-const PROMPT = `Tu es l'aiguilleur de Vaiiya, une app de sport et de nutrition. Tu lis le DERNIER message de l'utilisateur et tu appelles l'outil qui correspond à ce qu'il te demande de FAIRE dans l'app. S'il ne demande rien à faire, tu appelles ${RIEN}.
-Tu appelles TOUJOURS exactement un outil, et tu n'écris jamais de texte.`;
+const PROMPT = `Tu es l’aiguilleur de Vaiiya, une app de sport et de nutrition. Tu lis le DERNIER message de l’utilisateur et tu appelles l’outil qui correspond à ce qu’il te demande de FAIRE dans l’app. S’il ne demande rien à faire, tu appelles ${RIEN}.
+Tu appelles TOUJOURS exactement un outil, et tu n’écris jamais de texte.`;
 
 type Message = { role: "user" | "assistant"; content: unknown };
 
@@ -139,13 +139,13 @@ const CARTES: Record<string, string> = {
  */
 export function cadreAction(action: AssistantAction | null): string {
   if (!action) {
-    return `\n\nCE QUI SE PASSE PENDANT QUE TU RÉPONDS : aucune carte ne va s'afficher sous ton message. Réponds donc pour de vrai, avec du contenu utile, et n'annonce JAMAIS quelque chose « à valider juste en dessous ».`;
+    return `\n\nCE QUI SE PASSE PENDANT QUE TU RÉPONDS : aucune carte ne va s’afficher sous ton message. Réponds donc pour de vrai, avec du contenu utile, et n’annonce JAMAIS quelque chose « à valider juste en dessous ».`;
   }
   if (action.intent === "ask_choice") return "";
   const carte = CARTES[action.intent];
   if (!carte) {
     // set_theme, open_page, save_lieu : ça agit sans rien faire valider.
-    return `\n\nCE QUI SE PASSE PENDANT QUE TU RÉPONDS : l'app est en train de faire ce qu'il demande. Confirme-le en UNE phrase courte, sans détailler.`;
+    return `\n\nCE QUI SE PASSE PENDANT QUE TU RÉPONDS : l’app est en train de faire ce qu’il demande. Confirme-le en UNE phrase courte, sans détailler.`;
   }
-  return `\n\nCE QUI SE PASSE PENDANT QUE TU RÉPONDS : ${carte} s'affiche à l'instant juste sous ton message, et il la validera d'un clic. Annonce-la en UNE seule phrase courte et chaleureuse, puis arrête-toi. N'écris SURTOUT pas ce qu'elle contient (ni exercices, ni séries, ni répétitions, ni calories, ni macros) et ne lui propose pas un choix qu'elle lui propose déjà. Ici, exceptionnellement, tu ne poses aucune question : la carte attend déjà sa réponse.`;
+  return `\n\nCE QUI SE PASSE PENDANT QUE TU RÉPONDS : ${carte} s’affiche à l’instant juste sous ton message, et il la validera d’un clic. Annonce-la en UNE seule phrase courte et chaleureuse, puis arrête-toi. N’écris SURTOUT pas ce qu’elle contient (ni exercices, ni séries, ni répétitions, ni calories, ni macros) et ne lui propose pas un choix qu’elle lui propose déjà. Ici, exceptionnellement, tu ne poses aucune question : la carte attend déjà sa réponse.`;
 }

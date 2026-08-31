@@ -721,7 +721,7 @@ function BarcodeScannerModal({ onClose, onAdd }: {
       });
       setEstimateMealType(data.mealType || getMealTypeFromTime());
     } catch {
-      setError("L'IA n'a pas pu estimer ce produit.");
+      setError("L’IA n’a pas pu estimer ce produit.");
     } finally {
       setEstimating(false);
     }
@@ -757,7 +757,7 @@ function BarcodeScannerModal({ onClose, onAdd }: {
         () => { /* scan attempt, ignore errors */ }
       ).catch((err: unknown) => {
         console.error("Camera error:", err);
-        setError("Caméra inaccessible — autorise l'accès à l'appareil photo.");
+        setError("Caméra inaccessible — autorise l’accès à l’appareil photo.");
       });
     });
   };
@@ -924,8 +924,8 @@ function BarcodeScannerModal({ onClose, onAdd }: {
                     <Sparkles size={15} strokeWidth={2} style={{ color: "var(--accent)", marginTop: 1, flexShrink: 0 }} />
                     <p className="text-xs font-light leading-relaxed" style={{ color: "var(--text-2)" }}>
                       {fallbackName
-                        ? "Trouvé, mais sans données nutritionnelles — décris-le, je m'occupe des chiffres."
-                        : "Pas encore dans la base — décris-le, je m'occupe des chiffres."}
+                        ? "Trouvé, mais sans données nutritionnelles — décris-le, je m’occupe des chiffres."
+                        : "Pas encore dans la base — décris-le, je m’occupe des chiffres."}
                     </p>
                   </div>
                 )}
@@ -1247,7 +1247,7 @@ function MenuScanModal({ objectiveLine, objectiveChip, goalKnown, initialResult,
           body: JSON.stringify({ image: base64, mimeType: file.type, objective: objectiveLine, goalKnown }),
         });
         if (res.status === 401) { setError("Connecte-toi pour lire une carte."); setPhase("select"); return; }
-        if (res.status === 422) { setError("Je n'ai pas réussi à lire les plats — rapproche-toi et recadre la carte."); setPhase("select"); return; }
+        if (res.status === 422) { setError("Je n’ai pas réussi à lire les plats — rapproche-toi et recadre la carte."); setPhase("select"); return; }
         if (!res.ok) throw new Error();
         const data: MenuScanResult = await res.json();
         if (!data?.dishes?.length) { setError("Aucun plat lisible — réessaie."); setPhase("select"); return; }
@@ -1600,7 +1600,7 @@ function ManualModal({ onClose, onAdd }: {
       if (data.mealType) setMealType(data.mealType as MealType);
       setEstimated(true);
     } catch {
-      setEstimateError("Impossible d'estimer, remplis manuellement.");
+      setEstimateError("Impossible d’estimer, remplis manuellement.");
     } finally {
       setEstimating(false);
     }
@@ -2118,7 +2118,7 @@ function NutritionCalendar({ onDayClick }: { onDayClick: (date: Date) => void })
               style={{ background: "linear-gradient(135deg,rgba(var(--violet-mid-rgb),0.22) 0%,rgba(var(--cream-mid-rgb),0.16) 100%)",
                 border: "1px solid rgba(var(--accent-rgb),0.14)", backdropFilter: "blur(12px)" }}>
               <p className="text-[10px] font-semibold tracking-widest uppercase mb-3" style={{ color: "var(--text-3)" }}>
-                Depuis l'inscription
+                Depuis l’inscription
               </p>
               <div className="grid grid-cols-3 gap-4 text-center">
                 {[
@@ -2290,7 +2290,7 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
       fats: meal.fats, has_photo: meal.hasPhoto ?? false, time: meal.time,
     }).select().single();
     if (!error && data) { setMeals(prev => [...prev, rowToMeal(data)]); showToast(`${meal.name} ajouté — ${meal.calories} kcal ✓`); }
-    else showToast("Erreur lors de l'ajout");
+    else showToast("Erreur lors de l’ajout");
     setShowPhoto(false);
     setPhotoFromMenu(false);
   };
@@ -2305,7 +2305,7 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
       carbs: meal.carbs, fats: meal.fats, has_photo: false, time: meal.time,
     }).select().single();
     if (!error && data) { setMeals(prev => [...prev, rowToMeal(data)]); showToast(`${meal.name} ajouté ✓`); }
-    else showToast("Erreur lors de l'ajout");
+    else showToast("Erreur lors de l’ajout");
     setShowBarcode(false);
   };
 
@@ -2319,7 +2319,7 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
       carbs: meal.carbs, fats: meal.fats, has_photo: false, time: meal.time,
     }).select().single();
     if (!error && data) { setMeals(prev => [...prev, rowToMeal(data)]); showToast(`${meal.name} ajouté ✓`); }
-    else showToast("Erreur lors de l'ajout");
+    else showToast("Erreur lors de l’ajout");
     setShowManual(false);
   };
 
@@ -2333,7 +2333,7 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
       carbs: r.carbs, fats: r.fats, has_photo: false, time: nowHHMM(),
     }).select().single();
     if (!error && data) { setMeals(prev => [...prev, rowToMeal(data)]); showToast(`${r.name} ajouté ✓`); void loadRecents(); }
-    else showToast("Erreur lors de l'ajout");
+    else showToast("Erreur lors de l’ajout");
   };
 
   /* ── Ajout d'une recette (IA) au journal du jour — même flux que ci-dessus ─── */
@@ -2346,7 +2346,7 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
       carbs: m.carbs, fats: m.fats, has_photo: false, time: nowHHMM(),
     }).select().single();
     if (!error && data) { setMeals(prev => [...prev, rowToMeal(data)]); showToast(`${m.name} ajouté ✓`); void loadRecents(); }
-    else showToast("Erreur lors de l'ajout");
+    else showToast("Erreur lors de l’ajout");
   };
 
   /* ── Suppression repas ─── */
@@ -2421,7 +2421,7 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
             onBarcode={() => setShowBarcode(true)}
             onManual={() => setShowManual(true)}
             onMenuScan={() => { setMenuResult(null); setPhotoFromMenu(false); setShowMenu(true); }}
-            onSkip={() => showToast("Noté — on ne t'embête pas 👌")}
+            onSkip={() => showToast("Noté — on ne t’embête pas 👌")}
             classics={displayRecents}
             onQuickAdd={(r) => { void quickAddRecent(r); }}
             onLogIdea={(m) => { void addRecipeMeal(m); }}

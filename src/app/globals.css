@@ -591,3 +591,83 @@ html.a-session .accueil-landing { display: none; }
 @media (prefers-reduced-motion: reduce) {
   .vy-anim > img { animation: none !important; }
 }
+
+/* ═══════════════════════ L'ÉCHELLE TYPOGRAPHIQUE ═══════════════════════
+   Mesuré le 2026-08-31 sur src/ : 33 tailles de texte distinctes, dont les six
+   plus fréquentes toutes sous 16 px (749 occurrences en dessous de 16 px contre
+   90 au-dessus de 20 px), et `font-semibold` 425 fois contre 10 `font-normal`.
+   Ce n'était pas une hiérarchie, c'était un aplatissement : rien ne commandait
+   l'écran, donc tout se ressemblait, donc ça se lisait comme une page générée.
+
+   Cinq niveaux, très écartés, et rien entre eux. Le contraste fait la
+   hiérarchie ; la nuance ne la fait jamais.
+
+   ⚠️ Ces règles sont HORS `@layer` : dans la cascade en couches, le non-couché
+   l'emporte sur les utilitaires Tailwind, donc `.vy-titre` gagne contre un
+   `text-lg` oublié à côté. C'est voulu, c'est ce qui garantit que l'échelle
+   reste une échelle. Pour un cas particulier, surcharger en style en ligne. */
+
+:root {
+  --titrage: var(--font-titrage), var(--font-geist-sans), system-ui, sans-serif;
+}
+
+/* Le chiffre ou le mot qui EST l'écran. UN SEUL par écran, jamais deux. */
+.vy-display {
+  font-family: var(--titrage);
+  font-size: clamp(2.375rem, 11vw, 3.25rem);
+  font-weight: 700;
+  line-height: 0.95;
+  letter-spacing: -0.035em;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Titre de page, ou titre d'une section qui porte l'écran. */
+.vy-titre {
+  font-family: var(--titrage);
+  font-size: clamp(1.375rem, 5.5vw, 1.75rem);
+  font-weight: 600;
+  line-height: 1.12;
+  letter-spacing: -0.025em;
+}
+
+/* Titre d'un bloc à l'intérieur d'un écran. Reste en sans : le titrage à
+   petite taille perd ce qui le rend reconnaissable et gagne du bruit. */
+.vy-sous {
+  font-size: 1.0625rem;
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: -0.012em;
+}
+
+/* La phrase qu'on lit vraiment. Interligne large : c'est ce qui sépare un texte
+   d'un bloc de remplissage. */
+.vy-corps {
+  font-size: 0.9375rem;
+  font-weight: 400;
+  line-height: 1.55;
+  color: var(--text-body);
+}
+
+/* L'étiquette qui NOMME une donnée. Jamais en capitales étirées : sur des mots
+   français ça écrase les accents et ça sonne « tableau de bord ». */
+.vy-label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1.25;
+  letter-spacing: 0.005em;
+  color: var(--text-2);
+}
+
+/* Un nombre qui se lit, se compare, ou change sous les yeux. Les chiffres à
+   chasse fixe empêchent la ligne de sauter quand la valeur passe de 9 à 10. */
+.vy-nombre {
+  font-family: var(--titrage);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  font-weight: 600;
+}
+
+/* Un filet d'un pixel qui sépare deux lignes de même nature. C'est la réponse
+   à « trois cartes identiques empilées » : des éléments qui se comparent se
+   posent en liste, pas en cartes. */
+.vy-filet + .vy-filet { border-top: 1px solid rgba(var(--text-3-rgb), 0.22); }

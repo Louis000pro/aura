@@ -46,13 +46,13 @@ export const ANNOUNCEMENTS: Announcement[] = [
   {
     id: "2026-07-30-grande-maj",
     date: "2026-07-30",
-    title: "Ce qui change aujourd'hui",
-    intro: "L'essentiel en cinq lignes.",
+    title: "Ce qui change aujourd’hui",
+    intro: "L’essentiel en cinq lignes.",
     recapComplet: true,
     items: [
       {
         emoji: "🏋️",
-        title: "L'entraînement",
+        title: "L’entraînement",
         text: "102 mouvements animés, 53 séances, et tu peux composer les tiennes.",
       },
       {
@@ -62,13 +62,13 @@ export const ANNOUNCEMENTS: Announcement[] = [
       },
       {
         emoji: "✨",
-        title: "L'étincelle",
+        title: "L’étincelle",
         text: "Elle prépare tes séances, note tes repas, et répond en un seul tour.",
       },
       {
         emoji: "💎",
         title: "Ton rang",
-        text: "De l'EXP à chaque séance, six rangs, et des missions du jour.",
+        text: "De l’EXP à chaque séance, six rangs, et des missions du jour.",
       },
       {
         emoji: "💬",
@@ -81,27 +81,27 @@ export const ANNOUNCEMENTS: Announcement[] = [
     id: "2026-06-21-maj-ia-planning",
     date: "2026-06-21",
     title: "La première mise à jour de Vaiiya 💜",
-    intro: "Merci d'être là. Voici tout ce qui change aujourd'hui :",
+    intro: "Merci d’être là. Voici tout ce qui change aujourd’hui :",
     items: [
       {
         emoji: "🤖",
         title: "Un assistant IA partout",
-        text: "Appuie sur l'orbe en bas de l'écran : il connaît tout le site, te guide, et peut même créer ou déplacer tes séances. Il retient tes objectifs, tes blessures et tes préférences.",
+        text: "Appuie sur l’orbe en bas de l’écran : il connaît tout le site, te guide, et peut même créer ou déplacer tes séances. Il retient tes objectifs, tes blessures et tes préférences.",
       },
       {
         emoji: "🗓️",
         title: "Ton planning, enfin tout connecté",
-        text: "Un planning unique relié à ta bibliothèque de séances et à ta progression. Pose une séance sur un jour, navigue entre les semaines, et laisse l'IA l'organiser pour toi.",
+        text: "Un planning unique relié à ta bibliothèque de séances et à ta progression. Pose une séance sur un jour, navigue entre les semaines, et laisse l’IA l’organiser pour toi.",
       },
       {
         emoji: "✨",
-        title: "Nouvelle orbe d'assistant",
+        title: "Nouvelle orbe d’assistant",
         text: "Un bouton central élégant pour parler à ton coach à tout moment : appui pour écrire, maintien pour parler.",
       },
       {
         emoji: "🏋️",
         title: "Des séances plus claires",
-        text: "Noms d'exercices standardisés, démo vidéo dépliable, et un générateur qui respecte vraiment ton lieu et ton matériel.",
+        text: "Noms d’exercices standardisés, démo vidéo dépliable, et un générateur qui respecte vraiment ton lieu et ton matériel.",
       },
       {
         emoji: "🚀",
@@ -111,7 +111,7 @@ export const ANNOUNCEMENTS: Announcement[] = [
       {
         emoji: "🐛",
         title: "Corrections",
-        text: "Compteurs d'abonnés/abonnements corrigés, ouverture de l'orbe sur mobile fiabilisée, et déploiements toujours à jour.",
+        text: "Compteurs d’abonnés/abonnements corrigés, ouverture de l’orbe sur mobile fiabilisée, et déploiements toujours à jour.",
       },
     ],
   },

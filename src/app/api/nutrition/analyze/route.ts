@@ -45,7 +45,7 @@ export async function POST(req: Request) {
             },
             {
               type: "text",
-              text: `Tu es un expert en nutrition et en reconnaissance d'aliments. Analyse très attentivement cette photo de repas.
+              text: `Tu es un expert en nutrition et en reconnaissance d’aliments. Analyse très attentivement cette photo de repas.
 
 INSTRUCTIONS IMPORTANTES :
 - Regarde TOUS les détails visuels : la forme, la texture, la couleur, la sauce des aliments
@@ -53,7 +53,7 @@ INSTRUCTIONS IMPORTANTES :
 - Les gnocchis sont des petites boulettes ovales/rondes de pommes de terre, souvent dans une sauce
 - Identifie précisément le plat (ex: "Gnocchis à la sauce tomate" et non "riz")
 - Sois précis sur les aliments européens/italiens/français
-- Tiens compte de tous les éléments visibles dans l'assiette (viande, légumes, sauce, garniture)
+- Tiens compte de tous les éléments visibles dans l’assiette (viande, légumes, sauce, garniture)
 
 Retourne UNIQUEMENT un objet JSON valide, sans texte avant ou après :
 {

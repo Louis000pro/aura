@@ -54,11 +54,11 @@ export async function POST(req: Request) {
         {
           role: "system",
           content:
-            "Tu es un chef qui compose des plats realistes a partir des ingredients DISPONIBLES de l'utilisateur. Tu peux supposer les basiques de placard (huile, sel, poivre, epices, oignon, ail). Reponds UNIQUEMENT avec un objet JSON valide, sans texte avant/apres, sans markdown.",
+            "Tu es un chef qui compose des plats realistes a partir des ingredients DISPONIBLES de l’utilisateur. Tu peux supposer les basiques de placard (huile, sel, poivre, epices, oignon, ail). Reponds UNIQUEMENT avec un objet JSON valide, sans texte avant/apres, sans markdown.",
         },
         {
           role: "user",
-          content: `Ingredients disponibles (n'achete rien d'autre que des basiques de placard) : ${ingredients.join(", ")}.
+          content: `Ingredients disponibles (n’achete rien d’autre que des basiques de placard) : ${ingredients.join(", ")}.
 Type de repas : ${mealType}. Vise environ ${perDish} kcal pour ce plat (coherent avec le type de repas).
 ${perso}
 

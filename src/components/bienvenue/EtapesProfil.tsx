@@ -135,14 +135,14 @@ export function champsManquants(
     if (!data.sessionsPerWeek) manque.push("ton nombre de séances par semaine");
   }
   if (section === "entrainement") {
-    if (!entrainement.location) manque.push("l'endroit où tu t'entraînes");
+    if (!entrainement.location) manque.push("l’endroit où tu t’entraînes");
     // La question du matériel n'existe qu'à la maison : on ne réclame
     // jamais une réponse à une question qui n'est pas à l'écran.
     else if (entrainement.location === "maison" && !entrainement.equip) manque.push("ton matériel");
   }
   if (section === "nutrition") {
     if (!data.mealsPerDay) manque.push("ton nombre de repas");
-    if (!data.diet) manque.push("ton type d'alimentation");
+    if (!data.diet) manque.push("ton type d’alimentation");
   }
   return manque;
 }

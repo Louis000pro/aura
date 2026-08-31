@@ -162,7 +162,7 @@ function Marques({ compte }: { compte: Compte }) {
 /* ─── Formulations ─── */
 function ilYA(jours: number | null): string {
   if (jours === null) return "jamais revenu";
-  if (jours <= 0) return "vu aujourd'hui";
+  if (jours <= 0) return "vu aujourd’hui";
   if (jours === 1) return "vu hier";
   if (jours < 30) return `vu il y a ${jours} jours`;
   const mois = Math.floor(jours / 30);
@@ -171,7 +171,7 @@ function ilYA(jours: number | null): string {
 
 function depuis(iso: string): string {
   const jours = Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);
-  if (jours < 1) return "inscrit aujourd'hui";
+  if (jours < 1) return "inscrit aujourd’hui";
   if (jours === 1) return "inscrit hier";
   if (jours < 30) return `inscrit il y a ${jours} jours`;
   return `inscrit le ${new Date(iso).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}`;
@@ -366,7 +366,7 @@ export default function AdminPage() {
             {/* ═══════════ POULS ═══════════ */}
             {onglet === "pouls" && p && (
               <>
-                <Carte titre="Actifs aujourd'hui" apres="30 derniers jours">
+                <Carte titre="Actifs aujourd’hui" apres="30 derniers jours">
                   <div className={s.hero}>
                     <span className={s.heroN}>{p.actifsAujourdhui}</span>
                     <div className={s.heroQuoi}>
@@ -393,7 +393,7 @@ export default function AdminPage() {
                   </div>
                 </div>
 
-                <Carte titre="Qui reste" apres="après l'inscription">
+                <Carte titre="Qui reste" apres="après l’inscription">
                   <div className={s.barres}>
                     {p.retention.map((r) => (
                       <Barre key={r.semaine}
@@ -568,7 +568,7 @@ export default function AdminPage() {
                   </div>
                   <p className={s.legende}>
                     {u.relais.inscription > 0
-                      ? `${u.relais.inscription} invitation${u.relais.inscription > 1 ? "s" : ""} en attente d'un équipier.`
+                      ? `${u.relais.inscription} invitation${u.relais.inscription > 1 ? "s" : ""} en attente d’un équipier.`
                       : "Aucune invitation en attente."}
                     {" "}Le nombre de comptes créés depuis un lien n&apos;est pas mesuré : l&apos;origine
                     d&apos;une inscription n&apos;est enregistrée nulle part.
@@ -592,7 +592,7 @@ export default function AdminPage() {
             {/* ═══════════ IA ═══════════ */}
             {onglet === "ia" && ia && (
               <>
-                <Carte titre="Appels aujourd'hui" apres={`${ia.comptes} compte${ia.comptes > 1 ? "s" : ""}`}>
+                <Carte titre="Appels aujourd’hui" apres={`${ia.comptes} compte${ia.comptes > 1 ? "s" : ""}`}>
                   <div className={s.hero}>
                     <span className={s.heroN}>{ia.total}</span>
                     <div className={s.heroQuoi}><b>appels</b><span>coach, vision, dictée…</span></div>
@@ -600,7 +600,7 @@ export default function AdminPage() {
                   </div>
                 </Carte>
 
-                <Carte titre="Par catégorie" apres="aujourd'hui">
+                <Carte titre="Par catégorie" apres="aujourd’hui">
                   <div className={s.barres}>
                     {ia.parCategorie.map((c) => (
                       <Barre key={c.categorie} nom={c.libelle} valeur={c.appels}
@@ -610,7 +610,7 @@ export default function AdminPage() {
                 </Carte>
 
                 {ia.top.length > 0 && (
-                  <Carte titre="Qui consomme" apres="aujourd'hui">
+                  <Carte titre="Qui consomme" apres="aujourd’hui">
                     <div className={s.barres}>
                       {ia.top.map((t) => (
                         <Barre key={t.pseudo} valeur={t.appels} max={ia.top[0].appels}
@@ -620,7 +620,7 @@ export default function AdminPage() {
                   </Carte>
                 )}
 
-                <Carte titre="Plafonds touchés" apres="aujourd'hui">
+                <Carte titre="Plafonds touchés" apres="aujourd’hui">
                   {ia.plafonds.length === 0 ? (
                     <p style={{ fontSize: 12.8, color: "var(--text-2)" }}>
                       Personne n&apos;a buté sur un plafond aujourd&apos;hui.

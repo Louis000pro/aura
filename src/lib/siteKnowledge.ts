@@ -31,24 +31,24 @@ export const SITE_FEATURES: SiteFeature[] = [
     title: "Accueil",
     route: "/",
     summary:
-      "Tableau de bord du jour : l'orbe IA au centre, les séances et repas recommandés du jour, les stats du jour (calories, pas, sommeil, score, streak).",
+      "Tableau de bord du jour : l’orbe IA au centre, les séances et repas recommandés du jour, les stats du jour (calories, pas, sommeil, score, streak).",
     actions: [
       "voir la séance recommandée du jour",
       "voir les repas recommandés du jour",
       "consulter ses stats du jour",
-      "parler à l'assistant via l'orbe",
+      "parler à l’assistant via l’orbe",
     ],
-    keywords: ["home", "dashboard", "tableau de bord", "jour", "aujourd'hui"],
+    keywords: ["home", "dashboard", "tableau de bord", "jour", "aujourd’hui"],
   },
   {
     key: "seances",
     title: "Séances & programme",
     route: "/",
     summary:
-      "Les séances recommandées et le programme de la semaine se consultent depuis l'accueil. L'assistant peut générer une séance personnalisée selon le profil et les objectifs.",
+      "Les séances recommandées et le programme de la semaine se consultent depuis l’accueil. L’assistant peut générer une séance personnalisée selon le profil et les objectifs.",
     actions: [
       "voir/lancer la séance du jour",
-      "demander à l'IA de générer une séance (ex. pecs, jambes, cardio)",
+      "demander à l’IA de générer une séance (ex. pecs, jambes, cardio)",
       "suivre une séance guidée",
     ],
     keywords: ["séance", "seance", "entraînement", "entrainement", "workout", "programme", "muscu", "musculation", "exercices"],
@@ -58,9 +58,9 @@ export const SITE_FEATURES: SiteFeature[] = [
     title: "Analyse de posture (caméra)",
     route: "/analyse",
     summary:
-      "Outil d'analyse de mouvement en temps réel via la caméra : compte les répétitions et corrige la posture (squat, pompes, curl biceps, fente, gainage). Tourne sur l'appareil, gratuit et illimité — n'utilise pas le coach IA.",
+      "Outil d’analyse de mouvement en temps réel via la caméra : compte les répétitions et corrige la posture (squat, pompes, curl biceps, fente, gainage). Tourne sur l’appareil, gratuit et illimité — n’utilise pas le coach IA.",
     actions: [
-      "lancer l'analyse de posture en temps réel",
+      "lancer l’analyse de posture en temps réel",
       "corriger sa technique sur un exercice",
       "compter ses répétitions à la caméra",
     ],
@@ -71,8 +71,8 @@ export const SITE_FEATURES: SiteFeature[] = [
     title: "Repas recommandés",
     route: "/",
     summary:
-      "Les repas recommandés du jour se consultent depuis l'accueil, adaptés au régime et à l'objectif calorique.",
-    actions: ["voir les plats recommandés", "demander une idée de repas à l'IA"],
+      "Les repas recommandés du jour se consultent depuis l’accueil, adaptés au régime et à l’objectif calorique.",
+    actions: ["voir les plats recommandés", "demander une idée de repas à l’IA"],
     keywords: ["repas", "plat", "plats", "menu", "manger", "recette"],
   },
   {
@@ -80,12 +80,12 @@ export const SITE_FEATURES: SiteFeature[] = [
     title: "Entraînement",
     route: "/progression",
     summary:
-      "L'onglet Entraînement accueille avec la séance du jour (planning piloté par l'IA) : la lancer en un geste, improviser une séance selon son temps et son matériel, choisir dans ses séances (Vaiiya + personnalisées), ou organiser sa semaine.",
+      "L’onglet Entraînement accueille avec la séance du jour (planning piloté par l’IA) : la lancer en un geste, improviser une séance selon son temps et son matériel, choisir dans ses séances (Vaiiya + personnalisées), ou organiser sa semaine.",
     actions: [
       "lancer la séance du jour",
       "improviser une séance (temps + matériel)",
       "choisir ou créer une séance",
-      "organiser sa semaine d'entraînement",
+      "organiser sa semaine d’entraînement",
     ],
     keywords: ["entraînement", "entrainement", "séance", "seance", "muscu", "musculation", "sport", "planning", "programme", "semaine", "improviser"],
   },
@@ -107,7 +107,7 @@ export const SITE_FEATURES: SiteFeature[] = [
     title: "Profil",
     route: "/profil",
     summary:
-      "Profil de l'utilisateur : ses publications, ses séances, ses objectifs personnels et ses infos.",
+      "Profil de l’utilisateur : ses publications, ses séances, ses objectifs personnels et ses infos.",
     actions: ["voir son profil", "consulter ses publications", "voir ses objectifs"],
     keywords: ["profil", "compte", "mon profil", "mes posts", "mes publications"],
   },
@@ -129,7 +129,7 @@ export const SITE_FEATURES: SiteFeature[] = [
     title: "Vaiiya Premium",
     route: "/premium",
     summary:
-      "Offres d'abonnement : coach IA illimité et fonctionnalités avancées.",
+      "Offres d’abonnement : coach IA illimité et fonctionnalités avancées.",
     actions: ["voir les offres", "passer au plan supérieur"],
     keywords: ["premium", "abonnement", "abonner", "payant", "plan supérieur", "upgrade", "illimité"],
   },
@@ -205,18 +205,18 @@ export function buildSiteKnowledgePrompt(currentPage?: string, nav = true): stri
     const feat = SITE_FEATURES.find((f) => f.route === currentPage)
       ?? SITE_FEATURES.find((f) => currentPage.startsWith(f.route) && f.route !== "/");
     here = feat
-      ? `\n\nPAGE COURANTE : l'utilisateur est actuellement sur « ${feat.title} » (${currentPage}). Tiens-en compte pour orienter (ne le renvoie pas là où il est déjà ; explique en contexte).`
+      ? `\n\nPAGE COURANTE : l’utilisateur est actuellement sur « ${feat.title} » (${currentPage}). Tiens-en compte pour orienter (ne le renvoie pas là où il est déjà ; explique en contexte).`
       : `\n\nPAGE COURANTE : ${currentPage}.`;
   }
 
   const commentFaire = nav
-    ? `- Réponds en 1 phrase claire indiquant la rubrique concernée, PUIS, si l'utilisateur veut clairement s'y rendre, emmène-le avec le tag [NAV]cible[/NAV] (cible = la clé entre crochets ci-dessus).`
-    : `- Réponds en 1 phrase claire indiquant la rubrique concernée et comment y arriver. Si l'utilisateur veut clairement s'y rendre, l'app l'y emmène toute seule : dis-le simplement, sans jamais écrire de code ni de balise.`;
+    ? `- Réponds en 1 phrase claire indiquant la rubrique concernée, PUIS, si l’utilisateur veut clairement s’y rendre, emmène-le avec le tag [NAV]cible[/NAV] (cible = la clé entre crochets ci-dessus).`
+    : `- Réponds en 1 phrase claire indiquant la rubrique concernée et comment y arriver. Si l’utilisateur veut clairement s’y rendre, l’app l’y emmène toute seule : dis-le simplement, sans jamais écrire de code ni de balise.`;
 
-  return `CONNAISSANCE DU SITE VAIIYA (tu connais l'app de A à Z et tu sais orienter) :
+  return `CONNAISSANCE DU SITE VAIIYA (tu connais l’app de A à Z et tu sais orienter) :
 ${lines.join("\n")}
 
 QUAND ON TE DEMANDE « COMMENT FAIRE X » OU « OÙ TROUVER X » :
 ${commentFaire}
-- Si la question est juste informative (« c'est quoi la progression ? »), explique brièvement sans forcément naviguer.${here}`;
+- Si la question est juste informative (« c’est quoi la progression ? »), explique brièvement sans forcément naviguer.${here}`;
 }

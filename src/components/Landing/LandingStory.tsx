@@ -600,9 +600,9 @@ function TunnelPhone() {
 }
 
 const TUNNEL_POINTS = [
-  { t: "Le geste est montré", d: "Un personnage rejoue le mouvement en boucle, à hauteur d'écran. Rien à chercher sur internet." },
+  { t: "Le geste est montré", d: "Un personnage rejoue le mouvement en boucle, à hauteur d’écran. Rien à chercher sur internet." },
   { t: "Le compte se fait tout seul", d: "Séries, répétitions et récupération avancent avec toi. Tu poses ton téléphone et tu suis." },
-  { t: "L'étincelle reste à portée", d: "Une question en plein effort, une adaptation à demander : elle est là, dans l'écran." },
+  { t: "L’étincelle reste à portée", d: "Une question en plein effort, une adaptation à demander : elle est là, dans l’écran." },
 ];
 
 function SectionTunnel() {
@@ -921,10 +921,10 @@ function SectionRelais() {
           </p>
           <ul className="mt-6 space-y-2.5">
             {[
-              "Une équipe de deux, un simple lien d'invitation",
+              "Une équipe de deux, un simple lien d’invitation",
               "Un maillon par jour, jamais deux fois de suite la même personne",
               "Tout se passe dans votre messagerie privée, jamais sur un fil public",
-              "L'affiche gagnée devient votre trophée",
+              "L’affiche gagnée devient votre trophée",
             ].map((b) => (
               <li key={b} className="flex items-start gap-2.5">
                 <span className="mt-0.5 w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: ACTION_BG }}>

@@ -150,7 +150,7 @@ export default function FollowListModal({
             <div className="flex flex-col items-center justify-center py-16 gap-2">
               <span className="text-3xl">👤</span>
               <p className="text-sm font-light" style={{ color: "var(--text-3)" }}>
-                {query ? "Aucun résultat" : "Aucun ami pour l'instant"}
+                {query ? "Aucun résultat" : "Aucun ami pour l’instant"}
               </p>
             </div>
           ) : (

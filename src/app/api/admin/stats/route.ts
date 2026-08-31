@@ -222,7 +222,7 @@ export async function GET(req: NextRequest) {
   if (jamaisDeSeance.length > 0) {
     alertes.push({
       niveau: "attention",
-      texte: `${jamaisDeSeance.length} compte${jamaisDeSeance.length > 1 ? "s n'ont" : " n'a"} jamais lancé de séance`,
+      texte: `${jamaisDeSeance.length} compte${jamaisDeSeance.length > 1 ? "s n’ont" : " n’a"} jamais lancé de séance`,
       detail: "Inscrits depuis plus de 7 jours",
       filtre: "jamais",
     });
@@ -231,7 +231,7 @@ export async function GET(req: NextRequest) {
     alertes.push({
       niveau: "attention",
       texte: `${iaPlafonds.length} compte${iaPlafonds.length > 1 ? "s gratuits ont" : " gratuit a"} atteint un plafond IA`,
-      detail: "Aujourd'hui. Le gratuit est-il au bon niveau ?",
+      detail: "Aujourd’hui. Le gratuit est-il au bon niveau ?",
     });
   }
   if (relaisChauds.length > 0) {

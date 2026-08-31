@@ -35,7 +35,7 @@ export default function InfosPremium() {
   const premium = PLANS.premium;
 
   return (
-    <section className="mt-12 md:mt-16 flex flex-col gap-4 md:gap-5" aria-label="Comprendre l'offre Vaiiya">
+    <section className="mt-12 md:mt-16 flex flex-col gap-4 md:gap-5" aria-label="Comprendre l’offre Vaiiya">
       <div className={CARTE} style={CARTE_STYLE}>
         <h2 className="text-xl md:text-2xl font-black mb-3" style={{ color: "var(--text-0)" }}>
           Ce que Vaiiya donne gratuitement

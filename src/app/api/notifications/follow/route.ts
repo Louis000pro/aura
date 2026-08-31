@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
       .eq("id", followed_id)
       .maybeSingle();
 
-    const followerName = follower?.full_name || `@${follower?.pseudo}` || "Quelqu'un";
+    const followerName = follower?.full_name || `@${follower?.pseudo}` || "Quelqu’un";
     const followerHandle = follower?.pseudo ? `@${follower.pseudo}` : "";
     const followedPseudo = followedProfile?.pseudo ?? "toi";
 
@@ -77,12 +77,12 @@ export async function POST(req: NextRequest) {
     const desormaisAmis = Boolean(retour);
 
     const texteRelation = desormaisAmis
-      ? "t'a ajouté à ses amis sur Vaiiya. Votre discussion est ouverte."
-      : "veut t'ajouter à ses amis sur Vaiiya.";
-    const titrePush = desormaisAmis ? "Vaiiya · Nouvel ami" : "Vaiiya · Demande d'ami";
+      ? "t’a ajouté à ses amis sur Vaiiya. Votre discussion est ouverte."
+      : "veut t’ajouter à ses amis sur Vaiiya.";
+    const titrePush = desormaisAmis ? "Vaiiya · Nouvel ami" : "Vaiiya · Demande d’ami";
     const corpsPush = desormaisAmis
-      ? `${followerName} t'a ajouté. Votre discussion est ouverte.`
-      : `${followerName} veut t'ajouter à ses amis.`;
+      ? `${followerName} t’a ajouté. Votre discussion est ouverte.`
+      : `${followerName} veut t’ajouter à ses amis.`;
     // Une notification mène toujours quelque part : vers la demande à
     // traiter, ou vers la conversation qui vient de s'ouvrir.
     const lienAction = desormaisAmis ? "/communaute" : "/communaute?amis=demandes";
@@ -134,8 +134,8 @@ export async function POST(req: NextRequest) {
       from: `"Vaiiya" <${cleanEnv(process.env.GMAIL_USER)}>`,
       to: followedEmail,
       subject: desormaisAmis
-        ? `${followerName} t'a ajouté à ses amis sur Vaiiya`
-        : `${followerName} veut t'ajouter à ses amis sur Vaiiya`,
+        ? `${followerName} t’a ajouté à ses amis sur Vaiiya`
+        : `${followerName} veut t’ajouter à ses amis sur Vaiiya`,
       html: `<!DOCTYPE html>
 <html>
 <head><meta charset="utf-8" /></head>

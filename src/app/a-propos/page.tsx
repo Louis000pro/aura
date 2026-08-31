@@ -28,12 +28,12 @@ import { CHIFFRES_PUBLICS } from "@/lib/chiffresPublics";
 export const metadata: Metadata = {
   title: "À propos de Vaiiya",
   description:
-    "Vaiiya est une application web française d'entraînement et de nutrition où l'entraînement, les repas, l'assistant IA et la progression communiquent. Son histoire, ce qu'elle contient et où elle va.",
+    "Vaiiya est une application web française d’entraînement et de nutrition où l’entraînement, les repas, l’assistant IA et la progression communiquent. Son histoire, ce qu’elle contient et où elle va.",
   alternates: { canonical: "https://vaiiya.fr/a-propos" },
   openGraph: {
     title: "À propos de Vaiiya",
     description:
-      "Une application web française d'entraînement et de nutrition, où chaque partie communique avec les autres. Développée par deux lycéens en région lyonnaise.",
+      "Une application web française d’entraînement et de nutrition, où chaque partie communique avec les autres. Développée par deux lycéens en région lyonnaise.",
     url: "https://vaiiya.fr/a-propos",
     images: ["/og-image.png"],
   },
@@ -44,16 +44,16 @@ export const metadata: Metadata = {
    l'assistant lit bien le planning et les repas avant de proposer. */
 const LIENS = [
   {
-    t: "Une séance terminée ne s'arrête pas à la séance",
-    d: "Elle coche ta mission du jour, ajoute ton EXP, fait monter ton rang et avance ta semaine. Il n'y a rien à recopier ailleurs.",
+    t: "Une séance terminée ne s’arrête pas à la séance",
+    d: "Elle coche ta mission du jour, ajoute ton EXP, fait monter ton rang et avance ta semaine. Il n’y a rien à recopier ailleurs.",
   },
   {
-    t: "L'assistant sait ce que tu as déjà fait",
-    d: "Il connaît ton profil, ton planning, tes repas notés et tes statistiques. C'est ce qui lui permet de proposer une semaine qui tient dans la tienne, plutôt qu'un programme générique.",
+    t: "L’assistant sait ce que tu as déjà fait",
+    d: "Il connaît ton profil, ton planning, tes repas notés et tes statistiques. C’est ce qui lui permet de proposer une semaine qui tient dans la tienne, plutôt qu’un programme générique.",
   },
   {
     t: "Un repas noté en parlant arrive au bon endroit",
-    d: "Tu dis à l'assistant ce que tu as mangé, il l'estime et te le montre. Une fois validé, il rejoint ta nutrition, pas un carnet séparé.",
+    d: "Tu dis à l’assistant ce que tu as mangé, il l’estime et te le montre. Une fois validé, il rejoint ta nutrition, pas un carnet séparé.",
   },
   {
     t: "Le défi à deux se nourrit de tes vraies séances",
@@ -64,8 +64,8 @@ const LIENS = [
 const PORTES = [
   { t: "Suivre une séance du catalogue", d: "Elle est prête, tu appuies, elle démarre." },
   { t: "Construire entièrement la tienne", d: "Tu pioches dans la bibliothèque de mouvements, tu règles les séries, les répétitions et le repos." },
-  { t: "La demander à l'assistant", d: "Tu écris ce que tu veux, il propose une séance sur une carte, tu la gardes ou non." },
-  { t: "Improviser", d: "Tu commences sans rien préparer, et tu peux garder la séance à la fin si elle t'a plu." },
+  { t: "La demander à l’assistant", d: "Tu écris ce que tu veux, il propose une séance sur une carte, tu la gardes ou non." },
+  { t: "Improviser", d: "Tu commences sans rien préparer, et tu peux garder la séance à la fin si elle t’a plu." },
 ];
 
 export default function AProposPage() {
@@ -79,7 +79,7 @@ export default function AProposPage() {
     name: "À propos de Vaiiya",
     inLanguage: "fr-FR",
     description:
-      "Ce qu'est Vaiiya, pourquoi ses différentes dimensions sont reliées, et comment le projet a commencé.",
+      "Ce qu’est Vaiiya, pourquoi ses différentes dimensions sont reliées, et comment le projet a commencé.",
     isPartOf: { "@id": "https://vaiiya.fr/#website" },
     // La page parle de l'éditeur et de l'application déjà décrits dans le
     // layout racine. On les référence, on ne les redéclare pas : deux

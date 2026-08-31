@@ -254,7 +254,7 @@ export default function ParcoursBienvenue() {
     setEnCours(null);
     if (!ok) {
       // Aucun faux succès : on ne fait pas semblant d'avoir enregistré.
-      setErreur("Impossible d'enregistrer ton choix pour le moment. Vérifie ta connexion et réessaie.");
+      setErreur("Impossible d’enregistrer ton choix pour le moment. Vérifie ta connexion et réessaie.");
       return;
     }
     setEtape(profilLu ? "pret" : ORDRE[0]);
@@ -329,7 +329,7 @@ export default function ParcoursBienvenue() {
      et la pastille « Recommencer » est juste au-dessus pour rejouer. */
   const entrer = () => {
     if (revue) {
-      setNoteRevue("En revue, on reste ici. En vrai, ce bouton t'emmène dans Vaiiya.");
+      setNoteRevue("En revue, on reste ici. En vrai, ce bouton t’emmène dans Vaiiya.");
       return;
     }
     router.replace(destination);
@@ -337,7 +337,7 @@ export default function ParcoursBienvenue() {
 
   const decouvrir = () => {
     if (revue) {
-      setNoteRevue("En revue, la visite guidée n'est pas lancée : la terminer enregistrerait un réglage sur ton compte.");
+      setNoteRevue("En revue, la visite guidée n’est pas lancée : la terminer enregistrerait un réglage sur ton compte.");
       return;
     }
     router.replace(destination);

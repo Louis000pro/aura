@@ -139,7 +139,7 @@ export async function garderIA(req: Request, categorie: CategorieIA): Promise<Re
             dailyLimit: plafond,
             premium: estPremium,
             message: estPremium
-              ? `Tu as atteint ${plafond} ${limite.libelle} aujourd'hui. C'est bien au-delà d'un usage normal, alors on met en pause jusqu'à demain. Écris-nous si c'est une erreur.`
+              ? `Tu as atteint ${plafond} ${limite.libelle} aujourd’hui. C’est bien au-delà d’un usage normal, alors on met en pause jusqu’à demain. Écris-nous si c’est une erreur.`
               : `Tu as utilisé tes ${plafond} ${limite.libelle} du jour. Ça repart demain, ou passe en Premium pour ne plus y penser.`,
           },
           { status: 429 }

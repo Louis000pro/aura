@@ -256,7 +256,7 @@ function AjouterAmi({
       setRechercheFaite(true);
     } catch {
       if (id !== rechercheId.current) return;
-      setErreur("La recherche n'a pas abouti. Réessaie.");
+      setErreur("La recherche n’a pas abouti. Réessaie.");
     } finally {
       if (id === rechercheId.current) setCharge(false);
     }
@@ -316,7 +316,7 @@ function AjouterAmi({
       const conversation = await creerConversation([cible.id]);
       setActionId(null);
       if (conversation.ok && conversation.conversation_id) onConversation(conversation.conversation_id);
-      else setErreur("Impossible d'ouvrir votre discussion.");
+      else setErreur("Impossible d’ouvrir votre discussion.");
       return;
     }
 
@@ -601,6 +601,6 @@ function DemandesAmi({
 
 function messageMigration(raison?: string) {
   return /function|schema cache|does not exist|404/i.test(String(raison ?? ""))
-    ? "Le nouvel ajout d'amis n'est pas encore activé côté serveur."
-    : "L'action n'a pas abouti. Réessaie.";
+    ? "Le nouvel ajout d’amis n’est pas encore activé côté serveur."
+    : "L’action n’a pas abouti. Réessaie.";
 }

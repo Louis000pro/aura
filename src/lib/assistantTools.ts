@@ -121,7 +121,7 @@ export const ASSISTANT_TOOLS: Tool[] = [
     function: {
       name: "create_seance",
       description:
-        "Créer une séance RÉUTILISABLE dans la bibliothèque de l'utilisateur, SANS référence à un jour du planning (« crée-moi une séance pecs », « fais-moi une séance jambes de 30 min »). Si tu viens de demander une précision (lieu, matériel, durée) et qu'il répond, c'est ici : reprends les muscles et l'objectif du contexte.",
+        "Créer une séance RÉUTILISABLE dans la bibliothèque de l’utilisateur, SANS référence à un jour du planning (« crée-moi une séance pecs », « fais-moi une séance jambes de 30 min »). Si tu viens de demander une précision (lieu, matériel, durée) et qu’il répond, c’est ici : reprends les muscles et l’objectif du contexte.",
       parameters: {
         type: "object",
         properties: {
@@ -137,7 +137,7 @@ export const ASSISTANT_TOOLS: Tool[] = [
     function: {
       name: "plan_set",
       description:
-        "DÉFINIR ou REMPLACER la séance d'un JOUR précis du planning (« remplace aujourd'hui par du dos », « mets du pecs jeudi », « dans 2 jours je veux jambes »). À ne pas confondre avec create_seance, qui ne vise aucun jour.",
+        "DÉFINIR ou REMPLACER la séance d’un JOUR précis du planning (« remplace aujourd’hui par du dos », « mets du pecs jeudi », « dans 2 jours je veux jambes »). À ne pas confondre avec create_seance, qui ne vise aucun jour.",
       parameters: {
         type: "object",
         properties: {
@@ -154,12 +154,12 @@ export const ASSISTANT_TOOLS: Tool[] = [
     function: {
       name: "plan_move",
       description:
-        "DÉPLACER une séance d'un jour vers un autre (« repousse ma séance à demain », « décale jeudi à vendredi »). Un EMPÊCHEMENT sans destination (« je ne peux pas jeudi », « annule ma séance de vendredi ») s'exprime ici aussi, avec `to` absent : l'app choisira un jour libre.",
+        "DÉPLACER une séance d’un jour vers un autre (« repousse ma séance à demain », « décale jeudi à vendredi »). Un EMPÊCHEMENT sans destination (« je ne peux pas jeudi », « annule ma séance de vendredi ») s’exprime ici aussi, avec `to` absent : l’app choisira un jour libre.",
       parameters: {
         type: "object",
         properties: {
           when: { type: "string", description: "Jour de départ. " + JOUR_DESC },
-          to: { type: "string", description: "Jour d'arrivée. À omettre si l'utilisateur ne le donne pas. " + JOUR_DESC },
+          to: { type: "string", description: "Jour d’arrivée. À omettre si l’utilisateur ne le donne pas. " + JOUR_DESC },
         },
         required: ["when"],
       },
@@ -170,7 +170,7 @@ export const ASSISTANT_TOOLS: Tool[] = [
     function: {
       name: "plan_location",
       description:
-        "Changer le LIEU d'entraînement d'un jour du planning (« vendredi je suis à la maison », « demain je m'entraîne en salle »).",
+        "Changer le LIEU d’entraînement d’un jour du planning (« vendredi je suis à la maison », « demain je m’entraîne en salle »).",
       parameters: {
         type: "object",
         properties: {
@@ -186,7 +186,7 @@ export const ASSISTANT_TOOLS: Tool[] = [
     function: {
       name: "plan_library",
       description:
-        "PLACER sur un jour une séance qui EXISTE DÉJÀ dans sa bibliothèque (« mets ma séance Pompes perso mardi »). Signal clé : il désigne une séance QU'IL A DÉJÀ (« ma séance X ») plus un jour. À ne pas confondre avec plan_set, qui GÉNÈRE une nouvelle séance.",
+        "PLACER sur un jour une séance qui EXISTE DÉJÀ dans sa bibliothèque (« mets ma séance Pompes perso mardi »). Signal clé : il désigne une séance QU’IL A DÉJÀ (« ma séance X ») plus un jour. À ne pas confondre avec plan_set, qui GÉNÈRE une nouvelle séance.",
       parameters: {
         type: "object",
         properties: {
@@ -202,7 +202,7 @@ export const ASSISTANT_TOOLS: Tool[] = [
     function: {
       name: "plan_regen",
       description:
-        "REFAIRE LA SEMAINE ENTIÈRE du planning (« refais ma semaine », « régénère mon programme »). À ne pas confondre avec plan_set, qui ne touche qu'un jour.",
+        "REFAIRE LA SEMAINE ENTIÈRE du planning (« refais ma semaine », « régénère mon programme »). À ne pas confondre avec plan_set, qui ne touche qu’un jour.",
       parameters: {
         type: "object",
         properties: {
@@ -220,15 +220,15 @@ export const ASSISTANT_TOOLS: Tool[] = [
     function: {
       name: "log_meal",
       description:
-        "ENREGISTRER un repas DÉJÀ mangé ou bu (« j'ai mangé un burger ce midi », « au petit-déj deux œufs »). Le signal clé est le PASSÉ. À ne pas confondre avec create_recipe (une idée à cuisiner) ni avec une simple question nutritionnelle (« combien de calories dans une banane ? »), qui n'appelle aucun outil.",
+        "ENREGISTRER un repas DÉJÀ mangé ou bu (« j’ai mangé un burger ce midi », « au petit-déj deux œufs »). Le signal clé est le PASSÉ. À ne pas confondre avec create_recipe (une idée à cuisiner) ni avec une simple question nutritionnelle (« combien de calories dans une banane ? »), qui n’appelle aucun outil.",
       parameters: {
         type: "object",
         properties: {
-          food: { type: "string", description: "Les aliments tels qu'il les décrit, quantités comprises (« deux œufs », « un bol de riz »)." },
+          food: { type: "string", description: "Les aliments tels qu’il les décrit, quantités comprises (« deux œufs », « un bol de riz »)." },
           mealType: {
             type: "string",
             enum: ["petit-dejeuner", "dejeuner", "gouter", "diner"],
-            description: "Le moment, s'il est dit ou évident. À omettre sinon.",
+            description: "Le moment, s’il est dit ou évident. À omettre sinon.",
           },
         },
         required: ["food"],
@@ -240,13 +240,13 @@ export const ASSISTANT_TOOLS: Tool[] = [
     function: {
       name: "create_recipe",
       description:
-        "Écrire une RECETTE de cuisine (« donne-moi une recette de poulet », « qu'est-ce que je peux cuisiner avec du riz et des œufs ? », « une idée de dîner riche en protéines »).",
+        "Écrire une RECETTE de cuisine (« donne-moi une recette de poulet », « qu’est-ce que je peux cuisiner avec du riz et des œufs ? », « une idée de dîner riche en protéines »).",
       parameters: {
         type: "object",
         properties: {
-          dish: { type: "string", description: "Le plat, s'il est nommé." },
-          theme_recette: { type: "string", description: "Le style, s'il est donné (italien, healthy, rapide…)." },
-          ingredients: { type: "array", items: { type: "string" }, description: "UNIQUEMENT les aliments qu'il dit AVOIR sous la main." },
+          dish: { type: "string", description: "Le plat, s’il est nommé." },
+          theme_recette: { type: "string", description: "Le style, s’il est donné (italien, healthy, rapide…)." },
+          ingredients: { type: "array", items: { type: "string" }, description: "UNIQUEMENT les aliments qu’il dit AVOIR sous la main." },
           mealType: { type: "string", enum: ["petit-dejeuner", "dejeuner", "gouter", "diner", "collation"] },
         },
       },
@@ -257,7 +257,7 @@ export const ASSISTANT_TOOLS: Tool[] = [
     function: {
       name: "set_theme",
       description:
-        "Changer l'APPARENCE de l'app, et seulement ça (« passe en mode sombre », « c'est trop lumineux à l'écran »). Le message doit porter explicitement sur le thème, l'affichage ou la luminosité de l'app. N'appelle JAMAIS cet outil à partir d'une fatigue (« je suis crevé »), de l'heure ou de la lumière de la pièce, ni d'un objet sombre ou clair qui n'est pas l'interface. Dans le moindre doute, n'appelle rien.",
+        "Changer l’APPARENCE de l’app, et seulement ça (« passe en mode sombre », « c’est trop lumineux à l’écran »). Le message doit porter explicitement sur le thème, l’affichage ou la luminosité de l’app. N’appelle JAMAIS cet outil à partir d’une fatigue (« je suis crevé »), de l’heure ou de la lumière de la pièce, ni d’un objet sombre ou clair qui n’est pas l’interface. Dans le moindre doute, n’appelle rien.",
       parameters: {
         type: "object",
         properties: { theme: { type: "string", enum: ["sombre", "clair", "auto"] } },
@@ -270,7 +270,7 @@ export const ASSISTANT_TOOLS: Tool[] = [
     function: {
       name: "save_lieu",
       description:
-        "Mémoriser le lieu d'entraînement quand l'utilisateur vient de l'indiquer (« à la maison », « en salle », « chez moi », « j'ai des haltères »). Appelle-le en même temps que ta réponse : il évite de reposer la question au tour suivant.",
+        "Mémoriser le lieu d’entraînement quand l’utilisateur vient de l’indiquer (« à la maison », « en salle », « chez moi », « j’ai des haltères »). Appelle-le en même temps que ta réponse : il évite de reposer la question au tour suivant.",
       parameters: {
         type: "object",
         properties: {
@@ -285,7 +285,7 @@ export const ASSISTANT_TOOLS: Tool[] = [
     function: {
       name: "ask_choice",
       description:
-        "Poser UNE question à l'utilisateur quand il te manque vraiment une information pour agir, en lui proposant 2 à 4 réponses qu'il pourra toucher du doigt. Conditions strictes : la réponse doit être un CHOIX FERMÉ (un lieu, un jour, une durée, un niveau, oui/non), jamais une question ouverte comme « comment tu te sens ? ». Ne pose JAMAIS une question dont la réponse est déjà dans le profil, les stats ou la conversation. Une seule question à la fois : si tu as besoin de deux informations, demande la première et attends. Si tu n'as pas besoin d'information pour répondre, n'appelle pas cet outil.",
+        "Poser UNE question à l’utilisateur quand il te manque vraiment une information pour agir, en lui proposant 2 à 4 réponses qu’il pourra toucher du doigt. Conditions strictes : la réponse doit être un CHOIX FERMÉ (un lieu, un jour, une durée, un niveau, oui/non), jamais une question ouverte comme « comment tu te sens ? ». Ne pose JAMAIS une question dont la réponse est déjà dans le profil, les stats ou la conversation. Une seule question à la fois : si tu as besoin de deux informations, demande la première et attends. Si tu n’as pas besoin d’information pour répondre, n’appelle pas cet outil.",
       parameters: {
         type: "object",
         properties: {
@@ -305,7 +305,7 @@ export const ASSISTANT_TOOLS: Tool[] = [
     function: {
       name: "open_page",
       description:
-        "Emmener l'utilisateur sur une page de l'app quand il veut clairement y ALLER (« montre mes repas », « ouvre mon programme », « je veux m'abonner »). Pas pour une simple question sur le contenu de la page.",
+        "Emmener l’utilisateur sur une page de l’app quand il veut clairement y ALLER (« montre mes repas », « ouvre mon programme », « je veux m’abonner »). Pas pour une simple question sur le contenu de la page.",
       parameters: {
         type: "object",
         properties: {

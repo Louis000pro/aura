@@ -539,7 +539,7 @@ export async function apercuInvitation(code: string): Promise<Apercu | null> {
   if (!row) return null;
   return {
     valide: Boolean(row.valide),
-    inviterNom: row.inviter_nom ?? "Quelqu'un",
+    inviterNom: row.inviter_nom ?? "Quelqu’un",
     inviterAvatar: row.inviter_avatar ?? null,
     complet: Boolean(row.complet),
   };

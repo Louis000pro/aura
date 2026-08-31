@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       {
         error: "vente_fermee",
-        message: "L'abonnement n'est pas encore ouvert. Tout est gratuit en attendant.",
+        message: "L’abonnement n’est pas encore ouvert. Tout est gratuit en attendant.",
       },
       { status: 503 }
     );

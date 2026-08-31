@@ -217,7 +217,7 @@ export default function AuthPage() {
       });
       const json = await res.json();
       if (!res.ok || json.error) {
-        setError(json.error ?? "Erreur lors de l'envoi du code.");
+        setError(json.error ?? "Erreur lors de l’envoi du code.");
         setLoading(false);
         return;
       }
@@ -296,7 +296,7 @@ export default function AuthPage() {
       body: JSON.stringify({ email }),
     });
     const json = await res.json();
-    if (!res.ok || json.error) { setOtpError(json.error ?? "Erreur d'envoi."); return; }
+    if (!res.ok || json.error) { setOtpError(json.error ?? "Erreur d’envoi."); return; }
     setOtpToken(json.token);
     setOtpCode("");
     setResendCooldown(60);

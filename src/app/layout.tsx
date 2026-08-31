@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Geist } from "next/font/google";
+import { Geist, Bricolage_Grotesque } from "next/font/google";
 import "./globals.css";
 import Navigation from "@/components/Navigation";
 import MainWrapper from "@/components/MainWrapper";
@@ -28,17 +28,34 @@ const geist = Geist({
   weight: ["300", "400", "500", "600"],
 });
 
+/* La police de TITRAGE. Elle n'existe que pour une raison : avant elle, tout
+   Vaiiya s'écrivait dans une seule famille et une seule graisse, et un écran où
+   rien ne commande se lit comme un écran généré. Le titrage a maintenant sa
+   voix, le texte courant garde la sienne. Variable, donc un seul fichier pour
+   toutes les graisses ; accents français complets. Elle ne sert JAMAIS au corps
+   de texte ni aux libellés : voir `.vy-*` dans globals.css. */
+const titrage = Bricolage_Grotesque({
+  variable: "--font-titrage",
+  subsets: ["latin"],
+  display: "swap",
+  // L'axe optique est demandé explicitement : sans lui, next/font fige la
+  // fonte sur `opsz: 14`, c'est-à-dire le dessin prévu pour du petit texte,
+  // et un titre de 52 px hérite alors d'un dessin trop large et trop lourd.
+  // Avec l'axe, le navigateur passe tout seul au dessin de titrage.
+  axes: ["opsz"],
+});
+
 export const metadata: Metadata = {
   metadataBase: new URL("https://vaiiya.fr"),
   title: {
     default: "Vaiiya ✦ · Coach IA · Musculation · Nutrition",
     template: "%s · Vaiiya",
   },
-  description: "Vaiiya réunit tes séances guidées, ta nutrition et ton coach IA dans une seule application web. Un catalogue de séances montrées mouvement par mouvement, la nutrition comprise d'une photo, et un rang qui monte à chaque effort.",
+  description: "Vaiiya réunit tes séances guidées, ta nutrition et ton coach IA dans une seule application web. Un catalogue de séances montrées mouvement par mouvement, la nutrition comprise d’une photo, et un rang qui monte à chaque effort.",
   applicationName: "Vaiiya",
   keywords: [
     "coach IA", "coach sportif IA", "musculation", "nutrition", "fitness",
-    "programme d'entraînement personnalisé", "suivi progression", "perte de poids",
+    "programme d’entraînement personnalisé", "suivi progression", "perte de poids",
     "prise de masse", "application fitness", "coach nutrition", "salle de sport",
     "entraînement maison", "Vaiiya",
   ],
@@ -83,7 +100,7 @@ export const metadata: Metadata = {
     type: "website",
     siteName: "Vaiiya",
     title: "Vaiiya ✦ · Coach IA · Musculation · Nutrition",
-    description: "Séances guidées mouvement par mouvement, nutrition comprise d'une photo, coach IA qui agit. Une seule application pour t'entraîner, manger mieux et tenir dans le temps.",
+    description: "Séances guidées mouvement par mouvement, nutrition comprise d’une photo, coach IA qui agit. Une seule application pour t’entraîner, manger mieux et tenir dans le temps.",
     locale: "fr_FR",
     images: [
       {
@@ -97,7 +114,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "Vaiiya ✦ · Coach IA · Musculation · Nutrition",
-    description: "Séances guidées, nutrition comprise d'une photo et coach IA. Une seule application pour t'entraîner et tenir dans le temps.",
+    description: "Séances guidées, nutrition comprise d’une photo et coach IA. Une seule application pour t’entraîner et tenir dans le temps.",
     images: ["/og-image.png"],
   },
 };
@@ -114,7 +131,7 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="fr" translate="no" suppressHydrationWarning className={`${geist.variable} h-full antialiased notranslate`} style={{ backgroundColor: "var(--html-bg)" }}>
+    <html lang="fr" translate="no" suppressHydrationWarning className={`${geist.variable} ${titrage.variable} h-full antialiased notranslate`} style={{ backgroundColor: "var(--html-bg)" }}>
       {/* Inline script runs before first paint — prevents dark mode flash */}
       <head>
         {/* Empêche les extensions de traduction (Google Translate, Opera) de casser React */}
@@ -168,7 +185,7 @@ export default function RootLayout({
                     height: 512,
                   },
                   image: "https://vaiiya.fr/icons/icon-512.png",
-                  description: "Vaiiya édite une application web française d'entraînement et de nutrition, guidée par un assistant IA.",
+                  description: "Vaiiya édite une application web française d’entraînement et de nutrition, guidée par un assistant IA.",
                   // Seul contact confirmé, celui des mentions légales.
                   email: "bonjour@vaiiya.fr",
                   contactPoint: {
@@ -228,7 +245,7 @@ export default function RootLayout({
                   // par les moteurs et par les assistants IA.
                   operatingSystem: "Web",
                   inLanguage: "fr-FR",
-                  description: "Séances guidées montrées mouvement par mouvement, nutrition estimée à partir d'une photo, coach IA qui agit sur le planning et les repas, et une progression par rangs sans classement entre utilisateurs.",
+                  description: "Séances guidées montrées mouvement par mouvement, nutrition estimée à partir d’une photo, coach IA qui agit sur le planning et les repas, et une progression par rangs sans classement entre utilisateurs.",
                   // Le prix n'est jamais écrit à la main : il vient de plans.ts,
                   // comme la page /conditions. Tant que `VENTE_OUVERTE` est faux
                   // (verrou juridique), rien n'est vendable, donc la seule offre
@@ -253,7 +270,7 @@ export default function RootLayout({
                         "@type": "Offer",
                         price: "0",
                         priceCurrency: "EUR",
-                        description: "Compte gratuit, sans carte bancaire. L'abonnement Premium n'est pas encore ouvert à la souscription.",
+                        description: "Compte gratuit, sans carte bancaire. L’abonnement Premium n’est pas encore ouvert à la souscription.",
                       },
                 },
               ],

@@ -57,7 +57,7 @@ export default async function FicheExercicePage({
   params: Promise<{ slug: string }>;
 }) {
   const soucis = verifierFiches();
-  if (soucis.length) throw new Error(`Fiches d'exercices : ${soucis.join(" | ")}`);
+  if (soucis.length) throw new Error(`Fiches d’exercices : ${soucis.join(" | ")}`);
 
   const { slug } = await params;
   const fiche = ficheParSlug(slug);
@@ -102,7 +102,7 @@ export default async function FicheExercicePage({
       />
 
       {/* ── Fil d'Ariane visible ─────────────────────────────────── */}
-      <nav aria-label="Fil d'Ariane" className="mb-7 text-[12px]" style={{ color: "#8B84A8" }}>
+      <nav aria-label="Fil d’Ariane" className="mb-7 text-[12px]" style={{ color: "#8B84A8" }}>
         <Link href="/" className="hover:underline">Accueil</Link>
         <span className="mx-1.5">›</span>
         <Link href="/exercices" className="hover:underline">Exercices</Link>

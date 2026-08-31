@@ -41,7 +41,7 @@ const VIOLET = "linear-gradient(135deg, #8B5CF6, #C13BC1)";
 export const BADGE_PREMIER_RELAIS: Badge = {
   slug: "premier-relais",
   nom: "Premier relais",
-  condition: "Terminer un relais, quel qu'il soit",
+  condition: "Terminer un relais, quel qu’il soit",
   image: null,
   degrade: VIOLET,
 };
@@ -52,7 +52,7 @@ export function badgeSerie(serie: string): Badge {
   return {
     slug: `serie-${serie}`,
     nom: s?.nom ?? serie,
-    condition: "Dévoiler l'affiche en entier",
+    condition: "Dévoiler l’affiche en entier",
     image: imageEtat(serie, 4),
     degrade: VIOLET,
   };
@@ -93,9 +93,9 @@ function derive(famille: Famille, seuil: number, prefixe: string, nom: string, c
 
 /** Le catalogue dérivé, dans l'ordre où il se lit sur une étagère. */
 export const BADGES_DERIVES: BadgeDerive[] = [
-  derive("serie",    7,   "regularite", "Sept jours",        "Sept journées actives d'affilée"),
-  derive("serie",   30,   "regularite", "Trente jours",      "Trente journées actives d'affilée"),
-  derive("serie",  100,   "regularite", "Cent jours",        "Cent journées actives d'affilée"),
+  derive("serie",    7,   "regularite", "Sept jours",        "Sept journées actives d’affilée"),
+  derive("serie",   30,   "regularite", "Trente jours",      "Trente journées actives d’affilée"),
+  derive("serie",  100,   "regularite", "Cent jours",        "Cent journées actives d’affilée"),
   derive("seances",  10,  "seances",    "Dix séances",       "Terminer dix séances"),
   derive("seances",  50,  "seances",    "Cinquante séances", "Terminer cinquante séances"),
   derive("seances", 100,  "seances",    "Cent séances",      "Terminer cent séances"),

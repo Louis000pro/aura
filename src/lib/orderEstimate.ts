@@ -61,7 +61,7 @@ export const EXTRAS_BY_CATEGORY: Record<OrderCategory, Extra[]> = {
   pizza: [{ label: "Soda", icon: "soda" }, { label: "Dessert", icon: "dessert" }, { label: "Sauce", icon: "sauce" }, { label: "Café", icon: "cafe" }],
   asiatique: [{ label: "Boisson", icon: "soda" }, { label: "Soupe", icon: "soup" }, { label: "Dessert", icon: "dessert" }, { label: "Café", icon: "cafe" }],
   bistro: [{ label: "Boisson", icon: "soda" }, { label: "Entrée", icon: "entree" }, { label: "Dessert", icon: "dessert" }, { label: "Café", icon: "cafe" }],
-  "petit-dej": [{ label: "Café", icon: "cafe" }, { label: "Jus d'orange", icon: "jus" }, { label: "Viennoiserie", icon: "viennoiserie" }],
+  "petit-dej": [{ label: "Café", icon: "cafe" }, { label: "Jus d’orange", icon: "jus" }, { label: "Viennoiserie", icon: "viennoiserie" }],
   dessert: [{ label: "Boisson", icon: "soda" }, { label: "Café", icon: "cafe" }],
 };
 
@@ -71,11 +71,11 @@ export const ambianceImg = (c: OrderCategory) => `/nutrition/ambiances/${c}.jpg`
 /* Raccourcis d'enseignes populaires (1 tap). Chaque entrée porte son niveau +
    sa catégorie provisoires (le vrai calcul reste fait par l'IA à l'estimation). */
 export const POPULAR_CHAINS: { name: string; niveau: Niveau; category: OrderCategory }[] = [
-  { name: "McDonald's", niveau: "fast-food", category: "burger" },
+  { name: "McDonald’s", niveau: "fast-food", category: "burger" },
   { name: "Burger King", niveau: "fast-food", category: "burger" },
   { name: "KFC", niveau: "fast-food", category: "burger" },
-  { name: "O'Tacos", niveau: "fast-food", category: "tacos" },
-  { name: "Domino's", niveau: "fast-food", category: "pizza" },
+  { name: "O’Tacos", niveau: "fast-food", category: "tacos" },
+  { name: "Domino’s", niveau: "fast-food", category: "pizza" },
   { name: "Sushi Shop", niveau: "resto", category: "asiatique" },
   { name: "Subway", niveau: "resto", category: "burger" },
   { name: "Poke bar", niveau: "healthy", category: "asiatique" },

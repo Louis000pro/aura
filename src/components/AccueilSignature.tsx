@@ -97,7 +97,7 @@ export default function AccueilSignature({
   const offrePremium = majuscule(
     `${enLettres(nbPremiumTotal)} mission${nbPremiumTotal > 1 ? "s" : ""} Premium : ` +
       `${enLettres(nbPremiumJour)} chaque jour, ${enLettres(nbPremiumSemaine)} dans la semaine. ` +
-      `Jusqu'à ${PLAFOND_JOUR_PREMIUM} EXP par jour.`
+      `Jusqu’à ${PLAFOND_JOUR_PREMIUM} EXP par jour.`
   );
 
   return (
@@ -335,10 +335,10 @@ function BandeRelais({ relais, onNavigate }: {
   // même lecture que /defi, donc les deux écrans ne se contredisent pas.
   const phrase =
     relais.tour.quoi === "deja_franchi"
-      ? (relais.tour.parMoi ? "C'est fait pour aujourd'hui." : "Le maillon du jour est franchi.")
+      ? (relais.tour.parMoi ? "C’est fait pour aujourd’hui." : "Le maillon du jour est franchi.")
       : relais.tour.quoi === "pas_mon_tour"
-        ? `Aujourd'hui, c'est à ${relais.tour.equipier?.pseudo ?? nom ?? "l'autre"}.`
-        : "Aujourd'hui, c'est à toi.";
+        ? `Aujourd’hui, c’est à ${relais.tour.equipier?.pseudo ?? nom ?? "l’autre"}.`
+        : "Aujourd’hui, c’est à toi.";
 
   return (
     <button

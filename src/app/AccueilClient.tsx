@@ -422,7 +422,7 @@ function Dashboard() {
       const count = parseInt(localStorage.getItem(dayKey) || "0") || 0;
       if (count >= DAILY_AI_LIMIT) {
         const upMsg: Message = { id: Date.now() + 1, from: "ai", time,
-          text: `🚀 Tu as atteint ta limite gratuite de ${DAILY_AI_LIMIT} messages/jour avec le coach Vaiiya. Passe au plan supérieur pour un coach illimité — je t'emmène voir les offres…` };
+          text: `🚀 Tu as atteint ta limite gratuite de ${DAILY_AI_LIMIT} messages/jour avec le coach Vaiiya. Passe au plan supérieur pour un coach illimité — je t’emmène voir les offres…` };
         const withUp = [...chatMessagesRef.current, upMsg];
         chatMessagesRef.current = withUp;
         setChatMessages(withUp);

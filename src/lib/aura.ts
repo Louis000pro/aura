@@ -216,7 +216,7 @@ export const MISSIONS: Mission[] = [
   {
     id: "seance",
     titre: "Terminer une séance",
-    condition: "Une séance menée jusqu'au bout.",
+    condition: "Une séance menée jusqu’au bout.",
     exp: EXP_SEANCE,
     periode: "jour",
     premium: false,
@@ -247,7 +247,7 @@ export const MISSIONS: Mission[] = [
   {
     id: "double",
     titre: "Double séance",
-    condition: "Deux séances de 5 min minimum aujourd'hui.",
+    condition: "Deux séances de 5 min minimum aujourd’hui.",
     unite: ["séance", "séances"] as [string, string],
     exp: EXP_DOUBLE,
     periode: "jour",
@@ -376,7 +376,7 @@ export const RECOMPENSE_RANG: Record<string, Recompense> = {
   argent: {
     emoji: "🏷️",
     titre: "Badge de rang",
-    desc: "Ta gemme s'affiche à côté de ton pseudo, sur ton profil et celui que voient les autres.",
+    desc: "Ta gemme s’affiche à côté de ton pseudo, sur ton profil et celui que voient les autres.",
     apercu: "badge",
   },
   or: {
@@ -394,7 +394,7 @@ export const RECOMPENSE_RANG: Record<string, Recompense> = {
   diamant: {
     emoji: "📛",
     titre: `Titre « ${TITRE_DIAMANT} »`,
-    desc: "Un titre s'affiche sous ton pseudo, sur ton profil.",
+    desc: "Un titre s’affiche sous ton pseudo, sur ton profil.",
     apercu: "titre",
   },
   eternel: {

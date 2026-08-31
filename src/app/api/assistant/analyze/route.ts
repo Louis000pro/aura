@@ -44,8 +44,8 @@ export async function POST(req: NextRequest) {
     {
       role: "user" as const,
       content: context
-        ? `Contexte (derniers échanges) :\n${context}\n\nDernier message de l'utilisateur (à analyser) : ${message}`
-        : `Message de l'utilisateur : ${message}`,
+        ? `Contexte (derniers échanges) :\n${context}\n\nDernier message de l’utilisateur (à analyser) : ${message}`
+        : `Message de l’utilisateur : ${message}`,
     },
   ];
   const ask = () => llm.chat.completions.create({

@@ -30,7 +30,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Galerie des personnages-guides",
   description:
-    "Écran interne de revue des animations d'exercices Vaiiya. Cette page n'est pas destinée aux visiteurs.",
+    "Écran interne de revue des animations d’exercices Vaiiya. Cette page n’est pas destinée aux visiteurs.",
   robots: { index: false, follow: true },
   alternates: { canonical: "https://vaiiya.fr/guides" },
 };

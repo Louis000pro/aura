@@ -278,18 +278,18 @@ export const FICHES: FichePublique[] = [
       "Comment faire le développé couché à la barre : placement, exécution, muscles travaillés et les erreurs qui limitent la progression. Animation du mouvement.",
     contenu: {
       definition:
-        "Allongé sur un banc, on descend une barre jusqu'au bas de la poitrine puis on la repousse à bout de bras. Le banc porte le buste, donc il n'y a pas d'équilibre à gérer : c'est l'une des raisons pour lesquelles on y manipule en général des charges plus élevées que sur les autres mouvements de poussée du haut du corps.",
+        "Allongé sur un banc, on descend une barre jusqu’au bas de la poitrine puis on la repousse à bout de bras. Le banc porte le buste, donc il n’y a pas d’équilibre à gérer : c’est l’une des raisons pour lesquelles on y manipule en général des charges plus élevées que sur les autres mouvements de poussée du haut du corps.",
       gabarit: "mouvement",
       etapes: [
         {
-          titre: "S'installer",
+          titre: "S’installer",
           texte:
-            "Allonge-toi les yeux à l'aplomb de la barre. Cinq appuis, et ils comptent : la tête, le haut du dos et les fessiers sur le banc, les deux pieds à plat au sol. Serre les omoplates l'une vers l'autre et garde-les serrées jusqu'à la fin de la série : c'est ce placement qui donne à l'épaule un appui stable. Prends la barre un peu plus large que les épaules, poignets dans l'axe des avant-bras.",
+            "Allonge-toi les yeux à l’aplomb de la barre. Cinq appuis, et ils comptent : la tête, le haut du dos et les fessiers sur le banc, les deux pieds à plat au sol. Serre les omoplates l’une vers l’autre et garde-les serrées jusqu’à la fin de la série : c’est ce placement qui donne à l’épaule un appui stable. Prends la barre un peu plus large que les épaules, poignets dans l’axe des avant-bras.",
         },
         {
           titre: "Descendre",
           texte:
-            "Sors la barre du rack et amène-la à l'aplomb des épaules, bras tendus. Descends lentement en gardant les coudes à environ 45 degrés du buste, vers le bas des pectoraux, dans l'amplitude où l'épaule reste confortable. Inspire pendant la descente. La barre se pose, elle ne s'écrase pas.",
+            "Sors la barre du rack et amène-la à l’aplomb des épaules, bras tendus. Descends lentement en gardant les coudes à environ 45 degrés du buste, vers le bas des pectoraux, dans l’amplitude où l’épaule reste confortable. Inspire pendant la descente. La barre se pose, elle ne s’écrase pas.",
         },
         {
           titre: "Pousser",
@@ -301,17 +301,17 @@ export const FICHES: FichePublique[] = [
         {
           titre: "Faire rebondir la barre sur la poitrine",
           pourquoi:
-            "L'élan prend une partie du travail à la place des pectoraux, et le contact devient brutal. Descends jusqu'au contact, marque un temps très court, puis repousse.",
+            "L’élan prend une partie du travail à la place des pectoraux, et le contact devient brutal. Descends jusqu’au contact, marque un temps très court, puis repousse.",
         },
         {
           titre: "Ouvrir les coudes à 90 degrés",
           pourquoi:
-            "Coudes complètement écartés, l'avant de l'épaule est davantage sollicité et fatigue souvent avant les pectoraux. Autour de 45 degrés du buste, la poussée se répartit mieux.",
+            "Coudes complètement écartés, l’avant de l’épaule est davantage sollicité et fatigue souvent avant les pectoraux. Autour de 45 degrés du buste, la poussée se répartit mieux.",
         },
         {
           titre: "Décoller les fessiers du banc",
           pourquoi:
-            "Cambrer permet souvent de pousser un peu plus lourd, mais une partie du travail quitte les pectoraux et le bas du dos se retrouve sollicité au passage. Si les fessiers se lèvent série après série, c'est en général le signe qu'il faut alléger.",
+            "Cambrer permet souvent de pousser un peu plus lourd, mais une partie du travail quitte les pectoraux et le bas du dos se retrouve sollicité au passage. Si les fessiers se lèvent série après série, c’est en général le signe qu’il faut alléger.",
         },
       ],
       variantes: [
@@ -319,21 +319,21 @@ export const FICHES: FichePublique[] = [
           angle: "Au poids du corps",
           exercice: "Pompes",
           texte:
-            "Le même schéma de poussée, sans matériel, avec une partie de ton poids de corps comme charge. Les appuis au sol demandent plus de gainage, et poser les genoux ou surélever les mains permet d'ajuster.",
+            "Le même schéma de poussée, sans matériel, avec une partie de ton poids de corps comme charge. Les appuis au sol demandent plus de gainage, et poser les genoux ou surélever les mains permet d’ajuster.",
         },
         {
           angle: "Avec deux haltères",
           exercice: "Développé couché haltères",
           texte:
-            "Chaque bras porte sa charge et se stabilise seul, ce qui demande plus de contrôle. Les haltères laissent aussi les mains descendre un peu plus bas que la barre, qui s'arrête au contact de la poitrine, et ils se posent sur les côtés en fin de série.",
+            "Chaque bras porte sa charge et se stabilise seul, ce qui demande plus de contrôle. Les haltères laissent aussi les mains descendre un peu plus bas que la barre, qui s’arrête au contact de la poitrine, et ils se posent sur les côtés en fin de série.",
         },
       ],
       placement:
-        "C'est un mouvement chargé et technique, dont l'exécution se dégrade vite une fois fatigué : on le place donc souvent tôt dans une séance de haut du corps, tant qu'on est frais. Ce qui vient après dépend de la séance et de l'objectif, mais le travail plus léger ou plus ciblé se garde en général pour la suite, une fois le gros du travail fait.",
+        "C’est un mouvement chargé et technique, dont l’exécution se dégrade vite une fois fatigué : on le place donc souvent tôt dans une séance de haut du corps, tant qu’on est frais. Ce qui vient après dépend de la séance et de l’objectif, mais le travail plus léger ou plus ciblé se garde en général pour la suite, une fois le gros du travail fait.",
       materiel: "Barre, banc et supports",
       materielCourt: "Barre",
       precaution:
-        "Travaille avec un pareur, ou avec des barres de sécurité réglées à hauteur de poitrine. Une barre qu'on n'arrive plus à repousser reste au-dessus de soi, alors que des haltères se posent sur les côtés.",
+        "Travaille avec un pareur, ou avec des barres de sécurité réglées à hauteur de poitrine. Une barre qu’on n’arrive plus à repousser reste au-dessus de soi, alors que des haltères se posent sur les côtés.",
     },
   },
   {
@@ -345,23 +345,23 @@ export const FICHES: FichePublique[] = [
       "Le squat au poids du corps : placement des pieds, profondeur, remontée et les erreurs fréquentes. Le mouvement en animation.",
     contenu: {
       definition:
-        "S'accroupir puis se relever, les deux pieds au sol. C'est un geste qu'on retrouve dans la vie courante, quand on se lève d'une chaise ou qu'on ramasse quelque chose au sol. Les cuisses et les fessiers fournissent l'effort, pendant que le tronc et le dos tiennent la position du buste, dont l'inclinaison varie selon la morphologie et la version du squat.",
+        "S’accroupir puis se relever, les deux pieds au sol. C’est un geste qu’on retrouve dans la vie courante, quand on se lève d’une chaise ou qu’on ramasse quelque chose au sol. Les cuisses et les fessiers fournissent l’effort, pendant que le tronc et le dos tiennent la position du buste, dont l’inclinaison varie selon la morphologie et la version du squat.",
       gabarit: "mouvement",
       etapes: [
         {
           titre: "Placer les pieds",
           texte:
-            "Debout, pieds à peu près à largeur d'épaules, pointes légèrement ouvertes vers l'extérieur. L'écartement exact n'est pas le même pour tout le monde : la mobilité des hanches et des chevilles change ce qui est confortable. Cherche la position où tu peux descendre en gardant les talons au sol, et garde-la.",
+            "Debout, pieds à peu près à largeur d’épaules, pointes légèrement ouvertes vers l’extérieur. L’écartement exact n’est pas le même pour tout le monde : la mobilité des hanches et des chevilles change ce qui est confortable. Cherche la position où tu peux descendre en gardant les talons au sol, et garde-la.",
         },
         {
           titre: "Descendre",
           texte:
-            "Pousse les hanches vers l'arrière et plie les genoux en même temps, comme pour t'asseoir sur une chaise basse. Les genoux suivent la direction des pointes de pieds. Garde la poitrine ouverte et le regard devant. Inspire pendant la descente.",
+            "Pousse les hanches vers l’arrière et plie les genoux en même temps, comme pour t’asseoir sur une chaise basse. Les genoux suivent la direction des pointes de pieds. Garde la poitrine ouverte et le regard devant. Inspire pendant la descente.",
         },
         {
           titre: "Trouver sa profondeur",
           texte:
-            "Descends jusqu'où tu gardes le contrôle : talons au sol, bas du dos qui ne s'arrondit pas, remontée possible sans à-coup. Ce point est plus bas chez certains que chez d'autres, et il bouge avec le temps. Une descente moins profonde mais tenue vaut mieux qu'une descente basse dans laquelle tu t'effondres.",
+            "Descends jusqu’où tu gardes le contrôle : talons au sol, bas du dos qui ne s’arrondit pas, remontée possible sans à-coup. Ce point est plus bas chez certains que chez d’autres, et il bouge avec le temps. Une descente moins profonde mais tenue vaut mieux qu’une descente basse dans laquelle tu t’effondres.",
         },
         {
           titre: "Remonter",
@@ -373,17 +373,17 @@ export const FICHES: FichePublique[] = [
         {
           titre: "Chercher la profondeur avant le contrôle",
           pourquoi:
-            "Passé un certain point, propre à chacun, le bassin bascule et le bas du dos s'arrondit en fin de descente. La profondeur utile est celle où la position tient encore. Descends un peu moins bas, et laisse l'amplitude venir avec les semaines.",
+            "Passé un certain point, propre à chacun, le bassin bascule et le bas du dos s’arrondit en fin de descente. La profondeur utile est celle où la position tient encore. Descends un peu moins bas, et laisse l’amplitude venir avec les semaines.",
         },
         {
-          titre: "Laisser les genoux rentrer franchement vers l'intérieur",
+          titre: "Laisser les genoux rentrer franchement vers l’intérieur",
           pourquoi:
-            "Quand les genoux se rapprochent nettement l'un de l'autre pendant la remontée, c'est en général que l'effort dépasse ce que les hanches contrôlent à ce moment-là. Pense à écarter légèrement les genoux vers l'extérieur en poussant, et allège si ça revient à chaque répétition.",
+            "Quand les genoux se rapprochent nettement l’un de l’autre pendant la remontée, c’est en général que l’effort dépasse ce que les hanches contrôlent à ce moment-là. Pense à écarter légèrement les genoux vers l’extérieur en poussant, et allège si ça revient à chaque répétition.",
         },
         {
-          titre: "Laisser le buste s'effondrer",
+          titre: "Laisser le buste s’effondrer",
           pourquoi:
-            "Une certaine inclinaison du buste est normale, et elle n'est pas la même selon la morphologie et selon la version du squat. Ce qui pose problème, c'est la perte de position : le buste qui plonge d'un coup pendant la descente, ou qui se casse vers l'avant au moment de repousser. Cherche une inclinaison qui reste la même du début à la fin de la répétition, et allège ou réduis l'amplitude dès qu'elle se dégrade en cours de série.",
+            "Une certaine inclinaison du buste est normale, et elle n’est pas la même selon la morphologie et selon la version du squat. Ce qui pose problème, c’est la perte de position : le buste qui plonge d’un coup pendant la descente, ou qui se casse vers l’avant au moment de repousser. Cherche une inclinaison qui reste la même du début à la fin de la répétition, et allège ou réduis l’amplitude dès qu’elle se dégrade en cours de série.",
         },
       ],
       variantes: [
@@ -391,17 +391,17 @@ export const FICHES: FichePublique[] = [
           angle: "Avec une charge tenue devant",
           exercice: "Goblet squat",
           texte:
-            "Un haltère ou une kettlebell tenue contre la poitrine. Le poids placé devant a tendance à redresser le buste, ce qui aide beaucoup de gens à descendre plus droit. C'est aussi la façon d'ajouter de la charge qui demande le moins de matériel : ni barre, ni rack.",
+            "Un haltère ou une kettlebell tenue contre la poitrine. Le poids placé devant a tendance à redresser le buste, ce qui aide beaucoup de gens à descendre plus droit. C’est aussi la façon d’ajouter de la charge qui demande le moins de matériel : ni barre, ni rack.",
         },
         {
           angle: "Sur une seule jambe",
           exercice: "Squat bulgare",
           texte:
-            "Le pied arrière posé sur un banc, l'essentiel du poids passe sur la jambe avant. L'équilibre fait alors partie du travail, et chaque jambe est chargée séparément, ce qui rend visible une différence entre les deux côtés.",
+            "Le pied arrière posé sur un banc, l’essentiel du poids passe sur la jambe avant. L’équilibre fait alors partie du travail, et chaque jambe est chargée séparément, ce qui rend visible une différence entre les deux côtés.",
         },
       ],
       placement:
-        "Le squat demande peu d'installation et sollicite beaucoup de muscles à la fois : au poids du corps, il tient aussi bien en échauffement qu'au milieu d'un circuit, où l'intérêt devient le volume et le rythme. Chargé, il se place plutôt en début de séance de jambes, tant que la coordination est fraîche, parce que c'est elle qui part en premier.",
+        "Le squat demande peu d’installation et sollicite beaucoup de muscles à la fois : au poids du corps, il tient aussi bien en échauffement qu’au milieu d’un circuit, où l’intérêt devient le volume et le rythme. Chargé, il se place plutôt en début de séance de jambes, tant que la coordination est fraîche, parce que c’est elle qui part en premier.",
       /* Ni `materiel` ni `materielCourt` : la famille de la bibliothèque
          dit déjà « Sans matériel », ce qui est exact et se lit bien. On
          ne redit pas ce que la donnée sait. */
@@ -416,52 +416,52 @@ export const FICHES: FichePublique[] = [
       "Le soulevé de terre à la barre : la position de départ, la tension à créer avant de décoller, la coordination de la montée et les erreurs fréquentes. Le mouvement en animation.",
     contenu: {
       promesse:
-        "Un mouvement qui met une grande partie du corps en jeu d'un coup : dos, fessiers, arrière des cuisses et tronc, sur chaque répétition.",
+        "Un mouvement qui met une grande partie du corps en jeu d’un coup : dos, fessiers, arrière des cuisses et tronc, sur chaque répétition.",
       definition:
-        "Dans la version classique montrée ici, la barre part du sol : on la ramasse, on se relève avec, puis on la repose. La première chose à réussir est donc la position de départ, qu'on ne peut plus rattraper une fois la barre en l'air, et c'est ce qui rend l'installation aussi importante que l'effort lui-même.",
+        "Dans la version classique montrée ici, la barre part du sol : on la ramasse, on se relève avec, puis on la repose. La première chose à réussir est donc la position de départ, qu’on ne peut plus rattraper une fois la barre en l’air, et c’est ce qui rend l’installation aussi importante que l’effort lui-même.",
       gabarit: "mouvement",
       etapes: [
         {
           titre: "Installer la barre et les appuis",
           texte:
-            "Barre au-dessus du milieu du pied, presque au contact des tibias. Pieds à largeur de bassin. Penche-toi en poussant les hanches vers l'arrière, plie les genoux et attrape la barre juste à l'extérieur des jambes, bras tendus.",
+            "Barre au-dessus du milieu du pied, presque au contact des tibias. Pieds à largeur de bassin. Penche-toi en poussant les hanches vers l’arrière, plie les genoux et attrape la barre juste à l’extérieur des jambes, bras tendus.",
         },
         {
           titre: "Créer la tension avant de décoller",
           texte:
-            "Avant que la barre ne quitte le sol, installe le buste et les hanches dans une position stable, serre le tronc, puis tire sur la barre juste assez pour en enlever le jeu. La hauteur exacte des hanches au départ n'est pas la même pour tout le monde : cherche celle que tu peux tenir pendant toute la montée. On ne décolle jamais d'un corps relâché.",
+            "Avant que la barre ne quitte le sol, installe le buste et les hanches dans une position stable, serre le tronc, puis tire sur la barre juste assez pour en enlever le jeu. La hauteur exacte des hanches au départ n’est pas la même pour tout le monde : cherche celle que tu peux tenir pendant toute la montée. On ne décolle jamais d’un corps relâché.",
         },
         {
           titre: "Se relever",
           texte:
-            "Pousse le sol avec les jambes et redresse le buste en même temps : les hanches et les épaules montent ensemble, pas l'une après l'autre. La barre reste proche des jambes pendant la montée, tibias puis cuisses. Souffle en fin de montée.",
+            "Pousse le sol avec les jambes et redresse le buste en même temps : les hanches et les épaules montent ensemble, pas l’une après l’autre. La barre reste proche des jambes pendant la montée, tibias puis cuisses. Souffle en fin de montée.",
         },
         {
           titre: "Verrouiller, puis reposer",
           texte:
-            "Debout, les hanches finissent tendues sous les épaules. Il n'y a rien à ajouter à ce moment-là. Pour reposer, refais le chemin en sens inverse : pousse les hanches vers l'arrière, laisse la barre glisser le long des cuisses, et plie les genoux une fois qu'elle les a dépassés.",
+            "Debout, les hanches finissent tendues sous les épaules. Il n’y a rien à ajouter à ce moment-là. Pour reposer, refais le chemin en sens inverse : pousse les hanches vers l’arrière, laisse la barre glisser le long des cuisses, et plie les genoux une fois qu’elle les a dépassés.",
         },
       ],
       erreurs: [
         {
-          titre: "Laisser la barre s'éloigner des jambes",
+          titre: "Laisser la barre s’éloigner des jambes",
           pourquoi:
-            "Plus la barre s'écarte du corps, plus le buste doit tenir un levier long, à charge identique. Le mouvement devient nettement plus difficile sans que rien n'ait changé sur les disques. Garde-la proche des tibias, puis des cuisses.",
+            "Plus la barre s’écarte du corps, plus le buste doit tenir un levier long, à charge identique. Le mouvement devient nettement plus difficile sans que rien n’ait changé sur les disques. Garde-la proche des tibias, puis des cuisses.",
         },
         {
-          titre: "Décoller d'un corps relâché",
+          titre: "Décoller d’un corps relâché",
           pourquoi:
-            "Partir sans tension fait presque toujours monter les hanches en premier, et le buste se retrouve seul à finir le travail dans une position qu'il n'a pas choisie. Prends le temps de te tendre avant chaque répétition, y compris au milieu d'une série.",
+            "Partir sans tension fait presque toujours monter les hanches en premier, et le buste se retrouve seul à finir le travail dans une position qu’il n’a pas choisie. Prends le temps de te tendre avant chaque répétition, y compris au milieu d’une série.",
         },
         {
           titre: "Basculer en arrière en fin de mouvement",
           pourquoi:
-            "Le verrouillage se fait en tendant les hanches, pas en penchant le buste vers l'arrière. Une fois debout, bassin sous les épaules, le mouvement est terminé : continuer n'ajoute rien.",
+            "Le verrouillage se fait en tendant les hanches, pas en penchant le buste vers l’arrière. Une fois debout, bassin sous les épaules, le mouvement est terminé : continuer n’ajoute rien.",
         },
         {
           titre: "Enchaîner les répétitions en rebond",
           pourquoi:
-            "Laisser tomber la barre et repartir sur le rebond fait perdre l'installation, et chaque répétition démarre alors d'une position un peu moins bonne que la précédente. Repose, replace-toi, repars.",
+            "Laisser tomber la barre et repartir sur le rebond fait perdre l’installation, et chaque répétition démarre alors d’une position un peu moins bonne que la précédente. Repose, replace-toi, repars.",
         },
       ],
       variantes: [
@@ -469,23 +469,23 @@ export const FICHES: FichePublique[] = [
           angle: "Sans revenir au sol",
           exercice: "Soulevé de terre roumain",
           texte:
-            "La barre part du haut et descend le long des jambes jusqu'à mi-tibia, sans se reposer entre les répétitions. Les genoux restent peu fléchis : le mouvement se concentre sur la bascule des hanches et l'étirement de l'arrière des cuisses.",
+            "La barre part du haut et descend le long des jambes jusqu’à mi-tibia, sans se reposer entre les répétitions. Les genoux restent peu fléchis : le mouvement se concentre sur la bascule des hanches et l’étirement de l’arrière des cuisses.",
         },
         {
           angle: "En balancier, avec une kettlebell",
           exercice: "Kettlebell swing",
           texte:
-            "La même bascule de hanches, mais rapide et sans temps d'arrêt : la charge passe entre les jambes puis remonte par l'impulsion des hanches. C'est un travail de rythme et de vitesse, pas de charge maximale.",
+            "La même bascule de hanches, mais rapide et sans temps d’arrêt : la charge passe entre les jambes puis remonte par l’impulsion des hanches. C’est un travail de rythme et de vitesse, pas de charge maximale.",
         },
       ],
       titreVariantes: "Variantes et mouvements proches",
       placement:
-        "Le soulevé de terre est souvent placé tôt dans la séance, quand il en est le mouvement prioritaire : il demande une position précise que la fatigue dégrade vite, et il sollicite à son tour une bonne partie de ce qui sert ensuite, du dos aux avant-bras. Son emplacement dépend malgré tout de la séance et de ce qu'on veut y faire passer.",
+        "Le soulevé de terre est souvent placé tôt dans la séance, quand il en est le mouvement prioritaire : il demande une position précise que la fatigue dégrade vite, et il sollicite à son tour une bonne partie de ce qui sert ensuite, du dos aux avant-bras. Son emplacement dépend malgré tout de la séance et de ce qu’on veut y faire passer.",
       materiel: "Une barre et des disques",
       materielCourt: "Barre",
       nomDansLeTitre: "le soulevé de terre",
       precaution:
-        "La charge se monte par paliers, et le repère utile est observable : si la charge ou la fatigue t'oblige à abandonner la position que tu cherchais, c'est le signal pour arrêter la série ou réduire la difficulté, plutôt que pour tenter une répétition de plus.",
+        "La charge se monte par paliers, et le repère utile est observable : si la charge ou la fatigue t’oblige à abandonner la position que tu cherchais, c’est le signal pour arrêter la série ou réduire la difficulté, plutôt que pour tenter une répétition de plus.",
     },
   },
   {
@@ -497,40 +497,40 @@ export const FICHES: FichePublique[] = [
       "Le rowing barre buste penché : inclinaison, trajectoire de la barre, contrôle de la descente et erreurs fréquentes. Le mouvement en animation.",
     contenu: {
       definition:
-        "Buste penché vers l'avant, on tire une barre vers le bas du torse puis on la laisse redescendre bras tendus. La difficulté est double : le dos tire, pendant que tout le reste du corps tient une position penchée qui demande déjà un effort. C'est ce qui sépare ce mouvement des autres tirages de la bibliothèque, où l'on est assis sur un siège ou en appui d'un genou sur un banc.",
+        "Buste penché vers l’avant, on tire une barre vers le bas du torse puis on la laisse redescendre bras tendus. La difficulté est double : le dos tire, pendant que tout le reste du corps tient une position penchée qui demande déjà un effort. C’est ce qui sépare ce mouvement des autres tirages de la bibliothèque, où l’on est assis sur un siège ou en appui d’un genou sur un banc.",
       gabarit: "mouvement",
       etapes: [
         {
           titre: "Se placer",
           texte:
-            "Pieds à largeur de bassin, barre au-dessus du milieu du pied. Plie légèrement les genoux, pousse les hanches vers l'arrière et penche le buste vers l'avant en gardant le dos plat. Prends la barre un peu plus large que les épaules. Autour de quarante-cinq degrés est un bon repère de départ : plus tu te rapproches de l'horizontale, plus la position elle-même devient coûteuse à tenir.",
+            "Pieds à largeur de bassin, barre au-dessus du milieu du pied. Plie légèrement les genoux, pousse les hanches vers l’arrière et penche le buste vers l’avant en gardant le dos plat. Prends la barre un peu plus large que les épaules. Autour de quarante-cinq degrés est un bon repère de départ : plus tu te rapproches de l’horizontale, plus la position elle-même devient coûteuse à tenir.",
         },
         {
           titre: "Tirer",
           texte:
-            "Amène la barre vers le haut du ventre ou le bas du torse en menant avec les coudes, qui partent vers l'arrière plutôt que vers l'extérieur. Les omoplates se rapprochent en fin de tirage. Souffle sur cette partie.",
+            "Amène la barre vers le haut du ventre ou le bas du torse en menant avec les coudes, qui partent vers l’arrière plutôt que vers l’extérieur. Les omoplates se rapprochent en fin de tirage. Souffle sur cette partie.",
         },
         {
           titre: "Contrôler la descente",
           texte:
-            "Laisse la barre redescendre jusqu'à bras tendus, sans la lâcher. Le buste, lui, reste exactement à la même hauteur qu'au départ : c'est le repère qui dit si la série est encore propre.",
+            "Laisse la barre redescendre jusqu’à bras tendus, sans la lâcher. Le buste, lui, reste exactement à la même hauteur qu’au départ : c’est le repère qui dit si la série est encore propre.",
         },
       ],
       erreurs: [
         {
           titre: "Se redresser à chaque répétition",
           pourquoi:
-            "Un buste qui remonte pendant le tirage aide la barre à monter, mais l'amplitude réellement parcourue par le dos diminue d'autant. C'est une erreur difficile à sentir soi-même : une vidéo de profil la rend évidente en dix secondes.",
+            "Un buste qui remonte pendant le tirage aide la barre à monter, mais l’amplitude réellement parcourue par le dos diminue d’autant. C’est une erreur difficile à sentir soi-même : une vidéo de profil la rend évidente en dix secondes.",
         },
         {
           titre: "Tirer avec un coup de reins",
           pourquoi:
-            "Une impulsion des hanches à chaque répétition permet de mettre plus lourd, et le travail se déplace vers cette impulsion. Garde le bassin immobile et ralentis volontairement la descente : c'est le meilleur moyen de voir la charge réellement gérable.",
+            "Une impulsion des hanches à chaque répétition permet de mettre plus lourd, et le travail se déplace vers cette impulsion. Garde le bassin immobile et ralentis volontairement la descente : c’est le meilleur moyen de voir la charge réellement gérable.",
         },
         {
-          titre: "Laisser le haut du dos s'enrouler sous la charge",
+          titre: "Laisser le haut du dos s’enrouler sous la charge",
           pourquoi:
-            "Quand la barre devient trop lourde pour la position penchée, le dos s'arrondit progressivement, série après série, souvent sans qu'on le décide. C'est le signal pour alléger plutôt que pour finir la série.",
+            "Quand la barre devient trop lourde pour la position penchée, le dos s’arrondit progressivement, série après série, souvent sans qu’on le décide. C’est le signal pour alléger plutôt que pour finir la série.",
         },
       ],
       variantes: [
@@ -538,17 +538,17 @@ export const FICHES: FichePublique[] = [
           angle: "À un bras, buste soutenu",
           exercice: "Rowing haltère",
           texte:
-            "Un genou et une main en appui sur un banc : il n'y a plus de position penchée à tenir, ce qui déplace tout l'effort vers le tirage. Chaque côté travaille seul, et une différence entre les deux devient visible.",
+            "Un genou et une main en appui sur un banc : il n’y a plus de position penchée à tenir, ce qui déplace tout l’effort vers le tirage. Chaque côté travaille seul, et une différence entre les deux devient visible.",
         },
         {
           angle: "Au poids du corps",
           exercice: "Rowing inversé",
           texte:
-            "Suspendu sous une barre basse, corps gainé, on tire la poitrine vers la barre. La charge est une fraction du poids du corps et se règle en changeant l'inclinaison du corps plutôt qu'en ajoutant des disques.",
+            "Suspendu sous une barre basse, corps gainé, on tire la poitrine vers la barre. La charge est une fraction du poids du corps et se règle en changeant l’inclinaison du corps plutôt qu’en ajoutant des disques.",
         },
       ],
       placement:
-        "Comme le buste reste penché pendant toute la série, le rowing barre demande aussi un effort de maintien du tronc : on le place donc plutôt tôt dans une séance de dos, avant les tirages où l'on est assis ou soutenu et où la fatigue du tronc compte moins. Placé après un soulevé de terre, il part avec une chaîne postérieure déjà bien sollicitée, ce qui limite en général ce qu'on peut y mettre.",
+        "Comme le buste reste penché pendant toute la série, le rowing barre demande aussi un effort de maintien du tronc : on le place donc plutôt tôt dans une séance de dos, avant les tirages où l’on est assis ou soutenu et où la fatigue du tronc compte moins. Placé après un soulevé de terre, il part avec une chaîne postérieure déjà bien sollicitée, ce qui limite en général ce qu’on peut y mettre.",
       materiel: "Une barre et des disques",
       materielCourt: "Barre",
     },
@@ -562,40 +562,40 @@ export const FICHES: FichePublique[] = [
       "Le développé militaire aux haltères : position de départ, trajectoire de la charge, tenue du tronc et erreurs fréquentes. Le mouvement en animation.",
     contenu: {
       definition:
-        "On pousse deux haltères depuis les épaules jusqu'au-dessus de la tête, bras tendus. À la différence des poussées faites allongé sur un banc, rien ne soutient le buste : le tronc participe aussi à stabiliser la position pendant que les épaules et les triceps poussent les haltères.",
+        "On pousse deux haltères depuis les épaules jusqu’au-dessus de la tête, bras tendus. À la différence des poussées faites allongé sur un banc, rien ne soutient le buste : le tronc participe aussi à stabiliser la position pendant que les épaules et les triceps poussent les haltères.",
       gabarit: "mouvement",
       etapes: [
         {
           titre: "Prendre la position",
           texte:
-            "Debout, pieds sous les hanches et bien ancrés, ou assis sur un banc à dossier haut. Monte les haltères à hauteur d'épaules, coudes sous les poignets. Paumes vers l'avant ou légèrement tournées vers l'intérieur : les deux prises se pratiquent, garde celle où ton épaule est à l'aise. Serre le ventre et les fessiers avant de pousser.",
+            "Debout, pieds sous les hanches et bien ancrés, ou assis sur un banc à dossier haut. Monte les haltères à hauteur d’épaules, coudes sous les poignets. Paumes vers l’avant ou légèrement tournées vers l’intérieur : les deux prises se pratiquent, garde celle où ton épaule est à l’aise. Serre le ventre et les fessiers avant de pousser.",
         },
         {
           titre: "Pousser",
           texte:
-            "Monte les haltères vers le haut en gardant les poignets dans l'axe des avant-bras. La trajectoire passe près de la tête plutôt que loin devant. Souffle pendant la poussée. En haut, les bras sont tendus sans claquer les coudes, et les haltères se retrouvent à l'aplomb des épaules.",
+            "Monte les haltères vers le haut en gardant les poignets dans l’axe des avant-bras. La trajectoire passe près de la tête plutôt que loin devant. Souffle pendant la poussée. En haut, les bras sont tendus sans claquer les coudes, et les haltères se retrouvent à l’aplomb des épaules.",
         },
         {
           titre: "Redescendre en contrôlant",
           texte:
-            "Ramène les haltères à hauteur d'épaules sans les laisser tomber. Inspire pendant la descente. Descends jusqu'où l'épaule reste confortable : le point bas n'est pas le même pour tout le monde, et le chercher à tout prix ne rend pas le mouvement meilleur.",
+            "Ramène les haltères à hauteur d’épaules sans les laisser tomber. Inspire pendant la descente. Descends jusqu’où l’épaule reste confortable : le point bas n’est pas le même pour tout le monde, et le chercher à tout prix ne rend pas le mouvement meilleur.",
         },
       ],
       erreurs: [
         {
           titre: "Cambrer le bas du dos pour finir la poussée",
           pourquoi:
-            "Quand les épaules n'ont plus de marge, le réflexe est de basculer le buste en arrière : le mouvement ressemble alors à un développé incliné fait debout, et le bas du dos travaille pour compenser. Serre le ventre avant chaque répétition, et allège si la cambrure revient à chaque série.",
+            "Quand les épaules n’ont plus de marge, le réflexe est de basculer le buste en arrière : le mouvement ressemble alors à un développé incliné fait debout, et le bas du dos travaille pour compenser. Serre le ventre avant chaque répétition, et allège si la cambrure revient à chaque série.",
         },
         {
           titre: "Pousser loin devant soi",
           pourquoi:
-            "Des haltères qui montent en avant du visage obligent à terminer bras tendus vers l'avant, ce qui rend la fin de la poussée plus difficile qu'elle ne devrait l'être. Fais passer la charge près de la tête et termine à l'aplomb des épaules.",
+            "Des haltères qui montent en avant du visage obligent à terminer bras tendus vers l’avant, ce qui rend la fin de la poussée plus difficile qu’elle ne devrait l’être. Fais passer la charge près de la tête et termine à l’aplomb des épaules.",
         },
         {
           titre: "Donner une impulsion avec les jambes",
           pourquoi:
-            "Un petit fléchissement suivi d'une poussée des jambes fait passer le point dur. C'est un mouvement à part entière quand on le fait exprès, mais ici il remplace le travail des épaules sans qu'on s'en aperçoive. Si l'élan devient nécessaire pour finir, la série est finie.",
+            "Un petit fléchissement suivi d’une poussée des jambes fait passer le point dur. C’est un mouvement à part entière quand on le fait exprès, mais ici il remplace le travail des épaules sans qu’on s’en aperçoive. Si l’élan devient nécessaire pour finir, la série est finie.",
         },
       ],
       variantes: [
@@ -603,17 +603,17 @@ export const FICHES: FichePublique[] = [
           angle: "Avec une rotation des mains",
           exercice: "Développé Arnold",
           texte:
-            "On part paumes tournées vers soi et les mains pivotent pendant la montée. L'épaule passe par une amplitude plus large, et la charge utilisée est en général plus légère que sur un développé classique.",
+            "On part paumes tournées vers soi et les mains pivotent pendant la montée. L’épaule passe par une amplitude plus large, et la charge utilisée est en général plus légère que sur un développé classique.",
         },
         {
           angle: "Sur machine",
           exercice: "Développé épaules machine",
           texte:
-            "La trajectoire est imposée et le dossier soutient le buste. Il ne reste qu'à pousser : plus besoin de stabiliser deux charges indépendantes ni de tenir le tronc, ce qui change beaucoup ce que l'exercice demande.",
+            "La trajectoire est imposée et le dossier soutient le buste. Il ne reste qu’à pousser : plus besoin de stabiliser deux charges indépendantes ni de tenir le tronc, ce qui change beaucoup ce que l’exercice demande.",
         },
       ],
       placement:
-        "Comme la charge se déplace au-dessus de la tête sans appui du buste, le mouvement demande de la coordination et un tronc stable. Il est donc souvent placé avant les mouvements d'isolation des épaules. Après un développé couché, l'avant d'épaule et les triceps sont déjà sollicités : c'est un choix possible dans une séance de poussée, mais les performances peuvent y être un peu plus basses.",
+        "Comme la charge se déplace au-dessus de la tête sans appui du buste, le mouvement demande de la coordination et un tronc stable. Il est donc souvent placé avant les mouvements d’isolation des épaules. Après un développé couché, l’avant d’épaule et les triceps sont déjà sollicités : c’est un choix possible dans une séance de poussée, mais les performances peuvent y être un peu plus basses.",
       materiel: "Deux haltères",
       materielCourt: "Haltères",
       nomDansLeTitre: "le développé militaire aux haltères",
@@ -628,13 +628,13 @@ export const FICHES: FichePublique[] = [
       "Le curl aux haltères : position des coudes, amplitude, contrôle de la descente et les erreurs fréquentes. Le mouvement en animation.",
     contenu: {
       definition:
-        "Le mouvement principal du curl se fait au coude : le biceps fléchit l'avant-bras pendant que l'épaule et le reste du corps servent surtout à stabiliser la position. C'est ce qui le rend simple à comprendre et facile à dénaturer, puisque tout ce qui bouge en plus du coude retire du travail au biceps.",
+        "Le mouvement principal du curl se fait au coude : le biceps fléchit l’avant-bras pendant que l’épaule et le reste du corps servent surtout à stabiliser la position. C’est ce qui le rend simple à comprendre et facile à dénaturer, puisque tout ce qui bouge en plus du coude retire du travail au biceps.",
       gabarit: "mouvement",
       etapes: [
         {
           titre: "Se placer",
           texte:
-            "Debout, pieds sous les hanches, un haltère dans chaque main le long du corps, paumes vers l'avant. Coudes près du buste, épaules basses et ventre légèrement serré.",
+            "Debout, pieds sous les hanches, un haltère dans chaque main le long du corps, paumes vers l’avant. Coudes près du buste, épaules basses et ventre légèrement serré.",
         },
         {
           titre: "Monter",
@@ -644,24 +644,24 @@ export const FICHES: FichePublique[] = [
         {
           titre: "Redescendre lentement",
           texte:
-            "Redescends jusqu'à bras presque tendus, plus lentement que tu n'es monté. C'est la moitié du mouvement que l'on abandonne le plus souvent, et celle qui distingue une série faite d'une série expédiée.",
+            "Redescends jusqu’à bras presque tendus, plus lentement que tu n’es monté. C’est la moitié du mouvement que l’on abandonne le plus souvent, et celle qui distingue une série faite d’une série expédiée.",
         },
       ],
       erreurs: [
         {
           titre: "Balancer le buste pour lancer la charge",
           pourquoi:
-            "Le corps recule puis avance pour donner l'impulsion, et le biceps se contente d'accompagner. Si le balancier devient nécessaire pour finir la série, la série est finie.",
+            "Le corps recule puis avance pour donner l’impulsion, et le biceps se contente d’accompagner. Si le balancier devient nécessaire pour finir la série, la série est finie.",
         },
         {
           titre: "Avancer les coudes en fin de montée",
           pourquoi:
-            "Quand les coudes partent vers l'avant, l'épaule prend le relais et le haut du mouvement devient facile. Garde les coudes à côté du buste du début à la fin, même si la charge doit baisser.",
+            "Quand les coudes partent vers l’avant, l’épaule prend le relais et le haut du mouvement devient facile. Garde les coudes à côté du buste du début à la fin, même si la charge doit baisser.",
         },
         {
           titre: "Laisser tomber les haltères à la descente",
           pourquoi:
-            "Si tu laisses simplement la gravité ramener la charge, tu perds une partie du contrôle de la répétition. Accompagne le retour jusqu'à avoir les bras presque tendus.",
+            "Si tu laisses simplement la gravité ramener la charge, tu perds une partie du contrôle de la répétition. Accompagne le retour jusqu’à avoir les bras presque tendus.",
         },
       ],
       variantes: [
@@ -669,17 +669,17 @@ export const FICHES: FichePublique[] = [
           angle: "Paumes face à face",
           exercice: "Curl marteau",
           texte:
-            "Les mains restent tournées vers l'intérieur pendant tout le mouvement. Cette prise sollicite davantage l'avant-bras, et beaucoup de gens la trouvent plus confortable pour le poignet.",
+            "Les mains restent tournées vers l’intérieur pendant tout le mouvement. Cette prise sollicite davantage l’avant-bras, et beaucoup de gens la trouvent plus confortable pour le poignet.",
         },
         {
           angle: "Les deux bras sur une même barre",
           exercice: "Curl barre EZ",
           texte:
-            "Les deux bras travaillent ensemble, ce qui permet en général plus de charge totale. La barre coudée laisse les poignets légèrement tournés, une position souvent plus agréable qu'une barre droite.",
+            "Les deux bras travaillent ensemble, ce qui permet en général plus de charge totale. La barre coudée laisse les poignets légèrement tournés, une position souvent plus agréable qu’une barre droite.",
         },
       ],
       placement:
-        "Le curl est un mouvement d'isolation : il ne prépare rien et fatigue les biceps, dont on se sert sur tous les tirages. Dans une séance qui contient de gros tirages, il est donc souvent placé après eux. En fin de séance, ou dans une séance de bras, la question ne se pose pas.",
+        "Le curl est un mouvement d’isolation : il ne prépare rien et fatigue les biceps, dont on se sert sur tous les tirages. Dans une séance qui contient de gros tirages, il est donc souvent placé après eux. En fin de séance, ou dans une séance de bras, la question ne se pose pas.",
       materiel: "Deux haltères",
       materielCourt: "Haltères",
       nomDansLeTitre: "le curl aux haltères",
@@ -691,10 +691,10 @@ export const FICHES: FichePublique[] = [
     categorie: "abdos",
     title: "Gainage : la position, la durée, les erreurs",
     description:
-      "Le gainage sur les coudes : l'alignement, la tension à créer, la respiration et le temps de maintien. Le placement illustré.",
+      "Le gainage sur les coudes : l’alignement, la tension à créer, la respiration et le temps de maintien. Le placement illustré.",
     contenu: {
       definition:
-        "Le gainage ne va nulle part, et c'est tout son principe. En appui sur les avant-bras et la pointe des pieds, le travail consiste à empêcher le corps de bouger : le bassin ne descend pas, ne monte pas, ne tourne pas. Les abdominaux et les muscles profonds du tronc y résistent au mouvement au lieu d'en produire un, ce qui explique qu'on le compte en secondes et non en répétitions.",
+        "Le gainage ne va nulle part, et c’est tout son principe. En appui sur les avant-bras et la pointe des pieds, le travail consiste à empêcher le corps de bouger : le bassin ne descend pas, ne monte pas, ne tourne pas. Les abdominaux et les muscles profonds du tronc y résistent au mouvement au lieu d’en produire un, ce qui explique qu’on le compte en secondes et non en répétitions.",
       gabarit: "tenue",
       etapes: [
         {
@@ -710,24 +710,24 @@ export const FICHES: FichePublique[] = [
         {
           titre: "Tenir et respirer",
           texte:
-            "Respire normalement, sans bloquer. La bonne durée est celle où l'alignement tient : dès que le bassin descend ou remonte, la série est finie, même si le chronomètre dit autre chose. Plusieurs séries courtes et propres valent mieux qu'une longue qui s'affaisse au milieu.",
+            "Respire normalement, sans bloquer. La bonne durée est celle où l’alignement tient : dès que le bassin descend ou remonte, la série est finie, même si le chronomètre dit autre chose. Plusieurs séries courtes et propres valent mieux qu’une longue qui s’affaisse au milieu.",
         },
       ],
       erreurs: [
         {
           titre: "Laisser le bassin descendre vers le sol",
           pourquoi:
-            "Quand le bassin s'affaisse, le tronc ne tient plus la ligne et la position se creuse au niveau du bas du dos. C'est le signal que la série est terminée, pas qu'il faut serrer les dents dix secondes de plus.",
+            "Quand le bassin s’affaisse, le tronc ne tient plus la ligne et la position se creuse au niveau du bas du dos. C’est le signal que la série est terminée, pas qu’il faut serrer les dents dix secondes de plus.",
         },
         {
           titre: "Monter le bassin en pointe",
           pourquoi:
-            "La position devient nettement plus confortable, parce qu'une partie du poids repose sur les bras et les jambes au lieu du tronc. On tient plus longtemps en travaillant moins. Vise la ligne des talons à la tête, quitte à afficher un temps plus court.",
+            "La position devient nettement plus confortable, parce qu’une partie du poids repose sur les bras et les jambes au lieu du tronc. On tient plus longtemps en travaillant moins. Vise la ligne des talons à la tête, quitte à afficher un temps plus court.",
         },
         {
           titre: "Bloquer volontairement sa respiration",
           pourquoi:
-            "Tu n'as pas besoin de retenir ton souffle pour tenir la position. Garde une respiration régulière pendant toute la série.",
+            "Tu n’as pas besoin de retenir ton souffle pour tenir la position. Garde une respiration régulière pendant toute la série.",
         },
       ],
       variantes: [
@@ -741,12 +741,12 @@ export const FICHES: FichePublique[] = [
           angle: "Avec des appuis qui changent",
           exercice: "Gainage dynamique",
           texte:
-            "Même position de départ, mais on passe des avant-bras aux mains tendues, puis retour. Il faut tenir l'alignement pendant que les appuis bougent, ce qui ajoute les épaules et les bras au travail du tronc.",
+            "Même position de départ, mais on passe des avant-bras aux mains tendues, puis retour. Il faut tenir l’alignement pendant que les appuis bougent, ce qui ajoute les épaules et les bras au travail du tronc.",
         },
       ],
       muscles: ["Abdominaux", "Muscles profonds du tronc"],
       placement:
-        "Le gainage n'a pas de place obligée. En début de séance, il réveille le tronc avant des mouvements où il devra tenir seul. En fin de séance, il se fait sans matériel et sans installation, ce qui en fait un dernier exercice commode. Le seul moment discutable, c'est juste avant un mouvement chargé où le tronc doit rester solide : un tronc déjà fatigué change la façon dont on tient la position.",
+        "Le gainage n’a pas de place obligée. En début de séance, il réveille le tronc avant des mouvements où il devra tenir seul. En fin de séance, il se fait sans matériel et sans installation, ce qui en fait un dernier exercice commode. Le seul moment discutable, c’est juste avant un mouvement chargé où le tronc doit rester solide : un tronc déjà fatigué change la façon dont on tient la position.",
     },
   },
   {
@@ -755,48 +755,48 @@ export const FICHES: FichePublique[] = [
     categorie: "cardio",
     title: "Burpees : la séquence, le rythme, les erreurs",
     description:
-      "Comment faire un burpee : la séquence décomposée, le rythme qu'on peut tenir, les adaptations possibles et les erreurs fréquentes. Le mouvement en animation.",
+      "Comment faire un burpee : la séquence décomposée, le rythme qu’on peut tenir, les adaptations possibles et les erreurs fréquentes. Le mouvement en animation.",
     contenu: {
       definition:
-        "Un burpee enchaîne quatre choses sans s'arrêter : on descend au sol, on envoie les pieds en arrière pour se retrouver en planche, on les ramène sous soi, on se relève. Le corps entier change de position à chaque répétition, et c'est ce qui fait monter le rythme cardiaque aussi vite avec si peu de matériel.",
+        "Un burpee enchaîne quatre choses sans s’arrêter : on descend au sol, on envoie les pieds en arrière pour se retrouver en planche, on les ramène sous soi, on se relève. Le corps entier change de position à chaque répétition, et c’est ce qui fait monter le rythme cardiaque aussi vite avec si peu de matériel.",
       gabarit: "mouvement",
       etapes: [
         {
           titre: "Descendre au sol",
           texte:
-            "De debout, accroupis-toi et pose les mains au sol devant tes pieds, à peu près à largeur d'épaules. Les mains touchent le sol avant que les pieds ne bougent : c'est ce qui empêche de partir en avant.",
+            "De debout, accroupis-toi et pose les mains au sol devant tes pieds, à peu près à largeur d’épaules. Les mains touchent le sol avant que les pieds ne bougent : c’est ce qui empêche de partir en avant.",
         },
         {
           titre: "Passer en planche",
           texte:
-            "Envoie les deux pieds vers l'arrière d'un seul coup. Pendant la fraction de seconde où tu es en position de planche, le corps forme une ligne : ventre et fessiers serrés, bassin ni creusé ni en l'air.",
+            "Envoie les deux pieds vers l’arrière d’un seul coup. Pendant la fraction de seconde où tu es en position de planche, le corps forme une ligne : ventre et fessiers serrés, bassin ni creusé ni en l’air.",
         },
         {
           titre: "Revenir sous soi",
           texte:
-            "Ramène les deux pieds vers les mains, pieds à plat si ta mobilité le permet. C'est le temps où l'enchaînement se casse le plus souvent, parce que c'est celui qui coûte le plus quand la fatigue monte. Garde-le fluide, quitte à ralentir l'ensemble.",
+            "Ramène les deux pieds vers les mains, pieds à plat si ta mobilité le permet. C’est le temps où l’enchaînement se casse le plus souvent, parce que c’est celui qui coûte le plus quand la fatigue monte. Garde-le fluide, quitte à ralentir l’ensemble.",
         },
         {
           titre: "Se relever et enchaîner",
           texte:
-            "Redresse-toi et repars. Avec ou sans saut en fin de mouvement, selon ce que tu cherches : le saut ajoute de l'intensité, la version sans saut permet de tenir des séries plus longues. Reçois-toi sur l'avant du pied puis le talon, genoux souples.",
+            "Redresse-toi et repars. Avec ou sans saut en fin de mouvement, selon ce que tu cherches : le saut ajoute de l’intensité, la version sans saut permet de tenir des séries plus longues. Reçois-toi sur l’avant du pied puis le talon, genoux souples.",
         },
       ],
       erreurs: [
         {
           titre: "Partir trop vite sur les premières répétitions",
           pourquoi:
-            "Un burpee coûte cher, et un départ lancé oblige presque toujours à ralentir ou à s'arrêter au milieu de la série. Choisis d'emblée un rythme que tu peux tenir jusqu'à la dernière répétition, sans dégrader les transitions.",
+            "Un burpee coûte cher, et un départ lancé oblige presque toujours à ralentir ou à s’arrêter au milieu de la série. Choisis d’emblée un rythme que tu peux tenir jusqu’à la dernière répétition, sans dégrader les transitions.",
         },
         {
-          titre: "Laisser le bassin s'affaisser en position de planche",
+          titre: "Laisser le bassin s’affaisser en position de planche",
           pourquoi:
-            "Quand les pieds partent en arrière et que le ventre lâche, le bas du dos encaisse l'arrivée. Serre le ventre et les fessiers avant d'envoyer les jambes, même si le passage ne dure qu'un instant.",
+            "Quand les pieds partent en arrière et que le ventre lâche, le bas du dos encaisse l’arrivée. Serre le ventre et les fessiers avant d’envoyer les jambes, même si le passage ne dure qu’un instant.",
         },
         {
           titre: "Sacrifier le placement pour gagner du temps",
           pourquoi:
-            "Mains mal posées, pieds à moitié ramenés, dos rond au moment de se relever : la vitesse gagnée se paie sur la qualité de chaque répétition, et le mouvement devient désagréable bien avant d'être efficace. Compte tes répétitions, pas tes secondes.",
+            "Mains mal posées, pieds à moitié ramenés, dos rond au moment de se relever : la vitesse gagnée se paie sur la qualité de chaque répétition, et le mouvement devient désagréable bien avant d’être efficace. Compte tes répétitions, pas tes secondes.",
         },
       ],
       variantes: [
@@ -804,13 +804,13 @@ export const FICHES: FichePublique[] = [
           angle: "Sans passage au sol",
           exercice: "Squats sautés",
           texte:
-            "L'enchaînement se réduit au bas du corps : on garde l'impulsion et le rythme, on retire la planche et le retour au sol. Utile quand les poignets ou les épaules ne suivent pas, ou pour garder le cardio haut sans changer de position à chaque répétition.",
+            "L’enchaînement se réduit au bas du corps : on garde l’impulsion et le rythme, on retire la planche et le retour au sol. Utile quand les poignets ou les épaules ne suivent pas, ou pour garder le cardio haut sans changer de position à chaque répétition.",
         },
         {
           angle: "En restant au sol",
           exercice: "Mountain climbers",
           texte:
-            "On tient la position de planche et ce sont les genoux qui viennent vers la poitrine, en alternance. Le rythme cardiaque monte de la même façon, les épaules travaillent en continu, et il n'y a plus ni saut ni réception.",
+            "On tient la position de planche et ce sont les genoux qui viennent vers la poitrine, en alternance. Le rythme cardiaque monte de la même façon, les épaules travaillent en continu, et il n’y a plus ni saut ni réception.",
         },
       ],
       /* Ni les squats sautés ni les mountain climbers ne sont des versions
@@ -821,7 +821,7 @@ export const FICHES: FichePublique[] = [
       titreVariantes: "Alternatives proches",
       muscles: ["Jambes", "Épaules", "Abdominaux"],
       placement:
-        "Les burpees servent rarement de plat principal. Ils viennent en général dans un circuit, entre deux exercices de renforcement, ou en fin de séance sur un format court et minuté. Comme ils fatiguent le corps entier d'un coup, les placer avant un mouvement technique ou chargé peut réduire la qualité de ce qui suit.",
+        "Les burpees servent rarement de plat principal. Ils viennent en général dans un circuit, entre deux exercices de renforcement, ou en fin de séance sur un format court et minuté. Comme ils fatiguent le corps entier d’un coup, les placer avant un mouvement technique ou chargé peut réduire la qualité de ce qui suit.",
     },
   },
 ];
@@ -895,11 +895,11 @@ export function verifierFiches(): string[] {
 
     const lib = trouverExercice(f.exercice);
     if (!lib) {
-      soucis.push(`« ${f.exercice} » n'existe pas dans la bibliothèque (fiche ${f.slug})`);
+      soucis.push(`« ${f.exercice} » n’existe pas dans la bibliothèque (fiche ${f.slug})`);
       continue;
     }
     if (!resolveGuide(lib.name)) {
-      soucis.push(`« ${f.exercice} » n'a pas d'animation (fiche ${f.slug})`);
+      soucis.push(`« ${f.exercice} » n’a pas d’animation (fiche ${f.slug})`);
     }
     for (const v of f.contenu?.variantes ?? []) {
       if (!trouverExercice(v.exercice)) {

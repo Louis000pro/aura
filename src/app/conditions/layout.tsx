@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Conditions générales",
   description:
-    "Conditions générales d'utilisation et de vente de Vaiiya : usage du service, abonnement, résiliation, rétractation et usage raisonnable de l'assistant.",
+    "Conditions générales d’utilisation et de vente de Vaiiya : usage du service, abonnement, résiliation, rétractation et usage raisonnable de l’assistant.",
   alternates: { canonical: "https://vaiiya.fr/conditions" },
 };
 

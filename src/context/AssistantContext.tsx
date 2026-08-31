@@ -216,7 +216,7 @@ const CAP = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
 /** « aujourd'hui », « demain », sinon le jour de la semaine (« jeudi »).
  *  Sert au libellé du bouton, qui doit tenir sur une ligne. */
 function jourCourt(date: string): string {
-  if (date === todayYmd()) return "aujourd'hui";
+  if (date === todayYmd()) return "aujourd’hui";
   if (date === resolveWhen("demain")) return "demain";
   return dayLabel(date).toLowerCase();
 }
@@ -538,10 +538,10 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
     if (mealsToday === 0) return null; // ne note pas ses repas aujourd'hui → on n'y touche pas
     const ratio = consumed / goal;
     if (ratio >= 0.9) {
-      return `L'utilisateur est bien rechargé aujourd'hui (~${consumed}/${goal} kcal mangées). Tu PEUX te permettre une séance un peu plus intense si c'est pertinent.`;
+      return `L’utilisateur est bien rechargé aujourd’hui (~${consumed}/${goal} kcal mangées). Tu PEUX te permettre une séance un peu plus intense si c’est pertinent.`;
     }
     if (new Date().getHours() >= 16 && ratio <= 0.5) {
-      return `L'utilisateur a peu mangé aujourd'hui (~${consumed}/${goal} kcal). Tu PEUX privilégier une séance un peu plus courte ou d'intensité modérée.`;
+      return `L’utilisateur a peu mangé aujourd’hui (~${consumed}/${goal} kcal). Tu PEUX privilégier une séance un peu plus courte ou d’intensité modérée.`;
     }
     return null;
   }, []);
@@ -734,7 +734,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       setPendingPlan({
         kicker: "Toute la semaine",
         title: "Nouvelle semaine ✦",
-        meta: `Dès aujourd'hui · ${nbSeances} séance${nbSeances > 1 ? "s" : ""}${adjustLabel}`,
+        meta: `Dès aujourd’hui · ${nbSeances} séance${nbSeances > 1 ? "s" : ""}${adjustLabel}`,
         cta: "Remplacer ma semaine",
         writes,
         preview: writes.find(hasSeance) ?? null,
@@ -999,7 +999,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
         const detail = (e as { message?: string })?.message ?? String(e);
         setMessages((prev) => [...prev, {
           role: "assistant" as const,
-          content: `⚠️ Je n'ai pas réussi à écrire la recette : ${detail}`,
+          content: `⚠️ Je n’ai pas réussi à écrire la recette : ${detail}`,
           id: uid(),
           ton: "explain" as const,
         }]);
@@ -1043,7 +1043,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
         const detail = (e as { message?: string })?.message ?? String(e);
         setMessages((prev) => [...prev, {
           role: "assistant" as const,
-          content: `⚠️ Je n'ai pas réussi à estimer ce repas : ${detail}`,
+          content: `⚠️ Je n’ai pas réussi à estimer ce repas : ${detail}`,
           id: uid(),
           ton: "explain" as const,
         }]);
@@ -1169,7 +1169,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       const count = parseInt(localStorage.getItem(dayKey) || "0") || 0;
       if (count >= 12) {
         setMessages((prev) => prev.map((m) => m.id === assistantId
-          ? { ...m, content: "🚀 Tu as atteint ta limite gratuite de 12 messages par jour. Passe au plan supérieur pour continuer sans limite, je t'emmène voir les offres…", streaming: false }
+          ? { ...m, content: "🚀 Tu as atteint ta limite gratuite de 12 messages par jour. Passe au plan supérieur pour continuer sans limite, je t’emmène voir les offres…", streaming: false }
           : m));
         setIsStreaming(false);
         setTimeout(() => router.push("/premium"), 1900);
@@ -1514,7 +1514,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
     try { map = await fetchRange(user.id, dates); } catch { /* planning illisible → jours nus */ }
     return dates.map((d, i) => ({
       ymd: d,
-      label: i === 0 ? "Aujourd'hui" : i === 1 ? "Demain" : CAP(dayLabel(d)).slice(0, 3) + ". " + Number(d.slice(8)),
+      label: i === 0 ? "Aujourd’hui" : i === 1 ? "Demain" : CAP(dayLabel(d)).slice(0, 3) + ". " + Number(d.slice(8)),
       occupe: hasSeance(map[d]) ? dayTitle(map[d]) : null,
       bloque: map[d]?.status === "done",
     }));
@@ -1597,7 +1597,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       has_photo: false,
       time: now.toTimeString().slice(0, 8),
     });
-    if (error) { setMemoryNotice("Oups, impossible d'ajouter le repas."); return; }
+    if (error) { setMemoryNotice("Oups, impossible d’ajouter le repas."); return; }
     const nom = pendingRecipe.nom;
     setPendingRecipe(null);
     setReussite((n) => n + 1);
@@ -1626,7 +1626,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       has_photo: false,
       time: now.toTimeString().slice(0, 8),
     });
-    if (error) { setMemoryNotice("Oups, impossible d'ajouter le repas."); return; }
+    if (error) { setMemoryNotice("Oups, impossible d’ajouter le repas."); return; }
     const nom = pendingMeal.foodName;
     setPendingMeal(null);
     setReussite((n) => n + 1);

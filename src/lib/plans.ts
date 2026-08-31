@@ -66,7 +66,7 @@ export const PLANS: Record<PlanId, Plan> = {
     tagline: "Pour découvrir Vaiiya",
     aiModel: "llama-3.1-8b-instant", // modèle léger & rapide → coûts maîtrisés
     features: [
-      "4 missions par jour, jusqu'à 50 EXP",
+      "4 missions par jour, jusqu’à 50 EXP",
       "3 séances à toi, gardées",
       "Coach IA : 5 messages/jour",
       "Analyse nutrition : 2/jour",
@@ -79,10 +79,10 @@ export const PLANS: Record<PlanId, Plan> = {
     priceCents: 599,
     currency: "eur",
     trialDays: 3,
-    tagline: "L'expérience Vaiiya complète",
+    tagline: "L’expérience Vaiiya complète",
     aiModel: "llama-3.3-70b-versatile", // modèle avancé
     features: [
-      "8 missions par jour, jusqu'à 120 EXP",
+      "8 missions par jour, jusqu’à 120 EXP",
       "Un palier de plus dans les défis de la semaine",
       "Tes propres séances, sans limite",
       "Coach IA avancé : illimité",

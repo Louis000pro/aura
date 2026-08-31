@@ -185,7 +185,7 @@ function Pastille({ texte, ton = "or" }: { texte: string; ton?: "or" | "teal" })
    `court` = la même chose en une ligne, pour tenir dans la ligne de réglage
    sans jamais laisser croire que c'est un simple goût esthétique. */
 const QUALITY_OPTS: { key: VisualQuality; label: string; court: string }[] = [
-  { key: "auto", label: "Auto",   court: "S'adapte à la puissance de ton appareil" },
+  { key: "auto", label: "Auto",   court: "S’adapte à la puissance de ton appareil" },
   { key: "high", label: "Élevée", court: "Tous les effets visuels" },
   { key: "lite", label: "Fluide", court: "Effets allégés, plus fluide si ça saccade" },
 ];
@@ -232,7 +232,7 @@ function GuideModal({ onClose, onChoisi }: { onClose: () => void; onChoisi: (g: 
     setEnCours(g);
     const ok = await choisirGuide(g);
     setEnCours(null);
-    if (!ok) { setErreur("Le changement n'a pas pu être enregistré. Vérifie ta connexion et réessaie."); return; }
+    if (!ok) { setErreur("Le changement n’a pas pu être enregistré. Vérifie ta connexion et réessaie."); return; }
     onChoisi(g);
     onClose();
   };
@@ -604,7 +604,7 @@ export default function ParametresPage() {
   };
 
   const handlePushToggle = async () => {
-    if (!user?.id) { showToast("Connecte-toi d'abord"); return; }
+    if (!user?.id) { showToast("Connecte-toi d’abord"); return; }
     setPushLoading(true);
     try {
       if (pushEnabled) {
@@ -621,7 +621,7 @@ export default function ParametresPage() {
         } else if (result === "unsupported") {
           showToast("Non supporté sur ce navigateur");
         } else {
-          showToast("Erreur lors de l'activation");
+          showToast("Erreur lors de l’activation");
         }
       }
     } finally {
@@ -650,9 +650,9 @@ export default function ParametresPage() {
       });
       const data = await res.json();
       if (res.ok && data.url) { window.location.href = data.url; return; }
-      setPortailErreur(data.message || "Impossible d'ouvrir la gestion de l'abonnement");
+      setPortailErreur(data.message || "Impossible d’ouvrir la gestion de l’abonnement");
     } catch {
-      setPortailErreur("Impossible d'ouvrir la gestion de l'abonnement");
+      setPortailErreur("Impossible d’ouvrir la gestion de l’abonnement");
     } finally {
       setPortail(false);
     }
@@ -748,7 +748,7 @@ export default function ParametresPage() {
             />
           </Groupe>
 
-          <Groupe titre="L'application">
+          <Groupe titre="L’application">
             <Ligne
               icon={isDark ? Moon : Sun}
               label="Thème"

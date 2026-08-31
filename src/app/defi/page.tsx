@@ -98,8 +98,8 @@ export default function DefiPage() {
     const raison = String(r.raison ?? "");
     setErreur(
       /function|does not exist|schema cache|404/i.test(raison)
-        ? "L'arrêt du relais n'est pas encore activé côté serveur."
-        : "Impossible d'arrêter le relais pour le moment.",
+        ? "L’arrêt du relais n’est pas encore activé côté serveur."
+        : "Impossible d’arrêter le relais pour le moment.",
     );
   };
 
@@ -290,12 +290,12 @@ export default function DefiPage() {
           />
 
           <h1 className="mt-7 text-[24px] font-bold leading-tight" style={{ color: "var(--text-0)" }}>
-            {gagne ? "L'affiche est à vous." : "La semaine est finie."}
+            {gagne ? "L’affiche est à vous." : "La semaine est finie."}
           </h1>
           <p className="mt-2 text-[15px] leading-relaxed" style={{ color: "var(--text-body)" }}>
             {gagne
               ? `« ${serie.nom} » rejoint ta galerie. Tu peux la réutiliser en fond de tes prochains posters de perf.`
-              : `Vous êtes allés à ${faits} jour${faits > 1 ? "s" : ""} sur ${defi.objectif}. L'affiche garde ce que vous avez dévoilé.`}
+              : `Vous êtes allés à ${faits} jour${faits > 1 ? "s" : ""} sur ${defi.objectif}. L’affiche garde ce que vous avez dévoilé.`}
           </p>
 
           {/* On ne reste pas devant une semaine finie : la suite est un
@@ -353,9 +353,9 @@ export default function DefiPage() {
   const perdu = !encoreJouable(defi);
 
   const phrase =
-    perdu                       ? "L'affiche restera comme elle est. Ce n'est pas grave — vous en relancerez une."
-  : tour.quoi === "deja_franchi" ? (tour.parMoi ? "C'est fait pour aujourd'hui. Le relais repart demain." : "Le maillon d'aujourd'hui est franchi.")
-  : tour.quoi === "pas_mon_tour" ? `Tu as franchi hier — aujourd'hui, c'est à ${tour.equipier?.pseudo ?? "l'autre"}.`
+    perdu                       ? "L’affiche restera comme elle est. Ce n’est pas grave — vous en relancerez une."
+  : tour.quoi === "deja_franchi" ? (tour.parMoi ? "C’est fait pour aujourd’hui. Le relais repart demain." : "Le maillon d’aujourd’hui est franchi.")
+  : tour.quoi === "pas_mon_tour" ? `Tu as franchi hier — aujourd’hui, c’est à ${tour.equipier?.pseudo ?? "l’autre"}.`
   :                                "À toi de jouer.";
 
   return (
@@ -462,7 +462,7 @@ function ChaineDesJours({ defi, moi, equipier }: {
 
     <div className="mt-2 flex items-center gap-3.5">
       <Pastille couleur="#2BD4A0" texte="Toi" />
-      <Pastille couleur="#8B5CF6" texte={equipier?.pseudo ?? "L'autre"} />
+      <Pastille couleur="#8B5CF6" texte={equipier?.pseudo ?? "L’autre"} />
       <Pastille couleur="rgba(var(--text-3-rgb), .38)" texte="Passé" />
     </div>
     </>

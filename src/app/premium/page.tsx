@@ -72,7 +72,7 @@ function PremiumInner() {
   useEffect(() => {
     setIsMobile(window.matchMedia("(max-width: 767px)").matches);
     if (params?.get("canceled")) setMsg("Paiement annulé, tu peux réessayer quand tu veux");
-    else if (params?.get("welcome")) setMsg("Bienvenue sur Vaiiya 👋 Commence gratuitement, ou débloque tout avec 3 jours d'essai offerts.");
+    else if (params?.get("welcome")) setMsg("Bienvenue sur Vaiiya 👋 Commence gratuitement, ou débloque tout avec 3 jours d’essai offerts.");
   }, [params]);
 
   /**
@@ -104,12 +104,12 @@ function PremiumInner() {
           setCelebrate(true);
         } else {
           setMsg(
-            "Ton paiement est bien reçu, l'activation prend parfois une minute. Recharge la page, et écris-nous si rien ne change."
+            "Ton paiement est bien reçu, l’activation prend parfois une minute. Recharge la page, et écris-nous si rien ne change."
           );
         }
       } catch {
         setMsg(
-          "Ton paiement est bien reçu, l'activation prend parfois une minute. Recharge la page, et écris-nous si rien ne change."
+          "Ton paiement est bien reçu, l’activation prend parfois une minute. Recharge la page, et écris-nous si rien ne change."
         );
       } finally {
         setVerifPaiement(false);
@@ -181,7 +181,7 @@ function PremiumInner() {
       });
       const data = await res.json();
       if (res.ok && data.url) { window.location.href = data.url; return; }
-      setMsg(data.message || "Impossible d'ouvrir la gestion de l'abonnement");
+      setMsg(data.message || "Impossible d’ouvrir la gestion de l’abonnement");
     } catch {
       setMsg("Une erreur est survenue, réessaie");
     } finally {
@@ -441,7 +441,7 @@ function PremiumInner() {
               inLanguage: "fr-FR",
               description: VENTE_OUVERTE
                 ? `Ce que contient Vaiiya ${PLANS.premium.name} à ${formatPrice(PLANS.premium.priceCents)} par mois, et ce que le compte gratuit donne déjà.`
-                : `Ce que contient Vaiiya ${PLANS.premium.name} et ce que le compte gratuit donne déjà. L'abonnement n'est pas encore ouvert à la souscription.`,
+                : `Ce que contient Vaiiya ${PLANS.premium.name} et ce que le compte gratuit donne déjà. L’abonnement n’est pas encore ouvert à la souscription.`,
               isPartOf: { "@id": "https://vaiiya.fr/#website" },
               about: { "@id": "https://vaiiya.fr/#application" },
             }),

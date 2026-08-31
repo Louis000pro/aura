@@ -64,7 +64,7 @@ export default function ConversationListPane({
       setErreurChargement(null);
       setConvs(prochaines);
     } catch {
-      setErreurChargement("Impossible d'actualiser tes discussions.");
+      setErreurChargement("Impossible d’actualiser tes discussions.");
     } finally {
       setCharge(false);
     }
@@ -85,7 +85,7 @@ export default function ConversationListPane({
         setConvs(prochaines);
       })
       .catch(() => {
-        if (actif) setErreurChargement("Impossible d'actualiser tes discussions.");
+        if (actif) setErreurChargement("Impossible d’actualiser tes discussions.");
       })
       .finally(() => {
         if (actif) setCharge(false);
@@ -691,7 +691,7 @@ function NouvelleDiscussion({ moi, onFermer, onCree }: {
     if (r.ok && r.conversation_id) { onCree(r.conversation_id); return; }
     setErreur(
       /function|does not exist|schema cache/i.test(String(r.raison ?? ""))
-        ? "La messagerie n'est pas encore activée côté serveur."
+        ? "La messagerie n’est pas encore activée côté serveur."
         : r.raison === "groupe_complet"
         ? "Un groupe peut réunir cinq personnes maximum."
         : r.raison === "relation_requise"

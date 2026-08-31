@@ -85,7 +85,7 @@ function isProfileIncomplete(ctx: UserContext | null): boolean {
 /* ─── Suggestion chips ───────────────────────────────────── */
 const SUGGESTIONS = [
   "Mon plan cette semaine",
-  "Analyse mes repas d'aujourd'hui",
+  "Analyse mes repas d’aujourd’hui",
   "Comment progresser plus vite ?",
   "Bilan nutrition du jour",
 ];
@@ -932,7 +932,7 @@ export default function CoachPage() {
                     border: "1px solid rgba(var(--violet-mid-rgb),0.4)",
                   }
             }
-            aria-label={isRecording ? "Arrêter l'enregistrement" : "Enregistrement vocal"}
+            aria-label={isRecording ? "Arrêter l’enregistrement" : "Enregistrement vocal"}
           >
             {isRecording ? (
               <MicOff size={17} strokeWidth={2} style={{ color: "#ffffff" }} />

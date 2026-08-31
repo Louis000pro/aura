@@ -87,7 +87,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         try { await supabase.auth.signOut(); } catch { /* ignore */ }
         setUser(null);
         if (typeof window !== "undefined") {
-          window.alert("Ton compte a été suspendu. Si tu penses que c'est une erreur, contacte le support.");
+          window.alert("Ton compte a été suspendu. Si tu penses que c’est une erreur, contacte le support.");
         }
         return;
       }
@@ -211,7 +211,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
       if (!res.ok) {
         const j = await res.json().catch(() => ({}));
-        return { message: j.error ?? "L'envoi a échoué, réessaie." };
+        return { message: j.error ?? "L’envoi a échoué, réessaie." };
       }
       return null;
     } catch {

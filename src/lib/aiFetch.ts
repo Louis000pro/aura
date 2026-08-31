@@ -30,6 +30,6 @@ export async function messageDeRefus(res: Response): Promise<string | null> {
     /* réponse sans JSON : on retombe sur les messages génériques */
   }
   if (res.status === 401) return "Connecte-toi pour utiliser cette fonction";
-  if (res.status === 413) return "C'est un peu trop volumineux, réduis et réessaie";
+  if (res.status === 413) return "C’est un peu trop volumineux, réduis et réessaie";
   return "Tu as atteint ta limite du jour, ça repart demain";
 }

@@ -53,7 +53,7 @@ export async function POST(req: Request) {
             { type: "image_url", image_url: { url: `data:${mimeType};base64,${image}` } },
             {
               type: "text",
-              text: `Tu es un coach nutrition bienveillant. Voici la PHOTO d'une carte / menu de restaurant.
+              text: `Tu es un coach nutrition bienveillant. Voici la PHOTO d’une carte / menu de restaurant.
 
 Ta mission : lire les PLATS proposés et les CLASSER pour aider la personne à choisir — SANS jamais inventer de chiffres.
 
@@ -61,7 +61,7 @@ Contexte de la personne (son objectif du moment) :
 ${obj}
 
 RÈGLES ABSOLUES :
-- Tu n'as PAS vu les assiettes, seulement des noms sur une carte. Donc AUCUN chiffre : pas de calories, pas de grammes, pas de macros. Le vrai comptage se fera plus tard avec une photo de l'assiette.
+- Tu n’as PAS vu les assiettes, seulement des noms sur une carte. Donc AUCUN chiffre : pas de calories, pas de grammes, pas de macros. Le vrai comptage se fera plus tard avec une photo de l’assiette.
 - Pour chaque plat, un "reason" court (max ~12 mots), RELATIF et PRUDENT ("souvent plus riche en protéines", "plutôt copieux", "léger mais peu de protéines"). Jamais affirmatif au gramme près.
 - Donne à chaque plat un "verdict" par rapport à SON objectif : "recommande" (bon choix), "correct" (ok mais pas idéal), "eviter" (à garder pour une autre fois — formulé sans culpabiliser).
 - Choisis UN SEUL plat avec "best": true — le meilleur pour son objectif.

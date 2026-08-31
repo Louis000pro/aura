@@ -30,15 +30,15 @@ export const metadata: Metadata = {
 const APPORTS = [
   {
     t: "Le mouvement en animation",
-    d: "Le geste est montré pose après pose, dans le bon ordre, pour qu'on le comprenne d'un coup d'œil plutôt qu'en imaginant une description.",
+    d: "Le geste est montré pose après pose, dans le bon ordre, pour qu’on le comprenne d’un coup d'œil plutôt qu’en imaginant une description.",
   },
   {
     t: "Les repères essentiels",
-    d: "Les muscles sollicités, le matériel, le placement, l'exécution étape par étape et les erreurs fréquentes.",
+    d: "Les muscles sollicités, le matériel, le placement, l’exécution étape par étape et les erreurs fréquentes.",
   },
   {
     t: "Libre à consulter",
-    d: "Aucun compte n'est nécessaire pour lire une fiche. Vaiiya n'intervient que si tu veux transformer le mouvement en séance.",
+    d: "Aucun compte n’est nécessaire pour lire une fiche. Vaiiya n’intervient que si tu veux transformer le mouvement en séance.",
   },
 ];
 
@@ -47,7 +47,7 @@ export default function ExercicesPage() {
      pas à l'écran, elles produisent une page à moitié vide. On les fait
      donc échouer bruyamment à la construction. */
   const soucis = verifierFiches();
-  if (soucis.length) throw new Error(`Fiches d'exercices : ${soucis.join(" | ")}`);
+  if (soucis.length) throw new Error(`Fiches d’exercices : ${soucis.join(" | ")}`);
 
   const publiees = fichesPubliees();
 

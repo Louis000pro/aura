@@ -40,15 +40,15 @@ export function refusRelais(r: Brut | null | undefined): RefusRelais {
 
     case "mon_relais_ailleurs":
       return {
-        texte: "Tu as déjà un relais en cours ailleurs. Termine-le ou arrête-le d'abord.",
+        texte: "Tu as déjà un relais en cours ailleurs. Termine-le ou arrête-le d’abord.",
         ou,
       };
 
     case "son_relais_ailleurs":
       return {
         texte: qui
-          ? `${qui} a déjà un relais en cours. Il faudra attendre qu'il se termine.`
-          : "L'autre a déjà un relais en cours. Il faudra attendre qu'il se termine.",
+          ? `${qui} a déjà un relais en cours. Il faudra attendre qu’il se termine.`
+          : "L’autre a déjà un relais en cours. Il faudra attendre qu’il se termine.",
       };
 
     // Renvoyé par `creer_defi_duo` et `rejoindre_defi`, qui ne savent
@@ -64,12 +64,12 @@ export function refusRelais(r: Brut | null | undefined): RefusRelais {
       return { texte: "Ce relais a déjà démarré sans toi." };
 
     case "invitation_invalide":
-      return { texte: "Cette invitation n'est plus valable." };
+      return { texte: "Cette invitation n’est plus valable." };
 
     case "relais_en_cours":
       return {
         texte:
-          "Ce fil porte un relais à deux. Arrêtez-le d'abord, ou ouvrez un autre groupe.",
+          "Ce fil porte un relais à deux. Arrêtez-le d’abord, ou ouvrez un autre groupe.",
       };
 
     case "pas_membre":

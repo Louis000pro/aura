@@ -254,7 +254,7 @@ const workoutSessions: WorkoutSession[] = [
     muscles: ["Hanches", "Fessiers", "Ischio-jambiers"],
     accent: "#8B5CF6", icon: Wind, access: "premium",
     collections: ["mobilite", "express"],
-    previewExercises: ["Cercles de hanches", "World's greatest stretch", "Pigeon"],
+    previewExercises: ["Cercles de hanches", "World’s greatest stretch", "Pigeon"],
   },
   {
     id: "epaules-haut-dos-mobilite", category: "mobilite",
@@ -272,7 +272,7 @@ const workoutSessions: WorkoutSession[] = [
     muscles: ["Chevilles", "Hanches", "Jambes"],
     accent: "#8B5CF6", icon: Wind, access: "premium",
     collections: ["mobilite", "express"],
-    previewExercises: ["Étirement mollet au mur", "Cercles de hanches", "World's greatest stretch"],
+    previewExercises: ["Étirement mollet au mur", "Cercles de hanches", "World’s greatest stretch"],
   },
   {
     id: "colonne-mobile", category: "mobilite",
@@ -290,7 +290,7 @@ const workoutSessions: WorkoutSession[] = [
     muscles: ["Corps entier", "Mobilité"],
     accent: "#8B5CF6", icon: Sparkles, access: "premium",
     collections: ["mobilite"],
-    previewExercises: ["Cercles de hanches", "Cat-cow", "World's greatest stretch"],
+    previewExercises: ["Cercles de hanches", "Cat-cow", "World’s greatest stretch"],
   },
   {
     id: "mobilite-active", category: "mobilite",
@@ -299,7 +299,7 @@ const workoutSessions: WorkoutSession[] = [
     muscles: ["Corps entier", "Mobilité"],
     accent: "#8B5CF6", icon: Zap, access: "premium",
     collections: ["mobilite", "express"],
-    previewExercises: ["Cercles de hanches", "Cat-cow", "World's greatest stretch"],
+    previewExercises: ["Cercles de hanches", "Cat-cow", "World’s greatest stretch"],
   },
   {
     id: "dos-biceps", category: "force",
@@ -391,7 +391,7 @@ const workoutSessions: WorkoutSession[] = [
   },
   {
     id: "retour-au-calme", category: "mobilite",
-    title: "Retour au calme", subtitle: "Après l'effort · Souffle · Étirements simples",
+    title: "Retour au calme", subtitle: "Après l’effort · Souffle · Étirements simples",
     duration: 12, difficulty: "Débutant", exercises: 5,
     muscles: ["Corps entier", "Respiration"],
     accent: "#8B5CF6", icon: Wind, access: "free",
@@ -448,7 +448,7 @@ const workoutSessions: WorkoutSession[] = [
     muscles: ["Corps entier", "Mobilité"],
     accent: "#8B5CF6", icon: Sun, access: "premium",
     collections: ["recup", "mobilite", "debuter"],
-    previewExercises: ["Cercles de hanches", "Cat-cow", "World's greatest stretch"],
+    previewExercises: ["Cercles de hanches", "Cat-cow", "World’s greatest stretch"],
   },
   {
     id: "recup-complete", category: "mobilite",
@@ -723,7 +723,7 @@ function TodayHero({
       <div className="absolute top-3.5 left-3.5 right-3.5 flex items-center justify-between z-10">
         <span className="px-3 py-1.5 rounded-full text-[10px] font-extrabold tracking-[0.09em] uppercase"
           style={{ background: "rgba(10,8,18,0.42)", color: "#fff", border: "1px solid rgba(255,255,255,0.22)", backdropFilter: "blur(6px)" }}>
-          {state === "setup" ? "Première fois ici" : "Aujourd'hui"}
+          {state === "setup" ? "Première fois ici" : "Aujourd’hui"}
         </span>
         {state === "seance" && (
           <span className="px-3 py-1.5 rounded-full text-[10px] font-extrabold tracking-[0.09em] uppercase"
@@ -921,9 +921,9 @@ function ForkCard({ kind, count, onClick }: {
       <div className="absolute inset-x-0 bottom-0 px-3 pb-2.5 pt-8"
         style={{ background: "linear-gradient(to top, rgba(8,6,14,0.9) 25%, transparent)" }}>
         <p className="text-[8.5px] font-extrabold tracking-[0.18em] uppercase mb-0.5" style={{ color: "#C9B8FF" }}>
-          {isIA ? "L'IA s'adapte" : "Mes séances"}
+          {isIA ? "L’IA s’adapte" : "Mes séances"}
         </p>
-        <p className="text-[16.5px] font-semibold text-white leading-tight">{isIA ? "J'improvise" : "Je choisis"}</p>
+        <p className="text-[16.5px] font-semibold text-white leading-tight">{isIA ? "J’improvise" : "Je choisis"}</p>
         <p className="text-[10.5px] font-normal mt-0.5 leading-snug" style={{ color: "rgba(255,255,255,0.68)" }}>
           {isIA ? "Ton temps, ton matériel — elle crée" : `${count ?? 0} séances, choisis la tienne`}
         </p>
@@ -2191,7 +2191,7 @@ const CATALOG: CatDef[] = [
     img: "cat-abdos", match: matchCollection("abdos", (_s, hay) => /abdo|gainage|core|planche|oblique|sangle|ventre/.test(hay)) },
   { id: "jambes", name: "Jambes & fessiers", tag: "La base — on ne triche pas avec les jambes.",
     img: "cat-jambes", match: matchCollection("jambes", (_s, hay) => /jambe|fessier|squat|cuisse|mollet|ischio|glute|\bleg|bas du corps|fente/.test(hay)) },
-  { id: "haut", name: "Haut du corps", tag: "Dos, pecs, épaules, bras — l'armure.",
+  { id: "haut", name: "Haut du corps", tag: "Dos, pecs, épaules, bras — l’armure.",
     img: "cat-haut", match: matchCollection("haut", (_s, hay) => /pec|\bdos\b|épaule|epaule|bras|biceps|triceps|haut du corps|push|pull|tirage|traction|rowing|upper|poussé/.test(hay)) },
   { id: "fullbody", name: "Full body", tag: "Tout le corps, une seule séance.",
     img: "cat-fullbody", match: matchCollection("fullbody", (s, hay) => s.category === "fullbody" || /full|complet|corps entier|total/.test(hay)) },
@@ -2575,7 +2575,7 @@ function ImproviseSheet({ defaultPlace, defaultHalteres, difficulty, onClose, on
         exerciseList,
       });
     } catch {
-      setError("L'IA n'a pas répondu — réessaie.");
+      setError("L’IA n’a pas répondu — réessaie.");
       setLoading(false);
     }
   };
@@ -2652,7 +2652,7 @@ function ImproviseSheet({ defaultPlace, defaultHalteres, difficulty, onClose, on
                   ? { background: "rgba(139,92,246,0.1)", border: "1px solid rgba(139,92,246,0.4)" }
                   : { background: "rgba(43,212,160,0.1)", border: "1px solid rgba(43,212,160,0.4)" }}>
                 <span className="text-[11px] font-bold" style={{ color: halteres ? "#8B5CF6" : "#12A87E" }}>
-                  {halteres ? "J'ai des haltères" : "Sans matériel — poids du corps"}
+                  {halteres ? "J’ai des haltères" : "Sans matériel — poids du corps"}
                 </span>
                 <span className="relative block w-[26px] h-[15px] rounded-full" style={{ background: halteres ? "#8B5CF6" : "#2BD4A0" }}>
                   <span className="absolute top-[2px] w-[11px] h-[11px] rounded-full bg-white transition-all duration-150"
@@ -2895,7 +2895,7 @@ function SemaineSheet({ week, todayIdx, fetchWeekAt, onClose, onStartDay, onAsk,
       {/* Footer — IA + ajout */}
       <div className="px-5 pt-3 flex gap-2 flex-shrink-0"
         style={{ borderTop: "1px solid rgba(var(--tint-violet-rgb),0.8)", paddingBottom: "calc(1rem + env(safe-area-inset-bottom))" }}>
-        <motion.button whileTap={{ scale: 0.97 }} onClick={() => onAsk("Refais toute ma semaine d'entraînement")}
+        <motion.button whileTap={{ scale: 0.97 }} onClick={() => onAsk("Refais toute ma semaine d’entraînement")}
           className="flex-1 py-3 rounded-2xl text-[13px] font-extrabold text-white cursor-pointer flex items-center justify-center gap-1.5"
           style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", boxShadow: "0 8px 22px rgba(139,92,246,0.4)" }}>
           <Sparkles size={13} strokeWidth={2} /> Refais ma semaine
@@ -3652,7 +3652,7 @@ export default function ProgressionPage() {
 
   /* ── Bifurcation : le libellé vit avec la réalité du jour ── */
   const askLabel =
-    heroState === "done" ? "Encore de l'énergie ?"
+    heroState === "done" ? "Encore de l’énergie ?"
     : heroState === "repos" ? "Envie de bouger quand même ?"
     : heroState === "setup" ? "Ou directement :"
     : "Pas ce qui était prévu ?";
@@ -3700,8 +3700,8 @@ export default function ProgressionPage() {
             onStart={startToday}
             onImprovise={() => setSheet("improviser")}
             onOrganise={() => setSheet("organiser")}
-            onShift={() => openAssistant("Décale ma séance d'aujourd'hui à un autre jour")}
-            onReplace={() => openAssistant("Remplace ma séance d'aujourd'hui par autre chose")}
+            onShift={() => openAssistant("Décale ma séance d’aujourd’hui à un autre jour")}
+            onReplace={() => openAssistant("Remplace ma séance d’aujourd’hui par autre chose")}
           />
         </section>
 

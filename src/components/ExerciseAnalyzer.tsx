@@ -22,9 +22,9 @@ interface ExerciseDef {
 
 /* ─── Exercices ──────────────────────────────────────────────────── */
 const EXERCISES: ExerciseDef[] = [
-  { id: "squat",  name: "Squat",       muscles: "Quadriceps · Fessiers", tip: "Pieds écartés épaule, descends jusqu'à 90°, dos droit" },
+  { id: "squat",  name: "Squat",       muscles: "Quadriceps · Fessiers", tip: "Pieds écartés épaule, descends jusqu’à 90°, dos droit" },
   { id: "pushup", name: "Pompes",      muscles: "Pectoraux · Triceps",   tip: "Corps aligné, coudes à 90° en bas" },
-  { id: "curl",   name: "Curl Biceps", muscles: "Biceps",                tip: "Coude fixe, monte jusqu'en haut" },
+  { id: "curl",   name: "Curl Biceps", muscles: "Biceps",                tip: "Coude fixe, monte jusqu’en haut" },
   { id: "lunge",  name: "Fente",       muscles: "Quadriceps · Fessiers", tip: "Genou avant à 90°, buste bien droit" },
   { id: "plank",  name: "Gainage",     muscles: "Abdos · Dos",           tip: "Corps aligné de la tête aux talons" },
 ];
@@ -119,7 +119,7 @@ function analyzeCurl(lm: Landmark[], phase: "up" | "down"): AnalysisResult {
   if (eAngle > 152) newPhase = "up";
 
   if (sAngle < 138) {
-    msgs.push({ text: "Ne balance pas l'épaule", type: "error" }); score -= 25;
+    msgs.push({ text: "Ne balance pas l’épaule", type: "error" }); score -= 25;
   } else {
     msgs.push({ text: "Épaule stable", type: "good" });
   }
@@ -584,7 +584,7 @@ export default function ExerciseAnalyzer() {
               : { background: "rgba(var(--tint-violet-rgb),0.6)", color: "var(--text-3)", cursor: "not-allowed" }
             }>
             <Play size={14} fill="currentColor" />
-            {mpError ? "Modèle indisponible" : !mpReady ? "Chargement…" : "Lancer l'analyse"}
+            {mpError ? "Modèle indisponible" : !mpReady ? "Chargement…" : "Lancer l’analyse"}
           </motion.button>
         ) : (
           <motion.button whileTap={{ scale: 0.96 }} onClick={stopAnalysis}
@@ -668,7 +668,7 @@ export default function ExerciseAnalyzer() {
                   onClick={() => { setShowPlacement(false); void startAnalysis(); }}
                   className="flex-[1.4] py-3 rounded-2xl text-sm font-bold text-white cursor-pointer"
                   style={{ background: "linear-gradient(135deg,#818CF8,#6366F1)", boxShadow: "0 6px 20px rgba(99,102,241,0.4)" }}>
-                  Démarrer l'analyse
+                  Démarrer l’analyse
                 </motion.button>
               </div>
             </motion.div>

@@ -8,7 +8,7 @@ import { Send, Sparkles, Maximize2, Minimize2 } from "lucide-react";
 export type Message = { id: number; from: "ai" | "me"; text: string; time: string };
 
 export const initialChatMessages: Message[] = [
-  { id: 1, from: "ai", text: "Bonjour ✦ Comment tu vas aujourd'hui ? Je suis là pour toi — dis-moi ce que tu veux qu'on fasse ensemble 💪", time: "" },
+  { id: 1, from: "ai", text: "Bonjour ✦ Comment tu vas aujourd’hui ? Je suis là pour toi — dis-moi ce que tu veux qu’on fasse ensemble 💪", time: "" },
 ];
 
 const suggestions = ["Plan du jour", "Ma récup", "Repas idéal", "Séance du jour", "Objectif calorique"];

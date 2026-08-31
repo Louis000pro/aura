@@ -89,7 +89,7 @@ export default function InfosPage() {
     const r = await majConversation(convId, { nom });
     setOccupe(null);
     if (!r.ok) {
-      setErreur("Le nom du groupe n'a pas pu être enregistré.");
+      setErreur("Le nom du groupe n’a pas pu être enregistré.");
       return;
     }
     setErreur(null);
@@ -116,7 +116,7 @@ export default function InfosPage() {
 
     if (error) {
       setOccupe(null);
-      setErreur(`La photo n'est pas passée — ${error.message}`);
+      setErreur(`La photo n’est pas passée — ${error.message}`);
       return;
     }
 
@@ -124,7 +124,7 @@ export default function InfosPage() {
     const maj = await majConversation(convId, { image: data.publicUrl });
     setOccupe(null);
     if (!maj.ok) {
-      setErreur("La photo a été envoyée, mais le groupe n'a pas pu être mis à jour.");
+      setErreur("La photo a été envoyée, mais le groupe n’a pas pu être mis à jour.");
       return;
     }
     setErreur(null);
@@ -141,7 +141,7 @@ export default function InfosPage() {
     const raison = String(r.raison ?? "");
     setErreur(
       /function|does not exist|schema cache|404/i.test(raison)
-        ? "Le relais n'est pas encore activé côté serveur."
+        ? "Le relais n’est pas encore activé côté serveur."
         : refusRelais(r).texte,
     );
   };
@@ -161,9 +161,9 @@ export default function InfosPage() {
     const raison = String(r.raison ?? "");
     setErreur(
       /function|does not exist|schema cache|404/i.test(raison)
-        ? "L'arrêt du relais n'est pas encore activé côté serveur."
+        ? "L’arrêt du relais n’est pas encore activé côté serveur."
         : raison === "deja_fini" ? "Ce relais est déjà terminé."
-        : "Impossible d'arrêter le relais pour le moment.",
+        : "Impossible d’arrêter le relais pour le moment.",
     );
   };
 
@@ -176,7 +176,7 @@ export default function InfosPage() {
     if (!r.ok) {
       setErreur(
         /policy|permission|row-level security/i.test(String(r.raison ?? ""))
-          ? "Le départ n'est pas encore activé côté serveur."
+          ? "Le départ n’est pas encore activé côté serveur."
           : "Impossible de quitter cette discussion pour le moment.",
       );
       return;
@@ -324,7 +324,7 @@ export default function InfosPage() {
               <span className="min-w-0 flex-1">
                 <b className="block text-[14px] font-semibold" style={{ color: "var(--text-0)" }}>
                   {conv.defi.statut === "reussi"
-                    ? "L'affiche est à vous"
+                    ? "L’affiche est à vous"
                     : `${conv.defi.faits} jour${conv.defi.faits > 1 ? "s" : ""} sur ${conv.defi.objectif}`}
                 </b>
                 <span className="mt-0.5 block text-[12px]" style={{ color: "var(--text-2)" }}>
@@ -528,8 +528,8 @@ function AjouterDesGens({ moi, dejaLa, convId, onFermer, onAjoute }: {
         // devenait un groupe, l'affiche restait épinglée pour trois, et la
         // nouvelle personne ne pouvait jamais franchir un maillon.
         : r.raison === "relais_en_cours"
-        ? "Ce fil porte un relais à deux. Arrêtez-le d'abord, ou ouvrez un autre groupe."
-        : "Impossible d'ajouter pour le moment.",
+        ? "Ce fil porte un relais à deux. Arrêtez-le d’abord, ou ouvrez un autre groupe."
+        : "Impossible d’ajouter pour le moment.",
     );
   };
 

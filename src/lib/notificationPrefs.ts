@@ -30,17 +30,17 @@ export const CATEGORIES: {
   {
     cle: "rappel",
     titre: "Le rappel du soir",
-    texte: "Un seul message à 19 h, et uniquement s'il te reste ta séance à faire.",
+    texte: "Un seul message à 19 h, et uniquement s’il te reste ta séance à faire.",
   },
   {
     cle: "message",
     titre: "Les messages",
-    texte: "Quand quelqu'un t'écrit dans une conversation.",
+    texte: "Quand quelqu’un t’écrit dans une conversation.",
   },
   {
     cle: "ami",
     titre: "Les amis",
-    texte: "Une demande d'ami, ou quelqu'un qui t'ajoute.",
+    texte: "Une demande d’ami, ou quelqu’un qui t’ajoute.",
   },
   {
     cle: "relais",

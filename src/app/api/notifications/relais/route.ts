@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
     ]);
 
     const faits   = actionsRes.count ?? 0;
-    const pseudo  = acteurRes.data?.pseudo ?? "Quelqu'un";
+    const pseudo  = acteurRes.data?.pseudo ?? "Quelqu’un";
     const cible   = (membresRes.data ?? [])
       .map((m) => m.user_id as string)
       .filter((id) => id !== actor_id);
@@ -72,8 +72,8 @@ export async function POST(req: NextRequest) {
     const titre = lancement
       ? "Un relais commence"
       : complete
-      ? "L'affiche est complète"
-      : "L'affiche s'est dévoilée";
+      ? "L’affiche est complète"
+      : "L’affiche s’est dévoilée";
     const corps = lancement
       ? `${pseudo} a lancé un relais avec toi. Une affiche se dévoile en ${run.target_days} jours.`
       : complete

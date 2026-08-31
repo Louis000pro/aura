@@ -48,13 +48,13 @@ export async function POST(req: NextRequest) {
       "<p style='text-align:center;font-size:13px;color:#718096;margin:0 0 28px'>Clique sur le bouton ci-dessous pour choisir un nouveau mot de passe.</p>" +
       "<div style='text-align:center;margin-bottom:24px'>" +
       "<a href='" + link + "' style='display:inline-block;background:linear-gradient(135deg,#A78BFA,#D4A843);color:#fff;text-decoration:none;font-weight:600;font-size:14px;padding:14px 32px;border-radius:16px'>Réinitialiser mon mot de passe</a></div>" +
-      "<p style='text-align:center;font-size:11px;color:#A0AEC0'>Ce lien expire bientôt. Si tu n'as pas fait cette demande, ignore cet email.</p>" +
+      "<p style='text-align:center;font-size:11px;color:#A0AEC0'>Ce lien expire bientôt. Si tu n’as pas fait cette demande, ignore cet email.</p>" +
       "</div></body></html>";
 
     const text =
       "Vaiiya · Réinitialisation du mot de passe\n\n" +
       "Ouvre ce lien pour choisir un nouveau mot de passe :\n" + link + "\n\n" +
-      "Si tu n'as pas fait cette demande, ignore cet email.";
+      "Si tu n’as pas fait cette demande, ignore cet email.";
 
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
@@ -65,7 +65,7 @@ export async function POST(req: NextRequest) {
     if (!res.ok) {
       const errBody = await res.text().catch(() => "");
       console.error("reset-password Resend error:", res.status, errBody);
-      return Response.json({ error: "Erreur d'envoi de l'email. Réessaie." }, { status: 502 });
+      return Response.json({ error: "Erreur d’envoi de l’email. Réessaie." }, { status: 502 });
     }
 
     return Response.json({ ok: true });

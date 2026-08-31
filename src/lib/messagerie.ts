@@ -1108,7 +1108,7 @@ export function memeJour(a: string, b: string): boolean {
 export function libelleJour(iso: string): string {
   const d = new Date(iso);
   const now = new Date();
-  if (d.toDateString() === now.toDateString()) return "Aujourd'hui";
+  if (d.toDateString() === now.toDateString()) return "Aujourd’hui";
 
   const hier = new Date(now);
   hier.setDate(now.getDate() - 1);

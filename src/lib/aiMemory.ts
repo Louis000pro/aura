@@ -83,5 +83,5 @@ export function buildMemoryPrompt(memories: AiMemory[] | null | undefined): stri
     .join("\n");
   return `\n\nCE QUE TU SAIS DÉJÀ SUR CET UTILISATEUR (mémoire long terme — à respecter ABSOLUMENT dans tes conseils) :
 ${lines}
-(Ne re-mémorise pas ces faits. Si l'un d'eux change, mémorise la mise à jour ; l'utilisateur peut les consulter et les supprimer dans Paramètres.)`;
+(Ne re-mémorise pas ces faits. Si l’un d’eux change, mémorise la mise à jour ; l’utilisateur peut les consulter et les supprimer dans Paramètres.)`;
 }

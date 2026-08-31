@@ -69,7 +69,7 @@ export const PLAFONDS = {
 export const QUOTAS_PUBLICS: { categorie: CategorieIA; nom: string }[] = [
   { categorie: "chat",       nom: "Messages au coach ✦" },
   { categorie: "vision",     nom: "Analyses photo (assiette, carte)" },
-  { categorie: "estimation", nom: "Estimations d'un repas décrit" },
+  { categorie: "estimation", nom: "Estimations d’un repas décrit" },
   { categorie: "recette",    nom: "Recettes et menus générés" },
   { categorie: "seance",     nom: "Séances générées" },
   { categorie: "vocal",      nom: "Dictées vocales" },
