@@ -231,7 +231,7 @@ export async function GET(req: NextRequest) {
     alertes.push({
       niveau: "attention",
       texte: `${iaPlafonds.length} compte${iaPlafonds.length > 1 ? "s gratuits ont" : " gratuit a"} atteint un plafond IA`,
-      detail: "Aujourd’hui. Le gratuit est-il au bon niveau ?",
+      detail: "Aujourd’hui. Le gratuit est-il au bon niveau ?",
     });
   }
   if (relaisChauds.length > 0) {

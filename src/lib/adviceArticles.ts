@@ -150,12 +150,12 @@ const ADVICE_DRAFTS: AdviceDraft[] = [
     readingMinutes: 3,
     access: "free",
     image: "full-slam",
-    intro: "On va casser une idée tenace : finir au sol n’est pas une preuve de qualité. C’est parfois juste la preuve que la séance était très fatigante.",
+    intro: "On va casser une idée tenace : finir au sol n’est pas une preuve de qualité. C’est parfois juste la preuve que la séance était très fatigante.",
     sections: [
       {
         title: "La fatigue n’est pas le résultat",
         paragraphs: [
-          "Transpirer, trembler ou avoir le souffle court décrit ce que tu ressens maintenant. Le progrès, lui, se construit après : ton corps s’adapte à un effort qu’il pourra rencontrer de nouveau.",
+          "Transpirer, trembler ou avoir le souffle court décrit ce que tu ressens maintenant. Le progrès, lui, se construit après : ton corps s’adapte à un effort qu’il pourra rencontrer de nouveau.",
           "Une séance spectaculaire mais impossible à répéter peut être moins utile qu’une séance simple, bien dosée et présente chaque semaine.",
         ],
       },
@@ -169,7 +169,7 @@ const ADVICE_DRAFTS: AdviceDraft[] = [
       {
         title: "Le test du lendemain",
         paragraphs: [
-          "Demande-toi simplement : « Est-ce que cette séance me donne une chance raisonnable de revenir ? » Si oui, tu es probablement plus proche du bon dosage que tu ne le crois.",
+          "Demande-toi simplement : « Est-ce que cette séance me donne une chance raisonnable de revenir ? » Si oui, tu es probablement plus proche du bon dosage que tu ne le crois.",
         ],
       },
     ],
@@ -186,7 +186,7 @@ const ADVICE_DRAFTS: AdviceDraft[] = [
     access: "free",
     image: "improvise",
     imagePosition: "center 42%",
-    intro: "Tu as douze minutes, pas une heure. Mauvaise nouvelle pour ton programme parfait. Excellente nouvelle pour ta vraie vie : tu peux quand même faire quelque chose d’utile.",
+    intro: "Tu as douze minutes, pas une heure. Mauvaise nouvelle pour ton programme parfait. Excellente nouvelle pour ta vraie vie : tu peux quand même faire quelque chose d’utile.",
     sections: [
       {
         title: "Petit ne veut pas dire inutile",
@@ -203,12 +203,12 @@ const ADVICE_DRAFTS: AdviceDraft[] = [
       {
         title: "Aucun remboursement à prévoir",
         paragraphs: [
-          "Tu n’as pas à « rattraper » le temps manquant le lendemain. La séance a existé, point. Reprends simplement ton rythme habituel quand ton agenda te le permet.",
+          "Tu n’as pas à « rattraper » le temps manquant le lendemain. La séance a existé, point. Reprends simplement ton rythme habituel quand ton agenda te le permet.",
         ],
       },
     ],
     takeaway: "La durée idéale est celle que tu peux réellement utiliser aujourd’hui.",
-    tryThis: "Prépare ton trio de secours : jambes, poussée ou tirage, gainage. Il sera prêt les jours chargés.",
+    tryThis: "Prépare ton trio de secours : jambes, poussée ou tirage, gainage. Il sera prêt les jours chargés.",
     sources: [SOURCES.acsm2026, SOURCES.whoActivity],
   },
   {
@@ -219,7 +219,7 @@ const ADVICE_DRAFTS: AdviceDraft[] = [
     readingMinutes: 3,
     access: "free",
     image: "legs-goblet",
-    intro: "Quand les résultats ralentissent, la tentation est grande de changer les exercices, les jours, les méthodes et probablement la couleur de la gourde. Respire : progresser demande souvent beaucoup moins de cinéma.",
+    intro: "Quand les résultats ralentissent, la tentation est grande de changer les exercices, les jours, les méthodes et probablement la couleur de la gourde. Respire : progresser demande souvent beaucoup moins de cinéma.",
     sections: [
       {
         title: "Rends un détail un peu plus exigeant",
@@ -263,18 +263,18 @@ const ADVICE_DRAFTS: AdviceDraft[] = [
       {
         title: "Garde une marge honnête",
         paragraphs: [
-          "Pour la majorité des séries, vise environ 1 à 3 répétitions possibles en réserve. Au début, ton estimation sera imparfaite. C’est normal : elle devient meilleure avec l’expérience.",
+          "Pour la majorité des séries, vise environ 1 à 3 répétitions possibles en réserve. Au début, ton estimation sera imparfaite. C’est normal : elle devient meilleure avec l’expérience.",
         ],
       },
       {
         title: "La charge varie avec la journée",
         paragraphs: [
-          "Sommeil, stress, alimentation et matériel peuvent changer tes sensations. Ajuster de 2 ou 5 kilos n’efface pas ton niveau ; cela montre que tu sais entraîner la personne présente aujourd’hui.",
+          "Sommeil, stress, alimentation et matériel peuvent changer tes sensations. Ajuster de 2 ou 5 kilos n’efface pas ton niveau ; cela montre que tu sais entraîner la personne présente aujourd’hui.",
         ],
       },
     ],
     takeaway: "La charge sert le mouvement. Le mouvement ne sert pas la charge.",
-    tryThis: "Après chaque série, note mentalement combien de répétitions propres il te restait : 0, 1, 2, 3 ou davantage.",
+    tryThis: "Après chaque série, note mentalement combien de répétitions propres il te restait : 0, 1, 2, 3 ou davantage.",
     sources: [SOURCES.acsm2026, SOURCES.proximity],
   },
   {
@@ -341,7 +341,7 @@ const ADVICE_DRAFTS: AdviceDraft[] = [
       },
     ],
     takeaway: "Un échauffement est spécifique, progressif et assez court pour te laisser de l’énergie.",
-    tryThis: "Teste la formule 3 + 2 : trois minutes faciles, puis deux séries d’approche du premier mouvement.",
+    tryThis: "Teste la formule 3 + 2 : trois minutes faciles, puis deux séries d’approche du premier mouvement.",
     sources: [SOURCES.warmup],
   },
   {
@@ -363,7 +363,7 @@ const ADVICE_DRAFTS: AdviceDraft[] = [
       {
         title: "Utilise un critère simple",
         paragraphs: [
-          "Repars quand ton souffle est revenu, que tu peux te concentrer et que tu crois pouvoir produire une série proche de la précédente. Le chrono aide ; il ne connaît pas mieux ton corps que toi.",
+          "Repars quand ton souffle est revenu, que tu peux te concentrer et que tu crois pouvoir produire une série proche de la précédente. Le chrono aide ; il ne connaît pas mieux ton corps que toi.",
         ],
       },
       {
@@ -379,7 +379,7 @@ const ADVICE_DRAFTS: AdviceDraft[] = [
   },
   {
     id: "conseil-sommeil",
-    title: "Dormir : l’entraînement qu’on ne voit pas",
+    title: "Dormir : l’entraînement qu’on ne voit pas",
     subtitle: "Tu peux optimiser tes séries. Si tes nuits sont cassées, commence aussi par là.",
     theme: "Récupération",
     readingMinutes: 3,
@@ -397,17 +397,17 @@ const ADVICE_DRAFTS: AdviceDraft[] = [
       {
         title: "Protège surtout la régularité",
         paragraphs: [
-          "Une heure de coucher relativement stable, une pièce sombre et une fin de journée plus calme ont souvent plus d’effet qu’un nouveau gadget. Ne cherche pas la nuit parfaite ; cherche un rythme soutenable.",
+          "Une heure de coucher relativement stable, une pièce sombre et une fin de journée plus calme ont souvent plus d’effet qu’un nouveau gadget. Ne cherche pas la nuit parfaite ; cherche un rythme soutenable.",
         ],
       },
       {
         title: "Après une mauvaise nuit, adapte",
         paragraphs: [
-          "Tu peux maintenir la séance en réduisant légèrement la charge, le volume ou l’intensité. Une nuit courte n’interdit pas de bouger ; elle change simplement le contrat du jour.",
+          "Tu peux maintenir la séance en réduisant légèrement la charge, le volume ou l’intensité. Une nuit courte n’interdit pas de bouger ; elle change simplement le contrat du jour.",
         ],
       },
     ],
-    takeaway: "Le sommeil n’est pas la récompense après le travail : il fait partie du travail.",
+    takeaway: "Le sommeil n’est pas la récompense après le travail : il fait partie du travail.",
     tryThis: "Choisis cette semaine une seule heure de lever stable, y compris après une soirée un peu plus tardive.",
     sources: [SOURCES.sleep],
   },
@@ -424,7 +424,7 @@ const ADVICE_DRAFTS: AdviceDraft[] = [
       {
         title: "Commence par les repas",
         paragraphs: [
-          "Place une source de protéines identifiable dans tes principaux repas : œufs, poisson, viande, produits laitiers, tofu, tempeh, légumineuses ou une combinaison végétale qui te convient.",
+          "Place une source de protéines identifiable dans tes principaux repas : œufs, poisson, viande, produits laitiers, tofu, tempeh, légumineuses ou une combinaison végétale qui te convient.",
         ],
       },
       {
@@ -458,7 +458,7 @@ const ADVICE_DRAFTS: AdviceDraft[] = [
       {
         title: "Ils alimentent particulièrement l’intensité",
         paragraphs: [
-          "Musculation volumineuse, HIIT, course rapide : ces efforts utilisent beaucoup les glucides disponibles. En manquer n’est pas toujours dangereux, mais peut rendre la séance inutilement plate.",
+          "Musculation volumineuse, HIIT, course rapide : ces efforts utilisent beaucoup les glucides disponibles. En manquer n’est pas toujours dangereux, mais peut rendre la séance inutilement plate.",
         ],
       },
       {
@@ -470,7 +470,7 @@ const ADVICE_DRAFTS: AdviceDraft[] = [
       {
         title: "Avant la séance, reste simple",
         paragraphs: [
-          "Si tu as faim, un repas digeste quelques heures avant ou une petite collation peut aider. Teste ce que ton ventre tolère : la meilleure théorie perd toujours contre une séance passée à digérer.",
+          "Si tu as faim, un repas digeste quelques heures avant ou une petite collation peut aider. Teste ce que ton ventre tolère : la meilleure théorie perd toujours contre une séance passée à digérer.",
         ],
       },
     ],
@@ -508,7 +508,7 @@ const ADVICE_DRAFTS: AdviceDraft[] = [
       },
     ],
     takeaway: "Hydrate-toi selon l’effort et le climat, pas selon un défi trouvé en ligne.",
-    tryThis: "Pour une séance chaude ou longue, pèse-toi avant et après une fois : l’écart t’aidera à comprendre ta transpiration personnelle.",
+    tryThis: "Pour une séance chaude ou longue, pèse-toi avant et après une fois : l’écart t’aidera à comprendre ta transpiration personnelle.",
     sources: [SOURCES.hydration],
   },
   {
@@ -525,7 +525,7 @@ const ADVICE_DRAFTS: AdviceDraft[] = [
       {
         title: "Ne transforme pas un événement en identité",
         paragraphs: [
-          "« Je n’ai pas fait cette séance » est un fait. « Je ne suis pas régulier » est une histoire beaucoup plus lourde, et souvent fausse. Garde les faits petits.",
+          "« Je n’ai pas fait cette séance » est un fait. « Je ne suis pas régulier » est une histoire beaucoup plus lourde, et souvent fausse. Garde les faits petits.",
         ],
       },
       {
@@ -537,12 +537,12 @@ const ADVICE_DRAFTS: AdviceDraft[] = [
       {
         title: "Prépare le retour le plus facile",
         paragraphs: [
-          "Décide quand et où tu reprendras. Les plans concrets du type « jeudi après le travail, vingt minutes à la maison » sont plus utiles que « il faut vraiment que je m’y remette ».",
+          "Décide quand et où tu reprendras. Les plans concrets du type « jeudi après le travail, vingt minutes à la maison » sont plus utiles que « il faut vraiment que je m’y remette ».",
         ],
       },
     ],
     takeaway: "La régularité se mesure sur la durée, pas sur un mardi isolé.",
-    tryThis: "Écris une phrase précise : « Ma prochaine occasion de bouger sera… » puis laisse la séance manquée derrière toi.",
+    tryThis: "Écris une phrase précise : « Ma prochaine occasion de bouger sera… » puis laisse la séance manquée derrière toi.",
     sources: [SOURCES.intentions, SOURCES.adherence],
   },
   {
@@ -553,7 +553,7 @@ const ADVICE_DRAFTS: AdviceDraft[] = [
     readingMinutes: 3,
     access: "free",
     image: "cat-salle",
-    intro: "La salle donne parfois l’impression que tout le monde connaît les machines, les codes et la bonne manière de poser sa serviette. C’est une illusion assez convaincante : chaque personne sûre d’elle a déjà cherché un réglage pendant cinq minutes.",
+    intro: "La salle donne parfois l’impression que tout le monde connaît les machines, les codes et la bonne manière de poser sa serviette. C’est une illusion assez convaincante : chaque personne sûre d’elle a déjà cherché un réglage pendant cinq minutes.",
     sections: [
       {
         title: "Rétrécis le terrain",
@@ -574,7 +574,7 @@ const ADVICE_DRAFTS: AdviceDraft[] = [
         ],
       },
     ],
-    takeaway: "La confiance n’est pas un prérequis : c’est un effet secondaire de l’expérience.",
+    takeaway: "La confiance n’est pas un prérequis : c’est un effet secondaire de l’expérience.",
     tryThis: "Prépare avant d’entrer une séance de quatre mouvements et autorise-toi à ne rien improviser.",
     sources: [SOURCES.adherence],
   },
@@ -591,19 +591,19 @@ const ADVICE_DRAFTS: AdviceDraft[] = [
       {
         title: "La comparaison oublie tout le contexte",
         paragraphs: [
-          "Ancienneté, génétique, sommeil, métier, blessures, disponibilité, montage vidéo : tu ne vois presque rien de ce qui produit l’image finale. Pourtant, ton cerveau la traite comme une référence équitable.",
+          "Ancienneté, génétique, sommeil, métier, blessures, disponibilité, montage vidéo : tu ne vois presque rien de ce qui produit l’image finale. Pourtant, ton cerveau la traite comme une référence équitable.",
         ],
       },
       {
         title: "Reviens à la fonction",
         paragraphs: [
-          "Au lieu de demander seulement « À quoi je ressemble ? », observe ce que ton corps te permet davantage : porter, monter, courir, jouer, te relever, avoir moins peur d’une charge. La fonction élargit le regard.",
+          "Au lieu de demander seulement « À quoi je ressemble ? », observe ce que ton corps te permet davantage : porter, monter, courir, jouer, te relever, avoir moins peur d’une charge. La fonction élargit le regard.",
         ],
       },
       {
         title: "Choisis une comparaison utile",
         paragraphs: [
-          "Compare une période assez longue de ta propre pratique : ton contrôle depuis six semaines, ta régularité depuis trois mois, ton aisance sur un mouvement. Pas ton reflet de 22 h après une journée compliquée.",
+          "Compare une période assez longue de ta propre pratique : ton contrôle depuis six semaines, ta régularité depuis trois mois, ton aisance sur un mouvement. Pas ton reflet de 22 h après une journée compliquée.",
         ],
       },
     ],
@@ -613,7 +613,7 @@ const ADVICE_DRAFTS: AdviceDraft[] = [
   },
   {
     id: "conseil-douleur-gene",
-    title: "Douleur, gêne, effort : apprends à les distinguer",
+    title: "Douleur, gêne, effort : apprends à les distinguer",
     subtitle: "Être courageux ne consiste pas à ignorer tous les signaux.",
     theme: "Récupération",
     readingMinutes: 3,
@@ -630,18 +630,18 @@ const ADVICE_DRAFTS: AdviceDraft[] = [
       {
         title: "Le signal qui mérite un arrêt",
         paragraphs: [
-          "Une douleur soudaine, aiguë, électrique, qui augmente à chaque répétition ou s’accompagne d’une perte de force inhabituelle mérite de stopper le mouvement. Réduire la charge ne suffit pas toujours : change d’exercice ou arrête la séance.",
+          "Une douleur soudaine, aiguë, électrique, qui augmente à chaque répétition ou s’accompagne d’une perte de force inhabituelle mérite de stopper le mouvement. Réduire la charge ne suffit pas toujours : change d’exercice ou arrête la séance.",
         ],
       },
       {
         title: "Quand demander un avis",
         paragraphs: [
           "Une douleur persistante, un gonflement important, une incapacité à prendre appui ou des symptômes qui s’aggravent doivent être évalués par un professionnel de santé. Une douleur thoracique, un malaise, un essoufflement inhabituel ou un symptôme neurologique appellent une aide urgente.",
-          "Ce mini-cours aide à observer ; il ne pose aucun diagnostic.",
+          "Ce mini-cours aide à observer ; il ne pose aucun diagnostic.",
         ],
       },
     ],
-    takeaway: "Écouter un signal n’est pas abandonner : c’est garder une marge de décision.",
+    takeaway: "Écouter un signal n’est pas abandonner : c’est garder une marge de décision.",
     tryThis: "Si une sensation t’inquiète, arrête la série, respire une minute et décris-la précisément avant de décider de la suite.",
     sources: [SOURCES.acsm2026],
   },
@@ -680,7 +680,7 @@ const ADVICE_DRAFTS: AdviceDraft[] = [
   },
   {
     id: "conseil-echec-musculaire",
-    title: "Échec musculaire : utile, pas obligatoire",
+    title: "Échec musculaire : utile, pas obligatoire",
     subtitle: "Aller au bout d’une série est un outil, pas une preuve de volonté.",
     theme: "Progression",
     readingMinutes: 3,
@@ -719,7 +719,7 @@ const ADVICE_DRAFTS: AdviceDraft[] = [
     readingMinutes: 3,
     access: "premium",
     image: "cat-tiennes",
-    intro: "Avant de répartir les groupes musculaires comme un ingénieur de la NASA, regarde ta semaine. Combien de créneaux peux-tu réellement protéger, même quand le travail déborde un peu ?",
+    intro: "Avant de répartir les groupes musculaires comme un ingénieur de la NASA, regarde ta semaine. Combien de créneaux peux-tu réellement protéger, même quand le travail déborde un peu ?",
     sections: [
       {
         title: "Pars de tes jours fiables",
@@ -736,7 +736,7 @@ const ADVICE_DRAFTS: AdviceDraft[] = [
       {
         title: "Prévois une version B",
         paragraphs: [
-          "Pour chaque séance longue, garde une version courte avec les deux ou trois priorités. Ce n’est pas un programme moins ambitieux ; c’est un programme qui sait survivre à un jeudi réel.",
+          "Pour chaque séance longue, garde une version courte avec les deux ou trois priorités. Ce n’est pas un programme moins ambitieux ; c’est un programme qui sait survivre à un jeudi réel.",
         ],
       },
     ],
@@ -746,7 +746,7 @@ const ADVICE_DRAFTS: AdviceDraft[] = [
   },
   {
     id: "conseil-plateau",
-    title: "Tu stagnes ? Ne change pas tout",
+    title: "Tu stagnes ? Ne change pas tout",
     subtitle: "Un plateau se diagnostique avant de se combattre.",
     theme: "Progression",
     readingMinutes: 3,
@@ -757,7 +757,7 @@ const ADVICE_DRAFTS: AdviceDraft[] = [
       {
         title: "Vérifie que tu stagnes vraiment",
         paragraphs: [
-          "Compare quatre à six semaines : charge, répétitions, technique, amplitude et effort perçu. Si tu fais la même performance avec plus de contrôle, quelque chose avance déjà.",
+          "Compare quatre à six semaines : charge, répétitions, technique, amplitude et effort perçu. Si tu fais la même performance avec plus de contrôle, quelque chose avance déjà.",
         ],
       },
       {
@@ -779,19 +779,19 @@ const ADVICE_DRAFTS: AdviceDraft[] = [
   },
   {
     id: "conseil-deload",
-    title: "Le deload : lever le pied pour mieux repartir",
+    title: "Le deload : lever le pied pour mieux repartir",
     subtitle: "Réduire temporairement n’efface pas le travail déjà fait.",
     theme: "Récupération",
     readingMinutes: 3,
     access: "premium",
     image: "repos",
     imagePosition: "68% center",
-    intro: "Quand tout paraît lourd, que l’envie baisse et que plusieurs performances reculent ensemble, la réponse n’est pas toujours « force un peu plus ». Parfois, ton programme demande simplement de respirer.",
+    intro: "Quand tout paraît lourd, que l’envie baisse et que plusieurs performances reculent ensemble, la réponse n’est pas toujours « force un peu plus ». Parfois, ton programme demande simplement de respirer.",
     sections: [
       {
         title: "Ce qu’est un deload",
         paragraphs: [
-          "C’est une courte période où tu réduis volontairement la difficulté : moins de séries, des charges plus légères, davantage de marge ou quelques jours de repos complet.",
+          "C’est une courte période où tu réduis volontairement la difficulté : moins de séries, des charges plus légères, davantage de marge ou quelques jours de repos complet.",
         ],
       },
       {
@@ -813,13 +813,13 @@ const ADVICE_DRAFTS: AdviceDraft[] = [
   },
   {
     id: "conseil-volume-frequence",
-    title: "Volume et fréquence : le calcul qui compte",
+    title: "Volume et fréquence : le calcul qui compte",
     subtitle: "Combien tu fais sur la semaine importe souvent plus que le nom du programme.",
     theme: "Progression",
     readingMinutes: 3,
     access: "premium",
     image: "full-thruster",
-    intro: "On adore débattre de trois séances contre cinq. La question plus utile est souvent : combien de séries de qualité chaque groupe musculaire reçoit-il au total, et peux-tu les récupérer ?",
+    intro: "On adore débattre de trois séances contre cinq. La question plus utile est souvent : combien de séries de qualité chaque groupe musculaire reçoit-il au total, et peux-tu les récupérer ?",
     sections: [
       {
         title: "Le volume est une dose",
@@ -840,13 +840,13 @@ const ADVICE_DRAFTS: AdviceDraft[] = [
         ],
       },
     ],
-    takeaway: "La fréquence organise le travail ; elle ne remplace ni le volume, ni l’effort, ni la récupération.",
+    takeaway: "La fréquence organise le travail ; elle ne remplace ni le volume, ni l’effort, ni la récupération.",
     tryThis: "Compte les séries exigeantes d’un seul groupe musculaire cette semaine avant d’en ajouter.",
     sources: [SOURCES.acsm2026, SOURCES.frequency],
   },
   {
     id: "conseil-fullbody-split",
-    title: "Full body ou split ? Le faux grand débat",
+    title: "Full body ou split ? Le faux grand débat",
     subtitle: "Les deux fonctionnent. Ton agenda va probablement trancher mieux qu’internet.",
     theme: "Entraînement",
     readingMinutes: 3,
@@ -890,7 +890,7 @@ const ADVICE_DRAFTS: AdviceDraft[] = [
       {
         title: "Crée un écart que tu peux habiter",
         paragraphs: [
-          "Un déficit très agressif donne parfois des résultats rapides sur la balance, mais augmente aussi faim, fatigue et risque d’abandon. Commence par des changements mesurés : portions, boissons, grignotages automatiques ou densité des repas.",
+          "Un déficit très agressif donne parfois des résultats rapides sur la balance, mais augmente aussi faim, fatigue et risque d’abandon. Commence par des changements mesurés : portions, boissons, grignotages automatiques ou densité des repas.",
         ],
       },
       {
@@ -902,7 +902,7 @@ const ADVICE_DRAFTS: AdviceDraft[] = [
       {
         title: "Ne laisse pas la balance devenir ton humeur",
         paragraphs: [
-          "L’eau, le sel, le transit et le cycle menstruel peuvent déplacer le poids à court terme. Observe une tendance sur plusieurs semaines et garde d’autres repères : tour de taille, vêtements, énergie, force.",
+          "L’eau, le sel, le transit et le cycle menstruel peuvent déplacer le poids à court terme. Observe une tendance sur plusieurs semaines et garde d’autres repères : tour de taille, vêtements, énergie, force.",
           "Si la restriction devient anxieuse, compulsive ou envahit tes journées, parle-en à un professionnel de santé qualifié.",
         ],
       },
@@ -913,7 +913,7 @@ const ADVICE_DRAFTS: AdviceDraft[] = [
   },
   {
     id: "conseil-creatine",
-    title: "Créatine : le solide et le marketing",
+    title: "Créatine : le solide et le marketing",
     subtitle: "Un supplément utile, beaucoup moins mystérieux que son rayon.",
     theme: "Nutrition",
     readingMinutes: 3,
@@ -936,17 +936,17 @@ const ADVICE_DRAFTS: AdviceDraft[] = [
       {
         title: "Ce qu’il faut savoir avant",
         paragraphs: [
-          "Une hausse initiale du poids liée à l’eau dans le muscle peut arriver ; ce n’est pas une prise de gras. Chez les personnes en bonne santé, les données disponibles sont rassurantes aux doses étudiées. En cas de maladie rénale, de grossesse, de traitement ou de doute médical, demande un avis professionnel avant toute supplémentation.",
+          "Une hausse initiale du poids liée à l’eau dans le muscle peut arriver ; ce n’est pas une prise de gras. Chez les personnes en bonne santé, les données disponibles sont rassurantes aux doses étudiées. En cas de maladie rénale, de grossesse, de traitement ou de doute médical, demande un avis professionnel avant toute supplémentation.",
         ],
       },
     ],
     takeaway: "Si tu en prends, monohydrate, dose simple, régularité, le reste est souvent surtout un emballage.",
-    tryThis: "Avant d’acheter, vérifie que l’étiquette dit uniquement « créatine monohydrate » et compare le prix par dose.",
+    tryThis: "Avant d’acheter, vérifie que l’étiquette dit uniquement « créatine monohydrate » et compare le prix par dose.",
     sources: [SOURCES.creatine],
   },
   {
     id: "conseil-cycle-menstruel",
-    title: "Cycle menstruel : observe-toi avant d’obéir à un calendrier",
+    title: "Cycle menstruel : observe-toi avant d’obéir à un calendrier",
     subtitle: "Les moyennes de groupe ne connaissent pas tes symptômes.",
     theme: "Récupération",
     readingMinutes: 3,
@@ -973,8 +973,8 @@ const ADVICE_DRAFTS: AdviceDraft[] = [
         ],
       },
     ],
-    takeaway: "Le cycle peut informer ton entraînement ; il n’a pas besoin de le commander.",
-    tryThis: "Note pendant un mois trois données simples : énergie, symptômes et qualité de séance, sur une échelle de 1 à 5.",
+    takeaway: "Le cycle peut informer ton entraînement ; il n’a pas besoin de le commander.",
+    tryThis: "Note pendant un mois trois données simples : énergie, symptômes et qualité de séance, sur une échelle de 1 à 5.",
     sources: [SOURCES.cycle],
   },
   {
@@ -990,13 +990,13 @@ const ADVICE_DRAFTS: AdviceDraft[] = [
       {
         title: "Ne confonds pas baisse du jour et perte de niveau",
         paragraphs: [
-          "Sous stress, une charge habituelle peut sembler anormalement lourde. Cela ne signifie pas que tu as régressé. Ton niveau n’est pas effacé ; son expression est simplement moins disponible.",
+          "Sous stress, une charge habituelle peut sembler anormalement lourde. Cela ne signifie pas que tu as régressé. Ton niveau n’est pas effacé ; son expression est simplement moins disponible.",
         ],
       },
       {
         title: "Utilise trois versions de la séance",
         paragraphs: [
-          "Version verte : séance prévue. Version orange : mêmes mouvements, moins de séries ou plus de marge. Version courte : deux priorités puis retour à la maison. Décider avant évite de négocier au milieu de la fatigue.",
+          "Version verte : séance prévue. Version orange : mêmes mouvements, moins de séries ou plus de marge. Version courte : deux priorités puis retour à la maison. Décider avant évite de négocier au milieu de la fatigue.",
         ],
       },
       {
@@ -1006,8 +1006,8 @@ const ADVICE_DRAFTS: AdviceDraft[] = [
         ],
       },
     ],
-    takeaway: "Ajuster la séance au stress protège la continuité ; ce n’est pas céder.",
-    tryThis: "Avant de commencer, choisis honnêtement ta couleur du jour : verte, orange ou courte.",
+    takeaway: "Ajuster la séance au stress protège la continuité ; ce n’est pas céder.",
+    tryThis: "Avant de commencer, choisis honnêtement ta couleur du jour : verte, orange ou courte.",
     sources: [SOURCES.sleep, SOURCES.whoActivity],
   },
 ];
@@ -1053,7 +1053,7 @@ const CONCRETE_CONTENT: Record<string, AdviceRewrite> = {
     "Une séance efficace doit être assez difficile pour faire travailler les muscles, mais elle n’a pas besoin de te mettre au sol. La transpiration, les nausées ou l’épuisement indiquent surtout que la séance était fatigante. Ils ne prouvent pas qu’elle était mieux construite.",
     [
       ["Ce que tu dois ressentir pendant une bonne série",
-        "Sur une série de musculation, les dernières répétitions doivent devenir plus lentes et demander de la concentration. En revanche, tu dois encore contrôler le mouvement : même amplitude, même posture et aucune douleur inhabituelle.",
+        "Sur une série de musculation, les dernières répétitions doivent devenir plus lentes et demander de la concentration. En revanche, tu dois encore contrôler le mouvement : même amplitude, même posture et aucune douleur inhabituelle.",
         "Pour la majorité des séries, arrête-toi quand tu estimes pouvoir encore faire une à trois répétitions propres. Cette marge est assez petite pour stimuler le muscle et assez grande pour limiter la fatigue inutile."],
       ["Pourquoi ne pas aller au maximum à chaque fois",
         "Une série à l’échec peut être utile ponctuellement, surtout sur une machine ou un exercice simple. Répétée sur tous les exercices, elle fatigue davantage, dégrade souvent les séries suivantes et peut rendre la prochaine séance plus difficile.",
@@ -1061,7 +1061,7 @@ const CONCRETE_CONTENT: Record<string, AdviceRewrite> = {
       ["Comment régler l’effort",
         "Si tu termines une série en pouvant faire cinq répétitions ou plus, augmente légèrement la charge ou les répétitions la prochaine fois. Si tu rates le nombre prévu ou que ta technique change fortement, baisse un peu la charge. Entre les deux, garde le réglage."],
     ],
-    "Tu prévois 3 séries de 10 squats avec un haltère. À la 10e répétition, tes jambes travaillent fort mais tu pourrais encore en faire 2 proprement : la charge est bien choisie. Si tu pouvais en faire 20, elle est trop légère. Si tu bloques à 7, elle est trop lourde pour l’objectif prévu.",
+    "Tu prévois 3 séries de 10 squats avec un haltère. À la 10e répétition, tes jambes travaillent fort mais tu pourrais encore en faire 2 proprement : la charge est bien choisie. Si tu pouvais en faire 20, elle est trop légère. Si tu bloques à 7, elle est trop lourde pour l’objectif prévu.",
     "Pour la plupart de tes séries, arrête-toi avec 1 à 3 répétitions propres encore possibles. Garde l’échec musculaire pour quelques séries sur des exercices sûrs.",
     "À ta prochaine séance, note après ton exercice principal combien de répétitions propres il te restait. Ajuste seulement si tu es au-dessus de 3 ou déjà à l’échec.",
   ),
@@ -1078,7 +1078,7 @@ const CONCRETE_CONTENT: Record<string, AdviceRewrite> = {
         "Choisis un mouvement pour les jambes, un mouvement de poussée ou de tirage et, si le temps le permet, un exercice de gainage. Utilise des exercices que tu connais déjà. Lance un chronomètre, garde des pauses suffisantes pour rester propre et évite de changer de matériel.",
         "Tu peux aussi ne faire que deux exercices importants avec davantage de repos. Court ne veut pas dire précipité."],
     ],
-    "Tu avais prévu 45 minutes, mais tu rentres tard. Fais 3 séries de squats, 3 séries de pompes inclinées et 2 séries de gainage, avec environ 45 secondes de repos. Tu n’as pas fait la séance complète ; tu as tout de même entraîné les jambes, le haut du corps et le tronc.",
+    "Tu avais prévu 45 minutes, mais tu rentres tard. Fais 3 séries de squats, 3 séries de pompes inclinées et 2 séries de gainage, avec environ 45 secondes de repos. Tu n’as pas fait la séance complète ; tu as tout de même entraîné les jambes, le haut du corps et le tronc.",
     "Une séance courte est utile si elle contient quelques séries sérieuses. Elle n’a pas besoin d’être présentée comme une séance complète pour avoir de la valeur.",
     "Prépare dès maintenant une séance de secours avec 3 exercices que tu maîtrises. Tu n’auras plus à l’inventer le jour où ton agenda déborde.",
   ),
@@ -1096,7 +1096,7 @@ const CONCRETE_CONTENT: Record<string, AdviceRewrite> = {
         "Une mauvaise séance isolée n’efface pas la tendance. Regarde plutôt les trois ou quatre dernières séances."],
     ],
     "Au développé avec haltères, tu fais 10, 9 puis 8 répétitions avec 12 kg. La séance suivante, vise 10, 9 puis 9. Quand tu atteindras 12, 12, 12 proprement, passe par exemple à 14 kg et accepte de redescendre autour de 8 répétitions.",
-    "Garde le même programme assez longtemps pour comparer tes résultats. Fais progresser une variable à la fois : répétitions, charge, série ou qualité technique.",
+    "Garde le même programme assez longtemps pour comparer tes résultats. Fais progresser une variable à la fois : répétitions, charge, série ou qualité technique.",
     "Choisis aujourd’hui un exercice et écris son résultat exact. À la prochaine séance, vise une seule répétition propre supplémentaire au total.",
   ),
   "conseil-bonne-charge": clear(
@@ -1112,12 +1112,12 @@ const CONCRETE_CONTENT: Record<string, AdviceRewrite> = {
         "La charge adaptée peut changer avec le sommeil, le stress, la chaleur ou une pause récente. Baisser de 5 à 10 % un jour difficile ne signifie pas que tu as perdu ton niveau.",
         "La priorité reste de produire l’effort prévu dans de bonnes conditions. Le nombre inscrit sur l’haltère n’est qu’un moyen."],
     ],
-    "Tu dois faire 10 répétitions de rowing. Avec 16 kg, tu en fais 10 et tu pourrais en faire encore 6 : essaie 18 kg. Avec 20 kg, tu tires avec l’épaule et bloques à 8 : reviens à 18 kg. Si 18 kg te laisse environ 2 répétitions propres, garde cette charge.",
+    "Tu dois faire 10 répétitions de rowing. Avec 16 kg, tu en fais 10 et tu pourrais en faire encore 6 : essaie 18 kg. Avec 20 kg, tu tires avec l’épaule et bloques à 8 : reviens à 18 kg. Si 18 kg te laisse environ 2 répétitions propres, garde cette charge.",
     "Une charge est adaptée si tu termines le nombre prévu avec une technique stable et environ 1 à 3 répétitions encore possibles.",
-    "Sur ton premier exercice, fais une série prudente puis réponds honnêtement : 0, 1, 2, 3 ou plus de répétitions restantes ? Ajuste la série suivante.",
+    "Sur ton premier exercice, fais une série prudente puis réponds honnêtement : 0, 1, 2, 3 ou plus de répétitions restantes ? Ajuste la série suivante.",
   ),
   "conseil-courbatures": clear(
-    "Courbatures : ce qu’elles signifient vraiment",
+    "Courbatures : ce qu’elles signifient vraiment",
     "Avoir mal le lendemain ne permet pas de savoir si une séance était efficace.",
     4,
     "Les courbatures apparaissent souvent après un exercice nouveau, une reprise ou beaucoup de travail en position étirée. Elles indiquent que le corps a subi un effort inhabituel. Elles ne mesurent ni la quantité de muscle gagnée ni la qualité du programme.",
@@ -1134,7 +1134,7 @@ const CONCRETE_CONTENT: Record<string, AdviceRewrite> = {
     "Pendant deux semaines, note un repère de performance après chaque séance et ne donne aucune note à tes courbatures.",
   ),
   "conseil-echauffement": clear(
-    "Échauffement : quoi faire en 5 à 10 minutes",
+    "Échauffement : quoi faire en 5 à 10 minutes",
     "Prépare les mouvements de la séance sans dépenser l’énergie nécessaire pour les réaliser.",
     4,
     "Un échauffement sert à augmenter progressivement l’effort et à répéter les gestes qui arrivent. Il n’a pas besoin d’être identique pour toutes les séances ni de contenir vingt exercices de mobilité.",
@@ -1166,7 +1166,7 @@ const CONCRETE_CONTENT: Record<string, AdviceRewrite> = {
     "Ajoute 30 secondes de repos à ton exercice principal et compare le nombre de répétitions sur la dernière série.",
   ),
   "conseil-sommeil": clear(
-    "Sommeil : son effet réel sur tes séances",
+    "Sommeil : son effet réel sur tes séances",
     "Des nuits trop courtes peuvent réduire l’énergie, la récupération et la qualité de l’entraînement.",
     4,
     "Le sommeil influence la vigilance, l’humeur, la coordination et la perception de l’effort. Tu peux avoir un excellent programme et tout de même trouver chaque charge plus lourde après plusieurs mauvaises nuits.",
@@ -1183,7 +1183,7 @@ const CONCRETE_CONTENT: Record<string, AdviceRewrite> = {
     "Choisis une heure de lever réaliste à garder cinq jours cette semaine et prépare une version allégée de ta prochaine séance.",
   ),
   "conseil-proteines": clear(
-    "Protéines : combien et comment les répartir",
+    "Protéines : combien et comment les répartir",
     "Quelques sources régulières dans la journée suffisent souvent sans compter chaque gramme.",
     4,
     "Les protéines fournissent les éléments utilisés pour entretenir et construire les tissus musculaires. Les personnes qui s’entraînent en ont généralement besoin d’un peu plus, mais le calcul exact n’est pas obligatoire pour bien commencer.",
@@ -1192,7 +1192,7 @@ const CONCRETE_CONTENT: Record<string, AdviceRewrite> = {
         "Une fourchette souvent utilisée pour une personne active est d’environ 1,4 à 2 grammes de protéines par kilo de poids corporel et par jour. Ce repère n’est pas un examen à réussir au gramme près et doit être adapté en cas de problème médical.",
         "Tu peux répartir les apports sur trois ou quatre repas plutôt que tout concentrer le soir."],
       ["Une méthode sans calcul",
-        "À chaque repas principal, ajoute une vraie source : œufs, poisson, viande, tofu, tempeh, légumineuses, skyr ou autre produit laitier selon tes choix. Une portion de la taille de ta paume est un repère visuel simple.",
+        "À chaque repas principal, ajoute une vraie source : œufs, poisson, viande, tofu, tempeh, légumineuses, skyr ou autre produit laitier selon tes choix. Une portion de la taille de ta paume est un repère visuel simple.",
         "La poudre est seulement un aliment pratique. Elle n’est utile que si elle facilite tes apports."],
     ],
     "Une personne de 70 kg peut viser environ 100 à 140 g par jour si elle souhaite utiliser le repère chiffré. Sans compter précisément, elle peut prévoir des œufs au petit-déjeuner, du poulet ou du tofu au déjeuner, un skyr en collation et des lentilles avec le dîner.",
@@ -1200,7 +1200,7 @@ const CONCRETE_CONTENT: Record<string, AdviceRewrite> = {
     "Regarde tes trois prochains repas et ajoute une source identifiable de protéines à celui qui n’en contient presque pas.",
   ),
   "conseil-glucides": clear(
-    "Glucides : à quoi servent-ils pour l’entraînement",
+    "Glucides : à quoi servent-ils pour l’entraînement",
     "Pain, riz, pâtes, pommes de terre, céréales et fruits peuvent soutenir les efforts intenses.",
     4,
     "Les glucides sont stockés notamment sous forme de glycogène dans les muscles et le foie. Ce carburant est particulièrement utile pour les séries répétées, les circuits et les sports intenses. Les supprimer n’est pas nécessaire pour progresser ou perdre du gras.",
@@ -1217,7 +1217,7 @@ const CONCRETE_CONTENT: Record<string, AdviceRewrite> = {
     "Avant une séance exigeante, teste une collation familière contenant des glucides et compare ton énergie avec une séance similaire.",
   ),
   "conseil-hydratation": clear(
-    "Hydratation : combien boire autour d’une séance",
+    "Hydratation : combien boire autour d’une séance",
     "Bois régulièrement, puis augmente selon la chaleur, la durée et ta transpiration.",
     4,
     "Les besoins en eau varient fortement. Une petite personne qui marche dans une salle fraîche ne perd pas autant qu’une personne très transpirante qui court une heure en été. Un objectif universel au litre près serait donc trompeur.",
@@ -1229,13 +1229,13 @@ const CONCRETE_CONTENT: Record<string, AdviceRewrite> = {
         "De l’eau suffit généralement pour une séance courte. Du sodium peut devenir utile si l’effort dure longtemps, s’il fait chaud ou si tu transpires beaucoup. Les boissons très concentrées ne sont pas automatiquement meilleures.",
         "Boire excessivement et très vite peut aussi être dangereux. L’objectif est de remplacer raisonnablement les pertes, pas de forcer plusieurs litres."],
     ],
-    "Après une heure de course par temps chaud, ton poids passe de 70,0 à 69,3 kg : tu as perdu environ 0,7 kg malgré ce que tu as bu. Cette mesure ponctuelle indique que tu transpires beaucoup dans ces conditions et qu’il faut prévoir davantage d’eau la prochaine fois, pas boire cette quantité à chaque séance.",
+    "Après une heure de course par temps chaud, ton poids passe de 70,0 à 69,3 kg : tu as perdu environ 0,7 kg malgré ce que tu as bu. Cette mesure ponctuelle indique que tu transpires beaucoup dans ces conditions et qu’il faut prévoir davantage d’eau la prochaine fois, pas boire cette quantité à chaque séance.",
     "Bois selon ta soif pour les séances ordinaires. Prévois davantage d’eau et éventuellement du sodium pour les efforts longs, chauds ou très transpirants.",
     "Pour ta prochaine séance chaude, note simplement ce que tu bois et si tu termines avec une forte soif. Ajuste progressivement, sans te forcer.",
   ),
   "conseil-seance-sautee": clear(
     "Que faire après avoir raté une séance",
-    "Ne double pas automatiquement le travail : replace la séance ou reprends le programme normalement.",
+    "Ne double pas automatiquement le travail : replace la séance ou reprends le programme normalement.",
     3,
     "Rater une séance ne supprime pas les semaines déjà réalisées. Le problème apparaît surtout quand la culpabilité conduit à abandonner plusieurs jours ou à ajouter une séance punitive trop lourde.",
     [
@@ -1243,12 +1243,12 @@ const CONCRETE_CONTENT: Record<string, AdviceRewrite> = {
         "Si un créneau proche est libre et que cela ne crée pas deux séances difficiles d’affilée, déplace la séance. Sinon, saute-la et continue au prochain jour prévu. Les deux choix sont valables.",
         "Évite de réunir deux séances complètes en une seule. Tu risques surtout d’allonger la fatigue sans récupérer tout le bénéfice manqué."],
       ["Rends le retour précis",
-        "Décide du prochain moment, du lieu et de la version minimale. Une décision comme « mardi à 18 h, 30 minutes à la maison » est plus utile que « je me reprends bientôt ».",
+        "Décide du prochain moment, du lieu et de la version minimale. Une décision comme « mardi à 18 h, 30 minutes à la maison » est plus utile que « je me reprends bientôt ».",
         "Si les séances sautées se répètent, ajuste le programme à ton agenda au lieu de te reprocher ton agenda."],
     ],
-    "Tu rates la séance jambes du mardi. Jeudi est libre et vendredi devait être une séance haut du corps : tu peux placer les jambes jeudi. Si jeudi est impossible, garde la séance du vendredi et reprends simplement le planning. Aucun doublage n’est nécessaire.",
+    "Tu rates la séance jambes du mardi. Jeudi est libre et vendredi devait être une séance haut du corps : tu peux placer les jambes jeudi. Si jeudi est impossible, garde la séance du vendredi et reprends simplement le planning. Aucun doublage n’est nécessaire.",
     "Après une séance ratée, déplace-la seulement si elle s’intègre sans surcharge. Sinon, reprends à la prochaine séance prévue.",
-    "Écris maintenant ta prochaine occasion concrète : jour, heure, lieu et durée minimale.",
+    "Écris maintenant ta prochaine occasion concrète : jour, heure, lieu et durée minimale.",
   ),
   "conseil-debuter-salle": clear(
     "Débuter à la salle sans se sentir perdu",
@@ -1282,13 +1282,13 @@ const CONCRETE_CONTENT: Record<string, AdviceRewrite> = {
     ],
     "Une personne réalise un squat à 100 kg sur une vidéo. Tu ignores son poids, ses dix années de pratique et la profondeur du mouvement. Ton vrai repère est que ton squat est passé de 40 kg pour 8 répétitions à 45 kg pour 9 répétitions avec la même amplitude.",
     "Évalue tes progrès avec tes propres mesures prises dans des conditions similaires. Le résultat isolé d’une autre personne n’est pas une norme.",
-    "Note une amélioration précise des huit dernières semaines : charge, répétitions, technique, énergie ou régularité.",
+    "Note une amélioration précise des huit dernières semaines : charge, répétitions, technique, énergie ou régularité.",
   ),
   "conseil-douleur-gene": clear(
-    "Douleur, gêne et effort : comment les distinguer",
+    "Douleur, gêne et effort : comment les distinguer",
     "Une brûlure musculaire attendue n’est pas la même chose qu’une douleur vive ou inhabituelle.",
     5,
-    "L’entraînement crée des sensations normales : muscles qui chauffent, respiration accélérée et fatigue progressive. Mais tu n’as pas à continuer automatiquement face à n’importe quelle douleur. Savoir s’arrêter fait partie d’une pratique responsable.",
+    "L’entraînement crée des sensations normales : muscles qui chauffent, respiration accélérée et fatigue progressive. Mais tu n’as pas à continuer automatiquement face à n’importe quelle douleur. Savoir s’arrêter fait partie d’une pratique responsable.",
     [
       ["Les sensations souvent attendues",
         "Une brûlure diffuse dans le muscle travaillé, un tremblement léger en fin de série ou un essoufflement qui diminue au repos sont fréquents. Ils doivent rester cohérents avec l’exercice et disparaître progressivement."],
@@ -1298,29 +1298,29 @@ const CONCRETE_CONTENT: Record<string, AdviceRewrite> = {
       ["Quand demander un avis",
         "Une douleur qui persiste, s’aggrave, revient à chaque séance, réveille la nuit ou limite les gestes quotidiens mérite l’avis d’un professionnel de santé. Une application ne peut pas poser de diagnostic."],
     ],
-    "Pendant des fentes, tes quadriceps brûlent progressivement des deux côtés : c’est cohérent avec l’effort. À la répétition suivante, une douleur vive apparaît dans un genou et modifie ta démarche : arrête les fentes. Essaie seulement une variante indolore et consulte si le problème persiste.",
+    "Pendant des fentes, tes quadriceps brûlent progressivement des deux côtés : c’est cohérent avec l’effort. À la répétition suivante, une douleur vive apparaît dans un genou et modifie ta démarche : arrête les fentes. Essaie seulement une variante indolore et consulte si le problème persiste.",
     "Continue face à un effort musculaire contrôlé. Arrête face à une douleur vive, soudaine ou inhabituelle, puis demande un avis si elle persiste ou inquiète.",
-    "Si une sensation te gêne, arrête la série et décris quatre points : endroit, type de douleur, moment d’apparition et évolution au repos.",
+    "Si une sensation te gêne, arrête la série et décris quatre points : endroit, type de douleur, moment d’apparition et évolution au repos.",
   ),
   "conseil-technique-parfaite": clear(
-    "Technique : il n’existe pas une seule forme parfaite",
+    "Technique : il n’existe pas une seule forme parfaite",
     "Une bonne technique respecte des principes de contrôle tout en s’adaptant à ton corps.",
     4,
     "Deux personnes peuvent exécuter correctement le même exercice avec des positions légèrement différentes. La longueur des membres, la mobilité, le matériel et l’objectif changent le mouvement visible.",
     [
       ["Les principes qui comptent",
         "Cherche une position stable, une amplitude que tu contrôles, une trajectoire reproductible et l’absence de douleur inquiétante. La charge doit rester adaptée à cette technique.",
-        "Une consigne générale comme « les pieds exactement droits » n’est pas forcément adaptée à chaque personne. De petites variations peuvent être normales."],
+        "Une consigne générale comme « les pieds exactement droits » n’est pas forcément adaptée à chaque personne. De petites variations peuvent être normales."],
       ["Modifie un détail à la fois",
-        "Filme une série légère de côté ou demande un retour qualifié. Choisis ensuite un seul point : profondeur, stabilité, vitesse ou respiration. Répète avant de corriger autre chose.",
+        "Filme une série légère de côté ou demande un retour qualifié. Choisis ensuite un seul point : profondeur, stabilité, vitesse ou respiration. Répète avant de corriger autre chose.",
         "Si une variante reste inconfortable malgré une charge raisonnable, change la position ou l’exercice. Tu n’as pas à forcer ton corps dans une forme unique."],
     ],
-    "Deux personnes squattent : l’une garde le buste assez vertical, l’autre se penche davantage parce que ses fémurs sont plus longs. Les deux peuvent avoir les pieds stables, les genoux contrôlés et une amplitude adaptée. Copier exactement l’angle de l’autre n’est pas l’objectif.",
+    "Deux personnes squattent : l’une garde le buste assez vertical, l’autre se penche davantage parce que ses fémurs sont plus longs. Les deux peuvent avoir les pieds stables, les genoux contrôlés et une amplitude adaptée. Copier exactement l’angle de l’autre n’est pas l’objectif.",
     "Une technique sûre est stable, contrôlée, reproductible et sans douleur inhabituelle. Elle peut être légèrement différente d’une personne à l’autre.",
     "Filme une série légère d’un seul exercice et choisis un détail concret à améliorer, pas toute ta technique en même temps.",
   ),
   "conseil-echec-musculaire": clear(
-    "Échec musculaire : quand l’utiliser",
+    "Échec musculaire : quand l’utiliser",
     "Aller jusqu’à ne plus pouvoir faire une répétition peut servir, mais ce n’est pas nécessaire sur toutes les séries.",
     4,
     "L’échec musculaire arrive quand tu ne peux plus terminer une répétition correcte malgré un effort maximal. S’en approcher suffit généralement à rendre une série stimulante. Aller systématiquement jusqu’au blocage ajoute souvent plus de fatigue.",
@@ -1354,13 +1354,13 @@ const CONCRETE_CONTENT: Record<string, AdviceRewrite> = {
     "Observe tes quatre dernières semaines et entoure les deux créneaux qui ont été disponibles le plus souvent.",
   ),
   "conseil-plateau": clear(
-    "Plateau : quoi vérifier avant de changer de programme",
+    "Plateau : quoi vérifier avant de changer de programme",
     "Confirme d’abord que tu stagnes, puis modifie une seule cause probable.",
     5,
     "Une ou deux séances difficiles ne constituent pas un plateau. Les performances bougent avec le sommeil, le stress et l’alimentation. On parle plutôt de stagnation quand plusieurs séances comparables n’apportent plus d’amélioration.",
     [
       ["Vérifie tes données",
-        "Compare au moins trois ou quatre séances : mêmes exercices, amplitude, charge et temps de repos. Regarde aussi si la technique s’est améliorée. Sans notes, une impression de stagnation peut être trompeuse."],
+        "Compare au moins trois ou quatre séances : mêmes exercices, amplitude, charge et temps de repos. Regarde aussi si la technique s’est améliorée. Sans notes, une impression de stagnation peut être trompeuse."],
       ["Cherche la cause la plus probable",
         "Si tu termines toujours avec beaucoup de marge, l’effort est peut-être trop faible. Si les performances baissent et que tu es épuisé, le volume peut être trop élevé. Vérifie aussi le sommeil, les calories, les protéines et la régularité."],
       ["Teste un seul changement",
@@ -1371,7 +1371,7 @@ const CONCRETE_CONTENT: Record<string, AdviceRewrite> = {
     "Écris une cause probable de ton plateau et le plus petit ajustement permettant de la tester.",
   ),
   "conseil-deload": clear(
-    "Deload : quand et comment alléger une semaine",
+    "Deload : quand et comment alléger une semaine",
     "Réduis temporairement le travail si la fatigue s’accumule et que les performances baissent.",
     4,
     "Un deload est une courte période où tu gardes les mouvements mais réduis la difficulté. Il peut être utile après plusieurs semaines exigeantes, surtout si plusieurs signes de fatigue apparaissent ensemble.",
@@ -1388,24 +1388,24 @@ const CONCRETE_CONTENT: Record<string, AdviceRewrite> = {
     "Compare tes performances, ton sommeil et tes douleurs des deux dernières semaines. Si plusieurs se dégradent, planifie une semaine allégée.",
   ),
   "conseil-volume-frequence": clear(
-    "Volume et fréquence : combien de séries par semaine",
+    "Volume et fréquence : combien de séries par semaine",
     "Compte d’abord les séries difficiles par muscle, puis répartis-les selon tes jours disponibles.",
     5,
     "Le volume correspond ici au nombre de séries suffisamment exigeantes réalisées pour un groupe musculaire. La fréquence indique combien de séances répartissent ce travail dans la semaine.",
     [
       ["Commence avec une dose modérée",
         "Il n’existe pas un nombre parfait pour tous. Un débutant peut progresser avec environ 6 à 10 séries hebdomadaires par grand groupe musculaire. Une personne avancée peut avoir besoin de davantage, mais uniquement si elle récupère.",
-        "Les séries d’exercices composés comptent pour plusieurs muscles : un développé travaille notamment les pectoraux et les triceps."],
+        "Les séries d’exercices composés comptent pour plusieurs muscles : un développé travaille notamment les pectoraux et les triceps."],
       ["Répartis quand la qualité baisse",
         "Faire 12 séries de jambes le même jour peut rendre les dernières très faibles. Les répartir sur deux séances de 6 séries permet souvent de mieux les exécuter.",
-        "La fréquence n’est pas magique : deux séances ne sont meilleures que si elles aident à réaliser et récupérer le volume."],
+        "La fréquence n’est pas magique : deux séances ne sont meilleures que si elles aident à réaliser et récupérer le volume."],
     ],
     "Tu fais le lundi 4 séries de squat et 3 de fentes, puis le jeudi 3 séries de presse. Cela représente environ 10 séries exigeantes pour les cuisses réparties sur deux jours. Avant d’ajouter du travail, vérifie que tes répétitions progressent et que tu récupères.",
     "Commence autour de 6 à 10 séries difficiles par grand muscle et par semaine, puis ajuste selon la progression et la récupération.",
     "Compte cette semaine les séries difficiles d’un seul groupe musculaire. N’ajoute rien avant de connaître ce total.",
   ),
   "conseil-fullbody-split": clear(
-    "Full body ou split : comment choisir",
+    "Full body ou split : comment choisir",
     "Les deux formats fonctionnent si le volume, l’effort et la régularité sont comparables.",
     4,
     "Un programme full body entraîne plusieurs grandes zones à chaque séance. Un split répartit davantage les muscles selon les jours. Le nom du format ne détermine pas à lui seul les résultats.",
@@ -1415,9 +1415,9 @@ const CONCRETE_CONTENT: Record<string, AdviceRewrite> = {
         "Si tu rates souvent une journée, un split très fragmenté peut laisser un muscle sans travail pendant longtemps."],
       ["Vérifie la qualité des séances",
         "Le full body peut devenir long si tu ajoutes trop d’exercices. Le split peut créer beaucoup de fatigue locale en une seule séance. Choisis le format qui te permet de garder des séries propres et une durée réaliste.",
-        "Le plaisir compte aussi : un format que tu apprécies sera plus souvent exécuté."],
+        "Le plaisir compte aussi : un format que tu apprécies sera plus souvent exécuté."],
     ],
-    "Tu peux t’entraîner lundi, mercredi et samedi : trois full body donnent trois occasions de travailler chaque mouvement. Si tu préfères quatre jours courts, un haut du corps lundi/jeudi et un bas du corps mardi/samedi répartit le travail sans séances interminables.",
+    "Tu peux t’entraîner lundi, mercredi et samedi : trois full body donnent trois occasions de travailler chaque mouvement. Si tu préfères quatre jours courts, un haut du corps lundi/jeudi et un bas du corps mardi/samedi répartit le travail sans séances interminables.",
     "Avec 2 ou 3 jours, commence par du full body. Avec 4 jours, full body ou haut/bas fonctionnent. Choisis ensuite selon la durée et tes préférences.",
     "Choisis ton format d’après le nombre de jours que tu peux tenir pendant huit semaines normales.",
   ),
@@ -1428,7 +1428,7 @@ const CONCRETE_CONTENT: Record<string, AdviceRewrite> = {
     "La perte de gras demande généralement de consommer un peu moins d’énergie que ce que le corps dépense sur la durée. Réduire brutalement les aliments peut faire baisser le poids vite, mais augmente souvent la faim, la fatigue et le risque d’abandon.",
     [
       ["Crée un déficit supportable",
-        "Commence par une ou deux modifications : réduire les boissons caloriques, ajuster une portion très dense ou ajouter des légumes et des aliments rassasiants. Une perte moyenne lente est souvent plus facile à maintenir.",
+        "Commence par une ou deux modifications : réduire les boissons caloriques, ajuster une portion très dense ou ajouter des légumes et des aliments rassasiants. Une perte moyenne lente est souvent plus facile à maintenir.",
         "Le poids varie chaque jour avec l’eau, le sel et la digestion. Observe une moyenne sur plusieurs semaines."],
       ["Protège le muscle et l’énergie",
         "Garde une alimentation suffisamment protéinée et continue la musculation. Évite de multiplier en même temps un gros déficit, beaucoup de cardio et un volume élevé de musculation.",
@@ -1439,33 +1439,33 @@ const CONCRETE_CONTENT: Record<string, AdviceRewrite> = {
     "Choisis un seul changement alimentaire réaliste pour les deux prochaines semaines et laisse le reste stable.",
   ),
   "conseil-creatine": clear(
-    "Créatine : effets, dose et précautions",
-    "La créatine monohydrate est la forme la mieux étudiée ; 3 à 5 g par jour suffisent généralement.",
+    "Créatine : effets, dose et précautions",
+    "La créatine monohydrate est la forme la mieux étudiée ; 3 à 5 g par jour suffisent généralement.",
     4,
     "La créatine aide les muscles à régénérer rapidement de l’énergie lors d’efforts courts et intenses. Elle peut améliorer légèrement la force, le nombre de répétitions et, avec l’entraînement, la prise de masse musculaire.",
     [
       ["Comment la prendre simplement",
-        "Choisis de la créatine monohydrate. Une dose quotidienne de 3 à 5 g fonctionne pour la plupart des adultes. L’heure importe peu ; la régularité compte davantage. Une phase de charge peut saturer plus vite les muscles mais n’est pas obligatoire.",
+        "Choisis de la créatine monohydrate. Une dose quotidienne de 3 à 5 g fonctionne pour la plupart des adultes. L’heure importe peu ; la régularité compte davantage. Une phase de charge peut saturer plus vite les muscles mais n’est pas obligatoire.",
         "Tu peux la mélanger à de l’eau ou à un repas. Les versions plus coûteuses ne montrent pas clairement un meilleur effet."],
       ["Ce qu’il faut savoir",
         "Une hausse de poids de un à deux kilos peut apparaître au début à cause de l’eau stockée dans les muscles. Ce n’est pas une prise de gras. De légers troubles digestifs peuvent survenir avec une grosse dose prise d’un coup.",
         "En cas de maladie rénale, grossesse, traitement ou doute médical, demande un avis professionnel avant d’en prendre."],
     ],
-    "Tu achètes un sachet indiquant uniquement « créatine monohydrate ». Tu prends 3 g chaque jour avec le déjeuner. Après deux semaines, la balance monte de 0,8 kg sans changement visible de gras : cette variation peut venir de l’eau musculaire et n’impose pas d’arrêter.",
+    "Tu achètes un sachet indiquant uniquement « créatine monohydrate ». Tu prends 3 g chaque jour avec le déjeuner. Après deux semaines, la balance monte de 0,8 kg sans changement visible de gras : cette variation peut venir de l’eau musculaire et n’impose pas d’arrêter.",
     "Si tu choisis la créatine, prends 3 à 5 g de monohydrate chaque jour. La phase de charge et les formes coûteuses ne sont pas nécessaires.",
-    "Avant d’acheter, vérifie la mention « créatine monohydrate », le prix par dose et l’absence de mélange inutile.",
+    "Avant d’acheter, vérifie la mention « créatine monohydrate », le prix par dose et l’absence de mélange inutile.",
   ),
   "conseil-cycle-menstruel": clear(
-    "Cycle menstruel : faut-il adapter ses séances ?",
+    "Cycle menstruel : faut-il adapter ses séances ?",
     "Adapte surtout selon tes symptômes personnels, pas selon une règle automatique liée au jour du cycle.",
     5,
-    "Les recherches trouvent en moyenne des effets faibles et très variables du cycle sur la performance. Certaines personnes ne remarquent presque rien ; d’autres ont des douleurs, une fatigue ou des saignements qui modifient réellement une séance.",
+    "Les recherches trouvent en moyenne des effets faibles et très variables du cycle sur la performance. Certaines personnes ne remarquent presque rien ; d’autres ont des douleurs, une fatigue ou des saignements qui modifient réellement une séance.",
     [
       ["Évite les calendriers rigides",
         "Une application ne peut pas conclure que tu dois faire du lourd à une phase et arrêter à une autre. Les cycles varient entre personnes et d’un mois à l’autre. Les contraceptifs changent aussi le contexte.",
         "Si tu te sens bien, tu peux suivre la séance prévue. Il n’existe pas d’interdiction générale."],
       ["Utilise tes propres observations",
-        "Pendant deux ou trois cycles, note les symptômes, l’énergie et la performance. Si une tendance claire apparaît, prépare une version adaptée : moins de séries, charge plus légère, pauses plus longues ou activité douce.",
+        "Pendant deux ou trois cycles, note les symptômes, l’énergie et la performance. Si une tendance claire apparaît, prépare une version adaptée : moins de séries, charge plus légère, pauses plus longues ou activité douce.",
         "Des douleurs très fortes, un malaise ou des saignements anormalement abondants méritent un avis médical."],
     ],
     "Tu constates pendant trois cycles que le premier jour des règles s’accompagne de crampes fortes et d’une baisse d’énergie. Tu gardes le même créneau mais remplaces les squats lourds par des exercices stables et retires une série. Les autres jours, tu suis le programme normal.",
@@ -1481,7 +1481,7 @@ const CONCRETE_CONTENT: Record<string, AdviceRewrite> = {
       ["Décide après l’échauffement",
         "Commence avec des charges légères. Si les sensations deviennent normales, suis le programme. Si chaque charge reste anormalement lourde, choisis une version réduite au lieu de forcer le plan exact."],
       ["Prépare trois versions",
-        "Version normale : toute la séance. Version allégée : mêmes exercices avec 10 % de charge ou un tiers de séries en moins. Version courte : deux exercices prioritaires, puis fin.",
+        "Version normale : toute la séance. Version allégée : mêmes exercices avec 10 % de charge ou un tiers de séries en moins. Version courte : deux exercices prioritaires, puis fin.",
         "Si tu es malade, étourdi, en dette de sommeil importante ou émotionnellement dépassé, le repos peut être le meilleur choix. Bouger ne doit pas devenir une obligation supplémentaire."],
     ],
     "Tu devais faire quatre exercices de 4 séries après une journée très stressante. L’échauffement paraît lourd. Tu gardes les deux exercices principaux, fais 3 séries au lieu de 4 avec davantage de marge, puis rentres. Tu as maintenu la pratique sans exiger une performance normale dans une journée anormale.",

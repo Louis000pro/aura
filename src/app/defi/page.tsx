@@ -245,7 +245,7 @@ export default function DefiPage() {
           {lien && (
             <>
               <button
-                onClick={() => partager(lien, "Rejoins mon relais sur Vaiiya", "Quatre jours sur sept, chacun son tour. On y va ?")}
+                onClick={() => partager(lien, "Rejoins mon relais sur Vaiiya", "Quatre jours sur sept, chacun son tour. On y va ?")}
                 className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl px-5 py-4 text-[16px] font-semibold text-white transition-transform active:scale-[.98]"
                 style={{ background: "linear-gradient(135deg, #8B5CF6, #C13BC1)" }}
               >

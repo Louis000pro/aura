@@ -58,7 +58,7 @@ export const ANNOUNCEMENTS: Announcement[] = [
       {
         emoji: "🥗",
         title: "La nutrition, repensée en entier",
-        text: "« On mange où ? », 78 recettes, ton assiette en photo, la carte du resto.",
+        text: "« On mange où ? », 78 recettes, ton assiette en photo, la carte du resto.",
       },
       {
         emoji: "✨",
@@ -81,12 +81,12 @@ export const ANNOUNCEMENTS: Announcement[] = [
     id: "2026-06-21-maj-ia-planning",
     date: "2026-06-21",
     title: "La première mise à jour de Vaiiya 💜",
-    intro: "Merci d’être là. Voici tout ce qui change aujourd’hui :",
+    intro: "Merci d’être là. Voici tout ce qui change aujourd’hui :",
     items: [
       {
         emoji: "🤖",
         title: "Un assistant IA partout",
-        text: "Appuie sur l’orbe en bas de l’écran : il connaît tout le site, te guide, et peut même créer ou déplacer tes séances. Il retient tes objectifs, tes blessures et tes préférences.",
+        text: "Appuie sur l’orbe en bas de l’écran : il connaît tout le site, te guide, et peut même créer ou déplacer tes séances. Il retient tes objectifs, tes blessures et tes préférences.",
       },
       {
         emoji: "🗓️",
@@ -96,7 +96,7 @@ export const ANNOUNCEMENTS: Announcement[] = [
       {
         emoji: "✨",
         title: "Nouvelle orbe d’assistant",
-        text: "Un bouton central élégant pour parler à ton coach à tout moment : appui pour écrire, maintien pour parler.",
+        text: "Un bouton central élégant pour parler à ton coach à tout moment : appui pour écrire, maintien pour parler.",
       },
       {
         emoji: "🏋️",

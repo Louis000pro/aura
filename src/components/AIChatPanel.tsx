@@ -11,7 +11,7 @@ export const initialChatMessages: Message[] = [
   { id: 1, from: "ai", text: "Bonjour. Dis-moi ce sur quoi tu veux qu’on avance.", time: "" },
 ];
 
-const suggestions = ["Ma séance du jour", "J’ai 30 minutes", "Je mange quoi ce midi ?", "J’ai mal dormi", "Ma semaine"];
+const suggestions = ["Ma séance du jour", "J’ai 30 minutes", "Je mange quoi ce midi ?", "J’ai mal dormi", "Ma semaine"];
 
 /* ─── Shared chat UI ─── */
 function ChatUI({

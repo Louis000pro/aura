@@ -66,7 +66,7 @@ export default function AiMemoryManager({ onClose }: { onClose: () => void }) {
 
   const clearAll = async () => {
     if (!user?.id || memories.length === 0) return;
-    if (!window.confirm("Effacer tout ce que ton Guide retient sur toi ? Cette action est définitive.")) return;
+    if (!window.confirm("Effacer tout ce que ton Guide retient sur toi ? Cette action est définitive.")) return;
     setClearing(true);
     const supabase = createClient();
     await supabase.from("ai_memories").delete().eq("user_id", user.id);

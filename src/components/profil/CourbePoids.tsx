@@ -220,7 +220,7 @@ export default function CourbePoids({ userId, onPeser }: {
         <span className="block text-[12px] mt-2 leading-relaxed" style={{ color: "var(--text-3)" }}>
           {pesees.length === 1
             ? "Une seule pesée pour l’instant. À la deuxième, la courbe commence."
-            : "Pèse-toi une fois, puis une autre : la courbe part de là."}
+            : "Pèse-toi une fois, puis une autre : la courbe part de là."}
           <b className="block mt-1.5 text-[12.5px] font-bold" style={{ color: "var(--exp-encre)" }}>
             Me peser
           </b>

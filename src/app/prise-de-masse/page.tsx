@@ -8,14 +8,14 @@ import MarketingShell from "@/components/seo/MarketingShell";
  * déclenche à la demande. Voir `docs/positionnement-public-vaiiya.md`, §5.
  */
 export const metadata: Metadata = {
-  title: "Programme prise de masse : prendre du muscle",
+  title: "Programme prise de masse : prendre du muscle",
   description:
-    "Programme de prise de masse : entraînement en surcharge progressive, surplus calorique et apport en protéines. Vaiiya compose tes séances et suit tes repas au quotidien.",
+    "Programme de prise de masse : entraînement en surcharge progressive, surplus calorique et apport en protéines. Vaiiya compose tes séances et suit tes repas au quotidien.",
   alternates: { canonical: "https://vaiiya.fr/prise-de-masse" },
   openGraph: {
     title: "Programme prise de masse · Vaiiya",
     description:
-      "Prends du muscle : des séances composées avec toi, des calories et des protéines suivies.",
+      "Prends du muscle : des séances composées avec toi, des calories et des protéines suivies.",
     url: "https://vaiiya.fr/prise-de-masse",
     images: ["/og-image.png"],
   },
@@ -24,7 +24,7 @@ export const metadata: Metadata = {
 export default function PriseDeMassePage() {
   return (
     <MarketingShell>
-      <h1>Programme prise de masse : prendre du muscle efficacement</h1>
+      <h1>Programme prise de masse : prendre du muscle efficacement</h1>
       <p className="lead">
         La <strong>prise de masse</strong>{" "}repose sur trois piliers : un entraînement de musculation en
         surcharge progressive, un léger surplus calorique et un apport suffisant en protéines. Vaiiya compose
@@ -53,9 +53,9 @@ export default function PriseDeMassePage() {
 
       <h2>Exemple de répartition hebdomadaire</h2>
       <ul>
-        <li><strong>Débutant :</strong> 3 séances full body par semaine.</li>
-        <li><strong>Intermédiaire :</strong> split haut / bas sur 4 séances.</li>
-        <li><strong>Confirmé :</strong> push / pull / legs sur 5 à 6 séances.</li>
+        <li><strong>Débutant :</strong> 3 séances full body par semaine.</li>
+        <li><strong>Intermédiaire :</strong> split haut / bas sur 4 séances.</li>
+        <li><strong>Confirmé :</strong> push / pull / legs sur 5 à 6 séances.</li>
       </ul>
       <p>
         Pas de salle&nbsp;? La <Link href="/musculation-maison">musculation à la maison</Link> permet aussi de

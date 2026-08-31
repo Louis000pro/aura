@@ -214,7 +214,7 @@ export default function PopupNouveautes() {
                     <div className={styles.legende}>78 recettes, en photo</div>
                   </div>
                   <p className={styles.txt}>
-                    Tout part d&apos;une question : <b>on mange où ?</b> À la maison, au resto ou sur le
+                    Tout part d&apos;une question : <b>on mange où ?</b> À la maison, au resto ou sur le
                     pouce. L&apos;écran s&apos;adapte à ta réponse au lieu de te dicter un menu.
                   </p>
                   <p className={styles.txt}>
@@ -336,7 +336,7 @@ export default function PopupNouveautes() {
                       <b>Ça continue de bouger.</b> Des maintenances, des ralentissements ou des coupures
                       peuvent arriver sur n&apos;importe quelle partie de l&apos;app.
                     </li>
-                    <li>Un souci, une idée ? <b>bonjour@vaiiya.fr</b></li>
+                    <li>Un souci, une idée ? <b>bonjour@vaiiya.fr</b></li>
                   </ul>
                 </div>
               </div>

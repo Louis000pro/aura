@@ -53,7 +53,7 @@ export const WAVE_4_EXERCISES: Record<string, Exercise[]> = {
   "cardio-endurance": [
     {
       name: "Rameur · mise en route", sets: 1, reps: "5 min", rest: 20, auto: 300,
-      tip: "Commence souple : pousse avec les jambes, puis accompagne avec les bras.",
+      tip: "Commence souple : pousse avec les jambes, puis accompagne avec les bras.",
       benefit: "Élève progressivement la température du corps avant le bloc principal.",
       muscles: ["Cardio", "Dos", "Jambes"],
     },
@@ -152,7 +152,7 @@ export const WAVE_4_EXERCISES: Record<string, Exercise[]> = {
   "pyramide-cardio": [
     {
       name: "Jumping jacks", sets: 2, reps: "20 sec", rest: 15, auto: 20,
-      tip: "Commence fluide : cette première marche doit te laisser de la marge.",
+      tip: "Commence fluide : cette première marche doit te laisser de la marge.",
       benefit: "Lance la montée d'intensité avec un geste facile à rythmer.",
       muscles: ["Cardio", "Épaules"],
     },

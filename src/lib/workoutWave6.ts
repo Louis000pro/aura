@@ -43,7 +43,7 @@ export const WAVE_6_EXERCISES: Record<string, Exercise[]> = {
     {
       name: "Dead bug", sets: 2, reps: "6 par côté", rest: 30,
       tip: "Garde le bas du dos au sol quand le bras et la jambe s'éloignent.",
-      benefit: "Pose la base du gainage : résister au mouvement plutôt que crisper tout le corps.",
+      benefit: "Pose la base du gainage : résister au mouvement plutôt que crisper tout le corps.",
       muscles: ["Core"],
     },
   ],

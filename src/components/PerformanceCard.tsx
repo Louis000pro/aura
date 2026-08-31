@@ -116,7 +116,7 @@ export default function PerformanceCard({
   const hero = all[heroIndex] ?? all[0];
   const subItems: { m: typeof all[number]; originalIdx: number }[] =
     shownIndices !== undefined
-      ? shownIndices.filter(i => i !== heroIndex && i < all.length).map(i => ({ m: all[i], originalIdx: i }))
+      ? shownIndices.filter(i => i !== heroIndex && i < all.length).map(i => ({ m: all[i], originalIdx: i }))
       : all.map((m, i) => ({ m, originalIdx: i })).filter(({ originalIdx }) => originalIdx !== heroIndex);
 
   const isSmall = size === "sm";

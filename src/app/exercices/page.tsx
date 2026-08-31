@@ -5,14 +5,14 @@ import CarteExercice from "@/components/exercices/CarteExercice";
 import { fichesPubliees, libelleCategorie, verifierFiches } from "@/lib/exercicesPublics";
 
 export const metadata: Metadata = {
-  title: "Exercices de musculation : la bibliothèque animée",
+  title: "Exercices de musculation : la bibliothèque animée",
   description:
     "Chaque exercice de musculation montré en mouvement, avec les muscles travaillés, la technique et les erreurs à éviter. Fiches claires, sans jargon.",
   alternates: { canonical: "https://vaiiya.fr/exercices" },
   openGraph: {
     title: "Exercices de musculation, montrés en mouvement",
     description:
-      "Les exercices de musculation expliqués et animés : technique, muscles travaillés, erreurs fréquentes.",
+      "Les exercices de musculation expliqués et animés : technique, muscles travaillés, erreurs fréquentes.",
     url: "https://vaiiya.fr/exercices",
     images: ["/og-image.png"],
   },

@@ -603,7 +603,7 @@ export default function MealSituationHero({
               <div className="flex gap-2">
                 <input value={ingInput} onChange={(e) => setIngInput(e.target.value)}
                   onKeyDown={(e) => { if (e.key === "Enter") addIngredients(ingInput); }}
-                  placeholder="Ex : courgettes, feta, œufs…"
+                  placeholder="Ex : courgettes, feta, œufs…"
                   className="flex-1 px-3.5 py-2.5 rounded-xl text-sm outline-none"
                   style={{ background: "rgba(var(--tint-violet-rgb),0.5)", border: "1px solid rgba(var(--violet-mid-rgb),0.5)", color: "var(--text-1)" }} />
                 <motion.button whileTap={{ scale: 0.94 }} onClick={() => addIngredients(ingInput)} disabled={!ingInput.trim()}
@@ -646,7 +646,7 @@ export default function MealSituationHero({
                 }}>
                 <Carrot size={16} strokeWidth={2} /> Trouve-moi un plat
               </motion.button>
-            </>) : restResult ? (<>
+            </>) : restResult ? (<>
               {/* Carte résultat du reste (kcal + macros ajustables) */}
               <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium self-start"
                 style={{ background: "rgba(139,92,246,0.16)", border: "1px solid rgba(139,92,246,0.4)", color: "var(--text-1)" }}>

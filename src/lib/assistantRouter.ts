@@ -50,7 +50,7 @@ const OUTILS = [
     function: {
       name: RIEN,
       description:
-        "Le message n’appelle AUCUNE action dans l’app : c’est une question de connaissance, un avis, une discussion, une confidence, un état ou une douleur, un salut, un remerciement, une réaction courte. C’est le cas le plus fréquent : dans le doute, appelle celui-ci.",
+        "Le message n’appelle AUCUNE action dans l’app : c’est une question de connaissance, un avis, une discussion, une confidence, un état ou une douleur, un salut, un remerciement, une réaction courte. C’est le cas le plus fréquent : dans le doute, appelle celui-ci.",
       parameters: { type: "object", properties: {} },
     },
   },
@@ -112,7 +112,7 @@ export async function deciderAction(messages: Message[]): Promise<AssistantActio
 
     return { ...args, intent: nom } as AssistantAction;
   } catch (err) {
-    console.error("[aiguilleur] échec :", (err as { message?: string })?.message ?? err);
+    console.error("[aiguilleur] échec :", (err as { message?: string })?.message ?? err);
     return null;
   }
 }

@@ -53,7 +53,7 @@ export async function POST(req: Request) {
       lines.push(`Regime/contraintes a respecter STRICTEMENT : ${diet.join(", ")}.`);
     const perso = lines.length
       ? lines.join("\n")
-      : "Aucune preference connue : propose des plats varies, equilibres et grand public.";
+      : "Aucune preference connue : propose des plats varies, equilibres et grand public.";
 
     const typesSpec = mealTypes.map((t) => `"${t}"`).join(", ");
 

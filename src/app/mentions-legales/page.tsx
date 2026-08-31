@@ -47,7 +47,7 @@ export default function MentionsLegalesPage() {
             n&apos;est en vente et aucun paiement n&apos;est encaissé.
           </p>
           <ul className="list-none space-y-1.5 mt-2">
-            <li><strong>Contact :</strong> bonjour@vaiiya.fr</li>
+            <li><strong>Contact :</strong> bonjour@vaiiya.fr</li>
           </ul>
           <p className="text-xs mt-2" style={{ color: "var(--text-3)" }}>
             Conformément à l&apos;article 6 III 2 de la loi du 21 juin 2004 pour la confiance dans
@@ -66,7 +66,7 @@ export default function MentionsLegalesPage() {
         </LegalSection>
 
         <LegalSection title="Hébergement">
-          <p>Le site est hébergé par :</p>
+          <p>Le site est hébergé par :</p>
           <ul className="list-none space-y-1.5 mt-2">
             <li><strong>Vercel Inc.</strong></li>
             <li>340 S Lemon Ave #4133, Walnut, CA 91789, États-Unis</li>

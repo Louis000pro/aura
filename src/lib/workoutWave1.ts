@@ -270,7 +270,7 @@ export const WAVE_1_EXERCISES: Record<string, Exercise[]> = {
     },
     {
       name: "Burpees", sets: 3, reps: "8 reps", rest: 60,
-      tip: "Garde un rythme que tu peux tenir proprement ; le saut final peut rester bas.",
+      tip: "Garde un rythme que tu peux tenir proprement ; le saut final peut rester bas.",
       benefit: "Réunit jambes, poussée et cardio pour conclure la séance.",
       muscles: ["Corps entier", "Cardio"],
     },

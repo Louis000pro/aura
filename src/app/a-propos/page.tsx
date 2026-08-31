@@ -133,7 +133,7 @@ export default function AProposPage() {
       >
         <Image
           src="/marque/marque-noir.png"
-          alt="La marque Vaiiya : deux courbes qui descendent et se rejoignent en un seul point."
+          alt="La marque Vaiiya : deux courbes qui descendent et se rejoignent en un seul point."
           width={128}
           height={112}
           style={{ display: "inline-block", height: "auto", maxWidth: "100%" }}

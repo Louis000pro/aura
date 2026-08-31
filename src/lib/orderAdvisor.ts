@@ -65,7 +65,7 @@ export const GENRE_PROFILE: Record<OrderCategory, GenreProfile> = {
   dessert: {
     cal: 400, protDensity: 0.015,
     title: "Un dessert, en petit plaisir", short: "petit plaisir",
-    vise: "Parfait en complément", saute: "peu de protéines : pas un vrai repas",
+    vise: "Parfait en complément", saute: "peu de protéines : pas un vrai repas",
     article: "Dessert",
   },
 };

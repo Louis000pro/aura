@@ -194,7 +194,7 @@ export default function ConditionsPage() {
             plafonnée.
           </p>
           <p>
-            <strong>Ce qui est interdit :</strong>{" "}accéder au service autrement que par l&apos;application
+            <strong>Ce qui est interdit :</strong>{" "}accéder au service autrement que par l&apos;application
             (script, robot, automatisation), revendre ou redistribuer les réponses de l&apos;IA, partager un
             compte entre plusieurs personnes, ou contourner les limites de quelque manière que ce soit.
           </p>
@@ -260,7 +260,7 @@ export default function ConditionsPage() {
             mois.
           </p>
           <p>
-            <strong>Ce que cette clause ne fait pas :</strong>{" "}elle n&apos;autorise pas à vous facturer un
+            <strong>Ce que cette clause ne fait pas :</strong>{" "}elle n&apos;autorise pas à vous facturer un
             service que vous n&apos;auriez pas. Si une interruption longue nous est imputable, vous obtenez
             sur demande un geste commercial au prorata. Si une fonctionnalité essentielle de
             l&apos;abonnement disparaissait durablement, vous pouvez résilier et être remboursé au prorata.

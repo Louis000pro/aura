@@ -53,7 +53,7 @@ function libelleJour(jours: JourDispo[] | null, ymd: string | null): string {
 const SUGGESTIONS = [
   "Fais-moi une séance jambes",
   "J’ai 30 minutes ce soir",
-  "Je mange quoi ce midi ?",
+  "Je mange quoi ce midi ?",
   "Passe en mode sombre",
 ];
 

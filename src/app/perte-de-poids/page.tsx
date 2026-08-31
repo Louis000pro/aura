@@ -9,14 +9,14 @@ import MarketingShell from "@/components/seo/MarketingShell";
  * automatisme inexistant. Voir `docs/positionnement-public-vaiiya.md`, §5 et §6.
  */
 export const metadata: Metadata = {
-  title: "Perte de poids : programme pour maigrir durablement",
+  title: "Perte de poids : programme pour maigrir durablement",
   description:
-    "Perdre du poids durablement : déficit calorique, musculation et cardio. Vaiiya compose tes séances de sèche, calcule tes calories et suit tes repas au quotidien.",
+    "Perdre du poids durablement : déficit calorique, musculation et cardio. Vaiiya compose tes séances de sèche, calcule tes calories et suit tes repas au quotidien.",
   alternates: { canonical: "https://vaiiya.fr/perte-de-poids" },
   openGraph: {
     title: "Perte de poids et sèche · Vaiiya",
     description:
-      "Maigrir durablement : des séances composées avec toi, des calories calculées et des repas suivis.",
+      "Maigrir durablement : des séances composées avec toi, des calories calculées et des repas suivis.",
     url: "https://vaiiya.fr/perte-de-poids",
     images: ["/og-image.png"],
   },
@@ -25,7 +25,7 @@ export const metadata: Metadata = {
 export default function PerteDePoidsPage() {
   return (
     <MarketingShell>
-      <h1>Perte de poids : maigrir durablement avec sport et nutrition</h1>
+      <h1>Perte de poids : maigrir durablement avec sport et nutrition</h1>
       <p className="lead">
         La <strong>perte de poids</strong>{" "}repose sur un déficit calorique maîtrisé, associé à de la
         musculation pour préserver le muscle et à de l&apos;activité pour augmenter ta dépense. Vaiiya
@@ -33,7 +33,7 @@ export default function PerteDePoidsPage() {
         jours.
       </p>
 
-      <h2>Le principe : le déficit calorique</h2>
+      <h2>Le principe : le déficit calorique</h2>
       <p>
         Pour maigrir, tu dois consommer moins de calories que tu n&apos;en dépenses. Un déficit modéré de{" "}
         <strong>300 à 500 kcal par jour</strong>{" "}vise environ 0,5&nbsp;kg par semaine, un rythme
@@ -41,7 +41,7 @@ export default function PerteDePoidsPage() {
         reprendre vite.
       </p>
 
-      <h2>Pourquoi garder la musculation ?</h2>
+      <h2>Pourquoi garder la musculation ?</h2>
       <p>
         En déficit, la musculation protège ta masse musculaire : tu perds du gras, pas du muscle. Résultat,
         une silhouette plus dessinée et un métabolisme maintenu. Garde des charges sur des exercices

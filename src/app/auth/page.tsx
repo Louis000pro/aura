@@ -610,13 +610,13 @@ export default function AuthPage() {
           </AnimatePresence>
 
           <p className="text-center text-[11px] mt-5 font-light" style={{ color:"var(--text-3)" }}>
-            {mode==="login" ? "Pas encore de compte ? " : "Déjà un compte ? "}
+            {mode==="login" ? "Pas encore de compte ? " : "Déjà un compte ? "}
             <button onClick={() => { setMode(mode==="login"?"signup":"login"); setError(null); }}
               className="font-medium cursor-pointer hover:underline" style={{ color:"var(--text-1)" }}>
               {mode==="login"?"Créer un compte":"Se connecter"}
             </button>
             {mode==="login" && <>{" · "}<button onClick={() => setForgotMode(v=>!v)}
-              className="font-medium cursor-pointer hover:underline" style={{ color:"var(--accent)" }}>Mot de passe oublié ?</button></>}
+              className="font-medium cursor-pointer hover:underline" style={{ color:"var(--accent)" }}>Mot de passe oublié ?</button></>}
           </p>
 
           <p className="text-center text-[10px] mt-4 font-light leading-relaxed" style={{ color:"var(--text-3)" }}>

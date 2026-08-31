@@ -647,7 +647,7 @@ export default function ExerciseAnalyzer() {
               <div className="flex flex-col gap-2.5 mb-5 text-left">
                 {[
                   { e: "📱", t: "Pose le téléphone à la verticale, appuyé (mur, support…)" },
-                  { e: "↔️", t: "Recule à 2-3 m : tout ton corps visible, tête → pieds" },
+                  { e: "↔️", t: "Recule à 2-3 m : tout ton corps visible, tête → pieds" },
                   { e: "💡", t: "Mets-toi dans un endroit bien éclairé" },
                   { e: "🧱", t: "Garde un fond dégagé derrière toi" },
                 ].map((c, i) => (

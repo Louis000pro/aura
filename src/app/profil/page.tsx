@@ -952,10 +952,18 @@ export default function ProfilPage() {
                 className="flex-1 flex flex-col items-center py-4"
                 style={{ cursor: clickable ? "pointer" : "default" }}
               >
-                <span className="text-[24px] font-black leading-none" style={{ color: encre, letterSpacing: "-0.03em" }}>
+                {/* Les trois chiffres du profil. Ils étaient à 24 px en graisse 900,
+                    soit la même présence qu'un titre de section : rien ne disait que
+                    c'était eux qu'on vient regarder ici. Ils grandissent, leur graisse
+                    descend (900 n'existait pas dans les fichiers de la police, le
+                    navigateur le fabriquait) et ils passent en chasse fixe, pour que
+                    la ligne ne se décale pas quand la série passe de 9 à 10. */}
+                <span className="vy-nombre text-[30px] leading-none" style={{ color: encre }}>
                   {value}
                 </span>
-                <span className="text-[11px] font-bold mt-1.5" style={{ color: clickable ? "var(--accent)" : "var(--text-3)" }}>
+                {/* ⚠️ L'encre, pas `--accent` : le violet décoratif tombe à 2,6:1 sur
+                    le blanc, et ce libellé porte une action. */}
+                <span className="text-[12px] font-medium mt-2" style={{ color: clickable ? "var(--exp-encre)" : "var(--text-2)" }}>
                   {label}
                 </span>
               </motion.button>

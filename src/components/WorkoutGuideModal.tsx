@@ -275,7 +275,7 @@ export const exerciseData: Record<string, Exercise[]> = {
 
     // ─── Olympic lifts ───────────────────────────────────────
     { name: "Clean And Jerk",    sets: 2, reps: "5 reps",  rest: 45,
-      tip: "Épaulé-jeté : barre du sol aux épaules, puis jet au-dessus de la tête.",
+      tip: "Épaulé-jeté : barre du sol aux épaules, puis jet au-dessus de la tête.",
       benefit: "Puissance complète, exo olympique.",
       muscles: ["Corps entier"] },
 
@@ -366,7 +366,7 @@ export const exerciseData: Record<string, Exercise[]> = {
       benefit: "Élève rapidement la FC en zone haute. Renforce les fléchisseurs de hanches et améliore la fréquence de foulée, bénéfique pour tous les sports de course.",
       muscles: ["Cardio", "Abdominaux"] },
     { name: "Pompes explosives", sets: 3, reps: "20 sec effort", rest: 0, hiit: true,
-      tip: "Descends lentement, pousse en explosif jusqu’à décoller les mains. Si trop difficile : pompes normales rapides.",
+      tip: "Descends lentement, pousse en explosif jusqu’à décoller les mains. Si trop difficile : pompes normales rapides.",
       benefit: "Développe la puissance du haut du corps tout en maintenant une FC élevée. Améliore la force rapide des pectoraux et triceps pour les sports de contact.",
       muscles: ["Pectoraux", "Triceps"] },
     { name: "Skaters", sets: 3, reps: "20 sec effort", rest: 0, hiit: true,
@@ -375,7 +375,7 @@ export const exerciseData: Record<string, Exercise[]> = {
       muscles: ["Fessiers", "Cardio"] },
     { name: "Sprint sur place", sets: 3, reps: "20 sec effort", rest: 0, hiit: true,
       tip: "Allure maximale, fréquence absolue. C’est le dernier, tout donner.",
-      benefit: "Maximise la fréquence cardiaque pour créer un effet EPOC intense : le corps continue de brûler des calories jusqu’à 24h après la séance.",
+      benefit: "Maximise la fréquence cardiaque pour créer un effet EPOC intense : le corps continue de brûler des calories jusqu’à 24h après la séance.",
       muscles: ["Cardio", "Corps entier"] },
   ],
 
@@ -404,7 +404,7 @@ export const exerciseData: Record<string, Exercise[]> = {
 
   "mobilite": [
     { name: "Cat-Cow", sets: 2, reps: "10 respirations", rest: 30,
-      tip: "Inspiration : creuse le dos, regard vers le haut. Expiration : arrondis le dos, menton vers la poitrine.",
+      tip: "Inspiration : creuse le dos, regard vers le haut. Expiration : arrondis le dos, menton vers la poitrine.",
       benefit: "Lubrifie les disques intervertébraux et améliore la mobilité de toute la colonne. Soulage les raideurs matinales et prépare le dos à l’effort.",
       muscles: ["Colonne vertébrale"] },
     { name: "Hip Circles", sets: 2, reps: "10 par côté", rest: 20,
@@ -424,7 +424,7 @@ export const exerciseData: Record<string, Exercise[]> = {
       benefit: "Améliore la rotation thoracique et ouvre les grands dorsaux. Contre les effets de la posture assise et réduit les douleurs inter-scapulaires.",
       muscles: ["Épaules", "Dos"] },
     { name: "Downward Dog → Cobra", sets: 2, reps: "8 transitions", rest: 30,
-      tip: "Chien tête en bas : talons vers le sol, dos plat. Cobra : hanches au sol, coudes sous les épaules. 3 sec chaque position.",
+      tip: "Chien tête en bas : talons vers le sol, dos plat. Cobra : hanches au sol, coudes sous les épaules. 3 sec chaque position.",
       benefit: "Étire la chaîne postérieure (ischio-jambiers, mollets) et la chaîne antérieure (pectoraux, abdos). Améliore la souplesse globale et réveille le système nerveux.",
       muscles: ["Dos", "Pectoraux"] },
     { name: "Shoulder Opener", sets: 2, reps: "30 sec", rest: 20, auto: 30,
@@ -490,7 +490,7 @@ export const exerciseData: Record<string, Exercise[]> = {
       benefit: "Renforce la portion inférieure des abdominaux et les fléchisseurs de hanche. Améliore la stabilité pelvienne et la force pour les mouvements de kick et de course.",
       muscles: ["Abdominaux"] },
     { name: "Planche latérale", sets: 3, reps: "30 sec par côté", rest: 30, auto: 30,
-      tip: "Corps droit de la tête aux pieds, hanche décollée du sol. Pour faciliter : genou inférieur au sol.",
+      tip: "Corps droit de la tête aux pieds, hanche décollée du sol. Pour faciliter : genou inférieur au sol.",
       benefit: "Renforce les obliques et le carré des lombes pour prévenir les douleurs lombaires latérales. Améliore la stabilité du tronc dans le plan frontal, souvent négligée.",
       muscles: ["Obliques", "Core"] },
     { name: "Dead Bug", sets: 3, reps: "12 reps (6/côté)", rest: 45,
@@ -513,7 +513,7 @@ export const exerciseData: Record<string, Exercise[]> = {
       benefit: "Élève progressivement la température corporelle et lubrifie les articulations. Prépare le système cardiovasculaire et réduit le risque de blessure musculaire.",
       muscles: ["Cardio"] },
     { name: "Course continue Zone 2", sets: 1, reps: "20 min", rest: 60, auto: 1200,
-      tip: "Allure conversationnelle : tu dois pouvoir parler par phrases courtes. FC cible 60-70% de ton max.",
+      tip: "Allure conversationnelle : tu dois pouvoir parler par phrases courtes. FC cible 60-70% de ton max.",
       benefit: "Développe les mitochondries musculaires et améliore l’utilisation des graisses comme carburant. C’est le fondamental de l’endurance aérobie à long terme.",
       muscles: ["Cardio", "Endurance"] },
     { name: "Fractionné (1 min / 2 min récup)", sets: 4, reps: "3 min par répét.", rest: 0, auto: 180,
@@ -544,7 +544,7 @@ export const exerciseData: Record<string, Exercise[]> = {
       benefit: "Épaissit le milieu du dos (rhomboïdes, trapèzes) et équilibre le travail de poussée. Essentiel pour une posture solide et des épaules protégées sur le long terme.",
       muscles: ["Dos", "Biceps"] },
     { name: "Écarté à la poulie vis-à-vis", sets: 3, reps: "12 reps", rest: 60,
-      tip: "Léger buste en avant, coudes à peine fléchis et figés tout le mouvement. Rassemble les poignées devant toi en pensant à « serrer » les pectoraux, puis ouvre lentement en gardant la tension.",
+      tip: "Léger buste en avant, coudes à peine fléchis et figés tout le mouvement. Rassemble les poignées devant toi en pensant à « serrer » les pectoraux, puis ouvre lentement en gardant la tension.",
       benefit: "Isole le pectoral en étirement et en contraction, là où la barre s’arrête. Sculpte la poitrine et renforce la connexion muscle-esprit sur les pectoraux.",
       muscles: ["Pectoraux"] },
     { name: "Élévations latérales poulie", sets: 3, reps: "15 reps", rest: 60,
@@ -555,7 +555,7 @@ export const exerciseData: Record<string, Exercise[]> = {
 
   "recup-active": [
     { name: "Cohérence cardiaque", sets: 1, reps: "3 min", rest: 0, auto: 180,
-      tip: "Assis confortablement, inspire 5 secondes par le nez, expire 5 secondes par la bouche. Aucune tension : laisse le ventre se gonfler à l’inspiration, se vider à l’expiration.",
+      tip: "Assis confortablement, inspire 5 secondes par le nez, expire 5 secondes par la bouche. Aucune tension : laisse le ventre se gonfler à l’inspiration, se vider à l’expiration.",
       benefit: "Active le système nerveux parasympathique et fait redescendre le rythme cardiaque. Amorce la récupération, réduit le cortisol et prépare le corps au relâchement.",
       muscles: ["Respiration"] },
     { name: "Étirement chaîne postérieure", sets: 2, reps: "45 sec", rest: 15, auto: 45,
@@ -579,7 +579,7 @@ export const exerciseData: Record<string, Exercise[]> = {
       benefit: "Détend le droit fémoral et l’avant de la hanche raccourcis par la position assise. Soulage les genoux et rééquilibre la tension autour du bassin.",
       muscles: ["Quadriceps"] },
     { name: "Posture de l’enfant", sets: 1, reps: "90 sec", rest: 0, auto: 90,
-      tip: "Genoux écartés, front au sol, bras tendus loin devant. Laisse tout le poids du haut du corps se déposer. Respiration lente : allonge progressivement l’expiration.",
+      tip: "Genoux écartés, front au sol, bras tendus loin devant. Laisse tout le poids du haut du corps se déposer. Respiration lente : allonge progressivement l’expiration.",
       benefit: "La position de récupération par excellence. Décompresse les lombaires, étire le dos et bascule définitivement le corps en mode parasympathique pour clôturer la séance.",
       muscles: ["Dos", "Hanches"] },
   ],
@@ -602,7 +602,7 @@ export const exerciseData: Record<string, Exercise[]> = {
       benefit: "Cible le bas des abdominaux et apprend à garder le bassin verrouillé. La descente lente maximise la tension et développe une vraie force de gainage.",
       muscles: ["Abdominaux"] },
     { name: "Planche, le record", sets: 1, reps: "Max", rest: 0,
-      tip: "Le défi final : tiens la planche parfaite le plus longtemps possible. Position irréprochable jusqu’à la dernière seconde. Note ton temps, c’est lui que tu battras la prochaine fois.",
+      tip: "Le défi final : tiens la planche parfaite le plus longtemps possible. Position irréprochable jusqu’à la dernière seconde. Note ton temps, c’est lui que tu battras la prochaine fois.",
       benefit: "Un repère concret de ta progression. Mesurer ton gainage maximal te donne un objectif clair à dépasser et transforme chaque séance en défi personnel.",
       muscles: ["Core", "Gainage"] },
   ],
@@ -1374,8 +1374,8 @@ export default function WorkoutGuideModal({
                         {paused
                           ? <Play size={30} strokeWidth={1.5} style={{ color: TUN.lav }} />
                           : prep > 0
-                            ? <motion.span key={prep} initial={{ scale: 1.6, opacity: 0.3 }} animate={{ scale: 1, opacity: 1 }} transition={{ duration: 0.3 }} className="text-6xl font-black tabular-nums" style={{ color: TUN.orange }}>{prep}</motion.span>
-                            : <span className="text-5xl font-black tabular-nums" style={{ color: "#fff" }}>{autoCountdown}</span>}
+                            ? <motion.span key={prep} initial={{ scale: 1.6, opacity: 0.3 }} animate={{ scale: 1, opacity: 1 }} transition={{ duration: 0.3 }} className="text-6xl font-black tabular-nums" style={{ color: TUN.orange, fontFamily: "var(--titrage)" }}>{prep}</motion.span>
+                            : <span className="text-5xl font-black tabular-nums" style={{ color: "#fff", fontFamily: "var(--titrage)" }}>{autoCountdown}</span>}
                       </div>
                     </motion.button>
                     <p className="text-[11px] font-extrabold tracking-[0.2em]" style={{ color: TUN.t2 }}>SÉRIE <b style={{ color: "#fff" }}>{setIdx + 1}</b> / {cur.sets}</p>
@@ -1383,7 +1383,7 @@ export default function WorkoutGuideModal({
                 ) : (
                   <div className="relative z-[2] text-center mt-5">
                     <p className="text-[11px] font-extrabold tracking-[0.2em]" style={{ color: TUN.t2 }}>SÉRIE <b style={{ color: "#fff" }}>{setIdx + 1}</b> / {cur.sets}</p>
-                    <p className="font-black tabular-nums leading-none mt-2" style={{ fontSize: 60, color: "#fff", letterSpacing: "-0.03em" }}>{repsHero}</p>
+                    <p className="font-black tabular-nums leading-none mt-2" style={{ fontSize: 60, color: "#fff", letterSpacing: "-0.03em", fontFamily: "var(--titrage)" }}>{repsHero}</p>
                     {repsSub && <p className="text-[12px] font-medium mt-1" style={{ color: TUN.t3 }}>{repsSub}</p>}
                     <div className="flex gap-2.5 justify-center mt-4">
                       {Array.from({ length: cur.sets }).map((_, i) => {
@@ -1438,7 +1438,7 @@ export default function WorkoutGuideModal({
                     <span className="flex-shrink-0 mt-0.5">
                       {guide ? <VisageGuide guide={guide} etat="explain" size={26} /> : <AssistantSpark px={17} />}
                     </span>
-                    <p className="text-[12px] leading-relaxed" style={{ color: TUN.t2 }}><b style={{ color: TUN.t1 }}>Le geste : </b>{cur.tip}</p>
+                    <p className="text-[12px] leading-relaxed" style={{ color: TUN.t2 }}><b style={{ color: TUN.t1 }}>Le geste : </b>{cur.tip}</p>
                   </div>
                 )}
               </motion.div>
@@ -1465,7 +1465,7 @@ export default function WorkoutGuideModal({
                         ? <Play size={34} strokeWidth={1.5} style={{ color: TUN.orange }} />
                         : <>
                             <span className="text-[10px] font-extrabold tracking-[0.3em]" style={{ color: TUN.orange }}>REPOS</span>
-                            <span className="font-black tabular-nums leading-none" style={{ fontSize: 52, color: "#fff", letterSpacing: "-0.03em" }}>{fmt(restCountdown)}</span>
+                            <span className="font-black tabular-nums leading-none" style={{ fontSize: 52, color: "#fff", letterSpacing: "-0.03em", fontFamily: "var(--titrage)" }}>{fmt(restCountdown)}</span>
                             <span className="text-[11px] font-medium tabular-nums" style={{ color: TUN.t3 }}>sur {fmt(restTotal)}</span>
                           </>}
                     </div>
@@ -1635,7 +1635,7 @@ export default function WorkoutGuideModal({
                   ].map(st => (
                     <div key={st.l} className="rounded-2xl px-3.5 py-3.5 text-left" style={{ background: "rgba(255,255,255,0.05)", border: `1px solid ${TUN.line}` }}>
                       <p className="text-[9px] font-extrabold tracking-[0.18em]" style={{ color: TUN.t3 }}>{st.l}</p>
-                      <p className="font-black tabular-nums mt-1" style={{ fontSize: 21, color: st.c, letterSpacing: "-0.02em" }}>
+                      <p className="font-black tabular-nums mt-1" style={{ fontSize: 21, color: st.c, letterSpacing: "-0.02em", fontFamily: "var(--titrage)" }}>
                         {st.v}<small className="text-[11px] font-bold" style={{ color: TUN.t3, letterSpacing: 0 }}>{st.s}</small>
                       </p>
                     </div>
@@ -1751,7 +1751,7 @@ export default function WorkoutGuideModal({
                             ))}
                           </div>
                           <div className="min-w-0">
-                            <p className="text-[13px] font-bold text-white leading-tight">Tu la gardes ?</p>
+                            <p className="text-[13px] font-bold text-white leading-tight">Tu la gardes ?</p>
                             <p className="text-[10.5px] leading-snug mt-1" style={{ color: TUN.t2 }}>
                               Elle rejoint tes séances, tu pourras la relancer ou la modifier.
                             </p>

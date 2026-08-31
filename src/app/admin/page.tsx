@@ -94,7 +94,7 @@ function Carte({ titre, apres, children }: { titre?: string; apres?: string; chi
 
 function Delta({ valeur, avant, suffixe }: { valeur: number; avant: number; suffixe: string }) {
   const ecart = valeur - avant;
-  const classe = ecart > 0 ? s.deltaHaut : ecart < 0 ? s.deltaBas : s.deltaPlat;
+  const classe = ecart > 0 ? s.deltaHaut : ecart < 0 ? s.deltaBas : s.deltaPlat;
   return (
     <span className={`${s.delta} ${classe}`}>
       {ecart > 0 ? "+" : ""}{ecart} {suffixe}
@@ -272,7 +272,7 @@ export default function AdminPage() {
     const g = stats?.gens ?? [];
     return {
       tous: g.length,
-      actifs: g.filter((c) => c.joursDepuisVisite !== null && c.joursDepuisVisite <= 7).length,
+      actifs: g.filter((c) => c.joursDepuisVisite !== null && c.joursDepuisVisite <= 7).length,
       endormis: g.filter((c) => c.joursDepuisVisite !== null && c.joursDepuisVisite > 7).length,
       jamais: g.filter((c) => c.seances === 0).length,
       premium: g.filter((c) => c.is_premium).length,
@@ -282,7 +282,7 @@ export default function AdminPage() {
 
   const listeFiltree = useMemo(() => {
     let liste = stats?.gens ?? [];
-    if (filtre === "actifs") liste = liste.filter((c) => c.joursDepuisVisite !== null && c.joursDepuisVisite <= 7);
+    if (filtre === "actifs") liste = liste.filter((c) => c.joursDepuisVisite !== null && c.joursDepuisVisite <= 7);
     if (filtre === "endormis") liste = liste.filter((c) => c.joursDepuisVisite !== null && c.joursDepuisVisite > 7);
     if (filtre === "jamais") liste = liste.filter((c) => c.seances === 0);
     if (filtre === "premium") liste = liste.filter((c) => c.is_premium);

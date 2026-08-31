@@ -70,7 +70,7 @@ export default function AvecQui({ moi, onFermer, onFil, onLien }: {
   return (
     <Sheet onFermer={onFermer}>
       <div className="mb-1 flex items-center justify-between">
-        <b className="text-[17px] font-bold" style={{ color: "var(--text-0)" }}>Avec qui ?</b>
+        <b className="text-[17px] font-bold" style={{ color: "var(--text-0)" }}>Avec qui ?</b>
         <button onClick={onFermer} aria-label="Fermer"><X className="h-5 w-5" style={{ color: "var(--text-3)" }} /></button>
       </div>
       {/* Le seuil : c'est ici que les règles se disent, et nulle part

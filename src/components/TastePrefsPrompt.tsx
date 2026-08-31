@@ -157,24 +157,24 @@ export default function TastePrefsPrompt() {
             {/* Contenu scrollable (fondu en bas = indice qu'il y a plus dessous) */}
             <div className="relative flex-1 min-h-0 flex flex-col">
               <div className="flex-1 min-h-0 overflow-y-auto -mx-1 px-1 pb-1" style={{ scrollbarWidth: "thin" }}>
-              <Question label="Tu aimes cuisiner ?">
+              <Question label="Tu aimes cuisiner ?">
                 <Segmented options={Q_COOKING} value={cooking} onSelect={setCooking} />
               </Question>
-              <Question label="Tu as le temps de cuisiner ?">
+              <Question label="Tu as le temps de cuisiner ?">
                 <Segmented options={Q_TIME} value={time} onSelect={setTime} />
               </Question>
-              <Question label="Accès aux ingrédients ?">
+              <Question label="Accès aux ingrédients ?">
                 <Segmented options={Q_INGREDIENTS} value={ingredients} onSelect={setIngredients} />
               </Question>
 
-              <Question label="Ton top 3 des endroits ?">
+              <Question label="Ton top 3 des endroits ?">
                 <p className="text-[11px] -mt-1 mb-1.5" style={{ color: "var(--text-3)" }}>
                   Tape dans l&apos;ordre, pour te conseiller quoi commander.
                 </p>
                 <PlacesTop3Picker value={places} onChange={setPlaces} />
               </Question>
 
-              <Question label="Tes bases préférées ?">
+              <Question label="Tes bases préférées ?">
                 {BASE_GROUPS.map((g) => (
                   <div key={g.group} className="mb-2">
                     <p className="text-[9px] font-semibold tracking-widest uppercase mb-1" style={{ color: "#CBD5E0" }}>{g.group}</p>

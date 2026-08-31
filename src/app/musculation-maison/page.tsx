@@ -11,14 +11,14 @@ import { CHIFFRES_PUBLICS } from "@/lib/chiffresPublics";
  * construit lui-même (voir `docs/positionnement-public-vaiiya.md`, §4).
  */
 export const metadata: Metadata = {
-  title: "Musculation à la maison : poids du corps et haltères",
+  title: "Musculation à la maison : poids du corps et haltères",
   description:
-    "Musculation à la maison : exercices au poids du corps et aux haltères pour progresser sans salle. Vaiiya compose la séance avec ce que tu as, ou tu la construis toi-même. Gratuit.",
+    "Musculation à la maison : exercices au poids du corps et aux haltères pour progresser sans salle. Vaiiya compose la séance avec ce que tu as, ou tu la construis toi-même. Gratuit.",
   alternates: { canonical: "https://vaiiya.fr/musculation-maison" },
   openGraph: {
     title: "Musculation à la maison · Vaiiya",
     description:
-      "Progresse sans salle : des séances au poids du corps ou aux haltères, composées avec toi ou construites par toi.",
+      "Progresse sans salle : des séances au poids du corps ou aux haltères, composées avec toi ou construites par toi.",
     url: "https://vaiiya.fr/musculation-maison",
     images: ["/og-image.png"],
   },
@@ -27,7 +27,7 @@ export const metadata: Metadata = {
 export default function MusculationMaisonPage() {
   return (
     <MarketingShell>
-      <h1>Musculation à la maison : progresser sans salle de sport</h1>
+      <h1>Musculation à la maison : progresser sans salle de sport</h1>
       <p className="lead">
         Pas besoin d&apos;abonnement en salle pour te muscler. Avec le <strong>poids du corps</strong>{" "}et une
         simple paire d&apos;<strong>haltères</strong>, tu peux construire du muscle chez toi. Vaiiya tient

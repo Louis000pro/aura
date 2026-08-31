@@ -61,7 +61,7 @@ export const GUIDE_SECTIONS: GuideSection[] = [
   {
     id: "mobilite",
     title: "Mobilité & étirements",
-    subtitle: "La descente : s'ouvrir, relâcher, respirer",
+    subtitle: "La descente : s'ouvrir, relâcher, respirer",
     items: nomsDe("mobilite"),
   },
 ];

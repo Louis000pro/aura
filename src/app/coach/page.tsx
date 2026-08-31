@@ -90,10 +90,10 @@ function isProfileIncomplete(ctx: UserContext | null): boolean {
    une phrase de quelqu'un. Aucun adjectif accordé : « fatigué » aurait mis tout
    le monde au masculin. */
 const SUGGESTIONS = [
-  "Ma semaine, elle donne quoi ?",
+  "Ma semaine, elle donne quoi ?",
   "Regarde ce que j’ai mangé aujourd’hui",
-  "Je stagne, je fais quoi ?",
-  "Il me reste combien de calories ?",
+  "Je stagne, je fais quoi ?",
+  "Il me reste combien de calories ?",
 ];
 
 /* ─── Unique ID helper ───────────────────────────────────── */

@@ -14,9 +14,9 @@ import { CHIFFRES_PUBLICS } from "@/lib/chiffresPublics";
  * maintenant.
  */
 export const metadata: Metadata = {
-  title: "Nutrition sportive : calories, protéines et repas équilibrés",
+  title: "Nutrition sportive : calories, protéines et repas équilibrés",
   description:
-    "Nutrition sportive : calcul des calories, des protéines, des glucides et des lipides, et repas équilibrés adaptés à tes objectifs. Vaiiya suit tes repas par photo, code-barres ou saisie.",
+    "Nutrition sportive : calcul des calories, des protéines, des glucides et des lipides, et repas équilibrés adaptés à tes objectifs. Vaiiya suit tes repas par photo, code-barres ou saisie.",
   alternates: { canonical: "https://vaiiya.fr/nutrition-sportive" },
   openGraph: {
     title: "Nutrition sportive · Vaiiya",
@@ -30,14 +30,14 @@ export const metadata: Metadata = {
 export default function NutritionSportivePage() {
   return (
     <MarketingShell>
-      <h1>Nutrition sportive : la moitié de tes résultats</h1>
+      <h1>Nutrition sportive : la moitié de tes résultats</h1>
       <p className="lead">
         Quel que soit ton objectif, la <strong>nutrition</strong>{" "}pèse autant que l&apos;entraînement.
         Comprendre tes calories et tes macros (protéines, glucides, lipides) te permet de progresser
         vraiment. Vaiiya calcule tes besoins, puis tient le compte de ce que tu manges réellement.
       </p>
 
-      <h2>Les calories : la base de tout</h2>
+      <h2>Les calories : la base de tout</h2>
       <p>
         Ton corps a un besoin calorique de maintenance. Manger au-dessus favorise la{" "}
         <Link href="/prise-de-masse">prise de masse</Link>, manger en dessous entraîne la{" "}
@@ -60,7 +60,7 @@ export default function NutritionSportivePage() {
         avocat). Pas besoin d&apos;aliments « miracle »&nbsp;: la régularité et l&apos;équilibre font le travail.
       </p>
 
-      <h2>Faut-il des compléments ?</h2>
+      <h2>Faut-il des compléments ?</h2>
       <p>
         Les compléments ne sont qu&apos;un bonus. La whey aide à atteindre ses protéines, la créatine est
         l&apos;une des rares aux effets prouvés sur la force. Mais ils ne remplacent jamais une alimentation

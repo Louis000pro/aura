@@ -942,7 +942,7 @@ function BarcodeScannerModal({ onClose, onAdd }: {
                           value={fallbackName}
                           onChange={e => setFallbackName(e.target.value)}
                           onKeyDown={e => { if (e.key === "Enter" && fallbackName.trim()) estimateByAI(); }}
-                          placeholder="Ex : Yaourt grec Fage 0%, 150g…"
+                          placeholder="Ex : Yaourt grec Fage 0%, 150g…"
                           autoFocus
                           className="flex-1 px-4 py-2.5 rounded-xl text-sm outline-none"
                           style={{ background: "rgba(var(--tint-violet-rgb),0.5)", border: "1px solid rgba(var(--violet-mid-rgb),0.5)", color: "var(--text-1)" }}
@@ -1667,7 +1667,7 @@ function ManualModal({ onClose, onAdd }: {
                 type="text" value={name}
                 onChange={e => { setName(e.target.value); setEstimated(false); setEstimateError(null); }}
                 onKeyDown={e => { if (e.key === "Enter" && name.trim()) estimate(); }}
-                placeholder="Ex : 5 madeleines et un bol de lait…"
+                placeholder="Ex : 5 madeleines et un bol de lait…"
                 autoFocus
                 className="flex-1 px-4 py-2.5 rounded-xl text-sm outline-none"
                 style={{ background: "rgba(var(--tint-violet-rgb),0.5)", border: "1px solid rgba(var(--violet-mid-rgb),0.5)", color: "var(--text-1)" }}

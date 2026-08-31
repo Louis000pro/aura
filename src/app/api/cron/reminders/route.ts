@@ -179,7 +179,7 @@ async function lireProfils(admin: ReturnType<typeof createAdminClient>, ids: str
   const avec = await admin.from("profiles").select("id, pseudo, guide_id").in("id", ids);
   if (!avec.error) return { data: avec.data, guideLisible: true };
 
-  console.warn("[reminders] guide_id illisible, voix commune :", avec.error.message);
+  console.warn("[reminders] guide_id illisible, voix commune :", avec.error.message);
   const sans = await admin.from("profiles").select("id, pseudo").in("id", ids);
   return { data: sans.data, guideLisible: false };
 }
@@ -307,7 +307,7 @@ async function portraits(
      soirs ». Tant que la migration n'est pas passée, mieux vaut aucun rappel
      qu'un rappel quotidien à quelqu'un qui n'a rien demandé. */
   if (journalRes.error) {
-    console.warn("[reminders] notification_rappels illisible, rappels suspendus :", journalRes.error.message);
+    console.warn("[reminders] notification_rappels illisible, rappels suspendus :", journalRes.error.message);
   }
 
   return { carte, presenceFiable: !presenceRes.error, journalFiable: !journalRes.error };
@@ -367,7 +367,7 @@ export async function GET(req: NextRequest) {
     // ne pas l'annoncer du tout.
     if (error) {
       annonceEnvoyable = false;
-      console.warn("[reminders] notification_annonces illisible, annonce suspendue :", error.message);
+      console.warn("[reminders] notification_annonces illisible, annonce suspendue :", error.message);
     }
     for (const r of data ?? []) dejaAnnonce.add(r.user_id as string);
   }

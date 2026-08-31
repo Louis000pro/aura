@@ -529,7 +529,7 @@ function Liste({ convs, moi, activeId, onPrefetch, onActions }: {
         const apercu =
           c.dernier == null                 ? "Dis-lui bonjour 👋"
         : c.dernier.type === "systeme"      ? c.dernier.contenu
-        : c.dernier.type === "image"         ? c.dernier.userId === moi ? "Toi : 📷 Photo" : "📷 Photo"
+        : c.dernier.type === "image"         ? c.dernier.userId === moi ? "Toi : 📷 Photo" : "📷 Photo"
         : c.dernier.userId === moi          ? `Toi : ${c.dernier.contenu}`
         : c.type === "groupe"               ? `${c.membres.find((m) => m.id === c.dernier!.userId)?.pseudo ?? "…"} : ${c.dernier.contenu}`
         :                                     c.dernier.contenu;

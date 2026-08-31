@@ -31,7 +31,7 @@ export const SITE_FEATURES: SiteFeature[] = [
     title: "Accueil",
     route: "/",
     summary:
-      "Tableau de bord du jour : l’orbe IA au centre, les séances et repas recommandés du jour, les stats du jour (calories, pas, sommeil, score, streak).",
+      "Tableau de bord du jour : l’orbe IA au centre, les séances et repas recommandés du jour, les stats du jour (calories, pas, sommeil, score, streak).",
     actions: [
       "voir la séance recommandée du jour",
       "voir les repas recommandés du jour",
@@ -58,7 +58,7 @@ export const SITE_FEATURES: SiteFeature[] = [
     title: "Analyse de posture (caméra)",
     route: "/analyse",
     summary:
-      "Outil d’analyse de mouvement en temps réel via la caméra : compte les répétitions et corrige la posture (squat, pompes, curl biceps, fente, gainage). Tourne sur l’appareil, gratuit et illimité, n’utilise pas le coach IA.",
+      "Outil d’analyse de mouvement en temps réel via la caméra : compte les répétitions et corrige la posture (squat, pompes, curl biceps, fente, gainage). Tourne sur l’appareil, gratuit et illimité, n’utilise pas le coach IA.",
     actions: [
       "lancer l’analyse de posture en temps réel",
       "corriger sa technique sur un exercice",
@@ -80,7 +80,7 @@ export const SITE_FEATURES: SiteFeature[] = [
     title: "Entraînement",
     route: "/progression",
     summary:
-      "L’onglet Entraînement accueille avec la séance du jour (planning piloté par l’IA) : la lancer en un geste, improviser une séance selon son temps et son matériel, choisir dans ses séances (Vaiiya + personnalisées), ou organiser sa semaine.",
+      "L’onglet Entraînement accueille avec la séance du jour (planning piloté par l’IA) : la lancer en un geste, improviser une séance selon son temps et son matériel, choisir dans ses séances (Vaiiya + personnalisées), ou organiser sa semaine.",
     actions: [
       "lancer la séance du jour",
       "improviser une séance (temps + matériel)",
@@ -94,7 +94,7 @@ export const SITE_FEATURES: SiteFeature[] = [
     title: "Nutrition",
     route: "/nutrition",
     summary:
-      "Journal nutritionnel : calendrier des repas, calories et macros, scan de code-barres et estimation des plats.",
+      "Journal nutritionnel : calendrier des repas, calories et macros, scan de code-barres et estimation des plats.",
     actions: [
       "logger / ajouter un repas",
       "scanner un code-barres",
@@ -107,7 +107,7 @@ export const SITE_FEATURES: SiteFeature[] = [
     title: "Profil",
     route: "/profil",
     summary:
-      "Profil de l’utilisateur : ses publications, ses séances, ses objectifs personnels et ses infos.",
+      "Profil de l’utilisateur : ses publications, ses séances, ses objectifs personnels et ses infos.",
     actions: ["voir son profil", "consulter ses publications", "voir ses objectifs"],
     keywords: ["profil", "compte", "mon profil", "mes posts", "mes publications"],
   },
@@ -116,7 +116,7 @@ export const SITE_FEATURES: SiteFeature[] = [
     title: "Paramètres",
     route: "/parametres",
     summary:
-      "Réglages : apparence (thème clair / sombre / auto), objectifs sportifs et nutritionnels, qualité visuelle, confidentialité et compte.",
+      "Réglages : apparence (thème clair / sombre / auto), objectifs sportifs et nutritionnels, qualité visuelle, confidentialité et compte.",
     actions: [
       "changer le thème (clair / sombre / auto)",
       "modifier ses objectifs",
@@ -129,7 +129,7 @@ export const SITE_FEATURES: SiteFeature[] = [
     title: "Vaiiya Premium",
     route: "/premium",
     summary:
-      "Offres d’abonnement : coach IA illimité et fonctionnalités avancées.",
+      "Offres d’abonnement : coach IA illimité et fonctionnalités avancées.",
     actions: ["voir les offres", "passer au plan supérieur"],
     keywords: ["premium", "abonnement", "abonner", "payant", "plan supérieur", "upgrade", "illimité"],
   },

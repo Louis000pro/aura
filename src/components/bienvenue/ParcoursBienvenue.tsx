@@ -337,7 +337,7 @@ export default function ParcoursBienvenue() {
 
   const decouvrir = () => {
     if (revue) {
-      setNoteRevue("En revue, la visite guidée n’est pas lancée : la terminer enregistrerait un réglage sur ton compte.");
+      setNoteRevue("En revue, la visite guidée n’est pas lancée : la terminer enregistrerait un réglage sur ton compte.");
       return;
     }
     router.replace(destination);

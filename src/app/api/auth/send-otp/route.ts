@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
 
     const text =
       "Vaiiya · Code de confirmation\n\n" +
-      "Ton code : " + otp + "\n\n" +
+      "Ton code : " + otp + "\n\n" +
       "Ce code expire dans 10 minutes.\n" +
       "Si tu n’as pas demandé ce code, ignore cet email.";
 

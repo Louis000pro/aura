@@ -40,7 +40,7 @@ export async function POST(req: Request) {
 
     const obj = typeof objective === "string" && objective.trim()
       ? objective.trim()
-      : "Objectif inconnu : privilégie un plat équilibré et un bon apport en protéines.";
+      : "Objectif inconnu : privilégie un plat équilibré et un bon apport en protéines.";
 
     const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 

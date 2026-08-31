@@ -580,7 +580,7 @@ function TunnelPhone() {
             style={{ background: "rgba(255,255,255,0.055)", border: "1px solid rgba(255,255,255,0.08)" }}>
             <span className="flex-shrink-0 mt-0.5"><AssistantSpark px={14} /></span>
             <p className="text-[11.5px] font-light leading-snug" style={{ color: "rgba(255,255,255,0.72)" }}>
-              <span className="font-semibold" style={{ color: "rgba(255,255,255,0.92)" }}>Le geste : </span>
+              <span className="font-semibold" style={{ color: "rgba(255,255,255,0.92)" }}>Le geste : </span>
               Mains à peine derrière les tempes, sans tirer sur la nuque. Expire en montant.
             </p>
           </div>
@@ -602,7 +602,7 @@ function TunnelPhone() {
 const TUNNEL_POINTS = [
   { t: "Le geste est montré", d: "Un personnage rejoue le mouvement en boucle, à hauteur d’écran. Rien à chercher sur internet." },
   { t: "Le compte se fait tout seul", d: "Séries, répétitions et récupération avancent avec toi. Tu poses ton téléphone et tu suis." },
-  { t: "L’étincelle reste à portée", d: "Une question en plein effort, une adaptation à demander : elle est là, dans l’écran." },
+  { t: "L’étincelle reste à portée", d: "Une question en plein effort, une adaptation à demander : elle est là, dans l’écran." },
 ];
 
 function SectionTunnel() {

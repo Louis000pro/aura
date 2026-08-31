@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
 
     const text =
       "Vaiiya · Réinitialisation du mot de passe\n\n" +
-      "Ouvre ce lien pour choisir un nouveau mot de passe :\n" + link + "\n\n" +
+      "Ouvre ce lien pour choisir un nouveau mot de passe :\n" + link + "\n\n" +
       "Si tu n’as pas fait cette demande, ignore cet email.";
 
     const res = await fetch("https://api.resend.com/emails", {

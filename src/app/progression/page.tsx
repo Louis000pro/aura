@@ -789,7 +789,7 @@ function TodayHero({
             <h2 className="text-[27px] leading-tight font-extralight text-white">Repos.</h2>
             <p className="text-[12.5px] font-light mt-1.5 mb-3.5 leading-relaxed" style={{ color: "rgba(255,255,255,0.72)" }}>
               Ton corps construit pendant que tu récupères.
-              {nextLabel && <> Prochaine : <b className="font-bold text-white">{nextLabel}</b>.</>}
+              {nextLabel && <> Prochaine : <b className="font-bold text-white">{nextLabel}</b>.</>}
             </p>
             <motion.button
               whileTap={{ scale: 0.97 }}
@@ -1706,7 +1706,7 @@ function ManageSheet({ session, week, onClose, onEdit, onDelete, onVisibilityCha
         <ChevronLeft size={15} strokeWidth={2.4} style={{ color: "var(--text-2)" }} />
       </motion.button>
       <p className="text-[13.5px] font-bold" style={{ color: "var(--text-1)" }}>
-        {vue === "jours" ? "Quel jour ?" : `Les exercices · ${exos.length}`}
+        {vue === "jours" ? "Quel jour ?" : `Les exercices · ${exos.length}`}
       </p>
     </div>
   );
@@ -3652,10 +3652,10 @@ export default function ProgressionPage() {
 
   /* ── Bifurcation : le libellé vit avec la réalité du jour ── */
   const askLabel =
-    heroState === "done" ? "Encore de l’énergie ?"
-    : heroState === "repos" ? "Envie de bouger quand même ?"
-    : heroState === "setup" ? "Ou directement :"
-    : "Pas ce qui était prévu ?";
+    heroState === "done" ? "Encore de l’énergie ?"
+    : heroState === "repos" ? "Envie de bouger quand même ?"
+    : heroState === "setup" ? "Ou directement :"
+    : "Pas ce qui était prévu ?";
 
   /* Défauts « J'improvise » depuis le lieu connu */
   const lieu = user ? readLieu(user.id) : { location: null, equip: null };

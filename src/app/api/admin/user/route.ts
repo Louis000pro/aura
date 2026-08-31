@@ -60,14 +60,14 @@ export async function POST(req: NextRequest) {
       case "set_certified": {
         const value = Boolean(body.value);
         const { error } = await admin.from("profiles").update({ is_certified: value }).eq("id", targetId);
-        if (error) return NextResponse.json({ error: error.message, hint: "colonne is_certified ?" }, { status: 500 });
+        if (error) return NextResponse.json({ error: error.message, hint: "colonne is_certified ?" }, { status: 500 });
         return NextResponse.json({ ok: true, is_certified: value });
       }
 
       case "set_banned": {
         const value = Boolean(body.value);
         const { error } = await admin.from("profiles").update({ is_banned: value }).eq("id", targetId);
-        if (error) return NextResponse.json({ error: error.message, hint: "colonne is_banned ?" }, { status: 500 });
+        if (error) return NextResponse.json({ error: error.message, hint: "colonne is_banned ?" }, { status: 500 });
         // Bannir = retirer aussi tout son contenu (posts + stories = ses vidéos)
         if (value) {
           await Promise.all([

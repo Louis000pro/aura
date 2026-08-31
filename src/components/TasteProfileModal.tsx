@@ -119,13 +119,13 @@ export default function TasteProfileModal({ onClose, onSaved }: { onClose: () =>
             </motion.div>
           ) : (
             <div className="flex flex-col gap-5 pt-1">
-              <Field label="Tu aimes cuisiner ?">
+              <Field label="Tu aimes cuisiner ?">
                 <Segmented options={Q_COOKING} value={cooking} onSelect={setCooking} />
               </Field>
-              <Field label="Tu as le temps de cuisiner ?">
+              <Field label="Tu as le temps de cuisiner ?">
                 <Segmented options={Q_TIME} value={time} onSelect={setTime} />
               </Field>
-              <Field label="Accès aux ingrédients ?">
+              <Field label="Accès aux ingrédients ?">
                 <Segmented options={Q_INGREDIENTS} value={ingredients} onSelect={setIngredients} />
               </Field>
 

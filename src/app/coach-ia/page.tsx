@@ -13,9 +13,9 @@ import { CHIFFRES_PUBLICS } from "@/lib/chiffresPublics";
  * que la promesse qu'il remplace.
  */
 export const metadata: Metadata = {
-  title: "Coach sportif IA : musculation et nutrition",
+  title: "Coach sportif IA : musculation et nutrition",
   description:
-    "Vaiiya est ton coach sportif IA : il compose tes séances de musculation, suit tes calories et tes macros, et te guide pendant l’effort. Tu peux aussi construire tes séances toi-même. Gratuit pour commencer.",
+    "Vaiiya est ton coach sportif IA : il compose tes séances de musculation, suit tes calories et tes macros, et te guide pendant l’effort. Tu peux aussi construire tes séances toi-même. Gratuit pour commencer.",
   alternates: { canonical: "https://vaiiya.fr/coach-ia" },
   openGraph: {
     title: "Coach sportif IA · Vaiiya",
@@ -29,14 +29,14 @@ export const metadata: Metadata = {
 export default function CoachIaPage() {
   return (
     <MarketingShell>
-      <h1>Coach sportif IA : ton coach musculation &amp; nutrition personnalisé</h1>
+      <h1>Coach sportif IA : ton coach musculation &amp; nutrition personnalisé</h1>
       <p className="lead">
         Vaiiya est un <strong>coach sportif propulsé par l&apos;intelligence artificielle</strong>. Tu lui
         parles normalement, il compose une séance, réorganise ta semaine ou note un repas, et il te montre
         toujours ce qu&apos;il va faire avant de le faire. Rien ne s&apos;enregistre sans que tu valides.
       </p>
 
-      <h2>Qu&apos;est-ce qu&apos;un coach sportif IA ?</h2>
+      <h2>Qu&apos;est-ce qu&apos;un coach sportif IA ?</h2>
       <p>
         Un coach sportif IA tient compte de ta situation (niveau, objectif, matériel disponible, temps que tu
         as cette semaine) pour te proposer un entraînement qui te correspond, tout de suite et sans
@@ -72,7 +72,7 @@ export default function CoachIaPage() {
         consultent librement dans les <Link href="/exercices">fiches d&apos;exercices</Link>.
       </p>
 
-      <h2>Pour qui ?</h2>
+      <h2>Pour qui ?</h2>
       <p>
         Que tu vises la <Link href="/prise-de-masse">prise de masse</Link>, la{" "}
         <Link href="/perte-de-poids">perte de poids</Link>, ou que tu t&apos;entraînes en salle ou à la{" "}
@@ -80,7 +80,7 @@ export default function CoachIaPage() {
         Débutant comme confirmé, tu avances avec une méthode claire plutôt que de naviguer à l&apos;aveugle.
       </p>
 
-      <h2>Combien ça coûte ?</h2>
+      <h2>Combien ça coûte ?</h2>
       <p>
         L&apos;inscription est <strong>gratuite</strong>, sans carte bancaire. Tu obtiens le catalogue de
         séances, la bibliothèque de mouvements, le suivi de tes repas et ta progression sans rien payer. Un

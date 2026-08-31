@@ -60,19 +60,19 @@ export default function ConfidentialitePage() {
         </LegalSection>
 
         <LegalSection title="Données collectées">
-          <p>Dans le cadre de l&apos;utilisation de Vaiiya, nous collectons les catégories de données suivantes :</p>
+          <p>Dans le cadre de l&apos;utilisation de Vaiiya, nous collectons les catégories de données suivantes :</p>
           <ul className="list-disc list-inside space-y-1 mt-2">
-            <li><strong>Données d&apos;identification :</strong> adresse email, pseudo, nom complet, avatar (photo de profil).</li>
-            <li><strong>Données de fitness et de nutrition :</strong> séances d&apos;entraînement, journaux de poids, journaux nutritionnels, statistiques quotidiennes.</li>
-            <li><strong>Contenus partagés :</strong> affiches de performance publiées, relations d&apos;amitié, conversations et messages (texte et photos) échangés dans la messagerie.</li>
-            <li><strong>Échanges avec l&apos;assistant :</strong> vos messages, et les informations que vous lui demandez de retenir.</li>
-            <li><strong>Abonnements aux notifications push :</strong> identifiants techniques permettant l&apos;envoi de notifications.</li>
-            <li><strong>Données d&apos;usage :</strong> informations techniques sur votre utilisation de l&apos;application (interactions, préférences d&apos;affichage).</li>
+            <li><strong>Données d&apos;identification :</strong> adresse email, pseudo, nom complet, avatar (photo de profil).</li>
+            <li><strong>Données de fitness et de nutrition :</strong> séances d&apos;entraînement, journaux de poids, journaux nutritionnels, statistiques quotidiennes.</li>
+            <li><strong>Contenus partagés :</strong> affiches de performance publiées, relations d&apos;amitié, conversations et messages (texte et photos) échangés dans la messagerie.</li>
+            <li><strong>Échanges avec l&apos;assistant :</strong> vos messages, et les informations que vous lui demandez de retenir.</li>
+            <li><strong>Abonnements aux notifications push :</strong> identifiants techniques permettant l&apos;envoi de notifications.</li>
+            <li><strong>Données d&apos;usage :</strong> informations techniques sur votre utilisation de l&apos;application (interactions, préférences d&apos;affichage).</li>
           </ul>
         </LegalSection>
 
         <LegalSection title="Finalités du traitement">
-          <p>Vos données sont traitées pour les finalités suivantes :</p>
+          <p>Vos données sont traitées pour les finalités suivantes :</p>
           <ul className="list-disc list-inside space-y-1 mt-2">
             <li>Fournir et faire fonctionner le service (compte, suivi sportif et nutritionnel).</li>
             <li>Personnaliser le coaching assisté par intelligence artificielle selon votre profil et vos objectifs.</li>
@@ -84,11 +84,11 @@ export default function ConfidentialitePage() {
         </LegalSection>
 
         <LegalSection title="Base légale">
-          <p>Le traitement de vos données repose sur les bases légales suivantes :</p>
+          <p>Le traitement de vos données repose sur les bases légales suivantes :</p>
           <ul className="list-disc list-inside space-y-1 mt-2">
-            <li><strong>Exécution du contrat :</strong> la fourniture du service conformément à nos Conditions Générales d&apos;Utilisation (CGU).</li>
-            <li><strong>Consentement :</strong> l&apos;envoi de notifications (email et push), que vous pouvez retirer à tout moment.</li>
-            <li><strong>Intérêt légitime :</strong> la sécurité de la plateforme et la prévention des abus.</li>
+            <li><strong>Exécution du contrat :</strong> la fourniture du service conformément à nos Conditions Générales d&apos;Utilisation (CGU).</li>
+            <li><strong>Consentement :</strong> l&apos;envoi de notifications (email et push), que vous pouvez retirer à tout moment.</li>
+            <li><strong>Intérêt légitime :</strong> la sécurité de la plateforme et la prévention des abus.</li>
           </ul>
         </LegalSection>
 
@@ -98,12 +98,12 @@ export default function ConfidentialitePage() {
             sens du RGPD) qui peuvent traiter certaines de vos données pour notre compte :
           </p>
           <ul className="list-disc list-inside space-y-1 mt-2">
-            <li><strong>Supabase</strong> (Supabase Inc.) : hébergement de la base de données, authentification et stockage des fichiers.</li>
-            <li><strong>Vercel</strong> (Vercel Inc.) : hébergement de l&apos;application et mesure d&apos;audience anonyme.</li>
+            <li><strong>Supabase</strong> (Supabase Inc.) : hébergement de la base de données, authentification et stockage des fichiers.</li>
+            <li><strong>Vercel</strong> (Vercel Inc.) : hébergement de l&apos;application et mesure d&apos;audience anonyme.</li>
             <li><strong>Resend</strong> : envoi des emails transactionnels.</li>
-            <li><strong>Stripe</strong> (Stripe Inc. et Stripe Payments Europe) : gestion des abonnements et des paiements. Stripe reçoit votre adresse email et vos données de paiement, que nous ne voyons jamais.</li>
-            <li><strong>Mistral AI</strong> (société française) : assistant conversationnel, génération de séances, de recettes et de menus.</li>
-            <li><strong>Groq</strong> (Groq Inc.) : analyse des photos de repas et de cartes de restaurant, estimation nutritionnelle, transcription de la dictée vocale.</li>
+            <li><strong>Stripe</strong> (Stripe Inc. et Stripe Payments Europe) : gestion des abonnements et des paiements. Stripe reçoit votre adresse email et vos données de paiement, que nous ne voyons jamais.</li>
+            <li><strong>Mistral AI</strong> (société française) : assistant conversationnel, génération de séances, de recettes et de menus.</li>
+            <li><strong>Groq</strong> (Groq Inc.) : analyse des photos de repas et de cartes de restaurant, estimation nutritionnelle, transcription de la dictée vocale.</li>
           </ul>
           <p className="mt-2">
             Les contenus que vous soumettez à ces fonctions (message, photo d&apos;assiette, enregistrement
@@ -131,11 +131,11 @@ export default function ConfidentialitePage() {
         </LegalSection>
 
         <LegalSection title="Vos droits (RGPD)">
-          <p>Conformément au Règlement Général sur la Protection des Données, vous disposez des droits suivants :</p>
+          <p>Conformément au Règlement Général sur la Protection des Données, vous disposez des droits suivants :</p>
           <ul className="list-disc list-inside space-y-1 mt-2">
             <li><strong>Droit d&apos;accès</strong> à vos données personnelles.</li>
             <li><strong>Droit de rectification</strong> des données inexactes ou incomplètes.</li>
-            <li><strong>Droit à l&apos;effacement</strong> (« droit à l&apos;oubli »).</li>
+            <li><strong>Droit à l&apos;effacement</strong> (« droit à l&apos;oubli »).</li>
             <li><strong>Droit à la portabilité</strong> de vos données.</li>
             <li><strong>Droit d&apos;opposition</strong> au traitement.</li>
             <li><strong>Droit à la limitation</strong> du traitement.</li>
@@ -170,17 +170,17 @@ export default function ConfidentialitePage() {
             pour les besoins strictement nécessaires au fonctionnement du service :
           </p>
           <ul className="list-disc list-inside space-y-1 mt-2">
-            <li>la préférence de <strong>thème</strong> (clair / sombre) ;</li>
-            <li>l&apos;état de l&apos;<strong>onboarding</strong> (parcours d&apos;accueil) ;</li>
+            <li>la préférence de <strong>thème</strong> (clair / sombre) ;</li>
+            <li>l&apos;état de l&apos;<strong>onboarding</strong> (parcours d&apos;accueil) ;</li>
             <li>le <strong>jeton de session</strong> d&apos;authentification (Supabase Auth).</li>
           </ul>
         </LegalSection>
 
         <LegalSection title="Sécurité">
-          <p>Nous mettons en œuvre des mesures techniques et organisationnelles appropriées pour protéger vos données, notamment :</p>
+          <p>Nous mettons en œuvre des mesures techniques et organisationnelles appropriées pour protéger vos données, notamment :</p>
           <ul className="list-disc list-inside space-y-1 mt-2">
             <li>le <strong>chiffrement des données en transit</strong> (HTTPS / TLS) ;</li>
-            <li>des règles de sécurité au niveau de la base de données (<strong>Row Level Security</strong> de Supabase) ;</li>
+            <li>des règles de sécurité au niveau de la base de données (<strong>Row Level Security</strong> de Supabase) ;</li>
             <li>une authentification sécurisée et un contrôle d&apos;accès aux données.</li>
           </ul>
         </LegalSection>

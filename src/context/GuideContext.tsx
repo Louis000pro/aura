@@ -111,7 +111,7 @@ export function useGuideActif(): ValeurGuide {
   const c = useContext(Ctx);
   if (c) return c;
   if (process.env.NODE_ENV !== "production") {
-    console.warn("[guide] useGuideActif() hors <GuideProvider> : état « inconnu ». Monte le provider dans app/layout.tsx.");
+    console.warn("[guide] useGuideActif() hors <GuideProvider> : état « inconnu ». Monte le provider dans app/layout.tsx.");
   }
   return HORS_PROVIDER;
 }
@@ -191,7 +191,7 @@ export function GuideProvider({ children }: { children: React.ReactNode }) {
       // Impossible via l'app (la contrainte CHECK l'interdit) : valeur
       // écrite à la main en console. On ne la traite pas comme « aucun »,
       // pour ne pas réécrire par-dessus une intention qu'on ne comprend pas.
-      console.warn("[guide] valeur inattendue dans profiles.guide_id :", v);
+      console.warn("[guide] valeur inattendue dans profiles.guide_id :", v);
       setLu({ pour: userId, etat: "inconnu", guide: null });
     })();
   }, [userId, tick]);
@@ -209,7 +209,7 @@ export function GuideProvider({ children }: { children: React.ReactNode }) {
     // disparaît au prochain chargement, sans que personne comprenne
     // pourquoi.
     if (error) {
-      console.warn("[guide] écriture de guide_id impossible :", error.message);
+      console.warn("[guide] écriture de guide_id impossible :", error.message);
       return false;
     }
 

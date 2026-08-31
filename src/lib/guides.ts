@@ -191,7 +191,7 @@ const REPLIQUES = {
   },
   "action.set_theme.auto": {
     commun: "Thème réglé sur automatique, il suivra ton téléphone ✦",
-    nora:   "C’est réglé sur automatique : le thème suivra ton téléphone 🙂",
+    nora:   "C’est réglé sur automatique : le thème suivra ton téléphone 🙂",
     sasha:  "Sur automatique, il suivra ton téléphone 👍",
   },
   "action.defaut": {
@@ -207,19 +207,19 @@ const REPLIQUES = {
      question. Les réponses proposées, elles, restent hors de sa voix
      (voir CHOIX_LIEU / CHOIX_EQUIP plus bas). */
   "question.lieu": {
-    commun: "Avant de te préparer ça, tu t’entraînes où ?",
+    commun: "Avant de te préparer ça, tu t’entraînes où ?",
     nora:   "Avant de te préparer ça, j’ai besoin de savoir où tu t’entraînes.",
-    sasha:  "Tu t’entraînes où ? J’adapte tout de suite.",
+    sasha:  "Tu t’entraînes où ? J’adapte tout de suite.",
   },
   "question.lieu_semaine": {
-    commun: "Tu t’entraînes où cette semaine ?",
+    commun: "Tu t’entraînes où cette semaine ?",
     nora:   "Pour construire ta semaine, dis-moi où tu t’entraînes.",
-    sasha:  "Tu t’entraînes où cette semaine ?",
+    sasha:  "Tu t’entraînes où cette semaine ?",
   },
   "question.equip": {
-    commun: "Tu as des haltères à la maison ?",
-    nora:   "Une dernière chose : tu as des haltères à la maison ?",
-    sasha:  "Des haltères à la maison ?",
+    commun: "Tu as des haltères à la maison ?",
+    nora:   "Une dernière chose : tu as des haltères à la maison ?",
+    sasha:  "Des haltères à la maison ?",
   },
 
   /* ── Les impasses ──
@@ -227,14 +227,14 @@ const REPLIQUES = {
      une demande sans réponse et sans explication, impossible à
      diagnostiquer (« j'ai parlé, il ne s'est rien passé »). */
   "impasse.move_introuvable": {
-    commun: "Je ne trouve pas de séance à déplacer cette semaine 🤔 Dis-moi le jour de départ, par ex. « déplace la séance de jeudi à vendredi ».",
-    nora:   "Je ne trouve pas de séance à déplacer cette semaine 🤔 Dis-moi son jour de départ et je m’en occupe, par ex. « déplace la séance de jeudi à vendredi ».",
-    sasha:  "Aucune séance à déplacer cette semaine 🤔 Donne-moi le jour de départ, par ex. « déplace la séance de jeudi à vendredi ».",
+    commun: "Je ne trouve pas de séance à déplacer cette semaine 🤔 Dis-moi le jour de départ, par ex. « déplace la séance de jeudi à vendredi ».",
+    nora:   "Je ne trouve pas de séance à déplacer cette semaine 🤔 Dis-moi son jour de départ et je m’en occupe, par ex. « déplace la séance de jeudi à vendredi ».",
+    sasha:  "Aucune séance à déplacer cette semaine 🤔 Donne-moi le jour de départ, par ex. « déplace la séance de jeudi à vendredi ».",
   },
   "impasse.move_sans_jour": {
-    commun: "Vers quel jour veux-tu déplacer la séance ? (par ex. « demain », « dans 2 jours » ou « vendredi ») 📅",
-    nora:   "Vers quel jour veux-tu la déplacer ? Un « demain », un « vendredi » ou un « dans 2 jours » me suffit 📅",
-    sasha:  "Vers quel jour ? « demain », « vendredi », « dans 2 jours » 📅",
+    commun: "Vers quel jour veux-tu déplacer la séance ? (par ex. « demain », « dans 2 jours » ou « vendredi ») 📅",
+    nora:   "Vers quel jour veux-tu la déplacer ? Un « demain », un « vendredi » ou un « dans 2 jours » me suffit 📅",
+    sasha:  "Vers quel jour ? « demain », « vendredi », « dans 2 jours » 📅",
   },
   "impasse.move_deja_prevu": {
     commun: (c: ContexteVoix) => `La séance est déjà prévue le ${c.jour ?? ""} 🙂`,
@@ -247,14 +247,14 @@ const REPLIQUES = {
     sasha:  "Plus de jour modifiable cette semaine 🙂 Décale une séance précise, ou redemande-moi lundi.",
   },
   "impasse.library_sans_jour": {
-    commun: "Quel jour veux-tu programmer cette séance ? (par ex. « mardi » ou « demain ») 📅",
-    nora:   "Quel jour veux-tu lui donner ? Un « mardi » ou un « demain » suffit 📅",
-    sasha:  "Quel jour ? « mardi », « demain » 📅",
+    commun: "Quel jour veux-tu programmer cette séance ? (par ex. « mardi » ou « demain ») 📅",
+    nora:   "Quel jour veux-tu lui donner ? Un « mardi » ou un « demain » suffit 📅",
+    sasha:  "Quel jour ? « mardi », « demain » 📅",
   },
   "impasse.library_sans_nom": {
-    commun: "Quelle séance de ta bibliothèque veux-tu programmer ? Donne-moi son nom 🙂",
-    nora:   "Laquelle de tes séances veux-tu programmer ? Donne-moi son nom et je la retrouve 🙂",
-    sasha:  "Laquelle ? Donne-moi son nom 🙂",
+    commun: "Quelle séance de ta bibliothèque veux-tu programmer ? Donne-moi son nom 🙂",
+    nora:   "Laquelle de tes séances veux-tu programmer ? Donne-moi son nom et je la retrouve 🙂",
+    sasha:  "Laquelle ? Donne-moi son nom 🙂",
   },
   "impasse.library_introuvable": {
     commun: (c: ContexteVoix) => `Je ne trouve pas de séance « ${c.titre ?? ""} » dans ta bibliothèque 🤔 Vérifie le nom, ou demande-moi de la créer.`,
@@ -360,9 +360,9 @@ const REPLIQUES = {
     sasha:  "Je suis là. Une question, une séance, ce que tu veux.",
   },
   "retour.jour.c": {
-    commun: "On fait quoi aujourd’hui ?",
-    nora:   "On regarde ta journée ensemble ?",
-    sasha:  "On fait quoi aujourd’hui ?",
+    commun: "On fait quoi aujourd’hui ?",
+    nora:   "On regarde ta journée ensemble ?",
+    sasha:  "On fait quoi aujourd’hui ?",
   },
 
   /* ── Sa mémoire ──
@@ -387,9 +387,9 @@ const REPLIQUES = {
     sasha:  "Tu retires, j’oublie. Et rien ne sort d’ici.",
   },
   "memoire.vide": {
-    commun: "Je n’ai encore rien retenu. Parle-moi normalement et dis-moi ce qui compte : une blessure, ce que tu ne manges pas, tes horaires. Je m’en servirai à chaque fois qu’on se parle.",
-    nora:   "Je n’ai encore rien retenu de toi. Parle-moi normalement et dis-moi ce qui compte : une blessure, ce que tu ne manges pas, tes horaires. Je m’en servirai à chaque fois qu’on se parle.",
-    sasha:  "Rien de retenu pour l’instant. Dis-moi ce qui compte : une blessure, ce que tu ne manges pas, tes horaires. Je m’en sers dès la prochaine fois.",
+    commun: "Je n’ai encore rien retenu. Parle-moi normalement et dis-moi ce qui compte : une blessure, ce que tu ne manges pas, tes horaires. Je m’en servirai à chaque fois qu’on se parle.",
+    nora:   "Je n’ai encore rien retenu de toi. Parle-moi normalement et dis-moi ce qui compte : une blessure, ce que tu ne manges pas, tes horaires. Je m’en servirai à chaque fois qu’on se parle.",
+    sasha:  "Rien de retenu pour l’instant. Dis-moi ce qui compte : une blessure, ce que tu ne manges pas, tes horaires. Je m’en sers dès la prochaine fois.",
   },
 
   /* ── Ce qu'il dit pendant qu'il travaille ──
@@ -565,28 +565,28 @@ const REPLIQUES = {
   },
   "visite.seance": {
     commun: "Le mouvement s’anime à l’écran, le compte à rebours part, le repos s’enchaîne. Tu n’as qu’à suivre. Cent-deux mouvements sont dessinés, pas un seul n’est une photo prise au hasard.",
-    nora:   "Regarde bien : le mouvement s’anime, le compte à rebours part, le repos s’enchaîne tout seul. Tu n’as qu’à suivre, je m’occupe du reste. Cent-deux mouvements sont dessinés un par un.",
+    nora:   "Regarde bien : le mouvement s’anime, le compte à rebours part, le repos s’enchaîne tout seul. Tu n’as qu’à suivre, je m’occupe du reste. Cent-deux mouvements sont dessinés un par un.",
     sasha:  "Le mouvement s’anime, le compte à rebours part, le repos s’enchaîne. Tu suis, je gère le reste. Cent-deux mouvements dessinés un par un.",
   },
   "visite.catalogue": {
     commun: "Sans matériel, à la salle, mobilité, cardio, récupération. Vingt-six mini-cours pour comprendre ce que tu fais. Et si rien ne te va, tu pioches parmi les mouvements animés pour composer la tienne.",
-    nora:   "Sans matériel, à la salle, mobilité, cardio, récupération, plus vingt-six mini-cours pour comprendre ce que tu fais. Et si rien ne te va, dis-le-moi : on compose la tienne à partir des mouvements animés.",
-    sasha:  "Sans matériel, salle, mobilité, cardio, récupération. Vingt-six mini-cours en plus. Rien ne te va ? Dis-le-moi, on compose la tienne.",
+    nora:   "Sans matériel, à la salle, mobilité, cardio, récupération, plus vingt-six mini-cours pour comprendre ce que tu fais. Et si rien ne te va, dis-le-moi : on compose la tienne à partir des mouvements animés.",
+    sasha:  "Sans matériel, salle, mobilité, cardio, récupération. Vingt-six mini-cours en plus. Rien ne te va ? Dis-le-moi, on compose la tienne.",
   },
   "visite.assistant": {
-    commun: "Demande-lui de poser une séance jeudi, de noter ton repas, de refaire ta semaine : elle le prépare dans la foulée. Rien ne s’enregistre tant que tu n’as pas touché la carte.",
-    nora:   "C’est là qu’on se parle. Demande-moi de poser une séance jeudi, de noter ton repas, de refaire ta semaine : je le prépare dans la foulée. Rien ne s’enregistre tant que tu n’as pas touché la carte.",
-    sasha:  "C’est là qu’on se parle. Une séance jeudi, un repas à noter, la semaine à refaire : je prépare, tu valides. Rien ne s’enregistre sans ton clic.",
+    commun: "Demande-lui de poser une séance jeudi, de noter ton repas, de refaire ta semaine : elle le prépare dans la foulée. Rien ne s’enregistre tant que tu n’as pas touché la carte.",
+    nora:   "C’est là qu’on se parle. Demande-moi de poser une séance jeudi, de noter ton repas, de refaire ta semaine : je le prépare dans la foulée. Rien ne s’enregistre tant que tu n’as pas touché la carte.",
+    sasha:  "C’est là qu’on se parle. Une séance jeudi, un repas à noter, la semaine à refaire : je prépare, tu valides. Rien ne s’enregistre sans ton clic.",
   },
   "visite.nutrition": {
-    commun: "Pas de tableau à remplir : on te demande simplement où tu manges. À la maison, au resto, ou un sandwich acheté en chemin. Une photo de ton assiette suffit à estimer le reste.",
-    nora:   "Pas de tableau à remplir : je te demande simplement où tu manges. À la maison, au resto, ou un sandwich acheté en chemin. Une photo de ton assiette me suffit pour estimer le reste.",
-    sasha:  "Pas de tableau à remplir. Je demande juste où tu manges : maison, resto, ou sandwich en chemin. Une photo de l’assiette, j’estime le reste.",
+    commun: "Pas de tableau à remplir : on te demande simplement où tu manges. À la maison, au resto, ou un sandwich acheté en chemin. Une photo de ton assiette suffit à estimer le reste.",
+    nora:   "Pas de tableau à remplir : je te demande simplement où tu manges. À la maison, au resto, ou un sandwich acheté en chemin. Une photo de ton assiette me suffit pour estimer le reste.",
+    sasha:  "Pas de tableau à remplir. Je demande juste où tu manges : maison, resto, ou sandwich en chemin. Une photo de l’assiette, j’estime le reste.",
   },
   "visite.rang": {
-    commun: "Une présence, une séance, un repas : tout se transforme en EXP et fait monter ta gemme. On mesure ta constance, jamais ton corps, et il n’y a aucun classement.",
-    nora:   "Une présence, une séance, un repas : tout se transforme en EXP et fait monter ta gemme. Je compte ta constance, jamais ton corps, et il n’y a aucun classement.",
-    sasha:  "Présence, séance, repas : tout devient de l’EXP et fait monter ta gemme. Je compte ta constance, jamais ton corps. Aucun classement.",
+    commun: "Une présence, une séance, un repas : tout se transforme en EXP et fait monter ta gemme. On mesure ta constance, jamais ton corps, et il n’y a aucun classement.",
+    nora:   "Une présence, une séance, un repas : tout se transforme en EXP et fait monter ta gemme. Je compte ta constance, jamais ton corps, et il n’y a aucun classement.",
+    sasha:  "Présence, séance, repas : tout devient de l’EXP et fait monter ta gemme. Je compte ta constance, jamais ton corps. Aucun classement.",
   },
   "visite.relais": {
     commun: "Invite quelqu’un, un maillon chacun son tour. À chaque séance l’image se dévoile un peu plus, jusqu’à être entière. Aucun score, et on ne nomme jamais celui qui a lâché.",
@@ -595,8 +595,8 @@ const REPLIQUES = {
   },
   "visite.repere": {
     commun: "Ton accueil, tes entraînements, ta nutrition, tes discussions. Et l’étincelle au centre, disponible depuis n’importe quel écran.",
-    nora:   "Ton accueil, tes entraînements, ta nutrition, tes discussions. Et l’étincelle au centre : c’est par là que tu me trouves, depuis n’importe quel écran.",
-    sasha:  "Accueil, entraînements, nutrition, discussions. L’étincelle au centre : c’est par là que tu me trouves, depuis n’importe quel écran.",
+    nora:   "Ton accueil, tes entraînements, ta nutrition, tes discussions. Et l’étincelle au centre : c’est par là que tu me trouves, depuis n’importe quel écran.",
+    sasha:  "Accueil, entraînements, nutrition, discussions. L’étincelle au centre : c’est par là que tu me trouves, depuis n’importe quel écran.",
   },
   "visite.final": {
     commun: "Commence par ce que tu veux. Si tu ne sais pas, touche l’étincelle et dis-lui simplement ce que tu as envie de faire aujourd’hui.",
@@ -625,9 +625,9 @@ const REPLIQUES = {
     sasha:  "Rien ici pour l’instant. Prends une séance courte, je te la déroule.",
   },
   "vide.amis": {
-    commun: "Personne ici pour l’instant. Le relais se joue à deux : on invite quelqu’un, et chacun avance à son tour.",
-    nora:   "Personne ici pour l’instant. Si tu veux quelqu’un à côté de toi, le relais se joue à deux : tu invites, et vous avancez chacun votre tour.",
-    sasha:  "Personne ici pour l’instant. Le relais se joue à deux : tu invites, vous avancez chacun votre tour.",
+    commun: "Personne ici pour l’instant. Le relais se joue à deux : on invite quelqu’un, et chacun avance à son tour.",
+    nora:   "Personne ici pour l’instant. Si tu veux quelqu’un à côté de toi, le relais se joue à deux : tu invites, et vous avancez chacun votre tour.",
+    sasha:  "Personne ici pour l’instant. Le relais se joue à deux : tu invites, vous avancez chacun votre tour.",
   },
   /* Les affiches de perf. Elles se gagnent en TERMINANT une séance, pas en
      publiant quoi que ce soit : la porte est donc la séance, et il n'y en a
@@ -849,7 +849,7 @@ const RAPPELS = {
       }),
       { title: "102 mouvements animés t’attendent",
         body: "Un coup d’oeil suffit pour voir à quoi ressemble une séance." },
-      { title: "On commence par quoi ?",
+      { title: "On commence par quoi ?",
         body: "Choisis une séance, je m’occupe du reste." },
     ],
     nora: [
@@ -859,17 +859,17 @@ const RAPPELS = {
       }),
       { title: "102 mouvements animés t’attendent",
         body: "Tu peux voir comment ils se font avant de te lancer." },
-      { title: "On commence par quoi ?",
+      { title: "On commence par quoi ?",
         body: "Choisis une séance, je m’occupe du déroulé." },
     ],
     sasha: [
       (c) => ({
-        title: c.pseudo ? `On commence, ${c.pseudo} ?` : "On commence ?",
+        title: c.pseudo ? `On commence, ${c.pseudo} ?` : "On commence ?",
         body: "Quinze minutes, sans matériel. Tout est prêt.",
       }),
       { title: "102 mouvements animés t’attendent",
         body: "Ouvre, regarde, choisis." },
-      { title: "On commence par quoi ?",
+      { title: "On commence par quoi ?",
         body: "Tu choisis, je gère le reste." },
     ],
   },
@@ -944,15 +944,15 @@ const RAPPELS = {
   "rappel.generique": {
     commun: [
       { title: "Ta séance t’attend", body: "Elle est prête dans Vaiiya." },
-      { title: "Un créneau aujourd’hui ?", body: "Quinze minutes suffisent pour que ça compte." },
+      { title: "Un créneau aujourd’hui ?", body: "Quinze minutes suffisent pour que ça compte." },
     ],
     nora: [
       { title: "Ta séance t’attend", body: "Elle est prête, il n’y a plus qu’à ouvrir." },
-      { title: "Un créneau aujourd’hui ?", body: "Quinze minutes suffisent pour que ça compte." },
+      { title: "Un créneau aujourd’hui ?", body: "Quinze minutes suffisent pour que ça compte." },
     ],
     sasha: [
       { title: "Ta séance t’attend", body: "Elle est prête." },
-      { title: "Un créneau aujourd’hui ?", body: "Quinze minutes, ça compte déjà." },
+      { title: "Un créneau aujourd’hui ?", body: "Quinze minutes, ça compte déjà." },
     ],
   },
 
@@ -1061,15 +1061,15 @@ const RAPPELS = {
 
   "rappel.repas": {
     commun: [
-      { title: "Et tes repas ?", body: "Séance faite, il ne manque que ce que tu as mangé." },
+      { title: "Et tes repas ?", body: "Séance faite, il ne manque que ce que tu as mangé." },
       { title: "Il manque ta journée d’assiettes", body: "Deux minutes et ton suivi est complet." },
     ],
     nora: [
-      { title: "Et tes repas ?", body: "La séance est faite, il ne manque que ce que tu as mangé." },
+      { title: "Et tes repas ?", body: "La séance est faite, il ne manque que ce que tu as mangé." },
       { title: "Il manque ta journée d’assiettes", body: "Deux minutes, et ton suivi est complet." },
     ],
     sasha: [
-      { title: "Et tes repas ?", body: "Séance faite. Il ne manque que l’assiette." },
+      { title: "Et tes repas ?", body: "Séance faite. Il ne manque que l’assiette." },
       { title: "Il manque ta journée d’assiettes", body: "Deux minutes et c’est complet." },
     ],
   },

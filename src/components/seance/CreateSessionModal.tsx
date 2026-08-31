@@ -404,7 +404,7 @@ export default function CreateSessionModal({
                             <textarea
                               value={iaTexte}
                               onChange={e => setIaTexte(e.target.value)}
-                              placeholder="Décris ta séance : push prise de masse, 45 min, développé couché et épaules…"
+                              placeholder="Décris ta séance : push prise de masse, 45 min, développé couché et épaules…"
                               rows={3}
                               className="w-full px-3.5 py-3 rounded-xl text-[13px] outline-none resize-none"
                               style={{
