@@ -91,6 +91,37 @@
   --pied-lien:  #6B5BA0;               /* 5,49:1 sur #faf8ff */
   --pied-titre: #6B4FD8;               /* 5,34:1 */
   --pied-bas:   #4A5568;               /* 7,14:1 */
+
+  /* ── TROIS OMBRES, ET PAS UNE DE PLUS ──────────────────────────────────
+     Mesuré le 2026-09-01 : 249 ombres dans le produit pour 193 valeurs
+     DISTINCTES. Ce n'était pas un système d'ombres, c'étaient 193 décisions
+     ponctuelles, presque toutes des halos violets décoratifs. Une ombre a une
+     fonction, et il n'y en a que trois :
+       --ombre-pose     : quelque chose qui REPOSE sur la page (un groupe, une
+                          affiche). Très basse, presque un contact.
+       --ombre-flottant : quelque chose qui FLOTTE au-dessus du contenu (une
+                          feuille, une modale, une barre collante).
+       --ombre-action   : le bouton violet qui se soulève. C'est la SEULE ombre
+                          teintée du produit, parce que c'est la seule qui dit
+                          quelque chose : ici, on appuie.
+     ⚠️ En clair les deux premières sont NEUTRES. Une ombre violette sous une
+     carte blanche ne sépare rien, elle décore, et c'est précisément le signe
+     qu'on retire. */
+  --ombre-pose:     0 1px 2px rgba(45, 55, 72, 0.05), 0 8px 20px -14px rgba(45, 55, 72, 0.4);
+  --ombre-flottant: 0 2px 8px rgba(45, 55, 72, 0.05), 0 18px 44px -16px rgba(45, 55, 72, 0.28);
+  --ombre-action:   0 6px 16px -6px rgba(139, 92, 246, 0.5);
+
+  /* ── TROIS RAYONS, PLUS LA PILULE ──────────────────────────────────────
+     `rounded-2xl` (16 px) était posé 318 fois : sur une carte pleine largeur
+     comme sur un bouton de 36 px. Un rayon qui ne dit rien de la taille de la
+     surface, c'est ce qui donne l'impression que tout a le même rang.
+       --r-affiche  : une image, une affiche, un héros.
+       --r-bloc     : un groupe posé sur la page.
+       --r-controle : un bouton, un champ, une pastille carrée.
+     La pilule (999px) reste pour ce qui EST une pilule, et rien d'autre. */
+  --r-affiche: 26px;
+  --r-bloc: 18px;
+  --r-controle: 10px;
 }
 
 [data-theme="dark"] {
@@ -125,6 +156,14 @@
   --pied-lien:  #BAB2DD;               /* 10,50:1 sur #000 */
   --pied-titre: #C3AEFF;               /* 10,82:1 */
   --pied-bas:   #9E98BE;               /*  7,69:1 */
+
+  /* Sur du noir, une ombre claire n'existe pas : les deux ombres neutres
+     repassent en noir franc et gagnent en densité. L'ombre d'action garde sa
+     teinte, c'est elle qui porte le sens. Les rayons ne dépendent pas du
+     thème, ils ne sont pas redéfinis ici. */
+  --ombre-pose:     0 1px 2px rgba(0, 0, 0, 0.5), 0 10px 24px -16px rgba(0, 0, 0, 0.85);
+  --ombre-flottant: 0 2px 8px rgba(0, 0, 0, 0.4), 0 20px 48px -16px rgba(0, 0, 0, 0.75);
+  --ombre-action:   0 6px 16px -6px rgba(139, 92, 246, 0.55);
 }
 
 @layer base {

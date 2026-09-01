@@ -74,7 +74,7 @@ function Toast({ message }: { message: string }) {
         background: "rgba(var(--surface-rgb),0.95)",
         backdropFilter: "blur(10px)",
         border: "1px solid rgba(var(--tint-violet-rgb),0.9)",
-        boxShadow: "0 8px 32px rgba(var(--accent-rgb),0.2), inset 0 1px 0 rgba(var(--surface-rgb),0.9)",
+        boxShadow: "var(--ombre-flottant)",
         color: "var(--text-1)",
         whiteSpace: "nowrap",
       }}
@@ -153,7 +153,7 @@ function AvatarCropper({ src, onCancel, onCropped }: {
         transition={{ type: "spring", damping: 28, stiffness: 280 }}
         onClick={(e) => e.stopPropagation()}
         className="w-full max-w-sm rounded-3xl p-6 flex flex-col items-center"
-        style={{ background: "rgba(var(--surface-rgb),0.98)", boxShadow: "0 24px 70px rgba(var(--accent-rgb),0.3)" }}
+        style={{ background: "rgba(var(--surface-rgb),0.98)", boxShadow: "var(--ombre-flottant)" }}
       >
         <p className="text-base font-semibold mb-1" style={{ color: "var(--text-1)" }}>Recadre ta photo</p>
         <p className="text-[11px] mb-4" style={{ color: "var(--text-3)" }}>Glisse pour déplacer · zoome avec le curseur</p>
@@ -201,7 +201,7 @@ function AvatarCropper({ src, onCancel, onCropped }: {
           </motion.button>
           <motion.button whileTap={{ scale: 0.96 }} onClick={confirm}
             className="flex-1 py-3 rounded-2xl text-sm font-semibold cursor-pointer flex items-center justify-center gap-1.5"
-            style={{ background: "linear-gradient(135deg,var(--violet-mid) 0%,var(--accent) 100%)", color: "#fff", boxShadow: "0 6px 20px rgba(var(--accent-rgb),0.3)" }}>
+            style={{ background: "linear-gradient(135deg,var(--violet-mid) 0%,var(--accent) 100%)", color: "#fff", boxShadow: "var(--ombre-action)" }}>
             <Check size={15} strokeWidth={2.5} /> Valider
           </motion.button>
         </div>
@@ -324,7 +324,7 @@ function EditProfileModal({
             className="w-24 h-24 rounded-full flex items-center justify-center text-3xl font-light cursor-pointer relative overflow-hidden"
             style={{
               background: "linear-gradient(135deg,var(--violet-mid) 0%,var(--cream-mid) 100%)",
-              boxShadow: "0 4px 20px rgba(var(--accent-rgb),0.3)",
+              boxShadow: "var(--ombre-action)",
               color: "var(--text-1)",
             }}
           >
@@ -429,7 +429,7 @@ function EditProfileModal({
           style={{
             background: "linear-gradient(135deg,var(--violet-mid) 0%,var(--cream-mid) 100%)",
             color: "var(--text-1)",
-            boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.8), 0 4px 16px rgba(var(--accent-rgb),0.2)",
+            boxShadow: "var(--ombre-action)",
             opacity: saving || uploading ? 0.7 : 1,
           }}
         >
@@ -710,7 +710,7 @@ export default function ProfilPage() {
             className="w-9 h-9 rounded-2xl flex items-center justify-center cursor-pointer"
             style={{
               background: "linear-gradient(135deg,#8B5CF6,#C13BC1)",
-              boxShadow: "0 2px 14px rgba(124,92,250,0.35)",
+              boxShadow: "var(--ombre-action)",
             }}
             aria-label="Vaiiya Premium"
           >
@@ -724,16 +724,13 @@ export default function ProfilPage() {
           <Link href="/admin">
             <motion.div
               whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.9 }}
+              /* Le verre, la bordure dorée et le halo sont partis : la cloche
+                 juste à côté est une icône NUE, donc c'était ce bouton-ci
+                 l'intrus. Une seule action colorée dans la rangée, la couronne. */
               className="w-9 h-9 rounded-2xl flex items-center justify-center cursor-pointer"
-              style={{
-                background: "rgba(var(--surface-rgb),0.88)",
-                backdropFilter: "blur(16px)",
-                border: "1px solid rgba(var(--gold-rgb),0.5)",
-                boxShadow: "0 2px 14px rgba(var(--gold-rgb),0.18)",
-              }}
               aria-label="Administration"
             >
-              <Shield size={15} strokeWidth={1.8} style={{ color: "var(--gold)" }} />
+              <Shield size={17} strokeWidth={1.8} style={{ color: "var(--or-encre)" }} />
             </motion.div>
           </Link>
         )}
@@ -741,14 +738,8 @@ export default function ProfilPage() {
           <motion.div
             whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.9 }}
             className="w-9 h-9 rounded-2xl flex items-center justify-center cursor-pointer"
-            style={{
-              background: "rgba(var(--surface-rgb),0.88)",
-              backdropFilter: "blur(16px)",
-              border: "1px solid rgba(var(--violet-mid-rgb),0.45)",
-              boxShadow: "0 2px 14px rgba(var(--accent-rgb),0.15)",
-            }}
           >
-            <Settings size={15} strokeWidth={1.6} style={{ color: "var(--exp-encre)" }} />
+            <Settings size={17} strokeWidth={1.7} style={{ color: "var(--text-2)" }} />
           </motion.div>
         </Link>
       </div>
@@ -784,7 +775,7 @@ export default function ProfilPage() {
                   background: displayAvatar ? "transparent" : "linear-gradient(135deg,rgba(var(--tint-violet-rgb),1),rgba(var(--tint-cream-rgb),1))",
                   color: "var(--exp-encre)",
                   fontWeight: 300,
-                  boxShadow: "0 12px 40px rgba(var(--accent-rgb),0.35)",
+                  boxShadow: "var(--ombre-pose)",
                 }}
               >
                 {displayAvatar
@@ -804,7 +795,7 @@ export default function ProfilPage() {
                 width: 32, height: 32,
                 bottom: -6, right: -6,
                 background: "linear-gradient(135deg,#8B5CF6,#C13BC1)",
-                boxShadow: "0 3px 12px rgba(139,92,246,0.45)",
+                boxShadow: "var(--ombre-action)",
                 border: "3px solid rgb(var(--surface-rgb))",
                 zIndex: 30,
               }}
@@ -815,10 +806,7 @@ export default function ProfilPage() {
 
           {/* Pseudo + badge vérifié (+ gemme de rang à l'Argent, brillance à l'Éternel) */}
           <div className="flex items-center gap-2">
-            <h1
-              className="text-[28px] font-black tracking-[-0.03em] leading-none"
-              style={{ color: "var(--text-0)" }}
-            >
+            <h1 className="vy-titre" style={{ color: "var(--text-0)" }}>
               <PseudoRang
                 rang={rangCourant}
                 cosmetiques={cosmetiques}
@@ -836,7 +824,6 @@ export default function ProfilPage() {
                 style={{
                   width: 24, height: 24,
                   background: "linear-gradient(135deg,#8B5CF6,#C13BC1)",
-                  boxShadow: "0 2px 8px rgba(124,92,250,0.4)",
                 }}
               >
                 <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
@@ -851,7 +838,7 @@ export default function ProfilPage() {
 
           {/* Goals / titre */}
           {profileGoals.length > 0 && (
-            <p className="text-[12px] font-semibold mt-1.5 max-w-[260px]" style={{ color: "var(--exp-encre)" }}>
+            <p className="vy-label mt-2 max-w-[260px]" style={{ color: "var(--exp-encre)" }}>
               {profileGoals
                 .map((id) => GOALS_LIST.find((g) => g.id === id))
                 .filter(Boolean)
@@ -863,8 +850,8 @@ export default function ProfilPage() {
           {/* Niveau */}
           {profileLevel && (
             <span
-              className="mt-1 text-[11px] font-bold px-2.5 py-1 rounded-full"
-              style={{ background: "rgba(var(--violet-mid-rgb),0.3)", color: "var(--exp-encre)", border: "1px solid rgba(var(--accent-rgb),0.25)" }}
+              className="vy-label mt-2 px-2.5 py-1 rounded-full"
+              style={{ background: "rgba(var(--violet-mid-rgb),0.34)", color: "var(--exp-encre)", fontWeight: 600 }}
             >
               {LEVELS_LIST.find((l) => l.id === profileLevel)?.label ?? profileLevel}
             </span>
@@ -872,114 +859,119 @@ export default function ProfilPage() {
 
           {/* Bio */}
           {profileBio && (
-            <p className="text-[13px] mt-2 max-w-[240px] leading-relaxed font-light" style={{ color: "var(--text-2)" }}>
+            <p className="vy-corps mt-2.5 max-w-[280px]">
               {profileBio}
             </p>
           )}
         </motion.div>
 
-        {/* ─── Rang (l'aura) — la pièce maîtresse ─── */}
-        <motion.button
+        {/* ─── LE RANG ET LES TROIS CHIFFRES SONT UN SEUL ENSEMBLE ───
+             C'étaient deux cartes au style STRICTEMENT identique (même surface
+             translucide, même bordure violette, même halo, même verre dépoli),
+             posées l'une sous l'autre avec 12 px entre elles. Deux surfaces
+             pour une seule idée, « où j'en suis », c'est la forme qui fait
+             « tableau de bord généré ».
+             Le modèle est celui des Paramètres : UN groupe, des filets à
+             l'intérieur. La séparation vient du trait, pas d'une deuxième
+             surface. Et comme le bloc ne flotte au-dessus de rien, il n'a ni
+             ombre ni verre. ─── */}
+        <motion.section
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3 }}
-          whileTap={{ scale: 0.985 }}
-          /* Tant que l'aura n'est pas lue, la carte montre un squelette : on
-             n'ouvre pas la galerie dessus, elle annoncerait « Bronze · 0 EXP »
-             comme rang courant à quelqu'un qui est peut-être Diamant. */
-          onClick={() => { if (aura) setShowRangs(true); }}
-          className="w-full flex items-center gap-4 mb-3 px-4 py-3.5 rounded-3xl overflow-hidden cursor-pointer text-left"
+          className="mb-5 overflow-hidden"
           style={{
-            background: "rgba(var(--surface-rgb),0.8)",
-            border: "1px solid rgba(var(--accent-rgb),0.14)",
-            boxShadow: "0 4px 24px rgba(var(--accent-rgb),0.1), inset 0 1px 0 rgba(var(--surface-rgb),1)",
-            backdropFilter: "blur(10px)",
+            borderRadius: "var(--r-bloc)",
+            background: "rgba(var(--surface-rgb),0.9)",
+            border: "1px solid rgba(var(--text-3-rgb),0.16)",
           }}
         >
-          {aura ? (
-            <>
-              <div className="flex-shrink-0"><GemmeRang rang={aura.rang} size={44} /></div>
-              <div className="flex-1 min-w-0">
-                <span className="text-[11px] font-bold" style={{ color: "var(--text-3)" }}>Ton rang</span>
-                <p className="text-[19px] font-black tracking-[-0.02em] leading-tight" style={{ color: "var(--text-0)" }}>{aura.rang.nom}</p>
-                <p className="text-[12.5px] font-semibold mt-0.5" style={{ color: "var(--text-soft)" }}>
-                  <span style={{ color: "var(--exp-encre)", fontVariantNumeric: "tabular-nums" }}>{aura.exp}</span> / {aura.seuilHaut} EXP
-                </p>
-                <div className="h-[7px] rounded-full mt-2 overflow-hidden" style={{ background: "rgba(var(--tint-violet-rgb),0.9)" }}>
-                  <div className="h-full rounded-full" style={{
-                    width: `${Math.min(100, Math.max(4, ((aura.exp - aura.seuilBas) / Math.max(1, aura.seuilHaut - aura.seuilBas)) * 100))}%`,
-                    background: "linear-gradient(90deg,#8B5CF6,#C13BC1)",
-                  }} />
+          {/* Le rang. `.vy-filet` porte le trait qui le sépare du trio :
+              la règle est `.vy-filet + .vy-filet`, donc c'est le SECOND qui
+              le reçoit, et un jour où l'un des deux disparaîtrait il n'y
+              aurait pas de trait orphelin. */}
+          <motion.button
+            whileTap={{ scale: 0.99 }}
+            /* Tant que l'aura n'est pas lue, la ligne montre un squelette : on
+               n'ouvre pas la galerie dessus, elle annoncerait « Bronze · 0 EXP »
+               comme rang courant à quelqu'un qui est peut-être Diamant. */
+            onClick={() => { if (aura) setShowRangs(true); }}
+            className="vy-filet w-full flex items-center gap-4 px-4 py-4 cursor-pointer text-left"
+          >
+            {aura ? (
+              <>
+                <div className="flex-shrink-0"><GemmeRang rang={aura.rang} size={44} /></div>
+                <div className="flex-1 min-w-0">
+                  <span className="vy-label block">Ton rang</span>
+                  <p className="vy-sous mt-0.5" style={{ color: "var(--text-0)" }}>{aura.rang.nom}</p>
+                  <p className="vy-label mt-1" style={{ color: "var(--text-soft)" }}>
+                    <span style={{ color: "var(--exp-encre)", fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>{aura.exp}</span> / {aura.seuilHaut} EXP
+                  </p>
+                  <div className="h-[6px] rounded-full mt-2 overflow-hidden" style={{ background: "rgba(var(--tint-violet-rgb),0.9)" }}>
+                    <div className="h-full rounded-full" style={{
+                      width: `${Math.min(100, Math.max(4, ((aura.exp - aura.seuilBas) / Math.max(1, aura.seuilHaut - aura.seuilBas)) * 100))}%`,
+                      background: "linear-gradient(90deg,#8B5CF6,#C13BC1)",
+                    }} />
+                  </div>
                 </div>
-              </div>
-              <ChevronRight size={18} strokeWidth={2} style={{ color: "var(--text-3)" }} />
-            </>
-          ) : (
-            <div className="h-[60px] w-full rounded-2xl animate-pulse" style={{ background: "rgba(var(--tint-violet-rgb),0.5)" }} />
-          )}
-        </motion.button>
+                <ChevronRight size={18} strokeWidth={2} style={{ color: "var(--text-3)" }} />
+              </>
+            ) : (
+              <div className="h-[60px] w-full animate-pulse" style={{ borderRadius: "var(--r-controle)", background: "rgba(var(--tint-violet-rgb),0.5)" }} />
+            )}
+          </motion.button>
 
-        {/* Stats row */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
-          className="flex items-stretch mb-3 rounded-3xl overflow-hidden"
-          style={{
-            background: "rgba(var(--surface-rgb),0.8)",
-            border: "1px solid rgba(var(--accent-rgb),0.14)",
-            boxShadow: "0 4px 24px rgba(var(--accent-rgb),0.1), inset 0 1px 0 rgba(var(--surface-rgb),1)",
-            backdropFilter: "blur(10px)",
-          }}
-        >
-          {[
-            { label: "Amis", value: followingCount !== null ? String(followingCount) : "0", clickable: true, tab: "amis" as const, encre: "var(--text-0)" },
-            { label: "Séances", value: sessionCount !== null ? String(sessionCount) : "0", clickable: true, tab: "progres" as const, encre: "var(--text-0)" },
-            /* La série est le seul des trois qui porte une couleur, et c'est
-               l'orange de l'ÉNERGIE (système D). Elle était en encre normale,
-               donc la flamme était le seul signe et elle se lisait comme un
-               emoji décoratif posé devant un chiffre. */
-            { label: "Série", value: `🔥 ${aura?.detail.streak ?? 0}`, clickable: false, tab: null, encre: "var(--feu-encre)" },
-          ].map(({ label, value, clickable, tab, encre }, i) => (
-            <div key={label} className="flex items-stretch flex-1">
-              {i > 0 && (
-                <div className="w-px self-stretch my-3.5" style={{ background: "rgba(var(--violet-mid-rgb),0.3)" }} />
-              )}
-              <motion.button
-                whileHover={clickable ? { scale: 1.05 } : {}}
-                whileTap={clickable ? { scale: 0.94 } : {}}
-                onClick={() => { if (tab) setActiveTab(tab); }}
-                className="flex-1 flex flex-col items-center py-4"
-                style={{ cursor: clickable ? "pointer" : "default" }}
-              >
-                {/* Les trois chiffres du profil. Ils étaient à 24 px en graisse 900,
-                    soit la même présence qu'un titre de section : rien ne disait que
-                    c'était eux qu'on vient regarder ici. Ils grandissent, leur graisse
-                    descend (900 n'existait pas dans les fichiers de la police, le
-                    navigateur le fabriquait) et ils passent en chasse fixe, pour que
-                    la ligne ne se décale pas quand la série passe de 9 à 10. */}
-                <span className="vy-nombre text-[30px] leading-none" style={{ color: encre }}>
-                  {value}
-                </span>
-                {/* ⚠️ L'encre, pas `--accent` : le violet décoratif tombe à 2,6:1 sur
-                    le blanc, et ce libellé porte une action. */}
-                <span className="text-[12px] font-medium mt-2" style={{ color: clickable ? "var(--exp-encre)" : "var(--text-2)" }}>
-                  {label}
-                </span>
-              </motion.button>
-            </div>
-          ))}
-        </motion.div>
+          {/* Les trois chiffres : la même question, « où j'en suis », donc le
+              même ensemble. */}
+          <div className="vy-filet flex items-stretch">
+            {[
+              { label: "Amis", value: followingCount !== null ? String(followingCount) : "0", clickable: true, tab: "amis" as const, encre: "var(--text-0)" },
+              { label: "Séances", value: sessionCount !== null ? String(sessionCount) : "0", clickable: true, tab: "progres" as const, encre: "var(--text-0)" },
+              /* La série est le seul des trois qui porte une couleur, et c'est
+                 l'orange de l'ÉNERGIE (système D). Elle était en encre normale,
+                 donc la flamme était le seul signe et elle se lisait comme un
+                 emoji décoratif posé devant un chiffre. */
+              { label: "Série", value: `🔥 ${aura?.detail.streak ?? 0}`, clickable: false, tab: null, encre: "var(--feu-encre)" },
+            ].map(({ label, value, clickable, tab, encre }, i) => (
+              <div key={label} className="flex items-stretch flex-1">
+                {i > 0 && (
+                  <div className="w-px self-stretch my-4" style={{ background: "rgba(var(--text-3-rgb),0.16)" }} />
+                )}
+                <motion.button
+                  whileTap={clickable ? { scale: 0.96 } : {}}
+                  onClick={() => { if (tab) setActiveTab(tab); }}
+                  className="flex-1 flex flex-col items-center py-4"
+                  style={{ cursor: clickable ? "pointer" : "default" }}
+                >
+                  {/* Les trois chiffres du profil. Ils étaient à 24 px en graisse 900,
+                      soit la même présence qu'un titre de section : rien ne disait que
+                      c'était eux qu'on vient regarder ici. Ils grandissent, leur graisse
+                      descend (900 n'existait pas dans les fichiers de la police, le
+                      navigateur le fabriquait) et ils passent en chasse fixe, pour que
+                      la ligne ne se décale pas quand la série passe de 9 à 10. */}
+                  <span className="vy-nombre text-[30px] leading-none" style={{ color: encre }}>
+                    {value}
+                  </span>
+                  {/* ⚠️ L'encre, pas `--accent` : le violet décoratif tombe à 2,6:1 sur
+                      le blanc, et ce libellé porte une action. */}
+                  <span className="vy-label mt-2" style={{ color: clickable ? "var(--exp-encre)" : "var(--text-2)" }}>
+                    {label}
+                  </span>
+                </motion.button>
+              </div>
+            ))}
+          </div>
+        </motion.section>
 
         {/* ─── Tabs ─── */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.3 }}
-          className="flex gap-1 mb-6 p-1 rounded-2xl"
+          className="flex gap-1 mb-6 p-1"
           style={{
-            background: "rgba(var(--tint-violet-rgb),0.6)",
-            border: "1px solid rgba(var(--violet-mid-rgb),0.2)",
+            borderRadius: "calc(var(--r-controle) + 4px)",
+            background: "rgba(var(--tint-violet-rgb),0.7)",
           }}
         >
           {([
@@ -990,14 +982,15 @@ export default function ProfilPage() {
             <motion.button
               key={id}
               onClick={() => setActiveTab(id)}
-              className="flex-1 py-2 rounded-xl text-[11px] font-bold cursor-pointer flex items-center justify-center gap-1.5"
+              className="vy-label flex-1 py-2 cursor-pointer flex items-center justify-center gap-1.5"
               animate={{
                 background: activeTab === id ? "linear-gradient(135deg,#8B5CF6,#C13BC1)" : "transparent",
                 color: activeTab === id ? "#fff" : "var(--text-3)",
               }}
               style={{
-                boxShadow: activeTab === id ? "0 3px 14px rgba(193,59,193,0.35)" : "none",
-                letterSpacing: "0.02em",
+                borderRadius: "var(--r-controle)",
+                boxShadow: activeTab === id ? "var(--ombre-action)" : "none",
+                fontWeight: 600,
               }}
             >
               <Icon size={13} strokeWidth={2} />
@@ -1020,7 +1013,7 @@ export default function ProfilPage() {
             className="px-5 md:px-8 max-w-3xl mx-auto"
           >
             {/* Affiches du relais — gagnées en clair, verrouillées en cadenas */}
-            <p className="mb-3 text-[11px] font-bold" style={{ color: "var(--text-3)" }}>
+            <p className="vy-label mb-3" style={{ color: "var(--text-3)" }}>
               Affiches du relais
             </p>
             <div className="grid grid-cols-2 gap-3 mb-8">
@@ -1041,8 +1034,11 @@ export default function ProfilPage() {
                       onClick: () => setAvecQui(true),
                       "aria-label": `Lancer un relais pour dévoiler ${serie.nom}`,
                     })}
-                    className={`relative rounded-2xl overflow-hidden w-full text-left${gagnee ? "" : " cursor-pointer"}`}
-                    style={{ aspectRatio: "9/16", border: "1px solid rgba(255,255,255,0.06)", boxShadow: "0 10px 26px -12px rgba(0,0,0,0.5)" }}
+                    /* Une affiche est une IMAGE : c'est le grand rayon, celui
+                       qu'aucun bloc ni aucun contrôle ne porte. Le liseré blanc
+                       à 6 % ne séparait rien, il décorait. */
+                    className={`relative overflow-hidden w-full text-left${gagnee ? "" : " cursor-pointer"}`}
+                    style={{ aspectRatio: "9/16", borderRadius: "var(--r-affiche)", boxShadow: "var(--ombre-pose)" }}
                   >
                     <Image
                       src={imageEtat(slug, 4)}
@@ -1055,8 +1051,8 @@ export default function ProfilPage() {
                     <div className="absolute inset-0" style={{ background: "linear-gradient(180deg,transparent 45%,rgba(0,0,0,0.72))" }} />
                     {gagnee && <div className="absolute top-2.5 right-3 text-[13px] font-black" style={{ color: "rgba(255,255,255,0.9)" }}>✦</div>}
                     <div className="absolute left-3 right-3 bottom-3" style={{ color: "#fff" }}>
-                      <p className="text-[14px] font-black leading-tight">{serie.nom}</p>
-                      <p className="text-[10.5px] font-semibold mt-0.5" style={{ opacity: 0.75 }}>
+                      <p className="vy-sous">{serie.nom}</p>
+                      <p className="vy-label mt-0.5" style={{ color: "#fff", opacity: 0.78 }}>
                         {gagnee ? "Dévoilée · à deux" : serie.promesse}
                       </p>
                     </div>
@@ -1075,7 +1071,7 @@ export default function ProfilPage() {
             <EtagereBadges slugs={badgeSlugs} titre="Tes badges" progres={progresBadges} />
 
             {/* Tes affiches de perf (posts séance) */}
-            <p className="mb-3 text-[11px] font-bold" style={{ color: "var(--text-3)" }}>
+            <p className="vy-label mb-3" style={{ color: "var(--text-3)" }}>
               Tes affiches de perf
             </p>
             {(() => {
@@ -1127,8 +1123,18 @@ export default function ProfilPage() {
             transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
             className="px-5 md:px-8 max-w-3xl mx-auto"
           >
+            {/* Le poids et la constance répondent à la même question, « est-ce
+                que ça bouge ? », et ils portaient DEUX fois exactement le même
+                dessin de carte. Un seul cadre, un filet entre les deux. */}
             {user && (
-              <div className="mb-6">
+              <div
+                className="mb-6 overflow-hidden"
+                style={{
+                  borderRadius: "var(--r-bloc)",
+                  background: "rgba(var(--surface-rgb),0.9)",
+                  border: "1px solid rgba(var(--text-3-rgb),0.16)",
+                }}
+              >
                 <CourbePoids userId={user.id} onPeser={() => setPesee(true)} />
                 <CarteConstance
                   userId={user.id}
@@ -1141,7 +1147,7 @@ export default function ProfilPage() {
               </div>
             )}
 
-            <p className="mb-3 text-[11px] font-bold" style={{ color: "var(--text-3)" }}>
+            <p className="vy-label mb-3" style={{ color: "var(--text-3)" }}>
               Tes séances
             </p>
 
@@ -1156,7 +1162,20 @@ export default function ProfilPage() {
                 action={{ libelle: "Voir les séances", onClick: () => router.push("/progression") }}
               />
             ) : (
-              <div className="flex flex-col gap-3">
+              /* C'était le cas d'école : autant de cartes que de séances,
+                 toutes au même dessin, séparées par 12 px de vide. Une liste
+                 de choses de MÊME nature se pose en liste, pas en cartes :
+                 un seul contour, des filets entre les lignes. Le commentaire
+                 de `.vy-filet` dans globals.css dit exactement ça, et c'est
+                 son premier emploi réel. */
+              <div
+                className="overflow-hidden"
+                style={{
+                  borderRadius: "var(--r-bloc)",
+                  background: "rgba(var(--surface-rgb),0.9)",
+                  border: "1px solid rgba(var(--text-3-rgb),0.16)",
+                }}
+              >
                 {workoutSessions.map((session) => {
                   const durationMin = session.elapsed_seconds
                     ? Math.round(session.elapsed_seconds / 60)
@@ -1165,13 +1184,11 @@ export default function ProfilPage() {
                     <motion.div
                       key={session.id}
                       onClick={() => refaireSeance(session)}
-                      className="flex items-center gap-3 px-4 py-3.5 rounded-2xl cursor-pointer"
-                      style={{ background: "rgba(var(--surface-rgb),0.8)", border: "1px solid rgba(var(--violet-mid-rgb),0.2)", boxShadow: "0 2px 12px rgba(var(--accent-rgb),0.06)" }}
-                      initial={{ opacity: 0, y: 8 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      whileTap={{ scale: 0.99 }}
+                      className="vy-filet flex items-center gap-3 px-4 py-3.5 cursor-pointer"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
                     >
-                      <div className="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0" style={{ background: "linear-gradient(135deg,var(--violet-mid),var(--cream-mid))" }}>
+                      <div className="w-10 h-10 flex items-center justify-center flex-shrink-0" style={{ borderRadius: "var(--r-controle)", background: "linear-gradient(135deg,var(--violet-mid),var(--cream-mid))" }}>
                         <Dumbbell size={16} strokeWidth={1.5} style={{ color: "var(--exp-encre)" }} />
                       </div>
                       <div className="flex-1 min-w-0">
@@ -1184,8 +1201,8 @@ export default function ProfilPage() {
                       <motion.button
                         whileTap={{ scale: 0.85 }}
                         onClick={(e) => { e.stopPropagation(); refaireSeance(session); }}
-                        className="h-8 px-3 rounded-xl flex items-center justify-center gap-1.5 flex-shrink-0 cursor-pointer"
-                        style={{ background: "rgba(var(--accent-rgb),0.10)", border: "1px solid rgba(var(--accent-rgb),0.22)" }}
+                        className="h-8 px-3 flex items-center justify-center gap-1.5 flex-shrink-0 cursor-pointer"
+                        style={{ borderRadius: "var(--r-controle)", background: "rgba(var(--accent-rgb),0.12)" }}
                         title="Refaire cette séance"
                       >
                         <Play size={12} strokeWidth={2.2} style={{ color: "var(--exp-encre)" }} />
@@ -1199,8 +1216,8 @@ export default function ProfilPage() {
                           const { error } = await supabase.from("workout_sessions").delete().eq("id", session.id);
                           if (!error) setWorkoutSessions(prev => prev.filter(s => s.id !== session.id));
                         }}
-                        className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 cursor-pointer"
-                        style={{ background: "rgba(252,129,129,0.1)", border: "1px solid rgba(252,129,129,0.18)" }}
+                        className="w-8 h-8 flex items-center justify-center flex-shrink-0 cursor-pointer"
+                        style={{ borderRadius: "var(--r-controle)", background: "rgba(252,129,129,0.12)" }}
                         title="Supprimer cette séance"
                       >
                         <Trash2 size={13} strokeWidth={1.8} style={{ color: "#FC8181" }} />
@@ -1239,13 +1256,13 @@ export default function ProfilPage() {
                 {amis.map((ami) => (
                   <Link key={ami.id} href={`/profil/${ami.pseudo}`} className="flex flex-col items-center gap-2">
                     <div className="w-14 h-14 rounded-full overflow-hidden flex items-center justify-center text-lg font-bold"
-                      style={{ background: ami.avatar_url ? "transparent" : "linear-gradient(135deg,var(--violet-mid),var(--cream-mid))", color: "var(--text-1)", border: "2px solid rgba(var(--surface-rgb),1)", boxShadow: "0 3px 10px -3px rgba(var(--accent-rgb),0.5)" }}>
+                      style={{ background: ami.avatar_url ? "transparent" : "linear-gradient(135deg,var(--violet-mid),var(--cream-mid))", color: "var(--text-1)", border: "2px solid rgba(var(--surface-rgb),1)" }}>
                       {ami.avatar_url
                         // eslint-disable-next-line @next/next/no-img-element
                         ? <img loading="lazy" decoding="async" src={ami.avatar_url} alt={ami.pseudo} className="w-full h-full object-cover" />
                         : ami.pseudo.charAt(0).toUpperCase()}
                     </div>
-                    <span className="text-[10.5px] font-semibold max-w-[64px] truncate" style={{ color: "var(--text-2)" }}>{ami.pseudo}</span>
+                    <span className="vy-label max-w-[64px] truncate">{ami.pseudo}</span>
                   </Link>
                 ))}
               </div>
@@ -1587,7 +1604,7 @@ export default function ProfilPage() {
                       style={{
                         background: editSaving ? "rgba(var(--violet-mid-rgb),0.5)" : "linear-gradient(135deg,#8B5CF6,#C13BC1)",
                         color: "#fff",
-                        boxShadow: editSaving ? "none" : "0 4px 16px rgba(var(--accent-rgb),0.3)",
+                        boxShadow: editSaving ? "none" : "var(--ombre-action)",
                       }}
                     >
                       {editSaving ? "Sauvegarde..." : "Sauvegarder"}

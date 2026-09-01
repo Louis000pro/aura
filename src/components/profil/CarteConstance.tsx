@@ -113,10 +113,7 @@ export default function CarteConstance({ userId, inscritLe, serieRecord }: {
 
   if (actifs === null) {
     return (
-      <div
-        className="rounded-3xl h-[152px] mt-3 animate-pulse"
-        style={{ background: "rgba(var(--tint-violet-rgb),0.5)" }}
-      />
+      <div className="vy-filet h-[152px] animate-pulse" style={{ background: "rgba(var(--tint-violet-rgb),0.35)" }} />
     );
   }
 
@@ -124,18 +121,8 @@ export default function CarteConstance({ userId, inscritLe, serieRecord }: {
   const hauteur = PAS * 7 + 2;
 
   return (
-    <div
-      className="rounded-3xl px-4 py-3.5 mt-3"
-      style={{
-        background: "rgba(var(--surface-rgb),0.8)",
-        border: "1px solid rgba(var(--accent-rgb),0.14)",
-        boxShadow: "0 4px 24px rgba(var(--accent-rgb),0.1), inset 0 1px 0 rgba(var(--surface-rgb),1)",
-        backdropFilter: "blur(10px)",
-      }}
-    >
-      <p className="text-[10px] font-bold tracking-[0.12em] uppercase" style={{ color: "var(--text-3)" }}>
-        Ta constance
-      </p>
+    <div className="vy-filet px-4 py-4">
+      <p className="vy-label">Ta constance</p>
 
       <svg
         viewBox={`0 0 ${largeur} ${hauteur}`} width="100%"
@@ -162,14 +149,14 @@ export default function CarteConstance({ userId, inscritLe, serieRecord }: {
         )}
       </svg>
 
-      <p className="text-[11.5px] mt-2.5 leading-relaxed" style={{ color: "var(--text-3)" }}>
+      <p className="vy-corps mt-2.5">
         {serieRecord !== null && serieRecord > 1 && (
           <>
-            Ta plus longue série : <b style={{ color: "var(--text-2)", fontWeight: 700 }}>{serieRecord} jours</b>.<br />
+            Ta plus longue série : <b style={{ color: "var(--text-0)", fontWeight: 700 }}>{serieRecord} jours</b>.<br />
           </>
         )}
         {semainesVues < SEMAINES
-          ? <>Tu es là depuis <b style={{ color: "var(--text-2)", fontWeight: 700 }}>{semainesVues <= 1 ? "une semaine" : `${semainesVues} semaines`}</b>.</>
+          ? <>Tu es là depuis <b style={{ color: "var(--text-0)", fontWeight: 700 }}>{semainesVues <= 1 ? "une semaine" : `${semainesVues} semaines`}</b>.</>
           : <>{total} journée{total > 1 ? "s" : ""} active{total > 1 ? "s" : ""} sur les {SEMAINES} dernières semaines.</>}
       </p>
     </div>

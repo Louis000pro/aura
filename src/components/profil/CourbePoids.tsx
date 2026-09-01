@@ -147,10 +147,7 @@ export default function CourbePoids({ userId, onPeser }: {
 
   if (pesees === null) {
     return (
-      <div
-        className="rounded-3xl h-[152px] animate-pulse"
-        style={{ background: "rgba(var(--tint-violet-rgb),0.5)" }}
-      />
+      <div className="vy-filet h-[152px] animate-pulse" style={{ background: "rgba(var(--tint-violet-rgb),0.35)" }} />
     );
   }
 
@@ -160,18 +157,12 @@ export default function CourbePoids({ userId, onPeser }: {
     <button
       type="button"
       onClick={onPeser}
-      className="w-full text-left rounded-3xl px-4 py-3.5 cursor-pointer"
-      style={{
-        background: "rgba(var(--surface-rgb),0.8)",
-        border: "1px solid rgba(var(--accent-rgb),0.14)",
-        boxShadow: "0 4px 24px rgba(var(--accent-rgb),0.1), inset 0 1px 0 rgba(var(--surface-rgb),1)",
-        backdropFilter: "blur(10px)",
-      }}
+      className="vy-filet w-full text-left px-4 py-4 cursor-pointer"
       aria-label="Ton poids, et ajouter une pesée"
     >
-      <span className="block text-[10px] font-bold tracking-[0.12em] uppercase" style={{ color: "var(--text-3)" }}>
-        Ton poids
-      </span>
+      {/* L'étiquette criait encore en capitales avec 0,12 em d'interlettrage :
+          la passe du 31 août l'avait manquée. Une seule forme d'étiquette. */}
+      <span className="vy-label block">Ton poids</span>
 
       {dernier ? (
         <span className="flex items-baseline gap-1.5 mt-1">
@@ -184,13 +175,13 @@ export default function CourbePoids({ userId, onPeser }: {
           <i className="not-italic text-[13px] font-bold" style={{ color: "var(--teal-encre)", opacity: 0.72 }}>kg</i>
         </span>
       ) : (
-        <span className="block text-[13px] font-semibold mt-1.5" style={{ color: "var(--text-1)" }}>
+        <span className="vy-corps block mt-1.5">
           Aucune pesée pour l&apos;instant.
         </span>
       )}
 
       {phrase && (
-        <span className="block text-[11.5px] mt-1.5" style={{ color: "var(--text-2)" }}>{phrase}</span>
+        <span className="vy-corps block mt-1.5">{phrase}</span>
       )}
 
       {trace ? (
@@ -217,11 +208,11 @@ export default function CourbePoids({ userId, onPeser }: {
            ⚠️ ET PAS DE GUIDE ICI, malgré la maquette : la liste des séances
            juste en dessous a déjà le sien quand elle est vide, et un compte
            neuf a les deux vides en même temps. Un seul Guide par écran. */
-        <span className="block text-[12px] mt-2 leading-relaxed" style={{ color: "var(--text-3)" }}>
+        <span className="vy-corps block mt-2">
           {pesees.length === 1
             ? "Une seule pesée pour l’instant. À la deuxième, la courbe commence."
             : "Pèse-toi une fois, puis une autre : la courbe part de là."}
-          <b className="block mt-1.5 text-[12.5px] font-bold" style={{ color: "var(--exp-encre)" }}>
+          <b className="block mt-1.5 font-bold" style={{ color: "var(--exp-encre)" }}>
             Me peser
           </b>
         </span>
