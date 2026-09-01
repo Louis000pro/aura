@@ -1027,33 +1027,52 @@ export default function WorkoutGuideModal({
       if (e?.auto)      { setAutoCountdown(e.auto); setPrep(3); }
       else if (e?.hiit) { setHiitSub("work"); setAutoCountdown(HIIT_WORK); setPrep(3); }
     } else if (nextEx < exercises.length) {
-      const restAfter = exercises[exerciseIdx]?.restAfter ?? 0;
-      if (restAfter > 0) {
-        setRestMode("exercise");
-        setRestTotal(restAfter);
-        setRestCountdown(restAfter);
-        setPhase("resting");
-      } else {
-        setExerciseIdx(nextEx); setSetIdx(0); setPhase("exercising");
-        const e = exercises[nextEx];
-        if (e?.auto)      { setAutoCountdown(e.auto); setPrep(3); }
-        else if (e?.hiit) { setHiitSub("work"); setAutoCountdown(HIIT_WORK); setPrep(3); }
-        else              setAutoCountdown(0);
-      }
+      /* Plus aucune attente posée ici : l’unique temps du changement
+         d’exercice est décidé dans `completeSet`, juste en dessous. */
+      setExerciseIdx(nextEx); setSetIdx(0); setPhase("exercising");
+      const e = exercises[nextEx];
+      if (e?.auto)      { setAutoCountdown(e.auto); setPrep(3); }
+      else if (e?.hiit) { setHiitSub("work"); setAutoCountdown(HIIT_WORK); setPrep(3); }
+      else              setAutoCountdown(0);
     } else {
       setPhase("done");
     }
   }, [exercises, exerciseIdx, setIdx]);
 
-  /* ── Complete a set ── */
+  /* ── Complete a set ──
+
+     ⚠️ UN SEUL TEMPS D’ATTENTE AU CHANGEMENT D’EXERCICE. `rest` est le repos
+     entre deux SÉRIES du même exercice ; `restAfter` est la TRANSITION vers
+     l’exercice suivant, et elle contient déjà la récupération plus le temps de
+     changer de place ou de matériel. Le tunnel servait les deux à la suite,
+     donc 60 s puis 90 s entre deux exercices, et la séance dépassait d’autant
+     la durée annoncée : les trois estimateurs (le prompt de
+     /api/workout/generate, `calcDuration` dans assistantActions, `calculerDuree`
+     dans CreateSessionModal) comptent tous `(sets - 1) × rest` PUIS `restAfter`,
+     jamais un repos de série après la dernière série. Le doublon ne se voyait
+     que sur les séances qui portent une transition : celles de l’IA, celles
+     qu’on compose soi-même, celles du planning. Le catalogue n’en déclare
+     aucune, d’où le repli sur `rest` pour lui garder son comportement.
+
+     Après la toute dernière série de la séance, plus rien ne suit : on va droit
+     à l’écran de fin au lieu d’imposer un compte à rebours devant une carte
+     « Ensuite » vide et une phrase qui annonce un dernier exercice déjà fini. */
   const completeSet = useCallback(() => {
     setDoneMap(prev => ({
       ...prev,
       [exerciseIdx]: { ...(prev[exerciseIdx] ?? {}), [setIdx]: true },
     }));
-    const rest = exercises[exerciseIdx]?.rest ?? 0;
-    if (rest > 0) { setRestTotal(rest); setRestCountdown(rest); setPhase("resting"); }
-    else          advance();
+    const ex         = exercises[exerciseIdx];
+    const dernierSet = setIdx + 1 >= (ex?.sets ?? 1);
+    const resteUnExo = exerciseIdx + 1 < exercises.length;
+    if (dernierSet && !resteUnExo) { advance(); return; }
+    const attente = dernierSet
+      ? ((ex?.restAfter ?? 0) > 0 ? (ex?.restAfter as number) : (ex?.rest ?? 0))
+      : (ex?.rest ?? 0);
+    if (attente > 0) {
+      setRestMode(dernierSet ? "exercise" : "set");
+      setRestTotal(attente); setRestCountdown(attente); setPhase("resting");
+    } else advance();
   }, [exercises, exerciseIdx, setIdx, advance]);
 
   /* ── Pause / resume ── */
