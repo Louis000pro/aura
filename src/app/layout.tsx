@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Archivo } from "next/font/google";
+import { Archivo, Martian_Mono } from "next/font/google";
 import "./globals.css";
 import Navigation from "@/components/Navigation";
 import MainWrapper from "@/components/MainWrapper";
@@ -42,6 +42,34 @@ import { PLANS, VENTE_OUVERTE } from "@/lib/plans";
    statiques, donc les faux gras. */
 const archivo = Archivo({
   variable: "--font-archivo",
+  subsets: ["latin"],
+  display: "swap",
+  axes: ["wdth"],
+});
+
+/* LE TROISIÈME RÔLE : LE CHIFFRE.
+   Vaiiya affiche 631 unités de mesure (295 « min », 198 « reps », 70 « kcal »,
+   42 « EXP », 26 « kg ») : ce sont des écrans de chiffres entourés de phrases
+   courtes. Les nombres ont donc leur propre voix, et elle vient visiblement
+   d'un autre monde que le texte : c'est ce qui fait qu'on la lit comme une
+   décision et pas comme un accident.
+
+   ⚠️ DEUX CANDIDATS PLUS PROCHES ONT ÉTÉ ESSAYÉS PUIS ÉCARTÉS, ne pas refaire
+   le tour. Archivo resserré (largeur 88) et Saira condensé (largeur 75) sont
+   deux grotesques comme le texte : côte à côte avec un titre en Archivo, ils
+   se lisent comme « Archivo, mais plus étroit », donc comme une erreur. Et
+   Big Shoulders Display, pourtant dessiné pour la signalétique, est éliminé À
+   LA MESURE : ses chiffres n'ont pas la même largeur (« 00:45 » fait 120 px
+   là où « 11:11 » en fait 96), donc un chrono qui tourne ferait sauter la
+   ligne à chaque seconde. C'est exactement le défaut que la chasse fixe
+   existe pour empêcher.
+
+   ⚠️ `axes: ["wdth"]` ici aussi, et pour la même raison silencieuse : sans
+   lui la fonte est servie figée, et un mono à sa largeur naturelle est
+   nettement trop large pour un téléphone. À 82, « 00:45 » à 60 px tient en
+   173 px, soit MOINS que ce qu'occupait Archivo (182). */
+const chiffre = Martian_Mono({
+  variable: "--font-chiffre",
   subsets: ["latin"],
   display: "swap",
   axes: ["wdth"],
@@ -133,7 +161,7 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="fr" translate="no" suppressHydrationWarning className={`${archivo.variable} h-full antialiased notranslate`} style={{ backgroundColor: "var(--html-bg)" }}>
+    <html lang="fr" translate="no" suppressHydrationWarning className={`${archivo.variable} ${chiffre.variable} h-full antialiased notranslate`} style={{ backgroundColor: "var(--html-bg)" }}>
       {/* Inline script runs before first paint — prevents dark mode flash */}
       <head>
         {/* Empêche les extensions de traduction (Google Translate, Opera) de casser React */}

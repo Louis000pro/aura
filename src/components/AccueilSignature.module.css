@@ -240,12 +240,12 @@
 .streakCopy strong {
   display: block;
   color: var(--text-0);
-  font-family: var(--titrage);
+  font-family: var(--chiffre);
   font-variation-settings: var(--w-nombre);
   font-size: 28px;
   font-weight: 600;
   line-height: 1.05;
-  letter-spacing: -0.03em;
+  letter-spacing: -0.045em;
   font-variant-numeric: tabular-nums;
 }
 
@@ -346,12 +346,12 @@
 }
 
 .rankExp strong {
-  font-family: var(--titrage);
+  font-family: var(--chiffre);
   font-variation-settings: var(--w-nombre);
   font-variant-numeric: tabular-nums;
   font-size: 16px;
   font-weight: 600;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.045em;
 }
 
 .rankExp small {

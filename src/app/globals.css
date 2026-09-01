@@ -626,6 +626,14 @@ html.a-session .accueil-landing { display: none; }
 :root {
   --titrage: var(--font-archivo), system-ui, sans-serif;
 
+  /* LE CHIFFRE A SA PROPRE FAMILLE, ET C'EST LE SEUL ENDROIT OÙ VAIIYA EN A
+     DEUX. Elle ne sert QU'aux valeurs mesurées : chrono, EXP, série, poids,
+     macros, répétitions. Jamais à une phrase, jamais à un libellé, jamais à
+     un nombre écrit dans du texte courant. Une police réservée aux chiffres
+     n'entre dans aucune relation de composition avec le texte : ce n'est pas
+     un couple à réussir, c'est un instrument. */
+  --chiffre: var(--font-chiffre), ui-monospace, monospace;
+
   /* LES TROIS LARGEURS, ET IL N'Y EN A QUE TROIS.
      Depuis le 2026-08-31, Vaiiya n'a plus qu'une famille : la hiérarchie ne
      vient pas d'une seconde police mais de l'axe de largeur d'Archivo. Ces
@@ -639,7 +647,10 @@ html.a-session .accueil-landing { display: none; }
      titre du site d'un coup. */
   --w-affiche: "wdth" 122;
   --w-voix: "wdth" 116;
-  --w-nombre: "wdth" 112;
+  /* 82 et pas 100 : à sa largeur naturelle, un mono est trop large pour un
+     téléphone. Resserré, « 00:45 » à 60 px occupe 173 px, soit moins que les
+     182 px qu'Archivo prenait avant lui. */
+  --w-nombre: "wdth" 82;
 }
 
 /* Le chiffre ou le mot qui EST l'écran. UN SEUL par écran, jamais deux. */
@@ -694,10 +705,12 @@ html.a-session .accueil-landing { display: none; }
 /* Un nombre qui se lit, se compare, ou change sous les yeux. Les chiffres à
    chasse fixe empêchent la ligne de sauter quand la valeur passe de 9 à 10. */
 .vy-nombre {
-  font-family: var(--titrage);
+  font-family: var(--chiffre);
   font-variation-settings: var(--w-nombre);
   font-variant-numeric: tabular-nums;
-  letter-spacing: -0.02em;
+  /* Un mono arrive avec ses gouttières intégrées : sans ce resserrement, un
+     grand nombre se disperse et cesse de se lire comme une valeur unique. */
+  letter-spacing: -0.045em;
   font-weight: 600;
 }
 
