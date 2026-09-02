@@ -693,7 +693,7 @@ function TodayHero({
   /* Skeleton — même silhouette que la carte, aucune culpabilité d'attente */
   if (state === "loading") {
     return (
-      <div className="rounded-3xl overflow-hidden relative" style={{ height: 340, background: "rgba(var(--surface-rgb),0.7)", border: "1px solid rgba(var(--accent-rgb),0.12)" }}>
+      <div className="overflow-hidden relative" style={{ height: 340, borderRadius: "var(--r-affiche)", background: "rgba(var(--surface-rgb),0.7)", border: "1px solid rgba(var(--accent-rgb),0.12)" }}>
         <motion.div
           className="absolute inset-0"
           style={{ background: "linear-gradient(100deg, transparent 30%, rgba(var(--accent-rgb),0.08) 50%, transparent 70%)" }}
@@ -714,8 +714,8 @@ function TodayHero({
     <motion.div
       initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.45 }}
-      className="rounded-3xl overflow-hidden relative"
-      style={{ minHeight: state === "seance" ? 360 : 300, boxShadow: "0 14px 40px rgba(var(--accent-rgb),0.22)" }}
+      className="overflow-hidden relative"
+      style={{ minHeight: state === "seance" ? 360 : 300, borderRadius: "var(--r-affiche)", boxShadow: "var(--ombre-pose)" }}
     >
       <Photo img={viz.img} pos={viz.pos} style={{ position: "absolute", inset: 0 }} />
 
@@ -733,7 +733,7 @@ function TodayHero({
         )}
         {state === "done" && (
           <span className="w-10 h-10 rounded-full flex items-center justify-center"
-            style={{ background: "linear-gradient(135deg,#4FE8B8,#1FBF8C)", boxShadow: "0 8px 22px rgba(43,212,160,0.45)" }}>
+            style={{ background: "linear-gradient(135deg,#4FE8B8,#1FBF8C)", boxShadow: "var(--ombre-pose)" }}>
             <Check size={18} strokeWidth={3.2} style={{ color: "#06281E" }} />
           </span>
         )}
@@ -764,7 +764,7 @@ function TodayHero({
               whileTap={{ scale: 0.97 }}
               onClick={onStart}
               className="w-full py-3.5 rounded-2xl flex items-center justify-center gap-2 cursor-pointer text-[15px] font-extrabold text-white"
-              style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", boxShadow: "0 8px 26px rgba(139,92,246,0.45), inset 0 1px 0 rgba(255,255,255,0.25)" }}
+              style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", boxShadow: "var(--ombre-action)" }}
             >
               <Play size={14} strokeWidth={2.5} fill="#fff" /> C&apos;est parti
             </motion.button>
@@ -838,7 +838,7 @@ function TodayHero({
               whileTap={{ scale: 0.97 }}
               onClick={onOrganise}
               className="w-full py-3.5 rounded-2xl flex items-center justify-center gap-2 cursor-pointer text-[15px] font-extrabold text-white"
-              style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", boxShadow: "0 8px 26px rgba(139,92,246,0.45), inset 0 1px 0 rgba(255,255,255,0.25)" }}
+              style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", boxShadow: "var(--ombre-action)" }}
             >
               ✦ Créer mon planning
             </motion.button>
@@ -884,8 +884,8 @@ function ForkCard({ kind, count, onClick }: {
     <motion.button
       whileTap={{ scale: 0.97 }}
       onClick={onClick}
-      className="rounded-[20px] overflow-hidden relative cursor-pointer text-left border-none p-0 h-[148px] md:h-[188px]"
-      style={{ boxShadow: "0 8px 26px rgba(var(--accent-rgb),0.14)" }}
+      className="overflow-hidden relative cursor-pointer text-left border-none p-0 h-[148px] md:h-[188px]"
+      style={{ borderRadius: "var(--r-bloc)", boxShadow: "var(--ombre-pose)" }}
     >
       {isIA ? (
         <>
@@ -960,16 +960,15 @@ function WeekStrip({ week, todayIdx, onOrganise }: {
   }
 
   return (
-    <div className="rounded-[20px] px-4 pt-3.5 pb-3.5"
-      style={{ background: "rgb(var(--surface-rgb))", border: "1px solid rgba(var(--accent-rgb),0.14)", boxShadow: "0 6px 22px rgba(var(--accent-rgb),0.08)" }}>
+    <div className="px-4 pt-3.5 pb-3.5">
       <div className="flex items-center justify-between mb-3">
         <button onClick={onOrganise} className="flex items-center gap-1 bg-transparent border-none p-0 cursor-pointer">
-          <span className="text-[13.5px] font-bold" style={{ color: "var(--text-1)" }}>Ma semaine</span>
+          <span className="vy-sous" style={{ color: "var(--text-0)" }}>Ma semaine</span>
           <ChevronRight size={13} strokeWidth={2.6} style={{ color: "var(--text-3)" }} />
         </button>
         <button onClick={onOrganise}
-          className="flex items-center gap-1 text-[11.5px] font-bold cursor-pointer bg-transparent border-none p-0"
-          style={{ color: "var(--accent)" }}>
+          className="vy-label flex items-center gap-1 cursor-pointer bg-transparent border-none p-0"
+          style={{ color: "var(--exp-encre)" }}>
           <CalendarDays size={12} strokeWidth={2.2} />
           Organiser
         </button>
@@ -987,12 +986,11 @@ function WeekStrip({ week, todayIdx, onOrganise }: {
           return (
             <button key={i} onClick={onOrganise}
               aria-label={`${DAY_FULL[i]}, ${isSeance ? dayTitle(d!) : "repos"}`}
-              className="relative flex-1 rounded-[12px] overflow-hidden cursor-pointer border-none p-0 block"
+              className="relative flex-1 overflow-hidden cursor-pointer border-none p-0 block"
               style={{
-                height: 60, background: "#0f0d17",
+                height: 60, borderRadius: "var(--r-controle)", background: "#0f0d17",
                 outline: isToday ? "2px solid #8B5CF6" : undefined,
                 outlineOffset: isToday ? 2 : undefined,
-                boxShadow: isToday ? "0 5px 16px rgba(139,92,246,0.4)" : undefined,
                 opacity: isPast && !isDone && isSeance ? 0.5 : 1,
               }}>
               {isSeance && art ? (
@@ -1008,7 +1006,7 @@ function WeekStrip({ week, todayIdx, onOrganise }: {
                 </>
               ) : (
                 <div className="absolute inset-0 flex items-center justify-center"
-                  style={{ background: "rgba(255,255,255,0.04)", border: "1px dashed rgba(var(--accent-rgb),0.22)", borderRadius: 12 }}>
+                  style={{ background: "rgba(255,255,255,0.04)", border: "1px dashed rgba(var(--accent-rgb),0.22)", borderRadius: "var(--r-controle)" }}>
                   <Moon size={13} strokeWidth={1.8} style={{ color: "var(--text-3)", opacity: 0.7 }} />
                 </div>
               )}
@@ -1025,7 +1023,7 @@ function WeekStrip({ week, todayIdx, onOrganise }: {
       </div>
 
       {story && (
-        <p className="text-[11px] font-medium mt-3" style={{ color: "var(--text-3)" }}>{story}</p>
+        <p className="vy-corps mt-3">{story}</p>
       )}
     </div>
   );
@@ -1055,16 +1053,15 @@ function ElanStrip({ data, onOpen }: { data: ElanData | null; onOpen: () => void
   return (
     <motion.button
       whileTap={{ scale: 0.98 }} onClick={onOpen}
-      className="w-full text-left cursor-pointer block rounded-[20px] px-4 pt-3.5 pb-3.5"
-      style={{ background: "rgb(var(--surface-rgb))", border: "1px solid rgba(43,212,160,0.20)", boxShadow: "0 6px 22px rgba(43,212,160,0.08)" }}>
+      className="w-full text-left cursor-pointer block px-4 pt-3.5 pb-3.5">
       <div className="flex items-center justify-between mb-3.5">
-        <p className="text-[13.5px] font-bold flex items-center gap-0.5" style={{ color: "var(--text-1)" }}>
+        <p className="vy-sous flex items-center gap-0.5" style={{ color: "var(--text-0)" }}>
           Ton élan
           <ChevronRight size={13} strokeWidth={2.6} style={{ color: "var(--text-3)" }} />
         </p>
         {streak > 0 && (
           <span className="flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-extrabold"
-            style={{ background: "rgba(239,159,39,0.14)", color: "#EF9F27" }}>
+            style={{ background: "rgba(239,159,39,0.14)", color: "var(--feu-encre)" }}>
             <Flame size={12} strokeWidth={2.4} fill="#EF9F27" />
             {streak} sem.
           </span>
@@ -1078,23 +1075,23 @@ function ElanStrip({ data, onOpen }: { data: ElanData | null; onOpen: () => void
               <div key={i} className="flex flex-col items-center gap-1.5">
                 <span className="w-[9px] rounded-full" style={{
                   height: barH(b.min),
-                  background: b.today ? "#8B5CF6" : b.done ? "rgba(139,92,246,0.55)" : "rgba(255,255,255,0.10)",
+                  background: b.today ? "#8B5CF6" : b.done ? "rgba(139,92,246,0.55)" : "rgba(var(--text-3-rgb),0.28)",
                 }} />
                 <span className="text-[8.5px] font-bold" style={{ color: b.today ? "#8B5CF6" : "var(--text-3)" }}>{b.label}</span>
               </div>
             ))}
           </div>
           <div className="text-right">
-            <p className="text-[11px] font-bold mb-1" style={{ color: "var(--text-3)" }}>Cette semaine</p>
+            <p className="vy-label mb-1">Cette semaine</p>
             <p className="leading-none">
               <span className="vy-nombre text-[26px]" style={{ color: "var(--exp-encre)" }}>{sessions}</span>
-              <span className="text-[12px] font-semibold ml-1" style={{ color: "var(--text-2)" }}>séance{sessions > 1 ? "s" : ""}</span>
+              <span className="vy-label ml-1">séance{sessions > 1 ? "s" : ""}</span>
             </p>
-            <p className="text-[11px] font-semibold mt-1.5 flex items-center justify-end gap-1.5" style={{ color: "var(--text-3)" }}>
+            <p className="vy-label mt-1.5 flex items-center justify-end gap-1.5">
               <Clock size={11} strokeWidth={2.4} />{fmtDur(minutes)}
               <span className="w-[3px] h-[3px] rounded-full" style={{ background: "var(--text-3)" }} />
               <Zap size={11} strokeWidth={2.4} style={{ color: "#EF9F27" }} fill="#EF9F27" />
-              <span style={{ color: "#EF9F27" }}>{kcal.toLocaleString("fr-FR")} kcal</span>
+              <span style={{ color: "var(--feu-encre)" }}>{kcal.toLocaleString("fr-FR")} kcal</span>
             </p>
           </div>
         </div>
@@ -1103,12 +1100,12 @@ function ElanStrip({ data, onOpen }: { data: ElanData | null; onOpen: () => void
           <div className="flex items-end gap-[7px]">
             {bars.map((b, i) => (
               <div key={i} className="flex flex-col items-center gap-1.5">
-                <span className="w-[9px] rounded-full" style={{ height: 8 + (i % 3) * 6, background: "rgba(255,255,255,0.08)" }} />
+                <span className="w-[9px] rounded-full" style={{ height: 8 + (i % 3) * 6, background: "rgba(var(--text-3-rgb),0.22)" }} />
                 <span className="text-[8.5px] font-bold" style={{ color: "var(--text-3)" }}>{b.label}</span>
               </div>
             ))}
           </div>
-          <p className="text-[11.5px] font-medium leading-snug" style={{ color: "var(--text-3)" }}>
+          <p className="vy-corps leading-snug">
             Ton élan démarre à la première séance.
           </p>
         </div>
@@ -1141,7 +1138,7 @@ function ElanSheet({ data, onClose }: { data: ElanData; onClose: () => void }) {
             </span>
           )}
         </div>
-        <p className="text-[11px] font-medium mt-0.5 mb-5" style={{ color: "var(--text-3)" }}>
+        <p className="vy-label mt-0.5 mb-5">
           7 derniers jours · en minutes
         </p>
 
@@ -1157,7 +1154,6 @@ function ElanSheet({ data, onClose }: { data: ElanData; onClose: () => void }) {
                   height: barH(b.min),
                   background: b.today && b.min > 0 ? "#8B5CF6"
                     : b.done ? "rgba(139,92,246,0.5)" : "rgba(255,255,255,0.09)",
-                  boxShadow: b.today && b.min > 0 ? "0 0 14px rgba(139,92,246,0.4)" : undefined,
                 }} />
                 <span className="text-[9px] font-bold" style={{ color: b.today ? "#8B5CF6" : "var(--text-3)" }}>{b.label}</span>
               </div>
@@ -1184,14 +1180,14 @@ function ElanSheet({ data, onClose }: { data: ElanData; onClose: () => void }) {
 
         {/* Comparaison vs semaine dernière — jamais un reproche */}
         {prevMinutes > 0 && delta > 0 && (
-          <div className="flex items-center gap-2 mt-4 px-3 py-2.5 rounded-[13px] text-[11.5px] font-bold"
-            style={{ background: "rgba(139,92,246,0.09)", border: "1px solid rgba(139,92,246,0.22)", color: "var(--exp-encre)" }}>
+          <div className="flex items-center gap-2 mt-4 px-3 py-2.5 text-[11.5px] font-bold"
+            style={{ borderRadius: "var(--r-controle)", background: "rgba(139,92,246,0.09)", border: "1px solid rgba(139,92,246,0.22)", color: "var(--exp-encre)" }}>
             ▲ +{delta} min vs la semaine dernière, ça monte.
           </div>
         )}
         {prevMinutes > 0 && delta <= 0 && (
-          <div className="flex items-center gap-2 mt-4 px-3 py-2.5 rounded-[13px] text-[11.5px] font-semibold"
-            style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", color: "var(--text-2)" }}>
+          <div className="flex items-center gap-2 mt-4 px-3 py-2.5 text-[11.5px] font-semibold"
+            style={{ borderRadius: "var(--r-controle)", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", color: "var(--text-2)" }}>
             Encore {Math.abs(delta) + 1} min pour égaler la semaine dernière.
           </div>
         )}
@@ -1393,7 +1389,7 @@ function SessionTile({ session, onStart, onManage, onPremium, canAccessPremium, 
         className={`w-full overflow-hidden relative cursor-pointer border-none p-0 block ${isPremium ? "" : "rounded-[18px]"}`}
         style={{
           aspectRatio: "3 / 4",
-          boxShadow: "0 10px 26px rgba(0,0,0,0.2)",
+          boxShadow: "var(--ombre-pose)",
           // Le bas de la carte Premium épouse l'anneau ; le haut est droit,
           // c'est le bandeau qui porte les deux coins hauts.
           ...(isPremium ? { borderBottomLeftRadius: PREMIUM_RAYON, borderBottomRightRadius: PREMIUM_RAYON } : null),
@@ -1633,7 +1629,7 @@ function PremiumPreviewSheet({ session, premiumCount, onClose, onUpgrade }: {
             className="w-full h-12 mt-4 rounded-2xl text-[13px] font-black text-white"
             style={{
               background: "linear-gradient(135deg,#8B5CF6,#C13BC1)",
-              boxShadow: "0 8px 22px rgba(139,92,246,0.32)",
+              boxShadow: "var(--ombre-action)",
             }}
           >
             Débloquer {advice ? "tous les cours" : "toutes les séances"}
@@ -2039,8 +2035,8 @@ function SessionRow({ label, count, children }: {
   return (
     <section className="mb-6">
       <div className="flex items-center gap-2 mb-2.5 px-0.5">
-        <span className="text-[11px] font-semibold" style={{ color: "var(--text-2)" }}>{label}</span>
-        <span className="text-[9.5px] font-bold" style={{ color: "var(--text-3)" }}>{count}</span>
+        <span className="vy-label">{label}</span>
+        <span className="vy-label" style={{ color: "var(--text-3)" }}>{count}</span>
         <span aria-hidden className="flex-1 h-px" style={{ background: "rgba(var(--accent-rgb),0.1)" }} />
         {/* Flèches — desktop uniquement, discrètes */}
         <div className="hidden md:flex items-center gap-1">
@@ -2228,8 +2224,8 @@ function CatTile({ cat, count, freeCount, premiumCount, onOpen }: {
   return (
     <motion.button
       whileTap={{ scale: 0.97 }} onClick={onOpen}
-      className="relative w-full rounded-[18px] overflow-hidden cursor-pointer border-none p-0 block"
-      style={{ aspectRatio: "3 / 4", boxShadow: "0 10px 26px rgba(0,0,0,0.22)" }}
+      className="relative w-full overflow-hidden cursor-pointer border-none p-0 block"
+      style={{ aspectRatio: "3 / 4", borderRadius: "var(--r-bloc)", boxShadow: "var(--ombre-pose)" }}
       aria-label={`${cat.name}, ${sub}`}
     >
       <Photo img={cat.img} pos={cat.pos} style={{ position: "absolute", inset: 0 }} />
@@ -2313,8 +2309,8 @@ function ChooseSheet({ sessions, week, loading, canAccessPremium, maxSeances, ca
   const createCard = (
     <motion.button
       whileTap={{ scale: 0.96 }} onClick={onCreate}
-      className="w-full rounded-[18px] flex flex-col items-center justify-center gap-2 cursor-pointer px-3"
-      style={{ aspectRatio: "3 / 4", background: "rgba(var(--tint-violet-rgb),0.25)", border: "2px dashed rgba(var(--accent-rgb),0.32)" }}
+      className="w-full flex flex-col items-center justify-center gap-2 cursor-pointer px-3"
+      style={{ aspectRatio: "3 / 4", borderRadius: "var(--r-bloc)", background: "rgba(var(--tint-violet-rgb),0.25)", border: "2px dashed rgba(var(--accent-rgb),0.32)" }}
     >
       <span className="w-10 h-10 rounded-2xl flex items-center justify-center" style={{ background: "rgba(var(--accent-rgb),0.12)" }}>
         <Plus size={17} strokeWidth={2.2} style={{ color: "var(--accent)" }} />
@@ -2339,17 +2335,19 @@ function ChooseSheet({ sessions, week, loading, canAccessPremium, maxSeances, ca
               <ChevronLeft size={15} strokeWidth={2.2} style={{ color: "var(--text-2)" }} />
             </motion.button>
             <div className="flex-1 min-w-0">
-              <h2 className="text-[17px] font-semibold leading-tight truncate" style={{ color: "var(--text-1)" }}>{cat.name}</h2>
-              <p className="text-[10.5px] font-light mt-0.5 truncate" style={{ color: "var(--text-3)" }}>{cat.tag}</p>
+              <h2 className="vy-sous leading-tight truncate" style={{ color: "var(--text-0)" }}>{cat.name}</h2>
+              <p className="vy-label mt-0.5 truncate">{cat.tag}</p>
             </div>
           </>
         ) : (
           <div className="flex-1">
-            <h2 className="text-[23px] font-light leading-tight" style={{ color: "var(--text-1)" }}>
+            <h2 className="vy-titre leading-tight" style={{ color: "var(--text-0)" }}>
               Entraînements
             </h2>
-            <p className="text-[11.5px] font-light mt-1" style={{ color: "var(--text-3)" }}>
-              Un but, une envie. <span className="font-semibold" style={{ color: "var(--text-2)" }}>{sessions.length} contenus t&apos;attendent</span>
+            {/* ⚠️ `.vy-corps` pose `--text-body` : l'emphase qu'il contient etait
+                en `--text-2`, donc PLUS CLAIRE que la phrase autour. */}
+            <p className="vy-corps mt-1">
+              Un but, une envie. <span className="font-semibold" style={{ color: "var(--text-0)" }}>{sessions.length} contenus t&apos;attendent</span>
             </p>
           </div>
         )}
@@ -2378,9 +2376,9 @@ function ChooseSheet({ sessions, week, loading, canAccessPremium, maxSeances, ca
                   key={theme}
                   whileTap={{ scale: 0.95 }}
                   onClick={() => setAdviceTheme(theme)}
-                  className="h-8 px-3 rounded-full flex-shrink-0 text-[10px] font-extrabold whitespace-nowrap"
+                  className="vy-label h-8 px-3 rounded-full flex-shrink-0 whitespace-nowrap"
                   style={active
-                    ? { color: "white", background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", boxShadow: "0 5px 14px rgba(139,92,246,0.22)" }
+                    ? { color: "white", background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", boxShadow: "var(--ombre-action)" }
                     : { color: "var(--text-2)", background: "rgba(var(--tint-violet-rgb),0.55)", border: "1px solid rgba(var(--accent-rgb),0.1)" }}
                   aria-pressed={active}
                 >
@@ -2395,8 +2393,8 @@ function ChooseSheet({ sessions, week, loading, canAccessPremium, maxSeances, ca
           loading ? (
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
               {Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="rounded-[18px] animate-pulse"
-                  style={{ aspectRatio: "3 / 4", background: "rgba(var(--tint-violet-rgb),0.5)" }} />
+                <div key={i} className="animate-pulse"
+                  style={{ aspectRatio: "3 / 4", borderRadius: "var(--r-bloc)", background: "rgba(var(--tint-violet-rgb),0.5)" }} />
               ))}
             </div>
           ) : (
@@ -2453,13 +2451,13 @@ function ChooseSheet({ sessions, week, loading, canAccessPremium, maxSeances, ca
               style={{ background: "rgba(var(--accent-rgb),0.1)" }}>
               <Sparkles size={18} strokeWidth={1.8} style={{ color: "var(--accent)" }} />
             </span>
-            <p className="text-[14.5px] font-semibold" style={{ color: "var(--text-1)" }}>Cette collection arrive</p>
-            <p className="text-[11.5px] font-light mt-1.5 leading-relaxed max-w-[260px]" style={{ color: "var(--text-3)" }}>
+            <p className="vy-sous" style={{ color: "var(--text-0)" }}>Cette collection arrive</p>
+            <p className="vy-corps mt-1.5 leading-relaxed max-w-[260px]">
               On la remplit séance après séance. En attendant, crée la tienne, si elle colle, elle apparaîtra ici.
             </p>
             <motion.button whileTap={{ scale: 0.95 }} onClick={onCreate}
               className="mt-5 px-5 h-10 rounded-full text-[12px] font-bold text-white cursor-pointer border-none"
-              style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", boxShadow: "0 6px 18px rgba(139,92,246,0.35)" }}>
+              style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", boxShadow: "var(--ombre-action)" }}>
               Créer la mienne
             </motion.button>
           </div>
@@ -2606,16 +2604,16 @@ function ImproviseSheet({ defaultPlace, defaultHalteres, difficulty, onClose, on
 
       <div className="px-5 overflow-y-auto" style={{ paddingBottom: "calc(1.25rem + env(safe-area-inset-bottom))" }}>
         {/* Temps */}
-        <p className="text-[11px] font-semibold mt-4 mb-2" style={{ color: "var(--text-3)" }}>
+        <p className="vy-label mt-4 mb-2">
           Tu as combien de temps ?
         </p>
         <div className="flex gap-2">
           {IMPRO_TIMES.map((t) => (
             <motion.button key={t} whileTap={{ scale: 0.94 }} onClick={() => setTime(t)}
-              className="flex-1 py-2.5 rounded-[13px] cursor-pointer text-center"
-              style={time === t
-                ? { background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", boxShadow: "0 6px 16px rgba(139,92,246,0.35)", border: "1px solid transparent" }
-                : { background: "rgba(var(--tint-violet-rgb),0.45)", border: "1px solid rgba(var(--accent-rgb),0.14)" }}>
+              className="flex-1 py-2.5 cursor-pointer text-center"
+              style={{ borderRadius: "var(--r-controle)", ...(time === t
+                ? { background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", boxShadow: "var(--ombre-action)", border: "1px solid transparent" }
+                : { background: "rgba(var(--tint-violet-rgb),0.45)", border: "1px solid rgba(var(--accent-rgb),0.14)" }) }}>
               <span className="text-[13px] font-extrabold block leading-none" style={{ color: time === t ? "#fff" : "var(--text-3)" }}>
                 {t === 60 ? "60+" : t}
               </span>
@@ -2625,16 +2623,16 @@ function ImproviseSheet({ defaultPlace, defaultHalteres, difficulty, onClose, on
         </div>
 
         {/* Lieu */}
-        <p className="text-[11px] font-semibold mt-4 mb-2" style={{ color: "var(--text-3)" }}>
+        <p className="vy-label mt-4 mb-2">
           Tu es où ?
         </p>
         <div className="flex gap-2">
           {placeMeta.map(({ key, label, icon: PIcon }) => (
             <motion.button key={key} whileTap={{ scale: 0.94 }} onClick={() => setPlace(key)}
-              className="flex-1 flex flex-col items-center gap-1.5 py-3 rounded-[15px] cursor-pointer"
-              style={place === key
+              className="flex-1 flex flex-col items-center gap-1.5 py-3 cursor-pointer"
+              style={{ borderRadius: "var(--r-controle)", ...(place === key
                 ? { background: "rgba(var(--accent-rgb),0.13)", border: "1.5px solid var(--accent)", boxShadow: "0 0 0 3px rgba(var(--accent-rgb),0.14)" }
-                : { background: "rgba(var(--tint-violet-rgb),0.45)", border: "1.5px solid rgba(var(--accent-rgb),0.14)" }}>
+                : { background: "rgba(var(--tint-violet-rgb),0.45)", border: "1.5px solid rgba(var(--accent-rgb),0.14)" }) }}>
               <PIcon size={17} strokeWidth={1.8} style={{ color: place === key ? "var(--accent)" : "var(--text-3)" }} />
               <span className="text-[11px] font-bold" style={{ color: place === key ? "var(--text-1)" : "var(--text-3)" }}>{label}</span>
             </motion.button>
@@ -2673,7 +2671,7 @@ function ImproviseSheet({ defaultPlace, defaultHalteres, difficulty, onClose, on
           onClick={generate}
           disabled={loading}
           className="w-full mt-4 py-3.5 rounded-2xl flex items-center justify-center gap-2 cursor-pointer text-[14.5px] font-extrabold text-white"
-          style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", boxShadow: "0 8px 26px rgba(139,92,246,0.4)", opacity: loading ? 0.85 : 1 }}
+          style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", boxShadow: "var(--ombre-action)", opacity: loading ? 0.85 : 1 }}
         >
           {loading ? (
             <>
@@ -2897,7 +2895,7 @@ function SemaineSheet({ week, todayIdx, fetchWeekAt, onClose, onStartDay, onAsk,
         style={{ borderTop: "1px solid rgba(var(--tint-violet-rgb),0.8)", paddingBottom: "calc(1rem + env(safe-area-inset-bottom))" }}>
         <motion.button whileTap={{ scale: 0.97 }} onClick={() => onAsk("Refais toute ma semaine d’entraînement")}
           className="flex-1 py-3 rounded-2xl text-[13px] font-extrabold text-white cursor-pointer flex items-center justify-center gap-1.5"
-          style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", boxShadow: "0 8px 22px rgba(139,92,246,0.4)" }}>
+          style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", boxShadow: "var(--ombre-action)" }}>
           <Sparkles size={13} strokeWidth={2} /> Refais ma semaine
         </motion.button>
         <motion.button whileTap={{ scale: 0.96 }} onClick={onAddSession}
@@ -3043,7 +3041,7 @@ function ActChip({ children, onClick, primary }: { children: React.ReactNode; on
     <motion.button whileTap={{ scale: 0.94 }} onClick={onClick}
       className="flex items-center gap-1 text-[11px] font-bold px-3 py-1.5 rounded-full cursor-pointer border-none"
       style={primary
-        ? { background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", color: "#fff", boxShadow: "0 4px 12px rgba(139,92,246,0.35)" }
+        ? { background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", color: "#fff", boxShadow: "var(--ombre-action)" }
         : { background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)", color: "var(--text-2)" }}>
       {children}
     </motion.button>
@@ -3677,7 +3675,7 @@ export default function ProgressionPage() {
           initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
           className="mb-5"
         >
-          <p className="text-[11px] font-semibold mb-1" style={{ color: "var(--text-3)" }}>
+          <p className="vy-label mb-1">
             {dateLabel}
           </p>
           <h1 className="text-2xl font-extralight tracking-tight" style={{ color: "var(--text-1)" }}>
@@ -3708,7 +3706,7 @@ export default function ProgressionPage() {
         {/* ── ② Bifurcation ── */}
         <motion.p
           initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.4, delay: 0.15 }}
-          className="text-[16px] font-light mt-6 mb-3" style={{ color: "var(--text-1)" }}
+          className="vy-corps mt-6 mb-3"
         >
           {askLabel}
         </motion.p>
@@ -3731,22 +3729,35 @@ export default function ProgressionPage() {
           <MouvementsRow onOuvrir={(exo) => setMouvements({ fiche: exo ?? null })} />
         </motion.div>
 
-        {/* ── ④ Ma semaine ── */}
-        <motion.div
-          data-tour-anchor="prog-semaine"
-          initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.25 }}
-          className="mt-4"
-        >
-          <WeekStrip week={week} todayIdx={todayIdx} onOrganise={() => setSheet("semaine")} />
-        </motion.div>
+        {/* ── ④ Ma semaine · ⑤ Ton élan ──
+           Un seul groupe, deux sections separees par un filet. Les deux blocs
+           portaient EXACTEMENT le meme dessin (meme surface pleine, meme rayon
+           de 20, meme halo a 0,08) a 12 px l'un de l'autre : seule la TEINTE
+           changeait, violet puis teal. Deux surfaces pour une seule idee, c'est
+           la forme qui fait « tableau de bord genere ».
 
-        {/* ── ⑤ Ton élan ── */}
+           Le filet vient de `.vy-filet + .vy-filet`, donc c'est le SECOND enfant
+           qui le porte : quand l'elan n'a rien a dire, il n'y a pas de trait
+           orphelin. D'ou aussi le `{elan && ...}` ici, et pas seulement le
+           `return null` interne du composant : un enfant vide porterait quand
+           meme sa bordure. */}
         <motion.div
-          data-tour-anchor="prog-elan"
-          initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.3 }}
-          className="mt-3"
+          initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.25 }}
+          className="mt-6 overflow-hidden"
+          style={{
+            borderRadius: "var(--r-bloc)",
+            background: "rgba(var(--surface-rgb),0.9)",
+            border: "1px solid rgba(var(--text-3-rgb),0.16)",
+          }}
         >
-          <ElanStrip data={elan} onOpen={() => setSheet("elan")} />
+          <div data-tour-anchor="prog-semaine" className="vy-filet">
+            <WeekStrip week={week} todayIdx={todayIdx} onOrganise={() => setSheet("semaine")} />
+          </div>
+          {elan && (
+            <div data-tour-anchor="prog-elan" className="vy-filet">
+              <ElanStrip data={elan} onOpen={() => setSheet("elan")} />
+            </div>
+          )}
         </motion.div>
       </div>
 
@@ -3909,7 +3920,7 @@ export default function ProgressionPage() {
             initial={{ opacity: 0, y: 30, scale: 0.9 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 20, scale: 0.95 }}
             transition={{ type: "spring", bounce: 0.4, duration: 0.5 }}
             className="fixed bottom-32 md:bottom-6 left-1/2 -translate-x-1/2 z-[200] px-5 py-3 rounded-2xl flex items-center gap-2"
-            style={{ background: "rgba(var(--surface-rgb),0.9)", backdropFilter: "blur(10px)", border: "1px solid rgba(var(--surface-rgb),0.9)", boxShadow: "0 8px 32px rgba(var(--accent-rgb),0.2)", whiteSpace: "nowrap" }}>
+            style={{ background: "rgba(var(--surface-rgb),0.9)", backdropFilter: "blur(10px)", border: "1px solid rgba(var(--surface-rgb),0.9)", boxShadow: "var(--ombre-flottant)", whiteSpace: "nowrap" }}>
             <Check size={14} strokeWidth={2.5} style={{ color: "var(--gold)" }} />
             <span className="text-sm font-medium" style={{ color: "var(--text-1)" }}>{toast}</span>
           </motion.div>
