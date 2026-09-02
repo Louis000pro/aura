@@ -118,70 +118,51 @@ export default function AccueilSignature({
           vaut mieux qu'une phrase quotidienne qui ne dit rien. */}
       {moment && <MotDuGuide guide={guide} moment={moment} reduce={!!reduce} />}
 
-      {showPremiumOffer && (
-        <motion.section
-          className={styles.poster}
-          initial={reduce ? false : { opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.45, ease: "easeOut" }}
-          aria-label="Découvrir Vaiiya Premium"
-        >
-          <Image
-            src="/premium/vaiiya-premium-home-v1.webp"
-            alt=""
-            fill
-            priority
-            sizes="(max-width: 767px) calc(100vw - 32px), 640px"
-            className={styles.posterImage}
-          />
-          <div className={styles.posterShade} aria-hidden="true" />
-          <div className={styles.posterCopy}>
-            <span className={styles.premiumWordmark}>
-              <BrandSpark />
-              VAIYIA PREMIUM
-            </span>
-            <h2>Tout Vaiiya. Sans limites.</h2>
-            <p>Programmes exclusifs, assistant illimité et toutes les missions.</p>
-            <button type="button" onClick={() => onNavigate("/premium")}>
-              {VENTE_OUVERTE ? `Découvrir · ${prix}` : "Découvrir"}
-            </button>
-          </div>
-        </motion.section>
-      )}
+      {/* ── OÙ J'EN SUIS AUJOURD'HUI ────────────────────────────────
+          La série et le rang répondaient à la MÊME question, et ils la
+          posaient sur deux surfaces identiques séparées de 16 px. C'est
+          la forme qui fait « tableau de bord » : autant de cadres que
+          d'informations. Un seul groupe, un filet entre les deux, et
+          l'écran ouvre enfin sur où j'en suis plutôt que sur une
+          affiche de vente.
 
-      <BlocSerie serie={aura.serie} jourValide={aura.jourValide} charge={auraLoaded} />
+          Le filet vient de `.vy-filet + .vy-filet`, donc c'est le SECOND
+          enfant qui le porte : tant que l'aura n'est pas lue, la série ne
+          se rend pas et il n'y a pas de trait orphelin. */}
+      <section className={styles.today}>
+        <BlocSerie serie={aura.serie} jourValide={aura.jourValide} charge={auraLoaded} />
 
-      <button type="button" className={styles.rankStrip} onClick={onOpenRangs}>
-        <span className={styles.rankGem}>
-          <GemmeRang rang={aura.rang} size={34} />
-        </span>
-        <span className={styles.rankCopy}>
-          {/* La série a son propre bloc juste au-dessus : la redire ici
-              ferait deux compteurs pour une seule idée. */}
-          <strong>{aura.rang.nom}</strong>
-          <small>Voir les rangs et leurs récompenses.</small>
-        </span>
-        <span className={styles.rankExp}>
-          <strong>{auraLoaded ? aura.exp : "—"} EXP</strong>
-          <small>sur {aura.seuilHaut}</small>
-          <AnimatePresence>
-            {expGain !== null && (
-              <motion.em
-                initial={reduce ? false : { opacity: 0, y: 7, scale: 0.8 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: -8 }}
-              >
-                +{expGain}
-              </motion.em>
-            )}
-          </AnimatePresence>
-        </span>
-      </button>
+        <button type="button" className={`vy-filet ${styles.rankStrip}`} onClick={onOpenRangs}>
+          <span className={styles.rankGem}>
+            <GemmeRang rang={aura.rang} size={34} />
+          </span>
+          <span className={styles.rankCopy}>
+            {/* La série est la section juste au-dessus : la redire ici
+                ferait deux compteurs pour une seule idée. */}
+            <strong>{aura.rang.nom}</strong>
+            <small>Voir les rangs et leurs récompenses.</small>
+          </span>
+          <span className={styles.rankExp}>
+            <strong>{auraLoaded ? aura.exp : "—"} EXP</strong>
+            <small>sur {aura.seuilHaut}</small>
+            <AnimatePresence>
+              {expGain !== null && (
+                <motion.em
+                  initial={reduce ? false : { opacity: 0, y: 7, scale: 0.8 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -8 }}
+                >
+                  +{expGain}
+                </motion.em>
+              )}
+            </AnimatePresence>
+          </span>
+        </button>
+      </section>
 
       <section>
         <SectionHeading
           title="Missions du jour"
-          subtitle="Tu sais ce que ça rapporte avant de le faire."
           aside={`${expDuJour} / ${plafondDuJour} EXP`}
         />
         <div className={styles.missionStack}>
@@ -218,7 +199,37 @@ export default function AccueilSignature({
       </section>
 
       <section>
-        <SectionHeading title="Missions Premium" />
+        {showPremiumOffer ? (
+          <motion.div
+            className={styles.poster}
+            initial={reduce ? false : { opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.45, ease: "easeOut" }}
+            aria-label="Découvrir Vaiiya Premium"
+          >
+            <Image
+              src="/premium/vaiiya-premium-home-v1.webp"
+              alt=""
+              fill
+              sizes="(max-width: 767px) calc(100vw - 32px), 640px"
+              className={styles.posterImage}
+            />
+            <div className={styles.posterShade} aria-hidden="true" />
+            <div className={styles.posterCopy}>
+              <span className={styles.premiumWordmark}>
+                <BrandSpark />
+                VAIYIA PREMIUM
+              </span>
+              <h2>Tout Vaiiya. Sans limites.</h2>
+              <p>Programmes exclusifs, assistant illimité et toutes les missions.</p>
+              <button type="button" onClick={() => onNavigate("/premium")}>
+                {VENTE_OUVERTE ? `Découvrir · ${prix}` : "Découvrir"}
+              </button>
+            </div>
+          </motion.div>
+        ) : (
+          <SectionHeading title="Missions Premium" />
+        )}
         <div className={styles.premiumVault}>
           <div className={styles.premiumHeading}>
             <span className={styles.premiumSeal} aria-hidden="true" />
@@ -287,7 +298,7 @@ function BlocSerie({
 
   const aUneSerie = serie > 0;
   return (
-    <section className={styles.streak} data-done={jourValide ? "" : undefined}>
+    <div className={`vy-filet ${styles.streak}`} data-done={jourValide ? "" : undefined}>
       <span className={styles.streakFlame} aria-hidden="true">🔥</span>
       <span className={styles.streakCopy}>
         <strong>
@@ -308,7 +319,7 @@ function BlocSerie({
           </svg>
         </span>
       )}
-    </section>
+    </div>
   );
 }
 

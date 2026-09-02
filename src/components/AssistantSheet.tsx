@@ -467,15 +467,15 @@ export default function AssistantSheet() {
                       {voix(guide, "accueil.invite")}
                     </p>
                   </div>
-                  <div className="flex flex-wrap gap-2 justify-center">
+                  <div className="w-full self-stretch flex flex-col">
                     {SUGGESTIONS.map((s, i) => (
                       <motion.button key={s}
-                        initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
+                        initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.08 + i * 0.06 }}
-                        whileTap={{ scale: 0.96 }}
+                        whileTap={{ scale: 0.99 }}
                         onClick={() => sendMessage(s)}
-                        className="px-3.5 py-2 rounded-2xl text-[13px] font-medium cursor-pointer"
-                        style={{ background: "rgba(var(--accent-rgb),0.10)", color: "var(--text-1)", border: "1px solid rgba(var(--accent-rgb),0.18)" }}>
+                        className="vy-filet w-full text-left py-3 px-1 text-[14px] font-normal cursor-pointer bg-transparent border-none"
+                        style={{ color: "var(--text-1)" }}>
                         {s}
                       </motion.button>
                     ))}

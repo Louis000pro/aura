@@ -836,25 +836,19 @@ export default function ProfilPage() {
           {/* Titre débloqué au Diamant */}
           <TitreRang cosmetiques={cosmetiques} />
 
-          {/* Goals / titre */}
-          {profileGoals.length > 0 && (
-            <p className="vy-label mt-2 max-w-[260px]" style={{ color: "var(--exp-encre)" }}>
-              {profileGoals
-                .map((id) => GOALS_LIST.find((g) => g.id === id))
-                .filter(Boolean)
-                .map((g) => `${g!.emoji} ${g!.label}`)
-                .join(" · ")}
+          {/* Objectifs et niveau : une seule ligne, une seule idée. */}
+          {(profileGoals.length > 0 || profileLevel) && (
+            <p className="vy-label mt-2 max-w-[290px]" style={{ color: "var(--exp-encre)" }}>
+              {[
+                ...profileGoals
+                  .map((id) => GOALS_LIST.find((g) => g.id === id))
+                  .filter(Boolean)
+                  .map((g) => `${g!.emoji} ${g!.label}`),
+                ...(profileLevel
+                  ? [LEVELS_LIST.find((l) => l.id === profileLevel)?.label ?? profileLevel]
+                  : []),
+              ].join(" · ")}
             </p>
-          )}
-
-          {/* Niveau */}
-          {profileLevel && (
-            <span
-              className="vy-label mt-2 px-2.5 py-1 rounded-full"
-              style={{ background: "rgba(var(--violet-mid-rgb),0.34)", color: "var(--exp-encre)", fontWeight: 600 }}
-            >
-              {LEVELS_LIST.find((l) => l.id === profileLevel)?.label ?? profileLevel}
-            </span>
           )}
 
           {/* Bio */}

@@ -693,7 +693,7 @@ function TodayHero({
   /* Skeleton — même silhouette que la carte, aucune culpabilité d'attente */
   if (state === "loading") {
     return (
-      <div className="overflow-hidden relative" style={{ height: 340, borderRadius: "var(--r-affiche)", background: "rgba(var(--surface-rgb),0.7)", border: "1px solid rgba(var(--accent-rgb),0.12)" }}>
+      <div className="overflow-hidden relative" style={{ height: 380, borderRadius: "var(--r-affiche)", background: "rgba(var(--surface-rgb),0.7)", border: "1px solid rgba(var(--accent-rgb),0.12)" }}>
         <motion.div
           className="absolute inset-0"
           style={{ background: "linear-gradient(100deg, transparent 30%, rgba(var(--accent-rgb),0.08) 50%, transparent 70%)" }}
@@ -715,7 +715,7 @@ function TodayHero({
       initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.45 }}
       className="overflow-hidden relative"
-      style={{ minHeight: state === "seance" ? 360 : 300, borderRadius: "var(--r-affiche)", boxShadow: "var(--ombre-pose)" }}
+      style={{ minHeight: state === "seance" ? 400 : 320, borderRadius: "var(--r-affiche)", boxShadow: "var(--ombre-pose)" }}
     >
       <Photo img={viz.img} pos={viz.pos} style={{ position: "absolute", inset: 0 }} />
 
@@ -725,12 +725,6 @@ function TodayHero({
           style={{ background: "rgba(10,8,18,0.42)", color: "#fff", border: "1px solid rgba(255,255,255,0.22)", backdropFilter: "blur(6px)" }}>
           {state === "setup" ? "Première fois ici" : "Aujourd’hui"}
         </span>
-        {state === "seance" && (
-          <span className="px-3 py-1.5 rounded-full text-[11px] font-semibold"
-            style={{ background: "rgba(139,92,246,0.32)", color: "#E9DFFF", border: "1px solid rgba(196,168,255,0.45)", backdropFilter: "blur(6px)" }}>
-            ✦ Planifié
-          </span>
-        )}
         {state === "done" && (
           <span className="w-10 h-10 rounded-full flex items-center justify-center"
             style={{ background: "linear-gradient(135deg,#4FE8B8,#1FBF8C)", boxShadow: "var(--ombre-pose)" }}>
@@ -750,16 +744,10 @@ function TodayHero({
             <p className="text-[11px] font-semibold mb-1" style={{ color: "#C9B8FF" }}>
               {day.type}{lieuLabel(day.location) ? ` · ${lieuLabel(day.location)}` : ""}
             </p>
-            <h2 className="text-[27px] leading-tight font-extralight text-white">{dayTitle(day)}</h2>
-            <div className="flex items-center gap-2 mt-2 mb-3.5 text-[12px] font-medium" style={{ color: "rgba(255,255,255,0.82)" }}>
-              <Clock size={12} strokeWidth={2} />
-              <span>{day.type === "HIIT" ? 30 : 45} min</span>
-              <span className="w-[3px] h-[3px] rounded-full" style={{ background: "rgba(255,255,255,0.4)" }} />
-              <span>{day.exerciseList.length} exercices</span>
-              <span className="w-[3px] h-[3px] rounded-full" style={{ background: "rgba(255,255,255,0.4)" }} />
-              <Zap size={12} strokeWidth={2} style={{ color: "#EF9F27" }} fill="#EF9F27" />
-              <span>{day.difficulty}</span>
-            </div>
+            <h2 className="text-[34px] md:text-[38px] leading-[1.02] font-extralight text-white">{dayTitle(day)}</h2>
+            <p className="mt-2.5 mb-4 text-[11.5px] font-medium" style={{ color: "rgba(255,255,255,0.62)" }}>
+              {day.type === "HIIT" ? 30 : 45} min · {day.exerciseList.length} exercices · {day.difficulty}
+            </p>
             <motion.button
               whileTap={{ scale: 0.97 }}
               onClick={onStart}
@@ -786,7 +774,7 @@ function TodayHero({
             <p className="text-[11px] font-semibold mb-1" style={{ color: "#9FD8C6" }}>
               Aujourd&apos;hui
             </p>
-            <h2 className="text-[27px] leading-tight font-extralight text-white">Repos.</h2>
+            <h2 className="text-[34px] md:text-[38px] leading-[1.02] font-extralight text-white">Repos.</h2>
             <p className="text-[12.5px] font-light mt-1.5 mb-3.5 leading-relaxed" style={{ color: "rgba(255,255,255,0.72)" }}>
               Ton corps construit pendant que tu récupères.
               {nextLabel && <> Prochaine : <b className="font-bold text-white">{nextLabel}</b>.</>}
@@ -807,7 +795,7 @@ function TodayHero({
             <p className="text-[11px] font-semibold mb-1" style={{ color: "#7FE8C8" }}>
               Aujourd&apos;hui · fait
             </p>
-            <h2 className="text-[27px] leading-tight font-extralight text-white">C&apos;est fait.</h2>
+            <h2 className="text-[34px] md:text-[38px] leading-[1.02] font-extralight text-white">C&apos;est fait.</h2>
             <p className="text-[12.5px] font-light mt-1.5 mb-3.5" style={{ color: "rgba(255,255,255,0.72)" }}>
               {dayTitle(day)}
               {doneStats && doneStats.minutes > 0 && <> · {doneStats.minutes} min</>}
@@ -830,7 +818,7 @@ function TodayHero({
               On fait connaissance
             </p>
             {/* La question n'apparaît QUE quand l'app ne sait pas — même logique que Nutrition */}
-            <h2 className="text-[26px] leading-tight font-extralight text-white">On s&apos;entraîne comment&nbsp;?</h2>
+            <h2 className="text-[30px] md:text-[34px] leading-[1.04] font-extralight text-white">On s&apos;entraîne comment&nbsp;?</h2>
             <p className="text-[12.5px] font-light mt-1.5 mb-3.5 leading-relaxed" style={{ color: "rgba(255,255,255,0.72)" }}>
               Quelques questions, et l&apos;IA construit ta semaine idéale.
             </p>
@@ -2149,14 +2137,30 @@ function PremiumSessionRow({ count, children, title = "Continue avec Premium", u
    ouverte : on la montre « Bientôt », on ne la cache pas — la banque se
    remplira. Les photos sont naturelles, les titres blancs font le reste.
    ════════════════════════════════════════════════════════════════════ */
+type CatFamille = "objectif" | "zone" | "terrain" | "moment" | "lire";
+
 type CatDef = {
   id: string;
   name: string;
   tag: string;                                   // la promesse, en une ligne
   img: string;
   pos?: string;
+  /** La rangée éditoriale où la collection se range au niveau 1.
+   *  « tiennes » n'en a pas : elle est épinglée en tête, hors grille. */
+  famille?: CatFamille;
   match: (s: MergedSession, hay: string) => boolean;
 };
+
+/** Les quatre familles, dans l'ordre où l'on cherche : ce qu'on veut,
+ *  ce qu'on travaille, où on est, et où on en est. « Pour comprendre »
+ *  ferme la marche parce qu'elle ne contient pas de séance du tout. */
+const FAMILLES: { id: CatFamille; label: string }[] = [
+  { id: "objectif", label: "Un objectif" },
+  { id: "zone", label: "Une zone" },
+  { id: "terrain", label: "Un terrain" },
+  { id: "moment", label: "Un moment" },
+  { id: "lire", label: "Pour comprendre" },
+];
 
 const hayOf = (s: MergedSession) =>
   `${s.title} ${s.subtitle ?? ""} ${(s.muscles ?? []).join(" ")}`.toLowerCase();
@@ -2173,47 +2177,50 @@ const matchCollection = (
 const CATALOG: CatDef[] = [
   { id: "tiennes", name: "Les tiennes", tag: "Tes créations, elles vivent aussi dans les autres collections.",
     img: "cat-tiennes", match: (s) => s.perso },
-  { id: "express", name: "Séances express", tag: "Peu de temps, mais une vraie séance.",
+  { id: "express", famille: "objectif", name: "Séances express", tag: "Peu de temps, mais une vraie séance.",
     img: "cat-express", match: matchCollection("express", (s) => s.duration <= 20) },
-  { id: "masse", name: "Prise de masse", tag: "Construire du muscle, brique par brique.",
+  { id: "masse", famille: "objectif", name: "Prise de masse", tag: "Construire du muscle, brique par brique.",
     img: "cat-masse", match: matchCollection("masse", (s, hay) => /masse|hypertroph|volume/.test(hay) || (s.category === "force" && s.duration >= 40)) },
-  { id: "perte", name: "Perte de poids", tag: "Brûler, sans se cramer.",
+  { id: "perte", famille: "objectif", name: "Perte de poids", tag: "Brûler, sans se cramer.",
     img: "cat-perte", match: matchCollection("perte", (s, hay) => /perte|brûle|brule|minceur|sèche|seche|calorie/.test(hay) || s.category === "cardio") },
-  { id: "renfo", name: "Renfo musculaire", tag: "Plus fort, partout, pour de vrai.",
+  { id: "renfo", famille: "objectif", name: "Renfo musculaire", tag: "Plus fort, partout, pour de vrai.",
     img: "cat-renfo", match: matchCollection("renfo", (s, hay) => s.category === "force" || /renfo|force|muscu/.test(hay)) },
-  { id: "cardiohiit", name: "Cardio & HIIT", tag: "Le souffle court, le cœur solide.",
+  { id: "cardiohiit", famille: "objectif", name: "Cardio & HIIT", tag: "Le souffle court, le cœur solide.",
     img: "cat-cardiohiit", match: matchCollection("cardiohiit", (s, hay) => s.category === "cardio" || /cardio|hiit|fractionn|endurance|sprint|course|vélo|velo/.test(hay)) },
-  { id: "abdos", name: "Abdos & gainage", tag: "Le centre qui tient tout le reste.",
+  { id: "abdos", famille: "zone", name: "Abdos & gainage", tag: "Le centre qui tient tout le reste.",
     img: "cat-abdos", match: matchCollection("abdos", (_s, hay) => /abdo|gainage|core|planche|oblique|sangle|ventre/.test(hay)) },
-  { id: "jambes", name: "Jambes & fessiers", tag: "La base, on ne triche pas avec les jambes.",
+  { id: "jambes", famille: "zone", name: "Jambes & fessiers", tag: "La base, on ne triche pas avec les jambes.",
     img: "cat-jambes", match: matchCollection("jambes", (_s, hay) => /jambe|fessier|squat|cuisse|mollet|ischio|glute|\bleg|bas du corps|fente/.test(hay)) },
-  { id: "haut", name: "Haut du corps", tag: "Dos, pecs, épaules, bras, l’armure.",
+  { id: "haut", famille: "zone", name: "Haut du corps", tag: "Dos, pecs, épaules, bras, l’armure.",
     img: "cat-haut", match: matchCollection("haut", (_s, hay) => /pec|\bdos\b|épaule|epaule|bras|biceps|triceps|haut du corps|push|pull|tirage|traction|rowing|upper|poussé/.test(hay)) },
-  { id: "fullbody", name: "Full body", tag: "Tout le corps, une seule séance.",
+  { id: "fullbody", famille: "zone", name: "Full body", tag: "Tout le corps, une seule séance.",
     img: "cat-fullbody", match: matchCollection("fullbody", (s, hay) => s.category === "fullbody" || /full|complet|corps entier|total/.test(hay)) },
-  { id: "salle", name: "À la salle", tag: "Machines, barres, charges, ton terrain.",
+  { id: "salle", famille: "terrain", name: "À la salle", tag: "Machines, barres, charges, ton terrain.",
     img: "cat-salle", match: matchCollection("salle", (_s, hay) => /salle|machine|barre|rack|poulie|banc/.test(hay)) },
-  { id: "sansmateriel", name: "Sans matériel", tag: "Ton corps suffit, partout, tout le temps.",
+  { id: "sansmateriel", famille: "terrain", name: "Sans matériel", tag: "Ton corps suffit, partout, tout le temps.",
     img: "cat-sansmateriel", match: matchCollection("sansmateriel", (_s, hay) => /sans mat|poids du corps|maison|nomade/.test(hay)) },
-  { id: "debuter", name: "Débuter & reprendre", tag: "Le premier pas compte double.",
+  { id: "debuter", famille: "moment", name: "Débuter & reprendre", tag: "Le premier pas compte double.",
     img: "cat-debuter", match: matchCollection("debuter", (s, hay) => s.difficulty === "Débutant" || /débutant|debutant|starter|reprise|découverte|decouverte|doux/.test(hay)) },
-  { id: "mobilite", name: "Mobilité & posture", tag: "Bouger mieux avant de bouger plus.",
+  { id: "mobilite", famille: "moment", name: "Mobilité & posture", tag: "Bouger mieux avant de bouger plus.",
     img: "cat-mobilite", match: matchCollection("mobilite", (s, hay) => s.category === "mobilite" || /mobilit|étirement|etirement|souplesse|posture|stretch/.test(hay)) },
-  { id: "recup", name: "Récupération", tag: "Le muscle se construit au repos.",
+  { id: "recup", famille: "moment", name: "Récupération", tag: "Le muscle se construit au repos.",
     img: "cat-recup", match: matchCollection("recup", (_s, hay) => /récup|recup|détente|detente|relax|respiration|repos/.test(hay)) },
-  { id: "defis", name: "Défis", tag: "Un max, un chrono, un record à battre.",
+  { id: "defis", famille: "moment", name: "Défis", tag: "Un max, un chrono, un record à battre.",
     img: "cat-defis", match: matchCollection("defis", (_s, hay) => /défi|defi|challenge|\bmax\b|record/.test(hay)) },
-  { id: "conseils", name: "Conseils & progresser", tag: "Des conseils francs et utiles, à lire partout.",
+  { id: "conseils", famille: "lire", name: "Conseils & progresser", tag: "Des conseils francs et utiles, à lire partout.",
     img: "cat-conseils", match: matchCollection("conseils", () => false) },
 ];
 
 /** Tuile de collection — photo naturelle, titre blanc centré, compte.
     Une collection vide dit « Bientôt » : la porte reste ouverte. */
-function CatTile({ cat, count, freeCount, premiumCount, onOpen }: {
+function CatTile({ cat, count, freeCount, premiumCount, large, onOpen }: {
   cat: CatDef;
   count: number;
   freeCount: number;
   premiumCount: number;
+  /** Pleine largeur, cadrage à plat, promesse écrite. Réservé à ce qui
+   *  n'est pas de la même nature que le reste de la grille. */
+  large?: boolean;
   onOpen: () => void;
 }) {
   const sub = count > 0
@@ -2225,18 +2232,32 @@ function CatTile({ cat, count, freeCount, premiumCount, onOpen }: {
     <motion.button
       whileTap={{ scale: 0.97 }} onClick={onOpen}
       className="relative w-full overflow-hidden cursor-pointer border-none p-0 block"
-      style={{ aspectRatio: "3 / 4", borderRadius: "var(--r-bloc)", boxShadow: "var(--ombre-pose)" }}
+      style={{ aspectRatio: large ? "16 / 7" : "3 / 4", borderRadius: "var(--r-bloc)", boxShadow: "var(--ombre-pose)" }}
       aria-label={`${cat.name}, ${sub}`}
     >
       <Photo img={cat.img} pos={cat.pos} style={{ position: "absolute", inset: 0 }} />
-      <div className="absolute inset-x-0 bottom-0 px-2.5 pb-3.5 pt-14 flex flex-col items-center text-center"
-        style={{ background: "linear-gradient(to top, rgba(6,5,10,0.88) 20%, rgba(6,5,10,0.35) 62%, transparent)" }}>
-        <p className="text-[14.5px] font-semibold text-white leading-[1.08] tracking-tight"
-          style={{ textWrap: "balance", textShadow: "0 2px 10px rgba(0,0,0,0.5)" }}>
-          {cat.name}
-        </p>
-        <p className="text-[8.5px] font-bold mt-1" style={{ color: "rgba(255,255,255,0.68)" }}>{sub}</p>
-      </div>
+      {large ? (
+        <div className="absolute inset-0 flex flex-col justify-end px-4 pb-4 pt-10 text-left"
+          style={{ background: "linear-gradient(90deg, rgba(6,5,10,0.9) 8%, rgba(6,5,10,0.62) 52%, rgba(6,5,10,0.18))" }}>
+          <p className="text-[18px] font-semibold text-white leading-[1.06] tracking-tight"
+            style={{ textShadow: "0 2px 10px rgba(0,0,0,0.5)" }}>
+            {cat.name}
+          </p>
+          <p className="text-[11.5px] font-light mt-1 max-w-[30ch] leading-snug" style={{ color: "rgba(255,255,255,0.78)" }}>
+            {cat.tag}
+          </p>
+          <p className="text-[9px] font-bold mt-2" style={{ color: "rgba(255,255,255,0.62)" }}>{sub}</p>
+        </div>
+      ) : (
+        <div className="absolute inset-x-0 bottom-0 px-2.5 pb-3.5 pt-14 flex flex-col items-center text-center"
+          style={{ background: "linear-gradient(to top, rgba(6,5,10,0.88) 20%, rgba(6,5,10,0.35) 62%, transparent)" }}>
+          <p className="text-[14.5px] font-semibold text-white leading-[1.08] tracking-tight"
+            style={{ textWrap: "balance", textShadow: "0 2px 10px rgba(0,0,0,0.5)" }}>
+            {cat.name}
+          </p>
+          <p className="text-[8.5px] font-bold mt-1" style={{ color: "rgba(255,255,255,0.68)" }}>{sub}</p>
+        </div>
+      )}
     </motion.button>
   );
 }
@@ -2407,25 +2428,42 @@ function ChooseSheet({ sessions, week, loading, canAccessPremium, maxSeances, ca
               onVoir={() => setCatId("tiennes")}
             />
 
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-              {CATALOG.filter((c) => c.id !== "tiennes").map((c) => {
-                const catSessions = sessions.filter((s) => c.match(s, hayOf(s)));
-                const official = catSessions.filter((s) => !s.perso);
-                const premiumCount = official.filter((s) => s.access === "premium").length;
-                const freeCount = official.length - premiumCount;
-                const count = premiumCount > 0 ? official.length : catSessions.length;
-                return (
-                  <CatTile
-                    key={c.id}
-                    cat={c}
-                    count={count}
-                    freeCount={freeCount}
-                    premiumCount={premiumCount}
-                    onOpen={() => { setCatId(c.id); setAdviceTheme("Tous"); }}
-                  />
-                );
-              })}
-            </div>
+            {FAMILLES.map(({ id: famille, label }) => {
+              const cats = CATALOG.filter((c) => c.famille === famille);
+              if (cats.length === 0) return null;
+              /* La rangée « Pour comprendre » n'en contient qu'une, et
+                 c'est justement la seule qui ne range pas des séances :
+                 elle s'étale, les autres restent en grille. */
+              const seule = cats.length === 1;
+              return (
+                <section key={famille} className="mb-6">
+                  <div className="flex items-center gap-2 mb-2.5 px-0.5">
+                    <span className="vy-label">{label}</span>
+                    <span aria-hidden className="flex-1 h-px" style={{ background: "rgba(var(--accent-rgb),0.1)" }} />
+                  </div>
+                  <div className={seule ? "" : "grid grid-cols-2 md:grid-cols-3 gap-3"}>
+                    {cats.map((c) => {
+                      const catSessions = sessions.filter((s) => c.match(s, hayOf(s)));
+                      const official = catSessions.filter((s) => !s.perso);
+                      const premiumCount = official.filter((s) => s.access === "premium").length;
+                      const freeCount = official.length - premiumCount;
+                      const count = premiumCount > 0 ? official.length : catSessions.length;
+                      return (
+                        <CatTile
+                          key={c.id}
+                          cat={c}
+                          count={count}
+                          freeCount={freeCount}
+                          premiumCount={premiumCount}
+                          large={seule}
+                          onOpen={() => { setCatId(c.id); setAdviceTheme("Tous"); }}
+                        />
+                      );
+                    })}
+                  </div>
+                </section>
+              );
+            })}
             </>
           )
         ) : cat.id === "tiennes" ? (
@@ -3673,11 +3711,8 @@ export default function ProgressionPage() {
         {/* ── En-tête : date + titre ── */}
         <motion.div
           initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
-          className="mb-5"
+          className="mb-3.5 flex items-baseline justify-between gap-3"
         >
-          <p className="vy-label mb-1">
-            {dateLabel}
-          </p>
           <h1 className="text-2xl font-extralight tracking-tight" style={{ color: "var(--text-1)" }}>
             <em className="not-italic font-light" style={{
               background: "linear-gradient(135deg,var(--accent),var(--gold))",
@@ -3686,6 +3721,9 @@ export default function ProgressionPage() {
               display: "inline-block", paddingRight: "0.14em",  // même traitement que « nutrition »
             }}>Entraînement</em>
           </h1>
+          <p className="vy-label flex-shrink-0 text-right" style={{ color: "var(--text-3)" }}>
+            {dateLabel}
+          </p>
         </motion.div>
 
         {/* ── ① Héros « Aujourd'hui » ── */}

@@ -2394,22 +2394,19 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
       {/* ── Titre « Suivi nutrition » (le seul titre qui fait sens, en tête) ── */}
       <motion.div
         initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
-        className="flex items-center justify-between mb-5 max-w-5xl">
-        <div>
-          {/* Bouton retour vers Progression */}
-          {showBackButton && (
-            <button
-              onClick={() => window.history.back()}
-              className="flex items-center gap-1.5 mb-3 text-xs font-semibold"
-              style={{ color: "var(--exp-encre)" }}
-            >
-              <ChevronLeft size={14} strokeWidth={2.5} />
-              Progression
-            </button>
-          )}
-          <p className="vy-label mb-0.5" style={{ color: "var(--text-3)" }}>
-            {today.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })}
-          </p>
+        className="mb-3.5 max-w-5xl">
+        {/* Bouton retour vers Progression */}
+        {showBackButton && (
+          <button
+            onClick={() => window.history.back()}
+            className="flex items-center gap-1.5 mb-3 text-xs font-semibold"
+            style={{ color: "var(--exp-encre)" }}
+          >
+            <ChevronLeft size={14} strokeWidth={2.5} />
+            Progression
+          </button>
+        )}
+        <div className="flex items-baseline justify-between gap-3">
           <h1 className="text-3xl font-extralight" style={{ color: "var(--text-1)" }}>
             Suivi{" "}
             <em className="not-italic font-light" style={{
@@ -2421,6 +2418,9 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
               nutrition
             </em>
           </h1>
+          <p className="vy-label flex-shrink-0 text-right" style={{ color: "var(--text-3)" }}>
+            {today.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })}
+          </p>
         </div>
         {/* Plus de trio série / code-barres / photo ici : la série n'était
             qu'un chiffre en dur, et les deux actions vivent maintenant dans
@@ -2448,40 +2448,26 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
         </div>
       )}
 
-      {/* ── Tab toggle: Journal / Calendrier ─────────────────── */}
-      <motion.div
-        initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.06 }}
-        className="flex items-center gap-2 mb-5 max-w-5xl"
-      >
-        {(["journal", "calendrier"] as const).map((v) => {
-          const active = calView === v;
-          const Icon = v === "journal" ? BookOpen : CalendarDays;
-          const labels = { journal: "Journal", calendrier: "Calendrier" };
-          return (
-            <motion.button
-              key={v}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => setCalView(v)}
-              className="vy-label flex items-center gap-1.5 px-4 py-2 cursor-pointer transition-all duration-200"
-              style={{
-                borderRadius: "var(--r-controle)",
-                background: active ? "linear-gradient(135deg,#8B5CF6,#C13BC1)" : "rgba(var(--accent-rgb),0.10)",
-                color: active ? "#fff" : "var(--text-2)",
-                boxShadow: active ? "var(--ombre-action)" : "none",
-                border: active ? "1px solid transparent" : "1px solid rgba(var(--accent-rgb),0.2)",
-              }}
-            >
-              <Icon size={13} strokeWidth={1.8} />
-              {labels[v]}
-            </motion.button>
-          );
-        })}
-      </motion.div>
-
       {/* ── Calendar view ────────────────────────────────────── */}
       <AnimatePresence mode="wait">
         {calView === "calendrier" && (
           <motion.div key="cal" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+            {/* Le retour au journal est une SORTIE, pas un onglet : il ne
+                partage donc plus une paire de pastilles avec le calendrier
+                qu'on est déjà en train de regarder. */}
+            <button
+              onClick={() => setCalView("journal")}
+              className="vy-label inline-flex items-center gap-1.5 mb-4 px-3 py-2 cursor-pointer"
+              style={{
+                borderRadius: "var(--r-controle)",
+                background: "rgba(var(--accent-rgb),0.10)",
+                border: "1px solid rgba(var(--accent-rgb),0.2)",
+                color: "var(--text-2)",
+              }}
+            >
+              <ChevronLeft size={13} strokeWidth={2} />
+              Journal
+            </button>
             <NutritionCalendar
               onDayClick={(date) => {
                 setSelectedDate(date);
@@ -2496,7 +2482,8 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
       {/* ── Week selector ────────────────────────────────────── */}
       {calView === "journal" && <motion.div
         initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 }}
-        className="flex justify-between mb-6 max-w-5xl">
+        className="flex items-center gap-2 mb-6 max-w-5xl">
+        <div className="flex justify-between flex-1 min-w-0">
         {weekDays.map((day, i) => {
           const isSel = day.toDateString() === selectedDate.toDateString();
           const isToday = day.toDateString() === today.toDateString();
@@ -2522,6 +2509,23 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
             </motion.button>
           );
         })}
+        </div>
+        {/* Sept jours suffisent presque toujours. Quand ils ne suffisent
+            pas, la porte est au bout de la semaine, pas dans une barre
+            d'onglets au-dessus. */}
+        <motion.button
+          whileTap={{ scale: 0.94 }}
+          onClick={() => setCalView("calendrier")}
+          aria-label="Voir le calendrier du mois"
+          className="w-9 h-9 flex items-center justify-center cursor-pointer flex-shrink-0"
+          style={{
+            borderRadius: "var(--r-controle)",
+            background: "rgba(var(--accent-rgb),0.10)",
+            border: "1px solid rgba(var(--accent-rgb),0.2)",
+          }}
+        >
+          <CalendarDays size={15} strokeWidth={1.8} style={{ color: "var(--text-2)" }} />
+        </motion.button>
       </motion.div>}
 
       {/* ── Statut ──────────────────────────────────────────────── */}

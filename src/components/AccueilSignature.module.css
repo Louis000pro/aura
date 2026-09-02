@@ -82,9 +82,26 @@
   text-wrap: pretty;
 }
 
+/* ── OÙ J'EN SUIS AUJOURD'HUI ────────────────────────────────────────
+   Un seul cadre pour la série et le rang. Ils répondent à la même
+   question, ils n'ont donc pas à porter deux surfaces : le filet suffit
+   à les séparer, et c'est le dessin des Paramètres, généralisé depuis la
+   vague 1.
+
+   La section de la série garde sa teinte (orange, ou teal une fois la
+   journée validée) : dans un groupe, une section peut être colorée sans
+   redevenir une carte, puisqu'elle ne porte ni bord ni ombre à elle. */
+.today {
+  overflow: hidden;
+  border: 1px solid rgba(var(--text-3-rgb), 0.16);
+  border-radius: var(--r-bloc);
+  background: rgba(var(--surface-rgb), 0.9);
+}
+
 .poster {
   position: relative;
   min-height: 178px;
+  margin-bottom: 11px;
   overflow: hidden;
   border: 1px solid rgba(var(--glass-sheen), 0.15);
   border-radius: 23px;
@@ -206,16 +223,13 @@
   width: 100%;
   align-items: center;
   gap: 12px;
-  padding: 12px 14px;
-  border: 1px solid rgba(232, 98, 12, 0.16);
-  border-radius: 18px;
-  background: linear-gradient(120deg, rgba(255, 211, 78, 0.11), rgba(255, 122, 26, 0.07));
+  padding: 13px 14px;
+  background: linear-gradient(120deg, rgba(255, 211, 78, 0.13), rgba(255, 122, 26, 0.08));
 }
 
 .streak[data-done] {
   --ok: #0f7a5c;
-  border-color: rgba(43, 212, 160, 0.26);
-  background: linear-gradient(120deg, rgba(43, 212, 160, 0.13), rgba(43, 212, 160, 0.05));
+  background: linear-gradient(120deg, rgba(43, 212, 160, 0.15), rgba(43, 212, 160, 0.06));
 }
 
 :global([data-theme="dark"]) .streak[data-done] {
@@ -282,12 +296,10 @@
   min-height: 67px;
   align-items: center;
   gap: 11px;
-  padding: 10px 12px;
-  border: 1px solid rgba(var(--accent-rgb), 0.11);
-  border-radius: 18px;
+  padding: 11px 13px;
+  border: 0;
   color: var(--text-1);
-  background: rgba(var(--surface-rgb), 0.88);
-  box-shadow: 0 9px 24px -18px rgba(var(--accent-rgb), 0.45);
+  background: transparent;
   text-align: left;
 }
 

@@ -257,7 +257,7 @@ function PremiumInner() {
         <div
           ref={carouselRef}
           onScroll={onCarouselScroll}
-          className="flex md:grid md:grid-cols-2 md:max-w-3xl md:mx-auto overflow-x-auto md:overflow-visible snap-x snap-mandatory gap-4 md:gap-5 -mx-4 px-4 md:mx-0 md:px-0 items-stretch"
+          className="flex md:grid md:grid-cols-[minmax(0,0.76fr)_minmax(0,1.24fr)] md:max-w-3xl md:mx-auto overflow-x-auto md:overflow-visible snap-x snap-mandatory gap-4 md:gap-5 -mx-4 px-4 md:mx-0 md:px-0 items-stretch"
           style={{
             scrollbarWidth: "none",
             WebkitOverflowScrolling: "touch" as never,
@@ -303,7 +303,7 @@ function PremiumInner() {
 
                   {/* Prix */}
                   <div className="flex items-end gap-1.5 flex-wrap mb-2.5">
-                    <span className="text-3xl md:text-4xl font-black" style={{ color: "var(--text-0)" }}>
+                    <span className={`font-black ${highlight ? "text-4xl md:text-5xl" : "text-3xl md:text-3xl"}`} style={{ color: "var(--text-0)" }}>
                       {p.priceCents === 0 ? "0 €" : formatPrice(p.priceCents)}
                     </span>
                     {p.priceCents > 0 && <span className="text-sm font-light mb-1.5" style={{ color: "var(--text-3)" }}>/mois</span>}
@@ -369,7 +369,7 @@ function PremiumInner() {
                         </span>
                       </label>
                       <motion.button whileTap={{ scale: 0.97 }} onClick={() => subscribe(id)} disabled={loading === id || verifPaiement}
-                        className={`${styles.cta} py-2.5 md:py-3.5 text-sm font-bold text-white cursor-pointer disabled:opacity-60`}
+                        className={`${styles.cta} py-2.5 md:py-4 text-sm md:text-base font-bold text-white cursor-pointer disabled:opacity-60`}
                         style={{ borderRadius: "var(--r-controle)" }}>
                         {loading === id ? "Redirection…" : verifPaiement ? "Vérification…" : "Démarrer mes 3 jours gratuits"}
                       </motion.button>
@@ -382,7 +382,7 @@ function PremiumInner() {
                   {/* Avantages — listés en bas, tous visibles */}
                   <ul className="flex flex-col gap-2.5">
                     {p.features.map((f, i) => (
-                      <li key={i} className="flex items-start gap-2 text-sm" style={{ color: "var(--text-body)" }}>
+                      <li key={i} className="flex items-start gap-2 text-sm" style={{ color: highlight ? "var(--text-body)" : "var(--text-soft)" }}>
                         <span className="mt-0.5 flex-shrink-0 w-4 h-4 rounded-full flex items-center justify-center"
                           style={{ background: highlight ? "linear-gradient(135deg,#A78BFA,#7C5CFA)" : "rgba(167,139,250,0.18)" }}>
                           <Check size={11} strokeWidth={3} style={{ color: highlight ? "#fff" : "#A78BFA" }} />
