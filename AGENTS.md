@@ -66,6 +66,90 @@ fonctionnalités ; ce document est la source de vérité de ce qu'on en dit deho
 - L'assistant a UN visage : l'étincelle ✦ bicolore violet+or via `src/components/AssistantMark.tsx` (`AssistantSpark` dans la nav, `AssistantAvatar` dans le chat). Ne pas la remplacer.
 - Direction visuelle « clarté » : un seul accent = action, hiérarchie franche, typo forte, affordances nettes.
 
+## Règles de composition (VERROUILLÉ, validées par Louis le 2026-09-02)
+
+Le système D dit les COULEURS. Ces règles-là disent la FORME. Elles sortent
+des vagues 1 et 2 du refinement visuel et elles ne se rediscutent pas : le
+diagnostic de départ était « ça ressemble à une app faite par une IA », et
+c'était une question de composition, pas de goût.
+
+- **Moins de cartes, plus de composition.** Une carte n'est pas un moyen de
+  ranger, c'est un moyen de SÉPARER. Autant de surfaces que d'informations,
+  c'est exactement la forme qui fait « tableau de bord généré ».
+- **Une idée = un groupe visuel**, avec des filets internes si plusieurs blocs
+  la portent. Deux surfaces identiques posées à 12 ou 16 px l'une de l'autre
+  pour une seule question, c'est le défaut qu'on répare partout. Le modèle est
+  celui des Paramètres : un cadre, des sections, un trait entre elles.
+  Le filet vient de `.vy-filet + .vy-filet`, donc c'est le SECOND enfant qui le
+  porte : si l'un disparaît, il n'y a pas de trait orphelin.
+- **Le héros de l'écran domine clairement.** Sa photo, son titre et son action
+  passent avant tout le reste. S'il ne se distingue que par sa position, ce
+  n'est pas un héros.
+- **Les actions secondaires sont visuellement en retrait** : plus petites, en
+  encre plus discrète, sans surface propre. Deux boutons de même poids annulent
+  la lecture du système D.
+- **Le verre (`backdropFilter`) uniquement sur une photo ou un élément qui
+  flotte réellement.** Sur une surface opaque, le flou ne laisse rien deviner
+  derrière : il coûte des images par seconde pour rien.
+- **Ombres et rayons NOMMÉS, jamais écrits à la main.** `--ombre-pose`,
+  `--ombre-flottant`, `--ombre-action` (la seule teintée) ; `--r-affiche` (26),
+  `--r-bloc` (18), `--r-controle` (10). Une ombre violette sous une carte claire
+  ne sépare rien, elle décore. ⚠️ Les ombres MONTANTES des feuilles du bas sont
+  directionnelles et restent telles quelles.
+- **`.vy-*` pour la hiérarchie typographique quand c'est pertinent**, et
+  seulement là : `.vy-display` (un seul par écran), `.vy-titre`, `.vy-sous`,
+  `.vy-corps`, `.vy-label`, `.vy-nombre`. On ne force pas la classe quand une
+  taille précise a une vraie raison, et on ne normalise jamais pour faire
+  baisser un compteur.
+- **Asymétrie seulement si elle traduit une vraie différence de contenu.** Trois
+  choix égaux restent trois cartes égales ; une collection qui n'est pas de la
+  même nature que ses voisines a le droit de prendre toute la largeur. Une
+  asymétrie sans fonction n'est pas de la composition, c'est de la décoration.
+- **Ne pas sur-expliquer les écrans.** Un sous-titre sous chaque titre au-dessus
+  de chaque carte, c'est du remplissage. Une phrase reste si elle porte une
+  règle qu'on ne peut pas deviner ; elle part si elle redit ce que les lignes
+  montrent déjà.
+- **Chaque écran garde son caractère, on ne les rend pas identiques.** Premium
+  a le droit de rester spectaculaire (c'est le seul endroit où le drame est
+  gagné), la Communauté doit rester sobre et naturelle, les Paramètres
+  utilitaires, la Nutrition très visuelle.
+- **Nora et Sasha sont intouchables** : leur visage, leur voix et leurs poses
+  font partie de l'identité Vaiiya au même titre que l'étincelle ✦. Aucune
+  recomposition ne les retire d'un écran où ils parlent. Voir la section
+  suivante pour les règles produit qui les régissent.
+
+### Décisions par écran (validées, ne pas défaire)
+
+- **Accueil : la progression passe AVANT Premium.** La série et le rang forment
+  un seul groupe à filet en tête d'écran (« où j'en suis aujourd'hui »), et
+  l'affiche Premium vit en bas, au-dessus du coffre des missions Premium
+  qu'elle annonce. Elle REMPLACE le titre de cette section : l'affiche, le titre
+  et l'en-tête du coffre faisaient trois annonces pour une seule chose.
+- **Entraînement : la séance du jour EST le héros.** Photo haute, titre à
+  34/38 px, et les métadonnées (durée, nombre d'exercices, difficulté) en UNE
+  ligne discrète sans icône. Pas de seconde puce d'état sur la photo : dans
+  l'état « séance », elle vient forcément du planning, donc « Planifié »
+  n'apprend rien.
+- **Catalogue : des familles éditoriales.** Le niveau 1 se range en
+  « Un objectif · Une zone · Un terrain · Un moment · Pour comprendre »
+  (champ `famille` de `CatDef`), avec le même en-tête étiquette + filet que les
+  rangées de niveau 2. Ce n'est PAS un filtre : aucune collection n'est cachée,
+  aucun prédicat ne change, l'ordre du tableau est conservé. « Conseils &
+  progresser » prend toute la largeur parce que c'est la seule collection qui ne
+  contient aucune séance.
+- **Nutrition : pas de double navigation jour / journal.** Le calendrier n'a pas
+  d'onglet à lui : c'est le bouton au bout de la semaine, et revenir au journal
+  est une sortie, pas un onglet. On n'ouvre pas un écran sur une barre de
+  réglages.
+- **Assistant : les suggestions sont une LISTE, pas un nuage de pastilles.**
+  Alignées à gauche, pleine largeur, séparées par un filet, sans cadre ni fond.
+  Un nuage de pastilles bordées se lit comme un panneau de commandes d'IA ;
+  une liste se lit comme des phrases qu'on peut reprendre. Les textes eux-mêmes
+  ne bougent pas (ce que quelqu'un DIT en ouvrant, jamais une rubrique).
+- **Profil : objectif et niveau sur une même ligne.** Ils répondent à la même
+  question et s'écrivent dans la même encre : ils tiennent sur une ligne,
+  séparés par le point médian, sans pastille.
+
 ## Les Guides Nora & Sasha (VERROUILLÉ)
 
 Vaiiya aura deux Guides personnels au choix : **Nora** (féminine) et **Sasha**
