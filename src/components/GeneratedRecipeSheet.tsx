@@ -72,19 +72,19 @@ export default function GeneratedRecipeSheet({
             initial={{ y: 60, opacity: 0, scale: 0.97 }} animate={{ y: 0, opacity: 1, scale: 1 }} exit={{ y: 40, opacity: 0 }}
             transition={{ type: "spring", stiffness: 380, damping: 34 }}
             onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-md rounded-t-3xl md:rounded-3xl overflow-hidden flex flex-col bg-white"
-            style={{ maxHeight: "88vh", boxShadow: "0 -8px 40px rgba(var(--accent-rgb),0.18)" }}
+            className="w-full max-w-md rounded-t-3xl md:rounded-3xl overflow-hidden flex flex-col"
+            style={{ background: "rgb(var(--surface-rgb))", maxHeight: "88vh", boxShadow: "0 -8px 40px rgba(var(--accent-rgb),0.18)" }}
           >
             <div className="flex items-center justify-between px-5 pt-5 pb-3" style={{ borderBottom: "1px solid rgba(var(--violet-mid-rgb),0.4)" }}>
               <div>
-                <p className="text-[11px] font-semiboldst" style={{ color: "var(--text-3)" }}>{eyebrow}</p>
+                <p className="vy-label" style={{ color: "var(--text-3)" }}>{eyebrow}</p>
                 <h2 className="text-base font-semibold mt-0.5" style={{ color: "var(--text-1)" }}>
                   {loading ? loadingTitle : recipe ? recipe.nom : "Recette"}
                 </h2>
               </div>
               <button onClick={onClose} aria-label="Fermer"
-                className="w-9 h-9 rounded-2xl flex items-center justify-center flex-shrink-0"
-                style={{ background: "rgba(var(--tint-violet-rgb),0.8)" }}>
+                className="w-9 h-9 flex items-center justify-center flex-shrink-0"
+                style={{ borderRadius: "var(--r-controle)", background: "rgba(var(--tint-violet-rgb),0.8)" }}>
                 <X size={15} strokeWidth={2} style={{ color: "var(--text-2)" }} />
               </button>
             </div>
@@ -103,7 +103,7 @@ export default function GeneratedRecipeSheet({
                   <p className="text-sm text-center" style={{ color: "var(--text-2)" }}>L&apos;IA a calé cette fois.</p>
                   <button onClick={onRetry}
                     className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold cursor-pointer"
-                    style={{ background: "rgba(var(--tint-violet-rgb),0.8)", color: "#7C5CFA" }}>
+                    style={{ background: "rgba(var(--tint-violet-rgb),0.8)", color: "var(--exp-encre)" }}>
                     <RefreshCw size={14} /> Réessayer
                   </button>
                 </div>
@@ -112,10 +112,10 @@ export default function GeneratedRecipeSheet({
               {recipe && !loading && (
                 <div className="flex flex-col gap-4">
                   <div className="flex flex-wrap gap-1.5">
-                    <span className="text-[11px] px-2.5 py-1 rounded-full font-medium" style={{ background: "rgba(var(--tint-violet-rgb),0.8)", color: "#7C5CFA" }}>{recipe.portions} portion{recipe.portions > 1 ? "s" : ""}</span>
-                    <span className="text-[11px] px-2.5 py-1 rounded-full font-medium" style={{ background: "rgba(var(--tint-violet-rgb),0.8)", color: "#7C5CFA" }}>prépa {recipe.prepMin} min</span>
-                    {recipe.cookMin > 0 && <span className="text-[11px] px-2.5 py-1 rounded-full font-medium" style={{ background: "rgba(var(--tint-violet-rgb),0.8)", color: "#7C5CFA" }}>cuisson {recipe.cookMin} min</span>}
-                    <span className="text-[11px] px-2.5 py-1 rounded-full font-medium" style={{ background: "rgba(var(--tint-violet-rgb),0.8)", color: "#7C5CFA" }}>{recipe.difficulty}</span>
+                    <span className="text-[11px] px-2.5 py-1 rounded-full font-medium" style={{ background: "rgba(var(--tint-violet-rgb),0.8)", color: "var(--exp-encre)" }}>{recipe.portions} portion{recipe.portions > 1 ? "s" : ""}</span>
+                    <span className="text-[11px] px-2.5 py-1 rounded-full font-medium" style={{ background: "rgba(var(--tint-violet-rgb),0.8)", color: "var(--exp-encre)" }}>prépa {recipe.prepMin} min</span>
+                    {recipe.cookMin > 0 && <span className="text-[11px] px-2.5 py-1 rounded-full font-medium" style={{ background: "rgba(var(--tint-violet-rgb),0.8)", color: "var(--exp-encre)" }}>cuisson {recipe.cookMin} min</span>}
+                    <span className="text-[11px] px-2.5 py-1 rounded-full font-medium" style={{ background: "rgba(var(--tint-violet-rgb),0.8)", color: "var(--exp-encre)" }}>{recipe.difficulty}</span>
                     {recipe.diet.map((d) => (
                       <span key={d} className="text-[11px] px-2.5 py-1 rounded-full font-medium" style={{ background: "rgba(154,230,180,0.25)", color: "#2F855A" }}>{d}</span>
                     ))}
@@ -144,7 +144,7 @@ export default function GeneratedRecipeSheet({
                   )}
 
                   <div>
-                    <p className="text-[11px] font-semiboldst mb-2" style={{ color: "var(--text-3)" }}>Ingrédients</p>
+                    <p className="vy-label mb-2" style={{ color: "var(--text-3)" }}>Ingrédients</p>
                     <div className="flex flex-col gap-1.5">
                       {recipe.ingredients.map((it, i) => (
                         <div key={i} className="flex items-center justify-between text-sm">
@@ -156,11 +156,11 @@ export default function GeneratedRecipeSheet({
                   </div>
 
                   <div>
-                    <p className="text-[11px] font-semiboldst mb-2" style={{ color: "var(--text-3)" }}>Préparation</p>
+                    <p className="vy-label mb-2" style={{ color: "var(--text-3)" }}>Préparation</p>
                     <div className="flex flex-col gap-2.5">
                       {recipe.steps.map((s, i) => (
                         <div key={i} className="flex gap-2.5">
-                          <span className="flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-bold" style={{ background: "rgba(var(--accent-rgb),0.15)", color: "#7C5CFA" }}>{i + 1}</span>
+                          <span className="flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-bold" style={{ background: "rgba(var(--accent-rgb),0.15)", color: "var(--exp-encre)" }}>{i + 1}</span>
                           <p className="text-sm leading-snug" style={{ color: "var(--text-body)" }}>{s}</p>
                         </div>
                       ))}
@@ -184,7 +184,7 @@ export default function GeneratedRecipeSheet({
                 {onOther && !added && (
                   <button onClick={onOther}
                     className="w-full py-2.5 rounded-2xl text-[13px] font-semibold flex items-center justify-center gap-2 cursor-pointer"
-                    style={{ background: "rgba(var(--tint-violet-rgb),0.8)", color: "#7C5CFA" }}>
+                    style={{ background: "rgba(var(--tint-violet-rgb),0.8)", color: "var(--exp-encre)" }}>
                     <Shuffle size={14} strokeWidth={2} /> Une autre idée
                   </button>
                 )}

@@ -259,7 +259,7 @@ export default function RecipeSheet({
         <div className="flex gap-2 px-5 pt-3" style={{ borderTop: "1px solid rgba(var(--violet-mid-rgb),0.35)", paddingBottom: "calc(0.9rem + env(safe-area-inset-bottom))" }}>
           <button onClick={() => { onLog({ name: recipe.nom, calories: recipe.calories, proteins: recipe.proteins, carbs: recipe.carbs, fats: recipe.fats }); onClose(); }}
             className="flex-1 py-3 rounded-2xl text-sm font-semibold cursor-pointer flex items-center justify-center gap-2"
-            style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", color: "#fff", boxShadow: "0 4px 16px rgba(147,60,200,0.4)" }}>
+            style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", color: "#fff", boxShadow: "var(--ombre-action)" }}>
             <Check size={17} strokeWidth={2.5} /> Je fais ça
           </button>
           {hasOther && onOther && (

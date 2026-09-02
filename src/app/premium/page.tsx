@@ -247,8 +247,8 @@ function PremiumInner() {
         </motion.div>
 
         {msg && (
-          <div className="max-w-md mx-auto mb-8 px-4 py-3 rounded-2xl text-center text-sm font-medium"
-            style={{ background: "rgba(167,139,250,0.12)", color: "var(--exp-encre)", border: "1px solid rgba(167,139,250,0.25)" }}>
+          <div className="max-w-md mx-auto mb-8 px-4 py-3 text-center text-sm font-medium"
+            style={{ borderRadius: "var(--r-bloc)", background: "rgba(167,139,250,0.12)", color: "var(--exp-encre)", border: "1px solid rgba(167,139,250,0.25)" }}>
             {msg}
           </div>
         )}
@@ -272,13 +272,19 @@ function PremiumInner() {
               <motion.div key={id} data-tier={id}
                 initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.35 }}
-                className={`${styles.cardFrame} relative rounded-[26px] p-[1.5px] snap-center shrink-0 w-[82vw] max-w-[340px] md:w-auto md:max-w-none min-h-0`}
+                className={`${styles.cardFrame} relative p-[1.5px] snap-center shrink-0 w-[82vw] max-w-[340px] md:w-auto md:max-w-none min-h-0`}
                 style={{
+                  // Cette carte EST une affiche : le rayon exterieur porte le
+                  // nom qui le dit. Le 24 interieur n'est pas un chiffre libre,
+                  // c'est 26 moins les 1,5 px du cadre : changer l'un sans
+                  // l'autre epaissit les angles, on l'a deja paye une fois.
+                  borderRadius: "var(--r-affiche)",
                   scrollSnapAlign: "center",
                   scrollSnapStop: "always",
                 }}>
-                <div className={`${styles.cardSurface} relative rounded-[24px] p-4 md:p-6 h-full flex flex-col overflow-hidden`}
-                  style={{ backdropFilter: isMobile ? "none" : "blur(8px)" }}>
+                {/* Le verre est parti : la surface est opaque a 0,955, donc le
+                    flou ne laissait rien deviner derriere. */}
+                <div className={`${styles.cardSurface} relative rounded-[24px] p-4 md:p-6 h-full flex flex-col overflow-hidden`}>
 
                   {highlight && (
                     <div className={`${styles.popularBadge} absolute top-4 right-4 px-2.5 py-1 rounded-full text-[10px] font-black tracking-wider text-white`}>
@@ -287,7 +293,10 @@ function PremiumInner() {
                   )}
 
                   {/* Nom de l'offre */}
-                  <div className="flex items-center gap-2 mb-3" style={{ color: highlight ? "#7C5CFA" : "#A78BFA" }}>
+                  {/* Le violet ne peut pas etre le seul signal d'importance :
+                      sur la carte gratuite, un pictogramme violet ne disait
+                      rien de plus que le nom ecrit a cote. */}
+                  <div className="flex items-center gap-2 mb-3" style={{ color: highlight ? "var(--exp-encre)" : "var(--text-3)" }}>
                     {ICONS[id]}
                     <span className="text-lg font-extrabold" style={{ color: "var(--text-0)" }}>{p.name}</span>
                   </div>
@@ -300,7 +309,7 @@ function PremiumInner() {
                     {p.priceCents > 0 && <span className="text-sm font-light mb-1.5" style={{ color: "var(--text-3)" }}>/mois</span>}
                     {p.priceCents > 0 && (
                       <span className="text-[11px] font-semibold mb-1.5 px-2 py-0.5 rounded-full"
-                        style={{ background: "rgba(167,139,250,0.1)", color: "#7C5CFA" }}>
+                        style={{ background: "rgba(167,139,250,0.1)", color: "var(--exp-encre)" }}>
                         ≈ {(p.priceCents / 100 / 30).toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €/jour
                       </span>
                     )}
@@ -313,13 +322,15 @@ function PremiumInner() {
                       jamais de repayer : elle propose de gérer ou d'arrêter. */}
                   {id === "free" ? (
                     !user?.is_premium && (
-                      <div className={`${styles.currentPlan} text-center py-3 rounded-2xl text-sm font-semibold`}>
+                      <div className={`${styles.currentPlan} text-center py-3 text-sm font-semibold`}
+                        style={{ borderRadius: "var(--r-controle)" }}>
                         Ton offre actuelle
                       </div>
                     )
                   ) : user?.is_premium ? (
                     <>
-                      <div className={`${styles.currentPlan} text-center py-3 rounded-2xl text-sm font-semibold`}>
+                      <div className={`${styles.currentPlan} text-center py-3 text-sm font-semibold`}
+                        style={{ borderRadius: "var(--r-controle)" }}>
                         Ton abonnement est actif
                       </div>
                       <button onClick={ouvrirPortail} disabled={portail}
@@ -331,9 +342,9 @@ function PremiumInner() {
                   ) : !VENTE_OUVERTE ? (
                     /* La vente n'est pas ouverte : on le dit franchement au lieu
                        d'afficher un bouton qui refuserait après le clic. */
-                    <div className="text-center py-3 px-3 rounded-2xl"
-                      style={{ background: "rgba(167,139,250,0.1)", border: "1px solid rgba(167,139,250,0.28)" }}>
-                      <p className="text-sm font-semibold" style={{ color: "#7C5CFA" }}>Bientôt disponible</p>
+                    <div className="text-center py-3 px-3"
+                      style={{ borderRadius: "var(--r-controle)", background: "rgba(167,139,250,0.1)", border: "1px solid rgba(167,139,250,0.28)" }}>
+                      <p className="text-sm font-semibold" style={{ color: "var(--exp-encre)" }}>Bientôt disponible</p>
                       <p className="text-[11px] font-light leading-snug mt-1" style={{ color: "var(--text-3)" }}>
                         L&apos;abonnement n&apos;est pas encore ouvert. En attendant, tout ce qui est
                         gratuit le reste, et rien ne t&apos;est facturé.
@@ -347,7 +358,7 @@ function PremiumInner() {
                           checked={cguOk}
                           onChange={(e) => { setCguOk(e.target.checked); if (e.target.checked) setMsg(null); }}
                           className="mt-0.5 flex-shrink-0 w-4 h-4 cursor-pointer"
-                          style={{ accentColor: "#7C5CFA" }}
+                          style={{ accentColor: "#8B5CF6" }}
                         />
                         <span className="text-[11px] font-light leading-snug" style={{ color: "var(--text-3)" }}>
                           J&apos;ai lu et j&apos;accepte les{" "}
@@ -358,7 +369,8 @@ function PremiumInner() {
                         </span>
                       </label>
                       <motion.button whileTap={{ scale: 0.97 }} onClick={() => subscribe(id)} disabled={loading === id || verifPaiement}
-                        className={`${styles.cta} ${highlight ? styles.ctaPrimary : styles.ctaSecondary} py-2.5 md:py-3.5 rounded-2xl text-sm font-bold text-white cursor-pointer disabled:opacity-60`}>
+                        className={`${styles.cta} py-2.5 md:py-3.5 text-sm font-bold text-white cursor-pointer disabled:opacity-60`}
+                        style={{ borderRadius: "var(--r-controle)" }}>
                         {loading === id ? "Redirection…" : verifPaiement ? "Vérification…" : "Démarrer mes 3 jours gratuits"}
                       </motion.button>
                     </>
@@ -404,7 +416,7 @@ function PremiumInner() {
             se lire AVANT de payer, pas après. */}
         {VENTE_OUVERTE ? (
           <p className="text-center text-[11px] md:text-xs font-light mt-3 md:mt-6 flex-shrink-0" style={{ color: "var(--text-3)" }}>
-            <strong style={{ color: "#7C5CFA" }}>0 € aujourd&apos;hui</strong>{" "}· annulable en 1 clic avant la fin de l&apos;essai · paiement sécurisé Stripe 🔒
+            <strong style={{ color: "var(--exp-encre)" }}>0 € aujourd&apos;hui</strong>{" "}· annulable en 1 clic avant la fin de l&apos;essai · paiement sécurisé Stripe 🔒
             <br />
             Puis {formatPrice(PLANS.premium.priceCents)}/mois, reconduit automatiquement, résiliable à tout moment.
             {" "}

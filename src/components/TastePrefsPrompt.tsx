@@ -235,7 +235,7 @@ export default function TastePrefsPrompt() {
                 onClick={save}
                 disabled={saving || !canSave}
                 className="w-full rounded-2xl py-3.5 text-sm font-semibold text-white disabled:opacity-50"
-                style={{ background: "linear-gradient(135deg,var(--accent),var(--gold))", boxShadow: "0 6px 20px rgba(var(--accent-rgb),0.3)" }}
+                style={{ background: "linear-gradient(135deg,var(--accent),var(--gold))", boxShadow: "var(--ombre-action)" }}
               >
                 {saving ? "..." : "Enregistrer mes goûts"}
               </button>

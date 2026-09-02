@@ -88,7 +88,7 @@ export default function TasteProfileModal({ onClose, onSaved }: { onClose: () =>
         initial={{ opacity: 0, y: 80, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 40, scale: 0.97 }}
         transition={{ type: "spring", bounce: 0.28, duration: 0.5 }}
         className="w-full max-w-md rounded-t-3xl md:rounded-3xl overflow-hidden flex flex-col"
-        style={{ background: "rgba(var(--surface-rgb),0.97)", backdropFilter: "blur(12px)", border: "1px solid rgba(var(--surface-rgb),0.9)", boxShadow: "0 20px 60px rgba(var(--accent-rgb),0.18), inset 0 1px 0 rgba(var(--surface-rgb),0.9)", maxHeight: "90dvh" }}
+        style={{ background: "rgba(var(--surface-rgb),0.97)", backdropFilter: "blur(12px)", border: "1px solid rgba(var(--surface-rgb),0.9)", boxShadow: "var(--ombre-flottant), inset 0 1px 0 rgba(var(--surface-rgb),0.9)", maxHeight: "90dvh" }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -186,7 +186,7 @@ export default function TasteProfileModal({ onClose, onSaved }: { onClose: () =>
               onClick={save}
               disabled={saving || !canSave}
               className="w-full py-3.5 rounded-2xl text-sm font-semibold cursor-pointer disabled:opacity-50"
-              style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", color: "#fff", boxShadow: "0 4px 20px rgba(var(--accent-rgb),0.3), inset 0 1px 0 rgba(var(--surface-rgb),0.9)" }}
+              style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", color: "#fff", boxShadow: "var(--ombre-action), inset 0 1px 0 rgba(var(--surface-rgb),0.9)" }}
             >
               {saving ? "Enregistrement…" : "Enregistrer mes goûts"}
             </motion.button>
@@ -216,7 +216,7 @@ function Segmented({ options, value, onSelect }: { options: string[]; value: str
           <motion.button key={o} whileTap={{ scale: 0.95 }} onClick={() => onSelect(o)} type="button"
             className="flex-1 py-2.5 rounded-2xl text-xs font-semibold cursor-pointer transition-all"
             style={on
-              ? { background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", color: "#fff", boxShadow: "0 4px 12px rgba(var(--accent-rgb),0.25), inset 0 1px 0 rgba(var(--surface-rgb),0.9)" }
+              ? { background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", color: "#fff", boxShadow: "var(--ombre-action), inset 0 1px 0 rgba(var(--surface-rgb),0.9)" }
               : { background: "rgba(var(--tint-violet-rgb),0.5)", color: "var(--text-3)", border: "1px solid rgba(var(--accent-rgb),0.12)" }
             }>
             {o}
@@ -232,7 +232,7 @@ function Chip({ on, onClick, children }: { on: boolean; onClick: () => void; chi
     <motion.button whileTap={{ scale: 0.93 }} onClick={onClick} type="button"
       className="flex items-center gap-1 px-2 py-1 rounded-full cursor-pointer select-none text-xs font-medium"
       style={on
-        ? { background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--accent) 100%)", color: "#fff", boxShadow: "0 2px 8px rgba(var(--accent-rgb),0.3)" }
+        ? { background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--accent) 100%)", color: "#fff", boxShadow: "var(--ombre-action)" }
         : { background: "rgba(var(--tint-violet-rgb),0.6)", color: "var(--text-2)", border: "1px solid rgba(var(--accent-rgb),0.15)" }
       }>
       {children}

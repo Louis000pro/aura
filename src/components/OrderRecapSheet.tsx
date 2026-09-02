@@ -138,7 +138,7 @@ export default function OrderRecapSheet({
           <button
             onClick={() => { onLog({ name: estimate.foodName, calories: kcal, proteins: prot, carbs, fats }); onClose(); }}
             className="w-full py-3 rounded-2xl text-sm font-semibold cursor-pointer flex items-center justify-center gap-2"
-            style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", color: "#fff", boxShadow: "0 4px 16px rgba(147,60,200,0.4)" }}>
+            style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", color: "#fff", boxShadow: "var(--ombre-action)" }}>
             <Check size={17} strokeWidth={2.5} /> Ajouter à ma journée
           </button>
         </div>

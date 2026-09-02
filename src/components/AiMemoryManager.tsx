@@ -85,7 +85,7 @@ export default function AiMemoryManager({ onClose }: { onClose: () => void }) {
         initial={{ opacity: 0, y: 80, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 40, scale: 0.97 }}
         transition={{ type: "spring", bounce: 0.28, duration: 0.5 }}
         className="w-full max-w-md rounded-t-3xl md:rounded-3xl overflow-hidden flex flex-col"
-        style={{ background: "rgba(var(--surface-rgb),0.97)", backdropFilter: "blur(12px)", border: "1px solid rgba(var(--surface-rgb),0.9)", boxShadow: "0 20px 60px rgba(var(--accent-rgb),0.18), inset 0 1px 0 rgba(var(--surface-rgb),0.9)", maxHeight: "90dvh" }}
+        style={{ background: "rgba(var(--surface-rgb),0.97)", backdropFilter: "blur(12px)", border: "1px solid rgba(var(--surface-rgb),0.9)", boxShadow: "var(--ombre-flottant), inset 0 1px 0 rgba(var(--surface-rgb),0.9)", maxHeight: "90dvh" }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -119,7 +119,7 @@ export default function AiMemoryManager({ onClose }: { onClose: () => void }) {
               </p>
             </div>
           ) : (
-            <div className="flex flex-col gap-2 py-1">
+            <div className="flex flex-col py-1">
               {memories.map((m) => {
                 const cat = normalizeCategory(m.category);
                 return (
@@ -127,13 +127,12 @@ export default function AiMemoryManager({ onClose }: { onClose: () => void }) {
                     key={m.id}
                     layout
                     initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
-                    className="flex items-start gap-3 px-3.5 py-3 rounded-2xl"
-                    style={{ background: "rgba(var(--surface-rgb),0.7)", border: "1px solid rgba(var(--accent-rgb),0.10)", boxShadow: "0 2px 8px rgba(var(--accent-rgb),0.04)" }}
+                    className="vy-filet flex items-start gap-3 px-1.5 py-3.5"
                   >
                     <span className="text-base leading-none mt-0.5 flex-shrink-0" aria-hidden>{MEMORY_CATEGORY_EMOJI[cat]}</span>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-light leading-snug" style={{ color: "var(--text-1)" }}>{m.content}</p>
-                      <p className="text-[10px] font-semibold tracking-wide uppercase mt-1" style={{ color: "var(--text-3)" }}>
+                      <p className="vy-label mt-1" style={{ color: "var(--text-3)" }}>
                         {MEMORY_CATEGORY_LABEL[cat]}{m.source === "user" ? " · à ta demande" : ""}
                       </p>
                     </div>

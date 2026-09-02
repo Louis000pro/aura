@@ -229,7 +229,7 @@ export default function AdviceReaderSheet({
               className="w-full h-12 rounded-2xl mt-8 text-[13px] font-black text-white"
               style={{
                 background: "linear-gradient(135deg,#8B5CF6,#C13BC1)",
-                boxShadow: "0 8px 22px rgba(139,92,246,0.28)",
+                boxShadow: "var(--ombre-action)",
               }}
             >
               Revenir aux conseils

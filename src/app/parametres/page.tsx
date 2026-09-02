@@ -43,12 +43,12 @@ function Groupe({ titre, children }: { titre: string; children: ReactNode[] }) {
         {titre}
       </p>
       <div
-        className="rounded-2xl overflow-hidden"
+        className="overflow-hidden"
         style={{
+          borderRadius: "var(--r-bloc)",
           background: "rgba(var(--surface-rgb),0.75)",
           border: "1px solid rgba(var(--text-3-rgb),0.16)",
-          backdropFilter: "blur(12px)",
-          boxShadow: "0 1px 3px rgba(var(--accent-rgb),0.05)",
+          boxShadow: "var(--ombre-pose)",
         }}
       >
         {lignes.map((ligne, i) => (
@@ -248,7 +248,7 @@ function GuideModal({ onClose, onChoisi }: { onClose: () => void; onChoisi: (g: 
         initial={{ opacity: 0, y: 60, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 30, scale: 0.97 }}
         transition={{ type: "spring", bounce: 0.3, duration: 0.5 }}
         className="w-full max-w-sm rounded-3xl p-6"
-        style={{ background: "rgba(var(--surface-rgb),0.95)", backdropFilter: "blur(12px)", border: "1px solid rgba(var(--surface-rgb),0.9)", boxShadow: "0 20px 60px rgba(var(--accent-rgb),0.15), inset 0 1px 0 rgba(var(--surface-rgb),0.9)" }}
+        style={{ background: "rgba(var(--surface-rgb),0.95)", backdropFilter: "blur(12px)", border: "1px solid rgba(var(--surface-rgb),0.9)", boxShadow: "var(--ombre-flottant), inset 0 1px 0 rgba(var(--surface-rgb),0.9)" }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-2">
@@ -361,7 +361,7 @@ function ChangePasswordModal({ onClose }: { onClose: () => void }) {
         initial={{ opacity: 0, y: 60, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 30, scale: 0.97 }}
         transition={{ type: "spring", bounce: 0.3, duration: 0.5 }}
         className="w-full max-w-sm rounded-3xl p-6"
-        style={{ background: "rgba(var(--surface-rgb),0.95)", backdropFilter: "blur(12px)", border: "1px solid rgba(var(--surface-rgb),0.9)", boxShadow: "0 20px 60px rgba(var(--accent-rgb),0.15), inset 0 1px 0 rgba(var(--surface-rgb),0.9)" }}
+        style={{ background: "rgba(var(--surface-rgb),0.95)", backdropFilter: "blur(12px)", border: "1px solid rgba(var(--surface-rgb),0.9)", boxShadow: "var(--ombre-flottant), inset 0 1px 0 rgba(var(--surface-rgb),0.9)" }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-5">
@@ -415,7 +415,7 @@ function ChangePasswordModal({ onClose }: { onClose: () => void }) {
               onClick={handleSubmit}
               disabled={loading}
               className="w-full py-3 rounded-2xl text-sm font-semibold cursor-pointer mt-1"
-              style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", color: "#fff", boxShadow: "0 4px 16px rgba(var(--accent-rgb),0.3), inset 0 1px 0 rgba(var(--surface-rgb),0.9)" }}
+              style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", color: "#fff", boxShadow: "var(--ombre-action), inset 0 1px 0 rgba(var(--surface-rgb),0.9)" }}
             >
               {loading ? "Mise à jour…" : "Mettre à jour"}
             </motion.button>
@@ -467,7 +467,7 @@ function DeleteAccountModal({ onClose }: { onClose: () => void }) {
         initial={{ opacity: 0, y: 60, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 30, scale: 0.97 }}
         transition={{ type: "spring", bounce: 0.3, duration: 0.5 }}
         className="w-full max-w-sm rounded-3xl p-6"
-        style={{ background: "rgba(var(--surface-rgb),0.95)", backdropFilter: "blur(12px)", border: "1px solid rgba(252,165,165,0.3)", boxShadow: "0 20px 60px rgba(239,68,68,0.1), inset 0 1px 0 rgba(var(--surface-rgb),0.9)" }}
+        style={{ background: "rgba(var(--surface-rgb),0.95)", backdropFilter: "blur(12px)", border: "1px solid rgba(252,165,165,0.3)", boxShadow: "var(--ombre-flottant), inset 0 1px 0 rgba(var(--surface-rgb),0.9)" }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-4">
@@ -674,12 +674,12 @@ export default function ParametresPage() {
         {/* Qui je suis : l'avatar, le pseudo, le rang. Remplace le
             « Connecté en tant que » en gris clair. */}
         <div
-          className="flex items-center gap-3.5 px-4 py-3.5 rounded-2xl mb-6"
+          className="flex items-center gap-3.5 px-4 py-3.5 mb-6"
           style={{
+            borderRadius: "var(--r-bloc)",
             background: "rgba(var(--surface-rgb),0.75)",
             border: "1px solid rgba(var(--text-3-rgb),0.16)",
-            backdropFilter: "blur(12px)",
-            boxShadow: "0 1px 3px rgba(var(--accent-rgb),0.05)",
+            boxShadow: "var(--ombre-pose)",
           }}
         >
           <div
@@ -887,7 +887,7 @@ export default function ParametresPage() {
             initial={{ opacity: 0, y: 40, scale: 0.9 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 20, scale: 0.95 }}
             transition={{ type: "spring", bounce: 0.4, duration: 0.5 }}
             className="fixed bottom-32 md:bottom-6 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-2xl flex items-center gap-2"
-            style={{ background: "rgba(var(--surface-rgb),0.9)", backdropFilter: "blur(10px)", border: "1px solid rgba(var(--tint-violet-rgb),0.9)", boxShadow: "0 8px 32px rgba(var(--accent-rgb),0.2), inset 0 1px 0 rgba(var(--surface-rgb),0.9)", color: "var(--text-1)", whiteSpace: "nowrap" }}
+            style={{ background: "rgba(var(--surface-rgb),0.9)", backdropFilter: "blur(10px)", border: "1px solid rgba(var(--tint-violet-rgb),0.9)", boxShadow: "var(--ombre-flottant), inset 0 1px 0 rgba(var(--surface-rgb),0.9)", color: "var(--text-1)", whiteSpace: "nowrap" }}
           >
             <Check size={14} strokeWidth={2.5} style={{ color: "var(--gold)" }} />
             <span className="text-sm font-medium">{toast}</span>

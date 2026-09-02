@@ -315,7 +315,7 @@ export default function InfosPage() {
         <p className="mb-2 pl-1 text-[10.5px] font-bold uppercase tracking-[.1em]" style={{ color: "var(--text-3)" }}>
           Le relais
         </p>
-        <div className="overflow-hidden rounded-2xl border" style={{ borderColor: "rgba(var(--text-3-rgb), .18)", background: "rgb(var(--surface-rgb))" }}>
+        <div className="overflow-hidden border" style={{ borderRadius: "var(--r-bloc)", borderColor: "rgba(var(--text-3-rgb), .18)", background: "rgb(var(--surface-rgb))" }}>
           {conv.defi ? (
             <button onClick={() => router.push("/defi")} className="flex w-full items-center gap-3 p-3 text-left">
               <div className="relative h-[52px] w-[37px] shrink-0 overflow-hidden rounded-[7px] shadow-md">
@@ -393,7 +393,7 @@ export default function InfosPage() {
         <p className="mb-2 pl-1 text-[10.5px] font-bold uppercase tracking-[.1em]" style={{ color: "var(--text-3)" }}>
           Membres
         </p>
-        <div className="overflow-hidden rounded-2xl border" style={{ borderColor: "rgba(var(--text-3-rgb), .18)", background: "rgb(var(--surface-rgb))" }}>
+        <div className="overflow-hidden border" style={{ borderRadius: "var(--r-bloc)", borderColor: "rgba(var(--text-3-rgb), .18)", background: "rgb(var(--surface-rgb))" }}>
           {conv.membres.map((p, i) => {
             const rang = rangs.get(p.id);
             const nom = p.id === moi ? "Toi" : p.pseudo;

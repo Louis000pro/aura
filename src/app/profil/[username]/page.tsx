@@ -363,7 +363,7 @@ export default function PublicProfilePage() {
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="rounded-3xl p-6 mb-6 relative overflow-hidden"
+        className="p-6 mb-6 relative overflow-hidden"
         style={{
           /* Cette carte était peinte en dur (#faf8ff vers #fffef8). Elle porte
              le pseudo, la bio, le rang et les chiffres, tous en `--text-0` :
@@ -372,7 +372,8 @@ export default function PublicProfilePage() {
              chose et suit le thème. */
           background: "linear-gradient(135deg, rgba(var(--tint-violet-rgb),0.75) 0%, rgba(var(--tint-cream-rgb),0.75) 100%)",
           border: "1px solid rgba(var(--violet-mid-rgb),0.35)",
-          boxShadow: "0 4px 32px rgba(var(--accent-rgb),0.1), inset 0 1px 0 rgba(var(--surface-rgb),0.95)",
+          boxShadow: "var(--ombre-pose), inset 0 1px 0 rgba(var(--surface-rgb),0.95)",
+          borderRadius: "var(--r-affiche)",
         }}
       >
         <motion.div
@@ -392,7 +393,7 @@ export default function PublicProfilePage() {
                 borderRadius: "50%",
                 padding: 3,
                 background: "linear-gradient(135deg,var(--violet-mid) 0%,var(--cream-mid) 100%)",
-                boxShadow: "0 6px 24px rgba(var(--accent-rgb),0.28)",
+                boxShadow: "var(--ombre-pose)",
               }}
             >
               <div
@@ -424,7 +425,7 @@ export default function PublicProfilePage() {
                 transition={{ type: "spring", bounce: 0.5, delay: 0.2 }}
                 className="flex-shrink-0 flex items-center justify-center rounded-full"
                 title="Compte certifié"
-                style={{ width: 22, height: 22, background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", boxShadow: "0 2px 8px rgba(139,92,246,0.4)" }}
+                style={{ width: 22, height: 22, background: "linear-gradient(135deg,#8B5CF6,#C13BC1)" }}
               >
                 <svg width="11" height="11" viewBox="0 0 13 13" fill="none">
                   <path d="M2.5 6.5L5 9L10.5 4" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
@@ -475,10 +476,11 @@ export default function PublicProfilePage() {
                 whileTap={{ scale: 0.92 }}
                 onClick={handleFriendButton}
                 disabled={followLoading}
-                className="flex items-center gap-1.5 px-4 py-2.5 rounded-2xl text-sm font-semibold cursor-pointer flex-shrink-0"
+                className="flex items-center gap-1.5 px-4 py-2.5 text-sm font-semibold cursor-pointer flex-shrink-0"
                 style={
                   isFollowing
                     ? {
+                        borderRadius: "var(--r-controle)",
                         background: "rgba(var(--tint-violet-rgb),0.7)",
                         color: "var(--exp-encre)",
                         border: "1px solid rgba(var(--accent-rgb),0.2)",
@@ -487,9 +489,10 @@ export default function PublicProfilePage() {
                         /* Le bouton principal de l'écran est TOUJOURS violet
                            plein (système D). Il était en lavande pâle avec du
                            texte sombre : il se lisait comme désactivé. */
+                        borderRadius: "var(--r-controle)",
                         background: "linear-gradient(135deg,#8B5CF6,#C13BC1)",
                         color: "#fff",
-                        boxShadow: "0 4px 14px rgba(139,92,246,0.32)",
+                        boxShadow: "var(--ombre-action)",
                       }
                 }
               >
@@ -506,8 +509,9 @@ export default function PublicProfilePage() {
             <motion.button
               whileTap={{ scale: 0.93 }}
               onClick={() => router.push("/profil")}
-              className="px-4 py-2 rounded-2xl text-xs font-semibold cursor-pointer"
+              className="px-4 py-2 text-xs font-semibold cursor-pointer"
               style={{
+                borderRadius: "var(--r-controle)",
                 background: "rgba(var(--tint-violet-rgb),0.6)",
                 color: "var(--exp-encre)",
                 border: "1px solid rgba(var(--accent-rgb),0.15)",
@@ -522,16 +526,12 @@ export default function PublicProfilePage() {
         {/* ─── Rang (l'aura) ─── */}
         {aura && (
           <div
-            className="flex items-center gap-4 mt-5 px-4 py-3.5 rounded-3xl relative z-10"
-            style={{
-              background: "rgba(var(--surface-rgb),0.8)",
-              border: "1px solid rgba(var(--accent-rgb),0.14)",
-              boxShadow: "0 4px 24px rgba(var(--accent-rgb),0.1)",
-            }}
+            className="flex items-center gap-4 mt-4 pt-4 relative z-10"
+            style={{ borderTop: "1px solid rgba(var(--accent-rgb),0.1)" }}
           >
             <div className="flex-shrink-0"><GemmeRang rang={aura.rang} size={44} /></div>
             <div className="flex-1 min-w-0">
-              <span className="text-[11px] font-bold" style={{ color: "var(--text-3)" }}>Rang</span>
+              <span className="vy-label" style={{ color: "var(--text-3)" }}>Rang</span>
               <p className="text-[19px] font-black tracking-[-0.02em] leading-tight" style={{ color: "var(--text-0)" }}>{aura.rang.nom}</p>
               <p className="text-[12.5px] font-semibold mt-0.5" style={{ color: "var(--text-soft)" }}>
                 <span style={{ color: "var(--exp-encre)", fontVariantNumeric: "tabular-nums" }}>{aura.exp}</span> / {aura.seuilHaut} EXP
@@ -620,8 +620,8 @@ export default function PublicProfilePage() {
           return (
             <div
               key={slug}
-              className="relative rounded-2xl overflow-hidden"
-              style={{ aspectRatio: "9/16", border: "1px solid rgba(255,255,255,0.06)", boxShadow: "0 10px 26px -12px rgba(0,0,0,0.5)" }}
+              className="relative overflow-hidden"
+              style={{ borderRadius: "var(--r-affiche)", aspectRatio: "9/16", border: "1px solid rgba(255,255,255,0.06)", boxShadow: "var(--ombre-pose)" }}
             >
               <Image
                 src={imageEtat(slug, 4)}
@@ -676,7 +676,7 @@ export default function PublicProfilePage() {
               style={{
                 background: "rgb(var(--surface-rgb))",
                 paddingBottom: "calc(1.5rem + env(safe-area-inset-bottom))",
-                boxShadow: "0 24px 70px rgba(17,10,34,.24)",
+                boxShadow: "var(--ombre-flottant)",
               }}
               onClick={(event) => event.stopPropagation()}
             >
@@ -743,7 +743,7 @@ export default function PublicProfilePage() {
               background: "rgba(var(--surface-rgb),0.95)",
               backdropFilter: "blur(10px)",
               border: "1px solid rgba(var(--surface-rgb),0.9)",
-              boxShadow: "0 8px 32px rgba(var(--accent-rgb),0.2)",
+              boxShadow: "var(--ombre-flottant)",
               whiteSpace: "nowrap",
             }}
           >

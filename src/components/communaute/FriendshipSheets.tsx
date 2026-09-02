@@ -126,7 +126,7 @@ function Sheet({ children, onFermer }: { children: React.ReactNode; onFermer: ()
         style={{
           background: "rgb(var(--surface-rgb))",
           paddingBottom: "calc(1.5rem + env(safe-area-inset-bottom))",
-          boxShadow: "0 24px 70px rgba(17, 10, 34, .24)",
+          boxShadow: "var(--ombre-flottant)",
         }}
         initial={{ y: "100%", opacity: 0.7 }}
         animate={{ y: 0, opacity: 1 }}

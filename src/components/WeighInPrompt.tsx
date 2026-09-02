@@ -140,7 +140,7 @@ export default function WeighInPrompt({ ouvert, onFermer }: {
               onClick={save}
               disabled={saving || !value}
               className="w-full rounded-2xl py-3.5 text-sm font-semibold text-white disabled:opacity-50"
-              style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", boxShadow: "0 6px 20px rgba(139,92,246,0.3)" }}
+              style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", boxShadow: "var(--ombre-action)" }}
             >
               {saving ? "..." : "Enregistrer"}
             </button>

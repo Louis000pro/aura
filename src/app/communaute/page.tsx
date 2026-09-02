@@ -7,11 +7,11 @@ export default function CommunautePage() {
     <div className="hidden h-[100dvh] min-w-0 flex-1 items-center justify-center px-10 md:flex">
       <div className="max-w-[340px] text-center">
         <div
-          className="mx-auto flex h-16 w-16 items-center justify-center rounded-[22px]"
+          className="mx-auto flex h-16 w-16 items-center justify-center"
           style={{
+            borderRadius: "var(--r-bloc)",
             background: "rgba(var(--tint-violet-rgb), .55)",
-            color: "var(--accent)",
-            boxShadow: "0 16px 40px rgba(var(--accent-rgb), .10)",
+            color: "var(--exp-encre)",
           }}
         >
           <MessageCircle className="h-7 w-7" strokeWidth={1.6} />

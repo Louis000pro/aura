@@ -441,16 +441,16 @@ export default function ConversationListPane({
             <button
               onClick={ouvrirAvecQui}
               disabled={occupe}
-              className="flex w-full items-center justify-center gap-2 rounded-2xl px-5 py-4 text-[16px] font-semibold text-white disabled:opacity-60"
-              style={{ background: "linear-gradient(135deg, #8B5CF6, #C13BC1)" }}
+              className="flex w-full items-center justify-center gap-2 px-5 py-4 text-[16px] font-semibold text-white disabled:opacity-60"
+              style={{ borderRadius: "var(--r-controle)", background: "linear-gradient(135deg, #8B5CF6, #C13BC1)", boxShadow: "var(--ombre-action)" }}
             >
               {occupe ? <Loader2 className="h-5 w-5 animate-spin" /> : null}
               Lancer un relais
             </button>
             <button
               onClick={() => setSheet("nouvelle")}
-              className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl border px-5 py-4 text-[15px] font-medium"
-              style={{ borderColor: "rgba(var(--text-3-rgb), .3)", color: "var(--text-1)" }}
+              className="mt-3 flex w-full items-center justify-center gap-2 border px-5 py-4 text-[15px] font-medium"
+              style={{ borderRadius: "var(--r-controle)", borderColor: "rgba(var(--text-3-rgb), .3)", color: "var(--text-1)" }}
             >
               <PenLine className="h-4.5 w-4.5" />
               Nouvelle discussion
@@ -626,7 +626,7 @@ function Vide({ onRelais, onDiscussion, occupe }: {
 }) {
   return (
     <div className="flex flex-col items-center px-8 pt-6 text-center">
-      <div className="relative w-[128px] overflow-hidden rounded-2xl shadow-2xl" style={{ aspectRatio: "9 / 16" }}>
+      <div className="relative w-[128px] overflow-hidden" style={{ borderRadius: "var(--r-affiche)", boxShadow: "var(--ombre-pose)", aspectRatio: "9 / 16" }}>
         <Image src={imageEtat("sillage", 1)} alt="" fill sizes="128px" className="object-cover" priority />
       </div>
 
@@ -641,8 +641,8 @@ function Vide({ onRelais, onDiscussion, occupe }: {
       <button
         onClick={onRelais}
         disabled={occupe}
-        className="mt-6 flex w-full max-w-[320px] items-center justify-center gap-2 rounded-2xl px-5 py-4 text-[16px] font-semibold text-white transition-transform active:scale-[.98] disabled:opacity-60"
-        style={{ background: "linear-gradient(135deg, #8B5CF6, #C13BC1)" }}
+        className="mt-6 flex w-full max-w-[320px] items-center justify-center gap-2 px-5 py-4 text-[16px] font-semibold text-white transition-transform active:scale-[.98] disabled:opacity-60"
+        style={{ borderRadius: "var(--r-controle)", background: "linear-gradient(135deg, #8B5CF6, #C13BC1)", boxShadow: "var(--ombre-action)" }}
       >
         {occupe ? <Loader2 className="h-5 w-5 animate-spin" /> : null}
         Lancer un relais
@@ -650,8 +650,8 @@ function Vide({ onRelais, onDiscussion, occupe }: {
 
       <button
         onClick={onDiscussion}
-        className="mt-3 flex w-full max-w-[320px] items-center justify-center gap-2 rounded-2xl border px-5 py-3.5 text-[15px] font-medium"
-        style={{ borderColor: "rgba(var(--text-3-rgb), .3)", color: "var(--text-1)" }}
+        className="mt-3 flex w-full max-w-[320px] items-center justify-center gap-2 border px-5 py-3.5 text-[15px] font-medium"
+        style={{ borderRadius: "var(--r-controle)", borderColor: "rgba(var(--text-3-rgb), .3)", color: "var(--text-1)" }}
       >
         <PenLine className="h-4 w-4" />
         Écrire à quelqu&apos;un

@@ -116,11 +116,11 @@ function ExerciseTutorial({ exercise, onClose }: { exercise: string; onClose: ()
         transition={{ type: "spring", damping: 28, stiffness: 280 }}
         onClick={(e) => e.stopPropagation()}
         className="w-full max-w-md rounded-3xl overflow-hidden"
-        style={{ background: "rgba(var(--surface-rgb),0.97)", border: "1px solid rgba(var(--surface-rgb),0.9)", boxShadow: "0 24px 70px rgba(var(--accent-rgb),0.3)" }}
+        style={{ background: "rgba(var(--surface-rgb),0.97)", border: "1px solid rgba(var(--surface-rgb),0.9)", boxShadow: "var(--ombre-flottant)" }}
       >
         <div className="flex items-center justify-between px-5 pt-4 pb-3">
           <div className="min-w-0">
-            <p className="text-[10px] font-bold tracking-widest uppercase" style={{ color: "var(--exp-encre)" }}>Tuto · démo</p>
+            <p className="vy-label" style={{ color: "var(--exp-encre)" }}>Tuto · démo</p>
             <p className="text-sm font-semibold truncate" style={{ color: "var(--text-1)" }}>{clean}</p>
           </div>
           <button type="button" onClick={onClose}
@@ -215,7 +215,7 @@ function DayDetail({ day, onTuto, onStart }: { day: PlanningDay; onTuto: (ex: st
             whileTap={{ scale: 0.98 }}
             onClick={onStart}
             className="mt-1 w-full flex items-center justify-center gap-2 py-3 rounded-2xl cursor-pointer"
-            style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", boxShadow: "0 6px 18px rgba(193,59,193,0.38)" }}
+            style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", boxShadow: "var(--ombre-action)" }}
           >
             <Play size={13} strokeWidth={2.5} style={{ color: "#fff", marginLeft: 1 }} fill="currentColor" />
             <span className="text-sm font-semibold" style={{ color: "#fff" }}>Commencer</span>
@@ -245,15 +245,15 @@ function LocationQuestion({ onChoose }: { onChoose: (loc: "salle" | "maison") =>
       </div>
       <div className="grid grid-cols-2 gap-2.5">
         <motion.button whileTap={{ scale: 0.96 }} onClick={() => onChoose("salle")}
-          className="flex flex-col items-center gap-1.5 py-4 rounded-2xl cursor-pointer"
-          style={{ background: "rgba(var(--surface-rgb),0.8)", border: "1px solid rgba(var(--violet-mid-rgb),0.5)", boxShadow: "0 2px 12px rgba(var(--accent-rgb),0.1)" }}>
+          className="flex flex-col items-center gap-1.5 py-4 cursor-pointer"
+          style={{ borderRadius: "var(--r-controle)", background: "rgba(var(--surface-rgb),0.8)", border: "1px solid rgba(var(--violet-mid-rgb),0.5)" }}>
           <Dumbbell size={20} strokeWidth={1.5} style={{ color: "var(--exp-encre)" }} />
           <span className="text-sm font-semibold" style={{ color: "var(--text-1)" }}>En salle</span>
           <span className="text-[10px] font-light" style={{ color: "var(--text-3)" }}>Machines & charges</span>
         </motion.button>
         <motion.button whileTap={{ scale: 0.96 }} onClick={() => onChoose("maison")}
-          className="flex flex-col items-center gap-1.5 py-4 rounded-2xl cursor-pointer"
-          style={{ background: "rgba(var(--surface-rgb),0.8)", border: "1px solid rgba(var(--cream-mid-rgb),0.6)", boxShadow: "0 2px 12px rgba(var(--gold-rgb),0.1)" }}>
+          className="flex flex-col items-center gap-1.5 py-4 cursor-pointer"
+          style={{ borderRadius: "var(--r-controle)", background: "rgba(var(--surface-rgb),0.8)", border: "1px solid rgba(var(--cream-mid-rgb),0.6)" }}>
           <Home size={20} strokeWidth={1.5} style={{ color: "var(--gold)" }} />
           <span className="text-sm font-semibold" style={{ color: "var(--text-1)" }}>À la maison</span>
           <span className="text-[10px] font-light" style={{ color: "var(--text-3)" }}>Poids du corps</span>
@@ -282,15 +282,15 @@ function HomeEquipQuestion({ onChoose, onBack }: { onChoose: (e: "halteres" | "p
       </div>
       <div className="grid grid-cols-2 gap-2.5">
         <motion.button whileTap={{ scale: 0.96 }} onClick={() => onChoose("halteres")}
-          className="flex flex-col items-center gap-1.5 py-4 rounded-2xl cursor-pointer"
-          style={{ background: "rgba(var(--surface-rgb),0.8)", border: "1px solid rgba(var(--cream-mid-rgb),0.6)", boxShadow: "0 2px 12px rgba(var(--gold-rgb),0.1)" }}>
+          className="flex flex-col items-center gap-1.5 py-4 cursor-pointer"
+          style={{ borderRadius: "var(--r-controle)", background: "rgba(var(--surface-rgb),0.8)", border: "1px solid rgba(var(--cream-mid-rgb),0.6)" }}>
           <Dumbbell size={20} strokeWidth={1.5} style={{ color: "var(--gold)" }} />
           <span className="text-sm font-semibold" style={{ color: "var(--text-1)" }}>Oui, haltères</span>
           <span className="text-[10px] font-light" style={{ color: "var(--text-3)" }}>Poids du corps + haltères</span>
         </motion.button>
         <motion.button whileTap={{ scale: 0.96 }} onClick={() => onChoose("poids")}
-          className="flex flex-col items-center gap-1.5 py-4 rounded-2xl cursor-pointer"
-          style={{ background: "rgba(var(--surface-rgb),0.8)", border: "1px solid rgba(var(--violet-mid-rgb),0.5)", boxShadow: "0 2px 12px rgba(var(--accent-rgb),0.1)" }}>
+          className="flex flex-col items-center gap-1.5 py-4 cursor-pointer"
+          style={{ borderRadius: "var(--r-controle)", background: "rgba(var(--surface-rgb),0.8)", border: "1px solid rgba(var(--violet-mid-rgb),0.5)" }}>
           <Home size={20} strokeWidth={1.5} style={{ color: "var(--exp-encre)" }} />
           <span className="text-sm font-semibold" style={{ color: "var(--text-1)" }}>Non</span>
           <span className="text-[10px] font-light" style={{ color: "var(--text-3)" }}>Poids du corps uniquement</span>
@@ -493,12 +493,11 @@ export default function WeeklyProgramme() {
           Programme auto-généré
         </p>
         <div
-          className="rounded-2xl p-5 flex items-center gap-4"
+          className="p-5 flex items-center gap-4"
           style={{
+            borderRadius: "var(--r-bloc)",
             background: "rgba(var(--surface-rgb),0.7)",
-            backdropFilter: "blur(12px)",
-            boxShadow:
-              "0 4px 24px rgba(var(--accent-rgb),0.1), inset 0 1px 0 rgba(var(--surface-rgb),0.8)",
+            boxShadow: "var(--ombre-pose), inset 0 1px 0 rgba(var(--surface-rgb),0.8)",
           }}
         >
           <div

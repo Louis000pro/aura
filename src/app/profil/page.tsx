@@ -369,7 +369,7 @@ function EditProfileModal({
         <div className="flex flex-col gap-3">
           {/* Full name */}
           <div>
-            <label className="text-[11px] font-semiboldst mb-1.5 block" style={{ color: "var(--text-3)" }}>
+            <label className="vy-label mb-1.5 block" style={{ color: "var(--text-3)" }}>
               Nom complet
             </label>
             <input
@@ -384,7 +384,7 @@ function EditProfileModal({
 
           {/* Pseudo */}
           <div>
-            <label className="text-[11px] font-semiboldst mb-1.5 block" style={{ color: "var(--text-3)" }}>
+            <label className="vy-label mb-1.5 block" style={{ color: "var(--text-3)" }}>
               Pseudo
             </label>
             <input
@@ -405,7 +405,7 @@ function EditProfileModal({
 
           {/* Bio */}
           <div>
-            <label className="text-[11px] font-semiboldst mb-1.5 flex items-center justify-between" style={{ color: "var(--text-3)" }}>
+            <label className="vy-label mb-1.5 flex items-center justify-between" style={{ color: "var(--text-3)" }}>
               <span>Bio</span>
               <span>{editBio.length}/150</span>
             </label>

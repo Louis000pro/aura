@@ -580,15 +580,15 @@ export default function AssistantSheet() {
               {/* ── Carte RECETTE ── */}
               {pendingRecipe && (
                 <motion.div initial={{ opacity: 0, y: 10, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }}
-                  className="w-full rounded-3xl overflow-hidden flex flex-col"
-                  style={{ minHeight: 0, background: "rgba(var(--surface-rgb),0.98)", border: "1px solid rgba(var(--accent-rgb),0.22)", boxShadow: "0 8px 28px rgba(var(--accent-rgb),0.18)" }}>
+                  className="w-full overflow-hidden flex flex-col"
+                  style={{ minHeight: 0, borderRadius: "var(--r-bloc)", background: "rgba(var(--surface-rgb),0.98)", border: "1px solid rgba(var(--accent-rgb),0.22)", boxShadow: "var(--ombre-pose)" }}>
                   <div className="flex items-center gap-3 px-4 pt-3.5 pb-3 flex-shrink-0" style={{ borderBottom: "1px solid rgba(var(--accent-rgb),0.10)" }}>
-                    <div className="w-9 h-9 rounded-2xl flex items-center justify-center flex-shrink-0 text-[17px]"
-                      style={{ background: "linear-gradient(135deg,#F5B120,#E8620C)" }}>
+                    <div className="w-9 h-9 flex items-center justify-center flex-shrink-0 text-[17px]"
+                      style={{ borderRadius: "var(--r-controle)", background: "linear-gradient(135deg,#F5B120,#E8620C)" }}>
                       🍽️
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "var(--exp-encre)" }}>Recette</p>
+                      <p className="vy-label" style={{ color: "var(--exp-encre)" }}>Recette</p>
                       <p className="text-[15px] font-semibold leading-tight truncate" style={{ color: "var(--text-0)" }}>{pendingRecipe.nom}</p>
                     </div>
                   </div>
@@ -640,13 +640,13 @@ export default function AssistantSheet() {
 
                   <div className="flex gap-2 px-4 py-3 flex-shrink-0" style={{ borderTop: "1px solid rgba(var(--accent-rgb),0.10)" }}>
                     <motion.button whileTap={{ scale: 0.97 }} onClick={cancelRecipe}
-                      className="flex-1 py-2.5 rounded-2xl text-[13px] font-semibold cursor-pointer"
-                      style={{ background: "rgba(var(--accent-rgb),0.10)", color: "var(--text-2)" }}>
+                      className="flex-1 py-2.5 text-[13px] font-semibold cursor-pointer"
+                      style={{ borderRadius: "var(--r-controle)", background: "rgba(var(--accent-rgb),0.10)", color: "var(--text-2)" }}>
                       Fermer
                     </motion.button>
                     <motion.button whileTap={{ scale: 0.97 }} onClick={confirmRecipe}
-                      className="flex-1 py-2.5 rounded-2xl text-[13px] font-semibold cursor-pointer flex items-center justify-center gap-1.5"
-                      style={{ background: "linear-gradient(135deg, var(--accent), var(--violet-mid))", color: "#fff" }}>
+                      className="flex-1 py-2.5 text-[13px] font-semibold cursor-pointer flex items-center justify-center gap-1.5"
+                      style={{ borderRadius: "var(--r-controle)", background: "linear-gradient(135deg, var(--accent), var(--violet-mid))", color: "#fff", boxShadow: "var(--ombre-action)" }}>
                       <Check size={15} strokeWidth={2.4} /> Ajouter au repas
                     </motion.button>
                   </div>
@@ -656,15 +656,15 @@ export default function AssistantSheet() {
               {/* ── Carte REPAS (log) — estimation à valider, aucune écriture sans clic ── */}
               {pendingMeal && (
                 <motion.div initial={{ opacity: 0, y: 10, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }}
-                  className="w-full rounded-3xl overflow-hidden"
-                  style={{ background: "rgba(var(--surface-rgb),0.98)", border: "1px solid rgba(var(--accent-rgb),0.22)", boxShadow: "0 8px 28px rgba(var(--accent-rgb),0.18)" }}>
+                  className="w-full overflow-hidden"
+                  style={{ borderRadius: "var(--r-bloc)", background: "rgba(var(--surface-rgb),0.98)", border: "1px solid rgba(var(--accent-rgb),0.22)", boxShadow: "var(--ombre-pose)" }}>
                   <div className="flex items-center gap-3 px-4 pt-3.5 pb-3" style={{ borderBottom: "1px solid rgba(var(--accent-rgb),0.10)" }}>
-                    <div className="w-9 h-9 rounded-2xl flex items-center justify-center flex-shrink-0"
-                      style={{ background: "linear-gradient(135deg,#F5B120,#E8620C)" }}>
+                    <div className="w-9 h-9 flex items-center justify-center flex-shrink-0"
+                      style={{ borderRadius: "var(--r-controle)", background: "linear-gradient(135deg,#F5B120,#E8620C)" }}>
                       <Utensils size={16} strokeWidth={1.8} style={{ color: "#fff" }} />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "var(--exp-encre)" }}>
+                      <p className="vy-label" style={{ color: "var(--exp-encre)" }}>
                         Repas à noter · {MEAL_LABEL[pendingMeal.mealType] ?? "Repas"}
                       </p>
                       <p className="text-[15px] font-semibold leading-tight truncate" style={{ color: "var(--text-0)" }}>{pendingMeal.foodName}</p>
@@ -692,13 +692,13 @@ export default function AssistantSheet() {
 
                   <div className="flex gap-2 px-4 py-3 mt-1" style={{ borderTop: "1px solid rgba(var(--accent-rgb),0.10)" }}>
                     <motion.button whileTap={{ scale: 0.97 }} onClick={cancelMeal}
-                      className="flex-1 py-2.5 rounded-2xl text-[13px] font-semibold cursor-pointer"
-                      style={{ background: "rgba(var(--accent-rgb),0.10)", color: "var(--text-2)" }}>
+                      className="flex-1 py-2.5 text-[13px] font-semibold cursor-pointer"
+                      style={{ borderRadius: "var(--r-controle)", background: "rgba(var(--accent-rgb),0.10)", color: "var(--text-2)" }}>
                       Annuler
                     </motion.button>
                     <motion.button whileTap={{ scale: 0.97 }} onClick={confirmMeal}
-                      className="flex-1 py-2.5 rounded-2xl text-[13px] font-semibold cursor-pointer flex items-center justify-center gap-1.5"
-                      style={{ background: "linear-gradient(135deg, var(--accent), var(--violet-mid))", color: "#fff" }}>
+                      className="flex-1 py-2.5 text-[13px] font-semibold cursor-pointer flex items-center justify-center gap-1.5"
+                      style={{ borderRadius: "var(--r-controle)", background: "linear-gradient(135deg, var(--accent), var(--violet-mid))", color: "#fff", boxShadow: "var(--ombre-action)" }}>
                       <Check size={15} strokeWidth={2.4} /> Noter le repas
                     </motion.button>
                   </div>

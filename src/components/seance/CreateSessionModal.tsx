@@ -296,7 +296,7 @@ export default function CreateSessionModal({
           style={{
             background: "rgba(var(--surface-rgb),0.98)",
             border: "1px solid rgba(var(--tint-violet-rgb),0.9)",
-            boxShadow: "0 24px 70px rgba(var(--accent-rgb),0.2)",
+            boxShadow: "var(--ombre-flottant)",
             height: "min(94dvh, 860px)",
             maxHeight: "94vh",
           }}
@@ -307,7 +307,7 @@ export default function CreateSessionModal({
             style={{ borderBottom: "1px solid rgba(var(--tint-violet-rgb),0.8)" }}>
             <div className="flex items-start justify-between gap-3">
               <div>
-                <p className="text-[11px] font-semiboldst" style={{ color: "var(--exp-encre)" }}>
+                <p className="vy-label" style={{ color: "var(--exp-encre)" }}>
                   {isEdit ? "Modifier" : "Nouvelle séance"}
                 </p>
                 <h2 className="text-[19px] font-light mt-0.5 leading-tight" style={{ color: "var(--text-1)" }}>
@@ -360,7 +360,7 @@ export default function CreateSessionModal({
                   className="flex flex-col gap-6"
                 >
                   <div className="flex flex-col gap-2">
-                    <label className="text-[11px] font-semiboldst" style={{ color: "var(--text-3)" }}>
+                    <label className="vy-label" style={{ color: "var(--text-3)" }}>
                       Le nom
                     </label>
                     <input
@@ -441,7 +441,7 @@ export default function CreateSessionModal({
 
                   {/* Type */}
                   <div className="flex flex-col gap-2.5">
-                    <p className="text-[11px] font-semiboldst" style={{ color: "var(--text-3)" }}>
+                    <p className="vy-label" style={{ color: "var(--text-3)" }}>
                       Le type
                     </p>
                     <div className="grid grid-cols-4 gap-2">
@@ -468,7 +468,7 @@ export default function CreateSessionModal({
 
                   {/* Niveau */}
                   <div className="flex flex-col gap-2.5">
-                    <p className="text-[11px] font-semiboldst" style={{ color: "var(--text-3)" }}>
+                    <p className="vy-label" style={{ color: "var(--text-3)" }}>
                       Le niveau
                     </p>
                     <div className="grid grid-cols-3 gap-2">
@@ -495,8 +495,8 @@ export default function CreateSessionModal({
                   className="flex flex-col gap-4"
                 >
                   {exForms.length === 0 ? (
-                    <div className="rounded-3xl px-5 py-8 flex flex-col items-center text-center gap-4"
-                      style={{ background: "rgba(var(--tint-violet-rgb),0.3)", border: "1px dashed rgba(var(--violet-mid-rgb),0.5)" }}>
+                    <div className="px-5 py-8 flex flex-col items-center text-center gap-4"
+                      style={{ borderRadius: "var(--r-bloc)", background: "rgba(var(--tint-violet-rgb),0.3)", border: "1px dashed rgba(var(--violet-mid-rgb),0.5)" }}>
                       <div className="flex items-end justify-center -space-x-2">
                         {["Squat", "Pompes", "Gainage"].map((n, i) => (
                           <ExerciseThumb key={n} name={n} size={64} delay={i * 300} />
@@ -511,15 +511,15 @@ export default function CreateSessionModal({
                         </p>
                       </div>
                       <motion.button whileTap={{ scale: 0.96 }} onClick={() => setBibliotheque(true)}
-                        className="px-5 py-3 rounded-2xl text-[13px] font-semibold cursor-pointer flex items-center gap-2"
-                        style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", color: "#fff", boxShadow: "0 8px 24px rgba(139,92,246,0.28)" }}>
+                        className="px-5 py-3 text-[13px] font-semibold cursor-pointer flex items-center gap-2"
+                        style={{ borderRadius: "var(--r-controle)", background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", color: "#fff", boxShadow: "var(--ombre-action)" }}>
                         <Library size={15} strokeWidth={2} /> Ouvrir la bibliothèque
                       </motion.button>
                     </div>
                   ) : (
                     <>
                       <div className="flex items-center justify-between">
-                        <p className="text-[11px] font-semiboldst" style={{ color: "var(--exp-encre)" }}>
+                        <p className="vy-label" style={{ color: "var(--exp-encre)" }}>
                           {exForms.length} exercice{exForms.length > 1 ? "s" : ""}
                         </p>
                         {animes > 0 && (
@@ -562,22 +562,26 @@ export default function CreateSessionModal({
                   className="flex flex-col gap-6"
                 >
                   {/* Récap */}
-                  <div className="rounded-3xl p-5 flex flex-col gap-4"
+                  <div className="p-5 flex flex-col gap-4"
                     style={{
+                      borderRadius: "var(--r-bloc)",
                       background: "linear-gradient(150deg, rgba(139,92,246,0.14), rgba(193,59,193,0.08))",
                       border: "1px solid rgba(var(--accent-rgb),0.28)",
                     }}>
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-[11px] font-semiboldst" style={{ color: "var(--text-3)" }}>
+                        <p className="vy-label" style={{ color: "var(--text-3)" }}>
                           Durée estimée
                         </p>
+                        {/* Le nombre dans son element, l'unite dans un autre :
+                            la famille du chiffre ne sert QU'aux valeurs
+                            mesurees, jamais a un mot pose a cote. */}
                         <p className="text-[30px] font-light leading-none mt-1" style={{ color: "var(--text-1)" }}>
-                          {duration} <span className="text-base">min</span>
+                          <span className="vy-nombre">{duration}</span> <span className="text-base">min</span>
                         </p>
                       </div>
                       <div className="text-right">
-                        <p className="text-[11px] font-semiboldst" style={{ color: "var(--text-3)" }}>
+                        <p className="vy-label" style={{ color: "var(--text-3)" }}>
                           Contenu
                         </p>
                         <p className="text-[13px] font-semibold mt-1.5" style={{ color: "var(--text-1)" }}>
@@ -601,7 +605,7 @@ export default function CreateSessionModal({
                   {/* Muscles déduits */}
                   <div className="flex flex-col gap-3">
                     <div>
-                      <p className="text-[11px] font-semiboldst" style={{ color: "var(--exp-encre)" }}>
+                      <p className="vy-label" style={{ color: "var(--exp-encre)" }}>
                         Muscles ciblés
                       </p>
                       <p className="text-[11px] mt-1" style={{ color: "var(--text-3)" }}>
@@ -687,11 +691,11 @@ export default function CreateSessionModal({
               whileTap={{ scale: 0.97 }}
               onClick={() => { if (etape < 2) setEtape(e => e + 1); else valider(); }}
               disabled={!peutContinuer}
-              className="flex-1 py-3.5 rounded-2xl text-sm font-semibold cursor-pointer flex items-center justify-center gap-2"
-              style={peutContinuer
-                ? { background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", color: "#fff", boxShadow: "0 8px 24px rgba(139,92,246,0.26)" }
-                : { background: "rgba(var(--tint-violet-rgb),0.5)", color: "var(--text-3)" }
-              }
+              className="flex-1 py-3.5 text-sm font-semibold cursor-pointer flex items-center justify-center gap-2"
+              style={{ borderRadius: "var(--r-controle)", ...(peutContinuer
+                ? { background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", color: "#fff", boxShadow: "var(--ombre-action)" }
+                : { background: "rgba(var(--tint-violet-rgb),0.5)", color: "var(--text-3)" })
+              }}
             >
               {etape < 2
                 ? "Continuer"
@@ -868,7 +872,7 @@ function Compteur({ label, valeur, onMoins, onPlus }: {
 }) {
   return (
     <div>
-      <p className="text-[11px] font-semiboldst mb-1.5 text-center" style={{ color: "var(--text-3)" }}>
+      <p className="vy-label mb-1.5 text-center" style={{ color: "var(--text-3)" }}>
         {label}
       </p>
       <div className="flex items-center justify-between gap-1 px-2 py-2 rounded-xl"

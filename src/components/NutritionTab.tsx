@@ -113,10 +113,17 @@ function CalorieRing({ consumed, goal }: { consumed: number; goal: number }) {
           transition={{ duration: 1.4, ease: "easeOut", delay: 0.2 }} />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center gap-1">
-        <p className="text-[11px] font-semiboldst" style={{ color: "var(--text-3)" }}>Consommé</p>
+        <p className="vy-label" style={{ color: "var(--text-3)" }}>Consommé</p>
         <motion.p
           initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.4 }}
+          /* ⚠️ PAS `.vy-nombre` ICI, ET C'EST UNE MESURE, PAS UN GOUT.
+             `toLocaleString("fr-FR")` separe les milliers par une espace
+             insecable ; dans une chasse fixe cette espace occupe une CASE
+             ENTIERE, donc « 1 480 » se lit « 1 » puis « 480 », c'est-a-dire
+             deux valeurs au lieu d'une. Verifie a l'ecran a 40 px. La famille
+             du chiffre sert les valeurs qu'on regarde, mais pas celles qui
+             portent un separateur de milliers francais. */
           className="text-[2.5rem] font-light leading-none" style={{ color: "var(--text-1)" }}>
           {consumed.toLocaleString("fr-FR")}
         </motion.p>
@@ -293,7 +300,7 @@ function PhotoAnalysisModal({ onClose, onAdd, onBack }: {
   const CARD_STYLE = {
     background: "rgb(var(--surface-rgb))",
     border: "1px solid rgba(var(--accent-rgb),0.14)",
-    boxShadow: "0 24px 64px rgba(0,0,0,0.5)",
+    boxShadow: "var(--ombre-flottant)",
     maxHeight: "90dvh",
     overflowY: "auto" as const,
   };
@@ -325,7 +332,7 @@ function PhotoAnalysisModal({ onClose, onAdd, onBack }: {
               </motion.button>
             )}
             <div className="min-w-0">
-              <p className="text-[11px] font-semiboldst" style={{ color: "var(--text-3)" }}>{onBack ? "Retour à la carte" : "IA Nutrition"}</p>
+              <p className="vy-label" style={{ color: "var(--text-3)" }}>{onBack ? "Retour à la carte" : "IA Nutrition"}</p>
               <h2 className="text-lg font-semibold truncate" style={{ color: "var(--text-1)" }}>
                 {phase === "analyzing" ? "Je regarde…"
                   : phase === "result"   ? "Repas identifié"
@@ -389,7 +396,7 @@ function PhotoAnalysisModal({ onClose, onAdd, onBack }: {
                     <button type="button" onClick={() => camRef.current?.click()}
                       className="absolute inset-0 flex flex-col items-center justify-center gap-3 cursor-pointer">
                       <div className="w-16 h-16 rounded-full flex items-center justify-center"
-                        style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", boxShadow: "0 8px 24px rgba(139,92,246,0.5)" }}>
+                        style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", boxShadow: "var(--ombre-action)" }}>
                         <Camera size={26} strokeWidth={1.8} style={{ color: "#fff" }} />
                       </div>
                       <div className="text-center px-6">
@@ -411,7 +418,7 @@ function PhotoAnalysisModal({ onClose, onAdd, onBack }: {
                     <motion.button whileTap={{ scale: 0.92 }} onClick={capturePhoto}
                       className="rounded-full flex items-center justify-center cursor-pointer flex-shrink-0"
                       style={{ width: 68, height: 68, border: "3px solid rgba(var(--accent-rgb),0.35)" }}>
-                      <span className="rounded-full" style={{ width: 52, height: 52, background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", boxShadow: "0 6px 18px rgba(139,92,246,0.5)" }} />
+                      <span className="rounded-full" style={{ width: 52, height: 52, background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", boxShadow: "var(--ombre-action)" }} />
                     </motion.button>
                     <motion.button whileTap={{ scale: 0.9 }} onClick={flipCam}
                       className="w-11 h-11 rounded-2xl flex items-center justify-center cursor-pointer"
@@ -485,7 +492,7 @@ function PhotoAnalysisModal({ onClose, onAdd, onBack }: {
                 {/* Titre + kcal */}
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex-1 min-w-0">
-                    <p className="text-[11px] font-semiboldst flex items-center gap-1" style={{ color: "var(--text-3)" }}>
+                    <p className="vy-label flex items-center gap-1" style={{ color: "var(--text-3)" }}>
                       <Check size={11} strokeWidth={3} style={{ color: "var(--teal-encre)" }} /> Repas identifié
                     </p>
                     <p className="font-semibold text-base leading-tight mt-1" style={{ color: "var(--text-1)" }}>
@@ -528,7 +535,7 @@ function PhotoAnalysisModal({ onClose, onAdd, onBack }: {
                   <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
                     onClick={handleConfirm}
                     className="flex-[2] py-3 rounded-2xl text-sm font-bold cursor-pointer flex items-center justify-center gap-2"
-                    style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", color: "#fff", boxShadow: "0 6px 18px rgba(139,92,246,0.4)" }}>
+                    style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", color: "#fff", boxShadow: "var(--ombre-action)" }}>
                     <Plus size={16} strokeWidth={2.5} /> Ajouter à ma journée
                   </motion.button>
                 </div>
@@ -549,7 +556,7 @@ function PhotoAnalysisModal({ onClose, onAdd, onBack }: {
                   { key: "fats",     label: "Lipides (g)",     type: "number" },
                 ].map(({ key, label, type }) => (
                   <div key={key}>
-                    <label className="text-[11px] font-semiboldst mb-1 block"
+                    <label className="vy-label mb-1 block"
                       style={{ color: "var(--text-3)" }}>{label}</label>
                     <input
                       type={type}
@@ -565,7 +572,7 @@ function PhotoAnalysisModal({ onClose, onAdd, onBack }: {
                 ))}
 
                 <div>
-                  <label className="text-[11px] font-semiboldst mb-1.5 block"
+                  <label className="vy-label mb-1.5 block"
                     style={{ color: "var(--text-3)" }}>Type de repas</label>
                   <div className="grid grid-cols-2 gap-2">
                     {(Object.keys(MEAL_META) as MealType[]).map(mt => (
@@ -594,7 +601,7 @@ function PhotoAnalysisModal({ onClose, onAdd, onBack }: {
                   style={{
                     background: "linear-gradient(135deg,#8B5CF6,#C13BC1)",
                     color: "#fff",
-                    boxShadow: "0 6px 18px rgba(139,92,246,0.4)",
+                    boxShadow: "var(--ombre-action)",
                   }}>
                   Valider les modifications
                 </motion.button>
@@ -803,7 +810,7 @@ function BarcodeScannerModal({ onClose, onAdd }: {
   const CARD_STYLE = {
     background: "rgb(var(--surface-rgb))",
     border: "1px solid rgba(var(--accent-rgb),0.14)",
-    boxShadow: "0 24px 64px rgba(0,0,0,0.5)",
+    boxShadow: "var(--ombre-flottant)",
     maxHeight: "90dvh",
     overflowY: "auto" as const,
   };
@@ -831,7 +838,7 @@ function BarcodeScannerModal({ onClose, onAdd }: {
         {/* Header */}
         <div className="flex items-center justify-between p-5 pb-4">
           <div>
-            <p className="text-[11px] font-semiboldst" style={{ color: "var(--text-3)" }}>
+            <p className="vy-label" style={{ color: "var(--text-3)" }}>
               Scanner
             </p>
             <h2 className="text-lg font-semibold" style={{ color: "var(--text-1)" }}>
@@ -934,7 +941,7 @@ function BarcodeScannerModal({ onClose, onAdd }: {
                 {!estimated && (
                   <>
                     <div>
-                      <label className="text-[11px] font-semiboldst mb-1.5 block"
+                      <label className="vy-label mb-1.5 block"
                         style={{ color: "var(--text-3)" }}>Nom du produit</label>
                       <div className="flex gap-2">
                         <input
@@ -957,7 +964,7 @@ function BarcodeScannerModal({ onClose, onAdd }: {
                               ? "linear-gradient(135deg,#8B5CF6,#C13BC1)"
                               : "rgba(var(--tint-violet-rgb),0.6)",
                             color: fallbackName.trim() && !estimating ? "#fff" : "var(--text-3)",
-                            boxShadow: fallbackName.trim() && !estimating ? "0 4px 14px rgba(139,92,246,0.35)" : "none",
+                            boxShadow: fallbackName.trim() && !estimating ? "var(--ombre-action)" : "none",
                             minWidth: 80, justifyContent: "center",
                           }}>
                           {estimating
@@ -1002,7 +1009,7 @@ function BarcodeScannerModal({ onClose, onAdd }: {
                     {/* Estimation IA — mini fiche */}
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex-1 min-w-0">
-                        <p className="text-[11px] font-semiboldst flex items-center gap-1" style={{ color: "var(--exp-encre)" }}>
+                        <p className="vy-label flex items-center gap-1" style={{ color: "var(--exp-encre)" }}>
                           <Sparkles size={11} strokeWidth={2} /> Estimé par l&apos;IA
                         </p>
                         <p className="font-semibold text-sm leading-tight mt-1" style={{ color: "var(--text-1)" }}>
@@ -1018,7 +1025,7 @@ function BarcodeScannerModal({ onClose, onAdd }: {
 
                     {/* Type de repas */}
                     <div>
-                      <label className="text-[11px] font-semiboldst mb-1.5 block"
+                      <label className="vy-label mb-1.5 block"
                         style={{ color: "var(--text-3)" }}>Type de repas</label>
                       <div className="grid grid-cols-2 gap-1.5">
                         {(Object.keys(MEAL_META) as MealType[]).map(mt => (
@@ -1047,7 +1054,7 @@ function BarcodeScannerModal({ onClose, onAdd }: {
                       <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
                         onClick={handleConfirmEstimate}
                         className="flex-[2] py-3 rounded-2xl text-sm font-bold cursor-pointer flex items-center justify-center gap-2"
-                        style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", color: "#fff", boxShadow: "0 6px 18px rgba(139,92,246,0.4)" }}>
+                        style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", color: "#fff", boxShadow: "var(--ombre-action)" }}>
                         <Plus size={16} strokeWidth={2.5} /> Ajouter à ma journée
                       </motion.button>
                     </div>
@@ -1101,7 +1108,7 @@ function BarcodeScannerModal({ onClose, onAdd }: {
 
                 {/* Quantity stepper */}
                 <div>
-                  <label className="text-[11px] font-semiboldst mb-2 block"
+                  <label className="vy-label mb-2 block"
                     style={{ color: "var(--text-3)" }}>Quantité</label>
                   <div className="flex items-center gap-2">
                     <motion.button whileTap={{ scale: 0.86 }}
@@ -1140,7 +1147,7 @@ function BarcodeScannerModal({ onClose, onAdd }: {
 
                 {/* Meal type */}
                 <div>
-                  <label className="text-[11px] font-semiboldst mb-1.5 block"
+                  <label className="vy-label mb-1.5 block"
                     style={{ color: "var(--text-3)" }}>Type de repas</label>
                   <div className="grid grid-cols-2 gap-1.5">
                     {(Object.keys(MEAL_META) as MealType[]).map(mt => (
@@ -1169,7 +1176,7 @@ function BarcodeScannerModal({ onClose, onAdd }: {
                   <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
                     onClick={handleConfirm}
                     className="flex-[2] py-3 rounded-2xl text-sm font-bold cursor-pointer flex items-center justify-center gap-2"
-                    style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", color: "#fff", boxShadow: "0 6px 18px rgba(139,92,246,0.4)" }}>
+                    style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", color: "#fff", boxShadow: "var(--ombre-action)" }}>
                     <Plus size={16} strokeWidth={2.5} /> Ajouter à ma journée
                   </motion.button>
                 </div>
@@ -1300,7 +1307,7 @@ function MenuScanModal({ objectiveLine, objectiveChip, goalKnown, initialResult,
   const CARD_STYLE = {
     background: "rgb(var(--surface-rgb))",
     border: "1px solid rgba(var(--accent-rgb),0.14)",
-    boxShadow: "0 24px 64px rgba(0,0,0,0.5)",
+    boxShadow: "var(--ombre-flottant)",
     maxHeight: "90dvh",
     overflowY: "auto" as const,
   };
@@ -1327,7 +1334,7 @@ function MenuScanModal({ objectiveLine, objectiveChip, goalKnown, initialResult,
         {/* Header */}
         <div className="flex items-center justify-between p-5 pb-4">
           <div>
-            <p className="text-[11px] font-semiboldst" style={{ color: "var(--text-3)" }}>Carte du resto</p>
+            <p className="vy-label" style={{ color: "var(--text-3)" }}>Carte du resto</p>
             <h2 className="text-lg font-semibold" style={{ color: "var(--text-1)" }}>
               {phase === "analyzing" ? "Je lis la carte…" : phase === "result" ? "Trié pour toi" : "Photographie la carte"}
             </h2>
@@ -1382,7 +1389,7 @@ function MenuScanModal({ objectiveLine, objectiveChip, goalKnown, initialResult,
                     <button type="button" onClick={() => camRef.current?.click()}
                       className="absolute inset-0 flex flex-col items-center justify-center gap-3 cursor-pointer">
                       <div className="w-16 h-16 rounded-full flex items-center justify-center"
-                        style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", boxShadow: "0 8px 24px rgba(139,92,246,0.5)" }}>
+                        style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", boxShadow: "var(--ombre-action)" }}>
                         <BookOpen size={26} strokeWidth={1.8} style={{ color: "#fff" }} />
                       </div>
                       <div className="text-center px-6">
@@ -1403,7 +1410,7 @@ function MenuScanModal({ objectiveLine, objectiveChip, goalKnown, initialResult,
                     <motion.button whileTap={{ scale: 0.92 }} onClick={capturePhoto}
                       className="rounded-full flex items-center justify-center cursor-pointer flex-shrink-0"
                       style={{ width: 68, height: 68, border: "3px solid rgba(var(--accent-rgb),0.35)" }}>
-                      <span className="rounded-full" style={{ width: 52, height: 52, background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", boxShadow: "0 6px 18px rgba(139,92,246,0.5)" }} />
+                      <span className="rounded-full" style={{ width: 52, height: 52, background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", boxShadow: "var(--ombre-action)" }} />
                     </motion.button>
                     <motion.button whileTap={{ scale: 0.9 }} onClick={flipCam}
                       className="w-11 h-11 rounded-2xl flex items-center justify-center cursor-pointer"
@@ -1488,7 +1495,7 @@ function MenuScanModal({ objectiveLine, objectiveChip, goalKnown, initialResult,
                   {best.reason && <p className="text-xs mt-1 leading-snug" style={{ color: "var(--text-2)" }}>{best.reason}</p>}
                   <motion.button whileTap={{ scale: 0.97 }} onClick={() => onPickDish(best.name)}
                     className="w-full mt-3.5 py-3 rounded-2xl text-sm font-bold cursor-pointer flex items-center justify-center gap-2"
-                    style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", color: "#fff", boxShadow: "0 6px 18px rgba(139,92,246,0.4)" }}>
+                    style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", color: "#fff", boxShadow: "var(--ombre-action)" }}>
                     <Camera size={16} strokeWidth={2} /> Je pars là-dessus
                   </motion.button>
                 </div>
@@ -1497,7 +1504,7 @@ function MenuScanModal({ objectiveLine, objectiveChip, goalKnown, initialResult,
                     2e tap sur « Je pars là-dessus » = vraie sélection. Voir [[nutrition-onmangeou-redesign]]. */}
                 {others.length > 0 && (
                   <>
-                    <p className="text-[11px] font-semiboldst mt-0.5" style={{ color: "var(--text-3)" }}>
+                    <p className="vy-label mt-0.5" style={{ color: "var(--text-3)" }}>
                       Les autres plats <span className="font-normal tracking-normal normal-case">· touche pour choisir</span>
                     </p>
                     <div className="flex flex-col gap-2">
@@ -1531,7 +1538,7 @@ function MenuScanModal({ objectiveLine, objectiveChip, goalKnown, initialResult,
                                   <div className="px-3 pb-3">
                                     <motion.button whileTap={{ scale: 0.97 }} onClick={() => onPickDish(d.name)}
                                       className="w-full py-2.5 rounded-xl text-sm font-bold cursor-pointer flex items-center justify-center gap-2"
-                                      style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", color: "#fff", boxShadow: "0 6px 18px rgba(139,92,246,0.35)" }}>
+                                      style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", color: "#fff", boxShadow: "var(--ombre-action)" }}>
                                       <Camera size={15} strokeWidth={2} /> Je pars là-dessus
                                     </motion.button>
                                   </div>
@@ -1637,7 +1644,7 @@ function ManualModal({ onClose, onAdd }: {
           background: "rgba(var(--surface-rgb),0.96)",
           backdropFilter: "blur(12px)",
           border: "1px solid rgba(var(--surface-rgb),0.9)",
-          boxShadow: "0 20px 60px rgba(var(--accent-rgb),0.15)",
+          boxShadow: "var(--ombre-flottant)",
           maxHeight: "90dvh",
           overflowY: "auto",
         }}
@@ -1645,7 +1652,7 @@ function ManualModal({ onClose, onAdd }: {
 
         <div className="flex items-center justify-between mb-4">
           <div>
-            <p className="text-[11px] font-semiboldst" style={{ color: "var(--text-3)" }}>IA Nutrition</p>
+            <p className="vy-label" style={{ color: "var(--text-3)" }}>IA Nutrition</p>
             <h2 className="text-lg font-light" style={{ color: "var(--text-1)" }}>Décrire un repas</h2>
           </div>
           <motion.button whileTap={{ scale: 0.9 }} onClick={onClose}
@@ -1659,7 +1666,7 @@ function ManualModal({ onClose, onAdd }: {
 
           {/* Champ description + bouton estimer */}
           <div>
-            <label className="text-[11px] font-semiboldst mb-1.5 block" style={{ color: "var(--text-3)" }}>
+            <label className="vy-label mb-1.5 block" style={{ color: "var(--text-3)" }}>
               Ce que tu as mangé
             </label>
             <div className="flex gap-2">
@@ -1731,7 +1738,7 @@ function ManualModal({ onClose, onAdd }: {
               { label: "Lipides (g)",     val: fats,      set: setFats,     ph: "15"  },
             ].map(({ label, val, set, ph }) => (
               <div key={label}>
-                <label className="text-[11px] font-semiboldst mb-1 block"
+                <label className="vy-label mb-1 block"
                   style={{ color: "var(--text-3)" }}>{label}</label>
                 <motion.input
                   type="number" value={val} onChange={e => set(e.target.value)} placeholder={ph}
@@ -1749,7 +1756,7 @@ function ManualModal({ onClose, onAdd }: {
 
           {/* Type de repas */}
           <div>
-            <label className="text-[11px] font-semiboldst mb-1.5 block" style={{ color: "var(--text-3)" }}>
+            <label className="vy-label mb-1.5 block" style={{ color: "var(--text-3)" }}>
               Type de repas
             </label>
             <div className="grid grid-cols-2 gap-1.5">
@@ -1939,9 +1946,9 @@ function NutritionCalendar({ onDayClick }: { onDayClick: (date: Date) => void })
           whileTap={{ scale: 0.9 }}
           onClick={() => canPrev && setCalMonth(new Date(calMonth.getFullYear(), calMonth.getMonth()-1, 1))}
           disabled={!canPrev}
-          className="w-10 h-10 rounded-2xl flex items-center justify-center cursor-pointer"
-          style={{ background: canPrev ? "rgba(var(--tint-violet-rgb),0.85)" : "transparent", opacity: canPrev ? 1 : 0.3,
-            border: "1px solid rgba(var(--violet-mid-rgb),0.3)", boxShadow: canPrev ? "0 2px 8px rgba(var(--accent-rgb),0.08), inset 0 1px 0 rgba(var(--surface-rgb),0.9)" : "none" }}
+          className="w-10 h-10 flex items-center justify-center cursor-pointer"
+          style={{ borderRadius: "var(--r-controle)", background: canPrev ? "rgba(var(--tint-violet-rgb),0.85)" : "transparent", opacity: canPrev ? 1 : 0.3,
+            border: "1px solid rgba(var(--violet-mid-rgb),0.3)", boxShadow: canPrev ? "inset 0 1px 0 rgba(var(--surface-rgb),0.9)" : "none" }}
         >
           <ChevronLeft size={16} strokeWidth={1.5} style={{ color: "var(--text-1)" }} />
         </motion.button>
@@ -1972,9 +1979,9 @@ function NutritionCalendar({ onDayClick }: { onDayClick: (date: Date) => void })
             whileTap={{ scale: 0.9 }}
             onClick={() => canNext && setCalMonth(new Date(calMonth.getFullYear(), calMonth.getMonth()+1, 1))}
             disabled={!canNext}
-            className="w-10 h-10 rounded-2xl flex items-center justify-center cursor-pointer"
-            style={{ background: canNext ? "rgba(var(--tint-violet-rgb),0.85)" : "transparent", opacity: canNext ? 1 : 0.3,
-              border: "1px solid rgba(var(--violet-mid-rgb),0.3)", boxShadow: canNext ? "0 2px 8px rgba(var(--accent-rgb),0.08), inset 0 1px 0 rgba(var(--surface-rgb),0.9)" : "none" }}
+            className="w-10 h-10 flex items-center justify-center cursor-pointer"
+            style={{ borderRadius: "var(--r-controle)", background: canNext ? "rgba(var(--tint-violet-rgb),0.85)" : "transparent", opacity: canNext ? 1 : 0.3,
+              border: "1px solid rgba(var(--violet-mid-rgb),0.3)", boxShadow: canNext ? "inset 0 1px 0 rgba(var(--surface-rgb),0.9)" : "none" }}
           >
             <ChevronRight size={16} strokeWidth={1.5} style={{ color: "var(--text-1)" }} />
           </motion.button>
@@ -2088,56 +2095,62 @@ function NutritionCalendar({ onDayClick }: { onDayClick: (date: Date) => void })
             ))}
           </div>
 
-          {/* Monthly stats tiles */}
-          <div className="grid grid-cols-3 gap-3 mt-4">
-            {[
-              { icon: "📅", label: "Jours trackés",  val: `${trackedThisMonth}`,   unit: `/ ${daysInMonth}`, color: "var(--text-1)" },
-              { icon: "🔥", label: "Moy. calories",  val: avgCal > 0 ? avgCal.toLocaleString("fr-FR") : "—", unit: avgCal > 0 ? "kcal/j" : "", color: "var(--exp-encre)" },
-              { icon: "⚡", label: "Streak actuel",  val: streak > 0 ? `${streak}` : "—", unit: streak > 0 ? "jours" : "", color: "var(--gold)" },
-            ].map(({ icon, label, val, unit, color }) => (
-              <motion.div key={label}
-                initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
-                className="flex flex-col gap-1.5 p-3.5 rounded-2xl"
-                style={{ background: "rgba(var(--surface-rgb),0.7)", border: "1px solid rgba(var(--surface-rgb),0.9)",
-                  backdropFilter: "blur(16px)", boxShadow: "0 4px 16px rgba(var(--accent-rgb),0.06), inset 0 1px 0 rgba(var(--surface-rgb),0.95)" }}>
-                <span className="text-base">{icon}</span>
-                <div>
-                  <span className="text-lg font-light leading-none" style={{ color }}>{val}</span>
-                  {unit && <span className="text-[10px] font-light ml-1" style={{ color: "var(--text-3)" }}>{unit}</span>}
-                </div>
-                <p className="text-[10px] font-light" style={{ color: "var(--text-3)" }}>{label}</p>
-              </motion.div>
-            ))}
-          </div>
+          {/* ── Ce que le mois raconte, ce que tout raconte ──
+             Deux trios de chiffres de MEME nature qui se suivaient a 16 px,
+             l'un en trois tuiles de verre, l'autre dans un lavis violet :
+             deux ecritures pour une seule idee. Un cadre, deux sections, un
+             filet. Le verre est parti parce qu'il n'y avait rien derriere a
+             laisser deviner : c'etait une surface statique, pas un element
+             flottant. Les pictogrammes decoratifs partent avec (l'⚡ disait
+             meme la serie, alors que la serie se dit 🔥 partout ailleurs). */}
+          <motion.div
+            initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+            className="mt-4 overflow-hidden"
+            style={{ borderRadius: "var(--r-bloc)", border: "1px solid rgba(var(--text-3-rgb),0.16)" }}>
 
-          {/* All-time summary banner */}
-          {allTracked.length > 0 && (
-            <motion.div
-              initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
-              className="mt-4 p-4 rounded-2xl"
-              style={{ background: "linear-gradient(135deg,rgba(var(--violet-mid-rgb),0.22) 0%,rgba(var(--cream-mid-rgb),0.16) 100%)",
-                border: "1px solid rgba(var(--accent-rgb),0.14)", backdropFilter: "blur(12px)" }}>
-              <p className="text-[11px] font-semiboldst mb-3" style={{ color: "var(--text-3)" }}>
-                Depuis l’inscription
-              </p>
+            <div className="vy-filet p-4">
+              <p className="vy-label mb-3" style={{ color: "var(--text-3)" }}>Ce mois-ci</p>
               <div className="grid grid-cols-3 gap-4 text-center">
                 {[
-                  { val: allTracked.length, unit: "jours", label: "trackés",   color: "var(--text-1)" },
-                  { val: bestStreak,        unit: "jours", label: "meil. série",color: "var(--exp-encre)" },
-                  { val: globalAvgCal > 0 ? globalAvgCal.toLocaleString("fr-FR") : "—",
-                    unit: globalAvgCal > 0 ? "kcal" : "", label: "moy./jour",   color: "var(--gold)" },
-                ].map(({ val, unit, label, color }) => (
+                  { label: "Jours trackés", val: `${trackedThisMonth}`, unit: `/ ${daysInMonth}`, color: "var(--text-1)" },
+                  { label: "Moy. calories", val: avgCal > 0 ? avgCal.toLocaleString("fr-FR") : "—", unit: avgCal > 0 ? "kcal/j" : "", color: "var(--exp-encre)" },
+                  { label: "Série en cours", val: streak > 0 ? `${streak}` : "—", unit: streak > 0 ? "jours" : "", color: "var(--feu-encre)" },
+                ].map(({ label, val, unit, color }) => (
                   <div key={label}>
                     <p className="text-xl font-extralight leading-tight" style={{ color }}>
                       {val}
-                      <span className="text-xs font-light ml-0.5" style={{ color: "var(--text-3)" }}>{unit}</span>
+                      {unit && <span className="text-xs font-light ml-0.5" style={{ color: "var(--text-3)" }}>{unit}</span>}
                     </p>
-                    <p className="text-[10px] font-light mt-0.5" style={{ color: "var(--text-3)" }}>{label}</p>
+                    <p className="vy-label mt-0.5" style={{ color: "var(--text-3)" }}>{label}</p>
                   </div>
                 ))}
               </div>
-            </motion.div>
-          )}
+            </div>
+
+            {allTracked.length > 0 && (
+              <div className="vy-filet p-4">
+                <p className="vy-label mb-3" style={{ color: "var(--text-3)" }}>
+                  Depuis l’inscription
+                </p>
+                <div className="grid grid-cols-3 gap-4 text-center">
+                  {[
+                    { val: allTracked.length, unit: "jours", label: "trackés",   color: "var(--text-1)" },
+                    { val: bestStreak,        unit: "jours", label: "meil. série",color: "var(--exp-encre)" },
+                    { val: globalAvgCal > 0 ? globalAvgCal.toLocaleString("fr-FR") : "—",
+                      unit: globalAvgCal > 0 ? "kcal" : "", label: "moy./jour",   color: "var(--feu-encre)" },
+                  ].map(({ val, unit, label, color }) => (
+                    <div key={label}>
+                      <p className="text-xl font-extralight leading-tight" style={{ color }}>
+                        {val}
+                        <span className="text-xs font-light ml-0.5" style={{ color: "var(--text-3)" }}>{unit}</span>
+                      </p>
+                      <p className="vy-label mt-0.5" style={{ color: "var(--text-3)" }}>{label}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </motion.div>
         </>
       )}
     </motion.div>
@@ -2361,10 +2374,16 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
     .map(mt => ({ type: mt, ...MEAL_META[mt], meals: meals.filter(m => m.mealType === mt) }))
     .filter(g => g.meals.length > 0);
 
+  /* Le dessin commun des blocs du journal. Le halo violet a 0,16 qui vivait
+     ici ne separait rien : sous une surface pleine et claire, une ombre
+     teintee decore, elle ne pose pas. Les deux ombres neutres sont neutres,
+     c'est le coeur du geste. Le rayon dit maintenant la taille de la surface :
+     ces blocs font la largeur de l'ecran, donc `--r-bloc`. */
   const CARD = {
     background: "rgb(var(--surface-rgb))",
-    border: "1px solid rgba(var(--accent-rgb),0.12)",
-    boxShadow: "0 6px 26px rgba(var(--accent-rgb),0.16)",
+    border: "1px solid rgba(var(--text-3-rgb),0.16)",
+    boxShadow: "var(--ombre-pose)",
+    borderRadius: "var(--r-bloc)",
   };
 
   return (
@@ -2388,7 +2407,7 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
               Progression
             </button>
           )}
-          <p className="text-xs font-semiboldst mb-0.5" style={{ color: "var(--text-3)" }}>
+          <p className="vy-label mb-0.5" style={{ color: "var(--text-3)" }}>
             {today.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })}
           </p>
           <h1 className="text-3xl font-extralight" style={{ color: "var(--text-1)" }}>
@@ -2443,12 +2462,13 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
               key={v}
               whileTap={{ scale: 0.95 }}
               onClick={() => setCalView(v)}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-2xl text-xs font-semibold cursor-pointer transition-all duration-200"
+              className="vy-label flex items-center gap-1.5 px-4 py-2 cursor-pointer transition-all duration-200"
               style={{
+                borderRadius: "var(--r-controle)",
                 background: active ? "linear-gradient(135deg,#8B5CF6,#C13BC1)" : "rgba(var(--accent-rgb),0.10)",
-                color: active ? "#fff" : "var(--text-3)",
-                boxShadow: active ? "0 4px 14px rgba(147,60,200,0.4)" : "none",
-                border: active ? "none" : "1px solid rgba(var(--accent-rgb),0.2)",
+                color: active ? "#fff" : "var(--text-2)",
+                boxShadow: active ? "var(--ombre-action)" : "none",
+                border: active ? "1px solid transparent" : "1px solid rgba(var(--accent-rgb),0.2)",
               }}
             >
               <Icon size={13} strokeWidth={1.8} />
@@ -2484,10 +2504,10 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
           return (
             <motion.button key={i} whileTap={{ scale: 0.9 }}
               onClick={() => setSelectedDate(day)}
-              className="flex flex-col items-center gap-1 w-10 py-2 rounded-2xl cursor-pointer"
+              className="flex flex-col items-center gap-1 w-10 py-2 cursor-pointer"
               style={{
+                borderRadius: "var(--r-controle)",
                 background: isSel ? "linear-gradient(135deg,var(--accent) 0%,#9270E0 100%)" : "transparent",
-                boxShadow: isSel ? "0 4px 14px rgba(var(--accent-rgb),0.38)" : "none",
               }}>
               <span className="text-[9px] font-semibold"
                 style={{ color: isSel ? "rgba(var(--surface-rgb),0.65)" : "var(--text-3)" }}>
@@ -2527,7 +2547,7 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
       {calView === "journal" && (
         <button
           onClick={() => setJournalOpen((o) => !o)}
-          className="w-full max-w-5xl flex items-center justify-between px-5 py-4 rounded-3xl mb-4 cursor-pointer"
+          className="w-full max-w-5xl flex items-center justify-between px-5 py-4 mb-4 cursor-pointer"
           style={CARD}
         >
           <div className="flex items-center gap-3">
@@ -2536,7 +2556,7 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
               <BookOpen size={16} strokeWidth={1.8} style={{ color: "var(--exp-encre)" }} />
             </div>
             <div className="text-left">
-              <p className="text-[11px] font-semiboldst" style={{ color: "var(--text-3)" }}>
+              <p className="vy-label" style={{ color: "var(--text-3)" }}>
                 Journal du jour
               </p>
               <p className="text-sm font-medium" style={{ color: "var(--text-1)" }}>
@@ -2555,13 +2575,20 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
       {calView === "journal" && journalOpen && (
       <div className="grid grid-cols-1 lg:grid-cols-[320px,1fr] gap-5 max-w-5xl">
 
-        {/* LEFT — Ring + Macros */}
-        <div className="flex flex-col gap-4">
+        {/* ── LEFT — L'anneau et les macros, UN SEUL groupe ──
+           Les deux blocs portaient EXACTEMENT le meme dessin (meme surface,
+           meme rayon, meme halo violet) a 16 px l'un de l'autre, et ils
+           repondent a une seule question : ou j'en suis aujourd'hui. Deux
+           surfaces pour une seule idee, c'est la forme qui fait « tableau de
+           bord genere ». Un cadre, deux sections, un filet entre elles.
+           Le filet vient de `.vy-filet + .vy-filet`, donc c'est le SECOND
+           enfant qui le porte : pas de trait orphelin si l'un disparait. */}
+        <motion.div
+          initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.12 }}
+          className="overflow-hidden self-start w-full" style={CARD}>
 
           {/* Calorie ring */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.12 }}
-            className="rounded-3xl p-6" style={CARD}>
+          <div className="vy-filet p-6">
             <div className="flex flex-col items-center gap-5">
               <CalorieRing consumed={totalCals} goal={goals.calories} />
               <div className="w-full grid grid-cols-3 gap-2 text-center">
@@ -2571,7 +2598,7 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
                   { label: "Objectif",val: goals.calories, color: "#B79CFF" },
                 ].map(({ label, val, color }) => (
                   <div key={label}>
-                    <p className="text-[11px] font-semiboldst mb-0.5"
+                    <p className="vy-label mb-0.5"
                       style={{ color: "var(--text-3)" }}>{label}</p>
                     <p className="text-lg font-light leading-tight" style={{ color }}>
                       {val.toLocaleString("fr-FR")}
@@ -2584,16 +2611,14 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
                 Restant = ce qu&apos;il te reste à manger · Brûlé = dépensé en bougeant
               </p>
             </div>
-          </motion.div>
+          </div>
 
           {/* Macros */}
-          <motion.div
-            initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-            className="rounded-3xl p-5" style={CARD}>
+          <div className="vy-filet p-5">
             <div className="flex items-start justify-between mb-4">
               <div>
-                <p className="text-[11px] font-semiboldst" style={{ color: "var(--text-3)" }}>
-                  MACROS DU JOUR
+                <p className="vy-label" style={{ color: "var(--text-3)" }}>
+                  Macros du jour
                 </p>
                 <p className="text-[11px] mt-0.5" style={{ color: "var(--text-3)" }}>
                   Les 3 familles d&apos;aliments qui composent ton assiette
@@ -2608,19 +2633,19 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
               <MacroBar label="Glucides"  hint="Ton énergie pour la journée"      consumed={totalCarbs} goal={goals.carbs}    color="#FF9A3D" />
               <MacroBar label="Lipides"   hint="Les graisses utiles à ton corps"  consumed={totalFats}  goal={goals.fats}     color="#2BD4A0" />
             </div>
-          </motion.div>
-        </div>
+          </div>
+        </motion.div>
 
         {/* RIGHT — Meals */}
         <motion.div
           initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.28 }}
-          className="rounded-3xl p-5" style={CARD}>
+          className="p-5" style={CARD}>
 
           {/* Header */}
           <div className="flex items-center justify-between mb-5">
             <div>
-              <p className="text-[11px] font-semiboldst" style={{ color: "var(--text-3)" }}>
-                REPAS DU JOUR
+              <p className="vy-label" style={{ color: "var(--text-3)" }}>
+                Repas du jour
               </p>
               <p className="text-sm font-light mt-0.5" style={{ color: "var(--text-2)" }}>
                 {totalCals} kcal consommés
@@ -2671,7 +2696,7 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
             <div className="mb-5">
               <div className="flex items-center gap-1.5 mb-2">
                 <Heart size={11} strokeWidth={2} style={{ color: "var(--text-3)" }} />
-                <p className="text-[11px] font-semiboldst" style={{ color: "var(--text-3)" }}>
+                <p className="vy-label" style={{ color: "var(--text-3)" }}>
                   Tes coups de cœur
                 </p>
                 {!pinHintSeen && (
@@ -2765,17 +2790,13 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
                     </div>
 
                     {/* Meals */}
-                    <div className="flex flex-col gap-2">
+                    <div className="flex flex-col">
                       {group.meals.map(meal => (
                         <motion.div key={meal.id}
                           initial={{ opacity: 0, x: -8 }}
                           animate={{ opacity: 1, x: 0 }}
-                          exit={{ opacity: 0, x: 16, height: 0, marginBottom: 0 }}
-                          className="flex items-center gap-3 p-3 rounded-2xl group"
-                          style={{
-                            background: "rgba(250,249,255,0.7)",
-                            border: "1px solid rgba(var(--accent-rgb),0.06)",
-                          }}>
+                          exit={{ opacity: 0, x: 16, height: 0, paddingTop: 0, paddingBottom: 0 }}
+                          className="vy-filet flex items-center gap-3 py-3 group overflow-hidden">
 
                           {/* Icon */}
                           <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
@@ -2893,7 +2914,7 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
               background: "rgba(var(--surface-rgb),0.92)",
               backdropFilter: "blur(10px)",
               border: "1px solid rgba(var(--surface-rgb),0.9)",
-              boxShadow: "0 8px 32px rgba(var(--accent-rgb),0.2)",
+              boxShadow: "var(--ombre-flottant)",
               whiteSpace: "nowrap",
             }}>
             <Check size={14} strokeWidth={2.5} style={{ color: "var(--gold)" }} />

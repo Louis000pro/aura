@@ -52,7 +52,7 @@ export default function StatsDrawer({
                 background: "rgba(var(--surface-rgb),0.95)",
                 backdropFilter: "blur(16px)",
                 border: "1px solid rgba(var(--surface-rgb),0.95)",
-                boxShadow: "0 20px 60px rgba(var(--accent-rgb),0.2)",
+                boxShadow: "var(--ombre-flottant)",
               }}>
 
               {/* Header sticky avec bouton close */}

@@ -94,12 +94,13 @@ export default function CarteSeance({
        mouvements qui absorbe. Sans ça, une séance de 8 mouvements poussait
        le bouton violet sous le bord de la feuille (signalé par Louis). */
     <motion.div initial={{ opacity: 0, y: 10, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }}
-      className="w-full rounded-3xl overflow-hidden relative flex flex-col"
+      className="w-full overflow-hidden relative flex flex-col"
       style={{
         minHeight: 0,
+        borderRadius: "var(--r-bloc)",
         background: "rgba(var(--surface-rgb),0.98)",
         border: "1px solid rgba(var(--accent-rgb),0.20)",
-        boxShadow: "0 8px 28px rgba(var(--accent-rgb),0.16)",
+        boxShadow: "var(--ombre-pose)",
       }}>
 
       {/* Le filet coloré dit d'un coup d'œil de quoi il s'agit : violet =
@@ -108,19 +109,19 @@ export default function CarteSeance({
 
       <div className="px-4 pt-3.5 pb-3 flex flex-col gap-0.5 flex-shrink-0">
         <button type="button" onClick={onFermer} aria-label="Fermer la proposition"
-          className="absolute top-2.5 right-2.5 w-7 h-7 rounded-xl flex items-center justify-center cursor-pointer"
-          style={{ background: "rgba(var(--accent-rgb),0.08)" }}>
+          className="absolute top-2.5 right-2.5 w-7 h-7 flex items-center justify-center cursor-pointer"
+          style={{ borderRadius: "var(--r-controle)", background: "rgba(var(--accent-rgb),0.08)" }}>
           <X size={13} strokeWidth={2.4} style={{ color: "var(--text-3)" }} />
         </button>
-        <p className="text-[9.5px] font-semibold tracking-[0.15em] uppercase pr-8"
-          style={{ color: ton === "jour" ? "#E8620C" : "var(--accent)" }}>{kicker}</p>
+        <p className="vy-label pr-8"
+          style={{ color: ton === "jour" ? "var(--feu-encre)" : "var(--exp-encre)" }}>{kicker}</p>
         <p className="text-[17px] font-bold leading-tight pr-8" style={{ color: "var(--text-0)", letterSpacing: "-0.018em" }}>{titre}</p>
         <p className="text-[12px] font-medium" style={{ color: "var(--text-2)" }}>{meta}</p>
       </div>
 
       {exercices.length > 0 && (
         <>
-          <p className="px-4 pb-1.5 text-[9.5px] font-semibold tracking-[0.13em] uppercase flex-shrink-0" style={{ color: "var(--text-3)" }}>
+          <p className="vy-label px-4 pb-1.5 flex-shrink-0" style={{ color: "var(--text-3)" }}>
             Les mouvements · {exercices.length}
           </p>
           {/* Assez haut pour couper une ligne en deux : c'est ce demi-mouvement
@@ -132,8 +133,7 @@ export default function CarteSeance({
               bouton. */}
           <div className="px-2.5 overflow-y-auto flex-1" style={{ maxHeight: 200, minHeight: 76, scrollbarWidth: "none" }}>
             {exercices.map((ex, i) => (
-              <div key={`${ex.name}-${i}`} className="flex items-center gap-2.5 px-1.5 py-1 rounded-2xl"
-                style={i > 0 ? { boxShadow: "inset 0 1px 0 rgba(var(--accent-rgb),0.10)" } : undefined}>
+              <div key={`${ex.name}-${i}`} className="vy-filet flex items-center gap-2.5 px-1.5 py-1">
                 <ExerciseThumb name={ex.name} size={46} delay={i * 220} />
                 <div className="flex-1 min-w-0">
                   <p className="text-[13px] font-medium truncate" style={{ color: "var(--text-1)" }}>{ex.name}</p>
@@ -141,7 +141,7 @@ export default function CarteSeance({
                     <p className="text-[10.5px] truncate" style={{ color: "var(--text-3)" }}>{ex.muscles.slice(0, 2).join(", ")}</p>
                   )}
                 </div>
-                <span className="text-[11.5px] font-bold flex-shrink-0 tabular-nums" style={{ color: "var(--accent)" }}>{ex.dose}</span>
+                <span className="vy-nombre text-[11.5px] flex-shrink-0" style={{ color: "var(--exp-encre)" }}>{ex.dose}</span>
               </div>
             ))}
           </div>
@@ -153,8 +153,9 @@ export default function CarteSeance({
           <div className="flex gap-1.5">
             {options.map((o) => (
               <motion.button key={o.id} type="button" whileTap={{ scale: 0.96 }} onClick={o.onClick}
-                className="flex-1 flex flex-col items-center gap-1 px-1 py-2 rounded-2xl cursor-pointer"
+                className="flex-1 flex flex-col items-center gap-1 px-1 py-2 cursor-pointer"
                 style={{
+                  borderRadius: "var(--r-controle)",
                   background: o.actif ? "rgba(var(--accent-rgb),0.14)" : "rgba(var(--accent-rgb),0.05)",
                   border: `1px solid rgba(var(--accent-rgb),${o.actif ? 0.4 : 0.16})`,
                 }}>
@@ -197,8 +198,8 @@ export default function CarteSeance({
         )}
 
         <motion.button whileTap={{ scale: 0.98 }} onClick={onValider}
-          className="w-full py-3 rounded-2xl text-[13.5px] font-bold cursor-pointer flex items-center justify-center gap-2"
-          style={{ background: "linear-gradient(135deg, var(--accent), var(--violet-mid))", color: "#fff" }}>
+          className="w-full py-3 text-[13.5px] font-bold cursor-pointer flex items-center justify-center gap-2"
+          style={{ borderRadius: "var(--r-controle)", background: "linear-gradient(135deg, var(--accent), var(--violet-mid))", color: "#fff", boxShadow: "var(--ombre-action)" }}>
           <Check size={15} strokeWidth={2.6} /> {cta}
         </motion.button>
 

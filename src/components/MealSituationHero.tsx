@@ -113,8 +113,8 @@ function PhotoCard({ label, sub, Icon, gradient, img, onClick }: {
 }) {
   return (
     <motion.button whileTap={{ scale: 0.97 }} onClick={onClick}
-      className="relative overflow-hidden rounded-3xl cursor-pointer text-left"
-      style={{ minHeight: "56vh", background: gradient }}>
+      className="relative overflow-hidden cursor-pointer text-left"
+      style={{ borderRadius: "var(--r-affiche)", minHeight: "56vh", background: gradient }}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={img} alt="" aria-hidden loading="lazy" decoding="async"
         onError={(e) => { e.currentTarget.style.display = "none"; }}
@@ -453,17 +453,18 @@ export default function MealSituationHero({
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
-      className="rounded-3xl p-5 max-w-5xl"
+      className="p-5 max-w-5xl"
       style={{
+        borderRadius: "var(--r-bloc)",
         background: "rgb(var(--surface-rgb))",
-        border: "1px solid rgba(var(--accent-rgb),0.12)",
-        boxShadow: "0 6px 26px rgba(var(--accent-rgb),0.16)",
+        border: "1px solid rgba(var(--text-3-rgb),0.16)",
+        boxShadow: "var(--ombre-pose)",
       }}
     >
       {/* En-tête : racine = question ; sous-niveau = retour + titre */}
       {sit === null ? (
         <>
-          <p className="text-[11px] font-semiboldst" style={{ color: "var(--text-3)" }}>
+          <p className="vy-label" style={{ color: "var(--text-3)" }}>
             {hello}{name ? ` ${name}` : ""} · {moment}
           </p>
           {/* Le visage prend la place de la puce violette : la question
@@ -483,12 +484,12 @@ export default function MealSituationHero({
       ) : (
         <div className="flex items-center gap-2.5">
           <motion.button whileTap={{ scale: 0.9 }} onClick={goBack}
-            className="w-9 h-9 rounded-xl flex items-center justify-center cursor-pointer flex-shrink-0"
-            style={{ background: "rgba(var(--tint-violet-rgb),0.8)" }}>
+            className="w-9 h-9 flex items-center justify-center cursor-pointer flex-shrink-0"
+            style={{ borderRadius: "var(--r-controle)", background: "rgba(var(--tint-violet-rgb),0.8)" }}>
             <ChevronLeft size={16} strokeWidth={2} style={{ color: "var(--text-2)" }} />
           </motion.button>
           <div>
-            <p className="text-[11px] font-semiboldst" style={{ color: "var(--text-3)" }}>{sitObj?.sub}</p>
+            <p className="vy-label" style={{ color: "var(--text-3)" }}>{sitObj?.sub}</p>
             <h2 className="text-xl font-light" style={{ color: "var(--text-1)" }}>{heading}</h2>
           </div>
         </div>
@@ -625,7 +626,7 @@ export default function MealSituationHero({
               )}
               {baseSuggestions.filter((s) => !ingredients.some((i) => i.toLowerCase() === s.toLowerCase())).length > 0 && (
                 <div>
-                  <p className="text-[11px] font-semiboldst mb-1.5" style={{ color: "var(--text-3)" }}>Suggestions</p>
+                  <p className="vy-label mb-1.5" style={{ color: "var(--text-3)" }}>Suggestions</p>
                   <div className="flex flex-wrap gap-1.5">
                     {baseSuggestions.filter((s) => !ingredients.some((i) => i.toLowerCase() === s.toLowerCase())).map((s) => (
                       <button key={s} onClick={() => addIngredients(s)}
@@ -642,7 +643,7 @@ export default function MealSituationHero({
                 style={{
                   background: ingredients.length ? "linear-gradient(135deg,#8B5CF6,#C13BC1)" : "rgba(var(--tint-violet-rgb),0.5)",
                   color: ingredients.length ? "#fff" : "var(--text-3)",
-                  boxShadow: ingredients.length ? "0 4px 16px rgba(147,60,200,0.4)" : "none",
+                  boxShadow: ingredients.length ? "var(--ombre-action)" : "none",
                 }}>
                 <Carrot size={16} strokeWidth={2} /> Trouve-moi un plat
               </motion.button>
@@ -700,7 +701,7 @@ export default function MealSituationHero({
               </div>
               <motion.button whileTap={{ scale: 0.98 }} onClick={() => { if (restResult) { onLogIdea(restResult); reset(); } }}
                 className="w-full py-3 rounded-2xl text-sm font-semibold cursor-pointer flex items-center justify-center gap-2"
-                style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", color: "#fff", boxShadow: "0 4px 16px rgba(147,60,200,0.4)" }}>
+                style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", color: "#fff", boxShadow: "var(--ombre-action)" }}>
                 <Check size={17} strokeWidth={2.5} /> Ajouter à ma journée
               </motion.button>
             </>) : (<>
@@ -709,7 +710,7 @@ export default function MealSituationHero({
                 Un reste au frigo&nbsp;? Dis-moi lequel, je l&apos;estime, même sans le peser.
               </p>
               <div>
-                <p className="text-[11px] font-semiboldst mb-1.5" style={{ color: "var(--text-3)" }}>C&apos;était quoi&nbsp;?</p>
+                <p className="vy-label mb-1.5" style={{ color: "var(--text-3)" }}>C&apos;était quoi&nbsp;?</p>
                 <div className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl"
                   style={{ background: "rgba(var(--tint-violet-rgb),0.5)", border: "1px solid rgba(var(--violet-mid-rgb),0.5)" }}>
                   <Search size={15} strokeWidth={1.8} style={{ color: "var(--text-3)" }} />
@@ -720,7 +721,7 @@ export default function MealSituationHero({
                 </div>
               </div>
               <div>
-                <p className="text-[11px] font-semiboldst mb-1.5" style={{ color: "var(--text-3)" }}>Il en restait combien&nbsp;?</p>
+                <p className="vy-label mb-1.5" style={{ color: "var(--text-3)" }}>Il en restait combien&nbsp;?</p>
                 <div className="grid grid-cols-3 gap-2">
                   {PORTIONS.map((p) => {
                     const on = portion === p.key;
@@ -749,7 +750,7 @@ export default function MealSituationHero({
                 style={{
                   background: canEstimateRest ? "linear-gradient(135deg,#8B5CF6,#C13BC1)" : "rgba(var(--tint-violet-rgb),0.5)",
                   color: canEstimateRest ? "#fff" : "var(--text-3)",
-                  boxShadow: canEstimateRest ? "0 4px 16px rgba(147,60,200,0.4)" : "none",
+                  boxShadow: canEstimateRest ? "var(--ombre-action)" : "none",
                 }}>
                 {restBusy
                   ? <><Loader2 size={16} strokeWidth={2} className="animate-spin" /> Estimation…</>
@@ -790,7 +791,7 @@ export default function MealSituationHero({
                 {formStep === 1 && (<>
                   <h3 className="text-xl font-medium leading-snug" style={{ color: "var(--text-1)" }}>Tu commandes où&nbsp;?</h3>
                   <div>
-                    <p className="text-[11px] font-semiboldst mb-1.5" style={{ color: "var(--text-3)" }}>Quel genre d&apos;endroit&nbsp;?</p>
+                    <p className="vy-label mb-1.5" style={{ color: "var(--text-3)" }}>Quel genre d&apos;endroit&nbsp;?</p>
                     <div className="grid grid-cols-4 gap-1.5">
                       {CATEGORY_ORDER.map((c) => {
                         const on = category === c;
@@ -816,7 +817,7 @@ export default function MealSituationHero({
                     </div>
                   </div>
                   <div>
-                    <p className="text-[11px] font-semiboldst mb-1.5" style={{ color: "var(--text-3)" }}>Son nom, pour affiner l&apos;estimation</p>
+                    <p className="vy-label mb-1.5" style={{ color: "var(--text-3)" }}>Son nom, pour affiner l&apos;estimation</p>
                     <div className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl"
                       style={{ background: "rgba(var(--tint-violet-rgb),0.5)", border: "1px solid rgba(var(--violet-mid-rgb),0.5)" }}>
                       <Store size={15} strokeWidth={1.8} style={{ color: "var(--text-3)" }} />
@@ -828,7 +829,7 @@ export default function MealSituationHero({
                   </div>
                   <motion.button whileTap={{ scale: 0.98 }} onClick={() => setFormStep(2)}
                     className="w-full py-3 rounded-2xl text-sm font-semibold cursor-pointer flex items-center justify-center gap-2 mt-1"
-                    style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", color: "#fff", boxShadow: "0 4px 16px rgba(147,60,200,0.4)" }}>
+                    style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", color: "#fff", boxShadow: "var(--ombre-action)" }}>
                     Suivant <ArrowRight size={16} strokeWidth={2} />
                   </motion.button>
                 </>)}
@@ -875,7 +876,7 @@ export default function MealSituationHero({
                     </motion.button>
                     <motion.button whileTap={{ scale: 0.98 }} onClick={() => setFormStep(3)}
                       className="flex-1 py-3 rounded-2xl text-sm font-semibold cursor-pointer flex items-center justify-center gap-2"
-                      style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", color: "#fff", boxShadow: "0 4px 16px rgba(147,60,200,0.4)" }}>
+                      style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", color: "#fff", boxShadow: "var(--ombre-action)" }}>
                       Suivant <ArrowRight size={16} strokeWidth={2} />
                     </motion.button>
                   </div>
@@ -928,7 +929,7 @@ export default function MealSituationHero({
                       style={{
                         background: canEstimate ? "linear-gradient(135deg,#8B5CF6,#C13BC1)" : "rgba(var(--tint-violet-rgb),0.5)",
                         color: canEstimate ? "#fff" : "var(--text-3)",
-                        boxShadow: canEstimate ? "0 4px 16px rgba(147,60,200,0.4)" : "none",
+                        boxShadow: canEstimate ? "var(--ombre-action)" : "none",
                       }}>
                       {estimating
                         ? <><Loader2 size={16} strokeWidth={2} className="animate-spin" /> Estimation…</>
@@ -996,7 +997,7 @@ export default function MealSituationHero({
                       </p>
                       <motion.button whileTap={{ scale: 0.98 }} onClick={() => startFromGenre(top.category)}
                         className="w-full py-3 rounded-2xl text-sm font-semibold cursor-pointer flex items-center justify-center gap-2"
-                        style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", color: "#fff", boxShadow: "0 4px 16px rgba(147,60,200,0.4)" }}>
+                        style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", color: "#fff", boxShadow: "var(--ombre-action)" }}>
                         Je pars là-dessus <ArrowRight size={16} strokeWidth={2} />
                       </motion.button>
                     </div>
@@ -1006,7 +1007,7 @@ export default function MealSituationHero({
 
               {/* Alternatives — 2 lignes compactes */}
               {advice.length > 1 && (<>
-                <p className="text-[11px] font-semiboldst mt-4 mb-2 ml-0.5" style={{ color: "var(--text-3)" }}>Sinon, ça passe aussi</p>
+                <p className="vy-label mt-4 mb-2 ml-0.5" style={{ color: "var(--text-3)" }}>Sinon, ça passe aussi</p>
                 <div className="flex flex-col gap-2">
                   {advice.slice(1, 3).map((alt) => (
                     <motion.button key={alt.category} whileTap={{ scale: 0.98 }} onClick={() => startFromGenre(alt.category)}
