@@ -1,22 +1,16 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { chargerRelaisAccueil, type RelaisAccueil } from "@/lib/defi";
-import { aiFetch, messageDeRefus } from "@/lib/aiFetch";
-import { motion, AnimatePresence } from "framer-motion";
-import { X, Check } from "lucide-react";
+import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
-import StatsDrawer from "@/components/StatsDrawer";
-import AIChatPanel, { initialChatMessages, type Message } from "@/components/AIChatPanel";
 import LandingStory from "@/components/Landing/LandingStory";
 import LandingHero from "@/components/Landing/LandingHero";
 /* Le type seul : la coquille serveur (`app/page.tsx`) fait le comptage et
    descend trois entiers, pour que les données ne traversent pas jusqu'ici. */
 import type { ChiffresPublics } from "@/lib/chiffresPublics";
 import { useAuth } from "@/context/AuthContext";
-import { type OnboardingData } from "@/lib/profilOnboarding";
 import { createClient } from "@/lib/supabase";
-import { stripMemoryTags } from "@/lib/aiMemory";
 import AccueilSignature from "@/components/AccueilSignature";
 import RangsModal from "@/components/rang/RangsModal";
 import { calculerAura, etatDepuisExp, type EtatAura } from "@/lib/aura";
@@ -29,91 +23,8 @@ import {
   noterDejaVu,
   type MomentAccueil,
 } from "@/lib/momentAccueil";
-import { persistLieu } from "@/lib/planning";
 import { observeParisDay, parisDateStr } from "@/lib/dates";
 import { marquerPresence } from "@/lib/presence";
-
-/* ─── Compute & save Aura score dynamically ─── */
-async function computeAndSaveScore(userId: string, supabase: ReturnType<typeof createClient>) {
-  const today = parisDateStr();
-
-  const [{ data: sessions }, { data: nutrition }, { data: weight }] = await Promise.all([
-    supabase.from("workout_sessions")
-      .select("id, duration_minutes, calories_burned")
-      .eq("user_id", userId)
-      .gte("started_at", today + "T00:00:00")
-      .lt("started_at", today + "T23:59:59"),
-    supabase.from("nutrition_logs")
-      .select("calories")
-      .eq("user_id", userId)
-      .eq("date", today),
-    supabase.from("weight_logs")
-      .select("weight_kg")
-      .eq("user_id", userId)
-      .order("date", { ascending: false })
-      .limit(1),
-  ]);
-
-  let score = 30; // base score pour les utilisateurs actifs
-  const todaySessions = sessions ?? [];
-  const todayNutrition = nutrition ?? [];
-
-  // Points pour les séances (max 35 pts)
-  if (todaySessions.length > 0) {
-    const totalDuration = todaySessions.reduce((sum: number, s: { duration_minutes: number }) => sum + (s.duration_minutes || 0), 0);
-    score += Math.min(35, Math.floor(totalDuration / 2));
-  }
-
-  // Points pour la nutrition loggée (max 25 pts)
-  if (todayNutrition.length > 0) {
-    const totalCals = todayNutrition.reduce((sum: number, n: { calories: number }) => sum + (n.calories || 0), 0);
-    if (totalCals > 0) score += Math.min(25, Math.floor(todayNutrition.length * 8));
-  }
-
-  // Points pour le suivi du poids (10 pts)
-  if ((weight ?? []).length > 0) score += 10;
-
-  score = Math.min(100, score);
-
-  const calories = todayNutrition.reduce((sum: number, n: { calories: number }) => sum + (n.calories || 0), 0);
-  const burned = todaySessions.reduce((sum: number, s: { calories_burned?: number }) => sum + (s.calories_burned || 0), 0);
-
-  /* ⚠️ CE CALCUL NE TOUCHE PLUS À LA SÉRIE (2026-08-21). Il l'incrémentait
-     ici ET dans `marquerPresence`, deux écritures concurrentes de la même
-     colonne, et il la faisait monter sur une simple ouverture de l'app.
-     La série est désormais DÉRIVÉE des journées validées, en base
-     (`serie_aura`) : on ne fait que lire la valeur qu'elle a posée. */
-  const { data: ligneJour } = await supabase.from("daily_stats")
-    .select("streak").eq("user_id", userId).eq("date", today).maybeSingle();
-  const streak = (ligneJour?.streak as number | undefined) ?? 0;
-
-  // Upsert dans daily_stats, sans `streak`, qui appartient au serveur.
-  await supabase.from("daily_stats").upsert({
-    user_id: userId,
-    date: today,
-    score,
-    calories,
-    burned,
-  }, { onConflict: "user_id,date" });
-
-  return { score, calories, burned, steps: 0, sleepHours: 0, streak };
-}
-
-/* ─── Home Toast ─── */
-function HomeToast({ message }: { message: string }) {
-  return (
-    <motion.div initial={{ opacity: 0, y: 30, scale: 0.9 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 20, scale: 0.95 }}
-      transition={{ type: "spring", bounce: 0.4, duration: 0.5 }}
-      className="fixed bottom-32 md:bottom-6 left-1/2 -translate-x-1/2 z-[200] px-5 py-3 rounded-2xl flex items-center gap-2"
-      style={{ background: "rgba(var(--surface-rgb),0.9)", backdropFilter: "blur(10px)", border: "1px solid rgba(var(--surface-rgb),0.9)", boxShadow: "0 8px 32px rgba(var(--accent-rgb),0.2),inset 0 1px 0 rgba(var(--surface-rgb),0.9)", whiteSpace: "nowrap" }}
-    >
-      <Check size={14} strokeWidth={2.5} style={{ color: "var(--gold)" }} />
-      <span className="text-sm font-medium" style={{ color: "var(--text-1)" }}>{message}</span>
-    </motion.div>
-  );
-}
-
-
 
 /* ─────────────────────────────────────────────────
    LANDING PAGE — visiteur non connecté
@@ -130,10 +41,6 @@ function LandingPage({ chiffres }: { chiffres: ChiffresPublics }) {
 }
 
 /* ─── Dashboard ─── */
-// Cache module : les stats de l'accueil s'affichent instantanément au retour
-let __statsCache = { score: 0, calories: 0, burned: 0, steps: 0, sleepHours: 0, streak: 0, sessionsWeek: 0, loaded: false };
-
-
 function Dashboard() {
   const now = new Date();
   const hour = now.getHours();
@@ -141,33 +48,11 @@ function Dashboard() {
   const router = useRouter();
   const greeting = hour < 12 ? "Bonjour" : hour < 18 ? "Bon après-midi" : "Bonsoir";
 
-  const [showChat, setShowChat] = useState(false);
-  // Masque la barre du bas quand le chat IA est ouvert (évite la superposition)
-  useEffect(() => {
-    document.body.classList.toggle("chat-open", showChat);
-    return () => document.body.classList.remove("chat-open");
-  }, [showChat]);
-  const [showStatsDrawer, setShowStatsDrawer] = useState(false);
   const [parisDay, setParisDay] = useState(() => parisDateStr());
-  const [toast, setToast] = useState<string|null>(null);
-  const [chatMessages, setChatMessages] = useState<Message[]>(initialChatMessages);
-  const [aiTyping, setAiTyping] = useState(false);
-  const [userContext, setUserContext] = useState<OnboardingData | null>(null);
-  const [showMenu, setShowMenu] = useState(false);
-  const [liveStats, setLiveStatsRaw] = useState(() => __statsCache);
-  const setLiveStats: typeof setLiveStatsRaw = (v) => {
-    setLiveStatsRaw((prev) => {
-      const next = typeof v === "function" ? (v as (p: typeof prev) => typeof prev)(prev) : v;
-      __statsCache = next; // garde le cache à jour
-      return next;
-    });
-  };
 
   // Une app laissée ouverte traverse réellement minuit : toutes les requêtes
   // quotidiennes repartent alors sur le nouveau jour Europe/Paris.
   useEffect(() => observeParisDay(setParisDay), []);
-  const menuRef = useRef<HTMLDivElement>(null);
-  const dropdownRef = useRef<HTMLDivElement>(null);
 
   // ── L'aura (rang personnel) : EXP dérivée des vraies données de l'utilisateur ──
   // `statsTick` est incrémenté quand l'effet des stats a fini d'écrire daily_stats
@@ -295,328 +180,28 @@ function Dashboard() {
   }, [user, parisDay, statsTick]);
 
 
-  // Ferme le menu au clic extérieur (vérifie les deux refs : bouton avatar + portal dropdown)
-  useEffect(() => {
-    if (!showMenu) return;
-    const handler = (e: MouseEvent) => {
-      const inTrigger = menuRef.current?.contains(e.target as Node);
-      const inDropdown = dropdownRef.current?.contains(e.target as Node);
-      if (!inTrigger && !inDropdown) setShowMenu(false);
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [showMenu]);
+  /* ── La présence du jour ──
+     ⚠️ CET EFFET NE FAIT PLUS QU'UNE CHOSE, ET ELLE EST INDISPENSABLE.
+     `marquerPresence` crédite la connexion du jour (+5 EXP) et tient la
+     série ; `setStatsTick` fait recalculer l'aura APRÈS, sinon la course
+     entre les deux effets afficherait 0 EXP et « Jour 0 ».
 
-  // Fetch stats du jour depuis Supabase
+     Il portait aussi un score sur 100 écrit dans `daily_stats` et lu par
+     PERSONNE depuis la refonte de l'accueil (vérifié : seuls `streak` et
+     `date` sont relus, par l'admin, le cron, `presence.ts` et
+     `momentAccueil`). Trois requêtes par ouverture pour une colonne morte,
+     sur l'écran le plus ouvert de l'app. */
   useEffect(() => {
     if (!user) return;
     const supabase = createClient();
-    const today = parisDay;
     (async () => {
       try {
-        // La connexion du jour ne dépend PAS de ce calcul : elle part du
-        // layout, depuis n'importe quelle page. On l'attend d'abord ici pour
-        // que la ligne du jour existe et que l'aura recalculée juste après
-        // la voie déjà créditée.
         await marquerPresence(supabase, user.id);
-
-        const { data, error } = await supabase
-          .from("daily_stats")
-          .select("score, calories, burned, steps, sleep_hours, streak")
-          .eq("user_id", user.id)
-          .eq("date", today)
-          .maybeSingle();
-        if (!error && data && data.score > 0) {
-          // Données existantes avec un score valide — on les utilise directement
-          setLiveStats(prev => ({
-            ...prev,
-            score:      data.score       ?? 0,
-            calories:   data.calories    ?? 0,
-            burned:     data.burned      ?? 0,
-            steps:      data.steps       ?? 0,
-            sleepHours: data.sleep_hours ?? 0,
-            streak:     data.streak      ?? 0,
-            loaded:     true,
-          }));
-        } else {
-          // Score absent ou nul — calcul dynamique (crée aussi la ligne du jour)
-          const computed = await computeAndSaveScore(user.id, supabase);
-          setLiveStats(prev => ({
-            ...prev,
-            score:      computed.score,
-            calories:   computed.calories,
-            burned:     computed.burned,
-            steps:      computed.steps,
-            sleepHours: computed.sleepHours,
-            streak:     computed.streak,
-            loaded:     true,
-          }));
-        }
-      } catch {
-        setLiveStats(prev => ({ ...prev, loaded: true }));
       } finally {
-        // daily_stats du jour est désormais garantie écrite → on recalcule l'aura
-        // (la connexion du jour +5 est enfin comptée, et la série passe à Jour 1).
         setStatsTick((t) => t + 1);
       }
     })();
   }, [user, parisDay]);
-
-  // Fetch le nombre de séances de la semaine (lundi → maintenant)
-  useEffect(() => {
-    if (!user) return;
-    const supabase = createClient();
-    const now = new Date();
-    const monday = new Date(now);
-    monday.setDate(now.getDate() - ((now.getDay() + 6) % 7)); // lundi de la semaine en cours
-    monday.setHours(0, 0, 0, 0);
-    supabase
-      .from("workout_sessions")
-      .select("id", { count: "exact", head: true })
-      .eq("user_id", user.id)
-      .gte("started_at", monday.toISOString())
-      .then(({ count }) => setLiveStats(prev => ({ ...prev, sessionsWeek: count ?? 0 })));
-  }, [user]);
-
-  /* Les réponses de profil relues pour le coach. Le questionnaire, lui,
-     ne vit plus ici : il n'y a qu'un seul écran qui pose ces questions,
-     `/bienvenue`, et c'est `GardeGuide` qui y envoie. L'accueil ne fait
-     donc plus que LIRE la copie locale que `enregistrerProfil` écrit. */
-  useEffect(() => {
-    if (!user) return;
-    const ctxKeys = [
-      `vaiiya_ob_${user.id}`,
-      `aura_onboarding_${user.pseudo}`,
-      `aura_onboarding_${user.name}`,
-      `aura_onboarding_${user.email?.split("@")[0]}`,
-    ].filter(Boolean);
-    for (const key of ctxKeys) {
-      const stored = localStorage.getItem(key);
-      if (stored) { try { setUserContext(JSON.parse(stored)); } catch { /* ignore */ } break; }
-    }
-  }, [user]);
-
-  const chatMessagesRef = useRef<Message[]>(initialChatMessages);
-
-  // (Ancien pilotage de programme via localStorage retiré — le planning est
-  //  désormais en base et piloté par l'orbe via cartes de confirmation.)
-
-  const sendMessage = useCallback(async (text: string) => {
-    if (!text.trim()) return;
-    const n = new Date();
-    const time = `${String(n.getHours()).padStart(2,"0")}:${String(n.getMinutes()).padStart(2,"0")}`;
-
-    // Ajoute le message utilisateur
-    const userMsg: Message = { id: Date.now(), from: "me", text, time };
-    const newMessages = [...chatMessagesRef.current, userMsg];
-    chatMessagesRef.current = newMessages;
-    setChatMessages(newMessages);
-
-    /* Le plafond du coach est tenu par le SERVEUR (`garderIA`), et son refus
-       est rendu par `messageDeRefus` plus bas. Il y avait ici un SECOND
-       compteur, en localStorage : il se remettait à zéro en vidant son
-       navigateur, et il bloquait sur son propre chiffre. Deux autorités pour
-       une seule règle, c'est une de trop. */
-
-    setAiTyping(true);
-
-    // Historique pour l'API
-    const apiMessages = newMessages.slice(initialChatMessages.length).map((m) => ({
-      role: m.from === "me" ? "user" as const : "assistant" as const,
-      content: m.text,
-    }));
-
-    // Planning désormais en base (piloté par l'orbe) — non injecté ici.
-    const programmeText: string | null = null;
-
-    // ── Données RÉELLES du compte (repas loggés/scannés + séances) pour que l'IA réponde précisément ──
-    let richProfile: unknown = null;
-    if (user) {
-      try {
-        const sb = createClient();
-        const pad = (x: number) => String(x).padStart(2, "0");
-        const d0 = new Date();
-        const todayStr = `${d0.getFullYear()}-${pad(d0.getMonth() + 1)}-${pad(d0.getDate())}`;
-        const d7 = new Date(d0.getTime() - 6 * 86400000);
-        const weekAgoStr = `${d7.getFullYear()}-${pad(d7.getMonth() + 1)}-${pad(d7.getDate())}`;
-
-        const [mealsRes, workoutsRes] = await Promise.all([
-          sb.from("nutrition_logs")
-            .select("date, meal_type, food_name, calories, proteins, carbs, fats, time, description")
-            .eq("user_id", user.id).gte("date", weekAgoStr)
-            .order("date", { ascending: false }).order("time", { ascending: true }).limit(120),
-          sb.from("workout_sessions")
-            .select("title, category, duration_minutes, calories_burned, exercises, started_at")
-            .eq("user_id", user.id)
-            .order("started_at", { ascending: false }).limit(10),
-        ]);
-
-        const meals = mealsRes.data ?? [];
-        const mealsDetail = meals.slice(0, 40).map((m) => ({
-          date: m.date, mealType: m.meal_type, name: m.food_name,
-          calories: m.calories, proteins: m.proteins, time: m.time,
-          description: m.date === todayStr ? m.description : null,
-        }));
-        // Agrégats 7 jours (par jour)
-        const byDay: Record<string, { calories: number; proteins: number; carbs: number; fats: number }> = {};
-        meals.forEach((m) => {
-          const day = (byDay[m.date] ||= { calories: 0, proteins: 0, carbs: 0, fats: 0 });
-          day.calories += m.calories || 0; day.proteins += m.proteins || 0;
-          day.carbs += m.carbs || 0; day.fats += m.fats || 0;
-        });
-        const nutritionWeek = Object.entries(byDay)
-          .sort((a, b) => b[0].localeCompare(a[0]))
-          .map(([date, v]) => ({ date, calories: Math.round(v.calories), proteins: Math.round(v.proteins), carbs: Math.round(v.carbs), fats: Math.round(v.fats) }));
-
-        const workoutHistory = (workoutsRes.data ?? []).map((w) => ({
-          title: w.title, date: String(w.started_at ?? "").slice(0, 10),
-          durationMinutes: w.duration_minutes, caloriesBurned: w.calories_burned,
-          exercises: Array.isArray(w.exercises)
-            ? (w.exercises as unknown[]).map((e) => (typeof e === "string" ? e : ((e as { name?: string; title?: string })?.name ?? (e as { title?: string })?.title ?? ""))).filter(Boolean).slice(0, 8)
-            : undefined,
-        }));
-
-        richProfile = { todayDate: todayStr, mealsDetail, nutritionWeek, workoutHistory };
-      } catch { /* ignore, l'IA marchera sans, juste moins précise */ }
-    }
-
-    try {
-      const response = await aiFetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          messages: apiMessages,
-          userContext,
-          pseudo: user?.pseudo ?? user?.name ?? "",
-          richProfile,
-          liveStats: liveStats.loaded ? {
-            calories: liveStats.calories || undefined,
-            steps: liveStats.steps || undefined,
-            sleepHours: liveStats.sleepHours || undefined,
-            score: liveStats.score || undefined,
-            streak: liveStats.streak || undefined,
-          } : null,
-          programme: programmeText,
-          lieu: user ? (localStorage.getItem(`vaiiya_lieu_${user.id}`) || null) : null,
-          lieu_equip: user ? (localStorage.getItem(`vaiiya_lieu_equip_${user.id}`) || null) : null,
-        }),
-      });
-
-      // Quota atteint ou session expirée : message clair plutôt qu'une erreur
-      // générique (le serveur sait si c'est la limite du gratuit ou le plafond
-      // d'usage raisonnable).
-      const refus = await messageDeRefus(response);
-      if (refus) {
-        setAiTyping(false);
-        setChatMessages((prev) => [...prev, { id: Date.now() + 1, from: "ai" as const, text: refus, time }]);
-        return;
-      }
-
-      if (!response.ok || !response.body) throw new Error("API error");
-
-      setAiTyping(false);
-      const aiMsgId = Date.now() + 1;
-      const withAi = [...chatMessagesRef.current, { id: aiMsgId, from: "ai" as const, text: "", time }];
-      chatMessagesRef.current = withAi;
-      setChatMessages(withAi);
-
-      // Stream les tokens
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let fullText = "";
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        const chunk = decoder.decode(value, { stream: true });
-        fullText += chunk;
-        setChatMessages((m) => {
-          const updated = m.map((msg) => msg.id === aiMsgId ? { ...msg, text: msg.text + chunk } : msg);
-          chatMessagesRef.current = updated;
-          return updated;
-        });
-      }
-
-      // Le pilotage du planning passe désormais par l'orbe (cartes de confirmation).
-      // Défensif : on retire un éventuel ancien tag du message affiché.
-      if (/\[PROGRAMME_UPDATE\]/i.test(fullText)) {
-        setChatMessages((m) => {
-          const updated = m.map((msg) =>
-            msg.id === aiMsgId
-              ? { ...msg, text: msg.text.replace(/\[PROGRAMME_UPDATE\][\s\S]*?\[\/PROGRAMME_UPDATE\]/gi, "").trim() }
-              : msg
-          );
-          chatMessagesRef.current = updated;
-          return updated;
-        });
-      }
-
-      // Détecte le lieu d'entraînement indiqué par l'utilisateur (salle / maison)
-      const lieuMatch = fullText.match(/\[LIEU_UPDATE\]\s*(salle|maison)\s*\[\/LIEU_UPDATE\]/i);
-      if (lieuMatch && user) {
-        const lieu = lieuMatch[1].toLowerCase() as "salle" | "maison";
-        void persistLieu(user.id, { location: lieu }); // localStorage + base (cross-device)
-        window.dispatchEvent(new CustomEvent("lieu-updated"));
-        showToast(lieu === "maison" ? "🏠 Séances adaptées à la maison" : "🏋️ Séances adaptées à la salle");
-        // Nettoie le tag du message affiché
-        setChatMessages((m) => {
-          const updated = m.map((msg) =>
-            msg.id === aiMsgId
-              ? { ...msg, text: msg.text.replace(/\[LIEU_UPDATE\][\s\S]*?\[\/LIEU_UPDATE\]/gi, "").trim() }
-              : msg
-          );
-          chatMessagesRef.current = updated;
-          return updated;
-        });
-      }
-
-      // Détecte une demande de navigation [NAV]cible[/NAV] → ouvre la page/fenêtre
-      const navMatch = fullText.match(/\[NAV\]\s*([a-zéè]+)\s*\[\/NAV\]/i);
-      if (navMatch) {
-        const target = navMatch[1].toLowerCase();
-        // Nettoie le tag du message affiché
-        setChatMessages((m) => {
-          const updated = m.map((msg) =>
-            msg.id === aiMsgId ? { ...msg, text: msg.text.replace(/\[NAV\][\s\S]*?\[\/NAV\]/gi, "").trim() } : msg
-          );
-          chatMessagesRef.current = updated;
-          return updated;
-        });
-        setTimeout(() => {
-          switch (target) {
-            case "repas":
-            case "seances":
-            case "séances":
-            case "recommandations": setShowChat(false); setShowStatsDrawer(true); break;
-            case "premium":        router.push("/premium"); break;
-            case "progression":    router.push("/progression"); break;
-            case "nutrition":      router.push("/nutrition"); break;
-            case "parametres":
-            case "paramètres":     router.push("/parametres"); break;
-            default: break;
-          }
-        }, 700);
-      }
-
-      // Sécurité : masque tout tag mémoire qui aurait fui (la mémoire long terme
-      // est gérée par l'assistant orbe, pas par ce chat). Nettoie aussi l'historique.
-      if (/\[MEMOIRE\]|\[OUBLI\]/i.test(fullText)) {
-        setChatMessages((m) => {
-          const updated = m.map((msg) =>
-            msg.id === aiMsgId ? { ...msg, text: stripMemoryTags(msg.text).trim() } : msg
-          );
-          chatMessagesRef.current = updated;
-          return updated;
-        });
-      }
-    } catch {
-      setAiTyping(false);
-      const errMsg: Message = { id: Date.now() + 1, from: "ai", text: "Je n’ai pas réussi à répondre. Réessaie dans un instant.", time };
-      chatMessagesRef.current = [...chatMessagesRef.current, errMsg];
-      setChatMessages(chatMessagesRef.current);
-    }
-  }, [user, userContext, liveStats]);
-
-  const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(null), 2500); };
 
   return (
     <div
@@ -655,40 +240,6 @@ function Dashboard() {
           isAdmin={!!user?.is_admin}
         />
       </div>
-
-      {/* ────────────────── DRAWER STATS (top → down) ─────────────────── */}
-      <StatsDrawer
-        open={showStatsDrawer}
-        onClose={() => setShowStatsDrawer(false)}
-        user={user}
-      />
-
-      {/* ────────────────── CHAT PANEL (overlay) ─────────────────────── */}
-      <AnimatePresence>
-        {showChat && (
-          <>
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              onClick={() => setShowChat(false)}
-              className="fixed inset-0 md:left-[88px] z-[55]" style={{ background: "rgba(var(--tint-violet-rgb),0.5)", backdropFilter: "blur(10px)" }} />
-            <motion.div initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
-              transition={{ type: "spring", damping: 28, stiffness: 280 }}
-              className="fixed inset-x-2 md:left-[96px] bottom-2 z-[60] overflow-hidden rounded-3xl"
-              style={{ top: "calc(env(safe-area-inset-top) + 12px)" }}>
-              <button type="button" onClick={() => setShowChat(false)} aria-label="Fermer"
-                className="absolute top-3 right-3 z-10 w-9 h-9 rounded-full flex items-center justify-center"
-                style={{ background: "rgba(var(--accent-rgb),0.15)", backdropFilter: "blur(8px)" }}>
-                <X size={16} strokeWidth={2} style={{ color: "var(--accent)" }} />
-              </button>
-              <AIChatPanel messages={chatMessages} aiTyping={aiTyping} onSend={sendMessage} />
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
-
-
-      <AnimatePresence>
-        {toast && <HomeToast key="toast" message={toast} />}
-      </AnimatePresence>
     </div>
   );
 }

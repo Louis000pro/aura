@@ -9,8 +9,9 @@ import { fichesPubliees } from "@/lib/exercicesPublics";
  * 1. On ne liste QUE des pages réellement indexables. Une URL présente ici mais
  *    marquée `noindex` envoie deux ordres contradictoires au robot ; une URL
  *    d'écran applicatif (derrière l'auth, personnalisée) n'a rien à y faire même
- *    si elle répond 200. C'est pourquoi `/coach` en est sorti : c'est le chat de
- *    l'assistant, pas une page vitrine.
+ *    si elle répond 200. C'est pourquoi `/coach` en était sorti : c'était le
+ *    chat de l'assistant, pas une page vitrine. (Cette page a été supprimée le
+ *    2026-09-03, plus rien n'y menait. `/coach-ia`, la page vitrine, reste.)
  *
  * 2. Pas de `lastModified`, et c'est délibéré. La version précédente posait
  *    `new Date()` sur TOUTES les pages : à chaque déploiement, le sitemap

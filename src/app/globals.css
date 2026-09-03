@@ -228,10 +228,12 @@
   /* Perf scroll : le navigateur saute le rendu des cartes hors écran */
   .cv-auto { content-visibility: auto; contain-intrinsic-size: 0 480px; }
 
-  /* Masque la barre du bas quand le chat IA OU une modale plein écran est ouvert
-     (évite la superposition de la nav par-dessus le pied de la modale sur mobile) */
+  /* Masque la barre du bas quand une modale plein écran est ouverte (évite la
+     superposition de la nav par-dessus le pied de la modale sur mobile).
+     `body.chat-open` a été retiré le 2026-09-03 : son seul auteur était le chat
+     historique de l'accueil, injoignable puis supprimé. `modal-open` reste, il
+     est posé par `lockBodyModal`. */
   .mobile-nav { transition: transform 0.25s ease, opacity 0.2s ease; }
-  body.chat-open .mobile-nav,
   body.modal-open .mobile-nav { transform: translateY(140%); opacity: 0; pointer-events: none; }
 
   /* Le lecteur de conseils possède sa propre commande de fermeture. L'en-tête
