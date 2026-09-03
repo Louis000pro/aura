@@ -1248,15 +1248,15 @@ export default function WorkoutGuideModal({
                     <div className="w-full h-full" style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)" }} />
                   )}
                   <div className="absolute inset-0"
-                    style={{ background: "linear-gradient(to top, rgba(6,5,10,0.9) 6%, rgba(6,5,10,0.35) 42%, transparent 66%)" }} />
+                    style={{ background: "var(--voile-affiche)" }} />
                   <div className="absolute top-3.5 left-3.5 right-3.5 flex items-center gap-2">
                     <span className="text-[11px] font-bold text-white px-2.5 py-1.5 rounded-full"
-                      style={{ background: "rgba(8,6,14,0.4)", backdropFilter: "blur(4px)", border: "1px solid rgba(255,255,255,0.2)" }}>
+                      style={{ background: "var(--verre-photo)", backdropFilter: "blur(6px)", border: "1px solid var(--verre-photo-bord)" }}>
                       ≈ {duration} min
                     </span>
                     <button onClick={onClose}
                       className="ml-auto w-8 h-8 rounded-full flex items-center justify-center cursor-pointer text-white"
-                      style={{ background: "rgba(8,6,14,0.42)", backdropFilter: "blur(4px)", border: "1px solid rgba(255,255,255,0.18)" }}
+                      style={{ background: "var(--verre-photo)", backdropFilter: "blur(6px)", border: "1px solid var(--verre-photo-bord)" }}
                       aria-label="Fermer">
                       <X size={15} strokeWidth={2} />
                     </button>

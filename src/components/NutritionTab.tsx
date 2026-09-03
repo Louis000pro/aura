@@ -3,7 +3,8 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { aiFetch, messageDeRefus } from "@/lib/aiFetch";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, X, Check, Camera, Upload, Loader2, Edit2, Barcode, Minus, ChevronLeft, ChevronRight, ChevronDown, CalendarDays, BookOpen, Heart, Sparkles, SwitchCamera, Star, Target, Image as ImageIcon } from "lucide-react";
+import { Plus, X, Check, Camera, Upload, Loader2, Edit2, Barcode, Minus, ChevronLeft, ChevronRight, ChevronDown, CalendarDays, BookOpen, Heart, SwitchCamera, Star, Target, Image as ImageIcon } from "lucide-react";
+import { AssistantSpark } from "@/components/AssistantMark";
 import { useAuth } from "@/context/AuthContext";
 import { createClient } from "@/lib/supabase";
 import { useNutritionGoals } from "@/hooks/useNutritionGoals";
@@ -374,7 +375,7 @@ function PhotoAnalysisModal({ onClose, onAdd, onBack }: {
                   <video ref={videoRef} autoPlay playsInline muted
                     className="absolute inset-0 w-full h-full object-cover"
                     style={{ opacity: camReady ? 1 : 0, transition: "opacity .3s" }} />
-                  <div className="absolute inset-0 pointer-events-none" style={{ background: "linear-gradient(180deg,rgba(8,4,14,0.12),rgba(8,4,14,0.32))" }} />
+                  <div className="absolute inset-0 pointer-events-none" style={{ background: "linear-gradient(180deg,rgba(var(--voile-photo-rgb),0.12),rgba(var(--voile-photo-rgb),0.32))" }} />
                   {/* repères d'angle */}
                   {[["top-3 left-3", "border-t-2 border-l-2 rounded-tl-xl"],
                     ["top-3 right-3", "border-t-2 border-r-2 rounded-tr-xl"],
@@ -388,7 +389,7 @@ function PhotoAnalysisModal({ onClose, onAdd, onBack }: {
                     <>
                       <div className="absolute top-1/2 left-1/2 rounded-full pointer-events-none" style={{ width: 150, height: 150, transform: "translate(-50%,-50%)", border: "1.5px dashed rgba(255,255,255,0.4)" }} />
                       <div className="absolute left-1/2 bottom-3 -translate-x-1/2 whitespace-nowrap text-[11px] font-semibold px-3 py-1.5 rounded-full pointer-events-none"
-                        style={{ background: "rgba(10,6,16,0.45)", color: "#fff", backdropFilter: "blur(4px)" }}>
+                        style={{ background: "var(--verre-photo)", color: "#fff", backdropFilter: "blur(6px)" }}>
                         Cadre ton assiette
                       </div>
                     </>
@@ -451,15 +452,15 @@ function PhotoAnalysisModal({ onClose, onAdd, onBack }: {
                   <div className="w-full rounded-2xl overflow-hidden relative" style={{ height: 300 }}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img loading="lazy" decoding="async" src={photoUrl} alt="repas" className="w-full h-full object-cover" />
-                    <div className="absolute inset-0" style={{ background: "linear-gradient(180deg,rgba(8,4,14,0.05),rgba(8,4,14,0.5))" }} />
+                    <div className="absolute inset-0" style={{ background: "linear-gradient(180deg,rgba(var(--voile-photo-rgb),0.05),rgba(var(--voile-photo-rgb),0.5))" }} />
                     {/* balayage */}
                     <motion.div className="absolute left-0 right-0"
-                      style={{ height: 56, background: "linear-gradient(180deg,transparent,rgba(139,92,246,0.55) 60%,transparent)", boxShadow: "0 2px 12px rgba(255,217,138,0.55)" }}
+                      style={{ height: 56, background: "linear-gradient(180deg,transparent,rgba(139,92,246,0.55) 60%,transparent)", boxShadow: "0 2px 12px rgba(193,59,193,0.55)" }}
                       animate={{ top: ["4%", "82%", "4%"] }}
                       transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }} />
                     <div className="absolute left-0 right-0 flex items-center justify-center gap-2" style={{ bottom: 16 }}>
                       <motion.div animate={{ rotate: 360 }} transition={{ duration: 1.1, repeat: Infinity, ease: "linear" }}>
-                        <Sparkles size={16} style={{ color: "#FFD98A" }} />
+                        <AssistantSpark px={16} />
                       </motion.div>
                       <motion.span animate={{ opacity: [0.6, 1, 0.6] }} transition={{ duration: 1.6, repeat: Infinity }}
                         className="text-xs font-semibold" style={{ color: "#fff" }}>
@@ -877,7 +878,7 @@ function BarcodeScannerModal({ onClose, onAdd }: {
                   style={{ background: "linear-gradient(160deg,#2A2140,#140E22)", height: 320 }}>
                   {/* html5-qrcode injecte sa <video> ici → forcée en object-fit cover (globals.css) */}
                   <div id="aura-barcode-reader" ref={scannerRef} className="absolute inset-0" style={{ width: "100%", height: "100%" }} />
-                  <div className="absolute inset-0 pointer-events-none" style={{ background: "linear-gradient(180deg,rgba(8,4,14,0.12),rgba(8,4,14,0.32))" }} />
+                  <div className="absolute inset-0 pointer-events-none" style={{ background: "linear-gradient(180deg,rgba(var(--voile-photo-rgb),0.12),rgba(var(--voile-photo-rgb),0.32))" }} />
                   {/* repères d'angle (mêmes que la Photo IA) */}
                   {[["top-3 left-3", "border-t-2 border-l-2 rounded-tl-xl"],
                     ["top-3 right-3", "border-t-2 border-r-2 rounded-tr-xl"],
@@ -894,7 +895,7 @@ function BarcodeScannerModal({ onClose, onAdd }: {
                     transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
                   />
                   <div className="absolute left-1/2 bottom-3 -translate-x-1/2 whitespace-nowrap text-[11px] font-semibold px-3 py-1.5 rounded-full pointer-events-none"
-                    style={{ background: "rgba(10,6,16,0.45)", color: "#fff", backdropFilter: "blur(4px)" }}>
+                    style={{ background: "var(--verre-photo)", color: "#fff", backdropFilter: "blur(6px)" }}>
                     Centre le code-barres
                   </div>
                 </div>
@@ -928,7 +929,7 @@ function BarcodeScannerModal({ onClose, onAdd }: {
                 {!estimated && (
                   <div className="flex items-start gap-2.5 px-3 py-3 rounded-2xl"
                     style={{ background: "rgba(var(--tint-violet-rgb),0.6)", border: "1px solid rgba(var(--violet-mid-rgb),0.35)" }}>
-                    <Sparkles size={15} strokeWidth={2} style={{ color: "var(--exp-encre)", marginTop: 1, flexShrink: 0 }} />
+                    <span className="flex-shrink-0" style={{ marginTop: 1 }}><AssistantSpark px={15} /></span>
                     <p className="text-xs font-light leading-relaxed" style={{ color: "var(--text-2)" }}>
                       {fallbackName
                         ? "Trouvé, mais sans données nutritionnelles. Décris-le, je m’occupe des chiffres."
@@ -1010,7 +1011,7 @@ function BarcodeScannerModal({ onClose, onAdd }: {
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex-1 min-w-0">
                         <p className="vy-label flex items-center gap-1" style={{ color: "var(--exp-encre)" }}>
-                          <Sparkles size={11} strokeWidth={2} /> Estimé par l&apos;IA
+                          Estimation
                         </p>
                         <p className="font-semibold text-sm leading-tight mt-1" style={{ color: "var(--text-1)" }}>
                           {estimated.foodName}
@@ -1368,7 +1369,7 @@ function MenuScanModal({ objectiveLine, objectiveChip, goalKnown, initialResult,
                   <video ref={videoRef} autoPlay playsInline muted
                     className="absolute inset-0 w-full h-full object-cover"
                     style={{ opacity: camReady ? 1 : 0, transition: "opacity .3s" }} />
-                  <div className="absolute inset-0 pointer-events-none" style={{ background: "linear-gradient(180deg,rgba(8,4,14,0.12),rgba(8,4,14,0.32))" }} />
+                  <div className="absolute inset-0 pointer-events-none" style={{ background: "linear-gradient(180deg,rgba(var(--voile-photo-rgb),0.12),rgba(var(--voile-photo-rgb),0.32))" }} />
                   {[["top-3 left-3", "border-t-2 border-l-2 rounded-tl-xl"],
                     ["top-3 right-3", "border-t-2 border-r-2 rounded-tr-xl"],
                     ["bottom-3 left-3", "border-b-2 border-l-2 rounded-bl-xl"],
@@ -1381,8 +1382,8 @@ function MenuScanModal({ objectiveLine, objectiveChip, goalKnown, initialResult,
                     <>
                       <div className="absolute pointer-events-none" style={{ left: "13%", right: "13%", top: "17%", bottom: "17%", border: "1.5px dashed rgba(255,255,255,0.4)", borderRadius: 10 }} />
                       <div className="absolute left-1/2 bottom-3 -translate-x-1/2 whitespace-nowrap text-[11px] font-semibold px-3 py-1.5 rounded-full pointer-events-none inline-flex items-center gap-1.5"
-                        style={{ background: "rgba(10,6,16,0.45)", color: "#fff", backdropFilter: "blur(4px)" }}>
-                        <Sparkles size={12} style={{ color: "#D79BFF" }} /> Cadre la carte entière
+                        style={{ background: "var(--verre-photo)", color: "#fff", backdropFilter: "blur(6px)" }}>
+                        Cadre la carte entière
                       </div>
                     </>
                   ) : (
@@ -1441,14 +1442,14 @@ function MenuScanModal({ objectiveLine, objectiveChip, goalKnown, initialResult,
                   <div className="w-full rounded-2xl overflow-hidden relative" style={{ height: 300 }}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img loading="lazy" decoding="async" src={photoUrl} alt="carte" className="w-full h-full object-cover" />
-                    <div className="absolute inset-0" style={{ background: "linear-gradient(180deg,rgba(8,4,14,0.05),rgba(8,4,14,0.5))" }} />
+                    <div className="absolute inset-0" style={{ background: "linear-gradient(180deg,rgba(var(--voile-photo-rgb),0.05),rgba(var(--voile-photo-rgb),0.5))" }} />
                     <motion.div className="absolute left-0 right-0"
                       style={{ height: 56, background: "linear-gradient(180deg,transparent,rgba(139,92,246,0.55) 60%,transparent)", boxShadow: "0 2px 12px rgba(193,59,193,0.55)" }}
                       animate={{ top: ["4%", "82%", "4%"] }}
                       transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }} />
                     <div className="absolute left-0 right-0 flex items-center justify-center gap-2" style={{ bottom: 16 }}>
                       <motion.div animate={{ rotate: 360 }} transition={{ duration: 1.1, repeat: Infinity, ease: "linear" }}>
-                        <Sparkles size={16} style={{ color: "#D79BFF" }} />
+                        <AssistantSpark px={16} />
                       </motion.div>
                       <motion.span animate={{ opacity: [0.6, 1, 0.6] }} transition={{ duration: 1.6, repeat: Infinity }}
                         className="text-xs font-semibold" style={{ color: "#fff" }}>
@@ -1479,7 +1480,6 @@ function MenuScanModal({ objectiveLine, objectiveChip, goalKnown, initialResult,
                   {result.place && <span className="text-[11px]" style={{ color: "var(--text-3)" }}>· {result.place}</span>}
                 </div>
                 <p className="flex items-start gap-1.5 text-[11px] leading-snug -mt-1" style={{ color: "var(--text-3)" }}>
-                  <Sparkles size={12} style={{ color: "var(--exp-encre)", flexShrink: 0, marginTop: 1 }} />
                   Estimations d&apos;après la carte, le vrai compte se fera à l&apos;assiette.
                 </p>
 

@@ -631,7 +631,7 @@ export default function PublicProfilePage() {
                 className="object-cover"
                 style={{ filter: gagnee ? "none" : "grayscale(1) brightness(0.5)" }}
               />
-              <div className="absolute inset-0" style={{ background: "linear-gradient(180deg,transparent 45%,rgba(0,0,0,0.72))" }} />
+              <div className="absolute inset-0" style={{ background: "var(--voile-affiche)" }} />
               {gagnee && <div className="absolute top-2.5 right-3 text-[13px] font-black" style={{ color: "rgba(255,255,255,0.9)" }}>&#10022;</div>}
               <div className="absolute left-3 right-3 bottom-3" style={{ color: "#fff" }}>
                 <p className="text-[14px] font-black leading-tight">{serie.nom}</p>

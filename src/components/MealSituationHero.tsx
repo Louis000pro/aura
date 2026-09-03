@@ -25,7 +25,7 @@
 import { useState, useRef, useEffect } from "react";
 import { aiFetch } from "@/lib/aiFetch";
 import { motion, AnimatePresence } from "framer-motion";
-import { VisageGuide } from "@/components/AssistantMark";
+import { AssistantSpark, VisageGuide } from "@/components/AssistantMark";
 import { useGuideActif } from "@/context/GuideContext";
 import { voix } from "@/lib/guides";
 import {
@@ -120,7 +120,7 @@ function PhotoCard({ label, sub, Icon, gradient, img, onClick }: {
         onError={(e) => { e.currentTarget.style.display = "none"; }}
         className="absolute inset-0 w-full h-full object-cover" />
       <Icon size={34} strokeWidth={1.5} className="absolute" style={{ top: 12, right: 12, color: "rgba(255,255,255,0.30)" }} />
-      <div className="absolute inset-x-0 bottom-0" style={{ height: "46%", background: "linear-gradient(to top,rgba(14,7,18,0.9),rgba(14,7,18,0.35) 58%,transparent)" }} />
+      <div className="absolute inset-x-0 bottom-0" style={{ height: "46%", background: "var(--voile-affiche)" }} />
       <div className="absolute inset-x-0 bottom-0 p-3.5">
         <p className="text-[15px] font-medium leading-tight" style={{ color: "#fff" }}>{label}</p>
         <p className="text-[11px] mt-0.5" style={{ color: "rgba(255,255,255,0.85)" }}>{sub}</p>
@@ -802,7 +802,7 @@ export default function MealSituationHero({
                             {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img src={ambianceImg(c)} alt="" aria-hidden loading="lazy" decoding="async"
                               className="absolute inset-0 w-full h-full object-cover" style={{ opacity: on ? 1 : 0.55 }} />
-                            <div className="absolute inset-0" style={{ background: "linear-gradient(to top,rgba(10,6,14,0.82),rgba(10,6,14,0.12))" }} />
+                            <div className="absolute inset-0" style={{ background: "var(--voile-carte)" }} />
                             {on && (
                               <span className="absolute top-1 right-1 w-4 h-4 rounded-full flex items-center justify-center" style={{ background: "var(--accent)" }}>
                                 <Check size={10} strokeWidth={3} style={{ color: "#fff" }} />
@@ -950,13 +950,13 @@ export default function MealSituationHero({
             className="mt-4">
             {advice.length === 0 ? (
               <div className="flex flex-col items-center text-center gap-2 py-10">
-                <Sparkles size={24} strokeWidth={1.5} style={{ color: "var(--exp-encre)" }} />
+                <AssistantSpark px={24} />
                 <p className="text-sm font-light" style={{ color: "var(--text-3)" }}>Un instant…</p>
               </div>
             ) : (<>
               {/* Contexte : ce que lit l'IA */}
               <div className="flex items-center gap-1.5 mb-3">
-                <Sparkles size={14} strokeWidth={2} style={{ color: "#8B5CF6" }} />
+                <AssistantSpark px={14} />
                 <p className="text-[12px]" style={{ color: "var(--text-3)" }}>
                   {advisorNeeds && advisorNeeds.goalCalories > 0 ? (
                     <>Il te reste <span style={{ color: "var(--text-1)", fontWeight: 600 }}>{advisorNeeds.remaining} kcal</span>
@@ -971,12 +971,12 @@ export default function MealSituationHero({
               {(() => {
                 const top = advice[0]; const p = top.profile;
                 return (
-                  <div className="rounded-2xl overflow-hidden" style={{ border: "2px solid var(--accent)" }}>
+                  <div className="overflow-hidden" style={{ borderRadius: "var(--r-bloc)", border: "1px solid rgba(var(--violet-mid-rgb),0.35)", boxShadow: "var(--ombre-pose)" }}>
                     <div className="relative" style={{ height: 92 }}>
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img src={ambianceImg(top.category)} alt="" aria-hidden loading="lazy" decoding="async"
                         className="absolute inset-0 w-full h-full object-cover" />
-                      <div className="absolute inset-0" style={{ background: "linear-gradient(to top,rgba(10,6,14,0.85),rgba(10,6,14,0.15))" }} />
+                      <div className="absolute inset-0" style={{ background: "var(--voile-carte)" }} />
                       <span className="absolute top-2 left-2.5 text-[10px] font-semibold px-2 py-0.5 rounded-full"
                         style={{ background: "var(--accent)", color: "#fff" }}>Le mieux placé</span>
                       <span className="absolute left-3 bottom-2 text-[12px] font-semibold" style={{ color: "#fff", textShadow: "0 1px 3px rgba(0,0,0,0.7)" }}>
@@ -987,7 +987,7 @@ export default function MealSituationHero({
                       {top.reason && (
                         <div className="inline-flex items-center gap-1.5 mb-2 px-2.5 py-1 rounded-full"
                           style={{ background: "rgba(139,92,246,0.12)", border: "1px solid rgba(139,92,246,0.3)" }}>
-                          <Sparkles size={12} strokeWidth={2} style={{ color: "#8B5CF6" }} />
+                          <AssistantSpark px={12} />
                           <span className="text-[11px] font-semibold" style={{ color: "var(--exp-encre)" }}>{top.reason}</span>
                         </div>
                       )}
@@ -1017,7 +1017,7 @@ export default function MealSituationHero({
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img src={ambianceImg(alt.category)} alt="" aria-hidden loading="lazy" decoding="async"
                           className="absolute inset-0 w-full h-full object-cover" />
-                        <div className="absolute inset-0" style={{ background: "linear-gradient(to top,rgba(10,6,14,0.5),transparent)" }} />
+                        <div className="absolute inset-0" style={{ background: "var(--voile-carte)" }} />
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-[13.5px] font-medium" style={{ color: "var(--text-1)" }}>

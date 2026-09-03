@@ -37,7 +37,7 @@ import {
 import { useAuth } from "@/context/AuthContext";
 import { useAssistant } from "@/context/AssistantContext";
 import { useGuideActif } from "@/context/GuideContext";
-import { VisageGuide } from "@/components/AssistantMark";
+import { AssistantSpark, VisageGuide } from "@/components/AssistantMark";
 import { voix } from "@/lib/guides";
 import { createClient } from "@/lib/supabase";
 import { lockBodyModal } from "@/lib/bodyModal";
@@ -722,7 +722,7 @@ function TodayHero({
       {/* Chips du haut */}
       <div className="absolute top-3.5 left-3.5 right-3.5 flex items-center justify-between z-10">
         <span className="px-3 py-1.5 rounded-full text-[11px] font-semibold"
-          style={{ background: "rgba(10,8,18,0.42)", color: "#fff", border: "1px solid rgba(255,255,255,0.22)", backdropFilter: "blur(6px)" }}>
+          style={{ background: "var(--verre-photo)", color: "#fff", border: "1px solid var(--verre-photo-bord)", backdropFilter: "blur(6px)" }}>
           {state === "setup" ? "Première fois ici" : "Aujourd’hui"}
         </span>
         {state === "done" && (
@@ -732,12 +732,12 @@ function TodayHero({
           </span>
         )}
         {state === "repos" && <Moon size={22} strokeWidth={1.6} style={{ color: "#9FD8C6", opacity: 0.85 }} />}
-        {state === "setup" && <Sparkles size={22} strokeWidth={1.6} style={{ color: "#E4D6FF" }} />}
+        {state === "setup" && <AssistantSpark px={22} />}
       </div>
 
       {/* Légende sur l'image (style validé nutrition) */}
       <div className="absolute inset-x-0 bottom-0 px-4 pb-4 pt-16"
-        style={{ background: "linear-gradient(to top, rgba(8,6,14,0.92) 30%, rgba(8,6,14,0.5) 70%, transparent)" }}>
+        style={{ background: "var(--voile-affiche)" }}>
 
         {state === "seance" && day && (
           <>
@@ -879,14 +879,13 @@ function ForkCard({ kind, count, onClick }: {
         <>
           <Photo img={WIDGET.improvise.img} pos={WIDGET.improvise.pos}
             style={{ position: "absolute", inset: 0 }} />
-          <Sparkles size={24} strokeWidth={1.5} className="absolute top-3 right-3" style={{ color: "#E4D6FF", opacity: 0.9 }} />
-          <Sparkles size={11} strokeWidth={1.5} className="absolute top-10 right-11" style={{ color: "#C9B8FF", opacity: 0.5 }} />
+          <span className="absolute top-3 right-3"><AssistantSpark px={22} /></span>
         </>
       ) : (
         <div aria-hidden className="absolute inset-0" style={{ isolation: "isolate", containerType: "size" }}>
           {/* fond en profondeur — la bibliothèque derrière l'éventail */}
           <div style={{ position: "absolute", inset: 0, backgroundImage: "url(/entrainement/pull-rowing.webp)", backgroundSize: "cover", backgroundPosition: "center", filter: "blur(4px) brightness(0.42)", transform: "scale(1.12)" }} />
-          <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(8,6,14,0.5), rgba(8,6,14,0.72))" }} />
+          <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(var(--voile-photo-rgb),0.5), rgba(var(--voile-photo-rgb),0.72))" }} />
           {/* halo — centré sur la carte du milieu, suit sa hauteur */}
           <div style={{ position: "absolute", left: "50%", top: "calc(100cqh - 64px - (clamp(80px,54cqh,120px) / 2))", width: 96, height: 96, transform: "translate(-50%,-50%)", background: "radial-gradient(circle, rgba(155,130,255,0.35), transparent 68%)", filter: "blur(6px)" }} />
           {/* l'éventail de séances — grandit avec la hauteur de la carte */}
@@ -907,7 +906,7 @@ function ForkCard({ kind, count, onClick }: {
         </div>
       )}
       <div className="absolute inset-x-0 bottom-0 px-3 pb-2.5 pt-8"
-        style={{ background: "linear-gradient(to top, rgba(8,6,14,0.9) 25%, transparent)" }}>
+        style={{ background: "var(--voile-affiche)" }}>
         <p className="text-[11px] font-semibold mb-0.5" style={{ color: "#C9B8FF" }}>
           {isIA ? "Nouvelle séance" : "Mes séances"}
         </p>
@@ -984,7 +983,7 @@ function WeekStrip({ week, todayIdx, onOrganise }: {
               {isSeance && art ? (
                 <>
                   <Photo img={art.img} pos="center 22%" style={{ position: "absolute", inset: 0 }} />
-                  <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(5,4,9,0.8) 0%, rgba(5,4,9,0.12) 52%, transparent)" }} />
+                  <div className="absolute inset-0" style={{ background: "var(--voile-carte)" }} />
                   {isDone && (
                     <span className="absolute top-1 right-1 rounded-full flex items-center justify-center"
                       style={{ width: 14, height: 14, background: "#8B5CF6", boxShadow: "0 2px 6px rgba(0,0,0,0.4)" }}>
@@ -1393,7 +1392,7 @@ function SessionTile({ session, onStart, onManage, onPremium, canAccessPremium, 
             (hérité par les 3 points). */}
         {advice ? (
           <span className="absolute top-2 left-2 flex items-center gap-1 px-[7px] py-[4px] rounded-full"
-            style={{ background: "rgba(8,6,14,0.38)", backdropFilter: "blur(5px)", border: "1px solid rgba(255,255,255,0.24)" }}>
+            style={{ background: "var(--verre-photo)", backdropFilter: "blur(6px)", border: "1px solid var(--verre-photo-bord)" }}>
             <BookOpen size={9} strokeWidth={2.4} className="flex-shrink-0 text-white" aria-hidden />
             <span className="text-[7.5px] leading-none font-semibold text-white">
               {session.duration} min · lire
@@ -1401,7 +1400,7 @@ function SessionTile({ session, onStart, onManage, onPremium, canAccessPremium, 
           </span>
         ) : (
           <span className="absolute top-2 left-2 flex items-center gap-[3px] px-[7px] py-[4px] rounded-full"
-            style={{ background: "rgba(8,6,14,0.3)", backdropFilter: "blur(4px)", border: "1px solid rgba(255,255,255,0.22)", forcedColorAdjust: "none" }}
+            style={{ background: "var(--verre-photo)", backdropFilter: "blur(6px)", border: "1px solid var(--verre-photo-bord)", forcedColorAdjust: "none" }}
             aria-label={`Difficulté : ${session.difficulty}`}>
             {[0, 1, 2].map((i) => (
               <span key={i} className="w-1 h-1 rounded-full"
@@ -1413,7 +1412,7 @@ function SessionTile({ session, onStart, onManage, onPremium, canAccessPremium, 
         {/* Durée — badge discret */}
         {!advice && (
           <span className="absolute top-2 right-2 px-2 py-[3px] rounded-full text-[8px] font-extrabold tracking-[0.05em] text-white"
-            style={{ background: "rgba(8,6,14,0.3)", backdropFilter: "blur(4px)", border: "1px solid rgba(255,255,255,0.34)" }}>
+            style={{ background: "var(--verre-photo)", backdropFilter: "blur(6px)", border: "1px solid var(--verre-photo-bord)" }}>
             {session.duration} MIN
           </span>
         )}
@@ -1427,7 +1426,7 @@ function SessionTile({ session, onStart, onManage, onPremium, canAccessPremium, 
             // On dégage le coin quand une pastille l'occupe : le ⋯ des séances
             // à soi, le cadenas d'une séance qu'on n'a pas encore.
             paddingRight: session.perso || premiumLocked ? 34 : 10,
-            background: "linear-gradient(to top, rgba(6,5,10,0.9) 32%, rgba(6,5,10,0.4) 66%, transparent)",
+            background: "var(--voile-affiche)",
             forcedColorAdjust: "none",
           }}>
           <p className="text-[12.5px] font-semibold text-white leading-[1.12] tracking-tight"
@@ -1461,7 +1460,7 @@ function SessionTile({ session, onStart, onManage, onPremium, canAccessPremium, 
       {!advice && !premiumLocked && (
         <motion.button whileTap={{ scale: 0.85 }} onClick={() => onManage(session)}
           className="absolute bottom-2 right-2 w-7 h-7 rounded-full flex items-center justify-center cursor-pointer border-none p-0"
-          style={{ background: "rgba(8,6,14,0.5)", backdropFilter: "blur(6px)", border: "1px solid rgba(255,255,255,0.13)" }}
+          style={{ background: "var(--verre-photo)", backdropFilter: "blur(6px)", border: "1px solid var(--verre-photo-bord)" }}
           aria-label={session.perso ? `Gérer : ${session.title}` : `Options : ${session.title}`}>
           <MoreHorizontal size={14} strokeWidth={2.2} style={{ color: "rgba(255,255,255,0.88)" }} />
         </motion.button>
@@ -1529,7 +1528,7 @@ function PremiumPreviewSheet({ session, premiumCount, onClose, onUpgrade }: {
         <div className="relative" style={{ aspectRatio: "16 / 9" }}>
           <Photo img={advice?.image ?? art.img} pos={advice?.imagePosition ?? "center 24%"} style={{ position: "absolute", inset: 0 }} />
           <div className="absolute inset-x-0 bottom-0 px-5 pb-4 pt-16"
-            style={{ background: "linear-gradient(to top,rgba(6,5,10,0.94),rgba(6,5,10,0.38),transparent)" }}>
+            style={{ background: "var(--voile-affiche)" }}>
             <p className="text-[20px] font-semibold leading-[1.05] text-white"
               style={{ textShadow: "0 2px 12px rgba(0,0,0,0.58)" }}>
               {session.title}
@@ -1540,7 +1539,7 @@ function PremiumPreviewSheet({ session, premiumCount, onClose, onUpgrade }: {
             whileTap={{ scale: 0.9 }}
             onClick={onClose}
             className="absolute top-3 right-3 w-8 h-8 rounded-full flex items-center justify-center text-white"
-            style={{ background: "rgba(8,6,14,0.46)", border: "1px solid rgba(255,255,255,0.25)", backdropFilter: "blur(6px)" }}
+            style={{ background: "var(--verre-photo)", border: "1px solid var(--verre-photo-bord)", backdropFilter: "blur(6px)" }}
             aria-label="Fermer l’aperçu"
           >
             <X size={14} strokeWidth={2.2} />
@@ -2238,7 +2237,7 @@ function CatTile({ cat, count, freeCount, premiumCount, large, onOpen }: {
       <Photo img={cat.img} pos={cat.pos} style={{ position: "absolute", inset: 0 }} />
       {large ? (
         <div className="absolute inset-0 flex flex-col justify-end px-4 pb-4 pt-10 text-left"
-          style={{ background: "linear-gradient(90deg, rgba(6,5,10,0.9) 8%, rgba(6,5,10,0.62) 52%, rgba(6,5,10,0.18))" }}>
+          style={{ background: "linear-gradient(90deg, rgba(var(--voile-photo-rgb),0.9) 8%, rgba(var(--voile-photo-rgb),0.62) 52%, rgba(var(--voile-photo-rgb),0.18))" }}>
           <p className="text-[18px] font-semibold text-white leading-[1.06] tracking-tight"
             style={{ textShadow: "0 2px 10px rgba(0,0,0,0.5)" }}>
             {cat.name}
@@ -2250,7 +2249,7 @@ function CatTile({ cat, count, freeCount, premiumCount, large, onOpen }: {
         </div>
       ) : (
         <div className="absolute inset-x-0 bottom-0 px-2.5 pb-3.5 pt-14 flex flex-col items-center text-center"
-          style={{ background: "linear-gradient(to top, rgba(6,5,10,0.88) 20%, rgba(6,5,10,0.35) 62%, transparent)" }}>
+          style={{ background: "var(--voile-affiche)" }}>
           <p className="text-[14.5px] font-semibold text-white leading-[1.08] tracking-tight"
             style={{ textWrap: "balance", textShadow: "0 2px 10px rgba(0,0,0,0.5)" }}>
             {cat.name}
@@ -2485,10 +2484,6 @@ function ChooseSheet({ sessions, week, loading, canAccessPremium, maxSeances, ca
         ) : matched.length === 0 ? (
           /* ── Niveau 2, collection vide : la porte reste ouverte ── */
           <div className="flex flex-col items-center text-center pt-12 px-6">
-            <span className="w-12 h-12 rounded-2xl flex items-center justify-center mb-3"
-              style={{ background: "rgba(var(--accent-rgb),0.1)" }}>
-              <Sparkles size={18} strokeWidth={1.8} style={{ color: "var(--accent)" }} />
-            </span>
             <p className="vy-sous" style={{ color: "var(--text-0)" }}>Cette collection arrive</p>
             <p className="vy-corps mt-1.5 leading-relaxed max-w-[260px]">
               On la remplit séance après séance. Crée la tienne, elle apparaîtra ici.
@@ -2934,7 +2929,7 @@ function SemaineSheet({ week, todayIdx, fetchWeekAt, onClose, onStartDay, onAsk,
         <motion.button whileTap={{ scale: 0.97 }} onClick={() => onAsk("Refais toute ma semaine d’entraînement")}
           className="flex-1 py-3 rounded-2xl text-[13px] font-extrabold text-white cursor-pointer flex items-center justify-center gap-1.5"
           style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", boxShadow: "var(--ombre-action)" }}>
-          <Sparkles size={13} strokeWidth={2} /> Refais ma semaine
+          ✦ Refais ma semaine
         </motion.button>
         <motion.button whileTap={{ scale: 0.96 }} onClick={onAddSession}
           className="px-4 rounded-2xl text-[12.5px] font-bold cursor-pointer flex items-center gap-1"

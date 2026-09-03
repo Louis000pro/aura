@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import AiMemoryManager from "@/components/AiMemoryManager";
 import TasteProfileModal from "@/components/TasteProfileModal";
 import { AssistantSpark, VisageGuide } from "@/components/AssistantMark";
+import GemmeRang from "@/components/GemmeRang";
 import { Lock, LogOut, ChevronRight, Eye, EyeOff, Check, AlertTriangle, X, Shield, Moon, Sun, Target, Compass, Gauge, Gem, Utensils, CreditCard, Sparkles, type LucideIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -698,12 +699,9 @@ export default function ParametresPage() {
           {aura && (
             <div
               className="flex items-center gap-1.5 pl-2 pr-3 py-1.5 rounded-full flex-shrink-0"
-              style={{ background: "linear-gradient(135deg, rgba(var(--accent-rgb),0.16), rgba(var(--gold-rgb),0.20))" }}
+              style={{ background: "rgba(var(--tint-violet-rgb),0.55)" }}
             >
-              {aura.rang.image
-                // eslint-disable-next-line @next/next/no-img-element
-                ? <img src={aura.rang.image} alt="" className="h-[18px] w-auto" />
-                : <span className="w-2.5 h-2.5 rotate-45 rounded-[2px]" style={{ background: `linear-gradient(135deg,${aura.rang.neon[0]},${aura.rang.neon[1]})` }} />}
+              <GemmeRang rang={aura.rang} size={18} flotte={false} />
               <span className="text-[11px] font-semibold whitespace-nowrap" style={{ color: "var(--text-2)" }}>
                 {aura.rang.nom} · {aura.exp} EXP
               </span>

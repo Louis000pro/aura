@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { ArrowUpRight, BookOpen, Check, Clock, Sparkles, X } from "lucide-react";
+import { ArrowUpRight, BookOpen, Check, Clock, X } from "lucide-react";
 import { lockBodyModal } from "@/lib/bodyModal";
 import type { AdviceArticle } from "@/lib/adviceArticles";
 
@@ -69,9 +69,9 @@ export default function AdviceReaderSheet({
           onClick={onClose}
           className="absolute z-30 top-[calc(env(safe-area-inset-top)+14px)] md:top-4 right-4 h-9 px-3 rounded-full flex items-center justify-center gap-1.5 text-white"
           style={{
-            background: "rgba(8,6,14,0.5)",
-            border: "1px solid rgba(255,255,255,0.25)",
-            backdropFilter: "blur(8px)",
+            background: "var(--verre-photo)",
+            border: "1px solid var(--verre-photo-bord)",
+            backdropFilter: "blur(6px)",
           }}
           aria-label="Fermer le cours"
         >
@@ -98,19 +98,18 @@ export default function AdviceReaderSheet({
             <div
               aria-hidden
               className="absolute inset-0"
-              style={{ background: "linear-gradient(to top,rgba(6,5,10,0.97) 5%,rgba(6,5,10,0.56) 48%,rgba(6,5,10,0.08) 82%)" }}
+              style={{ background: "var(--voile-affiche)" }}
             />
             <div className="relative z-10 px-6 pb-6 pt-[calc(env(safe-area-inset-top)+88px)] text-white">
               <div className="flex items-center gap-2 mb-3">
                 <span className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-full text-[9px] font-black uppercase tracking-[0.14em]"
-                  style={{ background: "rgba(8,6,14,0.42)", border: "1px solid rgba(255,255,255,0.24)", backdropFilter: "blur(7px)" }}>
+                  style={{ background: "var(--verre-photo)", border: "1px solid var(--verre-photo-bord)", backdropFilter: "blur(6px)" }}>
                   <BookOpen size={11} strokeWidth={2.2} aria-hidden />
                   {article.theme}
                 </span>
                 {article.access === "premium" && (
                   <span className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-full text-[9px] font-black uppercase tracking-[0.14em]"
-                    style={{ background: "linear-gradient(110deg,var(--accent),var(--gold))" }}>
-                    <Sparkles size={10} strokeWidth={2.3} aria-hidden />
+                    style={{ background: "linear-gradient(120deg,#FFD34E,#F5B120)", color: "#3A2402" }}>
                     Premium
                   </span>
                 )}

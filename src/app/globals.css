@@ -122,6 +122,32 @@
   --r-affiche: 26px;
   --r-bloc: 18px;
   --r-controle: 10px;
+
+  /* ── LA PHOTO ──────────────────────────────────────────────────────
+     Vaiiya est un produit d’images : le héros de la séance, le catalogue, les
+     cartes de la nutrition et les affiches du profil montrent tous une photo
+     avec du texte posé dessus. Ce voile était pourtant réécrit à chaque
+     endroit : douze recettes, et surtout SIX noirs différents (#080610,
+     #050409, #06050A, #000000, #0E0712, #0A060E). Une photo n’avait donc pas
+     la même lumière selon l’écran où on la croisait, ce qui est exactement ce
+     qui fait lire plusieurs produits au lieu d’un. Même maladie que les 193
+     ombres, et même remède : on nomme.
+       --voile-affiche : sous un TITRE et sa ligne de détail (héros, carte de
+                         séance, aperçu Premium, affiche du profil).
+       --voile-carte   : sous une seule ÉTIQUETTE, ou sur une vignette qui ne
+                         porte aucun texte et n’a qu’à s’asseoir.
+       --verre-photo   : la pastille qui FLOTTE sur la photo (durée, niveau,
+                         fermer, ⋯). C’est le seul verre légitime du produit :
+                         il y a vraiment quelque chose à deviner dessous.
+     ⚠️ CES QUATRE-LÀ NE BASCULENT PAS AVEC LE THÈME, et ce n’est pas un oubli :
+     une photo est sombre dans les deux, et le texte posé dessus est blanc dans
+     les deux. Un voile qui s’éclaircirait en mode clair rendrait ce texte
+     illisible sur l’image la plus pâle. */
+  --voile-photo-rgb: 6, 5, 10;
+  --voile-affiche: linear-gradient(to top, rgba(6,5,10,0.92) 0%, rgba(6,5,10,0.46) 56%, rgba(6,5,10,0) 100%);
+  --voile-carte:   linear-gradient(to top, rgba(6,5,10,0.84) 0%, rgba(6,5,10,0.16) 62%, rgba(6,5,10,0) 100%);
+  --verre-photo:      rgba(6,5,10,0.42);
+  --verre-photo-bord: rgba(255,255,255,0.24);
 }
 
 [data-theme="dark"] {

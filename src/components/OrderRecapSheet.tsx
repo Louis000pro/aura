@@ -68,7 +68,7 @@ export default function OrderRecapSheet({
             onError={(e) => { e.currentTarget.style.display = "none"; }}
             className="absolute inset-0 w-full h-full object-cover" />
           {/* Voile gauche → droite pour la lisibilité de la légende */}
-          <div className="absolute inset-0" style={{ background: "linear-gradient(90deg,rgba(10,6,14,0.66) 0%,rgba(10,6,14,0.24) 46%,rgba(10,6,14,0.04) 100%)" }} />
+          <div className="absolute inset-0" style={{ background: "linear-gradient(90deg,rgba(var(--voile-photo-rgb),0.66) 0%,rgba(var(--voile-photo-rgb),0.24) 46%,rgba(var(--voile-photo-rgb),0.04) 100%)" }} />
           <button onClick={onClose} aria-label="Retour"
             className="absolute top-3 left-3 w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer"
             style={{ background: "rgba(20,12,24,0.42)", backdropFilter: "blur(6px)" }}>

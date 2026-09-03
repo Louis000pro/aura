@@ -367,23 +367,6 @@ export default function NotificationBell({ side = "right" }: { side?: "right" | 
           <Bell size={18} strokeWidth={1.5} style={{ color: open || announceGlow ? "var(--accent)" : "var(--text-3)" }} />
         </motion.span>
 
-        {/* Étincelle qui scintille à côté de la cloche */}
-        <AnimatePresence>
-          {announceGlow && (
-            <motion.span
-              key="ann-sparkle"
-              aria-hidden
-              className="absolute -top-1 -left-1 pointer-events-none"
-              initial={{ scale: 0, opacity: 0 }}
-              animate={{ scale: [0, 1, 0.6, 1, 0], opacity: [0, 1, 0.7, 1, 0], rotate: [0, 20, -10, 15, 0] }}
-              exit={{ scale: 0, opacity: 0 }}
-              transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
-            >
-              <Sparkles size={11} strokeWidth={2.2} style={{ color: "#F5D77A", fill: "#F5D77A" }} />
-            </motion.span>
-          )}
-        </AnimatePresence>
-
         <AnimatePresence>
           {badgeCount > 0 && (
             <motion.span

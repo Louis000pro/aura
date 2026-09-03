@@ -46,7 +46,7 @@ export default function PlacesTop3Picker({
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={img} alt="" aria-hidden loading="lazy" decoding="async"
               className="absolute inset-0 w-full h-full object-cover" style={{ opacity: on ? 1 : 0.6 }} />
-            <div className="absolute inset-0" style={{ background: "linear-gradient(to top,rgba(10,6,14,0.82),rgba(10,6,14,0.12))" }} />
+            <div className="absolute inset-0" style={{ background: "var(--voile-carte)" }} />
             {on && (
               <span className="absolute top-1 right-1 w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-semibold"
                 style={{ background: "var(--accent)", color: "#fff" }}>
