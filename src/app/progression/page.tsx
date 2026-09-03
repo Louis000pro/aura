@@ -820,7 +820,7 @@ function TodayHero({
             {/* La question n'apparaît QUE quand l'app ne sait pas — même logique que Nutrition */}
             <h2 className="text-[30px] md:text-[34px] leading-[1.04] font-extralight text-white">On s&apos;entraîne comment&nbsp;?</h2>
             <p className="text-[12.5px] font-light mt-1.5 mb-3.5 leading-relaxed" style={{ color: "rgba(255,255,255,0.72)" }}>
-              Quelques questions, et l&apos;IA construit ta semaine idéale.
+              Quelques questions, et ta semaine est prête.
             </p>
             <motion.button
               whileTap={{ scale: 0.97 }}
@@ -909,11 +909,11 @@ function ForkCard({ kind, count, onClick }: {
       <div className="absolute inset-x-0 bottom-0 px-3 pb-2.5 pt-8"
         style={{ background: "linear-gradient(to top, rgba(8,6,14,0.9) 25%, transparent)" }}>
         <p className="text-[11px] font-semibold mb-0.5" style={{ color: "#C9B8FF" }}>
-          {isIA ? "L’IA s’adapte" : "Mes séances"}
+          {isIA ? "Nouvelle séance" : "Mes séances"}
         </p>
         <p className="text-[16.5px] font-semibold text-white leading-tight">{isIA ? "J’improvise" : "Je choisis"}</p>
         <p className="text-[10.5px] font-normal mt-0.5 leading-snug" style={{ color: "rgba(255,255,255,0.68)" }}>
-          {isIA ? "Ton temps, ton matériel, elle crée" : `${count ?? 0} séances, choisis la tienne`}
+          {isIA ? "Ton temps, ton matériel" : `${count ?? 0} séances et cours`}
         </p>
       </div>
     </motion.button>
@@ -1988,8 +1988,8 @@ function PleinSheet({ max, onVoir, onPremium, onClose }: {
             Tes places sont prises
           </p>
           <p className="text-[12px] font-light mt-1.5 leading-relaxed" style={{ color: "var(--text-3)" }}>
-            En gratuit tu gardes {max} séances à toi. Supprime celle que tu ne fais plus,
-            elle libère la place tout de suite. Avec Premium, tu en gardes autant que tu veux.
+            En gratuit, tu gardes {max} séances. Supprime celle que tu ne fais plus, la place
+            se libère tout de suite. Avec Premium, tu en gardes autant que tu veux.
           </p>
 
           <motion.button whileTap={{ scale: 0.97 }} onClick={onPremium}
@@ -2000,7 +2000,7 @@ function PleinSheet({ max, onVoir, onPremium, onClose }: {
           <motion.button whileTap={{ scale: 0.97 }} onClick={onVoir}
             className="w-full h-11 mt-1 text-[12px] font-semibold cursor-pointer bg-transparent border-none"
             style={{ color: "var(--text-2)" }}>
-            Voir mes séances pour en libérer une
+            Voir mes séances
           </motion.button>
         </div>
       </motion.div>
@@ -2060,7 +2060,7 @@ function SessionRow({ label, count, children }: {
    titre, il devient le chiffre en or qu'on lit à droite. C'est la réponse à
    « pourquoi payer », et elle tient en un nombre, comme le « +70 EXP » des
    missions. */
-function PremiumSessionRow({ count, children, title = "Continue avec Premium", unite = "séance", description = "Des séances plus ciblées pour aller plus loin, à ton rythme." }: {
+function PremiumSessionRow({ count, children, title = "Continue avec Premium", unite = "séance", description = "Des séances plus ciblées." }: {
   count: number;
   children: React.ReactNode;
   title?: string;
@@ -2368,7 +2368,7 @@ function ChooseSheet({ sessions, week, loading, canAccessPremium, maxSeances, ca
             {/* ⚠️ `.vy-corps` pose `--text-body` : l'emphase qu'il contient etait
                 en `--text-2`, donc PLUS CLAIRE que la phrase autour. */}
             <p className="vy-corps mt-1">
-              Un but, une envie. <span className="font-semibold" style={{ color: "var(--text-0)" }}>{sessions.length} contenus t&apos;attendent</span>
+              Un but, une envie. <span className="font-semibold" style={{ color: "var(--text-0)" }}>{sessions.length} séances et cours</span>
             </p>
           </div>
         )}
@@ -2491,7 +2491,7 @@ function ChooseSheet({ sessions, week, loading, canAccessPremium, maxSeances, ca
             </span>
             <p className="vy-sous" style={{ color: "var(--text-0)" }}>Cette collection arrive</p>
             <p className="vy-corps mt-1.5 leading-relaxed max-w-[260px]">
-              On la remplit séance après séance. En attendant, crée la tienne, si elle colle, elle apparaîtra ici.
+              On la remplit séance après séance. Crée la tienne, elle apparaîtra ici.
             </p>
             <motion.button whileTap={{ scale: 0.95 }} onClick={onCreate}
               className="mt-5 px-5 h-10 rounded-full text-[12px] font-bold text-white cursor-pointer border-none"
@@ -2514,7 +2514,7 @@ function ChooseSheet({ sessions, week, loading, canAccessPremium, maxSeances, ca
                 title={cat.id === "conseils" ? "Approfondis avec Premium" : undefined}
                 unite={cat.id === "conseils" ? "cours" : undefined}
                 description={cat.id === "conseils"
-                  ? "Des sujets plus pointus pour comprendre tes plateaux, ta récupération et ta programmation."
+                  ? "Plateaux, récupération, programmation."
                   : undefined}
               >
                 {vaiiyaPremium.map((session, index) => rowTile(session, index, true))}
@@ -2611,7 +2611,7 @@ function ImproviseSheet({ defaultPlace, defaultHalteres, difficulty, onClose, on
         exerciseList,
       });
     } catch {
-      setError("L’IA n’a pas répondu, réessaie.");
+      setError("Pas de réponse, réessaie.");
       setLoading(false);
     }
   };
@@ -2716,7 +2716,7 @@ function ImproviseSheet({ defaultPlace, defaultHalteres, difficulty, onClose, on
               <motion.span animate={{ rotate: 360 }} transition={{ duration: 0.9, repeat: Infinity, ease: "linear" }} className="flex">
                 <Sparkles size={15} strokeWidth={2} />
               </motion.span>
-              L&apos;IA compose ta séance…
+              Ta séance se prépare…
             </>
           ) : (
             <>✦ Prépare ma séance</>
@@ -3096,10 +3096,7 @@ function OrganiserSheet({ onClose }: { onClose: () => void }) {
     <Sheet onClose={onClose} maxHeight="92vh">
       <div className="px-5 pt-2 pb-3 flex items-center justify-between flex-shrink-0">
         <div>
-          <p className="text-[11px] font-semibold" style={{ color: "var(--text-3)" }}>
-            Piloté par l&apos;IA ✦
-          </p>
-          <h2 className="text-[19px] font-light mt-0.5" style={{ color: "var(--text-1)" }}>Organiser ma semaine</h2>
+          <h2 className="text-[19px] font-light" style={{ color: "var(--text-1)" }}>Organiser ma semaine</h2>
         </div>
         <motion.button whileTap={{ scale: 0.9 }} onClick={onClose}
           className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer"

@@ -283,7 +283,7 @@ export default function ExerciseLibrarySheet({
             }
           >
             {choix.length === 0
-              ? exploration ? "Choisis des mouvements pour en faire une séance" : "Sélectionne des exercices"
+              ? exploration ? "Choisis des mouvements" : "Sélectionne des exercices"
               : exploration ? `En faire une séance (${choix.length})`
               : `Ajouter ${choix.length} exercice${choix.length > 1 ? "s" : ""}`}
           </motion.button>

@@ -427,7 +427,7 @@ export default function MealSituationHero({
     ];
     return [
       { key: "code",       label: "Code-barres",    sub: "produit emballé", Icon: Barcode, run: onBarcode },
-      { key: "photo",      label: "Une photo",      sub: "l’IA estime",     Icon: Camera,  run: onPhoto },
+      { key: "photo",      label: "Une photo",      sub: "on l’estime",     Icon: Camera,  run: onPhoto },
       { key: "classiques", label: "Mes classiques", sub: "mes habitudes",   Icon: Heart,   run: () => setScreen("classics") },
     ];
   };
@@ -765,10 +765,10 @@ export default function MealSituationHero({
           <motion.div key="livraison"
             initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 12 }}
             className="grid grid-cols-2 gap-2.5 mt-4">
-            <PhotoCard label="Je sais ce que je prends" sub="log express" Icon={ShoppingBag}
+            <PhotoCard label="Je sais ce que je prends" sub="je le note" Icon={ShoppingBag}
               gradient={sitObj?.gradient ?? ""} img="/nutrition/livraison-jesais.jpg"
               onClick={() => { setFormStep(1); setScreen("livraison-form"); }} />
-            <PhotoCard label="Conseille-moi" sub="l’IA choisit" Icon={Sparkles}
+            <PhotoCard label="Conseille-moi" sub="on choisit pour toi" Icon={Sparkles}
               gradient={sitObj?.gradient ?? ""} img="/nutrition/livraison-conseil.jpg"
               onClick={openAdvisor} />
           </motion.div>
@@ -1070,7 +1070,7 @@ export default function MealSituationHero({
                 className="w-full max-w-xs rounded-3xl p-6 text-center"
                 style={{ background: "rgb(var(--surface-rgb))", border: "1px solid rgba(var(--accent-rgb),0.14)" }}>
                 <p className="text-sm" style={{ color: "var(--text-1)" }}>La banque de recettes se remplit.</p>
-                <p className="text-xs mt-1.5 font-light" style={{ color: "var(--text-3)" }}>Aucune recette pour ce filtre pour l&apos;instant, reviens vite.</p>
+                <p className="text-xs mt-1.5 font-light" style={{ color: "var(--text-3)" }}>Rien pour ce filtre.</p>
                 <button onClick={closeRecipe}
                   className="mt-4 px-5 py-2.5 rounded-2xl text-sm font-semibold cursor-pointer"
                   style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", color: "#fff" }}>

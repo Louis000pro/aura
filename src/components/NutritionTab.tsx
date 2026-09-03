@@ -332,12 +332,12 @@ function PhotoAnalysisModal({ onClose, onAdd, onBack }: {
               </motion.button>
             )}
             <div className="min-w-0">
-              <p className="vy-label" style={{ color: "var(--text-3)" }}>{onBack ? "Retour à la carte" : "IA Nutrition"}</p>
+              <p className="vy-label" style={{ color: "var(--text-3)" }}>{onBack ? "Retour à la carte" : "Nutrition"}</p>
               <h2 className="text-lg font-semibold truncate" style={{ color: "var(--text-1)" }}>
                 {phase === "analyzing" ? "Je regarde…"
                   : phase === "result"   ? "Repas identifié"
                   : phase === "edit"     ? "Ajuster"
-                  : "Snap ton assiette"}
+                  : "Ton assiette en photo"}
               </h2>
             </div>
           </div>
@@ -437,7 +437,7 @@ function PhotoAnalysisModal({ onClose, onAdd, onBack }: {
                 )}
 
                 <p className="text-[11px] text-center mt-4 font-light" style={{ color: "var(--text-3)" }}>
-                  L&apos;IA détecte les aliments et estime calories &amp; macros automatiquement
+                  Les aliments sont reconnus, les calories et macros estimées.
                 </p>
               </motion.div>
             )}
@@ -728,7 +728,7 @@ function BarcodeScannerModal({ onClose, onAdd }: {
       });
       setEstimateMealType(data.mealType || getMealTypeFromTime());
     } catch {
-      setError("L’IA n’a pas pu estimer ce produit.");
+      setError("Estimation impossible pour ce produit.");
     } finally {
       setEstimating(false);
     }
@@ -975,7 +975,7 @@ function BarcodeScannerModal({ onClose, onAdd }: {
                         </motion.button>
                       </div>
                       <p className="text-[10px] mt-1.5 font-light" style={{ color: "var(--text-3)" }}>
-                        Précise la marque et la quantité pour une meilleure estimation
+                        Précise la marque et la quantité.
                       </p>
                     </div>
 
@@ -1428,7 +1428,7 @@ function MenuScanModal({ objectiveLine, objectiveChip, goalKnown, initialResult,
                 )}
 
                 <p className="text-[11px] text-center mt-4 font-light" style={{ color: "var(--text-3)" }}>
-                  L&apos;IA lit les plats et te dit lesquels collent à ton objectif, sans chiffres inventés.
+                  Les plats sont classés selon ton objectif, sans chiffres inventés.
                 </p>
               </motion.div>
             )}
@@ -1652,7 +1652,6 @@ function ManualModal({ onClose, onAdd }: {
 
         <div className="flex items-center justify-between mb-4">
           <div>
-            <p className="vy-label" style={{ color: "var(--text-3)" }}>IA Nutrition</p>
             <h2 className="text-lg font-light" style={{ color: "var(--text-1)" }}>Décrire un repas</h2>
           </div>
           <motion.button whileTap={{ scale: 0.9 }} onClick={onClose}
@@ -1723,7 +1722,7 @@ function ManualModal({ onClose, onAdd }: {
                 style={{ background: "rgba(var(--accent-rgb),0.08)", border: "1px solid rgba(var(--accent-rgb),0.15)" }}>
                 <Check size={12} strokeWidth={2.5} style={{ color: "var(--exp-encre)" }} />
                 <span className="text-xs font-medium" style={{ color: "var(--exp-encre)" }}>
-                  Estimation IA. Vérifie et modifie si besoin
+                  Estimation, à corriger si besoin
                 </span>
               </motion.div>
             )}
@@ -2611,9 +2610,6 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
                   </div>
                 ))}
               </div>
-              <p className="text-[11px] text-center leading-snug px-2" style={{ color: "var(--text-3)" }}>
-                Restant = ce qu&apos;il te reste à manger · Brûlé = dépensé en bougeant
-              </p>
             </div>
           </div>
 
@@ -2623,9 +2619,6 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
               <div>
                 <p className="vy-label" style={{ color: "var(--text-3)" }}>
                   Macros du jour
-                </p>
-                <p className="text-[11px] mt-0.5" style={{ color: "var(--text-3)" }}>
-                  Les 3 familles d&apos;aliments qui composent ton assiette
                 </p>
               </div>
               <button className="text-xs font-semibold cursor-pointer flex-shrink-0" style={{ color: "var(--exp-encre)" }}>

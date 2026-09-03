@@ -231,7 +231,7 @@ function PremiumInner() {
             </span>
           </h1>
           <p className="mt-3 text-sm md:text-base font-light max-w-md mx-auto" style={{ color: "var(--text-soft)" }}>
-            Le coach répond <strong style={{ color: "var(--exp-encre)" }}>sans plafond de messages</strong>, le catalogue s’ouvre en entier, et des missions en plus s’ajoutent à tes journées.
+            Le coach répond <strong style={{ color: "var(--exp-encre)" }}>sans plafond de messages</strong>, le catalogue s’ouvre en entier, et des missions s’ajoutent à tes journées.
             {VENTE_OUVERTE ? (
               <>
                 <br className="hidden md:block" /> <strong style={{ color: "var(--exp-encre)" }}>3 jours gratuits</strong>{" "}· 0 € aujourd&apos;hui · annule en 1 clic.

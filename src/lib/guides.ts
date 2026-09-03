@@ -271,9 +271,9 @@ const REPLIQUES = {
     sasha:  (c: ContexteVoix) => `Salut${c.pseudo ? ` ${c.pseudo}` : ""} 👋`,
   },
   "accueil.invite": {
-    commun: "Demande-moi n’importe quoi, ou dis-moi où tu veux aller dans l’app.",
-    nora:   "Pose-moi ta question, ou dis-moi simplement où tu veux aller dans l’app.",
-    sasha:  "Demande-moi ce que tu veux, ou dis-moi où aller dans l’app.",
+    commun: "Je t’écoute.",
+    nora:   "Je t’écoute.",
+    sasha:  "Vas-y, je t’écoute.",
   },
 
   /* ════════════════════════════════════════════════════════════════
@@ -1237,7 +1237,7 @@ export function nomGuide(guide: GuideRef): string {
 /** La ligne sous le nom. Elle dit ce qu'est cette personne pour toi, pas
  *  ce qu'elle sait faire. */
 export function roleGuide(guide: GuideRef): string {
-  return guide ? "Ton Guide Vaiiya" : "Ton assistant, partout dans l’app";
+  return guide ? "Ton Guide Vaiiya" : "Ton assistant Vaiiya";
 }
 
 /* ── La variation de ton envoyée au modèle ─────────────────────────────

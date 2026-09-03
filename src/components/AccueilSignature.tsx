@@ -96,8 +96,7 @@ export default function AccueilSignature({
   const nbPremiumTotal = nbPremiumJour + nbPremiumSemaine;
   const offrePremium = majuscule(
     `${enLettres(nbPremiumTotal)} mission${nbPremiumTotal > 1 ? "s" : ""} Premium : ` +
-      `${enLettres(nbPremiumJour)} chaque jour, ${enLettres(nbPremiumSemaine)} dans la semaine. ` +
-      `Jusqu’à ${PLAFOND_JOUR_PREMIUM} EXP par jour.`
+      `${enLettres(nbPremiumJour)} chaque jour, ${enLettres(nbPremiumSemaine)} dans la semaine.`
   );
 
   return (
@@ -205,7 +204,7 @@ export default function AccueilSignature({
             initial={reduce ? false : { opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.45, ease: "easeOut" }}
-            aria-label="Découvrir Vaiiya Premium"
+            aria-label="Vaiiya Premium"
           >
             <Image
               src="/premium/vaiiya-premium-home-v1.webp"
@@ -221,9 +220,9 @@ export default function AccueilSignature({
                 VAIYIA PREMIUM
               </span>
               <h2>Tout Vaiiya. Sans limites.</h2>
-              <p>Programmes exclusifs, assistant illimité et toutes les missions.</p>
+              <p>Le catalogue entier, l’assistant sans compteur, des missions en plus.</p>
               <button type="button" onClick={() => onNavigate("/premium")}>
-                {VENTE_OUVERTE ? `Découvrir · ${prix}` : "Découvrir"}
+                {VENTE_OUVERTE ? `Essayer · ${prix}` : "Voir Premium"}
               </button>
             </div>
           </motion.div>
@@ -234,8 +233,8 @@ export default function AccueilSignature({
           <div className={styles.premiumHeading}>
             <span className={styles.premiumSeal} aria-hidden="true" />
             <span className={styles.premiumHeadingCopy}>
-              <strong>Un autre terrain de jeu</strong>
-              <small>Des missions supplémentaires, jamais obligatoires.</small>
+              <strong>Des missions en plus</strong>
+              <small>Jamais obligatoires.</small>
             </span>
             <span className={styles.premiumBonus}>
               <strong>+{expPremiumJour}</strong>
