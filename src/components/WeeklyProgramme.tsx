@@ -12,7 +12,7 @@ import { useAuth } from "@/context/AuthContext";
 import WorkoutGuideModal from "@/components/WorkoutGuideModal";
 import {
   ensureWeek, regenerateWeek, setDayStatus, ctxFromLieu, dayTitle, persistLieu, loadLieu,
-  weekDatesForOffset, weekOffsetOf, weekdayIndex, todayWeekIndex,
+  weekDatesForOffset, weekOffsetOf, weekdayIndex, todayWeekIndex, parDate,
   type PlanningDay, type GenInput,
 } from "@/lib/planning";
 
@@ -555,7 +555,14 @@ export default function WeeklyProgramme() {
     return <HomeEquipQuestion onChoose={chooseHomeEquip} onBack={resetLocation} />;
   }
 
-  const currentDay = days?.[selectedDay];
+  /* `selectedDay` est un curseur d'ÉCRAN (quelle colonne est choisie) ; le
+     jour, lui, se cherche par sa DATE. Le tableau rendu par `ensureWeek` ne
+     garantit ni sept entrées ni leur ordre dès qu'un jour peut manquer. */
+  const semaineDates = weekDatesForOffset(weekOffset);
+  const parJour = parDate(days);
+  /* Type explicite : l'indexation d'un Record rend `PlanningDay` alors
+     qu'elle peut ne rien trouver. On garde la vérité dans le type. */
+  const currentDay: PlanningDay | undefined = parJour[semaineDates[selectedDay]];
 
   const getDayFromX = (clientX: number): number => {
     const rect = trackRef.current?.getBoundingClientRect();

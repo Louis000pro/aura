@@ -353,6 +353,30 @@ export async function fetchRange(userId: string, dates: string[]): Promise<Recor
   return out;
 }
 
+/**
+ * Indexe une liste de jours PAR DATE.
+ *
+ * ⚠️ C'EST LA SEULE FAÇON D'ALLER CHERCHER UN JOUR, ET LE TABLEAU N'EN EST
+ * PAS UNE. `ensureWeek` rend `dates.map(...).filter(Boolean)` : le jour
+ * qu'on n'a pas ne laisse pas de trou, il RACCOURCIT le tableau, donc tous
+ * les jours suivants glissent d'un cran. Aujourd'hui ça ne se voit pas,
+ * parce qu'`ensureWeek` écrit ce qui manque et rend donc toujours sept
+ * lignes dans l'ordre du lundi. Les deux garanties qui tiennent ce silence
+ * vont tomber : l'écriture à la lecture s'arrête, et une même date pourra
+ * porter deux lignes (une séance et son supplément). Une position ne veut
+ * alors plus rien dire ; une date, si.
+ *
+ * Corollaire : deux lignes de même date écraseraient l'une l'autre ici.
+ * C'est voulu tant que `UNIQUE (user_id, date)` existe ; le jour où elle
+ * tombe, c'est cette fonction qui devient une liste par date, à un seul
+ * endroit.
+ */
+export function parDate(days: PlanningDay[] | null | undefined): Record<string, PlanningDay> {
+  const out: Record<string, PlanningDay> = {};
+  for (const d of days ?? []) out[d.date] = d;
+  return out;
+}
+
 /** Vrai si le jour porte une vraie séance (ni vide, ni Repos). */
 export function hasSeance(day: PlanningDay | null | undefined): day is PlanningDay {
   return !!day && day.type.toLowerCase() !== "repos" && day.exerciseList.length > 0;

@@ -53,7 +53,8 @@ import {
 } from "@/lib/adviceArticles";
 import {
   ensureWeek, setDayStatus, saveDay, hasSeance, readLieu, loadLieu, readVariant, ctxFromLieu,
-  weekDates, weekDatesForOffset, todayYmd, todayWeekIndex, weekOffsetOf, dayTitle, normalizeExercises,
+  weekDates, weekDatesForOffset, todayYmd, weekOffsetOf, dayTitle, normalizeExercises,
+  parDate, weekdayIndex, prochainsJours,
   dayLabelLong, PLANNING_TYPE_BY_CATEGORY,
   type PlanningDay, type GenInput, type Ctx,
 } from "@/lib/planning";
@@ -923,13 +924,17 @@ function ForkCard({ kind, count, onClick }: {
    ③ Ma semaine — 7 pastilles + « Organiser ». Une phrase qui raconte,
    pas un tableau.
    ════════════════════════════════════════════════════════════════════ */
-function WeekStrip({ week, todayIdx, onOrganise }: {
+function WeekStrip({ week, dates, today, onOrganise }: {
   week: PlanningDay[] | null;
-  todayIdx: number;
+  /** Les sept dates affichées, du lundi au dimanche. C'est ELLES qui font la
+   *  colonne : le tableau `week` ne garantit ni sept entrées ni leur ordre. */
+  dates: string[];
+  today: string;
   onOrganise: () => void;
 }) {
+  const parJour = useMemo(() => parDate(week), [week]);
   const doneCount = week?.filter((d) => d.status === "done").length ?? 0;
-  const todayDay = week?.[todayIdx] ?? null;
+  const todayDay = parJour[today] ?? null;
 
   let story: React.ReactNode = null;
   if (week) {
@@ -963,15 +968,18 @@ function WeekStrip({ week, todayIdx, onOrganise }: {
 
       <div className="flex gap-1.5">
         {DAY_LETTERS.map((letter, i) => {
-          const d = week?.[i] ?? null;
-          const isToday = i === todayIdx;
+          const date = dates[i];
+          const d = parJour[date] ?? null;
+          /* Comparaison de chaînes : en YYYY-MM-DD l'ordre alphabétique EST
+             l'ordre chronologique. Pas de Date à construire pour ça. */
+          const isToday = date === today;
           const isDone = d?.status === "done";
           const isSeance = hasSeance(d);
-          const isPast = i < todayIdx;
+          const isPast = date < today;
           const art = isSeance ? resolveArt({ title: `${d!.title} ${d!.type}` }) : null;
 
           return (
-            <button key={i} onClick={onOrganise}
+            <button key={date} onClick={onOrganise}
               aria-label={`${DAY_FULL[i]}, ${isSeance ? dayTitle(d!) : "repos"}`}
               className="relative flex-1 overflow-hidden cursor-pointer border-none p-0 block"
               style={{
@@ -1679,7 +1687,8 @@ function ManageSheet({ session, week, onClose, onEdit, onDelete, onVisibilityCha
   const [vue, setVue] = useState<"menu" | "jours" | "exos">("menu");
   const exos = exosDeLaSeance(session);
   const dates = weekDates();
-  const todayIdx = todayWeekIndex();
+  const today = todayYmd();
+  const parJour = useMemo(() => parDate(week), [week]);
 
   const retour = (
     <div className="flex items-center gap-2 px-5 pt-1 pb-2">
@@ -1744,8 +1753,8 @@ function ManageSheet({ session, week, onClose, onEdit, onDelete, onVisibilityCha
             <div className="px-5 pb-4">
               {DAY_FULL.map((nom, i) => {
                 const date = dates[i];
-                const jour = week?.[i] ?? null;
-                const passe = i < todayIdx;
+                const jour = parJour[date] ?? null;
+                const passe = date < today;
                 const prise = hasSeance(jour);
                 const faite = jour?.status === "done";
                 const bloque = passe || faite;
@@ -1756,7 +1765,7 @@ function ManageSheet({ session, week, onClose, onEdit, onDelete, onVisibilityCha
                     className="w-full flex items-center gap-3 py-2.5 text-left border-none bg-transparent"
                     style={{ opacity: bloque ? 0.38 : 1, cursor: bloque ? "default" : "pointer" }}>
                     <span className="w-[42px] text-[11px] font-semibold flex-shrink-0"
-                      style={{ color: i === todayIdx ? "var(--accent)" : "var(--text-2)" }}>
+                      style={{ color: date === today ? "var(--accent)" : "var(--text-2)" }}>
                       {nom.slice(0, 3)}
                     </span>
                     <span className="flex-1 min-w-0 text-[12.5px] font-semibold truncate"
@@ -1766,7 +1775,7 @@ function ManageSheet({ session, week, onClose, onEdit, onDelete, onVisibilityCha
                     {!bloque && (
                       <span className="text-[10px] font-bold flex-shrink-0"
                         style={{ color: prise ? "#EF9F27" : "var(--accent)" }}>
-                        {prise ? "Remplacer" : i === todayIdx ? "Aujourd’hui" : "Choisir"}
+                        {prise ? "Remplacer" : date === today ? "Aujourd’hui" : "Choisir"}
                       </span>
                     )}
                   </motion.button>
@@ -2755,9 +2764,9 @@ const BALANCE_BUCKET: Record<Family, string> = {
 const fmtDay = (ymd: string) =>
   new Date(ymd + "T00:00:00").toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
 
-function SemaineSheet({ week, todayIdx, fetchWeekAt, onClose, onStartDay, onAsk, onAddSession, onMove }: {
+function SemaineSheet({ week, today, fetchWeekAt, onClose, onStartDay, onAsk, onAddSession, onMove }: {
   week: PlanningDay[] | null;
-  todayIdx: number;
+  today: string;
   fetchWeekAt: (offset: number) => Promise<PlanningDay[] | null>;
   onClose: () => void;
   onStartDay: (day: PlanningDay) => void;
@@ -2771,13 +2780,20 @@ function SemaineSheet({ week, todayIdx, fetchWeekAt, onClose, onStartDay, onAsk,
   const [loading, setLoading] = useState(false);
   const [openIdx, setOpenIdx] = useState<number | null>(null);
 
+  /* Les sept dates de la semaine regardée, et ce qu'on a trouvé pour chacune.
+     Les index qui restent (`openIdx`, `dragIdx`, `hoverIdx`, `rowRefs`) sont
+     des positions de LIGNE À L'ÉCRAN, pas des clés de donnée : ils désignent
+     la rangée qu'on ouvre ou qu'on survole, et ça reste juste. */
+  const wd = weekDatesForOffset(offset);
+  const parJour = useMemo(() => parDate(days), [days]);
+
   /* ── Drag & drop : déplacer une séance d'un jour à l'autre ── */
   const rowRefs = useRef<(HTMLDivElement | null)[]>([]);
   const [dragIdx, setDragIdx] = useState<number | null>(null);
   const [hoverIdx, setHoverIdx] = useState<number | null>(null);
 
   const canDrop = (from: number, to: number) => {
-    const t = days?.[to];
+    const t = parJour[wd[to]];
     return to !== from && !!t && t.status !== "done" && t.date >= todayYmd();
   };
   const hoverFromY = (y: number): number | null => {
@@ -2796,7 +2812,8 @@ function SemaineSheet({ week, todayIdx, fetchWeekAt, onClose, onStartDay, onAsk,
     const to = hoverIdx;
     setDragIdx(null); setHoverIdx(null);
     if (to === null || !canDrop(i, to) || !days) return;
-    const a = days[i], b = days[to];
+    const a = parJour[wd[i]], b = parJour[wd[to]];
+    if (!a || !b) return;
     // Échange des contenus (les dates restent aux jours) ; tout redevient « prévu ».
     const swap = (x: PlanningDay, y2: PlanningDay): PlanningDay => ({
       ...x, type: y2.type, title: y2.title, difficulty: y2.difficulty,
@@ -2804,7 +2821,7 @@ function SemaineSheet({ week, todayIdx, fetchWeekAt, onClose, onStartDay, onAsk,
       status: "planned",
     });
     const newA = swap(a, b), newB = swap(b, a);
-    setDays(days.map((d, k) => (k === i ? newA : k === to ? newB : d)));
+    setDays(days.map((d) => (d.date === newA.date ? newA : d.date === newB.date ? newB : d)));
     const msg = hasSeance(newA) ? "Séances échangées ✓" : `${dayTitle(newB)} → ${DAY_FULL[to]} ✓`;
     void onMove(newA, newB, msg);
   };
@@ -2825,7 +2842,6 @@ function SemaineSheet({ week, todayIdx, fetchWeekAt, onClose, onStartDay, onAsk,
     setOffset(next);
   };
 
-  const wd = weekDatesForOffset(offset);
   const rangeLabel = `${fmtDay(wd[0])} – ${fmtDay(wd[6])}`;
   const weekTag = offset === 0 ? "Cette semaine" : offset === 1 ? "Semaine prochaine" : `Dans ${offset} sem.`;
 
@@ -2902,11 +2918,11 @@ function SemaineSheet({ week, todayIdx, fetchWeekAt, onClose, onStartDay, onAsk,
         )}
         {DAY_ABBR.map((abbr, i) => (
           <DayRow
-            key={`${offset}-${i}`}
-            day={days?.[i] ?? null}
+            key={wd[i]}
+            day={parJour[wd[i]] ?? null}
             idx={i}
             abbr={abbr}
-            isToday={offset === 0 && i === todayIdx}
+            isToday={wd[i] === today}
             open={openIdx === i}
             dropHover={hoverIdx === i && dragIdx !== null}
             dimmed={dragIdx !== null && dragIdx !== i && hoverIdx !== i}
@@ -3208,7 +3224,11 @@ export default function ProgressionPage() {
   const [elan, setElan] = useState<ElanData | null>(null);
 
   const today = todayYmd();
-  const todayIdx = todayWeekIndex();
+  /* Les sept dates de la semaine affichée. On les DÉRIVE de `today` au lieu
+     de relire l'horloge : le calcul devient une pure fonction de sa
+     dépendance, donc il suit exactement la cadence de `today` au passage de
+     minuit, et il n'y a rien d'impur dans le mémo. */
+  const semaineDates = useMemo(() => weekDates(new Date(today + "T00:00:00")), [today]);
 
   /* ── Charge la semaine — même recette que WeeklyProgramme (idempotent) ── */
   const loadWeek = useCallback(async () => {
@@ -3295,7 +3315,8 @@ export default function ProgressionPage() {
   }, [loadWeek]);
 
   /* ── État du héros ── */
-  const todayDay = week?.[todayIdx] ?? null;
+  const parJour = useMemo(() => parDate(week), [week]);
+  const todayDay = parJour[today] ?? null;
   const heroState: HeroState = !heroReady ? "loading"
     : needsSetup ? "setup"
     : todayDay?.status === "done" ? "done"
@@ -3305,14 +3326,17 @@ export default function ProgressionPage() {
   /* Prochaine séance de la semaine (état repos) — « Jambes · demain » */
   const nextLabel = useMemo(() => {
     if (!week) return null;
-    for (let i = todayIdx + 1; i < 7; i++) {
-      if (hasSeance(week[i]) && week[i].status !== "done") {
-        const when = i === todayIdx + 1 ? "demain" : DAY_FULL[i];
-        return `${dayTitle(week[i])} · ${when}`;
+    const demain = prochainsJours(2)[1];
+    for (const date of semaineDates) {
+      if (date <= today) continue;
+      const jour = parJour[date];
+      if (hasSeance(jour) && jour.status !== "done") {
+        const when = date === demain ? "demain" : DAY_FULL[weekdayIndex(date)];
+        return `${dayTitle(jour)} · ${when}`;
       }
     }
     return null;
-  }, [week, todayIdx]);
+  }, [week, parJour, semaineDates, today]);
 
   /* Durée / kcal de la séance faite aujourd'hui (une seule petite requête) */
   useEffect(() => {
@@ -3781,7 +3805,7 @@ export default function ProgressionPage() {
           }}
         >
           <div data-tour-anchor="prog-semaine" className="vy-filet">
-            <WeekStrip week={week} todayIdx={todayIdx} onOrganise={() => setSheet("semaine")} />
+            <WeekStrip week={week} dates={semaineDates} today={today} onOrganise={() => setSheet("semaine")} />
           </div>
           {elan && (
             <div data-tour-anchor="prog-elan" className="vy-filet">
@@ -3796,7 +3820,7 @@ export default function ProgressionPage() {
         {sheet === "semaine" && (
           <SemaineSheet
             week={week}
-            todayIdx={todayIdx}
+            today={today}
             fetchWeekAt={fetchWeekAt}
             onClose={() => { setSheet(null); void loadWeek(); }}
             onStartDay={(d) => { setSheet(null); startDay(d); }}
