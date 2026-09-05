@@ -7,6 +7,12 @@
    séance ou un repos. `seances_prevues` avait été écarté pour la même
    raison (une ligne « repos » y serait un contresens).
 
+   ✅ APPLIQUÉE le 2026-09-05, à 18 h 50 UTC, et dans le bon ordre :
+   `main` avait rattrapé la branche une demi-heure plus tôt, donc la
+   production tournait déjà le code transitoire. L'avertissement qui
+   suit est conservé parce qu'il explique POURQUOI cet ordre, et parce
+   qu'il vaudra tel quel pour le retrait de la couche transitoire.
+
    ⚠️ ⚠️ NE PAS APPLIQUER AVANT QUE LE CODE TRANSITOIRE SOIT DÉPLOYÉ
    PARTOUT, PRODUCTION COMPRISE. Ce n'est pas une précaution de style,
    c'est mesuré : `main` (la production) lit `planning_days`, demande la
