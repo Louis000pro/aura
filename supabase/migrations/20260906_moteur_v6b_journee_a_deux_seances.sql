@@ -76,3 +76,34 @@ begin
     end if;
   end loop;
 end $$;
+
+/* ─────────────── LE POINT DE ROLLBACK ───────────────
+
+   ⚠️ IL N'EST VALABLE QUE TANT QU'AUCUNE DATE NE PORTE DEUX SÉANCES. La
+   requête ci-dessous le dit, et c'est elle qu'il faut lire AVANT
+   d'espérer revenir en arrière :
+
+     select user_id, date, count(*)
+       from public.intentions_entrainement
+      where date is not null
+      group by user_id, date having count(*) > 1;
+
+   Si elle rend une seule ligne, le retour en arrière est fermé : une
+   contrainte d'unicité ne s'ajoute pas sur des données qui la violent, et
+   la seule façon de la remettre serait de SUPPRIMER une séance que
+   quelqu'un a posée. On ne le fera pas.
+
+   Tant qu'elle est vide, le retour complet tient en deux gestes, dans cet
+   ordre (la base d'abord, parce que l'ancien code EXIGE la contrainte
+   pour son `on_conflict`) :
+
+     drop index if exists public.uniq_repos_par_date;
+     alter table public.intentions_entrainement
+       add constraint intentions_user_date_key unique (user_id, date);
+
+   puis, côté code, revenir à `c8ac8dd` (le dernier commit avant V6b).
+
+   ÉTAT DE RÉFÉRENCE PRIS JUSTE AVANT L'APPLICATION :
+     244 lignes · empreinte md5 ba2a890b373a31cdf0e88c82e94b9f1c
+     (235 prevue · 9 faite · 0 passee · 2 repos · 25 comptes)
+*/

@@ -750,7 +750,7 @@ export default function WeeklyProgramme() {
         <AnimatePresence>
           {launchDay && (
             <WorkoutGuideModal
-              sessionId={`planning-${launchDay.date}`}
+              sessionId={`planning-${launchDay.id ?? launchDay.date}`}
               title={dayTitle(launchDay)}
               accent="var(--accent)"
               duration={launchDay.type === "HIIT" ? 30 : 45}

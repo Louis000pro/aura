@@ -3645,7 +3645,7 @@ export default function ProgressionPage() {
   const startDay = (d: PlanningDay) => {
     if (!hasSeance(d)) return;
     setActiveWorkout({
-      id: `planning-${d.date}`,
+      id: `planning-${d.id ?? d.date}`,
       title: dayTitle(d),
       duration: d.type === "HIIT" ? 30 : 45,
       difficulty: d.difficulty,
