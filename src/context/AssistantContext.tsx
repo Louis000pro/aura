@@ -31,7 +31,7 @@ import { useGuideActif } from "@/context/GuideContext";
 import { PLANS } from "@/lib/plans";
 import {
   resolveWhen, dayLabel, dayLabelLong, dayTitle, fetchDay, fetchRange, hasSeance, saveDay, prochainsJours,
-  ctxFromLieu, readLieu, loadLieu, persistLieu, readVariant, weekDates, todayYmd, normalizeExercises, previewWeek,
+  ctxFromLieu, readLieu, loadLieu, persistLieu, readVariant, weekDates, todayYmd, normalizeExercises, previewWeek, libererJours,
   PLANNING_TYPE_BY_CATEGORY, type PlanningDay, type GenInput,
 } from "@/lib/planning";
 
@@ -106,6 +106,11 @@ type PendingPlan = {
   meta: string;             // « Force · 5 mouvements · en salle »
   cta: string;              // « Remplacer jeudi »
   writes: PlanningDay[];    // jours à écrire en base à la confirmation
+  /* Jours à LIBÉRER (plus aucune intention) avant d'écrire. Depuis V5, un
+     déplacement vide son jour de départ au lieu d'y poser un « Repos » que
+     personne n'a choisi, et « refais ma semaine » retire le mobilier
+     automatique de la semaine sans toucher aux jours posés à la main. */
+  liberer?: string[];
   preview: PlanningDay | null; // jour dont on prévisualise les exercices
   /** Le jour visé peut-il être changé depuis la carte ? (faux pour la semaine entière) */
   retargetable?: boolean;
@@ -649,9 +654,14 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       // le premier jour de repos à venir de la semaine (après le jour source
       // de préférence), plutôt que de renvoyer une question.
       if (!to) {
+        /* ⚠️ Depuis V5, un jour LIBRE est le plus souvent un jour SANS
+           AUCUNE LIGNE : c'est justement ce que « aucune ligne = rien de
+           prévu » veut dire. Exiger une ligne ici (l'ancien `!!day`)
+           rendrait « déplace ma séance » impossible pour presque tout le
+           monde, et l'échec serait muet. */
         const rest = (d: string) => {
           const day = weekMap[d];
-          return !!day && day.status !== "done" && !hasSeance(day);
+          return !day || (day.status !== "done" && !hasSeance(day));
         };
         to = weekDates().find((d) => d > from! && rest(d))
           ?? weekDates().find((d) => d >= todayYmd() && d !== from && rest(d))
@@ -666,14 +676,14 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
         return;
       }
       const movedDay: PlanningDay = { ...src, date: to, status: "planned" };
-      const restDay: PlanningDay = { date: from, type: "Repos", title: "", difficulty: src.difficulty, location: src.location, exerciseList: [], sessionId: null, status: "planned" };
       const ecrase = hasSeance(weekMap[to]) ? dayTitle(weekMap[to]) : null;
       const t = texteCartePlan(movedDay, ecrase, "Déplacer vers");
       setPendingPlan({
         ...t,
         kicker: `${CAP(dayLabelLong(from))} → ${dayLabelLong(to)}${ecrase ? ` · à la place de « ${ecrase} »` : ""}`,
         title: dayTitle(src),
-        writes: [movedDay, restDay],
+        writes: [movedDay],
+        liberer: [from],
         preview: movedDay,
         retargetable: true,
       });
@@ -720,8 +730,14 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       };
       const dates = weekDates();
       const existing = await fetchRange(user.id, dates);
+      /* ⚠️ On n'écrit QUE des séances : reposer les jours « Repos » de la
+         semaine générée recréerait le mobilier automatique que V5 retire.
+         Les jours sans séance sont libérés, et un jour libre veut dire
+         libre. Les jours déjà faits et le passé ne bougent pas. */
+      const aVenir = dates.filter((d) => d >= todayYmd() && existing[d]?.status !== "done");
       const writes = previewWeek(gen, dates)
-        .filter((d) => d.date >= todayYmd() && existing[d.date]?.status !== "done");
+        .filter((d) => aVenir.includes(d.date))
+        .filter(hasSeance);
       const nbSeances = writes.filter(hasSeance).length;
       if (nbSeances === 0) {
         say(voix(guideRef.current, "impasse.regen_semaine_finie"));
@@ -737,6 +753,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
         meta: `Dès aujourd’hui · ${nbSeances} séance${nbSeances > 1 ? "s" : ""}${adjustLabel}`,
         cta: "Remplacer ma semaine",
         writes,
+        liberer: aVenir,
         preview: writes.find(hasSeance) ?? null,
       });
       return;
@@ -1480,7 +1497,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
         exerciseList: normalizeExercises(s.exerciseList),
         sessionId: s.id,
         status: "planned",
-      });
+      }, "guide");
       if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent("programme-updated", { detail: { date: jour } }));
       setPendingSeance(null);
       setMemoryNotice(`Gardée et programmée · ${dayLabelLong(jour)} ✓`);
@@ -1521,9 +1538,6 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       const cible = prev.preview.date;
       const writes = prev.writes
         .map((w) => (w.date === cible ? { ...w, date: ymd } : w))
-        // Un déplacement écrit AUSSI un « Repos » sur le jour de départ. Si on
-        // ramène la séance sur ce jour-là, les deux écritures viseraient la même
-        // date et le Repos, écrit en dernier, effacerait la séance.
         .filter((w, i, all) => all.findIndex((x) => x.date === w.date) === i);
       const preview = { ...prev.preview, date: ymd };
       // Le libellé doit suivre : il nomme le jour et ce qu'on y remplace. On ne
@@ -1537,7 +1551,14 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
   const confirmPlan = useCallback(async (garderAussi?: boolean) => {
     if (!user?.id || !pendingPlan) return;
     try {
-      for (const w of pendingPlan.writes) await saveDay(user.id, w);
+      /* On libère AVANT d'écrire, et jamais un jour qu'on est en train
+         d'écrire : ramener une séance sur son propre jour de départ
+         l'effacerait sinon. */
+      const aLiberer = (pendingPlan.liberer ?? []).filter((d) => !pendingPlan.writes.some((w) => w.date === d));
+      await libererJours(user.id, aLiberer);
+      // C'est le Guide qui pose ces jours : ils sont donc protégés de la
+      // prochaine régénération automatique, comme ceux posés à la main.
+      for (const w of pendingPlan.writes) await saveDay(user.id, w, "guide");
       // On transporte la date de destination → le planning saute sur la bonne
       // semaine/jour pour que la modif soit visible (même en semaine suivante).
       const focusDate = pendingPlan.preview?.date ?? pendingPlan.writes[0]?.date ?? null;

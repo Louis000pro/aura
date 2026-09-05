@@ -33,7 +33,7 @@ export type Nature = "seance" | "repos";
 
 /**
  * Le dernier auteur DELIBERE de la ligne. La regeneration ne touchera que
- * `systeme` : aujourd'hui `regenerateWeek` efface sans distinction le
+ * `systeme` : avant V5, `regenerateWeek` effaçait sans distinction le
  * remplissage automatique et les jours qu'on a poses soi-meme.
  */
 export type Origine = "systeme" | "utilisateur" | "guide";
@@ -262,6 +262,22 @@ function generateWeek(gen: GenInput, dates: string[]): PlanningDay[] {
   });
 }
 
+/**
+ * L'INSTANCE d'une étape du cycle : sa liste d'exercices concrète.
+ *
+ * ⚠️ C'est le troisième étage du modèle, et il se matérialise TARD :
+ * l'étape (« Push ») est stable des mois, sa liste d'exercices se fabrique
+ * au moment de faire la séance et reste jetable tant qu'elle n'a pas été
+ * consommée. C'est un calcul local et instantané, aucune écriture, aucun
+ * appel d'IA : rien n'oblige à l'écrire d'avance, et écrire d'avance est
+ * précisément ce qui figeait le programme.
+ */
+export function instanceDeLEtape(nomEtape: string, gen: GenInput): Exercise[] {
+  const rng = mulberry32(hashStr(`${gen.seed}-${gen.ctx}-${nomEtape}-v${gen.variant}`));
+  const bank = EX[gen.ctx][nomEtape] ?? EX[gen.ctx]["Full Body"];
+  return shuffleArr(bank, rng).slice(0, 5).map((p) => toExercise(p, repSchemeFor(gen.goals)));
+}
+
 /** Génère la semaine SANS rien écrire — pour préparer une carte de
     confirmation (l'écriture n'arrive qu'au clic, via saveDay). */
 export function previewWeek(gen: GenInput, dates: string[] = weekDates()): PlanningDay[] {
@@ -304,7 +320,13 @@ function rowToDay(r: PlanningRow): PlanningDay {
   };
 }
 
-function dayToRow(userId: string, d: PlanningDay) {
+/**
+ * ⚠️ `origine` EST UN ARGUMENT OBLIGATOIRE, ET C'EST VOULU (V5). C'est le
+ * dernier auteur DÉLIBÉRÉ de la ligne, et lui seul décide si la ligne est
+ * du mobilier qu'on peut remplacer ou une intention qu'on doit protéger.
+ * Un défaut cacherait la question à l'endroit exact où il faut se la poser.
+ */
+function dayToRow(userId: string, d: PlanningDay, origine: Origine) {
   return {
     user_id: userId,
     date: d.date,
@@ -315,51 +337,73 @@ function dayToRow(userId: string, d: PlanningDay) {
     exercise_list: d.exerciseList,
     session_id: d.sessionId,
     status: d.status,
+    nature: natureDe(d),
+    origine,
     updated_at: new Date().toISOString(),
   };
 }
 
 /**
- * Charge le planning d'une semaine, en l'AMORÇANT si des jours manquent.
- * Idempotent : si deux composants l'appellent en même temps, l'upsert
- * `ignoreDuplicates` évite les doublons (contrainte UNIQUE user/date).
+ * Lit une semaine. C'EST TOUT : elle n'écrit plus rien.
+ *
+ * ⚠️ C'ÉTAIT `ensureWeek`, ET LE NOM DISAIT EXACTEMENT LE PROBLÈME. Ouvrir
+ * son planning écrivait sept lignes en base, dont les jours de repos que
+ * personne n'avait posés : le planning était à 95 % du mobilier
+ * automatique (mesuré : 469 lignes, dont 227 « Repos » et 447 jamais
+ * retouchées). Désormais l'absence de ligne veut dire ce qu'elle dit :
+ * rien de prévu ce jour-là.
+ *
+ * ⚠️ ELLE REND UN TABLEAU CREUX, DONC ON N'Y ACCÈDE QUE PAR `parDate`.
+ * Un jour sans ligne ne laisse pas de trou dans le tableau, il le
+ * RACCOURCIT : la garantie « toujours sept lignes dans l'ordre du lundi »
+ * vient de tomber avec l'écriture à la lecture. C'est exactement le
+ * scénario que V1 avait préparé.
  */
-export async function ensureWeek(userId: string, gen: GenInput, dates: string[] = weekDates()): Promise<PlanningDay[]> {
-  const supabase = createClient();
-  const { data } = await supabase
-    .from("planning_days")
-    .select("date, type, title, difficulty, location, exercise_list, session_id, status")
-    .eq("user_id", userId)
-    .in("date", dates);
-
-  const existing = new Map<string, PlanningDay>(
-    ((data ?? []) as PlanningRow[]).map((r) => [r.date, rowToDay(r)]),
-  );
-  const missing = dates.filter((d) => !existing.has(d));
-
-  if (missing.length > 0) {
-    const generated = generateWeek(gen, dates);
-    const toInsert = generated.filter((d) => missing.includes(d.date)).map((d) => dayToRow(userId, d));
-    await supabase.from("planning_days").upsert(toInsert, { onConflict: "user_id,date", ignoreDuplicates: true });
-    for (const d of generated) if (missing.includes(d.date)) existing.set(d.date, d);
-  }
-
-  return dates.map((d) => existing.get(d)!).filter(Boolean);
+export async function lireSemaine(userId: string, dates: string[] = weekDates()): Promise<PlanningDay[]> {
+  const map = await fetchRange(userId, dates);
+  return dates.map((d) => map[d]).filter(Boolean);
 }
 
 /**
- * Régénère la semaine : efface les jours « planned » (préserve l'historique
- * done/skipped) puis ré-amorce avec le `gen` fourni (nouveau variant ou lieu).
+ * Repose le mobilier automatique de la semaine, à la demande EXPLICITE de
+ * quelqu'un (le bouton « Refais ma semaine », le Guide).
+ *
+ * ⚠️ ELLE N'EFFACE QUE `origine = 'systeme'`. C'est toute la raison d'être
+ * de cette colonne : avant, un `delete where status='planned'` emportait
+ * sans distinction le remplissage automatique et les jours posés à la
+ * main. Une intention explicite ne se fait plus écraser par une
+ * régénération.
+ *
+ * ⚠️ ELLE N'ÉCRIT QUE LES SÉANCES, JAMAIS DE REPOS. Un repos est une
+ * intention qu'on pose, pas un trou qu'on remplit : reposer sept lignes
+ * dont quatre « Repos » recréerait exactement le mobilier que V5 retire.
+ * Les jours sans séance restent vides, et vides veut dire libre.
  */
-export async function regenerateWeek(userId: string, gen: GenInput, dates: string[] = weekDates()): Promise<PlanningDay[]> {
+export async function reposerLaSemaine(userId: string, gen: GenInput, dates: string[] = weekDates()): Promise<PlanningDay[]> {
   const supabase = createClient();
   await supabase
     .from("planning_days")
     .delete()
     .eq("user_id", userId)
     .eq("status", "planned")
+    .eq("origine", "systeme")
     .in("date", dates);
-  return ensureWeek(userId, gen, dates);
+
+  /* ⚠️ ON NE POSE QUE SUR LES JOURS RESTÉS LIBRES. Ce qui a survécu au
+     `delete` ci-dessus, ce sont précisément les jours qu'on doit
+     protéger : les séances déjà faites, et celles posées par la personne
+     ou par le Guide. Un `upsert` aveugle sur toutes les dates de la
+     semaine les écraserait, et l'écran ne montrerait rien de l'accident. */
+  const restant = await fetchRange(userId, dates);
+  const seances = generateWeek(gen, dates)
+    .filter(hasSeance)
+    .filter((d) => !restant[d.date]);
+  if (seances.length > 0) {
+    await supabase
+      .from("planning_days")
+      .upsert(seances.map((d) => dayToRow(userId, d, "systeme")), { onConflict: "user_id,date", ignoreDuplicates: true });
+  }
+  return lireSemaine(userId, dates);
 }
 
 /** Récupère un seul jour (sans amorçage). null si absent. */
@@ -392,19 +436,12 @@ export async function fetchRange(userId: string, dates: string[]): Promise<Recor
  * Indexe une liste de jours PAR DATE.
  *
  * ⚠️ C'EST LA SEULE FAÇON D'ALLER CHERCHER UN JOUR, ET LE TABLEAU N'EN EST
- * PAS UNE. `ensureWeek` rend `dates.map(...).filter(Boolean)` : le jour
+ * PAS UNE. `lireSemaine` rend `dates.map(...).filter(Boolean)` : le jour
  * qu'on n'a pas ne laisse pas de trou, il RACCOURCIT le tableau, donc tous
- * les jours suivants glissent d'un cran. Aujourd'hui ça ne se voit pas,
- * parce qu'`ensureWeek` écrit ce qui manque et rend donc toujours sept
- * lignes dans l'ordre du lundi. Les deux garanties qui tiennent ce silence
- * vont tomber : l'écriture à la lecture s'arrête, et une même date pourra
- * porter deux lignes (une séance et son supplément). Une position ne veut
- * alors plus rien dire ; une date, si.
- *
- * Corollaire : deux lignes de même date écraseraient l'une l'autre ici.
- * C'est voulu tant que `UNIQUE (user_id, date)` existe ; le jour où elle
- * tombe, c'est cette fonction qui devient une liste par date, à un seul
- * endroit.
+ * les jours suivants glissent d'un cran. Ce n'est plus une hypothèse depuis
+ * V5 : l'écriture à la lecture s'est arrêtée, donc une semaine rend
+ * couramment deux ou trois lignes au lieu de sept. `week[i]` et
+ * `days[selectedDay]` désignent maintenant le mauvais jour pour de bon.
  */
 export function parDate(days: PlanningDay[] | null | undefined): Record<string, PlanningDay> {
   const out: Record<string, PlanningDay> = {};
@@ -454,18 +491,44 @@ export function seanceNonFaite(day: PlanningDay | null | undefined, today: strin
   );
 }
 
-/** Enregistre / remplace un jour (utilisé par l'IA en Phase 2). */
-export async function saveDay(userId: string, day: PlanningDay): Promise<void> {
+/** Enregistre / remplace un jour. `origine` dit QUI l'a voulu. */
+export async function saveDay(userId: string, day: PlanningDay, origine: Origine): Promise<void> {
   const supabase = createClient();
-  await supabase.from("planning_days").upsert(dayToRow(userId, day), { onConflict: "user_id,date" });
+  await supabase.from("planning_days").upsert(dayToRow(userId, day, origine), { onConflict: "user_id,date" });
 }
 
-/** Met à jour le statut d'un jour (planned → done après une séance). */
-export async function setDayStatus(userId: string, date: string, status: DayStatus): Promise<void> {
+/** Libère un jour : plus aucune intention, donc rien de prévu. C'est ce qui
+ *  remplace le « Repos » qu'on écrivait sur le jour de départ d'un
+ *  déplacement, et qui affirmait un repos que personne n'avait choisi. */
+export async function libererJours(userId: string, dates: string[]): Promise<void> {
+  if (dates.length === 0) return;
   const supabase = createClient();
   await supabase
     .from("planning_days")
-    .update({ status, updated_at: new Date().toISOString() })
+    .delete()
+    .eq("user_id", userId)
+    .neq("status", "done")
+    .in("date", dates);
+}
+
+/**
+ * Met à jour le statut d'un jour (planned → done après une séance).
+ *
+ * ⚠️ ELLE POSE AUSSI `consommee_le`, ET SANS ÇA LE CURSEUR DU CYCLE NE
+ * PEUT PAS SE DÉRIVER : il s'ordonne par cette date, jamais par `date`,
+ * une intention non datée n'en ayant pas. V2 a rempli la colonne pour
+ * l'existant ; c'est ici qu'elle se tient à jour.
+ */
+export async function setDayStatus(userId: string, date: string, status: DayStatus): Promise<void> {
+  const supabase = createClient();
+  const maintenant = new Date().toISOString();
+  await supabase
+    .from("planning_days")
+    .update({
+      status,
+      consommee_le: status === "planned" ? null : maintenant,
+      updated_at: maintenant,
+    })
     .eq("user_id", userId)
     .eq("date", date);
 }

@@ -11,7 +11,7 @@ import { createClient } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import WorkoutGuideModal from "@/components/WorkoutGuideModal";
 import {
-  ensureWeek, regenerateWeek, setDayStatus, ctxFromLieu, dayTitle, persistLieu, loadLieu,
+  lireSemaine, reposerLaSemaine, setDayStatus, ctxFromLieu, dayTitle, persistLieu, loadLieu,
   weekDatesForOffset, weekOffsetOf, weekdayIndex, todayWeekIndex, parDate,
   type PlanningDay, type GenInput,
 } from "@/lib/planning";
@@ -396,7 +396,7 @@ export default function WeeklyProgramme() {
       });
   }, [user]);
 
-  /* ── Charge / amorce le planning de la semaine depuis la base ── */
+  /* ── Charge le planning de la semaine (lecture pure depuis V5) ── */
   const generate = useCallback(
     async (loc: "salle" | "maison" | null, equip: "halteres" | "poids" | null, force = false) => {
       if (!user || !profile) return;
@@ -413,7 +413,9 @@ export default function WeeklyProgramme() {
       setLoading(true);
       try {
         const dates = weekDatesForOffset(weekOffset);
-        const week = force ? await regenerateWeek(user.id, gen, dates) : await ensureWeek(user.id, gen, dates);
+        // ⚠️ Lire ne pose plus rien (V5) : seule la demande EXPLICITE de
+        // refaire la semaine écrit, et elle n'écrit que des séances.
+        const week = force ? await reposerLaSemaine(user.id, gen, dates) : await lireSemaine(user.id, dates);
         setDays(week);
         setError(null);
       } catch (e) {
@@ -556,7 +558,7 @@ export default function WeeklyProgramme() {
   }
 
   /* `selectedDay` est un curseur d'ÉCRAN (quelle colonne est choisie) ; le
-     jour, lui, se cherche par sa DATE. Le tableau rendu par `ensureWeek` ne
+     jour, lui, se cherche par sa DATE. Le tableau rendu par `lireSemaine` ne
      garantit ni sept entrées ni leur ordre dès qu'un jour peut manquer. */
   const semaineDates = weekDatesForOffset(weekOffset);
   const parJour = parDate(days);

@@ -15,6 +15,7 @@
    base, planning intact) se vérifie contre la vraie base, dans une
    transaction annulée.
    ════════════════════════════════════════════════════════════════════ */
+import { readFileSync } from "node:fs";
 import { etapesDuCycle, etapeSuivante, nomDeProgramme, POSITION_INITIALE } from "@/lib/programme";
 import { cycleDeReference, seancesDuCycle, previewWeek, weekDates } from "@/lib/planning";
 
@@ -121,6 +122,34 @@ verdict("nom · objectif connu", nomDeProgramme(["masse"]) === "Prise de masse",
 verdict("nom · ancien vocabulaire", nomDeProgramme(["prise_de_masse"]) === "Prise de masse", nomDeProgramme(["prise_de_masse"]));
 verdict("nom · aucun objectif", nomDeProgramme(null) === "Mon programme", nomDeProgramme(null));
 verdict("nom · liste vide", nomDeProgramme([]) === "Mon programme", nomDeProgramme([]));
+
+/* ── 6. Lire n'écrit plus rien ────────────────────────────────────────
+   ⚠️ Ce contrôle lit le SOURCE, et c'est volontaire. « Consulter sa
+   semaine n'écrit plus » est une propriété du CHEMIN de lecture, pas
+   d'une valeur : la seule façon de la tenir dans le temps est de vérifier
+   qu'aucune écriture n'y est réintroduite. C'est exactement la régression
+   qui repasserait inaperçue, puisqu'elle ne casse rien et ne se voit
+   qu'en base.                                                           */
+{
+  const source = readFileSync(new URL("../src/lib/planning.ts", import.meta.url), "utf8");
+  const corpsDe = (nom: string) => {
+    const debut = source.indexOf("export async function " + nom);
+    if (debut === -1) return null;
+    const suite = source.indexOf("\nexport ", debut + 10);
+    return source.slice(debut, suite === -1 ? source.length : suite);
+  };
+  const ECRITURES = [".insert(", ".upsert(", ".delete(", ".update("];
+  for (const nom of ["lireSemaine", "fetchDay", "fetchRange"]) {
+    const corps = corpsDe(nom);
+    const fautes = corps === null ? ["fonction introuvable"] : ECRITURES.filter((e) => corps.includes(e));
+    verdict("lecture pure · " + nom, fautes.length === 0, fautes.length ? "écrit : " + fautes.join(" ") : "aucune écriture");
+  }
+  verdict(
+    "l'ancien moteur a disparu · ensureWeek",
+    !source.includes("export async function ensureWeek"),
+    "plus exporté par planning.ts",
+  );
+}
 
 console.log("\n" + (echecs === 0 ? "Tout passe." : echecs + " échec(s)."));
 process.exit(echecs === 0 ? 0 : 1);

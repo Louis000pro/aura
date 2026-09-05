@@ -17,8 +17,10 @@
    source de vérité à partir de son activation.
 
    ⚠️ AUCUNE SÉANCE FUTURE N'EST ÉCRITE. Le programme est persisté dans
-   sa STRUCTURE : l'intention de fond d'un côté, le cycle de l'autre.
-   Ce fichier n'écrit jamais dans `planning_days`.
+   sa STRUCTURE : l'intention de fond d'un côté, le cycle de l'autre. La
+   seule écriture de `planning_days` de ce fichier est `consommerEtape`,
+   et elle arrive APRÈS la séance : c'est un fait qu'on enregistre, pas
+   une intention qu'on matérialise d'avance.
 
    ⚠️ LE CYCLE NE PORTE QUE LES SÉANCES, PAS LES JOURS DE REPOS.
    `REST_PATTERN` (dans `planning.ts`) dit sur quels jours de la SEMAINE
@@ -28,10 +30,10 @@
    train d'en sortir. Le repos redevient ce que le modèle en dit : une
    intention explicite et datée, ou rien.
 
-   ⚠️ PERSONNE N'APPELLE ENCORE CE FICHIER, et c'est voulu. Tant que V5
-   n'est pas activée, aucun écran ne crée de programme : c'est la
-   garantie la plus simple qu'il n'existe aucun changement visible, et
-   elle ne repose sur aucune promesse.
+   ⚠️ BRANCHÉ PAR V5 (2026-09-05). `/entrainement` appelle
+   `getOrCreateProgramme` à l'ouverture : c'est la seule écriture que la
+   lecture d'un écran autorise encore, elle n'arrive qu'une fois par
+   personne, et elle n'écrit ni séance ni date.
    ════════════════════════════════════════════════════════════════════ */
 
 import { createClient } from "@/lib/supabase";
@@ -318,6 +320,52 @@ export async function getOrCreateProgramme(userId: string): Promise<ProgrammeEtC
 }
 
 /**
+ * Referme une étape : la séance vient d'être faite, on écrit LE FAIT.
+ *
+ * ⚠️ C'EST LA SEULE ÉCRITURE DE `planning_days` DE TOUT CE FICHIER, ET
+ * ELLE ARRIVE APRÈS COUP. Rien n'est écrit quand on lit, rien n'est écrit
+ * quand on lance : la ligne naît au moment où la séance est terminée,
+ * datée du jour où elle a eu lieu. C'est exactement la différence entre
+ * une intention qu'on matérialise d'avance et un fait qu'on enregistre.
+ *
+ * ⚠️ LES DEUX RENVOIS SONT ÉCRITS, ET ILS NE DISENT PAS LA MÊME CHOSE.
+ * `programme_seance_id` dit D'OÙ VIENT LE CONTENU, `etape_consommee_id`
+ * dit QUELLE ÉTAPE EST REFERMÉE. Ici les deux valent la même étape parce
+ * que la personne a fait ce que le programme proposait ; le jour où elle
+ * fait autre chose « à la place », ils divergeront, et c'est pour ça
+ * qu'il y a deux colonnes et pas un booléen.
+ */
+export async function consommerEtape(
+  userId: string,
+  programmeId: string,
+  etapeId: string,
+  jour: { date: string; type: string; title: string; difficulty: string; location: string | null; exerciseList: unknown[] },
+): Promise<void> {
+  const supabase = createClient();
+  const maintenant = new Date().toISOString();
+  await supabase.from("planning_days").upsert({
+    user_id: userId,
+    date: jour.date,
+    type: jour.type,
+    title: jour.title,
+    difficulty: jour.difficulty,
+    location: jour.location,
+    exercise_list: jour.exerciseList,
+    session_id: null,
+    status: "done",
+    nature: "seance",
+    // La personne a délibérément fait cette séance : c'est elle l'auteur,
+    // pas le système qui l'avait proposée.
+    origine: "utilisateur",
+    programme_id: programmeId,
+    programme_seance_id: etapeId,
+    etape_consommee_id: etapeId,
+    consommee_le: maintenant,
+    updated_at: maintenant,
+  }, { onConflict: "user_id,date" });
+}
+
+/**
  * La prochaine étape du cycle pour quelqu'un, dérivée de son journal
  * d'intentions. Rend `null` s'il n'a pas de programme.
  *
@@ -329,7 +377,15 @@ export async function getOrCreateProgramme(userId: string): Promise<ProgrammeEtC
  */
 export async function prochaineEtape(userId: string): Promise<EtapeCycle | null> {
   const actif = await lireProgrammeActif(userId);
-  if (!actif || actif.cycle.length === 0) return null;
+  if (!actif) return null;
+  return etapeSuivanteDe(userId, actif);
+}
+
+/** La prochaine étape d'un programme DÉJÀ chargé : une requête, pas trois.
+ *  C'est cette forme qu'utilisent les écrans, qui viennent d'appeler
+ *  `getOrCreateProgramme` et n'ont aucune raison de le relire. */
+export async function etapeSuivanteDe(userId: string, actif: ProgrammeEtCycle): Promise<EtapeCycle | null> {
+  if (actif.cycle.length === 0) return null;
   return etapeSuivante(actif.cycle, await positionConsommee(userId, actif), actif.programme.positionInitiale);
 }
 
