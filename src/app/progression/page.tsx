@@ -52,7 +52,7 @@ import {
   type AdviceTheme,
 } from "@/lib/adviceArticles";
 import {
-  ensureWeek, setDayStatus, saveDay, hasSeance, readLieu, loadLieu, readVariant, ctxFromLieu,
+  ensureWeek, setDayStatus, saveDay, hasSeance, seanceNonFaite, readLieu, loadLieu, readVariant, ctxFromLieu,
   weekDates, weekDatesForOffset, todayYmd, weekOffsetOf, dayTitle, normalizeExercises,
   parDate, weekdayIndex, prochainsJours,
   dayLabelLong, PLANNING_TYPE_BY_CATEGORY,
@@ -975,7 +975,6 @@ function WeekStrip({ week, dates, today, onOrganise }: {
           const isToday = date === today;
           const isDone = d?.status === "done";
           const isSeance = hasSeance(d);
-          const isPast = date < today;
           const art = isSeance ? resolveArt({ title: `${d!.title} ${d!.type}` }) : null;
 
           return (
@@ -986,7 +985,12 @@ function WeekStrip({ week, dates, today, onOrganise }: {
                 height: 60, borderRadius: "var(--r-controle)", background: "#0f0d17",
                 outline: isToday ? "2px solid #8B5CF6" : undefined,
                 outlineOffset: isToday ? 2 : undefined,
-                opacity: isPast && !isDone && isSeance ? 0.5 : 1,
+                /* Une séance passée et jamais faite s'estompe. Le prédicat
+                   vit dans `seanceNonFaite` : ses trois conditions sont
+                   faciles à écrire de travers, et la première (nature) est
+                   celle qui empêchera un jour de repos passé de remonter
+                   comme une séance ratée. */
+                opacity: seanceNonFaite(d, today) ? 0.5 : 1,
               }}>
               {isSeance && art ? (
                 <>

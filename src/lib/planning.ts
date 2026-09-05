@@ -19,6 +19,25 @@ import type { Exercise } from "@/components/WorkoutGuideModal";
 export type Ctx = "salle" | "halteres" | "poids";
 export type DayStatus = "planned" | "done" | "skipped";
 
+/**
+ * Ce que la ligne DIT : une seance, ou un repos voulu.
+ *
+ * ATTENTION : aujourd'hui la nature se deduit du champ `type`, qui est un
+ * LIBELLE D'AFFICHAGE (Force, HIIT, Repos). C'est justement le probleme :
+ * renommer un badge changerait le sens des donnees. La colonne
+ * `planning_days.nature` existe desormais en base (V2) et prendra le
+ * relais quand le code cessera d'ecrire a la lecture ; d'ici la, la
+ * deduction vit ICI et nulle part ailleurs.
+ */
+export type Nature = "seance" | "repos";
+
+/**
+ * Le dernier auteur DELIBERE de la ligne. La regeneration ne touchera que
+ * `systeme` : aujourd'hui `regenerateWeek` efface sans distinction le
+ * remplissage automatique et les jours qu'on a poses soi-meme.
+ */
+export type Origine = "systeme" | "utilisateur" | "guide";
+
 /** Un jour du planning, avec sa séance directement dedans. */
 export interface PlanningDay {
   date: string;                 // YYYY-MM-DD
@@ -377,9 +396,46 @@ export function parDate(days: PlanningDay[] | null | undefined): Record<string, 
   return out;
 }
 
+/**
+ * La nature d'un jour, deduite de son libelle tant que la colonne n'est pas
+ * lue. Verifie en base avant d'ecrire V2 : ZERO ligne Repos porte des
+ * exercices et zero ligne non-Repos n'en porte aucun, donc cette deduction
+ * et l'ancien `hasSeance` coincident exactement sur les donnees reelles.
+ */
+export function natureDe(day: PlanningDay | null | undefined): Nature {
+  return day && day.type.toLowerCase() === "repos" ? "repos" : "seance";
+}
+
+/** Un repos VOULU. L'absence de ligne, elle, ne veut rien dire du tout. */
+export function estRepos(day: PlanningDay | null | undefined): boolean {
+  return !!day && natureDe(day) === "repos";
+}
+
 /** Vrai si le jour porte une vraie séance (ni vide, ni Repos). */
 export function hasSeance(day: PlanningDay | null | undefined): day is PlanningDay {
-  return !!day && day.type.toLowerCase() !== "repos" && day.exerciseList.length > 0;
+  return !!day && natureDe(day) === "seance" && day.exerciseList.length > 0;
+}
+
+/**
+ * Seance non faite : le predicat, ecrit UNE SEULE FOIS.
+ *
+ * ATTENTION : il a TROIS conditions, et la premiere est celle qu'on oublie.
+ * Sans `nature === "seance"`, tous les repos passes remontent comme des
+ * seances ratees, et le Guide finit par proposer de deplacer un jour de
+ * repos. Il etait jusqu'ici ecrit a la main dans Ma semaine (l'opacite 0,5
+ * d'un jour passe) ; il n'y a plus qu'un endroit ou le corriger.
+ *
+ * ATTENTION : une intention SANS date n'est jamais non faite. Elle est la
+ * prochaine etape, elle n'a simplement pas encore de jour.
+ */
+export function seanceNonFaite(day: PlanningDay | null | undefined, today: string): boolean {
+  return (
+    !!day &&
+    natureDe(day) === "seance" &&
+    !!day.date &&
+    day.date < today &&
+    day.status === "planned"
+  );
 }
 
 /** Enregistre / remplace un jour (utilisé par l'IA en Phase 2). */
