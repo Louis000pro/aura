@@ -91,6 +91,22 @@ const EX: Record<Ctx, Record<string, string[]>> = {
 const REST_PATTERN: Record<number, number[]> = {
   1: [0], 2: [0, 3], 3: [0, 2, 4], 4: [0, 1, 3, 4], 5: [0, 1, 2, 4, 5], 6: [0, 1, 2, 4, 5, 6],
 };
+/**
+ * Le CYCLE de référence : la rotation des séances, et rien d'autre.
+ *
+ * ⚠️ Ce sont ces mêmes lignes qui deviennent `programme_seances` (V4.5).
+ * Il n'existe donc qu'UNE définition du cycle dans le produit, partagée
+ * par l'ancien moteur (qui la date tout de suite) et par le nouveau (qui
+ * ne la date jamais). En écrire une seconde pour le programme, c'était
+ * garantir que les deux divergent au premier ajustement.
+ */
+export function seancesDuCycle(sessions: number): number {
+  return Math.max(1, Math.min(6, sessions || 3));
+}
+export function cycleDeReference(sessions: number): string[] {
+  return buildSplit(seancesDuCycle(sessions));
+}
+
 function buildSplit(sessions: number): string[] {
   if (sessions <= 1) return ["Full Body"];
   if (sessions === 2) return ["Haut du corps", "Bas du corps"];
@@ -217,7 +233,7 @@ export function todayWeekIndex(): number { return weekdayIndex(todayYmd()); }
 const DAY_LABELS = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
 
 function generateWeek(gen: GenInput, dates: string[]): PlanningDay[] {
-  const sessions = Math.max(1, Math.min(6, gen.sessions || 3));
+  const sessions = seancesDuCycle(gen.sessions);
   const rng = mulberry32(hashStr(`${gen.seed}-${gen.ctx}-s${sessions}-v${gen.variant}`));
   const split = buildSplit(sessions);
   const trainingDays = REST_PATTERN[sessions] ?? [0, 2, 4];

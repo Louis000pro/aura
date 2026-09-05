@@ -16,6 +16,7 @@
     "portraits": "node scripts/build-portraits.mjs",
     "rangs": "node scripts/build-rangs.mjs",
     "check:portraits": "node scripts/check-portraits.mjs",
+    "check:programme": "node --experimental-strip-types --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --import ./scripts/check-ia-alias.mjs scripts/check-programme.ts",
     "check:ia": "node --env-file-if-exists=.env.local --experimental-strip-types --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --import ./scripts/check-ia-alias.mjs scripts/check-ia.ts"
   },
   "dependencies": {
