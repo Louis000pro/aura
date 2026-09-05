@@ -128,6 +128,22 @@ export async function enregistrerProfil(userId: string, d: OnboardingData): Prom
      l'inscription ne comptait pas comme une pesée et la courbe du profil
      démarrait à vide. Il n'y a qu'une source de poids, `weight_logs`, et
      c'est elle que relit l'objectif nutrition. */
+  /* ⚠️ DUAL-WRITE V3 : le nombre de séances visées est aussi le contexte
+     d'entraînement par défaut. Il vit encore dans `profiles` (personne ne
+     lit la nouvelle table pour ça aujourd'hui), et déjà dans sa source
+     unique, pour que la bascule ne demande aucun backfill de rattrapage.
+     Écriture INDÉPENDANTE et silencieuse : tant que la migration n'est pas
+     collée, la table n'existe pas et le questionnaire ne doit pas s'en
+     apercevoir. */
+  const cible = d.sessionsPerWeek ? parseInt(d.sessionsPerWeek) : null;
+  if (cible !== null && Number.isFinite(cible)) {
+    try {
+      await supabase
+        .from("contexte_entrainement")
+        .upsert({ user_id: userId, seances_cible: cible }, { onConflict: "user_id" });
+    } catch { /* table absente → ancien modèle seul */ }
+  }
+
   const poids = parseFloat(d.weight);
   if (Number.isFinite(poids) && poids > 0) {
     await supabase.from("weight_logs").upsert(

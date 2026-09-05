@@ -472,6 +472,16 @@ export function readLieu(userId: string): { location: "salle" | "maison" | null;
 
 type Lieu = { location: "salle" | "maison" | null; equip: "halteres" | "poids" | null };
 
+/** Le localStorage n'est PAS une autorite : c'est le cache qui permet a
+ *  `readLieu` de repondre de facon synchrone. Il se remplit depuis la base,
+ *  jamais l'inverse. */
+function hydraterLieuLocal(userId: string, location: string | null, equip: string | null): void {
+  try {
+    if (location) localStorage.setItem(`vaiiya_lieu_${userId}`, location);
+    if (equip) localStorage.setItem(`vaiiya_lieu_equip_${userId}`, equip);
+  } catch { /* navigation privee, stockage plein : le cache est optionnel */ }
+}
+
 /**
  * Lit le lieu depuis la BASE (cross-device) puis retombe sur le localStorage.
  * Hydrate le localStorage de l'appareil au passage (pour les lectures synchrones
@@ -479,6 +489,31 @@ type Lieu = { location: "salle" | "maison" | null; equip: "halteres" | "poids" |
  * passée), la requête échoue silencieusement → fallback localStorage, zéro régression.
  */
 export async function loadLieu(userId: string): Promise<Lieu> {
+  /* ── 1. La source unique (V3) ──────────────────────────────────────
+     `contexte_entrainement` est le DEFAUT de la chaine de surcharge
+     (intention -> adaptation -> programme -> contexte). On la demande en
+     premier ; si la table n'existe pas encore (migration non collee), la
+     requete echoue et on retombe sur `profiles` exactement comme avant.
+     Une absence de ligne veut dire "on ne sait pas", pas "rien". */
+  try {
+    const supabase = createClient();
+    const { data, error } = await supabase
+      .from("contexte_entrainement")
+      .select("lieu, materiel")
+      .eq("user_id", userId)
+      .maybeSingle();
+    if (!error && data) {
+      const row = data as { lieu?: string | null; materiel?: string | null };
+      const location = row.lieu === "salle" || row.lieu === "maison" ? row.lieu : null;
+      const equip = row.materiel === "halteres" || row.materiel === "poids" ? row.materiel : null;
+      if (location || equip) {
+        hydraterLieuLocal(userId, location, equip);
+        return { location, equip };
+      }
+    }
+  } catch { /* table absente -> on continue sur l'ancien modele */ }
+
+  /* ── 2. L'ancien modele, tenu a jour par le dual-write ── */
   try {
     const supabase = createClient();
     const { data, error } = await supabase
@@ -491,10 +526,7 @@ export async function loadLieu(userId: string): Promise<Lieu> {
       const location = row.training_location === "salle" || row.training_location === "maison" ? row.training_location : null;
       const equip = row.training_equipment === "halteres" || row.training_equipment === "poids" ? row.training_equipment : null;
       if (location || equip) {
-        try {
-          if (location) localStorage.setItem(`vaiiya_lieu_${userId}`, location);
-          if (equip) localStorage.setItem(`vaiiya_lieu_equip_${userId}`, equip);
-        } catch { /* ignore */ }
+        hydraterLieuLocal(userId, location, equip);
         return { location, equip };
       }
     }
@@ -522,6 +554,13 @@ export async function persistLieu(userId: string, patch: { location?: "salle" | 
     if (patch.location) localStorage.setItem(`vaiiya_lieu_${userId}`, patch.location);
     if (patch.equip) localStorage.setItem(`vaiiya_lieu_equip_${userId}`, patch.equip);
   } catch { /* ignore */ }
+  /* ⚠️ DUAL-WRITE, ET C'EST LA CORRECTION POSEE PAR LOUIS AU PLAN DE V3.
+     On ecrit dans LES DEUX modeles jusqu'a stabilisation. Sans ca, le
+     rollback de cette vague supposerait que `profiles.training_location`
+     reste a jour, ce qui cesse d'etre vrai des que la nouvelle table
+     devient l'autorite : revenir en arriere demanderait alors un backfill
+     inverse. Les deux ecritures sont INDEPENDANTES : l'une qui echoue ne
+     doit pas emporter l'autre. */
   try {
     const supabase = createClient();
     const dbPatch: Record<string, string> = {};
@@ -529,6 +568,19 @@ export async function persistLieu(userId: string, patch: { location?: "salle" | 
     if (patch.equip) dbPatch.training_equipment = patch.equip;
     if (Object.keys(dbPatch).length) await supabase.from("profiles").update(dbPatch).eq("id", userId);
   } catch { /* colonnes absentes → localStorage seul */ }
+
+  try {
+    const supabase = createClient();
+    const ctxPatch: Record<string, string> = { user_id: userId };
+    if (patch.location) ctxPatch.lieu = patch.location;
+    if (patch.equip) ctxPatch.materiel = patch.equip;
+    /* `upsert` et pas `update` : la personne peut n'avoir jamais eu de
+       ligne (rien a reprendre au backfill). On ne passe QUE les champs
+       fournis, donc regler le lieu n'efface pas le materiel. */
+    if (Object.keys(ctxPatch).length > 1) {
+      await supabase.from("contexte_entrainement").upsert(ctxPatch, { onConflict: "user_id" });
+    }
+  } catch { /* table absente → ancien modele seul, zero regression */ }
 }
 
 /** Contexte matériel effectif (salle / haltères / poids du corps). */
