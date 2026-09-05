@@ -3843,7 +3843,10 @@ export default function ProgressionPage() {
       difficulty: normalizeDifficulty(s.difficulty),
       location: ctxFromLieu(saved.location, saved.equip),
       exerciseList: exosDeLaSeance(s),
-      sessionId: s.id,
+      /* ⚠️ SEULE UNE SÉANCE PERSO EST UN MODÈLE DE LA BIBLIOTHÈQUE. Le renvoi
+         pointe sur `custom_sessions` ; l'identifiant d'une séance du catalogue
+         est un slug qui n'y existe pas, et la base refusait l'écriture. */
+      sessionId: s.perso ? s.id : null,
       status: "planned",
     };
     try {

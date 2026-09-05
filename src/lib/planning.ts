@@ -456,6 +456,24 @@ function rowToDay(r: PlanningRow, s: SchemaIntentions): PlanningDay {
  * du mobilier qu'on peut remplacer ou une intention qu'on doit protéger.
  * Un défaut cacherait la question à l'endroit exact où il faut se la poser.
  */
+/**
+ * ⚠️ `session_id` A UNE CLÉ ÉTRANGÈRE VERS `custom_sessions`, ET C'EST CE
+ * QUI A REFUSÉ SILENCIEUSEMENT « Ajouter à ma semaine » PENDANT TROIS MOIS.
+ * La colonne est un renvoi vers un modèle de la BIBLIOTHÈQUE (des lignes
+ * `custom-…`), pas vers une séance du catalogue, dont l'identifiant est un
+ * slug (`hiit`, `force-haut`) qui n'existe dans aucune table. Poser ce slug
+ * là fait rendre `23503` à la base, donc 409 à l'écran, et l'intention n'est
+ * jamais écrite.
+ *
+ * Une séance du catalogue n'a donc PAS de renvoi, et elle n'en a pas besoin :
+ * l'intention porte déjà son titre et sa liste d'exercices, c'est-à-dire tout
+ * ce que le tunnel relit. La règle vit ici, à l'unique endroit où l'on
+ * fabrique la ligne, pour qu'aucun appelant ne puisse la réintroduire.
+ */
+export function refModele(sessionId: string | null | undefined): string | null {
+  return sessionId && sessionId.startsWith("custom-") ? sessionId : null;
+}
+
 function dayToRow(userId: string, d: PlanningDay, origine: Origine, s: SchemaIntentions) {
   const maintenant = new Date().toISOString();
   return {
@@ -466,7 +484,7 @@ function dayToRow(userId: string, d: PlanningDay, origine: Origine, s: SchemaInt
     difficulty: d.difficulty,
     location: d.location,
     exercise_list: d.exerciseList,
-    session_id: d.sessionId,
+    session_id: refModele(d.sessionId),
     [s.colStatut]: s.versBase[d.status],
     nature: natureDe(d),
     origine,

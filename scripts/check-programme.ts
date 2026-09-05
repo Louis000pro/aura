@@ -20,6 +20,7 @@ import { etapesDuCycle, etapeSuivante, nomDeProgramme, POSITION_INITIALE } from 
 import {
   cycleDeReference, seancesDuCycle, previewWeek, weekDates, ANCIEN, NOUVEAU,
   ordonner, parDate, principale, supplements, seancesDuJour, prochaineSeanceDuJour,
+  refModele,
   type PlanningDay,
 } from "@/lib/planning";
 
@@ -304,6 +305,34 @@ verdict(
     "V6b · consommerEtape ENREGISTRE le fait, il n'écrase plus la journée",
     programme.includes("await supabase.from(sc.table).insert({") && !programme.includes('onConflict: "user_id,date"'),
     "insert, plus d'upsert sur la date",
+  );
+
+  /* ── Le renvoi vers un modèle de la bibliothèque ──
+     ⚠️ CE CONTRÔLE EXISTE PARCE QUE LE DÉFAUT A VÉCU TROIS MOIS SANS SE
+     VOIR. `session_id` a une clé étrangère vers `custom_sessions` : y poser
+     le slug d'une séance du catalogue fait refuser l'écriture par la base
+     (23503 → 409), et « Ajouter à ma semaine » ne posait donc rien. Un test
+     de fonction pure suffit à le tenir, sur une app pourtant auth-gated. */
+  for (const [libelle, entree, attendu] of [
+    ["une séance perso garde son renvoi", "custom-1785365610133", "custom-1785365610133"],
+    ["un slug du catalogue n'en est pas un", "hiit", null],
+    ["un slug composé non plus", "force-haut", null],
+    ["rien reste rien", null, null],
+  ] as [string, string | null, string | null][]) {
+    verdict("V6b · session_id : " + libelle, refModele(entree) === attendu, String(refModele(entree)));
+  }
+
+  const ecran = readFileSync(new URL("../src/app/progression/page.tsx", import.meta.url), "utf8");
+  verdict(
+    "V6b · planifierSeance ne renvoie au modèle que pour une séance perso",
+    ecran.includes("sessionId: s.perso ? s.id : null"),
+    "le catalogue n'a pas de modèle en bibliothèque",
+  );
+
+  verdict(
+    "V6b · dayToRow passe le renvoi par le garde-fou",
+    source.includes("session_id: refModele(") && !source.includes("session_id: d.sessionId"),
+    "aucun appelant ne peut réintroduire un renvoi dans le vide",
   );
 
   const corpsMarquer = source.slice(source.indexOf("export async function marquerIntention"));
