@@ -12,6 +12,11 @@
    arrière ne se referme donc pas à une date qu'on choisit, mais au
    premier geste de la première personne.
 
+   ✅ APPLIQUÉE le 2026-09-05, à 20 h 01 UTC, et dans le bon ordre : la
+   production servait déjà le code qui désigne une intention par son `id`
+   depuis vingt minutes. L'avertissement qui suit est conservé parce qu'il
+   explique POURQUOI cet ordre.
+
    ⚠️ NE PAS APPLIQUER AVANT QUE LE CODE QUI S'EN PASSE SOIT DÉPLOYÉ
    PARTOUT, PRODUCTION COMPRISE. Même ordre qu'en V6, et pour une raison
    plus dure encore : la production écrivait `on_conflict=user_id,date`,
