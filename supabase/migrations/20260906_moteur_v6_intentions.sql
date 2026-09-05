@@ -191,6 +191,20 @@ begin
   end loop;
 end $$;
 
-/* Les policies suivent la table : `planning_days` était déjà en RLS
-   propriétaire (`auth.uid() = user_id`) et un renommage ne les touche
-   pas. Rien à réécrire, et surtout rien à rouvrir. */
+/* La policy suit la table : `planning_days` était déjà en RLS
+   propriétaire (`auth.uid() = user_id`) et un renommage de table ne la
+   touche pas. Rien à réécrire, et surtout rien à rouvrir.
+
+   Son NOM, lui, mentait encore, au même titre que les contraintes
+   ci-dessus. Purement cosmétique : le nom d'une policy n'entre dans
+   aucune décision, seule sa clause compte. */
+
+do $$
+begin
+  if exists (select 1 from pg_policies where schemaname='public'
+              and tablename='intentions_entrainement'
+              and policyname='planning_days: owner full access') then
+    alter policy "planning_days: owner full access"
+      on public.intentions_entrainement rename to "intentions: owner full access";
+  end if;
+end $$;
