@@ -52,9 +52,9 @@ import {
   type AdviceTheme,
 } from "@/lib/adviceArticles";
 import {
-  lireSemaine, setDayStatus, saveDay, hasSeance, estRepos, seanceNonFaite, readLieu, loadLieu, readVariant, ctxFromLieu,
+  lireSemaine, marquerIntention, saveDay, ajouterIntention, hasSeance, estRepos, seanceNonFaite, readLieu, loadLieu, readVariant, ctxFromLieu,
   weekDates, weekDatesForOffset, todayYmd, weekOffsetOf, dayTitle, normalizeExercises,
-  parDate, weekdayIndex, prochainsJours, instanceDeLEtape,
+  parDate, principale, supplements, seancesDuJour, ordonner, weekdayIndex, prochainsJours, instanceDeLEtape,
   dayLabelLong, PLANNING_TYPE_BY_CATEGORY,
   type PlanningDay, type GenInput, type Ctx,
 } from "@/lib/planning";
@@ -996,7 +996,7 @@ function WeekStrip({ week, dates, today, onOrganise }: {
 }) {
   const parJour = useMemo(() => parDate(week), [week]);
   const doneCount = week?.filter((d) => d.status === "done").length ?? 0;
-  const todayDay = parJour[today] ?? null;
+  const todayDay = principale(parJour[today]);
 
   let story: React.ReactNode = null;
   if (week) {
@@ -1031,7 +1031,13 @@ function WeekStrip({ week, dates, today, onOrganise }: {
       <div className="flex gap-1.5">
         {DAY_LETTERS.map((letter, i) => {
           const date = dates[i];
-          const d = parJour[date] ?? null;
+          const jour = parJour[date] ?? [];
+          const d = principale(jour);
+          /* ⚠️ COMBIEN DE SÉANCES CE JOUR-LÀ (V6b). Une pastille de 60 px
+             ne peut en montrer qu'une : elle montre la principale et DIT
+             qu'il y en a d'autres. Le pire serait qu'une seconde séance
+             existe en base et n'apparaisse nulle part. */
+          const nbSeances = seancesDuJour(jour).length;
           /* Comparaison de chaînes : en YYYY-MM-DD l'ordre alphabétique EST
              l'ordre chronologique. Pas de Date à construire pour ça. */
           const isToday = date === today;
@@ -1041,7 +1047,7 @@ function WeekStrip({ week, dates, today, onOrganise }: {
 
           return (
             <button key={date} onClick={onOrganise}
-              aria-label={`${DAY_FULL[i]}, ${isSeance ? dayTitle(d!) : "repos"}`}
+              aria-label={`${DAY_FULL[i]}, ${isSeance ? dayTitle(d!) : "repos"}${nbSeances > 1 ? `, ${nbSeances} séances` : ""}`}
               className="relative flex-1 overflow-hidden cursor-pointer border-none p-0 block"
               style={{
                 height: 60, borderRadius: "var(--r-controle)", background: "#0f0d17",
@@ -1062,6 +1068,12 @@ function WeekStrip({ week, dates, today, onOrganise }: {
                     <span className="absolute top-1 right-1 rounded-full flex items-center justify-center"
                       style={{ width: 14, height: 14, background: "#8B5CF6", boxShadow: "0 2px 6px rgba(0,0,0,0.4)" }}>
                       <Check size={9} strokeWidth={3.4} style={{ color: "#fff" }} />
+                    </span>
+                  )}
+                  {nbSeances > 1 && (
+                    <span className="absolute top-1 left-1 rounded-full flex items-center justify-center text-[8px] font-extrabold"
+                      style={{ minWidth: 14, height: 14, padding: "0 3px", background: "rgba(12,8,22,0.72)", color: "#fff" }}>
+                      ×{nbSeances}
                     </span>
                   )}
                 </>
@@ -1812,18 +1824,24 @@ function ManageSheet({ session, week, onClose, onEdit, onDelete, onVisibilityCha
         <div aria-hidden className="h-px mx-5" style={{ background: "rgba(var(--accent-rgb),0.1)" }} />
 
         {/* ── Le détour « quel jour ? » ── on écrit sur la semaine réelle,
-           donc on montre ce qui est déjà posé : remplacer, ça se voit. */}
+           donc on montre ce qui est déjà posé : la séance REJOINT la
+           journée au lieu d'écraser ce qui s'y trouve (V6b). */}
         {vue === "jours" ? (
           <>
             {retour}
             <div className="px-5 pb-4">
               {DAY_FULL.map((nom, i) => {
                 const date = dates[i];
-                const jour = parJour[date] ?? null;
-                const passe = date < today;
-                const prise = hasSeance(jour);
-                const faite = jour?.status === "done";
-                const bloque = passe || faite;
+                /* ⚠️ « PRISE » NE VEUT PLUS DIRE « INTERDITE » (V6b). Une
+                   journée peut porter une séance et un supplément : poser
+                   une séance sur un jour occupé l'AJOUTE, elle n'écrase
+                   plus rien. Seul le passé est fermé ; une journée dont
+                   tout est fait reste ouverte à un extra. */
+                const intentions = parJour[date] ?? [];
+                const tete = principale(intentions);
+                const prise = seancesDuJour(intentions).length > 0;
+                const faite = !!tete && intentions.every((x) => x.status === "done");
+                const bloque = date < today;
                 return (
                   <motion.button key={date} whileTap={bloque ? undefined : { scale: 0.98 }}
                     onClick={() => { if (!bloque) { onPlanifier(session, date); onClose(); } }}
@@ -1836,12 +1854,12 @@ function ManageSheet({ session, week, onClose, onEdit, onDelete, onVisibilityCha
                     </span>
                     <span className="flex-1 min-w-0 text-[12.5px] font-semibold truncate"
                       style={{ color: prise ? "var(--text-2)" : "var(--text-3)" }}>
-                      {faite ? "Séance faite ✓" : prise ? dayTitle(jour!) : "Repos"}
+                      {tete ? dayTitle(tete) + (faite ? " ✓" : "") : "Rien de prévu"}
                     </span>
                     {!bloque && (
                       <span className="text-[10px] font-bold flex-shrink-0"
-                        style={{ color: prise ? "#EF9F27" : "var(--accent)" }}>
-                        {prise ? "Remplacer" : date === today ? "Aujourd’hui" : "Choisir"}
+                        style={{ color: prise ? "var(--exp-encre)" : "var(--accent)" }}>
+                        {prise ? "Ajouter" : date === today ? "Aujourd’hui" : "Choisir"}
                       </span>
                     )}
                   </motion.button>
@@ -2838,13 +2856,15 @@ function SemaineSheet({ week, today, fetchWeekAt, onClose, onStartDay, onAsk, on
   onStartDay: (day: PlanningDay) => void;
   onAsk: (prompt: string) => void;
   onAddSession: () => void;
-  onMove: (a: PlanningDay, b: PlanningDay, msg: string) => Promise<void>;
+  onMove: (intention: PlanningDay, msg: string) => Promise<void>;
 }) {
   const { guide } = useGuideActif();
   const [offset, setOffset] = useState(0);
   const [days, setDays] = useState<PlanningDay[] | null>(week);
   const [loading, setLoading] = useState(false);
-  const [openIdx, setOpenIdx] = useState<number | null>(null);
+  /* ⚠️ CE N'EST PLUS UN INDEX DE LIGNE MAIS L'IDENTITÉ D'UNE INTENTION :
+     une journée en porte plusieurs, chacune avec ses actions. */
+  const [openKey, setOpenKey] = useState<string | null>(null);
 
   /* Les sept dates de la semaine regardée, et ce qu'on a trouvé pour chacune.
      Les index qui restent (`openIdx`, `dragIdx`, `hoverIdx`, `rowRefs`) sont
@@ -2853,15 +2873,24 @@ function SemaineSheet({ week, today, fetchWeekAt, onClose, onStartDay, onAsk, on
   const wd = weekDatesForOffset(offset);
   const parJour = useMemo(() => parDate(days), [days]);
 
-  /* ── Drag & drop : déplacer une séance d'un jour à l'autre ── */
+  /* ── Drag & drop : déplacer UNE intention d'un jour à l'autre ──
+     ⚠️ CE N'EST PLUS UN ÉCHANGE (V6b), ET LA DIFFÉRENCE EST LE CŒUR DE LA
+     VAGUE. Déposer une séance sur un jour occupé permutait les contenus
+     des deux jours, parce qu'une date ne pouvait porter qu'une ligne : il
+     fallait bien que l'occupant aille quelque part. Désormais l'intention
+     CHANGE DE DATE, garde son identité, et rejoint ce qui est déjà là.
+     Aucune séance n'est écrasée, aucune n'est déplacée à l'insu de
+     quelqu'un.
+
+     ⚠️ ET ON PEUT ENFIN DÉPOSER SUR UN JOUR VIDE. L'ancienne règle exigeait
+     une ligne à l'arrivée (`!!t`), ce qui, depuis que lire n'écrit plus,
+     rendait la cible introuvable les jours où il n'y a rien : le geste
+     échouait en silence sur presque toute la semaine. */
   const rowRefs = useRef<(HTMLDivElement | null)[]>([]);
-  const [dragIdx, setDragIdx] = useState<number | null>(null);
+  const [drag, setDrag] = useState<{ id: string; date: string } | null>(null);
   const [hoverIdx, setHoverIdx] = useState<number | null>(null);
 
-  const canDrop = (from: number, to: number) => {
-    const t = parJour[wd[to]];
-    return to !== from && !!t && t.status !== "done" && t.date >= todayYmd();
-  };
+  const canDrop = (source: string, to: number) => wd[to] !== source && wd[to] >= todayYmd();
   const hoverFromY = (y: number): number | null => {
     for (let i = 0; i < 7; i++) {
       const r = rowRefs.current[i]?.getBoundingClientRect();
@@ -2869,27 +2898,21 @@ function SemaineSheet({ week, today, fetchWeekAt, onClose, onStartDay, onAsk, on
     }
     return null;
   };
-  const handleDragStart = (i: number) => { setOpenIdx(null); setDragIdx(i); };
-  const handleDragMove = (i: number, y: number) => {
-    const h = hoverFromY(y);
-    setHoverIdx(h !== null && canDrop(i, h) ? h : null);
+  const handleDragStart = (it: PlanningDay) => {
+    setOpenKey(null);
+    if (it.id) setDrag({ id: it.id, date: it.date });
   };
-  const handleDragEnd = (i: number) => {
+  const handleDragMove = (it: PlanningDay, y: number) => {
+    const h = hoverFromY(y);
+    setHoverIdx(h !== null && canDrop(it.date, h) ? h : null);
+  };
+  const handleDragEnd = (it: PlanningDay) => {
     const to = hoverIdx;
-    setDragIdx(null); setHoverIdx(null);
-    if (to === null || !canDrop(i, to) || !days) return;
-    const a = parJour[wd[i]], b = parJour[wd[to]];
-    if (!a || !b) return;
-    // Échange des contenus (les dates restent aux jours) ; tout redevient « prévu ».
-    const swap = (x: PlanningDay, y2: PlanningDay): PlanningDay => ({
-      ...x, type: y2.type, title: y2.title, difficulty: y2.difficulty,
-      location: y2.location, exerciseList: y2.exerciseList, sessionId: y2.sessionId,
-      status: "planned",
-    });
-    const newA = swap(a, b), newB = swap(b, a);
-    setDays(days.map((d) => (d.date === newA.date ? newA : d.date === newB.date ? newB : d)));
-    const msg = hasSeance(newA) ? "Séances échangées ✓" : `${dayTitle(newB)} → ${DAY_FULL[to]} ✓`;
-    void onMove(newA, newB, msg);
+    setDrag(null); setHoverIdx(null);
+    if (to === null || !it.id || !canDrop(it.date, to) || !days) return;
+    const deplacee: PlanningDay = { ...it, date: wd[to], status: "planned" };
+    setDays(days.map((d) => (d.id === it.id ? deplacee : d)));
+    void onMove(deplacee, `${dayTitle(deplacee)} → ${DAY_FULL[to]} ✓`);
   };
 
   /* offset 0 = la semaine du héros (déjà chargée) ; sinon on va la chercher. */
@@ -2904,7 +2927,7 @@ function SemaineSheet({ week, today, fetchWeekAt, onClose, onStartDay, onAsk, on
   const go = (delta: number) => {
     const next = Math.max(0, Math.min(MAX_WEEK_AHEAD, offset + delta));
     if (next === offset) return;
-    setOpenIdx(null);
+    setOpenKey(null);
     setOffset(next);
   };
 
@@ -2985,20 +3008,21 @@ function SemaineSheet({ week, today, fetchWeekAt, onClose, onStartDay, onAsk, on
         {DAY_ABBR.map((abbr, i) => (
           <DayRow
             key={wd[i]}
-            day={parJour[wd[i]] ?? null}
+            date={wd[i]}
+            jour={parJour[wd[i]] ?? []}
             idx={i}
             abbr={abbr}
             isToday={wd[i] === today}
-            open={openIdx === i}
-            dropHover={hoverIdx === i && dragIdx !== null}
-            dimmed={dragIdx !== null && dragIdx !== i && hoverIdx !== i}
+            openKey={openKey}
+            dropHover={hoverIdx === i && drag !== null}
+            dimmed={drag !== null && drag.date !== wd[i] && hoverIdx !== i}
             registerRef={(el) => { rowRefs.current[i] = el; }}
-            onToggle={() => setOpenIdx(openIdx === i ? null : i)}
+            onToggle={(cle) => setOpenKey(openKey === cle ? null : cle)}
             onStartDay={onStartDay}
             onAsk={onAsk}
-            onDragStart={() => handleDragStart(i)}
-            onDragMove={(y) => handleDragMove(i, y)}
-            onDragEnd={() => handleDragEnd(i)}
+            onDragStart={handleDragStart}
+            onDragMove={handleDragMove}
+            onDragEnd={handleDragEnd}
           />
         ))}
         {loading && <p className="text-[11px] font-medium text-center py-4" style={{ color: "var(--text-3)" }}>Chargement…</p>}
@@ -3029,119 +3053,174 @@ const clientYOf = (e: unknown, fallback: number): number => {
   return ev.clientY ?? ev.touches?.[0]?.clientY ?? fallback;
 };
 
-/** Un jour de l'agenda — carte draggable (poignée dédiée, pour laisser le
-    scroll tranquille) + actions dépliées au tap. */
-function DayRow({ day, idx, abbr, isToday, open, dropHover, dimmed, registerRef, onToggle, onStartDay, onAsk, onDragStart, onDragMove, onDragEnd }: {
-  day: PlanningDay | null;
+/** Une JOURNÉE de l'agenda : sa date, puis autant de cartes que la journée
+    porte d'intentions. La principale d'abord, les suppléments ensuite.
+
+    ⚠️ C'ÉTAIT « un jour = une carte » (V6b). Le minimum absolu de cette
+    vague est là : une seconde séance existe en base, elle doit se VOIR,
+    se lancer et se déplacer comme la première. La mise en scène d'une
+    journée chargée, elle, appartient à la restructuration de l'accueil. */
+function DayRow({ date, jour, idx, abbr, isToday, openKey, dropHover, dimmed, registerRef, onToggle, onStartDay, onAsk, onDragStart, onDragMove, onDragEnd }: {
+  date: string;
+  jour: PlanningDay[];
   idx: number;
   abbr: string;
   isToday: boolean;
-  open: boolean;
+  openKey: string | null;
   dropHover: boolean;
   dimmed: boolean;
   registerRef: (el: HTMLDivElement | null) => void;
-  onToggle: () => void;
+  onToggle: (cle: string) => void;
   onStartDay: (d: PlanningDay) => void;
   onAsk: (p: string) => void;
-  onDragStart: () => void;
-  onDragMove: (clientY: number) => void;
-  onDragEnd: () => void;
+  onDragStart: (it: PlanningDay) => void;
+  onDragMove: (it: PlanningDay, clientY: number) => void;
+  onDragEnd: (it: PlanningDay) => void;
 }) {
-  const controls = useDragControls();
-  const d = day;
-  const isDone = d?.status === "done";
-  const isSeance = hasSeance(d);
-  const draggable = isSeance && !isDone;
-  const art = isSeance ? resolveArt({ title: `${d!.title} ${d!.type}` }) : null;
-  const num = d ? new Date(d.date + "T00:00:00").getDate() : "";
+  const ordre = ordonner(jour);
+  const num = new Date(date + "T00:00:00").getDate();
+  const cleVide = "vide-" + date;
 
   return (
     <div ref={registerRef} className="py-1" style={{ opacity: dimmed ? 0.45 : 1, transition: "opacity 0.15s" }}>
-      <div className="flex items-center gap-2.5">
-        <div className="w-8 flex-shrink-0 text-center">
+      <div className="flex items-start gap-2.5">
+        <div className="w-8 flex-shrink-0 text-center pt-1.5">
           <span className="block text-[9px] font-extrabold tracking-wide" style={{ color: isToday ? "#A78BFA" : "var(--text-3)" }}>{abbr}</span>
           <span className="block text-[15px] font-light" style={{ color: isToday ? "#A78BFA" : "var(--text-2)" }}>{num}</span>
         </div>
-        <motion.div
-          drag={draggable ? "y" : false}
-          dragControls={controls}
-          dragListener={false}
-          dragSnapToOrigin
-          dragMomentum={false}
-          dragElastic={0.1}
-          onDragStart={onDragStart}
-          onDrag={(e, info) => onDragMove(clientYOf(e, info.point.y))}
-          onDragEnd={onDragEnd}
-          whileDrag={{ scale: 1.04, rotate: -1.5, zIndex: 40, boxShadow: "0 14px 34px rgba(0,0,0,0.55)" }}
-          className="flex-1 flex items-center gap-2 rounded-2xl px-2.5 py-2 min-w-0 relative"
-          style={{
-            background: dropHover ? "rgba(139,92,246,0.13)"
-              : isToday ? "rgba(139,92,246,0.1)"
-              : isSeance ? "rgba(255,255,255,0.04)" : "transparent",
-            border: dropHover ? "1.5px dashed rgba(139,92,246,0.75)"
-              : isToday ? "1px solid rgba(139,92,246,0.55)"
-              : isSeance ? "1px solid rgba(255,255,255,0.06)" : "1px dashed rgba(var(--accent-rgb),0.18)",
-            opacity: isDone ? 0.72 : 1,
-          }}
-        >
-          <button onClick={onToggle}
-            className="flex items-center gap-2.5 flex-1 min-w-0 text-left bg-transparent border-none p-0 cursor-pointer">
-            {isSeance && art ? (
-              <Photo img={art.img} pos="center 22%" className="rounded-xl flex-shrink-0" style={{ width: 38, height: 38 }} />
-            ) : (
-              <span className="rounded-xl flex-shrink-0 flex items-center justify-center" style={{ width: 38, height: 38, background: "rgba(255,255,255,0.03)" }}>
-                <Moon size={14} strokeWidth={1.8} style={{ color: "var(--text-3)", opacity: 0.7 }} />
-              </span>
-            )}
-            <div className="min-w-0 flex-1">
-              <p className="text-[12.5px] font-bold truncate" style={{ color: "var(--text-1)" }}>{isSeance ? dayTitle(d!) : "Repos"}</p>
-              <p className="text-[10px] font-semibold mt-0.5 truncate" style={{ color: dropHover ? "#C9B8FF" : "var(--text-3)" }}>
-                {dropHover ? "Dépose la séance ici ✦"
-                  : isSeance ? `${d!.type === "HIIT" ? 30 : 45} min${lieuLabel(d!.location) ? ` · ${lieuLabel(d!.location)}` : ""}`
-                  : "Ton corps construit"}
-              </p>
-            </div>
-            {isDone ? (
-              <span className="flex-shrink-0 rounded-full flex items-center justify-center" style={{ width: 18, height: 18, background: "rgba(43,212,160,0.16)", border: "1px solid rgba(43,212,160,0.5)" }}>
-                <Check size={10} strokeWidth={3.2} style={{ color: "var(--teal-encre)" }} />
-              </span>
-            ) : isToday ? (
-              <span className="flex-shrink-0 text-[9px] font-extrabold tracking-wide" style={{ backgroundImage: "linear-gradient(135deg,var(--accent),var(--gold))", WebkitBackgroundClip: "text", backgroundClip: "text", WebkitTextFillColor: "transparent", color: "transparent" }}>AUJOURD&apos;HUI</span>
-            ) : (
-              <ChevronRight size={14} strokeWidth={2.4} className="flex-shrink-0"
-                style={{ color: "var(--text-3)", transform: open ? "rotate(90deg)" : "none", transition: "transform 0.18s" }} />
-            )}
-          </button>
-          {draggable && (
-            <div
-              onPointerDown={(e) => { e.preventDefault(); controls.start(e); }}
-              className="flex-shrink-0 flex items-center justify-center cursor-grab"
-              style={{ touchAction: "none", width: 24, height: 34 }}
-              aria-label="Déplacer la séance"
-            >
-              <GripVertical size={15} strokeWidth={2.2} style={{ color: "var(--text-3)", opacity: 0.8 }} />
-            </div>
-          )}
-        </motion.div>
+        <div className="flex-1 min-w-0 flex flex-col gap-1">
+          {ordre.length === 0 ? (
+            <CarteJournee
+              intention={null} idx={idx} isToday={isToday} dropHover={dropHover}
+              open={openKey === cleVide}
+              onToggle={() => onToggle(cleVide)}
+              onStartDay={onStartDay} onAsk={onAsk}
+              onDragStart={onDragStart} onDragMove={onDragMove} onDragEnd={onDragEnd}
+            />
+          ) : ordre.map((it, n) => (
+            <CarteJournee
+              key={it.id ?? date + "-" + n}
+              intention={it} idx={idx} isToday={isToday && n === 0}
+              dropHover={dropHover && n === 0}
+              open={openKey === (it.id ?? date + "-" + n)}
+              onToggle={() => onToggle(it.id ?? date + "-" + n)}
+              onStartDay={onStartDay} onAsk={onAsk}
+              onDragStart={onDragStart} onDragMove={onDragMove} onDragEnd={onDragEnd}
+            />
+          ))}
+        </div>
       </div>
+    </div>
+  );
+}
 
-      {/* Actions du jour — dépliées au tap */}
+/** UNE intention de la journée : sa carte, draggable par sa poignée, et
+    ses actions dépliées au tap. `intention` à `null` = la journée est
+    vide, et vide ne veut pas dire repos (V5). */
+function CarteJournee({ intention, idx, isToday, dropHover, open, onToggle, onStartDay, onAsk, onDragStart, onDragMove, onDragEnd }: {
+  intention: PlanningDay | null;
+  idx: number;
+  isToday: boolean;
+  dropHover: boolean;
+  open: boolean;
+  onToggle: () => void;
+  onStartDay: (d: PlanningDay) => void;
+  onAsk: (p: string) => void;
+  onDragStart: (it: PlanningDay) => void;
+  onDragMove: (it: PlanningDay, clientY: number) => void;
+  onDragEnd: (it: PlanningDay) => void;
+}) {
+  const controls = useDragControls();
+  const d = intention;
+  const isDone = d?.status === "done";
+  const isSeance = hasSeance(d);
+  const draggable = isSeance && !isDone && !!d?.id;
+  const art = isSeance ? resolveArt({ title: d!.title + " " + d!.type }) : null;
+  /* ⚠️ « RIEN DE PRÉVU » N'EST PAS « REPOS ». Une journée sans ligne ne dit
+     rien du tout depuis V5 ; seul un repos POSÉ est un repos. */
+  const titre = isSeance ? dayTitle(d!) : d ? "Repos" : "Rien de prévu";
+
+  return (
+    <div>
+      <motion.div
+        drag={draggable ? "y" : false}
+        dragControls={controls}
+        dragListener={false}
+        dragSnapToOrigin
+        dragMomentum={false}
+        dragElastic={0.1}
+        onDragStart={() => { if (d) onDragStart(d); }}
+        onDrag={(e, info) => { if (d) onDragMove(d, clientYOf(e, info.point.y)); }}
+        onDragEnd={() => { if (d) onDragEnd(d); }}
+        whileDrag={{ scale: 1.04, rotate: -1.5, zIndex: 40, boxShadow: "0 14px 34px rgba(0,0,0,0.55)" }}
+        className="flex items-center gap-2 rounded-2xl px-2.5 py-2 min-w-0 relative"
+        style={{
+          background: dropHover ? "rgba(139,92,246,0.13)"
+            : isToday ? "rgba(139,92,246,0.1)"
+            : isSeance ? "rgba(255,255,255,0.04)" : "transparent",
+          border: dropHover ? "1.5px dashed rgba(139,92,246,0.75)"
+            : isToday ? "1px solid rgba(139,92,246,0.55)"
+            : isSeance ? "1px solid rgba(255,255,255,0.06)" : "1px dashed rgba(var(--accent-rgb),0.18)",
+          opacity: isDone ? 0.72 : 1,
+        }}
+      >
+        <button onClick={onToggle}
+          className="flex items-center gap-2.5 flex-1 min-w-0 text-left bg-transparent border-none p-0 cursor-pointer">
+          {isSeance && art ? (
+            <Photo img={art.img} pos="center 22%" className="rounded-xl flex-shrink-0" style={{ width: 38, height: 38 }} />
+          ) : (
+            <span className="rounded-xl flex-shrink-0 flex items-center justify-center" style={{ width: 38, height: 38, background: "rgba(255,255,255,0.03)" }}>
+              <Moon size={14} strokeWidth={1.8} style={{ color: "var(--text-3)", opacity: 0.7 }} />
+            </span>
+          )}
+          <div className="min-w-0 flex-1">
+            <p className="text-[12.5px] font-bold truncate" style={{ color: "var(--text-1)" }}>{titre}</p>
+            <p className="text-[10px] font-semibold mt-0.5 truncate" style={{ color: dropHover ? "#C9B8FF" : "var(--text-3)" }}>
+              {dropHover ? "Dépose la séance ici ✦"
+                : isSeance ? (d!.type === "HIIT" ? 30 : 45) + " min" + (lieuLabel(d!.location) ? " · " + lieuLabel(d!.location) : "")
+                : d ? "Ton corps construit" : "Libre"}
+            </p>
+          </div>
+          {isDone ? (
+            <span className="flex-shrink-0 rounded-full flex items-center justify-center" style={{ width: 18, height: 18, background: "rgba(43,212,160,0.16)", border: "1px solid rgba(43,212,160,0.5)" }}>
+              <Check size={10} strokeWidth={3.2} style={{ color: "var(--teal-encre)" }} />
+            </span>
+          ) : isToday ? (
+            <span className="flex-shrink-0 text-[9px] font-extrabold tracking-wide" style={{ backgroundImage: "linear-gradient(135deg,var(--accent),var(--gold))", WebkitBackgroundClip: "text", backgroundClip: "text", WebkitTextFillColor: "transparent", color: "transparent" }}>AUJOURD&apos;HUI</span>
+          ) : (
+            <ChevronRight size={14} strokeWidth={2.4} className="flex-shrink-0"
+              style={{ color: "var(--text-3)", transform: open ? "rotate(90deg)" : "none", transition: "transform 0.18s" }} />
+          )}
+        </button>
+        {draggable && (
+          <div
+            onPointerDown={(e) => { e.preventDefault(); controls.start(e); }}
+            className="flex-shrink-0 flex items-center justify-center cursor-grab"
+            style={{ touchAction: "none", width: 24, height: 34 }}
+            aria-label="Déplacer la séance"
+          >
+            <GripVertical size={15} strokeWidth={2.2} style={{ color: "var(--text-3)", opacity: 0.8 }} />
+          </div>
+        )}
+      </motion.div>
+
+      {/* Actions — dépliées au tap, et propres à CETTE intention */}
       <AnimatePresence initial={false}>
-        {open && d && (
+        {open && (
           <motion.div
             initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.2 }} className="overflow-hidden">
-            <div className="flex gap-1.5 flex-wrap pl-[42px] pt-2 pb-1">
+            <div className="flex gap-1.5 flex-wrap pt-2 pb-1">
               {isSeance && (
-                <ActChip onClick={() => onStartDay(d)} primary>
+                <ActChip onClick={() => onStartDay(d!)} primary>
                   <Play size={11} strokeWidth={2.5} fill="#fff" style={{ color: "#fff" }} /> Commencer
                 </ActChip>
               )}
-              {isSeance && <ActChip onClick={() => onAsk(`Remplace ma séance de ${DAY_FULL[idx]} par autre chose`)}><span style={{ color: "#C9B8FF" }}>✦</span> Remplacer</ActChip>}
-              {isSeance && <ActChip onClick={() => onAsk(`Décale ma séance de ${DAY_FULL[idx]} à un autre jour`)}>Décaler</ActChip>}
+              {isSeance && <ActChip onClick={() => onAsk("Remplace ma séance de " + DAY_FULL[idx] + " par autre chose")}><span style={{ color: "#C9B8FF" }}>✦</span> Remplacer</ActChip>}
+              {isSeance && <ActChip onClick={() => onAsk("Décale ma séance de " + DAY_FULL[idx] + " à un autre jour")}>Décaler</ActChip>}
               {isSeance
-                ? <ActChip onClick={() => onAsk(`Mets repos le ${DAY_FULL[idx]}`)}>☾ Repos</ActChip>
-                : <ActChip onClick={() => onAsk(`Ajoute une séance le ${DAY_FULL[idx]}`)}><span style={{ color: "#C9B8FF" }}>✦</span> Ajouter une séance</ActChip>}
+                ? <ActChip onClick={() => onAsk("Mets repos le " + DAY_FULL[idx])}>☾ Repos</ActChip>
+                : <ActChip onClick={() => onAsk("Ajoute une séance le " + DAY_FULL[idx])}><span style={{ color: "#C9B8FF" }}>✦</span> Ajouter une séance</ActChip>}
             </div>
           </motion.div>
         )}
@@ -3237,7 +3316,7 @@ type LaunchTarget = {
   difficulty: string;
   category?: string;
   exerciseList?: Exercise[];
-  planningDate?: string;   // présent = séance du planning → marquer « done » à la fin
+  planningId?: string;     // présent = intention du planning → la marquer « faite » à la fin
   /* Présent = séance venue directement du CYCLE, sans intention datée.
      Rien n'a été écrit pour la lancer ; c'est la fin de séance qui écrit
      le fait et referme l'étape. */
@@ -3398,7 +3477,15 @@ export default function ProgressionPage() {
 
   /* ── État du héros ── */
   const parJour = useMemo(() => parDate(week), [week]);
-  const todayDay = parJour[today] ?? null;
+  /* ⚠️ LE HÉROS N'A LA PLACE QUE POUR UNE SÉANCE, DONC IL MONTRE LA
+     PRINCIPALE (V6b) : l'étape du programme d'abord, sinon la plus
+     ancienne intention de la journée. Ce qui vient en plus ne disparaît
+     pas pour autant, il se voit dans la bande semaine et dans Organiser.
+     Lui donner sa propre place sur l'accueil est un travail de mise en
+     scène, et c'est V7. */
+  const intentionsDuJour = parJour[today] ?? [];
+  const todayDay = principale(intentionsDuJour);
+  const extrasDuJour = supplements(intentionsDuJour);
   /* L'INSTANCE de l'étape : sa liste d'exercices concrète. Calcul local et
      instantané, jetable, jamais écrite tant que la séance n'est pas faite. */
   const instanceEtape = useMemo(
@@ -3420,10 +3507,12 @@ export default function ProgressionPage() {
     const demain = prochainsJours(2)[1];
     for (const date of semaineDates) {
       if (date <= today) continue;
-      const jour = parJour[date];
-      if (hasSeance(jour) && jour.status !== "done") {
+      /* La prochaine séance À FAIRE de la journée, pas la première ligne :
+         une journée peut porter une séance déjà faite et un extra prévu. */
+      const suivante = seancesDuJour(parJour[date]).find((x) => x.status !== "done");
+      if (suivante) {
         const when = date === demain ? "demain" : DAY_FULL[weekdayIndex(date)];
-        return `${dayTitle(jour)} · ${when}`;
+        return `${dayTitle(suivante)} · ${when}`;
       }
     }
     return null;
@@ -3562,7 +3651,7 @@ export default function ProgressionPage() {
       difficulty: d.difficulty,
       category: d.type,
       exerciseList: d.exerciseList,
-      planningDate: d.date,
+      planningId: d.id ?? undefined,
     });
   };
   /* Lancer une étape du cycle : on matérialise son instance À CET
@@ -3587,12 +3676,22 @@ export default function ProgressionPage() {
     startEtape();
   };
 
-  /* Drag & drop de l'agenda : persiste les deux jours échangés, puis
-     resynchronise le héros (l'agenda a déjà fait sa mise à jour optimiste). */
-  const moveDays = async (a: PlanningDay, b: PlanningDay, msg: string) => {
+  /* Drag & drop de l'agenda : l'intention CHANGE DE DATE et garde son
+     identité, donc une seule écriture, et rien à l'arrivée n'est touché.
+     Puis on resynchronise le héros (l'agenda a déjà fait sa mise à jour
+     optimiste). */
+  const deplacerIntention = async (intention: PlanningDay, msg: string) => {
     if (!user) return;
-    await Promise.all([saveDay(user.id, a, "utilisateur"), saveDay(user.id, b, "utilisateur")]);
-    showToast(msg);
+    try {
+      await saveDay(user.id, intention, "utilisateur");
+      showToast(msg);
+    } catch {
+      /* La mise à jour optimiste de l'agenda a déjà bougé la carte : on
+         dit que ça n'a pas pris, et on relit pour remettre l'écran en
+         accord avec la base plutôt que de laisser un déplacement qui
+         n'existe que devant les yeux. */
+      showToast("Impossible de déplacer cette séance");
+    }
     void loadWeek();
   };
 
@@ -3620,9 +3719,12 @@ export default function ProgressionPage() {
   };
 
   const handleWorkoutComplete = (target: LaunchTarget) => {
-    if (target.planningDate && user) {
-      void setDayStatus(user.id, target.planningDate, "done");
-      setWeek((prev) => prev?.map((d) => d.date === target.planningDate ? { ...d, status: "done" as const } : d) ?? prev);
+    /* ⚠️ ON MARQUE L'INTENTION, PLUS LA DATE (V6b). Par la date, terminer
+       une séance créditerait aussi le supplément du même jour : on en
+       aurait fait une, l'app en compterait deux. */
+    if (target.planningId && user) {
+      void marquerIntention(user.id, target.planningId, "done");
+      setWeek((prev) => prev?.map((d) => d.id === target.planningId ? { ...d, status: "done" as const } : d) ?? prev);
       return;
     }
     /* ⚠️ L'ÉTAPE SE REFERME ICI, ET NULLE PART AILLEURS. La séance venait
@@ -3726,11 +3828,15 @@ export default function ProgressionPage() {
 
   /* « Ajouter à ma semaine » : on COPIE la séance sur le jour choisi et on
      garde le renvoi vers son modèle (sessionId), comme le fait l'assistant.
-     Le jour cible est réécrit : c'est le sens de « Remplacer » à l'écran. */
+
+     ⚠️ ELLE AJOUTE, ELLE NE REMPLACE PLUS (V6b). C'était le dernier
+     endroit du produit où poser une séance en détruisait une autre, et
+     c'est précisément ce que la journée à deux séances rend inutile. */
   const planifierSeance = async (s: MergedSession, date: string) => {
     if (!user) return;
     const saved = readLieu(user.id);
     const jour: PlanningDay = {
+      id: null,
       date,
       type: PLANNING_TYPE_BY_CATEGORY[s.category] ?? "Force",
       title: s.title,
@@ -3741,16 +3847,12 @@ export default function ProgressionPage() {
       status: "planned",
     };
     try {
-      await saveDay(user.id, jour, "utilisateur");
-      /* ⚠️ La semaine est CREUSE depuis V5 : le jour visé peut ne pas y
-         être du tout, donc un `map` ne le trouverait jamais et l'écran
-         n'afficherait rien avant un rechargement. */
-      setWeek((prev) => {
-        if (!prev) return prev;
-        return prev.some((d) => d.date === date)
-          ? prev.map((d) => (d.date === date ? jour : d))
-          : [...prev, jour].sort((a, b) => a.date.localeCompare(b.date));
-      });
+      const ecrite = await ajouterIntention(user.id, jour, "utilisateur");
+      /* ⚠️ La semaine est CREUSE depuis V5 et elle peut porter DEUX lignes
+         sur une même date depuis V6b : on ajoute, on ne remplace pas la
+         ligne du jour, sinon la séance déjà posée disparaîtrait de
+         l'écran alors qu'elle est toujours en base. */
+      setWeek((prev) => (prev ? [...prev, ecrite].sort((a, b) => a.date.localeCompare(b.date)) : prev));
       if (typeof window !== "undefined") {
         window.dispatchEvent(new CustomEvent("programme-updated", { detail: { date } }));
       }
@@ -3896,6 +3998,36 @@ export default function ProgressionPage() {
             onShift={() => openAssistant("Décale ma séance d’aujourd’hui à un autre jour")}
             onReplace={() => openAssistant("Remplace ma séance d’aujourd’hui par autre chose")}
           />
+
+          {/* ⚠️ CE QUI VIENT EN PLUS AUJOURD'HUI (V6b). Le héros ne montre
+              qu'une séance, et c'est très bien : il répond à « je fais
+              quoi maintenant ». Mais une seconde intention existe en base,
+              donc elle doit exister à l'écran, sinon on l'a écrite pour
+              rien. Une ligne, lançable, sous le héros : la vraie place
+              d'une journée à deux séances est un travail de composition,
+              et c'est V7. */}
+          {extrasDuJour.length > 0 && (
+            <div className="mt-2.5">
+              {extrasDuJour.map((extra) => (
+                <button key={extra.id ?? extra.title}
+                  onClick={() => { if (hasSeance(extra)) startDay(extra); }}
+                  disabled={!hasSeance(extra)}
+                  className="w-full flex items-center gap-2 py-1.5 text-left border-none bg-transparent"
+                  style={{ cursor: hasSeance(extra) ? "pointer" : "default" }}>
+                  <span className="vy-label flex-shrink-0" style={{ color: "var(--text-3)" }}>En plus</span>
+                  <span className="flex-1 min-w-0 text-[12.5px] font-semibold truncate" style={{ color: "var(--text-2)" }}>
+                    {dayTitle(extra)}
+                  </span>
+                  {hasSeance(extra) && (
+                    <span className="text-[10px] font-bold flex-shrink-0"
+                      style={{ color: extra.status === "done" ? "var(--teal-encre)" : "var(--exp-encre)" }}>
+                      {extra.status === "done" ? "Faite ✓" : "Commencer"}
+                    </span>
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
         </section>
 
         {/* ── ② Bifurcation ── */}
@@ -3967,7 +4099,7 @@ export default function ProgressionPage() {
             onStartDay={(d) => { setSheet(null); startDay(d); }}
             onAsk={(p) => { setSheet(null); openAssistant(p); }}
             onAddSession={() => setSheet("choisir")}
-            onMove={moveDays}
+            onMove={deplacerIntention}
           />
         )}
       </AnimatePresence>

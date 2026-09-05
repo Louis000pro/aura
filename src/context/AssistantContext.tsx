@@ -30,7 +30,8 @@ import { voix, voixAction, CHOIX_LIEU, CHOIX_EQUIP, type EtatGuide, type GuideRe
 import { useGuideActif } from "@/context/GuideContext";
 import { PLANS } from "@/lib/plans";
 import {
-  resolveWhen, dayLabel, dayLabelLong, dayTitle, fetchDay, fetchRange, hasSeance, saveDay, prochainsJours,
+  resolveWhen, dayLabel, dayLabelLong, dayTitle, lireJour, fetchRange, hasSeance, saveDay, prochainsJours,
+  principale, seancesDuJour,
   ctxFromLieu, readLieu, loadLieu, persistLieu, readVariant, weekDates, todayYmd, normalizeExercises, previewWeek, libererJours,
   PLANNING_TYPE_BY_CATEGORY, type PlanningDay, type GenInput,
 } from "@/lib/planning";
@@ -640,11 +641,17 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       // jour d'entraînement à venir cette semaine (« déplace ma séance dans 2
       // jours » sans préciser le départ doit marcher même si aujourd'hui = repos).
       let from = action.when ? resolveWhen(action.when) : null;
-      let src = from ? await fetchDay(user.id, from) : null;
+      /* ⚠️ ON DÉPLACE UNE INTENTION, PLUS UNE JOURNÉE (V6b). Une date en
+         porte désormais plusieurs : on prend la première séance encore à
+         faire, jamais la journée entière, sinon un supplément partirait
+         avec la séance principale sans que personne ne l'ait demandé. */
+      const seanceAdeplacer = (jour: PlanningDay[]) =>
+        seancesDuJour(jour).find((d) => d.status !== "done") ?? null;
+      let src = from ? seanceAdeplacer(await lireJour(user.id, from)) : null;
       const weekMap = await fetchRange(user.id, weekDates());
       if (!hasSeance(src)) {
-        const next = weekDates().find((d) => d >= todayYmd() && d !== to && hasSeance(weekMap[d]));
-        if (next) { from = next; src = weekMap[next]; }
+        const next = weekDates().find((d) => d >= todayYmd() && d !== to && !!seanceAdeplacer(weekMap[d] ?? []));
+        if (next) { from = next; src = seanceAdeplacer(weekMap[next] ?? []); }
       }
       if (!hasSeance(src) || !from) {
         say(voix(guideRef.current, "impasse.move_introuvable"));
@@ -660,8 +667,8 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
            rendrait « déplace ma séance » impossible pour presque tout le
            monde, et l'échec serait muet. */
         const rest = (d: string) => {
-          const day = weekMap[d];
-          return !day || (day.status !== "done" && !hasSeance(day));
+          const jour = weekMap[d] ?? [];
+          return jour.length === 0 || jour.every((i) => i.status !== "done" && !hasSeance(i));
         };
         to = weekDates().find((d) => d > from! && rest(d))
           ?? weekDates().find((d) => d >= todayYmd() && d !== from && rest(d))
@@ -676,14 +683,23 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
         return;
       }
       const movedDay: PlanningDay = { ...src, date: to, status: "planned" };
-      const ecrase = hasSeance(weekMap[to]) ? dayTitle(weekMap[to]) : null;
-      const t = texteCartePlan(movedDay, ecrase, "Déplacer vers");
+      /* ⚠️ « REJOINT », PLUS « À LA PLACE DE » (V6b). L'intention se
+         DÉPLACE, elle garde son identité et change de date : ce qui est
+         déjà posé au jour d'arrivée reste, et la journée en porte deux.
+         Aucune séance n'est écrasée par un déplacement.
+
+         ⚠️ ET PLUS DE `liberer` SUR LE JOUR DE DÉPART. Il servait à
+         effacer la ligne restée derrière quand le déplacement en CRÉAIT
+         une nouvelle ailleurs. Maintenant qu'elle se déplace, libérer le
+         jour de départ emporterait ses voisines. */
+      const rejoint = principale(weekMap[to] ?? []);
+      const cotoie = hasSeance(rejoint) ? dayTitle(rejoint) : null;
+      const t = texteCartePlan(movedDay, null, "Déplacer vers");
       setPendingPlan({
         ...t,
-        kicker: `${CAP(dayLabelLong(from))} → ${dayLabelLong(to)}${ecrase ? ` · à la place de « ${ecrase} »` : ""}`,
+        kicker: `${CAP(dayLabelLong(from))} → ${dayLabelLong(to)}${cotoie ? ` · avec « ${cotoie} »` : ""}`,
         title: dayTitle(src),
         writes: [movedDay],
-        liberer: [from],
         preview: movedDay,
         retargetable: true,
       });
@@ -734,7 +750,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
          semaine générée recréerait le mobilier automatique que V5 retire.
          Les jours sans séance sont libérés, et un jour libre veut dire
          libre. Les jours déjà faits et le passé ne bougent pas. */
-      const aVenir = dates.filter((d) => d >= todayYmd() && existing[d]?.status !== "done");
+      const aVenir = dates.filter((d) => d >= todayYmd() && !(existing[d] ?? []).some((i) => i.status === "done"));
       const writes = previewWeek(gen, dates)
         .filter((d) => aVenir.includes(d.date))
         .filter(hasSeance);
@@ -788,6 +804,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       const category = normalizeWorkoutCategory(row.category);
       const saved = readLieu(user.id);
       const libDay: PlanningDay = {
+        id: null,
         date: day,
         type: PLANNING_TYPE_BY_CATEGORY[category] ?? "Force",
         title: row.title,
@@ -797,7 +814,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
         sessionId: row.id,
         status: "planned",
       };
-      const avant = await fetchDay(user.id, day);
+      const avant = principale(await lireJour(user.id, day));
       setPendingPlan({
         ...texteCartePlan(libDay, hasSeance(avant) ? dayTitle(avant) : null),
         title: row.title,
@@ -826,7 +843,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       ? (action.muscles as unknown[]).filter((m): m is string => typeof m === "string")
       : [];
     let baseDesc = (action.description || "").trim();
-    const existing = await fetchDay(user.id, when);
+    const existing = principale(await lireJour(user.id, when));
     if (action.intent === "plan_location") {
       baseDesc = existing && existing.title ? existing.title : "séance complète";
     }
@@ -860,6 +877,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       });
 
       const day: PlanningDay = {
+        id: null,
         date: when,
         type: PLANNING_TYPE_BY_CATEGORY[category] ?? "Force",
         title: seance.title,
@@ -1489,6 +1507,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
     const saved = readLieu(user.id);
     try {
       await saveDay(user.id, {
+        id: null,
         date: jour,
         type: PLANNING_TYPE_BY_CATEGORY[category] ?? "Force",
         title: s.title,
@@ -1518,14 +1537,20 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
   const chargerJours = useCallback(async (): Promise<JourDispo[]> => {
     if (!user?.id) return [];
     const dates = prochainsJours(7);
-    let map: Record<string, PlanningDay> = {};
+    let map: Record<string, PlanningDay[]> = {};
     try { map = await fetchRange(user.id, dates); } catch { /* planning illisible → jours nus */ }
-    return dates.map((d, i) => ({
-      ymd: d,
-      label: i === 0 ? "Aujourd’hui" : i === 1 ? "Demain" : CAP(dayLabel(d)).slice(0, 3) + ". " + Number(d.slice(8)),
-      occupe: hasSeance(map[d]) ? dayTitle(map[d]) : null,
-      bloque: map[d]?.status === "done",
-    }));
+    return dates.map((d, i) => {
+      /* ⚠️ « OCCUPÉ » NE VEUT PLUS DIRE « PRIS » (V6b) : la journée peut
+         en porter une seconde. On nomme ce qui s'y trouve, et on ne
+         bloque que ce qui est FAIT, qu'on ne réécrit jamais. */
+      const tete = principale(map[d]);
+      return {
+        ymd: d,
+        label: i === 0 ? "Aujourd’hui" : i === 1 ? "Demain" : CAP(dayLabel(d)).slice(0, 3) + ". " + Number(d.slice(8)),
+        occupe: hasSeance(tete) ? dayTitle(tete) : null,
+        bloque: (map[d] ?? []).every((i2) => i2.status === "done") && (map[d] ?? []).length > 0,
+      };
+    });
   }, [user?.id]);
 
   /* ── Changer le jour visé par une carte planning ──

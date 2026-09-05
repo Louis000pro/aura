@@ -38,8 +38,24 @@ export type Nature = "seance" | "repos";
  */
 export type Origine = "systeme" | "utilisateur" | "guide";
 
-/** Un jour du planning, avec sa séance directement dedans. */
+/**
+ * UNE INTENTION d'entraînement, avec sa séance directement dedans.
+ *
+ * ⚠️ LE NOM MENT DEPUIS V6b, ET IL RESTE POUR NE PAS RENOMMER 4 000
+ * LIGNES DANS LA MÊME VAGUE : ce n'est plus « un jour du planning », une
+ * journée pouvant désormais en porter plusieurs (la séance principale et
+ * son supplément). Tout le reste du fichier en tire les conséquences.
+ */
 export interface PlanningDay {
+  /**
+   * ⚠️ L'IDENTITÉ DE LA LIGNE, ET C'EST V6b QUI LA REND INDISPENSABLE.
+   * Une date ne désigne plus une intention : elle en désigne autant que
+   * la journée en porte. `null` veut dire « cette intention n'existe pas
+   * encore en base » (une séance générée, une prévisualisation), donc
+   * l'écrire la CRÉE. Le champ est obligatoire exprès : chaque endroit
+   * qui fabrique une intention doit répondre à la question.
+   */
+  id: string | null;
   date: string;                 // YYYY-MM-DD
   type: string;                 // "Force" | "HIIT" | "Repos" (label d'affichage)
   title: string;                // nom du split ("Push", "Haut du corps"…) ou ""
@@ -48,6 +64,16 @@ export interface PlanningDay {
   exerciseList: Exercise[];
   sessionId: string | null;     // renvoi optionnel vers un modèle de la biblio
   status: DayStatus;
+  /**
+   * L'étape du cycle que cette intention referme. Elle décide de la
+   * hiérarchie de la journée : l'étape d'abord, les suppléments ensuite
+   * (leur étape vaut `null`). Absente d'une intention qu'on vient de
+   * fabriquer et qui n'a encore rien refermé.
+   */
+  etapeId?: string | null;
+  /** Départage deux suppléments : le plus ancien d'abord. Absente d'une
+   *  intention qui n'est pas encore en base. */
+  creeLe?: string | null;
 }
 
 export interface GenInput {
@@ -243,13 +269,14 @@ function generateWeek(gen: GenInput, dates: string[]): PlanningDay[] {
   return dates.map((date, dayIdx) => {
     const pos = trainingDays.indexOf(dayIdx);
     if (pos === -1) {
-      return { date, type: "Repos", title: "", difficulty, location: gen.ctx, exerciseList: [], sessionId: null, status: "planned" as DayStatus };
+      return { id: null, date, type: "Repos", title: "", difficulty, location: gen.ctx, exerciseList: [], sessionId: null, status: "planned" as DayStatus };
     }
     const sessionType = split[pos % split.length];
     const isCardio = sessionType.includes("Cardio");
     const bank = EX[gen.ctx][sessionType] ?? EX[gen.ctx]["Full Body"];
     const exerciseList = shuffleArr(bank, rng).slice(0, 5).map((p) => toExercise(p, scheme));
     return {
+      id: null,
       date,
       type: isCardio ? "HIIT" : "Force",
       title: sessionType,
@@ -374,13 +401,19 @@ export function colonnesIntention(s: SchemaIntentions, extra = ""): string {
   return `${extra ? extra + ", " : ""}${s.colStatut}`;
 }
 
-/** Les colonnes à demander, avec le bon nom de statut. */
+/** Les colonnes à demander, avec le bon nom de statut.
+ *
+ *  ⚠️ `id` ET `created_at` ONT REJOINT LA LISTE EN V6b, et ce n'est pas du
+ *  confort : une date ne désigne plus une ligne, donc il faut de quoi
+ *  désigner celle qu'on modifie, et de quoi ordonner celles d'une même
+ *  journée. `etape_consommee_id` porte la hiérarchie (l'étape d'abord). */
 function colonnes(s: SchemaIntentions): string {
-  return `date, type, title, difficulty, location, exercise_list, session_id, ${s.colStatut}`;
+  return `id, date, type, title, difficulty, location, exercise_list, session_id, etape_consommee_id, created_at, ${s.colStatut}`;
 }
 
 /* ═══════════════════════════ Persistance Supabase ═══════════════════════════ */
 interface PlanningRow {
+  id: string;
   date: string;
   type: string;
   title: string | null;
@@ -388,6 +421,8 @@ interface PlanningRow {
   location: string | null;
   exercise_list: Exercise[] | null;
   session_id: string | null;
+  etape_consommee_id?: string | null;
+  created_at?: string | null;
   /* ⚠️ LES DEUX NOMS, ET LES DEUX VOCABULAIRES. Une ligne peut arriver de
      l'ancien contrat (`status: 'planned'`) comme du nouveau
      (`statut: 'prevue'`). Lire l'un en croyant l'autre ne plante pas, ça
@@ -399,6 +434,7 @@ interface PlanningRow {
 function rowToDay(r: PlanningRow, s: SchemaIntentions): PlanningDay {
   const brut = String((r as unknown as Record<string, unknown>)[s.colStatut] ?? "");
   return {
+    id: r.id,
     date: r.date,
     type: r.type,
     title: r.title ?? "",
@@ -409,6 +445,8 @@ function rowToDay(r: PlanningRow, s: SchemaIntentions): PlanningDay {
     // Un mot inconnu vaut « prévue » : on ne fait jamais passer pour faite
     // une intention dont on n'a pas compris le statut.
     status: s.versCode[brut] ?? "planned",
+    etapeId: r.etape_consommee_id ?? null,
+    creeLe: r.created_at ?? null,
   };
 }
 
@@ -419,6 +457,7 @@ function rowToDay(r: PlanningRow, s: SchemaIntentions): PlanningDay {
  * Un défaut cacherait la question à l'endroit exact où il faut se la poser.
  */
 function dayToRow(userId: string, d: PlanningDay, origine: Origine, s: SchemaIntentions) {
+  const maintenant = new Date().toISOString();
   return {
     user_id: userId,
     date: d.date,
@@ -431,7 +470,14 @@ function dayToRow(userId: string, d: PlanningDay, origine: Origine, s: SchemaInt
     [s.colStatut]: s.versBase[d.status],
     nature: natureDe(d),
     origine,
-    updated_at: new Date().toISOString(),
+    /* ⚠️ ÉCRITE ICI PARCE QUE L'INVARIANT EST ENTRÉ EN BASE (V6) :
+       `consommee_le` est non nulle si ET SEULEMENT SI l'intention est
+       résolue. Sans cette ligne, réécrire une intention déjà faite en
+       « prévue » laisserait la date en place et la CHECK refuserait
+       l'écriture. Le mauvais échec serait de ne s'en apercevoir qu'en
+       production, sur le premier remplacement d'une séance faite. */
+    consommee_le: d.status === "planned" ? null : maintenant,
+    updated_at: maintenant,
   };
 }
 
@@ -450,10 +496,15 @@ function dayToRow(userId: string, d: PlanningDay, origine: Origine, s: SchemaInt
  * RACCOURCIT : la garantie « toujours sept lignes dans l'ordre du lundi »
  * vient de tomber avec l'écriture à la lecture. C'est exactement le
  * scénario que V1 avait préparé.
+ *
+ * ⚠️ ET DEPUIS V6b IL PEUT AUSSI ÊTRE PLUS LONG QUE SEPT : une journée
+ * porte autant d'intentions qu'on y a posées. La seule lecture juste est
+ * donc `parDate`, qui rend LA LISTE d'une date, puis `principale` et
+ * `supplements` pour la hiérarchie.
  */
 export async function lireSemaine(userId: string, dates: string[] = weekDates()): Promise<PlanningDay[]> {
   const map = await fetchRange(userId, dates);
-  return dates.map((d) => map[d]).filter(Boolean);
+  return dates.flatMap((d) => map[d] ?? []);
 }
 
 /**
@@ -490,30 +541,44 @@ export async function reposerLaSemaine(userId: string, gen: GenInput, dates: str
   const restant = await fetchRange(userId, dates);
   const seances = generateWeek(gen, dates)
     .filter(hasSeance)
-    .filter((d) => !restant[d.date]);
+    .filter((d) => (restant[d.date] ?? []).length === 0);
+  /* ⚠️ UN `insert`, PLUS UN `upsert` : c'est V6b. L'ancienne écriture
+     s'appuyait sur `on_conflict=user_id,date` pour ignorer les doublons,
+     or cette contrainte disparaît. Le tri ci-dessus fait déjà le travail
+     qu'elle faisait, et il le fait mieux : il ne pose une séance que sur
+     une date où il ne reste RIEN, suppléments compris. */
   if (seances.length > 0) {
     await supabase
       .from(sc.table)
-      .upsert(seances.map((d) => dayToRow(userId, d, "systeme", sc)), { onConflict: "user_id,date", ignoreDuplicates: true });
+      .insert(seances.map((d) => dayToRow(userId, d, "systeme", sc)));
   }
   return lireSemaine(userId, dates);
 }
 
-/** Récupère un seul jour (sans amorçage). null si absent. */
-export async function fetchDay(userId: string, date: string): Promise<PlanningDay | null> {
+/**
+ * TOUTES les intentions d'une date, dans l'ordre de lecture.
+ *
+ * ⚠️ C'ÉTAIT `fetchDay`, ET IL RENDAIT UNE SEULE LIGNE VIA `maybeSingle()`.
+ * Ce n'est pas qu'une question de type : `maybeSingle()` ÉCHOUE dès que la
+ * requête ramène deux lignes. Le jour où quelqu'un pose une seconde séance
+ * sur une journée, l'ancienne version n'aurait pas montré la première,
+ * elle aurait rendu une erreur. Le renommage est là pour qu'aucun appelant
+ * ne la retrouve en croyant qu'elle rend encore un jour.
+ */
+export async function lireJour(userId: string, date: string): Promise<PlanningDay[]> {
   const supabase = createClient();
   const sc = await schemaIntentions();
   const { data } = await supabase
     .from(sc.table)
     .select(colonnes(sc))
     .eq("user_id", userId)
-    .eq("date", date)
-    .maybeSingle();
-  return data ? rowToDay(data as unknown as PlanningRow, sc) : null;
+    .eq("date", date);
+  return ordonner((data ?? []).map((r) => rowToDay(r as unknown as PlanningRow, sc)));
 }
 
-/** Récupère plusieurs jours en UNE requête, indexés par date (YYYY-MM-DD). */
-export async function fetchRange(userId: string, dates: string[]): Promise<Record<string, PlanningDay>> {
+/** Récupère plusieurs jours en UNE requête, indexés par date (YYYY-MM-DD).
+ *  Chaque date porte SA LISTE d'intentions, déjà ordonnée. */
+export async function fetchRange(userId: string, dates: string[]): Promise<Record<string, PlanningDay[]>> {
   if (dates.length === 0) return {};
   const supabase = createClient();
   const sc = await schemaIntentions();
@@ -522,9 +587,7 @@ export async function fetchRange(userId: string, dates: string[]): Promise<Recor
     .select(colonnes(sc))
     .eq("user_id", userId)
     .in("date", dates);
-  const out: Record<string, PlanningDay> = {};
-  for (const row of (data ?? [])) { const d = rowToDay(row as unknown as PlanningRow, sc); out[d.date] = d; }
-  return out;
+  return parDate((data ?? []).map((r) => rowToDay(r as unknown as PlanningRow, sc)));
 }
 
 /**
@@ -538,10 +601,66 @@ export async function fetchRange(userId: string, dates: string[]): Promise<Recor
  * couramment deux ou trois lignes au lieu de sept. `week[i]` et
  * `days[selectedDay]` désignent maintenant le mauvais jour pour de bon.
  */
-export function parDate(days: PlanningDay[] | null | undefined): Record<string, PlanningDay> {
-  const out: Record<string, PlanningDay> = {};
-  for (const d of days ?? []) out[d.date] = d;
+export function parDate(days: PlanningDay[] | null | undefined): Record<string, PlanningDay[]> {
+  const out: Record<string, PlanningDay[]> = {};
+  for (const d of days ?? []) (out[d.date] ??= []).push(d);
+  for (const date of Object.keys(out)) out[date] = ordonner(out[date]);
   return out;
+}
+
+/**
+ * L'ORDRE DE LECTURE D'UNE JOURNÉE : l'étape du programme d'abord, les
+ * suppléments ensuite, du plus ancien au plus récent.
+ *
+ * ⚠️ IL N'Y A PAS DE COLONNE D'ORDRE, ET IL NE FAUT PAS EN AJOUTER UNE.
+ * La hiérarchie se DÉDUIT : ce qui referme une étape du cycle est la
+ * séance du programme, tout le reste est venu en plus. Une colonne
+ * `position` serait une seconde autorité, à tenir à jour à chaque
+ * écriture, et elle se désynchroniserait comme tous les compteurs qu'on a
+ * déjà retirés du produit (l'EXP, la série).
+ *
+ * ⚠️ UNE INTENTION PAS ENCORE EN BASE PASSE EN DERNIER. Elle n'a pas de
+ * date de création, et c'est justement la plus récente : la faire passer
+ * en tête ferait sauter la carte du héros le temps d'un enregistrement.
+ */
+const JAMAIS_ECRITE = "~"; // trie après n'importe quel horodatage ISO
+
+export function ordonner(jour: PlanningDay[] | null | undefined): PlanningDay[] {
+  return [...(jour ?? [])].sort((a, b) => {
+    const ea = a.etapeId ? 0 : 1;
+    const eb = b.etapeId ? 0 : 1;
+    if (ea !== eb) return ea - eb;
+    const ca = a.creeLe ?? JAMAIS_ECRITE;
+    const cb = b.creeLe ?? JAMAIS_ECRITE;
+    if (ca !== cb) return ca < cb ? -1 : 1;
+    return (a.id ?? "").localeCompare(b.id ?? "");
+  });
+}
+
+/**
+ * L'intention qui REPRÉSENTE la journée : celle que montrent le héros et
+ * la bande semaine quand il n'y a la place que pour une.
+ *
+ * ⚠️ ELLE PEUT ÊTRE `null` SANS QUE LA JOURNÉE SOIT VIDE au sens de V5 :
+ * une liste vide veut dire « rien de prévu », et c'est une réponse.
+ */
+export function principale(jour: PlanningDay[] | null | undefined): PlanningDay | null {
+  return ordonner(jour)[0] ?? null;
+}
+
+/** Ce qui vient EN PLUS ce jour-là. Jamais masqué : c'est toute la vague. */
+export function supplements(jour: PlanningDay[] | null | undefined): PlanningDay[] {
+  return ordonner(jour).slice(1);
+}
+
+/** Les intentions de la journée qui portent une vraie séance. */
+export function seancesDuJour(jour: PlanningDay[] | null | undefined): PlanningDay[] {
+  return ordonner(jour).filter(hasSeance);
+}
+
+/** La première séance encore à faire ce jour-là, s'il y en a une. */
+export function prochaineSeanceDuJour(jour: PlanningDay[] | null | undefined): PlanningDay | null {
+  return seancesDuJour(jour).find((d) => d.status === "planned") ?? null;
 }
 
 /**
@@ -586,16 +705,116 @@ export function seanceNonFaite(day: PlanningDay | null | undefined, today: strin
   );
 }
 
-/** Enregistre / remplace un jour. `origine` dit QUI l'a voulu. */
-export async function saveDay(userId: string, day: PlanningDay, origine: Origine): Promise<void> {
+/**
+ * ⚠️ LES DEUX SEULES FAÇONS D'ÉCRIRE UNE INTENTION, ET LA DIFFÉRENCE EST
+ * LA RÈGLE DU MODÈLE : REMPLACER, C'EST MODIFIER L'INTENTION EXISTANTE ;
+ * AJOUTER, C'EST EN CRÉER UNE. Un remplacement ne crée jamais de seconde
+ * ligne, un ajout n'écrase jamais la première.
+ *
+ * ⚠️ ET PLUS AUCUN `on_conflict=user_id,date` : la contrainte disparaît
+ * en V6b, donc PostgREST n'a plus rien sur quoi arbitrer. Ce qui décidait
+ * en base décide désormais ici, en une seule fonction, à partir d'une
+ * lecture de la journée visée.
+ */
+async function poser(
+  userId: string,
+  day: PlanningDay,
+  origine: Origine,
+  mode: "remplacer" | "ajouter",
+): Promise<PlanningDay> {
   const supabase = createClient();
   const sc = await schemaIntentions();
-  await supabase.from(sc.table).upsert(dayToRow(userId, day, origine, sc), { onConflict: "user_id,date" });
+  /* La journée VISÉE, pas celle d'où l'intention vient : c'est elle qui
+     porte les voisines et la règle repos/séance. */
+  const jour = await lireJour(userId, day.date);
+
+  /* Quelle ligne écrit-on ? Une intention qui a une identité se modifie
+     elle-même (on la déplace, on la remplace) ; sinon on reprend la
+     principale de la journée, et JAMAIS une séance déjà faite : la
+     réécrire effacerait un fait pour y mettre une intention. */
+  const cible = day.id
+    ?? (mode === "remplacer" ? ordonner(jour).find((i) => i.status !== "done")?.id ?? null : null);
+
+  /* ⚠️ UNE ÉCRITURE REFUSÉE DOIT SE VOIR, ET C'EST LA FENÊTRE DE
+     DÉPLOIEMENT QUI L'IMPOSE. Entre le moment où ce code part en
+     production et celui où la migration retire `UNIQUE (user_id, date)`,
+     poser une SECONDE intention sur une journée est refusé par la base.
+     Avaler l'erreur laisserait l'écran afficher une séance qui n'existe
+     pas : on la remonte, l'appelant dit que ça n'a pas marché. */
+  let ecrit: PlanningDay;
+  if (cible) {
+    const { error } = await supabase
+      .from(sc.table)
+      .update(dayToRow(userId, day, origine, sc))
+      .eq("id", cible)
+      .eq("user_id", userId);
+    if (error) throw new Error(error.message);
+    ecrit = { ...day, id: cible };
+  } else {
+    const { data, error } = await supabase
+      .from(sc.table)
+      .insert(dayToRow(userId, day, origine, sc))
+      .select("id, created_at")
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    const ligne = (data ?? null) as { id?: string; created_at?: string } | null;
+    ecrit = { ...day, id: ligne?.id ?? null, creeLe: ligne?.created_at ?? null };
+  }
+
+  /* ⚠️ LA RÈGLE QUE LA BASE NE PEUT PAS TENIR : UN REPOS ET UNE SÉANCE NE
+     COEXISTENT PAS À LA MÊME DATE. Un `EXCLUDE` l'imposerait, mais il
+     interdirait du même coup les suppléments, qui sont justement ce que
+     V6b ouvre. C'est donc une règle d'ÉCRITURE, et elle vit ici, à
+     l'endroit unique où l'on pose une intention délibérée : poser une
+     séance sur un jour de repos retire le repos, poser un repos sur un
+     jour de séances retire les séances encore prévues. Une journée qui
+     porterait les deux serait exactement l'état ambigu qu'on refuse.
+
+     ⚠️ ELLE NE TOUCHE JAMAIS UNE INTENTION FAITE. « Faire une séance non
+     prévue un jour de repos ne touche à rien » : le fait est enregistré,
+     le repos reste, et personne ne réécrit le passé. */
+  const contraires = jour.filter(
+    (i) => i.id && i.id !== ecrit.id && i.status !== "done" && natureDe(i) !== natureDe(day),
+  );
+  if (contraires.length > 0) {
+    await supabase
+      .from(sc.table)
+      .delete()
+      .eq("user_id", userId)
+      .in("id", contraires.map((i) => i.id as string));
+  }
+
+  return ecrit;
+}
+
+/**
+ * REMPLACE l'intention principale du jour (ou celle que `day.id` désigne).
+ * C'est le geste de « Remplacer » et celui d'un déplacement : rien ne se
+ * duplique. `origine` dit QUI l'a voulu.
+ */
+export async function saveDay(userId: string, day: PlanningDay, origine: Origine): Promise<PlanningDay> {
+  return poser(userId, day, origine, "remplacer");
+}
+
+/**
+ * AJOUTE une intention à la journée, sans toucher à ce qui s'y trouve
+ * déjà. C'est le supplément : une séance principale et un extra le même
+ * jour est un cas normal, et c'est la raison d'être de V6b.
+ *
+ * ⚠️ ELLE NE REFERME AUCUNE ÉTAPE (`etape_consommee_id` reste nul), ce qui
+ * est exactement ce qui la range après la principale dans l'ordre de
+ * lecture, et ce qui la laisse échapper à `uniq_intention_par_etape`.
+ */
+export async function ajouterIntention(userId: string, day: PlanningDay, origine: Origine): Promise<PlanningDay> {
+  return poser(userId, { ...day, id: null }, origine, "ajouter");
 }
 
 /** Libère un jour : plus aucune intention, donc rien de prévu. C'est ce qui
  *  remplace le « Repos » qu'on écrivait sur le jour de départ d'un
- *  déplacement, et qui affirmait un repos que personne n'avait choisi. */
+ *  déplacement, et qui affirmait un repos que personne n'avait choisi.
+ *
+ *  ⚠️ ELLE EMPORTE TOUTE LA JOURNÉE, SUPPLÉMENTS COMPRIS, et c'est bien ce
+ *  que « libérer le jour » veut dire. Ce qui est FAIT ne bouge jamais. */
 export async function libererJours(userId: string, dates: string[]): Promise<void> {
   if (dates.length === 0) return;
   const supabase = createClient();
@@ -609,14 +828,19 @@ export async function libererJours(userId: string, dates: string[]): Promise<voi
 }
 
 /**
- * Met à jour le statut d'un jour (planned → done après une séance).
+ * Met à jour le statut d'UNE intention (planned → done après une séance).
  *
  * ⚠️ ELLE POSE AUSSI `consommee_le`, ET SANS ÇA LE CURSEUR DU CYCLE NE
  * PEUT PAS SE DÉRIVER : il s'ordonne par cette date, jamais par `date`,
  * une intention non datée n'en ayant pas. V2 a rempli la colonne pour
  * l'existant ; c'est ici qu'elle se tient à jour.
  */
-export async function setDayStatus(userId: string, date: string, status: DayStatus): Promise<void> {
+export async function marquerIntention(userId: string, intentionId: string | null, status: DayStatus): Promise<void> {
+  /* ⚠️ ELLE VISE UNE INTENTION, PLUS UNE DATE, ET C'EST TOUT V6b EN UNE
+     LIGNE. Marquer « faite » par la date créditerait d'un coup la séance
+     principale ET le supplément du même jour : on aurait fait une séance,
+     l'app en compterait deux. Sans identité, on ne marque rien. */
+  if (!intentionId) return;
   const supabase = createClient();
   const sc = await schemaIntentions();
   const maintenant = new Date().toISOString();
@@ -627,8 +851,8 @@ export async function setDayStatus(userId: string, date: string, status: DayStat
       consommee_le: status === "planned" ? null : maintenant,
       updated_at: maintenant,
     })
-    .eq("user_id", userId)
-    .eq("date", date);
+    .eq("id", intentionId)
+    .eq("user_id", userId);
 }
 
 /* ═══════════════════════════ Helpers lieu/contexte ═══════════════════════════ */

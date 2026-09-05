@@ -11,8 +11,8 @@ import { createClient } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import WorkoutGuideModal from "@/components/WorkoutGuideModal";
 import {
-  lireSemaine, reposerLaSemaine, setDayStatus, ctxFromLieu, dayTitle, persistLieu, loadLieu,
-  weekDatesForOffset, weekOffsetOf, weekdayIndex, todayWeekIndex, parDate,
+  lireSemaine, reposerLaSemaine, marquerIntention, ctxFromLieu, dayTitle, persistLieu, loadLieu,
+  weekDatesForOffset, weekOffsetOf, weekdayIndex, todayWeekIndex, parDate, principale, supplements,
   type PlanningDay, type GenInput,
 } from "@/lib/planning";
 
@@ -562,9 +562,13 @@ export default function WeeklyProgramme() {
      garantit ni sept entrées ni leur ordre dès qu'un jour peut manquer. */
   const semaineDates = weekDatesForOffset(weekOffset);
   const parJour = parDate(days);
-  /* Type explicite : l'indexation d'un Record rend `PlanningDay` alors
-     qu'elle peut ne rien trouver. On garde la vérité dans le type. */
-  const currentDay: PlanningDay | undefined = parJour[semaineDates[selectedDay]];
+  /* Type explicite : l'indexation d'un Record rend `PlanningDay[]` alors
+     qu'elle peut ne rien trouver. On garde la vérité dans le type.
+     ⚠️ Une date porte désormais une LISTE (V6b) : ce détail d'affichage
+     montre la principale, et le détail complet vit dans « Ma semaine ». */
+  const intentionsDuJour: PlanningDay[] = parJour[semaineDates[selectedDay]] ?? [];
+  const currentDay: PlanningDay | null = principale(intentionsDuJour);
+  const extras = supplements(intentionsDuJour);
 
   const getDayFromX = (clientX: number): number => {
     const rect = trackRef.current?.getBoundingClientRect();
@@ -707,6 +711,32 @@ export default function WeeklyProgramme() {
             />
           )}
         </AnimatePresence>
+
+        {/* ⚠️ CE QUI VIENT EN PLUS CE JOUR-LÀ (V6b). Le détail ci-dessus
+            montre la séance principale ; une journée peut en porter une
+            seconde, et le minimum est qu'elle ne DISPARAISSE pas. Une
+            ligne, lançable, sans refaire la carte : la vraie mise en
+            scène d'une journée à deux séances viendra avec l'accueil. */}
+        {!loading && extras.length > 0 && (
+          <div className="mt-2.5">
+            <p className="text-[9px] font-semibold mb-1" style={{ color: "var(--text-3)" }}>
+              En plus ce jour-là
+            </p>
+            {extras.map((extra) => (
+              <button key={extra.id ?? extra.title}
+                onClick={() => setLaunchDay(extra)}
+                className="w-full flex items-center gap-2 py-1.5 text-left cursor-pointer border-none bg-transparent">
+                <span className="flex-1 min-w-0 text-[11.5px] font-semibold truncate" style={{ color: "var(--text-2)" }}>
+                  {dayTitle(extra)}
+                </span>
+                <span className="text-[9.5px] font-bold flex-shrink-0"
+                  style={{ color: extra.status === "done" ? "var(--teal-encre)" : "var(--exp-encre)" }}>
+                  {extra.status === "done" ? "Faite ✓" : "Commencer"}
+                </span>
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Modal tuto vidéo de l'exercice sélectionné */}
@@ -728,7 +758,7 @@ export default function WeeklyProgramme() {
               category={launchDay.type}
               exerciseList={launchDay.exerciseList}
               onClose={() => setLaunchDay(null)}
-              onComplete={() => { if (user) void setDayStatus(user.id, launchDay.date, "done"); }}
+              onComplete={() => { if (user) void marquerIntention(user.id, launchDay.id, "done"); }}
             />
           )}
         </AnimatePresence>,

@@ -344,7 +344,13 @@ export async function consommerEtape(
   const supabase = createClient();
   const sc = await schemaIntentions();
   const maintenant = new Date().toISOString();
-  await supabase.from(sc.table).upsert({
+  /* ⚠️ UN `insert`, ET PLUS UN `upsert` SUR LA DATE (V6b). L'ancienne
+     écriture écrasait ce qui se trouvait déjà sur la journée : faire
+     l'étape du cycle un jour où une séance était prévue effaçait cette
+     intention, et faire une séance un jour de repos effaçait le repos.
+     Le fait s'ENREGISTRE, il ne remplace rien : c'est la règle « faire une
+     séance non prévue un jour de repos ne touche à rien ». */
+  await supabase.from(sc.table).insert({
     user_id: userId,
     date: jour.date,
     type: jour.type,
@@ -363,7 +369,7 @@ export async function consommerEtape(
     etape_consommee_id: etapeId,
     consommee_le: maintenant,
     updated_at: maintenant,
-  }, { onConflict: "user_id,date" });
+  });
 }
 
 /**

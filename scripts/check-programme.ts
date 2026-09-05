@@ -17,7 +17,11 @@
    ════════════════════════════════════════════════════════════════════ */
 import { readFileSync, readdirSync } from "node:fs";
 import { etapesDuCycle, etapeSuivante, nomDeProgramme, POSITION_INITIALE } from "@/lib/programme";
-import { cycleDeReference, seancesDuCycle, previewWeek, weekDates, ANCIEN, NOUVEAU } from "@/lib/planning";
+import {
+  cycleDeReference, seancesDuCycle, previewWeek, weekDates, ANCIEN, NOUVEAU,
+  ordonner, parDate, principale, supplements, seancesDuJour, prochaineSeanceDuJour,
+  type PlanningDay,
+} from "@/lib/planning";
 
 let echecs = 0;
 function verdict(nom: string, bon: boolean, detail: string) {
@@ -139,7 +143,7 @@ verdict("nom · liste vide", nomDeProgramme([]) === "Mon programme", nomDeProgra
     return source.slice(debut, suite === -1 ? source.length : suite);
   };
   const ECRITURES = [".insert(", ".upsert(", ".delete(", ".update("];
-  for (const nom of ["lireSemaine", "fetchDay", "fetchRange"]) {
+  for (const nom of ["lireSemaine", "lireJour", "fetchRange"]) {
     const corps = corpsDe(nom);
     const fautes = corps === null ? ["fonction introuvable"] : ECRITURES.filter((e) => corps.includes(e));
     verdict("lecture pure · " + nom, fautes.length === 0, fautes.length ? "écrit : " + fautes.join(" ") : "aucune écriture");
@@ -189,6 +193,126 @@ verdict(
   };
   for (const d of dossiers) parcourir(d);
   verdict("plus aucune table nommée en dur", enDur.length === 0, enDur.length ? enDur.join(", ") : "toutes les lectures passent par le schéma résolu");
+}
+
+/* ── 8. La journée à plusieurs intentions (V6b) ───────────────────────
+   ⚠️ TOUT SE JOUE ICI : ce sont des fonctions PURES, donc la hiérarchie
+   d'une journée se vérifie hors ligne, sur une app pourtant auth-gated.
+   Le défaut qu'elles empêchent est le pire de la vague : une seconde
+   séance écrite en base et qui n'apparaît nulle part.                   */
+{
+  const intention = (p: Partial<PlanningDay>): PlanningDay => ({
+    id: null, date: "2026-09-10", type: "Force", title: "Séance",
+    difficulty: "Intermédiaire", location: null,
+    exerciseList: [{ name: "Pompes", sets: 3, reps: "12", rest: 60, restAfter: 90, tip: "", benefit: "", muscles: [] }],
+    sessionId: null, status: "planned", etapeId: null, creeLe: null, ...p,
+  });
+
+  const etape   = intention({ id: "a", title: "Push", etapeId: "e1", creeLe: "2026-09-09T18:00:00Z" });
+  const vieille = intention({ id: "b", title: "Ancienne", creeLe: "2026-09-01T08:00:00Z" });
+  const recente = intention({ id: "c", title: "Récente", creeLe: "2026-09-09T20:00:00Z" });
+  const neuve   = intention({ id: null, title: "Pas encore écrite" });
+
+  const ordre = ordonner([recente, vieille, etape, neuve]).map((i) => i.title);
+  verdict(
+    "journée · l'étape d'abord, les suppléments ensuite",
+    ordre.join(" · ") === "Push · Ancienne · Récente · Pas encore écrite",
+    ordre.join(" · "),
+  );
+
+  /* Une seule séance sur un jour : rien ne change, et c'est le contrôle
+     qui compte le plus, parce que c'est le cas de tout le monde. */
+  const seule = [intention({ id: "z", title: "Full Body", creeLe: "2026-09-02T08:00:00Z" })];
+  verdict(
+    "journée · une seule séance, comportement identique",
+    principale(seule)?.title === "Full Body" && supplements(seule).length === 0,
+    "principale = Full Body, 0 supplément",
+  );
+
+  /* Deux séances le même jour : les DEUX existent, et l'ordre est stable. */
+  const deux = [vieille, recente];
+  verdict(
+    "journée · séance + supplément, les deux existent",
+    principale(deux)?.title === "Ancienne" && supplements(deux).map((i) => i.title).join() === "Récente",
+    "principale = Ancienne, supplément = Récente",
+  );
+
+  /* ⚠️ LE DÉFAUT QUE L'ANCIEN `parDate` AVAIT : il indexait par date, donc
+     la seconde intention d'une même journée ÉCRASAIT la première dans le
+     Record. Elle était en base, lue, et invisible. */
+  const index = parDate([vieille, recente, intention({ id: "d", date: "2026-09-11", title: "Autre jour" })]);
+  verdict(
+    "journée · aucune intention perdue à l'indexation",
+    index["2026-09-10"]?.length === 2 && index["2026-09-11"]?.length === 1,
+    (index["2026-09-10"]?.length ?? 0) + " le 10, " + (index["2026-09-11"]?.length ?? 0) + " le 11",
+  );
+
+  /* Un repos ne se lance pas, et il ne compte pas comme une séance. */
+  const repos = intention({ id: "r", type: "Repos", title: "", exerciseList: [], creeLe: "2026-09-01T07:00:00Z" });
+  verdict(
+    "journée · un repos n'est jamais compté comme une séance",
+    seancesDuJour([repos, vieille]).map((i) => i.title).join() === "Ancienne",
+    "1 séance retenue sur 2 intentions",
+  );
+
+  /* La prochaine séance À FAIRE, pas la première ligne : une journée peut
+     porter une séance déjà faite et un extra encore prévu. */
+  const faiteEtExtra = [
+    intention({ id: "f", title: "Déjà faite", status: "done", creeLe: "2026-09-01T08:00:00Z" }),
+    intention({ id: "g", title: "Extra du soir", creeLe: "2026-09-09T19:00:00Z" }),
+  ];
+  verdict(
+    "journée · la prochaine séance est celle qui reste à faire",
+    prochaineSeanceDuJour(faiteEtExtra)?.title === "Extra du soir",
+    prochaineSeanceDuJour(faiteEtExtra)?.title ?? "aucune",
+  );
+
+  verdict("journée · une journée vide n'a pas de principale", principale([]) === null, "null");
+}
+
+/* ── 9. Plus rien ne s'appuie sur `UNIQUE (user_id, date)` (V6b) ──────
+   ⚠️ CE CONTRÔLE LIT LE SOURCE, ET C'EST VOLONTAIRE. La contrainte
+   disparaît en base : un `on_conflict=user_id,date` oublié quelque part
+   ne casserait pas le typecheck, il échouerait à l'exécution, sur une
+   écriture, chez quelqu'un. Et `marquerIntention` par la date créditerait
+   d'un coup la séance ET le supplément du même jour.                    */
+{
+  const source = readFileSync(new URL("../src/lib/planning.ts", import.meta.url), "utf8");
+  const programme = readFileSync(new URL("../src/lib/programme.ts", import.meta.url), "utf8");
+
+  const fautes: string[] = [];
+  const parcourir = (d: string) => {
+    for (const e of readdirSync(d, { withFileTypes: true })) {
+      const chemin = d + "/" + e.name;
+      if (e.isDirectory()) { parcourir(chemin); continue; }
+      if (!/[.]tsx?$/.test(e.name)) continue;
+      const t = readFileSync(chemin, "utf8");
+      /* On ne regarde que les fichiers qui écrivent DANS LES INTENTIONS :
+         d'autres tables ont une unicité (user_id, date) parfaitement
+         légitime (la pesée du jour, la présence), et elles la gardent. */
+      if (t.includes("schemaIntentions") && /onConflict:\s*"user_id,date"/.test(t)) fautes.push(chemin);
+    }
+  };
+  for (const d of ["src/lib", "src/app", "src/components", "src/context"]) parcourir(d);
+  verdict(
+    "V6b · plus aucun on_conflict sur (user_id, date) pour les intentions",
+    fautes.length === 0,
+    fautes.length ? fautes.join(", ") : "toutes les écritures désignent une ligne",
+  );
+
+  verdict(
+    "V6b · consommerEtape ENREGISTRE le fait, il n'écrase plus la journée",
+    programme.includes("await supabase.from(sc.table).insert({") && !programme.includes('onConflict: "user_id,date"'),
+    "insert, plus d'upsert sur la date",
+  );
+
+  const corpsMarquer = source.slice(source.indexOf("export async function marquerIntention"));
+  const corps = corpsMarquer.slice(0, corpsMarquer.indexOf("\n}"));
+  verdict(
+    "V6b · marquerIntention vise une intention, jamais une date",
+    corps.includes('.eq("id", intentionId)') && !corps.includes('.eq("date"'),
+    "cible = id",
+  );
 }
 
 console.log("\n" + (echecs === 0 ? "Tout passe." : echecs + " échec(s)."));
