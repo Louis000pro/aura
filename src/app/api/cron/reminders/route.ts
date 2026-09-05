@@ -206,7 +206,11 @@ async function portraits(
       admin.from("workout_sessions").select("user_id, started_at").in("user_id", ids),
       admin.from("nutrition_logs").select("user_id, date").in("user_id", ids).gte("date", debutHabitude),
       admin.from("daily_stats").select("user_id, date, streak").in("user_id", ids).gte("date", debutObservation),
-      admin.from("planning_days").select("user_id, type, title, exercise_list, status").in("user_id", ids).eq("date", today),
+      /* ⚠️ `nature` PLUTÔT QUE LE LIBELLÉ `type` : la nature d'une ligne se
+         déduisait d'un mot d'AFFICHAGE (« Repos »), donc renommer un badge
+         aurait changé qui reçoit un push. La colonne existe depuis V2 et
+         elle est renseignée sur toutes les lignes. */
+      admin.from("planning_days").select("user_id, type, title, exercise_list, status, nature").in("user_id", ids).eq("date", today),
       admin.from("aura_mission_credits").select("user_id, points").in("user_id", ids),
       admin.from("notification_rappels").select("user_id, jour, cle, variante").in("user_id", ids).gte("jour", debutJournal).order("jour", { ascending: false }),
       lireProfils(admin, ids),
@@ -258,10 +262,28 @@ async function portraits(
     if (!p) continue;
     const type = String(j.type ?? "");
     const exos = Array.isArray(j.exercise_list) ? j.exercise_list.length : 0;
-    // Même définition que `hasSession` côté client : un jour « Repos », ou
-    // un jour sans exercice, n'est pas une séance à faire.
-    if (type.toLowerCase() === "repos" || exos === 0) { p.jourDeRepos = true; continue; }
+
+    /* Un repos EXPLICITEMENT posé : la personne a choisi de ne pas
+       s'entraîner, on se tait. Depuis V5 c'est le seul repos qui existe,
+       les 225 repos que l'ancien moteur posait tout seul ont été
+       supprimés : ils faisaient taire le rappel au nom d'un choix que
+       personne n'avait fait. */
+    if (j.nature === "repos") { p.jourDeRepos = true; continue; }
+
     if (j.status === "done") { p.seanceFaite = true; continue; }
+
+    /* ⚠️ SEULE UNE INTENTION ENCORE PRÉVUE SE RAPPELLE. Un jour
+       délibérément passé (`skipped`) mettait `seancePrevue` comme les
+       autres, donc l'app écrivait « ta séance t'attend » le soir même où
+       la personne l'avait écartée. Et une séance sans exercice n'a rien à
+       nommer : dans le doute, on se tait. */
+    if (j.status !== "planned" || exos === 0) continue;
+
+    /* ⚠️ UNE SÉANCE PRÉVUE L'EMPORTE SUR UN REPOS DU MÊME JOUR. Les deux
+       ne coexistent pas aujourd'hui (`UNIQUE (user_id, date)`), mais V6
+       retire cette contrainte : un rappel qui NOMME une vraie séance
+       n'est jamais à côté de la plaque, un silence de trop l'est. */
+    p.jourDeRepos = false;
     p.seancePrevue = String(j.title || type);
   }
 

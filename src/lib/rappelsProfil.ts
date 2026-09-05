@@ -136,7 +136,15 @@ export type ContexteRappel = {
   /** Jours depuis la dernière venue, null si jamais venu. */
   joursDepuisVenue: number | null;
 
-  /** Le jour au planning : son titre, et s'il s'agit d'un repos. */
+  /** L'intention DATÉE d'aujourd'hui : le titre d'une séance encore
+   *  prévue, et s'il s'agit d'un repos voulu.
+   *
+   *  ⚠️ `seancePrevue = null` VEUT DIRE « RIEN DE PRÉVU AUJOURD'HUI », ET
+   *  DEPUIS V5 C'EST LE CAS LE PLUS FRÉQUENT. Ce n'est pas un oubli à
+   *  rattraper : le programme dit QUOI faire ensuite, le planning dit
+   *  éventuellement QUAND, et quelqu'un en mode libre n'a aucune date.
+   *  Un rappel d'entraînement ce jour-là reviendrait à écrire « tu aurais
+   *  dû t'entraîner aujourd'hui » à quelqu'un qui n'avait rien promis. */
   seancePrevue: string | null;
   jourDeRepos: boolean;
 
@@ -332,6 +340,22 @@ export function rappelPour(c: ContexteRappel): Rappel | null {
   if (c.seanceFaite) {
     return REPAS.quand(c) ? habiller(REPAS, c) : null;
   }
+
+  /* ⚠️ AUCUNE INTENTION DATÉE AUJOURD'HUI → AUCUN RAPPEL D'ENTRAÎNEMENT
+     (règle produit, Louis, 2026-09-05). Avant V5, l'ancien moteur écrivait
+     sept lignes par semaine, donc il y avait TOUJOURS quelque chose au
+     planning et cette question ne se posait pas. Maintenant que l'absence
+     de ligne veut dire « rien de prévu », quatre des cinq modèles
+     partiraient sans qu'aucune séance n'ait été promise : « une séance et
+     tu passes Argent », « ta série continue », et le générique. Reprocher
+     un entraînement que personne n'avait prévu, c'est exactement ce que
+     le produit s'interdit.
+
+     ⚠️ CE GARDE-FOU EST APRÈS `seanceFaite`, ET PAS AVANT : le rappel
+     NUTRITION n'est pas un rappel d'entraînement. Il ne part qu'à
+     quelqu'un qui VIENT de s'entraîner et qui note habituellement ses
+     repas, donc il ne reproche rien à personne. */
+  if (!c.seancePrevue) return null;
 
   const applicables = MODELES.filter((m) => m.quand(c));
   const precis = applicables.filter((m) => !m.dernierRecours);
