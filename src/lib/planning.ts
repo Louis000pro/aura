@@ -295,6 +295,90 @@ export function dayLabel(date: string): string {
   return DAY_LABELS[idx];
 }
 
+/* ═══════════════════ La couche d'accès transitoire (V6) ═══════════════════
+
+   ⚠️ LE CODE COMPREND LES DEUX VOCABULAIRES, ET C'EST LA CORRECTION POSÉE
+   PAR LOUIS AU PLAN. Une vue de compatibilité protégerait le NOM de la
+   table, pas le SENS de ses valeurs : un déploiement qui lit `status` et
+   reçoit `prevue` ne plante pas, il comprend de travers, et « faite »
+   cesse silencieusement d'être reconnue. L'ordre de déploiement est donc
+   celui-ci, et il n'est pas négociable :
+
+     1. ce code transitoire part en production (il lit et écrit l'ancien
+        schéma tant que le nouveau n'existe pas) ;
+     2. ensuite seulement, la migration renomme ;
+     3. plus tard, quand plus aucun déploiement n'a l'ancien contrat en
+        tête, cette couche disparaît.
+
+   ⚠️ TANT QUE LA MIGRATION N'EST PAS APPLIQUÉE, RIEN NE CHANGE. Le
+   sondage échoue sur la table neuve, on retombe sur l'ancienne, et
+   l'application se comporte exactement comme avant.                     */
+
+export type SchemaIntentions = {
+  table: string;
+  /** Le nom de la colonne de statut : `status` hier, `statut` demain. */
+  colStatut: string;
+  /** Le mot écrit en base pour un statut du code. */
+  versBase: Record<DayStatus, string>;
+  /** Le statut du code pour un mot lu en base. */
+  versCode: Record<string, DayStatus>;
+};
+
+export const ANCIEN: SchemaIntentions = {
+  table: "planning_days",
+  colStatut: "status",
+  versBase: { planned: "planned", done: "done", skipped: "skipped" },
+  versCode: { planned: "planned", done: "done", skipped: "skipped" },
+};
+
+export const NOUVEAU: SchemaIntentions = {
+  table: "intentions_entrainement",
+  colStatut: "statut",
+  versBase: { planned: "prevue", done: "faite", skipped: "passee" },
+  versCode: { prevue: "planned", faite: "done", passee: "skipped" },
+};
+
+/* Sondé UNE fois par session, puis mémorisé : la question ne change pas
+   d'une requête à l'autre. Le coût est d'une requête au premier accès.
+
+   ⚠️ LE CLIENT EST UN ARGUMENT, PARCE QUE LE CRON N'A PAS LE MÊME. Le
+   rappel du soir et les statistiques d'administration lisent ces lignes
+   avec le client de service, côté serveur : s'ils gardaient l'ancien
+   contrat en dur, la première nuit après la migration serait une nuit
+   sans aucun rappel, et personne ne le verrait. */
+type ClientLike = { from: (t: string) => { select: (c: string) => { limit: (n: number) => PromiseLike<{ error: unknown }> } } };
+
+let schemaResolu: SchemaIntentions | null = null;
+let sondage: Promise<SchemaIntentions> | null = null;
+
+export async function schemaIntentions(client?: ClientLike): Promise<SchemaIntentions> {
+  if (schemaResolu) return schemaResolu;
+  if (sondage) return sondage;
+  sondage = (async () => {
+    try {
+      const c = client ?? (createClient() as unknown as ClientLike);
+      const { error } = await c.from(NOUVEAU.table).select("id").limit(1);
+      schemaResolu = error ? ANCIEN : NOUVEAU;
+    } catch {
+      schemaResolu = ANCIEN;
+    }
+    sondage = null;
+    return schemaResolu;
+  })();
+  return sondage;
+}
+
+/** Les colonnes de l'intention, avec le bon nom de statut. Exporté pour
+ *  les lectures serveur, qui composent leur propre requête. */
+export function colonnesIntention(s: SchemaIntentions, extra = ""): string {
+  return `${extra ? extra + ", " : ""}${s.colStatut}`;
+}
+
+/** Les colonnes à demander, avec le bon nom de statut. */
+function colonnes(s: SchemaIntentions): string {
+  return `date, type, title, difficulty, location, exercise_list, session_id, ${s.colStatut}`;
+}
+
 /* ═══════════════════════════ Persistance Supabase ═══════════════════════════ */
 interface PlanningRow {
   date: string;
@@ -304,10 +388,16 @@ interface PlanningRow {
   location: string | null;
   exercise_list: Exercise[] | null;
   session_id: string | null;
-  status: string | null;
+  /* ⚠️ LES DEUX NOMS, ET LES DEUX VOCABULAIRES. Une ligne peut arriver de
+     l'ancien contrat (`status: 'planned'`) comme du nouveau
+     (`statut: 'prevue'`). Lire l'un en croyant l'autre ne plante pas, ça
+     comprend de travers : « faite » cesserait simplement d'être reconnue. */
+  status?: string | null;
+  statut?: string | null;
 }
 
-function rowToDay(r: PlanningRow): PlanningDay {
+function rowToDay(r: PlanningRow, s: SchemaIntentions): PlanningDay {
+  const brut = String((r as unknown as Record<string, unknown>)[s.colStatut] ?? "");
   return {
     date: r.date,
     type: r.type,
@@ -316,7 +406,9 @@ function rowToDay(r: PlanningRow): PlanningDay {
     location: (r.location as Ctx | null) ?? null,
     exerciseList: Array.isArray(r.exercise_list) ? r.exercise_list : [],
     sessionId: r.session_id ?? null,
-    status: (r.status as DayStatus) ?? "planned",
+    // Un mot inconnu vaut « prévue » : on ne fait jamais passer pour faite
+    // une intention dont on n'a pas compris le statut.
+    status: s.versCode[brut] ?? "planned",
   };
 }
 
@@ -326,7 +418,7 @@ function rowToDay(r: PlanningRow): PlanningDay {
  * du mobilier qu'on peut remplacer ou une intention qu'on doit protéger.
  * Un défaut cacherait la question à l'endroit exact où il faut se la poser.
  */
-function dayToRow(userId: string, d: PlanningDay, origine: Origine) {
+function dayToRow(userId: string, d: PlanningDay, origine: Origine, s: SchemaIntentions) {
   return {
     user_id: userId,
     date: d.date,
@@ -336,7 +428,7 @@ function dayToRow(userId: string, d: PlanningDay, origine: Origine) {
     location: d.location,
     exercise_list: d.exerciseList,
     session_id: d.sessionId,
-    status: d.status,
+    [s.colStatut]: s.versBase[d.status],
     nature: natureDe(d),
     origine,
     updated_at: new Date().toISOString(),
@@ -381,11 +473,12 @@ export async function lireSemaine(userId: string, dates: string[] = weekDates())
  */
 export async function reposerLaSemaine(userId: string, gen: GenInput, dates: string[] = weekDates()): Promise<PlanningDay[]> {
   const supabase = createClient();
+  const sc = await schemaIntentions();
   await supabase
-    .from("planning_days")
+    .from(sc.table)
     .delete()
     .eq("user_id", userId)
-    .eq("status", "planned")
+    .eq(sc.colStatut, sc.versBase.planned)
     .eq("origine", "systeme")
     .in("date", dates);
 
@@ -400,8 +493,8 @@ export async function reposerLaSemaine(userId: string, gen: GenInput, dates: str
     .filter((d) => !restant[d.date]);
   if (seances.length > 0) {
     await supabase
-      .from("planning_days")
-      .upsert(seances.map((d) => dayToRow(userId, d, "systeme")), { onConflict: "user_id,date", ignoreDuplicates: true });
+      .from(sc.table)
+      .upsert(seances.map((d) => dayToRow(userId, d, "systeme", sc)), { onConflict: "user_id,date", ignoreDuplicates: true });
   }
   return lireSemaine(userId, dates);
 }
@@ -409,26 +502,28 @@ export async function reposerLaSemaine(userId: string, gen: GenInput, dates: str
 /** Récupère un seul jour (sans amorçage). null si absent. */
 export async function fetchDay(userId: string, date: string): Promise<PlanningDay | null> {
   const supabase = createClient();
+  const sc = await schemaIntentions();
   const { data } = await supabase
-    .from("planning_days")
-    .select("date, type, title, difficulty, location, exercise_list, session_id, status")
+    .from(sc.table)
+    .select(colonnes(sc))
     .eq("user_id", userId)
     .eq("date", date)
     .maybeSingle();
-  return data ? rowToDay(data as PlanningRow) : null;
+  return data ? rowToDay(data as unknown as PlanningRow, sc) : null;
 }
 
 /** Récupère plusieurs jours en UNE requête, indexés par date (YYYY-MM-DD). */
 export async function fetchRange(userId: string, dates: string[]): Promise<Record<string, PlanningDay>> {
   if (dates.length === 0) return {};
   const supabase = createClient();
+  const sc = await schemaIntentions();
   const { data } = await supabase
-    .from("planning_days")
-    .select("date, type, title, difficulty, location, exercise_list, session_id, status")
+    .from(sc.table)
+    .select(colonnes(sc))
     .eq("user_id", userId)
     .in("date", dates);
   const out: Record<string, PlanningDay> = {};
-  for (const row of (data ?? [])) { const d = rowToDay(row as PlanningRow); out[d.date] = d; }
+  for (const row of (data ?? [])) { const d = rowToDay(row as unknown as PlanningRow, sc); out[d.date] = d; }
   return out;
 }
 
@@ -494,7 +589,8 @@ export function seanceNonFaite(day: PlanningDay | null | undefined, today: strin
 /** Enregistre / remplace un jour. `origine` dit QUI l'a voulu. */
 export async function saveDay(userId: string, day: PlanningDay, origine: Origine): Promise<void> {
   const supabase = createClient();
-  await supabase.from("planning_days").upsert(dayToRow(userId, day, origine), { onConflict: "user_id,date" });
+  const sc = await schemaIntentions();
+  await supabase.from(sc.table).upsert(dayToRow(userId, day, origine, sc), { onConflict: "user_id,date" });
 }
 
 /** Libère un jour : plus aucune intention, donc rien de prévu. C'est ce qui
@@ -503,11 +599,12 @@ export async function saveDay(userId: string, day: PlanningDay, origine: Origine
 export async function libererJours(userId: string, dates: string[]): Promise<void> {
   if (dates.length === 0) return;
   const supabase = createClient();
+  const sc = await schemaIntentions();
   await supabase
-    .from("planning_days")
+    .from(sc.table)
     .delete()
     .eq("user_id", userId)
-    .neq("status", "done")
+    .neq(sc.colStatut, sc.versBase.done)
     .in("date", dates);
 }
 
@@ -521,11 +618,12 @@ export async function libererJours(userId: string, dates: string[]): Promise<voi
  */
 export async function setDayStatus(userId: string, date: string, status: DayStatus): Promise<void> {
   const supabase = createClient();
+  const sc = await schemaIntentions();
   const maintenant = new Date().toISOString();
   await supabase
-    .from("planning_days")
+    .from(sc.table)
     .update({
-      status,
+      [sc.colStatut]: sc.versBase[status],
       consommee_le: status === "planned" ? null : maintenant,
       updated_at: maintenant,
     })

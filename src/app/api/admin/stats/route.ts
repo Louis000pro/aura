@@ -24,6 +24,7 @@ import { exigerAdmin } from "@/lib/adminGuard";
 import { parisDateStr, shiftDateStr } from "@/lib/dates";
 import { LIMITES, type CategorieIA } from "@/lib/aiQuotas";
 import { EXP_BIENVENUE } from "@/lib/aura";
+import { schemaIntentions } from "@/lib/planning";
 
 /* ─── Ce qu'on lit en base ─── */
 type LigneProfil = {
@@ -35,7 +36,9 @@ type LigneJour     = { user_id: string; date: string; streak: number | null };
 type LigneSeance   = { user_id: string; started_at: string; title: string | null; duration_minutes: number | null };
 type LigneRepas    = { user_id: string; date: string; meal_type: string | null };
 type LigneCreation = { user_id: string; created_at: string };
-type LignePlanning = { user_id: string; date: string; status: string | null };
+/* Le statut arrive sous son nom d'hier ou celui de demain (V6) : la ligne
+   porte les deux, et on lit celui que le schéma résolu désigne. */
+type LignePlanning = { user_id: string; date: string } & Record<string, unknown>;
 type LigneRelais   = { id: string; statut: string | null; created_at: string; ends_on: string | null };
 type LigneCredit   = { user_id: string; points: number | null };
 type LigneUsageIA  = { user_id: string; cle: string; compteur: number | null };
@@ -85,12 +88,15 @@ export async function GET(req: NextRequest) {
       )
     : ((profilsComplets.data ?? []) as LigneProfil[]);
 
+  const sc = await schemaIntentions(admin as unknown as Parameters<typeof schemaIntentions>[0]);
+  const statutDe = (p: LignePlanning) => sc.versCode[String(p[sc.colStatut] ?? "")] ?? "planned";
+
   const [jours, seances, repas, creations, planning, relais, credits, usageIA, usageJour] = await Promise.all([
     lire<LigneJour>(admin.from("daily_stats").select("user_id, date, streak").limit(50000)),
     lire<LigneSeance>(admin.from("workout_sessions").select("user_id, started_at, title, duration_minutes").limit(50000)),
     lire<LigneRepas>(admin.from("nutrition_logs").select("user_id, date, meal_type").gte("date", il_y_a(29)).limit(50000)),
     lire<LigneCreation>(admin.from("custom_sessions").select("user_id, created_at").limit(50000)),
-    lire<LignePlanning>(admin.from("planning_days").select("user_id, date, status").gte("date", il_y_a(29)).limit(50000)),
+    lire<LignePlanning>(admin.from(sc.table).select(`user_id, date, ${sc.colStatut}`).gte("date", il_y_a(29)).limit(50000)),
     lire<LigneRelais>(admin.from("challenge_runs").select("id, statut, created_at, ends_on").limit(5000)),
     lire<LigneCredit>(admin.from("aura_mission_credits").select("user_id, points").limit(50000)),
     lire<LigneUsageIA>(admin.from("ai_usage").select("user_id, cle, compteur").limit(50000)),
@@ -366,8 +372,8 @@ export async function GET(req: NextRequest) {
         inscription: relais.filter((r) => r.statut === "inscription").length,
       },
       planning: {
-        prevus: planning30.filter((p) => p.status !== "skipped").length,
-        faits: planning30.filter((p) => p.status === "done").length,
+        prevus: planning30.filter((p) => statutDe(p) !== "skipped").length,
+        faits: planning30.filter((p) => statutDe(p) === "done").length,
       },
     },
     ia: {

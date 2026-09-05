@@ -15,9 +15,9 @@
    base, planning intact) se vérifie contre la vraie base, dans une
    transaction annulée.
    ════════════════════════════════════════════════════════════════════ */
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { etapesDuCycle, etapeSuivante, nomDeProgramme, POSITION_INITIALE } from "@/lib/programme";
-import { cycleDeReference, seancesDuCycle, previewWeek, weekDates } from "@/lib/planning";
+import { cycleDeReference, seancesDuCycle, previewWeek, weekDates, ANCIEN, NOUVEAU } from "@/lib/planning";
 
 let echecs = 0;
 function verdict(nom: string, bon: boolean, detail: string) {
@@ -149,6 +149,46 @@ verdict("nom · liste vide", nomDeProgramme([]) === "Mon programme", nomDeProgra
     !source.includes("export async function ensureWeek"),
     "plus exporté par planning.ts",
   );
+}
+
+/* ── 7. Les deux vocabulaires (V6) ────────────────────────────────────
+   ⚠️ Une vue de compatibilité protégerait le NOM de la table, pas le SENS
+   de ses valeurs : un déploiement qui lit `status` et reçoit `prevue` ne
+   plante pas, il comprend de travers, et « faite » cesse silencieusement
+   d'être reconnue. D'où deux tables de traduction, et ce contrôle qui
+   vérifie qu'elles sont bien l'inverse l'une de l'autre : une seule
+   entrée oubliée ferait passer une séance faite pour une séance à faire.  */
+for (const s of [ANCIEN, NOUVEAU]) {
+  const statuts = ["planned", "done", "skipped"] as const;
+  const allerRetour = statuts.every((st) => s.versCode[s.versBase[st]] === st);
+  verdict(
+    "vocabulaire · " + s.table,
+    allerRetour && Object.keys(s.versCode).length === statuts.length,
+    statuts.map((st) => st + "→" + s.versBase[st]).join(" · "),
+  );
+}
+verdict(
+  "vocabulaire · les deux contrats sont bien distincts",
+  ANCIEN.colStatut !== NOUVEAU.colStatut && ANCIEN.table !== NOUVEAU.table,
+  ANCIEN.colStatut + " / " + NOUVEAU.colStatut,
+);
+
+{
+  // Plus aucun écran ne doit nommer la table en dur : le nom se résout.
+  const dossiers = ["src/lib", "src/app", "src/components", "src/context"];
+  const enDur: string[] = [];
+  const parcourir = (d: string) => {
+    for (const e of readdirSync(d, { withFileTypes: true })) {
+      const chemin = d + "/" + e.name;
+      if (e.isDirectory()) { parcourir(chemin); continue; }
+      if (!/[.]tsx?$/.test(e.name)) continue;
+      const t = readFileSync(chemin, "utf8");
+      // planning.ts a le droit : c'est lui qui DÉCLARE l'ancien contrat.
+      if (t.includes('"planning_days"') && !chemin.endsWith("lib/planning.ts")) enDur.push(chemin);
+    }
+  };
+  for (const d of dossiers) parcourir(d);
+  verdict("plus aucune table nommée en dur", enDur.length === 0, enDur.length ? enDur.join(", ") : "toutes les lectures passent par le schéma résolu");
 }
 
 console.log("\n" + (echecs === 0 ? "Tout passe." : echecs + " échec(s)."));

@@ -37,7 +37,7 @@
    ════════════════════════════════════════════════════════════════════ */
 
 import { createClient } from "@/lib/supabase";
-import { cycleDeReference } from "@/lib/planning";
+import { cycleDeReference, schemaIntentions } from "@/lib/planning";
 import { libelleObjectif } from "@/lib/profilOnboarding";
 
 /** La première étape du cycle. Les positions sont numérotées à partir de
@@ -342,8 +342,9 @@ export async function consommerEtape(
   jour: { date: string; type: string; title: string; difficulty: string; location: string | null; exerciseList: unknown[] },
 ): Promise<void> {
   const supabase = createClient();
+  const sc = await schemaIntentions();
   const maintenant = new Date().toISOString();
-  await supabase.from("planning_days").upsert({
+  await supabase.from(sc.table).upsert({
     user_id: userId,
     date: jour.date,
     type: jour.type,
@@ -352,7 +353,7 @@ export async function consommerEtape(
     location: jour.location,
     exercise_list: jour.exerciseList,
     session_id: null,
-    status: "done",
+    [sc.colStatut]: sc.versBase.done,
     nature: "seance",
     // La personne a délibérément fait cette séance : c'est elle l'auteur,
     // pas le système qui l'avait proposée.
@@ -393,13 +394,14 @@ export async function etapeSuivanteDe(userId: string, actif: ProgrammeEtCycle): 
 async function positionConsommee(userId: string, actif: ProgrammeEtCycle): Promise<number | null> {
   const supabase = createClient();
   try {
+    const sc = await schemaIntentions();
     const { data } = await supabase
-      .from("planning_days")
+      .from(sc.table)
       .select("etape_consommee_id, consommee_le")
       .eq("user_id", userId)
       .eq("programme_id", actif.programme.id)
       .not("etape_consommee_id", "is", null)
-      .in("status", ["done", "skipped"])
+      .in(sc.colStatut, [sc.versBase.done, sc.versBase.skipped])
       .order("consommee_le", { ascending: false })
       .limit(1);
 

@@ -37,6 +37,7 @@ import {
   type Envoi,
   type Rappel,
 } from "@/lib/rappelsProfil";
+import { schemaIntentions } from "@/lib/planning";
 import type { GuideRef } from "@/lib/guides";
 import { ANNOUNCEMENTS, JOURS_ANNONCE_POUSSABLE, type Announcement } from "@/lib/announcements";
 
@@ -201,6 +202,8 @@ async function portraits(
   const debutObservation = shiftDateStr(today, -JOURS_OBSERVATION);
   const debutJournal     = shiftDateStr(today, -JOURS_JOURNAL);
 
+  const sc = await schemaIntentions(admin as unknown as Parameters<typeof schemaIntentions>[0]);
+
   const [seancesRes, repasRes, presenceRes, planningRes, expRes, journalRes, profilsRes] =
     await Promise.all([
       admin.from("workout_sessions").select("user_id, started_at").in("user_id", ids),
@@ -209,8 +212,13 @@ async function portraits(
       /* ⚠️ `nature` PLUTÔT QUE LE LIBELLÉ `type` : la nature d'une ligne se
          déduisait d'un mot d'AFFICHAGE (« Repos »), donc renommer un badge
          aurait changé qui reçoit un push. La colonne existe depuis V2 et
-         elle est renseignée sur toutes les lignes. */
-      admin.from("planning_days").select("user_id, type, title, exercise_list, status, nature").in("user_id", ids).eq("date", today),
+         elle est renseignée sur toutes les lignes.
+
+         ⚠️ ET LA TABLE COMME LE STATUT SE RÉSOLVENT (V6) : le cron tourne
+         côté serveur, donc il ne profite pas du sondage du navigateur.
+         S'il gardait l'ancien contrat en dur, la première nuit après le
+         renommage serait une nuit sans aucun rappel. */
+      admin.from(sc.table).select(`user_id, type, title, exercise_list, nature, ${sc.colStatut}`).in("user_id", ids).eq("date", today),
       admin.from("aura_mission_credits").select("user_id, points").in("user_id", ids),
       admin.from("notification_rappels").select("user_id, jour, cle, variante").in("user_id", ids).gte("jour", debutJournal).order("jour", { ascending: false }),
       lireProfils(admin, ids),
@@ -257,7 +265,13 @@ async function portraits(
     if (d.date === today) p.serie = (d.streak as number) ?? 0;
   }
 
-  for (const j of planningRes.data ?? []) {
+  /* Le `select` est composé (le nom de la colonne de statut varie), donc
+     l'inférence du client ne peut rien en dire : on décrit la forme ici. */
+  type LigneIntention = {
+    user_id: string; type: string | null; title: string | null;
+    exercise_list: unknown; nature: string | null;
+  } & Record<string, unknown>;
+  for (const j of ((planningRes.data ?? []) as unknown as LigneIntention[])) {
     const p = carte.get(j.user_id as string);
     if (!p) continue;
     const type = String(j.type ?? "");
@@ -270,14 +284,15 @@ async function portraits(
        personne n'avait fait. */
     if (j.nature === "repos") { p.jourDeRepos = true; continue; }
 
-    if (j.status === "done") { p.seanceFaite = true; continue; }
+    const statut = sc.versCode[String(j[sc.colStatut] ?? "")] ?? "planned";
+    if (statut === "done") { p.seanceFaite = true; continue; }
 
     /* ⚠️ SEULE UNE INTENTION ENCORE PRÉVUE SE RAPPELLE. Un jour
        délibérément passé (`skipped`) mettait `seancePrevue` comme les
        autres, donc l'app écrivait « ta séance t'attend » le soir même où
        la personne l'avait écartée. Et une séance sans exercice n'a rien à
        nommer : dans le doute, on se tait. */
-    if (j.status !== "planned" || exos === 0) continue;
+    if (statut !== "planned" || exos === 0) continue;
 
     /* ⚠️ UNE SÉANCE PRÉVUE L'EMPORTE SUR UN REPOS DU MÊME JOUR. Les deux
        ne coexistent pas aujourd'hui (`UNIQUE (user_id, date)`), mais V6
