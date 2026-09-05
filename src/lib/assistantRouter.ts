@@ -32,6 +32,12 @@
    il ne fait que décider. Ils ne peuvent pas être en désaccord puisqu'ils
    ne répondent pas à la même question.
 
+   ⚠️ La mesure ci-dessus date de `mistral-small-latest`, mais la leçon ne
+   dépend pas du modèle : un prompt court appelle ses outils, un prompt long
+   les oublie. C'est pour ça que ce fichier demande le rôle `outil` à
+   `optionsIA` : il a droit au plus petit modèle du fournisseur, puisqu'il
+   ne parle jamais et ne fait que choisir dans une liste fermée.
+
    ⚠️ `rien_a_faire` n'est pas décoratif. Sans issue de secours, le modèle
    appelle quelque chose PLUTÔT QUE RIEN : « salut » et « merci » partaient
    sur open_page. Avec cet outil-là, ils retombent correctement sur zéro
@@ -39,7 +45,7 @@
    ════════════════════════════════════════════════════════════════════ */
 
 import type OpenAI from "openai";
-import { llm, CHAT_MODEL } from "@/lib/llm";
+import { llm, optionsIA } from "@/lib/llm";
 import { ASSISTANT_TOOLS, type AssistantAction } from "@/lib/assistantTools";
 
 const RIEN = "rien_a_faire";
@@ -91,13 +97,25 @@ export async function deciderAction(messages: Message[]): Promise<AssistantActio
 
   try {
     const res = await llm.chat.completions.create({
-      model: CHAT_MODEL,
+      ...optionsIA("outil", 200),
       messages: [{ role: "system", content: PROMPT }, ...recents] as OpenAI.Chat.ChatCompletionMessageParam[],
-      max_tokens: 200,
       temperature: 0,
       tools: OUTILS as OpenAI.Chat.Completions.ChatCompletionTool[],
       tool_choice: "auto",
     });
+
+    /* ⚠️ Distinguer « il n'a rien à faire » de « il a été coupé ». Chez un
+       fournisseur qui RAISONNE, le raisonnement se paie sur le budget de
+       complétion : un budget trop court le fait s'arrêter AVANT d'écrire son
+       appel d'outil, et l'app se comporte alors exactement comme si aucune
+       action n'était demandée — aucune carte, aucune erreur, rien à
+       diagnostiquer. C'est le mode d'échec de la bascule de fournisseur, et
+       la réserve de `optionsIA` existe pour l'empêcher. Si cette ligne
+       apparaît dans les logs, c'est cette réserve qu'il faut remonter. */
+    if (res.choices?.[0]?.finish_reason === "length") {
+      console.error("[aiguilleur] réponse coupée (budget de tokens trop court) : aucune action ne sera proposée.");
+      return null;
+    }
 
     const appel = res.choices?.[0]?.message?.tool_calls?.[0];
     if (!appel || !("function" in appel)) return null;

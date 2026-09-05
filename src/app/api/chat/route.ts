@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import type OpenAI from "openai";
-import { llm, hasLLMKey, CHAT_MODEL } from "@/lib/llm";
+import { llm, hasLLMKey, optionsIA, NOM_FOURNISSEUR, CLE_ATTENDUE } from "@/lib/llm";
 import { buildSiteKnowledgePrompt } from "@/lib/siteKnowledge";
 import { buildMemoryPrompt, type AiMemory } from "@/lib/aiMemory";
 import { type ChatEvent } from "@/lib/assistantTools";
@@ -20,7 +20,7 @@ function contentEmpty(content: string | ContentPart[]): boolean {
 }
 
 /**
- * Nettoie l'historique pour Mistral (plus strict que Groq) : la conversation
+ * Nettoie l'historique pour le fournisseur le plus strict : la conversation
  * doit commencer par un message `user`, alterner user/assistant, et n'avoir
  * aucun contenu vide. On ignore les messages vides, on retire les messages
  * `assistant` en tête, et on fusionne deux messages TEXTE consécutifs de même
@@ -306,7 +306,7 @@ function fluxTexte(texte: string, ndjson: boolean) {
 export async function POST(req: NextRequest) {
   // Garde-fou : connexion obligatoire + plafond d'usage. Cette route était
   // ouverte à tout internet, donc n'importe qui pouvait faire tourner la
-  // facture Mistral sans même avoir de compte Vaiiya.
+  // facture du fournisseur d'IA sans même avoir de compte Vaiiya.
   const garde = await garderIA(req, "chat");
   if (!garde.ok) return garde.reponse;
 
@@ -376,7 +376,7 @@ export async function POST(req: NextRequest) {
 
   if (!hasLLMKey()) {
     return fluxTexte(
-      "⚠️ Clé API Mistral manquante. Ajoute MISTRAL_API_KEY dans ton .env.local et sur Vercel (https://console.mistral.ai/api-keys)",
+      `⚠️ Clé API ${NOM_FOURNISSEUR} manquante. Ajoute ${CLE_ATTENDUE} dans ton .env.local et sur Vercel (ou change AI_PROVIDER).`,
       ndjson
     );
   }
@@ -395,13 +395,12 @@ export async function POST(req: NextRequest) {
 
   try {
     const stream = await llm.chat.completions.create({
-      model: CHAT_MODEL,
+      ...optionsIA("coach", maxTokens),
       messages: [
         { role: "system", content: systemPrompt },
         ...historique,
       ] as OpenAI.Chat.ChatCompletionMessageParam[],
       stream: true,
-      max_tokens: maxTokens,
       temperature: 0.4,
     });
 

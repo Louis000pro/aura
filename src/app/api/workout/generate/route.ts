@@ -1,4 +1,4 @@
-import { llm, hasLLMKey, CHAT_MODEL } from "@/lib/llm";
+import { llm, hasLLMKey, optionsIA } from "@/lib/llm";
 import { NextResponse } from "next/server";
 import { garderIA, PLAFONDS, refusTaille } from "@/lib/aiLimits";
 import { exercicesDisponibles, aplatir, type LibExercise } from "@/lib/exerciseLibrary";
@@ -108,7 +108,7 @@ Tu PEUX t en servir pour un LEGER ajustement (intensite, volume ou duree) ou pou
     const listeAutorisee = dispo.map((e) => e.name).join(" | ");
 
     const response = await llm.chat.completions.create({
-      model: CHAT_MODEL,
+      ...optionsIA("coach", 2200),
       messages: [
         {
           role: "system",
@@ -160,7 +160,6 @@ ${targetSeconds ? `- DUREE : total proche de ${targetMinutes} min (${targetSecon
       ],
       // De quoi ecrire 8 exercices complets sans tronquer le JSON (un JSON
       // coupe en deux ne parse pas du tout : la generation echoue en entier).
-      max_tokens: 2200,
       temperature: 0.6,
       response_format: { type: "json_object" },
     });
@@ -220,7 +219,7 @@ ${targetSeconds ? `- DUREE : total proche de ${targetMinutes} min (${targetSecon
   } catch (err) {
     const e = err as { status?: number; message?: string };
     console.error("Workout generate error:", err);
-    // Détail temporaire pour diagnostic (statut Mistral : 429 ? parse ? …)
+    // Détail temporaire pour diagnostic (statut du fournisseur : 429 ? parse ? …)
     return NextResponse.json(
       { error: `Generation impossible [${e?.status ?? "?"}] ${(e?.message ?? "").slice(0, 150)}` },
       { status: 500 },

@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { llm, hasLLMKey, CHAT_MODEL } from "@/lib/llm";
+import { llm, hasLLMKey, optionsIA } from "@/lib/llm";
 import { ANALYZE_SYSTEM as SYSTEM } from "@/lib/analyzePrompt";
 import { garderIA } from "@/lib/aiLimits";
 
@@ -49,14 +49,13 @@ export async function POST(req: NextRequest) {
     },
   ];
   const ask = () => llm.chat.completions.create({
-    model: CHAT_MODEL,
+    ...optionsIA("outil", 280),
     messages,
     temperature: 0,
-    max_tokens: 280,
     response_format: { type: "json_object" },
   });
 
-  // Mistral palier gratuit = 1 req/s : cet appel suit de près celui du chat
+  // Palier gratuit = débit limité : cet appel suit de près celui du chat
   // et peut se prendre un 429. On retente UNE fois après la fenêtre de débit
   // plutôt que de perdre le fait à retenir.
   try {
@@ -67,7 +66,14 @@ export async function POST(req: NextRequest) {
       await new Promise((r) => setTimeout(r, 1300));
       completion = await ask();
     }
-    const raw = completion.choices[0]?.message?.content ?? '{"memory":null}';
+    /* ⚠️ `??` ne rattrape pas la chaîne VIDE, et c'est exactement ce que rend
+       un modèle qui raisonne quand son budget de complétion a été mangé par
+       le raisonnement : on renverrait un corps vide, et le client planterait
+       sur son `.json()`. On préfère dire « rien à retenir » et le signaler. */
+    if (completion.choices[0]?.finish_reason === "length") {
+      console.error("[assistant/analyze] réponse coupée (budget de tokens trop court) : aucun souvenir extrait.");
+    }
+    const raw = completion.choices[0]?.message?.content?.trim() || '{"memory":null}';
     return new Response(raw, { headers: { "Content-Type": "application/json; charset=utf-8" } });
   } catch (err) {
     console.warn("[assistant/analyze] échec après retry:", (err as { message?: string })?.message);

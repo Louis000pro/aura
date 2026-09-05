@@ -1,4 +1,4 @@
-import { llm, hasLLMKey, CHAT_MODEL } from "@/lib/llm";
+import { llm, hasLLMKey, optionsIA } from "@/lib/llm";
 import { NextResponse } from "next/server";
 import { garderIA } from "@/lib/aiLimits";
 
@@ -58,7 +58,7 @@ export async function POST(req: Request) {
     const typesSpec = mealTypes.map((t) => `"${t}"`).join(", ");
 
     const response = await llm.chat.completions.create({
-      model: CHAT_MODEL,
+      ...optionsIA("coach", 3500),
       messages: [
         {
           role: "system",
@@ -96,7 +96,6 @@ Regles :
 - Retourne UNIQUEMENT le JSON.`,
         },
       ],
-      max_tokens: 3500,
       temperature: 0.7,
       response_format: { type: "json_object" },
     });

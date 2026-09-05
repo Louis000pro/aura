@@ -1,4 +1,4 @@
-import { llm, hasLLMKey, CHAT_MODEL } from "@/lib/llm";
+import { llm, hasLLMKey, optionsIA } from "@/lib/llm";
 import { reconcileMacros } from "@/lib/macros";
 import { NextResponse } from "next/server";
 import { garderIA } from "@/lib/aiLimits";
@@ -72,7 +72,7 @@ export async function POST(req: Request) {
       : `Calories realistes pour une portion normale.`;
 
     const response = await llm.chat.completions.create({
-      model: CHAT_MODEL,
+      ...optionsIA("coach", 1600),
       messages: [
         {
           role: "system",
@@ -118,7 +118,6 @@ Regles de redaction :
 - Retourne UNIQUEMENT le JSON.`,
         },
       ],
-      max_tokens: 1600,
       temperature: 0.6,
       response_format: { type: "json_object" },
     });

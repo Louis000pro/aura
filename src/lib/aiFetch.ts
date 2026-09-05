@@ -3,7 +3,7 @@
  *
  * Depuis le 2026-07-29, toutes les routes IA exigent d'être connecté (avant,
  * elles étaient ouvertes à tout internet : n'importe qui pouvait faire tourner
- * la facture Mistral/Groq sans même avoir de compte). Plutôt que de recopier la
+ * la facture du fournisseur d'IA sans même avoir de compte). Plutôt que de recopier la
  * récupération du jeton dans la quinzaine d'endroits qui appellent l'IA, tout
  * passe par ici.
  *

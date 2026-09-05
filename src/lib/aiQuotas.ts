@@ -10,12 +10,12 @@
  */
 
 export type CategorieIA =
-  | "chat"        // le coach ✦ (Mistral)
-  | "memoire"     // extraction de mémoire long terme (Mistral), 1 par message
+  | "chat"        // le coach ✦ (fournisseur de chat, cf. lib/llm)
+  | "memoire"     // extraction de mémoire long terme, 1 par message
   | "vision"      // photo d'assiette ou de carte de resto (Groq)
   | "estimation"  // macros d'un repas décrit en texte (Groq)
-  | "recette"     // recette ou menu généré (Mistral)
-  | "seance"      // génération d'une séance (Mistral)
+  | "recette"     // recette ou menu généré
+  | "seance"      // génération d'une séance
   | "vocal"       // dictée (Groq Whisper)
   | "lookup";     // appels externes gratuits mais coûteux en bande passante
 

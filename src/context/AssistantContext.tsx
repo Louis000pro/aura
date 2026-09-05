@@ -1177,7 +1177,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
        l'outil save_lieu. Plus rien à deviner. */
 
     // Mémoire long terme uniquement (l'action, elle, est décidée côté serveur
-    // dans le même aller-retour que le texte). ⚠️ Mistral palier gratuit =
+    // dans le même aller-retour que le texte). ⚠️ palier gratuit =
     // 1 req/s, et /api/chat en consomme désormais DEUX à la suite
     // (l'aiguilleur puis le coach) : on décale d'autant cet appel secondaire,
     // dont rien à l'écran ne dépend, pour lui laisser la voie libre.
