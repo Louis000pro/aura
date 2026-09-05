@@ -98,6 +98,14 @@ alter table public.planning_days
   add column if not exists programme_seance_id uuid,
   add column if not exists etape_consommee_id  uuid;
 
+/* ⚠️ LES DEUX FK CI-DESSOUS SONT CORRIGÉES PAR
+   `20260905_moteur_v4b_suppression_programme.sql`, À COLLER JUSTE APRÈS
+   CELLE-CI. Leur `on delete set null` plein annule `programme_id` en même
+   temps que son renvoi, ce qui fait sauter les CHECK au milieu d'une
+   cascade et casse la suppression d'un programme. V4b fait porter le SET
+   NULL sur sa propre colonne. Ce fichier garde la version d'origine pour
+   que le dépôt raconte ce qui a réellement été appliqué, et dans quel
+   ordre. */
 do $$
 begin
   /* ⚠️ FK COMPOSITES : sans elles, une intention pourrait déclarer un
