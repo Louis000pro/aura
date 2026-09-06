@@ -1482,9 +1482,8 @@ function LigneMenu({ icon: Icon, label, sub, onClick }: {
   );
 }
 
-function ManageSheet({ session, week, onClose, onEdit, onDelete, onVisibilityChange, onInspirer, onPlanifier }: {
+function ManageSheet({ session, onClose, onEdit, onDelete, onVisibilityChange, onInspirer, onPlanifier }: {
   session: MergedSession;
-  week: PlanningDay[] | null;
   onClose: () => void;
   onEdit: (s: WorkoutSession) => void;
   onDelete: (id: string) => void;
@@ -1561,7 +1560,7 @@ function ManageSheet({ session, week, onClose, onEdit, onDelete, onVisibilityCha
           <>
             {retour}
             <div className="px-5 pb-4">
-              <ChoixJour week={week} onChoisir={(date) => { onPlanifier(session, date); onClose(); }} />
+              <ChoixJour onChoisir={(date) => { onPlanifier(session, date); onClose(); }} />
             </div>
           </>
         ) : vue === "exos" ? (
@@ -2051,9 +2050,8 @@ function CatTile({ cat, count, freeCount, premiumCount, large, onOpen }: {
   );
 }
 
-function ChooseSheet({ sessions, week, loading, canAccessPremium, maxSeances, catInitial, onClose, onStart, onUpgrade, onCreate, onEdit, onDelete, onVisibilityChange, onInspirer, onPlanifier }: {
+function ChooseSheet({ sessions, loading, canAccessPremium, maxSeances, catInitial, onClose, onStart, onUpgrade, onCreate, onEdit, onDelete, onVisibilityChange, onInspirer, onPlanifier }: {
   sessions: MergedSession[];
-  week: PlanningDay[] | null;
   loading: boolean;
   canAccessPremium: boolean;
   maxSeances: number;
@@ -2320,7 +2318,6 @@ function ChooseSheet({ sessions, week, loading, canAccessPremium, maxSeances, ca
       {manage && (
         <ManageSheet
           session={manage}
-          week={week}
           onClose={() => setManage(null)}
           onEdit={(s) => { setManage(null); onEdit(s); }}
           onDelete={(id) => { setManage(null); onDelete(id); }}
@@ -3589,7 +3586,6 @@ export default function ProgressionPage() {
           <ChooseSheet
             key={choisirCible ?? "collections"}
             sessions={allSessions}
-            week={week}
             loading={loadingCustom}
             canAccessPremium={canAccessPremium}
             maxSeances={maxSeances}

@@ -134,7 +134,7 @@ export default function HeroJournee() {
               </div>
               <div aria-hidden className="h-px mx-5" style={{ background: "rgba(var(--accent-rgb),0.1)" }} />
               <div className="px-5 pt-2 pb-4">
-                <ChoixJour week={j.semaine} onChoisir={(date) => {
+                <ChoixJour onChoisir={(date) => {
                   setQuand(false);
                   void j.daterEtape(date);
                 }} />

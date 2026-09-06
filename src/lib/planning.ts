@@ -903,6 +903,29 @@ export async function libererJours(userId: string, dates: string[]): Promise<voi
 }
 
 /**
+ * La réservation EN ATTENTE d'une étape du cycle, où qu'elle soit posée.
+ *
+ * ⚠️ ELLE NE PEUT PAS SE CHERCHER DANS « LA SEMAINE », ET C'EST TOUT
+ * L'INTÉRÊT. Les écrans ne lisent que la semaine courante ; une étape
+ * datée pour la semaine prochaine y serait invisible, donc redonner un
+ * jour aurait tenté d'en CRÉER une seconde. `uniq_intention_par_etape`
+ * l'aurait refusée, et le geste aurait échoué sans rien dire. On
+ * interroge donc la base sur la clé de l'invariant lui-même.
+ */
+export async function reservationDeLEtape(userId: string, etapeId: string): Promise<string | null> {
+  const supabase = createClient();
+  const sc = await schemaIntentions();
+  const { data } = await supabase
+    .from(sc.table)
+    .select("id")
+    .eq("user_id", userId)
+    .eq("etape_consommee_id", etapeId)
+    .eq(sc.colStatut, sc.versBase.planned)
+    .limit(1);
+  return ((data ?? [])[0] as { id: string } | undefined)?.id ?? null;
+}
+
+/**
  * Met à jour le statut d'UNE intention (planned → done après une séance).
  *
  * ⚠️ ELLE POSE AUSSI `consommee_le`, ET SANS ÇA LE CURSEUR DU CYCLE NE

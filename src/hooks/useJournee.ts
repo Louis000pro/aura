@@ -29,7 +29,7 @@ import { heroImageForSeance } from "@/lib/workoutArt";
 import { EVT_JOURNEE } from "@/lib/finSeance";
 import { etatJournee, intentionDeLEtape } from "@/lib/journee";
 import {
-  lireSemaine, ajouterIntention, saveDay, hasSeance, loadLieu, readVariant, ctxFromLieu,
+  lireSemaine, ajouterIntention, saveDay, reservationDeLEtape, hasSeance, loadLieu, readVariant, ctxFromLieu,
   weekDates, todayYmd, dayTitle, parDate, principale, supplements, seancesDuJour,
   weekdayIndex, prochainsJours, instanceDeLEtape,
   type PlanningDay, type GenInput,
@@ -289,22 +289,28 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
     /* ⚠️ UNE SEULE RÉSERVATION PAR ÉTAPE, ET C'EST LA BASE QUI L'IMPOSE
        (`uniq_intention_par_etape`, V6). Redonner un jour à une étape déjà
        datée est donc un DÉPLACEMENT, pas un second ajout : sans ça, la
-       base refuserait l'écriture et le geste échouerait sans rien dire. */
-    const dejaPosee = (semaine ?? []).find(
-      (i) => i.etapeId === etape.id && i.status === "planned",
-    );
-    const voulue = {
-      ...intentionDeLEtape({
-        date,
-        programmeId: programme.programme.id,
-        etape: { id: etape.id, nom: etape.nom },
-        difficulty: levelToDifficulty(gen?.level ?? null),
-        location: gen?.ctx ?? null,
-        exerciseList: instance,
-      }),
-      id: dejaPosee?.id ?? null,
-    };
+       base refuserait l'écriture et le geste échouerait sans rien dire.
+
+       ⚠️ ET ON LA CHERCHE EN BASE, PAS DANS LA SEMAINE CHARGÉE. Depuis
+       que le sélecteur propose quinze jours, la réservation peut vivre
+       hors de la semaine courante, donc hors de tout ce que cet écran a
+       lu : la chercher là aurait rendu le défaut intermittent, ce qui
+       est pire qu'un défaut franc. */
     try {
+      /* La lecture est DANS le `try` : elle interroge la base comme
+         l'écriture, donc elle échoue de la même façon. */
+      const dejaPosee = await reservationDeLEtape(user.id, etape.id);
+      const voulue = {
+        ...intentionDeLEtape({
+          date,
+          programmeId: programme.programme.id,
+          etape: { id: etape.id, nom: etape.nom },
+          difficulty: levelToDifficulty(gen?.level ?? null),
+          location: gen?.ctx ?? null,
+          exerciseList: instance,
+        }),
+        id: dejaPosee,
+      };
       if (voulue.id) await saveDay(user.id, voulue, "utilisateur");
       else await ajouterIntention(user.id, voulue, "utilisateur");
     } catch (e) {
@@ -315,7 +321,7 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
        et le héros passe de « quand tu veux » à la journée qui la porte. */
     if (typeof window !== "undefined") window.dispatchEvent(new Event(EVT_JOURNEE));
     return true;
-  }, [user, etape, programme, instance, gen, semaine]);
+  }, [user, etape, programme, instance, gen]);
 
   return {
     etat, jour, extras, etape, nbExos: instance.length, nextLabel, doneStats,

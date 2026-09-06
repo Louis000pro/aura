@@ -22,7 +22,7 @@ import { etatJournee, intentionDeLEtape } from "@/lib/journee";
 import {
   cycleDeReference, seancesDuCycle, previewWeek, weekDates, ANCIEN, NOUVEAU,
   ordonner, parDate, principale, supplements, seancesDuJour, prochaineSeanceDuJour,
-  refModele, lienProgramme,
+  refModele, lienProgramme, prochainsJours, todayYmd,
   type PlanningDay,
 } from "@/lib/planning";
 
@@ -619,6 +619,93 @@ verdict(
     "V7A · dayToRow passe par le lien, il ne le recompose pas",
     readFileSync(new URL("../src/lib/planning.ts", import.meta.url), "utf8").includes("...lienProgramme(d)"),
     "une seule règle d'écriture du lien",
+  );
+}
+
+/* ── 10. V7A · LE SÉLECTEUR DE JOUR PROPOSE DE VRAIS JOURS FUTURS ─────
+   Le défaut, signalé un DIMANCHE : « Quel jour ? » déroulait la semaine
+   CIVILE (`weekDates()`, lundi → dimanche de la semaine en cours) puis
+   grisait tout ce qui est passé. Le samedi il restait deux jours, le
+   dimanche UN SEUL, et dater sa prochaine étape devenait impossible.
+   C'est le genre de défaut qui ne se voit qu'un jour sur sept. */
+{
+  /* Le défaut, reproduit sur une date fixe : le 2026-09-06 est un
+     dimanche, et la semaine civile n'y offre plus qu'une seule case. */
+  const dimanche = "2026-09-06";
+  const semaineCivile = weekDates(new Date(dimanche + "T00:00:00"));
+  verdict(
+    "V7A · le défaut : un dimanche, la semaine civile n'offre qu'un jour",
+    semaineCivile.filter((d) => d >= dimanche).length === 1,
+    semaineCivile.filter((d) => d >= dimanche).length + " case(s) choisissable(s)",
+  );
+
+  const fenetre = prochainsJours(15);
+  const aujourdhui = todayYmd();
+  verdict(
+    "V7A · la fenêtre commence aujourd'hui et n'offre aucun jour passé",
+    fenetre.length === 15 && fenetre[0] === aujourdhui && fenetre.every((d) => d >= aujourdhui),
+    fenetre[0] + " → " + fenetre[14],
+  );
+  verdict(
+    "V7A · elle est strictement croissante, sans doublon",
+    fenetre.every((d, i) => i === 0 || d > fenetre[i - 1]),
+    "15 jours distincts et ordonnés",
+  );
+  /* ⚠️ LA PROPRIÉTÉ QUI COMPTE, ET ELLE VAUT N'IMPORTE QUEL JOUR DE LA
+     SEMAINE : la fenêtre déborde toujours la semaine courante, donc la
+     semaine prochaine est TOUJOURS atteignable. */
+  const finDeSemaine = weekDates()[6];
+  verdict(
+    "V7A · la semaine prochaine est toujours atteignable",
+    fenetre.filter((d) => d > finDeSemaine).length >= 7,
+    fenetre.filter((d) => d > finDeSemaine).length + " jour(s) au-delà de dimanche",
+  );
+
+  /* ⚠️ ON LIT LE CODE, PAS LES COMMENTAIRES. Ce fichier EXPLIQUE le défaut
+     qu'il corrige, donc il cite `weekDates()` en toutes lettres : chercher
+     la chaîne brute ferait échouer le contrôle sur sa propre explication. */
+  const sansCommentaires = (t: string) => t.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
+  const picker = sansCommentaires(
+    readFileSync(new URL("../src/components/entrainement/ChoixJour.tsx", import.meta.url), "utf8"),
+  );
+  verdict(
+    "V7A · le sélecteur ne déroule plus la semaine civile",
+    !picker.includes("weekDates(") && picker.includes("prochainsJours("),
+    "fenêtre glissante depuis aujourd'hui",
+  );
+  verdict(
+    "V7A · plus aucune ligne grisée : ce qui est proposé est choisissable",
+    !picker.includes("disabled"),
+    "aucun jour mort dans la liste",
+  );
+  /* ⚠️ IL LIT SA PROPRE FENÊTRE. Les écrans ne connaissent que la semaine
+     courante : recevoir `week` lui ferait affirmer « Rien de prévu » sur
+     des journées qu'il n'a jamais lues. */
+  verdict(
+    "V7A · le sélecteur lit lui-même les journées qu'il montre",
+    picker.includes("fetchRange(") && !picker.includes("week:"),
+    "une requête sur exactement les dates montrées",
+  );
+  verdict(
+    "V7A · il ne dit jamais « rien de prévu » avant d'avoir lu",
+    picker.includes("parJour === null"),
+    "« je ne sais pas » n'est pas « il n'y a rien »",
+  );
+  /* Une seule source pour les deux appelants. */
+  const appelants = ["src/app/progression/page.tsx", "src/components/entrainement/HeroJournee.tsx"]
+    .filter((f) => readFileSync(new URL("../" + f, import.meta.url), "utf8").includes("<ChoixJour "));
+  verdict(
+    "V7A · le héros et le menu d'une séance partagent le même sélecteur",
+    appelants.length === 2,
+    appelants.length + " appelant(s) de <ChoixJour>",
+  );
+  /* ⚠️ ET LA RÉSERVATION SE CHERCHE EN BASE, PAS DANS LA SEMAINE CHARGÉE :
+     une étape datée la semaine prochaine est hors de tout ce que l'écran
+     a lu, donc la chercher là rendrait le défaut intermittent. */
+  verdict(
+    "V7A · redonner un jour retrouve la réservation où qu'elle soit",
+    readFileSync(new URL("../src/hooks/useJournee.ts", import.meta.url), "utf8").includes("reservationDeLEtape("),
+    "la clé de l'invariant, interrogée en base",
   );
 }
 
