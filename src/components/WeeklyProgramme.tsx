@@ -10,8 +10,9 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import WorkoutGuideModal from "@/components/WorkoutGuideModal";
+import { terminerSeance } from "@/lib/finSeance";
 import {
-  lireSemaine, reposerLaSemaine, marquerIntention, ctxFromLieu, dayTitle, persistLieu, loadLieu,
+  lireSemaine, reposerLaSemaine, ctxFromLieu, dayTitle, persistLieu, loadLieu,
   weekDatesForOffset, weekOffsetOf, weekdayIndex, todayWeekIndex, parDate, principale, supplements,
   type PlanningDay, type GenInput,
 } from "@/lib/planning";
@@ -758,7 +759,17 @@ export default function WeeklyProgramme() {
               category={launchDay.type}
               exerciseList={launchDay.exerciseList}
               onClose={() => setLaunchDay(null)}
-              onComplete={() => { if (user) void marquerIntention(user.id, launchDay.id, "done"); }}
+              /* ⚠️ IL PASSE PAR L'AUTORITÉ UNIQUE (V7A), COMME TOUT LE RESTE.
+                 Il appelait `marquerIntention` lui-même : c'était la seconde
+                 copie de « que faire quand la séance est finie », celle-là
+                 même que la vague existe pour supprimer. Elle écrivait la
+                 bonne chose, mais elle n'émettait AUCUN événement : le héros
+                 de l'accueil restait sur son état d'avant, et cet écran-ci
+                 ne se rafraîchissait pas non plus, alors qu'il écoute
+                 pourtant `programme-updated` juste au-dessus. */
+              onComplete={launchDay.id
+                ? () => { if (user) void terminerSeance(user.id, { genre: "intention", intentionId: launchDay.id as string }); }
+                : undefined}
             />
           )}
         </AnimatePresence>,

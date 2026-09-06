@@ -406,18 +406,32 @@ verdict(
     lanceur.includes("terminerSeance(") && lanceur.includes("onComplete="),
     "onComplete → terminerSeance",
   );
-  for (const [libelle, fichier, contenu] of [
-    ["l'écran Entraînement", "src/app/progression/page.tsx", ecran],
-    ["le héros de l'accueil", "src/components/entrainement/HeroJournee.tsx", heros],
-    ["le hook de lecture", "src/hooks/useJournee.ts", hook],
-  ] as [string, string, string][]) {
-    void fichier;
-    verdict(
-      "V7A · " + libelle + " ne referme rien lui-même",
-      !contenu.includes("consommerEtape(") && !contenu.includes("marquerIntention("),
-      "aucune écriture de fin de séance",
-    );
-  }
+  /* ⚠️ ON BALAYE TOUT `src/`, ET PAS UNE LISTE ÉCRITE À LA MAIN.
+     Première version, ce contrôle nommait trois fichiers : l'écran, le
+     héros et le hook. Il les a bien tenus, et il a laissé passer
+     `WeeklyProgramme`, qui montait son propre lecteur guidé et appelait
+     `marquerIntention` lui-même depuis « Organiser » — c'est-à-dire la
+     seconde autorité de fin de séance que toute la vague existe pour
+     supprimer. Un contrôle qui énumère ses cibles ne protège que ce à
+     quoi on a pensé ; celui-ci part des fichiers. */
+  const fichiersSrc: string[] = [];
+  (function parcourir(dir: string) {
+    for (const e of readdirSync(new URL("../" + dir, import.meta.url), { withFileTypes: true })) {
+      if (e.isDirectory()) parcourir(dir + "/" + e.name);
+      else if (/\.tsx?$/.test(e.name)) fichiersSrc.push(dir + "/" + e.name);
+    }
+  })("src");
+
+  const AUTORISES = ["src/lib/finSeance.ts", "src/lib/planning.ts", "src/lib/programme.ts"];
+  const coupables = fichiersSrc.filter(
+    (f) => !AUTORISES.includes(f) && /consommerEtape\(|marquerIntention\(/.test(lire(f)),
+  );
+  verdict(
+    "V7A · personne d'autre que `finSeance` ne referme une séance",
+    coupables.length === 0,
+    coupables.length === 0 ? "une seule autorité dans tout src/" : coupables.join(", "),
+  );
+  void ecran; void heros; void hook;
 
   /* ── Ouvrir l'accueil ne crée aucune structure ──
      ⚠️ C'est la décision de V7A la plus facile à défaire sans s'en

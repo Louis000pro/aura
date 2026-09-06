@@ -320,7 +320,14 @@ export default function ParcoursBienvenue() {
        anciens. On n'attend donc rien de cette écriture pour laisser
        entrer quelqu'un. */
     if (fini && !revue && user?.id) {
-      void getOrCreateProgramme(user.id).catch(() => { /* repli sur Entraînement */ });
+      /* ⚠️ SON ÉCHEC NE BLOQUE RIEN, MAIS IL SE VOIT. Un `catch` muet
+         rendait ce chemin indistinguable du cas légitime où il n'y a
+         rien à créer (cible à zéro, aucune réponse), donc le repli
+         d'Entraînement aurait rattrapé la panne sans que personne ne
+         sache qu'il y en avait une. */
+      void getOrCreateProgramme(user.id).catch((e) => {
+        console.warn("[bienvenue] premier programme impossible, repli sur Entraînement :", e);
+      });
     }
     setEtape(fini ? "pret" : ORDRE[index + 1]);
   };
