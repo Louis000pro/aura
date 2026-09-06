@@ -18,7 +18,7 @@
 import { readFileSync, readdirSync } from "node:fs";
 import { verrouDeFermeture } from "@/lib/finSeance";
 import { etapesDuCycle, etapeSuivante, nomDeProgramme, positionRefermee, POSITION_INITIALE } from "@/lib/programme";
-import { etatJournee, intentionDeLEtape } from "@/lib/journee";
+import { etatJournee, intentionDeLEtape, lancementDuJour, libelleReservation } from "@/lib/journee";
 import {
   cycleDeReference, seancesDuCycle, previewWeek, weekDates, ANCIEN, NOUVEAU,
   ordonner, parDate, principale, supplements, seancesDuJour, prochaineSeanceDuJour,
@@ -581,6 +581,95 @@ verdict(
     "V7A · réserver l'étape ne la referme pas",
     apres([{ etapeId: lienReserve.etape_consommee_id, resolue: false, consommeeLe: null }]) === 1,
     "→ toujours étape 1 tant qu'elle n'est pas faite",
+  );
+
+  /* ── L'étape réservée pour plus tard, et lancée avant ──
+     ⚠️ CE BLOC REJOUE UN DÉFAUT RÉEL, TROUVÉ LE 2026-09-06 SUR LA
+     PRÉVERSION. Push était réservée pour le mardi 8. Le dimanche 6,
+     l'accueil l'a présentée comme une étape LIBRE (« quand tu veux ») :
+     il ne regarde que les intentions d'aujourd'hui, et `etapeSuivante`
+     ne dérive son curseur que des étapes REFERMÉES, donc une réservation
+     en attente est invisible aux deux. La terminer a INSÉRÉ une seconde
+     ligne portant la même étape, et la base ne pouvait pas la refuser :
+     `uniq_intention_par_etape` ne couvre que les intentions prévues, or
+     la ligne insérée naît « faite ». Le banc, lui, joue sur des dates
+     fixes : ce défaut ne se voyait que si la réservation tombait hors
+     d'aujourd'hui, donc presque tous les jours. */
+  const AUJ = "2026-09-06";                       // un dimanche
+  const posee: PlanningDay = { ...reservee, id: "int-reserve", date: "2026-09-08" }; // mardi
+
+  verdict(
+    "V7A · étape libre → le héros dit « quand tu veux »",
+    lancementDuJour({ jour: null, reservation: null, etape: enCours, instancePrete: true })?.genre === "etape",
+    "aucune réservation → aucune date à annoncer",
+  );
+  verdict(
+    "V7A · étape réservée dans 2 jours → le héros connaît sa date",
+    libelleReservation(posee.date, AUJ) === "mardi 8"
+      && libelleReservation("2026-09-07", AUJ) === "demain"
+      && libelleReservation(AUJ, AUJ) === "aujourd’hui",
+    libelleReservation(posee.date, AUJ),
+  );
+
+  const anticipe = lancementDuJour({ jour: null, reservation: posee, etape: enCours, instancePrete: true });
+  verdict(
+    "V7A · lancement anticipé → il vise l'intention existante, pas une nouvelle étape",
+    anticipe?.genre === "intention" && anticipe.intention.id === "int-reserve",
+    anticipe ? anticipe.genre : "rien",
+  );
+  verdict(
+    "V7A · aucune seconde intention n'est créée pour une étape réservée",
+    anticipe?.genre !== "etape",
+    "la branche qui INSÈRE reste fermée tant qu'une réservation existe",
+  );
+  /* Et la fermeture de cette intention fait bien avancer le cycle une fois. */
+  verdict(
+    "V7A · réservation lancée en avance → terminer → le cycle avance d'une étape",
+    apres([{ etapeId: lienProgramme(posee).etape_consommee_id, resolue: true, consommeeLe: T }]) === 2,
+    "→ étape " + apres([{ etapeId: lienProgramme(posee).etape_consommee_id, resolue: true, consommeeLe: T }]),
+  );
+  /* Le supplément du même jour n'entre jamais dans cette décision : il ne
+     porte aucune étape, donc il ne peut pas être pris pour la réservation. */
+  verdict(
+    "V7A · un supplément ne peut pas être pris pour la réservation de l'étape",
+    lienProgramme(supplement).etape_consommee_id === null
+      && lancementDuJour({ jour: null, reservation: null, etape: enCours, instancePrete: true })?.genre === "etape",
+    "la réservation se cherche par l'étape, jamais par la journée",
+  );
+
+  /* ⚠️ ET LE GARDE-FOU RESTE, POUR UN APPELANT FUTUR OU UN ÉTAT PÉRIMÉ.
+     Le chemin normal ne déclare plus `cible: etape` sur une étape
+     réservée, mais rien n'empêche un écran resté sur une lecture d'il y
+     a dix minutes de le faire. La défense vit dans l'autorité unique de
+     fin de séance, donc elle couvre tous les lanceurs d'un coup. */
+  const finSeance = readFileSync(new URL("../src/lib/finSeance.ts", import.meta.url), "utf8");
+  const brancheEtape = finSeance.slice(finSeance.indexOf("} else {"));
+  verdict(
+    "V7A · terminerSeance refuse d'insérer si l'étape a déjà une réservation",
+    brancheEtape.includes("reservationDeLEtape(")
+      && brancheEtape.indexOf("reservationDeLEtape(") < brancheEtape.indexOf("consommerEtape("),
+    "on cherche la réservation AVANT d'écrire",
+  );
+  verdict(
+    "V7A · une séance faite est datée du jour où elle a eu lieu",
+    finSeance.includes('marquerIntention(userId, cible.intentionId, "done", aujourdhui)')
+      && readFileSync(new URL("../src/lib/planning.ts", import.meta.url), "utf8").includes("{ date: dateDuFait }"),
+    "plus de séance « faite mardi » terminée un dimanche",
+  );
+  /* La correction est à sa SOURCE, pas seulement dans le garde-fou : la
+     lecture de la journée doit connaître la réservation, et le héros doit
+     la dire. Deux propriétés du chemin, donc deux contrôles de source. */
+  verdict(
+    "V7A · la source de journée connaît la réservation de l'étape suivante",
+    readFileSync(new URL("../src/hooks/useJournee.ts", import.meta.url), "utf8")
+      .includes("reservationDeLEtape(user.id, suivante.id)"),
+    "elle la cherche en base, pas dans la semaine chargée",
+  );
+  verdict(
+    "V7A · le héros annonce le jour de l'étape au lieu de « quand tu veux »",
+    readFileSync(new URL("../src/components/entrainement/TodayHero.tsx", import.meta.url), "utf8")
+      .includes('{reserveLe ?? "Quand tu veux"}'),
+    "« quand tu veux » ne reste vrai que sans réservation",
   );
 
   /* ── Une fermeture par lancement ──

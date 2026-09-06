@@ -27,7 +27,7 @@ import { createClient } from "@/lib/supabase";
 import { levelToDifficulty } from "@/lib/assistantActions";
 import { heroImageForSeance } from "@/lib/workoutArt";
 import { EVT_JOURNEE } from "@/lib/finSeance";
-import { etatJournee, intentionDeLEtape } from "@/lib/journee";
+import { etatJournee, intentionDeLEtape, lancementDuJour, libelleReservation } from "@/lib/journee";
 import {
   lireSemaine, ajouterIntention, saveDay, reservationDeLEtape, hasSeance, loadLieu, readVariant, ctxFromLieu,
   weekDates, todayYmd, dayTitle, parDate, principale, supplements, seancesDuJour,
@@ -60,6 +60,12 @@ export type Journee = {
   /** Ce qui vient EN PLUS aujourd'hui (V6b). */
   extras: PlanningDay[];
   etape: EtapeCycle | null;
+  /** La réservation EN ATTENTE de l'étape suivante, où qu'elle soit datée
+   *  (elle vit souvent hors de la semaine chargée). `null` = l'étape n'a
+   *  pas encore de jour, et « quand tu veux » est alors la vérité. */
+  reservation: PlanningDay | null;
+  /** Le jour de cette réservation, dit à voix haute : « mardi 8 ». */
+  reserveLe: string | null;
   /** La taille de l'instance de l'étape, calculée sans rien écrire. */
   nbExos: number;
   nextLabel: string | null;
@@ -92,6 +98,7 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
   const [programme, setProgramme] = useState<ProgrammeEtCycle | null>(null);
   const [gen, setGen] = useState<GenInput | null>(null);
   const [etape, setEtape] = useState<EtapeCycle | null>(null);
+  const [reservation, setReservation] = useState<PlanningDay | null>(null);
   const [niveau, setNiveau] = useState<string | null>(null);
   const [doneStats, setDoneStats] = useState<{ minutes: number; kcal: number } | null>(null);
 
@@ -150,7 +157,18 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
         ? await getOrCreateProgramme(user.id)
         : await lireProgrammeActif(user.id);
       setProgramme(actif);
-      setEtape(actif ? await etapeSuivanteDe(user.id, actif) : null);
+      const suivante = actif ? await etapeSuivanteDe(user.id, actif) : null;
+      setEtape(suivante);
+      /* ⚠️ ET ON DEMANDE À LA BASE SI CETTE ÉTAPE A DÉJÀ UN JOUR.
+         C'est la réparation du défaut du 2026-09-06 : le héros ne
+         regardait que les intentions D'AUJOURD'HUI, et `etapeSuivante`
+         ne dérive son curseur que des étapes REFERMÉES. Une étape
+         réservée pour mardi était donc invisible aux deux, et l'accueil
+         la reproposait « quand tu veux » un dimanche. La chercher dans
+         la semaine chargée ne suffit pas : depuis que le sélecteur
+         propose quinze jours, elle vit souvent au-delà. Une requête, sur
+         la clé de l'invariant lui-même, et seulement s'il y a une étape. */
+      setReservation(suivante ? await reservationDeLEtape(user.id, suivante.id) : null);
     } catch (e) {
       console.error("Programme load error", e);
     }
@@ -251,11 +269,17 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
   }, [launchWorkout]);
 
   const lancerAujourdhui = useCallback(() => {
-    if (jour) { lancerIntention(jour); return; }
+    /* ⚠️ LA DÉCISION EST UNE FONCTION PURE, ET ELLE VIT DANS `journee.ts`.
+       Elle porte l'ordre qui compte : la séance datée aujourd'hui, puis
+       la RÉSERVATION de l'étape où qu'elle soit posée, puis l'étape libre
+       et elle seule. Décider dimanche de faire l'étape réservée mardi est
+       légitime ; c'est cette ligne-là qu'on termine, jamais une seconde. */
+    const quoi = lancementDuJour({ jour, reservation, etape, instancePrete: instance.length > 0 });
+    if (quoi?.genre === "intention") { lancerIntention(quoi.intention); return; }
     /* Lancer une étape du cycle : on matérialise son instance À CET
        INSTANT, en mémoire, et on n'écrit RIEN. Si la séance n'est pas
        terminée, il n'en reste aucune trace. */
-    if (!etape || instance.length === 0 || !programme) return;
+    if (!quoi || !etape || !programme) return;
     const difficulte = levelToDifficulty(gen?.level ?? null);
     launchWorkout({
       sessionId: `etape-${etape.id}`,
@@ -276,7 +300,7 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
         exerciseList: instance,
       },
     });
-  }, [jour, lancerIntention, etape, instance, programme, gen, launchWorkout]);
+  }, [jour, reservation, lancerIntention, etape, instance, programme, gen, launchWorkout]);
 
   /* ⚠️ LE SEUL ENDROIT DU PRODUIT QUI DATE UNE ÉTAPE, ET DONC LE SEUL
      QUI CRÉE UNE INTENTION PORTANT SON LIEN VERS LE PROGRAMME. Sans ce
@@ -309,7 +333,7 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
           location: gen?.ctx ?? null,
           exerciseList: instance,
         }),
-        id: dejaPosee,
+        id: dejaPosee?.id ?? null,
       };
       if (voulue.id) await saveDay(user.id, voulue, "utilisateur");
       else await ajouterIntention(user.id, voulue, "utilisateur");
@@ -324,7 +348,12 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
   }, [user, etape, programme, instance, gen]);
 
   return {
-    etat, jour, extras, etape, nbExos: instance.length, nextLabel, doneStats,
+    etat, jour, extras, etape, reservation,
+    /* ⚠️ AUCUNE DATE À AFFICHER SI ELLE EST DÉJÀ AUJOURD'HUI : dans ce
+       cas l'intention EST celle du jour, donc l'état vaut « seance » et
+       le héros ne montre plus l'étape. */
+    reserveLe: reservation?.date ? libelleReservation(reservation.date, today) : null,
+    nbExos: instance.length, nextLabel, doneStats,
     semaine, setSemaine, gen, programme, besoinSetup, niveau,
     recharger: () => { void charger(); },
     lancerAujourdhui, lancerIntention, daterEtape,

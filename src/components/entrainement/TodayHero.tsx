@@ -36,11 +36,14 @@ import { Photo, WIDGET } from "./PhotoSeance";
 export type HeroState = EtatJournee;
 
 export default function TodayHero({
-  state, day, etape, nbExos, nextLabel, doneStats, onStart, onImprovise, onOrganise, onShift, onReplace,
+  state, day, etape, reserveLe, nbExos, nextLabel, doneStats, onStart, onImprovise, onOrganise, onShift, onReplace,
 }: {
   state: HeroState;
   day: PlanningDay | null;
   etape: EtapeCycle | null;                       // l'étape du cycle (état « etape »)
+  /* ⚠️ LE JOUR DE L'ÉTAPE, QUAND ELLE EN A UN. `null` veut dire « pas de
+     réservation », et c'est le seul cas où « quand tu veux » est vrai. */
+  reserveLe: string | null;
   nbExos: number;                                 // taille de son instance, calculée sans rien écrire
   nextLabel: string | null;                       // « Jambes · demain » (état repos)
   doneStats: { minutes: number; kcal: number } | null;
@@ -136,7 +139,14 @@ export default function TodayHero({
             Le programme dit QUOI faire ensuite ; le planning, facultatif, dit
             éventuellement QUAND. D'où « quand tu veux » à la place du jour :
             écrire « Aujourd'hui » ici reposerait la promesse d'agenda que V5
-            retire. */}
+            retire.
+
+            ⚠️ MAIS QUAND ELLE EN A UN, ELLE LE DIT (2026-09-06). Une étape
+            déjà réservée pour mardi restait annoncée « quand tu veux » : ce
+            n'était pas qu'une imprécision d'affichage, c'est ce qui laissait
+            la lancer comme une étape LIBRE, donc en refermer une seconde
+            fois. La carte dit le jour, et le bouton propose d'en changer au
+            lieu de « lui donner » celui qu'elle a déjà. */}
         {state === "etape" && etape && (
           <>
             <p className="text-[11px] font-semibold mb-1" style={{ color: "#C9B8FF" }}>
@@ -144,7 +154,7 @@ export default function TodayHero({
             </p>
             <h2 className="text-[34px] md:text-[38px] leading-[1.02] font-extralight text-white">{etape.nom}</h2>
             <p className="mt-2.5 mb-4 text-[11.5px] font-medium" style={{ color: "rgba(255,255,255,0.62)" }}>
-              Quand tu veux{nbExos > 0 ? ` · ${nbExos} exercices` : ""}
+              {reserveLe ?? "Quand tu veux"}{nbExos > 0 ? ` · ${nbExos} exercices` : ""}
             </p>
             <motion.button
               whileTap={{ scale: 0.97 }}
@@ -157,7 +167,7 @@ export default function TodayHero({
             <div className="flex justify-center gap-5 mt-2.5">
               <button onClick={onOrganise} className="text-[11.5px] font-semibold cursor-pointer bg-transparent border-none"
                 style={{ color: "rgba(255,255,255,0.6)" }}>
-                Lui donner un jour
+                {reserveLe ? "Changer de jour" : "Lui donner un jour"}
               </button>
             </div>
           </>

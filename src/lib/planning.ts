@@ -911,18 +911,26 @@ export async function libererJours(userId: string, dates: string[]): Promise<voi
  * jour aurait tenté d'en CRÉER une seconde. `uniq_intention_par_etape`
  * l'aurait refusée, et le geste aurait échoué sans rien dire. On
  * interroge donc la base sur la clé de l'invariant lui-même.
+ *
+ * ⚠️ ELLE REND L'INTENTION ENTIÈRE, PLUS SON SEUL IDENTIFIANT, ET C'EST
+ * CE QUI RÉPARE LE DÉFAUT DU 2026-09-06. Le héros ne savait pas qu'une
+ * étape avait déjà un jour : il la reproposait comme une étape LIBRE, et
+ * la terminer écrivait une SECONDE ligne portant la même étape. Pour
+ * qu'il puisse dire « Push · mardi 8 » et lancer CETTE intention-là, il
+ * lui faut sa date et son contenu, pas seulement sa clé.
  */
-export async function reservationDeLEtape(userId: string, etapeId: string): Promise<string | null> {
+export async function reservationDeLEtape(userId: string, etapeId: string): Promise<PlanningDay | null> {
   const supabase = createClient();
   const sc = await schemaIntentions();
   const { data } = await supabase
     .from(sc.table)
-    .select("id")
+    .select(colonnes(sc))
     .eq("user_id", userId)
     .eq("etape_consommee_id", etapeId)
     .eq(sc.colStatut, sc.versBase.planned)
     .limit(1);
-  return ((data ?? [])[0] as { id: string } | undefined)?.id ?? null;
+  const ligne = (data ?? [])[0];
+  return ligne ? rowToDay(ligne as unknown as PlanningRow, sc) : null;
 }
 
 /**
@@ -932,12 +940,26 @@ export async function reservationDeLEtape(userId: string, etapeId: string): Prom
  * PEUT PAS SE DÉRIVER : il s'ordonne par cette date, jamais par `date`,
  * une intention non datée n'en ayant pas. V2 a rempli la colonne pour
  * l'existant ; c'est ici qu'elle se tient à jour.
+ *
+ * ⚠️ `dateDuFait` DATE LE FAIT DU JOUR OÙ IL A EU LIEU, ET C'EST UNE
+ * RÈGLE PRODUIT, PAS UN CONFORT. Une séance réservée pour mardi et faite
+ * dimanche resterait écrite au mardi : le planning affirmerait une séance
+ * « faite » un jour à venir. `consommee_le` porte déjà l'heure exacte (et
+ * c'est lui qui ordonne le curseur, jamais `date`), mais c'est `date` que
+ * la semaine donne à lire. L'autre branche de `terminerSeance` le fait
+ * depuis toujours : `consommerEtape` écrit son fait au jour du jour.
  */
-export async function marquerIntention(userId: string, intentionId: string | null, status: DayStatus): Promise<void> {
+export async function marquerIntention(
+  userId: string,
+  intentionId: string | null,
+  status: DayStatus,
+  dateDuFait?: string,
+): Promise<void> {
   /* ⚠️ ELLE VISE UNE INTENTION, PLUS UNE DATE, ET C'EST TOUT V6b EN UNE
      LIGNE. Marquer « faite » par la date créditerait d'un coup la séance
      principale ET le supplément du même jour : on aurait fait une séance,
-     l'app en compterait deux. Sans identité, on ne marque rien. */
+     l'app en compterait deux. Sans identité, on ne marque rien.
+     `dateDuFait` est ce qu'on ÉCRIT, jamais ce sur quoi on vise. */
   if (!intentionId) return;
   const supabase = createClient();
   const sc = await schemaIntentions();
@@ -947,6 +969,7 @@ export async function marquerIntention(userId: string, intentionId: string | nul
     .update({
       [sc.colStatut]: sc.versBase[status],
       consommee_le: status === "planned" ? null : maintenant,
+      ...(dateDuFait && status !== "planned" ? { date: dateDuFait } : {}),
       updated_at: maintenant,
     })
     .eq("id", intentionId)

@@ -60,6 +60,85 @@ export function etatJournee(input: {
 }
 
 /* ════════════════════════════════════════════════════════════════════
+   V7A · L'ÉTAPE SUIVANTE SAIT SI ELLE A DÉJÀ UN JOUR.
+
+   ⚠️ CE BLOC RÉPARE LE DÉFAUT DU 2026-09-06, ET IL EST DANS LA SOURCE
+   DE JOURNÉE PARCE QUE C'EST LÀ QU'EST LA CAUSE. Push était réservée
+   pour le mardi ; l'accueil, qui ne regarde que les intentions
+   D'AUJOURD'HUI, ne voyait rien, et `etapeSuivante` ne dérive son
+   curseur que des étapes REFERMÉES, donc une réservation en attente ne
+   lui dit rien non plus. Le héros la proposait comme une étape libre,
+   le lanceur déclarait `cible: etape`, et la fin de séance INSÉRAIT une
+   seconde ligne portant la même étape. `uniq_intention_par_etape` ne
+   pouvait pas l'attraper : il ne couvre que les intentions PRÉVUES, et
+   la ligne insérée naît « faite ».
+   ════════════════════════════════════════════════════════════════════ */
+
+const JOURS = ["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"];
+
+/**
+ * Le jour d'une réservation, dit comme on le dirait à voix haute.
+ *
+ * ⚠️ « QUAND TU VEUX » RESTE LA VÉRITÉ D'UNE ÉTAPE SANS DATE, et cette
+ * fonction ne s'appelle jamais dans ce cas : le programme dit QUOI, le
+ * planning dit QUAND *quand il dit quelque chose*. Ce qu'on répare ici
+ * est l'inverse, une étape qui a bel et bien un jour et à qui l'écran
+ * répondait quand même « quand tu veux ».
+ */
+export function libelleReservation(date: string, today: string): string {
+  if (date === today) return "aujourd’hui";
+  /* ⚠️ ON FORMATE EN LOCAL, JAMAIS PAR `toISOString()`. Minuit local
+     rendu en UTC recule d'un jour dès qu'on est à l'est de Greenwich :
+     « demain » deviendrait « aujourd'hui » pour tout le monde en France. */
+  const j = new Date(today + "T00:00:00");
+  j.setDate(j.getDate() + 1);
+  const p = (n: number) => String(n).padStart(2, "0");
+  if (date === `${j.getFullYear()}-${p(j.getMonth() + 1)}-${p(j.getDate())}`) return "demain";
+  const jour = new Date(date + "T00:00:00");
+  const i = jour.getDay() === 0 ? 6 : jour.getDay() - 1;
+  return `${JOURS[i]} ${jour.getDate()}`;
+}
+
+/** Ce que le héros lance, et par quel chemin la fin de séance refermera. */
+export type LancementJournee =
+  /** Une ligne existe en base : on la MARQUE, par son identité. */
+  | { genre: "intention"; intention: PlanningDay }
+  /** Rien n'est écrit : la fin de séance écrira le fait et refermera l'étape. */
+  | { genre: "etape" }
+  /** Rien à lancer (pas d'étape, ou instance vide). */
+  | null;
+
+/**
+ * QUOI LANCER DEPUIS LE HÉROS, ET SURTOUT SUR QUOI LE REFERMER.
+ *
+ * ⚠️ L'ORDRE EST LA RÈGLE, PAS UN DÉTAIL D'IMPLÉMENTATION.
+ * · La séance DATÉE AUJOURD'HUI d'abord : elle existe, on la marque.
+ * · Puis la RÉSERVATION de l'étape, où qu'elle soit posée dans le
+ *   calendrier. Décider de faire mardi dès dimanche est parfaitement
+ *   légitime, mais c'est TOUJOURS cette ligne-là qu'on termine : en
+ *   créer une seconde ferait deux intentions pour une seule étape.
+ * · L'étape LIBRE en dernier, et elle seule autorise l'insertion.
+ *
+ * Fonction pure : c'est ce qui permet au banc de rejouer les trois cas
+ * hors ligne, sur une app pourtant auth-gated.
+ */
+export function lancementDuJour(input: {
+  /** L'intention principale d'aujourd'hui. */
+  jour: PlanningDay | null;
+  /** La réservation en attente de l'étape suivante, où qu'elle soit datée. */
+  reservation: PlanningDay | null;
+  /** La prochaine étape du cycle. */
+  etape: unknown | null;
+  /** L'instance est-elle matérialisable (sinon il n'y a rien à lancer) ? */
+  instancePrete: boolean;
+}): LancementJournee {
+  if (hasSeance(input.jour)) return { genre: "intention", intention: input.jour! };
+  if (input.reservation?.id) return { genre: "intention", intention: input.reservation };
+  if (input.etape && input.instancePrete) return { genre: "etape" };
+  return null;
+}
+
+/* ════════════════════════════════════════════════════════════════════
    V7A · DATER LA PROCHAINE ÉTAPE DU PROGRAMME.
 
    ⚠️ C'EST LE SEUL GESTE QUI CRÉE UNE INTENTION PORTANT UNE ÉTAPE, ET

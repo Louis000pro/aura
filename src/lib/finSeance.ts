@@ -27,7 +27,7 @@
      avancer le cycle.
    ════════════════════════════════════════════════════════════════════ */
 
-import { marquerIntention, type Ctx } from "@/lib/planning";
+import { marquerIntention, reservationDeLEtape, type Ctx } from "@/lib/planning";
 import { consommerEtape } from "@/lib/programme";
 import { todayYmd } from "@/lib/planning";
 import type { Exercise } from "@/components/WorkoutGuideModal";
@@ -83,18 +83,39 @@ export function verrouDeFermeture(): (lancement: object) => boolean {
  * journaux, et le prochain chargement lira la vérité de la base.
  */
 export async function terminerSeance(userId: string, cible: CibleSeance): Promise<void> {
+  const aujourdhui = todayYmd();
   try {
     if (cible.genre === "intention") {
-      await marquerIntention(userId, cible.intentionId, "done");
+      /* ⚠️ LE FAIT SE DATE DU JOUR OÙ IL A EU LIEU. Une séance réservée
+         pour mardi et faite dimanche resterait écrite au mardi : le
+         planning afficherait une séance « faite » un jour à venir.
+         `consommee_le` porte l'heure exacte et ordonne le curseur, mais
+         c'est `date` que la semaine donne à lire. */
+      await marquerIntention(userId, cible.intentionId, "done", aujourdhui);
     } else {
-      await consommerEtape(userId, cible.programmeId, cible.etapeId, {
-        date: todayYmd(),
-        type: cible.type,
-        title: cible.title,
-        difficulty: cible.difficulty,
-        location: cible.location,
-        exerciseList: cible.exerciseList,
-      });
+      /* ⚠️ GARDE-FOU D'INTÉGRITÉ, ET IL A UNE HISTOIRE (2026-09-06).
+         Le chemin normal ne passe plus ici quand l'étape a déjà un jour :
+         `lancementDuJour` vise alors la réservation, donc la branche du
+         dessus. Mais un appelant futur, ou un écran resté sur un état
+         périmé, peut encore déclarer `cible: etape` sur une étape
+         pourtant réservée. Insérer alors écrirait une SECONDE ligne
+         portant la même étape, et la base ne peut pas le refuser :
+         `uniq_intention_par_etape` ne couvre que les intentions PRÉVUES,
+         or la ligne insérée naît « faite ». On termine donc la
+         réservation existante au lieu d'en créer une jumelle. */
+      const dejaPosee = await reservationDeLEtape(userId, cible.etapeId);
+      if (dejaPosee?.id) {
+        await marquerIntention(userId, dejaPosee.id, "done", aujourdhui);
+      } else {
+        await consommerEtape(userId, cible.programmeId, cible.etapeId, {
+          date: aujourdhui,
+          type: cible.type,
+          title: cible.title,
+          difficulty: cible.difficulty,
+          location: cible.location,
+          exerciseList: cible.exerciseList,
+        });
+      }
     }
   } catch (e) {
     console.error("[finSeance] fermeture impossible :", e);

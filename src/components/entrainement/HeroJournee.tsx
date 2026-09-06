@@ -55,6 +55,7 @@ export default function HeroJournee() {
         state={j.etat}
         day={j.jour}
         etape={j.etape}
+        reserveLe={j.reserveLe}
         nbExos={j.nbExos}
         nextLabel={j.nextLabel}
         doneStats={j.doneStats}
@@ -123,7 +124,7 @@ export default function HeroJournee() {
                     Quel jour&nbsp;?
                   </p>
                   <p className="text-[10.5px] font-medium mt-1" style={{ color: "var(--text-3)" }}>
-                    {j.etape?.nom} · ta prochaine étape
+                    {j.etape?.nom} · {j.reserveLe ? `posée ${j.reserveLe}` : "ta prochaine étape"}
                   </p>
                 </div>
                 <motion.button whileTap={{ scale: 0.9 }} onClick={() => setQuand(false)}
