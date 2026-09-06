@@ -46,6 +46,7 @@ export default function AccueilSignature({
   guide,
   moment,
   relais,
+  heros,
   onNavigate,
   onOpenRangs,
 }: {
@@ -66,6 +67,12 @@ export default function AccueilSignature({
    *  dire, ce qui est le cas le plus fréquent. Décidé dans
    *  `momentAccueil.ts`, jamais ici : cet écran affiche, il ne juge pas. */
   moment: MomentAccueil | null;
+  /** Le héros « Aujourd'hui », arrivé d'Entraînement en V7A. L'accueil ne
+   *  le fabrique pas : il lui donne sa place, juste après le bonjour,
+   *  parce que la première question de la journée est « je fais quoi
+   *  maintenant » et non « où en est mon EXP ». La restructuration
+   *  complète de l'écran autour de lui est V7B. */
+  heros?: React.ReactNode;
   onNavigate: (path: string) => void;
   onOpenRangs: () => void;
 }) {
@@ -116,6 +123,8 @@ export default function AccueilSignature({
           série) et se tait le reste du temps. Un mot rare qui tombe juste
           vaut mieux qu'une phrase quotidienne qui ne dit rien. */}
       {moment && <MotDuGuide guide={guide} moment={moment} reduce={!!reduce} />}
+
+      {heros}
 
       {/* ── OÙ J'EN SUIS AUJOURD'HUI ────────────────────────────────
           La série et le rang répondaient à la MÊME question, et ils la

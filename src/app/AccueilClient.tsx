@@ -12,6 +12,7 @@ import type { ChiffresPublics } from "@/lib/chiffresPublics";
 import { useAuth } from "@/context/AuthContext";
 import { createClient } from "@/lib/supabase";
 import AccueilSignature from "@/components/AccueilSignature";
+import HeroJournee from "@/components/entrainement/HeroJournee";
 import RangsModal from "@/components/rang/RangsModal";
 import { calculerAura, etatDepuisExp, type EtatAura } from "@/lib/aura";
 import { noterRang } from "@/lib/celebrationRang";
@@ -226,6 +227,7 @@ function Dashboard() {
           guide={guide}
           moment={motGuide}
           relais={relais}
+          heros={<HeroJournee />}
           onNavigate={(path) => router.push(path)}
           onOpenRangs={() => setShowRangs(true)}
         />

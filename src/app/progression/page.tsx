@@ -23,10 +23,11 @@ import {
   Moon, Zap, Home, Sun, CalendarDays, MoreHorizontal, GripVertical, BookOpen,
 } from "lucide-react";
 import WeeklyProgramme from "@/components/WeeklyProgramme";
-import WorkoutGuideModal, { exerciseData, type Exercise } from "@/components/WorkoutGuideModal";
+import { exerciseData, type Exercise } from "@/components/WorkoutGuideModal";
 import ExerciseGuide from "@/components/ExerciseGuide";
 import CreateSessionModal, { type SessionDraft } from "@/components/seance/CreateSessionModal";
 import MouvementsRow from "@/components/seance/MouvementsRow";
+import { Photo, WIDGET } from "@/components/entrainement/PhotoSeance";
 import ExerciseLibrarySheet from "@/components/seance/ExerciseLibrarySheet";
 import ExerciseThumb from "@/components/seance/ExerciseThumb";
 import AdviceReaderSheet from "@/components/AdviceReaderSheet";
@@ -36,6 +37,7 @@ import {
 } from "@/lib/exerciseLibrary";
 import { useAuth } from "@/context/AuthContext";
 import { useAssistant } from "@/context/AssistantContext";
+import { useWorkoutLaunch } from "@/context/WorkoutLaunchContext";
 import { useGuideActif } from "@/context/GuideContext";
 import { AssistantSpark, VisageGuide } from "@/components/AssistantMark";
 import { voix } from "@/lib/guides";
@@ -43,7 +45,7 @@ import { createClient } from "@/lib/supabase";
 import { lockBodyModal } from "@/lib/bodyModal";
 import { PLANS } from "@/lib/plans";
 import { levelToDifficulty, normalizeDifficulty } from "@/lib/assistantActions";
-import { FAMILY, resolveArt, type Family } from "@/lib/workoutArt";
+import { FAMILY, resolveArt, heroImageForSeance, type Family } from "@/lib/workoutArt";
 import {
   ADVICE_ARTICLES,
   ADVICE_THEMES,
@@ -52,13 +54,13 @@ import {
   type AdviceTheme,
 } from "@/lib/adviceArticles";
 import {
-  lireSemaine, marquerIntention, saveDay, ajouterIntention, hasSeance, estRepos, seanceNonFaite, readLieu, loadLieu, readVariant, ctxFromLieu,
-  weekDates, weekDatesForOffset, todayYmd, weekOffsetOf, dayTitle, normalizeExercises,
-  parDate, principale, supplements, seancesDuJour, ordonner, weekdayIndex, prochainsJours, instanceDeLEtape,
+  lireSemaine, saveDay, ajouterIntention, hasSeance, seanceNonFaite, readLieu, ctxFromLieu,
+  weekDates, weekDatesForOffset, todayYmd, weekOffsetOf, dayTitle, lieuLabel, normalizeExercises,
+  parDate, principale, seancesDuJour, ordonner,
   dayLabelLong, PLANNING_TYPE_BY_CATEGORY,
-  type PlanningDay, type GenInput, type Ctx,
+  type PlanningDay,
 } from "@/lib/planning";
-import { getOrCreateProgramme, etapeSuivanteDe, consommerEtape, type ProgrammeEtCycle, type EtapeCycle } from "@/lib/programme";
+import { useJournee } from "@/hooks/useJournee";
 
 /* ─── Workout sessions data (catalogue Vaiiya) ─────────────── */
 type WorkoutCategory = "force" | "cardio" | "mobilite" | "fullbody";
@@ -572,17 +574,6 @@ type Visibility = keyof typeof VIS_CONFIG;
 const VIS_ORDER: Visibility[] = ["private", "friends", "public"];
 
 /* ─── Libellés FR des objectifs onboarding (même map que WeeklyProgramme) ── */
-const goalLabels: Record<string, string> = {
-  masse: "prise de masse",
-  prise_de_masse: "prise de masse",
-  poids: "perte de poids",
-  perte_de_poids: "perte de poids",
-  force: "force",
-  endurance: "endurance",
-  sante: "santé générale",
-  sante_generale: "santé générale",
-  souplesse: "souplesse",
-};
 
 /* ════════════════════════════════════════════════════════════════════
    Banque photo (public/entrainement) — dans le CATALOGUE, les photos
@@ -596,38 +587,6 @@ const goalLabels: Record<string, string> = {
 // Banque photo (familles, règles image, resolveArt) → SOURCE UNIQUE dans
 // src/lib/workoutArt.ts, partagée avec le lanceur global. Types/valeurs
 // importés en tête de fichier (Family, FAMILY, Art, resolveArt).
-
-/** Ambiances des états fixes (widgets) — couleur appliquée in-app, comme la banque. */
-const WIDGET: Record<"repos" | "done" | "setup" | "improvise", {
-  img: string; pos: string;
-}> = {
-  repos:     { img: "repos",     pos: "68% center" },
-  done:      { img: "done",      pos: "center 40%" },
-  setup:     { img: "setup",     pos: "center 45%" },
-  improvise: { img: "improvise", pos: "center 40%" },
-};
-
-/** Photo naturelle — la banque parle d'elle-même. Juste l'image, cadrée,
-    sur fond sombre le temps du chargement. Le scrim vit chez l'appelant. */
-function Photo({ img, pos = "center 25%", className, style, children }: {
-  img: string; pos?: string;
-  className?: string; style?: React.CSSProperties; children?: React.ReactNode;
-}) {
-  return (
-    <div className={className} style={{ position: "relative", overflow: "hidden", background: "#101018", ...style }}>
-      <div aria-hidden style={{ position: "absolute", inset: 0, backgroundImage: `url(/entrainement/${img}.webp)`, backgroundSize: "cover", backgroundPosition: pos }} />
-      {children}
-    </div>
-  );
-}
-
-/** Lieu lisible d'une séance du planning. */
-function lieuLabel(loc: Ctx | null): string {
-  if (loc === "salle") return "À la salle";
-  if (loc === "halteres") return "Maison · haltères";
-  if (loc === "poids") return "Maison · poids du corps";
-  return "";
-}
 
 const DAY_LETTERS = ["L", "M", "M", "J", "V", "S", "D"];
 const DAY_FULL = ["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"];
@@ -670,232 +629,6 @@ function Sheet({ onClose, children, maxHeight = "88vh", height }: {
         </div>
         {children}
       </motion.div>
-    </motion.div>
-  );
-}
-
-/* ════════════════════════════════════════════════════════════════════
-   ① Héros « Aujourd'hui » — un seul emplacement, quatre vérités.
-   ════════════════════════════════════════════════════════════════════ */
-/* ⚠️ « repos » et « libre » ne sont PAS la même chose, et c'est tout le
-   sens de V5 : un repos est une intention qu'on a POSÉE, « libre » c'est
-   l'absence de ligne. Avant, les deux s'affichaient « Repos. », donc
-   l'app affirmait un repos que personne n'avait choisi. */
-type HeroState = "loading" | "setup" | "seance" | "etape" | "repos" | "libre" | "done";
-
-function TodayHero({
-  state, day, etape, nbExos, nextLabel, doneStats, onStart, onImprovise, onOrganise, onShift, onReplace,
-}: {
-  state: HeroState;
-  day: PlanningDay | null;
-  etape: EtapeCycle | null;                       // l'étape du cycle (état « etape »)
-  nbExos: number;                                 // taille de son instance, calculée sans rien écrire
-  nextLabel: string | null;                       // « Jambes · demain » (état repos)
-  doneStats: { minutes: number; kcal: number } | null;
-  onStart: () => void;
-  onImprovise: () => void;
-  onOrganise: () => void;
-  onShift: () => void;
-  onReplace: () => void;
-}) {
-  /* Skeleton — même silhouette que la carte, aucune culpabilité d'attente */
-  if (state === "loading") {
-    return (
-      <div className="overflow-hidden relative" style={{ height: 380, borderRadius: "var(--r-affiche)", background: "rgba(var(--surface-rgb),0.7)", border: "1px solid rgba(var(--accent-rgb),0.12)" }}>
-        <motion.div
-          className="absolute inset-0"
-          style={{ background: "linear-gradient(100deg, transparent 30%, rgba(var(--accent-rgb),0.08) 50%, transparent 70%)" }}
-          animate={{ x: ["-100%", "100%"] }}
-          transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
-        />
-      </div>
-    );
-  }
-
-  const viz =
-    state === "setup" ? WIDGET.setup
-    : state === "done" ? WIDGET.done
-    : state === "repos" || state === "libre" ? WIDGET.repos
-    : state === "etape" ? { img: resolveArt({ title: etape?.nom ?? "" }).img, pos: "center 24%" }
-    : { img: resolveArt({ title: day ? `${day.title} ${day.type}` : "" }).img, pos: "center 24%" };
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.45 }}
-      className="overflow-hidden relative"
-      style={{ minHeight: state === "seance" || state === "etape" ? 400 : 320, borderRadius: "var(--r-affiche)", boxShadow: "var(--ombre-pose)" }}
-    >
-      <Photo img={viz.img} pos={viz.pos} style={{ position: "absolute", inset: 0 }} />
-
-      {/* Chips du haut */}
-      <div className="absolute top-3.5 left-3.5 right-3.5 flex items-center justify-between z-10">
-        <span className="px-3 py-1.5 rounded-full text-[11px] font-semibold"
-          style={{ background: "var(--verre-photo)", color: "#fff", border: "1px solid var(--verre-photo-bord)", backdropFilter: "blur(6px)" }}>
-          {state === "setup" ? "Première fois ici"
-            : state === "etape" ? "Ton programme"
-            : "Aujourd’hui"}
-        </span>
-        {state === "done" && (
-          <span className="w-10 h-10 rounded-full flex items-center justify-center"
-            style={{ background: "linear-gradient(135deg,#4FE8B8,#1FBF8C)", boxShadow: "var(--ombre-pose)" }}>
-            <Check size={18} strokeWidth={3.2} style={{ color: "#06281E" }} />
-          </span>
-        )}
-        {(state === "repos" || state === "libre") && <Moon size={22} strokeWidth={1.6} style={{ color: "#9FD8C6", opacity: 0.85 }} />}
-        {state === "setup" && <AssistantSpark px={22} />}
-      </div>
-
-      {/* Légende sur l'image (style validé nutrition) */}
-      <div className="absolute inset-x-0 bottom-0 px-4 pb-4 pt-16"
-        style={{ background: "var(--voile-affiche)" }}>
-
-        {state === "seance" && day && (
-          <>
-            <p className="text-[11px] font-semibold mb-1" style={{ color: "#C9B8FF" }}>
-              {day.type}{lieuLabel(day.location) ? ` · ${lieuLabel(day.location)}` : ""}
-            </p>
-            <h2 className="text-[34px] md:text-[38px] leading-[1.02] font-extralight text-white">{dayTitle(day)}</h2>
-            <p className="mt-2.5 mb-4 text-[11.5px] font-medium" style={{ color: "rgba(255,255,255,0.62)" }}>
-              {day.type === "HIIT" ? 30 : 45} min · {day.exerciseList.length} exercices · {day.difficulty}
-            </p>
-            <motion.button
-              whileTap={{ scale: 0.97 }}
-              onClick={onStart}
-              className="w-full py-3.5 rounded-2xl flex items-center justify-center gap-2 cursor-pointer text-[15px] font-extrabold text-white"
-              style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", boxShadow: "var(--ombre-action)" }}
-            >
-              <Play size={14} strokeWidth={2.5} fill="#fff" /> C&apos;est parti
-            </motion.button>
-            <div className="flex justify-center gap-5 mt-2.5">
-              <button onClick={onShift} className="text-[11.5px] font-semibold cursor-pointer bg-transparent border-none"
-                style={{ color: "rgba(255,255,255,0.6)" }}>
-                Décaler
-              </button>
-              <button onClick={onReplace} className="text-[11.5px] font-semibold cursor-pointer bg-transparent border-none flex items-center gap-1"
-                style={{ color: "rgba(255,255,255,0.6)" }}>
-                <span style={{ color: "#C9B8FF" }}>✦</span> Remplacer
-              </button>
-            </div>
-          </>
-        )}
-
-        {/* ⚠️ L'ÉTAPE N'A PAS DE DATE, ET LA CARTE NE DOIT PAS EN INVENTER UNE.
-            Le programme dit QUOI faire ensuite ; le planning, facultatif, dit
-            éventuellement QUAND. D'où « quand tu veux » à la place du jour :
-            écrire « Aujourd'hui » ici reposerait la promesse d'agenda que V5
-            retire. */}
-        {state === "etape" && etape && (
-          <>
-            <p className="text-[11px] font-semibold mb-1" style={{ color: "#C9B8FF" }}>
-              Ta prochaine séance
-            </p>
-            <h2 className="text-[34px] md:text-[38px] leading-[1.02] font-extralight text-white">{etape.nom}</h2>
-            <p className="mt-2.5 mb-4 text-[11.5px] font-medium" style={{ color: "rgba(255,255,255,0.62)" }}>
-              Quand tu veux{nbExos > 0 ? ` · ${nbExos} exercices` : ""}
-            </p>
-            <motion.button
-              whileTap={{ scale: 0.97 }}
-              onClick={onStart}
-              className="w-full py-3.5 rounded-2xl flex items-center justify-center gap-2 cursor-pointer text-[15px] font-extrabold text-white"
-              style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", boxShadow: "var(--ombre-action)" }}
-            >
-              <Play size={14} strokeWidth={2.5} fill="#fff" /> C&apos;est parti
-            </motion.button>
-            <div className="flex justify-center gap-5 mt-2.5">
-              <button onClick={onOrganise} className="text-[11.5px] font-semibold cursor-pointer bg-transparent border-none"
-                style={{ color: "rgba(255,255,255,0.6)" }}>
-                Lui donner un jour
-              </button>
-            </div>
-          </>
-        )}
-
-        {state === "libre" && (
-          <>
-            <p className="text-[11px] font-semibold mb-1" style={{ color: "#9FD8C6" }}>
-              Aujourd&apos;hui
-            </p>
-            <h2 className="text-[34px] md:text-[38px] leading-[1.02] font-extralight text-white">Rien de prévu.</h2>
-            <p className="text-[12.5px] font-light mt-1.5 mb-3.5 leading-relaxed" style={{ color: "rgba(255,255,255,0.72)" }}>
-              Tu t&apos;entraînes quand tu veux.
-              {nextLabel && <> Ensuite : <b className="font-bold text-white">{nextLabel}</b>.</>}
-            </p>
-            <motion.button
-              whileTap={{ scale: 0.97 }}
-              onClick={onImprovise}
-              className="w-full py-3 rounded-2xl flex items-center justify-center gap-2 cursor-pointer text-[13.5px] font-bold text-white"
-              style={{ background: "rgba(255,255,255,0.10)", border: "1px solid rgba(255,255,255,0.28)", backdropFilter: "blur(4px)" }}
-            >
-              ✦ J&apos;ai envie de bouger
-            </motion.button>
-          </>
-        )}
-
-        {state === "repos" && (
-          <>
-            <p className="text-[11px] font-semibold mb-1" style={{ color: "#9FD8C6" }}>
-              Aujourd&apos;hui
-            </p>
-            <h2 className="text-[34px] md:text-[38px] leading-[1.02] font-extralight text-white">Repos.</h2>
-            <p className="text-[12.5px] font-light mt-1.5 mb-3.5 leading-relaxed" style={{ color: "rgba(255,255,255,0.72)" }}>
-              Ton corps construit pendant que tu récupères.
-              {nextLabel && <> Prochaine : <b className="font-bold text-white">{nextLabel}</b>.</>}
-            </p>
-            <motion.button
-              whileTap={{ scale: 0.97 }}
-              onClick={onImprovise}
-              className="w-full py-3 rounded-2xl flex items-center justify-center gap-2 cursor-pointer text-[13.5px] font-bold text-white"
-              style={{ background: "rgba(255,255,255,0.10)", border: "1px solid rgba(255,255,255,0.28)", backdropFilter: "blur(4px)" }}
-            >
-              ✦ J&apos;ai quand même envie de bouger
-            </motion.button>
-          </>
-        )}
-
-        {state === "done" && day && (
-          <>
-            <p className="text-[11px] font-semibold mb-1" style={{ color: "#7FE8C8" }}>
-              Aujourd&apos;hui · fait
-            </p>
-            <h2 className="text-[34px] md:text-[38px] leading-[1.02] font-extralight text-white">C&apos;est fait.</h2>
-            <p className="text-[12.5px] font-light mt-1.5 mb-3.5" style={{ color: "rgba(255,255,255,0.72)" }}>
-              {dayTitle(day)}
-              {doneStats && doneStats.minutes > 0 && <> · {doneStats.minutes} min</>}
-              {doneStats && doneStats.kcal > 0 && <> · <b className="font-bold" style={{ color: "#EF9F27" }}>{doneStats.kcal} kcal</b></>}
-            </p>
-            <motion.button
-              whileTap={{ scale: 0.97 }}
-              onClick={onStart}
-              className="w-full py-3 rounded-2xl flex items-center justify-center gap-2 cursor-pointer text-[13.5px] font-bold text-white"
-              style={{ background: "rgba(255,255,255,0.10)", border: "1px solid rgba(255,255,255,0.28)", backdropFilter: "blur(4px)" }}
-            >
-              <Play size={12} strokeWidth={2.5} fill="#fff" /> Refaire la séance
-            </motion.button>
-          </>
-        )}
-
-        {state === "setup" && (
-          <>
-            <p className="text-[11px] font-semibold mb-1" style={{ color: "#C9B8FF" }}>
-              On fait connaissance
-            </p>
-            {/* La question n'apparaît QUE quand l'app ne sait pas — même logique que Nutrition */}
-            <h2 className="text-[30px] md:text-[34px] leading-[1.04] font-extralight text-white">On s&apos;entraîne comment&nbsp;?</h2>
-            <p className="text-[12.5px] font-light mt-1.5 mb-3.5 leading-relaxed" style={{ color: "rgba(255,255,255,0.72)" }}>
-              Quelques questions, et ta semaine est prête.
-            </p>
-            <motion.button
-              whileTap={{ scale: 0.97 }}
-              onClick={onOrganise}
-              className="w-full py-3.5 rounded-2xl flex items-center justify-center gap-2 cursor-pointer text-[15px] font-extrabold text-white"
-              style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", boxShadow: "var(--ombre-action)" }}
-            >
-              ✦ Créer mon planning
-            </motion.button>
-          </>
-        )}
-      </div>
     </motion.div>
   );
 }
@@ -3308,42 +3041,36 @@ const nouvelIdSeance = () => `custom-${Date.now()}`;
    plus d'historique ici.
    ════════════════════════════════════════════════════════════════════ */
 
-/** Séance prête à être lancée dans le lecteur guidé, quelle que soit sa source. */
-type LaunchTarget = {
+/** Une impro qu'on vient de terminer et qu'on peut garder. Elle n'a plus
+ *  à dire ce qu'elle referme : depuis V7A, c'est le lanceur global qui le
+ *  sait, et `terminerSeance` qui l'écrit. */
+type ImproFaite = {
   id: string;
   title: string;
   duration: number;
   difficulty: string;
   category?: string;
   exerciseList?: Exercise[];
-  planningId?: string;     // présent = intention du planning → la marquer « faite » à la fin
-  /* Présent = séance venue directement du CYCLE, sans intention datée.
-     Rien n'a été écrit pour la lancer ; c'est la fin de séance qui écrit
-     le fait et referme l'étape. */
-  etape?: { programmeId: string; etapeId: string };
 };
 
 export default function ProgressionPage() {
   const { user } = useAuth();
   const { open: openAssistant } = useAssistant();
+  const { launchWorkout } = useWorkoutLaunch();
   const router = useRouter();
   const canAccessPremium = Boolean(user?.is_premium || user?.is_admin);
 
-  /* ── Planning de la semaine (source de vérité du héros + du bandeau) ── */
-  const [week, setWeek] = useState<PlanningDay[] | null>(null);
-  const [heroReady, setHeroReady] = useState(false);
-  const [needsSetup, setNeedsSetup] = useState(false);
-  /* Le programme actif et son cycle. `null` = cette personne n'en a pas,
-     et c'est une réponse, pas une panne (cible à zéro, ou aucune réponse). */
-  const [programme, setProgramme] = useState<ProgrammeEtCycle | null>(null);
-  /* Les réglages de génération, gardés pour matérialiser l'instance d'une
-     étape au moment de la lancer, et pas avant. */
-  const [gen, setGen] = useState<GenInput | null>(null);
-  /* La prochaine étape du cycle : DÉRIVÉE de la dernière étape refermée,
-     ordonnée par `consommee_le` et jamais par `date`. Un curseur stocké se
-     désynchronise, une dérivation ne le peut pas. */
-  const [etapeCourante, setEtapeCourante] = useState<EtapeCycle | null>(null);
-  const [profileLevel, setProfileLevel] = useState<string | null>(null);
+  /* ── La journée, lue par le hook partagé avec l'accueil ──
+     ⚠️ UNE SEULE LECTURE POUR LES DEUX ÉCRANS (V7A). Le héros est parti
+     sur l'accueil, mais cet écran garde la semaine, « Organiser » et le
+     catalogue : ils lisent les mêmes lignes. Deux lectures, c'étaient
+     deux façons de décider si une journée est libre ou en repos.
+
+     `creerProgramme` n'est vrai QUE là. Le premier programme naît à la
+     sortie du questionnaire ; ici c'est le repli pour les comptes qui
+     avaient répondu avant que le questionnaire ne sache le faire. */
+  const journee = useJournee({ creerProgramme: true });
+  const { semaine: week, setSemaine: setWeek, niveau: profileLevel, recharger: loadWeek } = journee;
 
   /* ── UI ── */
   const [sheet, setSheet] = useState<null | "choisir" | "improviser" | "organiser" | "elan" | "semaine">(null);
@@ -3363,7 +3090,6 @@ export default function ProgressionPage() {
   const [plein, setPlein] = useState(false);
   /* Collection sur laquelle ouvrir le catalogue (null = la grille). */
   const [choisirCible, setChoisirCible] = useState<string | null>(null);
-  const [activeWorkout, setActiveWorkout] = useState<LaunchTarget | null>(null);
   const [activeArticle, setActiveArticle] = useState<AdviceArticle | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(null), 2500); };
@@ -3378,8 +3104,6 @@ export default function ProgressionPage() {
   const maxSeances = canAccessPremium ? Infinity : PLANS.free.limits.sessionsMax;
   const peutGarderUneSeance = customSessions.length < maxSeances;
 
-  /* ── Stats du jour (état « fait » du héros) ── */
-  const [doneStats, setDoneStats] = useState<{ minutes: number; kcal: number } | null>(null);
   const [elan, setElan] = useState<ElanData | null>(null);
 
   const today = todayYmd();
@@ -3389,72 +3113,33 @@ export default function ProgressionPage() {
      minuit, et il n'y a rien d'impur dans le mémo. */
   const semaineDates = useMemo(() => weekDates(new Date(today + "T00:00:00")), [today]);
 
-  /* ── Charge la semaine — même recette que WeeklyProgramme (idempotent) ── */
-  const loadWeek = useCallback(async () => {
-    if (!user) return;
-    const supabase = createClient();
-    const { data: prof } = await supabase
-      .from("profiles")
-      .select("onboarding_level, onboarding_sessions_week, onboarding_goals")
-      .eq("id", user.id)
-      .maybeSingle();
+  /* ── Une feuille demandée depuis ailleurs (V7A) ──
+     Le héros vit sur l'accueil, mais « Organiser » et « J'improvise »
+     manipulent la semaine et le catalogue, qui sont ici. Il nous envoie
+     donc, en disant laquelle ouvrir.
 
-    const hasOnboarding = !!(prof && (prof.onboarding_level || prof.onboarding_sessions_week
-      || (Array.isArray(prof.onboarding_goals) && prof.onboarding_goals.length > 0)));
-    const { location, equip } = await loadLieu(user.id);
-    setProfileLevel(prof?.onboarding_level ?? null);
+     ⚠️ ON LIT `window.location`, PAS `useSearchParams`. Ce dernier fait
+     basculer la page en rendu client sous Suspense au build ; ici on ne
+     veut qu'un geste d'ouverture, une fois, au montage. Le paramètre est
+     retiré de l'URL aussitôt : revenir en arrière ne doit pas rouvrir une
+     feuille qu'on vient de fermer. */
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const voulue = params.get("ouvrir");
+    if (voulue !== "organiser" && voulue !== "improviser") return;
+    params.delete("ouvrir");
+    const reste = params.toString();
+    window.history.replaceState(null, "", window.location.pathname + (reste ? `?${reste}` : ""));
+    /* ⚠️ À LA PREMIÈRE IMAGE, PAS PENDANT LE MONTAGE. La feuille doit
+       glisser par-dessus un écran déjà peint : ouverte dans le corps de
+       l'effet, elle serait là avant l'écran d'où elle vient, et ça se lit
+       comme un saut plutôt que comme une arrivée. */
+    const frame = requestAnimationFrame(() => setSheet(voulue));
+    return () => cancelAnimationFrame(frame);
+  }, []);
 
-    if (!hasOnboarding) {
-      // Vraiment rien à générer (onboarding pas fait) → héros de mise en route.
-      setNeedsSetup(true);
-      setWeek(null);
-      setHeroReady(true);
-      return;
-    }
-    // Lieu OPTIONNEL : tant que la synchro cross-device n'a pas eu lieu, le
-    // localStorage de cet appareil peut être vide. On ne bloque JAMAIS sur
-    // « 7 repos » pour ça — on retombe sur le poids du corps (ctxFromLieu(null,
-    // null) === "poids") et l'utilisateur affine son lieu via « Organiser ».
-
-    const gen: GenInput = {
-      ctx: ctxFromLieu(location, equip),
-      sessions: prof!.onboarding_sessions_week ?? 3,
-      goals: ((prof!.onboarding_goals as string[] | null) ?? []).map((g) => goalLabels[g] ?? g),
-      level: prof!.onboarding_level,
-      variant: readVariant(user.id),
-      seed: user.id,
-    };
-    try {
-      /* ⚠️ LIRE N'ÉCRIT PLUS RIEN (V5). Une semaine sans ligne est une
-         semaine sans rien de prévu, et c'est une réponse valide. */
-      const days = await lireSemaine(user.id, weekDates());
-      setWeek(days);
-      setGen(gen);
-      setNeedsSetup(false);
-    } catch (e) {
-      console.error("Planning load error", e);
-    }
-
-    /* ⚠️ LE PROGRAMME, LUI, PEUT NAÎTRE ICI, ET C'EST LA SEULE ÉCRITURE
-       QUE L'OUVERTURE DE L'ÉCRAN AUTORISE ENCORE. Elle n'arrive qu'une
-       fois par personne, elle n'écrit aucune séance et aucune date : elle
-       persiste la STRUCTURE (l'intention de fond et son cycle). Rend
-       `null` pour qui a répondu « aucune séance par semaine » ou n'a rien
-       répondu : dans les deux cas il n'y a pas de prochaine étape, et
-       inventer une carte serait pire que de n'en montrer aucune. */
-    try {
-      const actif = await getOrCreateProgramme(user.id);
-      setProgramme(actif);
-      setEtapeCourante(actif ? await etapeSuivanteDe(user.id, actif) : null);
-    } catch (e) {
-      console.error("Programme load error", e);
-    }
-    setHeroReady(true);
-  }, [user]);
-
-  useEffect(() => { void loadWeek(); }, [loadWeek]);
-
-  /* ── Charge une autre semaine (navigation de l'agenda) sans toucher au héros ──
+  /* ── Charge une autre semaine (navigation de l'agenda), sans toucher à celle-ci ──
      Lecture pure : plus de profil à relire ni de lieu à résoudre, puisqu'il
      n'y a plus rien à générer. Feuilleter son agenda ne coûte plus qu'une
      requête et n'écrit plus une seule ligne. */
@@ -3463,85 +3148,6 @@ export default function ProgressionPage() {
     try { return await lireSemaine(user.id, weekDatesForOffset(offset)); }
     catch (e) { console.error("Week fetch error", e); return null; }
   }, [user]);
-
-  /* Recharge si le planning ou le lieu changent ailleurs (orbe, Organiser…) */
-  useEffect(() => {
-    const handler = () => { void loadWeek(); };
-    window.addEventListener("programme-updated", handler);
-    window.addEventListener("lieu-updated", handler);
-    return () => {
-      window.removeEventListener("programme-updated", handler);
-      window.removeEventListener("lieu-updated", handler);
-    };
-  }, [loadWeek]);
-
-  /* ── État du héros ── */
-  const parJour = useMemo(() => parDate(week), [week]);
-  /* ⚠️ LE HÉROS N'A LA PLACE QUE POUR UNE SÉANCE, DONC IL MONTRE LA
-     PRINCIPALE (V6b) : l'étape du programme d'abord, sinon la plus
-     ancienne intention de la journée. Ce qui vient en plus ne disparaît
-     pas pour autant, il se voit dans la bande semaine et dans Organiser.
-     Lui donner sa propre place sur l'accueil est un travail de mise en
-     scène, et c'est V7. */
-  const intentionsDuJour = parJour[today] ?? [];
-  const todayDay = principale(intentionsDuJour);
-  const extrasDuJour = supplements(intentionsDuJour);
-  /* L'INSTANCE de l'étape : sa liste d'exercices concrète. Calcul local et
-     instantané, jetable, jamais écrite tant que la séance n'est pas faite. */
-  const instanceEtape = useMemo(
-    () => (etapeCourante && gen ? instanceDeLEtape(etapeCourante.nom, gen) : []),
-    [etapeCourante, gen],
-  );
-
-  const heroState: HeroState = !heroReady ? "loading"
-    : needsSetup ? "setup"
-    : todayDay?.status === "done" ? "done"
-    : hasSeance(todayDay) ? "seance"
-    : estRepos(todayDay) ? "repos"
-    : etapeCourante ? "etape"
-    : "libre";
-
-  /* Prochaine séance de la semaine (état repos) — « Jambes · demain » */
-  const nextLabel = useMemo(() => {
-    if (!week) return null;
-    const demain = prochainsJours(2)[1];
-    for (const date of semaineDates) {
-      if (date <= today) continue;
-      /* La prochaine séance À FAIRE de la journée, pas la première ligne :
-         une journée peut porter une séance déjà faite et un extra prévu. */
-      const suivante = seancesDuJour(parJour[date]).find((x) => x.status !== "done");
-      if (suivante) {
-        const when = date === demain ? "demain" : DAY_FULL[weekdayIndex(date)];
-        return `${dayTitle(suivante)} · ${when}`;
-      }
-    }
-    return null;
-  }, [week, parJour, semaineDates, today]);
-
-  /* Durée / kcal de la séance faite aujourd'hui (une seule petite requête) */
-  useEffect(() => {
-    if (heroState !== "done" || !user) return;
-    let cancelled = false;
-    (async () => {
-      const supabase = createClient();
-      const startOfDay = new Date(today + "T00:00:00").toISOString();
-      const { data } = await supabase
-        .from("workout_sessions")
-        .select("duration_minutes, elapsed_seconds, calories_burned")
-        .eq("user_id", user.id)
-        .gte("started_at", startOfDay)
-        .order("started_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      if (!cancelled && data) {
-        setDoneStats({
-          minutes: data.elapsed_seconds ? Math.max(1, Math.round(data.elapsed_seconds / 60)) : (data.duration_minutes ?? 0),
-          kcal: data.calories_burned ?? 0,
-        });
-      }
-    })();
-    return () => { cancelled = true; };
-  }, [heroState, user, today]);
 
   /* ── Ton élan : agrégat des séances faites sur 8 semaines glissantes ── */
   useEffect(() => {
@@ -3641,40 +3247,13 @@ export default function ProgressionPage() {
     ...workoutSessions.map((s) => ({ ...s, perso: false })),
   ], [customSessions]);
 
-  /* ── Lancements ── */
-  const startDay = (d: PlanningDay) => {
-    if (!hasSeance(d)) return;
-    setActiveWorkout({
-      id: `planning-${d.id ?? d.date}`,
-      title: dayTitle(d),
-      duration: d.type === "HIIT" ? 30 : 45,
-      difficulty: d.difficulty,
-      category: d.type,
-      exerciseList: d.exerciseList,
-      planningId: d.id ?? undefined,
-    });
-  };
-  /* Lancer une étape du cycle : on matérialise son instance À CET
-     INSTANT, en mémoire, et on n'écrit RIEN. Si la séance n'est pas
-     terminée, il n'en reste aucune trace, ce qui est exactement ce qu'on
-     veut d'une liste d'exercices jetable. */
-  const startEtape = () => {
-    if (!etapeCourante || instanceEtape.length === 0 || !programme) return;
-    setActiveWorkout({
-      id: `etape-${etapeCourante.id}`,
-      title: etapeCourante.nom,
-      duration: etapeCourante.dureeMin ?? 45,
-      difficulty: levelToDifficulty(gen?.level ?? null),
-      category: "Force",
-      exerciseList: instanceEtape,
-      etape: { programmeId: programme.programme.id, etapeId: etapeCourante.id },
-    });
-  };
-
-  const startToday = () => {
-    if (todayDay) { startDay(todayDay); return; }
-    startEtape();
-  };
+  /* ── Lancements ──
+     ⚠️ TOUT PASSE PAR LE LANCEUR GLOBAL (V7A). Cet écran avait son propre
+     tunnel, avec sa propre logique de fin de séance ; le héros lance
+     maintenant depuis l'accueil, et deux tunnels auraient voulu dire deux
+     façons de refermer une intention. Ce qu'une séance referme est
+     déclaré ici (`cible`) et écrit une seule fois, dans `terminerSeance`. */
+  const startDay = (d: PlanningDay) => journee.lancerIntention(d);
 
   /* Drag & drop de l'agenda : l'intention CHANGE DE DATE et garde son
      identité, donc une seule écriture, et rien à l'arrivée n'est touché.
@@ -3707,42 +3286,19 @@ export default function ProgressionPage() {
       return;
     }
     setSheet(null);
-    setActiveWorkout({
-      id: s.id,
+    /* Une séance du catalogue ou de ta bibliothèque ne referme AUCUNE
+       étape : pas de `cible`. C'est la règle « une séance hors programme
+       ne fait pas avancer le cycle ». */
+    launchWorkout({
+      sessionId: s.id,
       title: s.title,
       duration: s.duration,
       difficulty: s.difficulty,
       category: s.category,
+      heroImage: heroImageForSeance({ title: s.title, category: s.category }),
       exerciseList: s.exerciseList,
     });
     showToast(`${s.title} démarrée ✓`);
-  };
-
-  const handleWorkoutComplete = (target: LaunchTarget) => {
-    /* ⚠️ ON MARQUE L'INTENTION, PLUS LA DATE (V6b). Par la date, terminer
-       une séance créditerait aussi le supplément du même jour : on en
-       aurait fait une, l'app en compterait deux. */
-    if (target.planningId && user) {
-      void marquerIntention(user.id, target.planningId, "done");
-      setWeek((prev) => prev?.map((d) => d.id === target.planningId ? { ...d, status: "done" as const } : d) ?? prev);
-      return;
-    }
-    /* ⚠️ L'ÉTAPE SE REFERME ICI, ET NULLE PART AILLEURS. La séance venait
-       du cycle sans passer par une intention datée : c'est la fin de la
-       séance qui écrit le fait, daté du jour où il a eu lieu, et qui fait
-       avancer le curseur. Rien n'avait été écrit avant. */
-    if (target.etape && user) {
-      const seance = {
-        date: todayYmd(),
-        type: target.category ?? "Force",
-        title: target.title,
-        difficulty: target.difficulty,
-        location: gen?.ctx ?? null,
-        exerciseList: target.exerciseList ?? [],
-      };
-      void consommerEtape(user.id, target.etape.programmeId, target.etape.etapeId, seance)
-        .then(() => loadWeek());
-    }
   };
 
   /* ── Actions bibliothèque perso ── */
@@ -3866,7 +3422,7 @@ export default function ProgressionPage() {
   };
 
   /* Fin d'une impro : elle n'existe nulle part, on propose de la garder. */
-  const garderImpro = (t: LaunchTarget) => {
+  const garderImpro = (t: ImproFaite) => {
     const exos = t.exerciseList ?? [];
     handleCreateOrEdit({
       id: nouvelIdSeance(),
@@ -3943,16 +3499,6 @@ export default function ProgressionPage() {
     setEditSession(null);
   };
 
-  /* ── Bifurcation : le libellé vit avec la réalité du jour ── */
-  const askLabel =
-    heroState === "done" ? "Encore de l’énergie ?"
-    : heroState === "repos" ? "Envie de bouger quand même ?"
-    /* « Rien de prévu » n’est pas un manque : on ne demande pas
-       « quand même », on propose simplement autre chose. */
-    : heroState === "libre" ? "Ou autre chose :"
-    : heroState === "setup" ? "Ou directement :"
-    : "Pas ce qui était prévu ?";
-
   /* Défauts « J'improvise » depuis le lieu connu */
   const lieu = user ? readLieu(user.id) : { location: null, equip: null };
   const improDefaultPlace: ImproPlace = lieu.location === "salle" ? "salle" : "maison";
@@ -3986,64 +3532,22 @@ export default function ProgressionPage() {
           </p>
         </motion.div>
 
-        {/* ── ① Héros « Aujourd'hui » ── */}
-        <section data-tour-anchor="prog-hero">
-          <TodayHero
-            state={heroState}
-            day={todayDay}
-            etape={etapeCourante}
-            nbExos={instanceEtape.length}
-            nextLabel={nextLabel}
-            doneStats={doneStats}
-            onStart={startToday}
-            onImprovise={() => setSheet("improviser")}
-            onOrganise={() => setSheet("organiser")}
-            onShift={() => openAssistant("Décale ma séance d’aujourd’hui à un autre jour")}
-            onReplace={() => openAssistant("Remplace ma séance d’aujourd’hui par autre chose")}
-          />
+        {/* ⚠️ LE HÉROS « AUJOURD'HUI » N'EST PLUS ICI (V7A). Il vit sur
+            l'accueil, l'écran où l'on arrive et où la question de la
+            journée se pose vraiment. Entraînement redevient ce qu'il est :
+            le plan d'entraînement et sa bibliothèque. */}
 
-          {/* ⚠️ CE QUI VIENT EN PLUS AUJOURD'HUI (V6b). Le héros ne montre
-              qu'une séance, et c'est très bien : il répond à « je fais
-              quoi maintenant ». Mais une seconde intention existe en base,
-              donc elle doit exister à l'écran, sinon on l'a écrite pour
-              rien. Une ligne, lançable, sous le héros : la vraie place
-              d'une journée à deux séances est un travail de composition,
-              et c'est V7. */}
-          {extrasDuJour.length > 0 && (
-            <div className="mt-2.5">
-              {extrasDuJour.map((extra) => (
-                <button key={extra.id ?? extra.title}
-                  onClick={() => { if (hasSeance(extra)) startDay(extra); }}
-                  disabled={!hasSeance(extra)}
-                  className="w-full flex items-center gap-2 py-1.5 text-left border-none bg-transparent"
-                  style={{ cursor: hasSeance(extra) ? "pointer" : "default" }}>
-                  <span className="vy-label flex-shrink-0" style={{ color: "var(--text-3)" }}>En plus</span>
-                  <span className="flex-1 min-w-0 text-[12.5px] font-semibold truncate" style={{ color: "var(--text-2)" }}>
-                    {dayTitle(extra)}
-                  </span>
-                  {hasSeance(extra) && (
-                    <span className="text-[10px] font-bold flex-shrink-0"
-                      style={{ color: extra.status === "done" ? "var(--teal-encre)" : "var(--exp-encre)" }}>
-                      {extra.status === "done" ? "Faite ✓" : "Commencer"}
-                    </span>
-                  )}
-                </button>
-              ))}
-            </div>
-          )}
-        </section>
-
-        {/* ── ② Bifurcation ── */}
-        <motion.p
-          initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.4, delay: 0.15 }}
-          className="vy-corps mt-6 mb-3"
-        >
-          {askLabel}
-        </motion.p>
+        {/* ── ② Bifurcation ──
+            ⚠️ LA PHRASE D'INVITE EST PARTIE AVEC LE HÉROS (V7A). Elle
+            s'écrivait AUTOUR de lui (« Pas ce qui était prévu ? », « Ou
+            autre chose : ») : sans la carte du jour au-dessus, elle
+            désigne quelque chose qui n'est plus à l'écran. Les deux
+            cartes se nomment elles-mêmes, et « ne pas sur-expliquer les
+            écrans » est une règle de composition verrouillée. */}
         <motion.div
           data-tour-anchor="prog-forks"
           initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.2 }}
-          className="grid grid-cols-2 gap-3"
+          className="grid grid-cols-2 gap-3 mt-2"
         >
           <ForkCard kind="improvise" onClick={() => setSheet("improviser")} />
           <ForkCard kind="choisis" count={allSessions.length} onClick={() => setSheet("choisir")} />
@@ -4155,7 +3659,27 @@ export default function ProgressionPage() {
             defaultHalteres={improDefaultHalteres}
             difficulty={levelToDifficulty(profileLevel)}
             onClose={() => setSheet(null)}
-            onLaunch={(t) => { setSheet(null); setActiveWorkout(t); showToast(`${t.title} prête ✦`); }}
+            onLaunch={(t) => {
+              setSheet(null);
+              /* Une impro n'existe NULLE PART : c'est la seule séance
+                 qu'on perdrait, d'où « Tu la gardes ? » à la fin. Une
+                 séance du catalogue ou du planning est déjà quelque part.
+                 Places prises : on ne propose rien plutôt qu'un mur après
+                 l'effort. Et elle ne referme aucune étape. */
+              launchWorkout({
+                sessionId: t.id,
+                title: t.title,
+                duration: t.duration,
+                difficulty: t.difficulty,
+                category: t.category,
+                heroImage: heroImageForSeance({ title: t.title }),
+                exerciseList: t.exerciseList,
+                onGarder: user && peutGarderUneSeance && t.exerciseList.length
+                  ? () => garderImpro(t)
+                  : undefined,
+              });
+              showToast(`${t.title} prête ✦`);
+            }}
           />
         )}
       </AnimatePresence>
@@ -4184,31 +3708,6 @@ export default function ProgressionPage() {
                 }],
               });
             }}
-          />
-        )}
-      </AnimatePresence>
-
-      {/* ══ Lecteur guidé ══ */}
-      <AnimatePresence>
-        {activeWorkout && (
-          <WorkoutGuideModal
-            sessionId={activeWorkout.id}
-            title={activeWorkout.title}
-            accent="var(--accent)"
-            duration={activeWorkout.duration}
-            difficulty={activeWorkout.difficulty}
-            category={activeWorkout.category}
-            heroImage={`/entrainement/${resolveArt({ title: activeWorkout.title, category: activeWorkout.category as WorkoutCategory | undefined }).img}.webp`}
-            exerciseList={activeWorkout.exerciseList}
-            onClose={() => setActiveWorkout(null)}
-            onComplete={() => handleWorkoutComplete(activeWorkout)}
-            /* Seule une impro n'existe nulle part : c'est elle qu'on
-               perdrait. Une séance du catalogue ou du planning est déjà
-               quelque part, on ne propose rien. Places prises : on ne
-               propose rien non plus, plutôt qu'un mur en fin de séance. */
-            onGarder={user && peutGarderUneSeance && activeWorkout.id.startsWith("improv-") && activeWorkout.exerciseList?.length
-              ? () => garderImpro(activeWorkout)
-              : undefined}
           />
         )}
       </AnimatePresence>

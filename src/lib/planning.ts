@@ -316,6 +316,16 @@ export function dayTitle(day: PlanningDay): string {
   return day.title || day.type;
 }
 /** Label du jour de la semaine pour une date (Lundi…Dimanche). */
+/** Lieu lisible d'une séance du planning. Il vit ici, avec `dayTitle`,
+ *  parce que deux écrans l'écrivent désormais : le héros de la journée
+ *  (sur l'accueil) et le détail d'un jour (sur Entraînement). */
+export function lieuLabel(loc: Ctx | null): string {
+  if (loc === "salle") return "À la salle";
+  if (loc === "halteres") return "Maison · haltères";
+  if (loc === "poids") return "Maison · poids du corps";
+  return "";
+}
+
 export function dayLabel(date: string): string {
   const d = new Date(date + "T00:00:00");
   const idx = d.getDay() === 0 ? 6 : d.getDay() - 1;

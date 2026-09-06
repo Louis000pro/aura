@@ -17,6 +17,7 @@
    ════════════════════════════════════════════════════════════════════ */
 import { readFileSync, readdirSync } from "node:fs";
 import { etapesDuCycle, etapeSuivante, nomDeProgramme, POSITION_INITIALE } from "@/lib/programme";
+import { etatJournee } from "@/lib/journee";
 import {
   cycleDeReference, seancesDuCycle, previewWeek, weekDates, ANCIEN, NOUVEAU,
   ordonner, parDate, principale, supplements, seancesDuJour, prochaineSeanceDuJour,
@@ -341,6 +342,125 @@ verdict(
     "V6b · marquerIntention vise une intention, jamais une date",
     corps.includes('.eq("id", intentionId)') && !corps.includes('.eq("date"'),
     "cible = id",
+  );
+}
+
+/* ── 8. V7A · le héros de la journée, et l'autorité unique de fin de séance ──
+   Ce que ce bloc tient ne se voit ni au typecheck ni au build : ce sont
+   des propriétés du CHEMIN (qui écrit, qui lit, qui crée), et ce sont
+   exactement celles qui repasseraient inaperçues, puisqu'elles ne
+   cassent rien et ne se constatent qu'en base. */
+{
+  const lire = (rel: string) => readFileSync(new URL("../" + rel, import.meta.url), "utf8");
+  const ecran = lire("src/app/progression/page.tsx");
+  const hook = lire("src/hooks/useJournee.ts");
+  const heros = lire("src/components/entrainement/HeroJournee.tsx");
+  const lanceur = lire("src/context/WorkoutLaunchContext.tsx");
+  const bienvenue = lire("src/components/bienvenue/ParcoursBienvenue.tsx");
+
+  /* ── L'état de la journée, sur ses sept états ──
+     La décision vivait dans un écran de 4 000 lignes derrière
+     l'authentification, donc elle n'était vérifiable nulle part. */
+  const seance = (over: Partial<PlanningDay> = {}): PlanningDay => ({
+    id: "i1", date: "2026-09-06", type: "Force", title: "Push",
+    difficulty: "Intermédiaire", location: null,
+    exerciseList: [{ name: "Pompes", sets: 3, reps: "12 reps", rest: 60, restAfter: 90, tip: "", benefit: "", muscles: [] }],
+    sessionId: null, status: "planned",
+    ...over,
+  });
+  /* ⚠️ LA NATURE SE DÉDUIT DU LIBELLÉ, pas d'une colonne du modèle
+     d'écran : c'est `natureDe` qui décide, et c'est exactement ce qu'on
+     veut exercer ici. */
+  const repos = (): PlanningDay => seance({ type: "Repos", title: "Repos", exerciseList: [] });
+  const etapeBidon = { id: "e1", position: 1, nom: "Push", nature: "seance", dureeMin: null, origine: "systeme" };
+
+  for (const [libelle, entree, attendu] of [
+    ["on n'a pas encore lu", { pret: false, besoinSetup: false, jour: null, etape: etapeBidon }, "loading"],
+    ["le questionnaire n'est pas fait", { pret: true, besoinSetup: true, jour: null, etape: null }, "setup"],
+    ["une séance datée aujourd'hui", { pret: true, besoinSetup: false, jour: seance(), etape: etapeBidon }, "seance"],
+    ["elle est faite", { pret: true, besoinSetup: false, jour: seance({ status: "done" }), etape: etapeBidon }, "done"],
+    ["un repos posé", { pret: true, besoinSetup: false, jour: repos(), etape: etapeBidon }, "repos"],
+    ["rien aujourd'hui, mais un programme", { pret: true, besoinSetup: false, jour: null, etape: etapeBidon }, "etape"],
+    ["rien du tout", { pret: true, besoinSetup: false, jour: null, etape: null }, "libre"],
+  ] as [string, Parameters<typeof etatJournee>[0], string][]) {
+    verdict("V7A · état de la journée : " + libelle, etatJournee(entree) === attendu, etatJournee(entree));
+  }
+
+  /* ⚠️ LE CAS QUI COÛTERAIT LE PLUS CHER : une journée vide n'est PAS un
+     repos. C'est la promesse de V5, et elle se rejoue ici parce que rien
+     d'autre ne la tient. */
+  verdict(
+    "V7A · une journée sans ligne n'est jamais annoncée comme un repos",
+    etatJournee({ pret: true, besoinSetup: false, jour: null, etape: null }) !== "repos",
+    "libre",
+  );
+
+  /* ── Une seule autorité de fin de séance ── */
+  verdict(
+    "V7A · un seul tunnel : /progression n'en monte plus",
+    !/<WorkoutGuideModal/.test(ecran) && /<WorkoutGuideModal/.test(lanceur),
+    "le lecteur guidé vit dans WorkoutLaunchContext",
+  );
+  verdict(
+    "V7A · le lanceur global referme ce que la séance referme",
+    lanceur.includes("terminerSeance(") && lanceur.includes("onComplete="),
+    "onComplete → terminerSeance",
+  );
+  for (const [libelle, fichier, contenu] of [
+    ["l'écran Entraînement", "src/app/progression/page.tsx", ecran],
+    ["le héros de l'accueil", "src/components/entrainement/HeroJournee.tsx", heros],
+    ["le hook de lecture", "src/hooks/useJournee.ts", hook],
+  ] as [string, string, string][]) {
+    void fichier;
+    verdict(
+      "V7A · " + libelle + " ne referme rien lui-même",
+      !contenu.includes("consommerEtape(") && !contenu.includes("marquerIntention("),
+      "aucune écriture de fin de séance",
+    );
+  }
+
+  /* ── Ouvrir l'accueil ne crée aucune structure ──
+     ⚠️ C'est la décision de V7A la plus facile à défaire sans s'en
+     apercevoir : `getOrCreateProgramme` s'appelle exactement comme
+     `lireProgrammeActif`, et l'écart ne se voit qu'en base. */
+  verdict(
+    "V7A · le hook ne crée un programme que si on l'y autorise",
+    hook.includes("creerProgramme = false") && hook.includes("? await getOrCreateProgramme(") && hook.includes(": await lireProgrammeActif("),
+    "creerProgramme ? créer : lire",
+  );
+  verdict(
+    "V7A · le héros de l'accueil n'arme pas la création",
+    /useJournee\(\)/.test(heros) && !heros.includes("creerProgramme"),
+    "useJournee() sans option",
+  );
+  verdict(
+    "V7A · seul Entraînement garde le repli de création",
+    ecran.includes("useJournee({ creerProgramme: true })"),
+    "repli des comptes plus anciens",
+  );
+  verdict(
+    "V7A · le premier programme naît à la sortie du questionnaire",
+    bienvenue.includes("getOrCreateProgramme("),
+    "/bienvenue crée, l'accueil lit",
+  );
+
+  /* ── Le héros a bien changé d'écran ── */
+  verdict(
+    "V7A · le héros est monté sur l'accueil",
+    lire("src/app/AccueilClient.tsx").includes("<HeroJournee />"),
+    "AccueilClient → HeroJournee",
+  );
+  verdict(
+    "V7A · il ne se dessine plus sur Entraînement",
+    !ecran.includes("<TodayHero"),
+    "un seul héros dans l'app",
+  );
+
+  /* ── Lire n'écrit toujours rien (V5), y compris par le nouveau chemin ── */
+  verdict(
+    "V7A · le hook de lecture n'écrit aucune intention",
+    !/\.insert\(|\.upsert\(|\.delete\(|\.update\(/.test(hook),
+    "aucune écriture dans useJournee",
   );
 }
 

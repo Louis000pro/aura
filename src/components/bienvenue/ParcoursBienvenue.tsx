@@ -47,6 +47,7 @@ import { createClient } from "@/lib/supabase";
 import { lockBodyModal } from "@/lib/bodyModal";
 import { destinationDepuisUrl } from "@/lib/destinationInterne";
 import { enregistrerProfil, PROFIL_VIDE, type OnboardingData } from "@/lib/profilOnboarding";
+import { getOrCreateProgramme } from "@/lib/programme";
 import { modeRevue } from "@/lib/modeRevue";
 import { loadLieu, persistLieu } from "@/lib/planning";
 import { voix } from "@/lib/guides";
@@ -305,7 +306,23 @@ export default function ParcoursBienvenue() {
     if (bloque) { setManqueVu(true); return; }
     setManqueVu(false);
     await enregistrer();
-    setEtape(index >= ORDRE.length - 1 ? "pret" : ORDRE[index + 1]);
+    const fini = index >= ORDRE.length - 1;
+    /* ⚠️ LE PREMIER PROGRAMME NAÎT ICI, ET C'EST LE BON ENDROIT (V7A).
+       Il se créait à l'ouverture d'Entraînement, ce qui faisait d'un
+       écran de lecture un écran qui écrit ; et l'accueil, qui porte
+       désormais le héros, ne doit surtout pas créer une structure du
+       simple fait qu'on l'ouvre. La personne vient de donner ses
+       réponses : c'est le moment exact où Vaiiya peut en composer un.
+
+       ⚠️ SON ÉCHEC NE BLOQUE RIEN. `getOrCreateProgramme` rend `null`
+       quand il n'y a rien à créer (cible à zéro, réponses absentes), et
+       Entraînement garde le même appel en repli pour les comptes plus
+       anciens. On n'attend donc rien de cette écriture pour laisser
+       entrer quelqu'un. */
+    if (fini && !revue && user?.id) {
+      void getOrCreateProgramme(user.id).catch(() => { /* repli sur Entraînement */ });
+    }
+    setEtape(fini ? "pret" : ORDRE[index + 1]);
   };
 
   const precedent = () => {
