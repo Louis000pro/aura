@@ -18,7 +18,7 @@
 import { readFileSync, readdirSync } from "node:fs";
 import { verrouDeFermeture } from "@/lib/finSeance";
 import { etapesDuCycle, etapeSuivante, nomDeProgramme, positionRefermee, POSITION_INITIALE } from "@/lib/programme";
-import { etatJournee, intentionDeLEtape, lancementDuJour, libelleReservation } from "@/lib/journee";
+import { etatJournee, intentionDeLEtape, lancementDuJour, libelleReservation, repetitionDuJour } from "@/lib/journee";
 import {
   cycleDeReference, seancesDuCycle, previewWeek, weekDates, ANCIEN, NOUVEAU,
   ordonner, parDate, principale, supplements, seancesDuJour, prochaineSeanceDuJour,
@@ -670,6 +670,95 @@ verdict(
     readFileSync(new URL("../src/components/entrainement/TodayHero.tsx", import.meta.url), "utf8")
       .includes('{reserveLe ?? "Quand tu veux"}'),
     "« quand tu veux » ne reste vrai que sans réservation",
+  );
+
+  /* ── L'ÉTAT `done` : « REFAIRE LA SÉANCE » REFAIT LA SÉANCE ──
+     ⚠️ CE BLOC FERME UN DÉFAUT SIGNALÉ PAR LOUIS LE 2026-09-06. Le
+     bouton de l'état `done` partageait `onStart` avec les autres états,
+     donc il passait par `lancementDuJour`, c'est-à-dire par la
+     résolution de la PROCHAINE action : il annonçait la séance qu'on
+     vient de terminer et en lançait une autre. Le mode d'échec dépendait
+     des données, ce qui est le pire des deux : une séance faite qui
+     porte encore ses exercices était bien relancée, mais AVEC SA CIBLE,
+     donc la terminer refermait une seconde fois une étape déjà refermée
+     (`date` et `consommee_le` du fait d'origine réécrits) ; une séance
+     faite sans contenu tombait jusqu'à l'étape suivante et lançait Pull
+     sous un bouton qui promettait Push.
+
+     Le cycle joué ici est celui de cinq étapes, pour que « la prochaine
+     étape reste Pull » veuille dire exactement ça. */
+  const cycle5 = etapesDuCycle(5)!.map((e, i) => ({ ...e, id: "e5-" + (i + 1) }));
+  const push5 = cycle5[0];
+  const T5 = "2026-09-06T19:06:54.063Z";
+  const suivante5 = (journal: { etapeId: string | null; resolue: boolean; consommeeLe: string | null }[]) =>
+    etapeSuivante(cycle5, positionRefermee(journal, cycle5), POSITION_INITIALE);
+
+  /* La séance du jour, terminée : la ligne porte son étape ET son
+     contenu, comme celle d'une vraie séance faite depuis l'accueil. */
+  const pushFaite: PlanningDay = {
+    ...intentionDeLEtape({
+      date: "2026-09-06", programmeId: "prog-5",
+      etape: { id: push5.id, nom: push5.nom },
+      difficulty: "Intermédiaire", location: "poids",
+      exerciseList: [{ name: "Pompes diamant", sets: 3, reps: "15", rest: 60, restAfter: 90, tip: "", benefit: "", muscles: [] }],
+    }),
+    id: "int-push-faite", status: "done",
+  };
+  /* Le journal après la vraie séance : UNE consommation de Push. */
+  const journalPush = [{ etapeId: lienProgramme(pushFaite).etape_consommee_id, resolue: true, consommeeLe: T5 }];
+
+  const refaite = repetitionDuJour(pushFaite);
+  verdict(
+    "V7A · done → « Refaire la séance » relance le contenu terminé",
+    refaite?.id === pushFaite.id
+      && refaite?.title === push5.nom
+      /* La MÊME liste d'exercices, pas une liste équivalente : c'est ce
+         qui distingue « refaire cette séance » de « refaire une séance
+         qui lui ressemble ». */
+      && refaite?.exerciseList === pushFaite.exerciseList,
+    refaite ? refaite.title + " · le même contenu, " + refaite.exerciseList.length + " exercice(s)" : "rien",
+  );
+  verdict(
+    "V7A · rien à refaire tant que la séance n'est pas terminée",
+    repetitionDuJour({ ...pushFaite, status: "planned" }) === null
+      && repetitionDuJour({ ...pushFaite, exerciseList: [] }) === null
+      && repetitionDuJour(null) === null,
+    "ni une séance prévue, ni une ligne sans contenu",
+  );
+
+  /* ⚠️ ET C'EST UNE PROPRIÉTÉ DU CHEMIN, DONC ELLE SE LIT DANS LA SOURCE.
+     Le défaut ne venait pas d'un mauvais calcul mais d'un mauvais
+     câblage : le bouton posait la question de la prochaine action. */
+  const heroDone = readFileSync(new URL("../src/components/entrainement/TodayHero.tsx", import.meta.url), "utf8");
+  const heroJournee = readFileSync(new URL("../src/components/entrainement/HeroJournee.tsx", import.meta.url), "utf8");
+  const journee = readFileSync(new URL("../src/hooks/useJournee.ts", import.meta.url), "utf8");
+  verdict(
+    "V7A · « Refaire la séance » a sa propre action, pas celle du héros",
+    /onClick=\{onRedo\}[\s\S]*Refaire la séance/.test(heroDone)
+      && heroJournee.includes("onRedo={j.refaire}")
+      && journee.includes("repetitionDuJour(jour)"),
+    "le bouton ne passe plus par `lancementDuJour`",
+  );
+  verdict(
+    "V7A · la répétition ne déclare aucune cible → aucun doublon de consommation",
+    journee.includes("!options?.repetition && d.id ? { genre: \"intention\", intentionId: d.id } : undefined")
+      && journalPush.filter((f) => f.etapeId === push5.id).length === 1,
+    "sans cible, la fin de séance n'écrit rien dans les intentions",
+  );
+
+  /* Et la conséquence, sur le vrai curseur : refaire ne rejoue pas le
+     fait. Le journal ne gagne aucune ligne portant une étape, donc la
+     position refermée ne bouge pas d'un cran. */
+  verdict(
+    "V7A · cycle inchangé après cette répétition",
+    positionRefermee(journalPush, cycle5) === 1
+      && suivante5(journalPush)?.position === 2,
+    "→ toujours refermée à l'étape " + positionRefermee(journalPush, cycle5),
+  );
+  verdict(
+    "V7A · après avoir refait Push, la prochaine étape reste Pull",
+    suivante5(journalPush)?.nom === "Pull",
+    "→ " + (suivante5(journalPush)?.nom ?? "rien"),
   );
 
   /* ── Une fermeture par lancement ──

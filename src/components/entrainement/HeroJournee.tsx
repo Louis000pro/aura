@@ -60,6 +60,9 @@ export default function HeroJournee() {
         nextLabel={j.nextLabel}
         doneStats={j.doneStats}
         onStart={j.lancerAujourdhui}
+        /* « Refaire la séance » relance ce qui vient d'être fait, jamais
+           ce qui vient après : deux questions différentes, deux chemins. */
+        onRedo={j.refaire}
         onImprovise={() => ouvrir("improviser")}
         onOrganise={donnerUnJour}
         onShift={() => openAssistant("Décale ma séance d’aujourd’hui à un autre jour")}

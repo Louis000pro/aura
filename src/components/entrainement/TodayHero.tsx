@@ -36,7 +36,7 @@ import { Photo, WIDGET } from "./PhotoSeance";
 export type HeroState = EtatJournee;
 
 export default function TodayHero({
-  state, day, etape, reserveLe, nbExos, nextLabel, doneStats, onStart, onImprovise, onOrganise, onShift, onReplace,
+  state, day, etape, reserveLe, nbExos, nextLabel, doneStats, onStart, onRedo, onImprovise, onOrganise, onShift, onReplace,
 }: {
   state: HeroState;
   day: PlanningDay | null;
@@ -48,6 +48,13 @@ export default function TodayHero({
   nextLabel: string | null;                       // « Jambes · demain » (état repos)
   doneStats: { minutes: number; kcal: number } | null;
   onStart: () => void;
+  /* ⚠️ « REFAIRE LA SÉANCE » A SA PROPRE ACTION, ET CE N'EST PAS UN
+     DÉTAIL DE CÂBLAGE. Partager `onStart` avec les autres états faisait
+     passer ce bouton par la résolution de la PROCHAINE action : il
+     annonçait la séance qu'on vient de terminer et lançait ce qui vient
+     après. Un bouton ne promet pas une chose et n'en fait pas une
+     autre. */
+  onRedo: () => void;
   onImprovise: () => void;
   onOrganise: () => void;
   onShift: () => void;
@@ -228,7 +235,7 @@ export default function TodayHero({
             </p>
             <motion.button
               whileTap={{ scale: 0.97 }}
-              onClick={onStart}
+              onClick={onRedo}
               className="w-full py-3 rounded-2xl flex items-center justify-center gap-2 cursor-pointer text-[13.5px] font-bold text-white"
               style={{ background: "rgba(255,255,255,0.10)", border: "1px solid rgba(255,255,255,0.28)", backdropFilter: "blur(4px)" }}
             >

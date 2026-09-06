@@ -27,7 +27,7 @@ import { createClient } from "@/lib/supabase";
 import { levelToDifficulty } from "@/lib/assistantActions";
 import { heroImageForSeance } from "@/lib/workoutArt";
 import { EVT_JOURNEE } from "@/lib/finSeance";
-import { etatJournee, intentionDeLEtape, lancementDuJour, libelleReservation } from "@/lib/journee";
+import { etatJournee, intentionDeLEtape, lancementDuJour, libelleReservation, repetitionDuJour } from "@/lib/journee";
 import {
   lireSemaine, ajouterIntention, saveDay, reservationDeLEtape, hasSeance, loadLieu, readVariant, ctxFromLieu,
   weekDates, todayYmd, dayTitle, parDate, principale, supplements, seancesDuJour,
@@ -81,7 +81,12 @@ export type Journee = {
    *  l'étape du cycle, matérialisée à cet instant et jamais avant. */
   lancerAujourdhui: () => void;
   /** Lance une intention précise (un supplément, un autre jour). */
-  lancerIntention: (d: PlanningDay) => void;
+  lancerIntention: (d: PlanningDay, options?: { repetition?: boolean }) => void;
+  /** Relance la séance DÉJÀ TERMINÉE aujourd'hui (« Refaire la séance »).
+   *  C'est une répétition, donc un supplément : elle ne referme aucune
+   *  étape et ne fait pas avancer le cycle. Ne fait rien s'il n'y a rien
+   *  à refaire. */
+  refaire: () => void;
   /** Donne un jour à la prochaine étape du cycle. L'intention créée PORTE
    *  son étape, donc la faire refermera bien le cycle. Rend `false` si
    *  l'écriture n'a pas pris. */
@@ -245,7 +250,7 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
     return () => { annule = true; };
   }, [etat, user, today]);
 
-  const lancerIntention = useCallback((d: PlanningDay) => {
+  const lancerIntention = useCallback((d: PlanningDay, options?: { repetition?: boolean }) => {
     if (!hasSeance(d)) return;
     const titre = dayTitle(d);
     launchWorkout({
@@ -263,10 +268,27 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
       exerciseList: d.exerciseList,
       /* Sans identité, rien à refermer : une ligne sans `id` ne peut pas
          être marquée, et la marquer par sa date créditerait aussi le
-         supplément du même jour (V6b). */
-      cible: d.id ? { genre: "intention", intentionId: d.id } : undefined,
+         supplément du même jour (V6b).
+
+         ⚠️ ET UNE RÉPÉTITION NE DÉCLARE AUCUNE CIBLE, C'EST CE QUI LA
+         REND INOFFENSIVE. Refaire une séance déjà terminée en la visant
+         par son `id` rejouerait `marquerIntention` sur elle : le fait
+         d'origine verrait sa `date` et son `consommee_le` réécrits à
+         l'instant de la répétition. Sans cible, la fin de séance n'écrit
+         rien dans les intentions et le journal enregistre la séance pour
+         ce qu'elle est, un supplément hors programme. */
+      cible: !options?.repetition && d.id ? { genre: "intention", intentionId: d.id } : undefined,
     });
   }, [launchWorkout]);
+
+  /* ⚠️ L'ÉTAT `done` NE PASSE PAS PAR `lancementDuJour`, ET C'EST LE
+     CŒUR DU CORRECTIF. Cette résolution-là répond à « qu'est-ce qui
+     vient ensuite » ; « Refaire la séance » demande l'inverse. Le bouton
+     promettait donc une action et en exécutait une autre. */
+  const refaire = useCallback(() => {
+    const quoi = repetitionDuJour(jour);
+    if (quoi) lancerIntention(quoi, { repetition: true });
+  }, [jour, lancerIntention]);
 
   const lancerAujourdhui = useCallback(() => {
     /* ⚠️ LA DÉCISION EST UNE FONCTION PURE, ET ELLE VIT DANS `journee.ts`.
@@ -356,6 +378,6 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
     nbExos: instance.length, nextLabel, doneStats,
     semaine, setSemaine, gen, programme, besoinSetup, niveau,
     recharger: () => { void charger(); },
-    lancerAujourdhui, lancerIntention, daterEtape,
+    lancerAujourdhui, lancerIntention, refaire, daterEtape,
   };
 }

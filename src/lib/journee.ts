@@ -138,6 +138,37 @@ export function lancementDuJour(input: {
   return null;
 }
 
+/**
+ * REFAIRE LA SÉANCE QU'ON VIENT DE FAIRE, ET RIEN D'AUTRE.
+ *
+ * ⚠️ CE N'EST PAS UN CAS PARTICULIER DE `lancementDuJour`, ET LES
+ * SÉPARER EST TOUTE LA CORRECTION. Cette fonction-là répond à « qu'est-ce
+ * qui vient MAINTENANT » ; celle-ci répond à « refais ce qui vient
+ * d'avoir lieu ». Les faire passer par la même résolution, c'était
+ * écrire « Refaire la séance » sur un bouton qui fait autre chose, et le
+ * mode d'échec dépendait des données : une séance faite qui porte encore
+ * ses exercices était bien relancée, mais AVEC SA CIBLE, donc la
+ * terminer refermait une seconde fois une étape déjà refermée (`date` et
+ * `consommee_le` du fait d'origine réécrits) ; une séance faite sans
+ * contenu, elle, tombait jusqu'à l'étape suivante et lançait Pull sous
+ * un bouton qui promettait Push. Deux défauts, une seule cause : la
+ * question posée n'était pas celle du bouton.
+ *
+ * ⚠️ ET LA RÉPÉTITION EST UN SUPPLÉMENT. Elle a bien eu lieu, et
+ * `workout_sessions` l'enregistre tout seul ; mais elle ne referme
+ * AUCUNE étape, c'est la règle déjà verrouillée du modèle : une séance
+ * hors programme ne fait pas avancer le cycle. Le curseur ne bouge donc
+ * pas, aucun second `etape_consommee_id` n'est écrit, et la prochaine
+ * étape reste celle qui suit le fait d'origine.
+ *
+ * `null` quand il n'y a rien à refaire : la journée n'est pas terminée,
+ * ou la ligne ne porte aucun contenu relançable.
+ */
+export function repetitionDuJour(jour: PlanningDay | null): PlanningDay | null {
+  if (jour?.status !== "done") return null;
+  return hasSeance(jour) ? jour : null;
+}
+
 /* ════════════════════════════════════════════════════════════════════
    V7A · DATER LA PROCHAINE ÉTAPE DU PROGRAMME.
 
