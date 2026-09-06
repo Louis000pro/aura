@@ -396,6 +396,34 @@ export async function etapeSuivanteDe(userId: string, actif: ProgrammeEtCycle): 
   return etapeSuivante(actif.cycle, await positionConsommee(userId, actif), actif.programme.positionInitiale);
 }
 
+/**
+ * La position de la dernière étape refermée par un journal d'intentions.
+ *
+ * ⚠️ LES TROIS CONDITIONS DE « REFERMÉE » SONT ÉCRITES ICI, UNE FOIS, ET
+ * C'EST CETTE FONCTION QUI DÉCIDE. Une intention referme une étape si
+ * elle en DÉCLARE une (`etapeId`), si elle est résolue, et elle se
+ * classe par `consommee_le` — jamais par `date`, une intention non datée
+ * n'en ayant pas. La requête juste en dessous applique les mêmes filtres
+ * en base pour ne rapatrier qu'une ligne ; elle optimise, elle ne
+ * décide pas. C'est ce partage qui rend la règle vérifiable hors ligne
+ * sur une app pourtant auth-gated.
+ *
+ * ⚠️ UNE INTENTION SANS ÉTAPE NE FAIT RIEN AVANCER, quel que soit son
+ * titre : c'est ce qui garde un supplément, une séance du catalogue et
+ * une séance perso hors du cycle.
+ */
+export function positionRefermee(
+  journal: { etapeId: string | null; resolue: boolean; consommeeLe: string | null }[],
+  cycle: { id: string; position: number }[],
+): number | null {
+  const refermees = journal
+    .filter((l) => !!l.etapeId && l.resolue && !!l.consommeeLe)
+    .sort((a, b) => (b.consommeeLe as string).localeCompare(a.consommeeLe as string));
+  const derniere = refermees[0];
+  if (!derniere) return null;
+  return cycle.find((e) => e.id === derniere.etapeId)?.position ?? null;
+}
+
 /** La position de la dernière étape refermée, ou `null`. */
 async function positionConsommee(userId: string, actif: ProgrammeEtCycle): Promise<number | null> {
   const supabase = createClient();
@@ -411,9 +439,14 @@ async function positionConsommee(userId: string, actif: ProgrammeEtCycle): Promi
       .order("consommee_le", { ascending: false })
       .limit(1);
 
-    const derniere = (data ?? [])[0] as { etape_consommee_id: string } | undefined;
-    if (!derniere) return null;
-    return actif.cycle.find((e) => e.id === derniere.etape_consommee_id)?.position ?? null;
+    const lignes = (data ?? []) as { etape_consommee_id: string | null; consommee_le: string | null }[];
+    return positionRefermee(
+      // La base a déjà écarté ce qui n'est pas résolu : `resolue` est donc
+      // vrai pour tout ce qui revient. On ne redemande pas le statut pour
+      // le redéduire, on dit ce que la requête garantit.
+      lignes.map((l) => ({ etapeId: l.etape_consommee_id, resolue: true, consommeeLe: l.consommee_le })),
+      actif.cycle,
+    );
   } catch {
     // On préfère repartir du début du cycle que de prétendre qu'il n'y a
     // rien à faire.

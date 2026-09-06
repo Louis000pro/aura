@@ -27,9 +27,9 @@ import { createClient } from "@/lib/supabase";
 import { levelToDifficulty } from "@/lib/assistantActions";
 import { heroImageForSeance } from "@/lib/workoutArt";
 import { EVT_JOURNEE } from "@/lib/finSeance";
-import { etatJournee } from "@/lib/journee";
+import { etatJournee, intentionDeLEtape } from "@/lib/journee";
 import {
-  lireSemaine, hasSeance, loadLieu, readVariant, ctxFromLieu,
+  lireSemaine, ajouterIntention, saveDay, hasSeance, loadLieu, readVariant, ctxFromLieu,
   weekDates, todayYmd, dayTitle, parDate, principale, supplements, seancesDuJour,
   weekdayIndex, prochainsJours, instanceDeLEtape,
   type PlanningDay, type GenInput,
@@ -76,6 +76,10 @@ export type Journee = {
   lancerAujourdhui: () => void;
   /** Lance une intention précise (un supplément, un autre jour). */
   lancerIntention: (d: PlanningDay) => void;
+  /** Donne un jour à la prochaine étape du cycle. L'intention créée PORTE
+   *  son étape, donc la faire refermera bien le cycle. Rend `false` si
+   *  l'écriture n'a pas pris. */
+  daterEtape: (date: string) => Promise<boolean>;
 };
 
 export function useJournee({ creerProgramme = false }: { creerProgramme?: boolean } = {}): Journee {
@@ -274,10 +278,49 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
     });
   }, [jour, lancerIntention, etape, instance, programme, gen, launchWorkout]);
 
+  /* ⚠️ LE SEUL ENDROIT DU PRODUIT QUI DATE UNE ÉTAPE, ET DONC LE SEUL
+     QUI CRÉE UNE INTENTION PORTANT SON LIEN VERS LE PROGRAMME. Sans ce
+     lien, « Lui donner un jour » écrivait une séance ordinaire : on la
+     faisait, elle passait « faite », et le cycle n'avançait pas — le
+     héros reproposait la même étape le lendemain, indéfiniment. La
+     consommation vient de l'INTENTION du geste, jamais du titre. */
+  const daterEtape = useCallback(async (date: string): Promise<boolean> => {
+    if (!user || !etape || !programme || instance.length === 0) return false;
+    /* ⚠️ UNE SEULE RÉSERVATION PAR ÉTAPE, ET C'EST LA BASE QUI L'IMPOSE
+       (`uniq_intention_par_etape`, V6). Redonner un jour à une étape déjà
+       datée est donc un DÉPLACEMENT, pas un second ajout : sans ça, la
+       base refuserait l'écriture et le geste échouerait sans rien dire. */
+    const dejaPosee = (semaine ?? []).find(
+      (i) => i.etapeId === etape.id && i.status === "planned",
+    );
+    const voulue = {
+      ...intentionDeLEtape({
+        date,
+        programmeId: programme.programme.id,
+        etape: { id: etape.id, nom: etape.nom },
+        difficulty: levelToDifficulty(gen?.level ?? null),
+        location: gen?.ctx ?? null,
+        exerciseList: instance,
+      }),
+      id: dejaPosee?.id ?? null,
+    };
+    try {
+      if (voulue.id) await saveDay(user.id, voulue, "utilisateur");
+      else await ajouterIntention(user.id, voulue, "utilisateur");
+    } catch (e) {
+      console.error("[journee] impossible de dater l'étape :", e);
+      return false;
+    }
+    /* Les deux écrans se remettent d'accord : la semaine gagne une ligne,
+       et le héros passe de « quand tu veux » à la journée qui la porte. */
+    if (typeof window !== "undefined") window.dispatchEvent(new Event(EVT_JOURNEE));
+    return true;
+  }, [user, etape, programme, instance, gen, semaine]);
+
   return {
     etat, jour, extras, etape, nbExos: instance.length, nextLabel, doneStats,
     semaine, setSemaine, gen, programme, besoinSetup, niveau,
     recharger: () => { void charger(); },
-    lancerAujourdhui, lancerIntention,
+    lancerAujourdhui, lancerIntention, daterEtape,
   };
 }

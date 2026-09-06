@@ -20,19 +20,34 @@
    marchent ici exactement comme sur Entraînement.
    ════════════════════════════════════════════════════════════════════ */
 
+import { useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useAssistant } from "@/context/AssistantContext";
 import { useJournee } from "@/hooks/useJournee";
 import { dayTitle, hasSeance } from "@/lib/planning";
+import ChoixJour from "./ChoixJour";
 import TodayHero from "./TodayHero";
 
 export default function HeroJournee() {
   const router = useRouter();
   const { open: openAssistant } = useAssistant();
   const j = useJournee();
+  /* « Lui donner un jour » : le seul geste du héros qui écrit. */
+  const [quand, setQuand] = useState(false);
 
   const ouvrir = (feuille: "organiser" | "improviser") =>
     router.push(`/progression?ouvrir=${feuille}`);
+
+  /* ⚠️ IL NE RENVOIE PLUS VERS « ORGANISER », ET C'ÉTAIT UN CUL-DE-SAC.
+     Le bouton promettait de donner un jour à l'étape et ouvrait le
+     planificateur de la semaine, qui ne sait pas dater une étape : on en
+     ressortait avec une séance ordinaire, sans lien vers le programme.
+     On la faisait, elle passait « faite », le cycle n'avançait pas, et
+     le héros reproposait la même étape le lendemain. Il ouvre désormais
+     le choix du jour, et `daterEtape` écrit l'intention AVEC son étape. */
+  const donnerUnJour = j.etat === "etape" ? () => setQuand(true) : () => ouvrir("organiser");
 
   return (
     <section>
@@ -45,7 +60,7 @@ export default function HeroJournee() {
         doneStats={j.doneStats}
         onStart={j.lancerAujourdhui}
         onImprovise={() => ouvrir("improviser")}
-        onOrganise={() => ouvrir("organiser")}
+        onOrganise={donnerUnJour}
         onShift={() => openAssistant("Décale ma séance d’aujourd’hui à un autre jour")}
         onReplace={() => openAssistant("Remplace ma séance d’aujourd’hui par autre chose")}
       />
@@ -78,6 +93,56 @@ export default function HeroJournee() {
           ))}
         </div>
       )}
+
+      <AnimatePresence>
+        {quand && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[130] flex items-end md:items-center justify-center md:px-4"
+            style={{ background: "rgba(12,8,22,0.55)", backdropFilter: "blur(3px)" }}
+            onClick={(e) => { if (e.target === e.currentTarget) setQuand(false); }}
+          >
+            <motion.div
+              initial={{ y: 56, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 40, opacity: 0 }}
+              transition={{ type: "spring", stiffness: 400, damping: 34 }}
+              className="w-full max-w-lg rounded-t-3xl md:rounded-3xl overflow-hidden"
+              style={{
+                background: "rgb(var(--surface-rgb))",
+                border: "1px solid rgba(var(--accent-rgb),0.14)",
+                boxShadow: "0 -14px 44px rgba(0,0,0,0.4)",
+                paddingBottom: "env(safe-area-inset-bottom)",
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex justify-center pt-2.5 pb-1 md:hidden">
+                <div className="w-10 h-1 rounded-full" style={{ background: "var(--text-3)", opacity: 0.4 }} />
+              </div>
+              <div className="flex items-center gap-3 px-5 pt-2 pb-3">
+                <div className="min-w-0 flex-1">
+                  <p className="text-[15px] font-bold leading-tight truncate" style={{ color: "var(--text-1)" }}>
+                    Quel jour&nbsp;?
+                  </p>
+                  <p className="text-[10.5px] font-medium mt-1" style={{ color: "var(--text-3)" }}>
+                    {j.etape?.nom} · ta prochaine étape
+                  </p>
+                </div>
+                <motion.button whileTap={{ scale: 0.9 }} onClick={() => setQuand(false)}
+                  className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer flex-shrink-0 border-none"
+                  style={{ background: "rgba(var(--tint-violet-rgb),0.7)" }} aria-label="Fermer">
+                  <X size={14} strokeWidth={2} style={{ color: "var(--text-3)" }} />
+                </motion.button>
+              </div>
+              <div aria-hidden className="h-px mx-5" style={{ background: "rgba(var(--accent-rgb),0.1)" }} />
+              <div className="px-5 pt-2 pb-4">
+                <ChoixJour week={j.semaine} onChoisir={(date) => {
+                  setQuand(false);
+                  void j.daterEtape(date);
+                }} />
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </section>
   );
 }

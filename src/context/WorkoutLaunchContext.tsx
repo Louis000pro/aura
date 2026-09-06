@@ -20,11 +20,11 @@
    `terminerSeance` décide de ce qui s'écrit.
    ════════════════════════════════════════════════════════════════════ */
 
-import { createContext, useCallback, useContext, useState } from "react";
+import { createContext, useCallback, useContext, useRef, useState } from "react";
 import { AnimatePresence } from "framer-motion";
 import WorkoutGuideModal, { type Exercise } from "@/components/WorkoutGuideModal";
 import { useAuth } from "@/context/AuthContext";
-import { terminerSeance, type CibleSeance } from "@/lib/finSeance";
+import { terminerSeance, verrouDeFermeture, type CibleSeance } from "@/lib/finSeance";
 
 export type WorkoutLaunchInput = {
   sessionId: string;
@@ -60,6 +60,9 @@ export function WorkoutLaunchProvider({ children }: { children: React.ReactNode 
   const { user } = useAuth();
   const [active, setActive] = useState<WorkoutLaunchInput | null>(null);
   const launchWorkout = useCallback((w: WorkoutLaunchInput) => setActive(w), []);
+  /* Une fermeture par lancement, et le lancement EST son objet : un
+     callback rejoué ne peut plus écrire une seconde fois. */
+  const dejaFerme = useRef(verrouDeFermeture());
 
   return (
     <Ctx.Provider value={{ launchWorkout }}>
@@ -77,7 +80,10 @@ export function WorkoutLaunchProvider({ children }: { children: React.ReactNode 
             exerciseList={active.exerciseList}
             onGarder={active.onGarder}
             onComplete={active.cible && user
-              ? () => { void terminerSeance(user.id, active.cible!); }
+              ? () => {
+                  if (!dejaFerme.current(active)) return;
+                  void terminerSeance(user.id, active.cible!);
+                }
               : undefined}
             onClose={() => setActive(null)}
           />

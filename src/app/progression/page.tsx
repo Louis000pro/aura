@@ -23,6 +23,7 @@ import {
   Moon, Zap, Home, Sun, CalendarDays, MoreHorizontal, GripVertical, BookOpen,
 } from "lucide-react";
 import WeeklyProgramme from "@/components/WeeklyProgramme";
+import ChoixJour from "@/components/entrainement/ChoixJour";
 import { exerciseData, type Exercise } from "@/components/WorkoutGuideModal";
 import ExerciseGuide from "@/components/ExerciseGuide";
 import CreateSessionModal, { type SessionDraft } from "@/components/seance/CreateSessionModal";
@@ -1497,9 +1498,6 @@ function ManageSheet({ session, week, onClose, onEdit, onDelete, onVisibilityCha
      modale sur téléphone, on ne sait plus d'où on vient ni où on ferme. */
   const [vue, setVue] = useState<"menu" | "jours" | "exos">("menu");
   const exos = exosDeLaSeance(session);
-  const dates = weekDates();
-  const today = todayYmd();
-  const parJour = useMemo(() => parDate(week), [week]);
 
   const retour = (
     <div className="flex items-center gap-2 px-5 pt-1 pb-2">
@@ -1563,41 +1561,7 @@ function ManageSheet({ session, week, onClose, onEdit, onDelete, onVisibilityCha
           <>
             {retour}
             <div className="px-5 pb-4">
-              {DAY_FULL.map((nom, i) => {
-                const date = dates[i];
-                /* ⚠️ « PRISE » NE VEUT PLUS DIRE « INTERDITE » (V6b). Une
-                   journée peut porter une séance et un supplément : poser
-                   une séance sur un jour occupé l'AJOUTE, elle n'écrase
-                   plus rien. Seul le passé est fermé ; une journée dont
-                   tout est fait reste ouverte à un extra. */
-                const intentions = parJour[date] ?? [];
-                const tete = principale(intentions);
-                const prise = seancesDuJour(intentions).length > 0;
-                const faite = !!tete && intentions.every((x) => x.status === "done");
-                const bloque = date < today;
-                return (
-                  <motion.button key={date} whileTap={bloque ? undefined : { scale: 0.98 }}
-                    onClick={() => { if (!bloque) { onPlanifier(session, date); onClose(); } }}
-                    disabled={bloque}
-                    className="w-full flex items-center gap-3 py-2.5 text-left border-none bg-transparent"
-                    style={{ opacity: bloque ? 0.38 : 1, cursor: bloque ? "default" : "pointer" }}>
-                    <span className="w-[42px] text-[11px] font-semibold flex-shrink-0"
-                      style={{ color: date === today ? "var(--accent)" : "var(--text-2)" }}>
-                      {nom.slice(0, 3)}
-                    </span>
-                    <span className="flex-1 min-w-0 text-[12.5px] font-semibold truncate"
-                      style={{ color: prise ? "var(--text-2)" : "var(--text-3)" }}>
-                      {tete ? dayTitle(tete) + (faite ? " ✓" : "") : "Rien de prévu"}
-                    </span>
-                    {!bloque && (
-                      <span className="text-[10px] font-bold flex-shrink-0"
-                        style={{ color: prise ? "var(--exp-encre)" : "var(--accent)" }}>
-                        {prise ? "Ajouter" : date === today ? "Aujourd’hui" : "Choisir"}
-                      </span>
-                    )}
-                  </motion.button>
-                );
-              })}
+              <ChoixJour week={week} onChoisir={(date) => { onPlanifier(session, date); onClose(); }} />
             </div>
           </>
         ) : vue === "exos" ? (

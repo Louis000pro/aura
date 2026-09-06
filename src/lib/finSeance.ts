@@ -52,6 +52,30 @@ export type CibleSeance =
     };
 
 /**
+ * ⚠️ UN LANCEMENT NE REFERME QU'UNE FOIS, ET ÇA NE SE DÉLÈGUE PAS À REACT.
+ *
+ * Pour une intention, l'écriture est un `update` par `id` : la rejouer ne
+ * change rien. Pour une ÉTAPE, c'est un `insert` : un second appel
+ * écrirait une seconde ligne « faite » sur la journée. Le cycle, lui, ne
+ * bougerait pas deux fois (les deux lignes refermeraient la MÊME étape,
+ * et le curseur prend la dernière), mais le journal porterait une séance
+ * fantôme, et « le composant ne devrait pas rappeler son callback » n'est
+ * pas une garantie, c'est une espérance.
+ *
+ * Le verrou porte sur l'OBJET du lancement, pas sur la cible : refaire
+ * la même étape demain est un nouveau lancement, donc une nouvelle
+ * fermeture. `WeakSet` pour ne rien retenir de ce qui est déjà oublié.
+ */
+export function verrouDeFermeture(): (lancement: object) => boolean {
+  const fermees = new WeakSet<object>();
+  return (lancement) => {
+    if (fermees.has(lancement)) return false;
+    fermees.add(lancement);
+    return true;
+  };
+}
+
+/**
  * Referme ce que la séance vient de refermer, et rien de plus.
  *
  * Ne jette jamais : une écriture ratée ne doit pas casser l'écran de fin

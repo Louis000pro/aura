@@ -16,12 +16,13 @@
    transaction annulée.
    ════════════════════════════════════════════════════════════════════ */
 import { readFileSync, readdirSync } from "node:fs";
-import { etapesDuCycle, etapeSuivante, nomDeProgramme, POSITION_INITIALE } from "@/lib/programme";
-import { etatJournee } from "@/lib/journee";
+import { verrouDeFermeture } from "@/lib/finSeance";
+import { etapesDuCycle, etapeSuivante, nomDeProgramme, positionRefermee, POSITION_INITIALE } from "@/lib/programme";
+import { etatJournee, intentionDeLEtape } from "@/lib/journee";
 import {
   cycleDeReference, seancesDuCycle, previewWeek, weekDates, ANCIEN, NOUVEAU,
   ordonner, parDate, principale, supplements, seancesDuJour, prochaineSeanceDuJour,
-  refModele,
+  refModele, lienProgramme,
   type PlanningDay,
 } from "@/lib/planning";
 
@@ -475,6 +476,149 @@ verdict(
     "V7A · le hook de lecture n'écrit aucune intention",
     !/\.insert\(|\.upsert\(|\.delete\(|\.update\(/.test(hook),
     "aucune écriture dans useJournee",
+  );
+}
+
+/* ── 9. V7A · CE QUI FAIT AVANCER LE CYCLE, ET CE QUI NE LE FAIT PAS ──
+   Le défaut que ce bloc ferme : « Lui donner un jour » depuis l'état
+   `etape` écrivait une séance ORDINAIRE. On la faisait, elle passait
+   « faite », le cycle n'avançait pas, et le héros reproposait la même
+   étape le lendemain, indéfiniment.
+
+   La chaîne est jouée sur le VRAI code de bout en bout : ce que le geste
+   fabrique (`intentionDeLEtape`), ce que la base recevrait
+   (`lienProgramme`), ce que le curseur en déduit (`positionRefermee`) et
+   quelle étape vient ensuite (`etapeSuivante`). */
+{
+  const cycle = etapesDuCycle(3)!.map((e, i) => ({ ...e, id: "etape-" + (i + 1) }));
+  const enCours = cycle[0];                       // position 1, « Push »
+  const T = "2026-09-06T18:00:00.000Z";
+
+  /** Le journal d'après la séance, puis l'étape que le héros proposera. */
+  const apres = (journal: { etapeId: string | null; resolue: boolean; consommeeLe: string | null }[]) =>
+    etapeSuivante(cycle, positionRefermee(journal, cycle), POSITION_INITIALE)?.position ?? null;
+
+  /* La ligne que `consommerEtape` écrit quand on lance l'étape sans date. */
+  const faitDirect = { etapeId: enCours.id, resolue: true, consommeeLe: T };
+  verdict(
+    "V7A · prochaine étape libre → terminer → le cycle avance",
+    apres([faitDirect]) === 2,
+    "→ étape " + apres([faitDirect]),
+  );
+
+  /* « Lui donner un jour » : l'intention DATÉE doit porter son étape. */
+  const reservee = intentionDeLEtape({
+    date: "2026-09-11", programmeId: "prog-1",
+    etape: { id: enCours.id, nom: enCours.nom },
+    difficulty: "Intermédiaire", location: "salle",
+    exerciseList: [{ name: "Pompes", sets: 3, reps: "12 reps", rest: 60, restAfter: 90, tip: "", benefit: "", muscles: [] }],
+  });
+  const lienReserve = lienProgramme(reservee);
+  verdict(
+    "V7A · dater l'étape écrit bien le lien vers le programme",
+    lienReserve.programme_id === "prog-1"
+      && lienReserve.etape_consommee_id === enCours.id
+      && lienReserve.programme_seance_id === enCours.id,
+    "programme + provenance + étape refermée",
+  );
+  /* Terminer cette intention : `marquerIntention` pose statut et
+     `consommee_le`, la ligne garde son étape. */
+  const faitDate = { etapeId: lienReserve.etape_consommee_id, resolue: true, consommeeLe: T };
+  verdict(
+    "V7A · étape datée via « Lui donner un jour » → terminer → le cycle avance",
+    apres([faitDate]) === 2,
+    "→ étape " + apres([faitDate]),
+  );
+
+  /* Déplacée : `saveDay` réécrit la ligne entière depuis le `PlanningDay`
+     relu, donc le lien doit survivre au changement de date. C'est
+     exactement ce que `rowToDay` rapatrie et ce que `dayToRow` réécrit. */
+  const deplacee = { ...reservee, id: "int-1", date: "2026-09-12" };
+  const lienDeplace = lienProgramme(deplacee);
+  verdict(
+    "V7A · déplacer l'étape datée ne perd pas son lien",
+    lienDeplace.programme_id === "prog-1" && lienDeplace.etape_consommee_id === enCours.id,
+    "le déplacement garde programme + étape",
+  );
+  const faitDeplace = { etapeId: lienDeplace.etape_consommee_id, resolue: true, consommeeLe: T };
+  verdict(
+    "V7A · étape datée puis déplacée → terminer → le cycle avance",
+    apres([faitDeplace]) === 2,
+    "→ étape " + apres([faitDeplace]),
+  );
+
+  /* ⚠️ ET CE QUI NE DOIT RIEN FAIRE AVANCER. Le titre ne décide de rien :
+     un supplément appelé comme l'étape reste un supplément. */
+  const supplement: PlanningDay = {
+    id: "int-2", date: "2026-09-11", type: "Force", title: enCours.nom,
+    difficulty: "Intermédiaire", location: "salle",
+    exerciseList: [{ name: "Pompes", sets: 3, reps: "12 reps", rest: 60, restAfter: 90, tip: "", benefit: "", muscles: [] }],
+    sessionId: null, status: "planned",
+  };
+  const lienSupp = lienProgramme(supplement);
+  verdict(
+    "V7A · un supplément du même jour ne déclare aucune étape",
+    lienSupp.programme_id === null && lienSupp.etape_consommee_id === null,
+    "aucun lien, malgré le même titre",
+  );
+  verdict(
+    "V7A · supplément terminé → le cycle ne bouge pas",
+    apres([{ etapeId: lienSupp.etape_consommee_id, resolue: true, consommeeLe: T }]) === 1,
+    "→ toujours étape 1",
+  );
+
+  /* Une séance du catalogue posée normalement : même chose. */
+  const catalogue: PlanningDay = { ...supplement, id: "int-3", title: "HIIT 20/10", type: "HIIT" };
+  verdict(
+    "V7A · séance du catalogue → le cycle ne bouge pas",
+    apres([{ etapeId: lienProgramme(catalogue).etape_consommee_id, resolue: true, consommeeLe: T }]) === 1,
+    "→ toujours étape 1",
+  );
+
+  /* Et une intention encore PRÉVUE ne referme rien : réserver n'est pas
+     faire. Sans ça, dater l'étape la ferait avancer avant la séance. */
+  verdict(
+    "V7A · réserver l'étape ne la referme pas",
+    apres([{ etapeId: lienReserve.etape_consommee_id, resolue: false, consommeeLe: null }]) === 1,
+    "→ toujours étape 1 tant qu'elle n'est pas faite",
+  );
+
+  /* ── Une fermeture par lancement ──
+     ⚠️ ON NE S'EN REMET PAS À « React ne devrait rappeler `onComplete`
+     qu'une fois ». Pour une étape, la fermeture est un `insert` : rejouée,
+     elle écrirait une seconde séance sur la journée. */
+  const dejaFerme = verrouDeFermeture();
+  const lancement = { sessionId: "etape-1" };
+  const autre = { sessionId: "etape-2" };
+  verdict(
+    "V7A · double callback du même lancement → une seule fermeture",
+    dejaFerme(lancement) === true && dejaFerme(lancement) === false,
+    "la seconde est refusée",
+  );
+  verdict(
+    "V7A · un autre lancement referme normalement",
+    dejaFerme(autre) === true,
+    "le verrou porte sur le lancement, pas sur la cible",
+  );
+
+  /* Le contrat d'écriture : les trois colonnes vont ensemble ou pas du
+     tout (FK composites + deux CHECK en base). */
+  verdict(
+    "V7A · une étape sans son programme n'est jamais écrite seule",
+    lienProgramme({ programmeId: null, etapeId: "etape-1" }).etape_consommee_id === null
+      && lienProgramme({ programmeId: "prog-1", etapeId: null }).programme_id === null,
+    "les deux, ou aucun",
+  );
+  verdict(
+    "V7A · le lien s'écrit TOUJOURS, même à null",
+    ["programme_id", "programme_seance_id", "etape_consommee_id"]
+      .every((c) => c in lienProgramme({ programmeId: null, etapeId: null })),
+    "un remplacement ne peut pas hériter d'une étape",
+  );
+  verdict(
+    "V7A · dayToRow passe par le lien, il ne le recompose pas",
+    readFileSync(new URL("../src/lib/planning.ts", import.meta.url), "utf8").includes("...lienProgramme(d)"),
+    "une seule règle d'écriture du lien",
   );
 }
 

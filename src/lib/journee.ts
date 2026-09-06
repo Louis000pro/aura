@@ -20,7 +20,9 @@
    aucune date).
    ════════════════════════════════════════════════════════════════════ */
 
-import { estRepos, hasSeance, type PlanningDay } from "@/lib/planning";
+import { estRepos, hasSeance, type Ctx, type PlanningDay } from "@/lib/planning";
+import type { WorkoutDifficulty } from "@/lib/assistantActions";
+import type { Exercise } from "@/components/WorkoutGuideModal";
 
 export type EtatJournee =
   /** On ne sait pas encore : on n'affirme jamais « rien de prévu » avant d'avoir lu. */
@@ -55,4 +57,49 @@ export function etatJournee(input: {
   if (estRepos(input.jour)) return "repos";
   if (input.etape) return "etape";
   return "libre";
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   V7A · DATER LA PROCHAINE ÉTAPE DU PROGRAMME.
+
+   ⚠️ C'EST LE SEUL GESTE QUI CRÉE UNE INTENTION PORTANT UNE ÉTAPE, ET
+   C'EST VOULU. Le programme dit QUOI, le planning dit QUAND : quand la
+   personne donne un jour à sa prochaine étape, l'intention qui naît doit
+   porter le lien vers cette étape, sinon la faire ne referme rien et le
+   héros la repropose le lendemain, indéfiniment. C'est le seul chemin où
+   la consommation est EXPLICITE ; partout ailleurs (catalogue, séance
+   perso, supplément, impro) l'intention naît sans lien, et ne consomme
+   donc rien.
+
+   ⚠️ ON NE DEVINE JAMAIS. Une séance du catalogue intitulée « Push »
+   posée le même jour reste un supplément : la ressemblance des titres
+   ne fait pas avancer un cycle.
+
+   Fonction pure : elle ne lit rien, n'écrit rien, et c'est ce qui la
+   rend vérifiable sur une app pourtant auth-gated.
+   ════════════════════════════════════════════════════════════════════ */
+export function intentionDeLEtape(input: {
+  date: string;
+  programmeId: string;
+  etape: { id: string; nom: string };
+  difficulty: WorkoutDifficulty;
+  location: Ctx | null;
+  /** L'instance matérialisée à l'instant où l'on date : une intention
+   *  datée doit pouvoir se lancer, comme toutes les autres. */
+  exerciseList: Exercise[];
+}): PlanningDay {
+  return {
+    id: null,
+    date: input.date,
+    type: "Force",
+    title: input.etape.nom,
+    difficulty: input.difficulty,
+    location: input.location,
+    exerciseList: input.exerciseList,
+    // Aucun modèle de bibliothèque derrière une étape de cycle.
+    sessionId: null,
+    status: "planned",
+    programmeId: input.programmeId,
+    etapeId: input.etape.id,
+  };
 }

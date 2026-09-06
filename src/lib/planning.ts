@@ -71,6 +71,13 @@ export interface PlanningDay {
    * fabriquer et qui n'a encore rien refermé.
    */
   etapeId?: string | null;
+  /**
+   * Le programme dont vient cette étape. Il n'a de sens QU'AVEC `etapeId`,
+   * et les deux s'écrivent ensemble : la base porte deux clés étrangères
+   * COMPOSITES (V4), pour qu'une intention ne puisse pas déclarer un
+   * programme et pointer l'étape d'un autre.
+   */
+  programmeId?: string | null;
   /** Départage deux suppléments : le plus ancien d'abord. Absente d'une
    *  intention qui n'est pas encore en base. */
   creeLe?: string | null;
@@ -418,7 +425,7 @@ export function colonnesIntention(s: SchemaIntentions, extra = ""): string {
  *  désigner celle qu'on modifie, et de quoi ordonner celles d'une même
  *  journée. `etape_consommee_id` porte la hiérarchie (l'étape d'abord). */
 function colonnes(s: SchemaIntentions): string {
-  return `id, date, type, title, difficulty, location, exercise_list, session_id, etape_consommee_id, created_at, ${s.colStatut}`;
+  return `id, date, type, title, difficulty, location, exercise_list, session_id, programme_id, etape_consommee_id, created_at, ${s.colStatut}`;
 }
 
 /* ═══════════════════════════ Persistance Supabase ═══════════════════════════ */
@@ -431,6 +438,7 @@ interface PlanningRow {
   location: string | null;
   exercise_list: Exercise[] | null;
   session_id: string | null;
+  programme_id?: string | null;
   etape_consommee_id?: string | null;
   created_at?: string | null;
   /* ⚠️ LES DEUX NOMS, ET LES DEUX VOCABULAIRES. Une ligne peut arriver de
@@ -456,6 +464,11 @@ function rowToDay(r: PlanningRow, s: SchemaIntentions): PlanningDay {
     // une intention dont on n'a pas compris le statut.
     status: s.versCode[brut] ?? "planned",
     etapeId: r.etape_consommee_id ?? null,
+    /* ⚠️ RELU POUR QUE LE DÉPLACEMENT NE PERDE PAS LE LIEN. Une intention
+       qui réserve une étape se déplace comme n'importe quelle autre, et
+       `saveDay` réécrit la ligne entière : sans cette lecture, changer de
+       jour effacerait la réservation en silence. */
+    programmeId: r.programme_id ?? null,
     creeLe: r.created_at ?? null,
   };
 }
@@ -484,6 +497,39 @@ export function refModele(sessionId: string | null | undefined): string | null {
   return sessionId && sessionId.startsWith("custom-") ? sessionId : null;
 }
 
+/**
+ * Le lien de cette intention avec le programme : les trois colonnes, ou
+ * les trois à `null`. JAMAIS un mélange.
+ *
+ * ⚠️ IL SE DÉCLARE, IL NE SE DEVINE PAS. Une intention ne referme une
+ * étape que si celui qui l'a écrite l'a voulu : dater explicitement la
+ * prochaine étape du programme, oui ; ajouter une séance du catalogue ou
+ * une séance perso qui s'appelle « Push », non. Déduire la consommation
+ * du titre ferait avancer le cycle sur une ressemblance de mots.
+ *
+ * ⚠️ LES DEUX MOITIÉS SONT INDISSOCIABLES. Les clés étrangères sont
+ * COMPOSITES (V4) et deux `CHECK` refusent une étape sans son programme :
+ * écrire `etape_consommee_id` seul ferait rejeter la ligne par la base.
+ * D'où le « les deux, ou aucun » plutôt que deux champs indépendants.
+ *
+ * ⚠️ ET IL S'ÉCRIT TOUJOURS, MÊME À `null`. Omettre les colonnes dans un
+ * `update` les laisserait en place : remplacer une réservation d'étape
+ * par une séance du catalogue lui ferait alors refermer une étape que
+ * personne ne lui a confiée.
+ */
+export function lienProgramme(d: Pick<PlanningDay, "programmeId" | "etapeId">) {
+  const lie = !!d.programmeId && !!d.etapeId;
+  return {
+    programme_id: lie ? d.programmeId! : null,
+    // D'OÙ VIENT LE CONTENU / QUELLE ÉTAPE EST REFERMÉE. Ici les deux
+    // valent la même étape : la personne a daté ce que le programme
+    // proposait. Le jour où elle fera autre chose « à la place », ils
+    // divergeront, et c'est pour ça qu'il y a deux colonnes.
+    programme_seance_id: lie ? d.etapeId! : null,
+    etape_consommee_id: lie ? d.etapeId! : null,
+  };
+}
+
 function dayToRow(userId: string, d: PlanningDay, origine: Origine, s: SchemaIntentions) {
   const maintenant = new Date().toISOString();
   return {
@@ -505,6 +551,7 @@ function dayToRow(userId: string, d: PlanningDay, origine: Origine, s: SchemaInt
        l'écriture. Le mauvais échec serait de ne s'en apercevoir qu'en
        production, sur le premier remplacement d'une séance faite. */
     consommee_le: d.status === "planned" ? null : maintenant,
+    ...lienProgramme(d),
     updated_at: maintenant,
   };
 }
