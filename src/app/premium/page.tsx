@@ -431,7 +431,7 @@ function PremiumInner() {
         )}
 
         {/* Le contenu écrit : ce qui est gratuit, ce que Premium ajoute, le prix. */}
-        <InfosPremium />
+        <InfosPremium premiumDebloque={!!user?.is_premium || !!user?.is_admin} />
 
         {/*
           Données structurées de la page.

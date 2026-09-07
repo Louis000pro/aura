@@ -62,6 +62,15 @@ function Dashboard() {
   const [statsTick, setStatsTick] = useState(0);
   const [aura, setAura] = useState<EtatAura>(() => etatDepuisExp(0));
   const [auraLoaded, setAuraLoaded] = useState(false);
+  /* ⚠️ DEUX DRAPEAUX, ET LA NUANCE COMPTE DEPUIS V7B. `auraLoaded` autorise
+     l'affichage du RANG, et il passe à vrai dès le cache localStorage : c'est
+     tout l'intérêt de ce cache, montrer tout de suite le dernier rang connu au
+     lieu d'un tiret. Mais ce cache ne garde QUE l'EXP : les missions qui
+     l'accompagnent sont vides. Rendre « Ma journée » dessus afficherait
+     « 0 / 4 » et « Noter un repas » à quelqu'un qui vient de le noter, le
+     temps d'un aller-retour. `missionsLues` ne passe à vrai que sur la
+     réponse RÉELLE de la base. */
+  const [missionsLues, setMissionsLues] = useState(false);
   const didInitAuraRef = useRef(false);
   useEffect(() => {
     if (!user) return;
@@ -96,6 +105,7 @@ function Dashboard() {
         if (firstRun) prevExpRef.current = etat.exp; // le premier chargement ne s'anime jamais
         setAura(etat);
         setAuraLoaded(true);
+        setMissionsLues(true);
         try { localStorage.setItem(cacheKey, String(etat.exp)); } catch { /* ignore */ }
         // Passage de rang : on note le rang FRAIS (jamais celui du cache d'affichage).
         noterRang(user.id, etat.rang);
@@ -221,12 +231,14 @@ function Dashboard() {
           pseudo={user?.pseudo ?? user?.name ?? ""}
           aura={aura}
           auraLoaded={auraLoaded}
+          missionsLues={missionsLues}
           expGain={expGain}
           isPremium={!!user?.is_premium}
           isAdmin={!!user?.is_admin}
           guide={guide}
           moment={motGuide}
           relais={relais}
+          jour={parisDay}
           heros={<HeroJournee />}
           onNavigate={(path) => router.push(path)}
           onOpenRangs={() => setShowRangs(true)}

@@ -1,3 +1,14 @@
+/* ═══════════════════════════════════════════════════════════════════════
+   V7B · L'ACCUEIL.
+
+   Ce fichier a perdu les deux tiers de sa taille avec la restructuration :
+   l'affiche Premium, le coffre des missions Premium, les en-têtes de
+   section et les deux blocs série/rang ont quitté l'écran. Le dessin
+   d'une LIGNE de mission, lui, n'a pas disparu : il vit désormais dans
+   `components/missions/LigneMission.module.css`, parce que trois surfaces
+   le rendent (la feuille, le profil, /premium).
+   ═══════════════════════════════════════════════════════════════════════ */
+
 .home {
   display: flex;
   flex-direction: column;
@@ -9,43 +20,45 @@
      diverger. Rien ne change pour cet écran, qui en hérite. */
 }
 
-.greeting {
-  padding-top: 4px;
+/* ── ① L'ENTRÉE ──────────────────────────────────────────────────────
+   Ni carte, ni cadre, ni pastille : la ligne se pose sur la page comme le
+   reste du texte. Lui donner une surface en ferait une notification,
+   c'est-à-dire quelque chose à traiter, alors que c'est quelqu'un qui
+   accompagne.
+
+   ⚠️ C'EST UN BOUTON EN ENTIER, et il ouvre la conversation globale. Le
+   visage seul aurait été une cible de 34 px, sous le minimum tactile
+   confortable, et il n'y a rien d'autre à faire dans cette zone. */
+.entree {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 11px;
+  padding: 4px 0 0;
+  border: 0;
+  background: transparent;
+  text-align: left;
 }
 
-/* ⚠️ PLUS DE CAPITALES ÉTIRÉES ICI. C'était « BONJOUR » en 11 px, gras, avec
-   0,16 em d'interlettrage : la forme d'étiquette qu'on trouve en tête de toutes
-   les pages générées, et sur un mot français elle abîme en plus les accents,
-   qui n'ont pas la place de respirer au-dessus d'une capitale. Un sur-titre n'a
-   pas besoin de crier pour se placer avant le titre : il lui suffit d'être
-   petit et calme. */
-.greeting > p {
-  color: var(--text-2);
-  font-size: 12px;
-  font-weight: 500;
-  letter-spacing: 0;
+.entree[data-parle] {
+  align-items: flex-start;
+  padding-top: 0;
 }
 
-/* Le titre de l'écran le plus ouvert de l'app. Il passe au titrage et il
-   grandit : c'est lui qui doit commander la page. La graisse DESCEND en même
-   temps, de 800 à 600, et ce n'est pas une contradiction : 800 n'existait pas
-   dans les fichiers de Geist et le navigateur le fabriquait, donc le titre
-   était à la fois moins grand et moins net. */
-.greeting h1 {
-  margin: 0;
-  color: var(--text-0);
-  font-family: var(--titrage);
-  font-size: clamp(30px, 8.5vw, 36px);
-  font-weight: 600;
-  line-height: 1.08;
-  letter-spacing: -0.03em;
+.entreeTxt {
+  min-width: 0;
 }
 
-.greeting > span {
+.salut {
   display: block;
-  margin-top: 3px;
-  color: var(--text-soft);
-  font-size: 12.5px;
+  color: var(--text-2);
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.25;
+}
+
+.entree[data-parle] .salut {
+  font-size: 15px;
 }
 
 .pseudo {
@@ -54,330 +67,132 @@
   background: linear-gradient(135deg, var(--accent), var(--gold));
   background-clip: text;
   color: transparent;
+  font-weight: 700;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
-/* ── Le mot du Guide ──────────────────────────────────────────────────
-   Pas de fond, pas de bordure, pas de coin arrondi : la phrase se pose
-   sur la page comme le reste du texte. Lui donner une surface en ferait
-   une notification, c'est-à-dire quelque chose à traiter, alors que
-   c'est juste quelqu'un qui parle.
-
-   Il remonte de 8 px : l'écart de 16 px de `.home` est fait pour séparer
-   des blocs, et cette phrase appartient au bonjour juste au-dessus. */
-.guideWord {
-  display: flex;
-  align-items: center;
-  gap: 11px;
-  margin-top: -8px;
-}
-
-.guideWord p {
-  margin: 0;
-  min-width: 0;
+/* La phrase du Guide, quand il en a une. Elle est rare par construction :
+   `momentAccueil.ts` ne la laisse sortir qu'une fois par jour parisien et
+   seulement sur l'un de ses six moments. V7B n'en ajoute aucun. */
+.mot {
+  display: block;
+  margin-top: 2px;
   color: var(--text-soft);
   font-size: 13.5px;
   line-height: 1.45;
   text-wrap: pretty;
 }
 
-/* ── OÙ J'EN SUIS AUJOURD'HUI ────────────────────────────────────────
-   Un seul cadre pour la série et le rang. Ils répondent à la même
-   question, ils n'ont donc pas à porter deux surfaces : le filet suffit
-   à les séparer, et c'est le dessin des Paramètres, généralisé depuis la
-   vague 1.
+/* ── ⑤ OÙ J'EN SUIS ──────────────────────────────────────────────────
+   Une seule ligne pour la série, le rang et l'EXP. Elles répondaient à la
+   même question sur deux blocs empilés de 142 px, en tête d'écran ; elles
+   la posent maintenant en 60 px, en bas, ce qui est leur vraie place dans
+   une journée.
 
-   La section de la série garde sa teinte (orange, ou teal une fois la
-   journée validée) : dans un groupe, une section peut être colorée sans
-   redevenir une carte, puisqu'elle ne porte ni bord ni ombre à elle. */
-.today {
-  overflow: hidden;
+   La surface reste celle d'un groupe (un cadre, pas d'ombre teintée) :
+   c'est une ligne cliquable, pas une carte de tableau de bord. */
+.etat {
+  display: flex;
+  width: 100%;
+  min-height: 58px;
+  align-items: center;
+  gap: 11px;
+  padding: 0 13px;
   border: 1px solid rgba(var(--text-3-rgb), 0.16);
   border-radius: var(--r-bloc);
   background: rgba(var(--surface-rgb), 0.9);
-}
-
-.poster {
-  position: relative;
-  min-height: 178px;
-  margin-bottom: 11px;
-  overflow: hidden;
-  border: 1px solid rgba(var(--glass-sheen), 0.15);
-  border-radius: 23px;
-  box-shadow:
-    0 18px 38px -18px rgba(94, 44, 133, 0.58),
-    inset 0 1px rgba(var(--glass-sheen), 0.12);
-  isolation: isolate;
-}
-
-.posterImage {
-  z-index: -3;
-  object-fit: cover;
-  object-position: center;
-}
-
-.posterShade {
-  position: absolute;
-  z-index: -2;
-  inset: 0;
-  background:
-    linear-gradient(90deg, rgba(15, 5, 21, 0.95) 0%, rgba(15, 5, 21, 0.78) 53%, rgba(15, 5, 21, 0.05) 83%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.04), transparent 42%, rgba(7, 2, 12, 0.28));
-}
-
-.posterCopy {
-  width: min(72%, 340px);
-  padding: 18px;
-  color: #fff;
-}
-
-.premiumWordmark {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  margin-bottom: 9px;
-  color: rgba(255, 255, 255, 0.78);
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-}
-
-.brandSpark,
-.premiumSeal {
-  position: relative;
-  display: inline-block;
-}
-
-.brandSpark {
-  width: 14px;
-  height: 14px;
-}
-
-.brandSpark::before,
-.brandSpark::after,
-.premiumSeal::before,
-.premiumSeal::after {
-  position: absolute;
-  inset: 0;
-  margin: auto;
-  border-radius: 999px;
-  background: linear-gradient(135deg, #8b5cf6, #f5b120);
-  content: "";
-}
-
-.brandSpark::before {
-  width: 3px;
-  height: 14px;
-}
-
-.brandSpark::after {
-  width: 14px;
-  height: 3px;
-}
-
-.posterCopy h2 {
-  max-width: 14ch;
-  margin: 0;
-  color: #fff;
-  font-size: 21px;
-  font-weight: 800;
-  line-height: 1.08;
-}
-
-.posterCopy p {
-  max-width: 29ch;
-  margin-top: 7px;
-  color: rgba(255, 255, 255, 0.76);
-  font-size: 11.5px;
-  line-height: 1.35;
-}
-
-.posterCopy button,
-.premiumFooter button {
-  min-height: 37px;
-  border: 0;
-  border-radius: 12px;
-  font-size: 12px;
-  font-weight: 800;
-}
-
-.posterCopy button {
-  margin-top: 14px;
-  padding: 0 13px;
-  color: #351044;
-  background: rgba(255, 255, 255, 0.95);
-  box-shadow: 0 8px 18px rgba(7, 2, 12, 0.22);
-}
-
-/* ── LA SÉRIE ────────────────────────────────────────────────────────
-   Elle est passée d'une demi-ligne dans la bande de rang (« Bronze · Jour
-   3 ») à un bloc à elle : c'est désormais la première chose que le produit
-   veut faire lire, et une information collée à une autre ne se lit jamais.
-
-   Orange, parce que 🔥 = énergie dans le système D. Elle passe au teal une
-   fois la journée validée : teal = réussite, la même couleur que la coche
-   de fin de séance et que les missions cochées. */
-.streak {
-  display: flex;
-  width: 100%;
-  align-items: center;
-  gap: 12px;
-  padding: 13px 14px;
-  background: linear-gradient(120deg, rgba(255, 211, 78, 0.13), rgba(255, 122, 26, 0.08));
-}
-
-.streak[data-done] {
-  --ok: #0f7a5c;
-  background: linear-gradient(120deg, rgba(43, 212, 160, 0.15), rgba(43, 212, 160, 0.06));
-}
-
-:global([data-theme="dark"]) .streak[data-done] {
-  --ok: #2bd4a0;
-}
-
-.streakFlame {
-  flex: 0 0 auto;
-  font-size: 22px;
-  line-height: 1;
-}
-
-.streakCopy {
-  min-width: 0;
-  flex: 1;
-}
-
-/* Le nombre de jours. Il était en 17 px : la même taille que trois autres
-   choses de l'écran, donc rien ne disait que c'était celui qui compte. Il
-   double presque, et il passe en chasse fixe pour ne pas se décaler d'un pixel
-   le jour où la série passe de 9 à 10. */
-.streakCopy strong {
-  display: block;
-  color: var(--text-0);
-  font-family: var(--chiffre);
-  font-variation-settings: var(--w-nombre);
-  font-size: 28px;
-  font-weight: 600;
-  line-height: 1.05;
-  letter-spacing: -0.045em;
-  font-variant-numeric: tabular-nums;
-}
-
-.streakCopy small {
-  display: block;
-  margin-top: 1px;
-  color: var(--text-2);
-  font-size: 11.5px;
-}
-
-/* La coche pleine : la couleur porte le sens, donc elle suit la même
-   bascule que l'encre. Le blanc de la coche reste lisible sur les deux
-   valeurs (4,4:1 sur #0F7A5C, et le vert clair du mode sombre est un
-   aplat, pas du texte). */
-.streakCheck {
-  display: grid;
-  width: 26px;
-  height: 26px;
-  flex: 0 0 26px;
-  place-items: center;
-  border-radius: 999px;
-  color: #fff;
-  background: var(--ok, #0f7a5c);
-}
-
-:global([data-theme="dark"]) .streakCheck {
-  color: #06231a;
-}
-
-.rankStrip {
-  position: relative;
-  display: flex;
-  width: 100%;
-  min-height: 67px;
-  align-items: center;
-  gap: 11px;
-  padding: 11px 13px;
-  border: 0;
   color: var(--text-1);
-  background: transparent;
   text-align: left;
 }
 
-.rankGem {
-  display: grid;
-  width: 44px;
-  height: 47px;
-  flex: 0 0 44px;
-  place-items: center;
-  overflow: visible;
+/* Orange, parce que 🔥 = énergie dans le système D. L'encre passe au teal
+   une fois la journée validée : teal = réussite, la même couleur que la
+   coche de fin de séance et que les missions cochées. */
+.etatSerie {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: baseline;
+  gap: 5px;
+  color: var(--feu-encre);
 }
 
-.rankCopy {
+.etatSerie[data-done] {
+  color: var(--teal-encre);
+}
+
+.etatSerie i {
+  font-size: 15px;
+  font-style: normal;
+  line-height: 1;
+}
+
+/* Chasse fixe : la ligne ne doit pas se décaler d'un pixel le jour où la
+   série passe de 9 à 10. */
+.etatSerie b {
+  font-family: var(--chiffre);
+  font-variation-settings: var(--w-nombre);
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  font-variant-numeric: tabular-nums;
+}
+
+.etatSerie small {
+  color: var(--text-2);
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+.etatSep {
+  width: 1px;
+  height: 22px;
+  flex: 0 0 1px;
+  background: rgba(var(--text-3-rgb), 0.3);
+}
+
+.etatRang {
+  display: flex;
   min-width: 0;
   flex: 1;
-}
-
-.rankCopy strong,
-.rankCopy small,
-.rankExp strong,
-.rankExp small,
-.premiumHeadingCopy strong,
-.premiumHeadingCopy small,
-.premiumBonus strong,
-.premiumBonus small,
-.premiumPrice strong,
-.premiumPrice small,
-.missionCopy strong,
-.missionCopy small {
-  display: block;
-}
-
-.rankCopy strong {
-  color: var(--text-0);
-  font-size: 13.5px;
-  font-weight: 800;
-}
-
-.rankCopy small {
-  margin-top: 2px;
+  align-items: center;
+  gap: 6px;
   overflow: hidden;
-  color: var(--text-3);
-  font-size: 11.5px;
+  color: var(--text-0);
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-/* ⚠️ L'ENCRE, PAS LE VIOLET DÉCORATIF : ce bloc porte l'EXP, donc un chiffre
-   qu'on lit. `--accent` vaut 2,6:1 sur le blanc. */
-.rankExp {
+/* ⚠️ L'ENCRE, PAS LE VIOLET DÉCORATIF : ce bloc porte l'EXP, donc un
+   chiffre qu'on lit. `--accent` vaut 2,6:1 sur le blanc. */
+.etatExp {
   position: relative;
   flex: 0 0 auto;
-  color: var(--exp-encre);
-  text-align: right;
+  color: var(--text-3);
+  font-size: 11px;
+  font-weight: 600;
   white-space: nowrap;
+  font-variant-numeric: tabular-nums;
 }
 
-.rankExp strong {
+.etatExp b {
+  color: var(--exp-encre);
   font-family: var(--chiffre);
   font-variation-settings: var(--w-nombre);
-  font-variant-numeric: tabular-nums;
-  font-size: 16px;
-  font-weight: 600;
-  letter-spacing: -0.045em;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -0.04em;
 }
 
-.rankExp small {
-  margin-top: 1px;
-  color: var(--text-3);
-  font-size: 10.5px;
-}
-
-/* ⚠️ LE GAIN « +30 » ÉTAIT EN TEAL CODÉ EN DUR, ET DONC ILLISIBLE EN CLAIR.
-   `#2BD4A0` est le teal de REMPLISSAGE : mesuré à 1,85:1 sur le blanc, il ne
-   peut pas porter du texte. Ce chiffre apparaît une seconde et demie au moment
-   exact où l'on vient de gagner : c'est le pire endroit pour être illisible.
-   `--teal-encre` est là pour ça, et il bascule avec le thème. */
-.rankExp em {
+/* ⚠️ LE GAIN « +30 » ÉTAIT EN TEAL CODÉ EN DUR, ET DONC ILLISIBLE EN
+   CLAIR. `#2BD4A0` est le teal de REMPLISSAGE : mesuré à 1,85:1 sur le
+   blanc, il ne peut pas porter du texte. Ce chiffre apparaît une seconde
+   et demie au moment exact où l'on vient de gagner : c'est le pire
+   endroit pour être illisible. `--teal-encre` bascule avec le thème. */
+.etatExp em {
   position: absolute;
   right: 0;
   bottom: calc(100% + 4px);
@@ -388,485 +203,15 @@
   font-variant-numeric: tabular-nums;
 }
 
-.sectionHeading {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 10px;
-  margin: 4px 2px 9px;
-}
-
-.sectionHeading h2 {
-  margin: 0;
-  color: var(--text-0);
-  font-family: var(--titrage);
-  font-size: 17px;
-  font-weight: 600;
-  letter-spacing: -0.02em;
-}
-
-.sectionHeading p {
-  margin-top: 2px;
-  color: var(--text-3);
-  font-size: 11.5px;
-}
-
-/* ⚠️ `--exp-encre` ET PAS `--accent`. Ce span porte « 35 / 50 EXP », donc un
-   chiffre qu'on LIT. Le violet décoratif de l'app tombe à 2,6:1 sur le blanc :
-   le compte paraissait éteint avant même d'être lu. Même teinte, encre dense,
-   et elle bascule avec le thème. La règle est déjà écrite dans globals.css. */
-.sectionHeading > span {
+.etatChevron {
   flex: 0 0 auto;
-  color: var(--exp-encre);
-  font-size: 11px;
-  font-weight: 600;
-  white-space: nowrap;
-  font-variant-numeric: tabular-nums;
-}
-
-.missionStack {
-  overflow: hidden;
-  border: 1px solid rgba(var(--accent-rgb), 0.1);
-  border-radius: 19px;
-  background: rgba(var(--surface-rgb), 0.9);
-  box-shadow: 0 10px 26px -22px rgba(var(--accent-rgb), 0.5);
-}
-
-.mission {
-  position: relative;
-  display: flex;
-  width: 100%;
-  min-height: 66px;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 12px;
-  border: 0;
-  border-bottom: 1px solid rgba(var(--accent-rgb), 0.08);
-  color: var(--text-1);
-  background: transparent;
-  text-align: left;
-}
-
-.mission:last-child {
-  border-bottom: 0;
-}
-
-/* ── UNE MISSION PREMIUM POSÉE AU MILIEU DES GRATUITES ────────────────
-   « Semaine régulière » vit dans la liste de la semaine, entre deux
-   missions offertes. Elle ne peut donc pas compter sur un bloc à part
-   pour se signaler : elle porte sa marque sur elle-même, et ces trois
-   signes doivent se lire ENSEMBLE, en une fraction de seconde.
-
-   1. un liseré doré à gauche, qui découpe la ligne dans la liste ;
-   2. un lavis or → magenta, la même paire que la marque Premium ;
-   3. la puce « Premium » collée au titre, plus le cachet sur l'icône.
-
-   ⚠️ L'or est une ENCRE ici, pas seulement un décor : #F5B120 tombe à
-   1,9:1 sur le blanc du mode clair. On bascule donc la valeur selon le
-   thème, comme le teal de « Validée » juste en dessous.
-   Mesuré : #8A5A06 = 5,9:1 sur blanc · #F5B120 = 8,4:1 sur la surface
-   sombre. */
-/* ⚠️ LE DÉGRADÉ EST EXACTEMENT HORIZONTAL, ET C'EST LA SEULE VALEUR QUI
-   MARCHE. Chaque ligne peint le sien dans sa propre boîte : au moindre
-   degré d'inclinaison, deux lignes voisines ne montrent pas la même
-   tranche du dégradé, et la frontière entre elles devient une coupure
-   nette. Invisible sur « Semaine régulière », seule au milieu de lignes
-   blanches ; très visible dès que quatre missions Premium s'empilent.
-   À 90deg toutes les lignes peignent la même chose, et le bloc redevient
-   un seul aplat continu. Ne pas remettre d'angle « pour faire vivant ». */
-.mission[data-premium] {
-  --or: #8a5a06;
-  border-bottom-color: rgba(245, 177, 32, 0.22);
-  background:
-    linear-gradient(90deg, rgba(245, 177, 32, 0.13), rgba(193, 59, 193, 0.06) 62%, transparent);
-}
-
-:global([data-theme="dark"]) .mission[data-premium] {
-  --or: #f5b120;
-  background:
-    linear-gradient(90deg, rgba(245, 177, 32, 0.16), rgba(193, 59, 193, 0.09) 62%, transparent);
-}
-
-/* ⚠️ `bottom: -1px` N'EST PAS UN AJUSTEMENT COSMÉTIQUE. Un élément absolu
-   se cale sur la boîte de PADDING, donc le séparateur de 1 px reste en
-   dehors : le liseré s'arrêtait juste avant, et sur quatre lignes
-   empilées ça faisait une colonne dorée encochée tous les 66 px. Il
-   déborde maintenant pile sur le séparateur, et la colonne est d'un
-   seul tenant. */
-.mission[data-premium]::before {
-  position: absolute;
-  top: 0;
-  bottom: -1px;
-  left: 0;
-  width: 3px;
-  background: linear-gradient(180deg, #ffd34e, #f5b120 42%, #c13bc1);
-  content: "";
-}
-
-/* Sur une ligne Premium, le contour et l'encre passent à l'or, comme le
-   reste de la ligne. Le tampon teal, lui, ne bouge pas : la réussite se
-   dit en teal partout, y compris chez un abonné. */
-.mission[data-premium] .sceau:not([data-earned]) {
-  border-color: rgba(245, 177, 32, 0.55);
-  color: var(--or);
-}
-
-.mission[data-premium] .gain > small {
-  color: var(--or);
-  opacity: 0.78;
-}
-
-/* La puce dorée collée au titre. Elle dit le mot, ce que ni une couleur
-   ni une icône ne peuvent faire seules : quelqu'un qui ne connaît pas
-   encore le code visuel de l'app doit comprendre du premier coup. */
-.tagPremium {
-  display: inline-block;
-  margin-left: 7px;
-  padding: 2px 6px;
-  border-radius: 6px;
-  color: #3a2402;
-  background: linear-gradient(120deg, #ffd34e, #f5b120);
-  font-size: 8.5px;
-  font-style: normal;
-  font-weight: 900;
-  letter-spacing: 0.06em;
-  line-height: 1.35;
-  text-transform: uppercase;
-  vertical-align: 1px;
-}
-
-.sigil {
-  position: relative;
-  display: grid;
-  width: 42px;
-  height: 42px;
-  flex: 0 0 42px;
-  place-items: center;
-  border-radius: 14px;
-}
-
-/* Le cachet posé sur le coin du pictogramme : un cadenas doré, et seulement
-   pour un compte qui n'a pas encore Premium. Le raisonnement est dans
-   `Cadenas` (AccueilSignature.tsx), y compris l'aller-retour par le « + »
-   qu'il ne faut pas refaire.
-
-   ⚠️ Il déborde du pictogramme, donc `.sigil` ne peut pas porter
-   `overflow: hidden`. Ce n'est pas une perte : les WebP
-   arrivent déjà avec leurs coins arrondis découpés en transparence, le
-   rognage n'avait rien à faire. */
-.cachet {
-  position: absolute;
-  right: -4px;
-  bottom: -4px;
-  display: grid;
-  width: 18px;
-  height: 18px;
-  place-items: center;
-  border-radius: 999px;
-  color: #3a2402;
-  background: linear-gradient(135deg, #ffd34e, #f5b120);
-  box-shadow: 0 2px 6px rgba(84, 52, 2, 0.34);
-}
-
-.dailyMissionImage {
-  display: block;
-  width: 42px;
-  height: 42px;
-  object-fit: cover;
-}
-
-.missionCopy {
-  min-width: 0;
-  flex: 1;
-}
-
-.missionCopy strong {
-  color: var(--text-0);
-  font-size: 13.5px;
-  font-weight: 750;
-}
-
-.missionCopy small {
-  margin-top: 2px;
-  overflow: hidden;
   color: var(--text-3);
-  font-size: 11px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
-/* ── LE SCEAU ────────────────────────────────────────────────────────
-   La récompense au bout d'une ligne. Deux états, et le contraste entre
-   les deux est tout l'intérêt : un CONTOUR tant que ce n'est pas fait,
-   un APLAT teal plein avec sa coche une fois gagné. « Validée » cesse
-   d'être une pastille éteinte et devient un tampon.
-
-   Ce qu'on répare, précisément : l'ancienne pastille tassait la
-   récompense et l'avancement dans 64 px, avec un fond pâle sous un texte
-   pâle, ce qui est la recette d'un bouton désactivé. Ici le chiffre a la
-   pastille pour lui seul, et ce qu'il reste à faire vit dessous.
-
-   Le teal reste la seule couleur pleine de la ligne : c'est la réussite
-   du système D, la même que la coche de fin de séance. Il n'entre pas en
-   conflit avec le violet, qui reste l'action. */
-.gain {
-  display: flex;
-  flex: 0 0 auto;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 3px;
-  white-space: nowrap;
-}
-
-/* Ce qu'il reste à faire, à la place exacte de l'ancien « À FAIRE ».
-   Le mot ne disait rien (toute mission non validée est à faire) ; le
-   compte, lui, dit à quelle distance on est. */
-.gain > small {
-  color: var(--text-3);
-  font-size: 10px;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-}
-
-.sceau {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 6px 11px;
-  border: 1.5px solid var(--exp-trait);
-  border-radius: 999px;
-  color: var(--exp-encre);
-  font-variant-numeric: tabular-nums;
-}
-
-.sceau strong {
-  font-size: 13px;
-  font-weight: 900;
-  letter-spacing: -0.02em;
-}
-
-.sceau em {
-  font-size: 9px;
-  font-style: normal;
-  font-weight: 800;
-  letter-spacing: 0.06em;
-}
-
-/* L'aplat plein, identique dans les deux thèmes : un teal saturé tient
-   sur le blanc comme sur le noir, et c'est justement ce qui en fait un
-   tampon plutôt qu'une teinte de surface. L'encre sombre posée dessus
-   donne 8,9:1.
-   ⚠️ Pas de `--exp-ok` ici : ce jeton est l'ENCRE du teal, celle qui
-   bascule pour rester lisible sur la surface. Le tampon, lui, apporte
-   son propre fond, donc il n'a rien à basculer. */
-.sceau[data-earned] {
-  border-color: transparent;
-  color: #05271d;
-  background: linear-gradient(135deg, #35e0ae, #17b487);
-  box-shadow: 0 6px 14px -8px rgba(23, 180, 135, 0.9);
-}
-
-/* Lu par les synthèses vocales, jamais affiché. */
-.horsEcran {
-  position: absolute;
-  overflow: hidden;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  border: 0;
-  margin: -1px;
-  clip-path: inset(50%);
-  white-space: nowrap;
-}
-
-/* ── LE BLOC PREMIUM ─────────────────────────────────────────────────
-   Il garde la surface de l'app, comme les autres listes : ce n'est pas
-   lui qui porte la marque, ce sont ses lignes, et elles la portent avec
-   exactement les mêmes signes que « Semaine régulière » deux blocs plus
-   haut. Un seul apprentissage, valable partout.
-
-   Deux directions ont été essayées puis ABANDONNÉES ici, ne pas les
-   refaire : une surface sombre pour le bloc (elle tranchait, mais elle
-   inventait une seconde écriture de Premium pour un seul endroit de
-   l'app), et un balayage de lumière qui traversait le bloc en boucle
-   pour les comptes gratuits. Louis n'en veut ni l'une ni l'autre : la
-   marque Premium se lit à l'arrêt, sur les lignes, sans que rien ne
-   bouge. Il ne reste de tout ça que la bordure dorée. */
-.premiumVault {
-  overflow: hidden;
-  border: 1px solid rgba(245, 177, 32, 0.32);
-  border-radius: 20px;
-  background: rgba(var(--surface-rgb), 0.9);
-  box-shadow: 0 12px 28px -22px rgba(198, 140, 20, 0.62);
-}
-
-.premiumHeading {
-  display: flex;
-  align-items: center;
-  gap: 11px;
-  padding: 14px 13px 12px;
-  border-bottom: 1px solid rgba(245, 177, 32, 0.18);
-}
-
-/* Ce que le bloc ajoute en une journée, en or et en gros. C'est la
-   réponse à « pourquoi payer », et elle tient en un nombre.
-   Même encre que les lignes Premium, donc même bascule de valeur. */
-.premiumBonus {
-  --or: #8a5a06;
-  flex: 0 0 auto;
-  color: var(--or);
-  text-align: right;
-  white-space: nowrap;
-}
-
-:global([data-theme="dark"]) .premiumBonus {
-  --or: #f5b120;
-}
-
-.premiumBonus strong {
-  font-size: 19px;
-  font-weight: 900;
-  letter-spacing: -0.02em;
-}
-
-.premiumBonus small {
-  margin-top: -1px;
-  color: var(--or);
-  font-size: 9px;
-  font-weight: 800;
-  letter-spacing: 0.06em;
-  opacity: 0.74;
-  text-transform: uppercase;
-}
-
-.premiumSeal {
-  width: 39px;
-  height: 39px;
-  flex: 0 0 39px;
-  clip-path: polygon(50% 0, 88% 17%, 100% 55%, 75% 90%, 34% 100%, 4% 72%, 8% 27%);
-  background: linear-gradient(145deg, #8b5cf6, #c13bc1);
-  filter: drop-shadow(0 7px 10px rgba(139, 92, 246, 0.22));
-}
-
-.premiumSeal::before,
-.premiumSeal::after {
-  background: #fff;
-}
-
-.premiumSeal::before {
-  width: 3px;
-  height: 16px;
-}
-
-.premiumSeal::after {
-  width: 16px;
-  height: 3px;
-}
-
-.premiumHeadingCopy {
-  min-width: 0;
-  flex: 1;
-}
-
-.premiumHeadingCopy strong {
-  color: var(--text-0);
-  font-size: 13.5px;
-  font-weight: 800;
-}
-
-.premiumHeadingCopy small {
-  margin-top: 2px;
-  color: var(--text-3);
-  font-size: 10.5px;
-}
-
-.premiumList {
-  display: flex;
-  flex-direction: column;
-}
-
-.premiumFooter {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 10px;
-  padding: 12px 13px;
-}
-
-.premiumFooter {
-  border-top: 1px solid rgba(245, 177, 32, 0.16);
-}
-
-.premiumFooter p {
-  color: var(--text-3);
-  font-size: 10.5px;
-  line-height: 1.3;
-}
-
-/* ⚠️ LE BOUTON RESTE VIOLET, et ce n'est pas négociable : dans le système
-   D le bouton d'action principal est violet partout. L'or dit « Premium »
-   sur cet écran, il ne dit jamais « appuie ici ». */
-.premiumFooter button {
-  padding: 0 13px;
-  color: #fff;
-  background: linear-gradient(120deg, #8b5cf6, #c13bc1);
-  box-shadow: 0 8px 18px -9px rgba(139, 92, 246, 0.65);
-}
-
-@media (hover: hover) {
-  .rankStrip:hover,
-  .mission:not([data-premium]):hover {
-    background-color: rgba(var(--accent-rgb), 0.055);
-  }
-
-  .mission[data-premium]:hover {
-    background-color: rgba(245, 177, 32, 0.09);
-  }
-}
-
-@media (max-width: 350px) {
-  .poster {
-    min-height: 186px;
-  }
-
-  .posterCopy {
-    width: 78%;
-    padding-inline: 14px;
-  }
-
-  .rankStrip {
-    gap: 8px;
-    padding-inline: 9px;
-  }
-
-  .rankCopy small {
-    max-width: 17ch;
-  }
-
-  .mission {
-    gap: 9px;
-    padding-inline: 10px;
-  }
-}
-
-@media (min-width: 768px) {
-  .poster {
-    min-height: 196px;
-  }
-
-  .posterCopy {
-    padding: 22px;
-  }
-
-  .posterCopy h2 {
-    font-size: 25px;
-  }
-}
-
-/* ── LA BANDE DU RELAIS ───────────────────────────────────────────────
-   Sous les missions du jour, JAMAIS au-dessus : le relais est un extra,
-   pas le cœur du produit. Et elle n'existe que s'il y a un relais vivant,
-   même règle que le Guide : on ne parle que quand on a une raison.
+/* ── ④ LA BANDE DU RELAIS ─────────────────────────────────────────────
+   Après « Ma journée », JAMAIS avant : le relais est un extra, pas le
+   cœur du produit. Et elle n'existe que s'il y a un relais vivant, même
+   règle que le Guide : on ne parle que quand on a une raison.
 
    Or, comme partout où le relais se signe (le sceau de la liste, la
    bande de fin de séance, l'étincelle du composer). Un seul signe pour
@@ -876,7 +221,6 @@
   width: 100%;
   align-items: center;
   gap: 12px;
-  margin-top: 12px;
   padding: 10px 12px;
   border: 1px solid rgba(215, 166, 42, 0.3);
   border-radius: 16px;

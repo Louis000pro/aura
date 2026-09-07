@@ -1,4 +1,6 @@
 import Link from "next/link";
+import LigneMission, { listeMissions } from "@/components/missions/LigneMission";
+import { MISSIONS_PREMIUM } from "@/lib/aura";
 import { PLANS, VENTE_OUVERTE, formatPrice } from "@/lib/plans";
 
 /**
@@ -30,9 +32,14 @@ function limite(n: number, singulier: string, pluriel: string) {
   return n === Infinity ? `${pluriel} sans limite` : `${n} ${n > 1 ? pluriel : singulier}`;
 }
 
-export default function InfosPremium() {
+export default function InfosPremium({ premiumDebloque = false }: { premiumDebloque?: boolean }) {
   const free = PLANS.free;
   const premium = PLANS.premium;
+
+  /* Ce que les missions Premium ajoutent en une journée. Calculé depuis le
+     catalogue, jamais écrit : le jour où l'une d'elles change de valeur, ce
+     chiffre suit tout seul. */
+  const expPremiumJour = MISSIONS_PREMIUM.reduce((total, m) => total + m.exp, 0);
 
   return (
     <section className="mt-12 md:mt-16 flex flex-col gap-4 md:gap-5" aria-label="Comprendre l’offre Vaiiya">
@@ -73,6 +80,38 @@ export default function InfosPremium() {
           dans les deux cas. Vaiiya ne verrouille jamais l&apos;effort lui-même, et il n&apos;y a de
           publicité dans aucune des deux offres.
         </p>
+      </div>
+
+      {/* ⭐ V7B · LES QUATRE MISSIONS PREMIUM ATTERRISSENT ICI, EN VRAI.
+          La page les vendait par une phrase abstraite (« des missions
+          s'ajoutent à tes journées ») pendant que le coffre qui les montrait
+          vivait sur l'accueil, au milieu d'un écran qui n'était plus censé
+          vendre. On voit maintenant ce qu'on achète : le nom, la condition,
+          le gain, à l'endroit où la question se pose.
+
+          ⚠️ AUCUNE PROGRESSION N'EST AFFICHÉE ICI, et c'est délibéré : la
+          page est publique, donc il n'y a pas toujours de compte derrière.
+          `LigneMission` sans `etat` rend un CATALOGUE, jamais un suivi qui
+          affirmerait « encore 2 séances » à quelqu'un qui les a faites. */}
+      <div className={CARTE} style={CARTE_STYLE}>
+        <h2 className="text-xl md:text-2xl font-black mb-1" style={{ color: "var(--text-0)" }}>
+          Les missions que {premium.name} ajoute
+        </h2>
+        <p className="mb-4 text-sm md:text-base font-light leading-relaxed" style={{ color: "var(--text-body)" }}>
+          Quatre missions de plus chaque jour, soit{" "}
+          <strong style={{ color: "var(--or-encre)" }}>+{expPremiumJour} EXP par jour</strong>. Elles ne sont
+          jamais obligatoires : elles s&apos;ajoutent à celles que tout le monde a, elles ne les remplacent pas.
+        </p>
+        <div className={listeMissions}>
+          {MISSIONS_PREMIUM.map((mission) => (
+            <LigneMission
+              key={mission.id}
+              mission={mission}
+              debloquee={premiumDebloque}
+              onNavigate={() => {}}
+            />
+          ))}
+        </div>
       </div>
 
       <div className={CARTE} style={CARTE_STYLE}>

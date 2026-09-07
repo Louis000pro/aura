@@ -20,6 +20,15 @@ import { verrouDeFermeture } from "@/lib/finSeance";
 import { etapesDuCycle, etapeSuivante, nomDeProgramme, positionRefermee, POSITION_INITIALE } from "@/lib/programme";
 import { etatJournee, intentionDeLEtape, lancementDuJour, libelleReservation, repetitionDuJour } from "@/lib/journee";
 import {
+  etatDepuisExp, missionsAuraVides,
+  MISSIONS_JOUR, MISSIONS_PREMIUM, MISSIONS_SEMAINE,
+  type EtatAura, type MissionId,
+} from "@/lib/aura";
+import {
+  actionRestante, apercuPremiumDuJour, compteMissionsJour,
+  marqueursDuJour, missionDebloquee, MARQUEURS,
+} from "@/lib/missionsAccueil";
+import {
   cycleDeReference, seancesDuCycle, previewWeek, weekDates, ANCIEN, NOUVEAU,
   ordonner, parDate, principale, supplements, seancesDuJour, prochaineSeanceDuJour,
   refModele, lienProgramme, prochainsJours, todayYmd,
@@ -884,6 +893,263 @@ verdict(
     "V7A · redonner un jour retrouve la réservation où qu'elle soit",
     readFileSync(new URL("../src/hooks/useJournee.ts", import.meta.url), "utf8").includes("reservationDeLEtape("),
     "la clé de l'invariant, interrogée en base",
+  );
+}
+
+
+/* ════════════════════════════════════════════════════════════════════
+   V7B · L'ACCUEIL RÉPOND À LA JOURNÉE
+
+   Ce que ces contrôles verrouillent, et pourquoi : la vague a déplacé des
+   missions et fusionné deux blocs, donc les régressions possibles sont des
+   régressions de PROVENANCE (qui compte quoi, qui lit quoi, qui reste
+   visible où). Elles ne cassent rien et ne se voient qu'en regardant très
+   précisément le bon écran, c'est-à-dire jamais.
+   ════════════════════════════════════════════════════════════════════ */
+{
+  const lire = (f: string) => readFileSync(new URL("../" + f, import.meta.url), "utf8");
+  /* ⚠️ ON LIT LE CODE, PAS LES COMMENTAIRES. Les fichiers de cette vague
+     EXPLIQUENT ce qu'ils refusent de faire, donc ils citent en toutes
+     lettres les chaînes qu'on cherche justement à interdire. */
+  const net = (t: string) => t.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
+
+  const ACCUEIL = net(lire("src/components/AccueilSignature.tsx"));
+  const JOURNEE = net(lire("src/components/accueil/MaJournee.tsx"));
+  const FEUILLE = net(lire("src/components/accueil/FeuilleMissions.tsx"));
+  const REGLES = net(lire("src/lib/missionsAccueil.ts"));
+  const PROFIL = net(lire("src/app/profil/page.tsx"));
+  const OFFRE = net(lire("src/app/premium/InfosPremium.tsx"));
+  const NEUFS = [JOURNEE, FEUILLE, REGLES, ACCUEIL];
+
+  /** Une aura fabriquée, où seules les missions nommées sont remplies. */
+  const auraAvec = (faites: MissionId[]): EtatAura => {
+    const missions = missionsAuraVides();
+    for (const id of faites) {
+      missions[id] = { ...missions[id], progress: missions[id].target, complete: true, earned: true };
+    }
+    return etatDepuisExp(0, undefined, missions);
+  };
+
+  /* ── Le compteur vient de l'évaluation existante, pas d'un second
+        moteur. `aura.missions` est ce que rend `etat_missions_aura` : le
+        seul vrai risque de cette vague était de recompter les séances dans
+        un composant, ce qui rouvrirait l'écart entre le chiffre affiché et
+        le chiffre crédité, fermé le 2026-08-21. ── */
+  verdict(
+    "V7B · le compteur du jour est le catalogue, pas un 4 écrit à la main",
+    compteMissionsJour(auraAvec([])).total === MISSIONS_JOUR.length,
+    "dénominateur = " + MISSIONS_JOUR.length + " missions du jour",
+  );
+  verdict(
+    "V7B · il compte ce que la base a évalué",
+    compteMissionsJour(auraAvec(["connexion"])).fait === 1 &&
+      compteMissionsJour(auraAvec(["connexion", "seance"])).fait === 2 &&
+      compteMissionsJour(auraAvec(["connexion", "seance", "repas", "journee"])).fait === 4,
+    "0 → 1 → 2 → 4, lus dans `complete`",
+  );
+  verdict(
+    "V7B · aucun second moteur de missions dans les composants",
+    NEUFS.every((t) => !t.includes("supabase") && !t.includes("workout_sessions") && !t.includes(".rpc(")),
+    "ni requête ni recomptage",
+  );
+
+  /* ── Les marqueurs. « Présence » et jamais « Venu » ; trois et pas
+        quatre, parce que « Journée complète » se remplit toute seule. ── */
+  const marques = marqueursDuJour(auraAvec(["connexion", "repas"]));
+  verdict(
+    "V7B · trois marqueurs, et « Journée complète » n'en est pas un",
+    marques.length === 3 && !marques.some((m) => m.id === "journee") && MARQUEURS.length === 3,
+    marques.map((m) => m.libelle).join(" · "),
+  );
+  verdict(
+    "V7B · « Présence », jamais « Venu »",
+    marques[0].libelle === "Présence" && NEUFS.every((t) => !/\bVenu\b/.test(t)),
+    "le mot dit un état, pas un exploit",
+  );
+  verdict(
+    "V7B · un marqueur suit la mission qu'il nomme",
+    marques[0].acquis && !marques[1].acquis && marques[2].acquis,
+    "Présence ✓ · Séance ○ · Repas ✓",
+  );
+
+  /* ── L'action ne duplique jamais le héros. C'est la règle produit la
+        plus facile à défaire sans s'en apercevoir : reproposer la séance
+        ici, ce serait deux fois le même chemin à cent pixels d'écart. ── */
+  verdict(
+    "V7B · l'action restante ne propose jamais la séance du héros",
+    actionRestante(auraAvec([]))?.id === "repas" &&
+      actionRestante(auraAvec(["connexion"]))?.id === "repas",
+    "seul « Noter un repas » a le droit de devenir une action",
+  );
+  verdict(
+    "V7B · plus rien à proposer quand le repas est noté",
+    actionRestante(auraAvec(["repas"])) === null,
+    "aucune ligne d'action",
+  );
+  verdict(
+    "V7B · la connexion reste un état, jamais une action",
+    actionRestante(auraAvec([]))?.id !== "connexion",
+    "on ne demande pas d'ouvrir l'app qu'on vient d'ouvrir",
+  );
+
+  /* ── La rotation Premium. Un `Math.random()` changerait la mission entre
+        le rendu serveur et le rendu client : React signalerait un écart
+        d'hydratation et la ligne bougerait sous les yeux. ── */
+  const jours = ["2026-09-07", "2026-09-08", "2026-09-09", "2026-09-10"];
+  const tires = jours.map((j) => apercuPremiumDuJour(j)?.id);
+  verdict(
+    "V7B · la mission Premium du jour est stable pour une même date",
+    apercuPremiumDuJour(jours[0])?.id === tires[0] &&
+      apercuPremiumDuJour(jours[3])?.id === tires[3],
+    "même date → même mission, appel après appel",
+  );
+  verdict(
+    "V7B · elle tourne, et les quatre passent en quatre jours",
+    new Set(tires).size === MISSIONS_PREMIUM.length,
+    tires.join(" → "),
+  );
+  {
+    let toutes = true;
+    for (let i = 0; i < 60; i++) {
+      const jour = new Date(Date.UTC(2026, 0, 1) + i * 86_400_000).toISOString().slice(0, 10);
+      const m = apercuPremiumDuJour(jour);
+      if (!m || !MISSIONS_PREMIUM.includes(m)) toutes = false;
+    }
+    verdict(
+      "V7B · sur 60 jours, elle sort toujours du catalogue Premium",
+      toutes && !REGLES.includes("Math.random"),
+      "déterministe, jamais tirée au sort",
+    );
+  }
+
+  /* ── L'entitlement. Un abonné ne doit JAMAIS voir sa propre mission
+        présentée comme inaccessible : ce serait lui vendre ce qu'il paie. ── */
+  const premiumJour = MISSIONS_PREMIUM[0];
+  const gratuiteJour = MISSIONS_JOUR[0];
+  verdict(
+    "V7B · non-Premium : la mission Premium est verrouillée",
+    missionDebloquee(premiumJour, false) === false,
+    premiumJour.titre + " → cadenas",
+  );
+  verdict(
+    "V7B · Premium : sa propre mission n'est jamais verrouillée",
+    missionDebloquee(premiumJour, true) === true,
+    premiumJour.titre + " → simplement une mission",
+  );
+  verdict(
+    "V7B · une mission gratuite n'est verrouillée pour personne",
+    missionDebloquee(gratuiteJour, false) === true,
+    gratuiteJour.titre,
+  );
+
+  /* ── La feuille porte le catalogue entier : 4 + 4 + 3. ── */
+  verdict(
+    "V7B · la feuille = 4 du jour + 4 Premium + 3 de la semaine",
+    MISSIONS_JOUR.length === 4 && MISSIONS_PREMIUM.length === 4 && MISSIONS_SEMAINE.length === 3,
+    MISSIONS_JOUR.length + " + " + MISSIONS_PREMIUM.length + " + " + MISSIONS_SEMAINE.length,
+  );
+  verdict(
+    "V7B · et elle rend les trois listes du catalogue",
+    ["MISSIONS_JOUR", "MISSIONS_PREMIUM", "MISSIONS_SEMAINE"].every((c) => FEUILLE.includes(c)),
+    "les trois constantes, jamais une liste recopiée",
+  );
+  verdict(
+    "V7B · c'est une feuille, pas un accordéon qui rallonge l'accueil",
+    FEUILLE.includes("Sheet") && ACCUEIL.includes("FeuilleMissions"),
+    "le composant `Sheet` partagé, ouvert depuis l'accueil",
+  );
+
+  /* ── Le Guide. Son visage est là même quand il se tait, et V7B ne lui
+        donne aucun déclencheur métier nouveau. ── */
+  verdict(
+    "V7B · Nora ou Sasha reste visible même sans message",
+    ACCUEIL.includes('etat={moment?.etat ?? "welcome"}'),
+    "c'est la PHRASE qui est conditionnelle, pas la présence",
+  );
+  verdict(
+    "V7B · toute la zone ouvre le vrai Assistant, jamais un second chat",
+    ACCUEIL.includes("useAssistant()") && !ACCUEIL.includes("sendMessage("),
+    "`open()` sur la feuille globale",
+  );
+  {
+    const moments = net(lire("src/lib/momentAccueil.ts"));
+    const cles = ["absence.longue", "absence.courte", "debut", "palier", "serie", "jour"];
+    verdict(
+      "V7B · aucun déclencheur métier nouveau pour le Guide",
+      cles.every((c) => moments.includes(c)) && NEUFS.every((t) => !t.includes("momentAccueil(")),
+      "les six moments existants, et rien de plus",
+    );
+  }
+
+  /* ── Le héros de V7A n'est pas touché : l'accueil lui donne sa place, il
+        ne le fabrique pas et ne juge rien à sa place. ── */
+  verdict(
+    "V7B · l'accueil ne touche pas au moteur du héros",
+    ACCUEIL.includes("{heros}") &&
+      NEUFS.every((t) => !t.includes("lancementDuJour") && !t.includes("etatJournee") && !t.includes("terminerSeance")),
+    "le héros arrive en prop, comme en V7A",
+  );
+  verdict(
+    "V7B · aucune logique « séance ratée » ajoutée",
+    NEUFS.every((t) => !t.includes("seanceNonFaite") && !t.includes("intentions_entrainement")),
+    "un cercle vide n'est pas un reproche",
+  );
+
+  /* ── Un seul affichage principal d'EXP. L'ancien écran écrivait « EXP »
+        quinze fois ; il ne reste que la ligne du rang, la mission Premium
+        du jour portant son propre gain via le composant partagé. ── */
+  verdict(
+    "V7B · un seul affichage d'EXP sur l'accueil lui-même",
+    (ACCUEIL.match(/EXP/g) ?? []).length === 1 && !ACCUEIL.includes("PLAFOND_JOUR_"),
+    "la ligne « où j'en suis », et rien d'autre",
+  );
+  verdict(
+    "V7B · l'accueil ne liste plus aucune famille de missions",
+    !ACCUEIL.includes("MISSIONS_") && !ACCUEIL.includes("premiumVault") && !ACCUEIL.includes("poster"),
+    "ni liste du jour, ni semaine, ni coffre, ni affiche Premium",
+  );
+
+  /* ── ⚠️ LE CACHE D'EXP NE VAUT PAS UNE ÉVALUATION DES MISSIONS. Le cache
+        localStorage de l'accueil ne garde QUE l'EXP : rendre « Ma journée »
+        dessus afficherait « 0 / 4 » et « Noter un repas » à quelqu'un qui
+        vient de le noter, le temps d'un aller-retour. Le défaut clignoterait
+        une demi-seconde, donc personne ne le signalerait jamais. ── */
+  {
+    const CLIENT = net(lire("src/app/AccueilClient.tsx"));
+    verdict(
+      "V7B · « Ma journée » attend la vraie évaluation, pas le cache d'EXP",
+      ACCUEIL.includes("{missionsLues && (") && !ACCUEIL.includes("{auraLoaded && ("),
+      "le groupe est gardé par `missionsLues`",
+    );
+    verdict(
+      "V7B · et ce drapeau ne se lève que sur la réponse de la base",
+      (CLIENT.match(/setMissionsLues\(true\)/g) ?? []).length === 1 &&
+        CLIENT.indexOf("setMissionsLues(true)") > CLIENT.indexOf("calculerAura("),
+      "un seul point de levée, dans le `then` de calculerAura",
+    );
+  }
+
+  /* ── Les atterrissages. Une mission qui crédite sans s'afficher est un
+        bonus caché : c'est la règle du catalogue lui-même. ── */
+  verdict(
+    "V7B · les trois hebdomadaires sont visibles dans Profil › Progrès",
+    PROFIL.includes("MISSIONS_SEMAINE") && PROFIL.includes("LigneMission"),
+    "dans la zone de constance, qui a exactement le même sujet",
+  );
+  verdict(
+    "V7B · les quatre Premium sont visibles sur /premium",
+    OFFRE.includes("MISSIONS_PREMIUM") && OFFRE.includes("LigneMission"),
+    "on voit ce qu'on achète",
+  );
+  verdict(
+    "V7B · une seule écriture de la ligne de mission dans tout le produit",
+    [
+      "src/components/accueil/FeuilleMissions.tsx",
+      "src/components/accueil/MaJournee.tsx",
+      "src/app/profil/page.tsx",
+      "src/app/premium/InfosPremium.tsx",
+    ].every((f) => lire(f).includes("@/components/missions/LigneMission")),
+    "quatre surfaces, un seul composant",
   );
 }
 

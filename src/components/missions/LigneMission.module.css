@@ -1,0 +1,272 @@
+/* ─────────────────────────────────────────────────────────────────────
+   LE DESSIN D'UNE LIGNE DE MISSION.
+
+   Il vivait dans `AccueilSignature.module.css` tant que l'accueil était
+   le seul écran à empiler des missions. Depuis V7B il y en a trois : la
+   feuille « Missions » ouverte depuis l'accueil, la zone de constance du
+   profil (les trois hebdomadaires) et /premium (les quatre Premium).
+   Recopier ces 250 lignes trois fois, c'était garantir qu'elles
+   divergent au premier ajustement.
+   ───────────────────────────────────────────────────────────────────── */
+
+.missionStack {
+  overflow: hidden;
+  border: 1px solid rgba(var(--accent-rgb), 0.1);
+  border-radius: 19px;
+  background: rgba(var(--surface-rgb), 0.9);
+  box-shadow: 0 10px 26px -22px rgba(var(--accent-rgb), 0.5);
+}
+
+.mission {
+  position: relative;
+  display: flex;
+  width: 100%;
+  min-height: 66px;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 0;
+  border-bottom: 1px solid rgba(var(--accent-rgb), 0.08);
+  color: var(--text-1);
+  background: transparent;
+  text-align: left;
+}
+
+.mission:last-child {
+  border-bottom: 0;
+}
+
+/* ── UNE MISSION PREMIUM POSÉE AU MILIEU DES GRATUITES ────────────────
+   « Semaine régulière » vit dans la liste de la semaine, entre deux
+   missions offertes. Elle ne peut donc pas compter sur un bloc à part
+   pour se signaler : elle porte sa marque sur elle-même, et ces trois
+   signes doivent se lire ENSEMBLE, en une fraction de seconde.
+
+   1. un liseré doré à gauche, qui découpe la ligne dans la liste ;
+   2. un lavis or → magenta, la même paire que la marque Premium ;
+   3. la puce « Premium » collée au titre, plus le cachet sur l'icône.
+
+   ⚠️ L'or est une ENCRE ici, pas seulement un décor : #F5B120 tombe à
+   1,9:1 sur le blanc du mode clair. On bascule donc la valeur selon le
+   thème, comme le teal de « Validée » juste en dessous.
+   Mesuré : #8A5A06 = 5,9:1 sur blanc · #F5B120 = 8,4:1 sur la surface
+   sombre. */
+/* ⚠️ LE DÉGRADÉ EST EXACTEMENT HORIZONTAL, ET C'EST LA SEULE VALEUR QUI
+   MARCHE. Chaque ligne peint le sien dans sa propre boîte : au moindre
+   degré d'inclinaison, deux lignes voisines ne montrent pas la même
+   tranche du dégradé, et la frontière entre elles devient une coupure
+   nette. Invisible sur « Semaine régulière », seule au milieu de lignes
+   blanches ; très visible dès que quatre missions Premium s'empilent.
+   À 90deg toutes les lignes peignent la même chose, et le bloc redevient
+   un seul aplat continu. Ne pas remettre d'angle « pour faire vivant ». */
+.mission[data-premium] {
+  --or: #8a5a06;
+  border-bottom-color: rgba(245, 177, 32, 0.22);
+  background:
+    linear-gradient(90deg, rgba(245, 177, 32, 0.13), rgba(193, 59, 193, 0.06) 62%, transparent);
+}
+
+:global([data-theme="dark"]) .mission[data-premium] {
+  --or: #f5b120;
+  background:
+    linear-gradient(90deg, rgba(245, 177, 32, 0.16), rgba(193, 59, 193, 0.09) 62%, transparent);
+}
+
+/* ⚠️ `bottom: -1px` N'EST PAS UN AJUSTEMENT COSMÉTIQUE. Un élément absolu
+   se cale sur la boîte de PADDING, donc le séparateur de 1 px reste en
+   dehors : le liseré s'arrêtait juste avant, et sur quatre lignes
+   empilées ça faisait une colonne dorée encochée tous les 66 px. Il
+   déborde maintenant pile sur le séparateur, et la colonne est d'un
+   seul tenant. */
+.mission[data-premium]::before {
+  position: absolute;
+  top: 0;
+  bottom: -1px;
+  left: 0;
+  width: 3px;
+  background: linear-gradient(180deg, #ffd34e, #f5b120 42%, #c13bc1);
+  content: "";
+}
+
+/* Sur une ligne Premium, le contour et l'encre passent à l'or, comme le
+   reste de la ligne. Le tampon teal, lui, ne bouge pas : la réussite se
+   dit en teal partout, y compris chez un abonné. */
+.mission[data-premium] .sceau:not([data-earned]) {
+  border-color: rgba(245, 177, 32, 0.55);
+  color: var(--or);
+}
+
+.mission[data-premium] .gain > small {
+  color: var(--or);
+  opacity: 0.78;
+}
+
+/* La puce dorée collée au titre. Elle dit le mot, ce que ni une couleur
+   ni une icône ne peuvent faire seules : quelqu'un qui ne connaît pas
+   encore le code visuel de l'app doit comprendre du premier coup. */
+.tagPremium {
+  display: inline-block;
+  margin-left: 7px;
+  padding: 2px 6px;
+  border-radius: 6px;
+  color: #3a2402;
+  background: linear-gradient(120deg, #ffd34e, #f5b120);
+  font-size: 8.5px;
+  font-style: normal;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  line-height: 1.35;
+  text-transform: uppercase;
+  vertical-align: 1px;
+}
+
+.sigil {
+  position: relative;
+  display: grid;
+  width: 42px;
+  height: 42px;
+  flex: 0 0 42px;
+  place-items: center;
+  border-radius: 14px;
+}
+
+/* Le cachet posé sur le coin du pictogramme : un cadenas doré, et seulement
+   pour un compte qui n'a pas encore Premium. Le raisonnement est dans
+   `Cadenas` (LigneMission.tsx), y compris l'aller-retour par le « + »
+   qu'il ne faut pas refaire.
+
+   ⚠️ Il déborde du pictogramme, donc `.sigil` ne peut pas porter
+   `overflow: hidden`. Ce n'est pas une perte : les WebP
+   arrivent déjà avec leurs coins arrondis découpés en transparence, le
+   rognage n'avait rien à faire. */
+.cachet {
+  position: absolute;
+  right: -4px;
+  bottom: -4px;
+  display: grid;
+  width: 18px;
+  height: 18px;
+  place-items: center;
+  border-radius: 999px;
+  color: #3a2402;
+  background: linear-gradient(135deg, #ffd34e, #f5b120);
+  box-shadow: 0 2px 6px rgba(84, 52, 2, 0.34);
+}
+
+.dailyMissionImage {
+  display: block;
+  width: 42px;
+  height: 42px;
+  object-fit: cover;
+}
+
+.missionCopy {
+  min-width: 0;
+  flex: 1;
+}
+
+.missionCopy strong {
+  color: var(--text-0);
+  font-size: 13.5px;
+  font-weight: 750;
+}
+
+.missionCopy small {
+  margin-top: 2px;
+  overflow: hidden;
+  color: var(--text-3);
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── LE SCEAU ────────────────────────────────────────────────────────
+   La récompense au bout d'une ligne. Deux états, et le contraste entre
+   les deux est tout l'intérêt : un CONTOUR tant que ce n'est pas fait,
+   un APLAT teal plein avec sa coche une fois gagné. « Validée » cesse
+   d'être une pastille éteinte et devient un tampon.
+
+   Ce qu'on répare, précisément : l'ancienne pastille tassait la
+   récompense et l'avancement dans 64 px, avec un fond pâle sous un texte
+   pâle, ce qui est la recette d'un bouton désactivé. Ici le chiffre a la
+   pastille pour lui seul, et ce qu'il reste à faire vit dessous.
+
+   Le teal reste la seule couleur pleine de la ligne : c'est la réussite
+   du système D, la même que la coche de fin de séance. Il n'entre pas en
+   conflit avec le violet, qui reste l'action. */
+.gain {
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 3px;
+  white-space: nowrap;
+}
+
+/* Ce qu'il reste à faire, à la place exacte de l'ancien « À FAIRE ».
+   Le mot ne disait rien (toute mission non validée est à faire) ; le
+   compte, lui, dit à quelle distance on est. */
+.gain > small {
+  color: var(--text-3);
+  font-size: 10px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.sceau {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 11px;
+  border: 1.5px solid var(--exp-trait);
+  border-radius: 999px;
+  color: var(--exp-encre);
+  font-variant-numeric: tabular-nums;
+}
+
+.sceau strong {
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+}
+
+.sceau em {
+  font-size: 9px;
+  font-style: normal;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+}
+
+/* L'aplat plein, identique dans les deux thèmes : un teal saturé tient
+   sur le blanc comme sur le noir, et c'est justement ce qui en fait un
+   tampon plutôt qu'une teinte de surface. L'encre sombre posée dessus
+   donne 8,9:1.
+   ⚠️ Pas de `--exp-ok` ici : ce jeton est l'ENCRE du teal, celle qui
+   bascule pour rester lisible sur la surface. Le tampon, lui, apporte
+   son propre fond, donc il n'a rien à basculer. */
+.sceau[data-earned] {
+  border-color: transparent;
+  color: #05271d;
+  background: linear-gradient(135deg, #35e0ae, #17b487);
+  box-shadow: 0 6px 14px -8px rgba(23, 180, 135, 0.9);
+}
+
+/* Lu par les synthèses vocales, jamais affiché. */
+.horsEcran {
+  position: absolute;
+  overflow: hidden;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  border: 0;
+  margin: -1px;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Ces deux-là étaient portées par une règle groupée d'AccueilSignature,
+   partagée avec des blocs qui n'existent plus. */
+.missionCopy strong,
+.missionCopy small {
+  display: block;
+}

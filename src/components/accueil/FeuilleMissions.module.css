@@ -1,0 +1,86 @@
+/* ─────────────────────────────────────────────────────────────────────
+   La feuille « Missions ». Le composant `Sheet` porte déjà la surface,
+   le rayon, la poignée et la marge de sécurité du bas : il ne reste ici
+   que l'en-tête, les sections et le défilement.
+   ───────────────────────────────────────────────────────────────────── */
+
+.head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.head h2 {
+  margin: 0;
+  color: var(--text-0);
+  font-family: var(--titrage);
+  font-variation-settings: var(--w-voix);
+  font-size: 21px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+/* ⚠️ `--exp-encre` ET PAS `--accent` : ce compte porte de l'EXP, donc un
+   chiffre qu'on lit. Le violet décoratif tombe à 2,6:1 sur le blanc. */
+.headExp {
+  flex: 0 0 auto;
+  color: var(--exp-encre);
+  font-size: 11.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ⚠️ LA HAUTEUR EST BORNÉE ICI, ET C'EST OBLIGATOIRE. La feuille est
+   ancrée en bas de l'écran : onze lignes de mission la feraient sortir
+   par le haut du téléphone, en emportant son en-tête. `70vh` laisse voir
+   l'accueil au-dessus, ce qui est exactement ce qu'on veut montrer : il
+   n'a pas bougé. */
+.corps {
+  max-height: 70vh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.sec + .sec {
+  margin-top: 16px;
+}
+
+.lab {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 0 2px 7px;
+  color: var(--text-3);
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* La valeur à droite n'est pas une étiquette : elle se lit comme un
+   chiffre, donc elle ne crie pas. */
+.lab span {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ⚠️ L'OR EST UNE ENCRE. `--gold` est décoratif et tombe à 2:1 sur le
+   blanc ; `--or-encre` bascule avec le thème et reste lisible. */
+.labOr {
+  color: var(--or-encre);
+}
+
+.regle {
+  margin: 16px 2px 0;
+  color: var(--text-3);
+  font-size: 11.5px;
+  line-height: 1.45;
+}
