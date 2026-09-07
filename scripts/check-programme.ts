@@ -1129,6 +1129,28 @@ verdict(
     );
   }
 
+  /* ── ⚠️ LE CERCLE EST LE GUIDE, LE SQUIRCLE EST LE COMPTE. Depuis que
+        l'entrée porte le visage de Nora ou de Sasha, deux portraits RONDS
+        se retrouvaient empilés en haut à gauche pour deux fonctions
+        différentes : le compte se lisait comme un second personnage. La
+        forme porte la distinction, et ça ne se voit qu'à l'œil, donc ça se
+        redéfait sans que rien ne casse. ── */
+  {
+    const NAV = net(lire("src/components/Navigation.tsx"));
+    const bloc = NAV.slice(NAV.indexOf('data-tour-anchor="nav-profil"'));
+    const bouton = bloc.slice(0, bloc.indexOf("</button>"));
+    verdict(
+      "V7B · l'accès compte est un squircle, jamais un cercle",
+      bouton.length > 0 && !bouton.includes("rounded-full") && bouton.includes("var(--r-controle)"),
+      "rayon nommé, et aucun `rounded-full` sur l'avatar du compte",
+    );
+    verdict(
+      "V7B · et le Guide, lui, reste rond",
+      net(lire("src/components/AssistantMark.tsx")).includes("rounded-full"),
+      "`VisageGuide` garde le cercle",
+    );
+  }
+
   /* ── Les atterrissages. Une mission qui crédite sans s'afficher est un
         bonus caché : c'est la règle du catalogue lui-même. ── */
   verdict(

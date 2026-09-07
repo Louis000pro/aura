@@ -308,14 +308,32 @@ export default function Navigation() {
       {user && (pathname === "/" || pathname === "/progression" || pathname === "/nutrition") && (
         <div className="global-mobile-header md:hidden fixed top-0 left-0 z-40 flex items-center px-3"
           style={{ paddingTop: "calc(env(safe-area-inset-top) + 8px)" }}>
+          {/* ⚠️ CARRÉ TRÈS ARRONDI, ET SURTOUT PAS UN CERCLE (V7B, 2026-09-07).
+                Depuis que l'entrée de l'accueil porte le visage de Nora ou de
+                Sasha, deux portraits RONDS se retrouvaient empilés en haut à
+                gauche, à quelques pixels l'un de l'autre. Ils n'ont pourtant
+                pas la même fonction, et le compte se lisait comme un second
+                personnage. La forme porte donc la distinction, une fois pour
+                toute l'app : LE CERCLE EST LE GUIDE, LE SQUIRCLE EST LE COMPTE.
+
+                ⚠️ Le rayon est NOMMÉ (`--r-controle`, 10 px) : c'est un
+                contrôle, et la règle de composition interdit d'écrire un rayon
+                à la main. Sur 40 px ça donne exactement la proportion d'une
+                icône d'application, donc un carré qu'on ne confond avec aucun
+                visage. Le rail de bureau porte déjà un squircle : cette
+                correction aligne le mobile dessus, elle n'invente rien.
+
+                ⚠️ Ni la cloche, ni la destination, ni l'ancre de la visite
+                guidée ne changent. La taille passe de 36 à 40 px, et c'est
+                tout ce qui bouge. */}
           <button onClick={() => router.push("/profil")} aria-label="Mon profil"
             data-tour-anchor="nav-profil" className="relative shrink-0 active:opacity-80 transition-opacity">
             {user.avatar ? (
-              <Image src={user.avatar} alt="" width={36} height={36}
-                className="h-9 w-9 rounded-full object-cover" unoptimized />
+              <Image src={user.avatar} alt="" width={40} height={40}
+                className="h-10 w-10 object-cover" style={{ borderRadius: "var(--r-controle)" }} unoptimized />
             ) : (
-              <div className="flex h-9 w-9 items-center justify-center rounded-full text-[14px] font-bold text-white"
-                style={{ background: "linear-gradient(135deg, #8B5CF6, #C13BC1)" }}>
+              <div className="flex h-10 w-10 items-center justify-center text-[15px] font-bold text-white"
+                style={{ background: "linear-gradient(135deg, #8B5CF6, #C13BC1)", borderRadius: "var(--r-controle)" }}>
                 {(user.pseudo ?? "?").charAt(0).toUpperCase()}
               </div>
             )}
