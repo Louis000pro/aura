@@ -1,6 +1,6 @@
 import Link from "next/link";
 import LigneMission, { listeMissions } from "@/components/missions/LigneMission";
-import { MISSIONS_PREMIUM } from "@/lib/aura";
+import { MISSIONS_PREMIUM, MISSIONS_PREMIUM_SEMAINE } from "@/lib/aura";
 import { PLANS, VENTE_OUVERTE, formatPrice } from "@/lib/plans";
 
 /**
@@ -36,10 +36,16 @@ export default function InfosPremium({ premiumDebloque = false }: { premiumDeblo
   const free = PLANS.free;
   const premium = PLANS.premium;
 
-  /* Ce que les missions Premium ajoutent en une journée. Calculé depuis le
-     catalogue, jamais écrit : le jour où l'une d'elles change de valeur, ce
-     chiffre suit tout seul. */
+  /* Ce que les missions Premium ajoutent, calculé depuis le catalogue et
+     jamais écrit : le jour où l'une d'elles change de valeur, ces chiffres
+     suivent tout seuls.
+
+     ⚠️ DEUX TOTAUX, ET C'EST TOUT L'INTÉRÊT DE LES SÉPARER. Les quatre
+     missions Premium du jour se rejouent chaque matin ; « Semaine régulière »
+     se compte sur la semaine ISO. Additionner les cinq afficherait un gain
+     quotidien que personne ne peut atteindre en une journée. */
   const expPremiumJour = MISSIONS_PREMIUM.reduce((total, m) => total + m.exp, 0);
+  const expPremiumSemaine = MISSIONS_PREMIUM_SEMAINE.reduce((total, m) => total + m.exp, 0);
 
   return (
     <section className="mt-12 md:mt-16 flex flex-col gap-4 md:gap-5" aria-label="Comprendre l’offre Vaiiya">
@@ -82,12 +88,21 @@ export default function InfosPremium({ premiumDebloque = false }: { premiumDeblo
         </p>
       </div>
 
-      {/* ⭐ V7B · LES QUATRE MISSIONS PREMIUM ATTERRISSENT ICI, EN VRAI.
+      {/* ⭐ V7B · LES MISSIONS PREMIUM ATTERRISSENT ICI, EN VRAI.
           La page les vendait par une phrase abstraite (« des missions
           s'ajoutent à tes journées ») pendant que le coffre qui les montrait
           vivait sur l'accueil, au milieu d'un écran qui n'était plus censé
           vendre. On voit maintenant ce qu'on achète : le nom, la condition,
           le gain, à l'endroit où la question se pose.
+
+          ⚠️ LE CATALOGUE COMPTE CINQ MISSIONS PREMIUM, PAS QUATRE, et la
+          cinquième est HEBDOMADAIRE. Elle a sa propre section parce qu'elle
+          ne se gagne pas au même rythme : la ranger avec les quotidiennes
+          la ferait entrer dans le « + X EXP par jour », c'est-à-dire
+          promettre en une journée un gain qui demande cinq jours. Les deux
+          listes viennent du catalogue (`MISSIONS_PREMIUM` et
+          `MISSIONS_PREMIUM_SEMAINE`), donc basculer une mission d'un rythme
+          à l'autre reste un champ dans `aura.ts` et rien d'autre.
 
           ⚠️ AUCUNE PROGRESSION N'EST AFFICHÉE ICI, et c'est délibéré : la
           page est publique, donc il n'y a pas toujours de compte derrière.
@@ -97,11 +112,17 @@ export default function InfosPremium({ premiumDebloque = false }: { premiumDeblo
         <h2 className="text-xl md:text-2xl font-black mb-1" style={{ color: "var(--text-0)" }}>
           Les missions que {premium.name} ajoute
         </h2>
-        <p className="mb-4 text-sm md:text-base font-light leading-relaxed" style={{ color: "var(--text-body)" }}>
-          Quatre missions de plus chaque jour, soit{" "}
-          <strong style={{ color: "var(--or-encre)" }}>+{expPremiumJour} EXP par jour</strong>. Elles ne sont
-          jamais obligatoires : elles s&apos;ajoutent à celles que tout le monde a, elles ne les remplacent pas.
+        <p className="mb-5 text-sm md:text-base font-light leading-relaxed" style={{ color: "var(--text-body)" }}>
+          Elles ne sont jamais obligatoires : elles s&apos;ajoutent à celles que tout le monde a, elles
+          ne les remplacent pas.
         </p>
+
+        <div className="mb-1.5 flex items-baseline justify-between gap-3">
+          <p className="vy-label">Chaque jour</p>
+          <span className="text-xs font-extrabold" style={{ color: "var(--or-encre)" }}>
+            +{expPremiumJour} EXP / jour
+          </span>
+        </div>
         <div className={listeMissions}>
           {MISSIONS_PREMIUM.map((mission) => (
             <LigneMission
@@ -112,6 +133,27 @@ export default function InfosPremium({ premiumDebloque = false }: { premiumDeblo
             />
           ))}
         </div>
+
+        <div className="mt-6 mb-1.5 flex items-baseline justify-between gap-3">
+          <p className="vy-label">Chaque semaine</p>
+          <span className="text-xs font-extrabold" style={{ color: "var(--or-encre)" }}>
+            +{expPremiumSemaine} EXP / semaine
+          </span>
+        </div>
+        <div className={listeMissions}>
+          {MISSIONS_PREMIUM_SEMAINE.map((mission) => (
+            <LigneMission
+              key={mission.id}
+              mission={mission}
+              debloquee={premiumDebloque}
+              onNavigate={() => {}}
+            />
+          ))}
+        </div>
+        <p className="mt-3 text-sm font-light leading-relaxed" style={{ color: "var(--text-body)" }}>
+          Celle-ci se compte sur la semaine, à côté des deux missions hebdomadaires que tout le monde
+          a. Elle n&apos;entre pas dans le total du jour.
+        </p>
       </div>
 
       <div className={CARTE} style={CARTE_STYLE}>

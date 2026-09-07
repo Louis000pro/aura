@@ -21,7 +21,7 @@ import { etapesDuCycle, etapeSuivante, nomDeProgramme, positionRefermee, POSITIO
 import { etatJournee, intentionDeLEtape, lancementDuJour, libelleReservation, repetitionDuJour } from "@/lib/journee";
 import {
   etatDepuisExp, missionsAuraVides,
-  MISSIONS_JOUR, MISSIONS_PREMIUM, MISSIONS_SEMAINE,
+  MISSIONS, MISSIONS_JOUR, MISSIONS_PREMIUM, MISSIONS_PREMIUM_SEMAINE, MISSIONS_SEMAINE,
   type EtatAura, type MissionId,
 } from "@/lib/aura";
 import {
@@ -1130,26 +1130,68 @@ verdict(
   }
 
   /* ── Les atterrissages. Une mission qui crédite sans s'afficher est un
-        bonus caché : c'est la règle du catalogue lui-même. ── */
+        bonus caché : c'est la règle du catalogue lui-même. Il n'en reste
+        donc que DEUX, et c'est la correction du 2026-09-07 : Profil ›
+        Progrès a rendu les trois hebdomadaires (elles y avaient été
+        posées la veille), la feuille « Voir tout » les porte déjà, et
+        deux endroits pour la même liste, c'est un de trop. ── */
   verdict(
-    "V7B · les trois hebdomadaires sont visibles dans Profil › Progrès",
-    PROFIL.includes("MISSIONS_SEMAINE") && PROFIL.includes("LigneMission"),
-    "dans la zone de constance, qui a exactement le même sujet",
+    "V7B · Profil › Progrès ne porte plus aucune mission",
+    !PROFIL.includes("MISSIONS_") && !PROFIL.includes("LigneMission"),
+    "constance, historique, progression, et rien d'autre",
   );
   verdict(
-    "V7B · les quatre Premium sont visibles sur /premium",
-    OFFRE.includes("MISSIONS_PREMIUM") && OFFRE.includes("LigneMission"),
-    "on voit ce qu'on achète",
+    "V7B · la feuille reste le seul accès quotidien aux hebdomadaires",
+    FEUILLE.includes("MISSIONS_SEMAINE"),
+    "à un geste de l'accueil, jamais deux listes à tenir d'accord",
   );
+
+  /* ── /premium montre CINQ missions Premium, pas quatre, et la cinquième
+        est hebdomadaire. L'oublier laissait une mission qui crédite sans
+        jamais se montrer là où on l'achète. ── */
+  const premiums = MISSIONS.filter((m) => m.premium);
+  verdict(
+    "V7B · le catalogue compte cinq missions Premium, quatre + une",
+    premiums.length === MISSIONS_PREMIUM.length + MISSIONS_PREMIUM_SEMAINE.length &&
+      MISSIONS_PREMIUM_SEMAINE.length === 1,
+    premiums.map((m) => m.titre).join(" · "),
+  );
+  verdict(
+    "V7B · /premium rend les deux familles depuis le catalogue",
+    OFFRE.includes("MISSIONS_PREMIUM.map") &&
+      OFFRE.includes("MISSIONS_PREMIUM_SEMAINE.map") &&
+      OFFRE.includes("LigneMission"),
+    "les quotidiennes et l'hebdomadaire, jamais une liste recopiée",
+  );
+  verdict(
+    "V7B · l'hebdomadaire n'entre pas dans le total « par jour »",
+    MISSIONS_PREMIUM.every((m) => m.periode === "jour") &&
+      MISSIONS_PREMIUM_SEMAINE.every((m) => m.periode === "semaine") &&
+      OFFRE.includes("MISSIONS_PREMIUM_SEMAINE.reduce"),
+    "deux totaux séparés, +X / jour et +Y / semaine",
+  );
+
+  /* ── Et rien ne se perd en route : les trois familles rendues par la
+        feuille SONT le catalogue entier. Une mission ajoutée à `MISSIONS`
+        sans période exploitable disparaîtrait de tous les écrans. ── */
+  {
+    const rendues = [...MISSIONS_JOUR, ...MISSIONS_PREMIUM, ...MISSIONS_SEMAINE];
+    verdict(
+      "V7B · les trois listes de la feuille couvrent tout le catalogue",
+      rendues.length === MISSIONS.length &&
+        MISSIONS.every((m) => rendues.includes(m)),
+      rendues.length + " missions sur " + MISSIONS.length,
+    );
+  }
+
   verdict(
     "V7B · une seule écriture de la ligne de mission dans tout le produit",
     [
       "src/components/accueil/FeuilleMissions.tsx",
       "src/components/accueil/MaJournee.tsx",
-      "src/app/profil/page.tsx",
       "src/app/premium/InfosPremium.tsx",
     ].every((f) => lire(f).includes("@/components/missions/LigneMission")),
-    "quatre surfaces, un seul composant",
+    "trois surfaces, un seul composant",
   );
 }
 

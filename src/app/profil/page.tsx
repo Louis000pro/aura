@@ -17,9 +17,7 @@ import GemmeRang from "@/components/GemmeRang";
 import EtatVideGuide from "@/components/EtatVideGuide";
 import RangsModal from "@/components/rang/RangsModal";
 import { AvatarRang, PseudoRang, TitreRang } from "@/components/rang/IdentiteRang";
-import { calculerAura, cosmetiquesDuRang, MISSIONS_SEMAINE, RANGS, type EtatAura } from "@/lib/aura";
-import { missionDebloquee } from "@/lib/missionsAccueil";
-import LigneMission, { listeMissions } from "@/components/missions/LigneMission";
+import { calculerAura, cosmetiquesDuRang, RANGS, type EtatAura } from "@/lib/aura";
 import { noterRang } from "@/lib/celebrationRang";
 import { SERIES, imageEtat, type SerieSlug } from "@/lib/defi";
 import { chargerBadgesAura } from "@/lib/badgesAura";
@@ -1140,35 +1138,6 @@ export default function ProfilPage() {
                      badges de régularité, et il n'en existe qu'un. */
                   serieRecord={progresBadges?.serie ?? null}
                 />
-
-                {/* ⭐ V7B · LES TROIS MISSIONS DE LA SEMAINE ATTERRISSENT ICI.
-                    Elles ont quitté l'accueil, qui répond désormais à « ce que
-                    je fais aujourd'hui ». Elles ne pouvaient pas simplement
-                    disparaître : une mission qui crédite sans s'afficher est un
-                    bonus caché, et c'est le catalogue lui-même qui l'interdit.
-
-                    ⚠️ ELLES SONT DANS LA ZONE DE CONSTANCE, ET C'EST LE BON
-                    SUJET : « 3, 5, 7 jours validés » compte exactement ce que
-                    la grille du dessus dessine. Ce sont les quatre missions
-                    QUOTIDIENNES qui n'ont rien à faire ici, et elles n'y sont
-                    pas : elles vivent dans la feuille « Missions » de
-                    l'accueil, à un geste de là où on en a besoin. */}
-                {aura && (
-                  <div className="vy-filet px-4 py-4">
-                    <p className="vy-label mb-2.5">Cette semaine</p>
-                    <div className={listeMissions}>
-                      {MISSIONS_SEMAINE.map((mission) => (
-                        <LigneMission
-                          key={mission.id}
-                          mission={mission}
-                          etat={aura.missions[mission.id]}
-                          debloquee={missionDebloquee(mission, !!user?.is_premium || !!user?.is_admin)}
-                          onNavigate={(path) => router.push(path)}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                )}
               </div>
             )}
 
