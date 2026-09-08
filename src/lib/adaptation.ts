@@ -416,7 +416,11 @@ export async function creerAdaptation(input: CreationAdaptation): Promise<Result
          proposer de LA MODIFIER, jamais d'en créer une seconde. */
       const message = error?.message ?? "";
       if (message.includes("adaptations_sans_chevauchement")) {
-        return { ok: false, raison: "Une adaptation couvre déjà ces jours. Modifie-la plutôt que d’en créer une seconde." };
+        /* ⚠️ ON NE PROMET QUE CE QUE L'ÉCRAN SAIT FAIRE. « Modifie-la »
+           serait la bonne phrase le jour où l'écran sait modifier une
+           adaptation en cours ; aujourd'hui il sait l'arrêter, et c'est
+           donc ça qu'on propose. */
+        return { ok: false, raison: "Une adaptation couvre déjà ces jours. Arrête-la d’abord, ou choisis d’autres dates." };
       }
       console.warn("[adaptation] création impossible :", message);
       return { ok: false, raison: "L’adaptation n’a pas pu être enregistrée." };
