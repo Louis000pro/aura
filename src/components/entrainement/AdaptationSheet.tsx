@@ -24,6 +24,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { Check, X } from "lucide-react";
+import { lockBodyModal } from "@/lib/bodyModal";
 import {
   ajouterJours, creerAdaptation, fermerAdaptations, finParDefaut, libelleJour,
   REEVALUATION_SEMAINES, reservationsEnConflit, validerAxes,
@@ -151,6 +152,11 @@ export default function AdaptationSheet({
     onClose();
   }, [adaptation, onChange, onClose]);
 
+  /* La nav du bas s'efface tant que la feuille est ouverte : c'est ce que
+     fait `Sheet` pour Organiser, Choisir et Improviser, et l'oublier ici
+     laissait le bouton d'activation collé a la barre fixe. */
+  useEffect(() => lockBodyModal(), []);
+
   const nomDe = (id: string) => cycle.find((e) => e.id === id)?.nom ?? "";
 
   return (
@@ -168,7 +174,7 @@ export default function AdaptationSheet({
           background: "rgb(var(--surface-rgb))",
           border: "1px solid rgba(var(--accent-rgb),0.14)",
           boxShadow: "0 -14px 44px rgba(0,0,0,0.35)",
-          maxHeight: "88vh",
+          maxHeight: "88dvh",
         }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -192,7 +198,7 @@ export default function AdaptationSheet({
           </motion.button>
         </div>
 
-        <div className="overflow-y-auto px-5 flex-1" style={{ scrollbarWidth: "none", paddingBottom: "calc(1.25rem + env(safe-area-inset-bottom))" }}>
+        <div className="overflow-y-auto px-5 flex-1" style={{ scrollbarWidth: "none", paddingBottom: "calc(2rem + env(safe-area-inset-bottom))" }}>
 
           {/* ── Ce qui est en cours ── */}
           {adaptation && (
