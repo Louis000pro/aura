@@ -134,7 +134,13 @@ function buildSystemPrompt(
   ctx: UserContext | null,
   pseudo: string,
   live?: LiveStats | null,
-  programme?: string | null,
+  /* V9A · CE QUE VAIIYA SAIT DE SON ENTRAÎNEMENT, composé par
+     `resumeMoteur` (`src/lib/guideMoteur.ts`). Le paramètre s'appelait
+     `programme` et n'était plus renseigné par PERSONNE depuis V0 : ses
+     deux appelants d'origine (le chat de l'accueil et /coach) ont été
+     supprimés, donc le bloc était vide à chaque tour et le coach
+     répondait « qu'est-ce que j'ai de prévu ? » à partir de rien. */
+  moteur?: string | null,
   rich?: RichProfile | null,
   lieu?: string | null,
   equip?: string | null,
@@ -209,7 +215,7 @@ ${lieu === "salle"
   : `Lieu d’entraînement inconnu → reste NEUTRE sur le lieu dans ta phrase (ne dis ni "en salle" ni "à la maison") : l’app posera elle-même la question avec des réponses à toucher, puis reprendra la demande. Tu ne DÉDUIS JAMAIS le lieu et tu n’en SUPPOSES aucun.`}
 Quand l’utilisateur t’indique son lieu d’entraînement (ex: "à la maison", "en salle", "chez moi", "à la gym", "j’ai des haltères"), tu n’as rien à faire : l’app le retient toute seule. Accuse simplement réception en une phrase.
 
-${buildSiteKnowledgePrompt(currentPage ?? undefined, !memoryEnabled)}${memoryEnabled ? buildMemoryPrompt(memories) : ""}${programme ? `\n\nProgramme actuel :\n${programme}` : ""}${tonDuGuide(guide ?? null)}`;
+${buildSiteKnowledgePrompt(currentPage ?? undefined, !memoryEnabled)}${memoryEnabled ? buildMemoryPrompt(memories) : ""}${moteur ? `\n\nSON ENTRAÎNEMENT, TEL QUE VAIIYA LE SAIT (relu à chaque message) :\n${moteur}\nCe bloc est la SEULE vérité sur son programme, son cycle, ses séances datées et son adaptation. Réponds à « qu’est-ce que j’ai de prévu ? », « c’est quoi ma prochaine séance ? », « j’ai quelque chose jeudi ? », « mon adaptation est encore active ? », « pourquoi tu me proposes celle-là ? » directement à partir de lui, en une ou deux phrases, avec les vrais noms et les vrais jours. ⚠️ N’invente JAMAIS une étape, une date ou une séance qui n’y figure pas, et ne déduis rien d’un titre : ce qui n’est pas écrit ici n’existe pas. S’il n’y a pas de programme ou rien de daté, dis-le simplement, sans t’excuser et sans le combler.` : ""}${tonDuGuide(guide ?? null)}`;
 
   // ── Bloc stats du jour ──
   const statsBlock = live ? `
@@ -314,7 +320,7 @@ export async function POST(req: NextRequest) {
   let userContext: UserContext | null = null;
   let pseudo = "";
   let liveStats: LiveStats | null = null;
-  let programme: string | null = null;
+  let moteur: string | null = null;
   let richProfile: RichProfile | null = null;
   let lieu: string | null = null;
   let lieuEquip: string | null = null;
@@ -333,7 +339,7 @@ export async function POST(req: NextRequest) {
     userContext = body.userContext ?? null;
     pseudo = body.pseudo ?? "";
     liveStats = body.liveStats ?? null;
-    programme = body.programme ?? null;
+    moteur = body.moteur ?? null;
     richProfile = body.richProfile ?? null;
     lieu = body.lieu ?? null;
     lieuEquip = body.lieu_equip ?? null;
@@ -390,7 +396,7 @@ export async function POST(req: NextRequest) {
   const action = ndjson ? await deciderAction(historique) : null;
 
   const systemPrompt =
-    buildSystemPrompt(userContext, pseudo, liveStats, programme, richProfile, lieu, lieuEquip, currentPage, memories, memoryEnabled, guide) +
+    buildSystemPrompt(userContext, pseudo, liveStats, moteur, richProfile, lieu, lieuEquip, currentPage, memories, memoryEnabled, guide) +
     (ndjson ? cadreAction(action) : "");
 
   try {

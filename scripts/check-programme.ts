@@ -34,6 +34,11 @@ import {
   refModele, lienProgramme, prochainsJours, todayYmd,
   type PlanningDay, type CycleSemaine,
 } from "@/lib/planning";
+import { ASSISTANT_TOOLS } from "@/lib/assistantTools";
+import {
+  etatMoteur, invaliderMoteur, resumeMoteur, TTL_MOTEUR_MS,
+  type EtatMoteur, type SeanceMoteur,
+} from "@/lib/guideMoteur";
 import {
   adaptationActive, ajouterJours, chevauchent, datesEntre, estExpiree, etapeMasquee,
   etapesCompatibles, finParDefaut, idsMasques, libelleJour, REEVALUATION_SEMAINES,
@@ -1764,6 +1769,328 @@ verdict(
       "V8 · le défaut de position_initiale est corrigé au passage",
       MIGRATION.includes("alter column position_initiale set default 1"),
       "les positions du cycle commencent à 1",
+    );
+  }
+}
+
+
+/* ════════════════════════════════════════════════════════════════════
+   V9A · LE GUIDE VOIT LE MOTEUR (2026-09-08)
+
+   Le Guide ne savait RIEN du programme : le paramètre `programme` de
+   `buildSystemPrompt` n'était plus renseigné par personne depuis V0. Ce
+   bloc exerce les deux choses que V9A ajoute, et elles sont toutes les
+   deux vérifiables hors ligne sur une app pourtant auth-gated :
+   `resumeMoteur`, qui est PURE, et la FRAÎCHEUR du cache, qui se pilote
+   par sa lecture injectée.
+
+   ⚠️ CE QUI SE VÉRIFIE ICI, C'EST AUSSI CE QUI N'A PAS BOUGÉ : le prompt
+   de l'aiguilleur, la liste des outils, et le fait que le module neuf
+   n'écrive rien. Une vague de LECTURE se prouve autant par ses absences.
+   ════════════════════════════════════════════════════════════════════ */
+{
+  const AUJ = "2026-09-08";                 // un mardi
+  const CYCLE = [
+    { id: "e-push", nom: "Push", position: 1 },
+    { id: "e-pull", nom: "Pull", position: 2 },
+    { id: "e-bas", nom: "Bas du corps", position: 3 },
+    { id: "e-haut", nom: "Haut du corps", position: 4 },
+    { id: "e-cardio", nom: "Cardio", position: 5 },
+  ];
+  const COUCHE: Adaptation = {
+    id: "a1", userId: "u1", programmeId: "p1",
+    debut: "2026-09-08", fin: "2026-10-06", statut: "active",
+    motif: "épaule sensible", axes: { eviter_etapes: ["e-push"] },
+    axesVersion: 1, origine: "utilisateur", fermeeLe: null,
+  };
+  const seance = (date: string, titre: string, over: Partial<SeanceMoteur> = {}): SeanceMoteur => ({
+    date, titre, faite: false, etapeId: null, provenanceId: null, supplement: false, ...over,
+  });
+  const etat = (over: Partial<EtatMoteur> = {}): EtatMoteur => ({
+    aujourdhui: AUJ,
+    programme: { id: "p1", nom: "Santé générale" },
+    cycle: CYCLE,
+    etapeBrute: { id: "e-pull", nom: "Pull" },
+    etape: { id: "e-pull", nom: "Pull" },
+    reserveLe: null,
+    adaptation: null,
+    masquees: [],
+    aVenir: [],
+    recent: [],
+    contexte: { seancesCible: 5, dureeCibleMin: null },
+    ...over,
+  });
+
+  /* ── 1. Ce que le résumé dit, état par état ─────────────────────── */
+
+  verdict(
+    "V9A · rien à lire → aucun bloc, et surtout pas un bloc vide",
+    resumeMoteur(null) === null,
+    "le prompt du coach ne porte alors PAS la section entraînement",
+  );
+
+  {
+    /* Un compte SANS programme n'est pas un compte cassé : il peut avoir
+       des séances datées. On dit l'absence, on n'invente aucune étape. */
+    const r = resumeMoteur(etat({
+      programme: null, cycle: [], etapeBrute: null, etape: null, contexte: null,
+      aVenir: [seance("2026-09-10", "HIIT 20/10")],
+    })) ?? "";
+    verdict(
+      "V9A · sans programme, on le dit et on n’invente aucune étape",
+      r.includes("Programme actif : aucun.") && !r.includes("Prochaine étape") && r.includes("HIIT 20/10"),
+      "ce qui n’est pas écrit dans le bloc n’existe pas pour le coach",
+    );
+  }
+
+  {
+    const r = resumeMoteur(etat()) ?? "";
+    verdict(
+      "V9A · programme sans planning → la prochaine étape, et « rien de daté »",
+      r.includes("Santé générale") && r.includes("Cycle qui tourne : Push, Pull, Bas du corps, Haut du corps, Cardio.")
+        && r.includes("Prochaine étape : Pull, pas encore datée (quand il veut).")
+        && r.includes("Prévu (7 jours) : rien de daté."),
+      "« quand tu veux » est la vérité d’une étape sans date (V5)",
+    );
+  }
+
+  {
+    /* La réservation V7A : l'étape a DÉJÀ un jour, et le taire est ce qui
+       avait autorisé une seconde fermeture le 2026-09-06. */
+    const r = resumeMoteur(etat({ reserveLe: "2026-09-10" })) ?? "";
+    verdict(
+      "V9A · une étape réservée dit son jour, jamais « quand tu veux »",
+      r.includes("Prochaine étape : Pull, prévue jeudi 10.") && !r.includes("quand il veut"),
+      "elle se cherche en base, où qu’elle soit posée dans le calendrier",
+    );
+  }
+
+  {
+    const r = resumeMoteur(etat({
+      aVenir: [
+        seance(AUJ, "Bas du corps", { etapeId: "e-bas" }),
+        seance(AUJ, "Cardio doux", { supplement: true }),
+        seance("2026-09-09", "Pull"),
+      ],
+    })) ?? "";
+    verdict(
+      "V9A · deux séances le même jour : la principale, puis le supplément",
+      r.includes("aujourd’hui Bas du corps · aujourd’hui Cardio doux (en plus) · demain Pull."),
+      "la hiérarchie se déduit (V6b), elle ne se stocke pas",
+    );
+  }
+
+  {
+    /* Le cas du scénario : le curseur pointe Push, l'adaptation la masque,
+       et le Guide doit pouvoir répondre « pourquoi tu me proposes Pull ? ». */
+    const r = resumeMoteur(etat({
+      etapeBrute: { id: "e-push", nom: "Push" }, adaptation: COUCHE, masquees: ["Push"],
+    })) ?? "";
+    verdict(
+      "V9A · l’adaptation explique POURQUOI c’est cette étape-là",
+      r.includes("Prochaine étape : Pull") && r.includes("Push vient avant dans le cycle, mais elle est mise de côté")
+        && r.includes("Adaptation en cours jusqu’au 6 oct. : Push mise(s) de côté."),
+      "la cinquième question du scénario se répond sans un seul outil de lecture",
+    );
+  }
+
+  {
+    /* V8 · l'adaptation masque TOUT le cycle : ce n'est ni « libre » ni
+       « repos », et surtout on n'invente aucune séance de remplacement. */
+    const r = resumeMoteur(etat({
+      etapeBrute: null, etape: null, adaptation: COUCHE,
+      masquees: CYCLE.map((e) => e.nom),
+    })) ?? "";
+    verdict(
+      "V9A · tout le cycle masqué → on le dit, on ne propose rien d’inventé",
+      r.includes("l’adaptation en cours met tout le cycle de côté")
+        && !r.includes("Prochaine étape : Pull"),
+      "V9A n’adapte pas le CONTENU : en proposer un serait promettre ce qu’on ne sait pas faire",
+    );
+  }
+
+  {
+    /* Une adaptation expirée n'arrive jamais jusqu'ici : `adaptationDuJour`
+       recalcule sa fenêtre et rend `null`. Le résumé ne doit alors porter
+       aucune trace d'adaptation. */
+    verdict(
+      "V9A · adaptation expirée → pas une ligne dans le résumé",
+      estExpiree(COUCHE, "2026-10-07")
+        && !(resumeMoteur(etat({ adaptation: null })) ?? "").includes("Adaptation"),
+      "l’expiration se DÉDUIT, elle n’attend aucune écriture (V8)",
+    );
+  }
+
+  {
+    const faits = [
+      seance("2026-09-07", "Push", { faite: true, etapeId: "e-push" }),
+      seance("2026-09-04", "Cardio", { faite: true }),
+    ];
+    const r = resumeMoteur(etat({ recent: faits })) ?? "";
+    verdict(
+      "V9A · « qu’est-ce que j’ai fait ? » se répond depuis la même fenêtre",
+      r.includes("Fait récemment : lundi 7 Push · vendredi 4 Cardio."),
+      "sept jours devant et sept derrière : c’est UNE requête, pas deux",
+    );
+  }
+
+  /* ── 2. Le résumé est BORNÉ, et c'est la promesse de la vague ──
+     « Pas de gros contexte envoyé au modèle » ne tient que si le bloc ne
+     grossit pas avec les données de quelqu'un. */
+  {
+    const beaucoup = Array.from({ length: 20 }, (_, i) =>
+      seance("2026-09-" + String(9 + (i % 6)).padStart(2, "0"), "Une séance au titre interminable numéro " + i));
+    const r = resumeMoteur(etat({
+      aVenir: beaucoup,
+      recent: beaucoup.map((s) => ({ ...s, faite: true })),
+      adaptation: { ...COUCHE, motif: "M".repeat(400) },
+      masquees: ["Push"],
+    })) ?? "";
+    verdict(
+      "V9A · le résumé reste borné, quel que soit le planning",
+      r.length < 1200 && r.includes("et 14 autre(s)") && !r.includes("M".repeat(70)),
+      r.length + " caractères pour 20 séances à venir, 20 faites et un motif de 400",
+    );
+    const nu = resumeMoteur(etat({ reserveLe: "2026-09-10", adaptation: COUCHE, masquees: ["Push"] })) ?? "";
+    verdict(
+      "V9A · dans un état normal, il tient en quelques centaines de caractères",
+      nu.length > 0 && nu.length < 600,
+      nu.length + " caractères",
+    );
+  }
+
+  /* ── 3. LA FRAÎCHEUR. C'est le défaut d'`ensureContext()` qu'on
+     s'interdit : lire une fois par session et ne jamais relire est
+     acceptable pour un profil, faux pour un moteur. ── */
+  {
+    let lectures = 0;
+    let prochaine = "Pull";
+    const lire = async () => { lectures++; return etat({ etape: { id: "e-x", nom: prochaine } }); };
+
+    const a = resumeMoteur(await etatMoteur("u1", lire)) ?? "";
+    const b = resumeMoteur(await etatMoteur("u1", lire)) ?? "";
+    verdict(
+      "V9A · deux messages d’affilée ne relisent pas le moteur",
+      lectures === 1 && a === b && a.includes("Pull"),
+      "une rafale de messages ne coûte pas sept requêtes par message",
+    );
+
+    /* Le témoin du scénario : message 1 → Pull, la journée change,
+       message 2 → Bas du corps, SANS recréer la conversation. */
+    prochaine = "Bas du corps";
+    invaliderMoteur();
+    const c = resumeMoteur(await etatMoteur("u1", lire)) ?? "";
+    verdict(
+      "V9A · après un évènement de journée, le message suivant voit le nouvel état",
+      lectures === 2 && c.includes("Bas du corps") && !c.includes("Prochaine étape : Pull"),
+      "sans ça, le Guide annoncerait Pull une heure après que Pull a été faite",
+    );
+
+    const avant = lectures;
+    await etatMoteur("u2", lire);
+    verdict(
+      "V9A · le cache est nominatif : changer de compte relit",
+      lectures === avant + 1,
+      "un cache qui servirait l’état d’autrui serait pire que pas de cache",
+    );
+    invaliderMoteur();
+    verdict(
+      "V9A · le cache est court par lui-même",
+      TTL_MOTEUR_MS > 0 && TTL_MOTEUR_MS <= 60_000,
+      TTL_MOTEUR_MS / 1000 + " s, et `EVT_JOURNEE` le vide avant l’heure",
+    );
+  }
+
+  /* ── 4. LES CONTRÔLES DE SOURCE ────────────────────────────────────
+     Ce sont des propriétés du CHEMIN (qui lit, qui écrit, qui grossit),
+     donc exactement celles qui repasseraient inaperçues. ── */
+  {
+    const lireF = (f: string) => readFileSync(new URL("../" + f, import.meta.url), "utf8");
+    const net = (t: string) => t.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
+    const MOTEUR = net(lireF("src/lib/guideMoteur.ts"));
+    const ROUTE = net(lireF("src/app/api/chat/route.ts"));
+    const CTX = net(lireF("src/context/AssistantContext.tsx"));
+    const ROUTEUR = lireF("src/lib/assistantRouter.ts");
+    const OUTILS = net(lireF("src/lib/assistantTools.ts"));
+
+    verdict(
+      "V9A · le Guide REGARDE : `guideMoteur` n’écrit rien du tout",
+      !/\.(insert|upsert|update|delete)\(/.test(MOTEUR),
+      "aucune écriture, aucune carte, aucune migration dans cette vague",
+    );
+    verdict(
+      "V9A · il ne touche ni au programme de référence ni aux adaptations",
+      !MOTEUR.includes('from("programmes")') && !MOTEUR.includes('from("programme_seances")')
+        && !MOTEUR.includes('from("adaptations_entrainement")'),
+      "il passe par `lireProgrammeActif` et `adaptationDuJour`, pas par les tables",
+    );
+    verdict(
+      "V9A · il compose les autorités, il ne redécide rien",
+      MOTEUR.includes("lireProgrammeActif(") && MOTEUR.includes("positionConsommee(")
+        && MOTEUR.includes("etapeSuivante(") && MOTEUR.includes("etapeMasquee(")
+        && MOTEUR.includes("reservationDeLEtape(") && MOTEUR.includes("principale("),
+      "le curseur, le masquage, la réservation et la hiérarchie restent chez eux",
+    );
+    verdict(
+      "V9A · aucune identité ne se devine par un titre",
+      MOTEUR.includes("etat.etapeBrute.id !== etat.etape.id")
+        && !/\.(nom|titre|title)\s*===/.test(MOTEUR),
+      "les noms ne servent qu’à ÉCRIRE le résumé, jamais à décider",
+    );
+    verdict(
+      "V9A · le curseur ne se lit qu’UNE fois pour deux dérivations",
+      (MOTEUR.match(/positionConsommee\(/g) ?? []).length === 1
+        && (MOTEUR.match(/etapeSuivante[<(]/g) ?? []).length === 2,
+      "passer deux fois par `etapeSuivanteDe` referait la requête pour rien",
+    );
+    verdict(
+      "V9A · la fraîcheur est branchée sur l’évènement que tout le monde émet déjà",
+      MOTEUR.includes("addEventListener(EVT_JOURNEE, invaliderMoteur)"),
+      "une fin de séance rend le message suivant conscient du nouvel état",
+    );
+
+    verdict(
+      "V9A · le paramètre mort de `buildSystemPrompt` est REMPLACÉ, pas doublé",
+      ROUTE.includes("moteur?: string | null") && !ROUTE.includes("Programme actuel")
+        && !/\bbody\.programme\b/.test(ROUTE),
+      "deux chemins vers le même bloc, c’est la divergence programmée",
+    );
+    verdict(
+      "V9A · le bloc interdit d’inventer au-delà de ce qu’il contient",
+      ROUTE.includes("N’invente JAMAIS une étape, une date ou une séance qui n’y figure pas"),
+      "un coach qui comble un trou est pire qu’un coach qui dit « rien de prévu »",
+    );
+    verdict(
+      "V9A · l’assistant envoie le résumé, relu à chaque message",
+      CTX.includes("resumeMoteur(await etatMoteur(user.id)") && CTX.includes("moteur,"),
+      "il ne passe PAS par `ensureContext`, qui ne relit jamais",
+    );
+
+    /* ⚠️ L'AIGUILLEUR RESTE AVEUGLE, ET C'EST LA MESURE QUI COMMANDE
+       TOUTE LA VAGUE : 241 caractères → l'outil est appelé 6 fois sur 6 ;
+       5 371 → 1 fois sur 6. Chaque caractère ajouté ici abîme une
+       décision d'action qui marche à 24 cas sur 25. */
+    const prompt = (ROUTEUR.match(/const PROMPT = `([\s\S]*?)`;/) ?? [])[1] ?? "";
+    verdict(
+      "V9A · le prompt de l’aiguilleur n’a pas grossi d’un caractère",
+      prompt.length > 0 && prompt.length <= 400,
+      prompt.length + " caractères (la fiabilité s’effondre bien avant 5 371)",
+    );
+    verdict(
+      "V9A · l’aiguilleur ne sait rien du moteur",
+      !/guideMoteur|resumeMoteur|etatMoteur/.test(ROUTEUR),
+      "il appelle l’outil sans connaître le nom de l’étape : c’est le CODE qui résout",
+    );
+    verdict(
+      "V9A · aucun outil de lecture n’a été créé",
+      ASSISTANT_TOOLS.length === 12 && !OUTILS.includes("guideMoteur")
+        && !ASSISTANT_TOOLS.some((t) => /lire|read|get_|voir|etat_|moteur/.test(t.function.name)),
+      ASSISTANT_TOOLS.length + " outils, tous des ACTIONS",
+    );
+    verdict(
+      "V9A · aucun outil d’ÉCRITURE nouveau non plus",
+      !ASSISTANT_TOOLS.some((t) => /sauter|substitu|supplement|adaptation|retirer/.test(t.function.name)),
+      "substitution, saut, supplément et adaptation attendent V9B à V9D",
     );
   }
 }

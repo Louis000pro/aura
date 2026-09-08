@@ -461,8 +461,16 @@ export function positionRefermee(
   return cycle.find((e) => e.id === derniere.etapeId)?.position ?? null;
 }
 
-/** La position de la dernière étape refermée, ou `null`. */
-async function positionConsommee(userId: string, actif: ProgrammeEtCycle): Promise<number | null> {
+/**
+ * La position de la dernière étape refermée, ou `null`.
+ *
+ * ⚠️ EXPOSÉE EN V9A, ET C'EST CE QUI ÉVITE UNE SECONDE LECTURE DU
+ * CURSEUR. Le Guide a besoin des DEUX étapes suivantes : celle que le
+ * cycle donne, et celle que l'adaptation laisse passer. Passer deux fois
+ * par `etapeSuivanteDe` referait cette requête pour rien ; on lit la
+ * position une fois, et `etapeSuivante` (pure) la dérive deux fois.
+ */
+export async function positionConsommee(userId: string, actif: ProgrammeEtCycle): Promise<number | null> {
   const supabase = createClient();
   try {
     const sc = await schemaIntentions();

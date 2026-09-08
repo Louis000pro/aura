@@ -38,6 +38,7 @@ import {
 } from "@/lib/planning";
 import { lireProgrammeActif } from "@/lib/programme";
 import { adaptationDuJour, idsMasques } from "@/lib/adaptation";
+import { etatMoteur, resumeMoteur } from "@/lib/guideMoteur";
 
 type MemoryAction =
   | { type: "save"; category?: string; fact?: string }
@@ -1249,6 +1250,15 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
     // → évite le 413 « request too large » sur les longues conversations).
     const history = [...messages, userMsg].slice(-10).map((m) => ({ role: m.role, content: m.content }));
 
+    /* ⚠️ V9A · LE MOTEUR SE RELIT, IL NE SE MET PAS EN CACHE DE SESSION.
+       `ensureContext()` charge une fois et ne relit jamais (`dataLoadedRef`)
+       : c'est acceptable pour un profil, c'est FAUX pour un programme, dont
+       l'état change à chaque séance terminée. Sans ça, le Guide continuerait
+       d'annoncer Pull une heure après que Pull a été faite. Le cache d'ici
+       est court et `EVT_JOURNEE` le vide, donc toute écriture existante
+       rend le message suivant conscient du nouvel état. */
+    const moteur = user?.id ? resumeMoteur(await etatMoteur(user.id).catch(() => null)) : null;
+
     try {
       const abort = new AbortController();
       abortRef.current = abort;
@@ -1260,6 +1270,10 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
           userContext: userContextRef.current,
           pseudo: user?.pseudo,
           liveStats: liveStatsRef.current,
+          // V9A · le programme, le cycle, les séances datées et l'adaptation,
+          // en quelques centaines de caractères. C'est la source unique du
+          // coach là-dessus : il n'a aucun outil pour aller la chercher.
+          moteur,
           richProfile: richProfileRef.current,
           currentPage: pathname,
           memories: memoriesRef.current,
@@ -1475,8 +1489,14 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
   const open = useCallback((prefill?: string) => {
     setIsOpen(true);
     void ensureContext();
+    /* V9A · on remplit le cache du moteur pendant que la feuille s'ouvre,
+       donc AVANT le premier message. Sans ça, la première phrase paierait
+       les lectures ; ici elles se font pendant qu'on tape. Un échec ne
+       coûte rien : `sendMessage` relit. */
+    const qui = user?.id;
+    if (qui) void etatMoteur(qui).catch(() => null);
     if (prefill && prefill.trim()) sendMessage(prefill);
-  }, [ensureContext, sendMessage]);
+  }, [ensureContext, sendMessage, user?.id]);
   const close = useCallback(() => setIsOpen(false), []);
   const toggle = useCallback(() => setIsOpen((v) => !v), []);
   const clear = useCallback(() => {
