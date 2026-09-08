@@ -37,7 +37,7 @@
    ════════════════════════════════════════════════════════════════════ */
 
 import { createClient } from "@/lib/supabase";
-import { cycleDeReference, schemaIntentions } from "@/lib/planning";
+import { adaptationsDisponibles, cycleDeReference, schemaIntentions } from "@/lib/planning";
 import { libelleObjectif } from "@/lib/profilOnboarding";
 
 /** La première étape du cycle. Les positions sont numérotées à partir de
@@ -133,27 +133,51 @@ export function nomDeProgramme(objectifs: string[] | null | undefined): string {
  * ⚠️ Le cycle TOURNE : après la dernière étape, on revient à la
  * première. C'est ce qui permet à trois lignes de tenir des mois sans
  * qu'on écrive une seule séance d'avance.
+ *
+ * ⚠️ V8 · `masquee` EST UN FILTRE DE LECTURE, ET IL NE TOUCHE PAS AU
+ * CURSEUR. Une adaptation temporaire peut rendre une étape impossible :
+ * on la TRAVERSE, on ne la consomme pas. Aucune intention n'est écrite,
+ * aucun `consommee_le` n'est posé, la position refermée reste celle du
+ * dernier fait réel, et l'étape masquée revient d'elle-même au tour
+ * suivant du cycle, une fois l'adaptation finie. C'est exactement ce qui
+ * distingue « masquer » de « sauter » : sauter refermerait une étape que
+ * personne n'a faite, donc falsifierait l'historique.
+ *
+ * Sans `masquee`, le comportement est celui d'avant V8, à l'identique.
+ * Rend `null` quand TOUTES les étapes sont masquées : il n'y a alors
+ * rien à proposer, et inventer une séance serait mentir.
  */
 export function etapeSuivante<T extends { position: number }>(
   cycle: T[],
   positionConsommee: number | null,
   positionInitiale: number = POSITION_INITIALE,
+  masquee?: (etape: T) => boolean,
 ): T | null {
   if (cycle.length === 0) return null;
   const ordonne = [...cycle].sort((a, b) => a.position - b.position);
+  const auReport = () => {
+    const i = ordonne.findIndex((e) => e.position === positionInitiale);
+    return i === -1 ? 0 : i;
+  };
 
+  let depart: number;
   if (positionConsommee === null) {
     // Le départ : l'étape à la position de report, sinon la première du
     // cycle. `position_initiale` est ce qui empêche un simple ajustement
     // de programme de renvoyer tout le monde à l'étape 1.
-    return ordonne.find((e) => e.position === positionInitiale) ?? ordonne[0];
+    depart = auReport();
+  } else {
+    const i = ordonne.findIndex((e) => e.position === positionConsommee);
+    // Étape inconnue (elle appartenait à une version archivée) : on repart
+    // du point de report plutôt que de rendre « rien à faire ».
+    depart = i === -1 ? auReport() : (i + 1) % ordonne.length;
   }
 
-  const i = ordonne.findIndex((e) => e.position === positionConsommee);
-  // Étape inconnue (elle appartenait à une version archivée) : on repart
-  // du point de report plutôt que de rendre « rien à faire ».
-  if (i === -1) return ordonne.find((e) => e.position === positionInitiale) ?? ordonne[0];
-  return ordonne[(i + 1) % ordonne.length];
+  for (let pas = 0; pas < ordonne.length; pas++) {
+    const candidate = ordonne[(depart + pas) % ordonne.length];
+    if (!masquee || !masquee(candidate)) return candidate;
+  }
+  return null;
 }
 
 /* ═══════════════ La partie qui lit et qui écrit ═══════════════ */
@@ -340,9 +364,14 @@ export async function consommerEtape(
   programmeId: string,
   etapeId: string,
   jour: { date: string; type: string; title: string; difficulty: string; location: string | null; exerciseList: unknown[] },
+  /* V8 · l'adaptation sous laquelle cette séance a été matérialisée.
+     Une TRACE, jamais une décision : rien ne la relit pour savoir quoi
+     proposer. */
+  adaptationId: string | null = null,
 ): Promise<void> {
   const supabase = createClient();
   const sc = await schemaIntentions();
+  const avecAdaptation = await adaptationsDisponibles();
   const maintenant = new Date().toISOString();
   /* ⚠️ UN `insert`, ET PLUS UN `upsert` SUR LA DATE (V6b). L'ancienne
      écriture écrasait ce qui se trouvait déjà sur la journée : faire
@@ -368,6 +397,7 @@ export async function consommerEtape(
     programme_seance_id: etapeId,
     etape_consommee_id: etapeId,
     consommee_le: maintenant,
+    ...(avecAdaptation ? { adaptation_id: adaptationId } : {}),
     updated_at: maintenant,
   });
 }
@@ -391,9 +421,16 @@ export async function prochaineEtape(userId: string): Promise<EtapeCycle | null>
 /** La prochaine étape d'un programme DÉJÀ chargé : une requête, pas trois.
  *  C'est cette forme qu'utilisent les écrans, qui viennent d'appeler
  *  `getOrCreateProgramme` et n'ont aucune raison de le relire. */
-export async function etapeSuivanteDe(userId: string, actif: ProgrammeEtCycle): Promise<EtapeCycle | null> {
+export async function etapeSuivanteDe(
+  userId: string,
+  actif: ProgrammeEtCycle,
+  /* V8 · le filtre de l'adaptation en cours. On le reçoit au lieu de
+     l'aller chercher : `programme.ts` ne connaît pas les adaptations, et
+     c'est ce qui garde la dépendance dans un seul sens. */
+  masquee?: (etape: EtapeCycle) => boolean,
+): Promise<EtapeCycle | null> {
   if (actif.cycle.length === 0) return null;
-  return etapeSuivante(actif.cycle, await positionConsommee(userId, actif), actif.programme.positionInitiale);
+  return etapeSuivante(actif.cycle, await positionConsommee(userId, actif), actif.programme.positionInitiale, masquee);
 }
 
 /**

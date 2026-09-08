@@ -23,6 +23,8 @@ import {
   Moon, Zap, Home, Sun, CalendarDays, MoreHorizontal, GripVertical, BookOpen,
 } from "lucide-react";
 import WeeklyProgramme from "@/components/WeeklyProgramme";
+import AdaptationSheet from "@/components/entrainement/AdaptationSheet";
+import { libelleJour, type Adaptation } from "@/lib/adaptation";
 import ChoixJour from "@/components/entrainement/ChoixJour";
 import { exerciseData, type Exercise } from "@/components/WorkoutGuideModal";
 import ExerciseGuide from "@/components/ExerciseGuide";
@@ -850,6 +852,47 @@ type ElanData = {
 
 const fmtDur = (m: number) =>
   m >= 60 ? `${Math.floor(m / 60)} h ${String(m % 60).padStart(2, "0")}` : `${m} min`;
+
+/* ════════════════════════════════════════════════════════════════════
+   V8 · L'ENTRÉE DES ADAPTATIONS.
+
+   Une ligne dans le groupe qui porte déjà la semaine et l'élan : une
+   idée, un groupe, des filets internes (règle de composition
+   verrouillée). Elle ne s'affiche que s'il y a un programme, parce que
+   sans programme il n'y a rien à adapter.
+
+   ⚠️ PAS DE SOUS-TITRE QUAND IL N'Y A RIEN À DIRE. « Adapter
+   temporairement › » se comprend seul ; la seconde ligne n'apparaît que
+   quand une adaptation est en cours, et elle dit alors ce qu'on ne peut
+   pas deviner : ce qui est évité, et jusqu'à quand.
+   ════════════════════════════════════════════════════════════════════ */
+function AdaptationStrip({ etapes, adaptation, onOpen }: {
+  etapes: { id: string; nom: string }[];
+  adaptation: Adaptation | null;
+  onOpen: () => void;
+}) {
+  const evitees = adaptation
+    ? adaptation.axes.eviter_etapes
+        .map((id) => etapes.find((e) => e.id === id)?.nom)
+        .filter(Boolean)
+        .join(" · ")
+    : "";
+  return (
+    <motion.button
+      whileTap={{ scale: 0.98 }} onClick={onOpen}
+      className="w-full text-left cursor-pointer block px-4 pt-3.5 pb-3.5">
+      <p className="vy-sous flex items-center gap-0.5" style={{ color: "var(--text-0)" }}>
+        {adaptation ? "Adaptation en cours" : "Adapter temporairement"}
+        <ChevronRight size={13} strokeWidth={2.6} style={{ color: "var(--text-3)" }} />
+      </p>
+      {adaptation && (
+        <p className="text-[12px] font-medium mt-1.5" style={{ color: "var(--text-2)" }}>
+          {evitees ? `${evitees} · ` : ""}jusqu&apos;au {libelleJour(adaptation.fin)}
+        </p>
+      )}
+    </motion.button>
+  );
+}
 
 function ElanStrip({ data, onOpen }: { data: ElanData | null; onOpen: () => void }) {
   if (!data) return null; // le temps du chargement : rien, pas de flash
@@ -2941,7 +2984,7 @@ function ActChip({ children, onClick, primary }: { children: React.ReactNode; on
    jours, tutos, régénération, lieu. Réservé au chemin setup (le héros
    « Créer mon planning » quand l'app ne sait pas encore).
    ════════════════════════════════════════════════════════════════════ */
-function OrganiserSheet({ onClose }: { onClose: () => void }) {
+function OrganiserSheet({ onClose, etapesMasquees }: { onClose: () => void; etapesMasquees: string[] }) {
   return (
     <Sheet onClose={onClose} maxHeight="92vh">
       <div className="px-5 pt-2 pb-3 flex items-center justify-between flex-shrink-0">
@@ -2955,7 +2998,10 @@ function OrganiserSheet({ onClose }: { onClose: () => void }) {
         </motion.button>
       </div>
       <div className="overflow-y-auto px-5 flex-1" style={{ scrollbarWidth: "none", paddingBottom: "calc(1.5rem + env(safe-area-inset-bottom))" }}>
-        <WeeklyProgramme />
+        {/* ⚠️ V8 · « Refais ma semaine » est le SECOND chemin capable de
+            poser une étape du cycle. Sans ce filtre, il reposerait celle
+            que l'adaptation vient d'écarter. */}
+        <WeeklyProgramme etapesMasquees={etapesMasquees} />
         <p className="text-[11px] font-light mt-4 leading-snug" style={{ color: "var(--text-3)" }}>
           Demande à l&apos;orbe ✦ de remplacer, décaler ou changer le lieu d&apos;un jour.
         </p>
@@ -3034,7 +3080,7 @@ export default function ProgressionPage() {
   const { semaine: week, setSemaine: setWeek, niveau: profileLevel, recharger: loadWeek } = journee;
 
   /* ── UI ── */
-  const [sheet, setSheet] = useState<null | "choisir" | "improviser" | "organiser" | "elan" | "semaine">(null);
+  const [sheet, setSheet] = useState<null | "choisir" | "improviser" | "organiser" | "elan" | "semaine" | "adaptation">(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editSession, setEditSession] = useState<WorkoutSession | null>(null);
   /* Séance pré-remplie : arrive de la bibliothèque (mouvements cochés) ou
@@ -3088,7 +3134,7 @@ export default function ProgressionPage() {
     if (typeof window === "undefined") return;
     const params = new URLSearchParams(window.location.search);
     const voulue = params.get("ouvrir");
-    if (voulue !== "organiser" && voulue !== "improviser") return;
+    if (voulue !== "organiser" && voulue !== "improviser" && voulue !== "adaptation") return;
     params.delete("ouvrir");
     const reste = params.toString();
     window.history.replaceState(null, "", window.location.pathname + (reste ? `?${reste}` : ""));
@@ -3548,6 +3594,15 @@ export default function ProgressionPage() {
           <div data-tour-anchor="prog-semaine" className="vy-filet">
             <WeekStrip week={week} dates={semaineDates} today={today} onOrganise={() => setSheet("semaine")} />
           </div>
+          {journee.programme && (
+            <div className="vy-filet">
+              <AdaptationStrip
+                etapes={journee.programme.cycle}
+                adaptation={journee.adaptation}
+                onOpen={() => setSheet("adaptation")}
+              />
+            </div>
+          )}
           {elan && (
             <div data-tour-anchor="prog-elan" className="vy-filet">
               <ElanStrip data={elan} onOpen={() => setSheet("elan")} />
@@ -3573,7 +3628,21 @@ export default function ProgressionPage() {
       </AnimatePresence>
       <AnimatePresence>
         {sheet === "organiser" && (
-          <OrganiserSheet onClose={() => { setSheet(null); void loadWeek(); }} />
+          <OrganiserSheet
+            etapesMasquees={journee.etapesMasquees}
+            onClose={() => { setSheet(null); void loadWeek(); }}
+          />
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {sheet === "adaptation" && user && (
+          <AdaptationSheet
+            userId={user.id}
+            programme={journee.programme}
+            adaptation={journee.adaptation}
+            onClose={() => setSheet(null)}
+            onChange={() => void loadWeek()}
+          />
         )}
       </AnimatePresence>
       <AnimatePresence>

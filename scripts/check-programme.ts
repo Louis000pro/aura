@@ -34,6 +34,12 @@ import {
   refModele, lienProgramme, prochainsJours, todayYmd,
   type PlanningDay,
 } from "@/lib/planning";
+import {
+  adaptationActive, ajouterJours, chevauchent, estExpiree, etapeMasquee,
+  etapesCompatibles, finParDefaut, libelleJour, nomsMasques, REEVALUATION_SEMAINES,
+  reservationsEnConflit, validerAxes, validerPeriode,
+  type Adaptation,
+} from "@/lib/adaptation";
 
 let echecs = 0;
 function verdict(nom: string, bon: boolean, detail: string) {
@@ -1193,6 +1199,360 @@ verdict(
     ].every((f) => lire(f).includes("@/components/missions/LigneMission")),
     "trois surfaces, un seul composant",
   );
+}
+
+
+/* ════════════════════════════════════════════════════════════════════
+   V8 · LES ADAPTATIONS TEMPORAIRES
+
+   ⚠️ CE QUE CE BLOC PROTÈGE N'EST PAS UN AFFICHAGE, C'EST UNE
+   SÉMANTIQUE. « Éviter » n'est pas « sauter » : une étape masquée ne
+   doit RIEN consommer, ne rien écrire, et ne pas faire bouger le
+   curseur d'un cran. Si quelqu'un « simplifie » un jour en refermant
+   l'étape masquée, l'app continuera de fonctionner, l'écran continuera
+   d'avoir l'air juste, et l'historique dira qu'une séance a eu lieu
+   alors qu'elle n'a jamais eu lieu. C'est exactement le genre de
+   régression qui ne se voit qu'en base, des mois plus tard.
+   ════════════════════════════════════════════════════════════════════ */
+{
+  const lireV8 = (f: string) => readFileSync(new URL("../" + f, import.meta.url), "utf8");
+  const netV8 = (t: string) => t.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
+
+  const ADAPTATION = lireV8("src/lib/adaptation.ts");
+  const MIGRATION = lireV8("supabase/migrations/20260907_moteur_v8_adaptations.sql");
+
+  /* Le cycle du scénario de l'audit. */
+  const CYCLE = [
+    { id: "e-push", position: 1, nom: "Push" },
+    { id: "e-pull", position: 2, nom: "Pull" },
+    { id: "e-bas", position: 3, nom: "Bas du corps" },
+    { id: "e-haut", position: 4, nom: "Haut du corps" },
+    { id: "e-cardio", position: 5, nom: "Cardio / HIIT" },
+  ];
+  const couche = (etapes: string[], debut = "2026-09-07", fin = "2026-09-16"): Adaptation => ({
+    id: "a1", userId: "u1", programmeId: "p1", debut, fin,
+    statut: "active", motif: null, axes: { eviter_etapes: etapes },
+    axesVersion: 1, origine: "utilisateur", fermeeLe: null,
+  });
+
+  /* ── 1. Le vocabulaire est FERMÉ, et il refuse au lieu de corriger ── */
+  for (const [libelle, brut, attenduOk] of [
+    ["une étape du cycle", { eviter_etapes: ["e-push"] }, true],
+    ["deux étapes du cycle", { eviter_etapes: ["e-push", "e-haut"] }, true],
+    ["un axe inconnu", { duree_max_min: 30 }, false],
+    ["un axe inconnu à côté d’un axe valide", { eviter_etapes: ["e-push"], seances_max: 2 }, false],
+    ["un tableau vide", { eviter_etapes: [] }, false],
+    ["un doublon", { eviter_etapes: ["e-push", "e-push"] }, false],
+    ["une étape d’un autre programme", { eviter_etapes: ["e-inconnue"] }, false],
+    ["un NOM d’étape au lieu d’un identifiant", { eviter_etapes: ["Push"] }, false],
+    ["autre chose qu’un objet", ["e-push"], false],
+    ["rien du tout", {}, false],
+  ] as [string, unknown, boolean][]) {
+    const r = validerAxes(brut, CYCLE);
+    verdict("V8 · axes · " + libelle, r.ok === attenduOk, r.ok ? "accepté" : r.raison);
+  }
+
+  /* ── 2. La période ─────────────────────────────────────────────── */
+  verdict(
+    "V8 · une adaptation sans fin est refusée",
+    !validerPeriode("2026-09-07", "").ok && !validerPeriode("", "2026-09-16").ok,
+    "« jusqu’à nouvel ordre » n’existe pas",
+  );
+  verdict(
+    "V8 · une fin avant le début est refusée, un seul jour reste valide",
+    !validerPeriode("2026-09-16", "2026-09-07").ok
+      && validerPeriode("2026-09-07", "2026-09-07").ok,
+    "fin >= debut",
+  );
+  verdict(
+    "V8 · « je ne sais pas encore » propose quatre semaines",
+    REEVALUATION_SEMAINES === 4 && finParDefaut("2026-09-07") === "2026-10-05",
+    "2026-09-07 → " + finParDefaut("2026-09-07"),
+  );
+  /* ⚠️ L'arithmétique se fait en UTC depuis la CHAÎNE : repassée par le
+     fuseau du navigateur, une date de calendrier recule d'un jour à
+     l'ouest de Greenwich. Même piège que la rotation Premium de V7B. */
+  verdict(
+    "V8 · les dates traversent mois et années sans dériver",
+    ajouterJours("2026-12-28", 7) === "2027-01-04"
+      && ajouterJours("2026-02-27", 2) === "2026-03-01"
+      && ajouterJours("2026-09-30", 1) === "2026-10-01",
+    "28 déc + 7 = " + ajouterJours("2026-12-28", 7),
+  );
+  verdict(
+    "V8 · la fin se dit en français sans dépendre de l’ICU du runtime",
+    libelleJour("2026-09-17") === "17 sept." && libelleJour("2026-08-01") === "1 août",
+    libelleJour("2026-09-17") + " · " + libelleJour("2026-08-01"),
+  );
+
+  /* ── 3. L'expiration se DÉDUIT, elle n'attend aucune écriture ──
+     C'est le remède au défaut de `challenge_runs`, restée `en_cours` à
+     vie parce que rien ne la fermait. */
+  {
+    const a = couche(["e-push"], "2026-09-07", "2026-09-16");
+    verdict(
+      "V8 · une adaptation expirée n’agit plus, même déclarée active",
+      adaptationActive([a], "2026-09-17") === null && estExpiree(a, "2026-09-17"),
+      "statut active, fin au 16, lue le 17 → aucune",
+    );
+    verdict(
+      "V8 · elle n’agit pas avant son premier jour",
+      adaptationActive([a], "2026-09-06") === null,
+      "déclarée pour le 7, lue le 6",
+    );
+    verdict(
+      "V8 · elle agit sur ses deux bornes, incluses",
+      !!adaptationActive([a], "2026-09-07") && !!adaptationActive([a], "2026-09-16"),
+      "du 7 au 16, les deux compris",
+    );
+    verdict(
+      "V8 · une adaptation terminée n’agit jamais",
+      adaptationActive([{ ...a, statut: "terminee" }], "2026-09-10") === null,
+      "statut terminee",
+    );
+  }
+
+  /* ── 4. Le chevauchement, lu comme la base le lira ──
+     `daterange(debut, fin, '[]')` : bornes incluses des deux côtés. Avec
+     la borne haute exclusive par défaut de PostgreSQL, le dernier jour
+     d'une adaptation cesserait d'être protégé. */
+  verdict(
+    "V8 · deux adaptations bout à bout (le 17 puis le 18) sont compatibles",
+    !chevauchent({ debut: "2026-09-07", fin: "2026-09-17" }, { debut: "2026-09-18", fin: "2026-09-30" }),
+    "aucune journée partagée",
+  );
+  verdict(
+    "V8 · deux adaptations qui partagent UNE journée se chevauchent",
+    chevauchent({ debut: "2026-09-07", fin: "2026-09-17" }, { debut: "2026-09-17", fin: "2026-09-30" })
+      && chevauchent({ debut: "2026-09-07", fin: "2026-09-07" }, { debut: "2026-09-07", fin: "2026-09-07" }),
+    "le 17 des deux côtés",
+  );
+  verdict(
+    "V8 · la base porte la même lecture que l’écran",
+    MIGRATION.includes("daterange(debut, fin, '[]') with &&")
+      && MIGRATION.includes("where (statut = 'active')"),
+    "EXCLUDE gist sur la plage inclusive, actives seulement",
+  );
+
+  /* ── 5. LE CŒUR : une étape masquée est TRAVERSÉE, jamais consommée ── */
+  {
+    verdict(
+      "V8 · sans adaptation, rien ne change (Push reste la première)",
+      etapeSuivante(CYCLE, null, 1)?.id === "e-push",
+      String(etapeSuivante(CYCLE, null, 1)?.nom),
+    );
+
+    const a = couche(["e-push"]);
+    const masque = (e: { id: string }) => etapeMasquee(e.id, a);
+    verdict(
+      "V8 · Push masquée → Pull est proposée",
+      etapeSuivante(CYCLE, null, 1, masque)?.id === "e-pull",
+      String(etapeSuivante(CYCLE, null, 1, masque)?.nom),
+    );
+    verdict(
+      "V8 · Pull faite → Bas du corps, le cycle continue normalement",
+      etapeSuivante(CYCLE, 2, 1, masque)?.id === "e-bas",
+      "aucune étape n’a été refermée en trop",
+    );
+    verdict(
+      "V8 · au tour suivant, Push est de nouveau TRAVERSÉE",
+      etapeSuivante(CYCLE, 5, 1, masque)?.id === "e-pull",
+      "après Cardio, on repasse devant Push masquée",
+    );
+
+    /* ⚠️ LA PREUVE QUE « MASQUER » N'EST PAS « SAUTER » : le journal ne
+       bouge pas d'une ligne, donc le curseur non plus. Une implémentation
+       qui refermerait l'étape masquée écrirait ici une intention `passee`
+       avec un `consommee_le`, et l'historique dirait qu'une séance a eu
+       lieu alors qu'elle n'a jamais eu lieu. */
+    const journal = [{ etapeId: "e-pull", resolue: true, consommeeLe: "2026-09-10T18:00:00Z" }];
+    verdict(
+      "V8 · le curseur est le même avec et sans adaptation",
+      positionRefermee(journal, CYCLE) === 2,
+      "dernière étape refermée = Pull (2), l’adaptation n’y touche pas",
+    );
+
+    /* Plusieurs étapes masquées : on prend la première COMPATIBLE. */
+    const b = couche(["e-push", "e-pull", "e-bas"]);
+    const masque3 = (e: { id: string }) => etapeMasquee(e.id, b);
+    verdict(
+      "V8 · trois étapes masquées → Haut du corps, la première compatible",
+      etapeSuivante(CYCLE, null, 1, masque3)?.id === "e-haut",
+      String(etapeSuivante(CYCLE, null, 1, masque3)?.nom),
+    );
+
+    /* Tout masqué : on ne propose RIEN. Inventer une séance de
+       remplacement serait promettre ce que V8 ne sait pas faire (elle
+       n'adapte pas encore le CONTENU d'une étape). */
+    const tout = couche(CYCLE.map((e) => e.id));
+    const masqueTout = (e: { id: string }) => etapeMasquee(e.id, tout);
+    verdict(
+      "V8 · tout le cycle masqué → aucune étape compatible, aucune séance inventée",
+      etapeSuivante(CYCLE, null, 1, masqueTout) === null
+        && etapesCompatibles(CYCLE, tout).length === 0,
+      "null, jamais une séance vide",
+    );
+    verdict(
+      "V8 · l’écran le DIT au lieu d’écrire « rien de prévu »",
+      etatJournee({ pret: true, besoinSetup: false, jour: null, etape: null, adaptationBloque: true }) === "aucune_compatible"
+        && etatJournee({ pret: true, besoinSetup: false, jour: null, etape: null }) === "libre",
+      "aucune_compatible n’est pas libre",
+    );
+    /* ⚠️ APRÈS l'étape, jamais avant : une adaptation qui laisse une
+       étape compatible ne doit pas faire apparaître cet état. */
+    verdict(
+      "V8 · une étape compatible passe avant « aucune compatible »",
+      etatJournee({ pret: true, besoinSetup: false, jour: null, etape: CYCLE[1], adaptationBloque: true }) === "etape",
+      "l’étape gagne",
+    );
+
+    /* Fin de l'adaptation : plus de filtre, et AUCUNE écriture n'a été
+       nécessaire pour ça. */
+    verdict(
+      "V8 · l’adaptation finie, Push redevient proposable sans une écriture",
+      etapeSuivante(CYCLE, null, 1)?.id === "e-push"
+        && etapesCompatibles(CYCLE, null).length === CYCLE.length,
+      "le programme de référence n’a jamais bougé",
+    );
+
+    verdict(
+      "V8 · « Refais ma semaine » sait quels noms écarter",
+      nomsMasques(CYCLE, a).join("|") === "Push"
+        && nomsMasques(CYCLE, b).join("|") === "Push|Pull|Bas du corps"
+        && nomsMasques(CYCLE, null).length === 0,
+      "les noms suivent le cycle, jamais une liste recopiée",
+    );
+
+    /* Et le générateur de semaine les respecte VRAIMENT. */
+    {
+      const dates = weekDates(new Date("2026-09-07T00:00:00"));
+      const genSem = { ctx: "salle" as const, sessions: 5, goals: [], level: "intermediaire", variant: 0, seed: "u1" };
+      const normale = previewWeek(genSem, dates).filter((d) => d.title);
+      const adaptee = previewWeek(genSem, dates, ["Push"]).filter((d) => d.title);
+      const vide = previewWeek(genSem, dates, cycleDeReference(5)).filter((d) => d.title);
+      verdict(
+        "V8 · la semaine régénérée ne repose pas une étape masquée",
+        normale.some((d) => d.title === "Push")
+          && !adaptee.some((d) => d.title === "Push")
+          && adaptee.length > 0,
+        normale.length + " séances → " + adaptee.length + " sans Push",
+      );
+      verdict(
+        "V8 · tout masqué → la semaine régénérée ne pose aucune séance",
+        vide.length === 0,
+        "aucune séance inventée pour remplir",
+      );
+    }
+  }
+
+  /* ── 6. Les réservations : on MONTRE, on ne réécrit jamais ──
+     Supprimer, déplacer ou substituer automatiquement ce que quelqu'un a
+     posé serait la réécriture silencieuse que le modèle s'interdit. */
+  {
+    const intention = (over: Partial<PlanningDay>): PlanningDay => ({
+      id: "i1", date: "2026-09-10", type: "Force", title: "Push",
+      difficulty: "Intermédiaire", location: "salle", exerciseList: [],
+      sessionId: null, status: "planned", etapeId: null, programmeId: null, ...over,
+    });
+    const fenetre = { debut: "2026-09-07", fin: "2026-09-16", axes: { eviter_etapes: ["e-push"] } };
+
+    const dedans = intention({ id: "conflit", etapeId: "e-push", programmeId: "p1" });
+    const autreEtape = intention({ id: "ok-etape", etapeId: "e-pull", programmeId: "p1" });
+    const horsFenetre = intention({ id: "ok-date", date: "2026-09-30", etapeId: "e-push", programmeId: "p1" });
+    const supplement = intention({ id: "ok-extra", title: "Push (catalogue)" });
+    const dejaFaite = intention({ id: "ok-faite", etapeId: "e-push", programmeId: "p1", status: "done" });
+
+    const conflits = reservationsEnConflit([dedans, autreEtape, horsFenetre, supplement, dejaFaite], fenetre);
+    verdict(
+      "V8 · une réservation de l’étape masquée, dans la fenêtre, bloque",
+      conflits.length === 1 && conflits[0].id === "conflit",
+      conflits.map((c) => c.id).join(", ") || "aucun",
+    );
+    verdict(
+      "V8 · une réservation d’une étape autorisée ne bloque pas",
+      !conflits.includes(autreEtape),
+      "Pull reste posée",
+    );
+    verdict(
+      "V8 · une réservation hors de la fenêtre ne bloque pas",
+      !conflits.includes(horsFenetre),
+      "le 30 septembre, hors période",
+    );
+    verdict(
+      "V8 · un supplément (sans étape) ne bloque jamais",
+      !conflits.includes(supplement),
+      "une séance du catalogue ne consomme rien, même si elle s’appelle Push",
+    );
+    verdict(
+      "V8 · une séance déjà faite n’est jamais un conflit",
+      !conflits.includes(dejaFaite),
+      "on ne réécrit jamais un fait",
+    );
+  }
+
+  /* ── 7. LES CONTRÔLES DE SOURCE ────────────────────────────────────
+     ⚠️ « Le programme de référence reste intact » et « une adaptation ne
+     consomme rien » sont des propriétés du CHEMIN. Elles ne cassent rien
+     quand on les perd, elles ne se voient qu'en base, et ce sont donc
+     exactement celles qui repasseraient inaperçues. */
+  {
+    const propre = netV8(ADAPTATION);
+    verdict(
+      "V8 · le module d’adaptation n’écrit jamais dans le programme",
+      !propre.includes("programmes") && !propre.includes("programme_seances"),
+      "aucune écriture du programme de référence, par construction",
+    );
+    verdict(
+      "V8 · il ne referme aucune étape et ne marque aucune intention",
+      !propre.includes("consommerEtape") && !propre.includes("marquerIntention")
+        && !propre.includes("consommee_le"),
+      "masquer n’est pas consommer",
+    );
+    verdict(
+      "V8 · il n’écrit que dans sa propre table",
+      (propre.match(/\.from\(/g) ?? []).length
+        === (propre.match(/from\("adaptations_entrainement"\)/g) ?? []).length,
+      "adaptations_entrainement, et rien d’autre",
+    );
+    verdict(
+      "V8 · la lecture de la journée passe le filtre à l’étape suivante",
+      netV8(lireV8("src/hooks/useJournee.ts")).includes("etapeSuivanteDe(user.id, actif, (e) => etapeMasquee(e.id, couche))"),
+      "sinon l’adaptation serait lue, affichée, et sans effet",
+    );
+    verdict(
+      "V8 · « Refais ma semaine » reçoit les étapes masquées",
+      netV8(lireV8("src/components/WeeklyProgramme.tsx")).includes("reposerLaSemaine(user.id, gen, dates,")
+        && netV8(lireV8("src/app/progression/page.tsx")).includes("etapesMasquees={journee.etapesMasquees}"),
+      "le second chemin qui pose une étape la respecte aussi",
+    );
+    /* ⚠️ Le vocabulaire compte : `effet_cycle = saut` sera une AUTRE
+       action, explicite, qui consommera réellement une étape. Employer ce
+       mot ici, c'est préparer la confusion qui fera refermer une étape
+       masquée. */
+    verdict(
+      "V8 · le code métier ne dit jamais « saut » ni « skip »",
+      !/\b(skip|saut)\b/i.test(propre),
+      "une étape évitée est MASQUÉE",
+    );
+    verdict(
+      "V8 · la migration ferme le vocabulaire en base, elle ne l’ignore pas",
+      MIGRATION.includes("adaptation_axes_valides")
+        && MIGRATION.includes("k not in ('eviter_etapes')")
+        && MIGRATION.includes("axes_version"),
+      "une clé inconnue est refusée à l’écriture",
+    );
+    verdict(
+      "V8 · la trace sur l’intention ne détruit jamais rien",
+      MIGRATION.includes("add column if not exists adaptation_id uuid")
+        && MIGRATION.includes("references public.adaptations_entrainement(id) on delete set null"),
+      "ON DELETE SET NULL : supprimer une adaptation ne touche pas aux faits",
+    );
+    verdict(
+      "V8 · le défaut de position_initiale est corrigé au passage",
+      MIGRATION.includes("alter column position_initiale set default 1"),
+      "les positions du cycle commencent à 1",
+    );
+  }
 }
 
 console.log("\n" + (echecs === 0 ? "Tout passe." : echecs + " échec(s)."));

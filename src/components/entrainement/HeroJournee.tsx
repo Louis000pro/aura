@@ -37,7 +37,13 @@ export default function HeroJournee() {
   /* « Lui donner un jour » : le seul geste du héros qui écrit. */
   const [quand, setQuand] = useState(false);
 
-  const ouvrir = (feuille: "organiser" | "improviser") =>
+  /* ⚠️ V8 · « adaptation » REJOINT LES DEUX AUTRES, ET POUR LA MÊME
+     RAISON QU'ELLES. L'écran qui déclare et arrête une adaptation vit
+     dans Entraînement, avec le programme et la semaine qu'il regarde :
+     en monter un second sur l'accueil, ce serait deux écrans à tenir
+     d'accord. L'accueil dit qu'une adaptation est en cours, il n'est pas
+     l'endroit où on la gère. */
+  const ouvrir = (feuille: "organiser" | "improviser" | "adaptation") =>
     router.push(`/progression?ouvrir=${feuille}`);
 
   /* ⚠️ IL NE RENVOIE PLUS VERS « ORGANISER », ET C'ÉTAIT UN CUL-DE-SAC.
@@ -59,6 +65,7 @@ export default function HeroJournee() {
         nbExos={j.nbExos}
         nextLabel={j.nextLabel}
         doneStats={j.doneStats}
+        adaptationJusquau={j.adaptationJusquau}
         onStart={j.lancerAujourdhui}
         /* « Refaire la séance » relance ce qui vient d'être fait, jamais
            ce qui vient après : deux questions différentes, deux chemins. */
@@ -67,6 +74,7 @@ export default function HeroJournee() {
         onOrganise={donnerUnJour}
         onShift={() => openAssistant("Décale ma séance d’aujourd’hui à un autre jour")}
         onReplace={() => openAssistant("Remplace ma séance d’aujourd’hui par autre chose")}
+        onAdaptation={() => ouvrir("adaptation")}
       />
 
       {/* ⚠️ CE QUI VIENT EN PLUS AUJOURD'HUI (V6b). Le héros ne montre

@@ -78,6 +78,17 @@ export interface PlanningDay {
    * programme et pointer l'étape d'un autre.
    */
   programmeId?: string | null;
+  /**
+   * V8 · L'ADAPTATION SOUS LAQUELLE CETTE INTENTION A ÉTÉ MATÉRIALISÉE.
+   *
+   * ⚠️ ELLE TRACE, ELLE NE DÉCIDE RIEN. Aucune lecture ne s'en sert pour
+   * savoir quoi proposer : ce que le moteur applique, c'est l'adaptation
+   * ACTIVE aujourd'hui, jamais celle qu'une vieille ligne cite. Et rien
+   * ne rétro-étiquette une intention parce que sa date tombe dans une
+   * période : on n'écrit cette colonne qu'au moment où l'on écrit la
+   * ligne.
+   */
+  adaptationId?: string | null;
   /** Départage deux suppléments : le plus ancien d'abord. Absente d'une
    *  intention qui n'est pas encore en base. */
   creeLe?: string | null;
@@ -265,16 +276,29 @@ export function todayWeekIndex(): number { return weekdayIndex(todayYmd()); }
 /* ═══════════════════════════ Génération ═══════════════════════════ */
 const DAY_LABELS = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
 
-function generateWeek(gen: GenInput, dates: string[]): PlanningDay[] {
+/**
+ * ⚠️ V8 · `masquees` PORTE LES NOMS D'ÉTAPES QU'UNE ADAPTATION ÉVITE, ET
+ * CE CHEMIN DOIT LES RESPECTER COMME LE HÉROS. « Refais ma semaine » est
+ * le second endroit du produit capable de POSER une étape du cycle : le
+ * laisser reposer une étape que l'adaptation masque, c'est réintroduire
+ * par la porte du planning ce qu'on vient d'écarter à l'accueil, et la
+ * personne le découvrirait le jour où la séance arrive.
+ *
+ * ⚠️ ON FILTRE LE SPLIT, ON NE SAUTE PAS UN JOUR. La rotation ne tourne
+ * plus que sur les étapes compatibles, exactement comme `etapeSuivante`.
+ * Si aucune ne l'est, la semaine ne porte AUCUNE séance : on n'invente
+ * pas une séance de remplacement, et une séance vide serait pire.
+ */
+function generateWeek(gen: GenInput, dates: string[], masquees: string[] = []): PlanningDay[] {
   const sessions = seancesDuCycle(gen.sessions);
   const rng = mulberry32(hashStr(`${gen.seed}-${gen.ctx}-s${sessions}-v${gen.variant}`));
-  const split = buildSplit(sessions);
+  const split = buildSplit(sessions).filter((nom) => !masquees.includes(nom));
   const trainingDays = REST_PATTERN[sessions] ?? [0, 2, 4];
   const scheme = repSchemeFor(gen.goals);
   const difficulty = levelToDifficulty(gen.level);
 
   return dates.map((date, dayIdx) => {
-    const pos = trainingDays.indexOf(dayIdx);
+    const pos = split.length === 0 ? -1 : trainingDays.indexOf(dayIdx);
     if (pos === -1) {
       return { id: null, date, type: "Repos", title: "", difficulty, location: gen.ctx, exerciseList: [], sessionId: null, status: "planned" as DayStatus };
     }
@@ -314,8 +338,8 @@ export function instanceDeLEtape(nomEtape: string, gen: GenInput): Exercise[] {
 
 /** Génère la semaine SANS rien écrire — pour préparer une carte de
     confirmation (l'écriture n'arrive qu'au clic, via saveDay). */
-export function previewWeek(gen: GenInput, dates: string[] = weekDates()): PlanningDay[] {
-  return generateWeek(gen, dates);
+export function previewWeek(gen: GenInput, dates: string[] = weekDates(), masquees: string[] = []): PlanningDay[] {
+  return generateWeek(gen, dates, masquees);
 }
 
 /** Titre lisible d'un jour de planning (pour le lancement / l'historique). */
@@ -412,6 +436,36 @@ export async function schemaIntentions(client?: ClientLike): Promise<SchemaInten
   return sondage;
 }
 
+/* ⚠️ V8 · LE MÊME PROCÉDÉ, POUR LA COLONNE `adaptation_id`, ET IL EST
+   AUSSI OBLIGATOIRE QU'EN V6. Les migrations SQL se collent à la main :
+   entre le déploiement du code et l'application de la migration, demander
+   une colonne qui n'existe pas fait échouer la requête ENTIÈRE. Sans ce
+   sondage, toutes les lectures et toutes les écritures du planning
+   tomberaient d'un coup pendant cette fenêtre, pour une colonne qui ne
+   sert qu'à tracer.
+
+   Une requête par session, mémorisée, et le repli est le comportement
+   d'avant V8 : pas de colonne, pas d'adaptation, l'app d'hier. */
+let adaptationsResolu: boolean | null = null;
+let sondageAdaptations: Promise<boolean> | null = null;
+
+export async function adaptationsDisponibles(client?: ClientLike): Promise<boolean> {
+  if (adaptationsResolu !== null) return adaptationsResolu;
+  if (sondageAdaptations) return sondageAdaptations;
+  sondageAdaptations = (async () => {
+    try {
+      const c = client ?? (createClient() as unknown as ClientLike);
+      const { error } = await c.from("adaptations_entrainement").select("id").limit(1);
+      adaptationsResolu = !error;
+    } catch {
+      adaptationsResolu = false;
+    }
+    sondageAdaptations = null;
+    return adaptationsResolu;
+  })();
+  return sondageAdaptations;
+}
+
 /** Les colonnes de l'intention, avec le bon nom de statut. Exporté pour
  *  les lectures serveur, qui composent leur propre requête. */
 export function colonnesIntention(s: SchemaIntentions, extra = ""): string {
@@ -424,8 +478,9 @@ export function colonnesIntention(s: SchemaIntentions, extra = ""): string {
  *  confort : une date ne désigne plus une ligne, donc il faut de quoi
  *  désigner celle qu'on modifie, et de quoi ordonner celles d'une même
  *  journée. `etape_consommee_id` porte la hiérarchie (l'étape d'abord). */
-function colonnes(s: SchemaIntentions): string {
-  return `id, date, type, title, difficulty, location, exercise_list, session_id, programme_id, etape_consommee_id, created_at, ${s.colStatut}`;
+function colonnes(s: SchemaIntentions, avecAdaptation: boolean): string {
+  return `id, date, type, title, difficulty, location, exercise_list, session_id, programme_id, etape_consommee_id, created_at, ${s.colStatut}`
+    + (avecAdaptation ? ", adaptation_id" : "");
 }
 
 /* ═══════════════════════════ Persistance Supabase ═══════════════════════════ */
@@ -440,6 +495,7 @@ interface PlanningRow {
   session_id: string | null;
   programme_id?: string | null;
   etape_consommee_id?: string | null;
+  adaptation_id?: string | null;
   created_at?: string | null;
   /* ⚠️ LES DEUX NOMS, ET LES DEUX VOCABULAIRES. Une ligne peut arriver de
      l'ancien contrat (`status: 'planned'`) comme du nouveau
@@ -469,6 +525,7 @@ function rowToDay(r: PlanningRow, s: SchemaIntentions): PlanningDay {
        `saveDay` réécrit la ligne entière : sans cette lecture, changer de
        jour effacerait la réservation en silence. */
     programmeId: r.programme_id ?? null,
+    adaptationId: r.adaptation_id ?? null,
     creeLe: r.created_at ?? null,
   };
 }
@@ -530,7 +587,7 @@ export function lienProgramme(d: Pick<PlanningDay, "programmeId" | "etapeId">) {
   };
 }
 
-function dayToRow(userId: string, d: PlanningDay, origine: Origine, s: SchemaIntentions) {
+function dayToRow(userId: string, d: PlanningDay, origine: Origine, s: SchemaIntentions, avecAdaptation: boolean) {
   const maintenant = new Date().toISOString();
   return {
     user_id: userId,
@@ -552,6 +609,11 @@ function dayToRow(userId: string, d: PlanningDay, origine: Origine, s: SchemaInt
        production, sur le premier remplacement d'une séance faite. */
     consommee_le: d.status === "planned" ? null : maintenant,
     ...lienProgramme(d),
+    /* ⚠️ ÉCRITE COMME `lienProgramme` : toujours, même à `null`. Omettre
+       la colonne dans un `update` laisserait la trace d'une adaptation
+       finie sur une intention qu'on vient de réécrire ; et parce que
+       `rowToDay` la relit, un simple déplacement la conserve. */
+    ...(avecAdaptation ? { adaptation_id: d.adaptationId ?? null } : {}),
     updated_at: maintenant,
   };
 }
@@ -597,9 +659,17 @@ export async function lireSemaine(userId: string, dates: string[] = weekDates())
  * dont quatre « Repos » recréerait exactement le mobilier que V5 retire.
  * Les jours sans séance restent vides, et vides veut dire libre.
  */
-export async function reposerLaSemaine(userId: string, gen: GenInput, dates: string[] = weekDates()): Promise<PlanningDay[]> {
+export async function reposerLaSemaine(
+  userId: string,
+  gen: GenInput,
+  dates: string[] = weekDates(),
+  /* V8 · les noms d'étapes que l'adaptation en cours masque. Vide = pas
+     d'adaptation, donc exactement le comportement d'avant la vague. */
+  masquees: string[] = [],
+): Promise<PlanningDay[]> {
   const supabase = createClient();
   const sc = await schemaIntentions();
+  const avecAdaptation = await adaptationsDisponibles();
   await supabase
     .from(sc.table)
     .delete()
@@ -614,7 +684,7 @@ export async function reposerLaSemaine(userId: string, gen: GenInput, dates: str
      ou par le Guide. Un `upsert` aveugle sur toutes les dates de la
      semaine les écraserait, et l'écran ne montrerait rien de l'accident. */
   const restant = await fetchRange(userId, dates);
-  const seances = generateWeek(gen, dates)
+  const seances = generateWeek(gen, dates, masquees)
     .filter(hasSeance)
     .filter((d) => (restant[d.date] ?? []).length === 0);
   /* ⚠️ UN `insert`, PLUS UN `upsert` : c'est V6b. L'ancienne écriture
@@ -625,7 +695,7 @@ export async function reposerLaSemaine(userId: string, gen: GenInput, dates: str
   if (seances.length > 0) {
     await supabase
       .from(sc.table)
-      .insert(seances.map((d) => dayToRow(userId, d, "systeme", sc)));
+      .insert(seances.map((d) => dayToRow(userId, d, "systeme", sc, avecAdaptation)));
   }
   return lireSemaine(userId, dates);
 }
@@ -643,9 +713,10 @@ export async function reposerLaSemaine(userId: string, gen: GenInput, dates: str
 export async function lireJour(userId: string, date: string): Promise<PlanningDay[]> {
   const supabase = createClient();
   const sc = await schemaIntentions();
+  const avecAdaptation = await adaptationsDisponibles();
   const { data } = await supabase
     .from(sc.table)
-    .select(colonnes(sc))
+    .select(colonnes(sc, avecAdaptation))
     .eq("user_id", userId)
     .eq("date", date);
   return ordonner((data ?? []).map((r) => rowToDay(r as unknown as PlanningRow, sc)));
@@ -657,9 +728,10 @@ export async function fetchRange(userId: string, dates: string[]): Promise<Recor
   if (dates.length === 0) return {};
   const supabase = createClient();
   const sc = await schemaIntentions();
+  const avecAdaptation = await adaptationsDisponibles();
   const { data } = await supabase
     .from(sc.table)
-    .select(colonnes(sc))
+    .select(colonnes(sc, avecAdaptation))
     .eq("user_id", userId)
     .in("date", dates);
   return parDate((data ?? []).map((r) => rowToDay(r as unknown as PlanningRow, sc)));
@@ -799,6 +871,7 @@ async function poser(
 ): Promise<PlanningDay> {
   const supabase = createClient();
   const sc = await schemaIntentions();
+  const avecAdaptation = await adaptationsDisponibles();
   /* La journée VISÉE, pas celle d'où l'intention vient : c'est elle qui
      porte les voisines et la règle repos/séance. */
   const jour = await lireJour(userId, day.date);
@@ -820,7 +893,7 @@ async function poser(
   if (cible) {
     const { error } = await supabase
       .from(sc.table)
-      .update(dayToRow(userId, day, origine, sc))
+      .update(dayToRow(userId, day, origine, sc, avecAdaptation))
       .eq("id", cible)
       .eq("user_id", userId);
     if (error) throw new Error(error.message);
@@ -828,7 +901,7 @@ async function poser(
   } else {
     const { data, error } = await supabase
       .from(sc.table)
-      .insert(dayToRow(userId, day, origine, sc))
+      .insert(dayToRow(userId, day, origine, sc, avecAdaptation))
       .select("id, created_at")
       .maybeSingle();
     if (error) throw new Error(error.message);
@@ -922,9 +995,10 @@ export async function libererJours(userId: string, dates: string[]): Promise<voi
 export async function reservationDeLEtape(userId: string, etapeId: string): Promise<PlanningDay | null> {
   const supabase = createClient();
   const sc = await schemaIntentions();
+  const avecAdaptation = await adaptationsDisponibles();
   const { data } = await supabase
     .from(sc.table)
-    .select(colonnes(sc))
+    .select(colonnes(sc, avecAdaptation))
     .eq("user_id", userId)
     .eq("etape_consommee_id", etapeId)
     .eq(sc.colStatut, sc.versBase.planned)

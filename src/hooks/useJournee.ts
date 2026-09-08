@@ -38,6 +38,10 @@ import {
   getOrCreateProgramme, lireProgrammeActif, etapeSuivanteDe,
   type EtapeCycle, type ProgrammeEtCycle,
 } from "@/lib/programme";
+import {
+  adaptationDuJour, etapeMasquee, etapesCompatibles, libelleJour, nomsMasques,
+  type Adaptation,
+} from "@/lib/adaptation";
 import type { EtatJournee } from "@/lib/journee";
 
 const DAY_FULL = ["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"];
@@ -66,6 +70,20 @@ export type Journee = {
   reservation: PlanningDay | null;
   /** Le jour de cette réservation, dit à voix haute : « mardi 8 ». */
   reserveLe: string | null;
+  /**
+   * V8 · L'ADAPTATION QUI S'APPLIQUE AUJOURD'HUI, ou `null`.
+   *
+   * ⚠️ ELLE EST LUE, ELLE N'EST JAMAIS APPLIQUÉE AU PROGRAMME. Le cycle
+   * persisté ne bouge pas d'une ligne : c'est la SÉLECTION de l'étape qui
+   * la traverse. Quand l'adaptation expire, il n'y a donc rien à
+   * réécrire, la lecture cesse simplement de filtrer.
+   */
+  adaptation: Adaptation | null;
+  /** Sa fin, dite à voix haute : « 17 sept. ». `null` sans adaptation. */
+  adaptationJusquau: string | null;
+  /** Les noms d'étapes que l'adaptation masque. Le seul endroit qui en a
+   *  besoin est « Refais ma semaine », qui compose encore en noms. */
+  etapesMasquees: string[];
   /** La taille de l'instance de l'étape, calculée sans rien écrire. */
   nbExos: number;
   nextLabel: string | null;
@@ -104,6 +122,7 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
   const [gen, setGen] = useState<GenInput | null>(null);
   const [etape, setEtape] = useState<EtapeCycle | null>(null);
   const [reservation, setReservation] = useState<PlanningDay | null>(null);
+  const [adaptation, setAdaptation] = useState<Adaptation | null>(null);
   const [niveau, setNiveau] = useState<string | null>(null);
   const [doneStats, setDoneStats] = useState<{ minutes: number; kcal: number } | null>(null);
 
@@ -162,7 +181,16 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
         ? await getOrCreateProgramme(user.id)
         : await lireProgrammeActif(user.id);
       setProgramme(actif);
-      const suivante = actif ? await etapeSuivanteDe(user.id, actif) : null;
+      /* ⚠️ V8 · L'ADAPTATION SE LIT AVANT L'ÉTAPE, PARCE QU'ELLE DÉCIDE
+         DE L'ÉTAPE. Une requête, et seulement s'il y a un programme :
+         sans programme il n'y a pas de cycle à adapter. Elle est
+         rattachée au programme ACTIF, donc une nouvelle version du
+         programme cesse d'être adaptée d'elle-même, sans écriture. */
+      const couche = actif ? await adaptationDuJour(user.id, actif.programme.id, todayYmd()) : null;
+      setAdaptation(couche);
+      const suivante = actif
+        ? await etapeSuivanteDe(user.id, actif, (e) => etapeMasquee(e.id, couche))
+        : null;
       setEtape(suivante);
       /* ⚠️ ET ON DEMANDE À LA BASE SI CETTE ÉTAPE A DÉJÀ UN JOUR.
          C'est la réparation du défaut du 2026-09-06 : le héros ne
@@ -206,7 +234,24 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
     [etape, gen],
   );
 
-  const etat = etatJournee({ pret, besoinSetup, jour, etape });
+  /* ⚠️ « AUCUNE ÉTAPE COMPATIBLE » N'EST PAS « PAS DE PROGRAMME ». Les
+     deux rendent `etape = null`, et l'écran ne dit pas du tout la même
+     chose : sans programme, la journée est libre ; avec un programme
+     entièrement masqué, c'est l'adaptation qui bloque, et il faut le
+     dire au lieu d'écrire « rien de prévu » comme si personne n'avait
+     rien décidé. */
+  const adaptationBloque =
+    !!adaptation && !!programme && programme.cycle.length > 0
+    && etapesCompatibles(programme.cycle, adaptation).length === 0;
+
+  const etat = etatJournee({ pret, besoinSetup, jour, etape, adaptationBloque });
+
+  /* Les noms d'étapes masquées : « Refais ma semaine » compose encore en
+     noms de split, pas en identifiants d'étapes. */
+  const etapesMasquees = useMemo(
+    () => (programme ? nomsMasques(programme.cycle, adaptation) : []),
+    [programme, adaptation],
+  );
 
   /* Prochaine séance de la semaine (états repos et libre) */
   const nextLabel = useMemo(() => {
@@ -315,6 +360,7 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
         genre: "etape",
         programmeId: programme.programme.id,
         etapeId: etape.id,
+        adaptationId: adaptation?.id ?? null,
         type: "Force",
         title: etape.nom,
         difficulty: difficulte,
@@ -322,7 +368,7 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
         exerciseList: instance,
       },
     });
-  }, [jour, reservation, lancerIntention, etape, instance, programme, gen, launchWorkout]);
+  }, [jour, reservation, lancerIntention, etape, instance, programme, adaptation, gen, launchWorkout]);
 
   /* ⚠️ LE SEUL ENDROIT DU PRODUIT QUI DATE UNE ÉTAPE, ET DONC LE SEUL
      QUI CRÉE UNE INTENTION PORTANT SON LIEN VERS LE PROGRAMME. Sans ce
@@ -354,6 +400,7 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
           difficulty: levelToDifficulty(gen?.level ?? null),
           location: gen?.ctx ?? null,
           exerciseList: instance,
+          adaptationId: adaptation?.id ?? null,
         }),
         id: dejaPosee?.id ?? null,
       };
@@ -367,7 +414,7 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
        et le héros passe de « quand tu veux » à la journée qui la porte. */
     if (typeof window !== "undefined") window.dispatchEvent(new Event(EVT_JOURNEE));
     return true;
-  }, [user, etape, programme, instance, gen]);
+  }, [user, etape, programme, instance, adaptation, gen]);
 
   return {
     etat, jour, extras, etape, reservation,
@@ -375,6 +422,9 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
        cas l'intention EST celle du jour, donc l'état vaut « seance » et
        le héros ne montre plus l'étape. */
     reserveLe: reservation?.date ? libelleReservation(reservation.date, today) : null,
+    adaptation,
+    adaptationJusquau: adaptation ? libelleJour(adaptation.fin) : null,
+    etapesMasquees,
     nbExos: instance.length, nextLabel, doneStats,
     semaine, setSemaine, gen, programme, besoinSetup, niveau,
     recharger: () => { void charger(); },

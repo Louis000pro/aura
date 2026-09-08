@@ -36,7 +36,8 @@ import { Photo, WIDGET } from "./PhotoSeance";
 export type HeroState = EtatJournee;
 
 export default function TodayHero({
-  state, day, etape, reserveLe, nbExos, nextLabel, doneStats, onStart, onRedo, onImprovise, onOrganise, onShift, onReplace,
+  state, day, etape, reserveLe, nbExos, nextLabel, doneStats, adaptationJusquau,
+  onStart, onRedo, onImprovise, onOrganise, onShift, onReplace, onAdaptation,
 }: {
   state: HeroState;
   day: PlanningDay | null;
@@ -47,6 +48,11 @@ export default function TodayHero({
   nbExos: number;                                 // taille de son instance, calculée sans rien écrire
   nextLabel: string | null;                       // « Jambes · demain » (état repos)
   doneStats: { minutes: number; kcal: number } | null;
+  /* ⚠️ V8 · UNE LIGNE, JAMAIS UN BANDEAU. Une adaptation en cours est un
+     CONTEXTE, pas une nouvelle du jour : elle se dit sous la carte, en
+     une phrase qui donne la date de fin et ouvre l'écran qui la gère.
+     `null` quand il n'y en a pas, et alors rien ne s'affiche. */
+  adaptationJusquau: string | null;
   onStart: () => void;
   /* ⚠️ « REFAIRE LA SÉANCE » A SA PROPRE ACTION, ET CE N'EST PAS UN
      DÉTAIL DE CÂBLAGE. Partager `onStart` avec les autres états faisait
@@ -59,6 +65,8 @@ export default function TodayHero({
   onOrganise: () => void;
   onShift: () => void;
   onReplace: () => void;
+  /** Ouvre l'écran des adaptations, dans Entraînement. */
+  onAdaptation: () => void;
 }) {
   /* Skeleton — même silhouette que la carte, aucune culpabilité d'attente */
   if (state === "loading") {
@@ -77,7 +85,7 @@ export default function TodayHero({
   const viz =
     state === "setup" ? WIDGET.setup
     : state === "done" ? WIDGET.done
-    : state === "repos" || state === "libre" ? WIDGET.repos
+    : state === "repos" || state === "libre" || state === "aucune_compatible" ? WIDGET.repos
     : state === "etape" ? { img: resolveArt({ title: etape?.nom ?? "" }).img, pos: "center 24%" }
     : { img: resolveArt({ title: day ? `${day.title} ${day.type}` : "" }).img, pos: "center 24%" };
 
@@ -104,7 +112,7 @@ export default function TodayHero({
             <Check size={18} strokeWidth={3.2} style={{ color: "#06281E" }} />
           </span>
         )}
-        {(state === "repos" || state === "libre") && <Moon size={22} strokeWidth={1.6} style={{ color: "#9FD8C6", opacity: 0.85 }} />}
+        {(state === "repos" || state === "libre" || state === "aucune_compatible") && <Moon size={22} strokeWidth={1.6} style={{ color: "#9FD8C6", opacity: 0.85 }} />}
         {state === "setup" && <AssistantSpark px={22} />}
       </div>
 
@@ -175,6 +183,42 @@ export default function TodayHero({
               <button onClick={onOrganise} className="text-[11.5px] font-semibold cursor-pointer bg-transparent border-none"
                 style={{ color: "rgba(255,255,255,0.6)" }}>
                 {reserveLe ? "Changer de jour" : "Lui donner un jour"}
+              </button>
+            </div>
+          </>
+        )}
+
+        {/* ⚠️ V8 · « RIEN DE COMPATIBLE » N'EST PAS « RIEN DE PRÉVU ».
+            L'adaptation masque toutes les étapes du cycle : le programme
+            a bien quelque chose à proposer, c'est la couche qui l'en
+            empêche. Écrire « rien de prévu » ferait porter à la personne
+            une absence qu'elle a elle-même décidée, et sans lui dire où
+            la défaire. On le dit, on ouvre l'écran qui la gère, et
+            surtout ON N'INVENTE PAS une séance de remplacement : V8
+            n'adapte pas encore le CONTENU d'une étape, donc en proposer
+            une serait promettre ce qu'on ne sait pas faire. */}
+        {state === "aucune_compatible" && (
+          <>
+            <p className="text-[11px] font-semibold mb-1" style={{ color: "#9FD8C6" }}>
+              Adaptation en cours
+            </p>
+            <h2 className="text-[30px] md:text-[34px] leading-[1.04] font-extralight text-white">Rien de compatible.</h2>
+            <p className="text-[12.5px] font-light mt-1.5 mb-3.5 leading-relaxed" style={{ color: "rgba(255,255,255,0.72)" }}>
+              Aucune séance de ton programme n&apos;est compatible avec ton adaptation
+              {adaptationJusquau ? <>, en cours jusqu&apos;au <b className="font-bold text-white">{adaptationJusquau}</b></> : null}.
+            </p>
+            <motion.button
+              whileTap={{ scale: 0.97 }}
+              onClick={onAdaptation}
+              className="w-full py-3 rounded-2xl flex items-center justify-center gap-2 cursor-pointer text-[13.5px] font-bold text-white"
+              style={{ background: "rgba(255,255,255,0.10)", border: "1px solid rgba(255,255,255,0.28)", backdropFilter: "blur(4px)" }}
+            >
+              Gérer mon adaptation
+            </motion.button>
+            <div className="flex justify-center gap-5 mt-2.5">
+              <button onClick={onImprovise} className="text-[11.5px] font-semibold cursor-pointer bg-transparent border-none"
+                style={{ color: "rgba(255,255,255,0.6)" }}>
+                J&apos;ai quand même envie de bouger
               </button>
             </div>
           </>
@@ -263,6 +307,19 @@ export default function TodayHero({
               ✦ Créer mon planning
             </motion.button>
           </>
+        )}
+
+        {/* ⚠️ V8 · LA LIGNE DE CONTEXTE, ET C'EST TOUT CE QUE L'ADAPTATION
+            PREND À L'ÉCRAN. Elle ne se répète pas dans l'état
+            « aucune_compatible », qui vient déjà de dire la même chose en
+            plus grand. Un bandeau ferait de l'adaptation le sujet de
+            l'accueil, alors que le sujet reste la séance du jour. */}
+        {adaptationJusquau && state !== "aucune_compatible" && state !== "setup" && (
+          <button onClick={onAdaptation}
+            className="mt-2.5 w-full text-center text-[11px] font-semibold cursor-pointer bg-transparent border-none"
+            style={{ color: "rgba(255,255,255,0.48)" }}>
+            Adaptation en cours jusqu&apos;au {adaptationJusquau}
+          </button>
         )}
       </div>
     </motion.div>

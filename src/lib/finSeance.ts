@@ -49,6 +49,10 @@ export type CibleSeance =
       difficulty: string;
       location: Ctx | null;
       exerciseList: Exercise[];
+      /* V8 · l'adaptation sous laquelle l'étape a été matérialisée. Une
+         TRACE sur le fait, jamais une décision : le curseur, lui, avance
+         exactement comme sans adaptation. */
+      adaptationId?: string | null;
     };
 
 /**
@@ -114,7 +118,7 @@ export async function terminerSeance(userId: string, cible: CibleSeance): Promis
           difficulty: cible.difficulty,
           location: cible.location,
           exerciseList: cible.exerciseList,
-        });
+        }, cible.adaptationId ?? null);
       }
     }
   } catch (e) {

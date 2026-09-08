@@ -305,8 +305,23 @@ function HomeEquipQuestion({ onChoose, onBack }: { onChoose: (e: "halteres" | "p
 }
 
 /* ─── Main Component ─── */
-export default function WeeklyProgramme() {
+/**
+ * ⚠️ V8 · `etapesMasquees` N'EST PAS UN CONFORT, C'EST LE SECOND CHEMIN
+ * QUI POSE DES ÉTAPES. « Refais ma semaine » compose la semaine depuis le
+ * cycle de référence : sans ce filtre, il reposerait tranquillement
+ * l'étape que l'adaptation vient d'écarter à l'accueil, et la personne ne
+ * le découvrirait que le jour où la séance arrive. Le laisser derrière
+ * une prop plutôt que de relire l'adaptation ici garde une seule lecture
+ * de la journée dans l'app (`useJournee`), qui est déjà montée par
+ * l'écran parent.
+ */
+export default function WeeklyProgramme({ etapesMasquees = [] }: { etapesMasquees?: string[] } = {}) {
   const { user } = useAuth();
+  /* ⚠️ UNE CLÉ, PAS LE TABLEAU. `generate` est un `useCallback` dont
+     dépend l'effet d'auto-génération : un tableau change d'identité à
+     chaque rendu, donc l'effet repartirait en boucle. La clé est stable
+     tant que le contenu l'est. */
+  const masqueesCle = etapesMasquees.join("|");
   const router = useRouter();
   const isPremium = !!(user?.is_admin || user?.is_premium);
   const [profile, setProfile] = useState<ProfileData | null>(null);
@@ -416,7 +431,9 @@ export default function WeeklyProgramme() {
         const dates = weekDatesForOffset(weekOffset);
         // ⚠️ Lire ne pose plus rien (V5) : seule la demande EXPLICITE de
         // refaire la semaine écrit, et elle n'écrit que des séances.
-        const week = force ? await reposerLaSemaine(user.id, gen, dates) : await lireSemaine(user.id, dates);
+        const week = force
+          ? await reposerLaSemaine(user.id, gen, dates, masqueesCle ? masqueesCle.split("|") : [])
+          : await lireSemaine(user.id, dates);
         setDays(week);
         setError(null);
       } catch (e) {
@@ -426,7 +443,7 @@ export default function WeeklyProgramme() {
         setLoading(false);
       }
     },
-    [user, profile, weekOffset]
+    [user, profile, weekOffset, masqueesCle]
   );
 
   /* Régénère un programme différent (incrémente le variant) — réservé au Premium */

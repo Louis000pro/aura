@@ -370,6 +370,28 @@ export async function GET(req: NextRequest) {
   const admin = createAdminClient();
   const today = parisDateStr(maintenant);
 
+  /* ⚠️ V8 · LE BALAI DES ADAPTATIONS EXPIRÉES, ET IL NE DÉCIDE DE RIEN.
+     L'affichage a déjà sa réponse sans lui : `adaptationActive` recalcule
+     l'expiration à la lecture, donc une adaptation périmée cesse
+     d'agir à la seconde où le jour change, même si personne n'a écrit
+     son statut. C'est le remède au défaut de `challenge_runs`, restée
+     `en_cours` à vie parce que rien ne la fermait.
+
+     Il sert à autre chose : une adaptation qui reste `active` en base
+     BLOQUE la suivante, l'`EXCLUDE` refusant deux périodes actives qui
+     se chevauchent. On range donc, une fois par soir, et son échec est
+     sans conséquence pour le rappel qui suit. */
+  {
+    const { error } = await admin
+      .from("adaptations_entrainement")
+      .update({ statut: "terminee", fermee_le: new Date().toISOString() })
+      .eq("statut", "active")
+      .lt("fin", today);
+    /* La table n'existe pas tant que la migration V8 n'est pas collée :
+       on le dit une fois, on ne casse pas la nuit pour autant. */
+    if (error) console.warn("[cron] adaptations expirées :", error.message);
+  }
+
   const { data: subs } = await admin
     .from("push_subscriptions")
     .select("user_id, endpoint, p256dh, auth");

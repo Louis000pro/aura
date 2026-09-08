@@ -35,6 +35,14 @@ export type EtatJournee =
   | "etape"
   /** Un repos EXPLICITEMENT posé. */
   | "repos"
+  /**
+   * V8 · une adaptation est en cours et elle masque TOUTES les étapes du
+   * cycle. Ce n'est ni « libre » ni « repos » : le programme a quelque
+   * chose à proposer, c'est l'adaptation qui l'en empêche, et l'écran
+   * doit le dire au lieu d'afficher « rien de prévu » comme si la
+   * personne n'avait rien décidé.
+   */
+  | "aucune_compatible"
   /** Rien de prévu, et ce n'est pas un repos. */
   | "libre"
   /** La séance principale du jour est terminée. */
@@ -49,6 +57,13 @@ export function etatJournee(input: {
   jour: PlanningDay | null;
   /** La prochaine étape du cycle, ou `null` s'il n'y a pas de programme. */
   etape: unknown | null;
+  /**
+   * V8 · l'adaptation en cours ne laisse AUCUNE étape proposable. C'est
+   * un fait qu'on reçoit, pas qu'on déduit : « pas d'étape » a deux
+   * causes très différentes (aucun programme, ou un programme entièrement
+   * masqué) et l'écran ne dit pas la même chose dans les deux cas.
+   */
+  adaptationBloque?: boolean;
 }): EtatJournee {
   if (!input.pret) return "loading";
   if (input.besoinSetup) return "setup";
@@ -56,6 +71,11 @@ export function etatJournee(input: {
   if (hasSeance(input.jour)) return "seance";
   if (estRepos(input.jour)) return "repos";
   if (input.etape) return "etape";
+  /* ⚠️ APRÈS L'ÉTAPE, JAMAIS AVANT. Une adaptation qui masque une partie
+     du cycle laisse une étape compatible : c'est elle qu'on propose, et
+     cet état ne doit pas exister. Il n'apparaît que quand il ne reste
+     vraiment rien. */
+  if (input.adaptationBloque) return "aucune_compatible";
   return "libre";
 }
 
@@ -197,6 +217,9 @@ export function intentionDeLEtape(input: {
   /** L'instance matérialisée à l'instant où l'on date : une intention
    *  datée doit pouvoir se lancer, comme toutes les autres. */
   exerciseList: Exercise[];
+  /** V8 · l'adaptation en cours au moment où l'on réserve. Une TRACE :
+   *  ce que la séance contiendra se décidera à son lancement, pas ici. */
+  adaptationId?: string | null;
 }): PlanningDay {
   return {
     id: null,
@@ -211,5 +234,6 @@ export function intentionDeLEtape(input: {
     status: "planned",
     programmeId: input.programmeId,
     etapeId: input.etape.id,
+    adaptationId: input.adaptationId ?? null,
   };
 }
