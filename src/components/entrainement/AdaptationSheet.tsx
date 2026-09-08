@@ -14,38 +14,40 @@
    l'intérêt d'une couche datée. Le retour au programme de référence ne
    demande donc aucune écriture, puisque le programme n'a jamais bougé.
 
-   ⚠️ ET IL NE RÉÉCRIT AUCUNE RÉSERVATION. Une séance déjà datée sur une
-   étape que l'adaptation masquerait est un CONFLIT : on la montre, et
-   on n'active pas tant qu'elle est là. Supprimer, déplacer ou remplacer
-   automatiquement ce que quelqu'un a posé serait exactement la
+   ⚠️ ET IL NE RÉÉCRIT AUCUNE RÉSERVATION TOUT SEUL. Une séance déjà
+   datée sur une étape que l'adaptation masquerait est un CONFLIT : on la
+   montre, et on n'active pas tant qu'elle est là. Supprimer, déplacer ou
+   remplacer automatiquement ce que quelqu'un a posé serait exactement la
    réécriture silencieuse que le modèle s'interdit.
+
+   ⚠️ MAIS ON PEUT LE RÉSOUDRE D'ICI, ET C'EST DE L'ERGONOMIE, PAS UNE
+   SÉMANTIQUE NOUVELLE. Chaque conflit porte « Décaler » et « Retirer »,
+   et les deux passent par les AUTORITÉS QUI EXISTENT DÉJÀ : `saveDay`
+   déplace l'intention (même identité, même provenance, même lien vers le
+   programme, exactement ce que fait le glisser-déposer de « Organiser »)
+   et `retirerIntention` la retire (une suppression, jamais un statut, la
+   même sémantique que `libererJours`, resserrée sur une ligne). Cet
+   écran n'invente donc aucune écriture de planning : il déclare un
+   geste, et c'est toujours la personne qui le déclenche.
+
+   ⚠️ APRÈS CHAQUE GESTE, ON RELIT LA BASE. Une séance décalée À
+   L'INTÉRIEUR de la période reste un conflit : retirer sa ligne de la
+   liste affichée rouvrirait le bouton sur un conflit qui existe encore.
    ════════════════════════════════════════════════════════════════════ */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { Check, X } from "lucide-react";
 import { lockBodyModal } from "@/lib/bodyModal";
 import {
-  ajouterJours, creerAdaptation, fermerAdaptations, finParDefaut, libelleJour,
-  REEVALUATION_SEMAINES, reservationsEnConflit, validerAxes,
+  chargerConflits, creerAdaptation, fermerAdaptations, finParDefaut, libelleJour,
+  REEVALUATION_SEMAINES, validerAxes,
   type Adaptation,
 } from "@/lib/adaptation";
-import { fetchRange, todayYmd, dayTitle, type PlanningDay } from "@/lib/planning";
+import { retirerIntention, saveDay, todayYmd, dayTitle, type PlanningDay } from "@/lib/planning";
+import { EVT_JOURNEE } from "@/lib/finSeance";
 import type { ProgrammeEtCycle } from "@/lib/programme";
-
-/** Les dates d'une fenêtre, bornes incluses. Bornée à 120 jours : une
- *  adaptation plus longue qu'un trimestre n'est plus une adaptation,
- *  c'est une nouvelle version du programme, et on ne va pas demander
- *  cent cinquante jours d'intentions pour le dire. */
-function datesEntre(debut: string, fin: string): string[] {
-  const out: string[] = [];
-  let d = debut;
-  for (let i = 0; i < 120 && d <= fin; i++) {
-    out.push(d);
-    d = ajouterJours(d, 1);
-  }
-  return out;
-}
+import ChoixJour from "./ChoixJour";
 
 export default function AdaptationSheet({
   userId, programme, adaptation, onClose, onChange,
@@ -79,6 +81,16 @@ export default function AdaptationSheet({
   const [conflits, setConflits] = useState<{ cle: string; liste: PlanningDay[] } | null>(null);
   const [erreur, setErreur] = useState<string | null>(null);
   const [occupe, setOccupe] = useState(false);
+  /* Le geste en cours sur UN conflit : le sélecteur de jour ouvert, ou le
+     retrait armé. Un seul à la fois, et il porte l'identité de la ligne
+     visée : une confirmation qui ne dit pas sur quoi elle porte est une
+     confirmation qu'on donne à l'aveugle. */
+  const [geste, setGeste] = useState<{ id: string; quoi: "decaler" | "retirer" } | null>(null);
+  /* ⚠️ IL FAIT PARTIE DE LA QUESTION POSÉE, PAS D'UN RAFRAÎCHISSEMENT À
+     CÔTÉ. Après un geste, la réponse d'avant ne répond plus : la clé
+     change, la liste affichée redevient « je ne sais pas », et le bouton
+     d'activation reste fermé tant que la base n'a pas répondu. */
+  const [tick, setTick] = useState(0);
 
   const basculer = (id: string) =>
     setChoisies((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
@@ -95,15 +107,13 @@ export default function AdaptationSheet({
      chercher dans la semaine déjà chargée à l'écran raterait toutes les
      réservations au-delà de dimanche, et le défaut serait INTERMITTENT
      selon la date d'aujourd'hui : le pire mode d'échec possible. */
-  const cleConflits = `${debut}|${fin}|${[...choisies].sort().join(",")}`;
+  const cleConflits = `${debut}|${fin}|${[...choisies].sort().join(",")}|${tick}`;
   useEffect(() => {
     if (!userId || !periodeValide || choisies.length === 0) return;
     let annule = false;
     (async () => {
       try {
-        const parJour = await fetchRange(userId, datesEntre(debut, fin));
-        const toutes = Object.values(parJour).flat();
-        const liste = reservationsEnConflit(toutes, { debut, fin, axes: { eviter_etapes: choisies } });
+        const liste = await chargerConflits(userId, { debut, fin, axes: { eviter_etapes: choisies } });
         if (!annule) setConflits({ cle: cleConflits, liste });
       } catch {
         /* On ne sait pas : on n'affirme donc pas « aucun conflit », et le
@@ -151,6 +161,57 @@ export default function AdaptationSheet({
     onChange();
     onClose();
   }, [adaptation, onChange, onClose]);
+
+  /* ⚠️ ON NE RETIRE RIEN DE LA LISTE À L'ÉCRAN : ON REPOSE LA QUESTION.
+     C'est la source qui dit s'il reste un conflit, et un déplacement peut
+     très bien retomber dans la période. */
+  const relire = useCallback(() => {
+    setGeste(null);
+    setTick((t) => t + 1);
+    /* La semaine derrière et le héros de l'accueil se remettent d'accord
+       avec ce qui vient d'être écrit. */
+    onChange();
+    if (typeof window !== "undefined") window.dispatchEvent(new Event(EVT_JOURNEE));
+  }, [onChange]);
+
+  /* ⚠️ DÉCALER, C'EST L'AUTORITÉ DE DÉPLACEMENT DÉJÀ EN PLACE, ET RIEN
+     D'AUTRE. `saveDay` sur une intention qui porte son `id` MODIFIE cette
+     ligne : aucune seconde intention, l'identité est conservée, et la
+     provenance comme le lien vers l'étape survivent parce que la ligne a
+     été relue avant d'être réécrite. C'est mot pour mot ce que fait le
+     glisser-déposer de « Organiser ». */
+  const decaler = useCallback(async (c: PlanningDay, date: string) => {
+    if (!c.id || date === c.date) { setGeste(null); return; }
+    setOccupe(true);
+    setErreur(null);
+    try {
+      await saveDay(userId, { ...c, date }, "utilisateur");
+    } catch {
+      setErreur("Cette séance n’a pas pu être décalée.");
+    }
+    setOccupe(false);
+    relire();
+  }, [userId, relire]);
+
+  /* ⚠️ RETIRER, C'EST UNE SUPPRESSION, ET SÛREMENT PAS UN STATUT. La
+     marquer `passee` dirait qu'elle a été écartée alors qu'elle n'a
+     jamais eu lieu, et `faite` refermerait une étape que personne n'a
+     faite : le curseur du cycle s'ordonne justement sur les intentions
+     résolues. Rien du programme n'est touché, et une réservation V7A
+     rend simplement son étape libre : le héros la reproposera quand
+     l'adaptation ne la masquera plus. */
+  const retirer = useCallback(async (c: PlanningDay) => {
+    if (!c.id) { setGeste(null); return; }
+    setOccupe(true);
+    setErreur(null);
+    try {
+      await retirerIntention(userId, c.id);
+    } catch {
+      setErreur("Cette séance n’a pas pu être retirée.");
+    }
+    setOccupe(false);
+    relire();
+  }, [userId, relire]);
 
   /* La nav du bas s'efface tant que la feuille est ouverte : c'est ce que
      fait `Sheet` pour Organiser, Choisir et Improviser, et l'oublier ici
@@ -323,19 +384,80 @@ export default function AdaptationSheet({
                     <p className="text-[13px] font-bold mb-1.5" style={{ color: "var(--text-0)" }}>
                       {conflitsAJour.length === 1 ? "Une séance est déjà posée" : `${conflitsAJour.length} séances sont déjà posées`}
                     </p>
-                    <p className="text-[11.5px] font-light leading-snug mb-2.5" style={{ color: "var(--text-2)" }}>
+                    <p className="text-[11.5px] font-light leading-snug mb-1" style={{ color: "var(--text-2)" }}>
                       Elles portent une étape que tu veux éviter. Vaiiya n’y touche pas tout
-                      seul : décale-les ou retire-les depuis ta semaine, puis reviens ici.
+                      seul : décale-les ou retire-les, une par une.
                     </p>
                     <ul className="m-0 p-0 list-none">
-                      {conflitsAJour.map((c) => (
-                        <li key={c.id ?? `${c.date}-${c.title}`}
-                          className="flex items-baseline gap-2 py-1 text-[12px] font-semibold"
-                          style={{ color: "var(--text-1)" }}>
-                          <span style={{ color: "var(--text-3)" }}>{libelleJour(c.date)}</span>
-                          <span className="truncate">{dayTitle(c)}</span>
-                        </li>
-                      ))}
+                      {conflitsAJour.map((c) => {
+                        const ouvert = geste && geste.id === c.id ? geste.quoi : null;
+                        return (
+                          <li key={c.id ?? `${c.date}-${c.title}`} className="py-2 vy-filet">
+                            <div className="flex items-center gap-2">
+                              <span className="text-[11px] font-semibold flex-shrink-0" style={{ color: "var(--text-3)" }}>
+                                {libelleJour(c.date)}
+                              </span>
+                              <span className="flex-1 min-w-0 truncate text-[12px] font-semibold" style={{ color: "var(--text-1)" }}>
+                                {dayTitle(c)}
+                              </span>
+                              {/* ⚠️ DEUX ACTIONS SECONDAIRES, DONC SANS SURFACE
+                                  NI VIOLET PLEIN : le seul bouton d'action de
+                                  cet écran reste « Activer l'adaptation ». */}
+                              {ouvert === "retirer" ? (
+                                <>
+                                  <button onClick={() => void retirer(c)} disabled={occupe}
+                                    className="text-[11.5px] font-bold cursor-pointer bg-transparent border-none px-0 flex-shrink-0"
+                                    style={{ color: "var(--exp-encre)" }}>
+                                    Confirmer
+                                  </button>
+                                  <button onClick={() => setGeste(null)}
+                                    className="text-[11.5px] font-bold cursor-pointer bg-transparent border-none px-0 flex-shrink-0"
+                                    style={{ color: "var(--text-3)" }}>
+                                    Annuler
+                                  </button>
+                                </>
+                              ) : (
+                                <>
+                                  <button onClick={() => setGeste(ouvert === "decaler" || !c.id ? null : { id: c.id, quoi: "decaler" })}
+                                    className="text-[11.5px] font-bold cursor-pointer bg-transparent border-none px-0 flex-shrink-0"
+                                    style={{ color: ouvert === "decaler" ? "var(--exp-encre)" : "var(--text-2)" }}>
+                                    {ouvert === "decaler" ? "Fermer" : "Décaler"}
+                                  </button>
+                                  <button onClick={() => { if (c.id) setGeste({ id: c.id, quoi: "retirer" }); }}
+                                    className="text-[11.5px] font-bold cursor-pointer bg-transparent border-none px-0 flex-shrink-0"
+                                    style={{ color: "var(--text-2)" }}>
+                                    Retirer
+                                  </button>
+                                </>
+                              )}
+                            </div>
+                            {/* ⚠️ LA CONSÉQUENCE SE NOMME AVANT LE CLIC, C'EST
+                                la règle du modèle : on ne fait jamais deviner
+                                ce qu'un geste va écrire. */}
+                            {ouvert === "retirer" && (
+                              <p className="text-[11px] font-light leading-snug mt-1.5" style={{ color: "var(--text-3)" }}>
+                                Elle disparaît de ta semaine. Elle n’est ni faite, ni sautée, et ton
+                                programme ne bouge pas.
+                              </p>
+                            )}
+                            <AnimatePresence initial={false}>
+                              {ouvert === "decaler" && (
+                                <motion.div
+                                  initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }}
+                                  exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.18 }}
+                                  className="overflow-hidden">
+                                  <p className="text-[11px] font-light leading-snug mt-1.5" style={{ color: "var(--text-3)" }}>
+                                    Choisis un jour hors de la période, sinon elle restera dans la liste.
+                                  </p>
+                                  {/* Le sélecteur de jour de l'app, celui du héros
+                                      et du menu d'une séance. Pas un second. */}
+                                  <ChoixJour onChoisir={(date) => void decaler(c, date)} />
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
+                          </li>
+                        );
+                      })}
                     </ul>
                   </div>
                 </div>

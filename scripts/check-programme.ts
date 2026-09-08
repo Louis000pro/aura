@@ -35,7 +35,7 @@ import {
   type PlanningDay, type CycleSemaine,
 } from "@/lib/planning";
 import {
-  adaptationActive, ajouterJours, chevauchent, estExpiree, etapeMasquee,
+  adaptationActive, ajouterJours, chevauchent, datesEntre, estExpiree, etapeMasquee,
   etapesCompatibles, finParDefaut, idsMasques, libelleJour, REEVALUATION_SEMAINES,
   reservationsEnConflit, validerAxes, validerPeriode,
   type Adaptation,
@@ -1565,6 +1565,79 @@ verdict(
     );
   }
 
+  /* ── 6bis. RÉSOUDRE UN CONFLIT DEPUIS LA CARTE (2026-09-08) ────────
+     Le blocage fonctionnait, mais il envoyait la personne fermer la
+     feuille, retrouver la séance dans sa semaine, la modifier, puis
+     revenir. Les deux gestes vivent maintenant sur la ligne du conflit.
+     Ce qui se vérifie hors ligne, c'est ce que la LISTE devient après
+     chacun d'eux, et le fait qu'aucun ne consomme quoi que ce soit. */
+  {
+    const conflit = (over: Partial<PlanningDay>): PlanningDay => ({
+      id: "c1", date: "2026-09-09", type: "Force", title: "Bas du corps",
+      difficulty: "Intermédiaire", location: "salle", exerciseList: [],
+      sessionId: null, status: "planned",
+      programmeId: "p1", etapeId: null, provenanceId: "e-bas", ...over,
+    });
+    const fenetre = { debut: "2026-09-08", fin: "2026-10-06", axes: { eviter_etapes: ["e-bas", "e-pull"] } };
+    /* Les deux natures de conflit, celles du vrai compte : une séance
+       RÉGÉNÉRÉE (provenance seule) et une RÉSERVATION V7A (étape). */
+    const regeneree = conflit({});
+    const reservation = conflit({ id: "c2", date: "2026-09-10", title: "Pull", etapeId: "e-pull", provenanceId: null });
+
+    verdict(
+      "V8 · deux séances incompatibles font deux conflits, pas un",
+      reservationsEnConflit([regeneree, reservation], fenetre).length === 2,
+      "on les résout une par une",
+    );
+    verdict(
+      "V8 · un conflit décalé HORS de la période disparaît de la liste",
+      reservationsEnConflit([{ ...regeneree, date: "2026-10-07" }, reservation], fenetre)
+        .every((c) => c.id !== "c1"),
+      "le lendemain de la fin : plus rien à lui reprocher",
+    );
+    verdict(
+      "V8 · un conflit décalé DANS la période reste un conflit",
+      reservationsEnConflit([{ ...regeneree, date: "2026-09-30" }, reservation], fenetre)
+        .some((c) => c.id === "c1"),
+      "croire l’écran plutôt que la base rouvrirait le bouton",
+    );
+    verdict(
+      "V8 · un conflit retiré ne bloque plus, et l’autre reste",
+      reservationsEnConflit([reservation], fenetre).map((c) => c.id).join("|") === "c2",
+      "en résoudre un ne résout pas le second",
+    );
+    verdict(
+      "V8 · le dernier conflit résolu laisse la liste vide",
+      reservationsEnConflit([], fenetre).length === 0,
+      "le bouton redevient disponible, et le clic final reste volontaire",
+    );
+
+    /* ⚠️ DÉCALER NE TOUCHE NI À L'IDENTITÉ NI AU LIEN, ET C'EST TOUTE LA
+       RAISON DE PASSER PAR `saveDay` : on réécrit LA ligne, donc les
+       trois colonnes du programme restent exactement les mêmes. */
+    const bougee = { ...regeneree, date: "2026-10-07" };
+    verdict(
+      "V8 · décaler conserve l’identité, la provenance et le lien programme",
+      bougee.id === regeneree.id
+        && JSON.stringify(lienProgramme(bougee)) === JSON.stringify(lienProgramme(regeneree))
+        && lienProgramme(bougee).etape_consommee_id === null,
+      "une séance régénérée provient d’une étape et n’en referme aucune",
+    );
+    const reservationBougee = { ...reservation, date: "2026-09-11" };
+    verdict(
+      "V8 · une réservation V7A décalée réserve toujours la MÊME étape",
+      lienProgramme(reservationBougee).etape_consommee_id === "e-pull"
+        && lienProgramme(reservationBougee).programme_seance_id === "e-pull",
+      "changer de jour ne change pas ce qu’une séance réserve",
+    );
+    const jours = datesEntre(fenetre.debut, fenetre.fin);
+    verdict(
+      "V8 · la fenêtre relue porte ses deux bornes",
+      jours[0] === "2026-09-08" && jours[jours.length - 1] === "2026-10-06" && jours.length === 29,
+      jours.length + " jours interrogés en base",
+    );
+  }
+
   /* ── 7. LES CONTRÔLES DE SOURCE ────────────────────────────────────
      ⚠️ « Le programme de référence reste intact » et « une adaptation ne
      consomme rien » sont des propriétés du CHEMIN. Elles ne cassent rien
@@ -1621,6 +1694,54 @@ verdict(
        action, explicite, qui consommera réellement une étape. Employer ce
        mot ici, c'est préparer la confusion qui fera refermer une étape
        masquée. */
+    /* ── Les deux gestes de résolution : ils RÉUTILISENT les autorités,
+       ils n'en inventent pas. C'est une propriété du chemin, donc de
+       celles qui repasseraient inaperçues : écrire un statut au lieu de
+       supprimer, ou créer une seconde intention au lieu de déplacer,
+       ne casserait rien à l'écran et ne se verrait qu'en base. ── */
+    const feuille = netV8(lireV8("src/components/entrainement/AdaptationSheet.tsx"));
+    verdict(
+      "V8 · « Décaler » DÉPLACE l’intention, il n’en crée pas une seconde",
+      feuille.includes('saveDay(userId, { ...c, date }, "utilisateur")')
+        && !feuille.includes("ajouterIntention"),
+      "saveDay sur un id modifie LA ligne : même identité, même provenance",
+    );
+    verdict(
+      "V8 · « Retirer » supprime, il ne marque jamais faite ni passée",
+      feuille.includes("retirerIntention(userId, c.id)")
+        && !/["'](done|skipped|passee|faite)["']/.test(feuille),
+      "une intention retirée n’est pas un fait, c’est l’absence de fait",
+    );
+    verdict(
+      "V8 · la feuille n’écrit toujours aucune table elle-même",
+      !feuille.includes("programme_seances") && !feuille.includes('from("'),
+      "elle déclare des gestes, les autorités écrivent",
+    );
+    verdict(
+      "V8 · après un geste, les conflits se relisent À LA SOURCE",
+      feuille.includes("chargerConflits(userId,")
+        && feuille.includes("setTick((t) => t + 1)")
+        && feuille.includes("|${tick}`"),
+      "la clé change, donc la liste redevient « je ne sais pas »",
+    );
+    verdict(
+      "V8 · rien n’active l’adaptation à la place de la personne",
+      !/\bactiver\(/.test(feuille)
+        && feuille.includes("onClick={peutActiver ? activer : undefined}"),
+      "aucun appel : le seul chemin vers l’activation est le clic",
+    );
+    verdict(
+      "V8 · le choix du jour reste le sélecteur unique de l’app",
+      feuille.includes("<ChoixJour onChoisir="),
+      "celui du héros et du menu d’une séance, pas un second",
+    );
+    verdict(
+      "V8 · retirer une intention vise son id et épargne ce qui est fait",
+      /retirerIntention[\s\S]*?\.eq\("id", intentionId\)[\s\S]*?\.neq\(sc\.colStatut, sc\.versBase\.done\)/
+        .test(netV8(lireV8("src/lib/planning.ts"))),
+      "libérer la journée emporterait le supplément posé à côté",
+    );
+
     verdict(
       "V8 · le code métier ne dit jamais « saut » ni « skip »",
       !/\b(skip|saut)\b/i.test(propre),

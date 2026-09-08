@@ -36,7 +36,7 @@
    ════════════════════════════════════════════════════════════════════ */
 
 import { createClient } from "@/lib/supabase";
-import { adaptationsDisponibles, type PlanningDay } from "@/lib/planning";
+import { adaptationsDisponibles, fetchRange, type PlanningDay } from "@/lib/planning";
 import type { Origine } from "@/lib/programme";
 
 /* ═══════════════════ Le vocabulaire, fermé et versionné ═══════════════════
@@ -149,6 +149,24 @@ export function ajouterJours(jour: string, n: number): string {
   const d = new Date(jour + "T00:00:00Z");
   d.setUTCDate(d.getUTCDate() + n);
   return d.toISOString().slice(0, 10);
+}
+
+/**
+ * Les dates d'une fenêtre, bornes incluses.
+ *
+ * ⚠️ BORNÉE À 120 JOURS, ET LA BORNE EST UNE RÈGLE PRODUIT AUTANT QU'UNE
+ * PRÉCAUTION : une adaptation plus longue qu'un trimestre n'est plus une
+ * adaptation, c'est une nouvelle version du programme. On ne va donc pas
+ * demander cent cinquante jours d'intentions pour le dire.
+ */
+export function datesEntre(debut: string, fin: string): string[] {
+  const out: string[] = [];
+  let d = debut;
+  for (let i = 0; i < 120 && d <= fin; i++) {
+    out.push(d);
+    d = ajouterJours(d, 1);
+  }
+  return out;
 }
 
 /** La réévaluation par défaut. « Jusqu'à nouvel ordre » n'existe pas :
@@ -466,4 +484,28 @@ export async function fermerAdaptations(ids: string[]): Promise<boolean> {
   } catch {
     return false;
   }
+}
+
+/**
+ * Les conflits d'une fenêtre, lus À LA SOURCE.
+ *
+ * ⚠️ ILS SE CHERCHENT EN BASE, SUR LA FENÊTRE DEMANDÉE, ET JAMAIS DANS
+ * LA SEMAINE DÉJÀ CHARGÉE À L'ÉCRAN. Les écrans ne connaissent que la
+ * semaine courante : chercher là raterait toutes les réservations
+ * au-delà de dimanche, et le défaut serait INTERMITTENT selon la date
+ * d'aujourd'hui, c'est-à-dire pire qu'un défaut franc.
+ *
+ * ⚠️ ET C'EST ELLE QU'ON RELIT APRÈS CHAQUE GESTE DE RÉSOLUTION. Retirer
+ * la ligne résolue de la liste affichée serait croire l'écran plutôt que
+ * la base : une séance décalée À L'INTÉRIEUR de la période est toujours
+ * un conflit, et elle doit le rester sous les yeux. C'est la source qui
+ * dit s'il reste quelque chose, jamais le geste qu'on vient de faire.
+ */
+export async function chargerConflits(
+  userId: string,
+  fenetre: { debut: string; fin: string; axes: Axes },
+): Promise<PlanningDay[]> {
+  if (!userId || fenetre.axes.eviter_etapes.length === 0) return [];
+  const parJour = await fetchRange(userId, datesEntre(fenetre.debut, fenetre.fin));
+  return reservationsEnConflit(Object.values(parJour).flat(), fenetre);
 }

@@ -1045,6 +1045,44 @@ export async function libererJours(userId: string, dates: string[]): Promise<voi
 }
 
 /**
+ * Retire UNE intention du planning, par son identité.
+ *
+ * ⚠️ C'EST `libererJours` RESSERRÉ SUR UNE LIGNE, ET LA GRANULARITÉ EST
+ * TOUT LE SUJET DEPUIS V6b : une date ne désigne plus une intention, elle
+ * en désigne autant que la journée en porte. Libérer la journée pour
+ * retirer une séance emporterait le supplément posé à côté, qui n'a rien
+ * demandé. On vise donc l'identifiant, jamais la date.
+ *
+ * ⚠️ ELLE SUPPRIME, ELLE NE MARQUE RIEN, ET C'EST LA MÊME SÉMANTIQUE QUE
+ * `libererJours`. Écrire `passee` dirait qu'une séance a été écartée
+ * alors qu'elle n'a jamais eu lieu ; écrire `faite` refermerait une étape
+ * que personne n'a faite. Les deux mentiraient à l'historique et au
+ * curseur du cycle, qui s'ordonne justement sur les intentions résolues.
+ * Une intention prévue qu'on retire n'est pas un fait, c'est l'absence
+ * de fait.
+ *
+ * ⚠️ ET ELLE NE TOUCHE JAMAIS À CE QUI EST FAIT : le filtre de statut vit
+ * dans la requête, donc même appelée sur l'identifiant d'une séance déjà
+ * terminée, elle n'efface aucun fait.
+ *
+ * ⚠️ ELLE REMONTE SON ÉCHEC. Un retrait avalé laisserait l'écran affirmer
+ * qu'une séance a disparu alors qu'elle est toujours en base : c'est
+ * exactement le défaut muet de trois mois qu'a révélé V6b.
+ */
+export async function retirerIntention(userId: string, intentionId: string | null): Promise<void> {
+  if (!intentionId) return;
+  const supabase = createClient();
+  const sc = await schemaIntentions();
+  const { error } = await supabase
+    .from(sc.table)
+    .delete()
+    .eq("user_id", userId)
+    .eq("id", intentionId)
+    .neq(sc.colStatut, sc.versBase.done);
+  if (error) throw new Error(error.message);
+}
+
+/**
  * La réservation EN ATTENTE d'une étape du cycle, où qu'elle soit posée.
  *
  * ⚠️ ELLE NE PEUT PAS SE CHERCHER DANS « LA SEMAINE », ET C'EST TOUT
