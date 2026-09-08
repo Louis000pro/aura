@@ -61,7 +61,7 @@ import {
   weekDates, weekDatesForOffset, todayYmd, weekOffsetOf, dayTitle, lieuLabel, normalizeExercises,
   parDate, principale, seancesDuJour, ordonner,
   dayLabelLong, PLANNING_TYPE_BY_CATEGORY,
-  type PlanningDay,
+  type PlanningDay, type CycleSemaine,
 } from "@/lib/planning";
 import { useJournee } from "@/hooks/useJournee";
 
@@ -2984,7 +2984,7 @@ function ActChip({ children, onClick, primary }: { children: React.ReactNode; on
    jours, tutos, régénération, lieu. Réservé au chemin setup (le héros
    « Créer mon planning » quand l'app ne sait pas encore).
    ════════════════════════════════════════════════════════════════════ */
-function OrganiserSheet({ onClose, etapesMasquees }: { onClose: () => void; etapesMasquees: string[] }) {
+function OrganiserSheet({ onClose, cycle }: { onClose: () => void; cycle: CycleSemaine | null }) {
   return (
     <Sheet onClose={onClose} maxHeight="92vh">
       <div className="px-5 pt-2 pb-3 flex items-center justify-between flex-shrink-0">
@@ -3001,7 +3001,7 @@ function OrganiserSheet({ onClose, etapesMasquees }: { onClose: () => void; etap
         {/* ⚠️ V8 · « Refais ma semaine » est le SECOND chemin capable de
             poser une étape du cycle. Sans ce filtre, il reposerait celle
             que l'adaptation vient d'écarter. */}
-        <WeeklyProgramme etapesMasquees={etapesMasquees} />
+        <WeeklyProgramme cycle={cycle} />
         <p className="text-[11px] font-light mt-4 leading-snug" style={{ color: "var(--text-3)" }}>
           Demande à l&apos;orbe ✦ de remplacer, décaler ou changer le lieu d&apos;un jour.
         </p>
@@ -3629,7 +3629,7 @@ export default function ProgressionPage() {
       <AnimatePresence>
         {sheet === "organiser" && (
           <OrganiserSheet
-            etapesMasquees={journee.etapesMasquees}
+            cycle={journee.cycleSemaine}
             onClose={() => { setSheet(null); void loadWeek(); }}
           />
         )}

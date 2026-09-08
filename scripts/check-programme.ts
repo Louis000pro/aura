@@ -32,11 +32,11 @@ import {
   cycleDeReference, seancesDuCycle, previewWeek, weekDates, ANCIEN, NOUVEAU,
   ordonner, parDate, principale, supplements, seancesDuJour, prochaineSeanceDuJour,
   refModele, lienProgramme, prochainsJours, todayYmd,
-  type PlanningDay,
+  type PlanningDay, type CycleSemaine,
 } from "@/lib/planning";
 import {
   adaptationActive, ajouterJours, chevauchent, estExpiree, etapeMasquee,
-  etapesCompatibles, finParDefaut, libelleJour, nomsMasques, REEVALUATION_SEMAINES,
+  etapesCompatibles, finParDefaut, idsMasques, libelleJour, REEVALUATION_SEMAINES,
   reservationsEnConflit, validerAxes, validerPeriode,
   type Adaptation,
 } from "@/lib/adaptation";
@@ -596,6 +596,35 @@ verdict(
     "V7A · réserver l'étape ne la referme pas",
     apres([{ etapeId: lienReserve.etape_consommee_id, resolue: false, consommeeLe: null }]) === 1,
     "→ toujours étape 1 tant qu'elle n'est pas faite",
+  );
+
+  /* ⚠️ LA PROVENANCE SANS LA RÉSERVATION : LES DEUX COLONNES DE V4 SONT
+     ENFIN TOUTES LES DEUX ÉCRITES (2026-09-08). Une séance composée par
+     « Refais ma semaine » vient d'une étape, mais elle n'en referme
+     aucune : la base l'accepte (`intentions_provenance_check` ne demande
+     que le programme), elle échappe à `uniq_intention_par_etape`, et le
+     curseur ne bouge pas d'un cran. */
+  const regeneree: PlanningDay = {
+    ...supplement, id: "int-4",
+    programmeId: "prog-1", provenanceId: enCours.id, etapeId: null,
+  };
+  const lienRegen = lienProgramme(regeneree);
+  verdict(
+    "V8 · une séance régénérée déclare sa provenance sans refermer l'étape",
+    lienRegen.programme_id === "prog-1"
+      && lienRegen.programme_seance_id === enCours.id
+      && lienRegen.etape_consommee_id === null,
+    "provenance oui, consommation non",
+  );
+  verdict(
+    "V8 · … donc terminer une séance régénérée ne fait PAS avancer le cycle",
+    apres([{ etapeId: lienRegen.etape_consommee_id, resolue: true, consommeeLe: T }]) === 1,
+    "→ toujours étape 1",
+  );
+  verdict(
+    "V8 · une provenance sans programme n'écrit rien du tout",
+    lienProgramme({ ...regeneree, programmeId: null }).programme_seance_id === null,
+    "les deux ou aucun : la clé étrangère est composite",
   );
 
   /* ── L'étape réservée pour plus tard, et lancée avant ──
@@ -1416,20 +1445,26 @@ verdict(
     );
 
     verdict(
-      "V8 · « Refais ma semaine » sait quels noms écarter",
-      nomsMasques(CYCLE, a).join("|") === "Push"
-        && nomsMasques(CYCLE, b).join("|") === "Push|Pull|Bas du corps"
-        && nomsMasques(CYCLE, null).length === 0,
-      "les noms suivent le cycle, jamais une liste recopiée",
+      "V8 · « Refais ma semaine » masque par IDENTIFIANT, plus par nom",
+      idsMasques(CYCLE, a).join("|") === "e-push"
+        && idsMasques(CYCLE, b).join("|") === "e-push|e-pull|e-bas"
+        && idsMasques(CYCLE, null).length === 0
+        && idsMasques(CYCLE, couche(["e-dune-autre-version"])).length === 0,
+      "bornés au cycle : une étape d’une version archivée ne masque rien",
     );
 
     /* Et le générateur de semaine les respecte VRAIMENT. */
     {
       const dates = weekDates(new Date("2026-09-07T00:00:00"));
       const genSem = { ctx: "salle" as const, sessions: 5, goals: [], level: "intermediaire", variant: 0, seed: "u1" };
-      const normale = previewWeek(genSem, dates).filter((d) => d.title);
-      const adaptee = previewWeek(genSem, dates, ["Push"]).filter((d) => d.title);
-      const vide = previewWeek(genSem, dates, cycleDeReference(5)).filter((d) => d.title);
+      const cyc = (masquees: string[]): CycleSemaine => ({
+        programmeId: "p1",
+        etapes: CYCLE.map((e) => ({ id: e.id, nom: e.nom })),
+        masquees,
+      });
+      const normale = previewWeek(genSem, dates, cyc([])).filter((d) => d.title);
+      const adaptee = previewWeek(genSem, dates, cyc(["e-push"])).filter((d) => d.title);
+      const vide = previewWeek(genSem, dates, cyc(CYCLE.map((e) => e.id))).filter((d) => d.title);
       verdict(
         "V8 · la semaine régénérée ne repose pas une étape masquée",
         normale.some((d) => d.title === "Push")
@@ -1441,6 +1476,46 @@ verdict(
         "V8 · tout masqué → la semaine régénérée ne pose aucune séance",
         vide.length === 0,
         "aucune séance inventée pour remplir",
+      );
+
+      /* ⭐ LE DÉFAUT DU 2026-09-08, REJOUÉ TEL QU'IL S'EST PRODUIT.
+         « Refais ma semaine » posait une séance dont le contenu vient
+         d'une étape du cycle SANS écrire le moindre lien vers le
+         programme : la ligne n'avait plus qu'un titre, donc l'adaptation
+         qui masque cette étape ne pouvait pas la voir, et elle
+         s'activait par-dessus la séance du jour sans un mot. */
+      verdict(
+        "V8 · une semaine régénérée porte la PROVENANCE de chaque séance",
+        normale.every((d) => d.programmeId === "p1" && !!d.provenanceId)
+          && normale.find((d) => d.title === "Pull")?.provenanceId === "e-pull",
+        normale.map((d) => d.title + "→" + String(d.provenanceId)).join(" · "),
+      );
+      verdict(
+        "V8 · … et elle ne RÉSERVE aucune étape",
+        normale.every((d) => !d.etapeId),
+        "la rotation ignore le curseur : provenir n’est pas refermer",
+      );
+      verdict(
+        "V8 · sans cycle lu, la semaine reste celle d’avant (aucun lien inventé)",
+        previewWeek(genSem, dates).filter((d) => d.title).every((d) => !d.programmeId && !d.provenanceId),
+        "un programme illisible ne fabrique pas de fausse provenance",
+      );
+
+      /* Et c'est bien ce lien qui rend le conflit visible. */
+      const posee = normale.find((d) => d.title === "Pull")!;
+      const fenetreReelle = { debut: "2026-09-08", fin: "2026-10-06", axes: { eviter_etapes: ["e-pull"] } };
+      verdict(
+        "V8 · une séance RÉGÉNÉRÉE sur l’étape masquée bloque l’activation",
+        reservationsEnConflit([posee], fenetreReelle).length === 1,
+        "le cas réel du 2026-09-08 : Pull posée aujourd’hui, adaptation sur Pull",
+      );
+      verdict(
+        "V8 · … et le titre n’y est pour rien",
+        reservationsEnConflit(
+          [{ ...posee, programmeId: null, provenanceId: null, etapeId: null }],
+          fenetreReelle,
+        ).length === 0,
+        "une séance nommée « Pull » sans identité d’étape ne bloque rien",
       );
     }
   }
@@ -1520,10 +1595,27 @@ verdict(
       "sinon l’adaptation serait lue, affichée, et sans effet",
     );
     verdict(
-      "V8 · « Refais ma semaine » reçoit les étapes masquées",
-      netV8(lireV8("src/components/WeeklyProgramme.tsx")).includes("reposerLaSemaine(user.id, gen, dates,")
-        && netV8(lireV8("src/app/progression/page.tsx")).includes("etapesMasquees={journee.etapesMasquees}"),
-      "le second chemin qui pose une étape la respecte aussi",
+      "V8 · « Refais ma semaine » reçoit le cycle, pas une liste de noms",
+      netV8(lireV8("src/components/WeeklyProgramme.tsx")).includes("reposerLaSemaine(user.id, gen, dates, cycleStable)")
+        && netV8(lireV8("src/app/progression/page.tsx")).includes("cycle={journee.cycleSemaine}"),
+      "le second chemin qui pose une étape connaît son identité",
+    );
+    /* ⚠️ LE TROISIÈME CHEMIN, OUBLIÉ EN V8 ET TROUVÉ PAR LE TEST RÉEL DU
+       2026-09-08 : « refais ma semaine » DIT AU GUIDE compose la même
+       semaine et écrivait, elle, sans aucun cycle. C'est de là que venait
+       la séance Pull sans identité. */
+    verdict(
+      "V8 · le Guide aussi compose sa semaine AVEC le cycle",
+      netV8(lireV8("src/context/AssistantContext.tsx")).includes("previewWeek(gen, dates, cycleSemaine)"),
+      "les trois chemins qui posent une étape la nomment de la même façon",
+    );
+    /* ⚠️ ET AUCUN D'EUX NE PEUT PLUS RECONNAÎTRE UNE ÉTAPE AU TITRE : la
+       provenance se résout sur le cycle persisté, dans `generateWeek`, et
+       nulle part ailleurs. */
+    verdict(
+      "V8 · l’identité d’une séance posée ne se déduit jamais du titre",
+      !/title\s*===\s*["'`]/.test(netV8(lireV8("src/lib/adaptation.ts"))),
+      "« Push » est une chaîne d’affichage, pas une identité métier",
     );
     /* ⚠️ Le vocabulaire compte : `effet_cycle = saut` sera une AUTRE
        action, explicite, qui consommera réellement une étape. Employer ce

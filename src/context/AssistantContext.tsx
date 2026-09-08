@@ -33,8 +33,11 @@ import {
   resolveWhen, dayLabel, dayLabelLong, dayTitle, lireJour, fetchRange, hasSeance, saveDay, prochainsJours,
   principale, seancesDuJour,
   ctxFromLieu, readLieu, loadLieu, persistLieu, readVariant, weekDates, todayYmd, normalizeExercises, previewWeek, libererJours,
+  type CycleSemaine,
   PLANNING_TYPE_BY_CATEGORY, type PlanningDay, type GenInput,
 } from "@/lib/planning";
+import { lireProgrammeActif } from "@/lib/programme";
+import { adaptationDuJour, idsMasques } from "@/lib/adaptation";
 
 type MemoryAction =
   | { type: "save"; category?: string; fact?: string }
@@ -746,12 +749,32 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       };
       const dates = weekDates();
       const existing = await fetchRange(user.id, dates);
+      /* ⚠️ LE GUIDE EST LE TROISIÈME CHEMIN QUI POSE DES ÉTAPES, ET IL
+         AVAIT ÉTÉ OUBLIÉ EN V8 (défaut du 2026-09-08). « Refais ma
+         semaine » dit au Guide compose exactement la même semaine que le
+         bouton d'Entraînement : sans le cycle, il repose une étape que
+         l'adaptation masque, et il l'écrit sans aucun lien avec le
+         programme, donc invisible à la détection de conflit. Deux
+         lectures, seulement sur ce chemin, et son échec ne bloque rien :
+         on retombe alors sur le comportement d'avant. */
+      let cycleSemaine: CycleSemaine | null = null;
+      try {
+        const actif = await lireProgrammeActif(user.id);
+        if (actif) {
+          const couche = await adaptationDuJour(user.id, actif.programme.id, todayYmd());
+          cycleSemaine = {
+            programmeId: actif.programme.id,
+            etapes: actif.cycle.map((e) => ({ id: e.id, nom: e.nom })),
+            masquees: idsMasques(actif.cycle, couche),
+          };
+        }
+      } catch { /* programme illisible → semaine composée sans lien, comme avant */ }
       /* ⚠️ On n'écrit QUE des séances : reposer les jours « Repos » de la
          semaine générée recréerait le mobilier automatique que V5 retire.
          Les jours sans séance sont libérés, et un jour libre veut dire
          libre. Les jours déjà faits et le passé ne bougent pas. */
       const aVenir = dates.filter((d) => d >= todayYmd() && !(existing[d] ?? []).some((i) => i.status === "done"));
-      const writes = previewWeek(gen, dates)
+      const writes = previewWeek(gen, dates, cycleSemaine)
         .filter((d) => aVenir.includes(d.date))
         .filter(hasSeance);
       const nbSeances = writes.filter(hasSeance).length;

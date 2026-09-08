@@ -79,6 +79,24 @@ export interface PlanningDay {
    */
   programmeId?: string | null;
   /**
+   * D'OÙ VIENT LE CONTENU, ce qui n'est PAS « quelle étape est refermée ».
+   *
+   * ⚠️ LES DEUX COLONNES EXISTENT DEPUIS V4 ET UNE SEULE ÉTAIT ÉCRITE,
+   * C'EST LE DÉFAUT DU 2026-09-08. « Refais ma semaine » compose ses
+   * journées depuis le cycle de référence : leur contenu vient bel et
+   * bien d'une étape, mais elles n'en RÉSERVENT aucune (la rotation part
+   * toujours de la première étape, elle ignore le curseur). Sans cette
+   * colonne, ces journées n'avaient plus aucun lien avec le programme,
+   * et une adaptation ne pouvait pas voir qu'une étape qu'elle masque
+   * était déjà posée : le conflit ne se déclenchait jamais.
+   *
+   * ⚠️ ELLE NE REFERME RIEN, ET C'EST TOUT L'INTÉRÊT. Elle échappe donc à
+   * `uniq_intention_par_etape` (qui ne porte que sur `etape_consommee_id`),
+   * elle ne bouge pas le curseur, et une semaine peut reposer deux fois
+   * la même étape sans que la base ne s'y oppose.
+   */
+  provenanceId?: string | null;
+  /**
    * V8 · L'ADAPTATION SOUS LAQUELLE CETTE INTENTION A ÉTÉ MATÉRIALISÉE.
    *
    * ⚠️ ELLE TRACE, ELLE NE DÉCIDE RIEN. Aucune lecture ne s'en sert pour
@@ -277,22 +295,59 @@ export function todayWeekIndex(): number { return weekdayIndex(todayYmd()); }
 const DAY_LABELS = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
 
 /**
- * ⚠️ V8 · `masquees` PORTE LES NOMS D'ÉTAPES QU'UNE ADAPTATION ÉVITE, ET
- * CE CHEMIN DOIT LES RESPECTER COMME LE HÉROS. « Refais ma semaine » est
- * le second endroit du produit capable de POSER une étape du cycle : le
- * laisser reposer une étape que l'adaptation masque, c'est réintroduire
- * par la porte du planning ce qu'on vient d'écarter à l'accueil, et la
- * personne le découvrirait le jour où la séance arrive.
+ * LE CYCLE PERSISTÉ, TEL QUE LE GÉNÉRATEUR DE SEMAINE A BESOIN DE LE
+ * CONNAÎTRE.
+ *
+ * ⚠️ IL NE SERT PAS À CHOISIR LES SÉANCES, IL SERT À LEUR DONNER LEUR
+ * IDENTITÉ. `buildSplit` compose déjà exactement les mêmes noms que
+ * `programme_seances` (c'est la même fonction depuis V4.5, et
+ * l'équivalence a été balayée) : ce qui manquait, c'était de RETROUVER
+ * l'étape derrière le nom au moment d'écrire, pour que la ligne porte sa
+ * provenance au lieu d'un titre.
+ */
+export interface CycleSemaine {
+  programmeId: string;
+  /** Le cycle du programme actif, avec son identifiant par étape. */
+  etapes: { id: string; nom: string }[];
+  /** Les IDENTIFIANTS d'étapes qu'une adaptation masque. */
+  masquees: string[];
+}
+
+/**
+ * ⚠️ V8 · CE CHEMIN DOIT RESPECTER L'ADAPTATION COMME LE HÉROS.
+ * « Refais ma semaine » est le second endroit du produit capable de POSER
+ * une étape du cycle : le laisser reposer une étape que l'adaptation
+ * masque, c'est réintroduire par la porte du planning ce qu'on vient
+ * d'écarter à l'accueil, et la personne le découvrirait le jour où la
+ * séance arrive.
+ *
+ * ⚠️ ET IL MASQUE PAR IDENTIFIANT, PLUS PAR NOM (2026-09-08). Il était
+ * jusqu'ici le seul endroit du produit qui raisonnait encore en noms de
+ * split, faute de connaître le cycle persisté. Maintenant qu'il le
+ * connaît, l'exception disparaît : les axes d'adaptation portent des
+ * identifiants partout, sans traduction.
  *
  * ⚠️ ON FILTRE LE SPLIT, ON NE SAUTE PAS UN JOUR. La rotation ne tourne
  * plus que sur les étapes compatibles, exactement comme `etapeSuivante`.
  * Si aucune ne l'est, la semaine ne porte AUCUNE séance : on n'invente
  * pas une séance de remplacement, et une séance vide serait pire.
+ *
+ * ⚠️ CE QU'IL POSE PROVIENT D'UNE ÉTAPE, IL N'EN RÉSERVE AUCUNE. La
+ * rotation repart toujours de la première étape et ignore le curseur :
+ * lui faire écrire `etape_consommee_id` ferait refermer des étapes que
+ * personne n'a choisi de réserver, et deux jours qui retombent sur la
+ * même étape se feraient refuser par `uniq_intention_par_etape`.
  */
-function generateWeek(gen: GenInput, dates: string[], masquees: string[] = []): PlanningDay[] {
+function generateWeek(gen: GenInput, dates: string[], cycle: CycleSemaine | null = null): PlanningDay[] {
   const sessions = seancesDuCycle(gen.sessions);
   const rng = mulberry32(hashStr(`${gen.seed}-${gen.ctx}-s${sessions}-v${gen.variant}`));
-  const split = buildSplit(sessions).filter((nom) => !masquees.includes(nom));
+  const parNom = new Map((cycle?.etapes ?? []).map((e) => [e.nom, e]));
+  const masquees = new Set(cycle?.masquees ?? []);
+  const estMasquee = (nom: string) => {
+    const e = parNom.get(nom);
+    return !!e && masquees.has(e.id);
+  };
+  const split = buildSplit(sessions).filter((nom) => !estMasquee(nom));
   const trainingDays = REST_PATTERN[sessions] ?? [0, 2, 4];
   const scheme = repSchemeFor(gen.goals);
   const difficulty = levelToDifficulty(gen.level);
@@ -300,12 +355,13 @@ function generateWeek(gen: GenInput, dates: string[], masquees: string[] = []): 
   return dates.map((date, dayIdx) => {
     const pos = split.length === 0 ? -1 : trainingDays.indexOf(dayIdx);
     if (pos === -1) {
-      return { id: null, date, type: "Repos", title: "", difficulty, location: gen.ctx, exerciseList: [], sessionId: null, status: "planned" as DayStatus };
+      return { id: null, date, type: "Repos", title: "", difficulty, location: gen.ctx, exerciseList: [], sessionId: null, status: "planned" as DayStatus, provenanceId: null, programmeId: null };
     }
     const sessionType = split[pos % split.length];
     const isCardio = sessionType.includes("Cardio");
     const bank = EX[gen.ctx][sessionType] ?? EX[gen.ctx]["Full Body"];
     const exerciseList = shuffleArr(bank, rng).slice(0, 5).map((p) => toExercise(p, scheme));
+    const source = parNom.get(sessionType) ?? null;
     return {
       id: null,
       date,
@@ -316,6 +372,10 @@ function generateWeek(gen: GenInput, dates: string[], masquees: string[] = []): 
       exerciseList,
       sessionId: null,
       status: "planned" as DayStatus,
+      /* Les deux ensemble ou aucun des deux : la clé étrangère est
+         COMPOSITE, et un `CHECK` refuse une provenance sans programme. */
+      programmeId: source ? cycle!.programmeId : null,
+      provenanceId: source ? source.id : null,
     };
   });
 }
@@ -338,8 +398,8 @@ export function instanceDeLEtape(nomEtape: string, gen: GenInput): Exercise[] {
 
 /** Génère la semaine SANS rien écrire — pour préparer une carte de
     confirmation (l'écriture n'arrive qu'au clic, via saveDay). */
-export function previewWeek(gen: GenInput, dates: string[] = weekDates(), masquees: string[] = []): PlanningDay[] {
-  return generateWeek(gen, dates, masquees);
+export function previewWeek(gen: GenInput, dates: string[] = weekDates(), cycle: CycleSemaine | null = null): PlanningDay[] {
+  return generateWeek(gen, dates, cycle);
 }
 
 /** Titre lisible d'un jour de planning (pour le lancement / l'historique). */
@@ -479,7 +539,7 @@ export function colonnesIntention(s: SchemaIntentions, extra = ""): string {
  *  désigner celle qu'on modifie, et de quoi ordonner celles d'une même
  *  journée. `etape_consommee_id` porte la hiérarchie (l'étape d'abord). */
 function colonnes(s: SchemaIntentions, avecAdaptation: boolean): string {
-  return `id, date, type, title, difficulty, location, exercise_list, session_id, programme_id, etape_consommee_id, created_at, ${s.colStatut}`
+  return `id, date, type, title, difficulty, location, exercise_list, session_id, programme_id, programme_seance_id, etape_consommee_id, created_at, ${s.colStatut}`
     + (avecAdaptation ? ", adaptation_id" : "");
 }
 
@@ -494,6 +554,7 @@ interface PlanningRow {
   exercise_list: Exercise[] | null;
   session_id: string | null;
   programme_id?: string | null;
+  programme_seance_id?: string | null;
   etape_consommee_id?: string | null;
   adaptation_id?: string | null;
   created_at?: string | null;
@@ -525,6 +586,11 @@ function rowToDay(r: PlanningRow, s: SchemaIntentions): PlanningDay {
        `saveDay` réécrit la ligne entière : sans cette lecture, changer de
        jour effacerait la réservation en silence. */
     programmeId: r.programme_id ?? null,
+    /* ⚠️ RELUE POUR LA MÊME RAISON QUE `programmeId` : `saveDay` réécrit la
+       ligne entière, donc sans cette lecture un simple déplacement
+       effacerait la provenance, et l'adaptation cesserait de voir le
+       conflit dès qu'on aurait bougé la séance d'un jour. */
+    provenanceId: r.programme_seance_id ?? null,
     adaptationId: r.adaptation_id ?? null,
     creeLe: r.created_at ?? null,
   };
@@ -574,16 +640,18 @@ export function refModele(sessionId: string | null | undefined): string | null {
  * par une séance du catalogue lui ferait alors refermer une étape que
  * personne ne lui a confiée.
  */
-export function lienProgramme(d: Pick<PlanningDay, "programmeId" | "etapeId">) {
-  const lie = !!d.programmeId && !!d.etapeId;
+export function lienProgramme(d: Pick<PlanningDay, "programmeId" | "etapeId" | "provenanceId">) {
+  /* QUELLE ÉTAPE EST REFERMÉE : seulement si on a déclaré la réserver. */
+  const referme = !!d.programmeId && !!d.etapeId;
+  /* D'OÙ VIENT LE CONTENU : l'étape réservée si elle existe, sinon
+     l'étape dont la semaine régénérée a copié le contenu. Réserver, c'est
+     donc toujours aussi provenir ; provenir n'est jamais réserver. */
+  const source = d.etapeId ?? d.provenanceId ?? null;
+  const provient = !!d.programmeId && !!source;
   return {
-    programme_id: lie ? d.programmeId! : null,
-    // D'OÙ VIENT LE CONTENU / QUELLE ÉTAPE EST REFERMÉE. Ici les deux
-    // valent la même étape : la personne a daté ce que le programme
-    // proposait. Le jour où elle fera autre chose « à la place », ils
-    // divergeront, et c'est pour ça qu'il y a deux colonnes.
-    programme_seance_id: lie ? d.etapeId! : null,
-    etape_consommee_id: lie ? d.etapeId! : null,
+    programme_id: provient ? d.programmeId! : null,
+    programme_seance_id: provient ? source! : null,
+    etape_consommee_id: referme ? d.etapeId! : null,
   };
 }
 
@@ -663,9 +731,10 @@ export async function reposerLaSemaine(
   userId: string,
   gen: GenInput,
   dates: string[] = weekDates(),
-  /* V8 · les noms d'étapes que l'adaptation en cours masque. Vide = pas
-     d'adaptation, donc exactement le comportement d'avant la vague. */
-  masquees: string[] = [],
+  /* Le cycle du programme actif, avec les étapes que l'adaptation masque.
+     `null` = aucun programme lu, donc exactement le comportement d'avant
+     V8 : des séances composées par nom, sans lien avec le programme. */
+  cycle: CycleSemaine | null = null,
 ): Promise<PlanningDay[]> {
   const supabase = createClient();
   const sc = await schemaIntentions();
@@ -684,7 +753,7 @@ export async function reposerLaSemaine(
      ou par le Guide. Un `upsert` aveugle sur toutes les dates de la
      semaine les écraserait, et l'écran ne montrerait rien de l'accident. */
   const restant = await fetchRange(userId, dates);
-  const seances = generateWeek(gen, dates, masquees)
+  const seances = generateWeek(gen, dates, cycle)
     .filter(hasSeance)
     .filter((d) => (restant[d.date] ?? []).length === 0);
   /* ⚠️ UN `insert`, PLUS UN `upsert` : c'est V6b. L'ancienne écriture

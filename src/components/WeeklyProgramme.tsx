@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { aiFetch } from "@/lib/aiFetch";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
@@ -14,7 +14,7 @@ import { terminerSeance } from "@/lib/finSeance";
 import {
   lireSemaine, reposerLaSemaine, ctxFromLieu, dayTitle, persistLieu, loadLieu,
   weekDatesForOffset, weekOffsetOf, weekdayIndex, todayWeekIndex, parDate, principale, supplements,
-  type PlanningDay, type GenInput,
+  type PlanningDay, type GenInput, type CycleSemaine,
 } from "@/lib/planning";
 
 /** Nombre max de semaines en avant qu'on autorise à consulter. */
@@ -306,22 +306,27 @@ function HomeEquipQuestion({ onChoose, onBack }: { onChoose: (e: "halteres" | "p
 
 /* ─── Main Component ─── */
 /**
- * ⚠️ V8 · `etapesMasquees` N'EST PAS UN CONFORT, C'EST LE SECOND CHEMIN
- * QUI POSE DES ÉTAPES. « Refais ma semaine » compose la semaine depuis le
- * cycle de référence : sans ce filtre, il reposerait tranquillement
- * l'étape que l'adaptation vient d'écarter à l'accueil, et la personne ne
- * le découvrirait que le jour où la séance arrive. Le laisser derrière
- * une prop plutôt que de relire l'adaptation ici garde une seule lecture
- * de la journée dans l'app (`useJournee`), qui est déjà montée par
- * l'écran parent.
+ * ⚠️ V8 · `cycle` N'EST PAS UN CONFORT, C'EST LE SECOND CHEMIN QUI POSE
+ * DES ÉTAPES. « Refais ma semaine » compose la semaine depuis le cycle de
+ * référence : sans lui, elle reposerait tranquillement l'étape que
+ * l'adaptation vient d'écarter à l'accueil, et surtout elle écrirait des
+ * séances SANS AUCUN LIEN avec le programme, donc invisibles à la
+ * détection de conflit (défaut du 2026-09-08). Le passer en prop plutôt
+ * que de relire l'adaptation ici garde une seule lecture de la journée
+ * dans l'app (`useJournee`), déjà montée par l'écran parent.
  */
-export default function WeeklyProgramme({ etapesMasquees = [] }: { etapesMasquees?: string[] } = {}) {
+export default function WeeklyProgramme({ cycle = null }: { cycle?: CycleSemaine | null } = {}) {
   const { user } = useAuth();
-  /* ⚠️ UNE CLÉ, PAS LE TABLEAU. `generate` est un `useCallback` dont
-     dépend l'effet d'auto-génération : un tableau change d'identité à
-     chaque rendu, donc l'effet repartirait en boucle. La clé est stable
-     tant que le contenu l'est. */
-  const masqueesCle = etapesMasquees.join("|");
+  /* ⚠️ UNE CLÉ, PAS L'OBJET. `generate` est un `useCallback` dont dépend
+     l'effet d'auto-génération : un objet (comme un tableau) change
+     d'identité à chaque rendu, donc l'effet repartirait en boucle. La
+     CLÉ EST LA VALEUR ELLE-MÊME, sérialisée : elle est stable tant que le
+     contenu l'est, et le mémo qui la relit ne dépend donc que d'elle. */
+  const cycleCle = cycle ? JSON.stringify(cycle) : "";
+  const cycleStable = useMemo<CycleSemaine | null>(
+    () => (cycleCle ? JSON.parse(cycleCle) as CycleSemaine : null),
+    [cycleCle],
+  );
   const router = useRouter();
   const isPremium = !!(user?.is_admin || user?.is_premium);
   const [profile, setProfile] = useState<ProfileData | null>(null);
@@ -432,7 +437,7 @@ export default function WeeklyProgramme({ etapesMasquees = [] }: { etapesMasquee
         // ⚠️ Lire ne pose plus rien (V5) : seule la demande EXPLICITE de
         // refaire la semaine écrit, et elle n'écrit que des séances.
         const week = force
-          ? await reposerLaSemaine(user.id, gen, dates, masqueesCle ? masqueesCle.split("|") : [])
+          ? await reposerLaSemaine(user.id, gen, dates, cycleStable)
           : await lireSemaine(user.id, dates);
         setDays(week);
         setError(null);
@@ -443,7 +448,7 @@ export default function WeeklyProgramme({ etapesMasquees = [] }: { etapesMasquee
         setLoading(false);
       }
     },
-    [user, profile, weekOffset, masqueesCle]
+    [user, profile, weekOffset, cycleStable]
   );
 
   /* Régénère un programme différent (incrémente le variant) — réservé au Premium */

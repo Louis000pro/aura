@@ -219,12 +219,14 @@ export function etapesCompatibles<T extends { id: string }>(cycle: T[], a: Adapt
   return cycle.filter((e) => !etapeMasquee(e.id, a));
 }
 
-/** Les NOMS des étapes masquées. Nécessaire au seul endroit du produit
- *  qui raisonne encore en noms de split : la régénération de semaine
- *  (« Refais ma semaine »), qui compose depuis `buildSplit` et non
- *  depuis le cycle persisté. */
-export function nomsMasques<T extends { id: string; nom: string }>(cycle: T[], a: Adaptation | null): string[] {
-  return cycle.filter((e) => etapeMasquee(e.id, a)).map((e) => e.nom);
+/** Les IDENTIFIANTS des étapes masquées, bornés au cycle donné.
+ *
+ *  ⚠️ ON NE REND PAS `a.axes.eviter_etapes` TEL QUEL : une adaptation
+ *  peut citer une étape d'une version archivée du programme, et la
+ *  laisser passer ferait masquer un identifiant qui n'existe plus dans
+ *  le cycle qu'on est en train de composer. */
+export function idsMasques<T extends { id: string }>(cycle: T[], a: Adaptation | null): string[] {
+  return cycle.filter((e) => etapeMasquee(e.id, a)).map((e) => e.id);
 }
 
 /** Deux périodes partagent-elles au moins une journée ? Les bornes sont
@@ -248,28 +250,42 @@ export function chevauchent(
  * étape que l'adaptation masquerait, et on n'active pas tant qu'elles
  * sont là : c'est à la personne de décider ce qu'elle en fait.
  *
+ * ⚠️ ON REGARDE LA PROVENANCE, PAS SEULEMENT LA RÉSERVATION, ET C'EST LA
+ * CORRECTION DU 2026-09-08. Une séance posée par « Refais ma semaine »
+ * ne RÉSERVE aucune étape (elle n'en referme aucune), mais son contenu
+ * vient bel et bien d'une étape du cycle : c'est très exactement la
+ * séance que l'adaptation existe pour éviter. Ne lire que
+ * `etape_consommee_id` laissait donc activer une adaptation par-dessus la
+ * séance de ce jour, sans un mot.
+ *
+ * ⚠️ ET SÛREMENT PAS LE TITRE. « Push » est une chaîne d'affichage : deux
+ * programmes la partagent, un renommage la casse, et une séance du
+ * catalogue qui s'appelle « Push » n'a rien à voir avec le cycle. C'est
+ * l'identifiant d'étape qui décide, jamais le mot.
+ *
  * Ne gênent pas, et il faut savoir pourquoi :
- * · une réservation HORS de la fenêtre (l'adaptation ne la concerne pas) ;
- * · une réservation d'une étape AUTORISÉE (rien à lui reprocher) ;
+ * · une intention HORS de la fenêtre (l'adaptation ne la concerne pas) ;
+ * · une intention issue d'une étape AUTORISÉE (rien à lui reprocher) ;
  * · une intention déjà résolue (on ne réécrit jamais un fait) ;
- * · un supplément, une séance du catalogue, une impro : leur étape est
- *   `null`, donc elles ne consomment rien et l'adaptation ne les vise
- *   pas.
+ * · un supplément, une séance du catalogue, une impro : elles ne portent
+ *   ni étape ni provenance, donc l'adaptation ne les vise pas.
  */
 export function reservationsEnConflit(
   intentions: PlanningDay[],
   fenetre: { debut: string; fin: string; axes: Axes },
 ): PlanningDay[] {
   const masquees = new Set(fenetre.axes.eviter_etapes);
-  return intentions.filter(
-    (i) =>
+  return intentions.filter((i) => {
+    const source = i.etapeId ?? i.provenanceId ?? null;
+    return (
       i.status === "planned" &&
       !!i.date &&
       i.date >= fenetre.debut &&
       i.date <= fenetre.fin &&
-      !!i.etapeId &&
-      masquees.has(i.etapeId),
-  );
+      !!source &&
+      masquees.has(source)
+    );
+  });
 }
 
 /* ═══════════════════ La partie qui lit et qui écrit ═══════════════════ */

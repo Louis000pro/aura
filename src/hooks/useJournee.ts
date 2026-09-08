@@ -32,14 +32,14 @@ import {
   lireSemaine, ajouterIntention, saveDay, reservationDeLEtape, hasSeance, loadLieu, readVariant, ctxFromLieu,
   weekDates, todayYmd, dayTitle, parDate, principale, supplements, seancesDuJour,
   weekdayIndex, prochainsJours, instanceDeLEtape,
-  type PlanningDay, type GenInput,
+  type PlanningDay, type GenInput, type CycleSemaine,
 } from "@/lib/planning";
 import {
   getOrCreateProgramme, lireProgrammeActif, etapeSuivanteDe,
   type EtapeCycle, type ProgrammeEtCycle,
 } from "@/lib/programme";
 import {
-  adaptationDuJour, etapeMasquee, etapesCompatibles, libelleJour, nomsMasques,
+  adaptationDuJour, etapeMasquee, etapesCompatibles, idsMasques, libelleJour,
   type Adaptation,
 } from "@/lib/adaptation";
 import type { EtatJournee } from "@/lib/journee";
@@ -81,9 +81,13 @@ export type Journee = {
   adaptation: Adaptation | null;
   /** Sa fin, dite à voix haute : « 17 sept. ». `null` sans adaptation. */
   adaptationJusquau: string | null;
-  /** Les noms d'étapes que l'adaptation masque. Le seul endroit qui en a
-   *  besoin est « Refais ma semaine », qui compose encore en noms. */
-  etapesMasquees: string[];
+  /** Le cycle du programme actif et les étapes que l'adaptation masque,
+   *  pour les DEUX chemins qui composent une semaine (« Refais ma
+   *  semaine » et « refais ma semaine » dit au Guide). C'est lui qui leur
+   *  donne de quoi écrire la provenance de chaque séance posée. `null`
+   *  quand il n'y a pas de programme : la semaine se compose alors comme
+   *  avant, sans lien. */
+  cycleSemaine: CycleSemaine | null;
   /** La taille de l'instance de l'étape, calculée sans rien écrire. */
   nbExos: number;
   nextLabel: string | null;
@@ -246,10 +250,18 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
 
   const etat = etatJournee({ pret, besoinSetup, jour, etape, adaptationBloque });
 
-  /* Les noms d'étapes masquées : « Refais ma semaine » compose encore en
-     noms de split, pas en identifiants d'étapes. */
-  const etapesMasquees = useMemo(
-    () => (programme ? nomsMasques(programme.cycle, adaptation) : []),
+  /* Ce qu'il faut pour composer une semaine QUI SAIT D'OÙ ELLE VIENT :
+     le cycle avec ses identifiants, et les étapes que l'adaptation
+     masque. Le masquage se fait donc par identifiant partout, jusque
+     dans le générateur de semaine. */
+  const cycleSemaine = useMemo<CycleSemaine | null>(
+    () => (programme
+      ? {
+        programmeId: programme.programme.id,
+        etapes: programme.cycle.map((e) => ({ id: e.id, nom: e.nom })),
+        masquees: idsMasques(programme.cycle, adaptation),
+      }
+      : null),
     [programme, adaptation],
   );
 
@@ -424,7 +436,7 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
     reserveLe: reservation?.date ? libelleReservation(reservation.date, today) : null,
     adaptation,
     adaptationJusquau: adaptation ? libelleJour(adaptation.fin) : null,
-    etapesMasquees,
+    cycleSemaine,
     nbExos: instance.length, nextLabel, doneStats,
     semaine, setSemaine, gen, programme, besoinSetup, niveau,
     recharger: () => { void charger(); },
