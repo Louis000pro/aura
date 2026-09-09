@@ -31,7 +31,7 @@ import { useGuideActif } from "@/context/GuideContext";
 import { PLANS } from "@/lib/plans";
 import {
   resolveWhen, dayLabel, dayLabelLong, dayTitle, lireJour, lireIntention, fetchRange, hasSeance, saveDay, prochainsJours,
-  principale, cibleRemplacable, estMobilier, reserveUneEtape,
+  principale, cibleRemplacable, estMobilier, vientDuProgramme,
   ctxFromLieu, readLieu, loadLieu, persistLieu, readVariant, weekDates, todayYmd, normalizeExercises, previewWeek,
   type CycleSemaine,
   PLANNING_TYPE_BY_CATEGORY, type PlanningDay, type GenInput,
@@ -284,6 +284,19 @@ function texteCartePlan(jour: PlanningDay, remplace: string | null, verbe = "Pro
 }
 
 /**
+ * Le verbe d'une pose : on REMPLACE ce qu'on réécrit, on AJOUTE à côté de
+ * ce qui reste, on PROGRAMME une journée vide.
+ *
+ * ⚠️ « Programmer vendredi » SUR UN JOUR DÉJÀ OCCUPÉ NE DIT PAS CE QUI SE
+ * PASSE. Le bouton doit annoncer le geste exact, sinon la ligne de
+ * conséquence est le seul endroit qui dit la vérité, et elle est plus
+ * petite que le bouton.
+ */
+function verbePose(gardee: PlanningDay | null | undefined): string {
+  return gardee ? "Ajouter" : "Programmer";
+}
+
+/**
  * V9B · RECOMPOSE UNE CARTE QUI CHANGE DE JOUR.
  *
  * ⚠️ CHANGER LE JOUR D'UNE POSE CHANGE LA LIGNE QU'ELLE VISE, et l'ancienne
@@ -300,7 +313,7 @@ function recalerCarte(
   p: PendingPlan,
   ymd: string,
   cible: PlanningDay | null,
-  reservation: PlanningDay | null,
+  gardee: PlanningDay | null,
   connu: boolean,
 ): PendingPlan {
   if (p.geste.type === "deplacer") {
@@ -319,9 +332,9 @@ function recalerCarte(
     const jour = { ...p.geste.jour, date: ymd, id: cible?.id ?? null };
     return {
       ...p,
-      ...texteCartePlan(jour, cible ? dayTitle(cible) : null),
+      ...texteCartePlan(jour, cible ? dayTitle(cible) : null, verbePose(gardee)),
       geste: cible ? { type: "remplacer", jour } : { type: "ajouter", jour },
-      consequence: connu ? consequencePose(cible, reservation) : "",
+      consequence: connu ? consequencePose(cible, gardee) : "",
       preview: jour,
     };
   }
@@ -1041,12 +1054,12 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
          nommait autre chose que ce qui allait être écrit. */
       const jourVise = await lireJour(user.id, day);
       const cible = cibleRemplacable(jourVise);
-      const reservation = jourVise.find(reserveUneEtape) ?? null;
+      const gardee = jourVise.find(vientDuProgramme) ?? null;
       const libJour: PlanningDay = { ...libDay, id: cible?.id ?? null };
       setPendingPlan({
-        ...texteCartePlan(libJour, cible ? dayTitle(cible) : null),
+        ...texteCartePlan(libJour, cible ? dayTitle(cible) : null, verbePose(gardee)),
         title: row.title,
-        consequence: consequencePose(cible, reservation),
+        consequence: consequencePose(cible, gardee),
         geste: cible ? { type: "remplacer", jour: libJour } : { type: "ajouter", jour: libJour },
         preview: libJour,
         retargetable: true,
@@ -1082,11 +1095,12 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
        héros reproposait l'étape comme libre, et personne n'était prévenu.
        On résout donc la cible ICI, avec la règle unique, et le geste
        déclare l'identité qu'il écrira. Une journée qui ne porte qu'une
-       réservation n'a pas de cible remplaçable : la séance s'AJOUTE à
+       séance de PROGRAMME (qu'elle réserve une étape ou qu'elle en
+       provienne) n'a pas de cible remplaçable : la séance s'AJOUTE à
        côté, et la carte le dit. */
     const jourVise = await lireJour(user.id, when);
     const cible = cibleRemplacable(jourVise);
-    const reservation = jourVise.find(reserveUneEtape) ?? null;
+    const gardee = jourVise.find(vientDuProgramme) ?? null;
     const actuelle = principale(jourVise);
     if (action.intent === "plan_location") {
       baseDesc = actuelle && actuelle.title ? actuelle.title : "séance complète";
@@ -1134,9 +1148,9 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
 
       const pleine = await verifierPlaces();
       setPendingPlan({
-        ...texteCartePlan(day, cible ? dayTitle(cible) : null),
+        ...texteCartePlan(day, cible ? dayTitle(cible) : null, verbePose(gardee)),
         title: seance.title,
-        consequence: consequencePose(cible, reservation),
+        consequence: consequencePose(cible, gardee),
         geste: cible ? { type: "remplacer", jour: day } : { type: "ajouter", jour: day },
         preview: day,
         retargetable: true,
@@ -1897,7 +1911,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
     if (!compte) return;
     void lireJour(compte, ymd).then((jour) => {
       setPendingPlan((prev) => (prev?.preview?.date === ymd
-        ? recalerCarte(prev, ymd, cibleRemplacable(jour), jour.find(reserveUneEtape) ?? null, true)
+        ? recalerCarte(prev, ymd, cibleRemplacable(jour), jour.find(vientDuProgramme) ?? null, true)
         : prev));
     }).catch(() => { /* jour illisible : la carte reste en « ajouter », qui ne détruit rien */ });
   }, [idPlanning]);

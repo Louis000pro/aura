@@ -276,7 +276,7 @@ function CartePlanning() {
       exercices={(p.preview?.exerciseList ?? []).map((ex) => ({ name: ex.name, dose: `${ex.sets} × ${ex.reps}`, muscles: ex.muscles }))}
       options={[
         ...(p.retargetable ? [{ id: "day", icone: <CalendarDays size={15} strokeWidth={2} />, ligne1: "Un autre", ligne2: "jour", actif: ouvert, onClick: ouvrirJours }] : []),
-        ...(p.gardable ? [{ id: "keep", icone: <BookmarkPlus size={15} strokeWidth={2} />, ligne1: "La garder", ligne2: "aussi", actif: garderAussi, onClick: () => setGarderAussi((v) => !v) }] : []),
+        ...(p.gardable ? [{ id: "keep", icone: <BookmarkPlus size={15} strokeWidth={2} />, ligne1: "Garder dans", ligne2: "mes séances", actif: garderAussi, onClick: () => setGarderAussi((v) => !v) }] : []),
       ]}
       jours={ouvert ? jours : null}
       jourChoisi={p.preview?.date ?? null}

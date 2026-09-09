@@ -157,26 +157,41 @@ export function consequenceRetrait(d: PlanningDay | null | undefined): string {
 }
 
 /**
+ * Comment nommer une ligne de programme qu'on laisse en place.
+ *
+ * ⚠️ LE MOT DIT LAQUELLE DES DEUX PROMESSES ELLE PORTE, et il n'y en a
+ * que deux : une réservation referme une étape du cycle, une séance
+ * régénérée dit seulement d'où venait son contenu. Les appeler pareil
+ * ferait promettre à la seconde ce que seule la première tient.
+ */
+const etatGardee = (d: PlanningDay): string => (reserveUneEtape(d) ? "réservée" : "prévue");
+
+/**
  * Ce qu'une pose sur un jour change, selon ce qu'elle trouve.
  *
  * ⚠️ LE TROISIÈME CAS EST LA RAISON D'ÊTRE DE CETTE FONCTION. Quand la
- * journée ne porte qu'une réservation d'étape, le geste ne la réécrit
- * pas : il s'ajoute à côté, et la carte le dit. C'est le contraire de ce
- * que faisait `plan_set`, qui l'écrasait sans un mot.
+ * journée ne porte qu'une séance de programme, le geste ne la réécrit
+ * pas : il s'ajoute à côté, et la carte le dit AVANT le clic. C'est le
+ * contraire de ce que faisait `plan_set`, qui l'écrasait sans un mot.
+ *
+ * ⚠️ `gardee` EST LA LIGNE DE PROGRAMME QUI RESTE, RÉSERVATION OU NON.
+ * Le paramètre s'appelait `reservation` et ne recevait que les lignes
+ * portant `etape_consommee_id` : une séance régénérée n'était donc
+ * nommée nulle part, et la carte annonçait « ta progression de programme
+ * ne change pas » à l'instant précis où elle allait effacer le lien de
+ * cette séance vers son étape.
  */
 export function consequencePose(
   cible: PlanningDay | null | undefined,
-  reservation: PlanningDay | null | undefined,
+  gardee: PlanningDay | null | undefined,
 ): string {
+  const nom = gardee ? (gardee.title || "ta séance de programme").trim() : "";
   if (cible) {
-    return reservation
-      ? `« ${(reservation.title || "ta séance de programme").trim()} » reste réservée ce jour-là.`
+    return gardee
+      ? `« ${nom} » reste ${etatGardee(gardee)} ce jour-là.`
       : "Ta progression de programme ne change pas.";
   }
-  if (reservation) {
-    const nom = (reservation.title || "ta séance de programme").trim();
-    return `« ${nom} » reste réservée ce jour-là : celle-ci s’ajoute à côté.`;
-  }
+  if (gardee) return `« ${nom} » reste ${etatGardee(gardee)} ce jour-là : celle-ci s’ajoute à côté.`;
   return "Rien d’autre n’est prévu ce jour-là.";
 }
 

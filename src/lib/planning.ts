@@ -966,21 +966,56 @@ export function seanceNonFaite(day: PlanningDay | null | undefined, today: strin
 
 /* ═══════ V9B · CE QU'UN GESTE A LE DROIT DE TOUCHER ═══════
 
-   Deux distinctions, toutes deux nées d'un défaut réel, et toutes deux
-   PURES pour qu'un banc puisse les exercer hors ligne.
+   Trois prédicats, tous nés d'un défaut réel, et tous PURS pour qu'un banc
+   puisse les exercer hors ligne.
 
-   ⚠️ RÉSERVER UNE ÉTAPE N'EST PAS PROVENIR D'UNE ÉTAPE, et c'est ce que
-   `plan_set` ignorait. Une réservation (V7A) porte `etape_consommee_id` :
-   c'est la PROMESSE qu'une étape du cycle sera refermée ce jour-là. Une
-   séance composée par « refais ma semaine » ne porte que sa provenance :
-   elle dit d'où vient son contenu, elle ne referme rien. La première ne
-   se réécrit pas en silence, la seconde si — quand son contenu change,
-   sa provenance devient fausse et doit tomber avec lui.
+   ⚠️ RÉSERVER UNE ÉTAPE N'EST PAS PROVENIR D'UNE ÉTAPE, et la nuance sert
+   à DIRE, pas à décider qui se fait écraser. Une réservation (V7A) porte
+   `etape_consommee_id` : c'est la PROMESSE qu'une étape du cycle sera
+   refermée ce jour-là. Une séance composée par « refais ma semaine » ne
+   porte que sa provenance : elle dit d'où venait son contenu, elle ne
+   referme rien. La carte n'annonce donc pas la même conséquence dans les
+   deux cas.
+
+   ⚠️ ⚠️ MAIS AUCUNE DES DEUX N'EST UNE CIBLE IMPLICITE, ET C'EST LA
+   CORRECTION DU 2026-09-09, TROUVÉE PAR LOUIS AU PREMIER ESSAI RÉEL.
+   La première version de V9B n'écartait que la réservation, en se disant
+   qu'une provenance « tombe avec le contenu qu'elle décrivait ». C'est
+   faux dès qu'on le regarde en face : `dayToRow` réécrit la ligne
+   ENTIÈRE, `lienProgramme` écrit ses trois colonnes même à `null`, donc
+   remplacer une séance qui provient d'une étape DÉTRUIT son lien au
+   programme, en silence, exactement comme pour une réservation. Et ce
+   lien n'est pas décoratif : depuis V8 c'est lui qui fait qu'une séance
+   posée sur une étape masquée BLOQUE l'activation d'une adaptation
+   (`reservationsEnConflit` lit `etapeId ?? provenanceId`). Le geste
+   annonçait « ta progression de programme ne change pas » et emportait
+   l'identité que la vague d'avant avait passé un correctif entier à
+   écrire.
+
+   La règle est donc plus simple qu'elle ne l'était : UNE LIGNE QUI PORTE
+   UNE IDENTITÉ DE PROGRAMME NE SE FAIT PAS ÉCRASER PAR UN GESTE QU'ON N'A
+   PAS DEMANDÉ. On s'écarte, on ajoute à côté, et la carte le dit. La
+   remplacer pour de bon est une SUBSTITUTION : elle se déclare, elle
+   nomme son effet sur le cycle, et c'est V9C.
 */
 
 /** Cette intention RÉSERVE-t-elle une étape du cycle ? */
 export function reserveUneEtape(d: PlanningDay | null | undefined): boolean {
   return !!d?.etapeId;
+}
+
+/**
+ * Cette intention porte-t-elle une identité de programme, quelle qu'elle
+ * soit : la promesse de refermer une étape, ou seulement l'étape d'où son
+ * contenu venait ?
+ *
+ * ⚠️ C'EST LE MÊME COUPLE DE COLONNES QUE `reservationsEnConflit` (V8),
+ * ET CE N'EST PAS UNE COÏNCIDENCE : ce qui vaut identité pour bloquer une
+ * adaptation vaut identité pour refuser un écrasement muet. Deux
+ * définitions du « lien au programme » finiraient par diverger.
+ */
+export function vientDuProgramme(d: PlanningDay | null | undefined): boolean {
+  return !!(d?.etapeId || d?.provenanceId);
 }
 
 /**
@@ -999,12 +1034,21 @@ export function reserveUneEtape(d: PlanningDay | null | undefined): boolean {
  * prévenu. C'est exactement la substitution non déclarée que le modèle
  * interdit depuis V4.
  *
+ * ⚠️ ET LE FILTRE PORTE SUR `vientDuProgramme`, PAS SUR LA SEULE
+ * RÉSERVATION. Écarter la réservation et garder la séance régénérée
+ * laissait le geste réécrire une ligne qui portait `programme_id` et
+ * `programme_seance_id` : le lien partait à `null` sans un mot, et la
+ * carte annonçait pourtant « ta progression de programme ne change pas ».
+ * Ce qui reste remplaçable est ce qui ne vient d'aucune étape : une
+ * séance du catalogue, une impro, une séance perso, une semaine posée
+ * avant que la provenance ne s'écrive.
+ *
  * ⚠️ ON NE CONVERTIT PAS, ON NE DEVINE PAS : on s'écarte. Remplacer le
- * CONTENU d'une étape réservée est une substitution, elle se déclarera
- * en V9C avec sa confirmation à elle.
+ * CONTENU d'une séance de programme est une substitution, elle se
+ * déclarera en V9C avec sa confirmation à elle.
  */
 export function cibleRemplacable(jour: PlanningDay[] | null | undefined): PlanningDay | null {
-  return ordonner(jour).find((i) => i.status !== "done" && !reserveUneEtape(i)) ?? null;
+  return ordonner(jour).find((i) => i.status !== "done" && !vientDuProgramme(i)) ?? null;
 }
 
 /**
@@ -1017,6 +1061,14 @@ export function cibleRemplacable(jour: PlanningDay[] | null | undefined): Planni
  * (une réservation n'est jamais du mobilier, quoi qu'en dise son
  * origine). Un statut ou une origine qu'on ne comprend pas rend `false` :
  * dans le doute, on protège.
+ *
+ * ⚠️ ET CE PRÉDICAT-CI GARDE `reserveUneEtape`, LÀ OÙ `cibleRemplacable`
+ * EST PASSÉ À `vientDuProgramme` : la différence n'est pas un oubli,
+ * c'est la portée du geste. « Refais ma semaine » a précisément pour
+ * métier de remplacer le mobilier qu'il a lui-même posé, provenance
+ * comprise ; l'en empêcher rendrait le bouton inerte dès la deuxième
+ * fois. `plan_set`, lui, vise UN jour qu'on ne lui a pas demandé de
+ * refaire.
  */
 export function estMobilier(d: PlanningDay | null | undefined): boolean {
   return !!d && d.status === "planned" && d.origine === "systeme" && !reserveUneEtape(d);

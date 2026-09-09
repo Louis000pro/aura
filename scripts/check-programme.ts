@@ -32,7 +32,7 @@ import {
   cycleDeReference, seancesDuCycle, previewWeek, weekDates, ANCIEN, NOUVEAU,
   ordonner, parDate, principale, supplements, seancesDuJour, prochaineSeanceDuJour,
   refModele, lienProgramme, prochainsJours, todayYmd,
-  cibleRemplacable, estMobilier,
+  cibleRemplacable, estMobilier, reserveUneEtape, vientDuProgramme,
   type PlanningDay, type CycleSemaine,
 } from "@/lib/planning";
 import {
@@ -2525,377 +2525,467 @@ verdict(
   }
 }
 
-/* ════════════════════════════════════════════════════════════════════
-   V9B · LE GUIDE DÉPLACE ET RETIRE, ET IL NE DÉTRUIT PLUS RIEN EN SILENCE
-
-   Deux défauts prouvés, tous deux ANTÉRIEURS à cette vague et tous deux
-   MUETS, ce qui est le seul point commun qui compte :
-
-   • `plan_set` composait `{ id: null, … }` sans identité de programme.
-     `poser` visait alors « la première intention non résolue » du jour,
-     or `ordonner` met justement l'étape en tête : une réservation V7A
-     était donc réécrite, et `lienProgramme` écrivant ses trois colonnes
-     même à `null`, elle cessait d'être une réservation. Toujours là,
-     toujours prévue, mais sans son étape. Le curseur ne bougeait pas, le
-     héros reproposait l'étape comme libre, et personne n'était prévenu.
-
-   • `plan_regen` libérait TOUS les jours à venir : réservations,
-     suppléments et séances posées à la main partaient ensemble, alors que
-     le bouton d'Entraînement ne retire que le mobilier système depuis V5.
-
-   ⚠️ TOUT CE QUI DÉCIDE EST PUR, ET C'EST CE QUI REND LA VAGUE
-   VÉRIFIABLE : quelle ligne un geste vise, ce qu'il change pour le
-   programme, ce qu'il préserve. Le reste est une propriété du CHEMIN (qui
-   écrit, et qui n'écrit plus), donc des contrôles de SOURCE.
-   ════════════════════════════════════════════════════════════════════ */
-{
-  const lireV9B = (f: string) => readFileSync(new URL("../" + f, import.meta.url), "utf8");
-  const PLAN9B = lireV9B("src/lib/planning.ts");
-  const GESTE = lireV9B("src/lib/gestePlanning.ts");
-  const CTX9B = lireV9B("src/context/AssistantContext.tsx");
-
-  const ex = [{ name: "Pompes", sets: 3, reps: "12 reps", rest: 60, restAfter: 90, tip: "", benefit: "", muscles: [] }];
-  const inte = (over: Partial<PlanningDay> = {}): PlanningDay => ({
-    id: "i1", date: "2026-09-10", type: "Force", title: "Push",
-    difficulty: "Intermédiaire", location: "salle", exerciseList: ex,
-    sessionId: null, status: "planned", origine: "systeme", ...over,
-  });
-
-  /* Les natures de ligne du modèle, telles qu'elles vivent vraiment en base. */
-  const RESERVATION = inte({
-    id: "r1", title: "Push", origine: "utilisateur",
-    programmeId: "p1", etapeId: "e-push", provenanceId: "e-push", adaptationId: "a1",
-  });
-  const REGENEREE = inte({ id: "g1", title: "Pull", programmeId: "p1", provenanceId: "e-pull" });
-  const SUPPLEMENT = inte({ id: "s1", title: "HIIT 20/10", type: "HIIT", origine: "utilisateur" });
-  const FAITE = inte({ id: "f1", title: "Bas du corps", status: "done", origine: "utilisateur" });
-  const CYCLE = [
-    { id: "e-push", nom: "Push" },
-    { id: "e-pull", nom: "Pull" },
-    { id: "e-bas", nom: "Bas du corps" },
-  ];
-
-  /* ── 1. LE DÉFAUT `plan_set` : UNE RÉSERVATION N'EST PLUS UNE CIBLE ── */
-
-  verdict(
-    "V9B · une journée qui ne porte qu'une réservation n'a AUCUNE cible remplaçable",
-    cibleRemplacable([RESERVATION]) === null,
-    "c'est le défaut : `poser` la visait, et elle cessait d'être une réservation",
-  );
-  verdict(
-    "V9B · une séance ordinaire, elle, reste remplaçable",
-    cibleRemplacable([REGENEREE])?.id === "g1",
-    "sa provenance disait d'où venait son contenu : le contenu change, elle tombe avec lui",
-  );
-  verdict(
-    "V9B · avec une réservation ET un supplément, c'est le supplément qui est visé",
-    cibleRemplacable([RESERVATION, SUPPLEMENT])?.id === "s1",
-    "`ordonner` met l'étape en tête : c'est elle que l'ancienne règle prenait",
-  );
-  verdict(
-    "V9B · une séance FAITE n'est jamais une cible",
-    cibleRemplacable([FAITE]) === null,
-    "réécrire un fait pour y mettre une intention, ce serait effacer l'historique",
-  );
-  verdict(
-    "V9B · et une journée vide non plus",
-    cibleRemplacable([]) === null && cibleRemplacable(null) === null,
-    "le geste devient alors un ajout, jamais un écrasement",
-  );
-  verdict(
-    "V9B · la réservation garde ses TROIS colonnes quand on réécrit la ligne",
-    (() => {
-      const l = lienProgramme(RESERVATION);
-      return l.programme_id === "p1" && l.programme_seance_id === "e-push" && l.etape_consommee_id === "e-push";
-    })(),
-    "c'est exactement ce que `plan_set` remettait à null",
-  );
-  verdict(
-    "V9B · une séance sans lien écrit toujours ses trois `null`",
-    (() => {
-      const l = lienProgramme(SUPPLEMENT);
-      return l.programme_id === null && l.programme_seance_id === null && l.etape_consommee_id === null;
-    })(),
-    "le lien s'écrit TOUJOURS, même à null : c'est la règle posée en V7A",
-  );
-
-  /* ── 2. LE DÉFAUT `plan_regen` : CE QUI EST DU MOBILIER, ET CE QUI NE L'EST PAS ── */
-
-  verdict(
-    "V9B · une séance système encore prévue EST du mobilier",
-    estMobilier(REGENEREE),
-    "c'est ce que « refais ma semaine » a le droit de retirer",
-  );
-  verdict(
-    "V9B · une RÉSERVATION n'est jamais du mobilier",
-    !estMobilier(RESERVATION) && !estMobilier(inte({ etapeId: "e-push", programmeId: "p1" })),
-    "même écrite par le système : une étape réservée ne se retire pas au passage",
-  );
-  verdict(
-    "V9B · un SUPPLÉMENT posé à la main ou par le Guide n'est pas du mobilier",
-    !estMobilier(SUPPLEMENT) && !estMobilier(inte({ origine: "guide" })),
-    "l'ancienne libération les emportait avec le reste, sans un mot",
-  );
-  verdict(
-    "V9B · une séance FAITE n'est pas du mobilier",
-    !estMobilier(FAITE),
-    "un fait ne se libère pas",
-  );
-  verdict(
-    "V9B · une origine inconnue PROTÈGE la ligne au lieu de l'exposer",
-    !estMobilier(inte({ origine: null })) && !estMobilier(inte({ origine: undefined })),
-    "dans le doute on protège : le mauvais échec serait d'effacer ce qu'on n'a pas compris",
-  );
-  verdict(
-    "V9B · et la colonne `origine` est enfin RELUE",
-    PLAN9B.includes("etape_consommee_id, origine, created_at")
-      && PLAN9B.includes("origine: (r.origine as Origine | null) ?? null,"),
-    "sans elle, le Guide ne peut pas distinguer le mobilier d'une séance posée à la main",
-  );
-
-  /* ── 3. DÉSIGNER UNE LIGNE : L'IDENTITÉ D'ABORD, LE TITRE ENSUITE ── */
-
-  const SEMAINE = [RESERVATION, REGENEREE, SUPPLEMENT, FAITE];
-
-  verdict(
-    "V9B · « déplace Push » passe par l'ÉTAPE du cycle, pas par le titre",
-    (() => {
-      const r = resoudreCibles(SEMAINE, { nom: "Push" }, CYCLE);
-      return r.length === 1 && r[0].id === "r1";
-    })(),
-    "le nom est traduit en identité d'étape, puis on cherche qui la porte",
-  );
-  verdict(
-    "V9B · une séance du catalogue nommée « Push » n'est PAS l'étape Push",
-    (() => {
-      const sosie = inte({ id: "x1", title: "Push", origine: "utilisateur" });
-      const r = resoudreCibles([RESERVATION, sosie], { nom: "Push" }, CYCLE);
-      return r.length === 1 && r[0].id === "r1";
-    })(),
-    "la ressemblance des titres ne désigne rien quand une identité existe",
-  );
-  verdict(
-    "V9B · le titre reste le repli pour ce qui ne porte aucune identité",
-    resoudreCibles(SEMAINE, { nom: "HIIT" }, CYCLE).map((d) => d.id).join() === "s1",
-    "une séance perso ou du catalogue ne se désigne QUE par son nom",
-  );
-  verdict(
-    "V9B · si aucune ligne ne porte l'étape, on retombe sur le titre",
-    (() => {
-      const sosie = inte({ id: "x1", title: "Push", origine: "utilisateur" });
-      return resoudreCibles([sosie], { nom: "Push" }, CYCLE).map((d) => d.id).join() === "x1";
-    })(),
-    "sinon une séance visible à l'écran deviendrait introuvable pour le Guide",
-  );
-  verdict(
-    "V9B · une séance FAITE n'est jamais désignée",
-    resoudreCibles(SEMAINE, { nom: "Bas du corps" }, CYCLE).length === 0,
-    "on ne déplace pas un fait, et on ne le retire pas non plus",
-  );
-  verdict(
-    "V9B · un jour de repos n'est pas une séance à déplacer",
-    resoudreCibles([inte({ id: "z1", type: "Repos", title: "Repos", exerciseList: [] })], {}, CYCLE).length === 0,
-    "`hasSeance` tient la règle ici comme partout",
-  );
-  verdict(
-    "V9B · le jour dit filtre, et le résultat est ordonné par date",
-    (() => {
-      const tard = inte({ id: "t1", date: "2026-09-14", title: "Pull", programmeId: "p1", provenanceId: "e-pull" });
-      const tous = resoudreCibles([tard, REGENEREE], {}, CYCLE).map((d) => d.id).join();
-      const cible = resoudreCibles([tard, REGENEREE], { date: "2026-09-14" }, CYCLE).map((d) => d.id).join();
-      return tous === "g1,t1" && cible === "t1";
-    })(),
-    "« ma séance » veut dire la prochaine : le tri par date est une décision, pas un hasard",
-  );
-  verdict(
-    "V9B · PLUSIEURS correspondances remontent toutes : c'est ce qui déclenche la question",
-    resoudreCibles(
-      [REGENEREE, inte({ id: "g2", date: "2026-09-12", title: "Pull", programmeId: "p1", provenanceId: "e-pull" })],
-      { nom: "Pull" }, CYCLE,
-    ).length === 2,
-    "on demande laquelle, on n'écrit rien, et on ne repasse pas par le modèle",
-  );
-  verdict(
-    "V9B · sans cycle lisible, on désigne par le titre et rien ne casse",
-    resoudreCibles(SEMAINE, { nom: "Pull" }, null).map((d) => d.id).join() === "g1",
-    "un programme illisible ne doit pas rendre le Guide muet",
-  );
-  verdict(
-    "V9B · `etapeParNom` ne sort jamais du cycle persisté",
-    etapeParNom(CYCLE, "Push")?.id === "e-push"
-      && etapeParNom(CYCLE, "bas du corps")?.id === "e-bas"
-      && etapeParNom(CYCLE, "Yoga") === null
-      && etapeParNom(null, "Push") === null,
-    "c'est la seule traduction nom vers identité de la vague, et elle est bornée",
-  );
-
-  /* ── 4. CE QU'UN DÉPLACEMENT PRÉSERVE ── */
-
-  const deplacee: PlanningDay = { ...RESERVATION, date: "2026-09-12", status: "planned" };
-  verdict(
-    "V9B · déplacer une réservation garde ses trois identités de programme",
-    deplacee.programmeId === "p1" && deplacee.etapeId === "e-push" && deplacee.provenanceId === "e-push",
-    "elle change de jour, elle ne change pas de nature",
-  );
-  verdict(
-    "V9B · elle garde aussi son identité de ligne et son adaptation",
-    deplacee.id === "r1" && deplacee.adaptationId === "a1",
-    "même `id` = un UPDATE, donc aucun doublon et aucune seconde réservation",
-  );
-  verdict(
-    "V9B · déplacer une séance régénérée garde sa provenance",
-    (() => {
-      const d: PlanningDay = { ...REGENEREE, date: "2026-09-12", status: "planned" };
-      const l = lienProgramme(d);
-      return l.programme_seance_id === "e-pull" && l.etape_consommee_id === null;
-    })(),
-    "sinon l'adaptation cesserait de voir le conflit dès qu'on bouge la séance d'un jour",
-  );
-  verdict(
-    "V9B · déplacer vers un jour occupé n'écrase rien",
-    GESTE.includes('case "deplacer":') && GESTE.includes("await saveDay(userId, geste.jour, origine)")
-      && PLAN9B.includes("const cible = day.id"),
-    "c'est un UPDATE par identité : ce qui est posé au jour d'arrivée reste, la journée en porte deux",
-  );
-  verdict(
-    "V9B · et la seule suppression au jour d'arrivée reste la règle repos/séance",
-    PLAN9B.includes('i.status !== "done" && natureDe(i) !== natureDe(day)'),
-    "elle ne touche jamais une intention faite, et jamais une séance de même nature",
-  );
-
-  /* ── 5. CE QUE LE GESTE ANNONCE, AVANT LE CLIC ── */
-
-  verdict(
-    "V9B · déplacer une réservation le DIT",
-    consequenceDeplacement(RESERVATION).includes("séance de programme")
-      && consequenceDeplacement(REGENEREE).includes("ne change pas"),
-    "la conséquence se déduit de la ligne, jamais du modèle",
-  );
-  verdict(
-    "V9B · retirer une réservation dit que l'étape RESTE",
-    consequenceRetrait(RESERVATION).includes("tape reste dans ton programme")
-      && consequenceRetrait(RESERVATION).includes("ni faite ni saut"),
-    "elle n'est ni consommée ni sautée : elle sera reproposée",
-  );
-  verdict(
-    "V9B · retirer un supplément dit que le cycle ne bouge pas",
-    consequenceRetrait(SUPPLEMENT).includes("Ton cycle ne change pas"),
-    "il ne réservait rien, donc il ne libère rien",
-  );
-  verdict(
-    "V9B · poser à côté d'une réservation le DIT avant le clic",
-    consequencePose(null, RESERVATION).includes("reste réservée")
-      && consequencePose(SUPPLEMENT, null).includes("ne change pas")
-      && consequencePose(null, null).startsWith("Rien"),
-    "c'est le contraire de `plan_set`, qui l'écrasait sans un mot",
-  );
-  verdict(
-    "V9B · la semaine régénérée NOMME les jours qu'elle garde",
-    consequenceSemaine([]).includes("posées automatiquement")
-      && consequenceSemaine(["jeudi"]).includes("jeudi ne bouge pas")
-      && consequenceSemaine(["jeudi", "vendredi"]).includes("jeudi et vendredi ne bougent pas"),
-    "« refais ma semaine » ne veut pas dire « efface tout ce qui était prévu »",
-  );
-
-  /* ── 6. LES CONTRÔLES DE SOURCE : DES PROPRIÉTÉS DU CHEMIN ── */
-
-  verdict(
-    "V9B · `poser` passe par la règle unique de ciblage",
-    PLAN9B.includes("cibleRemplacable(jour)?.id ?? null")
-      && !PLAN9B.includes('ordonner(jour).find((i) => i.status !== "done")?.id'),
-    "une seconde règle écrite ailleurs annoncerait autre chose que ce qui s'écrit",
-  );
-  verdict(
-    "V9B · une mise à jour qui ne touche AUCUNE ligne échoue au lieu de se taire",
-    PLAN9B.includes("if (!data || data.length === 0) throw new Error"),
-    "le Guide déclare son identité à l'affichage et l'écrit au clic : entre les deux, elle peut disparaître",
-  );
-  verdict(
-    "V9B · et une écriture ne réécrit jamais une séance FAITE",
-    /\.update\(dayToRow\([\s\S]{0,900}?\.neq\(sc\.colStatut, sc\.versBase\.done\)[\s\S]{0,300}?\.select\("id"\)/.test(PLAN9B),
-    "`retirerIntention` portait ce filtre depuis V8, `poser` ne l'avait pas",
-  );
-  verdict(
-    "V9B · la libération du Guide ne vise QUE le mobilier",
-    PLAN9B.includes('.eq("origine", "systeme")')
-      && PLAN9B.includes('.is("etape_consommee_id", null)'),
-    "les trois conditions d'`estMobilier`, appliquées en base et pas sur ce que l'écran a lu",
-  );
-  verdict(
-    "V9B · `confirmPlan` n'écrit plus rien lui-même",
-    CTX9B.includes("await appliquerGeste(user.id, pendingPlan.geste")
-      && !CTX9B.includes("await libererJours(")
-      && !/for \(const w of pendingPlan\.writes\)/.test(CTX9B),
-    "il décidait de la portée d'une suppression : c'était le second moteur de planning",
-  );
-  verdict(
-    "V9B · plus aucune libération à la journée entière depuis le Guide",
-    !CTX9B.includes("libererJours"),
-    "elle emportait réservations et suppléments, et la carte n'en disait rien",
-  );
-  verdict(
-    "V9B · l'autorité d'application ne fait que ROUTER",
-    GESTE.includes("await saveDay(") && GESTE.includes("await ajouterIntention(")
-      && GESTE.includes("await retirerIntention(") && GESTE.includes("await libererMobilier(")
-      && !GESTE.includes(".from("),
-    "aucune requête à elle : ajouter un geste en V9C ne doit pas rouvrir un moteur ici",
-  );
-  verdict(
-    "V9B · le retrait passe UNIQUEMENT par `retirerIntention`, et n'écrit aucun statut",
-    GESTE.includes("await retirerIntention(userId, geste.intentionId)")
-      && !GESTE.includes('"passee"') && !GESTE.includes('"skipped"') && !GESTE.includes('"done"'),
-    "écrire un statut dirait qu'une séance a été écartée alors qu'elle n'a jamais eu lieu",
-  );
-  verdict(
-    "V9B · préparer une carte n'écrit RIEN",
-    (() => {
-      const bloc = (CTX9B.match(/const preparerSurCible = useCallback\(async \([\s\S]*?\n  \}, \[idPlanning\]\);/) ?? [""])[0];
-      return bloc.length > 400 && !/appliquerGeste\(|\.insert\(|\.update\(|\.delete\(|saveDay\(|retirerIntention\(/.test(bloc);
-    })(),
-    "aucune écriture sans clic : c'est le bouton violet qui écrit",
-  );
-  verdict(
-    "V9B · le Guide DÉCLARE l'identité qu'il vise, il ne la laisse plus deviner",
-    CTX9B.includes("const cible = cibleRemplacable(jourVise)")
-      && CTX9B.includes("id: cible?.id ?? null")
-      && CTX9B.includes('geste: cible ? { type: "remplacer", jour: day } : { type: "ajouter", jour: day }'),
-    "sans `id`, la base choisissait, et elle choisissait justement la réservation",
-  );
-  verdict(
-    "V9B · la régénération ne libère que les jours qu'elle a le droit de toucher",
-    CTX9B.includes("const garde = (d: string) => (existing[d] ?? []).some((i) => !estMobilier(i))")
-      && CTX9B.includes('geste: { type: "semaine", poser: writes, liberer: modifiables }'),
-    "un jour qui porte autre chose que du mobilier n'est ni libéré ni réécrit",
-  );
-  verdict(
-    "V9B · une ambiguïté se lève par un IDENTIFIANT, jamais en renvoyant la phrase au modèle",
-    CTX9B.includes('genre: "cible"') && CTX9B.includes("void lireIntention(compte, trouve.id)"),
-    "renvoyer « jeudi 10 » à l'aiguilleur rouvrirait l'ambiguïté qu'on vient de lever",
-  );
-  verdict(
-    "V9B · changer le jour d'une carte relit la journée d'arrivée",
-    CTX9B.includes("void lireJour(compte, ymd).then")
-      && CTX9B.includes("recalerCarte(prev, ymd, cibleRemplacable(jour)"),
-    "sinon la carte annonce un jour et l'écriture en vise un autre",
-  );
-  verdict(
-    "V9B · l'aiguilleur a gagné `plan_retirer`, et rien de plus",
-    ASSISTANT_TOOLS.some((t) => t.function.name === "plan_retirer")
-      && !ASSISTANT_TOOLS.some((t) => /sauter|substitu|supplement|adaptation/.test(t.function.name)),
-    "saut, substitution, supplément et adaptation attendent V9C et V9D",
-  );
-  verdict(
-    "V9B · `plan_move` comprend enfin CE QU'ON déplace",
-    (() => {
-      const move = ASSISTANT_TOOLS.find((t) => t.function.name === "plan_move");
-      const ret = ASSISTANT_TOOLS.find((t) => t.function.name === "plan_retirer");
-      return !!move && "quoi" in move.function.parameters.properties
-        && !!ret && "quoi" in ret.function.parameters.properties
-        && !move.function.parameters.required && !ret.function.parameters.required;
-    })(),
-    "« mets Bas du corps à vendredi » nomme la séance, et le jour cesse d'être obligatoire",
-  );
-}
+/* ════════════════════════════════════════════════════════════════════
+   V9B · LE GUIDE DÉPLACE ET RETIRE, ET IL NE DÉTRUIT PLUS RIEN EN SILENCE
+
+   Deux défauts prouvés, tous deux ANTÉRIEURS à cette vague et tous deux
+   MUETS, ce qui est le seul point commun qui compte :
+
+   • `plan_set` composait `{ id: null, … }` sans identité de programme.
+     `poser` visait alors « la première intention non résolue » du jour,
+     or `ordonner` met justement l'étape en tête : une réservation V7A
+     était donc réécrite, et `lienProgramme` écrivant ses trois colonnes
+     même à `null`, elle cessait d'être une réservation. Toujours là,
+     toujours prévue, mais sans son étape. Le curseur ne bougeait pas, le
+     héros reproposait l'étape comme libre, et personne n'était prévenu.
+
+   • `plan_regen` libérait TOUS les jours à venir : réservations,
+     suppléments et séances posées à la main partaient ensemble, alors que
+     le bouton d'Entraînement ne retire que le mobilier système depuis V5.
+
+   ⚠️ TOUT CE QUI DÉCIDE EST PUR, ET C'EST CE QUI REND LA VAGUE
+   VÉRIFIABLE : quelle ligne un geste vise, ce qu'il change pour le
+   programme, ce qu'il préserve. Le reste est une propriété du CHEMIN (qui
+   écrit, et qui n'écrit plus), donc des contrôles de SOURCE.
+   ════════════════════════════════════════════════════════════════════ */
+{
+  const lireV9B = (f: string) => readFileSync(new URL("../" + f, import.meta.url), "utf8");
+  const PLAN9B = lireV9B("src/lib/planning.ts");
+  const GESTE = lireV9B("src/lib/gestePlanning.ts");
+  const CTX9B = lireV9B("src/context/AssistantContext.tsx");
+
+  const ex = [{ name: "Pompes", sets: 3, reps: "12 reps", rest: 60, restAfter: 90, tip: "", benefit: "", muscles: [] }];
+  const inte = (over: Partial<PlanningDay> = {}): PlanningDay => ({
+    id: "i1", date: "2026-09-10", type: "Force", title: "Push",
+    difficulty: "Intermédiaire", location: "salle", exerciseList: ex,
+    sessionId: null, status: "planned", origine: "systeme", ...over,
+  });
+
+  /* Les natures de ligne du modèle, telles qu'elles vivent vraiment en base. */
+  const RESERVATION = inte({
+    id: "r1", title: "Push", origine: "utilisateur",
+    programmeId: "p1", etapeId: "e-push", provenanceId: "e-push", adaptationId: "a1",
+  });
+  const REGENEREE = inte({ id: "g1", title: "Pull", programmeId: "p1", provenanceId: "e-pull" });
+  const SUPPLEMENT = inte({ id: "s1", title: "HIIT 20/10", type: "HIIT", origine: "utilisateur" });
+  /* Une séance qui ne vient d'aucune étape : catalogue, impro, séance perso,
+     ou une semaine posée avant que la provenance ne s'écrive (V8). C'est
+     exactement, et seulement, ce qu'un geste a le droit de réécrire. */
+  const LIBRE = inte({ id: "l1", title: "Force Totale", origine: "guide" });
+  const FAITE = inte({ id: "f1", title: "Bas du corps", status: "done", origine: "utilisateur" });
+  const CYCLE = [
+    { id: "e-push", nom: "Push" },
+    { id: "e-pull", nom: "Pull" },
+    { id: "e-bas", nom: "Bas du corps" },
+  ];
+
+  /* ── 1. LE DÉFAUT `plan_set` : UNE RÉSERVATION N'EST PLUS UNE CIBLE ── */
+
+  verdict(
+    "V9B · une journée qui ne porte qu'une réservation n'a AUCUNE cible remplaçable",
+    cibleRemplacable([RESERVATION]) === null,
+    "c'est le défaut : `poser` la visait, et elle cessait d'être une réservation",
+  );
+  verdict(
+    "V9B · une séance qui PROVIENT d'une étape n'est pas une cible non plus",
+    cibleRemplacable([REGENEREE]) === null && vientDuProgramme(REGENEREE),
+    "le défaut réel du 2026-09-09 : la réécrire mettait `programme_seance_id` à null sans un mot",
+  );
+  verdict(
+    "V9B · une séance sans aucune identité de programme, elle, reste remplaçable",
+    cibleRemplacable([LIBRE])?.id === "l1" && !vientDuProgramme(LIBRE),
+    "catalogue, impro, séance perso : rien à détruire, le remplacement garde son sens",
+  );
+  verdict(
+    "V9B · avec une réservation ET un supplément, c'est le supplément qui est visé",
+    cibleRemplacable([RESERVATION, SUPPLEMENT])?.id === "s1",
+    "`ordonner` met l'étape en tête : c'est elle que l'ancienne règle prenait",
+  );
+  verdict(
+    "V9B · avec une séance de programme ET une séance libre, c'est la libre",
+    cibleRemplacable([REGENEREE, LIBRE])?.id === "l1",
+    "on s'écarte de ce qui porte une identité, on ne renonce pas au geste",
+  );
+  verdict(
+    "V9B · une séance FAITE n'est jamais une cible",
+    cibleRemplacable([FAITE]) === null,
+    "réécrire un fait pour y mettre une intention, ce serait effacer l'historique",
+  );
+  verdict(
+    "V9B · et une journée vide non plus",
+    cibleRemplacable([]) === null && cibleRemplacable(null) === null,
+    "le geste devient alors un ajout, jamais un écrasement",
+  );
+  verdict(
+    "V9B · la réservation garde ses TROIS colonnes quand on réécrit la ligne",
+    (() => {
+      const l = lienProgramme(RESERVATION);
+      return l.programme_id === "p1" && l.programme_seance_id === "e-push" && l.etape_consommee_id === "e-push";
+    })(),
+    "c'est exactement ce que `plan_set` remettait à null",
+  );
+  verdict(
+    "V9B · une séance sans lien écrit toujours ses trois `null`",
+    (() => {
+      const l = lienProgramme(SUPPLEMENT);
+      return l.programme_id === null && l.programme_seance_id === null && l.etape_consommee_id === null;
+    })(),
+    "le lien s'écrit TOUJOURS, même à null : c'est la règle posée en V7A",
+  );
+
+  /* ── 2. LE DÉFAUT `plan_regen` : CE QUI EST DU MOBILIER, ET CE QUI NE L'EST PAS ── */
+
+  verdict(
+    "V9B · une séance système encore prévue EST du mobilier",
+    estMobilier(REGENEREE),
+    "c'est ce que « refais ma semaine » a le droit de retirer",
+  );
+  verdict(
+    "V9B · une RÉSERVATION n'est jamais du mobilier",
+    !estMobilier(RESERVATION) && !estMobilier(inte({ etapeId: "e-push", programmeId: "p1" })),
+    "même écrite par le système : une étape réservée ne se retire pas au passage",
+  );
+  verdict(
+    "V9B · un SUPPLÉMENT posé à la main ou par le Guide n'est pas du mobilier",
+    !estMobilier(SUPPLEMENT) && !estMobilier(inte({ origine: "guide" })),
+    "l'ancienne libération les emportait avec le reste, sans un mot",
+  );
+  verdict(
+    "V9B · une séance FAITE n'est pas du mobilier",
+    !estMobilier(FAITE),
+    "un fait ne se libère pas",
+  );
+  verdict(
+    "V9B · une origine inconnue PROTÈGE la ligne au lieu de l'exposer",
+    !estMobilier(inte({ origine: null })) && !estMobilier(inte({ origine: undefined })),
+    "dans le doute on protège : le mauvais échec serait d'effacer ce qu'on n'a pas compris",
+  );
+  verdict(
+    "V9B · et la colonne `origine` est enfin RELUE",
+    PLAN9B.includes("etape_consommee_id, origine, created_at")
+      && PLAN9B.includes("origine: (r.origine as Origine | null) ?? null,"),
+    "sans elle, le Guide ne peut pas distinguer le mobilier d'une séance posée à la main",
+  );
+
+  /* ── 3. DÉSIGNER UNE LIGNE : L'IDENTITÉ D'ABORD, LE TITRE ENSUITE ── */
+
+  const SEMAINE = [RESERVATION, REGENEREE, SUPPLEMENT, FAITE];
+
+  verdict(
+    "V9B · « déplace Push » passe par l'ÉTAPE du cycle, pas par le titre",
+    (() => {
+      const r = resoudreCibles(SEMAINE, { nom: "Push" }, CYCLE);
+      return r.length === 1 && r[0].id === "r1";
+    })(),
+    "le nom est traduit en identité d'étape, puis on cherche qui la porte",
+  );
+  verdict(
+    "V9B · une séance du catalogue nommée « Push » n'est PAS l'étape Push",
+    (() => {
+      const sosie = inte({ id: "x1", title: "Push", origine: "utilisateur" });
+      const r = resoudreCibles([RESERVATION, sosie], { nom: "Push" }, CYCLE);
+      return r.length === 1 && r[0].id === "r1";
+    })(),
+    "la ressemblance des titres ne désigne rien quand une identité existe",
+  );
+  verdict(
+    "V9B · le titre reste le repli pour ce qui ne porte aucune identité",
+    resoudreCibles(SEMAINE, { nom: "HIIT" }, CYCLE).map((d) => d.id).join() === "s1",
+    "une séance perso ou du catalogue ne se désigne QUE par son nom",
+  );
+  verdict(
+    "V9B · si aucune ligne ne porte l'étape, on retombe sur le titre",
+    (() => {
+      const sosie = inte({ id: "x1", title: "Push", origine: "utilisateur" });
+      return resoudreCibles([sosie], { nom: "Push" }, CYCLE).map((d) => d.id).join() === "x1";
+    })(),
+    "sinon une séance visible à l'écran deviendrait introuvable pour le Guide",
+  );
+  verdict(
+    "V9B · une séance FAITE n'est jamais désignée",
+    resoudreCibles(SEMAINE, { nom: "Bas du corps" }, CYCLE).length === 0,
+    "on ne déplace pas un fait, et on ne le retire pas non plus",
+  );
+  verdict(
+    "V9B · un jour de repos n'est pas une séance à déplacer",
+    resoudreCibles([inte({ id: "z1", type: "Repos", title: "Repos", exerciseList: [] })], {}, CYCLE).length === 0,
+    "`hasSeance` tient la règle ici comme partout",
+  );
+  verdict(
+    "V9B · le jour dit filtre, et le résultat est ordonné par date",
+    (() => {
+      const tard = inte({ id: "t1", date: "2026-09-14", title: "Pull", programmeId: "p1", provenanceId: "e-pull" });
+      const tous = resoudreCibles([tard, REGENEREE], {}, CYCLE).map((d) => d.id).join();
+      const cible = resoudreCibles([tard, REGENEREE], { date: "2026-09-14" }, CYCLE).map((d) => d.id).join();
+      return tous === "g1,t1" && cible === "t1";
+    })(),
+    "« ma séance » veut dire la prochaine : le tri par date est une décision, pas un hasard",
+  );
+  verdict(
+    "V9B · PLUSIEURS correspondances remontent toutes : c'est ce qui déclenche la question",
+    resoudreCibles(
+      [REGENEREE, inte({ id: "g2", date: "2026-09-12", title: "Pull", programmeId: "p1", provenanceId: "e-pull" })],
+      { nom: "Pull" }, CYCLE,
+    ).length === 2,
+    "on demande laquelle, on n'écrit rien, et on ne repasse pas par le modèle",
+  );
+  verdict(
+    "V9B · sans cycle lisible, on désigne par le titre et rien ne casse",
+    resoudreCibles(SEMAINE, { nom: "Pull" }, null).map((d) => d.id).join() === "g1",
+    "un programme illisible ne doit pas rendre le Guide muet",
+  );
+  verdict(
+    "V9B · `etapeParNom` ne sort jamais du cycle persisté",
+    etapeParNom(CYCLE, "Push")?.id === "e-push"
+      && etapeParNom(CYCLE, "bas du corps")?.id === "e-bas"
+      && etapeParNom(CYCLE, "Yoga") === null
+      && etapeParNom(null, "Push") === null,
+    "c'est la seule traduction nom vers identité de la vague, et elle est bornée",
+  );
+
+  /* ── 4. CE QU'UN DÉPLACEMENT PRÉSERVE ── */
+
+  const deplacee: PlanningDay = { ...RESERVATION, date: "2026-09-12", status: "planned" };
+  verdict(
+    "V9B · déplacer une réservation garde ses trois identités de programme",
+    deplacee.programmeId === "p1" && deplacee.etapeId === "e-push" && deplacee.provenanceId === "e-push",
+    "elle change de jour, elle ne change pas de nature",
+  );
+  verdict(
+    "V9B · elle garde aussi son identité de ligne et son adaptation",
+    deplacee.id === "r1" && deplacee.adaptationId === "a1",
+    "même `id` = un UPDATE, donc aucun doublon et aucune seconde réservation",
+  );
+  verdict(
+    "V9B · déplacer une séance régénérée garde sa provenance",
+    (() => {
+      const d: PlanningDay = { ...REGENEREE, date: "2026-09-12", status: "planned" };
+      const l = lienProgramme(d);
+      return l.programme_seance_id === "e-pull" && l.etape_consommee_id === null;
+    })(),
+    "sinon l'adaptation cesserait de voir le conflit dès qu'on bouge la séance d'un jour",
+  );
+  verdict(
+    "V9B · déplacer vers un jour occupé n'écrase rien",
+    GESTE.includes('case "deplacer":') && GESTE.includes("await saveDay(userId, geste.jour, origine)")
+      && PLAN9B.includes("const cible = day.id"),
+    "c'est un UPDATE par identité : ce qui est posé au jour d'arrivée reste, la journée en porte deux",
+  );
+  verdict(
+    "V9B · et la seule suppression au jour d'arrivée reste la règle repos/séance",
+    PLAN9B.includes('i.status !== "done" && natureDe(i) !== natureDe(day)'),
+    "elle ne touche jamais une intention faite, et jamais une séance de même nature",
+  );
+
+  /* ── 5. CE QUE LE GESTE ANNONCE, AVANT LE CLIC ── */
+
+  verdict(
+    "V9B · déplacer une réservation le DIT",
+    consequenceDeplacement(RESERVATION).includes("séance de programme")
+      && consequenceDeplacement(REGENEREE).includes("ne change pas"),
+    "la conséquence se déduit de la ligne, jamais du modèle",
+  );
+  verdict(
+    "V9B · retirer une réservation dit que l'étape RESTE",
+    consequenceRetrait(RESERVATION).includes("tape reste dans ton programme")
+      && consequenceRetrait(RESERVATION).includes("ni faite ni saut"),
+    "elle n'est ni consommée ni sautée : elle sera reproposée",
+  );
+  verdict(
+    "V9B · retirer un supplément dit que le cycle ne bouge pas",
+    consequenceRetrait(SUPPLEMENT).includes("Ton cycle ne change pas"),
+    "il ne réservait rien, donc il ne libère rien",
+  );
+  verdict(
+    "V9B · poser à côté d'une réservation le DIT avant le clic",
+    consequencePose(null, RESERVATION).includes("reste réservée")
+      && consequencePose(SUPPLEMENT, null).includes("ne change pas")
+      && consequencePose(null, null).startsWith("Rien"),
+    "c'est le contraire de `plan_set`, qui l'écrasait sans un mot",
+  );
+  verdict(
+    "V9B · et à côté d'une séance RÉGÉNÉRÉE, le mot change avec la promesse",
+    consequencePose(null, REGENEREE).includes("« Pull » reste prévue ce jour-là")
+      && consequencePose(null, REGENEREE).includes("s’ajoute à côté")
+      && !consequencePose(null, REGENEREE).includes("réservée"),
+    "elle ne referme aucune étape : la dire « réservée » lui ferait tenir une promesse qu'elle n'a pas",
+  );
+  verdict(
+    "V9B · la séance de programme est nommée même quand une autre ligne est remplacée",
+    consequencePose(LIBRE, REGENEREE).includes("« Pull » reste prévue ce jour-là")
+      && consequencePose(LIBRE, RESERVATION).includes("« Push » reste réservée ce jour-là"),
+    "un jour peut porter les deux : ce qui reste doit se lire, pas seulement ce qui change",
+  );
+  verdict(
+    "V9B · la semaine régénérée NOMME les jours qu'elle garde",
+    consequenceSemaine([]).includes("posées automatiquement")
+      && consequenceSemaine(["jeudi"]).includes("jeudi ne bouge pas")
+      && consequenceSemaine(["jeudi", "vendredi"]).includes("jeudi et vendredi ne bougent pas"),
+    "« refais ma semaine » ne veut pas dire « efface tout ce qui était prévu »",
+  );
+
+  /* ── 6. LES CONTRÔLES DE SOURCE : DES PROPRIÉTÉS DU CHEMIN ── */
+
+  verdict(
+    "V9B · `poser` passe par la règle unique de ciblage",
+    PLAN9B.includes("cibleRemplacable(jour)?.id ?? null")
+      && !PLAN9B.includes('ordonner(jour).find((i) => i.status !== "done")?.id'),
+    "une seconde règle écrite ailleurs annoncerait autre chose que ce qui s'écrit",
+  );
+  verdict(
+    "V9B · une mise à jour qui ne touche AUCUNE ligne échoue au lieu de se taire",
+    PLAN9B.includes("if (!data || data.length === 0) throw new Error"),
+    "le Guide déclare son identité à l'affichage et l'écrit au clic : entre les deux, elle peut disparaître",
+  );
+  verdict(
+    "V9B · et une écriture ne réécrit jamais une séance FAITE",
+    /\.update\(dayToRow\([\s\S]{0,900}?\.neq\(sc\.colStatut, sc\.versBase\.done\)[\s\S]{0,300}?\.select\("id"\)/.test(PLAN9B),
+    "`retirerIntention` portait ce filtre depuis V8, `poser` ne l'avait pas",
+  );
+  verdict(
+    "V9B · la libération du Guide ne vise QUE le mobilier",
+    PLAN9B.includes('.eq("origine", "systeme")')
+      && PLAN9B.includes('.is("etape_consommee_id", null)'),
+    "les trois conditions d'`estMobilier`, appliquées en base et pas sur ce que l'écran a lu",
+  );
+  verdict(
+    "V9B · `confirmPlan` n'écrit plus rien lui-même",
+    CTX9B.includes("await appliquerGeste(user.id, pendingPlan.geste")
+      && !CTX9B.includes("await libererJours(")
+      && !/for \(const w of pendingPlan\.writes\)/.test(CTX9B),
+    "il décidait de la portée d'une suppression : c'était le second moteur de planning",
+  );
+  verdict(
+    "V9B · plus aucune libération à la journée entière depuis le Guide",
+    !CTX9B.includes("libererJours"),
+    "elle emportait réservations et suppléments, et la carte n'en disait rien",
+  );
+  verdict(
+    "V9B · l'autorité d'application ne fait que ROUTER",
+    GESTE.includes("await saveDay(") && GESTE.includes("await ajouterIntention(")
+      && GESTE.includes("await retirerIntention(") && GESTE.includes("await libererMobilier(")
+      && !GESTE.includes(".from("),
+    "aucune requête à elle : ajouter un geste en V9C ne doit pas rouvrir un moteur ici",
+  );
+  verdict(
+    "V9B · le retrait passe UNIQUEMENT par `retirerIntention`, et n'écrit aucun statut",
+    GESTE.includes("await retirerIntention(userId, geste.intentionId)")
+      && !GESTE.includes('"passee"') && !GESTE.includes('"skipped"') && !GESTE.includes('"done"'),
+    "écrire un statut dirait qu'une séance a été écartée alors qu'elle n'a jamais eu lieu",
+  );
+  verdict(
+    "V9B · préparer une carte n'écrit RIEN",
+    (() => {
+      const bloc = (CTX9B.match(/const preparerSurCible = useCallback\(async \([\s\S]*?\n  \}, \[idPlanning\]\);/) ?? [""])[0];
+      return bloc.length > 400 && !/appliquerGeste\(|\.insert\(|\.update\(|\.delete\(|saveDay\(|retirerIntention\(/.test(bloc);
+    })(),
+    "aucune écriture sans clic : c'est le bouton violet qui écrit",
+  );
+  verdict(
+    "V9B · le Guide DÉCLARE l'identité qu'il vise, il ne la laisse plus deviner",
+    CTX9B.includes("const cible = cibleRemplacable(jourVise)")
+      && CTX9B.includes("id: cible?.id ?? null")
+      && CTX9B.includes('geste: cible ? { type: "remplacer", jour: day } : { type: "ajouter", jour: day }'),
+    "sans `id`, la base choisissait, et elle choisissait justement la réservation",
+  );
+  verdict(
+    "V9B · la régénération ne libère que les jours qu'elle a le droit de toucher",
+    CTX9B.includes("const garde = (d: string) => (existing[d] ?? []).some((i) => !estMobilier(i))")
+      && CTX9B.includes('geste: { type: "semaine", poser: writes, liberer: modifiables }'),
+    "un jour qui porte autre chose que du mobilier n'est ni libéré ni réécrit",
+  );
+  verdict(
+    "V9B · une ambiguïté se lève par un IDENTIFIANT, jamais en renvoyant la phrase au modèle",
+    CTX9B.includes('genre: "cible"') && CTX9B.includes("void lireIntention(compte, trouve.id)"),
+    "renvoyer « jeudi 10 » à l'aiguilleur rouvrirait l'ambiguïté qu'on vient de lever",
+  );
+  verdict(
+    "V9B · changer le jour d'une carte relit la journée d'arrivée",
+    CTX9B.includes("void lireJour(compte, ymd).then")
+      && CTX9B.includes("recalerCarte(prev, ymd, cibleRemplacable(jour)"),
+    "sinon la carte annonce un jour et l'écriture en vise un autre",
+  );
+  verdict(
+    "V9B · l'aiguilleur a gagné `plan_retirer`, et rien de plus",
+    ASSISTANT_TOOLS.some((t) => t.function.name === "plan_retirer")
+      && !ASSISTANT_TOOLS.some((t) => /sauter|substitu|supplement|adaptation/.test(t.function.name)),
+    "saut, substitution, supplément et adaptation attendent V9C et V9D",
+  );
+  verdict(
+    "V9B · le jour visé n'est plus lu par la seule réservation",
+    CTX9B.includes("jourVise.find(vientDuProgramme)")
+      && !CTX9B.includes("jourVise.find(reserveUneEtape)"),
+    "une séance régénérée porte une identité elle aussi : la carte doit la nommer",
+  );
+  verdict(
+    "V9B · le bouton dit AJOUTER quand quelque chose reste sur le jour",
+    CTX9B.includes('return gardee ? "Ajouter" : "Programmer";')
+      && CTX9B.includes("verbePose(gardee)"),
+    "« Programmer vendredi » sur un jour occupé ne dit pas ce qui se passe",
+  );
+
+  /* ── 7. LE CAS RÉEL DU 2026-09-09, REJOUÉ TEL QUEL ──
+     Vendredi 11 septembre portait « Haut du corps », écrite par le Guide
+     avec sa provenance (étape 4 du cycle) mais SANS réservation. Louis a
+     demandé une séance jambes pour ce jour-là ; la carte a proposé « à la
+     place de Haut du corps », avec « Remplacer vendredi » en bouton et
+     « ta progression de programme ne change pas » en conséquence. Trois
+     affirmations, dont la dernière était fausse : la réécriture aurait mis
+     `programme_id` et `programme_seance_id` à null. ── */
+
+  const VENDREDI = inte({
+    id: "02bb1440", date: "2026-09-11", title: "Haut du corps", origine: "guide",
+    programmeId: "ae4c607f", provenanceId: "fa49f126", etapeId: null,
+  });
+
+  verdict(
+    "V9B · cas réel · vendredi ne porte AUCUNE cible remplaçable",
+    cibleRemplacable([VENDREDI]) === null,
+    "c'est elle que la carte proposait de remplacer, sans jamais le dire au programme",
+  );
+  verdict(
+    "V9B · cas réel · la ligne est bien une PROVENANCE, pas une réservation",
+    !reserveUneEtape(VENDREDI) && vientDuProgramme(VENDREDI)
+      && lienProgramme(VENDREDI).etape_consommee_id === null
+      && lienProgramme(VENDREDI).programme_seance_id === "fa49f126",
+    "la relire en base l'a montré : le filtre d'avant ne regardait que `etape_consommee_id`",
+  );
+  verdict(
+    "V9B · cas réel · la carte annonce un AJOUT, et nomme ce qui reste",
+    consequencePose(null, VENDREDI) === "« Haut du corps » reste prévue ce jour-là : celle-ci s’ajoute à côté.",
+    "la phrase attendue par Louis, composée par le code et jamais par le modèle",
+  );
+  verdict(
+    "V9B · cas réel · réécrire la ligne aurait effacé son lien au programme",
+    (() => {
+      const remplacee: PlanningDay = { ...VENDREDI, title: "Jambes Boost", programmeId: null, provenanceId: null, etapeId: null };
+      const l = lienProgramme(remplacee);
+      return l.programme_id === null && l.programme_seance_id === null;
+    })(),
+    "`lienProgramme` écrit ses trois colonnes MÊME à null : c'est ce qui rendait la destruction muette",
+  );
+  verdict(
+    "V9B · cas réel · et l'adaptation aurait cessé de voir le conflit",
+    (() => {
+      const source = (d: PlanningDay) => d.etapeId ?? d.provenanceId ?? null;
+      const remplacee: PlanningDay = { ...VENDREDI, programmeId: null, provenanceId: null };
+      return source(VENDREDI) === "fa49f126" && source(remplacee) === null;
+    })(),
+    "`reservationsEnConflit` lit `etapeId ?? provenanceId` depuis V8 : la provenance n'est pas décorative",
+  );
+
+  verdict(
+    "V9B · `plan_move` comprend enfin CE QU'ON déplace",
+    (() => {
+      const move = ASSISTANT_TOOLS.find((t) => t.function.name === "plan_move");
+      const ret = ASSISTANT_TOOLS.find((t) => t.function.name === "plan_retirer");
+      return !!move && "quoi" in move.function.parameters.properties
+        && !!ret && "quoi" in ret.function.parameters.properties
+        && !move.function.parameters.required && !ret.function.parameters.required;
+    })(),
+    "« mets Bas du corps à vendredi » nomme la séance, et le jour cesse d'être obligatoire",
+  );
+}
 
 console.log("\n" + (echecs === 0 ? "Tout passe." : echecs + " échec(s)."));
 process.exit(echecs === 0 ? 0 : 1);
