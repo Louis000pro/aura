@@ -39,6 +39,8 @@ import {
 import { lireProgrammeActif } from "@/lib/programme";
 import { adaptationDuJour, idsMasques } from "@/lib/adaptation";
 import { etatMoteur, resumeMoteur } from "@/lib/guideMoteur";
+import { etatNutrition, repasFrais, signalerRepas, type RepasDetail } from "@/lib/guideNutrition";
+import { localDateStr } from "@/lib/dates";
 
 type MemoryAction =
   | { type: "save"; category?: string; fact?: string }
@@ -219,7 +221,13 @@ export function useAssistant(): AssistantContextValue {
 
 let _counter = 0;
 const uid = () => `${Date.now()}-${++_counter}`;
-const todayISODate = () => new Date().toISOString().slice(0, 10);
+/* ⚠️ Le jour du journal alimentaire se calcule en heure LOCALE, jamais en
+   UTC. C'est la convention documentée des colonnes `date` de
+   `nutrition_logs` (`src/lib/dates.ts`) et c'est ce que l'écran Nutrition
+   écrit. Il y avait ici un `new Date().toISOString().slice(0, 10)` : entre
+   minuit et 2 h du matin en France, le Guide interrogeait donc la veille et
+   ne voyait aucun des repas que l'écran affichait. */
+const jourDuJournal = () => localDateStr();
 
 const CAP = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
 
@@ -334,7 +342,21 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
   const richProfileRef = useRef<Record<string, unknown> | null>(null);
   const memoriesRef = useRef<AiMemory[]>([]);
   const dataLoadedRef = useRef(false);
+  /* Le chargement du contexte est PARTAGÉ, pas seulement marqué comme
+     démarré. `open()` le lance, `sendMessage` l'attend : sans cette
+     promesse, le second appel voyait `dataLoadedRef` déjà vrai et repartait
+     aussitôt, donc le premier message pouvait partir avec un contexte
+     encore nul. Même procédé que `marquerPresence`. */
+  const chargementRef = useRef<Promise<void> | null>(null);
   const abortRef = useRef<AbortController | null>(null);
+
+  /* Changer de compte remet le contexte à zéro. Sans ça, les deux repères
+     ci-dessus resteraient posés et le nouveau compte hériterait du profil,
+     des repas et des souvenirs du précédent. */
+  useEffect(() => {
+    dataLoadedRef.current = false;
+    chargementRef.current = null;
+  }, [user?.id]);
 
   /* La demande mise en attente parce qu'il nous manquait le lieu. Elle repart
      dès qu'on l'apprend, PAR N'IMPORTE QUEL CHEMIN : la puce touchée, mais
@@ -443,8 +465,11 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       userContextRef.current = { pseudo: user.pseudo, skipped: true };
     }
 
-    const today = todayISODate();
-    const sevenDaysAgo = new Date(Date.now() - 7 * 86400_000).toISOString().slice(0, 10);
+    const today = jourDuJournal();
+    // Cette fenêtre se compare à la colonne `date` (jour local) : elle se
+    // calcule dans le même repère. `thirtyDaysAgo` ci-dessous vise
+    // `started_at`, un horodatage : là, UTC est le bon repère.
+    const sevenDaysAgo = localDateStr(new Date(Date.now() - 7 * 86400_000));
     const thirtyDaysAgo = new Date(Date.now() - 30 * 86400_000).toISOString().slice(0, 10);
 
     const [nutritionTodayRes, nutritionWeekRes, sessionsRes, weightHistoryRes, followersRes, followingRes, postsRes, profileBioRes, memoriesRes] = await Promise.all([
@@ -532,6 +557,14 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
 
     memoriesRef.current = (memoriesRes.data ?? []) as AiMemory[];
   }, [user?.id, user?.pseudo]);
+
+  /* Le contexte, attendable. `ensureContext` garde son propre garde-fou
+     (`dataLoadedRef`) ; ce qu'on ajoute ici, c'est de pouvoir ATTENDRE le
+     chargement déjà en cours au lieu de repartir aussitôt. */
+  const contextePret = useCallback((): Promise<void> => {
+    if (!chargementRef.current) chargementRef.current = ensureContext();
+    return chargementRef.current;
+  }, [ensureContext]);
 
   /* Repère nutrition OPTIONNEL pour la génération de séance — renvoie une courte
      note SEULEMENT si l'utilisateur suit sa nutrition aujourd'hui ET qu'un signal
@@ -1214,7 +1247,13 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
     const trimmed = text.trim();
     if (!trimmed || isStreaming) return;
 
-    void ensureContext();
+    /* Attendu, et plus seulement lancé. `void ensureContext()` laissait le
+       premier message d'une session partir avec `liveStats` et
+       `richProfile` encore nuls : le prompt disait alors « Données non
+       disponibles » et le coach répondait « aucun repas enregistré » à
+       quelqu'un dont le journal était rempli. `open()` l'a en général déjà
+       lancé, donc ça n'attend rien dans le cas normal. */
+    const contexteCharge = contextePret();
 
     const userMsg: AssistantMsg = { role: "user", content: trimmed, id: uid(), ...(masque ? { masque: true } : {}) };
     const assistantId = uid();
@@ -1259,6 +1298,29 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
        rend le message suivant conscient du nouvel état. */
     const moteur = user?.id ? resumeMoteur(await etatMoteur(user.id).catch(() => null)) : null;
 
+    /* ⚠️ MÊME RÈGLE POUR LE JOURNAL ALIMENTAIRE, ET C'EST LE DÉFAUT DU
+       2026-09-09. Le contexte de session gardait « 0 kcal, aucun repas »
+       pendant que l'écran Nutrition affichait 286 kcal du jour. On relit
+       donc la journée (cache court, vidé par `EVT_NUTRITION`) et on
+       REMPLACE la part « aujourd'hui » du contexte. Une lecture ratée rend
+       `null` et laisse le contexte de session intact : on ne remplace
+       jamais une donnée par une absence de donnée. */
+    await contexteCharge.catch(() => undefined);
+    const nut = user?.id ? await etatNutrition(user.id).catch(() => null) : null;
+    const live = nut
+      ? { ...(liveStatsRef.current ?? {}), calories: nut.calories, proteins: nut.proteines }
+      : liveStatsRef.current;
+    const rich = nut
+      ? {
+          ...(richProfileRef.current ?? {}),
+          todayDate: nut.jour,
+          mealsDetail: repasFrais(
+            (richProfileRef.current?.mealsDetail as RepasDetail[] | undefined),
+            nut,
+          ),
+        }
+      : richProfileRef.current;
+
     try {
       const abort = new AbortController();
       abortRef.current = abort;
@@ -1269,12 +1331,12 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
           messages: history,
           userContext: userContextRef.current,
           pseudo: user?.pseudo,
-          liveStats: liveStatsRef.current,
+          liveStats: live,
           // V9A · le programme, le cycle, les séances datées et l'adaptation,
           // en quelques centaines de caractères. C'est la source unique du
           // coach là-dessus : il n'a aucun outil pour aller la chercher.
           moteur,
-          richProfile: richProfileRef.current,
+          richProfile: rich,
           currentPage: pathname,
           memories: memoriesRef.current,
           memoryEnabled: true,
@@ -1426,7 +1488,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       setIsStreaming(false);
       abortRef.current = null;
     }
-  }, [messages, isStreaming, user, pathname, router, ensureContext, persist, extractMemory, runAction, questionManquante]);
+  }, [messages, isStreaming, user, pathname, router, contextePret, persist, extractMemory, runAction, questionManquante]);
 
   // `runAction` relance une demande mise en attente sans dépendre de
   // `sendMessage`, défini après lui (et qui dépend de lui).
@@ -1488,7 +1550,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
   /* ── Contrôles ── */
   const open = useCallback((prefill?: string) => {
     setIsOpen(true);
-    void ensureContext();
+    void contextePret();
     /* V9A · on remplit le cache du moteur pendant que la feuille s'ouvre,
        donc AVANT le premier message. Sans ça, la première phrase paierait
        les lectures ; ici elles se font pendant qu'on tape. Un échec ne
@@ -1496,7 +1558,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
     const qui = user?.id;
     if (qui) void etatMoteur(qui).catch(() => null);
     if (prefill && prefill.trim()) sendMessage(prefill);
-  }, [ensureContext, sendMessage, user?.id]);
+  }, [contextePret, sendMessage, user?.id]);
   const close = useCallback(() => setIsOpen(false), []);
   const toggle = useCallback(() => setIsOpen((v) => !v), []);
   const clear = useCallback(() => {
@@ -1666,7 +1728,10 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
     const now = new Date();
     const { error } = await supabase.from("nutrition_logs").insert({
       user_id: user.id,
-      date: now.toISOString().slice(0, 10),
+      // Le jour LOCAL, celui qu'ecrit l'ecran Nutrition. En UTC, un repas
+      // note entre minuit et 2 h du matin atterrissait la VEILLE, donc
+      // invisible sur le journal du jour.
+      date: localDateStr(now),
       meal_type: "dejeuner",
       food_name: pendingRecipe.nom,
       description: null,
@@ -1678,6 +1743,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       time: now.toTimeString().slice(0, 8),
     });
     if (error) { setMemoryNotice("Oups, impossible d’ajouter le repas."); return; }
+    signalerRepas();
     const nom = pendingRecipe.nom;
     setPendingRecipe(null);
     setReussite((n) => n + 1);
@@ -1695,7 +1761,10 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
     const now = new Date();
     const { error } = await supabase.from("nutrition_logs").insert({
       user_id: user.id,
-      date: now.toISOString().slice(0, 10),
+      // Le jour LOCAL, celui qu'ecrit l'ecran Nutrition. En UTC, un repas
+      // note entre minuit et 2 h du matin atterrissait la VEILLE, donc
+      // invisible sur le journal du jour.
+      date: localDateStr(now),
       meal_type: pendingMeal.mealType,
       food_name: pendingMeal.foodName,
       description: null,
@@ -1707,6 +1776,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       time: now.toTimeString().slice(0, 8),
     });
     if (error) { setMemoryNotice("Oups, impossible d’ajouter le repas."); return; }
+    signalerRepas();
     const nom = pendingMeal.foodName;
     setPendingMeal(null);
     setReussite((n) => n + 1);

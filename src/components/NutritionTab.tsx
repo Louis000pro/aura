@@ -7,6 +7,7 @@ import { Plus, X, Check, Camera, Upload, Loader2, Edit2, Barcode, Minus, Chevron
 import { AssistantSpark } from "@/components/AssistantMark";
 import { useAuth } from "@/context/AuthContext";
 import { createClient } from "@/lib/supabase";
+import { signalerRepas } from "@/lib/guideNutrition";
 import { useNutritionGoals } from "@/hooks/useNutritionGoals";
 import WeighInPrompt from "@/components/WeighInPrompt";
 import TastePrefsPrompt from "@/components/TastePrefsPrompt";
@@ -2301,7 +2302,7 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
       calories: meal.calories, proteins: meal.proteins, carbs: meal.carbs,
       fats: meal.fats, has_photo: meal.hasPhoto ?? false, time: meal.time,
     }).select().single();
-    if (!error && data) { setMeals(prev => [...prev, rowToMeal(data)]); showToast(`${meal.name} ajouté, ${meal.calories} kcal ✓`); }
+    if (!error && data) { setMeals(prev => [...prev, rowToMeal(data)]); signalerRepas(); showToast(`${meal.name} ajouté, ${meal.calories} kcal ✓`); }
     else showToast("Erreur lors de l’ajout");
     setShowPhoto(false);
     setPhotoFromMenu(false);
@@ -2316,7 +2317,7 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
       food_name: meal.name, calories: meal.calories, proteins: meal.proteins,
       carbs: meal.carbs, fats: meal.fats, has_photo: false, time: meal.time,
     }).select().single();
-    if (!error && data) { setMeals(prev => [...prev, rowToMeal(data)]); showToast(`${meal.name} ajouté ✓`); }
+    if (!error && data) { setMeals(prev => [...prev, rowToMeal(data)]); signalerRepas(); showToast(`${meal.name} ajouté ✓`); }
     else showToast("Erreur lors de l’ajout");
     setShowBarcode(false);
   };
@@ -2330,7 +2331,7 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
       food_name: meal.name, calories: meal.calories, proteins: meal.proteins,
       carbs: meal.carbs, fats: meal.fats, has_photo: false, time: meal.time,
     }).select().single();
-    if (!error && data) { setMeals(prev => [...prev, rowToMeal(data)]); showToast(`${meal.name} ajouté ✓`); }
+    if (!error && data) { setMeals(prev => [...prev, rowToMeal(data)]); signalerRepas(); showToast(`${meal.name} ajouté ✓`); }
     else showToast("Erreur lors de l’ajout");
     setShowManual(false);
   };
@@ -2344,7 +2345,7 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
       food_name: r.name, calories: r.calories, proteins: r.proteins,
       carbs: r.carbs, fats: r.fats, has_photo: false, time: nowHHMM(),
     }).select().single();
-    if (!error && data) { setMeals(prev => [...prev, rowToMeal(data)]); showToast(`${r.name} ajouté ✓`); void loadRecents(); }
+    if (!error && data) { setMeals(prev => [...prev, rowToMeal(data)]); signalerRepas(); showToast(`${r.name} ajouté ✓`); void loadRecents(); }
     else showToast("Erreur lors de l’ajout");
   };
 
@@ -2357,7 +2358,7 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
       food_name: m.name, calories: m.calories, proteins: m.proteins,
       carbs: m.carbs, fats: m.fats, has_photo: false, time: nowHHMM(),
     }).select().single();
-    if (!error && data) { setMeals(prev => [...prev, rowToMeal(data)]); showToast(`${m.name} ajouté ✓`); void loadRecents(); }
+    if (!error && data) { setMeals(prev => [...prev, rowToMeal(data)]); signalerRepas(); showToast(`${m.name} ajouté ✓`); void loadRecents(); }
     else showToast("Erreur lors de l’ajout");
   };
 
@@ -2365,6 +2366,7 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
   const deleteMeal = async (id: string) => {
     await supabase.from("nutrition_logs").delete().eq("id", id);
     setMeals(prev => prev.filter(m => m.id !== id));
+    signalerRepas();
     showToast("Repas supprimé");
   };
 

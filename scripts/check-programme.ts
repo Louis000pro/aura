@@ -40,6 +40,10 @@ import {
   type EtatMoteur, type SeanceMoteur,
 } from "@/lib/guideMoteur";
 import {
+  etatNutrition, invaliderNutrition, repasFrais, MAX_REPAS, TTL_NUTRITION_MS, EVT_NUTRITION,
+  type EtatNutrition, type RepasDetail,
+} from "@/lib/guideNutrition";
+import {
   adaptationActive, ajouterJours, chevauchent, datesEntre, estExpiree, etapeMasquee,
   etapesCompatibles, finParDefaut, idsMasques, libelleJour, REEVALUATION_SEMAINES,
   reservationsEnConflit, validerAxes, validerPeriode,
@@ -2091,6 +2095,195 @@ verdict(
       "V9A · aucun outil d’ÉCRITURE nouveau non plus",
       !ASSISTANT_TOOLS.some((t) => /sauter|substitu|supplement|adaptation|retirer/.test(t.function.name)),
       "substitution, saut, supplément et adaptation attendent V9B à V9D",
+    );
+  }
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   V9A bis · LE GUIDE VOIT LE JOURNAL DU JOUR (2026-09-09)
+
+   Défaut réel : l'écran Nutrition affichait 286 kcal pour aujourd'hui et
+   le Guide répondait « aucun repas n'est encore enregistré ». La ligne
+   était en base, à la bonne date : ce n'était pas la source, c'était la
+   FRAÎCHEUR. `ensureContext()` lit une fois par session et ne relit
+   jamais, donc le prompt disait « 0 kcal » et n'écrivait aucune ligne
+   « Repas du jour ». Le Guide n'a rien inventé : on lui avait menti.
+
+   ⚠️ CE BLOC TIENT LES DEUX MOITIÉS. La fusion, qui est PURE, et le fait
+   qu'AUCUNE écriture du journal n'oublie de le signaler : une seule
+   oubliée et le défaut revient sur ce chemin-là uniquement, donc de
+   façon intermittente, c'est-à-dire de la pire façon.
+   ════════════════════════════════════════════════════════════════════ */
+{
+  const JOUR = "2026-09-09";
+  const HIER = "2026-09-08";
+  const etatN = (over: Partial<EtatNutrition> = {}): EtatNutrition => ({
+    jour: JOUR, repas: [], calories: 0, proteines: 0, ...over,
+  });
+  const BARRES = {
+    mealType: "gouter", name: "Barres protéinées maison chocolat-cacahuète",
+    calories: 286, proteins: 16, time: "16:35", description: null,
+  };
+  const ANCIEN: RepasDetail[] = [
+    { date: JOUR, name: "Ce que le contexte croyait" },
+    { date: HIER, name: "Riz au lait", calories: 311 },
+  ];
+
+  /* ── 1. La fusion, pure ─────────────────────────────────────────── */
+
+  verdict(
+    "V9A bis · le cas réel : le repas du jour entre dans le contexte du coach",
+    (() => {
+      const r = repasFrais([{ date: HIER, name: "Riz au lait" }], etatN({ repas: [BARRES], calories: 286, proteines: 16 }));
+      return r.length === 2 && r[0].date === JOUR && r[0].calories === 286
+        && r[0].name.startsWith("Barres");
+    })(),
+    "c’est cette ligne-là qui devient « Repas du jour : Goûter … » dans le prompt",
+  );
+  verdict(
+    "V9A bis · la journée est REMPLACÉE, jamais fusionnée ligne à ligne",
+    (() => {
+      const r = repasFrais(ANCIEN, etatN({ repas: [BARRES], calories: 286 }));
+      const duJour = r.filter((m) => m.date === JOUR);
+      return duJour.length === 1 && duJour[0].name.startsWith("Barres")
+        && r.some((m) => m.date === HIER);
+    })(),
+    "un repas périmé disparaît, les jours précédents restent",
+  );
+  verdict(
+    "V9A bis · un repas supprimé disparaît vraiment du contexte",
+    (() => {
+      const r = repasFrais(ANCIEN, etatN({ repas: [] }));
+      return r.every((m) => m.date !== JOUR) && r.some((m) => m.date === HIER);
+    })(),
+    "sans quoi le Guide continuerait de citer un repas effacé sur l’écran",
+  );
+  verdict(
+    "V9A bis · une lecture ratée laisse le contexte de session intact",
+    (() => {
+      const r = repasFrais(ANCIEN, null);
+      return r.length === ANCIEN.length && r[0].name === ANCIEN[0].name;
+    })(),
+    "on ne remplace JAMAIS une donnée par une absence de donnée",
+  );
+  verdict(
+    "V9A bis · la liste reste bornée, quelle que soit la journée",
+    (() => {
+      const gros = Array.from({ length: 30 }, (_, i) => ({ ...BARRES, name: "Repas " + i }));
+      return repasFrais(ANCIEN, etatN({ repas: gros })).length <= MAX_REPAS;
+    })(),
+    "même borne qu’avant (12) : un contexte qui grossit avec la journée n’en est plus un",
+  );
+
+  /* ── 2. LA FRAÎCHEUR, le cœur du correctif ──────────────────────── */
+  {
+    let lectures = 0;
+    let courant: EtatNutrition | null = etatN();          // journée vide
+    const lire = async () => { lectures++; return courant; };
+
+    invaliderNutrition();
+    const a = await etatNutrition("u1", lire);
+    const b = await etatNutrition("u1", lire);
+    verdict(
+      "V9A bis · deux messages d’affilée ne relisent pas le journal",
+      lectures === 1 && a?.calories === 0 && b?.calories === 0,
+      lectures + " lecture pour deux messages",
+    );
+
+    // Le geste réel : on note un repas sur l’écran Nutrition.
+    courant = etatN({ repas: [BARRES], calories: 286, proteines: 16 });
+    verdict(
+      "V9A bis · sans signal, le Guide resterait sur la journée d’avant",
+      (await etatNutrition("u1", lire))?.calories === 0,
+      "c’est EXACTEMENT le défaut du 2026-09-09, reproduit ici",
+    );
+    invaliderNutrition();                                  // ce que fait EVT_NUTRITION
+    verdict(
+      "V9A bis · après un repas noté, le message suivant voit les 286 kcal",
+      (await etatNutrition("u1", lire))?.calories === 286,
+      "le Guide ne peut plus dire « aucun repas » quand le journal en contient un",
+    );
+    const avant = lectures;
+    await etatNutrition("u2", lire);
+    verdict(
+      "V9A bis · le cache est nominatif : changer de compte relit",
+      lectures === avant + 1,
+      "un journal alimentaire ne se partage pas entre deux comptes",
+    );
+    invaliderNutrition();
+
+    verdict(
+      "V9A bis · le cache est court par lui-même",
+      TTL_NUTRITION_MS > 0 && TTL_NUTRITION_MS <= 60_000,
+      TTL_NUTRITION_MS / 1000 + " s, et `EVT_NUTRITION` le vide avant l’heure",
+    );
+  }
+
+  /* ── 3. LES CONTRÔLES DE SOURCE ─────────────────────────────────── */
+  {
+    const lireF = (f: string) => readFileSync(new URL("../" + f, import.meta.url), "utf8");
+    const net = (t: string) => t.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
+    const NUT = net(lireF("src/lib/guideNutrition.ts"));
+    const CTX = net(lireF("src/context/AssistantContext.tsx"));
+    const ECRAN = net(lireF("src/components/NutritionTab.tsx"));
+    const ROUTE = net(lireF("src/app/api/chat/route.ts"));
+    const ROUTEUR = lireF("src/lib/assistantRouter.ts");
+
+    // Une écriture du journal = un signal. C'est la propriété qui empêche
+    // le défaut de revenir par un chemin qu'on aurait oublié.
+    const ecritures = (t: string) => (t.match(/nutrition_logs"\)[\s\S]{0,60}?\.(insert|delete)\(/g) ?? []).length;
+    const signaux = (t: string) => (t.match(/signalerRepas\(\)/g) ?? []).length;
+
+    verdict(
+      "V9A bis · les six écritures de l’écran Nutrition signalent toutes",
+      ecritures(ECRAN) >= 6 && signaux(ECRAN) === ecritures(ECRAN),
+      ecritures(ECRAN) + " écritures, " + signaux(ECRAN) + " signaux",
+    );
+    verdict(
+      "V9A bis · les deux cartes de repas du Guide signalent aussi",
+      ecritures(CTX) >= 2 && signaux(CTX) === ecritures(CTX),
+      ecritures(CTX) + " écritures, " + signaux(CTX) + " signaux",
+    );
+    verdict(
+      "V9A bis · `guideNutrition` REGARDE : il n’écrit rien du tout",
+      !/\.(insert|upsert|update|delete)\(/.test(NUT),
+      "une lecture, une seule, sur le jour courant",
+    );
+    verdict(
+      "V9A bis · la fraîcheur est branchée sur l’évènement des repas",
+      NUT.includes("addEventListener(EVT_NUTRITION") && NUT.includes(EVT_NUTRITION),
+      "sans ça le cache ne serait qu’un TTL, donc un état périmé de 30 s",
+    );
+    verdict(
+      "V9A bis · le jour se lit en LOCAL, comme l’écrit l’écran Nutrition",
+      NUT.includes("localDateStr()") && !/toISOString\(\)\.slice\(0, 10\)/.test(NUT),
+      "en UTC, le Guide interrogeait la veille entre minuit et 2 h du matin",
+    );
+    verdict(
+      "V9A bis · les repas notés par le Guide se datent du même jour que l’écran",
+      (CTX.match(/date: localDateStr\(now\)/g) ?? []).length === 2
+        && !/date: now\.toISOString\(\)/.test(CTX),
+      "sinon un repas noté la nuit atterrissait la veille, invisible sur le journal",
+    );
+    verdict(
+      "V9A bis · l’assistant relit le journal à CHAQUE message",
+      /await etatNutrition\(/.test(CTX) && /repasFrais\(/.test(CTX),
+      "c’est la promesse de V9A appliquée à la nutrition",
+    );
+    verdict(
+      "V9A bis · le contexte de session est ATTENDU, plus seulement lancé",
+      /await contexteCharge/.test(CTX) && !/void ensureContext\(\)/.test(CTX),
+      "le premier message ne part plus avec un profil et un journal encore nuls",
+    );
+    verdict(
+      "V9A bis · aucun second bloc nutrition dans le prompt du coach",
+      (ROUTE.match(/Repas du jour/g) ?? []).length === 1,
+      "on remplace la part périmée, on n’empile pas une seconde autorité",
+    );
+    verdict(
+      "V9A bis · l’aiguilleur reste aveugle à la nutrition aussi",
+      !/guideNutrition|etatNutrition|repasFrais/.test(ROUTEUR),
+      "son prompt ne bouge pas d’un caractère",
     );
   }
 }
