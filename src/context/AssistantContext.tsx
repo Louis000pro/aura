@@ -39,7 +39,10 @@ import {
 import { lireProgrammeActif } from "@/lib/programme";
 import { adaptationDuJour, idsMasques } from "@/lib/adaptation";
 import { etatMoteur, resumeMoteur } from "@/lib/guideMoteur";
-import { etatNutrition, repasFrais, signalerRepas, type RepasDetail } from "@/lib/guideNutrition";
+import {
+  etatNutrition, repasFrais, semaineFraiche, signalerRepas,
+  type JourNutrition, type RepasDetail,
+} from "@/lib/guideNutrition";
 import { localDateStr } from "@/lib/dates";
 
 type MemoryAction =
@@ -570,15 +573,19 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
      note SEULEMENT si l'utilisateur suit sa nutrition aujourd'hui ET qu'un signal
      clair existe. Sinon null → séance générée comme d'habitude, jamais de pénalité.
      C'est un BONUS, pas une condition (même esprit que la règle côté /api/chat). */
-  const buildNutritionNote = useCallback((): string | null => {
-    const ls = liveStatsRef.current;
-    const rich = richProfileRef.current as { todayDate?: string; mealsDetail?: { date: string }[] } | null;
-    const goal = ls?.calorieGoal;
-    const consumed = ls?.calories;
-    if (!goal || consumed == null) return null;
-    const today = rich?.todayDate;
-    const mealsToday = (rich?.mealsDetail ?? []).filter((m) => m.date === today).length;
-    if (mealsToday === 0) return null; // ne note pas ses repas aujourd'hui → on n'y touche pas
+  /* ⚠️ ELLE LIT LE JOURNAL FRAIS, PLUS L'INSTANTANÉ DE SESSION. Elle
+     lisait `liveStatsRef` et `richProfileRef` bruts, donc c'était la
+     TROISIÈME représentation du jour qui survivait à une suppression : on
+     pouvait générer une séance « bien rechargé, ~286 kcal mangées » sur
+     une journée vidée. Sans lecture fraîche, elle ne dit RIEN : la note
+     est un bonus, jamais une pénalité, donc son doute se tait. */
+  const buildNutritionNote = useCallback(async (): Promise<string | null> => {
+    const goal = liveStatsRef.current?.calorieGoal;
+    if (!goal || !user?.id) return null;
+    const nut = await etatNutrition(user.id).catch(() => null);
+    if (!nut) return null;
+    if (nut.repas.length === 0) return null; // ne note pas ses repas aujourd'hui → on n'y touche pas
+    const consumed = nut.calories;
     const ratio = consumed / goal;
     if (ratio >= 0.9) {
       return `L’utilisateur est bien rechargé aujourd’hui (~${consumed}/${goal} kcal mangées). Tu PEUX te permettre une séance un peu plus intense si c’est pertinent.`;
@@ -587,7 +594,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       return `L’utilisateur a peu mangé aujourd’hui (~${consumed}/${goal} kcal). Tu PEUX privilégier une séance un peu plus courte ou d’intensité modérée.`;
     }
     return null;
-  }, []);
+  }, [user?.id]);
 
   /* ── Mémoire long terme : persiste une action d'extraction (save / forget) ── */
   const persistMemoryAction = useCallback(async (action: MemoryAction) => {
@@ -914,7 +921,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
         : " en salle de sport";
       const description = `${baseDesc || "séance complète"}${lieuTxt}`.slice(0, 400);
       // Bonus nutrition uniquement si on planifie AUJOURD'HUI (jamais un jour futur)
-      const nutritionNote = when === richProfileRef.current?.todayDate ? buildNutritionNote() : null;
+      const nutritionNote = when === localDateStr() ? await buildNutritionNote() : null;
 
       const genRes = await aiFetch("/api/workout/generate", {
         method: "POST",
@@ -1310,12 +1317,29 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
     const live = nut
       ? { ...(liveStatsRef.current ?? {}), calories: nut.calories, proteins: nut.proteines }
       : liveStatsRef.current;
+    /* ⚠️ TOUTES les représentations du jour se remplacent, pas seulement
+       les deux évidentes. Défaut du 2026-09-09 (suppression) : `liveStats`
+       et `mealsDetail` étaient bien purgés, `nutritionWeek` non, donc la
+       moyenne 7 jours comptait encore le repas effacé. Une seule
+       représentation oubliée suffit à faire survivre un fait supprimé.
+
+       ⚠️ ET `journalDuJourLu` PORTE LA DIFFÉRENCE ENTRE « JE SAIS QU'IL
+       N'Y A RIEN » ET « JE N'AI PAS PU LIRE ». Elle ne vaut vrai que sur
+       une lecture fraîche RÉUSSIE (`nut` non nul, journée vide comprise),
+       et c'est elle qui autorise le prompt à écrire l'absence. Sans ce
+       drapeau, une journée vide et une lecture ratée arrivent au coach
+       sous la même forme : rien du tout. */
     const rich = nut
       ? {
           ...(richProfileRef.current ?? {}),
           todayDate: nut.jour,
+          journalDuJourLu: true,
           mealsDetail: repasFrais(
             (richProfileRef.current?.mealsDetail as RepasDetail[] | undefined),
+            nut,
+          ),
+          nutritionWeek: semaineFraiche(
+            (richProfileRef.current?.nutritionWeek as JourNutrition[] | undefined),
             nut,
           ),
         }

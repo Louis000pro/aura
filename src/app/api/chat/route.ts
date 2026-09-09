@@ -105,6 +105,11 @@ interface RichProfile {
   monthCaloriesAvg?: number;
   // Date du jour (YYYY-MM-DD, fuseau utilisateur) pour distinguer "aujourd'hui"
   todayDate?: string;
+  /* ⚠️ Vrai UNIQUEMENT quand le journal du jour vient d'être relu avec
+     succès, journée vide comprise. C'est ce qui sépare « je sais qu'il n'y
+     a rien » de « je n'ai pas pu lire », et donc ce qui autorise à écrire
+     l'absence de repas. Absent = on ne sait pas, on n'affirme rien. */
+  journalDuJourLu?: boolean;
   // Repas RÉELS loggés/scannés par l'utilisateur (détail, pas agrégat)
   mealsDetail?: {
     date: string;
@@ -250,13 +255,25 @@ Statistiques du jour :
     }
     if (rich.monthWorkouts !== undefined) richBlock += `\nSéances ce mois : ${rich.monthWorkouts}`;
 
-    // Repas du jour uniquement (pour répondre à "qu'est-ce que j'ai mangé")
-    if (rich.mealsDetail && rich.mealsDetail.length > 0) {
-      const today = rich.todayDate;
-      const todays = today ? rich.mealsDetail.filter(m => m.date === today) : [];
-      if (todays.length > 0) {
-        richBlock += `\nRepas du jour : ${todays.map(m => `${mealTypeLabel(m.mealType)} ${m.name}${m.calories ? ` (${m.calories}kcal)` : ""}`).join(" ; ")}`;
-      }
+    /* Les repas du jour, ET l’absence de repas, qui est un fait comme
+       un autre. Défaut du 2026-09-09 : cette ligne ne s’écrivait que
+       s’il y avait un repas, donc une journée vidée ne laissait AUCUNE
+       trace dans le prompt. Or une absence de ligne est une absence
+       d’information, jamais une information d’absence : privé de tout
+       fait sur sa journée, le coach retombait sur sa propre réponse
+       d’avant la suppression et citait un repas effacé, en boucle.
+       C’est la confusion `null` / `[]` de `guideNutrition`, rouverte
+       ici côté mots. Une seule ligne, deux branches : ce n’est pas une
+       seconde autorité, c’est la même qui sait dire non.
+       ⚠️ `journalDuJourLu` est obligatoire sur la branche vide : sans
+       lui, une lecture ratée ferait affirmer une journée vide, ce qui
+       est le mensonge exactement inverse. */
+    const today = rich.todayDate;
+    const todays = today ? (rich.mealsDetail ?? []).filter(m => m.date === today) : [];
+    if (todays.length > 0) {
+      richBlock += `\nRepas du jour (journal relu à l’instant) : ${todays.map(m => `${mealTypeLabel(m.mealType)} ${m.name}${m.calories ? ` (${m.calories}kcal)` : ""}`).join(" ; ")}`;
+    } else if (rich.journalDuJourLu) {
+      richBlock += `\nRepas du jour (journal relu à l’instant) : aucun repas enregistré aujourd’hui.`;
     }
   }
 

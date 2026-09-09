@@ -40,8 +40,9 @@ import {
   type EtatMoteur, type SeanceMoteur,
 } from "@/lib/guideMoteur";
 import {
-  etatNutrition, invaliderNutrition, repasFrais, MAX_REPAS, TTL_NUTRITION_MS, EVT_NUTRITION,
-  type EtatNutrition, type RepasDetail,
+  etatNutrition, invaliderNutrition, repasFrais, semaineFraiche,
+  MAX_REPAS, TTL_NUTRITION_MS, EVT_NUTRITION,
+  type EtatNutrition, type JourNutrition, type RepasDetail,
 } from "@/lib/guideNutrition";
 import {
   adaptationActive, ajouterJours, chevauchent, datesEntre, estExpiree, etapeMasquee,
@@ -2276,14 +2277,245 @@ verdict(
       "le premier message ne part plus avec un profil et un journal encore nuls",
     );
     verdict(
-      "V9A bis · aucun second bloc nutrition dans le prompt du coach",
-      (ROUTE.match(/Repas du jour/g) ?? []).length === 1,
-      "on remplace la part périmée, on n’empile pas une seconde autorité",
+      "V9A bis · une seule autorité sur les repas du jour, en deux branches",
+      ROUTE.split("Repas du jour").length - 1 === 2
+        && ROUTE.split("m.name").length - 1 === 1,
+      "« présent » et « absent » sont les deux branches de la MÊME ligne, jamais un second bloc",
     );
     verdict(
       "V9A bis · l’aiguilleur reste aveugle à la nutrition aussi",
       !/guideNutrition|etatNutrition|repasFrais/.test(ROUTEUR),
       "son prompt ne bouge pas d’un caractère",
+    );
+  }
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   V9A ter · UN REPAS SUPPRIMÉ DISPARAÎT DE PARTOUT (2026-09-09)
+
+   Défaut réel, trouvé par Louis juste après V9A bis : on ajoute un repas,
+   le Guide le voit, on le supprime depuis Nutrition, l'écran ne le montre
+   plus, et le Guide continue de le citer en boucle sans recharger la page.
+
+   L'ajout était donc devenu frais, la suppression non. Deux survivants,
+   tous deux structurels : `nutritionWeek`, jamais rafraîchie, qui comptait
+   encore la journée supprimée ; et surtout le PROMPT, qui n'écrivait la
+   ligne « Repas du jour » que s'il y avait un repas, donc laissait une
+   journée vidée sans aucune trace. Une absence de ligne est une absence
+   d'information, jamais une information d'absence : privé de tout fait sur
+   sa journée, le coach retombait sur sa propre réponse d'avant.
+
+   ⚠️ CE BLOC TIENT LES DEUX MOITIÉS : le payload nutritionnel du coach,
+   assemblé exactement comme `sendMessage`, et la source qui prouve que le
+   vrai assemblage remplace bien les quatre représentations.
+   ════════════════════════════════════════════════════════════════════ */
+{
+  const JOUR = "2026-09-09";
+  const HIER = "2026-09-08";
+  const etatN = (over: Partial<EtatNutrition> = {}): EtatNutrition => ({
+    jour: JOUR, repas: [], calories: 0, proteines: 0, ...over,
+  });
+  const BARRES = {
+    mealType: "gouter", name: "Barres protéinées maison chocolat-cacahuète",
+    calories: 286, proteins: 16, time: "16:35", description: null,
+  };
+  const OEUFS = {
+    mealType: "petit_dejeuner", name: "Deux œufs au plat",
+    calories: 160, proteins: 13, time: "08:10", description: null,
+  };
+
+  type Session = { calories: number; mealsDetail: RepasDetail[]; nutritionWeek: JourNutrition[] };
+
+  /* Le même assemblage que `sendMessage`. Les contrôles de SOURCE plus bas
+     vérifient que le vrai code fait bien ces quatre remplacements. */
+  const payload = (session: Session, nut: EtatNutrition | null) => nut
+    ? {
+        calories: nut.calories,
+        mealsDetail: repasFrais(session.mealsDetail, nut),
+        nutritionWeek: semaineFraiche(session.nutritionWeek, nut),
+        journalDuJourLu: true as boolean | undefined,
+      }
+    : {
+        calories: session.calories,
+        mealsDetail: session.mealsDetail,
+        nutritionWeek: session.nutritionWeek,
+        journalDuJourLu: undefined as boolean | undefined,
+      };
+
+  /* L'instantané de session, pris quand le repas existait encore. */
+  const AVEC: Session = {
+    calories: 286,
+    mealsDetail: [
+      { date: JOUR, mealType: "gouter", name: BARRES.name, calories: 286, proteins: 16 },
+      { date: HIER, name: "Riz au lait", calories: 311 },
+    ],
+    nutritionWeek: [
+      { date: JOUR, calories: 286, proteins: 16 },
+      { date: HIER, calories: 311, proteins: 9 },
+    ],
+  };
+
+  /* ── 1. LE CAS RÉEL : on supprime le seul repas du jour ─────────── */
+
+  const apres = payload(AVEC, etatN());
+
+  verdict(
+    "V9A ter · le repas supprimé quitte le détail des repas du jour",
+    apres.mealsDetail.every((m) => m.date !== JOUR) && apres.mealsDetail.some((m) => m.date === HIER),
+    "les jours précédents, eux, ne bougent pas",
+  );
+  verdict(
+    "V9A ter · il quitte AUSSI la moyenne 7 jours",
+    apres.nutritionWeek.every((d) => d.date !== JOUR) && apres.nutritionWeek.some((d) => d.date === HIER),
+    "c’est la représentation qui survivait : elle comptait encore la journée effacée",
+  );
+  verdict(
+    "V9A ter · les calories du jour retombent à 0",
+    apres.calories === 0,
+    "et l’écran Nutrition affiche la même chose",
+  );
+  verdict(
+    "V9A ter · PLUS AUCUNE trace du repas dans tout le payload nutrition",
+    !JSON.stringify(apres).includes("Barres"),
+    "c’est le contrôle qui attrapera la prochaine copie qu’on oublierait",
+  );
+  verdict(
+    "V9A ter · et la journée vide est DÉCLARÉE, plus seulement muette",
+    apres.journalDuJourLu === true,
+    "sans ce drapeau, le prompt n’écrit rien et le coach retombe sur sa réponse d’avant",
+  );
+
+  const moyenne = (w: JourNutrition[]) =>
+    w.length ? Math.round(w.reduce((s, d) => s + d.calories, 0) / w.length) : null;
+  verdict(
+    "V9A ter · la moyenne 7 jours cesse de compter le repas effacé",
+    moyenne(AVEC.nutritionWeek) === 299 && moyenne(apres.nutritionWeek) === 311,
+    "« 299 kcal/j en moyenne » sur une journée vidée, c’est le même mensonge en plus discret",
+  );
+
+  /* ── 2. DEUX REPAS, ON N'EN SUPPRIME QU'UN ──────────────────────── */
+
+  const DEUX: Session = {
+    calories: 446,
+    mealsDetail: [
+      { date: JOUR, mealType: "petit_dejeuner", name: OEUFS.name, calories: 160 },
+      { date: JOUR, mealType: "gouter", name: BARRES.name, calories: 286 },
+      { date: HIER, name: "Riz au lait", calories: 311 },
+    ],
+    nutritionWeek: [
+      { date: JOUR, calories: 446, proteins: 29 },
+      { date: HIER, calories: 311, proteins: 9 },
+    ],
+  };
+  const reste = payload(DEUX, etatN({ repas: [OEUFS], calories: 160, proteines: 13 }));
+
+  verdict(
+    "V9A ter · l’autre repas reste, le supprimé disparaît",
+    reste.mealsDetail.filter((m) => m.date === JOUR).length === 1
+      && reste.mealsDetail.some((m) => m.name === OEUFS.name)
+      && !JSON.stringify(reste).includes("Barres"),
+    "une suppression ne vide pas la journée entière",
+  );
+  verdict(
+    "V9A ter · et la moyenne suit le repas qui reste",
+    reste.nutritionWeek.find((d) => d.date === JOUR)?.calories === 160,
+    "446 est un total qui n’existe plus",
+  );
+
+  /* ── 3. « JOURNÉE VIDE » N'EST JAMAIS « LECTURE RATÉE » ─────────── */
+
+  const rate = payload(AVEC, null);
+  verdict(
+    "V9A ter · une lecture ratée ne fabrique JAMAIS une journée vide",
+    rate.calories === 286
+      && rate.mealsDetail.some((m) => m.date === JOUR)
+      && rate.nutritionWeek.some((d) => d.date === JOUR),
+    "on ne remplace pas une donnée par une absence de donnée",
+  );
+  verdict(
+    "V9A ter · et elle ne DÉCLARE pas la journée lue",
+    rate.journalDuJourLu !== true,
+    "donc le prompt n’écrit pas « aucun repas » : affirmer le vide sur un doute est le mensonge inverse",
+  );
+  verdict(
+    "V9A ter · `[]` et `null` sont impossibles à confondre dans le payload",
+    apres.journalDuJourLu === true && rate.journalDuJourLu !== true
+      && apres.mealsDetail.length !== rate.mealsDetail.length,
+    "`[]` = aucun repas, c’est une vérité ; `null` = je ne sais pas, on ne touche à rien",
+  );
+  verdict(
+    "V9A ter · une lecture RÉUSSIE sur journée vide rend un état, pas `null`",
+    (() => {
+      const e = etatN();
+      return e.repas.length === 0 && e.calories === 0 && e.jour === JOUR;
+    })(),
+    "c’est la forme que `lireEtatNutrition` rend quand la requête ne ramène aucune ligne",
+  );
+
+  /* ── 4. LE CACHE NE GARDE PAS UN ÉCHEC ──────────────────────────── */
+  {
+    let lectures = 0;
+    let reponse: EtatNutrition | null = null;
+    const lire = async () => { lectures++; return reponse; };
+
+    invaliderNutrition();
+    await etatNutrition("u9", lire);
+    await etatNutrition("u9", lire);
+    verdict(
+      "V9A ter · une lecture ratée ne se met pas en cache",
+      lectures === 2,
+      "sinon un échec réseau figerait le contexte 30 s de plus, sans rien pour le dire",
+    );
+    reponse = etatN({ repas: [BARRES], calories: 286, proteines: 16 });
+    verdict(
+      "V9A ter · et le message suivant récupère tout seul",
+      (await etatNutrition("u9", lire))?.calories === 286,
+      "la récupération est immédiate, pas au bout du TTL",
+    );
+    invaliderNutrition();
+  }
+
+  /* ── 5. LES CONTRÔLES DE SOURCE ─────────────────────────────────── */
+  {
+    const lireF = (f: string) => readFileSync(new URL("../" + f, import.meta.url), "utf8");
+    const net = (t: string) => t.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
+    const CTX = net(lireF("src/context/AssistantContext.tsx"));
+    const ROUTE = net(lireF("src/app/api/chat/route.ts"));
+    const NUT = net(lireF("src/lib/guideNutrition.ts"));
+
+    verdict(
+      "V9A ter · le contexte remplace les QUATRE représentations du jour",
+      CTX.includes("todayDate: nut.jour")
+        && CTX.includes("mealsDetail: repasFrais(")
+        && CTX.includes("nutritionWeek: semaineFraiche(")
+        && CTX.includes("journalDuJourLu: true"),
+      "une seule oubliée, et un fait supprimé survit dans le prompt",
+    );
+    verdict(
+      "V9A ter · la route sait ÉCRIRE l’absence de repas",
+      ROUTE.includes("aucun repas enregistré aujourd"),
+      "une absence de ligne n’est pas une information d’absence",
+    );
+    verdict(
+      "V9A ter · et elle ne l’écrit QUE si la journée a vraiment été lue",
+      ROUTE.includes("} else if (rich.journalDuJourLu) {"),
+      "le drapeau est la seule chose qui sépare « rien » de « je ne sais pas »",
+    );
+    verdict(
+      "V9A ter · la note nutrition d’une séance lit le journal frais",
+      CTX.includes("const buildNutritionNote = useCallback(async")
+        && CTX.includes("await buildNutritionNote()"),
+      "elle lisait l’instantané de session : c’était le troisième survivant",
+    );
+    verdict(
+      "V9A ter · une journée vide sort de la moyenne au lieu d’y peser 0",
+      semaineFraiche([{ date: JOUR, calories: 286, proteins: 16 }], etatN()).length === 0,
+      "sinon la moyenne 7 jours plongerait au lieu de perdre un jour",
+    );
+    verdict(
+      "V9A ter · le cache d’échec est refusé dans le module, pas seulement au banc",
+      NUT.includes("cache = etat ? { userId, a: Date.now(), etat } : null;"),
+      "un `null` veut dire « je ne sais pas » : on réessaie, on ne le garde pas",
     );
   }
 }

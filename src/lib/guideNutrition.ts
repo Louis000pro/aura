@@ -37,6 +37,24 @@
    Nutrition, deux depuis les cartes du Guide). Le banc vérifie qu'aucune
    écriture ne l'oublie : une seule oubliée, et le défaut revient sur ce
    chemin-là uniquement, c'est-à-dire de façon intermittente.
+
+   ⚠️ ET LA SUPPRESSION N'EST PAS SEULEMENT L'AJOUT À L'ENVERS
+   (défaut trouvé par Louis le 2026-09-09, après le premier correctif).
+   Supprimer le dernier repas du jour rendait bien `liveStats` à 0 et
+   vidait `mealsDetail`, mais le Guide continuait de citer le repas
+   effacé. Deux raisons, toutes deux structurelles :
+
+   • le prompt n'écrit une ligne « Repas du jour » QUE s'il y a un repas,
+     donc une journée vide n'y laisse AUCUNE trace. Or l'absence d'une
+     ligne est une absence d'information, jamais une information
+     d'absence : c'est exactement la confusion `null` / `[]` que ce module
+     ferme côté données, et que le prompt rouvrait côté mots. Privé de
+     tout fait sur sa journée, le coach retombe sur la seule chose qui
+     lui reste : sa propre réponse précédente. D'où la boucle.
+
+   • `nutritionWeek` (la moyenne 7 jours) n'était pas rafraîchie, donc
+     elle comptait encore la journée supprimée. Une seule représentation
+     oubliée suffit à faire survivre un fait effacé.
    ════════════════════════════════════════════════════════════════════ */
 
 import { createClient } from "@/lib/supabase";
@@ -172,7 +190,12 @@ export async function etatNutrition(
   brancherEcoute();
   if (cache && cache.userId === userId && Date.now() - cache.a < TTL_NUTRITION_MS) return cache.etat;
   const etat = await lire(userId);
-  cache = { userId, a: Date.now(), etat };
+  /* UNE LECTURE RATEE NE SE MET PAS EN CACHE. La garder gelerait le
+     contexte de session 30 s de plus a chaque echec, alors que `null` veut
+     precisement dire "je ne sais pas" : on reessaie au message suivant. Un
+     etat VIDE, lui, se met en cache comme les autres, parce que c'est une
+     REPONSE et pas une absence de reponse. */
+  cache = etat ? { userId, a: Date.now(), etat } : null;
   return etat;
 }
 
@@ -190,6 +213,36 @@ export async function etatNutrition(
  * ⚠️ Un état `null` (lecture ratée) laisse le contexte de session
  * intact : on ne remplace jamais une donnée par une absence de donnée.
  */
+/** Un jour de la moyenne 7 jours, telle que le contexte la transporte. */
+export type JourNutrition = { date: string; calories: number; proteins: number };
+
+/**
+ * Remplace la journee d'aujourd'hui dans la moyenne 7 jours.
+ *
+ * Defaut du 2026-09-09 (suppression) : `liveStats` et `mealsDetail`
+ * etaient bien purges, mais `nutritionWeek` restait etale depuis
+ * l'instantane de session, donc la moyenne continuait de compter un repas
+ * qui n'existait plus. Une representation nutritionnelle du jour qui
+ * survit a la suppression, c'est la meme faute que celle qu'on repare.
+ *
+ * Une journee SANS aucun repas n'est pas une journee a 0 kcal : elle sort
+ * de la moyenne, exactement comme `ensureContext`, qui ne construit ses
+ * entrees qu'a partir de lignes existantes. La compter ferait plonger la
+ * moyenne au lieu de la laisser tranquille.
+ */
+export function semaineFraiche(
+  ancien: JourNutrition[] | undefined,
+  etat: EtatNutrition | null,
+): JourNutrition[] {
+  if (!etat) return ancien ?? [];
+  const autres = (ancien ?? []).filter((d) => d.date !== etat.jour);
+  if (etat.repas.length === 0) return autres;
+  return [
+    { date: etat.jour, calories: etat.calories, proteins: etat.proteines },
+    ...autres,
+  ].sort((a, b) => b.date.localeCompare(a.date));
+}
+
 export function repasFrais(
   ancien: RepasDetail[] | undefined,
   etat: EtatNutrition | null,
