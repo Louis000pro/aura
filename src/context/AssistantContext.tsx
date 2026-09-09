@@ -579,10 +579,15 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
      pouvait générer une séance « bien rechargé, ~286 kcal mangées » sur
      une journée vidée. Sans lecture fraîche, elle ne dit RIEN : la note
      est un bonus, jamais une pénalité, donc son doute se tait. */
+  /* ⚠️ L'identifiant passe par une variable locale, comme dans `open`.
+     Lire `user.id` DANS le callback ferait inférer `user` entier au
+     compilateur React là où la dépendance déclarée est `user?.id`, et
+     ça coûte un avertissement neuf, ce que la discipline interdit. */
+  const idNutrition = user?.id;
   const buildNutritionNote = useCallback(async (): Promise<string | null> => {
     const goal = liveStatsRef.current?.calorieGoal;
-    if (!goal || !user?.id) return null;
-    const nut = await etatNutrition(user.id).catch(() => null);
+    if (!goal || !idNutrition) return null;
+    const nut = await etatNutrition(idNutrition).catch(() => null);
     if (!nut) return null;
     if (nut.repas.length === 0) return null; // ne note pas ses repas aujourd'hui → on n'y touche pas
     const consumed = nut.calories;
@@ -594,7 +599,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       return `L’utilisateur a peu mangé aujourd’hui (~${consumed}/${goal} kcal). Tu PEUX privilégier une séance un peu plus courte ou d’intensité modérée.`;
     }
     return null;
-  }, [user?.id]);
+  }, [idNutrition]);
 
   /* ── Mémoire long terme : persiste une action d'extraction (save / forget) ── */
   const persistMemoryAction = useCallback(async (action: MemoryAction) => {
