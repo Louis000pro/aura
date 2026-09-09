@@ -12,7 +12,7 @@
 import { Fragment, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, X, Mic, Square, Check, CalendarDays, Play, BookmarkPlus, Utensils } from "lucide-react";
+import { Send, X, Mic, Square, Check, Utensils } from "lucide-react";
 import { useAssistant } from "@/context/AssistantContext";
 import type { QuestionCliquable } from "@/lib/assistantTools";
 import type { JourDispo } from "@/context/AssistantContext";
@@ -231,8 +231,8 @@ function CarteProposition() {
          l'effort, ce serait le contraire de la règle — le plafond se voit
          AVANT. S'entraîner, lui, n'est jamais limité. */
       options={bibliothequePleine ? [] : [
-        { id: "now", icone: <Play size={15} strokeWidth={2.2} fill="currentColor" />, ligne1: "La faire", ligne2: "maintenant", onClick: faireMaintenant },
-        { id: "day", icone: <CalendarDays size={15} strokeWidth={2} />, ligne1: "La mettre", ligne2: "un jour", actif: ouvert, onClick: ouvrirJours },
+        { id: "now", label: "La faire maintenant", onClick: faireMaintenant },
+        { id: "day", label: "Choisir un jour", actif: ouvert, onClick: ouvrirJours },
       ]}
       jours={ouvert ? jours : null}
       jourChoisi={jourChoisi}
@@ -275,8 +275,8 @@ function CartePlanning() {
       meta={p.meta}
       exercices={(p.preview?.exerciseList ?? []).map((ex) => ({ name: ex.name, dose: `${ex.sets} × ${ex.reps}`, muscles: ex.muscles }))}
       options={[
-        ...(p.retargetable ? [{ id: "day", icone: <CalendarDays size={15} strokeWidth={2} />, ligne1: "Un autre", ligne2: "jour", actif: ouvert, onClick: ouvrirJours }] : []),
-        ...(p.gardable ? [{ id: "keep", icone: <BookmarkPlus size={15} strokeWidth={2} />, ligne1: "Garder dans", ligne2: "mes séances", actif: garderAussi, onClick: () => setGarderAussi((v) => !v) }] : []),
+        ...(p.retargetable ? [{ id: "day", label: "Changer de jour", actif: ouvert, onClick: ouvrirJours }] : []),
+        ...(p.gardable ? [{ id: "keep", label: "Garder dans mes séances", bascule: true, actif: garderAussi, onClick: () => setGarderAussi((v) => !v) }] : []),
       ]}
       jours={ouvert ? jours : null}
       jourChoisi={p.preview?.date ?? null}
@@ -535,14 +535,20 @@ export default function AssistantSheet() {
             </div>
 
             {/* Zone d'action ÉPINGLÉE au-dessus de la saisie : la carte reste
-                TOUJOURS entièrement visible (boutons compris), quelle que soit
-                la longueur de la conversation, elle n'est plus écrasée par le
-                fil de messages qui, lui, se réduit (flex-1) pour lui faire place.
-                Le plafond de 62 % est l'autre moitié de la promesse : sans lui,
-                une carte plus haute que la feuille débordait par le bas et son
-                bouton violet passait sous le bord (signalé par Louis). Borné,
-                c'est la liste des mouvements qui rétrécit, jamais le bouton. */}
-            <div className="flex-shrink-0 min-h-0 px-3 pb-1 flex flex-col gap-2" style={{ maxHeight: "62%" }}>
+                TOUJOURS atteignable, quelle que soit la longueur de la
+                conversation, elle n'est plus écrasée par le fil de messages
+                qui, lui, se réduit (flex-1) pour lui faire place.
+
+                ⚠️ ELLE DÉFILE, ELLE NE ROGNE PLUS. Le plafond de 62 % existait
+                déjà, mais la zone était en `overflow-hidden` : une carte plus
+                haute que ce plafond perdait purement et simplement son bas,
+                donc son bouton violet, derrière le composer (signalé par Louis
+                le 2026-09-09). On la borne toujours, pour que la conversation
+                reste visible, mais ce qui dépasse se fait défiler au lieu de
+                disparaître. La carte, elle, s'est repliée : le cas normal
+                n'atteint plus ce plafond. */}
+            <div className="flex-shrink-0 min-h-0 px-3 pb-2.5 pt-0.5 flex flex-col gap-2 overflow-y-auto overscroll-contain"
+              style={{ maxHeight: "62%", scrollbarWidth: "none" }}>
 
               {/* Génération en cours */}
               {actionLoading && (
