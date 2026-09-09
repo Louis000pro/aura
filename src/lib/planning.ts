@@ -110,6 +110,21 @@ export interface PlanningDay {
   /** Départage deux suppléments : le plus ancien d'abord. Absente d'une
    *  intention qui n'est pas encore en base. */
   creeLe?: string | null;
+  /**
+   * V9B · LE DERNIER AUTEUR DÉLIBÉRÉ, ENFIN RELU.
+   *
+   * La colonne existe depuis V2 et personne ne la lisait : `dayToRow`
+   * l'écrivait depuis son argument, et aucun `select` ne la redemandait.
+   * Conséquence, trouvée en auditant `plan_regen` : le Guide ne pouvait
+   * pas distinguer le mobilier automatique d'une séance posée à la main,
+   * donc « refais ma semaine » les effaçait toutes les deux.
+   *
+   * ⚠️ ELLE SE LIT, ELLE NE S'ÉCRIT PAS D'ICI. C'est toujours l'argument
+   * `origine` de `saveDay` / `ajouterIntention` qui décide de ce qui part
+   * en base : deux sources pour la même colonne finiraient par diverger.
+   * Absente d'une intention qu'on vient de fabriquer.
+   */
+  origine?: Origine | null;
 }
 
 export interface GenInput {
@@ -539,7 +554,7 @@ export function colonnesIntention(s: SchemaIntentions, extra = ""): string {
  *  désigner celle qu'on modifie, et de quoi ordonner celles d'une même
  *  journée. `etape_consommee_id` porte la hiérarchie (l'étape d'abord). */
 function colonnes(s: SchemaIntentions, avecAdaptation: boolean): string {
-  return `id, date, type, title, difficulty, location, exercise_list, session_id, programme_id, programme_seance_id, etape_consommee_id, created_at, ${s.colStatut}`
+  return `id, date, type, title, difficulty, location, exercise_list, session_id, programme_id, programme_seance_id, etape_consommee_id, origine, created_at, ${s.colStatut}`
     + (avecAdaptation ? ", adaptation_id" : "");
 }
 
@@ -557,6 +572,7 @@ interface PlanningRow {
   programme_seance_id?: string | null;
   etape_consommee_id?: string | null;
   adaptation_id?: string | null;
+  origine?: string | null;
   created_at?: string | null;
   /* ⚠️ LES DEUX NOMS, ET LES DEUX VOCABULAIRES. Une ligne peut arriver de
      l'ancien contrat (`status: 'planned'`) comme du nouveau
@@ -592,6 +608,11 @@ function rowToDay(r: PlanningRow, s: SchemaIntentions): PlanningDay {
        conflit dès qu'on aurait bougé la séance d'un jour. */
     provenanceId: r.programme_seance_id ?? null,
     adaptationId: r.adaptation_id ?? null,
+    /* ⚠️ RELUE EN V9B, ET SANS ELLE « refais ma semaine » NE PEUT PAS
+       FAIRE LA DIFFÉRENCE entre le mobilier qu'il a le droit de retirer
+       et une séance que quelqu'un a posée. Un mot inconnu ne vaut donc
+       jamais « systeme » : dans le doute, la ligne est protégée. */
+    origine: (r.origine as Origine | null) ?? null,
     creeLe: r.created_at ?? null,
   };
 }
@@ -791,6 +812,28 @@ export async function lireJour(userId: string, date: string): Promise<PlanningDa
   return ordonner((data ?? []).map((r) => rowToDay(r as unknown as PlanningRow, sc)));
 }
 
+/**
+ * UNE intention, par son identité.
+ *
+ * ⚠️ ELLE EXISTE POUR QU'UNE QUESTION POSÉE AU GUIDE SURVIVE À UN
+ * RECHARGEMENT (V9B). Quand deux séances portent le même nom, on demande
+ * laquelle : la réponse désigne un identifiant, et c'est la base qui rend
+ * la ligne au moment du clic. Garder les candidates en mémoire aurait
+ * rendu la question inerte au premier rafraîchissement, sans rien dire.
+ */
+export async function lireIntention(userId: string, intentionId: string): Promise<PlanningDay | null> {
+  const supabase = createClient();
+  const sc = await schemaIntentions();
+  const avecAdaptation = await adaptationsDisponibles();
+  const { data } = await supabase
+    .from(sc.table)
+    .select(colonnes(sc, avecAdaptation))
+    .eq("user_id", userId)
+    .eq("id", intentionId)
+    .maybeSingle();
+  return data ? rowToDay(data as unknown as PlanningRow, sc) : null;
+}
+
 /** Récupère plusieurs jours en UNE requête, indexés par date (YYYY-MM-DD).
  *  Chaque date porte SA LISTE d'intentions, déjà ordonnée. */
 export async function fetchRange(userId: string, dates: string[]): Promise<Record<string, PlanningDay[]>> {
@@ -921,6 +964,64 @@ export function seanceNonFaite(day: PlanningDay | null | undefined, today: strin
   );
 }
 
+/* ═══════ V9B · CE QU'UN GESTE A LE DROIT DE TOUCHER ═══════
+
+   Deux distinctions, toutes deux nées d'un défaut réel, et toutes deux
+   PURES pour qu'un banc puisse les exercer hors ligne.
+
+   ⚠️ RÉSERVER UNE ÉTAPE N'EST PAS PROVENIR D'UNE ÉTAPE, et c'est ce que
+   `plan_set` ignorait. Une réservation (V7A) porte `etape_consommee_id` :
+   c'est la PROMESSE qu'une étape du cycle sera refermée ce jour-là. Une
+   séance composée par « refais ma semaine » ne porte que sa provenance :
+   elle dit d'où vient son contenu, elle ne referme rien. La première ne
+   se réécrit pas en silence, la seconde si — quand son contenu change,
+   sa provenance devient fausse et doit tomber avec lui.
+*/
+
+/** Cette intention RÉSERVE-t-elle une étape du cycle ? */
+export function reserveUneEtape(d: PlanningDay | null | undefined): boolean {
+  return !!d?.etapeId;
+}
+
+/**
+ * L'intention qu'un « remplacer » a le droit de réécrire sur cette
+ * journée, ou `null` s'il n'y en a aucune (le geste devient alors un
+ * ajout, jamais un écrasement).
+ *
+ * ⚠️ C'EST LA CORRECTION DU DÉFAUT LE PLUS COÛTEUX DE V9B, ET IL ÉTAIT
+ * MUET. `poser` prenait « la première intention non résolue » ; or
+ * `ordonner` met justement l'étape en tête, donc dès qu'une réservation
+ * existait, c'était ELLE que le geste visait. `dayToRow` réécrit la ligne
+ * entière et `lienProgramme` écrit ses trois colonnes MÊME À `null` : une
+ * réservation ciblée cessait donc d'être une réservation. Elle restait
+ * là, à la bonne date, prévue, mais sans son étape. Le curseur ne bougeait
+ * pas, le héros reproposait l'étape comme libre, et personne n'était
+ * prévenu. C'est exactement la substitution non déclarée que le modèle
+ * interdit depuis V4.
+ *
+ * ⚠️ ON NE CONVERTIT PAS, ON NE DEVINE PAS : on s'écarte. Remplacer le
+ * CONTENU d'une étape réservée est une substitution, elle se déclarera
+ * en V9C avec sa confirmation à elle.
+ */
+export function cibleRemplacable(jour: PlanningDay[] | null | undefined): PlanningDay | null {
+  return ordonner(jour).find((i) => i.status !== "done" && !reserveUneEtape(i)) ?? null;
+}
+
+/**
+ * Cette intention est-elle du MOBILIER, c'est-à-dire quelque chose que
+ * personne n'a délibérément posé et qu'une régénération peut retirer ?
+ *
+ * ⚠️ TROIS CONDITIONS, ET AUCUNE N'EST DÉCORATIVE : encore prévue (un
+ * fait ne se retire pas), écrite par le système (`origine`, la colonne
+ * que V9B a enfin rebranchée en lecture), et ne réservant aucune étape
+ * (une réservation n'est jamais du mobilier, quoi qu'en dise son
+ * origine). Un statut ou une origine qu'on ne comprend pas rend `false` :
+ * dans le doute, on protège.
+ */
+export function estMobilier(d: PlanningDay | null | undefined): boolean {
+  return !!d && d.status === "planned" && d.origine === "systeme" && !reserveUneEtape(d);
+}
+
 /**
  * ⚠️ LES DEUX SEULES FAÇONS D'ÉCRIRE UNE INTENTION, ET LA DIFFÉRENCE EST
  * LA RÈGLE DU MODÈLE : REMPLACER, C'EST MODIFIER L'INTENTION EXISTANTE ;
@@ -949,8 +1050,12 @@ async function poser(
      elle-même (on la déplace, on la remplace) ; sinon on reprend la
      principale de la journée, et JAMAIS une séance déjà faite : la
      réécrire effacerait un fait pour y mettre une intention. */
+  /* ⚠️ UNE SEULE RÈGLE DE CIBLAGE, ET LE GUIDE LIT LA MÊME (V9B). Elle
+     est exportée exprès : la carte de confirmation doit pouvoir NOMMER ce
+     qu'elle va remplacer avant le clic, et une seconde règle écrite
+     ailleurs finirait par annoncer autre chose que ce qui s'écrit. */
   const cible = day.id
-    ?? (mode === "remplacer" ? ordonner(jour).find((i) => i.status !== "done")?.id ?? null : null);
+    ?? (mode === "remplacer" ? cibleRemplacable(jour)?.id ?? null : null);
 
   /* ⚠️ UNE ÉCRITURE REFUSÉE DOIT SE VOIR, ET C'EST LA FENÊTRE DE
      DÉPLOIEMENT QUI L'IMPOSE. Entre le moment où ce code part en
@@ -960,12 +1065,24 @@ async function poser(
      pas : on la remonte, l'appelant dit que ça n'a pas marché. */
   let ecrit: PlanningDay;
   if (cible) {
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from(sc.table)
       .update(dayToRow(userId, day, origine, sc, avecAdaptation))
       .eq("id", cible)
-      .eq("user_id", userId);
+      .eq("user_id", userId)
+      /* ⚠️ ON NE RÉÉCRIT JAMAIS UN FAIT. `retirerIntention` porte ce
+         filtre depuis V8 ; il manquait ici, alors que c'est la seule
+         écriture capable d'effacer une séance déjà terminée. */
+      .neq(sc.colStatut, sc.versBase.done)
+      .select("id");
     if (error) throw new Error(error.message);
+    /* ⚠️ ZÉRO LIGNE TOUCHÉE EST UN ÉCHEC, PAS UN SUCCÈS SILENCIEUX, ET
+       V9B EN A BESOIN. Le Guide DÉCLARE désormais l'identité qu'il vise au
+       moment de composer sa carte, et l'applique au clic : entre les deux,
+       la ligne peut avoir été retirée ailleurs ou terminée. Sans ce
+       contrôle, l'écran annoncerait un déplacement que la base n'a jamais
+       fait — le mode d'échec muet qu'on passe cette vague à fermer. */
+    if (!data || data.length === 0) throw new Error("cette séance a changé depuis, relis ton planning");
     ecrit = { ...day, id: cible };
   } else {
     const { data, error } = await supabase
@@ -1042,6 +1159,41 @@ export async function libererJours(userId: string, dates: string[]): Promise<voi
     .eq("user_id", userId)
     .neq(sc.colStatut, sc.versBase.done)
     .in("date", dates);
+}
+
+/**
+ * V9B · LIBÈRE LE MOBILIER AUTOMATIQUE DE CES JOURS, ET RIEN D'AUTRE.
+ *
+ * ⚠️ C'EST LA CORRECTION DU SECOND DÉFAUT PROUVÉ. « Refais ma semaine »
+ * dit au Guide appelait `libererJours` sur tous les jours à venir, donc il
+ * supprimait TOUTES les intentions encore prévues : les réservations
+ * d'étapes, les suppléments, et les séances posées à la main. Le bouton
+ * d'Entraînement, lui, ne retirait que `origine = 'systeme'` depuis V5 :
+ * les deux chemins faisaient le même geste avec deux portées, et c'est le
+ * plus destructeur qui n'avait aucune carte pour le dire.
+ *
+ * ⚠️ LE TRI SE FAIT EN BASE, PAS SUR CE QUE L'ÉCRAN A LU. Une
+ * régénération porte sur des dates, pas sur des lignes chargées : filtrer
+ * côté client laisserait passer tout ce qui a été écrit depuis le dernier
+ * rafraîchissement. Les trois conditions sont celles d'`estMobilier`.
+ *
+ * ⚠️ ET `etape_consommee_id IS NULL` EST UNE CEINTURE, PAS UNE ÉLÉGANCE.
+ * Une réservation ne devrait jamais porter `origine = 'systeme'` ; si elle
+ * le faisait, c'est ce filtre-là qui l'empêcherait de disparaître.
+ */
+export async function libererMobilier(userId: string, dates: string[]): Promise<void> {
+  if (dates.length === 0) return;
+  const supabase = createClient();
+  const sc = await schemaIntentions();
+  const { error } = await supabase
+    .from(sc.table)
+    .delete()
+    .eq("user_id", userId)
+    .eq(sc.colStatut, sc.versBase.planned)
+    .eq("origine", "systeme")
+    .is("etape_consommee_id", null)
+    .in("date", dates);
+  if (error) throw new Error(error.message);
 }
 
 /**

@@ -68,6 +68,7 @@ export default function CarteSeance({
   onValider,
   onFermer,
   hint,
+  consequence,
 }: {
   kicker: string;
   ton?: "accent" | "jour";
@@ -82,6 +83,16 @@ export default function CarteSeance({
   onValider: () => void;
   onFermer: () => void;
   hint?: string | null;
+  /**
+   * V9B · CE QUE LE GESTE CHANGE, DIT AVANT LE CLIC.
+   *
+   * ⚠️ CE N'EST PAS UN `hint`, ET LA DIFFÉRENCE COMPTE. Un hint accompagne
+   * une option ; celle-ci répond à « qu'est-ce que ça va faire à mon
+   * programme ? », c'est-à-dire à la question qu'on ne peut pas poser après
+   * coup. Elle vit donc AU-DESSUS du bouton, dans l'encre du texte courant,
+   * et elle vient toujours du code : la carte ne devine rien.
+   */
+  consequence?: string | null;
 }) {
   const TEAL = "#2BD4A0";
   const barre = ton === "jour"
@@ -195,6 +206,10 @@ export default function CarteSeance({
               );
             })}
           </div>
+        )}
+
+        {consequence && (
+          <p className="text-[11.5px] leading-snug px-1" style={{ color: "var(--text-2)" }}>{consequence}</p>
         )}
 
         <motion.button whileTap={{ scale: 0.98 }} onClick={onValider}

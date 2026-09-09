@@ -140,6 +140,7 @@ const CARTES: Record<string, string> = {
   create_seance: "une proposition de séance",
   plan_set: "une séance à mettre sur un jour de son planning",
   plan_move: "un déplacement de séance dans son planning",
+  plan_retirer: "une séance à retirer de son planning",
   plan_location: "un changement de lieu sur un jour de son planning",
   plan_library: "une de ses séances à poser sur un jour",
   plan_regen: "une nouvelle semaine de planning",

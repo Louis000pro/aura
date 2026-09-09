@@ -30,12 +30,16 @@ import { voix, voixAction, CHOIX_LIEU, CHOIX_EQUIP, type EtatGuide, type GuideRe
 import { useGuideActif } from "@/context/GuideContext";
 import { PLANS } from "@/lib/plans";
 import {
-  resolveWhen, dayLabel, dayLabelLong, dayTitle, lireJour, fetchRange, hasSeance, saveDay, prochainsJours,
-  principale, seancesDuJour,
-  ctxFromLieu, readLieu, loadLieu, persistLieu, readVariant, weekDates, todayYmd, normalizeExercises, previewWeek, libererJours,
+  resolveWhen, dayLabel, dayLabelLong, dayTitle, lireJour, lireIntention, fetchRange, hasSeance, saveDay, prochainsJours,
+  principale, cibleRemplacable, estMobilier, reserveUneEtape,
+  ctxFromLieu, readLieu, loadLieu, persistLieu, readVariant, weekDates, todayYmd, normalizeExercises, previewWeek,
   type CycleSemaine,
   PLANNING_TYPE_BY_CATEGORY, type PlanningDay, type GenInput,
 } from "@/lib/planning";
+import {
+  appliquerGeste, consequenceDeplacement, consequencePose, consequenceRetrait, consequenceSemaine,
+  resoudreCibles, type EtapeNommee, type GestePlanning,
+} from "@/lib/gestePlanning";
 import { lireProgrammeActif } from "@/lib/programme";
 import { adaptationDuJour, idsMasques } from "@/lib/adaptation";
 import { etatMoteur, resumeMoteur } from "@/lib/guideMoteur";
@@ -111,16 +115,33 @@ export type PendingMeal = {
  *  au moment où on connaît le jour visé et ce qu'on va écraser. La carte, elle,
  *  ne devine rien (elle ne saurait pas dire « à la place de Jambes »). */
 type PendingPlan = {
-  kicker: string;           // « Jeudi 6 août · à la place de « Jambes » »
+  kicker: string;           // le jour visé, et ce qu'on y remplace
   title: string;            // titre de la carte (nom de la séance ou jour déplacé)
   meta: string;             // « Force · 5 mouvements · en salle »
   cta: string;              // « Remplacer jeudi »
-  writes: PlanningDay[];    // jours à écrire en base à la confirmation
-  /* Jours à LIBÉRER (plus aucune intention) avant d'écrire. Depuis V5, un
-     déplacement vide son jour de départ au lieu d'y poser un « Repos » que
-     personne n'a choisi, et « refais ma semaine » retire le mobilier
-     automatique de la semaine sans toucher aux jours posés à la main. */
-  liberer?: string[];
+  /**
+   * V9B · CE QUI SERA ÉCRIT, DÉCLARÉ AU MOMENT OÙ LA CARTE S'AFFICHE.
+   *
+   * ⚠️ C'ÉTAIT UNE LISTE DE JOURS À ÉCRIRE PLUS UNE LISTE DE JOURS À
+   * LIBÉRER, ET `confirmPlan` DÉCIDAIT DU RESTE. C'est ce qui a laissé
+   * passer les deux défauts de cette vague : `plan_set` ne disait pas
+   * quelle ligne il visait (donc la base choisissait, et elle choisissait
+   * justement la réservation d'étape), et la libération de « refais ma
+   * semaine » emportait tout ce qui était prévu. Un geste nommé, avec son
+   * identité et sa portée, ne peut plus vouloir dire autre chose à
+   * l'écriture qu'à l'affichage.
+   */
+  geste: GestePlanning;
+  /**
+   * Ce que ça change pour le programme, en toutes lettres, AVANT le clic.
+   * Composée par le CODE (`gestePlanning`), jamais par le modèle : le
+   * coach n'a plus d'outils depuis juillet et ne voit pas ce qu'on écrit,
+   * donc le laisser décrire l'effet d'un geste, ce serait lui faire
+   * promettre ce qu'il ne peut pas savoir.
+   */
+  consequence: string;
+  /** Jour de départ d'un déplacement : c'est lui que le kicker nomme. */
+  depuis?: string;
   preview: PlanningDay | null; // jour dont on prévisualise les exercices
   /** Le jour visé peut-il être changé depuis la carte ? (faux pour la semaine entière) */
   retargetable?: boolean;
@@ -260,6 +281,51 @@ function texteCartePlan(jour: PlanningDay, remplace: string | null, verbe = "Pro
       .filter(Boolean).join(" · "),
     cta: `${remplace ? "Remplacer" : verbe} ${jourCourt(jour.date)}`,
   };
+}
+
+/**
+ * V9B · RECOMPOSE UNE CARTE QUI CHANGE DE JOUR.
+ *
+ * ⚠️ CHANGER LE JOUR D'UNE POSE CHANGE LA LIGNE QU'ELLE VISE, et l'ancienne
+ * version l'ignorait : elle déplaçait les dates à écrire, laissait le
+ * « à la place de » vide, et l'identité de la cible se décidait à
+ * l'écriture. Ici la carte redemande la journée d'arrivée, donc elle
+ * nomme ce qu'elle y remplace et déclare l'identité qu'elle écrira.
+ *
+ * `connu` dit si la journée d'arrivée a vraiment été relue. Tant qu'elle ne
+ * l'est pas, on ne prétend rien : la conséquence est vide (donc pas
+ * affichée) et le geste retombe sur l'AJOUT, qui ne détruit rien.
+ */
+function recalerCarte(
+  p: PendingPlan,
+  ymd: string,
+  cible: PlanningDay | null,
+  reservation: PlanningDay | null,
+  connu: boolean,
+): PendingPlan {
+  if (p.geste.type === "deplacer") {
+    /* Un déplacement vise une ligne par son `id` : changer la destination
+       ne change pas ce qu'on déplace, donc rien à re-résoudre. */
+    const jour = { ...p.geste.jour, date: ymd };
+    return {
+      ...p,
+      ...texteCartePlan(jour, null, "Déplacer vers"),
+      kicker: `${p.depuis ? CAP(dayLabelLong(p.depuis)) + " → " : ""}${dayLabelLong(ymd)}`,
+      geste: { type: "deplacer", jour },
+      preview: jour,
+    };
+  }
+  if (p.geste.type === "remplacer" || p.geste.type === "ajouter") {
+    const jour = { ...p.geste.jour, date: ymd, id: cible?.id ?? null };
+    return {
+      ...p,
+      ...texteCartePlan(jour, cible ? dayTitle(cible) : null),
+      geste: cible ? { type: "remplacer", jour } : { type: "ajouter", jour },
+      consequence: connu ? consequencePose(cible, reservation) : "",
+      preview: jour,
+    };
+  }
+  return p;
 }
 
 /** Normalise un moment de repas vers les 4 valeurs canoniques du journal. */
@@ -584,6 +650,10 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
      compilateur React là où la dépendance déclarée est `user?.id`, et
      ça coûte un avertissement neuf, ce que la discipline interdit. */
   const idNutrition = user?.id;
+  /* Même précaution pour la recomposition d'une carte planning : elle relit
+     la journée d'arrivée, donc elle a besoin du compte, et elle ne doit pas
+     faire inférer `user` entier au compilateur React. */
+  const idPlanning = user?.id;
   const buildNutritionNote = useCallback(async (): Promise<string | null> => {
     const goal = liveStatsRef.current?.calorieGoal;
     if (!goal || !idNutrition) return null;
@@ -672,6 +742,82 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
     setMessages((prev) => [...prev, { role: "assistant" as const, content: contenu, id: uid(), question: q, ton: "listen" as const }]);
   }, []);
 
+  /* ── V9B · LA CARTE D'UN GESTE QUI VISE UNE INTENTION DÉJÀ ÉCRITE ──
+     Déplacer et retirer partagent tout : la ligne est trouvée, son
+     identité est déclarée, et la conséquence se déduit de ce qu'elle
+     porte. Deux entrées y mènent (la demande directe, et la réponse à
+     « laquelle ? »), donc une seule composition : deux cartes écrites à
+     deux endroits finiraient par annoncer deux choses différentes. ── */
+  const preparerSurCible = useCallback(async (
+    cible: PlanningDay,
+    suite: { geste: "deplacer" | "retirer"; to?: string | null },
+    connu?: Record<string, PlanningDay[]>,
+  ) => {
+    /* ⚠️ L'identifiant passe par la variable hoistée, jamais par `user.id`
+       lu dans le callback : c'est le piège déjà payé deux fois (V9A, puis
+       V9A ter). Le compilateur React infère alors `user` entier là où la
+       dépendance déclarée est `user?.id`, et ça coûte un avertissement. */
+    if (!idPlanning || !cible.id) return;
+    const say = (content: string) => setMessages((prev) => [...prev, { role: "assistant" as const, content, id: uid(), ton: "explain" as const }]);
+
+    if (suite.geste === "retirer") {
+      setPendingPlan({
+        ...texteCartePlan(cible, null, "Retirer"),
+        title: dayTitle(cible),
+        consequence: consequenceRetrait(cible),
+        geste: { type: "retirer", intentionId: cible.id },
+        preview: cible,
+      });
+      return;
+    }
+
+    const dates = prochainsJours(15);
+    const parJour = connu ?? await fetchRange(idPlanning, dates);
+    let to = suite.to ?? null;
+    if (!to) {
+      /* Empêchement sans destination (« je ne peux pas jeudi ») : on prend
+         le premier jour libre à venir. ⚠️ Depuis V5, un jour LIBRE est le
+         plus souvent un jour SANS AUCUNE LIGNE : exiger une ligne ici
+         rendrait le geste impossible pour presque tout le monde, et
+         l'échec serait muet. */
+      const libre = (d: string) => {
+        const jour = parJour[d] ?? [];
+        return jour.length === 0 || jour.every((i) => i.status !== "done" && !hasSeance(i));
+      };
+      to = dates.find((d) => d > cible.date && libre(d))
+        ?? dates.find((d) => d !== cible.date && libre(d))
+        ?? null;
+      if (!to) {
+        say(voix(guideRef.current, "impasse.move_sans_jour"));
+        return;
+      }
+    }
+    if (to === cible.date) {
+      say(voix(guideRef.current, "impasse.move_deja_prevu", { jour: dayLabelLong(to) }));
+      return;
+    }
+
+    /* ⚠️ « REJOINT », PLUS « À LA PLACE DE » (V6b). L'intention se DÉPLACE :
+       elle garde son identité, sa réservation, sa provenance et son
+       adaptation, et change de date. Ce qui est déjà posé au jour d'arrivée
+       reste, la journée en porte deux. Aucune séance n'est écrasée par un
+       déplacement, et plus rien n'est libéré derrière lui — la ligne qu'il
+       fallait effacer, c'était celle qu'un déplacement CRÉAIT ailleurs. */
+    const movedDay: PlanningDay = { ...cible, date: to, status: "planned" };
+    const rejoint = principale(parJour[to] ?? []);
+    const cotoie = hasSeance(rejoint) ? dayTitle(rejoint) : null;
+    setPendingPlan({
+      ...texteCartePlan(movedDay, null, "Déplacer vers"),
+      kicker: `${CAP(dayLabelLong(cible.date))} → ${dayLabelLong(to)}${cotoie ? ` · avec « ${cotoie} »` : ""}`,
+      title: dayTitle(cible),
+      consequence: consequenceDeplacement(cible),
+      depuis: cible.date,
+      geste: { type: "deplacer", jour: movedDay },
+      preview: movedDay,
+      retargetable: true,
+    });
+  }, [idPlanning]);
+
   /* ── Action PLANNING (Phase 2) : prépare une carte de confirmation.
      Aucune écriture en base ici — tout passe par confirmPlan() (clic). ── */
   const preparePlanAction = useCallback(async (action: AssistantAction, text: string) => {
@@ -681,77 +827,72 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
     // bouge. Ce n'est ni une question, ni une réussite.
     const say = (content: string) => setMessages((prev) => [...prev, { role: "assistant" as const, content, id: uid(), ton: "explain" as const }]);
 
-    // DÉPLACEMENT : pas de génération, on copie la séance vers le jour cible
-    // et on libère (Repos) le jour source. Aucun échec silencieux : chaque
-    // impasse renvoie un message clair (sinon « la carte ne s'ouvre pas »).
-    if (action.intent === "plan_move") {
-      let to = action.to ? resolveWhen(action.to) : null;
-      // Jour source : celui indiqué s'il porte une séance ; sinon le prochain
-      // jour d'entraînement à venir cette semaine (« déplace ma séance dans 2
-      // jours » sans préciser le départ doit marcher même si aujourd'hui = repos).
-      let from = action.when ? resolveWhen(action.when) : null;
-      /* ⚠️ ON DÉPLACE UNE INTENTION, PLUS UNE JOURNÉE (V6b). Une date en
-         porte désormais plusieurs : on prend la première séance encore à
-         faire, jamais la journée entière, sinon un supplément partirait
-         avec la séance principale sans que personne ne l'ait demandé. */
-      const seanceAdeplacer = (jour: PlanningDay[]) =>
-        seancesDuJour(jour).find((d) => d.status !== "done") ?? null;
-      let src = from ? seanceAdeplacer(await lireJour(user.id, from)) : null;
-      const weekMap = await fetchRange(user.id, weekDates());
-      if (!hasSeance(src)) {
-        const next = weekDates().find((d) => d >= todayYmd() && d !== to && !!seanceAdeplacer(weekMap[d] ?? []));
-        if (next) { from = next; src = seanceAdeplacer(weekMap[next] ?? []); }
-      }
-      if (!hasSeance(src) || !from) {
-        say(voix(guideRef.current, "impasse.move_introuvable"));
-        return;
-      }
-      // Empêchement sans destination (« je ne peux pas jeudi ») → on choisit
-      // le premier jour de repos à venir de la semaine (après le jour source
-      // de préférence), plutôt que de renvoyer une question.
-      if (!to) {
-        /* ⚠️ Depuis V5, un jour LIBRE est le plus souvent un jour SANS
-           AUCUNE LIGNE : c'est justement ce que « aucune ligne = rien de
-           prévu » veut dire. Exiger une ligne ici (l'ancien `!!day`)
-           rendrait « déplace ma séance » impossible pour presque tout le
-           monde, et l'échec serait muet. */
-        const rest = (d: string) => {
-          const jour = weekMap[d] ?? [];
-          return jour.length === 0 || jour.every((i) => i.status !== "done" && !hasSeance(i));
-        };
-        to = weekDates().find((d) => d > from! && rest(d))
-          ?? weekDates().find((d) => d >= todayYmd() && d !== from && rest(d))
-          ?? null;
-        if (!to) {
-          say(voix(guideRef.current, "impasse.move_sans_jour"));
-          return;
-        }
-      }
-      if (from === to) {
-        say(voix(guideRef.current, "impasse.move_deja_prevu", { jour: dayLabelLong(to) }));
-        return;
-      }
-      const movedDay: PlanningDay = { ...src, date: to, status: "planned" };
-      /* ⚠️ « REJOINT », PLUS « À LA PLACE DE » (V6b). L'intention se
-         DÉPLACE, elle garde son identité et change de date : ce qui est
-         déjà posé au jour d'arrivée reste, et la journée en porte deux.
-         Aucune séance n'est écrasée par un déplacement.
+    /* ── V9B · DÉPLACER ET RETIRER : ON RÉSOUT LA LIGNE, PUIS ON DEMANDE ──
 
-         ⚠️ ET PLUS DE `liberer` SUR LE JOUR DE DÉPART. Il servait à
-         effacer la ligne restée derrière quand le déplacement en CRÉAIT
-         une nouvelle ailleurs. Maintenant qu'elle se déplace, libérer le
-         jour de départ emporterait ses voisines. */
-      const rejoint = principale(weekMap[to] ?? []);
-      const cotoie = hasSeance(rejoint) ? dayTitle(rejoint) : null;
-      const t = texteCartePlan(movedDay, null, "Déplacer vers");
-      setPendingPlan({
-        ...t,
-        kicker: `${CAP(dayLabelLong(from))} → ${dayLabelLong(to)}${cotoie ? ` · avec « ${cotoie} »` : ""}`,
-        title: dayTitle(src),
-        writes: [movedDay],
-        preview: movedDay,
-        retargetable: true,
-      });
+       ⚠️ L'AIGUILLEUR RESTE PAUVRE, ET C'EST LA DÉCISION 7 DE V9. Il rend
+       un jour et éventuellement un nom ; c'est le CODE qui traduit ça en
+       une intention réelle, en passant D'ABORD par les étapes du cycle.
+       Une séance du catalogue intitulée « Push » n'est pas l'étape Push :
+       le titre désigne, il n'identifie jamais.
+
+       ⚠️ ET LA FENÊTRE FAIT QUINZE JOURS, PAS LA SEMAINE CIVILE. Une
+       réservation d'étape vit souvent au-delà du dimanche : la chercher
+       dans la semaine courante rendrait le geste intermittent selon le
+       jour où l'on parle, c'est-à-dire pire qu'un geste qui échoue. */
+    if (action.intent === "plan_move" || action.intent === "plan_retirer") {
+      const dates = prochainsJours(15);
+      const parJour = await fetchRange(user.id, dates);
+      const toutes = dates.flatMap((d) => parJour[d] ?? []);
+      const nom = (action.quoi || "").trim() || null;
+      const jourDit = action.when ? resolveWhen(action.when) : null;
+      const to = action.intent === "plan_move" && action.to ? resolveWhen(action.to) : null;
+
+      /* Le cycle sert UNIQUEMENT à traduire un nom en identité d'étape. Son
+         échec ne bloque rien : on désigne alors par le titre, et rien de
+         métier n'en dépend puisque la ligne voyage avec ses colonnes. */
+      let cycle: EtapeNommee[] | null = null;
+      try {
+        const actif = await lireProgrammeActif(user.id);
+        cycle = actif ? actif.cycle.map((e) => ({ id: e.id, nom: e.nom })) : null;
+      } catch { /* programme illisible : on désignera par le nom */ }
+
+      let candidats = resoudreCibles(toutes, { date: jourDit, nom }, cycle);
+      if (to) candidats = candidats.filter((c) => c.date !== to);
+      /* Ni jour ni nom : « ma séance » veut dire la prochaine. Poser
+         « laquelle ? » sur une demande qui n'en désigne aucune, ce serait
+         un formulaire, pas une question. */
+      if (!jourDit && !nom) candidats = candidats.slice(0, 1);
+
+      if (candidats.length === 0) {
+        say(nom
+          ? voix(guideRef.current, "impasse.cible_introuvable", { titre: nom })
+          : voix(guideRef.current, action.intent === "plan_move" ? "impasse.move_introuvable" : "impasse.retrait_introuvable"));
+        return;
+      }
+
+      const geste = action.intent === "plan_move" ? "deplacer" as const : "retirer" as const;
+      if (candidats.length > 1) {
+        /* ⚠️ PLUSIEURS CORRESPONDANCES : ON DEMANDE, ON N'ÉCRIT RIEN, ET
+           ON NE REPASSE PAS PAR LE MODÈLE. La réponse désigne un
+           identifiant ; renvoyer « jeudi 10 » à l'aiguilleur rouvrirait
+           exactement l'ambiguïté qu'on est en train de lever. */
+        const vus = new Set<string>();
+        const cibles = candidats.slice(0, 4).map((c) => {
+          let choix = `${dayTitle(c)} · ${jourCourt(c.date)}`;
+          while (vus.has(choix)) choix += " ·";
+          vus.add(choix);
+          return { choix, id: c.id as string };
+        });
+        poserQuestion(voix(guideRef.current, "question.quelle_seance"), {
+          choix: cibles.map((c) => c.choix),
+          genre: "cible",
+          cibles,
+          suite: { geste, to },
+        });
+        return;
+      }
+
+      await preparerSurCible(candidats[0], { geste, to }, parJour);
       return;
     }
 
@@ -818,12 +959,24 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       /* ⚠️ On n'écrit QUE des séances : reposer les jours « Repos » de la
          semaine générée recréerait le mobilier automatique que V5 retire.
          Les jours sans séance sont libérés, et un jour libre veut dire
-         libre. Les jours déjà faits et le passé ne bougent pas. */
-      const aVenir = dates.filter((d) => d >= todayYmd() && !(existing[d] ?? []).some((i) => i.status === "done"));
+         libre. Les jours déjà faits et le passé ne bougent pas.
+
+         ⚠️ ⚠️ ET « REFAIS MA SEMAINE » NE VEUT PAS DIRE « EFFACE TOUT CE
+         QUI ÉTAIT PRÉVU » : C'EST LE SECOND DÉFAUT QUE V9B RÉPARE. Ce
+         chemin libérait TOUS les jours à venir, donc il emportait les
+         réservations d'étapes, les suppléments et les séances posées à la
+         main, sans que la carte n'en dise un mot. Le bouton d'Entraînement,
+         lui, ne retire que `origine = 'systeme'` depuis V5 : deux chemins
+         pour le même geste, deux portées, et c'est le plus destructeur qui
+         était muet. Un jour qui porte autre chose que du mobilier n'est
+         donc ni libéré, ni réécrit, et la carte le NOMME avant le clic. */
+      const garde = (d: string) => (existing[d] ?? []).some((i) => !estMobilier(i));
+      const aVenir = dates.filter((d) => d >= todayYmd());
+      const modifiables = aVenir.filter((d) => !garde(d));
       const writes = previewWeek(gen, dates, cycleSemaine)
-        .filter((d) => aVenir.includes(d.date))
+        .filter((d) => modifiables.includes(d.date))
         .filter(hasSeance);
-      const nbSeances = writes.filter(hasSeance).length;
+      const nbSeances = writes.length;
       if (nbSeances === 0) {
         say(voix(guideRef.current, "impasse.regen_semaine_finie"));
         return;
@@ -837,8 +990,8 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
         title: "Nouvelle semaine ✦",
         meta: `Dès aujourd’hui · ${nbSeances} séance${nbSeances > 1 ? "s" : ""}${adjustLabel}`,
         cta: "Remplacer ma semaine",
-        writes,
-        liberer: aVenir,
+        consequence: consequenceSemaine(aVenir.filter(garde).map((d) => dayLabel(d).toLowerCase())),
+        geste: { type: "semaine", poser: writes, liberer: modifiables },
         preview: writes.find(hasSeance) ?? null,
       });
       return;
@@ -883,12 +1036,19 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
         sessionId: row.id,
         status: "planned",
       };
-      const avant = principale(await lireJour(user.id, day));
+      /* ⚠️ LA CIBLE SE DÉCLARE ICI, ET PAS À L'ÉCRITURE (V9B). Sans `id`,
+         `poser` choisissait lui-même la ligne à réécrire, et la carte
+         nommait autre chose que ce qui allait être écrit. */
+      const jourVise = await lireJour(user.id, day);
+      const cible = cibleRemplacable(jourVise);
+      const reservation = jourVise.find(reserveUneEtape) ?? null;
+      const libJour: PlanningDay = { ...libDay, id: cible?.id ?? null };
       setPendingPlan({
-        ...texteCartePlan(libDay, hasSeance(avant) ? dayTitle(avant) : null),
+        ...texteCartePlan(libJour, cible ? dayTitle(cible) : null),
         title: row.title,
-        writes: [libDay],
-        preview: libDay,
+        consequence: consequencePose(cible, reservation),
+        geste: cible ? { type: "remplacer", jour: libJour } : { type: "ajouter", jour: libJour },
+        preview: libJour,
         retargetable: true,
       });
       return;
@@ -912,9 +1072,24 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       ? (action.muscles as unknown[]).filter((m): m is string => typeof m === "string")
       : [];
     let baseDesc = (action.description || "").trim();
-    const existing = principale(await lireJour(user.id, when));
+    /* ⚠️ ⚠️ LE DÉFAUT CENTRAL DE V9B EST ICI, ET IL ÉTAIT MUET. `plan_set`
+       composait `{ id: null, … }` sans aucune identité de programme ;
+       `poser` visait alors « la première intention non résolue » du jour,
+       or `ordonner` met justement l'étape en tête. Une réservation V7A
+       était donc réécrite, et `lienProgramme` écrivant ses trois colonnes
+       MÊME À `null`, elle cessait d'être une réservation : toujours là,
+       toujours prévue, mais sans son étape. Le curseur ne bougeait pas, le
+       héros reproposait l'étape comme libre, et personne n'était prévenu.
+       On résout donc la cible ICI, avec la règle unique, et le geste
+       déclare l'identité qu'il écrira. Une journée qui ne porte qu'une
+       réservation n'a pas de cible remplaçable : la séance s'AJOUTE à
+       côté, et la carte le dit. */
+    const jourVise = await lireJour(user.id, when);
+    const cible = cibleRemplacable(jourVise);
+    const reservation = jourVise.find(reserveUneEtape) ?? null;
+    const actuelle = principale(jourVise);
     if (action.intent === "plan_location") {
-      baseDesc = existing && existing.title ? existing.title : "séance complète";
+      baseDesc = actuelle && actuelle.title ? actuelle.title : "séance complète";
     }
 
     setActionLoading("seance");
@@ -946,7 +1121,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       });
 
       const day: PlanningDay = {
-        id: null,
+        id: cible?.id ?? null,
         date: when,
         type: PLANNING_TYPE_BY_CATEGORY[category] ?? "Force",
         title: seance.title,
@@ -959,9 +1134,10 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
 
       const pleine = await verifierPlaces();
       setPendingPlan({
-        ...texteCartePlan(day, hasSeance(existing) ? dayTitle(existing) : null),
+        ...texteCartePlan(day, cible ? dayTitle(cible) : null),
         title: seance.title,
-        writes: [day],
+        consequence: consequencePose(cible, reservation),
+        geste: cible ? { type: "remplacer", jour: day } : { type: "ajouter", jour: day },
         preview: day,
         retargetable: true,
         // Générée à l'instant : elle n'existe nulle part ailleurs, donc on peut
@@ -976,7 +1152,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setActionLoading(null);
     }
-  }, [user?.id, buildNutritionNote, poserQuestion, verifierPlaces]);
+  }, [user?.id, buildNutritionNote, poserQuestion, verifierPlaces, preparerSurCible]);
 
   /* ── Mémoire long terme (silencieuse, best-effort) ──
      Volontairement restée sur son propre petit appel : elle n'a rien à voir
@@ -1158,7 +1334,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
     }
 
     // 2a) Pilotage du PLANNING (remplacer / décaler / changer le lieu / poser une séance de la biblio / refaire la semaine)
-    if (action.intent === "plan_set" || action.intent === "plan_location" || action.intent === "plan_move" || action.intent === "plan_library" || action.intent === "plan_regen") {
+    if (action.intent === "plan_set" || action.intent === "plan_location" || action.intent === "plan_move" || action.intent === "plan_retirer" || action.intent === "plan_library" || action.intent === "plan_regen") {
       void preparePlanAction(action, text);
       return;
     }
@@ -1572,9 +1748,24 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
+    /* V9B · « Laquelle ? » : la réponse désigne une INTENTION, pas une
+       phrase. On relit la ligne en base par son identifiant — la question
+       survit donc à un rechargement — et on ouvre la carte. Toujours
+       aucune écriture : c'est le bouton violet qui écrit. */
+    if (q.genre === "cible" && user?.id && q.suite) {
+      const trouve = (q.cibles ?? []).find((c) => c.choix === choix);
+      if (!trouve) return;
+      const suite = q.suite;
+      const compte = user.id;
+      void lireIntention(compte, trouve.id).then((intention) => {
+        if (intention) void preparerSurCible(intention, suite);
+      });
+      return;
+    }
+
     // Question libre du coach : sa réponse repart telle quelle.
     sendMessage(choix, true);
-  }, [messages, isStreaming, user?.id, persist, sendMessage]);
+  }, [messages, isStreaming, user?.id, persist, sendMessage, preparerSurCible]);
 
   /* ── Contrôles ── */
   const open = useCallback((prefill?: string) => {
@@ -1690,37 +1881,44 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
   /* ── Changer le jour visé par une carte planning ──
      Les exercices ne bougent pas, seule la date change : régénérer une séance
      parce qu'on la décale d'un jour serait absurde (et coûterait un appel IA).
-     Le déplacement garde son jour de départ, qui reste libéré. ── */
-  const retargetPlan = useCallback((ymd: string) => {
-    setPendingPlan((prev) => {
-      if (!prev || !prev.preview) return prev;
-      const cible = prev.preview.date;
-      const writes = prev.writes
-        .map((w) => (w.date === cible ? { ...w, date: ymd } : w))
-        .filter((w, i, all) => all.findIndex((x) => x.date === w.date) === i);
-      const preview = { ...prev.preview, date: ymd };
-      // Le libellé doit suivre : il nomme le jour et ce qu'on y remplace. On ne
-      // connaît pas encore le contenu du nouveau jour → on repart d'un « à la
-      // place de » vide, la carte le redira à la validation.
-      return { ...prev, ...texteCartePlan(preview, null), writes, preview };
-    });
-  }, []);
 
-  /* ── Validation de la carte planning : écrit les jours en base (aucune écriture sans clic) ── */
+     ⚠️ MAIS CHANGER DE JOUR CHANGE LA LIGNE QU'ON VISE, ET C'ÉTAIT LE TROU.
+     L'ancienne version déplaçait les dates à écrire, laissait le « à la place
+     de » vide, et l'identité de la cible se décidait à l'écriture — donc la
+     carte pouvait annoncer autre chose que ce qui allait s'écrire. On relit
+     donc la journée d'arrivée. En attendant sa réponse, la carte ne prétend
+     rien : conséquence vide, et un geste qui AJOUTE, c'est-à-dire qui ne
+     détruit rien. ── */
+  const retargetPlan = useCallback((ymd: string) => {
+    const compte = idPlanning;
+    setPendingPlan((prev) => (prev?.preview && prev.preview.date !== ymd
+      ? recalerCarte(prev, ymd, null, null, false)
+      : prev));
+    if (!compte) return;
+    void lireJour(compte, ymd).then((jour) => {
+      setPendingPlan((prev) => (prev?.preview?.date === ymd
+        ? recalerCarte(prev, ymd, cibleRemplacable(jour), jour.find(reserveUneEtape) ?? null, true)
+        : prev));
+    }).catch(() => { /* jour illisible : la carte reste en « ajouter », qui ne détruit rien */ });
+  }, [idPlanning]);
+
+  /* ── Validation de la carte planning ──
+     ⚠️ ELLE N'ÉCRIT PLUS RIEN ELLE-MÊME (V9B), ET C'EST LE POINT DE LA
+     REFONTE. Cette fonction décidait quoi libérer, avec quelle portée, et
+     quelle ligne réécrire : un second moteur de planning caché dans un
+     contexte React, c'est-à-dire une règle que personne ne relit. C'est ce
+     qui a laissé vivre les deux défauts de la vague. Elle résout désormais
+     le geste confirmé, le confie à l'autorité qui sait l'écrire, et ne
+     s'occupe plus que de l'écran. V9C pourra ajouter un geste sans rouvrir
+     un moteur ici. ── */
   const confirmPlan = useCallback(async (garderAussi?: boolean) => {
     if (!user?.id || !pendingPlan) return;
     try {
-      /* On libère AVANT d'écrire, et jamais un jour qu'on est en train
-         d'écrire : ramener une séance sur son propre jour de départ
-         l'effacerait sinon. */
-      const aLiberer = (pendingPlan.liberer ?? []).filter((d) => !pendingPlan.writes.some((w) => w.date === d));
-      await libererJours(user.id, aLiberer);
-      // C'est le Guide qui pose ces jours : ils sont donc protégés de la
-      // prochaine régénération automatique, comme ceux posés à la main.
-      for (const w of pendingPlan.writes) await saveDay(user.id, w, "guide");
-      // On transporte la date de destination → le planning saute sur la bonne
-      // semaine/jour pour que la modif soit visible (même en semaine suivante).
-      const focusDate = pendingPlan.preview?.date ?? pendingPlan.writes[0]?.date ?? null;
+      /* C'est le Guide qui pose ces lignes : elles sont donc protégées de
+         la prochaine régénération automatique, comme celles posées à la
+         main. On transporte la date visée → le planning saute sur la bonne
+         semaine pour que la modification se voie. */
+      const focusDate = await appliquerGeste(user.id, pendingPlan.geste, "guide") ?? pendingPlan.preview?.date ?? null;
       if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent("programme-updated", { detail: { date: focusDate } }));
 
       // « La garder aussi » : la séance générée pour ce jour rejoint la

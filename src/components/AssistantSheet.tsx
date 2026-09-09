@@ -284,6 +284,7 @@ function CartePlanning() {
       cta={p.cta}
       onValider={() => confirmPlan(garderAussi)}
       onFermer={cancelPlan}
+      consequence={p.consequence}
       hint={garderAussi ? "Elle rejoindra aussi tes séances" : null}
     />
   );

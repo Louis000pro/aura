@@ -35,6 +35,10 @@ export type AssistantAction = {
   difficulty?: string;
   when?: string;
   to?: string | null;
+  /* V9B · la séance nommée dans la demande (« déplace Bas du corps »).
+     ⚠️ C'est un mot, pas une identité : le CODE le résout ensuite vers une
+     ligne du planning, en passant d'abord par les étapes du cycle. */
+  quoi?: string;
   location?: string;
   title?: string;
   adjust?: string;
@@ -63,8 +67,19 @@ export type QuestionCliquable = {
   /** Réponse déjà donnée : la question devient inerte, on ne répond qu'une fois. */
   repondu?: string;
   /** `lieu` et `equip` sont posées par le code (déterministe) ; `libre` vient du coach. */
-  genre: "lieu" | "equip" | "libre";
+  genre: "lieu" | "equip" | "libre" | "cible";
   relance?: string;
+  /**
+   * V9B, genre « cible » : quelle INTENTION chaque reponse designe.
+   *
+   * ATTENTION : ON REPOND PAR UN IDENTIFIANT, JAMAIS EN RENVOYANT LA
+   * PHRASE AU MODELE. « Laquelle ? » n'a de sens que si la reponse designe
+   * une ligne precise : refaire un tour d'aiguillage sur « jeudi 10 »
+   * rouvrirait exactement l'ambiguite qu'on vient de lever.
+   */
+  cibles?: { choix: string; id: string }[];
+  /** Ce qu'on fera de la cible une fois choisie, et vers ou pour un deplacement. */
+  suite?: { geste: "deplacer" | "retirer"; to?: string | null };
 };
 
 /** Nettoie les choix rendus par le modèle : 2 à 4 réponses courtes, non vides.
@@ -154,14 +169,29 @@ export const ASSISTANT_TOOLS: Tool[] = [
     function: {
       name: "plan_move",
       description:
-        "DÉPLACER une séance d’un jour vers un autre (« repousse ma séance à demain », « décale jeudi à vendredi »). Un EMPÊCHEMENT sans destination (« je ne peux pas jeudi », « annule ma séance de vendredi ») s’exprime ici aussi, avec `to` absent : l’app choisira un jour libre.",
+        "DÉPLACER une séance d’un jour vers un autre (« repousse ma séance à demain », « décale jeudi à vendredi », « mets Bas du corps à vendredi »). Un EMPÊCHEMENT sans destination (« je ne peux pas jeudi », « je suis pris vendredi ») s’exprime ici aussi, avec `to` absent : l’app choisira un jour libre. À ne pas confondre avec plan_retirer, qui la fait DISPARAÎTRE au lieu de la déplacer.",
       parameters: {
         type: "object",
         properties: {
-          when: { type: "string", description: "Jour de départ. " + JOUR_DESC },
+          when: { type: "string", description: "Jour de départ, s’il est dit. À omettre sinon. " + JOUR_DESC },
           to: { type: "string", description: "Jour d’arrivée. À omettre si l’utilisateur ne le donne pas. " + JOUR_DESC },
+          quoi: { type: "string", description: "Nom de la séance s’il la nomme (« Bas du corps », « Push »). À omettre sinon." },
         },
-        required: ["when"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "plan_retirer",
+      description:
+        "RETIRER une séance du planning sans la reposer ailleurs (« retire ma séance de vendredi », « enlève Bas du corps de mon planning », « supprime la séance de jeudi », « je ne veux plus rien mardi »). Signal clé : il veut qu’elle DISPARAISSE, pas qu’elle change de jour.",
+      parameters: {
+        type: "object",
+        properties: {
+          when: { type: "string", description: "Jour de la séance, s’il est dit. À omettre sinon. " + JOUR_DESC },
+          quoi: { type: "string", description: "Nom de la séance s’il la nomme. À omettre sinon." },
+        },
       },
     },
   },

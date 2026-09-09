@@ -246,6 +246,26 @@ const REPLIQUES = {
     nora:   "Il ne reste plus de jour modifiable cette semaine 🙂 On peut décaler une séance précise, ou reprendre la semaine entière lundi.",
     sasha:  "Plus de jour modifiable cette semaine 🙂 Décale une séance précise, ou redemande-moi lundi.",
   },
+  /* ── V9B · la séance qu'on cherche ──
+     Un nom ne suffit pas toujours à désigner une ligne : deux séances
+     peuvent s'appeler pareil, ou aucune ne porter ce nom. Les deux cas se
+     disent, jamais un silence. */
+  "impasse.cible_introuvable": {
+    commun: (c: ContexteVoix) => `Je ne trouve pas de séance « ${c.titre ?? ""} » dans ton planning 🤔 Dis-moi le jour, par ex. « celle de jeudi ».`,
+    nora:   (c: ContexteVoix) => `Je ne trouve pas de séance « ${c.titre ?? ""} » dans ton planning des prochains jours 🤔 Dis-moi son jour et je la retrouve, par ex. « celle de jeudi ».`,
+    sasha:  (c: ContexteVoix) => `Pas de « ${c.titre ?? ""} » dans ton planning 🤔 Donne-moi le jour, par ex. « celle de jeudi ».`,
+  },
+  "impasse.retrait_introuvable": {
+    commun: "Je ne vois aucune séance à retirer ces jours-ci 🙂 Dis-moi le jour ou le nom de celle que tu veux enlever.",
+    nora:   "Je ne vois aucune séance à retirer ces jours-ci 🙂 Dis-moi le jour ou le nom de celle que tu veux enlever, et je m'en occupe.",
+    sasha:  "Rien à retirer ces jours-ci 🙂 Donne-moi le jour ou le nom.",
+  },
+  "question.quelle_seance": {
+    commun: "Tu en as plusieurs qui correspondent. Laquelle ?",
+    nora:   "Tu en as plusieurs qui correspondent. Laquelle veux-tu ?",
+    sasha:  "Plusieurs correspondent. Laquelle ?",
+  },
+
   "impasse.library_sans_jour": {
     commun: "Quel jour veux-tu programmer cette séance ? (par ex. « mardi » ou « demain ») 📅",
     nora:   "Quel jour veux-tu lui donner ? Un « mardi » ou un « demain » suffit 📅",
