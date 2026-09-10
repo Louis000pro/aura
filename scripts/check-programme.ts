@@ -36,9 +36,12 @@ import {
   type PlanningDay, type CycleSemaine,
 } from "@/lib/planning";
 import {
-  consequenceDeplacement, consequencePose, consequenceRetrait, consequenceSemaine,
+  consequenceDeplacement, consequencePose, consequenceRetrait, consequenceSaut,
+  consequenceSemaine, consequenceSubstitution, consequenceSupplement,
   etapeParNom, resoudreCibles,
 } from "@/lib/gestePlanning";
+import { verdictEtape } from "@/lib/etapeCiblee";
+import { voix, voixAction, CHOIX_PORTEE, type CleVoix } from "@/lib/guides";
 import { ASSISTANT_TOOLS } from "@/lib/assistantTools";
 import {
   etatMoteur, invaliderMoteur, resumeMoteur, TTL_MOTEUR_MS,
@@ -1597,7 +1600,12 @@ verdict(
     /* Les deux natures de conflit, celles du vrai compte : une séance
        RÉGÉNÉRÉE (provenance seule) et une RÉSERVATION V7A (étape). */
     const regeneree = conflit({});
-    const reservation = conflit({ id: "c2", date: "2026-09-10", title: "Pull", etapeId: "e-pull", provenanceId: null });
+    /* ⚠️ V9C · UNE RÉSERVATION V7A DÉCLARE SES DEUX COLONNES. Elle
+       n'écrivait que `etapeId` et `lienProgramme` en déduisait la
+       provenance ; la déduction tombe (elle rendait la substitution
+       impossible à représenter), donc `intentionDeLEtape` déclare les
+       deux. Le fixture suit ce que la base porte vraiment. */
+    const reservation = conflit({ id: "c2", date: "2026-09-10", title: "Pull", etapeId: "e-pull", provenanceId: "e-pull" });
 
     verdict(
       "V8 · deux séances incompatibles font deux conflits, pas un",
@@ -2093,14 +2101,14 @@ verdict(
     );
     verdict(
       "V9A · aucun outil de lecture n’a été créé",
-      ASSISTANT_TOOLS.length === 13 && !OUTILS.includes("guideMoteur")
+      ASSISTANT_TOOLS.length === 16 && !OUTILS.includes("guideMoteur")
         && !ASSISTANT_TOOLS.some((t) => /lire|read|get_|voir|etat_|moteur/.test(t.function.name)),
       ASSISTANT_TOOLS.length + " outils, tous des ACTIONS",
     );
     verdict(
-      "V9A · aucun outil d’ÉCRITURE au-delà de ce que V9B ouvre",
-      !ASSISTANT_TOOLS.some((t) => /sauter|substitu|supplement|adaptation/.test(t.function.name)),
-      "substitution, saut, supplément et adaptation attendent V9C et V9D",
+      "V9A · aucun outil d’ÉCRITURE au-delà de ce que V9B et V9C ouvrent",
+      !ASSISTANT_TOOLS.some((t) => /adaptation/.test(t.function.name)),
+      "l’adaptation attend V9D : c’est un écran (la feuille V8), pas une carte",
     );
   }
 }
@@ -2773,8 +2781,8 @@ verdict(
   );
   verdict(
     "V9B · et la seule suppression au jour d'arrivée reste la règle repos/séance",
-    PLAN9B.includes('i.status !== "done" && natureDe(i) !== natureDe(day)'),
-    "elle ne touche jamais une intention faite, et jamais une séance de même nature",
+    PLAN9B.includes('i.status === "planned" && natureDe(i) !== natureDe(day)'),
+    "elle ne touche jamais une intention RÉSOLUE (V9C : faite OU sautée), ni une séance de même nature",
   );
 
   /* ── 5. CE QUE LE GESTE ANNONCE, AVANT LE CLIC ── */
@@ -2906,10 +2914,9 @@ verdict(
     "sinon la carte annonce un jour et l'écriture en vise un autre",
   );
   verdict(
-    "V9B · l'aiguilleur a gagné `plan_retirer`, et rien de plus",
-    ASSISTANT_TOOLS.some((t) => t.function.name === "plan_retirer")
-      && !ASSISTANT_TOOLS.some((t) => /sauter|substitu|supplement|adaptation/.test(t.function.name)),
-    "saut, substitution, supplément et adaptation attendent V9C et V9D",
+    "V9B · l'aiguilleur a gagné `plan_retirer`",
+    ASSISTANT_TOOLS.some((t) => t.function.name === "plan_retirer"),
+    "V9B donnait enfin un appelant à `retirerIntention`, écrite en V8 et jamais appelée",
   );
   verdict(
     "V9B · le jour visé n'est plus lu par la seule réservation",
@@ -2984,6 +2991,522 @@ verdict(
         && !move.function.parameters.required && !ret.function.parameters.required;
     })(),
     "« mets Bas du corps à vendredi » nomme la séance, et le jour cesse d'être obligatoire",
+  );
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   V9C · SUBSTITUER, SAUTER, AJOUTER — TROIS GESTES QU'ON NE PEUT PAS
+   CONFONDRE.
+
+   Ils se ressemblent à l'écran (même coquille de carte, même bouton
+   violet) et ils ne font pas du tout la même chose au cycle :
+
+     · SUBSTITUER referme l'étape, mais seulement quand la séance de
+       remplacement aura été faite. Le clic n'avance rien.
+     · SAUTER la referme TOUT DE SUITE et sans séance : aucun workout,
+       aucune EXP, aucune mission, aucune journée validée.
+     · AJOUTER n'y touche jamais, ni avant ni après.
+
+   ⚠️ ET C'EST `lienProgramme` QUI RENDAIT LA SUBSTITUTION IMPOSSIBLE À
+   REPRÉSENTER. Il écrivait `source = d.etapeId ?? d.provenanceId` : dès
+   qu'une étape était refermée, la provenance valait cette étape, quoi
+   que l'appelant ait déclaré. Refermer Pull avec un contenu venu
+   d'ailleurs n'avait donc aucune forme en base. La déduction tombe, et
+   les gestes qui voulaient les deux les déclarent tous les deux.
+
+   Tout ce qui décide reste pur : quelle étape un geste a le droit de
+   viser, ce qu'il écrit, ce qu'il change au curseur. Le reste est une
+   propriété du CHEMIN (qui écrit, et qui n'écrit pas), donc des
+   contrôles de SOURCE.
+   ════════════════════════════════════════════════════════════════════ */
+{
+  const lire9C = (f: string) => readFileSync(new URL("../" + f, import.meta.url), "utf8");
+  const PLAN9C = lire9C("src/lib/planning.ts");
+  const PROG9C = lire9C("src/lib/programme.ts");
+  const GESTE9C = lire9C("src/lib/gestePlanning.ts");
+  const CIBLE9C = lire9C("src/lib/etapeCiblee.ts");
+  const CTX9C = lire9C("src/context/AssistantContext.tsx");
+  const JOURNEE9C = lire9C("src/lib/journee.ts");
+
+  const ex9c = [{ name: "Pompes", sets: 3, reps: "12 reps", rest: 60, restAfter: 90, tip: "", benefit: "", muscles: [] }];
+  const li = (over: Partial<PlanningDay> = {}): PlanningDay => ({
+    id: "x1", date: "2026-09-14", type: "Force", title: "Pull",
+    difficulty: "Intermédiaire", location: "salle", exerciseList: ex9c,
+    sessionId: null, status: "planned", origine: "utilisateur", ...over,
+  });
+
+  /* Le cycle de référence des trois gestes, avec ses positions : c'est
+     par elles que le curseur se dérive, jamais par les noms. */
+  const CY = [
+    { id: "e-push", nom: "Push", position: 1 },
+    { id: "e-pull", nom: "Pull", position: 2 },
+    { id: "e-bas", nom: "Bas du corps", position: 3 },
+  ];
+  const T9C = "2026-09-14T10:00:00.000Z";
+
+  /* ── 1. `lienProgramme` NE DÉDUIT PLUS RIEN ─────────────────────────
+     C'était le seul endroit du TypeScript qui empêchait une
+     substitution : la moitié de la vague tient dans ces six lignes. ── */
+
+  verdict(
+    "V9C · lienProgramme · refermer une étape n'invente plus sa provenance",
+    (() => {
+      const l = lienProgramme({ programmeId: "p1", etapeId: "e-pull", provenanceId: null });
+      return l.programme_id === "p1" && l.etape_consommee_id === "e-pull" && l.programme_seance_id === null;
+    })(),
+    "une substitution referme Pull avec un contenu venu d'ailleurs : la provenance DOIT pouvoir rester nulle",
+  );
+  verdict(
+    "V9C · lienProgramme · un geste qui veut les deux les déclare tous les deux",
+    (() => {
+      const l = lienProgramme({ programmeId: "p1", etapeId: "e-pull", provenanceId: "e-pull" });
+      return l.programme_seance_id === "e-pull" && l.etape_consommee_id === "e-pull";
+    })(),
+    "réserver la prochaine étape (V7A) : le contenu vient bien de l'étape, alors on l'écrit",
+  );
+  verdict(
+    "V9C · lienProgramme · provenir n'est toujours pas réserver",
+    (() => {
+      const l = lienProgramme({ programmeId: "p1", etapeId: null, provenanceId: "e-pull" });
+      return l.programme_seance_id === "e-pull" && l.etape_consommee_id === null;
+    })(),
+    "une semaine régénérée dit d'où venait son contenu, elle ne referme rien (V8)",
+  );
+  verdict(
+    "V9C · lienProgramme · sans programme, les trois colonnes sont nulles",
+    (() => {
+      const l = lienProgramme({ programmeId: null, etapeId: "e-pull", provenanceId: "e-pull" });
+      return l.programme_id === null && l.programme_seance_id === null && l.etape_consommee_id === null;
+    })(),
+    "les FK sont COMPOSITES : une étape sans son programme serait refusée par la base",
+  );
+  verdict(
+    "V9C · lienProgramme · les trois colonnes s'écrivent TOUJOURS, même à null",
+    ["programme_id", "programme_seance_id", "etape_consommee_id"]
+      .every((c) => c in lienProgramme({ programmeId: null, etapeId: null, provenanceId: null })),
+    "les omettre dans un `update` les laisserait en place : c'est ce qui rendait les destructions muettes",
+  );
+  verdict(
+    "V9C · lienProgramme · la déduction a bien disparu du source",
+    (() => {
+      const corps = /export function lienProgramme[\s\S]*?\n}/.exec(PLAN9C)?.[0] ?? "";
+      return corps.includes("const provenance = prog ? d.provenanceId ?? null : null;")
+        && corps.includes("const consommee = prog ? d.etapeId ?? null : null;")
+        && !corps.includes("d.etapeId ?? d.provenanceId");
+    })(),
+    "témoin de la vague : la remettre rendrait la substitution à nouveau impossible à écrire",
+  );
+
+  /* ── 2. LES ANCIENS APPELANTS N'ONT PAS CHANGÉ DE COMPORTEMENT ──
+     Une déduction qui tombe, ce sont autant d'appelants qui perdent
+     silencieusement une colonne. On les vérifie un par un. ── */
+
+  verdict(
+    "V9C · V7A · réserver une étape écrit toujours ses TROIS colonnes",
+    (() => {
+      const r = intentionDeLEtape({
+        date: "2026-09-16", programmeId: "p1", etape: { id: "e-pull", nom: "Pull" },
+        difficulty: "Intermédiaire", location: "salle", exerciseList: ex9c,
+      });
+      const l = lienProgramme(r);
+      return r.provenanceId === "e-pull" && r.etapeId === "e-pull"
+        && l.programme_id === "p1" && l.programme_seance_id === "e-pull" && l.etape_consommee_id === "e-pull";
+    })(),
+    "elle les obtenait par effet de bord ; elle les DÉCLARE, et le comportement en base est identique",
+  );
+  verdict(
+    "V9C · V7A · la déclaration est bien dans le source, pas dans un hasard",
+    JOURNEE9C.includes("provenanceId: input.etape.id"),
+    "c'est la contrepartie exacte de la déduction retirée",
+  );
+  verdict(
+    "V9C · V8 · une semaine régénérée porte toujours sa provenance et rien d'autre",
+    (() => {
+      /* Les noms du cycle sont ceux du split, sinon la provenance ne se
+         résout sur rien : c'est `cycleDeReference` qui les donne, dans les
+         deux chemins du produit. */
+      const cyc: CycleSemaine = {
+        programmeId: "p1",
+        etapes: cycleDeReference(4).map((nom, i) => ({ id: "e" + i, nom })),
+        masquees: [],
+      };
+      const jours = previewWeek({ ctx: "salle", sessions: 4, goals: [], level: null, variant: 0, seed: "u" }, weekDates(), cyc)
+        .filter((d) => !!d.provenanceId);
+      return jours.length > 0 && jours.every((d) => !d.etapeId && lienProgramme(d).etape_consommee_id === null);
+    })(),
+    "le correctif du 2026-09-08 tient : elle PROVIENT d'une étape, elle n'en RÉSERVE aucune",
+  );
+  verdict(
+    "V9C · V9B · une provenance reste protégée, une séance libre reste remplaçable",
+    cibleRemplacable([li({ id: "g1", programmeId: "p1", provenanceId: "e-pull" })]) === null
+      && cibleRemplacable([li({ id: "l1", title: "Force Totale" })])?.id === "l1",
+    "la règle de ciblage de V9B n'a pas bougé d'un mot",
+  );
+
+  /* ── 3. `verdictEtape` : CE QU'UN GESTE DE CYCLE A LE DROIT DE VISER ──
+     L'ordre des questions EST la règle : « déjà refermée » d'abord (c'est
+     le garde-fou du double saut, et il doit se reconnaître à son
+     message), puis « masquée », puis « pas la prochaine ». ── */
+
+  const V = (etape: { id: string; position: number } | null, compatible: string | null, masquee: boolean, pos: number | null) =>
+    verdictEtape({ etape, compatible: compatible ? { id: compatible } : null, masquee, positionConsommee: pos });
+
+  verdict(
+    "V9C · viser · un nom qui ne désigne aucune étape est refusé",
+    V(null, "e-pull", false, null).ok === false
+      && (V(null, "e-pull", false, null) as { refus: string }).refus === "introuvable",
+    "le titre désigne, il n'identifie jamais : la règle de V9B vaut aussi ici",
+  );
+  verdict(
+    "V9C · viser · la prochaine étape compatible est acceptée",
+    V({ id: "e-pull", position: 2 }, "e-pull", false, 1).ok === true,
+    "Push refermée, Pull proposée : c'est elle et elle seule",
+  );
+  verdict(
+    "V9C · viser · une étape plus loin dans le cycle est refusée",
+    (V({ id: "e-bas", position: 3 }, "e-pull", false, 1) as { refus: string }).refus === "pas_la_prochaine",
+    "décision 2 de V9 : sauter plus loin ferait avancer le curseur de plusieurs crans d'un coup",
+  );
+  verdict(
+    "V9C · viser · une étape masquée par une adaptation est refusée EN TANT QUE TELLE",
+    (V({ id: "e-push", position: 1 }, "e-pull", true, null) as { refus: string }).refus === "masquee",
+    "l'adaptation se gère dans son écran, pas en la contournant depuis la conversation",
+  );
+  verdict(
+    "V9C · viser · le DOUBLE SAUT est refusé, et il dit pourquoi",
+    (V({ id: "e-pull", position: 2 }, "e-bas", false, 2) as { refus: string }).refus === "deja_resolue",
+    "la base ne peut pas l'attraper : `uniq_intention_par_etape` ne couvre que les intentions PRÉVUES",
+  );
+  verdict(
+    "V9C · viser · une étape déjà FAITE est refusée par le même chemin",
+    (V({ id: "e-push", position: 1 }, "e-pull", false, 1) as { refus: string }).refus === "deja_resolue",
+    "faite ou sautée, elle est refermée : le curseur est posé dessus",
+  );
+  verdict(
+    "V9C · viser · tout le cycle masqué ne laisse rien viser",
+    (V({ id: "e-pull", position: 2 }, null, false, null) as { refus: string }).refus === "pas_la_prochaine",
+    "aucune étape compatible : on ne substitue ni ne saute quelque chose qui n'est pas proposé",
+  );
+  verdict(
+    "V9C · viser · « déjà refermée » passe AVANT « masquée » et « pas la prochaine »",
+    (V({ id: "e-pull", position: 2 }, "e-bas", true, 2) as { refus: string }).refus === "deja_resolue",
+    "quand les trois sont vrais, c'est le message le plus utile qui sort",
+  );
+
+  /* ── 4. SUBSTITUER ──────────────────────────────────────────────────
+     Ce que la ligne porte, et surtout QUAND le cycle avance. ── */
+
+  /* La ligne telle que `preparerSubstitution` la compose : elle reprend
+     la réservation existante, elle referme Pull, et son contenu vient
+     d'ailleurs. */
+  const SUBST = li({
+    id: "r-pull", title: "HIIT 20/10", type: "HIIT",
+    programmeId: "p1", etapeId: "e-pull", provenanceId: null, adaptationId: "a1",
+  });
+
+  verdict(
+    "V9C · substituer · la ligne referme l'étape SANS prétendre en venir",
+    (() => {
+      const l = lienProgramme(SUBST);
+      return l.etape_consommee_id === "e-pull" && l.programme_seance_id === null && l.programme_id === "p1";
+    })(),
+    "c'est la forme que `lienProgramme` refusait d'écrire avant cette vague",
+  );
+  verdict(
+    "V9C · substituer · elle REPREND la réservation, elle n'en crée pas une seconde",
+    SUBST.id === "r-pull" && CTX9C.includes("id: reservation?.id ?? null"),
+    "`uniq_intention_par_etape` refuserait la deuxième intention prévue portant la même étape",
+  );
+  verdict(
+    "V9C · substituer · le cycle NE BOUGE PAS à la confirmation",
+    positionRefermee([{ etapeId: "e-pull", resolue: false, consommeeLe: null }], CY) === null,
+    "la ligne naît « prévue » : refermer l'étape au clic créditerait une séance que personne n'a faite",
+  );
+  verdict(
+    "V9C · substituer · le cycle avance quand la séance est TERMINÉE",
+    (() => {
+      const pos = positionRefermee([{ etapeId: "e-pull", resolue: true, consommeeLe: T9C }], CY);
+      return pos === 2 && etapeSuivante(CY, pos, POSITION_INITIALE)?.id === "e-bas";
+    })(),
+    "et c'est l'autorité de fin de séance (V7A) qui le fait, pas la carte",
+  );
+  verdict(
+    "V9C · substituer · aucune SECONDE intention sur la même étape",
+    !CTX9C.includes("ajouterIntention(user.id, jour")
+      && GESTE9C.includes("if (geste.jour.id) await saveDay(userId, geste.jour, origine);"),
+    "la réservation reprise se MODIFIE, elle ne se double pas",
+  );
+  verdict(
+    "V9C · substituer · la carte nomme l'étape et ce qu'elle devient",
+    consequenceSubstitution("Pull", "Bas du corps")
+      === "« Pull » ne sera pas faite : ta prochaine étape deviendra « Bas du corps », une fois cette séance terminée.",
+    "la conséquence vient du CODE : le coach n'a plus d'outils et ne voit pas ce qu'on écrit",
+  );
+  verdict(
+    "V9C · substituer · sans étape suivante connue, elle ne l'invente pas",
+    consequenceSubstitution("Pull", null).includes("ton cycle avancera")
+      && !consequenceSubstitution("Pull", null).includes("«  »"),
+    "un cycle entièrement masqué ne doit pas produire une phrase à trou",
+  );
+  verdict(
+    "V9C · substituer · le contenu ne vient JAMAIS d'une autre étape du cycle",
+    CTX9C.includes("custom_sessions") && CTX9C.includes("resolveSessionId")
+      && !/contenuSubstitution[\s\S]{0,2600}programme_seances/.test(CTX9C),
+    "décision 5 de V9 : catalogue, bibliothèque, séance perso — et rien d'autre",
+  );
+
+  /* ── 5. SAUTER ──────────────────────────────────────────────────────
+     Le geste qui referme sans séance. Tout l'enjeu est dans ce qu'il
+     N'ÉCRIT PAS. ── */
+
+  verdict(
+    "V9C · sauter · le cycle avance IMMÉDIATEMENT",
+    (() => {
+      const pos = positionRefermee([{ etapeId: "e-pull", resolue: true, consommeeLe: T9C }], CY);
+      return pos === 2 && etapeSuivante(CY, pos, POSITION_INITIALE)?.id === "e-bas";
+    })(),
+    "`positionConsommee` filtre déjà [faite, passee] depuis V6 : la base était prête",
+  );
+  verdict(
+    "V9C · sauter · la ligne est `passee` et porte `consommee_le`",
+    PROG9C.includes("[sc.colStatut]: sc.versBase.skipped")
+      && /sauterEtape[\s\S]*consommee_le: maintenant/.test(PROG9C),
+    "l'invariant V6 : `consommee_le` non nul si ET SEULEMENT SI l'intention est résolue",
+  );
+  verdict(
+    "V9C · sauter · AUCUNE séance enregistrée",
+    !/export async function sauterEtape[\s\S]*?\n}/.exec(PROG9C)?.[0].includes("workout_sessions"),
+    "un saut qui écrirait un workout paierait quelqu'un pour ne pas s'entraîner",
+  );
+  verdict(
+    "V9C · sauter · AUCUN gain secondaire",
+    (() => {
+      const bloc = /export async function sauterEtape[\s\S]*?\n}/.exec(PROG9C)?.[0] ?? "";
+      return !/aura|mission|daily_stats|serie|crediter/i.test(bloc);
+    })(),
+    "ni EXP, ni mission, ni journée validée, ni série : c'est la liste qui définit le geste",
+  );
+  verdict(
+    "V9C · sauter · la réservation existante est REPRISE",
+    PROG9C.includes("if (reservationId)") && /sauterEtape[\s\S]*\.eq\("id", reservationId\)/.test(PROG9C),
+    "sinon le journal porterait deux fermetures de la même étape, et la base l'accepterait",
+  );
+  verdict(
+    "V9C · sauter · la reprise ne réécrit jamais un fait",
+    /sauterEtape[\s\S]*\.eq\(sc\.colStatut, sc\.versBase\.planned\)/.test(PROG9C),
+    "si la séance a été terminée entre la carte et le clic, zéro ligne touchée",
+  );
+  verdict(
+    "V9C · sauter · les deux branches écrivent la MÊME chose",
+    (() => {
+      const bloc = /export async function sauterEtape[\s\S]*?\n}/.exec(PROG9C)?.[0] ?? "";
+      return bloc.includes("programme_seance_id: null,") && (bloc.match(/programme_seance_id: null,/g) ?? []).length === 2;
+    })(),
+    "un saut ne produit aucun contenu : rien ne « vient » de l'étape, avec ou sans réservation",
+  );
+  verdict(
+    "V9C · sauter · daté du jour où la décision est prise",
+    (() => {
+      const bloc = /export async function sauterEtape[\s\S]*?\n}/.exec(PROG9C)?.[0] ?? "";
+      return (bloc.match(/date: aujourdhui,/g) ?? []).length === 2;
+    })(),
+    "laisser la ligne à mardi afficherait une séance « passée » un jour à venir (leçon V7A)",
+  );
+  verdict(
+    "V9C · sauter · la carte dit ce que ça N'EST PAS",
+    consequenceSaut("Pull", "Bas du corps")
+      === "« Pull » ne sera comptée ni comme faite, ni comme une séance. Ta prochaine étape devient « Bas du corps » tout de suite.",
+    "il n'y a pas d'annulation dans cette version : la carte tient lieu de garde-fou (décision 3 de V9)",
+  );
+  verdict(
+    "V9C · sauter · une carte de saut n'a AUCUN contenu à montrer",
+    CTX9C.includes("preview: null,"),
+    "un saut n'est pas une séance : lui donner une liste de mouvements ferait croire qu'on va la faire",
+  );
+
+  /* ── 6. AJOUTER ─────────────────────────────────────────────────────
+     Le geste qui ne touche à rien, avant comme après. ── */
+
+  const SUPP9C = li({ id: "s9", title: "Cardio doux", type: "Cardio", programmeId: null, etapeId: null, provenanceId: null });
+
+  verdict(
+    "V9C · ajouter · un supplément ne referme jamais d'étape",
+    lienProgramme(SUPP9C).etape_consommee_id === null && lienProgramme(SUPP9C).programme_id === null,
+    "c'est ce qui le range après la principale et le laisse échapper à l'unicité par étape",
+  );
+  verdict(
+    "V9C · ajouter · le cycle ne bouge pas, même une fois la séance faite",
+    positionRefermee([{ etapeId: null, resolue: true, consommeeLe: T9C }], CY) === null,
+    "une séance hors programme ne fait pas avancer le cycle : règle verrouillée depuis V4",
+  );
+  verdict(
+    "V9C · ajouter · il ne passe JAMAIS par `cibleRemplacable`",
+    CTX9C.includes("const cible = estAjout ? null : cibleRemplacable(jourVise);"),
+    "s'ajouter, c'est s'ajouter : y compris sur une journée qui porte déjà une séance",
+  );
+  verdict(
+    "V9C · ajouter · changer son jour ne le transforme pas en remplacement",
+    CTX9C.includes("const vise = p.forcerAjout ? null : cible;"),
+    "sans ce garde, `recalerCarte` rebasculait sur « remplacer » dès que la journée d'arrivée n'était pas vide",
+  );
+  verdict(
+    "V9C · ajouter · un supplément est TOUJOURS daté",
+    (() => {
+      const t = ASSISTANT_TOOLS.find((x) => x.function.name === "plan_ajouter");
+      return !!t && (t.function.parameters.required ?? []).includes("when");
+    })(),
+    "« aujourd'hui » par défaut conviendrait à `plan_set` ; pour un « en plus », ce serait choisir à la place de quelqu'un",
+  );
+  verdict(
+    "V9C · ajouter · sans jour, on le DEMANDE, on ne reste pas muet",
+    CTX9C.includes('say(voix(guideRef.current, "impasse.ajout_sans_jour"))'),
+    "un `return` nu ici, c'est une demande sans réponse et sans explication",
+  );
+  verdict(
+    "V9C · ajouter · sa conséquence dit exactement ce qu'il ne change pas",
+    consequenceSupplement(null) === "Ta progression de programme ne change pas."
+      && consequenceSupplement("Pull") === "« Pull » reste ta prochaine étape : celle-ci s’ajoute à côté.",
+    "la carte de la brief : « En plus samedi » / « Ta progression de programme ne change pas. »",
+  );
+
+  /* ── 7. LA SECONDE SORTIE D'UNE SUBSTITUTION ────────────────────────
+     Décision 1 de V9 : « autre chose que X » propose une substitution par
+     DÉFAUT, jamais un saut, et la carte offre l'autre lecture en toutes
+     lettres. Dans le doute, on demande. ── */
+
+  verdict(
+    "V9C · portée · le doute se pose en question, il ne se devine pas",
+    CTX9C.includes('if (portee !== "a_la_place")') && CTX9C.includes('genre: "portee"'),
+    "« je veux faire du cardio » ne dit pas si c'est à la place ou en plus, et les deux ne font pas la même chose",
+  );
+  verdict(
+    "V9C · portée · la réponse ne repasse PAS par l'aiguilleur",
+    CTX9C.includes("q.genre === \"portee\" && q.substitution"),
+    "renvoyer « À la place » au modèle rouvrirait l'ambiguïté qu'on vient de lever (leçon V9B)",
+  );
+  verdict(
+    "V9C · portée · « à la place » est le défaut, et c'est le premier choix",
+    CHOIX_PORTEE[0] === "À la place" && CHOIX_PORTEE.length === 2,
+    "décision 1 de V9, verrouillée avant le code",
+  );
+  verdict(
+    "V9C · portée · basculer en « en plus » retire TOUTE l'identité de programme",
+    CTX9C.includes("{ ...jour, id: null, programmeId: null, etapeId: null, provenanceId: null }"),
+    "une ligne qui garderait `programmeId` sans étape serait un lien à moitié écrit",
+  );
+
+  /* ── 8. CONTRÔLES DE SOURCE : QUI ÉCRIT, ET QUI N'ÉCRIT PLUS ─────────
+     Ce sont des propriétés du CHEMIN, donc exactement celles qui
+     repasseraient inaperçues : elles ne cassent rien et ne se voient
+     qu'en base. ── */
+
+  verdict(
+    "V9C · `confirmSeance` n'est plus un écrivain caché",
+    !CTX9C.includes("saveDay(") && CTX9C.includes("await appliquerGeste(user.id, cible ?"),
+    "elle appelait l'autorité d'écriture en direct, donc elle décidait seule quelle ligne réécrire",
+  );
+  verdict(
+    "V9C · l'autorité d'étape ne fait AUCUNE écriture",
+    !/\.(insert|update|upsert|delete)\(/.test(CIBLE9C),
+    "elle décide et elle lit : écrire ici, ce serait un troisième moteur de planning",
+  );
+  verdict(
+    "V9C · l'autorité d'étape ne touche ni `programmes` ni `programme_seances`",
+    !CIBLE9C.includes("programme_seances") && !/from\("programmes"\)/.test(CIBLE9C),
+    "le programme de référence reste intact : un geste ne le modifie jamais",
+  );
+  verdict(
+    "V9C · aucun geste de cycle ne modifie le programme de référence",
+    !GESTE9C.includes("programme_seances") && !/from\("programmes"\)/.test(GESTE9C),
+    "substituer, sauter et ajouter écrivent des INTENTIONS, jamais le cycle",
+  );
+  verdict(
+    "V9C · aucune identité résolue par un titre dans l'autorité",
+    !/\.(nom|titre|title)\s*===/.test(CIBLE9C) && CIBLE9C.includes("etapeParNom"),
+    "le nom passe par la traduction unique et bornée au cycle persisté, ou il ne désigne rien",
+  );
+  verdict(
+    "V9C · la réservation se cherche EN BASE, jamais dans la semaine chargée",
+    CIBLE9C.includes("await reservationDeLEtape(userId,"),
+    "une étape datée au-delà de la fenêtre affichée rendrait le geste intermittent (leçon V7A)",
+  );
+  verdict(
+    "V9C · l'autorité relit, elle ne fait pas confiance au cache du Guide",
+    !/from "@\/lib\/guideMoteur"/.test(CIBLE9C) && !/etatMoteur\(/.test(CIBLE9C),
+    "`etatMoteur` est mis en cache 30 s : décider une ÉCRITURE dessus rouvrirait le double-fermage",
+  );
+  verdict(
+    "V9C · `appliquerGeste` reste un routeur : aucune requête à lui",
+    !/\.from\(/.test(GESTE9C) && !GESTE9C.includes("createClient"),
+    "ajouter un geste ne doit pas rouvrir un moteur de planning ici",
+  );
+  verdict(
+    "V9C · préparer une carte n'écrit RIEN",
+    (() => {
+      const bloc = /const preparerSubstitution[\s\S]*?const preparerSaut[\s\S]*?\}, \[idPlanning\]\);/.exec(CTX9C)?.[0] ?? "";
+      return bloc.length > 500 && !/\.(insert|update|upsert|delete)\(/.test(bloc) && !bloc.includes("appliquerGeste");
+    })(),
+    "aucune écriture sans clic : la règle produit ne bouge pas d'un mot",
+  );
+  verdict(
+    "V9C · une écriture ne réécrit jamais une intention RÉSOLUE",
+    PLAN9C.includes('i.status === "planned" && natureDe(i) !== natureDe(day)'),
+    "le filtre disait `!== \"done\"` : poser un repos aurait supprimé un saut, donc fait RECULER le curseur",
+  );
+  verdict(
+    "V9C · les trois gestes ont chacun leur outil",
+    ["plan_ajouter", "etape_substituer", "etape_sauter"]
+      .every((n) => ASSISTANT_TOOLS.some((t) => t.function.name === n)),
+    "un seul outil « faire autre chose » aurait laissé le modèle arbitrer une conséquence qu'il ne voit pas",
+  );
+  verdict(
+    "V9C · et l'adaptation n'en a toujours pas : c'est V9D",
+    !ASSISTANT_TOOLS.some((t) => /adaptation/.test(t.function.name)),
+    "V9D ouvrira la feuille V8, éventuellement préremplie : une adaptation est un écran, pas une carte",
+  );
+  verdict(
+    "V9C · chaque nouvel intent a sa phrase de repli",
+    ["plan_retirer", "plan_ajouter", "etape_substituer", "etape_sauter"]
+      .every((i) => voixAction(null, { intent: i }) !== voixAction(null, { intent: "___inconnu___" })),
+    "`plan_retirer` tombait sur `action.defaut` depuis V9B : repéré en ajoutant les trois gestes",
+  );
+  verdict(
+    "V9C · chaque refus d'étape a sa phrase, et aucune n'est vide",
+    (["impasse.etape_sans_programme", "impasse.etape_illisible", "impasse.etape_introuvable", "impasse.etape_deja_resolue",
+      "impasse.etape_masquee", "impasse.etape_pas_la_prochaine", "impasse.substitution_sans_contenu",
+      "impasse.ajout_sans_jour"] as CleVoix[])
+      .every((c) => voix(null, c, { titre: "Pull", jour: "6 octobre", etape: "Bas du corps" }).length > 20),
+    "aucune sortie muette : un geste refusé sans raison, c'est une demande sans réponse",
+  );
+  verdict(
+    "V9C · une lecture ratée n'est jamais repliée sur une absence",
+    CIBLE9C.includes('return { ok: false, refus: "illisible" };')
+      && !CIBLE9C.includes('catch { return { ok: false, refus: "aucun_programme" }'),
+    "« tu n'as pas de programme » à quelqu'un qui en a un, c'est la confusion `null` / `[]` de V9A ter",
+  );
+  verdict(
+    "V9C · une réservation illisible refuse le geste au lieu de la croire absente",
+    CIBLE9C.includes("réservation illisible"),
+    "la croire absente ferait naître une SECONDE ligne sur la même étape : le double-fermage de V7A par un autre chemin",
+  );
+  verdict(
+    "V9C · le refus « masquée » propose une sortie vers l'adaptation",
+    voix(null, "impasse.etape_masquee", { titre: "Pull", jour: "6 octobre" }).includes("Entraînement"),
+    "c'est là que ça se règle, jamais en la contournant depuis la conversation",
+  );
+  verdict(
+    "V9C · le prompt de l'aiguilleur n'a pas bougé d'un caractère",
+    (() => {
+      const p = /const PROMPT = `([\s\S]*?)`;/.exec(lire9C("src/lib/assistantRouter.ts"))?.[1] ?? "";
+      /* 316 caractères, nom de l'outil de secours compris, fins de ligne
+         normalisées. C'est une MESURE, pas une estimation : la fiabilité
+         de l'appel d'outil s'écroule avec la longueur du prompt (241 →
+         6 fois sur 6, 5 371 → 1 fois sur 6). Trois outils de plus
+         n'ajoutent pas un caractère ici. */
+      return p.replace(/\r\n/g, "\n")
+        .replace("${RIEN}", "rien_a_faire").length === 316;
+    })(),
+    "la fiabilité s'écroule avec la longueur : décision 7 de V9, l'aiguilleur reste aveugle et pauvre",
   );
 }
 

@@ -234,6 +234,16 @@ export function intentionDeLEtape(input: {
     status: "planned",
     programmeId: input.programmeId,
     etapeId: input.etape.id,
+    /* ⚠️ DÉCLARÉE EN TOUTES LETTRES DEPUIS V9C, ET CE N'EST PAS UNE
+       REDONDANCE. `lienProgramme` déduisait la provenance de la
+       consommation (`etapeId ?? provenanceId`) : réserver une étape
+       écrivait donc `programme_seance_id` tout seul. Cette déduction
+       tombe, parce qu'elle rendait la SUBSTITUTION impossible à
+       représenter (refermer Pull avec un contenu qui vient d'ailleurs).
+       Ici les deux valent bien la même étape : on fait ce que le
+       programme propose, et le contenu vient de là aussi. Alors on le
+       DIT, au lieu de compter sur un effet de bord. */
+    provenanceId: input.etape.id,
     adaptationId: input.adaptationId ?? null,
   };
 }

@@ -37,7 +37,7 @@
    ════════════════════════════════════════════════════════════════════ */
 
 import { createClient } from "@/lib/supabase";
-import { adaptationsDisponibles, cycleDeReference, schemaIntentions } from "@/lib/planning";
+import { adaptationsDisponibles, cycleDeReference, schemaIntentions, todayYmd } from "@/lib/planning";
 import { libelleObjectif } from "@/lib/profilOnboarding";
 
 /** La première étape du cycle. Les positions sont numérotées à partir de
@@ -396,6 +396,105 @@ export async function consommerEtape(
     programme_id: programmeId,
     programme_seance_id: etapeId,
     etape_consommee_id: etapeId,
+    consommee_le: maintenant,
+    ...(avecAdaptation ? { adaptation_id: adaptationId } : {}),
+    updated_at: maintenant,
+  });
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   V9C · SAUTER UNE ÉTAPE, ET SAVOIR CE QUE ÇA N'EST PAS.
+
+   ⚠️ SAUTER N'EST NI FAIRE, NI ÉVITER, ET LES TROIS EXISTENT DÉJÀ DANS
+   LE PRODUIT. Faire (`consommerEtape`) écrit un FAIT : la séance a eu
+   lieu, elle compte partout. Éviter (V8) est un FILTRE DE LECTURE : rien
+   n'est écrit, le curseur ne bouge pas, l'étape revient d'elle-même
+   quand l'adaptation expire. Sauter est le troisième : la personne
+   décide que cette étape-là ne se fera pas, elle referme donc l'étape et
+   le curseur avance IMMÉDIATEMENT, mais rien ne dit qu'elle s'est
+   entraînée.
+
+   D'où la liste de ce que ça N'ÉCRIT PAS, et c'est elle qui compte :
+   aucune ligne dans `workout_sessions`, aucune EXP, aucune mission,
+   aucune journée validée, aucune série tenue. Un saut qui créditerait
+   quoi que ce soit paierait quelqu'un pour ne pas s'entraîner.
+
+   ⚠️ ET LE GARDE-FOU DU DOUBLE SAUT EST CÔTÉ CODE, PARCE QUE LA BASE NE
+   PEUT PAS LE TENIR. `uniq_intention_par_etape` est partiel
+   (`where statut = 'prevue'`) : deux lignes `passee` sur la même étape
+   passent à travers. C'est `viserEtape` (`etapeCiblee.ts`) qui refuse,
+   en relisant le curseur juste avant l'écriture.
+   ════════════════════════════════════════════════════════════════════ */
+
+/**
+ * Referme une étape SANS séance : la personne a décidé de la passer.
+ *
+ * `reservationId` est la ligne qui réservait déjà cette étape, quand elle
+ * existe : on la REPREND au lieu d'en créer une jumelle. C'est la même
+ * leçon que le double-fermage de V7A, et la base ne l'attraperait pas
+ * ici (l'unicité par étape ne couvre que les intentions prévues).
+ */
+export async function sauterEtape(
+  userId: string,
+  programmeId: string,
+  etape: { id: string; nom: string },
+  reservationId: string | null = null,
+  adaptationId: string | null = null,
+): Promise<void> {
+  const supabase = createClient();
+  const sc = await schemaIntentions();
+  const avecAdaptation = await adaptationsDisponibles();
+  const maintenant = new Date().toISOString();
+  const aujourdhui = todayYmd();
+
+  /* ⚠️ LA PROVENANCE TOMBE À `null`, ET LES DEUX BRANCHES ÉCRIVENT DONC
+     LA MÊME CHOSE. Un saut ne produit aucun contenu : rien ne « vient »
+     de l'étape. Le laisser posé sur une réservation reprise ferait dire
+     deux choses différentes au même geste selon qu'un jour lui avait été
+     donné d'avance ou non. C'est aussi la moitié de la vague qui rend
+     `lienProgramme` déclaratif : refermer sans provenir est un état
+     légitime, et la base l'accepte (FK composite en `MATCH SIMPLE`). */
+  if (reservationId) {
+    await supabase
+      .from(sc.table)
+      .update({
+        [sc.colStatut]: sc.versBase.skipped,
+        consommee_le: maintenant,
+        /* ⚠️ DATÉ DU JOUR OÙ LA DÉCISION EST PRISE, comme un fait (V7A).
+           Laisser la ligne à mardi afficherait une séance « passée » un
+           jour à venir, exactement le défaut que la fin de séance a
+           corrigé pour les faits. */
+        date: aujourdhui,
+        programme_seance_id: null,
+        origine: "utilisateur",
+        updated_at: maintenant,
+      })
+      .eq("id", reservationId)
+      .eq("user_id", userId)
+      /* On ne réécrit jamais un fait : si la séance a été terminée entre
+         l'affichage de la carte et le clic, zéro ligne touchée, et rien
+         ne s'écrit. */
+      .eq(sc.colStatut, sc.versBase.planned);
+    return;
+  }
+
+  /* L'INTENTION MINIMALE : elle dit qui a été passé, et quand. Pas
+     d'exercices, puisqu'il n'y en a jamais eu. */
+  await supabase.from(sc.table).insert({
+    user_id: userId,
+    date: aujourdhui,
+    type: "Force",
+    title: etape.nom,
+    difficulty: "Intermédiaire",
+    location: null,
+    exercise_list: [],
+    session_id: null,
+    [sc.colStatut]: sc.versBase.skipped,
+    nature: "seance",
+    origine: "utilisateur",
+    programme_id: programmeId,
+    programme_seance_id: null,
+    etape_consommee_id: etape.id,
     consommee_le: maintenant,
     ...(avecAdaptation ? { adaptation_id: adaptationId } : {}),
     updated_at: maintenant,

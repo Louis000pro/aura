@@ -39,6 +39,15 @@ export type AssistantAction = {
      ⚠️ C'est un mot, pas une identité : le CODE le résout ensuite vers une
      ligne du planning, en passant d'abord par les étapes du cycle. */
   quoi?: string;
+  /* V9C · le nom de l'ÉTAPE du cycle qu'un geste vise (« autre chose que
+     Pull », « saute Pull »). Comme `quoi`, c'est un mot : `viserEtape` le
+     traduit en identité, borné au cycle persisté, ou refuse. */
+  etape?: string;
+  /* V9C · « à la place » ou « en plus » ? Verrouillé par la décision 1 de
+     V9 : le défaut est la SUBSTITUTION, et un doute se pose en question
+     avant toute proposition. `pas_dit` est donc une valeur utile, pas une
+     absence de réponse. */
+  portee?: string;
   location?: string;
   title?: string;
   adjust?: string;
@@ -66,8 +75,9 @@ export type QuestionCliquable = {
   choix: string[];
   /** Réponse déjà donnée : la question devient inerte, on ne répond qu'une fois. */
   repondu?: string;
-  /** `lieu` et `equip` sont posées par le code (déterministe) ; `libre` vient du coach. */
-  genre: "lieu" | "equip" | "libre" | "cible";
+  /** `lieu`, `equip`, `cible` et `portee` sont posées par le CODE
+   *  (déterministe) ; `libre` vient du coach. */
+  genre: "lieu" | "equip" | "libre" | "cible" | "portee";
   relance?: string;
   /**
    * V9B, genre « cible » : quelle INTENTION chaque reponse designe.
@@ -80,6 +90,16 @@ export type QuestionCliquable = {
   cibles?: { choix: string; id: string }[];
   /** Ce qu'on fera de la cible une fois choisie, et vers ou pour un deplacement. */
   suite?: { geste: "deplacer" | "retirer"; to?: string | null };
+  /**
+   * V9C, genre « portee » : « à la place » ou « en plus » ?
+   *
+   * ⚠️ ON NE REPASSE PAS PAR LE MODELE, POUR LA MEME RAISON QUE « cible ».
+   * Renvoyer « A la place » a l'aiguilleur lui ferait re-decider une action
+   * a partir de trois mots sans contexte. La demande d'origine est donc
+   * portee ici, telle qu'elle a ete comprise, et la reponse ne fait que
+   * choisir laquelle des deux branches ouvrir.
+   */
+  substitution?: { etape?: string | null; quoi?: string | null; when?: string | null };
 };
 
 /** Nettoie les choix rendus par le modèle : 2 à 4 réponses courtes, non vides.
@@ -191,6 +211,58 @@ export const ASSISTANT_TOOLS: Tool[] = [
         properties: {
           when: { type: "string", description: "Jour de la séance, s’il est dit. À omettre sinon. " + JOUR_DESC },
           quoi: { type: "string", description: "Nom de la séance s’il la nomme. À omettre sinon." },
+        },
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "plan_ajouter",
+      description:
+        "AJOUTER une séance EN PLUS de ce qui est déjà prévu, sans rien remplacer (« ajoute-moi une petite séance cardio samedi », « je veux faire des abdos en plus demain », « rajoute du gainage jeudi »). Signal clé : « en plus », « rajoute », « aussi ». À ne pas confondre avec plan_set, qui DÉFINIT la séance du jour, ni avec etape_substituer, qui remplace une étape du programme.",
+      parameters: {
+        type: "object",
+        properties: {
+          when: { type: "string", description: "Le jour, OBLIGATOIRE : un supplément est toujours daté. " + JOUR_DESC },
+          description: { type: "string", description: "Courte description de la séance voulue." },
+          muscles, category,
+        },
+        required: ["when"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "etape_substituer",
+      description:
+        "Faire AUTRE CHOSE que l’étape que son programme propose (« je veux faire autre chose que Pull », « pas Pull aujourd’hui, plutôt du dos », « remplace ma prochaine séance de programme par du cardio »). Signal clé : il OPPOSE ce qu’il veut à ce que le programme prévoit. À ne pas confondre avec plan_set, qui vise un JOUR du planning sans parler du programme.",
+      parameters: {
+        type: "object",
+        properties: {
+          etape: { type: "string", description: "Le nom de l’étape du programme qu’il ne veut pas faire (« Pull », « Bas du corps »). À omettre s’il ne la nomme pas." },
+          quoi: { type: "string", description: "Ce qu’il veut faire à la place, tel qu’il le dit (« du dos », « du cardio », « ma séance Pompes »). À omettre s’il ne le dit pas." },
+          portee: {
+            type: "string",
+            enum: ["a_la_place", "en_plus", "pas_dit"],
+            description: "a_la_place s’il dit explicitement que c’est À LA PLACE de l’étape ; en_plus s’il dit que c’est EN PLUS ; pas_dit s’il ne le précise pas. Ne devine pas : pas_dit est une réponse valable.",
+          },
+          when: { type: "string", description: "Le jour, s’il le dit. À omettre sinon. " + JOUR_DESC },
+        },
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "etape_sauter",
+      description:
+        "PASSER une étape de son programme sans la faire (« saute Pull », « passe ma prochaine séance de programme », « je ne ferai pas Pull, passe à la suite »). Signal clé : il veut AVANCER dans son cycle sans s’entraîner. À ne pas confondre avec plan_retirer, qui enlève une séance du planning sans toucher au programme, ni avec etape_substituer, qui fait autre chose à la place.",
+      parameters: {
+        type: "object",
+        properties: {
+          etape: { type: "string", description: "Le nom de l’étape à passer, s’il la nomme. À omettre sinon." },
         },
       },
     },

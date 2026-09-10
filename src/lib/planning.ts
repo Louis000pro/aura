@@ -642,8 +642,8 @@ export function refModele(sessionId: string | null | undefined): string | null {
 }
 
 /**
- * Le lien de cette intention avec le programme : les trois colonnes, ou
- * les trois à `null`. JAMAIS un mélange.
+ * Le lien de cette intention avec le programme, EN TROIS COLONNES QUI NE
+ * DISENT PAS LA MÊME CHOSE.
  *
  * ⚠️ IL SE DÉCLARE, IL NE SE DEVINE PAS. Une intention ne referme une
  * étape que si celui qui l'a écrite l'a voulu : dater explicitement la
@@ -651,10 +651,29 @@ export function refModele(sessionId: string | null | undefined): string | null {
  * une séance perso qui s'appelle « Push », non. Déduire la consommation
  * du titre ferait avancer le cycle sur une ressemblance de mots.
  *
- * ⚠️ LES DEUX MOITIÉS SONT INDISSOCIABLES. Les clés étrangères sont
- * COMPOSITES (V4) et deux `CHECK` refusent une étape sans son programme :
- * écrire `etape_consommee_id` seul ferait rejeter la ligne par la base.
- * D'où le « les deux, ou aucun » plutôt que deux champs indépendants.
+ * ⚠️ ⚠️ ET LA PROVENANCE NE SE DÉDUIT PLUS DE LA CONSOMMATION (V9C).
+ * Cette fonction écrivait `source = d.etapeId ?? d.provenanceId` : dès
+ * qu'une étape était refermée, la provenance valait cette étape, quoi que
+ * l'appelant ait déclaré. C'était juste tant que les deux seuls gestes
+ * possibles étaient « je fais ce que le programme propose » et « je pose
+ * autre chose sans rien refermer ». Une SUBSTITUTION est exactement le
+ * troisième cas : elle referme Pull et son contenu vient d'ailleurs, donc
+ * `programme_seance_id` doit pouvoir rester nul alors que
+ * `etape_consommee_id` ne l'est pas. Cette ligne était LE SEUL endroit du
+ * TypeScript qui rendait ce cas impossible à représenter.
+ *
+ * Corollaire, et c'est la contrepartie du gain : LES GESTES QUI VEULENT
+ * LES DEUX LES DÉCLARENT TOUS LES DEUX. Réserver la prochaine étape
+ * (`intentionDeLEtape`, V7A) écrit désormais `provenanceId` en toutes
+ * lettres au lieu de l'obtenir par effet de bord.
+ *
+ * ⚠️ `programme_id` RESTE INDISSOCIABLE DES DEUX AUTRES. Les clés
+ * étrangères sont COMPOSITES (V4) et deux `CHECK` refusent une étape ou
+ * une provenance sans son programme : écrire `etape_consommee_id` seul
+ * ferait rejeter la ligne par la base. En revanche `programme_seance_id`
+ * nul À CÔTÉ d'un `etape_consommee_id` posé est parfaitement légal, la FK
+ * composite étant en `MATCH SIMPLE` : c'est exactement ce qui autorise
+ * une substitution par le catalogue ou par la bibliothèque.
  *
  * ⚠️ ET IL S'ÉCRIT TOUJOURS, MÊME À `null`. Omettre les colonnes dans un
  * `update` les laisserait en place : remplacer une réservation d'étape
@@ -662,17 +681,15 @@ export function refModele(sessionId: string | null | undefined): string | null {
  * personne ne lui a confiée.
  */
 export function lienProgramme(d: Pick<PlanningDay, "programmeId" | "etapeId" | "provenanceId">) {
+  const prog = d.programmeId ?? null;
+  /* D'OÙ VIENT LE CONTENU : ce que l'appelant DÉCLARE, et rien d'autre. */
+  const provenance = prog ? d.provenanceId ?? null : null;
   /* QUELLE ÉTAPE EST REFERMÉE : seulement si on a déclaré la réserver. */
-  const referme = !!d.programmeId && !!d.etapeId;
-  /* D'OÙ VIENT LE CONTENU : l'étape réservée si elle existe, sinon
-     l'étape dont la semaine régénérée a copié le contenu. Réserver, c'est
-     donc toujours aussi provenir ; provenir n'est jamais réserver. */
-  const source = d.etapeId ?? d.provenanceId ?? null;
-  const provient = !!d.programmeId && !!source;
+  const consommee = prog ? d.etapeId ?? null : null;
   return {
-    programme_id: provient ? d.programmeId! : null,
-    programme_seance_id: provient ? source! : null,
-    etape_consommee_id: referme ? d.etapeId! : null,
+    programme_id: provenance || consommee ? prog : null,
+    programme_seance_id: provenance,
+    etape_consommee_id: consommee,
   };
 }
 
@@ -1159,8 +1176,16 @@ async function poser(
      ⚠️ ELLE NE TOUCHE JAMAIS UNE INTENTION FAITE. « Faire une séance non
      prévue un jour de repos ne touche à rien » : le fait est enregistré,
      le repos reste, et personne ne réécrit le passé. */
+  /* ⚠️ « ENCORE PRÉVUE », ET PLUS « PAS FAITE » (V9C). Le filtre disait
+     `status !== "done"`, ce qui était sans conséquence tant que rien
+     n'écrivait `passee` : les deux seuls statuts en base étaient `prevue`
+     et `faite`. V9C écrit le troisième, et poser un repos sur une journée
+     portant une étape SAUTÉE aurait supprimé la ligne du saut, donc fait
+     RECULER le curseur du cycle sans un mot. On ne touche donc qu'à ce
+     qui est encore prévu : une intention résolue est un fait, quelle que
+     soit la façon dont elle s'est résolue. */
   const contraires = jour.filter(
-    (i) => i.id && i.id !== ecrit.id && i.status !== "done" && natureDe(i) !== natureDe(day),
+    (i) => i.id && i.id !== ecrit.id && i.status === "planned" && natureDe(i) !== natureDe(day),
   );
   if (contraires.length > 0) {
     await supabase

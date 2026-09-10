@@ -32,6 +32,7 @@ import {
   retirerIntention, saveDay,
   type Origine, type PlanningDay,
 } from "@/lib/planning";
+import { sauterEtape } from "@/lib/programme";
 
 /* ═══════════════════ Ce qu'un geste déclare ═══════════════════ */
 
@@ -50,6 +51,33 @@ export type GestePlanning =
   | { type: "remplacer"; jour: PlanningDay }
   /** Poser une séance EN PLUS de ce qui est déjà là (supplément). */
   | { type: "ajouter"; jour: PlanningDay }
+  /**
+   * V9C · SUBSTITUER : faire autre chose À LA PLACE d'une étape du cycle.
+   *
+   * ⚠️ `jour` PORTE DÉJÀ SON `etapeId`, ET C'EST TOUTE LA DIFFÉRENCE
+   * AVEC « remplacer ». Remplacer réécrit une ligne qui ne vient d'aucune
+   * étape ; substituer écrit une ligne qui en REFERME une, avec un
+   * contenu qui vient d'ailleurs. Son `id` dit si l'on reprend la
+   * réservation existante ou si l'on crée : on n'en crée jamais une
+   * seconde, `uniq_intention_par_etape` la refuserait.
+   */
+  | { type: "substituer"; jour: PlanningDay }
+  /**
+   * V9C · SAUTER : cette étape ne se fera pas, et le cycle avance.
+   *
+   * ⚠️ AUCUN CONTENU, DONC AUCUN `PlanningDay`. Un saut n'est pas une
+   * séance : il n'a ni exercices, ni durée, ni lieu. Le déclarer comme
+   * une intention ordinaire ferait croire à un écran qu'il y a quelque
+   * chose à lancer.
+   */
+  | {
+      type: "sauter";
+      programmeId: string;
+      etape: { id: string; nom: string };
+      /** La réservation à REPRENDRE, ou `null` si l'étape n'a pas de jour. */
+      reservationId: string | null;
+      adaptationId: string | null;
+    }
   /** Changer la date d'une intention existante : même ligne, même identité. */
   | { type: "deplacer"; jour: PlanningDay }
   /** Refaire la semaine : on libère le mobilier, puis on pose. */
@@ -195,6 +223,46 @@ export function consequencePose(
   return "Rien d’autre n’est prévu ce jour-là.";
 }
 
+/* ═══════════════════ V9C · les trois gestes de cycle ═══════════════════
+
+   ⚠️ CES TROIS PHRASES SONT LA MOITIÉ DE LA VAGUE. Substituer, sauter et
+   ajouter ne se distinguent par aucun signe visible sur la carte : même
+   coquille, même bouton violet. Ce qui les sépare, c'est ce qu'ils font
+   au cycle, et personne ne peut le deviner après coup. Elles se
+   déduisent donc de l'étape visée et de ce qui la suit, et elles
+   s'affichent AU-DESSUS du bouton. */
+
+/** Ce qu'une substitution change : l'étape est refermée, mais plus tard. */
+export function consequenceSubstitution(etape: string, apres: string | null): string {
+  const suite = apres
+    ? `ta prochaine étape deviendra « ${apres} »`
+    : "ton cycle avancera";
+  return `« ${etape} » ne sera pas faite : ${suite}, une fois cette séance terminée.`;
+}
+
+/**
+ * Ce qu'un saut change : tout de suite, et sans séance.
+ *
+ * ⚠️ ELLE DIT CE QUE ÇA N'EST PAS, ET C'EST LE PLUS IMPORTANT. Un saut
+ * ressemble à « c'est fait » dans le planning (l'étape est refermée, le
+ * curseur avance) sans en être un : aucune séance, aucune EXP, aucune
+ * mission, aucune journée validée. Sans cette phrase, la seule façon de
+ * l'apprendre serait de constater après coup que rien n'a été crédité.
+ */
+export function consequenceSaut(etape: string, apres: string | null): string {
+  const suite = apres
+    ? `Ta prochaine étape devient « ${apres} » tout de suite.`
+    : "Ton cycle avance tout de suite.";
+  return `« ${etape} » ne sera comptée ni comme faite, ni comme une séance. ${suite}`;
+}
+
+/** Ce qu'un supplément change : rien, et c'est exactement sa raison d'être. */
+export function consequenceSupplement(etape: string | null): string {
+  return etape
+    ? `« ${etape} » reste ta prochaine étape : celle-ci s’ajoute à côté.`
+    : "Ta progression de programme ne change pas.";
+}
+
 /** Ce qu'une semaine régénérée préserve. `gardes` = les jours intouchés. */
 export function consequenceSemaine(gardes: string[]): string {
   const base = "Seules les séances posées automatiquement sont remplacées.";
@@ -228,6 +296,21 @@ export async function appliquerGeste(
     case "ajouter":
       await ajouterIntention(userId, geste.jour, origine);
       return geste.jour.date;
+    case "substituer":
+      /* ⚠️ ON REPREND LA RÉSERVATION QUAND ELLE EXISTE, ON N'EN CRÉE
+         JAMAIS UNE SECONDE. `uniq_intention_par_etape` refuserait la
+         deuxième intention PRÉVUE portant la même étape, et le geste
+         échouerait au clic après avoir promis le contraire sur la carte.
+         L'identité vient de `viserEtape`, la seule autorité qui la
+         cherche (en base, jamais dans la semaine chargée). */
+      if (geste.jour.id) await saveDay(userId, geste.jour, origine);
+      else await ajouterIntention(userId, geste.jour, origine);
+      return geste.jour.date;
+    case "sauter":
+      await sauterEtape(userId, geste.programmeId, geste.etape, geste.reservationId, geste.adaptationId);
+      /* Aucune date à montrer : le saut se date du jour où on le décide,
+         et l'écran se recale dessus comme sur n'importe quel fait. */
+      return null;
     case "semaine": {
       /* ⚠️ ON LIBÈRE AVANT D'ÉCRIRE, ET JAMAIS UN JOUR QU'ON ÉCRIT : ce
          jour-là garde sa ligne, qui est REMPLACÉE au lieu d'être

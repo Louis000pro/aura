@@ -254,7 +254,7 @@ function CarteProposition() {
    nomme et le bandeau dit ce qu'on va remplacer. Le jour sélectionné n'est pas
    un état local ici : c'est la date de la proposition elle-même. */
 function CartePlanning() {
-  const { pendingPlan, confirmPlan, retargetPlan, cancelPlan, chargerJours } = useAssistant();
+  const { pendingPlan, confirmPlan, basculerEnPlus, retargetPlan, cancelPlan, chargerJours } = useAssistant();
   const [jours, setJours] = useState<JourDispo[] | null>(null);
   const [ouvert, setOuvert] = useState(false);
   const [garderAussi, setGarderAussi] = useState(false);
@@ -276,6 +276,18 @@ function CartePlanning() {
       exercices={(p.preview?.exerciseList ?? []).map((ex) => ({ name: ex.name, dose: `${ex.sets} × ${ex.reps}`, muscles: ex.muscles }))}
       options={[
         ...(p.retargetable ? [{ id: "day", label: "Changer de jour", actif: ouvert, onClick: ouvrirJours }] : []),
+        /* V9C · la seconde sortie d'une substitution, en toutes lettres.
+           Décision 1 de V9 : « autre chose que X » propose une substitution
+           par défaut, et la carte offre l'autre lecture sans la deviner.
+           C'est une BASCULE : elle porte sa coche quand elle est active, et
+           on peut revenir en arrière. */
+        ...(p.substitution ? [{
+          id: "enplus",
+          label: `En plus, sans toucher à « ${p.substitution.etapeNom} »`,
+          bascule: true,
+          actif: p.geste.type === "ajouter",
+          onClick: basculerEnPlus,
+        }] : []),
         ...(p.gardable ? [{ id: "keep", label: "Garder dans mes séances", bascule: true, actif: garderAussi, onClick: () => setGarderAussi((v) => !v) }] : []),
       ]}
       jours={ouvert ? jours : null}

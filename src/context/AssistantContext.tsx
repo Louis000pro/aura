@@ -26,20 +26,28 @@ import { normalizeForDedupe, stripMemoryTags, normalizeCategory, type AiMemory }
 import { setThemePreference, type ThemePreference } from "@/hooks/useTheme";
 import { assembleSeance, seanceToRow, normalizeCategory as normalizeWorkoutCategory, normalizeDifficulty, levelToDifficulty, type ProposedSeance } from "@/lib/assistantActions";
 import { normaliserChoix, type AssistantAction, type ChatEvent, type QuestionCliquable } from "@/lib/assistantTools";
-import { voix, voixAction, CHOIX_LIEU, CHOIX_EQUIP, type EtatGuide, type GuideRef, type TonGuide } from "@/lib/guides";
+import { voix, voixAction, CHOIX_LIEU, CHOIX_EQUIP, CHOIX_PORTEE, type EtatGuide, type GuideRef, type TonGuide } from "@/lib/guides";
 import { useGuideActif } from "@/context/GuideContext";
 import { PLANS } from "@/lib/plans";
 import {
-  resolveWhen, dayLabel, dayLabelLong, dayTitle, lireJour, lireIntention, fetchRange, hasSeance, saveDay, prochainsJours,
+  /* ⚠️ `saveDay` A DISPARU DE CETTE LISTE EN V9C, ET C'EST LE POINT.
+     `confirmSeance` était le dernier écrivain caché du contexte : il
+     appelait l'autorité d'écriture directement, donc il décidait seul
+     quelle ligne du jour serait réécrite. Tout passe désormais par
+     `appliquerGeste`. Un `saveDay` qui réapparaîtrait ici, c'est
+     `confirmPlan` qui a simplement changé d'adresse. */
+  resolveWhen, dayLabel, dayLabelLong, dayTitle, lireJour, lireIntention, fetchRange, hasSeance, prochainsJours,
   principale, cibleRemplacable, estMobilier, vientDuProgramme,
   ctxFromLieu, readLieu, loadLieu, persistLieu, readVariant, weekDates, todayYmd, normalizeExercises, previewWeek,
   type CycleSemaine,
   PLANNING_TYPE_BY_CATEGORY, type PlanningDay, type GenInput,
 } from "@/lib/planning";
 import {
-  appliquerGeste, consequenceDeplacement, consequencePose, consequenceRetrait, consequenceSemaine,
+  appliquerGeste, consequenceDeplacement, consequencePose, consequenceRetrait, consequenceSaut,
+  consequenceSemaine, consequenceSubstitution, consequenceSupplement,
   resoudreCibles, type EtapeNommee, type GestePlanning,
 } from "@/lib/gestePlanning";
+import { viserEtape, type ResultatVisee } from "@/lib/etapeCiblee";
 import { lireProgrammeActif } from "@/lib/programme";
 import { adaptationDuJour, idsMasques } from "@/lib/adaptation";
 import { etatMoteur, resumeMoteur } from "@/lib/guideMoteur";
@@ -147,6 +155,33 @@ type PendingPlan = {
   retargetable?: boolean;
   /** Cette séance peut-elle rejoindre la bibliothèque en plus du planning ? */
   gardable?: boolean;
+  /**
+   * V9C · CE GESTE EST UN SUPPLÉMENT, ET IL LE RESTE MÊME EN CHANGEANT DE
+   * JOUR.
+   *
+   * ⚠️ SANS CE DRAPEAU, CHANGER LE JOUR D'UN SUPPLÉMENT LE TRANSFORMERAIT
+   * EN REMPLACEMENT. `recalerCarte` relit la journée d'arrivée et bascule
+   * sur « remplacer » dès qu'elle y trouve une cible : c'est juste pour
+   * `plan_set`, et c'est exactement ce qu'un supplément ne doit jamais
+   * faire (« ne passe jamais par `cibleRemplacable` »).
+   */
+  forcerAjout?: boolean;
+  /**
+   * V9C · LA SUBSTITUTION, ET SA SECONDE SORTIE.
+   *
+   * ⚠️ « EN PLUS, SANS TOUCHER À PULL » N'EST PAS UNE POLITESSE : c'est la
+   * décision 1 de V9, verrouillée avant le code. « Autre chose que X »
+   * propose une substitution PAR DÉFAUT, jamais un saut, et la carte offre
+   * l'autre lecture en toutes lettres. On garde donc de quoi recomposer
+   * les deux faces sans rien relire : la bascule est un choix d'affichage,
+   * pas une seconde lecture de la base.
+   */
+  substitution?: {
+    etapeNom: string;
+    apresNom: string | null;
+    /** L'intention telle qu'elle s'écrirait EN SUBSTITUTION (avec son étape). */
+    jour: PlanningDay;
+  };
 };
 
 /** Un jour proposé dans le choix « quand ? » d'une carte. */
@@ -224,6 +259,8 @@ type AssistantContextValue = {
   garderSeance: (s: ProposedSeance) => Promise<boolean>;
   cancelSeance: () => void;
   confirmPlan: (garderAussi?: boolean) => void;
+  /** V9C · bascule une substitution en supplément, et inversement. */
+  basculerEnPlus: () => void;
   /** Change le jour visé par la carte planning (mêmes exercices, autre date). */
   retargetPlan: (ymd: string) => void;
   cancelPlan: () => void;
@@ -328,13 +365,41 @@ function recalerCarte(
       preview: jour,
     };
   }
-  if (p.geste.type === "remplacer" || p.geste.type === "ajouter") {
-    const jour = { ...p.geste.jour, date: ymd, id: cible?.id ?? null };
+  /* V9C · UNE SUBSTITUTION CHANGE DE JOUR SANS CHANGER D'IDENTITÉ. Elle
+     vise une ÉTAPE, pas une ligne de la journée d'arrivée : il n'y a donc
+     aucune cible à re-résoudre, et son `id` (la réservation reprise) ne
+     bouge pas non plus. Seule la date change, exactement comme pour un
+     déplacement. */
+  if (p.geste.type === "substituer") {
+    const jour = { ...p.geste.jour, date: ymd };
     return {
       ...p,
-      ...texteCartePlan(jour, cible ? dayTitle(cible) : null, verbePose(gardee)),
-      geste: cible ? { type: "remplacer", jour } : { type: "ajouter", jour },
-      consequence: connu ? consequencePose(cible, gardee) : "",
+      ...texteCartePlan(jour, null, "Faire à la place"),
+      kicker: p.kicker,
+      geste: { type: "substituer", jour },
+      substitution: p.substitution ? { ...p.substitution, jour } : undefined,
+      preview: jour,
+    };
+  }
+  if (p.geste.type === "remplacer" || p.geste.type === "ajouter") {
+    /* ⚠️ UN SUPPLÉMENT RESTE UN SUPPLÉMENT. Sans ce garde, changer le jour
+       d'un « en plus » le ferait passer par `cibleRemplacable` et écraser
+       la séance déjà posée là-bas : le geste dirait une chose sur la
+       carte et en ferait une autre au clic. */
+    const vise = p.forcerAjout ? null : cible;
+    const jour = { ...p.geste.jour, date: ymd, id: vise?.id ?? null };
+    return {
+      ...p,
+      ...texteCartePlan(jour, vise ? dayTitle(vise) : null, p.forcerAjout ? "Ajouter" : verbePose(gardee)),
+      geste: vise ? { type: "remplacer", jour } : { type: "ajouter", jour },
+      consequence: p.forcerAjout
+        ? consequenceSupplement(p.substitution?.etapeNom ?? null)
+        : connu ? consequencePose(vise, gardee) : "",
+      /* La face « à la place » suit la même date, sinon revenir dessus
+         reproposerait le jour d'avant sans le dire. */
+      substitution: p.substitution
+        ? { ...p.substitution, jour: { ...p.substitution.jour, date: ymd } }
+        : undefined,
       preview: jour,
     };
   }
@@ -362,6 +427,101 @@ function mealTypeFromHour(h = new Date().getHours()): string {
 function textMentionsTheme(text: string): boolean {
   const t = (text || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
   return /(theme|mode\s*(?:sombre|clair|nuit|jour|noir|blanc|auto)|\bsombre\b|\bclair\b|\bnuit\b|dark\s*mode|night\s*mode|apparence|affichage|luminos|eblou|trop\s*(?:blanc|lumineu|clair|brillant|vif)|mal\s*aux\s*yeux|\becran\b|\bfond\b\s*(?:noir|blanc|sombre|clair))/.test(t);
+}
+
+/* ═══════════════ V9C · LE CONTENU D'UNE SUBSTITUTION ═══════════════
+
+   ⚠️ TROIS SOURCES AUTORISÉES, ET AUCUNE GÉNÉRATION LIBRE : le catalogue
+   Vaiiya, la bibliothèque, une séance perso (décision 5 de V9). Une
+   quatrième est explicitement refusée : UNE AUTRE ÉTAPE DU CYCLE. Elle
+   ouvrirait une ambiguïté sur son propre tour futur (l'a-t-on avancée ?
+   la refera-t-on ?), et c'est hors périmètre.
+
+   ⚠️ ET LE CATALOGUE SE CHARGE À LA DEMANDE, PAS À L'IMPORT. Ses
+   exercices vivent dans `WorkoutGuideModal`, qui importe `useAssistant` :
+   un import statique refermerait un cycle sur le contexte le plus haut de
+   l'app. Le tunnel est déjà monté globalement, donc l'import dynamique ne
+   télécharge rien de plus, il attend juste que les deux modules soient
+   initialisés.
+
+   ⚠️ ON NE DEVINE PAS UN CONTENU. Si la demande ne nomme rien qu'on
+   retrouve, on le DIT et on demande le nom : inventer une séance ici,
+   ce serait la génération libre qu'on vient de s'interdire. */
+type ContenuSubstitution = {
+  title: string;
+  /* Les deux normalisations du produit, pas des chaînes libres : c'est ce
+     qui garantit qu'une séance venue de la bibliothèque et une séance venue
+     du catalogue produisent la même intention. */
+  category: ReturnType<typeof normalizeWorkoutCategory>;
+  difficulty: ReturnType<typeof normalizeDifficulty>;
+  exerciseList: unknown[];
+  /** Renvoi vers un modèle de la bibliothèque, ou `null` (catalogue). */
+  sessionId: string | null;
+};
+
+async function contenuSubstitution(userId: string, quoi: string): Promise<ContenuSubstitution | null> {
+  const nom = quoi.trim();
+  if (!nom) return null;
+
+  /* 1. SA bibliothèque d'abord : « ma séance Pompes » désigne la sienne,
+        pas une du catalogue qui lui ressemblerait. */
+  try {
+    const { data } = await createClient()
+      .from("custom_sessions")
+      .select("id, title, category, difficulty, exercise_list")
+      .eq("user_id", userId)
+      .ilike("title", `%${nom}%`)
+      .order("updated_at", { ascending: false })
+      .limit(1);
+    const row = data?.[0] as { id: string; title: string; category: string | null; difficulty: string | null; exercise_list: unknown } | undefined;
+    if (row) {
+      return {
+        title: row.title,
+        category: normalizeWorkoutCategory(row.category),
+        difficulty: normalizeDifficulty(row.difficulty),
+        exerciseList: normalizeExercises(row.exercise_list),
+        sessionId: row.id,
+      };
+    }
+  } catch { /* bibliothèque illisible : on tentera le catalogue */ }
+
+  /* 2. Le catalogue, quand elle le NOMME. Une séance du catalogue n'a pas
+        de renvoi de modèle (`refModele` le refuserait de toute façon : son
+        identifiant est un slug, pas une ligne de `custom_sessions`). */
+  try {
+    const { resolveSessionId, exerciseData } = await import("@/components/WorkoutGuideModal");
+    const slug = resolveSessionId(nom);
+    const exos = slug ? exerciseData[slug] : undefined;
+    if (slug && exos && exos.length > 0) {
+      return {
+        title: nom,
+        category: normalizeWorkoutCategory(null),
+        difficulty: normalizeDifficulty(null),
+        exerciseList: normalizeExercises(exos),
+        sessionId: null,
+      };
+    }
+  } catch { /* catalogue indisponible : on demandera le nom */ }
+
+  return null;
+}
+
+/** Ce que le Guide répond quand une étape ne peut pas être visée.
+ *
+ *  ⚠️ CHAQUE REFUS A SA PHRASE, ET AUCUN N'EST MUET. Un `return` nu ici,
+ *  ce serait une demande sans réponse, exactement ce que V9B a passé une
+ *  vague à fermer. Et le refus « masquée » propose une SORTIE : c'est
+ *  l'adaptation qui bloque, elle se gère dans son écran. */
+function phraseRefus(guide: GuideRef, res: Extract<ResultatVisee, { ok: false }>): string {
+  switch (res.refus) {
+    case "aucun_programme": return voix(guide, "impasse.etape_sans_programme");
+    case "illisible":       return voix(guide, "impasse.etape_illisible");
+    case "introuvable":     return voix(guide, "impasse.etape_introuvable", { titre: res.nom ?? "" });
+    case "deja_resolue":    return voix(guide, "impasse.etape_deja_resolue", { titre: res.nom ?? "" });
+    case "masquee":         return voix(guide, "impasse.etape_masquee", { titre: res.nom ?? "", jour: res.jusquau ?? "" });
+    case "pas_la_prochaine":
+      return voix(guide, "impasse.etape_pas_la_prochaine", { titre: res.nom ?? "", etape: res.proposable ?? "" });
+  }
 }
 
 /* Au-delà de cette absence (app en arrière-plan / onglet en veille), revenir
@@ -831,6 +991,112 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
     });
   }, [idPlanning]);
 
+  /* ══════════════ V9C · SUBSTITUER ══════════════
+
+     ⚠️ « AUTRE CHOSE QUE PULL » PROPOSE UNE SUBSTITUTION, JAMAIS UN SAUT
+     (décision 1 de V9). Les deux referment l'étape, mais l'un le fait
+     parce qu'on s'est entraîné et l'autre parce qu'on a renoncé : les
+     confondre ferait avancer le cycle sans séance sur une phrase qui
+     annonçait le contraire. La carte porte donc la seconde sortie en
+     toutes lettres, « en plus, sans y toucher ».
+
+     ⚠️ ET LE CYCLE N'AVANCE PAS AU CLIC. La ligne naît « prévue » : c'est
+     la FIN DE SÉANCE qui la passera à « faite », par l'autorité unique de
+     V7A. Refermer l'étape à la confirmation, ce serait créditer une
+     séance que personne n'a encore faite. */
+  const preparerSubstitution = useCallback(async (
+    input: { etape?: string | null; quoi?: string | null; when?: string | null },
+  ) => {
+    const compte = idPlanning;
+    if (!compte) return;
+    const say = (content: string) => setMessages((prev) => [...prev, { role: "assistant" as const, content, id: uid(), ton: "explain" as const }]);
+
+    const res = await viserEtape(compte, input.etape ?? null);
+    if (!res.ok) { say(phraseRefus(guideRef.current, res)); return; }
+    const { etape, apres, reservation, programmeId, adaptation } = res.visee;
+
+    const contenu = await contenuSubstitution(compte, input.quoi ?? "");
+    if (!contenu) { say(voix(guideRef.current, "impasse.substitution_sans_contenu", { titre: etape.nom })); return; }
+
+    /* Le jour : celui qu'on demande, sinon CELUI DE LA RÉSERVATION quand
+       l'étape en avait déjà un (« à la place de Pull » garde le jour de
+       Pull), sinon aujourd'hui. */
+    const date = (input.when ? resolveWhen(input.when) : null) ?? reservation?.date ?? todayYmd();
+    const saved = readLieu(compte);
+    const jour: PlanningDay = {
+      /* ⚠️ ON REPREND LA RÉSERVATION, ON N'EN CRÉE PAS UNE SECONDE :
+         `uniq_intention_par_etape` refuserait la deuxième intention
+         prévue portant la même étape, et le geste échouerait au clic
+         après avoir promis le contraire sur la carte. */
+      id: reservation?.id ?? null,
+      date,
+      type: PLANNING_TYPE_BY_CATEGORY[contenu.category] ?? "Force",
+      title: contenu.title,
+      difficulty: normalizeDifficulty(contenu.difficulty),
+      location: ctxFromLieu(saved.location, saved.equip),
+      exerciseList: normalizeExercises(contenu.exerciseList),
+      sessionId: contenu.sessionId,
+      status: "planned",
+      programmeId,
+      /* CE QUI EST REFERMÉ : l'étape, déclarée. */
+      etapeId: etape.id,
+      /* ⚠️ D'OÙ VIENT LE CONTENU : d'AILLEURS, donc `null`. C'est
+         exactement le cas que `lienProgramme` ne savait pas représenter
+         avant V9C, puisqu'il déduisait la provenance de la consommation.
+         Une substitution qui déclarerait l'étape comme provenance
+         mentirait sur ce qu'on va faire. */
+      provenanceId: null,
+      adaptationId: adaptation?.id ?? null,
+    };
+
+    setPendingPlan({
+      kicker: `À la place de « ${etape.nom} »`,
+      title: contenu.title,
+      meta: [jour.type, `${jour.exerciseList.length} mouvements`, CAP(dayLabelLong(date))].filter(Boolean).join(" · "),
+      cta: `Faire ça à la place`,
+      consequence: consequenceSubstitution(etape.nom, apres?.nom ?? null),
+      geste: { type: "substituer", jour },
+      preview: jour,
+      retargetable: true,
+      substitution: { etapeNom: etape.nom, apresNom: apres?.nom ?? null, jour },
+    });
+  }, [idPlanning]);
+
+  /* ══════════════ V9C · SAUTER ══════════════
+
+     ⚠️ CE QU'UN SAUT N'EST PAS SE DIT AVANT LE CLIC, PARCE QU'APRÈS IL EST
+     TROP TARD : il n'y a pas d'annulation dans cette première version
+     (décision 3 de V9), et c'est la carte qui tient lieu de garde-fou.
+     Elle nomme donc les deux choses qui comptent : l'étape ne sera pas
+     comptée comme faite, et la prochaine devient l'autre, tout de suite. */
+  const preparerSaut = useCallback(async (nom?: string | null) => {
+    const compte = idPlanning;
+    if (!compte) return;
+    const say = (content: string) => setMessages((prev) => [...prev, { role: "assistant" as const, content, id: uid(), ton: "explain" as const }]);
+
+    const res = await viserEtape(compte, nom ?? null);
+    if (!res.ok) { say(phraseRefus(guideRef.current, res)); return; }
+    const { etape, apres, reservation, programmeId, adaptation } = res.visee;
+
+    setPendingPlan({
+      kicker: "Passer une étape",
+      title: etape.nom,
+      meta: apres ? `Ensuite : ${apres.nom}` : "Ton cycle avance",
+      cta: `Passer « ${etape.nom} »`,
+      consequence: consequenceSaut(etape.nom, apres?.nom ?? null),
+      geste: {
+        type: "sauter",
+        programmeId,
+        etape: { id: etape.id, nom: etape.nom },
+        reservationId: reservation?.id ?? null,
+        adaptationId: adaptation?.id ?? null,
+      },
+      /* Un saut n'a aucun contenu : pas d'aperçu, donc pas de liste de
+         mouvements dépliable. Ce n'est pas une séance. */
+      preview: null,
+    });
+  }, [idPlanning]);
+
   /* ── Action PLANNING (Phase 2) : prépare une carte de confirmation.
      Aucune écriture en base ici — tout passe par confirmPlan() (clic). ── */
   const preparePlanAction = useCallback(async (action: AssistantAction, text: string) => {
@@ -1067,9 +1333,19 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    // SET / LOCATION : on génère une vraie séance pour le jour cible.
-    const when = resolveWhen(action.when || "aujourd_hui");
-    if (!when) return;
+    // SET / LOCATION / AJOUTER : on génère une vraie séance pour le jour cible.
+    /* ⚠️ V9C · UN SUPPLÉMENT EST TOUJOURS DATÉ, ET IL N'A PAS DE JOUR PAR
+       DÉFAUT. « Aujourd'hui » convient à `plan_set`, qui DÉFINIT la séance
+       d'un jour ; pour un « en plus » sans jour dit, ce serait choisir à la
+       place de quelqu'un. On demande, et on ne reste jamais muet. */
+    const estAjout = action.intent === "plan_ajouter";
+    const when = estAjout
+      ? (action.when ? resolveWhen(action.when) : null)
+      : resolveWhen(action.when || "aujourd_hui");
+    if (!when) {
+      if (estAjout) say(voix(guideRef.current, "impasse.ajout_sans_jour"));
+      return;
+    }
 
     const saved = readLieu(user.id);
     let location: "salle" | "maison" | null = saved.location;
@@ -1099,7 +1375,11 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
        provienne) n'a pas de cible remplaçable : la séance s'AJOUTE à
        côté, et la carte le dit. */
     const jourVise = await lireJour(user.id, when);
-    const cible = cibleRemplacable(jourVise);
+    /* ⚠️ V9C · UN SUPPLÉMENT NE PASSE JAMAIS PAR `cibleRemplacable`. C'est
+       la définition même du geste : il s'ajoute, y compris sur une journée
+       qui porte déjà une séance. Lui laisser résoudre une cible, ce serait
+       en refaire un remplacement dès que la journée n'est pas vide. */
+    const cible = estAjout ? null : cibleRemplacable(jourVise);
     const gardee = jourVise.find(vientDuProgramme) ?? null;
     const actuelle = principale(jourVise);
     if (action.intent === "plan_location") {
@@ -1148,12 +1428,14 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
 
       const pleine = await verifierPlaces();
       setPendingPlan({
-        ...texteCartePlan(day, cible ? dayTitle(cible) : null, verbePose(gardee)),
+        ...texteCartePlan(day, cible ? dayTitle(cible) : null, estAjout ? "Ajouter" : verbePose(gardee)),
+        ...(estAjout ? { kicker: `En plus · ${CAP(dayLabelLong(when))}` } : {}),
         title: seance.title,
-        consequence: consequencePose(cible, gardee),
+        consequence: estAjout ? consequenceSupplement(null) : consequencePose(cible, gardee),
         geste: cible ? { type: "remplacer", jour: day } : { type: "ajouter", jour: day },
         preview: day,
         retargetable: true,
+        forcerAjout: estAjout,
         // Générée à l'instant : elle n'existe nulle part ailleurs, donc on peut
         // proposer de la garder AUSSI dans la bibliothèque, pas seulement sur
         // ce jour-là (une séance de la biblio, elle, y est déjà). Sauf si le
@@ -1347,8 +1629,46 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    // 2a) Pilotage du PLANNING (remplacer / décaler / changer le lieu / poser une séance de la biblio / refaire la semaine)
-    if (action.intent === "plan_set" || action.intent === "plan_location" || action.intent === "plan_move" || action.intent === "plan_retirer" || action.intent === "plan_library" || action.intent === "plan_regen") {
+    /* ══════ V9C · LES TROIS GESTES DE CYCLE ══════
+
+       ⚠️ ILS SONT STRICTEMENT DISTINCTS, ET AUCUN NE PEUT SE FAIRE PASSER
+       POUR UN AUTRE. Substituer referme l'étape quand la séance sera
+       faite ; sauter la referme tout de suite et sans séance ; ajouter n'y
+       touche jamais. C'est aussi pour ça que chacun a son outil : un seul
+       outil « faire autre chose » aurait laissé le modèle arbitrer une
+       conséquence qu'il ne voit pas. */
+    if (action.intent === "etape_substituer") {
+      const portee = (action.portee ?? "").trim();
+      const charge = {
+        etape: action.etape ?? null,
+        quoi: action.quoi ?? action.description ?? null,
+        when: action.when ?? null,
+      };
+      /* ⚠️ DANS LE DOUTE ON DEMANDE, ON NE DEVINE PAS. « Je veux faire du
+         cardio » ne dit pas si c'est à la place de la prochaine étape ou
+         en plus, et les deux ne font pas du tout la même chose au cycle.
+         La question porte la demande d'origine, donc la réponse ne
+         repasse pas par l'aiguilleur. */
+      if (portee === "en_plus") {
+        void preparePlanAction({ ...action, intent: "plan_ajouter", description: charge.quoi ?? action.description }, text);
+        return;
+      }
+      if (portee !== "a_la_place") {
+        poserQuestion(voix(guideRef.current, "question.portee"), {
+          choix: CHOIX_PORTEE, genre: "portee", substitution: charge,
+        });
+        return;
+      }
+      void preparerSubstitution(charge);
+      return;
+    }
+    if (action.intent === "etape_sauter") {
+      void preparerSaut(action.etape ?? action.quoi ?? null);
+      return;
+    }
+
+    // 2a) Pilotage du PLANNING (remplacer / décaler / changer le lieu / poser une séance de la biblio / refaire la semaine / ajouter en plus)
+    if (action.intent === "plan_set" || action.intent === "plan_location" || action.intent === "plan_move" || action.intent === "plan_retirer" || action.intent === "plan_library" || action.intent === "plan_regen" || action.intent === "plan_ajouter") {
       void preparePlanAction(action, text);
       return;
     }
@@ -1415,7 +1735,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setActionLoading(null);
     }
-  }, [user?.id, pathname, router, preparePlanAction, buildNutritionNote, poserQuestion, verifierPlaces]);
+  }, [user?.id, pathname, router, preparePlanAction, buildNutritionNote, poserQuestion, verifierPlaces, preparerSubstitution, preparerSaut]);
 
   /* ── Ce qui manque AVANT d'agir ──
      C'est le CODE qui sait de quoi il a besoin, pas le modèle : lui demander
@@ -1426,7 +1746,8 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
      Sans ça le coach promettrait une carte, puis poserait une question. ── */
   const questionManquante = useCallback((action: AssistantAction, text: string): { texte: string; question: QuestionCliquable } | null => {
     if (!user?.id) return null;
-    const besoinDuLieu = action.intent === "create_seance" || action.intent === "plan_set" || action.intent === "plan_regen";
+    const besoinDuLieu = action.intent === "create_seance" || action.intent === "plan_set"
+      || action.intent === "plan_regen" || action.intent === "plan_ajouter";
     if (!besoinDuLieu) return null;
     const { location, equip } = readLieu(user.id);
     // La demande est mise de côté : elle repart dès qu'on connaît la réponse,
@@ -1777,9 +2098,27 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
+    /* V9C · « À la place » ou « en plus » ? La réponse ne repart PAS au
+       modèle : elle choisit laquelle des deux branches ouvrir, à partir de
+       la demande d'origine portée par la question. Renvoyer trois mots à
+       l'aiguilleur lui ferait re-décider une action sans son contexte,
+       c'est-à-dire rouvrir l'ambiguïté qu'on vient de lever. */
+    if (q.genre === "portee" && q.substitution) {
+      const charge = q.substitution;
+      if (/place/i.test(choix)) {
+        void preparerSubstitution(charge);
+      } else {
+        void preparePlanAction(
+          { intent: "plan_ajouter", when: charge.when ?? undefined, description: charge.quoi ?? undefined },
+          charge.quoi ?? "",
+        );
+      }
+      return;
+    }
+
     // Question libre du coach : sa réponse repart telle quelle.
     sendMessage(choix, true);
-  }, [messages, isStreaming, user?.id, persist, sendMessage, preparerSurCible]);
+  }, [messages, isStreaming, user?.id, persist, sendMessage, preparerSurCible, preparerSubstitution, preparePlanAction]);
 
   /* ── Contrôles ── */
   const open = useCallback((prefill?: string) => {
@@ -1845,8 +2184,19 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
     const category = normalizeWorkoutCategory(s.category);
     const saved = readLieu(user.id);
     try {
-      await saveDay(user.id, {
-        id: null,
+      /* ⚠️ V9C · ELLE NE CONSTITUE PLUS UN ÉCRIVAIN CACHÉ. Cette fonction
+         appelait `saveDay` directement, donc elle décidait toute seule
+         quelle ligne du jour serait réécrite — exactement le second moteur
+         de planning que V9B a sorti de `confirmPlan`. Et elle ne posait
+         même pas la question : `saveDay` sans `id` laissait `poser` choisir
+         sa cible, ce que la vague précédente a passé un correctif entier à
+         supprimer. On résout ICI, avec la règle unique, et on confie
+         l'écriture à l'autorité qui sait la faire. `AssistantContext`
+         déclare des gestes, il n'écrit pas. */
+      const jourVise = await lireJour(user.id, jour);
+      const cible = cibleRemplacable(jourVise);
+      const pose: PlanningDay = {
+        id: cible?.id ?? null,
         date: jour,
         type: PLANNING_TYPE_BY_CATEGORY[category] ?? "Force",
         title: s.title,
@@ -1855,7 +2205,8 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
         exerciseList: normalizeExercises(s.exerciseList),
         sessionId: s.id,
         status: "planned",
-      }, "guide");
+      };
+      await appliquerGeste(user.id, cible ? { type: "remplacer", jour: pose } : { type: "ajouter", jour: pose }, "guide");
       if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent("programme-updated", { detail: { date: jour } }));
       setPendingSeance(null);
       setMemoryNotice(`Gardée et programmée · ${dayLabelLong(jour)} ✓`);
@@ -1958,6 +2309,47 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       setMemoryNotice("Oups, impossible de mettre à jour le planning.");
     }
   }, [user?.id, pendingPlan]);
+
+  /* ── V9C · LES DEUX FACES D'UNE SUBSTITUTION ──
+
+     ⚠️ « EN PLUS, SANS TOUCHER À PULL » EST LA SECONDE SORTIE EXIGÉE PAR
+     LA DÉCISION 1 DE V9, et elle bascule DANS LA CARTE, sans rien relire.
+     Les deux faces portent le même contenu ; ce qui change, c'est
+     l'identité de programme (`etapeId`) et donc ce que le geste fait au
+     cycle. On garde la bascule dans les deux sens : un clic de trop ne
+     doit pas coûter la proposition. ── */
+  const basculerEnPlus = useCallback(() => {
+    setPendingPlan((prev) => {
+      if (!prev?.substitution) return prev;
+      const { etapeNom, apresNom, jour } = prev.substitution;
+      if (prev.geste.type === "substituer") {
+        /* ⚠️ ON RETIRE TOUTE L'IDENTITÉ DE PROGRAMME, PAS SEULEMENT
+           `etapeId`. Une ligne qui garderait `programmeId` sans étape
+           serait un lien à moitié écrit, et `lienProgramme` la
+           ramènerait à trois colonnes nulles de toute façon : autant que
+           l'objet dise ce qu'il est. */
+        const supp: PlanningDay = { ...jour, id: null, programmeId: null, etapeId: null, provenanceId: null };
+        return {
+          ...prev,
+          kicker: `En plus · ${CAP(dayLabelLong(supp.date))}`,
+          cta: `Ajouter ${jourCourt(supp.date)}`,
+          consequence: consequenceSupplement(etapeNom),
+          geste: { type: "ajouter", jour: supp },
+          preview: supp,
+          forcerAjout: true,
+        };
+      }
+      return {
+        ...prev,
+        kicker: `À la place de « ${etapeNom} »`,
+        cta: "Faire ça à la place",
+        consequence: consequenceSubstitution(etapeNom, apresNom),
+        geste: { type: "substituer", jour },
+        preview: jour,
+        forcerAjout: false,
+      };
+    });
+  }, []);
 
   const cancelPlan = useCallback(() => setPendingPlan(null), []);
 
@@ -2092,7 +2484,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
   }, [memoryNotice]);
 
   return (
-    <Ctx.Provider value={{ isOpen, open, close, toggle, clear, messages, isStreaming, sendMessage, repondreQuestion, pseudo: user?.pseudo, memoryNotice, pendingSeance, pendingPlan, pendingRecipe, pendingMeal, actionLoading, etatGuide, noterSaisie: setSaisie, bibliothequePleine, confirmSeance, garderSeance, cancelSeance, confirmPlan, retargetPlan, cancelPlan, chargerJours, confirmRecipe, cancelRecipe, confirmMeal, cancelMeal }}>
+    <Ctx.Provider value={{ isOpen, open, close, toggle, clear, messages, isStreaming, sendMessage, repondreQuestion, pseudo: user?.pseudo, memoryNotice, pendingSeance, pendingPlan, pendingRecipe, pendingMeal, actionLoading, etatGuide, noterSaisie: setSaisie, bibliothequePleine, confirmSeance, garderSeance, cancelSeance, confirmPlan, basculerEnPlus, retargetPlan, cancelPlan, chargerJours, confirmRecipe, cancelRecipe, confirmMeal, cancelMeal }}>
       {children}
     </Ctx.Provider>
   );

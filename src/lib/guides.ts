@@ -80,6 +80,11 @@ export type ContexteVoix = {
   exp?: number;
   /** Maillons qui manquent à un relais (`rappel.relais_decisif`). */
   maillons?: number;
+  /** V9C · le nom d'une ÉTAPE du cycle (`impasse.etape_*`). Distinct de
+   *  `titre`, qui nomme une séance : dans une même phrase on cite
+   *  parfois les deux (« Pull n'est pas la prochaine, c'est Bas du
+   *  corps »). */
+  etape?: string;
 };
 
 /** « Une séance posée », « Trois séances posées ». Le nombre s'écrit en
@@ -152,6 +157,26 @@ const REPLIQUES = {
     commun: "Ça marche, je te prépare une nouvelle semaine. Valide en dessous ✦",
     nora:   "Je reprends ta semaine à partir de ton rythme. Valide en dessous ✦",
     sasha:  "Nouvelle semaine prête, valide en dessous ✦",
+  },
+  "action.plan_retirer": {
+    commun: "Ça marche, je te prépare le retrait. Valide juste en dessous 👇",
+    nora:   "Je te prépare le retrait de cette séance. Valide juste en dessous 👇",
+    sasha:  "Retrait prêt, valide juste en dessous 👇",
+  },
+  "action.plan_ajouter": {
+    commun: "Ça marche, je te prépare ça en plus. Valide juste en dessous 👇",
+    nora:   "Je te prépare cette séance en plus, sans toucher au reste. Valide juste en dessous 👇",
+    sasha:  "Une séance en plus, valide juste en dessous 👇",
+  },
+  "action.etape_substituer": {
+    commun: "Ça marche, je te propose ça à la place. Valide juste en dessous 👇",
+    nora:   "Je te propose ça à la place, et je te dis ce que ça change pour ton cycle. Valide juste en dessous 👇",
+    sasha:  "Voilà ce que je te propose à la place, valide juste en dessous 👇",
+  },
+  "action.etape_sauter": {
+    commun: "Regarde ce que ça change avant de valider, juste en dessous 👇",
+    nora:   "Je te prépare ça. Regarde ce que ça change pour ton cycle avant de valider, juste en dessous 👇",
+    sasha:  "Regarde ce que ça change avant de valider, juste en dessous 👇",
   },
   "action.log_meal": {
     commun: "C’est noté, je te prépare l’ajout. Valide juste en dessous 👇",
@@ -264,6 +289,58 @@ const REPLIQUES = {
     commun: "Tu en as plusieurs qui correspondent. Laquelle ?",
     nora:   "Tu en as plusieurs qui correspondent. Laquelle veux-tu ?",
     sasha:  "Plusieurs correspondent. Laquelle ?",
+  },
+
+  /* ── V9C · les refus d'un geste de cycle ──
+     ⚠️ CHACUN DIT POURQUOI, ET DEUX D'ENTRE EUX PROPOSENT UNE SUITE. Un
+     geste refusé sans raison, c'est une demande sans réponse : le
+     symptôme que V9B a passé une vague à fermer. Le refus « masquée »
+     renvoie vers l'écran d'adaptation, parce que c'est là que ça se
+     règle, jamais dans la conversation. */
+  "impasse.etape_sans_programme": {
+    commun: "Tu n’as pas encore de programme, donc pas d’étape à remplacer 🙂 Dis-moi plutôt quelle séance tu veux faire, et je te la prépare.",
+    nora:   "Tu n’as pas encore de programme, donc il n’y a pas d’étape à remplacer 🙂 Dis-moi la séance que tu veux faire et je m’en occupe.",
+    sasha:  "Pas encore de programme, donc pas d’étape à remplacer 🙂 Dis-moi la séance que tu veux et je te la prépare.",
+  },
+  "impasse.etape_illisible": {
+    commun: "Je n’arrive pas à lire ton programme à l’instant 🤔 Réessaie dans un moment, je ne veux pas toucher à ton cycle sans être sûr.",
+    nora:   "Je n’arrive pas à lire ton programme à l’instant 🤔 Réessaie dans un moment : je préfère ne rien toucher à ton cycle tant que je ne suis pas sûre.",
+    sasha:  "Je n’arrive pas à lire ton programme là 🤔 Réessaie dans un moment : je ne touche pas à ton cycle à l’aveugle.",
+  },
+  "impasse.etape_introuvable": {
+    commun: (c: ContexteVoix) => `« ${c.titre ?? ""} » n’est pas une étape de ton programme 🤔 Dis-moi juste « autre chose que ma prochaine séance » et je m’en occupe.`,
+    nora:   (c: ContexteVoix) => `« ${c.titre ?? ""} » ne fait pas partie de ton cycle 🤔 Dis-moi « autre chose que ma prochaine séance » et je te propose ça.`,
+    sasha:  (c: ContexteVoix) => `« ${c.titre ?? ""} » n’est pas dans ton cycle 🤔 Dis « autre chose que ma prochaine séance ».`,
+  },
+  "impasse.etape_deja_resolue": {
+    commun: (c: ContexteVoix) => `« ${c.titre ?? ""} » est déjà réglée : ton cycle est passé à la suite 🙂`,
+    nora:   (c: ContexteVoix) => `« ${c.titre ?? ""} » est déjà derrière toi, ton cycle est passé à la suite 🙂`,
+    sasha:  (c: ContexteVoix) => `« ${c.titre ?? ""} » est déjà réglée, le cycle a avancé 🙂`,
+  },
+  "impasse.etape_masquee": {
+    commun: (c: ContexteVoix) => `« ${c.titre ?? ""} » est déjà mise de côté par ton adaptation${c.jour ? `, jusqu’au ${c.jour}` : ""}. Il n’y a rien à remplacer : tu peux gérer ton adaptation dans Entraînement.`,
+    nora:   (c: ContexteVoix) => `« ${c.titre ?? ""} » est déjà mise de côté par ton adaptation${c.jour ? `, jusqu’au ${c.jour}` : ""} : il n’y a rien à remplacer. Si tu veux la reprendre, ça se règle dans ton adaptation, côté Entraînement.`,
+    sasha:  (c: ContexteVoix) => `« ${c.titre ?? ""} » est déjà écartée par ton adaptation${c.jour ? ` jusqu’au ${c.jour}` : ""}. Rien à remplacer. Ça se gère dans Entraînement.`,
+  },
+  "impasse.etape_pas_la_prochaine": {
+    commun: (c: ContexteVoix) => `Je ne peux toucher qu’à ta prochaine étape${c.etape ? `, « ${c.etape} »` : ""} 🙂 Sauter plus loin ferait avancer ton cycle de plusieurs crans d’un coup.`,
+    nora:   (c: ContexteVoix) => `Je ne peux agir que sur ta prochaine étape${c.etape ? `, « ${c.etape} »` : ""} 🙂 Aller plus loin ferait avancer ton cycle de plusieurs crans d’un coup, sur des séances que tu n’as pas écartées.`,
+    sasha:  (c: ContexteVoix) => `Seulement ta prochaine étape${c.etape ? `, « ${c.etape} »` : ""} 🙂 Plus loin, ton cycle avancerait de plusieurs crans d’un coup.`,
+  },
+  "impasse.substitution_sans_contenu": {
+    commun: (c: ContexteVoix) => `Tu veux faire quoi à la place de « ${c.titre ?? ""} » ? Nomme-moi une de tes séances ou une du catalogue, par ex. « HIIT 20/10 » 🙂`,
+    nora:   (c: ContexteVoix) => `Tu veux faire quoi à la place de « ${c.titre ?? ""} » ? Nomme-moi une de tes séances ou une du catalogue, par ex. « HIIT 20/10 », et je te la prépare 🙂`,
+    sasha:  (c: ContexteVoix) => `Quoi à la place de « ${c.titre ?? ""} » ? Une de tes séances, ou une du catalogue (« HIIT 20/10 ») 🙂`,
+  },
+  "impasse.ajout_sans_jour": {
+    commun: "Quel jour veux-tu cette séance en plus ? Un supplément se pose toujours sur un jour précis 📅",
+    nora:   "Quel jour veux-tu cette séance en plus ? Un supplément se pose toujours sur un jour précis, sinon il reste en suspens 📅",
+    sasha:  "Quel jour, ce supplément ? « demain », « samedi » 📅",
+  },
+  "question.portee": {
+    commun: "C’est à la place de ta prochaine étape, ou en plus ?",
+    nora:   "Tu veux la faire à la place de ta prochaine étape, ou en plus de ce qui est prévu ?",
+    sasha:  "À la place de ta prochaine étape, ou en plus ?",
   },
 
   "impasse.library_sans_jour": {
@@ -778,6 +855,14 @@ const CLE_PAR_INTENT: Record<string, CleVoix> = {
   plan_location: "action.plan_location",
   plan_library:  "action.plan_library",
   plan_regen:    "action.plan_regen",
+  /* ⚠️ `plan_retirer` MANQUAIT DEPUIS V9B, et il tombait donc sur
+     `action.defaut` (« C'est noté ✦ ») : un filet correct, mais muet sur
+     ce qui allait s'afficher. Repéré en ajoutant les trois gestes de
+     V9C. */
+  plan_retirer:  "action.plan_retirer",
+  plan_ajouter:  "action.plan_ajouter",
+  etape_substituer: "action.etape_substituer",
+  etape_sauter:  "action.etape_sauter",
   log_meal:      "action.log_meal",
   create_recipe: "action.create_recipe",
   open_page:     "action.open_page",
@@ -1327,3 +1412,7 @@ TA MANIÈRE DE PARLER : ${TON_PAR_GUIDE[guide]} ${TON_COMMUN}
    /halt/i) : vérifier les deux côtés. */
 export const CHOIX_LIEU: string[] = ["En salle", "À la maison"];
 export const CHOIX_EQUIP: string[] = ["Oui, des haltères", "Au poids du corps"];
+/* V9C · ⚠️ L'ORDRE COMPTE : « à la place » d'abord, parce que c'est le
+   défaut verrouillé (décision 1 de V9) quand la personne oppose ce qu'elle
+   veut à ce que le programme prévoit. Le code reconnaît /place/i. */
+export const CHOIX_PORTEE: string[] = ["À la place", "En plus"];
