@@ -75,9 +75,9 @@ export type QuestionCliquable = {
   choix: string[];
   /** Réponse déjà donnée : la question devient inerte, on ne répond qu'une fois. */
   repondu?: string;
-  /** `lieu`, `equip`, `cible` et `portee` sont posées par le CODE
-   *  (déterministe) ; `libre` vient du coach. */
-  genre: "lieu" | "equip" | "libre" | "cible" | "portee";
+  /** `lieu`, `equip`, `cible`, `portee` et `contenu` sont posées par le
+   *  CODE (déterministe) ; `libre` vient du coach. */
+  genre: "lieu" | "equip" | "libre" | "cible" | "portee" | "contenu";
   relance?: string;
   /**
    * V9B, genre « cible » : quelle INTENTION chaque reponse designe.
@@ -100,6 +100,23 @@ export type QuestionCliquable = {
    * choisir laquelle des deux branches ouvrir.
    */
   substitution?: { etape?: string | null; quoi?: string | null; when?: string | null };
+  /**
+   * V9C bis, genre « contenu » : deux séances portent le nom qu'on a dit.
+   *
+   * ⚠️ ON RÉPOND PAR UNE RÉFÉRENCE (`lib:<id>` ou `cat:<slug>`), JAMAIS
+   * PAR UN TITRE : c'est justement le titre qui est ambigu. Et la source
+   * est RELUE au clic, donc la question survit à un rechargement au lieu
+   * de devenir inerte sans le dire.
+   */
+  contenus?: { choix: string; ref: string }[];
+  /**
+   * La demande d'origine, à rejouer une fois la séance choisie.
+   *
+   * ⚠️ ELLE NE REPASSE PAS PAR L'AIGUILLEUR, même raison que « cible » et
+   * « portee » : lui renvoyer le libellé choisi lui ferait re-décider une
+   * action à partir de trois mots sans contexte.
+   */
+  demande?: AssistantAction;
 };
 
 /** Nettoie les choix rendus par le modèle : 2 à 4 réponses courtes, non vides.

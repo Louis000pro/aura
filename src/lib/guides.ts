@@ -290,6 +290,13 @@ const REPLIQUES = {
     nora:   "Tu en as plusieurs qui correspondent. Laquelle veux-tu ?",
     sasha:  "Plusieurs correspondent. Laquelle ?",
   },
+  /* V9C bis · deux séances portent ce nom : on demande, on ne choisit
+     jamais la plus récente en silence à la place de quelqu'un. */
+  "question.quel_contenu": {
+    commun: "Deux séances portent ce nom. Laquelle tu veux ?",
+    nora:   "Deux séances portent ce nom. Dis-moi laquelle tu veux et je la mets.",
+    sasha:  "Deux séances portent ce nom. Laquelle ?",
+  },
 
   /* ── V9C · les refus d'un geste de cycle ──
      ⚠️ CHACUN DIT POURQUOI, ET DEUX D'ENTRE EUX PROPOSENT UNE SUITE. Un

@@ -48,6 +48,10 @@ import {
   resoudreCibles, type EtapeNommee, type GestePlanning,
 } from "@/lib/gestePlanning";
 import { viserEtape, type ResultatVisee } from "@/lib/etapeCiblee";
+import {
+  contenuParRef, libelleContenu, resoudreSeanceNommee,
+  type ContenuNomme, type ForceNom,
+} from "@/lib/contenuNomme";
 import { lireProgrammeActif } from "@/lib/programme";
 import { adaptationDuJour, idsMasques } from "@/lib/adaptation";
 import { etatMoteur, resumeMoteur } from "@/lib/guideMoteur";
@@ -429,7 +433,7 @@ function textMentionsTheme(text: string): boolean {
   return /(theme|mode\s*(?:sombre|clair|nuit|jour|noir|blanc|auto)|\bsombre\b|\bclair\b|\bnuit\b|dark\s*mode|night\s*mode|apparence|affichage|luminos|eblou|trop\s*(?:blanc|lumineu|clair|brillant|vif)|mal\s*aux\s*yeux|\becran\b|\bfond\b\s*(?:noir|blanc|sombre|clair))/.test(t);
 }
 
-/* ═══════════════ V9C · LE CONTENU D'UNE SUBSTITUTION ═══════════════
+/* ═══════════════ V9C bis · LE CONTENU QU'ON A NOMMÉ ═══════════════
 
    ⚠️ TROIS SOURCES AUTORISÉES, ET AUCUNE GÉNÉRATION LIBRE : le catalogue
    Vaiiya, la bibliothèque, une séance perso (décision 5 de V9). Une
@@ -437,74 +441,15 @@ function textMentionsTheme(text: string): boolean {
    ouvrirait une ambiguïté sur son propre tour futur (l'a-t-on avancée ?
    la refera-t-on ?), et c'est hors périmètre.
 
-   ⚠️ ET LE CATALOGUE SE CHARGE À LA DEMANDE, PAS À L'IMPORT. Ses
-   exercices vivent dans `WorkoutGuideModal`, qui importe `useAssistant` :
-   un import statique refermerait un cycle sur le contexte le plus haut de
-   l'app. Le tunnel est déjà monté globalement, donc l'import dynamique ne
-   télécharge rien de plus, il attend juste que les deux modules soient
-   initialisés.
+   ⚠️ ET LA RECONNAISSANCE A QUITTÉ CE FICHIER (V9C bis). Elle vivait ici,
+   donc elle ne servait qu'à la substitution : `plan_set` continuait de
+   GÉNÉRER une séance neuve quand on lui nommait « Express 12 ». Trois
+   gestes en ont besoin, ils partagent donc une seule autorité,
+   `contenuNomme`, qui décide aussi ce qu'on fait d'un nom ambigu.
 
    ⚠️ ON NE DEVINE PAS UN CONTENU. Si la demande ne nomme rien qu'on
    retrouve, on le DIT et on demande le nom : inventer une séance ici,
    ce serait la génération libre qu'on vient de s'interdire. */
-type ContenuSubstitution = {
-  title: string;
-  /* Les deux normalisations du produit, pas des chaînes libres : c'est ce
-     qui garantit qu'une séance venue de la bibliothèque et une séance venue
-     du catalogue produisent la même intention. */
-  category: ReturnType<typeof normalizeWorkoutCategory>;
-  difficulty: ReturnType<typeof normalizeDifficulty>;
-  exerciseList: unknown[];
-  /** Renvoi vers un modèle de la bibliothèque, ou `null` (catalogue). */
-  sessionId: string | null;
-};
-
-async function contenuSubstitution(userId: string, quoi: string): Promise<ContenuSubstitution | null> {
-  const nom = quoi.trim();
-  if (!nom) return null;
-
-  /* 1. SA bibliothèque d'abord : « ma séance Pompes » désigne la sienne,
-        pas une du catalogue qui lui ressemblerait. */
-  try {
-    const { data } = await createClient()
-      .from("custom_sessions")
-      .select("id, title, category, difficulty, exercise_list")
-      .eq("user_id", userId)
-      .ilike("title", `%${nom}%`)
-      .order("updated_at", { ascending: false })
-      .limit(1);
-    const row = data?.[0] as { id: string; title: string; category: string | null; difficulty: string | null; exercise_list: unknown } | undefined;
-    if (row) {
-      return {
-        title: row.title,
-        category: normalizeWorkoutCategory(row.category),
-        difficulty: normalizeDifficulty(row.difficulty),
-        exerciseList: normalizeExercises(row.exercise_list),
-        sessionId: row.id,
-      };
-    }
-  } catch { /* bibliothèque illisible : on tentera le catalogue */ }
-
-  /* 2. Le catalogue, quand elle le NOMME. Une séance du catalogue n'a pas
-        de renvoi de modèle (`refModele` le refuserait de toute façon : son
-        identifiant est un slug, pas une ligne de `custom_sessions`). */
-  try {
-    const { resolveSessionId, exerciseData } = await import("@/components/WorkoutGuideModal");
-    const slug = resolveSessionId(nom);
-    const exos = slug ? exerciseData[slug] : undefined;
-    if (slug && exos && exos.length > 0) {
-      return {
-        title: nom,
-        category: normalizeWorkoutCategory(null),
-        difficulty: normalizeDifficulty(null),
-        exerciseList: normalizeExercises(exos),
-        sessionId: null,
-      };
-    }
-  } catch { /* catalogue indisponible : on demandera le nom */ }
-
-  return null;
-}
 
 /** Ce que le Guide répond quand une étape ne peut pas être visée.
  *
@@ -915,6 +860,45 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
     setMessages((prev) => [...prev, { role: "assistant" as const, content: contenu, id: uid(), question: q, ton: "listen" as const }]);
   }, []);
 
+  /* ══════════ V9C bis · LE CONTENU QU'ON A NOMMÉ, ET RIEN D'AUTRE ══════════
+
+     Trois gestes ont besoin de reconnaître une séance qu'on leur nomme
+     (substituer, poser une séance sur un jour, en ajouter une en plus).
+     Ils passent tous par ici, pour la même raison que `viserEtape` existe
+     du côté des étapes : une reconnaissance écrite à trois endroits
+     donnerait trois réponses différentes au même mot.
+
+     ⚠️ TROIS ISSUES, ET AUCUNE N'EST MUETTE. Un contenu trouvé, une
+     ambiguïté qu'on ne tranche pas tout seul (on demande, la question
+     porte la demande d'origine), ou rien du tout, que l'appelant traite
+     selon ce que son geste sait faire d'un nom inconnu. */
+  const resoudreContenu = useCallback(async (
+    nom: string,
+    force: ForceNom,
+    demande: AssistantAction,
+  ): Promise<ContenuNomme | "demande" | null> => {
+    const compte = user?.id;
+    if (!compte) return null;
+    const res = await resoudreSeanceNommee(compte, nom, force, !!(user?.is_premium || user?.is_admin));
+    if (res.ok) return res.contenu;
+    if (res.raison === "aucune") return null;
+
+    /* ⚠️ ON DEMANDE PAR IDENTIFIANT, JAMAIS EN RENVOYANT LA PHRASE AU
+       MODÈLE : même raison que le « laquelle ? » de V9B, repasser trois
+       mots à l'aiguilleur rouvrirait l'ambiguïté qu'on lève. */
+    const vus = new Set<string>();
+    const contenus = res.candidats.slice(0, 4).map((c) => {
+      let choix = libelleContenu(c);
+      while (vus.has(choix)) choix += " ·";
+      vus.add(choix);
+      return { choix, ref: c.ref };
+    });
+    poserQuestion(voix(guideRef.current, "question.quel_contenu"), {
+      choix: contenus.map((c) => c.choix), genre: "contenu", contenus, demande,
+    });
+    return "demande";
+  }, [user?.id, user?.is_premium, user?.is_admin, poserQuestion]);
+
   /* ── V9B · LA CARTE D'UN GESTE QUI VISE UNE INTENTION DÉJÀ ÉCRITE ──
      Déplacer et retirer partagent tout : la ligne est trouvée, son
      identité est déclarée, et la conséquence se déduit de ce qu'elle
@@ -1006,6 +990,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
      séance que personne n'a encore faite. */
   const preparerSubstitution = useCallback(async (
     input: { etape?: string | null; quoi?: string | null; when?: string | null },
+    contenuImpose?: ContenuNomme,
   ) => {
     const compte = idPlanning;
     if (!compte) return;
@@ -1015,7 +1000,15 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
     if (!res.ok) { say(phraseRefus(guideRef.current, res)); return; }
     const { etape, apres, reservation, programmeId, adaptation } = res.visee;
 
-    const contenu = await contenuSubstitution(compte, input.quoi ?? "");
+    /* ⚠️ ICI ON DÉSIGNE, DONC ON RECONNAÎT LARGEMENT : « ma séance
+       Pompes » a le droit de retrouver « Pompes ». Générer n'a jamais été
+       une option sur ce geste (décision 5 de V9), donc un nom un peu lâche
+       ne risque pas de faire passer une invention pour un choix. */
+    const contenu = contenuImpose ?? await resoudreContenu(input.quoi ?? "", "large", {
+      intent: "etape_substituer", etape: input.etape ?? undefined,
+      quoi: input.quoi ?? undefined, when: input.when ?? undefined, portee: "a_la_place",
+    });
+    if (contenu === "demande") return;
     if (!contenu) { say(voix(guideRef.current, "impasse.substitution_sans_contenu", { titre: etape.nom })); return; }
 
     /* Le jour : celui qu'on demande, sinon CELUI DE LA RÉSERVATION quand
@@ -1031,10 +1024,17 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       id: reservation?.id ?? null,
       date,
       type: PLANNING_TYPE_BY_CATEGORY[contenu.category] ?? "Force",
+      /* ⚠️ SON TITRE RÉEL, JAMAIS LES MOTS DE LA DEMANDE. On écrivait la
+         phrase telle qu'elle était dite : « express 12 » restait en
+         minuscules dans le planning, et `resolveSessionId` ne retrouvait
+         plus ses animations le jour où on la relançait. */
       title: contenu.title,
-      difficulty: normalizeDifficulty(contenu.difficulty),
+      difficulty: contenu.difficulty,
       location: ctxFromLieu(saved.location, saved.equip),
-      exerciseList: normalizeExercises(contenu.exerciseList),
+      /* ⚠️ SA LISTE EXACTE, PAS UNE VERSION NORMALISÉE. `normalizeExercises`
+         COMBLE ce qui manque (`restAfter` absent devient 90) : Express 12
+         y gagnait six minutes de transitions et y perdait son `auto`. */
+      exerciseList: contenu.exerciseList,
       sessionId: contenu.sessionId,
       status: "planned",
       programmeId,
@@ -1060,7 +1060,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       retargetable: true,
       substitution: { etapeNom: etape.nom, apresNom: apres?.nom ?? null, jour },
     });
-  }, [idPlanning]);
+  }, [idPlanning, resoudreContenu]);
 
   /* ══════════════ V9C · SAUTER ══════════════
 
@@ -1099,7 +1099,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
 
   /* ── Action PLANNING (Phase 2) : prépare une carte de confirmation.
      Aucune écriture en base ici — tout passe par confirmPlan() (clic). ── */
-  const preparePlanAction = useCallback(async (action: AssistantAction, text: string) => {
+  const preparePlanAction = useCallback(async (action: AssistantAction, text: string, contenuImpose?: ContenuNomme) => {
     if (!user?.id) return;
     // Réponse courte du coach dans le fil (chaque impasse est explicite, jamais muette).
     // Une impasse est une explication : le Guide dit pourquoi rien ne
@@ -1289,30 +1289,28 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
         say(voix(guideRef.current, "impasse.library_sans_nom"));
         return;
       }
-      const supabase = createClient();
-      const { data } = await supabase
-        .from("custom_sessions")
-        .select("id, title, category, difficulty, exercise_list")
-        .eq("user_id", user.id)
-        .ilike("title", `%${title}%`)
-        .order("updated_at", { ascending: false })
-        .limit(1);
-      const row = data?.[0] as { id: string; title: string; category: string | null; difficulty: string | null; exercise_list: unknown } | undefined;
-      if (!row) {
+      /* ⚠️ V9C bis · CE GESTE DÉSIGNE, IL NE COMPOSE JAMAIS, donc il passe
+         par l'autorité et il voit désormais le CATALOGUE en plus de la
+         bibliothèque : « mets Express 12 mardi » désignait une séance qui
+         existe et se faisait répondre qu'elle est introuvable. Il perd au
+         passage son `.limit(1)` sur la plus récemment modifiée, qui
+         choisissait en silence entre deux séances du même nom. */
+      const contenuLib = contenuImpose ?? await resoudreContenu(title, "large", action);
+      if (contenuLib === "demande") return;
+      if (!contenuLib) {
         say(voix(guideRef.current, "impasse.library_introuvable", { titre: title }));
         return;
       }
-      const category = normalizeWorkoutCategory(row.category);
       const saved = readLieu(user.id);
       const libDay: PlanningDay = {
         id: null,
         date: day,
-        type: PLANNING_TYPE_BY_CATEGORY[category] ?? "Force",
-        title: row.title,
-        difficulty: normalizeDifficulty(row.difficulty),
+        type: PLANNING_TYPE_BY_CATEGORY[contenuLib.category] ?? "Force",
+        title: contenuLib.title,
+        difficulty: contenuLib.difficulty,
         location: ctxFromLieu(saved.location, saved.equip),
-        exerciseList: normalizeExercises(row.exercise_list),
-        sessionId: row.id,
+        exerciseList: contenuLib.exerciseList,
+        sessionId: contenuLib.sessionId,
         status: "planned",
       };
       /* ⚠️ LA CIBLE SE DÉCLARE ICI, ET PAS À L'ÉCRITURE (V9B). Sans `id`,
@@ -1324,7 +1322,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       const libJour: PlanningDay = { ...libDay, id: cible?.id ?? null };
       setPendingPlan({
         ...texteCartePlan(libJour, cible ? dayTitle(cible) : null, verbePose(gardee)),
-        title: row.title,
+        title: contenuLib.title,
         consequence: consequencePose(cible, gardee),
         geste: cible ? { type: "remplacer", jour: libJour } : { type: "ajouter", jour: libJour },
         preview: libJour,
@@ -1384,6 +1382,60 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
     const actuelle = principale(jourVise);
     if (action.intent === "plan_location") {
       baseDesc = actuelle && actuelle.title ? actuelle.title : "séance complète";
+    }
+
+    /* ══════════ V9C bis · UNE SÉANCE QU'ON NOMME N'EST PAS UNE SÉANCE
+       À COMPOSER, ET C'ÉTAIT LE DÉFAUT RÉEL. ══════════
+
+       « Remplace ma séance d'aujourd'hui par Express 12 » arrivait ici,
+       et « Express 12 » n'était rien de plus qu'un bout de phrase passé
+       à `/api/workout/generate` : le générateur rendait une séance neuve
+       (« Force Express Maison », 6 mouvements) alors qu'Express 12 existe
+       et en porte 5. L'intention était comprise, l'objet perdu.
+
+       ⚠️ LA RECONNAISSANCE EST EXACTE ICI, ET LARGE AILLEURS. Ce geste
+       DÉCRIT ce qu'il veut, et composer est son métier : « du dos »,
+       « une séance jambes de 30 min » doivent continuer de générer. Seule
+       une demande qui EST le nom d'une séance prend le dessus. Les gestes
+       qui DÉSIGNENT (`plan_library`, le contenu d'une substitution)
+       reconnaissent largement, eux, puisque générer n'y est pas une option.
+
+       ⚠️ ET `plan_location` RESTE DEHORS. Sa description est le titre de
+       la séance DÉJÀ posée sur ce jour : la reconnaître, ce serait reposer
+       la même au lieu de la recomposer pour le nouveau lieu, c'est-à-dire
+       retourner le geste contre lui-même. */
+    const nomme = (action.intent === "plan_set" || estAjout)
+      ? (contenuImpose ?? await resoudreContenu(baseDesc, "exacte", action))
+      : null;
+    if (nomme === "demande") return;
+    if (nomme) {
+      const jourNomme: PlanningDay = {
+        id: cible?.id ?? null,
+        date: when,
+        type: PLANNING_TYPE_BY_CATEGORY[nomme.category] ?? "Force",
+        title: nomme.title,
+        difficulty: nomme.difficulty,
+        location: ctx,
+        /* Sa liste, dans son ordre, avec ses temps : rien n'est recomposé
+           et rien n'est comblé. */
+        exerciseList: nomme.exerciseList,
+        sessionId: nomme.sessionId,
+        status: "planned",
+      };
+      setPendingPlan({
+        ...texteCartePlan(jourNomme, cible ? dayTitle(cible) : null, estAjout ? "Ajouter" : verbePose(gardee)),
+        ...(estAjout ? { kicker: `En plus · ${CAP(dayLabelLong(when))}` } : {}),
+        title: nomme.title,
+        consequence: estAjout ? consequenceSupplement(null) : consequencePose(cible, gardee),
+        geste: cible ? { type: "remplacer", jour: jourNomme } : { type: "ajouter", jour: jourNomme },
+        preview: jourNomme,
+        retargetable: true,
+        forcerAjout: estAjout,
+        /* Pas de « garder aussi » : cette séance existe déjà, dans sa
+           bibliothèque ou dans le catalogue. La proposer une seconde fois
+           ferait un doublon à son nom. */
+      });
+      return;
     }
 
     setActionLoading("seance");
@@ -1448,7 +1500,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setActionLoading(null);
     }
-  }, [user?.id, buildNutritionNote, poserQuestion, verifierPlaces, preparerSurCible]);
+  }, [user?.id, buildNutritionNote, poserQuestion, verifierPlaces, preparerSurCible, resoudreContenu]);
 
   /* ── Mémoire long terme (silencieuse, best-effort) ──
      Volontairement restée sur son propre petit appel : elle n'a rien à voir
@@ -2116,9 +2168,33 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
+    /* V9C bis · « Laquelle de ces deux séances ? » La réponse désigne une
+       SOURCE, qu'on relit avant de composer quoi que ce soit, puis on
+       rejoue exactement la demande d'origine avec elle. Aucune écriture
+       ici non plus : c'est le bouton violet qui écrit. */
+    if (q.genre === "contenu" && user?.id && q.demande) {
+      const trouve = (q.contenus ?? []).find((c) => c.choix === choix);
+      if (!trouve) return;
+      const demande = q.demande;
+      const compte = user.id;
+      const premium = !!(user.is_premium || user.is_admin);
+      void contenuParRef(compte, trouve.ref, premium).then((contenu) => {
+        if (!contenu) return;
+        if (demande.intent === "etape_substituer") {
+          void preparerSubstitution(
+            { etape: demande.etape ?? null, quoi: demande.quoi ?? null, when: demande.when ?? null },
+            contenu,
+          );
+        } else {
+          void preparePlanAction(demande, demande.description ?? demande.title ?? "", contenu);
+        }
+      });
+      return;
+    }
+
     // Question libre du coach : sa réponse repart telle quelle.
     sendMessage(choix, true);
-  }, [messages, isStreaming, user?.id, persist, sendMessage, preparerSurCible, preparerSubstitution, preparePlanAction]);
+  }, [messages, isStreaming, user?.id, user?.is_premium, user?.is_admin, persist, sendMessage, preparerSurCible, preparerSubstitution, preparePlanAction]);
 
   /* ── Contrôles ── */
   const open = useCallback((prefill?: string) => {

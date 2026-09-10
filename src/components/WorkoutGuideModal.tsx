@@ -615,90 +615,100 @@ export const exerciseData: Record<string, Exercise[]> = {
 const fmt = (s: number) =>
   `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
 
+/* ⚠️ CETTE TABLE PORTE DES ALIAS, ET CE N'EST PAS DU DOUBLON. Un titre de
+   séance n'est pas qu'un libellé : il est écrit dans `workout_sessions.title`
+   au moment où la séance est faite, et c'est par lui que « Refaire » retrouve
+   le tunnel des années plus tard. Renommer un titre à l'écran sans garder
+   l'ancien ici ferait perdre son animation à tout l'historique déjà écrit.
+   Le premier de chaque paire est le titre affiché aujourd'hui, le second
+   l'ancien. Précédent : « HIIT Brûle-Graisses », renommé le 2026-07-26.
+
+   ⚠️ ELLE EST SORTIE DE `resolveSessionId` EN V9C bis, ET C'EST TOUT
+   L'INTÉRÊT : le Guide a besoin de reconnaître une séance du catalogue
+   qu'on lui NOMME (« remplace aujourd'hui par Express 12 »), et il doit
+   le faire sur la même table que « Refaire ». En recopier une seconde
+   ailleurs, ce serait garantir qu'elles divergent au premier titre
+   ajouté, et qu'une séance existe pour un écran et pas pour l'autre.
+   L'ORDRE COMPTE : pour un slug donné, la PREMIÈRE clé est le titre
+   affiché, c'est celle que `contenuNomme` rend à l'écran. */
+export const SESSION_SLUGS: Record<string, string> = {
+  "Force Haut du Corps":   "force-haut",
+  "Full Body Débutant":    "fullbody-deb",
+  "HIIT 20/10":            "hiit",
+  "HIIT Brûle-Graisses":   "hiit",
+  "Jambes & Fessiers":     "jambes",
+  "Mobilité Matinale":     "mobilite",
+  "Dos & Biceps":          "dos-biceps",
+  "Core & Gainage":        "core",
+  "Endurance Cardio":      "cardio-endurance",
+  "Haut du corps en salle": "salle-haut",
+  "Haut du corps — Salle": "salle-haut",
+  "Récupération active":   "recup-active",
+  "Défi Gainage":          "defi-gainage",
+  "Express 12":            "express-12",
+  "Reprendre en douceur":  "reprise-douce",
+  "Appartement silencieux":"appartement-silencieux",
+  "Jambes au poids du corps": "jambes-poids-corps",
+  "Haut du corps au sol":  "haut-corps-sol",
+  "Full Body Intermédiaire": "fullbody-inter",
+  "Puissance sans matériel": "puissance-sans-materiel",
+  "Découverte des machines": "salle-decouverte",
+  "Push, pectoraux et épaules": "push-salle",
+  "Push — Pectoraux & épaules": "push-salle",
+  "Jambes, dominante quadriceps": "jambes-quadriceps",
+  "Jambes — Dominante quadriceps": "jambes-quadriceps",
+  "Chaîne postérieure": "chaine-posterieure",
+  "Épaules & bras": "epaules-bras",
+  "Full Body Machines": "fullbody-machines",
+  "Posture après écran": "posture-ecran",
+  "Hanches libres": "hanches-libres",
+  "Épaules & haut du dos": "epaules-haut-dos-mobilite",
+  "Chevilles & squat": "chevilles-squat",
+  "Colonne mobile": "colonne-mobile",
+  "Mobilité complète": "mobilite-complete",
+  "Mobilité active": "mobilite-active",
+  "Cardio sans saut": "cardio-sans-saut",
+  "Tabata Express": "tabata-express",
+  "Cardio de salle": "cardio-salle",
+  "Pyramide cardio": "pyramide-cardio",
+  "Cardio et force aux haltères": "cardio-halteres",
+  "Cardio & force — Haltères": "cardio-halteres",
+  "Retour au calme": "retour-au-calme",
+  "Pause détente": "pause-detente",
+  "Récupération jambes": "recup-jambes",
+  "Haut du corps relâché": "recup-haut-corps",
+  "Dos relâché": "dos-relache",
+  "Soir calme": "soir-calme",
+  "Lendemain de séance": "lendemain-seance",
+  "Récupération complète": "recup-complete",
+  "Les bases du mouvement": "bases-mouvement",
+  "Squat maîtrisé": "squat-maitrise",
+  "Pompes maîtrisées": "pompes-maitrise",
+  "Tractions, construire le mouvement": "tractions-progression",
+  "Tractions — Construire le mouvement": "tractions-progression",
+  "Charnière de hanche": "charniere-hanche",
+  "Gainage, progresser": "gainage-progression",
+  "Gainage — Progresser": "gainage-progression",
+  "Épaules, mobilité et contrôle": "epaules-controle",
+  "Épaules — Mobilité & contrôle": "epaules-controle",
+  "Unilatéral, maîtriser les appuis": "unilateral-maitrise",
+  "Unilatéral — Maîtriser les appuis": "unilateral-maitrise",
+  "Tempo, ralentir pour progresser": "tempo-controle",
+  "Tempo — Ralentir pour progresser": "tempo-controle",
+};
+
 /**
  * Résout l'id de session depuis le titre d'un post.
  * Retourne null si aucune séance intégrée ne correspond
  * (séance perso ou titre inconnu).
  */
 export function resolveSessionId(title: string): string | null {
-  /* ⚠️ CETTE TABLE PORTE DES ALIAS, ET CE N'EST PAS DU DOUBLON. Un titre de
-     séance n'est pas qu'un libellé : il est écrit dans `workout_sessions.title`
-     au moment où la séance est faite, et c'est par lui que « Refaire » retrouve
-     le tunnel des années plus tard. Renommer un titre à l'écran sans garder
-     l'ancien ici ferait perdre son animation à tout l'historique déjà écrit.
-     Le premier de chaque paire est le titre affiché aujourd'hui, le second
-     l'ancien. Précédent : « HIIT Brûle-Graisses », renommé le 2026-07-26. */
-  const MAP: Record<string, string> = {
-    "Force Haut du Corps":   "force-haut",
-    "Full Body Débutant":    "fullbody-deb",
-    "HIIT 20/10":            "hiit",
-    "HIIT Brûle-Graisses":   "hiit",
-    "Jambes & Fessiers":     "jambes",
-    "Mobilité Matinale":     "mobilite",
-    "Dos & Biceps":          "dos-biceps",
-    "Core & Gainage":        "core",
-    "Endurance Cardio":      "cardio-endurance",
-    "Haut du corps en salle": "salle-haut",
-    "Haut du corps — Salle": "salle-haut",
-    "Récupération active":   "recup-active",
-    "Défi Gainage":          "defi-gainage",
-    "Express 12":            "express-12",
-    "Reprendre en douceur":  "reprise-douce",
-    "Appartement silencieux":"appartement-silencieux",
-    "Jambes au poids du corps": "jambes-poids-corps",
-    "Haut du corps au sol":  "haut-corps-sol",
-    "Full Body Intermédiaire": "fullbody-inter",
-    "Puissance sans matériel": "puissance-sans-materiel",
-    "Découverte des machines": "salle-decouverte",
-    "Push, pectoraux et épaules": "push-salle",
-    "Push — Pectoraux & épaules": "push-salle",
-    "Jambes, dominante quadriceps": "jambes-quadriceps",
-    "Jambes — Dominante quadriceps": "jambes-quadriceps",
-    "Chaîne postérieure": "chaine-posterieure",
-    "Épaules & bras": "epaules-bras",
-    "Full Body Machines": "fullbody-machines",
-    "Posture après écran": "posture-ecran",
-    "Hanches libres": "hanches-libres",
-    "Épaules & haut du dos": "epaules-haut-dos-mobilite",
-    "Chevilles & squat": "chevilles-squat",
-    "Colonne mobile": "colonne-mobile",
-    "Mobilité complète": "mobilite-complete",
-    "Mobilité active": "mobilite-active",
-    "Cardio sans saut": "cardio-sans-saut",
-    "Tabata Express": "tabata-express",
-    "Cardio de salle": "cardio-salle",
-    "Pyramide cardio": "pyramide-cardio",
-    "Cardio et force aux haltères": "cardio-halteres",
-    "Cardio & force — Haltères": "cardio-halteres",
-    "Retour au calme": "retour-au-calme",
-    "Pause détente": "pause-detente",
-    "Récupération jambes": "recup-jambes",
-    "Haut du corps relâché": "recup-haut-corps",
-    "Dos relâché": "dos-relache",
-    "Soir calme": "soir-calme",
-    "Lendemain de séance": "lendemain-seance",
-    "Récupération complète": "recup-complete",
-    "Les bases du mouvement": "bases-mouvement",
-    "Squat maîtrisé": "squat-maitrise",
-    "Pompes maîtrisées": "pompes-maitrise",
-    "Tractions, construire le mouvement": "tractions-progression",
-    "Tractions — Construire le mouvement": "tractions-progression",
-    "Charnière de hanche": "charniere-hanche",
-    "Gainage, progresser": "gainage-progression",
-    "Gainage — Progresser": "gainage-progression",
-    "Épaules, mobilité et contrôle": "epaules-controle",
-    "Épaules — Mobilité & contrôle": "epaules-controle",
-    "Unilatéral, maîtriser les appuis": "unilateral-maitrise",
-    "Unilatéral — Maîtriser les appuis": "unilateral-maitrise",
-    "Tempo, ralentir pour progresser": "tempo-controle",
-    "Tempo — Ralentir pour progresser": "tempo-controle",
-  };
-  if (MAP[title]) return MAP[title];
-  // recherche partielle (ex: "Force Haut du Corps · 42 min" → "force-haut")
-  for (const [key, val] of Object.entries(MAP)) {
+  if (SESSION_SLUGS[title]) return SESSION_SLUGS[title];
+  // recherche partielle (ex: "Force Haut du Corps . 42 min" -> "force-haut")
+  for (const [key, val] of Object.entries(SESSION_SLUGS)) {
     if (title.toLowerCase().includes(key.toLowerCase())) return val;
   }
-  return null; // séance perso ou titre inconnu
+  return null; // seance perso ou titre inconnu
 }
 
 /* ─── Component ──────────────────────────────────────────── */

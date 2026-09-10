@@ -31,7 +31,7 @@ import {
 import {
   cycleDeReference, seancesDuCycle, previewWeek, weekDates, ANCIEN, NOUVEAU,
   ordonner, parDate, principale, supplements, seancesDuJour, prochaineSeanceDuJour,
-  refModele, lienProgramme, prochainsJours, todayYmd,
+  refModele, lienProgramme, prochainsJours, todayYmd, normalizeExercises,
   cibleRemplacable, estMobilier, reserveUneEtape, vientDuProgramme,
   type PlanningDay, type CycleSemaine,
 } from "@/lib/planning";
@@ -41,6 +41,12 @@ import {
   etapeParNom, resoudreCibles,
 } from "@/lib/gestePlanning";
 import { verdictEtape } from "@/lib/etapeCiblee";
+import {
+  candidatsParNom, clefDeNom, copierExercices, entreeBibliotheque, entreesCatalogue,
+  libelleContenu,
+  type SourcesCatalogue,
+} from "@/lib/contenuNomme";
+import { WAVE_1_EXERCISES } from "@/lib/workoutWave1";
 import { voix, voixAction, CHOIX_PORTEE, type CleVoix } from "@/lib/guides";
 import { ASSISTANT_TOOLS } from "@/lib/assistantTools";
 import {
@@ -3507,6 +3513,321 @@ verdict(
         .replace("${RIEN}", "rien_a_faire").length === 316;
     })(),
     "la fiabilité s'écroule avec la longueur : décision 7 de V9, l'aiguilleur reste aveugle et pauvre",
+  );
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   V9C bis · UNE SÉANCE QU'ON NOMME EST CELLE-LÀ, PAS UNE QUI LUI
+   RESSEMBLE.
+
+   Cas réel, Louis, 2026-09-10 : « remplace ma séance d'aujourd'hui par
+   Express 12 » a rendu une carte « Force Express Maison » de 6
+   mouvements. Express 12 existe, elle en porte 5, dont un chronométré.
+
+   ⚠️ ET LA CAUSE N'EST PAS UN MAUVAIS APPARIEMENT, C'EST L'ABSENCE
+   D'APPARIEMENT : `plan_set` n'a jamais cherché à reconnaître une séance
+   existante, il passe la demande à un générateur qui compose du neuf et
+   invente un titre. Le nom n'est jamais devenu une identité.
+
+   Ce que ce bloc tient : la reconnaissance (pure), la COPIE (pure, et
+   c'est elle qui garantit que le contenu est bien celui de la source),
+   et les propriétés du CHEMIN qu'aucune valeur ne peut prouver (qui
+   génère, qui ne génère pas, qui écrit).
+   ════════════════════════════════════════════════════════════════════ */
+{
+  const lire9D = (f: string) => readFileSync(new URL("../" + f, import.meta.url), "utf8");
+  const CTX9D = lire9D("src/context/AssistantContext.tsx");
+  const NOM9D = lire9D("src/lib/contenuNomme.ts");
+  const TUNNEL9D = lire9D("src/components/WorkoutGuideModal.tsx");
+
+  /* ⚠️ LA VRAIE SÉANCE, PAS UNE COPIE DE TEST. Le banc lit `express-12`
+     dans le fichier du catalogue : c'est le seul moyen que « même
+     contenu que la source » veuille dire quelque chose. */
+  const EXPRESS = WAVE_1_EXERCISES["express-12"];
+
+  const SRC9D: SourcesCatalogue = {
+    fiches: [
+      { id: "express-12", title: "Express 12", category: "fullbody", difficulty: "Débutant", access: "free" },
+      { id: "reprise-douce", title: "Reprendre en douceur", category: "fullbody", difficulty: "Débutant", access: "free" },
+      { id: "fullbody-inter", title: "Full Body Intermédiaire", category: "fullbody", difficulty: "Intermédiaire", access: "premium" },
+      { id: "lecture-x", title: "Bien récupérer", category: "fullbody", difficulty: "Débutant", contentType: "article" },
+      { id: "vide-x", title: "Séance sans contenu", category: "force", difficulty: "Débutant" },
+    ],
+    slugs: {
+      "Express 12": "express-12",
+      "Reprendre en douceur": "reprise-douce",
+      "Full Body Intermédiaire": "fullbody-inter",
+      /* Un alias historique : le titre a changé, l'ancien reste reconnu. */
+      "Reprise en douceur": "reprise-douce",
+    },
+    exos: {
+      "express-12": EXPRESS,
+      "reprise-douce": WAVE_1_EXERCISES["reprise-douce"],
+      "fullbody-inter": WAVE_1_EXERCISES["fullbody-inter"],
+    },
+  };
+
+  const CAT9D = entreesCatalogue(SRC9D, false);
+  const CAT9D_PREMIUM = entreesCatalogue(SRC9D, true);
+
+  /* Une séance perso qui porte EXACTEMENT le nom d'une séance du
+     catalogue : c'est le seul cas d'ambiguïté que le produit peut
+     vraiment rencontrer. */
+  const PERSO_EXPRESS = entreeBibliotheque({
+    id: "u-1", title: "Express 12", category: "force", difficulty: "Avancé",
+    exercise_list: [{ name: "Burpees", sets: 4, reps: "10 reps", rest: 45, tip: "", benefit: "", muscles: ["Cardio"] }],
+  });
+  const PERSO_POMPES = entreeBibliotheque({
+    id: "u-2", title: "Pompes du lundi", category: "force", difficulty: "Intermédiaire",
+    exercise_list: [{ name: "Pompes", sets: 3, reps: "12 reps", rest: 60, tip: "", benefit: "", muscles: ["Pectoraux"] }],
+  });
+
+  /* Comparaison champ par champ : `JSON.stringify` dépend de l'ORDRE des
+     clés, or la source déclare `auto` au milieu de l'objet et la copie
+     l'ajoute à la fin. Ce serait un faux échec, et surtout ça ne dirait
+     rien de ce qui compte. */
+  const CHAMPS9D = ["name", "sets", "reps", "rest", "restAfter", "auto", "hiit", "tip", "benefit"] as const;
+  const memeExo = (a: Record<string, unknown>, b: Record<string, unknown>) =>
+    CHAMPS9D.every((c) => a[c] === b[c])
+    && JSON.stringify(a.muscles ?? []) === JSON.stringify(b.muscles ?? []);
+  const memeListe = (a: unknown[], b: unknown[]) =>
+    a.length === b.length
+    && a.every((x, i) => memeExo(x as Record<string, unknown>, b[i] as Record<string, unknown>));
+
+  const expressCat = CAT9D.find((e) => e.contenu.ref === "cat:express-12")?.contenu;
+
+  /* ── 1. LE CAS RÉEL, REJOUÉ TEL QUEL ────────────────────────────── */
+
+  verdict(
+    "V9C bis · « Express 12 » désigne UNE séance, et sans ambiguïté",
+    (() => {
+      const t = candidatsParNom("Express 12", CAT9D, "exacte");
+      return t.length === 1 && t[0].contenu.ref === "cat:express-12";
+    })(),
+    "c'est le point exact où l'identité se perdait : le nom n'était comparé à rien",
+  );
+  verdict(
+    "V9C bis · elle porte SON titre, pas les mots de la demande",
+    candidatsParNom("express 12", CAT9D, "exacte")[0]?.contenu.title === "Express 12",
+    "« express 12 » écrit en minuscules dans le planning ne retrouve plus ses animations",
+  );
+  verdict(
+    "V9C bis · elle porte SES 5 mouvements, pas 6",
+    expressCat?.exerciseList.length === 5 && EXPRESS.length === 5,
+    "la carte fautive en annonçait 6 : c'est le signe qu'elle avait été composée, pas reprise",
+  );
+  verdict(
+    "V9C bis · même liste, même ORDRE, mêmes paramètres que la source",
+    !!expressCat && memeListe(expressCat.exerciseList as unknown[], EXPRESS as unknown[]),
+    "« utiliser exactement cette séance » n'a de sens que si rien n'est recomposé en chemin",
+  );
+  verdict(
+    "V9C bis · son mouvement chronométré garde son chrono",
+    expressCat?.exerciseList.find((e) => e.name === "Mountain climbers")?.auto === 30,
+    "sans `auto`, le compte à rebours ne part plus et l'exercice attend un geste qui ne vient pas",
+  );
+  verdict(
+    "V9C bis · sa catégorie et sa difficulté sont les VRAIES",
+    expressCat?.category === "fullbody" && expressCat?.difficulty === "Débutant",
+    "elle était étiquetée « Force · Intermédiaire » par défaut, faute de lire sa fiche",
+  );
+  verdict(
+    "V9C bis · une séance du catalogue ne prétend pas venir de la bibliothèque",
+    expressCat?.sessionId === null,
+    "`session_id` est une clé étrangère vers `custom_sessions` : un slug y est refusé par la base (défaut V6b)",
+  );
+
+  /* ── 2. LA COPIE N'INVENTE RIEN, ET C'EST TOUT LE SUJET ─────────── */
+
+  verdict(
+    "V9C bis · copier n'ajoute pas de transition qui n'existe pas",
+    copierExercices(EXPRESS).every((e) => e.restAfter === undefined),
+    "aucune des 53 séances du catalogue ne déclare `restAfter` : en inventer 90 ajoute six minutes à une séance de douze",
+  );
+  verdict(
+    "V9C bis · TÉMOIN · la normalisation d'usage, elle, aurait inventé",
+    (() => {
+      const n = normalizeExercises(EXPRESS as unknown[]);
+      const mc = n.find((e) => e.name === "Mountain climbers") as { auto?: number } | undefined;
+      return n.every((e) => e.restAfter === 90) && mc?.auto === undefined;
+    })(),
+    "elle COMBLE une forme inconnue, c'est son métier : passer une séance existante dedans la modifie",
+  );
+  verdict(
+    "V9C bis · copier garde un repos nul au lieu d'en fabriquer un",
+    copierExercices([{ name: "Planche, le record", sets: 1, reps: "Max", rest: 0, tip: "", benefit: "", muscles: [] }])[0].rest === 0,
+    "`Number(0) || 60` rend 60 : le dernier exercice d'un défi gagnait une minute de repos que personne n'a écrite",
+  );
+  verdict(
+    "V9C bis · copier ne garde rien qui n'ait de nom",
+    copierExercices([{ name: "" }, { sets: 3 }, { name: "Squat", sets: 2, reps: "15", rest: 30, tip: "", benefit: "", muscles: [] }]).length === 1,
+    "une ligne sans mouvement n'est pas un mouvement",
+  );
+  verdict(
+    "V9C bis · copier ne renvoie pas les objets de la source",
+    copierExercices(EXPRESS)[0] !== (EXPRESS as unknown[])[0],
+    "une intention qui partagerait ses objets avec le catalogue le modifierait en se modifiant",
+  );
+
+  /* ── 3. DÉCRIRE N'EST PAS DÉSIGNER ──────────────────────────────── */
+
+  verdict(
+    "V9C bis · une demande DESCRIPTIVE continue de générer",
+    candidatsParNom("du dos", CAT9D, "exacte").length === 0
+      && candidatsParNom("une séance jambes de 30 min", CAT9D, "exacte").length === 0,
+    "composer est le métier de `plan_set` : seule une demande qui EST un nom a le droit de le lui retirer",
+  );
+  verdict(
+    "V9C bis · un geste qui DÉSIGNE reconnaît largement",
+    (() => {
+      const t = candidatsParNom("ma séance Pompes", [PERSO_POMPES, ...CAT9D], "large");
+      return t.length === 1 && t[0].contenu.ref === "lib:u-2";
+    })(),
+    "« ma séance Pompes » désigne la sienne, et générer n'a jamais été une option sur ce geste",
+  );
+  verdict(
+    "V9C bis · ce qui présente la séance n'est pas ce qui la nomme",
+    clefDeNom("ma séance Express 12") === "express 12" && clefDeNom("séance") === "",
+    "chercher « ma séance Pompes » tel quel dans les titres ne trouve jamais rien",
+  );
+  verdict(
+    "V9C bis · un nom exact l'emporte sur tous les à-peu-près",
+    (() => {
+      const t = candidatsParNom("Express 12", [PERSO_POMPES, ...CAT9D], "large");
+      return t.length === 1 && t[0].contenu.ref === "cat:express-12";
+    })(),
+    "sinon un titre qui en contient un autre rendrait ambigu un nom pourtant écrit mot pour mot",
+  );
+  verdict(
+    "V9C bis · un alias historique désigne toujours la séance, sous son titre d'aujourd'hui",
+    (() => {
+      const t = candidatsParNom("Reprise en douceur", CAT9D, "exacte");
+      return t.length === 1 && t[0].contenu.title === "Reprendre en douceur";
+    })(),
+    "même règle que « Refaire » : renommer une séance ne doit pas la rendre introuvable",
+  );
+  verdict(
+    "V9C bis · un nom vide ne désigne rien",
+    candidatsParNom("", CAT9D, "large").length === 0 && candidatsParNom("   ", CAT9D, "exacte").length === 0,
+    "sans nom il n'y a rien à reconnaître, et surtout rien à choisir au hasard",
+  );
+
+  /* ── 4. ON NE TRANCHE PAS UNE AMBIGUÏTÉ TOUT SEUL ───────────────── */
+
+  verdict(
+    "V9C bis · deux séances du même nom rendent DEUX candidates",
+    candidatsParNom("Express 12", [PERSO_EXPRESS, ...CAT9D], "exacte").length === 2,
+    "l'ancien chemin faisait `.limit(1)` sur la plus récemment modifiée : il choisissait en silence",
+  );
+  verdict(
+    "V9C bis · la sienne est proposée en premier",
+    candidatsParNom("Express 12", [PERSO_EXPRESS, ...CAT9D], "exacte")[0].contenu.source === "bibliotheque",
+    "quand on nomme une séance qu'on a écrite soi-même, c'est d'elle qu'on parle d'abord",
+  );
+  verdict(
+    "V9C bis · les deux candidates se distinguent à l'écran",
+    (() => {
+      const t = candidatsParNom("Express 12", [PERSO_EXPRESS, ...CAT9D], "exacte");
+      return libelleContenu(t[0].contenu) !== libelleContenu(t[1].contenu);
+    })(),
+    "une question dont les deux réponses portent le même mot ne lève aucune ambiguïté",
+  );
+  verdict(
+    "V9C bis · une même séance ne se propose jamais deux fois",
+    candidatsParNom("Reprendre en douceur", CAT9D, "large").length === 1,
+    "elle porte deux titres reconnus : les compter tous les deux inventerait un choix à faire",
+  );
+
+  /* ── 5. CE QUE LE CATALOGUE NE PROPOSE PAS ──────────────────────── */
+
+  verdict(
+    "V9C bis · une séance Premium n'est pas proposable à qui ne l'a pas",
+    CAT9D.every((e) => e.contenu.ref !== "cat:fullbody-inter")
+      && candidatsParNom("Full Body Intermédiaire", CAT9D, "exacte").length === 0,
+    "la poser depuis la conversation ouvrirait en la NOMMANT ce que le catalogue ferme à l'écran",
+  );
+  verdict(
+    "V9C bis · et elle l'est pour qui l'a",
+    CAT9D_PREMIUM.some((e) => e.contenu.ref === "cat:fullbody-inter"),
+    "chez un abonné, une séance Premium est simplement une séance",
+  );
+  verdict(
+    "V9C bis · un mini-cours ne se pose pas sur un jour",
+    CAT9D_PREMIUM.every((e) => e.contenu.ref !== "cat:lecture-x"),
+    "c'est une lecture : elle n'a aucun mouvement à mettre dans une intention",
+  );
+  verdict(
+    "V9C bis · une séance sans mouvement n'est pas proposable",
+    CAT9D_PREMIUM.every((e) => e.contenu.ref !== "cat:vide-x"),
+    "proposer une séance vide, c'est promettre un contenu qu'on n'a pas",
+  );
+
+  /* ── 6. CE QUI EST UNE PROPRIÉTÉ DU CHEMIN ──────────────────────── */
+
+  verdict(
+    "V9C bis · SOURCE · une séance nommée est reconnue AVANT toute génération",
+    (() => {
+      const i = CTX9D.indexOf('resoudreContenu(baseDesc, "exacte", action)');
+      const g = CTX9D.indexOf('aiFetch("/api/workout/generate"');
+      return i > 0 && g > i;
+    })(),
+    "c'est LE défaut : « Express 12 » partait au générateur sans avoir jamais été comparé à quoi que ce soit",
+  );
+  verdict(
+    "V9C bis · SOURCE · `plan_location` reste hors de cette reconnaissance",
+    CTX9D.includes('const nomme = (action.intent === "plan_set" || estAjout)'),
+    "sa description EST le titre de la séance déjà posée : la reconnaître reposerait la même au lieu de la recomposer pour le nouveau lieu",
+  );
+  verdict(
+    "V9C bis · SOURCE · la substitution ne normalise plus le contenu qu'elle recopie",
+    (() => {
+      const i = CTX9D.indexOf("V9C · SUBSTITUER");
+      const j = CTX9D.indexOf("V9C · SAUTER");
+      return i > 0 && j > i && !CTX9D.slice(i, j).includes("normalizeExercises(");
+    })(),
+    "elle y perdait `auto` et y gagnait 90 secondes de transition par mouvement",
+  );
+  verdict(
+    "V9C bis · SOURCE · poser une séance de sa bibliothèque passe par la même autorité",
+    CTX9D.includes('resoudreContenu(title, "large", action)')
+      && !CTX9D.includes('.ilike("title", `%${title}%`)'),
+    "trois reconnaissances écrites à trois endroits donneraient trois réponses au même mot",
+  );
+  verdict(
+    "V9C bis · SOURCE · la reconnaissance ne compose JAMAIS de séance",
+    ["aiFetch(", "fetch(", "assembleSeance(", "toExercise("].every((m) => !NOM9D.includes(m)),
+    "une identité choisie donne un contenu exact, ou rien : il n'y a pas de troisième issue",
+  );
+  verdict(
+    "V9C bis · SOURCE · elle n'écrit rien",
+    [".insert(", ".update(", ".upsert(", ".delete("].every((m) => !NOM9D.includes(m)),
+    "reconnaître une séance est une LECTURE ; ce qui écrit, c'est le bouton violet de la carte",
+  );
+  verdict(
+    "V9C bis · SOURCE · la source est relue au clic, jamais gardée en mémoire",
+    CTX9D.includes("contenuParRef(compte, trouve.ref, premium)")
+      && NOM9D.includes('.eq("id", ref.slice(4))'),
+    "une question qui survit à un rechargement, c'est la leçon du « laquelle ? » de V9B",
+  );
+  verdict(
+    "V9C bis · SOURCE · une seule table de titres de séances dans tout le produit",
+    (() => {
+      const n = TUNNEL9D.split("SESSION_SLUGS: Record<string, string> = {").length - 1;
+      return n === 1
+        && TUNNEL9D.includes("if (SESSION_SLUGS[title]) return SESSION_SLUGS[title];")
+        && NOM9D.includes("tunnel.SESSION_SLUGS")
+        && !NOM9D.includes("express-12");
+    })(),
+    "en recopier une seconde, c'est garantir qu'une séance existe pour un écran et pas pour l'autre",
+  );
+  verdict(
+    "V9C bis · SOURCE · le catalogue n'a plus qu'une adresse",
+    (() => {
+      const page = lire9D("src/app/progression/page.tsx");
+      return page.includes("@/lib/catalogueSeances")
+        && !page.includes("const workoutSessions: WorkoutSession[] = [");
+    })(),
+    "il vivait dans l'écran Entraînement, donc il n'existait que pour lui",
   );
 }
 
