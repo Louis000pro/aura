@@ -339,6 +339,16 @@ const REPLIQUES = {
     nora:   (c: ContexteVoix) => `« ${c.titre ?? ""} » est déjà mise de côté par ton adaptation${c.jour ? `, jusqu’au ${c.jour}` : ""} : il n’y a rien à remplacer. Si tu veux la reprendre, ça se règle dans ton adaptation, côté Entraînement.`,
     sasha:  (c: ContexteVoix) => `« ${c.titre ?? ""} » est déjà écartée par ton adaptation${c.jour ? ` jusqu’au ${c.jour}` : ""}. Rien à remplacer. Ça se gère dans Entraînement.`,
   },
+  /* V9C quater · l'adaptation ne laisse passer aucune étape.
+     ⚠️ ELLE NOMME LA COUCHE, JAMAIS UNE ÉTAPE. Avant, ce cas tombait sur
+     « introuvable » avec un titre vide, donc sur un reproche adressé à
+     quelqu'un qui n'avait rien cité. Et elle propose la SORTIE : c'est
+     l'adaptation qui bloque, elle se gère dans son écran. */
+  "impasse.etape_aucune_compatible": {
+    commun: (c: ContexteVoix) => `Ton adaptation met de côté toutes les étapes de ton cycle${c.jour ? `, jusqu’au ${c.jour}` : ""} : il n’y en a donc aucune à passer. Tu peux gérer ton adaptation dans Entraînement.`,
+    nora:   (c: ContexteVoix) => `Pour l’instant ton adaptation écarte toutes les étapes de ton cycle${c.jour ? `, jusqu’au ${c.jour}` : ""} : il n’y a donc rien à passer. Si tu veux en reprendre une, ça se règle dans ton adaptation, côté Entraînement.`,
+    sasha:  (c: ContexteVoix) => `Ton adaptation écarte tout ton cycle${c.jour ? ` jusqu’au ${c.jour}` : ""}. Rien à passer. Ça se gère dans Entraînement.`,
+  },
   "impasse.etape_pas_la_prochaine": {
     commun: (c: ContexteVoix) => `Je ne peux toucher qu’à ta prochaine étape${c.etape ? `, « ${c.etape} »` : ""} 🙂 Sauter plus loin ferait avancer ton cycle de plusieurs crans d’un coup.`,
     nora:   (c: ContexteVoix) => `Je ne peux agir que sur ta prochaine étape${c.etape ? `, « ${c.etape} »` : ""} 🙂 Aller plus loin ferait avancer ton cycle de plusieurs crans d’un coup, sur des séances que tu n’as pas écartées.`,

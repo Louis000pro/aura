@@ -65,7 +65,17 @@ export type RefusEtape =
   /** Une adaptation la met de côté : ce n'est pas à un geste de la trancher. */
   | "masquee"
   /** Ce n'est pas la prochaine étape proposable. */
-  | "pas_la_prochaine";
+  | "pas_la_prochaine"
+  /**
+   * Il y a un programme, mais l'adaptation ne laisse passer AUCUNE étape.
+   *
+   * ⚠️ CE N'EST PAS « introuvable », ET LA NUANCE COMPTE. Quand la
+   * demande ne nomme rien, l'ancienne version tombait sur « introuvable »
+   * avec un titre vide, donc sur une phrase qui accusait la personne
+   * d'avoir cité une étape qui n'existe pas alors qu'elle n'en avait cité
+   * aucune. C'est la couche qui bloque, et c'est elle qu'il faut nommer.
+   */
+  | "aucune_compatible";
 
 export type VerdictEtape = { ok: true } | { ok: false; refus: RefusEtape };
 
@@ -103,6 +113,135 @@ export function verdictEtape(input: {
     return { ok: false, refus: "pas_la_prochaine" };
   }
   return { ok: true };
+}
+
+/* ══════ V9C quater · UNE RÉFÉRENCE N'EST PAS UN NOM ══════
+
+   Cas réel, Louis, 2026-09-12 : « Saute ma prochaine étape » a répondu
+   « « ? » n'est pas dans ton cycle ».
+
+   ⚠️ LA CAUSE TIENT EN UNE PHRASE : `viserEtape` n'avait QU'UN SEUL
+   SIGNAL, la présence ou l'absence d'un nom. Un nom absent visait la
+   prochaine étape compatible ; un nom présent DEVAIT se résoudre dans le
+   cycle. Une référence déictique (« ma prochaine étape ») et un
+   remplissage (« ? ») arrivent pourtant dans ce champ-là exactement
+   comme un vrai nom : ils devenaient donc des noms inconnus, et le Guide
+   répondait à côté d'une demande parfaitement claire.
+
+   ⚠️ ET ON NE RÉPARE PAS ÇA EN ESPÉRANT QUE LE MODÈLE OMETTE LE CHAMP.
+   « À omettre sinon » était déjà la consigne : un modèle remplit ce
+   qu'on lui donne. Le signal devient donc STRUCTURÉ (`designation`), au
+   même titre que `portee` et `remplacement` : l'aiguilleur rapporte
+   COMMENT la personne désigne, il ne lit toujours rien du moteur, et son
+   prompt ne bouge pas d'un caractère.
+
+   ⚠️ LE FILET NE DEVINE PAS UNE INTENTION DANS UNE PHRASE. C'est la
+   différence avec `sniffLieu`, supprimé en V9C : celui-là fouillait le
+   message libre de quelqu'un. Ici on regarde la VALEUR d'un paramètre
+   dont le contrat est « un nom d'étape », et on demande seulement
+   si c'en est un. C'est la même famille que `refModele` (seul un
+   identifiant `custom-…` désigne un modèle) ou `estMobilier` (une
+   origine qu'on ne comprend pas rend `false`) : un contrôle de forme sur
+   un paramètre pauvre, jamais une lecture de prose.
+   ══════════════════════════════════════════════════════════════════ */
+
+/**
+ * Les mots qui DÉSIGNENT sans NOMMER.
+ *
+ * ⚠️ AUCUN NOM D'ÉTAPE N'EST FAIT QUE DE CES MOTS-LÀ, et c'est ce qui
+ * rend la liste sûre. Le cycle vient de `buildSplit`, donc d'un vivier
+ * fermé : Full Body, Haut du corps, Bas du corps, Push, Pull,
+ * Cardio / HIIT. Chacun porte au moins un mot de contenu (`corps`,
+ * `body`, `push`, `pull`, `cardio`, `hiit`) qui n'est pas ici.
+ *
+ * ⚠️ ET LE FILTRE NE PASSE QU'APRÈS `etapeParNom`, jamais avant : si un
+ * jour un nom d'étape tombait là-dedans, il serait reconnu comme nom
+ * AVANT qu'on se demande s'il désigne. L'ordre est le garde-fou.
+ */
+const MOTS_QUI_DESIGNENT = new Set([
+  // déterminants, pronoms, liaisons
+  "ma", "mon", "mes", "le", "la", "les", "l", "un", "une", "de", "du", "des",
+  "d", "a", "au", "aux", "en", "ce", "cet", "cette", "ces", "ci", "celle",
+  "celui", "ceux", "celles", "ca", "cela", "qui", "que", "vient", "est",
+  // le geste lui-même, quand l'aiguilleur recopie la demande
+  "je", "veux", "voudrais", "peux", "tu", "saute", "sauter", "passe",
+  "passer", "skip", "stp", "please",
+  // les remplissages : ils ne nomment rien non plus
+  "n", "na", "nc", "null", "none", "aucun", "aucune", "rien", "inconnu", "non",
+  // ce qui est désigné
+  "prochain", "prochaine", "prochains", "prochaines", "suivant", "suivante",
+  "suite", "apres", "actuel", "actuelle", "meme", "prevu", "prevue",
+  "etape", "etapes", "seance", "seances", "entrainement", "entrainements",
+  "programme", "cycle", "jour", "aujourd", "hui", "maintenant", "truc",
+]);
+
+/** Le mot-à-mot d'une valeur, sans accent, sans ponctuation, sans vide. */
+function mots(v: string): string[] {
+  return (v || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim()
+    .split(" ")
+    .filter(Boolean);
+}
+
+/**
+ * Cette valeur POINTE-t-elle vers la prochaine étape au lieu d'en nommer une ?
+ *
+ * La question posée est littérale : une fois retirés les mots qui ne
+ * nomment rien, reste-t-il quelque chose qui pourrait être un nom ? S'il
+ * ne reste rien, la valeur ne nomme rien : elle désigne. Un remplissage
+ * (« ? », « - », « n/a ») ne laisse aucun mot du tout, donc il
+ * tombe dans le même cas, et c'est voulu : il ne nomme rien non plus.
+ */
+export function estReferenceProchaine(valeur: string | null | undefined): boolean {
+  const restants = mots(valeur ?? "").filter((m) => !MOTS_QUI_DESIGNENT.has(m));
+  return restants.length === 0;
+}
+
+/** Ce que la demande désigne vraiment, une fois traduite. */
+export type CibleDemandee =
+  /** La prochaine étape compatible, quelle qu'elle soit. */
+  | { mode: "prochaine" }
+  /** Une étape citée, résolue par IDENTITÉ dans le cycle persisté. */
+  | { mode: "nommee"; id: string }
+  /** Un nom qui ne désigne rien : on le dit, on ne devine pas. */
+  | { mode: "introuvable"; nom: string };
+
+/**
+ * Traduit les deux paramètres pauvres en une cible, sans rien lire.
+ *
+ * ⚠️ L'ORDRE DES QUESTIONS EST LA RÈGLE, comme partout dans ce chantier.
+ *
+ *   1. `designation = prochaine` → AUCUNE résolution par nom. C'est la
+ *      règle posée par Louis, et elle est délibérément plus forte que le
+ *      nom : sans elle, un `etape` mal rempli (« ma prochaine étape »)
+ *      reprendrait la main sur une demande pourtant explicite, et le
+ *      défaut reviendrait par la porte qu'on est en train de fermer.
+ *      Rien ne s'écrit avant confirmation et la carte NOMME l'étape
+ *      qu'elle vise : une contradiction entre les deux paramètres se voit
+ *      donc à l'écran au lieu de se décider en silence.
+ *   2. Pas de nom du tout → la prochaine (comportement d'avant, inchangé).
+ *   3. Le nom se résout dans le cycle → c'est un NOM, on le vise.
+ *   4. Il ne se résout pas mais il ne nomme rien → la prochaine.
+ *   5. Sinon → introuvable, et on le dit.
+ */
+export function cibleDemandee(
+  input: { designation?: string | null; nom?: string | null },
+  cycle: EtapeNommee[],
+): CibleDemandee {
+  if (input.designation === "prochaine") return { mode: "prochaine" };
+
+  const nom = (input.nom ?? "").trim();
+  if (!nom) return { mode: "prochaine" };
+
+  const parNom = etapeParNom(cycle, nom);
+  if (parNom) return { mode: "nommee", id: parNom.id };
+
+  if (estReferenceProchaine(nom)) return { mode: "prochaine" };
+  return { mode: "introuvable", nom };
 }
 
 /* ═══════════════════ La lecture, une fois, juste avant d'écrire ═══════════════════ */
@@ -152,7 +291,19 @@ export type ResultatVisee =
  * correspond à aucune étape ne devient jamais une identité de programme,
  * et une séance du catalogue intitulée « Push » n'est pas l'étape Push.
  */
-export async function viserEtape(userId: string, nom?: string | null): Promise<ResultatVisee> {
+export async function viserEtape(
+  userId: string,
+  nom?: string | null,
+  /**
+   * V9C quater · COMMENT la personne désigne l'étape.
+   *
+   * ⚠️ `"prochaine"` COURT-CIRCUITE LE NOM, ET C'EST VOULU. Un `nom` mal
+   * rempli par l'aiguilleur ne doit jamais reprendre la main sur une
+   * demande explicite : c'est exactement ce qui transformait
+   * « saute ma prochaine étape » en « « ? » n'est pas dans ton cycle ».
+   */
+  designation?: string | null,
+): Promise<ResultatVisee> {
   let actif: Awaited<ReturnType<typeof lireProgrammeActif>>;
   try {
     actif = await lireProgrammeActif(userId);
@@ -173,10 +324,25 @@ export async function viserEtape(userId: string, nom?: string | null): Promise<R
   );
 
   const cycleNomme: EtapeNommee[] = actif.cycle.map((e) => ({ id: e.id, nom: e.nom }));
-  const parNom = nom ? etapeParNom(cycleNomme, nom) : null;
-  /* Sans nom, le geste vise ce que le programme propose : c'est ce que
-     « autre chose que ma prochaine séance » veut dire. */
-  const viseeId = parNom?.id ?? (nom ? null : compatible?.id ?? null);
+  const demande = cibleDemandee({ designation, nom }, cycleNomme);
+
+  /* ⚠️ L'ADAPTATION QUI MASQUE TOUT SE DIT, ELLE NE SE DÉGUISE PAS EN NOM
+     INCONNU. Sans ce garde, une demande qui ne cite rien retombait sur
+     « introuvable » avec un titre vide : le Guide reprochait alors une
+     étape inexistante à quelqu'un qui n'en avait nommé aucune. */
+  if (demande.mode === "prochaine" && !compatible) {
+    return {
+      ok: false,
+      refus: "aucune_compatible",
+      jusquau: adaptation ? libelleJour(adaptation.fin) : undefined,
+    };
+  }
+
+  const viseeId = demande.mode === "nommee"
+    ? demande.id
+    : demande.mode === "prochaine"
+      ? compatible?.id ?? null
+      : null;
   const etape = viseeId ? actif.cycle.find((e) => e.id === viseeId) ?? null : null;
 
   const verdict = verdictEtape({
@@ -190,7 +356,7 @@ export async function viserEtape(userId: string, nom?: string | null): Promise<R
     return {
       ok: false,
       refus: verdict.refus,
-      nom: etape?.nom ?? nom ?? undefined,
+      nom: etape?.nom ?? (demande.mode === "introuvable" ? demande.nom : undefined),
       proposable: compatible?.nom,
       jusquau: adaptation ? libelleJour(adaptation.fin) : undefined,
     };

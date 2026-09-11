@@ -467,6 +467,8 @@ function phraseRefus(guide: GuideRef, res: Extract<ResultatVisee, { ok: false }>
     case "masquee":         return voix(guide, "impasse.etape_masquee", { titre: res.nom ?? "", jour: res.jusquau ?? "" });
     case "pas_la_prochaine":
       return voix(guide, "impasse.etape_pas_la_prochaine", { titre: res.nom ?? "", etape: res.proposable ?? "" });
+    case "aucune_compatible":
+      return voix(guide, "impasse.etape_aucune_compatible", { jour: res.jusquau ?? "" });
   }
 }
 
@@ -1099,12 +1101,19 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
      (décision 3 de V9), et c'est la carte qui tient lieu de garde-fou.
      Elle nomme donc les deux choses qui comptent : l'étape ne sera pas
      comptée comme faite, et la prochaine devient l'autre, tout de suite. */
-  const preparerSaut = useCallback(async (nom?: string | null) => {
+  const preparerSaut = useCallback(async (nom?: string | null, designation?: string | null) => {
     const compte = idPlanning;
     if (!compte) return;
     const say = (content: string) => setMessages((prev) => [...prev, { role: "assistant" as const, content, id: uid(), ton: "explain" as const }]);
 
-    const res = await viserEtape(compte, nom ?? null);
+    /* ⚠️ V9C quater · LES DEUX PARAMÈTRES VOYAGENT ENSEMBLE, ET C'EST LA
+       DÉSIGNATION QUI TRANCHE. « Saute ma prochaine étape » ne cite
+       aucun nom : le faire chercher dans le cycle produisait
+       « « ? » n'est pas dans ton cycle », c'est-à-dire un reproche à
+       la place d'une réponse. `viserEtape` relit la prochaine étape
+       COMPATIBLE fraîche et utilise son identité, sans jamais passer par
+       un titre. Rien ne s'écrit ici : la carte attend le clic. */
+    const res = await viserEtape(compte, nom ?? null, designation ?? null);
     if (!res.ok) { say(phraseRefus(guideRef.current, res)); return; }
     const { etape, apres, reservation, programmeId, adaptation } = res.visee;
 
@@ -1845,7 +1854,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       return;
     }
     if (action.intent === "etape_sauter") {
-      void preparerSaut(action.etape ?? action.quoi ?? null);
+      void preparerSaut(action.etape ?? action.quoi ?? null, action.designation ?? null);
       return;
     }
 

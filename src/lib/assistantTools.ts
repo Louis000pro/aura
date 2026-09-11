@@ -58,6 +58,16 @@ export type AssistantAction = {
   /* V9C ter · quelle SEMAINE une régénération vise. Même nature : un
      paramètre pauvre, deux valeurs, aucune connaissance du planning. */
   periode?: string;
+  /* V9C quater · COMMENT il désigne l'étape qu'il veut sauter.
+     ⚠️ CE N'EST PAS UN DOUBLON DE `etape`, C'EST CE QUI LUI DONNE UN SENS.
+     `etape` est un mot ; celui-ci dit si ce mot NOMME quelque chose
+     (« saute Pull ») ou s'il POINTE (« saute ma prochaine étape »).
+     Sans lui, les deux arrivaient sous la même forme et une référence
+     à la prochaine étape se faisait chercher dans le cycle comme un nom,
+     donc introuvable.
+     ⚠️ ET IL NE S'APPELLE PAS `cible` : ce nom-là est déjà pris par
+     `open_page`, et deux sens pour un même champ finiraient par diverger. */
+  designation?: string;
   location?: string;
   title?: string;
   adjust?: string;
@@ -294,7 +304,12 @@ export const ASSISTANT_TOOLS: Tool[] = [
       parameters: {
         type: "object",
         properties: {
-          etape: { type: "string", description: "Le nom de l’étape à passer, s’il la nomme. À omettre sinon." },
+          designation: {
+            type: "string",
+            enum: ["prochaine", "nommee"],
+            description: "prochaine s’il désigne sa prochaine étape SANS la nommer (« saute ma prochaine étape », « passe à la suivante », « je veux sauter celle-là »). nommee s’il CITE le nom d’une étape (« saute Pull »). Dans le doute, prochaine.",
+          },
+          etape: { type: "string", description: "Le nom de l’étape à passer, UNIQUEMENT s’il la cite vraiment (« Pull », « Bas du corps »). À omettre s’il dit simplement « la prochaine »." },
         },
       },
     },

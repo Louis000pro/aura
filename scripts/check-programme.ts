@@ -41,7 +41,7 @@ import {
   consequenceSemaine, consequenceSubstitution, consequenceSupplement,
   etapeParNom, resoudreCibles, voieDeLaPose,
 } from "@/lib/gestePlanning";
-import { verdictEtape } from "@/lib/etapeCiblee";
+import { cibleDemandee, estReferenceProchaine, verdictEtape } from "@/lib/etapeCiblee";
 import {
   candidatsParNom, clefDeNom, copierExercices, entreeBibliotheque, entreesCatalogue,
   libelleContenu,
@@ -4203,6 +4203,300 @@ verdict(
       && GESTE9E.includes("etapeLiee(input.programme)")
       && !PLAN9E.includes("!!(d?.etapeId || d?.provenanceId)"),
     "ce qui vaut identité pour bloquer une adaptation vaut identité pour refuser un écrasement",
+  );
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   V9C quater · UNE RÉFÉRENCE N’EST PAS UN NOM.
+
+   Cas réel, Louis, 2026-09-12 : « Saute ma prochaine étape »
+   → « « ? » n’est pas dans ton cycle. Dis « autre chose que ma prochaine séance ». »
+
+   `viserEtape` n’avait qu’UN signal : un nom présent ou absent. Absent →
+   la prochaine étape compatible ; présent → il DEVAIT se résoudre dans
+   le cycle. Une référence (« ma prochaine étape ») et un remplissage
+   (« ? ») tombent dans ce champ-là exactement comme un vrai nom : ils
+   devenaient donc des noms inconnus.
+
+   Tout ce qui décide ici est PUR, donc vérifiable hors ligne sur une app
+   pourtant auth-gated. Le reste est une propriété du CHEMIN.
+   ════════════════════════════════════════════════════════════════════ */
+{
+  const lire9F = (f: string) => readFileSync(new URL("../" + f, import.meta.url), "utf8");
+  const CTX9F = lire9F("src/context/AssistantContext.tsx");
+  const CIBLE9F = lire9F("src/lib/etapeCiblee.ts");
+  const PROG9F = lire9F("src/lib/programme.ts");
+
+  /* Le cycle de Louis, cinq étapes, tel que `buildSplit` le compose. */
+  const cycle9f = cycleDeReference(5).map((nom, i) => ({ id: "e" + (i + 1), nom }));
+  const nomDe9f = (r: ReturnType<typeof cibleDemandee>) =>
+    r.mode === "nommee" ? cycle9f.find((e) => e.id === r.id)?.nom ?? "?" : r.mode;
+
+  /* ─────────────── LE TÉMOIN EXACT DU « ? » ─────────────── */
+
+  verdict(
+    "V9C quater · LE CAS RÉEL · « ? » ne se cherche plus dans le cycle",
+    cibleDemandee({ nom: "?" }, cycle9f).mode === "prochaine",
+    "c’est le remplissage de l’aiguilleur, pas un nom : il désigne la prochaine",
+  );
+  verdict(
+    "V9C quater · LE CAS RÉEL · témoin : la résolution par nom échouait bien",
+    etapeParNom(cycle9f, "?") === null,
+    "c’est elle qu’on court-circuite, et c’est elle qui produisait le message",
+  );
+  verdict(
+    "V9C quater · LE CAS RÉEL · la demande complète vise la prochaine étape",
+    cibleDemandee({ designation: "prochaine", nom: "ma prochaine étape" }, cycle9f).mode === "prochaine",
+    "« Saute ma prochaine étape » : plus aucun nom à résoudre",
+  );
+
+  /* ─────────────── LES EXPRESSIONS QUI DOIVENT TOUTES MARCHER ─────────────── */
+
+  for (const dit of [
+    "ma prochaine étape", "ma prochaine séance", "la prochaine", "la suivante",
+    "passe à la suivante", "celle-là", "je veux sauter celle-là", "celle qui vient",
+    "mon prochain entraînement", "la prochaine étape de mon programme",
+    "?", "-", "…", "n/a", "",
+  ]) {
+    verdict(
+      "V9C quater · référence · " + (dit || "(vide)"),
+      cibleDemandee({ nom: dit }, cycle9f).mode === "prochaine",
+      "ça DÉSIGNE, ça ne nomme pas : aucune résolution par nom",
+    );
+  }
+
+  /* ─────────────── UN NOM CITÉ RESTE UN NOM ─────────────── */
+
+  for (const [dit, attendu] of [
+    ["Pull", "Pull"],
+    ["pull", "Pull"],
+    ["Bas du corps", "Bas du corps"],
+    ["bas du corps", "Bas du corps"],
+    ["Cardio / HIIT", "Cardio / HIIT"],
+    ["Haut du corps", "Haut du corps"],
+  ] as [string, string][]) {
+    verdict(
+      "V9C quater · nom cité · " + dit,
+      nomDe9f(cibleDemandee({ nom: dit }, cycle9f)) === attendu,
+      "« saute " + dit + " » se résout par IDENTITÉ dans le cycle persisté",
+    );
+  }
+  verdict(
+    "V9C quater · nom cité · « nommee » ne change rien à la résolution",
+    nomDe9f(cibleDemandee({ designation: "nommee", nom: "Pull" }, cycle9f)) === "Pull",
+    "le paramètre confirme ce que le nom dit déjà, il ne le remplace pas",
+  );
+
+  /* ─────────────── ON NE DEVINE TOUJOURS PAS ─────────────── */
+
+  verdict(
+    "V9C quater · un vrai nom inconnu reste introuvable",
+    (() => {
+      const r = cibleDemandee({ nom: "Express 12" }, cycle9f);
+      return r.mode === "introuvable" && r.nom === "Express 12";
+    })(),
+    "une séance du catalogue n’est pas une étape : on le DIT, on ne bascule pas en douce",
+  );
+  verdict(
+    "V9C quater · le filtre ne mord sur AUCUN nom d’étape, de 1 à 14 séances",
+    (() => {
+      for (let n = 1; n <= 14; n++) {
+        for (const nom of cycleDeReference(n)) {
+          if (estReferenceProchaine(nom)) return false;
+        }
+      }
+      return true;
+    })(),
+    "le vivier de `buildSplit` est fermé : aucun de ses noms ne se lit comme une référence",
+  );
+  verdict(
+    "V9C quater · et le nom passe AVANT le filtre, jamais après",
+    CIBLE9F.indexOf("const parNom = etapeParNom(cycle, nom);")
+      < CIBLE9F.indexOf("if (estReferenceProchaine(nom)) return { mode: \"prochaine\" };"),
+    "l’ordre EST le garde-fou : un nom qui se résout gagne toujours",
+  );
+
+  /* ─────────────── LA DÉSIGNATION EXPLICITE COURT-CIRCUITE LE NOM ─────────────── */
+
+  verdict(
+    "V9C quater · « prochaine » l’emporte sur un nom mal rempli",
+    cibleDemandee({ designation: "prochaine", nom: "?" }, cycle9f).mode === "prochaine",
+    "sans ça, le défaut revenait par la porte qu’on est en train de fermer",
+  );
+  verdict(
+    "V9C quater · « prochaine » l’emporte même sur un nom qui se résout",
+    cibleDemandee({ designation: "prochaine", nom: "Pull" }, cycle9f).mode === "prochaine",
+    "règle de Louis : aucune résolution par nom. Rien ne s’écrit, et la carte NOMME l’étape visée",
+  );
+
+  /* ─────────────── CE QUE LE VERDICT REFUSE TOUJOURS ─────────────── */
+
+  const e1_9f = { id: "e1", position: 1 };
+  const e2_9f = { id: "e2", position: 2 };
+  verdict(
+    "V9C quater · adaptation active · une étape masquée ne se saute pas",
+    (() => {
+      const v = verdictEtape({ etape: e1_9f, compatible: e1_9f, masquee: true, positionConsommee: null });
+      return !v.ok && v.refus === "masquee";
+    })(),
+    "contourner une adaptation depuis la conversation ferait deux autorités sur la même couche",
+  );
+  verdict(
+    "V9C quater · double saut · la même étape ne se referme pas deux fois",
+    (() => {
+      const v = verdictEtape({ etape: e1_9f, compatible: e1_9f, masquee: false, positionConsommee: 1 });
+      return !v.ok && v.refus === "deja_resolue";
+    })(),
+    "`uniq_intention_par_etape` est PARTIEL : deux lignes `passee` y passeraient, le refus est côté code",
+  );
+  verdict(
+    "V9C quater · étape déjà résolue · le message la reconnaît à SON motif",
+    (() => {
+      const v = verdictEtape({ etape: e1_9f, compatible: e2_9f, masquee: false, positionConsommee: 1 });
+      return !v.ok && v.refus === "deja_resolue";
+    })(),
+    "il passe avant « pas la prochaine », sinon le double saut se cacherait derrière une erreur de désignation",
+  );
+  verdict(
+    "V9C quater · on ne saute que la PROCHAINE étape compatible",
+    (() => {
+      const v = verdictEtape({ etape: e2_9f, compatible: e1_9f, masquee: false, positionConsommee: null });
+      return !v.ok && v.refus === "pas_la_prochaine";
+    })(),
+    "décision 2 de V9 : plus loin, le cycle avancerait de plusieurs crans d’un coup",
+  );
+  verdict(
+    "V9C quater · et la prochaine compatible, elle, passe",
+    verdictEtape({ etape: e1_9f, compatible: e1_9f, masquee: false, positionConsommee: null }).ok,
+    "le geste normal n’est bloqué par rien",
+  );
+
+  /* ─────────────── L’ADAPTATION QUI MASQUE TOUT SE NOMME ─────────────── */
+
+  verdict(
+    "V9C quater · tout le cycle masqué · ce n’est pas « introuvable »",
+    CIBLE9F.includes('if (demande.mode === "prochaine" && !compatible) {')
+      && CIBLE9F.includes('refus: "aucune_compatible",'),
+    "reprocher une étape inexistante à quelqu’un qui n’en a cité aucune était un mensonge",
+  );
+  verdict(
+    "V9C quater · tout le cycle masqué · la phrase nomme la COUCHE, pas une étape",
+    (() => {
+      const t = voix(null, "impasse.etape_aucune_compatible" as CleVoix, { jour: "6 octobre" });
+      return t.includes("adaptation") && t.includes("6 octobre") && !t.includes("«  »");
+    })(),
+    "elle dit ce qui bloque, et elle propose la sortie",
+  );
+  verdict(
+    "V9C quater · SOURCE · chaque refus a toujours sa phrase",
+    (() => {
+      const refus = [...CIBLE9F.matchAll(/^\s*\| "([a-z_]+)"/gm)].map((m) => m[1]);
+      const i = CTX9F.indexOf("function phraseRefus(");
+      const bloc = CTX9F.slice(i, CTX9F.indexOf("\n}", i));
+      return refus.length >= 7 && refus.every((r) => bloc.includes('case "' + r + '"'));
+    })(),
+    "un `return` nu, c’est une demande sans réponse : V9B a passé une vague à fermer ça",
+  );
+
+  /* ─────────────── UN SAUT NE CRÉDITE TOUJOURS RIEN ─────────────── */
+
+  const saut9f = (() => {
+    const i = PROG9F.indexOf("export async function sauterEtape(");
+    const j = PROG9F.indexOf("\nexport ", i + 10);
+    return i > 0 ? PROG9F.slice(i, j > i ? j : undefined) : "";
+  })();
+  verdict(
+    "V9C quater · un saut n’écrit ni séance, ni EXP, ni mission",
+    !!saut9f
+      && !saut9f.includes("workout_sessions")
+      && !saut9f.includes("aura_mission_credits")
+      && !saut9f.includes("daily_stats")
+      && !saut9f.includes("crediter")
+      && saut9f.includes("etape_consommee_id: etape.id")
+      && saut9f.includes("consommee_le: maintenant"),
+    "payer quelqu’un pour ne pas s’entraîner serait le pire des barèmes",
+  );
+  verdict(
+    "V9C quater · un saut ne prétend jamais PROVENIR de l’étape",
+    (saut9f.match(/programme_seance_id: null/g) ?? []).length === 2,
+    "rien ne « vient » d’une étape qu’on passe : les deux branches écrivent la même chose",
+  );
+
+  /* ─────────────── SOURCE · LE CHEMIN ─────────────── */
+
+  verdict(
+    "V9C quater · SOURCE · le paramètre est PAUVRE et facultatif",
+    (() => {
+      const t = ASSISTANT_TOOLS.find((o) => o.function.name === "etape_sauter");
+      const p = t?.function.parameters as { properties?: Record<string, { enum?: string[] }>; required?: string[] } | undefined;
+      const d = p?.properties?.designation;
+      return !!d
+        && JSON.stringify(d.enum) === JSON.stringify(["prochaine", "nommee"])
+        && (p?.required ?? []).length === 0;
+    })(),
+    "deux valeurs, aucune connaissance du moteur : c’est la décision 7 de V9",
+  );
+  verdict(
+    "V9C quater · SOURCE · il ne s’appelle pas `cible`",
+    (() => {
+      const t = ASSISTANT_TOOLS.find((o) => o.function.name === "etape_sauter");
+      const p = t?.function.parameters as { properties?: Record<string, unknown> } | undefined;
+      const nav = ASSISTANT_TOOLS.find((o) => o.function.name === "open_page");
+      const np = nav?.function.parameters as { properties?: Record<string, unknown> } | undefined;
+      return !p?.properties?.cible && !!np?.properties?.cible;
+    })(),
+    "`cible` est déjà pris par open_page : deux sens pour un champ finiraient par diverger",
+  );
+  verdict(
+    "V9C quater · SOURCE · l’aiguilleur n’a toujours rien appris du moteur",
+    (() => {
+      const p = /const PROMPT = `([\s\S]*?)`;/.exec(lire9F("src/lib/assistantRouter.ts"))?.[1] ?? "";
+      return p.replace(/\r/g, "").replace("${RIEN}", "rien_a_faire").length === 316
+        && ASSISTANT_TOOLS.length === 16;
+    })(),
+    "316 caractères, 16 outils : un paramètre de plus ne rallonge pas le prompt",
+  );
+  verdict(
+    "V9C quater · SOURCE · la désignation voyage jusqu’à l’autorité",
+    CTX9F.includes("void preparerSaut(action.etape ?? action.quoi ?? null, action.designation ?? null);")
+      && CTX9F.includes("const res = await viserEtape(compte, nom ?? null, designation ?? null);"),
+    "la lire sans la transmettre, c’était un paramètre décoratif",
+  );
+  verdict(
+    "V9C quater · SOURCE · la décision est PURE, la lecture est à côté",
+    (() => {
+      const i = CIBLE9F.indexOf("export function cibleDemandee(");
+      const j = CIBLE9F.indexOf("\n}", i);
+      const bloc = CIBLE9F.slice(i, j);
+      return i > 0 && !/await|supabase|fetch\(/.test(bloc);
+    })(),
+    "c’est ce qui rend la règle vérifiable hors ligne sur une app auth-gated",
+  );
+  verdict(
+    "V9C quater · SOURCE · l’étape visée se relit fraîche, jamais dans `etatMoteur`",
+    !CIBLE9F.includes("etatMoteur(") && CIBLE9F.includes("const compatible = etapeSuivante<EtapeCycle>("),
+    "décider une écriture sur un cache de 30 s rouvrirait le double-fermage par un autre chemin",
+  );
+  verdict(
+    "V9C quater · SOURCE · préparer un saut n’écrit RIEN",
+    (() => {
+      const i = CTX9F.indexOf("const preparerSaut = useCallback(");
+      const j = CTX9F.indexOf("}, [idPlanning]);", i);
+      const bloc = CTX9F.slice(i, j);
+      return i > 0 && j > i
+        && [".insert(", ".update(", ".upsert(", ".delete(", "sauterEtape(", "appliquerGeste("]
+          .every((m) => !bloc.includes(m));
+    })(),
+    "aucune écriture avant le bouton violet : la carte est le seul garde-fou d’un saut (décision 3 de V9)",
+  );
+  verdict(
+    "V9C quater · la carte dit ce qu’un saut n’est PAS",
+    (() => {
+      const t = consequenceSaut("Haut du corps", "Cardio / HIIT");
+      return t.includes("Haut du corps") && t.includes("Cardio / HIIT")
+        && /ni comme faite/.test(t) && /tout de suite/.test(t);
+    })(),
+    "l’étape n’est pas comptée comme faite, et la prochaine devient l’autre immédiatement",
   );
 }
 
