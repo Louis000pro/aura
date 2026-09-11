@@ -38,16 +38,17 @@ import {
      `confirmPlan` qui a simplement changé d'adresse. */
   resolveWhen, dayLabel, dayLabelLong, dayTitle, lireJour, lireIntention, fetchRange, hasSeance, prochainsJours,
   principale, cibleRemplacable, estMobilier, vientDuProgramme,
-  ctxFromLieu, readLieu, loadLieu, persistLieu, readVariant, weekDates, todayYmd, normalizeExercises, previewWeek,
+  ctxFromLieu, readLieu, loadLieu, persistLieu, readVariant, todayYmd, normalizeExercises, previewWeek,
+  libelleFenetre, semaineVisee, type PeriodeSemaine,
   type CycleSemaine,
   PLANNING_TYPE_BY_CATEGORY, type PlanningDay, type GenInput,
 } from "@/lib/planning";
 import {
   appliquerGeste, consequenceDeplacement, consequencePose, consequenceRetrait, consequenceSaut,
   consequenceSemaine, consequenceSubstitution, consequenceSupplement,
-  resoudreCibles, type EtapeNommee, type GestePlanning,
+  resoudreCibles, voieDeLaPose, type EtapeNommee, type GestePlanning,
 } from "@/lib/gestePlanning";
-import { viserEtape, type ResultatVisee } from "@/lib/etapeCiblee";
+import { viserEtape, type EtapeVisee, type ResultatVisee } from "@/lib/etapeCiblee";
 import {
   contenuParRef, libelleContenu, resoudreSeanceNommee,
   type ContenuNomme, type ForceNom,
@@ -991,14 +992,36 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
   const preparerSubstitution = useCallback(async (
     input: { etape?: string | null; quoi?: string | null; when?: string | null },
     contenuImpose?: ContenuNomme,
+    /**
+     * V9C ter · LA VISÉE DÉJÀ RÉSOLUE, ET LA LIGNE QU'ELLE REMPLACE.
+     *
+     * ⚠️ CE N'EST PAS UN RACCOURCI DE PERFORMANCE, C'EST UNE IDENTITÉ. Un
+     * remplacement explicite (`plan_set`) a dû lire l'étape POUR décider
+     * que c'en était une : relire ici donnerait une seconde réponse à la
+     * même question, à quelques millisecondes d'intervalle, et rien ne
+     * garantirait qu'elle dise la même chose que la carte.
+     *
+     * ⚠️ ET `ligne` EST CE QUI ÉVITE LA DEUXIÈME LIGNE. Une séance qui
+     * PROVIENT d'une étape sans la réserver n'a pas de réservation à
+     * reprendre : sans elle, la substitution s'ajouterait à côté et la
+     * journée en porterait deux, c'est-à-dire exactement le supplément
+     * qu'on est en train de réparer.
+     */
+    depuis?: { visee: EtapeVisee; ligne: PlanningDay },
   ) => {
     const compte = idPlanning;
     if (!compte) return;
     const say = (content: string) => setMessages((prev) => [...prev, { role: "assistant" as const, content, id: uid(), ton: "explain" as const }]);
 
-    const res = await viserEtape(compte, input.etape ?? null);
-    if (!res.ok) { say(phraseRefus(guideRef.current, res)); return; }
-    const { etape, apres, reservation, programmeId, adaptation } = res.visee;
+    let visee: EtapeVisee;
+    if (depuis) {
+      visee = depuis.visee;
+    } else {
+      const res = await viserEtape(compte, input.etape ?? null);
+      if (!res.ok) { say(phraseRefus(guideRef.current, res)); return; }
+      visee = res.visee;
+    }
+    const { etape, apres, reservation, programmeId, adaptation } = visee;
 
     /* ⚠️ ICI ON DÉSIGNE, DONC ON RECONNAÎT LARGEMENT : « ma séance
        Pompes » a le droit de retrouver « Pompes ». Générer n'a jamais été
@@ -1014,14 +1037,21 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
     /* Le jour : celui qu'on demande, sinon CELUI DE LA RÉSERVATION quand
        l'étape en avait déjà un (« à la place de Pull » garde le jour de
        Pull), sinon aujourd'hui. */
-    const date = (input.when ? resolveWhen(input.when) : null) ?? reservation?.date ?? todayYmd();
+    const date = (input.when ? resolveWhen(input.when) : null)
+      ?? reservation?.date ?? depuis?.ligne.date ?? todayYmd();
     const saved = readLieu(compte);
     const jour: PlanningDay = {
       /* ⚠️ ON REPREND LA RÉSERVATION, ON N'EN CRÉE PAS UNE SECONDE :
          `uniq_intention_par_etape` refuserait la deuxième intention
          prévue portant la même étape, et le geste échouerait au clic
-         après avoir promis le contraire sur la carte. */
-      id: reservation?.id ?? null,
+         après avoir promis le contraire sur la carte.
+
+         ⚠️ ET À DÉFAUT DE RÉSERVATION, ON RÉÉCRIT LA LIGNE DU JOUR (V9C
+         ter). Une séance composée par « refais ma semaine » PROVIENT
+         d'une étape sans la réserver : la laisser en place ferait deux
+         séances le même jour là où on venait de demander un
+         remplacement. */
+      id: reservation?.id ?? depuis?.ligne.id ?? null,
       date,
       type: PLANNING_TYPE_BY_CATEGORY[contenu.category] ?? "Force",
       /* ⚠️ SON TITRE RÉEL, JAMAIS LES MOTS DE LA DEMANDE. On écrivait la
@@ -1213,7 +1243,35 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
         variant,
         seed: user.id,
       };
-      const dates = weekDates();
+      /* ══════════ V9C ter · IL EXISTE UNE SEMAINE PROCHAINE ══════════
+
+         Cas réel, Louis, 2026-09-11 : « fais ma prochaine semaine »
+         répondait « Plus de jour modifiable cette semaine. Redemande-moi lundi. »
+
+         ⚠️ CE N'ÉTAIT PAS UN MAUVAIS MESSAGE, C'ÉTAIT UN TROU : `plan_regen`
+         n'avait AUCUN paramètre de période, donc les deux demandes visaient
+         `weekDates()`, c'est-à-dire la semaine civile en cours. Un vendredi
+         il n'en restait presque rien à écrire, un dimanche plus rien du
+         tout, et le Guide renvoyait à lundi quelqu'un qui préparait
+         justement la semaine d'après. La sortie ne s'ouvrait donc jamais.
+
+         ⚠️ UN PARAMÈTRE PAUVRE SUFFIT, ET C'EST LA DÉCISION 7 DE V9 : deux
+         valeurs, aucune connaissance du planning, aucun contexte moteur
+         dans le prompt de l'aiguilleur, qui ne bouge pas d'un caractère.
+
+         ⚠️ ET TOUT LE RESTE EST LE MÊME MOTEUR : même `previewWeek`, même
+         cycle, même filtre d'adaptation, mêmes protections V9B (seul le
+         MOBILIER est libéré, une réservation, un supplément ou une séance
+         posée à la main ne bougent pas). Seule la fenêtre de dates change.
+
+         ⚠️ LIMITE CONNUE ET DÉLIBÉRÉE : l'adaptation appliquée reste celle
+         d'AUJOURD'HUI. `adaptationDuJour` ferme au passage ce qui a expiré
+         à la date qu'on lui donne : lui passer un jour futur clôturerait
+         une adaptation encore active. On préfère un masquage approximatif
+         sur la semaine prochaine à une écriture prématurée. */
+      const periode: PeriodeSemaine = action.periode === "semaine_prochaine" ? "semaine_prochaine" : "cette_semaine";
+      const prochaine = periode === "semaine_prochaine";
+      const dates = semaineVisee(periode);
       const existing = await fetchRange(user.id, dates);
       /* ⚠️ LE GUIDE EST LE TROISIÈME CHEMIN QUI POSE DES ÉTAPES, ET IL
          AVAIT ÉTÉ OUBLIÉ EN V8 (défaut du 2026-09-08). « Refais ma
@@ -1257,18 +1315,24 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
         .filter(hasSeance);
       const nbSeances = writes.length;
       if (nbSeances === 0) {
-        say(voix(guideRef.current, "impasse.regen_semaine_finie"));
+        say(voix(guideRef.current, prochaine
+          ? "impasse.regen_semaine_prochaine_pleine"
+          : "impasse.regen_semaine_finie"));
         return;
       }
       const adjustLabel = adjust === "leger" ? " · plus légère"
         : adjust === "intense" ? " · plus intense"
         : adjust === "cardio" ? " · plus de cardio"
         : adjust === "force" ? " · plus de force" : "";
+      /* ⚠️ LA PÉRIODE SE LIT AVANT LE CLIC, ET C'EST LA FENÊTRE RÉELLE,
+         PAS LA SEMAINE CIVILE. Une régénération de la semaine en cours ne
+         touche pas au passé : annoncer « la semaine du lundi 8 » un
+         jeudi promettrait de refaire trois jours déjà vécus. */
       setPendingPlan({
-        kicker: "Toute la semaine",
+        kicker: prochaine ? "Semaine prochaine" : "Cette semaine",
         title: "Nouvelle semaine ✦",
-        meta: `Dès aujourd’hui · ${nbSeances} séance${nbSeances > 1 ? "s" : ""}${adjustLabel}`,
-        cta: "Remplacer ma semaine",
+        meta: `${CAP(libelleFenetre(aVenir))} · ${nbSeances} séance${nbSeances > 1 ? "s" : ""}${adjustLabel}`,
+        cta: prochaine ? "Préparer la semaine" : "Remplacer ma semaine",
         consequence: consequenceSemaine(aVenir.filter(garde).map((d) => dayLabel(d).toLowerCase())),
         geste: { type: "semaine", poser: writes, liberer: modifiables },
         preview: writes.find(hasSeance) ?? null,
@@ -1382,6 +1446,72 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
     const actuelle = principale(jourVise);
     if (action.intent === "plan_location") {
       baseDesc = actuelle && actuelle.title ? actuelle.title : "séance complète";
+    }
+
+    /* ══════════ V9C ter · UN REMPLACEMENT EXPLICITE N'EST PAS UN AJOUT ══════════
+
+       Cas réel, Louis, 2026-09-11 : la journée portait « Haut du corps »,
+       liée au programme ; « remplace ma séance d’aujourd’hui par Express 12 »
+       a rendu une carte « En plus · Express 12 » et laissé les deux.
+       L'objet était enfin le bon (V9C bis), la SÉMANTIQUE du geste ne
+       l'était pas.
+
+       ⚠️ LA CAUSE N'EST PAS LE GARDE-FOU DE V9B, C'EST CE QUI LUI MANQUAIT.
+       « Une ligne de programme ne se fait pas écraser par un geste qu’on n’a pas demandé »
+       reste vrai. Seulement, `plan_set` ne portait aucune trace de ce qui
+       avait été DIT : poser et remplacer arrivaient sous la même forme,
+       donc on s'écartait dans les deux cas, y compris quand le
+       remplacement était demandé en toutes lettres.
+
+       ⚠️ ET LA BASCULE SE FAIT PAR IDENTITÉ, JAMAIS PAR TITRE. La ligne du
+       jour doit porter la PROCHAINE ÉTAPE COMPATIBLE (`viserEtape`, la
+       seule autorité) ; une étape plus loin ferait avancer le cycle de
+       plusieurs crans (décision 2 de V9), et une séance du catalogue
+       intitulée « Push » n'est pas l'étape Push. Sinon on ne devine
+       pas : on explique, et chaque refus nomme une sortie exécutable. */
+    const explicite = action.intent === "plan_set" && (action.remplacement ?? "") === "explicite";
+    /* On ne lit le moteur QUE si la question se pose vraiment : un geste
+       ordinaire ne paie pas les requêtes d'un geste de cycle. */
+    let visee: EtapeVisee | null = null;
+    if (explicite && !cible && gardee) {
+      const res = await viserEtape(user.id, null);
+      if (!res.ok) { say(phraseRefus(guideRef.current, res)); return; }
+      visee = res.visee;
+    }
+    const voie = voieDeLaPose({
+      explicite,
+      cible,
+      programme: gardee,
+      compatibleId: visee?.etape.id ?? null,
+      reservationId: visee?.reservation?.id ?? null,
+    });
+    if (voie === "conflit_etape" && gardee) {
+      say(voix(guideRef.current, "impasse.remplacement_pas_la_prochaine", {
+        titre: dayTitle(gardee),
+        etape: visee?.etape.nom ?? "",
+        jour: dayLabelLong(when),
+      }));
+      return;
+    }
+    if (voie === "conflit_reservation" && visee) {
+      say(voix(guideRef.current, "impasse.remplacement_reserve_ailleurs", {
+        titre: visee.etape.nom,
+        jour: visee.reservation?.date ? dayLabelLong(visee.reservation.date) : "",
+      }));
+      return;
+    }
+    if (voie === "substituer" && visee && gardee) {
+      /* ⚠️ ON PASSE LA VISÉE, PAS UN NOM. Repasser par `etapeParNom` ici
+         reviendrait à redésigner par un titre ce qu'on vient d'identifier
+         par une clé, et `preparerSubstitution` relirait une seconde fois
+         la même chose. La ligne du jour voyage avec, parce que c'est ELLE
+         qui sera réécrite quand l'étape n'a pas de réservation. */
+      await preparerSubstitution(
+        { etape: null, quoi: baseDesc, when: action.when ?? null },
+        contenuImpose,
+        { visee, ligne: gardee },
+      );
+      return;
     }
 
     /* ══════════ V9C bis · UNE SÉANCE QU'ON NOMME N'EST PAS UNE SÉANCE
@@ -1500,7 +1630,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setActionLoading(null);
     }
-  }, [user?.id, buildNutritionNote, poserQuestion, verifierPlaces, preparerSurCible, resoudreContenu]);
+  }, [user?.id, buildNutritionNote, poserQuestion, verifierPlaces, preparerSurCible, preparerSubstitution, resoudreContenu]);
 
   /* ── Mémoire long terme (silencieuse, best-effort) ──
      Volontairement restée sur son propre petit appel : elle n'a rien à voir

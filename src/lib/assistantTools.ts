@@ -48,6 +48,16 @@ export type AssistantAction = {
      avant toute proposition. `pas_dit` est donc une valeur utile, pas une
      absence de réponse. */
   portee?: string;
+  /* V9C ter · le VERBE employé pour poser une séance sur un jour.
+     ⚠️ C'est du linguistique, pas du moteur : l'aiguilleur rapporte ce
+     qui a été dit (« remplace », « à la place de »), et c'est le CODE
+     qui décide ensuite si ça vise la prochaine étape du cycle. Sans lui,
+     « mets du pecs jeudi » et « remplace ma séance d’aujourd’hui »
+     arrivaient sous exactement la même forme. */
+  remplacement?: string;
+  /* V9C ter · quelle SEMAINE une régénération vise. Même nature : un
+     paramètre pauvre, deux valeurs, aucune connaissance du planning. */
+  periode?: string;
   location?: string;
   title?: string;
   adjust?: string;
@@ -195,6 +205,11 @@ export const ASSISTANT_TOOLS: Tool[] = [
         properties: {
           when: { type: "string", description: JOUR_DESC },
           description: { type: "string", description: "Courte description de la séance voulue." },
+          remplacement: {
+            type: "string",
+            enum: ["explicite", "pas_dit"],
+            description: "explicite s’il dit en toutes lettres qu’il REMPLACE ce qui est prévu ce jour-là, ou que c’est À LA PLACE (« remplace ma séance d’aujourd’hui par… », « à la place de ce qui est prévu jeudi »). pas_dit s’il pose simplement une séance sur un jour (« mets du pecs jeudi »). Ne devine pas : pas_dit est une réponse valable.",
+          },
           muscles, category,
         },
         required: ["when"],
@@ -321,10 +336,15 @@ export const ASSISTANT_TOOLS: Tool[] = [
     function: {
       name: "plan_regen",
       description:
-        "REFAIRE LA SEMAINE ENTIÈRE du planning (« refais ma semaine », « régénère mon programme »). À ne pas confondre avec plan_set, qui ne touche qu’un jour.",
+        "REFAIRE LA SEMAINE ENTIÈRE du planning, celle en cours ou la suivante (« refais ma semaine », « régénère mon programme », « fais ma prochaine semaine », « prépare-moi la semaine prochaine »). À ne pas confondre avec plan_set, qui ne touche qu’un jour.",
       parameters: {
         type: "object",
         properties: {
+          periode: {
+            type: "string",
+            enum: ["cette_semaine", "semaine_prochaine"],
+            description: "semaine_prochaine s’il parle de LA SEMAINE SUIVANTE (« ma prochaine semaine », « la semaine prochaine », « celle d’après »). cette_semaine sinon, et par défaut.",
+          },
           adjust: {
             type: "string",
             enum: ["none", "leger", "intense", "cardio", "force"],

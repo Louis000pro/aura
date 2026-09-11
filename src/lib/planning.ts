@@ -286,10 +286,59 @@ export function prochainsJours(n = 7): string[] {
   });
 }
 
-/** Les 7 dates de la semaine décalée de `offset` semaines vs aujourd'hui. */
-export function weekDatesForOffset(offset: number): string[] {
-  const ref = new Date(); ref.setDate(ref.getDate() + offset * 7);
-  return weekDates(ref);
+/** Les 7 dates de la semaine décalée de `offset` semaines vs `ref`. */
+export function weekDatesForOffset(offset: number, ref: Date = new Date()): string[] {
+  const base = new Date(ref); base.setDate(base.getDate() + offset * 7);
+  return weekDates(base);
+}
+
+/**
+ * V9C ter · LA PÉRIODE QU'UNE RÉGÉNÉRATION VISE.
+ *
+ * ⚠️ ELLE N'EXISTAIT PAS, ET C'ÉTAIT LE TROU : « refais ma semaine » et
+ * « fais ma prochaine semaine » arrivaient sous exactement la même forme,
+ * donc les deux visaient `weekDates()`, c'est-à-dire la semaine civile en
+ * cours. Un vendredi, il n'en restait presque plus rien à écrire ; un
+ * dimanche, plus rien du tout, et le Guide répondait « redemande-moi
+ * lundi » à quelqu'un qui préparait justement la semaine d'après.
+ */
+export type PeriodeSemaine = "cette_semaine" | "semaine_prochaine";
+
+/**
+ * Les 7 dates (lundi → dimanche) de la semaine visée.
+ *
+ * ⚠️ `ref` EST INJECTABLE EXPRÈS. Le défaut ne se voit qu'un jour sur
+ * sept, et les deux passages qui cassent une arithmétique de dates (le
+ * changement de mois, le changement d'année) ne se voient qu'une fois par
+ * mois et une fois par an. Un banc qui ne peut pas choisir son jour ne
+ * les rencontrera jamais.
+ */
+export function semaineVisee(periode: PeriodeSemaine, ref: Date = new Date()): string[] {
+  return weekDatesForOffset(periode === "semaine_prochaine" ? 1 : 0, ref);
+}
+
+/**
+ * « du jeudi 11 au dimanche 14 septembre », pour NOMMER la période avant
+ * le clic.
+ *
+ * ⚠️ ON NOMME LA FENÊTRE RÉELLEMENT CONCERNÉE, PAS LA SEMAINE CIVILE.
+ * Une régénération de la semaine en cours ne touche pas au passé : dire
+ * « la semaine du lundi 8 » alors qu'on est jeudi promettrait de refaire
+ * trois jours déjà vécus.
+ *
+ * Le mois ne s'écrit qu'une fois quand les deux bornes le partagent : une
+ * semaine qui chevauche deux mois (ou deux années) les porte tous les
+ * deux, sinon la borne de départ deviendrait ambiguë.
+ */
+export function libelleFenetre(dates: string[]): string {
+  const debut = dates[0];
+  const fin = dates[dates.length - 1];
+  if (!debut) return "";
+  if (!fin || fin === debut) return `le ${dayLabelLong(debut)}`;
+  const memeMois = debut.slice(0, 7) === fin.slice(0, 7);
+  const court = new Date(debut + "T00:00:00")
+    .toLocaleDateString("fr-FR", { weekday: "long", day: "numeric" });
+  return `du ${memeMois ? court : dayLabelLong(debut)} au ${dayLabelLong(fin)}`;
 }
 /** Décalage en semaines d'une date (YYYY-MM-DD) vs la semaine courante. */
 export function weekOffsetOf(date: string): number {
@@ -1029,10 +1078,23 @@ export function reserveUneEtape(d: PlanningDay | null | undefined): boolean {
  * ⚠️ C'EST LE MÊME COUPLE DE COLONNES QUE `reservationsEnConflit` (V8),
  * ET CE N'EST PAS UNE COÏNCIDENCE : ce qui vaut identité pour bloquer une
  * adaptation vaut identité pour refuser un écrasement muet. Deux
- * définitions du « lien au programme » finiraient par diverger.
+ * définitions du « lien au programme » finiraient par diverger, d'où
+ * `etapeLiee` juste au-dessus : elle est désormais la SEULE, et les trois
+ * endroits qui posaient la question passent par elle.
+ *
+ * ⚠️ ET L'ORDRE DES DEUX COLONNES EST LA RÈGLE, PAS UN RACCOURCI.
+ * `etapeId` dit QUELLE étape la ligne referme ; `provenanceId` dit
+ * seulement d'où son contenu venait. Quand les deux existent (une
+ * substitution déjà posée), c'est la promesse de fermeture qui compte.
  */
+export function etapeLiee(
+  d: Pick<PlanningDay, "etapeId" | "provenanceId"> | null | undefined,
+): string | null {
+  return d?.etapeId ?? d?.provenanceId ?? null;
+}
+
 export function vientDuProgramme(d: PlanningDay | null | undefined): boolean {
-  return !!(d?.etapeId || d?.provenanceId);
+  return etapeLiee(d) !== null;
 }
 
 /**

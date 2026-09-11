@@ -271,6 +271,16 @@ const REPLIQUES = {
     nora:   "Il ne reste plus de jour modifiable cette semaine 🙂 On peut décaler une séance précise, ou reprendre la semaine entière lundi.",
     sasha:  "Plus de jour modifiable cette semaine 🙂 Décale une séance précise, ou redemande-moi lundi.",
   },
+  /* V9C ter · la semaine PROCHAINE n'a pas de jour à préparer. Message
+     distinct du précédent, et ce n'est pas un détail : celui-ci ne peut
+     pas dire « redemande-moi lundi », puisque c'est précisément lundi
+     qu'on est en train de préparer. */
+  "impasse.regen_semaine_prochaine_pleine": {
+    commun: "Ta semaine prochaine est déjà posée entièrement à la main, je n’ai aucun jour à préparer 🙂 Retire une séance si tu veux que je la recompose.",
+    nora:   "Ta semaine prochaine est déjà posée entièrement à la main : je n’ai aucun jour à préparer 🙂 Retire une séance et je recompose autour.",
+    sasha:  "Semaine prochaine déjà posée à la main, rien à préparer 🙂 Retire une séance si tu veux que je m’en occupe.",
+  },
+
   /* ── V9B · la séance qu'on cherche ──
      Un nom ne suffit pas toujours à désigner une ligne : deux séances
      peuvent s'appeler pareil, ou aucune ne porter ce nom. Les deux cas se
@@ -344,6 +354,25 @@ const REPLIQUES = {
     nora:   "Quel jour veux-tu cette séance en plus ? Un supplément se pose toujours sur un jour précis, sinon il reste en suspens 📅",
     sasha:  "Quel jour, ce supplément ? « demain », « samedi » 📅",
   },
+  /* ── V9C ter · quand un remplacement EXPLICITE ne peut pas devenir une
+     substitution ──
+
+     ⚠️ ON EXPLIQUE, ON NE DEVINE PAS, ET LES DEUX PHRASES NOMMENT UNE
+     SORTIE EXÉCUTABLE. Écraser la ligne serait une substitution non
+     déclarée (interdite depuis V4) ; l'ajouter à côté en silence serait
+     exactement le défaut qu'on répare. Reste à dire pourquoi, et quoi
+     faire à la place. */
+  "impasse.remplacement_pas_la_prochaine": {
+    commun: (c: ContexteVoix) => `« ${c.titre ?? ""} » vient de ton programme, mais ta prochaine étape est « ${c.etape ?? ""} ». Je ne fais pas avancer ton cycle sans être sûr 🤔 Dis-moi « retire ma séance du ${c.jour ?? "jour"} » d’abord, ou « ajoute-la en plus » si tu veux garder les deux.`,
+    nora:   (c: ContexteVoix) => `« ${c.titre ?? ""} » vient bien de ton programme, mais ce n’est pas ta prochaine étape : c’est « ${c.etape ?? ""} ». Je préfère ne pas faire avancer ton cycle à ta place 🤔 Dis-moi « retire ma séance du ${c.jour ?? "jour"} » d’abord, ou « ajoute-la en plus » et je garde les deux.`,
+    sasha:  (c: ContexteVoix) => `« ${c.titre ?? ""} » vient de ton programme, mais ta prochaine étape est « ${c.etape ?? ""} » 🤔 Je ne touche pas au cycle à l’aveugle. « retire ma séance du ${c.jour ?? "jour"} » d’abord, ou « ajoute-la en plus ».`,
+  },
+  "impasse.remplacement_reserve_ailleurs": {
+    commun: (c: ContexteVoix) => `« ${c.titre ?? ""} » est déjà réservée un autre jour${c.jour ? `, le ${c.jour}` : ""}, donc je ne peux pas la remplacer ici sans la dédoubler 🤔 Déplace-la d’abord sur ce jour-là, et je m’occupe du reste.`,
+    nora:   (c: ContexteVoix) => `« ${c.titre ?? ""} » est déjà réservée un autre jour${c.jour ? `, le ${c.jour}` : ""} : la remplacer ici la mettrait à deux endroits 🤔 Déplace-la d’abord sur ce jour-là, et je m’occupe du reste.`,
+    sasha:  (c: ContexteVoix) => `« ${c.titre ?? ""} » est déjà réservée ailleurs${c.jour ? `, le ${c.jour}` : ""} 🤔 Déplace-la d’abord sur ce jour-là.`,
+  },
+
   "question.portee": {
     commun: "C’est à la place de ta prochaine étape, ou en plus ?",
     nora:   "Tu veux la faire à la place de ta prochaine étape, ou en plus de ce qui est prévu ?",

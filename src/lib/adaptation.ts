@@ -36,7 +36,7 @@
    ════════════════════════════════════════════════════════════════════ */
 
 import { createClient } from "@/lib/supabase";
-import { adaptationsDisponibles, fetchRange, type PlanningDay } from "@/lib/planning";
+import { adaptationsDisponibles, etapeLiee, fetchRange, type PlanningDay } from "@/lib/planning";
 import type { Origine } from "@/lib/programme";
 
 /* ═══════════════════ Le vocabulaire, fermé et versionné ═══════════════════
@@ -294,7 +294,7 @@ export function reservationsEnConflit(
 ): PlanningDay[] {
   const masquees = new Set(fenetre.axes.eviter_etapes);
   return intentions.filter((i) => {
-    const source = i.etapeId ?? i.provenanceId ?? null;
+    const source = etapeLiee(i);
     return (
       i.status === "planned" &&
       !!i.date &&

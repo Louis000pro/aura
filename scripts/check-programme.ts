@@ -32,13 +32,14 @@ import {
   cycleDeReference, seancesDuCycle, previewWeek, weekDates, ANCIEN, NOUVEAU,
   ordonner, parDate, principale, supplements, seancesDuJour, prochaineSeanceDuJour,
   refModele, lienProgramme, prochainsJours, todayYmd, normalizeExercises,
-  cibleRemplacable, estMobilier, reserveUneEtape, vientDuProgramme,
+  cibleRemplacable, estMobilier, etapeLiee, libelleFenetre, reserveUneEtape,
+  semaineVisee, vientDuProgramme,
   type PlanningDay, type CycleSemaine,
 } from "@/lib/planning";
 import {
   consequenceDeplacement, consequencePose, consequenceRetrait, consequenceSaut,
   consequenceSemaine, consequenceSubstitution, consequenceSupplement,
-  etapeParNom, resoudreCibles,
+  etapeParNom, resoudreCibles, voieDeLaPose,
 } from "@/lib/gestePlanning";
 import { verdictEtape } from "@/lib/etapeCiblee";
 import {
@@ -3220,8 +3221,8 @@ verdict(
   );
   verdict(
     "V9C · substituer · elle REPREND la réservation, elle n'en crée pas une seconde",
-    SUBST.id === "r-pull" && CTX9C.includes("id: reservation?.id ?? null"),
-    "`uniq_intention_par_etape` refuserait la deuxième intention prévue portant la même étape",
+    SUBST.id === "r-pull" && CTX9C.includes("id: reservation?.id ?? depuis?.ligne.id ?? null"),
+    "`uniq_intention_par_etape` refuserait la deuxième intention prévue portant la même étape ; et à défaut de réservation c'est la ligne du jour qui est réécrite, jamais une seconde (V9C ter)",
   );
   verdict(
     "V9C · substituer · le cycle NE BOUGE PAS à la confirmation",
@@ -3828,6 +3829,380 @@ verdict(
         && !page.includes("const workoutSessions: WorkoutSession[] = [");
     })(),
     "il vivait dans l'écran Entraînement, donc il n'existait que pour lui",
+  );
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   V9C ter · UN REMPLACEMENT DEMANDÉ EST UN REMPLACEMENT, ET IL EXISTE
+   UNE SEMAINE PROCHAINE.
+
+   Deux cas réels, Louis, 2026-09-11.
+
+   A · La journée portait « Haut du corps », liée au programme.
+       « Remplace ma séance d'aujourd'hui par Express 12 » a rendu
+       « En plus · Express 12 » et laissé les deux séances. L'objet était
+       enfin le bon (V9C bis) ; la SÉMANTIQUE du geste ne l'était pas.
+
+       ⚠️ LA CAUSE N'EST PAS LE GARDE-FOU DE V9B, C'EST CE QUI LUI
+       MANQUAIT. `plan_set` ne portait aucune trace du VERBE employé :
+       poser une séance sur un jour et remplacer celle qui s'y trouve
+       arrivaient sous exactement la même forme, donc on s'écartait dans
+       les deux cas.
+
+   B · « Fais ma prochaine semaine » répondait « Plus de jour modifiable
+       cette semaine. Redemande-moi lundi. » `plan_regen` n'avait aucun
+       paramètre de période : les deux demandes visaient la semaine
+       civile en cours, donc la sortie ne s'ouvrait jamais.
+
+   Tout ce qui décide ici est PUR (quelle voie un geste prend, quelle
+   semaine il vise, comment on la nomme), donc vérifiable hors ligne sur
+   une app pourtant auth-gated. Le reste est une propriété du CHEMIN.
+   ════════════════════════════════════════════════════════════════════ */
+{
+  const lire9E = (f: string) => readFileSync(new URL("../" + f, import.meta.url), "utf8");
+  const CTX9E = lire9E("src/context/AssistantContext.tsx");
+  const PLAN9E = lire9E("src/lib/planning.ts");
+  const GESTE9E = lire9E("src/lib/gestePlanning.ts");
+
+  const ex9e = [{ name: "Squat", sets: 3, reps: "12 reps", rest: 60, tip: "", benefit: "", muscles: [] }];
+  const l9e = (over: Partial<PlanningDay> = {}): PlanningDay => ({
+    id: "i-haut", date: "2026-09-11", type: "Force", title: "Haut du corps",
+    difficulty: "Intermédiaire", location: "salle", exerciseList: ex9e,
+    sessionId: null, status: "planned", origine: "systeme",
+    programmeId: "p1", etapeId: null, provenanceId: "e-haut", ...over,
+  });
+
+  /* ─────────────── A · le cas réel, rejoué tel quel ─────────────── */
+
+  /* La journée de Louis : une seule ligne, venue du programme (semaine
+     régénérée), et l'étape « Haut du corps » est bien la prochaine. */
+  const journeeLouis = [l9e()];
+
+  verdict(
+    "V9C ter · CAS RÉEL · la journée n'offre aucune cible remplaçable",
+    cibleRemplacable(journeeLouis) === null && vientDuProgramme(journeeLouis[0]),
+    "V9B bis protège la ligne : c'est juste, et c'est ce qui la transformait en supplément",
+  );
+  verdict(
+    "V9C ter · CAS RÉEL · sans « remplace » dit, on ajoute toujours à côté",
+    voieDeLaPose({
+      explicite: false, cible: null, programme: journeeLouis[0],
+      compatibleId: "e-haut", reservationId: null,
+    }) === "ajouter",
+    "le garde-fou V9B ne bouge pas d'un cran pour les demandes ordinaires",
+  );
+  verdict(
+    "V9C ter · CAS RÉEL · « remplace ma séance d’aujourd’hui » devient une SUBSTITUTION",
+    voieDeLaPose({
+      explicite: true, cible: null, programme: journeeLouis[0],
+      compatibleId: "e-haut", reservationId: null,
+    }) === "substituer",
+    "le geste demandé en toutes lettres n'est plus retourné en « En plus »",
+  );
+
+  /* ─────────────── Les cinq voies, une par une ─────────────── */
+
+  verdict(
+    "V9C ter · une cible ordinaire l'emporte, même sur un remplacement explicite",
+    voieDeLaPose({
+      explicite: true, cible: { id: "i-libre" }, programme: l9e(),
+      compatibleId: "e-haut", reservationId: null,
+    }) === "remplacer",
+    "on ne touche au programme que s'il n'y a rien d'autre à réécrire",
+  );
+  verdict(
+    "V9C ter · journée vide : on programme, rien à arbitrer",
+    voieDeLaPose({ explicite: true, cible: null, programme: null, compatibleId: "e-haut", reservationId: null })
+      === "ajouter",
+    "pas de ligne de programme, pas de question de cycle",
+  );
+  verdict(
+    "V9C ter · une étape qui n'est PAS la prochaine ne bascule pas",
+    voieDeLaPose({
+      explicite: true, cible: null, programme: l9e({ provenanceId: "e-bas" }),
+      compatibleId: "e-haut", reservationId: null,
+    }) === "conflit_etape",
+    "sauter plus loin ferait avancer le cycle de plusieurs crans (décision 2 de V9)",
+  );
+  verdict(
+    "V9C ter · l'étape réservée par une AUTRE ligne bloque",
+    voieDeLaPose({
+      explicite: true, cible: null, programme: l9e({ id: "i-haut" }),
+      compatibleId: "e-haut", reservationId: "i-ailleurs",
+    }) === "conflit_reservation",
+    "l'écrire refermerait l'étape deux fois : uniq_intention_par_etape refuserait la seconde",
+  );
+  verdict(
+    "V9C ter · la réservation du jour MÊME se reprend, elle ne bloque pas",
+    voieDeLaPose({
+      explicite: true, cible: null, programme: l9e({ id: "i-haut", etapeId: "e-haut" }),
+      compatibleId: "e-haut", reservationId: "i-haut",
+    }) === "substituer",
+    "c'est le cas normal d'une étape déjà datée : une seule ligne, réécrite",
+  );
+
+  /* ⚠️ JAMAIS PAR LE TITRE, ET C'EST LA RÈGLE VERROUILLÉE DEPUIS V4. */
+  verdict(
+    "V9C ter · IDENTITÉ · une séance qui s'appelle comme l'étape n'est pas l'étape",
+    voieDeLaPose({
+      explicite: true, cible: null,
+      programme: { id: "i-cat", etapeId: null, provenanceId: null },
+      compatibleId: "e-haut", reservationId: null,
+    }) === "conflit_etape"
+      && voieDeLaPose({
+        explicite: true, cible: { id: "i-cat" },
+        programme: null, compatibleId: "e-haut", reservationId: null,
+      }) === "remplacer",
+    "une séance du catalogue intitulée « Haut du corps » reste une séance du catalogue",
+  );
+  verdict(
+    "V9C ter · IDENTITÉ · sans prochaine étape connue, on n'invente pas",
+    voieDeLaPose({
+      explicite: true, cible: null, programme: l9e(), compatibleId: null, reservationId: null,
+    }) === "conflit_etape",
+    "une lecture qui n'a rien rendu n'autorise aucune écriture de cycle",
+  );
+
+  /* `etapeLiee` : une seule définition du lien au programme, et l'ordre
+     des deux colonnes est la règle. */
+  verdict(
+    "V9C ter · etapeLiee · la fermeture l'emporte sur la provenance",
+    etapeLiee({ etapeId: "e-pull", provenanceId: "e-haut" }) === "e-pull"
+      && etapeLiee({ etapeId: null, provenanceId: "e-haut" }) === "e-haut"
+      && etapeLiee({ etapeId: null, provenanceId: null }) === null
+      && etapeLiee(null) === null,
+    "etapeId dit QUELLE étape la ligne referme ; provenanceId dit seulement d'où venait son contenu",
+  );
+
+  /* ─────────────── B · la semaine prochaine ─────────────── */
+
+  const lundi = (d: string) => new Date(d + "T12:00:00");
+
+  verdict(
+    "V9C ter · SEMAINE · « cette semaine » reste la semaine civile en cours",
+    (() => {
+      const s = semaineVisee("cette_semaine", lundi("2026-09-11"));
+      return s.length === 7 && s[0] === "2026-09-07" && s[6] === "2026-09-13";
+    })(),
+    "aucun changement pour « refais ma semaine »",
+  );
+  verdict(
+    "V9C ter · SEMAINE · « semaine prochaine » vise bien la suivante",
+    (() => {
+      const s = semaineVisee("semaine_prochaine", lundi("2026-09-11"));
+      return s.length === 7 && s[0] === "2026-09-14" && s[6] === "2026-09-20";
+    })(),
+    "du lundi 14 au dimanche 20, exactement ce que Louis demandait",
+  );
+
+  /* ⚠️ LE DIMANCHE EST LE JOUR OÙ LE DÉFAUT SE VOIT LE MIEUX : la semaine
+     en cours n'offre plus rien, donc c'est là que « fais ma prochaine
+     semaine » est le plus légitime, et c'est là qu'il échouait. */
+  verdict(
+    "V9C ter · SEMAINE · un DIMANCHE, la suivante commence bien le lendemain",
+    (() => {
+      const s = semaineVisee("semaine_prochaine", lundi("2026-09-13"));
+      const c = semaineVisee("cette_semaine", lundi("2026-09-13"));
+      return c[6] === "2026-09-13" && s[0] === "2026-09-14" && s[6] === "2026-09-20";
+    })(),
+    "le dimanche appartient à la semaine en cours, jamais à la suivante",
+  );
+  verdict(
+    "V9C ter · SEMAINE · les sept jours donnent tous la même semaine suivante",
+    ["2026-09-07", "2026-09-08", "2026-09-09", "2026-09-10", "2026-09-11", "2026-09-12", "2026-09-13"]
+      .every((j) => {
+        const s = semaineVisee("semaine_prochaine", lundi(j));
+        return s[0] === "2026-09-14" && s[6] === "2026-09-20";
+      }),
+    "la fenêtre ne dépend pas du jour où l'on parle",
+  );
+  verdict(
+    "V9C ter · SEMAINE · elle ne recoupe JAMAIS la semaine en cours",
+    ["2026-09-07", "2026-09-10", "2026-09-13", "2026-12-28", "2027-02-25"].every((j) => {
+      const c = semaineVisee("cette_semaine", lundi(j));
+      const s = semaineVisee("semaine_prochaine", lundi(j));
+      return s[0] > c[6];
+    }),
+    "sinon une régénération écraserait des jours qu'on vient de poser",
+  );
+  verdict(
+    "V9C ter · SEMAINE · changement de MOIS",
+    (() => {
+      const s = semaineVisee("semaine_prochaine", lundi("2026-09-28"));
+      return s[0] === "2026-10-05" && s[6] === "2026-10-11";
+    })(),
+    "l'arithmétique de dates ne se vérifie qu'en choisissant son jour",
+  );
+  verdict(
+    "V9C ter · SEMAINE · une semaine À CHEVAL sur deux mois",
+    (() => {
+      const s = semaineVisee("semaine_prochaine", lundi("2026-09-24"));
+      return s[0] === "2026-09-28" && s[3] === "2026-10-01" && s[6] === "2026-10-04";
+    })(),
+    "lundi 28 septembre → dimanche 4 octobre",
+  );
+  verdict(
+    "V9C ter · SEMAINE · changement d'ANNÉE",
+    (() => {
+      const s = semaineVisee("semaine_prochaine", lundi("2026-12-30"));
+      return s[0] === "2027-01-04" && s[6] === "2027-01-10";
+    })(),
+    "le 30 décembre 2026 est un mercredi : la suivante est celle du 4 janvier 2027",
+  );
+  verdict(
+    "V9C ter · SEMAINE · une semaine À CHEVAL sur deux années",
+    (() => {
+      const s = semaineVisee("semaine_prochaine", lundi("2026-12-23"));
+      return s[0] === "2026-12-28" && s[6] === "2027-01-03";
+    })(),
+    "lundi 28 décembre 2026 → dimanche 3 janvier 2027",
+  );
+
+  /* ─────────────── La période se LIT avant le clic ─────────────── */
+
+  verdict(
+    "V9C ter · LIBELLÉ · même mois, le mois ne s'écrit qu'une fois",
+    libelleFenetre(["2026-09-14", "2026-09-20"]) === "du lundi 14 au dimanche 20 septembre",
+    "c'est la phrase que Louis attend sur la carte",
+  );
+  verdict(
+    "V9C ter · LIBELLÉ · la fenêtre RÉELLE, pas la semaine civile",
+    libelleFenetre(["2026-09-11", "2026-09-12", "2026-09-13"]) === "du vendredi 11 au dimanche 13 septembre",
+    "une régénération de la semaine en cours ne refait jamais les jours déjà vécus",
+  );
+  verdict(
+    "V9C ter · LIBELLÉ · à cheval sur deux mois, les deux s'écrivent",
+    libelleFenetre(["2026-09-28", "2026-10-04"]) === "du lundi 28 septembre au dimanche 4 octobre",
+    "sans le premier mois, la borne de départ devient ambiguë",
+  );
+  verdict(
+    "V9C ter · LIBELLÉ · à cheval sur deux années",
+    libelleFenetre(["2026-12-28", "2027-01-03"]) === "du lundi 28 décembre au dimanche 3 janvier",
+    "deux années partagent le même couple de mois : c'est le jour qui tranche",
+  );
+  verdict(
+    "V9C ter · LIBELLÉ · un seul jour ne s'écrit pas « du … au … »",
+    libelleFenetre(["2026-09-13"]) === "le dimanche 13 septembre" && libelleFenetre([]) === "",
+    "un dimanche, la fenêtre de la semaine en cours n'a plus qu'une case",
+  );
+
+  /* ─────────────── Les contrôles de SOURCE ───────────────
+     Ce sont des propriétés du CHEMIN (quel signal on lit, qui décide,
+     qui écrit), donc exactement celles qu'aucune valeur ne prouve et
+     qui repasseraient inaperçues. */
+
+  verdict(
+    "V9C ter · SOURCE · `plan_set` rapporte le VERBE employé",
+    (() => {
+      const t = ASSISTANT_TOOLS.find((x) => x.function.name === "plan_set");
+      const p = t?.function.parameters.properties as Record<string, { enum?: string[] }> | undefined;
+      return !!p?.remplacement
+        && JSON.stringify(p.remplacement.enum) === JSON.stringify(["explicite", "pas_dit"])
+        && !(t?.function.parameters.required ?? []).includes("remplacement");
+    })(),
+    "un paramètre PAUVRE et facultatif : l'aiguilleur rapporte un mot, il ne lit pas le moteur",
+  );
+  verdict(
+    "V9C ter · SOURCE · `plan_regen` sait quelle SEMAINE on lui demande",
+    (() => {
+      const t = ASSISTANT_TOOLS.find((x) => x.function.name === "plan_regen");
+      const p = t?.function.parameters.properties as Record<string, { enum?: string[] }> | undefined;
+      return !!p?.periode
+        && JSON.stringify(p.periode.enum) === JSON.stringify(["cette_semaine", "semaine_prochaine"])
+        && /prochaine semaine|semaine prochaine/i.test(t?.function.description ?? "");
+    })(),
+    "le trou était là : deux demandes différentes arrivaient sous la même forme",
+  );
+  verdict(
+    "V9C ter · SOURCE · l'aiguilleur n'a rien appris du moteur",
+    (() => {
+      const p = /const PROMPT = `([\s\S]*?)`;/.exec(lire9E("src/lib/assistantRouter.ts"))?.[1] ?? "";
+      return p.replace(/\r/g, "").replace("${RIEN}", "rien_a_faire").length === 316
+        && ASSISTANT_TOOLS.length === 16;
+    })(),
+    "316 caractères, 16 outils : la décision 7 de V9 ne bouge pas d'un signe",
+  );
+  verdict(
+    "V9C ter · SOURCE · la voie d'une pose se décide par la règle unique",
+    CTX9E.includes("const voie = voieDeLaPose({")
+      && CTX9E.includes('const explicite = action.intent === "plan_set" && (action.remplacement ?? "") === "explicite";'),
+    "recopier la règle ailleurs, c'est garantir deux réponses à la même question",
+  );
+  verdict(
+    "V9C ter · SOURCE · l'étape se résout par `viserEtape`, jamais par un titre",
+    CTX9E.includes("await viserEtape(user.id, null)")
+      && !GESTE9E.includes("etapeParNom(cycle, nom)\n  const compatible")
+      && GESTE9E.includes("const lien = etapeLiee(input.programme);"),
+    "la seule autorité d'étape reste `etapeCiblee`, et la comparaison porte sur des clés",
+  );
+  verdict(
+    "V9C ter · SOURCE · on ne lit le moteur QUE si la question se pose",
+    CTX9E.includes("if (explicite && !cible && gardee) {"),
+    "un « mets du pecs jeudi » ne paie pas les requêtes d'un geste de cycle",
+  );
+  verdict(
+    "V9C ter · SOURCE · la substitution reprend la réservation, sinon la ligne du jour",
+    CTX9E.includes("id: reservation?.id ?? depuis?.ligne.id ?? null,"),
+    "sans ça, une séance venue d'une étape sans la réserver resterait à côté : le supplément revient",
+  );
+  verdict(
+    "V9C ter · SOURCE · la visée voyage, elle ne se relit pas une seconde fois",
+    CTX9E.includes("depuis?: { visee: EtapeVisee; ligne: PlanningDay },")
+      && CTX9E.includes("if (depuis) {") && CTX9E.includes("visee = depuis.visee;"),
+    "deux lectures de la même question à quelques millisecondes, c'est deux réponses possibles",
+  );
+  verdict(
+    "V9C ter · SOURCE · chaque refus a sa phrase, aucune sortie muette",
+    (["impasse.remplacement_pas_la_prochaine", "impasse.remplacement_reserve_ailleurs",
+      "impasse.regen_semaine_prochaine_pleine"] as CleVoix[])
+      .every((c) => voix(null, c, { titre: "Haut du corps", etape: "Pull", jour: "lundi 14" }).length > 20),
+    "un `return` nu, c'est une demande sans réponse : la règle de V9B ne bouge pas",
+  );
+  verdict(
+    "V9C ter · SOURCE · la régénération ne vise plus la semaine civile en dur",
+    CTX9E.includes("const dates = semaineVisee(periode);")
+      && !CTX9E.includes("const dates = weekDates();"),
+    "c'était la cause exacte : une seule fenêtre possible, quoi qu'on demande",
+  );
+  verdict(
+    "V9C ter · SOURCE · les protections V9B tiennent sur la semaine visée",
+    CTX9E.includes("const garde = (d: string) => (existing[d] ?? []).some((i) => !estMobilier(i));")
+      && CTX9E.includes("geste: { type: \"semaine\", poser: writes, liberer: modifiables },")
+      && PLAN9E.includes("export function estMobilier(")
+      && PLAN9E.includes("d.origine === \"systeme\" && !reserveUneEtape(d)"),
+    "réservation, supplément et séance posée à la main ne bougent pas, quelle que soit la semaine",
+  );
+  verdict(
+    "V9C ter · SOURCE · la carte NOMME la période avant le clic",
+    CTX9E.includes("kicker: prochaine ? \"Semaine prochaine\" : \"Cette semaine\",")
+      && CTX9E.includes("${CAP(libelleFenetre(aVenir))}")
+      && CTX9E.includes("cta: prochaine ? \"Préparer la semaine\" : \"Remplacer ma semaine\","),
+    "on ne prépare pas sept jours de quelqu'un sans lui dire lesquels",
+  );
+  verdict(
+    "V9C ter · SOURCE · l'impasse ne renvoie plus à lundi quand c'est lundi",
+    CTX9E.includes("? \"impasse.regen_semaine_prochaine_pleine\"")
+      && CTX9E.includes(": \"impasse.regen_semaine_finie\"))"),
+    "« redemande-moi lundi » n'a aucun sens quand c'est justement lundi qu'on prépare",
+  );
+  verdict(
+    "V9C ter · SOURCE · préparer une carte n'écrit toujours RIEN",
+    (() => {
+      const i = CTX9E.indexOf("const preparePlanAction = useCallback(");
+      const j = CTX9E.indexOf("const extractMemory = useCallback(", i);
+      const bloc = CTX9E.slice(i, j);
+      return i > 0 && j > i
+        && [".insert(", ".update(", ".upsert(", ".delete(", "appliquerGeste("].every((m) => !bloc.includes(m));
+    })(),
+    "aucune écriture avant le bouton violet, règle verrouillée du produit",
+  );
+  verdict(
+    "V9C ter · SOURCE · une seule définition du lien au programme",
+    PLAN9E.includes("export function etapeLiee(")
+      && lire9E("src/lib/adaptation.ts").includes("const source = etapeLiee(i);")
+      && GESTE9E.includes("etapeLiee(input.programme)")
+      && !PLAN9E.includes("!!(d?.etapeId || d?.provenanceId)"),
+    "ce qui vaut identité pour bloquer une adaptation vaut identité pour refuser un écrasement",
   );
 }
 

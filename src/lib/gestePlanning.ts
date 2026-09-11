@@ -28,7 +28,7 @@
    ════════════════════════════════════════════════════════════════════ */
 
 import {
-  ajouterIntention, hasSeance, libererMobilier, reserveUneEtape,
+  ajouterIntention, etapeLiee, hasSeance, libererMobilier, reserveUneEtape,
   retirerIntention, saveDay,
   type Origine, type PlanningDay,
 } from "@/lib/planning";
@@ -261,6 +261,79 @@ export function consequenceSupplement(etape: string | null): string {
   return etape
     ? `« ${etape} » reste ta prochaine étape : celle-ci s’ajoute à côté.`
     : "Ta progression de programme ne change pas.";
+}
+
+/* ═══════════════ V9C ter · CE QUE « REMPLACE » VEUT DIRE ═══════════════
+
+   ⚠️ LE GARDE-FOU DE V9B PROTÉGEAIT AUSSI CE QU'ON LUI DEMANDAIT
+   EXPLICITEMENT, ET C'ÉTAIT LE DÉFAUT. Une ligne qui porte une identité
+   de programme ne se fait pas écraser par un geste qu'on n'a PAS demandé :
+   la règle est juste, et elle ne bouge pas. Mais `plan_set` ne portait
+   aucune trace de ce que la personne avait DIT, donc « mets du pecs
+   jeudi » et « remplace ma séance d'aujourd'hui par Express 12 »
+   arrivaient sous exactement la même forme. On s'écartait dans les deux
+   cas, et le second se transformait en supplément alors qu'il demandait
+   un remplacement en toutes lettres.
+
+   ⚠️ LE SIGNAL QUI MANQUAIT EST LINGUISTIQUE, PAS MOTEUR : c'est le verbe
+   employé, et c'est exactement le genre de paramètre pauvre que la
+   décision 7 de V9 autorise, au même titre que `quoi` (V9B) et `portee`
+   (V9C). L'aiguilleur reste aveugle : il rapporte le mot, le CODE résout
+   l'identité.
+
+   ⚠️ ET ON NE BASCULE JAMAIS SUR UN TITRE. La ligne du jour doit porter
+   l'identité de la PROCHAINE ÉTAPE COMPATIBLE, comparée par `etapeLiee`.
+   Une séance du catalogue intitulée « Push » n'est pas l'étape Push, et
+   une étape qui n'est pas la prochaine ferait avancer le cycle de
+   plusieurs crans (décision 2 de V9). Dans ces cas-là on ne devine pas :
+   on explique. */
+
+/** Ce qu'un « poser une séance sur un jour » doit réellement devenir. */
+export type VoiePose =
+  /** Une ligne ordinaire se laisse réécrire : comportement historique. */
+  | "remplacer"
+  /** Rien à réécrire (ou remplacement non demandé) : on pose à côté. */
+  | "ajouter"
+  /** Remplacement explicite de la prochaine étape : c'est une SUBSTITUTION. */
+  | "substituer"
+  /** Explicite, mais la ligne ne porte pas la prochaine étape compatible. */
+  | "conflit_etape"
+  /** Explicite, mais l'étape est déjà réservée par une AUTRE ligne. */
+  | "conflit_reservation";
+
+/**
+ * L'ordre des questions est la règle, comme partout dans ce chantier :
+ * une cible ordinaire l'emporte toujours (on ne touche au programme que
+ * s'il n'y a rien d'autre à réécrire) · pas de ligne de programme, rien à
+ * arbitrer · pas de remplacement demandé, on garde le garde-fou V9B · et
+ * seulement alors on compare les identités.
+ */
+export function voieDeLaPose(input: {
+  /** La demande dit-elle EN TOUTES LETTRES qu'elle remplace ? */
+  explicite: boolean;
+  /** Ce qu'un remplacement ordinaire a le droit de réécrire ce jour-là. */
+  cible: Pick<PlanningDay, "id"> | null;
+  /** La ligne de programme posée ce jour-là, s'il y en a une. */
+  programme: Pick<PlanningDay, "id" | "etapeId" | "provenanceId"> | null;
+  /** L'identité de la prochaine étape compatible, ou `null` si inconnue. */
+  compatibleId: string | null;
+  /** La ligne qui RÉSERVE déjà cette étape, s'il y en a une. */
+  reservationId: string | null;
+}): VoiePose {
+  if (input.cible) return "remplacer";
+  if (!input.programme) return "ajouter";
+  if (!input.explicite) return "ajouter";
+  const lien = etapeLiee(input.programme);
+  if (!lien || !input.compatibleId || lien !== input.compatibleId) return "conflit_etape";
+  /* ⚠️ UNE SUBSTITUTION REPREND LA RÉSERVATION DE L'ÉTAPE, ET IL N'Y EN A
+     QU'UNE. Si la ligne du jour n'est pas celle-là, l'écrire refermerait
+     l'étape deux fois : `uniq_intention_par_etape` refuserait la seconde
+     ligne prévue, et le geste échouerait au clic après avoir promis le
+     contraire sur la carte. */
+  if (input.reservationId && input.programme.id && input.reservationId !== input.programme.id) {
+    return "conflit_reservation";
+  }
+  return "substituer";
 }
 
 /** Ce qu'une semaine régénérée préserve. `gardes` = les jours intouchés. */
