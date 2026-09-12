@@ -27,6 +27,7 @@
 
 import { ajouterJours, finParDefaut } from "@/lib/adaptation";
 import { candidatsEtape, type EtapeNommee } from "@/lib/gestePlanning";
+import { motsDe } from "@/lib/etapeCiblee";
 
 /* ═══════════════════ Ce que la demande dit ═══════════════════ */
 
@@ -98,6 +99,45 @@ function dureeDite(brut: unknown): number | null {
 }
 
 /**
+ * Les mots qui ne disent RIEN dans un champ de texte libre.
+ *
+ * ⚠️ LA LISTE EST COURTE EXPRÈS, ET ELLE NE FAIT PAS LE GROS DU TRAVAIL.
+ * Un motif est du texte libre : « vacances », « épaule » ou
+ * « déménagement » sont tous légitimes, donc on ne peut pas filtrer
+ * par vocabulaire. Ce qui attrape « ? », « - » ou « … », c’est le
+ * découpage lui-même : ils ne laissent AUCUN mot. Cette liste ne couvre
+ * que le cran d’après, les remplissages qui ressemblent à des mots.
+ */
+const NE_DIT_RIEN = new Set([
+  "n", "a", "na", "nc", "nd", "null", "none", "nil", "undefined", "vide",
+  "aucun", "aucune", "rien", "ras", "inconnu", "inconnue", "non", "x", "xx",
+]);
+
+/**
+ * Un motif écrit par quelqu’un, ou `null` si le champ ne dit rien.
+ *
+ * ⚠️ ⚠️ CE FILTRE EST LA LEÇON DE V9C QUATER, APPLIQUÉE AU CHAMP D’À
+ * CÔTÉ. Un modèle REMPLIT ce qu’on lui donne : sur « Évite Push pendant
+ * 10 jours », aucun motif n’est dit, et l’aiguilleur a rendu « ? ».
+ * C’est exactement ce qu’il avait fait de `etape` avec « ? » la veille.
+ * Le remplissage arrivait donc jusqu’au champ « Pour t’en souvenir »,
+ * où il se lisait comme une phrase que personne n’avait écrite.
+ *
+ * ⚠️ ET ON NETTOIE ICI, PAS AU RENDU. C’est la frontière où les
+ * paramètres pauvres deviennent une demande : réparer dans la feuille
+ * laisserait le « ? » vivant dans le préremplissage, donc prêt à
+ * ressortir au premier autre lecteur.
+ */
+function motifDit(brut: string | null | undefined): string | null {
+  const v = (brut ?? "").trim().slice(0, 120);
+  if (!v) return null;
+  const m = motsDe(v);
+  if (m.length === 0) return null;
+  if (m.every((x) => NE_DIT_RIEN.has(x))) return null;
+  return v;
+}
+
+/**
  * Traduit les paramètres pauvres de l’aiguilleur en une demande lisible.
  *
  * ⚠️ AUCUNE LECTURE, AUCUNE DEVINETTE. Un mode inconnu vaut `creer`,
@@ -116,7 +156,7 @@ export function normaliserDemande(input: {
     mode,
     etapes: nomsCites(input.etapes),
     dureeJours: dureeDite(input.duree_jours),
-    motif: (input.motif ?? "").trim().slice(0, 120) || null,
+    motif: motifDit(input.motif),
   };
 }
 
@@ -270,6 +310,31 @@ export function citer(noms: string[]): string {
  * rien ne l’explique. Sans consommation, il reviendrait à chaque
  * ouverture. Les deux, donc.
  */
+/**
+ * Pourquoi l’adaptation ne peut pas s’activer, quand des séances posées
+ * portent une étape qu’elle masquerait.
+ *
+ * ⚠️ ON NE NOMME UNE ÉTAPE QUE SI C’EST LA SEULE, ET C’EST TOUTE LA
+ * RÈGLE. Deux séances qui gênent pour deux raisons différentes n’ont pas
+ * un coupable unique : écrire « utilisent Push » alors que l’une porte
+ * Pull, ce serait envoyer quelqu’un chercher la mauvaise ligne. Dans le
+ * doute on compte, on ne désigne pas.
+ *
+ * `noms` porte UNE entrée par séance en conflit, dans l’ordre de la
+ * liste affichée, `null` quand on n’a pas su nommer son étape.
+ */
+export function blocageConflits(noms: (string | null)[]): string {
+  const n = noms.length;
+  const pluriel = n > 1;
+  const seances = pluriel ? `${n} séances prévues` : "Une séance prévue";
+  const geste = pluriel ? "Décale-les ou retire-les" : "Décale-la ou retire-la";
+  const unique = noms.every((x) => x && x === noms[0]) ? noms[0] : null;
+  const quoi = unique
+    ? `${pluriel ? "utilisent" : "utilise"} « ${unique} »`
+    : `${pluriel ? "entrent" : "entre"} en conflit avec cette adaptation`;
+  return `${seances} ${quoi}. ${geste} ci-dessus.`;
+}
+
 const CLE_DEMANDE = "vaiiya:adaptation-demandee";
 const PEREMPTION_MS = 120_000;
 

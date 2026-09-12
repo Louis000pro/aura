@@ -175,8 +175,16 @@ const MOTS_QUI_DESIGNENT = new Set([
   "programme", "cycle", "jour", "aujourd", "hui", "maintenant", "truc",
 ]);
 
-/** Le mot-à-mot d'une valeur, sans accent, sans ponctuation, sans vide. */
-function mots(v: string): string[] {
+/**
+ * Le mot-à-mot d’une valeur, sans accent, sans ponctuation, sans vide.
+ *
+ * ⚠️ C’EST LE DÉCOUPEUR DES PARAMÈTRES PAUVRES DE L’AIGUILLEUR, ET IL
+ * N’EN EXISTE QU’UN. Il sert ici à savoir si une valeur NOMME quelque
+ * chose ou si elle POINTE, et il sert à V9D ter à savoir si un motif dit
+ * quelque chose ou s’il est un remplissage. Deux découpages du même
+ * genre de valeur finiraient par ne pas être d’accord sur « ? ».
+ */
+export function motsDe(v: string): string[] {
   return (v || "")
     .toLowerCase()
     .normalize("NFD")
@@ -197,7 +205,7 @@ function mots(v: string): string[] {
  * tombe dans le même cas, et c'est voulu : il ne nomme rien non plus.
  */
 export function estReferenceProchaine(valeur: string | null | undefined): boolean {
-  const restants = mots(valeur ?? "").filter((m) => !MOTS_QUI_DESIGNENT.has(m));
+  const restants = motsDe(valeur ?? "").filter((m) => !MOTS_QUI_DESIGNENT.has(m));
   return restants.length === 0;
 }
 

@@ -43,8 +43,8 @@ import {
 } from "@/lib/gestePlanning";
 import { cibleDemandee, estReferenceProchaine, verdictEtape } from "@/lib/etapeCiblee";
 import {
-  citer, composerPreremplissage, finDemandee, libelleDuree, libelleEtapes,
-  normaliserDemande, resoudreEtapesCitees, DUREE_MAX_JOURS,
+  blocageConflits, citer, composerPreremplissage, finDemandee, libelleDuree,
+  libelleEtapes, normaliserDemande, resoudreEtapesCitees, DUREE_MAX_JOURS,
 } from "@/lib/adaptationDemandee";
 import {
   candidatsParNom, clefDeNom, copierExercices, entreeBibliotheque, entreesCatalogue,
@@ -1761,7 +1761,7 @@ verdict(
     verdict(
       "V8 · rien n’active l’adaptation à la place de la personne",
       !/\bactiver\(/.test(feuille)
-        && feuille.includes("onClick={peutActiver ? activer : undefined}"),
+        && feuille.includes("onClick={peutActiver ? activer : () => setRefuse(true)}"),
       "aucun appel : le seul chemin vers l’activation est le clic",
     );
     verdict(
@@ -4961,7 +4961,7 @@ verdict(
       /* `activer` n’est RÉFÉRENCÉE que par le bouton : jamais appelée
          depuis un effet, jamais depuis le préremplissage. */
       const appels = (FEUILLE9G.match(/activer\(\)/g) ?? []).length;
-      return appels === 0 && FEUILLE9G.includes("onClick={peutActiver ? activer : undefined}");
+      return appels === 0 && FEUILLE9G.includes("onClick={peutActiver ? activer : () => setRefuse(true)}");
     })(),
     "le bouton violet reste le seul chemin vers `creerAdaptation`, prérempli ou pas",
   );
@@ -4976,6 +4976,135 @@ verdict(
       && ENTR9G.includes("window.removeEventListener(EVT_ADAPTATION, ouvrir)"),
     "depuis cet écran, changer la requête de l’adresse ne remonte pas la page : il ne se passerait rien",
   );
+  /* ══════════ V9D ter · LE MOTIF ET LE BOUTON QUI REFUSE ══════════ */
+
+  for (const remplissage of ["?", "??", "-", "…", "n/a", "N/A", "aucun", "RAS", "  ", "null"]) {
+    verdict(
+      `V9D ter · un remplissage ne devient jamais un motif : ${JSON.stringify(remplissage)}`,
+      normaliserDemande({ motif: remplissage }).motif === null,
+      "un modèle REMPLIT ce qu’on lui donne, et « ? » s’affichait dans « Pour t’en souvenir »",
+    );
+  }
+  verdict(
+    "V9D ter · un motif absent reste absent",
+    normaliserDemande({}).motif === null && normaliserDemande({ motif: "" }).motif === null,
+    "un champ vide n’est pas une information, et il ne doit pas en devenir une",
+  );
+  verdict(
+    "V9D ter · un VRAI motif est gardé tel quel, sans une retouche",
+    normaliserDemande({ motif: "épaule sensible" }).motif === "épaule sensible"
+      && normaliserDemande({ motif: "  déplacement pro  " }).motif === "déplacement pro",
+    "le motif est purement descriptif depuis V8 : on le recopie, on ne l’interprète jamais",
+  );
+  verdict(
+    "V9D ter · un motif qui contient un mot creux n’est pas un motif creux",
+    normaliserDemande({ motif: "aucun matériel cette semaine" }).motif === "aucun matériel cette semaine",
+    "on rejette une valeur qui ne dit RIEN, pas une phrase qui commence par « aucun »",
+  );
+  verdict(
+    "V9D ter · SOURCE · le nettoyage est à la FRONTIÈRE, pas au rendu",
+    (() => {
+      /* ⚠️ RÉPARER DANS LA FEUILLE AURAIT LAISSÉ LE « ? » VIVANT dans
+         le préremplissage, donc prêt à ressortir au premier autre
+         lecteur. Il meurt là où les paramètres pauvres deviennent une
+         demande, et la feuille recopie sans se méfier. */
+      return DEM9G.includes("motif: motifDit(input.motif)")
+        && FEUILLE9G.includes("useState(prerempli?.motif ?? \"\")");
+    })(),
+    "un paramètre pauvre se nettoie une fois, à l’entrée, jamais à chaque endroit qui le lit",
+  );
+  verdict(
+    "V9D ter · SOURCE · un seul découpeur de paramètre pauvre dans tout le produit",
+    (() => {
+      /* Le même « ? » avait déjà été rendu dans `etape` la veille
+         (V9C quater). Deux découpages du même genre de valeur
+         finiraient par ne pas être d’accord sur ce qu’est un mot. */
+      const e = lire9G("src/lib/etapeCiblee.ts");
+      return /export function motsDe\(/.test(e)
+        && DEM9G.includes('import { motsDe } from "@/lib/etapeCiblee"')
+        && !/\.normalize\("NFD"\)/.test(DEM9G);
+    })(),
+    "V9C quater avait déjà payé cette leçon sur le champ d’à côté",
+  );
+
+  verdict(
+    "V9D ter · le blocage nomme l’étape quand c’est LA MÊME",
+    blocageConflits(["Push", "Push"]) === "2 séances prévues utilisent « Push ». Décale-les ou retire-les ci-dessus."
+      && blocageConflits(["Push"]) === "Une séance prévue utilise « Push ». Décale-la ou retire-la ci-dessus.",
+    "nommer la ligne à corriger vaut mieux que la faire chercher",
+  );
+  verdict(
+    "V9D ter · et il ne nomme RIEN quand les étapes diffèrent",
+    (() => {
+      /* ⚠️ DEUX SÉANCES QUI GÊNENT POUR DEUX RAISONS N’ONT PAS UN
+         COUPABLE UNIQUE. Écrire « utilisent Push » alors que l’une
+         porte Pull, ce serait envoyer quelqu’un chercher la mauvaise
+         ligne : dans le doute on compte, on ne désigne pas. */
+      const p = blocageConflits(["Push", "Pull"]);
+      return !p.includes("Push") && !p.includes("Pull")
+        && p === "2 séances prévues entrent en conflit avec cette adaptation. Décale-les ou retire-les ci-dessus.";
+    })(),
+    "un message qui désigne la mauvaise séance est pire qu’un message qui compte",
+  );
+  verdict(
+    "V9D ter · une étape qu’on n’a pas su nommer ne se devine pas",
+    !blocageConflits([null, null]).includes("utilisent")
+      && !blocageConflits(["Push", null]).includes("Push"),
+    "on ne remplit pas un trou de lecture par le premier nom qui passe",
+  );
+  verdict(
+    "V9D ter · l’accord suit le nombre, des deux côtés de la phrase",
+    (() => {
+      const un = blocageConflits(["Push"]);
+      const deux = blocageConflits(["Push", "Pull"]);
+      return un.startsWith("Une séance prévue") && un.includes("Décale-la ou retire-la")
+        && deux.startsWith("2 séances prévues") && deux.includes("Décale-les ou retire-les");
+    })(),
+    "un pluriel faux se lit comme un bug, et il coûte la confiance dans le reste du message",
+  );
+
+  verdict(
+    "V9D ter · SOURCE · le bouton bloqué CAPTE le clic et répond",
+    /onClick=\{peutActiver \? activer : \(\) => setRefuse\(true\)\}/.test(FEUILLE9G),
+    "un bouton qui ne répond pas est un bouton cassé : il refusait sans dire pourquoi",
+  );
+  verdict(
+    "V9D ter · SOURCE · et il refuse SANS jamais écrire",
+    (() => {
+      /* `activer` reste le seul chemin vers `creerAdaptation`, et le
+         refus ne fait que poser un drapeau d’affichage. */
+      const refus = /: \(\) => setRefuse\(true\)/.test(FEUILLE9G);
+      const bloc = /const blocage = useMemo\([\s\S]*?\n  \}, \[/.exec(FEUILLE9G)?.[0] ?? "";
+      return refus && !/creerAdaptation|setOccupe|await /.test(bloc)
+        && (FEUILLE9G.match(/creerAdaptation\(/g) ?? []).length === 1;
+    })(),
+    "l’état bloqué ne doit JAMAIS toucher la base, c’est toute la raison d’être du blocage",
+  );
+  verdict(
+    "V9D ter · SOURCE · `aria-disabled`, jamais l’attribut natif",
+    (() => {
+      /* ⚠️ UN BOUTON NATIF DÉSACTIVÉ N’ÉMET AUCUN CLIC et sort du
+         parcours au clavier : il serait donc incapable de dire pourquoi
+         il refuse. En le laissant vivant, Entrée et Espace passent par
+         le même `onClick` que le doigt. */
+      const i = FEUILLE9G.indexOf("aria-disabled={!peutActiver}");
+      const btn = FEUILLE9G.slice(FEUILLE9G.lastIndexOf("<motion.button", i), FEUILLE9G.indexOf(">", i) + 1);
+      return i > 0 && !/(?<!-)\bdisabled(=|\s|>)/.test(btn);
+    })(),
+    "un bouton mort ne dit pas s’il est refusé ou cassé",
+  );
+  verdict(
+    "V9D ter · SOURCE · le message est INLINE, et il se dérive",
+    (() => {
+      /* Pas de bannière globale pour une raison locale ; et une phrase
+         figée au clic survivrait à la résolution du dernier conflit. */
+      return /\{refuse && blocage && \(/.test(FEUILLE9G)
+        && FEUILLE9G.includes("const blocage = useMemo(")
+        && !/setBlocage|toast/i.test(FEUILLE9G);
+    })(),
+    "le message vit à côté de ce qu’on vient de toucher, et il s’efface quand la raison disparaît",
+  );
+
   verdict(
     "V9D · SOURCE · l’aiguilleur n’a toujours pas grandi",
     (() => {

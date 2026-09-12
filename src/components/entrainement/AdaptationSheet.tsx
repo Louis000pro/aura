@@ -44,7 +44,8 @@ import {
   REEVALUATION_SEMAINES, validerAxes,
   type Adaptation,
 } from "@/lib/adaptation";
-import { prendreAdaptationDemandee } from "@/lib/adaptationDemandee";
+import { blocageConflits, prendreAdaptationDemandee } from "@/lib/adaptationDemandee";
+import { etapeLiee } from "@/lib/planning";
 import { retirerIntention, saveDay, todayYmd, dayTitle, type PlanningDay } from "@/lib/planning";
 import { EVT_JOURNEE } from "@/lib/finSeance";
 import type { ProgrammeEtCycle } from "@/lib/programme";
@@ -108,6 +109,11 @@ export default function AdaptationSheet({
      d'un profil. */
   const [conflits, setConflits] = useState<{ cle: string; liste: PlanningDay[] } | null>(null);
   const [erreur, setErreur] = useState<string | null>(null);
+  /* ⚠️ UN BOUTON QUI NE RÉPOND PAS EST UN BOUTON CASSÉ. Il gardait son
+     apparence éteinte et n’avait aucun `onClick` : appuyer dessus ne
+     faisait donc RIEN, pas même dire pourquoi. On garde l’état bloqué,
+     mais on capte le geste et on répond. */
+  const [refuse, setRefuse] = useState(false);
   const [occupe, setOccupe] = useState(false);
   /* Le geste en cours sur UN conflit : le sélecteur de jour ouvert, ou le
      retrait armé. Un seul à la fois, et il porte l'identité de la ligne
@@ -162,6 +168,30 @@ export default function AdaptationSheet({
 
   const peutActiver =
     valide.ok && periodeValide && !occupe && conflitsAJour !== null && conflitsAJour.length === 0;
+
+  /* ⚠️ ELLE SE DÉRIVE, ELLE NE SE STOCKE PAS, et c’est ce qui la fait
+     disparaître toute seule. Un message figé au moment du clic
+     survivrait à la résolution du dernier conflit, ou décrirait une
+     raison qui n’est plus la bonne. Ici il dit toujours l’état COURANT,
+     et il s’efface à la seconde où le bouton redevient vivant. */
+  const blocage = useMemo(() => {
+    if (peutActiver) return null;
+    if (conflitsAJour !== null && conflitsAJour.length > 0) {
+      /* On nomme l’étape quand toutes les séances portent la même, et
+         seulement dans ce cas : `blocageConflits` tranche. */
+      return blocageConflits(conflitsAJour.map((c) => {
+        const id = etapeLiee(c);
+        return cycle.find((e) => e.id === id)?.nom ?? null;
+      }));
+    }
+    if (!periodeValide) return "Choisis une date de début et une date de fin.";
+    /* « Je ne sais pas encore » n’est pas « il n’y a rien » : tant que
+       la base n’a pas répondu, on ne peut ni activer ni accuser. */
+    if (cochees.length > 0 && conflitsAJour === null) {
+      return "Je regarde ce qui est déjà prévu sur cette période.";
+    }
+    return null;
+  }, [peutActiver, conflitsAJour, periodeValide, cochees, cycle]);
 
   const activer = useCallback(async () => {
     if (!programme || !valide.ok) return;
@@ -494,15 +524,34 @@ export default function AdaptationSheet({
                 </div>
               )}
 
-              {(erreur || (!valide.ok && cochees.length > 0)) && (
+              {(erreur || (!valide.ok && (cochees.length > 0 || refuse))) && (
                 <p className="text-[12px] font-semibold mb-3" style={{ color: "var(--text-1)" }}>
                   {erreur ?? (valide.ok ? "" : valide.raison)}
                 </p>
               )}
 
+              {/* ⚠️ IL EST INLINE, ET IL EST AU-DESSUS DU BOUTON. Un
+                  message de refus posé ailleurs qu’à côté de ce qu’on
+                  vient de toucher se cherche ; et une bannière globale
+                  pour une raison locale ferait porter à toute l’app ce
+                  qui ne concerne que cet écran. */}
+              {refuse && blocage && (
+                <p role="status" className="text-[12px] font-semibold leading-snug mb-2.5" style={{ color: "var(--text-1)" }}>
+                  Impossible d’activer pour l’instant.{" "}
+                  <span className="font-light" style={{ color: "var(--text-2)" }}>{blocage}</span>
+                </p>
+              )}
+
               <motion.button
                 whileTap={peutActiver ? { scale: 0.97 } : undefined}
-                onClick={peutActiver ? activer : undefined}
+                /* ⚠️ `aria-disabled`, JAMAIS L’ATTRIBUT `disabled`. Un
+                   bouton natif désactivé n’émet aucun clic et sort du
+                   parcours au clavier : il serait donc incapable de dire
+                   pourquoi il refuse. Ici le bouton reste un bouton,
+                   donc Entrée et Espace passent par le même `onClick`
+                   que le doigt, et l’état bloqué se lit aux technologies
+                   d’assistance comme à l’œil. */
+                onClick={peutActiver ? activer : () => setRefuse(true)}
                 aria-disabled={!peutActiver}
                 className="w-full py-3.5 rounded-2xl flex items-center justify-center gap-2 cursor-pointer text-[15px] font-extrabold text-white border-none mb-2"
                 style={{
