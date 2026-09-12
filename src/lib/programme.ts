@@ -501,21 +501,15 @@ export async function sauterEtape(
   });
 }
 
-/**
- * La prochaine étape du cycle pour quelqu'un, dérivée de son journal
- * d'intentions. Rend `null` s'il n'a pas de programme.
- *
- * ⚠️ On ordonne par `consommee_le` et JAMAIS par `date` : une intention
- * non datée n'a pas de date, et c'est justement la forme normale de la
- * prochaine étape. C'est la leçon déjà payée deux fois (l'EXP, la
- * série) : un curseur stocké se désynchronise, une dérivation ne le
- * peut pas.
- */
-export async function prochaineEtape(userId: string): Promise<EtapeCycle | null> {
-  const actif = await lireProgrammeActif(userId);
-  if (!actif) return null;
-  return etapeSuivanteDe(userId, actif);
-}
+/* ⚠️ `prochaineEtape(userId)` A ÉTÉ SUPPRIMÉE À LA CLÔTURE DU
+   CHANTIER, ET ELLE ÉTAIT PLUS DANGEREUSE QUE MORTE. Elle appelait
+   `etapeSuivanteDe` SANS son filtre `masquee`, donc elle rendait
+   l'étape BRUTE : elle aurait proposé Push à quelqu'un qui vient
+   justement de mettre Push de côté (V8). Plus aucun appelant depuis
+   V9A, mais son nom est exactement celui qu'on cherche quand on veut
+   « la prochaine étape ». Le seul chemin juste passe donc par
+   `etapeSuivanteDe`, dont le filtre est un ARGUMENT : on ne peut pas
+   l'appeler sans voir qu'on a choisi de ne pas le passer. */
 
 /** La prochaine étape d'un programme DÉJÀ chargé : une requête, pas trois.
  *  C'est cette forme qu'utilisent les écrans, qui viennent d'appeler

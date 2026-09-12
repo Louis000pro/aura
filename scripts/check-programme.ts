@@ -3329,7 +3329,7 @@ verdict(
   verdict(
     "V9C · sauter · la carte dit ce que ça N'EST PAS",
     consequenceSaut("Pull", "Bas du corps")
-      === "« Pull » ne sera comptée ni comme faite, ni comme une séance. Ta prochaine étape devient « Bas du corps » tout de suite.",
+      === "« Pull » sera passée, sans séance enregistrée ni EXP. Ta prochaine étape devient « Bas du corps » tout de suite.",
     "il n'y a pas d'annulation dans cette version : la carte tient lieu de garde-fou (décision 3 de V9)",
   );
   verdict(
@@ -4504,7 +4504,7 @@ verdict(
     (() => {
       const t = consequenceSaut("Haut du corps", "Cardio / HIIT");
       return t.includes("Haut du corps") && t.includes("Cardio / HIIT")
-        && /ni comme faite/.test(t) && /tout de suite/.test(t);
+        && /sans séance enregistrée ni EXP/.test(t) && /tout de suite/.test(t);
     })(),
     "l’étape n’est pas comptée comme faite, et la prochaine devient l’autre immédiatement",
   );
@@ -5103,6 +5103,80 @@ verdict(
         && !/setBlocage|toast/i.test(FEUILLE9G);
     })(),
     "le message vit à côté de ce qu’on vient de toucher, et il s’efface quand la raison disparaît",
+  );
+
+  /* ══════════ CLÔTURE · LES ARMES CHARGÉES QUI DORMAIENT ══════════
+
+     Trois fonctions exportées n'avaient plus AUCUN appelant à la fin du
+     chantier, et deux d'entre elles portaient exactement le défaut que
+     la vague d'avant avait corrigé. Un contrôle qui vérifie une ABSENCE
+     ne sert que si quelqu'un peut la rompre : ces trois-là ont un nom
+     qu'on choisirait spontanément, donc elles reviendraient. */
+
+  verdict(
+    "CLÔTURE · SOURCE · plus rien ne peut vider une journée entière",
+    (() => {
+      /* ⚠️ `libererJours` SUPPRIMAIT TOUT CE QUI N'ÉTAIT PAS FAIT sur les
+         dates données : suppléments, séances posées à la main et
+         réservations d'étape comprises. C'est la destruction silencieuse
+         de V9B, et elle n'avait plus d'appelant depuis. Ce qui reste vise
+         juste : `libererMobilier` (origine + statut + pas de réservation)
+         et `retirerIntention` (UNE ligne, par son identité). */
+      const p = lire9G("src/lib/planning.ts");
+      return !/export async function libererJours/.test(p)
+        && /export async function libererMobilier/.test(p)
+        && /export async function retirerIntention/.test(p);
+    })(),
+    "une suppression large sans appelant est une suppression large qui attend le sien",
+  );
+  verdict(
+    "CLÔTURE · SOURCE · la prochaine étape ne se lit jamais sans son filtre",
+    (() => {
+      /* ⚠️ `prochaineEtape(userId)` APPELAIT `etapeSuivanteDe` SANS
+         `masquee` : elle rendait l'étape brute, donc celle qu'une
+         adaptation vient justement d'écarter. Le seul chemin restant
+         prend le filtre en ARGUMENT, donc on ne peut pas l'oublier sans
+         l'avoir écrit. */
+      const p = lire9G("src/lib/programme.ts");
+      return !/export async function prochaineEtape\(/.test(p)
+        && /export async function etapeSuivanteDe\(/.test(p)
+        && /masquee\?: \(etape: EtapeCycle\) => boolean/.test(p);
+    })(),
+    "V8 tient parce que le filtre voyage, pas parce qu'on pense à le passer",
+  );
+  verdict(
+    "CLÔTURE · SOURCE · toute feuille du bas masque la barre de navigation",
+    (() => {
+      /* ⚠️ C'EST LA LEÇON DE V8, RESTÉE OUVERTE SUR UN ÉCRAN. La feuille
+         « Quel jour ? » du héros recopiait la coquille des autres sans
+         recopier leur verrou : la barre du bas restait montée sous le
+         voile, visible en transparence, et le fond continuait de
+         défiler. Le contrôle vise les DEUX feuilles du chantier, parce
+         que la prochaine sera écrite en recopiant l'une des deux. */
+      const paires: [string, RegExp][] = [
+        ["src/components/entrainement/HeroJournee.tsx", /lockBodyModal\(\)/],
+        ["src/components/entrainement/AdaptationSheet.tsx", /lockBodyModal\(\)/],
+      ];
+      return paires.every(([f, re]) => {
+        const src = lire9G(f);
+        return /fixed inset-0/.test(src) && re.test(src);
+      });
+    })(),
+    "une feuille qui recopie la coquille recopie aussi le verrou, sinon la nav revient par-dessous",
+  );
+
+  verdict(
+    "CLÔTURE · la carte du saut dit ce qui n'est PAS crédité",
+    (() => {
+      /* Elle décrivait un statut (« ni comme une séance »), ce qui
+         suppose de connaître le modèle. Elle nomme maintenant les deux
+         choses qui se voient : la séance au journal, et l'EXP. */
+      const t = consequenceSaut("Pull", "Bas du corps");
+      return t.includes("sans séance enregistrée ni EXP")
+        && !t.includes("ni comme une séance")
+        && t.includes("Bas du corps");
+    })(),
+    "on dit ce que ça coûte, pas dans quelle case ça range",
   );
 
   verdict(

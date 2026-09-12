@@ -590,12 +590,6 @@ export async function adaptationsDisponibles(client?: ClientLike): Promise<boole
   return sondageAdaptations;
 }
 
-/** Les colonnes de l'intention, avec le bon nom de statut. Exporté pour
- *  les lectures serveur, qui composent leur propre requête. */
-export function colonnesIntention(s: SchemaIntentions, extra = ""): string {
-  return `${extra ? extra + ", " : ""}${s.colStatut}`;
-}
-
 /** Les colonnes à demander, avec le bon nom de statut.
  *
  *  ⚠️ `id` ET `created_at` ONT REJOINT LA LISTE EN V6b, et ce n'est pas du
@@ -1282,23 +1276,16 @@ export async function ajouterIntention(userId: string, day: PlanningDay, origine
   return poser(userId, { ...day, id: null }, origine, "ajouter");
 }
 
-/** Libère un jour : plus aucune intention, donc rien de prévu. C'est ce qui
- *  remplace le « Repos » qu'on écrivait sur le jour de départ d'un
- *  déplacement, et qui affirmait un repos que personne n'avait choisi.
- *
- *  ⚠️ ELLE EMPORTE TOUTE LA JOURNÉE, SUPPLÉMENTS COMPRIS, et c'est bien ce
- *  que « libérer le jour » veut dire. Ce qui est FAIT ne bouge jamais. */
-export async function libererJours(userId: string, dates: string[]): Promise<void> {
-  if (dates.length === 0) return;
-  const supabase = createClient();
-  const sc = await schemaIntentions();
-  await supabase
-    .from(sc.table)
-    .delete()
-    .eq("user_id", userId)
-    .neq(sc.colStatut, sc.versBase.done)
-    .in("date", dates);
-}
+/* ⚠️ `libererJours` A ÉTÉ SUPPRIMÉE À LA CLÔTURE DU CHANTIER, ET CE
+   N'EST PAS DU RANGEMENT : ELLE N'AVAIT PLUS D'APPELANT DEPUIS V9B ET
+   ELLE SUPPRIMAIT UNE JOURNÉE ENTIÈRE. Suppléments, séances posées à la
+   main et réservations d'étape partaient avec le mobilier : c'est
+   exactement la destruction silencieuse que V9B a passé un correctif à
+   fermer, et son nom (« libérer le jour ») est celui qu'un futur
+   appelant choisirait spontanément. Une arme chargée qui dort dans un
+   tiroir finit par servir. Ce qui la remplace existe et vise juste :
+   `libererMobilier` (V9B, trois conditions) pour une régénération,
+   `retirerIntention` (V8) pour UNE ligne. */
 
 /**
  * V9B · LIBÈRE LE MOBILIER AUTOMATIQUE DE CES JOURS, ET RIEN D'AUTRE.

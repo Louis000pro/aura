@@ -20,11 +20,12 @@
    marchent ici exactement comme sur Entraînement.
    ════════════════════════════════════════════════════════════════════ */
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useAssistant } from "@/context/AssistantContext";
+import { lockBodyModal } from "@/lib/bodyModal";
 import { useJournee } from "@/hooks/useJournee";
 import { dayTitle, hasSeance } from "@/lib/planning";
 import ChoixJour from "./ChoixJour";
@@ -36,6 +37,14 @@ export default function HeroJournee() {
   const j = useJournee();
   /* « Lui donner un jour » : le seul geste du héros qui écrit. */
   const [quand, setQuand] = useState(false);
+  /* ⚠️ UNE FEUILLE DU BAS QUI RECOPIE LA COQUILLE DOIT AUSSI
+     RECOPIER LE VERROU, et c'est la leçon déjà payée sur l'écran
+     d'adaptation en V8 : sans lui, la barre de navigation reste
+     montée sous le voile, visible en transparence derrière le flou,
+     et le fond continue de défiler pendant qu'on choisit un jour.
+     Le verrou compte ses références, donc il cohabite avec le tunnel
+     qu'on lance juste après. */
+  useEffect(() => (quand ? lockBodyModal() : undefined), [quand]);
 
   /* ⚠️ V8 · « adaptation » REJOINT LES DEUX AUTRES, ET POUR LA MÊME
      RAISON QU'ELLES. L'écran qui déclare et arrête une adaptation vit

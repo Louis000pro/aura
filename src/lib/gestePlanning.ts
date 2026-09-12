@@ -273,12 +273,18 @@ export function consequenceSubstitution(etape: string, apres: string | null): st
  * curseur avance) sans en être un : aucune séance, aucune EXP, aucune
  * mission, aucune journée validée. Sans cette phrase, la seule façon de
  * l'apprendre serait de constater après coup que rien n'a été crédité.
+ *
+ * ⚠️ ET ELLE LE DIT EN NOMMANT CE QUI N'EST PAS CRÉDITÉ, plus en
+ * décrivant un statut. « Ne sera comptée ni comme faite, ni comme une
+ * séance » était juste, mais il fallait déjà connaître le modèle pour
+ * comprendre ce que ça coûte : personne ne sait ce qu'est « compter
+ * comme une séance ». La séance enregistrée et l'EXP, elles, se voient.
  */
 export function consequenceSaut(etape: string, apres: string | null): string {
   const suite = apres
     ? `Ta prochaine étape devient « ${apres} » tout de suite.`
     : "Ton cycle avance tout de suite.";
-  return `« ${etape} » ne sera comptée ni comme faite, ni comme une séance. ${suite}`;
+  return `« ${etape} » sera passée, sans séance enregistrée ni EXP. ${suite}`;
 }
 
 /** Ce qu'un supplément change : rien, et c'est exactement sa raison d'être. */
