@@ -54,7 +54,11 @@ import {
   type ContenuNomme, type ForceNom,
 } from "@/lib/contenuNomme";
 import { lireProgrammeActif } from "@/lib/programme";
-import { adaptationDuJour, idsMasques } from "@/lib/adaptation";
+import { adaptationDuJour, idsMasques, libelleJour } from "@/lib/adaptation";
+import {
+  citer, composerPreremplissage, demanderAdaptation, libelleDuree, libelleEtapes,
+  normaliserDemande, resoudreEtapesCitees, EVT_ADAPTATION,
+} from "@/lib/adaptationDemandee";
 import { etatMoteur, resumeMoteur } from "@/lib/guideMoteur";
 import {
   etatNutrition, repasFrais, semaineFraiche, signalerRepas,
@@ -1136,7 +1140,142 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
     });
   }, [idPlanning]);
 
-  /* ── Action PLANNING (Phase 2) : prépare une carte de confirmation.
+  /* ══════════════ V9D · OUVRIR L’ADAPTATION, ET RIEN D’AUTRE ══════════════
+
+     ⚠️ AUCUNE CARTE, ET C’EST LA DÉCISION 4 DE V9. Une adaptation a une
+     période, des axes et des conflits de planning à résoudre un par un :
+     c’est un écran, il existe depuis V8, et il sait déjà tout dire. Le
+     Guide traduit donc la demande en identités, la pose dans le
+     formulaire, et s’efface.
+
+     ⚠️ IL NE PARLE QUE QUAND LA FEUILLE NE DIRA PAS CE QU’IL SAIT. Sur
+     une demande claire, l’écran arrive avec les bonnes cases cochées et
+     les deux dates posées : une phrase de plus ne ferait que répéter ce
+     qu’on a sous les yeux. On écrit ici ce que l’écran est incapable de
+     dire : un nom qu’on n’a pas retrouvé, une adaptation qui tourne
+     déjà, une demande d’arrêt sans rien à arrêter.
+
+     ⚠️ ET IL N’ÉCRIT RIEN. Ni création, ni fermeture, ni la moindre
+     intention : `creerAdaptation` et `fermerAdaptations` n’ont qu’un
+     appelant, la feuille, et le banc le vérifie en lisant le source. */
+  const ouvrirAdaptation = useCallback((pre: Parameters<typeof demanderAdaptation>[0]) => {
+    demanderAdaptation(pre);
+    /* Emmener quelqu’un au bon endroit EST une action qui aboutit : même
+       visage que pour `open_page`. */
+    setReussite((n) => n + 1);
+    setTimeout(() => {
+      /* ⚠️ LES DEUX CHEMINS SONT NÉCESSAIRES, ET C’EST UN PIÈGE RÉEL.
+         Si l’on est DÉJÀ sur Entraînement, `router.push` avec une autre
+         requête ne remonte pas l’écran : son effet d’ouverture ne se
+         rejouerait pas, et il ne se passerait rien du tout. L’évènement
+         couvre ce cas ; l’adresse couvre l’autre, celui où l’écran
+         n’existe pas encore pour l’entendre. */
+      if (typeof window !== "undefined") window.dispatchEvent(new Event(EVT_ADAPTATION));
+      if (pathname !== "/progression") router.push("/progression?ouvrir=adaptation");
+    }, 700);
+  }, [pathname, router]);
+
+  const preparerAdaptation = useCallback(async (
+    action: AssistantAction,
+    /* Les identités déjà tranchées par une question : elles REMPLACENT la
+       résolution par nom, elles ne s’y ajoutent pas. */
+    forcees?: string[] | null,
+  ) => {
+    const compte = idPlanning;
+    if (!compte) return;
+    const guide = guideRef.current;
+    const say = (content: string) => setMessages((prev) => [...prev, { role: "assistant" as const, content, id: uid(), ton: "explain" as const }]);
+
+    const demande = normaliserDemande(action);
+
+    /* ⚠️ ON LIT LE MOTEUR, ET LE CACHE DE 30 SECONDES EST ICI SANS
+       DANGER : rien ne s’écrit, et la feuille relit tout à son
+       ouverture. C’est exactement l’inverse de `viserEtape`, qui relit
+       toujours parce qu’une ÉCRITURE en dépend. */
+    const etat = await etatMoteur(compte).catch(() => null);
+
+    /* Pas de programme, ou lecture impossible : on ne l’envoie pas sur un
+       écran qui n’aurait rien à lui montrer. */
+    if (!etat?.programme || etat.cycle.length === 0) {
+      say(voix(guide, "impasse.adaptation_sans_programme"));
+      return;
+    }
+
+    const active = etat.adaptation;
+
+    if (demande.mode === "arreter" && !active) {
+      say(voix(guide, "impasse.adaptation_aucune"));
+      return;
+    }
+
+    /* ⚠️ UNE SEULE ADAPTATION À LA FOIS, ET C’EST LA BASE QUI LE TIENT
+       (`EXCLUDE` sur la période). Préparer une seconde déclaration ici,
+       ce serait préparer un refus. On ouvre donc celle qui existe, et on
+       ne le dit que si l’on nous demandait d’en créer une : sur « gère »
+       ou « arrête », l’écran répond déjà à la question posée. */
+    if (active) {
+      if (demande.mode === "creer") {
+        say(voix(guide, "impasse.adaptation_deja_active", { jour: libelleJour(active.fin) }));
+      }
+      ouvrirAdaptation(null);
+      return;
+    }
+
+    const cycle: EtapeNommee[] = etat.cycle.map((e) => ({ id: e.id, nom: e.nom }));
+    let retenues: EtapeNommee[];
+
+    if (forcees) {
+      retenues = forcees
+        .map((id) => cycle.find((e) => e.id === id))
+        .filter((e): e is EtapeNommee => !!e);
+    } else {
+      const r = resoudreEtapesCitees(cycle, demande.etapes);
+      /* ⚠️ ON NE TRANCHE PAS UNE AMBIGUÏTÉ TOUT SEUL. « du corps »
+         désigne deux étapes : en cocher une, ce serait écarter une
+         séance que personne n’a demandé d’écarter. La réponse désigne un
+         IDENTIFIANT, jamais un mot qui repartirait à l’aiguilleur. */
+      if (r.ambigu) {
+        poserQuestion(voix(guide, "question.adaptation_etape", { titre: r.ambigu.nom }), {
+          choix: r.ambigu.candidats.slice(0, 4).map((c) => c.nom),
+          genre: "etape",
+          etapes: r.ambigu.candidats.slice(0, 4).map((c) => ({ choix: c.nom, id: c.id })),
+          dejaRetenues: r.retenues.map((e) => e.id),
+          demande: action,
+        });
+        return;
+      }
+      /* On NOMME ce qu’on n’a pas retrouvé, et on ouvre quand même : la
+         feuille porte la liste complète, donc le mot juste est à un
+         geste. Inventer une étape parce que le mot ressemblait serait le
+         seul vrai mauvais choix. */
+      if (r.incertains.length > 0) {
+        say(voix(guide, "impasse.adaptation_etapes_incertaines", { etapes: citer(r.incertains) }));
+      }
+      retenues = r.retenues;
+    }
+
+    /* On dit ce que l’écran va montrer, et SEULEMENT quand il y a
+       quelque chose de précis à dire : c’est le seul moment où l’on peut
+       vérifier que le Guide a compris sans lire un formulaire. Sur une
+       demande sans étape ni durée, l’écran suffit, et une phrase de plus
+       ne ferait que répéter la bulle du coach. */
+    const duree = libelleDuree(demande.dureeJours);
+    if (retenues.length > 0 || duree) {
+      say(voix(guide, "adaptation.ouvre", {
+        etapes: libelleEtapes(retenues.map((e) => e.nom)),
+        duree: duree ?? "",
+      }));
+    }
+
+    ouvrirAdaptation(composerPreremplissage({
+      aujourdhui: etat.aujourdhui,
+      etapes: retenues,
+      dureeJours: demande.dureeJours,
+      motif: demande.motif,
+    }));
+  }, [idPlanning, poserQuestion, ouvrirAdaptation]);
+
+  /* ── Action PLANNING (Phase 2) : prépare une carte de confirmation.
      Aucune écriture en base ici — tout passe par confirmPlan() (clic). ── */
   const preparePlanAction = useCallback(async (action: AssistantAction, text: string, contenuImpose?: ContenuNomme) => {
     if (!user?.id) return;
@@ -1853,6 +1992,13 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       void preparerSubstitution(charge);
       return;
     }
+    /* V9D · le Guide ouvre l’écran d’adaptation, éventuellement
+       prérempli. Aucune carte : c’est la feuille qui confirme. */
+    if (action.intent === "adaptation_ouvrir") {
+      void preparerAdaptation(action);
+      return;
+    }
+
     if (action.intent === "etape_sauter") {
       void preparerSaut(action.etape ?? action.quoi ?? null, action.designation ?? null);
       return;
@@ -1926,7 +2072,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setActionLoading(null);
     }
-  }, [user?.id, pathname, router, preparePlanAction, buildNutritionNote, poserQuestion, verifierPlaces, preparerSubstitution, preparerSaut]);
+  }, [user?.id, pathname, router, preparePlanAction, buildNutritionNote, poserQuestion, verifierPlaces, preparerSubstitution, preparerSaut, preparerAdaptation]);
 
   /* ── Ce qui manque AVANT d'agir ──
      C'est le CODE qui sait de quoi il a besoin, pas le modèle : lui demander
@@ -2331,9 +2477,20 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    // Question libre du coach : sa réponse repart telle quelle.
+    /* V9D · « Laquelle de ces deux étapes ? » La réponse désigne une
+       IDENTITÉ du cycle, et elle remplace la résolution par nom : on
+       rejoue la demande d’origine avec la liste complète, sans jamais
+       repasser par l’aiguilleur. */
+    if (q.genre === "etape" && q.demande) {
+      const trouve = (q.etapes ?? []).find((c) => c.choix === choix);
+      if (!trouve) return;
+      void preparerAdaptation(q.demande, [...(q.dejaRetenues ?? []), trouve.id]);
+      return;
+    }
+
+    // Question libre du coach : sa réponse repart telle quelle.
     sendMessage(choix, true);
-  }, [messages, isStreaming, user?.id, user?.is_premium, user?.is_admin, persist, sendMessage, preparerSurCible, preparerSubstitution, preparePlanAction]);
+  }, [messages, isStreaming, user?.id, user?.is_premium, user?.is_admin, persist, sendMessage, preparerSurCible, preparerSubstitution, preparePlanAction, preparerAdaptation]);
 
   /* ── Contrôles ── */
   const open = useCallback((prefill?: string) => {

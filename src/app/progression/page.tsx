@@ -25,6 +25,7 @@ import {
 import WeeklyProgramme from "@/components/WeeklyProgramme";
 import AdaptationSheet from "@/components/entrainement/AdaptationSheet";
 import { libelleJour, type Adaptation } from "@/lib/adaptation";
+import { EVT_ADAPTATION } from "@/lib/adaptationDemandee";
 import ChoixJour from "@/components/entrainement/ChoixJour";
 import { exerciseData, type Exercise } from "@/components/WorkoutGuideModal";
 import ExerciseGuide from "@/components/ExerciseGuide";
@@ -2648,6 +2649,19 @@ export default function ProgressionPage() {
        comme un saut plutôt que comme une arrivée. */
     const frame = requestAnimationFrame(() => setSheet(voulue));
     return () => cancelAnimationFrame(frame);
+  }, []);
+
+  /* ── V9D · le Guide demande l’adaptation alors qu’on est DÉJÀ ici ──
+     ⚠️ L’ADRESSE NE SUFFIT PAS, ET C’EST UN PIÈGE RÉEL. Depuis cet
+     écran, `router.push("?ouvrir=adaptation")` ne remonte pas la page :
+     l’effet ci-dessus ne se rejoue donc jamais, et il ne se passerait
+     strictement rien. L’évènement couvre ce cas-là ; l’adresse couvre
+     l’autre, celui où cet écran n’existe pas encore pour l’entendre. */
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const ouvrir = () => setSheet("adaptation");
+    window.addEventListener(EVT_ADAPTATION, ouvrir);
+    return () => window.removeEventListener(EVT_ADAPTATION, ouvrir);
   }, []);
 
   /* ── Charge une autre semaine (navigation de l'agenda), sans toucher à celle-ci ──

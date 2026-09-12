@@ -105,14 +105,39 @@ const sansAccent = (s: string) =>
  * il ne sert alors qu'à désigner une ligne, et rien de métier n'en dépend.
  */
 export function etapeParNom(cycle: EtapeNommee[] | null | undefined, nom: string | null | undefined): EtapeNommee | null {
+  return candidatsEtape(cycle, nom)[0] ?? null;
+}
+
+/**
+ * TOUTES les étapes que ce nom pourrait désigner, la plus sûre en tête.
+ *
+ * ⚠️ `etapeParNom` EN DÉRIVE, ET C’EST VOULU : DEUX QUESTIONS, UNE SEULE
+ * RÈGLE. Les gestes qui visent une ligne du planning veulent savoir
+ * LAQUELLE, et le premier candidat suffit puisque le titre n’y est qu’un
+ * repli ; une adaptation, elle, a besoin de savoir COMBIEN, parce qu’elle
+ * coche des cases dans un formulaire et qu’un mot ambigu y cocherait la
+ * mauvaise sans rien dire. Écrire la seconde règle à côté de la première,
+ * c’était garantir que les deux divergent au premier ajustement.
+ *
+ * L’ordre ne bouge pas : l’égalité exacte d’abord, l’inclusion ensuite.
+ * `candidatsEtape(...)[0]` rend donc EXACTEMENT ce que `etapeParNom`
+ * rendait, et le banc le balaie sur tout le vivier de `buildSplit`.
+ *
+ * ⚠️ L’INCLUSION EXIGE TOUJOURS `n.length > 2` : sans ça, une étape dont
+ * le nom fait deux lettres attraperait tout mot qui les contient.
+ */
+export function candidatsEtape(
+  cycle: EtapeNommee[] | null | undefined,
+  nom: string | null | undefined,
+): EtapeNommee[] {
   const cible = sansAccent(nom ?? "");
-  if (!cible || !cycle || cycle.length === 0) return null;
-  return cycle.find((e) => sansAccent(e.nom) === cible)
-    ?? cycle.find((e) => {
-      const n = sansAccent(e.nom);
-      return n.length > 2 && (n.includes(cible) || cible.includes(n));
-    })
-    ?? null;
+  if (!cible || !cycle || cycle.length === 0) return [];
+  const exacts = cycle.filter((e) => sansAccent(e.nom) === cible);
+  if (exacts.length > 0) return exacts;
+  return cycle.filter((e) => {
+    const n = sansAccent(e.nom);
+    return n.length > 2 && (n.includes(cible) || cible.includes(n));
+  });
 }
 
 /**

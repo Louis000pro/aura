@@ -68,6 +68,30 @@ export type AssistantAction = {
      ⚠️ ET IL NE S'APPELLE PAS `cible` : ce nom-là est déjà pris par
      `open_page`, et deux sens pour un même champ finiraient par diverger. */
   designation?: string;
+  /* V9D · CE QU’IL DEMANDE DE FAIRE DE SON ADAPTATION, pas ce qui est
+     possible. L’aiguilleur rapporte un verbe (« évite », « gère »,
+     « arrête ») ; c’est le CODE qui confronte ça au moteur et décide ce
+     qui s’ouvre vraiment. Demander une création alors qu’une adaptation
+     tourne déjà ouvre la GESTION de celle-ci : la base refuserait la
+     seconde (`EXCLUDE`), et proposer un formulaire voué au refus serait
+     pire que de ne rien proposer.
+     ⚠️ CE CHAMP APPARTIENT À `adaptation_ouvrir`, et à lui seul. Le mot
+     est générique : un autre outil qui s’en servirait pour autre chose
+     rejouerait exactement la divergence que `designation` a évitée en ne
+     s’appelant pas `cible`. */
+  mode?: string;
+  /* V9D · les noms d’étapes CITÉS. Comme `etape`, ce sont des mots : le
+     code les traduit en identités contre le cycle persisté, et il DEMANDE
+     quand un mot en désigne plusieurs. */
+  etapes?: unknown;
+  /* V9D · un nombre de jours explicitement dit (« pendant 10 jours »,
+     « deux semaines »). C’est de la transcription, pas du calendrier :
+     l’aiguilleur ne sait pas quel jour on est, donc il ne traduit jamais
+     « jusqu’à la fin du mois ». */
+  duree_jours?: unknown;
+  /* V9D · pourquoi, en toutes lettres. Purement DESCRIPTIF : il ne
+     devient jamais une règle métier, c’est verrouillé depuis V8. */
+  motif?: string;
   location?: string;
   title?: string;
   adjust?: string;
@@ -97,7 +121,7 @@ export type QuestionCliquable = {
   repondu?: string;
   /** `lieu`, `equip`, `cible`, `portee` et `contenu` sont posées par le
    *  CODE (déterministe) ; `libre` vient du coach. */
-  genre: "lieu" | "equip" | "libre" | "cible" | "portee" | "contenu";
+  genre: "lieu" | "equip" | "libre" | "cible" | "portee" | "contenu" | "etape";
   relance?: string;
   /**
    * V9B, genre « cible » : quelle INTENTION chaque reponse designe.
@@ -129,6 +153,18 @@ export type QuestionCliquable = {
    * de devenir inerte sans le dire.
    */
   contenus?: { choix: string; ref: string }[];
+  /**
+   * V9D, genre « etape » : un mot désigne plusieurs étapes du cycle.
+   *
+   * ⚠️ ON RÉPOND PAR UN IDENTIFIANT, comme pour « cible » et pour la même
+   * raison : renvoyer « Haut du corps » à l’aiguilleur lui ferait
+   * re-décider une action à partir de trois mots sans contexte, donc
+   * rouvrir l’ambiguïté qu’on vient de lever. Les étapes DÉJÀ retenues
+   * voyagent avec, puisque la réponse remplace la résolution entière.
+   */
+  etapes?: { choix: string; id: string }[];
+  /** V9D · les identités déjà reconnues, à garder avec celle qu’on choisit. */
+  dejaRetenues?: string[];
   /**
    * La demande d'origine, à rejouer une fois la séance choisie.
    *
@@ -310,6 +346,37 @@ export const ASSISTANT_TOOLS: Tool[] = [
             description: "prochaine s’il désigne sa prochaine étape SANS la nommer (« saute ma prochaine étape », « passe à la suivante », « je veux sauter celle-là »). nommee s’il CITE le nom d’une étape (« saute Pull »). Dans le doute, prochaine.",
           },
           etape: { type: "string", description: "Le nom de l’étape à passer, UNIQUEMENT s’il la cite vraiment (« Pull », « Bas du corps »). À omettre s’il dit simplement « la prochaine »." },
+        },
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "adaptation_ouvrir",
+      description:
+        "Ouvrir l’écran d’ADAPTATION TEMPORAIRE du programme, quand il veut mettre une ou plusieurs séances de son programme DE CÔTÉ pendant une période (« pendant deux semaines j’évite Push », « mets Pull de côté quelque temps », « je ne peux pas faire Haut du corps en ce moment »), ou gérer celle qui tourne déjà (« gère mon adaptation », « arrête mon adaptation »). Signal clé : une PÉRIODE pendant laquelle quelque chose ne sera pas fait. N’appelle PAS cet outil sur une douleur ou une fatigue simplement mentionnée, ni sur une seule séance à éviter aujourd’hui (c’est etape_sauter ou etape_substituer).",
+      parameters: {
+        type: "object",
+        properties: {
+          mode: {
+            type: "string",
+            enum: ["creer", "gerer", "arreter"],
+            description: "creer s’il veut mettre quelque chose de côté ; gerer s’il veut voir ou modifier son adaptation en cours ; arreter s’il demande d’y mettre fin. creer par défaut.",
+          },
+          etapes: {
+            type: "array",
+            items: { type: "string" },
+            description: "Les noms des séances de son programme qu’il veut éviter, UNIQUEMENT s’il les cite (« Push », « Bas du corps »). À omettre s’il ne nomme rien.",
+          },
+          duree_jours: {
+            type: "integer",
+            description: "Le nombre de JOURS s’il donne une durée (« 10 jours » → 10, « deux semaines » → 14, « un mois » → 30). À omettre s’il ne dit pas de durée chiffrable : ne devine jamais.",
+          },
+          motif: {
+            type: "string",
+            description: "Pourquoi, dans ses mots et en une poignée de mots (« épaule sensible », « déplacement »). À omettre s’il ne le dit pas.",
+          },
         },
       },
     },

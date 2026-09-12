@@ -85,6 +85,13 @@ export type ContexteVoix = {
    *  parfois les deux (« Pull n'est pas la prochaine, c'est Bas du
    *  corps »). */
   etape?: string;
+  /** V9D · PLUSIEURS étapes, DÉJÀ jointes par l’appelant (« Push et
+   *  Pull »). Distinct de `etape`, qui en nomme une seule : la même
+   *  phrase peut citer les deux, et c’est l’appelant qui sait accorder,
+   *  comme pour `jour`. */
+  etapes?: string;
+  /** V9D · une durée déjà écrite (« 10 jours », « 2 semaines »). */
+  duree?: string;
 };
 
 /** « Une séance posée », « Trois séances posées ». Le nombre s'écrit en
@@ -177,6 +184,14 @@ const REPLIQUES = {
     commun: "Regarde ce que ça change avant de valider, juste en dessous 👇",
     nora:   "Je te prépare ça. Regarde ce que ça change pour ton cycle avant de valider, juste en dessous 👇",
     sasha:  "Regarde ce que ça change avant de valider, juste en dessous 👇",
+  },
+  /* V9D · IL OUVRE UN ÉCRAN, IL NE PROPOSE PAS UNE CARTE, donc il ne dit
+     jamais « valide juste en dessous ». Ce qu’il y a à vérifier est dans
+     la feuille qui arrive, et rien ne partira en base avant son bouton. */
+  "action.adaptation_ouvrir": {
+    commun: "Je t’ouvre ton adaptation ✦",
+    nora:   "Je t’ouvre l’écran d’adaptation, tu vérifies et tu valides 🙂",
+    sasha:  "Je t’ouvre l’adaptation 👉",
   },
   "action.log_meal": {
     commun: "C’est noté, je te prépare l’ajout. Valide juste en dessous 👇",
@@ -381,6 +396,61 @@ const REPLIQUES = {
     commun: (c: ContexteVoix) => `« ${c.titre ?? ""} » est déjà réservée un autre jour${c.jour ? `, le ${c.jour}` : ""}, donc je ne peux pas la remplacer ici sans la dédoubler 🤔 Déplace-la d’abord sur ce jour-là, et je m’occupe du reste.`,
     nora:   (c: ContexteVoix) => `« ${c.titre ?? ""} » est déjà réservée un autre jour${c.jour ? `, le ${c.jour}` : ""} : la remplacer ici la mettrait à deux endroits 🤔 Déplace-la d’abord sur ce jour-là, et je m’occupe du reste.`,
     sasha:  (c: ContexteVoix) => `« ${c.titre ?? ""} » est déjà réservée ailleurs${c.jour ? `, le ${c.jour}` : ""} 🤔 Déplace-la d’abord sur ce jour-là.`,
+  },
+
+  /* ── V9D · CE QUE LE GUIDE DIT QUAND IL OUVRE (OU N’OUVRE PAS)
+     L’ADAPTATION ──
+
+     ⚠️ IL NE PARLE QUE QUAND LA FEUILLE NE DIRA PAS CE QU’IL SAIT. Une
+     demande claire (« évite Push pendant 10 jours ») n’a besoin
+     d’AUCUNE phrase du code : l’écran arrive avec Push cochée et les
+     deux dates posées, donc il montre déjà ce qui a été compris, mieux
+     qu’une phrase ne le dirait. On n’écrit ici que ce que l’écran est
+     incapable de dire : un nom qu’on n’a pas retrouvé, une adaptation
+     qui tourne déjà, une demande d’arrêt sans rien à arrêter. */
+  "impasse.adaptation_sans_programme": {
+    commun: "Tu n’as pas encore de programme, donc il n’y a rien à adapter 🙂 Commence par en avoir un, et je m’occupe du reste.",
+    nora:   "Tu n’as pas encore de programme, donc il n’y a rien à mettre de côté pour l’instant 🙂 Dès que tu en as un, on peut l’adapter quand tu veux.",
+    sasha:  "Pas encore de programme, donc rien à adapter 🙂",
+  },
+  "impasse.adaptation_aucune": {
+    commun: "Tu n’as aucune adaptation en cours : ton programme tourne déjà normalement 🙂",
+    nora:   "Il n’y a rien à arrêter : tu n’as aucune adaptation en cours, ton programme tourne déjà normalement 🙂",
+    sasha:  "Rien à arrêter : aucune adaptation en cours 🙂",
+  },
+  /* ⚠️ ON N’EN CRÉE JAMAIS UNE SECONDE, ET CE N’EST PAS UNE PRUDENCE :
+     l’`EXCLUDE` de la base refuse deux adaptations qui partagent un
+     seul jour. Ouvrir un formulaire de création ici, ce serait proposer
+     un geste voué au refus. On ouvre donc celle qui existe. */
+  "impasse.adaptation_deja_active": {
+    commun: (c: ContexteVoix) => `Tu as déjà une adaptation en cours${c.jour ? `, jusqu’au ${c.jour}` : ""} : on n’en tient qu’une à la fois. Je t’ouvre celle-là, tu peux l’arrêter pour en déclarer une autre.`,
+    nora:   (c: ContexteVoix) => `Tu as déjà une adaptation en cours${c.jour ? `, jusqu’au ${c.jour}` : ""}, et on n’en garde qu’une à la fois 🙂 Je t’ouvre celle-là : tu peux l’arrêter, et on en déclare une nouvelle juste après.`,
+    sasha:  (c: ContexteVoix) => `Une adaptation tourne déjà${c.jour ? ` jusqu’au ${c.jour}` : ""}, et on n’en garde qu’une 🙂 Je t’ouvre celle-là.`,
+  },
+  /* ⚠️ ON NOMME CE QU’ON N’A PAS RETROUVÉ, ON N’INVENTE RIEN. Cocher
+     une étape au hasard parce que le mot ressemblait, ce serait écarter
+     une séance que personne n’a demandé d’écarter. La feuille arrive
+     avec la liste complète : le mot juste est à un geste. */
+  "impasse.adaptation_etapes_incertaines": {
+    commun: (c: ContexteVoix) => `Je n’ai pas su retrouver ${c.etapes ?? ""} dans ton programme 🤔 Coche toi-même ce que tu veux éviter, tout est dans la liste.`,
+    nora:   (c: ContexteVoix) => `Je n’ai pas su retrouver ${c.etapes ?? ""} dans ton programme 🤔 Regarde la liste qui s’ouvre, et coche ce que tu veux mettre de côté.`,
+    sasha:  (c: ContexteVoix) => `Pas retrouvé ${c.etapes ?? ""} dans ton programme 🤔 Coche-le dans la liste.`,
+  },
+  /* ⚠️ CELLE-CI DIT CE QUE LA FEUILLE VA MONTRER, ET ELLE NE SORT QUE
+     QUAND IL Y A QUELQUE CHOSE DE PRÉCIS À DIRE : au moins une étape
+     reconnue, ou une durée entendue. C’est le seul moment où l’on peut
+     vérifier que le Guide a compris sans avoir à lire un formulaire.
+     Sur une demande sans rien de chiffrable (« adapte mon programme »),
+     elle se tait : l’écran arrive, et il dit tout. */
+  "adaptation.ouvre": {
+    commun: (c: ContexteVoix) => `Je t’ouvre ton adaptation${c.etapes ? ` avec ${c.etapes}` : ""}${c.duree ? `, pour ${c.duree}` : ""}. Tu vérifies avant d’activer 🙂`,
+    nora:   (c: ContexteVoix) => `Je t’ouvre ton adaptation${c.etapes ? ` avec ${c.etapes} de côté` : ""}${c.duree ? `, pour ${c.duree}` : ""}. Regarde si ça te va, et c’est toi qui actives 🙂`,
+    sasha:  (c: ContexteVoix) => `Adaptation ouverte${c.etapes ? ` avec ${c.etapes}` : ""}${c.duree ? `, pour ${c.duree}` : ""}. Tu vérifies, tu actives 👉`,
+  },
+  "question.adaptation_etape": {
+    commun: (c: ContexteVoix) => `Tu veux éviter laquelle${c.titre ? ` avec « ${c.titre} »` : ""} ?`,
+    nora:   (c: ContexteVoix) => `Laquelle veux-tu mettre de côté${c.titre ? `, avec « ${c.titre} »` : ""} ?`,
+    sasha:  (c: ContexteVoix) => `Laquelle${c.titre ? `, avec « ${c.titre} »` : ""} ?`,
   },
 
   "question.portee": {
@@ -909,6 +979,7 @@ const CLE_PAR_INTENT: Record<string, CleVoix> = {
   plan_ajouter:  "action.plan_ajouter",
   etape_substituer: "action.etape_substituer",
   etape_sauter:  "action.etape_sauter",
+  adaptation_ouvrir: "action.adaptation_ouvrir",
   log_meal:      "action.log_meal",
   create_recipe: "action.create_recipe",
   open_page:     "action.open_page",

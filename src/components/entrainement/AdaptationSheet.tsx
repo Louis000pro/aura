@@ -44,6 +44,7 @@ import {
   REEVALUATION_SEMAINES, validerAxes,
   type Adaptation,
 } from "@/lib/adaptation";
+import { prendreAdaptationDemandee } from "@/lib/adaptationDemandee";
 import { retirerIntention, saveDay, todayYmd, dayTitle, type PlanningDay } from "@/lib/planning";
 import { EVT_JOURNEE } from "@/lib/finSeance";
 import type { ProgrammeEtCycle } from "@/lib/programme";
@@ -66,10 +67,37 @@ export default function AdaptationSheet({
      dépend se recalcule sans raison. */
   const cycle = useMemo(() => programme?.cycle ?? [], [programme]);
 
-  const [choisies, setChoisies] = useState<string[]>([]);
-  const [debut, setDebut] = useState(today);
-  const [fin, setFin] = useState(() => finParDefaut(today));
-  const [motif, setMotif] = useState("");
+  /* ⚠️ V9D · CE QUE LE GUIDE A COMPRIS, POSÉ DANS LE FORMULAIRE, ET
+     RIEN DE PLUS. Le témoin est consommé au montage (une seule fois,
+     et il se périme), donc ouvrir cet écran à la main n’en hérite
+     jamais. Et ce n’est qu’une PROPOSITION : tout ce qui décide reste
+     ici, la période comme les conflits, et rien ne part en base avant
+     le bouton violet. */
+  const [prerempli] = useState(prendreAdaptationDemandee);
+
+  /* ⚠️ `null` VEUT DIRE « PAS ENCORE TOUCHÉ », ET CE N’EST PAS UNE
+     COQUETTERIE. Le préremplissage doit être filtré contre le cycle
+     RÉEL (une étape d’une autre version ferait refuser l’activation
+     sans que personne comprenne pourquoi), or le programme n’est pas
+     forcément chargé au premier rendu. Un état initialisé une fois pour
+     toutes perdrait donc les cases à cocher ; un effet qui les repose
+     plus tard écraserait les clics. On DÉRIVE tant que personne n’a
+     touché, exactement comme la liste de conflits porte sa question. */
+  const [choisies, setChoisies] = useState<string[] | null>(null);
+  const proposees = useMemo(
+    () => (prerempli?.eviter ?? []).filter((id) => cycle.some((e) => e.id === id)),
+    [prerempli, cycle],
+  );
+  const cochees = choisies ?? proposees;
+
+  /* Un témoin posé juste avant minuit ouvrirait un formulaire dont le
+     début est hier, que le champ refuserait (`min`). On repart
+     d’aujourd’hui, et la fin suit si elle n’a plus de sens. */
+  const debutPropose = prerempli && prerempli.debut >= today ? prerempli.debut : today;
+  const [debut, setDebut] = useState(debutPropose);
+  const [fin, setFin] = useState(() =>
+    prerempli && prerempli.fin >= debutPropose ? prerempli.fin : finParDefaut(debutPropose));
+  const [motif, setMotif] = useState(prerempli?.motif ?? "");
   /* ⚠️ LA RÉPONSE PORTE LA QUESTION QU'ELLE DÉCRIT, ET ON NE
      RÉINITIALISE JAMAIS. Un `setConflits(null)` synchrone au début de
      l'effet est un avertissement React (`set-state-in-effect`) et une
@@ -93,27 +121,30 @@ export default function AdaptationSheet({
   const [tick, setTick] = useState(0);
 
   const basculer = (id: string) =>
-    setChoisies((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
+    setChoisies((p) => {
+      const base = p ?? proposees;
+      return base.includes(id) ? base.filter((x) => x !== id) : [...base, id];
+    });
 
-  const axes = useMemo(() => ({ eviter_etapes: choisies }), [choisies]);
+  const axes = useMemo(() => ({ eviter_etapes: cochees }), [cochees]);
   const valide = validerAxes(axes, cycle);
   const periodeValide = !!debut && !!fin && fin >= debut;
   /* Toutes les étapes masquées : on ne l'interdit pas (c'est une réponse
      légitime à une vraie gêne), on le DIT avant le clic. Le héros dira la
      même chose ensuite, au lieu d'afficher « rien de prévu ». */
-  const toutMasque = cycle.length > 0 && choisies.length === cycle.length;
+  const toutMasque = cycle.length > 0 && cochees.length === cycle.length;
 
   /* ⚠️ LES CONFLITS SE CHERCHENT EN BASE, SUR LA FENÊTRE DEMANDÉE. Les
      chercher dans la semaine déjà chargée à l'écran raterait toutes les
      réservations au-delà de dimanche, et le défaut serait INTERMITTENT
      selon la date d'aujourd'hui : le pire mode d'échec possible. */
-  const cleConflits = `${debut}|${fin}|${[...choisies].sort().join(",")}|${tick}`;
+  const cleConflits = `${debut}|${fin}|${[...cochees].sort().join(",")}|${tick}`;
   useEffect(() => {
-    if (!userId || !periodeValide || choisies.length === 0) return;
+    if (!userId || !periodeValide || cochees.length === 0) return;
     let annule = false;
     (async () => {
       try {
-        const liste = await chargerConflits(userId, { debut, fin, axes: { eviter_etapes: choisies } });
+        const liste = await chargerConflits(userId, { debut, fin, axes: { eviter_etapes: cochees } });
         if (!annule) setConflits({ cle: cleConflits, liste });
       } catch {
         /* On ne sait pas : on n'affirme donc pas « aucun conflit », et le
@@ -124,7 +155,7 @@ export default function AdaptationSheet({
       }
     })();
     return () => { annule = true; };
-  }, [userId, debut, fin, choisies, periodeValide, cleConflits]);
+  }, [userId, debut, fin, cochees, periodeValide, cleConflits]);
 
   /* La réponse ne vaut que pour la question qu'elle porte. */
   const conflitsAJour = conflits && conflits.cle === cleConflits ? conflits.liste : null;
@@ -305,7 +336,7 @@ export default function AdaptationSheet({
               <p className="vy-label mb-2">Ce que tu évites</p>
               <div className="flex flex-wrap gap-2 mb-1">
                 {cycle.map((e) => {
-                  const on = choisies.includes(e.id);
+                  const on = cochees.includes(e.id);
                   return (
                     <button key={e.id} onClick={() => basculer(e.id)}
                       aria-pressed={on}
@@ -463,7 +494,7 @@ export default function AdaptationSheet({
                 </div>
               )}
 
-              {(erreur || (!valide.ok && choisies.length > 0)) && (
+              {(erreur || (!valide.ok && cochees.length > 0)) && (
                 <p className="text-[12px] font-semibold mb-3" style={{ color: "var(--text-1)" }}>
                   {erreur ?? (valide.ok ? "" : valide.raison)}
                 </p>

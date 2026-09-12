@@ -39,9 +39,13 @@ import {
 import {
   consequenceDeplacement, consequencePose, consequenceRetrait, consequenceSaut,
   consequenceSemaine, consequenceSubstitution, consequenceSupplement,
-  etapeParNom, resoudreCibles, voieDeLaPose,
+  candidatsEtape, etapeParNom, resoudreCibles, voieDeLaPose,
 } from "@/lib/gestePlanning";
 import { cibleDemandee, estReferenceProchaine, verdictEtape } from "@/lib/etapeCiblee";
+import {
+  citer, composerPreremplissage, finDemandee, libelleDuree, libelleEtapes,
+  normaliserDemande, resoudreEtapesCitees, DUREE_MAX_JOURS,
+} from "@/lib/adaptationDemandee";
 import {
   candidatsParNom, clefDeNom, copierExercices, entreeBibliotheque, entreesCatalogue,
   libelleContenu,
@@ -2108,14 +2112,17 @@ verdict(
     );
     verdict(
       "V9A · aucun outil de lecture n’a été créé",
-      ASSISTANT_TOOLS.length === 16 && !OUTILS.includes("guideMoteur")
+      ASSISTANT_TOOLS.length === 17 && !OUTILS.includes("guideMoteur")
         && !ASSISTANT_TOOLS.some((t) => /lire|read|get_|voir|etat_|moteur/.test(t.function.name)),
       ASSISTANT_TOOLS.length + " outils, tous des ACTIONS",
     );
     verdict(
-      "V9A · aucun outil d’ÉCRITURE au-delà de ce que V9B et V9C ouvrent",
-      !ASSISTANT_TOOLS.some((t) => /adaptation/.test(t.function.name)),
-      "l’adaptation attend V9D : c’est un écran (la feuille V8), pas une carte",
+      "V9A · le seul outil d’adaptation OUVRE un écran, il n’en déclare aucune",
+      (() => {
+        const t = ASSISTANT_TOOLS.filter((x) => /adaptation/.test(x.function.name));
+        return t.length === 1 && t[0].function.name === "adaptation_ouvrir";
+      })(),
+      "V9D : l’adaptation a une période, des axes et des conflits, donc c’est la feuille V8 qui décide",
     );
   }
 }
@@ -3467,9 +3474,12 @@ verdict(
     "un seul outil « faire autre chose » aurait laissé le modèle arbitrer une conséquence qu'il ne voit pas",
   );
   verdict(
-    "V9C · et l'adaptation n'en a toujours pas : c'est V9D",
-    !ASSISTANT_TOOLS.some((t) => /adaptation/.test(t.function.name)),
-    "V9D ouvrira la feuille V8, éventuellement préremplie : une adaptation est un écran, pas une carte",
+    "V9C · et l’adaptation, elle, n’a jamais eu de carte : c’est V9D qui ouvre l’écran",
+    (() => {
+      const t = ASSISTANT_TOOLS.find((x) => /adaptation/.test(x.function.name));
+      return t?.function.name === "adaptation_ouvrir" && /ouvrir/i.test(t.function.description);
+    })(),
+    "une adaptation a une période, des axes et des conflits à résoudre un par un : c’est un écran",
   );
   verdict(
     "V9C · chaque nouvel intent a sa phrase de repli",
@@ -4118,9 +4128,9 @@ verdict(
     (() => {
       const p = /const PROMPT = `([\s\S]*?)`;/.exec(lire9E("src/lib/assistantRouter.ts"))?.[1] ?? "";
       return p.replace(/\r/g, "").replace("${RIEN}", "rien_a_faire").length === 316
-        && ASSISTANT_TOOLS.length === 16;
+        && ASSISTANT_TOOLS.length === 17;
     })(),
-    "316 caractères, 16 outils : la décision 7 de V9 ne bouge pas d'un signe",
+    "316 caractères, 17 outils : la décision 7 de V9 ne bouge pas d'un signe",
   );
   verdict(
     "V9C ter · SOURCE · la voie d'une pose se décide par la règle unique",
@@ -4452,9 +4462,9 @@ verdict(
     (() => {
       const p = /const PROMPT = `([\s\S]*?)`;/.exec(lire9F("src/lib/assistantRouter.ts"))?.[1] ?? "";
       return p.replace(/\r/g, "").replace("${RIEN}", "rien_a_faire").length === 316
-        && ASSISTANT_TOOLS.length === 16;
+        && ASSISTANT_TOOLS.length === 17;
     })(),
-    "316 caractères, 16 outils : un paramètre de plus ne rallonge pas le prompt",
+    "316 caractères, 17 outils : un paramètre de plus ne rallonge pas le prompt",
   );
   verdict(
     "V9C quater · SOURCE · la désignation voyage jusqu’à l’autorité",
@@ -4497,6 +4507,425 @@ verdict(
         && /ni comme faite/.test(t) && /tout de suite/.test(t);
     })(),
     "l’étape n’est pas comptée comme faite, et la prochaine devient l’autre immédiatement",
+  );
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   V9D · LE GUIDE OUVRE L’ADAPTATION, IL NE LA DÉCLARE JAMAIS.
+
+   Dernière vague du chantier. Le Guide comprend une demande
+   d’adaptation, la traduit en IDENTITÉS, et ouvre la feuille V8 avec ce
+   qu’il a compris déjà posé dedans. Il n’écrit rien, ne ferme rien, ne
+   modifie rien : c’est la décision 4 de V9, et une adaptation reste un
+   ÉCRAN (une période, des axes, des conflits à résoudre un par un).
+
+   Tout ce qui décide est PUR, donc vérifiable hors ligne sur une app
+   pourtant auth-gated ; le reste est une propriété du CHEMIN.
+   ════════════════════════════════════════════════════════════════════ */
+{
+  const lire9G = (f: string) => readFileSync(new URL("../" + f, import.meta.url), "utf8");
+  const DEM9G = lire9G("src/lib/adaptationDemandee.ts");
+  const CTX9G = lire9G("src/context/AssistantContext.tsx");
+  const FEUILLE9G = lire9G("src/components/entrainement/AdaptationSheet.tsx");
+  const ENTR9G = lire9G("src/app/progression/page.tsx");
+
+  /* Le cycle réel de `buildSplit`, celui que la feuille affiche. */
+  const cycle9g = cycleDeReference(5).map((nom, i) => ({ id: "e" + (i + 1), nom }));
+  const idDe9g = (nom: string) => cycle9g.find((e) => e.nom === nom)?.id ?? "?";
+
+  /* ─────────────── LE CAS DE LOUIS, DE BOUT EN BOUT ─────────────── */
+
+  {
+    const d = normaliserDemande({ mode: "creer", etapes: ["Push"], duree_jours: 10 });
+    const r = resoudreEtapesCitees(cycle9g, d.etapes);
+    const pre = composerPreremplissage({
+      aujourdhui: "2026-09-12", etapes: r.retenues, dureeJours: d.dureeJours, motif: d.motif,
+    });
+    verdict(
+      "V9D · « évite Push pendant 10 jours » · Push est cochée, par son IDENTITÉ",
+      JSON.stringify(pre.eviter) === JSON.stringify([idDe9g("Push")]),
+      "le formulaire porte un identifiant du cycle, jamais un titre : c’est la règle de V4",
+    );
+    verdict(
+      "V9D · « évite Push pendant 10 jours » · la fenêtre va du 12 au 21",
+      pre.debut === "2026-09-12" && pre.fin === "2026-09-21",
+      "les deux bornes sont INCLUSES (`daterange … '[]'`) : dix jours finissent à J+9, pas à J+10",
+    );
+    verdict(
+      "V9D · « évite Push pendant 10 jours » · rien d’autre n’est décidé",
+      pre.motif === null && r.ambigu === null && r.incertains.length === 0,
+      "aucun motif inventé, aucune question à poser : la feuille fait le reste",
+    );
+  }
+
+  /* ─────────────── DEUX ÉTAPES NOMMÉES, DEUX IDENTITÉS ─────────────── */
+
+  {
+    const r = resoudreEtapesCitees(cycle9g, ["Push", "Pull"]);
+    verdict(
+      "V9D · deux étapes citées · deux vraies identités, dans l’ordre dit",
+      JSON.stringify(r.retenues.map((e) => e.id)) === JSON.stringify([idDe9g("Push"), idDe9g("Pull")]),
+      "on coche ce qui a été demandé, et seulement ça",
+    );
+    verdict(
+      "V9D · deux étapes citées · la casse et les accents ne comptent pas",
+      JSON.stringify(resoudreEtapesCitees(cycle9g, ["haut du corps"]).retenues.map((e) => e.nom))
+        === JSON.stringify(["Haut du corps"]),
+      "la reconnaissance normalise, exactement comme `etapeParNom` depuis V9B",
+    );
+    verdict(
+      "V9D · la même étape citée deux fois ne se coche qu’une",
+      resoudreEtapesCitees(cycle9g, ["Push", "push"]).retenues.length === 1,
+      "`validerAxes` refuse les doublons : les laisser passer ferait échouer l’activation sans rien expliquer",
+    );
+  }
+
+  /* ─────────────── L’AMBIGUÏTÉ SE DEMANDE, ELLE NE SE TRANCHE PAS ─────────────── */
+
+  {
+    const r = resoudreEtapesCitees(cycle9g, ["du corps"]);
+    verdict(
+      "V9D · « du corps » désigne DEUX étapes : on demande laquelle",
+      !!r.ambigu && r.ambigu.candidats.length === 2 && r.retenues.length === 0,
+      "cocher la première trouvée écarterait une séance que personne n’a demandé d’écarter",
+    );
+    verdict(
+      "V9D · et les candidats sont les vraies étapes, avec leurs identités",
+      JSON.stringify((r.ambigu?.candidats ?? []).map((c) => c.nom))
+        === JSON.stringify(["Bas du corps", "Haut du corps"]),
+      "la réponse désignera un IDENTIFIANT, jamais un mot qui repartirait à l’aiguilleur",
+    );
+    const r2 = resoudreEtapesCitees(cycle9g, ["Push", "du corps"]);
+    verdict(
+      "V9D · une ambiguïté n’annule pas ce qui était clair",
+      r2.retenues.length === 1 && r2.retenues[0].nom === "Push" && !!r2.ambigu,
+      "Push reste cochée pendant qu’on demande l’autre : la question porte les identités déjà retenues",
+    );
+    const r3 = resoudreEtapesCitees(cycle9g, ["du corps", "corps"]);
+    verdict(
+      "V9D · on ne pose QU’UNE question, et le reste est nommé, jamais deviné",
+      !!r3.ambigu && r3.incertains.length === 1,
+      "enchaîner deux questions pour ouvrir un formulaire qui porte déjà la liste coûterait plus que ça ne rapporte",
+    );
+  }
+
+  /* ─────────────── UN NOM INCONNU NE DEVIENT JAMAIS UNE ÉTAPE ─────────────── */
+
+  {
+    const r = resoudreEtapesCitees(cycle9g, ["Express 12"]);
+    verdict(
+      "V9D · un nom qui n’est pas une étape ne coche rien",
+      r.retenues.length === 0 && r.incertains.length === 1 && r.incertains[0] === "Express 12",
+      "une séance du catalogue n’est pas une étape de cycle : on le DIT, on n’invente pas",
+    );
+    verdict(
+      "V9D · et on le rend entre guillemets, comme un mot qu’on n’a pas reconnu",
+      citer(["Express 12"]).includes("Express 12") && citer(["Express 12"]).includes("«"),
+      "le redonner nu le ferait passer pour le nom d’une vraie étape",
+    );
+    verdict(
+      "V9D · plusieurs mots inconnus se citent en une seule phrase",
+      citer(["A", "B", "C"]).includes(" et "),
+      "trois phrases d’impasse pour une demande, c’est trois fois la même réponse",
+    );
+  }
+
+  /* ─────────────── LA DURÉE, ET SES BORNES ─────────────── */
+
+  for (const [jours, attendu] of [
+    [1, "2026-09-12"],
+    [7, "2026-09-18"],
+    [10, "2026-09-21"],
+    [14, "2026-09-25"],
+    [30, "2026-10-11"],
+  ] as [number, string][]) {
+    verdict(
+      "V9D · durée · " + jours + " jours finissent le " + attendu,
+      finDemandee("2026-09-12", jours) === attendu,
+      "bornes incluses des deux côtés, comme la base et comme `reservationsEnConflit`",
+    );
+  }
+  verdict(
+    "V9D · durée · le changement de mois passe",
+    finDemandee("2026-09-28", 10) === "2026-10-07",
+    "l’arithmétique se fait en UTC depuis la chaîne, jamais par le fuseau du navigateur",
+  );
+  verdict(
+    "V9D · durée · le changement d’année aussi",
+    finDemandee("2026-12-28", 10) === "2027-01-06",
+    "un défaut qui ne se voit qu’une fois par an est un défaut qu’un banc doit voir",
+  );
+  verdict(
+    "V9D · « jusqu’à nouvel ordre » · sans durée, c’est la réévaluation à 4 semaines",
+    finDemandee("2026-09-12", null) === finParDefaut("2026-09-12")
+      && REEVALUATION_SEMAINES === 4,
+    "une adaptation sans fin est une modification permanente qui ne dit pas son nom (V8)",
+  );
+  verdict(
+    "V9D · une durée hors bornes est IGNORÉE, jamais rognée en silence",
+    normaliserDemande({ duree_jours: 400 }).dureeJours === null
+      && normaliserDemande({ duree_jours: 0 }).dureeJours === null
+      && normaliserDemande({ duree_jours: DUREE_MAX_JOURS }).dureeJours === DUREE_MAX_JOURS,
+    "au-delà d’un trimestre ce n’est plus une adaptation : on retombe sur les 4 semaines, et l’écran montre la date",
+  );
+  verdict(
+    "V9D · une durée illisible n’existe pas",
+    normaliserDemande({ duree_jours: "bientôt" }).dureeJours === null
+      && normaliserDemande({ duree_jours: "10" }).dureeJours === 10,
+    "un modèle remplit ce qu’on lui donne : ce qui n’est pas un nombre ne devient pas une période",
+  );
+  verdict(
+    "V9D · la durée se dit dans les mots qu’on a employés",
+    libelleDuree(14) === "2 semaines" && libelleDuree(7) === "une semaine"
+      && libelleDuree(10) === "10 jours" && libelleDuree(null) === null,
+    "« deux semaines » se redit en semaines : c’est comme ça qu’on l’a demandé",
+  );
+
+  /* ─────────────── LE MOTIF EST DESCRIPTIF, ET IL LE RESTE ─────────────── */
+
+  {
+    const d = normaliserDemande({ motif: "gêne à l’épaule" });
+    const pre = composerPreremplissage({
+      aujourdhui: "2026-09-12", etapes: [], dureeJours: d.dureeJours, motif: d.motif,
+    });
+    verdict(
+      "V9D · motif seul · AUCUNE étape n’est inventée",
+      pre.eviter.length === 0 && pre.motif === "gêne à l’épaule",
+      "règle 3 de la vague : une gêne n’est pas une règle métier, c’est un texte qu’on recopie",
+    );
+    verdict(
+      "V9D · motif seul · la période reste celle du produit",
+      pre.debut === "2026-09-12" && pre.fin === finParDefaut("2026-09-12"),
+      "sans durée dite, la feuille propose sa réévaluation : on ne décide pas à sa place",
+    );
+    verdict(
+      "V9D · le motif est borné, comme le champ de la feuille",
+      (normaliserDemande({ motif: "x".repeat(400) }).motif ?? "").length === 120,
+      "120 caractères, exactement le `maxLength` de l’écran",
+    );
+  }
+
+  /* ─────────────── CE QUE LA DEMANDE DIT, ET RIEN DE PLUS ─────────────── */
+
+  verdict(
+    "V9D · les trois modes se distinguent",
+    normaliserDemande({ mode: "arreter" }).mode === "arreter"
+      && normaliserDemande({ mode: "gerer" }).mode === "gerer"
+      && normaliserDemande({ mode: "creer" }).mode === "creer",
+    "l’aiguilleur rapporte un verbe ; c’est le CODE qui décide ensuite ce qui est possible",
+  );
+  verdict(
+    "V9D · un mode inconnu vaut « creer », le cas courant",
+    normaliserDemande({ mode: "n’importe quoi" }).mode === "creer"
+      && normaliserDemande({}).mode === "creer",
+    "un modèle remplit ce qu’on lui donne : une valeur hors vocabulaire ne doit pas bloquer la demande",
+  );
+  verdict(
+    "V9D · les noms cités sont bornés à quatre",
+    normaliserDemande({ etapes: ["a", "b", "c", "d", "e", "f"] }).etapes.length === 4,
+    "un cycle en compte six au maximum : un modèle qui recopie la phrase ne doit pas cocher la moitié d’un programme",
+  );
+  verdict(
+    "V9D · un nom vide ou non textuel disparaît",
+    normaliserDemande({ etapes: ["  ", "Push", 42, null] }).etapes.length === 1,
+    "on nettoie avant de résoudre, plutôt que de faire échouer la résolution sur du vide",
+  );
+  verdict(
+    "V9D · une liste jointe se lit comme une phrase",
+    libelleEtapes(["Push"]) === "Push" && libelleEtapes(["Push", "Pull"]) === "Push et Pull",
+    "l’accord se fait une fois, dans le module, pas dans chaque variante de voix",
+  );
+
+  /* ─────────────── UNE SEULE RÈGLE DE RECONNAISSANCE ─────────────── */
+
+  verdict(
+    "V9D · `etapeParNom` DÉRIVE de `candidatsEtape`, sur tout le vivier",
+    (() => {
+      for (let n = 1; n <= 14; n++) {
+        const c = cycleDeReference(n).map((nom, i) => ({ id: "x" + i, nom }));
+        for (const mot of [...c.map((e) => e.nom), "push", "corps", "cardio", "inconnu", "", "hiit"]) {
+          const a = etapeParNom(c, mot);
+          const b = candidatsEtape(c, mot)[0] ?? null;
+          if ((a?.id ?? null) !== (b?.id ?? null)) return false;
+        }
+      }
+      return true;
+    })(),
+    "deux règles de reconnaissance auraient donné deux réponses au même mot",
+  );
+  verdict(
+    "V9D · un nom EXACT ne laisse aucune ambiguïté, même s’il est contenu ailleurs",
+    candidatsEtape(cycle9g, "Bas du corps").length === 1,
+    "l’égalité passe avant l’inclusion : sinon nommer précisément une étape poserait une question",
+  );
+
+  /* ─────────────── CONTRÔLES DE SOURCE ─────────────── */
+
+  verdict(
+    "V9D · SOURCE · l’outil est PAUVRE, et tous ses paramètres sont facultatifs",
+    (() => {
+      const t = ASSISTANT_TOOLS.find((x) => x.function.name === "adaptation_ouvrir");
+      const p = t?.function.parameters.properties as Record<string, { enum?: string[] }> | undefined;
+      return !!p && !t?.function.parameters.required
+        && JSON.stringify(p.mode?.enum) === JSON.stringify(["creer", "gerer", "arreter"])
+        && !!p.etapes && !!p.duree_jours && !!p.motif
+        && Object.keys(p).length === 4;
+    })(),
+    "quatre paramètres, aucun obligatoire : l’aiguilleur rapporte ce qu’il a entendu, il ne compose rien",
+  );
+  verdict(
+    "V9D · SOURCE · l’outil ne connaît toujours rien du moteur",
+    (() => {
+      const t = ASSISTANT_TOOLS.find((x) => x.function.name === "adaptation_ouvrir");
+      const j = JSON.stringify(t);
+      return !/programme_seance_id|etape_consommee|cycle actuel|adaptation_id/.test(j);
+    })(),
+    "décision 7 de V9 : il rend des mots, le code résout les identités",
+  );
+  verdict(
+    "V9D · SOURCE · le module de décision n’écrit RIEN",
+    !/\.insert\(|\.update\(|\.delete\(|\.upsert\(|createClient/.test(DEM9G),
+    "il traduit une demande en formulaire : la seule écriture d’adaptation reste celle de la feuille",
+  );
+  verdict(
+    "V9D · SOURCE · et il ne touche ni au programme ni au cycle",
+    !/from\("programmes"\)|from\("programme_seances"\)|programme_seances/.test(DEM9G),
+    "le programme de référence ne bouge jamais : c’est la promesse de V8, et V9D ne l’entame pas",
+  );
+  verdict(
+    "V9D · SOURCE · le Guide n’a aucun moyen de déclarer une adaptation",
+    /* ⚠️ ON CHERCHE UN APPEL, PAS UN NOM, ET C’EST LA MÊME LEÇON QU’EN
+       V9C QUATER : un contrôle qui cherche un mot attrape aussi le
+       commentaire qui explique pourquoi ce mot est absent. Le
+       contre-exemple est trois lignes plus haut dans le fichier visé. */
+    !/creerAdaptation\(|fermerAdaptations\(/.test(CTX9G),
+    "les deux écritures n’ont qu’un appelant, la feuille : le chat propose, l’écran dispose",
+  );
+  verdict(
+    "V9D · SOURCE · et il ne résout AUCUN conflit de planning lui-même",
+    !/chargerConflits|reservationsEnConflit/.test(CTX9G),
+    "« Décaler » et « Retirer » vivent dans la feuille V8, avec les autorités qui écrivent",
+  );
+  verdict(
+    "V9D · SOURCE · préparer une adaptation n’écrit rien non plus",
+    (() => {
+      const i = CTX9G.indexOf("const preparerAdaptation = useCallback");
+      const j = CTX9G.indexOf("const preparePlanAction = useCallback");
+      const bloc = i >= 0 && j > i ? CTX9G.slice(i, j) : "";
+      return bloc.length > 0
+        && !/\.insert\(|\.update\(|\.delete\(|\.upsert\(/.test(bloc)
+        && bloc.includes("normaliserDemande(")
+        && bloc.includes("resoudreEtapesCitees(");
+    })(),
+    "il lit, il traduit, il ouvre : la feuille est la confirmation, puisque rien n’est parti en base",
+  );
+  verdict(
+    "V9D · SOURCE · une identité ne se décide jamais par un titre",
+    (() => {
+      const i = CTX9G.indexOf("const preparerAdaptation = useCallback");
+      const j = CTX9G.indexOf("const preparePlanAction = useCallback");
+      const bloc = i >= 0 && j > i ? CTX9G.slice(i, j) : "";
+      return !/\.nom ===|\.titre ===|title ===/.test(bloc);
+    })(),
+    "`eviter_etapes` porte des identifiants, la base les revérifie, et un renommage ne casse rien",
+  );
+  verdict(
+    "V9D · SOURCE · une adaptation active ouvre la GESTION, jamais une seconde déclaration",
+    CTX9G.includes("impasse.adaptation_deja_active")
+      && CTX9G.includes('if (demande.mode === "arreter" && !active)'),
+    "l’`EXCLUDE` de la base refuse deux adaptations qui partagent un jour : préparer la seconde, c’est préparer un refus",
+  );
+  verdict(
+    "V9D · SOURCE · chaque refus a sa phrase, et elle nomme une suite",
+    ["impasse.adaptation_sans_programme", "impasse.adaptation_aucune",
+     "impasse.adaptation_deja_active", "impasse.adaptation_etapes_incertaines"]
+      .every((c) => {
+        const p = voix(null, c as CleVoix, { jour: "6 octobre", etapes: "« Pects »" });
+        return p.length > 20 && p !== c;
+      }),
+    "une impasse muette est le symptôme que ce chantier chasse depuis le début",
+  );
+  verdict(
+    "V9D · la phrase d’ouverture dit ce que l’écran va montrer",
+    (() => {
+      const p = voix(null, "adaptation.ouvre", { etapes: "Push", duree: "10 jours" });
+      return p.includes("Push") && p.includes("10 jours");
+    })(),
+    "c’est le seul moment où l’on vérifie que le Guide a compris sans lire un formulaire",
+  );
+  verdict(
+    "V9D · et elle se tait sur ce qu’elle ne sait pas",
+    (() => {
+      const p = voix(null, "adaptation.ouvre", { etapes: "", duree: "" });
+      return !p.includes("avec ") && !p.includes("pour ");
+    })(),
+    "une phrase à trous se lit comme un bug : sans étape ni durée, l’écran parle tout seul",
+  );
+  verdict(
+    "V9D · SOURCE · elle ne sort QUE quand il y a quelque chose à dire",
+    CTX9G.includes("if (retenues.length > 0 || duree) {"),
+    "sur « adapte mon programme », une bulle de plus ne ferait que répéter celle du coach",
+  );
+  verdict(
+    "V9D · SOURCE · l’outil a sa phrase de repli, et elle ne promet aucune carte",
+    (() => {
+      const p = voixAction(null, { intent: "adaptation_ouvrir" });
+      return p !== voixAction(null, { intent: "___inconnu___" }) && !/en dessous/.test(p);
+    })(),
+    "il ouvre un écran : « valide juste en dessous » désignerait quelque chose qui n’existe pas",
+  );
+  verdict(
+    "V9D · SOURCE · le préremplissage voyage dans la session, pas dans l’adresse",
+    !/ouvrir=adaptation&|eviter=|motif=/.test(CTX9G)
+      && DEM9G.includes("sessionStorage")
+      && DEM9G.includes("PEREMPTION_MS"),
+    "des identifiants et un motif écrit à la main n’ont rien à faire dans un historique de navigateur",
+  );
+  verdict(
+    "V9D · SOURCE · le témoin se CONSOMME et se PÉRIME",
+    DEM9G.includes("sessionStorage.removeItem(CLE_DEMANDE)")
+      && DEM9G.includes("Date.now() - parse.a > PEREMPTION_MS"),
+    "sans ça, un formulaire ouvert à la main une heure plus tard hériterait d’une demande abandonnée",
+  );
+  verdict(
+    "V9D · SOURCE · la feuille lit le témoin une seule fois, à son ouverture",
+    FEUILLE9G.includes("useState(prendreAdaptationDemandee)"),
+    "une lecture par rendu reposerait les cases à chaque frappe dans le champ du motif",
+  );
+  verdict(
+    "V9D · SOURCE · et elle filtre le préremplissage contre le cycle RÉEL",
+    FEUILLE9G.includes("(prerempli?.eviter ?? []).filter((id) => cycle.some((e) => e.id === id))"),
+    "une étape d’une autre version ferait refuser l’activation sans que personne comprenne pourquoi",
+  );
+  verdict(
+    "V9D · SOURCE · rien ne s’active sans le clic de la feuille",
+    (() => {
+      /* `activer` n’est RÉFÉRENCÉE que par le bouton : jamais appelée
+         depuis un effet, jamais depuis le préremplissage. */
+      const appels = (FEUILLE9G.match(/activer\(\)/g) ?? []).length;
+      return appels === 0 && FEUILLE9G.includes("onClick={peutActiver ? activer : undefined}");
+    })(),
+    "le bouton violet reste le seul chemin vers `creerAdaptation`, prérempli ou pas",
+  );
+  verdict(
+    "V9D · SOURCE · l’écran d’entraînement écoute aussi l’évènement",
+    /* ⚠️ ON VÉRIFIE L’ÉCOUTE ENTIÈRE, PAS LE MOT. `setSheet("adaptation")`
+       existe déjà ailleurs dans cet écran (la ligne d’adaptation du
+       héros) : un contrôle qui se contente de le chercher passe même
+       quand l’écoute est débranchée. Mesuré avec le témoin. */
+    ENTR9G.includes('const ouvrir = () => setSheet("adaptation");')
+      && ENTR9G.includes("window.addEventListener(EVT_ADAPTATION, ouvrir)")
+      && ENTR9G.includes("window.removeEventListener(EVT_ADAPTATION, ouvrir)"),
+    "depuis cet écran, changer la requête de l’adresse ne remonte pas la page : il ne se passerait rien",
+  );
+  verdict(
+    "V9D · SOURCE · l’aiguilleur n’a toujours pas grandi",
+    (() => {
+      const p = /const PROMPT = `([\s\S]*?)`;/.exec(lire9G("src/lib/assistantRouter.ts"))?.[1] ?? "";
+      return p.replace(/\r/g, "").replace("${RIEN}", "rien_a_faire").length === 316
+        && ASSISTANT_TOOLS.length === 17;
+    })(),
+    "316 caractères, 17 outils : un outil de plus ne rallonge pas le prompt d’un signe",
   );
 }
 
