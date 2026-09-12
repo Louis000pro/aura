@@ -4862,9 +4862,67 @@ verdict(
     "une phrase à trous se lit comme un bug : sans étape ni durée, l’écran parle tout seul",
   );
   verdict(
-    "V9D · SOURCE · elle ne sort QUE quand il y a quelque chose à dire",
-    CTX9G.includes("if (retenues.length > 0 || duree) {"),
-    "sur « adapte mon programme », une bulle de plus ne ferait que répéter celle du coach",
+    "V9D bis · SOURCE · la phrase d’ouverture sort TOUJOURS",
+    /* ⚠️ ELLE ÉTAIT CONDITIONNÉE À « il y a une étape ou une durée »,
+       pour ne pas répéter la bulle du coach. Le premier essai réel a
+       montré ce que ça coûte : c’est AUSSI la seule trace à l’écran que
+       cet outil-là a bien été appelé, donc sans elle « le Guide n’a pas
+       compris » et « la feuille s’est ouverte ailleurs » se
+       ressemblent trait pour trait. */
+    !CTX9G.includes("if (retenues.length > 0 || duree) {")
+      && /say\(voix\(guide, "adaptation\.ouvre"/.test(CTX9G),
+    "une phrase de trop coûte une ligne ; une phrase manquante coûte un diagnostic",
+  );
+  verdict(
+    "V9D bis · SOURCE · ouvrir l’adaptation FERME la conversation",
+    /setIsOpen\(false\);[\s\S]{0,900}?ouvrir=adaptation/.test(CTX9G),
+    "sans ça l’écran s’ouvre DERRIÈRE la feuille de l’✦, et personne ne le voit jamais",
+  );
+  verdict(
+    "V9D bis · SOURCE · et c’est nécessaire : l’écran vit SOUS la conversation",
+    (() => {
+      /* ⚠️ ⚠️ LE CONTRÔLE QUI AURAIT ATTRAPÉ LE DÉFAUT DU PREMIER ESSAI.
+         La feuille de l’✦ est opaque, pleine largeur et posée plus haut
+         que l’écran d’adaptation : la fermer n’est donc pas une politesse,
+         c’est la condition pour que cet écran soit visible. Le jour où
+         l’un des deux étages bouge, c’est ici qu’on l’apprendra. */
+      const haut = (t: string) => Math.max(0, ...(t.match(/z-\[\d+\]/g) ?? []).map((z) => Number(z.replace(/\D/g, ""))));
+      return haut(lire9G("src/components/AssistantSheet.tsx")) > haut(FEUILLE9G);
+    })(),
+    "deux surfaces plein écran, et la plus haute gagne : c’est de l’arithmétique, pas du réglage",
+  );
+  verdict(
+    "V9D bis · SOURCE · les deux chemins d’ouverture sont EXCLUSIFS",
+    (() => {
+      /* L’évènement pour l’écran déjà affiché, l’adresse pour celui qui
+         n’existe pas encore. Les jouer tous les deux, c’est émettre dans
+         le vide PUIS naviguer : la moitié du geste ne sert alors jamais
+         à rien, et on ne sait plus lequel des deux a ouvert l’écran. */
+      const i = CTX9G.indexOf("const ouvrirAdaptation");
+      const corps = CTX9G.slice(i, CTX9G.indexOf("const preparerAdaptation", i));
+      return /pathname === "\/progression"[\s\S]{0,200}?dispatchEvent[\s\S]{0,80}?return;/.test(corps)
+        && (corps.match(/router\.push\(/g) ?? []).length === 1;
+    })(),
+    "on émet là où quelqu’un écoute, et on navigue là où il n’y a encore personne",
+  );
+  verdict(
+    "V9D bis · SOURCE · le coach sait qu’un ÉCRAN s’ouvre, pas une carte",
+    (() => {
+      /* ⚠️ SANS CETTE BRANCHE, `adaptation_ouvrir` tombait dans le
+         fourre-tout de `set_theme` et d’`open_page`, qui ne dit ni qu’un
+         écran arrive ni qu’il ne faut rien demander : le coach annonçait
+         donc « valide juste en dessous » alors qu’il n’y a pas de carte,
+         puis posait une question que personne n’avait appelée. Une
+         consigne absente, c’est un modèle qui improvise. */
+      const r = lire9G("src/lib/assistantRouter.ts");
+      const cartes = /const CARTES[\s\S]*?\n\};/.exec(r)?.[0] ?? "";
+      const cadre = /if \(action\.intent === "adaptation_ouvrir"\) \{[\s\S]*?\n  \}/.exec(r)?.[0] ?? "";
+      return !cartes.includes("adaptation_ouvrir")
+        && /écran d’adaptation/.test(cadre)
+        && /AUCUNE question/.test(cadre)
+        && /en dessous/.test(cadre);
+    })(),
+    "un écran prérempli n’est ni une carte à valider, ni un simple « c’est fait »",
   );
   verdict(
     "V9D · SOURCE · l’outil a sa phrase de repli, et elle ne promet aucune carte",

@@ -1164,14 +1164,27 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
        visage que pour `open_page`. */
     setReussite((n) => n + 1);
     setTimeout(() => {
-      /* ⚠️ LES DEUX CHEMINS SONT NÉCESSAIRES, ET C’EST UN PIÈGE RÉEL.
-         Si l’on est DÉJÀ sur Entraînement, `router.push` avec une autre
-         requête ne remonte pas l’écran : son effet d’ouverture ne se
-         rejouerait pas, et il ne se passerait rien du tout. L’évènement
-         couvre ce cas ; l’adresse couvre l’autre, celui où l’écran
-         n’existe pas encore pour l’entendre. */
-      if (typeof window !== "undefined") window.dispatchEvent(new Event(EVT_ADAPTATION));
-      if (pathname !== "/progression") router.push("/progression?ouvrir=adaptation");
+      /* ⚠️ ⚠️ ON FERME LA CONVERSATION D’ABORD, ET CE N’EST PAS UN
+         CONFORT : C’EST TOUT LE DÉFAUT DU PREMIER ESSAI RÉEL. La feuille
+         de l’✦ est opaque, pleine largeur, et posée à z-111 sur un voile
+         à z-110 ; l’écran d’adaptation vit à z-100. Sans cette ligne, il
+         s’ouvrait bel et bien, DERRIÈRE la conversation, donc personne ne
+         le voyait jamais : ni carte, ni feuille, ni erreur, rien à
+         diagnostiquer. C’est exactement ce que font déjà les quatre
+         confirmations de carte avant de naviguer.
+
+         ⚠️ ET LES DEUX CHEMINS SONT EXCLUSIFS, PAS CUMULÉS. Si l’on est
+         DÉJÀ sur Entraînement, `router.push` avec une autre requête ne
+         remonte pas l’écran : son effet d’ouverture ne se rejouerait pas,
+         et il ne se passerait rien du tout. L’évènement couvre ce cas ;
+         l’adresse couvre l’autre, celui où l’écran n’existe pas encore
+         pour entendre quoi que ce soit. */
+      setIsOpen(false);
+      if (typeof window !== "undefined" && pathname === "/progression") {
+        window.dispatchEvent(new Event(EVT_ADAPTATION));
+        return;
+      }
+      router.push("/progression?ouvrir=adaptation");
     }, 700);
   }, [pathname, router]);
 
@@ -1254,18 +1267,20 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       retenues = r.retenues;
     }
 
-    /* On dit ce que l’écran va montrer, et SEULEMENT quand il y a
-       quelque chose de précis à dire : c’est le seul moment où l’on peut
-       vérifier que le Guide a compris sans lire un formulaire. Sur une
-       demande sans étape ni durée, l’écran suffit, et une phrase de plus
-       ne ferait que répéter la bulle du coach. */
+    /* ⚠️ ELLE SORT TOUJOURS, ET LA CONDITION D’AVANT ÉTAIT UNE ERREUR.
+       Elle disait ce que le Guide a compris (l’étape, la durée) seulement
+       quand il y avait de quoi le chiffrer, pour ne pas répéter la bulle
+       du coach. Mais c’est AUSSI la seule trace à l’écran que cet outil-là
+       a bien été appelé : sans elle, « le Guide n’a pas compris » et
+       « la feuille s’est ouverte ailleurs » se ressemblent trait pour
+       trait, et c’est exactement ce qui a rendu le premier essai réel
+       impossible à lire. Une phrase de trop coûte une ligne ; une phrase
+       manquante coûte un diagnostic. */
     const duree = libelleDuree(demande.dureeJours);
-    if (retenues.length > 0 || duree) {
-      say(voix(guide, "adaptation.ouvre", {
-        etapes: libelleEtapes(retenues.map((e) => e.nom)),
-        duree: duree ?? "",
-      }));
-    }
+    say(voix(guide, "adaptation.ouvre", {
+      etapes: libelleEtapes(retenues.map((e) => e.nom)),
+      duree: duree ?? "",
+    }));
 
     ouvrirAdaptation(composerPreremplissage({
       aujourdhui: etat.aujourdhui,

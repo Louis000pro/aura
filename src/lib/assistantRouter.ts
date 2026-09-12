@@ -164,6 +164,19 @@ export function cadreAction(action: AssistantAction | null): string {
     return `\n\nCE QUI SE PASSE PENDANT QUE TU RÉPONDS : aucune carte ne va s’afficher sous ton message. Réponds donc pour de vrai, avec du contenu utile, et n’annonce JAMAIS quelque chose « à valider juste en dessous ».`;
   }
   if (action.intent === "ask_choice") return "";
+
+  /* ⚠️ L’ADAPTATION N’EST PAS UNE CARTE, ET ELLE N’EST PAS NON PLUS UN
+     SIMPLE « c’est fait ». C’est un ÉCRAN qui s’ouvre, déjà rempli, et
+     que la personne vérifie avant d’activer quoi que ce soit. Sans cette
+     branche, elle tombait dans le fourre-tout ci-dessous, qui ne dit ni
+     qu’un écran arrive, ni qu’il ne faut poser aucune question : le coach
+     annonçait donc « valide juste en dessous » (il n’y a rien en dessous)
+     puis demandait quelle séance privilégier (personne ne le lui avait
+     demandé). Une consigne absente, c’est un modèle qui improvise. */
+  if (action.intent === "adaptation_ouvrir") {
+    return `\n\nCE QUI SE PASSE PENDANT QUE TU RÉPONDS : l’écran d’adaptation de son programme s’ouvre à l’instant, déjà rempli avec ce qu’il vient de demander, et c’est LUI qui activera l’adaptation quand il aura vérifié. Dis-le en UNE seule phrase courte et chaleureuse, puis arrête-toi. N’annonce rien « à valider juste en dessous » (il n’y a pas de carte), ne détaille pas ce que l’écran contient, et ne pose AUCUNE question : tout ce qu’il reste à choisir est déjà sur l’écran.`;
+  }
+
   const carte = CARTES[action.intent];
   if (!carte) {
     // set_theme, open_page, save_lieu : ça agit sans rien faire valider.
