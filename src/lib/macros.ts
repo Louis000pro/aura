@@ -24,7 +24,7 @@ export type Macros = { proteins: number; carbs: number; fats: number };
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
 
 /* Normalise pour la détection : minuscules, œ→oe, accents retirés.
-   Exporté : sert aussi au filtre régime des plats suggérés (RecommendedMeals). */
+   Exporté : il servait au filtre régime des plats suggérés, retirés au gel. */
 export function normalizeAccents(s: string): string {
   return (s || "").toLowerCase().replace(/œ/g, "oe").normalize("NFD").replace(/[̀-ͯ]/g, "");
 }

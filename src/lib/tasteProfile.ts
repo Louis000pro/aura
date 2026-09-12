@@ -6,7 +6,7 @@
    modifiable à tout moment dans les Paramètres (TasteProfileModal). Les deux
    écrans partagent ce fichier pour que les questions, les bases proposées et
    la logique d'enregistrement ne divergent JAMAIS — c'est aussi ce que lit le
-   menu généré par l'IA (RecommendedMeals → /api/nutrition/menu).
+   menu généré par l'IA (/api/nutrition/menu, sans appelant depuis le gel).
    Voir [[nutrition-unification-refonte]].
    ════════════════════════════════════════════════════════════════════ */
 
@@ -73,11 +73,6 @@ export function isTasteComplete(p: Pick<TasteProfile, "cooking" | "time" | "ingr
 
 export function tasteTodayStr(): string {
   return localDateStr();
-}
-
-/* Signature courte (pour invalider le cache du menu quand les goûts changent). */
-export function tasteSignature(p: TasteProfile | null): string {
-  return p?.updatedAt ? p.updatedAt.replace(/[^0-9]/g, "") : "0";
 }
 
 const localKey = (userId: string) => `vaiiya_taste_profile_${userId}`;
