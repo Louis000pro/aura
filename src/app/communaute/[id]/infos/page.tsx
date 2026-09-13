@@ -312,7 +312,7 @@ export default function InfosPage() {
           relais » avec un bouton mort valait moins que pas de carte. */}
       {(conv.defi || !groupe) && (
       <div className="mt-7 px-4">
-        <p className="mb-2 pl-1 text-[10.5px] font-bold uppercase tracking-[.1em]" style={{ color: "var(--text-3)" }}>
+        <p className="mb-2 pl-1 text-[11px] font-bold uppercase tracking-[.1em]" style={{ color: "var(--text-3)" }}>
           Le relais
         </p>
         <div className="overflow-hidden border" style={{ borderRadius: "var(--r-bloc)", borderColor: "rgba(var(--text-3-rgb), .18)", background: "rgb(var(--surface-rgb))" }}>
@@ -390,7 +390,7 @@ export default function InfosPage() {
 
       {/* ─── Membres ─── */}
       <div className="mt-6 px-4">
-        <p className="mb-2 pl-1 text-[10.5px] font-bold uppercase tracking-[.1em]" style={{ color: "var(--text-3)" }}>
+        <p className="mb-2 pl-1 text-[11px] font-bold uppercase tracking-[.1em]" style={{ color: "var(--text-3)" }}>
           Membres
         </p>
         <div className="overflow-hidden border" style={{ borderRadius: "var(--r-bloc)", borderColor: "rgba(var(--text-3-rgb), .18)", background: "rgb(var(--surface-rgb))" }}>

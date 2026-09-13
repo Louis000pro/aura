@@ -130,11 +130,11 @@ export default function GeneratedRecipeSheet({
                     ].map((m) => (
                       <div key={m.l} className="flex flex-col items-center">
                         <span className="text-sm font-bold" style={{ color: "var(--text-1)" }}>{m.v}</span>
-                        <span className="text-[9px]" style={{ color: "var(--text-3)" }}>{m.l}</span>
+                        <span className="text-[11px]" style={{ color: "var(--text-3)" }}>{m.l}</span>
                       </div>
                     ))}
                   </div>
-                  <p className="text-[10px] -mt-2 text-center" style={{ color: "#B7A9CE" }}>≈ par portion (estimation)</p>
+                  <p className="text-[11px] -mt-2 text-center" style={{ color: "#B7A9CE" }}>≈ par portion (estimation)</p>
 
                   {recipe.allergens.length > 0 && (
                     <div className="flex items-start gap-2 px-3 py-2 rounded-xl" style={{ background: "rgba(246,173,85,0.12)" }}>

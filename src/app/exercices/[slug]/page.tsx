@@ -485,7 +485,7 @@ function CarteVariante({ variante }: { variante: Variante }) {
               particulier. Un seul violet, neutre, et c'est le texte qui
               renseigne. */}
           <p
-            className="text-[10.5px] font-bold tracking-[0.16em] uppercase mb-1"
+            className="text-[11px] font-bold tracking-[0.16em] uppercase mb-1"
             style={{ color: "#A78BFA" }}
           >
             {variante.angle}

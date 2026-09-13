@@ -178,7 +178,7 @@ function DayDetail({ day, onTuto, onStart }: { day: PlanningDay; onTuto: (ex: st
       <div className="flex items-center gap-2 flex-wrap">
         <span style={getBadgeStyle(day.type)}>{day.type}</span>
         {!isRest && (
-          <span className="text-[10px] font-medium" style={{ color: "var(--text-3)" }}>{day.difficulty}</span>
+          <span className="text-[11px] font-medium" style={{ color: "var(--text-3)" }}>{day.difficulty}</span>
         )}
       </div>
       {!isRest && day.title && (
@@ -201,11 +201,11 @@ function DayDetail({ day, onTuto, onStart }: { day: PlanningDay; onTuto: (ex: st
               >
                 <div className="rounded-full flex-shrink-0" style={{ width: 4, height: 4, background: "var(--accent)", opacity: 0.8 }} />
                 <p className="text-[11px] leading-snug flex-1" style={{ color: "var(--text-body)" }}>{ex.name}</p>
-                <span className="text-[9px] font-medium flex-shrink-0" style={{ color: "var(--text-3)" }}>{ex.sets}×{ex.reps}</span>
+                <span className="text-[11px] font-medium flex-shrink-0" style={{ color: "var(--text-3)" }}>{ex.sets}×{ex.reps}</span>
                 <span className="flex items-center gap-1 flex-shrink-0 rounded-full px-2 py-0.5"
                   style={{ background: "rgba(var(--accent-rgb),0.12)" }}>
                   <Play size={9} strokeWidth={2.5} style={{ color: "var(--exp-encre)" }} fill="currentColor" />
-                  <span className="text-[9px] font-semibold" style={{ color: "var(--exp-encre)" }}>Tuto</span>
+                  <span className="text-[11px] font-semibold" style={{ color: "var(--exp-encre)" }}>Tuto</span>
                 </span>
               </button>
             ))}
@@ -250,14 +250,14 @@ function LocationQuestion({ onChoose }: { onChoose: (loc: "salle" | "maison") =>
           style={{ borderRadius: "var(--r-controle)", background: "rgba(var(--surface-rgb),0.8)", border: "1px solid rgba(var(--violet-mid-rgb),0.5)" }}>
           <Dumbbell size={20} strokeWidth={1.5} style={{ color: "var(--exp-encre)" }} />
           <span className="text-sm font-semibold" style={{ color: "var(--text-1)" }}>En salle</span>
-          <span className="text-[10px] font-light" style={{ color: "var(--text-3)" }}>Machines & charges</span>
+          <span className="text-[11px] font-light" style={{ color: "var(--text-3)" }}>Machines & charges</span>
         </motion.button>
         <motion.button whileTap={{ scale: 0.96 }} onClick={() => onChoose("maison")}
           className="flex flex-col items-center gap-1.5 py-4 cursor-pointer"
           style={{ borderRadius: "var(--r-controle)", background: "rgba(var(--surface-rgb),0.8)", border: "1px solid rgba(var(--cream-mid-rgb),0.6)" }}>
           <Home size={20} strokeWidth={1.5} style={{ color: "var(--gold)" }} />
           <span className="text-sm font-semibold" style={{ color: "var(--text-1)" }}>À la maison</span>
-          <span className="text-[10px] font-light" style={{ color: "var(--text-3)" }}>Poids du corps</span>
+          <span className="text-[11px] font-light" style={{ color: "var(--text-3)" }}>Poids du corps</span>
         </motion.button>
       </div>
     </motion.div>
@@ -287,17 +287,17 @@ function HomeEquipQuestion({ onChoose, onBack }: { onChoose: (e: "halteres" | "p
           style={{ borderRadius: "var(--r-controle)", background: "rgba(var(--surface-rgb),0.8)", border: "1px solid rgba(var(--cream-mid-rgb),0.6)" }}>
           <Dumbbell size={20} strokeWidth={1.5} style={{ color: "var(--gold)" }} />
           <span className="text-sm font-semibold" style={{ color: "var(--text-1)" }}>Oui, haltères</span>
-          <span className="text-[10px] font-light" style={{ color: "var(--text-3)" }}>Poids du corps + haltères</span>
+          <span className="text-[11px] font-light" style={{ color: "var(--text-3)" }}>Poids du corps + haltères</span>
         </motion.button>
         <motion.button whileTap={{ scale: 0.96 }} onClick={() => onChoose("poids")}
           className="flex flex-col items-center gap-1.5 py-4 cursor-pointer"
           style={{ borderRadius: "var(--r-controle)", background: "rgba(var(--surface-rgb),0.8)", border: "1px solid rgba(var(--violet-mid-rgb),0.5)" }}>
           <Home size={20} strokeWidth={1.5} style={{ color: "var(--exp-encre)" }} />
           <span className="text-sm font-semibold" style={{ color: "var(--text-1)" }}>Non</span>
-          <span className="text-[10px] font-light" style={{ color: "var(--text-3)" }}>Poids du corps uniquement</span>
+          <span className="text-[11px] font-light" style={{ color: "var(--text-3)" }}>Poids du corps uniquement</span>
         </motion.button>
       </div>
-      <button onClick={onBack} className="text-[10px] font-medium self-center cursor-pointer" style={{ color: "var(--text-3)", background: "none", border: "none" }}>
+      <button onClick={onBack} className="text-[11px] font-medium self-center cursor-pointer" style={{ color: "var(--text-3)", background: "none", border: "none" }}>
         ← Changer de lieu
       </button>
     </motion.div>
@@ -691,7 +691,7 @@ export default function WeeklyProgramme({ cycle = null }: { cycle?: CycleSemaine
               onClick={resetLocation}
               className="flex items-center gap-1 cursor-pointer" style={{ color: "var(--text-3)", background: "none", border: "none", padding: 0 }}>
               {location === "maison" ? <Home size={10} strokeWidth={2} /> : <MapPin size={10} strokeWidth={2} />}
-              <span className="text-[9px] font-medium">
+              <span className="text-[11px] font-medium">
                 {location === "maison" ? (homeEquip === "halteres" ? "Maison · haltères" : "Maison · poids du corps") : "En salle"} · changer
               </span>
             </button>
@@ -699,7 +699,7 @@ export default function WeeklyProgramme({ cycle = null }: { cycle?: CycleSemaine
               onClick={regenerateProgramme}
               className="flex items-center gap-1 cursor-pointer" style={{ color: isPremium ? "var(--text-3)" : "#B7A3E0", background: "none", border: "none", padding: 0 }}>
               {isPremium ? <RefreshCw size={10} strokeWidth={2.5} /> : <Lock size={10} strokeWidth={2.5} />}
-              <span className="text-[9px] font-medium">{isPremium ? "Régénérer" : "Régénérer · Premium"}</span>
+              <span className="text-[11px] font-medium">{isPremium ? "Régénérer" : "Régénérer · Premium"}</span>
             </button>
           </div>
         )}
@@ -713,7 +713,7 @@ export default function WeeklyProgramme({ cycle = null }: { cycle?: CycleSemaine
             style={{ background: "rgba(252,129,129,0.08)", border: "1px solid rgba(252,129,129,0.18)" }}>
             <p className="text-xs" style={{ color: "#DC2626" }}>{error}</p>
             <motion.button whileTap={{ scale: 0.95 }} onClick={() => generate(location, homeEquip, true)}
-              className="text-[10px] font-semibold px-2.5 py-1 rounded-lg cursor-pointer"
+              className="text-[11px] font-semibold px-2.5 py-1 rounded-lg cursor-pointer"
               style={{ background: "rgba(252,129,129,0.15)", color: "#DC2626" }}>
               Réessayer
             </motion.button>
@@ -742,7 +742,7 @@ export default function WeeklyProgramme({ cycle = null }: { cycle?: CycleSemaine
             scène d'une journée à deux séances viendra avec l'accueil. */}
         {!loading && extras.length > 0 && (
           <div className="mt-2.5">
-            <p className="text-[9px] font-semibold mb-1" style={{ color: "var(--text-3)" }}>
+            <p className="text-[11px] font-semibold mb-1" style={{ color: "var(--text-3)" }}>
               En plus ce jour-là
             </p>
             {extras.map((extra) => (
@@ -752,7 +752,7 @@ export default function WeeklyProgramme({ cycle = null }: { cycle?: CycleSemaine
                 <span className="flex-1 min-w-0 text-[11.5px] font-semibold truncate" style={{ color: "var(--text-2)" }}>
                   {dayTitle(extra)}
                 </span>
-                <span className="text-[9.5px] font-bold flex-shrink-0"
+                <span className="text-[11px] font-bold flex-shrink-0"
                   style={{ color: extra.status === "done" ? "var(--teal-encre)" : "var(--exp-encre)" }}>
                   {extra.status === "done" ? "Faite ✓" : "Commencer"}
                 </span>

@@ -1275,14 +1275,14 @@ export default function WorkoutGuideModal({
                     <h2 className="font-black uppercase leading-[0.98] tracking-tight text-white"
                       style={{ fontSize: 27, textShadow: "0 2px 14px rgba(0,0,0,0.45)" }}>{title}</h2>
                     {muscleSummary && (
-                      <p className="text-[10px] font-extrabold tracking-[0.14em] mt-1.5" style={{ color: "#C9B8FF" }}>{muscleSummary}</p>
+                      <p className="text-[11px] font-extrabold tracking-[0.14em] mt-1.5" style={{ color: "#C9B8FF" }}>{muscleSummary}</p>
                     )}
                     <div className="flex gap-1.5 mt-3">
-                      <span className="text-[10.5px] font-bold text-white px-2.5 py-1.5 rounded-full"
+                      <span className="text-[11px] font-bold text-white px-2.5 py-1.5 rounded-full"
                         style={{ background: "rgba(255,255,255,0.13)", backdropFilter: "blur(4px)", border: "1px solid rgba(255,255,255,0.16)" }}>{exercises.length} exercices</span>
-                      <span className="text-[10.5px] font-bold text-white px-2.5 py-1.5 rounded-full"
+                      <span className="text-[11px] font-bold text-white px-2.5 py-1.5 rounded-full"
                         style={{ background: "rgba(255,255,255,0.13)", backdropFilter: "blur(4px)", border: "1px solid rgba(255,255,255,0.16)" }}>{totalSets} séries</span>
-                      <span className="text-[10.5px] font-bold px-2.5 py-1.5 rounded-full"
+                      <span className="text-[11px] font-bold px-2.5 py-1.5 rounded-full"
                         style={{ color: "#FFC96B", background: "rgba(255,255,255,0.13)", backdropFilter: "blur(4px)", border: "1px solid rgba(245,177,32,0.35)" }}>~{kcalEst} kcal</span>
                     </div>
                   </div>
@@ -1291,8 +1291,8 @@ export default function WorkoutGuideModal({
                 {/* Programme — une colonne calme, chaque exo déplie sa démo */}
                 <div className="px-4 pt-4 pb-3">
                   <div className="flex items-baseline justify-between mb-1.5 px-1">
-                    <p className="text-[10px] font-extrabold tracking-[0.18em]" style={{ color: "var(--text-3)" }}>AU PROGRAMME</p>
-                    <p className="text-[10px] font-medium" style={{ color: "var(--accent)" }}>Touche un exo pour la démo</p>
+                    <p className="text-[11px] font-extrabold tracking-[0.18em]" style={{ color: "var(--text-3)" }}>AU PROGRAMME</p>
+                    <p className="text-[11px] font-medium" style={{ color: "var(--accent)" }}>Touche un exo pour la démo</p>
                   </div>
                   <div className="flex flex-col">
                     {exercises.map((ex, i) => {
@@ -1309,7 +1309,11 @@ export default function WorkoutGuideModal({
                             <span className="text-[15px] font-black w-4 text-center flex-shrink-0" style={{ color: "rgba(var(--accent-rgb),0.55)" }}>{i + 1}</span>
                             <span className="flex-1 min-w-0">
                               <b className="block text-[13.5px] font-bold tracking-tight truncate" style={{ color: "var(--text-1)" }}>{ex.name}</b>
-                              <span className="block text-[8.5px] font-extrabold tracking-[0.1em] truncate" style={{ color: "var(--text-3)" }}>{ex.muscles.join(" · ").toUpperCase()}</span>
+                              {/* ⚠️ L'INTERLETTRAGE BAISSE PARCE QUE LA TAILLE MONTE. Il valait
+                                  0,1 em pour aérer du 8,5 px ; à 11 px il ajoutait 29 % de largeur
+                                  à une ligne déjà `truncate`, donc il aurait tronqué des muscles
+                                  au lieu de les rendre lisibles. */}
+                              <span className="block text-[11px] font-extrabold tracking-[0.04em] truncate" style={{ color: "var(--text-3)" }}>{ex.muscles.join(" · ").toUpperCase()}</span>
                             </span>
                             <span className="text-[13px] font-extrabold tabular-nums flex-shrink-0" style={{ color: "var(--text-1)" }}>{setrep}</span>
                             <motion.span animate={{ rotate: open ? 180 : 0 }} transition={{ duration: 0.2 }} className="flex-shrink-0 flex">
@@ -1348,7 +1352,7 @@ export default function WorkoutGuideModal({
               >
                 {/* Titre + démo dépliable */}
                 <div className="relative z-[2]">
-                  <p className="text-[10px] font-extrabold tracking-[0.24em]" style={{ color: TUN.lav }}>
+                  <p className="text-[11px] font-extrabold tracking-[0.24em]" style={{ color: TUN.lav }}>
                     EXERCICE {exerciseIdx + 1} / {exercises.length}
                   </p>
                   <h2 className="font-black uppercase tracking-tight leading-none mt-2" style={{ fontSize: 30, color: "#fff" }}>{cur.name}</h2>
@@ -1493,7 +1497,7 @@ export default function WorkoutGuideModal({
                       {paused
                         ? <Play size={34} strokeWidth={1.5} style={{ color: TUN.orange }} />
                         : <>
-                            <span className="text-[10px] font-extrabold tracking-[0.3em]" style={{ color: TUN.orange }}>REPOS</span>
+                            <span className="text-[11px] font-extrabold tracking-[0.3em]" style={{ color: TUN.orange }}>REPOS</span>
                             <span className="font-black tabular-nums leading-none" style={{ fontSize: 52, color: "#fff", fontFamily: "var(--chiffre)", fontVariationSettings: "var(--w-nombre)", letterSpacing: "-0.045em" }}>{fmt(restCountdown)}</span>
                             <span className="text-[11px] font-medium tabular-nums" style={{ color: TUN.t3 }}>sur {fmt(restTotal)}</span>
                           </>}
@@ -1518,13 +1522,13 @@ export default function WorkoutGuideModal({
                   const num = isLastSet ? exerciseIdx + 2 : exerciseIdx + 1;
                   return (
                     <div className="relative z-[2] mt-7">
-                      <p className="text-[10px] font-extrabold tracking-[0.2em] mb-2" style={{ color: TUN.t3 }}>ENSUITE</p>
+                      <p className="text-[11px] font-extrabold tracking-[0.2em] mb-2" style={{ color: TUN.t3 }}>ENSUITE</p>
                       <div className="flex items-center gap-3 rounded-2xl p-3" style={{ background: "rgba(255,255,255,0.05)", border: `1px solid ${TUN.line}` }}>
                         <span className="w-11 h-14 rounded-xl flex items-center justify-center flex-shrink-0 text-[15px] font-black"
                           style={{ background: "rgba(139,92,246,0.1)", border: "1px solid rgba(139,92,246,0.18)", color: TUN.lav }}>{num}</span>
                         <div className="min-w-0">
                           <b className="block text-sm font-extrabold tracking-tight truncate" style={{ color: "#fff" }}>{nx.name}</b>
-                          <span className="block text-[9.5px] font-extrabold tracking-[0.08em] truncate" style={{ color: TUN.lav }}>{sub}</span>
+                          <span className="block text-[11px] font-extrabold tracking-[0.08em] truncate" style={{ color: TUN.lav }}>{sub}</span>
                         </div>
                       </div>
                     </div>
@@ -1663,7 +1667,7 @@ export default function WorkoutGuideModal({
                     { l: "EXERCICES",    v: String(exercises.length),    c: TUN.teal,    s: "" },
                   ].map(st => (
                     <div key={st.l} className="rounded-2xl px-3.5 py-3.5 text-left" style={{ background: "rgba(255,255,255,0.05)", border: `1px solid ${TUN.line}` }}>
-                      <p className="text-[9px] font-extrabold tracking-[0.18em]" style={{ color: TUN.t3 }}>{st.l}</p>
+                      <p className="text-[11px] font-extrabold tracking-[0.18em]" style={{ color: TUN.t3 }}>{st.l}</p>
                       <p className="font-black tabular-nums mt-1" style={{ fontSize: 21, color: st.c, fontFamily: "var(--chiffre)", fontVariationSettings: "var(--w-nombre)", letterSpacing: "-0.045em" }}>
                         {st.v}<small className="text-[11px] font-bold" style={{ color: TUN.t3, letterSpacing: 0 }}>{st.s}</small>
                       </p>
@@ -1781,7 +1785,7 @@ export default function WorkoutGuideModal({
                           </div>
                           <div className="min-w-0">
                             <p className="text-[13px] font-bold text-white leading-tight">Tu la gardes ?</p>
-                            <p className="text-[10.5px] leading-snug mt-1" style={{ color: TUN.t2 }}>
+                            <p className="text-[11px] leading-snug mt-1" style={{ color: TUN.t2 }}>
                               Elle rejoint tes séances, tu pourras la relancer ou la modifier.
                             </p>
                           </div>

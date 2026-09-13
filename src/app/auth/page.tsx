@@ -83,7 +83,7 @@ function PasswordStrengthBar({ password }: { password: string }) {
             style={{ background: i <= s.bars ? s.color : "rgba(var(--accent-rgb),0.14)", transition: "background 0.3s ease" }} />
         ))}
       </div>
-      <p className="text-[10px] font-semibold" style={{ color: s.color, transition: "color 0.3s ease" }}>
+      <p className="text-[11px] font-semibold" style={{ color: s.color, transition: "color 0.3s ease" }}>
         {s.label}
       </p>
     </motion.div>
@@ -619,7 +619,7 @@ export default function AuthPage() {
               className="font-medium cursor-pointer hover:underline" style={{ color:"var(--accent)" }}>Mot de passe oublié ?</button></>}
           </p>
 
-          <p className="text-center text-[10px] mt-4 font-light leading-relaxed" style={{ color:"var(--text-3)" }}>
+          <p className="text-center text-[11px] mt-4 font-light leading-relaxed" style={{ color:"var(--text-3)" }}>
             En continuant, tu acceptes nos{" "}
             <Link href="/conditions" className="font-medium hover:underline" style={{ color:"var(--accent)" }}>Conditions générales</Link>
             {", "}nos{" "}

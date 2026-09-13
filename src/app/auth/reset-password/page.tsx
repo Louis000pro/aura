@@ -41,7 +41,7 @@ function StrengthBar({ password }: { password: string }) {
             style={{ background: i <= s.bars ? s.color : "rgba(var(--accent-rgb),0.14)", transition: "background 0.3s ease" }} />
         ))}
       </div>
-      <p className="text-[10px] font-semibold" style={{ color: s.color, transition: "color 0.3s ease" }}>
+      <p className="text-[11px] font-semibold" style={{ color: s.color, transition: "color 0.3s ease" }}>
         {s.label}
       </p>
     </motion.div>

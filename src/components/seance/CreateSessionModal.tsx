@@ -338,7 +338,7 @@ export default function CreateSessionModal({
                         ? "linear-gradient(90deg,#8B5CF6,#C13BC1)"
                         : "rgba(var(--tint-violet-rgb),0.9)",
                     }} />
-                    <span className="text-[10px] font-semibold"
+                    <span className="text-[11px] font-semibold"
                       style={{ color: actif ? "var(--accent)" : "var(--text-3)" }}>
                       {label}
                     </span>
@@ -390,7 +390,7 @@ export default function CreateSessionModal({
                       <span className="text-[12.5px] font-semibold flex-1" style={{ color: "var(--text-1)" }}>
                         Laisse l’✦ la construire
                       </span>
-                      <span className="text-[10px]" style={{ color: "var(--text-3)" }}>
+                      <span className="text-[11px]" style={{ color: "var(--text-3)" }}>
                         {iaOuvert ? "Fermer" : "Optionnel"}
                       </span>
                     </button>
@@ -456,7 +456,7 @@ export default function CreateSessionModal({
                               : { background: "rgba(var(--surface-rgb),0.7)", border: "1px solid rgba(var(--tint-violet-rgb),0.9)" }
                             }>
                             <Icone size={17} strokeWidth={1.8} style={{ color: actif ? "var(--accent)" : "var(--text-3)" }} />
-                            <span className="text-[10px] font-semibold"
+                            <span className="text-[11px] font-semibold"
                               style={{ color: actif ? "var(--accent)" : "var(--text-3)" }}>
                               {LIBELLE_CATEGORIE[cat]}
                             </span>
@@ -523,7 +523,7 @@ export default function CreateSessionModal({
                           {exForms.length} exercice{exForms.length > 1 ? "s" : ""}
                         </p>
                         {animes > 0 && (
-                          <span className="flex items-center gap-1 text-[10px] font-semibold" style={{ color: "var(--gold)" }}>
+                          <span className="flex items-center gap-1 text-[11px] font-semibold" style={{ color: "var(--gold)" }}>
                             <Sparkles size={10} strokeWidth={2.4} /> {animes} animé{animes > 1 ? "s" : ""}
                           </span>
                         )}
@@ -642,7 +642,7 @@ export default function CreateSessionModal({
                           <div className="flex flex-wrap gap-1.5 pb-3">
                             {ALL_MUSCLES.filter(m => !muscles.includes(m)).map(m => (
                               <motion.button key={m} whileTap={{ scale: 0.92 }} onClick={() => ajouterMuscle(m)}
-                                className="px-2.5 py-1 rounded-full text-[10.5px] cursor-pointer"
+                                className="px-2.5 py-1 rounded-full text-[11px] cursor-pointer"
                                 style={{ background: "transparent", color: "var(--text-3)", border: "1px solid rgba(var(--tint-violet-rgb),0.9)" }}>
                                 {m}
                               </motion.button>
@@ -777,7 +777,7 @@ function LigneExercice({
         </button>
 
         <button onClick={onOuvrir}
-          className="text-[10px] font-semibold px-2.5 py-1.5 rounded-lg cursor-pointer flex-shrink-0"
+          className="text-[11px] font-semibold px-2.5 py-1.5 rounded-lg cursor-pointer flex-shrink-0"
           style={{ background: "rgba(var(--accent-rgb),0.1)", color: "var(--exp-encre)" }}>
           {ouvert ? "OK" : "Régler"}
         </button>
@@ -837,7 +837,7 @@ function LigneExercice({
                 <div className="flex items-center gap-2.5 px-3 py-2 rounded-xl"
                   style={{ background: "rgba(var(--accent-rgb),0.07)", border: "1px dashed rgba(var(--accent-rgb),0.28)" }}>
                   <Clock size={11} strokeWidth={1.8} style={{ color: "var(--exp-encre)", flexShrink: 0 }} />
-                  <span className="text-[10px] font-medium flex-1" style={{ color: "var(--exp-encre)" }}>
+                  <span className="text-[11px] font-medium flex-1" style={{ color: "var(--exp-encre)" }}>
                     Récup avant l’exercice suivant
                   </span>
                   <div className="flex items-center gap-1.5">

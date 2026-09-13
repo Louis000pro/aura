@@ -276,7 +276,7 @@ export default function ConversationListPane({
           <UserPlus className="h-4.5 w-4.5" />
           {nombreDemandes > 0 && (
             <span
-              className="absolute -right-1 -top-1 flex min-w-4.5 items-center justify-center rounded-full px-1 py-0.5 text-[9px] font-bold text-white"
+              className="absolute -right-1 -top-1 flex min-w-4.5 items-center justify-center rounded-full px-1 py-0.5 text-[11px] font-bold text-white"
               style={{ background: "linear-gradient(135deg, #8B5CF6, #C13BC1)" }}
             >
               {nombreDemandes > 9 ? "9+" : nombreDemandes}
@@ -594,7 +594,7 @@ function Liste({ convs, moi, activeId, onPrefetch, onActions }: {
                 </span>
                 {c.nonLus > 0 && (
                   <span
-                    className="flex min-w-5 items-center justify-center rounded-full px-1.5 py-0.5 text-[10px] font-bold text-white"
+                    className="flex min-w-5 items-center justify-center rounded-full px-1.5 py-0.5 text-[11px] font-bold text-white"
                     style={{ background: "linear-gradient(135deg, #8B5CF6, #C13BC1)" }}
                   >
                     {c.nonLus > 99 ? "99+" : c.nonLus}

@@ -665,7 +665,7 @@ export default function MealSituationHero({
                   ) : (
                     <p className="text-[28px] font-light leading-none" style={{ color: "#E8620C" }}>{restResult.calories}</p>
                   )}
-                  <p className="text-[10px] mt-0.5" style={{ color: "var(--text-3)" }}>kcal</p>
+                  <p className="text-[11px] mt-0.5" style={{ color: "var(--text-3)" }}>kcal</p>
                 </div>
               </div>
               <div className="grid grid-cols-3 gap-2">
@@ -738,7 +738,7 @@ export default function MealSituationHero({
                         <img src={`/nutrition/portions/${p.key}.png`} alt="" aria-hidden loading="lazy" decoding="async"
                           className="w-11 h-11 object-contain" style={{ opacity: on ? 1 : 0.9 }} />
                         <span className="text-[12.5px] font-medium mt-1" style={{ color: "var(--text-1)" }}>{p.label}</span>
-                        <span className="text-[10px]" style={{ color: "var(--text-3)" }}>{p.sub}</span>
+                        <span className="text-[11px]" style={{ color: "var(--text-3)" }}>{p.sub}</span>
                       </motion.button>
                     );
                   })}
@@ -808,7 +808,7 @@ export default function MealSituationHero({
                                 <Check size={10} strokeWidth={3} style={{ color: "#fff" }} />
                               </span>
                             )}
-                            <span className="absolute inset-x-0 bottom-0 px-1 pb-1 text-[9px] font-semibold leading-tight text-center block" style={{ color: "#fff", textShadow: "0 1px 3px rgba(0,0,0,0.7)" }}>
+                            <span className="absolute inset-x-0 bottom-0 px-1 pb-1 text-[11px] font-semibold leading-tight text-center block" style={{ color: "#fff", textShadow: "0 1px 3px rgba(0,0,0,0.7)" }}>
                               {CATEGORY_LABEL[c]}
                             </span>
                           </motion.button>
@@ -977,7 +977,7 @@ export default function MealSituationHero({
                       <img src={ambianceImg(top.category)} alt="" aria-hidden loading="lazy" decoding="async"
                         className="absolute inset-0 w-full h-full object-cover" />
                       <div className="absolute inset-0" style={{ background: "var(--voile-carte)" }} />
-                      <span className="absolute top-2 left-2.5 text-[10px] font-semibold px-2 py-0.5 rounded-full"
+                      <span className="absolute top-2 left-2.5 text-[11px] font-semibold px-2 py-0.5 rounded-full"
                         style={{ background: "var(--accent)", color: "#fff" }}>Le mieux placé</span>
                       <span className="absolute left-3 bottom-2 text-[12px] font-semibold" style={{ color: "#fff", textShadow: "0 1px 3px rgba(0,0,0,0.7)" }}>
                         {CATEGORY_LABEL[top.category]}

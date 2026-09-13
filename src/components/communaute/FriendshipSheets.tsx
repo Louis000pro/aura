@@ -207,7 +207,7 @@ function NavigationAmis({
         Demandes
         {nombreDemandes > 0 && (
           <span
-            className="flex min-w-5 items-center justify-center rounded-full px-1.5 py-0.5 text-[9px] font-bold text-white"
+            className="flex min-w-5 items-center justify-center rounded-full px-1.5 py-0.5 text-[11px] font-bold text-white"
             style={{ background: "linear-gradient(135deg, #8B5CF6, #C13BC1)" }}
           >
             {nombreDemandes > 99 ? "99+" : nombreDemandes}

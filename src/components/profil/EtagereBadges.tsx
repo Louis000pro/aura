@@ -38,7 +38,7 @@ export default function EtagereBadges({ slugs, titre, progres }: {
   return (
     <div className="mb-8">
       <p
-        className="mb-3 text-[10px] font-bold uppercase tracking-[0.14em]"
+        className="mb-3 text-[11px] font-bold uppercase tracking-[0.14em]"
         style={{ color: "var(--text-3)" }}
       >
         {titre}

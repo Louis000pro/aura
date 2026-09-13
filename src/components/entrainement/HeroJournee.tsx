@@ -105,7 +105,7 @@ export default function HeroJournee() {
                 {dayTitle(extra)}
               </span>
               {hasSeance(extra) && (
-                <span className="text-[10px] font-bold flex-shrink-0"
+                <span className="text-[11px] font-bold flex-shrink-0"
                   style={{ color: extra.status === "done" ? "var(--teal-encre)" : "var(--exp-encre)" }}>
                   {extra.status === "done" ? "Faite ✓" : "Commencer"}
                 </span>
@@ -143,7 +143,7 @@ export default function HeroJournee() {
                   <p className="text-[15px] font-bold leading-tight truncate" style={{ color: "var(--text-1)" }}>
                     Quel jour&nbsp;?
                   </p>
-                  <p className="text-[10.5px] font-medium mt-1" style={{ color: "var(--text-3)" }}>
+                  <p className="text-[11px] font-medium mt-1" style={{ color: "var(--text-3)" }}>
                     {j.etape?.nom} · {j.reserveLe ? `posée ${j.reserveLe}` : "ta prochaine étape"}
                   </p>
                 </div>

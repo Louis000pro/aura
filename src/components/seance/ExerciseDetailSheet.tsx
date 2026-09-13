@@ -96,16 +96,16 @@ export default function ExerciseDetailSheet({
           </h2>
 
           <div className="flex flex-wrap gap-1.5 mt-2.5">
-            <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full"
+            <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full"
               style={{ background: "rgba(var(--tint-violet-rgb),0.7)", color: "var(--text-2)" }}>
               {materiel}
             </span>
-            <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full"
+            <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full"
               style={{ background: "rgba(var(--tint-violet-rgb),0.7)", color: "var(--text-2)" }}>
               {dosage}
             </span>
             {estAnime(exo.name) && (
-              <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full flex items-center gap-1"
+              <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full flex items-center gap-1"
                 style={{ background: "rgba(43,212,160,0.13)", color: "var(--teal-encre)" }}>
                 <Sparkles size={9} strokeWidth={2.4} /> Animé
               </span>
@@ -113,13 +113,13 @@ export default function ExerciseDetailSheet({
           </div>
 
           <section className="mt-5">
-            <p className="text-[9.5px] font-extrabold tracking-[0.16em] uppercase mb-2"
+            <p className="text-[11px] font-extrabold tracking-[0.16em] uppercase mb-2"
               style={{ color: "var(--text-3)" }}>
               Ce que ça travaille
             </p>
             <div className="flex flex-wrap gap-1.5">
               {exo.muscles.map(m => (
-                <span key={m} className="text-[10.5px] font-semibold px-2.5 py-1 rounded-full"
+                <span key={m} className="text-[11px] font-semibold px-2.5 py-1 rounded-full"
                   style={{ background: "rgba(var(--tint-violet-rgb),0.7)", color: "var(--text-2)" }}>
                   {m}
                 </span>

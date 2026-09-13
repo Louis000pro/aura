@@ -118,7 +118,7 @@ export default function RangsModal({
                         <div className="flex items-center gap-2">
                           <span className="text-[15px] font-extrabold" style={{ color: "var(--text-0)" }}>{rang.nom}</span>
                           {courant && (
-                            <span className="rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide" style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", color: "#fff" }}>
+                            <span className="rounded-full px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide" style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", color: "#fff" }}>
                               Ton rang
                             </span>
                           )}
@@ -172,7 +172,7 @@ export default function RangsModal({
                             pseudo={pseudo}
                             avatarUrl={avatarUrl}
                           />
-                          <span className="ml-auto shrink-0 text-[9.5px] font-bold uppercase tracking-[0.12em]" style={{ color: atteint ? "var(--accent)" : "var(--text-3)" }}>
+                          <span className="ml-auto shrink-0 text-[11px] font-bold uppercase tracking-[0.12em]" style={{ color: atteint ? "var(--accent)" : "var(--text-3)" }}>
                             {atteint ? "Actif" : "Aperçu"}
                           </span>
                         </div>
@@ -188,7 +188,7 @@ export default function RangsModal({
                 la vérifier sur son téléphone sans toucher au stockage. */}
             {isAdmin && (
               <div className="mt-4 border-t pt-3" style={{ borderColor: "rgba(var(--accent-rgb),0.1)" }}>
-                <p className="text-[10px] font-bold uppercase tracking-[0.14em]" style={{ color: "var(--text-3)" }}>
+                <p className="text-[11px] font-bold uppercase tracking-[0.14em]" style={{ color: "var(--text-3)" }}>
                   Admin · rejouer la célébration
                 </p>
                 <div className="mt-2 flex flex-wrap gap-1.5">

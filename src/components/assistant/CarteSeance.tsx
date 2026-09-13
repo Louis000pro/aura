@@ -177,7 +177,7 @@ export default function CarteSeance({
         </motion.button>
 
         {hint && (
-          <p className="text-[10.5px] text-center" style={{ color: "var(--text-3)" }}>{hint}</p>
+          <p className="text-[11px] text-center" style={{ color: "var(--text-3)" }}>{hint}</p>
         )}
 
         {/* 4. Les sorties secondaires : du texte, en retrait, séparé par un
@@ -251,7 +251,7 @@ export default function CarteSeance({
                   <div className="flex-1 min-w-0">
                     <p className="text-[13px] font-medium truncate" style={{ color: "var(--text-1)" }}>{ex.name}</p>
                     {ex.muscles && ex.muscles.length > 0 && (
-                      <p className="text-[10.5px] truncate" style={{ color: "var(--text-3)" }}>{ex.muscles.slice(0, 2).join(", ")}</p>
+                      <p className="text-[11px] truncate" style={{ color: "var(--text-3)" }}>{ex.muscles.slice(0, 2).join(", ")}</p>
                     )}
                   </div>
                   <span className="vy-nombre text-[11.5px] flex-shrink-0" style={{ color: "var(--exp-encre)" }}>{ex.dose}</span>

@@ -98,7 +98,7 @@ export default function ExerciseLibrarySheet({
         <div className="px-5 pt-5 pb-3 flex flex-col gap-3" style={{ borderBottom: "1px solid rgba(var(--tint-violet-rgb),0.8)" }}>
           <div className="flex items-start justify-between gap-3">
             <div>
-              <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "var(--exp-encre)" }}>
+              <p className="text-[11px] font-semibold tracking-widest uppercase" style={{ color: "var(--exp-encre)" }}>
                 {exploration ? `${EXERCISE_LIBRARY.length} exercices animés` : "Bibliothèque"}
               </p>
               <h2 className="text-lg font-light mt-0.5" style={{ color: "var(--text-1)" }}>
@@ -152,7 +152,7 @@ export default function ExerciseLibrarySheet({
             {EQUIPS.map(eq => (
               <motion.button key={eq.id} whileTap={{ scale: 0.94 }}
                 onClick={() => setEquip(p => p === eq.id ? null : eq.id)}
-                className="px-3 py-1 rounded-full text-[10px] font-semibold cursor-pointer flex-shrink-0"
+                className="px-3 py-1 rounded-full text-[11px] font-semibold cursor-pointer flex-shrink-0"
                 style={equip === eq.id
                   ? { background: "rgba(var(--accent-rgb),0.14)", color: "var(--exp-encre)", border: "1px solid rgba(var(--accent-rgb),0.4)" }
                   : { background: "transparent", color: "var(--text-3)", border: "1px solid rgba(var(--tint-violet-rgb),0.9)" }
@@ -212,17 +212,17 @@ export default function ExerciseLibrarySheet({
                       <p className="text-[12px] font-semibold leading-tight" style={{ color: "var(--text-1)" }}>
                         {e.name}
                       </p>
-                      <p className="text-[9.5px] leading-tight" style={{ color: "var(--text-3)" }}>
+                      <p className="text-[11px] leading-tight" style={{ color: "var(--text-3)" }}>
                         {e.muscles.slice(0, 2).join(" · ")}
                       </p>
-                      <p className="text-[9.5px] font-semibold" style={{ color: "var(--exp-encre)" }}>
+                      <p className="text-[11px] font-semibold" style={{ color: "var(--exp-encre)" }}>
                         {e.sets} × {libelleReps(e.mode, e.reps, e.seconds, e.unite)}
                       </p>
                     </motion.button>
 
                     {/* Pastille d'état, cliquable sauf quand l'exo est déjà pris */}
                     {pris ? (
-                      <span className="absolute top-2 right-2 text-[8.5px] font-bold px-1.5 py-0.5 rounded-full"
+                      <span className="absolute top-2 right-2 text-[11px] font-bold px-1.5 py-0.5 rounded-full"
                         style={{ background: "rgba(43,212,160,0.16)", color: "var(--teal-encre)" }}>
                         Ajouté
                       </span>
@@ -248,7 +248,7 @@ export default function ExerciseLibrarySheet({
 
                     {/* Marque « animé » : jamais promise sans sprite. */}
                     {estAnime(e.name) && (
-                      <span className="absolute top-2 left-2 flex items-center gap-0.5 text-[8.5px] font-bold pointer-events-none"
+                      <span className="absolute top-2 left-2 flex items-center gap-0.5 text-[11px] font-bold pointer-events-none"
                         style={{ color: "var(--gold)" }}>
                         <Sparkles size={9} strokeWidth={2.4} /> animé
                       </span>

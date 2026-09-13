@@ -73,7 +73,7 @@ export default function AnnouncementCard({
           </div>
           {unseen && (
             <span
-              className="text-[9px] font-bold px-2 py-0.5 rounded-full flex-shrink-0"
+              className="text-[11px] font-bold px-2 py-0.5 rounded-full flex-shrink-0"
               style={{ background: "var(--accent)", color: "#fff", boxShadow: "0 2px 8px rgba(var(--accent-rgb),0.4)" }}
             >
               NOUVEAU

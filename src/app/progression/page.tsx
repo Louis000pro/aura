@@ -215,7 +215,7 @@ function ForkCard({ kind, count, onClick }: {
           {isIA ? "Nouvelle séance" : "Mes séances"}
         </p>
         <p className="text-[16.5px] font-semibold text-white leading-tight">{isIA ? "J’improvise" : "Je choisis"}</p>
-        <p className="text-[10.5px] font-normal mt-0.5 leading-snug" style={{ color: "rgba(255,255,255,0.68)" }}>
+        <p className="text-[11px] font-normal mt-0.5 leading-snug" style={{ color: "rgba(255,255,255,0.68)" }}>
           {isIA ? "Ton temps, ton matériel" : `${count ?? 0} séances et cours`}
         </p>
       </div>
@@ -312,7 +312,7 @@ function WeekStrip({ week, dates, today, onOrganise }: {
                     </span>
                   )}
                   {nbSeances > 1 && (
-                    <span className="absolute top-1 left-1 rounded-full flex items-center justify-center text-[8px] font-extrabold"
+                    <span className="absolute top-1 left-1 rounded-full flex items-center justify-center text-[11px] font-extrabold"
                       style={{ minWidth: 14, height: 14, padding: "0 3px", background: "rgba(12,8,22,0.72)", color: "#fff" }}>
                       ×{nbSeances}
                     </span>
@@ -324,7 +324,7 @@ function WeekStrip({ week, dates, today, onOrganise }: {
                   <Moon size={13} strokeWidth={1.8} style={{ color: "var(--text-3)", opacity: 0.7 }} />
                 </div>
               )}
-              <span className="absolute inset-x-0 bottom-[3px] text-center text-[8.5px] font-extrabold tracking-wide"
+              <span className="absolute inset-x-0 bottom-[3px] text-center text-[11px] font-extrabold tracking-wide"
                 style={{
                   color: isSeance ? "rgba(255,255,255,0.92)" : "var(--text-3)",
                   textShadow: isSeance ? "0 1px 4px rgba(0,0,0,0.7)" : "none",
@@ -432,7 +432,7 @@ function ElanStrip({ data, onOpen }: { data: ElanData | null; onOpen: () => void
                   height: barH(b.min),
                   background: b.today ? "#8B5CF6" : b.done ? "rgba(139,92,246,0.55)" : "rgba(var(--text-3-rgb),0.28)",
                 }} />
-                <span className="text-[8.5px] font-bold" style={{ color: b.today ? "#8B5CF6" : "var(--text-3)" }}>{b.label}</span>
+                <span className="text-[11px] font-bold" style={{ color: b.today ? "#8B5CF6" : "var(--text-3)" }}>{b.label}</span>
               </div>
             ))}
           </div>
@@ -456,7 +456,7 @@ function ElanStrip({ data, onOpen }: { data: ElanData | null; onOpen: () => void
             {bars.map((b, i) => (
               <div key={i} className="flex flex-col items-center gap-1.5">
                 <span className="w-[9px] rounded-full" style={{ height: 8 + (i % 3) * 6, background: "rgba(var(--text-3-rgb),0.22)" }} />
-                <span className="text-[8.5px] font-bold" style={{ color: "var(--text-3)" }}>{b.label}</span>
+                <span className="text-[11px] font-bold" style={{ color: "var(--text-3)" }}>{b.label}</span>
               </div>
             ))}
           </div>
@@ -503,14 +503,14 @@ function ElanSheet({ data, onClose }: { data: ElanData; onClose: () => void }) {
             {bars.map((b, i) => (
               <div key={i} className="flex flex-col items-center justify-end gap-1.5 h-full">
                 {b.min > 0 && b.min === maxMin && (
-                  <span className="vy-nombre text-[10px]" style={{ color: "var(--exp-encre)" }}>{b.min} min</span>
+                  <span className="vy-nombre text-[11px]" style={{ color: "var(--exp-encre)" }}>{b.min} min</span>
                 )}
                 <span className="w-[12px] rounded-full" style={{
                   height: barH(b.min),
                   background: b.today && b.min > 0 ? "#8B5CF6"
                     : b.done ? "rgba(139,92,246,0.5)" : "rgba(255,255,255,0.09)",
                 }} />
-                <span className="text-[9px] font-bold" style={{ color: b.today ? "#8B5CF6" : "var(--text-3)" }}>{b.label}</span>
+                <span className="text-[11px] font-bold" style={{ color: b.today ? "#8B5CF6" : "var(--text-3)" }}>{b.label}</span>
               </div>
             ))}
           </div>
@@ -526,7 +526,7 @@ function ElanSheet({ data, onClose }: { data: ElanData; onClose: () => void }) {
             ] as const).map(([k, v, c], i, arr) => (
               <div key={k} className="flex items-baseline justify-between py-[7px]"
                 style={{ borderBottom: i < arr.length - 1 ? "1px solid rgba(255,255,255,0.06)" : "none" }}>
-                <span className="text-[10.5px] font-semibold" style={{ color: "var(--text-3)" }}>{k}</span>
+                <span className="text-[11px] font-semibold" style={{ color: "var(--text-3)" }}>{k}</span>
                 <span className="text-[13px] font-extrabold" style={{ color: c }}>{v}</span>
               </div>
             ))}
@@ -762,7 +762,7 @@ function SessionTile({ session, onStart, onManage, onPremium, canAccessPremium, 
           <span className="absolute top-2 left-2 flex items-center gap-1 px-[7px] py-[4px] rounded-full"
             style={{ background: "var(--verre-photo)", backdropFilter: "blur(6px)", border: "1px solid var(--verre-photo-bord)" }}>
             <BookOpen size={9} strokeWidth={2.4} className="flex-shrink-0 text-white" aria-hidden />
-            <span className="text-[7.5px] leading-none font-semibold text-white">
+            <span className="text-[11px] leading-none font-semibold text-white">
               {session.duration} min · lire
             </span>
           </span>
@@ -779,7 +779,7 @@ function SessionTile({ session, onStart, onManage, onPremium, canAccessPremium, 
 
         {/* Durée — badge discret */}
         {!advice && (
-          <span className="absolute top-2 right-2 px-2 py-[3px] rounded-full text-[8px] font-extrabold tracking-[0.05em] text-white"
+          <span className="absolute top-2 right-2 px-2 py-[3px] rounded-full text-[11px] font-extrabold tracking-[0.05em] text-white"
             style={{ background: "var(--verre-photo)", backdropFilter: "blur(6px)", border: "1px solid var(--verre-photo-bord)" }}>
             {session.duration} MIN
           </span>
@@ -804,7 +804,7 @@ function SessionTile({ session, onStart, onManage, onPremium, canAccessPremium, 
             }}>
             {session.title}
           </p>
-          <p className="text-[10.5px] font-semibold mt-1 leading-snug"
+          <p className="text-[11px] font-semibold mt-1 leading-snug"
             style={{
               color: "#C9B8FF",
               display: "-webkit-box", WebkitLineClamp: 1, WebkitBoxOrient: "vertical", overflow: "hidden",
@@ -915,7 +915,7 @@ function PremiumPreviewSheet({ session, premiumCount, onClose, onUpgrade }: {
         </div>
 
         <div className="px-5 pt-4 pb-5">
-          <div className="flex items-center gap-2 text-[10px] font-bold" style={{ color: "var(--text-2)" }}>
+          <div className="flex items-center gap-2 text-[11px] font-bold" style={{ color: "var(--text-2)" }}>
             <span>{session.duration} min{advice ? " de lecture" : ""}</span>
             <span aria-hidden style={{ color: "var(--text-3)" }}>·</span>
             {advice ? (
@@ -941,7 +941,7 @@ function PremiumPreviewSheet({ session, premiumCount, onClose, onUpgrade }: {
                 {advice.sections.slice(0, 3).map((section, index) => (
                   <div key={section.title} className="flex items-center gap-2.5 rounded-xl px-3 py-2.5"
                     style={{ background: "rgba(var(--accent-rgb),0.07)", border: "1px solid rgba(var(--accent-rgb),0.11)" }}>
-                    <span className="text-[9px] font-black" style={{ color: "var(--accent)" }}>0{index + 1}</span>
+                    <span className="text-[11px] font-black" style={{ color: "var(--accent)" }}>0{index + 1}</span>
                     <span className="text-[11px] font-bold" style={{ color: "var(--text-1)" }}>{section.title}</span>
                   </div>
                 ))}
@@ -957,7 +957,7 @@ function PremiumPreviewSheet({ session, premiumCount, onClose, onUpgrade }: {
                   <div key={name} className="rounded-2xl px-1.5 pt-1.5 pb-2 overflow-hidden text-center"
                     style={{ background: "rgba(var(--accent-rgb),0.07)", border: "1px solid rgba(var(--accent-rgb),0.11)" }}>
                     <ExerciseGuide name={name} compact loading="lazy" />
-                    <p className="text-[9px] font-bold leading-tight line-clamp-2 min-h-[22px]" style={{ color: "var(--text-2)" }}>
+                    <p className="text-[11px] font-bold leading-tight line-clamp-2 min-h-[22px]" style={{ color: "var(--text-2)" }}>
                       {name}
                     </p>
                   </div>
@@ -973,7 +973,7 @@ function PremiumPreviewSheet({ session, premiumCount, onClose, onUpgrade }: {
                 ? `${premiumSubject} et ${others} autre${others > 1 ? "s" : ""} sont inclus${advice ? "" : "es"} avec Premium.`
                 : `${premiumSubject} est inclus${advice ? "" : "e"} avec Premium.`}
             </p>
-            <p className="text-[10.5px] mt-1 leading-relaxed" style={{ color: "var(--text-3)" }}>
+            <p className="text-[11px] mt-1 leading-relaxed" style={{ color: "var(--text-3)" }}>
               Débloque tout le catalogue, pas seulement {advice ? "cette lecture" : "cette séance"}.
             </p>
           </div>
@@ -1022,7 +1022,7 @@ function LigneMenu({ icon: Icon, label, sub, onClick }: {
       <span className="flex-1 min-w-0">
         <span className="block text-[13px] font-semibold" style={{ color: "var(--text-1)" }}>{label}</span>
         {sub && (
-          <span className="block text-[10.5px] font-light mt-0.5 leading-snug" style={{ color: "var(--text-3)" }}>{sub}</span>
+          <span className="block text-[11px] font-light mt-0.5 leading-snug" style={{ color: "var(--text-3)" }}>{sub}</span>
         )}
       </span>
       <ChevronRight size={15} strokeWidth={2} style={{ color: "var(--text-3)" }} />
@@ -1088,7 +1088,7 @@ function ManageSheet({ session, onClose, onEdit, onDelete, onVisibilityChange, o
             className="rounded-xl flex-shrink-0" style={{ width: 46, height: 61 }} />
           <div className="min-w-0 flex-1">
             <p className="text-[15px] font-bold leading-tight truncate" style={{ color: "var(--text-1)" }}>{session.title}</p>
-            <p className="text-[10.5px] font-medium mt-1" style={{ color: "var(--text-3)" }}>
+            <p className="text-[11px] font-medium mt-1" style={{ color: "var(--text-3)" }}>
               {session.perso ? "Séance perso" : "Séance Vaiiya"} · {session.duration} min
             </p>
           </div>
@@ -1123,7 +1123,7 @@ function ManageSheet({ session, onClose, onEdit, onDelete, onVisibilityChange, o
                   </span>
                   <span className="flex-1 min-w-0">
                     <span className="block text-[12.5px] font-semibold truncate" style={{ color: "var(--text-1)" }}>{e.name}</span>
-                    <span className="block text-[10.5px] font-medium mt-0.5" style={{ color: "var(--text-3)" }}>
+                    <span className="block text-[11px] font-medium mt-0.5" style={{ color: "var(--text-3)" }}>
                       {e.sets} × {e.reps}
                     </span>
                   </span>
@@ -1189,7 +1189,7 @@ function ManageSheet({ session, onClose, onEdit, onDelete, onVisibilityChange, o
                     : { background: "rgba(var(--tint-violet-rgb),0.4)", border: "1.5px solid transparent" }}
                   aria-pressed={active}>
                   <CfgIcon size={14} strokeWidth={2} style={{ color: active ? "var(--accent)" : "var(--text-3)" }} />
-                  <span className="text-[9.5px] font-bold" style={{ color: active ? "var(--accent)" : "var(--text-3)" }}>{cfg.label}</span>
+                  <span className="text-[11px] font-bold" style={{ color: active ? "var(--accent)" : "var(--text-3)" }}>{cfg.label}</span>
                 </motion.button>
               );
             })}
@@ -1435,7 +1435,7 @@ function PremiumSessionRow({ count, children, title = "Continue avec Premium", u
           <p className="text-[14px] font-extrabold leading-tight" style={{ color: "var(--text-0)" }}>
             {title}
           </p>
-          <p className="text-[10.5px] leading-relaxed mt-1" style={{ color: "var(--text-3)" }}>
+          <p className="text-[11px] leading-relaxed mt-1" style={{ color: "var(--text-3)" }}>
             {description}
           </p>
         </div>
@@ -1582,7 +1582,7 @@ function CatTile({ cat, count, freeCount, premiumCount, large, onOpen }: {
           <p className="text-[11.5px] font-light mt-1 max-w-[30ch] leading-snug" style={{ color: "rgba(255,255,255,0.78)" }}>
             {cat.tag}
           </p>
-          <p className="text-[9px] font-bold mt-2" style={{ color: "rgba(255,255,255,0.62)" }}>{sub}</p>
+          <p className="text-[11px] font-bold mt-2" style={{ color: "rgba(255,255,255,0.62)" }}>{sub}</p>
         </div>
       ) : (
         <div className="absolute inset-x-0 bottom-0 px-2.5 pb-3.5 pt-14 flex flex-col items-center text-center"
@@ -1591,7 +1591,7 @@ function CatTile({ cat, count, freeCount, premiumCount, large, onOpen }: {
             style={{ textWrap: "balance", textShadow: "0 2px 10px rgba(0,0,0,0.5)" }}>
             {cat.name}
           </p>
-          <p className="text-[8.5px] font-bold mt-1" style={{ color: "rgba(255,255,255,0.68)" }}>{sub}</p>
+          <p className="text-[11px] font-bold mt-1" style={{ color: "rgba(255,255,255,0.68)" }}>{sub}</p>
         </div>
       )}
     </motion.button>
@@ -1672,7 +1672,7 @@ function ChooseSheet({ sessions, loading, canAccessPremium, maxSeances, catIniti
         <Plus size={17} strokeWidth={2.2} style={{ color: "var(--accent)" }} />
       </span>
       <span className="text-[11.5px] font-bold text-center" style={{ color: "var(--text-2)" }}>Composer ma séance</span>
-      <span className="text-[9px] font-medium text-center leading-snug" style={{ color: "var(--text-3)" }}>
+      <span className="text-[11px] font-medium text-center leading-snug" style={{ color: "var(--text-3)" }}>
         102 exercices animés
       </span>
     </motion.button>
@@ -1985,7 +1985,7 @@ function ImproviseSheet({ defaultPlace, defaultHalteres, difficulty, onClose, on
               <span className="text-[13px] font-extrabold block leading-none" style={{ color: time === t ? "#fff" : "var(--text-3)" }}>
                 {t === 60 ? "60+" : t}
               </span>
-              <span className="text-[8.5px] font-semibold" style={{ color: time === t ? "rgba(255,255,255,0.75)" : "var(--text-3)", opacity: 0.85 }}>min</span>
+              <span className="text-[11px] font-semibold" style={{ color: time === t ? "rgba(255,255,255,0.75)" : "var(--text-3)", opacity: 0.85 }}>min</span>
             </motion.button>
           ))}
         </div>
@@ -2207,7 +2207,7 @@ function SemaineSheet({ week, today, fetchWeekAt, onClose, onStartDay, onAsk, on
             style={{ background: "rgba(var(--accent-rgb),0.1)", opacity: offset <= 0 ? 0.3 : 1, cursor: offset <= 0 ? "default" : "pointer" }}>
             <ChevronLeft size={15} strokeWidth={2.4} style={{ color: "var(--accent)" }} />
           </button>
-          <span className="text-[10.5px] font-bold w-[92px] text-center" style={{ color: "var(--text-2)" }}>{weekTag}</span>
+          <span className="text-[11px] font-bold w-[92px] text-center" style={{ color: "var(--text-2)" }}>{weekTag}</span>
           <button onClick={() => go(1)} disabled={offset >= MAX_WEEK_AHEAD} aria-label="Semaine suivante"
             className="w-8 h-8 rounded-xl flex items-center justify-center"
             style={{ background: "rgba(var(--accent-rgb),0.1)", opacity: offset >= MAX_WEEK_AHEAD ? 0.3 : 1, cursor: offset >= MAX_WEEK_AHEAD ? "default" : "pointer" }}>
@@ -2229,13 +2229,13 @@ function SemaineSheet({ week, today, fetchWeekAt, onClose, onStartDay, onAsk, on
       {/* Verdict d'équilibre + charge */}
       {verdict && (
         <div className="px-5 pb-3 flex items-center gap-1.5 flex-wrap flex-shrink-0">
-          <span className="text-[10px] font-extrabold px-2.5 py-1 rounded-full"
+          <span className="text-[11px] font-extrabold px-2.5 py-1 rounded-full"
             style={{ background: "rgba(43,212,160,0.12)", color: "var(--teal-encre)" }}>{verdict}</span>
           {[...buckets.entries()].sort((a, b) => b[1] - a[1]).map(([b, n]) => (
-            <span key={b} className="text-[10px] font-bold px-2 py-1 rounded-full"
+            <span key={b} className="text-[11px] font-bold px-2 py-1 rounded-full"
               style={{ background: "rgba(255,255,255,0.055)", color: "var(--text-2)" }}>{n}× {b}</span>
           ))}
-          <span className="text-[10px] font-bold px-2 py-1 rounded-full"
+          <span className="text-[11px] font-bold px-2 py-1 rounded-full"
             style={{ background: "rgba(239,159,39,0.12)", color: "#EF9F27" }}>{fmtDur(totalMin)} prévues</span>
         </div>
       )}
@@ -2243,7 +2243,7 @@ function SemaineSheet({ week, today, fetchWeekAt, onClose, onStartDay, onAsk, on
       {/* Liste des 7 jours */}
       <div className="overflow-y-auto px-5 flex-1" style={{ scrollbarWidth: "none" }}>
         {days?.some((d) => hasSeance(d) && d.status !== "done") && (
-          <p className="text-[9.5px] font-semibold pb-1" style={{ color: "var(--text-3)", opacity: 0.8 }}>
+          <p className="text-[11px] font-semibold pb-1" style={{ color: "var(--text-3)", opacity: 0.8 }}>
             Maintiens <GripVertical size={9} strokeWidth={2.4} style={{ display: "inline", verticalAlign: "-1px" }} /> pour déplacer une séance.
           </p>
         )}
@@ -2327,7 +2327,7 @@ function DayRow({ date, jour, idx, abbr, isToday, openKey, dropHover, dimmed, re
     <div ref={registerRef} className="py-1" style={{ opacity: dimmed ? 0.45 : 1, transition: "opacity 0.15s" }}>
       <div className="flex items-start gap-2.5">
         <div className="w-8 flex-shrink-0 text-center pt-1.5">
-          <span className="block text-[9px] font-extrabold tracking-wide" style={{ color: isToday ? "#A78BFA" : "var(--text-3)" }}>{abbr}</span>
+          <span className="block text-[11px] font-extrabold tracking-wide" style={{ color: isToday ? "#A78BFA" : "var(--text-3)" }}>{abbr}</span>
           <span className="block text-[15px] font-light" style={{ color: isToday ? "#A78BFA" : "var(--text-2)" }}>{num}</span>
         </div>
         <div className="flex-1 min-w-0 flex flex-col gap-1">
@@ -2417,7 +2417,7 @@ function CarteJournee({ intention, idx, isToday, dropHover, open, onToggle, onSt
           )}
           <div className="min-w-0 flex-1">
             <p className="text-[12.5px] font-bold truncate" style={{ color: "var(--text-1)" }}>{titre}</p>
-            <p className="text-[10px] font-semibold mt-0.5 truncate" style={{ color: dropHover ? "#C9B8FF" : "var(--text-3)" }}>
+            <p className="text-[11px] font-semibold mt-0.5 truncate" style={{ color: dropHover ? "#C9B8FF" : "var(--text-3)" }}>
               {dropHover ? "Dépose la séance ici ✦"
                 : isSeance ? (d!.type === "HIIT" ? 30 : 45) + " min" + (lieuLabel(d!.location) ? " · " + lieuLabel(d!.location) : "")
                 : d ? "Ton corps construit" : "Libre"}
@@ -2428,7 +2428,7 @@ function CarteJournee({ intention, idx, isToday, dropHover, open, onToggle, onSt
               <Check size={10} strokeWidth={3.2} style={{ color: "var(--teal-encre)" }} />
             </span>
           ) : isToday ? (
-            <span className="flex-shrink-0 text-[9px] font-extrabold tracking-wide" style={{ backgroundImage: "linear-gradient(135deg,var(--accent),var(--gold))", WebkitBackgroundClip: "text", backgroundClip: "text", WebkitTextFillColor: "transparent", color: "transparent" }}>AUJOURD&apos;HUI</span>
+            <span className="flex-shrink-0 text-[11px] font-extrabold tracking-wide" style={{ backgroundImage: "linear-gradient(135deg,var(--accent),var(--gold))", WebkitBackgroundClip: "text", backgroundClip: "text", WebkitTextFillColor: "transparent", color: "transparent" }}>AUJOURD&apos;HUI</span>
           ) : (
             <ChevronRight size={14} strokeWidth={2.4} className="flex-shrink-0"
               style={{ color: "var(--text-3)", transform: open ? "rotate(90deg)" : "none", transition: "transform 0.18s" }} />

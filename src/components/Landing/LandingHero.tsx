@@ -201,7 +201,7 @@ export default function LandingHero() {
               <div className="absolute inset-x-0 bottom-0 h-2/3" style={{ background: "linear-gradient(to top, rgba(10,6,20,0.85), transparent)" }} />
               <div className="absolute inset-x-0 bottom-0 p-2.5">
                 <p className="text-[11.5px] font-semibold text-white leading-tight">{c.label}</p>
-                <p className="text-[10px] font-light" style={{ color: "rgba(255,255,255,0.78)" }}>{c.meta}</p>
+                <p className="text-[11px] font-light" style={{ color: "rgba(255,255,255,0.78)" }}>{c.meta}</p>
               </div>
             </div>
           ))}

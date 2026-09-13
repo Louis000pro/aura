@@ -635,7 +635,7 @@ export default function PublicProfilePage() {
               {gagnee && <div className="absolute top-2.5 right-3 text-[13px] font-black" style={{ color: "rgba(255,255,255,0.9)" }}>&#10022;</div>}
               <div className="absolute left-3 right-3 bottom-3" style={{ color: "#fff" }}>
                 <p className="text-[14px] font-black leading-tight">{serie.nom}</p>
-                <p className="text-[10.5px] font-semibold mt-0.5" style={{ opacity: 0.75 }}>
+                <p className="text-[11px] font-semibold mt-0.5" style={{ opacity: 0.75 }}>
                   {gagnee ? "Dévoilée · à deux" : serie.promesse}
                 </p>
               </div>

@@ -76,7 +76,7 @@ export default function AdviceReaderSheet({
           aria-label="Fermer le cours"
         >
           <X size={16} strokeWidth={2.2} />
-          <span className="text-[10px] font-extrabold">Fermer</span>
+          <span className="text-[11px] font-extrabold">Fermer</span>
         </motion.button>
 
         <div
@@ -102,13 +102,13 @@ export default function AdviceReaderSheet({
             />
             <div className="relative z-10 px-6 pb-6 pt-[calc(env(safe-area-inset-top)+88px)] text-white">
               <div className="flex items-center gap-2 mb-3">
-                <span className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-full text-[9px] font-black uppercase tracking-[0.14em]"
+                <span className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-full text-[11px] font-black uppercase tracking-[0.14em]"
                   style={{ background: "var(--verre-photo)", border: "1px solid var(--verre-photo-bord)", backdropFilter: "blur(6px)" }}>
                   <BookOpen size={11} strokeWidth={2.2} aria-hidden />
                   {article.theme}
                 </span>
                 {article.access === "premium" && (
-                  <span className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-full text-[9px] font-black uppercase tracking-[0.14em]"
+                  <span className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-full text-[11px] font-black uppercase tracking-[0.14em]"
                     style={{ background: "linear-gradient(120deg,#FFD34E,#F5B120)", color: "#3A2402" }}>
                     Premium
                   </span>
@@ -122,7 +122,7 @@ export default function AdviceReaderSheet({
               <p className="mt-3 text-[13px] leading-relaxed font-medium text-white/78 max-w-[410px]">
                 {article.subtitle}
               </p>
-              <div className="mt-4 flex items-center gap-2 text-[10px] font-bold text-white/68">
+              <div className="mt-4 flex items-center gap-2 text-[11px] font-bold text-white/68">
                 <Clock size={12} strokeWidth={2.2} aria-hidden />
                 <span>{article.readingMinutes} min de lecture</span>
                 <span aria-hidden>·</span>
@@ -140,7 +140,7 @@ export default function AdviceReaderSheet({
               {article.sections.map((section, index) => (
                 <section key={section.title}>
                   <div className="flex items-baseline gap-3 mb-3">
-                    <span className="text-[10px] font-black tabular-nums" style={{ color: "var(--accent)" }}>
+                    <span className="text-[11px] font-black tabular-nums" style={{ color: "var(--accent)" }}>
                       {String(index + 1).padStart(2, "0")}
                     </span>
                     <h2 className="text-[20px] font-black leading-tight tracking-[-0.02em]" style={{ color: "var(--text-1)", textWrap: "balance" }}>
@@ -170,7 +170,7 @@ export default function AdviceReaderSheet({
 
             <section className="mt-9 rounded-[22px] p-5"
               style={{ background: "rgba(var(--accent-rgb),0.07)", border: "1px solid rgba(var(--accent-rgb),0.16)" }}>
-              <p className="text-[9.5px] font-black uppercase tracking-[0.16em]" style={{ color: "var(--accent)" }}>
+              <p className="text-[11px] font-black uppercase tracking-[0.16em]" style={{ color: "var(--accent)" }}>
                 Exemple concret
               </p>
               <p className="text-[14.5px] font-semibold leading-[1.72] mt-2" style={{ color: "var(--text-1)" }}>
@@ -180,7 +180,7 @@ export default function AdviceReaderSheet({
 
             <section className="mt-9 rounded-[22px] p-5"
               style={{ background: "rgba(43,212,160,0.08)", border: "1px solid rgba(43,212,160,0.18)" }}>
-              <p className="text-[9.5px] font-black uppercase tracking-[0.16em]" style={{ color: "var(--teal-encre)" }}>
+              <p className="text-[11px] font-black uppercase tracking-[0.16em]" style={{ color: "var(--teal-encre)" }}>
                 À retenir
               </p>
               <p className="text-[17px] font-black leading-snug mt-2" style={{ color: "var(--text-1)", textWrap: "balance" }}>
@@ -190,7 +190,7 @@ export default function AdviceReaderSheet({
 
             <section className="mt-3 rounded-[22px] p-5"
               style={{ background: "rgba(var(--accent-rgb),0.09)", border: "1px solid rgba(var(--accent-rgb),0.18)" }}>
-              <p className="text-[9.5px] font-black uppercase tracking-[0.16em]" style={{ color: "var(--accent)" }}>
+              <p className="text-[11px] font-black uppercase tracking-[0.16em]" style={{ color: "var(--accent)" }}>
                 Essaie ça
               </p>
               <p className="text-[14.5px] font-semibold leading-relaxed mt-2" style={{ color: "var(--text-1)" }}>
@@ -199,7 +199,7 @@ export default function AdviceReaderSheet({
             </section>
 
             <section className="mt-9">
-              <p className="text-[9.5px] font-black uppercase tracking-[0.16em] mb-2.5" style={{ color: "var(--text-3)" }}>
+              <p className="text-[11px] font-black uppercase tracking-[0.16em] mb-2.5" style={{ color: "var(--text-3)" }}>
                 Repères scientifiques
               </p>
               <div className="space-y-1">
@@ -217,7 +217,7 @@ export default function AdviceReaderSheet({
                   </a>
                 ))}
               </div>
-              <p className="mt-3 text-[10.5px] leading-relaxed" style={{ color: "var(--text-3)", opacity: 0.82 }}>
+              <p className="mt-3 text-[11px] leading-relaxed" style={{ color: "var(--text-3)", opacity: 0.82 }}>
                 Ces repères sont généraux. Une douleur, une maladie, une grossesse ou un traitement peuvent demander un avis personnalisé.
               </p>
             </section>

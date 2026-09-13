@@ -67,10 +67,10 @@ export default function RecipesByTheme({
     <div className="mb-5">
       <div className="flex items-center gap-1.5 mb-2">
         <BookOpen size={11} strokeWidth={2} style={{ color: "var(--text-3)" }} />
-        <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "var(--text-3)" }}>
+        <p className="text-[11px] font-semibold tracking-widest uppercase" style={{ color: "var(--text-3)" }}>
           Recettes par thème
         </p>
-        <span className="text-[9px] font-normal tracking-normal" style={{ color: "#C4B5FD", textTransform: "none" }}>
+        <span className="text-[11px] font-normal tracking-normal" style={{ color: "#C4B5FD", textTransform: "none" }}>
           · écrites par l&apos;IA
         </span>
       </div>

@@ -1361,7 +1361,7 @@ export default function ProfilPage() {
                         </div>
                       )}
                     </div>
-                    <p className="text-[10px]" style={{ color: "var(--text-3)" }}>
+                    <p className="text-[11px]" style={{ color: "var(--text-3)" }}>
                       {new Date(selectedPost.created_at).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}
                     </p>
                   </div>
@@ -1463,7 +1463,7 @@ export default function ProfilPage() {
                           <div className="w-full py-3 rounded-2xl flex flex-col items-center justify-center gap-1 text-xs"
                             style={{ background: "rgba(var(--tint-violet-rgb),0.5)", border: "1px solid rgba(var(--accent-rgb),0.15)", color: "var(--text-3)" }}>
                             <span>Séance perso, exercices non embarqués</span>
-                            <span className="text-[10px]" style={{ color: "#C4B5FD" }}>Repartage via l&apos;écran de fin pour l&apos;activer</span>
+                            <span className="text-[11px]" style={{ color: "#C4B5FD" }}>Repartage via l&apos;écran de fin pour l&apos;activer</span>
                           </div>
                         ) : (
                           <motion.button

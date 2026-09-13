@@ -563,7 +563,7 @@ export default function FilPage() {
               <div key={m.id}>
                 {nouveauJour && (
                   <p
-                    className="mx-auto my-3 w-fit rounded-full px-3 py-1 text-[10.5px] font-bold tracking-wide"
+                    className="mx-auto my-3 w-fit rounded-full px-3 py-1 text-[11px] font-bold tracking-wide"
                     style={{ background: surAffiche ? "rgba(255,255,255,.09)" : "rgba(var(--text-3-rgb), .12)", color: c.t2 }}
                   >
                     {libelleJour(m.createdAt)}
@@ -589,7 +589,7 @@ export default function FilPage() {
         </div>
 
         {vu && (
-          <p className="mr-1.5 mt-0.5 text-right text-[10px]" style={{ color: c.t3 }}>Vu</p>
+          <p className="mr-1.5 mt-0.5 text-right text-[11px]" style={{ color: c.t3 }}>Vu</p>
         )}
 
         {ecrivent.length > 0 && (
@@ -610,7 +610,7 @@ export default function FilPage() {
           style={{ background: c.carte, borderLeft: "2.5px solid #D7A62A" }}
         >
           <span className="min-w-0 flex-1">
-            <b className="block text-[10.5px] font-bold" style={{ color: "#D7A62A" }}>
+            <b className="block text-[11px] font-bold" style={{ color: "#D7A62A" }}>
               {repondA.userId === moi ? "Toi" : conv.membres.find((p) => p.id === repondA.userId)?.pseudo ?? "…"}
             </b>
             <span className="block truncate text-[12px]" style={{ color: c.t2 }}>
@@ -731,7 +731,7 @@ function Bulle({ message: m, moi, conv, couleur: c, surAffiche, cite, onMenu }: 
   return (
     <div className={`flex flex-col ${aMoi ? "items-end" : "items-start"}`}>
       {conv.type === "groupe" && !aMoi && (
-        <span className="mb-0.5 ml-3 mt-1.5 text-[10.5px]" style={{ color: c.t3 }}>
+        <span className="mb-0.5 ml-3 mt-1.5 text-[11px]" style={{ color: c.t3 }}>
           {auteur?.pseudo ?? "…"}
         </span>
       )}
@@ -764,7 +764,7 @@ function Bulle({ message: m, moi, conv, couleur: c, surAffiche, cite, onMenu }: 
             className="mb-1.5 block border-l-[2.5px] pl-2 opacity-85"
             style={{ borderColor: "#D7A62A" }}
           >
-            <b className="block text-[10px] font-bold" style={{ color: aMoi ? "#F5D98A" : "#D7A62A" }}>
+            <b className="block text-[11px] font-bold" style={{ color: aMoi ? "#F5D98A" : "#D7A62A" }}>
               {cite.userId === moi ? "Toi" : conv.membres.find((p) => p.id === cite.userId)?.pseudo ?? "…"}
             </b>
             <span className="block truncate text-[11.5px]">
@@ -796,7 +796,7 @@ function Bulle({ message: m, moi, conv, couleur: c, surAffiche, cite, onMenu }: 
           {m.reactions.map((r) => (
             <span
               key={r.emoji}
-              className="rounded-xl px-1.5 py-[1px] text-[10.5px]"
+              className="rounded-xl px-1.5 py-[1px] text-[11px]"
               style={{ background: c.carte, border: `1px solid ${c.trait}`, color: c.t1 }}
             >
               {r.emoji}{r.userIds.length > 1 ? ` ${r.userIds.length}` : ""}
@@ -805,7 +805,7 @@ function Bulle({ message: m, moi, conv, couleur: c, surAffiche, cite, onMenu }: 
         </div>
       )}
 
-      <span className="mx-1 mt-[3px] text-[9.5px] tabular-nums" style={{ color: c.t3 }}>
+      <span className="mx-1 mt-[3px] text-[11px] tabular-nums" style={{ color: c.t3 }}>
         {heureExacte(m.createdAt)}
       </span>
     </div>
@@ -864,7 +864,7 @@ function EnTrainDEcrire({ noms, couleur: c, surAffiche }: {
           />
         ))}
       </span>
-      <span className="text-[10.5px]" style={{ color: c.t3 }}>
+      <span className="text-[11px]" style={{ color: c.t3 }}>
         {noms.length === 1 ? `${noms[0]} écrit…` : "plusieurs personnes écrivent…"}
       </span>
     </div>

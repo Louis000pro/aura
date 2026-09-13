@@ -178,11 +178,11 @@ export default function RecipeSheet({
               <div key={r.l} className="flex flex-col items-center justify-center rounded-full flex-shrink-0"
                 style={{ width: 66, height: 66, border: `2.5px solid ${r.c}` }}>
                 <span className="text-[15px] font-semibold" style={{ color: "var(--text-1)" }}>{r.v}</span>
-                <span className="text-[9px]" style={{ color: "var(--text-3)" }}>{r.l}</span>
+                <span className="text-[11px]" style={{ color: "var(--text-3)" }}>{r.l}</span>
               </div>
             ))}
           </div>
-          <p className="text-[10px] text-center mt-1.5" style={{ color: "var(--text-3)" }}>par portion</p>
+          <p className="text-[11px] text-center mt-1.5" style={{ color: "var(--text-3)" }}>par portion</p>
 
           {/* Sélecteur de portions */}
           <div className="mx-5 mt-4 flex items-center justify-between px-4 py-3 rounded-2xl" style={{ background: "rgba(var(--tint-violet-rgb),0.5)" }}>

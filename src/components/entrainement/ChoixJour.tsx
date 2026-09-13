@@ -93,7 +93,7 @@ export default function ChoixJour({ onChoisir }: { onChoisir: (date: string) => 
               style={{ color: prise ? "var(--text-2)" : "var(--text-3)" }}>
               {parJour === null ? "" : tete ? dayTitle(tete) + (faite ? " ✓" : "") : "Rien de prévu"}
             </span>
-            <span className="text-[10px] font-bold flex-shrink-0"
+            <span className="text-[11px] font-bold flex-shrink-0"
               style={{ color: prise ? "var(--exp-encre)" : "var(--accent)" }}>
               {prise ? "Ajouter" : date === today ? "Aujourd’hui" : "Choisir"}
             </span>

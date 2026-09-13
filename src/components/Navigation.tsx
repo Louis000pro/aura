@@ -168,15 +168,19 @@ export default function Navigation() {
                 style={{ color: isActive ? "var(--gold)" : "var(--nav-fg-inactive)", transition: "color 0.2s ease" }} />
               {badge && (
                 <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }}
-                  className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-bold"
+                  className="absolute -top-1.5 -right-1.5 w-[18px] h-[18px] rounded-full flex items-center justify-center text-[11px] font-bold"
                   style={{ background: "var(--accent)", color: "#fff" }}>
                   {badge > 9 ? "9+" : badge}
                 </motion.span>
               )}
             </div>
-            {/* Libellé : uniquement l'onglet actif (option B). Hauteur réservée → icônes alignées. */}
-            <span className="text-[9px] font-bold leading-none truncate max-w-full"
-              style={{ height: 10, color: "var(--gold)", opacity: isActive ? 1 : 0, transition: "opacity 0.2s ease" }}>
+            {/* Libellé : uniquement l'onglet actif (option B). Hauteur réservée → icônes alignées.
+                ⚠️ CETTE HAUTEUR SUIT LA TAILLE DU TEXTE, elle ne se règle pas au jugé : avec
+                `leading-none`, un libellé de 11 px occupe 11 px, et `truncate` pose
+                `overflow: hidden`. Réservée à 10 px comme elle l'était quand le texte faisait
+                9 px, elle rognerait le bas des lettres. 13 px laisse la marge des jambages. */}
+            <span className="text-[11px] font-bold leading-none truncate max-w-full"
+              style={{ height: 13, color: "var(--gold)", opacity: isActive ? 1 : 0, transition: "opacity 0.2s ease" }}>
               {label}
             </span>
           </motion.div>
@@ -260,7 +264,7 @@ export default function Navigation() {
             {badge && !isActive && (
               <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }}
                 transition={{ type: "spring", bounce: 0.6 }}
-                className="absolute -top-1.5 -right-1.5 w-3.5 h-3.5 rounded-full flex items-center justify-center text-[7px] font-bold"
+                className="absolute -top-1.5 -right-1.5 w-[18px] h-[18px] rounded-full flex items-center justify-center text-[11px] font-bold"
                 style={{ background: "var(--accent)", color: "#fff" }}>
                 {badge > 9 ? "9+" : badge}
               </motion.span>

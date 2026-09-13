@@ -75,7 +75,7 @@ export default function OrderRecapSheet({
             <ChevronLeft size={18} strokeWidth={2} style={{ color: "#fff" }} />
           </button>
           <div className="absolute inset-x-0 bottom-0 p-3.5">
-            <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "rgba(255,255,255,0.8)" }}>{originLabel}</p>
+            <p className="text-[11px] font-semibold tracking-widest uppercase" style={{ color: "rgba(255,255,255,0.8)" }}>{originLabel}</p>
             <div className="flex items-center gap-1.5 mt-0.5">
               <Flame size={14} strokeWidth={2} style={{ color: "#fff" }} />
               <p className="text-[15px] font-medium leading-tight" style={{ color: "#fff", textShadow: "0 1px 4px rgba(0,0,0,0.4)" }}>
@@ -98,7 +98,7 @@ export default function OrderRecapSheet({
               ) : (
                 <p className="text-[28px] font-light leading-none" style={{ color: "var(--text-1)" }}>{kcal}</p>
               )}
-              <p className="text-[10px] mt-0.5" style={{ color: "var(--text-3)" }}>kcal</p>
+              <p className="text-[11px] mt-0.5" style={{ color: "var(--text-3)" }}>kcal</p>
             </div>
           </div>
 
@@ -115,7 +115,7 @@ export default function OrderRecapSheet({
                 ) : (
                   <span className="text-[15px] font-semibold" style={{ color: m.c }}>{m.v}g</span>
                 )}
-                <span className="text-[10px] mt-0.5" style={{ color: "var(--text-3)" }}>{m.label}</span>
+                <span className="text-[11px] mt-0.5" style={{ color: "var(--text-3)" }}>{m.label}</span>
               </div>
             ))}
           </div>

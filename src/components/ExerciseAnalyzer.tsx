@@ -413,7 +413,7 @@ export default function ExerciseAnalyzer() {
 
       {/* En-tête */}
       <div>
-        <p className="text-[10px] font-semibold tracking-widest uppercase mb-0.5" style={{ color: "var(--text-3)" }}>
+        <p className="text-[11px] font-semibold tracking-widest uppercase mb-0.5" style={{ color: "var(--text-3)" }}>
           Intelligence Mouvement
         </p>
         <h2 className="text-lg font-light" style={{ color: "var(--text-1)" }}>Analyse en temps réel</h2>
@@ -439,7 +439,7 @@ export default function ExerciseAnalyzer() {
         style={{ background: "rgba(var(--tint-violet-rgb),0.45)", border: "1px solid rgba(var(--violet-mid-rgb),0.28)" }}>
         <p className="text-sm font-semibold leading-tight" style={{ color: "var(--text-1)" }}>{ex.name}</p>
         <p className="text-[11px] mt-1 font-light leading-snug" style={{ color: "var(--text-2)" }}>{ex.tip}</p>
-        <p className="text-[10px] mt-1.5 font-medium" style={{ color: "var(--accent)" }}>{ex.muscles}</p>
+        <p className="text-[11px] mt-1.5 font-medium" style={{ color: "var(--accent)" }}>{ex.muscles}</p>
       </div>
 
       {/* Zone caméra */}
@@ -495,14 +495,14 @@ export default function ExerciseAnalyzer() {
             style={{ background: "rgba(0,0,0,0.5)", backdropFilter: "blur(8px)" }}>
             <motion.div className="w-1.5 h-1.5 rounded-full" style={{ background: "#F87171" }}
               animate={{ opacity: [1, 0.25, 1] }} transition={{ duration: 1, repeat: Infinity }} />
-            <span className="text-[10px] font-bold text-white tracking-widest">LIVE</span>
+            <span className="text-[11px] font-bold text-white tracking-widest">LIVE</span>
           </div>
         )}
 
         {/* Indicateur phase */}
         {running && selected !== "plank" && (
           <motion.div key={phase} initial={{ opacity: 0, scale: 0.85 }} animate={{ opacity: 1, scale: 1 }}
-            className="absolute top-3 right-3 px-2.5 py-1 rounded-full text-[10px] font-extrabold tracking-widest"
+            className="absolute top-3 right-3 px-2.5 py-1 rounded-full text-[11px] font-extrabold tracking-widest"
             style={{
               background: phase === "down" ? "rgba(99,102,241,0.82)" : "rgba(43,212,160,0.82)",
               color: "#fff", backdropFilter: "blur(6px)",
@@ -523,7 +523,7 @@ export default function ExerciseAnalyzer() {
             style={{ background: "rgba(var(--surface-rgb),0.9)", border: "1px solid rgba(var(--violet-mid-rgb),0.2)", boxShadow: "0 2px 8px rgba(var(--accent-rgb),0.06)" }}>
             <div className="flex items-center gap-1">
               <Icon size={11} style={{ color }} />
-              <p className="text-[7px] font-semibold tracking-widest uppercase leading-none" style={{ color: "var(--text-3)" }}>{label}</p>
+              <p className="text-[11px] font-semibold tracking-widest uppercase leading-none" style={{ color: "var(--text-3)" }}>{label}</p>
             </div>
             <p className="text-lg font-bold leading-none truncate" style={{ color }}>{value}</p>
           </div>

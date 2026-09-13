@@ -42,7 +42,7 @@ export default function MouvementsRow({ onOuvrir }: {
         <h3 id="titre-mouvements" className="text-[15px] font-semibold" style={{ color: "var(--text-1)" }}>
           Les mouvements
         </h3>
-        <span className="text-[9px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 flex-shrink-0"
+        <span className="text-[11px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 flex-shrink-0"
           style={{ background: "linear-gradient(135deg,var(--accent),var(--gold))", color: "#fff" }}>
           <Sparkles size={8} strokeWidth={2.6} />
           {EXERCISE_LIBRARY.length} animés
@@ -73,7 +73,7 @@ export default function MouvementsRow({ onOuvrir }: {
               }}>
               <ExerciseThumb name={e.name} size={70} delay={i * 110} />
             </span>
-            <span className="text-[9.5px] font-semibold leading-tight text-center"
+            <span className="text-[11px] font-semibold leading-tight text-center"
               style={{ color: "var(--text-2)" }}>
               {e.name}
             </span>
@@ -94,7 +94,7 @@ export default function MouvementsRow({ onOuvrir }: {
             }}>
             <ChevronRight size={18} strokeWidth={2} style={{ color: "var(--exp-encre)" }} />
           </span>
-          <span className="text-[9.5px] font-semibold leading-tight text-center"
+          <span className="text-[11px] font-semibold leading-tight text-center"
             style={{ color: "var(--exp-encre)" }}>
             Explorer
           </span>

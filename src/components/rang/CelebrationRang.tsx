@@ -99,7 +99,7 @@ export default function CelebrationRang() {
             }}
           >
             <span
-              className="text-[10.5px] font-bold uppercase tracking-[0.22em]"
+              className="text-[11px] font-bold uppercase tracking-[0.22em]"
               style={{ color: "var(--gold)" }}
             >
               Nouveau rang
@@ -176,7 +176,7 @@ export default function CelebrationRang() {
                     avatarUrl={user?.avatar}
                   />
                   <span
-                    className="ml-auto shrink-0 text-[9.5px] font-bold uppercase tracking-[0.12em]"
+                    className="ml-auto shrink-0 text-[11px] font-bold uppercase tracking-[0.12em]"
                     style={{ color: "var(--accent)" }}
                   >
                     Actif

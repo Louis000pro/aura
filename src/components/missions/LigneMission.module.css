@@ -111,7 +111,7 @@
   border-radius: 6px;
   color: #3a2402;
   background: linear-gradient(120deg, #ffd34e, #f5b120);
-  font-size: 8.5px;
+  font-size: 11px;
   font-style: normal;
   font-weight: 900;
   letter-spacing: 0.06em;
@@ -208,7 +208,7 @@
    compte, lui, dit à quelle distance on est. */
 .gain > small {
   color: var(--text-3);
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
@@ -231,7 +231,7 @@
 }
 
 .sceau em {
-  font-size: 9px;
+  font-size: 11px;
   font-style: normal;
   font-weight: 800;
   letter-spacing: 0.06em;

@@ -139,7 +139,7 @@ export default function TasteProfileModal({ onClose, onSaved }: { onClose: () =>
               <Field label="Tes bases préférées">
                 {BASE_GROUPS.map((g) => (
                   <div key={g.group} className="mb-2">
-                    <p className="text-[9px] font-semibold tracking-widest uppercase mb-1" style={{ color: "var(--text-3)" }}>{g.group}</p>
+                    <p className="text-[11px] font-semibold tracking-widest uppercase mb-1" style={{ color: "var(--text-3)" }}>{g.group}</p>
                     <div className="flex flex-wrap gap-1">
                       {g.items.map((it) => (
                         <Chip key={it.label} on={bases.includes(it.label)} onClick={() => toggleBase(it.label)}>
@@ -201,7 +201,7 @@ export default function TasteProfileModal({ onClose, onSaved }: { onClose: () =>
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-2">
-      <label className="text-[10px] font-semibold tracking-wider uppercase" style={{ color: "var(--text-3)" }}>{label}</label>
+      <label className="text-[11px] font-semibold tracking-wider uppercase" style={{ color: "var(--text-3)" }}>{label}</label>
       {children}
     </div>
   );

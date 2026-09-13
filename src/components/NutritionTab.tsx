@@ -508,7 +508,7 @@ function PhotoAnalysisModal({ onClose, onAdd, onBack }: {
                   </div>
                   <div className="text-right flex-shrink-0">
                     <p className="text-[28px] font-light leading-none" style={{ color: "var(--exp-encre)", fontVariantNumeric: "tabular-nums" }}>{editData.calories}</p>
-                    <p className="text-[10px] mt-1" style={{ color: "var(--text-3)" }}>kcal</p>
+                    <p className="text-[11px] mt-1" style={{ color: "var(--text-3)" }}>kcal</p>
                   </div>
                 </div>
 
@@ -976,7 +976,7 @@ function BarcodeScannerModal({ onClose, onAdd }: {
                             : <>Estimer</>}
                         </motion.button>
                       </div>
-                      <p className="text-[10px] mt-1.5 font-light" style={{ color: "var(--text-3)" }}>
+                      <p className="text-[11px] mt-1.5 font-light" style={{ color: "var(--text-3)" }}>
                         Précise la marque et la quantité.
                       </p>
                     </div>
@@ -1020,7 +1020,7 @@ function BarcodeScannerModal({ onClose, onAdd }: {
                       </div>
                       <div className="text-right flex-shrink-0">
                         <p className="text-[26px] font-light leading-none" style={{ color: "var(--exp-encre)", fontVariantNumeric: "tabular-nums" }}>{estimated.calories}</p>
-                        <p className="text-[10px] mt-1" style={{ color: "var(--text-3)" }}>kcal</p>
+                        <p className="text-[11px] mt-1" style={{ color: "var(--text-3)" }}>kcal</p>
                       </div>
                     </div>
                     <MacroTiles proteins={estimated.proteins} carbs={estimated.carbs} fats={estimated.fats} />
@@ -1093,13 +1093,13 @@ function BarcodeScannerModal({ onClose, onAdd }: {
                       <p className="text-xs mt-0.5 font-light" style={{ color: "var(--text-2)" }}>{product.brand}</p>
                     )}
                     {product.quantity && (
-                      <p className="text-[10px] mt-0.5" style={{ color: "var(--text-3)" }}>{product.quantity}</p>
+                      <p className="text-[11px] mt-0.5" style={{ color: "var(--text-3)" }}>{product.quantity}</p>
                     )}
                   </div>
                   {/* Nutri-Score (si connu) */}
                   {product.nutriscore && (
                     <div className="flex flex-col items-center gap-1 flex-shrink-0">
-                      <span className="text-[7px] font-bold tracking-widest" style={{ color: "var(--text-3)" }}>NUTRI</span>
+                      <span className="text-[11px] font-bold tracking-widest" style={{ color: "var(--text-3)" }}>NUTRI</span>
                       <span className="w-8 h-8 rounded-lg flex items-center justify-center text-base font-black"
                         style={{ background: NUTRISCORE_COLOR[product.nutriscore], color: "#fff" }}>
                         {product.nutriscore}
@@ -1142,7 +1142,7 @@ function BarcodeScannerModal({ onClose, onAdd }: {
                   <span className="text-xs font-medium" style={{ color: "var(--text-2)" }}>Pour {grams} g</span>
                   <span className="flex items-baseline gap-1">
                     <span className="text-2xl font-light" style={{ color: "var(--exp-encre)", fontVariantNumeric: "tabular-nums" }}>{computedMacros.calories}</span>
-                    <span className="text-[10px]" style={{ color: "var(--text-3)" }}>kcal</span>
+                    <span className="text-[11px]" style={{ color: "var(--text-3)" }}>kcal</span>
                   </span>
                 </div>
                 <MacroTiles proteins={computedMacros.proteins} carbs={computedMacros.carbs} fats={computedMacros.fats} />
@@ -1528,7 +1528,7 @@ function MenuScanModal({ objectiveLine, objectiveChip, goalKnown, initialResult,
                                 <p className={`font-semibold leading-tight ${open ? "text-base" : "text-sm"}`} style={{ color: "var(--text-1)" }}>{d.name}</p>
                                 {d.reason && <p className="text-[11px] mt-0.5 leading-snug" style={{ color: open ? "var(--text-2)" : "var(--text-3)" }}>{d.reason}</p>}
                               </div>
-                              <span className="text-[10px] font-bold px-2 py-1 rounded-full flex-shrink-0"
+                              <span className="text-[11px] font-bold px-2 py-1 rounded-full flex-shrink-0"
                                 style={{ color: vm.color, background: vm.tint }}>{vm.label}</span>
                             </motion.button>
                             <AnimatePresence initial={false}>
@@ -1702,7 +1702,7 @@ function ManualModal({ onClose, onAdd }: {
                 )}
               </motion.button>
             </div>
-            <p className="text-[10px] mt-1.5 font-light" style={{ color: "var(--text-3)" }}>
+            <p className="text-[11px] mt-1.5 font-light" style={{ color: "var(--text-3)" }}>
               L&apos;IA calcule automatiquement les calories & macros, ou appuie sur Entrée
             </p>
           </div>
@@ -1958,7 +1958,7 @@ function NutritionCalendar({ onDayClick }: { onDayClick: (date: Date) => void })
             {MONTHS_FR[calMonth.getMonth()]} {calMonth.getFullYear()}
           </p>
           {regDate && (
-            <p className="text-[10px] font-light mt-0.5" style={{ color: "var(--text-3)" }}>
+            <p className="text-[11px] font-light mt-0.5" style={{ color: "var(--text-3)" }}>
               Suivi depuis le {regDate.toLocaleDateString("fr-FR",{day:"numeric",month:"long",year:"numeric"})}
             </p>
           )}
@@ -1969,7 +1969,7 @@ function NutritionCalendar({ onDayClick }: { onDayClick: (date: Date) => void })
             <motion.button
               whileTap={{ scale: 0.9 }}
               onClick={() => setCalMonth(new Date(today.getFullYear(), today.getMonth(), 1))}
-              className="text-[10px] font-semibold px-2.5 py-1.5 rounded-xl cursor-pointer"
+              className="text-[11px] font-semibold px-2.5 py-1.5 rounded-xl cursor-pointer"
               style={{ background: "rgba(var(--accent-rgb),0.15)", color: "var(--exp-encre)" }}
             >
               Auj.
@@ -2000,7 +2000,7 @@ function NutritionCalendar({ onDayClick }: { onDayClick: (date: Date) => void })
           <div className="grid grid-cols-7 mb-1.5">
             {WEEK_SHORT.map((d) => (
               <div key={d} className="flex justify-center py-1">
-                <span className="text-[10px] font-semibold tracking-wide" style={{ color: "var(--text-3)" }}>{d}</span>
+                <span className="text-[11px] font-semibold tracking-wide" style={{ color: "var(--text-3)" }}>{d}</span>
               </div>
             ))}
           </div>
@@ -2048,7 +2048,7 @@ function NutritionCalendar({ onDayClick }: { onDayClick: (date: Date) => void })
 
                       {/* Calories */}
                       {hasData && (
-                        <span className="text-[9px] font-semibold leading-none mt-0.5"
+                        <span className="text-[11px] font-semibold leading-none mt-0.5"
                           style={{ color: highContrast ? "rgba(var(--surface-rgb),0.9)" : "#6B5FC0" }}>
                           {s.total_calories >= 1000
                             ? `${(s.total_calories/1000).toFixed(1)}k`
@@ -2090,7 +2090,7 @@ function NutritionCalendar({ onDayClick }: { onDayClick: (date: Date) => void })
             ].map(({ c, l }) => (
               <div key={l} className="flex items-center gap-1">
                 <div className="w-3 h-3 rounded-sm" style={{ background: c }} />
-                <span className="text-[9px] font-light" style={{ color: "var(--text-3)" }}>{l}</span>
+                <span className="text-[11px] font-light" style={{ color: "var(--text-3)" }}>{l}</span>
               </div>
             ))}
           </div>
@@ -2497,7 +2497,7 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
                 borderRadius: "var(--r-controle)",
                 background: isSel ? "linear-gradient(135deg,var(--accent) 0%,#9270E0 100%)" : "transparent",
               }}>
-              <span className="text-[9px] font-semibold"
+              <span className="text-[11px] font-semibold"
                 style={{ color: isSel ? "rgba(var(--surface-rgb),0.65)" : "var(--text-3)" }}>
                 {DAY_LABELS[i]}
               </span>
@@ -2608,7 +2608,7 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
                     <p className="text-lg font-light leading-tight" style={{ color }}>
                       {val.toLocaleString("fr-FR")}
                     </p>
-                    <p className="text-[10px]" style={{ color: "var(--text-3)" }}>kcal</p>
+                    <p className="text-[11px]" style={{ color: "var(--text-3)" }}>kcal</p>
                   </div>
                 ))}
               </div>
@@ -2699,7 +2699,7 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
                   Tes coups de cœur
                 </p>
                 {!pinHintSeen && (
-                  <span className="text-[9px] font-normal tracking-normal" style={{ color: "#C4B5FD", textTransform: "none" }}>
+                  <span className="text-[11px] font-normal tracking-normal" style={{ color: "#C4B5FD", textTransform: "none" }}>
                     · appui long pour épingler
                   </span>
                 )}
@@ -2728,7 +2728,7 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
                           {pin && <Heart size={9} strokeWidth={2.5} style={{ color: "#8B5CF6", fill: "#8B5CF6" }} />}
                           {r.name}
                         </p>
-                        <p className="text-[9px] leading-tight" style={{ color: "var(--text-3)" }}>
+                        <p className="text-[11px] leading-tight" style={{ color: "var(--text-3)" }}>
                           {r.calories} kcal{(r.count ?? 0) >= 2 ? ` · ${r.count}×` : ""}
                         </p>
                       </div>
@@ -2812,18 +2812,18 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
                               {meal.name}
                             </p>
                             <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                              <span className="text-[10px]" style={{ color: "var(--text-3)" }}>{meal.time}</span>
+                              <span className="text-[11px]" style={{ color: "var(--text-3)" }}>{meal.time}</span>
                               {meal.proteins > 0 && (
                                 <>
-                                  <span className="text-[10px] px-1.5 py-0.5 rounded-full"
+                                  <span className="text-[11px] px-1.5 py-0.5 rounded-full"
                                     style={{ background: "rgba(var(--accent-rgb),0.1)", color: "var(--exp-encre)" }}>
                                     P {meal.proteins}g
                                   </span>
-                                  <span className="text-[10px] px-1.5 py-0.5 rounded-full"
+                                  <span className="text-[11px] px-1.5 py-0.5 rounded-full"
                                     style={{ background: "rgba(123,92,196,0.08)", color: "#7B5CC4" }}>
                                     G {meal.carbs}g
                                   </span>
-                                  <span className="text-[10px] px-1.5 py-0.5 rounded-full hidden sm:inline-block"
+                                  <span className="text-[11px] px-1.5 py-0.5 rounded-full hidden sm:inline-block"
                                     style={{ background: "rgba(var(--gold-rgb),0.1)", color: "var(--gold)" }}>
                                     L {meal.fats}g
                                   </span>
@@ -2836,7 +2836,7 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
                           <div className="flex items-center gap-2 flex-shrink-0">
                             <div className="text-right">
                               <p className="text-sm font-semibold" style={{ color: "var(--text-1)" }}>{meal.calories}</p>
-                              <p className="text-[10px]" style={{ color: "var(--text-3)" }}>kcal</p>
+                              <p className="text-[11px]" style={{ color: "var(--text-3)" }}>kcal</p>
                             </div>
                             <motion.button whileTap={{ scale: 0.85 }}
                               onClick={() => deleteMeal(meal.id)}

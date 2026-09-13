@@ -149,10 +149,24 @@ export const metadata: Metadata = {
   },
 };
 
+/* ⚠️ PAS DE `maximumScale`, ET CE N'EST PAS UN OUBLI : C'EST LE SEUL MOYEN
+   D'AGRANDIR LE TEXTE DE VAIIYA.
+
+   L'app écrit 858 de ses tailles de texte en `px` contre 18 en `rem`, donc le
+   réglage de taille de police du système n'a quasiment aucun effet ici. Le
+   pincement était donc la dernière sortie, et `maximumScale: 1` la fermait :
+   quelqu'un qui a besoin d'un texte plus grand n'avait AUCUN recours, sur une
+   app qui affiche encore du 10 px.
+
+   ⚠️ ET IL NE PROTÉGEAIT DE RIEN. La seule raison de le poser est d'empêcher
+   iOS de zoomer quand on touche un champ de saisie, or ce zoom ne se déclenche
+   que sous 16 px et `globals.css` force déjà `input, textarea, select` à 16 px
+   sous 768 px. Vérifié : aucun des 54 champs de l'app ne déclare de taille
+   propre, ils héritent tous de cette règle. Le remettre ne rendrait donc rien,
+   et retirerait à nouveau le zoom. */
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
   viewportFit: "cover",
   themeColor: "#FFFFFF",
 };

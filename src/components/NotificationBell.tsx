@@ -249,7 +249,7 @@ export default function NotificationBell({ side = "right" }: { side?: "right" | 
               🔔 Notifications
             </span>
             {unreadNotifs > 0 && (
-              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ background: "rgba(var(--violet-mid-rgb),0.3)", color: "var(--exp-encre)" }}>
+              <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full" style={{ background: "rgba(var(--violet-mid-rgb),0.3)", color: "var(--exp-encre)" }}>
                 {unreadNotifs} nouvelle{unreadNotifs > 1 ? "s" : ""}
               </span>
             )}
@@ -310,7 +310,7 @@ export default function NotificationBell({ side = "right" }: { side?: "right" | 
                         <span className="font-semibold">@{n.from_pseudo}</span>
                         {" "}<span style={{ color: "var(--text-body)" }}>{notifLabel(n)}</span>
                       </p>
-                      <p className="text-[10px] mt-0.5" style={{ color: "var(--text-3)" }}>
+                      <p className="text-[11px] mt-0.5" style={{ color: "var(--text-3)" }}>
                         {formatRelative(n.created_at)}
                       </p>
                     </div>
@@ -375,7 +375,7 @@ export default function NotificationBell({ side = "right" }: { side?: "right" | 
               animate={{ scale: 1 }}
               exit={{ scale: 0 }}
               transition={{ type: "spring", bounce: 0.6 }}
-              className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full flex items-center justify-center text-[8px] font-bold"
+              className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center text-[11px] font-bold"
               style={{ background: "var(--accent)", color: "#fff" }}
             >
               {badgeCount > 9 ? "9+" : badgeCount}

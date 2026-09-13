@@ -621,7 +621,7 @@ export default function AssistantSheet() {
                       `${pendingRecipe.calories} kcal`,
                       `${pendingRecipe.proteins} g prot.`,
                     ].map((t) => (
-                      <span key={t} className="text-[10.5px] font-semibold px-2 py-0.5 rounded-full"
+                      <span key={t} className="text-[11px] font-semibold px-2 py-0.5 rounded-full"
                         style={{ background: "rgba(var(--tint-violet-rgb),0.7)", color: "var(--text-2)" }}>{t}</span>
                     ))}
                   </div>
@@ -698,7 +698,7 @@ export default function AssistantSheet() {
                       `${pendingMeal.carbs} g gluc.`,
                       `${pendingMeal.fats} g lip.`,
                     ].map((t) => (
-                      <span key={t} className="text-[10.5px] font-semibold px-2 py-0.5 rounded-full"
+                      <span key={t} className="text-[11px] font-semibold px-2 py-0.5 rounded-full"
                         style={{ background: "rgba(var(--tint-violet-rgb),0.7)", color: "var(--text-2)" }}>{t}</span>
                     ))}
                   </div>

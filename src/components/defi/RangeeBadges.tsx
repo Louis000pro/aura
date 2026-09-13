@@ -63,7 +63,7 @@ export default function RangeeBadges({ badges, debloques }: {
               >
                 {b.nom}
               </b>
-              <span className="mt-0.5 block text-[10.5px] leading-tight" style={{ color: "var(--text-3)" }}>
+              <span className="mt-0.5 block text-[11px] leading-tight" style={{ color: "var(--text-3)" }}>
                 {ouvert ? "Débloqué" : b.condition}
               </span>
             </div>

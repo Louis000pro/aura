@@ -48,12 +48,12 @@ export default function PlacesTop3Picker({
               className="absolute inset-0 w-full h-full object-cover" style={{ opacity: on ? 1 : 0.6 }} />
             <div className="absolute inset-0" style={{ background: "var(--voile-carte)" }} />
             {on && (
-              <span className="absolute top-1 right-1 w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-semibold"
+              <span className="absolute top-1 right-1 w-4 h-4 rounded-full flex items-center justify-center text-[11px] font-semibold"
                 style={{ background: "var(--accent)", color: "#fff" }}>
                 {rank + 1}
               </span>
             )}
-            <span className="absolute inset-x-0 bottom-0 px-1 pb-1 text-[9px] font-semibold leading-tight text-center block"
+            <span className="absolute inset-x-0 bottom-0 px-1 pb-1 text-[11px] font-semibold leading-tight text-center block"
               style={{ color: "#fff", textShadow: "0 1px 3px rgba(0,0,0,0.7)" }}>
               {label}
             </span>

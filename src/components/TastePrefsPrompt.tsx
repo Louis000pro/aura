@@ -177,7 +177,7 @@ export default function TastePrefsPrompt() {
               <Question label="Tes bases préférées ?">
                 {BASE_GROUPS.map((g) => (
                   <div key={g.group} className="mb-2">
-                    <p className="text-[9px] font-semibold tracking-widest uppercase mb-1" style={{ color: "#CBD5E0" }}>{g.group}</p>
+                    <p className="text-[11px] font-semibold tracking-widest uppercase mb-1" style={{ color: "#CBD5E0" }}>{g.group}</p>
                     <div className="flex flex-wrap gap-1">
                       {g.items.map((it) => {
                         const on = bases.includes(it.label);

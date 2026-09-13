@@ -191,7 +191,7 @@ export function TitreRang({ cosmetiques }: { cosmetiques: Cosmetiques }) {
   if (!cosmetiques.titre) return null;
   return (
     <span
-      className="mt-1 inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em]"
+      className="mt-1 inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.14em]"
       style={{
         background: "linear-gradient(135deg,rgba(139,92,246,0.14),rgba(193,59,193,0.14))",
         border: "1px solid rgba(var(--accent-rgb),0.28)",

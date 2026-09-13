@@ -287,7 +287,7 @@ function PremiumInner() {
                 <div className={`${styles.cardSurface} relative rounded-[24px] p-4 md:p-6 h-full flex flex-col overflow-hidden`}>
 
                   {highlight && (
-                    <div className={`${styles.popularBadge} absolute top-4 right-4 px-2.5 py-1 rounded-full text-[10px] font-black tracking-wider text-white`}>
+                    <div className={`${styles.popularBadge} absolute top-4 right-4 px-2.5 py-1 rounded-full text-[11px] font-black tracking-wider text-white`}>
                       POPULAIRE
                     </div>
                   )}

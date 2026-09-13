@@ -118,7 +118,7 @@ export default function PosterDefi({
           dessus. Le contraste vient du voile, pas d'un contour. */}
       <div className="pointer-events-none absolute inset-x-0 top-0 flex items-center justify-center gap-[6px] pt-[5.5%]">
         <span
-          className="text-[10.5px] font-bold uppercase leading-none"
+          className="text-[11px] font-bold uppercase leading-none"
           style={{
             letterSpacing: "0.38em",
             // Le dernier caractère emporte son interlettrage avec lui :
@@ -168,7 +168,7 @@ export default function PosterDefi({
 
           {noms.length > 0 && (
             <span
-              className="mt-2.5 block text-[9.5px] font-semibold uppercase leading-[1.6]"
+              className="mt-2.5 block text-[11px] font-semibold uppercase leading-[1.6]"
               style={{
                 letterSpacing: "0.3em",
                 textIndent: "0.3em",

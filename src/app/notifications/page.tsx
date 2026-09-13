@@ -270,7 +270,7 @@ export default function NotificationsPage() {
         <div className="flex items-end justify-between mb-6">
           <div>
             <p
-              className="text-[10px] font-semibold tracking-[0.2em] uppercase mb-1"
+              className="text-[11px] font-semibold tracking-[0.2em] uppercase mb-1"
               style={{ color: "var(--text-3)" }}
             >
               Activité
@@ -335,7 +335,7 @@ export default function NotificationsPage() {
             >
               {/* Group label */}
               <p
-                className="text-[10px] font-semibold tracking-widest uppercase mb-2 ml-1"
+                className="text-[11px] font-semibold tracking-widest uppercase mb-2 ml-1"
                 style={{ color: "var(--text-3)" }}
               >
                 {group.label}

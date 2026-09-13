@@ -40,7 +40,7 @@ function Groupe({ titre, children }: { titre: string; children: ReactNode[] }) {
   const lignes = children.filter(Boolean);
   return (
     <section className="flex flex-col">
-      <p className="text-[10px] font-semibold tracking-widest uppercase px-1.5 mb-2" style={{ color: "var(--text-3)" }}>
+      <p className="text-[11px] font-semibold tracking-widest uppercase px-1.5 mb-2" style={{ color: "var(--text-3)" }}>
         {titre}
       </p>
       <div
@@ -171,7 +171,7 @@ function Interrupteur({ on }: { on: boolean }) {
 function Pastille({ texte, ton = "or" }: { texte: string; ton?: "or" | "teal" }) {
   return (
     <span
-      className="text-[10.5px] font-bold tracking-wide px-2 py-1 rounded-full flex-shrink-0"
+      className="text-[11px] font-bold tracking-wide px-2 py-1 rounded-full flex-shrink-0"
       style={ton === "teal"
         ? { background: "rgba(43,212,160,0.16)", color: "#1FA47B" }
         : { background: "rgba(var(--gold-rgb),0.18)", color: "var(--gold)" }
@@ -387,7 +387,7 @@ function ChangePasswordModal({ onClose }: { onClose: () => void }) {
               { label: "Confirmer le nouveau", value: confirm, onChange: setConfirm, show: showNext, toggle: () => setShowNext(p => !p) },
             ].map(({ label, value, onChange, show, toggle }, i) => (
               <div key={i} className="flex flex-col gap-1">
-                <label className="text-[10px] font-semibold tracking-wider uppercase" style={{ color: "var(--text-3)" }}>{label}</label>
+                <label className="text-[11px] font-semibold tracking-wider uppercase" style={{ color: "var(--text-3)" }}>{label}</label>
                 <div className="flex items-center gap-2 px-4 py-3 rounded-2xl" style={{ background: "rgba(var(--tint-violet-rgb),0.5)", border: "1px solid rgba(var(--accent-rgb),0.15)" }}>
                   <input
                     type={show ? "text" : "password"}
@@ -486,7 +486,7 @@ function DeleteAccountModal({ onClose }: { onClose: () => void }) {
         </div>
 
         <div className="flex flex-col gap-1.5 mb-4">
-          <label className="text-[10px] font-semibold tracking-wider uppercase" style={{ color: "var(--text-3)" }}>
+          <label className="text-[11px] font-semibold tracking-wider uppercase" style={{ color: "var(--text-3)" }}>
             Tape <span style={{ color: "#EF4444" }}>SUPPRIMER</span> pour confirmer
           </label>
           <input
@@ -867,7 +867,7 @@ export default function ParametresPage() {
           >
             Supprimer mon compte
           </motion.button>
-          <p className="text-[10px] font-light" style={{ color: "var(--text-3)" }}>
+          <p className="text-[11px] font-light" style={{ color: "var(--text-3)" }}>
             Vaiiya v1.0 · Fait avec ✦ pour ta santé
           </p>
         </div>

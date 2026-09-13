@@ -240,7 +240,7 @@ function SectionCatalogue() {
                 <div className="relative w-full" style={{ aspectRatio: "3 / 4" }}>
                   <Image src={c.img} alt={c.title} fill sizes="(max-width:768px) 45vw, 22vw" style={{ objectFit: "cover" }} />
                   <div className="absolute inset-x-0 bottom-0 h-2/3" style={{ background: "linear-gradient(to top, rgba(10,6,20,0.82), transparent)" }} />
-                  <span className="absolute top-2.5 left-2.5 px-2.5 py-1 rounded-full text-[10px] font-semibold"
+                  <span className="absolute top-2.5 left-2.5 px-2.5 py-1 rounded-full text-[11px] font-semibold"
                     style={c.premium
                       ? { background: ACTION_BG, color: "#fff" }
                       : { background: "rgba(255,255,255,0.9)", color: "#2D2150" }}>
@@ -325,7 +325,7 @@ function VignetteMouvement({
         />
       </div>
       <p className="mt-2 text-[12px] font-semibold leading-tight truncate" style={{ color: "var(--text-1)" }}>{m.nom}</p>
-      <p className="text-[10.5px] font-light leading-tight truncate" style={{ color: "var(--text-3)" }}>{m.zone}</p>
+      <p className="text-[11px] font-light leading-tight truncate" style={{ color: "var(--text-3)" }}>{m.zone}</p>
 
       {/* La pastille : teal quand le mouvement est déjà dans la séance, violet
           quand elle reste à toucher. Système « D », rien d'inventé ici. */}
@@ -519,7 +519,7 @@ function TunnelPhone() {
           </div>
 
           {/* Exercice */}
-          <p className="mt-4 text-[10px] font-semibold uppercase" style={{ letterSpacing: "0.22em", color: "#B6A2E8" }}>
+          <p className="mt-4 text-[11px] font-semibold uppercase" style={{ letterSpacing: "0.22em", color: "#B6A2E8" }}>
             Exercice 6 / 7
           </p>
           <h3 className="mt-1 text-[30px] font-extrabold tracking-tight leading-none text-white">CRUNCH</h3>
@@ -556,7 +556,7 @@ function TunnelPhone() {
           </div>
 
           {/* Séries et répétitions */}
-          <p className="text-center text-[10px] font-semibold uppercase" style={{ letterSpacing: "0.22em", color: "rgba(255,255,255,0.5)" }}>
+          <p className="text-center text-[11px] font-semibold uppercase" style={{ letterSpacing: "0.22em", color: "rgba(255,255,255,0.5)" }}>
             Série 2 / 3
           </p>
           <p className="text-center text-[46px] font-light leading-none mt-1 text-white tabular-nums">20</p>
@@ -791,7 +791,7 @@ function SectionIntelligence() {
                   <div className="flex gap-2">
                     {MACROS.map((m) => (
                       <div key={m.l} className="flex-1 rounded-lg px-2 py-1.5" style={{ background: "rgba(255,255,255,0.08)" }}>
-                        <p className="text-[9.5px] font-medium" style={{ color: "rgba(255,255,255,0.6)" }}>{m.l}</p>
+                        <p className="text-[11px] font-medium" style={{ color: "rgba(255,255,255,0.6)" }}>{m.l}</p>
                         <p className="text-[13px] font-bold leading-tight" style={{ color: m.c }}>{m.v}</p>
                       </div>
                     ))}
