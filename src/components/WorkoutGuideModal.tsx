@@ -1176,7 +1176,7 @@ export default function WorkoutGuideModal({
       <motion.div
         initial={{ y: 80, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 80, opacity: 0 }}
         transition={{ type: "spring", stiffness: 380, damping: 36 }}
-        className="relative w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl flex flex-col overflow-hidden"
+        className="relative w-full sm:max-w-md rounded-t-[var(--r-feuille)] sm:rounded-[var(--r-feuille)] flex flex-col overflow-hidden"
         style={{
           background: isTunnel ? "#0B0714" : "rgba(var(--surface-rgb),0.98)",
           backdropFilter: "blur(24px)",

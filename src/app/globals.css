@@ -122,6 +122,21 @@
   --r-affiche: 26px;
   --r-bloc: 18px;
   --r-controle: 10px;
+  /* ⚠️ LE QUATRIÈME RÔLE, AJOUTÉ LE 2026-09-14, ET IL MANQUAIT DEPUIS LE
+     DÉBUT : une FEUILLE du bas (ou la modale centrée qu'elle devient sur
+     desktop). Les trois rôles ci-dessus ne décrivaient qu'une image, un
+     groupe et un contrôle, donc chaque feuille inventait sa valeur. Mesuré
+     avant de trancher : QUATRE valeurs pour le même objet, 24 px (21 fois),
+     26 px (6), 28 px (1) et 12 px (1), plus deux écrites en CSS.
+
+     ⚠️ ET LA VALEUR EST 24 PARCE QUE C'EST LA MAJORITÉ, PAS PARCE QU'ELLE
+     EST PLUS JOLIE. Nommer un rôle sert à dire ce que le produit fait déjà :
+     poser 28 aurait redessiné 29 feuilles sur 30 sans que personne l'ait
+     demandé. Les 26 et 28 étaient les accidents, pas la décision.
+
+     Une feuille est plus arrondie qu'un groupe (18) et moins qu'une affiche
+     (26) : elle FLOTTE au-dessus du contenu, elle n'est pas posée dedans. */
+  --r-feuille: 24px;
 
   /* ── LA PHOTO ──────────────────────────────────────────────────────
      Vaiiya est un produit d’images : le héros de la séance, le catalogue, les
@@ -770,7 +785,34 @@ html.a-session .accueil-landing { display: none; }
 }
 
 /* Un nombre qui se lit, se compare, ou change sous les yeux. Les chiffres à
-   chasse fixe empêchent la ligne de sauter quand la valeur passe de 9 à 10. */
+   chasse fixe empêchent la ligne de sauter quand la valeur passe de 9 à 10.
+
+   ── QUAND POSER CETTE CLASSE, ET QUAND NE PAS LA POSER ────────────────
+   C'est la SIGNATURE de Vaiiya, validée le 2026-09-14 : une app qui affiche
+   des centaines de durées, de poids, de calories et de gains doit donner un
+   visage à ses valeurs. Trois règles, et les deux exceptions ont été payées
+   à l'écran, pas décidées au jugé.
+
+   ✓ OUI : une durée, un compte, un poids, une répétition, un gain d'EXP, une
+     série. Bref, ce qu'on lit comme une DONNÉE.
+
+   ✗ NON à un nombre qui se lit comme un mot dans une phrase, à un libellé,
+     à une difficulté. Le mono les ferait ressembler à un tableau.
+
+   ✗ NON à une valeur qui porte un SÉPARATEUR DE MILLIERS FRANÇAIS.
+     `toLocaleString("fr-FR")` sépare par une espace insécable, et dans une
+     chasse fixe cette espace occupe une CASE ENTIÈRE : « 1 480 » se lit
+     « 1 » puis « 480 », donc deux valeurs au lieu d'une. Mesuré à 40 px sur
+     l'anneau de la nutrition, qui porte la même remarque à son point d'appel.
+
+   ✗ NON dans une boîte trop serrée pour l'accueillir. Le mono est plus
+     étroit qu'Archivo à cette largeur (mesuré : « 00:45 » fait 173 px contre
+     182 px à 60 px de corps), mais une tuile compacte reste une tuile.
+
+   ⚠️ ET ON POSE LA CLASSE, JAMAIS SON CONTENU. Recopier le trio
+   `font-family` + `font-variation-settings` + `letter-spacing` dans un écran,
+   c'est une seconde définition du chiffre, qui divergera au premier
+   ajustement. */
 .vy-nombre {
   font-family: var(--chiffre);
   font-variation-settings: var(--w-nombre);

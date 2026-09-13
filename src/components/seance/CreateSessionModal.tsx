@@ -292,7 +292,7 @@ export default function CreateSessionModal({
           animate={{ y: 0, opacity: 1, scale: 1 }}
           exit={{ y: 40, opacity: 0 }}
           transition={{ type: "spring", stiffness: 380, damping: 34 }}
-          className="w-full md:max-w-xl rounded-t-3xl md:rounded-3xl overflow-hidden flex flex-col"
+          className="w-full md:max-w-xl rounded-t-[var(--r-feuille)] md:rounded-[var(--r-feuille)] overflow-hidden flex flex-col"
           style={{
             background: "rgba(var(--surface-rgb),0.98)",
             border: "1px solid rgba(var(--tint-violet-rgb),0.9)",

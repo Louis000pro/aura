@@ -84,7 +84,7 @@ export default function AiMemoryManager({ onClose }: { onClose: () => void }) {
       <motion.div
         initial={{ opacity: 0, y: 80, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 40, scale: 0.97 }}
         transition={{ type: "spring", bounce: 0.28, duration: 0.5 }}
-        className="w-full max-w-md rounded-t-3xl md:rounded-3xl overflow-hidden flex flex-col"
+        className="w-full max-w-md rounded-t-[var(--r-feuille)] md:rounded-[var(--r-feuille)] overflow-hidden flex flex-col"
         style={{ background: "rgba(var(--surface-rgb),0.97)", backdropFilter: "blur(12px)", border: "1px solid rgba(var(--surface-rgb),0.9)", boxShadow: "var(--ombre-flottant), inset 0 1px 0 rgba(var(--surface-rgb),0.9)", maxHeight: "90dvh" }}
         onClick={(e) => e.stopPropagation()}
       >

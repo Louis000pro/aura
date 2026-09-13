@@ -122,7 +122,7 @@ function Sheet({ children, onFermer }: { children: React.ReactNode; onFermer: ()
         role="dialog"
         aria-modal="true"
         aria-label="Amis"
-        className="fixed inset-x-0 bottom-0 z-[91] max-h-[86dvh] overflow-y-auto rounded-t-[26px] px-5 pt-4 md:left-[88px] md:right-auto md:bottom-6 md:w-[440px] md:rounded-[26px]"
+        className="fixed inset-x-0 bottom-0 z-[91] max-h-[86dvh] overflow-y-auto rounded-t-[var(--r-feuille)] px-5 pt-4 md:left-[88px] md:right-auto md:bottom-6 md:w-[440px] md:rounded-[26px]"
         style={{
           background: "rgb(var(--surface-rgb))",
           paddingBottom: "calc(1.5rem + env(safe-area-inset-bottom))",

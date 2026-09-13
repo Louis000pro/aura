@@ -65,7 +65,7 @@ export default function RangsModal({
           style={{ background: "rgba(10,6,20,0.55)", backdropFilter: "blur(4px)" }}
         >
           <motion.div
-            className="w-full sm:max-w-md max-h-[85vh] overflow-y-auto rounded-t-3xl sm:rounded-3xl px-5 pt-4 pb-[calc(env(safe-area-inset-bottom)+20px)]"
+            className="w-full sm:max-w-md max-h-[85vh] overflow-y-auto rounded-t-[var(--r-feuille)] sm:rounded-[var(--r-feuille)] px-5 pt-4 pb-[calc(env(safe-area-inset-bottom)+20px)]"
             initial={{ y: "100%" }}
             animate={{ y: 0 }}
             exit={{ y: "100%" }}

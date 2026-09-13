@@ -121,7 +121,7 @@ function Sheet({ onClose, children, maxHeight = "88vh", height }: {
       <motion.div
         initial={{ y: 64, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 48, opacity: 0 }}
         transition={{ type: "spring", stiffness: 380, damping: 34 }}
-        className="w-full max-w-lg rounded-t-3xl md:rounded-3xl overflow-hidden flex flex-col"
+        className="w-full max-w-lg rounded-t-[var(--r-feuille)] md:rounded-[var(--r-feuille)] overflow-hidden flex flex-col"
         style={{
           background: "rgb(var(--surface-rgb))",
           border: "1px solid rgba(var(--accent-rgb),0.14)",
@@ -874,7 +874,7 @@ function PremiumPreviewSheet({ session, premiumCount, onClose, onUpgrade }: {
         animate={{ y: 0, opacity: 1 }}
         exit={{ y: 44, opacity: 0 }}
         transition={{ type: "spring", stiffness: 390, damping: 34 }}
-        className="w-full max-w-lg rounded-t-[28px] md:rounded-[28px] overflow-hidden"
+        className="w-full max-w-lg rounded-t-[var(--r-feuille)] md:rounded-[var(--r-feuille)] overflow-hidden"
         style={{
           background: "rgb(var(--surface-rgb))",
           border: "1px solid rgba(var(--accent-rgb),0.2)",
@@ -1069,7 +1069,7 @@ function ManageSheet({ session, onClose, onEdit, onDelete, onVisibilityChange, o
       <motion.div
         initial={{ y: 56, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 40, opacity: 0 }}
         transition={{ type: "spring", stiffness: 400, damping: 34 }}
-        className="w-full max-w-lg rounded-t-3xl md:rounded-3xl overflow-hidden"
+        className="w-full max-w-lg rounded-t-[var(--r-feuille)] md:rounded-[var(--r-feuille)] overflow-hidden"
         style={{
           background: "rgb(var(--surface-rgb))",
           border: "1px solid rgba(var(--accent-rgb),0.14)",
@@ -1307,7 +1307,7 @@ function PleinSheet({ max, onVoir, onPremium, onClose }: {
       <motion.div
         initial={{ y: 56, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 40, opacity: 0 }}
         transition={{ type: "spring", stiffness: 400, damping: 34 }}
-        className="w-full max-w-md rounded-t-[26px] md:rounded-[26px] overflow-hidden"
+        className="w-full max-w-md rounded-t-[var(--r-feuille)] md:rounded-[var(--r-feuille)] overflow-hidden"
         style={{
           background: "rgb(var(--surface-rgb))",
           border: "1px solid rgba(var(--accent-rgb),0.18)",

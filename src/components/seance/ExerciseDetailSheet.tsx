@@ -66,7 +66,7 @@ export default function ExerciseDetailSheet({
       <motion.div
         initial={{ y: 70, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 50, opacity: 0 }}
         transition={{ type: "spring", stiffness: 380, damping: 34 }}
-        className="w-full md:max-w-md rounded-t-3xl md:rounded-3xl overflow-hidden flex flex-col"
+        className="w-full md:max-w-md rounded-t-[var(--r-feuille)] md:rounded-[var(--r-feuille)] overflow-hidden flex flex-col"
         style={{
           background: "rgb(var(--surface-rgb))",
           border: "1px solid rgba(var(--accent-rgb),0.14)",

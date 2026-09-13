@@ -72,7 +72,7 @@ export default function GeneratedRecipeSheet({
             initial={{ y: 60, opacity: 0, scale: 0.97 }} animate={{ y: 0, opacity: 1, scale: 1 }} exit={{ y: 40, opacity: 0 }}
             transition={{ type: "spring", stiffness: 380, damping: 34 }}
             onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-md rounded-t-3xl md:rounded-3xl overflow-hidden flex flex-col"
+            className="w-full max-w-md rounded-t-[var(--r-feuille)] md:rounded-[var(--r-feuille)] overflow-hidden flex flex-col"
             style={{ background: "rgb(var(--surface-rgb))", maxHeight: "88vh", boxShadow: "0 -8px 40px rgba(var(--accent-rgb),0.18)" }}
           >
             <div className="flex items-center justify-between px-5 pt-5 pb-3" style={{ borderBottom: "1px solid rgba(var(--violet-mid-rgb),0.4)" }}>

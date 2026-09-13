@@ -119,7 +119,7 @@ export default function FollowListModal({
         animate={{ y: 0 }}
         exit={{ y: "100%" }}
         transition={{ type: "spring", bounce: 0.18, duration: 0.45 }}
-        className="w-full max-w-md rounded-t-3xl overflow-hidden flex flex-col"
+        className="w-full max-w-md rounded-t-[var(--r-feuille)] overflow-hidden flex flex-col"
         style={{ background: "rgba(var(--surface-rgb),0.96)", backdropFilter: "blur(12px)", boxShadow: "0 -12px 48px rgba(var(--accent-rgb),0.18)", maxHeight: "82vh" }}
         onClick={(e) => e.stopPropagation()}
       >

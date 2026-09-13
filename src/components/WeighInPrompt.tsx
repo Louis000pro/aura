@@ -102,7 +102,7 @@ export default function WeighInPrompt({ ouvert, onFermer }: {
             initial={{ opacity: 0, y: 80, scale: 0.96 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 40, scale: 0.97 }}
             transition={{ type: "spring", bounce: 0.28, duration: 0.5 }}
             onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-sm rounded-t-3xl md:rounded-3xl px-6 pt-7 pb-8 md:pb-7"
+            className="w-full max-w-sm rounded-t-[var(--r-feuille)] md:rounded-[var(--r-feuille)] px-6 pt-7 pb-8 md:pb-7"
             style={{ background: "rgb(var(--surface-rgb))", boxShadow: "0 -8px 40px rgba(var(--accent-rgb),0.18)" }}
           >
             <div className="flex items-center justify-between mb-1">

@@ -375,7 +375,7 @@
   max-height: 92vh;
   overflow-y: auto;
   background: rgb(var(--surface-rgb));
-  border-radius: 26px 26px 0 0;
+  border-radius: var(--r-feuille) var(--r-feuille) 0 0;
   padding: 8px 16px calc(28px + env(safe-area-inset-bottom));
 }
 @media (min-width: 768px) { .feuille { border-radius: 26px; padding-bottom: 24px; } }

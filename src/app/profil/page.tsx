@@ -286,7 +286,7 @@ function EditProfileModal({
         animate={{ y: 0 }}
         exit={{ y: "100%" }}
         transition={{ type: "spring", bounce: 0.18, duration: 0.45 }}
-        className="w-full max-w-md rounded-t-3xl md:rounded-3xl p-6 pb-8 md:pb-6"
+        className="w-full max-w-md rounded-t-[var(--r-feuille)] md:rounded-[var(--r-feuille)] p-6 pb-8 md:pb-6"
         style={{
           background: "rgba(var(--surface-rgb),0.98)",
           backdropFilter: "blur(12px)",
@@ -1328,7 +1328,7 @@ export default function ProfilPage() {
               animate={{ y: 0, opacity: 1, scale: 1 }}
               exit={{ y: 60, opacity: 0, scale: 0.96 }}
               transition={{ type: "spring", bounce: 0.22, duration: 0.4 }}
-              className="w-full max-w-sm rounded-t-3xl md:rounded-3xl overflow-hidden"
+              className="w-full max-w-sm rounded-t-[var(--r-feuille)] md:rounded-[var(--r-feuille)] overflow-hidden"
               style={{
                 background: "rgba(var(--surface-rgb),0.97)",
                 boxShadow: "0 -12px 48px rgba(var(--accent-rgb),0.2)",

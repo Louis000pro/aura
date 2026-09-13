@@ -92,7 +92,7 @@ export default function RecipeSheet({
         initial={{ y: 60, opacity: 0, scale: 0.98 }} animate={{ y: 0, opacity: 1, scale: 1 }} exit={{ y: 40, opacity: 0 }}
         transition={{ type: "spring", stiffness: 360, damping: 34 }}
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-md rounded-t-3xl md:rounded-3xl overflow-hidden flex flex-col"
+        className="w-full max-w-md rounded-t-[var(--r-feuille)] md:rounded-[var(--r-feuille)] overflow-hidden flex flex-col"
         style={{ background: "rgb(var(--surface-rgb))", maxHeight: "92dvh" }}
       >
         {loading ? (

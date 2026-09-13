@@ -672,7 +672,7 @@ export default function PublicProfilePage() {
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: "100%", opacity: .7 }}
               transition={{ type: "spring", damping: 30, stiffness: 340 }}
-              className="w-full max-w-md rounded-t-[26px] px-5 pb-6 pt-3 md:rounded-[26px] md:p-6"
+              className="w-full max-w-md rounded-t-[var(--r-feuille)] px-5 pb-6 pt-3 md:rounded-[26px] md:p-6"
               style={{
                 background: "rgb(var(--surface-rgb))",
                 paddingBottom: "calc(1.5rem + env(safe-area-inset-bottom))",

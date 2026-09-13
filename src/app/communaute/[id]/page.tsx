@@ -943,7 +943,7 @@ function MenuMessage({ message, moi, mienne, onFermer, onReaction, onRepondre, o
       <motion.div
         role="dialog"
         aria-modal="true"
-        className="fixed inset-x-0 bottom-0 z-[91] rounded-t-[26px] px-4 pt-4 md:left-1/2 md:right-auto md:bottom-6 md:-ml-[220px] md:w-[440px] md:rounded-[26px]"
+        className="fixed inset-x-0 bottom-0 z-[91] rounded-t-[var(--r-feuille)] px-4 pt-4 md:left-1/2 md:right-auto md:bottom-6 md:-ml-[220px] md:w-[440px] md:rounded-[26px]"
         style={{
           background: "rgb(var(--surface-rgb))",
           paddingBottom: "calc(1.25rem + env(safe-area-inset-bottom))",

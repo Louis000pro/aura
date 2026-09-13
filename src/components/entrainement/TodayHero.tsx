@@ -29,6 +29,28 @@ import type { EtapeCycle } from "@/lib/programme";
 import { Photo, WIDGET } from "./PhotoSeance";
 
 /* ════════════════════════════════════════════════════════════════════
+   LA VALEUR MESURÉE PORTE LE VISAGE DU CHIFFRE.
+
+   ⚠️ `vy-nombre` ET RIEN D'AUTRE : la classe porte déjà la famille
+   (Martian Mono), sa largeur (`--w-nombre`), la chasse tabulaire et le
+   resserrement. Réécrire ce trio à la main, c'est une seconde
+   définition du chiffre qui divergera au premier ajustement.
+
+   ⚠️ CE QUI EST UNE VALEUR, ET CE QUI N'EN EST PAS UNE. Une durée, un
+   compte, un poids, un gain : oui. Un mot qui contient un nombre, un
+   libellé, une difficulté : non. Le mono sert ce qu'on LIT comme une
+   donnée ; l'imposer à une phrase la ferait ressembler à un tableau.
+
+   Le séparateur s'efface exprès : il porte moins que les valeurs qu'il
+   sépare, sinon la ligne se lit comme une suite de points. */
+function V({ children, couleur = "#fff" }: { children: React.ReactNode; couleur?: string }) {
+  return <span className="vy-nombre text-[15px]" style={{ color: couleur }}>{children}</span>;
+}
+function S() {
+  return <span style={{ color: "rgba(255,255,255,0.4)" }}> · </span>;
+}
+
+/* ════════════════════════════════════════════════════════════════════
    ① Héros « Aujourd'hui » — un seul emplacement, quatre vérités.
    ════════════════════════════════════════════════════════════════════ */
 /* Le vocabulaire des états vit dans `lib/journee.ts`, avec la fonction
@@ -126,8 +148,8 @@ export default function TodayHero({
               {day.type}{lieuLabel(day.location) ? ` · ${lieuLabel(day.location)}` : ""}
             </p>
             <h2 className="text-[34px] md:text-[38px] leading-[1.02] font-extralight text-white">{dayTitle(day)}</h2>
-            <p className="mt-2.5 mb-4 text-[11.5px] font-medium" style={{ color: "rgba(255,255,255,0.62)" }}>
-              {day.type === "HIIT" ? 30 : 45} min · {day.exerciseList.length} exercices · {day.difficulty}
+            <p className="mt-2.5 mb-4 text-[16px] font-normal" style={{ color: "rgba(255,255,255,0.82)" }}>
+              <V>{day.type === "HIIT" ? 30 : 45}</V> min<S /><V>{day.exerciseList.length}</V> exercices<S />{day.difficulty}
             </p>
             <motion.button
               whileTap={{ scale: 0.97 }}
@@ -138,11 +160,11 @@ export default function TodayHero({
               <Play size={14} strokeWidth={2.5} fill="#fff" /> C&apos;est parti
             </motion.button>
             <div className="flex justify-center gap-5 mt-2.5">
-              <button onClick={onShift} className="text-[11.5px] font-semibold cursor-pointer bg-transparent border-none"
+              <button onClick={onShift} className="text-[13px] font-semibold cursor-pointer bg-transparent border-none"
                 style={{ color: "rgba(255,255,255,0.6)" }}>
                 Décaler
               </button>
-              <button onClick={onReplace} className="text-[11.5px] font-semibold cursor-pointer bg-transparent border-none flex items-center gap-1"
+              <button onClick={onReplace} className="text-[13px] font-semibold cursor-pointer bg-transparent border-none flex items-center gap-1"
                 style={{ color: "rgba(255,255,255,0.6)" }}>
                 <span style={{ color: "#C9B8FF" }}>✦</span> Remplacer
               </button>
@@ -168,8 +190,9 @@ export default function TodayHero({
               Ta prochaine séance
             </p>
             <h2 className="text-[34px] md:text-[38px] leading-[1.02] font-extralight text-white">{etape.nom}</h2>
-            <p className="mt-2.5 mb-4 text-[11.5px] font-medium" style={{ color: "rgba(255,255,255,0.62)" }}>
-              {reserveLe ?? "Quand tu veux"}{nbExos > 0 ? ` · ${nbExos} exercices` : ""}
+            <p className="mt-2.5 mb-4 text-[16px] font-normal" style={{ color: "rgba(255,255,255,0.82)" }}>
+              {reserveLe ?? "Quand tu veux"}
+              {nbExos > 0 && <><S /><V>{nbExos}</V> exercices</>}
             </p>
             <motion.button
               whileTap={{ scale: 0.97 }}
@@ -180,7 +203,7 @@ export default function TodayHero({
               <Play size={14} strokeWidth={2.5} fill="#fff" /> C&apos;est parti
             </motion.button>
             <div className="flex justify-center gap-5 mt-2.5">
-              <button onClick={onOrganise} className="text-[11.5px] font-semibold cursor-pointer bg-transparent border-none"
+              <button onClick={onOrganise} className="text-[13px] font-semibold cursor-pointer bg-transparent border-none"
                 style={{ color: "rgba(255,255,255,0.6)" }}>
                 {reserveLe ? "Changer de jour" : "Lui donner un jour"}
               </button>
@@ -203,7 +226,7 @@ export default function TodayHero({
               Adaptation en cours
             </p>
             <h2 className="text-[30px] md:text-[34px] leading-[1.04] font-extralight text-white">Rien de compatible.</h2>
-            <p className="text-[12.5px] font-light mt-1.5 mb-3.5 leading-relaxed" style={{ color: "rgba(255,255,255,0.72)" }}>
+            <p className="text-[16px] font-normal mt-1.5 mb-3.5 leading-relaxed" style={{ color: "rgba(255,255,255,0.82)" }}>
               Aucune séance de ton programme n&apos;est compatible avec ton adaptation
               {adaptationJusquau ? <>, en cours jusqu&apos;au <b className="font-bold text-white">{adaptationJusquau}</b></> : null}.
             </p>
@@ -216,7 +239,7 @@ export default function TodayHero({
               Gérer mon adaptation
             </motion.button>
             <div className="flex justify-center gap-5 mt-2.5">
-              <button onClick={onImprovise} className="text-[11.5px] font-semibold cursor-pointer bg-transparent border-none"
+              <button onClick={onImprovise} className="text-[13px] font-semibold cursor-pointer bg-transparent border-none"
                 style={{ color: "rgba(255,255,255,0.6)" }}>
                 J&apos;ai quand même envie de bouger
               </button>
@@ -230,7 +253,7 @@ export default function TodayHero({
               Aujourd&apos;hui
             </p>
             <h2 className="text-[34px] md:text-[38px] leading-[1.02] font-extralight text-white">Rien de prévu.</h2>
-            <p className="text-[12.5px] font-light mt-1.5 mb-3.5 leading-relaxed" style={{ color: "rgba(255,255,255,0.72)" }}>
+            <p className="text-[16px] font-normal mt-1.5 mb-3.5 leading-relaxed" style={{ color: "rgba(255,255,255,0.82)" }}>
               Tu t&apos;entraînes quand tu veux.
               {nextLabel && <> Ensuite : <b className="font-bold text-white">{nextLabel}</b>.</>}
             </p>
@@ -251,7 +274,7 @@ export default function TodayHero({
               Aujourd&apos;hui
             </p>
             <h2 className="text-[34px] md:text-[38px] leading-[1.02] font-extralight text-white">Repos.</h2>
-            <p className="text-[12.5px] font-light mt-1.5 mb-3.5 leading-relaxed" style={{ color: "rgba(255,255,255,0.72)" }}>
+            <p className="text-[16px] font-normal mt-1.5 mb-3.5 leading-relaxed" style={{ color: "rgba(255,255,255,0.82)" }}>
               Ton corps construit pendant que tu récupères.
               {nextLabel && <> Prochaine : <b className="font-bold text-white">{nextLabel}</b>.</>}
             </p>
@@ -272,10 +295,10 @@ export default function TodayHero({
               Aujourd&apos;hui · fait
             </p>
             <h2 className="text-[34px] md:text-[38px] leading-[1.02] font-extralight text-white">C&apos;est fait.</h2>
-            <p className="text-[12.5px] font-light mt-1.5 mb-3.5" style={{ color: "rgba(255,255,255,0.72)" }}>
+            <p className="text-[16px] font-normal mt-1.5 mb-3.5" style={{ color: "rgba(255,255,255,0.82)" }}>
               {dayTitle(day)}
-              {doneStats && doneStats.minutes > 0 && <> · {doneStats.minutes} min</>}
-              {doneStats && doneStats.kcal > 0 && <> · <b className="font-bold" style={{ color: "#EF9F27" }}>{doneStats.kcal} kcal</b></>}
+              {doneStats && doneStats.minutes > 0 && <><S /><V>{doneStats.minutes}</V> min</>}
+              {doneStats && doneStats.kcal > 0 && <><S /><span style={{ color: "#EF9F27" }}><V couleur="#EF9F27">{doneStats.kcal}</V> kcal</span></>}
             </p>
             <motion.button
               whileTap={{ scale: 0.97 }}
@@ -295,7 +318,7 @@ export default function TodayHero({
             </p>
             {/* La question n'apparaît QUE quand l'app ne sait pas — même logique que Nutrition */}
             <h2 className="text-[30px] md:text-[34px] leading-[1.04] font-extralight text-white">On s&apos;entraîne comment&nbsp;?</h2>
-            <p className="text-[12.5px] font-light mt-1.5 mb-3.5 leading-relaxed" style={{ color: "rgba(255,255,255,0.72)" }}>
+            <p className="text-[16px] font-normal mt-1.5 mb-3.5 leading-relaxed" style={{ color: "rgba(255,255,255,0.82)" }}>
               Quelques questions, et ta semaine est prête.
             </p>
             <motion.button

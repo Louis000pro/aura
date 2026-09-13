@@ -126,7 +126,7 @@ export default function HeroJournee() {
             <motion.div
               initial={{ y: 56, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 40, opacity: 0 }}
               transition={{ type: "spring", stiffness: 400, damping: 34 }}
-              className="w-full max-w-lg rounded-t-3xl md:rounded-3xl overflow-hidden"
+              className="w-full max-w-lg rounded-t-[var(--r-feuille)] md:rounded-[var(--r-feuille)] overflow-hidden"
               style={{
                 background: "rgb(var(--surface-rgb))",
                 border: "1px solid rgba(var(--accent-rgb),0.14)",

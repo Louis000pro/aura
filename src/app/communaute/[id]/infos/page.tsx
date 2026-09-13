@@ -538,7 +538,7 @@ function AjouterDesGens({ moi, dejaLa, convId, onFermer, onAjoute }: {
       <motion.div className="fixed inset-0 z-[90] bg-black/45"
         initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onFermer} />
       <motion.div
-        className="fixed inset-x-0 bottom-0 z-[91] rounded-t-[26px] px-5 pt-5"
+        className="fixed inset-x-0 bottom-0 z-[91] rounded-t-[var(--r-feuille)] px-5 pt-5"
         style={{ background: "rgb(var(--surface-rgb))", paddingBottom: "calc(1.5rem + env(safe-area-inset-bottom))" }}
         initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
         transition={{ type: "spring", damping: 32, stiffness: 320 }}
