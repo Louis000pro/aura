@@ -31,8 +31,16 @@ const nextConfig: NextConfig = {
   // Recopié explicitement plutôt que laissé au réglage « exposer
   // automatiquement les variables système » de Vercel : ce réglage peut
   // être décoché sans qu'on le remarque, ce fichier non.
+  //
+  // `NEXT_PUBLIC_BUILD_ID` suit exactement la même logique, et sert au journal
+  // des erreurs client (`/api/client-error`) ainsi qu'au verrou de
+  // récupération de `src/lib/secoursErreur.ts`. C'est le COMMIT réel du
+  // déploiement, pas un identifiant fabriqué : il se retrouve tel quel dans
+  // `git log`, ce qu'un compteur maison ne permettrait pas. Vide en local, et
+  // c'est voulu : on ne fabrique pas une fausse version.
   env: {
     NEXT_PUBLIC_VERCEL_ENV: process.env.VERCEL_ENV ?? "",
+    NEXT_PUBLIC_BUILD_ID: (process.env.VERCEL_GIT_COMMIT_SHA ?? "").slice(0, 7),
   },
 
   // ── Non-indexation de tout ce qui n'est pas la production ─────

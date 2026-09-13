@@ -24,24 +24,40 @@ function balayer(maintenant: number) {
 }
 
 /**
- * `true` si l'envoi est permis, `false` s'il faut refuser (429).
- * Chaque appel autorisé consomme un jeton.
+ * Le compteur générique. `true` si l'appel est permis, `false` s'il faut
+ * refuser. Chaque appel autorisé consomme un jeton.
  *
  * `usage` sépare les compteurs : demander trois codes de connexion ne doit pas
  * empêcher de demander ensuite une réinitialisation de mot de passe. Ce sont
  * deux besoins légitimes différents, chacun a son quota.
+ *
+ * `cle` est ce qu'on compte (une adresse e-mail, une IP). Elle n'est ni
+ * journalisée ni renvoyée, elle ne sert qu'à indexer le seau en mémoire.
  */
-export function autoriserEnvoiEmail(usage: string, email: string, maxParHeure = 3): boolean {
+export function autoriserRafale(
+  usage: string,
+  cle: string,
+  max: number,
+  fenetreMs: number = FENETRE_MS,
+): boolean {
   const maintenant = Date.now();
   balayer(maintenant);
 
-  const cle = `${usage}:${email.toLowerCase().trim()}`;
-  const seau = seaux.get(cle);
+  const index = `${usage}:${cle}`;
+  const seau = seaux.get(index);
   if (!seau || maintenant > seau.finFenetre) {
-    seaux.set(cle, { envois: 1, finFenetre: maintenant + FENETRE_MS });
+    seaux.set(index, { envois: 1, finFenetre: maintenant + fenetreMs });
     return true;
   }
-  if (seau.envois >= maxParHeure) return false;
+  if (seau.envois >= max) return false;
   seau.envois++;
   return true;
+}
+
+/**
+ * Envoi d'e-mail : le cas historique, inchangé (même seau, même fenêtre d'une
+ * heure, même normalisation de l'adresse).
+ */
+export function autoriserEnvoiEmail(usage: string, email: string, maxParHeure = 3): boolean {
+  return autoriserRafale(usage, email.toLowerCase().trim(), maxParHeure, FENETRE_MS);
 }

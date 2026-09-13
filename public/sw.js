@@ -1,4 +1,10 @@
-// Vaiiya Service Worker — v10 (HTML réseau-strict : déploiements toujours frais en ligne)
+// Vaiiya Service Worker — v11 (HTML réseau-strict + purge ciblée à la demande)
+//
+// ⚠️ v11 N'A CHANGÉ AUCUNE STRATÉGIE DE CACHE. Le seul ajout est un
+// gestionnaire `message` qui permet à l'écran de secours (`app/error.tsx`) de
+// demander la purge du cache HTML. Les navigations restent en réseau strict,
+// les chunks en cache-first permanent, les assets en stale-while-revalidate.
+//
 // Stratégie :
 //   - Navigation (HTML) → Réseau STRICT d'abord : on sert toujours la page
 //     fraîche quand on est en ligne (un déploiement est visible immédiatement),
@@ -94,6 +100,47 @@ self.addEventListener("fetch", (e) => {
         return cached || fresh;
       })
     )
+  );
+});
+
+// ── Purge ciblée, demandée par l'écran de secours ────────────
+//
+// ⚠️ SEUL `vaiiya-html` EST PURGEABLE, ET C'EST UN ARBITRAGE, PAS UNE
+// PRÉCAUTION. C'est le seul cache dont le contenu peut être FAUX plutôt que
+// simplement vieux : il reçoit toute navigation réussie (étape 3), donc il
+// peut porter le document d'un build disparu, et il accepterait aussi une page
+// de contrôle anti-robot, qui répond en 200.
+//
+// ⚠️ `vaiiya-static` N'EST PAS PURGÉ, ET IL NE FAUT PAS L'AJOUTER ICI. Ses URL
+// sont hachées par contenu, donc immuables : une entrée en cache est toujours
+// les bons octets pour cette URL-là. Le vider ne peut donc pas réparer un
+// chunk manquant, puisque le problème est justement une URL qui n'est PAS dans
+// le cache et qui répond 404 sur le réseau. Ça ne ferait que retélécharger des
+// fichiers corrects et détruire le fonctionnement hors ligne, au moment précis
+// où quelqu'un a peut-être simplement un réseau qui vacille. (Que ce cache
+// grossisse sans fin est un vrai sujet, mais c'en est un autre : il ne cause
+// pas cette panne.)
+//
+// `vaiiya-dynamic` (images, polices) n'a aucun rapport avec le chargement des
+// modules. Pas de `caches.keys()` balayé aveuglément : la liste est explicite.
+const PURGEABLES = [HTML_CACHE];
+
+self.addEventListener("message", (e) => {
+  if (!e.data || e.data.type !== "vaiiya-purge") return;
+  const port = e.ports && e.ports[0];
+  e.waitUntil(
+    (async () => {
+      const purges = [];
+      for (const nom of PURGEABLES) {
+        try {
+          if (await caches.delete(nom)) purges.push(nom);
+        } catch { /* un cache qui refuse de partir ne bloque pas le reste */ }
+      }
+      // La réponse est un confort : l'appelant borne son attente et recharge
+      // de toute façon. Un service worker d'une version antérieure ne répond
+      // pas du tout, et c'est un cas prévu côté client.
+      try { if (port) port.postMessage({ ok: true, purges }); } catch { /* ignore */ }
+    })(),
   );
 });
 
