@@ -812,7 +812,18 @@ html.a-session .accueil-landing { display: none; }
    ⚠️ ET ON POSE LA CLASSE, JAMAIS SON CONTENU. Recopier le trio
    `font-family` + `font-variation-settings` + `letter-spacing` dans un écran,
    c'est une seconde définition du chiffre, qui divergera au premier
-   ajustement. */
+   ajustement.
+
+   ⚠️ ⚠️ CETTE CLASSE EMPORTE LA GRAISSE AVEC ELLE, ET ÇA SURPREND À CHAQUE
+   FOIS. Les `.vy-*` vivent HORS `@layer` exprès, pour gagner contre un
+   utilitaire Tailwind oublié : poser `.vy-nombre` sur un élément qui portait
+   `font-bold` ou `font-extrabold` le ramène donc à 600, et la valeur maigrit
+   au lieu de ressortir. Quand la graisse compte, elle se pose en STYLE EN
+   LIGNE (`style={{ fontWeight: 800 }}`), qui gagne sur les deux.
+   C'est aussi pour ça que le chrono du tunnel garde son `--chiffre` écrit à
+   la main : il est en `font-black`, et la classe l'affaiblirait au moment
+   précis où on le regarde le plus. ⚠️ 800 est le MAXIMUM de Martian Mono :
+   au-delà le navigateur ne fabrique rien, il plafonne (mesuré). */
 .vy-nombre {
   font-family: var(--chiffre);
   font-variation-settings: var(--w-nombre);

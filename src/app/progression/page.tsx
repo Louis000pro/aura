@@ -517,17 +517,30 @@ function ElanSheet({ data, onClose }: { data: ElanData; onClose: () => void }) {
 
           {/* Détails */}
           <div style={{ width: 128 }}>
+            {/* ⚠️ LE DERNIER CHAMP DIT SI LA VALEUR PREND LE VISAGE DU CHIFFRE.
+                « Calories » est le seul à dire NON, et ce n'est pas un oubli :
+                `toLocaleString("fr-FR")` sépare les milliers par une espace
+                insécable, qui occupe une CASE ENTIÈRE en chasse fixe, donc
+                « 1 480 » se lirait comme deux valeurs. Même remarque que sur
+                l'anneau de la nutrition. La règle complète est dans
+                `globals.css`, au point de définition de `.vy-nombre`. */}
             {([
-              ["Séances", sessions > 0 ? String(sessions) : "—", "#8B5CF6"],
-              ["Temps", minutes > 0 ? fmtDur(minutes) : "—", "var(--text-1)"],
-              ["Calories", kcal > 0 ? kcal.toLocaleString("fr-FR") : "—", "#EF9F27"],
-              ["Moyenne", avg > 0 ? `${avg} min` : "—", "var(--text-1)"],
-              ["Record", record > 0 ? `${record} min` : "—", "var(--text-1)"],
-            ] as const).map(([k, v, c], i, arr) => (
+              ["Séances", sessions > 0 ? String(sessions) : "—", "#8B5CF6", true],
+              ["Temps", minutes > 0 ? fmtDur(minutes) : "—", "var(--text-1)", true],
+              ["Calories", kcal > 0 ? kcal.toLocaleString("fr-FR") : "—", "#EF9F27", false],
+              ["Moyenne", avg > 0 ? `${avg} min` : "—", "var(--text-1)", true],
+              ["Record", record > 0 ? `${record} min` : "—", "var(--text-1)", true],
+            ] as const).map(([k, v, c, chiffre], i, arr) => (
               <div key={k} className="flex items-baseline justify-between py-[7px]"
                 style={{ borderBottom: i < arr.length - 1 ? "1px solid rgba(255,255,255,0.06)" : "none" }}>
                 <span className="text-[11px] font-semibold" style={{ color: "var(--text-3)" }}>{k}</span>
-                <span className="text-[13px] font-extrabold" style={{ color: c }}>{v}</span>
+                {/* ⚠️ LE POIDS EN STYLE EN LIGNE, ET C'EST OBLIGATOIRE ICI.
+                    `.vy-nombre` est définie HORS @layer pour gagner contre un
+                    utilitaire Tailwind oublié : elle écraserait donc le
+                    `font-extrabold` de cette ligne et rendrait la valeur plus
+                    légère. Le style en ligne gagne sur les deux. */}
+                <span className={`text-[13px] ${chiffre ? "vy-nombre" : "font-extrabold"}`}
+                  style={{ color: c, fontWeight: 800 }}>{v}</span>
               </div>
             ))}
           </div>
@@ -763,7 +776,7 @@ function SessionTile({ session, onStart, onManage, onPremium, canAccessPremium, 
             style={{ background: "var(--verre-photo)", backdropFilter: "blur(6px)", border: "1px solid var(--verre-photo-bord)" }}>
             <BookOpen size={9} strokeWidth={2.4} className="flex-shrink-0 text-white" aria-hidden />
             <span className="text-[11px] leading-none font-semibold text-white">
-              {session.duration} min · lire
+              <span className="vy-nombre">{session.duration}</span> min · lire
             </span>
           </span>
         ) : (
@@ -916,7 +929,7 @@ function PremiumPreviewSheet({ session, premiumCount, onClose, onUpgrade }: {
 
         <div className="px-5 pt-4 pb-5">
           <div className="flex items-center gap-2 text-[11px] font-bold" style={{ color: "var(--text-2)" }}>
-            <span>{session.duration} min{advice ? " de lecture" : ""}</span>
+            <span><span className="vy-nombre">{session.duration}</span> min{advice ? " de lecture" : ""}</span>
             <span aria-hidden style={{ color: "var(--text-3)" }}>·</span>
             {advice ? (
               <span className="truncate">{advice.theme}</span>
@@ -1089,7 +1102,7 @@ function ManageSheet({ session, onClose, onEdit, onDelete, onVisibilityChange, o
           <div className="min-w-0 flex-1">
             <p className="text-[15px] font-bold leading-tight truncate" style={{ color: "var(--text-1)" }}>{session.title}</p>
             <p className="text-[11px] font-medium mt-1" style={{ color: "var(--text-3)" }}>
-              {session.perso ? "Séance perso" : "Séance Vaiiya"} · {session.duration} min
+              {session.perso ? "Séance perso" : "Séance Vaiiya"} · <span className="vy-nombre">{session.duration}</span> min
             </p>
           </div>
           <motion.button whileTap={{ scale: 0.9 }} onClick={onClose}

@@ -63,10 +63,14 @@ export default function MaJournee({
           </b>
           <small>missions</small>
         </span>
-        <span className={styles.voir}>
-          Voir tout
-          <ChevronRight size={14} strokeWidth={2.6} aria-hidden="true" />
-        </span>
+        {/* ⚠️ LE CHEVRON SEUL, ET LE MOT EN MOINS. « Voir tout » redisait ce
+            que la tête fait déjà : elle est un bouton en entier depuis V7B,
+            et le compte « 2 / 4 » annonce lui-même qu'il y en a plus à voir.
+            C'est l'accessoire qu'on enlève pour payer l'agrandissement du
+            reste. ⚠️ Le chevron, LUI, RESTE : c'est le seul signe que la
+            ligne s'ouvre, et le retirer coûterait une affordance au lieu
+            d'un mot. */}
+        <ChevronRight size={17} strokeWidth={2.4} className={styles.voir} aria-hidden="true" />
       </button>
 
       <ul className={styles.marques}>

@@ -95,7 +95,7 @@
 .etat {
   display: flex;
   width: 100%;
-  min-height: 58px;
+  min-height: 62px;
   align-items: center;
   gap: 11px;
   padding: 0 13px;
@@ -132,7 +132,7 @@
 .etatSerie b {
   font-family: var(--chiffre);
   font-variation-settings: var(--w-nombre);
-  font-size: 16px;
+  font-size: 22px;
   font-weight: 700;
   letter-spacing: -0.04em;
   font-variant-numeric: tabular-nums;
@@ -140,7 +140,7 @@
 
 .etatSerie small {
   color: var(--text-2);
-  font-size: 11.5px;
+  font-size: 13px;
   font-weight: 600;
 }
 
@@ -159,8 +159,8 @@
   gap: 6px;
   overflow: hidden;
   color: var(--text-0);
-  font-size: 13px;
-  font-weight: 800;
+  font-size: 16px;
+  font-weight: 600;
   letter-spacing: -0.01em;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -172,7 +172,7 @@
   position: relative;
   flex: 0 0 auto;
   color: var(--text-3);
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 600;
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
@@ -182,7 +182,7 @@
   color: var(--exp-encre);
   font-family: var(--chiffre);
   font-variation-settings: var(--w-nombre);
-  font-size: 14px;
+  font-size: 17px;
   font-weight: 700;
   letter-spacing: -0.04em;
 }
