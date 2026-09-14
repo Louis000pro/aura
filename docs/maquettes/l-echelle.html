@@ -1,0 +1,335 @@
+<title>L'échelle de Vaiiya</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&family=Martian+Mono:wdth,wght@75..112.5,100..800&display=swap">
+<style>
+  :root{
+    --ground:#F8F6FD;
+    --carte:#FFFFFF;
+    --encre:#17122A;
+    --encre-2:#4A4160;
+    --encre-3:#8A7FA6;
+    --filet:rgba(109,75,214,.16);
+    --accent:#6D4BD6;
+    --magenta:#B0329F;
+    --avant:#C2530B;
+    --avant-fond:rgba(232,98,12,.09);
+    --apres:#0B8A68;
+    --apres-fond:rgba(11,138,104,.10);
+    --voix:"wdth" 116;
+    --affiche:"wdth" 122;
+    --nombre:"wdth" 82;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --ground:#131020; --carte:#1C1730; --encre:#F2EFFA; --encre-2:#C3BCD8;
+      --encre-3:#8C83A8; --filet:rgba(195,174,255,.20); --accent:#C3AEFF;
+      --magenta:#E77BD8; --avant:#FFA35C; --avant-fond:rgba(255,163,92,.12);
+      --apres:#3FE0B0; --apres-fond:rgba(63,224,176,.12);
+    }
+  }
+  :root[data-theme="dark"]{
+    --ground:#131020; --carte:#1C1730; --encre:#F2EFFA; --encre-2:#C3BCD8;
+    --encre-3:#8C83A8; --filet:rgba(195,174,255,.20); --accent:#C3AEFF;
+    --magenta:#E77BD8; --avant:#FFA35C; --avant-fond:rgba(255,163,92,.12);
+    --apres:#3FE0B0; --apres-fond:rgba(63,224,176,.12);
+  }
+
+  *{box-sizing:border-box}
+  body{
+    background:var(--ground); color:var(--encre);
+    font-family:Archivo,system-ui,sans-serif; font-variation-settings:"wdth" 100;
+    -webkit-font-smoothing:antialiased;
+    padding:0 20px; padding-block:40px 64px;
+  }
+  main{max-width:520px; margin:0 auto; display:flex; flex-direction:column; gap:52px}
+
+  .nombre{font-family:"Martian Mono",ui-monospace,monospace; font-variation-settings:var(--nombre); letter-spacing:-.045em; font-variant-numeric:tabular-nums}
+
+  /* ── ouverture ─────────────────────────────────────────────── */
+  header{display:flex; flex-direction:column; gap:14px}
+  .eyebrow{font-size:11px; font-weight:600; letter-spacing:.09em; text-transform:uppercase; color:var(--encre-3)}
+  h1{
+    margin:0; font-size:clamp(34px,9vw,44px); line-height:1.02;
+    font-variation-settings:var(--affiche); font-weight:700; letter-spacing:-.035em;
+    text-wrap:balance;
+  }
+  h1 em{font-style:normal; color:var(--accent)}
+  .chapo{margin:0; font-size:16px; line-height:1.55; color:var(--encre-2); max-width:44ch}
+
+  /* ── sections ──────────────────────────────────────────────── */
+  section{display:flex; flex-direction:column; gap:16px}
+  h2{
+    margin:0; font-size:20px; line-height:1.15; font-weight:600;
+    font-variation-settings:var(--voix); letter-spacing:-.02em;
+  }
+  p{margin:0; font-size:16px; line-height:1.6; color:var(--encre-2); max-width:46ch}
+  p b{color:var(--encre); font-weight:600}
+  .note{font-size:13px; line-height:1.5; color:var(--encre-3)}
+
+  /* ── le constat : deux colonnes de valeurs ─────────────────── */
+  .constat{display:grid; grid-template-columns:1fr 1fr; gap:12px}
+  .pile{
+    background:var(--carte); border:1px solid var(--filet); border-radius:18px;
+    padding:16px 14px 18px; display:flex; flex-direction:column; gap:10px;
+  }
+  .pile[data-etat="avant"]{border-color:color-mix(in srgb, var(--avant) 30%, transparent)}
+  .pile[data-etat="apres"]{border-color:color-mix(in srgb, var(--apres) 34%, transparent)}
+  .pile h3{
+    margin:0; font-size:11px; font-weight:600; letter-spacing:.08em; text-transform:uppercase;
+    display:flex; align-items:baseline; gap:6px;
+  }
+  .pile[data-etat="avant"] h3{color:var(--avant)}
+  .pile[data-etat="apres"] h3{color:var(--apres)}
+  .pile h3 span{font-size:16px; letter-spacing:-.04em; text-transform:none}
+  .vals{display:flex; flex-wrap:wrap; gap:4px 5px}
+  .val{
+    font-size:11px; font-weight:600; padding:3px 6px; border-radius:7px;
+    background:var(--avant-fond); color:var(--avant);
+  }
+  .pile[data-etat="apres"] .val{background:var(--apres-fond); color:var(--apres); font-size:13px; padding:4px 8px}
+
+  /* ── l'échelle, montrée à sa vraie taille ──────────────────── */
+  .marches{
+    background:var(--carte); border:1px solid var(--filet); border-radius:20px;
+    overflow:hidden;
+  }
+  .marche{
+    display:flex; align-items:baseline; gap:14px; padding:14px 18px;
+  }
+  .marche + .marche{border-top:1px solid var(--filet)}
+  .marche dt{
+    flex:0 0 46px; font-size:13px; color:var(--encre-3); font-weight:600;
+  }
+  .marche dd{margin:0; display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; min-width:0}
+  .marche .mot{line-height:1.1; font-weight:600; letter-spacing:-.015em}
+  .marche .role{font-size:13px; color:var(--encre-3); line-height:1.3}
+
+  /* ── avant / après sur un vrai bloc ────────────────────────── */
+  .duel{display:flex; flex-direction:column; gap:14px}
+  @media (min-width:520px){ .duel{flex-direction:row} .duel > *{flex:1; min-width:0} }
+  .ecran{
+    background:var(--carte); border:1px solid var(--filet); border-radius:20px;
+    padding:0 0 4px; overflow:hidden; display:flex; flex-direction:column;
+  }
+  .ecran > .tag{
+    font-size:11px; font-weight:600; letter-spacing:.08em; text-transform:uppercase;
+    padding:9px 16px; border-bottom:1px solid var(--filet);
+  }
+  .ecran[data-etat="avant"] .tag{color:var(--avant); background:var(--avant-fond)}
+  .ecran[data-etat="apres"] .tag{color:var(--apres); background:var(--apres-fond)}
+  .corps{padding:14px 16px 16px; display:flex; flex-direction:column; gap:12px}
+
+  .titre-bloc{font-weight:600; letter-spacing:-.02em; color:var(--encre)}
+  .repas{display:flex; align-items:center; gap:10px}
+  .repas .glyphe{
+    flex:0 0 34px; height:34px; border-radius:11px; display:grid; place-items:center;
+    background:color-mix(in srgb, var(--accent) 12%, transparent); font-size:16px;
+  }
+  .repas .nom{flex:1; min-width:0; display:flex; flex-direction:column; gap:2px}
+  .repas .nom b{font-weight:600; color:var(--encre); letter-spacing:-.01em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .repas .nom small{color:var(--encre-3)}
+  .repas .kcal{text-align:right; display:flex; flex-direction:column; gap:1px}
+  .repas .kcal b{color:var(--encre); font-weight:700}
+  .repas .kcal small{color:var(--encre-3)}
+  .filet-h{height:1px; background:var(--filet)}
+
+  /* ── ce qui change ─────────────────────────────────────────── */
+  .points{display:flex; flex-direction:column; gap:0; background:var(--carte); border:1px solid var(--filet); border-radius:20px; overflow:hidden}
+  .point{display:flex; gap:14px; padding:16px 18px}
+  .point + .point{border-top:1px solid var(--filet)}
+  .point .chiffre{flex:0 0 auto; font-size:20px; font-weight:700; color:var(--accent); line-height:1.1}
+  .point div{display:flex; flex-direction:column; gap:4px; min-width:0}
+  .point b{font-size:16px; font-weight:600; letter-spacing:-.012em}
+  .point span{font-size:13px; line-height:1.5; color:var(--encre-2)}
+
+  /* ── le verrou ─────────────────────────────────────────────── */
+  .verrou{
+    border:1px solid var(--filet); border-radius:20px; padding:18px;
+    background:linear-gradient(180deg, color-mix(in srgb, var(--accent) 7%, var(--carte)), var(--carte));
+    display:flex; flex-direction:column; gap:10px;
+  }
+  .verrou code{
+    font-family:"Martian Mono",ui-monospace,monospace; font-variation-settings:var(--nombre);
+    font-size:13px; font-weight:600; color:var(--accent); letter-spacing:-.03em;
+  }
+  .sortie{
+    font-family:"Martian Mono",ui-monospace,monospace; font-variation-settings:var(--nombre);
+    font-size:11px; line-height:1.7; color:var(--encre-2); letter-spacing:-.02em;
+    white-space:pre-wrap; word-break:break-word;
+  }
+  .sortie u{text-decoration:none; color:var(--apres)}
+
+  footer{font-size:13px; line-height:1.6; color:var(--encre-3); border-top:1px solid var(--filet); padding-top:20px}
+  footer b{color:var(--encre-2); font-weight:600}
+</style>
+
+<main>
+  <header>
+    <p class="eyebrow">Fondations visuelles · 14 septembre</p>
+    <h1>Vaiiya écrivait ses textes en <em>vingt-cinq</em> tailles.</h1>
+    <p class="chapo">Une par une, écran par écran, sans que rien ne les relie. Dont <b>neuf entre 11 et 17 px</b>, c'est-à-dire neuf façons de dire « petit ». Il y en a six maintenant, et un contrôle les compte.</p>
+  </header>
+
+  <section>
+    <h2>Le problème n'était pas le goût, il était comptable</h2>
+    <p>Un écart d'un demi-pixel ne se voit pas. Il ne crée donc aucune hiérarchie : il ne fait qu'ajouter une décision à prendre à chaque nouvel écran, et une chose de plus à tenir d'accord.</p>
+    <div class="constat">
+      <div class="pile" data-etat="avant">
+        <h3>Avant <span class="nombre">25</span></h3>
+        <div class="vals">
+          <i class="val">11</i><i class="val">11,5</i><i class="val">11,8</i><i class="val">12</i><i class="val">12,5</i><i class="val">12,8</i><i class="val">13</i><i class="val">13,5</i><i class="val">14</i><i class="val">14,5</i><i class="val">15</i><i class="val">16</i><i class="val">16,5</i><i class="val">17</i><i class="val">18</i><i class="val">19</i><i class="val">20</i><i class="val">21</i><i class="val">22</i><i class="val">24</i><i class="val">26</i><i class="val">27</i><i class="val">28</i><i class="val">30</i><i class="val">34</i>
+        </div>
+      </div>
+      <div class="pile" data-etat="apres">
+        <h3>Après <span class="nombre">6</span></h3>
+        <div class="vals">
+          <i class="val">11</i><i class="val">13</i><i class="val">16</i><i class="val">20</i><i class="val">26</i><i class="val">34+</i>
+        </div>
+      </div>
+    </div>
+    <p class="note">1 489 tailles écrites à la main dans le produit. Aucune n'a disparu : chacune est venue se poser sur la marche de son rôle.</p>
+  </section>
+
+  <section>
+    <h2>Les six marches, à leur vraie taille</h2>
+    <p>La règle n'est pas « prendre la valeur la plus proche », c'est <b>prendre la marche du rôle</b>. Une pastille descend à 11, une phrase monte à 13, un texte qu'on lit vraiment monte à 16.</p>
+    <dl class="marches">
+      <div class="marche">
+        <dt class="nombre">11</dt>
+        <dd><span class="mot" style="font-size:11px">kcal · Premium · mardi 8</span><span class="role">la mention, l'unité, l'étiquette</span></dd>
+      </div>
+      <div class="marche">
+        <dt class="nombre">13</dt>
+        <dd><span class="mot" style="font-size:13px">Changer de jour</span><span class="role">ce qu'on lit en second</span></dd>
+      </div>
+      <div class="marche">
+        <dt class="nombre">16</dt>
+        <dd><span class="mot" style="font-size:16px">Pull · 45 min · 6 mouvements</span><span class="role">le texte qu'on lit vraiment</span></dd>
+      </div>
+      <div class="marche">
+        <dt class="nombre">20</dt>
+        <dd><span class="mot" style="font-size:20px">Ma semaine</span><span class="role">le titre d'un bloc</span></dd>
+      </div>
+      <div class="marche">
+        <dt class="nombre">26</dt>
+        <dd><span class="mot nombre" style="font-size:26px">1 240</span><span class="role">la valeur forte</span></dd>
+      </div>
+      <div class="marche">
+        <dt class="nombre">34+</dt>
+        <dd><span class="mot" style="font-size:34px; font-variation-settings:var(--affiche); letter-spacing:-.035em">Repos.</span><span class="role">le héros, un seul par écran</span></dd>
+      </div>
+    </dl>
+    <p class="note">Le plancher reste 11 px, celui d'Apple. Cinq textes vivaient encore en dessous, à 9,5 et 10 px : le contrôle ne savait pas lire la façon dont ils étaient écrits.</p>
+  </section>
+
+  <section>
+    <h2>Ce que ça donne : une ligne du journal</h2>
+    <p>Même contenu, mêmes couleurs, même hauteur à deux pixels près. Seuls les rapports changent.</p>
+    <div class="duel">
+      <div class="ecran" data-etat="avant">
+        <div class="tag">Avant · 5 tailles</div>
+        <div class="corps">
+          <div class="titre-bloc" style="font-size:17px">Aujourd'hui</div>
+          <div class="repas">
+            <span class="glyphe" style="font-size:15px">🍳</span>
+            <span class="nom">
+              <b style="font-size:14px">Œufs brouillés, pain complet</b>
+              <small style="font-size:11px">08:20 · Petit-déjeuner</small>
+            </span>
+            <span class="kcal">
+              <b style="font-size:14px">412</b>
+              <small style="font-size:11px">kcal</small>
+            </span>
+          </div>
+          <div class="filet-h"></div>
+          <div class="repas">
+            <span class="glyphe" style="font-size:15px">🥗</span>
+            <span class="nom">
+              <b style="font-size:14px">Poulet, riz, brocolis</b>
+              <small style="font-size:11px">12:45 · Déjeuner</small>
+            </span>
+            <span class="kcal">
+              <b style="font-size:14px">638</b>
+              <small style="font-size:11px">kcal</small>
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div class="ecran" data-etat="apres">
+        <div class="tag">Après · 3 tailles</div>
+        <div class="corps">
+          <div class="titre-bloc" style="font-size:20px">Aujourd'hui</div>
+          <div class="repas">
+            <span class="glyphe" style="font-size:16px">🍳</span>
+            <span class="nom">
+              <b style="font-size:16px">Œufs brouillés, pain complet</b>
+              <small style="font-size:11px">08:20 · Petit-déjeuner</small>
+            </span>
+            <span class="kcal">
+              <b class="nombre" style="font-size:16px">412</b>
+              <small style="font-size:11px">kcal</small>
+            </span>
+          </div>
+          <div class="filet-h"></div>
+          <div class="repas">
+            <span class="glyphe" style="font-size:16px">🥗</span>
+            <span class="nom">
+              <b style="font-size:16px">Poulet, riz, brocolis</b>
+              <small style="font-size:11px">12:45 · Déjeuner</small>
+            </span>
+            <span class="kcal">
+              <b class="nombre" style="font-size:16px">638</b>
+              <small style="font-size:11px">kcal</small>
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <p class="note">Le titre commande enfin le bloc, le nom du repas se lit au lieu de se deviner, et les calories prennent le visage du chiffre : Martian Mono, la signature que tu as validée hier.</p>
+  </section>
+
+  <section>
+    <h2>Ce qui change vraiment</h2>
+    <div class="points">
+      <div class="point">
+        <span class="chiffre nombre">1</span>
+        <div>
+          <b>Le texte qu'on lit a grandi</b>
+          <span>Un message de conversation passe de 13,5 à 16 px. C'est le contenu même de l'onglet, il était écrit plus petit qu'une légende.</span>
+        </div>
+      </div>
+      <div class="point">
+        <span class="chiffre nombre">2</span>
+        <div>
+          <b>Il n'y a plus deux échelles</b>
+          <span>Les classes du produit disaient 12 / 15 / 17 pendant que l'accueil, validé la veille, posait 11 / 13 / 16 / 20. Deux valeurs pour un même rôle, ce n'est pas une échelle.</span>
+        </div>
+      </div>
+      <div class="point">
+        <span class="chiffre nombre">3</span>
+        <div>
+          <b>Le chiffre n'a plus qu'une définition</b>
+          <span>Trois endroits de l'accueil recopiaient Martian Mono à la main, avec un interlettrage déjà différent. Ils posent la classe, comme partout ailleurs.</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Et ça ne peut plus repartir</h2>
+    <p>Une échelle ne se maintient pas toute seule : la vingt-sixième valeur s'écrit sans qu'on la voie. Un banc les compte désormais, comme les cinq autres du projet.</p>
+    <div class="verrou">
+      <code>npm run check:echelle</code>
+      <div class="sortie"><u>✓</u> l'échelle tient : 1 489 tailles,
+toutes sur une marche (247 fichiers).</div>
+      <p class="note" style="margin-top:2px">Il lit les <b>trois</b> façons d'écrire une taille, refuse les classes toutes faites qui rouvrent 12 et 14, et vérifie qu'un titre fluide démarre lui aussi sur une marche. Cinq essais de sabotage, cinq échecs attendus.</p>
+    </div>
+  </section>
+
+  <footer>
+    <b>Rien d'autre n'a bougé.</b> Aucune couleur, aucune règle de calcul, aucune migration. Le contrôle du code rend exactement le même résultat qu'avant la passe.
+    <br><br>À regarder en premier sur la préversion : le journal de la nutrition, une conversation, et la carte du jour sur l'accueil (les deux états dont la phrase est longue passent de 30 à 34 px, donc sur deux lignes).
+  </footer>
+</main>

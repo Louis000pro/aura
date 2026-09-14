@@ -1,5 +1,5 @@
 /* ════════════════════════════════════════════════════════════════════
-   check-echelle — L'ÉCHELLE TYPOGRAPHIQUE TIENT, ET ELLE SE VÉRIFIE.
+   check-echelle · L'ÉCHELLE TYPOGRAPHIQUE TIENT, ET ELLE SE VÉRIFIE.
 
    Posée sur tout le produit le 2026-09-14. Avant : 858 tailles écrites à
    la main sur 25 valeurs distinctes, dont NEUF entre 11 et 17 px. Ce banc
@@ -41,7 +41,7 @@ const fichiers = [];
 })(RACINE);
 
 const fautes = [];
-const ajoute = (f, i, quoi) => fautes.push(`${relative(".", f)}:${i + 1} — ${quoi}`);
+const ajoute = (f, i, quoi) => fautes.push(`${relative(".", f)}:${i + 1} · ${quoi}`);
 
 let mesures = 0;
 for (const f of fichiers) {
@@ -116,7 +116,7 @@ for (const [classe, attendu] of [["vy-label", 11], ["vy-corps", 16], ["vy-sous",
   const bloc = css.match(new RegExp(`\.${classe} \{[^}]*\}`));
   const rem = bloc && bloc[0].match(/font-size: *([0-9.]+)rem/);
   const px = rem ? Math.round(parseFloat(rem[1]) * 16) : null;
-  if (px !== attendu) fautes.push(`globals.css — .${classe} vaut ${px}px, la marche de son rôle est ${attendu}px`);
+  if (px !== attendu) fautes.push(`globals.css · .${classe} vaut ${px}px, la marche de son rôle est ${attendu}px`);
 }
 
 if (fautes.length) {
