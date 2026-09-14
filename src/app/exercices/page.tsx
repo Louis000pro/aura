@@ -78,7 +78,7 @@ export default function ExercicesPage() {
         >
           Les exercices de musculation, montrés en mouvement
         </h1>
-        <p className="max-w-[640px] text-[1.05rem] leading-[1.65]" style={{ color: "#4A5568" }}>
+        <p className="max-w-[640px] text-[1rem] leading-[1.65]" style={{ color: "#4A5568" }}>
           Un mouvement se comprend mieux quand on le voit. Chaque fiche montre le geste en
           animation, les muscles sollicités, les repères d&apos;exécution et les erreurs
           fréquentes.
@@ -90,7 +90,7 @@ export default function ExercicesPage() {
           exercice qu'il ne peut pas ouvrir : `CarteExercice` exige
           désormais une destination, donc le compilateur tient la règle. */}
       <section>
-        <h2 className="text-[1.35rem] font-medium mb-1" style={{ color: "#2D2150" }}>
+        <h2 className="text-[1.625rem] font-medium mb-1" style={{ color: "#2D2150" }}>
           Les exercices
         </h2>
         <p className="text-[16px] mb-6" style={{ color: "#8B84A8" }}>

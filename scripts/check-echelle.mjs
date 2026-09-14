@@ -68,11 +68,19 @@ for (const f of fichiers) {
       l = l.slice(0, d) + l.slice(fin + 2);
     }
     l = l.replace(/\/\/.*$/, "");
-    /* ── 1 · les trois écritures d'une taille ─────────────────────── */
+    /* ── 1 · TOUTES les écritures d'une taille, px ET rem ────────────
+       ⚠️ Le `rem` n'est pas une coquetterie à tolérer, c'est la SEULE
+       unité qui suive le réglage de taille de police du système. Les
+       pages publiques /exercices et l'affiche de perf sont écrites comme
+       ça, et c'est la seule qualité que le reste de l'app n'a pas : on
+       les met sur les marches SANS les convertir en px. Un banc qui ne
+       lisait que les px les déclarait conformes sans les avoir lues. */
+    const enPx = (v, u) => (u === "rem" ? v * 16 : v);
     const vus = [
-      ...[...l.matchAll(/text-\[([0-9.]+)px\]/g)].map((m) => +m[1]),
-      ...[...l.matchAll(/font-size: *([0-9.]+)px/g)].map((m) => +m[1]),
+      ...[...l.matchAll(/text-\[([0-9.]+)(px|rem)\]/g)].map((m) => enPx(+m[1], m[2])),
+      ...[...l.matchAll(/font-size: *([0-9.]+)(px|rem)/g)].map((m) => enPx(+m[1], m[2])),
       ...[...l.matchAll(/fontSize: *([0-9.]+)\b/g)].map((m) => +m[1]),
+      ...[...l.matchAll(/fontSize[^\n]*?"([0-9.]+)(rem|px)"/g)].map((m) => enPx(+m[1], m[2])),
     ];
     for (const v of vus) {
       mesures++;

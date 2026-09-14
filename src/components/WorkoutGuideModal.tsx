@@ -1306,7 +1306,12 @@ export default function WorkoutGuideModal({
                             style={{ borderBottom: i < exercises.length - 1 ? "1px solid rgba(var(--accent-rgb),0.1)" : "none" }}
                             aria-expanded={open}
                           >
-                            <span className="text-[16px] font-black w-4 text-center flex-shrink-0" style={{ color: "rgba(var(--accent-rgb),0.55)" }}>{i + 1}</span>
+                            {/* ⚠️ 13 px, PAS 16, ET LA BOITE COMMANDE : `w-4` fait 16 px de large, donc
+                                deux chiffres en `font-black` a 16 px n'y entrent pas. Un numero
+                                d'ordre n'est de toute facon pas une donnee forte, il se lit en
+                                second. Monter une taille sans regarder sa boite, c'est deplacer
+                                le defaut. */}
+                            <span className="text-[13px] font-black w-4 text-center flex-shrink-0" style={{ color: "rgba(var(--accent-rgb),0.55)" }}>{i + 1}</span>
                             <span className="flex-1 min-w-0">
                               <b className="block text-[16px] font-bold tracking-tight truncate" style={{ color: "var(--text-1)" }}>{ex.name}</b>
                               {/* ⚠️ L'INTERLETTRAGE BAISSE PARCE QUE LA TAILLE MONTE. Il valait

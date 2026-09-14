@@ -185,13 +185,13 @@ export default function PerformanceCard({
               backdropFilter: hasPhoto ? "blur(6px)" : undefined,
             }}>
               <Icon size={isSmall ? 11 : 13} strokeWidth={2} style={{ color: "#fff" }} />
-              <span style={{ fontWeight: fw.label, color: "#fff", letterSpacing: "0.2em", textTransform: "uppercase", fontSize: isSmall ? "0.5rem" : "0.58rem", textShadow: ts }}>
+              <span style={{ fontWeight: fw.label, color: "#fff", letterSpacing: "0.2em", textTransform: "uppercase", fontSize: isSmall ? "0.6875rem" : "0.6875rem", textShadow: ts }}>
                 {label}
               </span>
             </div>
           ) : <div />}
           {showDate && (
-            <span style={{ fontWeight: fw.label, color: "rgba(255,255,255,0.85)", fontSize: isSmall ? "0.58rem" : "0.68rem", textShadow: ts }}>
+            <span style={{ fontWeight: fw.label, color: "rgba(255,255,255,0.85)", fontSize: isSmall ? "0.6875rem" : "0.8125rem", textShadow: ts }}>
               {data.date}
             </span>
           )}
@@ -204,7 +204,7 @@ export default function PerformanceCard({
           className={`relative z-10 ${isSmall ? "flex-1 flex flex-col justify-center" : ""}`}
           style={{ display: "flex", flexDirection: "column", alignItems: centered ? "center" : "flex-start" }}
         >
-          <p style={{ fontWeight: fw.label, letterSpacing: "0.24em", textTransform: "uppercase", marginBottom: "0.5rem", color: "rgba(255,255,255,0.75)", fontSize: isSmall ? "0.5rem" : "0.58rem", textShadow: ts, textAlign: centered ? "center" : "left" }}>
+          <p style={{ fontWeight: fw.label, letterSpacing: "0.24em", textTransform: "uppercase", marginBottom: "0.6875rem", color: "rgba(255,255,255,0.75)", fontSize: isSmall ? "0.6875rem" : "0.6875rem", textShadow: ts, textAlign: centered ? "center" : "left" }}>
             {hero.label}
           </p>
           <div style={{ display: "flex", alignItems: "flex-end", gap: "0.5rem", marginBottom: "0.5rem", justifyContent: centered ? "center" : "flex-start" }}>
@@ -212,13 +212,13 @@ export default function PerformanceCard({
               {hero.value}
             </span>
             {hero.unit && (
-              <span style={{ fontWeight: fw.label, lineHeight: 1, color: "rgba(255,255,255,0.7)", fontSize: isSmall ? "0.9rem" : "1.25rem", marginBottom: isSmall ? "0.25rem" : "0.5rem", textShadow: ts }}>
+              <span style={{ fontWeight: fw.label, lineHeight: 1, color: "rgba(255,255,255,0.7)", fontSize: isSmall ? "1rem" : "1.25rem", marginBottom: isSmall ? "0.25rem" : "0.6875rem", textShadow: ts }}>
                 {hero.unit}
               </span>
             )}
           </div>
           {showTitle && (
-            <p style={{ fontWeight: fw.label, color: "rgba(255,255,255,0.85)", fontSize: isSmall ? "0.7rem" : "0.88rem", textShadow: ts, textAlign: centered ? "center" : "left" }}>
+            <p style={{ fontWeight: fw.label, color: "rgba(255,255,255,0.85)", fontSize: isSmall ? "0.8125rem" : "1rem", textShadow: ts, textAlign: centered ? "center" : "left" }}>
               {data.title}
             </p>
           )}
@@ -236,15 +236,15 @@ export default function PerformanceCard({
           style={{ gridTemplateColumns: `repeat(${Math.min(subItems.length, 3)}, 1fr)`, gap: isSmall ? 8 : 12 }}>
           {subItems.slice(0, 3).map(({ m, originalIdx }) => (
             <div key={originalIdx} className="relative">
-              <p style={{ fontWeight: fw.label, letterSpacing: "0.2em", textTransform: "uppercase", marginBottom: "0.25rem", color: "rgba(255,255,255,0.65)", fontSize: isSmall ? "0.44rem" : "0.52rem", textShadow: ts }}>
+              <p style={{ fontWeight: fw.label, letterSpacing: "0.2em", textTransform: "uppercase", marginBottom: "0.25rem", color: "rgba(255,255,255,0.65)", fontSize: isSmall ? "0.6875rem" : "0.6875rem", textShadow: ts }}>
                 {m.label}
               </p>
               <div className="flex items-baseline gap-0.5">
-                <span style={{ fontWeight: fw.sub, color: "#fff", fontSize: isSmall ? "1.05rem" : "1.3rem", textShadow: ts }}>
+                <span style={{ fontWeight: fw.sub, color: "#fff", fontSize: isSmall ? "1rem" : "1.25rem", textShadow: ts }}>
                   {m.value}
                 </span>
                 {m.unit && (
-                  <span style={{ color: "rgba(255,255,255,0.6)", fontSize: "0.58rem", textShadow: ts }}>
+                  <span style={{ color: "rgba(255,255,255,0.6)", fontSize: "0.6875rem", textShadow: ts }}>
                     {m.unit}
                   </span>
                 )}
@@ -273,7 +273,7 @@ export default function PerformanceCard({
       {/* ── Branding ── */}
       {showBranding && (
         <div className="relative z-10 flex items-center justify-end mt-auto">
-          <span style={{ fontWeight: 900, color: "#fff", letterSpacing: "0.42em", textTransform: "uppercase", fontSize: isSmall ? "0.52rem" : "0.62rem", opacity: 0.85, textShadow: ts }}>
+          <span style={{ fontWeight: 900, color: "#fff", letterSpacing: "0.42em", textTransform: "uppercase", fontSize: isSmall ? "0.6875rem" : "0.6875rem", opacity: 0.85, textShadow: ts }}>
             ✦ VAIIYA
           </span>
         </div>

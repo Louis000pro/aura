@@ -158,7 +158,7 @@ export default async function FicheExercicePage({
         </div>
 
         <div className="order-3 md:order-none md:col-start-2 md:row-start-2">
-          <p className="text-[1.12rem] leading-[1.55] mb-6" style={{ color: "#4A5568" }}>
+          <p className="text-[1.25rem] leading-[1.55] mb-6" style={{ color: "#4A5568" }}>
             {contenu.promesse ?? lib.benefit}
           </p>
 
@@ -214,19 +214,19 @@ export default async function FicheExercicePage({
         <p className="text-[11px] font-bold tracking-[0.18em] uppercase mb-1.5" style={{ color: "#12A67C" }}>
           Le point qui compte
         </p>
-        <p className="text-[1.02rem] leading-[1.6]" style={{ color: "#2D2150" }}>
+        <p className="text-[1rem] leading-[1.6]" style={{ color: "#2D2150" }}>
           {lib.tip}
         </p>
       </aside>
 
       {/* ── Le corps : borné à 680 px quelle que soit la fenêtre ─── */}
       <div className="mt-14 max-w-[680px]">
-        <p className="text-[1.05rem] leading-[1.7]" style={{ color: "#4A5568" }}>
+        <p className="text-[1rem] leading-[1.7]" style={{ color: "#4A5568" }}>
           {contenu.definition}
         </p>
 
         {/* Exécution */}
-        <h2 className="mt-12 mb-6 text-[1.45rem] font-medium" style={{ color: "#2D2150" }}>
+        <h2 className="mt-12 mb-6 text-[1.625rem] font-medium" style={{ color: "#2D2150" }}>
           Comment faire {contenu.nomDansLeTitre ?? motDeLExercice(lib.name)}
         </h2>
         <ol className="list-none p-0 m-0">
@@ -243,7 +243,7 @@ export default async function FicheExercicePage({
               >
                 {i + 1}
               </span>
-              <p className="text-[1.02rem] font-semibold mb-1" style={{ color: "#1A1535" }}>
+              <p className="text-[1rem] font-semibold mb-1" style={{ color: "#1A1535" }}>
                 {e.titre}
               </p>
               <p className="text-[1rem] leading-[1.7]" style={{ color: "#4A5568" }}>
@@ -255,7 +255,7 @@ export default async function FicheExercicePage({
 
         {contenu.precaution && (
           <p
-            className="rounded-2xl px-5 py-4 text-[0.95rem] leading-[1.6]"
+            className="rounded-2xl px-5 py-4 text-[1rem] leading-[1.6]"
             style={{ background: "rgba(245,177,32,0.09)", color: "#7A5210" }}
           >
             <strong style={{ color: "#7A5210" }}>À savoir avant de charger.</strong>{" "}
@@ -277,7 +277,7 @@ export default async function FicheExercicePage({
             grille, chacune garde toute la largeur de lecture, et ça se lit
             pour ce que c'est : une liste de choses à ne pas faire. Sur
             téléphone, le rendu est exactement le même. */}
-        <h2 className="mt-12 mb-5 text-[1.45rem] font-medium" style={{ color: "#2D2150" }}>
+        <h2 className="mt-12 mb-5 text-[1.625rem] font-medium" style={{ color: "#2D2150" }}>
           Erreurs fréquentes
         </h2>
         <div
@@ -308,7 +308,7 @@ export default async function FicheExercicePage({
                 <p className="text-[1rem] font-semibold mb-1" style={{ color: "#1A1535" }}>
                   {err.titre}
                 </p>
-                <p className="text-[0.95rem] leading-[1.6]" style={{ color: "#4A5568" }}>
+                <p className="text-[1rem] leading-[1.6]" style={{ color: "#4A5568" }}>
                   {err.pourquoi}
                 </p>
               </div>
@@ -317,7 +317,7 @@ export default async function FicheExercicePage({
         </div>
 
         {/* Variantes */}
-        <h2 className="mt-12 mb-5 text-[1.45rem] font-medium" style={{ color: "#2D2150" }}>
+        <h2 className="mt-12 mb-5 text-[1.625rem] font-medium" style={{ color: "#2D2150" }}>
           {contenu.titreVariantes ?? "Variantes et progressions"}
         </h2>
         <div className="grid gap-4 sm:grid-cols-2">
@@ -327,10 +327,10 @@ export default async function FicheExercicePage({
         </div>
 
         {/* Placement */}
-        <h2 className="mt-12 mb-3 text-[1.45rem] font-medium" style={{ color: "#2D2150" }}>
+        <h2 className="mt-12 mb-3 text-[1.625rem] font-medium" style={{ color: "#2D2150" }}>
           Où le placer dans ta séance
         </h2>
-        <p className="text-[1.02rem] leading-[1.7]" style={{ color: "#4A5568" }}>
+        <p className="text-[1rem] leading-[1.7]" style={{ color: "#4A5568" }}>
           {contenu.placement}
         </p>
       </div>
@@ -378,7 +378,7 @@ export default async function FicheExercicePage({
           là, sinon la fiche deviendrait un cul-de-sac. */}
       {voisins.length > 0 && (
         <section className="mt-16">
-          <h2 className="text-[1.35rem] font-medium mb-5" style={{ color: "#2D2150" }}>
+          <h2 className="text-[1.625rem] font-medium mb-5" style={{ color: "#2D2150" }}>
             Les autres exercices {categorie.toLowerCase()}
           </h2>
           <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
@@ -495,7 +495,7 @@ function CarteVariante({ variante }: { variante: Variante }) {
           </p>
         </div>
       </div>
-      <p className="text-[0.93rem] leading-[1.6]" style={{ color: "#4A5568" }}>
+      <p className="text-[1rem] leading-[1.6]" style={{ color: "#4A5568" }}>
         {variante.texte}
       </p>
     </>
