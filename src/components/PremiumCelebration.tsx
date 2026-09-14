@@ -102,7 +102,7 @@ export default function PremiumCelebration({ onClose }: { onClose: () => void })
             Bienvenue dans Premium
           </motion.h2>
 
-          <motion.p className="text-sm font-light mb-6" style={{ color: "#7C6BAA" }}
+          <motion.p className="text-[16px] font-light mb-6" style={{ color: "#7C6BAA" }}
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.35 }}>
             Ton essai de 3 jours est lancé 🎉<br />
             Coach IA illimité · contenus exclusifs · zéro pub. <strong style={{ color: "#6D28D9" }}>tout est débloqué.</strong>
@@ -110,7 +110,7 @@ export default function PremiumCelebration({ onClose }: { onClose: () => void })
 
           {/* Bouton avec shimmer */}
           <motion.button whileTap={{ scale: 0.96 }} onClick={() => onClose()}
-            className="relative w-full py-3.5 rounded-2xl text-sm font-bold text-white cursor-pointer overflow-hidden"
+            className="relative w-full py-3.5 rounded-2xl text-[16px] font-bold text-white cursor-pointer overflow-hidden"
             style={{ background: "linear-gradient(135deg,#A78BFA,#7C5CFA)", boxShadow: "0 10px 28px rgba(124,92,250,0.45)" }}
             initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.45 }}>
             <motion.span className="absolute top-0 bottom-0 w-1/3 pointer-events-none"

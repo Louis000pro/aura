@@ -239,7 +239,7 @@ export default function GuidedTour() {
           style={{
             padding: "7px 12px",
             borderRadius: 999,
-            fontSize: 12,
+            fontSize: 13,
             fontWeight: 500,
             color: BLANC(0.62),
             background: BLANC(0.06),
@@ -310,7 +310,7 @@ export default function GuidedTour() {
                   <p
                     style={{
                       margin: 0,
-                      fontSize: 14,
+                      fontSize: 13,
                       fontWeight: 700,
                       letterSpacing: "0.13em",
                       textTransform: "uppercase",
@@ -339,7 +339,7 @@ export default function GuidedTour() {
               <p
                 style={{
                   margin: "12px 0 0",
-                  fontSize: 14.5,
+                  fontSize: 16,
                   fontWeight: 300,
                   lineHeight: 1.62,
                   color: BLANC(0.7),
@@ -391,7 +391,7 @@ export default function GuidedTour() {
           style={{
             height: 52,
             borderRadius: 999,
-            fontSize: 15,
+            fontSize: 16,
             fontWeight: 600,
             color: "#FFFFFF",
             background: "linear-gradient(135deg, #8B5CF6 0%, #C13BC1 100%)",

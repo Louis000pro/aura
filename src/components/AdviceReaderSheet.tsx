@@ -115,7 +115,7 @@ export default function AdviceReaderSheet({
                 )}
               </div>
               <h1 id={`advice-title-${article.id}`}
-                className="text-[30px] md:text-[34px] font-black leading-[0.98] tracking-[-0.035em] max-w-[420px]"
+                className="text-[26px] md:text-[34px] font-black leading-[0.98] tracking-[-0.035em] max-w-[420px]"
                 style={{ textWrap: "balance", textShadow: "0 3px 18px rgba(0,0,0,0.52)" }}>
                 {article.title}
               </h1>
@@ -132,7 +132,7 @@ export default function AdviceReaderSheet({
           </header>
 
           <div className="px-6 pt-7 pb-[calc(2rem+env(safe-area-inset-bottom))]">
-            <p className="text-[17px] font-semibold leading-[1.7]" style={{ color: "var(--text-1)" }}>
+            <p className="text-[20px] font-semibold leading-[1.7]" style={{ color: "var(--text-1)" }}>
               {article.intro}
             </p>
 
@@ -149,14 +149,14 @@ export default function AdviceReaderSheet({
                   </div>
                   <div className="space-y-3.5">
                     {section.paragraphs.map((paragraph) => (
-                      <p key={paragraph} className="text-[15px] leading-[1.78] font-normal" style={{ color: "var(--text-2)" }}>
+                      <p key={paragraph} className="text-[16px] leading-[1.78] font-normal" style={{ color: "var(--text-2)" }}>
                         {paragraph}
                       </p>
                     ))}
                     {section.bullets && section.bullets.length > 0 && (
                       <ul className="space-y-2.5 pt-1">
                         {section.bullets.map((bullet) => (
-                          <li key={bullet} className="flex gap-2.5 text-[14px] leading-relaxed" style={{ color: "var(--text-2)" }}>
+                          <li key={bullet} className="flex gap-2.5 text-[16px] leading-relaxed" style={{ color: "var(--text-2)" }}>
                             <Check size={14} strokeWidth={2.4} className="mt-1 flex-shrink-0" style={{ color: "var(--teal-encre)" }} aria-hidden />
                             <span>{bullet}</span>
                           </li>
@@ -173,7 +173,7 @@ export default function AdviceReaderSheet({
               <p className="text-[11px] font-black uppercase tracking-[0.16em]" style={{ color: "var(--accent)" }}>
                 Exemple concret
               </p>
-              <p className="text-[14.5px] font-semibold leading-[1.72] mt-2" style={{ color: "var(--text-1)" }}>
+              <p className="text-[16px] font-semibold leading-[1.72] mt-2" style={{ color: "var(--text-1)" }}>
                 {article.example}
               </p>
             </section>
@@ -183,7 +183,7 @@ export default function AdviceReaderSheet({
               <p className="text-[11px] font-black uppercase tracking-[0.16em]" style={{ color: "var(--teal-encre)" }}>
                 À retenir
               </p>
-              <p className="text-[17px] font-black leading-snug mt-2" style={{ color: "var(--text-1)", textWrap: "balance" }}>
+              <p className="text-[20px] font-black leading-snug mt-2" style={{ color: "var(--text-1)", textWrap: "balance" }}>
                 {article.takeaway}
               </p>
             </section>
@@ -193,7 +193,7 @@ export default function AdviceReaderSheet({
               <p className="text-[11px] font-black uppercase tracking-[0.16em]" style={{ color: "var(--accent)" }}>
                 Essaie ça
               </p>
-              <p className="text-[14.5px] font-semibold leading-relaxed mt-2" style={{ color: "var(--text-1)" }}>
+              <p className="text-[16px] font-semibold leading-relaxed mt-2" style={{ color: "var(--text-1)" }}>
                 {article.tryThis}
               </p>
             </section>

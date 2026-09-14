@@ -141,7 +141,7 @@ function FooterCol({ titre, liens }: { titre: string; liens: { href: string; lab
 function CtaGhost({ label, href }: { label: string; href: string }) {
   return (
     <Link href={href}>
-      <span className="inline-flex items-center gap-1.5 px-5 py-3 rounded-full text-[14px] font-medium cursor-pointer lg-surface"
+      <span className="inline-flex items-center gap-1.5 px-5 py-3 rounded-full text-[13px] font-medium cursor-pointer lg-surface"
         style={{ color: "var(--text-body)", border: "1px solid rgba(var(--accent-rgb),0.25)" }}>
         {label}
       </span>
@@ -173,7 +173,7 @@ function SectionQuoi({ chiffres }: { chiffres: ChiffresPublics }) {
           </SectionTitle>
         </Reveal>
         <Reveal delay={0.12}>
-          <p className="mt-7 text-base md:text-lg font-light leading-relaxed max-w-xl mx-auto" style={{ color: "var(--text-2)" }}>
+          <p className="mt-7 text-[16px] md:text-[20px] font-light leading-relaxed max-w-xl mx-auto" style={{ color: "var(--text-2)" }}>
             Un vrai catalogue de séances guidées, ta nutrition comprise d&rsquo;une photo, un assistant qui agit
             et un rang qui monte à chaque effort. Une seule app pour t&rsquo;entraîner, manger mieux et tenir dans le temps.
           </p>
@@ -185,7 +185,7 @@ function SectionQuoi({ chiffres }: { chiffres: ChiffresPublics }) {
             {preuves.map((p) => (
               <div key={p.label} className="rounded-[22px] p-4 lg-surface lg-highlight">
                 <p className="text-[clamp(1.8rem,6vw,2.6rem)] font-extralight leading-none" style={ACCENT_TEXT}>{p.n}</p>
-                <p className="mt-2 text-[12px] font-medium leading-tight" style={{ color: "var(--text-3)" }}>{p.label}</p>
+                <p className="mt-2 text-[13px] font-medium leading-tight" style={{ color: "var(--text-3)" }}>{p.label}</p>
               </div>
             ))}
           </div>
@@ -193,7 +193,7 @@ function SectionQuoi({ chiffres }: { chiffres: ChiffresPublics }) {
 
         {/* Le fil rouge « tout connecté », en une phrase plutôt qu'en cartes. */}
         <Reveal delay={0.24}>
-          <p className="mt-10 text-[15px] font-light leading-relaxed max-w-lg mx-auto" style={{ color: "var(--text-3)" }}>
+          <p className="mt-10 text-[16px] font-light leading-relaxed max-w-lg mx-auto" style={{ color: "var(--text-3)" }}>
             Et tout communique : une séance terminée coche ta mission du jour, ajoute ton EXP et fait avancer
             ta semaine. Rien à recopier ailleurs.
           </p>
@@ -224,7 +224,7 @@ function SectionCatalogue() {
             </SectionTitle>
           </Reveal>
           <Reveal delay={0.12}>
-            <p className="mt-6 text-base md:text-lg font-light max-w-xl mx-auto leading-relaxed" style={{ color: "var(--text-2)" }}>
+            <p className="mt-6 text-[16px] md:text-[20px] font-light max-w-xl mx-auto leading-relaxed" style={{ color: "var(--text-2)" }}>
               Sans matériel, à la salle, en mobilité ou en récupération. Une base gratuite solide pour démarrer,
               et Premium quand tu veux les formats spécialisés.
             </p>
@@ -324,7 +324,7 @@ function VignetteMouvement({
           style={{ objectFit: "contain" }}
         />
       </div>
-      <p className="mt-2 text-[12px] font-semibold leading-tight truncate" style={{ color: "var(--text-1)" }}>{m.nom}</p>
+      <p className="mt-2 text-[13px] font-semibold leading-tight truncate" style={{ color: "var(--text-1)" }}>{m.nom}</p>
       <p className="text-[11px] font-light leading-tight truncate" style={{ color: "var(--text-3)" }}>{m.zone}</p>
 
       {/* La pastille : teal quand le mouvement est déjà dans la séance, violet
@@ -356,8 +356,8 @@ function PanneauBibliotheque({ mouvements }: { mouvements: number }) {
       style={{ border: "1px solid rgba(var(--accent-rgb),0.16)" }}>
 
       <div className="px-5 py-4" style={{ borderBottom: "1px solid rgba(var(--accent-rgb),0.1)" }}>
-        <p className="text-[14px] font-semibold leading-tight" style={{ color: "var(--text-0)" }}>La bibliothèque</p>
-        <p className="text-[11.5px] font-light" style={{ color: "var(--text-3)" }}>
+        <p className="text-[13px] font-semibold leading-tight" style={{ color: "var(--text-0)" }}>La bibliothèque</p>
+        <p className="text-[11px] font-light" style={{ color: "var(--text-3)" }}>
           {mouvements} mouvements, tous animés
         </p>
       </div>
@@ -381,7 +381,7 @@ function PanneauBibliotheque({ mouvements }: { mouvements: number }) {
       </div>
 
       <div className="px-5 pb-5">
-        <span className="flex items-center justify-center py-3 rounded-full text-[13.5px] font-semibold text-white"
+        <span className="flex items-center justify-center py-3 rounded-full text-[13px] font-semibold text-white"
           style={{ background: ACTION_BG }}>
           En faire une séance ({choisis})
         </span>
@@ -400,7 +400,7 @@ function SectionComposer({ chiffres }: { chiffres: ChiffresPublics }) {
           <SectionTitle>
             Suis-en une. Ou <span style={ACCENT_TEXT}>compose la tienne</span>.
           </SectionTitle>
-          <p className="mt-5 text-[15px] md:text-base font-light leading-relaxed" style={{ color: "var(--text-2)" }}>
+          <p className="mt-5 text-[16px] font-light leading-relaxed" style={{ color: "var(--text-2)" }}>
             Le catalogue est une porte d&rsquo;entrée, pas la seule. Selon le jour, tu prends une séance toute
             faite, tu la construis mouvement par mouvement, tu la demandes à l&rsquo;assistant, ou tu
             improvises.
@@ -415,8 +415,8 @@ function SectionComposer({ chiffres }: { chiffres: ChiffresPublics }) {
                     <Check size={10} color="#fff" strokeWidth={3.5} />
                   </span>
                   <div>
-                    <p className="text-[14.5px] font-semibold leading-snug" style={{ color: "var(--text-1)" }}>{p.t}</p>
-                    <p className="mt-0.5 text-[13.5px] font-light leading-relaxed" style={{ color: "var(--text-3)" }}>{p.d}</p>
+                    <p className="text-[16px] font-semibold leading-snug" style={{ color: "var(--text-1)" }}>{p.t}</p>
+                    <p className="mt-0.5 text-[13px] font-light leading-relaxed" style={{ color: "var(--text-3)" }}>{p.d}</p>
                   </div>
                 </div>
               </Reveal>
@@ -522,10 +522,10 @@ function TunnelPhone() {
           <p className="mt-4 text-[11px] font-semibold uppercase" style={{ letterSpacing: "0.22em", color: "#B6A2E8" }}>
             Exercice 6 / 7
           </p>
-          <h3 className="mt-1 text-[30px] font-extrabold tracking-tight leading-none text-white">CRUNCH</h3>
+          <h3 className="mt-1 text-[26px] font-extrabold tracking-tight leading-none text-white">CRUNCH</h3>
 
           {/* Démo dépliable */}
-          <span className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[11.5px] font-medium"
+          <span className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[11px] font-medium"
             style={{ background: "rgba(255,255,255,0.07)", color: "rgba(255,255,255,0.85)" }}>
             <Play size={10} fill="currentColor" strokeWidth={0} />
             Démo · ton coach
@@ -559,8 +559,8 @@ function TunnelPhone() {
           <p className="text-center text-[11px] font-semibold uppercase" style={{ letterSpacing: "0.22em", color: "rgba(255,255,255,0.5)" }}>
             Série 2 / 3
           </p>
-          <p className="text-center text-[46px] font-light leading-none mt-1 text-white tabular-nums">20</p>
-          <p className="text-center text-[12px] font-light" style={{ color: "rgba(255,255,255,0.55)" }}>reps</p>
+          <p className="text-center text-[34px] font-light leading-none mt-1 text-white tabular-nums">20</p>
+          <p className="text-center text-[13px] font-light" style={{ color: "rgba(255,255,255,0.55)" }}>reps</p>
 
           {/* Pastilles de série */}
           <div className="mt-3 flex items-center justify-center gap-3">
@@ -579,18 +579,18 @@ function TunnelPhone() {
           <div className="mt-4 rounded-2xl px-3 py-2.5 flex gap-2"
             style={{ background: "rgba(255,255,255,0.055)", border: "1px solid rgba(255,255,255,0.08)" }}>
             <span className="flex-shrink-0 mt-0.5"><AssistantSpark px={14} /></span>
-            <p className="text-[11.5px] font-light leading-snug" style={{ color: "rgba(255,255,255,0.72)" }}>
+            <p className="text-[11px] font-light leading-snug" style={{ color: "rgba(255,255,255,0.72)" }}>
               <span className="font-semibold" style={{ color: "rgba(255,255,255,0.92)" }}>Le geste : </span>
               Mains à peine derrière les tempes, sans tirer sur la nuque. Expire en montant.
             </p>
           </div>
 
           {/* Validation */}
-          <div className="mt-4 w-full rounded-full py-3 text-center text-[15px] font-semibold text-white"
+          <div className="mt-4 w-full rounded-full py-3 text-center text-[16px] font-semibold text-white"
             style={{ background: ACTION_BG, boxShadow: "0 12px 30px -6px rgba(168,85,247,0.6)" }}>
             Série terminée ✓
           </div>
-          <p className="mt-2.5 text-center text-[12px] font-light" style={{ color: "rgba(255,255,255,0.42)" }}>
+          <p className="mt-2.5 text-center text-[13px] font-light" style={{ color: "rgba(255,255,255,0.42)" }}>
             Passer l&rsquo;exercice
           </p>
         </div>
@@ -616,7 +616,7 @@ function SectionTunnel() {
           <h2 className="mt-6 text-[clamp(1.9rem,4.6vw,3rem)] font-extralight tracking-tight text-white leading-[1.12]">
             Tu n&rsquo;as pas besoin de savoir <span className="font-light" style={{ color: "#D9C6FF" }}>quoi faire</span>.
           </h2>
-          <p className="mt-5 text-[15px] md:text-base font-light leading-relaxed" style={{ color: "rgba(236,234,246,0.78)" }}>
+          <p className="mt-5 text-[16px] font-light leading-relaxed" style={{ color: "rgba(236,234,246,0.78)" }}>
             Une fois la séance lancée, l&rsquo;écran ne fait plus qu&rsquo;une chose : te dire le mouvement suivant.
             C&rsquo;est ce que tu vois à droite, ni plus ni moins.
           </p>
@@ -630,8 +630,8 @@ function SectionTunnel() {
                     <Check size={11} color="#04150F" strokeWidth={3.5} />
                   </span>
                   <div>
-                    <p className="text-[14.5px] font-semibold text-white leading-snug">{p.t}</p>
-                    <p className="mt-1 text-[13.5px] font-light leading-relaxed" style={{ color: "rgba(236,234,246,0.62)" }}>{p.d}</p>
+                    <p className="text-[16px] font-semibold text-white leading-snug">{p.t}</p>
+                    <p className="mt-1 text-[13px] font-light leading-relaxed" style={{ color: "rgba(236,234,246,0.62)" }}>{p.d}</p>
                   </div>
                 </div>
               </Reveal>
@@ -662,8 +662,8 @@ function ChatDemo() {
         style={{ borderBottom: "1px solid rgba(var(--accent-rgb),0.1)" }}>
         <AssistantAvatar size={30} />
         <div>
-          <p className="text-[14px] font-semibold leading-tight" style={{ color: "var(--text-0)" }}>Ton assistant</p>
-          <p className="text-[11.5px] font-light" style={{ color: "var(--text-3)" }}>Il connaît tes séances et tes repas</p>
+          <p className="text-[13px] font-semibold leading-tight" style={{ color: "var(--text-0)" }}>Ton assistant</p>
+          <p className="text-[11px] font-light" style={{ color: "var(--text-3)" }}>Il connaît tes séances et tes repas</p>
         </div>
       </div>
 
@@ -671,7 +671,7 @@ function ChatDemo() {
         {/* Message de l'utilisateur */}
         <Reveal y={12}>
           <div className="flex justify-end">
-            <p className="max-w-[80%] px-4 py-2.5 text-[13.5px] font-light leading-relaxed text-white"
+            <p className="max-w-[80%] px-4 py-2.5 text-[13px] font-light leading-relaxed text-white"
               style={{ background: ACTION_BG, borderRadius: "18px 18px 5px 18px" }}>
               Cette semaine je n&rsquo;ai que mardi et samedi.
             </p>
@@ -681,7 +681,7 @@ function ChatDemo() {
         {/* Réponse de l'assistant */}
         <Reveal y={12} delay={0.12}>
           <div className="flex justify-start">
-            <p className="max-w-[85%] px-4 py-2.5 text-[13.5px] font-light leading-relaxed"
+            <p className="max-w-[85%] px-4 py-2.5 text-[13px] font-light leading-relaxed"
               style={{
                 background: "rgba(var(--accent-rgb),0.09)",
                 color: "var(--text-1)",
@@ -714,7 +714,7 @@ function ChatDemo() {
                 <div key={r.j} className="flex items-center gap-3 px-3 py-2 rounded-xl"
                   style={{ background: "rgba(var(--accent-rgb),0.07)" }}>
                   <span className="text-[11px] font-bold w-12 flex-shrink-0" style={{ color: "var(--accent)" }}>{r.j}</span>
-                  <span className="text-[12.5px] font-medium flex-1 leading-tight" style={{ color: "var(--text-1)" }}>{r.s}</span>
+                  <span className="text-[13px] font-medium flex-1 leading-tight" style={{ color: "var(--text-1)" }}>{r.s}</span>
                   <span className="text-[11px] font-light" style={{ color: "var(--text-3)" }}>{r.d}</span>
                 </div>
               ))}
@@ -757,7 +757,7 @@ function SectionIntelligence() {
             </SectionTitle>
           </Reveal>
           <Reveal delay={0.12}>
-            <p className="mt-6 text-base md:text-lg font-light max-w-xl mx-auto leading-relaxed" style={{ color: "var(--text-2)" }}>
+            <p className="mt-6 text-[16px] md:text-[20px] font-light max-w-xl mx-auto leading-relaxed" style={{ color: "var(--text-2)" }}>
               Tu écris comme tu parles. Elle déplace tes séances, note un repas, propose une recette.
               Toujours une carte à valider : rien ne s&rsquo;écrit sans ton accord.
             </p>
@@ -784,7 +784,7 @@ function SectionIntelligence() {
                   style={{ background: "rgba(12,8,24,0.78)", backdropFilter: "blur(14px)", border: "1px solid rgba(255,255,255,0.1)" }}>
                   <div className="flex items-baseline justify-between mb-2.5">
                     <p className="text-[13px] font-semibold text-white">Bowl poulet quinoa avocat</p>
-                    <p className="text-[17px] font-semibold leading-none" style={{ color: GOLD }}>
+                    <p className="text-[20px] font-semibold leading-none" style={{ color: GOLD }}>
                       612 <span className="text-[11px] font-normal">kcal</span>
                     </p>
                   </div>
@@ -800,10 +800,10 @@ function SectionIntelligence() {
               </div>
 
               <div className="px-5 py-5">
-                <p className="text-[15px] font-semibold mb-2" style={{ color: "var(--text-0)" }}>
+                <p className="text-[16px] font-semibold mb-2" style={{ color: "var(--text-0)" }}>
                   Ton repas, compris en une photo
                 </p>
-                <p className="text-[13.5px] font-light leading-relaxed" style={{ color: "var(--text-2)" }}>
+                <p className="text-[13px] font-light leading-relaxed" style={{ color: "var(--text-2)" }}>
                   Sans rien peser ni fouiller une base de données. Tu prends l&rsquo;assiette en photo, Vaiiya estime
                   les calories et les macros, tu corriges si besoin. La saisie en moins, le suivi en plus.
                 </p>
@@ -844,7 +844,7 @@ function SectionConstance() {
             </SectionTitle>
           </Reveal>
           <Reveal delay={0.12}>
-            <p className="mt-6 text-base md:text-lg font-light max-w-xl mx-auto leading-relaxed" style={{ color: "var(--text-2)" }}>
+            <p className="mt-6 text-[16px] md:text-[20px] font-light max-w-xl mx-auto leading-relaxed" style={{ color: "var(--text-2)" }}>
               Les missions récompensent ce que tu fais vraiment. Ton rang raconte ton parcours, sans classement
               et sans culpabilisation.
             </p>
@@ -854,17 +854,17 @@ function SectionConstance() {
         <div className="grid md:grid-cols-2 gap-5 items-stretch">
           <Reveal>
             <div className="h-full rounded-[26px] p-6 lg-surface lg-highlight">
-              <p className="text-[12px] font-semibold uppercase tracking-wide mb-4" style={{ color: "var(--text-3)" }}>Tes missions du jour</p>
+              <p className="text-[13px] font-semibold uppercase tracking-wide mb-4" style={{ color: "var(--text-3)" }}>Tes missions du jour</p>
               <div className="space-y-2.5">
                 {MISSIONS.map((m) => (
                   <div key={m.label} className="flex items-center gap-3 px-3 py-2.5 rounded-2xl" style={{ background: "rgba(var(--accent-rgb),0.07)" }}>
                     <Image src={m.img} alt="" aria-hidden width={34} height={34} className="rounded-lg" />
-                    <span className="text-[13.5px] font-medium flex-1" style={{ color: "var(--text-1)" }}>{m.label}</span>
+                    <span className="text-[13px] font-medium flex-1" style={{ color: "var(--text-1)" }}>{m.label}</span>
                     <span className="text-[13px] font-bold" style={{ color: "var(--gold)" }}>{m.exp} EXP</span>
                   </div>
                 ))}
               </div>
-              <p className="mt-4 text-[12.5px] font-light leading-relaxed" style={{ color: "var(--text-3)" }}>
+              <p className="mt-4 text-[13px] font-light leading-relaxed" style={{ color: "var(--text-3)" }}>
                 Une mission ne se crédite qu&rsquo;une fois par jour. Pas de triche possible, donc pas de course à qui
                 clique le plus.
               </p>
@@ -873,7 +873,7 @@ function SectionConstance() {
 
           <Reveal delay={0.08}>
             <div className="h-full rounded-[26px] p-6 lg-surface lg-highlight flex flex-col">
-              <p className="text-[12px] font-semibold uppercase tracking-wide mb-4" style={{ color: "var(--text-3)" }}>Ton rang qui monte</p>
+              <p className="text-[13px] font-semibold uppercase tracking-wide mb-4" style={{ color: "var(--text-3)" }}>Ton rang qui monte</p>
               <div className="grid grid-cols-3 gap-3 flex-1 place-items-center">
                 {RANGS_LADDER.map((r, i) => (
                   <div key={r.id} className="flex flex-col items-center gap-1.5">
@@ -885,7 +885,7 @@ function SectionConstance() {
                   </div>
                 ))}
               </div>
-              <p className="mt-4 inline-flex items-center gap-1.5 text-[12px] font-medium" style={{ color: TEAL }}>
+              <p className="mt-4 inline-flex items-center gap-1.5 text-[13px] font-medium" style={{ color: TEAL }}>
                 <ShieldCheck size={13} /> Cosmétique uniquement. Aucun avantage acheté avec l&rsquo;EXP.
               </p>
             </div>
@@ -915,7 +915,7 @@ function SectionRelais() {
           <SectionTitle>
             À deux. <span style={ACCENT_TEXT}>Pas contre les autres</span>.
           </SectionTitle>
-          <p className="mt-5 text-[15px] md:text-base font-light leading-relaxed" style={{ color: "var(--text-2)" }}>
+          <p className="mt-5 text-[16px] font-light leading-relaxed" style={{ color: "var(--text-2)" }}>
             Quatre jours sur sept, chacun son tour. À chaque séance, votre affiche se dévoile un peu plus.
             Aucun classement, aucune punition, on ne nomme jamais celui qui a lâché.
           </p>
@@ -930,7 +930,7 @@ function SectionRelais() {
                 <span className="mt-0.5 w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: ACTION_BG }}>
                   <Check size={10} color="#fff" strokeWidth={3.5} />
                 </span>
-                <span className="text-[14px] font-light" style={{ color: "var(--text-2)" }}>{b}</span>
+                <span className="text-[13px] font-light" style={{ color: "var(--text-2)" }}>{b}</span>
               </li>
             ))}
           </ul>
@@ -965,7 +965,7 @@ function SectionFinale() {
               </SectionTitle>
             </Reveal>
             <Reveal delay={0.12}>
-              <p className="mt-6 text-base font-light max-w-lg mx-auto leading-relaxed" style={{ color: "var(--text-2)" }}>
+              <p className="mt-6 text-[16px] font-light max-w-lg mx-auto leading-relaxed" style={{ color: "var(--text-2)" }}>
                 Pas de version bridée le temps d&rsquo;un essai. Le compte gratuit donne accès au produit,
                 pour de vrai.
               </p>
@@ -981,7 +981,7 @@ function SectionFinale() {
                     <span className="mt-0.5 w-[18px] h-[18px] rounded-full flex items-center justify-center flex-shrink-0" style={{ background: TEAL }}>
                       <Check size={11} color="#04150F" strokeWidth={3.5} />
                     </span>
-                    <span className="text-[14px] font-light" style={{ color: "var(--text-1)" }}>{b}</span>
+                    <span className="text-[13px] font-light" style={{ color: "var(--text-1)" }}>{b}</span>
                   </li>
                 ))}
               </ul>
@@ -1004,12 +1004,12 @@ function SectionFinale() {
           <h2 className="relative text-[clamp(2rem,6vw,3.6rem)] font-extralight leading-[1.02] tracking-tight mb-4" style={{ color: "var(--text-0)" }}>
             Commence là où <span style={ACCENT_TEXT}>tu en es</span>.
           </h2>
-          <p className="relative text-[15px] md:text-base font-light max-w-md mx-auto leading-relaxed mb-9" style={{ color: "var(--text-2)" }}>
+          <p className="relative text-[16px] font-light max-w-md mx-auto leading-relaxed mb-9" style={{ color: "var(--text-2)" }}>
             Une séance suffit pour savoir si Vaiiya est fait pour toi.
           </p>
           <div className="relative flex flex-col items-center gap-4">
             <CtaPrimary label="Créer mon compte gratuit" big />
-            <p className="text-[12.5px] font-light" style={{ color: "var(--text-3)" }}>
+            <p className="text-[13px] font-light" style={{ color: "var(--text-3)" }}>
               Sans carte bancaire · Prêt en une minute
             </p>
             <Link href="/auth?mode=login">
@@ -1034,8 +1034,8 @@ function SectionFinale() {
           <div className="grid gap-9 sm:grid-cols-3">
             {/* Marque */}
             <div>
-              <span className="text-lg font-extralight tracking-[0.12em]" style={{ color: "var(--text-1)" }}>Vaiiya</span>
-              <p className="mt-2 text-[12.5px] font-light leading-relaxed max-w-[24ch]" style={{ color: "var(--text-3)" }}>
+              <span className="text-[20px] font-extralight tracking-[0.12em]" style={{ color: "var(--text-1)" }}>Vaiiya</span>
+              <p className="mt-2 text-[13px] font-light leading-relaxed max-w-[24ch]" style={{ color: "var(--text-3)" }}>
                 Tes séances, tes repas et ton coach au même endroit. Application web, en français.
               </p>
             </div>
@@ -1054,7 +1054,7 @@ function SectionFinale() {
             </div>
           </div>
 
-          <p className="mt-10 pt-6 text-[12px] font-light border-t" style={{ color: "var(--text-3)", borderColor: "rgba(var(--accent-rgb),0.10)" }}>
+          <p className="mt-10 pt-6 text-[13px] font-light border-t" style={{ color: "var(--text-3)", borderColor: "rgba(var(--accent-rgb),0.10)" }}>
             © {new Date().getFullYear()} Vaiiya · Entraînement · Nutrition · Coach IA
           </p>
         </div>

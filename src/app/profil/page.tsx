@@ -80,7 +80,7 @@ function Toast({ message }: { message: string }) {
       }}
     >
       <Check size={14} strokeWidth={2.5} style={{ color: "var(--gold)" }} />
-      <span className="text-sm font-medium">{message}</span>
+      <span className="text-[13px] font-medium">{message}</span>
     </motion.div>
   );
 }
@@ -155,7 +155,7 @@ function AvatarCropper({ src, onCancel, onCropped }: {
         className="w-full max-w-sm rounded-3xl p-6 flex flex-col items-center"
         style={{ background: "rgba(var(--surface-rgb),0.98)", boxShadow: "var(--ombre-flottant)" }}
       >
-        <p className="text-base font-semibold mb-1" style={{ color: "var(--text-1)" }}>Recadre ta photo</p>
+        <p className="text-[16px] font-semibold mb-1" style={{ color: "var(--text-1)" }}>Recadre ta photo</p>
         <p className="text-[11px] mb-4" style={{ color: "var(--text-3)" }}>Glisse pour déplacer · zoome avec le curseur</p>
 
         {/* Viewport circulaire */}
@@ -195,12 +195,12 @@ function AvatarCropper({ src, onCancel, onCropped }: {
         {/* Actions */}
         <div className="flex gap-3 w-full mt-5">
           <motion.button whileTap={{ scale: 0.96 }} onClick={onCancel}
-            className="flex-1 py-3 rounded-2xl text-sm font-semibold cursor-pointer"
+            className="flex-1 py-3 rounded-2xl text-[13px] font-semibold cursor-pointer"
             style={{ background: "rgba(var(--tint-violet-rgb),0.8)", color: "var(--text-2)" }}>
             Annuler
           </motion.button>
           <motion.button whileTap={{ scale: 0.96 }} onClick={confirm}
-            className="flex-1 py-3 rounded-2xl text-sm font-semibold cursor-pointer flex items-center justify-center gap-1.5"
+            className="flex-1 py-3 rounded-2xl text-[16px] font-semibold cursor-pointer flex items-center justify-center gap-1.5"
             style={{ background: "linear-gradient(135deg,var(--violet-mid) 0%,var(--accent) 100%)", color: "#fff", boxShadow: "var(--ombre-action)" }}>
             <Check size={15} strokeWidth={2.5} /> Valider
           </motion.button>
@@ -304,7 +304,7 @@ function EditProfileModal({
         </div>
 
         <div className="flex items-center justify-between mb-5">
-          <h2 className="text-lg font-semibold" style={{ color: "var(--text-1)" }}>Modifier le profil</h2>
+          <h2 className="text-[20px] font-semibold" style={{ color: "var(--text-1)" }}>Modifier le profil</h2>
           <motion.button
             whileTap={{ scale: 0.9 }}
             onClick={onClose}
@@ -321,7 +321,7 @@ function EditProfileModal({
             whileHover={{ scale: 1.04 }}
             whileTap={{ scale: 0.96 }}
             onClick={() => fileRef.current?.click()}
-            className="w-24 h-24 rounded-full flex items-center justify-center text-3xl font-light cursor-pointer relative overflow-hidden"
+            className="w-24 h-24 rounded-full flex items-center justify-center text-[26px] font-light cursor-pointer relative overflow-hidden"
             style={{
               background: "linear-gradient(135deg,var(--violet-mid) 0%,var(--cream-mid) 100%)",
               boxShadow: "var(--ombre-action)",
@@ -352,7 +352,7 @@ function EditProfileModal({
             </div>
           </motion.div>
           <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
-          <p className="text-xs mt-2" style={{ color: "var(--text-3)" }}>Appuie pour changer la photo</p>
+          <p className="text-[11px] mt-2" style={{ color: "var(--text-3)" }}>Appuie pour changer la photo</p>
         </div>
 
         {/* Recadrage de la photo sélectionnée */}
@@ -376,7 +376,7 @@ function EditProfileModal({
               type="text"
               value={editFullName}
               onChange={(e) => setEditFullName(e.target.value)}
-              className="w-full px-4 py-3 rounded-2xl text-sm outline-none"
+              className="w-full px-4 py-3 rounded-2xl text-[16px] outline-none"
               style={{ background: "rgba(var(--tint-violet-rgb),0.5)", border: "1px solid rgba(var(--violet-mid-rgb),0.6)", color: "var(--text-1)" }}
               placeholder="Ton prénom et nom"
             />
@@ -397,7 +397,7 @@ function EditProfileModal({
                   e.target.value.replace(/[^\p{L}\p{N}\p{Emoji}\p{Extended_Pictographic}‍️ ._-]/gu, "").slice(0, 30)
                 )
               }
-              className="w-full px-4 py-3 rounded-2xl text-sm outline-none"
+              className="w-full px-4 py-3 rounded-2xl text-[16px] outline-none"
               style={{ background: "rgba(var(--tint-violet-rgb),0.5)", border: "1px solid rgba(var(--violet-mid-rgb),0.6)", color: "var(--text-1)" }}
               placeholder="Ton pseudo (espaces & emojis ok)"
             />
@@ -413,7 +413,7 @@ function EditProfileModal({
               value={editBio}
               onChange={(e) => setEditBio(e.target.value.slice(0, 150))}
               rows={3}
-              className="w-full px-4 py-3 rounded-2xl text-sm outline-none resize-none"
+              className="w-full px-4 py-3 rounded-2xl text-[16px] outline-none resize-none"
               style={{ background: "rgba(var(--tint-violet-rgb),0.5)", border: "1px solid rgba(var(--violet-mid-rgb),0.6)", color: "var(--text-1)" }}
               placeholder="Dis quelque chose sur toi…"
             />
@@ -425,7 +425,7 @@ function EditProfileModal({
           whileTap={{ scale: 0.97 }}
           onClick={handleSave}
           disabled={saving || uploading || !editPseudo.trim()}
-          className="w-full mt-5 py-3.5 rounded-2xl text-sm font-semibold cursor-pointer flex items-center justify-center gap-2"
+          className="w-full mt-5 py-3.5 rounded-2xl text-[16px] font-semibold cursor-pointer flex items-center justify-center gap-2"
           style={{
             background: "linear-gradient(135deg,var(--violet-mid) 0%,var(--cream-mid) 100%)",
             color: "var(--text-1)",
@@ -769,7 +769,7 @@ export default function ProfilPage() {
               <div className="absolute rounded-full" style={{ inset: 0, background: "rgb(var(--surface-rgb))" }} />
               {/* Photo */}
               <div
-                className="absolute rounded-full overflow-hidden flex items-center justify-center text-4xl"
+                className="absolute rounded-full overflow-hidden flex items-center justify-center text-[34px]"
                 style={{
                   inset: 3,
                   background: displayAvatar ? "transparent" : "linear-gradient(135deg,rgba(var(--tint-violet-rgb),1),rgba(var(--tint-cream-rgb),1))",
@@ -943,7 +943,7 @@ export default function ProfilPage() {
                       descend (900 n'existait pas dans les fichiers de la police, le
                       navigateur le fabriquait) et ils passent en chasse fixe, pour que
                       la ligne ne se décale pas quand la série passe de 9 à 10. */}
-                  <span className="vy-nombre text-[30px] leading-none" style={{ color: encre }}>
+                  <span className="vy-nombre text-[26px] leading-none" style={{ color: encre }}>
                     {value}
                   </span>
                   {/* ⚠️ L'encre, pas `--accent` : le violet décoratif tombe à 2,6:1 sur
@@ -1186,7 +1186,7 @@ export default function ProfilPage() {
                         <Dumbbell size={16} strokeWidth={1.5} style={{ color: "var(--exp-encre)" }} />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold truncate" style={{ color: "var(--text-0)" }}>{session.title || "Séance"}</p>
+                        <p className="text-[16px] font-semibold truncate" style={{ color: "var(--text-0)" }}>{session.title || "Séance"}</p>
                         <p className="text-[11px] font-light mt-0.5" style={{ color: "var(--text-3)" }}>
                           {session.started_at ? new Date(session.started_at).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" }) : "Date inconnue"}
                           {durationMin ? ` · ${durationMin} min` : ""}
@@ -1200,7 +1200,7 @@ export default function ProfilPage() {
                         title="Refaire cette séance"
                       >
                         <Play size={12} strokeWidth={2.2} style={{ color: "var(--exp-encre)" }} />
-                        <span className="text-[11.5px] font-bold" style={{ color: "var(--exp-encre)" }}>Refaire</span>
+                        <span className="text-[13px] font-bold" style={{ color: "var(--exp-encre)" }}>Refaire</span>
                       </motion.button>
                       <motion.button
                         whileTap={{ scale: 0.85 }}
@@ -1249,7 +1249,7 @@ export default function ProfilPage() {
               <div className="grid grid-cols-4 gap-x-2 gap-y-5">
                 {amis.map((ami) => (
                   <Link key={ami.id} href={`/profil/${ami.pseudo}`} className="flex flex-col items-center gap-2">
-                    <div className="w-14 h-14 rounded-full overflow-hidden flex items-center justify-center text-lg font-bold"
+                    <div className="w-14 h-14 rounded-full overflow-hidden flex items-center justify-center text-[20px] font-bold"
                       style={{ background: ami.avatar_url ? "transparent" : "linear-gradient(135deg,var(--violet-mid),var(--cream-mid))", color: "var(--text-1)", border: "2px solid rgba(var(--surface-rgb),1)" }}>
                       {ami.avatar_url
                         // eslint-disable-next-line @next/next/no-img-element
@@ -1341,7 +1341,7 @@ export default function ProfilPage() {
               <div className="flex items-center justify-between px-4 pt-4 pb-3">
                 <div className="flex items-center gap-2.5">
                   <div
-                    className="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center text-sm font-semibold flex-shrink-0"
+                    className="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center text-[13px] font-semibold flex-shrink-0"
                     style={{ background: displayAvatar ? "transparent" : "linear-gradient(135deg,var(--violet-mid),var(--cream-mid))", color: "var(--text-1)" }}
                   >
                     {displayAvatar
@@ -1351,7 +1351,7 @@ export default function ProfilPage() {
                   </div>
                   <div>
                     <div className="flex items-center gap-1">
-                      <p className="text-sm font-semibold" style={{ color: "var(--text-1)" }}>@{displayPseudo}</p>
+                      <p className="text-[16px] font-semibold" style={{ color: "var(--text-1)" }}>@{displayPseudo}</p>
                       {(user?.is_certified || user?.is_admin || user?.email === "teyprox@gmail.com") && (
                         <div className="w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0"
                           style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)" }}>
@@ -1376,7 +1376,7 @@ export default function ProfilPage() {
                         setEditBio(selectedPost.description ?? "");
                         setEditingSelectedPost(true);
                       }}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold"
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[13px] font-semibold"
                       style={{ background: "rgba(var(--accent-rgb),0.15)", color: "var(--exp-encre)" }}
                     >
                       <Pencil size={11} strokeWidth={2} />
@@ -1398,7 +1398,7 @@ export default function ProfilPage() {
               {!editingSelectedPost && (
                 <>
                   {selectedPost.caption && (
-                    <p className="px-4 pb-2 text-sm font-semibold leading-snug" style={{ color: "var(--text-1)" }}>
+                    <p className="px-4 pb-2 text-[16px] font-semibold leading-snug" style={{ color: "var(--text-1)" }}>
                       {selectedPost.caption}
                     </p>
                   )}
@@ -1439,7 +1439,7 @@ export default function ProfilPage() {
                         onClick={() => setAfficheAEnvoyer(
                           perfDataToShare(selectedPost.performance_data as PerformanceData, { user: displayPseudo })
                         )}
-                        className="w-full py-3 rounded-2xl flex items-center justify-center gap-2 text-sm font-semibold cursor-pointer"
+                        className="w-full py-3 rounded-2xl flex items-center justify-center gap-2 text-[16px] font-semibold cursor-pointer"
                         style={{ background: "rgba(139,92,246,0.1)", color: "var(--exp-encre)", border: "1px solid rgba(139,92,246,0.3)" }}
                       >
                         <Share2 size={16} strokeWidth={2} /> Envoyer à quelqu&apos;un
@@ -1460,7 +1460,7 @@ export default function ProfilPage() {
                     return (
                       <div className="px-4 pt-2 pb-3">
                         {unavailable ? (
-                          <div className="w-full py-3 rounded-2xl flex flex-col items-center justify-center gap-1 text-xs"
+                          <div className="w-full py-3 rounded-2xl flex flex-col items-center justify-center gap-1 text-[11px]"
                             style={{ background: "rgba(var(--tint-violet-rgb),0.5)", border: "1px solid rgba(var(--accent-rgb),0.15)", color: "var(--text-3)" }}>
                             <span>Séance perso, exercices non embarqués</span>
                             <span className="text-[11px]" style={{ color: "#C4B5FD" }}>Repartage via l&apos;écran de fin pour l&apos;activer</span>
@@ -1480,7 +1480,7 @@ export default function ProfilPage() {
                                 exerciseList: exList,
                               });
                             }}
-                            className="w-full py-3 rounded-2xl flex items-center justify-center gap-2 text-sm font-semibold cursor-pointer"
+                            className="w-full py-3 rounded-2xl flex items-center justify-center gap-2 text-[16px] font-semibold cursor-pointer"
                             style={{
                               background: "linear-gradient(135deg,rgba(var(--accent-rgb),0.18) 0%,rgba(var(--violet-mid-rgb),0.12) 100%)",
                               border: "1px solid rgba(var(--accent-rgb),0.28)",
@@ -1496,7 +1496,7 @@ export default function ProfilPage() {
                   })()}
 
                   {selectedPost.description && (
-                    <p className="px-4 pb-3 text-sm font-light leading-relaxed" style={{ color: "var(--text-2)" }}>
+                    <p className="px-4 pb-3 text-[13px] font-light leading-relaxed" style={{ color: "var(--text-2)" }}>
                       {selectedPost.description}
                     </p>
                   )}
@@ -1526,7 +1526,7 @@ export default function ProfilPage() {
                       value={editCaption}
                       onChange={(e) => setEditCaption(e.target.value)}
                       maxLength={200}
-                      className="w-full rounded-2xl px-4 py-3 text-sm outline-none"
+                      className="w-full rounded-2xl px-4 py-3 text-[16px] outline-none"
                       style={{ background: "rgba(var(--tint-violet-rgb),0.5)", border: "1px solid rgba(var(--violet-mid-rgb),0.6)", color: "var(--text-1)" }}
                       placeholder="Titre du post..."
                       autoFocus
@@ -1541,7 +1541,7 @@ export default function ProfilPage() {
                       onChange={(e) => setEditBio(e.target.value)}
                       rows={3}
                       maxLength={500}
-                      className="w-full resize-none rounded-2xl px-4 py-3 text-sm outline-none leading-relaxed"
+                      className="w-full resize-none rounded-2xl px-4 py-3 text-[16px] outline-none leading-relaxed"
                       style={{ background: "rgba(var(--tint-violet-rgb),0.5)", border: "1px solid rgba(var(--violet-mid-rgb),0.6)", color: "var(--text-1)" }}
                       placeholder="Description du post..."
                     />
@@ -1552,7 +1552,7 @@ export default function ProfilPage() {
                     <motion.button
                       whileTap={{ scale: 0.97 }}
                       onClick={() => setEditingSelectedPost(false)}
-                      className="flex-1 py-3 rounded-2xl text-sm font-semibold"
+                      className="flex-1 py-3 rounded-2xl text-[13px] font-semibold"
                       style={{ background: "rgba(var(--tint-violet-rgb),0.6)", color: "var(--text-2)" }}
                     >
                       Annuler
@@ -1594,7 +1594,7 @@ export default function ProfilPage() {
                         setEditSaving(false);
                         showToast("Post modifié ✓");
                       }}
-                      className="flex-[2] py-3 rounded-2xl text-sm font-bold"
+                      className="flex-[2] py-3 rounded-2xl text-[16px] font-bold"
                       style={{
                         background: editSaving ? "rgba(var(--violet-mid-rgb),0.5)" : "linear-gradient(135deg,#8B5CF6,#C13BC1)",
                         color: "#fff",

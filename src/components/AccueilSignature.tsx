@@ -243,7 +243,7 @@ function LigneEtat({
         {/* Tant que la base n'a pas répondu, un tiret : un « 0 » provisoire
             chez quelqu'un qui en est à trente jours serait le pire des
             messages possibles. */}
-        <b>{charge ? serie : "—"}</b>
+        <b className="vy-nombre">{charge ? serie : "—"}</b>
         <small>{serie > 1 || !charge ? "jours" : "jour"}</small>
       </span>
 
@@ -255,7 +255,7 @@ function LigneEtat({
       </span>
 
       <span className={styles.etatExp}>
-        <b>{charge ? aura.exp : "—"}</b> / {aura.seuilHaut} EXP
+        <b className="vy-nombre">{charge ? aura.exp : "—"}</b> / {aura.seuilHaut} EXP
         <AnimatePresence>
           {expGain !== null && (
             <motion.em

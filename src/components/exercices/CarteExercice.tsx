@@ -84,10 +84,10 @@ export default function CarteExercice({
       >
         <AnimationExercice nom={lib.name} taille={taille} label={labelAnimation(lib.name)} priorite={priorite} />
       </div>
-      <p className="text-[15px] font-semibold leading-snug" style={{ color: "#1A1535" }}>
+      <p className="text-[16px] font-semibold leading-snug" style={{ color: "#1A1535" }}>
         {lib.name}
       </p>
-      <p className="mt-0.5 text-[12px]" style={{ color: "#8B84A8" }}>
+      <p className="mt-0.5 text-[13px]" style={{ color: "#8B84A8" }}>
         {meta(lib, materiel, zone)}
       </p>
     </Link>

@@ -51,12 +51,9 @@
 
 .compte b {
   color: var(--exp-encre);
-  font-family: var(--chiffre);
-  font-variation-settings: var(--w-nombre);
   font-size: 20px;
+  /* gagne sur les 600 de `.vy-nombre`, qui vit hors @layer */
   font-weight: 700;
-  letter-spacing: -0.04em;
-  font-variant-numeric: tabular-nums;
 }
 
 .compte small {

@@ -117,10 +117,10 @@ export default function WeighInPrompt({ ouvert, onFermer }: {
               </button>
             </div>
 
-            <h2 className="text-xl font-light mt-3" style={{ color: "var(--text-1)" }}>
+            <h2 className="text-[20px] font-light mt-3" style={{ color: "var(--text-1)" }}>
               On fait le point ? 💜
             </h2>
-            <p className="text-sm mt-1.5 mb-5" style={{ color: "var(--text-3)", lineHeight: 1.5 }}>
+            <p className="text-[16px] mt-1.5 mb-5" style={{ color: "var(--text-3)", lineHeight: 1.5 }}>
               Ça fait un moment, tu pèses combien aujourd&apos;hui&nbsp;? Ça garde ton objectif bien ajusté à toi.
             </p>
 
@@ -129,22 +129,22 @@ export default function WeighInPrompt({ ouvert, onFermer }: {
                 type="number" inputMode="decimal" autoFocus
                 value={value} onChange={(e) => setValue(e.target.value)}
                 placeholder={lastWeight ? String(lastWeight) : "70"}
-                className="flex-1 rounded-2xl px-4 py-3 text-lg outline-none"
+                className="flex-1 rounded-2xl px-4 py-3 text-[20px] outline-none"
                 style={{ border: "1.5px solid rgba(var(--text-3-rgb),0.35)", background: "transparent", color: "var(--text-1)" }}
                 onKeyDown={(e) => { if (e.key === "Enter") save(); }}
               />
-              <span className="text-sm font-semibold" style={{ color: "var(--text-3)" }}>kg</span>
+              <span className="text-[16px] font-semibold" style={{ color: "var(--text-3)" }}>kg</span>
             </div>
 
             <button
               onClick={save}
               disabled={saving || !value}
-              className="w-full rounded-2xl py-3.5 text-sm font-semibold text-white disabled:opacity-50"
+              className="w-full rounded-2xl py-3.5 text-[16px] font-semibold text-white disabled:opacity-50"
               style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", boxShadow: "var(--ombre-action)" }}
             >
               {saving ? "..." : "Enregistrer"}
             </button>
-            <button onClick={later} className="w-full mt-2 py-2.5 text-sm font-medium" style={{ color: "var(--text-3)" }}>
+            <button onClick={later} className="w-full mt-2 py-2.5 text-[16px] font-medium" style={{ color: "var(--text-3)" }}>
               Plus tard
             </button>
           </motion.div>

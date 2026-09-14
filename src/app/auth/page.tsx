@@ -43,7 +43,7 @@ function Field({
       <input type={type} placeholder={placeholder} value={value} onChange={e => onChange(e.target.value)}
         onFocus={() => setFocused(true)} onBlur={() => setFocused(false)}
         required={required} autoFocus={autoFocus}
-        className="flex-1 bg-transparent text-sm outline-none placeholder:text-[var(--text-3)]"
+        className="flex-1 bg-transparent text-[16px] outline-none placeholder:text-[var(--text-3)]"
         style={{ color: "var(--text-1)" }} />
       {suffix}
     </div>
@@ -132,7 +132,7 @@ function OtpInput({ value, onChange }: { value: string; onChange: (v: string) =>
             onKeyDown={e => handleKeyDown(i, e)}
             onPaste={handlePaste}
             onFocus={e => e.target.select()}
-            className="w-11 h-14 text-center text-xl font-bold rounded-2xl outline-none"
+            className="w-11 h-14 text-center text-[20px] font-bold rounded-2xl outline-none"
             style={{
               background: "rgba(var(--tint-violet-rgb),0.62)",
               border: digit ? "1.5px solid rgba(var(--accent-rgb),0.55)" : "1.5px solid rgba(var(--accent-rgb),0.14)",
@@ -345,7 +345,7 @@ export default function AuthPage() {
                 <motion.div initial={{ scale:0,rotate:-180 }} animate={{ scale:1,rotate:0 }} transition={{ type:"spring",bounce:0.5 }}>
                   <CheckCircle2 size={52} style={{ color:TEAL }} strokeWidth={1.5} />
                 </motion.div>
-                <p className="text-lg font-light" style={{ color:"var(--text-1)" }}>Bon retour.</p>
+                <p className="text-[20px] font-light" style={{ color:"var(--text-1)" }}>Bon retour.</p>
               </motion.div>
             )}
           </AnimatePresence>
@@ -369,8 +369,8 @@ export default function AuthPage() {
                 {/* Texte */}
                 <motion.div initial={{ opacity:0,y:8 }} animate={{ opacity:1,y:0 }} transition={{ delay:0.15 }}
                   className="text-center">
-                  <p className="text-lg font-light mb-1" style={{ color:"var(--text-1)" }}>Code de confirmation</p>
-                  <p className="text-xs font-light leading-relaxed" style={{ color:"var(--text-2)" }}>
+                  <p className="text-[20px] font-light mb-1" style={{ color:"var(--text-1)" }}>Code de confirmation</p>
+                  <p className="text-[13px] font-light leading-relaxed" style={{ color:"var(--text-2)" }}>
                     Un code à 6 chiffres a été envoyé à<br/>
                     <strong style={{ color:"var(--text-1)" }}>{email}</strong>
                   </p>
@@ -386,7 +386,7 @@ export default function AuthPage() {
                 <AnimatePresence>
                   {otpError && (
                     <motion.p initial={{ opacity:0,y:-4,height:0 }} animate={{ opacity:1,y:0,height:"auto" }} exit={{ opacity:0,height:0 }}
-                      className="text-xs font-medium text-center -mt-2" style={{ color:"#E53E3E" }}>
+                      className="text-[13px] font-medium text-center -mt-2" style={{ color:"#E53E3E" }}>
                       {otpError}
                     </motion.p>
                   )}
@@ -400,7 +400,7 @@ export default function AuthPage() {
                     whileHover={otpCode.length === 6 && !otpLoading ? { scale:1.02,y:-1 } : {}}
                     whileTap={otpCode.length === 6 && !otpLoading ? { scale:0.97 } : {}}
                     onClick={handleVerifyOtp}
-                    className="relative w-full py-4 rounded-2xl text-sm font-semibold cursor-pointer overflow-hidden"
+                    className="relative w-full py-4 rounded-2xl text-[16px] font-semibold cursor-pointer overflow-hidden"
                     style={{
                       background:ACTION_BG,
                       color:"#fff",
@@ -428,12 +428,12 @@ export default function AuthPage() {
                 <motion.div initial={{ opacity:0 }} animate={{ opacity:1 }} transition={{ delay:0.3 }}
                   className="flex flex-col items-center gap-1.5">
                   <button onClick={handleResendOtp} disabled={resendCooldown > 0}
-                    className="text-xs font-medium cursor-pointer"
+                    className="text-[13px] font-medium cursor-pointer"
                     style={{ color: resendCooldown > 0 ? "var(--text-3)" : "var(--accent)" }}>
                     {resendCooldown > 0 ? `Renvoyer dans ${resendCooldown}s` : "Renvoyer le code"}
                   </button>
                   <button onClick={() => { setSignupSent(false); setOtpCode(""); setOtpError(null); }}
-                    className="text-xs cursor-pointer" style={{ color:"var(--text-3)" }}>
+                    className="text-[13px] cursor-pointer" style={{ color:"var(--text-3)" }}>
                     Annuler
                   </button>
                 </motion.div>
@@ -450,7 +450,7 @@ export default function AuthPage() {
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src="/logo-vaiiya.png" alt="Vaiiya" className="w-20 h-20 object-contain relative z-10" />
             </div>
-            <h1 className="text-xl font-extralight tracking-[0.2em]" style={{ color:"var(--text-1)" }}>Vaiiya</h1>
+            <h1 className="text-[20px] font-extralight tracking-[0.2em]" style={{ color:"var(--text-1)" }}>Vaiiya</h1>
             <p className="text-[11px] font-light mt-0.5" style={{ color:"var(--text-3)" }}>Coach IA · Musculation · Nutrition</p>
           </div>
 
@@ -458,7 +458,7 @@ export default function AuthPage() {
           <AnimatePresence>
             {error && (
               <motion.div initial={{ opacity:0,y:-8,height:0 }} animate={{ opacity:1,y:0,height:"auto" }} exit={{ opacity:0,height:0 }}
-                className="mb-4 px-4 py-3 rounded-2xl text-xs font-medium"
+                className="mb-4 px-4 py-3 rounded-2xl text-[13px] font-medium"
                 style={{ background:"rgba(252,129,129,0.12)",border:"1px solid rgba(252,129,129,0.25)",color:"#E53E3E" }}>
                 {error}
               </motion.div>
@@ -469,7 +469,7 @@ export default function AuthPage() {
           <motion.button type="button"
             whileHover={{ scale:1.02,y:-1 }} whileTap={{ scale:0.97 }}
             onClick={handleGoogle} disabled={googleLoading}
-            className="w-full flex items-center justify-center gap-3 py-3.5 rounded-2xl text-sm font-medium cursor-pointer mb-5"
+            className="w-full flex items-center justify-center gap-3 py-3.5 rounded-2xl text-[16px] font-medium cursor-pointer mb-5"
             style={{ background:"rgba(var(--surface-rgb),0.8)",border:"1px solid rgba(var(--accent-rgb),0.18)",backdropFilter:"blur(10px)",color:"var(--text-1)",boxShadow:"0 2px 12px rgba(var(--accent-rgb),0.08),inset 0 1px 0 rgba(var(--surface-rgb),0.95)" }}>
             {googleLoading ? (
               <motion.div className="w-4 h-4 rounded-full border-2" style={{ borderColor:"rgba(var(--accent-rgb),0.2)",borderTopColor:"var(--accent)" }}
@@ -496,7 +496,7 @@ export default function AuthPage() {
           <div className="relative flex rounded-2xl p-1 mb-5 gap-1" style={{ background:"rgba(var(--tint-violet-rgb),0.5)",border:"1px solid rgba(var(--accent-rgb),0.12)" }}>
             {(["login","signup"] as const).map(m => (
               <button key={m} onClick={() => { setMode(m); setError(null); }}
-                className="relative flex-1 py-2.5 rounded-xl text-sm font-medium cursor-pointer z-10"
+                className="relative flex-1 py-2.5 rounded-xl text-[16px] font-medium cursor-pointer z-10"
                 style={{ color:mode===m?"var(--accent)":"var(--text-3)" }}>
                 {mode===m && <motion.div layoutId="auth-tab" className="absolute inset-0 rounded-xl"
                   style={{ background:"rgba(var(--surface-rgb),0.95)",border:"1px solid rgba(var(--accent-rgb),0.28)",boxShadow:"0 2px 12px rgba(var(--accent-rgb),0.18)" }}
@@ -544,7 +544,7 @@ export default function AuthPage() {
 
             <motion.button type="submit" disabled={loading||!canSubmit}
               whileHover={!loading?{scale:1.02,y:-2}:{}} whileTap={!loading?{scale:0.97}:{}}
-              className="relative mt-1 w-full py-4 rounded-2xl text-sm font-semibold cursor-pointer overflow-hidden"
+              className="relative mt-1 w-full py-4 rounded-2xl text-[16px] font-semibold cursor-pointer overflow-hidden"
               style={{ background:ACTION_BG,color:"#fff",boxShadow:"0 4px 24px rgba(139,92,246,0.42),inset 0 1px 0 rgba(255,255,255,0.28)",opacity:!canSubmit?0.6:1 }}>
               <motion.div className="absolute inset-0 pointer-events-none"
                 style={{ background:"linear-gradient(105deg,transparent 40%,rgba(255,255,255,0.3) 50%,transparent 60%)" }}
@@ -577,7 +577,7 @@ export default function AuthPage() {
                   {forgotSent ? (
                     <motion.div initial={{ opacity:0,scale:0.9 }} animate={{ opacity:1,scale:1 }} className="flex flex-col items-center gap-2 py-1">
                       <CheckCircle2 size={28} style={{ color:"var(--accent)" }} strokeWidth={1.5}/>
-                      <p className="text-xs text-center font-light" style={{ color:"var(--text-1)" }}>
+                      <p className="text-[13px] text-center font-light" style={{ color:"var(--text-1)" }}>
                         Email envoyé à <strong>{forgotEmail}</strong>.<br/>
                         <span style={{ color:"var(--text-3)" }}>Vérifie ta boîte mail (et les spams).</span>
                       </p>
@@ -586,15 +586,15 @@ export default function AuthPage() {
                     </motion.div>
                   ) : (
                     <form onSubmit={handleForgot} className="flex flex-col gap-3">
-                      <p className="text-xs font-light" style={{ color:"var(--text-2)" }}>Entre ton email pour recevoir un lien de réinitialisation.</p>
+                      <p className="text-[13px] font-light" style={{ color:"var(--text-2)" }}>Entre ton email pour recevoir un lien de réinitialisation.</p>
                       <Field icon={<Mail size={15}/>} type="email" placeholder="ton@email.com" value={forgotEmail} onChange={setForgotEmail} required />
                       <div className="flex gap-2">
                         <button type="button" onClick={() => setForgotMode(false)}
-                          className="flex-1 py-2.5 rounded-2xl text-xs font-medium cursor-pointer"
+                          className="flex-1 py-2.5 rounded-2xl text-[13px] font-medium cursor-pointer"
                           style={{ background:"rgba(var(--surface-rgb),0.6)",border:"1px solid rgba(var(--accent-rgb),0.18)",color:"var(--text-2)" }}>Annuler</button>
                         <motion.button type="submit" disabled={forgotLoading||!forgotEmail.trim()}
                           whileHover={{ scale:1.02 }} whileTap={{ scale:0.97 }}
-                          className="flex-1 py-2.5 rounded-2xl text-xs font-semibold cursor-pointer flex items-center justify-center"
+                          className="flex-1 py-2.5 rounded-2xl text-[13px] font-semibold cursor-pointer flex items-center justify-center"
                           style={{ background:ACTION_BG,color:"#fff",opacity:!forgotEmail.trim()?0.6:1 }}>
                           {forgotLoading
                             ? <motion.div className="w-3.5 h-3.5 rounded-full border-2" style={{ borderColor:"rgba(255,255,255,0.3)",borderTopColor:"#fff" }}

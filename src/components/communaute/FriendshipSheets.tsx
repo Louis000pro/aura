@@ -149,7 +149,7 @@ function Entete({
 }) {
   return (
     <div className="mb-4 flex items-center gap-3">
-      <b className="min-w-0 flex-1 truncate text-[18px] font-bold" style={{ color: "var(--text-0)" }}>
+      <b className="min-w-0 flex-1 truncate text-[20px] font-bold" style={{ color: "var(--text-0)" }}>
         {titre}
       </b>
       {onFermer && (
@@ -386,14 +386,14 @@ function AjouterAmi({
             placeholder="Cherche un pseudo…"
             autoCapitalize="none"
             autoCorrect="off"
-            className="min-w-0 flex-1 bg-transparent text-[14.5px] outline-none"
+            className="min-w-0 flex-1 bg-transparent text-[16px] outline-none"
             style={{ color: "var(--text-1)" }}
           />
           {charge && <Loader2 className="h-4 w-4 shrink-0 animate-spin" style={{ color: "var(--text-3)" }} />}
         </label>
       </form>
 
-      <p className="mt-2 px-1 text-[12px]" style={{ color: "var(--text-3)" }}>
+      <p className="mt-2 px-1 text-[13px]" style={{ color: "var(--text-3)" }}>
         Saisis au moins 2 caractères : les pseudos les plus proches apparaissent pendant la frappe.
       </p>
 
@@ -407,8 +407,8 @@ function AjouterAmi({
           <Share2 className="h-4.5 w-4.5" />
         </span>
         <span className="min-w-0 flex-1">
-          <b className="block text-[14.5px]">Partager mon lien</b>
-          <span className="block truncate text-[12.5px]" style={{ color: "var(--text-3)" }}>
+          <b className="block text-[16px]">Partager mon lien</b>
+          <span className="block truncate text-[13px]" style={{ color: "var(--text-3)" }}>
             Ton ami ouvre Vaiiya et te retrouve directement
           </span>
         </span>
@@ -417,7 +417,7 @@ function AjouterAmi({
 
       <div className="min-h-[112px]">
         {rechercheFaite && pseudo.trim().replace(/^@/, "").length >= 2 && resultats.length === 0 && !charge && (
-          <p className="py-8 text-center text-[14px]" style={{ color: "var(--text-3)" }}>
+          <p className="py-8 text-center text-[16px]" style={{ color: "var(--text-3)" }}>
             Aucun pseudo proche trouvé.
           </p>
         )}
@@ -441,16 +441,16 @@ function AjouterAmi({
                   cosmetiques={rang.cosmetiques}
                   pseudo={personne.pseudo}
                   classNameEnveloppe="flex min-w-0 items-center gap-1.5"
-                  className="block truncate text-[15px] font-bold"
+                  className="block truncate text-[16px] font-bold"
                   style={{ color: "var(--text-0)" }}
                   tailleGemme={15}
                 />
               ) : (
-                <b className="block truncate text-[15px]" style={{ color: "var(--text-0)" }}>
+                <b className="block truncate text-[16px]" style={{ color: "var(--text-0)" }}>
                   {personne.pseudo}
                 </b>
               )}
-              <span className="block truncate text-[12.5px]" style={{ color: "var(--text-3)" }}>
+              <span className="block truncate text-[13px]" style={{ color: "var(--text-3)" }}>
                 @{personne.pseudo}
               </span>
             </span>
@@ -532,7 +532,7 @@ function DemandesAmi({
         </div>
       ) : erreur ? (
         <div className="py-8 text-center">
-          <p className="text-[14px]" style={{ color: "#E8620C" }}>{erreur}</p>
+          <p className="text-[13px]" style={{ color: "#E8620C" }}>{erreur}</p>
           <button onClick={onRecharger} className="mt-3 text-[13px] font-semibold" style={{ color: "var(--exp-encre)" }}>
             Réessayer
           </button>
@@ -543,7 +543,7 @@ function DemandesAmi({
             style={{ background: "rgba(var(--tint-violet-rgb), .45)", color: "var(--exp-encre)" }}>
             <Users className="h-5 w-5" />
           </span>
-          <p className="mt-3 text-[14px] font-medium" style={{ color: "var(--text-2)" }}>
+          <p className="mt-3 text-[16px] font-medium" style={{ color: "var(--text-2)" }}>
             Aucune demande en attente.
           </p>
         </div>
@@ -562,21 +562,21 @@ function DemandesAmi({
                     cosmetiques={rang.cosmetiques}
                     pseudo={personne.pseudo}
                     classNameEnveloppe="flex min-w-0 items-center gap-1.5"
-                    className="block truncate text-[14.5px] font-bold"
+                    className="block truncate text-[16px] font-bold"
                     style={{ color: "var(--text-0)" }}
                     tailleGemme={14}
                   />
                 ) : (
-                  <b className="block truncate text-[14.5px]" style={{ color: "var(--text-0)" }}>
+                  <b className="block truncate text-[16px]" style={{ color: "var(--text-0)" }}>
                     {personne.pseudo}
                   </b>
                 )}
-                <span className="text-[12px]" style={{ color: "var(--text-3)" }}>veut t&apos;ajouter</span>
+                <span className="text-[13px]" style={{ color: "var(--text-3)" }}>veut t&apos;ajouter</span>
               </span>
               <button
                 onClick={() => void accepter(personne)}
                 disabled={!!occupe}
-                className="rounded-xl px-3 py-2 text-[12.5px] font-semibold text-white disabled:opacity-50"
+                className="rounded-xl px-3 py-2 text-[13px] font-semibold text-white disabled:opacity-50"
                 style={{ background: "linear-gradient(135deg, #8B5CF6, #C13BC1)" }}
               >
                 {occupe === personne.id ? <Loader2 className="h-4 w-4 animate-spin" /> : "Accepter"}
@@ -584,7 +584,7 @@ function DemandesAmi({
               <button
                 onClick={() => void ignorer(personne)}
                 disabled={!!occupe}
-                className="px-1 py-2 text-[12.5px] font-medium disabled:opacity-50"
+                className="px-1 py-2 text-[13px] font-medium disabled:opacity-50"
                 style={{ color: "var(--text-3)" }}
               >
                 Ignorer

@@ -106,12 +106,12 @@ export default function RappelProfil() {
                 état que partout ailleurs dans l'app, et il se lit. */}
             <VisageGuide guide={guide} etat="listen" size={26} className="mt-0.5" />
             <div className="flex flex-col items-start gap-1.5">
-              <p className="text-[12px] leading-snug" style={{ color: "var(--text-body)" }}>
+              <p className="text-[13px] leading-snug" style={{ color: "var(--text-body)" }}>
                 {voix(guide, "bienvenue.rappel")}
               </p>
               <button
                 onClick={() => router.push("/bienvenue")}
-                className="text-[12px] font-bold cursor-pointer underline underline-offset-2"
+                className="text-[13px] font-bold cursor-pointer underline underline-offset-2"
                 style={{ color: "var(--accent)" }}
               >
                 Reprendre

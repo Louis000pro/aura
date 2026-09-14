@@ -151,7 +151,7 @@ function QuestionChips({ q, actif, onChoisir }: {
   if (q.repondu) {
     return (
       <div className="flex flex-wrap gap-1.5 pl-9">
-        <span className="px-3 py-1.5 rounded-full text-[12.5px] font-semibold flex items-center gap-1.5"
+        <span className="px-3 py-1.5 rounded-full text-[13px] font-semibold flex items-center gap-1.5"
           style={{ background: "rgba(43,212,160,0.12)", color: TEAL, border: `1px solid rgba(43,212,160,0.45)` }}>
           <Check size={12} strokeWidth={3} /> {q.repondu}
         </span>
@@ -167,7 +167,7 @@ function QuestionChips({ q, actif, onChoisir }: {
           transition={{ delay: 0.05 + i * 0.05 }}
           whileTap={{ scale: 0.95 }}
           onClick={() => onChoisir(c)}
-          className="px-3.5 py-2 rounded-full text-[12.5px] font-medium cursor-pointer"
+          className="px-3.5 py-2 rounded-full text-[13px] font-medium cursor-pointer"
           style={{ background: "rgba(var(--accent-rgb),0.10)", color: "var(--text-1)", border: "1px solid rgba(var(--accent-rgb),0.26)" }}>
           {c}
         </motion.button>
@@ -437,7 +437,7 @@ export default function AssistantSheet() {
                       L'en-tête disait « Ton assistant », les cartes disaient
                       « le coach » et le produit dit ✦ : trois noms pour un
                       seul interlocuteur. */}
-                  <p className="text-[15px] font-semibold leading-tight truncate" style={{ color: "var(--text-0)" }}>{nomGuide(guide)}</p>
+                  <p className="text-[16px] font-semibold leading-tight truncate" style={{ color: "var(--text-0)" }}>{nomGuide(guide)}</p>
                   <p className="text-[11px] font-medium truncate" style={{ color: "var(--exp-encre)" }}>{roleGuide(guide)}</p>
                 </div>
                 <button onClick={close} aria-label="Fermer"
@@ -473,10 +473,10 @@ export default function AssistantSheet() {
                     <BusteGuide guide={guide} hauteur="clamp(132px, 26vh, 216px)" />
                   </motion.div>
                   <div>
-                    <p className="text-base font-semibold mb-1" style={{ color: "var(--text-0)" }}>
+                    <p className="text-[16px] font-semibold mb-1" style={{ color: "var(--text-0)" }}>
                       {voix(guide, "accueil.salut", { pseudo: pseudo ?? "" })}
                     </p>
-                    <p className="text-sm font-light leading-relaxed" style={{ color: "var(--text-soft)" }}>
+                    <p className="text-[13px] font-light leading-relaxed" style={{ color: "var(--text-soft)" }}>
                       {voix(guide, "accueil.invite")}
                     </p>
                   </div>
@@ -487,7 +487,7 @@ export default function AssistantSheet() {
                         transition={{ delay: 0.08 + i * 0.06 }}
                         whileTap={{ scale: 0.99 }}
                         onClick={() => sendMessage(s)}
-                        className="vy-filet w-full text-left py-3 px-1 text-[14px] font-normal cursor-pointer bg-transparent border-none"
+                        className="vy-filet w-full text-left py-3 px-1 text-[16px] font-normal cursor-pointer bg-transparent border-none"
                         style={{ color: "var(--text-1)" }}>
                         {s}
                       </motion.button>
@@ -511,7 +511,7 @@ export default function AssistantSheet() {
                       <VisageGuide guide={guide} size={28} className="mb-0.5"
                         etat={msg.streaming ? "think" : (msg.ton ?? "explain")} />
                     )}
-                    <div className="px-4 py-2.5 rounded-3xl text-[14px] font-light leading-relaxed"
+                    <div className="px-4 py-2.5 rounded-3xl text-[16px] font-light leading-relaxed"
                       style={{
                         maxWidth: "80%", wordBreak: "break-word", whiteSpace: "pre-wrap",
                         ...(msg.role === "user"
@@ -602,13 +602,13 @@ export default function AssistantSheet() {
                   className="w-full overflow-hidden flex flex-col"
                   style={{ minHeight: 0, borderRadius: "var(--r-bloc)", background: "rgba(var(--surface-rgb),0.98)", border: "1px solid rgba(var(--accent-rgb),0.22)", boxShadow: "var(--ombre-pose)" }}>
                   <div className="flex items-center gap-3 px-4 pt-3.5 pb-3 flex-shrink-0" style={{ borderBottom: "1px solid rgba(var(--accent-rgb),0.10)" }}>
-                    <div className="w-9 h-9 flex items-center justify-center flex-shrink-0 text-[17px]"
+                    <div className="w-9 h-9 flex items-center justify-center flex-shrink-0 text-[20px]"
                       style={{ borderRadius: "var(--r-controle)", background: "linear-gradient(135deg,#F5B120,#E8620C)" }}>
                       🍽️
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="vy-label" style={{ color: "var(--exp-encre)" }}>Recette</p>
-                      <p className="text-[15px] font-semibold leading-tight truncate" style={{ color: "var(--text-0)" }}>{pendingRecipe.nom}</p>
+                      <p className="text-[16px] font-semibold leading-tight truncate" style={{ color: "var(--text-0)" }}>{pendingRecipe.nom}</p>
                     </div>
                   </div>
 
@@ -642,7 +642,7 @@ export default function AssistantSheet() {
                     {pendingRecipe.steps.length > 0 && (
                       <ol className="flex flex-col gap-1.5 pl-1">
                         {pendingRecipe.steps.map((s, i) => (
-                          <li key={i} className="flex gap-2 text-[12.5px] font-light leading-snug" style={{ color: "var(--text-2)" }}>
+                          <li key={i} className="flex gap-2 text-[13px] font-light leading-snug" style={{ color: "var(--text-2)" }}>
                             <span className="flex-shrink-0 font-bold" style={{ color: "var(--exp-encre)" }}>{i + 1}.</span>
                             <span>{s}</span>
                           </li>
@@ -650,7 +650,7 @@ export default function AssistantSheet() {
                       </ol>
                     )}
                     {pendingRecipe.safetyNote && (
-                      <p className="text-[11.5px] font-medium leading-snug px-3 py-2 rounded-xl"
+                      <p className="text-[11px] font-medium leading-snug px-3 py-2 rounded-xl"
                         style={{ background: "rgba(245,177,32,0.12)", color: "var(--text-2)" }}>
                         ⚠️ {pendingRecipe.safetyNote}
                       </p>
@@ -686,7 +686,7 @@ export default function AssistantSheet() {
                       <p className="vy-label" style={{ color: "var(--exp-encre)" }}>
                         Repas à noter · {MEAL_LABEL[pendingMeal.mealType] ?? "Repas"}
                       </p>
-                      <p className="text-[15px] font-semibold leading-tight truncate" style={{ color: "var(--text-0)" }}>{pendingMeal.foodName}</p>
+                      <p className="text-[16px] font-semibold leading-tight truncate" style={{ color: "var(--text-0)" }}>{pendingMeal.foodName}</p>
                     </div>
                   </div>
 
@@ -734,7 +734,7 @@ export default function AssistantSheet() {
                 {memoryNotice && (
                   <motion.div
                     initial={{ opacity: 0, y: 6, scale: 0.96 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 6, scale: 0.96 }}
-                    className="flex items-center gap-1.5 w-fit mx-auto mb-2 px-3 py-1.5 rounded-full text-[12px] font-medium"
+                    className="flex items-center gap-1.5 w-fit mx-auto mb-2 px-3 py-1.5 rounded-full text-[13px] font-medium"
                     style={{ background: "rgba(var(--accent-rgb),0.12)", color: "var(--exp-encre)", border: "1px solid rgba(var(--accent-rgb),0.22)" }}>
                     {memoryNotice}
                   </motion.div>
@@ -758,7 +758,7 @@ export default function AssistantSheet() {
                       : questionEnAttente ? "ou écris ta réponse…"
                       : "Pose ta question…"}
                     disabled={isStreaming || voice.state !== "idle"}
-                    className="flex-1 bg-transparent text-[14px] leading-relaxed outline-none disabled:opacity-60 resize-none py-1"
+                    className="flex-1 bg-transparent text-[16px] leading-relaxed outline-none disabled:opacity-60 resize-none py-1"
                     style={{ color: "var(--text-0)", maxHeight: 132 }}
                   />
                 </div>

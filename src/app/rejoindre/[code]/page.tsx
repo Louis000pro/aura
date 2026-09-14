@@ -70,15 +70,15 @@ export default function RejoindrePage() {
     return (
       <Ecran>
         <div className="mx-auto w-full max-w-[360px] pt-16 text-center">
-          <h1 className="text-[24px] font-bold" style={{ color: "var(--text-0)" }}>
+          <h1 className="text-[26px] font-bold" style={{ color: "var(--text-0)" }}>
             Cette invitation n&apos;existe plus.
           </h1>
-          <p className="mt-2 text-[15px]" style={{ color: "var(--text-body)" }}>
+          <p className="mt-2 text-[16px]" style={{ color: "var(--text-body)" }}>
             Elle a peut-être expiré, ou le lien est incomplet.
           </p>
           <button
             onClick={() => router.push("/")}
-            className="mt-6 rounded-2xl px-5 py-3 text-[15px] font-semibold text-white"
+            className="mt-6 rounded-2xl px-5 py-3 text-[16px] font-semibold text-white"
             style={{ background: "linear-gradient(135deg, #8B5CF6, #C13BC1)" }}
           >
             Découvrir Vaiiya
@@ -111,7 +111,7 @@ export default function RejoindrePage() {
               {apercu.inviterNom.charAt(0).toUpperCase()}
             </div>
           )}
-          <p className="text-[15px] leading-snug" style={{ color: "var(--text-body)" }}>
+          <p className="text-[16px] leading-snug" style={{ color: "var(--text-body)" }}>
             <span className="font-semibold" style={{ color: "var(--text-0)" }}>{apercu.inviterNom}</span>
             {" "}t&apos;invite à un relais.
           </p>
@@ -120,14 +120,14 @@ export default function RejoindrePage() {
         <h1 className="mt-5 text-[26px] font-bold leading-tight" style={{ color: "var(--text-0)" }}>
           Cette affiche se dévoile à deux.
         </h1>
-        <p className="mt-2 text-[15px] leading-relaxed" style={{ color: "var(--text-body)" }}>
+        <p className="mt-2 text-[16px] leading-relaxed" style={{ color: "var(--text-body)" }}>
           Quatre jours de sport sur sept, chacun son tour, jamais deux jours de
           suite la même personne. À la fin de la semaine, l&apos;affiche est
           entière et elle est à vous deux.
         </p>
 
         {apercu.complet ? (
-          <p className="mt-6 text-[15px] font-medium" style={{ color: "var(--text-2)" }}>
+          <p className="mt-6 text-[16px] font-medium" style={{ color: "var(--text-2)" }}>
             L&apos;équipe est déjà complète.
           </p>
         ) : (
@@ -148,7 +148,7 @@ export default function RejoindrePage() {
         )}
 
         {erreur && (
-          <p className="mt-4 text-center text-[14px]" style={{ color: "#E8620C" }}>{erreur}</p>
+          <p className="mt-4 text-center text-[13px]" style={{ color: "#E8620C" }}>{erreur}</p>
         )}
       </div>
     </Ecran>

@@ -51,7 +51,7 @@ export default function LigneEnsemble({ serie, nombre }: {
         <Image src={imageEtat(serie, 4)} alt="" fill sizes="44px" className="object-cover" />
       </div>
 
-      <p className="min-w-0 flex-1 text-[13.5px] leading-snug" style={{ color: "var(--text-2)" }}>
+      <p className="min-w-0 flex-1 text-[13px] leading-snug" style={{ color: "var(--text-2)" }}>
         {nombre === 1 ? (
           <>
             Vous avez dévoilé{" "}

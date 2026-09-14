@@ -85,7 +85,7 @@ function Avatar({ pseudo, avatarUrl, type }: { pseudo: string; avatarUrl: string
   return (
     <div className="relative flex-shrink-0">
       <div
-        className="w-11 h-11 rounded-full overflow-hidden flex items-center justify-center text-base font-semibold"
+        className="w-11 h-11 rounded-full overflow-hidden flex items-center justify-center text-[16px] font-semibold"
         style={{
           background: avatarUrl ? "transparent" : "linear-gradient(135deg,var(--violet-mid) 0%,var(--cream-mid) 100%)",
           color: "var(--text-1)",
@@ -135,7 +135,7 @@ function EmptyState() {
         transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
       >
         <div
-          className="w-24 h-24 rounded-3xl flex items-center justify-center text-4xl"
+          className="w-24 h-24 rounded-3xl flex items-center justify-center text-[34px]"
           style={{ background: "linear-gradient(135deg,rgba(var(--violet-mid-rgb),0.4) 0%,rgba(var(--cream-mid-rgb),0.4) 100%)" }}
         >
           <Bell size={38} strokeWidth={1.2} style={{ color: "var(--exp-encre)" }} />
@@ -152,8 +152,8 @@ function EmptyState() {
       </motion.div>
 
       <div className="text-center space-y-1">
-        <p className="text-sm font-medium" style={{ color: "var(--text-1)" }}>Aucune notification</p>
-        <p className="text-xs font-light" style={{ color: "var(--text-3)" }}>
+        <p className="text-[16px] font-medium" style={{ color: "var(--text-1)" }}>Aucune notification</p>
+        <p className="text-[13px] font-light" style={{ color: "var(--text-3)" }}>
           Les interactions de ta communauté<br />apparaîtront ici
         </p>
       </div>
@@ -275,7 +275,7 @@ export default function NotificationsPage() {
             >
               Activité
             </p>
-            <h1 className="text-2xl font-extralight" style={{ color: "var(--text-1)" }}>
+            <h1 className="text-[26px] font-extralight" style={{ color: "var(--text-1)" }}>
               Notifications
             </h1>
           </div>

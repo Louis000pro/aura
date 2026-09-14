@@ -21,7 +21,7 @@ export default function AnalysePage() {
         <button
           type="button"
           onClick={() => router.back()}
-          className="flex items-center gap-1.5 mb-4 text-sm font-medium cursor-pointer"
+          className="flex items-center gap-1.5 mb-4 text-[16px] font-medium cursor-pointer"
           style={{ color: "var(--text-3)" }}
         >
           <ArrowLeft size={16} strokeWidth={2} /> Retour

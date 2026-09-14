@@ -38,7 +38,7 @@ export default function RetourLegal() {
         }}
       >
         <ArrowLeft size={15} strokeWidth={1.75} style={{ color: "var(--accent)" }} />
-        <span className="text-sm font-medium">{versApp ? "Retour" : "Accueil Vaiiya"}</span>
+        <span className="text-[16px] font-medium">{versApp ? "Retour" : "Accueil Vaiiya"}</span>
       </motion.div>
     </Link>
   );

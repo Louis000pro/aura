@@ -62,8 +62,8 @@ export default function GuidesGalleryPage() {
           >
             Personnages-guides
           </div>
-          <h1 className="mt-1.5 text-2xl font-bold sm:text-3xl">Tous les exercices animés</h1>
-          <p className="mt-2 max-w-xl text-sm" style={{ color: "rgba(255,255,255,0.6)" }}>
+          <h1 className="mt-1.5 text-[26px] font-bold sm:text-[26px]">Tous les exercices animés</h1>
+          <p className="mt-2 max-w-xl text-[16px]" style={{ color: "rgba(255,255,255,0.6)" }}>
             {total} exercices avec leur personnage-guide, en fondu-enchaîné comme pendant la
             séance. Les mouvements rejouent leur geste en boucle ; les tenues (gainage, chaise
             au mur) restent sur leur pose.
@@ -73,7 +73,7 @@ export default function GuidesGalleryPage() {
         {SECTIONS.map((sec) => (
           <section key={sec.title} className="mb-11">
             <h2
-              className="mb-4 flex items-center gap-2.5 text-xs font-semibold uppercase tracking-wide"
+              className="mb-4 flex items-center gap-2.5 text-[13px] font-semibold uppercase tracking-wide"
               style={{ color: "rgba(255,255,255,0.85)" }}
             >
               <span

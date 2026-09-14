@@ -86,7 +86,7 @@
   background: transparent;
   color: var(--text-2);
   font: inherit;
-  font-size: 12.5px;
+  font-size: 13px;
   font-weight: 700;
   cursor: pointer;
   transition: background 0.18s ease, color 0.18s ease;
@@ -137,10 +137,10 @@
   font-variant-numeric: tabular-nums;
 }
 .heroQuoi { flex: 1; min-width: 0; padding-bottom: 4px; }
-.heroQuoi b { display: block; font-size: 13.5px; font-weight: 700; color: var(--text-1); }
-.heroQuoi span { font-size: 11.5px; color: var(--text-3); }
+.heroQuoi b { display: block; font-size: 13px; font-weight: 700; color: var(--text-1); }
+.heroQuoi span { font-size: 11px; color: var(--text-3); }
 .delta {
-  font-size: 11.5px;
+  font-size: 11px;
   font-weight: 700;
   padding: 3px 8px;
   border-radius: 999px;
@@ -160,7 +160,7 @@
   padding: 11px 10px;
 }
 .tuileN {
-  font-size: 21px;
+  font-size: 20px;
   font-weight: 800;
   letter-spacing: -0.03em;
   color: var(--text-0);
@@ -177,7 +177,7 @@
   align-items: center;
 }
 .barreNom {
-  font-size: 12.5px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--text-1);
   overflow: hidden;
@@ -185,7 +185,7 @@
   white-space: nowrap;
 }
 .barreVal {
-  font-size: 12px;
+  font-size: 13px;
   color: var(--text-2);
   text-align: right;
   min-width: 30px;
@@ -229,9 +229,9 @@
 }
 .alerteAtt { background: rgba(232, 98, 12, 0.16); color: var(--orange); }
 .alerteInf { background: rgba(var(--accent-rgb), 0.18); color: var(--accent); }
-.alerteTxt { font-size: 12.8px; line-height: 1.4; color: var(--text-1); }
+.alerteTxt { font-size: 13px; line-height: 1.4; color: var(--text-1); }
 .alerteTxt small { display: block; font-size: 11px; color: var(--text-3); margin-top: 2px; }
-.alerteGo { font-size: 11.5px; font-weight: 700; color: var(--accent); white-space: nowrap; padding-top: 3px; }
+.alerteGo { font-size: 11px; font-weight: 700; color: var(--accent); white-space: nowrap; padding-top: 3px; }
 
 /* ── Recherche & filtres ── */
 .recherche {
@@ -266,7 +266,7 @@
 .filtre {
   flex: none;
   font: inherit;
-  font-size: 11.5px;
+  font-size: 11px;
   font-weight: 700;
   padding: 7px 12px;
   border-radius: 999px;
@@ -311,7 +311,7 @@
   place-items: center;
   overflow: hidden;
   color: #fff;
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 800;
   background: linear-gradient(135deg, #8B5CF6, #C13BC1);
 }
@@ -320,7 +320,7 @@
 .qui { min-width: 0; }
 .quiL1 { display: flex; align-items: center; gap: 5px; min-width: 0; }
 .quiL1 b {
-  font-size: 13.5px;
+  font-size: 13px;
   font-weight: 750;
   color: var(--text-0);
   overflow: hidden;
@@ -387,13 +387,13 @@
   margin: 6px auto 14px;
 }
 .ficheTete { display: flex; align-items: center; gap: 13px; margin-bottom: 16px; }
-.ficheTete .avatar { width: 58px; height: 58px; font-size: 21px; }
-.ficheTete b { display: block; font-size: 17px; font-weight: 800; letter-spacing: -0.02em; color: var(--text-0); }
+.ficheTete .avatar { width: 58px; height: 58px; font-size: 20px; }
+.ficheTete b { display: block; font-size: 16px; font-weight: 800; letter-spacing: -0.02em; color: var(--text-0); }
 .ficheTete span { font-size: 11px; color: var(--text-3); word-break: break-all; }
 
 .six { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
 .mini { background: rgba(var(--tint-violet-rgb), 0.6); border-radius: 13px; padding: 9px 10px; }
-.miniN { font-size: 17px; font-weight: 800; letter-spacing: -0.02em; color: var(--text-0); font-variant-numeric: tabular-nums; }
+.miniN { font-size: 16px; font-weight: 800; letter-spacing: -0.02em; color: var(--text-0); font-variant-numeric: tabular-nums; }
 .miniQ { font-size: 11px; font-weight: 600; color: var(--text-3); line-height: 1.2; margin-top: 1px; }
 
 .champ {
@@ -475,7 +475,7 @@
   border: 0;
   background: none;
   font: inherit;
-  font-size: 12.5px;
+  font-size: 13px;
   font-weight: 700;
   color: var(--rouge);
   text-align: center;
@@ -496,7 +496,7 @@
   border: 1px solid rgba(var(--gold-rgb), 0.32);
   border-radius: 16px;
   padding: 12px 13px;
-  font-size: 11.8px;
+  font-size: 11px;
   line-height: 1.45;
   color: var(--text-2);
 }
@@ -514,7 +514,7 @@
   background: rgba(var(--surface-rgb), 0.96);
   border: 1px solid var(--ligne);
   box-shadow: 0 8px 32px rgba(var(--accent-rgb), 0.22);
-  font-size: 13.5px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--text-1);
   white-space: nowrap;

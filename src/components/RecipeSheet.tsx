@@ -111,7 +111,7 @@ export default function RecipeSheet({
             </div>
             <div className="px-5 pt-4 flex items-center gap-2">
               <Sparkles size={15} strokeWidth={2} style={{ color: "#8B5CF6" }} />
-              <span className="text-[12.5px]" style={{ color: "var(--text-3)" }}>Je te prépare une idée…</span>
+              <span className="text-[13px]" style={{ color: "var(--text-3)" }}>Je te prépare une idée…</span>
             </div>
             <div className="px-5 pt-3 flex flex-col gap-2">
               <Sk h={18} w="68%" />
@@ -157,11 +157,11 @@ export default function RecipeSheet({
             {fitNote && (
               <div className="flex items-center gap-1.5 mb-1.5">
                 <Sparkles size={13} strokeWidth={2} style={{ color: "#8B5CF6" }} />
-                <span className="text-[11.5px] font-semibold" style={{ color: "var(--exp-encre)" }}>{fitNote}</span>
+                <span className="text-[11px] font-semibold" style={{ color: "var(--exp-encre)" }}>{fitNote}</span>
               </div>
             )}
-            <h2 className="text-lg font-medium leading-tight" style={{ color: "var(--text-1)" }}>{recipe.nom}</h2>
-            {recipe.description && <p className="text-xs mt-1.5" style={{ color: "var(--text-2)" }}>{recipe.description}</p>}
+            <h2 className="text-[20px] font-medium leading-tight" style={{ color: "var(--text-1)" }}>{recipe.nom}</h2>
+            {recipe.description && <p className="text-[13px] mt-1.5" style={{ color: "var(--text-2)" }}>{recipe.description}</p>}
             <div className="flex flex-wrap gap-1.5 mt-3">
               {recipe.tags.map((t) => (
                 <span key={t} className="text-[11px] px-2.5 py-1 rounded-full" style={{ background: "rgba(var(--tint-violet-rgb),0.7)", color: "var(--text-2)", border: "1px solid rgba(var(--violet-mid-rgb),0.35)" }}>{t}</span>
@@ -177,7 +177,7 @@ export default function RecipeSheet({
             {rings.map((r) => (
               <div key={r.l} className="flex flex-col items-center justify-center rounded-full flex-shrink-0"
                 style={{ width: 66, height: 66, border: `2.5px solid ${r.c}` }}>
-                <span className="text-[15px] font-semibold" style={{ color: "var(--text-1)" }}>{r.v}</span>
+                <span className="text-[16px] font-semibold" style={{ color: "var(--text-1)" }}>{r.v}</span>
                 <span className="text-[11px]" style={{ color: "var(--text-3)" }}>{r.l}</span>
               </div>
             ))}
@@ -186,14 +186,14 @@ export default function RecipeSheet({
 
           {/* Sélecteur de portions */}
           <div className="mx-5 mt-4 flex items-center justify-between px-4 py-3 rounded-2xl" style={{ background: "rgba(var(--tint-violet-rgb),0.5)" }}>
-            <span className="text-sm" style={{ color: "var(--text-1)" }}>Nombre de portions</span>
+            <span className="text-[16px]" style={{ color: "var(--text-1)" }}>Nombre de portions</span>
             <div className="flex items-center gap-3.5">
               <button onClick={() => setPortions((p) => Math.max(1, p - 1))} aria-label="Moins"
                 className="w-7 h-7 rounded-full flex items-center justify-center cursor-pointer"
                 style={{ background: "rgb(var(--surface-rgb))", border: "1px solid rgba(var(--violet-mid-rgb),0.4)" }}>
                 <Minus size={14} strokeWidth={2} style={{ color: "var(--text-2)" }} />
               </button>
-              <span className="text-[15px] font-semibold tabular-nums" style={{ color: "var(--text-1)", minWidth: 16, textAlign: "center" }}>{portions}</span>
+              <span className="text-[16px] font-semibold tabular-nums" style={{ color: "var(--text-1)", minWidth: 16, textAlign: "center" }}>{portions}</span>
               <button onClick={() => setPortions((p) => Math.min(12, p + 1))} aria-label="Plus"
                 className="w-7 h-7 rounded-full flex items-center justify-center cursor-pointer"
                 style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)" }}>
@@ -208,7 +208,7 @@ export default function RecipeSheet({
               <button key={k} onClick={() => setTab(k)}
                 className="flex-1 pb-2.5 text-center cursor-pointer"
                 style={{ borderBottom: `2px solid ${tab === k ? "#8B5CF6" : "rgba(var(--violet-mid-rgb),0.25)"}` }}>
-                <span className="text-xs font-medium" style={{ color: tab === k ? "var(--text-1)" : "var(--text-3)" }}>{label}</span>
+                <span className="text-[13px] font-medium" style={{ color: tab === k ? "var(--text-1)" : "var(--text-3)" }}>{label}</span>
               </button>
             ))}
           </div>
@@ -219,14 +219,14 @@ export default function RecipeSheet({
               ? recipe.ingredients.map((it, i) => (
                 <div key={i} className="flex items-center gap-3 py-2.5" style={{ borderBottom: i < recipe.ingredients.length - 1 ? "1px solid rgba(var(--accent-rgb),0.07)" : "none" }}>
                   <Thumb src={ingredientImg(it.nom)} kind="ing" />
-                  <span className="flex-1 text-sm" style={{ color: "var(--text-1)" }}>{it.nom}</span>
+                  <span className="flex-1 text-[16px]" style={{ color: "var(--text-1)" }}>{it.nom}</span>
                   <span className="text-[13px] font-medium" style={{ color: "#E8620C" }}>{scaledQty(it, portions, recipe.portions)}</span>
                 </div>
               ))
               : recipe.ustensiles.map((u, i) => (
                 <div key={i} className="flex items-center gap-3 py-2.5" style={{ borderBottom: i < recipe.ustensiles.length - 1 ? "1px solid rgba(var(--accent-rgb),0.07)" : "none" }}>
                   <Thumb src={utensilImg(u)} kind="ust" />
-                  <span className="flex-1 text-sm" style={{ color: "var(--text-1)" }}>{u}</span>
+                  <span className="flex-1 text-[16px]" style={{ color: "var(--text-1)" }}>{u}</span>
                 </div>
               ))}
           </div>
@@ -258,13 +258,13 @@ export default function RecipeSheet({
         {/* Actions */}
         <div className="flex gap-2 px-5 pt-3" style={{ borderTop: "1px solid rgba(var(--violet-mid-rgb),0.35)", paddingBottom: "calc(0.9rem + env(safe-area-inset-bottom))" }}>
           <button onClick={() => { onLog({ name: recipe.nom, calories: recipe.calories, proteins: recipe.proteins, carbs: recipe.carbs, fats: recipe.fats }); onClose(); }}
-            className="flex-1 py-3 rounded-2xl text-sm font-semibold cursor-pointer flex items-center justify-center gap-2"
+            className="flex-1 py-3 rounded-2xl text-[16px] font-semibold cursor-pointer flex items-center justify-center gap-2"
             style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", color: "#fff", boxShadow: "var(--ombre-action)" }}>
             <Check size={17} strokeWidth={2.5} /> Je fais ça
           </button>
           {hasOther && onOther && (
             <button onClick={onOther}
-              className="flex items-center gap-1.5 px-4 py-3 rounded-2xl text-sm font-medium cursor-pointer flex-shrink-0"
+              className="flex items-center gap-1.5 px-4 py-3 rounded-2xl text-[16px] font-medium cursor-pointer flex-shrink-0"
               style={{ background: "rgba(var(--tint-violet-rgb),0.6)", color: "var(--text-2)", border: "1px solid rgba(var(--violet-mid-rgb),0.4)" }}>
               <RefreshCw size={14} strokeWidth={2} /> Autre
             </button>

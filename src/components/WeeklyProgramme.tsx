@@ -664,7 +664,7 @@ export default function WeeklyProgramme({ cycle = null }: { cycle?: CycleSemaine
               style={{
                 color: i === selectedDay ? "var(--text-1)" : "var(--text-3)",
                 fontWeight: i === selectedDay ? 600 : 400,
-                fontSize: 12,
+                fontSize: 13,
                 transition: "color 0.15s, font-weight 0.15s",
                 background: "none", border: "none", padding: 0,
               }}>

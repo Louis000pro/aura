@@ -148,7 +148,7 @@ export default function ResetPasswordPage() {
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src="/logo-vaiiya.png" alt="Vaiiya" className="w-11 h-11 object-contain relative z-10" />
             </div>
-            <h1 className="text-xl font-extralight tracking-[0.2em]" style={{ color:"var(--text-1)" }}>Vaiiya</h1>
+            <h1 className="text-[20px] font-extralight tracking-[0.2em]" style={{ color:"var(--text-1)" }}>Vaiiya</h1>
             <p className="text-[11px] font-light mt-0.5" style={{ color:"var(--text-3)" }}>Coach IA · Musculation · Nutrition</p>
           </div>
 
@@ -158,7 +158,7 @@ export default function ResetPasswordPage() {
               <motion.div className="w-8 h-8 rounded-full border-2"
                 style={{ borderColor:"rgba(var(--accent-rgb),0.2)",borderTopColor:"var(--accent)" }}
                 animate={{ rotate:360 }} transition={{ duration:0.8,repeat:Infinity,ease:"linear" }} />
-              <p className="text-sm font-light" style={{ color:"var(--text-2)" }}>Vérification du lien…</p>
+              <p className="text-[16px] font-light" style={{ color:"var(--text-2)" }}>Vérification du lien…</p>
             </div>
           )}
 
@@ -172,15 +172,15 @@ export default function ResetPasswordPage() {
                 <AlertCircle size={30} style={{ color:"#FC8181" }} strokeWidth={1.5} />
               </motion.div>
               <div>
-                <p className="text-base font-medium mb-2" style={{ color:"var(--text-1)" }}>Lien invalide ou expiré</p>
-                <p className="text-xs font-light leading-relaxed" style={{ color:"var(--text-2)" }}>
+                <p className="text-[16px] font-medium mb-2" style={{ color:"var(--text-1)" }}>Lien invalide ou expiré</p>
+                <p className="text-[13px] font-light leading-relaxed" style={{ color:"var(--text-2)" }}>
                   Ce lien a peut-être déjà été utilisé ou a expiré.<br/>
                   Demande un nouveau lien de réinitialisation.
                 </p>
               </div>
               <motion.button whileHover={{ scale:1.02,y:-1 }} whileTap={{ scale:0.97 }}
                 onClick={() => router.push("/auth")}
-                className="flex items-center gap-2 px-6 py-3 rounded-2xl text-sm font-semibold cursor-pointer"
+                className="flex items-center gap-2 px-6 py-3 rounded-2xl text-[16px] font-semibold cursor-pointer"
                 style={{ background:ACTION_BG,color:"#fff",boxShadow:"0 4px 20px rgba(139,92,246,0.42)" }}>
                 <ArrowLeft size={14} strokeWidth={2} />
                 Retour à la connexion
@@ -191,13 +191,13 @@ export default function ResetPasswordPage() {
           {/* ── Formulaire ── */}
           {status === "ready" && !success && (
             <motion.div initial={{ opacity:0,y:10 }} animate={{ opacity:1,y:0 }}>
-              <h2 className="text-lg font-light mb-1 text-center" style={{ color:"var(--text-1)" }}>Nouveau mot de passe</h2>
-              <p className="text-xs font-light mb-6 text-center" style={{ color:"var(--text-3)" }}>Choisis un mot de passe fort et sécurisé</p>
+              <h2 className="text-[20px] font-light mb-1 text-center" style={{ color:"var(--text-1)" }}>Nouveau mot de passe</h2>
+              <p className="text-[13px] font-light mb-6 text-center" style={{ color:"var(--text-3)" }}>Choisis un mot de passe fort et sécurisé</p>
 
               <AnimatePresence>
                 {error && (
                   <motion.div initial={{ opacity:0,y:-8,height:0 }} animate={{ opacity:1,y:0,height:"auto" }} exit={{ opacity:0,height:0 }}
-                    className="mb-4 px-4 py-3 rounded-2xl text-xs font-medium overflow-hidden"
+                    className="mb-4 px-4 py-3 rounded-2xl text-[13px] font-medium overflow-hidden"
                     style={{ background:"rgba(252,129,129,0.12)",border:"1px solid rgba(252,129,129,0.25)",color:"#E53E3E" }}>
                     {error}
                   </motion.div>
@@ -211,7 +211,7 @@ export default function ResetPasswordPage() {
                     <Lock size={15} style={{ color:"var(--text-3)" }} />
                     <input type={showPwd?"text":"password"} placeholder="Nouveau mot de passe" value={password}
                       onChange={e => setPassword(e.target.value)} required autoFocus
-                      className="flex-1 bg-transparent text-sm outline-none placeholder:text-[var(--text-3)]"
+                      className="flex-1 bg-transparent text-[16px] outline-none placeholder:text-[var(--text-3)]"
                       style={{ color:"var(--text-1)" }} />
                     <button type="button" onClick={() => setShowPwd(v=>!v)} className="cursor-pointer flex-shrink-0">
                       {showPwd ? <EyeOff size={14} style={{ color:"var(--text-3)" }}/> : <Eye size={14} style={{ color:"var(--text-3)" }}/>}
@@ -225,7 +225,7 @@ export default function ResetPasswordPage() {
                   <Lock size={15} style={{ color:"var(--text-3)" }} />
                   <input type={showCfm?"text":"password"} placeholder="Confirmer le mot de passe" value={confirm}
                     onChange={e => setConfirm(e.target.value)} required
-                    className="flex-1 bg-transparent text-sm outline-none placeholder:text-[var(--text-3)]"
+                    className="flex-1 bg-transparent text-[16px] outline-none placeholder:text-[var(--text-3)]"
                     style={{ color:"var(--text-1)" }} />
                   <button type="button" onClick={() => setShowCfm(v=>!v)} className="cursor-pointer flex-shrink-0">
                     {showCfm ? <EyeOff size={14} style={{ color:"var(--text-3)" }}/> : <Eye size={14} style={{ color:"var(--text-3)" }}/>}
@@ -234,7 +234,7 @@ export default function ResetPasswordPage() {
 
                 <motion.button type="submit" disabled={loading||!password||!confirm}
                   whileHover={!loading?{scale:1.02,y:-2}:{}} whileTap={!loading?{scale:0.97}:{}}
-                  className="relative mt-1 w-full py-4 rounded-2xl text-sm font-semibold cursor-pointer overflow-hidden"
+                  className="relative mt-1 w-full py-4 rounded-2xl text-[16px] font-semibold cursor-pointer overflow-hidden"
                   style={{ background:ACTION_BG,color:"#fff",boxShadow:"0 4px 24px rgba(139,92,246,0.42),inset 0 1px 0 rgba(255,255,255,0.28)",opacity:(!password||!confirm)?0.6:1 }}>
                   <motion.div className="absolute inset-0 pointer-events-none"
                     style={{ background:"linear-gradient(105deg,transparent 40%,rgba(255,255,255,0.3) 50%,transparent 60%)" }}
@@ -262,8 +262,8 @@ export default function ResetPasswordPage() {
                 <CheckCircle2 size={32} style={{ color:TEAL }} strokeWidth={1.5} />
               </motion.div>
               <div>
-                <p className="text-lg font-light mb-1" style={{ color:"var(--text-1)" }}>Mot de passe mis à jour</p>
-                <p className="text-xs font-light" style={{ color:"var(--text-2)" }}>Redirection vers l&rsquo;accueil…</p>
+                <p className="text-[20px] font-light mb-1" style={{ color:"var(--text-1)" }}>Mot de passe mis à jour</p>
+                <p className="text-[13px] font-light" style={{ color:"var(--text-2)" }}>Redirection vers l&rsquo;accueil…</p>
               </div>
               <motion.div className="w-40 h-0.5 rounded-full overflow-hidden" style={{ background:"rgba(var(--accent-rgb),0.15)" }}>
                 <motion.div className="h-full rounded-full"

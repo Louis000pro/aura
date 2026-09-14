@@ -154,7 +154,7 @@ export default function PosterDefi({
         <div className="pointer-events-none absolute inset-x-0 bottom-0 px-5 pb-[6.5%] text-center">
           {titre && (
             <span
-              className="block text-[27px] font-extrabold uppercase leading-none"
+              className="block text-[26px] font-extrabold uppercase leading-none"
               style={{
                 letterSpacing: "0.18em",
                 textIndent: "0.18em",

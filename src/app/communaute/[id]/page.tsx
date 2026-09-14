@@ -379,10 +379,10 @@ export default function FilPage() {
   if (erreurChargement) {
     return (
       <div className="flex h-[100dvh] flex-col items-center justify-center gap-4 px-8 text-center">
-        <p className="text-[15px]" style={{ color: "var(--text-body)" }}>{erreurChargement}</p>
+        <p className="text-[16px]" style={{ color: "var(--text-body)" }}>{erreurChargement}</p>
         <button
           onClick={() => { setCharge(true); void recharger(); }}
-          className="rounded-2xl px-5 py-3 text-[15px] font-semibold text-white"
+          className="rounded-2xl px-5 py-3 text-[16px] font-semibold text-white"
           style={{ background: "linear-gradient(135deg, #8B5CF6, #C13BC1)" }}
         >
           Réessayer
@@ -394,9 +394,9 @@ export default function FilPage() {
   if (!conv) {
     return (
       <div className="flex h-[100dvh] flex-col items-center justify-center gap-4 px-8 text-center">
-        <p className="text-[15px]" style={{ color: "var(--text-body)" }}>Cette conversation n&apos;existe plus.</p>
+        <p className="text-[16px]" style={{ color: "var(--text-body)" }}>Cette conversation n&apos;existe plus.</p>
         <button onClick={() => router.replace("/communaute")}
-          className="rounded-2xl px-5 py-3 text-[15px] font-semibold text-white"
+          className="rounded-2xl px-5 py-3 text-[16px] font-semibold text-white"
           style={{ background: "linear-gradient(135deg, #8B5CF6, #C13BC1)" }}>
           Retour aux discussions
         </button>
@@ -474,14 +474,14 @@ export default function FilPage() {
                 cosmetiques={rangAutre.cosmetiques}
                 pseudo={titre}
                 classNameEnveloppe="flex min-w-0 items-center gap-1.5"
-                className="block truncate text-[15px] font-semibold"
+                className="block truncate text-[16px] font-semibold"
                 style={{ color: c.t0 }}
                 tailleGemme={14}
               />
             ) : (
-              <b className="block truncate text-[15px] font-semibold" style={{ color: c.t0 }}>{titre}</b>
+              <b className="block truncate text-[16px] font-semibold" style={{ color: c.t0 }}>{titre}</b>
             )}
-            <span className="block truncate text-[11.5px]" style={{ color: c.t2 }}>
+            <span className="block truncate text-[13px]" style={{ color: c.t2 }}>
               {conv.type === "groupe"
                 ? `${autres.map((p) => p.pseudo).join(", ")}, toi`
                 : "Touche pour les infos"}
@@ -494,20 +494,20 @@ export default function FilPage() {
       {conv.defi && <DefiEpingle defi={conv.defi} etat={etat} onOuvrir={() => router.push("/defi")} />}
 
       {erreur && (
-        <p className="relative z-10 px-4 pb-1 text-center text-[12.5px] font-medium" style={{ color: "#FFB27A" }}>
+        <p className="relative z-10 px-4 pb-1 text-center text-[13px] font-medium" style={{ color: "#FFB27A" }}>
           {erreur}
         </p>
       )}
 
       {refus && (
         <div className="relative z-10 px-4 pb-1 text-center">
-          <p className="text-[12.5px] font-medium leading-snug" style={{ color: "#FFB27A" }}>
+          <p className="text-[13px] font-medium leading-snug" style={{ color: "#FFB27A" }}>
             {refus.texte}
           </p>
           {refus.ou && (
             <button
               onClick={() => { setRefus(null); router.push(`/communaute/${refus.ou}`); }}
-              className="mt-1 text-[12.5px] font-semibold underline"
+              className="mt-1 text-[13px] font-semibold underline"
               style={{ color: "#D7A62A" }}
             >
               Ouvrir ce relais
@@ -523,7 +523,7 @@ export default function FilPage() {
             <button
               onClick={() => void chargerAvant()}
               disabled={chargeAvant}
-              className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11.5px] font-semibold disabled:opacity-60"
+              className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-semibold disabled:opacity-60"
               style={{ background: c.carte, border: `1px solid ${c.trait}`, color: c.t2 }}
             >
               {chargeAvant
@@ -536,7 +536,7 @@ export default function FilPage() {
 
         {messages.length === 0 && (
           <div className="mt-8 flex flex-col items-center px-6 text-center">
-            <p className="text-[13.5px] leading-relaxed" style={{ color: c.t3 }}>
+            <p className="text-[13px] leading-relaxed" style={{ color: c.t3 }}>
               Rien encore.<br />C&apos;est à toi d&apos;ouvrir.
             </p>
 
@@ -546,7 +546,7 @@ export default function FilPage() {
             <button
               onClick={() => void envoyerTexte("Salut l’ami ! 👋")}
               disabled={envoi || photoEnCours}
-              className="mt-4 rounded-full px-5 py-2.5 text-[14px] font-semibold text-white transition-transform active:scale-95 disabled:opacity-50"
+              className="mt-4 rounded-full px-5 py-2.5 text-[16px] font-semibold text-white transition-transform active:scale-95 disabled:opacity-50"
               style={{ background: "linear-gradient(135deg, #8B5CF6, #C13BC1)" }}
             >
               Salut l&apos;ami&nbsp;! 👋
@@ -613,7 +613,7 @@ export default function FilPage() {
             <b className="block text-[11px] font-bold" style={{ color: "#D7A62A" }}>
               {repondA.userId === moi ? "Toi" : conv.membres.find((p) => p.id === repondA.userId)?.pseudo ?? "…"}
             </b>
-            <span className="block truncate text-[12px]" style={{ color: c.t2 }}>
+            <span className="block truncate text-[13px]" style={{ color: c.t2 }}>
               {repondA.type === "image" ? "📷 Photo" : repondA.contenu}
             </span>
           </span>
@@ -677,7 +677,7 @@ export default function FilPage() {
           maxLength={4000}
           rows={1}
           placeholder="Message…"
-          className="max-h-28 min-h-[40px] flex-1 resize-none rounded-[20px] border px-4 py-2.5 text-[14px] outline-none"
+          className="max-h-28 min-h-[40px] flex-1 resize-none rounded-[20px] border px-4 py-2.5 text-[16px] outline-none"
           style={{ borderColor: c.trait, background: c.carte, color: c.t1 }}
         />
 
@@ -749,7 +749,7 @@ function Bulle({ message: m, moi, conv, couleur: c, surAffiche, cite, onMenu }: 
         }}
         onPointerUp={stop}
         onPointerCancel={stop}
-        className={`max-w-[80%] select-none text-[13.5px] leading-snug ${m.type === "image" ? "p-1" : "px-3.5 py-2"}`}
+        className={`max-w-[80%] select-none text-[16px] leading-snug ${m.type === "image" ? "p-1" : "px-3.5 py-2"}`}
         style={
           aMoi
             ? { background: "linear-gradient(135deg, #8B5CF6, #C13BC1)", color: "#fff",
@@ -767,7 +767,7 @@ function Bulle({ message: m, moi, conv, couleur: c, surAffiche, cite, onMenu }: 
             <b className="block text-[11px] font-bold" style={{ color: aMoi ? "#F5D98A" : "#D7A62A" }}>
               {cite.userId === moi ? "Toi" : conv.membres.find((p) => p.id === cite.userId)?.pseudo ?? "…"}
             </b>
-            <span className="block truncate text-[11.5px]">
+            <span className="block truncate text-[13px]">
               {cite.type === "image" ? "📷 Photo" : cite.contenu}
             </span>
           </span>
@@ -822,7 +822,7 @@ function LigneSysteme({ message, serie, etat, couleur: c }: {
 
   if (!avecAffiche) {
     return (
-      <p className="my-2 px-6 text-center text-[11.5px] leading-relaxed" style={{ color: c.t3 }}>
+      <p className="my-2 px-6 text-center text-[13px] leading-relaxed" style={{ color: c.t3 }}>
         {message.contenu}
       </p>
     );
@@ -836,7 +836,7 @@ function LigneSysteme({ message, serie, etat, couleur: c }: {
       <div className="relative h-[37px] w-[26px] shrink-0 overflow-hidden rounded-[5px]">
         <Image src={imageEtat(serie!, etat)} alt="" fill sizes="26px" className="object-cover" />
       </div>
-      <p className="text-[11.5px] leading-snug" style={{ color: c.t1 }}>{message.contenu}</p>
+      <p className="text-[13px] leading-snug" style={{ color: c.t1 }}>{message.contenu}</p>
     </div>
   );
 }
@@ -892,10 +892,10 @@ function DefiEpingle({ defi, etat, onOuvrir }: {
       </div>
 
       <div className="min-w-0 flex-1">
-        <b className="block text-[13.5px] font-semibold" style={{ color: "#F4F1F9" }}>
+        <b className="block text-[13px] font-semibold" style={{ color: "#F4F1F9" }}>
           {gagne ? "L’affiche est à vous" : `${defi.faits} jour${defi.faits > 1 ? "s" : ""} sur ${defi.objectif}`}
         </b>
-        <span className="mt-0.5 block text-[12px]" style={{ color: "#A79FB6" }}>
+        <span className="mt-0.5 block text-[11px]" style={{ color: "#A79FB6" }}>
           {gagne ? "Elle rejoint vos profils." : "Touche pour voir l’affiche en grand."}
         </span>
 
@@ -958,7 +958,7 @@ function MenuMessage({ message, moi, mienne, onFermer, onReaction, onRepondre, o
             <button
               key={e}
               onClick={() => onReaction(e)}
-              className="flex h-11 w-11 items-center justify-center rounded-full text-[22px] transition-transform active:scale-90"
+              className="flex h-11 w-11 items-center justify-center rounded-full text-[20px] transition-transform active:scale-90"
               style={{ background: mienne === e ? "rgba(139,92,246,.22)" : "transparent" }}
             >
               {e}
@@ -970,7 +970,7 @@ function MenuMessage({ message, moi, mienne, onFermer, onReaction, onRepondre, o
           <button
             key={cle}
             onClick={action}
-            className="flex w-full items-center gap-3 rounded-xl px-2 py-3 text-left text-[15px] font-medium"
+            className="flex w-full items-center gap-3 rounded-xl px-2 py-3 text-left text-[16px] font-medium"
             style={{ color: danger ? "#E05A5A" : "var(--text-1)" }}
           >
             <Icone className="h-[18px] w-[18px]" />

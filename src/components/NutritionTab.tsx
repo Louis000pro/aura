@@ -1039,7 +1039,7 @@ function BarcodeScannerModal({ onClose, onAdd }: {
                               border: estimateMealType === mt ? "1px solid rgba(var(--accent-rgb),0.35)" : "1px solid rgba(var(--violet-mid-rgb),0.3)",
                               color: estimateMealType === mt ? "var(--text-1)" : "var(--text-2)",
                             }}>
-                            <span style={{ fontSize: 12 }}>{MEAL_META[mt].icon}</span>
+                            <span style={{ fontSize: 13 }}>{MEAL_META[mt].icon}</span>
                             <span>{MEAL_META[mt].label}</span>
                           </motion.button>
                         ))}
@@ -1161,7 +1161,7 @@ function BarcodeScannerModal({ onClose, onAdd }: {
                           border: mealType === mt ? "1px solid rgba(var(--accent-rgb),0.35)" : "1px solid rgba(var(--violet-mid-rgb),0.3)",
                           color: mealType === mt ? "var(--text-1)" : "var(--text-2)",
                         }}>
-                        <span style={{ fontSize: 12 }}>{MEAL_META[mt].icon}</span>
+                        <span style={{ fontSize: 13 }}>{MEAL_META[mt].icon}</span>
                         <span>{MEAL_META[mt].label}</span>
                       </motion.button>
                     ))}
@@ -2780,7 +2780,7 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
 
                     {/* Group header */}
                     <div className="flex items-center gap-2 mb-3">
-                      <span style={{ fontSize: 15 }}>{group.icon}</span>
+                      <span style={{ fontSize: 16 }}>{group.icon}</span>
                       <p className="text-[13px] font-semibold" style={{ color: "var(--text-2)" }}>{group.label}</p>
                       <div className="flex-1 h-px" style={{ background: "rgba(var(--accent-rgb),0.1)" }} />
                       <p className="text-[11px] font-medium" style={{ color: "var(--text-3)" }}>
@@ -2802,7 +2802,7 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
                             style={{ background: meal.hasPhoto ? "rgba(var(--accent-rgb),0.12)" : "rgba(var(--accent-rgb),0.07)" }}>
                             {meal.hasPhoto
                               ? <Camera size={14} strokeWidth={1.5} style={{ color: "var(--exp-encre)" }} />
-                              : <span style={{ fontSize: 15 }}>{group.icon}</span>
+                              : <span style={{ fontSize: 16 }}>{group.icon}</span>
                             }
                           </div>
 

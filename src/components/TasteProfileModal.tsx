@@ -94,8 +94,8 @@ export default function TasteProfileModal({ onClose, onSaved }: { onClose: () =>
         {/* Header */}
         <div className="flex items-center justify-between px-6 pt-6 pb-4 flex-shrink-0">
           <div>
-            <h2 className="text-base font-semibold" style={{ color: "var(--text-1)" }}>Mes goûts cuisine</h2>
-            <p className="text-xs font-light mt-0.5" style={{ color: "var(--text-3)" }}>Pour des recommandations de plats qui te ressemblent</p>
+            <h2 className="text-[20px] font-semibold" style={{ color: "var(--text-1)" }}>Mes goûts cuisine</h2>
+            <p className="text-[13px] font-light mt-0.5" style={{ color: "var(--text-3)" }}>Pour des recommandations de plats qui te ressemblent</p>
           </div>
           <motion.button whileTap={{ scale: 0.9 }} onClick={onClose} className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer flex-shrink-0" style={{ background: "rgba(var(--tint-violet-rgb),0.8)" }}>
             <X size={14} strokeWidth={2} style={{ color: "var(--text-3)" }} />
@@ -114,8 +114,8 @@ export default function TasteProfileModal({ onClose, onSaved }: { onClose: () =>
               <div className="w-14 h-14 rounded-full flex items-center justify-center" style={{ background: "linear-gradient(135deg, var(--violet-mid), var(--cream-mid))" }}>
                 <Check size={24} strokeWidth={2.5} style={{ color: "var(--text-1)" }} />
               </div>
-              <p className="text-sm font-semibold" style={{ color: "var(--text-1)" }}>Goûts mis à jour.</p>
-              <p className="text-xs font-light text-center" style={{ color: "var(--text-3)" }}>Ton menu de la semaine va s&apos;adapter</p>
+              <p className="text-[16px] font-semibold" style={{ color: "var(--text-1)" }}>Goûts mis à jour.</p>
+              <p className="text-[13px] font-light text-center" style={{ color: "var(--text-3)" }}>Ton menu de la semaine va s&apos;adapter</p>
             </motion.div>
           ) : (
             <div className="flex flex-col gap-5 pt-1">
@@ -143,7 +143,7 @@ export default function TasteProfileModal({ onClose, onSaved }: { onClose: () =>
                     <div className="flex flex-wrap gap-1">
                       {g.items.map((it) => (
                         <Chip key={it.label} on={bases.includes(it.label)} onClick={() => toggleBase(it.label)}>
-                          <span style={{ fontSize: 12 }}>{it.emoji}</span>{it.label}
+                          <span style={{ fontSize: 13 }}>{it.emoji}</span>{it.label}
                         </Chip>
                       ))}
                     </div>
@@ -164,7 +164,7 @@ export default function TasteProfileModal({ onClose, onSaved }: { onClose: () =>
                     value={custom} onChange={(e) => setCustom(e.target.value)}
                     onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addCustom(); } }}
                     placeholder="Ajouter un aliment…"
-                    className="flex-1 rounded-xl px-3 py-2 text-xs outline-none"
+                    className="flex-1 rounded-xl px-3 py-2 text-[13px] outline-none"
                     style={{ background: "rgba(var(--tint-violet-rgb),0.5)", border: "1px solid rgba(var(--accent-rgb),0.15)", color: "var(--text-1)" }}
                   />
                   <button onClick={addCustom} type="button" aria-label="Ajouter"
@@ -185,7 +185,7 @@ export default function TasteProfileModal({ onClose, onSaved }: { onClose: () =>
               whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.98 }}
               onClick={save}
               disabled={saving || !canSave}
-              className="w-full py-3.5 rounded-2xl text-sm font-semibold cursor-pointer disabled:opacity-50"
+              className="w-full py-3.5 rounded-2xl text-[16px] font-semibold cursor-pointer disabled:opacity-50"
               style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", color: "#fff", boxShadow: "var(--ombre-action), inset 0 1px 0 rgba(var(--surface-rgb),0.9)" }}
             >
               {saving ? "Enregistrement…" : "Enregistrer mes goûts"}
@@ -214,7 +214,7 @@ function Segmented({ options, value, onSelect }: { options: string[]; value: str
         const on = value === o;
         return (
           <motion.button key={o} whileTap={{ scale: 0.95 }} onClick={() => onSelect(o)} type="button"
-            className="flex-1 py-2.5 rounded-2xl text-xs font-semibold cursor-pointer transition-all"
+            className="flex-1 py-2.5 rounded-2xl text-[13px] font-semibold cursor-pointer transition-all"
             style={on
               ? { background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", color: "#fff", boxShadow: "var(--ombre-action), inset 0 1px 0 rgba(var(--surface-rgb),0.9)" }
               : { background: "rgba(var(--tint-violet-rgb),0.5)", color: "var(--text-3)", border: "1px solid rgba(var(--accent-rgb),0.12)" }
@@ -230,7 +230,7 @@ function Segmented({ options, value, onSelect }: { options: string[]; value: str
 function Chip({ on, onClick, children }: { on: boolean; onClick: () => void; children: React.ReactNode }) {
   return (
     <motion.button whileTap={{ scale: 0.93 }} onClick={onClick} type="button"
-      className="flex items-center gap-1 px-2 py-1 rounded-full cursor-pointer select-none text-xs font-medium"
+      className="flex items-center gap-1 px-2 py-1 rounded-full cursor-pointer select-none text-[13px] font-medium"
       style={on
         ? { background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--accent) 100%)", color: "#fff", boxShadow: "var(--ombre-action)" }
         : { background: "rgba(var(--tint-violet-rgb),0.6)", color: "var(--text-2)", border: "1px solid rgba(var(--accent-rgb),0.15)" }

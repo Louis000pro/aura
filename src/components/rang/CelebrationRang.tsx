@@ -128,7 +128,7 @@ export default function CelebrationRang() {
             </div>
 
             <h2
-              className="mt-2 text-[30px] font-black leading-none tracking-[-0.03em]"
+              className="mt-2 text-[26px] font-black leading-none tracking-[-0.03em]"
               style={{ color: "var(--text-0)" }}
             >
               {rang.nom}
@@ -152,12 +152,12 @@ export default function CelebrationRang() {
                 }}
               >
                 <div className="flex items-center gap-2.5">
-                  <span className="text-[17px] shrink-0">{reco.emoji}</span>
+                  <span className="text-[20px] shrink-0">{reco.emoji}</span>
                   <div className="min-w-0 flex-1">
                     <p className="text-[13px] font-bold leading-tight" style={{ color: "var(--text-0)" }}>
                       {reco.titre}
                     </p>
-                    <p className="mt-0.5 text-[11.5px] leading-snug" style={{ color: "var(--text-3)" }}>
+                    <p className="mt-0.5 text-[11px] leading-snug" style={{ color: "var(--text-3)" }}>
                       {reco.desc}
                     </p>
                   </div>
@@ -188,7 +188,7 @@ export default function CelebrationRang() {
             <button
               type="button"
               onClick={fermer}
-              className="mt-5 w-full rounded-2xl py-3.5 text-[15px] font-bold active:opacity-90"
+              className="mt-5 w-full rounded-2xl py-3.5 text-[16px] font-bold active:opacity-90"
               style={{
                 background: "linear-gradient(135deg,#8B5CF6,#C13BC1)",
                 color: "#fff",

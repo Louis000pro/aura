@@ -55,7 +55,7 @@ export default function SplashIntro() {
               style={{ filter: "drop-shadow(0 8px 24px rgba(167,139,250,0.30))" }}
             />
             <motion.span
-              className="mt-3 text-2xl font-black tracking-tight"
+              className="mt-3 text-[26px] font-black tracking-tight"
               style={{ color: "#2D2150", letterSpacing: "0.04em" }}
               initial={sobre ? { opacity: 1 } : { opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}

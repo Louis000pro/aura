@@ -78,7 +78,7 @@ export default function GeneratedRecipeSheet({
             <div className="flex items-center justify-between px-5 pt-5 pb-3" style={{ borderBottom: "1px solid rgba(var(--violet-mid-rgb),0.4)" }}>
               <div>
                 <p className="vy-label" style={{ color: "var(--text-3)" }}>{eyebrow}</p>
-                <h2 className="text-base font-semibold mt-0.5" style={{ color: "var(--text-1)" }}>
+                <h2 className="text-[20px] font-semibold mt-0.5" style={{ color: "var(--text-1)" }}>
                   {loading ? loadingTitle : recipe ? recipe.nom : "Recette"}
                 </h2>
               </div>
@@ -93,16 +93,16 @@ export default function GeneratedRecipeSheet({
               {loading && (
                 <div className="flex flex-col items-center justify-center gap-3 py-16">
                   <Loader2 size={26} className="animate-spin" style={{ color: "var(--exp-encre)" }} />
-                  <p className="text-xs" style={{ color: "var(--text-3)" }}>{loadingHint}</p>
+                  <p className="text-[13px]" style={{ color: "var(--text-3)" }}>{loadingHint}</p>
                 </div>
               )}
 
               {error && !loading && (
                 <div className="flex flex-col items-center justify-center gap-3 py-14">
                   <AlertTriangle size={24} style={{ color: "#F6AD55" }} />
-                  <p className="text-sm text-center" style={{ color: "var(--text-2)" }}>L&apos;IA a calé cette fois.</p>
+                  <p className="text-[16px] text-center" style={{ color: "var(--text-2)" }}>L&apos;IA a calé cette fois.</p>
                   <button onClick={onRetry}
-                    className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold cursor-pointer"
+                    className="flex items-center gap-2 px-4 py-2 rounded-xl text-[16px] font-semibold cursor-pointer"
                     style={{ background: "rgba(var(--tint-violet-rgb),0.8)", color: "var(--exp-encre)" }}>
                     <RefreshCw size={14} /> Réessayer
                   </button>
@@ -129,7 +129,7 @@ export default function GeneratedRecipeSheet({
                       { v: recipe.fats, l: "L" },
                     ].map((m) => (
                       <div key={m.l} className="flex flex-col items-center">
-                        <span className="text-sm font-bold" style={{ color: "var(--text-1)" }}>{m.v}</span>
+                        <span className="text-[16px] font-bold" style={{ color: "var(--text-1)" }}>{m.v}</span>
                         <span className="text-[11px]" style={{ color: "var(--text-3)" }}>{m.l}</span>
                       </div>
                     ))}
@@ -147,7 +147,7 @@ export default function GeneratedRecipeSheet({
                     <p className="vy-label mb-2" style={{ color: "var(--text-3)" }}>Ingrédients</p>
                     <div className="flex flex-col gap-1.5">
                       {recipe.ingredients.map((it, i) => (
-                        <div key={i} className="flex items-center justify-between text-sm">
+                        <div key={i} className="flex items-center justify-between text-[16px]">
                           <span style={{ color: "var(--text-1)" }}>{it.nom}</span>
                           <span className="font-medium" style={{ color: "var(--exp-encre)" }}>{it.quantite}</span>
                         </div>
@@ -161,7 +161,7 @@ export default function GeneratedRecipeSheet({
                       {recipe.steps.map((s, i) => (
                         <div key={i} className="flex gap-2.5">
                           <span className="flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-bold" style={{ background: "rgba(var(--accent-rgb),0.15)", color: "var(--exp-encre)" }}>{i + 1}</span>
-                          <p className="text-sm leading-snug" style={{ color: "var(--text-body)" }}>{s}</p>
+                          <p className="text-[16px] leading-snug" style={{ color: "var(--text-body)" }}>{s}</p>
                         </div>
                       ))}
                     </div>
@@ -177,7 +177,7 @@ export default function GeneratedRecipeSheet({
             {recipe && !loading && (
               <div className="px-5 pt-3 flex flex-col gap-2" style={{ borderTop: "1px solid rgba(var(--violet-mid-rgb),0.4)", paddingBottom: "calc(1rem + env(safe-area-inset-bottom))" }}>
                 <button onClick={addToDay} disabled={added}
-                  className="w-full py-3.5 rounded-2xl text-sm font-bold flex items-center justify-center gap-2 cursor-pointer"
+                  className="w-full py-3.5 rounded-2xl text-[16px] font-bold flex items-center justify-center gap-2 cursor-pointer"
                   style={{ background: added ? "rgba(154,230,180,0.5)" : "#DDA62C", color: added ? "#2F855A" : "#3A2A06" }}>
                   {added ? (<><Check size={17} strokeWidth={2.5} /> Ajouté à ta journée</>) : (<><Plus size={17} strokeWidth={2.5} /> Ajouter à mes repas du jour</>)}
                 </button>

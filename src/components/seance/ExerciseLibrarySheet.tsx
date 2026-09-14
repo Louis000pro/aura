@@ -101,7 +101,7 @@ export default function ExerciseLibrarySheet({
               <p className="text-[11px] font-semibold tracking-widest uppercase" style={{ color: "var(--exp-encre)" }}>
                 {exploration ? `${EXERCISE_LIBRARY.length} exercices animés` : "Bibliothèque"}
               </p>
-              <h2 className="text-lg font-light mt-0.5" style={{ color: "var(--text-1)" }}>
+              <h2 className="text-[20px] font-light mt-0.5" style={{ color: "var(--text-1)" }}>
                 {exploration ? "Les mouvements" : "Choisis tes exercices"}
               </h2>
             </div>
@@ -120,7 +120,7 @@ export default function ExerciseLibrarySheet({
               value={texte}
               onChange={e => setTexte(e.target.value)}
               placeholder="Chercher un exercice ou un muscle…"
-              className="flex-1 bg-transparent text-sm outline-none min-w-0"
+              className="flex-1 bg-transparent text-[16px] outline-none min-w-0"
               style={{ color: "var(--text-1)" }}
             />
             {texte && (
@@ -167,13 +167,13 @@ export default function ExerciseLibrarySheet({
         <div className="flex-1 overflow-y-auto px-5 py-4" style={{ scrollbarWidth: "none" }}>
           {resultats.length === 0 ? (
             <div className="flex flex-col items-center text-center gap-3 py-12">
-              <p className="text-sm" style={{ color: "var(--text-2)" }}>
+              <p className="text-[16px]" style={{ color: "var(--text-2)" }}>
                 Aucun exercice ne correspond.
               </p>
               {texte.trim() && (
                 <motion.button whileTap={{ scale: 0.96 }}
                   onClick={() => { onAjouterLibre(texte.trim()); onClose(); }}
-                  className="px-4 py-2.5 rounded-2xl text-sm font-semibold cursor-pointer"
+                  className="px-4 py-2.5 rounded-2xl text-[16px] font-semibold cursor-pointer"
                   style={{ background: "rgba(var(--accent-rgb),0.12)", color: "var(--exp-encre)", border: "1px solid rgba(var(--accent-rgb),0.35)" }}>
                   Ajouter « {texte.trim()} » quand même
                 </motion.button>
@@ -209,7 +209,7 @@ export default function ExerciseLibrarySheet({
                       aria-label={`${e.name}, voir la fiche`}
                     >
                       <ExerciseThumb name={e.name} size={78} delay={i * 90} />
-                      <p className="text-[12px] font-semibold leading-tight" style={{ color: "var(--text-1)" }}>
+                      <p className="text-[13px] font-semibold leading-tight" style={{ color: "var(--text-1)" }}>
                         {e.name}
                       </p>
                       <p className="text-[11px] leading-tight" style={{ color: "var(--text-3)" }}>
@@ -263,7 +263,7 @@ export default function ExerciseLibrarySheet({
           {resultats.length > 0 && texte.trim() && (
             <motion.button whileTap={{ scale: 0.98 }}
               onClick={() => { onAjouterLibre(texte.trim()); onClose(); }}
-              className="w-full mt-3 py-3 rounded-2xl text-[12px] font-semibold cursor-pointer"
+              className="w-full mt-3 py-3 rounded-2xl text-[13px] font-semibold cursor-pointer"
               style={{ background: "transparent", color: "var(--text-3)", border: "1px dashed rgba(var(--violet-mid-rgb),0.5)" }}>
               Ajouter « {texte.trim()} » comme exercice perso
             </motion.button>
@@ -276,7 +276,7 @@ export default function ExerciseLibrarySheet({
             whileTap={{ scale: 0.97 }}
             onClick={valider}
             disabled={choix.length === 0}
-            className="w-full py-3.5 rounded-2xl text-sm font-semibold cursor-pointer"
+            className="w-full py-3.5 rounded-2xl text-[16px] font-semibold cursor-pointer"
             style={choix.length > 0
               ? { background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", color: "#fff", boxShadow: "0 8px 24px rgba(139,92,246,0.28)" }
               : { background: "rgba(var(--tint-violet-rgb),0.5)", color: "var(--text-3)" }

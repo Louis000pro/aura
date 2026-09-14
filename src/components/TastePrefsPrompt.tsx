@@ -147,10 +147,10 @@ export default function TastePrefsPrompt() {
               </button>
             </div>
 
-            <h2 className="text-xl font-light mt-3 flex-shrink-0" style={{ color: "var(--text-1)" }}>
+            <h2 className="text-[20px] font-light mt-3 flex-shrink-0" style={{ color: "var(--text-1)" }}>
               On personnalise tes plats&nbsp;?
             </h2>
-            <p className="text-sm mt-1.5 mb-4 flex-shrink-0" style={{ color: "var(--text-3)", lineHeight: 1.5 }}>
+            <p className="text-[16px] mt-1.5 mb-4 flex-shrink-0" style={{ color: "var(--text-3)", lineHeight: 1.5 }}>
               Quelques questions rapides pour te proposer des repas qui te ressemblent vraiment.
             </p>
 
@@ -214,7 +214,7 @@ export default function TastePrefsPrompt() {
                     value={custom} onChange={(e) => setCustom(e.target.value)}
                     onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addCustom(); } }}
                     placeholder="Ajouter un aliment…"
-                    className="flex-1 rounded-xl px-3 py-2 text-xs outline-none"
+                    className="flex-1 rounded-xl px-3 py-2 text-[13px] outline-none"
                     style={{ border: "1.5px solid #E2E8F0", color: "var(--text-1)" }}
                   />
                   <button onClick={addCustom} type="button" aria-label="Ajouter"
@@ -234,12 +234,12 @@ export default function TastePrefsPrompt() {
               <button
                 onClick={save}
                 disabled={saving || !canSave}
-                className="w-full rounded-2xl py-3.5 text-sm font-semibold text-white disabled:opacity-50"
+                className="w-full rounded-2xl py-3.5 text-[16px] font-semibold text-white disabled:opacity-50"
                 style={{ background: "linear-gradient(135deg,var(--accent),var(--gold))", boxShadow: "var(--ombre-action)" }}
               >
                 {saving ? "..." : "Enregistrer mes goûts"}
               </button>
-              <button onClick={later} className="w-full mt-2 py-2.5 text-sm font-medium" style={{ color: "var(--text-3)" }}>
+              <button onClick={later} className="w-full mt-2 py-2.5 text-[16px] font-medium" style={{ color: "var(--text-3)" }}>
                 Plus tard
               </button>
             </div>
@@ -254,7 +254,7 @@ export default function TastePrefsPrompt() {
 function Question({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="mb-4">
-      <p className="text-xs font-semibold mb-2" style={{ color: "var(--text-body)" }}>{label}</p>
+      <p className="text-[13px] font-semibold mb-2" style={{ color: "var(--text-body)" }}>{label}</p>
       {children}
     </div>
   );
@@ -271,7 +271,7 @@ function Segmented({ options, value, onSelect }: { options: string[]; value: str
             style={{
               background: on ? "linear-gradient(135deg,var(--violet-mid),var(--cream-mid))" : "rgba(var(--tint-violet-rgb),0.5)",
               border: on ? "1px solid rgba(var(--accent-rgb),0.4)" : "1px solid rgba(var(--violet-mid-rgb),0.35)",
-              color: on ? "var(--text-1)" : "var(--text-2)", fontSize: 11.5, fontWeight: 500,
+              color: on ? "var(--text-1)" : "var(--text-2)", fontSize: 11, fontWeight: 500,
             }}>
             {o}
           </button>

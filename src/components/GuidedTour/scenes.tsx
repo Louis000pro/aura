@@ -149,7 +149,7 @@ export function SceneOuverture({ pseudo, guide }: { pseudo: string; guide: Guide
         style={{
           position: "relative",
           margin: `${guide ? 4 : 26}px 0 0`,
-          fontSize: 15,
+          fontSize: 16,
           fontWeight: 300,
           color: BLANC(0.6),
         }}
@@ -272,7 +272,7 @@ export function SceneTunnel() {
           </svg>
           <span
             className="absolute text-center"
-            style={{ fontSize: 19, fontWeight: 600, color: "#FFC864", letterSpacing: "0.01em" }}
+            style={{ fontSize: 20, fontWeight: 600, color: "#FFC864", letterSpacing: "0.01em" }}
           >
             {reduce ? 3 : reste}
           </span>
@@ -378,7 +378,7 @@ export function SceneAssistant() {
             maxWidth: "82%",
             padding: "10px 14px",
             borderRadius: "16px 16px 4px 16px",
-            fontSize: 13.5,
+            fontSize: 13,
             lineHeight: 1.45,
             color: "#FFFFFF",
             background: `linear-gradient(135deg, ${VIOLET}, ${MAGENTA})`,
@@ -414,7 +414,7 @@ export function SceneAssistant() {
             maxWidth: "82%",
             padding: "10px 14px",
             borderRadius: "16px 16px 16px 4px",
-            fontSize: 13.5,
+            fontSize: 13,
             lineHeight: 1.45,
             color: BLANC(0.9),
             background: BLANC(0.07),
@@ -439,10 +439,10 @@ export function SceneAssistant() {
         }}
       >
         <Mention color="rgba(195,174,255,0.8)">Jeudi</Mention>
-        <p style={{ margin: "6px 0 0", fontSize: 15, fontWeight: 600, color: "#FFFFFF" }}>
+        <p style={{ margin: "6px 0 0", fontSize: 16, fontWeight: 600, color: "#FFFFFF" }}>
           Jambes &amp; Fessiers
         </p>
-        <p style={{ margin: "2px 0 0", fontSize: 12, color: BLANC(0.5) }}>
+        <p style={{ margin: "2px 0 0", fontSize: 13, color: BLANC(0.5) }}>
           40 min · 6 exercices
         </p>
         <motion.div
@@ -484,7 +484,7 @@ export function SceneNutrition() {
         transition={{ duration: 0.45 }}
         style={{
           margin: "0 0 16px",
-          fontSize: 22,
+          fontSize: 20,
           fontWeight: 300,
           letterSpacing: "-0.01em",
           color: "#FFFFFF",
@@ -530,7 +530,7 @@ export function SceneNutrition() {
                 left: 16,
                 top: "50%",
                 transform: "translateY(-50%)",
-                fontSize: 14.5,
+                fontSize: 16,
                 fontWeight: 600,
                 color: "#FFFFFF",
               }}
@@ -566,13 +566,13 @@ export function SceneRang() {
     <div className="w-full flex flex-col items-center">
       <GemmeRang rang={RANGS[0]} size={78} />
 
-      <p style={{ margin: "10px 0 0", fontSize: 15, fontWeight: 600, color: "#FFFFFF" }}>
+      <p style={{ margin: "10px 0 0", fontSize: 16, fontWeight: 600, color: "#FFFFFF" }}>
         {RANGS[0].nom}
       </p>
       <p
         style={{
           margin: "2px 0 0",
-          fontSize: 12.5,
+          fontSize: 13,
           fontWeight: 600,
           letterSpacing: "0.04em",
           color: OR_CLAIR,
@@ -606,12 +606,12 @@ export function SceneRang() {
 
                 <motion.span
                   animate={{ color: fait ? BLANC(0.94) : BLANC(0.52) }}
-                  style={{ flex: 1, fontSize: 13.5 }}
+                  style={{ flex: 1, fontSize: 13 }}
                 >
                   {m.nom}
                 </motion.span>
 
-                <span style={{ fontSize: 12.5, fontWeight: 700, color: fait ? TEAL : BLANC(0.3) }}>
+                <span style={{ fontSize: 13, fontWeight: 700, color: fait ? TEAL : BLANC(0.3) }}>
                   {m.exp}
                 </span>
               </div>
@@ -632,7 +632,7 @@ export function SceneRang() {
         }}
       >
         <Flame size={14} strokeWidth={2.4} color={OR} />
-        <span style={{ fontSize: 12.5, fontWeight: 600, color: "#FFCE7A" }}>Série · 4 jours</span>
+        <span style={{ fontSize: 13, fontWeight: 600, color: "#FFCE7A" }}>Série · 4 jours</span>
       </div>
     </div>
   );
@@ -705,7 +705,7 @@ export function SceneRelais() {
           </motion.span>
         ))}
       </div>
-      <p style={{ margin: "12px 0 0", fontSize: 12.5, color: BLANC(0.55) }}>
+      <p style={{ margin: "12px 0 0", fontSize: 13, color: BLANC(0.55) }}>
         Un maillon par jour, à deux
       </p>
     </div>
@@ -807,7 +807,7 @@ export function SceneRepere() {
         </div>
       </div>
 
-      <p style={{ margin: "18px 0 0", fontSize: 12.5, color: BLANC(0.5), textAlign: "center" }}>
+      <p style={{ margin: "18px 0 0", fontSize: 13, color: BLANC(0.5), textAlign: "center" }}>
         Cinq cases, jamais plus. Elle reste en bas de chaque écran.
       </p>
     </div>

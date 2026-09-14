@@ -58,7 +58,7 @@ export default function EtatVideGuide({
       <BusteGuide guide={guide} hauteur={168} />
 
       <p
-        className="relative text-[14.5px] font-light leading-relaxed"
+        className="relative text-[16px] font-light leading-relaxed"
         style={{
           marginTop: guide ? -22 : 16,
           maxWidth: 320,
@@ -74,7 +74,7 @@ export default function EtatVideGuide({
           whileTap={{ scale: 0.96 }}
           onClick={action.onClick}
           type="button"
-          className="relative mt-5 cursor-pointer rounded-2xl px-6 py-3 text-[13.5px] font-semibold"
+          className="relative mt-5 cursor-pointer rounded-2xl px-6 py-3 text-[13px] font-semibold"
           style={{
             // Violet plein = l'action, partout dans l'app (système D).
             background: "linear-gradient(135deg,var(--violet-mid),var(--accent))",

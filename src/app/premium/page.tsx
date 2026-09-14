@@ -218,7 +218,7 @@ function PremiumInner() {
               alors « Vaiiya Premium · Tout Vaiiya, sans compteur », donc il nomme
               l'offre au lieu de la sous-entendre. Rien ne bouge à l'écran. */}
           <h1 style={{ color: "var(--text-0)" }}>
-            <span className={`${styles.eyebrow} inline-block text-xs font-bold tracking-[0.2em] mb-3 px-3 py-1 rounded-full`}>
+            <span className={`${styles.eyebrow} inline-block text-[13px] font-bold tracking-[0.2em] mb-3 px-3 py-1 rounded-full`}>
               VAIIYA PREMIUM ✦
             </span>
             {/* « Passe au niveau supérieur » aurait pu titrer n'importe quelle
@@ -226,11 +226,11 @@ function PremiumInner() {
                 maintenant la chose concrète que Premium retire, et c'est le
                 compteur : plus de plafond de messages au coach, plus de cadenas
                 sur le catalogue. */}
-            <span className="block text-3xl md:text-5xl font-black tracking-tight leading-tight">
+            <span className="block text-[34px] md:text-[48px] font-black tracking-tight leading-tight">
               Tout Vaiiya, <span className={styles.titleAccent}>sans compteur</span>
             </span>
           </h1>
-          <p className="mt-3 text-sm md:text-base font-light max-w-md mx-auto" style={{ color: "var(--text-soft)" }}>
+          <p className="mt-3 text-[16px] font-light max-w-md mx-auto" style={{ color: "var(--text-soft)" }}>
             Le coach répond <strong style={{ color: "var(--exp-encre)" }}>sans plafond de messages</strong>, le catalogue s’ouvre en entier, et des missions s’ajoutent à tes journées.
             {VENTE_OUVERTE ? (
               <>
@@ -247,7 +247,7 @@ function PremiumInner() {
         </motion.div>
 
         {msg && (
-          <div className="max-w-md mx-auto mb-8 px-4 py-3 text-center text-sm font-medium"
+          <div className="max-w-md mx-auto mb-8 px-4 py-3 text-center text-[16px] font-medium"
             style={{ borderRadius: "var(--r-bloc)", background: "rgba(167,139,250,0.12)", color: "var(--exp-encre)", border: "1px solid rgba(167,139,250,0.25)" }}>
             {msg}
           </div>
@@ -298,15 +298,15 @@ function PremiumInner() {
                       rien de plus que le nom ecrit a cote. */}
                   <div className="flex items-center gap-2 mb-3" style={{ color: highlight ? "var(--exp-encre)" : "var(--text-3)" }}>
                     {ICONS[id]}
-                    <span className="text-lg font-extrabold" style={{ color: "var(--text-0)" }}>{p.name}</span>
+                    <span className="text-[20px] font-extrabold" style={{ color: "var(--text-0)" }}>{p.name}</span>
                   </div>
 
                   {/* Prix */}
                   <div className="flex items-end gap-1.5 flex-wrap mb-2.5">
-                    <span className={`font-black ${highlight ? "text-4xl md:text-5xl" : "text-3xl md:text-3xl"}`} style={{ color: "var(--text-0)" }}>
+                    <span className={`font-black ${highlight ? "text-[34px] md:text-[48px]" : "text-[26px]"}`} style={{ color: "var(--text-0)" }}>
                       {p.priceCents === 0 ? "0 €" : formatPrice(p.priceCents)}
                     </span>
-                    {p.priceCents > 0 && <span className="text-sm font-light mb-1.5" style={{ color: "var(--text-3)" }}>/mois</span>}
+                    {p.priceCents > 0 && <span className="text-[16px] font-light mb-1.5" style={{ color: "var(--text-3)" }}>/mois</span>}
                     {p.priceCents > 0 && (
                       <span className="text-[11px] font-semibold mb-1.5 px-2 py-0.5 rounded-full"
                         style={{ background: "rgba(167,139,250,0.1)", color: "var(--exp-encre)" }}>
@@ -316,25 +316,25 @@ function PremiumInner() {
                   </div>
 
                   {/* Petite phrase entre le prix et le bouton (façon ChatGPT) */}
-                  <p className="text-sm font-light mb-4" style={{ color: "var(--text-soft)", minHeight: 40 }}>{p.tagline}</p>
+                  <p className="text-[16px] font-light mb-4" style={{ color: "var(--text-soft)", minHeight: 40 }}>{p.tagline}</p>
 
                   {/* CTA — juste sous le prix. L'offre en cours ne propose
                       jamais de repayer : elle propose de gérer ou d'arrêter. */}
                   {id === "free" ? (
                     !user?.is_premium && (
-                      <div className={`${styles.currentPlan} text-center py-3 text-sm font-semibold`}
+                      <div className={`${styles.currentPlan} text-center py-3 text-[16px] font-semibold`}
                         style={{ borderRadius: "var(--r-controle)" }}>
                         Ton offre actuelle
                       </div>
                     )
                   ) : user?.is_premium ? (
                     <>
-                      <div className={`${styles.currentPlan} text-center py-3 text-sm font-semibold`}
+                      <div className={`${styles.currentPlan} text-center py-3 text-[16px] font-semibold`}
                         style={{ borderRadius: "var(--r-controle)" }}>
                         Ton abonnement est actif
                       </div>
                       <button onClick={ouvrirPortail} disabled={portail}
-                        className="mt-2 py-2 text-xs font-semibold underline underline-offset-4 cursor-pointer disabled:opacity-60"
+                        className="mt-2 py-2 text-[13px] font-semibold underline underline-offset-4 cursor-pointer disabled:opacity-60"
                         style={{ color: "var(--text-3)" }}>
                         {portail ? "Ouverture…" : "Gérer ou résilier mon abonnement"}
                       </button>
@@ -344,7 +344,7 @@ function PremiumInner() {
                        d'afficher un bouton qui refuserait après le clic. */
                     <div className="text-center py-3 px-3"
                       style={{ borderRadius: "var(--r-controle)", background: "rgba(167,139,250,0.1)", border: "1px solid rgba(167,139,250,0.28)" }}>
-                      <p className="text-sm font-semibold" style={{ color: "var(--exp-encre)" }}>Bientôt disponible</p>
+                      <p className="text-[16px] font-semibold" style={{ color: "var(--exp-encre)" }}>Bientôt disponible</p>
                       <p className="text-[11px] font-light leading-snug mt-1" style={{ color: "var(--text-3)" }}>
                         L&apos;abonnement n&apos;est pas encore ouvert. En attendant, tout ce qui est
                         gratuit le reste, et rien ne t&apos;est facturé.
@@ -369,7 +369,7 @@ function PremiumInner() {
                         </span>
                       </label>
                       <motion.button whileTap={{ scale: 0.97 }} onClick={() => subscribe(id)} disabled={loading === id || verifPaiement}
-                        className={`${styles.cta} py-2.5 md:py-4 text-sm md:text-base font-bold text-white cursor-pointer disabled:opacity-60`}
+                        className={`${styles.cta} py-2.5 md:py-4 text-[16px] font-bold text-white cursor-pointer disabled:opacity-60`}
                         style={{ borderRadius: "var(--r-controle)" }}>
                         {loading === id ? "Redirection…" : verifPaiement ? "Vérification…" : "Démarrer mes 3 jours gratuits"}
                       </motion.button>
@@ -382,7 +382,7 @@ function PremiumInner() {
                   {/* Avantages — listés en bas, tous visibles */}
                   <ul className="flex flex-col gap-2.5">
                     {p.features.map((f, i) => (
-                      <li key={i} className="flex items-start gap-2 text-sm" style={{ color: highlight ? "var(--text-body)" : "var(--text-soft)" }}>
+                      <li key={i} className="flex items-start gap-2 text-[16px]" style={{ color: highlight ? "var(--text-body)" : "var(--text-soft)" }}>
                         <span className="mt-0.5 flex-shrink-0 w-4 h-4 rounded-full flex items-center justify-center"
                           style={{ background: highlight ? "linear-gradient(135deg,#A78BFA,#7C5CFA)" : "rgba(167,139,250,0.18)" }}>
                           <Check size={11} strokeWidth={3} style={{ color: highlight ? "#fff" : "#A78BFA" }} />
@@ -415,7 +415,7 @@ function PremiumInner() {
         {/* Information précontractuelle : la reconduction et le contrat doivent
             se lire AVANT de payer, pas après. */}
         {VENTE_OUVERTE ? (
-          <p className="text-center text-[11px] md:text-xs font-light mt-3 md:mt-6 flex-shrink-0" style={{ color: "var(--text-3)" }}>
+          <p className="text-center text-[11px] md:text-[13px] font-light mt-3 md:mt-6 flex-shrink-0" style={{ color: "var(--text-3)" }}>
             <strong style={{ color: "var(--exp-encre)" }}>0 € aujourd&apos;hui</strong>{" "}· annulable en 1 clic avant la fin de l&apos;essai · paiement sécurisé Stripe 🔒
             <br />
             Puis {formatPrice(PLANS.premium.priceCents)}/mois, reconduit automatiquement, résiliable à tout moment.
@@ -423,7 +423,7 @@ function PremiumInner() {
             <Link href="/conditions" className="underline" style={{ color: "var(--text-2)" }}>Conditions</Link>
           </p>
         ) : (
-          <p className="text-center text-[11px] md:text-xs font-light mt-3 md:mt-6 flex-shrink-0" style={{ color: "var(--text-3)" }}>
+          <p className="text-center text-[11px] md:text-[13px] font-light mt-3 md:mt-6 flex-shrink-0" style={{ color: "var(--text-3)" }}>
             Aucun paiement n&apos;est possible aujourd&apos;hui, et aucun moyen de paiement ne t&apos;est demandé.
             {" "}
             <Link href="/conditions" className="underline" style={{ color: "var(--text-2)" }}>Conditions</Link>

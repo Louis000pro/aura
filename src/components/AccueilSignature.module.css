@@ -58,7 +58,7 @@
 }
 
 .entree[data-parle] .salut {
-  font-size: 15px;
+  font-size: 16px;
 }
 
 .pseudo {
@@ -79,7 +79,7 @@
   display: block;
   margin-top: 2px;
   color: var(--text-soft);
-  font-size: 13.5px;
+  font-size: 13px;
   line-height: 1.45;
   text-wrap: pretty;
 }
@@ -122,7 +122,7 @@
 }
 
 .etatSerie i {
-  font-size: 15px;
+  font-size: 16px;
   font-style: normal;
   line-height: 1;
 }
@@ -130,12 +130,8 @@
 /* Chasse fixe : la ligne ne doit pas se décaler d'un pixel le jour où la
    série passe de 9 à 10. */
 .etatSerie b {
-  font-family: var(--chiffre);
-  font-variation-settings: var(--w-nombre);
-  font-size: 22px;
+  font-size: 20px;
   font-weight: 700;
-  letter-spacing: -0.04em;
-  font-variant-numeric: tabular-nums;
 }
 
 .etatSerie small {
@@ -180,11 +176,8 @@
 
 .etatExp b {
   color: var(--exp-encre);
-  font-family: var(--chiffre);
-  font-variation-settings: var(--w-nombre);
-  font-size: 17px;
+  font-size: 16px;
   font-weight: 700;
-  letter-spacing: -0.04em;
 }
 
 /* ⚠️ LE GAIN « +30 » ÉTAIT EN TEAL CODÉ EN DUR, ET DONC ILLISIBLE EN
@@ -197,7 +190,7 @@
   right: 0;
   bottom: calc(100% + 4px);
   color: var(--teal-encre);
-  font-size: 12px;
+  font-size: 13px;
   font-style: normal;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
@@ -247,7 +240,7 @@
   display: block;
   overflow: hidden;
   color: var(--text-0);
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 800;
   letter-spacing: -0.01em;
   text-overflow: ellipsis;
@@ -258,7 +251,7 @@
   display: block;
   margin-top: 1px;
   color: var(--text-2);
-  font-size: 11.5px;
+  font-size: 11px;
 }
 
 .relaisChevron {

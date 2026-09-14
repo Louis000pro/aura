@@ -78,7 +78,7 @@ export default function OrderRecapSheet({
             <p className="text-[11px] font-semibold tracking-widest uppercase" style={{ color: "rgba(255,255,255,0.8)" }}>{originLabel}</p>
             <div className="flex items-center gap-1.5 mt-0.5">
               <Flame size={14} strokeWidth={2} style={{ color: "#fff" }} />
-              <p className="text-[15px] font-medium leading-tight" style={{ color: "#fff", textShadow: "0 1px 4px rgba(0,0,0,0.4)" }}>
+              <p className="text-[16px] font-medium leading-tight" style={{ color: "#fff", textShadow: "0 1px 4px rgba(0,0,0,0.4)" }}>
                 {enseigne || "Ma commande"} · {NIVEAU_LABEL[estimate.niveau]}
               </p>
             </div>
@@ -88,15 +88,15 @@ export default function OrderRecapSheet({
         <div className="flex-1 min-h-0 overflow-y-auto px-5 pt-4" style={{ scrollbarWidth: "none" }}>
           {/* Nom + kcal */}
           <div className="flex items-start justify-between gap-3">
-            <h2 className="text-lg font-medium leading-tight flex-1" style={{ color: "var(--text-1)" }}>{estimate.foodName}</h2>
+            <h2 className="text-[20px] font-medium leading-tight flex-1" style={{ color: "var(--text-1)" }}>{estimate.foodName}</h2>
             <div className="text-right flex-shrink-0">
               {edit ? (
                 <input type="number" inputMode="numeric" value={kcal}
                   onChange={(e) => setKcal(Math.max(0, parseInt(e.target.value) || 0))}
-                  className="w-20 text-right text-2xl font-light outline-none rounded-lg px-1"
+                  className="w-20 text-right text-[26px] font-light outline-none rounded-lg px-1"
                   style={{ background: "rgba(var(--tint-violet-rgb),0.5)", color: "var(--text-1)" }} />
               ) : (
-                <p className="text-[28px] font-light leading-none" style={{ color: "var(--text-1)" }}>{kcal}</p>
+                <p className="text-[26px] font-light leading-none" style={{ color: "var(--text-1)" }}>{kcal}</p>
               )}
               <p className="text-[11px] mt-0.5" style={{ color: "var(--text-3)" }}>kcal</p>
             </div>
@@ -110,10 +110,10 @@ export default function OrderRecapSheet({
                 {edit ? (
                   <input type="number" inputMode="numeric" value={m.v}
                     onChange={(e) => m.set(Math.max(0, parseInt(e.target.value) || 0))}
-                    className="w-12 text-center text-[15px] font-semibold outline-none rounded"
+                    className="w-12 text-center text-[16px] font-semibold outline-none rounded"
                     style={{ background: "rgb(var(--surface-rgb))", color: m.c }} />
                 ) : (
-                  <span className="text-[15px] font-semibold" style={{ color: m.c }}>{m.v}g</span>
+                  <span className="text-[16px] font-semibold" style={{ color: m.c }}>{m.v}g</span>
                 )}
                 <span className="text-[11px] mt-0.5" style={{ color: "var(--text-3)" }}>{m.label}</span>
               </div>
@@ -137,7 +137,7 @@ export default function OrderRecapSheet({
         <div className="px-5 pt-3" style={{ borderTop: "1px solid rgba(var(--violet-mid-rgb),0.35)", paddingBottom: "calc(0.9rem + env(safe-area-inset-bottom))" }}>
           <button
             onClick={() => { onLog({ name: estimate.foodName, calories: kcal, proteins: prot, carbs, fats }); onClose(); }}
-            className="w-full py-3 rounded-2xl text-sm font-semibold cursor-pointer flex items-center justify-center gap-2"
+            className="w-full py-3 rounded-2xl text-[16px] font-semibold cursor-pointer flex items-center justify-center gap-2"
             style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", color: "#fff", boxShadow: "var(--ombre-action)" }}>
             <Check size={17} strokeWidth={2.5} /> Ajouter à ma journée
           </button>

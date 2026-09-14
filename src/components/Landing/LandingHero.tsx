@@ -55,7 +55,7 @@ export default function LandingHero() {
         initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
         className="relative z-20 flex items-center justify-between gap-3 px-5 md:px-10 py-4"
       >
-        <span className="text-xl md:text-2xl font-extralight tracking-[0.12em] flex-shrink-0" style={{ color: "var(--text-1)" }}>
+        <span className="text-[20px] md:text-[26px] font-extralight tracking-[0.12em] flex-shrink-0" style={{ color: "var(--text-1)" }}>
           Vaiiya
         </span>
         <div className="flex items-center gap-2">
@@ -99,7 +99,7 @@ export default function LandingHero() {
           {/* Sur-titre : le concret, tout de suite */}
           <motion.span
             initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.15 }}
-            className="block text-[11px] md:text-xs font-semibold uppercase mb-7 md:mb-9"
+            className="block text-[11px] md:text-[13px] font-semibold uppercase mb-7 md:mb-9"
             style={{ letterSpacing: "0.26em", color: "var(--text-3)" }}
           >
             Entraînement · Nutrition · Coach IA
@@ -131,7 +131,7 @@ export default function LandingHero() {
         {/* Sous-titre : ce que fait le produit */}
         <motion.p
           initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.75, duration: 0.6 }}
-          className="text-[15px] md:text-lg font-light max-w-lg leading-relaxed mb-9 md:mb-10"
+          className="text-[16px] md:text-[20px] font-light max-w-lg leading-relaxed mb-9 md:mb-10"
           style={{ color: "var(--text-2)" }}
         >
           {/* « coach IA » plutôt que « coach » : c'est le seul mot ajouté au
@@ -148,7 +148,7 @@ export default function LandingHero() {
         >
           <Link href="/auth?mode=signup" className="w-full sm:w-auto">
             <motion.span whileHover={{ scale: 1.04, y: -2 }} whileTap={{ scale: 0.97 }}
-              className="relative flex items-center justify-center gap-2 w-full sm:w-auto px-8 py-4 rounded-full text-[15px] font-semibold cursor-pointer overflow-hidden text-white"
+              className="relative flex items-center justify-center gap-2 w-full sm:w-auto px-8 py-4 rounded-full text-[16px] font-semibold cursor-pointer overflow-hidden text-white"
               style={{ background: ACTION_BG, boxShadow: "0 14px 36px rgba(139,92,246,0.45), inset 0 1px 0 rgba(255,255,255,0.28)" }}>
               {!reduce && (
                 <motion.span className="absolute inset-0 pointer-events-none"
@@ -161,7 +161,7 @@ export default function LandingHero() {
           </Link>
           <button type="button"
             onClick={() => document.getElementById(DISCOVER_ANCHOR)?.scrollIntoView({ behavior: "smooth" })}
-            className="flex items-center justify-center gap-2 w-full sm:w-auto px-7 py-4 rounded-full text-[15px] font-medium cursor-pointer lg-surface"
+            className="flex items-center justify-center gap-2 w-full sm:w-auto px-7 py-4 rounded-full text-[16px] font-medium cursor-pointer lg-surface"
             style={{ color: "var(--text-body)", border: "1px solid rgba(var(--accent-rgb),0.22)" }}>
             <Sparkles size={15} style={{ color: "var(--accent)" }} />
             Voir Vaiiya en action
@@ -171,7 +171,7 @@ export default function LandingHero() {
         {/* Réassurance */}
         <motion.p
           initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.05, duration: 0.6 }}
-          className="mt-6 text-[12.5px] font-light"
+          className="mt-6 text-[13px] font-light"
           style={{ color: "var(--text-3)" }}
         >
           Sans carte bancaire · Gratuit pour commencer
@@ -200,7 +200,7 @@ export default function LandingHero() {
               <Image src={c.src} alt={c.label} fill sizes="140px" style={{ objectFit: "cover" }} priority={c.big} />
               <div className="absolute inset-x-0 bottom-0 h-2/3" style={{ background: "linear-gradient(to top, rgba(10,6,20,0.85), transparent)" }} />
               <div className="absolute inset-x-0 bottom-0 p-2.5">
-                <p className="text-[11.5px] font-semibold text-white leading-tight">{c.label}</p>
+                <p className="text-[11px] font-semibold text-white leading-tight">{c.label}</p>
                 <p className="text-[11px] font-light" style={{ color: "rgba(255,255,255,0.78)" }}>{c.meta}</p>
               </div>
             </div>

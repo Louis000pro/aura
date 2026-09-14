@@ -91,7 +91,7 @@ export default function ExerciseDetailSheet({
         </div>
 
         <div className="flex-1 overflow-y-auto px-5 pt-4" style={{ scrollbarWidth: "none" }}>
-          <h2 className="text-[21px] font-semibold leading-tight" style={{ color: "var(--text-1)" }}>
+          <h2 className="text-[20px] font-semibold leading-tight" style={{ color: "var(--text-1)" }}>
             {exo.name}
           </h2>
 
@@ -140,7 +140,7 @@ export default function ExerciseDetailSheet({
               <p className="text-[13px] font-light leading-relaxed" style={{ color: "var(--text-2)" }}>
                 {exo.tip}
               </p>
-              <p className="text-[12.5px] font-light leading-relaxed mt-2.5" style={{ color: "var(--text-3)" }}>
+              <p className="text-[13px] font-light leading-relaxed mt-2.5" style={{ color: "var(--text-3)" }}>
                 {exo.benefit}
               </p>
             </div>
@@ -154,13 +154,13 @@ export default function ExerciseDetailSheet({
             paddingBottom: "calc(1rem + env(safe-area-inset-bottom))",
           }}>
           {dejaDansLaSeance ? (
-            <div className="w-full py-3.5 rounded-2xl text-sm font-semibold flex items-center justify-center gap-2"
+            <div className="w-full py-3.5 rounded-2xl text-[16px] font-semibold flex items-center justify-center gap-2"
               style={{ background: "rgba(43,212,160,0.1)", color: "var(--teal-encre)", border: "1px solid rgba(43,212,160,0.25)" }}>
               <Check size={15} strokeWidth={2.4} /> Déjà dans ta séance
             </div>
           ) : (
             <motion.button whileTap={{ scale: 0.97 }} onClick={onBasculer}
-              className="w-full py-3.5 rounded-2xl text-sm font-semibold cursor-pointer flex items-center justify-center gap-2"
+              className="w-full py-3.5 rounded-2xl text-[16px] font-semibold cursor-pointer flex items-center justify-center gap-2"
               style={choisi
                 ? { background: "rgba(var(--tint-violet-rgb),0.7)", color: "var(--text-2)" }
                 : { background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", color: "#fff", boxShadow: "0 8px 24px rgba(139,92,246,0.28)" }

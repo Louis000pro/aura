@@ -19,7 +19,7 @@ export default function CommunautePage() {
         <h2 className="mt-5 text-[20px] font-semibold" style={{ color: "var(--text-1)" }}>
           Tes discussions, ici
         </h2>
-        <p className="mt-2 text-[13.5px] leading-relaxed" style={{ color: "var(--text-3)" }}>
+        <p className="mt-2 text-[13px] leading-relaxed" style={{ color: "var(--text-3)" }}>
           Choisis une conversation à gauche. Elle restera ouverte à côté de ta liste.
         </p>
       </div>

@@ -8,9 +8,9 @@ import RetourLegal from "@/components/legal/RetourLegal";
 function LegalSection({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="mb-7">
-      <h2 className="text-base font-semibold mb-2.5" style={{ color: "var(--text-0)" }}>{title}</h2>
+      <h2 className="text-[16px] font-semibold mb-2.5" style={{ color: "var(--text-0)" }}>{title}</h2>
       <div
-        className="rounded-3xl px-5 py-5 text-sm font-light leading-relaxed space-y-2.5"
+        className="rounded-3xl px-5 py-5 text-[16px] font-light leading-relaxed space-y-2.5"
         style={{
           background: "rgba(var(--surface-rgb),0.7)",
           border: "1px solid rgba(var(--accent-rgb),0.12)",
@@ -32,8 +32,8 @@ export default function ConfidentialitePage() {
 
       {/* Header */}
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="mb-8">
-        <h1 className="text-3xl font-extralight tracking-tight" style={{ color: "var(--text-0)" }}>Politique de confidentialité</h1>
-        <p className="text-sm font-light mt-1.5" style={{ color: "var(--text-3)" }}>
+        <h1 className="text-[26px] font-extralight tracking-tight" style={{ color: "var(--text-0)" }}>Politique de confidentialité</h1>
+        <p className="text-[16px] font-light mt-1.5" style={{ color: "var(--text-3)" }}>
           Comment Vaiiya collecte, utilise et protège vos données personnelles, conformément au RGPD.
         </p>
       </motion.div>
@@ -51,7 +51,7 @@ export default function ConfidentialitePage() {
             {/* À COMPLÉTER : adresse email de contact officielle */}
             {" "}<strong>bonjour@vaiiya.fr</strong>.
           </p>
-          <p className="text-xs" style={{ color: "var(--text-3)" }}>
+          <p className="text-[13px]" style={{ color: "var(--text-3)" }}>
             Les informations complètes sur l&apos;éditeur figurent dans les{" "}
             <Link href="/mentions-legales" style={{ color: "var(--accent)" }} className="hover:underline">
               Mentions légales

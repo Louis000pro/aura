@@ -93,7 +93,7 @@ export default function ExercicesPage() {
         <h2 className="text-[1.35rem] font-medium mb-1" style={{ color: "#2D2150" }}>
           Les exercices
         </h2>
-        <p className="text-sm mb-6" style={{ color: "#8B84A8" }}>
+        <p className="text-[16px] mb-6" style={{ color: "#8B84A8" }}>
           Choisis un exercice pour voir le mouvement et ses repères.
         </p>
 
@@ -122,8 +122,8 @@ export default function ExercicesPage() {
             className="rounded-3xl p-6"
             style={{ background: "rgba(255,255,255,0.72)", border: "1px solid rgba(167,139,250,0.16)" }}
           >
-            <p className="text-[15px] font-semibold mb-1.5" style={{ color: "#1A1535" }}>{c.t}</p>
-            <p className="text-[14px] leading-[1.6]" style={{ color: "#4A5568" }}>{c.d}</p>
+            <p className="text-[16px] font-semibold mb-1.5" style={{ color: "#1A1535" }}>{c.t}</p>
+            <p className="text-[13px] leading-[1.6]" style={{ color: "#4A5568" }}>{c.d}</p>
           </div>
         ))}
       </section>
@@ -137,16 +137,16 @@ export default function ExercicesPage() {
           boxShadow: "0 12px 40px rgba(167,139,250,0.18)",
         }}
       >
-        <h2 className="text-2xl font-light mb-2" style={{ color: "#1A1535" }}>
+        <h2 className="text-[26px] font-light mb-2" style={{ color: "#1A1535" }}>
           Une séance construite autour de ces mouvements
         </h2>
-        <p className="text-sm mb-6 mx-auto max-w-[460px]" style={{ color: "#4A5568" }}>
+        <p className="text-[16px] mb-6 mx-auto max-w-[460px]" style={{ color: "#4A5568" }}>
           Dis à Vaiiya ton matériel et ton niveau, il compose la séance et te guide pendant
           l&apos;effort, avec ces mêmes personnages.
         </p>
         <Link
           href="/auth"
-          className="inline-block px-7 py-3.5 rounded-2xl text-sm font-semibold"
+          className="inline-block px-7 py-3.5 rounded-2xl text-[16px] font-semibold"
           style={{
             background: "linear-gradient(135deg,#A78BFA,#D4A843)",
             color: "#fff",

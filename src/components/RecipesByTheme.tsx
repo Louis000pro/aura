@@ -81,8 +81,8 @@ export default function RecipesByTheme({
             onClick={() => generate(t.label)}
             className="flex items-center gap-2.5 px-3 py-3 rounded-2xl cursor-pointer text-left"
             style={{ background: "rgba(var(--tint-violet-rgb),0.6)", border: "1px solid rgba(var(--violet-mid-rgb),0.4)" }}>
-            <span style={{ fontSize: 22, lineHeight: 1 }}>{t.emoji}</span>
-            <span className="text-xs font-medium leading-tight" style={{ color: "var(--text-1)" }}>{t.label}</span>
+            <span style={{ fontSize: 20, lineHeight: 1 }}>{t.emoji}</span>
+            <span className="text-[13px] font-medium leading-tight" style={{ color: "var(--text-1)" }}>{t.label}</span>
           </motion.button>
         ))}
       </div>

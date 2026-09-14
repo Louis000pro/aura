@@ -157,8 +157,8 @@ export default function CarteSeance({
           <X size={13} strokeWidth={2.4} style={{ color: "var(--text-3)" }} />
         </button>
         <p className="vy-label pr-8" style={{ color: encre }}>{kicker}</p>
-        <p className="text-[17px] font-bold leading-tight pr-8" style={{ color: "var(--text-0)", letterSpacing: "-0.018em" }}>{titre}</p>
-        <p className="text-[12px] font-medium" style={{ color: "var(--text-2)" }}>{meta}</p>
+        <p className="text-[20px] font-bold leading-tight pr-8" style={{ color: "var(--text-0)", letterSpacing: "-0.018em" }}>{titre}</p>
+        <p className="text-[13px] font-medium" style={{ color: "var(--text-2)" }}>{meta}</p>
       </div>
 
       <div className="px-3 pb-3 flex flex-col gap-2">
@@ -166,12 +166,12 @@ export default function CarteSeance({
         {/* 2. Ce que le geste change, lu AVANT le bouton et sans avoir à
             passer sous la liste des mouvements. */}
         {consequence && (
-          <p className="text-[12px] leading-snug px-1" style={{ color: "var(--text-1)" }}>{consequence}</p>
+          <p className="text-[13px] leading-snug px-1" style={{ color: "var(--text-1)" }}>{consequence}</p>
         )}
 
         {/* 3. L'action, seule de son poids */}
         <motion.button whileTap={{ scale: 0.98 }} onClick={onValider}
-          className="w-full py-3 text-[13.5px] font-bold cursor-pointer flex items-center justify-center gap-2"
+          className="w-full py-3 text-[16px] font-bold cursor-pointer flex items-center justify-center gap-2"
           style={{ borderRadius: "var(--r-controle)", background: "linear-gradient(135deg, var(--accent), var(--violet-mid))", color: "#fff", boxShadow: "var(--ombre-action)" }}>
           <Check size={15} strokeWidth={2.6} /> {cta}
         </motion.button>
@@ -189,7 +189,7 @@ export default function CarteSeance({
               <span key={o.id} className="flex items-center">
                 {i > 0 && <span className="text-[11px] px-1" style={{ color: "var(--text-3)" }}>·</span>}
                 <button type="button" onClick={o.onClick} aria-pressed={o.bascule ? !!o.actif : undefined}
-                  className="flex items-center gap-1 py-1 text-[12px] cursor-pointer"
+                  className="flex items-center gap-1 py-1 text-[13px] cursor-pointer"
                   style={{ color: o.actif ? encre : "var(--text-2)", fontWeight: o.actif ? 700 : 500 }}>
                   {o.bascule && o.actif && <Check size={11} strokeWidth={3} />}
                   {o.label}
@@ -209,7 +209,7 @@ export default function CarteSeance({
                 <motion.button key={j.ymd} type="button" whileTap={j.bloque ? {} : { scale: 0.94 }}
                   disabled={j.bloque}
                   onClick={() => onJour?.(j.ymd)}
-                  className="px-3 py-1.5 rounded-full text-[11.5px] font-semibold cursor-pointer disabled:cursor-default"
+                  className="px-3 py-1.5 rounded-full text-[13px] font-semibold cursor-pointer disabled:cursor-default"
                   style={choisi
                     ? { background: "rgba(43,212,160,0.13)", color: TEAL, border: "1px solid rgba(43,212,160,0.45)" }
                     : {
@@ -236,7 +236,7 @@ export default function CarteSeance({
           <button type="button" onClick={() => setDetail((v) => !v)} aria-expanded={detail}
             className="w-full flex items-center gap-2 px-4 py-2.5 cursor-pointer text-left"
             style={{ borderTop: "1px solid rgba(var(--accent-rgb),0.10)" }}>
-            <span className="flex-1 min-w-0 truncate text-[11.5px] font-medium" style={{ color: "var(--text-2)" }}>
+            <span className="flex-1 min-w-0 truncate text-[13px] font-medium" style={{ color: "var(--text-2)" }}>
               {detail ? `Les mouvements · ${exercices.length}` : apercu}
             </span>
             <ChevronDown size={14} strokeWidth={2.2} className="flex-shrink-0"
@@ -254,7 +254,7 @@ export default function CarteSeance({
                       <p className="text-[11px] truncate" style={{ color: "var(--text-3)" }}>{ex.muscles.slice(0, 2).join(", ")}</p>
                     )}
                   </div>
-                  <span className="vy-nombre text-[11.5px] flex-shrink-0" style={{ color: "var(--exp-encre)" }}>{ex.dose}</span>
+                  <span className="vy-nombre text-[13px] flex-shrink-0" style={{ color: "var(--exp-encre)" }}>{ex.dose}</span>
                 </div>
               ))}
             </div>

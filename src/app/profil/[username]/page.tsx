@@ -243,21 +243,21 @@ export default function PublicProfilePage() {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-4 px-6">
         <div
-          className="w-16 h-16 rounded-3xl flex items-center justify-center text-3xl"
+          className="w-16 h-16 rounded-3xl flex items-center justify-center text-[26px]"
           style={{ background: "rgba(var(--tint-violet-rgb),0.6)" }}
         >
           👤
         </div>
-        <p className="text-lg font-light" style={{ color: "var(--text-1)" }}>
+        <p className="text-[20px] font-light" style={{ color: "var(--text-1)" }}>
           Profil introuvable
         </p>
-        <p className="text-sm" style={{ color: "var(--text-3)" }}>
+        <p className="text-[13px]" style={{ color: "var(--text-3)" }}>
           @{username} n&apos;existe pas
         </p>
         <motion.button
           whileTap={{ scale: 0.96 }}
           onClick={() => router.back()}
-          className="px-5 py-2.5 rounded-2xl text-sm font-medium cursor-pointer"
+          className="px-5 py-2.5 rounded-2xl text-[16px] font-medium cursor-pointer"
           style={{
             background: "linear-gradient(135deg,#8B5CF6,#C13BC1)",
             color: "#fff",
@@ -318,7 +318,7 @@ export default function PublicProfilePage() {
               <ArrowLeft size={15} strokeWidth={1.5} />
             </motion.button>
             <div
-              className="w-7 h-7 rounded-full overflow-hidden flex items-center justify-center text-xs font-semibold flex-shrink-0"
+              className="w-7 h-7 rounded-full overflow-hidden flex items-center justify-center text-[11px] font-semibold flex-shrink-0"
               style={{ background: displayAvatar ? "transparent" : "linear-gradient(135deg,var(--violet-mid),var(--cream-mid))", color: "var(--text-1)" }}
             >
               {displayAvatar
@@ -326,13 +326,13 @@ export default function PublicProfilePage() {
                 ? <img loading="lazy" decoding="async" src={displayAvatar} alt="" className="w-full h-full object-cover" />
                 : initial}
             </div>
-            <p className="text-sm font-semibold flex-1" style={{ color: "var(--text-1)" }}>@{displayPseudo}</p>
+            <p className="text-[16px] font-semibold flex-1" style={{ color: "var(--text-1)" }}>@{displayPseudo}</p>
             {!isOwnProfile && user && (
               <motion.button
                 whileTap={{ scale: 0.9 }}
                 onClick={handleFriendButton}
                 disabled={followLoading}
-                className="px-3 py-1.5 rounded-xl text-xs font-semibold cursor-pointer"
+                className="px-3 py-1.5 rounded-xl text-[13px] font-semibold cursor-pointer"
                 style={isFollowing
                   ? { background: "rgba(var(--tint-violet-rgb),0.7)", color: "var(--exp-encre)", border: "1px solid rgba(var(--accent-rgb),0.2)" }
                   : { background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", color: "#fff" }
@@ -355,7 +355,7 @@ export default function PublicProfilePage() {
         style={{ color: "var(--text-3)" }}
       >
         <ArrowLeft size={16} strokeWidth={1.5} />
-        <span className="text-sm font-medium">Retour</span>
+        <span className="text-[16px] font-medium">Retour</span>
       </motion.button>
 
       {/* Profile card */}
@@ -397,7 +397,7 @@ export default function PublicProfilePage() {
               }}
             >
               <div
-                className="w-full h-full rounded-full overflow-hidden flex items-center justify-center text-3xl font-semibold"
+                className="w-full h-full rounded-full overflow-hidden flex items-center justify-center text-[26px] font-semibold"
                 style={{ background: displayAvatar ? "transparent" : "linear-gradient(135deg,rgba(var(--tint-violet-rgb),1) 0%,rgba(var(--tint-cream-rgb),1) 100%)", color: "var(--text-1)" }}
               >
                 {displayAvatar
@@ -410,7 +410,7 @@ export default function PublicProfilePage() {
 
           {/* Pseudo + badge certifié */}
           <div className="flex items-center gap-2 justify-center">
-            <h1 className="text-[28px] font-black tracking-[-0.03em] leading-none" style={{ color: "var(--text-0)" }}>
+            <h1 className="text-[26px] font-black tracking-[-0.03em] leading-none" style={{ color: "var(--text-0)" }}>
               <PseudoRang
                 rang={rangCourant}
                 cosmetiques={cosmetiques}
@@ -442,14 +442,14 @@ export default function PublicProfilePage() {
               ni la taille, qui vivent dans les colonnes voisines et n'ont rien
               à faire dehors. */}
           {profile?.onboarding_goals && profile.onboarding_goals.length > 0 && (
-            <p className="text-[12px] font-semibold mt-1.5 max-w-[260px]" style={{ color: "var(--exp-encre)" }}>
+            <p className="text-[13px] font-semibold mt-1.5 max-w-[260px]" style={{ color: "var(--exp-encre)" }}>
               {profile.onboarding_goals.map(libelleObjectif).join(" · ")}
             </p>
           )}
 
           {/* Bio */}
           {profile?.bio && (
-            <p className="text-sm mt-1.5 max-w-xs leading-relaxed" style={{ color: "var(--text-2)" }}>
+            <p className="text-[16px] mt-1.5 max-w-xs leading-relaxed" style={{ color: "var(--text-2)" }}>
               {profile.bio}
             </p>
           )}
@@ -476,7 +476,7 @@ export default function PublicProfilePage() {
                 whileTap={{ scale: 0.92 }}
                 onClick={handleFriendButton}
                 disabled={followLoading}
-                className="flex items-center gap-1.5 px-4 py-2.5 text-sm font-semibold cursor-pointer flex-shrink-0"
+                className="flex items-center gap-1.5 px-4 py-2.5 text-[16px] font-semibold cursor-pointer flex-shrink-0"
                 style={
                   isFollowing
                     ? {
@@ -509,7 +509,7 @@ export default function PublicProfilePage() {
             <motion.button
               whileTap={{ scale: 0.93 }}
               onClick={() => router.push("/profil")}
-              className="px-4 py-2 text-xs font-semibold cursor-pointer"
+              className="px-4 py-2 text-[13px] font-semibold cursor-pointer"
               style={{
                 borderRadius: "var(--r-controle)",
                 background: "rgba(var(--tint-violet-rgb),0.6)",
@@ -532,8 +532,8 @@ export default function PublicProfilePage() {
             <div className="flex-shrink-0"><GemmeRang rang={aura.rang} size={44} /></div>
             <div className="flex-1 min-w-0">
               <span className="vy-label" style={{ color: "var(--text-3)" }}>Rang</span>
-              <p className="text-[19px] font-black tracking-[-0.02em] leading-tight" style={{ color: "var(--text-0)" }}>{aura.rang.nom}</p>
-              <p className="text-[12.5px] font-semibold mt-0.5" style={{ color: "var(--text-soft)" }}>
+              <p className="text-[20px] font-black tracking-[-0.02em] leading-tight" style={{ color: "var(--text-0)" }}>{aura.rang.nom}</p>
+              <p className="text-[13px] font-semibold mt-0.5" style={{ color: "var(--text-soft)" }}>
                 <span style={{ color: "var(--exp-encre)", fontVariantNumeric: "tabular-nums" }}>{aura.exp}</span> / {aura.seuilHaut} EXP
               </p>
               <div className="h-[7px] rounded-full mt-2 overflow-hidden" style={{ background: "rgba(var(--tint-violet-rgb),0.9)" }}>
@@ -579,7 +579,7 @@ export default function PublicProfilePage() {
                 whileHover={tab ? { backgroundColor: "rgba(var(--accent-rgb),0.07)" } : undefined}
                 className={`flex-1 flex flex-col items-center py-1 rounded-xl ${tab ? "cursor-pointer" : ""}`}
               >
-                <span className="text-[22px] font-black leading-none" style={{ color: encre, letterSpacing: "-0.03em" }}>
+                <span className="text-[20px] font-black leading-none" style={{ color: encre, letterSpacing: "-0.03em" }}>
                   {value}
                 </span>
                 <span
@@ -634,7 +634,7 @@ export default function PublicProfilePage() {
               <div className="absolute inset-0" style={{ background: "var(--voile-affiche)" }} />
               {gagnee && <div className="absolute top-2.5 right-3 text-[13px] font-black" style={{ color: "rgba(255,255,255,0.9)" }}>&#10022;</div>}
               <div className="absolute left-3 right-3 bottom-3" style={{ color: "#fff" }}>
-                <p className="text-[14px] font-black leading-tight">{serie.nom}</p>
+                <p className="text-[13px] font-black leading-tight">{serie.nom}</p>
                 <p className="text-[11px] font-semibold mt-0.5" style={{ opacity: 0.75 }}>
                   {gagnee ? "Dévoilée · à deux" : serie.promesse}
                 </p>
@@ -692,12 +692,12 @@ export default function PublicProfilePage() {
               </div>
               <h2
                 id="retirer-ami-titre"
-                className="mt-4 text-center text-[18px] font-bold"
+                className="mt-4 text-center text-[20px] font-bold"
                 style={{ color: "var(--text-0)" }}
               >
                 Retirer {profile.pseudo} de tes amis ?
               </h2>
-              <p className="mx-auto mt-2 max-w-xs text-center text-[13.5px] leading-relaxed" style={{ color: "var(--text-3)" }}>
+              <p className="mx-auto mt-2 max-w-xs text-center text-[13px] leading-relaxed" style={{ color: "var(--text-3)" }}>
                 Cette action supprimera votre lien d&apos;amitié. Votre conversation restera disponible.
               </p>
               <div className="mt-5 grid gap-2">
@@ -705,7 +705,7 @@ export default function PublicProfilePage() {
                   type="button"
                   autoFocus
                   onClick={() => setShowRemoveConfirm(false)}
-                  className="rounded-2xl px-4 py-3 text-[14px] font-semibold text-white"
+                  className="rounded-2xl px-4 py-3 text-[16px] font-semibold text-white"
                   style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)" }}
                 >
                   Garder comme ami
@@ -714,7 +714,7 @@ export default function PublicProfilePage() {
                   type="button"
                   onClick={() => void handleFollow()}
                   disabled={followLoading}
-                  className="flex items-center justify-center gap-2 rounded-2xl px-4 py-3 text-[14px] font-semibold disabled:opacity-50"
+                  className="flex items-center justify-center gap-2 rounded-2xl px-4 py-3 text-[16px] font-semibold disabled:opacity-50"
                   style={{ color: "var(--text-2)", background: "rgba(var(--text-3-rgb),.08)" }}
                 >
                   {followLoading ? (
@@ -748,7 +748,7 @@ export default function PublicProfilePage() {
             }}
           >
             <Check size={14} strokeWidth={2.5} style={{ color: "var(--gold)" }} />
-            <span className="text-sm font-medium" style={{ color: "var(--text-1)" }}>
+            <span className="text-[16px] font-medium" style={{ color: "var(--text-1)" }}>
               {toast}
             </span>
           </motion.div>

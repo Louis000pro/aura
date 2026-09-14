@@ -8,9 +8,9 @@ import RetourLegal from "@/components/legal/RetourLegal";
 function LegalSection({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="mb-7">
-      <h2 className="text-base font-semibold mb-2.5" style={{ color: "var(--text-0)" }}>{title}</h2>
+      <h2 className="text-[16px] font-semibold mb-2.5" style={{ color: "var(--text-0)" }}>{title}</h2>
       <div
-        className="rounded-3xl px-5 py-5 text-sm font-light leading-relaxed space-y-2.5"
+        className="rounded-3xl px-5 py-5 text-[16px] font-light leading-relaxed space-y-2.5"
         style={{
           background: "rgba(var(--surface-rgb),0.7)",
           border: "1px solid rgba(var(--accent-rgb),0.12)",
@@ -32,8 +32,8 @@ export default function MentionsLegalesPage() {
 
       {/* Header */}
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="mb-8">
-        <h1 className="text-3xl font-extralight tracking-tight" style={{ color: "var(--text-0)" }}>Mentions légales</h1>
-        <p className="text-sm font-light mt-1.5" style={{ color: "var(--text-3)" }}>
+        <h1 className="text-[26px] font-extralight tracking-tight" style={{ color: "var(--text-0)" }}>Mentions légales</h1>
+        <p className="text-[16px] font-light mt-1.5" style={{ color: "var(--text-3)" }}>
           Informations légales relatives au site et à l&apos;application Vaiiya.
         </p>
       </motion.div>
@@ -49,7 +49,7 @@ export default function MentionsLegalesPage() {
           <ul className="list-none space-y-1.5 mt-2">
             <li><strong>Contact :</strong> bonjour@vaiiya.fr</li>
           </ul>
-          <p className="text-xs mt-2" style={{ color: "var(--text-3)" }}>
+          <p className="text-[13px] mt-2" style={{ color: "var(--text-3)" }}>
             Conformément à l&apos;article 6 III 2 de la loi du 21 juin 2004 pour la confiance dans
             l&apos;économie numérique, un éditeur non professionnel peut ne pas rendre publiques ses
             coordonnées personnelles, à condition de les avoir communiquées à son hébergeur, qui les

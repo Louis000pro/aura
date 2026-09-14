@@ -622,13 +622,13 @@ export default function AdminPage() {
 
                 <Carte titre="Plafonds touchés" apres="aujourd’hui">
                   {ia.plafonds.length === 0 ? (
-                    <p style={{ fontSize: 12.8, color: "var(--text-2)" }}>
+                    <p style={{ fontSize: 13, color: "var(--text-2)" }}>
                       Personne n&apos;a buté sur un plafond aujourd&apos;hui.
                     </p>
                   ) : (
                     <div className={s.barres}>
                       {ia.plafonds.map((pl, i) => (
-                        <p key={i} style={{ fontSize: 12.8, color: "var(--text-1)" }}>
+                        <p key={i} style={{ fontSize: 13, color: "var(--text-1)" }}>
                           @{pl.pseudo} · {pl.appels}/{pl.plafond} {pl.libelle}
                         </p>
                       ))}
@@ -690,7 +690,7 @@ export default function AdminPage() {
               <p style={{ fontSize: 16, fontWeight: 800, color: "var(--text-0)", marginBottom: 8 }}>
                 Supprimer @{confirmation.pseudo} ?
               </p>
-              <p style={{ fontSize: 13.5, color: "var(--text-2)", lineHeight: 1.5, marginBottom: 18 }}>
+              <p style={{ fontSize: 13, color: "var(--text-2)", lineHeight: 1.5, marginBottom: 18 }}>
                 Le profil, ses relations et ses notifications partent avec lui, ainsi que son compte
                 de connexion. C&apos;est irréversible.
               </p>
@@ -699,7 +699,7 @@ export default function AdminPage() {
                   style={{
                     flex: 1, padding: "12px 0", borderRadius: 14, border: 0, cursor: "pointer",
                     background: "rgba(var(--text-3-rgb),0.16)", color: "var(--text-2)",
-                    font: "inherit", fontSize: 13.5, fontWeight: 700,
+                    font: "inherit", fontSize: 13, fontWeight: 700,
                   }}>
                   Annuler
                 </button>
@@ -707,7 +707,7 @@ export default function AdminPage() {
                   style={{
                     flex: 1, padding: "12px 0", borderRadius: 14, border: 0, cursor: "pointer",
                     background: "linear-gradient(135deg,#E0575C,#C7383D)", color: "#fff",
-                    font: "inherit", fontSize: 13.5, fontWeight: 700,
+                    font: "inherit", fontSize: 13, fontWeight: 700,
                   }}>
                   Supprimer
                 </button>

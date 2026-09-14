@@ -102,7 +102,7 @@ export default async function FicheExercicePage({
       />
 
       {/* ── Fil d'Ariane visible ─────────────────────────────────── */}
-      <nav aria-label="Fil d’Ariane" className="mb-7 text-[12px]" style={{ color: "#8B84A8" }}>
+      <nav aria-label="Fil d’Ariane" className="mb-7 text-[13px]" style={{ color: "#8B84A8" }}>
         <Link href="/" className="hover:underline">Accueil</Link>
         <span className="mx-1.5">›</span>
         <Link href="/exercices" className="hover:underline">Exercices</Link>
@@ -166,7 +166,7 @@ export default async function FicheExercicePage({
             {(contenu.muscles ?? lib.muscles).map((m, i) => (
               <li
                 key={m}
-                className="px-3 py-1.5 rounded-full text-[12.5px] font-semibold"
+                className="px-3 py-1.5 rounded-full text-[13px] font-semibold"
                 style={
                   i === 0
                     ? { background: "rgba(139,92,246,0.14)", color: "#6B46C1" }
@@ -188,7 +188,7 @@ export default async function FicheExercicePage({
 
               Le nombre de lignes n'est pas fixe : « Pour » ne s'affiche que
               lorsqu'elle distingue quelque chose. Voir `lignesDuHero`. */}
-          <dl className="text-[14px]">
+          <dl className="text-[13px]">
             {lignesDuHero(fiche, materiel).map(([cle, valeur], i) => (
               <div
                 key={cle}
@@ -350,16 +350,16 @@ export default async function FicheExercicePage({
             du corps, un full body ou un push. On parle donc d'intégration
             à une séance adaptée, sans présumer du format. Design du CTA
             inchangé. */}
-        <h2 className="text-2xl font-light mb-2 max-w-[520px]" style={{ color: "#1A1535" }}>
+        <h2 className="text-[26px] font-light mb-2 max-w-[520px]" style={{ color: "#1A1535" }}>
           Intègre ce mouvement à une séance qui te correspond
         </h2>
-        <p className="text-sm mb-6 max-w-[520px]" style={{ color: "#4A5568" }}>
+        <p className="text-[16px] mb-6 max-w-[520px]" style={{ color: "#4A5568" }}>
           Dis ton matériel et ton niveau, Vaiiya compose la séance et te guide pendant l&apos;effort,
           avec ces mêmes personnages. Gratuit.
         </p>
         <Link
           href="/auth"
-          className="inline-block px-7 py-3.5 rounded-2xl text-sm font-semibold"
+          className="inline-block px-7 py-3.5 rounded-2xl text-[16px] font-semibold"
           style={{
             background: "linear-gradient(135deg,#A78BFA,#D4A843)",
             color: "#fff",
@@ -396,7 +396,7 @@ export default async function FicheExercicePage({
         </section>
       )}
 
-      <p className="mt-12 text-sm">
+      <p className="mt-12 text-[16px]">
         <Link href="/exercices" className="font-medium hover:underline" style={{ color: "#7C5CFA" }}>
           Voir tous les exercices
         </Link>
@@ -490,7 +490,7 @@ function CarteVariante({ variante }: { variante: Variante }) {
           >
             {variante.angle}
           </p>
-          <p className="text-[15px] font-semibold leading-tight" style={{ color: "#1A1535" }}>
+          <p className="text-[16px] font-semibold leading-tight" style={{ color: "#1A1535" }}>
             {lib.name}
           </p>
         </div>

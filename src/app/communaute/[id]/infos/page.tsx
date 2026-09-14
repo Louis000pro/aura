@@ -195,10 +195,10 @@ export default function InfosPage() {
   if (erreurChargement) {
     return (
       <div className="flex h-[70vh] flex-col items-center justify-center gap-4 px-8 text-center">
-        <p className="text-[15px]" style={{ color: "var(--text-body)" }}>{erreurChargement}</p>
+        <p className="text-[16px]" style={{ color: "var(--text-body)" }}>{erreurChargement}</p>
         <button
           onClick={() => { setCharge(true); void recharger(); }}
-          className="rounded-2xl px-5 py-3 text-[15px] font-semibold text-white"
+          className="rounded-2xl px-5 py-3 text-[16px] font-semibold text-white"
           style={{ background: "linear-gradient(135deg, #8B5CF6, #C13BC1)" }}
         >
           Réessayer
@@ -210,7 +210,7 @@ export default function InfosPage() {
   if (!conv || !user) {
     return (
       <div className="flex h-[70vh] flex-col items-center justify-center gap-4 px-8 text-center">
-        <p className="text-[15px]" style={{ color: "var(--text-body)" }}>Cette conversation n&apos;existe plus.</p>
+        <p className="text-[16px]" style={{ color: "var(--text-body)" }}>Cette conversation n&apos;existe plus.</p>
       </div>
     );
   }
@@ -292,12 +292,12 @@ export default function InfosPage() {
             className="mt-3 flex items-center gap-2"
             disabled={!groupe}
           >
-            <b className="text-[19px] font-extrabold tracking-tight" style={{ color: "var(--text-0)" }}>{titre}</b>
+            <b className="text-[20px] font-extrabold tracking-tight" style={{ color: "var(--text-0)" }}>{titre}</b>
             {groupe && <Pencil className="h-3.5 w-3.5" style={{ color: "#8B5CF6" }} />}
           </button>
         )}
 
-        <p className="mt-1 text-[12px]" style={{ color: "var(--text-2)" }}>
+        <p className="mt-1 text-[13px]" style={{ color: "var(--text-2)" }}>
           {groupe ? `Groupe · ${conv.membres.length} membres` : "Discussion"}
         </p>
       </div>
@@ -322,12 +322,12 @@ export default function InfosPage() {
                 <Image src={imageEtat(conv.defi.serie, etat)} alt="" fill sizes="37px" className="object-cover" />
               </div>
               <span className="min-w-0 flex-1">
-                <b className="block text-[14px] font-semibold" style={{ color: "var(--text-0)" }}>
+                <b className="block text-[16px] font-semibold" style={{ color: "var(--text-0)" }}>
                   {conv.defi.statut === "reussi"
                     ? "L’affiche est à vous"
                     : `${conv.defi.faits} jour${conv.defi.faits > 1 ? "s" : ""} sur ${conv.defi.objectif}`}
                 </b>
-                <span className="mt-0.5 block text-[12px]" style={{ color: "var(--text-2)" }}>
+                <span className="mt-0.5 block text-[13px]" style={{ color: "var(--text-2)" }}>
                   Voir l&apos;affiche en grand
                 </span>
               </span>
@@ -341,7 +341,7 @@ export default function InfosPage() {
             <div className="border-t" style={{ borderColor: "rgba(var(--text-3-rgb), .14)" }}>
               {confirmeAnnul ? (
                 <div className="p-3">
-                  <p className="mb-2.5 text-[12.5px]" style={{ color: "var(--text-2)" }}>
+                  <p className="mb-2.5 text-[13px]" style={{ color: "var(--text-2)" }}>
                     Le relais s&apos;arrête pour vous deux et l&apos;affiche reste ici.
                     Vous pourrez en relancer un tout de suite.
                   </p>
@@ -361,7 +361,7 @@ export default function InfosPage() {
                 </div>
               ) : (
                 <button onClick={() => setConfirmeAnnul(true)}
-                  className="w-full p-3 text-left text-[13.5px] font-semibold"
+                  className="w-full p-3 text-left text-[16px] font-semibold"
                   style={{ color: "#E8620C" }}>
                   Arrêter le relais
                 </button>
@@ -377,8 +377,8 @@ export default function InfosPage() {
                 {occupe === "relais" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
               </span>
               <span className="min-w-0 flex-1">
-                <b className="block text-[14px] font-semibold" style={{ color: "var(--exp-encre)" }}>Lancer un relais</b>
-                <span className="mt-0.5 block text-[12px]" style={{ color: "var(--text-2)" }}>
+                <b className="block text-[16px] font-semibold" style={{ color: "var(--exp-encre)" }}>Lancer un relais</b>
+                <span className="mt-0.5 block text-[13px]" style={{ color: "var(--text-2)" }}>
                   4 jours sur 7, chacun son tour
                 </span>
               </span>
@@ -407,12 +407,12 @@ export default function InfosPage() {
                     cosmetiques={rang.cosmetiques}
                     pseudo={nom}
                     classNameEnveloppe="flex min-w-0 flex-1 items-center gap-1.5"
-                    className="truncate text-[14px] font-medium"
+                    className="truncate text-[16px] font-medium"
                     style={{ color: "var(--text-1)" }}
                     tailleGemme={14}
                   />
                 ) : (
-                  <span className="min-w-0 flex-1 truncate text-[14px] font-medium" style={{ color: "var(--text-1)" }}>
+                  <span className="min-w-0 flex-1 truncate text-[16px] font-medium" style={{ color: "var(--text-1)" }}>
                     {nom}
                   </span>
                 )}
@@ -429,7 +429,7 @@ export default function InfosPage() {
               style={{ background: "rgba(139,92,246,.14)", color: "#8B5CF6" }}>
               <UserPlus className="h-4 w-4" />
             </span>
-            <b className="text-[14px] font-semibold" style={{ color: "var(--exp-encre)" }}>Ajouter quelqu&apos;un</b>
+            <b className="text-[16px] font-semibold" style={{ color: "var(--exp-encre)" }}>Ajouter quelqu&apos;un</b>
           </button>
 
           <button
@@ -442,7 +442,7 @@ export default function InfosPage() {
               style={{ background: "rgba(224,90,90,.12)", color: "#E05A5A" }}>
               {occupe === "quitter" ? <Loader2 className="h-4 w-4 animate-spin" /> : <LogOut className="h-4 w-4" />}
             </span>
-            <b className="text-[14px] font-semibold" style={{ color: "#E05A5A" }}>
+            <b className="text-[16px] font-semibold" style={{ color: "#E05A5A" }}>
               {groupe ? "Quitter le groupe" : "Quitter la discussion"}
             </b>
           </button>
@@ -544,7 +544,7 @@ function AjouterDesGens({ moi, dejaLa, convId, onFermer, onAjoute }: {
         transition={{ type: "spring", damping: 32, stiffness: 320 }}
       >
         <div className="mx-auto mb-4 h-1 w-10 rounded-full" style={{ background: "rgba(var(--text-3-rgb), .35)" }} />
-        <b className="mb-3 block text-[17px] font-bold" style={{ color: "var(--text-0)" }}>Ajouter quelqu&apos;un</b>
+        <b className="mb-3 block text-[20px] font-bold" style={{ color: "var(--text-0)" }}>Ajouter quelqu&apos;un</b>
 
         <div className="max-h-[42vh] overflow-y-auto">
           {charge ? (
@@ -552,7 +552,7 @@ function AjouterDesGens({ moi, dejaLa, convId, onFermer, onAjoute }: {
               <Loader2 className="h-5 w-5 animate-spin" style={{ color: "var(--text-3)" }} />
             </div>
           ) : gens.length === 0 ? (
-            <p className="py-6 text-center text-[14px] leading-relaxed" style={{ color: "var(--text-2)" }}>
+            <p className="py-6 text-center text-[16px] leading-relaxed" style={{ color: "var(--text-2)" }}>
               Tout le monde est déjà là.
             </p>
           ) : (
@@ -573,7 +573,7 @@ function AjouterDesGens({ moi, dejaLa, convId, onFermer, onAjoute }: {
                   }}
                   className="flex w-full items-center gap-3 rounded-xl px-1 py-2.5 text-left">
                   <Avatar personne={p} taille={38} />
-                  <span className="flex-1 truncate text-[14.5px] font-medium" style={{ color: "var(--text-1)" }}>
+                  <span className="flex-1 truncate text-[16px] font-medium" style={{ color: "var(--text-1)" }}>
                     {p.pseudo}
                   </span>
                   <span className="flex h-6 w-6 items-center justify-center rounded-full border-2"
@@ -589,7 +589,7 @@ function AjouterDesGens({ moi, dejaLa, convId, onFermer, onAjoute }: {
           )}
         </div>
 
-        {erreur && <p className="mt-3 text-center text-[13.5px]" style={{ color: "#E8620C" }}>{erreur}</p>}
+        {erreur && <p className="mt-3 text-center text-[13px]" style={{ color: "#E8620C" }}>{erreur}</p>}
 
         <button onClick={valider} disabled={!choisis.length || occupe}
           className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl px-5 py-4 text-[16px] font-semibold text-white disabled:opacity-40"

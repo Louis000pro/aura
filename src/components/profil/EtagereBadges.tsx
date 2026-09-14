@@ -80,7 +80,7 @@ export default function EtagereBadges({ slugs, titre, progres }: {
               </div>
 
               <b
-                className="mt-2 block max-w-full text-[12px] font-semibold leading-tight"
+                className="mt-2 block max-w-full text-[13px] font-semibold leading-tight"
                 style={{ color: "var(--text-1)" }}
               >
                 {b.nom}
@@ -96,7 +96,7 @@ export default function EtagereBadges({ slugs, titre, progres }: {
           serait exactement le mur qu'elle évite. */}
       {suivant && (
         <p
-          className={`text-[12px] font-medium ${badges.length > 0 ? "mt-4" : ""}`}
+          className={`text-[13px] font-medium ${badges.length > 0 ? "mt-4" : ""}`}
           style={{ color: "var(--text-3)" }}
         >
           Le prochain :{" "}

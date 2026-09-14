@@ -101,7 +101,7 @@ export default function HeroJournee() {
               className="w-full flex items-center gap-2 py-1.5 text-left border-none bg-transparent"
               style={{ cursor: hasSeance(extra) ? "pointer" : "default" }}>
               <span className="vy-label flex-shrink-0" style={{ color: "var(--text-3)" }}>En plus</span>
-              <span className="flex-1 min-w-0 text-[12.5px] font-semibold truncate" style={{ color: "var(--text-2)" }}>
+              <span className="flex-1 min-w-0 text-[13px] font-semibold truncate" style={{ color: "var(--text-2)" }}>
                 {dayTitle(extra)}
               </span>
               {hasSeance(extra) && (
@@ -140,7 +140,7 @@ export default function HeroJournee() {
               </div>
               <div className="flex items-center gap-3 px-5 pt-2 pb-3">
                 <div className="min-w-0 flex-1">
-                  <p className="text-[15px] font-bold leading-tight truncate" style={{ color: "var(--text-1)" }}>
+                  <p className="text-[16px] font-bold leading-tight truncate" style={{ color: "var(--text-1)" }}>
                     Quel jour&nbsp;?
                   </p>
                   <p className="text-[11px] font-medium mt-1" style={{ color: "var(--text-3)" }}>

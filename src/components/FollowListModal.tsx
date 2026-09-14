@@ -127,7 +127,7 @@ export default function FollowListModal({
           <div className="w-10 h-1 rounded-full" style={{ background: "rgba(0,0,0,0.12)" }} />
         </div>
         <div className="flex items-center justify-between px-5 pb-3 pt-1">
-          <h2 className="text-base font-semibold" style={{ color: "var(--text-1)" }}>Amis</h2>
+          <h2 className="text-[20px] font-semibold" style={{ color: "var(--text-1)" }}>Amis</h2>
           <motion.button whileTap={{ scale: 0.88 }} onClick={onClose} className="w-8 h-8 rounded-full flex items-center justify-center cursor-pointer" style={{ background: "rgba(0,0,0,0.06)" }}>
             <X size={14} strokeWidth={2.5} style={{ color: "var(--text-2)" }} />
           </motion.button>
@@ -135,7 +135,7 @@ export default function FollowListModal({
         <div className="px-4 pb-3">
           <div className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-2xl" style={{ background: "rgba(0,0,0,0.05)", border: "1px solid rgba(0,0,0,0.06)" }}>
             <Search size={13} strokeWidth={2.5} style={{ color: "var(--text-3)", flexShrink: 0 }} />
-            <input type="text" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Rechercher…" className="flex-1 text-sm bg-transparent outline-none" style={{ color: "var(--text-1)" }} />
+            <input type="text" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Rechercher…" className="flex-1 text-[16px] bg-transparent outline-none" style={{ color: "var(--text-1)" }} />
           </div>
         </div>
         <div className="h-px mx-4" style={{ background: "rgba(0,0,0,0.06)" }} />
@@ -148,8 +148,8 @@ export default function FollowListModal({
             </div>
           ) : filtered.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 gap-2">
-              <span className="text-3xl">👤</span>
-              <p className="text-sm font-light" style={{ color: "var(--text-3)" }}>
+              <span className="text-[26px]">👤</span>
+              <p className="text-[16px] font-light" style={{ color: "var(--text-3)" }}>
                 {query ? "Aucun résultat" : "Aucun ami pour l’instant"}
               </p>
             </div>
@@ -160,7 +160,7 @@ export default function FollowListModal({
               return (
                 <motion.div key={u.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }} className="flex items-center gap-3 px-4 py-2.5">
                   <Link href={`/profil/${encodeURIComponent(u.pseudo)}`} onClick={onClose} className="flex-shrink-0">
-                    <div className="w-11 h-11 rounded-full flex items-center justify-center text-sm font-semibold overflow-hidden"
+                    <div className="w-11 h-11 rounded-full flex items-center justify-center text-[16px] font-semibold overflow-hidden"
                       style={{ background: u.avatar_url ? "transparent" : "linear-gradient(135deg,var(--violet-mid),var(--cream-mid))", color: "var(--text-1)" }}>
                       {u.avatar_url
                         // eslint-disable-next-line @next/next/no-img-element
@@ -169,7 +169,7 @@ export default function FollowListModal({
                     </div>
                   </Link>
                   <Link href={`/profil/${encodeURIComponent(u.pseudo)}`} onClick={onClose} className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold truncate" style={{ color: "var(--text-1)" }}>{u.full_name || u.pseudo}</p>
+                    <p className="text-[16px] font-semibold truncate" style={{ color: "var(--text-1)" }}>{u.full_name || u.pseudo}</p>
                     <p className="text-[11px] font-light truncate" style={{ color: "var(--text-3)" }}>@{u.pseudo}</p>
                   </Link>
                   {!isOwn && user && (
@@ -177,7 +177,7 @@ export default function FollowListModal({
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.92 }}
                       onClick={() => handleFollow(u)}
-                      className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold cursor-pointer flex-shrink-0"
+                      className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-[13px] font-semibold cursor-pointer flex-shrink-0"
                       style={isF
                         ? { background: "rgba(0,0,0,0.05)", color: "var(--text-2)", border: "1px solid rgba(0,0,0,0.08)" }
                         : { background: "linear-gradient(135deg,var(--violet-mid) 0%,var(--cream-mid) 100%)", color: "var(--text-1)", boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.7)" }

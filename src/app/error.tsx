@@ -87,7 +87,7 @@ export default function Error({
         </div>
         <h1
           style={{
-            fontSize: 22,
+            fontSize: 20,
             fontWeight: 300,
             color: "#2D3748",
             marginBottom: 8,
@@ -97,7 +97,7 @@ export default function Error({
         </h1>
         <p
           style={{
-            fontSize: 14,
+            fontSize: 13,
             color: "#A0AEC0",
             marginBottom: 24,
             lineHeight: 1.6,
@@ -115,7 +115,7 @@ export default function Error({
             border: "none",
             background: "linear-gradient(135deg, #A78BFA, #D4A843)",
             color: "#fff",
-            fontSize: 14,
+            fontSize: 13,
             fontWeight: 600,
             cursor: "pointer",
             boxShadow: "0 6px 20px rgba(167,139,250,0.3)",

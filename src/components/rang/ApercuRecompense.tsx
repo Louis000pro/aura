@@ -30,7 +30,7 @@ export default function ApercuRecompense({
   if (kind === "exp") {
     return (
       <span
-        className="inline-flex items-center rounded-full px-2.5 py-1 text-[12px] font-black"
+        className="inline-flex items-center rounded-full px-2.5 py-1 text-[13px] font-black"
         style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", color: "#fff" }}
       >
         +{EXP_BIENVENUE} EXP
@@ -41,7 +41,7 @@ export default function ApercuRecompense({
   if (kind === "titre") {
     return (
       <span className="flex flex-col items-start leading-tight">
-        <span className="text-[14px] font-black" style={{ color: "var(--text-0)" }}>{nom}</span>
+        <span className="text-[13px] font-black" style={{ color: "var(--text-0)" }}>{nom}</span>
         <TitreRang cosmetiques={{ ...AUCUN, titre: TITRE_DIAMANT }} />
       </span>
     );
@@ -53,7 +53,7 @@ export default function ApercuRecompense({
         rang={rang}
         cosmetiques={{ ...AUCUN, badge: kind === "badge", brillant: kind === "brillant" }}
         pseudo={nom}
-        className="text-[15px] font-black tracking-[-0.02em]"
+        className="text-[16px] font-black tracking-[-0.02em]"
         style={{ color: "var(--text-0)" }}
         tailleGemme={17}
       />
@@ -69,7 +69,7 @@ export default function ApercuRecompense({
         size={40}
       >
         <span
-          className="absolute inset-0 grid place-items-center overflow-hidden rounded-full text-[15px] font-bold"
+          className="absolute inset-0 grid place-items-center overflow-hidden rounded-full text-[16px] font-bold"
           style={{
             background: avatarUrl ? "transparent" : "linear-gradient(135deg,rgba(var(--tint-violet-rgb),1),rgba(var(--tint-cream-rgb),1))",
             color: "var(--accent)",
@@ -81,7 +81,7 @@ export default function ApercuRecompense({
             : nom.charAt(0).toUpperCase()}
         </span>
       </AvatarRang>
-      <span className="text-[14px] font-black" style={{ color: "var(--text-0)" }}>{nom}</span>
+      <span className="text-[13px] font-black" style={{ color: "var(--text-0)" }}>{nom}</span>
     </div>
   );
 }

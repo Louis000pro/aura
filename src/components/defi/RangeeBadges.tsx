@@ -58,7 +58,7 @@ export default function RangeeBadges({ badges, debloques }: {
               </div>
 
               <b
-                className="mt-2 block max-w-full truncate text-[12.5px] font-semibold"
+                className="mt-2 block max-w-full truncate text-[13px] font-semibold"
                 style={{ color: ouvert ? "var(--text-0)" : "var(--text-2)" }}
               >
                 {b.nom}

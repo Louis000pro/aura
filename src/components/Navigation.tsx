@@ -42,20 +42,20 @@ function UserMenuItems({
   onClose: () => void;
   onLogout: () => void;
 }) {
-  const itemCls = "flex items-center gap-3 px-4 py-3 text-sm font-semibold hover:bg-purple-50 transition-colors";
+  const itemCls = "flex items-center gap-3 px-4 py-3 text-[16px] font-semibold hover:bg-purple-50 transition-colors";
   return (
     <>
       <div className="px-4 py-3 border-b" style={{ borderColor: "rgba(0,0,0,0.06)" }}>
-        <p className="text-sm font-black tracking-tight" style={{ color: "var(--text-0)" }}>
+        <p className="text-[16px] font-black tracking-tight" style={{ color: "var(--text-0)" }}>
           {user.pseudo ?? user.name ?? "Utilisateur"}
         </p>
-        <p className="text-xs mt-0.5 truncate" style={{ color: "var(--text-3)" }}>{user.email}</p>
+        <p className="text-[13px] mt-0.5 truncate" style={{ color: "var(--text-3)" }}>{user.email}</p>
       </div>
       <Link href="/profil" onClick={onClose} className={itemCls} style={{ color: "var(--text-1)" }}>
         <User size={14} strokeWidth={2} style={{ color: "var(--accent)" }} />
         Mon profil
       </Link>
-      <Link href="/premium" onClick={onClose} className="flex items-center gap-3 px-4 py-3 text-sm font-bold hover:bg-purple-50 transition-colors" style={{ color: "#7C5CFA" }}>
+      <Link href="/premium" onClick={onClose} className="flex items-center gap-3 px-4 py-3 text-[16px] font-bold hover:bg-purple-50 transition-colors" style={{ color: "#7C5CFA" }}>
         <Crown size={14} strokeWidth={2.2} style={{ color: "#7C5CFA" }} />
         Vaiiya Premium ✦
       </Link>
@@ -71,7 +71,7 @@ function UserMenuItems({
       )}
       <div style={{ height: 1, background: "rgba(0,0,0,0.06)" }} />
       <button onClick={() => { onClose(); onLogout(); }}
-        className="flex items-center gap-3 px-4 py-3 text-sm font-semibold w-full text-left hover:bg-red-50 transition-colors"
+        className="flex items-center gap-3 px-4 py-3 text-[16px] font-semibold w-full text-left hover:bg-red-50 transition-colors"
         style={{ color: "#EF4444" }}>
         <LogOut size={14} strokeWidth={2} />
         Déconnexion
@@ -229,7 +229,7 @@ export default function Navigation() {
                   const subActive = pathname === item.href;
                   return (
                     <Link key={item.href} href={item.href}
-                      className="flex items-center gap-3 px-4 py-3 text-sm font-semibold transition-colors hover:bg-purple-50"
+                      className="flex items-center gap-3 px-4 py-3 text-[16px] font-semibold transition-colors hover:bg-purple-50"
                       style={{ color: subActive ? "#7C5CFA" : "var(--text-1)" }}
                       onClick={() => setProgMenu(false)}
                     >
@@ -327,7 +327,7 @@ export default function Navigation() {
               <Image src={user.avatar} alt="" width={36} height={36}
                 className="h-9 w-9 rounded-full object-cover" unoptimized />
             ) : (
-              <div className="flex h-9 w-9 items-center justify-center rounded-full text-[14px] font-bold text-white"
+              <div className="flex h-9 w-9 items-center justify-center rounded-full text-[13px] font-bold text-white"
                 style={{ background: "linear-gradient(135deg, #8B5CF6, #C13BC1)" }}>
                 {(user.pseudo ?? "?").charAt(0).toUpperCase()}
               </div>
@@ -422,7 +422,7 @@ export default function Navigation() {
               <motion.button
                 whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.9 }}
                 onClick={() => setUserMenu((v) => !v)}
-                className="w-10 h-10 rounded-2xl flex items-center justify-center text-sm font-black cursor-pointer overflow-hidden"
+                className="w-10 h-10 rounded-2xl flex items-center justify-center text-[16px] font-black cursor-pointer overflow-hidden"
                 style={{
                   background: userMenu
                     ? "linear-gradient(135deg,#C4A8FF,var(--accent))"

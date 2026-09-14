@@ -1273,7 +1273,7 @@ export default function WorkoutGuideModal({
                   </div>
                   <div className="absolute left-[18px] right-[18px] bottom-4">
                     <h2 className="font-black uppercase leading-[0.98] tracking-tight text-white"
-                      style={{ fontSize: 27, textShadow: "0 2px 14px rgba(0,0,0,0.45)" }}>{title}</h2>
+                      style={{ fontSize: 26, textShadow: "0 2px 14px rgba(0,0,0,0.45)" }}>{title}</h2>
                     {muscleSummary && (
                       <p className="text-[11px] font-extrabold tracking-[0.14em] mt-1.5" style={{ color: "#C9B8FF" }}>{muscleSummary}</p>
                     )}
@@ -1355,7 +1355,7 @@ export default function WorkoutGuideModal({
                   <p className="text-[11px] font-extrabold tracking-[0.24em]" style={{ color: TUN.lav }}>
                     EXERCICE {exerciseIdx + 1} / {exercises.length}
                   </p>
-                  <h2 className="font-black uppercase tracking-tight leading-none mt-2" style={{ fontSize: 30, color: "#fff" }}>{cur.name}</h2>
+                  <h2 className="font-black uppercase tracking-tight leading-none mt-2" style={{ fontSize: 26, color: "#fff" }}>{cur.name}</h2>
                   <button onClick={() => setShowInfo(v => !v)}
                     className="inline-flex items-center gap-1.5 mt-3.5 px-3 py-2 rounded-full cursor-pointer"
                     style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.16)", backdropFilter: "blur(4px)", color: TUN.t1 }}
@@ -1596,7 +1596,7 @@ export default function WorkoutGuideModal({
                     <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke={TUN.teal} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5" /></svg>
                   </motion.div>
                 )}
-                <h2 className="font-black uppercase tracking-tight mt-4" style={{ fontSize: 24, color: "#fff" }}>Séance terminée</h2>
+                <h2 className="font-black uppercase tracking-tight mt-4" style={{ fontSize: 26, color: "#fff" }}>Séance terminée</h2>
                 <p className="text-[13px] mt-1.5" style={{ color: TUN.t2 }}>{guide ? title : `${title} · rien lâché`}</p>
                 {guide && (
                   <motion.p
@@ -1621,7 +1621,7 @@ export default function WorkoutGuideModal({
                       className="flex items-center gap-2.5 px-4 py-2.5 rounded-2xl mt-4"
                       style={{ background: "rgba(245,177,32,0.10)", border: "1px solid rgba(245,177,32,0.28)" }}
                     >
-                      <span style={{ fontSize: 17 }} aria-hidden="true">🔥</span>
+                      <span style={{ fontSize: 16 }} aria-hidden="true">🔥</span>
                       <span className="text-left">
                         <strong className="block text-[13px] font-bold" style={{ color: "#FFD34E" }}>
                           Journée validée

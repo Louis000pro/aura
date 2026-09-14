@@ -167,7 +167,7 @@ export default function CourbePoids({ userId, onPeser }: {
       {dernier ? (
         <span className="flex items-baseline gap-1.5 mt-1">
           <b
-            className="vy-nombre text-[30px] leading-none"
+            className="vy-nombre text-[26px] leading-none"
             style={{ color: "var(--teal-encre)" }}
           >
             {dernier.kg.toFixed(1).replace(".", ",")}

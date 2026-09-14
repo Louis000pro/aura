@@ -70,10 +70,10 @@ export default function EnvoyerAffiche({ data, moi, accessToken, onFermer }: {
     // 106 : elle s'ouvre depuis le tunnel de séance, qui est à 100.
     <Sheet onFermer={onFermer} niveau={106}>
       <div className="mb-1 flex items-center justify-between">
-        <b className="text-[17px] font-bold" style={{ color: "var(--text-0)" }}>Envoyer à quelqu&apos;un</b>
+        <b className="text-[20px] font-bold" style={{ color: "var(--text-0)" }}>Envoyer à quelqu&apos;un</b>
         <button onClick={onFermer} aria-label="Fermer"><X className="h-5 w-5" style={{ color: "var(--text-3)" }} /></button>
       </div>
-      <p className="mb-3 text-[13.5px]" style={{ color: "var(--text-2)" }}>
+      <p className="mb-3 text-[13px]" style={{ color: "var(--text-2)" }}>
         Ton affiche part dans la discussion, comme une photo.
       </p>
 
@@ -83,7 +83,7 @@ export default function EnvoyerAffiche({ data, moi, accessToken, onFermer }: {
             <Loader2 className="h-5 w-5 animate-spin" style={{ color: "var(--text-3)" }} />
           </div>
         ) : fils.length === 0 ? (
-          <p className="py-4 text-center text-[14px] leading-relaxed" style={{ color: "var(--text-2)" }}>
+          <p className="py-4 text-center text-[16px] leading-relaxed" style={{ color: "var(--text-2)" }}>
             Tu n&apos;as encore aucune discussion.<br />
             Tu peux quand même partager ton affiche ailleurs.
           </p>
@@ -102,7 +102,7 @@ export default function EnvoyerAffiche({ data, moi, accessToken, onFermer }: {
                 taille={38}
                 afficherDefi={false}
               />
-              <span className="min-w-0 flex-1 truncate text-[14.5px] font-medium" style={{ color: "var(--text-1)" }}>
+              <span className="min-w-0 flex-1 truncate text-[16px] font-medium" style={{ color: "var(--text-1)" }}>
                 {titreConversation(fil, moi)}
               </span>
               {occupe === fil.id ? (
@@ -131,17 +131,17 @@ export default function EnvoyerAffiche({ data, moi, accessToken, onFermer }: {
           <Share2 className="h-4.5 w-4.5" style={{ color: "var(--accent)" }} />
         </span>
         <span className="min-w-0 flex-1">
-          <b className="block text-[14.5px] font-medium" style={{ color: "var(--text-1)" }}>
+          <b className="block text-[16px] font-medium" style={{ color: "var(--text-1)" }}>
             Quelqu&apos;un en dehors de Vaiiya
           </b>
-          <small className="block text-[12.5px]" style={{ color: "var(--text-3)" }}>
+          <small className="block text-[13px]" style={{ color: "var(--text-3)" }}>
             L&apos;image part dans ton téléphone.
           </small>
         </span>
       </button>
 
       {erreur && (
-        <p className="mt-3 text-center text-[13.5px] leading-snug" style={{ color: "#E8620C" }}>{erreur}</p>
+        <p className="mt-3 text-center text-[13px] leading-snug" style={{ color: "#E8620C" }}>{erreur}</p>
       )}
     </Sheet>
   );

@@ -70,7 +70,7 @@ export default function AvecQui({ moi, onFermer, onFil, onLien }: {
   return (
     <Sheet onFermer={onFermer}>
       <div className="mb-1 flex items-center justify-between">
-        <b className="text-[17px] font-bold" style={{ color: "var(--text-0)" }}>Avec qui ?</b>
+        <b className="text-[20px] font-bold" style={{ color: "var(--text-0)" }}>Avec qui ?</b>
         <button onClick={onFermer} aria-label="Fermer"><X className="h-5 w-5" style={{ color: "var(--text-3)" }} /></button>
       </div>
       {/* Le seuil : c'est ici que les règles se disent, et nulle part
@@ -78,7 +78,7 @@ export default function AvecQui({ moi, onFermer, onFil, onLien }: {
           énonçait déjà une règle sans que personne ne la porte. */}
       <div className="mb-3 flex items-start gap-2.5">
         <VisageGuide guide={guide} etat="explain" size={34} className="mt-0.5" />
-        <p className="text-[13.5px] leading-snug" style={{ color: "var(--text-2)" }}>
+        <p className="text-[13px] leading-snug" style={{ color: "var(--text-2)" }}>
           {voix(guide, "relais.avecqui")}
         </p>
       </div>
@@ -89,7 +89,7 @@ export default function AvecQui({ moi, onFermer, onFil, onLien }: {
             <Loader2 className="h-5 w-5 animate-spin" style={{ color: "var(--text-3)" }} />
           </div>
         ) : gens.length === 0 ? (
-          <p className="py-4 text-center text-[14px] leading-relaxed" style={{ color: "var(--text-2)" }}>
+          <p className="py-4 text-center text-[16px] leading-relaxed" style={{ color: "var(--text-2)" }}>
             Tu n&apos;as encore personne dans tes contacts.<br />
             Le lien ci-dessous te trouvera quelqu&apos;un.
           </p>
@@ -110,12 +110,12 @@ export default function AvecQui({ moi, onFermer, onFil, onLien }: {
                     cosmetiques={rang.cosmetiques}
                     pseudo={p.pseudo}
                     classNameEnveloppe="flex min-w-0 flex-1 items-center gap-1.5"
-                    className="truncate text-[14.5px] font-medium"
+                    className="truncate text-[16px] font-medium"
                     style={{ color: "var(--text-1)" }}
                     tailleGemme={14}
                   />
                 ) : (
-                  <span className="flex-1 truncate text-[14.5px] font-medium" style={{ color: "var(--text-1)" }}>
+                  <span className="flex-1 truncate text-[16px] font-medium" style={{ color: "var(--text-1)" }}>
                     {p.pseudo}
                   </span>
                 )}
@@ -143,10 +143,10 @@ export default function AvecQui({ moi, onFermer, onFil, onLien }: {
             : <Link2 className="h-4.5 w-4.5" style={{ color: "var(--exp-encre)" }} />}
         </span>
         <span className="min-w-0 flex-1">
-          <b className="block text-[14.5px] font-medium" style={{ color: "var(--text-1)" }}>
+          <b className="block text-[16px] font-medium" style={{ color: "var(--text-1)" }}>
             Quelqu&apos;un qui n&apos;a pas Vaiiya
           </b>
-          <small className="block text-[12.5px]" style={{ color: "var(--text-3)" }}>
+          <small className="block text-[13px]" style={{ color: "var(--text-3)" }}>
             Tu obtiendras un lien à envoyer.
           </small>
         </span>
@@ -154,11 +154,11 @@ export default function AvecQui({ moi, onFermer, onFil, onLien }: {
 
       {refus && (
         <div className="mt-3 text-center">
-          <p className="text-[13.5px] leading-snug" style={{ color: "#E8620C" }}>{refus.texte}</p>
+          <p className="text-[13px] leading-snug" style={{ color: "#E8620C" }}>{refus.texte}</p>
           {refus.ou && (
             <button
               onClick={() => onFil(refus.ou!)}
-              className="mt-2 text-[13.5px] font-semibold underline"
+              className="mt-2 text-[13px] font-semibold underline"
               style={{ color: "var(--exp-encre)" }}
             >
               Ouvrir ce relais

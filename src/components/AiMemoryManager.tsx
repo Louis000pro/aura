@@ -96,7 +96,7 @@ export default function AiMemoryManager({ onClose }: { onClose: () => void }) {
                 tu lui dises), `explain` dès qu'il a de quoi te montrer.
                 L'état se déduit de la liste, jamais du texte. */}
             <VisageGuide guide={guide} etat={!loading && memories.length === 0 ? "listen" : "explain"} size={38} />
-            <h2 className="text-base font-semibold min-w-0" style={{ color: "var(--text-1)" }}>Ce que je retiens de toi</h2>
+            <h2 className="text-[20px] font-semibold min-w-0" style={{ color: "var(--text-1)" }}>Ce que je retiens de toi</h2>
           </div>
           <motion.button whileTap={{ scale: 0.9 }} onClick={onClose} className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer flex-shrink-0" style={{ background: "rgba(var(--tint-violet-rgb),0.8)" }}>
             <X size={14} strokeWidth={2} style={{ color: "var(--text-3)" }} />
@@ -114,7 +114,7 @@ export default function AiMemoryManager({ onClose }: { onClose: () => void }) {
             /* Pas de deuxième visage ici : celui de l'en-tête est juste
                au-dessus, et il dit déjà que c'est lui qui parle. */
             <div className="py-10 px-4">
-              <p className="text-[13.5px] font-light leading-relaxed" style={{ color: "var(--text-2)" }}>
+              <p className="text-[13px] font-light leading-relaxed" style={{ color: "var(--text-2)" }}>
                 {voix(guide, "memoire.vide")}
               </p>
             </div>
@@ -129,9 +129,9 @@ export default function AiMemoryManager({ onClose }: { onClose: () => void }) {
                     initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
                     className="vy-filet flex items-start gap-3 px-1.5 py-3.5"
                   >
-                    <span className="text-base leading-none mt-0.5 flex-shrink-0" aria-hidden>{MEMORY_CATEGORY_EMOJI[cat]}</span>
+                    <span className="text-[16px] leading-none mt-0.5 flex-shrink-0" aria-hidden>{MEMORY_CATEGORY_EMOJI[cat]}</span>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-light leading-snug" style={{ color: "var(--text-1)" }}>{m.content}</p>
+                      <p className="text-[16px] font-light leading-snug" style={{ color: "var(--text-1)" }}>{m.content}</p>
                       <p className="vy-label mt-1" style={{ color: "var(--text-3)" }}>
                         {MEMORY_CATEGORY_LABEL[cat]}{m.source === "user" ? " · à ta demande" : ""}
                       </p>
@@ -140,7 +140,7 @@ export default function AiMemoryManager({ onClose }: { onClose: () => void }) {
                       whileTap={{ scale: 0.94 }}
                       onClick={() => removeOne(m.id)}
                       type="button"
-                      className="mt-0.5 px-1 text-[11.5px] font-semibold cursor-pointer flex-shrink-0"
+                      className="mt-0.5 px-1 text-[11px] font-semibold cursor-pointer flex-shrink-0"
                       style={{ color: "var(--text-3)" }}
                     >
                       Oublier
@@ -157,14 +157,14 @@ export default function AiMemoryManager({ onClose }: { onClose: () => void }) {
           <div className="flex-shrink-0 px-5 pb-6 pt-3" style={{ borderTop: "1px solid rgba(var(--violet-mid-rgb),0.25)" }}>
             {/* Sa promesse. Elle ne s'affiche qu'avec la liste : sur l'écran
                 vide, l'invitation du dessus est déjà sa phrase. */}
-            <p className="mb-3 text-[11.5px] font-light leading-snug" style={{ color: "var(--text-3)" }}>
+            <p className="mb-3 text-[11px] font-light leading-snug" style={{ color: "var(--text-3)" }}>
               {voix(guide, "memoire.ecran")}
             </p>
             <motion.button
               whileTap={{ scale: 0.98 }}
               onClick={clearAll}
               disabled={clearing}
-              className="w-full py-3 rounded-2xl text-sm font-semibold cursor-pointer flex items-center justify-center gap-2"
+              className="w-full py-3 rounded-2xl text-[16px] font-semibold cursor-pointer flex items-center justify-center gap-2"
               style={{ background: "rgba(254,226,226,0.45)", border: "1px solid rgba(252,165,165,0.35)", color: "#EF4444" }}
             >
               <Trash2 size={15} strokeWidth={1.8} />

@@ -58,7 +58,7 @@ export default function MaJournee({
       <button type="button" className={styles.tete} onClick={onVoirTout}>
         <span className={styles.titre}>Ma journée</span>
         <span className={styles.compte}>
-          <b>
+          <b className="vy-nombre">
             {fait} / {total}
           </b>
           <small>missions</small>

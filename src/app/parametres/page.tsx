@@ -94,8 +94,8 @@ function Ligne({
         {mark ?? (Icon ? <Icon size={18} strokeWidth={1.6} /> : null)}
       </span>
       <span className="flex flex-col gap-0.5 min-w-[120px] flex-1 text-left">
-        <span className="text-[14.5px] font-medium truncate" style={{ color: "var(--text-1)" }}>{label}</span>
-        {sub && <span className="text-xs font-light truncate" style={{ color: "var(--text-3)" }}>{sub}</span>}
+        <span className="text-[16px] font-medium truncate" style={{ color: "var(--text-1)" }}>{label}</span>
+        {sub && <span className="text-[11px] font-light truncate" style={{ color: "var(--text-3)" }}>{sub}</span>}
       </span>
       {value && (
         <span className="text-[13px] font-light flex-shrink-0 max-w-[45%] truncate" style={{ color: "var(--text-3)" }}>
@@ -137,7 +137,7 @@ function Selecteur<T extends string>({
           key={opt.key}
           whileTap={{ scale: 0.94 }}
           onClick={() => onChange(opt.key)}
-          className="px-2.5 py-1.5 rounded-full text-[11.5px] font-semibold cursor-pointer transition-colors"
+          className="px-2.5 py-1.5 rounded-full text-[11px] font-semibold cursor-pointer transition-colors"
           style={opt.key === value
             ? { background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", color: "#fff", boxShadow: "0 1px 4px rgba(139,92,246,0.32)" }
             : { color: "var(--text-2)" }
@@ -253,12 +253,12 @@ function GuideModal({ onClose, onChoisi }: { onClose: () => void; onChoisi: (g: 
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-2">
-          <h2 className="text-base font-semibold" style={{ color: "var(--text-1)" }}>Ton Guide</h2>
+          <h2 className="text-[20px] font-semibold" style={{ color: "var(--text-1)" }}>Ton Guide</h2>
           <motion.button whileTap={{ scale: 0.9 }} onClick={onClose} aria-label="Fermer" className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer" style={{ background: "rgba(var(--tint-violet-rgb),0.8)" }}>
             <X size={14} strokeWidth={2} style={{ color: "var(--text-3)" }} />
           </motion.button>
         </div>
-        <p className="text-xs font-light mb-4" style={{ color: "var(--text-3)" }}>
+        <p className="text-[13px] font-light mb-4" style={{ color: "var(--text-3)" }}>
           Mêmes séances, mêmes données, mêmes conseils dans les deux cas. C&apos;est la façon de te parler qui change.
         </p>
 
@@ -281,9 +281,9 @@ function GuideModal({ onClose, onChoisi }: { onClose: () => void; onChoisi: (g: 
               >
                 <VisageGuide guide={g} size={52} />
                 <span className="flex-1 min-w-0 flex flex-col gap-0.5">
-                  <span className="text-[15px] font-semibold" style={{ color: "var(--text-1)" }}>{PRENOM_GUIDE[g]}</span>
-                  <span className="text-[12px] font-medium" style={{ color: "var(--exp-encre)" }}>{PORTRAIT_GUIDE[g].trait}</span>
-                  <span className="text-[11.5px] font-light" style={{ color: "var(--text-3)" }}>{PORTRAIT_GUIDE[g].pour}</span>
+                  <span className="text-[16px] font-semibold" style={{ color: "var(--text-1)" }}>{PRENOM_GUIDE[g]}</span>
+                  <span className="text-[13px] font-medium" style={{ color: "var(--exp-encre)" }}>{PORTRAIT_GUIDE[g].trait}</span>
+                  <span className="text-[11px] font-light" style={{ color: "var(--text-3)" }}>{PORTRAIT_GUIDE[g].pour}</span>
                 </span>
                 {actif
                   ? <Pastille texte="Actif" ton="teal" />
@@ -300,7 +300,7 @@ function GuideModal({ onClose, onChoisi }: { onClose: () => void; onChoisi: (g: 
             <motion.p
               initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
               role="status"
-              className="text-[12px] font-medium mt-3"
+              className="text-[13px] font-medium mt-3"
               style={{ color: orangeRefus }}
             >
               {erreur}
@@ -308,7 +308,7 @@ function GuideModal({ onClose, onChoisi }: { onClose: () => void; onChoisi: (g: 
           )}
         </AnimatePresence>
 
-        <p className="text-[11.5px] font-light mt-4" style={{ color: "var(--text-3)" }}>
+        <p className="text-[11px] font-light mt-4" style={{ color: "var(--text-3)" }}>
           Tu peux changer quand tu veux. Tes séances, ton planning et ce que ton Guide retient de toi ne bougent pas.
         </p>
       </motion.div>
@@ -366,7 +366,7 @@ function ChangePasswordModal({ onClose }: { onClose: () => void }) {
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-5">
-          <h2 className="text-base font-semibold" style={{ color: "var(--text-1)" }}>Changer le mot de passe</h2>
+          <h2 className="text-[20px] font-semibold" style={{ color: "var(--text-1)" }}>Changer le mot de passe</h2>
           <motion.button whileTap={{ scale: 0.9 }} onClick={onClose} className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer" style={{ background: "rgba(var(--tint-violet-rgb),0.8)" }}>
             <X size={14} strokeWidth={2} style={{ color: "var(--text-3)" }} />
           </motion.button>
@@ -377,7 +377,7 @@ function ChangePasswordModal({ onClose }: { onClose: () => void }) {
             <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ background: "linear-gradient(135deg, var(--violet-mid), var(--cream-mid))" }}>
               <Check size={20} strokeWidth={2.5} style={{ color: "var(--text-1)" }} />
             </div>
-            <p className="text-sm font-medium" style={{ color: "var(--text-1)" }}>Mot de passe mis à jour.</p>
+            <p className="text-[16px] font-medium" style={{ color: "var(--text-1)" }}>Mot de passe mis à jour.</p>
           </motion.div>
         ) : (
           <div className="flex flex-col gap-3">
@@ -393,7 +393,7 @@ function ChangePasswordModal({ onClose }: { onClose: () => void }) {
                     type={show ? "text" : "password"}
                     value={value}
                     onChange={(e) => onChange(e.target.value)}
-                    className="flex-1 bg-transparent text-sm outline-none"
+                    className="flex-1 bg-transparent text-[16px] outline-none"
                     style={{ color: "var(--text-1)" }}
                   />
                   <motion.button whileTap={{ scale: 0.9 }} onClick={toggle} className="cursor-pointer">
@@ -405,7 +405,7 @@ function ChangePasswordModal({ onClose }: { onClose: () => void }) {
 
             <AnimatePresence>
               {error && (
-                <motion.p initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="text-xs font-medium" style={{ color: "#EF4444" }}>
+                <motion.p initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="text-[13px] font-medium" style={{ color: "#EF4444" }}>
                   {error}
                 </motion.p>
               )}
@@ -415,7 +415,7 @@ function ChangePasswordModal({ onClose }: { onClose: () => void }) {
               whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.98 }}
               onClick={handleSubmit}
               disabled={loading}
-              className="w-full py-3 rounded-2xl text-sm font-semibold cursor-pointer mt-1"
+              className="w-full py-3 rounded-2xl text-[16px] font-semibold cursor-pointer mt-1"
               style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", color: "#fff", boxShadow: "var(--ombre-action), inset 0 1px 0 rgba(var(--surface-rgb),0.9)" }}
             >
               {loading ? "Mise à jour…" : "Mettre à jour"}
@@ -472,7 +472,7 @@ function DeleteAccountModal({ onClose }: { onClose: () => void }) {
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-base font-semibold" style={{ color: "#EF4444" }}>Supprimer le compte</h2>
+          <h2 className="text-[20px] font-semibold" style={{ color: "#EF4444" }}>Supprimer le compte</h2>
           <motion.button whileTap={{ scale: 0.9 }} onClick={onClose} className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer" style={{ background: "rgba(var(--tint-violet-rgb),0.8)" }}>
             <X size={14} strokeWidth={2} style={{ color: "var(--text-3)" }} />
           </motion.button>
@@ -480,7 +480,7 @@ function DeleteAccountModal({ onClose }: { onClose: () => void }) {
 
         <div className="flex items-start gap-3 p-3.5 rounded-2xl mb-4" style={{ background: "rgba(254,226,226,0.5)", border: "1px solid rgba(252,165,165,0.3)" }}>
           <AlertTriangle size={16} strokeWidth={1.5} style={{ color: "#EF4444", flexShrink: 0, marginTop: 1 }} />
-          <p className="text-xs font-light leading-relaxed" style={{ color: "#EF4444" }}>
+          <p className="text-[13px] font-light leading-relaxed" style={{ color: "#EF4444" }}>
             Cette action est <strong>irréversible</strong>. Toutes tes données (posts, séances, messages) seront définitivement supprimées.
           </p>
         </div>
@@ -494,14 +494,14 @@ function DeleteAccountModal({ onClose }: { onClose: () => void }) {
             value={confirm}
             onChange={(e) => { setConfirm(e.target.value); setError(null); }}
             placeholder="SUPPRIMER"
-            className="px-4 py-3 rounded-2xl text-sm outline-none"
+            className="px-4 py-3 rounded-2xl text-[16px] outline-none"
             style={{ background: "rgba(254,226,226,0.3)", border: "1px solid rgba(252,165,165,0.3)", color: "var(--text-1)" }}
           />
         </div>
 
         <AnimatePresence>
           {error && (
-            <motion.p initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="text-xs font-medium mb-3" style={{ color: "#EF4444" }}>
+            <motion.p initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="text-[13px] font-medium mb-3" style={{ color: "#EF4444" }}>
               {error}
             </motion.p>
           )}
@@ -511,7 +511,7 @@ function DeleteAccountModal({ onClose }: { onClose: () => void }) {
           whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.98 }}
           onClick={handleDelete}
           disabled={loading || confirm !== "SUPPRIMER"}
-          className="w-full py-3 rounded-2xl text-sm font-semibold cursor-pointer"
+          className="w-full py-3 rounded-2xl text-[16px] font-semibold cursor-pointer"
           style={{
             background: confirm === "SUPPRIMER" ? "linear-gradient(135deg, #FCA5A5, #EF4444)" : "rgba(var(--tint-violet-rgb),0.5)",
             color: confirm === "SUPPRIMER" ? "#FFFFFF" : "var(--text-3)",
@@ -664,7 +664,7 @@ export default function ParametresPage() {
       {/* Titre */}
       <motion.h1
         initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}
-        className="text-2xl font-semibold tracking-tight mb-5"
+        className="text-[26px] font-semibold tracking-tight mb-5"
         style={{ color: "var(--text-1)" }}
       >
         Paramètres
@@ -684,7 +684,7 @@ export default function ParametresPage() {
           }}
         >
           <div
-            className="w-12 h-12 rounded-2xl flex-shrink-0 flex items-center justify-center overflow-hidden text-lg font-semibold"
+            className="w-12 h-12 rounded-2xl flex-shrink-0 flex items-center justify-center overflow-hidden text-[20px] font-semibold"
             style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", color: "#fff" }}
           >
             {user?.avatar
@@ -693,8 +693,8 @@ export default function ParametresPage() {
               : (user?.pseudo?.[0] ?? "?").toUpperCase()}
           </div>
           <div className="flex-1 min-w-0 flex flex-col gap-0.5">
-            <p className="text-[15px] font-semibold truncate" style={{ color: "var(--text-1)" }}>@{user?.pseudo}</p>
-            <p className="text-xs font-light truncate" style={{ color: "var(--text-3)" }}>{user?.email}</p>
+            <p className="text-[16px] font-semibold truncate" style={{ color: "var(--text-1)" }}>@{user?.pseudo}</p>
+            <p className="text-[11px] font-light truncate" style={{ color: "var(--text-3)" }}>{user?.email}</p>
           </div>
           {aura && (
             <div
@@ -862,7 +862,7 @@ export default function ParametresPage() {
           <motion.button
             whileTap={{ scale: 0.97 }}
             onClick={() => setShowDeleteModal(true)}
-            className="text-[12.5px] font-medium px-3 py-1.5 rounded-xl cursor-pointer hover:underline"
+            className="text-[13px] font-medium px-3 py-1.5 rounded-xl cursor-pointer hover:underline"
             style={{ color: "#D9646A" }}
           >
             Supprimer mon compte
@@ -888,7 +888,7 @@ export default function ParametresPage() {
             style={{ background: "rgba(var(--surface-rgb),0.9)", backdropFilter: "blur(10px)", border: "1px solid rgba(var(--tint-violet-rgb),0.9)", boxShadow: "var(--ombre-flottant), inset 0 1px 0 rgba(var(--surface-rgb),0.9)", color: "var(--text-1)", whiteSpace: "nowrap" }}
           >
             <Check size={14} strokeWidth={2.5} style={{ color: "var(--gold)" }} />
-            <span className="text-sm font-medium">{toast}</span>
+            <span className="text-[13px] font-medium">{toast}</span>
           </motion.div>
         )}
       </AnimatePresence>

@@ -20,7 +20,7 @@ export function VitrineHeader() {
       <Link href="/" className="flex items-center gap-2.5" aria-label="Accueil Vaiiya">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/icons/icon-192.png" alt="Logo Vaiiya" width={36} height={36} className="rounded-xl" />
-        <span className="text-lg font-light tracking-[0.18em]" style={{ color: "#1A1535" }}>VAIIYA</span>
+        <span className="text-[20px] font-light tracking-[0.18em]" style={{ color: "#1A1535" }}>VAIIYA</span>
       </Link>
       <Link
         href="/auth"
@@ -51,12 +51,12 @@ export function VitrinePied({ suitLeTheme = false }: { suitLeTheme?: boolean }) 
       <ul className="flex flex-wrap gap-x-5 gap-y-2.5">
         {SEO_PAGES.map((p) => (
           <li key={p.href}>
-            <Link href={p.href} className="text-sm font-medium hover:underline" style={{ color: lien }}>
+            <Link href={p.href} className="text-[16px] font-medium hover:underline" style={{ color: lien }}>
               {p.label}
             </Link>
           </li>
         ))}
-        <li><Link href="/premium" className="text-sm font-medium hover:underline" style={{ color: lien }}>Vaiiya Premium</Link></li>
+        <li><Link href="/premium" className="text-[16px] font-medium hover:underline" style={{ color: lien }}>Vaiiya Premium</Link></li>
       </ul>
       <p className="mt-8 text-[11px]" style={{ color: bas }}>
         © {new Date().getFullYear()} Vaiiya ·{" "}

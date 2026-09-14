@@ -78,7 +78,7 @@ export default function RangsModal({
               <div className="mx-auto sm:hidden h-1.5 w-10 rounded-full" style={{ background: "rgba(var(--accent-rgb),0.25)" }} />
             </div>
             <div className="flex items-center justify-between mb-1 mt-1">
-              <h2 className="text-[18px] font-extrabold" style={{ color: "var(--text-0)" }}>Les rangs</h2>
+              <h2 className="text-[20px] font-extrabold" style={{ color: "var(--text-0)" }}>Les rangs</h2>
               <button
                 type="button"
                 onClick={onClose}
@@ -89,7 +89,7 @@ export default function RangsModal({
                 <X size={16} strokeWidth={2.5} />
               </button>
             </div>
-            <p className="mb-4 text-[12.5px] leading-snug" style={{ color: "var(--text-3)" }}>
+            <p className="mb-4 text-[13px] leading-snug" style={{ color: "var(--text-3)" }}>
               Chaque rang débloque une décoration. Elle s&apos;applique toute seule dès que tu l&apos;atteins ✦
             </p>
 
@@ -116,14 +116,14 @@ export default function RangsModal({
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2">
-                          <span className="text-[15px] font-extrabold" style={{ color: "var(--text-0)" }}>{rang.nom}</span>
+                          <span className="text-[16px] font-extrabold" style={{ color: "var(--text-0)" }}>{rang.nom}</span>
                           {courant && (
                             <span className="rounded-full px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide" style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", color: "#fff" }}>
                               Ton rang
                             </span>
                           )}
                         </div>
-                        <p className="mt-0.5 text-[12px]" style={{ color: "var(--text-3)" }}>
+                        <p className="mt-0.5 text-[13px]" style={{ color: "var(--text-3)" }}>
                           {rang.min === 0
                             ? "Le point de départ"
                             : atteint
@@ -149,7 +149,7 @@ export default function RangsModal({
                             {atteint ? reco.emoji : "🔒"}
                           </span>
                           <div className="min-w-0 flex-1">
-                            <p className="text-[12.5px] font-bold leading-tight" style={{ color: atteint ? "var(--text-0)" : "var(--text-soft)" }}>
+                            <p className="text-[13px] font-bold leading-tight" style={{ color: atteint ? "var(--text-0)" : "var(--text-soft)" }}>
                               {reco.titre}
                             </p>
                             <p className="mt-0.5 text-[11px] leading-snug" style={{ color: "var(--text-3)" }}>

@@ -140,7 +140,7 @@ export default function DefiPage() {
           <h1 className="mt-7 text-[26px] font-bold leading-tight" style={{ color: "var(--text-0)" }}>
             Cette affiche est vide.
           </h1>
-          <p className="mt-2 text-[15px] leading-relaxed" style={{ color: "var(--text-body)" }}>
+          <p className="mt-2 text-[16px] leading-relaxed" style={{ color: "var(--text-body)" }}>
             Elle se dévoile à chaque séance de la semaine, mais elle ne se
             dévoile qu&apos;à deux. Quatre jours sur sept, chacun son tour, jamais
             deux jours de suite la même personne.
@@ -159,7 +159,7 @@ export default function DefiPage() {
           </p>
 
           {erreur && (
-            <p className="mt-4 text-center text-[14px] font-medium" style={{ color: "#E8620C" }}>
+            <p className="mt-4 text-center text-[13px] font-medium" style={{ color: "#E8620C" }}>
               {erreur}
             </p>
           )}
@@ -199,12 +199,12 @@ export default function DefiPage() {
           </p>
           <div className="mt-3 flex gap-2">
             <button onClick={arreter} disabled={creation}
-              className="flex-1 rounded-xl py-2.5 text-[14px] font-semibold text-white disabled:opacity-60"
+              className="flex-1 rounded-xl py-2.5 text-[16px] font-semibold text-white disabled:opacity-60"
               style={{ background: "#E8620C" }}>
               Arrêter le relais
             </button>
             <button onClick={() => setConfirmeArret(false)}
-              className="rounded-xl px-4 py-2.5 text-[14px] font-semibold"
+              className="rounded-xl px-4 py-2.5 text-[16px] font-semibold"
               style={{ color: "var(--text-2)", background: "rgba(var(--text-3-rgb), .10)" }}>
               Garder
             </button>
@@ -212,7 +212,7 @@ export default function DefiPage() {
         </div>
       ) : (
         <button onClick={() => setConfirmeArret(true)}
-          className="w-full py-2 text-[13.5px] font-medium"
+          className="w-full py-2 text-[13px] font-medium"
           style={{ color: "var(--text-3)" }}>
           Arrêter le relais
         </button>
@@ -227,10 +227,10 @@ export default function DefiPage() {
         <div className="mx-auto w-full max-w-[360px]">
           <PosterDefi serie={defi.serie} etat={1} noms={noms} titre={serie.nom} className="shadow-2xl" />
 
-          <h1 className="mt-7 text-[24px] font-bold leading-tight" style={{ color: "var(--text-0)" }}>
+          <h1 className="mt-7 text-[26px] font-bold leading-tight" style={{ color: "var(--text-0)" }}>
             Il manque une personne.
           </h1>
-          <p className="mt-2 text-[15px] leading-relaxed" style={{ color: "var(--text-body)" }}>
+          <p className="mt-2 text-[16px] leading-relaxed" style={{ color: "var(--text-body)" }}>
             Le relais démarre à la seconde où quelqu&apos;un rejoint. Envoie-lui
             ce lien, il n&apos;a pas besoin d&apos;avoir Vaiiya pour l&apos;ouvrir.
           </p>
@@ -238,7 +238,7 @@ export default function DefiPage() {
           {/* L'affiche en jeu se nomme : c'est ce qui rend la deuxième
               semaine désirable, puisque la série tourne d'un relais à
               l'autre (Sillage, puis Aurore, puis Brume). */}
-          <p className="mt-3 text-[13.5px]" style={{ color: "var(--text-3)" }}>
+          <p className="mt-3 text-[13px]" style={{ color: "var(--text-3)" }}>
             Vous jouez pour <b style={{ color: "var(--or-encre)" }}>{serie.nom}</b> · {serie.promesse.toLowerCase()}.
           </p>
 
@@ -255,7 +255,7 @@ export default function DefiPage() {
 
               <button
                 onClick={() => partager(lien, "", "")}
-                className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl border px-4 py-3 text-[14px] font-medium"
+                className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl border px-4 py-3 text-[16px] font-medium"
                 style={{ borderColor: "rgba(var(--text-3-rgb), .3)", color: "var(--text-2)" }}
               >
                 {copie ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
@@ -289,10 +289,10 @@ export default function DefiPage() {
             className="shadow-2xl"
           />
 
-          <h1 className="mt-7 text-[24px] font-bold leading-tight" style={{ color: "var(--text-0)" }}>
+          <h1 className="mt-7 text-[26px] font-bold leading-tight" style={{ color: "var(--text-0)" }}>
             {gagne ? "L’affiche est à vous." : "La semaine est finie."}
           </h1>
-          <p className="mt-2 text-[15px] leading-relaxed" style={{ color: "var(--text-body)" }}>
+          <p className="mt-2 text-[16px] leading-relaxed" style={{ color: "var(--text-body)" }}>
             {gagne
               ? `« ${serie.nom} » rejoint ta galerie. Tu peux la réutiliser en fond de tes prochains posters de perf.`
               : `Vous êtes allés à ${faits} jour${faits > 1 ? "s" : ""} sur ${defi.objectif}. L’affiche garde ce que vous avez dévoilé.`}
@@ -377,7 +377,7 @@ export default function DefiPage() {
             <span className="text-[34px] font-bold leading-none" style={{ color: "var(--text-0)" }}>
               {faits}
             </span>
-            <span className="text-[15px] font-medium" style={{ color: "var(--text-2)" }}>
+            <span className="text-[16px] font-medium" style={{ color: "var(--text-2)" }}>
               / {defi.objectif} jours
             </span>
           </div>
@@ -388,7 +388,7 @@ export default function DefiPage() {
 
         <ChaineDesJours defi={defi} moi={moi} equipier={equipier} />
 
-        <p className="mt-4 text-[15px] leading-relaxed" style={{ color: "var(--text-body)" }}>
+        <p className="mt-4 text-[16px] leading-relaxed" style={{ color: "var(--text-body)" }}>
           {phrase}
         </p>
 
@@ -473,7 +473,7 @@ function Pastille({ couleur, texte }: { couleur: string; texte: string }) {
   return (
     <span className="flex min-w-0 items-center gap-1.5">
       <span className="h-1.5 w-4 shrink-0 rounded-full" style={{ background: couleur }} />
-      <span className="truncate text-[11.5px] font-medium" style={{ color: "var(--text-3)" }}>
+      <span className="truncate text-[11px] font-medium" style={{ color: "var(--text-3)" }}>
         {texte}
       </span>
     </span>
@@ -521,13 +521,13 @@ function Cadre({ children, equipier, fil }: {
               />
             ) : (
               <span
-                className="flex h-7 w-7 items-center justify-center rounded-full text-[12px] font-bold text-white"
+                className="flex h-7 w-7 items-center justify-center rounded-full text-[13px] font-bold text-white"
                 style={{ background: "linear-gradient(135deg, #8B5CF6, #C13BC1)" }}
               >
                 {equipier.pseudo.charAt(0).toUpperCase()}
               </span>
             )}
-            <span className="truncate text-[14.5px] font-semibold" style={{ color: "var(--text-1)" }}>
+            <span className="truncate text-[16px] font-semibold" style={{ color: "var(--text-1)" }}>
               Avec {equipier.pseudo}
             </span>
           </button>
@@ -549,7 +549,7 @@ function Bandeau() {
   if (!texte) return null;
   return (
     <p
-      className="mb-3 rounded-xl px-3 py-2 text-center text-[12px] font-semibold"
+      className="mb-3 rounded-xl px-3 py-2 text-center text-[13px] font-semibold"
       style={{ background: "rgba(245,177,32,.14)", color: "#E8620C" }}
     >
       {texte} · aucune donnée réelle

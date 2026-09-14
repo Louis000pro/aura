@@ -39,7 +39,7 @@ export default function MouvementsRow({ onOuvrir }: {
   return (
     <section aria-labelledby="titre-mouvements">
       <div className="flex items-center gap-2 mb-2.5">
-        <h3 id="titre-mouvements" className="text-[15px] font-semibold" style={{ color: "var(--text-1)" }}>
+        <h3 id="titre-mouvements" className="text-[16px] font-semibold" style={{ color: "var(--text-1)" }}>
           Les mouvements
         </h3>
         <span className="text-[11px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 flex-shrink-0"

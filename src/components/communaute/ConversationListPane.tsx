@@ -244,14 +244,14 @@ export default function ConversationListPane({
             <Image src={user.avatar} alt="" width={36} height={36}
               className="h-9 w-9 rounded-full object-cover" unoptimized />
           ) : (
-            <div className="flex h-9 w-9 items-center justify-center rounded-full text-[14px] font-bold text-white"
+            <div className="flex h-9 w-9 items-center justify-center rounded-full text-[13px] font-bold text-white"
               style={{ background: "linear-gradient(135deg, #8B5CF6, #C13BC1)" }}>
               {(user?.pseudo ?? "?").charAt(0).toUpperCase()}
             </div>
           )}
         </button>
 
-        <h1 className="flex-1 text-2xl font-extralight tracking-tight" style={{ color: "var(--text-1)" }}>
+        <h1 className="flex-1 text-[26px] font-extralight tracking-tight" style={{ color: "var(--text-1)" }}>
           <em className="not-italic font-light" style={{
             background: "linear-gradient(135deg,var(--accent),var(--gold))",
             WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
@@ -308,7 +308,7 @@ export default function ConversationListPane({
               value={recherche}
               onChange={(e) => setRecherche(e.target.value)}
               placeholder="Rechercher une discussion"
-              className="min-w-0 flex-1 bg-transparent text-[13.5px] outline-none placeholder:text-[var(--text-3)]"
+              className="min-w-0 flex-1 bg-transparent text-[16px] outline-none placeholder:text-[var(--text-3)]"
               style={{ color: "var(--text-1)" }}
             />
             {recherche && (
@@ -322,7 +322,7 @@ export default function ConversationListPane({
             <div className="mt-2 flex gap-1 rounded-xl p-1" style={{ background: "rgba(var(--text-3-rgb), .08)" }}>
               <button
                 onClick={() => setVoirArchives(false)}
-                className="flex-1 rounded-lg px-3 py-1.5 text-[12px] font-semibold transition-colors"
+                className="flex-1 rounded-lg px-3 py-1.5 text-[13px] font-semibold transition-colors"
                 style={{
                   color: archivesActives ? "var(--text-3)" : "var(--text-0)",
                   background: archivesActives ? "transparent" : "rgb(var(--surface-rgb))",
@@ -332,7 +332,7 @@ export default function ConversationListPane({
               </button>
               <button
                 onClick={() => setVoirArchives(true)}
-                className="flex-1 rounded-lg px-3 py-1.5 text-[12px] font-semibold transition-colors"
+                className="flex-1 rounded-lg px-3 py-1.5 text-[13px] font-semibold transition-colors"
                 style={{
                   color: archivesActives ? "var(--text-0)" : "var(--text-3)",
                   background: archivesActives ? "rgb(var(--surface-rgb))" : "transparent",
@@ -346,14 +346,14 @@ export default function ConversationListPane({
       )}
 
       {erreur && (
-        <p className="px-4 pb-2 text-[13.5px] font-medium" style={{ color: "#E8620C" }}>{erreur}</p>
+        <p className="px-4 pb-2 text-[13px] font-medium" style={{ color: "#E8620C" }}>{erreur}</p>
       )}
 
       {erreurChargement && (
         <div className="mx-4 mb-3 flex items-center justify-between gap-3 rounded-xl px-3 py-2.5"
           style={{ background: "rgba(232,98,12,.1)", color: "#E8620C" }}>
-          <p className="text-[12.5px] font-medium">{erreurChargement}</p>
-          <button onClick={() => void recharger()} className="shrink-0 text-[12px] font-bold">
+          <p className="text-[13px] font-medium">{erreurChargement}</p>
+          <button onClick={() => void recharger()} className="shrink-0 text-[13px] font-bold">
             Réessayer
           </button>
         </div>
@@ -365,7 +365,7 @@ export default function ConversationListPane({
         ? (
           <div className="flex flex-1 flex-col items-center justify-center px-8 pb-16 text-center">
             <Search className="h-6 w-6" style={{ color: "var(--text-3)" }} />
-            <p className="mt-3 text-[14px] font-medium" style={{ color: "var(--text-2)" }}>
+            <p className="mt-3 text-[16px] font-medium" style={{ color: "var(--text-2)" }}>
               {recherche ? "Aucune discussion trouvée." : "Aucune discussion archivée."}
             </p>
           </div>
@@ -391,7 +391,7 @@ export default function ConversationListPane({
               <b className="block truncate text-[16px]" style={{ color: "var(--text-0)" }}>
                 {titreConversation(selection, user!.id)}
               </b>
-              <span className="text-[12px]" style={{ color: "var(--text-3)" }}>
+              <span className="text-[11px]" style={{ color: "var(--text-3)" }}>
                 Ces réglages ne concernent que toi.
               </span>
             </div>
@@ -403,7 +403,7 @@ export default function ConversationListPane({
               style={{ color: "var(--text-1)" }}
             >
               <Pin className="h-4.5 w-4.5" />
-              <span className="text-[14.5px] font-medium">
+              <span className="text-[16px] font-medium">
                 {selection.epinglee ? "Désépingler" : "Épingler"}
               </span>
             </button>
@@ -416,7 +416,7 @@ export default function ConversationListPane({
               {selection.sourde
                 ? <Volume2 className="h-4.5 w-4.5" />
                 : <VolumeX className="h-4.5 w-4.5" />}
-              <span className="text-[14.5px] font-medium">
+              <span className="text-[16px] font-medium">
                 {selection.sourde ? "Réactiver les notifications" : "Mettre en sourdine"}
               </span>
             </button>
@@ -429,7 +429,7 @@ export default function ConversationListPane({
               {selection.archivee
                 ? <ArchiveRestore className="h-4.5 w-4.5" />
                 : <Archive className="h-4.5 w-4.5" />}
-              <span className="text-[14.5px] font-medium">
+              <span className="text-[16px] font-medium">
                 {selection.archivee ? "Sortir des archives" : "Archiver"}
               </span>
             </button>
@@ -449,7 +449,7 @@ export default function ConversationListPane({
             </button>
             <button
               onClick={() => setSheet("nouvelle")}
-              className="mt-3 flex w-full items-center justify-center gap-2 border px-5 py-4 text-[15px] font-medium"
+              className="mt-3 flex w-full items-center justify-center gap-2 border px-5 py-4 text-[16px] font-medium"
               style={{ borderRadius: "var(--r-controle)", borderColor: "rgba(var(--text-3-rgb), .3)", color: "var(--text-1)" }}
             >
               <PenLine className="h-4.5 w-4.5" />
@@ -565,13 +565,13 @@ function Liste({ convs, moi, activeId, onPrefetch, onActions }: {
                       cosmetiques={rang.cosmetiques}
                       pseudo={titre}
                       classNameEnveloppe="flex min-w-0 items-center gap-1.5"
-                      className="block min-w-0 truncate text-[14.5px]"
+                      className="block min-w-0 truncate text-[16px]"
                       style={{ color: "var(--text-0)", fontWeight: c.nonLus > 0 ? 750 : 600 }}
                       tailleGemme={14}
                     />
                   ) : (
                     <b
-                      className="block min-w-0 truncate text-[14.5px]"
+                      className="block min-w-0 truncate text-[16px]"
                       style={{ color: "var(--text-0)", fontWeight: c.nonLus > 0 ? 750 : 600 }}
                     >
                       {titre}
@@ -633,7 +633,7 @@ function Vide({ onRelais, onDiscussion, occupe }: {
       <h2 className="mt-6 text-[20px] font-bold" style={{ color: "var(--text-0)" }}>
         Cette affiche est vide.
       </h2>
-      <p className="mt-2 max-w-[300px] text-[14.5px] leading-relaxed" style={{ color: "var(--text-body)" }}>
+      <p className="mt-2 max-w-[300px] text-[16px] leading-relaxed" style={{ color: "var(--text-body)" }}>
         Elle se dévoile à deux, une séance à la fois. Choisis avec qui : le
         relais démarre dans votre discussion.
       </p>
@@ -650,7 +650,7 @@ function Vide({ onRelais, onDiscussion, occupe }: {
 
       <button
         onClick={onDiscussion}
-        className="mt-3 flex w-full max-w-[320px] items-center justify-center gap-2 border px-5 py-3.5 text-[15px] font-medium"
+        className="mt-3 flex w-full max-w-[320px] items-center justify-center gap-2 border px-5 py-3.5 text-[16px] font-medium"
         style={{ borderRadius: "var(--r-controle)", borderColor: "rgba(var(--text-3-rgb), .3)", color: "var(--text-1)" }}
       >
         <PenLine className="h-4 w-4" />
@@ -703,7 +703,7 @@ function NouvelleDiscussion({ moi, onFermer, onCree }: {
   return (
     <Sheet onFermer={onFermer}>
       <div className="mb-3 flex items-center justify-between">
-        <b className="text-[17px] font-bold" style={{ color: "var(--text-0)" }}>Nouvelle discussion</b>
+        <b className="text-[20px] font-bold" style={{ color: "var(--text-0)" }}>Nouvelle discussion</b>
         <button onClick={onFermer} aria-label="Fermer"><X className="h-5 w-5" style={{ color: "var(--text-3)" }} /></button>
       </div>
 
@@ -712,7 +712,7 @@ function NouvelleDiscussion({ moi, onFermer, onCree }: {
           value={nom}
           onChange={(e) => setNom(e.target.value)}
           placeholder="Nom du groupe (facultatif)"
-          className="mb-3 w-full rounded-xl border px-4 py-3 text-[14.5px] outline-none"
+          className="mb-3 w-full rounded-xl border px-4 py-3 text-[16px] outline-none"
           style={{ borderColor: "rgba(var(--text-3-rgb), .3)", background: "transparent", color: "var(--text-1)" }}
         />
       )}
@@ -723,7 +723,7 @@ function NouvelleDiscussion({ moi, onFermer, onCree }: {
             <Loader2 className="h-5 w-5 animate-spin" style={{ color: "var(--text-3)" }} />
           </div>
         ) : gens.length === 0 ? (
-          <p className="py-6 text-center text-[14px] leading-relaxed" style={{ color: "var(--text-2)" }}>
+          <p className="py-6 text-center text-[16px] leading-relaxed" style={{ color: "var(--text-2)" }}>
             Tu n&apos;as encore personne à qui écrire.<br />
             Lance un relais : le lien d&apos;invitation te trouvera quelqu&apos;un.
           </p>
@@ -744,12 +744,12 @@ function NouvelleDiscussion({ moi, onFermer, onCree }: {
                     cosmetiques={rang.cosmetiques}
                     pseudo={p.pseudo}
                     classNameEnveloppe="flex min-w-0 flex-1 items-center gap-1.5"
-                    className="truncate text-[14.5px] font-medium"
+                    className="truncate text-[16px] font-medium"
                     style={{ color: "var(--text-1)" }}
                     tailleGemme={14}
                   />
                 ) : (
-                  <span className="flex-1 truncate text-[14.5px] font-medium" style={{ color: "var(--text-1)" }}>
+                  <span className="flex-1 truncate text-[16px] font-medium" style={{ color: "var(--text-1)" }}>
                     {p.pseudo}
                   </span>
                 )}
@@ -768,7 +768,7 @@ function NouvelleDiscussion({ moi, onFermer, onCree }: {
         )}
       </div>
 
-      {erreur && <p className="mt-3 text-center text-[13.5px]" style={{ color: "#E8620C" }}>{erreur}</p>}
+      {erreur && <p className="mt-3 text-center text-[13px]" style={{ color: "#E8620C" }}>{erreur}</p>}
 
       <button
         onClick={creer}

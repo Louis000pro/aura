@@ -245,7 +245,7 @@ export default function NotificationBell({ side = "right" }: { side?: "right" | 
             className="px-4 pt-4 pb-2.5 flex items-center justify-between flex-shrink-0"
             style={{ borderBottom: "1px solid rgba(var(--accent-rgb),0.1)" }}
           >
-            <span className="text-sm font-semibold flex items-center gap-1.5" style={{ color: "var(--text-1)" }}>
+            <span className="text-[16px] font-semibold flex items-center gap-1.5" style={{ color: "var(--text-1)" }}>
               🔔 Notifications
             </span>
             {unreadNotifs > 0 && (
@@ -268,8 +268,8 @@ export default function NotificationBell({ side = "right" }: { side?: "right" | 
 
             {notifs.length === 0 ? (
               <div className="flex flex-col items-center py-10 gap-2">
-                <span className="text-3xl">🔔</span>
-                <p className="text-sm font-light" style={{ color: "var(--text-3)" }}>
+                <span className="text-[26px]">🔔</span>
+                <p className="text-[16px] font-light" style={{ color: "var(--text-3)" }}>
                   Aucune notification
                 </p>
               </div>
@@ -290,7 +290,7 @@ export default function NotificationBell({ side = "right" }: { side?: "right" | 
                     {/* Avatar + badge type */}
                     <div className="relative flex-shrink-0">
                       <div
-                        className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-semibold overflow-hidden"
+                        className="w-9 h-9 rounded-full flex items-center justify-center text-[16px] font-semibold overflow-hidden"
                         style={{
                           background: n.from_avatar_url ? "transparent" : "linear-gradient(135deg, var(--violet-mid) 0%, var(--accent) 100%)",
                           color: "var(--text-1)",
