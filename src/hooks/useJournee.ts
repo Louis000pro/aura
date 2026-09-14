@@ -20,7 +20,7 @@
    `terminerSeance` qui referme, depuis le lanceur global.
    ════════════════════════════════════════════════════════════════════ */
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useWorkoutLaunch } from "@/context/WorkoutLaunchContext";
 import { createClient } from "@/lib/supabase";
@@ -133,8 +133,20 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
   const today = todayYmd();
   const semaineDates = useMemo(() => weekDates(new Date(today + "T00:00:00")), [today]);
 
+  /* ⚠️ UNE SEULE LECTURE DE LA JOURNÉE COMPTE À LA FOIS, ET C'EST LA DERNIÈRE.
+     `charger` fait huit requêtes en série puis écrit dix états, et il est
+     relancé par `EVT_JOURNEE` — que la fin de séance et les écrans du planning
+     émettent, parfois à quelques millisecondes l'un de l'autre. Deux lectures
+     qui se chevauchent écrivaient donc leurs dix états en s'entrelaçant : le
+     héros pouvait montrer la semaine de la lecture A et l'étape de la lecture
+     B, c'est-à-dire décrire un état qui n'a jamais existé. Même procédé que le
+     numéro de lecture d'AuthContext : la lecture dépassée n'écrit plus rien. */
+  const lecture = useRef(0);
+
   const charger = useCallback(async () => {
     if (!user) return;
+    const numero = ++lecture.current;
+    const perimee = () => lecture.current !== numero;
     const supabase = createClient();
     const { data: prof } = await supabase
       .from("profiles")
@@ -145,6 +157,7 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
     const aRepondu = !!(prof && (prof.onboarding_level || prof.onboarding_sessions_week
       || (Array.isArray(prof.onboarding_goals) && prof.onboarding_goals.length > 0)));
     const { location, equip } = await loadLieu(user.id);
+    if (perimee()) return;
     setNiveau(prof?.onboarding_level ?? null);
 
     if (!aRepondu) {
@@ -168,7 +181,9 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
     try {
       /* ⚠️ LIRE N'ÉCRIT PLUS RIEN (V5). Une semaine sans ligne est une
          semaine sans rien de prévu, et c'est une réponse valide. */
-      setSemaine(await lireSemaine(user.id, weekDates()));
+      const lue = await lireSemaine(user.id, weekDates());
+      if (perimee()) return;
+      setSemaine(lue);
       setGen(reglages);
       setBesoinSetup(false);
     } catch (e) {
@@ -184,6 +199,7 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
       const actif = creerProgramme
         ? await getOrCreateProgramme(user.id)
         : await lireProgrammeActif(user.id);
+      if (perimee()) return;
       setProgramme(actif);
       /* ⚠️ V8 · L'ADAPTATION SE LIT AVANT L'ÉTAPE, PARCE QU'ELLE DÉCIDE
          DE L'ÉTAPE. Une requête, et seulement s'il y a un programme :
@@ -191,10 +207,12 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
          rattachée au programme ACTIF, donc une nouvelle version du
          programme cesse d'être adaptée d'elle-même, sans écriture. */
       const couche = actif ? await adaptationDuJour(user.id, actif.programme.id, todayYmd()) : null;
+      if (perimee()) return;
       setAdaptation(couche);
       const suivante = actif
         ? await etapeSuivanteDe(user.id, actif, (e) => etapeMasquee(e.id, couche))
         : null;
+      if (perimee()) return;
       setEtape(suivante);
       /* ⚠️ ET ON DEMANDE À LA BASE SI CETTE ÉTAPE A DÉJÀ UN JOUR.
          C'est la réparation du défaut du 2026-09-06 : le héros ne
@@ -205,10 +223,13 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
          la semaine chargée ne suffit pas : depuis que le sélecteur
          propose quinze jours, elle vit souvent au-delà. Une requête, sur
          la clé de l'invariant lui-même, et seulement s'il y a une étape. */
-      setReservation(suivante ? await reservationDeLEtape(user.id, suivante.id) : null);
+      const reservee = suivante ? await reservationDeLEtape(user.id, suivante.id) : null;
+      if (perimee()) return;
+      setReservation(reservee);
     } catch (e) {
       console.error("Programme load error", e);
     }
+    if (perimee()) return;
     setPret(true);
   }, [user, creerProgramme]);
 

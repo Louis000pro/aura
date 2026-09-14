@@ -52,6 +52,19 @@ function mapUser(sbUser: SBUser, profile?: { pseudo?: string; avatar_url?: strin
   };
 }
 
+/** Vrai si les deux objets décrivent exactement le même compte, champ par champ. */
+function memeUser(a: User, b: User): boolean {
+  return a.id === b.id
+    && a.pseudo === b.pseudo
+    && a.name === b.name
+    && a.lastName === b.lastName
+    && a.email === b.email
+    && a.avatar === b.avatar
+    && !!a.is_admin === !!b.is_admin
+    && !!a.is_certified === !!b.is_certified
+    && !!a.is_premium === !!b.is_premium;
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const supabase = createClient();
   const [user, setUser]               = useState<User | null>(null);
@@ -77,12 +90,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
      n'a rien à vérifier. */
   const lecture = useRef(0);
 
+  /* ⚠️ UNE VALEUR IDENTIQUE NE DOIT PAS CRÉER UN NOUVEL OBJET, ET CE N'EST PAS
+     une élégance : une trentaine d'effets de l'app ont `user` dans leurs
+     dépendances, donc chaque nouvelle identité relance leurs lectures. La
+     journée de l'accueil, à elle seule, en refait sept ou huit
+     (`useJournee.charger` dépend de `user`). Or `enrichUser` posait DEUX
+     objets neufs par évènement d'authentification, et il y en a au moins un
+     par heure (rafraîchissement du jeton) : on payait donc ces lectures en
+     double, pour un compte qui n'avait pas changé d'un caractère. */
+  const poserUser = (u: User) => {
+    setUser((prev) => (prev && memeUser(prev, u) ? prev : u));
+  };
+
   // Enrichit l'utilisateur avec le pseudo/avatar depuis la table profiles (non-bloquant)
   const enrichUser = (sbUser: SBUser) => {
     const numero = ++lecture.current;
     const perimee = () => lecture.current !== numero;
-    // D'abord on set avec les metadata (immédiat, sans attendre la DB)
-    setUser(mapUser(sbUser));
+    /* ⚠️ ET ON NE REDESCEND JAMAIS À `user_metadata` POUR UN COMPTE DÉJÀ
+       CHARGÉ. C'était le second défaut du même geste : ce `setUser` partait
+       inconditionnellement, or les metadata ne portent ni `is_premium`, ni
+       `is_certified`, ni `is_admin`, et pas toujours le pseudo (un compte
+       Google n'en a pas). À chaque rafraîchissement de jeton, un abonné
+       redevenait donc un compte gratuit et un pseudo Google redevenait le
+       début de son adresse e-mail, le temps d'un aller-retour avec la base :
+       cadenas Premium, bouclier d'administration et pseudo clignotaient.
+       Ce qu'on a déjà est strictement plus riche ; on ne le remplace que
+       s'il s'agit d'un AUTRE compte, ou du premier chargement. */
+    setUser((prev) => (prev && prev.id === sbUser.id ? prev : mapUser(sbUser)));
     // Puis on fetch le profil DB et on met à jour (async, non-bloquant)
     (async () => {
       let res = await supabase
@@ -119,10 +153,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       {
         if (data && data.pseudo && String(data.pseudo).trim()) {
-          setUser(mapUser(sbUser, data));
+          poserUser(mapUser(sbUser, data));
         } else {
           // Profil manquant OU pseudo vide (compte Google) → création / réparation
-          if (data) setUser(mapUser(sbUser, data)); // affichage immédiat avec ce qu'on a
+          if (data) poserUser(mapUser(sbUser, data)); // affichage immédiat avec ce qu'on a
           // `fetchAuth` pose le jeton : la route identifie le compte par là,
           // elle n'accepte plus d'identifiant venu du client.
           void fetchAuth("/api/me/ensure-profile", {
@@ -136,7 +170,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             }),
           }).then((r) => r.json()).then((res) => {
             if (perimee()) return;
-            if (res?.profile) setUser(mapUser(sbUser, res.profile));
+            if (res?.profile) poserUser(mapUser(sbUser, res.profile));
           }).catch(() => {});
         }
       }
