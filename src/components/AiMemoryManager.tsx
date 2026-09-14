@@ -46,6 +46,10 @@ export default function AiMemoryManager({ onClose }: { onClose: () => void }) {
   const [memories, setMemories] = useState<AiMemory[]>([]);
   const [loading, setLoading] = useState(true);
   const [clearing, setClearing] = useState(false);
+  /** L'identifiant en cours d'oubli : le bouton doit dire qu'il travaille. */
+  const [oubli, setOubli] = useState<string | null>(null);
+  /** Ce que la base a refusé. Se dit dans le pied, à côté de la promesse. */
+  const [echec, setEchec] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user?.id) { setLoading(false); return; }
@@ -58,20 +62,34 @@ export default function AiMemoryManager({ onClose }: { onClose: () => void }) {
       .then(({ data }) => { setMemories((data ?? []) as AiMemory[]); setLoading(false); });
   }, [user?.id]);
 
+  /* ⚠️ CET ÉCRAN PROMET « J'OUBLIE TOUT DE SUITE CE QUE TU RETIRES », DONC IL
+     N'A PAS LE DROIT DE SE TROMPER. L'erreur des deux suppressions était
+     ignorée, et la liste vidée AVANT de savoir : le souvenir quittait l'écran,
+     restait en base, et le Guide continuait de s'en servir à la conversation
+     suivante. Une promesse tenue à l'écran et pas dans les faits est pire
+     qu'aucune promesse, et c'est la seule fonction du produit dont le sens EST
+     le contrôle de ses propres données. On attend donc la base : la ligne ne
+     part de l'écran qu'une fois réellement partie. */
   const removeOne = async (id: string) => {
-    setMemories((prev) => prev.filter((m) => m.id !== id));
+    setEchec(null);
+    setOubli(id);
     const supabase = createClient();
-    await supabase.from("ai_memories").delete().eq("id", id);
+    const { error } = await supabase.from("ai_memories").delete().eq("id", id);
+    setOubli(null);
+    if (error) { setEchec("Pas pu l’oublier. Il est toujours là, réessaie."); return; }
+    setMemories((prev) => prev.filter((m) => m.id !== id));
   };
 
   const clearAll = async () => {
     if (!user?.id || memories.length === 0) return;
     if (!window.confirm("Effacer tout ce que ton Guide retient sur toi ? Cette action est définitive.")) return;
+    setEchec(null);
     setClearing(true);
     const supabase = createClient();
-    await supabase.from("ai_memories").delete().eq("user_id", user.id);
-    setMemories([]);
+    const { error } = await supabase.from("ai_memories").delete().eq("user_id", user.id);
     setClearing(false);
+    if (error) { setEchec("Pas pu tout effacer. Rien n’a été retiré, réessaie."); return; }
+    setMemories([]);
   };
 
   return (
@@ -138,12 +156,13 @@ export default function AiMemoryManager({ onClose }: { onClose: () => void }) {
                     </div>
                     <motion.button
                       whileTap={{ scale: 0.94 }}
-                      onClick={() => removeOne(m.id)}
+                      onClick={() => { void removeOne(m.id); }}
                       type="button"
+                      disabled={oubli !== null}
                       className="mt-0.5 px-1 text-[11px] font-semibold cursor-pointer flex-shrink-0"
                       style={{ color: "var(--text-3)" }}
                     >
-                      Oublier
+                      {oubli === m.id ? "…" : "Oublier"}
                     </motion.button>
                   </motion.div>
                 );
@@ -157,9 +176,18 @@ export default function AiMemoryManager({ onClose }: { onClose: () => void }) {
           <div className="flex-shrink-0 px-5 pb-6 pt-3" style={{ borderTop: "1px solid rgba(var(--violet-mid-rgb),0.25)" }}>
             {/* Sa promesse. Elle ne s'affiche qu'avec la liste : sur l'écran
                 vide, l'invitation du dessus est déjà sa phrase. */}
-            <p className="mb-3 text-[11px] font-light leading-snug" style={{ color: "var(--text-3)" }}>
-              {voix(guide, "memoire.ecran")}
-            </p>
+            {/* Le refus se dit LÀ, juste au-dessus de la promesse qu'il
+                contredit, et il remplace la promesse le temps de sa lecture :
+                les deux côte à côte se répondraient. */}
+            {echec ? (
+              <p className="mb-3 text-[11px] font-semibold leading-snug" style={{ color: "#EF4444" }}>
+                {echec}
+              </p>
+            ) : (
+              <p className="mb-3 text-[11px] font-light leading-snug" style={{ color: "var(--text-3)" }}>
+                {voix(guide, "memoire.ecran")}
+              </p>
+            )}
             <motion.button
               whileTap={{ scale: 0.98 }}
               onClick={clearAll}

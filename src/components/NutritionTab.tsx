@@ -2362,9 +2362,19 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
     else showToast("Erreur lors de l’ajout");
   };
 
-  /* ── Suppression repas ─── */
+  /* ── Suppression repas ───
+     ⚠️ ON NE RETIRE LA LIGNE DE L'ÉCRAN QUE SI LA BASE L'A VRAIMENT RETIRÉE.
+     L'erreur était ignorée : le repas disparaissait de la liste, le message
+     disait « Repas supprimé », et la ligne restait en base. Deux conséquences
+     immédiates, pas une. Elle revenait au rechargement suivant ; et surtout le
+     Guide relit le journal EN BASE (guideNutrition), donc il continuait de
+     citer un repas que l'écran venait d'effacer — exactement le désaccord
+     écran/Guide qui a coûté les correctifs V9A bis et ter. Les cinq ajouts
+     juste au-dessus attendent déjà leur ligne : la suppression était la seule
+     écriture du journal à ne pas le faire. */
   const deleteMeal = async (id: string) => {
-    await supabase.from("nutrition_logs").delete().eq("id", id);
+    const { error } = await supabase.from("nutrition_logs").delete().eq("id", id);
+    if (error) { showToast("Pas pu supprimer ce repas, réessaie"); return; }
     setMeals(prev => prev.filter(m => m.id !== id));
     signalerRepas();
     showToast("Repas supprimé");

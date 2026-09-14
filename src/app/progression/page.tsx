@@ -2840,10 +2840,17 @@ export default function ProgressionPage() {
   };
 
   /* ── Actions bibliothèque perso ── */
+  /* ⚠️ LES DEUX ANNONÇAIENT UN RÉSULTAT QU'ELLES N'AVAIENT PAS VÉRIFIÉ.
+     L'erreur de l'écriture était ignorée : l'écran affichait « Séance publiée »
+     ou « Séance supprimée », la carte changeait ou disparaissait, et la base
+     n'avait pas bougé. Pour la suppression le contresens allait plus loin : le
+     plafond gratuit se compte en relisant la base, donc on annonçait une place
+     libérée puis on refusait la création juste après. */
   const handleVisibilityChange = useCallback(async (sessionId: string, vis: Visibility) => {
     if (user) {
       const supabase = createClient();
-      await supabase.from("custom_sessions").update({ visibility: vis }).eq("id", sessionId);
+      const { error } = await supabase.from("custom_sessions").update({ visibility: vis }).eq("id", sessionId);
+      if (error) { showToast("Pas pu changer la visibilité, réessaie"); return; }
     }
     setCustomSessions((prev) => prev.map((s) => s.id === sessionId ? { ...s, visibility: vis } : s));
     const labels = { private: "Séance privée ✓", friends: "Visible par tes amis ✓", public: "Séance publiée 🌐" };
@@ -2853,7 +2860,8 @@ export default function ProgressionPage() {
   const handleDelete = async (id: string) => {
     if (user) {
       const supabase = createClient();
-      await supabase.from("custom_sessions").delete().eq("id", id);
+      const { error } = await supabase.from("custom_sessions").delete().eq("id", id);
+      if (error) { showToast("Pas pu supprimer cette séance, réessaie"); return; }
     }
     setCustomSessions((p) => p.filter((cs) => cs.id !== id));
     showToast("Séance supprimée");

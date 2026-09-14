@@ -9,7 +9,7 @@
      profil ou sur celui de quelqu'un d'autre.
    ════════════════════════════════════════════════════════════════════ */
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { Search, X, UserCheck, UserPlus } from "lucide-react";
 import Link from "next/link";
@@ -77,19 +77,38 @@ export default function FollowListModal({
     fetchList();
   }, [type, ownerId, user]);
 
+  /* ⚠️ LE BOUTON REVIENT EN ARRIÈRE QUAND LA BASE DIT NON.
+     Les deux écritures étaient lancées et leur erreur jamais lue : le bouton
+     basculait, l'écran affirmait « Ami », et la relation n'existait pas (ou
+     n'avait pas été retirée). On repose donc l'état d'avant, ce qui est le
+     signal juste : ce qui n'a pas pris ne reste pas affiché comme pris.
+     Et un même profil ne part qu'une fois à la fois : deux touchers rapides
+     lançaient un ajout et un retrait qui se couraient l'un après l'autre. */
+  const enVol = useRef<Set<string>>(new Set());
   const handleFollow = async (profile: RealFollowUser) => {
     if (!user) return;
+    if (enVol.current.has(profile.id)) return;
+    enVol.current.add(profile.id);
     const supabase = createClient();
     const isF = followingIds.has(profile.id);
-    setFollowingIds((prev) => {
+    const poser = (ami: boolean) => setFollowingIds((prev) => {
       const next = new Set(prev);
-      isF ? next.delete(profile.id) : next.add(profile.id);
+      if (ami) next.add(profile.id); else next.delete(profile.id);
       return next;
     });
-    if (isF) {
-      await supabase.from("followers").delete().eq("follower_id", user.id).eq("following_id", profile.id);
-    } else {
-      await supabase.from("followers").insert({ follower_id: user.id, following_id: profile.id });
+    poser(!isF);
+    try {
+      if (isF) {
+        const { error } = await supabase.from("followers").delete().eq("follower_id", user.id).eq("following_id", profile.id);
+        if (error) { poser(true); return; }
+      } else {
+        const { error } = await supabase.from("followers").insert({ follower_id: user.id, following_id: profile.id });
+        if (error) { poser(false); return; }
+      }
+    } finally {
+      enVol.current.delete(profile.id);
+    }
+    if (!isF) {
       void supabase.auth.getSession().then(({ data: { session } }) => {
         if (!session) return;
         fetch("/api/notifications/follow", {

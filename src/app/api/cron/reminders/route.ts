@@ -347,6 +347,16 @@ async function portraits(
     console.warn("[reminders] notification_rappels illisible, rappels suspendus :", journalRes.error.message);
   }
 
+  /* ⚠️ ET LE PLANNING EST LE SEUL DONT L’ÉCHEC NE LAISSAIT AUCUNE TRACE, alors
+     qu’il coupe le plus de rappels d’un coup. Depuis V5b, `rappelPour` se tait
+     tant qu’aucune séance n’est datée aujourd’hui : une lecture ratée met donc
+     `seancePrevue` à `null` pour TOUT LE MONDE, et la soirée passe en silence
+     sans qu’une seule ligne ne le dise. On ne suspend rien (se taire est déjà
+     le comportement voulu quand rien n’est prévu), on le rend diagnosticable. */
+  if (planningRes.error) {
+    console.warn("[reminders] planning illisible, aucun rappel d’entraînement ce soir :", planningRes.error.message);
+  }
+
   return { carte, presenceFiable: !presenceRes.error, journalFiable: !journalRes.error };
 }
 
