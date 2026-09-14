@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { poserChrome } from "@/lib/chromeNavigateur";
 
 export type ThemePreference = "system" | "light" | "dark";
 export type Theme = "light" | "dark";
@@ -33,8 +34,12 @@ function resolveIsDark(pref: ThemePreference): boolean {
 /** Pose ou retire data-theme="dark" sur <html> selon la préférence. */
 function applyTheme(pref: ThemePreference): void {
   if (typeof document === "undefined") return;
-  if (resolveIsDark(pref)) document.documentElement.setAttribute("data-theme", "dark");
+  const sombre = resolveIsDark(pref);
+  if (sombre) document.documentElement.setAttribute("data-theme", "dark");
   else document.documentElement.removeAttribute("data-theme");
+  /* Le chrome du navigateur suit le thème RÉSOLU, jamais le réglage du
+     système : c'est le seul endroit où les deux sont déjà démêlés. */
+  poserChrome(sombre);
 }
 
 /**

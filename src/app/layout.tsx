@@ -21,6 +21,7 @@ import AssistantSheet from "@/components/AssistantSheet";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { PLANS, VENTE_OUVERTE } from "@/lib/plans";
+import { CHROME_CLAIR, CHROME_SOMBRE } from "@/lib/chromeNavigateur";
 
 /* UNE SEULE FAMILLE POUR TOUT VAIIYA, ET C'EST LA DÉCISION D'IDENTITÉ.
    Archivo est une grotesque à AXE DE LARGEUR variable (62 à 125). La
@@ -168,7 +169,12 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
-  themeColor: "#FFFFFF",
+  /* Le fond réellement peint sous la page en thème clair, et pas un blanc pur :
+     le chrome du navigateur et la page ne doivent pas montrer deux couleurs.
+     Le thème sombre corrige cette valeur avant le premier paint, dans le script
+     ci-dessous. Voir `lib/chromeNavigateur.ts` pour la raison qui interdit une
+     média-requête `prefers-color-scheme` ici. */
+  themeColor: CHROME_CLAIR,
 };
 
 export default function RootLayout({
@@ -192,7 +198,12 @@ export default function RootLayout({
         <link rel="apple-touch-startup-image" media="screen and (device-width:430px) and (device-height:932px) and (-webkit-device-pixel-ratio:3)" href="/splash/splash-1290x2796.png?v=5" />
         {/* Thème AVANT le paint → aucun flash. Préf. aura-theme : system|light|dark.
             Défaut = CLAIR (absence de préférence). Seul "system" explicite suit le téléphone. */}
-        <script dangerouslySetInnerHTML={{ __html: `(function(){try{var p;try{p=localStorage.getItem('aura-theme');}catch(e){}var dark=p==='dark'||(p==='system'&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);var el=document.documentElement;if(dark){el.setAttribute('data-theme','dark');}else{el.removeAttribute('data-theme');}}catch(e){}})();` }} />
+        {/* ⚠️ Le chrome du navigateur (la bande autour de l'app) suit le thème
+            ICI AUSSI, et pas seulement dans `useTheme` : sinon, en sombre, la
+            bande resterait claire jusqu'au premier rendu React, donc elle
+            clignoterait. Une seule balise à mettre à jour, jamais une seconde
+            à empiler — voir `lib/chromeNavigateur.ts`. */}
+        <script dangerouslySetInnerHTML={{ __html: `(function(){try{var p;try{p=localStorage.getItem('aura-theme');}catch(e){}var dark=p==='dark'||(p==='system'&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);var el=document.documentElement;if(dark){el.setAttribute('data-theme','dark');var m=document.querySelectorAll('meta[name="theme-color"]');for(var i=0;i<m.length;i++){m[i].setAttribute('content','${CHROME_SOMBRE}');}}else{el.removeAttribute('data-theme');}}catch(e){}})();` }} />
 
         {/* Qualité visuelle adaptative : pose la classe perf-lite sur <html> AVANT
             le paint. Priorité au réglage manuel (Paramètres → vaiiya-quality) ;
