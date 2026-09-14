@@ -86,7 +86,7 @@ function Eyebrow({ children, dark = false }: { children: React.ReactNode; dark?:
 /* ── Titre de section ── */
 function SectionTitle({ children }: { children: React.ReactNode }) {
   return (
-    <h2 className="mt-6 text-[clamp(1.9rem,4.6vw,3rem)] font-extralight tracking-tight leading-[1.12]"
+    <h2 className="mt-6 text-[clamp(1.625rem,4.6vw,3rem)] font-extralight tracking-tight leading-[1.12]"
       style={{ color: "var(--text-0)" }}>
       {children}
     </h2>
@@ -184,7 +184,7 @@ function SectionQuoi({ chiffres }: { chiffres: ChiffresPublics }) {
           <div className="mt-12 grid grid-cols-3 gap-3 max-w-lg mx-auto">
             {preuves.map((p) => (
               <div key={p.label} className="rounded-[22px] p-4 lg-surface lg-highlight">
-                <p className="text-[clamp(1.8rem,6vw,2.6rem)] font-extralight leading-none" style={ACCENT_TEXT}>{p.n}</p>
+                <p className="text-[clamp(1.625rem,6vw,2.6rem)] font-extralight leading-none" style={ACCENT_TEXT}>{p.n}</p>
                 <p className="mt-2 text-[13px] font-medium leading-tight" style={{ color: "var(--text-3)" }}>{p.label}</p>
               </div>
             ))}
@@ -613,7 +613,7 @@ function SectionTunnel() {
 
         <Reveal className="order-2 md:order-1">
           <Eyebrow dark>Le tunnel</Eyebrow>
-          <h2 className="mt-6 text-[clamp(1.9rem,4.6vw,3rem)] font-extralight tracking-tight text-white leading-[1.12]">
+          <h2 className="mt-6 text-[clamp(1.625rem,4.6vw,3rem)] font-extralight tracking-tight text-white leading-[1.12]">
             Tu n&rsquo;as pas besoin de savoir <span className="font-light" style={{ color: "#D9C6FF" }}>quoi faire</span>.
           </h2>
           <p className="mt-5 text-[16px] font-light leading-relaxed" style={{ color: "rgba(236,234,246,0.78)" }}>
@@ -1001,7 +1001,7 @@ function SectionFinale() {
           style={{ height: "70%", background: "linear-gradient(to top, rgba(var(--accent-rgb),0.12), transparent)" }} />
         <Reveal>
           <p className="relative text-[13px] font-semibold uppercase tracking-[0.24em] mb-5" style={{ color: "var(--accent)" }}>Vaiiya</p>
-          <h2 className="relative text-[clamp(2rem,6vw,3.6rem)] font-extralight leading-[1.02] tracking-tight mb-4" style={{ color: "var(--text-0)" }}>
+          <h2 className="relative text-[clamp(2.125rem,6vw,3.6rem)] font-extralight leading-[1.02] tracking-tight mb-4" style={{ color: "var(--text-0)" }}>
             Commence là où <span style={ACCENT_TEXT}>tu en es</span>.
           </h2>
           <p className="relative text-[16px] font-light max-w-md mx-auto leading-relaxed mb-9" style={{ color: "var(--text-2)" }}>

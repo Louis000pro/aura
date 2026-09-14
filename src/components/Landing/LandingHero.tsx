@@ -110,7 +110,7 @@ export default function LandingHero() {
             <motion.span
               initial={{ y: "108%", opacity: 0 }} animate={{ y: 0, opacity: 1 }}
               transition={{ duration: 0.9, delay: 0.25, ease: EASE }}
-              className="block text-[clamp(2.1rem,7.2vw,4.4rem)] font-extralight leading-[1.06] tracking-tight"
+              className="block text-[clamp(2.125rem,7.2vw,4.4rem)] font-extralight leading-[1.06] tracking-tight"
               style={{ color: "var(--text-0)" }}
             >
               La constance n&rsquo;est pas un don.
@@ -120,7 +120,7 @@ export default function LandingHero() {
             <motion.span
               initial={{ y: "108%", opacity: 0 }} animate={{ y: 0, opacity: 1 }}
               transition={{ duration: 0.9, delay: 0.45, ease: EASE }}
-              className="block text-[clamp(2.1rem,7.2vw,4.4rem)] font-light leading-[1.1] tracking-tight"
+              className="block text-[clamp(2.125rem,7.2vw,4.4rem)] font-light leading-[1.1] tracking-tight"
               style={ACCENT_TEXT}
             >
               C&rsquo;est un choix.

@@ -134,7 +134,7 @@ export default async function FicheExercicePage({
           </p>
           <h1
             className="font-light leading-[1.05]"
-            style={{ fontSize: "clamp(2.1rem,7vw,3.1rem)", letterSpacing: "-0.015em", color: "#1A1535" }}
+            style={{ fontSize: "clamp(2.125rem,7vw,3.1rem)", letterSpacing: "-0.015em", color: "#1A1535" }}
           >
             {lib.name}
           </h1>

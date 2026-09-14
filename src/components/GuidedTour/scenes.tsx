@@ -164,7 +164,7 @@ export function SceneOuverture({ pseudo, guide }: { pseudo: string; guide: Guide
         style={{
           position: "relative",
           margin: "2px 0 0",
-          fontSize: "clamp(30px, 8vw, 40px)",
+          fontSize: "clamp(26px, 8vw, 40px)",
           fontWeight: 300,
           letterSpacing: "-0.02em",
           background: `linear-gradient(100deg, ${VIOLET} 0%, #C3AEFF 42%, ${OR_CLAIR} 100%)`,

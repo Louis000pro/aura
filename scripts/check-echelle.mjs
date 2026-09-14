@@ -80,17 +80,35 @@ for (const f of fichiers) {
       else if (v < HEROS && !MARCHES.has(v)) ajoute(f, i, `${v}px n'est pas une marche (11 / 13 / 16 / 20 / 26, puis libre à partir de ${HEROS})`);
     }
 
-    /* ── 2 · les classes nommées de Tailwind rouvrent 12 / 14 / 18 / 24 ── */
+    /* ── 2 · un display fluide a le droit d'être fluide, mais sa borne
+       BASSE est une marche : c'est elle qui s'applique sur téléphone,
+       donc sur l'écran le plus fréquent. Mesuré sur la landing : le héros
+       rendait 33,6 px et les titres de section 30,4, trois pixels d'écart
+       là où l'échelle veut du contraste. ─────────────────────────────── */
+    /* ⚠️ Un clamp de police s'écrit de DEUX façons, et le témoin l'a
+       montré : `fontSize: "clamp(…)"` et `text-[clamp(…)]`. N'en lire
+       qu'une, c'est ne rien lire du côté de Tailwind, là où vit le héros
+       de la landing. */
+    for (const m of l.matchAll(/(?:font-size|fontSize): *"?clamp\( *([0-9.]+)(px|rem)|text-\[clamp\(([0-9.]+)(px|rem)/g)) {
+      const val = m[1] ?? m[3], unite = m[2] ?? m[4];
+      /* ⚠️ ON N'ARRONDIT PAS, ET LE TÉMOIN L'A MONTRÉ : `2.1rem` vaut 33,6 px
+         et s'arrondissait à 34, donc il passait pour le héros. Un demi-pixel
+         est exactement ce que cette échelle existe pour supprimer. */
+      const bas = unite === "rem" ? parseFloat(val) * 16 : +val;
+      if (bas < HEROS && !MARCHES.has(bas)) ajoute(f, i, `un clamp de police démarre à ${bas}px, qui n'est pas une marche`);
+    }
+
+    /* ── 3 · les classes nommées de Tailwind rouvrent 12 / 14 / 18 / 24 ── */
     const nommee = l.match(/\btext-(xs|sm|base|lg|xl|2xl|3xl|4xl|5xl|6xl)\b/);
     if (nommee) ajoute(f, i, `\`${nommee[0]}\` réintroduit une valeur hors échelle : écris la marche`);
 
-    /* ── 3 · une seconde définition du chiffre ─────────────────────── */
+    /* ── 4 · une seconde définition du chiffre ─────────────────────── */
     if (!estGlobals && l.includes("var(--chiffre)"))
       ajoute(f, i, "le chiffre se pose avec `.vy-nombre`, jamais en recopiant `var(--chiffre)`");
   });
 }
 
-/* ── 4 · les classes SONT l'échelle, et réciproquement ──────────────
+/* ── 5 · les classes SONT l'échelle, et réciproquement ──────────────
    Si `.vy-label` valait 12 pendant qu'un écran écrit 11 pour la même
    chose, il y aurait deux valeurs pour un seul rôle, donc pas d'échelle. */
 const css = readFileSync("src/app/globals.css", "utf8");

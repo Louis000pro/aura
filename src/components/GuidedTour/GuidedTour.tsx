@@ -327,7 +327,7 @@ export default function GuidedTour() {
               <h2
                 style={{
                   margin: 0,
-                  fontSize: "clamp(24px, 6.4vw, 31px)",
+                  fontSize: "clamp(26px, 6.4vw, 31px)",
                   fontWeight: 300,
                   letterSpacing: "-0.025em",
                   lineHeight: 1.18,

@@ -74,7 +74,7 @@ export default function ExercicesPage() {
         </p>
         <h1
           className="font-light leading-[1.08] mb-4"
-          style={{ fontSize: "clamp(2rem,6vw,2.9rem)", letterSpacing: "-0.01em", color: "#1A1535" }}
+          style={{ fontSize: "clamp(2.125rem,6vw,2.9rem)", letterSpacing: "-0.01em", color: "#1A1535" }}
         >
           Les exercices de musculation, montrés en mouvement
         </h1>
