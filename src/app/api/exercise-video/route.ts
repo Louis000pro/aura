@@ -8,6 +8,25 @@ import { garderIA } from "@/lib/aiLimits";
 
 const cache = new Map<string, { id: string | null; t: number }>();
 const TTL = 1000 * 60 * 60 * 24; // 24h
+/* ⚠️ LE CACHE EST BORNÉ, PARCE QUE SA CLÉ VIENT DE L'UTILISATEUR.
+   Le TTL n'était vérifié qu'à la LECTURE : une entrée périmée dont personne ne
+   redemande le nom restait en mémoire pour la vie de l'instance. Or `q` est du
+   texte libre, donc le nombre de clés possibles est infini — les 102 exercices
+   de l'app en sont l'usage normal, pas la limite. On range à l'écriture : les
+   entrées expirées partent, et au-delà du plafond c'est la plus ancienne qui
+   cède (`Map` garde l'ordre d'insertion). */
+const MAX_ENTREES = 500;
+
+function memoriser(cle: string, id: string | null): void {
+  const maintenant = Date.now();
+  for (const [k, v] of cache) if (maintenant - v.t >= TTL) cache.delete(k);
+  while (cache.size >= MAX_ENTREES) {
+    const plusAncienne = cache.keys().next().value;
+    if (plusAncienne === undefined) break;
+    cache.delete(plusAncienne);
+  }
+  cache.set(cle, { id, t: maintenant });
+}
 
 export async function GET(req: NextRequest) {
   const q = (req.nextUrl.searchParams.get("q") || "").trim();
@@ -42,7 +61,7 @@ export async function GET(req: NextRequest) {
     const html = await res.text();
     const m = html.match(/"videoId":"([a-zA-Z0-9_-]{11})"/);
     const id = m ? m[1] : null;
-    cache.set(key, { id, t: Date.now() });
+    memoriser(key, id);
     return NextResponse.json({ videoId: id });
   } catch (e) {
     console.error("[exercise-video]", e);

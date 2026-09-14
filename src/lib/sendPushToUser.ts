@@ -14,6 +14,7 @@
 
 import { createAdminClient } from "@/lib/supabase-admin";
 import { preferencesDe, type CategorieNotif } from "@/lib/notificationPrefs";
+import { appUrl } from "@/lib/serverEnv";
 
 export async function sendPushToUser(params: {
   user_id: string;
@@ -23,7 +24,7 @@ export async function sendPushToUser(params: {
   url?: string;
   icon?: string;
 }): Promise<void> {
-  const appUrl     = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+  const url        = appUrl();
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";
 
   if (!serviceKey) return;
@@ -42,7 +43,7 @@ export async function sendPushToUser(params: {
       icon:    params.icon,
     };
 
-    await fetch(`${appUrl}/api/notifications/push`, {
+    await fetch(`${url}/api/notifications/push`, {
       method:  "PUT",
       headers: {
         "Content-Type": "application/json",

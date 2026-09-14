@@ -33,7 +33,13 @@ async function fetchOFF(domain: string, code: string): Promise<OFFProduct | null
     const res = await fetch(
       `https://${domain}/api/v2/product/${encodeURIComponent(code)}.json?fields=${OFF_FIELDS}`,
       {
-        headers: { "User-Agent": "Aura-App/1.0 (contact@aura.app)" },
+        /* ⚠️ OpenFoodFacts demande une identification RÉELLE dans le
+           User-Agent, et s'en sert pour nous joindre plutôt que nous bloquer.
+           Celui-ci annonçait « Aura-App » et `contact@aura.app` : un nom que le
+           produit ne porte plus et une adresse qui n'existe pas, sur un domaine
+           qui n'est pas le nôtre. Le seul contact confirmé est celui des
+           mentions légales. */
+        headers: { "User-Agent": "Vaiiya/1.0 (bonjour@vaiiya.fr)" },
         signal: AbortSignal.timeout(6000),
       }
     );

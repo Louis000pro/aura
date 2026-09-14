@@ -3,7 +3,7 @@ import nodemailer from "nodemailer";
 import { createAdminClient } from "@/lib/supabase-admin";
 import { sendPushToUser } from "@/lib/sendPushToUser";
 import { ensureProfileForUser } from "@/lib/ensureProfile";
-import { cleanEnv } from "@/lib/serverEnv";
+import { appUrl, cleanEnv } from "@/lib/serverEnv";
 import { preferencesDe } from "@/lib/notificationPrefs";
 
 export async function POST(req: NextRequest) {
@@ -103,7 +103,7 @@ export async function POST(req: NextRequest) {
       if (insErr) console.error("[notify-follow] insert failed:", insErr);
     }
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://aura.app";
+    const url = appUrl();
 
     // Le push filtre lui-même sur la préférence ; l'e-mail doit suivre la
     // même règle, sinon couper « Les amis » dans ses réglages laisserait
@@ -169,7 +169,7 @@ export async function POST(req: NextRequest) {
 
     <!-- CTA -->
     <div style="text-align:center;margin-bottom:28px">
-      <a href="${appUrl}${lienAction}"
+      <a href="${url}${lienAction}"
          style="display:inline-block;padding:14px 32px;background:linear-gradient(135deg,#D4C0FF,#F5E6A3);color:#2D3748;text-decoration:none;border-radius:16px;font-size:14px;font-weight:600;box-shadow:0 4px 16px rgba(167,139,250,0.25)">
         ${desormaisAmis ? "Ouvrir la discussion" : "Voir la demande"}
       </a>
@@ -179,7 +179,7 @@ export async function POST(req: NextRequest) {
 
     <p style="text-align:center;font-size:11px;color:#A0AEC0;margin:0">
       Tu reçois cet email car tu as un compte Vaiiya (@${followedPseudo}).<br/>
-      <a href="${appUrl}/parametres" style="color:#A78BFA;text-decoration:none">Gérer mes notifications</a>
+      <a href="${url}/parametres" style="color:#A78BFA;text-decoration:none">Gérer mes notifications</a>
     </p>
 
   </div>

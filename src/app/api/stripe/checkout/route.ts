@@ -19,9 +19,10 @@ import Stripe from "stripe";
 import { createAdminClient } from "@/lib/supabase-admin";
 import { PLANS, VENTE_OUVERTE, isPaidPlan, type PlanId } from "@/lib/plans";
 import { souscriptionActiveChezStripe, synchroniserSouscription } from "@/lib/stripeSync";
+import { appUrl } from "@/lib/serverEnv";
 
 const SECRET = process.env.STRIPE_SECRET_KEY ?? "";
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://vaiiya.fr";
+const APP_URL = appUrl();
 
 export async function POST(req: NextRequest) {
   // La vente est fermée tant que l'identité du vendeur n'est pas publiée.

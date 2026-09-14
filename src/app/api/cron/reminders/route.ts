@@ -38,12 +38,13 @@ import {
   type Rappel,
 } from "@/lib/rappelsProfil";
 import { schemaIntentions } from "@/lib/planning";
+import { sujetVapid } from "@/lib/serverEnv";
 import type { GuideRef } from "@/lib/guides";
 import { ANNOUNCEMENTS, JOURS_ANNONCE_POUSSABLE, type Announcement } from "@/lib/announcements";
 
 const VAPID_PUBLIC_KEY  = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? "";
 const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY ?? "";
-const VAPID_SUBJECT     = process.env.VAPID_SUBJECT ?? "mailto:bonjour@vaiiya.fr";
+const VAPID_SUBJECT     = sujetVapid();
 
 if (VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY) {
   webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
