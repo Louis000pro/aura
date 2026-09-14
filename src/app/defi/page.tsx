@@ -114,8 +114,14 @@ export default function DefiPage() {
     } catch { /* pas de presse-papier */ }
   };
 
-  /* ── Chargement ─────────────────────────────────────────── */
-  if (authLoading || chargement) {
+  /* ── Chargement ───────────────────────────────────────────
+     ⚠️ `!user` EN FAIT PARTIE. `chargement` ne repasse à `false` qu'après un
+     chargement réussi : si la session meurt ensuite, l'effet part bien vers
+     `/auth`, mais un rendu passe avant la navigation, avec `defi` encore en
+     mémoire, et le `user!.id` d'en dessous levait — donc la frontière d'erreur
+     au lieu de l'écran de connexion. Même correction sur la liste des
+     discussions et sur le fil. */
+  if (authLoading || chargement || !user) {
     return (
       <Cadre>
         <div className="flex h-[60vh] items-center justify-center">
@@ -171,7 +177,7 @@ export default function DefiPage() {
   const faits    = defi.actions.length;
   const etat     = etatPoster(faits, defi.objectif);
   const noms     = defi.membres.map((m) => m.pseudo);
-  const moi      = user!.id;
+  const moi      = user.id;
   const tour     = tourDeJeu(defi, moi);
   const restants = joursRestants(defi);
   const serie    = SERIES[defi.serie as keyof typeof SERIES] ?? SERIES.sillage;

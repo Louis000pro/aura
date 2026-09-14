@@ -204,6 +204,28 @@ export default function ConversationListPane({
     }
   };
 
+  /* ⚠️ `!user` FAIT PARTIE DE L'ATTENTE, ET SON ABSENCE ÉTAIT UN PLANTAGE.
+     `charge` ne repasse à `false` qu'après un chargement réussi, donc il ne
+     protégeait que le PREMIER rendu. Si la session meurt ensuite — jeton
+     révoqué, compte suspendu (`enrichUser` déconnecte lui-même), changement de
+     mot de passe ailleurs — l'effet ci-dessus part bien vers `/auth`, mais une
+     navigation n'est pas immédiate : un rendu passe avant, avec `charge` à
+     `false` et les conversations encore en mémoire. Le `user!.id` du filtre
+     levait alors, et à la place d'un retour à la connexion on obtenait la
+     frontière d'erreur. Le même piège existait sur le fil et sur /defi ;
+     l'écran « Infos » le tenait déjà (`if (!conv || !user)`).
+     La garde passe donc AVANT tout ce qui lit `user`. */
+  if (authLoading || charge || !user) {
+    return (
+      <section
+        className={`flex min-h-screen items-center justify-center md:h-[100dvh] md:min-h-0 ${className}`}
+        style={{ background: "rgb(var(--bg-rgb))" }}
+      >
+        <Loader2 className="h-6 w-6 animate-spin" style={{ color: "var(--text-3)" }} />
+      </section>
+    );
+  }
+
   const normaliser = (valeur: string) => valeur
     .normalize("NFD")
     .replace(/\p{Diacritic}/gu, "")
@@ -214,20 +236,9 @@ export default function ConversationListPane({
   const convsVisibles = convs.filter((c) => {
     if (c.archivee !== archivesActives) return false;
     if (!terme) return true;
-    const texte = `${titreConversation(c, user!.id)} ${c.dernier?.contenu ?? ""}`;
+    const texte = `${titreConversation(c, user.id)} ${c.dernier?.contenu ?? ""}`;
     return normaliser(texte).includes(terme);
   });
-
-  if (authLoading || charge) {
-    return (
-      <section
-        className={`flex min-h-screen items-center justify-center md:h-[100dvh] md:min-h-0 ${className}`}
-        style={{ background: "rgb(var(--bg-rgb))" }}
-      >
-        <Loader2 className="h-6 w-6 animate-spin" style={{ color: "var(--text-3)" }} />
-      </section>
-    );
-  }
 
   return (
     <section

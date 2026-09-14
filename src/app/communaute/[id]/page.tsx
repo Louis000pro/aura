@@ -372,7 +372,14 @@ export default function FilPage() {
     setErreur(null);
   };
 
-  if (authLoading || charge) {
+  /* ⚠️ `!user` FAIT PARTIE DE L'ATTENTE. `charge` ne repasse à `false` qu'après
+     un chargement réussi : si la session meurt ensuite (jeton révoqué, compte
+     suspendu, mot de passe changé ailleurs), l'effet part bien vers `/auth`,
+     mais une navigation n'est pas immédiate — un rendu passe avant, avec `conv`
+     encore en mémoire, et le `user!.id` d'en dessous levait. On voyait la
+     frontière d'erreur au lieu de l'écran de connexion. Même correction sur la
+     liste des discussions et sur /defi ; l'écran « Infos » le tenait déjà. */
+  if (authLoading || charge || !user) {
     return <FilSkeleton />;
   }
 
@@ -404,7 +411,7 @@ export default function FilPage() {
     );
   }
 
-  const moi    = user!.id;
+  const moi    = user.id;
   const titre  = titreConversation(conv, moi);
   const autres = autresMembres(conv, moi);
 
