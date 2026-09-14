@@ -122,7 +122,7 @@ function ExerciseTutorial({ exercise, onClose }: { exercise: string; onClose: ()
         <div className="flex items-center justify-between px-5 pt-4 pb-3">
           <div className="min-w-0">
             <p className="vy-label" style={{ color: "var(--exp-encre)" }}>Tuto · démo</p>
-            <p className="text-sm font-semibold truncate" style={{ color: "var(--text-1)" }}>{clean}</p>
+            <p className="text-[16px] font-semibold truncate" style={{ color: "var(--text-1)" }}>{clean}</p>
           </div>
           <button type="button" onClick={onClose}
             className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 cursor-pointer"
@@ -155,7 +155,7 @@ function ExerciseTutorial({ exercise, onClose }: { exercise: string; onClose: ()
             <span className="inline-flex items-center justify-center w-12 h-12 rounded-full" style={{ background: "#FF0000" }}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="#fff"><path d="M8 5v14l11-7z" /></svg>
             </span>
-            <span className="text-sm font-semibold">Voir la démo sur YouTube</span>
+            <span className="text-[13px] font-semibold">Voir la démo sur YouTube</span>
           </a>
         )}
         <p className="text-[11px] font-light text-center px-5 py-3" style={{ color: "var(--text-3)" }}>
@@ -182,10 +182,10 @@ function DayDetail({ day, onTuto, onStart }: { day: PlanningDay; onTuto: (ex: st
         )}
       </div>
       {!isRest && day.title && (
-        <p className="text-sm font-medium leading-snug" style={{ color: "var(--text-1)" }}>{day.title}</p>
+        <p className="text-[16px] font-medium leading-snug" style={{ color: "var(--text-1)" }}>{day.title}</p>
       )}
       {isRest && (
-        <p className="text-xs font-light" style={{ color: "var(--text-3)" }}>Journée de récupération, repose-toi bien 💤</p>
+        <p className="text-[13px] font-light" style={{ color: "var(--text-3)" }}>Journée de récupération, repose-toi bien 💤</p>
       )}
       {!isRest && day.exerciseList.length > 0 && (
         <>
@@ -219,7 +219,7 @@ function DayDetail({ day, onTuto, onStart }: { day: PlanningDay; onTuto: (ex: st
             style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", boxShadow: "var(--ombre-action)" }}
           >
             <Play size={13} strokeWidth={2.5} style={{ color: "#fff", marginLeft: 1 }} fill="currentColor" />
-            <span className="text-sm font-semibold" style={{ color: "#fff" }}>Commencer</span>
+            <span className="text-[16px] font-semibold" style={{ color: "#fff" }}>Commencer</span>
           </motion.button>
         </>
       )}
@@ -249,14 +249,14 @@ function LocationQuestion({ onChoose }: { onChoose: (loc: "salle" | "maison") =>
           className="flex flex-col items-center gap-1.5 py-4 cursor-pointer"
           style={{ borderRadius: "var(--r-controle)", background: "rgba(var(--surface-rgb),0.8)", border: "1px solid rgba(var(--violet-mid-rgb),0.5)" }}>
           <Dumbbell size={20} strokeWidth={1.5} style={{ color: "var(--exp-encre)" }} />
-          <span className="text-sm font-semibold" style={{ color: "var(--text-1)" }}>En salle</span>
+          <span className="text-[16px] font-semibold" style={{ color: "var(--text-1)" }}>En salle</span>
           <span className="text-[11px] font-light" style={{ color: "var(--text-3)" }}>Machines & charges</span>
         </motion.button>
         <motion.button whileTap={{ scale: 0.96 }} onClick={() => onChoose("maison")}
           className="flex flex-col items-center gap-1.5 py-4 cursor-pointer"
           style={{ borderRadius: "var(--r-controle)", background: "rgba(var(--surface-rgb),0.8)", border: "1px solid rgba(var(--cream-mid-rgb),0.6)" }}>
           <Home size={20} strokeWidth={1.5} style={{ color: "var(--gold)" }} />
-          <span className="text-sm font-semibold" style={{ color: "var(--text-1)" }}>À la maison</span>
+          <span className="text-[16px] font-semibold" style={{ color: "var(--text-1)" }}>À la maison</span>
           <span className="text-[11px] font-light" style={{ color: "var(--text-3)" }}>Poids du corps</span>
         </motion.button>
       </div>
@@ -286,14 +286,14 @@ function HomeEquipQuestion({ onChoose, onBack }: { onChoose: (e: "halteres" | "p
           className="flex flex-col items-center gap-1.5 py-4 cursor-pointer"
           style={{ borderRadius: "var(--r-controle)", background: "rgba(var(--surface-rgb),0.8)", border: "1px solid rgba(var(--cream-mid-rgb),0.6)" }}>
           <Dumbbell size={20} strokeWidth={1.5} style={{ color: "var(--gold)" }} />
-          <span className="text-sm font-semibold" style={{ color: "var(--text-1)" }}>Oui, haltères</span>
+          <span className="text-[16px] font-semibold" style={{ color: "var(--text-1)" }}>Oui, haltères</span>
           <span className="text-[11px] font-light" style={{ color: "var(--text-3)" }}>Poids du corps + haltères</span>
         </motion.button>
         <motion.button whileTap={{ scale: 0.96 }} onClick={() => onChoose("poids")}
           className="flex flex-col items-center gap-1.5 py-4 cursor-pointer"
           style={{ borderRadius: "var(--r-controle)", background: "rgba(var(--surface-rgb),0.8)", border: "1px solid rgba(var(--violet-mid-rgb),0.5)" }}>
           <Home size={20} strokeWidth={1.5} style={{ color: "var(--exp-encre)" }} />
-          <span className="text-sm font-semibold" style={{ color: "var(--text-1)" }}>Non</span>
+          <span className="text-[16px] font-semibold" style={{ color: "var(--text-1)" }}>Non</span>
           <span className="text-[11px] font-light" style={{ color: "var(--text-3)" }}>Poids du corps uniquement</span>
         </motion.button>
       </div>
@@ -512,7 +512,7 @@ export default function WeeklyProgramme({ cycle = null }: { cycle?: CycleSemaine
     return (
       <div className="px-6 pb-4">
         <p
-          className="text-lg font-light mb-3"
+          className="text-[20px] font-light mb-3"
           style={{ color: "var(--text-1)" }}
         >
           Programme auto-généré
@@ -532,10 +532,10 @@ export default function WeeklyProgramme({ cycle = null }: { cycle?: CycleSemaine
             <Dumbbell size={18} strokeWidth={1.5} style={{ color: "var(--exp-encre)" }} />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium mb-0.5" style={{ color: "var(--text-1)" }}>
+            <p className="text-[16px] font-medium mb-0.5" style={{ color: "var(--text-1)" }}>
               Complète ton profil pour obtenir ton programme
             </p>
-            <p className="text-xs font-light" style={{ color: "var(--text-3)" }}>
+            <p className="text-[13px] font-light" style={{ color: "var(--text-3)" }}>
               Niveau, objectifs et fréquence requis
             </p>
           </div>
@@ -550,7 +550,7 @@ export default function WeeklyProgramme({ cycle = null }: { cycle?: CycleSemaine
               }}
             >
               <Settings size={12} strokeWidth={2} style={{ color: "var(--text-1)" }} />
-              <span className="text-xs font-semibold" style={{ color: "var(--text-1)" }}>
+              <span className="text-[13px] font-semibold" style={{ color: "var(--text-1)" }}>
                 Réglages
               </span>
             </motion.div>
@@ -639,7 +639,7 @@ export default function WeeklyProgramme({ cycle = null }: { cycle?: CycleSemaine
           style={{ background: "rgba(var(--accent-rgb),0.1)", cursor: weekOffset <= 0 ? "default" : "pointer", opacity: weekOffset <= 0 ? 0.3 : 1 }}>
           <ChevronLeft size={15} strokeWidth={2.2} style={{ color: "var(--exp-encre)" }} />
         </button>
-        <span className="text-[12px] font-semibold" style={{ color: "var(--text-1)" }}>{weekLabel}</span>
+        <span className="text-[13px] font-semibold" style={{ color: "var(--text-1)" }}>{weekLabel}</span>
         <button
           type="button"
           onClick={() => goWeek(1)}
@@ -711,7 +711,7 @@ export default function WeeklyProgramme({ cycle = null }: { cycle?: CycleSemaine
         {error && !loading && (
           <div className="rounded-2xl p-3 flex items-center justify-between"
             style={{ background: "rgba(252,129,129,0.08)", border: "1px solid rgba(252,129,129,0.18)" }}>
-            <p className="text-xs" style={{ color: "#DC2626" }}>{error}</p>
+            <p className="text-[13px]" style={{ color: "#DC2626" }}>{error}</p>
             <motion.button whileTap={{ scale: 0.95 }} onClick={() => generate(location, homeEquip, true)}
               className="text-[11px] font-semibold px-2.5 py-1 rounded-lg cursor-pointer"
               style={{ background: "rgba(252,129,129,0.15)", color: "#DC2626" }}>
@@ -749,7 +749,7 @@ export default function WeeklyProgramme({ cycle = null }: { cycle?: CycleSemaine
               <button key={extra.id ?? extra.title}
                 onClick={() => setLaunchDay(extra)}
                 className="w-full flex items-center gap-2 py-1.5 text-left cursor-pointer border-none bg-transparent">
-                <span className="flex-1 min-w-0 text-[11.5px] font-semibold truncate" style={{ color: "var(--text-2)" }}>
+                <span className="flex-1 min-w-0 text-[11px] font-semibold truncate" style={{ color: "var(--text-2)" }}>
                   {dayTitle(extra)}
                 </span>
                 <span className="text-[11px] font-bold flex-shrink-0"

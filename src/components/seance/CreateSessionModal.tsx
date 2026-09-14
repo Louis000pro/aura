@@ -310,7 +310,7 @@ export default function CreateSessionModal({
                 <p className="vy-label" style={{ color: "var(--exp-encre)" }}>
                   {isEdit ? "Modifier" : "Nouvelle séance"}
                 </p>
-                <h2 className="text-[19px] font-light mt-0.5 leading-tight" style={{ color: "var(--text-1)" }}>
+                <h2 className="text-[20px] font-light mt-0.5 leading-tight" style={{ color: "var(--text-1)" }}>
                   {title.trim() || (isEdit ? "Ma séance" : "Créer ma séance")}
                 </h2>
               </div>
@@ -368,7 +368,7 @@ export default function CreateSessionModal({
                       value={title}
                       onChange={e => setTitle(e.target.value)}
                       placeholder="Push du lundi, Cardio matin…"
-                      className="w-full px-4 py-3.5 rounded-2xl text-base outline-none"
+                      className="w-full px-4 py-3.5 rounded-2xl text-[16px] outline-none"
                       style={{
                         background: "rgba(var(--tint-violet-rgb),0.45)",
                         border: "1px solid rgba(var(--violet-mid-rgb),0.5)",
@@ -387,7 +387,7 @@ export default function CreateSessionModal({
                     <button onClick={() => setIaOuvert(o => !o)}
                       className="w-full px-4 py-3 flex items-center gap-2.5 cursor-pointer text-left">
                       <Sparkles size={15} strokeWidth={2} style={{ color: "var(--exp-encre)", flexShrink: 0 }} />
-                      <span className="text-[12.5px] font-semibold flex-1" style={{ color: "var(--text-1)" }}>
+                      <span className="text-[13px] font-semibold flex-1" style={{ color: "var(--text-1)" }}>
                         Laisse l’✦ la construire
                       </span>
                       <span className="text-[11px]" style={{ color: "var(--text-3)" }}>
@@ -474,7 +474,7 @@ export default function CreateSessionModal({
                     <div className="grid grid-cols-3 gap-2">
                       {(["Débutant", "Intermédiaire", "Avancé"] as Difficulty[]).map(d => (
                         <motion.button key={d} whileTap={{ scale: 0.95 }} onClick={() => setDifficulty(d)}
-                          className="py-2.5 rounded-xl text-[11.5px] font-semibold cursor-pointer"
+                          className="py-2.5 rounded-xl text-[11px] font-semibold cursor-pointer"
                           style={difficulty === d
                             ? { background: "rgba(var(--accent-rgb),0.14)", color: "var(--exp-encre)", border: "1px solid rgba(var(--accent-rgb),0.4)" }
                             : { background: "rgba(var(--surface-rgb),0.7)", color: "var(--text-3)", border: "1px solid rgba(var(--tint-violet-rgb),0.9)" }
@@ -503,10 +503,10 @@ export default function CreateSessionModal({
                         ))}
                       </div>
                       <div>
-                        <p className="text-[15px] font-medium" style={{ color: "var(--text-1)" }}>
+                        <p className="text-[16px] font-medium" style={{ color: "var(--text-1)" }}>
                           102 exercices animés t’attendent
                         </p>
-                        <p className="text-[12px] mt-1" style={{ color: "var(--text-3)" }}>
+                        <p className="text-[13px] mt-1" style={{ color: "var(--text-3)" }}>
                           Choisis-les dans la bibliothèque : ton personnage-guide te montre le geste pendant la séance.
                         </p>
                       </div>
@@ -545,7 +545,7 @@ export default function CreateSessionModal({
                       </Reorder.Group>
 
                       <motion.button whileTap={{ scale: 0.98 }} onClick={() => setBibliotheque(true)}
-                        className="w-full py-3 rounded-2xl text-[12.5px] font-semibold cursor-pointer flex items-center justify-center gap-2"
+                        className="w-full py-3 rounded-2xl text-[13px] font-semibold cursor-pointer flex items-center justify-center gap-2"
                         style={{ background: "rgba(var(--accent-rgb),0.1)", color: "var(--exp-encre)", border: "1px solid rgba(var(--accent-rgb),0.3)" }}>
                         <Plus size={14} strokeWidth={2.5} /> Ajouter des exercices
                       </motion.button>
@@ -576,8 +576,8 @@ export default function CreateSessionModal({
                         {/* Le nombre dans son element, l'unite dans un autre :
                             la famille du chiffre ne sert QU'aux valeurs
                             mesurees, jamais a un mot pose a cote. */}
-                        <p className="text-[30px] font-light leading-none mt-1" style={{ color: "var(--text-1)" }}>
-                          <span className="vy-nombre">{duration}</span> <span className="text-base">min</span>
+                        <p className="text-[26px] font-light leading-none mt-1" style={{ color: "var(--text-1)" }}>
+                          <span className="vy-nombre">{duration}</span> <span className="text-[13px]">min</span>
                         </p>
                       </div>
                       <div className="text-right">
@@ -615,7 +615,7 @@ export default function CreateSessionModal({
 
                     <div className="flex flex-wrap gap-2">
                       {muscles.length === 0 && (
-                        <span className="text-[12px]" style={{ color: "var(--text-3)" }}>Corps entier</span>
+                        <span className="text-[11px]" style={{ color: "var(--text-3)" }}>Corps entier</span>
                       )}
                       {muscles.map(m => (
                         <motion.button key={m} whileTap={{ scale: 0.92 }} onClick={() => retirerMuscle(m)}
@@ -655,7 +655,7 @@ export default function CreateSessionModal({
                               onChange={e => setMuscleLibre(e.target.value)}
                               onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); ajouterMuscle(muscleLibre); } }}
                               placeholder="Autre muscle…"
-                              className="flex-1 px-3 py-2 rounded-xl text-xs outline-none"
+                              className="flex-1 px-3 py-2 rounded-xl text-[16px] outline-none"
                               style={{ background: "rgba(var(--surface-rgb),0.7)", border: "1px solid rgba(var(--violet-mid-rgb),0.35)", color: "var(--text-1)" }}
                             />
                             <motion.button whileTap={{ scale: 0.9 }} onClick={() => ajouterMuscle(muscleLibre)}
@@ -691,7 +691,7 @@ export default function CreateSessionModal({
               whileTap={{ scale: 0.97 }}
               onClick={() => { if (etape < 2) setEtape(e => e + 1); else valider(); }}
               disabled={!peutContinuer}
-              className="flex-1 py-3.5 text-sm font-semibold cursor-pointer flex items-center justify-center gap-2"
+              className="flex-1 py-3.5 text-[16px] font-semibold cursor-pointer flex items-center justify-center gap-2"
               style={{ borderRadius: "var(--r-controle)", ...(peutContinuer
                 ? { background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", color: "#fff", boxShadow: "var(--ombre-action)" }
                 : { background: "rgba(var(--tint-violet-rgb),0.5)", color: "var(--text-3)" })
@@ -767,7 +767,7 @@ function LigneExercice({
               </div>
           }
           <div className="flex-1 min-w-0">
-            <p className="text-[13.5px] font-semibold truncate" style={{ color: "var(--text-1)" }}>
+            <p className="text-[13px] font-semibold truncate" style={{ color: "var(--text-1)" }}>
               {ex.name || `Exercice ${index + 1}`}
             </p>
             <p className="text-[11px]" style={{ color: "var(--text-3)" }}>
@@ -842,13 +842,13 @@ function LigneExercice({
                   </span>
                   <div className="flex items-center gap-1.5">
                     <button onClick={() => onChange({ restAfter: Math.max(0, ex.restAfter - 15) })}
-                      className="w-5 h-5 rounded flex items-center justify-center cursor-pointer text-xs font-bold"
+                      className="w-5 h-5 rounded flex items-center justify-center cursor-pointer text-[13px] font-bold"
                       style={{ color: "var(--exp-encre)" }}>−</button>
-                    <span className="text-xs font-semibold w-8 text-center tabular-nums" style={{ color: "var(--text-1)" }}>
+                    <span className="text-[13px] font-semibold w-8 text-center tabular-nums" style={{ color: "var(--text-1)" }}>
                       {ex.restAfter}s
                     </span>
                     <button onClick={() => onChange({ restAfter: Math.min(300, ex.restAfter + 15) })}
-                      className="w-5 h-5 rounded flex items-center justify-center cursor-pointer text-xs font-bold"
+                      className="w-5 h-5 rounded flex items-center justify-center cursor-pointer text-[13px] font-bold"
                       style={{ color: "var(--exp-encre)" }}>+</button>
                   </div>
                 </div>
@@ -877,10 +877,10 @@ function Compteur({ label, valeur, onMoins, onPlus }: {
       </p>
       <div className="flex items-center justify-between gap-1 px-2 py-2 rounded-xl"
         style={{ background: "rgba(var(--surface-rgb),0.75)", border: "1px solid rgba(var(--violet-mid-rgb),0.3)" }}>
-        <button onClick={onMoins} className="w-5 h-5 rounded flex items-center justify-center cursor-pointer text-sm font-bold"
+        <button onClick={onMoins} className="w-5 h-5 rounded flex items-center justify-center cursor-pointer text-[13px] font-bold"
           style={{ color: "var(--exp-encre)" }}>−</button>
-        <span className="text-[12.5px] font-semibold tabular-nums" style={{ color: "var(--text-1)" }}>{valeur}</span>
-        <button onClick={onPlus} className="w-5 h-5 rounded flex items-center justify-center cursor-pointer text-sm font-bold"
+        <span className="text-[13px] font-semibold tabular-nums" style={{ color: "var(--text-1)" }}>{valeur}</span>
+        <button onClick={onPlus} className="w-5 h-5 rounded flex items-center justify-center cursor-pointer text-[13px] font-bold"
           style={{ color: "var(--exp-encre)" }}>+</button>
       </div>
     </div>

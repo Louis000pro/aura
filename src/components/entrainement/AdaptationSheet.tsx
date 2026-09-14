@@ -306,10 +306,10 @@ export default function AdaptationSheet({
 
         <div className="px-5 pt-2 pb-3 flex items-start justify-between gap-3 flex-shrink-0">
           <div className="min-w-0">
-            <h2 className="text-[19px] font-light" style={{ color: "var(--text-1)" }}>
+            <h2 className="text-[20px] font-light" style={{ color: "var(--text-1)" }}>
               Adapter temporairement
             </h2>
-            <p className="text-[11.5px] font-medium mt-1 leading-snug" style={{ color: "var(--text-3)" }}>
+            <p className="text-[13px] font-medium mt-1 leading-snug" style={{ color: "var(--text-3)" }}>
               Ton programme ne change pas. Il reprend tout seul à la fin.
             </p>
           </div>
@@ -331,10 +331,10 @@ export default function AdaptationSheet({
             }}>
               <div className="px-4 pt-3.5 pb-3.5 vy-filet">
                 <p className="vy-label mb-1.5">En cours</p>
-                <p className="text-[15px] font-bold leading-snug" style={{ color: "var(--text-0)" }}>
+                <p className="text-[16px] font-bold leading-snug" style={{ color: "var(--text-0)" }}>
                   {adaptation.axes.eviter_etapes.map(nomDe).filter(Boolean).join(" · ") || "Étapes évitées"}
                 </p>
-                <p className="text-[12px] font-medium mt-1.5" style={{ color: "var(--text-2)" }}>
+                <p className="text-[13px] font-medium mt-1.5" style={{ color: "var(--text-2)" }}>
                   Jusqu’au {libelleJour(adaptation.fin)}
                   {adaptation.motif ? ` · ${adaptation.motif}` : ""}
                 </p>
@@ -357,7 +357,7 @@ export default function AdaptationSheet({
                (`EXCLUDE`). Proposer un second formulaire ici, c'est
                proposer un geste qui sera refusé : on dit plutôt quoi
                faire. */
-            <p className="text-[12.5px] font-light leading-relaxed" style={{ color: "var(--text-3)" }}>
+            <p className="text-[13px] font-light leading-relaxed" style={{ color: "var(--text-3)" }}>
               Une seule adaptation à la fois. Arrête celle-ci pour en déclarer une autre.
             </p>
           ) : (
@@ -370,7 +370,7 @@ export default function AdaptationSheet({
                   return (
                     <button key={e.id} onClick={() => basculer(e.id)}
                       aria-pressed={on}
-                      className="flex items-center gap-1.5 px-3 py-2 rounded-full text-[12.5px] font-bold cursor-pointer"
+                      className="flex items-center gap-1.5 px-3 py-2 rounded-full text-[13px] font-bold cursor-pointer"
                       style={on
                         ? { background: "rgba(var(--accent-rgb),0.14)", border: "1px solid rgba(var(--accent-rgb),0.42)", color: "var(--exp-encre)" }
                         : { background: "rgba(var(--text-3-rgb),0.07)", border: "1px solid rgba(var(--text-3-rgb),0.16)", color: "var(--text-2)" }}>
@@ -380,7 +380,7 @@ export default function AdaptationSheet({
                   );
                 })}
               </div>
-              <p className="text-[11.5px] font-light leading-snug mt-2 mb-4" style={{ color: "var(--text-3)" }}>
+              <p className="text-[13px] font-light leading-snug mt-2 mb-4" style={{ color: "var(--text-3)" }}>
                 Ces séances ne te seront plus proposées pendant la période. Elles ne sont
                 ni faites, ni sautées : elles reviennent à leur tour ensuite.
               </p>
@@ -407,11 +407,11 @@ export default function AdaptationSheet({
                   nouvelle version du programme. On propose donc une date,
                   et on dit qu'on repassera la voir. */}
               <button onClick={() => setFin(finParDefaut(debut || today))}
-                className="text-[11.5px] font-bold cursor-pointer bg-transparent border-none px-0 mt-1"
+                className="text-[13px] font-bold cursor-pointer bg-transparent border-none px-0 mt-1"
                 style={{ color: "var(--exp-encre)" }}>
                 Je ne sais pas encore · {REEVALUATION_SEMAINES} semaines
               </button>
-              <p className="text-[11.5px] font-light leading-snug mt-1.5 mb-4" style={{ color: "var(--text-3)" }}>
+              <p className="text-[13px] font-light leading-snug mt-1.5 mb-4" style={{ color: "var(--text-3)" }}>
                 Une adaptation a toujours une fin. Si ça dure, on en refait une, ou ton
                 programme change pour de bon.
               </p>
@@ -423,13 +423,13 @@ export default function AdaptationSheet({
                 placeholder="Épaule sensible, pas de matériel…"
                 className="w-full h-11 px-3 rounded-xl text-[13px] font-medium mb-1"
                 style={{ background: "rgba(var(--text-3-rgb),0.07)", border: "1px solid rgba(var(--text-3-rgb),0.16)", color: "var(--text-1)" }} />
-              <p className="text-[11.5px] font-light leading-snug mt-1.5 mb-4" style={{ color: "var(--text-3)" }}>
+              <p className="text-[13px] font-light leading-snug mt-1.5 mb-4" style={{ color: "var(--text-3)" }}>
                 Ce texte ne change rien à ce qui te sera proposé.
               </p>
 
               {/* ── Ce qui empêche ── */}
               {toutMasque && (
-                <p className="text-[12.5px] font-medium leading-snug mb-3" style={{ color: "var(--text-2)" }}>
+                <p className="text-[13px] font-medium leading-snug mb-3" style={{ color: "var(--text-2)" }}>
                   Tu évites tout ton programme : plus aucune séance ne te sera proposée
                   pendant cette période.
                 </p>
@@ -445,7 +445,7 @@ export default function AdaptationSheet({
                     <p className="text-[13px] font-bold mb-1.5" style={{ color: "var(--text-0)" }}>
                       {conflitsAJour.length === 1 ? "Une séance est déjà posée" : `${conflitsAJour.length} séances sont déjà posées`}
                     </p>
-                    <p className="text-[11.5px] font-light leading-snug mb-1" style={{ color: "var(--text-2)" }}>
+                    <p className="text-[13px] font-light leading-snug mb-1" style={{ color: "var(--text-2)" }}>
                       Elles portent une étape que tu veux éviter. Vaiiya n’y touche pas tout
                       seul : décale-les ou retire-les, une par une.
                     </p>
@@ -458,7 +458,7 @@ export default function AdaptationSheet({
                               <span className="text-[11px] font-semibold flex-shrink-0" style={{ color: "var(--text-3)" }}>
                                 {libelleJour(c.date)}
                               </span>
-                              <span className="flex-1 min-w-0 truncate text-[12px] font-semibold" style={{ color: "var(--text-1)" }}>
+                              <span className="flex-1 min-w-0 truncate text-[13px] font-semibold" style={{ color: "var(--text-1)" }}>
                                 {dayTitle(c)}
                               </span>
                               {/* ⚠️ DEUX ACTIONS SECONDAIRES, DONC SANS SURFACE
@@ -467,12 +467,12 @@ export default function AdaptationSheet({
                               {ouvert === "retirer" ? (
                                 <>
                                   <button onClick={() => void retirer(c)} disabled={occupe}
-                                    className="text-[11.5px] font-bold cursor-pointer bg-transparent border-none px-0 flex-shrink-0"
+                                    className="text-[13px] font-bold cursor-pointer bg-transparent border-none px-0 flex-shrink-0"
                                     style={{ color: "var(--exp-encre)" }}>
                                     Confirmer
                                   </button>
                                   <button onClick={() => setGeste(null)}
-                                    className="text-[11.5px] font-bold cursor-pointer bg-transparent border-none px-0 flex-shrink-0"
+                                    className="text-[13px] font-bold cursor-pointer bg-transparent border-none px-0 flex-shrink-0"
                                     style={{ color: "var(--text-3)" }}>
                                     Annuler
                                   </button>
@@ -480,12 +480,12 @@ export default function AdaptationSheet({
                               ) : (
                                 <>
                                   <button onClick={() => setGeste(ouvert === "decaler" || !c.id ? null : { id: c.id, quoi: "decaler" })}
-                                    className="text-[11.5px] font-bold cursor-pointer bg-transparent border-none px-0 flex-shrink-0"
+                                    className="text-[13px] font-bold cursor-pointer bg-transparent border-none px-0 flex-shrink-0"
                                     style={{ color: ouvert === "decaler" ? "var(--exp-encre)" : "var(--text-2)" }}>
                                     {ouvert === "decaler" ? "Fermer" : "Décaler"}
                                   </button>
                                   <button onClick={() => { if (c.id) setGeste({ id: c.id, quoi: "retirer" }); }}
-                                    className="text-[11.5px] font-bold cursor-pointer bg-transparent border-none px-0 flex-shrink-0"
+                                    className="text-[13px] font-bold cursor-pointer bg-transparent border-none px-0 flex-shrink-0"
                                     style={{ color: "var(--text-2)" }}>
                                     Retirer
                                   </button>
@@ -525,7 +525,7 @@ export default function AdaptationSheet({
               )}
 
               {(erreur || (!valide.ok && (cochees.length > 0 || refuse))) && (
-                <p className="text-[12px] font-semibold mb-3" style={{ color: "var(--text-1)" }}>
+                <p className="text-[13px] font-semibold mb-3" style={{ color: "var(--text-1)" }}>
                   {erreur ?? (valide.ok ? "" : valide.raison)}
                 </p>
               )}
@@ -536,7 +536,7 @@ export default function AdaptationSheet({
                   pour une raison locale ferait porter à toute l’app ce
                   qui ne concerne que cet écran. */}
               {refuse && blocage && (
-                <p role="status" className="text-[12px] font-semibold leading-snug mb-2.5" style={{ color: "var(--text-1)" }}>
+                <p role="status" className="text-[13px] font-semibold leading-snug mb-2.5" style={{ color: "var(--text-1)" }}>
                   Impossible d’activer pour l’instant.{" "}
                   <span className="font-light" style={{ color: "var(--text-2)" }}>{blocage}</span>
                 </p>
@@ -553,7 +553,7 @@ export default function AdaptationSheet({
                    d’assistance comme à l’œil. */
                 onClick={peutActiver ? activer : () => setRefuse(true)}
                 aria-disabled={!peutActiver}
-                className="w-full py-3.5 rounded-2xl flex items-center justify-center gap-2 cursor-pointer text-[15px] font-extrabold text-white border-none mb-2"
+                className="w-full py-3.5 rounded-2xl flex items-center justify-center gap-2 cursor-pointer text-[16px] font-extrabold text-white border-none mb-2"
                 style={{
                   background: "linear-gradient(135deg,#8B5CF6,#C13BC1)",
                   boxShadow: "var(--ombre-action)",

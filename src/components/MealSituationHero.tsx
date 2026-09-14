@@ -122,7 +122,7 @@ function PhotoCard({ label, sub, Icon, gradient, img, onClick }: {
       <Icon size={34} strokeWidth={1.5} className="absolute" style={{ top: 12, right: 12, color: "rgba(255,255,255,0.30)" }} />
       <div className="absolute inset-x-0 bottom-0" style={{ height: "46%", background: "var(--voile-affiche)" }} />
       <div className="absolute inset-x-0 bottom-0 p-3.5">
-        <p className="text-[15px] font-medium leading-tight" style={{ color: "#fff" }}>{label}</p>
+        <p className="text-[16px] font-medium leading-tight" style={{ color: "#fff" }}>{label}</p>
         <p className="text-[11px] mt-0.5" style={{ color: "rgba(255,255,255,0.85)" }}>{sub}</p>
       </div>
     </motion.button>
@@ -140,7 +140,7 @@ function StepBar({ cur }: { cur: 1 | 2 | 3 }) {
     <span className="flex-1 rounded" style={{ height: 2, background: on ? "var(--accent)" : "rgba(var(--violet-mid-rgb),0.3)", opacity: on ? 0.55 : 1 }} />
   );
   return (
-    <div className="flex items-center gap-2 text-xs">
+    <div className="flex items-center gap-2 text-[11px]">
       {seg(1, "Où")}{bar(cur > 1)}{seg(2, "Quoi")}{bar(cur > 2)}{seg(3, "Extras")}
     </div>
   );
@@ -474,8 +474,8 @@ export default function MealSituationHero({
           <div className="flex items-center gap-2.5 mt-1">
             <VisageGuide guide={guide} etat="listen" size={36} />
             <div className="min-w-0">
-              <h2 className="text-2xl font-light leading-none" style={{ color: "var(--text-1)" }}>On mange où&nbsp;?</h2>
-              <p className="text-[11.5px] mt-1.5" style={{ color: "var(--text-3)" }}>
+              <h2 className="text-[26px] font-light leading-none" style={{ color: "var(--text-1)" }}>On mange où&nbsp;?</h2>
+              <p className="text-[13px] mt-1.5" style={{ color: "var(--text-3)" }}>
                 {voix(guide, "nutrition.question")}
               </p>
             </div>
@@ -490,7 +490,7 @@ export default function MealSituationHero({
           </motion.button>
           <div>
             <p className="vy-label" style={{ color: "var(--text-3)" }}>{sitObj?.sub}</p>
-            <h2 className="text-xl font-light" style={{ color: "var(--text-1)" }}>{heading}</h2>
+            <h2 className="text-[20px] font-light" style={{ color: "var(--text-1)" }}>{heading}</h2>
           </div>
         </div>
       )}
@@ -533,12 +533,12 @@ export default function MealSituationHero({
                   style={{ background: "rgba(139,92,246,0.12)", border: "1px solid rgba(139,92,246,0.28)" }}>
                   <Heart size={20} strokeWidth={1.8} style={{ color: "var(--exp-encre)" }} />
                 </div>
-                <p className="text-xs font-light leading-relaxed max-w-[15rem]" style={{ color: "var(--text-3)" }}>
+                <p className="text-[13px] font-light leading-relaxed max-w-[15rem]" style={{ color: "var(--text-3)" }}>
                   Tes plats habituels apparaîtront ici dès que tu en auras enregistré quelques-uns.
                 </p>
               </div>
             ) : (<>
-              <p className="text-[11.5px] font-light mb-2 ml-0.5" style={{ color: "var(--text-3)" }}>
+              <p className="text-[11px] font-light mb-2 ml-0.5" style={{ color: "var(--text-3)" }}>
                 Un tap pour le rajouter à ta journée.
               </p>
               <div className="grid grid-cols-2 gap-2">
@@ -554,11 +554,11 @@ export default function MealSituationHero({
                       className="relative overflow-hidden text-left rounded-2xl p-3 pl-3.5 pr-8 cursor-pointer"
                       style={{ background: "rgba(var(--tint-violet-rgb),0.5)", border: "1px solid rgba(var(--violet-mid-rgb),0.35)" }}>
                       <span aria-hidden className="absolute left-0 top-0 bottom-0" style={{ width: 4, background: accent }} />
-                      <p className="text-[13.5px] font-semibold leading-tight"
+                      <p className="text-[13px] font-semibold leading-tight"
                         style={{ color: "var(--text-1)", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", minHeight: "2.4em" }}>
                         {r.name}
                       </p>
-                      <p className="text-[11.5px] font-semibold mt-1.5" style={{ color: "#E8620C", fontVariantNumeric: "tabular-nums" }}>
+                      <p className="text-[11px] font-semibold mt-1.5" style={{ color: "#E8620C", fontVariantNumeric: "tabular-nums" }}>
                         {r.calories} kcal
                       </p>
                       <span className="absolute top-2 right-2 w-5 h-5 rounded-full flex items-center justify-center"
@@ -589,7 +589,7 @@ export default function MealSituationHero({
                 const on = finishMode === t.key;
                 return (
                   <button key={t.key} onClick={() => setFinishMode(t.key)}
-                    className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-[12.5px] font-semibold cursor-pointer"
+                    className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-[13px] font-semibold cursor-pointer"
                     style={{ background: on ? "linear-gradient(135deg,#8B5CF6,#C13BC1)" : "transparent", color: on ? "#fff" : "var(--text-3)" }}>
                     <t.Icon size={15} strokeWidth={2} /> {t.label}
                   </button>
@@ -598,17 +598,17 @@ export default function MealSituationHero({
             </div>
 
             {finishMode === "cuisiner" ? (<>
-              <p className="text-xs font-light leading-relaxed" style={{ color: "var(--text-2)" }}>
+              <p className="text-[13px] font-light leading-relaxed" style={{ color: "var(--text-2)" }}>
                 Dis-moi ce que tu as sous la main, je te trouve un plat, rien à acheter.
               </p>
               <div className="flex gap-2">
                 <input value={ingInput} onChange={(e) => setIngInput(e.target.value)}
                   onKeyDown={(e) => { if (e.key === "Enter") addIngredients(ingInput); }}
                   placeholder="Ex : courgettes, feta, œufs…"
-                  className="flex-1 px-3.5 py-2.5 rounded-xl text-sm outline-none"
+                  className="flex-1 px-3.5 py-2.5 rounded-xl text-[16px] outline-none"
                   style={{ background: "rgba(var(--tint-violet-rgb),0.5)", border: "1px solid rgba(var(--violet-mid-rgb),0.5)", color: "var(--text-1)" }} />
                 <motion.button whileTap={{ scale: 0.94 }} onClick={() => addIngredients(ingInput)} disabled={!ingInput.trim()}
-                  className="px-3.5 rounded-xl text-sm font-semibold cursor-pointer flex-shrink-0"
+                  className="px-3.5 rounded-xl text-[13px] font-semibold cursor-pointer flex-shrink-0"
                   style={{ background: ingInput.trim() ? "rgba(var(--accent-rgb),0.16)" : "rgba(var(--tint-violet-rgb),0.4)", color: "var(--exp-encre)" }}>
                   Ajouter
                 </motion.button>
@@ -617,7 +617,7 @@ export default function MealSituationHero({
                 <div className="flex flex-wrap gap-1.5">
                   {ingredients.map((ing) => (
                     <button key={ing} onClick={() => setIngredients((prev) => prev.filter((x) => x !== ing))}
-                      className="flex items-center gap-1 pl-2.5 pr-2 py-1 rounded-full text-xs cursor-pointer"
+                      className="flex items-center gap-1 pl-2.5 pr-2 py-1 rounded-full text-[11px] cursor-pointer"
                       style={{ background: "rgba(139,92,246,0.14)", color: "var(--text-1)", border: "1px solid rgba(139,92,246,0.3)" }}>
                       {ing}<span style={{ fontSize: 13, lineHeight: 1 }}>×</span>
                     </button>
@@ -630,7 +630,7 @@ export default function MealSituationHero({
                   <div className="flex flex-wrap gap-1.5">
                     {baseSuggestions.filter((s) => !ingredients.some((i) => i.toLowerCase() === s.toLowerCase())).map((s) => (
                       <button key={s} onClick={() => addIngredients(s)}
-                        className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs cursor-pointer"
+                        className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] cursor-pointer"
                         style={{ background: "rgba(var(--tint-violet-rgb),0.5)", color: "var(--text-2)", border: "1px solid rgba(var(--violet-mid-rgb),0.35)" }}>
                         <Plus size={11} strokeWidth={2.5} style={{ color: "var(--exp-encre)" }} /> {s}
                       </button>
@@ -639,7 +639,7 @@ export default function MealSituationHero({
                 </div>
               )}
               <motion.button whileTap={{ scale: 0.98 }} onClick={generateFinish} disabled={!ingredients.length}
-                className="w-full py-3 rounded-2xl text-sm font-semibold cursor-pointer flex items-center justify-center gap-2 mt-1"
+                className="w-full py-3 rounded-2xl text-[16px] font-semibold cursor-pointer flex items-center justify-center gap-2 mt-1"
                 style={{
                   background: ingredients.length ? "linear-gradient(135deg,#8B5CF6,#C13BC1)" : "rgba(var(--tint-violet-rgb),0.5)",
                   color: ingredients.length ? "#fff" : "var(--text-3)",
@@ -649,21 +649,21 @@ export default function MealSituationHero({
               </motion.button>
             </>) : restResult ? (<>
               {/* Carte résultat du reste (kcal + macros ajustables) */}
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium self-start"
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium self-start"
                 style={{ background: "rgba(139,92,246,0.16)", border: "1px solid rgba(139,92,246,0.4)", color: "var(--text-1)" }}>
                 <Home size={13} strokeWidth={2} style={{ color: "var(--exp-encre)" }} />
                 Reste maison · portion {PORTIONS.find((p) => p.key === portion)?.label.toLowerCase()}
               </span>
               <div className="flex items-start justify-between gap-3">
-                <h3 className="text-lg font-medium leading-tight flex-1" style={{ color: "var(--text-1)" }}>{restResult.name}</h3>
+                <h3 className="text-[20px] font-medium leading-tight flex-1" style={{ color: "var(--text-1)" }}>{restResult.name}</h3>
                 <div className="text-right flex-shrink-0">
                   {restEdit ? (
                     <input type="number" inputMode="numeric" value={restResult.calories}
                       onChange={(e) => setRestResult((r) => r ? { ...r, calories: Math.max(0, parseInt(e.target.value) || 0) } : r)}
-                      className="w-20 text-right text-2xl font-light outline-none rounded-lg px-1"
+                      className="w-20 text-right text-[26px] font-light outline-none rounded-lg px-1"
                       style={{ background: "rgba(var(--tint-violet-rgb),0.5)", color: "var(--text-1)" }} />
                   ) : (
-                    <p className="text-[28px] font-light leading-none" style={{ color: "#E8620C" }}>{restResult.calories}</p>
+                    <p className="text-[26px] font-light leading-none" style={{ color: "#E8620C" }}>{restResult.calories}</p>
                   )}
                   <p className="text-[11px] mt-0.5" style={{ color: "var(--text-3)" }}>kcal</p>
                 </div>
@@ -680,12 +680,12 @@ export default function MealSituationHero({
                     {restEdit ? (
                       <input type="number" inputMode="numeric" value={m.v}
                         onChange={(e) => setRestResult((r) => r ? { ...r, [m.key]: Math.max(0, parseInt(e.target.value) || 0) } : r)}
-                        className="w-12 mx-auto block text-center text-[15px] font-extrabold outline-none rounded"
+                        className="w-12 mx-auto block text-center text-[16px] font-extrabold outline-none rounded"
                         style={{ background: "rgb(var(--surface-rgb))", color: m.c, fontVariantNumeric: "tabular-nums" }} />
                     ) : (
-                      <p className="font-extrabold" style={{ color: m.c, fontSize: 15, fontVariantNumeric: "tabular-nums" }}>{m.v}g</p>
+                      <p className="font-extrabold" style={{ color: m.c, fontSize: 16, fontVariantNumeric: "tabular-nums" }}>{m.v}g</p>
                     )}
-                    <p style={{ color: "var(--text-3)", fontSize: 9.5, marginTop: 3 }}>{m.label}</p>
+                    <p style={{ color: "var(--text-3)", fontSize: 11, marginTop: 2 }}>{m.label}</p>
                   </div>
                 ))}
               </div>
@@ -700,13 +700,13 @@ export default function MealSituationHero({
                 </button>
               </div>
               <motion.button whileTap={{ scale: 0.98 }} onClick={() => { if (restResult) { onLogIdea(restResult); reset(); } }}
-                className="w-full py-3 rounded-2xl text-sm font-semibold cursor-pointer flex items-center justify-center gap-2"
+                className="w-full py-3 rounded-2xl text-[16px] font-semibold cursor-pointer flex items-center justify-center gap-2"
                 style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", color: "#fff", boxShadow: "var(--ombre-action)" }}>
                 <Check size={17} strokeWidth={2.5} /> Ajouter à ma journée
               </motion.button>
             </>) : (<>
               {/* Saisie : nom du plat + portion imposée */}
-              <p className="text-xs font-light leading-relaxed" style={{ color: "var(--text-2)" }}>
+              <p className="text-[13px] font-light leading-relaxed" style={{ color: "var(--text-2)" }}>
                 Un reste au frigo&nbsp;? Dis-moi lequel, je l&apos;estime, même sans le peser.
               </p>
               <div>
@@ -717,7 +717,7 @@ export default function MealSituationHero({
                   <input value={restDish} onChange={(e) => setRestDish(e.target.value)}
                     onKeyDown={(e) => { if (e.key === "Enter" && canEstimateRest) estimateRest(); }}
                     placeholder="Gratin de courgettes, pâtes bolo…"
-                    className="flex-1 bg-transparent text-sm outline-none" style={{ color: "var(--text-1)" }} />
+                    className="flex-1 bg-transparent text-[16px] outline-none" style={{ color: "var(--text-1)" }} />
                 </div>
               </div>
               <div>
@@ -737,16 +737,16 @@ export default function MealSituationHero({
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img src={`/nutrition/portions/${p.key}.png`} alt="" aria-hidden loading="lazy" decoding="async"
                           className="w-11 h-11 object-contain" style={{ opacity: on ? 1 : 0.9 }} />
-                        <span className="text-[12.5px] font-medium mt-1" style={{ color: "var(--text-1)" }}>{p.label}</span>
+                        <span className="text-[13px] font-medium mt-1" style={{ color: "var(--text-1)" }}>{p.label}</span>
                         <span className="text-[11px]" style={{ color: "var(--text-3)" }}>{p.sub}</span>
                       </motion.button>
                     );
                   })}
                 </div>
               </div>
-              {restErr && <p className="text-xs" style={{ color: "#E53E3E" }}>⚠️ {restErr}</p>}
+              {restErr && <p className="text-[13px]" style={{ color: "#E53E3E" }}>⚠️ {restErr}</p>}
               <motion.button whileTap={{ scale: 0.98 }} onClick={estimateRest} disabled={!canEstimateRest || restBusy}
-                className="w-full py-3 rounded-2xl text-sm font-semibold cursor-pointer flex items-center justify-center gap-2 mt-1"
+                className="w-full py-3 rounded-2xl text-[16px] font-semibold cursor-pointer flex items-center justify-center gap-2 mt-1"
                 style={{
                   background: canEstimateRest ? "linear-gradient(135deg,#8B5CF6,#C13BC1)" : "rgba(var(--tint-violet-rgb),0.5)",
                   color: canEstimateRest ? "#fff" : "var(--text-3)",
@@ -789,7 +789,7 @@ export default function MealSituationHero({
 
                 {/* ── Étape 1 · Où : genre + nom de l'enseigne ── */}
                 {formStep === 1 && (<>
-                  <h3 className="text-xl font-medium leading-snug" style={{ color: "var(--text-1)" }}>Tu commandes où&nbsp;?</h3>
+                  <h3 className="text-[20px] font-medium leading-snug" style={{ color: "var(--text-1)" }}>Tu commandes où&nbsp;?</h3>
                   <div>
                     <p className="vy-label mb-1.5" style={{ color: "var(--text-3)" }}>Quel genre d&apos;endroit&nbsp;?</p>
                     <div className="grid grid-cols-4 gap-1.5">
@@ -824,11 +824,11 @@ export default function MealSituationHero({
                       <input value={enseigne} onChange={(e) => setEnseigneSmart(e.target.value)}
                         onKeyDown={(e) => { if (e.key === "Enter") setFormStep(2); }}
                         placeholder="McDonald’s, le resto du coin…"
-                        className="flex-1 bg-transparent text-sm outline-none" style={{ color: "var(--text-1)" }} />
+                        className="flex-1 bg-transparent text-[16px] outline-none" style={{ color: "var(--text-1)" }} />
                     </div>
                   </div>
                   <motion.button whileTap={{ scale: 0.98 }} onClick={() => setFormStep(2)}
-                    className="w-full py-3 rounded-2xl text-sm font-semibold cursor-pointer flex items-center justify-center gap-2 mt-1"
+                    className="w-full py-3 rounded-2xl text-[16px] font-semibold cursor-pointer flex items-center justify-center gap-2 mt-1"
                     style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", color: "#fff", boxShadow: "var(--ombre-action)" }}>
                     Suivant <ArrowRight size={16} strokeWidth={2} />
                   </motion.button>
@@ -837,21 +837,21 @@ export default function MealSituationHero({
                 {/* ── Étape 2 · Quoi : panier vivant, un article à la fois ── */}
                 {formStep === 2 && (<>
                   <div>
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium"
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium"
                       style={{ background: "rgba(139,92,246,0.16)", border: "1px solid rgba(139,92,246,0.4)", color: "var(--text-1)" }}>
                       <Flame size={13} strokeWidth={2} style={{ color: "var(--exp-encre)" }} />
                       {enseigne.trim() ? `${enseigne.trim()} · ` : ""}{CATEGORY_LABEL[category]}
                     </span>
                   </div>
                   <div>
-                    <h3 className="text-xl font-medium leading-snug" style={{ color: "var(--text-1)" }}>Qu&apos;est-ce que tu prends&nbsp;?</h3>
-                    <p className="text-xs font-light mt-1" style={{ color: "var(--text-3)" }}>Ajoute tes articles un par un, un seul suffit.</p>
+                    <h3 className="text-[20px] font-medium leading-snug" style={{ color: "var(--text-1)" }}>Qu&apos;est-ce que tu prends&nbsp;?</h3>
+                    <p className="text-[13px] font-light mt-1" style={{ color: "var(--text-3)" }}>Ajoute tes articles un par un, un seul suffit.</p>
                   </div>
                   <div className="flex flex-col gap-2">
                     {articles.map((a, i) => (
                       <div key={`${a}-${i}`} className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl"
                         style={{ background: "rgba(var(--tint-violet-rgb),0.5)", border: "1px solid rgba(var(--violet-mid-rgb),0.35)" }}>
-                        <span className="flex-1 text-sm" style={{ color: "var(--text-1)" }}>{a}</span>
+                        <span className="flex-1 text-[16px]" style={{ color: "var(--text-1)" }}>{a}</span>
                         <button onClick={() => removeArticle(i)} aria-label="Retirer" className="cursor-pointer flex-shrink-0">
                           <X size={15} strokeWidth={2} style={{ color: "var(--text-3)" }} />
                         </button>
@@ -865,7 +865,7 @@ export default function MealSituationHero({
                       <input value={articleInput} onChange={(e) => setArticleInput(e.target.value)}
                         onKeyDown={(e) => { if (e.key === "Enter") addArticle(articleInput); }}
                         placeholder="Ajoute un article…"
-                        className="flex-1 bg-transparent text-sm outline-none" style={{ color: "var(--text-1)" }} />
+                        className="flex-1 bg-transparent text-[16px] outline-none" style={{ color: "var(--text-1)" }} />
                     </div>
                   </div>
                   <div className="flex gap-2 mt-1">
@@ -875,7 +875,7 @@ export default function MealSituationHero({
                       <ArrowLeft size={16} strokeWidth={2} style={{ color: "var(--text-2)" }} />
                     </motion.button>
                     <motion.button whileTap={{ scale: 0.98 }} onClick={() => setFormStep(3)}
-                      className="flex-1 py-3 rounded-2xl text-sm font-semibold cursor-pointer flex items-center justify-center gap-2"
+                      className="flex-1 py-3 rounded-2xl text-[16px] font-semibold cursor-pointer flex items-center justify-center gap-2"
                       style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", color: "#fff", boxShadow: "var(--ombre-action)" }}>
                       Suivant <ArrowRight size={16} strokeWidth={2} />
                     </motion.button>
@@ -885,15 +885,15 @@ export default function MealSituationHero({
                 {/* ── Étape 3 · Extras : ajouts rapides adaptés à l'endroit ── */}
                 {formStep === 3 && (<>
                   <div>
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium"
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium"
                       style={{ background: "rgba(139,92,246,0.16)", border: "1px solid rgba(139,92,246,0.4)", color: "var(--text-1)" }}>
                       <Flame size={13} strokeWidth={2} style={{ color: "var(--exp-encre)" }} />
                       {enseigne.trim() ? `${enseigne.trim()} · ` : ""}{CATEGORY_LABEL[category]}
                     </span>
                   </div>
                   <div>
-                    <h3 className="text-xl font-medium leading-snug" style={{ color: "var(--text-1)" }}>Tu oublies rien&nbsp;?</h3>
-                    <p className="text-xs font-light mt-1" style={{ color: "var(--text-3)" }}>Les petits plus qu&apos;on oublie souvent.</p>
+                    <h3 className="text-[20px] font-medium leading-snug" style={{ color: "var(--text-1)" }}>Tu oublies rien&nbsp;?</h3>
+                    <p className="text-[13px] font-light mt-1" style={{ color: "var(--text-3)" }}>Les petits plus qu&apos;on oublie souvent.</p>
                   </div>
                   <div className="grid grid-cols-2 gap-2">
                     {EXTRAS_BY_CATEGORY[category].map((x) => {
@@ -907,7 +907,7 @@ export default function MealSituationHero({
                             border: `1px solid ${on ? "rgba(139,92,246,0.45)" : "rgba(var(--violet-mid-rgb),0.35)"}`,
                           }}>
                           <XIcon size={17} strokeWidth={1.8} style={{ color: "var(--exp-encre)" }} />
-                          <span className="flex-1 text-sm" style={{ color: "var(--text-1)" }}>{x.label}</span>
+                          <span className="flex-1 text-[16px]" style={{ color: "var(--text-1)" }}>{x.label}</span>
                           {on
                             ? <Check size={15} strokeWidth={2.5} style={{ color: "var(--exp-encre)" }} />
                             : <Plus size={15} strokeWidth={2} style={{ color: "var(--text-3)" }} />}
@@ -916,7 +916,7 @@ export default function MealSituationHero({
                     })}
                   </div>
 
-                  {estErr && <p className="text-xs" style={{ color: "#E53E3E" }}>⚠️ {estErr}</p>}
+                  {estErr && <p className="text-[13px]" style={{ color: "#E53E3E" }}>⚠️ {estErr}</p>}
 
                   <div className="flex gap-2 mt-1">
                     <motion.button whileTap={{ scale: 0.96 }} onClick={goBack} aria-label="Retour"
@@ -925,7 +925,7 @@ export default function MealSituationHero({
                       <ArrowLeft size={16} strokeWidth={2} style={{ color: "var(--text-2)" }} />
                     </motion.button>
                     <motion.button whileTap={{ scale: 0.98 }} onClick={runEstimate} disabled={!canEstimate || estimating}
-                      className="flex-1 py-3 rounded-2xl text-sm font-semibold cursor-pointer flex items-center justify-center gap-2"
+                      className="flex-1 py-3 rounded-2xl text-[16px] font-semibold cursor-pointer flex items-center justify-center gap-2"
                       style={{
                         background: canEstimate ? "linear-gradient(135deg,#8B5CF6,#C13BC1)" : "rgba(var(--tint-violet-rgb),0.5)",
                         color: canEstimate ? "#fff" : "var(--text-3)",
@@ -951,13 +951,13 @@ export default function MealSituationHero({
             {advice.length === 0 ? (
               <div className="flex flex-col items-center text-center gap-2 py-10">
                 <AssistantSpark px={24} />
-                <p className="text-sm font-light" style={{ color: "var(--text-3)" }}>Un instant…</p>
+                <p className="text-[13px] font-light" style={{ color: "var(--text-3)" }}>Un instant…</p>
               </div>
             ) : (<>
               {/* Contexte : ce que lit l'IA */}
               <div className="flex items-center gap-1.5 mb-3">
                 <AssistantSpark px={14} />
-                <p className="text-[12px]" style={{ color: "var(--text-3)" }}>
+                <p className="text-[13px]" style={{ color: "var(--text-3)" }}>
                   {advisorNeeds && advisorNeeds.goalCalories > 0 ? (
                     <>Il te reste <span style={{ color: "var(--text-1)", fontWeight: 600 }}>{advisorNeeds.remaining} kcal</span>
                     {advisorNeeds.proteinRemaining >= 15 && <> · <span style={{ color: "var(--text-1)", fontWeight: 600 }}>{advisorNeeds.proteinRemaining} g</span> de protéines à couvrir</>}</>
@@ -979,7 +979,7 @@ export default function MealSituationHero({
                       <div className="absolute inset-0" style={{ background: "var(--voile-carte)" }} />
                       <span className="absolute top-2 left-2.5 text-[11px] font-semibold px-2 py-0.5 rounded-full"
                         style={{ background: "var(--accent)", color: "#fff" }}>Le mieux placé</span>
-                      <span className="absolute left-3 bottom-2 text-[12px] font-semibold" style={{ color: "#fff", textShadow: "0 1px 3px rgba(0,0,0,0.7)" }}>
+                      <span className="absolute left-3 bottom-2 text-[11px] font-semibold" style={{ color: "#fff", textShadow: "0 1px 3px rgba(0,0,0,0.7)" }}>
                         {CATEGORY_LABEL[top.category]}
                       </span>
                     </div>
@@ -992,11 +992,11 @@ export default function MealSituationHero({
                         </div>
                       )}
                       <p className="text-[16px] font-medium leading-snug" style={{ color: "var(--text-1)" }}>{p.title}</p>
-                      <p className="text-[12.5px] font-light mt-1 mb-3" style={{ color: "var(--text-3)", lineHeight: 1.5 }}>
+                      <p className="text-[13px] font-light mt-1 mb-3" style={{ color: "var(--text-3)", lineHeight: 1.5 }}>
                         {p.vise}{p.saute ? ` · ${p.saute}` : ""}
                       </p>
                       <motion.button whileTap={{ scale: 0.98 }} onClick={() => startFromGenre(top.category)}
-                        className="w-full py-3 rounded-2xl text-sm font-semibold cursor-pointer flex items-center justify-center gap-2"
+                        className="w-full py-3 rounded-2xl text-[16px] font-semibold cursor-pointer flex items-center justify-center gap-2"
                         style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", color: "#fff", boxShadow: "var(--ombre-action)" }}>
                         Je pars là-dessus <ArrowRight size={16} strokeWidth={2} />
                       </motion.button>
@@ -1020,10 +1020,10 @@ export default function MealSituationHero({
                         <div className="absolute inset-0" style={{ background: "var(--voile-carte)" }} />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-[13.5px] font-medium" style={{ color: "var(--text-1)" }}>
+                        <p className="text-[13px] font-medium" style={{ color: "var(--text-1)" }}>
                           {CATEGORY_LABEL[alt.category]} · <span style={{ color: "var(--text-3)", fontWeight: 400 }}>{alt.profile.short}</span>
                         </p>
-                        <p className="text-[11.5px] font-light truncate" style={{ color: "var(--text-3)" }}>{alt.reason ?? alt.profile.vise}</p>
+                        <p className="text-[11px] font-light truncate" style={{ color: "var(--text-3)" }}>{alt.reason ?? alt.profile.vise}</p>
                       </div>
                       <span className="text-[11px] flex-shrink-0" style={{ color: "var(--text-3)" }}>~{alt.profile.cal}</span>
                       <ChevronRight size={16} strokeWidth={2} className="flex-shrink-0" style={{ color: "var(--text-3)" }} />
@@ -1069,10 +1069,10 @@ export default function MealSituationHero({
                 onClick={(e) => e.stopPropagation()}
                 className="w-full max-w-xs rounded-3xl p-6 text-center"
                 style={{ background: "rgb(var(--surface-rgb))", border: "1px solid rgba(var(--accent-rgb),0.14)" }}>
-                <p className="text-sm" style={{ color: "var(--text-1)" }}>La banque de recettes se remplit.</p>
-                <p className="text-xs mt-1.5 font-light" style={{ color: "var(--text-3)" }}>Rien pour ce filtre.</p>
+                <p className="text-[16px]" style={{ color: "var(--text-1)" }}>La banque de recettes se remplit.</p>
+                <p className="text-[13px] mt-1.5 font-light" style={{ color: "var(--text-3)" }}>Rien pour ce filtre.</p>
                 <button onClick={closeRecipe}
-                  className="mt-4 px-5 py-2.5 rounded-2xl text-sm font-semibold cursor-pointer"
+                  className="mt-4 px-5 py-2.5 rounded-2xl text-[16px] font-semibold cursor-pointer"
                   style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", color: "#fff" }}>
                   Fermer
                 </button>

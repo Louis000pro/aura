@@ -72,9 +72,11 @@ function Mention({ children, color = BLANC(0.42) }: { children: React.ReactNode;
     <p
       style={{
         margin: 0,
-        fontSize: 10,
+        fontSize: 11,
         fontWeight: 600,
-        letterSpacing: "0.16em",
+        /* 0.16 em a 11 px ajoutait 16 % de largeur a une ligne deja courte :
+           on agrandit le texte, on ne l ecarte pas. */
+        letterSpacing: "0.08em",
         textTransform: "uppercase",
         color,
       }}
@@ -766,8 +768,8 @@ export function SceneRepere() {
                   </span>
                   <span
                     style={{
-                      marginTop: 7,
-                      fontSize: 9.5,
+                      marginTop: 6,
+                      fontSize: 11,
                       fontWeight: 700,
                       letterSpacing: "0.02em",
                       color: OR_CLAIR,
@@ -789,8 +791,8 @@ export function SceneRepere() {
                 />
                 <span
                   style={{
-                    marginTop: 7,
-                    fontSize: 9.5,
+                    marginTop: 6,
+                    fontSize: 11,
                     fontWeight: actif ? 700 : 500,
                     color: actif ? "#C3AEFF" : BLANC(0.42),
                     textAlign: "center",

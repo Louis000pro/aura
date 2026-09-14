@@ -36,8 +36,8 @@ export default function MacroTiles({
             padding: compact ? "9px 4px 8px" : "11px 6px 9px",
           }}>
           <span aria-hidden className="absolute top-0 left-0 right-0" style={{ height: 3, background: t.c }} />
-          <p className="font-extrabold" style={{ color: t.c, fontSize: compact ? 14 : 15, fontVariantNumeric: "tabular-nums" }}>{t.v}g</p>
-          <p style={{ color: "var(--text-3)", fontSize: 9.5, marginTop: 3 }}>{t.label}</p>
+          <p className="font-extrabold" style={{ color: t.c, fontSize: 16, fontVariantNumeric: "tabular-nums" }}>{t.v}g</p>
+          <p style={{ color: "var(--text-3)", fontSize: 11, marginTop: 2 }}>{t.label}</p>
         </div>
       ))}
     </div>

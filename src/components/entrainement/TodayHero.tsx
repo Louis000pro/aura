@@ -44,7 +44,7 @@ import { Photo, WIDGET } from "./PhotoSeance";
    Le séparateur s'efface exprès : il porte moins que les valeurs qu'il
    sépare, sinon la ligne se lit comme une suite de points. */
 function V({ children, couleur = "#fff" }: { children: React.ReactNode; couleur?: string }) {
-  return <span className="vy-nombre text-[15px]" style={{ color: couleur }}>{children}</span>;
+  return <span className="vy-nombre text-[16px]" style={{ color: couleur }}>{children}</span>;
 }
 function S() {
   return <span style={{ color: "rgba(255,255,255,0.4)" }}> · </span>;
@@ -154,7 +154,7 @@ export default function TodayHero({
             <motion.button
               whileTap={{ scale: 0.97 }}
               onClick={onStart}
-              className="w-full py-3.5 rounded-2xl flex items-center justify-center gap-2 cursor-pointer text-[15px] font-extrabold text-white"
+              className="w-full py-3.5 rounded-2xl flex items-center justify-center gap-2 cursor-pointer text-[16px] font-extrabold text-white"
               style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", boxShadow: "var(--ombre-action)" }}
             >
               <Play size={14} strokeWidth={2.5} fill="#fff" /> C&apos;est parti
@@ -197,7 +197,7 @@ export default function TodayHero({
             <motion.button
               whileTap={{ scale: 0.97 }}
               onClick={onStart}
-              className="w-full py-3.5 rounded-2xl flex items-center justify-center gap-2 cursor-pointer text-[15px] font-extrabold text-white"
+              className="w-full py-3.5 rounded-2xl flex items-center justify-center gap-2 cursor-pointer text-[16px] font-extrabold text-white"
               style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", boxShadow: "var(--ombre-action)" }}
             >
               <Play size={14} strokeWidth={2.5} fill="#fff" /> C&apos;est parti
@@ -225,7 +225,7 @@ export default function TodayHero({
             <p className="text-[11px] font-semibold mb-1" style={{ color: "#9FD8C6" }}>
               Adaptation en cours
             </p>
-            <h2 className="text-[30px] md:text-[34px] leading-[1.04] font-extralight text-white">Rien de compatible.</h2>
+            <h2 className="text-[34px] md:text-[38px] leading-[1.02] font-extralight text-white">Rien de compatible.</h2>
             <p className="text-[16px] font-normal mt-1.5 mb-3.5 leading-relaxed" style={{ color: "rgba(255,255,255,0.82)" }}>
               Aucune séance de ton programme n&apos;est compatible avec ton adaptation
               {adaptationJusquau ? <>, en cours jusqu&apos;au <b className="font-bold text-white">{adaptationJusquau}</b></> : null}.
@@ -233,7 +233,7 @@ export default function TodayHero({
             <motion.button
               whileTap={{ scale: 0.97 }}
               onClick={onAdaptation}
-              className="w-full py-3 rounded-2xl flex items-center justify-center gap-2 cursor-pointer text-[13.5px] font-bold text-white"
+              className="w-full py-3 rounded-2xl flex items-center justify-center gap-2 cursor-pointer text-[16px] font-bold text-white"
               style={{ background: "rgba(255,255,255,0.10)", border: "1px solid rgba(255,255,255,0.28)", backdropFilter: "blur(4px)" }}
             >
               Gérer mon adaptation
@@ -260,7 +260,7 @@ export default function TodayHero({
             <motion.button
               whileTap={{ scale: 0.97 }}
               onClick={onImprovise}
-              className="w-full py-3 rounded-2xl flex items-center justify-center gap-2 cursor-pointer text-[13.5px] font-bold text-white"
+              className="w-full py-3 rounded-2xl flex items-center justify-center gap-2 cursor-pointer text-[16px] font-bold text-white"
               style={{ background: "rgba(255,255,255,0.10)", border: "1px solid rgba(255,255,255,0.28)", backdropFilter: "blur(4px)" }}
             >
               ✦ J&apos;ai envie de bouger
@@ -281,7 +281,7 @@ export default function TodayHero({
             <motion.button
               whileTap={{ scale: 0.97 }}
               onClick={onImprovise}
-              className="w-full py-3 rounded-2xl flex items-center justify-center gap-2 cursor-pointer text-[13.5px] font-bold text-white"
+              className="w-full py-3 rounded-2xl flex items-center justify-center gap-2 cursor-pointer text-[16px] font-bold text-white"
               style={{ background: "rgba(255,255,255,0.10)", border: "1px solid rgba(255,255,255,0.28)", backdropFilter: "blur(4px)" }}
             >
               ✦ J&apos;ai quand même envie de bouger
@@ -303,7 +303,7 @@ export default function TodayHero({
             <motion.button
               whileTap={{ scale: 0.97 }}
               onClick={onRedo}
-              className="w-full py-3 rounded-2xl flex items-center justify-center gap-2 cursor-pointer text-[13.5px] font-bold text-white"
+              className="w-full py-3 rounded-2xl flex items-center justify-center gap-2 cursor-pointer text-[16px] font-bold text-white"
               style={{ background: "rgba(255,255,255,0.10)", border: "1px solid rgba(255,255,255,0.28)", backdropFilter: "blur(4px)" }}
             >
               <Play size={12} strokeWidth={2.5} fill="#fff" /> Refaire la séance
@@ -317,14 +317,14 @@ export default function TodayHero({
               On fait connaissance
             </p>
             {/* La question n'apparaît QUE quand l'app ne sait pas — même logique que Nutrition */}
-            <h2 className="text-[30px] md:text-[34px] leading-[1.04] font-extralight text-white">On s&apos;entraîne comment&nbsp;?</h2>
+            <h2 className="text-[34px] md:text-[38px] leading-[1.02] font-extralight text-white">On s&apos;entraîne comment&nbsp;?</h2>
             <p className="text-[16px] font-normal mt-1.5 mb-3.5 leading-relaxed" style={{ color: "rgba(255,255,255,0.82)" }}>
               Quelques questions, et ta semaine est prête.
             </p>
             <motion.button
               whileTap={{ scale: 0.97 }}
               onClick={onOrganise}
-              className="w-full py-3.5 rounded-2xl flex items-center justify-center gap-2 cursor-pointer text-[15px] font-extrabold text-white"
+              className="w-full py-3.5 rounded-2xl flex items-center justify-center gap-2 cursor-pointer text-[16px] font-extrabold text-white"
               style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", boxShadow: "var(--ombre-action)" }}
             >
               ✦ Créer mon planning

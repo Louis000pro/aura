@@ -700,6 +700,31 @@ html.a-session .accueil-landing { display: none; }
    Cinq niveaux, très écartés, et rien entre eux. Le contraste fait la
    hiérarchie ; la nuance ne la fait jamais.
 
+   ── LES SIX MARCHES, ET ON N'ÉCRIT RIEN ENTRE ELLES ───────────────────
+   Posée sur tout le produit le 2026-09-14. Avant : 858 tailles écrites à la
+   main, 25 valeurs distinctes, dont NEUF entre 11 et 17 px. Un écart d'un
+   demi-pixel n'est pas une hiérarchie, c'est du bruit qu'il faut entretenir.
+
+     11 px  la mention, l'unité, l'étiquette. C'est le PLANCHER (11 pt chez
+            Apple), donc rien ne descend en dessous, jamais.
+     13 px  ce qu'on lit en second : une action secondaire, une méta-donnée.
+     16 px  le texte qu'on lit vraiment, et le défaut d'un bouton.
+     20 px  le titre d'un bloc à l'intérieur d'un écran.
+     26 px  la valeur forte, ou le titre d'un écran qui n'a pas de display.
+     34 px+ le héros. UN SEUL par écran (`.vy-display` monte jusqu'à 52).
+
+   ⚠️ CHOISIR LA MARCHE LA PLUS PROCHE N'EST PAS LA RÈGLE. La règle est de
+   choisir la marche du RÔLE, puis de regarder la boîte : monter une taille
+   sans regarder ce qui la contient, c'est déplacer le défaut, pas le
+   corriger (payé à l'écran sur le libellé de la barre de navigation, sur
+   trois badges de compteur et sur les muscles du tunnel). Dans le doute on
+   descend d'une marche : une boîte ne casse jamais en rétrécissant.
+
+   ⚠️ CES CLASSES SONT L'ÉCHELLE, ET RÉCIPROQUEMENT. Si `.vy-label` valait
+   12 et qu'un écran écrivait 11 pour la même chose, il y aurait deux valeurs
+   pour un seul rôle, donc pas d'échelle. Elles ont été réalignées le
+   2026-09-14 : label 12 → 11, corps 15 → 16, sous 17 → 20.
+
    ⚠️ Ces règles sont HORS `@layer` : dans la cascade en couches, le non-couché
    l'emporte sur les utilitaires Tailwind, donc `.vy-titre` gagne contre un
    `text-lg` oublié à côté. C'est voulu, c'est ce qui garantit que l'échelle
@@ -757,27 +782,34 @@ html.a-session .accueil-landing { display: none; }
 }
 
 /* Titre d'un bloc à l'intérieur d'un écran. Reste en sans : le titrage à
-   petite taille perd ce qui le rend reconnaissable et gagne du bruit. */
+   petite taille perd ce qui le rend reconnaissable et gagne du bruit.
+   20 px, comme « Ma journée » sur l'accueil : c'est la MÊME marche, et deux
+   valeurs pour un seul rôle sont exactement le défaut qu'on répare.
+   ⚠️ Un titre de CARTE dans une grille n'est pas un titre de bloc : il vit à
+   16 px, sinon il tronque. */
 .vy-sous {
-  font-size: 1.0625rem;
+  font-size: 1.25rem;
   font-weight: 600;
   line-height: 1.3;
   letter-spacing: -0.012em;
 }
 
 /* La phrase qu'on lit vraiment. Interligne large : c'est ce qui sépare un texte
-   d'un bloc de remplissage. */
+   d'un bloc de remplissage. 16 px : c'est le corps de l'échelle, et c'est aussi
+   le défaut d'iOS moins un cran, pas une note de bas de page. */
 .vy-corps {
-  font-size: 0.9375rem;
+  font-size: 1rem;
   font-weight: 400;
   line-height: 1.55;
   color: var(--text-body);
 }
 
 /* L'étiquette qui NOMME une donnée. Jamais en capitales étirées : sur des mots
-   français ça écrase les accents et ça sonne « tableau de bord ». */
+   français ça écrase les accents et ça sonne « tableau de bord ».
+   11 px, le plancher, et c'est le SEUL rôle qui a le droit d'y être : une
+   étiquette accompagne une valeur, elle ne se lit pas pour elle-même. */
 .vy-label {
-  font-size: 0.75rem;
+  font-size: 0.6875rem;
   font-weight: 500;
   line-height: 1.25;
   letter-spacing: 0.005em;

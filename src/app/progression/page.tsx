@@ -214,7 +214,7 @@ function ForkCard({ kind, count, onClick }: {
         <p className="text-[11px] font-semibold mb-0.5" style={{ color: "#C9B8FF" }}>
           {isIA ? "Nouvelle séance" : "Mes séances"}
         </p>
-        <p className="text-[16.5px] font-semibold text-white leading-tight">{isIA ? "J’improvise" : "Je choisis"}</p>
+        <p className="text-[16px] font-semibold text-white leading-tight">{isIA ? "J’improvise" : "Je choisis"}</p>
         <p className="text-[11px] font-normal mt-0.5 leading-snug" style={{ color: "rgba(255,255,255,0.68)" }}>
           {isIA ? "Ton temps, ton matériel" : `${count ?? 0} séances et cours`}
         </p>
@@ -391,7 +391,7 @@ function AdaptationStrip({ etapes, adaptation, onOpen }: {
         <ChevronRight size={13} strokeWidth={2.6} style={{ color: "var(--text-3)" }} />
       </p>
       {adaptation && (
-        <p className="text-[12px] font-medium mt-1.5" style={{ color: "var(--text-2)" }}>
+        <p className="text-[13px] font-medium mt-1.5" style={{ color: "var(--text-2)" }}>
           {evitees ? `${evitees} · ` : ""}jusqu&apos;au {libelleJour(adaptation.fin)}
         </p>
       )}
@@ -484,9 +484,9 @@ function ElanSheet({ data, onClose }: { data: ElanData; onClose: () => void }) {
     <Sheet onClose={onClose} maxHeight="72vh">
       <div className="px-5 pt-2 pb-6 overflow-y-auto">
         <div className="flex items-center justify-between">
-          <p className="text-[17px] font-bold" style={{ color: "var(--text-1)" }}>Ton élan</p>
+          <p className="text-[20px] font-bold" style={{ color: "var(--text-1)" }}>Ton élan</p>
           {streak > 0 && (
-            <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11.5px] font-extrabold"
+            <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-extrabold"
               style={{ background: "rgba(239,159,39,0.14)", color: "#EF9F27" }}>
               <Flame size={13} strokeWidth={2.4} fill="#EF9F27" />
               {streak} sem.
@@ -548,13 +548,13 @@ function ElanSheet({ data, onClose }: { data: ElanData; onClose: () => void }) {
 
         {/* Comparaison vs semaine dernière — jamais un reproche */}
         {prevMinutes > 0 && delta > 0 && (
-          <div className="flex items-center gap-2 mt-4 px-3 py-2.5 text-[11.5px] font-bold"
+          <div className="flex items-center gap-2 mt-4 px-3 py-2.5 text-[13px] font-bold"
             style={{ borderRadius: "var(--r-controle)", background: "rgba(139,92,246,0.09)", border: "1px solid rgba(139,92,246,0.22)", color: "var(--exp-encre)" }}>
             ▲ +{delta} min vs la semaine dernière, ça monte.
           </div>
         )}
         {prevMinutes > 0 && delta <= 0 && (
-          <div className="flex items-center gap-2 mt-4 px-3 py-2.5 text-[11.5px] font-semibold"
+          <div className="flex items-center gap-2 mt-4 px-3 py-2.5 text-[13px] font-semibold"
             style={{ borderRadius: "var(--r-controle)", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", color: "var(--text-2)" }}>
             Encore {Math.abs(delta) + 1} min pour égaler la semaine dernière.
           </div>
@@ -810,7 +810,7 @@ function SessionTile({ session, onStart, onManage, onPremium, canAccessPremium, 
             background: "var(--voile-affiche)",
             forcedColorAdjust: "none",
           }}>
-          <p className="text-[12.5px] font-semibold text-white leading-[1.12] tracking-tight"
+          <p className="text-[13px] font-semibold text-white leading-[1.12] tracking-tight"
             style={{
               display: "-webkit-box", WebkitLineClamp: advice ? 3 : 2, WebkitBoxOrient: "vertical", overflow: "hidden",
               textShadow: "0 2px 10px rgba(0,0,0,0.5)",
@@ -947,7 +947,7 @@ function PremiumPreviewSheet({ session, premiumCount, onClose, onUpgrade }: {
               <p className="text-[11px] font-semibold" style={{ color: "var(--text-3)" }}>
                 Dans ce mini-cours
               </p>
-              <p className="text-[12.5px] font-semibold leading-relaxed mt-2" style={{ color: "var(--text-2)" }}>
+              <p className="text-[13px] font-semibold leading-relaxed mt-2" style={{ color: "var(--text-2)" }}>
                 {advice.intro}
               </p>
               <div className="mt-3 space-y-2">
@@ -994,7 +994,7 @@ function PremiumPreviewSheet({ session, premiumCount, onClose, onUpgrade }: {
           <motion.button
             whileTap={{ scale: 0.97 }}
             onClick={onUpgrade}
-            className="w-full h-12 mt-4 rounded-2xl text-[13px] font-black text-white"
+            className="w-full h-12 mt-4 rounded-2xl text-[16px] font-black text-white"
             style={{
               background: "linear-gradient(135deg,#8B5CF6,#C13BC1)",
               boxShadow: "var(--ombre-action)",
@@ -1005,7 +1005,7 @@ function PremiumPreviewSheet({ session, premiumCount, onClose, onUpgrade }: {
           <motion.button
             whileTap={{ scale: 0.97 }}
             onClick={onClose}
-            className="w-full h-10 mt-1 text-[11.5px] font-semibold"
+            className="w-full h-10 mt-1 text-[13px] font-semibold"
             style={{ color: "var(--text-3)" }}
           >
             Pas maintenant
@@ -1066,7 +1066,7 @@ function ManageSheet({ session, onClose, onEdit, onDelete, onVisibilityChange, o
         style={{ background: "rgba(var(--tint-violet-rgb),0.7)" }} aria-label="Retour">
         <ChevronLeft size={15} strokeWidth={2.4} style={{ color: "var(--text-2)" }} />
       </motion.button>
-      <p className="text-[13.5px] font-bold" style={{ color: "var(--text-1)" }}>
+      <p className="text-[13px] font-bold" style={{ color: "var(--text-1)" }}>
         {vue === "jours" ? "Quel jour ?" : `Les exercices · ${exos.length}`}
       </p>
     </div>
@@ -1100,7 +1100,7 @@ function ManageSheet({ session, onClose, onEdit, onDelete, onVisibilityChange, o
           <Photo img={art.img} pos="center 20%"
             className="rounded-xl flex-shrink-0" style={{ width: 46, height: 61 }} />
           <div className="min-w-0 flex-1">
-            <p className="text-[15px] font-bold leading-tight truncate" style={{ color: "var(--text-1)" }}>{session.title}</p>
+            <p className="text-[16px] font-bold leading-tight truncate" style={{ color: "var(--text-1)" }}>{session.title}</p>
             <p className="text-[11px] font-medium mt-1" style={{ color: "var(--text-3)" }}>
               {session.perso ? "Séance perso" : "Séance Vaiiya"} · <span className="vy-nombre">{session.duration}</span> min
             </p>
@@ -1135,7 +1135,7 @@ function ManageSheet({ session, onClose, onEdit, onDelete, onVisibilityChange, o
                     <ExerciseThumb name={e.name} size={48} delay={i * 130} />
                   </span>
                   <span className="flex-1 min-w-0">
-                    <span className="block text-[12.5px] font-semibold truncate" style={{ color: "var(--text-1)" }}>{e.name}</span>
+                    <span className="block text-[13px] font-semibold truncate" style={{ color: "var(--text-1)" }}>{e.name}</span>
                     <span className="block text-[11px] font-medium mt-0.5" style={{ color: "var(--text-3)" }}>
                       {e.sets} × {e.reps}
                     </span>
@@ -1268,7 +1268,7 @@ function MonEspaceBloc({ count, max, onComposer, onVoir }: {
           <p className="text-[11px] font-semibold" style={{ color: "var(--accent)" }}>
             Ton espace
           </p>
-          <h3 className="text-[19px] sm:text-[21px] font-semibold leading-tight mt-1" style={{ color: "var(--text-1)" }}>
+          <h3 className="text-[20px] font-semibold leading-tight mt-1" style={{ color: "var(--text-1)" }}>
             Mes séances
           </h3>
           <p className="text-[11px] font-light mt-1 leading-snug" style={{ color: "var(--text-3)" }}>
@@ -1285,13 +1285,13 @@ function MonEspaceBloc({ count, max, onComposer, onVoir }: {
               className="h-9 px-3.5 rounded-full flex items-center gap-1.5 cursor-pointer border-none text-white flex-shrink-0"
               style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", boxShadow: "0 6px 16px rgba(139,92,246,0.32)" }}>
               <Plus size={14} strokeWidth={2.6} />
-              <span className="text-[12px] font-bold">Composer</span>
+              <span className="text-[13px] font-bold">Composer</span>
             </motion.button>
             {count > 0 && (
               <motion.button whileTap={{ scale: 0.96 }} onClick={onVoir}
                 className="h-9 px-3 rounded-full flex items-center gap-0.5 cursor-pointer bg-transparent flex-shrink-0"
                 style={{ border: "1px solid rgba(var(--accent-rgb),0.28)", color: "var(--accent)" }}>
-                <span className="text-[12px] font-bold">Les voir</span>
+                <span className="text-[13px] font-bold">Les voir</span>
                 <ChevronRight size={13} strokeWidth={2.6} />
               </motion.button>
             )}
@@ -1333,21 +1333,21 @@ function PleinSheet({ max, onVoir, onPremium, onClose }: {
             style={{ background: "rgba(var(--gold-rgb),0.14)" }}>
             <Layers size={18} strokeWidth={1.9} style={{ color: "var(--gold)" }} />
           </span>
-          <p className="text-[17px] font-semibold mt-3" style={{ color: "var(--text-1)" }}>
+          <p className="text-[20px] font-semibold mt-3" style={{ color: "var(--text-1)" }}>
             Tes places sont prises
           </p>
-          <p className="text-[12px] font-light mt-1.5 leading-relaxed" style={{ color: "var(--text-3)" }}>
+          <p className="text-[13px] font-light mt-1.5 leading-relaxed" style={{ color: "var(--text-3)" }}>
             En gratuit, tu gardes {max} séances. Supprime celle que tu ne fais plus, la place
             se libère tout de suite. Avec Premium, tu en gardes autant que tu veux.
           </p>
 
           <motion.button whileTap={{ scale: 0.97 }} onClick={onPremium}
-            className="w-full h-12 mt-5 rounded-2xl text-[13px] font-black text-white cursor-pointer border-none"
+            className="w-full h-12 mt-5 rounded-2xl text-[16px] font-black text-white cursor-pointer border-none"
             style={{ background: "linear-gradient(120deg,var(--accent),var(--gold))", boxShadow: "0 8px 22px rgba(139,92,246,0.3)" }}>
             Passer Premium
           </motion.button>
           <motion.button whileTap={{ scale: 0.97 }} onClick={onVoir}
-            className="w-full h-11 mt-1 text-[12px] font-semibold cursor-pointer bg-transparent border-none"
+            className="w-full h-11 mt-1 text-[13px] font-semibold cursor-pointer bg-transparent border-none"
             style={{ color: "var(--text-2)" }}>
             Voir mes séances
           </motion.button>
@@ -1445,7 +1445,7 @@ function PremiumSessionRow({ count, children, title = "Continue avec Premium", u
           <span className="absolute inset-0 m-auto rounded-full" style={{ width: 15, height: 3, background: "#fff" }} />
         </span>
         <div className="min-w-0 flex-1">
-          <p className="text-[14px] font-extrabold leading-tight" style={{ color: "var(--text-0)" }}>
+          <p className="text-[16px] font-extrabold leading-tight" style={{ color: "var(--text-0)" }}>
             {title}
           </p>
           <p className="text-[11px] leading-relaxed mt-1" style={{ color: "var(--text-3)" }}>
@@ -1453,7 +1453,7 @@ function PremiumSessionRow({ count, children, title = "Continue avec Premium", u
           </p>
         </div>
         <div className="flex-shrink-0 text-right" style={{ color: "var(--or-encre)" }}>
-          <p className="text-[19px] font-black leading-none tracking-[-0.02em]">{count}</p>
+          <p className="text-[20px] font-black leading-none tracking-[-0.02em]">{count}</p>
           <p className="text-[11px] font-semibold mt-1" style={{ opacity: 0.74 }}>
             {mot}
           </p>
@@ -1588,11 +1588,11 @@ function CatTile({ cat, count, freeCount, premiumCount, large, onOpen }: {
       {large ? (
         <div className="absolute inset-0 flex flex-col justify-end px-4 pb-4 pt-10 text-left"
           style={{ background: "linear-gradient(90deg, rgba(var(--voile-photo-rgb),0.9) 8%, rgba(var(--voile-photo-rgb),0.62) 52%, rgba(var(--voile-photo-rgb),0.18))" }}>
-          <p className="text-[18px] font-semibold text-white leading-[1.06] tracking-tight"
+          <p className="text-[20px] font-semibold text-white leading-[1.06] tracking-tight"
             style={{ textShadow: "0 2px 10px rgba(0,0,0,0.5)" }}>
             {cat.name}
           </p>
-          <p className="text-[11.5px] font-light mt-1 max-w-[30ch] leading-snug" style={{ color: "rgba(255,255,255,0.78)" }}>
+          <p className="text-[13px] font-light mt-1 max-w-[30ch] leading-snug" style={{ color: "rgba(255,255,255,0.78)" }}>
             {cat.tag}
           </p>
           <p className="text-[11px] font-bold mt-2" style={{ color: "rgba(255,255,255,0.62)" }}>{sub}</p>
@@ -1600,7 +1600,7 @@ function CatTile({ cat, count, freeCount, premiumCount, large, onOpen }: {
       ) : (
         <div className="absolute inset-x-0 bottom-0 px-2.5 pb-3.5 pt-14 flex flex-col items-center text-center"
           style={{ background: "var(--voile-affiche)" }}>
-          <p className="text-[14.5px] font-semibold text-white leading-[1.08] tracking-tight"
+          <p className="text-[16px] font-semibold text-white leading-[1.08] tracking-tight"
             style={{ textWrap: "balance", textShadow: "0 2px 10px rgba(0,0,0,0.5)" }}>
             {cat.name}
           </p>
@@ -1684,7 +1684,7 @@ function ChooseSheet({ sessions, loading, canAccessPremium, maxSeances, catIniti
       <span className="w-10 h-10 rounded-2xl flex items-center justify-center" style={{ background: "rgba(var(--accent-rgb),0.12)" }}>
         <Plus size={17} strokeWidth={2.2} style={{ color: "var(--accent)" }} />
       </span>
-      <span className="text-[11.5px] font-bold text-center" style={{ color: "var(--text-2)" }}>Composer ma séance</span>
+      <span className="text-[13px] font-bold text-center" style={{ color: "var(--text-2)" }}>Composer ma séance</span>
       <span className="text-[11px] font-medium text-center leading-snug" style={{ color: "var(--text-3)" }}>
         102 exercices animés
       </span>
@@ -1838,7 +1838,7 @@ function ChooseSheet({ sessions, loading, canAccessPremium, maxSeances, catIniti
               On la remplit séance après séance. Crée la tienne, elle apparaîtra ici.
             </p>
             <motion.button whileTap={{ scale: 0.95 }} onClick={onCreate}
-              className="mt-5 px-5 h-10 rounded-full text-[12px] font-bold text-white cursor-pointer border-none"
+              className="mt-5 px-5 h-10 rounded-full text-[13px] font-bold text-white cursor-pointer border-none"
               style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", boxShadow: "var(--ombre-action)" }}>
               Créer la mienne
             </motion.button>
@@ -1969,7 +1969,7 @@ function ImproviseSheet({ defaultPlace, defaultHalteres, difficulty, onClose, on
     <Sheet onClose={onClose} maxHeight="80vh">
       <div className="px-5 pt-2 flex-shrink-0">
         <div className="flex items-center justify-between">
-          <h2 className="text-[19px] font-light flex items-center gap-2" style={{ color: "var(--text-1)" }}>
+          <h2 className="text-[20px] font-light flex items-center gap-2" style={{ color: "var(--text-1)" }}>
             <span style={{ color: "var(--accent)" }}>✦</span> J&apos;improvise
           </h2>
           <motion.button whileTap={{ scale: 0.9 }} onClick={onClose}
@@ -1978,7 +1978,7 @@ function ImproviseSheet({ defaultPlace, defaultHalteres, difficulty, onClose, on
             <X size={14} strokeWidth={2} style={{ color: "var(--text-3)" }} />
           </motion.button>
         </div>
-        <p className="text-[11.5px] font-light mt-0.5" style={{ color: "var(--text-3)" }}>
+        <p className="text-[13px] font-light mt-0.5" style={{ color: "var(--text-3)" }}>
           Dis-moi ta réalité, je m&apos;occupe du reste.
         </p>
       </div>
@@ -2051,7 +2051,7 @@ function ImproviseSheet({ defaultPlace, defaultHalteres, difficulty, onClose, on
           whileTap={{ scale: loading ? 1 : 0.97 }}
           onClick={generate}
           disabled={loading}
-          className="w-full mt-4 py-3.5 rounded-2xl flex items-center justify-center gap-2 cursor-pointer text-[14.5px] font-extrabold text-white"
+          className="w-full mt-4 py-3.5 rounded-2xl flex items-center justify-center gap-2 cursor-pointer text-[16px] font-extrabold text-white"
           style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", boxShadow: "var(--ombre-action)", opacity: loading ? 0.85 : 1 }}
         >
           {loading ? (
@@ -2211,7 +2211,7 @@ function SemaineSheet({ week, today, fetchWeekAt, onClose, onStartDay, onAsk, on
       {/* En-tête + navigation semaine */}
       <div className="px-5 pt-1 pb-3 flex items-center justify-between flex-shrink-0">
         <div>
-          <p className="text-[17px] font-bold" style={{ color: "var(--text-1)" }}>Ma semaine</p>
+          <p className="text-[20px] font-bold" style={{ color: "var(--text-1)" }}>Ma semaine</p>
           <p className="text-[11px] font-medium mt-0.5" style={{ color: "var(--text-3)" }}>{rangeLabel}</p>
         </div>
         <div className="flex items-center gap-1.5">
@@ -2234,7 +2234,7 @@ function SemaineSheet({ week, today, fetchWeekAt, onClose, onStartDay, onAsk, on
           la phrase reste la version commune. */}
       <div className="px-5 pb-3 flex items-start gap-2.5 flex-shrink-0">
         <VisageGuide guide={guide} etat={verdict ? "explain" : "listen"} size={32} />
-        <p className="text-[12.5px] font-light leading-snug pt-0.5" style={{ color: "var(--text-2)" }}>
+        <p className="text-[13px] font-light leading-snug pt-0.5" style={{ color: "var(--text-2)" }}>
           {voix(guide, cleVerdict, { seances: seances.length })}
         </p>
       </div>
@@ -2288,12 +2288,12 @@ function SemaineSheet({ week, today, fetchWeekAt, onClose, onStartDay, onAsk, on
       <div className="px-5 pt-3 flex gap-2 flex-shrink-0"
         style={{ borderTop: "1px solid rgba(var(--tint-violet-rgb),0.8)", paddingBottom: "calc(1rem + env(safe-area-inset-bottom))" }}>
         <motion.button whileTap={{ scale: 0.97 }} onClick={() => onAsk("Refais toute ma semaine d’entraînement")}
-          className="flex-1 py-3 rounded-2xl text-[13px] font-extrabold text-white cursor-pointer flex items-center justify-center gap-1.5"
+          className="flex-1 py-3 rounded-2xl text-[16px] font-extrabold text-white cursor-pointer flex items-center justify-center gap-1.5"
           style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", boxShadow: "var(--ombre-action)" }}>
           ✦ Refais ma semaine
         </motion.button>
         <motion.button whileTap={{ scale: 0.96 }} onClick={onAddSession}
-          className="px-4 rounded-2xl text-[12.5px] font-bold cursor-pointer flex items-center gap-1"
+          className="px-4 rounded-2xl text-[13px] font-bold cursor-pointer flex items-center gap-1"
           style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.14)", color: "var(--text-2)" }}>
           <Plus size={14} strokeWidth={2.4} /> Séance
         </motion.button>
@@ -2341,7 +2341,7 @@ function DayRow({ date, jour, idx, abbr, isToday, openKey, dropHover, dimmed, re
       <div className="flex items-start gap-2.5">
         <div className="w-8 flex-shrink-0 text-center pt-1.5">
           <span className="block text-[11px] font-extrabold tracking-wide" style={{ color: isToday ? "#A78BFA" : "var(--text-3)" }}>{abbr}</span>
-          <span className="block text-[15px] font-light" style={{ color: isToday ? "#A78BFA" : "var(--text-2)" }}>{num}</span>
+          <span className="block text-[16px] font-light" style={{ color: isToday ? "#A78BFA" : "var(--text-2)" }}>{num}</span>
         </div>
         <div className="flex-1 min-w-0 flex flex-col gap-1">
           {ordre.length === 0 ? (
@@ -2429,7 +2429,7 @@ function CarteJournee({ intention, idx, isToday, dropHover, open, onToggle, onSt
             </span>
           )}
           <div className="min-w-0 flex-1">
-            <p className="text-[12.5px] font-bold truncate" style={{ color: "var(--text-1)" }}>{titre}</p>
+            <p className="text-[13px] font-bold truncate" style={{ color: "var(--text-1)" }}>{titre}</p>
             <p className="text-[11px] font-semibold mt-0.5 truncate" style={{ color: dropHover ? "#C9B8FF" : "var(--text-3)" }}>
               {dropHover ? "Dépose la séance ici ✦"
                 : isSeance ? (d!.type === "HIIT" ? 30 : 45) + " min" + (lieuLabel(d!.location) ? " · " + lieuLabel(d!.location) : "")
@@ -2507,7 +2507,7 @@ function OrganiserSheet({ onClose, cycle }: { onClose: () => void; cycle: CycleS
     <Sheet onClose={onClose} maxHeight="92vh">
       <div className="px-5 pt-2 pb-3 flex items-center justify-between flex-shrink-0">
         <div>
-          <h2 className="text-[19px] font-light" style={{ color: "var(--text-1)" }}>Organiser ma semaine</h2>
+          <h2 className="text-[20px] font-light" style={{ color: "var(--text-1)" }}>Organiser ma semaine</h2>
         </div>
         <motion.button whileTap={{ scale: 0.9 }} onClick={onClose}
           className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer"
@@ -3057,7 +3057,7 @@ export default function ProgressionPage() {
           initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
           className="mb-3.5 flex items-baseline justify-between gap-3"
         >
-          <h1 className="text-2xl font-extralight tracking-tight" style={{ color: "var(--text-1)" }}>
+          <h1 className="text-[26px] font-extralight tracking-tight" style={{ color: "var(--text-1)" }}>
             <em className="not-italic font-light" style={{
               background: "linear-gradient(135deg,var(--accent),var(--gold))",
               WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
@@ -3311,7 +3311,7 @@ export default function ProgressionPage() {
             className="fixed bottom-32 md:bottom-6 left-1/2 -translate-x-1/2 z-[200] px-5 py-3 rounded-2xl flex items-center gap-2"
             style={{ background: "rgba(var(--surface-rgb),0.9)", backdropFilter: "blur(10px)", border: "1px solid rgba(var(--surface-rgb),0.9)", boxShadow: "var(--ombre-flottant)", whiteSpace: "nowrap" }}>
             <Check size={14} strokeWidth={2.5} style={{ color: "var(--gold)" }} />
-            <span className="text-sm font-medium" style={{ color: "var(--text-1)" }}>{toast}</span>
+            <span className="text-[13px] font-medium" style={{ color: "var(--text-1)" }}>{toast}</span>
           </motion.div>
         )}
       </AnimatePresence>

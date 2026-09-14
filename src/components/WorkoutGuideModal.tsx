@@ -108,7 +108,7 @@ function ExerciseVideo({ exerciseName }: { exerciseName: string }) {
           <span className="inline-flex items-center justify-center w-10 h-10 rounded-full" style={{ background: "#FF0000" }}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="#fff"><path d="M8 5v14l11-7z" /></svg>
           </span>
-          <span className="text-xs font-semibold">Voir la démo sur YouTube</span>
+          <span className="text-[13px] font-semibold">Voir la démo sur YouTube</span>
         </a>
       )}
     </div>
@@ -764,7 +764,7 @@ function BandeMaillon({ maillon, onAller }: { maillon: MaillonFranchi; onAller: 
       </span>
 
       <span className="flex-1 min-w-0">
-        <strong className="block text-[12.5px] font-bold" style={{ color: or }}>
+        <strong className="block text-[13px] font-bold" style={{ color: or }}>
           {maillon.reussi ? "L’affiche est complète" : "Maillon franchi"}
         </strong>
         <small className="block text-[11px]" style={{ color: encre }}>
@@ -809,11 +809,11 @@ function BandeBadge({ badges, onAller }: { badges: Badge[]; onAller: () => void 
         {premier.image
           // eslint-disable-next-line @next/next/no-img-element
           ? <img src={premier.image} alt="" className="absolute inset-0 h-full w-full object-cover" />
-          : <span className="text-[14px] font-black tabular-nums" style={{ color: "#fff", letterSpacing: "-0.04em" }}>{premier.nombre ?? "\u2726"}</span>}
+          : <span className="text-[16px] font-black tabular-nums" style={{ color: "#fff", letterSpacing: "-0.04em" }}>{premier.nombre ?? "\u2726"}</span>}
       </span>
 
       <span className="flex-1 min-w-0">
-        <strong className="block text-[12.5px] font-bold" style={{ color: "#C3AEFF" }}>
+        <strong className="block text-[13px] font-bold" style={{ color: "#C3AEFF" }}>
           {autres > 0 ? `${badges.length} badges gagnés` : "Badge gagné"}
         </strong>
         <small className="block text-[11px]" style={{ color: "#A79FC0" }}>
@@ -1209,7 +1209,7 @@ export default function WorkoutGuideModal({
               })}
             </div>
             <div className="flex items-center justify-between mt-3">
-              <span className="text-[11.5px] font-semibold tabular-nums px-2.5 py-1.5 rounded-full"
+              <span className="text-[11px] font-semibold tabular-nums px-2.5 py-1.5 rounded-full"
                 style={{ color: TUN.t2, background: "rgba(255,255,255,0.06)", border: `1px solid ${TUN.line}` }}>
                 {fmt(elapsed)}
               </span>
@@ -1306,9 +1306,9 @@ export default function WorkoutGuideModal({
                             style={{ borderBottom: i < exercises.length - 1 ? "1px solid rgba(var(--accent-rgb),0.1)" : "none" }}
                             aria-expanded={open}
                           >
-                            <span className="text-[15px] font-black w-4 text-center flex-shrink-0" style={{ color: "rgba(var(--accent-rgb),0.55)" }}>{i + 1}</span>
+                            <span className="text-[16px] font-black w-4 text-center flex-shrink-0" style={{ color: "rgba(var(--accent-rgb),0.55)" }}>{i + 1}</span>
                             <span className="flex-1 min-w-0">
-                              <b className="block text-[13.5px] font-bold tracking-tight truncate" style={{ color: "var(--text-1)" }}>{ex.name}</b>
+                              <b className="block text-[16px] font-bold tracking-tight truncate" style={{ color: "var(--text-1)" }}>{ex.name}</b>
                               {/* ⚠️ L'INTERLETTRAGE BAISSE PARCE QUE LA TAILLE MONTE. Il valait
                                   0,1 em pour aérer du 8,5 px ; à 11 px il ajoutait 29 % de largeur
                                   à une ligne déjà `truncate`, donc il aurait tronqué des muscles
@@ -1328,7 +1328,7 @@ export default function WorkoutGuideModal({
                               >
                                 <div className="pb-3 pt-1 flex flex-col gap-2.5">
                                   {ex.tip && (
-                                    <p className="text-[12.5px] font-light leading-relaxed" style={{ color: "var(--text-body)" }}>{ex.tip}</p>
+                                    <p className="text-[13px] font-light leading-relaxed" style={{ color: "var(--text-body)" }}>{ex.tip}</p>
                                   )}
                                   <ExerciseVideo exerciseName={ex.name} />
                                 </div>
@@ -1361,7 +1361,7 @@ export default function WorkoutGuideModal({
                     style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.16)", backdropFilter: "blur(4px)", color: TUN.t1 }}
                     aria-expanded={showInfo}>
                     <svg width="11" height="11" viewBox="0 0 24 24" fill="#C9B8FF"><path d="M8 5v14l11-7z" /></svg>
-                    <span className="text-[11.5px] font-bold">Démo · ton coach</span>
+                    <span className="text-[11px] font-bold">Démo · ton coach</span>
                     <motion.span animate={{ rotate: showInfo ? 180 : 0 }} transition={{ duration: 0.2 }} className="flex">
                       <ChevronDown size={12} strokeWidth={2.4} style={{ color: TUN.t3 }} />
                     </motion.span>
@@ -1407,8 +1407,8 @@ export default function WorkoutGuideModal({
                         {paused
                           ? <Play size={30} strokeWidth={1.5} style={{ color: TUN.lav }} />
                           : prep > 0
-                            ? <motion.span key={prep} initial={{ scale: 1.6, opacity: 0.3 }} animate={{ scale: 1, opacity: 1 }} transition={{ duration: 0.3 }} className="text-6xl font-black tabular-nums" style={{ color: TUN.orange, fontFamily: "var(--chiffre)", fontVariationSettings: "var(--w-nombre)", letterSpacing: "-0.045em" }}>{prep}</motion.span>
-                            : <span className="text-5xl font-black tabular-nums" style={{ color: "#fff", fontFamily: "var(--chiffre)", fontVariationSettings: "var(--w-nombre)", letterSpacing: "-0.045em" }}>{autoCountdown}</span>}
+                            ? <motion.span key={prep} initial={{ scale: 1.6, opacity: 0.3 }} animate={{ scale: 1, opacity: 1 }} transition={{ duration: 0.3 }} className="vy-nombre text-[60px]" style={{ fontWeight: 800, color: TUN.orange }}>{prep}</motion.span>
+                            : <span className="vy-nombre text-[48px]" style={{ fontWeight: 800, color: "#fff" }}>{autoCountdown}</span>}
                       </div>
                     </motion.button>
                     <p className="text-[11px] font-extrabold tracking-[0.2em]" style={{ color: TUN.t2 }}>SÉRIE <b style={{ color: "#fff" }}>{setIdx + 1}</b> / {cur.sets}</p>
@@ -1416,8 +1416,8 @@ export default function WorkoutGuideModal({
                 ) : (
                   <div className="relative z-[2] text-center mt-5">
                     <p className="text-[11px] font-extrabold tracking-[0.2em]" style={{ color: TUN.t2 }}>SÉRIE <b style={{ color: "#fff" }}>{setIdx + 1}</b> / {cur.sets}</p>
-                    <p className="font-black tabular-nums leading-none mt-2" style={{ fontSize: 60, color: "#fff", fontFamily: "var(--chiffre)", fontVariationSettings: "var(--w-nombre)", letterSpacing: "-0.045em" }}>{repsHero}</p>
-                    {repsSub && <p className="text-[12px] font-medium mt-1" style={{ color: TUN.t3 }}>{repsSub}</p>}
+                    <p className="vy-nombre text-[60px] leading-none mt-2" style={{ fontWeight: 800, color: "#fff" }}>{repsHero}</p>
+                    {repsSub && <p className="text-[13px] font-medium mt-1" style={{ color: TUN.t3 }}>{repsSub}</p>}
                     <div className="flex gap-2.5 justify-center mt-4">
                       {Array.from({ length: cur.sets }).map((_, i) => {
                         const isDone = doneMap[exerciseIdx]?.[i];
@@ -1449,7 +1449,7 @@ export default function WorkoutGuideModal({
                       {guide
                         ? <VisageGuide guide={guide} etat="listen" size={24} />
                         : <Pause size={12} strokeWidth={2} style={{ color: TUN.lav }} />}
-                      <span className="text-xs font-semibold" style={{ color: TUN.lav }}>
+                      <span className="text-[13px] font-semibold" style={{ color: TUN.lav }}>
                         {guide ? voix(guide, "seance.pause") : "En pause"}
                       </span>
                     </motion.div>
@@ -1471,7 +1471,7 @@ export default function WorkoutGuideModal({
                     <span className="flex-shrink-0 mt-0.5">
                       {guide ? <VisageGuide guide={guide} etat="explain" size={26} /> : <AssistantSpark px={17} />}
                     </span>
-                    <p className="text-[12px] leading-relaxed" style={{ color: TUN.t2 }}><b style={{ color: TUN.t1 }}>Le geste : </b>{cur.tip}</p>
+                    <p className="text-[13px] leading-relaxed" style={{ color: TUN.t2 }}><b style={{ color: TUN.t1 }}>Le geste : </b>{cur.tip}</p>
                   </div>
                 )}
               </motion.div>
@@ -1498,15 +1498,15 @@ export default function WorkoutGuideModal({
                         ? <Play size={34} strokeWidth={1.5} style={{ color: TUN.orange }} />
                         : <>
                             <span className="text-[11px] font-extrabold tracking-[0.3em]" style={{ color: TUN.orange }}>REPOS</span>
-                            <span className="font-black tabular-nums leading-none" style={{ fontSize: 52, color: "#fff", fontFamily: "var(--chiffre)", fontVariationSettings: "var(--w-nombre)", letterSpacing: "-0.045em" }}>{fmt(restCountdown)}</span>
+                            <span className="vy-nombre text-[48px] leading-none" style={{ fontWeight: 800, color: "#fff" }}>{fmt(restCountdown)}</span>
                             <span className="text-[11px] font-medium tabular-nums" style={{ color: TUN.t3 }}>sur {fmt(restTotal)}</span>
                           </>}
                     </div>
                   </motion.button>
                   <div className="flex gap-2.5 mt-6">
-                    <button onClick={add15} className="text-[12.5px] font-bold px-5 py-2.5 rounded-full cursor-pointer"
+                    <button onClick={add15} className="text-[13px] font-bold px-5 py-2.5 rounded-full cursor-pointer"
                       style={{ color: TUN.t1, background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.14)" }}>+ 15 s</button>
-                    <button onClick={() => setRestCountdown(0)} className="text-[12.5px] font-bold px-5 py-2.5 rounded-full cursor-pointer"
+                    <button onClick={() => setRestCountdown(0)} className="text-[13px] font-bold px-5 py-2.5 rounded-full cursor-pointer"
                       style={{ color: TUN.t1, background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.14)" }}>Passer le repos</button>
                   </div>
                 </div>
@@ -1524,10 +1524,10 @@ export default function WorkoutGuideModal({
                     <div className="relative z-[2] mt-7">
                       <p className="text-[11px] font-extrabold tracking-[0.2em] mb-2" style={{ color: TUN.t3 }}>ENSUITE</p>
                       <div className="flex items-center gap-3 rounded-2xl p-3" style={{ background: "rgba(255,255,255,0.05)", border: `1px solid ${TUN.line}` }}>
-                        <span className="w-11 h-14 rounded-xl flex items-center justify-center flex-shrink-0 text-[15px] font-black"
+                        <span className="w-11 h-14 rounded-xl flex items-center justify-center flex-shrink-0 text-[16px] font-black"
                           style={{ background: "rgba(139,92,246,0.1)", border: "1px solid rgba(139,92,246,0.18)", color: TUN.lav }}>{num}</span>
                         <div className="min-w-0">
-                          <b className="block text-sm font-extrabold tracking-tight truncate" style={{ color: "#fff" }}>{nx.name}</b>
+                          <b className="block text-[16px] font-extrabold tracking-tight truncate" style={{ color: "#fff" }}>{nx.name}</b>
                           <span className="block text-[11px] font-extrabold tracking-[0.08em] truncate" style={{ color: TUN.lav }}>{sub}</span>
                         </div>
                       </div>
@@ -1549,7 +1549,7 @@ export default function WorkoutGuideModal({
                       <span className="flex-shrink-0">
                         {guide ? <VisageGuide guide={guide} etat={etat} size={26} /> : <AssistantSpark px={16} />}
                       </span>
-                      <p className="text-[12px]" style={{ color: TUN.t2 }}>{voix(guide, cle)}</p>
+                      <p className="text-[13px]" style={{ color: TUN.t2 }}>{voix(guide, cle)}</p>
                     </div>
                   );
                 })()}
@@ -1597,7 +1597,7 @@ export default function WorkoutGuideModal({
                   </motion.div>
                 )}
                 <h2 className="font-black uppercase tracking-tight mt-4" style={{ fontSize: 24, color: "#fff" }}>Séance terminée</h2>
-                <p className="text-[12.5px] mt-1.5" style={{ color: TUN.t2 }}>{guide ? title : `${title} · rien lâché`}</p>
+                <p className="text-[13px] mt-1.5" style={{ color: TUN.t2 }}>{guide ? title : `${title} · rien lâché`}</p>
                 {guide && (
                   <motion.p
                     initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }}
@@ -1623,7 +1623,7 @@ export default function WorkoutGuideModal({
                     >
                       <span style={{ fontSize: 17 }} aria-hidden="true">🔥</span>
                       <span className="text-left">
-                        <strong className="block text-[12.5px] font-bold" style={{ color: "#FFD34E" }}>
+                        <strong className="block text-[13px] font-bold" style={{ color: "#FFD34E" }}>
                           Journée validée
                         </strong>
                         <small className="block text-[11px]" style={{ color: TUN.t2 }}>
@@ -1668,7 +1668,7 @@ export default function WorkoutGuideModal({
                   ].map(st => (
                     <div key={st.l} className="rounded-2xl px-3.5 py-3.5 text-left" style={{ background: "rgba(255,255,255,0.05)", border: `1px solid ${TUN.line}` }}>
                       <p className="text-[11px] font-extrabold tracking-[0.18em]" style={{ color: TUN.t3 }}>{st.l}</p>
-                      <p className="font-black tabular-nums mt-1" style={{ fontSize: 21, color: st.c, fontFamily: "var(--chiffre)", fontVariationSettings: "var(--w-nombre)", letterSpacing: "-0.045em" }}>
+                      <p className="vy-nombre text-[20px] mt-1" style={{ fontWeight: 800, color: st.c }}>
                         {st.v}<small className="text-[11px] font-bold" style={{ color: TUN.t3, letterSpacing: 0 }}>{st.s}</small>
                       </p>
                     </div>
@@ -1702,7 +1702,7 @@ export default function WorkoutGuideModal({
                 initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
                 whileTap={{ scale: 0.97 }}
                 onClick={startWorkout}
-                className="w-full py-4 rounded-2xl flex items-center justify-center gap-2 font-bold text-[15px] cursor-pointer text-white"
+                className="w-full py-4 rounded-2xl flex items-center justify-center gap-2 font-bold text-[16px] cursor-pointer text-white"
                 style={{ background: "linear-gradient(100deg,#8B5CF6,#C13BC1)", boxShadow: "0 10px 30px -6px rgba(193,59,193,0.45)" }}
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="#fff"><path d="M13 2L4.09 12.11a.6.6 0 0 0 .45 1h5.56l-1.1 8.89L17.91 11.9a.6.6 0 0 0-.45-1h-5.56z" /></svg>
@@ -1714,13 +1714,13 @@ export default function WorkoutGuideModal({
               <motion.div key="set-done" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
                 className="flex flex-col items-center gap-1.5">
                 <motion.button whileTap={{ scale: 0.97 }} onClick={completeSet}
-                  className="w-full py-[18px] rounded-[22px] flex items-center justify-center gap-2 font-extrabold text-base cursor-pointer text-white"
+                  className="w-full py-[18px] rounded-[22px] flex items-center justify-center gap-2 font-extrabold text-[16px] cursor-pointer text-white"
                   style={{ background: "linear-gradient(100deg,#8B5CF6,#C13BC1)", boxShadow: "0 10px 30px -6px rgba(193,59,193,0.45)" }}
                 >
                   Série terminée ✓
                 </motion.button>
                 {exerciseIdx < exercises.length - 1 && (
-                  <button onClick={skipExercise} className="text-[12.5px] font-semibold py-2 cursor-pointer" style={{ color: TUN.t3 }}>
+                  <button onClick={skipExercise} className="text-[13px] font-semibold py-2 cursor-pointer" style={{ color: TUN.t3 }}>
                     Passer l&apos;exercice
                   </button>
                 )}
@@ -1731,13 +1731,13 @@ export default function WorkoutGuideModal({
               <motion.div key="skip-timed" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
                 className="flex flex-col items-center gap-1.5">
                 <motion.button whileTap={{ scale: 0.97 }} onClick={() => setAutoCountdown(0)}
-                  className="w-full py-[18px] rounded-[22px] flex items-center justify-center gap-2 font-extrabold text-base cursor-pointer text-white"
+                  className="w-full py-[18px] rounded-[22px] flex items-center justify-center gap-2 font-extrabold text-[16px] cursor-pointer text-white"
                   style={{ background: "linear-gradient(100deg,#8B5CF6,#C13BC1)", boxShadow: "0 10px 30px -6px rgba(193,59,193,0.45)" }}
                 >
                   {isHiit && hiitSub === "work" ? "Passer l’effort" : "Valider ✓"}
                 </motion.button>
                 {exerciseIdx < exercises.length - 1 && (
-                  <button onClick={skipExercise} className="text-[12.5px] font-semibold py-2 cursor-pointer" style={{ color: TUN.t3 }}>
+                  <button onClick={skipExercise} className="text-[13px] font-semibold py-2 cursor-pointer" style={{ color: TUN.t3 }}>
                     Passer l&apos;exercice
                   </button>
                 )}
@@ -1763,7 +1763,7 @@ export default function WorkoutGuideModal({
                     {garde === "gardee" ? (
                       <div className="flex items-center justify-center gap-2 py-1">
                         <Check size={14} strokeWidth={2.6} style={{ color: TUN.teal }} />
-                        <span className="text-[12.5px] font-semibold" style={{ color: TUN.teal }}>
+                        <span className="text-[13px] font-semibold" style={{ color: TUN.teal }}>
                           Ajoutée à tes séances
                         </span>
                       </div>
@@ -1793,13 +1793,13 @@ export default function WorkoutGuideModal({
                         <div className="flex gap-2 mt-3">
                           <motion.button whileTap={{ scale: 0.97 }}
                             onClick={() => { onGarder(); setGarde("gardee"); }}
-                            className="flex-1 py-2.5 rounded-xl flex items-center justify-center gap-1.5 font-bold text-[12.5px] cursor-pointer text-white"
+                            className="flex-1 py-2.5 rounded-xl flex items-center justify-center gap-1.5 font-bold text-[13px] cursor-pointer text-white"
                             style={{ background: "linear-gradient(100deg,#8B5CF6,#C13BC1)", boxShadow: "0 8px 22px -6px rgba(193,59,193,0.5)" }}>
                             <Plus size={14} strokeWidth={2.6} /> Garder la séance
                           </motion.button>
                           <motion.button whileTap={{ scale: 0.97 }}
                             onClick={() => setGarde("refusee")}
-                            className="px-4 py-2.5 rounded-xl font-semibold text-[12.5px] cursor-pointer"
+                            className="px-4 py-2.5 rounded-xl font-semibold text-[13px] cursor-pointer"
                             style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.14)", color: TUN.t2 }}>
                             Non
                           </motion.button>
@@ -1814,7 +1814,7 @@ export default function WorkoutGuideModal({
                 </div>
                 {user && shareStatus !== "done" && (
                   <motion.button whileTap={{ scale: 0.97 }} onClick={shareAsPost} disabled={shareStatus === "saving"}
-                    className="w-full py-4 rounded-2xl flex items-center justify-center gap-2 font-bold text-sm cursor-pointer text-white"
+                    className="w-full py-4 rounded-2xl flex items-center justify-center gap-2 font-bold text-[16px] cursor-pointer text-white"
                     style={{ background: "linear-gradient(100deg,#8B5CF6,#C13BC1)", boxShadow: "0 10px 30px -6px rgba(193,59,193,0.45)", opacity: shareStatus === "saving" ? 0.7 : 1 }}
                   >
                     {shareStatus === "saving"
@@ -1827,25 +1827,25 @@ export default function WorkoutGuideModal({
                     natif du téléphone. La feuille en propose deux : une de tes
                     discussions, ou le dehors. Le mot dit enfin la vérité. */}
                 <motion.button whileTap={{ scale: 0.97 }} onClick={() => setEnvoiAffiche(true)}
-                  className="w-full py-3.5 rounded-2xl flex items-center justify-center gap-2 font-bold text-sm cursor-pointer"
+                  className="w-full py-3.5 rounded-2xl flex items-center justify-center gap-2 font-bold text-[16px] cursor-pointer"
                   style={{ background: "rgba(139,92,246,0.12)", color: TUN.lav, border: "1px solid rgba(139,92,246,0.4)" }}
                 >
                   <Share2 size={15} strokeWidth={2} /> Envoyer à quelqu&apos;un
                 </motion.button>
                 {shareStatus === "done" && (
-                  <div className="w-full py-3 rounded-2xl flex items-center justify-center gap-2 text-sm font-medium"
+                  <div className="w-full py-3 rounded-2xl flex items-center justify-center gap-2 text-[16px] font-medium"
                     style={{ background: "rgba(43,212,160,0.1)", color: TUN.teal, border: "1px solid rgba(43,212,160,0.25)" }}
                   >
                     ✓ Affiche gardée dans ton profil
                   </div>
                 )}
                 {shareStatus === "error" && (
-                  <button onClick={() => setShareStatus("idle")} className="text-xs cursor-pointer py-2" style={{ color: "#F87171" }}>
+                  <button onClick={() => setShareStatus("idle")} className="text-[13px] cursor-pointer py-2" style={{ color: "#F87171" }}>
                     Erreur, réessayer
                   </button>
                 )}
                 <button onClick={onClose}
-                  className="w-full py-3.5 rounded-2xl flex items-center justify-center font-bold text-sm cursor-pointer"
+                  className="w-full py-3.5 rounded-2xl flex items-center justify-center font-bold text-[16px] cursor-pointer"
                   style={{ background: "rgba(255,255,255,0.06)", color: TUN.t1, border: "1px solid rgba(255,255,255,0.12)" }}
                 >
                   Terminer
