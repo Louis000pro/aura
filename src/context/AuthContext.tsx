@@ -60,31 +60,56 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [justLoggedIn, setJustLoggedIn] = useState(false);
   const [isNewUser, setIsNewUser]     = useState(false);
   const initialized = useRef(false);
+  /* ⚠️ LE NUMÉRO DE LA LECTURE EN COURS, ET IL N'EST PAS DÉCORATIF.
+     `enrichUser` lance une lecture asynchrone puis écrit `setUser`. Elle est
+     appelée à chaque évènement d'authentification (session initiale,
+     connexion, rafraîchissement de jeton) et par `refreshProfile`, donc
+     plusieurs lectures peuvent se chevaucher. Deux conséquences réelles
+     sans ce compteur :
+       · une déconnexion pendant une lecture en vol était ANNULÉE par elle
+         (`setUser(null)` puis, une fraction de seconde après, `setUser(…)`) :
+         l'app se croyait connectée avec une session morte, donc tous les
+         écrans interrogeaient Supabase sans jeton et revenaient vides ;
+       · deux comptes enchaînés pouvaient se croiser, et c'est la lecture la
+         plus LENTE qui gagnait, pas la plus récente.
+     Toute écriture issue d'une lecture périmée est donc jetée. Le
+     `setUser` SYNCHRONE du début, lui, est l'intention de l'appelant : il
+     n'a rien à vérifier. */
+  const lecture = useRef(0);
 
   // Enrichit l'utilisateur avec le pseudo/avatar depuis la table profiles (non-bloquant)
   const enrichUser = (sbUser: SBUser) => {
+    const numero = ++lecture.current;
+    const perimee = () => lecture.current !== numero;
     // D'abord on set avec les metadata (immédiat, sans attendre la DB)
     setUser(mapUser(sbUser));
     // Puis on fetch le profil DB et on met à jour (async, non-bloquant)
-    // Sélection défensive : si la colonne is_banned n'existe pas encore, on refetch sans.
     (async () => {
       let res = await supabase
         .from("profiles")
         .select("pseudo, avatar_url, is_admin, is_banned, is_certified, is_premium")
         .eq("id", sbUser.id)
         .maybeSingle();
-      if (res.error) {
+      /* ⚠️ LE REPLI NE VISE QUE LES COLONNES ABSENTES, ET C'EST TOUT L'ENJEU.
+         Il retirait `is_banned`, `is_certified` et `is_premium` sur N'IMPORTE
+         QUELLE erreur, réseau compris : un accroc passager suffisait donc à
+         faire passer un abonné pour un compte gratuit le temps de sa session,
+         et à sauter la vérification de suspension. On ne retente sans elles
+         que si la base dit qu'elle ne les connaît pas. */
+      if (res.error && /is_banned|is_certified|is_premium|schema cache|does not exist|column/i.test(res.error.message)) {
         res = await supabase
           .from("profiles")
           .select("pseudo, avatar_url, is_admin")
           .eq("id", sbUser.id)
           .maybeSingle();
       }
+      if (perimee()) return;
       const data = res.data as ({ pseudo?: string; avatar_url?: string; is_admin?: boolean; is_banned?: boolean; is_certified?: boolean; is_premium?: boolean } | null);
 
       // Compte banni → déconnexion immédiate
       if (data && (data as { is_banned?: boolean }).is_banned) {
         try { await supabase.auth.signOut(); } catch { /* ignore */ }
+        if (perimee()) return;
         setUser(null);
         if (typeof window !== "undefined") {
           window.alert("Ton compte a été suspendu. Si tu penses que c’est une erreur, contacte le support.");
@@ -110,6 +135,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               avatar_url: (sbUser.user_metadata?.avatar_url as string | undefined) ?? null,
             }),
           }).then((r) => r.json()).then((res) => {
+            if (perimee()) return;
             if (res?.profile) setUser(mapUser(sbUser, res.profile));
           }).catch(() => {});
         }
@@ -149,6 +175,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setIsNewUser(Date.now() - createdAt < 15_000);
         }
       } else {
+        // Une lecture de profil encore en vol appartient à la session qui
+        // vient de mourir : on la périme, sinon elle repose un `user` juste
+        // après ce `setUser(null)`.
+        lecture.current++;
         setSession(null);
         setUser(null);
         setJustLoggedIn(false);
@@ -199,6 +229,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return error ? { message: error.message } : null;
   };
 
+  /* ⚠️ SE DÉCONNECTER N'EST PAS UNE NAVIGATION, C'EST UNE REMISE À ZÉRO, ET LE
+     BOUTON QUI L'APPELLE DOIT FAIRE UNE VRAIE NAVIGATION (`window.location`),
+     jamais un `router.push`. Un `router.push` garde l'arbre React monté : la
+     cloche garde les notifications du compte précédent et son compteur de
+     non-lus, le profil corporel de la nutrition (âge, poids, sexe) reste en
+     mémoire, la journée et le programme aussi. Une trentaine d'écrans gardent
+     ainsi un état par compte, et aucun ne le remet à zéro de lui-même.
+     Repartir du document est la seule garantie qui couvre les trente d'un
+     coup, et c'est aussi le comportement attendu d'une déconnexion.
+     Cette fonction reste volontairement pure : elle ferme la session, elle
+     ne décide pas où va la personne ensuite. */
   const signOut = async () => { await supabase.auth.signOut(); };
 
   const resetPassword: AuthCtx["resetPassword"] = async (email) => {

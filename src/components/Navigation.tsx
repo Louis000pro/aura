@@ -116,7 +116,18 @@ export default function Navigation() {
   // Pages publiques : accueil vitrine et invitation à un relais.
   if (!user && (pathname === "/" || pathname.startsWith("/rejoindre"))) return null;
 
-  const handleLogout = () => { logout(); router.push("/"); };
+  /* On ATTEND la fermeture de session avant de partir : sans le `await`, on
+     naviguait vers l'accueil alors que `user` était encore posé, donc l'écran
+     relançait toutes ses lectures par compte pour se les voir refuser une
+     seconde plus tard. Et on repart du document (voir `signOut` dans
+     AuthContext) : un `router.push` laissait l'état du compte précédent
+     monté dans la trentaine d'écrans qui en gardent un. */
+  const handleLogout = async () => {
+    // On part même si la fermeture rate côté réseau : la session locale est de
+    // toute façon effacée, et un bouton qui ne fait rien est pire.
+    try { await logout(); } catch { /* ignore */ }
+    window.location.assign("/");
+  };
 
   /* Une surface publique n'affiche AUCUNE chrome applicative : ni la barre du
      bas, ni la cloche flottante, ni le rail desktop. Voir

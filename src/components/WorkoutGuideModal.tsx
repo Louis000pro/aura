@@ -862,7 +862,16 @@ export default function WorkoutGuideModal({
   const [showInfo,      setShowInfo]      = useState(false);
   const [introOpen,     setIntroOpen]     = useState<number | null>(null); // exo déplié dans la liste "Au programme"
   const [shareStatus,   setShareStatus]   = useState<"idle" | "saving" | "done" | "error">("idle");
-  const [sessionSaved,  setSessionSaved]  = useState(false);
+  /* ⚠️ TROIS ÉTATS, PAS UN BOOLÉEN, ET LE TROISIÈME EST TOUT L'INTÉRÊT.
+     L'enregistrement est la dernière chose qui se passe après l'effort, et
+     c'est aussi la plus fragile : il part au moment où quelqu'un vient de
+     finir, donc souvent avec un réseau qui vacille. Quand il ratait, `if
+     (error) return` avalait tout : la pastille « Enregistrée dans ton profil »
+     ne s'affichait simplement pas, et une absence de pastille ne se remarque
+     pas. On repartait donc en croyant sa séance comptée alors qu'elle n'existe
+     nulle part. On le dit, sans reproche et sans promettre un rattrapage qui
+     n'existe pas. */
+  const [sessionSaved,  setSessionSaved]  = useState<"attente" | "ok" | "echec">("attente");
   const [envoiAffiche, setEnvoiAffiche] = useState(false);
   /* La série APRÈS cette séance, lue en base une fois l'enregistrement fait.
      `null` tant qu'on ne la connaît pas : on ne montre jamais un compteur
@@ -891,7 +900,7 @@ export default function WorkoutGuideModal({
     if (!user) return;
     const supabase = createClient();
     const resolvedCategory = category ?? (sessionId.includes("-") ? sessionId.split("-")[0] : null) ?? "force";
-    supabase.from("workout_sessions").insert({
+    void Promise.resolve(supabase.from("workout_sessions").insert({
       user_id:          user.id,
       title,
       category:         resolvedCategory,
@@ -900,9 +909,15 @@ export default function WorkoutGuideModal({
       elapsed_seconds:  elapsed,
       exercises:        exercises,
       started_at:       new Date().toISOString(),
-    }).select("id").single().then(({ data, error }) => {
-      if (error) return;
-      setSessionSaved(true);
+    })
+      /* `maybeSingle` et non `single` : ce qu'on veut savoir, c'est si
+         l'écriture a eu lieu. `single` transforme « zéro ligne relue » en
+         erreur, donc il aurait fait annoncer un échec sur une séance
+         pourtant enregistrée. Sans identifiant, seul le maillon du relais
+         est sauté — il en a besoin, le reste non. */
+      .select("id").maybeSingle()).then(({ data, error }) => {
+      if (error) { setSessionSaved("echec"); return; }
+      setSessionSaved("ok");
       // Le maillon du jour, si un relais est en cours. Volontairement
       // silencieux : pas de défi, séance trop courte ou jour déjà
       // franchi par l'équipier → il ne se passe rien, et on ne
@@ -939,7 +954,10 @@ export default function WorkoutGuideModal({
           if (neufs.length) setBadgesGagnes(neufs);
         })
         .catch(() => {});
-    });
+    })
+      // Un rejet laisserait l'état sur « attente », donc ni pastille ni
+      // message : l'écran se tairait exactement comme avant le correctif.
+      .catch(() => setSessionSaved("echec"));
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase]);
 
@@ -1681,12 +1699,26 @@ export default function WorkoutGuideModal({
                 </div>
 
                 <AnimatePresence>
-                  {sessionSaved && (
-                    <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
+                  {sessionSaved === "ok" && (
+                    <motion.div key="saved" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
                       className="flex items-center gap-2 px-4 py-2 rounded-xl mt-3"
                       style={{ background: "rgba(43,212,160,0.09)", border: "1px solid rgba(43,212,160,0.22)" }}>
                       <BookmarkCheck size={12} strokeWidth={2} style={{ color: TUN.teal }} />
                       <span className="text-[11px] font-medium" style={{ color: TUN.teal }}>Enregistrée dans ton profil</span>
+                    </motion.div>
+                  )}
+                  {/* Le teal dit la réussite, donc l'échec n'a pas le droit de le
+                      porter ; et l'orange dit l'énergie. Cette ligne est donc
+                      neutre et discrète : elle dit le fait, elle ne dramatise
+                      pas et ne reproche rien. */}
+                  {sessionSaved === "echec" && (
+                    <motion.div key="unsaved" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
+                      className="flex items-center gap-2 px-4 py-2 rounded-xl mt-3"
+                      style={{ background: "rgba(255,255,255,0.05)", border: `1px solid ${TUN.line}` }}>
+                      <Bookmark size={12} strokeWidth={2} style={{ color: TUN.t2 }} />
+                      <span className="text-[11px] font-medium" style={{ color: TUN.t2 }}>
+                        Pas enregistrée : la connexion a lâché.
+                      </span>
                     </motion.div>
                   )}
                 </AnimatePresence>

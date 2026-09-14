@@ -434,27 +434,47 @@ function DeleteAccountModal({ onClose }: { onClose: () => void }) {
   const [loading, setLoading] = useState(false);
   const [error, setError]     = useState<string | null>(null);
   const supabase = createClient();
-  const router = useRouter();
 
+  /* ⚠️ ON NE DÉCONNECTE QU'APRÈS UNE SUPPRESSION RÉELLEMENT CONFIRMÉE.
+     L'échec de l'appel était avalé par un `.catch(() => {})` puis suivi d'un
+     `signOut()` : quelqu'un demandait la suppression de son compte, se
+     retrouvait déconnecté, et son compte existait toujours — sans qu'aucun
+     écran ne le lui dise. C'est la seule demande du produit où un échec
+     silencieux est aussi un manquement (RGPD). Maintenant l'écran dit non, et
+     la session reste ouverte pour pouvoir réessayer. */
   const handleDelete = async () => {
     if (confirm !== "SUPPRIMER") { setError("Tape exactement SUPPRIMER pour confirmer."); return; }
     setLoading(true);
-    // We can only call admin.deleteUser with service role — so here we just sign out
-    // and show instructions. A real deletion would go via a server API route.
-    const { data: sess } = await supabase.auth.getSession();
-    if (sess.session) {
-      await fetch("/api/account/delete", {
+    setError(null);
+    try {
+      const { data: sess } = await supabase.auth.getSession();
+      if (!sess.session) {
+        setError("Ta session a expiré. Reconnecte-toi puis réessaie.");
+        setLoading(false);
+        return;
+      }
+      const res = await fetch("/api/account/delete", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${sess.session.access_token}`,
         },
         body: JSON.stringify({ user_id: sess.session.user.id }),
-      }).catch(() => {});
+      });
+      if (!res.ok) {
+        setError("La suppression n’a pas abouti. Ton compte est intact, réessaie dans un instant.");
+        setLoading(false);
+        return;
+      }
+    } catch {
+      setError("Réseau indisponible. Ton compte est intact, réessaie dans un instant.");
+      setLoading(false);
+      return;
     }
-    await signOut();
-    setLoading(false);
-    router.replace("/");
+    try { await signOut(); } catch { /* le compte n'existe plus de toute façon */ }
+    // Vraie navigation : le compte vient de disparaître, plus aucun état en
+    // mémoire ne le concerne (voir `signOut` dans AuthContext).
+    window.location.assign("/");
   };
 
   return (
@@ -631,8 +651,10 @@ export default function ParametresPage() {
   };
 
   const handleLogout = async () => {
-    await logout();
-    router.replace("/");
+    try { await logout(); } catch { /* ignore */ }
+    // Vraie navigation, pas `router.replace` : voir `signOut` dans AuthContext.
+    // Un changement de route garderait monté tout l'état du compte précédent.
+    window.location.assign("/");
   };
 
   /**

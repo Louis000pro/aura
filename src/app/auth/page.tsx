@@ -153,6 +153,45 @@ function OtpInput({ value, onChange }: { value: string; onChange: (v: string) =>
    Lu sur window plutôt qu'avec useSearchParams : pas de Suspense à poser. */
 const destinationApres = () => destinationDepuisUrl("/");
 
+/* ⚠️ UNE RÉPONSE N'EST PAS TOUJOURS DU JSON, ET C'EST EXACTEMENT CE QUI
+   BLOQUAIT CET ÉCRAN. `await res.json()` levait dès que le corps n'était pas
+   du JSON (page d'erreur de la plateforme, contrôle anti-robot, réponse
+   tronquée) ; l'exception sortait du gestionnaire sans jamais repasser par
+   `setLoading(false)`, donc le bouton tournait indéfiniment, sans un mot. Même
+   chose pour une simple coupure réseau, ce qui est le cas fréquent sur une app
+   installée sur téléphone. C'est le seul écran du produit qui n'avait pas le
+   `try/catch` que /premium, /nutrition et la création de séance portent déjà.
+   `corpsJson` rend un objet vide plutôt que de lever : le code d'état suffit
+   alors à décider. */
+async function corpsJson(res: Response): Promise<Record<string, unknown>> {
+  try {
+    const d = (await res.json()) as unknown;
+    return d && typeof d === "object" ? (d as Record<string, unknown>) : {};
+  } catch {
+    return {};
+  }
+}
+
+const RESEAU = "Connexion impossible. Vérifie ton réseau et réessaie.";
+
+/** Demande un code de confirmation. Un seul chemin pour l'envoi et le renvoi. */
+async function demanderCode(email: string): Promise<{ token: string } | { erreur: string }> {
+  try {
+    const res = await fetch("/api/auth/send-otp", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
+    });
+    const json = await corpsJson(res);
+    const erreur = typeof json.error === "string" ? json.error : null;
+    if (!res.ok || erreur) return { erreur: erreur ?? "Erreur lors de l’envoi du code." };
+    if (typeof json.token !== "string") return { erreur: "Erreur lors de l’envoi du code." };
+    return { token: json.token };
+  } catch {
+    return { erreur: RESEAU };
+  }
+}
+
 export default function AuthPage() {
   const router = useRouter();
   const { signUp, signIn, signInWithGoogle, resetPassword, user, isLoading } = useAuth();
@@ -198,6 +237,14 @@ export default function AuthPage() {
     setIsMobile(window.matchMedia("(max-width: 767px)").matches);
   }, []);
 
+  /* Le compte à rebours du renvoi de code battait encore après le départ de
+     l'écran : la connexion réussie fait un `router.push`, donc la page se
+     démonte sans que la page se recharge, et la minuterie d'une seconde
+     survivait pour toute la session. */
+  useEffect(() => () => {
+    if (cooldownRef.current) clearInterval(cooldownRef.current);
+  }, []);
+
   const canSubmit = mode === "login"
     ? (email && password)
     : (pseudo && name && lastName && email && password);
@@ -208,31 +255,29 @@ export default function AuthPage() {
     setLoading(true);
     setError(null);
 
-    if (mode === "signup") {
-      // Étape 1 : envoyer l'OTP via notre API Resend (avant de créer le compte)
-      const res = await fetch("/api/auth/send-otp", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
-      });
-      const json = await res.json();
-      if (!res.ok || json.error) {
-        setError(json.error ?? "Erreur lors de l’envoi du code.");
-        setLoading(false);
+    try {
+      if (mode === "signup") {
+        // Étape 1 : envoyer l'OTP via notre API Resend (avant de créer le compte)
+        const r = await demanderCode(email);
+        if ("erreur" in r) { setError(r.erreur); return; }
+        setOtpToken(r.token);
+        setSignupSent(true);
         return;
       }
-      setOtpToken(json.token);
-      setLoading(false);
-      setSignupSent(true);
-      return;
-    } else {
-      const err = await signIn({ email, password });
-      if (err) { setError(err.message === "Invalid login credentials" ? "Email ou mot de passe incorrect." : err.message); setLoading(false); return; }
-    }
 
-    setLoading(false);
-    setSuccess(true);
-    setTimeout(() => router.push(destinationApres()), 900);
+      const err = await signIn({ email, password });
+      if (err) {
+        setError(err.message === "Invalid login credentials" ? "Email ou mot de passe incorrect." : err.message);
+        return;
+      }
+      setSuccess(true);
+      setTimeout(() => router.push(destinationApres()), 900);
+    } catch {
+      setError(RESEAU);
+    } finally {
+      // Quoi qu'il arrive, le bouton reprend la main.
+      setLoading(false);
+    }
   };
 
   const handleGoogle = async () => {
@@ -247,63 +292,62 @@ export default function AuthPage() {
     setOtpLoading(true);
     setOtpError(null);
 
-    // Étape 2 : vérifier le code
-    const verifyRes = await fetch("/api/auth/verify-otp", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ token: otpToken, otp: otpCode }),
-    });
-    const verifyJson = await verifyRes.json();
-    if (!verifyRes.ok || verifyJson.error) {
-      setOtpError(verifyJson.error ?? "Code incorrect ou expiré.");
-      setOtpCode("");
-      setOtpLoading(false);
-      return;
-    }
+    try {
+      // Étape 2 : vérifier le code
+      const verifyRes = await fetch("/api/auth/verify-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token: otpToken, otp: otpCode }),
+      });
+      const verifyJson = await corpsJson(verifyRes);
+      const erreurCode = typeof verifyJson.error === "string" ? verifyJson.error : null;
+      if (!verifyRes.ok || erreurCode) {
+        setOtpError(erreurCode ?? "Code incorrect ou expiré.");
+        setOtpCode("");
+        return;
+      }
 
-    // Étape 3 : créer le compte Supabase (email confirmé = vrai)
-    const err = await signUp({ pseudo, name, lastName, email, password });
-    if (err && err.message !== "User already registered") {
-      setOtpLoading(false);
-      setOtpError(err.message);
-      return;
-    }
+      // Étape 3 : créer le compte Supabase (email confirmé = vrai)
+      const err = await signUp({ pseudo, name, lastName, email, password });
+      if (err && err.message !== "User already registered") {
+        setOtpError(err.message);
+        return;
+      }
 
-    // Étape 4 : forcer la connexion immédiatement pour créer la session
-    // (sinon l'utilisateur est rebouclé sur /auth car la confirmation
-    // Supabase peut être encore active)
-    const signInErr = await signIn({ email, password });
-    setOtpLoading(false);
-    if (signInErr) {
-      // L'inscription a fonctionné mais la connexion auto a échoué :
-      // demander à l'utilisateur de se reconnecter manuellement.
-      setOtpError("Compte créé. Connecte-toi avec ton email et ton mot de passe.");
+      // Étape 4 : forcer la connexion immédiatement pour créer la session
+      // (sinon l'utilisateur est rebouclé sur /auth car la confirmation
+      // Supabase peut être encore active)
+      const signInErr = await signIn({ email, password });
+      if (signInErr) {
+        // L'inscription a fonctionné mais la connexion auto a échoué :
+        // demander à l'utilisateur de se reconnecter manuellement.
+        setOtpError("Compte créé. Connecte-toi avec ton email et ton mot de passe.");
+        setSignupSent(false);
+        return;
+      }
+
       setSignupSent(false);
-      return;
+      setSuccess(true);
+      setTimeout(() => router.push(destinationApres()), 1000);
+    } catch {
+      setOtpError(RESEAU);
+    } finally {
+      setOtpLoading(false);
     }
-
-    setSignupSent(false);
-    setSuccess(true);
-    setTimeout(() => router.push(destinationApres()), 1000);
   };
 
   const handleResendOtp = async () => {
     if (resendCooldown > 0) return;
     setOtpError(null);
-    const res = await fetch("/api/auth/send-otp", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email }),
-    });
-    const json = await res.json();
-    if (!res.ok || json.error) { setOtpError(json.error ?? "Erreur d’envoi."); return; }
-    setOtpToken(json.token);
+    const r = await demanderCode(email);
+    if ("erreur" in r) { setOtpError(r.erreur); return; }
+    setOtpToken(r.token);
     setOtpCode("");
     setResendCooldown(60);
     if (cooldownRef.current) clearInterval(cooldownRef.current);
     cooldownRef.current = setInterval(() => {
       setResendCooldown(v => {
-        if (v <= 1) { clearInterval(cooldownRef.current!); return 0; }
+        if (v <= 1) { if (cooldownRef.current) clearInterval(cooldownRef.current); return 0; }
         return v - 1;
       });
     }, 1000);
