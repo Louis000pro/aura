@@ -383,7 +383,7 @@ export default function ConversationListPane({
         )
         : <Liste
             convs={convsVisibles}
-            moi={user!.id}
+            moi={user.id}
             activeId={activeId}
             onPrefetch={(id) => {
               router.prefetch(`/communaute/${id}`);
@@ -400,7 +400,7 @@ export default function ConversationListPane({
           <Sheet onFermer={() => { setSheet("non"); setSelection(null); }}>
             <div className="mb-3 px-1">
               <b className="block truncate text-[16px]" style={{ color: "var(--text-0)" }}>
-                {titreConversation(selection, user!.id)}
+                {titreConversation(selection, user.id)}
               </b>
               <span className="text-[11px]" style={{ color: "var(--text-3)" }}>
                 Ces réglages ne concernent que toi.
