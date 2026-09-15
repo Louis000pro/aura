@@ -38,21 +38,36 @@ export default function FollowListModal({
   const [list, setList] = useState<RealFollowUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [followingIds, setFollowingIds] = useState<Set<string>>(new Set());
+  /** Vrai quand la lecture a échoué. Une liste vide et une lecture ratée
+   *  arrivaient sous la même forme, donc l'écran écrivait « Aucun ami pour
+   *  l'instant » sur un réseau coupé : il affirmait de quelqu'un qu'il n'a
+   *  personne, alors qu'on ne savait rien. */
+  const [echec, setEchec] = useState(false);
 
   useEffect(() => {
     const supabase = createClient();
     setLoading(true);
+    /* ⚠️ `type` BASCULE PENDANT QUE LA FEUILLE RESTE OUVERTE (Abonnés ↔
+       Abonnements), et `ownerId` change quand on l'ouvre sur un autre profil.
+       Sans ce garde-fou, deux lectures se chevauchaient et la plus lente
+       gagnait : on voyait la liste de l'AUTRE onglet sous l'onglet courant, et
+       son `setLoading(false)` éteignait le chargement de la bonne. Même
+       procédé que le fil d'une conversation. */
+    let actif = true;
 
     const fetchList = async () => {
       // Récupérer les IDs des membres de la liste (abonnés OU abonnements d'ownerId)
       const col = type === "Abonnés" ? "follower_id" : "following_id";
       const filter = type === "Abonnés" ? "following_id" : "follower_id";
 
-      const { data: rows } = await supabase
+      const { data: rows, error } = await supabase
         .from("followers")
         .select(col)
         .eq(filter, ownerId);
 
+      if (!actif) return;
+      if (error) { setEchec(true); setLoading(false); return; }
+      setEchec(false);
       if (!rows || rows.length === 0) { setList([]); setLoading(false); return; }
 
       const ids = (rows as Record<string, string>[]).map((r) => r[col]);
@@ -64,6 +79,7 @@ export default function FollowListModal({
           .in("id", ids),
       );
 
+      if (!actif) return;
       setList(profiles ?? []);
 
       // État des boutons : qui l'UTILISATEUR CONNECTÉ suit déjà
@@ -72,12 +88,14 @@ export default function FollowListModal({
           .from("followers")
           .select("following_id")
           .eq("follower_id", user.id);
+        if (!actif) return;
         setFollowingIds(new Set((myFollows ?? []).map((r) => r.following_id as string)));
       }
       setLoading(false);
     };
 
-    fetchList();
+    void fetchList();
+    return () => { actif = false; };
   }, [type, ownerId, user]);
 
   /* ⚠️ LE BOUTON REVIENT EN ARRIÈRE QUAND LA BASE DIT NON.
@@ -171,8 +189,12 @@ export default function FollowListModal({
           ) : filtered.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 gap-2">
               <span className="text-[26px]">👤</span>
+              {/* ⚠️ ON N'AFFIRME LE VIDE QUE QUAND ON SAIT. Une lecture ratée
+                  et une liste vraiment vide arrivaient sous la même forme,
+                  donc un réseau coupé écrivait de quelqu'un qu'il n'a personne. */}
               <p className="text-[16px] font-light" style={{ color: "var(--text-3)" }}>
-                {query ? "Aucun résultat" : "Aucun ami pour l’instant"}
+                {echec ? "Liste illisible pour l’instant"
+                  : query ? "Aucun résultat" : "Aucun ami pour l’instant"}
               </p>
             </div>
           ) : (
