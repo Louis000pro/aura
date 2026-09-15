@@ -8,11 +8,14 @@
  *  - open/closed
  *  - chapitre courant (index 0..N-1)
  *  - next / prev / skip / start / close
- *  - persistance DB (profiles.tour_completed) + fallback localStorage
+ *  - la trace de l'achèvement sur le compte (profiles.tour_completed)
  *
- * La visite se lance dans deux cas :
- *  1. Après l'onboarding pour un nouvel utilisateur (auto, via OnboardingWrapper)
- *  2. Sur clic du bouton "Refaire la visite" dans /parametres (manuel)
+ * ⚠️ ELLE NE SE LANCE JAMAIS TOUTE SEULE, ET CE COMMENTAIRE DISAIT LE CONTRAIRE.
+ * Il annonçait un démarrage automatique « via OnboardingWrapper », un composant
+ * supprimé le 2026-08-22 quand /bienvenue est devenu le seul questionnaire. Les
+ * deux portes réelles sont toutes les deux des GESTES :
+ *  1. « Découvrir Vaiiya », au bout du questionnaire (ParcoursBienvenue) ;
+ *  2. « Refaire la visite », dans /parametres.
  *
  * Elle ne navigue plus dans l'application (elle se joue en vase clos) :
  * on peut donc la lancer depuis n'importe quel écran sans le quitter.
@@ -37,7 +40,21 @@ type GuidedTourCtx = {
 
 const GuidedTourContext = createContext<GuidedTourCtx | null>(null);
 
-const LS_KEY = "vaiiya_tour_completed";
+/* ⚠️ IL N'Y A PLUS DE REPÈRE LOCAL, ET C'EST VOULU.
+   Il y avait ici `vaiiya_tour_completed`, écrit à la fin de la visite et lu par
+   `hasTourBeenCompleted` — une fonction exportée que PERSONNE n'appelait
+   (vérifié sur tout `src/`). Elle portait deux défauts, et le second est celui
+   qui l'a fait partir : elle lisait ce repère AVANT la base, et ce repère
+   n'était pas rattaché à un compte. Une personne qui avait fait la visite sur
+   un appareil la déclarait donc faite pour TOUT compte créé ensuite sur le
+   même appareil. C'est le même piège que les fonctions mortes retirées à la
+   clôture du 2026-09-12 : un nom qu'on choisirait spontanément le jour où l'on
+   voudra relancer la visite automatiquement.
+   La visite ne se lance de toute façon jamais toute seule : elle se demande,
+   à la sortie du questionnaire ou depuis les Paramètres. `profiles.tour_completed`
+   continue d'être écrit — c'est un fait sur le compte, pas un cache d'appareil,
+   et il vaut pour tous les appareils. Le jour où une relance automatique le
+   lira, elle le lira LÀ. */
 
 export function GuidedTourProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
@@ -69,9 +86,8 @@ export function GuidedTourProvider({ children }: { children: React.ReactNode }) 
     }
   }, [router]);
 
-  /* ── Marquer comme terminé en DB + localStorage ── */
+  /* ── Marquer comme terminé, sur le COMPTE ── */
   const markCompleted = useCallback(async () => {
-    try { localStorage.setItem(LS_KEY, "true"); } catch { /* ignore */ }
     if (!user?.id) return;
     const supabase = createClient();
     // Best-effort : si la colonne n'existe pas encore (migration pas appliquée), on ignore l'erreur silencieusement
@@ -82,9 +98,11 @@ export function GuidedTourProvider({ children }: { children: React.ReactNode }) 
   }, [user?.id]);
 
   /* ── Fermer (« Passer » ou Échap) ──
-        On retient qu'elle a été vue (on ne repropose pas ce qui a été
-        refusé), mais on ne redirige nulle part : l'utilisateur reste là
-        où il était. Seul `next` sur le dernier chapitre mène aux offres. ── */
+        On retient qu'elle a été vue, et on ne redirige nulle part :
+        l'utilisateur reste là où il était. Seul `next` sur le dernier
+        chapitre mène aux offres — quelqu'un qui vient de toucher « Passer »
+        a dit non, lui coller le tarif dans la foulée serait la pire
+        réponse possible. ── */
   const close = useCallback((shouldMark = true) => {
     setIsOpen(false);
     if (shouldMark) void markCompleted();
@@ -133,26 +151,3 @@ export function useGuidedTour() {
   return ctx;
 }
 
-/**
- * Helper : a-t-on déjà vu la visite ?
- * Source de vérité : DB (profiles.tour_completed). Fallback localStorage.
- */
-export async function hasTourBeenCompleted(userId: string): Promise<boolean> {
-  // Fallback localStorage (immédiat, pas de réseau)
-  try {
-    if (localStorage.getItem(LS_KEY) === "true") return true;
-  } catch { /* ignore */ }
-
-  if (!userId) return false;
-  try {
-    const supabase = createClient();
-    const { data } = await supabase
-      .from("profiles")
-      .select("tour_completed")
-      .eq("id", userId)
-      .maybeSingle();
-    return data?.tour_completed === true;
-  } catch {
-    return false;
-  }
-}

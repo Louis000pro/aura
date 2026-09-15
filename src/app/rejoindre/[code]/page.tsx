@@ -133,7 +133,11 @@ export default function RejoindrePage() {
         ) : (
           <>
             <button
-              onClick={() => (user ? entrer() : router.push(`/auth?next=/rejoindre/${code}`))}
+              /* `code` vient du chemin et s'encode comme les cinq autres
+                 `?next=` de l'app : un `#` ou un `?` dans le code tronquait
+                 sinon la destination, et on revenait sur une invitation
+                 différente de celle qu'on regardait. */
+              onClick={() => (user ? entrer() : router.push(`/auth?next=${encodeURIComponent(`/rejoindre/${code}`)}`))}
               disabled={entree}
               className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl px-5 py-4 text-[16px] font-semibold text-white transition-transform active:scale-[.98] disabled:opacity-60"
               style={{ background: "linear-gradient(135deg, #8B5CF6, #C13BC1)" }}
