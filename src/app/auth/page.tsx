@@ -661,15 +661,41 @@ export default function AuthPage() {
             )}
           </AnimatePresence>
 
-          <p className="text-center text-[11px] mt-5 font-light" style={{ color:"var(--text-3)" }}>
-            {mode==="login" ? "Pas encore de compte ? " : "Déjà un compte ? "}
-            <button onClick={() => { setMode(mode==="login"?"signup":"login"); setError(null); }}
-              className="font-medium cursor-pointer hover:underline" style={{ color:"var(--text-1)" }}>
-              {mode==="login"?"Créer un compte":"Se connecter"}
-            </button>
-            {mode==="login" && <>{" · "}<button onClick={() => setForgotMode(v=>!v)}
-              className="font-medium cursor-pointer hover:underline" style={{ color:"var(--accent)" }}>Mot de passe oublié ?</button></>}
-          </p>
+          {/* ⚠️ DEUX CIBLES DE 17 px COLLÉES L’UNE À L’AUTRE, ET C’EST
+              MESURÉ, PAS SUPPOSÉ. Les deux actions tenaient sur une seule
+              phrase séparée par un « · » ; à 390 px cette phrase passait à
+              la ligne, donc « Créer un compte » finissait à y=687 et « Mot
+              de passe oublié ? » commençait à y=687 : DEUX actions aux
+              conséquences très différentes, hautes de 17 px, sans UN pixel
+              entre elles, sur le seul écran par lequel tout le monde passe.
+
+              Le « · » disparaît, chaque action prend sa ligne, et le
+              rembourrage porte la zone touchable à 33 px en laissant un
+              couloir mort entre les deux. ⚠️ RIEN D’AUTRE NE BOUGE : 11 px
+              est le PLANCHER de l’app (on ne descend pas), l’encre reste
+              celle d’une action secondaire, et aucune surface n’est ajoutée
+              — deux boutons de même poids annuleraient la lecture du
+              système D, où le violet plein est L’ACTION.
+
+              ⚠️ ET ON RESTE SOUS LES 44 pt DU HIG, DÉLIBÉRÉMENT : les
+              porter à 44 px chacun ferait un pied de 92 px sous un
+              formulaire qui tient tout juste dans l’écran. Ce qui est
+              corrigé ici est la COLLISION, pas la taille absolue. */}
+          <div className="flex flex-col items-center mt-5 gap-1">
+            <p className="text-center text-[11px] font-light" style={{ color:"var(--text-3)" }}>
+              {mode==="login" ? "Pas encore de compte ? " : "Déjà un compte ? "}
+              <button type="button" onClick={() => { setMode(mode==="login"?"signup":"login"); setError(null); }}
+                className="inline-block py-2 px-1 font-medium cursor-pointer hover:underline" style={{ color:"var(--text-1)" }}>
+                {mode==="login"?"Créer un compte":"Se connecter"}
+              </button>
+            </p>
+            {mode==="login" && (
+              <button type="button" onClick={() => setForgotMode(v=>!v)}
+                className="py-2 px-2 text-[11px] font-medium cursor-pointer hover:underline" style={{ color:"var(--accent)" }}>
+                Mot de passe oublié ?
+              </button>
+            )}
+          </div>
 
           <p className="text-center text-[11px] mt-4 font-light leading-relaxed" style={{ color:"var(--text-3)" }}>
             En continuant, tu acceptes nos{" "}
