@@ -63,12 +63,24 @@ export async function subscribeToPush(): Promise<"granted" | "denied" | "unsuppo
       });
     }
 
-    // Save subscription to server
-    await fetchAuth("/api/notifications/push", {
+    /* ⚠️ LA RÉPONSE DU SERVEUR SE LIT, ET C'EST TOUT L'INTÉRÊT DE CET
+       APPEL. Sans ce test, la fonction rendait « granted » quoi qu'il
+       arrive : un 401, un 500, une souscription jamais enregistrée
+       donnaient le même résultat qu'un succès, donc l'interrupteur des
+       Paramètres s'allumait et aucun rappel n'arrivait plus jamais.
+       Le navigateur a bien accordé la permission, mais ce n'est pas ce
+       que l'appelant demande : il demande si les notifications marchent.
+       Son branchement « error » existait déjà, avec son message — il ne
+       se déclenchait simplement jamais. */
+    const res = await fetchAuth("/api/notifications/push", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ subscription: sub.toJSON() }),
     });
+    if (!res.ok) {
+      console.error("[push] le serveur n'a pas enregistré la souscription :", res.status);
+      return "error";
+    }
 
     return "granted";
   } catch (err) {

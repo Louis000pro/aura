@@ -379,7 +379,7 @@ export async function consommerEtape(
      intention, et faire une séance un jour de repos effaçait le repos.
      Le fait s'ENREGISTRE, il ne remplace rien : c'est la règle « faire une
      séance non prévue un jour de repos ne touche à rien ». */
-  await supabase.from(sc.table).insert({
+  const { error } = await supabase.from(sc.table).insert({
     user_id: userId,
     date: jour.date,
     type: jour.type,
@@ -400,6 +400,14 @@ export async function consommerEtape(
     ...(avecAdaptation ? { adaptation_id: adaptationId } : {}),
     updated_at: maintenant,
   });
+  /* ⚠️ L'ÉCHEC NE LÈVE PAS, MAIS IL NE SE TAIT PLUS. `terminerSeance`
+     ne doit pas casser l'écran de récompense pour une écriture ratée
+     (règle V7A), donc on ne jette pas ; mais sans cette ligne, l'étape
+     n'est pas refermée, le curseur ne bouge pas, et le héros repropose
+     la même séance le lendemain — sans la moindre trace. C'est
+     exactement le défaut de trois mois d'« Ajouter à ma semaine »
+     (V6b) : un écran qui affirme le contraire de la base. */
+  if (error) console.warn("[programme] étape non refermée :", error.message);
 }
 
 /* ════════════════════════════════════════════════════════════════════
@@ -480,7 +488,7 @@ export async function sauterEtape(
 
   /* L'INTENTION MINIMALE : elle dit qui a été passé, et quand. Pas
      d'exercices, puisqu'il n'y en a jamais eu. */
-  await supabase.from(sc.table).insert({
+  const { error } = await supabase.from(sc.table).insert({
     user_id: userId,
     date: aujourdhui,
     type: "Force",
@@ -499,6 +507,9 @@ export async function sauterEtape(
     ...(avecAdaptation ? { adaptation_id: adaptationId } : {}),
     updated_at: maintenant,
   });
+  /* Même raison qu'au-dessus : sans trace, un saut raté se comporte
+     comme un saut réussi à l'écran, et l'étape revient le lendemain. */
+  if (error) console.warn("[programme] saut non enregistré :", error.message);
 }
 
 /* ⚠️ `prochaineEtape(userId)` A ÉTÉ SUPPRIMÉE À LA CLÔTURE DU

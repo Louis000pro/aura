@@ -45,12 +45,22 @@ export async function POST(req: NextRequest) {
     }
 
     const supabase = createAdminClient();
-    await supabase.from("push_subscriptions").upsert({
+    const { error } = await supabase.from("push_subscriptions").upsert({
       user_id: appelant.id,
       endpoint: subscription.endpoint,
       p256dh:   subscription.keys.p256dh,
       auth:     subscription.keys.auth,
     }, { onConflict: "endpoint" });
+    /* ⚠️ `ok: true` ÉTAIT RENDU MÊME QUAND RIEN N'AVAIT ÉTÉ ÉCRIT, et le
+       symptôme est le pire possible : l'interrupteur des Paramètres passe
+       sur « Notifications activées », aucune souscription n'existe, et
+       plus jamais un seul rappel n'arrive. Rien à diagnostiquer, puisque
+       tout a l'air en ordre. Un constructeur Supabase ne lève pas : il
+       RÉSOUT avec une erreur, donc le `catch` ne voyait rien passer. */
+    if (error) {
+      console.error("[push] souscription non enregistrée :", error.message);
+      return NextResponse.json({ ok: false, error: "Souscription non enregistrée." }, { status: 500 });
+    }
 
     return NextResponse.json({ ok: true });
   } catch (e) {
@@ -71,7 +81,13 @@ export async function DELETE(req: NextRequest) {
     }
 
     const supabase = createAdminClient();
-    await supabase.from("push_subscriptions").delete().match({ user_id: appelant.id, endpoint });
+    const { error } = await supabase.from("push_subscriptions").delete().match({ user_id: appelant.id, endpoint });
+    /* Même raison : sans ce test, une souscription qu'on croit retirée
+       continuerait de recevoir les rappels du soir. */
+    if (error) {
+      console.error("[push] souscription non retirée :", error.message);
+      return NextResponse.json({ ok: false, error: "Souscription non retirée." }, { status: 500 });
+    }
 
     return NextResponse.json({ ok: true });
   } catch (e) {

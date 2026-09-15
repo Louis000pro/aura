@@ -109,7 +109,15 @@ export async function enregistrerProfil(userId: string, d: OnboardingData): Prom
   const complet = profilComplet(d);
 
   const supabase = createClient();
-  await supabase.from("profiles").upsert({
+  /* ⚠️ CETTE ÉCRITURE NE RATE PAS EN SILENCE, ET C'ÉTAIT LE CAS.
+     Son `error` n'était pas relu, or un constructeur Supabase ne lève pas :
+     il RÉSOUT avec une erreur. Le questionnaire enchaînait donc jusqu'à
+     « C'est prêt » sur un profil resté vide, et la seule trace était le
+     Guide qui redemandait les mêmes réponses le lendemain. On lève, et
+     l'écran s'en sert pour ne pas avancer. C'est la seule écriture de cette
+     fonction dont l'échec doit arrêter quelqu'un : les suivantes sont
+     secondaires et ne bloquent rien. */
+  const { error: erreurProfil } = await supabase.from("profiles").upsert({
     id:                       userId,
     onboarding_age:           d.age             ? parseInt(d.age)             : null,
     onboarding_height:        d.height          ? parseInt(d.height)          : null,
@@ -122,6 +130,7 @@ export async function enregistrerProfil(userId: string, d: OnboardingData): Prom
     onboarding_diet:          d.diet            || null,
     onboarding_completed:     complet,
   }, { onConflict: "id" });
+  if (erreurProfil) throw new Error(erreurProfil.message);
 
   /* ⚠️ Le poids saisi ici est AUSSI une pesée du jour. Cette écriture
      vivait dans le formulaire des Paramètres, donc le même poids donné à
@@ -146,10 +155,15 @@ export async function enregistrerProfil(userId: string, d: OnboardingData): Prom
 
   const poids = parseFloat(d.weight);
   if (Number.isFinite(poids) && poids > 0) {
-    await supabase.from("weight_logs").upsert(
+    /* Secondaire, donc elle ne bloque pas : rater la pesée du jour fait
+       démarrer la courbe du profil un cran plus tard, ça n'empêche personne
+       d'entrer. Mais elle se VOIT dans les logs, sinon une courbe vide
+       ressemble à une décision de produit. */
+    const { error } = await supabase.from("weight_logs").upsert(
       { user_id: userId, date: localDateStr(), weight_kg: poids },
       { onConflict: "user_id,date" }
     );
+    if (error) console.warn("[onboarding] pesée du jour non enregistrée :", error.message);
   }
 
   return complet;

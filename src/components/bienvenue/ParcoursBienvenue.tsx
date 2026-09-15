@@ -92,6 +92,10 @@ export default function ParcoursBienvenue() {
    *  C'est lui qui autorise la phrase « Il manque… » : sans tentative,
    *  pas de reproche. */
   const [manqueVu, setManqueVu] = useState(false);
+  /** Une écriture en vol. En `useRef` et pas en `useState` : deux taps
+   *  rapides tombent dans le MÊME rendu, donc un état n'aurait pas encore
+   *  changé quand le second arrive. */
+  const enregistrement = useRef(false);
 
   /** Les réponses telles qu'elles ont été lues, pour que « Recommencer »
    *  reparte du vrai profil et pas d'un formulaire à moitié modifié. */
@@ -302,10 +306,37 @@ export default function ParcoursBienvenue() {
     : manquants.length === 1 ? `Il manque ${manquants[0]}.`
     : `Il manque ${manquants.slice(0, -1).join(", ")} et ${manquants[manquants.length - 1]}.`;
 
+  /** Ce que le pied a à dire, s'il a quelque chose à dire. L'échec
+   *  d'écriture passe devant la réponse manquante : les deux ne peuvent
+   *  pas être vraies en même temps (on ne tente l'écriture que sur une
+   *  étape complète), et une seule ligne tient au-dessus du bouton. */
+  const mot = erreur ?? (manqueVu ? phraseManque : null);
+
   const suivant = async () => {
     if (bloque) { setManqueVu(true); return; }
+    /* ⚠️ UN SEUL ENREGISTREMENT À LA FOIS. Le bouton reste vivant pendant
+       l'écriture (un bouton mort ne dit pas s'il est refusé ou cassé,
+       règle du 2026-08-19), donc rien n'empêchait deux taps d'ouvrir deux
+       écritures et, sur le dernier écran, deux créations de programme. Le
+       verrou est ici et pas sur le bouton : il couvre tous les appelants. */
+    if (enregistrement.current) return;
     setManqueVu(false);
-    await enregistrer();
+    setErreur(null);
+    /* ⚠️ ON N'AVANCE PAS SUR UNE ÉCRITURE RATÉE, et c'est le vrai correctif.
+       `enregistrerProfil` lève désormais quand `profiles` refuse : sans ce
+       garde-fou, on traversait les cinq écrans, on arrivait à « C'est prêt »,
+       et le profil restait vide — la seule trace étant le Guide qui
+       redemandait les mêmes réponses le lendemain. */
+    enregistrement.current = true;
+    try {
+      await enregistrer();
+    } catch (e) {
+      console.warn("[bienvenue] réponses non enregistrées :", e);
+      setErreur("Tes réponses n’ont pas pu être enregistrées. Vérifie ta connexion et réessaie.");
+      return;
+    } finally {
+      enregistrement.current = false;
+    }
     const fini = index >= ORDRE.length - 1;
     /* ⚠️ LE PREMIER PROGRAMME NAÎT ICI, ET C'EST LE BON ENDROIT (V7A).
        Il se créait à l'ouverture d'Entraînement, ce qui faisait d'un
@@ -485,7 +516,7 @@ export default function ParcoursBienvenue() {
                   laisser le choix » : le choix existe encore, il se
                   prend en quittant la page, il n'est simplement plus
                   proposé à chaque écran. */}
-              <div className={manqueVu && phraseManque ? `${s.piedBloc} ${s.piedBlocAvecMot}` : s.piedBloc}>
+              <div className={mot ? `${s.piedBloc} ${s.piedBlocAvecMot}` : s.piedBloc}>
                 {/* ⚠️ AU-DESSUS DES BOUTONS, pas en dessous. Mesuré sur
                     un écran de 640 : la phrase ajoute 14 px, donc posée
                     sous le bouton elle passait sous le pli, et
@@ -493,10 +524,23 @@ export default function ParcoursBienvenue() {
                     hors de vue. Ici elle est prise dans l'espace libre
                     que le pied laissait au-dessus de lui.
 
-                    `role="status"` et pas `alert` : ce n'est pas une
-                    erreur, c'est une question encore ouverte. */}
-                {manqueVu && phraseManque && (
-                  <p className={s.manque} id="bv-manque" role="status">{phraseManque}</p>
+                    `role="status"` quand il manque une réponse (ce n'est
+                    pas une erreur, c'est une question encore ouverte), et
+                    `alert` quand l'écriture a échoué : là, c'en est une.
+
+                    ⚠️ LES DEUX PARTAGENT LE MÊME EMPLACEMENT, et l'échec
+                    passe devant. Deux lignes l'une sous l'autre pousseraient
+                    le bouton sous le pli, et elles ne peuvent de toute façon
+                    pas être vraies en même temps : on ne tente l'écriture
+                    que sur une étape complète. */}
+                {mot && (
+                  <p
+                    className={s.manque}
+                    id="bv-manque"
+                    role={erreur ? "alert" : "status"}
+                  >
+                    {mot}
+                  </p>
                 )}
                 <div className={s.pied}>
                   {index > 0 && (
@@ -506,7 +550,7 @@ export default function ParcoursBienvenue() {
                     type="button"
                     className={bloque ? `${s.cta} ${s.ctaEteint}` : s.cta}
                     aria-disabled={bloque}
-                    aria-describedby={manqueVu && phraseManque ? "bv-manque" : undefined}
+                    aria-describedby={mot ? "bv-manque" : undefined}
                     onClick={() => { void suivant(); }}
                   >
                     {index >= ORDRE.length - 1 ? "Terminer" : "Continuer"}

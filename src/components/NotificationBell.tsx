@@ -203,8 +203,12 @@ export default function NotificationBell({ side = "right" }: { side?: "right" | 
 
       if (unreadNotifs > 0 && user) {
         const supabase = createClient();
-        await supabase.from("notifications").update({ read: true }).eq("user_id", user.id).eq("read", false);
-        setNotifs((prev) => prev.map((n) => ({ ...n, read: true })));
+        /* La pastille ne retombe QUE si la base l'a enregistré : sinon elle
+           s'éteint à l'écran et revient au rechargement, ce qui se lit comme
+           un bug de compteur alors que c'est une écriture perdue. */
+        const { error } = await supabase.from("notifications").update({ read: true }).eq("user_id", user.id).eq("read", false);
+        if (error) console.warn("[cloche] notifications non marquées lues :", error.message);
+        else setNotifs((prev) => prev.map((n) => ({ ...n, read: true })));
       }
     }
   };

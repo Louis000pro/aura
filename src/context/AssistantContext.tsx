@@ -810,7 +810,17 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       });
       if (targets.length === 0) return;
       const ids = targets.map((t) => t.id);
-      await supabase.from("ai_memories").delete().in("id", ids);
+      /* ⚠️ ON NE DIT « C'EST OUBLIÉ » QU'APRÈS L'AVOIR OUBLIÉ. Sans ce
+         test, le Guide l'annonçait même quand la base avait refusé : le
+         souvenir revenait à la session suivante, et personne ne pouvait
+         relier les deux. Une mémoire est justement ce qu'on ne peut pas
+         vérifier à l'œil. */
+      const { error } = await supabase.from("ai_memories").delete().in("id", ids);
+      if (error) {
+        console.warn("[assistant] souvenir non oublié :", error.message);
+        setMemoryNotice("Je n’ai pas réussi à l’oublier. Réessaie dans un instant.");
+        return;
+      }
       const idSet = new Set(ids);
       memoriesRef.current = memoriesRef.current.filter((mm) => !idSet.has(mm.id));
       setMemoryNotice(voix(guideRef.current, "memoire.oubliee"));
