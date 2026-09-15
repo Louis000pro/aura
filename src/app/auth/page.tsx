@@ -28,8 +28,17 @@ function Field({
   return (
     /* Contour et icône passent par du CSS pur : framer-motion ne sait interpoler
        ni le raccourci « border » ni une couleur écrite en variable, il les
-       ignorait en silence et les champs n'avaient aucun contour. */
-    <div className="relative flex items-center gap-3 px-4 py-3.5 rounded-2xl"
+       ignorait en silence et les champs n'avaient aucun contour.
+
+       ⚠️ UN `<label>` ET PLUS UN `<div>`, ET C'EST MESURÉ : le champ SEMBLE
+       haut de 54 px (px-4 py-3.5 autour du texte) mais l'`<input>` n'en occupe
+       que 24. Les 28 px de rembourrage n'étaient cliquables par personne :
+       toucher le champ juste au-dessus ou juste en dessous de la ligne de
+       texte ne donnait pas le focus, donc la MOITIÉ de la cible visible était
+       morte, sur les deux champs de l'écran d'entrée. Un `<label>` transmet le
+       toucher à son `<input>`, donc tout le rectangle répond — sans un pixel
+       de changement à l'écran. */
+    <label className="relative flex items-center gap-3 px-4 py-3.5 rounded-2xl cursor-text"
       style={{
         background: "rgba(var(--tint-violet-rgb),0.62)",
         border: focused ? "1px solid rgba(var(--accent-rgb),0.5)" : "1px solid rgba(var(--accent-rgb),0.16)",
@@ -46,7 +55,7 @@ function Field({
         className="flex-1 bg-transparent text-[16px] outline-none placeholder:text-[var(--text-3)]"
         style={{ color: "var(--text-1)" }} />
       {suffix}
-    </div>
+    </label>
   );
 }
 
@@ -587,7 +596,14 @@ export default function AuthPage() {
               <Field icon={<Lock size={15}/>}
                 type={showPwd?"text":"password"} placeholder="Mot de passe" value={password} onChange={setPassword} required
                 suffix={
-                  <button type="button" onClick={() => setShowPwd(v=>!v)} className="cursor-pointer flex-shrink-0">
+                  /* ⚠️ 14 × 14 px ET AUCUN NOM, mesuré : un lecteur d'écran
+                     annonçait « bouton », et la cible était deux fois plus
+                     petite que le doigt qui la cherche. `-m-2 p-2` porte la
+                     zone à 30 px SANS déplacer quoi que ce soit : la marge
+                     négative annule exactement le rembourrage. */
+                  <button type="button" onClick={() => setShowPwd(v=>!v)}
+                    aria-label={showPwd ? "Masquer le mot de passe" : "Afficher le mot de passe"}
+                    className="cursor-pointer flex-shrink-0 -m-2 p-2">
                     {showPwd ? <EyeOff size={14} style={{ color:"var(--text-3)" }}/> : <Eye size={14} style={{ color:"var(--text-3)" }}/>}
                   </button>
                 } />

@@ -398,7 +398,19 @@ function PremiumInner() {
         </div>
 
         {/* Points indicateurs — montrent qu'il y a 3 offres à faire défiler (mobile) */}
-        <div className="flex md:hidden justify-center items-center gap-2 mt-3 flex-shrink-0">
+        {/* ⚠️ LE POINT MESURAIT 7 × 7 px, ET C'ÉTAIT LA CIBLE ENTIÈRE. Un
+            doigt ne l'atteint pas, alors que l'`aria-label` dit bien qu'on
+            peut le toucher. La PASTILLE reste à 7 px — c'est un indicateur,
+            pas un bouton — mais elle vit désormais dans un bouton rembourré
+            de 23 × 23 px. Le rembourrage n'est PAS annulé par une marge
+            négative ici : deux points voisins verraient alors leurs zones se
+            recouvrir, c'est-à-dire le défaut qu'on vient de corriger sur
+            l'écran d'entrée. Le `gap` descend donc à 4 px, ce qui laisse un
+            couloir mort entre les deux et n'élargit la rangée que de 24 px.
+
+            On reste sous les 44 pt du HIG, et c'est assumé : la vraie action
+            est le GLISSEMENT, la ligne le dit en toutes lettres. */}
+        <div className="flex md:hidden justify-center items-center gap-1 mt-3 flex-shrink-0">
           {order.map((id, i) => (
             <button key={id} aria-label={`Offre ${i + 1}`}
               onClick={() => {
@@ -406,8 +418,10 @@ function PremiumInner() {
                 const card = c?.querySelector(`[data-tier="${id}"]`) as HTMLElement | null;
                 if (c && card) c.scrollTo({ left: Math.max(0, card.offsetLeft + card.offsetWidth / 2 - c.clientWidth / 2), behavior: "smooth" });
               }}
-              className="rounded-full transition-all cursor-pointer"
-              style={{ width: activeIdx === i ? 20 : 7, height: 7, background: activeIdx === i ? "linear-gradient(90deg,#A78BFA,#D4A843)" : "rgba(167,139,250,0.3)" }} />
+              className="flex items-center justify-center p-2 cursor-pointer">
+              <span className="block rounded-full transition-all"
+                style={{ width: activeIdx === i ? 20 : 7, height: 7, background: activeIdx === i ? "linear-gradient(90deg,#A78BFA,#D4A843)" : "rgba(167,139,250,0.3)" }} />
+            </button>
           ))}
           <span className="ml-1.5 text-[11px] font-medium" style={{ color: "var(--text-3)" }}>2 offres · glisse pour comparer</span>
         </div>
