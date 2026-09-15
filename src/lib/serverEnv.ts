@@ -43,7 +43,13 @@ export function getAuthSecret(): Buffer {
  */
 export function appUrl(): string {
   const url = cleanEnv(process.env.NEXT_PUBLIC_APP_URL);
-  return (url || "https://vaiiya.fr").replace(/\/+$/, "");
+  if (url) return url.replace(/\/+$/, "");
+  /* Hors production, c'est bien la machine de développement qu'on veut joindre :
+     un lien d'e-mail comme un appel à notre propre route de push doivent rester
+     locaux, sinon un serveur de développement enverrait ses notifications à la
+     production. C'est le seul repli que `sendPushToUser` avait de juste ; on le
+     garde, mais borné à ce cas au lieu de valoir partout. */
+  return process.env.NODE_ENV === "production" ? "https://vaiiya.fr" : "http://localhost:3000";
 }
 
 /**

@@ -179,8 +179,13 @@ export default function AiMemoryManager({ onClose }: { onClose: () => void }) {
             {/* Le refus se dit LÀ, juste au-dessus de la promesse qu'il
                 contredit, et il remplace la promesse le temps de sa lecture :
                 les deux côte à côte se répondraient. */}
+            {/* `--feu-encre` et pas un rouge inventé : le système D n'a que
+                trois rôles de couleur et aucune encre de refus, et c'est déjà
+                l'orange que neuf messages d'erreur du produit emploient
+                (`#E8620C`, qui EST sa valeur claire). Le jeton, lui, bascule en
+                sombre ; le littéral non. */}
             {echec ? (
-              <p className="mb-3 text-[11px] font-semibold leading-snug" style={{ color: "#EF4444" }}>
+              <p className="mb-3 text-[11px] font-semibold leading-snug" style={{ color: "var(--feu-encre)" }}>
                 {echec}
               </p>
             ) : (

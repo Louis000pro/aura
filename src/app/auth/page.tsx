@@ -221,6 +221,12 @@ export default function AuthPage() {
   const [otpLoading, setOtpLoading]     = useState(false);
   const [otpError, setOtpError]         = useState<string|null>(null);
   const [resendCooldown, setResendCooldown] = useState(0);
+  /* ⚠️ LE RENVOI A SON PROPRE DRAPEAU, COMME LES QUATRE AUTRES GESTES DE
+     L’ÉCRAN. Sa porte était le compte à rebours, qui n’est posé qu’APRÈS le
+     retour de la requête : deux appuis rapides envoyaient donc deux codes, et
+     le second se faisait refuser par le plafond d’envoi côté serveur — donc un
+     message d’échec sur une demande qui avait réussi. */
+  const [renvoiEnCours, setRenvoiEnCours] = useState(false);
   const cooldownRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   /* Forgot password */
@@ -337,9 +343,11 @@ export default function AuthPage() {
   };
 
   const handleResendOtp = async () => {
-    if (resendCooldown > 0) return;
+    if (resendCooldown > 0 || renvoiEnCours) return;
     setOtpError(null);
+    setRenvoiEnCours(true);
     const r = await demanderCode(email);
+    setRenvoiEnCours(false);
     if ("erreur" in r) { setOtpError(r.erreur); return; }
     setOtpToken(r.token);
     setOtpCode("");
@@ -471,7 +479,7 @@ export default function AuthPage() {
                 {/* Actions secondaires */}
                 <motion.div initial={{ opacity:0 }} animate={{ opacity:1 }} transition={{ delay:0.3 }}
                   className="flex flex-col items-center gap-1.5">
-                  <button onClick={handleResendOtp} disabled={resendCooldown > 0}
+                  <button onClick={handleResendOtp} disabled={resendCooldown > 0 || renvoiEnCours}
                     className="text-[13px] font-medium cursor-pointer"
                     style={{ color: resendCooldown > 0 ? "var(--text-3)" : "var(--accent)" }}>
                     {resendCooldown > 0 ? `Renvoyer dans ${resendCooldown}s` : "Renvoyer le code"}

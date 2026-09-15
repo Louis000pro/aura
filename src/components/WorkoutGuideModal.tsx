@@ -929,7 +929,11 @@ export default function WorkoutGuideModal({
           // grande affiche rejouera la bascule à la première ouverture.
           sessionStorage.setItem(CLE_DEVOILE, "1");
           setMaillon(r);
-        });
+        })
+          /* Les deux lectures voisines ont déjà leur filet ; celle-ci n'en avait
+             pas, et `sessionStorage.setItem` lève en navigation privée. Un
+             maillon est silencieux par nature : son échec ne se plaint pas. */
+          .catch(() => {});
       }
       // La séance qui fait passer un rang doit se fêter ICI, pas à la prochaine
       // ouverture de l'accueil. Silencieux si le rang n'a pas bougé.
@@ -954,10 +958,15 @@ export default function WorkoutGuideModal({
           if (neufs.length) setBadgesGagnes(neufs);
         })
         .catch(() => {});
-    })
-      // Un rejet laisserait l'état sur « attente », donc ni pastille ni
-      // message : l'écran se tairait exactement comme avant le correctif.
-      .catch(() => setSessionSaved("echec"));
+    },
+      /* ⚠️ LE REFUS SE BRANCHE EN SECOND ARGUMENT DE `then`, PAS EN `.catch`
+         DERRIÈRE : un `.catch` en queue de chaîne verrait aussi les rejets du
+         traitement ci-dessus, donc il pourrait écrire « pas enregistrée » APRÈS
+         un « ok » déjà posé, c'est-à-dire mentir dans l'autre sens. Là, il ne
+         voit que l'écriture. Sans lui, un rejet laisserait l'état sur
+         « attente » : ni pastille ni message, l'écran se tairait exactement
+         comme avant le correctif. */
+      () => setSessionSaved("echec"));
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase]);
 

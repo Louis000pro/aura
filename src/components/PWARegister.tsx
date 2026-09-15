@@ -25,13 +25,25 @@ export default function PWARegister() {
     let refreshing = false;
     const hadController = !!navigator.serviceWorker.controller;
 
+    /* ⚠️ « EN ARRIÈRE-PLAN » NE SUFFIT PAS : PASSER À UNE AUTRE APPLI PENDANT UNE
+       SÉANCE, C'EST EXACTEMENT LE CAS QU'ON VEUT PROTÉGER. Changer de morceau
+       de musique au milieu d'un tunnel met l'onglet en arrière-plan, donc un
+       rechargement à ce moment-là perdrait la séance aussi sûrement qu'avant.
+       `body.modal-open` est le signal que l'app possède déjà pour « une
+       surface plein écran est ouverte » (`lib/bodyModal.ts`, compteur de
+       références) : le tunnel le pose, le questionnaire d'entrée aussi, la
+       création de séance, le lecteur d'un mini-cours et les feuilles du
+       planning également. Tant qu'il est là, on ne recharge pas et on continue
+       d'attendre ; le prochain passage en arrière-plan, une fois la surface
+       refermée, fera le travail. */
+    const rienEnCours = () => !document.body.classList.contains("modal-open");
     const surVisibilite = () => {
-      if (document.visibilityState === "hidden") window.location.reload();
+      if (document.visibilityState === "hidden" && rienEnCours()) window.location.reload();
     };
     const onControllerChange = () => {
       if (refreshing || !hadController) return;
       refreshing = true;
-      if (document.visibilityState === "hidden") { window.location.reload(); return; }
+      if (document.visibilityState === "hidden" && rienEnCours()) { window.location.reload(); return; }
       document.addEventListener("visibilitychange", surVisibilite);
     };
     navigator.serviceWorker.addEventListener("controllerchange", onControllerChange);
