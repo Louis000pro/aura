@@ -1,6 +1,6 @@
-import { createHmac } from "crypto";
 import { NextRequest } from "next/server";
-import { cleanEnv, getAuthSecret } from "@/lib/serverEnv";
+import { cleanEnv } from "@/lib/serverEnv";
+import { scellerJeton } from "@/lib/otp";
 import { autoriserEnvoiEmail } from "@/lib/rateLimit";
 
 export async function POST(req: NextRequest) {
@@ -30,9 +30,13 @@ export async function POST(req: NextRequest) {
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     const expires = Date.now() + 10 * 60 * 1000;
 
-    const data = JSON.stringify({ email, otp, expires });
-    const sig = createHmac("sha256", getAuthSecret()).update(data).digest("hex");
-    const token = Buffer.from(data).toString("base64") + "." + sig;
+    /* ⚠️ LE JETON PART CHEZ LE CLIENT (il est renvoyé plus bas), donc il ne
+       peut PAS porter le code. Il portait la charge en base64, c'est-à-dire en
+       clair : un décodage rendait le code, donc demander un code pour une
+       adresse qu'on ne possède pas suffisait à l'obtenir, et la confirmation
+       d'adresse ne prouvait plus rien. Le sceau vit maintenant dans
+       `lib/otp.ts`, qui n'y met que l'EMPREINTE du code. */
+    const token = scellerJeton(email, otp, expires);
 
     const fromAddress = cleanEnv(process.env.RESEND_FROM) || "Vaiiya <onboarding@resend.dev>";
     const subject = "Ton code Vaiiya · " + otp;
