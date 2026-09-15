@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useLayoutEffect } from "react";
+import { useState, useEffect, useLayoutEffect, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -47,12 +47,27 @@ export default function PublicProfilePage() {
   const rawUsername = (params?.username as string) ?? "";
   let username = rawUsername;
   try { username = decodeURIComponent(rawUsername); } catch { /* déjà décodé */ }
+  /** Le pseudo demandé, sous la forme qui sert à comparer. La requête le
+   *  cherche en `ilike`, donc la casse ne compte pas. */
+  const cle = username.trim().toLocaleLowerCase("fr");
   const router = useRouter();
   const { user } = useAuth();
 
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [notFound, setNotFound] = useState(false);
+  /* ⚠️ `loading` ET `notFound` ONT DISPARU, ET ILS PORTAIENT DEUX BOGUES.
+     Aucun des deux ne revenait en arrière : `setNotFound(true)` n'avait pas de
+     contrepartie, donc taper un pseudo qui n'existe pas dans l'URL PUIS ouvrir
+     un profil réel affichait « @nora n'existe pas » sur le profil de nora,
+     définitivement ; et `loading` ne repassait jamais à vrai, donc la personne
+     PRÉCÉDENTE restait entièrement affichée sous la nouvelle URL le temps de
+     la requête.
+
+     Les deux se DÉRIVENT désormais, comme la ligne « ensemble » de cet écran :
+     l'issue porte le pseudo qu'elle décrit, et on la compare au pseudo
+     demandé. Une réponse qui ne parle pas de la page ouverte ne décide donc de
+     rien, et il n'y a plus d'état à remettre à zéro — donc plus rien à
+     oublier. */
+  const [issue, setIssue] = useState<{ pour: string; quoi: "absent" | "panne" } | null>(null);
   const [followingCount, setFollowingCount] = useState(0);
   /* Les séances et la série viennent du SERVEUR ou ne viennent pas.
      `workout_sessions` est en RLS propriétaire : les compter ici rendait 0
@@ -72,6 +87,21 @@ export default function PublicProfilePage() {
   // et ne rien remettre laisserait, le temps d'une requête, la ligne d'un
   // ami sur le profil du suivant. On compare, on ne réinitialise pas.
   const [ensemble, setEnsemble] = useState<{ pour: string; data: RelaisPartage | null } | null>(null);
+
+  /* ⚠️ LE COMPTEUR DE LECTURE, ET CET ÉCRAN EN AVAIT LE PLUS BESOIN DE TOUT
+     L'APP. L'effet ci-dessous est indexé sur le pseudo de l'URL et lance SIX
+     écritures d'état indépendantes (profil, certification, nombre d'amis,
+     rang, badges, relation d'amitié). Rien n'annulait la lecture précédente,
+     et les six sous-requêtes courent en parallèle avec chacune sa latence :
+     passer d'un profil à l'autre depuis la communauté — un seul geste —
+     pouvait donc afficher le pseudo de l'un avec le rang, les badges et le
+     nombre d'amis de l'autre. Ce n'est pas un entrelacement rare, c'est le
+     cas normal de deux navigations rapprochées.
+
+     Le procédé est celui d'`AuthContext` et de `useJournee`, et celui que la
+     ligne « ensemble » juste au-dessus applique déjà dans ce fichier : une
+     réponse qui n'est plus celle qu'on attend ne s'écrit pas. */
+  const lecture = useRef(0);
 
   // Ce que vous avez fait ensemble. Effet séparé : le profil visité et ma
   // session n'arrivent pas au même moment, et l'effet du profil ne se
@@ -107,20 +137,26 @@ export default function PublicProfilePage() {
   }, [username]);
 
   useEffect(() => {
-    if (!username) return;
+    if (!cle) return;
     const supabase = createClient();
+    const numero = ++lecture.current;
+    /** La réponse est-elle encore celle qu'on attend ? */
+    const perimee = () => lecture.current !== numero;
 
     lireProfils((src) =>
       supabase
         .from(src)
         .select("id, pseudo, full_name, bio, avatar_url, onboarding_goals, onboarding_level, is_admin")
-        .ilike("pseudo", username.trim())
+        .ilike("pseudo", cle)
         .maybeSingle(),
     )
       .then(async ({ data, error }) => {
+        if (perimee()) return;
         if (error || !data) {
-          setNotFound(true);
-          setLoading(false);
+          /* ⚠️ ON NE DIT PAS « CE COMPTE N'EXISTE PAS » QUAND C'EST LA REQUÊTE
+             QUI A ÉCHOUÉ. Les deux arrivaient ici sous la même forme, donc un
+             réseau coupé affirmait la non-existence du compte de quelqu'un. */
+          setIssue({ pour: cle, quoi: error ? "panne" : "absent" });
           return;
         }
         setProfile(data);
@@ -130,7 +166,10 @@ export default function PublicProfilePage() {
            affiché à ce stade. */
         void lireProfils((src) =>
           supabase.from(src).select("is_certified").eq("id", data.id).maybeSingle(),
-        ).then(({ data: c }) => { if (c && (c as { is_certified?: boolean }).is_certified) setCertified(true); });
+        ).then(({ data: c }) => {
+          if (perimee()) return;
+          if (c && (c as { is_certified?: boolean }).is_certified) setCertified(true);
+        });
 
         // Le nombre d'amis se compte ici : `followers` est lisible de tous
         // (`USING (true)`), c'est le seul des trois chiffres qui l'était.
@@ -138,6 +177,7 @@ export default function PublicProfilePage() {
           .from("followers")
           .select("following_id", { count: "exact", head: true })
           .eq("follower_id", data.id);
+        if (perimee()) return;
         setFollowingCount(amisCount ?? 0);
 
         /* Les trois chiffres, et le rang.
@@ -148,23 +188,27 @@ export default function PublicProfilePage() {
            propre profil, où les tables sont lisibles. */
         void chargerProfilPublic(data.id)
           .then(async (chiffres) => {
+            if (perimee()) return;
             if (chiffres) {
               setPub(chiffres);
               setAura(etatDepuisExp(chiffres.exp));
               return;
             }
             const rangPublic = await chargerRang(data.id);
+            if (perimee()) return;
             if (rangPublic) setAura(etatDepuisExp(rangPublic.exp));
             else if (user?.id === data.id) {
               const etat = await calculerAura(supabase, data.id);
-              if (etat) setAura(etat);
+              if (!perimee() && etat) setAura(etat);
             }
           })
           .catch(() => {});
         /* Pas de `progres` ici : le serveur ne le rend que pour soi. Un
            badge est fait pour se voir de l'extérieur, le détail de ce qui
            reste à quelqu'un d'autre ne l'est pas. */
-        void chargerBadgesAura(data.id).then(({ slugs }) => setBadgeSlugs(slugs)).catch(() => {});
+        void chargerBadgesAura(data.id)
+          .then(({ slugs }) => { if (!perimee()) setBadgeSlugs(slugs); })
+          .catch(() => {});
 
         if (user && user.id !== data.id) {
           const { data: followData } = await supabase
@@ -173,12 +217,14 @@ export default function PublicProfilePage() {
             .eq("follower_id", user.id)
             .eq("following_id", data.id)
             .maybeSingle();
+          if (perimee()) return;
           setIsFollowing(!!followData);
         }
-
-        setLoading(false);
       });
-  }, [username, user]);
+    /* La clé remplace `username` dans les dépendances ET dans la requête : elle
+       en dérive, `ilike` ignore la casse, donc les deux sont équivalents et il
+       n'y a qu'une seule autorité sur « quel pseudo on demande ». */
+  }, [cle, user]);
 
   const handleFollow = async () => {
     if (!user || !profile || isOwnProfile) return;
@@ -232,7 +278,13 @@ export default function PublicProfilePage() {
     void handleFollow();
   };
 
-  if (loading) {
+  /* Le profil qu'on a en mémoire décrit-il la page ouverte ? Tant que non, on
+     attend : c'est ce qui empêche la personne PRÉCÉDENTE de rester affichée
+     sous la nouvelle URL, sans qu'aucun état n'ait à être remis à zéro. */
+  const aJour = !!profile && profile.pseudo.trim().toLocaleLowerCase("fr") === cle;
+  const echec = issue && issue.pour === cle ? issue.quoi : null;
+
+  if (!aJour && !echec) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <motion.div
@@ -245,7 +297,7 @@ export default function PublicProfilePage() {
     );
   }
 
-  if (notFound) {
+  if (echec) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-4 px-6">
         <div
@@ -255,10 +307,12 @@ export default function PublicProfilePage() {
           👤
         </div>
         <p className="text-[20px] font-light" style={{ color: "var(--text-1)" }}>
-          Profil introuvable
+          {echec === "panne" ? "Profil illisible" : "Profil introuvable"}
         </p>
         <p className="text-[13px]" style={{ color: "var(--text-3)" }}>
-          @{username} n&apos;existe pas
+          {echec === "panne"
+            ? "On n’a pas pu le charger. Vérifie ta connexion."
+            : <>@{username} n&apos;existe pas</>}
         </p>
         <motion.button
           whileTap={{ scale: 0.96 }}
