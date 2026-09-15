@@ -10,6 +10,7 @@
    ───────────────────────────────────────────────────────────── */
 
 import { createClient } from "@/lib/supabase";
+import { lireProfils } from "@/lib/profilsPublics";
 import { fetchAuth } from "@/lib/fetchAuth";
 
 /* ── Les séries d'affiches ────────────────────────────────────
@@ -275,10 +276,12 @@ export async function chargerDefi(userId: string): Promise<Defi | null> {
   ]);
 
   const membreIds = (membresRes.data ?? []).map((m) => m.user_id as string);
-  const { data: profils } = await supabase
-    .from("profiles")
-    .select("id, pseudo, avatar_url")
-    .in("id", membreIds.length ? membreIds : ["00000000-0000-0000-0000-000000000000"]);
+  const { data: profils } = await lireProfils((src) =>
+    supabase
+      .from(src)
+      .select("id, pseudo, avatar_url")
+      .in("id", membreIds.length ? membreIds : ["00000000-0000-0000-0000-000000000000"]),
+  );
 
   const membres: Membre[] = membreIds.map((id) => {
     const p = profils?.find((x) => x.id === id);
@@ -362,8 +365,9 @@ export async function chargerRelaisAccueil(userId: string): Promise<RelaisAccuei
 
   let equipier: Membre | null = null;
   if (autre) {
-    const { data: p } = await supabase
-      .from("profiles").select("id, pseudo, avatar_url").eq("id", autre).maybeSingle();
+    const { data: p } = await lireProfils((src) =>
+      supabase.from(src).select("id, pseudo, avatar_url").eq("id", autre).maybeSingle(),
+    );
     equipier = { userId: autre, pseudo: (p?.pseudo as string) ?? "…", avatar: (p?.avatar_url as string) ?? null };
   }
 

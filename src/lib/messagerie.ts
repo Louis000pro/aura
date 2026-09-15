@@ -8,6 +8,7 @@
    ───────────────────────────────────────────────────────────── */
 
 import { createClient } from "@/lib/supabase";
+import { lireProfils } from "@/lib/profilsPublics";
 
 export type Personne = {
   id: string;
@@ -269,9 +270,10 @@ export async function chargerConversations(userId: string): Promise<Conversation
   if (premiereErreur) throw new Error(premiereErreur.message);
 
   const profilIds = [...new Set((membresRes.data ?? []).map((m) => m.user_id as string))];
-  const { data: profils, error: profilsError } = await supabase
-    .from("profiles").select("id, pseudo, avatar_url")
-    .in("id", profilIds.length ? profilIds : ["00000000-0000-0000-0000-000000000000"]);
+  const { data: profils, error: profilsError } = await lireProfils((src) =>
+    supabase.from(src).select("id, pseudo, avatar_url")
+      .in("id", profilIds.length ? profilIds : ["00000000-0000-0000-0000-000000000000"]),
+  );
   if (profilsError) throw new Error(profilsError.message);
 
   const runIds = (defisRes.data ?? []).map((d) => d.id as string);
@@ -380,9 +382,10 @@ async function chargerFilDepuisServeur(convId: string): Promise<FilCharge> {
   const urlsPhotos = await signerPhotos(messagesBruts);
 
   const ids = (membresRes.data ?? []).map((m) => m.user_id as string);
-  const { data: profils } = await supabase
-    .from("profiles").select("id, pseudo, avatar_url")
-    .in("id", ids.length ? ids : ["00000000-0000-0000-0000-000000000000"]);
+  const { data: profils } = await lireProfils((src) =>
+    supabase.from(src).select("id, pseudo, avatar_url")
+      .in("id", ids.length ? ids : ["00000000-0000-0000-0000-000000000000"]),
+  );
 
   let defi: DefiDuFil | null = null;
   const brut = defiRes.data?.[0] as RunFil | undefined;
@@ -927,12 +930,14 @@ export async function rechercherAmisParPseudo(
   if (pseudo.length < 2) return [];
   const supabase = createClient();
   const motif = `%${pseudo.replace(/[\\%_]/g, "\\$&")}%`;
-  const { data, error } = await supabase
-    .from("profiles")
-    .select("id, pseudo, avatar_url")
-    .neq("id", moi)
-    .ilike("pseudo", motif)
-    .limit(Math.max(limite * 2, 12));
+  const { data, error } = await lireProfils((src) =>
+    supabase
+      .from(src)
+      .select("id, pseudo, avatar_url")
+      .neq("id", moi)
+      .ilike("pseudo", motif)
+      .limit(Math.max(limite * 2, 12)),
+  );
   if (error) throw new Error(error.message);
   const normalise = pseudo.toLocaleLowerCase("fr");
   const profils = ((data ?? []) as { id: string; pseudo: string; avatar_url: string | null }[])
@@ -980,10 +985,12 @@ export async function chargerDemandesAmi(moi: string): Promise<Personne[]> {
     .filter((id) => id !== moi && !dejaReciproques.has(id));
   if (!ids.length) return [];
 
-  const { data, error } = await supabase
-    .from("profiles")
-    .select("id, pseudo, avatar_url")
-    .in("id", ids);
+  const { data, error } = await lireProfils((src) =>
+    supabase
+      .from(src)
+      .select("id, pseudo, avatar_url")
+      .in("id", ids),
+  );
   if (error) throw new Error(error.message);
   return (data ?? []).map((p) => ({
     id: p.id as string,
@@ -1060,8 +1067,9 @@ export async function mesRelations(userId: string): Promise<Personne[]> {
 
   if (!ids.length) return [];
 
-  const { data, error } = await supabase
-    .from("profiles").select("id, pseudo, avatar_url").in("id", ids);
+  const { data, error } = await lireProfils((src) =>
+    supabase.from(src).select("id, pseudo, avatar_url").in("id", ids),
+  );
   if (error) throw new Error(error.message);
 
   return (data ?? []).map((p) => ({

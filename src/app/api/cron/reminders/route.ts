@@ -176,8 +176,15 @@ type Portrait = {
  * tous les rappels du soir se mettraient à tutoyer un inconnu. On retente
  * donc sans elle, et l'absence de Guide se contente de rendre la voix
  * commune. Le cas normal (colonne présente) ne coûte qu'une requête.
+ *
+ * ⚠️ LE NOM DIT `AvecGuide` POUR NE PAS SE CONFONDRE AVEC
+ * `lireProfils` DE `src/lib/profilsPublics.ts`, qui fait l'inverse : celui-ci
+ * lit avec le client de SERVICE, donc par-dessus la RLS, et il a le droit de
+ * demander une colonne privée ; l'autre est la surface PUBLIQUE d'un profil,
+ * bornée à ce que les écrans montrent déjà. Deux métiers opposés sous un
+ * même nom finissent par être appelés l'un pour l'autre.
  */
-async function lireProfils(admin: ReturnType<typeof createAdminClient>, ids: string[]) {
+async function lireProfilsAvecGuide(admin: ReturnType<typeof createAdminClient>, ids: string[]) {
   const avec = await admin.from("profiles").select("id, pseudo, guide_id").in("id", ids);
   if (!avec.error) return { data: avec.data, guideLisible: true };
 
@@ -222,7 +229,7 @@ async function portraits(
       admin.from(sc.table).select(`user_id, type, title, exercise_list, nature, ${sc.colStatut}`).in("user_id", ids).eq("date", today),
       admin.from("aura_mission_credits").select("user_id, points").in("user_id", ids),
       admin.from("notification_rappels").select("user_id, jour, cle, variante").in("user_id", ids).gte("jour", debutJournal).order("jour", { ascending: false }),
-      lireProfils(admin, ids),
+      lireProfilsAvecGuide(admin, ids),
     ]);
 
   const carte = new Map<string, Portrait>();

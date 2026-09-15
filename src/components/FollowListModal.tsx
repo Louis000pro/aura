@@ -14,6 +14,7 @@ import { motion } from "framer-motion";
 import { Search, X, UserCheck, UserPlus } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase";
+import { lireProfils } from "@/lib/profilsPublics";
 import { useAuth } from "@/context/AuthContext";
 
 type RealFollowUser = {
@@ -56,10 +57,12 @@ export default function FollowListModal({
 
       const ids = (rows as Record<string, string>[]).map((r) => r[col]);
 
-      const { data: profiles } = await supabase
-        .from("profiles")
-        .select("id, pseudo, full_name, avatar_url")
-        .in("id", ids);
+      const { data: profiles } = await lireProfils((src) =>
+        supabase
+          .from(src)
+          .select("id, pseudo, full_name, avatar_url")
+          .in("id", ids),
+      );
 
       setList(profiles ?? []);
 

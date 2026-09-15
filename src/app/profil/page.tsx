@@ -60,6 +60,7 @@ import Link from "next/link";
 import { GOALS as GOALS_LIST, LEVELS as LEVELS_LIST } from "@/lib/profilOnboarding";
 import { useAuth } from "@/context/AuthContext";
 import { createClient } from "@/lib/supabase";
+import { lireProfils } from "@/lib/profilsPublics";
 
 /* ─────────────── Toast ─────────────── */
 function Toast({ message }: { message: string }) {
@@ -561,8 +562,9 @@ export default function ProfilPage() {
       const { data: rows } = await supabase.from("followers").select("following_id").eq("follower_id", uid);
       const ids = (rows ?? []).map((r) => r.following_id as string);
       if (ids.length === 0) { setAmis([]); return; }
-      const { data: profiles } = await supabase
-        .from("profiles").select("id, pseudo, avatar_url").in("id", ids);
+      const { data: profiles } = await lireProfils((src) =>
+        supabase.from(src).select("id, pseudo, avatar_url").in("id", ids),
+      );
       setAmis((profiles ?? []) as { id: string; pseudo: string; avatar_url?: string }[]);
     })().catch(() => setAmis([]));
 

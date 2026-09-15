@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import { createClient } from "@/lib/supabase";
+import { lireProfils } from "@/lib/profilsPublics";
 import { useAuth } from "@/context/AuthContext";
 import FollowListModal from "@/components/FollowListModal";
 import GemmeRang from "@/components/GemmeRang";
@@ -109,11 +110,13 @@ export default function PublicProfilePage() {
     if (!username) return;
     const supabase = createClient();
 
-    supabase
-      .from("profiles")
-      .select("id, pseudo, full_name, bio, avatar_url, onboarding_goals, onboarding_level, is_admin")
-      .ilike("pseudo", username.trim())
-      .maybeSingle()
+    lireProfils((src) =>
+      supabase
+        .from(src)
+        .select("id, pseudo, full_name, bio, avatar_url, onboarding_goals, onboarding_level, is_admin")
+        .ilike("pseudo", username.trim())
+        .maybeSingle(),
+    )
       .then(async ({ data, error }) => {
         if (error || !data) {
           setNotFound(true);
@@ -122,9 +125,12 @@ export default function PublicProfilePage() {
         }
         setProfile(data);
 
-        // Certification (fetch défensif : la colonne is_certified peut ne pas exister)
-        supabase.from("profiles").select("is_certified").eq("id", data.id).maybeSingle()
-          .then(({ data: c }) => { if (c && (c as { is_certified?: boolean }).is_certified) setCertified(true); });
+        /* Certification, dans SA propre requête : elle reste séparée pour que
+           son échec ne puisse pas emporter le profil entier, qui est déjà
+           affiché à ce stade. */
+        void lireProfils((src) =>
+          supabase.from(src).select("is_certified").eq("id", data.id).maybeSingle(),
+        ).then(({ data: c }) => { if (c && (c as { is_certified?: boolean }).is_certified) setCertified(true); });
 
         // Le nombre d'amis se compte ici : `followers` est lisible de tous
         // (`USING (true)`), c'est le seul des trois chiffres qui l'était.
