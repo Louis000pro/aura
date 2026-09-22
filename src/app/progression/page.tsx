@@ -20,7 +20,7 @@ import { useRouter } from "next/navigation";
 import {
   Clock, ChevronRight, ChevronLeft, Dumbbell, Play, Flame, Wind, Sparkles, Layers,
   Check, X, Plus, Trash2, Pencil, Globe, Lock, Users,
-  Moon, Zap, Home, Sun, CalendarDays, MoreHorizontal, GripVertical, BookOpen,
+  Moon, Zap, Home, Sun, CalendarDays, MoreHorizontal, GripVertical, BookOpen, Search,
 } from "lucide-react";
 import WeeklyProgramme from "@/components/WeeklyProgramme";
 import AdaptationSheet from "@/components/entrainement/AdaptationSheet";
@@ -1514,6 +1514,19 @@ const FAMILLES: { id: CatFamille; label: string }[] = [
 const hayOf = (s: MergedSession) =>
   `${s.title} ${s.subtitle ?? ""} ${(s.muscles ?? []).join(" ")}`.toLowerCase();
 
+/* Recherche directe : on tape « pec » ou « abdo » et on tombe sur la séance,
+   sans passer par les familles. L'aiguille et la botte de foin sont toutes
+   deux SANS ACCENT et en minuscules, sinon « épaules » ne se trouve pas en
+   tapant « epaule ». Les collections entrent dans la botte : elles portent
+   « abdos », « jambes »… que le titre ne dit pas toujours. */
+const sansAccent = (v: string) =>
+  v.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+
+const hayRecherche = (s: MergedSession) =>
+  sansAccent(
+    `${s.title} ${s.subtitle ?? ""} ${(s.muscles ?? []).join(" ")} ${s.category} ${(s.collections ?? []).join(" ")}`,
+  );
+
 /** Les séances Vaiiya récentes déclarent leurs collections explicitement.
     Les créations perso et l'ancien catalogue gardent le prédicat historique
     en repli jusqu'à leur migration, sans perdre leur multi-appartenance. */
@@ -2785,6 +2798,22 @@ export default function ProgressionPage() {
     ...workoutSessions.map((s) => ({ ...s, perso: false })),
   ], [customSessions]);
 
+  /* Barre de recherche : trouver une séance parmi les ~94 sans dérouler les
+     familles. On ne cherche que dans les vraies séances (pas les mini-cours),
+     dès deux caractères, chaque mot devant être présent (« haut abdo »
+     retrouve une séance qui parle des deux). */
+  const [recherche, setRecherche] = useState("");
+  const resultatsRecherche = useMemo<MergedSession[]>(() => {
+    const q = sansAccent(recherche.trim());
+    if (q.length < 2) return [];
+    const mots = q.split(/\s+/);
+    return allSessions.filter((s) => {
+      if (s.contentType === "article") return false;
+      const hay = hayRecherche(s);
+      return mots.every((m) => hay.includes(m));
+    });
+  }, [recherche, allSessions]);
+
   /* ── Lancements ──
      ⚠️ TOUT PASSE PAR LE LANCEUR GLOBAL (V7A). Cet écran avait son propre
      tunnel, avec sa propre logique de fin de séance ; le héros lance
@@ -3074,6 +3103,77 @@ export default function ProgressionPage() {
             l'accueil, l'écran où l'on arrive et où la question de la
             journée se pose vraiment. Entraînement redevient ce qu'il est :
             le plan d'entraînement et sa bibliothèque. */}
+
+        {/* ── ① bis · Recherche directe ──
+            94 séances, la plupart dures à retrouver dans les familles :
+            on tape « pec », « abdo », « haut du corps » et on tombe dessus. */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.16 }}
+          className="mt-2"
+        >
+          <div className="relative flex items-center gap-2.5 px-4 py-3 rounded-2xl"
+            style={{
+              background: "rgba(var(--tint-violet-rgb),0.55)",
+              border: "1px solid rgba(var(--accent-rgb),0.16)",
+            }}>
+            <Search size={16} style={{ color: "var(--text-3)", flexShrink: 0 }} />
+            <input
+              value={recherche}
+              onChange={(e) => setRecherche(e.target.value)}
+              placeholder="Chercher une séance (pec, abdo, jambes…)"
+              className="flex-1 bg-transparent text-[16px] outline-none placeholder:text-[var(--text-3)]"
+              style={{ color: "var(--text-1)" }}
+              aria-label="Chercher une séance"
+            />
+            {recherche && (
+              <button type="button" onClick={() => setRecherche("")} aria-label="Effacer" className="flex-shrink-0 cursor-pointer">
+                <X size={15} style={{ color: "var(--text-3)" }} />
+              </button>
+            )}
+          </div>
+
+          <AnimatePresence>
+            {recherche.trim().length >= 2 && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.2 }} style={{ overflow: "hidden" }}
+              >
+                <div className="mt-2 rounded-2xl overflow-hidden"
+                  style={{ background: "rgba(var(--surface-rgb),0.9)", border: "1px solid rgba(var(--accent-rgb),0.12)" }}>
+                  {resultatsRecherche.length === 0 ? (
+                    <p className="px-4 py-4 text-[14px]" style={{ color: "var(--text-3)" }}>
+                      Aucune séance pour « {recherche.trim()} ».
+                    </p>
+                  ) : (
+                    <div className="max-h-[46vh] overflow-y-auto">
+                      {resultatsRecherche.map((s, i) => {
+                        const verrou = s.access === "premium" && !canAccessPremium;
+                        return (
+                          <button key={s.id} type="button"
+                            onClick={() => { startSession(s); setRecherche(""); }}
+                            className="w-full flex items-center gap-3 px-4 py-3 text-left cursor-pointer"
+                            style={{ borderTop: i === 0 ? "none" : "1px solid rgba(var(--accent-rgb),0.08)" }}>
+                            <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: s.accent || "var(--accent)" }} />
+                            <span className="flex-1 min-w-0">
+                              <span className="flex items-center gap-1.5">
+                                <b className="text-[15px] font-semibold truncate" style={{ color: "var(--text-1)" }}>{s.title}</b>
+                                {verrou && <Lock size={12} style={{ color: "var(--gold)", flexShrink: 0 }} />}
+                              </span>
+                              <span className="text-[12px] truncate block" style={{ color: "var(--text-3)" }}>
+                                {s.duration} min · {s.difficulty}{s.perso ? " · à toi" : ""}
+                              </span>
+                            </span>
+                            <ChevronRight size={16} style={{ color: "var(--text-3)", flexShrink: 0 }} />
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </motion.div>
 
         {/* ── ② Bifurcation ──
             ⚠️ LA PHRASE D'INVITE EST PARTIE AVEC LE HÉROS (V7A). Elle

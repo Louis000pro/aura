@@ -12,6 +12,7 @@ import { useNutritionGoals } from "@/hooks/useNutritionGoals";
 import WeighInPrompt from "@/components/WeighInPrompt";
 import TastePrefsPrompt from "@/components/TastePrefsPrompt";
 import RecipesByTheme from "@/components/RecipesByTheme";
+import RecipeSearch from "@/components/RecipeSearch";
 import MealSituationHero from "@/components/MealSituationHero";
 import MacroTiles from "@/components/MacroTiles";
 
@@ -2441,6 +2442,11 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
             qu'un chiffre en dur, et les deux actions vivent maintenant dans
             « On mange où ? » — un seul endroit pour ajouter un repas. */}
       </motion.div>
+
+      {/* ── Recherche de recette : le raccourci direct (avec image) ──── */}
+      {calView === "journal" && (
+        <RecipeSearch onAdd={addRecipeMeal} />
+      )}
 
       {/* ── On mange où ? — le nouveau #1 (dominant) ─────────── */}
       {calView === "journal" && (

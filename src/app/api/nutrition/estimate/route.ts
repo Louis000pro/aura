@@ -69,7 +69,10 @@ Exemples de precision :
 Retourne UNIQUEMENT le JSON.`;
 
     const response = await groq.chat.completions.create({
-      model: "llama-3.3-70b-versatile",
+      // llama-3.3-70b-versatile a été retiré de Groq (model_not_found) : on
+      // prend le même modèle que les deux autres routes nutrition, qui est en
+      // service et rend bien du JSON.
+      model: "meta-llama/llama-4-scout-17b-16e-instruct",
       messages: [
         {
           role: "system",
