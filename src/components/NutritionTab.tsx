@@ -2176,6 +2176,20 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
   const [toast, setToast] = useState<string | null>(null);
   const [journalOpen, setJournalOpen] = useState(false); // journal relégué en pied, déplié à la demande
 
+  /* « Noter un repas » depuis l'accueil arrive avec `?ajouter=repas` et ouvre
+     DIRECTEMENT le formulaire de saisie (choix de Louis, 2026-09-22). On
+     nettoie l'URL aussitôt : un rafraîchissement ou un retour arrière ne doit
+     pas rouvrir une feuille qu'on vient de fermer. */
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("ajouter") !== "repas") return;
+    setShowManual(true);
+    params.delete("ajouter");
+    const reste = params.toString();
+    window.history.replaceState(null, "", window.location.pathname + (reste ? `?${reste}` : ""));
+  }, []);
+
   /* Objectif du jour — lu depuis le profil central (base), partagé avec l'IA. */
   const { goals } = useNutritionGoals();
 

@@ -231,7 +231,10 @@ export const MISSIONS: Mission[] = [
     periode: "jour",
     premium: false,
     image: "/missions/daily/repas-v1.webp",
-    route: "/nutrition",
+    /* `?ajouter=repas` ouvre directement le formulaire de saisie manuelle
+       sur /nutrition (choix de Louis, 2026-09-22), au lieu de simplement
+       déposer sur le suivi. NutritionTab lit ce paramètre au montage. */
+    route: "/nutrition?ajouter=repas",
   },
   {
     id: "journee",
