@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Eye, EyeOff, ArrowRight, Sparkles,
+  Eye, EyeOff,
   User, Mail, Lock, CheckCircle2, AtSign, UserCheck,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
@@ -153,6 +153,11 @@ function OtpInput({ value, onChange }: { value: string; onChange: (v: string) =>
    Lu sur window plutôt qu'avec useSearchParams : pas de Suspense à poser. */
 const destinationApres = () => destinationDepuisUrl("/");
 
+/* Connexion en deux temps : on ne passe au mot de passe que sur un email
+   qui a la forme d'un email. Vérif volontairement souple (le vrai contrôle,
+   c'est Supabase) : elle sert juste à activer « Continuer ». */
+const emailValide = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
+
 export default function AuthPage() {
   const router = useRouter();
   const { signUp, signIn, signInWithGoogle, resetPassword, user, isLoading } = useAuth();
@@ -163,6 +168,8 @@ export default function AuthPage() {
   }, [user, isLoading, router]);
 
   const [mode, setMode]             = useState<"login"|"signup">("login");
+  /* Connexion : 1 = on demande l'email, 2 = on demande le mot de passe. */
+  const [etapeConnexion, setEtapeConnexion] = useState<1|2>(1);
   const [pseudo, setPseudo]         = useState("");
   const [name, setName]             = useState("");
   const [lastName, setLastName]     = useState("");
@@ -198,13 +205,23 @@ export default function AuthPage() {
     setIsMobile(window.matchMedia("(max-width: 767px)").matches);
   }, []);
 
-  const canSubmit = mode === "login"
-    ? (email && password)
-    : (pseudo && name && lastName && email && password);
+  const canSubmit = mode === "signup"
+    ? !!(pseudo && name && lastName && email && password)
+    : etapeConnexion === 1
+      ? emailValide(email)
+      : !!(email && password);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!canSubmit) return;
+
+    // Connexion en deux temps : l'étape 1 ne fait qu'ouvrir le mot de passe.
+    if (mode === "login" && etapeConnexion === 1) {
+      setError(null);
+      setEtapeConnexion(2);
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
@@ -451,7 +468,7 @@ export default function AuthPage() {
               <img src="/logo-vaiiya.png" alt="Vaiiya" className="w-20 h-20 object-contain relative z-10" />
             </div>
             <h1 className="text-[20px] font-extralight tracking-[0.2em]" style={{ color:"var(--text-1)" }}>Vaiiya</h1>
-            <p className="text-[11px] font-light mt-0.5" style={{ color:"var(--text-3)" }}>Coach IA · Musculation · Nutrition</p>
+            <p className="text-[11px] font-light mt-0.5" style={{ color:"var(--text-3)" }}>Ton coach, tes séances, ta nutrition.</p>
           </div>
 
           {/* Erreur globale */}
@@ -495,7 +512,7 @@ export default function AuthPage() {
           {/* Onglet actif = violet, comme partout dans l'app. */}
           <div className="relative flex rounded-2xl p-1 mb-5 gap-1" style={{ background:"rgba(var(--tint-violet-rgb),0.5)",border:"1px solid rgba(var(--accent-rgb),0.12)" }}>
             {(["login","signup"] as const).map(m => (
-              <button key={m} onClick={() => { setMode(m); setError(null); }}
+              <button key={m} onClick={() => { setMode(m); setError(null); setEtapeConnexion(1); }}
                 className="relative flex-1 py-2.5 rounded-xl text-[16px] font-medium cursor-pointer z-10"
                 style={{ color:mode===m?"var(--accent)":"var(--text-3)" }}>
                 {mode===m && <motion.div layoutId="auth-tab" className="absolute inset-0 rounded-xl"
@@ -504,6 +521,16 @@ export default function AuthPage() {
                 <span className="relative z-10">{m==="login"?"Se connecter":"Créer un compte"}</span>
               </button>
             ))}
+          </div>
+
+          {/* Titre humanisé. À l'étape 2, une ligne rappelle où on en est. */}
+          <div className="text-center mb-4">
+            <p className="text-[19px] font-semibold" style={{ color:"var(--text-1)" }}>
+              {mode==="login" ? "Se connecter à Vaiiya" : "Créer ton compte"}
+            </p>
+            {mode==="login" && etapeConnexion===2 && (
+              <p className="text-[13px] mt-0.5" style={{ color:"var(--text-2)" }}>Ravi de te revoir. Entre ton mot de passe.</p>
+            )}
           </div>
 
           {/* Form */}
@@ -529,18 +556,44 @@ export default function AuthPage() {
               )}
             </AnimatePresence>
 
-            <Field icon={<Mail size={15}/>} type="email" placeholder="Email" value={email} onChange={setEmail} required autoFocus={mode==="login"} />
+            {mode === "login" && etapeConnexion === 2 ? (
+              /* Étape 2 : l'email est validé, on le rappelle avec un retour possible. */
+              <div className="flex items-center justify-between gap-2 px-4 py-3 rounded-2xl"
+                style={{ background:"rgba(var(--tint-violet-rgb),0.62)", border:"1px solid rgba(var(--accent-rgb),0.16)" }}>
+                <span className="flex items-center gap-2.5 min-w-0">
+                  <CheckCircle2 size={15} style={{ color:TEAL }} />
+                  <b className="text-[14px] font-semibold truncate" style={{ color:"var(--text-1)" }}>{email}</b>
+                </span>
+                <button type="button"
+                  onClick={() => { setEtapeConnexion(1); setPassword(""); setError(null); setForgotMode(false); }}
+                  className="text-[13px] font-semibold cursor-pointer flex-shrink-0" style={{ color:"var(--accent)" }}>
+                  Modifier
+                </button>
+              </div>
+            ) : (
+              <Field icon={<Mail size={15}/>} type="email" placeholder="Ton email" value={email} onChange={setEmail} required autoFocus={mode==="login"} />
+            )}
 
-            <div className="flex flex-col gap-2">
-              <Field icon={<Lock size={15}/>}
-                type={showPwd?"text":"password"} placeholder="Mot de passe" value={password} onChange={setPassword} required
-                suffix={
-                  <button type="button" onClick={() => setShowPwd(v=>!v)} className="cursor-pointer flex-shrink-0">
-                    {showPwd ? <EyeOff size={14} style={{ color:"var(--text-3)" }}/> : <Eye size={14} style={{ color:"var(--text-3)" }}/>}
+            {(mode === "signup" || etapeConnexion === 2) && (
+              <div className="flex flex-col gap-2">
+                <Field icon={<Lock size={15}/>}
+                  type={showPwd?"text":"password"} placeholder="Ton mot de passe" value={password} onChange={setPassword} required
+                  autoFocus={mode==="login" && etapeConnexion===2}
+                  suffix={
+                    <button type="button" onClick={() => setShowPwd(v=>!v)} className="cursor-pointer flex-shrink-0">
+                      {showPwd ? <EyeOff size={14} style={{ color:"var(--text-3)" }}/> : <Eye size={14} style={{ color:"var(--text-3)" }}/>}
+                    </button>
+                  } />
+                {mode === "signup" && <PasswordStrengthBar password={password} />}
+                {/* La réinitialisation vit ICI, à l'étape mot de passe. */}
+                {mode === "login" && etapeConnexion === 2 && (
+                  <button type="button" onClick={() => setForgotMode(v=>!v)}
+                    className="self-end text-[13px] font-medium cursor-pointer hover:underline" style={{ color:"var(--accent)" }}>
+                    Mot de passe oublié ?
                   </button>
-                } />
-              {mode === "signup" && <PasswordStrengthBar password={password} />}
-            </div>
+                )}
+              </div>
+            )}
 
             <motion.button type="submit" disabled={loading||!canSubmit}
               whileHover={!loading?{scale:1.02,y:-2}:{}} whileTap={!loading?{scale:0.97}:{}}
@@ -557,10 +610,8 @@ export default function AuthPage() {
                     <span>{mode==="login"?"Connexion…":"Création…"}</span>
                   </motion.div>
                 ) : (
-                  <motion.div key="i" initial={{ opacity:0,y:6 }} animate={{ opacity:1,y:0 }} exit={{ opacity:0,y:-6 }} className="flex items-center justify-center gap-2">
-                    <Sparkles size={14} strokeWidth={1.5}/>
-                    <span>{mode==="login"?"Se connecter":"Créer mon compte"}</span>
-                    <ArrowRight size={14} strokeWidth={2}/>
+                  <motion.div key="i" initial={{ opacity:0,y:6 }} animate={{ opacity:1,y:0 }} exit={{ opacity:0,y:-6 }} className="flex items-center justify-center">
+                    <span>{mode==="signup" ? "Créer mon compte" : etapeConnexion===1 ? "Continuer" : "Se connecter"}</span>
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -609,17 +660,7 @@ export default function AuthPage() {
             )}
           </AnimatePresence>
 
-          <p className="text-center text-[11px] mt-5 font-light" style={{ color:"var(--text-3)" }}>
-            {mode==="login" ? "Pas encore de compte ? " : "Déjà un compte ? "}
-            <button onClick={() => { setMode(mode==="login"?"signup":"login"); setError(null); }}
-              className="font-medium cursor-pointer hover:underline" style={{ color:"var(--text-1)" }}>
-              {mode==="login"?"Créer un compte":"Se connecter"}
-            </button>
-            {mode==="login" && <>{" · "}<button onClick={() => setForgotMode(v=>!v)}
-              className="font-medium cursor-pointer hover:underline" style={{ color:"var(--accent)" }}>Mot de passe oublié ?</button></>}
-          </p>
-
-          <p className="text-center text-[11px] mt-4 font-light leading-relaxed" style={{ color:"var(--text-3)" }}>
+          <p className="text-center text-[11px] mt-6 font-light leading-relaxed" style={{ color:"var(--text-3)" }}>
             En continuant, tu acceptes nos{" "}
             <Link href="/conditions" className="font-medium hover:underline" style={{ color:"var(--accent)" }}>Conditions générales</Link>
             {", "}nos{" "}
