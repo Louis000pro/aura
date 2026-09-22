@@ -371,9 +371,13 @@ export default function Navigation() {
       </nav>
       )}
 
-      {/* ══ Desktop Sidebar ══ */}
+      {/* ══ Desktop Sidebar ══
+          ⚠️ PAS DE will-change/translateZ sur ce <aside> fixed (retiré le
+          2026-09-22) : sur un élément fixed, ces hints forcent une couche
+          GPU que Firefox ne peint pas au premier chargement, et la barre
+          latérale gauche n'apparaissait qu'après un rafraîchissement. */}
       {!railAbsent && (
-      <aside className={`hidden md:flex fixed left-4 top-4 bottom-4 z-50 flex-col${railSelonSession ? " rail-membre" : ""}`} style={{ willChange: "transform", transform: "translateZ(0)" }}>
+      <aside className={`hidden md:flex fixed left-4 top-4 bottom-4 z-50 flex-col${railSelonSession ? " rail-membre" : ""}`}>
         <motion.div
           initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}

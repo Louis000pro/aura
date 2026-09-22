@@ -191,9 +191,9 @@
    pâle, ce qui est la recette d'un bouton désactivé. Ici le chiffre a la
    pastille pour lui seul, et ce qu'il reste à faire vit dessous.
 
-   Le teal reste la seule couleur pleine de la ligne : c'est la réussite
-   du système D, la même que la coche de fin de séance. Il n'entre pas en
-   conflit avec le violet, qui reste l'action. */
+   L'aplat plein « Validée » porte le violet Vaiiya depuis le 2026-09-22
+   (choix de Louis, voir le bloc du `.sceau[data-earned]` plus bas) : la
+   coche « fait » de l'accueil et ce sceau parlent la même langue. */
 .gain {
   display: flex;
   flex: 0 0 auto;
@@ -237,18 +237,18 @@
   letter-spacing: 0.06em;
 }
 
-/* L'aplat plein, identique dans les deux thèmes : un teal saturé tient
-   sur le blanc comme sur le noir, et c'est justement ce qui en fait un
-   tampon plutôt qu'une teinte de surface. L'encre sombre posée dessus
-   donne 8,9:1.
-   ⚠️ Pas de `--exp-ok` ici : ce jeton est l'ENCRE du teal, celle qui
-   bascule pour rester lisible sur la surface. Le tampon, lui, apporte
-   son propre fond, donc il n'a rien à basculer. */
+/* ⚠️ VIOLET VAIIYA SUR LE SCEAU « VALIDÉE », CHOIX DE LOUIS (2026-09-22).
+   Le tampon d'une mission gagnée porte le violet de marque
+   (#8B5CF6 → #C13BC1), texte blanc, pour s'accorder avec la coche « fait »
+   des marqueurs de l'accueil. C'est un aplat plein saturé, qui tient sur le
+   blanc comme sur le noir : c'est ce qui en fait un tampon plutôt qu'une
+   teinte de surface. Le teal reste la couleur de la coche de fin de séance
+   et de la progression du corps. */
 .sceau[data-earned] {
   border-color: transparent;
-  color: #05271d;
-  background: linear-gradient(135deg, #35e0ae, #17b487);
-  box-shadow: 0 6px 14px -8px rgba(23, 180, 135, 0.9);
+  color: #fff;
+  background: linear-gradient(135deg, #8b5cf6, #c13bc1);
+  box-shadow: 0 6px 14px -8px rgba(139, 92, 246, 0.9);
 }
 
 /* Lu par les synthèses vocales, jamais affiché. */

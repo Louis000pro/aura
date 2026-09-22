@@ -109,12 +109,16 @@
   color: #05271d;
 }
 
-/* Le teal plein de la réussite, le même que le sceau d'une mission
-   gagnée et que la coche de fin de séance. Système D : teal = réussite,
-   partout. */
+/* ⚠️ VIOLET VAIIYA SUR LES MARQUEURS DU JOUR, CHOIX DE LOUIS (2026-09-22).
+   Le système D dit « teal = réussite » ; Louis a demandé explicitement que
+   la coche « fait » des missions de l'accueil porte le violet de marque
+   (#8B5CF6 → #C13BC1), le même que le sceau d'une mission gagnée juste en
+   dessous. La coche de FIN DE SÉANCE et la progression du corps (poids,
+   mesures) restent teal : là, teal garde son sens. */
 .marque[data-on] .pip {
   border-color: transparent;
-  background: linear-gradient(135deg, #35e0ae, #17b487);
+  color: #fff;
+  background: linear-gradient(135deg, #8b5cf6, #c13bc1);
 }
 
 .action {

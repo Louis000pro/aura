@@ -224,6 +224,11 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     overscroll-behavior: none;
+    /* ⚠️ ZÉRO NON BARRÉ (2026-09-22, choix de Louis). Les chiffres sont en
+       Martian Mono (`.vy-nombre`, `--chiffre`), qui rend un « 0 » barré par
+       défaut. On coupe la feature `zero` pour tout le produit ; hérité, donc
+       il atteint aussi le chrono du tunnel écrit à la main. */
+    font-feature-settings: "zero" 0;
   }
 
   /* TOUS LES TITRES PRENNENT LA POLICE DE TITRAGE, en une règle et pas cent.
@@ -860,6 +865,10 @@ html.a-session .accueil-landing { display: none; }
   font-family: var(--chiffre);
   font-variation-settings: var(--w-nombre);
   font-variant-numeric: tabular-nums;
+  /* Zéro non barré, posé aussi ici : `font-variant-numeric` local peut
+     court-circuiter le `font-feature-settings` hérité du body selon le
+     navigateur. Voir le bloc `body` de globals.css. */
+  font-feature-settings: "zero" 0;
   /* Un mono arrive avec ses gouttières intégrées : sans ce resserrement, un
      grand nombre se disperse et cesse de se lire comme une valeur unique. */
   letter-spacing: -0.045em;
