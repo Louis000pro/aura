@@ -843,7 +843,7 @@ export default function ProfilPage() {
                 ...profileGoals
                   .map((id) => GOALS_LIST.find((g) => g.id === id))
                   .filter(Boolean)
-                  .map((g) => `${g!.emoji} ${g!.label}`),
+                  .map((g) => g!.label),
                 ...(profileLevel
                   ? [LEVELS_LIST.find((l) => l.id === profileLevel)?.label ?? profileLevel]
                   : []),
