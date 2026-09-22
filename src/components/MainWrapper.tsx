@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { estSurfacePublique, estVitrinePure, estVitrineSiAnonyme } from "@/lib/surfacesPubliques";
@@ -7,6 +8,19 @@ import { estSurfacePublique, estVitrinePure, estVitrineSiAnonyme } from "@/lib/s
 export default function MainWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { user, isLoading } = useAuth();
+
+  /* `a-session` sur <html> révèle le rail « membre » des pages à double vie
+     (accueil, premium…) via le CSS `html:not(.a-session) .rail-membre`. Le
+     script du <head> ne la pose qu'au chargement complet : après une connexion
+     qui redirige côté client (donc sans rechargement), elle n'était jamais
+     ajoutée et la barre de gauche RESTAIT masquée. On la synchronise ici, une
+     fois la session résolue, pour les deux sens. */
+  useEffect(() => {
+    if (isLoading) return;
+    const html = document.documentElement;
+    if (user) html.classList.add("a-session");
+    else html.classList.remove("a-session");
+  }, [user, isLoading]);
 
   const isAuth = pathname === "/auth";
   // Le parcours d'entrée n'a ni barre du bas ni rail (voir Navigation).
