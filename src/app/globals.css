@@ -99,6 +99,8 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     overscroll-behavior: none;
+    /* Zéro NON barré (Louis n'aime pas le trait au milieu du 0 de Geist). */
+    font-feature-settings: "zero" 0;
   }
 
   ::selection { background-color: rgba(var(--tint-violet-rgb), 1); color: var(--text-1); }

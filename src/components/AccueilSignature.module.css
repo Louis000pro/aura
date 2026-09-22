@@ -318,6 +318,13 @@
   object-fit: cover;
 }
 
+/* L'icône « présent » (connexion) est un check TEAL cuit dans l'image. Choix de
+   Louis : la passer au violet de Vaiiya. On décale la teinte teal → violet
+   (mint → lavande, comme l'icône séance), sans nouveau fichier. */
+.sigil[data-kind="connexion"] .dailyMissionImage {
+  filter: hue-rotate(92deg) saturate(1.05);
+}
+
 .missionCopy {
   min-width: 0;
   flex: 1;
@@ -351,7 +358,7 @@
 }
 
 .missionExp[data-tone="success"] {
-  color: #159c79;
+  color: #8b5cf6;
 }
 
 .premiumVault {

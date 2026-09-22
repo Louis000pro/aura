@@ -212,7 +212,7 @@ export default function AccueilSignature({
             exp={EXP_REPAS}
             done={repasOk}
             tone="energy"
-            onClick={() => onNavigate("/nutrition")}
+            onClick={() => onNavigate("/nutrition?ajouter=repas")}
           />
         </div>
       </section>
@@ -325,7 +325,7 @@ function MissionRow({
 }) {
   const content = (
     <>
-      <span className={styles.sigil} data-tone={done ? "success" : tone}>
+      <span className={styles.sigil} data-tone={done ? "success" : tone} data-kind={kind}>
         <Image
           src={DAILY_MISSION_IMAGES[kind]}
           alt=""
