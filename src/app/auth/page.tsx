@@ -213,11 +213,30 @@ export default function AuthPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!canSubmit) return;
+    if (!canSubmit || loading) return;
 
-    // Connexion en deux temps : l'étape 1 ne fait qu'ouvrir le mot de passe.
+    // Connexion en deux temps : l'étape 1 vérifie VRAIMENT que l'email est
+    // inscrite avant d'ouvrir le mot de passe. Une adresse au hasard est
+    // refusée ici, on ne montre jamais « c'est bon » sur un compte inexistant.
     if (mode === "login" && etapeConnexion === 1) {
+      setLoading(true);
       setError(null);
+      try {
+        const res = await fetch("/api/auth/check-email", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: email.trim() }),
+        });
+        const json = await res.json();
+        if (res.status === 429) { setError(json.error ?? "Trop de tentatives. Réessaie dans un moment."); setLoading(false); return; }
+        if (!res.ok) { setError("Impossible de vérifier l’email. Réessaie."); setLoading(false); return; }
+        if (!json.inscrite) { setError("Email invalide, ou pas encore de compte à cette adresse."); setLoading(false); return; }
+      } catch {
+        setError("Impossible de vérifier l’email. Réessaie.");
+        setLoading(false);
+        return;
+      }
+      setLoading(false);
       setEtapeConnexion(2);
       return;
     }
@@ -523,15 +542,13 @@ export default function AuthPage() {
             ))}
           </div>
 
-          {/* Titre humanisé. À l'étape 2, une ligne rappelle où on en est. */}
-          <div className="text-center mb-4">
-            <p className="text-[19px] font-semibold" style={{ color:"var(--text-1)" }}>
-              {mode==="login" ? "Se connecter à Vaiiya" : "Créer ton compte"}
-            </p>
-            {mode==="login" && etapeConnexion===2 && (
-              <p className="text-[13px] mt-0.5" style={{ color:"var(--text-2)" }}>Ravi de te revoir. Entre ton mot de passe.</p>
-            )}
-          </div>
+          {/* En inscription, un titre. En connexion, l'écran se passe de titre :
+             le champ (email, puis mot de passe) dit déjà où on en est. */}
+          {mode==="signup" && (
+            <div className="text-center mb-4">
+              <p className="text-[19px] font-semibold" style={{ color:"var(--text-1)" }}>Créer ton compte</p>
+            </div>
+          )}
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="flex flex-col gap-3">
@@ -556,28 +573,16 @@ export default function AuthPage() {
               )}
             </AnimatePresence>
 
-            {mode === "login" && etapeConnexion === 2 ? (
-              /* Étape 2 : l'email est validé, on le rappelle avec un retour possible. */
-              <div className="flex items-center justify-between gap-2 px-4 py-3 rounded-2xl"
-                style={{ background:"rgba(var(--tint-violet-rgb),0.62)", border:"1px solid rgba(var(--accent-rgb),0.16)" }}>
-                <span className="flex items-center gap-2.5 min-w-0">
-                  <CheckCircle2 size={15} style={{ color:TEAL }} />
-                  <b className="text-[14px] font-semibold truncate" style={{ color:"var(--text-1)" }}>{email}</b>
-                </span>
-                <button type="button"
-                  onClick={() => { setEtapeConnexion(1); setPassword(""); setError(null); setForgotMode(false); }}
-                  className="text-[13px] font-semibold cursor-pointer flex-shrink-0" style={{ color:"var(--accent)" }}>
-                  Modifier
-                </button>
-              </div>
-            ) : (
+            {/* À l'étape 2, l'email est validé et disparaît : on ne montre plus
+               que le mot de passe. On revient en arrière par « Changer d'email ». */}
+            {!(mode === "login" && etapeConnexion === 2) && (
               <Field icon={<Mail size={15}/>} type="email" placeholder="Ton email" value={email} onChange={setEmail} required autoFocus={mode==="login"} />
             )}
 
             {(mode === "signup" || etapeConnexion === 2) && (
               <div className="flex flex-col gap-2">
                 <Field icon={<Lock size={15}/>}
-                  type={showPwd?"text":"password"} placeholder="Ton mot de passe" value={password} onChange={setPassword} required
+                  type={showPwd?"text":"password"} placeholder="Mot de passe" value={password} onChange={setPassword} required
                   autoFocus={mode==="login" && etapeConnexion===2}
                   suffix={
                     <button type="button" onClick={() => setShowPwd(v=>!v)} className="cursor-pointer flex-shrink-0">
@@ -585,12 +590,20 @@ export default function AuthPage() {
                     </button>
                   } />
                 {mode === "signup" && <PasswordStrengthBar password={password} />}
-                {/* La réinitialisation vit ICI, à l'étape mot de passe. */}
+                {/* À l'étape mot de passe : soit on réinitialise, soit on revient
+                   en arrière pour corriger l'email. */}
                 {mode === "login" && etapeConnexion === 2 && (
-                  <button type="button" onClick={() => setForgotMode(v=>!v)}
-                    className="self-end text-[13px] font-medium cursor-pointer hover:underline" style={{ color:"var(--accent)" }}>
-                    Mot de passe oublié ?
-                  </button>
+                  <div className="flex items-center justify-between">
+                    <button type="button"
+                      onClick={() => { setEtapeConnexion(1); setPassword(""); setError(null); setForgotMode(false); }}
+                      className="text-[13px] font-medium cursor-pointer hover:underline" style={{ color:"var(--text-3)" }}>
+                      Changer d’email
+                    </button>
+                    <button type="button" onClick={() => setForgotMode(v=>!v)}
+                      className="text-[13px] font-medium cursor-pointer hover:underline" style={{ color:"var(--accent)" }}>
+                      Mot de passe oublié ?
+                    </button>
+                  </div>
                 )}
               </div>
             )}
@@ -607,7 +620,7 @@ export default function AuthPage() {
                   <motion.div key="l" initial={{ opacity:0,y:6 }} animate={{ opacity:1,y:0 }} exit={{ opacity:0,y:-6 }} className="flex items-center justify-center gap-2">
                     <motion.div className="w-4 h-4 rounded-full border-2" style={{ borderColor:"rgba(255,255,255,0.3)",borderTopColor:"#fff" }}
                       animate={{ rotate:360 }} transition={{ duration:0.8,repeat:Infinity,ease:"linear" }} />
-                    <span>{mode==="login"?"Connexion…":"Création…"}</span>
+                    <span>{mode==="signup" ? "Création…" : etapeConnexion===1 ? "Vérification…" : "Connexion…"}</span>
                   </motion.div>
                 ) : (
                   <motion.div key="i" initial={{ opacity:0,y:6 }} animate={{ opacity:1,y:0 }} exit={{ opacity:0,y:-6 }} className="flex items-center justify-center">
