@@ -63,7 +63,9 @@ export default function RecipeSearch({ onAdd }: { onAdd: (m: LoggedMeal) => void
   }, [q]);
 
   return (
-    <div className="mb-4">
+    /* max-w-5xl : même largeur que le panneau « On mange où ? » juste en
+       dessous, sinon la barre dépasse à droite au-delà des cartes. */
+    <div className="mb-4 max-w-5xl">
       <div className="relative flex items-center gap-2.5 px-4 py-3 rounded-2xl"
         style={{ background: "rgba(var(--tint-violet-rgb),0.55)", border: "1px solid rgba(var(--accent-rgb),0.16)" }}>
         <Search size={16} style={{ color: "var(--text-3)", flexShrink: 0 }} />
