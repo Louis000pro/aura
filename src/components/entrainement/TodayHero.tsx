@@ -164,9 +164,9 @@ export default function TodayHero({
                 style={{ color: "rgba(255,255,255,0.6)" }}>
                 Décaler
               </button>
-              <button onClick={onReplace} className="text-[13px] font-semibold cursor-pointer bg-transparent border-none flex items-center gap-1"
+              <button onClick={onReplace} className="text-[13px] font-semibold cursor-pointer bg-transparent border-none"
                 style={{ color: "rgba(255,255,255,0.6)" }}>
-                <span style={{ color: "#C9B8FF" }}>✦</span> Remplacer
+                Remplacer
               </button>
             </div>
           </>
