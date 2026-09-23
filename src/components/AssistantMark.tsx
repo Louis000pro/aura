@@ -182,7 +182,7 @@ const LUMIERE: CSSProperties = {
     "radial-gradient(54% 44% at 50% 60%, rgba(var(--accent-rgb),0.085) 0%, rgba(var(--accent-rgb),0) 100%)",
 };
 
-function Portrait({ guide, fichier, hauteur, bande }: { guide: GuideId; fichier: string; hauteur: number | string; bande: number }) {
+function Portrait({ guide, fichier, hauteur, bande, lumiere = true }: { guide: GuideId; fichier: string; hauteur: number | string; bande: number; lumiere?: boolean }) {
   return (
     <span
       aria-hidden="true"
@@ -193,7 +193,12 @@ function Portrait({ guide, fichier, hauteur, bande }: { guide: GuideId; fichier:
       // CSS pour que la feuille puisse la faire respirer avec l'écran.
       style={{ height: hauteur, width: "auto", aspectRatio: "4 / 5" }}
     >
-      <span style={LUMIERE} />
+      {/* La lumière d'ambiance : large et diffuse sur un GRAND personnage
+          (feuille vide, fin de séance). Sur le petit portrait de la bulle
+          d'attente, elle se concentre en un carré lilas net derrière le
+          Guide au lieu de rester une ambiance — d'où `lumiere={false}` là,
+          pour qu'on ne voie que le personnage sur fond transparent. */}
+      {lumiere && <span style={LUMIERE} />}
       {/* ⚠️ `<img>` et pas `next/image` : ces fichiers sont déjà en WebP, à
           la taille exacte de leur usage, et servis en statique. Même choix
           que les sprites d'exercice et le portrait de /bienvenue. */}
@@ -262,7 +267,7 @@ export function ReflexionGuide({ guide, hauteur }: { guide: GuideRef; hauteur: n
   // Sans Guide, rien : la bulle d'attente garde son seul rond qui tourne,
   // comme avant. Mieux vaut pas de personnage qu'une place vide.
   if (!guide) return null;
-  return <Portrait guide={guide} fichier="think-reflexion" hauteur={hauteur} bande={16} />;
+  return <Portrait guide={guide} fichier="think-reflexion" hauteur={hauteur} bande={16} lumiere={false} />;
 }
 
 /** Le personnage de la FIN DE SÉANCE, et de nulle part ailleurs. C'est le
