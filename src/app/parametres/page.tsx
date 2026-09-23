@@ -6,7 +6,7 @@ import AiMemoryManager from "@/components/AiMemoryManager";
 import TasteProfileModal from "@/components/TasteProfileModal";
 import { AssistantSpark, VisageGuide } from "@/components/AssistantMark";
 import GemmeRang from "@/components/GemmeRang";
-import { Lock, LogOut, ChevronRight, Eye, EyeOff, Check, AlertTriangle, X, Shield, Moon, Sun, Target, Compass, Gauge, Gem, Utensils, CreditCard, Sparkles, type LucideIcon } from "lucide-react";
+import { Lock, LogOut, ChevronRight, Eye, EyeOff, Check, AlertTriangle, X, Shield, Moon, Sun, Target, Compass, Gauge, Gem, Utensils, CreditCard, Sparkles, Star, type LucideIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
@@ -796,6 +796,12 @@ export default function ParametresPage() {
               label="Nouveautés"
               sub="Le récap de la dernière mise à jour"
               onClick={() => ouvrirNouveautes()}
+            />
+            <Ligne
+              icon={Star}
+              label="Donner mon avis"
+              sub="Note Vaiiya et lis les avis"
+              onClick={() => router.push("/avis")}
             />
           </Groupe>
 
