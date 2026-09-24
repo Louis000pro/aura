@@ -810,9 +810,10 @@ export default function AssistantSheet() {
 }
 
 /* Les messages du jour sont épuisés : la saisie disparaît, à la façon des
-   autres assistants, et une petite bannière Vaiiya+ dit ce qui l'enlève.
-   ⚠️ Tant que la vente est fermée, la bannière dit « Bientôt » et ne mène
-   nulle part : un bouton vers une page qui ne vend rien serait un mensonge. */
+   autres assistants, et une petite bannière Vaiiya+ mène à la page Premium.
+   Tant que la vente est fermée, la page dit elle-même « Bientôt disponible » :
+   la bannière y mène quand même (décision de Louis, 2026-09-24), pour qu'on
+   puisse voir ce que Vaiiya+ contient. */
 function MessagesEpuises({ plafond, onPremium }: { plafond: number; onPremium: () => void }) {
   const banniere = (
     <>
@@ -821,8 +822,10 @@ function MessagesEpuises({ plafond, onPremium }: { plafond: number; onPremium: (
       <span className="flex-1 min-w-0 truncate" style={{ color: "var(--text-2)" }}>Le coach sans limite</span>
       {VENTE_OUVERTE
         ? <span className="font-bold flex-shrink-0" style={{ color: "var(--exp-encre)" }}>Découvrir ›</span>
-        : <span className="font-bold flex-shrink-0 px-2 py-0.5 rounded-full"
-            style={{ color: "var(--or-encre)", background: "rgba(var(--gold-rgb),0.14)" }}>Bientôt</span>}
+        : <span className="font-bold flex-shrink-0 flex items-center gap-1" style={{ color: "var(--or-encre)" }}>
+            <span className="px-2 py-0.5 rounded-full" style={{ background: "rgba(var(--gold-rgb),0.14)" }}>Bientôt</span>
+            <span aria-hidden>›</span>
+          </span>}
     </>
   );
   return (
@@ -833,18 +836,12 @@ function MessagesEpuises({ plafond, onPremium }: { plafond: number; onPremium: (
       <p className="text-[13px] text-center mt-0.5" style={{ color: "var(--text-3)" }}>
         Ils reviennent demain, à minuit.
       </p>
-      {VENTE_OUVERTE ? (
-        <button type="button" onClick={onPremium}
-          className="w-full mt-3 flex items-center gap-2 px-3.5 py-2.5 text-[13px] cursor-pointer text-left"
-          style={{ borderRadius: "var(--r-controle)", border: "1px solid rgba(var(--gold-rgb),0.45)", background: "rgba(var(--gold-rgb),0.07)" }}>
-          {banniere}
-        </button>
-      ) : (
-        <div className="w-full mt-3 flex items-center gap-2 px-3.5 py-2.5 text-[13px]"
-          style={{ borderRadius: "var(--r-controle)", border: "1px solid rgba(var(--gold-rgb),0.45)", background: "rgba(var(--gold-rgb),0.07)" }}>
-          {banniere}
-        </div>
-      )}
+      <button type="button" onClick={onPremium}
+        className="w-full mt-3 flex items-center gap-2 px-3.5 py-2.5 text-[13px] cursor-pointer text-left"
+        style={{ borderRadius: "var(--r-controle)", border: "1px solid rgba(var(--gold-rgb),0.45)", background: "rgba(var(--gold-rgb),0.07)" }}
+        aria-label="Découvrir Vaiiya+">
+        {banniere}
+      </button>
     </div>
   );
 }
