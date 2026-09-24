@@ -871,7 +871,11 @@ export default function WorkoutGuideModal({
      fort qu'est la fin de séance. Le drapeau se pose à l'affichage (dans l'effet
      de complétion), donc « Plus tard » comme « Laisser un avis » la referment
      pour de bon. Jamais après un abandon : on n'atteint « done » qu'en finissant. */
-  const [inviteAvis, setInviteAvis] = useState(false);
+  // Choix de Louis : l'invite à laisser un avis s'affiche à CHAQUE fin de séance.
+  // On la rend dès que la séance est finie (phase « done ») ; ce drapeau ne sert
+  // qu'à la masquer si on touche « Plus tard », et il repart à faux à la séance
+  // suivante (le tunnel se remonte à chaque lancement).
+  const [avisMasque, setAvisMasque] = useState(false);
   /* Le maillon du relais, quand cette séance vient d'en franchir un.
      `null` couvre TOUS les cas silencieux : pas de relais, jour déjà pris
      par l'équipier, deux jours de suite, séance trop courte. Aucune bande,
@@ -907,12 +911,6 @@ export default function WorkoutGuideModal({
     }).select("id").single().then(({ data, error }) => {
       if (error) return;
       setSessionSaved(true);
-      // L'invite à laisser un avis : une seule fois par compte. Le drapeau se
-      // pose ici, à la première séance terminée et enregistrée.
-      try {
-        const cle = `vaiiya_avis_invite_${user.id}`;
-        if (!localStorage.getItem(cle)) { localStorage.setItem(cle, "1"); setInviteAvis(true); }
-      } catch { /* ignore */ }
       // Le maillon du jour, si un relais est en cours. Volontairement
       // silencieux : pas de défi, séance trop courte ou jour déjà
       // franchi par l'équipier → il ne se passe rien, et on ne
@@ -1566,9 +1564,9 @@ export default function WorkoutGuideModal({
                       initial={{ scale: 0, rotate: -12 }} animate={{ scale: 1, rotate: 0 }}
                       transition={{ type: "spring", stiffness: 240, delay: 0.35 }}
                       className="absolute flex items-center justify-center"
-                      style={{ right: -12, bottom: 4, width: 46, height: 46, borderRadius: "50%", border: `2.5px solid ${TUN.teal}`, background: "rgba(10,10,14,0.86)", boxShadow: "0 0 30px rgba(43,212,160,0.4)" }}
+                      style={{ right: -12, bottom: 4, width: 46, height: 46, borderRadius: "50%", border: "2.5px solid rgba(168,85,247,0.9)", background: "rgba(20,15,38,0.88)", boxShadow: "0 0 30px rgba(139,92,246,0.45)" }}
                     >
-                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={TUN.teal} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5" /></svg>
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#D9C6FF" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5" /></svg>
                     </motion.span>
                   </motion.div>
                 ) : (
@@ -1576,9 +1574,9 @@ export default function WorkoutGuideModal({
                     initial={{ scale: 0, rotate: -12 }} animate={{ scale: 1, rotate: 0 }}
                     transition={{ type: "spring", stiffness: 240, delay: 0.05 }}
                     className="flex items-center justify-center"
-                    style={{ width: 92, height: 92, borderRadius: "50%", border: `3px solid ${TUN.teal}`, background: "rgba(43,212,160,0.1)", boxShadow: "0 0 44px rgba(43,212,160,0.35)" }}
+                    style={{ width: 92, height: 92, borderRadius: "50%", border: "3px solid rgba(168,85,247,0.9)", background: "rgba(139,92,246,0.14)", boxShadow: "0 0 44px rgba(139,92,246,0.45)", backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)" }}
                   >
-                    <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke={TUN.teal} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5" /></svg>
+                    <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="#D9C6FF" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5" /></svg>
                   </motion.div>
                 )}
                 <h2 className="font-black uppercase tracking-tight mt-4" style={{ fontSize: 26, color: "#fff" }}>Séance terminée</h2>
@@ -1664,19 +1662,19 @@ export default function WorkoutGuideModal({
                   {sessionSaved && (
                     <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
                       className="flex items-center gap-2 px-4 py-2 rounded-xl mt-3"
-                      style={{ background: "rgba(43,212,160,0.09)", border: "1px solid rgba(43,212,160,0.22)" }}>
-                      <BookmarkCheck size={12} strokeWidth={2} style={{ color: TUN.teal }} />
-                      <span className="text-[11px] font-medium" style={{ color: TUN.teal }}>Enregistrée dans ton profil</span>
+                      style={{ background: "rgba(139,92,246,0.12)", border: "1px solid rgba(139,92,246,0.35)", backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)" }}>
+                      <BookmarkCheck size={12} strokeWidth={2} style={{ color: "#C4B5FD" }} />
+                      <span className="text-[11px] font-medium" style={{ color: "#C4B5FD" }}>Enregistrée dans ton profil</span>
                     </motion.div>
                   )}
                 </AnimatePresence>
 
-                {/* ── L'invite à laisser un avis (une seule fois par compte) ── */}
+                {/* ── L'invite à laisser un avis, à CHAQUE fin de séance ── */}
                 <AnimatePresence>
-                  {inviteAvis && (
+                  {user && !avisMasque && (
                     <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
                       className="w-full rounded-2xl p-4 mt-4 text-left"
-                      style={{ background: "linear-gradient(150deg, rgba(139,92,246,0.16), rgba(193,59,193,0.10))", border: "1px solid rgba(139,92,246,0.4)" }}>
+                      style={{ background: "linear-gradient(150deg, rgba(139,92,246,0.22), rgba(96,120,255,0.14))", border: "1px solid rgba(139,92,246,0.5)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", boxShadow: "0 10px 30px -10px rgba(139,92,246,0.5)" }}>
                       <div className="flex items-center gap-1 mb-2" aria-hidden="true">
                         {[0, 1, 2, 3, 4].map((i) => (
                           <svg key={i} width="16" height="16" viewBox="0 0 24 24" fill="#F5B120" stroke="#F5B120" strokeWidth="1.4" strokeLinejoin="round"><path d="M12 2.5l2.9 5.9 6.5.95-4.7 4.6 1.1 6.45L12 17.9l-5.8 3 1.1-6.45-4.7-4.6 6.5-.95z" /></svg>
@@ -1693,7 +1691,7 @@ export default function WorkoutGuideModal({
                           style={{ background: "linear-gradient(100deg,#8B5CF6,#C13BC1)", boxShadow: "0 8px 22px -6px rgba(193,59,193,0.5)" }}>
                           Laisser un avis
                         </motion.button>
-                        <button onClick={() => setInviteAvis(false)}
+                        <button onClick={() => setAvisMasque(true)}
                           className="px-4 py-2.5 rounded-xl font-semibold text-[13px] cursor-pointer"
                           style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.14)", color: TUN.t2 }}>
                           Plus tard
@@ -1831,7 +1829,7 @@ export default function WorkoutGuideModal({
                     depuis « Tes affiches de perf » dans le profil. */}
                 {user && afficheSaved && (
                   <div className="w-full py-3 rounded-2xl flex items-center justify-center gap-2 text-[14px] font-medium"
-                    style={{ background: "rgba(43,212,160,0.1)", color: TUN.teal, border: "1px solid rgba(43,212,160,0.25)" }}
+                    style={{ background: "rgba(139,92,246,0.12)", color: "#C4B5FD", border: "1px solid rgba(139,92,246,0.35)", backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)" }}
                   >
                     <BookmarkCheck size={14} strokeWidth={2} /> Affiche ajoutée à ton profil
                   </div>
