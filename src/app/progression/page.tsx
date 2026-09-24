@@ -1626,12 +1626,15 @@ function CatTile({ cat, count, freeCount, premiumCount, large, onOpen }: {
   );
 }
 
-function ChooseSheet({ sessions, loading, canAccessPremium, maxSeances, catInitial, onClose, onStart, onUpgrade, onCreate, onEdit, onDelete, onVisibilityChange, onInspirer, onPlanifier }: {
+function ChooseSheet({ sessions, loading, canAccessPremium, maxSeances, catInitial, pourDate, onClose, onStart, onUpgrade, onCreate, onEdit, onDelete, onVisibilityChange, onInspirer, onPlanifier }: {
   sessions: MergedSession[];
   loading: boolean;
   canAccessPremium: boolean;
   maxSeances: number;
   catInitial: string | null;
+  /** Ouverte depuis un jour de la semaine : toucher une séance l'AJOUTE à
+      ce jour au lieu de la lancer. `null` = le catalogue ordinaire. */
+  pourDate?: string | null;
   onClose: () => void;
   onStart: (s: MergedSession) => void;
   onUpgrade: () => void;
@@ -1741,6 +1744,14 @@ function ChooseSheet({ sessions, loading, canAccessPremium, maxSeances, catIniti
           <X size={14} strokeWidth={2} style={{ color: "var(--text-3)" }} />
         </motion.button>
       </div>
+
+      {/* En mode « ajouter à un jour », on le dit avant le premier toucher :
+          sinon toucher une carte lancerait la séance, comme partout ailleurs. */}
+      {pourDate && (
+        <p className="vy-label px-5 pb-2 flex-shrink-0" style={{ color: "var(--exp-encre)" }}>
+          Touche une séance pour l&apos;ajouter · {dayLabelLong(pourDate)}
+        </p>
+      )}
 
       {/* Le corps — remonté par clé : l'entrée glisse dans le sens du voyage */}
       <motion.div
@@ -2118,7 +2129,7 @@ const BALANCE_BUCKET: Record<Family, string> = {
 const fmtDay = (ymd: string) =>
   new Date(ymd + "T00:00:00").toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
 
-function SemaineSheet({ week, today, fetchWeekAt, onClose, onStartDay, onAsk, onAddSession, onMove }: {
+function SemaineSheet({ week, today, fetchWeekAt, onClose, onStartDay, onAsk, onAddSession, onAddDay, onMove }: {
   week: PlanningDay[] | null;
   today: string;
   fetchWeekAt: (offset: number) => Promise<PlanningDay[] | null>;
@@ -2126,6 +2137,8 @@ function SemaineSheet({ week, today, fetchWeekAt, onClose, onStartDay, onAsk, on
   onStartDay: (day: PlanningDay) => void;
   onAsk: (prompt: string) => void;
   onAddSession: () => void;
+  /** Ouvre le catalogue pour poser une séance choisie sur CE jour. */
+  onAddDay: (date: string) => void;
   onMove: (intention: PlanningDay, msg: string) => Promise<void>;
 }) {
   const { guide } = useGuideActif();
@@ -2290,6 +2303,7 @@ function SemaineSheet({ week, today, fetchWeekAt, onClose, onStartDay, onAsk, on
             onToggle={(cle) => setOpenKey(openKey === cle ? null : cle)}
             onStartDay={onStartDay}
             onAsk={onAsk}
+            onAddDay={onAddDay}
             onDragStart={handleDragStart}
             onDragMove={handleDragMove}
             onDragEnd={handleDragEnd}
@@ -2330,7 +2344,7 @@ const clientYOf = (e: unknown, fallback: number): number => {
     vague est là : une seconde séance existe en base, elle doit se VOIR,
     se lancer et se déplacer comme la première. La mise en scène d'une
     journée chargée, elle, appartient à la restructuration de l'accueil. */
-function DayRow({ date, jour, idx, abbr, isToday, openKey, dropHover, dimmed, registerRef, onToggle, onStartDay, onAsk, onDragStart, onDragMove, onDragEnd }: {
+function DayRow({ date, jour, idx, abbr, isToday, openKey, dropHover, dimmed, registerRef, onToggle, onStartDay, onAsk, onAddDay, onDragStart, onDragMove, onDragEnd }: {
   date: string;
   jour: PlanningDay[];
   idx: number;
@@ -2343,6 +2357,7 @@ function DayRow({ date, jour, idx, abbr, isToday, openKey, dropHover, dimmed, re
   onToggle: (cle: string) => void;
   onStartDay: (d: PlanningDay) => void;
   onAsk: (p: string) => void;
+  onAddDay: (date: string) => void;
   onDragStart: (it: PlanningDay) => void;
   onDragMove: (it: PlanningDay, clientY: number) => void;
   onDragEnd: (it: PlanningDay) => void;
@@ -2364,7 +2379,7 @@ function DayRow({ date, jour, idx, abbr, isToday, openKey, dropHover, dimmed, re
               intention={null} idx={idx} isToday={isToday} dropHover={dropHover}
               open={openKey === cleVide}
               onToggle={() => onToggle(cleVide)}
-              onStartDay={onStartDay} onAsk={onAsk}
+              date={date} onStartDay={onStartDay} onAsk={onAsk} onAddDay={onAddDay}
               onDragStart={onDragStart} onDragMove={onDragMove} onDragEnd={onDragEnd}
             />
           ) : ordre.map((it, n) => (
@@ -2374,7 +2389,7 @@ function DayRow({ date, jour, idx, abbr, isToday, openKey, dropHover, dimmed, re
               dropHover={dropHover && n === 0}
               open={openKey === (it.id ?? date + "-" + n)}
               onToggle={() => onToggle(it.id ?? date + "-" + n)}
-              onStartDay={onStartDay} onAsk={onAsk}
+              date={date} onStartDay={onStartDay} onAsk={onAsk} onAddDay={onAddDay}
               onDragStart={onDragStart} onDragMove={onDragMove} onDragEnd={onDragEnd}
             />
           ))}
@@ -2387,8 +2402,9 @@ function DayRow({ date, jour, idx, abbr, isToday, openKey, dropHover, dimmed, re
 /** UNE intention de la journée : sa carte, draggable par sa poignée, et
     ses actions dépliées au tap. `intention` à `null` = la journée est
     vide, et vide ne veut pas dire repos (V5). */
-function CarteJournee({ intention, idx, isToday, dropHover, open, onToggle, onStartDay, onAsk, onDragStart, onDragMove, onDragEnd }: {
+function CarteJournee({ intention, date, idx, isToday, dropHover, open, onToggle, onStartDay, onAsk, onAddDay, onDragStart, onDragMove, onDragEnd }: {
   intention: PlanningDay | null;
+  date: string;
   idx: number;
   isToday: boolean;
   dropHover: boolean;
@@ -2396,6 +2412,7 @@ function CarteJournee({ intention, idx, isToday, dropHover, open, onToggle, onSt
   onToggle: () => void;
   onStartDay: (d: PlanningDay) => void;
   onAsk: (p: string) => void;
+  onAddDay: (date: string) => void;
   onDragStart: (it: PlanningDay) => void;
   onDragMove: (it: PlanningDay, clientY: number) => void;
   onDragEnd: (it: PlanningDay) => void;
@@ -2490,7 +2507,13 @@ function CarteJournee({ intention, idx, isToday, dropHover, open, onToggle, onSt
               {isSeance && <ActChip onClick={() => onAsk("Décale ma séance de " + DAY_FULL[idx] + " à un autre jour")}>Décaler</ActChip>}
               {isSeance
                 ? <ActChip onClick={() => onAsk("Mets repos le " + DAY_FULL[idx])}>☾ Repos</ActChip>
-                : <ActChip onClick={() => onAsk("Ajoute une séance le " + DAY_FULL[idx])}><span style={{ color: "#C9B8FF" }}>✦</span> Ajouter une séance</ActChip>}
+                : <>
+                    {/* Deux portes, pas une : choisir soi-même dans le catalogue,
+                        ou demander au Guide. N'offrir que l'IA forçait une
+                        conversation pour poser une séance qu'on connaît déjà. */}
+                    <ActChip onClick={() => onAddDay(date)}><Plus size={11} strokeWidth={2.6} /> Je choisis</ActChip>
+                    <ActChip onClick={() => onAsk("Ajoute une séance le " + DAY_FULL[idx])}><span style={{ color: "#C9B8FF" }}>✦</span> Avec l&apos;IA</ActChip>
+                  </>}
             </div>
           </motion.div>
         )}
@@ -2630,6 +2653,8 @@ export default function ProgressionPage() {
   const [plein, setPlein] = useState(false);
   /* Collection sur laquelle ouvrir le catalogue (null = la grille). */
   const [choisirCible, setChoisirCible] = useState<string | null>(null);
+  /* Le jour pour lequel le catalogue est ouvert (« Je choisis » d'un jour). */
+  const [pourDate, setPourDate] = useState<string | null>(null);
   const [activeArticle, setActiveArticle] = useState<AdviceArticle | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(null), 2500); };
@@ -3255,6 +3280,7 @@ export default function ProgressionPage() {
             onStartDay={(d) => { setSheet(null); startDay(d); }}
             onAsk={(p) => { setSheet(null); openAssistant(p); }}
             onAddSession={() => setSheet("choisir")}
+            onAddDay={(date) => { setPourDate(date); setSheet("choisir"); }}
             onMove={deplacerIntention}
           />
         )}
@@ -3292,8 +3318,20 @@ export default function ProgressionPage() {
             canAccessPremium={canAccessPremium}
             maxSeances={maxSeances}
             catInitial={choisirCible}
-            onClose={() => { setSheet(null); setChoisirCible(null); }}
-            onStart={startSession}
+            pourDate={pourDate}
+            onClose={() => {
+              /* Venu d'un jour de la semaine : on y revient, pas au vide. */
+              setSheet(pourDate ? "semaine" : null);
+              setChoisirCible(null); setPourDate(null);
+            }}
+            onStart={pourDate
+              ? (s) => {
+                  /* Un mini-cours ne se pose pas sur un jour : il se lit. */
+                  if (getAdviceArticle(s.id)) { startSession(s); return; }
+                  void planifierSeance(s, pourDate);
+                  setPourDate(null); setChoisirCible(null); setSheet("semaine");
+                }
+              : startSession}
             onUpgrade={() => { setSheet(null); router.push("/premium"); }}
             onCreate={() => ouvrirCreation(null)}
             onEdit={(s) => { setDraftSeed(null); setEditSession(s); setShowCreateModal(true); }}
