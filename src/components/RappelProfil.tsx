@@ -109,8 +109,14 @@ export default function RappelProfil() {
               <p className="text-[13px] leading-snug" style={{ color: "var(--text-body)" }}>
                 {voix(guide, "bienvenue.rappel")}
               </p>
+              {/* ⚠️ `?edit=1` : « Reprendre » ouvre le QUESTIONNAIRE, pas la
+                  conclusion. Sans ce drapeau, un profil que la base juge déjà
+                  complet fait atterrir /bienvenue sur l'écran de fin (« C'est
+                  noté. On y va. ») sans une seule question — le bouton semblait
+                  ne rien faire (Louis, 2026-09-24). Le mode édition entre
+                  toujours par la première section. */}
               <button
-                onClick={() => router.push("/bienvenue")}
+                onClick={() => router.push("/bienvenue?edit=1")}
                 className="text-[13px] font-bold cursor-pointer underline underline-offset-2"
                 style={{ color: "var(--accent)" }}
               >
