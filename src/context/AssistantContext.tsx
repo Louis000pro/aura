@@ -279,6 +279,11 @@ type AssistantContextValue = {
   cancelRecipe: () => void;
   confirmMeal: () => void;
   cancelMeal: () => void;
+  /** Messages au coach utilisés aujourd'hui, pour un compte gratuit.
+      `null` = abonné, admin, ou pas encore lu : on ne compte rien. */
+  quotaChat: { utilises: number; plafond: number } | null;
+  /** Les messages du jour sont épuisés : la saisie se ferme. */
+  messagesEpuises: boolean;
 };
 
 const Ctx = createContext<AssistantContextValue | null>(null);
@@ -489,6 +494,11 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<AssistantMsg[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
+  /* Le compteur de messages du jour. Le SERVEUR reste l'autorité (il refuse
+     au-delà du plafond) ; ceci sert seulement à fermer la saisie AU BON
+     MOMENT au lieu de laisser écrire un message qui sera refusé. */
+  const [quotaChat, setQuotaChat] = useState<{ utilises: number; plafond: number } | null>(null);
+  const messagesEpuises = !!quotaChat && quotaChat.utilises >= quotaChat.plafond;
   const [memoryNotice, setMemoryNotice] = useState<string | null>(null);
   const [pendingSeance, setPendingSeance] = useState<ProposedSeance | null>(null);
   const [pendingPlan, setPendingPlan] = useState<PendingPlan | null>(null);
@@ -2121,6 +2131,8 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
   const sendMessage = useCallback(async (text: string, masque?: boolean) => {
     const trimmed = text.trim();
     if (!trimmed || isStreaming) return;
+    // Plus de messages aujourd'hui : rien ne part, l'écran le dit déjà.
+    if (messagesEpuises) return;
 
     /* Attendu, et plus seulement lancé. `void ensureContext()` laissait le
        premier message d'une session partir avec `liveStats` et
@@ -2245,6 +2257,18 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       // Refus de quota ou de session : la réponse est un JSON, pas le flux
       // NDJSON. Sans ce filet, la boucle de lecture ci-dessous ne trouverait
       // ni `t` ni `a` et laisserait une bulle vide à l'écran.
+      /* Le compteur voyage avec la réponse : « 5/5 » ferme la saisie tout de
+         suite, sans attendre un refus au message suivant. */
+      const quotaLu = res.headers.get("X-Quota-Chat")?.match(/^(\d+)\/(\d+)$/);
+      if (quotaLu) setQuotaChat({ utilises: Number(quotaLu[1]), plafond: Number(quotaLu[2]) });
+      if (res.status === 429) {
+        try {
+          const d = await res.clone().json();
+          if (d?.limitReached && !d?.premium && typeof d?.dailyLimit === "number") {
+            setQuotaChat({ utilises: d.dailyLimit, plafond: d.dailyLimit });
+          }
+        } catch { /* réponse sans JSON : le message de refus suffit */ }
+      }
       const refus = await messageDeRefus(res);
       if (refus) {
         setMessages((prev) => {
@@ -2380,7 +2404,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       setIsStreaming(false);
       abortRef.current = null;
     }
-  }, [messages, isStreaming, user, pathname, router, contextePret, persist, extractMemory, runAction, questionManquante]);
+  }, [messages, isStreaming, user, pathname, router, contextePret, persist, extractMemory, runAction, questionManquante, messagesEpuises]);
 
   // `runAction` relance une demande mise en attente sans dépendre de
   // `sendMessage`, défini après lui (et qui dépend de lui).
@@ -2511,6 +2535,12 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
   const open = useCallback((prefill?: string) => {
     setIsOpen(true);
     void contextePret();
+    /* On relit le compteur à chaque ouverture : il repart à minuit, et une
+       feuille ouverte hier soir ne doit pas rester fermée ce matin. */
+    void aiFetch("/api/assistant/quota")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => { if (d) setQuotaChat(d.quota ?? null); })
+      .catch(() => { /* dans le doute on n'éteint rien */ });
     /* V9A · on remplit le cache du moteur pendant que la feuille s'ouvre,
        donc AVANT le premier message. Sans ça, la première phrase paierait
        les lectures ; ici elles se font pendant qu'on tape. Un échec ne
@@ -2871,7 +2901,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
   }, [memoryNotice]);
 
   return (
-    <Ctx.Provider value={{ isOpen, open, close, toggle, clear, messages, isStreaming, sendMessage, repondreQuestion, pseudo: user?.pseudo, memoryNotice, pendingSeance, pendingPlan, pendingRecipe, pendingMeal, actionLoading, etatGuide, noterSaisie: setSaisie, bibliothequePleine, confirmSeance, garderSeance, cancelSeance, confirmPlan, basculerEnPlus, retargetPlan, cancelPlan, chargerJours, confirmRecipe, cancelRecipe, confirmMeal, cancelMeal }}>
+    <Ctx.Provider value={{ isOpen, open, close, toggle, clear, messages, isStreaming, sendMessage, repondreQuestion, pseudo: user?.pseudo, memoryNotice, pendingSeance, pendingPlan, pendingRecipe, pendingMeal, actionLoading, etatGuide, noterSaisie: setSaisie, bibliothequePleine, confirmSeance, garderSeance, cancelSeance, confirmPlan, basculerEnPlus, retargetPlan, cancelPlan, chargerJours, confirmRecipe, cancelRecipe, confirmMeal, cancelMeal, quotaChat, messagesEpuises }}>
       {children}
     </Ctx.Provider>
   );

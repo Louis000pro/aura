@@ -482,6 +482,9 @@ export async function POST(req: NextRequest) {
 
     return new Response(readable, {
       headers: {
+        /* Le compteur du jour, pour que l'écran ferme la saisie au dernier
+           message au lieu d'attendre un refus au suivant. */
+        ...(garde.acces.quota ? { "X-Quota-Chat": `${garde.acces.quota.utilises}/${garde.acces.quota.plafond}` } : {}),
         "Content-Type": ndjson ? "application/x-ndjson; charset=utf-8" : "text/plain; charset=utf-8",
         "Cache-Control": "no-cache",
         "X-Content-Type-Options": "nosniff",

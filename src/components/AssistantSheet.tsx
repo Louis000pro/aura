@@ -20,7 +20,8 @@ import CarteSeance from "@/components/assistant/CarteSeance";
 import { useWorkoutLaunch } from "@/context/WorkoutLaunchContext";
 import { useVoiceCapture } from "@/hooks/useVoiceCapture";
 import { CATEGORY_LABEL } from "@/lib/assistantActions";
-import { PLANS, SORTIE_PREMIUM } from "@/lib/plans";
+import { PLANS, SORTIE_PREMIUM, VENTE_OUVERTE } from "@/lib/plans";
+import { useRouter } from "next/navigation";
 import { heroImageForSeance } from "@/lib/workoutArt";
 import { BusteGuide, ReflexionGuide, VisageGuide, prechargerGuide } from "@/components/AssistantMark";
 import { useGuideActif } from "@/context/GuideContext";
@@ -303,7 +304,8 @@ function CartePlanning() {
 }
 
 export default function AssistantSheet() {
-  const { isOpen, close, messages, isStreaming, sendMessage, repondreQuestion, pseudo, memoryNotice, pendingSeance, pendingPlan, pendingRecipe, pendingMeal, actionLoading, etatGuide, noterSaisie, confirmRecipe, cancelRecipe, confirmMeal, cancelMeal } = useAssistant();
+  const { isOpen, close, messages, isStreaming, sendMessage, repondreQuestion, pseudo, memoryNotice, pendingSeance, pendingPlan, pendingRecipe, pendingMeal, actionLoading, etatGuide, noterSaisie, confirmRecipe, cancelRecipe, confirmMeal, cancelMeal, quotaChat, messagesEpuises } = useAssistant();
+  const router = useRouter();
   /* Qui parle dans cette conversation. `null` tant que le choix n'a pas
      été fait (ou que la lecture a échoué) : tout retombe alors sur ✦ et
      sur le texte commun, donc rien ne casse. */
@@ -743,6 +745,9 @@ export default function AssistantSheet() {
               {voice.error && (
                 <p className="text-[11px] text-center mb-1.5" style={{ color: "var(--exp-encre)" }}>{voice.error}</p>
               )}
+              {messagesEpuises && quotaChat ? (
+                <MessagesEpuises plafond={quotaChat.plafond} onPremium={() => { close(); router.push("/premium"); }} />
+              ) : (
               <form onSubmit={submit} className="flex items-end gap-2">
                 <div className="flex-1 flex items-center px-4 py-2 rounded-3xl"
                   style={{ background: "rgba(var(--tint-violet-rgb),0.5)", border: "1px solid rgba(var(--accent-rgb),0.18)" }}>
@@ -794,11 +799,52 @@ export default function AssistantSheet() {
                   <Send size={15} strokeWidth={2.2} style={{ color: canSend ? "#fff" : "var(--accent)" }} />
                 </motion.button>
               </form>
+              )}
             </div>
           </motion.div>
         </>
       )}
     </AnimatePresence>,
     document.body
+  );
+}
+
+/* Les messages du jour sont épuisés : la saisie disparaît, à la façon des
+   autres assistants, et une petite bannière Vaiiya+ dit ce qui l'enlève.
+   ⚠️ Tant que la vente est fermée, la bannière dit « Bientôt » et ne mène
+   nulle part : un bouton vers une page qui ne vend rien serait un mensonge. */
+function MessagesEpuises({ plafond, onPremium }: { plafond: number; onPremium: () => void }) {
+  const banniere = (
+    <>
+      <span aria-hidden style={{ color: "var(--gold)" }}>✦</span>
+      <span className="font-extrabold" style={{ color: "var(--or-encre)" }}>Vaiiya+</span>
+      <span className="flex-1 min-w-0 truncate" style={{ color: "var(--text-2)" }}>Le coach sans limite</span>
+      {VENTE_OUVERTE
+        ? <span className="font-bold flex-shrink-0" style={{ color: "var(--exp-encre)" }}>Découvrir ›</span>
+        : <span className="font-bold flex-shrink-0 px-2 py-0.5 rounded-full"
+            style={{ color: "var(--or-encre)", background: "rgba(var(--gold-rgb),0.14)" }}>Bientôt</span>}
+    </>
+  );
+  return (
+    <div className="px-1 pb-1">
+      <p className="text-[16px] font-semibold text-center" style={{ color: "var(--text-0)" }}>
+        Tu as utilisé tes {plafond} messages du jour
+      </p>
+      <p className="text-[13px] text-center mt-0.5" style={{ color: "var(--text-3)" }}>
+        Ils reviennent demain, à minuit.
+      </p>
+      {VENTE_OUVERTE ? (
+        <button type="button" onClick={onPremium}
+          className="w-full mt-3 flex items-center gap-2 px-3.5 py-2.5 text-[13px] cursor-pointer text-left"
+          style={{ borderRadius: "var(--r-controle)", border: "1px solid rgba(var(--gold-rgb),0.45)", background: "rgba(var(--gold-rgb),0.07)" }}>
+          {banniere}
+        </button>
+      ) : (
+        <div className="w-full mt-3 flex items-center gap-2 px-3.5 py-2.5 text-[13px]"
+          style={{ borderRadius: "var(--r-controle)", border: "1px solid rgba(var(--gold-rgb),0.45)", background: "rgba(var(--gold-rgb),0.07)" }}>
+          {banniere}
+        </div>
+      )}
+    </div>
   );
 }

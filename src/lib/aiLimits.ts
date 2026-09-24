@@ -37,6 +37,20 @@ export interface AccesIA {
   userId: string;
   premium: boolean;
   admin: boolean;
+  /** Ce qui a été consommé aujourd'hui, appel en cours compris, pour un
+      compte PLAFONNÉ au sens produit (gratuit). `null` pour un abonné ou un
+      admin : leur plafond n'est qu'un garde-fou, l'écran n'a pas à compter. */
+  quota: QuotaIA | null;
+}
+
+export interface QuotaIA {
+  utilises: number;
+  plafond: number;
+}
+
+/** Clé du compteur du jour. Une seule écriture, partagée avec `lireQuota`. */
+function cleDuJour(categorie: CategorieIA): string {
+  return `${categorie}:${parisDateStr()}`;
 }
 
 type Resultat =
@@ -123,12 +137,14 @@ export async function garderIA(req: Request, categorie: CategorieIA): Promise<Re
   // ── Plafond du jour. Un admin n'est pas plafonné à la journée (il teste),
   //    mais il reste soumis à la rafale ci-dessus, ce qui suffit à arrêter
   //    une boucle folle ou un jeton volé. ──
+  let quotaJour: QuotaIA | null = null;
   if (!estAdmin) {
     const plafond = estPremium ? limite.premium : limite.gratuit;
     const finJour = new Date(Date.now() + 36 * 60 * 60 * 1000);
     // Jour parisien : les compteurs se remettent à zéro à minuit, comme les
     // missions et la présence. Un seul calendrier pour toute l'app.
-    const aujourdhui = await compter(`${categorie}:${parisDateStr()}`, finJour);
+    const aujourdhui = await compter(cleDuJour(categorie), finJour);
+    if (!estPremium && aujourdhui !== null) quotaJour = { utilises: Math.min(aujourdhui, plafond), plafond };
 
     if (aujourdhui !== null && aujourdhui > plafond) {
       return {
@@ -149,7 +165,31 @@ export async function garderIA(req: Request, categorie: CategorieIA): Promise<Re
     }
   }
 
-  return { ok: true, acces: { userId: compte.id, premium: estPremium, admin: estAdmin } };
+  return { ok: true, acces: { userId: compte.id, premium: estPremium, admin: estAdmin, quota: quotaJour } };
+}
+
+/**
+ * Lit le compteur du jour SANS le consommer : l'écran sait avant d'écrire
+ * s'il reste des messages. Rend `null` pour un abonné, un admin, ou quand on
+ * ne sait pas (dans le doute on n'éteint pas la saisie, le serveur refusera
+ * de toute façon au-delà du plafond).
+ */
+export async function lireQuota(req: Request, categorie: CategorieIA): Promise<QuotaIA | null> {
+  const admin = createAdminClient();
+  const token = (req.headers.get("authorization") ?? "").replace(/^Bearer\s+/i, "").trim();
+  if (!token) return null;
+  const { data: authData } = await admin.auth.getUser(token);
+  const compte = authData?.user;
+  if (!compte) return null;
+  const { data: profil } = await admin
+    .from("profiles").select("is_admin, is_premium").eq("id", compte.id).maybeSingle();
+  if (profil?.is_admin || profil?.is_premium) return null;
+  const plafond = LIMITES[categorie].gratuit;
+  const { data, error } = await admin
+    .from("ai_usage").select("compteur")
+    .eq("user_id", compte.id).eq("cle", cleDuJour(categorie)).maybeSingle();
+  if (error) return null;
+  return { utilises: Math.min(data?.compteur ?? 0, plafond), plafond };
 }
 
 /** Refus type quand une entrée dépasse un plafond de taille. */
