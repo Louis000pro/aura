@@ -4,6 +4,8 @@
    calorique affiché soit identique partout.
    ════════════════════════════════════════════════════════════════════ */
 
+import { normaliserNiveau, normaliserObjectif } from "@/lib/profilVocabulaire";
+
 export type OnboardingProfile = {
   age?: string;
   weight?: string;
@@ -19,8 +21,8 @@ export function calculateGoals(profile: OnboardingProfile) {
   const height = parseFloat(profile?.height ?? "0") || 175;
   const age    = parseFloat(profile?.age    ?? "0") || 25;
   const isFemale = (profile?.gender ?? "homme") === "femme";
-  const goals  = profile?.goals ?? [];
-  const level  = profile?.level ?? "Intermédiaire";
+  const goals  = new Set((profile?.goals ?? []).map(normaliserObjectif));
+  const level  = normaliserNiveau(profile?.level ?? "intermediaire");
 
   // Harris-Benedict BMR
   const bmr = isFemale
@@ -30,20 +32,20 @@ export function calculateGoals(profile: OnboardingProfile) {
   // Activity multiplier basé sur le niveau + séances/semaine
   const sessionsPerWeek = parseInt(profile?.sessionsPerWeek ?? "3") || 3;
   let actMult = 1.375;
-  if (level === "Débutant" || sessionsPerWeek <= 2) actMult = 1.2;
-  else if (level === "Avancé" || sessionsPerWeek >= 5) actMult = 1.725;
+  if (level === "debutant" || sessionsPerWeek <= 2) actMult = 1.2;
+  else if (level === "avance" || sessionsPerWeek >= 5) actMult = 1.725;
   else if (sessionsPerWeek >= 4) actMult = 1.55;
 
   let tdee = Math.round(bmr * actMult);
 
   // Ajustement selon objectif
-  const wantMasse = goals.includes("prise_de_masse");
-  const wantPoids = goals.includes("perte_de_poids");
+  const wantMasse = goals.has("masse");
+  const wantPoids = goals.has("poids");
   if (wantMasse && !wantPoids) tdee += 300;
   else if (wantPoids && !wantMasse) tdee = Math.max(1200, tdee - 500);
 
   // Macros : protéines 1.8g/kg pour fitness, 1.2g sinon
-  const wantsMuscle = wantMasse || goals.includes("force") || goals.includes("endurance");
+  const wantsMuscle = wantMasse || goals.has("force") || goals.has("endurance");
   const proteinPerKg = wantsMuscle ? 1.8 : 1.2;
   const proteins = Math.round(weight * proteinPerKg);
   const fats     = Math.round((tdee * 0.28) / 9);

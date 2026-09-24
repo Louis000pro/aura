@@ -22,6 +22,9 @@
 
 import { createClient } from "@/lib/supabase";
 import { localDateStr } from "@/lib/dates";
+import { GOALS, normaliserObjectif } from "@/lib/profilVocabulaire";
+
+export { GOALS, LEVELS } from "@/lib/profilVocabulaire";
 
 export type OnboardingData = {
   age: string;
@@ -45,21 +48,6 @@ export const PROFIL_VIDE: OnboardingData = {
    ⚠️ Les `id` sont ce qui part en base. Les changer réécrirait le sens
    des lignes déjà enregistrées : on ajoute, on ne renomme pas. */
 
-export const GOALS = [
-  { id: "masse",      label: "Prise de masse",   emoji: "💪" },
-  { id: "poids",      label: "Perte de poids",   emoji: "🔥" },
-  { id: "force",      label: "Force",             emoji: "🏋️" },
-  { id: "endurance",  label: "Endurance",         emoji: "⚡" },
-  { id: "sante",      label: "Santé générale",    emoji: "🌿" },
-  { id: "souplesse",  label: "Souplesse",         emoji: "🧘" },
-];
-
-export const LEVELS = [
-  { id: "debutant",      label: "Débutant",       sub: "< 6 mois" },
-  { id: "intermediaire", label: "Intermédiaire",  sub: "6 mois – 2 ans" },
-  { id: "avance",        label: "Avancé",         sub: "> 2 ans" },
-];
-
 export const GENDERS = [
   { id: "homme", label: "Homme" },
   { id: "femme", label: "Femme" },
@@ -75,19 +63,11 @@ export const DIETS    = [
   { id: "sansgluten",  label: "Sans gluten",emoji: "🌾" },
 ];
 
-/* Les valeurs écrites par les anciens formulaires. Elles sont encore en
-   base sur de vrais comptes : on les LIT, on ne les écrit plus. */
-const LEGACY_GOALS: Record<string, string> = {
-  prise_de_masse: "masse",
-  perte_de_poids: "poids",
-  sante_generale: "sante",
-};
-
 /** Le libellé d'un objectif, quelle que soit l'époque où il a été écrit.
  *  Rend la valeur brute si elle n'est pas reconnue : mieux vaut afficher
  *  quelque chose d'inattendu que rien du tout. */
 export function libelleObjectif(id: string): string {
-  const cle = LEGACY_GOALS[id] ?? id;
+  const cle = normaliserObjectif(id);
   return GOALS.find((g) => g.id === cle)?.label ?? id;
 }
 
