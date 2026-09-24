@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { aiFetch } from "@/lib/aiFetch";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Pause, Play, Share2, Bookmark, BookmarkCheck, ChevronDown, ChevronRight, Check, Plus } from "lucide-react";
+import { X, Pause, Play, BookmarkCheck, ChevronDown, ChevronRight, Check, Plus } from "lucide-react";
 import { AssistantSpark, VisageGuide, CelebrationGuide } from "@/components/AssistantMark";
 import { voix, type CleVoix } from "@/lib/guides";
 import { useGuideActif } from "@/context/GuideContext";
@@ -23,9 +23,6 @@ import { chargerBadgesAura } from "@/lib/badgesAura";
 import type { Badge } from "@/lib/badges";
 import { useAuth } from "@/context/AuthContext";
 import { useAssistant } from "@/context/AssistantContext";
-import EnvoyerAffiche from "@/components/communaute/EnvoyerAffiche";
-import PerfShareCard from "@/components/PerfShareCard";
-import type { PerfShareData } from "@/lib/perfShareExport";
 import { GUIDE_SECTIONS, sectionSessionId } from "@/lib/guideSections";
 import { WAVE_1_EXERCISES } from "@/lib/workoutWave1";
 import { WAVE_2_EXERCISES } from "@/lib/workoutWave2";
@@ -861,9 +858,11 @@ export default function WorkoutGuideModal({
   const [paused,        setPaused]        = useState(false);
   const [showInfo,      setShowInfo]      = useState(false);
   const [introOpen,     setIntroOpen]     = useState<number | null>(null); // exo déplié dans la liste "Au programme"
-  const [shareStatus,   setShareStatus]   = useState<"idle" | "saving" | "done" | "error">("idle");
   const [sessionSaved,  setSessionSaved]  = useState(false);
-  const [envoiAffiche, setEnvoiAffiche] = useState(false);
+  // L'affiche s'enregistre TOUTE SEULE dans le profil en fin de séance ; ce
+  // drapeau ne sert qu'à le confirmer à l'écran. Elle se revoit, s'envoie et se
+  // supprime depuis le profil (galerie « Tes affiches de perf »).
+  const [afficheSaved, setAfficheSaved] = useState(false);
   /* La série APRÈS cette séance, lue en base une fois l'enregistrement fait.
      `null` tant qu'on ne la connaît pas : on ne montre jamais un compteur
      provisoire qui se corrigerait sous les yeux. */
@@ -880,7 +879,7 @@ export default function WorkoutGuideModal({
   const [maillon,       setMaillon]       = useState<MaillonFranchi | null>(null);
   const [garde,         setGarde]         = useState<"idle" | "gardee" | "refusee">("idle");
 
-  const { user, session } = useAuth();
+  const { user } = useAuth();
 
   const pausedAtRef = useRef<number>(0);
 
@@ -951,27 +950,13 @@ export default function WorkoutGuideModal({
         })
         .catch(() => {});
     });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phase]);
 
-  /* ── Garder l'affiche dans son profil ──
-     ⚠️ CE BOUTON NE PARTAGE RIEN, ET NE L'A JAMAIS FAIT. Il écrivait
-     `audience: "friends"`, alors que la policy de `posts` est
-     `audience = 'public' OR auth.uid() = user_id` : le mot « friends »
-     ne donnait accès à personne, la rangée « Ses affiches de perf » d'un
-     profil public était vide par construction, et l'app annonçait quand
-     même « visible par tes amis ».
-
-     Le mot devient donc `private`, qui décrit ce qui se passe vraiment :
-     l'affiche entre dans TA galerie. Envoyer l'affiche à quelqu'un est
-     une autre intention, et c'est le second bouton. */
-  const shareAsPost = useCallback(async () => {
-    if (!user) return;
-    setShareStatus("saving");
-    const resolvedCategory = category ?? (sessionId.includes("-") ? sessionId.split("-")[0] : null) ?? "force";
-    const supabase = createClient();
+    // ── L'affiche part TOUTE SEULE dans le profil ──
+    // Audience privée : elle rejoint « Tes affiches de perf », où on la revoit,
+    // l'envoie ou la supprime. Aucun upload d'image, juste une ligne `posts`.
+    // Indépendant de l'enregistrement de la séance : si l'un rate, l'autre tient.
     const elapsedMin = Math.round(elapsed / 60) || 1;
-    const { error } = await supabase.from("posts").insert({
+    void supabase.from("posts").insert({
       user_id:  user.id,
       type:     "workout",
       caption:  "",
@@ -989,30 +974,14 @@ export default function WorkoutGuideModal({
         exercise_list: exercises,
         category: resolvedCategory,
       },
-    });
-    setShareStatus(error ? "error" : "done");
-  }, [user, category, sessionId, title, elapsed, exercises]);
+    }).then(({ error: e2 }) => { if (!e2) setAfficheSaved(true); });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase]);
 
   const cur      = exercises[exerciseIdx];
   const isHiit   = !!cur?.hiit;
   const isTimered = !!(cur?.auto || cur?.hiit);
   const totalSets = exercises.reduce((a, e) => a + e.sets, 0);
-
-  /* ── Données du poster de perf « aura » (aperçu + export) ── */
-  const elapsedMinCard = Math.round(elapsed / 60) || 1;
-  const perfShareData: PerfShareData = {
-    brand: "✦ VAIIYA",
-    date: new Date().toLocaleDateString("fr-FR", { day: "numeric", month: "long" }),
-    category: title,
-    hero: { value: String(elapsedMinCard), unit: "min" },
-    subs: [
-      { v: String(exercises.length), l: "exos" },
-      { v: String(totalSets), l: "séries" },
-      { v: String(Math.round(elapsedMinCard * 6.5)), l: "kcal" },
-    ],
-    user: "",
-    bg: "/perf/aura.jpg",
-  };
 
   /* ── Elapsed clock ── */
   useEffect(() => {
@@ -1857,40 +1826,15 @@ export default function WorkoutGuideModal({
                   </motion.div>
                 )}
 
-                <div className="flex justify-center mb-1">
-                  <PerfShareCard data={perfShareData} width="min(200px, 56%)" />
-                </div>
-                {user && shareStatus !== "done" && (
-                  <motion.button whileTap={{ scale: 0.97 }} onClick={shareAsPost} disabled={shareStatus === "saving"}
-                    className="w-full py-4 rounded-2xl flex items-center justify-center gap-2 font-bold text-[16px] cursor-pointer text-white"
-                    style={{ background: "linear-gradient(100deg,#8B5CF6,#C13BC1)", boxShadow: "0 10px 30px -6px rgba(193,59,193,0.45)", opacity: shareStatus === "saving" ? 0.7 : 1 }}
-                  >
-                    {shareStatus === "saving"
-                      ? <><motion.span animate={{ rotate: 360 }} transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }} style={{ display: "inline-block" }}>⏳</motion.span> Publication…</>
-                      : <><Bookmark size={15} strokeWidth={2} /> Garder cette affiche</>
-                    }
-                  </motion.button>
-                )}
-                {/* ⚠️ « Partager ma carte » n'avait qu'une sortie, le partage
-                    natif du téléphone. La feuille en propose deux : une de tes
-                    discussions, ou le dehors. Le mot dit enfin la vérité. */}
-                <motion.button whileTap={{ scale: 0.97 }} onClick={() => setEnvoiAffiche(true)}
-                  className="w-full py-3.5 rounded-2xl flex items-center justify-center gap-2 font-bold text-[16px] cursor-pointer"
-                  style={{ background: "rgba(139,92,246,0.12)", color: TUN.lav, border: "1px solid rgba(139,92,246,0.4)" }}
-                >
-                  <Share2 size={15} strokeWidth={2} /> Envoyer à quelqu&apos;un
-                </motion.button>
-                {shareStatus === "done" && (
-                  <div className="w-full py-3 rounded-2xl flex items-center justify-center gap-2 text-[16px] font-medium"
+                {/* L'affiche s'est enregistrée TOUTE SEULE dans le profil. On le
+                    confirme ici ; la revoir, l'envoyer ou la supprimer se fait
+                    depuis « Tes affiches de perf » dans le profil. */}
+                {user && afficheSaved && (
+                  <div className="w-full py-3 rounded-2xl flex items-center justify-center gap-2 text-[14px] font-medium"
                     style={{ background: "rgba(43,212,160,0.1)", color: TUN.teal, border: "1px solid rgba(43,212,160,0.25)" }}
                   >
-                    ✓ Affiche gardée dans ton profil
+                    <BookmarkCheck size={14} strokeWidth={2} /> Affiche ajoutée à ton profil
                   </div>
-                )}
-                {shareStatus === "error" && (
-                  <button onClick={() => setShareStatus("idle")} className="text-[13px] cursor-pointer py-2" style={{ color: "#F87171" }}>
-                    Erreur, réessayer
-                  </button>
                 )}
                 <button onClick={onClose}
                   className="w-full py-3.5 rounded-2xl flex items-center justify-center font-bold text-[16px] cursor-pointer"
@@ -1904,20 +1848,6 @@ export default function WorkoutGuideModal({
           </AnimatePresence>
         </div>
         )}
-
-        {/* La feuille d'envoi. Elle vit au-dessus du tunnel (z-[90]/[91]
-            posés par `Sheet`), et elle n'existe que si on a un compte :
-            envoyer suppose un fil, et un fil suppose quelqu'un. */}
-        <AnimatePresence>
-          {envoiAffiche && user && (
-            <EnvoyerAffiche
-              data={perfShareData}
-              moi={user.id}
-              accessToken={session?.access_token}
-              onFermer={() => setEnvoiAffiche(false)}
-            />
-          )}
-        </AnimatePresence>
       </motion.div>
     </motion.div>
   );

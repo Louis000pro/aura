@@ -493,6 +493,8 @@ export default function ProfilPage() {
   const [userPosts, setUserPosts] = useState<UserPost[]>([]);
   const [selectedPost, setSelectedPost] = useState<UserPost | null>(null);
   const [editingSelectedPost, setEditingSelectedPost] = useState(false);
+  // Suppression d'une affiche, en deux temps (pas de suppression accidentelle).
+  const [confirmSupprAffiche, setConfirmSupprAffiche] = useState(false);
 
   // ── Compter une vue quand on ouvre une vidéo depuis le profil ──
   useEffect(() => {
@@ -1091,7 +1093,7 @@ export default function ProfilPage() {
                       transition={{ duration: 0.32, delay: idx * 0.05 }}
                       className="cursor-pointer flex justify-center"
                       whileTap={{ scale: 0.98 }}
-                      onClick={() => { setSelectedPost(post); setEditingSelectedPost(false); }}
+                      onClick={() => { setSelectedPost(post); setEditingSelectedPost(false); setConfirmSupprAffiche(false); }}
                     >
                       <PerfShareCard data={perfDataToShare(post.performance_data as PerformanceData, { user: displayPseudo })} width="100%" />
                     </motion.div>
@@ -1321,7 +1323,7 @@ export default function ProfilPage() {
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-50 flex items-end md:items-center justify-center"
             style={{ background: "rgba(0,0,0,0.55)", backdropFilter: "blur(10px)" }}
-            onClick={() => { setSelectedPost(null); setEditingSelectedPost(false); }}
+            onClick={() => { setSelectedPost(null); setEditingSelectedPost(false); setConfirmSupprAffiche(false); }}
           >
             <motion.div
               initial={{ y: 60, opacity: 0, scale: 0.96 }}
@@ -1385,7 +1387,7 @@ export default function ProfilPage() {
                   )}
                   <motion.button
                     whileTap={{ scale: 0.9 }}
-                    onClick={() => { setSelectedPost(null); setEditingSelectedPost(false); }}
+                    onClick={() => { setSelectedPost(null); setEditingSelectedPost(false); setConfirmSupprAffiche(false); }}
                     className="w-7 h-7 rounded-full flex items-center justify-center"
                     style={{ background: "rgba(var(--tint-violet-rgb),0.8)" }}
                   >
@@ -1500,6 +1502,46 @@ export default function ProfilPage() {
                       {selectedPost.description}
                     </p>
                   )}
+
+                  {/* Supprimer l'affiche, en deux temps. */}
+                  <div className="px-4 pb-1">
+                    {!confirmSupprAffiche ? (
+                      <button
+                        onClick={() => setConfirmSupprAffiche(true)}
+                        className="w-full py-2.5 rounded-2xl flex items-center justify-center gap-2 text-[13px] font-medium cursor-pointer"
+                        style={{ background: "transparent", color: "var(--text-3)" }}
+                      >
+                        <Trash2 size={13} strokeWidth={1.8} /> Supprimer l&apos;affiche
+                      </button>
+                    ) : (
+                      <div className="flex gap-2">
+                        <motion.button
+                          whileTap={{ scale: 0.97 }}
+                          onClick={async () => {
+                            const supabase = createClient();
+                            const { error } = await supabase.from("posts").delete().eq("id", selectedPost.id);
+                            if (error) { showToast("Suppression impossible, réessaie"); return; }
+                            setUserPosts((prev) => prev.filter((p) => p.id !== selectedPost.id));
+                            setSelectedPost(null);
+                            setConfirmSupprAffiche(false);
+                            showToast("Affiche supprimée");
+                          }}
+                          className="flex-1 py-2.5 rounded-2xl flex items-center justify-center gap-2 text-[13px] font-bold cursor-pointer text-white"
+                          style={{ background: "#E53E3E" }}
+                        >
+                          <Trash2 size={13} strokeWidth={2} /> Confirmer
+                        </motion.button>
+                        <button
+                          onClick={() => setConfirmSupprAffiche(false)}
+                          className="px-4 py-2.5 rounded-2xl text-[13px] font-semibold cursor-pointer"
+                          style={{ background: "rgba(var(--tint-violet-rgb),0.6)", color: "var(--text-2)" }}
+                        >
+                          Annuler
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
                   <div className="pb-3" />
                 </>
               )}
