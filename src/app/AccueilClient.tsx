@@ -9,6 +9,7 @@ import LandingHero from "@/components/Landing/LandingHero";
 /* Le type seul : la coquille serveur (`app/page.tsx`) fait le comptage et
    descend trois entiers, pour que les données ne traversent pas jusqu'ici. */
 import type { ChiffresPublics } from "@/lib/chiffresPublics";
+import type { ResumeAvis } from "@/lib/avisTypes";
 import { useAuth } from "@/context/AuthContext";
 import { createClient } from "@/lib/supabase";
 import AccueilSignature from "@/components/AccueilSignature";
@@ -32,11 +33,11 @@ import { marquerPresence } from "@/lib/presence";
    Hero + présentation vivent dans src/components/Landing/ pour garder
    ce fichier (partagé entre agents) le plus petit possible.
 ───────────────────────────────────────────────── */
-function LandingPage({ chiffres }: { chiffres: ChiffresPublics }) {
+function LandingPage({ chiffres, avis }: { chiffres: ChiffresPublics; avis: ResumeAvis }) {
   return (
     <div className="relative w-full" style={{ overflowX: "clip", background: "var(--page-bg)" }}>
       <LandingHero />
-      <LandingStory chiffres={chiffres} />
+      <LandingStory chiffres={chiffres} avis={avis} />
     </div>
   );
 }
@@ -286,7 +287,7 @@ function LoadingSpinner() {
    classe `a-session`, posée avant le premier paint par le script du <head>,
    masque la landing et révèle l'attente (voir globals.css). La bascule est en
    CSS et non en React, pour que le rendu reste identique serveur et client. */
-export default function AccueilClient({ chiffres }: { chiffres: ChiffresPublics }) {
+export default function AccueilClient({ chiffres, avis }: { chiffres: ChiffresPublics; avis: ResumeAvis }) {
   const { user, isLoading, justLoggedIn, isNewUser, clearWelcome } = useAuth();
   // Le popup animé "Bonsoir" est retiré au profit de l'intro logo (SplashIntro).
   void justLoggedIn; void isNewUser; void clearWelcome;
@@ -306,7 +307,7 @@ export default function AccueilClient({ chiffres }: { chiffres: ChiffresPublics 
   // n'est pas remontée, donc les animations du hero ne rejouent pas.
   return (
     <>
-      <div className="accueil-landing"><LandingPage chiffres={chiffres} /></div>
+      <div className="accueil-landing"><LandingPage chiffres={chiffres} avis={avis} /></div>
       {isLoading && <div className="accueil-attente"><LoadingSpinner /></div>}
     </>
   );

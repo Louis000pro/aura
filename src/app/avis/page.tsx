@@ -1,95 +1,61 @@
-"use client";
+import type { Metadata } from "next";
+import Link from "next/link";
+import { ChevronLeft } from "lucide-react";
+import { listerAvisApprouves } from "@/lib/avisPublics";
+import FormAvis from "@/components/avis/FormAvis";
 
 /* ════════════════════════════════════════════════════════════════════
    /avis — les avis PUBLICS sur Vaiiya.
 
-   Choix de Louis (2026-09-23) : les gens laissent une note (1 à 5 étoiles)
-   et un mot, visibles par tout le monde. Un avis par personne, éditable.
-   Ce n'est pas un fil social (pas de réponse, pas de like) : juste le
-   témoignage de chacun sur le produit.
+   Composant SERVEUR : la liste des avis approuvés et la moyenne sont rendues
+   dans le HTML, donc lisibles par un visiteur non connecté ET par Google
+   (preuve sociale + contenu indexable). Seule la zone d'écriture (`FormAvis`)
+   est un îlot client, parce qu'elle a besoin de la session.
+
+   La page se relit toutes les 5 minutes (`revalidate`) au lieu de frapper la
+   base à chaque visite.
    ════════════════════════════════════════════════════════════════════ */
 
-import { useEffect, useState, useCallback } from "react";
-import { motion } from "framer-motion";
-import { Star, ChevronLeft } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { useAuth } from "@/context/AuthContext";
-import { chargerAvis, monAvis, poserAvis, supprimerAvis, type Avis } from "@/lib/avis";
+export const revalidate = 300;
 
-const ACTION = "linear-gradient(135deg,#8B5CF6 0%,#C13BC1 100%)";
+export const metadata: Metadata = {
+  // Le gabarit racine ajoute « · Vaiiya ».
+  title: "Avis des membres",
+  description:
+    "Ce que les membres pensent de Vaiiya, l'application web française d'entraînement et de nutrition avec assistant IA. Avis publics, laissés par de vrais utilisateurs.",
+  alternates: { canonical: "https://vaiiya.fr/avis" },
+};
 
-/* Une rangée d'étoiles, en lecture ou en saisie. En saisie, chaque étoile
-   est un bouton ; en lecture, un simple affichage doré. */
-function Etoiles({ note, taille = 18, onPick }: { note: number; taille?: number; onPick?: (n: number) => void }) {
+/* Étoiles en lecture, côté serveur (pas d'interaction). */
+function Etoiles({ note, taille = 15 }: { note: number; taille?: number }) {
   return (
-    <span className="inline-flex items-center gap-0.5">
+    <span className="inline-flex items-center gap-0.5" aria-label={`${note} sur 5`}>
       {[1, 2, 3, 4, 5].map((n) => {
         const plein = n <= note;
-        const commun = { size: taille, style: { color: plein ? "var(--gold)" : "rgba(var(--accent-rgb),0.22)" }, fill: plein ? "var(--gold)" : "transparent" as string };
-        return onPick ? (
-          <button key={n} type="button" onClick={() => onPick(n)} aria-label={`${n} étoile${n > 1 ? "s" : ""}`}
-            className="cursor-pointer bg-transparent border-none p-0.5">
-            <Star {...commun} />
-          </button>
-        ) : (
-          <Star key={n} {...commun} aria-hidden="true" />
+        return (
+          <svg key={n} width={taille} height={taille} viewBox="0 0 24 24" aria-hidden
+            style={{ color: plein ? "var(--gold)" : "rgba(var(--accent-rgb),0.22)" }}
+            fill={plein ? "var(--gold)" : "transparent"} stroke="currentColor" strokeWidth={1.6} strokeLinejoin="round">
+            <path d="M12 2.5l2.9 5.9 6.5.95-4.7 4.6 1.1 6.45L12 17.9l-5.8 3 1.1-6.45-4.7-4.6 6.5-.95z" />
+          </svg>
         );
       })}
     </span>
   );
 }
 
-export default function AvisPage() {
-  const router = useRouter();
-  const { user } = useAuth();
-
-  const [avis, setAvis] = useState<Avis[]>([]);
-  const [charge, setCharge] = useState(false);
-  const [note, setNote] = useState(0);
-  const [texte, setTexte] = useState("");
-  const [envoi, setEnvoi] = useState(false);
-  const [aDejaUn, setADejaUn] = useState(false);
-
-  const recharger = useCallback(async () => {
-    const liste = await chargerAvis();
-    setAvis(liste);
-    setCharge(true);
-  }, []);
-
-  useEffect(() => { void recharger(); }, [recharger]);
-
-  // Pré-remplir avec mon avis existant s'il y en a un.
-  useEffect(() => {
-    if (!user) return;
-    void monAvis(user.id).then((m) => {
-      if (m) { setNote(m.note); setTexte(m.texte); setADejaUn(true); }
-    });
-  }, [user]);
-
-  const soumettre = async () => {
-    if (!user || note === 0 || envoi) return;
-    setEnvoi(true);
-    const ok = await poserAvis(user.id, note, texte);
-    setEnvoi(false);
-    if (ok) { setADejaUn(true); await recharger(); }
-  };
-
-  const retirer = async () => {
-    if (!user) return;
-    const ok = await supprimerAvis(user.id);
-    if (ok) { setNote(0); setTexte(""); setADejaUn(false); await recharger(); }
-  };
-
+export default async function AvisPage() {
+  const avis = await listerAvisApprouves();
   const total = avis.length;
   const moyenne = total > 0 ? avis.reduce((s, a) => s + a.note, 0) / total : 0;
 
   return (
     <div className="min-h-screen px-4 pt-4 pb-28 max-w-2xl mx-auto" style={{ background: "var(--page-bg)" }}>
-      <button onClick={() => router.back()}
-        className="flex items-center gap-1.5 mb-3 text-[13px] font-semibold cursor-pointer bg-transparent border-none"
+      <Link href="/"
+        className="flex items-center gap-1.5 mb-3 text-[13px] font-semibold bg-transparent border-none"
         style={{ color: "var(--text-3)" }}>
         <ChevronLeft size={14} strokeWidth={2.5} /> Retour
-      </button>
+      </Link>
 
       <h1 className="text-[26px] font-extralight tracking-tight" style={{ color: "var(--text-1)" }}>
         Vos{" "}
@@ -100,7 +66,6 @@ export default function AvisPage() {
         }}>avis</em>
       </h1>
 
-      {/* Résumé : moyenne + nombre */}
       {total > 0 && (
         <div className="flex items-center gap-3 mt-2 mb-5">
           <b className="vy-nombre text-[26px]" style={{ color: "var(--text-1)" }}>{moyenne.toFixed(1)}</b>
@@ -109,45 +74,11 @@ export default function AvisPage() {
         </div>
       )}
 
-      {/* Mon avis : laisser ou modifier */}
-      {user ? (
-        <div className="rounded-2xl p-4 mb-6"
-          style={{ background: "rgba(var(--tint-violet-rgb),0.5)", border: "1px solid rgba(var(--accent-rgb),0.16)" }}>
-          <p className="text-[15px] font-semibold mb-2" style={{ color: "var(--text-1)" }}>
-            {aDejaUn ? "Ton avis" : "Ton avis sur Vaiiya"}
-          </p>
-          <Etoiles note={note} taille={26} onPick={setNote} />
-          <textarea
-            value={texte}
-            onChange={(e) => setTexte(e.target.value)}
-            maxLength={500}
-            placeholder="Dis ce que tu en penses (facultatif)…"
-            rows={3}
-            className="w-full mt-3 rounded-xl px-3 py-2.5 text-[16px] outline-none resize-none"
-            style={{ background: "rgba(var(--surface-rgb),0.9)", border: "1px solid rgba(var(--accent-rgb),0.16)", color: "var(--text-1)" }}
-          />
-          <p className="text-[11px] mt-1" style={{ color: "var(--text-3)" }}>Ton avis est public, avec ton pseudo.</p>
-          <div className="flex items-center gap-3 mt-3">
-            <motion.button type="button" whileTap={{ scale: 0.97 }}
-              onClick={soumettre} disabled={note === 0 || envoi}
-              className="flex-1 py-3 rounded-2xl text-[16px] font-semibold cursor-pointer"
-              style={{ background: ACTION, color: "#fff", opacity: note === 0 || envoi ? 0.55 : 1 }}>
-              {envoi ? "…" : aDejaUn ? "Modifier mon avis" : "Publier mon avis"}
-            </motion.button>
-            {aDejaUn && (
-              <button type="button" onClick={retirer}
-                className="text-[13px] font-medium cursor-pointer bg-transparent border-none" style={{ color: "var(--text-3)" }}>
-                Retirer
-              </button>
-            )}
-          </div>
-        </div>
-      ) : (
-        <p className="text-[14px] mb-6" style={{ color: "var(--text-3)" }}>Connecte-toi pour laisser ton avis.</p>
-      )}
+      {/* Zone d'écriture (îlot client). */}
+      <FormAvis />
 
-      {/* La liste des avis */}
-      {charge && total === 0 && (
+      {/* La liste des avis approuvés (rendue côté serveur). */}
+      {total === 0 && (
         <p className="text-[14px]" style={{ color: "var(--text-3)" }}>Aucun avis pour l’instant. Sois le premier.</p>
       )}
       <ul className="flex flex-col gap-3">
@@ -160,7 +91,7 @@ export default function AvisPage() {
                 <img src={a.avatar_url} alt="" width={30} height={30} className="rounded-full object-cover w-[30px] h-[30px]" />
               ) : (
                 <span className="w-[30px] h-[30px] rounded-full flex items-center justify-center text-[13px] font-bold text-white"
-                  style={{ background: ACTION }}>{a.pseudo.charAt(0).toUpperCase()}</span>
+                  style={{ background: "linear-gradient(135deg,#8B5CF6 0%,#C13BC1 100%)" }}>{a.pseudo.charAt(0).toUpperCase()}</span>
               )}
               <b className="text-[14px] font-semibold flex-1 truncate" style={{ color: "var(--text-1)" }}>{a.pseudo}</b>
               <Etoiles note={a.note} taille={14} />

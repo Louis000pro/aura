@@ -1,6 +1,12 @@
 import type { Metadata } from "next";
 import AccueilClient from "./AccueilClient";
 import { CHIFFRES_PUBLICS } from "@/lib/chiffresPublics";
+import { resumeAvisPublics } from "@/lib/avisPublics";
+
+/* La landing lit les avis approuvés côté serveur : on met le rendu en cache
+   10 min plutôt que de frapper la base à chaque visite de l'écran le plus
+   ouvert de l'app. Les avis n'ont pas besoin d'être à la seconde près. */
+export const revalidate = 600;
 
 /**
  * Coquille serveur de l'accueil.
@@ -19,10 +25,14 @@ export const metadata: Metadata = {
   alternates: { canonical: "https://vaiiya.fr/" },
 };
 
-export default function Page() {
+export default async function Page() {
   /* Les chiffres de la landing sont comptés ici, côté serveur, et descendus en
      props. Les importer directement dans `LandingStory` (composant client)
      enverrait au navigateur le texte intégral des 26 mini-cours pour n'afficher
-     qu'un nombre. Voir `lib/chiffresPublics.ts`. */
-  return <AccueilClient chiffres={CHIFFRES_PUBLICS} />;
+     qu'un nombre. Voir `lib/chiffresPublics.ts`.
+
+     Les avis approuvés se lisent en base (lecture serveur, jamais côté client :
+     voir `lib/avisPublics.ts`). */
+  const avis = await resumeAvisPublics();
+  return <AccueilClient chiffres={CHIFFRES_PUBLICS} avis={avis} />;
 }

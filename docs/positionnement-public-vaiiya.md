@@ -156,9 +156,14 @@ Vérifiés sur `main` le 2026-08-10. À revérifier avant réemploi.
 | Prix Premium | 5,99 €/mois | `lib/plans.ts` (jamais réécrit à la main) |
 
 **Chiffres interdits en dur :** nombre d'utilisateurs, de comptes, de téléchargements,
-de séances réalisées, note moyenne, témoignages. **52 comptes créés au 10 août 2026**
-est un instantané interne : ce n'est ni un nombre d'utilisateurs actifs, ni une
-métrique à publier, ni une valeur à écrire dans une page.
+de séances réalisées. **52 comptes créés au 10 août 2026** est un instantané interne :
+ce n'est ni un nombre d'utilisateurs actifs, ni une métrique à publier, ni une valeur
+à écrire dans une page.
+
+**Note moyenne et témoignages :** autorisés depuis le 24 septembre 2026, mais
+**uniquement quand ils sont RÉELS, modérés et rendus dynamiquement depuis la base**
+(voir §17). Jamais un chiffre ou un témoignage écrit en dur dans une page. La note
+moyenne ne s'affiche qu'au-dessus du seuil d'avis approuvés ; en dessous, rien.
 
 ## 11. Plateformes
 
@@ -211,7 +216,7 @@ fermée.
 | « soigne », « guérit », « brûle la graisse » | langage médical ou magique |
 | « micro-entreprise », « société », « notre équipe » | aucune structure immatriculée |
 | tout chiffre d'utilisateurs | voir §10 |
-| tout témoignage, note ou avis | aucun n'est réel |
+| tout témoignage, note ou avis **inventé**, écrit en dur, ou un balisage d'étoiles auto-décerné | les avis fabriqués sont interdits et le SEO ne récompense pas les faux ; les VRAIS avis modérés sont autorisés, voir §17 |
 
 ## 15. Fonctionnalités partielles, dormantes ou futures : ne pas vendre
 
@@ -243,3 +248,26 @@ avant chaque réutilisation** :
 - les **chiffres du §10**, qui bougent à chaque vague de contenu ;
 - la décision de **ne pas publier les prénoms** des fondateurs ;
 - l'existence d'un **Discord** ou d'un autre compte officiel à ajouter à `sameAs`.
+
+## 17. Avis publics (depuis le 24 septembre 2026)
+
+Vaiiya affiche des **avis de vrais membres**, sur la page d'accueil (en bas) et sur
+la page `/avis`, tous deux publics et indexables. C'est de la preuve sociale et du
+contenu frais, pas une astuce SEO.
+
+Règles verrouillées, à ne jamais contourner :
+
+- **Uniquement de vrais avis**, écrits par des comptes réels. Aucun avis inventé,
+  aucun texte de témoignage écrit en dur dans le code. Fabriquer un avis est interdit
+  (et se retourne contre le site : faux avis = risque légal et pénalité).
+- **Modération obligatoire** : un avis n'est public qu'une fois `approuve`
+  (`/admin/avis`). Toute écriture d'un non-admin retombe en `en_attente` (garde-fou
+  par trigger en base).
+- **Seuil d'affichage** : la section de la page d'accueil et la note moyenne
+  n'apparaissent qu'à partir de **5 avis approuvés** (`SEUIL_AVIS_PUBLIC`). En
+  dessous, rien — « 5,0 ★ (1 avis) » a l'air fabriqué.
+- **Pas de balisage d'étoiles auto-décerné** (`AggregateRating`/`Review` en JSON-LD
+  sur notre propre entité) : Google ne l'affiche pas pour les avis « self-serving »
+  et le risque de pénalité est réel. Les vraies étoiles dans la recherche viennent de
+  **plateformes tierces** (Trustpilot, fiche Google Business), qui relèvent d'une
+  configuration hors code.

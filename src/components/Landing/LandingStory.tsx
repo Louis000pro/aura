@@ -31,6 +31,8 @@ import { RANGS } from "@/lib/aura";
 /* Le type seul. Les nombres sont comptés côté serveur et descendus en props :
    voir `lib/chiffresPublics.ts`. */
 import type { ChiffresPublics } from "@/lib/chiffresPublics";
+/* Le résumé des avis, lui aussi compté côté serveur et descendu en props. */
+import { SEUIL_AVIS_PUBLIC, type ResumeAvis } from "@/lib/avisTypes";
 
 /* Couleur d'action du système D : violet vers magenta. Le CTA principal est
    TOUJOURS violet (jamais violet vers or). Constante de marque, stable clair/sombre. */
@@ -940,6 +942,90 @@ function SectionRelais() {
   );
 }
 
+/* ════════════════════════════ 6 bis · LES AVIS ════════════════════════════
+   Preuve sociale, tout en bas, juste avant l'invitation à créer un compte.
+
+   Ne s'affiche QUE si `avis.total >= SEUIL_AVIS_PUBLIC` (décidé par la page
+   serveur, mais on regarde ici aussi par sécurité) : « 5,0 ★ (1 avis) » a l'air
+   fabriqué. Les avis sont RÉELS, modérés, et rendus côté serveur — donc dans le
+   HTML, donc utiles au référencement. Les avatars sont des URL distantes (pas
+   de domaine configuré pour next/image), donc `<img>` simple, comme /avis.
+   ───────────────────────────────────────────────────────────────────── */
+
+function EtoilesLanding({ note, taille = 15 }: { note: number; taille?: number }) {
+  return (
+    <span className="inline-flex items-center gap-0.5" aria-label={`${note} sur 5`}>
+      {[1, 2, 3, 4, 5].map((n) => (
+        <svg key={n} width={taille} height={taille} viewBox="0 0 24 24" aria-hidden
+          style={{ color: n <= note ? GOLD : "rgba(var(--accent-rgb),0.22)" }}
+          fill={n <= note ? GOLD : "transparent"} stroke="currentColor" strokeWidth={1.6} strokeLinejoin="round">
+          <path d="M12 2.5l2.9 5.9 6.5.95-4.7 4.6 1.1 6.45L12 17.9l-5.8 3 1.1-6.45-4.7-4.6 6.5-.95z" />
+        </svg>
+      ))}
+    </span>
+  );
+}
+
+function SectionAvis({ avis }: { avis: ResumeAvis }) {
+  return (
+    <section className="relative px-6 py-24 md:py-32">
+      <div className="max-w-4xl mx-auto text-center">
+        <Reveal><Eyebrow>Les avis</Eyebrow></Reveal>
+        <Reveal delay={0.06}>
+          <SectionTitle>
+            Ils utilisent Vaiiya <span style={ACCENT_TEXT}>au quotidien</span>.
+          </SectionTitle>
+        </Reveal>
+
+        <Reveal delay={0.12}>
+          <div className="mt-7 flex items-center justify-center gap-3.5">
+            <span className="text-[clamp(2rem,7vw,2.8rem)] font-extralight leading-none" style={{ color: "var(--text-0)" }}>
+              {avis.moyenne.toFixed(1).replace(".", ",")}
+            </span>
+            <EtoilesLanding note={Math.round(avis.moyenne)} taille={20} />
+            <span className="text-[13px] font-light" style={{ color: "var(--text-3)" }}>sur {avis.total} avis</span>
+          </div>
+        </Reveal>
+
+        <div className="mt-12 grid md:grid-cols-3 gap-4 text-left">
+          {avis.apercu.map((a, i) => (
+            <Reveal key={a.id} delay={0.06 + i * 0.06}>
+              <div className="h-full rounded-[22px] p-5 lg-surface lg-highlight">
+                <div className="flex items-center gap-2.5 mb-3">
+                  {a.avatar_url ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={a.avatar_url} alt="" width={36} height={36} className="rounded-full object-cover w-9 h-9" />
+                  ) : (
+                    <span className="w-9 h-9 rounded-full flex items-center justify-center text-[14px] font-bold text-white"
+                      style={{ background: ACTION_BG }}>{a.pseudo.charAt(0).toUpperCase()}</span>
+                  )}
+                  <div className="min-w-0">
+                    <p className="text-[14px] font-semibold leading-tight truncate" style={{ color: "var(--text-0)" }}>{a.pseudo}</p>
+                    <p className="text-[11px] font-light" style={{ color: "var(--text-3)" }}>
+                      {new Date(a.created_at).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}
+                    </p>
+                  </div>
+                </div>
+                <EtoilesLanding note={a.note} taille={14} />
+                {a.texte.trim() && (
+                  <p className="mt-2.5 text-[14px] font-light leading-relaxed" style={{ color: "var(--text-2)" }}>{a.texte}</p>
+                )}
+              </div>
+            </Reveal>
+          ))}
+        </div>
+
+        <Reveal delay={0.14}>
+          <div className="mt-10 flex flex-wrap items-center justify-center gap-3.5">
+            <CtaPrimary label="Laisser un avis" href="/avis" />
+            <CtaGhost label="Voir tous les avis" href="/avis" />
+          </div>
+        </Reveal>
+      </div>
+    </section>
+  );
+}
+
 /* ════════════════════════════ 7 · CE QUE TU AS EN CRÉANT TON COMPTE ════════════════════════════ */
 
 const INCLUS = [
@@ -1063,7 +1149,7 @@ function SectionFinale() {
   );
 }
 
-export default function LandingStory({ chiffres }: { chiffres: ChiffresPublics }) {
+export default function LandingStory({ chiffres, avis }: { chiffres: ChiffresPublics; avis: ResumeAvis }) {
   return (
     <div className="relative w-full">
       <SectionQuoi chiffres={chiffres} />
@@ -1073,6 +1159,8 @@ export default function LandingStory({ chiffres }: { chiffres: ChiffresPublics }
       <SectionIntelligence />
       <SectionConstance />
       <SectionRelais />
+      {/* La preuve sociale n'apparaît qu'au-dessus du seuil : sinon rien. */}
+      {avis.total >= SEUIL_AVIS_PUBLIC && <SectionAvis avis={avis} />}
       <SectionFinale />
     </div>
   );
