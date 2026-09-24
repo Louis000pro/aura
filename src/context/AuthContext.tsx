@@ -27,6 +27,10 @@ type AuthCtx = {
   isNewUser: boolean;
   signUp: (d: { pseudo: string; name: string; lastName: string; email: string; password: string }) => Promise<AuthError>;
   signIn: (d: { email: string; password: string }) => Promise<AuthError>;
+  /** Connexion par pseudo OU email : la résolution pseudo → email et la
+   *  vérification du mot de passe se font côté serveur (l'email ne transite
+   *  jamais par le client), qui renvoie des jetons posés via `setSession`. */
+  signInIdentifiant: (d: { identifiant: string; password: string }) => Promise<AuthError>;
   signInWithGoogle: () => Promise<AuthError>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<AuthError>;
@@ -191,6 +195,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return error ? { message: error.message } : null;
   };
 
+  const signInIdentifiant: AuthCtx["signInIdentifiant"] = async ({ identifiant, password }) => {
+    try {
+      const res = await fetch("/api/auth/login-pseudo", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ identifiant, password }),
+      });
+      const j = await res.json().catch(() => ({}));
+      if (!res.ok || j.error || !j.access_token) {
+        return { message: j.error ?? "Identifiant ou mot de passe incorrect." };
+      }
+      // On pose la session sur NOTRE client : l'écouteur d'état d'auth se
+      // déclenche et met à jour l'utilisateur, comme pour un signIn normal.
+      const { error } = await supabase.auth.setSession({
+        access_token: j.access_token,
+        refresh_token: j.refresh_token,
+      });
+      return error ? { message: error.message } : null;
+    } catch {
+      return { message: "Connexion impossible. Réessaie." };
+    }
+  };
+
   const signInWithGoogle: AuthCtx["signInWithGoogle"] = async () => {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
@@ -236,7 +263,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   return (
     <AuthContext.Provider value={{
       user, session, isLoading, justLoggedIn, isNewUser,
-      signUp, signIn, signInWithGoogle, signOut, resetPassword,
+      signUp, signIn, signInIdentifiant, signInWithGoogle, signOut, resetPassword,
       clearWelcome, logout: signOut, refreshProfile,
     }}>
       {children}

@@ -158,9 +158,17 @@ const destinationApres = () => destinationDepuisUrl("/");
    c'est Supabase) : elle sert juste à activer « Continuer ». */
 const emailValide = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
 
+/* L'étape 1 de connexion accepte un email OU un pseudo. Avec « @ » on exige
+   la forme email ; sinon c'est un pseudo, qu'on valide juste assez pour
+   activer « Continuer » (le vrai contrôle est côté serveur). */
+const identifiantValide = (v: string) => {
+  const t = v.trim();
+  return t.includes("@") ? emailValide(t) : t.length >= 2 && !/\s/.test(t);
+};
+
 export default function AuthPage() {
   const router = useRouter();
-  const { signUp, signIn, signInWithGoogle, resetPassword, user, isLoading } = useAuth();
+  const { signUp, signIn, signInIdentifiant, signInWithGoogle, resetPassword, user, isLoading } = useAuth();
 
   // Redirige vers le dashboard si déjà connecté
   useEffect(() => {
@@ -168,8 +176,11 @@ export default function AuthPage() {
   }, [user, isLoading, router]);
 
   const [mode, setMode]             = useState<"login"|"signup">("login");
-  /* Connexion : 1 = on demande l'email, 2 = on demande le mot de passe. */
+  /* Connexion : 1 = on demande l'identifiant (email ou pseudo), 2 = le mot
+     de passe. `parPseudo` mémorise si l'étape 1 a résolu un pseudo : l'étape
+     2 passe alors par la route serveur au lieu du signIn email direct. */
   const [etapeConnexion, setEtapeConnexion] = useState<1|2>(1);
+  const [parPseudo, setParPseudo] = useState(false);
   const [pseudo, setPseudo]         = useState("");
   const [name, setName]             = useState("");
   const [lastName, setLastName]     = useState("");
@@ -208,31 +219,48 @@ export default function AuthPage() {
   const canSubmit = mode === "signup"
     ? !!(pseudo && name && lastName && email && password)
     : etapeConnexion === 1
-      ? emailValide(email)
+      ? identifiantValide(email)
       : !!(email && password);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!canSubmit || loading) return;
 
-    // Connexion en deux temps : l'étape 1 vérifie VRAIMENT que l'email est
-    // inscrite avant d'ouvrir le mot de passe. Une adresse au hasard est
-    // refusée ici, on ne montre jamais « c'est bon » sur un compte inexistant.
+    // Connexion en deux temps : l'étape 1 vérifie VRAIMENT que le compte
+    // existe avant d'ouvrir le mot de passe. On ne montre jamais « c'est bon »
+    // sur un compte inexistant. L'identifiant peut être un email OU un pseudo.
     if (mode === "login" && etapeConnexion === 1) {
       setLoading(true);
       setError(null);
+      const identifiant = email.trim();
+      const estEmail = emailValide(identifiant);
       try {
-        const res = await fetch("/api/auth/check-email", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email: email.trim() }),
-        });
-        const json = await res.json();
-        if (res.status === 429) { setError(json.error ?? "Trop de tentatives. Réessaie dans un moment."); setLoading(false); return; }
-        if (!res.ok) { setError("Impossible de vérifier l’email. Réessaie."); setLoading(false); return; }
-        if (!json.inscrite) { setError("Email invalide, ou pas encore de compte à cette adresse."); setLoading(false); return; }
+        if (estEmail) {
+          const res = await fetch("/api/auth/check-email", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email: identifiant }),
+          });
+          const json = await res.json();
+          if (res.status === 429) { setError(json.error ?? "Trop de tentatives. Réessaie dans un moment."); setLoading(false); return; }
+          if (!res.ok) { setError("Impossible de vérifier ce compte. Réessaie."); setLoading(false); return; }
+          if (!json.inscrite) { setError("Email invalide, ou pas encore de compte à cette adresse."); setLoading(false); return; }
+          setParPseudo(false);
+        } else {
+          // Pseudo : la route résout en base et répond seulement { existe }.
+          const res = await fetch("/api/auth/login-pseudo", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ identifiant }),
+          });
+          const json = await res.json();
+          if (res.status === 429) { setError(json.error ?? "Trop de tentatives. Réessaie dans un moment."); setLoading(false); return; }
+          if (!res.ok) { setError("Impossible de vérifier ce compte. Réessaie."); setLoading(false); return; }
+          if (!json.existe) { setError("Aucun compte à ce pseudo. Vérifie l’orthographe."); setLoading(false); return; }
+          setParPseudo(true);
+        }
       } catch {
-        setError("Impossible de vérifier l’email. Réessaie.");
+        setError("Impossible de vérifier ce compte. Réessaie.");
         setLoading(false);
         return;
       }
@@ -262,8 +290,10 @@ export default function AuthPage() {
       setSignupSent(true);
       return;
     } else {
-      const err = await signIn({ email, password });
-      if (err) { setError(err.message === "Invalid login credentials" ? "Email ou mot de passe incorrect." : err.message); setLoading(false); return; }
+      const err = parPseudo
+        ? await signInIdentifiant({ identifiant: email.trim(), password })
+        : await signIn({ email, password });
+      if (err) { setError(err.message === "Invalid login credentials" ? "Identifiant ou mot de passe incorrect." : err.message); setLoading(false); return; }
     }
 
     setLoading(false);
@@ -576,7 +606,15 @@ export default function AuthPage() {
             {/* À l'étape 2, l'email est validé et disparaît : on ne montre plus
                que le mot de passe. On revient en arrière par « Changer d'email ». */}
             {!(mode === "login" && etapeConnexion === 2) && (
-              <Field icon={<Mail size={15}/>} type="email" placeholder="Ton email" value={email} onChange={setEmail} required autoFocus={mode==="login"} />
+              <Field
+                icon={<Mail size={15}/>}
+                type={mode === "login" ? "text" : "email"}
+                placeholder={mode === "login" ? "Ton email ou ton pseudo" : "Ton email"}
+                value={email}
+                onChange={setEmail}
+                required
+                autoFocus={mode==="login"}
+              />
             )}
 
             {(mode === "signup" || etapeConnexion === 2) && (
@@ -597,7 +635,7 @@ export default function AuthPage() {
                     <button type="button"
                       onClick={() => { setEtapeConnexion(1); setPassword(""); setError(null); setForgotMode(false); }}
                       className="text-[13px] font-medium cursor-pointer hover:underline" style={{ color:"var(--text-3)" }}>
-                      Changer d’email
+                      Modifier
                     </button>
                     <button type="button" onClick={() => setForgotMode(v=>!v)}
                       className="text-[13px] font-medium cursor-pointer hover:underline" style={{ color:"var(--accent)" }}>
