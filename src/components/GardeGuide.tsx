@@ -41,7 +41,7 @@ export const ROUTE_BIENVENUE = "/bienvenue";
      · l'authentification, où l'on n'a pas encore de compte à écrire ;
      · l'invitation au relais, qui se lit sans compte et dont c'est tout
        l'intérêt (voir la page publique /rejoindre). */
-const EXEMPTES = [ROUTE_BIENVENUE, "/auth", "/rejoindre"];
+const EXEMPTES = [ROUTE_BIENVENUE, "/choisir-pseudo", "/auth", "/rejoindre"];
 
 function estExempte(pathname: string): boolean {
   return EXEMPTES.some((r) => pathname === r || pathname.startsWith(`${r}/`));

@@ -62,6 +62,18 @@ export async function POST(req: NextRequest) {
       `user_${user_id.slice(0, 6)}`;
     const basePseudo = candidate || `user_${user_id.slice(0, 6)}`;
 
+    // Le pseudo est-il DONNÉ par la personne (formulaire email) ou INVENTÉ
+    // par nous (compte Google) ? Dans le second cas on marque `pseudo_choisi`
+    // à false pour proposer l'écran de choix. Best-effort : si la colonne
+    // n'existe pas encore (migration non collée), on ignore, rien ne casse.
+    const pseudoInvente = !(metaPseudo && metaPseudo.trim());
+    const marquerAChoisir = async () => {
+      if (!pseudoInvente) return;
+      try {
+        await supabase.from("profiles").update({ pseudo_choisi: false }).eq("id", user_id);
+      } catch { /* colonne absente : sans effet */ }
+    };
+
     // ── Profil déjà présent ? ──
     const { data: existing } = await supabase
       .from("profiles")
@@ -84,6 +96,7 @@ export async function POST(req: NextRequest) {
           .select("id, pseudo")
           .maybeSingle();
         if (!error) {
+          await marquerAChoisir();
           return Response.json({ ok: true, created: false, healed: true, profile: updated });
         }
         if (error.code === "23505") {
@@ -110,6 +123,7 @@ export async function POST(req: NextRequest) {
         .select("id, pseudo")
         .maybeSingle();
       if (!error) {
+        await marquerAChoisir();
         return Response.json({ ok: true, created: true, profile: created });
       }
       if (error.code === "23505" && error.message?.includes("pseudo")) {

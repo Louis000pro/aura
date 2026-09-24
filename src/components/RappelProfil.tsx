@@ -40,7 +40,7 @@ import { usePathname } from "next/navigation";
 
 /** Les routes où un rappel n'a rien à faire : celle qui y répond, et
  *  celles où l'on n'a pas encore de compte à remplir. */
-const MUETTES = ["/bienvenue", "/auth", "/rejoindre"];
+const MUETTES = ["/bienvenue", "/choisir-pseudo", "/auth", "/rejoindre"];
 
 export default function RappelProfil() {
   const { user, isLoading } = useAuth();
