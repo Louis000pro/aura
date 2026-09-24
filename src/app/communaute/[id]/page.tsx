@@ -544,12 +544,12 @@ export default function FilPage() {
                 un tout fait : personne n'a jamais eu honte d'un
                 « Salut l'ami ! ». */}
             <button
-              onClick={() => void envoyerTexte("Salut l’ami ! 👋")}
+              onClick={() => void envoyerTexte("Salut !")}
               disabled={envoi || photoEnCours}
               className="mt-4 rounded-full px-5 py-2.5 text-[16px] font-semibold text-white transition-transform active:scale-95 disabled:opacity-50"
               style={{ background: "linear-gradient(135deg, #8B5CF6, #C13BC1)" }}
             >
-              Salut l&apos;ami&nbsp;! 👋
+              Salut&nbsp;!
             </button>
           </div>
         )}

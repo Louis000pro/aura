@@ -719,7 +719,7 @@ export default function ParametresPage() {
               label="Mon corps et mes objectifs"
               sub="Ce sur quoi ton Guide calibre tes séances"
               value={resumeCorps ?? undefined}
-              onClick={() => router.push("/bienvenue")}
+              onClick={() => router.push("/bienvenue?edit=1&next=/parametres")}
             />
             {(etatGuide === "actif" || etatGuide === "aucun") && (
               <Ligne

@@ -101,6 +101,17 @@ export default function ParcoursBienvenue() {
      interrompu une intention (une notification touchée, par exemple). */
   const [destination] = useState(() => destinationDepuisUrl("/"));
 
+  /* ⚠️ MODE ÉDITION (`?edit=1`). La ligne « Mon corps et mes objectifs »
+     des Paramètres envoie ici pour MODIFIER un profil déjà rempli. Sans
+     ce drapeau, un compte configuré atterrit droit sur la conclusion (il
+     n'a rien à re-répondre au sens de la garde), donc la ligne semblait
+     « ne rien faire » : elle ouvrait l'écran de fin, pas le questionnaire.
+     En édition, on rentre par la première section quoi qu'il arrive. */
+  const [editer] = useState(() =>
+    typeof window !== "undefined" &&
+    new URLSearchParams(window.location.search).get("edit") === "1"
+  );
+
   // Le parcours occupe tout l'écran : la barre du bas se retire, comme
   // pour le tunnel de séance.
   useEffect(() => lockBodyModal(), []);
@@ -192,7 +203,7 @@ export default function ParcoursBienvenue() {
      reprend là où ça a du sens. Un compte déjà configuré n'a que la
      conclusion à voir ; un compte neuf entre dans le questionnaire. */
   const debut: Etape = (!revue && etat === "actif" && profilLu !== null) || guideIndisponible
-    ? (profilLu ? "pret" : ORDRE[0])
+    ? (profilLu && !editer ? "pret" : ORDRE[0])
     : "guide";
   const etapeVoulue: Etape = etapeChoisie ?? debut;
 
