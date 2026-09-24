@@ -868,6 +868,11 @@ export default function WorkoutGuideModal({
      `null` tant qu'on ne la connaît pas : on ne montre jamais un compteur
      provisoire qui se corrigerait sous les yeux. */
   const [serieDuJour, setSerieDuJour] = useState<number | null>(null);
+  /* L'invite à laisser un avis, proposée UNE SEULE FOIS par compte, au moment
+     fort qu'est la fin de séance. Le drapeau se pose à l'affichage (dans l'effet
+     de complétion), donc « Plus tard » comme « Laisser un avis » la referment
+     pour de bon. Jamais après un abandon : on n'atteint « done » qu'en finissant. */
+  const [inviteAvis, setInviteAvis] = useState(false);
   /* Le maillon du relais, quand cette séance vient d'en franchir un.
      `null` couvre TOUS les cas silencieux : pas de relais, jour déjà pris
      par l'équipier, deux jours de suite, séance trop courte. Aucune bande,
@@ -903,6 +908,12 @@ export default function WorkoutGuideModal({
     }).select("id").single().then(({ data, error }) => {
       if (error) return;
       setSessionSaved(true);
+      // L'invite à laisser un avis : une seule fois par compte. Le drapeau se
+      // pose ici, à la première séance terminée et enregistrée.
+      try {
+        const cle = `vaiiya_avis_invite_${user.id}`;
+        if (!localStorage.getItem(cle)) { localStorage.setItem(cle, "1"); setInviteAvis(true); }
+      } catch { /* ignore */ }
       // Le maillon du jour, si un relais est en cours. Volontairement
       // silencieux : pas de défi, séance trop courte ou jour déjà
       // franchi par l'équipier → il ne se passe rien, et on ne
@@ -1687,6 +1698,38 @@ export default function WorkoutGuideModal({
                       style={{ background: "rgba(43,212,160,0.09)", border: "1px solid rgba(43,212,160,0.22)" }}>
                       <BookmarkCheck size={12} strokeWidth={2} style={{ color: TUN.teal }} />
                       <span className="text-[11px] font-medium" style={{ color: TUN.teal }}>Enregistrée dans ton profil</span>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                {/* ── L'invite à laisser un avis (une seule fois par compte) ── */}
+                <AnimatePresence>
+                  {inviteAvis && (
+                    <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+                      className="w-full rounded-2xl p-4 mt-4 text-left"
+                      style={{ background: "linear-gradient(150deg, rgba(139,92,246,0.16), rgba(193,59,193,0.10))", border: "1px solid rgba(139,92,246,0.4)" }}>
+                      <div className="flex items-center gap-1 mb-2" aria-hidden="true">
+                        {[0, 1, 2, 3, 4].map((i) => (
+                          <svg key={i} width="16" height="16" viewBox="0 0 24 24" fill="#F5B120" stroke="#F5B120" strokeWidth="1.4" strokeLinejoin="round"><path d="M12 2.5l2.9 5.9 6.5.95-4.7 4.6 1.1 6.45L12 17.9l-5.8 3 1.1-6.45-4.7-4.6 6.5-.95z" /></svg>
+                        ))}
+                      </div>
+                      <p className="text-[13px] font-bold text-white leading-tight">Tu kiffes Vaiiya ?</p>
+                      <p className="text-[11px] leading-snug mt-1" style={{ color: TUN.t2 }}>
+                        Un avis nous aide énormément à faire connaître Vaiiya.
+                      </p>
+                      <div className="flex gap-2 mt-3">
+                        <motion.button whileTap={{ scale: 0.97 }}
+                          onClick={() => { onClose(); router.push("/avis"); }}
+                          className="flex-1 py-2.5 rounded-xl font-bold text-[13px] cursor-pointer text-white"
+                          style={{ background: "linear-gradient(100deg,#8B5CF6,#C13BC1)", boxShadow: "0 8px 22px -6px rgba(193,59,193,0.5)" }}>
+                          Laisser un avis
+                        </motion.button>
+                        <button onClick={() => setInviteAvis(false)}
+                          className="px-4 py-2.5 rounded-xl font-semibold text-[13px] cursor-pointer"
+                          style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.14)", color: TUN.t2 }}>
+                          Plus tard
+                        </button>
+                      </div>
                     </motion.div>
                   )}
                 </AnimatePresence>
