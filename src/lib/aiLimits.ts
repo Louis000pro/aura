@@ -21,6 +21,7 @@ import { NextResponse } from "next/server";
 import { createAdminClient } from "./supabase-admin";
 import { LIMITES, PLAFONDS, type CategorieIA } from "./aiQuotas";
 import { parisDateStr } from "./dates";
+import { SORTIE_PREMIUM } from "./plans";
 
 // Les chiffres vivent dans `aiQuotas.ts` (sans dépendance serveur) pour que la
 // page des conditions générales affiche exactement ce que ce fichier applique.
@@ -140,7 +141,7 @@ export async function garderIA(req: Request, categorie: CategorieIA): Promise<Re
             premium: estPremium,
             message: estPremium
               ? `Tu as atteint ${plafond} ${limite.libelle} aujourd’hui. C’est bien au-delà d’un usage normal, alors on met en pause jusqu’à demain. Écris-nous si c’est une erreur.`
-              : `Tu as utilisé tes ${plafond} ${limite.libelle} du jour. Ça repart demain, ou passe en Premium pour ne plus y penser.`,
+              : `Tu as utilisé tes ${plafond} ${limite.libelle} du jour. Ça repart demain. ${SORTIE_PREMIUM}`,
           },
           { status: 429 }
         ),

@@ -47,7 +47,7 @@ import { AssistantSpark, VisageGuide } from "@/components/AssistantMark";
 import { voix } from "@/lib/guides";
 import { createClient } from "@/lib/supabase";
 import { lockBodyModal } from "@/lib/bodyModal";
-import { PLANS } from "@/lib/plans";
+import { PLANS, VENTE_OUVERTE } from "@/lib/plans";
 import { levelToDifficulty, normalizeDifficulty } from "@/lib/assistantActions";
 import { FAMILY, resolveArt, heroImageForSeance, type Family } from "@/lib/workoutArt";
 import {
@@ -1338,14 +1338,16 @@ function PleinSheet({ max, onVoir, onPremium, onClose }: {
           </p>
           <p className="text-[13px] font-light mt-1.5 leading-relaxed" style={{ color: "var(--text-3)" }}>
             En gratuit, tu gardes {max} séances. Supprime celle que tu ne fais plus, la place
-            se libère tout de suite. Avec Premium, tu en gardes autant que tu veux.
+            se libère tout de suite. {VENTE_OUVERTE
+              ? "Avec Premium, tu en gardes autant que tu veux."
+              : "Premium, sans limite, arrive bientôt."}
           </p>
 
-          <motion.button whileTap={{ scale: 0.97 }} onClick={onPremium}
+          {VENTE_OUVERTE && <motion.button whileTap={{ scale: 0.97 }} onClick={onPremium}
             className="w-full h-12 mt-5 rounded-2xl text-[16px] font-black text-white cursor-pointer border-none"
             style={{ background: "linear-gradient(120deg,var(--accent),var(--gold))", boxShadow: "0 8px 22px rgba(139,92,246,0.3)" }}>
             Passer Premium
-          </motion.button>
+          </motion.button>}
           <motion.button whileTap={{ scale: 0.97 }} onClick={onVoir}
             className="w-full h-11 mt-1 text-[13px] font-semibold cursor-pointer bg-transparent border-none"
             style={{ color: "var(--text-2)" }}>

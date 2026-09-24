@@ -20,7 +20,7 @@ import CarteSeance from "@/components/assistant/CarteSeance";
 import { useWorkoutLaunch } from "@/context/WorkoutLaunchContext";
 import { useVoiceCapture } from "@/hooks/useVoiceCapture";
 import { CATEGORY_LABEL } from "@/lib/assistantActions";
-import { PLANS } from "@/lib/plans";
+import { PLANS, SORTIE_PREMIUM } from "@/lib/plans";
 import { heroImageForSeance } from "@/lib/workoutArt";
 import { BusteGuide, ReflexionGuide, VisageGuide, prechargerGuide } from "@/components/AssistantMark";
 import { useGuideActif } from "@/context/GuideContext";
@@ -243,7 +243,7 @@ function CarteProposition() {
       onValider={bibliothequePleine ? faireMaintenant : () => confirmSeance(jourChoisi)}
       onFermer={cancelSeance}
       hint={bibliothequePleine
-        ? `Tes ${PLANS.free.limits.sessionsMax} séances gardées sont prises. Libère une place dans Mes séances, ou passe en Premium.`
+        ? `Tes ${PLANS.free.limits.sessionsMax} séances gardées sont prises. Libère une place dans Mes séances. ${SORTIE_PREMIUM}`
         : jourChoisi ? "Elle rejoint aussi tes séances" : null}
     />
   );

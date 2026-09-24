@@ -24,6 +24,15 @@
  */
 export const VENTE_OUVERTE = false;
 
+/**
+ * La sortie Premium d'un message de limite. Tant que la vente est fermée,
+ * « passe en Premium » enverrait vers un bouton qui ne mène nulle part :
+ * on dit « bientôt » au lieu de promettre un achat impossible.
+ */
+export const SORTIE_PREMIUM = VENTE_OUVERTE
+  ? "Ou passe en Premium pour ne plus y penser."
+  : "Premium, sans limite, arrive bientôt.";
+
 export type PlanId = "free" | "premium";
 
 export interface Plan {
@@ -67,11 +76,11 @@ export const PLANS: Record<PlanId, Plan> = {
     aiModel: "llama-3.1-8b-instant", // modèle léger & rapide → coûts maîtrisés
     features: [
       "4 missions par jour, jusqu’à 50 EXP",
-      "3 séances à toi, gardées",
+      "5 séances à toi, gardées",
       "Le coach : 5 messages par jour",
       "2 analyses de repas par jour",
     ],
-    limits: { chatPerDay: 5, nutritionPerDay: 2, sessionsMax: 3, ads: false, exclusiveContent: false },
+    limits: { chatPerDay: 5, nutritionPerDay: 2, sessionsMax: 5, ads: false, exclusiveContent: false },
   },
   premium: {
     id: "premium",

@@ -28,7 +28,7 @@ import { assembleSeance, seanceToRow, normalizeCategory as normalizeWorkoutCateg
 import { normaliserChoix, type AssistantAction, type ChatEvent, type QuestionCliquable } from "@/lib/assistantTools";
 import { voix, voixAction, CHOIX_LIEU, CHOIX_EQUIP, CHOIX_PORTEE, type EtatGuide, type GuideRef, type TonGuide } from "@/lib/guides";
 import { useGuideActif } from "@/context/GuideContext";
-import { PLANS } from "@/lib/plans";
+import { PLANS, SORTIE_PREMIUM } from "@/lib/plans";
 import {
   /* ⚠️ `saveDay` A DISPARU DE CETTE LISTE EN V9C, ET C'EST LE POINT.
      `confirmSeance` était le dernier écrivain caché du contexte : il
@@ -2553,7 +2553,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
     if (!user?.id || !pendingSeance) return;
     const s = pendingSeance;
     if (await verifierPlaces()) {
-      setMemoryNotice(`Tes ${PLANS.free.limits.sessionsMax} séances gardées sont prises. Libère une place, ou passe en Premium.`);
+      setMemoryNotice(`Tes ${PLANS.free.limits.sessionsMax} séances gardées sont prises. Libère une place. ${SORTIE_PREMIUM}`);
       return;
     }
     const ok = await garderSeance(s);
