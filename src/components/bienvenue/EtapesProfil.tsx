@@ -29,7 +29,15 @@ import s from "./bienvenue.module.css";
 /** Le lieu et le matériel, aux seules valeurs que le reste du code sait
  *  lire (`planning.ts` : readLieu, persistLieu, ctxFromLieu). */
 export type Entrainement = {
-  location: "salle" | "maison" | null;
+  /* ⚠️ « les deux » est un choix D'AFFICHAGE, jamais une valeur stockée
+     (Louis, 2026-09-24 : « en salle, à la maison ou les deux »). Le moteur
+     ne connaît que `salle | maison` (contrainte CHECK sur
+     `contexte_entrainement.lieu`), et à la salle on a accès à tout ce
+     qu'on a à la maison : « les deux » vaut donc le pool salle. Le
+     parcours le convertit en `salle` au moment d'enregistrer ; en base il
+     n'existe pas. Conséquence assumée : à la ré-édition, un compte « les
+     deux » se rouvre sur « En salle ». */
+  location: "salle" | "maison" | "les deux" | null;
   equip: "halteres" | "poids" | null;
 };
 
@@ -65,6 +73,10 @@ export const SECTIONS: Record<Section, { titre: string; voix: CleVoix; ligne?: s
   niveau: {
     titre: "Ton niveau et ton rythme",
     voix: "bienvenue.section.niveau",
+    // ⚠️ Cette ligne survit parce qu'elle dit ce que le titre ne dit pas :
+    // « niveau de quoi, rythme de quoi » (retour de Louis, 2026-09-24, qui
+    // ne comprenait pas lui-même). Elle nomme les deux champs qui suivent.
+    ligne: "Ton niveau, c’est depuis combien de temps tu t’entraînes. Ton rythme, combien de séances tu vises par semaine.",
   },
   entrainement: {
     titre: "Ton entraînement",
@@ -253,7 +265,7 @@ export default function EtapesProfil({
     return (
       <div className={s.champs}>
         <div>
-          <span className={s.libelle}>Niveau</span>
+          <span className={s.libelle}>Ton niveau en sport</span>
           <div className={s.pastilles}>
             {LEVELS.map((l) => (
               <Pastille key={l.id} actif={data.level === l.id} onClick={() => setData({ level: data.level === l.id ? "" : l.id })}>
@@ -263,7 +275,7 @@ export default function EtapesProfil({
           </div>
         </div>
         <div>
-          <span className={s.libelle}>Séances par semaine</span>
+          <span className={s.libelle}>Combien de séances par semaine</span>
           <div className={s.pastilles}>
             {SESSIONS.map((n) => (
               <Pastille key={n} actif={data.sessionsPerWeek === n} onClick={() => setData({ sessionsPerWeek: data.sessionsPerWeek === n ? "" : n })}>
@@ -287,6 +299,11 @@ export default function EtapesProfil({
             </Pastille>
             <Pastille actif={entrainement.location === "maison"} onClick={() => setEntrainement({ location: "maison" })}>
               À la maison
+            </Pastille>
+            {/* « Les deux » : accès salle + maison, donc le pool le plus
+                large. On ne demande pas le matériel (la salle l'a déjà). */}
+            <Pastille actif={entrainement.location === "les deux"} onClick={() => setEntrainement({ location: "les deux", equip: null })}>
+              Les deux
             </Pastille>
           </div>
         </div>

@@ -244,9 +244,13 @@ export default function ParcoursBienvenue() {
     // Le lieu vit dans ses propres colonnes, avec sa propre fonction : on
     // ne pousse QUE ce qui est renseigné, pour ne pas effacer un réglage
     // déjà fait ailleurs.
-    if (entrainement.location || entrainement.equip) {
+    // ⚠️ « les deux » n'existe pas en base (CHECK lieu ∈ {salle,maison}) :
+    // il vaut le pool salle, donc on l'y convertit ici, au seul endroit qui
+    // écrit. Voir le type `Entrainement`.
+    const lieu = entrainement.location === "les deux" ? "salle" : entrainement.location;
+    if (lieu || entrainement.equip) {
       await persistLieu(user.id, {
-        ...(entrainement.location ? { location: entrainement.location } : {}),
+        ...(lieu ? { location: lieu } : {}),
         ...(entrainement.equip ? { equip: entrainement.equip } : {}),
       });
     }
