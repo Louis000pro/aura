@@ -51,6 +51,14 @@ export interface Plan {
   limits: {
     chatPerDay: number;
     nutritionPerDay: number;
+    /**
+     * Combien de jours d'historique l'écran MONTRE (Infinity = tout).
+     * ⚠️ C'est un masquage, jamais un effacement : les séances, repas et
+     * pesées plus anciens restent en base, la série et les badges se
+     * calculent toujours sur tout l'historique, et passer Premium rend
+     * tout le passé visible d'un coup. Les conditions (article 3) le disent.
+     */
+    historiqueJours: number;
     /** Missions illimitées (les missions supplémentaires du Premium). */
     /**
      * Combien de séances à soi on GARDE (Infinity = illimité).
@@ -80,7 +88,7 @@ export const PLANS: Record<PlanId, Plan> = {
       "Le coach : 5 messages par jour",
       "2 analyses de repas par jour",
     ],
-    limits: { chatPerDay: 5, nutritionPerDay: 2, sessionsMax: 5, ads: false, exclusiveContent: false },
+    limits: { chatPerDay: 5, nutritionPerDay: 2, historiqueJours: 7, sessionsMax: 5, ads: false, exclusiveContent: false },
   },
   premium: {
     id: "premium",
@@ -100,7 +108,7 @@ export const PLANS: Record<PlanId, Plan> = {
       "Tout le catalogue de séances et de cours",
       "Badge Premium",
     ],
-    limits: { chatPerDay: Infinity, nutritionPerDay: Infinity, sessionsMax: Infinity, ads: false, exclusiveContent: true },
+    limits: { chatPerDay: Infinity, nutritionPerDay: Infinity, historiqueJours: Infinity, sessionsMax: Infinity, ads: false, exclusiveContent: true },
   },
 };
 

@@ -48,6 +48,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 
 export default function ConditionsPage() {
   const premium = PLANS.premium;
+  const free = PLANS.free;
   const prix = formatPrice(premium.priceCents);
 
   return (
@@ -72,8 +73,8 @@ export default function ConditionsPage() {
             l&apos;éditeur figurent dans les <Link href="/mentions-legales" className="underline" style={{ color: "var(--accent)" }}>mentions légales</Link>.
           </p>
           <p>
-            <strong>Vaiiya est aujourd&apos;hui entièrement gratuit.</strong>{" "}L&apos;abonnement décrit à
-            l&apos;article 4 n&apos;est pas encore ouvert : aucun paiement n&apos;est possible, aucun moyen de
+            <strong>Vaiiya est aujourd&apos;hui gratuit</strong>, avec les limites d&apos;usage décrites aux
+            articles 3 et 5. L&apos;abonnement décrit à l&apos;article 3 n&apos;est pas encore ouvert : aucun paiement n&apos;est possible, aucun moyen de
             paiement ne vous est demandé, et rien ne vous est facturé. Les articles relatifs à
             l&apos;abonnement ne s&apos;appliqueront qu&apos;à compter de son ouverture, qui sera annoncée dans
             l&apos;application et accompagnée de la publication de l&apos;identité complète du vendeur.
@@ -109,9 +110,23 @@ export default function ConditionsPage() {
 
         <Section title="3. L’offre gratuite et l’abonnement Premium">
           <p>
-            Vaiiya s&apos;utilise gratuitement, avec les limites indiquées à l&apos;article 5.
+            Vaiiya s&apos;utilise gratuitement, avec les limites indiquées ci-dessous et à l&apos;article 5.
             L&apos;abonnement <strong>{premium.name}</strong> coûte <strong>{prix} par mois</strong>, toutes
             taxes comprises, et donne accès à l&apos;ensemble des fonctionnalités.
+          </p>
+          <p>
+            Avec un compte gratuit, vous gardez jusqu&apos;à{" "}
+            <strong>{free.limits.sessionsMax} séances créées par vous</strong>. Supprimer une séance libère
+            une place immédiatement, et une séance déjà gardée n&apos;est jamais retirée.
+          </p>
+          <p>
+            <strong>Historique.</strong>{" "}Avec un compte gratuit, l&apos;application affiche les{" "}
+            <strong>{free.limits.historiqueJours} derniers jours</strong>{" "}de votre historique (séances
+            réalisées, repas, pesées). <strong>Les données plus anciennes ne sont pas effacées</strong> :
+            elles sont conservées et seulement masquées, votre série et vos badges continuent d&apos;en
+            tenir compte, et l&apos;abonnement les rend de nouveau visibles dans leur intégralité. Elles
+            restent supprimables à tout moment avec votre compte (article 2), et vous pouvez en demander
+            une copie à <strong>bonjour@vaiiya.fr</strong>.
           </p>
           <p>
             L&apos;abonnement commence par un <strong>essai gratuit de {premium.trialDays} jours</strong>.
