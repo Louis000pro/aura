@@ -17,6 +17,7 @@ import {
   createContext, useCallback, useContext, useEffect, useMemo, useRef, useState,
 } from "react";
 import { aiFetch, messageDeRefus } from "@/lib/aiFetch";
+import { consommerModifPlanning, libelleQuota } from "@/lib/planningGuide";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { createClient } from "@/lib/supabase";
@@ -2607,6 +2608,17 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
+    // Programmer la séance sur un jour, c'est le coach qui modifie le
+    // planning : ça compte dans les modifications de la semaine (gratuit).
+    // La séance, elle, est déjà gardée, on ne fait pas croire l'inverse.
+    const permis = await consommerModifPlanning();
+    if (!permis.ok) {
+      setPendingSeance(null);
+      setMemoryNotice("Gardée dans tes séances ✓");
+      setMessages((prev) => [...prev, { role: "assistant" as const, content: permis.message, id: uid(), ton: "explain" as const }]);
+      return;
+    }
+
     const category = normalizeWorkoutCategory(s.category);
     const saved = readLieu(user.id);
     try {
@@ -2635,7 +2647,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       await appliquerGeste(user.id, cible ? { type: "remplacer", jour: pose } : { type: "ajouter", jour: pose }, "guide");
       if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent("programme-updated", { detail: { date: jour } }));
       setPendingSeance(null);
-      setMemoryNotice(`Gardée et programmée · ${dayLabelLong(jour)} ✓`);
+      setMemoryNotice(`Gardée et programmée · ${dayLabelLong(jour)} ✓${libelleQuota(permis.quota)}`);
       setTimeout(() => setIsOpen(false), 1100);
     } catch {
       // La séance EST gardée : on ne fait pas croire l'inverse, on ne signale
@@ -2704,6 +2716,15 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
      un moteur ici. ── */
   const confirmPlan = useCallback(async (garderAussi?: boolean) => {
     if (!user?.id || !pendingPlan) return;
+    /* Une carte du Guide qui modifie le planning consomme une des
+       modifications de la semaine (offre gratuite). Le serveur décide ;
+       refusé, rien ne s'écrit et on dit pourquoi. */
+    const permis = await consommerModifPlanning();
+    if (!permis.ok) {
+      setPendingPlan(null);
+      setMessages((prev) => [...prev, { role: "assistant" as const, content: permis.message, id: uid(), ton: "explain" as const }]);
+      return;
+    }
     try {
       /* C'est le Guide qui pose ces lignes : elles sont donc protégées de
          la prochaine régénération automatique, comme celles posées à la
@@ -2729,7 +2750,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       }
       setPendingPlan(null);
       setReussite((n) => n + 1);
-      setMemoryNotice(gardee ? "Planning mis à jour, séance gardée ✓" : "Planning mis à jour ✓");
+      setMemoryNotice((gardee ? "Planning mis à jour, séance gardée ✓" : "Planning mis à jour ✓") + libelleQuota(permis.quota));
       setTimeout(() => setIsOpen(false), 900);
     } catch {
       setMemoryNotice("Oups, impossible de mettre à jour le planning.");

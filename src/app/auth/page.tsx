@@ -189,7 +189,6 @@ export default function AuthPage() {
   const [showPwd, setShowPwd]       = useState(false);
   const [loading, setLoading]       = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
-  const [success, setSuccess]       = useState(false);
   const [signupSent, setSignupSent] = useState(false);
   const [error, setError]           = useState<string|null>(null);
   const [isMobile, setIsMobile]     = useState(false);
@@ -296,9 +295,9 @@ export default function AuthPage() {
       if (err) { setError(err.message === "Invalid login credentials" ? "Identifiant ou mot de passe incorrect." : err.message); setLoading(false); return; }
     }
 
-    setLoading(false);
-    setSuccess(true);
-    setTimeout(() => router.push(destinationApres()), 900);
+    // Pas d'écran « Bon retour » (Louis, 2026-09-25) : on entre directement.
+    // Le bouton reste en chargement le temps de la navigation.
+    router.push(destinationApres());
   };
 
   const handleGoogle = async () => {
@@ -349,8 +348,7 @@ export default function AuthPage() {
     }
 
     setSignupSent(false);
-    setSuccess(true);
-    setTimeout(() => router.push(destinationApres()), 1000);
+    router.push(destinationApres());
   };
 
   const handleResendOtp = async () => {
@@ -401,20 +399,6 @@ export default function AuthPage() {
           {/* Liseré violet en haut de la carte : la marque, pas un reflet blanc. */}
           <div className="absolute top-0 left-0 right-0 h-px rounded-t-3xl"
             style={{ background:"linear-gradient(90deg,transparent,rgba(var(--accent-rgb),0.55),transparent)" }} />
-
-          {/* Success overlay (connexion) */}
-          <AnimatePresence>
-            {success && (
-              <motion.div initial={{ opacity:0,scale:0.85 }} animate={{ opacity:1,scale:1 }}
-                className="absolute inset-0 z-50 flex flex-col items-center justify-center rounded-3xl gap-3"
-                style={{ background:"rgba(var(--surface-rgb),0.97)",backdropFilter:"blur(10px)" }}>
-                <motion.div initial={{ scale:0,rotate:-180 }} animate={{ scale:1,rotate:0 }} transition={{ type:"spring",bounce:0.5 }}>
-                  <CheckCircle2 size={52} style={{ color:TEAL }} strokeWidth={1.5} />
-                </motion.div>
-                <p className="text-[20px] font-light" style={{ color:"var(--text-1)" }}>Bon retour.</p>
-              </motion.div>
-            )}
-          </AnimatePresence>
 
           {/* Overlay OTP (inscription) */}
           <AnimatePresence>

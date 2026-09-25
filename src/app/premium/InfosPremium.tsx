@@ -65,8 +65,9 @@ export default function InfosPremium({ premiumDebloque = false }: { premiumDeblo
           monte à chaque effort et les missions de base sont eux aussi compris. Ce qui est plafonné
           en gratuit, ce sont les usages qui nous coûtent à chaque appel :{" "}
           {limite(free.limits.sessionsMax, "séance à toi gardée", "séances à toi gardées")},{" "}
-          {limite(free.limits.chatPerDay, "message", "messages")} par jour avec l&apos;assistant, et{" "}
-          {limite(free.limits.nutritionPerDay, "analyse", "analyses")} de repas en photo par jour.
+          {limite(free.limits.chatPerDay, "message", "messages")} par jour avec l&apos;assistant,{" "}
+          {limite(free.limits.nutritionPerDay, "analyse", "analyses")} de repas en photo par jour, et{" "}
+          {limite(free.limits.planningGuideSemaine, "modification", "modifications")} de ton planning par le coach chaque semaine.
         </p>
       </div>
 

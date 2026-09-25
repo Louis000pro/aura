@@ -120,6 +120,11 @@ export default function ConditionsPage() {
             une place immédiatement, et une séance déjà gardée n&apos;est jamais retirée.
           </p>
           <p>
+            <strong>Planning.</strong>{" "}Avec un compte gratuit, le coach peut modifier votre planning{" "}
+            <strong>{free.limits.planningGuideSemaine} fois par semaine</strong> (du lundi au dimanche).
+            Les modifications que vous faites vous-même ne sont jamais comptées.
+          </p>
+          <p>
             <strong>Historique.</strong>{" "}Avec un compte gratuit, l&apos;application affiche les{" "}
             <strong>{free.limits.historiqueJours} derniers jours</strong>{" "}de votre historique (séances
             réalisées, repas, pesées). <strong>Les données plus anciennes ne sont pas effacées</strong> :

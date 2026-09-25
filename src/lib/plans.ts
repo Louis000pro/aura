@@ -68,6 +68,14 @@ export interface Plan {
      * reprend rien).
      */
     sessionsMax: number;
+    /**
+     * Combien de fois par semaine (lundi → dimanche, heure de Paris) le COACH
+     * peut modifier ton planning (poser, déplacer, retirer, refaire la
+     * semaine, substituer, sauter). Ce que tu fais toi-même dans « Organiser »
+     * ou depuis une séance n'est jamais compté (Louis, 2026-09-25).
+     * Le serveur tient le compteur (`/api/planning/modif`).
+     */
+    planningGuideSemaine: number;
     ads: boolean;
     exclusiveContent: boolean;
   };
@@ -87,8 +95,9 @@ export const PLANS: Record<PlanId, Plan> = {
       "5 séances à toi, gardées",
       "Le coach : 5 messages par jour",
       "2 analyses de repas par jour",
+      "Le coach modifie ton planning 3 fois par semaine",
     ],
-    limits: { chatPerDay: 5, nutritionPerDay: 2, historiqueJours: 7, sessionsMax: 5, ads: false, exclusiveContent: false },
+    limits: { chatPerDay: 5, nutritionPerDay: 2, historiqueJours: 7, sessionsMax: 5, planningGuideSemaine: 3, ads: false, exclusiveContent: false },
   },
   premium: {
     id: "premium",
@@ -104,12 +113,13 @@ export const PLANS: Record<PlanId, Plan> = {
       "Tes propres séances, sans limite",
       "Le coach, sans limite de messages",
       "Analyses de repas sans limite",
+      "Le coach modifie ton planning sans limite",
       "Le récap de ta journée par ton Guide, chaque matin",
       "Détails complets de tes entraînements",
       "Tout le catalogue de séances et de cours",
       "Badge Vaiiya+",
     ],
-    limits: { chatPerDay: Infinity, nutritionPerDay: Infinity, historiqueJours: Infinity, sessionsMax: Infinity, ads: false, exclusiveContent: true },
+    limits: { chatPerDay: Infinity, nutritionPerDay: Infinity, historiqueJours: Infinity, sessionsMax: Infinity, planningGuideSemaine: Infinity, ads: false, exclusiveContent: true },
   },
 };
 
