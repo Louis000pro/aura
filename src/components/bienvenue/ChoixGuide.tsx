@@ -27,36 +27,13 @@
 import { useEffect, useRef, useState } from "react";
 import { animate, motion, useMotionValue, useReducedMotion, type PanInfo } from "framer-motion";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { PORTRAIT_GUIDE, PRENOM_GUIDE, type GuideId } from "@/lib/guides";
+import { PRENOM_GUIDE, type GuideId } from "@/lib/guides";
 import PortraitGuide from "./PortraitGuide";
 import s from "./bienvenue.module.css";
 
 type Fiche = {
   id: GuideId;
   nom: string;
-  /* ⚠️ `trait` et `pour` ne s'écrivent PAS ici : ils viennent de
-     `PORTRAIT_GUIDE` (guides.ts), parce que la ligne « Ton Guide » des
-     paramètres montre exactement les mêmes mots. Deux copies auraient
-     divergé au premier ajustement. */
-  trait: string;
-  pour: string;
-  /** ⚠️ CE SONT SES MOTS, PAS UNE DESCRIPTION. Le Guide parle, à la
-   *  première personne, et c'est la seule ligne de la fiche où il le
-   *  fait. Les versions précédentes redisaient le trait et le « tu
-   *  préfères… » de la carte avec d'autres adjectifs : on lisait trois
-   *  fois la même chose, donc on n'apprenait rien en ouvrant. Une phrase
-   *  dite montre la différence au lieu de la nommer.
-   *
-   *  ⚠️ Elle s'écrit SANS guillemets : c'est le `<q>` de la feuille qui
-   *  les pose, avec les bonnes espaces insécables et le même dessin quel
-   *  que soit le navigateur. */
-  voix: string;
-  /* Les trois lignes de détail. Elles suivent les MÊMES trois axes chez
-     les deux Guides (longueur des réponses, rythme de l'échange, façon
-     d'encourager), pour qu'on puisse les comparer d'un coup d'oeil. Ce
-     sont des manières de faire, jamais des qualités : aucun des deux
-     n'est meilleur, ils n'ont pas les mêmes gestes. */
-  detail: string[];
 };
 
 /* ⚠️ LE GESTE ET LE RAIL PARLENT LA MÊME LANGUE. Même durée, même
@@ -97,29 +74,14 @@ const COURBE: [number, number, number, number] = [0.22, 0.61, 0.36, 1];
 const COURSE_LIBRE = 9999;
 const ELASTIQUE = 0.42;
 
+/* ⚠️ LE CHOIX SE FAIT SUR LE PRÉNOM ET LE VISAGE, RIEN D'AUTRE (Louis,
+   2026-09-25). Les descriptions d'avant (« calme et méthodique » pour Nora,
+   « direct et dynamique » pour Sasha, et la fiche « En savoir plus »)
+   reproduisaient un biais de genre : la femme posée, l'homme énergique.
+   Elles sont retirées ; ce qui les remplacera se décidera plus tard. */
 const FICHES: Fiche[] = [
-  {
-    id: "nora",
-    nom: PRENOM_GUIDE.nora,
-    ...PORTRAIT_GUIDE.nora,
-    voix: "On pose les bases, je t’explique au passage.",
-    detail: [
-      "Des réponses un peu plus longues, avec le raisonnement derrière la consigne.",
-      "Elle récapitule avant de conclure.",
-      "Elle encourage en rappelant le chemin déjà fait.",
-    ],
-  },
-  {
-    id: "sasha",
-    nom: PRENOM_GUIDE.sasha,
-    ...PORTRAIT_GUIDE.sasha,
-    voix: "On y va, je t’explique en route si tu veux.",
-    detail: [
-      "Des réponses courtes, la consigne d’abord.",
-      "Il conclut et enchaîne sur la suite.",
-      "Il encourage en te projetant sur la prochaine séance.",
-    ],
-  },
+  { id: "nora", nom: PRENOM_GUIDE.nora },
+  { id: "sasha", nom: PRENOM_GUIDE.sasha },
 ];
 
 export default function ChoixGuide({
@@ -134,7 +96,6 @@ export default function ChoixGuide({
   erreur: string | null;
 }) {
   const [index, setIndex] = useState(0);
-  const [detail, setDetail] = useState<Fiche | null>(null);
   const pisteRef = useRef<HTMLDivElement>(null);
   const reduit = useReducedMotion();
 
@@ -154,14 +115,12 @@ export default function ChoixGuide({
      nulle part, et ça marche sans avoir à deviner où cliquer d'abord. */
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") { setDetail(null); return; }
-      if (detail) return;                      // la feuille a la priorité
       if (e.key === "ArrowRight") setIndex((i) => Math.min(FICHES.length - 1, i + 1));
       if (e.key === "ArrowLeft") setIndex((i) => Math.max(0, i - 1));
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [detail]);
+  }, []);
 
   const finDeGlisse = (_e: unknown, info: PanInfo) => {
     // Un seuil proportionnel, avec un plancher : sur un petit écran un
@@ -258,11 +217,6 @@ export default function ChoixGuide({
 
                 <div className={s.identite}>
                   <span className={s.nom}>{f.nom}</span>
-                  <span className={s.trait}>{f.trait}</span>
-                  <span className={s.pour}>{f.pour}</span>
-                  <button type="button" className={s.enSavoirPlus} onClick={() => setDetail(f)}>
-                    En savoir plus
-                  </button>
                 </div>
               </div>
 
@@ -312,40 +266,6 @@ export default function ChoixGuide({
 
       {erreur && <p className={s.erreur} role="alert">{erreur}</p>}
 
-      {detail && (
-        <div
-          className={s.voile}
-          role="dialog"
-          aria-modal="true"
-          aria-label={`En savoir plus sur ${detail.nom}`}
-          onClick={() => setDetail(null)}
-        >
-          <div className={s.feuille} onClick={(e) => e.stopPropagation()}>
-            <span className={s.feuilleNom}>{detail.nom}</span>
-            {/* ⚠️ UN `<q>` ET PAS UN `<p>`. Cette ligne n'est pas l'app
-                qui décrit le Guide, c'est le Guide qui parle : la balise
-                le dit à la page comme aux lecteurs d'écran, et le CSS
-                pose les guillemets français. Sans cet habillage, la
-                phrase à la première personne se lirait comme un slogan
-                écrit par Vaiiya. */}
-            <q className={s.feuilleVoix}>{detail.voix}</q>
-            <ul className={s.feuilleListe}>
-              {detail.detail.map((d) => <li key={d}>{d}</li>)}
-            </ul>
-            {/* La vraie question de quelqu'un qui ouvre « En savoir
-                plus » : est-ce que je perds quelque chose en choisissant
-                l'autre ? Elle est écrite ICI et une seule fois, plutôt
-                que recopiée dans les deux fiches. */}
-            <p className={s.feuilleEgalite}>
-              Mêmes séances, mêmes données, mêmes conseils dans les deux cas.
-              C&apos;est la façon de te parler qui change.
-            </p>
-            <button type="button" className={s.secondaire} onClick={() => setDetail(null)}>
-              Fermer
-            </button>
-          </div>
-        </div>
-      )}
     </>
   );
 }

@@ -21,7 +21,7 @@ import { libelleObjectif } from "@/lib/profilOnboarding";
 import { PLANS, VENTE_OUVERTE } from "@/lib/plans";
 import { ouvrirNouveautes } from "@/lib/nouveautes";
 import { useGuideActif } from "@/context/GuideContext";
-import { PORTRAIT_GUIDE, PRENOM_GUIDE, type GuideId } from "@/lib/guides";
+import { PRENOM_GUIDE, type GuideId } from "@/lib/guides";
 
 /* ════════════════════════════════════════════════════════════
    Un écran de réglages se LIT avant de s'ouvrir.
@@ -282,8 +282,6 @@ function GuideModal({ onClose, onChoisi }: { onClose: () => void; onChoisi: (g: 
                 <VisageGuide guide={g} size={52} />
                 <span className="flex-1 min-w-0 flex flex-col gap-0.5">
                   <span className="text-[16px] font-semibold" style={{ color: "var(--text-1)" }}>{PRENOM_GUIDE[g]}</span>
-                  <span className="text-[13px] font-medium" style={{ color: "var(--exp-encre)" }}>{PORTRAIT_GUIDE[g].trait}</span>
-                  <span className="text-[11px] font-light" style={{ color: "var(--text-3)" }}>{PORTRAIT_GUIDE[g].pour}</span>
                 </span>
                 {actif
                   ? <Pastille texte="Actif" ton="teal" />
@@ -725,7 +723,7 @@ export default function ParametresPage() {
               <Ligne
                 mark={<VisageGuide guide={guide} size={20} />}
                 label="Ton Guide"
-                sub={guide ? PORTRAIT_GUIDE[guide].trait : "Nora ou Sasha, à toi de voir"}
+                sub={guide ? undefined : "Nora ou Sasha, à toi de voir"}
                 value={guide ? PRENOM_GUIDE[guide] : "Pas encore choisi"}
                 onClick={() => setShowGuideModal(true)}
               />

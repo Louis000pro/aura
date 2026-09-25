@@ -1332,29 +1332,6 @@ export const PRENOM_GUIDE: Record<GuideId, string> = {
   sasha: "Sasha",
 };
 
-/* ── Ce qui distingue les deux, en deux lignes ──────────────────────
-   Ces mots décrivent le Guide ; ils ne sont pas prononcés par lui. Ils
-   servent partout où l'on doit CHOISIR ou VÉRIFIER son Guide : l'écran
-   d'entrée `/bienvenue` et la ligne des paramètres. Ils vivent ici parce
-   que les recopier dans le second écran, c'est signer la divergence : on
-   corrigerait un adjectif d'un côté et pas de l'autre.
-
-   ⚠️ `trait` et `pour` décrivent une MANIÈRE, jamais une qualité. Aucun
-   des deux n'est le meilleur, le plus sérieux ou le plus efficace : ils
-   n'ont pas les mêmes gestes, c'est tout. Une formulation qui laisserait
-   entendre qu'un choix est plus ambitieux que l'autre est fausse, parce
-   que les capacités et les conseils de fond sont identiques. */
-export const PORTRAIT_GUIDE: Record<GuideId, { trait: string; pour: string }> = {
-  nora: {
-    trait: "Calme et méthodique",
-    pour: "Tu préfères comprendre avant d’agir.",
-  },
-  sasha: {
-    trait: "Direct et dynamique",
-    pour: "Tu préfères avancer puis ajuster en chemin.",
-  },
-};
-
 /* ── LES CINQ VISAGES ──────────────────────────────────────────────────
    Un Guide a cinq portraits, un par moment de la conversation. Ce ne
    sont pas des humeurs : ce sont des ÉTATS DE LA CONVERSATION, chacun
