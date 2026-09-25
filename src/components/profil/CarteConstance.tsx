@@ -51,12 +51,17 @@ function lundiDe(jour: string): string {
   return shiftDateStr(jour, -decalage);
 }
 
-export default function CarteConstance({ userId, inscritLe, serieRecord }: {
+export default function CarteConstance({ userId, inscritLe, serieRecord, debut = null, onMasques }: {
   userId: string;
   /** `profiles.created_at`. La carte ne remonte jamais plus haut. */
   inscritLe: string | null;
   /** La plus longue série, rendue par `badges_aura`. `null` = on ne sait pas. */
   serieRecord: number | null;
+  /** Premier jour visible (compte gratuit), `null` = tout (lib/historique).
+      Les jours plus anciens sont VOILÉS, jamais dessinés comme ratés. */
+  debut?: string | null;
+  /** Signale qu'une journée active plus ancienne existe. */
+  onMasques?: (oui: boolean) => void;
 }) {
   const [actifs, setActifs] = useState<Set<string> | null>(null);
 
@@ -84,6 +89,9 @@ export default function CarteConstance({ userId, inscritLe, serieRecord }: {
     return () => { vivant = false; };
   }, [userId]);
 
+  const masquees = !!debut && !!actifs && [...actifs].some((j) => j < debut);
+  useEffect(() => { onMasques?.(masquees); }, [masquees, onMasques]);
+
   const { colonnes, total, semainesVues } = useMemo(() => {
     const aujourdhui = parisDateStr();
     const debutGrille = lundiDe(shiftDateStr(aujourdhui, -((SEMAINES - 1) * 7)));
@@ -103,13 +111,13 @@ export default function CarteConstance({ userId, inscritLe, serieRecord }: {
         else {
           col.push(jour);
           if (s < premiereVue) premiereVue = s;
-          if (actifs?.has(jour)) compte++;
+          if (actifs?.has(jour) && (!debut || jour >= debut)) compte++;
         }
       }
       cols.push(col);
     }
     return { colonnes: cols, total: compte, semainesVues: SEMAINES - premiereVue };
-  }, [actifs, inscritLe]);
+  }, [actifs, inscritLe, debut]);
 
   if (actifs === null) {
     return (
@@ -136,6 +144,11 @@ export default function CarteConstance({ userId, inscritLe, serieRecord }: {
             if (!jour) return null;
             const cx = 1 + PAS * x + PAS / 2;
             const cy = 1 + PAS * y + PAS / 2;
+            /* Un jour masqué est VOILÉ : ni plein ni vide, tous pareils.
+               Le dessiner vide dirait « rien ce jour-là », ce qui serait faux. */
+            if (debut && jour < debut) {
+              return <circle key={jour} cx={cx} cy={cy} r={R_VIDE} fill="rgba(var(--text-3-rgb),0.16)" />;
+            }
             const plein = actifs.has(jour);
             return (
               <circle
@@ -155,7 +168,9 @@ export default function CarteConstance({ userId, inscritLe, serieRecord }: {
             Ta plus longue série : <b style={{ color: "var(--text-0)", fontWeight: 700 }}>{serieRecord} jours</b>.<br />
           </>
         )}
-        {semainesVues < SEMAINES
+        {debut
+          ? <>{total} journée{total > 1 ? "s" : ""} active{total > 1 ? "s" : ""} ces derniers jours.</>
+          : semainesVues < SEMAINES
           ? <>Tu es là depuis <b style={{ color: "var(--text-0)", fontWeight: 700 }}>{semainesVues <= 1 ? "une semaine" : `${semainesVues} semaines`}</b>.</>
           : <>{total} journée{total > 1 ? "s" : ""} active{total > 1 ? "s" : ""} sur les {SEMAINES} dernières semaines.</>}
       </p>

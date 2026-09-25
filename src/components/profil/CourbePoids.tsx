@@ -104,11 +104,16 @@ function tracer(pesees: Pesee[]): { d: string; fin: [number, number] } | null {
   return { d, fin: pts[pts.length - 1] };
 }
 
-export default function CourbePoids({ userId, onPeser }: {
+export default function CourbePoids({ userId, onPeser, debut = null, onMasques }: {
   userId: string;
   /** Ouvre la pesée du jour. Une porte, jamais deux : c'est la MÊME feuille
    *  que le rendez-vous mensuel de la nutrition, pas une seconde saisie. */
   onPeser: () => void;
+  /** Premier jour visible (compte gratuit), `null` = tout. Masquage à
+      l'AFFICHAGE seulement : rien n'est filtré en base (lib/historique). */
+  debut?: string | null;
+  /** Signale qu'une pesée plus ancienne existe, pour l'encart unique de l'écran. */
+  onMasques?: (oui: boolean) => void;
 }) {
   const [pesees, setPesees] = useState<Pesee[] | null>(null);
 
@@ -142,16 +147,26 @@ export default function CourbePoids({ userId, onPeser }: {
     return () => { vivant = false; window.removeEventListener("vaiiya:weighin", charger); };
   }, [userId]);
 
-  const trace  = useMemo(() => (pesees ? tracer(pesees) : null), [pesees]);
-  const phrase = useMemo(() => (pesees ? phraseMouvement(pesees) : null), [pesees]);
+  /* On lit toute la fenêtre, puis on ne MONTRE que ce qui est visible.
+     Une pesée masquée n'est jamais présentée comme une absence de pesée. */
+  const toutes   = pesees;
+  const visibles = useMemo(
+    () => (toutes ? (debut ? toutes.filter((p) => p.date >= debut) : toutes) : null),
+    [toutes, debut],
+  );
+  const masquees = !!toutes && !!visibles && visibles.length < toutes.length;
+  useEffect(() => { onMasques?.(masquees); }, [masquees, onMasques]);
 
-  if (pesees === null) {
+  const trace  = useMemo(() => (visibles ? tracer(visibles) : null), [visibles]);
+  const phrase = useMemo(() => (visibles ? phraseMouvement(visibles) : null), [visibles]);
+
+  if (visibles === null) {
     return (
       <div className="vy-filet h-[152px] animate-pulse" style={{ background: "rgba(var(--tint-violet-rgb),0.35)" }} />
     );
   }
 
-  const dernier = pesees[pesees.length - 1];
+  const dernier = visibles[visibles.length - 1];
 
   return (
     <button
@@ -176,7 +191,7 @@ export default function CourbePoids({ userId, onPeser }: {
         </span>
       ) : (
         <span className="vy-corps block mt-1.5">
-          Aucune pesée pour l&apos;instant.
+          {masquees ? "Pas de pesée ces derniers jours." : "Aucune pesée pour l’instant."}
         </span>
       )}
 
@@ -209,7 +224,7 @@ export default function CourbePoids({ userId, onPeser }: {
            juste en dessous a déjà le sien quand elle est vide, et un compte
            neuf a les deux vides en même temps. Un seul Guide par écran. */
         <span className="vy-corps block mt-2">
-          {pesees.length === 1
+          {visibles.length === 1
             ? "Une seule pesée pour l’instant. À la deuxième, la courbe commence."
             : "Pèse-toi une fois, puis une autre : la courbe part de là."}
           <b className="block mt-1.5 font-bold" style={{ color: "var(--exp-encre)" }}>

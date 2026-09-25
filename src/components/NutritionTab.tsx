@@ -4,6 +4,8 @@ import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { aiFetch, messageDeRefus } from "@/lib/aiFetch";
 import { motion, AnimatePresence } from "framer-motion";
 import { Plus, X, Check, Camera, Upload, Loader2, Edit2, Barcode, Minus, ChevronLeft, ChevronRight, ChevronDown, CalendarDays, BookOpen, Heart, SwitchCamera, Star, Target, Image as ImageIcon } from "lucide-react";
+import HistoriqueMasque from "@/components/historique/HistoriqueMasque";
+import { debutHistorique, historiqueComplet } from "@/lib/historique";
 import { AssistantSpark } from "@/components/AssistantMark";
 import { useAuth } from "@/context/AuthContext";
 import { createClient } from "@/lib/supabase";
@@ -1823,6 +1825,10 @@ function calBg(pct: number): React.CSSProperties {
 
 function NutritionCalendar({ onDayClick }: { onDayClick: (date: Date) => void }) {
   const { user } = useAuth();
+  /* Compte gratuit : on MONTRE les 7 derniers jours, la base garde tout
+     (lib/historique). Les séries du calendrier restent calculées sur tout
+     l'historique : les conditions promettent qu'elles en tiennent compte. */
+  const debutHisto = debutHistorique(historiqueComplet(user));
   const today = new Date(); today.setHours(0,0,0,0);
 
   const [calMonth, setCalMonth] = useState<Date>(new Date(today.getFullYear(), today.getMonth(), 1));
@@ -1898,17 +1904,25 @@ function NutritionCalendar({ onDayClick }: { onDayClick: (date: Date) => void })
     };
   }, [calMonth, regDate, today]);
 
+  /* Ce qui se montre : les jours de la fenêtre, et seulement eux. */
+  const visibleData = useMemo(
+    () => (debutHisto ? new Map([...allData.entries()].filter(([k]) => k >= debutHisto)) : allData),
+    [allData, debutHisto],
+  );
+  const aDesJoursMasques = !!debutHisto
+    && [...allData.entries()].some(([k, v]) => k < debutHisto && v.meal_count > 0);
+
   /* Monthly stats — mémorisé */
   const { trackedThisMonth, daysInMonth, avgCal } = useMemo(() => {
     const mk = `${calMonth.getFullYear()}-${String(calMonth.getMonth()+1).padStart(2,"0")}`;
-    const monthEntries = [...allData.entries()].filter(([k]) => k.startsWith(mk)).map(([,v]) => v);
+    const monthEntries = [...visibleData.entries()].filter(([k]) => k.startsWith(mk)).map(([,v]) => v);
     const tracked = monthEntries.filter(d => d.meal_count > 0);
     return {
       trackedThisMonth: tracked.length,
       daysInMonth: new Date(calMonth.getFullYear(), calMonth.getMonth()+1, 0).getDate(),
       avgCal: tracked.length > 0 ? Math.round(tracked.reduce((s,d) => s + d.total_calories,0) / tracked.length) : 0,
     };
-  }, [allData, calMonth]);
+  }, [visibleData, calMonth]);
 
   /* Streak calculation — mémorisé */
   const { streak, bestStreak } = useMemo(() => {
@@ -1930,7 +1944,7 @@ function NutritionCalendar({ onDayClick }: { onDayClick: (date: Date) => void })
   }, [allData, today]);
 
   /* All-time aggregates — mémorisé (allTracked au niveau composant pour le rendu) */
-  const allTracked = useMemo(() => [...allData.values()].filter(d => d.meal_count > 0), [allData]);
+  const allTracked = useMemo(() => [...visibleData.values()].filter(d => d.meal_count > 0), [visibleData]);
   const globalAvgCal = useMemo(() =>
     allTracked.length > 0
       ? Math.round(allTracked.reduce((s, d) => s + d.total_calories, 0) / allTracked.length)
@@ -1940,6 +1954,8 @@ function NutritionCalendar({ onDayClick }: { onDayClick: (date: Date) => void })
   return (
     <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}
       className="max-w-5xl">
+
+      {aDesJoursMasques && <HistoriqueMasque className="mb-4" />}
 
       {/* Month navigation header */}
       <div className="flex items-center justify-between mb-4">
@@ -2012,7 +2028,10 @@ function NutritionCalendar({ onDayClick }: { onDayClick: (date: Date) => void })
               <div key={wi} className="grid grid-cols-7 gap-1">
                 {week.map((day, di) => {
                   const ds = toDateStr(day);
-                  const s = allData.get(ds);
+                  /* Un jour masqué est VOILÉ et ne s'ouvre pas : l'ouvrir
+                     montrerait un journal vide, donc un faux « rien mangé ». */
+                  const isMasque   = !!debutHisto && ds < debutHisto;
+                  const s = isMasque ? undefined : allData.get(ds);
                   const inMonth    = day.getMonth() === calMonth.getMonth();
                   const isToday    = day.toDateString() === today.toDateString();
                   const isFuture   = day > today;
@@ -2020,7 +2039,7 @@ function NutritionCalendar({ onDayClick }: { onDayClick: (date: Date) => void })
                   const hasData    = !!s && s.meal_count > 0;
                   const pct        = hasData ? Math.min(s.total_calories / goals.calories, 1) : 0;
                   const highContrast = pct >= 0.5;
-                  const isClickable= inMonth && !isFuture && !isBeforeReg;
+                  const isClickable= inMonth && !isFuture && !isBeforeReg && !isMasque;
 
                   return (
                     <motion.button
@@ -2033,7 +2052,7 @@ function NutritionCalendar({ onDayClick }: { onDayClick: (date: Date) => void })
                       style={{
                         minHeight: 56,
                         cursor: isClickable ? "pointer" : "default",
-                        opacity: !inMonth || isBeforeReg ? 0.2 : isFuture ? 0.4 : 1,
+                        opacity: !inMonth || isBeforeReg ? 0.2 : isFuture || isMasque ? 0.4 : 1,
                         border: isToday
                           ? "2px solid rgba(var(--accent-rgb),0.8)"
                           : hasData ? "1px solid rgba(var(--accent-rgb),0.15)" : "1px solid rgba(var(--violet-mid-rgb),0.12)",
@@ -2165,6 +2184,10 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
   const today = new Date();
   const [calView, setCalView] = useState<"journal" | "calendrier">("journal");
   const [selectedDate, setSelectedDate] = useState(today);
+  /* Un jour hors de la fenêtre gratuite ne se lit pas : on ne dit pas
+     « aucun repas » d'une journée qui en a peut-être (lib/historique). */
+  const debutHisto = debutHistorique(historiqueComplet(user));
+  const jourMasque = !!debutHisto && toDateStr(selectedDate) < debutHisto;
   const [weekDays, setWeekDays] = useState<Date[]>([]);
   const [showPhoto, setShowPhoto] = useState(false);
   const [showManual, setShowManual] = useState(false);
@@ -2284,6 +2307,7 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
     if (!user) return;
     setIsLoading(true);
     const dateStr = toDateStr(date);
+    if (debutHisto && dateStr < debutHisto) { setMeals([]); setIsLoading(false); return; }
     const { data: md } = await supabase
       .from("nutrition_logs").select("*")
       .eq("user_id", user.id).eq("date", dateStr).order("time", { ascending: true });
@@ -2765,7 +2789,11 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
           </div>
 
           {/* Empty state */}
-          {meals.length === 0 ? (
+          {jourMasque ? (
+            <div className="py-10">
+              <HistoriqueMasque />
+            </div>
+          ) : meals.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-14 gap-4">
               <div className="w-16 h-16 rounded-2xl flex items-center justify-center"
                 style={{ background: "rgba(var(--accent-rgb),0.08)" }}>

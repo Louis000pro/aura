@@ -25,6 +25,8 @@ import type { ProgresBadges } from "@/lib/badges";
 import EtagereBadges from "@/components/profil/EtagereBadges";
 import CourbePoids from "@/components/profil/CourbePoids";
 import CarteConstance from "@/components/profil/CarteConstance";
+import HistoriqueMasque from "@/components/historique/HistoriqueMasque";
+import { debutHistorique, estVisible, historiqueComplet } from "@/lib/historique";
 import WeighInPrompt from "@/components/WeighInPrompt";
 import AvecQui from "@/components/communaute/AvecQui";
 import EnvoyerAffiche from "@/components/communaute/EnvoyerAffiche";
@@ -512,6 +514,15 @@ export default function ProfilPage() {
   const [editBio, setEditBio] = useState("");
   const [editSaving, setEditSaving] = useState(false);
   const [workoutSessions, setWorkoutSessions] = useState<WorkoutSessionItem[]>([]);
+  /* Compte gratuit : l'écran MONTRE les 7 derniers jours, la base garde
+     tout (lib/historique, conditions article 3). Un seul encart pour tout
+     l'onglet, allumé dès qu'un des trois blocs a quelque chose de masqué. */
+  const debutHisto = debutHistorique(historiqueComplet(user));
+  const seancesVisibles = workoutSessions.filter((w) => !w.started_at || estVisible(w.started_at, debutHisto));
+  const [poidsMasque, setPoidsMasque] = useState(false);
+  const [constanceMasquee, setConstanceMasquee] = useState(false);
+  const historiqueMasque = !!debutHisto
+    && (poidsMasque || constanceMasquee || seancesVisibles.length < workoutSessions.length);
 
   /* Fetch profile + stats */
   useEffect(() => {
@@ -1131,9 +1142,12 @@ export default function ProfilPage() {
                   border: "1px solid rgba(var(--text-3-rgb),0.16)",
                 }}
               >
-                <CourbePoids userId={user.id} onPeser={() => setPesee(true)} />
+                <CourbePoids userId={user.id} onPeser={() => setPesee(true)}
+                  debut={debutHisto} onMasques={setPoidsMasque} />
                 <CarteConstance
                   userId={user.id}
+                  debut={debutHisto}
+                  onMasques={setConstanceMasquee}
                   inscritLe={inscritLe}
                   /* La plus longue série vient de `badges_aura`, jamais d'un
                      second calcul : c'est le même nombre qui débloque les
@@ -1143,11 +1157,18 @@ export default function ProfilPage() {
               </div>
             )}
 
+            {historiqueMasque && <HistoriqueMasque className="mb-6" />}
+
             <p className="vy-label mb-3" style={{ color: "var(--text-3)" }}>
               Tes séances
             </p>
 
-            {workoutSessions.length === 0 ? (
+            {seancesVisibles.length === 0 && workoutSessions.length > 0 ? (
+              /* Des séances existent, mais plus anciennes que la fenêtre :
+                 on ne dit surtout pas « aucune séance ». L'encart du dessus
+                 dit qu'elles sont conservées. */
+              <p className="vy-corps">Pas de séance ces derniers jours.</p>
+            ) : workoutSessions.length === 0 ? (
               /* Le Guide prend la place du texte gris : c'est lui qui
                  ouvre la porte, et il n'en ouvre qu'une. Le « +30 EXP »
                  d'avant a disparu avec le cadre : sur un écran vide, un
@@ -1172,7 +1193,7 @@ export default function ProfilPage() {
                   border: "1px solid rgba(var(--text-3-rgb),0.16)",
                 }}
               >
-                {workoutSessions.map((session) => {
+                {seancesVisibles.map((session) => {
                   const durationMin = session.elapsed_seconds
                     ? Math.round(session.elapsed_seconds / 60)
                     : session.duration_minutes || null;
