@@ -17,7 +17,7 @@
 import { useEffect } from "react";
 import { createPortal } from "react-dom";
 import { motion, useReducedMotion } from "framer-motion";
-import { VisageGuide } from "@/components/AssistantMark";
+import { CelebrationGuide, VisageGuide } from "@/components/AssistantMark";
 import { nomGuide, type GuideRef } from "@/lib/guides";
 import { lockBodyModal } from "@/lib/bodyModal";
 import type { Recap } from "@/lib/recapJour";
@@ -40,13 +40,13 @@ export default function RecapHier({
 
   const f = recap.faits;
   const cases: Case[] = [
-    { valeur: f.seances.length, libelle: f.seances.length > 1 ? "séances" : "séance", encre: "var(--teal-encre)" },
-    { valeur: f.minutes, unite: "min", libelle: "d'entraînement", encre: "var(--teal-encre)" },
-    { valeur: f.series, libelle: f.series > 1 ? "séries" : "série", encre: "var(--teal-encre)" },
-    { valeur: f.kcalBrulees, unite: "kcal", libelle: "dépensées", encre: "var(--feu-encre)" },
-    { valeur: f.repas, libelle: f.repas > 1 ? "repas notés" : "repas noté", encre: "var(--feu-encre)" },
-    { valeur: f.calories, unite: "kcal", libelle: "mangées", encre: "var(--feu-encre)" },
-    { valeur: f.exp, unite: "EXP", libelle: "gagnée", encre: "var(--exp-encre)" },
+    { valeur: f.seances.length, libelle: f.seances.length > 1 ? "Séances" : "Séance", encre: "var(--teal-encre)" },
+    { valeur: f.minutes, unite: "min", libelle: "Temps d’entraînement", encre: "var(--text-0)" },
+    { valeur: f.series, libelle: "Séries", encre: "var(--teal-encre)" },
+    { valeur: f.kcalBrulees, unite: "kcal", libelle: "Dépensées", encre: "var(--feu-encre)" },
+    { valeur: f.repas, libelle: f.repas > 1 ? "Repas notés" : "Repas noté", encre: "var(--feu-encre)" },
+    { valeur: f.calories, unite: "kcal", libelle: "Mangées", encre: "var(--feu-encre)" },
+    { valeur: f.exp, unite: "EXP", libelle: "Gagnée", encre: "var(--exp-encre)" },
   ].filter((c) => c.valeur > 0);
 
   if (typeof document === "undefined") return null;
@@ -62,79 +62,95 @@ export default function RecapHier({
       <motion.div
         role="dialog"
         aria-modal="true"
-        aria-label="Ton récap d'hier"
-        className="relative w-full sm:max-w-[400px] rounded-t-[var(--r-feuille)] sm:rounded-[var(--r-affiche)] px-5 pt-6"
-        style={{
-          background: "rgb(var(--surface-rgb))",
-          boxShadow: "var(--ombre-flottant)",
-          paddingBottom: "calc(1.25rem + env(safe-area-inset-bottom))",
-        }}
+        aria-label="Ta journée d'hier"
+        className="relative w-full sm:max-w-[400px] overflow-hidden rounded-t-[var(--r-feuille)] sm:rounded-[var(--r-affiche)]"
+        style={{ background: "rgb(var(--surface-rgb))", boxShadow: "var(--ombre-flottant)", maxHeight: "94dvh", overflowY: "auto" }}
         initial={reduce ? false : { y: 40, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ type: "spring", damping: 30, stiffness: 300 }}
       >
-        <div className="flex items-center gap-3">
-          <VisageGuide guide={guide} etat="encourage" size={48} />
-          <div className="min-w-0">
-            <p className="text-[11px] font-semibold" style={{ color: "var(--or-encre)" }}>Vaiiya+ · Ton récap</p>
-            <h2 className="vy-titre" style={{ color: "var(--text-0)" }}>Ta journée d’hier</h2>
-          </div>
+        {/* Le Guide en grand, en haut, sur une lumière douce : même dessin
+            que la fin de séance. Blanc, sans verre, pour redonner confiance. */}
+        <div
+          className="flex flex-col items-center px-5 pt-6 text-center"
+          style={{ background: "linear-gradient(180deg, rgba(139,92,246,0.12) 0%, rgba(193,59,193,0.05) 160px, transparent 240px)" }}
+        >
+          {guide ? (
+            <CelebrationGuide guide={guide} hauteur="clamp(130px, 22vh, 180px)" />
+          ) : (
+            <VisageGuide guide={guide} etat="encourage" size={72} />
+          )}
+          <p className="text-[13px] font-semibold mt-3" style={{ color: "var(--or-encre)" }}>Vaiiya+ · Ton récap</p>
+          <h2 className="vy-titre mt-0.5" style={{ fontSize: 26, fontWeight: 800, color: "var(--text-0)" }}>
+            Ta journée d’hier
+          </h2>
+          <motion.p
+            className="mt-2 text-[16px] leading-[1.45] max-w-[20rem]"
+            style={{ color: "var(--text-1)", textWrap: "pretty" }}
+            initial={reduce ? false : { opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: reduce ? 0 : 0.35, duration: 0.4 }}
+          >
+            {recap.texte}
+          </motion.p>
+          {f.serie > 1 && (
+            <span className="mt-4 inline-flex items-center gap-2 rounded-full px-4 py-2" style={{ background: "rgba(245,177,32,0.13)" }}>
+              <span aria-hidden="true">🔥</span>
+              <span className="text-[13px] font-bold" style={{ color: "var(--feu-encre)" }}>
+                Série de <span className="vy-nombre">{f.serie}</span> jours
+              </span>
+            </span>
+          )}
         </div>
 
-        {cases.length > 0 && (
-          <div
-            className="mt-5 grid grid-cols-3 gap-y-4 gap-x-2 rounded-[var(--r-bloc)] px-3 py-4"
-            style={{ background: "rgba(var(--text-3-rgb), .07)" }}
+        <div className="px-5" style={{ paddingBottom: "calc(1.25rem + env(safe-area-inset-bottom))" }}>
+          {cases.length > 0 && (
+            /* Les chiffres : UN groupe à filets internes, jamais une grille
+               de cartes. Seules les valeurs non nulles s'affichent. */
+            <div
+              className="mt-5 grid grid-cols-2 overflow-hidden rounded-[var(--r-bloc)]"
+              style={{ border: "1px solid rgba(var(--text-3-rgb),0.18)", boxShadow: "var(--ombre-pose)" }}
+            >
+              {cases.map((c, i) => (
+                <motion.div
+                  key={c.libelle}
+                  className="px-4 py-3.5 text-left min-w-0"
+                  style={{
+                    borderLeft: i % 2 ? "1px solid rgba(var(--text-3-rgb),0.14)" : undefined,
+                    borderTop: i > 1 ? "1px solid rgba(var(--text-3-rgb),0.14)" : undefined,
+                    gridColumn: i === cases.length - 1 && cases.length % 2 ? "span 2" : undefined,
+                  }}
+                  initial={reduce ? false : { opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: reduce ? 0 : 0.2 + i * 0.06, duration: 0.3 }}
+                >
+                  <p className="text-[11px] font-semibold" style={{ color: "var(--text-2)" }}>{c.libelle}</p>
+                  <p className="mt-0.5 whitespace-nowrap" style={{ color: c.encre }}>
+                    <span className="vy-nombre text-[26px]" style={{ fontWeight: 800 }}>{c.valeur}</span>
+                    {c.unite && <small className="text-[11px] font-semibold ml-0.5" style={{ color: "var(--text-2)" }}>{c.unite}</small>}
+                  </p>
+                </motion.div>
+              ))}
+            </div>
+          )}
+
+          <button
+            type="button"
+            onClick={onFermer}
+            className="mt-6 w-full py-4 rounded-2xl text-white text-[16px] font-bold"
+            style={{ background: "linear-gradient(100deg, #8B5CF6, #C13BC1)", boxShadow: "var(--ombre-action)" }}
           >
-            {cases.map((c, i) => (
-              <motion.div
-                key={c.libelle}
-                className="flex flex-col items-center text-center min-w-0"
-                initial={reduce ? false : { opacity: 0, y: 6 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: reduce ? 0 : 0.15 + i * 0.06, duration: 0.3 }}
-              >
-                <span className="whitespace-nowrap" style={{ color: c.encre }}>
-                  <span className="vy-nombre text-[26px]" style={{ fontWeight: 800 }}>{c.valeur}</span>
-                  {c.unite && <span className="text-[11px] font-semibold ml-0.5">{c.unite}</span>}
-                </span>
-                <span className="text-[11px] mt-0.5" style={{ color: "var(--text-2)" }}>{c.libelle}</span>
-              </motion.div>
-            ))}
-          </div>
-        )}
-
-        <motion.p
-          className="mt-5 text-[16px] leading-[1.45]"
-          style={{ color: "var(--text-0)", textWrap: "pretty" }}
-          initial={reduce ? false : { opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: reduce ? 0 : 0.5, duration: 0.4 }}
-        >
-          {recap.texte}
-        </motion.p>
-        {f.serie > 1 && (
-          <p className="mt-2 text-[13px]" style={{ color: "var(--feu-encre)" }}>
-            🔥 Série de <span className="vy-nombre">{f.serie}</span> jours
-          </p>
-        )}
-
-        <button
-          type="button"
-          onClick={onFermer}
-          className="mt-6 w-full h-12 rounded-full text-white text-[16px] font-semibold"
-          style={{ background: "linear-gradient(135deg, #8B5CF6, #C13BC1)", boxShadow: "var(--ombre-action)" }}
-        >
-          C’est parti
-        </button>
-        <button
-          type="button"
-          onClick={onParler}
-          className="mt-2 w-full h-10 text-[13px] font-semibold"
-          style={{ color: "var(--exp-encre)" }}
-        >
-          En parler {guide ? `avec ${nomGuide(guide)}` : "au coach"}
-        </button>
+            C’est parti
+          </button>
+          <button
+            type="button"
+            onClick={onParler}
+            className="mt-1 w-full h-11 text-[13px] font-semibold"
+            style={{ color: "var(--exp-encre)" }}
+          >
+            En parler {guide ? `avec ${nomGuide(guide)}` : "au coach"}
+          </button>
+        </div>
       </motion.div>
     </div>,
     document.body,
