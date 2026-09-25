@@ -117,9 +117,8 @@
   color: var(--feu-encre);
 }
 
-.etatSerie[data-done] {
-  color: var(--exp-encre);
-}
+/* Journée validée ou non, le chiffre garde la couleur de la flamme
+   (Louis, 2026-09-25) : la série, c'est l'énergie, donc l'orange. */
 
 .etatSerie i {
   font-size: 16px;
