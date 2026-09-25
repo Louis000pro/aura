@@ -64,7 +64,7 @@ export default function RecapHier({
         role="dialog"
         aria-modal="true"
         aria-label="Ta journée d'hier"
-        className="relative w-full sm:max-w-[400px] overflow-hidden rounded-t-[var(--r-feuille)] sm:rounded-[var(--r-affiche)]"
+        className="relative w-full sm:max-w-[400px] overflow-hidden [&::-webkit-scrollbar]:hidden rounded-t-[var(--r-feuille)] sm:rounded-[var(--r-affiche)]"
         style={{
           /* Le filet dégradé de la marque, fin : violet → magenta → or, la
              signature de Vaiiya. Posé en bordure (padding-box / border-box)
@@ -74,6 +74,8 @@ export default function RecapHier({
           boxShadow: "var(--ombre-flottant)",
           maxHeight: "94dvh",
           overflowY: "auto",
+          // Le popup défile s'il le faut (petit écran), mais sans barre visible.
+          scrollbarWidth: "none",
         }}
         initial={reduce ? false : { y: 40, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
@@ -92,7 +94,7 @@ export default function RecapHier({
           )}
           <p className="text-[11px] font-semibold mt-2" style={{ color: "var(--or-encre)" }}>Vaiiya+ · Ton récap</p>
           <h2 className="vy-titre" style={{ fontSize: 26, fontWeight: 800, color: "var(--text-0)" }}>
-            Ta journée d’<span style={{ background: "linear-gradient(100deg, #8B5CF6, #C13BC1)", WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent" }}>hier</span>
+            Ta journée d’hier
           </h2>
           <motion.p
             className="mt-2 text-[16px] leading-[1.45] max-w-[19rem]"

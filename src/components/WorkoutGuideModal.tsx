@@ -730,9 +730,9 @@ function BandeMaillon({ maillon, onAller }: { maillon: MaillonFranchi; onAller: 
     return () => clearTimeout(t);
   }, [avant, apres]);
 
-  // La fin de séance est blanche : l'or passe par son encre.
-  const or = "var(--or-encre)";
-  const encre = "var(--text-2)";
+  // Le tunnel est toujours sombre : l'or decor y tient ses 8,4:1.
+  const or = "#F5B120";
+  const encre = "#A79FC0";
 
   return (
     <motion.button
@@ -741,7 +741,7 @@ function BandeMaillon({ maillon, onAller }: { maillon: MaillonFranchi; onAller: 
       initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.75 }}
       className="flex items-center gap-3 w-full max-w-[19rem] px-3.5 py-2.5 rounded-2xl mt-2.5 text-left"
-      style={{ background: "rgba(245,177,32,0.12)" }}
+      style={{ background: "rgba(245,177,32,0.10)", border: "1px solid rgba(245,177,32,0.28)" }}
     >
       <span
         className="relative flex-shrink-0 overflow-hidden"
@@ -796,7 +796,7 @@ function BandeBadge({ badges, onAller }: { badges: Badge[]; onAller: () => void 
       initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.9 }}
       className="flex items-center gap-3 w-full max-w-[19rem] px-3.5 py-2.5 rounded-2xl mt-2.5 text-left"
-      style={{ background: "rgba(139,92,246,0.08)" }}
+      style={{ background: "rgba(139,92,246,0.13)", border: "1px solid rgba(139,92,246,0.35)" }}
     >
       <span
         className="relative flex-shrink-0 grid place-items-center overflow-hidden rounded-full"
@@ -810,15 +810,15 @@ function BandeBadge({ badges, onAller }: { badges: Badge[]; onAller: () => void 
       </span>
 
       <span className="flex-1 min-w-0">
-        <strong className="block text-[13px] font-bold" style={{ color: "var(--exp-encre)" }}>
+        <strong className="block text-[13px] font-bold" style={{ color: "#C3AEFF" }}>
           {autres > 0 ? `${badges.length} badges gagnés` : "Badge gagné"}
         </strong>
-        <small className="block text-[11px]" style={{ color: "var(--text-2)" }}>
+        <small className="block text-[11px]" style={{ color: "#A79FC0" }}>
           {premier.nom}{autres > 0 ? ` et ${autres} autre${autres > 1 ? "s" : ""}` : ""}
         </small>
       </span>
 
-      <ChevronRight size={16} strokeWidth={2.5} style={{ color: "var(--exp-encre)", flexShrink: 0 }} />
+      <ChevronRight size={16} strokeWidth={2.5} style={{ color: "#C3AEFF", flexShrink: 0 }} />
     </motion.button>
   );
 }
@@ -1128,10 +1128,7 @@ export default function WorkoutGuideModal({
   const add15      = () => { setRestTotal(t => t + 15); setRestCountdown(c => c + 15); };
 
   /* ── Le player est TOUJOURS sombre (le « tunnel »), quel que soit le thème ── */
-  /* La fin de séance sort du tunnel sombre (Louis, 2026-09-25) : elle est
-     BLANCHE, sans verre, et rangée pour redonner confiance. Le tunnel reste
-     sombre pendant l'effort, c'est le compteur qui commande. */
-  const isTunnel = phase !== "intro" && phase !== "done";
+  const isTunnel = phase !== "intro";
   const TUN = {
     t1: "#F0ECFA", t2: "#A79FC0", t3: "#6E6690", lav: "#C9B8FF",
     line: "rgba(255,255,255,0.08)",
@@ -1159,7 +1156,8 @@ export default function WorkoutGuideModal({
         transition={{ type: "spring", stiffness: 380, damping: 36 }}
         className="relative w-full sm:max-w-md rounded-t-[var(--r-feuille)] sm:rounded-[var(--r-feuille)] flex flex-col overflow-hidden"
         style={{
-          background: isTunnel ? "#0B0714" : "rgb(var(--surface-rgb))",
+          background: isTunnel ? "#0B0714" : "rgba(var(--surface-rgb),0.98)",
+          backdropFilter: "blur(24px)",
           boxShadow: isTunnel
             ? "0 -4px 60px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.06)"
             : "0 -4px 60px rgba(var(--accent-rgb),0.12), 0 0 0 1px rgba(var(--surface-rgb),0.9)",
@@ -1544,29 +1542,31 @@ export default function WorkoutGuideModal({
             {/* ─────────── 04 · L'APRÈS · LA RÉCOMPENSE (teal) ─────────── */}
             {phase === "done" && (
               <motion.div key="done"
-                initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }}
-                className={`relative flex flex-col items-center px-5 pb-4 text-center ${guide ? "pt-4" : "pt-10"}`}
-                style={{ background: "linear-gradient(180deg, rgba(139,92,246,0.10) 0%, rgba(193,59,193,0.04) 170px, transparent 260px)" }}
+                initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }}
+                className={`relative flex flex-col items-center px-5 pb-4 text-center ${guide ? "pt-3" : "pt-10"}`}
               >
                 {/* ── LE MOMENT FORT ──
-                    Le Guide en grand, en haut, qui accompagne la réussite.
-                    L'écran est BLANC et sans verre (Louis, 2026-09-25) : il
-                    doit redonner confiance, pas ressembler à un tableau de
-                    bord. La coche teal dit « validée » (teal = réussite). */}
+                    C'est le seul endroit de la séance où le Guide est
+                    franchement grand : ailleurs il tient dans une pastille.
+                    Il ACCOMPAGNE la réussite, il ne la résume pas : la coche
+                    teal reste le signe que la séance est validée (teal =
+                    réussite, système D), les chiffres restent intacts juste
+                    en dessous, et lui n'ajoute qu'une phrase.
+                    Sans Guide résolu, l'écran d'avant revient à l'identique. */}
                 {guide ? (
                   <motion.div
                     initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.4, delay: 0.05 }}
                     className="relative"
                   >
-                    <CelebrationGuide guide={guide} hauteur="clamp(130px, 22vh, 180px)" />
+                    <CelebrationGuide guide={guide} hauteur="clamp(120px, 20vh, 168px)" />
                     <motion.span
                       initial={{ scale: 0, rotate: -12 }} animate={{ scale: 1, rotate: 0 }}
                       transition={{ type: "spring", stiffness: 240, delay: 0.35 }}
                       className="absolute flex items-center justify-center"
-                      style={{ right: -10, bottom: 6, width: 44, height: 44, borderRadius: "50%", background: TUN.teal, border: "3px solid rgb(var(--surface-rgb))", boxShadow: "var(--ombre-pose)" }}
+                      style={{ right: -12, bottom: 4, width: 46, height: 46, borderRadius: "50%", border: "2.5px solid rgba(168,85,247,0.9)", background: "rgba(20,15,38,0.88)", boxShadow: "0 0 30px rgba(139,92,246,0.45)" }}
                     >
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5" /></svg>
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#D9C6FF" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5" /></svg>
                     </motion.span>
                   </motion.div>
                 ) : (
@@ -1574,20 +1574,22 @@ export default function WorkoutGuideModal({
                     initial={{ scale: 0, rotate: -12 }} animate={{ scale: 1, rotate: 0 }}
                     transition={{ type: "spring", stiffness: 240, delay: 0.05 }}
                     className="flex items-center justify-center"
-                    style={{ width: 84, height: 84, borderRadius: "50%", background: TUN.teal, boxShadow: "var(--ombre-pose)" }}
+                    style={{ width: 92, height: 92, borderRadius: "50%", border: "3px solid rgba(168,85,247,0.9)", background: "rgba(139,92,246,0.14)", boxShadow: "0 0 44px rgba(139,92,246,0.45)", backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)" }}
                   >
-                    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5" /></svg>
+                    <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="#D9C6FF" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5" /></svg>
                   </motion.div>
                 )}
-                <p className="text-[13px] font-semibold mt-4" style={{ color: "var(--teal-encre)" }}>{title}</p>
-                <h2 className="vy-titre mt-0.5" style={{ fontSize: 26, fontWeight: 800, color: "var(--text-0)" }}>Séance terminée</h2>
-                <motion.p
-                  initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }}
-                  className="text-[16px] leading-[1.45] mt-2 max-w-[20rem]"
-                  style={{ color: "var(--text-1)", textWrap: "pretty" }}
-                >
-                  {voix(guide, "seance.fin")}
-                </motion.p>
+                <h2 className="font-black uppercase tracking-tight mt-4" style={{ fontSize: 26, color: "#fff" }}>Séance terminée</h2>
+                <p className="text-[13px] mt-1.5" style={{ color: TUN.t2 }}>{guide ? title : `${title} · rien lâché`}</p>
+                {guide && (
+                  <motion.p
+                    initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }}
+                    className="text-[13px] font-semibold leading-snug mt-2.5 max-w-[19rem]"
+                    style={{ color: TUN.lav }}
+                  >
+                    {voix(guide, "seance.fin")}
+                  </motion.p>
+                )}
 
                 {/* ── LA SÉRIE, AU MOMENT OÙ ELLE SE GAGNE ──
                     C'est ici qu'elle veut dire quelque chose : la journée
@@ -1599,15 +1601,15 @@ export default function WorkoutGuideModal({
                     <motion.div
                       initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.6 }}
-                      className="flex items-center gap-2.5 px-4 py-2.5 rounded-full mt-4"
-                      style={{ background: "rgba(245,177,32,0.13)" }}
+                      className="flex items-center gap-2.5 px-4 py-2.5 rounded-2xl mt-4"
+                      style={{ background: "rgba(245,177,32,0.10)", border: "1px solid rgba(245,177,32,0.28)" }}
                     >
                       <span style={{ fontSize: 16 }} aria-hidden="true">🔥</span>
                       <span className="text-left">
-                        <strong className="block text-[13px] font-bold" style={{ color: "var(--feu-encre)" }}>
+                        <strong className="block text-[13px] font-bold" style={{ color: "#FFD34E" }}>
                           Journée validée
                         </strong>
-                        <small className="block text-[11px]" style={{ color: "var(--text-2)" }}>
+                        <small className="block text-[11px]" style={{ color: TUN.t2 }}>
                           Série de {serieDuJour} jour{serieDuJour > 1 ? "s" : ""}
                         </small>
                       </span>
@@ -1640,27 +1642,17 @@ export default function WorkoutGuideModal({
                   )}
                 </AnimatePresence>
 
-                {/* Les chiffres : UN groupe, des filets internes, pas quatre
-                    cartes de verre. Une idée = un groupe visuel. */}
-                <div
-                  className="grid grid-cols-2 w-full mt-6 overflow-hidden rounded-[var(--r-bloc)]"
-                  style={{ border: "1px solid rgba(var(--text-3-rgb),0.18)", boxShadow: "var(--ombre-pose)", background: "rgb(var(--surface-rgb))" }}
-                >
+                <div className="grid grid-cols-2 gap-2.5 w-full mt-6">
                   {[
-                    { l: "Durée",     v: fmt(elapsed),                  c: "var(--text-0)",      s: "" },
-                    { l: "Séries",    v: String(totalSets),             c: "var(--exp-encre)",   s: "" },
-                    { l: "Calories",  v: `~${kcalReal || kcalEst}`,     c: "var(--feu-encre)",   s: " kcal" },
-                    { l: "Exercices", v: String(exercises.length),      c: "var(--bleu-encre)",  s: "" },
-                  ].map((st, i) => (
-                    <div key={st.l} className="px-4 py-3.5 text-left"
-                      style={{
-                        borderLeft: i % 2 ? "1px solid rgba(var(--text-3-rgb),0.14)" : undefined,
-                        borderTop: i > 1 ? "1px solid rgba(var(--text-3-rgb),0.14)" : undefined,
-                      }}>
-                      <p className="text-[11px] font-semibold" style={{ color: "var(--text-2)" }}>{st.l}</p>
-                      <p className="mt-0.5" style={{ color: st.c }}>
-                        <span className="vy-nombre text-[26px]" style={{ fontWeight: 800 }}>{st.v}</span>
-                        <small className="text-[11px] font-semibold" style={{ color: "var(--text-2)" }}>{st.s}</small>
+                    { l: "DURÉE RÉELLE", v: fmt(elapsed),                c: "#fff",      s: "" },
+                    { l: "SÉRIES",       v: String(totalSets),           c: TUN.teal,    s: ` / ${totalSets}` },
+                    { l: "CALORIES",     v: `~${kcalReal || kcalEst}`,   c: TUN.orange,  s: " kcal" },
+                    { l: "EXERCICES",    v: String(exercises.length),    c: TUN.teal,    s: "" },
+                  ].map(st => (
+                    <div key={st.l} className="rounded-2xl px-3.5 py-3.5 text-left" style={{ background: "rgba(255,255,255,0.05)", border: `1px solid ${TUN.line}` }}>
+                      <p className="text-[11px] font-extrabold tracking-[0.18em]" style={{ color: TUN.t3 }}>{st.l}</p>
+                      <p className="vy-nombre text-[20px] mt-1" style={{ fontWeight: 800, color: st.c }}>
+                        {st.v}<small className="text-[11px] font-bold" style={{ color: TUN.t3, letterSpacing: 0 }}>{st.s}</small>
                       </p>
                     </div>
                   ))}
@@ -1669,9 +1661,10 @@ export default function WorkoutGuideModal({
                 <AnimatePresence>
                   {sessionSaved && (
                     <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
-                      className="flex items-center gap-2 mt-3">
-                      <BookmarkCheck size={12} strokeWidth={2} style={{ color: "var(--exp-encre)" }} />
-                      <span className="text-[11px] font-medium" style={{ color: "var(--text-2)" }}>Enregistrée dans ton profil</span>
+                      className="flex items-center gap-2 px-4 py-2 rounded-xl mt-3"
+                      style={{ background: "rgba(139,92,246,0.12)", border: "1px solid rgba(139,92,246,0.35)", backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)" }}>
+                      <BookmarkCheck size={12} strokeWidth={2} style={{ color: "#C4B5FD" }} />
+                      <span className="text-[11px] font-medium" style={{ color: "#C4B5FD" }}>Enregistrée dans ton profil</span>
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -1681,14 +1674,14 @@ export default function WorkoutGuideModal({
                   {user && !avisMasque && (
                     <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
                       className="w-full rounded-2xl p-4 mt-4 text-left"
-                      style={{ background: "rgba(139,92,246,0.07)" }}>
+                      style={{ background: "linear-gradient(150deg, rgba(139,92,246,0.22), rgba(96,120,255,0.14))", border: "1px solid rgba(139,92,246,0.5)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", boxShadow: "0 10px 30px -10px rgba(139,92,246,0.5)" }}>
                       <div className="flex items-center gap-1 mb-2" aria-hidden="true">
                         {[0, 1, 2, 3, 4].map((i) => (
                           <svg key={i} width="16" height="16" viewBox="0 0 24 24" fill="#F5B120" stroke="#F5B120" strokeWidth="1.4" strokeLinejoin="round"><path d="M12 2.5l2.9 5.9 6.5.95-4.7 4.6 1.1 6.45L12 17.9l-5.8 3 1.1-6.45-4.7-4.6 6.5-.95z" /></svg>
                         ))}
                       </div>
-                      <p className="text-[13px] font-bold leading-tight" style={{ color: "var(--text-0)" }}>Tu kiffes Vaiiya ?</p>
-                      <p className="text-[11px] leading-snug mt-1" style={{ color: "var(--text-2)" }}>
+                      <p className="text-[13px] font-bold text-white leading-tight">Tu kiffes Vaiiya ?</p>
+                      <p className="text-[11px] leading-snug mt-1" style={{ color: TUN.t2 }}>
                         Un avis nous aide énormément à faire connaître Vaiiya.
                       </p>
                       <div className="flex gap-2 mt-3">
@@ -1700,7 +1693,7 @@ export default function WorkoutGuideModal({
                         </motion.button>
                         <button onClick={() => setAvisMasque(true)}
                           className="px-4 py-2.5 rounded-xl font-semibold text-[13px] cursor-pointer"
-                          style={{ color: "var(--text-2)" }}>
+                          style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.14)", color: TUN.t2 }}>
                           Plus tard
                         </button>
                       </div>
@@ -1778,11 +1771,14 @@ export default function WorkoutGuideModal({
                 {onGarder && garde !== "refusee" && (
                   <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
                     className="rounded-2xl p-3.5"
-                    style={{ background: "rgba(139,92,246,0.07)" }}>
+                    style={{
+                      background: "linear-gradient(150deg, rgba(139,92,246,0.19), rgba(193,59,193,0.11))",
+                      border: "1px solid rgba(139,92,246,0.42)",
+                    }}>
                     {garde === "gardee" ? (
                       <div className="flex items-center justify-center gap-2 py-1">
-                        <Check size={14} strokeWidth={2.6} style={{ color: "var(--teal-encre)" }} />
-                        <span className="text-[13px] font-semibold" style={{ color: "var(--teal-encre)" }}>
+                        <Check size={14} strokeWidth={2.6} style={{ color: TUN.teal }} />
+                        <span className="text-[13px] font-semibold" style={{ color: TUN.teal }}>
                           Ajoutée à tes séances
                         </span>
                       </div>
@@ -1795,16 +1791,16 @@ export default function WorkoutGuideModal({
                                 className="rounded-xl flex items-center justify-center overflow-hidden"
                                 style={{
                                   width: 36, height: 40, marginLeft: i === 0 ? 0 : -10,
-                                  background: "rgb(var(--surface-rgb))",
-                                  border: "1px solid rgba(var(--text-3-rgb),0.18)",
+                                  background: "rgba(255,255,255,0.07)",
+                                  border: "1px solid rgba(255,255,255,0.14)",
                                 }}>
                                 <ExerciseThumb name={e.name} size={34} delay={i * 200} />
                               </span>
                             ))}
                           </div>
                           <div className="min-w-0">
-                            <p className="text-[13px] font-bold leading-tight" style={{ color: "var(--text-0)" }}>Tu la gardes ?</p>
-                            <p className="text-[11px] leading-snug mt-1" style={{ color: "var(--text-2)" }}>
+                            <p className="text-[13px] font-bold text-white leading-tight">Tu la gardes ?</p>
+                            <p className="text-[11px] leading-snug mt-1" style={{ color: TUN.t2 }}>
                               Elle rejoint tes séances, tu pourras la relancer ou la modifier.
                             </p>
                           </div>
@@ -1819,7 +1815,7 @@ export default function WorkoutGuideModal({
                           <motion.button whileTap={{ scale: 0.97 }}
                             onClick={() => setGarde("refusee")}
                             className="px-4 py-2.5 rounded-xl font-semibold text-[13px] cursor-pointer"
-                            style={{ color: "var(--text-2)" }}>
+                            style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.14)", color: TUN.t2 }}>
                             Non
                           </motion.button>
                         </div>
@@ -1832,15 +1828,15 @@ export default function WorkoutGuideModal({
                     confirme ici ; la revoir, l'envoyer ou la supprimer se fait
                     depuis « Tes affiches de perf » dans le profil. */}
                 {user && afficheSaved && (
-                  <div className="w-full py-1 flex items-center justify-center gap-2 text-[13px] font-medium"
-                    style={{ color: "var(--text-2)" }}
+                  <div className="w-full py-3 rounded-2xl flex items-center justify-center gap-2 text-[14px] font-medium"
+                    style={{ background: "rgba(139,92,246,0.12)", color: "#C4B5FD", border: "1px solid rgba(139,92,246,0.35)", backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)" }}
                   >
-                    <BookmarkCheck size={14} strokeWidth={2} style={{ color: "var(--exp-encre)" }} /> Affiche ajoutée à ton profil
+                    <BookmarkCheck size={14} strokeWidth={2} /> Affiche ajoutée à ton profil
                   </div>
                 )}
                 <button onClick={onClose}
-                  className="w-full py-4 rounded-2xl flex items-center justify-center font-bold text-[16px] cursor-pointer text-white"
-                  style={{ background: "linear-gradient(100deg,#8B5CF6,#C13BC1)", boxShadow: "var(--ombre-action)" }}
+                  className="w-full py-3.5 rounded-2xl flex items-center justify-center font-bold text-[16px] cursor-pointer"
+                  style={{ background: "rgba(255,255,255,0.06)", color: TUN.t1, border: "1px solid rgba(255,255,255,0.12)" }}
                 >
                   Terminer
                 </button>
