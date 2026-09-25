@@ -18,6 +18,7 @@ import RangsModal from "@/components/rang/RangsModal";
 import { calculerAura, etatDepuisExp, type EtatAura } from "@/lib/aura";
 import { noterRang } from "@/lib/celebrationRang";
 import { useGuideActif } from "@/context/GuideContext";
+import { useAssistant } from "@/context/AssistantContext";
 import {
   lireDejaVu,
   lireSignauxAccueil,
@@ -28,7 +29,8 @@ import {
 import { observeParisDay, parisDateStr } from "@/lib/dates";
 import { marquerPresence } from "@/lib/presence";
 import { aiFetch } from "@/lib/aiFetch";
-import { bornesHier, lireRecap, noterRecap } from "@/lib/recapJour";
+import { bornesHier, journeeVide, lireRecap, noterRecap, type FaitsRecap, type Recap } from "@/lib/recapJour";
+import RecapHier from "@/components/accueil/RecapHier";
 
 /* ─────────────────────────────────────────────────
    LANDING PAGE — visiteur non connecté
@@ -152,6 +154,7 @@ function Dashboard() {
         traverse minuit redonne ainsi la parole au Guide, sans effet
         supplémentaire pour la lui reprendre. */
   const { guide, etat: etatGuide } = useGuideActif();
+  const { open: ouvrirAssistant } = useAssistant();
   const [motGuide, setMotGuide] = useState<MomentAccueil | null>(null);
   const jourEvalueRef = useRef<string | null>(null);
   useEffect(() => {
@@ -175,16 +178,17 @@ function Dashboard() {
   }, [user, aura, auraLoaded, etatGuide, parisDay]);
 
   /* ── Le récap d'hier (avantage Vaiiya+) ──
-     À la première ouverture de la journée, le Guide raconte hier, à la
-     place de sa phrase habituelle (un seul Guide qui parle). Toute la
-     règle vit dans `recapJour.ts` et dans la route.
+     À la première ouverture de la journée, un POPUP montre les chiffres
+     d'hier et le Guide dit une phrase très positive. Toute la règle vit
+     dans `recapJour.ts` et dans la route.
 
      ⚠️ ON ATTEND `missionsLues`, pas `auraLoaded` : la série et le rang du
-     cache pourraient être d'hier, et le récap les cite. Le texte du jour
-     est gardé sur l'appareil, donc une seule génération par jour ; un
-     compte gratuit ne fait AUCUN appel. */
+     cache pourraient être d'hier. Le récap du jour est gardé sur
+     l'appareil (une seule génération par jour, lue aussi par le coach),
+     et le popup ne s'ouvre qu'une fois (`vu`). Un compte gratuit ne fait
+     AUCUN appel. Une journée vide n'ouvre rien. */
   const vaiiyaPlus = !!user?.is_premium || !!user?.is_admin;
-  const [recap, setRecap] = useState<string | null>(null);
+  const [recap, setRecap] = useState<Recap | null>(null);
   const recapJourRef = useRef<string | null>(null);
   const cibleRecapRef = useRef<string | null>(null);
   useEffect(() => {
@@ -202,7 +206,9 @@ function Dashboard() {
 
     const enCache = lireRecap(user.id, parisDay);
     if (enCache) {
-      void Promise.resolve().then(() => { if (toujoursValable()) setRecap(enCache); });
+      if (!enCache.vu && !journeeVide(enCache.faits)) {
+        void Promise.resolve().then(() => { if (toujoursValable()) setRecap(enCache); });
+      }
       return;
     }
 
@@ -219,13 +225,19 @@ function Dashboard() {
       }),
     })
       .then((r) => (r.ok ? r.json() : null))
-      .then((d: { texte?: string } | null) => {
-        if (!toujoursValable() || !d?.texte) return;
-        setRecap(d.texte);
-        noterRecap(userId, parisDay, d.texte);
+      .then((d: { texte?: string; faits?: FaitsRecap } | null) => {
+        if (!toujoursValable() || !d?.texte || !d.faits) return;
+        const r: Recap = { texte: d.texte, faits: d.faits, vu: false };
+        noterRecap(userId, parisDay, r);
+        if (!journeeVide(r.faits)) setRecap(r);
       })
       .catch(() => {});
   }, [user, vaiiyaPlus, missionsLues, etatGuide, parisDay, aura.serie, aura.rang.nom, guide]);
+
+  const fermerRecap = () => {
+    if (user && recap) noterRecap(user.id, parisDay, { ...recap, vu: true });
+    setRecap(null);
+  };
 
   /* ── Le relais, s'il y en a un de vivant ──
      Le relais n'avait aucune entrée sur l'écran où l'on arrive. Une bande
@@ -293,7 +305,6 @@ function Dashboard() {
           isAdmin={!!user?.is_admin}
           guide={guide}
           moment={motGuide}
-          recap={recap}
           relais={relais}
           jour={parisDay}
           heros={<HeroJournee />}
@@ -310,6 +321,15 @@ function Dashboard() {
           avatarUrl={user?.avatar}
           isAdmin={!!user?.is_admin}
         />
+
+        {recap && (
+          <RecapHier
+            recap={recap}
+            guide={guide}
+            onFermer={fermerRecap}
+            onParler={() => { fermerRecap(); ouvrirAssistant(); }}
+          />
+        )}
       </div>
     </div>
   );

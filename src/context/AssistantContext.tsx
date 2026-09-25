@@ -65,6 +65,8 @@ import {
   type JourNutrition, type RepasDetail,
 } from "@/lib/guideNutrition";
 import { localDateStr } from "@/lib/dates";
+import { recapDuJour, recapPourCoach } from "@/lib/recapJour";
+import { parisDateStr } from "@/lib/dates";
 
 type MemoryAction =
   | { type: "save"; category?: string; fact?: string }
@@ -2247,6 +2249,13 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
           // Le prénom et la manière de parler du Guide. Le serveur en tire
           // un bloc de ton COURT ; les règles et les données ne changent pas.
           guide: guideRef.current,
+          // Le récap d'hier (Vaiiya+) que la personne a vu : le coach doit
+          // savoir de quoi elle parle quand elle dit « mon récap ».
+          recapHier: (() => {
+            if (!user?.id) return null;
+            const r = recapDuJour(user.id, parisDateStr());
+            return r ? recapPourCoach(r) : null;
+          })(),
           // Lieu connu → le chat ne redemande pas « salle ou maison ? »
           lieu: user?.id ? (localStorage.getItem(`vaiiya_lieu_${user.id}`) || null) : null,
           lieu_equip: user?.id ? (localStorage.getItem(`vaiiya_lieu_equip_${user.id}`) || null) : null,

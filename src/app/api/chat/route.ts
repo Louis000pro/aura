@@ -353,6 +353,10 @@ export async function POST(req: NextRequest) {
      une valeur absente ou fantaisiste retombe sur `null`, donc sur le prompt
      commun, et personne ne perd de fonctionnalité. */
   let guide: GuideRef = null;
+  /* Le récap d'hier (Vaiiya+) tel que la personne l'a vu à l'ouverture.
+     Sans lui, « t'en penses quoi de mon récap ? » tombait sur un coach qui
+     ne savait pas de quoi on parlait. Borné : c'est un résumé, pas un dossier. */
+  let recapHier: string | null = null;
   let maxTokens = 600;
 
   try {
@@ -369,6 +373,7 @@ export async function POST(req: NextRequest) {
     memories = body.memories ?? null;
     memoryEnabled = body.memoryEnabled === true;
     guide = body.guide === "nora" || body.guide === "sasha" ? body.guide : null;
+    recapHier = typeof body.recapHier === "string" && body.recapHier.trim() ? body.recapHier.slice(0, 900) : null;
     // Les tâches de génération (programme, plan repas) peuvent demander plus de tokens
     // pour éviter un JSON tronqué. Plafonné pour rester raisonnable.
     if (body.maxTokens) maxTokens = Math.min(Math.max(Number(body.maxTokens) || 800, 800), 4000);
@@ -419,6 +424,9 @@ export async function POST(req: NextRequest) {
 
   const systemPrompt =
     buildSystemPrompt(userContext, pseudo, liveStats, moteur, richProfile, lieu, lieuEquip, currentPage, memories, memoryEnabled, guide) +
+    (recapHier
+      ? `\n\nSON RÉCAP D’HIER (affiché dans un popup Vaiiya+ à l’ouverture de l’app ce matin) :\n${recapHier}\nSi la personne parle de « mon récap », « ma journée d’hier » ou de ce popup, c’est de ça qu’il s’agit : réponds directement à partir de ces chiffres, avec enthousiasme et uniquement du positif. Ne lui demande jamais de te le partager.`
+      : "") +
     (ndjson ? cadreAction(action) : "");
 
   try {

@@ -15,6 +15,7 @@ import { ouvertureGuide, tonDuGuide, type GuideRef } from "@/lib/guides";
 import {
   CONSIGNE_RECAP,
   faitsEnTexte,
+  journeeVide,
   nettoyerRecap,
   recapDeRepli,
   type FaitsRecap,
@@ -53,18 +54,34 @@ export async function POST(req: Request) {
 
   const admin = createAdminClient();
   const [seancesRes, repasRes, expRes] = await Promise.all([
-    admin.from("workout_sessions").select("title, duration_minutes")
+    admin.from("workout_sessions").select("title, duration_minutes, calories_burned, exercises")
       .eq("user_id", userId).gte("started_at", debut.toISOString()).lt("started_at", fin.toISOString())
       .order("started_at", { ascending: true }).limit(6),
     admin.from("nutrition_logs").select("calories").eq("user_id", userId).eq("date", jour).limit(40),
     admin.from("aura_mission_credits").select("points").eq("user_id", userId).eq("period_key", jour),
   ]);
 
+  // Les séries d'une séance : la somme des `sets` de ses exercices, tels
+  // que le tunnel les a enregistrés. Un exercice sans nombre compte 1.
+  const seriesDe = (ex: unknown): number => {
+    if (!Array.isArray(ex)) return 0;
+    return ex.reduce((t: number, e) => {
+      const n = Number((e as { sets?: unknown })?.sets);
+      return t + (Number.isFinite(n) && n > 0 ? Math.min(20, Math.round(n)) : 1);
+    }, 0);
+  };
+  const seances = (seancesRes.data ?? []).map((s) => ({
+    titre: String(s.title ?? "Séance").slice(0, 60),
+    minutes: Math.max(1, Math.round(Number(s.duration_minutes) || 1)),
+    series: seriesDe(s.exercises),
+    kcal: Math.max(0, Math.round(Number(s.calories_burned) || 0)),
+  }));
+
   const faits: FaitsRecap = {
-    seances: (seancesRes.data ?? []).map((s) => ({
-      titre: String(s.title ?? "Séance").slice(0, 60),
-      minutes: Math.max(1, Math.round(Number(s.duration_minutes) || 1)),
-    })),
+    seances: seances.map(({ titre, minutes, series }) => ({ titre, minutes, series })),
+    minutes: seances.reduce((t, s) => t + s.minutes, 0),
+    series: seances.reduce((t, s) => t + s.series, 0),
+    kcalBrulees: seances.reduce((t, s) => t + s.kcal, 0),
     repas: (repasRes.data ?? []).length,
     calories: Math.round((repasRes.data ?? []).reduce((t, r) => t + (Number(r.calories) || 0), 0)),
     exp: Math.round((expRes.data ?? []).reduce((t, r) => t + (Number(r.points) || 0), 0)),
@@ -75,22 +92,23 @@ export async function POST(req: Request) {
   const guide: GuideRef = corps.guide === "nora" || corps.guide === "sasha" ? corps.guide : null;
   const repli = recapDeRepli(faits);
 
-  if (!hasLLMKey()) return NextResponse.json({ texte: repli, source: "repli" });
+  // Journée vide : pas de popup côté écran, donc pas d'appel au modèle.
+  if (journeeVide(faits) || !hasLLMKey()) return NextResponse.json({ texte: repli, faits, source: "repli" });
 
   try {
     const r = await llm.chat.completions.create({
-      ...optionsIA("coach", 180),
-      temperature: 0.7,
+      ...optionsIA("coach", 140),
+      temperature: 0.8,
       messages: [
         { role: "system", content: `${ouvertureGuide(guide)}\n\n${CONSIGNE_RECAP}${tonDuGuide(guide)}` },
         { role: "user", content: faitsEnTexte(faits) },
       ],
     });
     const texte = nettoyerRecap(r.choices[0]?.message?.content ?? "");
-    if (texte.length < 12) return NextResponse.json({ texte: repli, source: "repli" });
-    return NextResponse.json({ texte, source: "ia" });
+    if (texte.length < 12) return NextResponse.json({ texte: repli, faits, source: "repli" });
+    return NextResponse.json({ texte, faits, source: "ia" });
   } catch (e) {
     console.warn("[recap] génération échouée, repli:", e instanceof Error ? e.message : e);
-    return NextResponse.json({ texte: repli, source: "repli" });
+    return NextResponse.json({ texte: repli, faits, source: "repli" });
   }
 }
