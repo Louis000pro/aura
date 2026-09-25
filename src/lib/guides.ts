@@ -955,9 +955,15 @@ export type CleVoix = keyof typeof REPLIQUES;
 
 /** La phrase du Guide pour cette clé. Tant qu'une réplique n'a pas de
  *  variante, le Guide passé ne change rien : c'est l'état de la phase 0. */
-export function voix(guide: GuideRef, cle: CleVoix, ctx: ContexteVoix = {}): string {
+/* ⚠️ NORA ET SASHA PARLENT PAREIL (Louis, 2026-09-25) : toujours positifs,
+   toujours encourageants, le même ton. Leurs variantes reproduisaient un
+   biais de genre (elle explique et rassure, lui va droit au but), donc on
+   rend la version COMMUNE pour les deux. Les variantes `nora` / `sasha`
+   restent écrites dans les tables mais ne sont plus lues : les supprimer
+   est un ménage à faire, pas une urgence. Ne pas les rebrancher. */
+export function voix(_guide: GuideRef, cle: CleVoix, ctx: ContexteVoix = {}): string {
   const r: Replique = REPLIQUES[cle];
-  const rendu = (guide === "nora" ? r.nora : guide === "sasha" ? r.sasha : undefined) ?? r.commun;
+  const rendu = r.commun;
   return typeof rendu === "function" ? rendu(ctx) : rendu;
 }
 
@@ -1310,9 +1316,10 @@ export type CleRappel = keyof typeof RAPPELS;
  * venait à ne pas avoir la même longueur que les autres : l'index se
  * calcule sur la liste rendue ici, jamais sur une autre.
  */
-export function voixRappel(guide: GuideRef, cle: CleRappel, ctx: ContexteVoix = {}): PhrasePush[] {
+export function voixRappel(_guide: GuideRef, cle: CleRappel, ctx: ContexteVoix = {}): PhrasePush[] {
   const r: RepliquePush = RAPPELS[cle];
-  const liste = (guide === "nora" ? r.nora : guide === "sasha" ? r.sasha : undefined) ?? r.commun;
+  // Même voix pour les deux Guides : voir `voix` ci-dessus.
+  const liste = r.commun;
   return liste.map((v) => (typeof v === "function" ? v(ctx) : v));
 }
 
@@ -1463,10 +1470,11 @@ export function roleGuide(guide: GuideRef): string {
    direct, je vais… »), parce que c'est ce qui casse une conversation. */
 const TON_COMMUN = `Tu ne te présentes jamais comme un robot ou un assistant, et tu ne commentes jamais ta propre façon de parler. Bannis « champion », « machine », « warrior », « je suis fier de toi » et tout ce qui ressemble à un coach de réseau social. Tu ne culpabilises jamais : tu réagis à ce que la personne fait, tu ne lui reproches pas ce qu’elle n’a pas fait.`;
 
-const TON_PAR_GUIDE: Record<GuideId, string> = {
-  nora: `Tu poses le contexte en quelques mots, tu donnes la raison courte de ce que tu proposes, puis tu proposes. Tu es calme, méthodique et structurée, un peu plus explicative que la moyenne, sans jamais rallonger pour rallonger.`,
-  sasha: `Tu donnes la proposition d’abord, l’action ensuite, la précision à la fin. Tu es direct, dynamique et spontané : phrases courtes, rythmées, aucune tournure inutile.`,
-};
+/* ⚠️ UN SEUL TON POUR LES DEUX (Louis, 2026-09-25). Il y en avait deux :
+   « calme, méthodique, structurée » pour Nora, « direct, dynamique,
+   spontané » pour Sasha, c'est-à-dire un biais de genre. Écrit sans
+   accord de genre, exprès : la même phrase vaut pour les deux. */
+const TON_GUIDE = `Tu restes toujours dans le positif, avec chaleur, et tu encourages à chaque réponse : tu remarques ce qui avance, même un petit pas, et tu donnes envie de faire le suivant. Tu proposes d’abord, puis tu donnes la raison en une phrase courte. Des phrases simples et claires, sans rallonger pour rallonger.`;
 
 /** La PREMIÈRE ligne du prompt : qui parle.
  *
@@ -1492,7 +1500,7 @@ export function tonDuGuide(guide: GuideRef): string {
   if (!guide) return "";
   return `
 
-TA MANIÈRE DE PARLER : ${TON_PAR_GUIDE[guide]} ${TON_COMMUN}
+TA MANIÈRE DE PARLER : ${TON_GUIDE} ${TON_COMMUN}
 ⚠️ Elle ne change RIEN au fond : mêmes règles, mêmes données, mêmes recommandations, mêmes limites que ce qui est écrit plus haut. Seule la formulation t’appartient.`;
 }
 
