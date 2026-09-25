@@ -70,6 +70,10 @@
      Mesuré : #0B8A68 = 4,4:1 sur blanc · #3FE0B0 = 10,8:1 sur la surface
      sombre. Le teal de remplissage, lui, ne bouge nulle part. */
   --teal-encre: #0B8A68;
+  /* Un bleu d'encre pour les compteurs du récap (Louis, 2026-09-25 :
+     « les écritures en vert, mets-les en bleu et violet »).
+     #3A5BD9 = 5,9:1 sur blanc · #A3B8FF sur la surface sombre. */
+  --bleu-encre: #3A5BD9;
   /* Surfaces translucides (base RGB) */
   --surface-rgb:      255, 255, 255;   /* verre blanc            */
   --tint-violet-rgb:  240, 235, 255;   /* #F0EBFF — voile violet */
@@ -181,6 +185,7 @@
   --exp-trait: rgba(195, 174, 255, 0.42);
   --feu-encre: #F5B120;     /* 8,4:1 sur la surface sombre */
   --teal-encre: #3FE0B0;    /* 10,8:1 sur la surface sombre */
+  --bleu-encre: #A3B8FF;
   --surface-rgb:     22, 18, 30;       /* carte sombre sur fond noir (distincte, discrète) */
   --tint-violet-rgb: 40, 33, 60;
   --tint-cream-rgb:  40, 33, 55;

@@ -20,7 +20,7 @@ import { motion, useReducedMotion } from "framer-motion";
 import { CelebrationGuide, VisageGuide } from "@/components/AssistantMark";
 import { nomGuide, type GuideRef } from "@/lib/guides";
 import { lockBodyModal } from "@/lib/bodyModal";
-import type { Recap } from "@/lib/recapJour";
+import { nettoyerRecap, type Recap } from "@/lib/recapJour";
 
 type Case = { valeur: number; unite?: string; libelle: string; encre: string };
 
@@ -39,14 +39,17 @@ export default function RecapHier({
   useEffect(() => lockBodyModal(), []);
 
   const f = recap.faits;
+  /* Six cases au plus, donc deux rangées de trois. Bleu et violet pour
+     l'entraînement (Louis : pas de vert ici), l'orange de l'énergie pour
+     les calories. L'EXP sort de la grille : elle vit dans la pastille, à
+     côté de la série, parce que ce sont les deux choses qu'on a GAGNÉES. */
   const cases: Case[] = [
-    { valeur: f.seances.length, libelle: f.seances.length > 1 ? "Séances" : "Séance", encre: "var(--teal-encre)" },
-    { valeur: f.minutes, unite: "min", libelle: "Temps d’entraînement", encre: "var(--text-0)" },
-    { valeur: f.series, libelle: "Séries", encre: "var(--teal-encre)" },
-    { valeur: f.kcalBrulees, unite: "kcal", libelle: "Dépensées", encre: "var(--feu-encre)" },
-    { valeur: f.repas, libelle: f.repas > 1 ? "Repas notés" : "Repas noté", encre: "var(--feu-encre)" },
-    { valeur: f.calories, unite: "kcal", libelle: "Mangées", encre: "var(--feu-encre)" },
-    { valeur: f.exp, unite: "EXP", libelle: "Gagnée", encre: "var(--exp-encre)" },
+    { valeur: f.seances.length, libelle: f.seances.length > 1 ? "séances" : "séance", encre: "var(--exp-encre)" },
+    { valeur: f.minutes, unite: "min", libelle: "d’entraînement", encre: "var(--bleu-encre)" },
+    { valeur: f.series, libelle: f.series > 1 ? "séries" : "série", encre: "var(--exp-encre)" },
+    { valeur: f.kcalBrulees, unite: "kcal", libelle: "dépensées", encre: "var(--feu-encre)" },
+    { valeur: f.repas, libelle: f.repas > 1 ? "repas notés" : "repas noté", encre: "var(--bleu-encre)" },
+    { valeur: f.calories, unite: "kcal", libelle: "mangées", encre: "var(--feu-encre)" },
   ].filter((c) => c.valeur > 0);
 
   if (typeof document === "undefined") return null;
@@ -72,63 +75,75 @@ export default function RecapHier({
         {/* Le Guide en grand, en haut, sur une lumière douce : même dessin
             que la fin de séance. Blanc, sans verre, pour redonner confiance. */}
         <div
-          className="flex flex-col items-center px-5 pt-6 text-center"
-          style={{ background: "linear-gradient(180deg, rgba(139,92,246,0.12) 0%, rgba(193,59,193,0.05) 160px, transparent 240px)" }}
+          className="flex flex-col items-center px-6 pt-5 text-center"
+          style={{ background: "linear-gradient(180deg, rgba(139,92,246,0.13) 0%, rgba(193,59,193,0.05) 150px, transparent 220px)" }}
         >
           {guide ? (
-            <CelebrationGuide guide={guide} hauteur="clamp(130px, 22vh, 180px)" />
+            <CelebrationGuide guide={guide} hauteur="clamp(112px, 17vh, 150px)" />
           ) : (
-            <VisageGuide guide={guide} etat="encourage" size={72} />
+            <VisageGuide guide={guide} etat="encourage" size={64} />
           )}
-          <p className="text-[13px] font-semibold mt-3" style={{ color: "var(--or-encre)" }}>Vaiiya+ · Ton récap</p>
-          <h2 className="vy-titre mt-0.5" style={{ fontSize: 26, fontWeight: 800, color: "var(--text-0)" }}>
+          <p className="text-[11px] font-semibold mt-2" style={{ color: "var(--or-encre)" }}>Vaiiya+ · Ton récap</p>
+          <h2 className="vy-titre" style={{ fontSize: 26, fontWeight: 800, color: "var(--text-0)" }}>
             Ta journée d’hier
           </h2>
           <motion.p
-            className="mt-2 text-[16px] leading-[1.45] max-w-[20rem]"
+            className="mt-2 text-[16px] leading-[1.45] max-w-[19rem]"
             style={{ color: "var(--text-1)", textWrap: "pretty" }}
             initial={reduce ? false : { opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: reduce ? 0 : 0.35, duration: 0.4 }}
           >
-            {recap.texte}
+            {/* Nettoyé aussi à l’affichage : un récap déjà gardé sur l’appareil
+                peut encore porter l’emoji d’avant la règle. */}
+            {nettoyerRecap(recap.texte)}
           </motion.p>
-          {f.serie > 1 && (
-            <span className="mt-4 inline-flex items-center gap-2 rounded-full px-4 py-2" style={{ background: "rgba(245,177,32,0.13)" }}>
-              <span aria-hidden="true">🔥</span>
-              <span className="text-[13px] font-bold" style={{ color: "var(--feu-encre)" }}>
-                Série de <span className="vy-nombre">{f.serie}</span> jours
-              </span>
-            </span>
+
+          {(f.serie > 1 || f.exp > 0) && (
+            <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
+              {f.serie > 1 && (
+                <span className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[13px] font-bold"
+                  style={{ background: "rgba(245,177,32,0.14)", color: "var(--feu-encre)" }}>
+                  <span aria-hidden="true">🔥</span>
+                  <span>Série de <span className="vy-nombre" style={{ fontWeight: 800 }}>{f.serie}</span>&nbsp;jours</span>
+                </span>
+              )}
+              {f.exp > 0 && (
+                <span className="inline-flex items-center rounded-full px-3 py-1.5 text-[13px] font-bold"
+                  style={{ background: "rgba(139,92,246,0.12)", color: "var(--exp-encre)" }}>
+                  +<span className="vy-nombre" style={{ fontWeight: 800 }}>{f.exp}</span>&nbsp;EXP
+                </span>
+              )}
+            </div>
           )}
         </div>
 
         <div className="px-5" style={{ paddingBottom: "calc(1.25rem + env(safe-area-inset-bottom))" }}>
           {cases.length > 0 && (
-            /* Les chiffres : UN groupe à filets internes, jamais une grille
-               de cartes. Seules les valeurs non nulles s'affichent. */
+            /* Les chiffres : UN groupe à filets internes, trois par rangée,
+               le nombre au-dessus de ce qu'il compte. Seules les valeurs non
+               nulles s'affichent. */
             <div
-              className="mt-5 grid grid-cols-2 overflow-hidden rounded-[var(--r-bloc)]"
-              style={{ border: "1px solid rgba(var(--text-3-rgb),0.18)", boxShadow: "var(--ombre-pose)" }}
+              className="mt-5 grid grid-cols-3 overflow-hidden rounded-[var(--r-bloc)]"
+              style={{ border: "1px solid rgba(var(--text-3-rgb),0.16)", background: "rgba(var(--tint-violet-rgb),0.35)" }}
             >
               {cases.map((c, i) => (
                 <motion.div
                   key={c.libelle}
-                  className="px-4 py-3.5 text-left min-w-0"
+                  className="flex flex-col items-center justify-center px-2 py-3.5 text-center min-w-0"
                   style={{
-                    borderLeft: i % 2 ? "1px solid rgba(var(--text-3-rgb),0.14)" : undefined,
-                    borderTop: i > 1 ? "1px solid rgba(var(--text-3-rgb),0.14)" : undefined,
-                    gridColumn: i === cases.length - 1 && cases.length % 2 ? "span 2" : undefined,
+                    borderLeft: i % 3 ? "1px solid rgba(var(--text-3-rgb),0.14)" : undefined,
+                    borderTop: i > 2 ? "1px solid rgba(var(--text-3-rgb),0.14)" : undefined,
                   }}
                   initial={reduce ? false : { opacity: 0, y: 6 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: reduce ? 0 : 0.2 + i * 0.06, duration: 0.3 }}
                 >
-                  <p className="text-[11px] font-semibold" style={{ color: "var(--text-2)" }}>{c.libelle}</p>
-                  <p className="mt-0.5 whitespace-nowrap" style={{ color: c.encre }}>
+                  <p className="whitespace-nowrap leading-none" style={{ color: c.encre }}>
                     <span className="vy-nombre text-[26px]" style={{ fontWeight: 800 }}>{c.valeur}</span>
-                    {c.unite && <small className="text-[11px] font-semibold ml-0.5" style={{ color: "var(--text-2)" }}>{c.unite}</small>}
+                    {c.unite && <span className="text-[11px] font-semibold ml-1">{c.unite}</span>}
                   </p>
+                  <p className="text-[11px] mt-1.5 truncate max-w-full" style={{ color: "var(--text-2)" }}>{c.libelle}</p>
                 </motion.div>
               ))}
             </div>
@@ -137,7 +152,7 @@ export default function RecapHier({
           <button
             type="button"
             onClick={onFermer}
-            className="mt-6 w-full py-4 rounded-2xl text-white text-[16px] font-bold"
+            className="mt-5 w-full py-4 rounded-2xl text-white text-[16px] font-bold"
             style={{ background: "linear-gradient(100deg, #8B5CF6, #C13BC1)", boxShadow: "var(--ombre-action)" }}
           >
             C’est parti

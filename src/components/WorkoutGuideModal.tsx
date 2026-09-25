@@ -1648,9 +1648,9 @@ export default function WorkoutGuideModal({
                 >
                   {[
                     { l: "Durée",     v: fmt(elapsed),                  c: "var(--text-0)",      s: "" },
-                    { l: "Séries",    v: String(totalSets),             c: "var(--teal-encre)",  s: "" },
+                    { l: "Séries",    v: String(totalSets),             c: "var(--exp-encre)",   s: "" },
                     { l: "Calories",  v: `~${kcalReal || kcalEst}`,     c: "var(--feu-encre)",   s: " kcal" },
-                    { l: "Exercices", v: String(exercises.length),      c: "var(--teal-encre)",  s: "" },
+                    { l: "Exercices", v: String(exercises.length),      c: "var(--bleu-encre)",  s: "" },
                   ].map((st, i) => (
                     <div key={st.l} className="px-4 py-3.5 text-left"
                       style={{

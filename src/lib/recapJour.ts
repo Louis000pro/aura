@@ -78,19 +78,19 @@ export const CONSIGNE_RECAP = `Tu réagis à la journée d'HIER de cette personn
 - Uniquement du positif. Jamais de reproche, jamais « tu n'as pas », jamais ce qui manque.
 - N'accorde aucun adjectif ni participe au genre de la personne (pas de « parti/partie », « fier/fière », « motivé/motivée ») : tourne la phrase autrement.
 - N'invente rien qui ne soit pas dans les faits.
-- Texte brut : pas de markdown, pas de guillemets autour de la réponse, au plus un emoji.
+- Texte brut : pas de markdown, pas de guillemets autour de la réponse, AUCUN emoji.
 - Pas de salutation et pas de question.`;
 
 /** Ce qu'on affiche si le modèle ne répond pas. Positif lui aussi. */
 export function recapDeRepli(f: FaitsRecap): string {
-  if (f.seances.length > 1) return "Deux séances et plus dans la même journée, c'est énorme. Continue comme ça, tu es sur une super lancée 🔥";
+  if (f.seances.length > 1) return "Deux séances et plus dans la même journée, c'est énorme. Continue comme ça, tu es sur une super lancée.";
   if (f.seances.length === 1) {
     return f.serie > 1
-      ? `Ta journée d'hier était vraiment solide, et ta série tient à ${f.serie} jours. Continue comme ça 🔥`
-      : "Ta journée d'hier était vraiment solide. Continue comme ça, tu es sur une super lancée 🔥";
+      ? `Ta journée d'hier était vraiment solide, et ta série tient à ${f.serie} jours. Continue comme ça.`
+      : "Ta journée d'hier était vraiment solide. Continue comme ça, tu es sur une super lancée.";
   }
-  if (f.repas > 0) return "Tu as pris soin de ton assiette hier, c'est comme ça qu'on avance. Continue sur cette lancée 💪";
-  return "Nouvelle journée, tout est ouvert. Continue comme ça 💪";
+  if (f.repas > 0) return "Tu as pris soin de ton assiette hier, c'est comme ça qu'on avance. Continue sur cette lancée.";
+  return "Nouvelle journée, tout est ouvert. Continue comme ça.";
 }
 
 /** Nettoie ce que rend le modèle : pas de guillemets d'enveloppe, pas de
@@ -98,6 +98,8 @@ export function recapDeRepli(f: FaitsRecap): string {
 export function nettoyerRecap(brut: string): string {
   let t = (brut ?? "").replace(/\[[^\]]*\]/g, "").replace(/[*#_`~]/g, "").trim();
   t = t.replace(/^["«“]\s*|\s*["»”]$/g, "").replace(/\s+/g, " ").trim();
+  // Aucun emoji dans la phrase (Louis) : le modèle en glisse parfois quand même.
+  t = t.replace(/[\p{Extended_Pictographic}\u{FE0F}\u{200D}]/gu, "").replace(/\s+([.!?,])/g, "$1").replace(/\s+/g, " ").trim();
   if (t.length > 240) t = t.slice(0, 240).replace(/\s+\S*$/, "") + "…";
   return t;
 }
