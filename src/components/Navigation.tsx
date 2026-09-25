@@ -57,7 +57,7 @@ function UserMenuItems({
       </Link>
       <Link href="/premium" onClick={onClose} className="flex items-center gap-3 px-4 py-3 text-[16px] font-bold hover:bg-purple-50 transition-colors" style={{ color: "#7C5CFA" }}>
         <Crown size={14} strokeWidth={2.2} style={{ color: "#7C5CFA" }} />
-        Vaiiya Premium ✦
+        Vaiiya+ ✦
       </Link>
       <Link href="/parametres" onClick={onClose} className={itemCls} style={{ color: "var(--text-1)" }}>
         <Settings size={14} strokeWidth={2} style={{ color: "var(--accent)" }} />

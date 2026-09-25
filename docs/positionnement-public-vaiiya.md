@@ -149,11 +149,11 @@ Vérifiés sur `main` le 2026-08-10. À revérifier avant réemploi.
 | Chiffre | Valeur | Source dans le code |
 |---|---|---|
 | Séances guidées au catalogue | 53 | catalogue de `app/progression` + vagues `workoutWave1..6` |
-| Mini-cours | 26 (16 gratuits, 10 Premium) | `lib/adviceArticles.ts` |
+| Mini-cours | 26 (16 gratuits, 10 Vaiiya+) | `lib/adviceArticles.ts` |
 | Mouvements animés | 102 | `lib/exerciseLibrary.ts` |
 | Fiches exercices publiques | 8 | `lib/exercicesPublics.ts` |
 | Rangs | 6 | `lib/aura.ts` |
-| Prix Premium | 5,99 €/mois | `lib/plans.ts` (jamais réécrit à la main) |
+| Prix Vaiiya+ | 5,99 €/mois | `lib/plans.ts` (jamais réécrit à la main) |
 
 **Chiffres interdits en dur :** nombre d'utilisateurs, de comptes, de téléchargements,
 de séances réalisées. **52 comptes créés au 10 août 2026** est un instantané interne :
@@ -173,12 +173,18 @@ Il n'existe **aucune application App Store ni Google Play**. Ne jamais l'annonce
 ni en texte, ni en donnée structurée, ni en bouton. `operatingSystem: "Web"` dans le
 JSON-LD est la formulation exacte et correcte.
 
-## 12. Premium actuel
+## 12. Vaiiya+ (l'offre payante)
+
+**L'offre payante s'appelle Vaiiya+** (décision de Louis, 2026-09-25), plus « Premium » :
+le mot générique disait n'importe quelle application. L'adresse reste `/premium`,
+et le code garde ses identifiants `premium` (colonnes, types, clés) : seul le NOM
+affiché change. Un texte public qui écrit « Premium » pour parler de l'offre est
+une faute à corriger.
 
 **La vente est fermée** (`VENTE_OUVERTE = false` dans `lib/plans.ts`, verrou
 juridique tant que la structure n'est pas immatriculée).
 
-Ce qu'on peut écrire : ce que le compte gratuit contient, ce que Premium ajoutera,
+Ce qu'on peut écrire : ce que le compte gratuit contient, ce que Vaiiya+ ajoutera,
 son prix à venir (5,99 €/mois), et le fait que **l'abonnement n'est pas encore
 ouvert à la souscription**.
 
@@ -244,7 +250,7 @@ avant chaque réutilisation** :
 
 - l'état de la **structure juridique** et l'existence d'un SIRET (bloque les mentions
   légales, les conditions, la désignation d'un médiateur et l'ouverture de la vente) ;
-- l'**ouverture de la vente Premium** et son prix ;
+- l'**ouverture de la vente Vaiiya+** et son prix ;
 - les **chiffres du §10**, qui bougent à chaque vague de contenu ;
 - la décision de **ne pas publier les prénoms** des fondateurs ;
 - l'existence d'un **Discord** ou d'un autre compte officiel à ajouter à `sameAs`.

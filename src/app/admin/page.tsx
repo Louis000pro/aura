@@ -153,7 +153,7 @@ function Marques({ compte }: { compte: Compte }) {
     <>
       {compte.is_banned && <span className={`${s.marque} ${s.marqueBanni}`}>Banni</span>}
       {compte.is_admin && <span className={`${s.marque} ${s.marqueAdmin}`}>Admin</span>}
-      {compte.is_premium && !compte.is_admin && <span className={`${s.marque} ${s.marquePremium}`}>Premium</span>}
+      {compte.is_premium && !compte.is_admin && <span className={`${s.marque} ${s.marquePremium}`}>Vaiiya+</span>}
       {compte.is_certified && <span className={`${s.marque} ${s.marqueCertifie}`}>Certifié</span>}
     </>
   );
@@ -460,7 +460,7 @@ export default function AdminPage() {
                 <div className={s.pastilles}>
                   {([
                     ["tous", "Tous"], ["actifs", "Actifs"], ["endormis", "Endormis"],
-                    ["jamais", "Jamais de séance"], ["premium", "Premium"], ["bannis", "Bannis"],
+                    ["jamais", "Jamais de séance"], ["premium", "Vaiiya+"], ["bannis", "Bannis"],
                   ] as const).map(([cle, libelle]) => (
                     <button key={cle} onClick={() => setFiltre(cle)}
                       aria-pressed={filtre === cle}
@@ -614,7 +614,7 @@ export default function AdminPage() {
                     <div className={s.barres}>
                       {ia.top.map((t) => (
                         <Barre key={t.pseudo} valeur={t.appels} max={ia.top[0].appels}
-                          nom={<>@{t.pseudo}{t.premium && <span className={`${s.marque} ${s.marquePremium}`} style={{ marginLeft: 6 }}>Premium</span>}</>} />
+                          nom={<>@{t.pseudo}{t.premium && <span className={`${s.marque} ${s.marquePremium}`} style={{ marginLeft: 6 }}>Vaiiya+</span>}</>} />
                       ))}
                     </div>
                   </Carte>

@@ -308,14 +308,14 @@ export default function RootLayout({
                           "@type": "Offer",
                           price: (PLANS.premium.priceCents / 100).toFixed(2),
                           priceCurrency: "EUR",
-                          description: "Vaiiya Premium, par mois, résiliable à tout moment.",
+                          description: "Vaiiya+, par mois, résiliable à tout moment.",
                         },
                       ]
                     : {
                         "@type": "Offer",
                         price: "0",
                         priceCurrency: "EUR",
-                        description: "Compte gratuit, sans carte bancaire. L’abonnement Premium n’est pas encore ouvert à la souscription.",
+                        description: "Compte gratuit, sans carte bancaire. L’abonnement Vaiiya+ n’est pas encore ouvert à la souscription.",
                       },
                 },
               ],

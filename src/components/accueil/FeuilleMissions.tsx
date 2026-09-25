@@ -102,7 +102,7 @@ export default function FeuilleMissions({
 
         <section className={styles.sec}>
           <div className={styles.lab}>
-            {premiumDebloque ? "Tes missions Premium" : "Avec Premium"}
+            {premiumDebloque ? "Tes missions Vaiiya+" : "Avec Vaiiya+"}
             <span className={styles.labOr}>+{expPremiumJour} EXP / jour</span>
           </div>
           {rendre(MISSIONS_PREMIUM)}

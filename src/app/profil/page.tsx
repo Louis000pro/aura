@@ -725,7 +725,7 @@ export default function ProfilPage() {
               background: "linear-gradient(135deg,#8B5CF6,#C13BC1)",
               boxShadow: "var(--ombre-action)",
             }}
-            aria-label="Vaiiya Premium"
+            aria-label="Vaiiya+"
           >
             <Crown size={15} strokeWidth={2} style={{ color: "#fff" }} />
           </motion.div>

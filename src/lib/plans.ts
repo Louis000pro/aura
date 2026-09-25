@@ -30,8 +30,8 @@ export const VENTE_OUVERTE = false;
  * on dit « bientôt » au lieu de promettre un achat impossible.
  */
 export const SORTIE_PREMIUM = VENTE_OUVERTE
-  ? "Ou passe en Premium pour ne plus y penser."
-  : "Premium, sans limite, arrive bientôt.";
+  ? "Ou passe à Vaiiya+ pour ne plus y penser."
+  : "Vaiiya+, sans limite, arrive bientôt.";
 
 export type PlanId = "free" | "premium";
 
@@ -92,7 +92,7 @@ export const PLANS: Record<PlanId, Plan> = {
   },
   premium: {
     id: "premium",
-    name: "Premium",
+    name: "Vaiiya+",
     priceCents: 599,
     currency: "eur",
     trialDays: 3,
@@ -106,7 +106,7 @@ export const PLANS: Record<PlanId, Plan> = {
       "Analyses de repas sans limite",
       "Détails complets de tes entraînements",
       "Tout le catalogue de séances et de cours",
-      "Badge Premium",
+      "Badge Vaiiya+",
     ],
     limits: { chatPerDay: Infinity, nutritionPerDay: Infinity, historiqueJours: Infinity, sessionsMax: Infinity, ads: false, exclusiveContent: true },
   },

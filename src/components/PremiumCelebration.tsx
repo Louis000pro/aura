@@ -99,7 +99,7 @@ export default function PremiumCelebration({ onClose }: { onClose: () => void })
             initial={{ backgroundPositionX: "0%", opacity: 0, y: 8 }}
             animate={{ backgroundPositionX: ["0%", "200%"], opacity: 1, y: 0 }}
             transition={{ backgroundPositionX: { duration: 3, repeat: Infinity, ease: "linear" }, opacity: { delay: 0.2 }, y: { delay: 0.2 } }}>
-            Bienvenue dans Premium
+            Bienvenue dans Vaiiya+
           </motion.h2>
 
           <motion.p className="text-[16px] font-light mb-6" style={{ color: "#7C6BAA" }}

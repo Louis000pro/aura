@@ -743,7 +743,7 @@ function SessionTile({ session, onStart, onManage, onPremium, canAccessPremium, 
               comme une tache. */}
           <span className="px-[5px] py-[2px] rounded-[5px] text-[11px] font-semibold"
             style={{ background: PREMIUM_PUCE, color: "#3A2402" }}>
-            Premium
+            Vaiiya+
           </span>
         </div>
       )}
@@ -763,7 +763,7 @@ function SessionTile({ session, onStart, onManage, onPremium, canAccessPremium, 
           ...(isPremium ? { borderBottomLeftRadius: PREMIUM_RAYON, borderBottomRightRadius: PREMIUM_RAYON } : null),
         }}
         aria-label={premiumLocked
-          ? `${session.title}, réservé à Premium`
+          ? `${session.title}, réservé à Vaiiya+`
           : advice ? `Lire : ${session.title}` : `Lancer : ${session.title}`}
       >
         <Photo img={img} pos={advice?.imagePosition ?? "center 20%"} style={{ position: "absolute", inset: 0 }} />
@@ -902,7 +902,7 @@ function PremiumPreviewSheet({ session, premiumCount, onClose, onUpgrade }: {
           style={{ background: `${PREMIUM_LAVIS},rgb(var(--surface-rgb))`, borderBottom: "1px solid rgba(245,177,32,0.2)" }}>
           <EtincellePremium taille={12} />
           <span className="text-[11px] font-semibold" style={{ color: "var(--or-encre)" }}>
-            {advice ? "Aperçu du cours Premium" : "Aperçu Premium"}
+            {advice ? "Aperçu du cours Vaiiya+" : "Aperçu Vaiiya+"}
           </span>
         </div>
 
@@ -983,8 +983,8 @@ function PremiumPreviewSheet({ session, premiumCount, onClose, onUpgrade }: {
             style={{ background: "rgba(var(--accent-rgb),0.08)", border: "1px solid rgba(var(--accent-rgb),0.14)" }}>
             <p className="text-[13px] font-bold leading-snug" style={{ color: "var(--text-1)" }}>
               {others > 0
-                ? `${premiumSubject} et ${others} autre${others > 1 ? "s" : ""} sont inclus${advice ? "" : "es"} avec Premium.`
-                : `${premiumSubject} est inclus${advice ? "" : "e"} avec Premium.`}
+                ? `${premiumSubject} et ${others} autre${others > 1 ? "s" : ""} sont inclus${advice ? "" : "es"} avec Vaiiya+.`
+                : `${premiumSubject} est inclus${advice ? "" : "e"} avec Vaiiya+.`}
             </p>
             <p className="text-[11px] mt-1 leading-relaxed" style={{ color: "var(--text-3)" }}>
               Débloque tout le catalogue, pas seulement {advice ? "cette lecture" : "cette séance"}.
@@ -1339,14 +1339,14 @@ function PleinSheet({ max, onVoir, onPremium, onClose }: {
           <p className="text-[13px] font-light mt-1.5 leading-relaxed" style={{ color: "var(--text-3)" }}>
             En gratuit, tu gardes {max} séances. Supprime celle que tu ne fais plus, la place
             se libère tout de suite. {VENTE_OUVERTE
-              ? "Avec Premium, tu en gardes autant que tu veux."
-              : "Premium, sans limite, arrive bientôt."}
+              ? "Avec Vaiiya+, tu en gardes autant que tu veux."
+              : "Vaiiya+, sans limite, arrive bientôt."}
           </p>
 
           {VENTE_OUVERTE && <motion.button whileTap={{ scale: 0.97 }} onClick={onPremium}
             className="w-full h-12 mt-5 rounded-2xl text-[16px] font-black text-white cursor-pointer border-none"
             style={{ background: "linear-gradient(120deg,var(--accent),var(--gold))", boxShadow: "0 8px 22px rgba(139,92,246,0.3)" }}>
-            Passer Premium
+            Passer à Vaiiya+
           </motion.button>}
           <motion.button whileTap={{ scale: 0.97 }} onClick={onVoir}
             className="w-full h-11 mt-1 text-[13px] font-semibold cursor-pointer bg-transparent border-none"
@@ -1411,7 +1411,7 @@ function SessionRow({ label, count, children }: {
    titre, il devient le chiffre en or qu'on lit à droite. C'est la réponse à
    « pourquoi payer », et elle tient en un nombre, comme le « +70 EXP » des
    missions. */
-function PremiumSessionRow({ count, children, title = "Continue avec Premium", unite = "séance", description = "Des séances plus ciblées." }: {
+function PremiumSessionRow({ count, children, title = "Continue avec Vaiiya+", unite = "séance", description = "Des séances plus ciblées." }: {
   count: number;
   children: React.ReactNode;
   title?: string;
@@ -1589,7 +1589,7 @@ function CatTile({ cat, count, freeCount, premiumCount, large, onOpen }: {
 }) {
   const sub = count > 0
     ? premiumCount > 0
-      ? `${freeCount} incluse${freeCount > 1 ? "s" : ""} · ${premiumCount} Premium`
+      ? `${freeCount} incluse${freeCount > 1 ? "s" : ""} · ${premiumCount} Vaiiya+`
       : `${count} séance${count > 1 ? "s" : ""}`
     : cat.id === "tiennes" ? "À toi de jouer" : "Bientôt";
   return (
@@ -1881,7 +1881,7 @@ function ChooseSheet({ sessions, loading, canAccessPremium, maxSeances, catIniti
             {vaiiyaPremium.length > 0 && (
               <PremiumSessionRow
                 count={vaiiyaPremium.length}
-                title={cat.id === "conseils" ? "Approfondis avec Premium" : undefined}
+                title={cat.id === "conseils" ? "Approfondis avec Vaiiya+" : undefined}
                 unite={cat.id === "conseils" ? "cours" : undefined}
                 description={cat.id === "conseils"
                   ? "Plateaux, récupération, programmation."

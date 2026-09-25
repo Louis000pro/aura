@@ -699,7 +699,7 @@ export default function WeeklyProgramme({ cycle = null }: { cycle?: CycleSemaine
               onClick={regenerateProgramme}
               className="flex items-center gap-1 cursor-pointer" style={{ color: isPremium ? "var(--text-3)" : "#B7A3E0", background: "none", border: "none", padding: 0 }}>
               {isPremium ? <RefreshCw size={10} strokeWidth={2.5} /> : <Lock size={10} strokeWidth={2.5} />}
-              <span className="text-[11px] font-medium">{isPremium ? "Régénérer" : "Régénérer · Premium"}</span>
+              <span className="text-[11px] font-medium">{isPremium ? "Régénérer" : "Régénérer · Vaiiya+"}</span>
             </button>
           </div>
         )}

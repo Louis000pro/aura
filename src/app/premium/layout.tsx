@@ -14,9 +14,9 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   // Le gabarit du layout racine ajoute « · Vaiiya » : « Vaiiya Premium » ici
   // donnerait « Vaiiya Premium · Vaiiya ».
-  title: "Premium, prix et offre",
+  title: "Vaiiya+, prix et offre",
   description:
-    "Ce que le compte gratuit Vaiiya contient, ce que Premium ajoute et combien il coûte. L’abonnement n’est pas encore ouvert à la souscription.",
+    "Ce que le compte gratuit Vaiiya contient, ce que Vaiiya+ ajoute et combien il coûte. L’abonnement n’est pas encore ouvert à la souscription.",
   alternates: { canonical: "https://vaiiya.fr/premium" },
 };
 

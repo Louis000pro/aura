@@ -110,7 +110,7 @@ export default function AdviceReaderSheet({
                 {article.access === "premium" && (
                   <span className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-full text-[11px] font-black uppercase tracking-[0.14em]"
                     style={{ background: "linear-gradient(120deg,#FFD34E,#F5B120)", color: "#3A2402" }}>
-                    Premium
+                    Vaiiya+
                   </span>
                 )}
               </div>

@@ -84,7 +84,7 @@ export default function CoachIaPage() {
       <p>
         L&apos;inscription est <strong>gratuite</strong>, sans carte bancaire. Tu obtiens le catalogue de
         séances, la bibliothèque de mouvements, le suivi de tes repas et ta progression sans rien payer. Un
-        abonnement <Link href="/premium">Vaiiya Premium</Link>{" "}lèvera plus tard les plafonds de
+        abonnement <Link href="/premium">Vaiiya+</Link>{" "}lèvera plus tard les plafonds de
         l&apos;assistant et ouvrira des programmes réservés : il n&apos;est <strong>pas encore ouvert à la
         souscription</strong>, et aucun paiement n&apos;est possible aujourd&apos;hui.
       </p>

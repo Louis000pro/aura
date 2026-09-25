@@ -56,7 +56,7 @@ export function VitrinePied({ suitLeTheme = false }: { suitLeTheme?: boolean }) 
             </Link>
           </li>
         ))}
-        <li><Link href="/premium" className="text-[16px] font-medium hover:underline" style={{ color: lien }}>Vaiiya Premium</Link></li>
+        <li><Link href="/premium" className="text-[16px] font-medium hover:underline" style={{ color: lien }}>Vaiiya+</Link></li>
       </ul>
       <p className="mt-8 text-[11px]" style={{ color: bas }}>
         © {new Date().getFullYear()} Vaiiya ·{" "}

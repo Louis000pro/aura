@@ -77,7 +77,7 @@ export default function LigneMission({
     : etat.earned
       ? null
       : !debloquee && etat.complete
-        ? "Premium"
+        ? "Vaiiya+"
         : resteMission(mission, etat);
 
   const contenu = (
@@ -95,7 +95,7 @@ export default function LigneMission({
       <span className={styles.missionCopy}>
         <strong>
           {mission.titre}
-          {premium && <em className={styles.tagPremium}>Premium</em>}
+          {premium && <em className={styles.tagPremium}>Vaiiya+</em>}
         </strong>
         <small>{mission.condition}</small>
       </span>

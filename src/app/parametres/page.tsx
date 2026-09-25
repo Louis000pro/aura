@@ -808,7 +808,7 @@ export default function ParametresPage() {
           <Groupe titre="Compte">
             <Ligne
               icon={Gem}
-              label="Vaiiya Premium"
+              label="Vaiiya+"
               sub={user?.is_premium ? "Ton abonnement est actif" : "Séances exclusives, missions illimitées"}
               right={
                 user?.is_premium

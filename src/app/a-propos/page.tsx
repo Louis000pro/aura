@@ -229,7 +229,7 @@ export default function AProposPage() {
       <p>
         Pour voir ce que ça donne concrètement, le plus simple reste de commencer&nbsp;: le{" "}
         <Link href="/coach-ia">coach IA</Link>, la <Link href="/nutrition-sportive">nutrition sportive</Link>{" "}
-        et l&apos;offre <Link href="/premium">Premium</Link> ont chacune leur page.
+        et l&apos;offre <Link href="/premium">Vaiiya+</Link> ont chacune leur page.
       </p>
     </MarketingShell>
   );

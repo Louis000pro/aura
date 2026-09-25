@@ -124,7 +124,7 @@ export default function PremiumBanner() {
             : { type: "spring", stiffness: 390, damping: 30, mass: 0.85 }}
           className={styles.position}
           style={{ top: "calc(env(safe-area-inset-top) + 12px)" }}
-          aria-label="Découvrir Vaiiya Premium"
+          aria-label="Découvrir Vaiiya+"
         >
           <div className={styles.halo} aria-hidden="true" />
 
@@ -146,7 +146,7 @@ export default function PremiumBanner() {
                   type="button"
                   onClick={() => setVisible(false)}
                   className={styles.close}
-                  aria-label="Fermer le rappel Premium"
+                  aria-label="Fermer le rappel Vaiiya+"
                 >
                   <X size={17} strokeWidth={2.3} />
                 </button>
@@ -161,7 +161,7 @@ export default function PremiumBanner() {
                 </div>
 
                 <button type="button" onClick={ouvrirPremium} className={styles.cta}>
-                  Découvrir Premium
+                  Découvrir Vaiiya+
                   <ArrowRight size={17} strokeWidth={2.5} />
                 </button>
               </div>

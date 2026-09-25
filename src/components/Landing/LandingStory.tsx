@@ -211,7 +211,7 @@ const CATALOGUE = [
   { img: "/entrainement/cat-sansmateriel.webp", tag: "Pour commencer", title: "Full Body Débutant", meta: "25 min · Sans matériel", premium: false },
   { img: "/entrainement/cat-salle.webp", tag: "Salle", title: "Force Haut du Corps", meta: "40 min · Renforcement", premium: false },
   { img: "/entrainement/cat-mobilite.webp", tag: "Mobilité", title: "Mobilité Matinale", meta: "12 min · Tous niveaux", premium: false },
-  { img: "/entrainement/cat-masse.webp", tag: "Premium", title: "Prise de masse", meta: "Programmes spécialisés", premium: true },
+  { img: "/entrainement/cat-masse.webp", tag: "Vaiiya+", title: "Prise de masse", meta: "Programmes spécialisés", premium: true },
 ];
 
 function SectionCatalogue() {
@@ -228,7 +228,7 @@ function SectionCatalogue() {
           <Reveal delay={0.12}>
             <p className="mt-6 text-[16px] md:text-[20px] font-light max-w-xl mx-auto leading-relaxed" style={{ color: "var(--text-2)" }}>
               Sans matériel, à la salle, en mobilité ou en récupération. Une base gratuite solide pour démarrer,
-              et Premium quand tu veux les formats spécialisés.
+              et Vaiiya+ quand tu veux les formats spécialisés.
             </p>
           </Reveal>
         </div>
@@ -1073,7 +1073,7 @@ function SectionFinale() {
               </ul>
               <p className="mt-6 pt-5 text-[13px] font-light leading-relaxed"
                 style={{ color: "var(--text-3)", borderTop: "1px solid rgba(var(--accent-rgb),0.12)" }}>
-                Premium arrive plus tard, si tu veux les séances spécialisées, les missions supplémentaires et
+                Vaiiya+ arrive plus tard, si tu veux les séances spécialisées, les missions supplémentaires et
                 l&rsquo;assistant sans limite. Jamais pour débloquer une fonction de base.
               </p>
             </div>
@@ -1134,7 +1134,7 @@ function SectionFinale() {
               <p className="text-[11px] font-semibold uppercase tracking-[0.2em] mb-3" style={{ color: "var(--text-3)" }}>Vaiiya</p>
               <ul className="space-y-2">
                 <FooterLien href="/auth?mode=login" label="Se connecter" />
-                <FooterLien href="/premium" label="Premium" />
+                <FooterLien href="/premium" label="Vaiiya+" />
                 {LEGAL_PAGES.map((p) => <FooterLien key={p.href} href={p.href} label={p.label} />)}
               </ul>
             </div>

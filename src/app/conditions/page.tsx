@@ -108,7 +108,7 @@ export default function ConditionsPage() {
           </p>
         </Section>
 
-        <Section title="3. L’offre gratuite et l’abonnement Premium">
+        <Section title="3. L’offre gratuite et l’abonnement Vaiiya+">
           <p>
             Vaiiya s&apos;utilise gratuitement, avec les limites indiquées ci-dessous et à l&apos;article 5.
             L&apos;abonnement <strong>{premium.name}</strong> coûte <strong>{prix} par mois</strong>, toutes
@@ -151,7 +151,7 @@ export default function ConditionsPage() {
         <Section title="4. Résiliation et rétractation">
           <p>
             <strong>Vous pouvez résilier à tout moment</strong>, sans motif et sans frais, depuis
-            Paramètres → Compte → « Gérer mon abonnement », ou depuis la page Premium. La résiliation
+            Paramètres → Compte → « Gérer mon abonnement », ou depuis la page Vaiiya+. La résiliation
             prend effet à la fin de la période déjà payée : vous gardez l&apos;accès jusque-là, et rien
             n&apos;est prélevé ensuite.
           </p>
@@ -185,7 +185,7 @@ export default function ConditionsPage() {
                 <tr style={{ color: "var(--text-3)" }}>
                   <th className="text-left font-semibold py-2">Par jour</th>
                   <th className="text-right font-semibold py-2 px-2">Gratuit</th>
-                  <th className="text-right font-semibold py-2">Premium</th>
+                  <th className="text-right font-semibold py-2">Vaiiya+</th>
                 </tr>
               </thead>
               <tbody>

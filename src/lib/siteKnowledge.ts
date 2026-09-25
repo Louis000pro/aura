@@ -41,7 +41,7 @@ export const SITE_FEATURES: SiteFeature[] = [
     title: "Accueil",
     route: "/",
     summary:
-      "Écran d’arrivée : le mot du Guide, la série de jours et le rang (EXP), les missions du jour et de la semaine, le relais en cours s’il y en a un, et l’offre Premium.",
+      "Écran d’arrivée : le mot du Guide, la série de jours et le rang (EXP), les missions du jour et de la semaine, le relais en cours s’il y en a un, et l’offre Vaiiya+.",
     actions: [
       "voir sa série de jours et son rang",
       "suivre ses missions du jour",
@@ -146,11 +146,11 @@ export const SITE_FEATURES: SiteFeature[] = [
        `lib/plans.ts`). La page présente l’offre et le dit elle-même : ne
        jamais laisser entendre ici qu’on peut souscrire. */
     key: "premium",
-    title: "Vaiiya Premium",
+    title: "Vaiiya+",
     route: "/premium",
     summary:
-      "Présentation de l’offre Premium : tout le catalogue de séances, les mini-cours, les missions supplémentaires et l’assistant sans compteur. L’abonnement n’est pas encore ouvert à la souscription.",
-    actions: ["voir ce que contient Premium"],
+      "Présentation de l’offre Vaiiya+ : tout le catalogue de séances, les mini-cours, les missions supplémentaires et l’assistant sans compteur. L’abonnement n’est pas encore ouvert à la souscription.",
+    actions: ["voir ce que contient Vaiiya+"],
     keywords: ["premium", "abonnement", "abonner", "payant", "plan supérieur", "upgrade", "illimité"],
   },
 ];
