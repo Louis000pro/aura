@@ -53,7 +53,7 @@ export const PLAFONDS = {
   messageChars: 4000,
   /** Messages d'historique renvoyés au modèle. */
   historique: 24,
-  /** Poids d'une image en base64 (le client compresse déjà à 1024 px). */
+  /** Poids d’une image en base64. Le client prépare ses photos à 1280 px en JPEG (lib/photoIA), bien en dessous. */
   imageOctets: 4 * 1024 * 1024,
   /** Poids d'un enregistrement vocal. Au-delà, ce n'est plus de la dictée. */
   audioOctets: 8 * 1024 * 1024,

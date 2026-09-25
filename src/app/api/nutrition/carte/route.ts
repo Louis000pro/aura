@@ -1,6 +1,7 @@
 import Groq from "groq-sdk";
 import { NextResponse } from "next/server";
 import { garderIA, PLAFONDS, refusTaille } from "@/lib/aiLimits";
+import { appelerVision } from "@/lib/visionRepas";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
@@ -44,16 +45,7 @@ export async function POST(req: Request) {
 
     const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
-    const response = await groq.chat.completions.create({
-      model: "meta-llama/llama-4-scout-17b-16e-instruct",
-      messages: [
-        {
-          role: "user",
-          content: [
-            { type: "image_url", image_url: { url: `data:${mimeType};base64,${image}` } },
-            {
-              type: "text",
-              text: `Tu es un coach nutrition bienveillant. Voici la PHOTO d’une carte / menu de restaurant.
+    const consigne = `Tu es un coach nutrition bienveillant. Voici la PHOTO d’une carte / menu de restaurant.
 
 Ta mission : lire les PLATS proposés et les CLASSER pour aider la personne à choisir, SANS jamais inventer de chiffres.
 
@@ -73,16 +65,13 @@ Retourne UNIQUEMENT un JSON valide, sans texte avant ou après :
   "dishes": [
     { "name": "nom du plat", "verdict": "recommande", "reason": "raison relative courte", "best": false }
   ]
-}`,
-            },
-          ],
-        },
-      ],
-      max_tokens: 900,
-      temperature: 0.2,
-    });
-
-    const text = response.choices[0]?.message?.content ?? "";
+}`;
+    const text = await appelerVision(
+      groq as unknown as Parameters<typeof appelerVision>[0],
+      { base64: image, mimeType },
+      consigne,
+      { maxTokens: 900, temperature: 0.2 },
+    );
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (!jsonMatch) throw new Error(`Pas de JSON dans la réponse: ${text.slice(0, 200)}`);
     const data = JSON.parse(jsonMatch[0]) as { place?: unknown; dishes?: unknown };

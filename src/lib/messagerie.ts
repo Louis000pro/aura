@@ -8,6 +8,7 @@
    ───────────────────────────────────────────────────────────── */
 
 import { createClient } from "@/lib/supabase";
+import { decoderPhoto } from "./decoderImage";
 
 export type Personne = {
   id: string;
@@ -649,48 +650,6 @@ export async function envoyerMessage(
   if (!error && data?.id) notifierMessage(data.id as string, accessToken);
 
   return { ok: !error, raison: error?.message, messageId: data?.id as string | undefined };
-}
-
-async function decoderPhoto(fichier: File): Promise<{
-  source: CanvasImageSource;
-  width: number;
-  height: number;
-  fermer: () => void;
-}> {
-  if (typeof createImageBitmap === "function") {
-    try {
-      const bitmap = await createImageBitmap(fichier, { imageOrientation: "from-image" });
-      return {
-        source: bitmap,
-        width: bitmap.width,
-        height: bitmap.height,
-        fermer: () => bitmap.close(),
-      };
-    } catch {
-      // Safari sait parfois afficher un format natif que createImageBitmap
-      // refuse : on retente alors via un élément image.
-    }
-  }
-
-  const url = URL.createObjectURL(fichier);
-  const image = document.createElement("img");
-  image.decoding = "async";
-  try {
-    await new Promise<void>((resolve, reject) => {
-      image.onload = () => resolve();
-      image.onerror = () => reject(new Error("format_invalide"));
-      image.src = url;
-    });
-    return {
-      source: image,
-      width: image.naturalWidth,
-      height: image.naturalHeight,
-      fermer: () => URL.revokeObjectURL(url),
-    };
-  } catch (error) {
-    URL.revokeObjectURL(url);
-    throw error;
-  }
 }
 
 async function compresserPhoto(fichier: File) {

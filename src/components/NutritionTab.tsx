@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { aiFetch, messageDeRefus } from "@/lib/aiFetch";
 import { motion, AnimatePresence } from "framer-motion";
 import { Plus, X, Check, Camera, Upload, Loader2, Edit2, Barcode, Minus, ChevronLeft, ChevronRight, ChevronDown, CalendarDays, BookOpen, Heart, SwitchCamera, Star, Target, Image as ImageIcon } from "lucide-react";
+import { preparerPhotoIA } from "@/lib/photoIA";
 import HistoriqueMasque from "@/components/historique/HistoriqueMasque";
 import { debutHistorique, historiqueComplet } from "@/lib/historique";
 import { AssistantSpark } from "@/components/AssistantMark";
@@ -42,6 +43,8 @@ type AnalysisResult = {
   proteins: number;
   carbs: number;
   fats: number;
+  /** Ce que l'IA a vu, élément par élément : le total en est la somme. */
+  items?: { nom: string; grammes: number; calories: number }[];
 };
 
 type DaySummary = {
@@ -195,22 +198,35 @@ function PhotoAnalysisModal({ onClose, onAdd, onBack }: {
   }, []);
 
   const analyze = async (file: File) => {
-    const reader = new FileReader();
-    reader.onload = async (e) => {
-      const dataUrl = e.target?.result as string;
-      setPhotoUrl(dataUrl);
-      setPhase("analyzing");
-      setError(null);
-
-      const base64 = dataUrl.split(",")[1];
+    setPhase("analyzing");
+    setError(null);
+    /* ⚠️ La photo est préparée AVANT l'envoi (lib/photoIA) : sans ça, un
+       HEIC d'iPhone ou une photo de 5 Mo échouait avant même d'atteindre
+       le modèle. */
+    let photo;
+    try {
+      photo = await preparerPhotoIA(file);
+    } catch {
+      setError("Cette photo ne s’ouvre pas. Essaie avec une autre, ou prends-la depuis l’appareil photo.");
+      setPhase("select");
+      return;
+    }
+    setPhotoUrl(photo.apercu);
+    {
       try {
         // aiFetch pose le jeton de session : l'endpoint vision est protégé et
         // plafonné (voir lib/aiLimits.ts).
         const res = await aiFetch("/api/nutrition/analyze", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ image: base64, mimeType: file.type }),
+          body: JSON.stringify({ image: photo.base64, mimeType: photo.mimeType, heure: new Date().getHours() }),
         });
+        if (res.status === 422) {
+          const d = await res.json().catch(() => ({}));
+          setError(d.message ?? "Je ne vois pas de repas sur cette photo.");
+          setPhase("select");
+          return;
+        }
         // Le serveur sait si la limite touchée est celle du gratuit ou le
         // plafond d'usage raisonnable : on affiche SON message, on ne réécrit
         // pas ici une phrase qui pourrait mentir à un abonné.
@@ -234,8 +250,7 @@ function PhotoAnalysisModal({ onClose, onAdd, onBack }: {
           : "Analyse impossible, essaie à nouveau.");
         setPhase("select");
       }
-    };
-    reader.readAsDataURL(file);
+    }
   };
 
   const handleConfirm = () => {
@@ -514,6 +529,22 @@ function PhotoAnalysisModal({ onClose, onAdd, onBack }: {
                     <p className="text-[11px] mt-1" style={{ color: "var(--text-3)" }}>kcal</p>
                   </div>
                 </div>
+
+                {/* Ce que l'IA a vu, élément par élément. Le total au-dessus
+                    en est la somme exacte (lib/visionRepas) : si un poids est
+                    faux, on le voit ici, et « Ajuster » le corrige. */}
+                {editData.items && editData.items.length > 0 && (
+                  <div className="overflow-hidden" style={{ borderRadius: "var(--r-controle)", border: "1px solid rgba(var(--accent-rgb),0.14)" }}>
+                    {editData.items.map((it, k) => (
+                      <div key={k} className="flex items-baseline gap-2 px-3 py-2 text-[13px]"
+                        style={{ borderTop: k ? "1px solid rgba(var(--accent-rgb),0.10)" : "none" }}>
+                        <span className="flex-1 min-w-0 truncate" style={{ color: "var(--text-1)" }}>{it.nom}</span>
+                        <span className="vy-nombre flex-shrink-0" style={{ color: "var(--text-3)" }}>{it.grammes} g</span>
+                        <span className="vy-nombre flex-shrink-0 w-16 text-right" style={{ color: "var(--text-2)" }}>{it.calories} kcal</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
 
                 {/* Macros — composant partagé Système D */}
                 <MacroTiles proteins={editData.proteins} carbs={editData.carbs} fats={editData.fats} />
@@ -1240,13 +1271,20 @@ function MenuScanModal({ objectiveLine, objectiveChip, goalKnown, initialResult,
   }, []);
 
   const analyze = async (file: File) => {
-    const reader = new FileReader();
-    reader.onload = async (e) => {
-      const dataUrl = e.target?.result as string;
-      setPhotoUrl(dataUrl);
-      setPhase("analyzing");
-      setError(null);
-      const base64 = dataUrl.split(",")[1];
+    setPhase("analyzing");
+    setError(null);
+    /* Même préparation que la photo d'un repas, un peu plus grande : sur une
+       carte, c'est du TEXTE qu'il faut lire. */
+    let photo;
+    try {
+      photo = await preparerPhotoIA(file, 1600);
+    } catch {
+      setError("Cette photo ne s’ouvre pas. Essaie avec une autre.");
+      setPhase("select");
+      return;
+    }
+    setPhotoUrl(photo.apercu);
+    {
       try {
         const supabase = createClient();
         const { data: { session } } = await supabase.auth.getSession();
@@ -1256,7 +1294,7 @@ function MenuScanModal({ objectiveLine, objectiveChip, goalKnown, initialResult,
             "Content-Type": "application/json",
             ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
           },
-          body: JSON.stringify({ image: base64, mimeType: file.type, objective: objectiveLine, goalKnown }),
+          body: JSON.stringify({ image: photo.base64, mimeType: photo.mimeType, objective: objectiveLine, goalKnown }),
         });
         if (res.status === 401) { setError("Connecte-toi pour lire une carte."); setPhase("select"); return; }
         if (res.status === 422) { setError("Je n’ai pas réussi à lire les plats, rapproche-toi et recadre la carte."); setPhase("select"); return; }
@@ -1270,8 +1308,7 @@ function MenuScanModal({ objectiveLine, objectiveChip, goalKnown, initialResult,
         setError("Lecture impossible, réessaie.");
         setPhase("select");
       }
-    };
-    reader.readAsDataURL(file);
+    }
   };
 
   // ── Caméra live in-app (identique à la Photo IA) ──

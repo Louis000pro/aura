@@ -9,6 +9,7 @@
     "lint": "eslint",
     "check:seo-spacing": "node scripts/check-seo-spacing.mjs",
     "check:missions": "node scripts/check-missions.mjs",
+    "check:vision": "node --experimental-strip-types --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --import ./scripts/check-ia-alias.mjs scripts/check-vision.ts",
     "check:echelle": "node scripts/check-echelle.mjs",
     "missions": "node scripts/build-missions.mjs",
     "guides": "node scripts/build-guides.mjs && node scripts/normalize-guides.mjs",
