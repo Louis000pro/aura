@@ -4,7 +4,7 @@
    RecapHier — le popup du récap d'hier (avantage Vaiiya+).
 
    Demande de Louis (2026-09-25) : à l'ouverture de l'app, un popup avec
-   ce qui a été fait hier (séances, temps, séries, calories, repas, EXP)
+   ce qui a été fait hier (séances, temps, calories dépensées et mangées)
    et le Guide qui dit un truc super positif dessus.
 
    ⚠️ Seules les valeurs NON NULLES s'affichent : une case « 0 repas »
@@ -39,16 +39,14 @@ export default function RecapHier({
   useEffect(() => lockBodyModal(), []);
 
   const f = recap.faits;
-  /* Six cases au plus, donc deux rangées de trois. Bleu et violet pour
-     l'entraînement (Louis : pas de vert ici), l'orange de l'énergie pour
-     les calories. L'EXP sort de la grille : elle vit dans la pastille, à
-     côté de la série, parce que ce sont les deux choses qu'on a GAGNÉES. */
+  /* Quatre informations, pas plus (Louis) : ce qu'on a fait et ce qu'on a
+     mangé. Les séries et le nombre de repas sont retirés : ils redisaient
+     la même journée en plus petit. Violet et bleu pour l'entraînement,
+     l'orange de l'énergie pour les calories. L'EXP vit dans sa pastille. */
   const cases: Case[] = [
     { valeur: f.seances.length, libelle: f.seances.length > 1 ? "séances" : "séance", encre: "var(--exp-encre)" },
     { valeur: f.minutes, unite: "min", libelle: "d’entraînement", encre: "var(--bleu-encre)" },
-    { valeur: f.series, libelle: f.series > 1 ? "séries" : "série", encre: "var(--exp-encre)" },
     { valeur: f.kcalBrulees, unite: "kcal", libelle: "dépensées", encre: "var(--feu-encre)" },
-    { valeur: f.repas, libelle: f.repas > 1 ? "repas notés" : "repas noté", encre: "var(--bleu-encre)" },
     { valeur: f.calories, unite: "kcal", libelle: "mangées", encre: "var(--feu-encre)" },
   ].filter((c) => c.valeur > 0);
 
@@ -67,7 +65,16 @@ export default function RecapHier({
         aria-modal="true"
         aria-label="Ta journée d'hier"
         className="relative w-full sm:max-w-[400px] overflow-hidden rounded-t-[var(--r-feuille)] sm:rounded-[var(--r-affiche)]"
-        style={{ background: "rgb(var(--surface-rgb))", boxShadow: "var(--ombre-flottant)", maxHeight: "94dvh", overflowY: "auto" }}
+        style={{
+          /* Le filet dégradé de la marque, fin : violet → magenta → or, la
+             signature de Vaiiya. Posé en bordure (padding-box / border-box)
+             pour qu'il suive exactement l'arrondi, sans surface en plus. */
+          border: "2px solid transparent",
+          background: "linear-gradient(rgb(var(--surface-rgb)), rgb(var(--surface-rgb))) padding-box, linear-gradient(135deg, #8B5CF6 0%, #C13BC1 55%, #F5B120 100%) border-box",
+          boxShadow: "var(--ombre-flottant)",
+          maxHeight: "94dvh",
+          overflowY: "auto",
+        }}
         initial={reduce ? false : { y: 40, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ type: "spring", damping: 30, stiffness: 300 }}
@@ -85,7 +92,7 @@ export default function RecapHier({
           )}
           <p className="text-[11px] font-semibold mt-2" style={{ color: "var(--or-encre)" }}>Vaiiya+ · Ton récap</p>
           <h2 className="vy-titre" style={{ fontSize: 26, fontWeight: 800, color: "var(--text-0)" }}>
-            Ta journée d’hier
+            Ta journée d’<span style={{ background: "linear-gradient(100deg, #8B5CF6, #C13BC1)", WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent" }}>hier</span>
           </h2>
           <motion.p
             className="mt-2 text-[16px] leading-[1.45] max-w-[19rem]"
@@ -124,16 +131,17 @@ export default function RecapHier({
                le nombre au-dessus de ce qu'il compte. Seules les valeurs non
                nulles s'affichent. */
             <div
-              className="mt-5 grid grid-cols-3 overflow-hidden rounded-[var(--r-bloc)]"
+              className="mt-5 grid grid-cols-2 overflow-hidden rounded-[var(--r-bloc)]"
               style={{ border: "1px solid rgba(var(--text-3-rgb),0.16)", background: "rgba(var(--tint-violet-rgb),0.35)" }}
             >
               {cases.map((c, i) => (
                 <motion.div
                   key={c.libelle}
-                  className="flex flex-col items-center justify-center px-2 py-3.5 text-center min-w-0"
+                  className="flex flex-col items-center justify-center px-2 py-4 text-center min-w-0"
                   style={{
-                    borderLeft: i % 3 ? "1px solid rgba(var(--text-3-rgb),0.14)" : undefined,
-                    borderTop: i > 2 ? "1px solid rgba(var(--text-3-rgb),0.14)" : undefined,
+                    borderLeft: i % 2 ? "1px solid rgba(var(--text-3-rgb),0.14)" : undefined,
+                    borderTop: i > 1 ? "1px solid rgba(var(--text-3-rgb),0.14)" : undefined,
+                    gridColumn: i === cases.length - 1 && cases.length % 2 ? "span 2" : undefined,
                   }}
                   initial={reduce ? false : { opacity: 0, y: 6 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -143,7 +151,7 @@ export default function RecapHier({
                     <span className="vy-nombre text-[26px]" style={{ fontWeight: 800 }}>{c.valeur}</span>
                     {c.unite && <span className="text-[11px] font-semibold ml-1">{c.unite}</span>}
                   </p>
-                  <p className="text-[11px] mt-1.5 truncate max-w-full" style={{ color: "var(--text-2)" }}>{c.libelle}</p>
+                  <p className="text-[13px] mt-1.5 truncate max-w-full" style={{ color: "var(--text-2)" }}>{c.libelle}</p>
                 </motion.div>
               ))}
             </div>

@@ -56,9 +56,9 @@ export function faitsEnTexte(f: FaitsRecap): string {
   if (f.seances.length) {
     l.push(
       "Séances terminées hier : " +
-        f.seances.map((s) => `« ${s.titre} » (${s.minutes} min${s.series ? `, ${s.series} séries` : ""})`).join(", ") + ".",
+        f.seances.map((s) => `« ${s.titre} » (${s.minutes} min)`).join(", ") + ".",
     );
-    l.push(`Temps d'entraînement total : ${f.minutes} min${f.series ? `, ${f.series} séries au total` : ""}${f.kcalBrulees ? `, environ ${f.kcalBrulees} kcal dépensées` : ""}.`);
+    l.push(`Temps d'entraînement total : ${f.minutes} min${f.kcalBrulees ? `, environ ${f.kcalBrulees} kcal dépensées` : ""}.`);
   } else {
     l.push("Aucune séance hier (ne le mentionne PAS).");
   }
@@ -72,7 +72,7 @@ export function faitsEnTexte(f: FaitsRecap): string {
 
 /** La consigne du récap. Les chiffres sont déjà affichés dans le popup :
  *  le Guide ne les recite pas, il FÉLICITE. */
-export const CONSIGNE_RECAP = `Tu réagis à la journée d'HIER de cette personne, au moment où elle ouvre l'app ce matin. Ses chiffres (séances, temps, séries, calories, repas, EXP) sont déjà affichés juste au-dessus de ta phrase : ne les recopie pas tous, tu peux en citer UN au plus.
+export const CONSIGNE_RECAP = `Tu réagis à la journée d'HIER de cette personne, au moment où elle ouvre l'app ce matin. Ses chiffres (séances, temps d'entraînement, calories dépensées et mangées) sont déjà affichés sous ta phrase : ne les recopie pas, tu peux en citer UN au plus, et seulement parmi ceux-là.
 - 1 ou 2 phrases courtes, 30 mots maximum, en tutoyant.
 - Ton : très enthousiaste, chaleureux, super positif, comme un coach qui est fier. Exemple de l'énergie attendue : « Ta journée d'hier était incroyable, continue comme ça, tu es sur une super lancée ! »
 - Uniquement du positif. Jamais de reproche, jamais « tu n'as pas », jamais ce qui manque.
@@ -112,7 +112,11 @@ export function recapPourCoach(r: Recap): string {
 
 /* ── Le cache, côté navigateur ────────────────────────────────────── */
 
-const cle = (userId: string, jour: string) => `vaiiya_recap_${userId}_${jour}`;
+/* « v2 » : les séries ont quitté le récap (Louis, 2026-09-25). Changer le
+   préfixe fait regénérer une fois la phrase gardée, qui pouvait encore les
+   citer ; l'ancienne clé est nettoyée par `noterRecap`. */
+const PREFIXE = "vaiiya_recap2_";
+const cle = (userId: string, jour: string) => `${PREFIXE}${userId}_${jour}`;
 
 export function lireRecap(userId: string, jour: string): Recap | null {
   try {
@@ -130,7 +134,7 @@ export function noterRecap(userId: string, jour: string, recap: Recap) {
     // Un seul récap gardé par compte : on nettoie ceux des jours d'avant.
     for (let i = localStorage.length - 1; i >= 0; i--) {
       const k = localStorage.key(i);
-      if (k && k.startsWith(`vaiiya_recap_${userId}_`) && k !== cle(userId, jour)) localStorage.removeItem(k);
+      if (k && (k.startsWith(`${PREFIXE}${userId}_`) || k.startsWith(`vaiiya_recap_${userId}_`)) && k !== cle(userId, jour)) localStorage.removeItem(k);
     }
     localStorage.setItem(cle(userId, jour), JSON.stringify(recap));
   } catch {
