@@ -27,6 +27,8 @@ import {
 } from "@/lib/momentAccueil";
 import { observeParisDay, parisDateStr } from "@/lib/dates";
 import { marquerPresence } from "@/lib/presence";
+import { aiFetch } from "@/lib/aiFetch";
+import { bornesHier, lireRecap, noterRecap } from "@/lib/recapJour";
 
 /* ─────────────────────────────────────────────────
    LANDING PAGE — visiteur non connecté
@@ -172,6 +174,59 @@ function Dashboard() {
     return () => { vivant = false; };
   }, [user, aura, auraLoaded, etatGuide, parisDay]);
 
+  /* ── Le récap d'hier (avantage Vaiiya+) ──
+     À la première ouverture de la journée, le Guide raconte hier, à la
+     place de sa phrase habituelle (un seul Guide qui parle). Toute la
+     règle vit dans `recapJour.ts` et dans la route.
+
+     ⚠️ ON ATTEND `missionsLues`, pas `auraLoaded` : la série et le rang du
+     cache pourraient être d'hier, et le récap les cite. Le texte du jour
+     est gardé sur l'appareil, donc une seule génération par jour ; un
+     compte gratuit ne fait AUCUN appel. */
+  const vaiiyaPlus = !!user?.is_premium || !!user?.is_admin;
+  const [recap, setRecap] = useState<string | null>(null);
+  const recapJourRef = useRef<string | null>(null);
+  const cibleRecapRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!user || !vaiiyaPlus || !missionsLues || etatGuide === "chargement") return;
+    if (recapJourRef.current === parisDay) return;
+    recapJourRef.current = parisDay;
+
+    /* ⚠️ Pas d'annulation au nettoyage de l'effet : la série se relit
+       juste après `missionsLues`, l'effet repasse, et le verrou du jour
+       l'empêcherait de relancer. On vérifie à l'arrivée que la réponse
+       concerne toujours ce compte et ce jour. */
+    const pour = `${user.id}|${parisDay}`;
+    const toujoursValable = () => cibleRecapRef.current === pour;
+    cibleRecapRef.current = pour;
+
+    const enCache = lireRecap(user.id, parisDay);
+    if (enCache) {
+      void Promise.resolve().then(() => { if (toujoursValable()) setRecap(enCache); });
+      return;
+    }
+
+    const userId = user.id;
+    const hier = bornesHier();
+    void aiFetch("/api/assistant/recap", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        ...hier,
+        serie: aura.serie,
+        rang: aura.rang.nom,
+        guide,
+      }),
+    })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d: { texte?: string } | null) => {
+        if (!toujoursValable() || !d?.texte) return;
+        setRecap(d.texte);
+        noterRecap(userId, parisDay, d.texte);
+      })
+      .catch(() => {});
+  }, [user, vaiiyaPlus, missionsLues, etatGuide, parisDay, aura.serie, aura.rang.nom, guide]);
+
   /* ── Le relais, s'il y en a un de vivant ──
      Le relais n'avait aucune entrée sur l'écran où l'on arrive. Une bande
      fine sous les missions du jour, et seulement quand il y a un relais :
@@ -238,6 +293,7 @@ function Dashboard() {
           isAdmin={!!user?.is_admin}
           guide={guide}
           moment={motGuide}
+          recap={recap}
           relais={relais}
           jour={parisDay}
           heros={<HeroJournee />}

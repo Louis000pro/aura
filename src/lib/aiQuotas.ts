@@ -17,7 +17,8 @@ export type CategorieIA =
   | "recette"     // recette ou menu généré
   | "seance"      // génération d'une séance
   | "vocal"       // dictée (Groq Whisper)
-  | "lookup";     // appels externes gratuits mais coûteux en bande passante
+  | "lookup"      // appels externes gratuits mais coûteux en bande passante
+  | "recap";      // le récap du jour de l’accueil, avantage Vaiiya+
 
 export interface Limite {
   /** Appels par jour pour un compte gratuit. */
@@ -41,6 +42,9 @@ export const LIMITES: Record<CategorieIA, Limite> = {
   seance:     { gratuit: 5,  premium: 60,  parMinute: 8,  libelle: "séances générées" },
   vocal:      { gratuit: 15, premium: 150, parMinute: 15, libelle: "dictées" },
   lookup:     { gratuit: 60, premium: 300, parMinute: 30, libelle: "recherches" },
+  // 0 en gratuit : c'est un avantage Vaiiya+. Un par jour suffit (il est
+  // gardé en cache sur l'appareil), 6 couvre plusieurs appareils et un retry.
+  recap:      { gratuit: 0,  premium: 6,   parMinute: 3,  libelle: "récaps du jour" },
 };
 
 /**

@@ -84,6 +84,27 @@
   text-wrap: pretty;
 }
 
+/* Le récap d'hier (Vaiiya+). Même règle que la phrase : ni carte ni
+   cadre, c'est quelqu'un qui parle. Il est plus long, donc il passe en
+   texte qu'on lit (16 px), avec une étiquette discrète en or : c'est ce
+   qui dit « ceci est un avantage Vaiiya+ » sans un mot de vente. */
+.recap {
+  display: block;
+  margin-top: 4px;
+  color: var(--text-1);
+  font-size: 16px;
+  line-height: 1.45;
+  text-wrap: pretty;
+}
+
+.recapTete {
+  display: block;
+  margin-bottom: 2px;
+  color: var(--or-encre);
+  font-size: 11px;
+  font-weight: 600;
+}
+
 /* ── ⑤ OÙ J'EN SUIS ──────────────────────────────────────────────────
    Une seule ligne pour la série, le rang et l'EXP. Elles répondaient à la
    même question sur deux blocs empilés de 142 px, en tête d'écran ; elles

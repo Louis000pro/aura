@@ -104,6 +104,7 @@ export const PLANS: Record<PlanId, Plan> = {
       "Tes propres séances, sans limite",
       "Le coach, sans limite de messages",
       "Analyses de repas sans limite",
+      "Le récap de ta journée par ton Guide, chaque matin",
       "Détails complets de tes entraînements",
       "Tout le catalogue de séances et de cours",
       "Badge Vaiiya+",

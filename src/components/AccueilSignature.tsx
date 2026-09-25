@@ -57,6 +57,7 @@ export default function AccueilSignature({
   isAdmin,
   guide,
   moment,
+  recap,
   relais,
   jour,
   heros,
@@ -91,6 +92,9 @@ export default function AccueilSignature({
    *  ⚠️ V7B N'AJOUTE AUCUN DÉCLENCHEUR. Les six moments de
    *  `momentAccueil.ts` sont exactement ceux d'avant cette vague. */
   moment: MomentAccueil | null;
+  /** Le récap d'hier (Vaiiya+), ou `null`. Quand il existe, il PREND LA
+   *  PLACE du moment : un seul Guide qui parle sur l'écran. */
+  recap?: string | null;
   /** Le jour parisien courant, `YYYY-MM-DD`. Il décide quelle mission
    *  Premium est mise en avant aujourd'hui. */
   jour: string;
@@ -109,7 +113,7 @@ export default function AccueilSignature({
 
   return (
     <div className={styles.home}>
-      <Entree guide={guide} greeting={greeting} pseudo={pseudo} moment={moment} reduce={!!reduce} />
+      <Entree guide={guide} greeting={greeting} pseudo={pseudo} moment={moment} recap={recap ?? null} reduce={!!reduce} />
 
       {heros}
 
@@ -178,21 +182,24 @@ function Entree({
   greeting,
   pseudo,
   moment,
+  recap,
   reduce,
 }: {
   guide: GuideRef;
   greeting: string;
   pseudo: string;
   moment: MomentAccueil | null;
+  recap: string | null;
   reduce: boolean;
 }) {
   const { open } = useAssistant();
+  const parle = !!recap || !!moment;
 
   return (
     <motion.button
       type="button"
       className={styles.entree}
-      data-parle={moment ? "" : undefined}
+      data-parle={parle ? "" : undefined}
       onClick={() => open()}
       aria-label="Parler à ton Guide"
       initial={reduce ? false : { opacity: 0, y: 6 }}
@@ -202,12 +209,24 @@ function Entree({
       {/* Sans Guide résolu (choix pas fait, SQL pas collé, hors ligne),
           `VisageGuide` rend l'étincelle ✦ : la zone reste, et elle ouvre
           la même conversation. */}
-      <VisageGuide guide={guide} etat={moment?.etat ?? "welcome"} size={moment ? 40 : 34} />
+      <VisageGuide guide={guide} etat={recap ? "encourage" : moment?.etat ?? "welcome"} size={parle ? 40 : 34} />
       <span className={styles.entreeTxt}>
         <span className={styles.salut}>
           {greeting}, <b className={styles.pseudo}>{pseudo}</b>
         </span>
-        {moment && <span className={styles.mot}>{voix(guide, moment.phrase, moment.ctx)}</span>}
+        {recap ? (
+          <motion.span
+            className={styles.recap}
+            initial={reduce ? false : { opacity: 0, y: 4 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, ease: "easeOut" }}
+          >
+            <span className={styles.recapTete}>Ton récap d’hier</span>
+            {recap}
+          </motion.span>
+        ) : (
+          moment && <span className={styles.mot}>{voix(guide, moment.phrase, moment.ctx)}</span>
+        )}
       </span>
     </motion.button>
   );
