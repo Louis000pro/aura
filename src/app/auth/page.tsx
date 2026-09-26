@@ -19,10 +19,14 @@ const TEAL = "#2BD4A0"; // réussite
 
 /* ── Champ input ── */
 function Field({
-  icon, type, placeholder, value, onChange, required, suffix, autoFocus,
+  icon, type, placeholder, value, onChange, required, suffix, autoFocus, name, autoComplete,
 }: {
   icon: React.ReactNode; type: string; placeholder: string; value: string;
   onChange: (v: string) => void; required?: boolean; suffix?: React.ReactNode; autoFocus?: boolean;
+  /* `name` + `autoComplete` : ce sont eux que le trousseau de l’iPhone,
+     Chrome et les gestionnaires de mots de passe lisent pour proposer
+     d’enregistrer puis de remplir les identifiants. */
+  name?: string; autoComplete?: string;
 }) {
   const [focused, setFocused] = useState(false);
   return (
@@ -41,6 +45,10 @@ function Field({
         {icon}
       </span>
       <input type={type} placeholder={placeholder} value={value} onChange={e => onChange(e.target.value)}
+        name={name} autoComplete={autoComplete}
+        autoCapitalize={type === "password" || name === "username" || name === "email" ? "none" : undefined}
+        autoCorrect={name === "username" || name === "email" ? "off" : undefined}
+        spellCheck={name === "username" || name === "email" ? false : undefined}
         onFocus={() => setFocused(true)} onBlur={() => setFocused(false)}
         required={required} autoFocus={autoFocus}
         className="flex-1 bg-transparent text-[16px] outline-none placeholder:text-[var(--text-3)]"
@@ -571,7 +579,7 @@ export default function AuthPage() {
                 <motion.div key="pseudo-field"
                   initial={{ opacity:0,height:0 }} animate={{ opacity:1,height:"auto" }} exit={{ opacity:0,height:0 }}
                   transition={{ duration:0.3 }} style={{ overflow:"hidden" }}>
-                  <Field icon={<AtSign size={15}/>} type="text" placeholder="Pseudo (ex: Atlas92 ou atlas_92)" value={pseudo} onChange={setPseudo} required autoFocus />
+                  <Field icon={<AtSign size={15}/>} type="text" placeholder="Pseudo (ex: Atlas92 ou atlas_92)" value={pseudo} onChange={setPseudo} required autoFocus name="pseudo" autoComplete="nickname" />
                 </motion.div>
               )}
             </AnimatePresence>
@@ -581,8 +589,8 @@ export default function AuthPage() {
                 <motion.div key="name-fields"
                   initial={{ opacity:0,height:0 }} animate={{ opacity:1,height:"auto" }} exit={{ opacity:0,height:0 }}
                   transition={{ duration:0.3 }} style={{ overflow:"hidden" }} className="grid grid-cols-2 gap-3">
-                  <Field icon={<User size={15}/>} type="text" placeholder="Prénom" value={name} onChange={setName} required />
-                  <Field icon={<UserCheck size={15}/>} type="text" placeholder="Nom" value={lastName} onChange={setLastName} required />
+                  <Field icon={<User size={15}/>} type="text" placeholder="Prénom" value={name} onChange={setName} required name="given-name" autoComplete="given-name" />
+                  <Field icon={<UserCheck size={15}/>} type="text" placeholder="Nom" value={lastName} onChange={setLastName} required name="family-name" autoComplete="family-name" />
                 </motion.div>
               )}
             </AnimatePresence>
@@ -598,13 +606,25 @@ export default function AuthPage() {
                 onChange={setEmail}
                 required
                 autoFocus={mode==="login"}
+                name={mode === "login" ? "username" : "email"}
+                autoComplete={mode === "login" ? "username" : "email"}
               />
+            )}
+            {/* À l’étape 2, le champ email a disparu de l’écran : sans lui, le
+               gestionnaire de mots de passe ne sait pas À QUEL compte rattacher
+               le mot de passe, et ne propose pas de l’enregistrer. On le garde
+               donc dans le formulaire, invisible et non modifiable. */}
+            {mode === "login" && etapeConnexion === 2 && (
+              <input type="text" name="username" autoComplete="username" value={email} readOnly
+                tabIndex={-1} aria-hidden="true"
+                style={{ position: "absolute", width: 1, height: 1, opacity: 0, pointerEvents: "none" }} />
             )}
 
             {(mode === "signup" || etapeConnexion === 2) && (
               <div className="flex flex-col gap-2">
                 <Field icon={<Lock size={15}/>}
                   type={showPwd?"text":"password"} placeholder="Mot de passe" value={password} onChange={setPassword} required
+                  name="password" autoComplete={mode === "signup" ? "new-password" : "current-password"}
                   autoFocus={mode==="login" && etapeConnexion===2}
                   suffix={
                     <button type="button" onClick={() => setShowPwd(v=>!v)} className="cursor-pointer flex-shrink-0">
@@ -673,7 +693,7 @@ export default function AuthPage() {
                   ) : (
                     <form onSubmit={handleForgot} className="flex flex-col gap-3">
                       <p className="text-[13px] font-light" style={{ color:"var(--text-2)" }}>Entre ton email pour recevoir un lien de réinitialisation.</p>
-                      <Field icon={<Mail size={15}/>} type="email" placeholder="ton@email.com" value={forgotEmail} onChange={setForgotEmail} required />
+                      <Field icon={<Mail size={15}/>} type="email" placeholder="ton@email.com" value={forgotEmail} onChange={setForgotEmail} required name="email" autoComplete="email" />
                       <div className="flex gap-2">
                         <button type="button" onClick={() => setForgotMode(false)}
                           className="flex-1 py-2.5 rounded-2xl text-[13px] font-medium cursor-pointer"

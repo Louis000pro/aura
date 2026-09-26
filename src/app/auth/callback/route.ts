@@ -15,6 +15,8 @@ export async function GET(request: NextRequest) {
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
+        // Même durée que le client du navigateur : on reste connecté.
+        cookieOptions: { maxAge: 60 * 60 * 24 * 365, sameSite: "lax", secure: true, path: "/" },
         cookies: {
           getAll() {
             return cookieStore.getAll();
