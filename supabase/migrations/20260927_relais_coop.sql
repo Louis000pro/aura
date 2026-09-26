@@ -186,11 +186,9 @@ BEGIN
   IF v_reussi THEN
     UPDATE public.challenge_runs SET statut = 'reussi', fini_le = NOW() WHERE id = p_run_id;
 
-    INSERT INTO public.challenge_rewards (run_id, user_id, reward_slug)
-    SELECT p_run_id, m.user_id, 'poster-' || v_run.serie
-      FROM public.challenge_run_members m WHERE m.run_id = p_run_id
-    ON CONFLICT DO NOTHING;
-
+    -- Une seule source de récompense : profile_badges. ⚠️ Ne pas remettre
+    -- `challenge_rewards` : la table est supprimée depuis 20260830_menage_relais.sql,
+    -- et l'insérer ferait échouer la victoire en entier.
     INSERT INTO public.profile_badges (user_id, badge_slug)
     SELECT m.user_id, 'serie-' || v_run.serie
       FROM public.challenge_run_members m WHERE m.run_id = p_run_id
