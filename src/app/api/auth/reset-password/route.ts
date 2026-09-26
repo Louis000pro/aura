@@ -42,8 +42,8 @@ export async function POST(req: NextRequest) {
       "<!DOCTYPE html><html><body style='margin:0;padding:40px 20px;font-family:sans-serif;background:#faf8ff'>" +
       "<div style='max-width:420px;margin:0 auto;background:#fff;border-radius:24px;padding:40px;box-shadow:0 4px 32px rgba(167,139,250,0.12)'>" +
       "<div style='text-align:center;margin-bottom:28px'>" +
-      "<div style='display:inline-block;width:56px;height:56px;border-radius:16px;background:linear-gradient(135deg,#D4C0FF,#F5E6A3);line-height:56px;font-size:26px;color:#2D3748;font-weight:600'>V</div>" +
-      "<h1 style='margin:12px 0 2px;font-size:18px;font-weight:300;letter-spacing:0.2em;color:#2D3748'>VAIIYA</h1></div>" +
+      "<img src='https://vaiiya.fr/logo-vaiiya.png' alt='Vaiiya' width='64' height='64' style='display:inline-block;width:64px;height:64px' />" +
+      "<h1 style='margin:10px 0 2px;font-family:Arial,Helvetica,sans-serif;font-size:20px;font-weight:700;letter-spacing:0.08em;color:#2D3748'>VAIIYA</h1></div>" +
       "<h2 style='text-align:center;font-size:17px;font-weight:400;color:#2D3748;margin:0 0 8px'>Réinitialise ton mot de passe</h2>" +
       "<p style='text-align:center;font-size:13px;color:#718096;margin:0 0 28px'>Clique sur le bouton ci-dessous pour choisir un nouveau mot de passe.</p>" +
       "<div style='text-align:center;margin-bottom:24px'>" +

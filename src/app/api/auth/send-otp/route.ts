@@ -41,13 +41,13 @@ export async function POST(req: NextRequest) {
       "<!DOCTYPE html><html><body style='margin:0;padding:40px 20px;font-family:sans-serif;background:#faf8ff'>" +
       "<div style='max-width:420px;margin:0 auto;background:#fff;border-radius:24px;padding:40px;box-shadow:0 4px 32px rgba(167,139,250,0.12)'>" +
       "<div style='text-align:center;margin-bottom:32px'>" +
-      "<div style='display:inline-block;width:56px;height:56px;border-radius:16px;background:linear-gradient(135deg,#D4C0FF,#F5E6A3);line-height:56px;font-size:26px;color:#2D3748;text-align:center;font-weight:600'>V</div>" +
-      "<h1 style='margin:12px 0 2px;font-size:18px;font-weight:300;letter-spacing:0.2em;color:#2D3748'>VAIIYA</h1>" +
+      "<img src='https://vaiiya.fr/logo-vaiiya.png' alt='Vaiiya' width='64' height='64' style='display:inline-block;width:64px;height:64px' />" +
+      "<h1 style='margin:10px 0 2px;font-family:Arial,Helvetica,sans-serif;font-size:20px;font-weight:700;letter-spacing:0.08em;color:#2D3748'>VAIIYA</h1>" +
       "<p style='margin:0;font-size:11px;color:#A0AEC0'>Coach IA · Musculation · Nutrition</p></div>" +
       "<h2 style='text-align:center;font-size:17px;font-weight:400;color:#2D3748;margin:0 0 8px'>Code de confirmation</h2>" +
       "<p style='text-align:center;font-size:13px;color:#718096;margin:0 0 28px'>Entre ce code dans l’application pour activer ton compte.</p>" +
       "<div style='background:rgba(212,192,255,0.15);border:1.5px solid rgba(167,139,250,0.2);border-radius:16px;padding:28px 20px;text-align:center;margin-bottom:24px'>" +
-      "<span style='font-family:monospace;font-size:42px;font-weight:700;letter-spacing:14px;color:#A78BFA'>" + otp + "</span></div>" +
+      "<span style='font-family:Arial,Helvetica,sans-serif;font-size:42px;font-weight:700;letter-spacing:8px;color:#A78BFA'>" + otp + "</span></div>" +
       "<p style='text-align:center;font-size:12px;color:#A0AEC0'>Ce code expire dans <strong>10 minutes</strong>.</p>" +
       "<p style='text-align:center;font-size:11px;color:#A0AEC0;margin-top:24px'>Si tu n’as pas demandé ce code, ignore cet email.</p>" +
       "</div></body></html>";
