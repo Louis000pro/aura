@@ -54,7 +54,7 @@ BEGIN
    WHERE nsp.nspname = 'public'
      AND rel.relname = 'challenge_actions'
      AND con.contype = 'u'
-     AND (SELECT array_agg(att.attname ORDER BY att.attname)
+     AND (SELECT array_agg(att.attname::text ORDER BY att.attname)
             FROM unnest(con.conkey) AS k
             JOIN pg_attribute att ON att.attrelid = con.conrelid AND att.attnum = k)
          = ARRAY['jour','run_id']
