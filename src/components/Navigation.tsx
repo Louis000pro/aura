@@ -83,7 +83,7 @@ function UserMenuItems({
 export default function Navigation() {
   const pathname   = usePathname();
   const router     = useRouter();
-  const { user, logout } = useAuth();
+  const { user, isLoading, logout } = useAuth();
 
   const [userMenu,    setUserMenu]    = useState(false);
   const [progMenu,    setProgMenu]    = useState(false);
@@ -345,7 +345,7 @@ export default function Navigation() {
           sur l'écran de connexion). Les onglets mènent tous à des écrans qui
           demandent un compte : les montrer à quelqu'un qui n'en a pas encore,
           c'est lui offrir des portes qui le renvoient à la connexion. */}
-      {user && !surfacePublique && (
+      {user && !isLoading && !surfacePublique && (
       <nav className="mobile-nav fixed bottom-0 left-0 right-0 z-50 md:hidden" style={{ willChange: "transform" }}>
         <div
           className="relative flex items-stretch justify-around px-1"

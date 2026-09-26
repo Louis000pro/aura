@@ -553,6 +553,14 @@ html.a-session .accueil-landing { display: none; }
   html:not(.a-session) .reserve-rail-membre { padding-left: 0; }
 }
 
+/* La barre du bas n'existe que pour un compte connecté (Louis, 2026-09-26 :
+   sur Safari elle restait posée sur la landing et sur l'écran de connexion).
+   Second verrou, indépendant de React : `a-session` n'est sur <html> que
+   quand une session est connue (script du <head>, puis MainWrapper une fois
+   la session résolue). Sans elle, la barre ne peut pas s'afficher, quel que
+   soit l'état dans lequel se trouve l'application. */
+html:not(.a-session) .mobile-nav { display: none !important; }
+
 /* ─────────────────────── SKELETON SHIMMER ─────────────────────── */
 @layer utilities {
   .skeleton {
