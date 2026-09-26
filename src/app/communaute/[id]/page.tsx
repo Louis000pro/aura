@@ -28,6 +28,7 @@ import ConversationAvatar from "@/components/communaute/ConversationAvatar";
 import { PseudoRang } from "@/components/rang/IdentiteRang";
 import { useRangs } from "@/lib/rangsPublics";
 import { imageEtat, etatPoster, lancerRelaisDansConversation } from "@/lib/defi";
+import { useTheme } from "@/hooks/useTheme";
 import { refusRelais, type RefusRelais } from "@/lib/defiErreurs";
 import {
   chargerFil, chargerMessagesAvant, chargerMessage, chargerReactions,
@@ -66,6 +67,7 @@ export default function FilPage() {
   const convId = (params?.id ?? "").toString();
   const router = useRouter();
   const { user, session, isLoading: authLoading } = useAuth();
+  const { isDark } = useTheme();
   const [cacheInitial] = useState(() => lireFilEnCache(convId));
 
   const [conv, setConv]         = useState<Conversation | null>(() => cacheInitial?.conversation ?? null);
@@ -408,9 +410,11 @@ export default function FilPage() {
   const titre  = titreConversation(conv, moi);
   const autres = autresMembres(conv, moi);
 
-  /* Sur une affiche, le fil assume le sombre en permanence — comme
-     le tunnel de séance. Sans affiche, il suit les tokens du thème. */
-  const surAffiche = !!conv.defi;
+  /* Sur une affiche, le fil se déroule dans le poster sombre — MAIS
+     seulement en mode sombre. En mode clair, il reste blanc et suit les
+     tokens du thème (choix de Louis : le clair ne doit jamais virer au
+     noir). L'affiche du relais reste montrée par la vignette épinglée. */
+  const surAffiche = !!conv.defi && isDark;
   const etat = conv.defi ? etatPoster(conv.defi.faits, conv.defi.objectif) : 0;
 
   const c = surAffiche
@@ -491,7 +495,7 @@ export default function FilPage() {
       </div>
 
       {/* ─── Le défi épinglé ─── */}
-      {conv.defi && <DefiEpingle defi={conv.defi} etat={etat} onOuvrir={() => router.push("/defi")} />}
+      {conv.defi && <DefiEpingle defi={conv.defi} etat={etat} surAffiche={surAffiche} onOuvrir={() => router.push("/defi")} />}
 
       {erreur && (
         <p className="relative z-10 px-4 pb-1 text-center text-[13px] font-medium" style={{ color: "#FFB27A" }}>
@@ -872,19 +876,28 @@ function EnTrainDEcrire({ noms, couleur: c, surAffiche }: {
 }
 
 /* ─── L'affiche épinglée ─────────────────────────────────────── */
-function DefiEpingle({ defi, etat, onOuvrir }: {
-  defi: NonNullable<Conversation["defi"]>; etat: number; onOuvrir: () => void;
+function DefiEpingle({ defi, etat, surAffiche, onOuvrir }: {
+  defi: NonNullable<Conversation["defi"]>; etat: number; surAffiche: boolean; onOuvrir: () => void;
 }) {
   const gagne = defi.statut === "reussi";
+
+  /* Sur le poster sombre (mode sombre), l'encart est en blanc translucide.
+     En mode clair, il pose une vraie surface opaque du thème, sinon un fond
+     blanc-sur-blanc et un texte clair le rendraient invisible. */
+  const col = surAffiche
+    ? { bord: "rgba(255,255,255,.15)", fond: "rgba(255,255,255,.08)", flou: "blur(10px)",
+        titre: "#F4F1F9", sous: "#A79FB6", vide: "rgba(255,255,255,.22)", chevron: "#807891" }
+    : { bord: "rgba(var(--text-3-rgb), .18)", fond: "rgb(var(--surface-rgb))", flou: "none",
+        titre: "var(--text-0)", sous: "var(--text-2)", vide: "rgba(var(--text-3-rgb), .22)", chevron: "var(--text-3)" };
 
   return (
     <button
       onClick={onOuvrir}
       className="relative z-10 mx-3 mb-1 mt-1 flex shrink-0 items-center gap-3 rounded-2xl p-2.5 text-left"
       style={{
-        border: "1px solid rgba(255,255,255,.15)",
-        background: "rgba(255,255,255,.08)",
-        backdropFilter: "blur(10px)",
+        border: `1px solid ${col.bord}`,
+        background: col.fond,
+        backdropFilter: col.flou,
       }}
     >
       <div className="relative h-16 w-[46px] shrink-0 overflow-hidden rounded-[9px] shadow-lg">
@@ -892,10 +905,10 @@ function DefiEpingle({ defi, etat, onOuvrir }: {
       </div>
 
       <div className="min-w-0 flex-1">
-        <b className="block text-[13px] font-semibold" style={{ color: "#F4F1F9" }}>
+        <b className="block text-[13px] font-semibold" style={{ color: col.titre }}>
           {gagne ? "L’affiche est à vous" : `${defi.faits} jour${defi.faits > 1 ? "s" : ""} sur ${defi.objectif}`}
         </b>
-        <span className="mt-0.5 block text-[11px]" style={{ color: "#A79FB6" }}>
+        <span className="mt-0.5 block text-[11px]" style={{ color: col.sous }}>
           {gagne ? "Elle rejoint vos profils." : "Touche pour voir l’affiche en grand."}
         </span>
 
@@ -904,13 +917,13 @@ function DefiEpingle({ defi, etat, onOuvrir }: {
             <span
               key={i}
               className="h-1 flex-1 rounded-full"
-              style={{ background: i < defi.faits ? "#2BD4A0" : "rgba(255,255,255,.22)" }}
+              style={{ background: i < defi.faits ? "#2BD4A0" : col.vide }}
             />
           ))}
         </div>
       </div>
 
-      <ChevronRight className="h-4 w-4 shrink-0" style={{ color: "#807891" }} />
+      <ChevronRight className="h-4 w-4 shrink-0" style={{ color: col.chevron }} />
     </button>
   );
 }
