@@ -13,6 +13,7 @@ export const SEO_PAGES: { href: string; label: string }[] = [
   { href: "/coach-ia", label: "Coach sportif IA" },
   { href: "/prise-de-masse", label: "Prise de masse" },
   { href: "/perte-de-poids", label: "Perte de poids" },
+  { href: "/programme-musculation-3-fois-par-semaine", label: "Programme 3 séances / semaine" },
   { href: "/musculation-maison", label: "Musculation à la maison" },
   { href: "/nutrition-sportive", label: "Nutrition sportive" },
   // Le hub des fiches d'exercices. Il est listé ici dès sa mise en ligne :

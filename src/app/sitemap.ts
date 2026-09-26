@@ -47,6 +47,9 @@ const PAGES: string[] = [
   "/musculation-maison",
   "/nutrition-sportive",
 
+  // Page pilier « programme musculation 3 fois par semaine » (contenu SEO/GEO).
+  "/programme-musculation-3-fois-par-semaine",
+
   // La page qui décrit l'entité Vaiiya (ce que c'est, qui le fait, ce qu'il y
   // a dedans). C'est la page que l'on veut voir répondre à « c'est quoi
   // Vaiiya », donc elle a sa place ici comme les autres pages de fond.
