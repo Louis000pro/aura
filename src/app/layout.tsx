@@ -113,6 +113,13 @@ export const metadata: Metadata = {
       "max-video-preview": -1,
     },
   },
+  // Vérification de domaine Trustpilot (preuve sociale + étoiles dans les
+  // résultats). Balise « one-time » : une fois le domaine vérifié sur
+  // vaiiya.fr (PRODUCTION), elle peut être retirée. `other` rend un
+  // <meta name=… content=…> standard dans le <head>.
+  other: {
+    "trustpilot-one-time-domain-verification-id": "b73e3832-fdaa-401e-8fc1-140de1978830",
+  },
   icons: {
     icon: [
       { url: "/icons/icon-48.png?v=6", type: "image/png", sizes: "48x48" },
