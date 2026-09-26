@@ -1,0 +1,296 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Le relais co-op — Vaiiya</title>
+<style>
+  :root{
+    --bg:#FAF8FF; --surface:#FFFFFF; --surface2:#F6F3FD;
+    --line:rgba(45,55,72,.10); --line2:rgba(45,55,72,.16);
+    --t0:#2D3748; --t1:#4A5568; --t2:#718096; --t3:#A0AEC0;
+    --violet:#8B5CF6; --violetd:#6D4BD6; --magenta:#C13BC1;
+    --or:#F5B120; --orv:#E8620C; --teal:#2BD4A0; --teald:#0E9E77; --rose:#D94FB8;
+    --ombre:0 10px 30px rgba(45,55,72,.10); --ombre-s:0 4px 14px rgba(45,55,72,.08);
+    --ombre-act:0 10px 26px rgba(139,92,246,.30);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:radial-gradient(1100px 620px at 50% -8%, #F1EBFF 0%, var(--bg) 55%);
+    color:var(--t0);font-family:"Segoe UI",system-ui,-apple-system,Roboto,Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;padding:0 16px 80px}
+  .wrap{max-width:1120px;margin:0 auto}
+  header.top{text-align:center;padding:56px 0 8px}
+  .kicker{font-size:12px;font-weight:800;letter-spacing:.22em;text-transform:uppercase;
+    background:linear-gradient(90deg,var(--rose),var(--violetd));-webkit-background-clip:text;background-clip:text;color:transparent}
+  h1{font-size:clamp(30px,6vw,54px);line-height:1.02;letter-spacing:-.03em;margin:.35em 0 .15em;font-weight:800;color:var(--t0)}
+  .lead{color:var(--t1);font-size:clamp(15px,2.2vw,18px);max-width:600px;margin:0 auto;line-height:1.5}
+  .lead b{color:var(--t0)}
+  .sect{margin-top:60px}
+  .sect h2{font-size:13px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:var(--t2);margin:0 0 18px;
+    display:flex;align-items:center;gap:10px}
+  .sect h2::before{content:"";width:22px;height:2px;border-radius:2px;background:linear-gradient(90deg,var(--violet),var(--magenta))}
+
+  /* ─ Comment ça marche : l'échelle co-op ─ */
+  .coop{background:var(--surface);border:1px solid var(--line);border-radius:22px;padding:26px 22px;box-shadow:var(--ombre-s)}
+  .rungs{display:flex;align-items:flex-start;gap:6px;overflow-x:auto;padding-bottom:6px}
+  .rung{flex:1 1 0;min-width:120px;text-align:center;position:relative}
+  .rung .node{width:66px;height:66px;margin:0 auto;border-radius:20px;display:grid;place-items:center;
+    font-size:28px;font-weight:800;font-variant-numeric:tabular-nums;position:relative;
+    background:linear-gradient(180deg,var(--surface2),#EFE9FB);border:1.5px solid var(--line2);color:var(--violetd)}
+  .rung.done .node{background:linear-gradient(135deg,var(--violet),var(--magenta));color:#fff;border-color:transparent;box-shadow:var(--ombre-act)}
+  .rung.lock .node{opacity:.5}
+  .rung .cap{font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--t3);margin-top:10px}
+  .who{display:flex;justify-content:center;gap:6px;margin-top:8px}
+  .chip{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;padding:3px 8px;border-radius:99px;
+    background:var(--surface2);border:1px solid var(--line);color:var(--t2)}
+  .chip.ok{background:rgba(43,212,160,.14);border-color:rgba(43,212,160,.3);color:var(--teald)}
+  .chip .av{width:14px;height:14px;border-radius:50%;display:grid;place-items:center;font-size:8px;color:#fff;font-weight:800}
+  .gate{position:absolute;top:24px;right:-3px;width:22px;height:22px;border-radius:50%;display:grid;place-items:center;
+    font-size:11px;background:var(--surface);border:1px solid var(--line2);z-index:2}
+  .gate.open{background:rgba(43,212,160,.16);border-color:rgba(43,212,160,.4);color:var(--teald)}
+  .gate.shut{color:var(--t3)}
+  .coop .note{margin:18px 2px 0;font-size:13px;color:var(--t1);line-height:1.5;text-align:center}
+  .coop .note b{color:var(--t0)}
+
+  /* ─ La rampe ─ */
+  .ramp{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+  @media(max-width:720px){.ramp{grid-template-columns:repeat(2,1fr)}}
+  .step{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:18px 16px 16px;box-shadow:var(--ombre-s)}
+  .step .lvl{font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--t3)}
+  .step .n{font-size:40px;font-weight:800;line-height:1;margin:6px 0 2px;font-variant-numeric:tabular-nums;
+    background:linear-gradient(180deg,var(--violetd),var(--magenta));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .step .u{font-size:12px;color:var(--t2);font-weight:600}
+  .dots{display:flex;gap:5px;margin-top:14px;flex-wrap:wrap}
+  .dot{width:10px;height:10px;border-radius:3px;background:rgba(45,55,72,.10)}
+  .dot.on{background:linear-gradient(135deg,#F27CD0,#D94FB8);box-shadow:0 2px 8px rgba(217,79,184,.32)}
+  .step .ex{margin-top:14px;font-size:11.5px;color:var(--t2);line-height:1.5;border-top:1px solid var(--line);padding-top:10px}
+
+  /* ─ Téléphones ─ */
+  .phones{display:flex;gap:28px;flex-wrap:wrap;justify-content:center;align-items:flex-start}
+  .phone{width:290px;flex:0 0 auto;border-radius:34px;padding:11px;background:#20242C;box-shadow:0 30px 70px rgba(45,55,72,.28)}
+  .screen{border-radius:25px;overflow:hidden;background:var(--bg);min-height:540px;display:flex;flex-direction:column;border:1px solid rgba(255,255,255,.4)}
+  .pcap{text-align:center;font-size:12px;font-weight:700;color:var(--t2);margin:14px 0 -6px;letter-spacing:.04em}
+  .pbar{display:flex;align-items:center;gap:10px;padding:15px 16px 8px}
+  .pbar .back{color:var(--t1);font-size:18px}
+  .pbar b{font-size:15px;color:var(--t0)}
+  .pbar .sub{font-size:11px;color:var(--t2)}
+
+  .poster{margin:4px auto 0;width:132px;height:188px;border-radius:13px;position:relative;overflow:hidden;
+    background:linear-gradient(180deg,#243049 0%,#0b1020 60%,#05070f 100%);box-shadow:0 12px 30px rgba(45,55,72,.30)}
+  .poster .wm{position:absolute;top:10px;left:0;right:0;text-align:center;font-size:10px;letter-spacing:.4em;color:#cfd6e6;font-weight:700}
+  .poster .nm{position:absolute;bottom:30px;left:0;right:0;text-align:center;font-size:17px;letter-spacing:.14em;font-weight:800;color:#fff}
+  .poster .who2{position:absolute;bottom:12px;left:0;right:0;text-align:center;font-size:8px;letter-spacing:.2em;color:#9aa6be}
+
+  .count{display:flex;align-items:baseline;justify-content:space-between;padding:14px 18px 6px}
+  .count .big{font-size:30px;font-weight:800;font-variant-numeric:tabular-nums;color:var(--t0)}
+  .count .slash{font-size:14px;color:var(--t2);font-weight:600}
+  .count .rem{font-size:12px;color:var(--t3)}
+  .chain{display:flex;gap:5px;padding:0 18px}
+  .chain .lk{height:6px;flex:1;border-radius:6px;background:rgba(45,55,72,.12)}
+  .chain .lk.done{background:linear-gradient(90deg,var(--violet),var(--magenta))}
+  .chain .lk.now{background:rgba(217,79,184,.35)}
+
+  .pair{display:flex;gap:8px;padding:12px 18px 0}
+  .pcard{flex:1;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:10px;text-align:center}
+  .pcard .nm{font-size:12px;font-weight:800;color:var(--t0)}
+  .pcard .st{font-size:11px;font-weight:700;margin-top:3px}
+  .pcard .st.ok{color:var(--teald)}
+  .pcard .st.wait{color:var(--orv)}
+
+  .today{margin:14px 18px 0;background:linear-gradient(135deg,rgba(139,92,246,.10),rgba(193,59,193,.06));
+    border:1px solid rgba(139,92,246,.22);border-radius:16px;padding:13px}
+  .today .tl{font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--violetd)}
+  .today .tt{font-size:16px;font-weight:800;margin-top:4px;color:var(--t0)}
+  .today .td{font-size:12px;color:var(--t1);margin-top:3px;line-height:1.45}
+
+  .wait-box{margin:14px 18px 0;background:var(--surface);border:1px dashed var(--line2);border-radius:16px;padding:16px;text-align:center}
+  .wait-box .ic{font-size:26px}
+  .wait-box .tt{font-size:15px;font-weight:800;color:var(--t0);margin-top:6px}
+  .wait-box .td{font-size:12px;color:var(--t2);margin-top:4px;line-height:1.45}
+
+  .cta{margin:14px 18px 0;border:0;border-radius:16px;padding:14px;font-size:15px;font-weight:800;color:#fff;
+    background:linear-gradient(135deg,var(--violet),var(--magenta));box-shadow:var(--ombre-act);
+    display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer}
+  .hint{text-align:center;font-size:11.5px;color:var(--t3);margin:11px 18px 0}
+  .stop{text-align:center;font-size:12px;color:var(--t3);margin:14px 0 18px;text-decoration:underline}
+
+  .mv{display:flex;align-items:center;gap:12px;margin:0 16px;padding:11px 0;border-bottom:1px solid var(--line)}
+  .mv .th{width:44px;height:44px;border-radius:12px;flex:0 0 auto;background:var(--surface2);display:grid;place-items:center;font-size:19px;border:1px solid var(--line)}
+  .mv .nm{font-size:14px;font-weight:700;color:var(--t0)}
+  .mv .rp{font-size:12px;color:var(--t2);margin-top:2px}
+  .mv .rp b{color:var(--teald);font-variant-numeric:tabular-nums}
+  .mv-h{padding:15px 18px 4px;font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--violetd)}
+  .mv-t{padding:0 18px 3px;font-size:18px;font-weight:800;color:var(--t0)}
+  .mv-s{padding:0 18px 8px;font-size:12px;color:var(--t2)}
+  .niv{display:inline-block;margin:0 18px 6px;font-size:10px;font-weight:800;letter-spacing:.06em;padding:3px 9px;border-radius:99px;
+    background:rgba(43,212,160,.14);color:var(--teald);border:1px solid rgba(43,212,160,.3)}
+
+  /* cartes changement */
+  .cards{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+  @media(max-width:900px){.cards{grid-template-columns:repeat(2,1fr)}}
+  @media(max-width:560px){.cards{grid-template-columns:1fr}}
+  .cc{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:18px;box-shadow:var(--ombre-s)}
+  .cc .ic{width:36px;height:36px;border-radius:11px;display:grid;place-items:center;font-size:17px;margin-bottom:10px;
+    background:rgba(43,212,160,.12);border:1px solid rgba(43,212,160,.28)}
+  .cc h3{margin:0 0 5px;font-size:14px;font-weight:800;color:var(--t0)}
+  .cc p{margin:0;font-size:12.5px;color:var(--t1);line-height:1.45}
+
+  .reg{display:flex;flex-wrap:wrap;gap:10px}
+  .rg{display:flex;align-items:center;gap:8px;background:rgba(43,212,160,.07);border:1px solid rgba(43,212,160,.28);
+    border-radius:99px;padding:8px 14px;font-size:13px;font-weight:600;color:var(--t1)}
+  .rg .c{color:var(--teald);font-weight:800}
+  footer{margin-top:60px;text-align:center;color:var(--t3);font-size:12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div class="kicker">Vaiiya · Le relais</div>
+    <h1>Le relais, à deux</h1>
+    <p class="lead">Vous grimpez la <b>même échelle, ensemble</b>. On avance d'un cran quand <b>les deux</b> ont fait le maillon.</p>
+  </header>
+
+  <!-- COMMENT ÇA MARCHE -->
+  <section class="sect">
+    <h2>Comment ça marche</h2>
+    <div class="coop">
+      <div class="rungs">
+        <div class="rung done">
+          <div class="node">1<span class="gate open">✓</span></div>
+          <div class="cap">1 mouvement</div>
+          <div class="who">
+            <span class="chip ok"><span class="av" style="background:var(--violet)">T</span>✓</span>
+            <span class="chip ok"><span class="av" style="background:var(--magenta)">N</span>✓</span>
+          </div>
+        </div>
+        <div class="rung">
+          <div class="node">2<span class="gate shut">🔒</span></div>
+          <div class="cap">2 mouvements</div>
+          <div class="who">
+            <span class="chip ok"><span class="av" style="background:var(--violet)">T</span>✓</span>
+            <span class="chip"><span class="av" style="background:var(--magenta)">N</span>⏳</span>
+          </div>
+        </div>
+        <div class="rung lock">
+          <div class="node">3<span class="gate shut">🔒</span></div>
+          <div class="cap">3 mouvements</div>
+          <div class="who"><span class="chip">bloqué</span></div>
+        </div>
+        <div class="rung lock">
+          <div class="node">4</div>
+          <div class="cap">4 mouvements</div>
+          <div class="who"><span class="chip">bloqué</span></div>
+        </div>
+      </div>
+      <p class="note">Ici, <b>Toi</b> a fait le maillon 2, mais <b>Nes</b> est encore au maillon 1 →
+      le maillon 3 reste <b>verrouillé</b> tant que Nes n'a pas rattrapé. De quoi se relancer mutuellement.</p>
+    </div>
+  </section>
+
+  <!-- LA RAMPE -->
+  <section class="sect">
+    <h2>La difficulté monte · adaptée à ton niveau</h2>
+    <div class="ramp">
+      <div class="step"><div class="lvl">Maillon 1</div><div class="n">1</div><div class="u">mouvement</div>
+        <div class="dots"><span class="dot on"></span></div><div class="ex">ex. 10 pompes</div></div>
+      <div class="step"><div class="lvl">Maillon 2</div><div class="n">2</div><div class="u">mouvements</div>
+        <div class="dots"><span class="dot on"></span><span class="dot on"></span></div><div class="ex">pompes · squats</div></div>
+      <div class="step"><div class="lvl">Maillon 3</div><div class="n">3</div><div class="u">mouvements</div>
+        <div class="dots"><span class="dot on"></span><span class="dot on"></span><span class="dot on"></span></div><div class="ex">+ gainage</div></div>
+      <div class="step"><div class="lvl">Maillon 4</div><div class="n">4</div><div class="u">mouvements</div>
+        <div class="dots"><span class="dot on"></span><span class="dot on"></span><span class="dot on"></span><span class="dot on"></span></div><div class="ex">+ fentes</div></div>
+    </div>
+  </section>
+
+  <!-- TELEPHONES -->
+  <section class="sect">
+    <h2>Le parcours</h2>
+    <div class="phones">
+
+      <!-- 1. à toi de jouer -->
+      <div>
+        <div class="pcap">À toi de jouer</div>
+        <div class="phone"><div class="screen">
+          <div class="pbar"><span class="back">‹</span><div><b>Avec nes</b><div class="sub">Sillage · en cours</div></div></div>
+          <div class="poster"><div class="wm">VAIIYA</div><div class="nm">SILLAGE</div><div class="who2">NES · TEYROOX</div></div>
+          <div class="count"><div><span class="big">Maillon 2</span></div><span class="rem">5 j restants</span></div>
+          <div class="chain"><span class="lk done"></span><span class="lk now"></span><span class="lk"></span><span class="lk"></span></div>
+          <div class="pair">
+            <div class="pcard"><div class="nm">Toi</div><div class="st wait">à faire</div></div>
+            <div class="pcard"><div class="nm">Nes</div><div class="st ok">fait ✓</div></div>
+          </div>
+          <div class="today"><div class="tl">Maillon 2</div><div class="tt">2 mouvements</div>
+            <div class="td">10 pompes, puis 20 squats. À ton niveau.</div></div>
+          <button class="cta">Lancer mon maillon</button>
+          <div class="hint">Termine la séance et ton maillon est franchi.</div>
+        </div></div>
+      </div>
+
+      <!-- 2. en attente -->
+      <div>
+        <div class="pcap">Bloqué — on attend le binôme</div>
+        <div class="phone"><div class="screen">
+          <div class="pbar"><span class="back">‹</span><div><b>Avec nes</b><div class="sub">Sillage · en cours</div></div></div>
+          <div class="poster"><div class="wm">VAIIYA</div><div class="nm">SILLAGE</div><div class="who2">NES · TEYROOX</div></div>
+          <div class="count"><div><span class="big">Maillon 2</span></div><span class="rem">5 j restants</span></div>
+          <div class="chain"><span class="lk done"></span><span class="lk now"></span><span class="lk"></span><span class="lk"></span></div>
+          <div class="pair">
+            <div class="pcard"><div class="nm">Toi</div><div class="st ok">fait ✓</div></div>
+            <div class="pcard"><div class="nm">Nes</div><div class="st wait">à faire</div></div>
+          </div>
+          <div class="wait-box"><div class="ic">⏳</div>
+            <div class="tt">Ton maillon 2 est fait</div>
+            <div class="td">Le maillon 3 se débloque dès que Nes a fait le sien. Envoie-lui un petit coup de pression ?</div></div>
+          <button class="cta" style="background:var(--surface);color:var(--violetd);box-shadow:none;border:1px solid var(--line2)">Écrire à Nes</button>
+          <div class="stop">Arrêter le relais</div>
+        </div></div>
+      </div>
+
+      <!-- 3. la séance -->
+      <div>
+        <div class="pcap">La séance du maillon</div>
+        <div class="phone"><div class="screen">
+          <div class="mv-h">Maillon 3 · à toi de jouer</div>
+          <div class="mv-t">3 mouvements</div>
+          <span class="niv">À ton niveau · Intermédiaire</span>
+          <div class="mv-s">Enchaîne-les à ton rythme. Pas de chrono minimum.</div>
+          <div style="margin-top:6px"></div>
+          <div class="mv"><div class="th">💪</div><div><div class="nm">Pompes</div><div class="rp"><b>12</b> répétitions</div></div></div>
+          <div class="mv"><div class="th">🦵</div><div><div class="nm">Squats</div><div class="rp"><b>20</b> répétitions</div></div></div>
+          <div class="mv"><div class="th">🧘</div><div><div class="nm">Gainage</div><div class="rp"><b>40 s</b> tenue</div></div></div>
+          <button class="cta" style="margin-top:auto;margin-bottom:18px">C'est parti ✦</button>
+        </div></div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- CE QUI CHANGE -->
+  <section class="sect">
+    <h2>Ce qui change</h2>
+    <div class="cards">
+      <div class="cc"><div class="ic">🤝</div><h3>On avance ensemble</h3><p>Le maillon suivant se débloque quand <b>les deux</b> ont fait le maillon en cours.</p></div>
+      <div class="cc"><div class="ic">🎯</div><h3>Séance à ton niveau</h3><p>Générée depuis les 102 mouvements animés, calée sur ton niveau (débutant / inter / avancé).</p></div>
+      <div class="cc"><div class="ic">🚀</div><h3>2 maillons/jour max</h3><p>À fond, vous bouclez les 4 en <b>2 jours</b>. Sinon, chacun à son rythme dans la fenêtre.</p></div>
+      <div class="cc"><div class="ic">✅</div><h3>Termine = validé</h3><p>Plus de plancher de 10 min : finir la séance donnée suffit. Anti-triche total.</p></div>
+    </div>
+  </section>
+
+  <!-- REGLE -->
+  <section class="sect">
+    <h2>Réglé</h2>
+    <div class="reg">
+      <div class="rg"><span class="c">✓</span> 4 maillons (rampe 1·2·3·4)</div>
+      <div class="rg"><span class="c">✓</span> Co-op : les 2 font chaque maillon</div>
+      <div class="rg"><span class="c">✓</span> 2 maillons/jour max</div>
+      <div class="rg"><span class="c">✓</span> Difficulté auto selon le niveau</div>
+      <div class="rg"><span class="c">✓</span> Terminer la séance = validé</div>
+      <div class="rg"><span class="c">?</span> Fenêtre 7 jours (ma reco, à confirmer)</div>
+    </div>
+  </section>
+
+  <footer>Maquette — à valider avant code · Vaiiya 2026</footer>
+</div>
+</body>
+</html>

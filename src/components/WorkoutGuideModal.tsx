@@ -13,7 +13,7 @@ import ExerciseThumb from "@/components/seance/ExerciseThumb";
 import { createClient } from "@/lib/supabase";
 import { lockBodyModal } from "@/lib/bodyModal";
 import {
-  validerMaillon, CLE_DEVOILE, etatPoster, imageEtat,
+  validerMaillon, CLE_DEVOILE, EVT_RELAIS, etatPoster, imageEtat,
   type MaillonFranchi,
 } from "@/lib/defi";
 import { calculerAura } from "@/lib/aura";
@@ -140,6 +140,10 @@ export interface WorkoutGuideModalProps {
   /** Présent = la séance n'existe nulle part (une impro) et peut être gardée.
       La page décide, le tunnel ne fait qu'afficher la proposition. */
   onGarder?: () => void;
+  /** Présent quand cette séance EST le maillon d'un relais (lancée par
+   *  « Lancer mon maillon »). C'est la SEULE façon de franchir un maillon :
+   *  une séance ordinaire ne valide plus rien côté relais. */
+  relaisRunId?: string;
 }
 
 type GuidePhase = "intro" | "exercising" | "resting" | "done";
@@ -720,8 +724,10 @@ export function resolveSessionId(title: string): string | null {
    l'équipier, et c'est le moment où on a envie de lui écrire. L'affiche
    en grand est à un tap de là. */
 function BandeMaillon({ maillon, onAller }: { maillon: MaillonFranchi; onAller: () => void }) {
-  const avant = etatPoster(maillon.faits - 1, maillon.objectif);
-  const apres = etatPoster(maillon.faits, maillon.objectif);
+  // L'affiche suit l'avancée COMMUNE (le min des deux). Mon maillon ne la
+  // fait avancer que si je viens de rattraper le binôme.
+  const avant = etatPoster(Math.min(maillon.mine - 1, maillon.partner), maillon.objectif);
+  const apres = etatPoster(maillon.min, maillon.objectif);
   const [etat, setEtat] = useState(avant);
 
   useEffect(() => {
@@ -767,7 +773,9 @@ function BandeMaillon({ maillon, onAller }: { maillon: MaillonFranchi; onAller: 
         <small className="block text-[11px]" style={{ color: encre }}>
           {maillon.reussi
             ? `Elle est à vous${maillon.equipier ? ` et à ${maillon.equipier.pseudo}` : ""}.`
-            : `L’affiche se dévoile · ${maillon.faits} jour${maillon.faits > 1 ? "s" : ""} sur ${maillon.objectif}`}
+            : maillon.bloque
+              ? `Maillon ${maillon.maillon} fait · on attend ${maillon.equipier?.pseudo ?? "ton binôme"}.`
+              : `Maillon ${maillon.maillon} sur ${maillon.objectif} · continue !`}
         </small>
       </span>
 
@@ -825,7 +833,7 @@ function BandeBadge({ badges, onAller }: { badges: Badge[]; onAller: () => void 
 
 export default function WorkoutGuideModal({
   sessionId, title, duration, category, heroImage, onClose, onComplete, exerciseList,
-  onGarder,
+  onGarder, relaisRunId,
 }: WorkoutGuideModalProps) {
   const router = useRouter();
   // On injecte un `auto` (durée) déduit des reps pour les exos chronométrés d'une
@@ -911,17 +919,21 @@ export default function WorkoutGuideModal({
     }).select("id").single().then(({ data, error }) => {
       if (error) return;
       setSessionSaved(true);
-      // Le maillon du jour, si un relais est en cours. Volontairement
-      // silencieux : pas de défi, séance trop courte ou jour déjà
-      // franchi par l'équipier → il ne se passe rien, et on ne
-      // reproche rien à personne.
-      if (data?.id) {
+      // Le maillon ne se valide QUE si cette séance est le maillon du
+      // relais (lancée par « Lancer mon maillon »). Une séance ordinaire
+      // ne fait plus rien : le relais donne sa séance, on ne triche pas.
+      // Silencieux si le serveur refuse (bloqué par le binôme, plafond du
+      // jour…) : aucune bande, aucun reproche.
+      if (data?.id && relaisRunId) {
         void validerMaillon(user.id, String(data.id)).then((r) => {
           if (!r) return;
           // Le drapeau reste : si on quitte sans toucher la bande, la
           // grande affiche rejouera la bascule à la première ouverture.
           sessionStorage.setItem(CLE_DEVOILE, "1");
           setMaillon(r);
+          // L'écran /defi vit sous ce tunnel (overlay global) : on lui dit
+          // de se recharger pour montrer le nouvel état co-op.
+          window.dispatchEvent(new Event(EVT_RELAIS));
         });
       }
       // La séance qui fait passer un rang doit se fêter ICI, pas à la prochaine

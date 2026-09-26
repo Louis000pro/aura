@@ -290,16 +290,17 @@ function BandeRelais({ relais, onNavigate }: {
   onNavigate: (href: string) => void;
 }) {
   const nom = relais.equipier?.pseudo;
-  const etat = etatPoster(relais.faits, relais.objectif);
+  const etat = etatPoster(relais.min, relais.objectif);
 
-  // Ce que dit la bande suit la règle du relais, jamais l'humeur : la
-  // même lecture que /defi, donc les deux écrans ne se contredisent pas.
+  // Ce que dit la bande suit la règle co-op du relais, la même lecture que
+  // /defi : les deux écrans ne se contredisent jamais.
+  const e = relais.etat;
   const phrase =
-    relais.tour.quoi === "deja_franchi"
-      ? (relais.tour.parMoi ? "C’est fait pour aujourd’hui." : "Le maillon du jour est franchi.")
-      : relais.tour.quoi === "pas_mon_tour"
-        ? `Aujourd’hui, c’est à ${relais.tour.equipier?.pseudo ?? nom ?? "l’autre"}.`
-        : "Aujourd’hui, c’est à toi.";
+    e.quoi === "a_moi"        ? `À toi de jouer · maillon ${e.maillon}.`
+  : e.quoi === "bloque"       ? `En attente de ${e.equipier?.pseudo ?? nom ?? "ton binôme"}.`
+  : e.quoi === "fini_pour_moi"? "Tu as fini, on attend ton binôme."
+  : e.quoi === "plafond_jour" ? "Reviens demain pour la suite."
+  :                             "Ouvre ton relais.";
 
   return (
     <button
@@ -312,7 +313,7 @@ function BandeRelais({ relais, onNavigate }: {
       </span>
       <span className={styles.relaisCopy}>
         <strong>
-          {nom ? `Relais avec ${nom}` : "Ton relais"} · {relais.faits} sur {relais.objectif}
+          {nom ? `Relais avec ${nom}` : "Ton relais"} · {relais.min} sur {relais.objectif}
         </strong>
         <small>{phrase}</small>
       </span>

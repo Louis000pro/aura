@@ -15,19 +15,28 @@ import Image from "next/image";
 import { useAuth } from "@/context/AuthContext";
 import PosterDefi from "@/components/defi/PosterDefi";
 import {
-  chargerDefi, annulerRelais, lienInvitation, etatPoster, tourDeJeu,
-  joursDeLaFenetre, joursRestants, encoreJouable, aujourdhui, fenetreFinie,
-  defiFactice, SERIES, CLE_DEVOILE, type Defi, type Membre,
+  chargerDefi, annulerRelais, lienInvitation, etatPoster,
+  joursRestants, fenetreFinie, etatCoop, niveauxCoop,
+  defiFactice, SERIES, CLE_DEVOILE, EVT_RELAIS, type Defi, type Membre,
 } from "@/lib/defi";
 import { badgesDuDefi } from "@/lib/badges";
 import { chargerBadges } from "@/lib/messagerie";
 import RangeeBadges from "@/components/defi/RangeeBadges";
 import { partagerAffiche } from "@/lib/defiShareExport";
 import { proposerAvis } from "@/lib/invitationAvis";
+import { createClient } from "@/lib/supabase";
+import { useWorkoutLaunch } from "@/context/WorkoutLaunchContext";
+import {
+  genererMaillon, sessionIdMaillon, dureeMaillon, niveauDepuisProfil,
+} from "@/lib/relaisSeance";
 
 export default function DefiPage() {
   const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
+  const { launchWorkout } = useWorkoutLaunch();
+  // La difficulté des maillons se cale sur le NIVEAU (débutant / inter /
+  // avancé), jamais sur le rang (qui mesure la régularité, pas la force).
+  const [niveau, setNiveau] = useState(() => niveauDepuisProfil(null));
 
   const [defi, setDefi]         = useState<Defi | null>(null);
   const [chargement, setChargement] = useState(true);
@@ -70,8 +79,24 @@ export default function DefiPage() {
     void recharger();
   }, [authLoading, user, router, recharger]);
 
+  /* Le niveau d'entraînement du joueur, pour caler la difficulté des maillons. */
+  useEffect(() => {
+    if (!user?.id || apercu) return;
+    const supabase = createClient();
+    void supabase.from("profiles").select("onboarding_level").eq("id", user.id).maybeSingle()
+      .then(({ data }) => setNiveau(niveauDepuisProfil((data?.onboarding_level as string | null) ?? null)));
+  }, [user?.id, apercu]);
+
+  /* Un maillon vient d'être franchi dans le tunnel (overlay global) : on
+     recharge pour montrer le nouvel état co-op, et on rejoue la bascule. */
+  useEffect(() => {
+    const on = () => { setDevoile(true); void recharger(); };
+    window.addEventListener(EVT_RELAIS, on);
+    return () => window.removeEventListener(EVT_RELAIS, on);
+  }, [recharger]);
+
   /* Un relais gagné (pas un aperçu) est un pic de satisfaction : on propose un
-     avis, une seule fois par personne (garde-fou dans `avis.ts`). */
+     avis, une seule fois par personne (garde-fou dans `invitationAvis.ts`). */
   useEffect(() => {
     if (apercu || !user?.id) return;
     if (defi?.statut === "reussi") proposerAvis(user.id);
@@ -149,9 +174,8 @@ export default function DefiPage() {
             Cette affiche est vide.
           </h1>
           <p className="mt-2 text-[16px] leading-relaxed" style={{ color: "var(--text-body)" }}>
-            Elle se dévoile à chaque séance de la semaine, mais elle ne se
-            dévoile qu&apos;à deux. Quatre jours sur sept, chacun son tour, jamais
-            deux jours de suite la même personne.
+            Elle se dévoile à deux. Vous grimpez la même échelle de 4 maillons,
+            et on avance quand les deux ont fait le maillon en cours.
           </p>
 
           <button
@@ -176,11 +200,14 @@ export default function DefiPage() {
     );
   }
 
-  const faits    = defi.actions.length;
-  const etat     = etatPoster(faits, defi.objectif);
   const noms     = defi.membres.map((m) => m.pseudo);
   const moi      = user!.id;
-  const tour     = tourDeJeu(defi, moi);
+  // Co-op : chacun grimpe ses 4 maillons ; l'affiche suit l'avancée COMMUNE
+  // (le min des deux). On ne compte plus des « jours », on compte des maillons.
+  const nv       = niveauxCoop(defi, moi);
+  const faits    = nv.min;                       // avancée commune, pour l'affiche
+  const etat     = etatPoster(nv.min, defi.objectif);
+  const coop     = etatCoop(defi, moi);
   const restants = joursRestants(defi);
   const serie    = SERIES[defi.serie as keyof typeof SERIES] ?? SERIES.sillage;
   const equipier = defi.membres.find((m) => m.userId !== moi) ?? null;
@@ -253,7 +280,7 @@ export default function DefiPage() {
           {lien && (
             <>
               <button
-                onClick={() => partager(lien, "Rejoins mon relais sur Vaiiya", "Quatre jours sur sept, chacun son tour. On y va ?")}
+                onClick={() => partager(lien, "Rejoins mon relais sur Vaiiya", "On grimpe les 4 maillons ensemble. On y va ?")}
                 className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl px-5 py-4 text-[16px] font-semibold text-white transition-transform active:scale-[.98]"
                 style={{ background: "linear-gradient(135deg, #8B5CF6, #C13BC1)" }}
               >
@@ -357,14 +384,8 @@ export default function DefiPage() {
     );
   }
 
-  /* ── En cours ───────────────────────────────────────────── */
-  const perdu = !encoreJouable(defi);
-
-  const phrase =
-    perdu                       ? "L’affiche restera comme elle est. Ce n’est pas grave, vous en relancerez une."
-  : tour.quoi === "deja_franchi" ? (tour.parMoi ? "C’est fait pour aujourd’hui. Le relais repart demain." : "Le maillon d’aujourd’hui est franchi.")
-  : tour.quoi === "pas_mon_tour" ? `Tu as franchi hier, aujourd’hui, c’est à ${tour.equipier?.pseudo ?? "l’autre"}.`
-  :                                "À toi de jouer.";
+  /* ── En cours (co-op) ─────────────────────────────────────── */
+  const maillonCourant = Math.min(nv.min + 1, defi.objectif);
 
   return (
     <Cadre equipier={equipier} fil={fil}>
@@ -379,42 +400,89 @@ export default function DefiPage() {
           className="shadow-2xl"
         />
 
-        {/* Compte + fenêtre */}
+        {/* Le maillon commun + la fenêtre */}
         <div className="mt-6 flex items-baseline justify-between">
           <div className="flex items-baseline gap-1.5">
-            <span className="text-[34px] font-bold leading-none" style={{ color: "var(--text-0)" }}>
-              {faits}
+            <span className="text-[28px] font-bold leading-none" style={{ color: "var(--text-0)" }}>
+              Maillon {maillonCourant}
             </span>
-            <span className="text-[16px] font-medium" style={{ color: "var(--text-2)" }}>
-              / {defi.objectif} jours
+            <span className="text-[15px] font-medium" style={{ color: "var(--text-2)" }}>
+              / {defi.objectif}
             </span>
           </div>
           <span className="text-[13px] font-medium" style={{ color: "var(--text-3)" }}>
-            {restants > 1 ? `${restants} jours restants` : "dernier jour"}
+            {restants > 1 ? `${restants} j restants` : "dernier jour"}
           </span>
         </div>
 
-        <ChaineDesJours defi={defi} moi={moi} equipier={equipier} />
+        <ChaineCoop objectif={defi.objectif} mine={nv.mine} partner={nv.partner} equipier={equipier} />
 
-        <p className="mt-4 text-[16px] leading-relaxed" style={{ color: "var(--text-body)" }}>
-          {phrase}
-        </p>
-
-        {tour.quoi === "a_moi" && !perdu && (
-          <button
-            onClick={() => router.push("/progression")}
-            className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl px-5 py-4 text-[16px] font-semibold text-white transition-transform active:scale-[.98]"
-            style={{ background: "linear-gradient(135deg, #8B5CF6, #C13BC1)" }}
-          >
-            <Dumbbell className="h-5 w-5" />
-            Lancer une séance
-          </button>
-        )}
-        {tour.quoi === "a_moi" && (
-          <p className="mt-3 text-center text-[13px]" style={{ color: "var(--text-3)" }}>
-            Dix minutes minimum pour que le maillon compte.
+        {finie ? (
+          <p className="mt-4 text-[16px] leading-relaxed" style={{ color: "var(--text-body)" }}>
+            La semaine est finie. L’affiche reste comme elle est, vous en relancerez une quand vous voulez.
           </p>
-        )}
+        ) : coop.quoi === "a_moi" ? (
+          <>
+            <p className="mt-4 text-[16px] leading-relaxed" style={{ color: "var(--text-body)" }}>
+              À toi de jouer · maillon {coop.maillon}, {coop.maillon} mouvement{coop.maillon > 1 ? "s" : ""} à ton niveau.
+            </p>
+            <button
+              onClick={() => {
+                const exos = genererMaillon(coop.maillon, niveau);
+                launchWorkout({
+                  sessionId: sessionIdMaillon(defi.runId, coop.maillon),
+                  title: `Maillon ${coop.maillon}`,
+                  duration: dureeMaillon(exos),
+                  difficulty: "Relais",
+                  exerciseList: exos,
+                  relaisRunId: defi.runId,
+                });
+              }}
+              className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl px-5 py-4 text-[16px] font-semibold text-white transition-transform active:scale-[.98]"
+              style={{ background: "linear-gradient(135deg, #8B5CF6, #C13BC1)" }}
+            >
+              <Dumbbell className="h-5 w-5" />
+              Lancer mon maillon
+            </button>
+            <p className="mt-3 text-center text-[13px]" style={{ color: "var(--text-3)" }}>
+              Termine la séance et ton maillon est franchi.
+            </p>
+          </>
+        ) : coop.quoi === "bloque" ? (
+          <div className="mt-4 rounded-2xl border p-4 text-center"
+            style={{ borderColor: "rgba(var(--text-3-rgb), .25)", background: "rgba(var(--surface-rgb), .5)" }}>
+            <p className="text-[16px] font-semibold" style={{ color: "var(--text-0)" }}>Ton maillon est fait.</p>
+            <p className="mt-1 text-[13px] leading-relaxed" style={{ color: "var(--text-2)" }}>
+              Le maillon suivant se débloque dès que {coop.equipier?.pseudo ?? "ton binôme"} a fait le sien.
+            </p>
+            {fil && (
+              <button onClick={() => router.push(`/communaute/${fil}`)}
+                className="mt-3 inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-[15px] font-semibold"
+                style={{ color: "var(--accent)", background: "rgba(var(--accent-rgb), .10)" }}>
+                <MessageCircle className="h-4 w-4" /> Écrire à {coop.equipier?.pseudo ?? "ton binôme"}
+              </button>
+            )}
+          </div>
+        ) : coop.quoi === "fini_pour_moi" ? (
+          <div className="mt-4 rounded-2xl border p-4 text-center"
+            style={{ borderColor: "rgba(43,212,160,.3)", background: "rgba(43,212,160,.06)" }}>
+            <p className="text-[16px] font-semibold" style={{ color: "var(--text-0)" }}>Tu as bouclé tes 4 maillons.</p>
+            <p className="mt-1 text-[13px] leading-relaxed" style={{ color: "var(--text-2)" }}>
+              L’affiche se complète dès que {coop.equipier?.pseudo ?? "ton binôme"} a fini les siens.
+            </p>
+            {fil && (
+              <button onClick={() => router.push(`/communaute/${fil}`)}
+                className="mt-3 inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-[15px] font-semibold"
+                style={{ color: "var(--accent)", background: "rgba(var(--accent-rgb), .10)" }}>
+                <MessageCircle className="h-4 w-4" /> Écrire à {coop.equipier?.pseudo ?? "ton binôme"}
+              </button>
+            )}
+          </div>
+        ) : coop.quoi === "plafond_jour" ? (
+          <p className="mt-4 text-[16px] leading-relaxed" style={{ color: "var(--text-body)" }}>
+            Tu as fait tes 2 maillons du jour. Reviens demain pour la suite.
+          </p>
+        ) : null}
 
         {arret}
 
@@ -426,52 +494,40 @@ export default function DefiPage() {
   );
 }
 
-/* ─── La chaîne des sept jours ───────────────────────────────
-   Ce qui est fait est en teal, aujourd'hui est cerclé de violet.
-   Un jour manqué n'est pas rouge et n'est attribué à personne :
-   on ne désigne jamais celui qui a lâché.
-
-   ⚠️ La légende n'est pas un ornement. C'est le SEUL endroit de l'app
-   où le teal ne veut pas dire « réussi » mais « toi », et rien ne le
-   disait : trois couleurs qu'on devait deviner. */
-function ChaineDesJours({ defi, moi, equipier }: {
-  defi: Defi; moi: string; equipier: Membre | null;
+/* ─── La chaîne co-op des 4 maillons ─────────────────────────
+   Un maillon est « franchi » (violet plein) quand LES DEUX l'ont fait :
+   l'échelle avance à l'avancée COMMUNE (le min). Le maillon en cours est
+   en rose. La légende dit où chacun en est, sans jamais désigner un
+   retard comme une faute. */
+function ChaineCoop({ objectif, mine, partner, equipier }: {
+  objectif: number; mine: number; partner: number; equipier: Membre | null;
 }) {
-  const jours = joursDeLaFenetre(defi);
-  const auj = aujourdhui();
+  const min = Math.min(mine, partner);
 
   return (
     <>
     <div className="mt-4 flex gap-1.5">
-      {jours.map((j) => {
-        const action = defi.actions.find((a) => a.jour === j);
-        const estAuj = j === auj;
-        const passe  = j < auj;
-
-        let fond = "rgba(var(--text-3-rgb), .16)";
-        if (action) fond = action.userId === moi ? "#2BD4A0" : "#8B5CF6";
-        else if (passe) fond = "rgba(var(--text-3-rgb), .28)";
-
+      {Array.from({ length: objectif }).map((_, i) => {
+        const done = min > i;      // les DEUX ont fait ce maillon
+        const now  = i === min;    // le maillon commun en cours
+        const fond = done
+          ? "linear-gradient(90deg,#8B5CF6,#C13BC1)"
+          : now ? "rgba(217,79,184,.45)" : "rgba(var(--text-3-rgb), .16)";
         return (
           <motion.div
-            key={j}
+            key={i}
             initial={false}
             animate={{ opacity: 1 }}
             className="h-1.5 flex-1 rounded-full"
-            style={{
-              background: fond,
-              outline: estAuj ? "2px solid rgba(139,92,246,.55)" : "none",
-              outlineOffset: "2px",
-            }}
+            style={{ background: fond }}
           />
         );
       })}
     </div>
 
     <div className="mt-2 flex items-center gap-3.5">
-      <Pastille couleur="#2BD4A0" texte="Toi" />
-      <Pastille couleur="#8B5CF6" texte={equipier?.pseudo ?? "L’autre"} />
-      <Pastille couleur="rgba(var(--text-3-rgb), .38)" texte="Passé" />
+      <Pastille couleur="#2BD4A0" texte={`Toi ${mine}/${objectif}`} />
+      <Pastille couleur="#8B5CF6" texte={`${equipier?.pseudo ?? "L’autre"} ${partner}/${objectif}`} />
     </div>
     </>
   );

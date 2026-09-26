@@ -44,6 +44,9 @@ export type WorkoutLaunchInput = {
    *  perso). Absent = la séance a eu lieu et ne referme rien, ce qui est
    *  la règle « une séance hors programme ne fait pas avancer le cycle ». */
   cible?: CibleSeance;
+  /** Présent quand cette séance EST le maillon d'un relais : c'est la seule
+   *  façon de franchir un maillon (la séance est donnée par le relais). */
+  relaisRunId?: string;
 };
 
 type Value = { launchWorkout: (w: WorkoutLaunchInput) => void };
@@ -79,6 +82,7 @@ export function WorkoutLaunchProvider({ children }: { children: React.ReactNode 
             heroImage={active.heroImage}
             exerciseList={active.exerciseList}
             onGarder={active.onGarder}
+            relaisRunId={active.relaisRunId}
             onComplete={active.cible && user
               ? () => {
                   if (!dejaFerme.current(active)) return;

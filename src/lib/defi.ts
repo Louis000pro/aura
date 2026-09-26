@@ -52,6 +52,10 @@ export const NB_ETATS = 4;
  *  d'affiche sous les yeux plutôt qu'un changement déjà fait. */
 export const CLE_DEVOILE = "vaiiya:defi-devoile";
 
+/** Émis après qu'un maillon vient d'être franchi (le tunnel est un overlay
+ *  global, donc l'écran /defi qui vit dessous doit se recharger). */
+export const EVT_RELAIS = "vaiiya:relais-maj";
+
 export function imageEtat(serie: string, etat: number): string {
   const s = etat.toString().padStart(2, "0");
   return `/defis/${serie}/${s}.webp`;
@@ -142,32 +146,53 @@ export function joursDeLaFenetre(defi: Defi): string[] {
   return Array.from({ length: defi.fenetre }, (_, i) => decaler(defi.debut!, i));
 }
 
-/* ── Lecture de l'état du défi ───────────────────────────────── */
-export type TourDeJeu =
+/* ── Lecture de l'état co-op ──────────────────────────────────
+   Le relais n'est plus une alternance : les deux grimpent la MÊME échelle
+   de 4 maillons, et on ne passe au suivant que quand les DEUX ont fait le
+   maillon en cours. Tout se dérive des actions (une action = un maillon
+   franchi par un joueur), jamais d'un compteur stocké. */
+
+/** Le maximum de maillons qu'une personne peut franchir dans une journée. */
+export const MAILLONS_PAR_JOUR = 2;
+
+/** Combien de maillons chacun a franchis, l'avancée COMMUNE (le min, c'est
+ *  ce que l'affiche montre) et combien j'en ai fait aujourd'hui. */
+export function niveauxCoop(defi: Defi, moi: string): {
+  mine: number; partner: number; min: number; equipier: Membre | null; aujourdhuiFaits: number;
+} {
+  const equipier = defi.membres.find((m) => m.userId !== moi) ?? null;
+  const mine = defi.actions.filter((a) => a.userId === moi).length;
+  const partner = equipier ? defi.actions.filter((a) => a.userId === equipier.userId).length : 0;
+  const jour = aujourdhui();
+  const aujourdhuiFaits = defi.actions.filter((a) => a.userId === moi && a.jour === jour).length;
+  return { mine, partner, min: Math.min(mine, partner), equipier, aujourdhuiFaits };
+}
+
+export type EtatCoop =
   | { quoi: "pas_lance" }
-  | { quoi: "deja_franchi"; parMoi: boolean }
-  | { quoi: "pas_mon_tour"; equipier: Membre | null }
-  | { quoi: "a_moi" }
-  | { quoi: "fini" };
+  | { quoi: "fini" }
+  | { quoi: "fini_pour_moi"; equipier: Membre | null }
+  | { quoi: "bloque"; equipier: Membre | null }
+  | { quoi: "plafond_jour" }
+  | { quoi: "a_moi"; maillon: number };
 
 /**
- * À qui de jouer aujourd'hui.
- * Reflète la règle serveur « jamais deux jours de suite par la même
- * personne » : si j'ai franchi hier, ce n'est pas à moi.
+ * Où j'en suis dans le relais co-op, aujourd'hui. Reflète EXACTEMENT la
+ * règle serveur (valider_action_defi) : lockstep (le binôme doit avoir
+ * fait mon maillon courant pour que je passe au suivant), et 2 maillons
+ * par jour maximum.
  */
-export function tourDeJeu(defi: Defi, moi: string): TourDeJeu {
+export function etatCoop(defi: Defi, moi: string): EtatCoop {
   if (defi.statut === "reussi" || defi.statut === "termine") return { quoi: "fini" };
   if (defi.statut !== "en_cours") return { quoi: "pas_lance" };
 
-  const jour = aujourdhui();
-  const dujour = defi.actions.find((a) => a.jour === jour);
-  if (dujour) return { quoi: "deja_franchi", parMoi: dujour.userId === moi };
+  const { mine, partner, equipier, aujourdhuiFaits } = niveauxCoop(defi, moi);
 
-  const hier = defi.actions.find((a) => a.jour === decaler(jour, -1));
-  if (hier && hier.userId === moi) {
-    return { quoi: "pas_mon_tour", equipier: defi.membres.find((m) => m.userId !== moi) ?? null };
-  }
-  return { quoi: "a_moi" };
+  if (mine >= defi.objectif && partner >= defi.objectif) return { quoi: "fini" };
+  if (mine >= defi.objectif) return { quoi: "fini_pour_moi", equipier };
+  if (partner < mine) return { quoi: "bloque", equipier };
+  if (aujourdhuiFaits >= MAILLONS_PAR_JOUR) return { quoi: "plafond_jour" };
+  return { quoi: "a_moi", maillon: mine + 1 };
 }
 
 /** Jours restants dans la fenêtre, aujourd'hui compris. */
@@ -319,11 +344,14 @@ export type RelaisAccueil = {
   runId: string;
   serie: string;
   objectif: number;
-  faits: number;
+  /** L'avancée COMMUNE (le min des deux), ce que l'affiche montre. */
+  min: number;
+  mine: number;
+  partner: number;
   conversationId: string | null;
   equipier: Membre | null;
-  /** À qui de jouer aujourd'hui, avec la vraie règle du relais. */
-  tour: TourDeJeu;
+  /** Où j'en suis dans le relais co-op, aujourd'hui. */
+  etat: EtatCoop;
 };
 
 export async function chargerRelaisAccueil(userId: string): Promise<RelaisAccueil | null> {
@@ -387,14 +415,17 @@ export async function chargerRelaisAccueil(userId: string): Promise<RelaisAccuei
   // à y faire, et `fermer_relais_expires()` va la clore de toute façon.
   if (fenetreFinie(partiel)) return null;
 
+  const nv = niveauxCoop(partiel, userId);
   return {
     runId: run.id,
     serie: partiel.serie,
     objectif: partiel.objectif,
-    faits: actions.length,
+    min: nv.min,
+    mine: nv.mine,
+    partner: nv.partner,
     conversationId: partiel.conversationId,
     equipier,
-    tour: tourDeJeu(partiel, userId),
+    etat: etatCoop(partiel, userId),
   };
 }
 
@@ -554,8 +585,14 @@ export async function apercuInvitation(code: string): Promise<Apercu | null> {
 export type MaillonFranchi = {
   serie: string;
   objectif: number;
-  /** Nombre de jours franchis, celui-ci compris. */
-  faits: number;
+  /** Le maillon que je viens de franchir (1..4). */
+  maillon: number;
+  /** Mes maillons faits, ceux du binôme, et l'avancée commune (l'affiche). */
+  mine: number;
+  partner: number;
+  min: number;
+  /** Suis-je maintenant en attente que le binôme rattrape ? */
+  bloque: boolean;
   reussi: boolean;
   /** Le fil à ouvrir : c'est là que vit l'équipier. */
   conversationId: string | null;
@@ -587,11 +624,13 @@ export async function validerMaillon(
   }).catch(() => {});
 
   return {
-    // `serie` n'est rendue qu'après 20260830_relais.sql : avant, le
-    // défi chargé juste au-dessus la porte déjà, donc rien ne casse.
     serie: (reponse.serie as string | undefined) ?? defi.serie,
     objectif: Number(reponse.objectif ?? defi.objectif),
-    faits: Number(reponse.jours_faits ?? 0),
+    maillon: Number(reponse.maillon ?? 0),
+    mine: Number(reponse.mine ?? 0),
+    partner: Number(reponse.partner ?? 0),
+    min: Number(reponse.min ?? 0),
+    bloque: Boolean(reponse.bloque),
     reussi: Boolean(reponse.reussi),
     conversationId: defi.conversationId,
     equipier: defi.membres.find((m) => m.userId !== userId) ?? null,
@@ -612,11 +651,14 @@ export function defiFactice(quoi: string, moi: string, monPseudo: string): Defi 
   const debut = decaler(aujourdhui(), -3);
   const equipier = "00000000-0000-0000-0000-0000000000e1";
 
-  // Des maillons alternés, comme la règle l'impose vraiment.
-  const actions: Action[] = Array.from({ length: jours }, (_, i) => ({
-    jour: decaler(debut, i),
-    userId: i % 2 === 0 ? moi : equipier,
-  }));
+  // Co-op : chacun a franchi `jours` maillons. Une action par joueur et par
+  // maillon (le jour n'a pas d'importance pour la lecture co-op, qui compte
+  // les actions par personne).
+  const actions: Action[] = [];
+  for (let i = 0; i < jours; i++) {
+    actions.push({ jour: decaler(debut, i), userId: moi });
+    actions.push({ jour: decaler(debut, i), userId: equipier });
+  }
 
   return {
     runId: "apercu",
