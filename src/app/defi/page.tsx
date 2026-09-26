@@ -23,6 +23,7 @@ import { badgesDuDefi } from "@/lib/badges";
 import { chargerBadges } from "@/lib/messagerie";
 import RangeeBadges from "@/components/defi/RangeeBadges";
 import { partagerAffiche } from "@/lib/defiShareExport";
+import { proposerAvis } from "@/lib/invitationAvis";
 
 export default function DefiPage() {
   const { user, isLoading: authLoading } = useAuth();
@@ -68,6 +69,13 @@ export default function DefiPage() {
     if (!user) { router.replace("/auth"); return; }
     void recharger();
   }, [authLoading, user, router, recharger]);
+
+  /* Un relais gagné (pas un aperçu) est un pic de satisfaction : on propose un
+     avis, une seule fois par personne (garde-fou dans `avis.ts`). */
+  useEffect(() => {
+    if (apercu || !user?.id) return;
+    if (defi?.statut === "reussi") proposerAvis(user.id);
+  }, [apercu, user?.id, defi?.statut]);
 
   /* Le maillon vient d'être franchi à la fin d'une séance :
      l'affiche bascule sous les yeux, une seule fois. */

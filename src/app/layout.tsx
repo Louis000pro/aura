@@ -14,6 +14,7 @@ import SplashIntro from "@/components/SplashIntro";
 import PremiumBanner from "@/components/PremiumBanner";
 import PresenceDuJour from "@/components/PresenceDuJour";
 import CelebrationRang from "@/components/rang/CelebrationRang";
+import InvitationAvis from "@/components/avis/InvitationAvis";
 import PopupNouveautes from "@/components/maj/PopupNouveautes";
 import { GuideProvider } from "@/context/GuideContext";
 import { AssistantProvider } from "@/context/AssistantContext";
@@ -269,6 +270,11 @@ export default function RootLayout({
                     "https://www.instagram.com/vaiiyapro/",
                     "https://www.tiktok.com/@vaiiyapro",
                     "https://www.youtube.com/@vaiiyapro",
+                    // La page Trustpilot de vaiiya.fr : elle relie l'entité à ses
+                    // avis modérés (§17), sans jamais porter d'AggregateRating
+                    // auto-décernée, qui reste interdite (§14). Le domaine a été
+                    // vérifié sur Trustpilot, donc l'URL /review/<domaine> est stable.
+                    "https://fr.trustpilot.com/review/vaiiya.fr",
                   ],
                 },
                 {
@@ -355,6 +361,10 @@ export default function RootLayout({
               récompense, et hors du fournisseur il serait « inconnu » pour
               tout le monde. */}
           <CelebrationRang />
+          {/* L'invitation à laisser un avis. Comme la célébration, elle répond à
+              un moment de satisfaction qui peut survenir n'importe où, donc elle
+              vit dans le layout. Elle s'affiche une seule fois par personne. */}
+          <InvitationAvis />
           <AssistantProvider>
             <WorkoutLaunchProvider>
               <GuidedTourProvider>

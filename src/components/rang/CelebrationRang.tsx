@@ -10,6 +10,7 @@ import { useGuideActif } from "@/context/GuideContext";
 import { voix } from "@/lib/guides";
 import ApercuRecompense from "@/components/rang/ApercuRecompense";
 import { EVENEMENT_RANG_MONTE, type DetailRangMonte } from "@/lib/celebrationRang";
+import { proposerAvis } from "@/lib/invitationAvis";
 import { RANGS, RECOMPENSE_RANG, type Rang } from "@/lib/aura";
 
 /**
@@ -56,7 +57,13 @@ export default function CelebrationRang() {
     return () => window.removeEventListener(EVENEMENT_RANG_MONTE, onMonte);
   }, []);
 
-  const fermer = useCallback(() => setRang(null), []);
+  // En refermant la célébration, la personne vient de voir sa montée de rang :
+  // c'est le pic de satisfaction où l'on peut proposer un avis (guardé à une
+  // seule fois par personne dans `avis.ts`).
+  const fermer = useCallback(() => {
+    setRang(null);
+    if (user?.id) proposerAvis(user.id);
+  }, [user?.id]);
 
   useEffect(() => {
     if (!rang) return;
