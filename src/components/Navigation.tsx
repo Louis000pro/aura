@@ -107,7 +107,9 @@ export default function Navigation() {
     });
   }, [router]);
 
-  if (pathname === "/auth") return null;
+  /* Tout l'écran d'entrée (/auth et ses sous-pages, « /auth/ » compris) : la
+     barre de l'app n'y a rien à faire, on n'est pas encore dedans. */
+  if (pathname === "/auth" || pathname.startsWith("/auth/")) return null;
   /* Le parcours d'entrée occupe tout l'écran et son premier choix est
      obligatoire : lui laisser une barre de navigation derrière, c'est
      offrir une sortie qui n'existe pas, et laisser le clavier tabuler
@@ -339,7 +341,11 @@ export default function Navigation() {
       {/* ══ Mobile Bottom Bar — barre pleine, opaque, edge-to-edge (façon TikTok / Insta / ShapeYou)
             Absente des surfaces publiques : elle donnait à un visiteur venu
             d'un moteur de recherche l'impression d'être déjà dans l'app. ══ */}
-      {!surfacePublique && (
+      {/* ⚠️ Jamais sans compte connecté (Louis, 2026-09-26 : la barre s'affichait
+          sur l'écran de connexion). Les onglets mènent tous à des écrans qui
+          demandent un compte : les montrer à quelqu'un qui n'en a pas encore,
+          c'est lui offrir des portes qui le renvoient à la connexion. */}
+      {user && !surfacePublique && (
       <nav className="mobile-nav fixed bottom-0 left-0 right-0 z-50 md:hidden" style={{ willChange: "transform" }}>
         <div
           className="relative flex items-stretch justify-around px-1"
