@@ -14,10 +14,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { X } from "lucide-react";
-import { usePathname } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
-import { useGuidedTour } from "@/context/GuidedTourContext";
-import { dejaVue, marquerVue, EVENEMENT_OUVRIR } from "@/lib/nouveautes";
+import { marquerVue, EVENEMENT_OUVRIR } from "@/lib/nouveautes";
 import { RANGS } from "@/lib/aura";
 import ExerciseThumb from "@/components/seance/ExerciseThumb";
 import styles from "./PopupNouveautes.module.css";
@@ -67,8 +65,6 @@ function Chapitre({ n, titre, children }: { n: string; titre: string; children: 
 
 export default function PopupNouveautes() {
   const { user } = useAuth();
-  const { isOpen: visiteEnCours } = useGuidedTour();
-  const pathname = usePathname() ?? "";
   const reduce = useReducedMotion();
   const [monte, setMonte] = useState(false);
   const [ouvert, setOuvert] = useState(false);
@@ -78,17 +74,11 @@ export default function PopupNouveautes() {
   useEffect(() => setMonte(true), []);
   useScrollBloque(ouvert);
 
-  /* Ouverture automatique : une seule fois, et jamais tout de suite. On
-     laisse l'écran d'arrivée se poser d'abord, on ne passe jamais par
-     dessus la visite guidée, et on laisse tranquilles les deux écrans
-     publics où l'on arrive de l'extérieur. */
-  const pageExclue = pathname.startsWith("/auth") || pathname.startsWith("/rejoindre");
-
-  useEffect(() => {
-    if (!user || visiteEnCours || pageExclue || dejaVue(user.id)) return;
-    const t = setTimeout(() => setOuvert(true), 1100);
-    return () => clearTimeout(t);
-  }, [user, visiteEnCours, pageExclue]);
+  /* ⚠️ PLUS D'OUVERTURE AUTOMATIQUE (Louis, 2026-09-26 : « enlève le pop-up
+     de la mise à jour à chaque fois qu'on va sur le site »). Le récap ne
+     s'ouvre plus tout seul à l'arrivée ; il ne s'ouvre QUE sur demande, par
+     la ligne « Nouveautés » des Paramètres et la carte de la cloche
+     (évènement `EVENEMENT_OUVRIR`). `marquerVue` reste utilisé à la fermeture. */
 
   /* Réouverture à la demande (Paramètres, carte de la cloche). */
   useEffect(() => {
