@@ -385,47 +385,57 @@ export default function DefiPage() {
   }
 
   /* ── En cours (co-op) ─────────────────────────────────────── */
-  const maillonCourant = Math.min(nv.min + 1, defi.objectif);
-
   return (
     <Cadre equipier={equipier} fil={fil}>
       <div className="mx-auto w-full max-w-[360px]">
+        {/* Le trésor à dévoiler */}
         <PosterDefi
           serie={defi.serie}
           etat={etat}
-          hauteurMax="38vh"
+          hauteurMax="34vh"
           noms={noms}
           titre={serie.nom}
           devoile={devoile}
           className="shadow-2xl"
         />
+        <p className="mt-3 text-center text-[12.5px] font-medium" style={{ color: "var(--text-3)" }}>
+          {finie
+            ? "L’affiche reste comme elle est."
+            : <>Vous dévoilez <b style={{ color: "var(--exp-encre)" }}>{serie.nom}</b> ensemble</>}
+        </p>
 
-        {/* Le maillon commun + la fenêtre */}
-        <div className="mt-6 flex items-baseline justify-between">
-          <div className="flex items-baseline gap-1.5">
-            <span className="text-[28px] font-bold leading-none" style={{ color: "var(--text-0)" }}>
-              Maillon {maillonCourant}
-            </span>
-            <span className="text-[15px] font-medium" style={{ color: "var(--text-2)" }}>
-              / {defi.objectif}
-            </span>
-          </div>
-          <span className="text-[13px] font-medium" style={{ color: "var(--text-3)" }}>
-            {restants > 1 ? `${restants} j restants` : "dernier jour"}
-          </span>
-        </div>
-
-        <ChaineCoop objectif={defi.objectif} mine={nv.mine} partner={nv.partner} equipier={equipier} />
+        {/* Votre montée : les 4 maillons + les deux joueurs (vraies PDP) */}
+        <MonteeCoop
+          objectif={defi.objectif}
+          mine={nv.mine}
+          partner={nv.partner}
+          restants={restants}
+          moiAvatar={user?.avatar ?? null}
+          equipier={equipier}
+        />
 
         {finie ? (
-          <p className="mt-4 text-[16px] leading-relaxed" style={{ color: "var(--text-body)" }}>
-            La semaine est finie. L’affiche reste comme elle est, vous en relancerez une quand vous voulez.
+          <p className="mt-4 text-center text-[14px] leading-relaxed" style={{ color: "var(--text-2)" }}>
+            La semaine est finie. Vous en relancerez une quand vous voulez.
           </p>
         ) : coop.quoi === "a_moi" ? (
           <>
-            <p className="mt-4 text-[16px] leading-relaxed" style={{ color: "var(--text-body)" }}>
-              À toi de jouer · maillon {coop.maillon}, {coop.maillon} mouvement{coop.maillon > 1 ? "s" : ""} à ton niveau.
-            </p>
+            {/* Ta marche du jour */}
+            <div className="mt-4 rounded-[20px] p-4"
+              style={{ background: "linear-gradient(135deg, rgba(139,92,246,.10), rgba(193,59,193,.06))", border: "1px solid rgba(139,92,246,.22)" }}>
+              <span className="text-[11px] font-extrabold uppercase tracking-[0.14em]" style={{ color: "var(--or-encre)" }}>Ta marche</span>
+              <div className="mt-1 flex items-baseline gap-2">
+                <b className="text-[24px] font-extrabold leading-none" style={{ color: "var(--text-0)" }}>Maillon {coop.maillon}</b>
+                <span className="text-[13px] font-bold" style={{ color: "var(--exp-encre)" }}>· {coop.maillon} mouvement{coop.maillon > 1 ? "s" : ""}</span>
+              </div>
+              <p className="mt-1.5 text-[13px] leading-relaxed" style={{ color: "var(--text-1)" }}>
+                Une séance courte, donnée par le relais. Termine-la et ton maillon est franchi.
+              </p>
+              <span className="mt-2.5 inline-block rounded-full px-2.5 py-1 text-[10px] font-extrabold tracking-[0.05em]"
+                style={{ background: "rgba(245,177,32,.16)", color: "var(--or-encre)", border: "1px solid rgba(245,177,32,.4)" }}>
+                À ton niveau · {NIVEAU_FR[niveau]}
+              </span>
+            </div>
             <button
               onClick={() => {
                 const exos = genererMaillon(coop.maillon, niveau);
@@ -438,48 +448,36 @@ export default function DefiPage() {
                   relaisRunId: defi.runId,
                 });
               }}
-              className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl px-5 py-4 text-[16px] font-semibold text-white transition-transform active:scale-[.98]"
-              style={{ background: "linear-gradient(135deg, #8B5CF6, #C13BC1)" }}
+              className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl px-5 py-4 text-[16px] font-bold text-white transition-transform active:scale-[.98]"
+              style={{ background: "linear-gradient(135deg, #8B5CF6, #C13BC1)", boxShadow: "0 12px 30px rgba(139,92,246,.36)" }}
             >
               <Dumbbell className="h-5 w-5" />
               Lancer mon maillon
             </button>
-            <p className="mt-3 text-center text-[13px]" style={{ color: "var(--text-3)" }}>
-              Termine la séance et ton maillon est franchi.
+            <p className="mt-3 text-center text-[12px]" style={{ color: "var(--text-3)" }}>
+              2 maillons par jour maximum · finissable en 2 jours.
             </p>
           </>
         ) : coop.quoi === "bloque" ? (
-          <div className="mt-4 rounded-2xl border p-4 text-center"
-            style={{ borderColor: "rgba(var(--text-3-rgb), .25)", background: "rgba(var(--surface-rgb), .5)" }}>
-            <p className="text-[16px] font-semibold" style={{ color: "var(--text-0)" }}>Ton maillon est fait.</p>
-            <p className="mt-1 text-[13px] leading-relaxed" style={{ color: "var(--text-2)" }}>
-              Le maillon suivant se débloque dès que {coop.equipier?.pseudo ?? "ton binôme"} a fait le sien.
-            </p>
-            {fil && (
-              <button onClick={() => router.push(`/communaute/${fil}`)}
-                className="mt-3 inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-[15px] font-semibold"
-                style={{ color: "var(--accent)", background: "rgba(var(--accent-rgb), .10)" }}>
-                <MessageCircle className="h-4 w-4" /> Écrire à {coop.equipier?.pseudo ?? "ton binôme"}
-              </button>
-            )}
-          </div>
+          <BoiteAttente
+            fait={`Ton maillon ${nv.mine} est fait`}
+            titre={`On attend ${coop.equipier?.pseudo ?? "ton binôme"}`}
+            texte={`Le maillon ${Math.min(nv.mine + 1, defi.objectif)} se débloque dès que ${coop.equipier?.pseudo ?? "ton binôme"} a fait le sien. Un petit coup de pression ?`}
+            equipier={coop.equipier}
+            fil={fil}
+            onEcrire={() => fil && router.push(`/communaute/${fil}`)}
+          />
         ) : coop.quoi === "fini_pour_moi" ? (
-          <div className="mt-4 rounded-2xl border p-4 text-center"
-            style={{ borderColor: "rgba(43,212,160,.3)", background: "rgba(43,212,160,.06)" }}>
-            <p className="text-[16px] font-semibold" style={{ color: "var(--text-0)" }}>Tu as bouclé tes 4 maillons.</p>
-            <p className="mt-1 text-[13px] leading-relaxed" style={{ color: "var(--text-2)" }}>
-              L’affiche se complète dès que {coop.equipier?.pseudo ?? "ton binôme"} a fini les siens.
-            </p>
-            {fil && (
-              <button onClick={() => router.push(`/communaute/${fil}`)}
-                className="mt-3 inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-[15px] font-semibold"
-                style={{ color: "var(--accent)", background: "rgba(var(--accent-rgb), .10)" }}>
-                <MessageCircle className="h-4 w-4" /> Écrire à {coop.equipier?.pseudo ?? "ton binôme"}
-              </button>
-            )}
-          </div>
+          <BoiteAttente
+            fait={`Tu as bouclé tes ${defi.objectif} maillons`}
+            titre={`On attend ${coop.equipier?.pseudo ?? "ton binôme"}`}
+            texte={`L’affiche se complète dès que ${coop.equipier?.pseudo ?? "ton binôme"} a fini les siens.`}
+            equipier={coop.equipier}
+            fil={fil}
+            onEcrire={() => fil && router.push(`/communaute/${fil}`)}
+          />
         ) : coop.quoi === "plafond_jour" ? (
-          <p className="mt-4 text-[16px] leading-relaxed" style={{ color: "var(--text-body)" }}>
+          <p className="mt-4 text-center text-[14px] leading-relaxed" style={{ color: "var(--text-2)" }}>
             Tu as fait tes 2 maillons du jour. Reviens demain pour la suite.
           </p>
         ) : null}
@@ -494,53 +492,116 @@ export default function DefiPage() {
   );
 }
 
-/* ─── La chaîne co-op des 4 maillons ─────────────────────────
-   Un maillon est « franchi » (violet plein) quand LES DEUX l'ont fait :
-   l'échelle avance à l'avancée COMMUNE (le min). Le maillon en cours est
-   en rose. La légende dit où chacun en est, sans jamais désigner un
-   retard comme une faute. */
-function ChaineCoop({ objectif, mine, partner, equipier }: {
-  objectif: number; mine: number; partner: number; equipier: Membre | null;
+/** Libellé français du niveau d'entraînement (pour « à ton niveau · … »). */
+const NIVEAU_FR: Record<string, string> = {
+  debutant: "Débutant", intermediaire: "Intermédiaire", avance: "Avancé",
+};
+
+/* ─── La montée co-op : les 4 maillons + les deux joueurs ─────
+   Violet = maillon fait par les DEUX, jaune = le maillon commun en cours.
+   Les avatars sont les VRAIES photos de profil, avec un liseré de couleur
+   (jaune = toi, violet = le binôme). On ne désigne jamais un retard comme
+   une faute. */
+function MonteeCoop({ objectif, mine, partner, restants, moiAvatar, equipier }: {
+  objectif: number; mine: number; partner: number; restants: number;
+  moiAvatar: string | null; equipier: Membre | null;
 }) {
   const min = Math.min(mine, partner);
-
   return (
-    <>
-    <div className="mt-4 flex gap-1.5">
-      {Array.from({ length: objectif }).map((_, i) => {
-        const done = min > i;      // les DEUX ont fait ce maillon
-        const now  = i === min;    // le maillon commun en cours
-        const fond = done
-          ? "linear-gradient(90deg,#8B5CF6,#C13BC1)"
-          : now ? "rgba(217,79,184,.45)" : "rgba(var(--text-3-rgb), .16)";
-        return (
-          <motion.div
-            key={i}
-            initial={false}
-            animate={{ opacity: 1 }}
-            className="h-1.5 flex-1 rounded-full"
-            style={{ background: fond }}
-          />
-        );
-      })}
+    <div className="mt-5 rounded-[22px] p-4"
+      style={{ background: "rgb(var(--surface-rgb))", border: "1px solid rgba(var(--text-3-rgb), .12)", boxShadow: "var(--ombre-pose)" }}>
+      <div className="mb-3 flex items-center justify-between">
+        <span className="text-[11px] font-extrabold uppercase tracking-[0.13em]" style={{ color: "var(--text-3)" }}>Votre montée</span>
+        <span className="text-[11px] font-bold" style={{ color: "var(--text-3)" }}>
+          {restants > 1 ? `${restants} j restants` : "dernier jour"}
+        </span>
+      </div>
+      <div className="flex gap-[7px]">
+        {Array.from({ length: objectif }).map((_, i) => {
+          const done = min > i;    // les DEUX ont fait ce maillon
+          const now  = i === min;  // le maillon commun en cours
+          const fond = done
+            ? "linear-gradient(90deg,#8B5CF6,#C13BC1)"
+            : now ? "linear-gradient(90deg,#F5B120,#FFD34E)" : "rgba(var(--text-3-rgb), .16)";
+          return (
+            <motion.span key={i} initial={false} animate={{ opacity: 1 }}
+              className="h-2 flex-1 rounded-full" style={{ background: fond }} />
+          );
+        })}
+      </div>
+      <div className="mt-3.5 flex gap-2.5">
+        <JoueurChip avatar={moiAvatar} pseudo="Toi" ring="jaune" compte={`Maillon ${mine} / ${objectif}`} encre="var(--or-encre)" />
+        <JoueurChip avatar={equipier?.avatar ?? null} pseudo={equipier?.pseudo ?? "L’autre"} ring="violet" compte={`Maillon ${partner} / ${objectif}`} encre="var(--exp-encre)" />
+      </div>
     </div>
-
-    <div className="mt-2 flex items-center gap-3.5">
-      <Pastille couleur="#2BD4A0" texte={`Toi ${mine}/${objectif}`} />
-      <Pastille couleur="#8B5CF6" texte={`${equipier?.pseudo ?? "L’autre"} ${partner}/${objectif}`} />
-    </div>
-    </>
   );
 }
 
-function Pastille({ couleur, texte }: { couleur: string; texte: string }) {
+/** La photo de profil, ronde, avec un liseré de couleur. Repli sur
+ *  l'initiale seulement s'il n'y a pas de photo : on garde la vraie PDP
+ *  de l'utilisateur quand elle existe (choix de Louis). */
+function Pdp({ avatar, pseudo, ring, taille = 34, pulse = false }: {
+  avatar: string | null; pseudo: string; ring: "jaune" | "violet"; taille?: number; pulse?: boolean;
+}) {
+  const couleur = ring === "jaune" ? "#F5B120" : "#8B5CF6";
+  const halo = ring === "jaune" ? "rgba(245,177,32,.28)" : "rgba(139,92,246,.24)";
+  const ombre = `0 0 0 2.5px ${couleur}, 0 0 0 4px ${halo}` + (pulse ? ", 0 0 0 11px rgba(139,92,246,.08)" : "");
+  if (avatar) {
+    return (
+      <Image src={avatar} alt="" width={taille} height={taille} unoptimized
+        className="shrink-0 rounded-full object-cover"
+        style={{ width: taille, height: taille, boxShadow: ombre }} />
+    );
+  }
   return (
-    <span className="flex min-w-0 items-center gap-1.5">
-      <span className="h-1.5 w-4 shrink-0 rounded-full" style={{ background: couleur }} />
-      <span className="truncate text-[11px] font-medium" style={{ color: "var(--text-3)" }}>
-        {texte}
-      </span>
+    <span className="grid shrink-0 place-items-center rounded-full font-extrabold"
+      style={{ width: taille, height: taille, fontSize: Math.round(taille * 0.4),
+        background: "linear-gradient(135deg,#DCDAE6,#EEECF4)", color: "#8A8698", boxShadow: ombre }}>
+      {pseudo.charAt(0).toUpperCase()}
     </span>
+  );
+}
+
+function JoueurChip({ avatar, pseudo, ring, compte, encre }: {
+  avatar: string | null; pseudo: string; ring: "jaune" | "violet"; compte: string; encre: string;
+}) {
+  return (
+    <div className="flex min-w-0 flex-1 items-center gap-2.5 rounded-[14px] px-2.5 py-2"
+      style={{ background: "rgba(var(--text-3-rgb), .07)", border: "1px solid rgba(var(--text-3-rgb), .10)" }}>
+      <Pdp avatar={avatar} pseudo={pseudo} ring={ring} />
+      <span className="min-w-0">
+        <b className="block truncate text-[12px] font-extrabold leading-none" style={{ color: "var(--text-0)" }}>{pseudo}</b>
+        <span className="mt-1 block text-[11px] font-bold" style={{ color: encre }}>{compte}</span>
+      </span>
+    </div>
+  );
+}
+
+/** L'état d'attente (bloqué / fini pour moi) : ton maillon marqué fait,
+ *  la PDP du binôme qui « pulse », et un bouton pour le relancer. */
+function BoiteAttente({ fait, titre, texte, equipier, fil, onEcrire }: {
+  fait: string; titre: string; texte: string; equipier: Membre | null; fil: string | null; onEcrire: () => void;
+}) {
+  return (
+    <div className="mt-4 rounded-[20px] p-[18px] text-center"
+      style={{ background: "rgb(var(--surface-rgb))", border: "1px solid rgba(var(--text-3-rgb), .12)", boxShadow: "var(--ombre-pose)" }}>
+      <span className="mb-3.5 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-extrabold"
+        style={{ color: "var(--or-encre)", background: "rgba(245,177,32,.14)", border: "1px solid rgba(245,177,32,.4)" }}>
+        <Check className="h-3 w-3" strokeWidth={3} /> {fait}
+      </span>
+      <div className="mb-2.5 flex justify-center">
+        <Pdp avatar={equipier?.avatar ?? null} pseudo={equipier?.pseudo ?? "?"} ring="violet" taille={56} pulse />
+      </div>
+      <p className="text-[16px] font-extrabold" style={{ color: "var(--text-0)" }}>{titre}</p>
+      <p className="mt-1.5 text-[12.5px] leading-relaxed" style={{ color: "var(--text-2)" }}>{texte}</p>
+      {fil && (
+        <button onClick={onEcrire}
+          className="mt-3.5 inline-flex items-center gap-2 rounded-2xl border px-5 py-3 text-[15px] font-bold"
+          style={{ borderColor: "rgba(var(--text-3-rgb), .18)", color: "var(--exp-encre)" }}>
+          <MessageCircle className="h-4 w-4" /> Écrire à {equipier?.pseudo ?? "ton binôme"}
+        </button>
+      )}
+    </div>
   );
 }
 
