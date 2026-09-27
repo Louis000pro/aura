@@ -53,6 +53,10 @@ export default function PosterDefi({
         // hauteur autorisée — auquel cas c'est la hauteur qui commande.
         width: `min(100%, calc(${hauteurMax} * 9 / 16))`,
         marginInline: "auto",
+        // Conteneur de requête : le titre et les prénoms se dimensionnent
+        // en `cqw` (% de la largeur du poster), donc ils tiennent quelle que
+        // soit la taille de l'affiche, sans jamais être rognés.
+        containerType: "inline-size",
       }}
     >
       {/* Les couches d'affiche. Le fondu croisé vient du fait que
@@ -151,15 +155,19 @@ export default function PosterDefi({
           coupés ; s'ils débordent malgré tout, ils passent à la ligne.
           Un « … » sur le prénom de quelqu'un, jamais. */}
       {(titre || noms.length > 0) && (
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 px-5 pb-[6.5%] text-center">
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 px-4 pb-[6.5%] text-center">
           {titre && (
             <span
-              className="block text-[26px] font-extrabold uppercase leading-none"
+              className="block font-extrabold uppercase leading-none"
               style={{
-                letterSpacing: "0.18em",
-                textIndent: "0.18em",
+                // Se cale sur la largeur du poster : jamais rogné, toujours
+                // centré (le textIndent compense l'espace de fin de tracking).
+                fontSize: "clamp(12px, 13cqw, 30px)",
+                letterSpacing: "0.12em",
+                textIndent: "0.12em",
                 color: "#FBF4E6",
                 textShadow: "0 2px 18px rgba(0,0,0,.45)",
+                whiteSpace: "nowrap",
               }}
             >
               {titre}
