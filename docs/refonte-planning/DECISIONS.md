@@ -20,7 +20,28 @@
 15. **Annuler** : commande inverse courte, seulement là où le retour est sûr, y compris les conséquences (un repos retiré doit revenir). Jamais d'effacement d'un fait ni d'écrasement d'une réservation neuve.
 16. **Lecture ratée = « Planning indisponible »**, jamais une semaine vide.
 
-## En attente de Louis (maquette `03-maquette-commune.html`)
+## Validées par Claude et Codex (tour 4 : programme et calendrier, soulevé par Louis)
+Constat vérifié dans le code : la semaine régénérée (`generateWeek`) tourne depuis l'étape 1 sans lire le curseur, n'écrit que la provenance, et le héros donne priorité au daté. Résultat : une séance manquée disparaît derrière la suivante. Une séance manquée par manque de temps ne doit jamais valoir un saut.
+17. **Trois responsabilités** : le programme dit QUOI et dans quel ordre ; les jours d'entraînement disent QUAND on peut s'entraîner ; le journal garde ce qui a été fait.
+18. **Le contenu d'un jour d'entraînement à venir se calcule à la lecture**, dans l'ordre du cycle, depuis la prochaine séance. Une séance manquée glisse au prochain jour d'entraînement, le passage du temps ne consomme jamais rien, aucun rattrapage n'ajoute de séance.
+19. **Les séances futures sont des prévisions**, expliquées par une seule phrase commune : « Ton programme suit ton rythme. Une séance manquée t'attend au prochain jour d'entraînement. »
+20. **Un jour d'entraînement n'est pas une séance** : stockage dédié (règle hebdomadaire + exceptions datées), jamais une intention `seance` vide. Migration SQL et révision de décisions verrouillées : validation explicite de Louis requise.
+21. **Une seule résolution** partagée par l'accueil, la semaine, le Guide et les rappels.
+22. **Lancer fige** : on relit la prochaine séance, on montre son vrai contenu avant de commencer, et l'étape visée ne change plus. Abandon = rien n'avance ; fin = une seule consommation.
+23. **Sauter reste un geste explicite.** Une séance hors programme compte comme réalisée et ne consomme aucune étape ; « Remplacer la prochaine séance » reste disponible.
+24. **Pas de compression** des séances manquées ; l'ordre du cycle ne garantit pas la récupération (`buildSplit` enchaîne Full Body → Haut du corps).
+25. **Adaptations** : étapes masquées traversées sans être consommées, appliquées à la date de chaque jour projeté.
+26. **Rappels** : un jour d'entraînement choisi peut en déclencher un, résolu au moment de l'envoi avec la même logique.
+27. **Migration sans conversion silencieuse** : faits, sauts et séances posées par la personne ou le Guide conservés ; aperçu avant de remplacer les anciennes semaines automatiques ; réservations traitées à part.
+28. **Changer ses jours ne change pas le programme** (le nombre de jours et la forme du cycle se séparent), et **une lecture du curseur ratée n'est pas « rien de fait »** (`positionConsommee` repart aujourd'hui au début sur erreur).
+29. Vocabulaire : « Mes jours d'entraînement », « Prochaine séance » ; jamais « créneau » ni « étape » à l'écran.
+
+## En attente de Louis (prioritaire : programme et calendrier)
+A. GO sur le principe 17 à 29 (migration SQL + révision des verrous du moteur).
+B. « Jambes tous les lundis » (jour fixe récurrent) dans la première version, ou plus tard ?
+C. Une maquette « avant / après une séance manquée » avant de trancher, ou d'abord le GO sur le principe ?
+
+## En attente de Louis (suspendues, maquette `03-maquette-commune.html`)
 1. La hiérarchie « jours + une ligne Prochaine séance » lui convient-elle ?
 2. « Placer mes prochaines séances » dès la première version ?
 3. GO pour une passe de corrections séparée : répétition depuis la semaine, liaison intention ↔ journal (identité, répétition, échec d'enregistrement traités ensemble), contexte perdu de « Décaler / Remplacer ».
