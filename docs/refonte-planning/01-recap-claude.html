@@ -1,0 +1,347 @@
+<title>Refonte du planning Vaiiya</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,300..900&family=Martian+Mono:wdth,wght@75..112.5,400..800&display=swap">
+<style>
+/* Layout : une colonne de lecture (~68ch), une maquette de téléphone au cœur, tableaux avant → après. */
+:root{
+  --bg:#FBFAFE; --surface:#FFFFFF; --line:rgba(70,60,110,.14);
+  --ink:#1D1A2B; --ink-2:#4A4560; --ink-3:#7A7591;
+  --violet:#8B5CF6; --violet-encre:#6D4BD6; --violet-pale:rgba(139,92,246,.10);
+  --orange:#E8620C; --orange-pale:rgba(232,98,12,.10);
+  --teal:#0B8A68; --teal-pale:rgba(43,212,160,.14);
+  --rouge:#B4233B; --rouge-pale:rgba(180,35,59,.08);
+  --phone:#F4F2FA;
+  --f-voix:"Archivo",system-ui,-apple-system,sans-serif;
+  --f-chiffre:"Martian Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#121019; --surface:#1B1824; --line:rgba(220,210,255,.13);
+  --ink:#F3F1FA; --ink-2:#C7C2D9; --ink-3:#958FAB;
+  --violet:#A78BFA; --violet-encre:#C3AEFF; --violet-pale:rgba(167,139,250,.14);
+  --orange:#F5B120; --orange-pale:rgba(245,177,32,.12);
+  --teal:#3FE0B0; --teal-pale:rgba(63,224,176,.12);
+  --rouge:#FF7C90; --rouge-pale:rgba(255,124,144,.10);
+  --phone:#211D2D; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#121019; --surface:#1B1824; --line:rgba(220,210,255,.13);
+  --ink:#F3F1FA; --ink-2:#C7C2D9; --ink-3:#958FAB;
+  --violet:#A78BFA; --violet-encre:#C3AEFF; --violet-pale:rgba(167,139,250,.14);
+  --orange:#F5B120; --orange-pale:rgba(245,177,32,.12);
+  --teal:#3FE0B0; --teal-pale:rgba(63,224,176,.12);
+  --rouge:#FF7C90; --rouge-pale:rgba(255,124,144,.10);
+  --phone:#211D2D; color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-voix);font-size:16px;line-height:1.6;padding:0 16px}
+main{max-width:760px;margin:0 auto;padding-block:40px 80px;display:flex;flex-direction:column;gap:56px}
+h1,h2,h3{font-variation-settings:"wdth" 116;line-height:1.15;text-wrap:balance;margin:0}
+h1{font-size:clamp(34px,6vw,46px);font-weight:800;font-variation-settings:"wdth" 122}
+h2{font-size:26px;font-weight:750}
+h3{font-size:18px;font-weight:700}
+p{margin:0;max-width:68ch;color:var(--ink-2)}
+.sur{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--violet-encre)}
+section{display:flex;flex-direction:column;gap:18px}
+.chapo{font-size:19px;color:var(--ink);max-width:62ch}
+.num{font-family:var(--f-chiffre);font-variation-settings:"wdth" 82;letter-spacing:-.045em;font-variant-numeric:tabular-nums}
+
+/* Bloc groupé à filets (règle Vaiiya : une idée = un groupe) */
+.groupe{background:var(--surface);border:1px solid var(--line);border-radius:18px;overflow:hidden}
+.groupe > div{padding:16px 18px;display:flex;flex-direction:column;gap:4px}
+.groupe > div + div{border-top:1px solid var(--line)}
+.groupe b{color:var(--ink);font-weight:650}
+.lig{display:flex;gap:12px;align-items:baseline;flex-wrap:wrap}
+.lig .t{font-weight:650;color:var(--ink);min-width:0}
+.pas{font-size:13px;color:var(--ink-3)}
+
+/* Chiffres */
+.chiffres{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:18px;overflow:hidden}
+.chiffres div{background:var(--surface);padding:16px;display:flex;flex-direction:column;gap:2px}
+.chiffres .v{font-size:28px;font-weight:700;color:var(--ink)}
+.chiffres .l{font-size:13px;color:var(--ink-3);line-height:1.35}
+
+/* Problèmes */
+.pb{display:grid;grid-template-columns:28px 1fr;gap:4px 12px;padding:16px 18px}
+.pb + .pb{border-top:1px solid var(--line)}
+.pb .n{font-family:var(--f-chiffre);font-size:13px;color:var(--rouge);padding-top:3px}
+.pb h3{font-size:16px}
+.pb p{grid-column:2;font-size:15px}
+
+/* Tableaux */
+.scroll{overflow-x:auto;border:1px solid var(--line);border-radius:18px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:15px;min-width:520px}
+th,td{text-align:left;padding:11px 16px;vertical-align:top}
+th{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);font-weight:600;border-bottom:1px solid var(--line)}
+tr + tr td{border-top:1px solid var(--line)}
+td:first-child{color:var(--ink-3)}
+td:last-child{color:var(--ink);font-weight:600}
+
+/* Maquette */
+.duo{display:grid;grid-template-columns:minmax(0,320px) minmax(0,1fr);gap:28px;align-items:start}
+@media (max-width:680px){.duo{grid-template-columns:1fr}}
+.tel{background:var(--phone);border:1px solid var(--line);border-radius:30px;padding:18px 14px;display:flex;flex-direction:column;gap:12px;max-width:320px;width:100%}
+.tel .tt{font-size:22px;font-weight:800;font-variation-settings:"wdth" 116;padding:0 4px}
+.tel .sem{display:flex;justify-content:space-between;font-size:12px;color:var(--ink-3);padding:0 4px}
+.suite{background:var(--violet-pale);border-radius:14px;padding:10px 12px;display:flex;flex-direction:column;gap:6px}
+.suite .lab{font-size:11px;font-weight:600;color:var(--violet-encre)}
+.puces{display:flex;gap:6px;flex-wrap:wrap}
+.puce{font-size:12px;font-weight:650;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:4px 10px;color:var(--ink)}
+.puce.prochaine{border-color:var(--violet);color:var(--violet-encre)}
+.jours{background:var(--surface);border-radius:18px;border:1px solid var(--line);overflow:hidden}
+.jour{padding:10px 12px;display:grid;grid-template-columns:44px 1fr;gap:4px 10px}
+.jour + .jour{border-top:1px solid var(--line)}
+.jour .d{font-size:11px;font-weight:700;color:var(--ink-3);text-transform:uppercase;letter-spacing:.04em;padding-top:3px}
+.jour .d .num{display:block;font-size:17px;color:var(--ink);letter-spacing:-.04em}
+.jour.auj{background:var(--violet-pale)}
+.jour.auj .d{color:var(--violet-encre)}
+.items{display:flex;flex-direction:column;gap:5px;min-width:0}
+.it{display:flex;align-items:center;gap:8px;font-size:14px;min-width:0}
+.it .ic{width:8px;height:8px;border-radius:50%;flex-shrink:0;background:var(--violet)}
+.it.fait .ic{background:var(--teal)}
+.it.fait{color:var(--ink-3)}
+.it.fait::after{content:"Faite";font-size:11px;color:var(--teal);font-weight:700;margin-left:auto}
+.it.repas .ic{background:transparent;border:1.5px solid var(--orange)}
+.it.repas{color:var(--ink-3);font-size:13px}
+.it.repos .ic{background:transparent;border:1.5px solid var(--ink-3)}
+.it.repos{color:var(--ink-3)}
+.it.pasfaite{color:var(--ink-3)}
+.it.pasfaite .ic{background:transparent;border:1.5px dashed var(--ink-3)}
+.it.pasfaite::after{content:"La reprendre ?";font-size:11px;color:var(--violet-encre);font-weight:600;margin-left:auto}
+.it .go{margin-left:auto;font-size:11px;font-weight:700;color:#fff;background:var(--violet);border-radius:999px;padding:3px 9px}
+.ajout{font-size:12px;color:var(--ink-3)}
+.tel .pied{font-size:12px;color:var(--ink-3);text-align:center}
+.lec{display:flex;flex-direction:column;gap:14px}
+.lec p{font-size:15px}
+.cle{display:flex;flex-direction:column;gap:8px;font-size:14px;color:var(--ink-2)}
+.cle span{display:inline-flex;align-items:center;gap:8px}
+.cle i{width:9px;height:9px;border-radius:50%;display:inline-block;flex-shrink:0}
+
+/* Vagues */
+.vague{display:grid;grid-template-columns:40px 1fr;gap:4px 14px;padding:16px 18px}
+.vague + .vague{border-top:1px solid var(--line)}
+.vague .n{font-family:var(--f-chiffre);font-variation-settings:"wdth" 82;font-size:20px;font-weight:700;color:var(--violet-encre)}
+.vague p{grid-column:2;font-size:15px}
+.tag{display:inline-block;font-size:11px;font-weight:650;border-radius:999px;padding:2px 9px;margin-left:6px;vertical-align:2px}
+.tag.petit{background:var(--teal-pale);color:var(--teal)}
+.tag.moyen{background:var(--orange-pale);color:var(--orange)}
+.tag.plustard{background:var(--violet-pale);color:var(--violet-encre)}
+
+ul.garde{margin:0;padding:0;list-style:none;display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px 20px}
+ul.garde li{font-size:15px;color:var(--ink-2);padding-left:20px;position:relative}
+ul.garde li::before{content:"";position:absolute;left:2px;top:9px;width:9px;height:5px;border-left:2px solid var(--teal);border-bottom:2px solid var(--teal);transform:rotate(-45deg)}
+.question{background:var(--surface);border:1px solid var(--line);border-left:3px solid var(--violet);border-radius:4px 14px 14px 4px;padding:14px 16px}
+.question b{color:var(--ink)}
+footer{font-size:13px;color:var(--ink-3)}
+</style>
+
+<main>
+
+<header style="display:flex;flex-direction:column;gap:14px">
+  <span class="sur">Entraînement · Nutrition · état au 2 octobre 2026</span>
+  <h1>Refonte du planning</h1>
+  <p class="chapo">Le moteur est solide. Ce qui est compliqué, c'est ce que l'écran en montre : deux « semaines » différentes, une dizaine de mots à apprendre, et cinq façons de dire « quel jour ». L'idéal tient en une phrase : <b>une seule semaine, des jours, et dans chaque jour des choses prévues ou faites</b>. La nutrition s'y glisse ensuite sans rien réinventer.</p>
+</header>
+
+<!-- ─────────────── 1. AUJOURD'HUI ─────────────── -->
+<section>
+  <span class="sur">1 · Ce qu'il y a aujourd'hui</span>
+  <h2>Où vit le planning, écran par écran</h2>
+  <div class="groupe">
+    <div>
+      <div class="lig"><span class="t">Accueil · le héros du jour</span></div>
+      <p>Lancer la séance, Refaire, « Lui donner un jour » ou « Changer de jour », « Organiser », « J'ai envie de bouger », Décaler et Remplacer (qui ouvrent le Guide), la ligne « En plus » et la ligne « Adaptation en cours ».</p>
+    </div>
+    <div>
+      <div class="lig"><span class="t">Entraînement · J'improvise / Je choisis</span></div>
+      <p>L'impro par l'IA et le catalogue (53 séances + tes séances perso). Le catalogue peut s'ouvrir « pour un jour » : toucher une séance la pose sur ce jour.</p>
+    </div>
+    <div>
+      <div class="lig"><span class="t">Entraînement · bande « Ma semaine »</span><span class="pas">7 pastilles + bouton « Organiser »</span></div>
+      <p>Le bouton ouvre la <b>feuille « Ma semaine »</b> : jours en photos, semaines suivantes, glisser-déposer, « + Je choisis » et « ✦ Avec l'IA » sur un jour vide, « ✦ Refais ma semaine », et le verdict Équilibrée / Ciblée.</p>
+    </div>
+    <div>
+      <div class="lig"><span class="t">Feuille « Organiser ma semaine »</span><span class="pas">ouverte depuis l'accueil</span></div>
+      <p>Une <b>autre</b> vue de la semaine (l'ancien planning complet) : son propre lecteur de séance, le lieu, sa propre régénération, sa propre navigation entre semaines.</p>
+    </div>
+    <div>
+      <div class="lig"><span class="t">Adapter temporairement · Ton élan</span></div>
+      <p>Mettre une étape de côté pour une période (avec conflits à résoudre), et la courbe des 8 dernières semaines.</p>
+    </div>
+    <div>
+      <div class="lig"><span class="t">Menu ⋯ d'une séance · sélecteur « Quel jour ? »</span></div>
+      <p>« Ajouter à ma semaine », 15 jours proposés, Ajouter ou Remplacer.</p>
+    </div>
+    <div>
+      <div class="lig"><span class="t">Le Guide (✦)</span><span class="pas">3 modifications par semaine en gratuit</span></div>
+      <p>Poser, déplacer, retirer, ajouter en plus, remplacer par autre chose, passer une étape, refaire la semaine (celle-ci ou la prochaine), ouvrir une adaptation. Il fait plus que l'écran.</p>
+    </div>
+    <div>
+      <div class="lig"><span class="t">Nutrition</span></div>
+      <p>« On mange où ? », le journal du jour, une bande semaine et un calendrier du mois. <b>Rien ne se prévoit</b> : on ne note que ce qui a été mangé. Une route qui sait générer des idées de plats par moment de la journée existe déjà, mais plus aucun écran ne l'appelle.</p>
+    </div>
+  </div>
+
+  <h3 style="margin-top:10px">Ce que quelqu'un doit comprendre pour s'en servir</h3>
+  <p>Programme · cycle · étape · prochaine séance « quand tu veux » · séance datée · séance réservée · séance « en plus » · repos posé (différent de « rien de prévu ») · adaptation · lieu · refaire la semaine · quota du Guide. <b>Douze notions.</b> Le moteur en a besoin, la personne non.</p>
+
+  <h3 style="margin-top:10px">Ce que disent les données (30 derniers jours)</h3>
+  <div class="chiffres">
+    <div><span class="v num">6</span><span class="l">comptes ont touché au planning, sur 66</span></div>
+    <div><span class="v num">18/32</span><span class="l">intentions posées par le Guide, 11 à la main</span></div>
+    <div><span class="v num">7</span><span class="l">séances prévues effectivement faites</span></div>
+    <div><span class="v num">236</span><span class="l">séances restées « prévues » dans le passé, jamais refermées</span></div>
+  </div>
+  <p class="pas">Peu de volume, donc à lire comme une tendance : quand quelqu'un planifie, il passe surtout par le Guide, et le passé non fait s'accumule sans jamais se clore (une bonne partie vient de l'ancien moteur).</p>
+</section>
+
+<!-- ─────────────── 2. DIAGNOSTIC ─────────────── -->
+<section>
+  <span class="sur">2 · Ce qui coince</span>
+  <h2>Sept frictions, par ordre d'importance</h2>
+  <div class="groupe">
+    <div class="pb"><span class="n">01</span><h3>Deux écrans « semaine », le même mot pour les ouvrir</h3>
+      <p>« Organiser » sur l'accueil ouvre l'ancien planning, « Organiser » sur Entraînement ouvre la nouvelle feuille. Deux vues, deux lecteurs, deux régénérations. On ne sait jamais laquelle est la vraie.</p></div>
+    <div class="pb"><span class="n">02</span><h3>Le vocabulaire du moteur remonte à l'écran</h3>
+      <p>« Étape », « réservée », « à la place de », « passer une étape », « adaptation » : ce sont des mots justes pour le code, mais il faut apprendre le modèle pour comprendre une carte.</p></div>
+    <div class="pb"><span class="n">03</span><h3>Cinq façons de choisir un jour</h3>
+      <p>Le sélecteur « Quel jour ? », le glisser dans la feuille, le catalogue ouvert « pour un jour », l'ancien planning, et le Guide. Chacune a ses règles.</p></div>
+    <div class="pb"><span class="n">04</span><h3>La semaine et le jour vivent à deux endroits</h3>
+      <p>« Aujourd'hui » est sur l'accueil, « la semaine » sur Entraînement. Pour voir demain, on change d'onglet puis on ouvre une feuille.</p></div>
+    <div class="pb"><span class="n">05</span><h3>Le passé ne se referme jamais</h3>
+      <p>Une séance non faite reste « prévue » pour toujours. Rien de visible ne la clôt, et rien ne propose de la reprendre.</p></div>
+    <div class="pb"><span class="n">06</span><h3>Le Guide est plus capable que l'écran</h3>
+      <p>Remplacer, passer, refaire la semaine prochaine : certains gestes n'existent qu'en parlant. Or le gratuit n'a que 3 modifications par semaine avec le Guide, donc la porte la plus complète est aussi la plus limitée.</p></div>
+    <div class="pb"><span class="n">07</span><h3>Suivre le planning ne fait pas toujours avancer le programme</h3>
+      <p>Une semaine composée par « Refais ma semaine » ne fait pas avancer la suite du programme (dette connue). Vu de l'extérieur : « je fais ce qu'on me dit, et la prochaine séance ne change pas ».</p></div>
+  </div>
+</section>
+
+<!-- ─────────────── 3. L'IDÉAL ─────────────── -->
+<section>
+  <span class="sur">3 · L'idéal</span>
+  <h2>Une semaine, des jours, trois gestes</h2>
+  <div class="groupe">
+    <div><span class="t" style="font-weight:650;color:var(--ink)">Un seul écran semaine</span><p>Une liste de jours. Dans chaque jour : ce qui est prévu et ce qui est fait. L'accueil n'en est que la ligne d'aujourd'hui, en grand.</p></div>
+    <div><span class="t" style="font-weight:650;color:var(--ink)">Trois gestes visibles, partout les mêmes</span><p><b>Ajouter</b>, <b>Déplacer</b>, <b>Retirer</b>, plus <b>Lancer</b> quand c'est le jour. Remplacer, passer ou adapter restent possibles, un cran plus loin dans le menu d'un jour.</p></div>
+    <div><span class="t" style="font-weight:650;color:var(--ink)">Le programme devient « La suite »</span><p>Une file de séances en haut de la semaine, comme une liste de lecture : la prochaine est mise en avant, on la fait quand on veut, ou on la glisse sur un jour. Plus besoin du mot « étape ».</p></div>
+    <div><span class="t" style="font-weight:650;color:var(--ink)">Libre par défaut, planifié si on veut</span><p>Le modèle le permet déjà : sans date, tout marche. Les dates sont un bonus, jamais une obligation.</p></div>
+    <div><span class="t" style="font-weight:650;color:var(--ink)">Le passé se referme tout seul, sans reproche</span><p>Le lendemain, une séance non faite devient grise avec « La reprendre ? ». Jamais « ratée ».</p></div>
+    <div><span class="t" style="font-weight:650;color:var(--ink)">Le Guide est un raccourci, pas une porte unique</span><p>Tout ce qu'il sait faire, l'écran sait le faire aussi. Le Guide fait gagner du temps et propose une semaine entière.</p></div>
+  </div>
+
+  <h3 style="margin-top:10px">À quoi ça ressemblerait</h3>
+  <div class="duo">
+    <div class="tel" role="img" aria-label="Maquette de l'écran Ma semaine unifié">
+      <span class="tt">Ma semaine</span>
+      <div class="sem"><span>‹ 29 sept.</span><span>Du 30 sept. au 6 oct.</span><span>13 oct. ›</span></div>
+      <div class="suite">
+        <span class="lab">La suite de ton programme</span>
+        <div class="puces"><span class="puce prochaine">Pull · prochaine</span><span class="puce">Bas du corps</span><span class="puce">Haut du corps</span></div>
+      </div>
+      <div class="jours">
+        <div class="jour"><span class="d">Lun<span class="num">30</span></span><div class="items"><div class="it fait"><i class="ic"></i>Push</div><div class="it repas"><i class="ic"></i>3 repas notés</div></div></div>
+        <div class="jour"><span class="d">Mar<span class="num">01</span></span><div class="items"><div class="it pasfaite"><i class="ic"></i>Express 12</div></div></div>
+        <div class="jour auj"><span class="d">Mer<span class="num">02</span></span><div class="items"><div class="it"><i class="ic"></i>Pull · 45 min<span class="go">Lancer</span></div><div class="it repas"><i class="ic"></i>Dîner prévu · Bowl saumon</div></div></div>
+        <div class="jour"><span class="d">Jeu<span class="num">03</span></span><div class="items"><div class="it repos"><i class="ic"></i>Repos</div></div></div>
+        <div class="jour"><span class="d">Ven<span class="num">04</span></span><div class="items"><span class="ajout">+ Ajouter</span></div></div>
+        <div class="jour"><span class="d">Sam<span class="num">05</span></span><div class="items"><div class="it"><i class="ic"></i>Bas du corps</div><div class="it"><i class="ic"></i>Cardio · en plus</div></div></div>
+        <div class="jour"><span class="d">Dim<span class="num">06</span></span><div class="items"><span class="ajout">+ Ajouter</span></div></div>
+      </div>
+      <span class="pied">✦ Me proposer ma semaine</span>
+    </div>
+    <div class="lec">
+      <p>Tout ce que l'app sait faire aujourd'hui tient dans ce seul écran. On le lit de haut en bas comme un agenda, sans avoir à connaître le moteur.</p>
+      <div class="cle">
+        <span><i style="background:var(--violet)"></i>Prévu : touche pour lancer, déplacer ou retirer</span>
+        <span><i style="background:var(--teal)"></i>Fait</span>
+        <span><i style="border:1.5px dashed var(--ink-3)"></i>Pas faite : grisée, « La reprendre ? »</span>
+        <span><i style="border:1.5px solid var(--ink-3)"></i>Repos choisi</span>
+        <span><i style="border:1.5px solid var(--orange)"></i>Repas, plus tard (voir § 4)</span>
+      </div>
+      <p>« La suite » remplace le mot étape : glisser « Pull » sur vendredi, c'est la réserver, et la terminer fait avancer le programme. Une séance « en plus » se lit telle quelle, sous la principale.</p>
+      <p>L'accueil garde son héros, mais il devient simplement <b>la ligne d'aujourd'hui de cette semaine</b> : même donnée, même gestes.</p>
+    </div>
+  </div>
+
+  <h3 style="margin-top:10px">Les mots, avant → après</h3>
+  <div class="scroll"><table>
+    <thead><tr><th>Aujourd'hui</th><th>Ce qu'on dirait</th></tr></thead>
+    <tbody>
+      <tr><td>Étape du cycle · « Ton programme »</td><td>La suite · ta prochaine séance</td></tr>
+      <tr><td>Réservée mardi</td><td>Prévue mardi</td></tr>
+      <tr><td>Lui donner un jour</td><td>Choisir un jour</td></tr>
+      <tr><td>À la place de « Push » (substitution)</td><td>Remplacer Push par…</td></tr>
+      <tr><td>Passer une étape</td><td>Passer cette séance</td></tr>
+      <tr><td>Adapter temporairement</td><td>Mettre de côté pendant… (ex. « pas de Push pendant 10 jours »)</td></tr>
+      <tr><td>Refais ma semaine</td><td>Me proposer ma semaine</td></tr>
+      <tr><td>Organiser / Organiser ma semaine</td><td>Ma semaine (un seul écran)</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- ─────────────── 4. NUTRITION ─────────────── -->
+<section>
+  <span class="sur">4 · Le pont vers la nutrition</span>
+  <h2>Même semaine, une ligne de plus par jour</h2>
+  <p>La nutrition a déjà le « fait » (le journal) et les idées (banque de recettes, « Mes classiques », resto). Il lui manque seulement le « prévu ». Si la semaine est pensée dès maintenant comme <b>des jours qui contiennent des moments</b>, les repas y entrent sans nouvelle grammaire : mêmes trois gestes, même lecture prévu / fait.</p>
+  <div class="groupe">
+    <div><span class="t" style="font-weight:650;color:var(--ink)">Fusion à l'écran, pas dans la base</span><p>Les séances ont des règles fortes (programme, unicités, fin de séance). Les mélanger aux repas dans une même table casserait ces garanties. Recommandation : une table jumelle pour les repas prévus, avec la même forme (jour facultatif, prévu / fait, qui l'a posé), et une seule vue « Ma semaine » qui lit les deux.</p></div>
+    <div><span class="t" style="font-weight:650;color:var(--ink)">Le journal reste la vérité</span><p>Un repas prévu ne devient « fait » que s'il est noté. Non mangé, il s'efface simplement le lendemain. Jamais « raté », jamais compté contre quelqu'un.</p></div>
+    <div><span class="t" style="font-weight:650;color:var(--ink)">Par petites touches</span><p>D'abord afficher, en lecture seule, ce qui a été noté chaque jour dans la semaine. Ensuite « Prévoir ce repas » depuis une recette ou un classique. En dernier, le Guide qui propose des idées pour la semaine, en réutilisant la génération qui existe déjà.</p></div>
+    <div><span class="t" style="font-weight:650;color:var(--ink)">Attention au discours public</span><p>« Plan nutrition » fait partie des claims interdits. À l'intérieur de l'app on parle de « repas prévus » ou « idées pour la semaine », et rien ne change dehors sans relire le positionnement.</p></div>
+  </div>
+</section>
+
+<!-- ─────────────── 5. CE QUI RESTE ─────────────── -->
+<section>
+  <span class="sur">5 · Rien ne disparaît</span>
+  <h2>Ce qu'on garde, intégralement</h2>
+  <ul class="garde">
+    <li>Programme et sa suite de séances</li>
+    <li>Séance datée ou « quand tu veux »</li>
+    <li>Deux séances le même jour</li>
+    <li>Repos choisi, distinct de « rien de prévu »</li>
+    <li>Remplacer, passer, ajouter en plus</li>
+    <li>Mettre une séance de côté pour une période</li>
+    <li>Lieu et matériel</li>
+    <li>Proposer une semaine entière (celle-ci ou la prochaine)</li>
+    <li>Refaire une séance terminée</li>
+    <li>J'improvise et le catalogue</li>
+    <li>Navigation entre les semaines</li>
+    <li>Ton élan</li>
+    <li>Tous les gestes du Guide</li>
+  </ul>
+  <p class="pas">Le moteur (V0 à V9D) ne bouge pas. La refonte est une refonte d'écran et de mots, plus une seule écriture neuve : la clôture douce du passé.</p>
+</section>
+
+<!-- ─────────────── 6. PLAN ─────────────── -->
+<section>
+  <span class="sur">6 · Proposition de déroulé</span>
+  <h2>Six vagues, maquette avant chacune</h2>
+  <div class="groupe">
+    <div class="vague"><span class="n">A</span><h3>Une seule semaine<span class="tag petit">petit · gros gain</span></h3>
+      <p>Retirer l'ancienne feuille « Organiser ma semaine ». Le lieu et la proposition de semaine rejoignent la feuille « Ma semaine ». Les deux boutons « Organiser » mènent au même endroit.</p></div>
+    <div class="vague"><span class="n">B</span><h3>Les mots<span class="tag petit">petit</span></h3>
+      <p>Appliquer le tableau avant → après, dans l'écran et dans les phrases du Guide.</p></div>
+    <div class="vague"><span class="n">C</span><h3>« La suite » et les trois gestes<span class="tag moyen">moyen</span></h3>
+      <p>La file du programme en haut de la semaine, glisser vers un jour, menu d'un jour réduit à Ajouter / Déplacer / Retirer, le reste un cran plus loin. Les gestes du Guide deviennent tous faisables à la main.</p></div>
+    <div class="vague"><span class="n">D</span><h3>Le passé se referme<span class="tag moyen">moyen</span></h3>
+      <p>Affichage « pas faite » + « La reprendre ? ». Et décider ce qu'une semaine proposée fait au programme (friction 07).</p></div>
+    <div class="vague"><span class="n">E</span><h3>L'accueil, fenêtre sur la semaine<span class="tag moyen">moyen</span></h3>
+      <p>Le héros lit la ligne du jour de la même semaine, avec les mêmes gestes. Un aperçu de demain en dessous.</p></div>
+    <div class="vague"><span class="n">F</span><h3>Les repas entrent dans la semaine<span class="tag plustard">plus tard</span></h3>
+      <p>Lecture seule du journal d'abord, puis « Prévoir ce repas », puis les idées du Guide.</p></div>
+  </div>
+  <p class="pas">Au passage, la refonte est l'occasion de sortir la semaine de l'écran Entraînement (3 460 lignes), ce qui réduira les conflits entre agents.</p>
+</section>
+
+<!-- ─────────────── 7. QUESTIONS ─────────────── -->
+<section>
+  <span class="sur">7 · À trancher avec toi</span>
+  <h2>Trois décisions avant la maquette</h2>
+  <div class="question"><b>Où vit « Ma semaine » ?</b> Une feuille d'Entraînement comme aujourd'hui, ou un vrai écran à part entière, accessible aussi depuis l'accueil (et plus tard depuis Nutrition).</div>
+  <div class="question"><b>Le gratuit et le Guide.</b> Si l'écran sait tout faire à la main, le plafond de 3 modifications par semaine avec le Guide reste-t-il tel quel ? (Il devient alors un pur confort payant.)</div>
+  <div class="question"><b>Une semaine proposée fait-elle avancer le programme ?</b> Aujourd'hui non. Ma recommandation : oui, une séance proposée par « Me proposer ma semaine » et terminée compte comme la suite du programme.</div>
+</section>
+
+<footer>Analyse faite à partir du code de la branche courante et d'une lecture de la base le 2 octobre 2026. Aucun code n'a été modifié.</footer>
+</main>
