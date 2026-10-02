@@ -38,7 +38,9 @@ Constat vérifié dans le code : la semaine régénérée (`generateWeek`) tourn
 
 ## En attente de Louis (prioritaire : programme et calendrier)
 Réponses de Louis : A = GO sur le principe 17 à 29 · B = jour fixe récurrent plus tard · C = maquette d'abord (`04-maquette-programme.html`).
-Questions de la maquette 04 : (1) garder « t'attendait mercredi » sous la séance décalée ; (2) afficher « Pas de séance ce jour-là » sur un jour d'entraînement passé ; (3) proposer « Compter à la place de Pull » dans le message de fin d'une séance libre.
+Maquette 04, tranché par Louis : « t'attendait mercredi » gardé · « Pas de séance ce jour-là » gardé (gris, sans alerte) · « Compter à la place de Pull » dans le message de fin d'une séance libre.
+Écran « Mes jours d'entraînement » : chaque jour a un interrupteur, la séance qui tombe dessus s'affiche en direct ; un choix « Chaque semaine / Cette semaine » remplace les exceptions et les explications.
+Direction de Louis : pas d'explication en petite police sous les éléments ; à terme, retirer un maximum de petites descriptions. La fonctionnalité doit se comprendre par ce qu'elle montre.
 
 ## En attente de Louis (suspendues, maquette `03-maquette-commune.html`)
 1. La hiérarchie « jours + une ligne Prochaine séance » lui convient-elle ?
