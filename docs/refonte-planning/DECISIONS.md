@@ -37,9 +37,8 @@ Constat vérifié dans le code : la semaine régénérée (`generateWeek`) tourn
 29. Vocabulaire : « Mes jours d'entraînement », « Prochaine séance » ; jamais « créneau » ni « étape » à l'écran.
 
 ## En attente de Louis (prioritaire : programme et calendrier)
-A. GO sur le principe 17 à 29 (migration SQL + révision des verrous du moteur).
-B. « Jambes tous les lundis » (jour fixe récurrent) dans la première version, ou plus tard ?
-C. Une maquette « avant / après une séance manquée » avant de trancher, ou d'abord le GO sur le principe ?
+Réponses de Louis : A = GO sur le principe 17 à 29 · B = jour fixe récurrent plus tard · C = maquette d'abord (`04-maquette-programme.html`).
+Questions de la maquette 04 : (1) garder « t'attendait mercredi » sous la séance décalée ; (2) afficher « Pas de séance ce jour-là » sur un jour d'entraînement passé ; (3) proposer « Compter à la place de Pull » dans le message de fin d'une séance libre.
 
 ## En attente de Louis (suspendues, maquette `03-maquette-commune.html`)
 1. La hiérarchie « jours + une ligne Prochaine séance » lui convient-elle ?
