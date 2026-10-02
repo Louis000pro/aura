@@ -69,6 +69,13 @@ Tour 5, tranché par Louis : 1 = oui (programme construit par objectif) · 2 = o
 Réponses de Louis : A = GO sur le principe 17 à 29 · B = jour fixe récurrent plus tard · C = maquette d'abord (`04-maquette-programme.html`).
 Maquette 04, tranché par Louis : « t'attendait mercredi » gardé · « Pas de séance ce jour-là » gardé (gris, sans alerte) · « Compter à la place de Pull » dans le message de fin d'une séance libre.
 Écran « Mes jours d'entraînement » : choix « Chaque semaine / Cette semaine ». En « Chaque semaine », deux réglages séparés : « Quand » (les jours) et « Dans quel ordre » (la suite des séances, réordonnable, ajout possible) ; aucune séance n'est affichée à côté d'un jour, sinon on croit que lundi = Bas du corps pour toujours (retour de Louis). En « Cette semaine », chaque jour daté a un interrupteur et la séance qui tombe dessus s'affiche en direct.
+Retours de Louis sur la maquette 06 (en discussion avec Codex, tour 7) :
+- Variété : « Davantage de stabilité » et « Garder mes exercices », c'est pareil. Il faut trois choix : toujours les mêmes exercices, un peu de nouveauté à chaque fois, ou presque tout qui change.
+- Tunnel : pas de formulaire pendant le repos. Petites questions et petites validations seulement, jamais une saisie obligatoire.
+- Le tunnel de la maquette ne ressemble pas au vrai. Garder le bon de l'ancien : personnage animé qui guide, chrono ou répétitions en grand, conseil du Guide, repos orange avec « Ensuite ».
+- Question après un repère : « Je ne sais pas » et « Passer » font doublon, n'en garder qu'un.
+- Fin de séance : trop d'informations et aucune qui ressort. À refaire, avec une hiérarchie claire.
+- Beauté, cohérence, simplicité, personnalisation.
 Direction de Louis : pas d'explication en petite police sous les éléments ; à terme, retirer un maximum de petites descriptions. La fonctionnalité doit se comprendre par ce qu'elle montre.
 
 ## En attente de Louis (suspendues, maquette `03-maquette-commune.html`)
