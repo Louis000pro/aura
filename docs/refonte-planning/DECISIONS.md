@@ -53,6 +53,7 @@ Constat vérifié dans le code : `buildSplit(n)` ne dépend que du nombre de sé
 42. **Découpage** : V1 = composeur par priorités, contenu fixé, occurrences, journal fiable, deux semaines modifiables, version courte, absence. V2 = carnet de charges, progression par exercice, blocs et réévaluation.
 
 ## En attente de Louis (prioritaire : programme et calendrier)
+Tour 5, tranché par Louis : 1 = oui (programme construit par objectif) · 2 = oui (une priorité + une seconde facultative, ou « Un peu de tout ») · 3 = oui (cette semaine et la suivante modifiables, aperçu au-delà) · 4 = oui (changer d'objectif = aperçu avant activation, séance en attente gardée / remplacée / retirée). Maquette `05-maquette-lina.html` à valider.
 Réponses de Louis : A = GO sur le principe 17 à 29 · B = jour fixe récurrent plus tard · C = maquette d'abord (`04-maquette-programme.html`).
 Maquette 04, tranché par Louis : « t'attendait mercredi » gardé · « Pas de séance ce jour-là » gardé (gris, sans alerte) · « Compter à la place de Pull » dans le message de fin d'une séance libre.
 Écran « Mes jours d'entraînement » : choix « Chaque semaine / Cette semaine ». En « Chaque semaine », deux réglages séparés : « Quand » (les jours) et « Dans quel ordre » (la suite des séances, réordonnable, ajout possible) ; aucune séance n'est affichée à côté d'un jour, sinon on croit que lundi = Bas du corps pour toujours (retour de Louis). En « Cette semaine », chaque jour daté a un interrupteur et la séance qui tombe dessus s'affiche en direct.
