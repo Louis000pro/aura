@@ -1,6 +1,6 @@
 # Plan d'implémentation de la refonte du planning
 
-**Validé avec Codex au tour 8.** Ordre retenu : **R1 → R6 → R2 → R3 → R4 → R5 → R9 → R7 → R8**. Le code part de `main` (décision de Louis). R1 est codée : voir la fin du fichier.
+**Validé avec Codex au tour 8.** Ordre retenu : **R1 → R6 → R2 → R3 → R4 → R5 → R9 → R7 → R8**. Le code part de `main` (décision de Louis). R1 et R1 bis sont codées : voir la fin du fichier.
 
 Base : décisions 17 à 60 de `DECISIONS.md`, maquettes 04 à 07. La maquette 07 a reçu le GO de Louis le 2026-10-03.
 
@@ -124,8 +124,33 @@ On commence par le journal parce que tout le reste se calcule dessus : une progr
   - table `series_realisees`, en lecture seule pour son propriétaire ;
   - fonction `enregistrer_seance(p)` : transactionnelle et idempotente.
 
-  Tant qu'elle n'est pas appliquée, le repli écrit la séance comme avant, sans ses séries.
-- **Limites connues** :
-  - Une séance commencée avant minuit et finie après ne crédite pas les missions du jour : le déclencheur compare la date de `started_at`, désormais l'heure du début.
-  - Si l'app se ferme entre l'enregistrement et la fermeture d'une **étape**, la fermeture n'est pas rejouée : une étape se referme par une insertion, et un double serait pire. R6 le règle avec les occurrences.
-  - Le repli sans migration n'est pas idempotent.
+- **Limite connue** : une séance commencée avant minuit et finie après ne crédite pas les missions du jour : le déclencheur compare la date de `started_at`, désormais l'heure du début.
+
+## R1 bis · fait (2026-10-03), après la relecture de Codex (tour 9)
+
+Les sept points de Codex, dans l'ordre :
+
+1. **Une fermeture ratée reste en attente.** `fermerCible` (`finSeance.ts`) rend un résultat vérifié : `fermee`, `deja`, `introuvable` ou `echec`. Une mise à jour qui ne touche aucune ligne est relue avant de conclure. Seul `echec` laisse le travail en attente. « Journal enregistré » et « séance finalisée » sont deux champs distincts du résultat.
+2. **Le rejeu est idempotent.** La fermeture se date avec le journal : `consommee_le` = sa fin, `date` = le jour parisien de sa fin (`faitDeLaSeance`). Une intention déjà résolue est rendue sans réécriture.
+3. **L'étape est récupérable dès maintenant.** L'intention refermée porte le `lancement_id`, et la base refuse deux intentions pour un même lancement (`uniq_intention_lancement`). Rejouer l'insertion d'une étape rend donc `deja` au lieu d'une jumelle. R6 reste nécessaire pour les occurrences, mais plus pour ce cas.
+4. **Le compte.** Le journal porte `proprietaire`, et `enregistrer_seance` refuse un journal qui n'est pas celui de `auth.uid()`. Le compte est vérifié avant ET après chaque étape. Le rejeu s'arrête au changement de compte, et il est coordonné par compte.
+5. **Relais et affiche.** L'entrée en attente garde `relaisRunId`. Le maillon et l'affiche sont des étapes de la finalisation, rejouables. La base les rend uniques : un maillon par séance (`uniq_action_par_seance`, `deja_valide`), une affiche par séance (`uniq_affiche_par_seance`). Le garde-fou `if (r.deja) return` a disparu.
+6. **Plus de repli avant migration.** Sans `enregistrer_seance`, la séance reste entière sur l'appareil. **La migration doit être appliquée avant de déployer ce code.**
+7. **Sauvegarde locale et journal unique.**
+   - L'écran ne dit « gardée sur ce téléphone » que si le stockage l'a vraiment gardée.
+   - Le journal est construit une fois (`journalRef`) ; la finalisation repart toujours de l'entrée gardée.
+
+**Tests comportementaux** (`check:programme`, 680 contrôles) : la vraie finalisation et la vraie fermeture, contre une base et un stockage en mémoire avec leurs pannes. Ils couvrent :
+- l'échec de fermeture ;
+- le rejeu le lendemain ;
+- l'étape rejouée ;
+- le changement de compte pendant une requête ;
+- deux comptes en parallèle ;
+- le relais récupéré ;
+- la migration absente ;
+- le stockage plein ;
+- deux finalisations simultanées.
+
+Trois témoins vérifiés.
+
+**Limite connue** : `valider_action_defi` refuse une séance commencée il y a plus de 3 h (règle du relais). Un maillon récupéré plus tard est donc refusé, et ce refus est définitif, pas réessayé.

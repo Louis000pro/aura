@@ -11,7 +11,22 @@
 
    La règle est donc : ON NE FERME UNE SÉANCE QU'ICI, et le seul appelant
    est la finalisation du journal (`journalSeance.ts`), APRÈS
-   l'enregistrement de la séance (R1). Un écran qui lance
+   l'enregistrement de la séance (R1).
+
+   ⚠️ R1 bis · LA FERMETURE REND UN RÉSULTAT VÉRIFIÉ, ET ELLE SE REJOUE.
+   Elle avalait ses erreurs et ne regardait pas si une ligne avait bougé :
+   le journal pouvait être écrit, le planning rester ouvert, et l'attente
+   disparaître quand même. Désormais :
+   · elle dit ce qui s'est passé (`fermee`, `deja`, `introuvable`,
+     `echec`), et seul `echec` laisse le travail en attente ;
+   · elle porte l'identifiant du LANCEMENT sur l'intention qu'elle
+     referme, et la base refuse deux intentions pour un même lancement
+     (`uniq_intention_lancement`) : rejouer la fermeture d'une ÉTAPE (une
+     insertion) ne crée plus de jumelle ;
+   · elle se date avec les horodatages du JOURNAL, jamais avec l'horloge
+     du moment : une séance faite samedi et récupérée dimanche reste
+     faite samedi, et le curseur garde son ordre ;
+   · une intention déjà résolue est rendue telle quelle, sans réécriture. Un écran qui lance
    déclare CE QU'IL LANCE (`CibleSeance`) ; il ne décide plus de ce qui
    s'écrit à l'arrivée.
 
@@ -28,9 +43,10 @@
      avancer le cycle.
    ════════════════════════════════════════════════════════════════════ */
 
-import { marquerIntention, reservationDeLEtape, type Ctx } from "@/lib/planning";
+import { schemaIntentions, type Ctx } from "@/lib/planning";
 import { consommerEtape } from "@/lib/programme";
-import { todayYmd } from "@/lib/planning";
+import { createClient } from "@/lib/supabase";
+import { parisDateStr } from "@/lib/dates";
 import type { Exercise } from "@/components/WorkoutGuideModal";
 
 /** L'évènement que tous les écrans du planning écoutent déjà. Il est
@@ -56,58 +72,161 @@ export type CibleSeance =
       adaptationId?: string | null;
     };
 
-/* ⚠️ UN LANCEMENT NE REFERME QU'UNE FOIS, ET DEPUIS R1 C'EST LA BASE QUI
-   LE GARANTIT. Pour une ÉTAPE, la fermeture est un `insert` : rejouée,
-   elle écrirait une seconde séance « faite ». Un verrou en mémoire
-   (`WeakSet`) protégeait l'objet du lancement, mais pas un rechargement
-   ni une requête rejouée. Désormais `finaliserSeance` (journalSeance.ts)
-   n'appelle cette fonction que si SON appel vient d'enregistrer la
-   séance : un même identifiant de lancement ne s'enregistre qu'une fois. */
+/** Ce que la fermeture écrit, tiré du JOURNAL et jamais de l'horloge. */
+export type FaitSeance = {
+  lancementId: string;
+  /** L'heure exacte de fin : elle ordonne le curseur (`consommee_le`). */
+  consommeeLe: string;
+  /** Le jour parisien de la fin : ce que la semaine donne à lire. */
+  date: string;
+};
+
+/** Le fait d'une séance, à partir de son journal. Pur. */
+export function faitDeLaSeance(j: { lancement_id: string; fin: string }): FaitSeance {
+  return { lancementId: j.lancement_id, consommeeLe: j.fin, date: parisDateStr(new Date(j.fin)) };
+}
 
 /**
- * Referme ce que la séance vient de refermer, et rien de plus.
- *
- * Ne jette jamais : une écriture ratée ne doit pas casser l'écran de fin
- * de séance, qui est un moment de récompense. Elle se voit dans les
- * journaux, et le prochain chargement lira la vérité de la base.
+ * · `fermee` : cet appel vient de refermer la cible.
+ * · `deja` : elle l'était déjà (par ce lancement, ou résolue autrement) ;
+ *   rien n'est réécrit.
+ * · `introuvable` : l'intention n'existe plus (retirée entre-temps) ; il
+ *   n'y a plus rien à refermer, et ce n'est pas une erreur à rejouer.
+ * · `echec` : on ne sait pas ; le travail reste en attente.
  */
-export async function terminerSeance(userId: string, cible: CibleSeance): Promise<void> {
-  const aujourdhui = todayYmd();
+export type ResultatFermeture = "fermee" | "deja" | "introuvable" | "echec";
+
+export const fermetureTerminee = (r: ResultatFermeture) => r !== "echec";
+
+/** Ce dont la fermeture a besoin en base. Injectable : le banc la joue
+ *  sur une base en mémoire, avec ses pannes. */
+export type StoreFermeture = {
+  /** L'intention déjà refermée par ce lancement, s'il y en a une. */
+  parLancement(userId: string, lancementId: string): Promise<{ ok: true; id: string | null } | { ok: false }>;
+  /** `null` : introuvable ; sinon, est-elle déjà résolue ? */
+  intention(userId: string, id: string): Promise<{ ok: true; resolue: boolean | null } | { ok: false }>;
+  /** La réservation en cours de cette étape, s'il y en a une. */
+  reservation(userId: string, etapeId: string): Promise<{ ok: true; id: string | null } | { ok: false }>;
+  /** Marque faite, SEULEMENT si elle est encore prévue ; rend le nombre de lignes touchées. */
+  marquer(userId: string, id: string, fait: FaitSeance): Promise<{ ok: true; touchees: number } | { ok: false }>;
+  /** Écrit le fait d'une étape sans réservation. `doublon` : ce lancement l'a déjà écrit. */
+  inserer(userId: string, cible: Extract<CibleSeance, { genre: "etape" }>, fait: FaitSeance): Promise<"ok" | "doublon" | "echec">;
+};
+
+/** Marque une intention prévue, et vérifie que c'est bien fait. */
+async function marquerVerifie(store: StoreFermeture, userId: string, id: string, fait: FaitSeance): Promise<ResultatFermeture> {
+  const m = await store.marquer(userId, id, fait);
+  if (!m.ok) return "echec";
+  if (m.touchees > 0) return "fermee";
+  /* Aucune ligne touchée : quelqu'un l'a résolue entre-temps (nous-mêmes,
+     dans un autre onglet ?), ou elle a disparu. On relit au lieu de
+     supposer. */
+  const relue = await store.intention(userId, id);
+  if (!relue.ok) return "echec";
+  if (relue.resolue === null) return "introuvable";
+  return relue.resolue ? "deja" : "echec";
+}
+
+/**
+ * Referme ce que la séance vient de refermer, et rien de plus. Rejouable :
+ * un second appel pour le même lancement rend `deja` sans rien écrire.
+ * Ne jette jamais.
+ */
+export async function fermerCible(
+  store: StoreFermeture, userId: string, cible: CibleSeance, fait: FaitSeance,
+): Promise<ResultatFermeture> {
   try {
+    const dejaFaite = await store.parLancement(userId, fait.lancementId);
+    if (!dejaFaite.ok) return "echec";
+    if (dejaFaite.id) return "deja";
+
     if (cible.genre === "intention") {
-      /* ⚠️ LE FAIT SE DATE DU JOUR OÙ IL A EU LIEU. Une séance réservée
-         pour mardi et faite dimanche resterait écrite au mardi : le
-         planning afficherait une séance « faite » un jour à venir.
-         `consommee_le` porte l'heure exacte et ordonne le curseur, mais
-         c'est `date` que la semaine donne à lire. */
-      await marquerIntention(userId, cible.intentionId, "done", aujourdhui);
-    } else {
-      /* ⚠️ GARDE-FOU D'INTÉGRITÉ, ET IL A UNE HISTOIRE (2026-09-06).
-         Le chemin normal ne passe plus ici quand l'étape a déjà un jour :
-         `lancementDuJour` vise alors la réservation, donc la branche du
-         dessus. Mais un appelant futur, ou un écran resté sur un état
-         périmé, peut encore déclarer `cible: etape` sur une étape
-         pourtant réservée. Insérer alors écrirait une SECONDE ligne
-         portant la même étape, et la base ne peut pas le refuser :
-         `uniq_intention_par_etape` ne couvre que les intentions PRÉVUES,
-         or la ligne insérée naît « faite ». On termine donc la
-         réservation existante au lieu d'en créer une jumelle. */
-      const dejaPosee = await reservationDeLEtape(userId, cible.etapeId);
-      if (dejaPosee?.id) {
-        await marquerIntention(userId, dejaPosee.id, "done", aujourdhui);
-      } else {
-        await consommerEtape(userId, cible.programmeId, cible.etapeId, {
-          date: aujourdhui,
-          type: cible.type,
-          title: cible.title,
-          difficulty: cible.difficulty,
-          location: cible.location,
-          exerciseList: cible.exerciseList,
-        }, cible.adaptationId ?? null);
-      }
+      const ligne = await store.intention(userId, cible.intentionId);
+      if (!ligne.ok) return "echec";
+      if (ligne.resolue === null) return "introuvable";
+      /* Déjà résolue autrement : c'est un fait, on ne le réécrit pas. */
+      if (ligne.resolue) return "deja";
+      return await marquerVerifie(store, userId, cible.intentionId, fait);
     }
+
+    /* ⚠️ GARDE-FOU D'INTÉGRITÉ, ET IL A UNE HISTOIRE (2026-09-06). Un
+       appelant peut encore déclarer `cible: etape` sur une étape pourtant
+       réservée. Insérer écrirait alors une SECONDE ligne portant la même
+       étape, que `uniq_intention_par_etape` ne voit pas (elle ne couvre
+       que les intentions PRÉVUES). On termine donc la réservation. */
+    const res = await store.reservation(userId, cible.etapeId);
+    if (!res.ok) return "echec";
+    if (res.id) return await marquerVerifie(store, userId, res.id, fait);
+    const ins = await store.inserer(userId, cible, fait);
+    return ins === "ok" ? "fermee" : ins === "doublon" ? "deja" : "echec";
   } catch (e) {
     console.error("[finSeance] fermeture impossible :", e);
+    return "echec";
   }
-  if (typeof window !== "undefined") window.dispatchEvent(new Event(EVT_JOURNEE));
+}
+
+/** La base réelle. */
+export function storeFermeture(): StoreFermeture {
+  const supabase = createClient();
+  return {
+    async parLancement(userId, lancementId) {
+      const sc = await schemaIntentions();
+      const { data, error } = await supabase.from(sc.table).select("id")
+        .eq("user_id", userId).eq("lancement_id", lancementId).limit(1);
+      if (error) return { ok: false };
+      return { ok: true, id: data?.[0]?.id ? String(data[0].id) : null };
+    },
+    async intention(userId, id) {
+      const sc = await schemaIntentions();
+      const { data, error } = await supabase.from(sc.table).select(sc.colStatut)
+        .eq("user_id", userId).eq("id", id).maybeSingle();
+      if (error) return { ok: false };
+      if (!data) return { ok: true, resolue: null };
+      const statut = (data as unknown as Record<string, unknown>)[sc.colStatut];
+      return { ok: true, resolue: statut !== sc.versBase.planned };
+    },
+    async reservation(userId, etapeId) {
+      const sc = await schemaIntentions();
+      const { data, error } = await supabase.from(sc.table).select("id")
+        .eq("user_id", userId).eq("etape_consommee_id", etapeId)
+        .eq(sc.colStatut, sc.versBase.planned).limit(1);
+      if (error) return { ok: false };
+      return { ok: true, id: data?.[0]?.id ? String(data[0].id) : null };
+    },
+    async marquer(userId, id, fait) {
+      const sc = await schemaIntentions();
+      /* ⚠️ `date` = le jour du fait (une séance réservée pour mardi et
+         faite dimanche ne reste pas écrite au mardi), `consommee_le` =
+         l'heure exacte de fin, qui ordonne le curseur. Le filtre sur le
+         statut fait que seule une intention ENCORE prévue est touchée. */
+      const { data, error } = await supabase.from(sc.table)
+        .update({
+          [sc.colStatut]: sc.versBase.done,
+          date: fait.date,
+          consommee_le: fait.consommeeLe,
+          lancement_id: fait.lancementId,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", id).eq("user_id", userId).eq(sc.colStatut, sc.versBase.planned)
+        .select("id");
+      if (error) return { ok: false };
+      return { ok: true, touchees: data?.length ?? 0 };
+    },
+    async inserer(userId, cible, fait) {
+      return consommerEtape(userId, cible.programmeId, cible.etapeId, {
+        type: cible.type,
+        title: cible.title,
+        difficulty: cible.difficulty,
+        location: cible.location,
+        exerciseList: cible.exerciseList,
+      }, fait, cible.adaptationId ?? null);
+    },
+  };
+}
+
+/** La fermeture réelle, et le signal aux écrans quand quelque chose a bougé. */
+export async function terminerSeance(userId: string, cible: CibleSeance, fait: FaitSeance): Promise<ResultatFermeture> {
+  const r = await fermerCible(storeFermeture(), userId, cible, fait);
+  if (r === "fermee" && typeof window !== "undefined") window.dispatchEvent(new Event(EVT_JOURNEE));
+  return r;
 }

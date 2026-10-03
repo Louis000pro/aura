@@ -13,7 +13,7 @@ import ExerciseThumb from "@/components/seance/ExerciseThumb";
 import { createClient } from "@/lib/supabase";
 import { lockBodyModal } from "@/lib/bodyModal";
 import {
-  validerMaillon, CLE_DEVOILE, EVT_RELAIS, etatPoster, imageEtat,
+  CLE_DEVOILE, EVT_RELAIS, etatPoster, imageEtat,
   type MaillonFranchi,
 } from "@/lib/defi";
 import { calculerAura } from "@/lib/aura";
@@ -24,8 +24,9 @@ import type { Badge } from "@/lib/badges";
 import { useAuth } from "@/context/AuthContext";
 import type { CibleSeance } from "@/lib/finSeance";
 import {
-  DUREE_EFFORT_HIIT, exercicesFaits, finaliserSeance, journalDe, nouveauLancement,
-  seriesConfirmees, type MarquesSeance, type Validation,
+  DUREE_EFFORT_HIIT, dependancesReelles, exercicesFaits, finaliserSeance, journalDe,
+  nouveauLancement, nouvelleAttente, seriesConfirmees,
+  type JournalSeance, type MarquesSeance, type Validation,
 } from "@/lib/journalSeance";
 import { useAssistant } from "@/context/AssistantContext";
 import { GUIDE_SECTIONS, sectionSessionId } from "@/lib/guideSections";
@@ -883,7 +884,7 @@ export default function WorkoutGuideModal({
   const [sessionSaved,  setSessionSaved]  = useState(false);
   /* L'enregistrement a échoué : la séance est gardée sur l'appareil et se
      rejouera, mais l'écran doit le dire au lieu de faire comme si. */
-  const [echecJournal,  setEchecJournal]  = useState(false);
+  const [echecJournal,  setEchecJournal]  = useState<{ garde: boolean; compte: boolean } | null>(null);
   // L'affiche s'enregistre TOUTE SEULE dans le profil en fin de séance ; ce
   // drapeau ne sert qu'à le confirmer à l'écran. Elle se revoit, s'envoie et se
   // supprime depuis le profil (galerie « Tes affiches de perf »).
@@ -921,14 +922,20 @@ export default function WorkoutGuideModal({
   /* ── R1 · LA FIN DE SÉANCE : LE JOURNAL D'ABORD ──
      L'ordre est la règle (`journalSeance.ts`) : on enregistre la séance et
      ses séries, ENSUITE on referme la cible du planning, ENSUITE viennent
-     les récompenses. Avant, la cible se refermait avant même de savoir si
-     le journal s'écrirait, et l'erreur d'insertion était avalée. */
+     le maillon et l'affiche. Tout ce travail est gardé sur l'appareil tant
+     qu'il n'est pas fait, et se reprend sans doublon (R1 bis). */
+  /* ⚠️ LE JOURNAL SE CONSTRUIT UNE SEULE FOIS. « Réessayer » le réutilise :
+     le reconstruire déplacerait l'heure de fin du même lancement. */
+  const journalRef = useRef<JournalSeance | null>(null);
+  /* Les lectures d'après séance (rang, série, badges) ne se font qu'une fois. */
+  const lecturesFaitesRef = useRef(false);
   const enregistrer = () => {
     if (!user) return;
     const supabase = createClient();
     const resolvedCategory = category ?? (sessionId.includes("-") ? sessionId.split("-")[0] : null) ?? "force";
-    void finaliserSeance(supabase, user.id, journalDe({
+    journalRef.current ??= journalDe({
       lancementId,
+      proprietaire: user.id,
       titre: title,
       categorie: resolvedCategory,
       /* ⚠️ L'HEURE DU DÉBUT, PLUS CELLE DE LA FIN. `started_at` recevait
@@ -938,34 +945,39 @@ export default function WorkoutGuideModal({
       dureeS: elapsed,
       exercices: exercises,
       marques: doneMap,
-    }), cible ?? null).then((r) => {
-      if (!r.ok) { setEchecJournal(true); return; }
-      setSessionSaved(true);
-      if (r.deja) return;
-      recompenser(supabase, r.id, resolvedCategory);
     });
-  };
-
-  /* Ce qui suit une séance ENREGISTRÉE, et seulement elle. */
-  const recompenser = (supabase: ReturnType<typeof createClient>, seanceId: string, resolvedCategory: string) => {
-    if (!user) return;
-    // Le maillon ne se valide QUE si cette séance est le maillon du
-    // relais (lancée par « Lancer mon maillon »). Une séance ordinaire
-    // ne fait plus rien : le relais donne sa séance, on ne triche pas.
-    // Silencieux si le serveur refuse (bloqué par le binôme, plafond du
-    // jour…) : aucune bande, aucun reproche.
-    if (relaisRunId) {
-      void validerMaillon(user.id, seanceId).then((r) => {
-        if (!r) return;
+    void finaliserSeance(dependancesReelles(supabase), nouvelleAttente({
+      journal: journalRef.current,
+      cible: cible ?? null,
+      relaisRunId: relaisRunId ?? null,
+    })).then((r) => {
+      if (r.journal !== "enregistre") {
+        setEchecJournal({ garde: r.gardeeSurAppareil, compte: r.raison === "compte_different" });
+        return;
+      }
+      setEchecJournal(null);
+      setSessionSaved(true);
+      if (r.afficheGardee) setAfficheSaved(true);
+      if (r.maillon) {
         // Le drapeau reste : si on quitte sans toucher la bande, la
         // grande affiche rejouera la bascule à la première ouverture.
         sessionStorage.setItem(CLE_DEVOILE, "1");
-        setMaillon(r);
+        setMaillon(r.maillon);
         // L'écran /defi vit sous ce tunnel (overlay global) : on lui dit
         // de se recharger pour montrer le nouvel état co-op.
         window.dispatchEvent(new Event(EVT_RELAIS));
-      });
-    }
+      }
+      if (!lecturesFaitesRef.current) {
+        lecturesFaitesRef.current = true;
+        lireApresSeance(supabase);
+      }
+    });
+  };
+
+  /* Ce qui se LIT après une séance enregistrée : la série, le rang, les
+     badges. Rien ne s'écrit ici ; la célébration reste ponctuelle. */
+  const lireApresSeance = (supabase: ReturnType<typeof createClient>) => {
+    if (!user) return;
     /* La séance vient de valider la journée : c'est le bon moment pour
        montrer la série, pas la prochaine ouverture de l'accueil. Même
        lecture pour le passage de rang, silencieux si rien n'a bougé. */
@@ -987,31 +999,6 @@ export default function WorkoutGuideModal({
         if (neufs.length) setBadgesGagnes(neufs);
       })
       .catch(() => {});
-
-    // ── L'affiche part TOUTE SEULE dans le profil ──
-    // Audience privée : elle rejoint « Tes affiches de perf », où on la revoit,
-    // l'envoie ou la supprime. Aucun upload d'image, juste une ligne `posts`.
-    // Elle suit la séance enregistrée : une affiche sans séance mentirait.
-    const elapsedMin = Math.round(elapsed / 60) || 1;
-    void supabase.from("posts").insert({
-      user_id:  user.id,
-      type:     "workout",
-      caption:  "",
-      audience: "private",
-      performance_data: {
-        type:      "workout",
-        title,
-        date:      new Date().toLocaleDateString("fr-FR", { day: "numeric", month: "long" }),
-        metrics:   [
-          { label: "Durée",     value: String(elapsedMin),                 unit: "min" },
-          { label: "Exercices", value: String(exercicesFaits(doneMap)),    unit: ""    },
-          { label: "Séries",    value: String(seriesConfirmees(doneMap)),  unit: ""    },
-          { label: "Calories",  value: String(Math.round(elapsedMin * 6.5)), unit: "kcal" },
-        ],
-        exercise_list: exercises,
-        category: resolvedCategory,
-      },
-    }).then(({ error: e2 }) => { if (!e2) setAfficheSaved(true); });
   };
 
   useEffect(() => {
@@ -1732,16 +1719,21 @@ export default function WorkoutGuideModal({
                   )}
                 </AnimatePresence>
 
-                {/* R1 · un enregistrement raté se DIT. La séance reste gardée sur
-                    l'appareil et se rejouera au prochain passage dans l'app ;
-                    « Réessayer » n'attend pas ce prochain passage. */}
+                {/* R1 · un enregistrement raté se DIT, et sans rien promettre de
+                    faux : « gardée sur ce téléphone » n'apparaît que si le
+                    stockage l'a vraiment gardée. « Réessayer » réutilise le
+                    même journal. */}
                 {echecJournal && (
                   <div className="flex items-center gap-3 w-full px-4 py-3 rounded-2xl mt-3 text-left"
                     style={{ background: "rgba(255,255,255,0.05)", border: `1px solid ${TUN.line}` }}>
                     <span className="flex-1 text-[13px]" style={{ color: TUN.t2 }}>
-                      Pas encore enregistrée. Elle reste gardée sur ce téléphone.
+                      {echecJournal.compte
+                        ? "Pas enregistrée : le compte connecté n'est plus celui de cette séance."
+                        : echecJournal.garde
+                          ? "Pas encore enregistrée. Elle reste gardée sur ce téléphone."
+                          : "Pas encore enregistrée, et ce téléphone n'a pas pu la garder. Laisse cet écran ouvert et réessaie."}
                     </span>
-                    <button onClick={() => { setEchecJournal(false); enregistrer(); }} className="text-[13px] font-bold cursor-pointer flex-shrink-0" style={{ color: TUN.lav }}>
+                    <button onClick={() => { setEchecJournal(null); enregistrer(); }} className="text-[13px] font-bold cursor-pointer flex-shrink-0" style={{ color: TUN.lav }}>
                       Réessayer
                     </button>
                   </div>

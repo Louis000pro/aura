@@ -576,12 +576,8 @@ export async function apercuInvitation(code: string): Promise<Apercu | null> {
   };
 }
 
-/**
- * Enregistre le maillon du jour après une séance terminée.
- * Appelée depuis WorkoutGuideModal. Silencieuse : si l'utilisateur
- * n'a pas de défi, ou si le jour est déjà franchi, il ne se passe
- * rien et surtout on ne lui reproche rien.
- */
+/** Le maillon qu'une séance vient de franchir, tel que la fin de séance le
+ *  montre. Un refus reste silencieux : aucune bande, aucun reproche. */
 export type MaillonFranchi = {
   serie: string;
   objectif: number;
@@ -599,41 +595,64 @@ export type MaillonFranchi = {
   equipier: Membre | null;
 };
 
+export type ResultatMaillon =
+  | { etat: "franchi"; maillon: MaillonFranchi }
+  /** Le serveur a répondu non (déjà franchi par cette séance, binôme en
+   *  retard, fenêtre finie…) : c'est une réponse, pas une panne. */
+  | { etat: "refuse"; raison: string }
+  /** On ne sait pas : la validation reste à reprendre. */
+  | { etat: "echec" };
+
+/**
+ * Valide le maillon d'UN relais, désigné par son identifiant (celui du
+ * lancement, gardé avec la séance en attente), pour UNE séance.
+ *
+ * ⚠️ R1 bis · REJOUABLE. Une séance de relais finie hors réseau se
+ * récupère plus tard, depuis la file d'attente : la validation doit donc
+ * pouvoir se refaire. La base rend `deja_valide` quand cette séance a déjà
+ * franchi son maillon (`uniq_action_par_seance`) : jamais deux maillons
+ * pour une séance.
+ */
 export async function validerMaillon(
   userId: string,
+  runId: string,
   sessionId: string,
-): Promise<MaillonFranchi | null> {
-  const defi = await chargerDefi(userId);
-  if (!defi || defi.statut !== "en_cours" || fenetreFinie(defi)) return null;
-
+): Promise<ResultatMaillon> {
   const supabase = createClient();
   const { data, error } = await supabase.rpc("valider_action_defi", {
-    p_run_id: defi.runId,
+    p_run_id: runId,
     p_session_id: sessionId,
   });
-  if (error) return null;
+  if (error) return { etat: "echec" };
 
   const reponse = data as Reponse;
-  if (!reponse?.ok) return null;
+  if (!reponse?.ok) return { etat: "refuse", raison: String(reponse?.raison ?? "refuse") };
 
   // On prévient l'équipier, sans jamais bloquer la fin de séance.
   void fetchAuth("/api/notifications/relais", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ run_id: defi.runId }),
+    body: JSON.stringify({ run_id: runId }),
   }).catch(() => {});
 
+  /* Le visage de l'équipier et le fil : une lecture d'affichage, après
+     coup. Son échec n'annule pas le maillon, il est déjà franchi. */
+  const defi = await chargerDefi(userId).catch(() => null);
+  const memeRun = defi?.runId === runId ? defi : null;
   return {
-    serie: (reponse.serie as string | undefined) ?? defi.serie,
-    objectif: Number(reponse.objectif ?? defi.objectif),
-    maillon: Number(reponse.maillon ?? 0),
-    mine: Number(reponse.mine ?? 0),
-    partner: Number(reponse.partner ?? 0),
-    min: Number(reponse.min ?? 0),
-    bloque: Boolean(reponse.bloque),
-    reussi: Boolean(reponse.reussi),
-    conversationId: defi.conversationId,
-    equipier: defi.membres.find((m) => m.userId !== userId) ?? null,
+    etat: "franchi",
+    maillon: {
+      serie: (reponse.serie as string | undefined) ?? memeRun?.serie ?? "sillage",
+      objectif: Number(reponse.objectif ?? memeRun?.objectif ?? 4),
+      maillon: Number(reponse.maillon ?? 0),
+      mine: Number(reponse.mine ?? 0),
+      partner: Number(reponse.partner ?? 0),
+      min: Number(reponse.min ?? 0),
+      bloque: Boolean(reponse.bloque),
+      reussi: Boolean(reponse.reussi),
+      conversationId: memeRun?.conversationId ?? null,
+      equipier: memeRun?.membres.find((m) => m.userId !== userId) ?? null,
+    },
   };
 }
 

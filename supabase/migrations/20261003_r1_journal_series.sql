@@ -5,8 +5,9 @@
    précédentes. Rejouable sans risque. Purement additif : aucune donnée
    existante n'est modifiée ni supprimée.
 
-   Tant que ce fichier n'est pas appliqué, l'app enregistre les séances
-   comme avant (repli dans `src/lib/journalSeance.ts`), sans leurs séries.
+   ⚠️ À APPLIQUER AVANT DE DÉPLOYER LE CODE R1. Sans lui, le code garde
+   chaque séance en attente sur l'appareil au lieu de l'écrire à moitié
+   (R1 bis : plus aucun repli vers l'ancienne écriture).
 
    Ce qu'il ajoute :
    1. `workout_sessions` : l'identifiant du lancement (une séance ne
@@ -15,7 +16,11 @@
    2. `series_realisees` : une ligne par série PRÉVUE, avec ce qui lui
       est réellement arrivé.
    3. `enregistrer_seance(p)` : la séance et ses séries en UNE
-      transaction, idempotente sur le lancement.
+      transaction, idempotente sur le lancement, et qui refuse un journal
+      dont le propriétaire n'est pas le compte connecté.
+   4. R1 bis · ce qui SUIT le journal devient rejouable sans doublon :
+      la fermeture du planning (une intention par lancement), le maillon
+      du relais (un maillon par séance) et l'affiche (une par séance).
    ════════════════════════════════════════════════════════════════════ */
 
 /* ─────────────── 1. La séance ─────────────── */
@@ -112,6 +117,14 @@ begin
   if v_lancement is null then
     raise exception 'lancement_manquant' using errcode = '22023';
   end if;
+  /* ⚠️ R1 bis · LE JOURNAL DIT À QUI IL APPARTIENT, ET LA BASE LE VÉRIFIE.
+     Une séance gardée sur l'appareil se rejoue plus tard ; si le compte
+     a changé entre-temps, `auth.uid()` désignerait le mauvais
+     propriétaire et la séance de A s'écrirait chez B. Le contrôle local
+     ne suffit pas : la session peut changer entre lui et la requête. */
+  if nullif(p->>'proprietaire', '') is null or (p->>'proprietaire')::uuid <> v_user then
+    raise exception 'proprietaire_different' using errcode = '42501';
+  end if;
   if jsonb_array_length(coalesce(p->'series', '[]'::jsonb)) > 400 then
     raise exception 'trop_de_series' using errcode = '22023';
   end if;
@@ -174,6 +187,164 @@ $$;
 revoke all on function public.enregistrer_seance(jsonb) from public, anon;
 grant execute on function public.enregistrer_seance(jsonb) to authenticated;
 
+
+/* ─────────────── 4. R1 bis · ce qui suit le journal ─────────────── */
+
+/* La fermeture du planning porte le lancement qui l'a faite. Une
+   intention par lancement : rejouer la fermeture d'une ÉTAPE (une
+   insertion) rend l'intention déjà écrite au lieu d'en créer une jumelle,
+   et une réservation refermée garde la trace de qui l'a refermée.
+   Contrainte pleine (et pas un index partiel) pour que PostgreSQL la
+   nomme dans l'erreur de doublon ; deux `null` ne se gênent pas. */
+alter table public.intentions_entrainement
+  add column if not exists lancement_id uuid;
+do $$ begin
+  alter table public.intentions_entrainement
+    add constraint uniq_intention_lancement unique (user_id, lancement_id);
+exception when duplicate_object or duplicate_table then null; end $$;
+
+/* Un maillon par séance : `valider_action_defi` rejouée sur la même
+   séance (récupération après une coupure) ne franchit rien une seconde
+   fois. */
+create unique index if not exists uniq_action_par_seance
+  on public.challenge_actions (run_id, workout_session_id)
+  where workout_session_id is not null;
+
+/* Une affiche par séance. */
+create unique index if not exists uniq_affiche_par_seance
+  on public.posts (user_id, (performance_data->>'seance_id'))
+  where type = 'workout' and performance_data ? 'seance_id';
+
+create or replace function public.valider_action_defi(p_run_id uuid, p_session_id uuid)
+returns jsonb
+language plpgsql
+security definer
+set search_path to 'public'
+as $function$
+declare
+  v_user       uuid := auth.uid();
+  v_run        public.challenge_runs%rowtype;
+  v_session    public.workout_sessions%rowtype;
+  v_jour       date := current_date;
+  v_partner    uuid;
+  v_mine       int;
+  v_partdone   int;
+  v_today      int;
+  v_next       int;
+  v_min        int;
+  v_reussi     boolean;
+  v_pseudo     text;
+  v_deja       int;
+begin
+  if v_user is null then
+    return jsonb_build_object('ok', false, 'raison', 'non_connecte');
+  end if;
+
+  select * into v_run from public.challenge_runs where id = p_run_id;
+  if not found or v_run.statut <> 'en_cours' then
+    return jsonb_build_object('ok', false, 'raison', 'defi_inactif');
+  end if;
+
+  if not public.est_membre_run(p_run_id, v_user) then
+    return jsonb_build_object('ok', false, 'raison', 'pas_membre');
+  end if;
+
+  /* R1 bis · cette séance a déjà franchi son maillon : on le dit, on ne
+     le refranchit pas. C'est ce qui rend la récupération rejouable. */
+  select maillon into v_deja from public.challenge_actions
+   where run_id = p_run_id and user_id = v_user and workout_session_id = p_session_id;
+  if found then
+    return jsonb_build_object('ok', false, 'raison', 'deja_valide', 'maillon', v_deja);
+  end if;
+
+  if v_jour < v_run.starts_on or v_jour > v_run.ends_on then
+    return jsonb_build_object('ok', false, 'raison', 'hors_fenetre');
+  end if;
+
+  select * into v_session from public.workout_sessions
+   where id = p_session_id and user_id = v_user;
+  if not found then
+    return jsonb_build_object('ok', false, 'raison', 'seance_introuvable');
+  end if;
+  if v_session.started_at < now() - interval '3 hours' then
+    return jsonb_build_object('ok', false, 'raison', 'seance_trop_ancienne');
+  end if;
+
+  select user_id into v_partner
+    from public.challenge_run_members
+   where run_id = p_run_id and user_id <> v_user
+   limit 1;
+
+  select count(*) into v_mine
+    from public.challenge_actions where run_id = p_run_id and user_id = v_user;
+  select count(*) into v_partdone
+    from public.challenge_actions where run_id = p_run_id and user_id = v_partner;
+  select count(*) into v_today
+    from public.challenge_actions
+   where run_id = p_run_id and user_id = v_user and jour = v_jour;
+
+  if v_mine >= v_run.target_days then
+    return jsonb_build_object('ok', false, 'raison', 'deja_fini_pour_moi');
+  end if;
+
+  if v_today >= 2 then
+    return jsonb_build_object('ok', false, 'raison', 'deux_par_jour_max');
+  end if;
+
+  if v_partdone < v_mine then
+    return jsonb_build_object('ok', false, 'raison', 'bloque_binome',
+                              'mine', v_mine, 'partner', v_partdone);
+  end if;
+
+  v_next := v_mine + 1;
+
+  insert into public.challenge_actions (run_id, user_id, jour, workout_session_id, maillon)
+  values (p_run_id, v_user, v_jour, p_session_id, v_next);
+
+  v_mine := v_next;
+  v_min  := least(v_mine, v_partdone);
+  v_reussi := (v_mine >= v_run.target_days and v_partdone >= v_run.target_days);
+
+  select pseudo into v_pseudo from public.profiles where id = v_user;
+
+  if v_run.conversation_id is not null then
+    insert into public.messages (conversation_id, user_id, contenu, type)
+    values (
+      v_run.conversation_id, null,
+      case when v_reussi
+        then 'L''affiche est complète. Vous avez bouclé les 4 maillons ensemble.'
+        else coalesce(v_pseudo, 'Quelqu''un') || ' a franchi le maillon ' || v_next || ' sur ' || v_run.target_days || '.'
+      end,
+      'systeme'
+    );
+  end if;
+
+  if v_reussi then
+    update public.challenge_runs set statut = 'reussi', fini_le = now() where id = p_run_id;
+    insert into public.profile_badges (user_id, badge_slug)
+    select m.user_id, 'serie-' || v_run.serie
+      from public.challenge_run_members m where m.run_id = p_run_id
+    on conflict do nothing;
+    insert into public.profile_badges (user_id, badge_slug)
+    select m.user_id, 'premier-relais'
+      from public.challenge_run_members m where m.run_id = p_run_id
+    on conflict do nothing;
+  end if;
+
+  return jsonb_build_object(
+    'ok', true,
+    'maillon', v_next,
+    'mine', v_mine,
+    'partner', v_partdone,
+    'min', v_min,
+    'objectif', v_run.target_days,
+    'serie', v_run.serie,
+    'reussi', v_reussi,
+    'bloque', (v_partdone < v_mine)
+  );
+end;
+$function$;
+
 /* ─────────────── Vérifications après application ───────────────
    select count(*) from public.series_realisees;                 -- 0 au départ
    select count(*) from public.workout_sessions
@@ -182,6 +353,11 @@ grant execute on function public.enregistrer_seance(jsonb) to authenticated;
    -- drop function public.enregistrer_seance(jsonb);
    -- drop table public.series_realisees;
    -- drop index public.uniq_workout_lancement;
+   -- drop index public.uniq_action_par_seance;
+   -- drop index public.uniq_affiche_par_seance;
+   -- alter table public.intentions_entrainement
+   --   drop constraint uniq_intention_lancement, drop column lancement_id;
+   -- (et réappliquer valider_action_defi depuis 20260927_relais_coop.sql)
    -- alter table public.workout_sessions drop column lancement_id,
    --   drop column termine_le, drop column journal_version;
 */
