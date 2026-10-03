@@ -5695,6 +5695,23 @@ verdict(
       etat4.genre === "suites" && etat4.texte.includes("ton planning et le maillon du relais"),
       etat4.genre === "ok" ? "aucune ligne" : etat4.texte,
     );
+    /* Changement de compte ET stockage plein : aucune promesse d'attente. */
+    const v = monde();
+    v.m.session = B;
+    v.m.panne.stockage = true;
+    const r5 = await finaliserSeance(v.deps, nouvelleAttente({ journal: unJournal(A), cible: null }));
+    const etat5 = etatFinDeSeance(r5);
+    verdict(
+      "Tour 11 · compte changé et stockage plein : « laisse cet écran ouvert », jamais « elle attend »",
+      r5.raison === "compte_different" && !r5.gardeeSurAppareil && etat5.genre === "journal"
+        && !etat5.texte.includes("attend son retour") && etat5.texte.includes("Laisse cet écran ouvert"),
+      etat5.genre === "ok" ? "aucune ligne" : etat5.texte,
+    );
+    verdict(
+      "Tour 11 · compte changé, stockage disponible : la séance attend sur ce téléphone",
+      etatFinDeSeance(r).genre === "journal" && (etatFinDeSeance(r) as { texte: string }).texte.includes("attend son retour sur ce téléphone"),
+      "la promesse ne vaut que si l'appareil l'a gardée",
+    );
     verdict(
       "Tour 10 · journal pas enregistré : c'est le journal qui se dit, pas les suites",
       etatFinDeSeance(r).genre === "journal" && etatFinDeSeance(r).genre !== "suites",

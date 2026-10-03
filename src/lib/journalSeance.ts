@@ -468,7 +468,9 @@ export function etatFinDeSeance(r: Finalisation): EtatFin {
     return {
       genre: "journal",
       texte: r.raison === "compte_different"
-        ? "Pas enregistrée : le compte connecté n'est plus celui qui a commencé cette séance. Elle attend son retour sur ce téléphone."
+        ? r.gardeeSurAppareil
+          ? "Pas enregistrée : le compte connecté n'est plus celui qui a commencé cette séance. Elle attend son retour sur ce téléphone."
+          : "Pas enregistrée : le compte connecté n'est plus celui qui a commencé cette séance, et ce téléphone n'a pas pu la garder. Laisse cet écran ouvert, reviens sur ce compte et réessaie."
         : r.gardeeSurAppareil
           ? "Pas encore enregistrée. Elle reste gardée sur ce téléphone."
           : "Pas encore enregistrée, et ce téléphone n'a pas pu la garder. Laisse cet écran ouvert et réessaie.",
@@ -479,7 +481,9 @@ export function etatFinDeSeance(r: Finalisation): EtatFin {
   return {
     genre: "suites",
     texte: r.raison === "compte_different"
-      ? `Séance enregistrée. La mise à jour de ${quoi} attend le retour du compte qui l'a faite.`
+      ? r.gardeeSurAppareil
+        ? `Séance enregistrée. La mise à jour de ${quoi} attend le retour du compte qui l'a faite.`
+        : `Séance enregistrée. La mise à jour de ${quoi} attend le compte qui l'a faite, et ce téléphone n'a pas pu la garder : laisse cet écran ouvert, reviens sur ce compte et réessaie.`
       : r.gardeeSurAppareil
         ? `Séance enregistrée. Il reste à mettre à jour ${quoi} ; ça se reprendra tout seul.`
         : `Séance enregistrée. Il reste à mettre à jour ${quoi}, et ce téléphone n'a pas pu le garder : réessaie avant de quitter.`,
