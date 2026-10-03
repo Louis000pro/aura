@@ -86,7 +86,7 @@ Tour 5, tranché par Louis : 1 = oui (programme construit par objectif) · 2 = o
 Réponses de Louis : A = GO sur le principe 17 à 29 · B = jour fixe récurrent plus tard · C = maquette d'abord (`04-maquette-programme.html`).
 Maquette 04, tranché par Louis : « t'attendait mercredi » gardé · « Pas de séance ce jour-là » gardé (gris, sans alerte) · « Compter à la place de Pull » dans le message de fin d'une séance libre.
 Écran « Mes jours d'entraînement » : choix « Chaque semaine / Cette semaine ». En « Chaque semaine », deux réglages séparés : « Quand » (les jours) et « Dans quel ordre » (la suite des séances, réordonnable, ajout possible) ; aucune séance n'est affichée à côté d'un jour, sinon on croit que lundi = Bas du corps pour toujours (retour de Louis). En « Cette semaine », chaque jour daté a un interrupteur et la séance qui tombe dessus s'affiche en direct.
-Retours de Louis sur la maquette 06, tranchés avec Codex aux points 52 à 60 ; maquette `07-maquette-tunnel.html` à valider :
+Retours de Louis sur la maquette 06, tranchés avec Codex aux points 52 à 60 ; maquette `07-maquette-tunnel.html` **validée par Louis (GO, 2026-10-03)**. Plan d'implémentation proposé dans `PLAN-IMPLEMENTATION.md`, en relecture par Codex (tour 8) :
 - Variété : « Davantage de stabilité » et « Garder mes exercices », c'est pareil. Il faut trois choix : toujours les mêmes exercices, un peu de nouveauté à chaque fois, ou presque tout qui change.
 - Tunnel : pas de formulaire pendant le repos. Petites questions et petites validations seulement, jamais une saisie obligatoire.
 - Le tunnel de la maquette ne ressemble pas au vrai. Garder le bon de l'ancien : personnage animé qui guide, chrono ou répétitions en grand, conseil du Guide, repos orange avec « Ensuite ».
