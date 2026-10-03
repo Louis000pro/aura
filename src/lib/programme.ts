@@ -363,25 +363,30 @@ export async function consommerEtape(
   userId: string,
   programmeId: string,
   etapeId: string,
-  jour: { date: string; type: string; title: string; difficulty: string; location: string | null; exerciseList: unknown[] },
+  jour: { type: string; title: string; difficulty: string; location: string | null; exerciseList: unknown[] },
+  /* R1 bis · le fait vient du JOURNAL : son jour, son heure, son lancement. */
+  fait: { lancementId: string; consommeeLe: string; date: string },
   /* V8 · l'adaptation sous laquelle cette séance a été matérialisée.
      Une TRACE, jamais une décision : rien ne la relit pour savoir quoi
      proposer. */
   adaptationId: string | null = null,
-): Promise<void> {
+): Promise<"ok" | "doublon" | "echec"> {
   const supabase = createClient();
   const sc = await schemaIntentions();
   const avecAdaptation = await adaptationsDisponibles();
-  const maintenant = new Date().toISOString();
   /* ⚠️ UN `insert`, ET PLUS UN `upsert` SUR LA DATE (V6b). L'ancienne
      écriture écrasait ce qui se trouvait déjà sur la journée : faire
      l'étape du cycle un jour où une séance était prévue effaçait cette
      intention, et faire une séance un jour de repos effaçait le repos.
      Le fait s'ENREGISTRE, il ne remplace rien : c'est la règle « faire une
-     séance non prévue un jour de repos ne touche à rien ». */
-  await supabase.from(sc.table).insert({
+     séance non prévue un jour de repos ne touche à rien ».
+
+     ⚠️ R1 bis · ET IL PORTE SON LANCEMENT. Rejouée après une coupure,
+     cette insertion est refusée par `uniq_intention_lancement` : c'est un
+     `doublon`, donc l'étape est déjà refermée, jamais deux fois. */
+  const { error } = await supabase.from(sc.table).insert({
     user_id: userId,
-    date: jour.date,
+    date: fait.date,
     type: jour.type,
     title: jour.title,
     difficulty: jour.difficulty,
@@ -396,10 +401,15 @@ export async function consommerEtape(
     programme_id: programmeId,
     programme_seance_id: etapeId,
     etape_consommee_id: etapeId,
-    consommee_le: maintenant,
+    consommee_le: fait.consommeeLe,
+    lancement_id: fait.lancementId,
     ...(avecAdaptation ? { adaptation_id: adaptationId } : {}),
-    updated_at: maintenant,
+    updated_at: new Date().toISOString(),
   });
+  if (!error) return "ok";
+  if (error.code === "23505" && /uniq_intention_lancement/.test(error.message)) return "doublon";
+  console.error("[programme] fermeture de l'étape impossible :", error.message);
+  return "echec";
 }
 
 /* ════════════════════════════════════════════════════════════════════

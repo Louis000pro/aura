@@ -16,7 +16,19 @@
    transaction annulée.
    ════════════════════════════════════════════════════════════════════ */
 import { readFileSync, readdirSync } from "node:fs";
-import { verrouDeFermeture } from "@/lib/finSeance";
+import {
+  lignesDuJournal, seriesConfirmees, exercicesFaits, repsPrescrites, type MarquesSeance,
+  journalDe, nouvelleAttente, finaliserSeance, rejouerJournalEnAttente, lireAttente,
+  etatFinDeSeance, proprietaireDeLaSeance,
+  type Dependances,
+} from "@/lib/journalSeance";
+import {
+  fermerCible, faitDeLaSeance, fermetureTerminee,
+  type CibleSeance, type FaitSeance, type StoreFermeture,
+} from "@/lib/finSeance";
+import { CLES_EXERCICES, cleExercice } from "@/lib/exerciceCle";
+import { EXERCISE_LIBRARY } from "@/lib/exerciseLibrary";
+import { resolveGuide } from "@/lib/exerciseGuides";
 import { etapesDuCycle, etapeSuivante, nomDeProgramme, positionRefermee, POSITION_INITIALE } from "@/lib/programme";
 import { etatJournee, intentionDeLEtape, lancementDuJour, libelleReservation, repetitionDuJour } from "@/lib/journee";
 import {
@@ -447,9 +459,9 @@ verdict(
     "le lecteur guidé vit dans WorkoutLaunchContext",
   );
   verdict(
-    "V7A · le lanceur global referme ce que la séance referme",
-    lanceur.includes("terminerSeance(") && lanceur.includes("onComplete="),
-    "onComplete → terminerSeance",
+    "R1 · le lanceur global transmet la cible au tunnel, il ne referme plus rien lui-même",
+    lanceur.includes("cible={active.cible") && !lanceur.includes("terminerSeance(") && !lanceur.includes("onComplete="),
+    "la cible part avec la séance, la finalisation du journal la referme",
   );
   /* ⚠️ ON BALAYE TOUT `src/`, ET PAS UNE LISTE ÉCRITE À LA MAIN.
      Première version, ce contrôle nommait trois fichiers : l'écran, le
@@ -715,19 +727,22 @@ verdict(
      réservée, mais rien n'empêche un écran resté sur une lecture d'il y
      a dix minutes de le faire. La défense vit dans l'autorité unique de
      fin de séance, donc elle couvre tous les lanceurs d'un coup. */
+  /* R1 bis : ces deux règles sont désormais exercées sur la VRAIE
+     fonction de fermeture, avec une base en mémoire (bloc R1 plus bas) :
+     la réservation est cherchée avant toute insertion, et le fait se date
+     du jour parisien de la fin du JOURNAL. Ici, le chemin seulement. */
   const finSeance = readFileSync(new URL("../src/lib/finSeance.ts", import.meta.url), "utf8");
-  const brancheEtape = finSeance.slice(finSeance.indexOf("} else {"));
+  const brancheEtape = finSeance.slice(finSeance.indexOf("export async function fermerCible"));
   verdict(
     "V7A · terminerSeance refuse d'insérer si l'étape a déjà une réservation",
-    brancheEtape.includes("reservationDeLEtape(")
-      && brancheEtape.indexOf("reservationDeLEtape(") < brancheEtape.indexOf("consommerEtape("),
+    brancheEtape.includes("store.reservation(")
+      && brancheEtape.indexOf("store.reservation(") < brancheEtape.indexOf("store.inserer("),
     "on cherche la réservation AVANT d'écrire",
   );
   verdict(
     "V7A · une séance faite est datée du jour où elle a eu lieu",
-    finSeance.includes('marquerIntention(userId, cible.intentionId, "done", aujourdhui)')
-      && readFileSync(new URL("../src/lib/planning.ts", import.meta.url), "utf8").includes("{ date: dateDuFait }"),
-    "plus de séance « faite mardi » terminée un dimanche",
+    finSeance.includes("date: parisDateStr(new Date(j.fin))") && !finSeance.includes("todayYmd"),
+    "le jour du journal, jamais l'horloge du rejeu",
   );
   /* La correction est à sa SOURCE, pas seulement dans le garde-fou : la
      lecture de la journée doit connaître la réservation, et le héros doit
@@ -834,23 +849,8 @@ verdict(
     "→ " + (suivante5(journalPush)?.nom ?? "rien"),
   );
 
-  /* ── Une fermeture par lancement ──
-     ⚠️ ON NE S'EN REMET PAS À « React ne devrait rappeler `onComplete`
-     qu'une fois ». Pour une étape, la fermeture est un `insert` : rejouée,
-     elle écrirait une seconde séance sur la journée. */
-  const dejaFerme = verrouDeFermeture();
-  const lancement = { sessionId: "etape-1" };
-  const autre = { sessionId: "etape-2" };
-  verdict(
-    "V7A · double callback du même lancement → une seule fermeture",
-    dejaFerme(lancement) === true && dejaFerme(lancement) === false,
-    "la seconde est refusée",
-  );
-  verdict(
-    "V7A · un autre lancement referme normalement",
-    dejaFerme(autre) === true,
-    "le verrou porte sur le lancement, pas sur la cible",
-  );
+  /* ── Une fermeture par lancement ── (R1 : c'est la base qui le tient,
+     par l'identifiant de lancement ; voir le bloc « R1 » plus bas.) */
 
   /* Le contrat d'écriture : les trois colonnes vont ensemble ou pas du
      tout (FK composites + deux CHECK en base). */
@@ -5187,6 +5187,619 @@ verdict(
         && ASSISTANT_TOOLS.length === 17;
     })(),
     "316 caractères, 17 outils : un outil de plus ne rallonge pas le prompt d’un signe",
+  );
+}
+
+/* ═══════════════════ R1 · LE JOURNAL DIT LA VÉRITÉ ═══════════════════ */
+{
+  const lire1 = (rel: string) => readFileSync(new URL("../" + rel, import.meta.url), "utf8");
+
+  /* ── La clé stable de chaque exercice ── */
+  const cles = Object.values(CLES_EXERCICES);
+  verdict(
+    "R1 · chaque exercice de la bibliothèque a une clé stable",
+    EXERCISE_LIBRARY.every((e) => cleExercice(e.name) !== null),
+    EXERCISE_LIBRARY.filter((e) => cleExercice(e.name) === null).map((e) => e.name).join(", ") || "102 / 102",
+  );
+  verdict(
+    "R1 · les clés sont uniques",
+    new Set(cles).size === cles.length,
+    cles.length + " clés",
+  );
+  verdict(
+    "R1 · la table figée est d'accord avec les personnages-guides",
+    EXERCISE_LIBRARY.every((e) => resolveGuide(e.name)?.key === cleExercice(e.name)),
+    "une règle d'animation modifiée doit se voir ici avant de déplacer un historique",
+  );
+  verdict(
+    "R1 · la clé ne dépend ni de la casse ni des accents",
+    cleExercice("developpe couche") !== null && cleExercice("DÉVELOPPÉ COUCHÉ") === cleExercice("Développé couché"),
+    String(cleExercice("Développé couché")),
+  );
+  verdict(
+    "R1 · un nom inconnu ne reçoit aucune clé devinée",
+    cleExercice("Squat sumo de mon coach") === null && cleExercice("Mon échauffement") === null,
+    "pas d'équivalence inventée",
+  );
+
+  /* ── Ce que le journal écrit ── */
+  const ex = (name: string, sets: number, reps: string, over: Record<string, unknown> = {}) =>
+    ({ name, sets, reps, rest: 60, tip: "", benefit: "", muscles: [], ...over });
+  const seance = [
+    ex("Hip thrust", 3, "10 reps"),
+    ex("Planche latérale", 2, "40 s", { auto: 40 }),
+    ex("Squat bulgare", 3, "10 par jambe"),
+  ];
+  const marques: MarquesSeance = {
+    0: {
+      0: { statut: "terminee", validation: "bouton", dureeS: null },
+      1: { statut: "terminee", validation: "bouton", dureeS: null },
+      2: { statut: "terminee", validation: "bouton", dureeS: null },
+    },
+    1: {
+      0: { statut: "terminee", validation: "minuteur_fini", dureeS: 40 },
+      1: { statut: "terminee", validation: "minuteur_abrege", dureeS: 25 },
+    },
+    2: { 0: { statut: "terminee", validation: "bouton", dureeS: null }, 1: { statut: "passee" }, 2: { statut: "passee" } },
+  };
+  const lignes = lignesDuJournal(seance, marques);
+  verdict("R1 · une ligne par série PRÉVUE", lignes.length === 8, lignes.length + " lignes");
+  verdict(
+    "R1 · le récapitulatif compte les séries faites, pas les séries prévues",
+    seriesConfirmees(marques) === 6 && exercicesFaits(marques) === 3,
+    seriesConfirmees(marques) + " séries sur 8",
+  );
+  verdict(
+    "R1 · aucune répétition supposée exacte avant R3",
+    lignes.every((l) => l.reps_declarees === null),
+    "la prescription est gardée à côté, la valeur déclarée reste vide",
+  );
+  verdict(
+    "R1 · la prescription accompagne chaque série",
+    lignes[0].reps_prescrites === 10 && lignes[0].mesure === "reps"
+      && lignes[3].mesure === "duree" && lignes[3].duree_prescrite_s === 40
+      && repsPrescrites("10 par jambe") === 10 && repsPrescrites("au max") === null,
+    "10 reps, 40 s",
+  );
+  verdict(
+    "R1 · un minuteur abrégé n'est pas un minuteur fini",
+    lignes[3].validation === "minuteur_fini" && lignes[3].duree_s === 40
+      && lignes[4].validation === "minuteur_abrege" && lignes[4].duree_s === 25,
+    "40 s tenues, puis 25 s",
+  );
+  verdict(
+    "R1 · passer est un geste, ne pas atteindre n'en est pas un",
+    lignes[6].statut === "passee" && lignes[6].validation === null
+      && lignesDuJournal([ex("Hip thrust", 2, "10")], {})[0].statut === "non_atteinte",
+    "passee ≠ non_atteinte",
+  );
+  verdict(
+    "R1 · deux passages du même exercice gardent deux emplacements",
+    (() => {
+      const l = lignesDuJournal([ex("Squat", 1, "10"), ex("Pompes", 1, "10"), ex("Squat", 1, "10")], {});
+      return l[0].exercice_cle === l[2].exercice_cle && l[0].emplacement !== l[2].emplacement;
+    })(),
+    "clé identique, emplacement différent",
+  );
+  verdict(
+    "R1 · un exercice perso garde son nom, sans clé",
+    (() => { const l = lignesDuJournal([ex("Mon circuit maison", 1, "10")], {})[0]; return l.exercice_cle === null && l.exercice_nom === "Mon circuit maison"; })(),
+    "enregistrable, pas comparable",
+  );
+
+  /* ── R1 bis · LE COMPORTEMENT, PAS LA PRÉSENCE D'UNE CHAÎNE ──
+     Codex (tour 9) : « retirer l'attente après l'appel » ne prouve pas que
+     la fermeture a réussi. On joue donc la VRAIE finalisation et la VRAIE
+     fermeture contre une base et un stockage en mémoire, avec leurs
+     pannes : fermeture ratée, rejeu le lendemain, changement de compte,
+     relais récupéré, migration absente, stockage plein. */
+  const A = "aaaaaaaa-0000-4000-8000-00000000000a";
+  const B = "bbbbbbbb-0000-4000-8000-00000000000b";
+  let nLancement = 0;
+  const unJournal = (proprietaire = A, finIso = "2026-10-03T08:40:00.000Z") => journalDe({
+    lancementId: `00000000-0000-4000-8000-${String(++nLancement).padStart(12, "0")}`,
+    proprietaire, titre: "Push", categorie: "force",
+    debutMs: Date.parse(finIso) - 40 * 60_000, dureeS: 2400,
+    exercices: seance, marques, finMs: Date.parse(finIso),
+  });
+  const cibleIntention: CibleSeance = { genre: "intention", intentionId: "i-push" };
+
+  /** Un monde en mémoire : la session, la base, le stockage, et des pannes à la demande. */
+  const monde = () => {
+    const m = {
+      session: A as string | null,
+      seances: new Map<string, { id: string; proprietaire: string; series: number }>(),
+      appelsEcriture: 0,
+      fermetures: [] as { userId: string; fait: FaitSeance }[],
+      maillons: [] as { runId: string; seanceId: string }[],
+      affiches: new Set<string>(),
+      migration: true,
+      panne: { fermer: 0, maillon: 0, stockage: false },
+      /** Appelé pendant une requête : de quoi changer de compte en plein vol. */
+      pendant: null as null | ((quoi: string) => void),
+      disque: new Map<string, string>(),
+    };
+    const deps: Dependances = {
+      compteConnecte: async () => m.session,
+      async enregistrer(j) {
+        m.appelsEcriture++;
+        m.pendant?.("enregistrer");
+        if (!m.migration) return { etat: "migration_absente" };
+        /* Ce que fait `enregistrer_seance` : le propriétaire vient de la
+           SESSION, et la base refuse un journal qui n'est pas le sien. */
+        if (!m.session) return { etat: "echec" };
+        if (j.proprietaire !== m.session) return { etat: "compte_different" };
+        const cle = m.session + ":" + j.lancement_id;
+        const deja = m.seances.get(cle);
+        if (deja) return { etat: "ok", id: deja.id, deja: true };
+        const id = "s" + (m.seances.size + 1);
+        m.seances.set(cle, { id, proprietaire: m.session, series: j.series.length });
+        return { etat: "ok", id, deja: false };
+      },
+      async fermer(userId, _cible, fait) {
+        m.pendant?.("fermer");
+        if (m.panne.fermer > 0) { m.panne.fermer--; return "echec"; }
+        m.fermetures.push({ userId, fait });
+        return "fermee";
+      },
+      async validerMaillon(_u, runId, seanceId) {
+        if (m.panne.maillon > 0) { m.panne.maillon--; return { etat: "echec" }; }
+        if (m.maillons.some((x) => x.seanceId === seanceId)) return { etat: "refuse", raison: "deja_valide" };
+        m.maillons.push({ runId, seanceId });
+        return { etat: "franchi", maillon: { serie: "sillage", objectif: 4, maillon: m.maillons.length, mine: 1, partner: 1, min: 1, bloque: false, reussi: false, conversationId: null, equipier: null } };
+      },
+      async garderAffiche(_u, seanceId) { m.affiches.add(seanceId); return "ok"; },
+      stockage: {
+        lire: (c) => m.disque.get(c) ?? null,
+        ecrire: (c, v) => { if (m.panne.stockage) throw new Error("quota"); m.disque.set(c, v); },
+        retirer: (c) => { if (m.panne.stockage) throw new Error("quota"); m.disque.delete(c); },
+      },
+    };
+    return { m, deps, attente: (u = A) => lireAttente(deps.stockage, u) };
+  };
+
+  /* 1 · Une fermeture ratée ne disparaît pas de la file. */
+  {
+    const { m, deps, attente } = monde();
+    m.panne.fermer = 1;
+    const r = await finaliserSeance(deps, nouvelleAttente({ journal: unJournal(), cible: cibleIntention }));
+    const reste = attente();
+    verdict(
+      "R1 bis · une fermeture ratée garde son travail en attente",
+      r.journal === "enregistre" && !r.finalisee && reste.length === 1
+        && reste[0].fermeture === "a_faire" && reste[0].seanceId === r.seanceId,
+      `journal ${r.journal}, finalisée ${r.finalisee}, ${reste.length} en attente`,
+    );
+    await rejouerJournalEnAttente(deps, A);
+    verdict(
+      "R1 bis · le rejeu referme le planning sans réécrire le journal",
+      attente().length === 0 && m.fermetures.length === 1 && m.appelsEcriture === 1,
+      `${m.fermetures.length} fermeture, ${m.appelsEcriture} écriture du journal`,
+    );
+  }
+
+  /* 2 · Une séance rejouée le lendemain reste faite le jour où elle l'a été. */
+  {
+    const fermes: FaitSeance[] = [];
+    let marquages = 0;
+    const base = new Map<string, { resolue: boolean; lancement: string | null }>([["i-push", { resolue: false, lancement: null }]]);
+    const store: StoreFermeture = {
+      async parLancement(_u, l) { for (const [id, x] of base) if (x.lancement === l) return { ok: true, id }; return { ok: true, id: null }; },
+      async intention(_u, id) { const x = base.get(id); return { ok: true, resolue: x ? x.resolue : null }; },
+      async reservation() { return { ok: true, id: null }; },
+      async marquer(_u, id, fait) {
+        marquages++;
+        const x = base.get(id);
+        if (!x || x.resolue) return { ok: true, touchees: 0 };
+        x.resolue = true; x.lancement = fait.lancementId; fermes.push(fait);
+        return { ok: true, touchees: 1 };
+      },
+      async inserer() { return "ok"; },
+    };
+    /* 23 h 50 à Paris le samedi 3, rejouée le dimanche 4. */
+    const j = unJournal(A, "2026-10-03T21:50:00.000Z");
+    const r1 = await fermerCible(store, A, cibleIntention, faitDeLaSeance(j));
+    const r2 = await fermerCible(store, A, cibleIntention, faitDeLaSeance(j));
+    verdict(
+      "R1 bis · une séance rejouée le lendemain garde son jour et son heure",
+      r1 === "fermee" && fermes[0].date === "2026-10-03" && fermes[0].consommeeLe === j.fin,
+      `${fermes[0]?.date}, ${fermes[0]?.consommeeLe}`,
+    );
+    verdict(
+      "R1 bis · le jour du fait est le jour PARISIEN de la fin",
+      faitDeLaSeance({ lancement_id: "x", fin: "2026-10-03T22:30:00.000Z" }).date === "2026-10-04",
+      "00 h 30 à Paris, c'est déjà dimanche",
+    );
+    verdict(
+      "R1 bis · une intention déjà refermée est rendue sans nouvelle écriture",
+      r2 === "deja" && marquages === 1,
+      `${r2}, ${marquages} écriture`,
+    );
+    /* Résolue autrement (passée, faite ailleurs) : on ne la réécrit pas. */
+    base.set("i-autre", { resolue: true, lancement: null });
+    const r3 = await fermerCible(store, A, { genre: "intention", intentionId: "i-autre" }, faitDeLaSeance(unJournal()));
+    const r4 = await fermerCible(store, A, { genre: "intention", intentionId: "i-disparue" }, faitDeLaSeance(unJournal()));
+    verdict(
+      "R1 bis · une intention résolue ailleurs n'est pas réécrite, une disparue n'est pas une panne",
+      r3 === "deja" && r4 === "introuvable" && marquages === 1 && fermetureTerminee(r4),
+      `${r3}, ${r4}`,
+    );
+    /* Aucune ligne touchée et rien de résolu : on ne déclare pas une fermeture. */
+    const panne: StoreFermeture = { ...store, async marquer() { return { ok: true, touchees: 0 }; } };
+    base.set("i-fantome", { resolue: false, lancement: null });
+    const r5 = await fermerCible(panne, A, { genre: "intention", intentionId: "i-fantome" }, faitDeLaSeance(unJournal()));
+    const r6 = await fermerCible({ ...store, async marquer() { return { ok: false }; } }, A,
+      { genre: "intention", intentionId: "i-fantome" }, faitDeLaSeance(unJournal()));
+    verdict(
+      "R1 bis · une mise à jour sans ligne touchée ou en erreur reste un échec",
+      r5 === "echec" && r6 === "echec" && !fermetureTerminee(r5),
+      `${r5}, ${r6}`,
+    );
+  }
+
+  /* 3 · Une étape se referme une fois, même rejouée après une coupure. */
+  {
+    const lignes: { lancement: string; etape: string }[] = [];
+    let insertions = 0;
+    const store: StoreFermeture = {
+      async parLancement(_u, l) { const x = lignes.find((y) => y.lancement === l); return { ok: true, id: x ? "e1" : null }; },
+      async intention() { return { ok: true, resolue: null }; },
+      async reservation() { return { ok: true, id: null }; },
+      async marquer() { return { ok: true, touchees: 0 }; },
+      async inserer(_u, c, fait) {
+        insertions++;
+        if (lignes.some((y) => y.lancement === fait.lancementId)) return "doublon";
+        lignes.push({ lancement: fait.lancementId, etape: c.etapeId });
+        return "ok";
+      },
+    };
+    const etape: CibleSeance = { genre: "etape", programmeId: "p", etapeId: "pull", type: "Force", title: "Pull", difficulty: "Moyen", location: null, exerciseList: [] };
+    const fait = faitDeLaSeance(unJournal());
+    const r1 = await fermerCible(store, A, etape, fait);
+    /* L'app s'est fermée avant de le noter : le rejeu repasse. */
+    const r2 = await fermerCible(store, A, etape, fait);
+    /* Et même si la lecture préalable rate la ligne, la base refuse le doublon. */
+    const r3 = await fermerCible({ ...store, async parLancement() { return { ok: true, id: null }; } }, A, etape, fait);
+    verdict(
+      "R1 bis · une étape rejouée n'est jamais refermée deux fois",
+      r1 === "fermee" && r2 === "deja" && r3 === "deja" && lignes.length === 1 && insertions === 2,
+      `${r1}, ${r2}, ${r3} · ${lignes.length} ligne`,
+    );
+    /* `deja` côté journal ne vide plus la file : l'étape est reprise. */
+    const { m, deps, attente } = monde();
+    const e = nouvelleAttente({ journal: unJournal(), cible: etape });
+    await deps.enregistrer(e.journal);              // le journal est déjà en base
+    m.panne.fermer = 1;
+    const r = await finaliserSeance(deps, e);
+    verdict(
+      "R1 bis · « déjà enregistrée » ne vaut pas « déjà refermée »",
+      r.journal === "enregistre" && attente().length === 1 && attente()[0].fermeture === "a_faire",
+      "l'étape reste à refermer",
+    );
+    await rejouerJournalEnAttente(deps, A);
+    verdict(
+      "R1 bis · l'étape d'une séance déjà enregistrée est refermée au rejeu",
+      attente().length === 0 && m.fermetures.length === 1,
+      `${m.fermetures.length} fermeture`,
+    );
+  }
+
+  /* 4 · Le compte change : rien de A ne s'écrit chez B. */
+  {
+    const { m, deps, attente } = monde();
+    m.migration = false;
+    await finaliserSeance(deps, nouvelleAttente({ journal: unJournal(), cible: null }));
+    await finaliserSeance(deps, nouvelleAttente({ journal: unJournal(), cible: null }));
+    m.migration = true;
+    /* Le compte bascule sur B pendant la première requête. */
+    m.pendant = (quoi) => { if (quoi === "enregistrer") m.session = B; };
+    await rejouerJournalEnAttente(deps, A);
+    const chezB = [...m.seances.values()].filter((x) => x.proprietaire === B).length;
+    verdict(
+      "R1 bis · un changement de compte arrête le rejeu, et rien de A n'arrive chez B",
+      chezB === 0 && attente(A).length === 2 && m.appelsEcriture === 3,
+      `${chezB} séance chez B, ${attente(A).length} toujours en attente pour A`,
+    );
+    /* Même si le contrôle local est contourné, la base refuse. */
+    m.pendant = null;
+    const r = await deps.enregistrer(unJournal(A));
+    verdict(
+      "R1 bis · la base refuse le journal d'un autre compte",
+      r.etat === "compte_different",
+      r.etat,
+    );
+    /* Changement pendant la fermeture : sa réponse n'est pas crue. */
+    const w = monde();
+    w.m.pendant = (quoi) => { if (quoi === "fermer") w.m.session = B; };
+    const f = await finaliserSeance(w.deps, nouvelleAttente({ journal: unJournal(), cible: cibleIntention }));
+    verdict(
+      "R1 bis · une réponse reçue sous un autre compte ne referme rien",
+      f.raison === "compte_different" && w.attente(A)[0]?.fermeture === "a_faire",
+      String(f.raison),
+    );
+    /* Deux comptes, deux rejeux : l'un n'attend pas l'autre. */
+    const x = monde();
+    let lacheA: () => void = () => {};
+    const bloqueA = new Promise<void>((ok) => { lacheA = ok; });
+    x.m.migration = false;
+    await finaliserSeance(x.deps, nouvelleAttente({ journal: unJournal(A), cible: null }));
+    x.m.session = B;
+    await finaliserSeance(x.deps, nouvelleAttente({ journal: unJournal(B), cible: null }));
+    x.m.migration = true;
+    const deps2: Dependances = { ...x.deps, compteConnecte: async () => x.m.session };
+    const depsA: Dependances = { ...deps2, compteConnecte: async () => { await bloqueA; return A; } };
+    const pA = rejouerJournalEnAttente(depsA, A);
+    await rejouerJournalEnAttente(deps2, B);
+    const bFini = x.attente(B).length === 0;
+    lacheA(); await pA;
+    verdict(
+      "R1 bis · le rejeu de A ne bloque pas celui de B",
+      bFini,
+      bFini ? "B rejoué pendant que A attendait" : "B attendait A",
+    );
+  }
+
+  /* 5 · Un maillon de relais se récupère depuis la file. */
+  {
+    const { m, deps, attente } = monde();
+    m.panne.maillon = 1;
+    const r1 = await finaliserSeance(deps, nouvelleAttente({ journal: unJournal(), cible: null, relaisRunId: "run-1" }));
+    verdict(
+      "R1 bis · le relais est gardé avec la séance",
+      r1.journal === "enregistre" && !r1.finalisee && attente()[0]?.relaisRunId === "run-1" && attente()[0]?.maillon === "a_faire",
+      "le maillon reste à valider",
+    );
+    await rejouerJournalEnAttente(deps, A);
+    verdict(
+      "R1 bis · le rejeu valide le maillon, une seule fois",
+      m.maillons.length === 1 && m.maillons[0].runId === "run-1" && m.maillons[0].seanceId === r1.seanceId
+        && attente().length === 0,
+      `${m.maillons.length} maillon`,
+    );
+    verdict(
+      "R1 bis · l'affiche se récupère aussi, une par séance",
+      m.affiches.size === 1 && r1.afficheGardee,
+      `${m.affiches.size} affiche`,
+    );
+  }
+
+  /* 6 · Sans la migration, la séance reste ENTIÈRE sur l'appareil. */
+  {
+    const { m, deps, attente } = monde();
+    m.migration = false;
+    const j = unJournal();
+    const r = await finaliserSeance(deps, nouvelleAttente({ journal: j, cible: cibleIntention }));
+    const gardee = attente()[0];
+    verdict(
+      "R1 bis · migration absente : rien n'est déclaré réussi, rien ne s'écrit à moitié",
+      r.journal === "en_attente" && r.raison === "migration_absente" && m.seances.size === 0
+        && m.fermetures.length === 0 && gardee?.journal.series.length === j.series.length,
+      `${gardee?.journal.series.length} séries gardées`,
+    );
+    m.migration = true;
+    await rejouerJournalEnAttente(deps, A);
+    await rejouerJournalEnAttente(deps, A);
+    verdict(
+      "R1 bis · après la migration, la séance part une fois, avec ses séries",
+      m.seances.size === 1 && [...m.seances.values()][0].series === j.series.length && attente().length === 0,
+      `${m.seances.size} séance`,
+    );
+  }
+
+  /* 7 · Ce que l'écran affirme est vrai, et le journal ne bouge plus. */
+  {
+    const { m, deps } = monde();
+    m.migration = false;
+    m.panne.stockage = true;
+    const r = await finaliserSeance(deps, nouvelleAttente({ journal: unJournal(), cible: null }));
+    verdict(
+      "R1 bis · « gardée sur ce téléphone » seulement si le stockage l'a gardée",
+      r.journal === "en_attente" && r.gardeeSurAppareil === false,
+      "le stockage a refusé, l'écran le sait",
+    );
+    const w = monde();
+    w.m.migration = false;
+    const j1 = unJournal(A, "2026-10-03T08:40:00.000Z");
+    await finaliserSeance(w.deps, nouvelleAttente({ journal: j1, cible: null }));
+    /* Un second essai avec un journal reconstruit plus tard : c'est le
+       journal GARDÉ qui part, son heure de fin ne bouge pas. */
+    w.m.migration = true;
+    const capte: string[] = [];
+    const deps2: Dependances = { ...w.deps, enregistrer: async (j) => { capte.push(j.fin); return w.deps.enregistrer(j); } };
+    await finaliserSeance(deps2, nouvelleAttente({ journal: { ...j1, fin: "2026-10-03T09:15:00.000Z" }, cible: null }));
+    verdict(
+      "R1 bis · réessayer renvoie le même journal, pas une heure de fin nouvelle",
+      capte[0] === j1.fin,
+      capte[0] ?? "rien",
+    );
+    /* Deux finalisations simultanées du même lancement : une écriture. */
+    const y = monde();
+    const e = nouvelleAttente({ journal: unJournal(), cible: null });
+    await Promise.all([finaliserSeance(y.deps, e), finaliserSeance(y.deps, e)]);
+    verdict(
+      "R1 bis · deux finalisations simultanées n'écrivent qu'une fois",
+      y.m.appelsEcriture === 1,
+      `${y.m.appelsEcriture} écriture`,
+    );
+  }
+
+  /* ── Tour 10 · le propriétaire se fixe au départ, une suite qui traîne se voit ── */
+  {
+    /* A commence, B est connecté à la fin : la séance reste celle de A. */
+    const proprio = proprietaireDeLaSeance(A, B);
+    const w = monde();
+    w.m.session = B;
+    const r = await finaliserSeance(w.deps, nouvelleAttente({ journal: unJournal(proprio ?? B), cible: cibleIntention }));
+    const rienChezB = [...w.m.seances.values()].every((x) => x.proprietaire !== B);
+    verdict(
+      "Tour 10 · A commence, B est connecté à la fin : le journal appartient à A",
+      proprio === A && r.raison === "compte_different" && rienChezB
+        && w.attente(A).length === 1 && w.attente(B).length === 0,
+      `propriétaire ${proprio === A ? "A" : "B"}, ${w.attente(A).length} en attente chez A`,
+    );
+    /* … et la séance attend le retour de A, puis part sous A. */
+    w.m.session = A;
+    await rejouerJournalEnAttente(w.deps, A);
+    const chezA = [...w.m.seances.values()].filter((x) => x.proprietaire === A).length;
+    verdict(
+      "Tour 10 · au retour de A, sa séance part sous A et se referme",
+      chezA === 1 && w.attente(A).length === 0 && w.m.fermetures[0]?.userId === A,
+      `${chezA} séance chez A`,
+    );
+    verdict(
+      "Tour 10 · sans compte au départ, on prend celui de la fin",
+      proprietaireDeLaSeance(null, B) === B && proprietaireDeLaSeance(null, null) === null,
+      "personne n'était connecté au départ",
+    );
+
+    /* Le parcours complet : journal enregistré, fermeture en échec, état
+       de reprise visible, puis finalisation réussie. */
+    const p = monde();
+    p.m.panne.fermer = 1;
+    const e = nouvelleAttente({ journal: unJournal(), cible: cibleIntention, relaisRunId: "run-1" });
+    const r1 = await finaliserSeance(p.deps, e);
+    const etat1 = etatFinDeSeance(r1);
+    verdict(
+      "Tour 10 · journal enregistré, fermeture ratée : la séance reste une réussite, la suite se voit",
+      r1.journal === "enregistre" && !r1.finalisee && r1.reste.join() === "fermeture"
+        && etat1.genre === "suites" && etat1.texte.startsWith("Séance enregistrée.")
+        && etat1.texte.includes("ton planning") && etat1.texte.includes("tout seul"),
+      etat1.genre === "ok" ? "aucune ligne" : etat1.texte,
+    );
+    const r2 = await finaliserSeance(p.deps, e);
+    verdict(
+      "Tour 10 · « Réessayer » termine la suite, sans réécrire le journal ni le maillon",
+      r2.finalisee && etatFinDeSeance(r2).genre === "ok" && p.m.appelsEcriture === 1
+        && p.m.maillons.length === 1 && p.m.fermetures.length === 1 && p.attente().length === 0,
+      `${p.m.appelsEcriture} écriture, ${p.m.maillons.length} maillon, ${p.m.fermetures.length} fermeture`,
+    );
+    /* Le stockage refuse : la ligne ne promet pas une reprise automatique. */
+    const q = monde();
+    q.m.panne.fermer = 1;
+    q.m.panne.stockage = true;
+    const r3 = await finaliserSeance(q.deps, nouvelleAttente({ journal: unJournal(), cible: cibleIntention }));
+    const etat3 = etatFinDeSeance(r3);
+    verdict(
+      "Tour 10 · stockage refusé : « réessaie avant de quitter », jamais « tout seul »",
+      etat3.genre === "suites" && !etat3.texte.includes("tout seul") && etat3.texte.includes("réessaie"),
+      etat3.genre === "ok" ? "aucune ligne" : etat3.texte,
+    );
+    /* Plusieurs suites : nommées dans l'ordre où elles se font. */
+    const z = monde();
+    z.m.panne.fermer = 1;
+    z.m.panne.maillon = 1;
+    const r4 = await finaliserSeance(z.deps, nouvelleAttente({ journal: unJournal(), cible: cibleIntention, relaisRunId: "run-2" }));
+    const etat4 = etatFinDeSeance(r4);
+    verdict(
+      "Tour 10 · plusieurs suites se nomment toutes, dans l'ordre",
+      etat4.genre === "suites" && etat4.texte.includes("ton planning et le maillon du relais"),
+      etat4.genre === "ok" ? "aucune ligne" : etat4.texte,
+    );
+    /* Changement de compte ET stockage plein : aucune promesse d'attente. */
+    const v = monde();
+    v.m.session = B;
+    v.m.panne.stockage = true;
+    const r5 = await finaliserSeance(v.deps, nouvelleAttente({ journal: unJournal(A), cible: null }));
+    const etat5 = etatFinDeSeance(r5);
+    verdict(
+      "Tour 11 · compte changé et stockage plein : « laisse cet écran ouvert », jamais « elle attend »",
+      r5.raison === "compte_different" && !r5.gardeeSurAppareil && etat5.genre === "journal"
+        && !etat5.texte.includes("attend son retour") && etat5.texte.includes("Laisse cet écran ouvert"),
+      etat5.genre === "ok" ? "aucune ligne" : etat5.texte,
+    );
+    verdict(
+      "Tour 11 · compte changé, stockage disponible : la séance attend sur ce téléphone",
+      etatFinDeSeance(r).genre === "journal" && (etatFinDeSeance(r) as { texte: string }).texte.includes("attend son retour sur ce téléphone"),
+      "la promesse ne vaut que si l'appareil l'a gardée",
+    );
+    verdict(
+      "Tour 10 · journal pas enregistré : c'est le journal qui se dit, pas les suites",
+      etatFinDeSeance(r).genre === "journal" && etatFinDeSeance(r).genre !== "suites",
+      "compte différent au départ",
+    );
+  }
+
+  /* ── Le chemin, ce qu'aucune simulation ne voit ── */
+  const sources = (dir: string): string[] => readdirSync(new URL("../" + dir, import.meta.url), { withFileTypes: true })
+    .flatMap((d) => d.isDirectory() ? sources(dir + "/" + d.name) : /\.tsx?$/.test(d.name) ? [dir + "/" + d.name] : []);
+  const appelants = sources("src").filter((f) => /terminerSeance\(|:\s*terminerSeance\b/.test(lire1(f)) && !f.endsWith("finSeance.ts"));
+  verdict(
+    "R1 · SOURCE · seule la finalisation du journal referme la cible",
+    appelants.length === 1 && appelants[0] === "src/lib/journalSeance.ts",
+    appelants.join(", "),
+  );
+  const tunnel = lire1("src/components/WorkoutGuideModal.tsx");
+  verdict(
+    "R1 · SOURCE · le tunnel n'a plus de onComplete, il enregistre par finaliserSeance",
+    !/onComplete/.test(tunnel) && tunnel.includes("finaliserSeance(") && !tunnel.includes('from("workout_sessions")')
+      && !tunnel.includes('from("posts")') && !tunnel.includes("validerMaillon("),
+    "séance, maillon et affiche passent tous par la finalisation",
+  );
+  verdict(
+    "R1 · SOURCE · started_at reçoit l'heure du DÉBUT",
+    !/started_at:\s*new Date\(\)/.test(tunnel) && tunnel.includes("debutRef.current = Date.now()"),
+    "plus l'heure de la fin",
+  );
+  verdict(
+    "R1 bis · SOURCE · le tunnel construit le journal une seule fois et garde le relais",
+    tunnel.includes("journalRef.current ??= journalDe(") && tunnel.includes("relaisRunId: relaisRunId ?? null"),
+    "« Réessayer » réutilise le même journal",
+  );
+  verdict(
+    "Tour 10 · SOURCE · le propriétaire se fige dans startWorkout, jamais à l'enregistrement",
+    /const startWorkout = \(\) => \{[^}]*proprietaireRef\.current = user\?\.id/.test(tunnel)
+      && tunnel.includes("proprietaireDeLaSeance(proprietaireRef.current")
+      && !/proprietaire:\s*user\.id/.test(tunnel),
+    "le compte du départ, pas celui de la fin",
+  );
+  verdict(
+    "Tour 10 · SOURCE · le tunnel montre aussi une finalisation partielle",
+    tunnel.includes("etatFinDeSeance(r)") && tunnel.includes("finIncomplete.texte")
+      && !/r\.journal !== "enregistre"\) \{\s*set/.test(tunnel),
+    "la phrase vient de etatFinDeSeance, « Réessayer » reste là",
+  );
+  const presence = lire1("src/components/PresenceDuJour.tsx");
+  verdict(
+    "Tour 10 · SOURCE · le rejeu repart au retour au premier plan et au retour du réseau",
+    presence.includes('addEventListener("visibilitychange"') && presence.includes('addEventListener("online"')
+      && presence.includes('removeEventListener("online"'),
+    "une PWA restée ouverte se reprend aussi",
+  );
+  const journalSrc = lire1("src/lib/journalSeance.ts");
+  verdict(
+    "R1 bis · SOURCE · plus aucun repli vers l'ancienne écriture",
+    !journalSrc.includes('from("workout_sessions")') && journalSrc.includes('"PGRST202") return { etat: "migration_absente" }'),
+    "sans la fonction en base, la séance attend",
+  );
+  verdict(
+    "R1 · SOURCE · les séances en attente se rejouent au retour dans l'app",
+    lire1("src/components/PresenceDuJour.tsx").includes("rejouerJournalEnAttente(dependancesReelles("),
+    "monté dans le layout",
+  );
+  const sql = lire1("supabase/migrations/20261003_r1_journal_series.sql");
+  verdict(
+    "R1 · SQL · un lancement ne s'enregistre qu'une fois, séance et séries en une transaction",
+    sql.includes("uniq_workout_lancement") && sql.includes("'deja', true")
+      && sql.includes("on conflict (user_id, lancement_id)") && /security definer/i.test(sql),
+    "idempotent sur le lancement",
+  );
+  verdict(
+    "R1 bis · SQL · la base vérifie le propriétaire du journal",
+    sql.indexOf("proprietaire_different") > 0
+      && sql.indexOf("proprietaire_different") < sql.indexOf("insert into public.workout_sessions"),
+    "avant toute écriture",
+  );
+  verdict(
+    "R1 bis · SQL · fermeture, maillon et affiche sont uniques par lancement ou par séance",
+    sql.includes("uniq_intention_lancement unique (user_id, lancement_id)")
+      && sql.includes("uniq_action_par_seance") && sql.includes("'deja_valide'")
+      && sql.includes("uniq_affiche_par_seance"),
+    "chaque suite se rejoue sans doublon",
+  );
+  verdict(
+    "R1 · SQL · aucune écriture directe sur les séries, lecture de ses seules lignes",
+    sql.includes('for select') && !/for (insert|update|delete)/i.test(sql) && sql.includes("auth.uid() = user_id"),
+    "on écrit par enregistrer_seance",
   );
 }
 

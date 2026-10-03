@@ -12,19 +12,19 @@
    toutes et expose launchWorkout(). Le tunnel s'auto-enregistre déjà
    (workout_sessions + maillon de relais).
 
-   ⚠️ V7A : IL FERME AUSSI CE QUE LA SÉANCE REFERME, ET C'EST LE SEUL
-   ENDROIT QUI LE FAIT. La logique vivait dans `/progression`, le seul
+   ⚠️ V7A : IL TRANSMET AUSSI CE QUE LA SÉANCE REFERME. Depuis R1, c'est
+   la finalisation du journal (`journalSeance.ts`) qui appelle
+   `terminerSeance`, une fois la séance enregistrée. La logique vivait dans `/progression`, le seul
    écran qui savait lancer une séance du planning ; l'accueil sait le
    faire maintenant, donc la garder là-bas aurait donné deux autorités
    pour une même écriture. L'appelant déclare CE QU'IL LANCE (`cible`),
    `terminerSeance` décide de ce qui s'écrit.
    ════════════════════════════════════════════════════════════════════ */
 
-import { createContext, useCallback, useContext, useRef, useState } from "react";
+import { createContext, useCallback, useContext, useState } from "react";
 import { AnimatePresence } from "framer-motion";
 import WorkoutGuideModal, { type Exercise } from "@/components/WorkoutGuideModal";
-import { useAuth } from "@/context/AuthContext";
-import { terminerSeance, verrouDeFermeture, type CibleSeance } from "@/lib/finSeance";
+import type { CibleSeance } from "@/lib/finSeance";
 
 export type WorkoutLaunchInput = {
   sessionId: string;
@@ -60,12 +60,8 @@ export function useWorkoutLaunch(): Value {
 }
 
 export function WorkoutLaunchProvider({ children }: { children: React.ReactNode }) {
-  const { user } = useAuth();
   const [active, setActive] = useState<WorkoutLaunchInput | null>(null);
   const launchWorkout = useCallback((w: WorkoutLaunchInput) => setActive(w), []);
-  /* Une fermeture par lancement, et le lancement EST son objet : un
-     callback rejoué ne peut plus écrire une seconde fois. */
-  const dejaFerme = useRef(verrouDeFermeture());
 
   return (
     <Ctx.Provider value={{ launchWorkout }}>
@@ -83,12 +79,13 @@ export function WorkoutLaunchProvider({ children }: { children: React.ReactNode 
             exerciseList={active.exerciseList}
             onGarder={active.onGarder}
             relaisRunId={active.relaisRunId}
-            onComplete={active.cible && user
-              ? () => {
-                  if (!dejaFerme.current(active)) return;
-                  void terminerSeance(user.id, active.cible!);
-                }
-              : undefined}
+            /* R1 · la cible part AVEC la séance : le tunnel l'enregistre au
+               journal, puis la referme par `terminerSeance`, et la garde en
+               attente si l'enregistrement échoue. Un lancement ne referme
+               qu'une fois parce que la base refuse d'enregistrer deux fois
+               le même (identifiant de lancement), pas par un verrou en
+               mémoire qui ne survit pas à un rechargement. */
+            cible={active.cible ?? null}
             onClose={() => setActive(null)}
           />
         )}

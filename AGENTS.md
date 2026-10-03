@@ -191,6 +191,42 @@ quelqu'un qui a déjà choisi et qui est hors ligne.
 
 ## Chantiers en cours (juillet 2026)
 
+- **⭐ REFONTE DU PLANNING · R1 + R1 bis « LE JOURNAL DIT LA VÉRITÉ » (Claude + Codex, 2026-10-03, branche `claude/zen-franklin-huz5qv`, base `main`).**
+  - Décisions dans `docs/refonte-planning/DECISIONS.md` (points 17 à 60). Maquettes 04 à 07 ; la 07 a le GO de Louis.
+  - Plan dans `docs/refonte-planning/PLAN-IMPLEMENTATION.md`, ordre R1 → R6 → R2 → R3 → R4 → R5 → R9 → R7 → R8.
+  - **⚠️ LA FIN DE SÉANCE A UNE SEULE AUTORITÉ ET UN ORDRE.** `finaliserSeance` (`src/lib/journalSeance.ts`) fait, dans l'ordre :
+    1. le journal (séance + séries) ;
+    2. la cible du planning (`terminerSeance` → `fermerCible`) ;
+    3. le maillon du relais ;
+    4. l'affiche.
+
+    Les suites ne dépendent que du journal. Le tunnel n'a plus d'`onComplete` : on lui passe `cible`.
+    - **Ne jamais rappeler `terminerSeance`, `validerMaillon` ni écrire `posts` ailleurs** ; le banc le vérifie.
+  - **⚠️ UN LANCEMENT = UN IDENTIFIANT, ET CHAQUE SUITE EST UNIQUE EN BASE (R1 bis).**
+    - Une séance par lancement (`uniq_workout_lancement`).
+    - Une intention refermée par lancement (`intentions_entrainement.lancement_id`, `uniq_intention_lancement`).
+    - Un maillon par séance (`uniq_action_par_seance`).
+    - Une affiche par séance (`uniq_affiche_par_seance`).
+
+    Tout se rejoue donc sans doublon.
+  - **⚠️ RIEN NE QUITTE L'APPAREIL AVANT D'ÊTRE FAIT.**
+    - `vaiiya_journal_attente_<user>` garde le travail entier : propriétaire, journal construit une fois, cible, relais, état de chaque étape.
+    - Le travail se reprend au retour dans l'app (`PresenceDuJour`), **pour ce compte seulement**.
+    - La base refuse un journal dont `proprietaire` n'est pas `auth.uid()`.
+  - **⚠️ LA FERMETURE SE DATE AVEC LE JOURNAL, JAMAIS AVEC L'HORLOGE** (`faitDeLaSeance`) : une séance récupérée le lendemain reste faite la veille.
+  - **⚠️ LE JOURNAL N'AFFIRME QUE CE QUI A ÉTÉ DÉCLARÉ.**
+    - `series_realisees` porte une ligne par série PRÉVUE (`terminee` / `passee` / `non_atteinte`), sa prescription, et la façon dont elle s'est terminée (`bouton` / `minuteur_fini` / `minuteur_abrege`).
+    - Les répétitions et la charge déclarées restent vides jusqu'à R3.
+    - Une charge inconnue n'est jamais zéro.
+  - **⚠️ `exercice_cle` VIENT DE `src/lib/exerciceCle.ts`, TABLE FIGÉE.**
+    - Les 102 clés y sont recopiées en dur depuis les personnages-guides ; ne jamais en changer une.
+    - Un nom inconnu reçoit `null`, jamais une équivalence devinée.
+  - `started_at` reçoit enfin l'heure du DÉBUT de la séance.
+  - **✅ SQL APPLIQUÉ PAR LOUIS LE 2026-10-03 : `supabase/migrations/20261003_r1_journal_series.sql`.** Vérifié en base, puis 14 scénarios joués sous le rôle `authenticated` avec deux vrais comptes, dans une transaction annulée : premier appel et rejeu, journal sans propriétaire refusé, journal de A refusé sous B, écriture directe des séries refusée, seconde fermeture, seconde affiche et second maillon refusés, B ne voit ni la séance ni les séries de A. Il n'y a **plus de repli** : sans la migration, chaque séance reste en attente sur l'appareil.
+  - **⚠️ LE PROPRIÉTAIRE SE FIGE AU DÉPART (tour 10).** `startWorkout` le capture, `proprietaireDeLaSeance` le rend ; le compte de la fin ne sert que si personne n'était connecté au départ. Si A commence et que B est connecté à la fin, la séance attend le retour de A.
+  - **⚠️ UNE SUITE QUI TRAÎNE SE VOIT (tour 10).** `etatFinDeSeance` décide la phrase : la séance enregistrée reste une réussite, une ligne secondaire nomme ce qui reste (planning, relais, affiche) avec « Réessayer », et ne promet une reprise automatique que si l'appareil a gardé le travail. Le rejeu repart aussi au retour au premier plan et au retour du réseau (`PresenceDuJour`).
+  - `check:programme` joue la vraie finalisation contre une base en mémoire avec ses pannes, avec trois témoins vérifiés. Les transactions et les droits restent à exercer sur la vraie base.
+
 - **⭐ LE RÉCAP D’HIER EST UN POPUP, AVANTAGE VAIIYA+ (Louis, 2026-09-25, branche `travail-actuel`).** Première version (le texte sous « Bonjour ») refaite le même jour : Louis voulait **un popup** avec les chiffres d’hier et le Guide qui dit un truc super positif. À la première ouverture de la journée, `components/accueil/RecapHier.tsx` montre les séances, le temps, les **séries** (somme des `sets` des exercices enregistrés), les kcal dépensées, les repas et kcal mangées, l’EXP, puis une phrase très enthousiaste de Nora ou Sasha (visage `encourage`) et « C’est parti » / « En parler avec … ».
   - **TOUJOURS POSITIF ET RIEN D’INVENTÉ.** La route `/api/assistant/recap` lit les faits en base et les rend (`faits`) avec la phrase ; le client ne donne que ses bornes d’hier, sa série et son rang. **Seules les valeurs non nulles s’affichent**, et **une journée vide n’ouvre pas de popup** (une grille de zéros serait un reproche). La phrase n’accorde rien au genre (« tu es sur une super lancée », jamais « bien parti(e) »). Règles : `src/lib/recapJour.ts`.
   - **Le coach connaît le récap** : `AssistantContext` envoie `recapHier` (`recapPourCoach`, récap du jour parisien seulement) et `/api/chat` l’ajoute au prompt. Avant, « t’en penses quoi de mon récap ? » faisait répondre « quel récapitulatif ? ».
