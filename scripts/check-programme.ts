@@ -16,7 +16,12 @@
    transaction annulée.
    ════════════════════════════════════════════════════════════════════ */
 import { readFileSync, readdirSync } from "node:fs";
-import { verrouDeFermeture } from "@/lib/finSeance";
+import {
+  lignesDuJournal, seriesConfirmees, exercicesFaits, repsPrescrites, type MarquesSeance,
+} from "@/lib/journalSeance";
+import { CLES_EXERCICES, cleExercice } from "@/lib/exerciceCle";
+import { EXERCISE_LIBRARY } from "@/lib/exerciseLibrary";
+import { resolveGuide } from "@/lib/exerciseGuides";
 import { etapesDuCycle, etapeSuivante, nomDeProgramme, positionRefermee, POSITION_INITIALE } from "@/lib/programme";
 import { etatJournee, intentionDeLEtape, lancementDuJour, libelleReservation, repetitionDuJour } from "@/lib/journee";
 import {
@@ -447,9 +452,9 @@ verdict(
     "le lecteur guidé vit dans WorkoutLaunchContext",
   );
   verdict(
-    "V7A · le lanceur global referme ce que la séance referme",
-    lanceur.includes("terminerSeance(") && lanceur.includes("onComplete="),
-    "onComplete → terminerSeance",
+    "R1 · le lanceur global transmet la cible au tunnel, il ne referme plus rien lui-même",
+    lanceur.includes("cible={active.cible") && !lanceur.includes("terminerSeance(") && !lanceur.includes("onComplete="),
+    "la cible part avec la séance, la finalisation du journal la referme",
   );
   /* ⚠️ ON BALAYE TOUT `src/`, ET PAS UNE LISTE ÉCRITE À LA MAIN.
      Première version, ce contrôle nommait trois fichiers : l'écran, le
@@ -834,23 +839,8 @@ verdict(
     "→ " + (suivante5(journalPush)?.nom ?? "rien"),
   );
 
-  /* ── Une fermeture par lancement ──
-     ⚠️ ON NE S'EN REMET PAS À « React ne devrait rappeler `onComplete`
-     qu'une fois ». Pour une étape, la fermeture est un `insert` : rejouée,
-     elle écrirait une seconde séance sur la journée. */
-  const dejaFerme = verrouDeFermeture();
-  const lancement = { sessionId: "etape-1" };
-  const autre = { sessionId: "etape-2" };
-  verdict(
-    "V7A · double callback du même lancement → une seule fermeture",
-    dejaFerme(lancement) === true && dejaFerme(lancement) === false,
-    "la seconde est refusée",
-  );
-  verdict(
-    "V7A · un autre lancement referme normalement",
-    dejaFerme(autre) === true,
-    "le verrou porte sur le lancement, pas sur la cible",
-  );
+  /* ── Une fermeture par lancement ── (R1 : c'est la base qui le tient,
+     par l'identifiant de lancement ; voir le bloc « R1 » plus bas.) */
 
   /* Le contrat d'écriture : les trois colonnes vont ensemble ou pas du
      tout (FK composites + deux CHECK en base). */
@@ -5187,6 +5177,171 @@ verdict(
         && ASSISTANT_TOOLS.length === 17;
     })(),
     "316 caractères, 17 outils : un outil de plus ne rallonge pas le prompt d’un signe",
+  );
+}
+
+/* ═══════════════════ R1 · LE JOURNAL DIT LA VÉRITÉ ═══════════════════ */
+{
+  const lire1 = (rel: string) => readFileSync(new URL("../" + rel, import.meta.url), "utf8");
+
+  /* ── La clé stable de chaque exercice ── */
+  const cles = Object.values(CLES_EXERCICES);
+  verdict(
+    "R1 · chaque exercice de la bibliothèque a une clé stable",
+    EXERCISE_LIBRARY.every((e) => cleExercice(e.name) !== null),
+    EXERCISE_LIBRARY.filter((e) => cleExercice(e.name) === null).map((e) => e.name).join(", ") || "102 / 102",
+  );
+  verdict(
+    "R1 · les clés sont uniques",
+    new Set(cles).size === cles.length,
+    cles.length + " clés",
+  );
+  verdict(
+    "R1 · la table figée est d'accord avec les personnages-guides",
+    EXERCISE_LIBRARY.every((e) => resolveGuide(e.name)?.key === cleExercice(e.name)),
+    "une règle d'animation modifiée doit se voir ici avant de déplacer un historique",
+  );
+  verdict(
+    "R1 · la clé ne dépend ni de la casse ni des accents",
+    cleExercice("developpe couche") !== null && cleExercice("DÉVELOPPÉ COUCHÉ") === cleExercice("Développé couché"),
+    String(cleExercice("Développé couché")),
+  );
+  verdict(
+    "R1 · un nom inconnu ne reçoit aucune clé devinée",
+    cleExercice("Squat sumo de mon coach") === null && cleExercice("Mon échauffement") === null,
+    "pas d'équivalence inventée",
+  );
+
+  /* ── Ce que le journal écrit ── */
+  const ex = (name: string, sets: number, reps: string, over: Record<string, unknown> = {}) =>
+    ({ name, sets, reps, rest: 60, tip: "", benefit: "", muscles: [], ...over });
+  const seance = [
+    ex("Hip thrust", 3, "10 reps"),
+    ex("Planche latérale", 2, "40 s", { auto: 40 }),
+    ex("Squat bulgare", 3, "10 par jambe"),
+  ];
+  const marques: MarquesSeance = {
+    0: {
+      0: { statut: "terminee", validation: "bouton", dureeS: null },
+      1: { statut: "terminee", validation: "bouton", dureeS: null },
+      2: { statut: "terminee", validation: "bouton", dureeS: null },
+    },
+    1: {
+      0: { statut: "terminee", validation: "minuteur_fini", dureeS: 40 },
+      1: { statut: "terminee", validation: "minuteur_abrege", dureeS: 25 },
+    },
+    2: { 0: { statut: "terminee", validation: "bouton", dureeS: null }, 1: { statut: "passee" }, 2: { statut: "passee" } },
+  };
+  const lignes = lignesDuJournal(seance, marques);
+  verdict("R1 · une ligne par série PRÉVUE", lignes.length === 8, lignes.length + " lignes");
+  verdict(
+    "R1 · le récapitulatif compte les séries faites, pas les séries prévues",
+    seriesConfirmees(marques) === 6 && exercicesFaits(marques) === 3,
+    seriesConfirmees(marques) + " séries sur 8",
+  );
+  verdict(
+    "R1 · aucune répétition supposée exacte avant R3",
+    lignes.every((l) => l.reps_declarees === null),
+    "la prescription est gardée à côté, la valeur déclarée reste vide",
+  );
+  verdict(
+    "R1 · la prescription accompagne chaque série",
+    lignes[0].reps_prescrites === 10 && lignes[0].mesure === "reps"
+      && lignes[3].mesure === "duree" && lignes[3].duree_prescrite_s === 40
+      && repsPrescrites("10 par jambe") === 10 && repsPrescrites("au max") === null,
+    "10 reps, 40 s",
+  );
+  verdict(
+    "R1 · un minuteur abrégé n'est pas un minuteur fini",
+    lignes[3].validation === "minuteur_fini" && lignes[3].duree_s === 40
+      && lignes[4].validation === "minuteur_abrege" && lignes[4].duree_s === 25,
+    "40 s tenues, puis 25 s",
+  );
+  verdict(
+    "R1 · passer est un geste, ne pas atteindre n'en est pas un",
+    lignes[6].statut === "passee" && lignes[6].validation === null
+      && lignesDuJournal([ex("Hip thrust", 2, "10")], {})[0].statut === "non_atteinte",
+    "passee ≠ non_atteinte",
+  );
+  verdict(
+    "R1 · deux passages du même exercice gardent deux emplacements",
+    (() => {
+      const l = lignesDuJournal([ex("Squat", 1, "10"), ex("Pompes", 1, "10"), ex("Squat", 1, "10")], {});
+      return l[0].exercice_cle === l[2].exercice_cle && l[0].emplacement !== l[2].emplacement;
+    })(),
+    "clé identique, emplacement différent",
+  );
+  verdict(
+    "R1 · un exercice perso garde son nom, sans clé",
+    (() => { const l = lignesDuJournal([ex("Mon circuit maison", 1, "10")], {})[0]; return l.exercice_cle === null && l.exercice_nom === "Mon circuit maison"; })(),
+    "enregistrable, pas comparable",
+  );
+
+  /* ── Le chemin : le journal d'abord, la cible ensuite ── */
+  const journal = lire1("src/lib/journalSeance.ts");
+  const fin = journal.slice(journal.indexOf("export async function finaliserSeance"));
+  verdict(
+    "R1 · SOURCE · la cible ne se referme qu'après l'enregistrement, et seulement s'il est neuf",
+    fin.indexOf("enregistrerJournal(") > 0
+      && fin.indexOf("enregistrerJournal(") < fin.indexOf("terminerSeance(")
+      && /if \(!r\.ok\) return r;/.test(fin) && fin.includes('!r.deja || cible.genre === "intention"'),
+    "journal → cible, jamais l'inverse",
+  );
+  verdict(
+    "R1 · SOURCE · une séance ratée reste en attente avant même le premier essai",
+    fin.indexOf("mettreEnAttente(") < fin.indexOf("enregistrerJournal(")
+      && fin.indexOf("retirerAttente(") > fin.indexOf("terminerSeance("),
+    "on la retire seulement quand tout est fait",
+  );
+  const sources = (dir: string): string[] => readdirSync(new URL("../" + dir, import.meta.url), { withFileTypes: true })
+    .flatMap((d) => d.isDirectory() ? sources(dir + "/" + d.name) : /\.tsx?$/.test(d.name) ? [dir + "/" + d.name] : []);
+  const appelants = sources("src").filter((f) => /terminerSeance\(/.test(lire1(f)) && !f.endsWith("finSeance.ts"));
+  verdict(
+    "R1 · SOURCE · seule la finalisation du journal appelle terminerSeance",
+    appelants.length === 1 && appelants[0] === "src/lib/journalSeance.ts",
+    appelants.join(", "),
+  );
+  const tunnel = lire1("src/components/WorkoutGuideModal.tsx");
+  verdict(
+    "R1 · SOURCE · le tunnel n'a plus de onComplete, il enregistre par finaliserSeance",
+    !/onComplete/.test(tunnel) && tunnel.includes("finaliserSeance(") && !tunnel.includes('from("workout_sessions")'),
+    "une seule écriture de la séance",
+  );
+  verdict(
+    "R1 · SOURCE · started_at reçoit l'heure du DÉBUT",
+    !/started_at:\s*new Date\(\)/.test(tunnel) && tunnel.includes("debutRef.current = Date.now()"),
+    "plus l'heure de la fin",
+  );
+  verdict(
+    "R1 · SOURCE · récompenses et affiche suivent une séance ENREGISTRÉE",
+    (() => {
+      const e = tunnel.slice(tunnel.indexOf("const enregistrer = () =>"));
+      return e.indexOf("if (!r.ok)") < e.indexOf("recompenser(") && e.indexOf("recompenser(") > 0
+        && tunnel.slice(tunnel.indexOf("const recompenser")).includes('from("posts")');
+    })(),
+    "rien n'est crédité ni affiché sur une séance absente du journal",
+  );
+  verdict(
+    "R1 · SOURCE · un échec se dit et se réessaie",
+    tunnel.includes("setEchecJournal(true)") && tunnel.includes("enregistrer(); }}"),
+    "« Pas encore enregistrée · Réessayer »",
+  );
+  verdict(
+    "R1 · SOURCE · les séances en attente se rejouent au retour dans l'app",
+    lire1("src/components/PresenceDuJour.tsx").includes("rejouerJournalEnAttente("),
+    "monté dans le layout",
+  );
+  const sql = lire1("supabase/migrations/20261003_r1_journal_series.sql");
+  verdict(
+    "R1 · SQL · un lancement ne s'enregistre qu'une fois, séance et séries en une transaction",
+    sql.includes("uniq_workout_lancement") && sql.includes("'deja', true")
+      && sql.includes("on conflict (user_id, lancement_id)") && /security definer/i.test(sql),
+    "idempotent sur le lancement",
+  );
+  verdict(
+    "R1 · SQL · aucune écriture directe sur les séries, lecture de ses seules lignes",
+    sql.includes('for select') && !/for (insert|update|delete)/i.test(sql) && sql.includes("auth.uid() = user_id"),
+    "on écrit par enregistrer_seance",
   );
 }
 

@@ -22,6 +22,11 @@ import { noterBadges } from "@/lib/celebrationBadge";
 import { chargerBadgesAura } from "@/lib/badgesAura";
 import type { Badge } from "@/lib/badges";
 import { useAuth } from "@/context/AuthContext";
+import type { CibleSeance } from "@/lib/finSeance";
+import {
+  DUREE_EFFORT_HIIT, exercicesFaits, finaliserSeance, journalDe, nouveauLancement,
+  seriesConfirmees, type MarquesSeance, type Validation,
+} from "@/lib/journalSeance";
 import { useAssistant } from "@/context/AssistantContext";
 import { GUIDE_SECTIONS, sectionSessionId } from "@/lib/guideSections";
 import { WAVE_1_EXERCISES } from "@/lib/workoutWave1";
@@ -135,7 +140,9 @@ export interface WorkoutGuideModalProps {
   category?: string;
   heroImage?: string;
   onClose: () => void;
-  onComplete?: () => void;
+  /** Ce que la séance referme au planning une fois ENREGISTRÉE (R1) :
+   *  le journal d'abord, la cible ensuite, jamais l'inverse. */
+  cible?: CibleSeance | null;
   exerciseList?: Exercise[];
   /** Présent = la séance n'existe nulle part (une impro) et peut être gardée.
       La page décide, le tunnel ne fait qu'afficher la proposition. */
@@ -170,7 +177,7 @@ function vibrer(pattern: number | number[]) {
 }
 
 /* ─── Constants ──────────────────────────────────────────── */
-const HIIT_WORK = 20;
+const HIIT_WORK = DUREE_EFFORT_HIIT;
 const HIIT_REST = 10;
 const CR        = 46;
 const CC        = 2 * Math.PI * CR;
@@ -832,7 +839,7 @@ function BandeBadge({ badges, onAller }: { badges: Badge[]; onAller: () => void 
 }
 
 export default function WorkoutGuideModal({
-  sessionId, title, duration, category, heroImage, onClose, onComplete, exerciseList,
+  sessionId, title, duration, category, heroImage, onClose, cible, exerciseList,
   onGarder, relaisRunId,
 }: WorkoutGuideModalProps) {
   const router = useRouter();
@@ -860,13 +867,23 @@ export default function WorkoutGuideModal({
   const [prep,          setPrep]          = useState(0); // décompte 3-2-1 avant un effort chronométré
   const [badgesGagnes,  setBadgesGagnes]  = useState<Badge[]>([]);
   const [hiitSub,       setHiitSub]       = useState<HiitSub>("work");
-  const [doneMap,       setDoneMap]       = useState<Record<number, Record<number, boolean>>>({});
+  const [doneMap,       setDoneMap]       = useState<MarquesSeance>({});
+  /* R1 · un identifiant par lancement, tiré une fois : la base refuse
+     d'enregistrer deux fois le même, donc un appel rejoué ne double rien. */
+  const [lancementId] = useState(nouveauLancement);
+  /* Comment la série chronométrée en cours se termine si on la valide à la
+     main (« Valider », « Passer l'effort ») : posé par le bouton, lu par
+     l'effet du minuteur. Sans ça, un minuteur abrégé passerait pour fini. */
+  const validationRef = useRef<{ validation: Validation; dureeS: number | null } | null>(null);
   const [startMs,       setStartMs]       = useState(0);
   const [elapsed,       setElapsed]       = useState(0);
   const [paused,        setPaused]        = useState(false);
   const [showInfo,      setShowInfo]      = useState(false);
   const [introOpen,     setIntroOpen]     = useState<number | null>(null); // exo déplié dans la liste "Au programme"
   const [sessionSaved,  setSessionSaved]  = useState(false);
+  /* L'enregistrement a échoué : la séance est gardée sur l'appareil et se
+     rejouera, mais l'écran doit le dire au lieu de faire comme si. */
+  const [echecJournal,  setEchecJournal]  = useState(false);
   // L'affiche s'enregistre TOUTE SEULE dans le profil en fin de séance ; ce
   // drapeau ne sert qu'à le confirmer à l'écran. Elle se revoit, s'envoie et se
   // supprime depuis le profil (galerie « Tes affiches de perf »).
@@ -894,77 +911,87 @@ export default function WorkoutGuideModal({
   const { user } = useAuth();
 
   const pausedAtRef = useRef<number>(0);
+  /** L'instant réel du départ : `startMs` se décale à chaque pause. */
+  const debutRef = useRef<number | null>(null);
 
   /* ── Masque la barre de navigation du bas tant que la séance guidée est ouverte
         (sinon, sur mobile, elle se superpose au bas de la modale). ── */
   useEffect(() => lockBodyModal(), []);
 
-  /* ── Notify parent + auto-save session when workout is done ── */
-  useEffect(() => {
-    if (phase !== "done") return;
-    onComplete?.();
-    // Auto-save to workout_sessions with actual elapsed time + exercises
+  /* ── R1 · LA FIN DE SÉANCE : LE JOURNAL D'ABORD ──
+     L'ordre est la règle (`journalSeance.ts`) : on enregistre la séance et
+     ses séries, ENSUITE on referme la cible du planning, ENSUITE viennent
+     les récompenses. Avant, la cible se refermait avant même de savoir si
+     le journal s'écrirait, et l'erreur d'insertion était avalée. */
+  const enregistrer = () => {
     if (!user) return;
     const supabase = createClient();
     const resolvedCategory = category ?? (sessionId.includes("-") ? sessionId.split("-")[0] : null) ?? "force";
-    supabase.from("workout_sessions").insert({
-      user_id:          user.id,
-      title,
-      category:         resolvedCategory,
-      duration_minutes: Math.round(elapsed / 60) || 1,
-      calories_burned:  Math.round((elapsed / 60) * 6.5),
-      elapsed_seconds:  elapsed,
-      exercises:        exercises,
-      started_at:       new Date().toISOString(),
-    }).select("id").single().then(({ data, error }) => {
-      if (error) return;
+    void finaliserSeance(supabase, user.id, journalDe({
+      lancementId,
+      titre: title,
+      categorie: resolvedCategory,
+      /* ⚠️ L'HEURE DU DÉBUT, PLUS CELLE DE LA FIN. `started_at` recevait
+         l'instant de l'enregistrement : une séance commencée à 8 h 30 et
+         finie à 9 h 10 ne comptait pas pour « Lève-tôt ». */
+      debutMs: debutRef.current,
+      dureeS: elapsed,
+      exercices: exercises,
+      marques: doneMap,
+    }), cible ?? null).then((r) => {
+      if (!r.ok) { setEchecJournal(true); return; }
       setSessionSaved(true);
-      // Le maillon ne se valide QUE si cette séance est le maillon du
-      // relais (lancée par « Lancer mon maillon »). Une séance ordinaire
-      // ne fait plus rien : le relais donne sa séance, on ne triche pas.
-      // Silencieux si le serveur refuse (bloqué par le binôme, plafond du
-      // jour…) : aucune bande, aucun reproche.
-      if (data?.id && relaisRunId) {
-        void validerMaillon(user.id, String(data.id)).then((r) => {
-          if (!r) return;
-          // Le drapeau reste : si on quitte sans toucher la bande, la
-          // grande affiche rejouera la bascule à la première ouverture.
-          sessionStorage.setItem(CLE_DEVOILE, "1");
-          setMaillon(r);
-          // L'écran /defi vit sous ce tunnel (overlay global) : on lui dit
-          // de se recharger pour montrer le nouvel état co-op.
-          window.dispatchEvent(new Event(EVT_RELAIS));
-        });
-      }
-      // La séance qui fait passer un rang doit se fêter ICI, pas à la prochaine
-      // ouverture de l'accueil. Silencieux si le rang n'a pas bougé.
-      /* La séance vient de valider la journée : c'est le bon moment pour
-         montrer la série, pas la prochaine ouverture de l'accueil. Même
-         lecture pour le passage de rang, silencieux si rien n'a bougé. */
-      void calculerAura(supabase, user.id)
-        .then((etat) => {
-          if (!etat) return;
-          noterRang(user.id, etat.rang);
-          if (etat.jourValide) setSerieDuJour(etat.serie);
-        })
-        .catch(() => {});
-
-      /* Les badges se lisent APRÈS l'insertion : le compte de séances et le
-         crédit du jour sont déjà écrits, donc ce que le serveur rend est
-         bien l'état d'après la séance. Silencieux au premier passage et
-         quand rien n'a bougé (voir `noterBadges`). */
-      void chargerBadgesAura(user.id)
-        .then(({ slugs }) => {
-          const neufs = noterBadges(user.id, slugs);
-          if (neufs.length) setBadgesGagnes(neufs);
-        })
-        .catch(() => {});
+      if (r.deja) return;
+      recompenser(supabase, r.id, resolvedCategory);
     });
+  };
+
+  /* Ce qui suit une séance ENREGISTRÉE, et seulement elle. */
+  const recompenser = (supabase: ReturnType<typeof createClient>, seanceId: string, resolvedCategory: string) => {
+    if (!user) return;
+    // Le maillon ne se valide QUE si cette séance est le maillon du
+    // relais (lancée par « Lancer mon maillon »). Une séance ordinaire
+    // ne fait plus rien : le relais donne sa séance, on ne triche pas.
+    // Silencieux si le serveur refuse (bloqué par le binôme, plafond du
+    // jour…) : aucune bande, aucun reproche.
+    if (relaisRunId) {
+      void validerMaillon(user.id, seanceId).then((r) => {
+        if (!r) return;
+        // Le drapeau reste : si on quitte sans toucher la bande, la
+        // grande affiche rejouera la bascule à la première ouverture.
+        sessionStorage.setItem(CLE_DEVOILE, "1");
+        setMaillon(r);
+        // L'écran /defi vit sous ce tunnel (overlay global) : on lui dit
+        // de se recharger pour montrer le nouvel état co-op.
+        window.dispatchEvent(new Event(EVT_RELAIS));
+      });
+    }
+    /* La séance vient de valider la journée : c'est le bon moment pour
+       montrer la série, pas la prochaine ouverture de l'accueil. Même
+       lecture pour le passage de rang, silencieux si rien n'a bougé. */
+    void calculerAura(supabase, user.id)
+      .then((etat) => {
+        if (!etat) return;
+        noterRang(user.id, etat.rang);
+        if (etat.jourValide) setSerieDuJour(etat.serie);
+      })
+      .catch(() => {});
+
+    /* Les badges se lisent APRÈS l'insertion : le compte de séances et le
+       crédit du jour sont déjà écrits, donc ce que le serveur rend est
+       bien l'état d'après la séance. Silencieux au premier passage et
+       quand rien n'a bougé (voir `noterBadges`). */
+    void chargerBadgesAura(user.id)
+      .then(({ slugs }) => {
+        const neufs = noterBadges(user.id, slugs);
+        if (neufs.length) setBadgesGagnes(neufs);
+      })
+      .catch(() => {});
 
     // ── L'affiche part TOUTE SEULE dans le profil ──
     // Audience privée : elle rejoint « Tes affiches de perf », où on la revoit,
     // l'envoie ou la supprime. Aucun upload d'image, juste une ligne `posts`.
-    // Indépendant de l'enregistrement de la séance : si l'un rate, l'autre tient.
+    // Elle suit la séance enregistrée : une affiche sans séance mentirait.
     const elapsedMin = Math.round(elapsed / 60) || 1;
     void supabase.from("posts").insert({
       user_id:  user.id,
@@ -976,15 +1003,20 @@ export default function WorkoutGuideModal({
         title,
         date:      new Date().toLocaleDateString("fr-FR", { day: "numeric", month: "long" }),
         metrics:   [
-          { label: "Durée",     value: String(elapsedMin),           unit: "min" },
-          { label: "Exercices", value: String(exercises.length),     unit: ""    },
-          { label: "Séries",    value: String(exercises.reduce((a, e) => a + e.sets, 0)), unit: "" },
+          { label: "Durée",     value: String(elapsedMin),                 unit: "min" },
+          { label: "Exercices", value: String(exercicesFaits(doneMap)),    unit: ""    },
+          { label: "Séries",    value: String(seriesConfirmees(doneMap)),  unit: ""    },
           { label: "Calories",  value: String(Math.round(elapsedMin * 6.5)), unit: "kcal" },
         ],
         exercise_list: exercises,
         category: resolvedCategory,
       },
     }).then(({ error: e2 }) => { if (!e2) setAfficheSaved(true); });
+  };
+
+  useEffect(() => {
+    if (phase !== "done") return;
+    enregistrer();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase]);
 
@@ -1057,10 +1089,10 @@ export default function WorkoutGuideModal({
      Après la toute dernière série de la séance, plus rien ne suit : on va droit
      à l’écran de fin au lieu d’imposer un compte à rebours devant une carte
      « Ensuite » vide et une phrase qui annonce un dernier exercice déjà fini. */
-  const completeSet = useCallback(() => {
+  const completeSet = useCallback((validation: Validation, dureeS: number | null = null) => {
     setDoneMap(prev => ({
       ...prev,
-      [exerciseIdx]: { ...(prev[exerciseIdx] ?? {}), [setIdx]: true },
+      [exerciseIdx]: { ...(prev[exerciseIdx] ?? {}), [setIdx]: { statut: "terminee", validation, dureeS } },
     }));
     const ex         = exercises[exerciseIdx];
     const dernierSet = setIdx + 1 >= (ex?.sets ?? 1);
@@ -1074,6 +1106,20 @@ export default function WorkoutGuideModal({
       setRestTotal(attente); setRestCountdown(attente); setPhase("resting");
     } else advance();
   }, [exercises, exerciseIdx, setIdx, advance]);
+
+  /* ── « Passer l'exercice » : un geste explicite, qui se dit au journal ──
+     Les séries restantes sont « passées », pas « non atteintes » : c'est
+     la seule différence entre sauter et ne pas avoir eu le temps. */
+  const passerExercice = useCallback(() => {
+    const ex = exercises[exerciseIdx];
+    setDoneMap(prev => {
+      const parSerie = { ...(prev[exerciseIdx] ?? {}) };
+      for (let s = setIdx; s < (ex?.sets ?? 1); s++) if (!parSerie[s]) parSerie[s] = { statut: "passee" };
+      return { ...prev, [exerciseIdx]: parSerie };
+    });
+    validationRef.current = null;
+    skipExercise();
+  }, [exercises, exerciseIdx, setIdx, skipExercise]);
 
   /* ── Pause / resume ── */
   const togglePause = useCallback(() => {
@@ -1116,7 +1162,11 @@ export default function WorkoutGuideModal({
     if (autoCountdown <= 0) {
       vibrer(90); // fin d'effort chronométré (ou fin d'un segment HIIT)
       if (cur.hiit && hiitSub === "work") { setHiitSub("rest"); setAutoCountdown(HIIT_REST); return; }
-      completeSet(); return;
+      /* Arrivé au bout tout seul, sauf si un bouton l'a abrégé juste avant. */
+      const v = validationRef.current
+        ?? { validation: "minuteur_fini" as const, dureeS: cur.hiit ? HIIT_WORK : (cur.auto ?? null) };
+      validationRef.current = null;
+      completeSet(v.validation, v.dureeS); return;
     }
     const t = setTimeout(() => setAutoCountdown(c => c - 1), 1000);
     return () => clearTimeout(t);
@@ -1126,6 +1176,7 @@ export default function WorkoutGuideModal({
   /* ── Start ── */
   const startWorkout = () => {
     setStartMs(Date.now());
+    debutRef.current = Date.now();
     setExerciseIdx(0); setSetIdx(0); setDoneMap({}); setPaused(false); setShowInfo(false);
     setPhase("exercising");
     if (exercises[0]?.auto)      { setAutoCountdown(exercises[0].auto); setPrep(3); }
@@ -1415,7 +1466,7 @@ export default function WorkoutGuideModal({
                     {repsSub && <p className="text-[13px] font-medium mt-1" style={{ color: TUN.t3 }}>{repsSub}</p>}
                     <div className="flex gap-2.5 justify-center mt-4">
                       {Array.from({ length: cur.sets }).map((_, i) => {
-                        const isDone = doneMap[exerciseIdx]?.[i];
+                        const isDone = doneMap[exerciseIdx]?.[i]?.statut === "terminee";
                         const isCur  = i === setIdx;
                         return (
                           <span key={i} className="w-[22px] h-[22px] rounded-full inline-flex items-center justify-center"
@@ -1657,9 +1708,9 @@ export default function WorkoutGuideModal({
                 <div className="grid grid-cols-2 gap-2.5 w-full mt-6">
                   {[
                     { l: "DURÉE RÉELLE", v: fmt(elapsed),                c: "#fff",      s: "" },
-                    { l: "SÉRIES",       v: String(totalSets),           c: TUN.teal,    s: ` / ${totalSets}` },
+                    { l: "SÉRIES",       v: String(seriesConfirmees(doneMap)), c: TUN.teal, s: ` / ${totalSets}` },
                     { l: "CALORIES",     v: `~${kcalReal || kcalEst}`,   c: TUN.orange,  s: " kcal" },
-                    { l: "EXERCICES",    v: String(exercises.length),    c: TUN.teal,    s: "" },
+                    { l: "EXERCICES",    v: String(exercicesFaits(doneMap)), c: TUN.teal,  s: ` / ${exercises.length}` },
                   ].map(st => (
                     <div key={st.l} className="rounded-2xl px-3.5 py-3.5 text-left" style={{ background: "rgba(255,255,255,0.05)", border: `1px solid ${TUN.line}` }}>
                       <p className="text-[11px] font-extrabold tracking-[0.18em]" style={{ color: TUN.t3 }}>{st.l}</p>
@@ -1680,6 +1731,21 @@ export default function WorkoutGuideModal({
                     </motion.div>
                   )}
                 </AnimatePresence>
+
+                {/* R1 · un enregistrement raté se DIT. La séance reste gardée sur
+                    l'appareil et se rejouera au prochain passage dans l'app ;
+                    « Réessayer » n'attend pas ce prochain passage. */}
+                {echecJournal && (
+                  <div className="flex items-center gap-3 w-full px-4 py-3 rounded-2xl mt-3 text-left"
+                    style={{ background: "rgba(255,255,255,0.05)", border: `1px solid ${TUN.line}` }}>
+                    <span className="flex-1 text-[13px]" style={{ color: TUN.t2 }}>
+                      Pas encore enregistrée. Elle reste gardée sur ce téléphone.
+                    </span>
+                    <button onClick={() => { setEchecJournal(false); enregistrer(); }} className="text-[13px] font-bold cursor-pointer flex-shrink-0" style={{ color: TUN.lav }}>
+                      Réessayer
+                    </button>
+                  </div>
+                )}
 
                 {/* ── L'invite à laisser un avis, à CHAQUE fin de séance ── */}
                 <AnimatePresence>
@@ -1740,14 +1806,14 @@ export default function WorkoutGuideModal({
             {phase === "exercising" && !isTimered && (
               <motion.div key="set-done" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
                 className="flex flex-col items-center gap-1.5">
-                <motion.button whileTap={{ scale: 0.97 }} onClick={completeSet}
+                <motion.button whileTap={{ scale: 0.97 }} onClick={() => completeSet("bouton")}
                   className="w-full py-[18px] rounded-[22px] flex items-center justify-center gap-2 font-extrabold text-[16px] cursor-pointer text-white"
                   style={{ background: "linear-gradient(100deg,#8B5CF6,#C13BC1)", boxShadow: "0 10px 30px -6px rgba(193,59,193,0.45)" }}
                 >
                   Série terminée ✓
                 </motion.button>
                 {exerciseIdx < exercises.length - 1 && (
-                  <button onClick={skipExercise} className="text-[13px] font-semibold py-2 cursor-pointer" style={{ color: TUN.t3 }}>
+                  <button onClick={passerExercice} className="text-[13px] font-semibold py-2 cursor-pointer" style={{ color: TUN.t3 }}>
                     Passer l&apos;exercice
                   </button>
                 )}
@@ -1757,14 +1823,20 @@ export default function WorkoutGuideModal({
             {phase === "exercising" && isTimered && (
               <motion.div key="skip-timed" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
                 className="flex flex-col items-center gap-1.5">
-                <motion.button whileTap={{ scale: 0.97 }} onClick={() => setAutoCountdown(0)}
+                <motion.button whileTap={{ scale: 0.97 }} onClick={() => {
+                    /* Abréger n'est pas finir : on note la durée réellement tenue.
+                       En HIIT, la marque posée sur l'effort survit au repos qui suit. */
+                    const effort = isHiit ? (hiitSub === "work" ? HIIT_WORK - autoCountdown : null) : (cur?.auto ?? 0) - autoCountdown;
+                    if (!isHiit || hiitSub === "work") validationRef.current = { validation: "minuteur_abrege", dureeS: effort };
+                    setAutoCountdown(0);
+                  }}
                   className="w-full py-[18px] rounded-[22px] flex items-center justify-center gap-2 font-extrabold text-[16px] cursor-pointer text-white"
                   style={{ background: "linear-gradient(100deg,#8B5CF6,#C13BC1)", boxShadow: "0 10px 30px -6px rgba(193,59,193,0.45)" }}
                 >
                   {isHiit && hiitSub === "work" ? "Passer l’effort" : "Valider ✓"}
                 </motion.button>
                 {exerciseIdx < exercises.length - 1 && (
-                  <button onClick={skipExercise} className="text-[13px] font-semibold py-2 cursor-pointer" style={{ color: TUN.t3 }}>
+                  <button onClick={passerExercice} className="text-[13px] font-semibold py-2 cursor-pointer" style={{ color: TUN.t3 }}>
                     Passer l&apos;exercice
                   </button>
                 )}

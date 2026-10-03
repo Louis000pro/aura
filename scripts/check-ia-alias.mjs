@@ -19,6 +19,18 @@ export async function resolve(spec, ctx, next) {
       } catch { /* essai suivant */ }
     }
   }
+  /* Un import relatif sans extension (« ./exerciseGuides ») se résout comme
+     Next le résout, sinon un module de src/ qui en importe un autre est
+     inexerçable hors du build. */
+  if (spec.startsWith(".") && ctx.parentURL?.startsWith("file:") && !path.extname(spec)) {
+    const base = path.resolve(path.dirname(new URL(ctx.parentURL).pathname), spec);
+    for (const ext of [".ts", ".tsx", "/index.ts"]) {
+      try {
+        statSync(base + ext);
+        return next(pathToFileURL(base + ext).href, ctx);
+      } catch { /* essai suivant */ }
+    }
+  }
   return next(spec, ctx);
 }
 

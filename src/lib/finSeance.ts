@@ -9,8 +9,9 @@
    marquerait l'intention, l'autre oublierait de refermer l'étape, et
    l'écart ne se verrait qu'en base, jamais à l'écran.
 
-   La règle est donc : ON NE FERME UNE SÉANCE QU'ICI, et le tunnel global
-   (`WorkoutLaunchContext`) est le seul appelant. Un écran qui lance
+   La règle est donc : ON NE FERME UNE SÉANCE QU'ICI, et le seul appelant
+   est la finalisation du journal (`journalSeance.ts`), APRÈS
+   l'enregistrement de la séance (R1). Un écran qui lance
    déclare CE QU'IL LANCE (`CibleSeance`) ; il ne décide plus de ce qui
    s'écrit à l'arrivée.
 
@@ -55,29 +56,13 @@ export type CibleSeance =
       adaptationId?: string | null;
     };
 
-/**
- * ⚠️ UN LANCEMENT NE REFERME QU'UNE FOIS, ET ÇA NE SE DÉLÈGUE PAS À REACT.
- *
- * Pour une intention, l'écriture est un `update` par `id` : la rejouer ne
- * change rien. Pour une ÉTAPE, c'est un `insert` : un second appel
- * écrirait une seconde ligne « faite » sur la journée. Le cycle, lui, ne
- * bougerait pas deux fois (les deux lignes refermeraient la MÊME étape,
- * et le curseur prend la dernière), mais le journal porterait une séance
- * fantôme, et « le composant ne devrait pas rappeler son callback » n'est
- * pas une garantie, c'est une espérance.
- *
- * Le verrou porte sur l'OBJET du lancement, pas sur la cible : refaire
- * la même étape demain est un nouveau lancement, donc une nouvelle
- * fermeture. `WeakSet` pour ne rien retenir de ce qui est déjà oublié.
- */
-export function verrouDeFermeture(): (lancement: object) => boolean {
-  const fermees = new WeakSet<object>();
-  return (lancement) => {
-    if (fermees.has(lancement)) return false;
-    fermees.add(lancement);
-    return true;
-  };
-}
+/* ⚠️ UN LANCEMENT NE REFERME QU'UNE FOIS, ET DEPUIS R1 C'EST LA BASE QUI
+   LE GARANTIT. Pour une ÉTAPE, la fermeture est un `insert` : rejouée,
+   elle écrirait une seconde séance « faite ». Un verrou en mémoire
+   (`WeakSet`) protégeait l'objet du lancement, mais pas un rechargement
+   ni une requête rejouée. Désormais `finaliserSeance` (journalSeance.ts)
+   n'appelle cette fonction que si SON appel vient d'enregistrer la
+   séance : un même identifiant de lancement ne s'enregistre qu'une fois. */
 
 /**
  * Referme ce que la séance vient de refermer, et rien de plus.

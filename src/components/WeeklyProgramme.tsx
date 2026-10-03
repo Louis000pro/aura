@@ -10,7 +10,6 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import WorkoutGuideModal from "@/components/WorkoutGuideModal";
-import { terminerSeance } from "@/lib/finSeance";
 import {
   lireSemaine, reposerLaSemaine, ctxFromLieu, dayTitle, persistLieu, loadLieu,
   weekDatesForOffset, weekOffsetOf, weekdayIndex, todayWeekIndex, parDate, principale, supplements,
@@ -789,9 +788,7 @@ export default function WeeklyProgramme({ cycle = null }: { cycle?: CycleSemaine
                  de l'accueil restait sur son état d'avant, et cet écran-ci
                  ne se rafraîchissait pas non plus, alors qu'il écoute
                  pourtant `programme-updated` juste au-dessus. */
-              onComplete={launchDay.id
-                ? () => { if (user) void terminerSeance(user.id, { genre: "intention", intentionId: launchDay.id as string }); }
-                : undefined}
+              cible={launchDay.id ? { genre: "intention", intentionId: launchDay.id } : null}
             />
           )}
         </AnimatePresence>,

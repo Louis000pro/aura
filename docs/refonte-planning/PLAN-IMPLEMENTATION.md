@@ -1,4 +1,6 @@
-# Plan d'implémentation de la refonte du planning (proposition, à relire par Codex)
+# Plan d'implémentation de la refonte du planning
+
+**Validé avec Codex au tour 8.** Ordre retenu : **R1 → R6 → R2 → R3 → R4 → R5 → R9 → R7 → R8**. Le code part de `main` (décision de Louis). R1 est codée : voir la fin du fichier.
 
 Base : décisions 17 à 60 de `DECISIONS.md`, maquettes 04 à 07. La maquette 07 a reçu le GO de Louis le 2026-10-03.
 
@@ -77,3 +79,53 @@ On commence par le journal parce que tout le reste se calcule dessus : une progr
 - Une migration SQL par vague, dans `supabase/migrations/`, appliquée seulement avec son accord.
 - Un essai sur la préversion à la fin de R1, R3, R5 et R9.
 - Rien n'est fusionné dans `main` sans son GO.
+
+## Corrections de Codex au tour 8 (retenues)
+
+- **Ordre.** Les occurrences (R6) passent avant la progression : appliquer une proposition à « la prochaine occurrence » demande son identité. R6 couvre tout le parcours de l'identité :
+  - préparation, réservation, lancement ;
+  - déplacement, substitution, fermeture.
+
+  Une occurrence a une identité avant son lancement, même sans date. Refaire C1 crée une séance réalisée sans refermer C1 une seconde fois. R9 passe avant la variété.
+- **Trois identités** :
+  - la clé stable de l'exercice ;
+  - l'emplacement dans la séance (un même exercice peut passer deux fois) ;
+  - l'identifiant de la série.
+- **La bibliothèque n'avait pas de clé stable.** R1 l'ajoute (`src/lib/exerciceCle.ts`). On n'invente aucune équivalence pour un nom inconnu.
+- **La charge** a une unité, un type (totale, par haltère, assistance, poids du corps) et peut rester inconnue, jamais zéro par défaut. Elle appartient à la personne et à son matériel, pas au modèle d'étape (R2).
+- **L'autorité de finalisation** : journal d'abord, cible ensuite, récompenses après ; identifiant de lancement unique en base ; rien ne se perd en cas d'échec ; `started_at` = l'heure du début.
+- **Confirmation ≠ passage.** Avant R3, une série « terminée » n'affirme ni les répétitions ni la charge. Un minuteur fini, un minuteur abrégé et un bouton sont trois faits. « Passée » (geste explicite) ≠ « non atteinte ».
+- **La vérification réelle** : `check:programme` ne prouve ni les transactions, ni les droits, ni la concurrence. Les scénarios suivants sont à jouer sur une base de test :
+  - une finalisation rejouée ;
+  - une insertion refusée sans fermeture ;
+  - les droits sur les séries d'un autre compte ;
+  - C1 avant B1 ;
+  - un remplacement après une série ;
+  - une séance raccourcie.
+- **R9 inclut** « Ma semaine » partagé, les deux semaines modifiables, l'absence, les séances manquées, et la cohérence avec l'accueil, le Guide et les rappels.
+- Les migrations se regroupent selon leurs dépendances réelles, pas une par vague.
+
+## R1 · fait (2026-10-03)
+
+- **`src/lib/journalSeance.ts`.** Les décisions sont pures :
+  - `lignesDuJournal`, `journalDe`, `seriesConfirmees`, `exercicesFaits` ;
+  - `finaliserSeance` : séance en attente → enregistrement → cible refermée → retrait de l'attente ;
+  - `rejouerJournalEnAttente`, appelé par `PresenceDuJour`.
+- **`src/lib/exerciceCle.ts`** : 102 clés figées, alignées sur les personnages-guides.
+- **Le tunnel.**
+  - Le prop `onComplete` disparaît, remplacé par `cible`. Le lanceur global et « Organiser » transmettent la cible au lieu de refermer eux-mêmes.
+  - « Passer l'exercice » marque les séries passées. « Valider » sur un minuteur marque une durée abrégée.
+  - Le récapitulatif compte les séries et exercices faits.
+  - Un échec affiche « Pas encore enregistrée · Réessayer ».
+  - Maillon, rang, badges et affiche ne partent qu'après un enregistrement neuf.
+- **`verrouDeFermeture` est supprimé.** L'unicité est tenue par la base.
+- **SQL `supabase/migrations/20261003_r1_journal_series.sql`** :
+  - colonnes `lancement_id`, `termine_le`, `journal_version` ;
+  - table `series_realisees`, en lecture seule pour son propriétaire ;
+  - fonction `enregistrer_seance(p)` : transactionnelle et idempotente.
+
+  Tant qu'elle n'est pas appliquée, le repli écrit la séance comme avant, sans ses séries.
+- **Limites connues** :
+  - Une séance commencée avant minuit et finie après ne crédite pas les missions du jour : le déclencheur compare la date de `started_at`, désormais l'heure du début.
+  - Si l'app se ferme entre l'enregistrement et la fermeture d'une **étape**, la fermeture n'est pas rejouée : une étape se referme par une insertion, et un double serait pire. R6 le règle avec les occurrences.
+  - Le repli sans migration n'est pas idempotent.
