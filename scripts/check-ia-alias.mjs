@@ -3,7 +3,7 @@
    recopier une version qui divergerait au premier changement.
    Chargé par --import ; Node applique ensuite le retrait de types aux .ts. */
 import { register } from "node:module";
-import { pathToFileURL } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { statSync } from "node:fs";
 import path from "node:path";
 
@@ -21,9 +21,10 @@ export async function resolve(spec, ctx, next) {
   }
   /* Un import relatif sans extension (« ./exerciseGuides ») se résout comme
      Next le résout, sinon un module de src/ qui en importe un autre est
-     inexerçable hors du build. */
+     inexerçable hors du build. ⚠️ `fileURLToPath`, jamais `.pathname` :
+     sous Windows celui-ci rend « /C:/… » et la résolution échoue. */
   if (spec.startsWith(".") && ctx.parentURL?.startsWith("file:") && !path.extname(spec)) {
-    const base = path.resolve(path.dirname(new URL(ctx.parentURL).pathname), spec);
+    const base = path.resolve(path.dirname(fileURLToPath(ctx.parentURL)), spec);
     for (const ext of [".ts", ".tsx", "/index.ts"]) {
       try {
         statSync(base + ext);

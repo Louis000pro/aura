@@ -330,7 +330,14 @@ export type Finalisation = {
   /** Ce qui reste à faire est-il vraiment gardé sur l'appareil ? Faux
    *  quand le stockage a refusé : l'écran ne doit pas promettre le contraire. */
   gardeeSurAppareil: boolean;
+  /** Les suites encore à faire, journal enregistré ou non. */
+  reste: Suite[];
 };
+
+export type Suite = "fermeture" | "maillon" | "affiche";
+
+const suitesRestantes = (e: EnAttente): Suite[] =>
+  (["fermeture", "maillon", "affiche"] as const).filter((k) => e[k] === "a_faire");
 
 const enCours = new Map<string, Promise<Finalisation>>();
 
@@ -377,6 +384,7 @@ async function finaliser(deps: Dependances, initiale: EnAttente): Promise<Finali
       raison, seanceId: e.seanceId, finalisee, maillon,
       afficheGardee: e.affiche === "faite",
       gardeeSurAppareil: finalisee || surAppareil,
+      reste: suitesRestantes(e),
     };
   };
 
@@ -427,6 +435,67 @@ async function finaliser(deps: Dependances, initiale: EnAttente): Promise<Finali
   }
 
   return bilan(raison);
+}
+
+/* ── Ce que l'écran de fin dit du résultat ────────────────────────────── */
+
+/** Les mots des suites, dans l'ordre où elles se font. */
+const NOM_SUITE: Record<Suite, string> = {
+  fermeture: "ton planning",
+  maillon: "le maillon du relais",
+  affiche: "ton affiche",
+};
+
+function enumerer(mots: string[]): string {
+  return mots.length < 2 ? mots.join("") : `${mots.slice(0, -1).join(", ")} et ${mots[mots.length - 1]}`;
+}
+
+/**
+ * Ce que l'écran de fin de séance montre, décidé une seule fois ici.
+ *
+ * ⚠️ UNE SÉANCE ENREGISTRÉE RESTE UNE RÉUSSITE, MÊME QUAND UNE SUITE TRAÎNE.
+ * On ne la présente jamais comme un échec ; on dit ce qui reste, avec
+ * « Réessayer ». Et on ne promet « ça se reprendra tout seul » que si
+ * l'appareil a vraiment gardé le travail.
+ */
+export type EtatFin =
+  | { genre: "ok" }
+  | { genre: "journal"; texte: string }
+  | { genre: "suites"; texte: string };
+
+export function etatFinDeSeance(r: Finalisation): EtatFin {
+  if (r.journal !== "enregistre") {
+    return {
+      genre: "journal",
+      texte: r.raison === "compte_different"
+        ? "Pas enregistrée : le compte connecté n'est plus celui qui a commencé cette séance. Elle attend son retour sur ce téléphone."
+        : r.gardeeSurAppareil
+          ? "Pas encore enregistrée. Elle reste gardée sur ce téléphone."
+          : "Pas encore enregistrée, et ce téléphone n'a pas pu la garder. Laisse cet écran ouvert et réessaie.",
+    };
+  }
+  if (r.finalisee || !r.reste.length) return { genre: "ok" };
+  const quoi = enumerer(r.reste.map((k) => NOM_SUITE[k]));
+  return {
+    genre: "suites",
+    texte: r.raison === "compte_different"
+      ? `Séance enregistrée. La mise à jour de ${quoi} attend le retour du compte qui l'a faite.`
+      : r.gardeeSurAppareil
+        ? `Séance enregistrée. Il reste à mettre à jour ${quoi} ; ça se reprendra tout seul.`
+        : `Séance enregistrée. Il reste à mettre à jour ${quoi}, et ce téléphone n'a pas pu le garder : réessaie avant de quitter.`,
+  };
+}
+
+/**
+ * Le compte d'une séance, c'est celui qui l'a COMMENCÉE.
+ *
+ * ⚠️ JAMAIS CELUI DE LA FIN. Si la session passe de A à B pendant la
+ * séance, la lire au moment d'enregistrer attribuerait à B le travail de
+ * A, et la base l'accepterait puisque B est bien connecté. On ne prend le
+ * compte de la fin que si personne n'était connecté au départ.
+ */
+export function proprietaireDeLaSeance(auDepart: string | null, aLaFin: string | null): string | null {
+  return auDepart ?? aLaFin;
 }
 
 const rejeux = new Map<string, Promise<void>>();

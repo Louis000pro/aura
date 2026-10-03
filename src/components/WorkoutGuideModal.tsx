@@ -24,9 +24,9 @@ import type { Badge } from "@/lib/badges";
 import { useAuth } from "@/context/AuthContext";
 import type { CibleSeance } from "@/lib/finSeance";
 import {
-  DUREE_EFFORT_HIIT, dependancesReelles, exercicesFaits, finaliserSeance, journalDe,
-  nouveauLancement, nouvelleAttente, seriesConfirmees,
-  type JournalSeance, type MarquesSeance, type Validation,
+  DUREE_EFFORT_HIIT, dependancesReelles, etatFinDeSeance, exercicesFaits, finaliserSeance,
+  journalDe, nouveauLancement, nouvelleAttente, proprietaireDeLaSeance, seriesConfirmees,
+  type EtatFin, type JournalSeance, type MarquesSeance, type Validation,
 } from "@/lib/journalSeance";
 import { useAssistant } from "@/context/AssistantContext";
 import { GUIDE_SECTIONS, sectionSessionId } from "@/lib/guideSections";
@@ -882,9 +882,10 @@ export default function WorkoutGuideModal({
   const [showInfo,      setShowInfo]      = useState(false);
   const [introOpen,     setIntroOpen]     = useState<number | null>(null); // exo déplié dans la liste "Au programme"
   const [sessionSaved,  setSessionSaved]  = useState(false);
-  /* L'enregistrement a échoué : la séance est gardée sur l'appareil et se
-     rejouera, mais l'écran doit le dire au lieu de faire comme si. */
-  const [echecJournal,  setEchecJournal]  = useState<{ garde: boolean; compte: boolean } | null>(null);
+  /* Ce qui n'est pas allé au bout : le journal lui-même, ou une suite
+     (planning, relais, affiche). L'écran le DIT au lieu de faire comme si,
+     et propose de réessayer. La phrase vient de `etatFinDeSeance`. */
+  const [finIncomplete, setFinIncomplete] = useState<Exclude<EtatFin, { genre: "ok" }> | null>(null);
   // L'affiche s'enregistre TOUTE SEULE dans le profil en fin de séance ; ce
   // drapeau ne sert qu'à le confirmer à l'écran. Elle se revoit, s'envoie et se
   // supprime depuis le profil (galerie « Tes affiches de perf »).
@@ -911,6 +912,10 @@ export default function WorkoutGuideModal({
 
   const { user } = useAuth();
 
+  /* R1 bis · le compte qui a COMMENCÉ la séance, figé au départ. Le
+     journal et ses suites lui appartiennent, même si la session change
+     avant la fin (`proprietaireDeLaSeance`). */
+  const proprietaireRef = useRef<string | null>(null);
   const pausedAtRef = useRef<number>(0);
   /** L'instant réel du départ : `startMs` se décale à chaque pause. */
   const debutRef = useRef<number | null>(null);
@@ -930,12 +935,13 @@ export default function WorkoutGuideModal({
   /* Les lectures d'après séance (rang, série, badges) ne se font qu'une fois. */
   const lecturesFaitesRef = useRef(false);
   const enregistrer = () => {
-    if (!user) return;
+    const proprietaire = proprietaireDeLaSeance(proprietaireRef.current, user?.id ?? null);
+    if (!proprietaire) return;
     const supabase = createClient();
     const resolvedCategory = category ?? (sessionId.includes("-") ? sessionId.split("-")[0] : null) ?? "force";
     journalRef.current ??= journalDe({
       lancementId,
-      proprietaire: user.id,
+      proprietaire,
       titre: title,
       categorie: resolvedCategory,
       /* ⚠️ L'HEURE DU DÉBUT, PLUS CELLE DE LA FIN. `started_at` recevait
@@ -951,11 +957,9 @@ export default function WorkoutGuideModal({
       cible: cible ?? null,
       relaisRunId: relaisRunId ?? null,
     })).then((r) => {
-      if (r.journal !== "enregistre") {
-        setEchecJournal({ garde: r.gardeeSurAppareil, compte: r.raison === "compte_different" });
-        return;
-      }
-      setEchecJournal(null);
+      const etat = etatFinDeSeance(r);
+      setFinIncomplete(etat.genre === "ok" ? null : etat);
+      if (r.journal !== "enregistre") return;
       setSessionSaved(true);
       if (r.afficheGardee) setAfficheSaved(true);
       if (r.maillon) {
@@ -967,7 +971,9 @@ export default function WorkoutGuideModal({
         // de se recharger pour montrer le nouvel état co-op.
         window.dispatchEvent(new Event(EVT_RELAIS));
       }
-      if (!lecturesFaitesRef.current) {
+      /* Le rang, la série et les badges se lisent pour la session : on ne
+         les lit que si c'est bien elle qui a fait la séance. */
+      if (!lecturesFaitesRef.current && user?.id === proprietaire) {
         lecturesFaitesRef.current = true;
         lireApresSeance(supabase);
       }
@@ -1164,6 +1170,7 @@ export default function WorkoutGuideModal({
   const startWorkout = () => {
     setStartMs(Date.now());
     debutRef.current = Date.now();
+    proprietaireRef.current = user?.id ?? null;
     setExerciseIdx(0); setSetIdx(0); setDoneMap({}); setPaused(false); setShowInfo(false);
     setPhase("exercising");
     if (exercises[0]?.auto)      { setAutoCountdown(exercises[0].auto); setPrep(3); }
@@ -1719,21 +1726,15 @@ export default function WorkoutGuideModal({
                   )}
                 </AnimatePresence>
 
-                {/* R1 · un enregistrement raté se DIT, et sans rien promettre de
-                    faux : « gardée sur ce téléphone » n'apparaît que si le
-                    stockage l'a vraiment gardée. « Réessayer » réutilise le
-                    même journal. */}
-                {echecJournal && (
+                {/* R1 · un enregistrement raté se DIT, et une suite restée en
+                    route aussi (R1 bis) : la séance reste une réussite, une
+                    ligne secondaire dit ce qui reste. « Réessayer » réutilise
+                    le même journal et reprend où le travail s'est arrêté. */}
+                {finIncomplete && (
                   <div className="flex items-center gap-3 w-full px-4 py-3 rounded-2xl mt-3 text-left"
                     style={{ background: "rgba(255,255,255,0.05)", border: `1px solid ${TUN.line}` }}>
-                    <span className="flex-1 text-[13px]" style={{ color: TUN.t2 }}>
-                      {echecJournal.compte
-                        ? "Pas enregistrée : le compte connecté n'est plus celui de cette séance."
-                        : echecJournal.garde
-                          ? "Pas encore enregistrée. Elle reste gardée sur ce téléphone."
-                          : "Pas encore enregistrée, et ce téléphone n'a pas pu la garder. Laisse cet écran ouvert et réessaie."}
-                    </span>
-                    <button onClick={() => { setEchecJournal(null); enregistrer(); }} className="text-[13px] font-bold cursor-pointer flex-shrink-0" style={{ color: TUN.lav }}>
+                    <span className="flex-1 text-[13px]" style={{ color: TUN.t2 }}>{finIncomplete.texte}</span>
+                    <button onClick={() => { setFinIncomplete(null); enregistrer(); }} className="text-[13px] font-bold cursor-pointer flex-shrink-0" style={{ color: TUN.lav }}>
                       Réessayer
                     </button>
                   </div>

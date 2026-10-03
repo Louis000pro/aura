@@ -154,3 +154,13 @@ Les sept points de Codex, dans l'ordre :
 Trois témoins vérifiés.
 
 **Limite connue** : `valider_action_defi` refuse une séance commencée il y a plus de 3 h (règle du relais). Un maillon récupéré plus tard est donc refusé, et ce refus est définitif, pas réessayé.
+
+## Tour 10 · fait (2026-10-03), après la relecture de Codex
+
+1. **Le propriétaire se fige au départ.** `startWorkout` capture le compte ; `proprietaireDeLaSeance(auDepart, aLaFin)` ne prend celui de la fin que si personne n'était connecté au départ. Testé : A commence, B est connecté à la fin → rien chez B, la séance attend A, puis part sous A au rejeu.
+2. **Une finalisation partielle se voit.** `Finalisation.reste` liste les suites encore à faire ; `etatFinDeSeance` décide la phrase. La séance enregistrée reste une réussite, une ligne secondaire nomme ce qui reste avec « Réessayer », et la reprise automatique n'est promise que si l'appareil a gardé le travail. Testé de bout en bout : journal enregistré, fermeture ratée, état visible, puis finalisation réussie sans réécrire le journal ni le maillon.
+3. **Le rejeu repart au retour au premier plan et au retour du réseau** (`PresenceDuJour`), coordonné par les Maps existantes.
+4. **Le banc tourne sous Windows** : `check-ia-alias.mjs` résout par `fileURLToPath`.
+5. **SQL appliqué et exercé** : aucun doublon préalable dans `challenge_actions` ni `posts` ; 14 scénarios sous le rôle `authenticated` (comptes A et B réels), transaction annulée, tous conformes. Reste : l'essai simultané depuis deux sessions, qui demande une écriture réelle puis un nettoyage (accord de Louis requis).
+
+`check:programme` : 691 contrôles, trois témoins vérifiés. La fermeture transactionnelle reste prévue en R6.

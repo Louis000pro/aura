@@ -19,6 +19,7 @@ import { readFileSync, readdirSync } from "node:fs";
 import {
   lignesDuJournal, seriesConfirmees, exercicesFaits, repsPrescrites, type MarquesSeance,
   journalDe, nouvelleAttente, finaliserSeance, rejouerJournalEnAttente, lireAttente,
+  etatFinDeSeance, proprietaireDeLaSeance,
   type Dependances,
 } from "@/lib/journalSeance";
 import {
@@ -5622,6 +5623,85 @@ verdict(
     );
   }
 
+  /* ── Tour 10 · le propriétaire se fixe au départ, une suite qui traîne se voit ── */
+  {
+    /* A commence, B est connecté à la fin : la séance reste celle de A. */
+    const proprio = proprietaireDeLaSeance(A, B);
+    const w = monde();
+    w.m.session = B;
+    const r = await finaliserSeance(w.deps, nouvelleAttente({ journal: unJournal(proprio ?? B), cible: cibleIntention }));
+    const rienChezB = [...w.m.seances.values()].every((x) => x.proprietaire !== B);
+    verdict(
+      "Tour 10 · A commence, B est connecté à la fin : le journal appartient à A",
+      proprio === A && r.raison === "compte_different" && rienChezB
+        && w.attente(A).length === 1 && w.attente(B).length === 0,
+      `propriétaire ${proprio === A ? "A" : "B"}, ${w.attente(A).length} en attente chez A`,
+    );
+    /* … et la séance attend le retour de A, puis part sous A. */
+    w.m.session = A;
+    await rejouerJournalEnAttente(w.deps, A);
+    const chezA = [...w.m.seances.values()].filter((x) => x.proprietaire === A).length;
+    verdict(
+      "Tour 10 · au retour de A, sa séance part sous A et se referme",
+      chezA === 1 && w.attente(A).length === 0 && w.m.fermetures[0]?.userId === A,
+      `${chezA} séance chez A`,
+    );
+    verdict(
+      "Tour 10 · sans compte au départ, on prend celui de la fin",
+      proprietaireDeLaSeance(null, B) === B && proprietaireDeLaSeance(null, null) === null,
+      "personne n'était connecté au départ",
+    );
+
+    /* Le parcours complet : journal enregistré, fermeture en échec, état
+       de reprise visible, puis finalisation réussie. */
+    const p = monde();
+    p.m.panne.fermer = 1;
+    const e = nouvelleAttente({ journal: unJournal(), cible: cibleIntention, relaisRunId: "run-1" });
+    const r1 = await finaliserSeance(p.deps, e);
+    const etat1 = etatFinDeSeance(r1);
+    verdict(
+      "Tour 10 · journal enregistré, fermeture ratée : la séance reste une réussite, la suite se voit",
+      r1.journal === "enregistre" && !r1.finalisee && r1.reste.join() === "fermeture"
+        && etat1.genre === "suites" && etat1.texte.startsWith("Séance enregistrée.")
+        && etat1.texte.includes("ton planning") && etat1.texte.includes("tout seul"),
+      etat1.genre === "ok" ? "aucune ligne" : etat1.texte,
+    );
+    const r2 = await finaliserSeance(p.deps, e);
+    verdict(
+      "Tour 10 · « Réessayer » termine la suite, sans réécrire le journal ni le maillon",
+      r2.finalisee && etatFinDeSeance(r2).genre === "ok" && p.m.appelsEcriture === 1
+        && p.m.maillons.length === 1 && p.m.fermetures.length === 1 && p.attente().length === 0,
+      `${p.m.appelsEcriture} écriture, ${p.m.maillons.length} maillon, ${p.m.fermetures.length} fermeture`,
+    );
+    /* Le stockage refuse : la ligne ne promet pas une reprise automatique. */
+    const q = monde();
+    q.m.panne.fermer = 1;
+    q.m.panne.stockage = true;
+    const r3 = await finaliserSeance(q.deps, nouvelleAttente({ journal: unJournal(), cible: cibleIntention }));
+    const etat3 = etatFinDeSeance(r3);
+    verdict(
+      "Tour 10 · stockage refusé : « réessaie avant de quitter », jamais « tout seul »",
+      etat3.genre === "suites" && !etat3.texte.includes("tout seul") && etat3.texte.includes("réessaie"),
+      etat3.genre === "ok" ? "aucune ligne" : etat3.texte,
+    );
+    /* Plusieurs suites : nommées dans l'ordre où elles se font. */
+    const z = monde();
+    z.m.panne.fermer = 1;
+    z.m.panne.maillon = 1;
+    const r4 = await finaliserSeance(z.deps, nouvelleAttente({ journal: unJournal(), cible: cibleIntention, relaisRunId: "run-2" }));
+    const etat4 = etatFinDeSeance(r4);
+    verdict(
+      "Tour 10 · plusieurs suites se nomment toutes, dans l'ordre",
+      etat4.genre === "suites" && etat4.texte.includes("ton planning et le maillon du relais"),
+      etat4.genre === "ok" ? "aucune ligne" : etat4.texte,
+    );
+    verdict(
+      "Tour 10 · journal pas enregistré : c'est le journal qui se dit, pas les suites",
+      etatFinDeSeance(r).genre === "journal" && etatFinDeSeance(r).genre !== "suites",
+      "compte différent au départ",
+    );
+  }
+
   /* ── Le chemin, ce qu'aucune simulation ne voit ── */
   const sources = (dir: string): string[] => readdirSync(new URL("../" + dir, import.meta.url), { withFileTypes: true })
     .flatMap((d) => d.isDirectory() ? sources(dir + "/" + d.name) : /\.tsx?$/.test(d.name) ? [dir + "/" + d.name] : []);
@@ -5647,6 +5727,26 @@ verdict(
     "R1 bis · SOURCE · le tunnel construit le journal une seule fois et garde le relais",
     tunnel.includes("journalRef.current ??= journalDe(") && tunnel.includes("relaisRunId: relaisRunId ?? null"),
     "« Réessayer » réutilise le même journal",
+  );
+  verdict(
+    "Tour 10 · SOURCE · le propriétaire se fige dans startWorkout, jamais à l'enregistrement",
+    /const startWorkout = \(\) => \{[^}]*proprietaireRef\.current = user\?\.id/.test(tunnel)
+      && tunnel.includes("proprietaireDeLaSeance(proprietaireRef.current")
+      && !/proprietaire:\s*user\.id/.test(tunnel),
+    "le compte du départ, pas celui de la fin",
+  );
+  verdict(
+    "Tour 10 · SOURCE · le tunnel montre aussi une finalisation partielle",
+    tunnel.includes("etatFinDeSeance(r)") && tunnel.includes("finIncomplete.texte")
+      && !/r\.journal !== "enregistre"\) \{\s*set/.test(tunnel),
+    "la phrase vient de etatFinDeSeance, « Réessayer » reste là",
+  );
+  const presence = lire1("src/components/PresenceDuJour.tsx");
+  verdict(
+    "Tour 10 · SOURCE · le rejeu repart au retour au premier plan et au retour du réseau",
+    presence.includes('addEventListener("visibilitychange"') && presence.includes('addEventListener("online"')
+      && presence.includes('removeEventListener("online"'),
+    "une PWA restée ouverte se reprend aussi",
   );
   const journalSrc = lire1("src/lib/journalSeance.ts");
   verdict(

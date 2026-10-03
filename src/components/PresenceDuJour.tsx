@@ -29,7 +29,21 @@ export default function PresenceDuJour() {
   const uid = user?.id;
   useEffect(() => {
     if (!uid) return;
-    void rejouerJournalEnAttente(dependancesReelles(createClient()), uid);
+    const rejouer = () => {
+      void rejouerJournalEnAttente(dependancesReelles(createClient()), uid);
+    };
+    rejouer();
+    /* ⚠️ UNE PWA RESTE OUVERTE DES JOURS : l'effet ne se relance pas tout
+       seul. On rejoue donc aussi au retour au premier plan et au retour du
+       réseau. Les appels qui se chevauchent n'en font qu'un : le rejeu est
+       coordonné par compte, la finalisation par lancement. */
+    const auPremierPlan = () => { if (document.visibilityState === "visible") rejouer(); };
+    document.addEventListener("visibilitychange", auPremierPlan);
+    window.addEventListener("online", rejouer);
+    return () => {
+      document.removeEventListener("visibilitychange", auPremierPlan);
+      window.removeEventListener("online", rejouer);
+    };
   }, [uid]);
 
   return null;
