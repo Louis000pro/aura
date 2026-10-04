@@ -337,3 +337,25 @@ Codex a validé les quatre corrections (tour 23) et rappelé que les mouvements 
 Raison : les mouvements retirés n'étaient pas faisables là où ils étaient proposés. Tractions et rowing inversé demandent un agrès qu'une séance « poids du corps » n'a pas ; le soulevé de terre roumain demande une barre qu'une séance « haltères » n'a pas. R2 remplace un mouvement impossible par un mouvement faisable, il ne retire rien qu'on pouvait faire.
 
 Ce qui reste ouvert, et qui n'est pas une équivalence : un « Pull » au poids du corps sans aucun tirage, une séance haltères sans charnière de hanche, des fentes et mollets sans charge. Les combler demande de nouveaux exercices animés (un tirage sans agrès, une charnière aux haltères) : une vague de contenu à part, hors R2.
+
+## R2 · migration appliquée et vérifiée sur la vraie base (2026-10-04)
+
+`20261005_r2_prescription.sql` collée par Louis. Présence vérifiée : trois tables, RLS active avec une seule policy de lecture chacune, les deux contraintes `*_prescription_check`, le trigger, les quatre colonnes du journal, les fonctions en SECURITY DEFINER.
+
+Puis joué sous le rôle `authenticated` avec deux vrais comptes, dans des transactions annulées (base vérifiée vide de tout essai après coup) :
+
+- modèle écrit, puis rejoué sans être recomposé (même identifiant, lignes inchangées) ;
+- modèle incomplet refusé (23514), aucun modèle à moitié écrit ;
+- occurrence préparée avec deux lignes, `exercise_list` identique à `projeter_prescription` ; rejouée, elle rend la même ;
+- occurrence incomplète refusée, aucune intention laissée derrière ;
+- écriture directe refusée (42501) sur les deux tables ; mise à jour et suppression directes ne touchent aucune ligne ;
+- modèle d'une autre étape refusé (`modele_inconnu`) ;
+- un déplacement garde la prescription, un changement de contenu l'emporte ;
+- fermeture `faite` acceptée ; même lancement rejoué → `doublon` ; même rang par un autre lancement → `doublon` ;
+- le journal recopie la prescription (`repere / poussee_horizontale / 8 / 12`) ;
+- le second compte ne voit ni l'occurrence, ni le modèle, ni ses lignes ; il ne peut écrire ni un modèle sur l'étape du premier, ni une occurrence sur son programme, ni rattacher son modèle, ni enregistrer son journal ; témoin : il écrit chez lui ;
+- `anon` n'exécute aucune des trois fonctions.
+
+Note d'outillage : le connecteur Supabase expire au-delà d'une requête d'environ 6 Ko ; les essais se jouent par blocs courts.
+
+Remplissage à suivre : 10 programmes actifs, 38 étapes, donc 38 modèles attendus.
