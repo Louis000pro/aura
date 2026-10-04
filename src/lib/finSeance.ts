@@ -48,6 +48,8 @@ import { consommerEtape } from "@/lib/programme";
 import { createClient } from "@/lib/supabase";
 import { parisDateStr } from "@/lib/dates";
 import type { Exercise } from "@/components/WorkoutGuideModal";
+import type { LignePrescription } from "@/lib/banqueEtapes";
+import { ecrireOccurrence } from "@/lib/prescription";
 
 /** L'évènement que tous les écrans du planning écoutent déjà. Il est
  *  émis ICI et nulle part ailleurs après une fin de séance : c'est ce
@@ -75,6 +77,13 @@ export type CibleSeance =
          TRACE sur le fait, jamais une décision : le curseur, lui, avance
          exactement comme sans adaptation. */
       adaptationId?: string | null;
+      /* R2 · la prescription FIGÉE au lancement, et le modèle d'où elle
+         vient (`null` : composée en mémoire). Elle voyage dans l'attente
+         locale et s'écrit telle quelle à la fermeture, jamais recomposée.
+         ABSENTE d'une finalisation préparée avant R2 : on referme alors
+         comme avant, sans prescription. */
+      prescription?: LignePrescription[] | null;
+      modeleId?: string | null;
     };
 
 /** Ce que la fermeture écrit, tiré du JOURNAL et jamais de l'horloge. */
@@ -223,6 +232,30 @@ export function storeFermeture(): StoreFermeture {
       return { ok: true, touchees: data?.length ?? 0 };
     },
     async inserer(userId, cible, fait) {
+      /* R2 · avec une prescription : l'occurrence et ses lignes en une
+         seule transaction. Mêmes doublons qu'avant (ce lancement l'a déjà
+         écrite, ou l'occurrence a déjà sa ligne). */
+      if (cible.prescription?.length) {
+        const r = await ecrireOccurrence({
+          programme_id: cible.programmeId,
+          etape_consommee_id: cible.etapeId,
+          programme_seance_id: cible.etapeId,
+          rang: cible.rang ?? null,
+          statut: "faite",
+          date: fait.date,
+          type: cible.type,
+          title: cible.title,
+          difficulty: cible.difficulty,
+          location: cible.location,
+          origine: "utilisateur",
+          adaptation_id: cible.adaptationId ?? null,
+          consommee_le: fait.consommeeLe,
+          lancement_id: fait.lancementId,
+        }, cible.modeleId ?? null, cible.prescription);
+        if (r.resultat === "ok") return "ok";
+        if (r.resultat === "doublon" && (r.contrainte === "uniq_intention_lancement" || r.contrainte === "uniq_occurrence")) return "doublon";
+        return "echec";
+      }
       return consommerEtape(userId, cible.programmeId, cible.etapeId, {
         type: cible.type,
         title: cible.title,

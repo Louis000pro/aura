@@ -37,7 +37,9 @@
    ════════════════════════════════════════════════════════════════════ */
 
 import { createClient } from "@/lib/supabase";
-import { adaptationsDisponibles, cycleDeReference, schemaIntentions, todayYmd } from "@/lib/planning";
+import { adaptationsDisponibles, ctxFromLieu, cycleDeReference, schemaIntentions, todayYmd } from "@/lib/planning";
+import { COMPOSITION_VERSION, orientationDe } from "@/lib/banqueEtapes";
+import { ecrireModelesDuCycle } from "@/lib/prescription";
 import {
   occurrenceSuivante,
   type EtatOccurrences, type OccurrenceFermee, type OccurrenceReservee,
@@ -270,7 +272,7 @@ export async function getOrCreateProgramme(userId: string): Promise<ProgrammeEtC
   // n'ont rien répondu du tout.
   const { data: ctx } = await supabase
     .from("contexte_entrainement")
-    .select("seances_cible")
+    .select("seances_cible, lieu, materiel")
     .eq("user_id", userId)
     .maybeSingle();
 
@@ -281,14 +283,16 @@ export async function getOrCreateProgramme(userId: string): Promise<ProgrammeEtC
   // jamais empêcher de le créer : on prend ce qu'on trouve, et sinon un
   // nom neutre.
   let objectifs: string[] | null = null;
+  let niveau: string | null = null;
   try {
     const { data: profil } = await supabase
       .from("profiles")
-      .select("onboarding_goals")
+      .select("onboarding_goals, onboarding_level")
       .eq("id", userId)
       .maybeSingle();
     const brut = (profil as { onboarding_goals: unknown } | null)?.onboarding_goals;
     if (Array.isArray(brut)) objectifs = brut.filter((g): g is string => typeof g === "string");
+    niveau = (profil as { onboarding_level?: string | null } | null)?.onboarding_level ?? null;
   } catch { /* le nom aura sa valeur neutre */ }
 
   const { data: cree, error } = await supabase
@@ -344,7 +348,23 @@ export async function getOrCreateProgramme(userId: string): Promise<ProgrammeEtC
     return null;
   }
 
-  return { programme, cycle: (etapesCreees as LigneEtape[]).map(versEtape) };
+  const cycle = (etapesCreees as LigneEtape[]).map(versEtape);
+
+  /* R2 · LE MODÈLE DE CHAQUE ÉTAPE NAÎT AVEC LE PROGRAMME, pour le lieu
+     connu à cet instant. Un échec ne défait rien : sans modèle écrit, la
+     composition pure (même version) donne le même contenu. */
+  const lu = ctx as { lieu?: "salle" | "maison" | null; materiel?: "halteres" | "poids" | null } | null;
+  await ecrireModelesDuCycle(
+    cycle.map((e) => ({ id: e.id, nom: e.nom })),
+    {
+      lieu: ctxFromLieu(lu?.lieu ?? null, lu?.materiel ?? null),
+      orientation: orientationDe(objectifs ?? []),
+      niveau,
+      version: COMPOSITION_VERSION,
+    },
+  );
+
+  return { programme, cycle };
 }
 
 /**
