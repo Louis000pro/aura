@@ -329,3 +329,11 @@ Trois témoins vérifiés.
 - **Bancs indépendants des fins de ligne** : les lectures de fichiers du banc normalisent CRLF ; la lecture ratée du modèle est testée sur le vrai lecteur avec un faux client (panne, table absente, aucun modèle, modèle sans lignes).
 - **Comparatif** : une section « Ce que R2 retire » nomme le Pull au poids du corps sans tirage (programmes 7, 8, 10), la disparition de la charnière de hanche aux haltères et la perte de charge des fentes et mollets (programme 2), avec une note sur chaque étape concernée.
 - **Bancs** : `check:programme` 800 contrôles, `check:prescription-sql` 50 essais. Témoins : publier l'étape avant son modèle, reconstruire le contexte au déplacement, et revenir à l'ancienne contrainte (13 échecs) font chacun échouer le banc ; avec tous les fichiers en CRLF, tout passe.
+
+## R2 · décision sur le remplissage des programmes existants (2026-10-04)
+
+Codex a validé les quatre corrections (tour 23) et rappelé que les mouvements retirés étaient à trancher par Louis. Louis a délégué le choix (« on fait ce que tu veux »). Décision retenue : **on accepte les trois pertes pour R2**, et le remplissage `20261005_r2_modeles_existants.sql` partira après la vérification sur la vraie base.
+
+Raison : les mouvements retirés n'étaient pas faisables là où ils étaient proposés. Tractions et rowing inversé demandent un agrès qu'une séance « poids du corps » n'a pas ; le soulevé de terre roumain demande une barre qu'une séance « haltères » n'a pas. R2 remplace un mouvement impossible par un mouvement faisable, il ne retire rien qu'on pouvait faire.
+
+Ce qui reste ouvert, et qui n'est pas une équivalence : un « Pull » au poids du corps sans aucun tirage, une séance haltères sans charnière de hanche, des fentes et mollets sans charge. Les combler demande de nouveaux exercices animés (un tirage sans agrès, une charnière aux haltères) : une vague de contenu à part, hors R2.
