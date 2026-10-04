@@ -280,10 +280,25 @@ export type ContexteEtape = {
   nom: string;
   adaptationId: string | null;
   masquees: string[];
+  /** R2 · tour 22 · l'empreinte de la PRESCRIPTION que le geste utilisera
+   *  (le modèle de CETTE étape, pour ce lieu). Une étape à jour avec le
+   *  modèle de la précédente n'est pas un contexte vérifié. */
+  prescription?: string | null;
 };
 
 export function cleContexte(c: ContexteEtape): string {
-  return JSON.stringify([c.programmeId, c.etapeId, c.rang, c.nom, c.adaptationId, [...c.masquees].sort()]);
+  return JSON.stringify([c.programmeId, c.etapeId, c.rang, c.nom, c.adaptationId, [...c.masquees].sort(), c.prescription ?? null]);
+}
+
+/**
+ * R2 · tour 22 · DÉPLACER UNE RÉSERVATION NE CHANGE QUE SA DATE. Son
+ * contenu, son lieu, sa difficulté, son adaptation et sa prescription
+ * restent ceux qui ont été préparés : reconstruire le contexte depuis les
+ * réglages du moment donnerait une séance « maison » qui garde ses
+ * machines. Changer le contenu ou le contexte est un autre geste.
+ */
+export function deplacerReservation<T extends { date: string | null }>(reservation: T, date: string): T {
+  return { ...reservation, date };
 }
 
 export async function avecEtapeVerifiee<C extends ContexteEtape>(

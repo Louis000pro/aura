@@ -299,3 +299,115 @@ Trois témoins vérifiés.
 3. Remplissage unique des 5 programmes existants par script, ou ancien calcul conservé pour eux ?
 4. Incrément reporté en R4 ?
 5. Fourchette visible dès R2, ou nombre unique jusqu'à R3 ?
+
+### R2 · précisions du tour 20 de Codex (2026-10-04)
+
+- Deux tables : oui. `exercise_list` reste une projection de la prescription, écrite dans la même transaction, jamais modifiée à part.
+- La **fonction** du mouvement et son **statut** (repère / complémentaire) sont deux propriétés distinctes et déclarées ; « les deux premiers » n'est qu'un ordre de présentation.
+- Étape datée : intention et prescription atomiques, idempotentes par occurrence ; un déplacement garde les lignes ; rejouer ne recalcule pas. Étape libre : la copie se fige au lancement, voyage dans l'attente locale, et se rejoue telle quelle.
+- Le rattachement du journal ne doit pas dépendre d'une fermeture réussie du premier coup ; deux lancements du même rang gardent chacun leur prescription.
+- Programmes existants : remplissage unique, rejouable, précédé d'un comparatif concret validé par Louis ; le contexte de composition est conservé avec le modèle, et un changement de matériel ne bloque personne.
+- Incrément en R4. Fourchette visible en R3 ; jusque-là une cible unique, dérivée et comprise dans la fourchette, et aucune répétition réelle déduite du bouton.
+- Une substitution préserve la fonction, le matériel et l'accessibilité ; on ne remplace jamais un exercice seulement pour obtenir une clé.
+
+## R2 · codée (2026-10-04), en attente de la relecture de Codex et de la migration
+
+- **La banque des étapes** (`src/lib/banqueEtapes.ts`) : chaque exercice a sa clé, sa fonction et son type de charge (`PROPRIETES`), chaque entrée son statut. Chaque liste ne contient que ce que `exercicesDisponibles(lieu)` autorise (la même autorité que la génération IA). Les 21 noms sans clé sont remplacés un par un, avec la raison écrite dans le fichier. Deux manques de contenu, signalés et non masqués : aucune charnière de hanche aux haltères, aucun tirage praticable à la maison sans matériel (le « Pull » au poids du corps devient une séance de chaîne arrière).
+- **La composition** (`composerEtape`) est pure, sans graine ni `variant` ni appareil, versionnée (`COMPOSITION_VERSION = 1`). Le banc tient l'empreinte de la version 1 : changer la banque sans changer la version fait échouer le contrôle. Fourchettes de la décision 47 ; cible de compatibilité = milieu de la fourchette.
+- **Migration `20261005_r2_prescription.sql`** : `etape_modeles` (contexte de composition conservé, un modèle par étape et par lieu, immuable) + `etape_exercices` ; `occurrence_exercices` (prescription figée, `charge_cible` nulle tant que `charge_origine = 'aucune'`, jamais zéro) ; lecture seule pour les comptes, écriture par `ecrire_modele` et `ecrire_occurrence` (SECURITY DEFINER, propriété vérifiée). `projeter_prescription` écrit `exercise_list`. Un déclencheur retire la prescription dans la même transaction si le contenu de l'intention change (substitution, autre lieu) : jamais une liste qui contredit ses lignes. `enregistrer_seance` recopie statut, fonction et fourchette dans `series_realisees`.
+- **Le journal se rattache par l'emplacement**, pas par une clé étrangère : (lancement → intention refermée par ce lancement → emplacement). Ce lien ne dépend ni de l'ordre d'écriture ni d'une fermeture réussie du premier coup, et chaque journal garde sa propre copie de la prescription de départ.
+- **Le code** : `useJournee` lit le modèle de l'étape (écrit, sinon composé ; une lecture ratée ne compose rien et n'autorise pas de lancement), fige la prescription dans la cible au lancement, écrit occurrence et prescription ensemble quand on date, et déplace sans réécrire le contenu. `finSeance` ferme une étape libre avec la copie figée. `getOrCreateProgramme` écrit les modèles du cycle à la création. `instanceDeLEtape` est supprimée. « Refais ma semaine » garde sa variété (Premium) dans la nouvelle banque ; ses lignes ne portent qu'une provenance, sans prescription.
+- **Remplissage des programmes existants** : `20261005_r2_modeles_existants.sql`, **généré** par `scripts/r2-remplissage.ts` depuis la composition TypeScript (le banc exige l'égalité). Rejouable, ne complète que les modèles absents des programmes actifs, ne touche à aucune intention. Comparatif des **10** programmes actifs (et non 5) publié pour Louis.
+- **Bancs** : `check:programme` 790 contrôles, six témoins vérifiés (nom sans clé, matériel absent, règle changée sans version, prescription non figée, fermeture sans copie, déplacement depuis l'instance). Nouveau `check:prescription-sql` (37 essais) : la migration jouée deux fois dans un PostgreSQL en mémoire (PGlite), ses fonctions, ses refus, le déclencheur, le remplissage, et la projection SQL comparée à la projection TypeScript sur les 54 compositions. Il ne remplace pas l'essai sur la vraie base.
+- **Ordre de déploiement** : R2 ne part qu'après la fusion de R6 (PR #3) et l'application de `20261005_r2_prescription.sql` ; le remplissage ensuite, après l'accord de Louis.
+
+### R2 · corrections du tour 22 de Codex (2026-10-04)
+
+- **L'étape et son modèle se publient ensemble.** `charger` lit l'étape, son modèle et sa réservation, puis publie tout d'un coup ; seule la dernière lecture publie (une réponse arrivée en retard ne remet rien à l'écran). Le modèle porte l'occurrence pour laquelle il a été lu (`ModeleDeLOccurrence`), et un modèle d'une autre étape n'est jamais projeté ni lancé. La prescription entre dans le contexte vérifié (`empreinteModele` dans `cleContexte`) : avant de lancer ou de dater, on relit l'étape ET son modèle pour le lieu ; un modèle illisible est un refus, un autre modèle aussi. Les gestes n'utilisent que le modèle relu (`c.modele`).
+- **SQL : une prescription incomplète est refusée.** Les deux contraintes (`etape_exercices_prescription_check`, `occurrence_exercices_prescription_check`) exigent `is not null` sur `reps_min`, `reps_cible`, `reps_max` pour les répétitions et sur `duree_s` pour une durée : une comparaison avec NULL rendait NULL, et le CHECK passait (reproduit par Codex avec la vraie fonction).
+- **Déplacer une réservation ne change que sa date** (`deplacerReservation`) : contenu, lieu, difficulté, adaptation et prescription restent ceux de la préparation.
+- **Bancs indépendants des fins de ligne** : les lectures de fichiers du banc normalisent CRLF ; la lecture ratée du modèle est testée sur le vrai lecteur avec un faux client (panne, table absente, aucun modèle, modèle sans lignes).
+- **Comparatif** : une section « Ce que R2 retire » nomme le Pull au poids du corps sans tirage (programmes 7, 8, 10), la disparition de la charnière de hanche aux haltères et la perte de charge des fentes et mollets (programme 2), avec une note sur chaque étape concernée.
+- **Bancs** : `check:programme` 800 contrôles, `check:prescription-sql` 50 essais. Témoins : publier l'étape avant son modèle, reconstruire le contexte au déplacement, et revenir à l'ancienne contrainte (13 échecs) font chacun échouer le banc ; avec tous les fichiers en CRLF, tout passe.
+
+## R2 · décision sur le remplissage des programmes existants (2026-10-04)
+
+Codex a validé les quatre corrections (tour 23) et rappelé que les mouvements retirés étaient à trancher par Louis. Louis a délégué le choix (« on fait ce que tu veux »). Décision retenue : **on accepte les trois pertes pour R2**, et le remplissage `20261005_r2_modeles_existants.sql` partira après la vérification sur la vraie base.
+
+Raison : les mouvements retirés n'étaient pas faisables là où ils étaient proposés. Tractions et rowing inversé demandent un agrès qu'une séance « poids du corps » n'a pas ; le soulevé de terre roumain demande une barre qu'une séance « haltères » n'a pas. R2 remplace un mouvement impossible par un mouvement faisable, il ne retire rien qu'on pouvait faire.
+
+Ce qui reste ouvert, et qui n'est pas une équivalence : un « Pull » au poids du corps sans aucun tirage, une séance haltères sans charnière de hanche, des fentes et mollets sans charge. Les combler demande de nouveaux exercices animés (un tirage sans agrès, une charnière aux haltères) : une vague de contenu à part, hors R2.
+
+## R2 · migration appliquée et vérifiée sur la vraie base (2026-10-04)
+
+`20261005_r2_prescription.sql` collée par Louis. Présence vérifiée : trois tables, RLS active avec une seule policy de lecture chacune, les deux contraintes `*_prescription_check`, le trigger, les quatre colonnes du journal, les fonctions en SECURITY DEFINER.
+
+Puis joué sous le rôle `authenticated` avec deux vrais comptes, dans des transactions annulées (base vérifiée vide de tout essai après coup) :
+
+- modèle écrit, puis rejoué sans être recomposé (même identifiant, lignes inchangées) ;
+- modèle incomplet refusé (23514), aucun modèle à moitié écrit ;
+- occurrence préparée avec deux lignes, `exercise_list` identique à `projeter_prescription` ; rejouée, elle rend la même ;
+- occurrence incomplète refusée, aucune intention laissée derrière ;
+- écriture directe refusée (42501) sur les deux tables ; mise à jour et suppression directes ne touchent aucune ligne ;
+- modèle d'une autre étape refusé (`modele_inconnu`) ;
+- un déplacement garde la prescription, un changement de contenu l'emporte ;
+- fermeture `faite` acceptée ; même lancement rejoué → `doublon` ; même rang par un autre lancement → `doublon` ;
+- le journal recopie la prescription (`repere / poussee_horizontale / 8 / 12`) ;
+- le second compte ne voit ni l'occurrence, ni le modèle, ni ses lignes ; il ne peut écrire ni un modèle sur l'étape du premier, ni une occurrence sur son programme, ni rattacher son modèle, ni enregistrer son journal ; témoin : il écrit chez lui ;
+- `anon` n'exécute aucune des trois fonctions.
+
+Note d'outillage : le connecteur Supabase expire au-delà d'une requête d'environ 6 Ko ; les essais se jouent par blocs courts.
+
+Remplissage à suivre : 10 programmes actifs, 38 étapes, donc 38 modèles attendus.
+
+## R2 · remplissage appliqué (2026-10-04)
+
+`20261005_r2_modeles_existants.sql` collé par Louis. Vérifié en base : 38 modèles pour 38 étapes de programmes actifs, aucune étape sans modèle, aucun modèle vide, 190 lignes (5 par modèle). Aucune occurrence écrite, intentions inchangées. R2 est complet côté base.
+
+## R3 · cadrage (2026-10-04), soumis à Codex avant le code
+
+Périmètre : maquette 07, écrans 02 à 04, 06 et 07. L'écran 05 (la question après un repère) appartient à R4 ; les écrans 08 à 10 à R5.
+
+### Ce que le code fait aujourd'hui (constaté)
+
+- `completeSet(validation, dureeS)` marque une série `terminee` dans `doneMap` ; aucune répétition ni charge n'est retenue. `lignesDuJournal` écrit donc `reps_declarees = null` partout.
+- `series_realisees` a déjà les colonnes `charge`, `charge_unite`, `charge_type` et `exercice_prevu_cle` (R1), avec `charge is null ⇔ charge_unite is null`. Mais **`enregistrer_seance` ne les recopie pas** : même si le tunnel les envoyait, elles resteraient nulles.
+- `exercises` est dérivé des props (`useMemo`) : rien ne permet de changer un exercice en cours de séance.
+- Une ligne de prescription (R2) porte `fonction`, `statut`, `reps_min/max`, `reps_cible` et `charge_type`. `charge_cible` est toujours nulle.
+
+### Proposition
+
+**1. Seules les séances prescrites changent.** Un exercice sans `prescription` (catalogue, bibliothèque, impro, séance générée) garde exactement le tunnel d'aujourd'hui : même bouton, rien de déclaré, `reps_declarees` nul. Le banc le vérifie.
+
+**2. Pendant l'exercice (écran 02).**
+- Le grand nombre reste la cible (`reps_cible`). La fourchette apparaît en une ligne discrète sous lui (« 8 à 12 ») ; aucune autre phrase.
+- La charge s'affiche sous les répétitions avec un crayon, seulement si `mesure = reps` et `charge_type` vaut `totale`, `par_haltere` ou `assistance`. Le libellé suit le type : « 60 kg », « 16 kg par haltère », « assistance 20 kg ».
+- Charge inconnue : le crayon dit « Charge ? ». Le bouton dit alors « Fait · 10 », et la série s'enregistre avec une charge nulle, **jamais zéro**. Première fois sur cet exercice : une seule ligne du Guide, « Choisis une charge que tu pourrais soulever environ {reps_max} fois » (décision 50), à la place de sa phrase habituelle.
+- Une charge saisie vaut pour les séries suivantes du même emplacement, jusqu'à ce qu'on la change.
+- Le bouton dit ce qui sera enregistré : « Fait · 10 × 60 kg ». Un toucher enregistre `reps_declarees = reps_cible` et la charge affichée. C'est une déclaration explicite, pas une déduction (tour 20).
+
+**3. Pendant le repos (écrans 03 et 04).**
+- Une ligne « ✓ Série 2 · 10 × 60 kg · Corriger » sous le minuteur. Rien d'autre à remplir.
+- « Corriger » ouvre, dans le même bloc, deux compteurs − / + (répétitions, charge). Pas de clavier. Pas de charge : seulement les répétitions.
+- **Saisie protégée** (décision 55) : si le repos se termine pendant une correction, le minuteur s'arrête à 0 (« Repos terminé »), la vibration a lieu, l'avance automatique est suspendue, et le bouton devient « Enregistrer et reprendre ». Fermer sans enregistrer garde la valeur d'avant. Une correction de charge vaut aussi pour les séries suivantes.
+- Une correction modifie la marque de la série dans `doneMap` ; le journal, construit une seule fois à la fin, porte la valeur corrigée.
+
+**4. Changer d'exercice (écran 06).**
+- « ⇄ Changer » à côté de la démo, seulement sur un exercice prescrit.
+- Équivalents : les exercices de la bibliothèque qui ont **la même fonction**, une clé, une animation, et qui se font au même lieu (`PROPRIETES` + `horsDuLieu`). Plus « Dans tous les mouvements » pour chercher ailleurs.
+- Règle des séries (décision 56) : les séries déjà faites restent sur l'exercice d'origine. Le remplaçant prend les séries suivantes du **même emplacement**, avec `exercice_prevu_cle` = l'exercice d'origine. Sa charge part inconnue, jamais héritée. La fourchette et le statut de l'emplacement restent ceux de la prescription.
+- L'état passe dans `remplacements: Record<emplacement, { aPartirDe: serie, exercice }>`. `exercises` affiché et `lignesDuJournal` en dérivent ; la prescription d'origine ne change pas.
+
+**5. Au poids du corps et chronométré (écran 07).** Aucun changement : anneau, 3-2-1, pas de kilos, pas de correction.
+
+**6. Une migration** : `enregistrer_seance` recopie `charge`, `charge_unite` (`kg` quand une charge existe), `charge_type`, et `exercice_prevu_cle`. Un journal en attente d'avant R3 n'a pas ces champs : ils restent nuls. Rien d'autre en base.
+
+**7. Le fichier.** `WorkoutGuideModal.tsx` (1 929 lignes) est un monolithe : la logique part dans des modules purs et testables (`saisieSerie.ts` pour le libellé, l'incrément et les corrections ; `remplacement.ts` pour les équivalents et la règle des séries), le composant ne fait qu'afficher. Passes courtes, un seul agent.
+
+### Questions pour Codex
+
+1. **« À chaque fois »** (écran 06) touche la prescription des occurrences futures, alors que les modèles sont immuables (R2). Ma proposition : R3 ne livre que « Pour cette séance seulement », et « À chaque fois » arrive avec R7, qui décide de la composition. D'accord, ou il faut une règle de substitution dès R3 ?
+2. **Valeur de départ de la charge** : rien (« Charge ? ») tant que R4 n'existe pas, ou la dernière charge **déclarée** sur la même clé et le même type, affichée telle quelle, sans hausse ?
+3. **Pas des compteurs de charge** : 2,5 kg en `totale` et `assistance`, 1 kg en `par_haltere` ? Ce n'est pas l'incrément de progression (R4), seulement le pas de correction.
+4. **La fourchette** sous le grand nombre suffit-elle, ou faut-il la montrer ailleurs ?
+5. **Remplacement à la dernière série** : s'il ne reste aucune série, « Changer » disparaît-il, ou sert-il à corriger la dernière série déjà faite ?

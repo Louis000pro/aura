@@ -43,6 +43,7 @@
    `check:programme` ; la lecture et l'écriture sont à côté.
    ════════════════════════════════════════════════════════════════════ */
 
+import type { ExercicePrescrit } from "@/lib/banqueEtapes";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Exercise } from "@/components/WorkoutGuideModal";
 import { cleExercice } from "@/lib/exerciceCle";
@@ -77,6 +78,11 @@ export type LigneSerie = {
   reps_declarees: number | null;
   duree_s: number | null;
   validation: Validation | null;
+  /* R2 · la copie de la prescription de départ (nulle sans prescription). */
+  statut_prescrit?: "repere" | "complementaire" | null;
+  fonction_prescrite?: string | null;
+  reps_min_prescrites?: number | null;
+  reps_max_prescrites?: number | null;
 };
 
 export type JournalSeance = {
@@ -132,12 +138,15 @@ export function lignesDuJournal(exercices: Exercise[], marques: MarquesSeance): 
   const lignes: LigneSerie[] = [];
   exercices.forEach((ex, emplacement) => {
     const duree = !!(ex.auto || ex.hiit);
+    /* R2 · une séance prescrite donne sa clé et sa fourchette ; sinon on
+       garde la résolution par le nom (R1), sans rien inventer. */
+    const pr = (ex as ExercicePrescrit).prescription ?? null;
     for (let s = 0; s < Math.max(1, ex.sets); s++) {
       const m = marques[emplacement]?.[s];
       const terminee = m?.statut === "terminee" ? m : null;
       lignes.push({
         emplacement,
-        exercice_cle: cleExercice(ex.name),
+        exercice_cle: pr?.cle ?? cleExercice(ex.name),
         exercice_nom: ex.name,
         serie: s + 1,
         statut: m ? m.statut : "non_atteinte",
@@ -147,6 +156,10 @@ export function lignesDuJournal(exercices: Exercise[], marques: MarquesSeance): 
         reps_declarees: null,
         duree_s: terminee?.dureeS ?? null,
         validation: terminee?.validation ?? null,
+        statut_prescrit: pr?.statut ?? null,
+        fonction_prescrite: pr?.fonction ?? null,
+        reps_min_prescrites: duree ? null : pr?.reps_min ?? null,
+        reps_max_prescrites: duree ? null : pr?.reps_max ?? null,
       });
     }
   });

@@ -16,6 +16,9 @@
    transaction annulée.
    ════════════════════════════════════════════════════════════════════ */
 import { readFileSync, readdirSync } from "node:fs";
+import { createHash } from "node:crypto";
+import { sqlRemplissage } from "./r2-remplissage";
+import { empreinteModele, modeleDeLEtape, type ModeleDeLOccurrence } from "@/lib/prescription";
 import {
   lignesDuJournal, seriesConfirmees, exercicesFaits, repsPrescrites, type MarquesSeance,
   journalDe, nouvelleAttente, finaliserSeance, rejouerJournalEnAttente, lireAttente,
@@ -27,11 +30,16 @@ import {
   type CibleSeance, type FaitSeance, type StoreFermeture,
 } from "@/lib/finSeance";
 import { CLES_EXERCICES, cleExercice } from "@/lib/exerciceCle";
-import { EXERCISE_LIBRARY } from "@/lib/exerciseLibrary";
+import { EXERCISE_LIBRARY, exercicesDisponibles, trouverExercice } from "@/lib/exerciseLibrary";
+import {
+  BANQUE, COMPOSITION_VERSION, EXERCICES_PAR_ETAPE, FONCTIONS, PROPRIETES, TYPES_CHARGE,
+  composerEtape, cibleCompat, fourchette, horsDuLieu, orientationDe, projeterPrescription,
+  type Lieu, type Orientation, type ExercicePrescrit,
+} from "@/lib/banqueEtapes";
 import { resolveGuide } from "@/lib/exerciseGuides";
 import { etapesDuCycle, etapeSuivante, nomDeProgramme, positionRefermee, POSITION_INITIALE } from "@/lib/programme";
 import { baseEtape, occurrenceSuivante, rangPourEtape } from "@/lib/occurrences";
-import { avecEtapeVerifiee, etatJournee, intentionDeLEtape, lancementDuJour, libelleReservation, repetitionDuJour } from "@/lib/journee";
+import { avecEtapeVerifiee, deplacerReservation, etatJournee, intentionDeLEtape, lancementDuJour, libelleReservation, repetitionDuJour } from "@/lib/journee";
 import {
   etatDepuisExp, missionsAuraVides,
   MISSIONS, MISSIONS_JOUR, MISSIONS_PREMIUM, MISSIONS_PREMIUM_SEMAINE, MISSIONS_SEMAINE,
@@ -2796,7 +2804,10 @@ verdict(
   );
   verdict(
     "V9B · et la seule suppression au jour d'arrivée reste la règle repos/séance",
-    PLAN9B.includes('i.status === "planned" && natureDe(i) !== natureDe(day)'),
+    /* R2 · la règle vit dans `retirerContraires`, que `poser` appelle avec
+       la nature de ce qu'il écrit. */
+    PLAN9B.includes('i.status === "planned" && natureDe(i) !== nature')
+      && PLAN9B.includes("await retirerContraires(userId, jour, ecrit.id ?? null, natureDe(day));"),
     "elle ne touche jamais une intention RÉSOLUE (V9C : faite OU sautée), ni une séance de même nature",
   );
 
@@ -3465,7 +3476,10 @@ verdict(
   );
   verdict(
     "V9C · une écriture ne réécrit jamais une intention RÉSOLUE",
-    PLAN9C.includes('i.status === "planned" && natureDe(i) !== natureDe(day)'),
+    /* R2 · la règle vit dans `retirerContraires`, que `poser` appelle avec
+       la nature de ce qu'il écrit. */
+    PLAN9C.includes('i.status === "planned" && natureDe(i) !== nature')
+      && PLAN9C.includes("await retirerContraires(userId, jour, ecrit.id ?? null, natureDe(day));"),
     "le filtre disait `!== \"done\"` : poser un repos aurait supprimé un saut, donc fait RECULER le curseur",
   );
   verdict(
@@ -5193,7 +5207,7 @@ verdict(
 
 /* ═══════════════════ R1 · LE JOURNAL DIT LA VÉRITÉ ═══════════════════ */
 {
-  const lire1 = (rel: string) => readFileSync(new URL("../" + rel, import.meta.url), "utf8");
+  const lire1 = (rel: string) => readFileSync(new URL("../" + rel, import.meta.url), "utf8").replace(/\r\n/g, "\n");
 
   /* ── La clé stable de chaque exercice ── */
   const cles = Object.values(CLES_EXERCICES);
@@ -5814,7 +5828,7 @@ verdict(
    finalisation R1 restée en attente reste récupérable.
    ════════════════════════════════════════════════════════════════════ */
 {
-  const lire1 = (rel: string) => readFileSync(new URL("../" + rel, import.meta.url), "utf8");
+  const lire1 = (rel: string) => readFileSync(new URL("../" + rel, import.meta.url), "utf8").replace(/\r\n/g, "\n");
   const cyc = (n: number) => Array.from({ length: n }, (_, i) => ({ id: "e" + (i + 1), position: i + 1, nom: "E" + (i + 1) }));
   const fe = (...rangs: number[]) => rangs.map((rang, i) => ({
     rang, etapeId: "e" + (((rang - 1) % 3) + 1), consommeeLe: `2026-10-0${1 + i}T10:00:00Z`,
@@ -6203,6 +6217,231 @@ verdict(
     verdict("R6 · SQL · uniq_intention_par_etape reste en place",
       !/drop index[^;]*uniq_intention_par_etape/i.test(sansCommentaires), "elle protège le code en production");
   }
+}
+
+/* ═══════════════════════════ R2 · la prescription ═══════════════════════════ */
+{
+  console.log("\n— R2 · la séance prévue sait ce qu'elle demande —");
+  const lire1 = (rel: string) => readFileSync(new URL("../" + rel, import.meta.url), "utf8").replace(/\r\n/g, "\n");
+  const LIEUX = Object.keys(BANQUE) as Lieu[];
+  const ORIENTS: Orientation[] = ["force", "masse", "general"];
+  const toutes = LIEUX.flatMap((lieu) => Object.entries(BANQUE[lieu]).flatMap(([nom, l]) => l.map((e) => ({ lieu, nom, e }))));
+
+  /* La banque. */
+  const sansCle = toutes.filter(({ e }) => !cleExercice(e.nom));
+  verdict("R2 · aucun exercice de la banque sans clé stable", sansCle.length === 0,
+    sansCle.length ? sansCle.map((x) => x.e.nom).join(", ") : `${new Set(toutes.map((x) => x.e.nom)).size} exercices, tous avec une clé`);
+  const horsBib = toutes.filter(({ e }) => !trouverExercice(e.nom));
+  verdict("R2 · chaque exercice de la banque est dans la bibliothèque animée", horsBib.length === 0, horsBib.map((x) => x.e.nom).join(", ") || "102 planches, aucune devinée");
+  const sansProp = toutes.filter(({ e }) => !PROPRIETES[e.nom]);
+  verdict("R2 · fonction et type de charge DÉCLARÉS pour chaque exercice", sansProp.length === 0, sansProp.map((x) => x.e.nom).join(", ") || "jamais déduits du nom");
+  verdict("R2 · les fonctions et les types de charge sont des vocabulaires fermés",
+    Object.values(PROPRIETES).every((p) => (FONCTIONS as readonly string[]).includes(p.fonction) && (p.charge === null || (TYPES_CHARGE as readonly string[]).includes(p.charge))),
+    "le SQL refuse le reste");
+  const sqlR2 = lire1("supabase/migrations/20261005_r2_prescription.sql");
+  verdict("R2 · le SQL connaît les mêmes fonctions que TypeScript",
+    FONCTIONS.every((f) => sqlR2.includes(`'${f}'`)), "une fonction ajoutée d'un seul côté serait refusée en base");
+  for (const lieu of LIEUX) {
+    const h = horsDuLieu(lieu);
+    verdict(`R2 · ${lieu} · rien de la banque n'exige un matériel absent`, h.length === 0,
+      h.join(", ") || "même autorité que la génération IA (`exercicesDisponibles`)");
+  }
+  verdict("R2 · « Tractions (ou rowing serviette) » n'est pas devenu « Tractions » à la maison",
+    !BANQUE.poids.Pull.some((e) => e.nom === "Tractions" || e.nom === "Rowing inversé")
+      && !exercicesDisponibles("poids").some((e) => e.name === "Tractions"),
+    "une substitution n'ajoute pas un agrès");
+  const courtes = LIEUX.flatMap((lieu) => Object.entries(BANQUE[lieu]).filter(([, l]) => l.length < EXERCICES_PAR_ETAPE).map(([n]) => `${lieu}/${n}`));
+  verdict("R2 · chaque étape a de quoi composer une séance entière", courtes.length === 0, courtes.join(", ") || `${EXERCICES_PAR_ETAPE} exercices au moins`);
+  const doublons = LIEUX.flatMap((lieu) => Object.entries(BANQUE[lieu]).filter(([, l]) => new Set(l.map((e) => e.nom)).size !== l.length).map(([n]) => `${lieu}/${n}`));
+  verdict("R2 · aucun exercice deux fois dans une même étape", doublons.length === 0, doublons.join(", ") || "les doublons nés des renommages sont partis");
+  const sansRepere = LIEUX.flatMap((lieu) => Object.entries(BANQUE[lieu])
+    .filter(([n, l]) => !n.includes("Cardio") && !l.slice(0, EXERCICES_PAR_ETAPE).some((e) => e.statut === "repere")).map(([n]) => `${lieu}/${n}`));
+  verdict("R2 · chaque étape de force porte au moins un repère, déclaré", sansRepere.length === 0, sansRepere.join(", ") || "jamais « les deux premiers » par définition");
+
+  /* La composition. */
+  const tousLesModeles = LIEUX.flatMap((lieu) => Object.keys(BANQUE[lieu]).flatMap((nom) =>
+    ORIENTS.map((o) => composerEtape(nom, { lieu, orientation: o, niveau: null, version: COMPOSITION_VERSION }))));
+  verdict("R2 · composer deux fois donne le même modèle",
+    LIEUX.every((lieu) => Object.keys(BANQUE[lieu]).every((nom) => JSON.stringify(composerEtape(nom, { lieu, orientation: "masse", niveau: "debutant", version: 1 }))
+      === JSON.stringify(composerEtape(nom, { lieu, orientation: "masse", niveau: "debutant", version: 1 })))),
+    "ni graine, ni variant, ni appareil");
+  const banqueSrc = lire1("src/lib/banqueEtapes.ts").replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
+  verdict("R2 · la composition ne lit ni le hasard, ni l'appareil, ni l'horloge",
+    !/Math\.random|localStorage|variant|Date\.now|new Date/.test(banqueSrc), "pure");
+  const fourchettesFausses = tousLesModeles.flat().filter((l) => l.mesure === "reps"
+    && !(l.reps_min! >= 1 && l.reps_min! <= l.reps_cible! && l.reps_cible! <= l.reps_max!));
+  verdict("R2 · la cible de compatibilité est dérivée et DANS la fourchette", fourchettesFausses.length === 0,
+    `${tousLesModeles.flat().filter((l) => l.mesure === "reps").length} lignes vérifiées`);
+  verdict("R2 · fourchettes de la décision 47",
+    JSON.stringify([fourchette("force", "repere"), fourchette("masse", "repere"), fourchette("masse", "complementaire"), fourchette("general", "repere")])
+      === JSON.stringify([{ series: 5, min: 4, max: 6 }, { series: 4, min: 6, max: 12 }, { series: 3, min: 10, max: 20 }, { series: 3, min: 8, max: 15 }])
+      && cibleCompat(6, 12) === 9 && cibleCompat(8, 15) === 12,
+    "force 4-6, masse 6-12 / 10-20, reprise 8-15");
+  verdict("R2 · l'orientation se lit dans les ids comme dans les libellés",
+    orientationDe(["prise_de_masse"]) === "masse" && orientationDe(["Prise de masse"]) === "masse" && orientationDe(["force"]) === "force"
+      && orientationDe(["sante"]) === "general" && orientationDe([]) === "general", "les deux vocabulaires d'objectifs");
+  verdict("R2 · aucune charge dans une prescription composée",
+    tousLesModeles.flat().every((l) => !("charge_cible" in l)), "R2 pose le type de charge, jamais un chiffre (décision 50)");
+  verdict("R2 · un exercice tenu porte une durée, jamais une fourchette",
+    tousLesModeles.flat().every((l) => (l.mesure === "duree") === (l.duree_s !== null && l.reps_min === null)), "mesure cohérente");
+  /* ⚠️ L'EMPREINTE DE LA VERSION 1. Un modèle composé en mémoire n'est
+     stable que si la même version donne toujours le même contenu :
+     changer la banque ou les règles SANS changer COMPOSITION_VERSION fait
+     échouer ce contrôle. */
+  const empreinte = createHash("sha256").update(JSON.stringify(tousLesModeles)).digest("hex").slice(0, 16);
+  verdict("R2 · la version 1 de la composition n'a pas bougé",
+    COMPOSITION_VERSION !== 1 || empreinte === "2b10ae76ef73b800", `empreinte ${empreinte}`);
+
+  /* La projection. */
+  const proj = projeterPrescription(composerEtape("Push", { lieu: "halteres", orientation: "masse", niveau: null, version: 1 })) as ExercicePrescrit[];
+  verdict("R2 · la projection garde l'ordre et la prescription",
+    proj.length === EXERCICES_PAR_ETAPE && proj.every((x, i) => x.prescription?.cle === composerEtape("Push", { lieu: "halteres", orientation: "masse", niveau: null, version: 1 })[i].exercice_cle),
+    proj.map((x) => `${x.name} ${x.sets}×${x.reps}`).join(" · "));
+  const champsTs = new Set(Object.keys(proj[0]).concat(Object.keys(proj[0].prescription!)));
+  const champsSql = new Set([...sqlR2.slice(sqlR2.indexOf("function public.projeter_prescription"), sqlR2.indexOf("─── 6."))
+    .matchAll(/'([a-zA-Z_]+)',/g)].map((m) => m[1]));
+  const manquent = [...champsTs].filter((c) => !champsSql.has(c));
+  verdict("R2 · la projection SQL porte les mêmes champs que TypeScript", manquent.length === 0,
+    manquent.join(", ") || "comparées à l'identique sur les 54 compositions par `check:prescription-sql`");
+  verdict("R2 · un exercice chronométré garde son déclenchement", projeterPrescription(composerEtape("Cardio / HIIT", { lieu: "poids", orientation: "general", niveau: null, version: 1 }))
+    .filter((x) => /^\d+(s| min)$/.test(x.reps)).every((x) => typeof x.auto === "number" && x.auto > 0), "auto = durée");
+
+  /* Le journal. */
+  const marques = { 0: { 0: { statut: "terminee" as const, validation: "bouton" as const, dureeS: null } } };
+  const lj = lignesDuJournal(proj, marques);
+  verdict("R2 · le journal recopie la prescription de départ",
+    lj[0].exercice_cle === proj[0].prescription!.cle && lj[0].statut_prescrit === "repere"
+      && lj[0].reps_min_prescrites === 6 && lj[0].reps_max_prescrites === 12 && lj[0].reps_declarees === null,
+    "statut, fonction, fourchette ; aucune répétition réelle déduite du bouton");
+  const ancien = lignesDuJournal([{ name: "Squat", sets: 1, reps: "10", rest: 60, tip: "", benefit: "", muscles: [] }], {});
+  verdict("R2 · une séance sans prescription garde le journal de R1",
+    ancien[0].statut_prescrit === null && ancien[0].reps_min_prescrites === null && ancien[0].exercice_cle === "squat", "rien d'inventé");
+
+  /* Le chemin. */
+  const journee = lire1("src/hooks/useJournee.ts");
+  const fin = lire1("src/lib/finSeance.ts");
+  const plan = lire1("src/lib/planning.ts");
+  verdict("R2 · le contenu d'une étape vient de son modèle, plus d'un tirage",
+    !plan.includes("export function instanceDeLEtape") && journee.includes("projeterPrescription(modeleDeLEtapeAffichee.lignes)") && !/instanceDeLEtape\(/.test(journee),
+    "`instanceDeLEtape` supprimée");
+  verdict("R2 · la prescription se fige au lancement et voyage avec lui",
+    journee.includes("prescription: c.modele.lignes.map((l) => ({ ...l })),") && journee.includes("modeleId: c.modele.modeleId,"),
+    "dans la cible, donc dans l'attente locale");
+  verdict("R2 · la fermeture écrit la copie figée, jamais une recomposition",
+    fin.includes("if (cible.prescription?.length)") && fin.includes("cible.prescription);") && !/composerEtape|modeleDeLEtape/.test(fin),
+    "ecrire_occurrence, en une transaction");
+  verdict("R2 · dater une étape écrit l'occurrence ET sa prescription ensemble",
+    journee.includes("statut: \"prevue\"") && journee.includes("}, c.modele.modeleId, c.modele.lignes);") && journee.includes("appliquerRegleDuJour(user.id, date, r.id)"),
+    "et la règle repos/séance s'applique comme ailleurs");
+  /* Tour 22 · 3 · déplacer ne change QUE la date. Le lieu actuel est
+     « maison » ; la réservation a été préparée en salle. */
+  {
+    const preparee = { id: "i1", date: "2026-10-08", type: "Force", title: "Push", difficulty: "Intermédiaire",
+      location: "salle" as const, adaptationId: "a1", etapeId: "e1", provenanceId: "e1", rang: 4,
+      exerciseList: [{ name: "Développé couché", sets: 4, reps: "6-12", rest: 120 }], status: "planned" as const };
+    const bougee = deplacerReservation(preparee, "2026-10-10");
+    const { date: d1, ...avant } = preparee;
+    const { date: d2, ...apres } = bougee;
+    verdict("R2 · déplacer une réservation ne change que sa date",
+      d1 === "2026-10-08" && d2 === "2026-10-10" && JSON.stringify(avant) === JSON.stringify(apres) && preparee.date === "2026-10-08",
+      `lieu ${bougee.location}, adaptation ${bougee.adaptationId}, ${bougee.exerciseList.length} exercice(s)`);
+    const dater = journee.slice(journee.indexOf("const daterEtape"), journee.indexOf("return {\n    etat,"));
+    verdict("R2 · dater une étape déjà posée la DÉPLACE, sans reconstruire son contexte",
+      (dater.match(/deplacerReservation\((dejaPosee|relue), date\)/g) ?? []).length === 2
+        && !dater.includes("intentionDeLEtape(")
+        && !/gen\?\.|levelToDifficulty/.test(dater.slice(dater.indexOf("UN DÉPLACEMENT NE CHANGE QUE LA DATE"))),
+      "ni lieu, ni difficulté, ni adaptation relus des réglages");
+  }
+  /* Tour 22 · 4 · une lecture de modèle ratée : le VRAI lecteur, un faux client. */
+  {
+    type Rep = { data: unknown; error: { code?: string; message: string } | null };
+    const client = (rep: Rep) => {
+      const ch: Record<string, unknown> = {};
+      for (const m of ["select", "eq"]) ch[m] = () => ch;
+      ch.maybeSingle = () => Promise.resolve(rep);
+      return { from: () => ch } as unknown as Parameters<typeof modeleDeLEtape>[2];
+    };
+    const e = { id: "e1", nom: "Push" };
+    const ctx = { lieu: "salle" as const, orientation: "masse" as const, niveau: null, version: 1 };
+    const panne = await modeleDeLEtape(e, ctx, client({ data: null, error: { message: "timeout" } }));
+    const absente = await modeleDeLEtape(e, ctx, client({ data: null, error: { code: "PGRST205", message: "no table" } }));
+    const rien = await modeleDeLEtape(e, ctx, client({ data: null, error: null }));
+    const vide = await modeleDeLEtape(e, ctx, client({ data: { id: "m1", etape_exercices: [] }, error: null }));
+    verdict("R2 · une lecture de modèle ratée ne compose rien à sa place",
+      panne === null && vide === null, `panne → ${panne === null ? "null" : "composé"} · modèle sans lignes → ${vide === null ? "null" : "composé"}`);
+    verdict("R2 · table absente ou aucun modèle écrit : la composition stable",
+      !!absente && absente.modeleId === null && absente.lignes.length > 0 && JSON.stringify(rien?.lignes) === JSON.stringify(absente.lignes),
+      `${absente?.lignes.length} lignes, identiques dans les deux cas`);
+  }
+  /* Tour 22 · 1 · une étape à jour avec le modèle de la précédente n'est pas
+     un contexte vérifié. Le VRAI `avecEtapeVerifiee`, la vraie empreinte. */
+  {
+    const ctx = { lieu: "salle" as const, orientation: "masse" as const, niveau: null, version: 1 };
+    const mod = (etapeId: string, nom: string, rang: number): ModeleDeLOccurrence =>
+      ({ modeleId: `m-${etapeId}`, lignes: composerEtape(nom, ctx), etapeId, rang, lieu: "salle" });
+    const A = mod("eA", "Push", 1);
+    const B = mod("eB", "Pull", 2);
+    const contexte = (etapeId: string, nom: string, rang: number, m: ModeleDeLOccurrence) => ({
+      programmeId: "p", etapeId, rang, nom, adaptationId: null, masquees: [] as string[],
+      prescription: empreinteModele(m), modele: m });
+    let lancees: string[] = [];
+    const lancer = (c: { modele: ModeleDeLOccurrence }) => { lancees.push(c.modele.etapeId); };
+    /* L'écran a l'étape B et encore le modèle de A ; la base dit B avec B. */
+    const melange = contexte("eB", "Pull", 2, A);
+    const r1 = await avecEtapeVerifiee(melange, async () => contexte("eB", "Pull", 2, B), lancer);
+    verdict("R2 · étape B affichée avec le modèle de A : aucune action",
+      !r1.ok && r1.raison === "changee" && lancees.length === 0, JSON.stringify(r1));
+    /* La lecture du modèle B est suspendue : le relire lève. */
+    const r2 = await avecEtapeVerifiee(contexte("eA", "Push", 1, A), async () => { throw new Error("modele_illisible"); }, lancer);
+    verdict("R2 · modèle illisible au moment du geste : refus", !r2.ok && r2.raison === "illisible" && lancees.length === 0, JSON.stringify(r2));
+    /* A → B pendant la lecture : l'écran montre encore A. */
+    const r3 = await avecEtapeVerifiee(contexte("eA", "Push", 1, A), async () => contexte("eB", "Pull", 2, B), lancer);
+    verdict("R2 · l'étape a changé (A → B) : aucune action avec le modèle de A", !r3.ok && lancees.length === 0, JSON.stringify(r3));
+    /* Même étape, autre lieu : autre prescription. */
+    const r4 = await avecEtapeVerifiee(contexte("eB", "Pull", 2, B), async () => contexte("eB", "Pull", 2, { ...B, lieu: "poids", lignes: composerEtape("Pull", { ...ctx, lieu: "poids" }) }), lancer);
+    verdict("R2 · même étape, prescription d'un autre lieu : refus", !r4.ok && lancees.length === 0, JSON.stringify(r4));
+    lancees = [];
+    const r5 = await avecEtapeVerifiee(contexte("eB", "Pull", 2, B), async () => contexte("eB", "Pull", 2, mod("eB", "Pull", 2)), lancer);
+    verdict("R2 · contexte confirmé : le lancement part avec le modèle RELU de B", r5.ok && lancees.join() === "eB", lancees.join() || "rien");
+
+    /* Le chemin dans le hook. */
+    const lecture = journee.slice(journee.indexOf("const charger = useCallback"), journee.indexOf("useEffect(() => { void charger(); }"));
+    verdict("R2 · l'étape n'est publiée qu'avec son modèle, après la dernière lecture",
+      lecture.indexOf("await modeleDeLEtape(") > 0 && lecture.indexOf("await modeleDeLEtape(") < lecture.indexOf("setEtape(suivante)")
+        && lecture.lastIndexOf("if (!derniere()) return;", lecture.indexOf("setEtape(suivante)")) > lecture.indexOf("await reservationDeLOccurrence(")
+        && /setModele\(suivante && lu\s*\? \{ \.\.\.lu, etapeId: suivante\.id, rang: suivante\.rang/.test(lecture),
+      "une réponse arrivée en retard ne publie rien");
+    const gestes = journee.slice(journee.indexOf("type ContexteHook"), journee.indexOf("return {\n    etat,"));
+    verdict("R2 · les gestes utilisent le modèle RELU, jamais celui de l'écran",
+      gestes.includes("prescription: empreinteModele(frais)") && gestes.includes("if (!lu) throw new Error(\"modele_illisible\")")
+        && gestes.includes("modele.etapeId === etape.id") === false && !/[^.]modele\.(lignes|modeleId)/.test(gestes.slice(gestes.indexOf("const lancerAujourdhui"))),
+      "`c.modele` partout ; un contexte sans modèle de CETTE étape n'existe pas");
+    verdict("R2 · un modèle d'une autre étape n'est jamais affiché comme le sien",
+      journee.includes("modele && modele.etapeId === etape.id && modele.rang === etape.rang ? modele : null"), "ni projeté, ni lancé");
+  }
+  verdict("R2 · le modèle naît avec le programme",
+    lire1("src/lib/programme.ts").includes("await ecrireModelesDuCycle("), "à la création, pour le lieu connu");
+
+  /* La base, en lisant le SQL. */
+  const sansCom = sqlR2.replace(/\/\*[\s\S]*?\*\//g, "");
+  verdict("R2 · SQL · aucune écriture directe sur les modèles et les prescriptions",
+    !/for (insert|update|delete|all)/i.test(sansCom.slice(sansCom.indexOf("4. Droits"))) && !/create policy[^;]*for (insert|update|delete|all)/i.test(sansCom),
+    "lecture seule ; les fonctions écrivent");
+  verdict("R2 · SQL · une charge inconnue n'est jamais zéro",
+    sqlR2.includes("check (charge_cible is null or charge_cible > 0)") && sqlR2.includes("check ((charge_cible is null) = (charge_origine = 'aucune'))"),
+    "nulle tant qu'aucune origine");
+  verdict("R2 · SQL · rejouer la préparation ne recalcule pas les lignes",
+    sqlR2.includes("return jsonb_build_object('resultat', 'deja', 'id', v_id, 'rang', v_rang);"), "on rend l'occurrence existante");
+  verdict("R2 · SQL · la projection est écrite avec les lignes, par la même fonction",
+    sqlR2.includes("public.projeter_prescription(v_lignes),"), "exercise_list n'est jamais fournie par le client");
+  verdict("R2 · SQL · un contenu qui change emporte sa prescription, explicitement",
+    sqlR2.includes("new.exercise_list is distinct from old.exercise_list") && sqlR2.includes("delete from public.occurrence_exercices where intention_id = old.id"),
+    "jamais une liste qui contredit des lignes restées en base");
+  verdict("R2 · le remplissage des programmes existants est la génération, mot pour mot",
+    lire1("supabase/migrations/20261005_r2_modeles_existants.sql") === sqlRemplissage().replace(/\r\n/g, "\n"),
+    "jamais une seconde banque écrite à la main en SQL");
+  verdict("R2 · SQL · un modèle écrit ne se recompose pas",
+    sqlR2.includes("on conflict (programme_seance_id, lieu) do nothing") && sqlR2.includes("'cree', false"), "idempotent");
 }
 
 console.log("\n" + (echecs === 0 ? "Tout passe." : echecs + " échec(s)."));

@@ -15,6 +15,10 @@
 import { createClient } from "@/lib/supabase";
 import { levelToDifficulty, type WorkoutDifficulty, type WorkoutCategory } from "@/lib/assistantActions";
 import type { Exercise } from "@/components/WorkoutGuideModal";
+import {
+  COMPOSITION_VERSION, EXERCICES_PAR_ETAPE, entreesDe, orientationDe, prescrire,
+  projeterPrescription, type ContexteComposition,
+} from "@/lib/banqueEtapes";
 
 export type Ctx = "salle" | "halteres" | "poids";
 export type DayStatus = "planned" | "done" | "skipped";
@@ -143,33 +147,10 @@ export interface GenInput {
   seed: string;                 // graine déterministe (= user.id)
 }
 
-/* ═══════════════════════════ Banque d'exercices ═══════════════════════════ */
-const EX: Record<Ctx, Record<string, string[]>> = {
-  salle: {
-    "Full Body": ["Presse à cuisses", "Développé couché", "Tirage poitrine", "Développé épaules machine", "Leg curl assis", "Rowing assis poulie", "Élévations latérales", "Crunch machine"],
-    "Haut du corps": ["Développé couché", "Tirage poitrine", "Développé épaules machine", "Rowing assis poulie", "Pec deck", "Tirage vertical", "Élévations latérales", "Curl haltères", "Extensions triceps poulie"],
-    "Bas du corps": ["Presse à cuisses", "Leg extension", "Leg curl allongé", "Hip thrust machine", "Fentes haltères", "Mollets debout", "Abducteurs machine", "Soulevé de terre roumain"],
-    "Push": ["Développé couché", "Développé incliné haltères", "Développé épaules machine", "Pec deck", "Élévations latérales", "Extensions triceps poulie", "Dips machine"],
-    "Pull": ["Tirage vertical", "Rowing assis poulie", "Tirage poitrine", "Rowing haltère", "Curl barre EZ", "Curl haltères", "Face pull poulie", "Tirage horizontal"],
-    "Cardio / HIIT": ["Tapis course 20 min", "Vélo 15 min", "Rameur 10 min", "Burpees 4x15", "Corde à sauter 5x2 min", "Mountain climbers 4x30s"],
-  },
-  halteres: {
-    "Full Body": ["Squat haltères", "Développé couché haltères", "Rowing haltère", "Développé épaules haltères", "Fentes haltères", "Curl haltères", "Pompes", "Gainage 3x45s"],
-    "Haut du corps": ["Développé couché haltères", "Rowing haltère", "Développé épaules haltères", "Élévations latérales", "Curl haltères", "Extensions triceps haltère", "Pompes", "Oiseau haltères"],
-    "Bas du corps": ["Squat haltères", "Fentes haltères", "Soulevé de terre roumain haltères", "Hip thrust haltère", "Mollets haltères", "Squat bulgare", "Fentes marchées"],
-    "Push": ["Développé couché haltères", "Développé épaules haltères", "Élévations latérales", "Pompes", "Extensions triceps haltère", "Développé incliné haltères"],
-    "Pull": ["Rowing haltère", "Tirage menton haltères", "Curl haltères", "Oiseau haltères", "Curl marteau", "Rowing buste penché"],
-    "Cardio / HIIT": ["Burpees 4x15", "Corde à sauter 5x2 min", "Mountain climbers 4x30s", "Jumping jacks 4x40s", "Squats sautés 4x20", "Gainage dynamique 4x45s"],
-  },
-  poids: {
-    "Full Body": ["Pompes", "Squats", "Fentes", "Gainage 3x45s", "Dips sur chaise", "Superman 3x15", "Mountain climbers 3x30s", "Chaise contre le mur 3x45s"],
-    "Haut du corps": ["Pompes", "Pompes diamant", "Dips sur chaise", "Pompes inclinées", "Pike push-ups", "Gainage 3x45s", "Superman 3x15", "Pompes serrées"],
-    "Bas du corps": ["Squats", "Fentes", "Fentes sautées", "Squats sautés", "Chaise contre le mur 3x45s", "Mollets debout", "Pont fessier 4x15", "Squat bulgare"],
-    "Push": ["Pompes", "Pike push-ups", "Dips sur chaise", "Pompes diamant", "Pompes inclinées", "Gainage 3x45s"],
-    "Pull": ["Tractions (ou rowing serviette)", "Rowing inversé sous table", "Superman 3x15", "Gainage dorsal 3x40s", "Bird dog 3x12", "Pont fessier 4x15"],
-    "Cardio / HIIT": ["Burpees 4x15", "Corde à sauter 5x2 min", "Mountain climbers 4x30s", "Jumping jacks 4x40s", "Squats sautés 4x20", "Montées de genoux 4x40s"],
-  },
-};
+/* ═══════════════════════════ Banque d'exercices ═══════════════════════════
+   R2 · La banque vit dans `banqueEtapes.ts` : chaque exercice y a une
+   clé stable, une fonction et un type de charge, et chaque liste ne
+   contient que ce qui est praticable au lieu. */
 
 // Répartition des séances sur la semaine (indices de jours, 0 = Lundi)
 const REST_PATTERN: Record<number, number[]> = {
@@ -199,14 +180,6 @@ function buildSplit(sessions: number): string[] {
   if (sessions === 5) return ["Push", "Pull", "Bas du corps", "Haut du corps", "Cardio / HIIT"];
   return ["Push", "Pull", "Bas du corps", "Haut du corps", "Full Body", "Cardio / HIIT"];
 }
-function repSchemeFor(goals: string[]): string {
-  const g = goals.join(" ").toLowerCase();
-  if (g.includes("force")) return "5x5";
-  if (g.includes("masse")) return "4x10";
-  if (g.includes("poids") || g.includes("endurance") || g.includes("souplesse")) return "3x15";
-  return "4x12";
-}
-
 /* PRNG déterministe (mulberry32) */
 function hashStr(s: string): number {
   let h = 2166136261;
@@ -229,21 +202,6 @@ function shuffleArr<T>(arr: T[], rng: () => number): T[] {
 
 /* Transforme une entrée de banque ("Développé couché" ou "Burpees 4x15"
    ou "Tapis course 20 min") en exercice STRUCTURÉ. `scheme` = "4x10" etc. */
-function toExercise(raw: string, scheme: string): Exercise {
-  const withReps = /\d/.test(raw) ? raw : `${raw} ${scheme}`;
-  // "Nom 4x10" / "Nom 3x45s" / "Nom 5x2 min"
-  const m = withReps.match(/^(.+?)\s+(\d+)\s*[x×]\s*(.+)$/);
-  if (m) {
-    return { name: m[1].trim(), sets: parseInt(m[2], 10) || 3, reps: m[3].trim(), rest: 60, restAfter: 90, tip: "", benefit: "", muscles: [] };
-  }
-  // "Nom 20 min" / "Nom 30s" → un seul bloc chronométré
-  const m2 = withReps.match(/^(.+?)\s+(\d+\s*(?:min|sec|s)\b.*)$/i);
-  if (m2) {
-    return { name: m2[1].trim(), sets: 1, reps: m2[2].trim(), rest: 45, restAfter: 60, tip: "", benefit: "", muscles: [] };
-  }
-  return { name: withReps.trim(), sets: 3, reps: "10", rest: 60, restAfter: 90, tip: "", benefit: "", muscles: [] };
-}
-
 /* Normalise une liste d'exercices STRUCTURÉS (sortie LLM ou ligne Supabase
    `exercise_list`) en Exercise[] propre, avec valeurs par défaut sûres. */
 export function normalizeExercises(raw: unknown): Exercise[] {
@@ -420,7 +378,7 @@ function generateWeek(gen: GenInput, dates: string[], cycle: CycleSemaine | null
   };
   const split = buildSplit(sessions).filter((nom) => !estMasquee(nom));
   const trainingDays = REST_PATTERN[sessions] ?? [0, 2, 4];
-  const scheme = repSchemeFor(gen.goals);
+  const ctxCompo = contexteDe(gen);
   const difficulty = levelToDifficulty(gen.level);
 
   return dates.map((date, dayIdx) => {
@@ -430,8 +388,14 @@ function generateWeek(gen: GenInput, dates: string[], cycle: CycleSemaine | null
     }
     const sessionType = split[pos % split.length];
     const isCardio = sessionType.includes("Cardio");
-    const bank = EX[gen.ctx][sessionType] ?? EX[gen.ctx]["Full Body"];
-    const exerciseList = shuffleArr(bank, rng).slice(0, 5).map((p) => toExercise(p, scheme));
+    /* « Refais ma semaine » garde sa variété (le compteur `variant`, Premium) :
+       ces lignes ne portent qu'une PROVENANCE, aucune occurrence, donc
+       aucune prescription figée. Elles puisent dans la même banque. */
+    const exerciseList = projeterPrescription(
+      shuffleArr([...entreesDe(sessionType, gen.ctx)], rng)
+        .slice(0, EXERCICES_PAR_ETAPE)
+        .map((e, i) => prescrire(e, i, ctxCompo)),
+    );
     const source = parNom.get(sessionType) ?? null;
     return {
       id: null,
@@ -451,20 +415,16 @@ function generateWeek(gen: GenInput, dates: string[], cycle: CycleSemaine | null
   });
 }
 
-/**
- * L'INSTANCE d'une étape du cycle : sa liste d'exercices concrète.
- *
- * ⚠️ C'est le troisième étage du modèle, et il se matérialise TARD :
- * l'étape (« Push ») est stable des mois, sa liste d'exercices se fabrique
- * au moment de faire la séance et reste jetable tant qu'elle n'a pas été
- * consommée. C'est un calcul local et instantané, aucune écriture, aucun
- * appel d'IA : rien n'oblige à l'écrire d'avance, et écrire d'avance est
- * précisément ce qui figeait le programme.
- */
-export function instanceDeLEtape(nomEtape: string, gen: GenInput): Exercise[] {
-  const rng = mulberry32(hashStr(`${gen.seed}-${gen.ctx}-${nomEtape}-v${gen.variant}`));
-  const bank = EX[gen.ctx][nomEtape] ?? EX[gen.ctx]["Full Body"];
-  return shuffleArr(bank, rng).slice(0, 5).map((p) => toExercise(p, repSchemeFor(gen.goals)));
+/* R2 · `instanceDeLEtape` a été SUPPRIMÉE. Elle recomposait le contenu
+   d'une étape à chaque lecture, avec une graine qui dépendait de
+   l'appareil. Le contenu d'une étape est désormais son MODÈLE
+   (`prescription.ts`, `modeleDeLEtape`), écrit ou composé de façon pure
+   et versionnée par `banqueEtapes.ts`. */
+
+/** R2 · Les réglages de composition d'une personne. Sans `variant` ni
+ *  graine : deux appareils composent le même modèle. */
+export function contexteDe(gen: Pick<GenInput, "ctx" | "goals" | "level">): ContexteComposition {
+  return { lieu: gen.ctx, orientation: orientationDe(gen.goals), niveau: gen.level ?? null, version: COMPOSITION_VERSION };
 }
 
 /** Génère la semaine SANS rien écrire — pour préparer une carte de
@@ -1287,18 +1247,36 @@ async function poser(
      RECULER le curseur du cycle sans un mot. On ne touche donc qu'à ce
      qui est encore prévu : une intention résolue est un fait, quelle que
      soit la façon dont elle s'est résolue. */
-  const contraires = jour.filter(
-    (i) => i.id && i.id !== ecrit.id && i.status === "planned" && natureDe(i) !== natureDe(day),
-  );
-  if (contraires.length > 0) {
-    await supabase
-      .from(sc.table)
-      .delete()
-      .eq("user_id", userId)
-      .in("id", contraires.map((i) => i.id as string));
-  }
+  await retirerContraires(userId, jour, ecrit.id ?? null, natureDe(day));
 
   return ecrit;
+}
+
+/** La règle repos/séance de `poser`, partagée avec l'écriture d'une
+ *  occurrence prescrite (R2), qui pose sa ligne par une autre porte mais
+ *  obéit à la même règle. `jour` = la journée lue AVANT l'écriture. */
+async function retirerContraires(userId: string, jour: PlanningDay[], idEcrit: string | null, nature: "seance" | "repos") {
+  const contraires = jour.filter(
+    (i) => i.id && i.id !== idEcrit && i.status === "planned" && natureDe(i) !== nature,
+  );
+  if (contraires.length === 0) return;
+  const supabase = createClient();
+  const sc = await schemaIntentions();
+  await supabase
+    .from(sc.table)
+    .delete()
+    .eq("user_id", userId)
+    .in("id", contraires.map((i) => i.id as string));
+}
+
+/**
+ * R2 · Pose une SÉANCE qui vient de s'écrire par une autre porte (une
+ * occurrence et sa prescription, `ecrire_occurrence`) : applique la même
+ * règle repos/séance que toute écriture délibérée.
+ */
+export async function appliquerRegleDuJour(userId: string, date: string, idEcrit: string): Promise<void> {
+  const jour = await lireJour(userId, date);
+  await retirerContraires(userId, jour, idEcrit, "seance");
 }
 
 /**
