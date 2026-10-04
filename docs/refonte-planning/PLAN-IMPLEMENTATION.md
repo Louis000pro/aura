@@ -246,3 +246,56 @@ Trois témoins vérifiés.
 - Codex a relu `b8b972f` et `d66cbea`, relancé le banc (751 contrôles) et validé R6 : aucun point bloquant ouvert.
 - La migration est déjà en base. La mise en ligne du code attend le feu vert de Louis.
 - Suite : R2, la prescription figée par occurrence, distincte des séries réalisées, sans charge cible inventée quand l'historique ne permet pas d'en proposer une.
+
+## R2 · cadrage (2026-10-04), soumis à Codex avant le code
+
+### Ce que le code fait aujourd'hui (constaté)
+
+- Une étape du cycle (`programme_seances`) ne porte qu'un **nom** (« Push »). Son contenu est recalculé à chaque lecture par `instanceDeLEtape(nom, gen)` : 5 exercices tirés d'une banque par lieu (`EX` dans `planning.ts`), mélangés avec la graine `user.id` + le lieu + `variant`.
+- `variant` vient de `readVariant(user.id)`, donc du **localStorage** : deux appareils peuvent proposer deux contenus différents pour la même occurrence. C'est exactement ce que la décision 44 interdit.
+- La prescription est une chaîne (`reps: "4x10"` → `sets` + `reps: "10"`), sans rôle, sans fourchette, sans type de charge. `repSchemeFor` la décide d'après les objectifs (5x5, 4x10, 3x15, 4x12).
+- **21 exercices de la banque des étapes n'ont aucune clé stable** (`cleExercice` rend `null`) : leur journal R1 s'écrit avec `exercice_cle = null`, donc aucune progression ne pourra jamais être calculée dessus. Liste : Squats, Squat haltères, Fentes haltères, Fentes marchées, Mollets debout, Mollets haltères, Chaise contre le mur, Tapis course, Tirage vertical, Tirage horizontal, Rowing buste penché, Rowing inversé sous table, Tractions (ou rowing serviette), Extensions triceps poulie, Extensions triceps haltère, Développé épaules haltères, Soulevé de terre roumain haltères, Hip thrust haltère, Crunch machine, Pompes serrées, Gainage dorsal.
+
+### Proposition
+
+**1. Deux tables, deux niveaux (décision 44).**
+
+- `etape_exercices` = **le modèle**, attaché à une étape d'une version de programme : `programme_seance_id` (cascade), `position`, `exercice_cle` (obligatoire), `exercice_nom` (copie d'affichage), `role` (`repere` | `complementaire`), `series`, `mesure` (`reps` | `duree`), `reps_min` / `reps_max` ou `duree_s`, `repos_s`, `charge_type` (`totale` | `par_haltere` | `assistance` | `poids_du_corps`, ou nul). Unique `(programme_seance_id, position)`. RLS par le programme, comme `programme_seances`. **Aucune charge** : elle appartient à la personne et à son matériel, pas au modèle.
+- `occurrence_exercices` = **la prescription figée** d'une occurrence : `intention_id` (cascade), `user_id`, `emplacement`, les mêmes colonnes de prescription recopiées, plus `charge_cible` (nulle), `charge_origine` (`aucune` | `historique` | `acceptee`) avec `charge_cible is null ⇔ charge_origine = 'aucune'`. Unique `(intention_id, emplacement)`. RLS propriétaire.
+- Pourquoi une table et pas un JSONB sur l'intention : R4 modifiera **une** cible acceptée, R3 et R4 liront ligne par ligne, et les contraintes (fourchette cohérente, charge jamais zéro par défaut) se tiennent en base.
+- `exercise_list` reste écrite à côté, dérivée de la prescription : c'est elle que les déploiements actuels et le tunnel lisent.
+
+**2. Quand la prescription se fige.**
+
+- **Dater une étape** (`intentionDeLEtape`) écrit l'intention ET ses lignes, dans une seule transaction (RPC `preparer_occurrence`, idempotente).
+- **Lancer une étape sans date** n'écrit toujours rien (règle V5) : la prescription est calculée à partir d'`etape_exercices`, qui vit en base, donc **identique sur tous les appareils** ; elle voyage dans la cible du lancement et s'écrit avec la fermeture (`consommerEtape`), dans la même transaction.
+- Les séances qui ne viennent pas d'une étape (catalogue, bibliothèque, impro, semaine régénérée qui ne porte que sa provenance) **n'ont pas de prescription** et gardent le comportement actuel.
+- Une nouvelle version du programme ne touche pas une prescription déjà figée.
+- Question pour R4, à ne pas trancher maintenant : une cible acceptée pour « la prochaine occurrence » a besoin d'une ligne où vivre si cette occurrence n'est pas encore écrite.
+
+**3. La composition d'une étape.**
+
+- `composerEtape(nom, lieu, niveau, objectifs)`, pure et déterministe, **sans `variant` ni localStorage**. Elle ne puise que des exercices qui ont une clé.
+- Rôles : les deux premiers exercices de chaque liste de la banque sont les repères (la banque est réordonnée pour que ce soient les mouvements principaux), les autres sont complémentaires. Écrit dans la banque, jamais deviné par le nom.
+- Fourchettes (décision 47) : force 4 à 6 sur les repères ; prise de masse 6 à 12 sur les principaux, 10 à 20 sur les accessoires ; par défaut (santé, reprise, perte de poids) 8 à 15. Les exercices tenus gardent une durée.
+- Appelée à la création du programme (`getOrCreateProgramme`). **Les 5 programmes actifs existants** n'ont pas de modèle : je propose un remplissage unique par script, avec l'accord de Louis, plutôt que de les laisser sur l'ancien calcul pour toujours. Leur contenu changera une fois, ce qui se dit dans la carte de mise à jour.
+
+**4. La banque doit n'avoir que des clés.** Chaque nom sans clé reçoit une décision explicite, écrite dans le code et vérifiée par le banc (aucun nom de la banque sans clé) :
+- même mouvement, nom différent : on remplace par le nom canonique (Squats → Squat, Chaise contre le mur → Chaise au mur, Tapis course → Tapis de course, Extensions triceps poulie / haltère → Extension triceps poulie / haltère, Rowing inversé sous table → Rowing inversé, Tractions (ou rowing serviette) → Tractions, Tirage vertical → Tirage poitrine, Tirage horizontal → Rowing assis poulie, Rowing buste penché → Rowing buste penché haltères, Mollets debout → Mollets) ;
+- même mouvement avec un autre matériel (Squat haltères, Fentes haltères, Soulevé de terre roumain haltères, Mollets haltères, Hip thrust haltère, Développé épaules haltères) : une variante garde son propre historique (décision 52), donc **pas** de clé partagée. Sans planche animée, elle ne peut pas entrer dans la bibliothèque : on la remplace par un exercice de la bibliothèque qui a la même fonction ;
+- sans équivalent (Crunch machine, Pompes serrées, Gainage dorsal, Fentes marchées) : même règle.
+
+**5. Le journal se rattache à la prescription.** `series_realisees` gagne `occurrence_exercice_id` (on delete set null), `role`, `reps_min_prescrites` et `reps_max_prescrites`. `reps_prescrites` reste remplie pour les séances sans prescription.
+
+**6. Ce que R2 ne fait pas.**
+- Aucune charge cible : `charge_cible` est toujours nulle en R2 (décision 50). La phrase « choisis une charge que tu pourrais soulever environ 12 fois » arrive en R3.
+- L'**incrément du matériel** : on ne connaît ni les haltères ni les disques de la personne. En écrire un serait inventer un chiffre. Je propose de le reporter en R4, qui en a besoin et qui peut poser la question.
+- Rien de visible dans le tunnel, sauf la fourchette écrite à la place d'un nombre unique (« 8 à 12 » au lieu de « 10 »), à trancher.
+
+### Questions pour Codex
+
+1. Une table de prescription plutôt qu'un JSONB : d'accord ?
+2. Figer au moment de dater, ou au lancement d'une étape sans date avec écriture à la fermeture : d'accord avec ce partage, sans écriture au lancement ?
+3. Remplissage unique des 5 programmes existants par script, ou ancien calcul conservé pour eux ?
+4. Incrément reporté en R4 ?
+5. Fourchette visible dès R2, ou nombre unique jusqu'à R3 ?
