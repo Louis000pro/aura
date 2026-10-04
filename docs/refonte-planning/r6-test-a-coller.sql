@@ -2,7 +2,7 @@
 -- Il applique la migration, joue les scénarios, puis ANNULE TOUT : la base ne garde rien.
 -- Le résultat s'affiche comme une erreur rouge qui commence par R6_SCENARIOS : c'est normal, envoie-moi une capture.
 begin;
-create temp table r6_avant as select md5(string_agg(concat_ws('|', id, statut, date, consommee_le, etape_consommee_id, programme_id, programme_seance_id, lancement_id, nature, origine), ',' order by id)) as e, count(*) as n from public.intentions_entrainement;
+create temp table r6_avant as select md5(string_agg(concat_ws('|', id, statut, date, consommee_le, etape_consommee_id, programme_id, programme_seance_id, lancement_id, nature, origine), ',' order by id)) as e_avant, count(*) as n_avant from public.intentions_entrainement;
 /* ════════════════════════════════════════════════════════════════════
    R6 · LES OCCURRENCES (refonte du planning, décisions 30 à 42)
 
@@ -248,7 +248,7 @@ begin
   select md5(string_agg(concat_ws('|', id, statut, date, consommee_le, etape_consommee_id,
          programme_id, programme_seance_id, lancement_id, nature, origine), ',' order by id)), count(*)
     into t, n from public.intentions_entrainement;
-  out := out || format('M1 sens=%s (%s lignes) ; ', t = (select e from r6_avant) and n = (select n from r6_avant), n);
+  out := out || format('M1 sens=%s (%s lignes) ; ', t = (select e_avant from r6_avant) and n = (select n_avant from r6_avant), n);
 
   /* ── M2 · Les rangs repris sont ceux de l'ancien curseur ── */
   select string_agg(rang::text, ',' order by consommee_le) into t
@@ -352,8 +352,8 @@ begin
       programme_id, programme_seance_id, etape_consommee_id)
     values (U, '2026-10-21', 'Force', 'Haut', 'Intermédiaire', '[]', 'prevue', 'seance', 'utilisateur', P, E1, E1);
     out := out || 'ECRITURE_AUTRE_ACCEPTEE';
-  exception when insufficient_privilege then
-    out := out || 'refus=42501';
+  exception when others then
+    out := out || 'refus=' || sqlstate;
   end;
 
   raise exception 'R6_SCENARIOS %', out;

@@ -193,4 +193,14 @@ Trois témoins vérifiés.
 **Vérifications.**
 - `check:programme` : 724 contrôles, trois témoins vérifiés (fenêtre retirée, ancien curseur, rang non transmis).
 - Typecheck, build, et eslint à 93, identique règle par règle.
-- Scénarios de base prêts dans `docs/refonte-planning/r6-scenarios-base.sql`, migration comprise, dans une transaction annulée. Ils ne sont pas encore joués et attendent l'accord de Louis.
+- **Scénarios joués sur la vraie base le 2026-10-04**, migration comprise, dans une transaction annulée collée par Louis (`r6-scenarios-base.sql`). Tous conformes :
+  - **M1 :** l'empreinte des 261 intentions est identique avant et après la migration.
+  - **M2 :** les rangs repris sont `1,4,5,6` avec un départ à 7, puis `1,2,3,4` avec un départ à 5. La réservation existante reçoit le rang 1, et plus aucune ligne n'a d'étape sans rang.
+  - **S1 :** A, puis C, puis B reçoivent les rangs 5, 7 et 6.
+  - **S2 :** une réservation déplacée puis fermée garde son rang 8.
+  - **S3 :** le rejeu est refusé par `uniq_intention_lancement`, la double fermeture par `uniq_occurrence`.
+  - **S4 :** un rang incohérent avec son étape est refusé.
+  - **S5 :** une répétition n'a pas de rang et le plancher ne bouge pas.
+  - **S6 :** changer l'étape recalcule le rang (Haut 9 devient Push 11).
+  - **S7 :** l'autre compte voit 0 ligne et son écriture est refusée. Le refus vient du déclencheur (`occurrence_sans_cycle`, 23514), qui ne voit pas le cycle d'autrui, avant même la RLS.
+- Reste à faire après l'application : l'essai simultané réel (deux fermetures sans rang sur le même programme), puis le nettoyage.
