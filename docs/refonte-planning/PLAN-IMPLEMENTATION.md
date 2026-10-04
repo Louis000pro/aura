@@ -363,3 +363,51 @@ Remplissage à suivre : 10 programmes actifs, 38 étapes, donc 38 modèles atten
 ## R2 · remplissage appliqué (2026-10-04)
 
 `20261005_r2_modeles_existants.sql` collé par Louis. Vérifié en base : 38 modèles pour 38 étapes de programmes actifs, aucune étape sans modèle, aucun modèle vide, 190 lignes (5 par modèle). Aucune occurrence écrite, intentions inchangées. R2 est complet côté base.
+
+## R3 · cadrage (2026-10-04), soumis à Codex avant le code
+
+Périmètre : maquette 07, écrans 02 à 04, 06 et 07. L'écran 05 (la question après un repère) appartient à R4 ; les écrans 08 à 10 à R5.
+
+### Ce que le code fait aujourd'hui (constaté)
+
+- `completeSet(validation, dureeS)` marque une série `terminee` dans `doneMap` ; aucune répétition ni charge n'est retenue. `lignesDuJournal` écrit donc `reps_declarees = null` partout.
+- `series_realisees` a déjà les colonnes `charge`, `charge_unite`, `charge_type` et `exercice_prevu_cle` (R1), avec `charge is null ⇔ charge_unite is null`. Mais **`enregistrer_seance` ne les recopie pas** : même si le tunnel les envoyait, elles resteraient nulles.
+- `exercises` est dérivé des props (`useMemo`) : rien ne permet de changer un exercice en cours de séance.
+- Une ligne de prescription (R2) porte `fonction`, `statut`, `reps_min/max`, `reps_cible` et `charge_type`. `charge_cible` est toujours nulle.
+
+### Proposition
+
+**1. Seules les séances prescrites changent.** Un exercice sans `prescription` (catalogue, bibliothèque, impro, séance générée) garde exactement le tunnel d'aujourd'hui : même bouton, rien de déclaré, `reps_declarees` nul. Le banc le vérifie.
+
+**2. Pendant l'exercice (écran 02).**
+- Le grand nombre reste la cible (`reps_cible`). La fourchette apparaît en une ligne discrète sous lui (« 8 à 12 ») ; aucune autre phrase.
+- La charge s'affiche sous les répétitions avec un crayon, seulement si `mesure = reps` et `charge_type` vaut `totale`, `par_haltere` ou `assistance`. Le libellé suit le type : « 60 kg », « 16 kg par haltère », « assistance 20 kg ».
+- Charge inconnue : le crayon dit « Charge ? ». Le bouton dit alors « Fait · 10 », et la série s'enregistre avec une charge nulle, **jamais zéro**. Première fois sur cet exercice : une seule ligne du Guide, « Choisis une charge que tu pourrais soulever environ {reps_max} fois » (décision 50), à la place de sa phrase habituelle.
+- Une charge saisie vaut pour les séries suivantes du même emplacement, jusqu'à ce qu'on la change.
+- Le bouton dit ce qui sera enregistré : « Fait · 10 × 60 kg ». Un toucher enregistre `reps_declarees = reps_cible` et la charge affichée. C'est une déclaration explicite, pas une déduction (tour 20).
+
+**3. Pendant le repos (écrans 03 et 04).**
+- Une ligne « ✓ Série 2 · 10 × 60 kg · Corriger » sous le minuteur. Rien d'autre à remplir.
+- « Corriger » ouvre, dans le même bloc, deux compteurs − / + (répétitions, charge). Pas de clavier. Pas de charge : seulement les répétitions.
+- **Saisie protégée** (décision 55) : si le repos se termine pendant une correction, le minuteur s'arrête à 0 (« Repos terminé »), la vibration a lieu, l'avance automatique est suspendue, et le bouton devient « Enregistrer et reprendre ». Fermer sans enregistrer garde la valeur d'avant. Une correction de charge vaut aussi pour les séries suivantes.
+- Une correction modifie la marque de la série dans `doneMap` ; le journal, construit une seule fois à la fin, porte la valeur corrigée.
+
+**4. Changer d'exercice (écran 06).**
+- « ⇄ Changer » à côté de la démo, seulement sur un exercice prescrit.
+- Équivalents : les exercices de la bibliothèque qui ont **la même fonction**, une clé, une animation, et qui se font au même lieu (`PROPRIETES` + `horsDuLieu`). Plus « Dans tous les mouvements » pour chercher ailleurs.
+- Règle des séries (décision 56) : les séries déjà faites restent sur l'exercice d'origine. Le remplaçant prend les séries suivantes du **même emplacement**, avec `exercice_prevu_cle` = l'exercice d'origine. Sa charge part inconnue, jamais héritée. La fourchette et le statut de l'emplacement restent ceux de la prescription.
+- L'état passe dans `remplacements: Record<emplacement, { aPartirDe: serie, exercice }>`. `exercises` affiché et `lignesDuJournal` en dérivent ; la prescription d'origine ne change pas.
+
+**5. Au poids du corps et chronométré (écran 07).** Aucun changement : anneau, 3-2-1, pas de kilos, pas de correction.
+
+**6. Une migration** : `enregistrer_seance` recopie `charge`, `charge_unite` (`kg` quand une charge existe), `charge_type`, et `exercice_prevu_cle`. Un journal en attente d'avant R3 n'a pas ces champs : ils restent nuls. Rien d'autre en base.
+
+**7. Le fichier.** `WorkoutGuideModal.tsx` (1 929 lignes) est un monolithe : la logique part dans des modules purs et testables (`saisieSerie.ts` pour le libellé, l'incrément et les corrections ; `remplacement.ts` pour les équivalents et la règle des séries), le composant ne fait qu'afficher. Passes courtes, un seul agent.
+
+### Questions pour Codex
+
+1. **« À chaque fois »** (écran 06) touche la prescription des occurrences futures, alors que les modèles sont immuables (R2). Ma proposition : R3 ne livre que « Pour cette séance seulement », et « À chaque fois » arrive avec R7, qui décide de la composition. D'accord, ou il faut une règle de substitution dès R3 ?
+2. **Valeur de départ de la charge** : rien (« Charge ? ») tant que R4 n'existe pas, ou la dernière charge **déclarée** sur la même clé et le même type, affichée telle quelle, sans hausse ?
+3. **Pas des compteurs de charge** : 2,5 kg en `totale` et `assistance`, 1 kg en `par_haltere` ? Ce n'est pas l'incrément de progression (R4), seulement le pas de correction.
+4. **La fourchette** sous le grand nombre suffit-elle, ou faut-il la montrer ailleurs ?
+5. **Remplacement à la dernière série** : s'il ne reste aucune série, « Changer » disparaît-il, ou sert-il à corriger la dernière série déjà faite ?
