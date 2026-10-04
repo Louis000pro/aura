@@ -328,6 +328,10 @@ export async function viserEtape(
   /* R6 · les occurrences se lisent une fois, fraîches : une écriture en
      dépend. La « dernière fermée » garde le garde-fou du double saut. */
   const occurrences = await lireOccurrences(userId, actif);
+  /* ⚠️ SANS LECTURE FIABLE, AUCUN GESTE DE CYCLE NE SE PRÉPARE (tour 14).
+     Un programme lu de travers ressemblerait à un programme neuf, et la
+     carte proposerait de réserver ou de passer une occurrence fausse. */
+  if (!occurrences) return { ok: false, refus: "illisible" };
   const position = positionDerniereFermee(actif.cycle, occurrences);
   const masque = (e: EtapeCycle) => etapeMasquee(e.id, adaptation);
   const suivante = occurrenceSuivante<EtapeCycle>(actif.cycle, occurrences, masque);

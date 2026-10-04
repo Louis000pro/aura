@@ -30,7 +30,7 @@ import { CLES_EXERCICES, cleExercice } from "@/lib/exerciceCle";
 import { EXERCISE_LIBRARY } from "@/lib/exerciseLibrary";
 import { resolveGuide } from "@/lib/exerciseGuides";
 import { etapesDuCycle, etapeSuivante, nomDeProgramme, positionRefermee, POSITION_INITIALE } from "@/lib/programme";
-import { occurrenceSuivante, rangMinimal, rangPourEtape } from "@/lib/occurrences";
+import { baseEtape, occurrenceSuivante, rangPourEtape } from "@/lib/occurrences";
 import { etatJournee, intentionDeLEtape, lancementDuJour, libelleReservation, repetitionDuJour } from "@/lib/journee";
 import {
   etatDepuisExp, missionsAuraVides,
@@ -5823,10 +5823,10 @@ verdict(
 
   /* 1 · C avant B */
   {
-    const etat = { depart: 1, fermes: fe(1, 3) };
+    const etat = { depart: 1, fermes: fe(1, 3), reserves: [] };
     const s = occurrenceSuivante(C3, etat);
     verdict("R6 · C₁ fait avant B₁ laisse B₁ proposée", s?.rang === 2 && s.etape.id === "e2", `→ rang ${s?.rang} (${s?.etape.nom})`);
-    const apres = occurrenceSuivante(C3, { depart: 1, fermes: fe(1, 3, 2) });
+    const apres = occurrenceSuivante(C3, { depart: 1, fermes: fe(1, 3, 2), reserves: [] });
     verdict("R6 · B₁ faite ensuite, le cycle reprend après C₁", apres?.rang === 4 && apres.etape.id === "e1", `→ rang ${apres?.rang}`);
     const ancien = etapeSuivante(C3, 3, 1);
     verdict("R6 · témoin : l'ancien curseur aurait fait disparaître B", ancien?.id === "e1", "l'ancien curseur proposait " + ancien?.nom);
@@ -5836,23 +5836,71 @@ verdict(
       rangPourEtape(C3, etat, "e2", [1, 2, 3]) === 5, "rang " + rangPourEtape(C3, etat, "e2", [1, 2, 3]));
   }
 
-  /* Aucune dette (décision 35) : un tour de cycle, pas plus. */
+  /* Une étape a au plus une occurrence en attente (décision 35, tour 14).
+     Les fermetures sont datées dans l'ordre où elles sont données. */
+  const jour = (i: number) => new Date(Date.UTC(2026, 0, 1 + i)).toISOString();
+  const ferme = (k: number, rangs: number[]) => rangs.map((rang, i) => ({
+    rang, etapeId: "e" + (((rang - 1) % k) + 1), consommeeLe: jour(i),
+  }));
   {
+    /* Le contre-exemple de Codex : A₁, C₁, A₂, C₂ fermées, sans adaptation. */
+    const etat = { depart: 1, fermes: ferme(3, [1, 3, 4, 6]), reserves: [] };
+    const s = occurrenceSuivante(C3, etat);
+    verdict("R6 · sans adaptation, B₁ reste proposée au-delà d'un tour",
+      s?.rang === 2 && s.etape.id === "e2", `→ rang ${s?.rang} (${s?.etape.nom})`);
+    const res = occurrenceSuivante(C3, { ...etat, reserves: [{ rang: 2, etapeId: "e2" }] });
+    verdict("R6 · B₁ réservée garde sa place dans la suite",
+      res?.rang === 2 && res.etape.id === "e2", `→ rang ${res?.rang}`);
+    const apres = occurrenceSuivante(C3, { ...etat, fermes: [...etat.fermes, { rang: 2, etapeId: "e2", consommeeLe: jour(9) }] });
+    verdict("R6 · B₁ faite en retard : B rejoint la suite, pas de B₂ à rattraper",
+      apres?.rang === 7 && apres.etape.id === "e1" && baseEtape({ ...etat, fermes: [...etat.fermes, { rang: 2, etapeId: "e2", consommeeLe: jour(9) }] }, 3, "e2") === 7,
+      `→ rang ${apres?.rang} (${apres?.etape.nom})`);
+    /* Une occurrence passée au choix reste due, même quand la suite a avancé. */
+    const avance = occurrenceSuivante(C3, { depart: 1, fermes: ferme(3, [1, 2, 3, 6]), reserves: [] });
+    verdict("R6 · A₂ laissée de côté (C₂ faite avant) reste proposée",
+      avance?.rang === 4, `→ rang ${avance?.rang}`);
+  }
+  {
+    /* L'adaptation : Push masquée pendant quatre tours (cycle de 5). */
     const C5 = cyc(5);
+    const masque = (e: { id: string }) => e.id === "e1";
     const nonPush: number[] = [];
     for (let r = 1; r <= 20; r++) if ((r - 1) % 5 !== 0) nonPush.push(r);
-    const etat = { depart: 1, fermes: nonPush.map((rang) => ({ rang, etapeId: "e" + (((rang - 1) % 5) + 1), consommeeLe: null })) };
-    const masque = (e: { id: string }) => e.id === "e1";
+    const etat = { depart: 1, fermes: ferme(5, nonPush), reserves: [] };
     const pendant = occurrenceSuivante(C5, etat, masque);
     verdict("R6 · pendant l'adaptation, l'étape masquée est traversée", pendant?.rang === 22, `→ rang ${pendant?.rang} (${pendant?.etape.nom})`);
     const s = occurrenceSuivante(C5, etat);
-    verdict("R6 · quatre Push masquées n'en laissent qu'une à faire",
-      s?.rang === 16 && rangMinimal(etat, 5) === 16, `→ rang ${s?.rang}, rien sous ${rangMinimal(etat, 5)}`);
-    const avec16 = occurrenceSuivante(C5, { ...etat, fermes: [...etat.fermes, { rang: 16, etapeId: "e1", consommeeLe: null }] });
-    verdict("R6 · elle faite, le cycle reprend sans rattrapage", avec16?.rang === 21, `→ rang ${avec16?.rang}`);
+    verdict("R6 · quatre Push masquées n'en laissent qu'une à faire", s?.rang === 1 && s.etape.id === "e1", `→ rang ${s?.rang}`);
+    const fait = { ...etat, fermes: [...etat.fermes, { rang: 1, etapeId: "e1", consommeeLe: jour(30) }] };
+    const ensuite = occurrenceSuivante(C5, fait);
+    verdict("R6 · elle faite, le cycle reprend sans rattrapage", ensuite?.rang === 21 && ensuite.etape.id === "e1",
+      `→ rang ${ensuite?.rang} (${ensuite?.etape.nom}, au tour courant)`);
+    /* Push faite AVANT l'adaptation, puis masquée trois tours. */
+    const avantPush: number[] = [1];
+    for (let r = 2; r <= 20; r++) if ((r - 1) % 5 !== 0) avantPush.push(r);
+    const e2 = { depart: 1, fermes: ferme(5, avantPush), reserves: [] };
+    const s2 = occurrenceSuivante(C5, e2);
+    const f2 = { ...e2, fermes: [...e2.fermes, { rang: s2?.rang ?? 0, etapeId: "e1", consommeeLe: jour(30) }] };
+    const n2 = occurrenceSuivante(C5, f2);
+    verdict("R6 · Push masquée après avoir été faite : due une fois, puis à sa place",
+      s2?.rang === 6 && n2?.rang === 21, `→ ${s2?.rang}, puis ${n2?.rang}`);
     const tout = occurrenceSuivante(C5, etat, () => true);
     verdict("R6 · tout masqué : rien d'inventé", tout === null, "→ null");
-    verdict("R6 · cycle vide : rien", occurrenceSuivante([], { depart: 1, fermes: [] }) === null, "→ null");
+    verdict("R6 · cycle vide : rien", occurrenceSuivante([], { depart: 1, fermes: [], reserves: [] }) === null, "→ null");
+  }
+  {
+    /* Une lecture ratée n'invente rien. */
+    const prog = lire1("src/lib/programme.ts");
+    const cible = lire1("src/lib/etapeCiblee.ts");
+    const moteur = lire1("src/lib/guideMoteur.ts");
+    verdict("R6 · une lecture d'occurrences ratée rend « je ne sais pas »",
+      prog.includes("Promise<EtatOccurrences | null>") && !prog.includes("repli: EtatOccurrences"),
+      "plus de repli sur un programme neuf");
+    verdict("R6 · sans lecture fiable, aucun saut ni réservation ne se prépare",
+      cible.includes("if (!occurrences) return { ok: false, refus: \"illisible\" };"), "viserEtape refuse");
+    verdict("R6 · le héros et le Guide n'inventent pas de suite",
+      prog.includes('throw new Error("occurrences_indisponibles")') && moteur.includes('throw new Error("occurrences_indisponibles")'),
+      "l'affichage précédent reste, le Guide ne dit rien du programme");
   }
 
   /* Le plancher : un historique repris garde sa prochaine séance. */
@@ -5874,7 +5922,7 @@ verdict(
        sous adaptation, puis Push au tour suivant. */
     const C5 = cyc(5);
     const r = reprise([1, 4, 5, 1], 5);
-    const etat = { depart: r.depart, fermes: r.rangs.map((rang) => ({ rang, etapeId: "e" + (((rang - 1) % 5) + 1), consommeeLe: null })) };
+    const etat = { depart: r.depart, reserves: [], fermes: r.rangs.map((rang, i) => ({ rang, etapeId: "e" + (((rang - 1) % 5) + 1), consommeeLe: new Date(Date.UTC(2026, 0, 1 + i)).toISOString() })) };
     const n = occurrenceSuivante(C5, etat);
     verdict("R6 · reprise · le cas réel garde sa prochaine séance",
       JSON.stringify(r.rangs) === "[1,4,5,6]" && r.depart === 7 && n?.etape.id === etapeSuivante(C5, 1, 1)?.id,
@@ -5902,7 +5950,7 @@ verdict(
           pos = s.position;
         }
         const rep = reprise(ordinaux, k);
-        const e = { depart: rep.depart, fermes: rep.rangs.map((rang) => ({ rang, etapeId: "e" + (((rang - 1) % k) + 1), consommeeLe: null })) };
+        const e = { depart: rep.depart, reserves: [], fermes: rep.rangs.map((rang, i) => ({ rang, etapeId: "e" + (((rang - 1) % k) + 1), consommeeLe: new Date(Date.UTC(2026, 0, 1 + i)).toISOString() })) };
         essais++;
         if (occurrenceSuivante(C, e)?.etape.id !== etapeSuivante(C, pos, 1)?.id) ecarts++;
       }
@@ -5971,7 +6019,7 @@ verdict(
     const journee = lire1("src/hooks/useJournee.ts");
     verdict("R6 · refaire une séance ne déclare aucune cible",
       journee.includes("cible: !options?.repetition && d.id ?"), "une répétition crée un journal, pas une fermeture");
-    const avant = occurrenceSuivante(C3, { depart: 1, fermes: fe(1) });
+    const avant = occurrenceSuivante(C3, { depart: 1, fermes: fe(1), reserves: [] });
     verdict("R6 · un journal sans occurrence ne bouge pas la suite",
       avant?.rang === 2, "seules les lignes qui portent un rang comptent");
     verdict("R6 · l'occurrence est figée au lancement",
@@ -5990,9 +6038,10 @@ verdict(
       sql.includes("occurrence_incoherente") && sql.includes("((new.rang - 1) % k) + 1 <> ord"), "vérifié par le déclencheur");
     verdict("R6 · SQL · deux fermetures simultanées sont sérialisées",
       sql.includes("pg_advisory_xact_lock"), "verrou par programme, pour la transaction");
-    verdict("R6 · SQL · même borne qu'en TypeScript (aucune dette)",
-      sql.includes("coalesce((select m from f) - (select n from k) + 1, 1)") && sql.includes("coalesce(rang_depart, position_initiale, 1)"),
-      "rang_minimal ≡ rangMinimal");
+    verdict("R6 · SQL · même base par étape qu'en TypeScript",
+      sql.includes("create or replace function public.rang_base(") && sql.includes("when a.m >= dr.rang + k.n then a.m + 1")
+        && sql.includes("coalesce(rang_depart, position_initiale, 1)") && !sql.includes("function public.rang_minimal("),
+      "rang_base ≡ baseEtape, plus de borne globale");
     verdict("R6 · SQL · la reprise ne change le sens d'aucune ligne",
       [...sansCommentaires.matchAll(/update public\.intentions_entrainement\s+set([\s\S]*?)\bwhere\b/gi)]
         .every((m) => !/(statut|date|consommee_le)\s*=/.test(m[1])),

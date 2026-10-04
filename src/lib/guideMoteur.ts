@@ -172,7 +172,12 @@ async function lireEtatMoteur(userId: string): Promise<EtatMoteur | null> {
 
   try {
     const actif = await lireProgrammeActif(userId);
-    if (actif) {
+    /* ⚠️ LES OCCURRENCES SE LISENT AVANT DE RIEN AFFIRMER DU PROGRAMME.
+       Illisibles, le Guide ne dit rien du programme plutôt qu'une suite
+       inventée (tour 14). */
+    const occurrences = actif ? await lireOccurrences(userId, actif) : null;
+    if (actif && !occurrences) throw new Error("occurrences_indisponibles");
+    if (actif && occurrences) {
       programme = { id: actif.programme.id, nom: actif.programme.nom };
       cycle = actif.cycle.map((e) => ({ id: e.id, nom: e.nom, position: e.position }));
 
@@ -184,7 +189,6 @@ async function lireEtatMoteur(userId: string): Promise<EtatMoteur | null> {
         .map((id) => actif.cycle.find((e) => e.id === id)?.nom)
         .filter((n): n is string => !!n);
 
-      const occurrences = await lireOccurrences(userId, actif);
       const brute = occurrenceSuivante(actif.cycle, occurrences)?.etape ?? null;
       const suivante = occurrenceSuivante<EtapeCycle>(
         actif.cycle, occurrences, (e) => etapeMasquee(e.id, adaptation),

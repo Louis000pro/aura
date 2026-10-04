@@ -112,13 +112,13 @@ begin
   end;
 
   /* ── S5 · Refaire : un journal sans occurrence ne bouge rien ── */
-  select public.rang_minimal(P) into r;
+  select public.rang_base(P, E1) into r;
   insert into public.intentions_entrainement (user_id, date, type, title, difficulty, exercise_list, statut, nature, origine,
     consommee_le, lancement_id, rang)
   values (U, '2026-10-06', 'Force', 'Haut (refaite)', 'Intermédiaire', '[]', 'faite', 'seance', 'utilisateur', now(), gen_random_uuid(), 3)
   returning rang into r2;
-  select public.rang_minimal(P) into v;
-  out := out || format('S5 rang_supplement=%s plancher %s→%s ; ', coalesce(r2::text, 'null'), r, v);
+  select public.rang_base(P, E1) into v;
+  out := out || format('S5 rang_supplement=%s base %s→%s ; ', coalesce(r2::text, 'null'), r, v);
 
   /* ── S6 · Changer l'étape d'une réservation recalcule son occurrence ── */
   insert into public.intentions_entrainement (user_id, date, type, title, difficulty, exercise_list, statut, nature, origine,
@@ -128,6 +128,10 @@ begin
   update public.intentions_entrainement set etape_consommee_id = E3, programme_seance_id = E3 where id = idr2;
   select rang into r2 from public.intentions_entrainement where id = idr2;
   out := out || format('S6 Haut=%s devient Push=%s ; ', r, r2);
+
+  /* ── S8 · La base de chaque étape (même calcul que baseEtape) ── */
+  out := out || format('S8 bases=%s,%s,%s,%s (attendu 6,7,8,9) ; ',
+    public.rang_base(P, E1), public.rang_base(P, E2), public.rang_base(P, E3), public.rang_base(P, E4));
 
   /* ── S7 · Une autre personne ne voit ni n'écrit rien ici ── */
   perform set_config('request.jwt.claims', json_build_object('sub', AUTRE, 'role', 'authenticated')::text, true);

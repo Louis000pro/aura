@@ -31,7 +31,7 @@
       chaque fermeture reçoit le rang que l'ancien curseur lui donnait,
       `rang_depart` est posé sur l'occurrence que l'ancien curseur
       proposait, et chaque réservation en cours reçoit la première
-      occurrence libre de son étape au-dessus de ce plancher. Aucun
+      occurrence libre de son étape à partir de sa base. Aucun
       statut, aucune date, aucun `consommee_le` n'est touché.
 
    ⚠️ `uniq_intention_par_etape` RESTE EN PLACE. Elle tombera quand on
@@ -57,7 +57,7 @@ exception when duplicate_object then null; end $$;
 
 /* ─────────────── Les deux règles, en SQL ───────────────
 
-   Elles sont la traduction exacte de `rangMinimal` et `rangPourEtape`
+   Elles sont la traduction exacte de `baseEtape` et `rangPourEtape`
    (`src/lib/occurrences.ts`). Le banc vérifie les formules côté
    TypeScript ; le scénario de base (fichier de test R6) vérifie qu'elles
    donnent les mêmes rangs ici. */
@@ -71,16 +71,30 @@ returns integer language sql stable as $$
   ) o where o.id = p_etape
 $$;
 
-/* Le premier rang encore proposable : le plancher, ou un tour de cycle
-   derrière la plus lointaine occurrence fermée. Au-delà d'un tour, une
-   occurrence non faite n'est pas due (décision 35, aucune dette). */
-create or replace function public.rang_minimal(p_programme uuid)
+/* Le premier rang où une étape peut avoir son occurrence en attente
+   (décision 35, revue au tour 14) :
+   - jamais fermée : le plancher, aussi longtemps qu'il le faudra ;
+   - fermée à l'heure : juste après sa dernière fermeture ;
+   - fermée EN RETARD (à ce moment, la suite avait déjà dépassé
+     l'occurrence suivante de la même étape) : juste après la suite
+     d'alors. Une étape a donc au plus une occurrence en attente, et une
+     adaptation ne fabrique pas de pile à rattraper. */
+drop function if exists public.rang_minimal(uuid);
+create or replace function public.rang_base(p_programme uuid, p_etape uuid)
 returns integer language sql stable as $$
   with k as (select count(*)::integer as n from public.programme_seances where programme_id = p_programme),
        d as (select coalesce(rang_depart, position_initiale, 1) as v from public.programmes where id = p_programme),
-       f as (select max(rang) as m from public.intentions_entrainement
-             where programme_id = p_programme and rang is not null and statut in ('faite', 'passee'))
-  select greatest(1, (select v from d), coalesce((select m from f) - (select n from k) + 1, 1))
+       dr as (select rang, consommee_le from public.intentions_entrainement
+              where programme_id = p_programme and etape_consommee_id = p_etape
+                and rang is not null and statut in ('faite', 'passee')
+              order by rang desc limit 1),
+       a as (select max(i.rang) as m from public.intentions_entrainement i, dr
+             where i.programme_id = p_programme and i.rang is not null
+               and i.statut in ('faite', 'passee') and i.consommee_le < dr.consommee_le)
+  select greatest(1, (select v from d), coalesce((
+    select case when a.m >= dr.rang + k.n then a.m + 1 else dr.rang + 1 end
+    from dr, k, a
+  ), 1))
 $$;
 
 /* ─────────────── 3. Le déclencheur ─────────────── */
@@ -124,7 +138,7 @@ begin
     return new;
   end if;
 
-  r := public.rang_minimal(new.programme_id);
+  r := public.rang_base(new.programme_id, new.etape_consommee_id);
   r := r + (((ord - r) % k) + k) % k;
   while exists (
     select 1 from public.intentions_entrainement

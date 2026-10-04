@@ -204,3 +204,11 @@ Trois témoins vérifiés.
   - **S6 :** changer l'étape recalcule le rang (Haut 9 devient Push 11).
   - **S7 :** l'autre compte voit 0 ligne et son écriture est refusée. Le refus vient du déclencheur (`occurrence_sans_cycle`, 23514), qui ne voit pas le cycle d'autrui, avant même la RLS.
 - Reste à faire après l'application : l'essai simultané réel (deux fermetures sans rang sur le même programme), puis le nettoyage.
+
+### R6 · corrections du tour 14 de Codex (2026-10-04)
+
+1. **La borne globale « un tour derrière la plus lointaine fermeture » est retirée.** Elle faisait disparaître B₁ sans adaptation (A₁, C₁, A₂, C₂ fermées → B₂ proposée), contre la décision 35. Remplacée par une **base par étape** (`baseEtape` en TypeScript, `rang_base` en SQL) : une étape jamais fermée reste due depuis le plancher, sans limite ; fermée à l'heure, elle repart juste après ; fermée **en retard** (la suite avait déjà dépassé son occurrence suivante), elle rejoint la suite au lieu de rattraper. Une étape a donc **au plus une occurrence en attente**, et une adaptation ne fabrique pas de pile. Une **réservation** est l'occurrence en attente de son étape et garde sa place jusqu'à sa résolution (`EtatOccurrences.reserves`).
+2. **Une lecture d'occurrences ratée rend `null`**, plus un programme neuf. `viserEtape` refuse (`illisible`), `etapeSuivanteDe` lève (le héros garde son affichage précédent), le Guide ne dit rien du programme. Une séance déjà lancée garde sa cible et reste finalisable.
+3. Banc : 733 contrôles. Témoins vérifiés : sans la notion de retard (3 échecs), avec l'ancienne borne globale (3 échecs).
+4. S7 : le refus attendu est `23514` (`occurrence_sans_cycle`, le déclencheur ne voit pas le cycle d'autrui), pas `42501`.
+5. À rejouer sur la base : `r6-test-a-coller.sql` (ajout de S8, les bases par étape, attendu 6,7,8,9). Après application : essai simultané réel, et deux fermetures au même rang explicite (une seule fermeture, les deux séances dans le journal).

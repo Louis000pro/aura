@@ -40,7 +40,7 @@ import { createClient } from "@/lib/supabase";
 import { adaptationsDisponibles, cycleDeReference, schemaIntentions, todayYmd } from "@/lib/planning";
 import {
   occurrenceSuivante,
-  type EtatOccurrences, type OccurrenceFermee,
+  type EtatOccurrences, type OccurrenceFermee, type OccurrenceReservee,
 } from "@/lib/occurrences";
 import { libelleObjectif } from "@/lib/profilOnboarding";
 
@@ -557,47 +557,54 @@ export async function etapeSuivanteDe(
   masquee?: (etape: EtapeCycle) => boolean,
 ): Promise<EtapeOccurrence | null> {
   if (actif.cycle.length === 0) return null;
-  const o = occurrenceSuivante(actif.cycle, await lireOccurrences(userId, actif), masquee);
+  const occurrences = await lireOccurrences(userId, actif);
+  /* ⚠️ « JE NE SAIS PAS » N'EST PAS « RIEN À FAIRE » : on lève, et
+     l'appelant garde ce qu'il montrait au lieu d'inventer une suite. */
+  if (!occurrences) throw new Error("occurrences_indisponibles");
+  const o = occurrenceSuivante(actif.cycle, occurrences, masquee);
   return o ? { ...o.etape, rang: o.rang } : null;
 }
 
 /**
- * Les occurrences fermées du programme actif, et son plancher.
+ * Les occurrences du programme actif (fermées et réservées), et son plancher.
  *
- * ⚠️ UNE LECTURE RATÉE REPART DU PLANCHER DU PROGRAMME, comme l'ancien
- * curseur repartait du début (dette connue, décision 28) : on préfère
- * proposer une séance que prétendre qu'il n'y a rien à faire. Le `warn`
- * la rend visible dans les logs.
+ * ⚠️ UNE LECTURE RATÉE REND `null`, JAMAIS UN PROGRAMME NEUF (décision 28,
+ * tour 14 de Codex). Repartir du plancher ferait annoncer le rang 1 à un
+ * programme repris au rang 7, et `viserEtape` préparerait une écriture
+ * dessus. `null` veut dire « je ne sais pas » : l'écran garde ce qu'il
+ * montrait, et aucun geste de cycle ne se prépare.
  */
-export async function lireOccurrences(userId: string, actif: ProgrammeEtCycle): Promise<EtatOccurrences> {
-  const repli: EtatOccurrences = { depart: actif.programme.positionInitiale, fermes: [] };
+export async function lireOccurrences(userId: string, actif: ProgrammeEtCycle): Promise<EtatOccurrences | null> {
   const supabase = createClient();
   try {
     const sc = await schemaIntentions();
     const [lignes, prog] = await Promise.all([
       supabase
         .from(sc.table)
-        .select("rang, etape_consommee_id, consommee_le")
+        .select("rang, etape_consommee_id, consommee_le, " + sc.colStatut)
         .eq("user_id", userId)
         .eq("programme_id", actif.programme.id)
         .not("rang", "is", null)
-        .in(sc.colStatut, [sc.versBase.done, sc.versBase.skipped]),
+        .in(sc.colStatut, [sc.versBase.done, sc.versBase.skipped, sc.versBase.planned]),
       supabase.from("programmes").select("rang_depart").eq("id", actif.programme.id).maybeSingle(),
     ]);
     if (lignes.error || prog.error) {
       console.warn("[programme] occurrences illisibles :", lignes.error?.message ?? prog.error?.message);
-      return repli;
+      return null;
     }
-    const fermes: OccurrenceFermee[] = ((lignes.data ?? []) as {
-      rang: number | null; etape_consommee_id: string | null; consommee_le: string | null;
-    }[])
-      .filter((l) => typeof l.rang === "number" && !!l.etape_consommee_id)
-      .map((l) => ({ rang: l.rang as number, etapeId: l.etape_consommee_id as string, consommeeLe: l.consommee_le }));
+    const fermes: OccurrenceFermee[] = [];
+    const reserves: OccurrenceReservee[] = [];
+    for (const l of (lignes.data ?? []) as unknown as Record<string, unknown>[]) {
+      const rang = l.rang, etapeId = l.etape_consommee_id;
+      if (typeof rang !== "number" || typeof etapeId !== "string") continue;
+      if (l[sc.colStatut] === sc.versBase.planned) reserves.push({ rang, etapeId });
+      else fermes.push({ rang, etapeId, consommeeLe: (l.consommee_le as string | null) ?? null });
+    }
     const depart = (prog.data as { rang_depart: number | null } | null)?.rang_depart ?? actif.programme.positionInitiale;
-    return { depart, fermes };
+    return { depart, fermes, reserves };
   } catch (e) {
     console.warn("[programme] occurrences illisibles :", (e as Error)?.message);
-    return repli;
+    return null;
   }
 }
 

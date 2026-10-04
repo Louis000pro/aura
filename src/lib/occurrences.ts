@@ -14,13 +14,22 @@
    plus petit rang qui n'est pas fermé, donc faire C₁ avant B₁ laisse B₁
    proposée ensuite (critère 1 de Codex).
 
-   ⚠️ MAIS AUCUNE DETTE (décision 35). Une occurrence franchie ne reste en
-   attente que pendant UN tour de cycle : dès qu'on a fermé une occurrence
-   située au moins `k` rangs plus loin, la même étape a déjà une occurrence
-   plus récente devant elle, et c'est celle-là qui compte. Sans cette
-   fenêtre, une adaptation de quatre semaines qui masque Push laisserait
-   quatre Push en attente, et la personne les enchaînerait au retour.
-   C'est la borne `rangMinimal`, et le banc la tient.
+   ⚠️ UNE ÉTAPE A AU PLUS UNE OCCURRENCE EN ATTENTE (décision 35, revue
+   par Codex au tour 14). Une occurrence non faite reste proposée SANS
+   LIMITE DE TEMPS : ne pas faire B₁ pendant trois tours laisse B₁ en tête
+   de la suite. Mais une étape ne s'empile jamais : sa prochaine occurrence
+   est la plus petite non fermée APRÈS sa dernière fermeture, et quand
+   cette fermeture arrive EN RETARD (une occurrence plus récente de la même
+   étape était déjà dépassée par la suite), l'étape rejoint la suite au
+   lieu de rattraper les tours manqués. C'est ce qui empêche une
+   adaptation de quatre semaines qui masque Push de laisser quatre Push à
+   enchaîner au retour : Push revient UNE fois, puis reprend sa place.
+   L'ancienne borne globale (« un tour derrière la plus lointaine
+   fermeture ») ne faisait pas cette distinction et faisait disparaître
+   B₁ sans qu'on l'ait écartée. C'est `baseEtape`, et le banc la tient.
+
+   ⚠️ UNE RÉSERVATION GARDE SA PLACE jusqu'à sa résolution : c'est elle,
+   et elle seule, qui est l'occurrence en attente de son étape.
 
    ⚠️ ET UN PLANCHER, `depart`, QUE RIEN NE FRANCHIT VERS LE BAS. Il vaut
    `position_initiale` pour un programme neuf. La migration R6 l'a posé,
@@ -41,15 +50,21 @@
 export type OccurrenceFermee = {
   rang: number;
   etapeId: string;
-  /** Ordonne la « dernière fermée », pour le garde-fou du double saut. */
+  /** L'heure de la fermeture : dit si elle est arrivée en retard, et
+   *  ordonne la « dernière fermée » du garde-fou du double saut. `null`
+   *  = fermée à l'instant (une fermeture imaginée, « et après ? »). */
   consommeeLe: string | null;
 };
+
+/** Une occurrence réservée : datée, encore prévue. */
+export type OccurrenceReservee = { rang: number; etapeId: string };
 
 /** Ce qu'il faut savoir des occurrences d'un programme, lu une fois. */
 export type EtatOccurrences = {
   /** Le plancher : aucun rang plus petit n'est jamais proposé. */
   depart: number;
   fermes: OccurrenceFermee[];
+  reserves: OccurrenceReservee[];
 };
 
 export type Occurrence<T> = { etape: T; rang: number };
@@ -66,28 +81,47 @@ export function etapeDuRang<T extends { position: number }>(cycle: T[], rang: nu
   return ordonne[(rang - 1) % ordonne.length];
 }
 
+/* Une fermeture sans heure est la plus récente de toutes. */
+const instant = (f: OccurrenceFermee) => (f.consommeeLe ? Date.parse(f.consommeeLe) : Infinity);
+
 /**
- * Le premier rang encore proposable : le plancher, ou un tour de cycle
- * derrière la plus lointaine occurrence fermée si c'est plus loin.
+ * Le premier rang où l'étape peut avoir son occurrence en attente.
  *
- * ⚠️ C'EST TOUTE LA RÈGLE « PAS DE DETTE ». Au-delà d'un tour, une
- * occurrence non faite n'est pas due : la même étape a une occurrence
- * plus récente, et c'est elle qui l'attend.
+ * - Jamais fermée : le plancher. Son occurrence la plus ancienne reste
+ *   due, aussi longtemps qu'il le faudra.
+ * - Fermée À L'HEURE : juste après sa dernière fermeture.
+ * - Fermée EN RETARD (au moment de cette fermeture, la suite avait déjà
+ *   dépassé l'occurrence suivante de la même étape) : juste après la
+ *   suite d'alors. Les tours manqués ne s'empilent pas.
+ *
+ * C'est le calcul de `rang_base` en SQL ; le banc les compare.
  */
-export function rangMinimal(etat: EtatOccurrences, k: number): number {
-  const plus = etat.fermes.reduce((m, f) => Math.max(m, f.rang), 0);
-  if (plus === 0 || k < 1) return Math.max(1, etat.depart);
-  return Math.max(1, etat.depart, plus - k + 1);
+export function baseEtape(etat: EtatOccurrences, k: number, etapeId: string): number {
+  const depart = Math.max(1, etat.depart);
+  const siennes = etat.fermes.filter((f) => f.etapeId === etapeId);
+  if (siennes.length === 0 || k < 1) return depart;
+  const derniere = siennes.reduce((a, b) => (b.rang > a.rang ? b : a));
+  const quand = instant(derniere);
+  const suiteAvant = etat.fermes.reduce((m, f) => (instant(f) < quand ? Math.max(m, f.rang) : m), 0);
+  const enRetard = suiteAvant >= derniere.rang + k;
+  return Math.max(depart, enRetard ? suiteAvant + 1 : derniere.rang + 1);
+}
+
+/** Le premier rang de l'étape d'ordinal `ordinal` (1-based) à partir de `depuis`. */
+function premierRangDe(ordinal: number, k: number, depuis: number): number {
+  return depuis + ((((ordinal - depuis) % k) + k) % k);
 }
 
 /**
- * La prochaine occurrence proposable : le plus petit rang au-dessus de
- * `rangMinimal` qui n'est ni fermé, ni masqué par une adaptation.
+ * La prochaine occurrence proposable : parmi l'occurrence en attente de
+ * chaque étape non masquée, celle qui a le plus petit rang. L'occurrence
+ * en attente d'une étape est sa réservation si elle en a une, sinon sa
+ * première occurrence non fermée à partir de `baseEtape`.
  *
  * Rend `null` sur un cycle vide, ou quand TOUTES les étapes sont
  * masquées : inventer une séance serait mentir.
  *
- * `enPlus` : des rangs à considérer comme fermés en plus (« et après
+ * `enPlus` : des rangs à considérer comme fermés à l'instant (« et après
  * celle-ci ? » sans rien écrire).
  */
 export function occurrenceSuivante<T extends { id: string; position: number }>(
@@ -99,26 +133,34 @@ export function occurrenceSuivante<T extends { id: string; position: number }>(
   const ordonne = ordreDuCycle(cycle);
   const k = ordonne.length;
   if (k === 0) return null;
-  if (masquee && ordonne.every((e) => masquee(e))) return null;
 
-  const fermes = [...etat.fermes, ...enPlus.map((rang) => ({ rang, etapeId: "", consommeeLe: null }))];
+  const fermes = [
+    ...etat.fermes,
+    ...enPlus.map((rang) => ({ rang, etapeId: ordonne[(rang - 1) % k].id, consommeeLe: null })),
+  ];
   const pris = new Set(fermes.map((f) => f.rang));
-  const depuis = rangMinimal({ depart: etat.depart, fermes }, k);
-  /* Borne : `k` rangs consécutifs non fermés contiennent chaque étape une
-     fois, et il y a au plus `pris.size` rangs fermés sur le chemin. */
-  const jusqua = depuis + pris.size + 2 * k;
-  for (let rang = depuis; rang <= jusqua; rang++) {
-    if (pris.has(rang)) continue;
-    const etape = ordonne[(rang - 1) % k];
-    if (masquee && masquee(etape)) continue;
-    return { etape, rang };
-  }
-  return null;
+  const reserves = etat.reserves.filter((r) => !pris.has(r.rang));
+  const vue: EtatOccurrences = { depart: etat.depart, fermes, reserves };
+
+  let meilleure: Occurrence<T> | null = null;
+  ordonne.forEach((etape, i) => {
+    if (masquee && masquee(etape)) return;
+    const reservee = reserves.filter((r) => r.etapeId === etape.id).sort((a, b) => a.rang - b.rang)[0];
+    let rang: number;
+    if (reservee) {
+      rang = reservee.rang;
+    } else {
+      rang = premierRangDe(i + 1, k, baseEtape(vue, k, etape.id));
+      while (pris.has(rang)) rang += k;
+    }
+    if (!meilleure || rang < meilleure.rang) meilleure = { etape, rang };
+  });
+  return meilleure;
 }
 
 /**
  * Le rang qu'on donne à une fermeture ou une réservation écrite SANS rang :
- * la première occurrence de cette étape, au-dessus de `rangMinimal`, que
+ * la première occurrence de cette étape, à partir de `baseEtape`, que
  * personne n'occupe encore. C'est le calcul du déclencheur SQL
  * `attribuer_rang`, écrit une seconde fois ici pour être vérifiable.
  *
@@ -135,9 +177,8 @@ export function rangPourEtape<T extends { id: string; position: number }>(
   const k = ordonne.length;
   const ordinal = ordonne.findIndex((e) => e.id === etapeId) + 1;
   if (k === 0 || ordinal === 0) return null;
-  const L = rangMinimal(etat, k);
   const pris = new Set(occupes);
-  let rang = L + ((((ordinal - L) % k) + k) % k);
+  let rang = premierRangDe(ordinal, k, baseEtape(etat, k, etapeId));
   while (pris.has(rang)) rang += k;
   return rang;
 }
