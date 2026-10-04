@@ -6536,16 +6536,131 @@ verdict(
     R.peutChanger(A, 0) && R.peutChanger(A, A.sets - 1) && !R.peutChanger(A, A.sets)
       && !R.peutChanger({ name: "Pompes", sets: 3, reps: "12", rest: 60, tip: "", benefit: "", muscles: [] }, 0), "");
 
+  /* ── Tour 27 · les transitions, rejouées passage par passage ──
+     Chaque boucle imite les passages de l'effet React : elle demande au
+     module ce qu'il a le droit de faire, applique la réponse, et s'arrête
+     quand l'effet s'arrêterait (il ne repasse qu'au changement d'une de
+     ses dépendances). */
+  const T = await import("@/lib/transitionsTunnel");
+  type Repos = { restant: number; correction: boolean; vibree: boolean; enRepos: boolean; vibrations: number; reprises: number };
+  const passerRepos = (r: Repos) => {
+    for (let i = 0; i < 200 && r.enRepos; i++) {
+      const pas = T.pasDuRepos({ restant: r.restant, enPause: false, correctionOuverte: r.correction, vibree: r.vibree });
+      if (pas.action === "attendre") return;
+      if (pas.action === "decompter") { r.restant--; continue; }
+      if (pas.vibrer) { r.vibrations++; r.vibree = true; }
+      if (!pas.reprendre) return;
+      r.reprises++; r.enRepos = false; return;
+    }
+  };
+  for (const fermeture of ["enregistrer", "annuler"] as const) {
+    const r: Repos = { restant: 3, correction: true, vibree: false, enRepos: true, vibrations: 0, reprises: 0 };
+    passerRepos(r);                      // le repos arrive à zéro, correction ouverte
+    const bloque = r.restant === 0 && r.enRepos && r.reprises === 0 && r.vibrations === 1;
+    passerRepos(r); passerRepos(r);      // d'autres rendus pendant la correction
+    const toujours = r.enRepos && r.reprises === 0 && r.vibrations === 1;
+    r.correction = false;                // enregistrer ou annuler ferme la correction
+    passerRepos(r); passerRepos(r);      // l'effet repasse, puis un rendu de plus
+    verdict(`R3 · repos à zéro, correction ouverte puis « ${fermeture} » : une vibration, une seule reprise`,
+      bloque && toujours && r.reprises === 1 && r.vibrations === 1 && !r.enRepos, `${r.vibrations} vibration(s), ${r.reprises} reprise(s)`);
+  }
+  {
+    const r: Repos = { restant: 2, correction: false, vibree: false, enRepos: true, vibrations: 0, reprises: 0 };
+    passerRepos(r);
+    verdict("R3 · sans correction, le repos reprend seul, une fois", r.reprises === 1 && r.vibrations === 1, "");
+  }
+
+  type Effort = { prep: number; restant: number; choix: boolean; validees: number };
+  const passerEffort = (e: Effort, chrono = true) => {
+    for (let i = 0; i < 200; i++) {
+      const pas = T.pasDeLEffort({ enPause: false, choixOuvert: e.choix, prep: e.prep, chronometre: chrono, restant: e.restant });
+      if (pas === "attendre") return;
+      if (pas === "decompter_prep") { e.prep--; continue; }
+      if (pas === "decompter") { e.restant--; continue; }
+      e.validees++; return;
+    }
+  };
+  const pasUnASeconde = (e: Effort) => {   // une seule seconde du chrono
+    const pas = T.pasDeLEffort({ enPause: false, choixOuvert: e.choix, prep: e.prep, chronometre: true, restant: e.restant });
+    if (pas === "decompter") e.restant--;
+    if (pas === "decompter_prep") e.prep--;
+  };
+  {
+    const ici = { emplacement: 0, serie: 1 };
+    const e: Effort = { prep: 0, restant: 1, choix: true, validees: 0 };   // ouvert à une seconde de la fin
+    passerEffort(e); passerEffort(e); passerEffort(e);
+    const fige = e.validees === 0 && e.restant === 1;
+    // « Remplacer » : le choix vaut pour la série d'ouverture, le chrono repart avec le 3-2-1.
+    const applique = T.choixApplicable(ici, { ...ici, enEffort: true });
+    e.choix = false; e.prep = 3; e.restant = 30;
+    passerEffort(e);
+    verdict("R3 · chrono suspendu derrière « Changer » puis « Remplacer » : aucune série validée derrière le panneau",
+      fige && applique && e.validees === 1 && e.restant === 0, "une seule validation, après le 3-2-1 et l'effort entier");
+  }
+  {
+    const e: Effort = { prep: 0, restant: 1, choix: true, validees: 0 };
+    passerEffort(e);
+    const fige = e.validees === 0;
+    e.choix = false;                         // « Annuler » : on reprend où on en était
+    pasUnASeconde(e);
+    const reprend = e.restant === 0 && e.validees === 0;
+    passerEffort(e);
+    verdict("R3 · chrono suspendu derrière « Changer » puis annulé : il reprend à la même seconde, une validation",
+      fige && reprend && e.validees === 1, "");
+  }
+  {
+    const e: Effort = { prep: 2, restant: 30, choix: true, validees: 0 };
+    passerEffort(e);
+    verdict("R3 · le 3-2-1 est suspendu aussi", e.prep === 2 && e.validees === 0, "");
+  }
+  verdict("R3 · un choix ouvert sur une série ne s'applique pas à la suivante, ni à l'exercice suivant, ni au repos",
+    !T.choixApplicable({ emplacement: 0, serie: 1 }, { emplacement: 0, serie: 2, enEffort: true })
+      && !T.choixApplicable({ emplacement: 0, serie: 2 }, { emplacement: 1, serie: 0, enEffort: true })
+      && !T.choixApplicable({ emplacement: 0, serie: 1 }, { emplacement: 0, serie: 1, enEffort: false })
+      && T.choixApplicable({ emplacement: 0, serie: 1 }, { emplacement: 0, serie: 1, enEffort: true }), "");
+
+  {
+    /* Dernière série, cible 10, 7 faites : réglées avant « Fait », un seul
+       journal, la prescription intacte. */
+    const ex = { ...A, sets: 3 };
+    const saisie = { emplacement: 0, serie: 2, reps: S.crancherReps(S.crancherReps(S.crancherReps(10, -1), -1), -1) };
+    const reps = T.repsADeclarer(S.cibleReps(ex), saisie, { emplacement: 0, serie: 2 });
+    const m: MarquesSeance = { 0: {
+      0: { statut: "terminee", validation: "bouton", dureeS: null, reps: 10, charge: 16, exercice: prevuA },
+      1: { statut: "terminee", validation: "bouton", dureeS: null, reps: 10, charge: 16, exercice: prevuA },
+      2: { statut: "terminee", validation: "bouton", dureeS: null, reps, charge: 16, exercice: prevuA },
+    } };
+    const l = lignesDuJournal([ex], m);
+    verdict("R3 · dernière série réglée à 7 avant « Fait » : le journal dit 7, la prescription ne bouge pas",
+      reps === 7 && l.length === 3 && l[2].reps_declarees === 7 && l[2].reps_prescrites === S.cibleReps(ex)
+        && l[2].reps_min_prescrites === ex.prescription?.reps_min && l[2].reps_max_prescrites === ex.prescription?.reps_max
+        && S.libelleFait(reps!, 16, "par_haltere") === "Fait · 7 × 16 kg par haltère", `${l[2].reps_declarees} déclarée(s)`);
+    verdict("R3 · une saisie de répétitions ne vaut que pour sa série",
+      T.repsADeclarer(10, { emplacement: 0, serie: 1, reps: 7 }, { emplacement: 0, serie: 2 }) === 10
+        && T.repsADeclarer(10, { emplacement: 0, serie: 1, reps: 7 }, { emplacement: 1, serie: 1 }) === 10
+        && T.repsADeclarer(10, null, { emplacement: 0, serie: 0 }) === 10, "");
+  }
+
   /* Le chemin, en lisant le source. */
   const tunnel = lire1("src/components/WorkoutGuideModal.tsx");
-  verdict("R3 · saisie protégée : une correction ouverte suspend la reprise à la fin du repos",
-    /if \(restCountdown <= 0\) \{[\s\S]{0,400}if \(correction\) return;[\s\S]{0,120}advance\(\);/.test(tunnel)
-      && tunnel.includes("}, [phase, restCountdown, paused, restMode, correction]);"),
-    "fermer la correction relance l'effet, qui avance une fois");
-  verdict("R3 · la vibration de fin de repos ne joue qu'une fois", tunnel.includes("if (!finReposVibreeRef.current) {"), "");
+  verdict("R3 · le repos demande sa décision à `pasDuRepos`, et se relance quand la correction se ferme",
+    /pasDuRepos\(\{ restant: restCountdown, enPause: paused, correctionOuverte: !!correction, vibree: finReposVibreeRef\.current \}\)/.test(tunnel)
+      && /if \(pas\.vibrer\)[\s\S]{0,120}if \(!pas\.reprendre\) return;/.test(tunnel)
+      && tunnel.includes("}, [phase, restCountdown, paused, restMode, correction]);"), "");
+  verdict("R3 · l'effort demande sa décision à `pasDeLEffort`, choix ouvert compris (3-2-1 et chrono)",
+    (tunnel.match(/pasDeLEffort\(\{ enPause: paused, choixOuvert, prep,/g) ?? []).length === 2
+      && tunnel.includes("}, [phase, prep, paused, choixOuvert, cur, autoCountdown]);")
+      && tunnel.includes("}, [phase, autoCountdown, hiitSub, cur, paused, prep, choixOuvert]);"), "");
+  verdict("R3 · « Changer » retient sa série et refuse un choix devenu périmé",
+    tunnel.includes("setChanger({ emplacement: exerciseIdx, serie: setIdx, choisi: null })")
+      && /appliquerRemplacement = \(ouvert: PositionTunnel, par: Equivalent\) => \{\s*\/\*[\s\S]{0,200}\*\/\s*if \(!choixApplicable\(ouvert,/.test(tunnel)
+      && tunnel.includes("appliquerRemplacement(ouvert, changer.choisi)"), "");
+  verdict("R3 · « Fait » déclare les répétitions réglées avant la validation",
+    /completeSet = useCallback[\s\S]{0,600}repsADeclarer\(cibleReps\(pr\), repsSaisie,/.test(tunnel)
+      && tunnel.includes("libelleFait(repsCur, chargeCur, typeCharge)"), "bouton et journal disent la même chose");
   verdict("R3 · « À chaque fois » n'est pas proposé avant d'avoir un effet (R7)", !/À chaque fois/.test(tunnel), "");
   verdict("R3 · un remplacement repart d'une charge inconnue",
-    /appliquerRemplacement[\s\S]{0,400}setChargeCourante\(c => \(\{ \.\.\.c, \[exerciseIdx\]: null \}\)\)/.test(tunnel), "jamais héritée");
+    /appliquerRemplacement = [\s\S]{0,700}setChargeCourante\(c => \(\{ \.\.\.c, \[emplacement\]: null \}\)\)/.test(tunnel), "jamais héritée");
   verdict("R3 · le journal reçoit les remplacements courants", /marques: doneMap,\s*remplacements,/.test(tunnel), "");
   verdict("R3 · la série validée garde l'exercice réellement fait",
     /completeSet = useCallback[\s\S]{0,900}exercice: exo/.test(tunnel), "");
