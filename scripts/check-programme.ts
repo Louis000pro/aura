@@ -46,7 +46,7 @@ import {
   ordonner, parDate, principale, supplements, seancesDuJour, prochaineSeanceDuJour,
   refModele, lienProgramme, prochainsJours, todayYmd, normalizeExercises,
   cibleRemplacable, estMobilier, etapeLiee, libelleFenetre, reserveUneEtape,
-  semaineVisee, vientDuProgramme,
+  semaineVisee, vientDuProgramme, classerSondageAdaptations, oublierSondageAdaptations,
   type PlanningDay, type CycleSemaine,
 } from "@/lib/planning";
 import {
@@ -77,7 +77,7 @@ import {
   type EtatNutrition, type JourNutrition, type RepasDetail,
 } from "@/lib/guideNutrition";
 import {
-  adaptationActive, ajouterJours, chevauchent, datesEntre, estExpiree, etapeMasquee, interpreterLectureAdaptations,
+  adaptationActive, ajouterJours, chevauchent, datesEntre, estExpiree, etapeMasquee, interpreterLectureAdaptations, lireAdaptations,
   etapesCompatibles, finParDefaut, idsMasques, libelleJour, REEVALUATION_SEMAINES,
   reservationsEnConflit, validerAxes, validerPeriode,
   type Adaptation,
@@ -5966,6 +5966,61 @@ verdict(
     const r6 = await avecEtapeVerifiee(afficheA, async () => contexte(etat, avecA, "stricte"), ecrire);
     verdict("R6 · contexte confirmé : l'action part une fois, avec l'adaptation relue",
       r6.ok && ecritures === 1 && adaptationEcrite === "a1", `${ecritures} écriture · adaptation ${adaptationEcrite}`);
+
+    /* Tour 17 · la panne du SONDAGE de la table ne vaut pas une absence.
+       Faux client : il sert le sondage ET la lecture, par le vrai chemin. */
+    {
+      type Rep = { data: unknown; error: { code?: string; message: string } | null };
+      let sondages = 0;
+      let reponseSondage: Rep = { data: null, error: { message: "timeout" } };
+      const lecture: Rep = { data: [ligneAdapt("a1", ["e2"])], error: null };
+      const chaine = (rep: () => Rep): unknown => {
+        const p: Record<string, unknown> = {};
+        for (const m of ["select", "eq", "order"]) p[m] = () => p;
+        p.limit = () => { sondages++; return Promise.resolve(rep()); };
+        p.then = (ok: (v: Rep) => unknown, ko?: (e: unknown) => unknown) => Promise.resolve(lecture).then(ok, ko);
+        return p;
+      };
+      const faux = { from: () => chaine(() => reponseSondage) } as unknown as Parameters<typeof lireAdaptations>[3];
+      const relire = async () => {
+        const liste = await lireAdaptations("u", "p", "stricte", faux);
+        const couche = adaptationActive(liste, "2026-10-04");
+        const occ = occurrenceSuivante(C3, etat, (e) => etapeMasquee(e.id, couche));
+        return occ ? { programmeId: "p", etapeId: occ.etape.id, rang: occ.rang, nom: occ.etape.nom,
+          adaptationId: couche?.id ?? null, masquees: idsMasques(C3, couche) } : null;
+      };
+      oublierSondageAdaptations();
+      const avant = ecritures;
+      const p1 = await avecEtapeVerifiee(affiche, relire, ecrire);
+      verdict("R6 · sondage en panne : refus « illisible », aucune écriture",
+        !p1.ok && p1.raison === "illisible" && ecritures === avant, `${JSON.stringify(p1)} · ${sondages} sondage`);
+      const souplePanne = await lireAdaptations("u", "p", "souple", faux);
+      verdict("R6 · témoin : en souple, la même panne passe pour « aucune » (affichage seulement)",
+        souplePanne.length === 0, "c'est pourquoi le geste lit en strict");
+      reponseSondage = { data: [], error: null };
+      const n = sondages;
+      const relue = await lireAdaptations("u", "p", "stricte", faux);
+      verdict("R6 · connexion rétablie : on sonde à nouveau, l'adaptation est lue",
+        sondages === n + 1 && relue.length === 1 && relue[0].id === "a1", `${sondages - n} nouveau sondage · ${relue.length} adaptation`);
+      const p2 = await avecEtapeVerifiee(affiche, relire, ecrire);
+      verdict("R6 · rétabli : l'adaptation qui masque B est vue, le geste est refusé « changee »",
+        !p2.ok && p2.raison === "changee" && ecritures === avant, JSON.stringify(p2));
+
+      /* Table réellement absente : réponse, mémorisée. */
+      oublierSondageAdaptations();
+      reponseSondage = { data: null, error: { code: "PGRST205", message: "Could not find the table 'public.adaptations_entrainement' in the schema cache" } };
+      const m = sondages;
+      const abs1 = await lireAdaptations("u", "p", "stricte", faux);
+      const abs2 = await lireAdaptations("u", "p", "stricte", faux);
+      verdict("R6 · table absente confirmée : « aucune » en strict, mémorisée",
+        abs1.length === 0 && abs2.length === 0 && sondages === m + 1, `${sondages - m} sondage pour deux lectures`);
+      verdict("R6 · classement du sondage : absence prouvée ≠ panne",
+        classerSondageAdaptations({ code: "42P01", message: "x" }) === "absente"
+          && classerSondageAdaptations({ message: "timeout" }) === "inconnue"
+          && classerSondageAdaptations({ code: "42501", message: "permission denied" }) === "inconnue"
+          && classerSondageAdaptations(null) === "presente", "42P01/PGRST205 seulement");
+      oublierSondageAdaptations();
+    }
 
     const hook = lire1("src/hooks/useJournee.ts");
     verdict("R6 · dater et lancer passent par le contexte relu, en lecture stricte",

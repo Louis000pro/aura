@@ -36,7 +36,7 @@
    ════════════════════════════════════════════════════════════════════ */
 
 import { createClient } from "@/lib/supabase";
-import { adaptationsDisponibles, etapeLiee, fetchRange, type PlanningDay } from "@/lib/planning";
+import { adaptationsDisponibles, etapeLiee, etatTableAdaptations, fetchRange, type PlanningDay } from "@/lib/planning";
 import type { Origine } from "@/lib/programme";
 
 /* ═══════════════════ Le vocabulaire, fermé et versionné ═══════════════════
@@ -383,11 +383,20 @@ export async function lireAdaptations(
   userId: string,
   programmeId: string,
   mode: "souple" | "stricte" = "souple",
+  /* Pour le banc : le même client sert au sondage et à la lecture. */
+  client?: ReturnType<typeof createClient>,
 ): Promise<Adaptation[]> {
   if (!userId || !programmeId) return [];
-  if (!(await adaptationsDisponibles())) return [];
+  /* ⚠️ R6 · une table confirmée absente vaut « aucune » ; un sondage en
+     panne ne prouve rien, donc en mode strict il lève. */
+  const table = await etatTableAdaptations(client as unknown as Parameters<typeof etatTableAdaptations>[0]);
+  if (table === "absente") return [];
+  if (table === "inconnue") {
+    if (mode === "stricte") throw new Error("adaptations_illisibles: sondage");
+    return [];
+  }
   try {
-    const supabase = createClient();
+    const supabase = client ?? createClient();
     const reponse = await supabase
       .from("adaptations_entrainement")
       .select(COLS)

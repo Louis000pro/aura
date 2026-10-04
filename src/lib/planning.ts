@@ -576,25 +576,57 @@ export async function schemaIntentions(client?: ClientLike): Promise<SchemaInten
    sert qu'à tracer.
 
    Une requête par session, mémorisée, et le repli est le comportement
-   d'avant V8 : pas de colonne, pas d'adaptation, l'app d'hier. */
-let adaptationsResolu: boolean | null = null;
-let sondageAdaptations: Promise<boolean> | null = null;
+   d'avant V8 : pas de colonne, pas d'adaptation, l'app d'hier.
 
-export async function adaptationsDisponibles(client?: ClientLike): Promise<boolean> {
+   ⚠️ R6 · TROIS RÉPONSES, PAS DEUX. Une table ABSENTE (PostgreSQL 42P01,
+   PostgREST PGRST205) est une réponse : elle se mémorise. Une panne
+   (délai dépassé, réseau, refus d'accès) ne prouve rien : elle rend
+   `inconnue` et ne se mémorise PAS, donc la lecture suivante sonde à
+   nouveau. Mémoriser une panne comme une absence ferait passer, pour toute
+   la session, une adaptation réelle pour « aucune adaptation ». */
+export type EtatTableAdaptations = "presente" | "absente" | "inconnue";
+
+/** Pure : ce que dit la réponse du sondage. */
+export function classerSondageAdaptations(error: unknown): EtatTableAdaptations {
+  if (!error) return "presente";
+  const e = error as { code?: string; message?: string };
+  if (e.code === "42P01" || e.code === "PGRST205") return "absente";
+  if (/does not exist|could not find the table/i.test(e.message ?? "")) return "absente";
+  return "inconnue";
+}
+
+let adaptationsResolu: Exclude<EtatTableAdaptations, "inconnue"> | null = null;
+let sondageAdaptations: Promise<EtatTableAdaptations> | null = null;
+
+export async function etatTableAdaptations(client?: ClientLike): Promise<EtatTableAdaptations> {
   if (adaptationsResolu !== null) return adaptationsResolu;
   if (sondageAdaptations) return sondageAdaptations;
   sondageAdaptations = (async () => {
+    let etat: EtatTableAdaptations;
     try {
       const c = client ?? (createClient() as unknown as ClientLike);
       const { error } = await c.from("adaptations_entrainement").select("id").limit(1);
-      adaptationsResolu = !error;
+      etat = classerSondageAdaptations(error);
     } catch {
-      adaptationsResolu = false;
+      etat = "inconnue";
     }
+    if (etat !== "inconnue") adaptationsResolu = etat;
     sondageAdaptations = null;
-    return adaptationsResolu;
+    return etat;
   })();
   return sondageAdaptations;
+}
+
+/** Lecture souple : seule une table confirmée compte. Une panne vaut
+ *  `false` pour CET appel (on lit sans la colonne), jamais pour la session. */
+export async function adaptationsDisponibles(client?: ClientLike): Promise<boolean> {
+  return (await etatTableAdaptations(client)) === "presente";
+}
+
+/** Pour le banc : oublie ce que le sondage a mémorisé. */
+export function oublierSondageAdaptations(): void {
+  adaptationsResolu = null;
+  sondageAdaptations = null;
 }
 
 /** Les colonnes à demander, avec le bon nom de statut.
