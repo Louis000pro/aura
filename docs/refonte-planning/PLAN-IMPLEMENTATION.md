@@ -212,3 +212,10 @@ Trois témoins vérifiés.
 3. Banc : 733 contrôles. Témoins vérifiés : sans la notion de retard (3 échecs), avec l'ancienne borne globale (3 échecs).
 4. S7 : le refus attendu est `23514` (`occurrence_sans_cycle`, le déclencheur ne voit pas le cycle d'autrui), pas `42501`.
 5. À rejouer sur la base : `r6-test-a-coller.sql` (ajout de S8, les bases par étape, attendu 6,7,8,9). Après application : essai simultané réel, et deux fermetures au même rang explicite (une seule fermeture, les deux séances dans le journal).
+
+### R6 · corrections du tour 15 de Codex (2026-10-04)
+
+- **Base réelle, nouvelle règle :** M1 à S7 inchangés et conformes, S8 `rang_base` = 6, 7, 8, 9 comme attendu.
+- **Affichage conservé ≠ cible vérifiée.** `avecEtapeVerifiee` (`journee.ts`) relit programme, adaptation et occurrences avant de dater l'étape ou de lancer une étape libre. Lecture ratée ou suite changée : refus, et l'écran se relit (`EVT_JOURNEE`). Une séance déjà lancée garde sa cible. Test comportemental au banc (affichage chargé → fermeture ailleurs → rafraîchissement raté → réservation tentée : zéro écriture).
+- **Date inconnue :** une vraie fermeture sans `consommee_le` ne déclare aucun retard, comme `<` avec NULL en SQL ; seule la fermeture imaginée de l'aperçu (`simulee`) a lieu « à l'instant ». En base le cas n'existe pas (`intentions_consommee_check`), S8b le vérifie.
+- Banc : 739 contrôles. Témoins : date inconnue traitée comme « maintenant » (1 échec), repli sur l'affichage conservé (3 échecs).

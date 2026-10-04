@@ -27,7 +27,7 @@ import { createClient } from "@/lib/supabase";
 import { levelToDifficulty } from "@/lib/assistantActions";
 import { heroImageForSeance } from "@/lib/workoutArt";
 import { EVT_JOURNEE } from "@/lib/finSeance";
-import { etatJournee, intentionDeLEtape, lancementDuJour, libelleReservation, repetitionDuJour } from "@/lib/journee";
+import { avecEtapeVerifiee, etatJournee, intentionDeLEtape, lancementDuJour, libelleReservation, repetitionDuJour } from "@/lib/journee";
 import {
   lireSemaine, ajouterIntention, saveDay, reservationDeLOccurrence, hasSeance, loadLieu, readVariant, ctxFromLieu,
   weekDates, todayYmd, dayTitle, parDate, principale, supplements, seancesDuJour,
@@ -311,6 +311,23 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
     return () => { annule = true; };
   }, [etat, user, today]);
 
+  /* R6 · tour 15 · relire la suite AVANT d'agir sur l'étape affichée.
+     Le programme, son adaptation et ses occurrences, frais : un écran
+     resté sur une lecture ratée ne décide pas d'une écriture. */
+  const relireEtape = useCallback(async (): Promise<EtapeOccurrence | null> => {
+    if (!user || !programme) return null;
+    const actif = await lireProgrammeActif(user.id);
+    if (!actif || actif.programme.id !== programme.programme.id) return null;
+    const couche = await adaptationDuJour(user.id, actif.programme.id, todayYmd());
+    return etapeSuivanteDe(user.id, actif, (e) => etapeMasquee(e.id, couche));
+  }, [user, programme]);
+
+  /* Refusé : on le dit, et on relit pour que l'écran montre la vraie suite. */
+  const refuser = useCallback((raison: "illisible" | "changee") => {
+    console.warn("[journee] étape non vérifiée :", raison);
+    if (typeof window !== "undefined") window.dispatchEvent(new Event(EVT_JOURNEE));
+  }, []);
+
   const lancerIntention = useCallback((d: PlanningDay, options?: { repetition?: boolean }) => {
     if (!hasSeance(d)) return;
     const titre = dayTitle(d);
@@ -364,7 +381,9 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
        terminée, il n'en reste aucune trace. */
     if (!quoi || !etape || !programme) return;
     const difficulte = levelToDifficulty(gen?.level ?? null);
-    launchWorkout({
+    /* ⚠️ UNE ÉTAPE LIBRE FERMERA UNE OCCURRENCE À LA FIN : on vérifie
+       qu'elle est toujours la suite avant de la lancer (tour 15). */
+    void avecEtapeVerifiee(etape, relireEtape, () => launchWorkout({
       sessionId: `etape-${etape.id}`,
       title: etape.nom,
       duration: etape.dureeMin ?? 45,
@@ -387,8 +406,8 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
         location: gen?.ctx ?? null,
         exerciseList: instance,
       },
-    });
-  }, [jour, reservation, lancerIntention, etape, instance, programme, adaptation, gen, launchWorkout]);
+    })).then((v) => { if (!v.ok) refuser(v.raison); });
+  }, [jour, reservation, lancerIntention, etape, instance, programme, adaptation, gen, launchWorkout, relireEtape, refuser]);
 
   /* ⚠️ LE SEUL ENDROIT DU PRODUIT QUI DATE UNE ÉTAPE, ET DONC LE SEUL
      QUI CRÉE UNE INTENTION PORTANT SON LIEN VERS LE PROGRAMME. Sans ce
@@ -408,7 +427,12 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
        hors de la semaine courante, donc hors de tout ce que cet écran a
        lu : la chercher là aurait rendu le défaut intermittent, ce qui
        est pire qu'un défaut franc. */
+    let v;
     try {
+      /* ⚠️ L'ÉTAPE AFFICHÉE PEUT ÊTRE UN AFFICHAGE CONSERVÉ (tour 15) :
+         on relit la suite avant d'écrire, et on refuse si on ne sait pas.
+         Chercher la réservation ne remplace pas lire les occurrences. */
+      v = await avecEtapeVerifiee(etape, relireEtape, async () => {
       /* La lecture est DANS le `try` : elle interroge la base comme
          l'écriture, donc elle échoue de la même façon. */
       const dejaPosee = await reservationDeLOccurrence(user.id, programme.programme.id, etape.rang);
@@ -427,15 +451,17 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
       };
       if (voulue.id) await saveDay(user.id, voulue, "utilisateur");
       else await ajouterIntention(user.id, voulue, "utilisateur");
+      });
     } catch (e) {
       console.error("[journee] impossible de dater l'étape :", e);
       return false;
     }
+    if (!v.ok) { refuser(v.raison); return false; }
     /* Les deux écrans se remettent d'accord : la semaine gagne une ligne,
        et le héros passe de « quand tu veux » à la journée qui la porte. */
     if (typeof window !== "undefined") window.dispatchEvent(new Event(EVT_JOURNEE));
     return true;
-  }, [user, etape, programme, instance, adaptation, gen]);
+  }, [user, etape, programme, instance, adaptation, gen, relireEtape, refuser]);
 
   return {
     etat, jour, extras, etape, reservation,

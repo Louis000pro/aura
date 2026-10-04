@@ -52,8 +52,12 @@ export type OccurrenceFermee = {
   etapeId: string;
   /** L'heure de la fermeture : dit si elle est arrivée en retard, et
    *  ordonne la « dernière fermée » du garde-fou du double saut. `null`
-   *  = fermée à l'instant (une fermeture imaginée, « et après ? »). */
+   *  sur une vraie fermeture = heure INCONNUE : on n'en déduit aucun
+   *  retard, exactement comme la comparaison SQL avec NULL. */
   consommeeLe: string | null;
+  /** Une fermeture IMAGINÉE (« et après celle-ci ? ») : elle a lieu à
+   *  l'instant, donc après toutes les autres. Jamais lue en base. */
+  simulee?: boolean;
 };
 
 /** Une occurrence réservée : datée, encore prévue. */
@@ -81,8 +85,12 @@ export function etapeDuRang<T extends { position: number }>(cycle: T[], rang: nu
   return ordonne[(rang - 1) % ordonne.length];
 }
 
-/* Une fermeture sans heure est la plus récente de toutes. */
-const instant = (f: OccurrenceFermee) => (f.consommeeLe ? Date.parse(f.consommeeLe) : Infinity);
+/* Une fermeture imaginée a lieu maintenant, après toutes les autres. Une
+   vraie fermeture sans heure n'a pas d'instant (NaN) : elle n'est « avant »
+   ni « après » rien, donc aucun retard ne s'en déduit. C'est le sens de
+   `consommee_le < …` en SQL quand l'une des deux dates est NULL (tour 15). */
+const instant = (f: OccurrenceFermee) =>
+  f.simulee ? Infinity : f.consommeeLe ? Date.parse(f.consommeeLe) : NaN;
 
 /**
  * Le premier rang où l'étape peut avoir son occurrence en attente.
@@ -136,7 +144,7 @@ export function occurrenceSuivante<T extends { id: string; position: number }>(
 
   const fermes = [
     ...etat.fermes,
-    ...enPlus.map((rang) => ({ rang, etapeId: ordonne[(rang - 1) % k].id, consommeeLe: null })),
+    ...enPlus.map((rang) => ({ rang, etapeId: ordonne[(rang - 1) % k].id, consommeeLe: null, simulee: true })),
   ];
   const pris = new Set(fermes.map((f) => f.rang));
   const reserves = etat.reserves.filter((r) => !pris.has(r.rang));

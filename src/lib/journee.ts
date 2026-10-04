@@ -250,3 +250,38 @@ export function intentionDeLEtape(input: {
     adaptationId: input.adaptationId ?? null,
   };
 }
+
+/* ════════════════════════════════════════════════════════════════════
+   R6 · L'AFFICHAGE CONSERVÉ N'EST PAS UNE CIBLE VÉRIFIÉE (tour 15).
+
+   Après un rafraîchissement raté, le héros garde l'étape qu'il montrait :
+   c'est mieux qu'un écran vide. Mais cette étape a pu être fermée ailleurs
+   entre-temps. Avant une écriture (dater l'étape) ou un lancement libre
+   (qui fermera une occurrence à la fin), on RELIT la suite et son
+   adaptation. Lecture ratée : on refuse. Suite changée : on refuse aussi,
+   l'écran se remet à jour et la personne voit la nouvelle étape avant de
+   rien décider. Une séance DÉJÀ lancée garde sa cible : ceci ne la touche
+   pas.
+   ════════════════════════════════════════════════════════════════════ */
+export type CibleVerifiee =
+  | { ok: true }
+  | { ok: false; raison: "illisible" | "changee" };
+
+export async function avecEtapeVerifiee<E extends { id: string; rang: number }>(
+  affichee: E,
+  /** Relit la prochaine étape compatible. Lève si la lecture échoue. */
+  relire: () => Promise<E | null>,
+  agir: (etape: E) => Promise<void> | void,
+): Promise<CibleVerifiee> {
+  let fraiche: E | null;
+  try {
+    fraiche = await relire();
+  } catch {
+    return { ok: false, raison: "illisible" };
+  }
+  if (!fraiche || fraiche.id !== affichee.id || fraiche.rang !== affichee.rang) {
+    return { ok: false, raison: "changee" };
+  }
+  await agir(fraiche);
+  return { ok: true };
+}

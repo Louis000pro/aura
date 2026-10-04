@@ -31,7 +31,7 @@ import { EXERCISE_LIBRARY } from "@/lib/exerciseLibrary";
 import { resolveGuide } from "@/lib/exerciseGuides";
 import { etapesDuCycle, etapeSuivante, nomDeProgramme, positionRefermee, POSITION_INITIALE } from "@/lib/programme";
 import { baseEtape, occurrenceSuivante, rangPourEtape } from "@/lib/occurrences";
-import { etatJournee, intentionDeLEtape, lancementDuJour, libelleReservation, repetitionDuJour } from "@/lib/journee";
+import { avecEtapeVerifiee, etatJournee, intentionDeLEtape, lancementDuJour, libelleReservation, repetitionDuJour } from "@/lib/journee";
 import {
   etatDepuisExp, missionsAuraVides,
   MISSIONS, MISSIONS_JOUR, MISSIONS_PREMIUM, MISSIONS_PREMIUM_SEMAINE, MISSIONS_SEMAINE,
@@ -5887,6 +5887,42 @@ verdict(
     const tout = occurrenceSuivante(C5, etat, () => true);
     verdict("R6 · tout masqué : rien d'inventé", tout === null, "→ null");
     verdict("R6 · cycle vide : rien", occurrenceSuivante([], { depart: 1, fermes: [], reserves: [] }) === null, "→ null");
+  }
+  {
+    /* Tour 15 · une date inconnue ne fait pas un retard, comme en SQL. */
+    const etat = { depart: 1, reserves: [], fermes: [
+      { rang: 1, etapeId: "e1", consommeeLe: jour(0) },
+      { rang: 3, etapeId: "e3", consommeeLe: jour(1) },
+      { rang: 4, etapeId: "e1", consommeeLe: jour(2) },
+      { rang: 6, etapeId: "e3", consommeeLe: jour(3) },
+      { rang: 2, etapeId: "e2", consommeeLe: null },
+    ] };
+    verdict("R6 · une fermeture sans date n'est jamais déclarée en retard (≡ SQL)",
+      baseEtape(etat, 3, "e2") === 3, `base de B ${baseEtape(etat, 3, "e2")} (SQL : 3)`);
+    const apercu = occurrenceSuivante(C3, { depart: 1, reserves: [], fermes: ferme(3, [1, 3, 4, 6]) }, undefined, [2]);
+    verdict("R6 · l'aperçu « et après ? » reste une fermeture à l'instant",
+      apercu?.rang === 7, `→ rang ${apercu?.rang}`);
+  }
+  {
+    /* Tour 15 · affichage conservé ≠ cible vérifiée. Scénario : l'écran
+       montre B₁ ; B₁ est fermée ailleurs ; le rafraîchissement échoue ;
+       on tente de dater B₁. Aucune écriture ne doit partir. */
+    const affichee = { id: "e2", rang: 2 };
+    let ecritures = 0;
+    const ecrire = () => { ecritures++; };
+    const rate = await avecEtapeVerifiee(affichee, async () => { throw new Error("réseau"); }, ecrire);
+    const changee = await avecEtapeVerifiee(affichee, async () => ({ id: "e1", rang: 7 }), ecrire);
+    const rien = await avecEtapeVerifiee(affichee, async () => null, ecrire);
+    verdict("R6 · lecture ratée : la réservation de l'ancienne cible est refusée",
+      !rate.ok && rate.raison === "illisible" && ecritures === 0, `${JSON.stringify(rate)} · ${ecritures} écriture`);
+    verdict("R6 · suite changée ailleurs : refusée aussi, l'écran se relit",
+      !changee.ok && changee.raison === "changee" && !rien.ok && ecritures === 0, `${JSON.stringify(changee)} · ${ecritures} écriture`);
+    const bon = await avecEtapeVerifiee(affichee, async () => ({ id: "e2", rang: 2 }), ecrire);
+    verdict("R6 · suite confirmée : l'action part, une fois", bon.ok && ecritures === 1, `${ecritures} écriture`);
+    const hook = lire1("src/hooks/useJournee.ts");
+    verdict("R6 · dater l'étape et lancer une étape libre passent par la vérification",
+      (hook.match(/avecEtapeVerifiee\(etape, relireEtape,/g) ?? []).length === 2,
+      "les deux seuls gestes qui écrivent ou fermeront une occurrence");
   }
   {
     /* Une lecture ratée n'invente rien. */

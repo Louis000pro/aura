@@ -133,6 +133,19 @@ begin
   out := out || format('S8 bases=%s,%s,%s,%s (attendu 6,7,8,9) ; ',
     public.rang_base(P, E1), public.rang_base(P, E2), public.rang_base(P, E3), public.rang_base(P, E4));
 
+  /* ── S8b · Une fermeture sans date n'existe pas en base
+     (`intentions_consommee_check`) : le cas « date inconnue » ne vit
+     qu'en TypeScript, où il ne déclare aucun retard, comme ici. ── */
+  begin
+    insert into public.intentions_entrainement (user_id, date, type, title, difficulty, exercise_list, statut, nature, origine,
+      programme_id, programme_seance_id, etape_consommee_id, lancement_id)
+    values (U, '2026-10-07', 'Force', 'Pull', 'Intermédiaire', '[]', 'faite', 'seance', 'utilisateur', P, E4, E4, gen_random_uuid());
+    out := out || 'S8b FERMETURE SANS DATE ACCEPTÉE ; ';
+  exception when check_violation then
+    get stacked diagnostics t = constraint_name;
+    out := out || format('S8b refus=%s ; ', t);
+  end;
+
   /* ── S7 · Une autre personne ne voit ni n'écrit rien ici ── */
   perform set_config('request.jwt.claims', json_build_object('sub', AUTRE, 'role', 'authenticated')::text, true);
   select count(*) into n from public.intentions_entrainement where programme_id = P;
