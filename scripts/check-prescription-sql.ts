@@ -115,6 +115,33 @@ t("fourchette incohérente refusée", !!(await err("ecrire_occurrence", { intent
 t("refus = rien écrit (intention annulée avec)", (await q(`select count(*)::int n from intentions_entrainement where rang=15`)).rows[0].n === 0);
 const zero = lignes.map((l, i) => i===0 ? { ...l, mesure: "reps", duree_s: 30 } : l);
 t("reps et durée à la fois refusée", !!(await err("ecrire_occurrence", { intention: intention({ rang: 16 }), lignes: zero })));
+/* Tour 22 · une prescription INCOMPLÈTE est refusée : une comparaison avec
+   NULL rendait NULL, et le CHECK passait. Chaque refus ne laisse rien. */
+const iReps = lignes.findIndex((l) => l.mesure === "reps");
+const sansReps = (champs: string[]) => lignes.map((l, i) => i === iReps ? { ...l, ...Object.fromEntries(champs.map((c) => [c, null])) } : l);
+let rangInc = 30;
+for (const champs of [["reps_min", "reps_max", "reps_cible"], ["reps_min"], ["reps_max"], ["reps_cible"]]) {
+  const r = rangInc++;
+  const e = await err("ecrire_occurrence", { intention: intention({ rang: r }), modele_id: null, lignes: sansReps(champs) });
+  t(`occurrence · reps sans ${champs.join("/")} refusée`, !!e, e || "acceptée");
+  t(`occurrence · refus ${champs.join("/")} = aucune intention`, (await q(`select count(*)::int n from intentions_entrainement where rang=$1`,[r])).rows[0].n === 0);
+}
+const dureeNulle = lignes.map((l, i) => i === iReps ? { ...l, mesure: "duree", duree_s: null, reps_min: null, reps_max: null, reps_cible: null } : l);
+const dureeZero = lignes.map((l, i) => i === iReps ? { ...l, mesure: "duree", duree_s: 0, reps_min: null, reps_max: null, reps_cible: null } : l);
+for (const [nom, ls] of [["durée nulle", dureeNulle], ["durée à zéro", dureeZero]] as const) {
+  const r = rangInc++;
+  const e = await err("ecrire_occurrence", { intention: intention({ rang: r }), modele_id: null, lignes: ls });
+  t(`occurrence · ${nom} refusée`, !!e && (await q(`select count(*)::int n from intentions_entrainement where rang=$1`,[r])).rows[0].n === 0, e || "acceptée");
+}
+const nbModeles = async () => (await q(`select count(*)::int n from etape_modeles`)).rows[0].n;
+const nbLignesModeles = async () => (await q(`select count(*)::int n from etape_exercices`)).rows[0].n;
+const avantM = [await nbModeles(), await nbLignesModeles()];
+for (const [nom, ls] of [["reps sans valeurs", sansReps(["reps_min", "reps_max", "reps_cible"])], ["durée nulle", dureeNulle]] as const) {
+  const e = await err("ecrire_modele", { programme_seance_id: etape, lieu: "poids", orientation: "masse", niveau: null, version: 1, lignes: ls });
+  t(`modèle · ${nom} refusé`, !!e, e || "accepté");
+}
+t("modèle refusé = aucun modèle ni ligne partiels", (await nbModeles()) === avantM[0] && (await nbLignesModeles()) === avantM[1],
+  `${await nbModeles()} modèles, ${await nbLignesModeles()} lignes`);
 await setUid(V);
 t("programme d'autrui refusé", /programme_inconnu/.test(await err("ecrire_occurrence", { intention: intention({ rang: 17 }), lignes })));
 await setUid("");

@@ -35,6 +35,18 @@ export type ModeleEtape = {
   lignes: LignePrescription[];
 };
 
+/**
+ * R2 · tour 22 · un modèle RATTACHÉ à l'occurrence pour laquelle il a été
+ * lu. Le hook ne publie jamais l'un sans l'autre, et un geste refuse un
+ * modèle qui appartient à une autre étape.
+ */
+export type ModeleDeLOccurrence = ModeleEtape & { etapeId: string; rang: number; lieu: string };
+
+/** Ce qui distingue deux prescriptions : l'étape, le lieu, le modèle, ses lignes. */
+export function empreinteModele(m: ModeleDeLOccurrence): string {
+  return JSON.stringify([m.etapeId, m.rang, m.lieu, m.modeleId, m.lignes]);
+}
+
 type ClientLike = ReturnType<typeof createClient>;
 
 const COLS_LIGNE = "emplacement, exercice_cle, exercice_nom, fonction, statut, series, mesure, reps_min, reps_max, reps_cible, duree_s, repos_s, transition_s, charge_type, unite";

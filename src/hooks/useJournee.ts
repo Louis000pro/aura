@@ -20,14 +20,14 @@
    `terminerSeance` qui referme, depuis le lanceur global.
    ════════════════════════════════════════════════════════════════════ */
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useWorkoutLaunch } from "@/context/WorkoutLaunchContext";
 import { createClient } from "@/lib/supabase";
 import { levelToDifficulty } from "@/lib/assistantActions";
 import { heroImageForSeance } from "@/lib/workoutArt";
 import { EVT_JOURNEE } from "@/lib/finSeance";
-import { avecEtapeVerifiee, type ContexteEtape, etatJournee, intentionDeLEtape, lancementDuJour, libelleReservation, repetitionDuJour } from "@/lib/journee";
+import { avecEtapeVerifiee, type ContexteEtape, deplacerReservation, etatJournee, lancementDuJour, libelleReservation, repetitionDuJour } from "@/lib/journee";
 import {
   lireSemaine, saveDay, reservationDeLOccurrence, hasSeance, loadLieu, readVariant, ctxFromLieu,
   weekDates, todayYmd, dayTitle, parDate, principale, supplements, seancesDuJour,
@@ -44,7 +44,7 @@ import {
 } from "@/lib/adaptation";
 import type { EtatJournee } from "@/lib/journee";
 import { projeterPrescription } from "@/lib/banqueEtapes";
-import { ecrireOccurrence, modeleDeLEtape, type ModeleEtape } from "@/lib/prescription";
+import { ecrireOccurrence, empreinteModele, modeleDeLEtape, type ModeleDeLOccurrence } from "@/lib/prescription";
 
 const DAY_FULL = ["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"];
 
@@ -129,8 +129,12 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
   const [etape, setEtape] = useState<EtapeOccurrence | null>(null);
   const [reservation, setReservation] = useState<PlanningDay | null>(null);
   /* R2 · le modèle de l'étape suivante pour ce lieu : écrit, ou composé
-     en mémoire. `null` = pas d'étape, ou lecture ratée (on ne lance pas). */
-  const [modele, setModele] = useState<ModeleEtape | null>(null);
+     en mémoire. `null` = pas d'étape, ou lecture ratée (on ne lance pas).
+     ⚠️ Il porte l'occurrence pour laquelle il a été lu (tour 22). */
+  const [modele, setModele] = useState<ModeleDeLOccurrence | null>(null);
+  /* Tour 22 · seule la DERNIÈRE lecture publie : une réponse arrivée en
+     retard ne remet pas à l'écran une étape ou un modèle périmés. */
+  const lectureEnCours = useRef(0);
   const [adaptation, setAdaptation] = useState<Adaptation | null>(null);
   const [niveau, setNiveau] = useState<string | null>(null);
   const [doneStats, setDoneStats] = useState<{ minutes: number; kcal: number } | null>(null);
@@ -140,6 +144,8 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
 
   const charger = useCallback(async () => {
     if (!user) return;
+    const numero = ++lectureEnCours.current;
+    const derniere = () => numero === lectureEnCours.current;
     const supabase = createClient();
     const { data: prof } = await supabase
       .from("profiles")
@@ -150,6 +156,7 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
     const aRepondu = !!(prof && (prof.onboarding_level || prof.onboarding_sessions_week
       || (Array.isArray(prof.onboarding_goals) && prof.onboarding_goals.length > 0)));
     const { location, equip } = await loadLieu(user.id);
+    if (!derniere()) return;
     setNiveau(prof?.onboarding_level ?? null);
 
     if (!aRepondu) {
@@ -173,7 +180,9 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
     try {
       /* ⚠️ LIRE N'ÉCRIT PLUS RIEN (V5). Une semaine sans ligne est une
          semaine sans rien de prévu, et c'est une réponse valide. */
-      setSemaine(await lireSemaine(user.id, weekDates()));
+      const lue = await lireSemaine(user.id, weekDates());
+      if (!derniere()) return;
+      setSemaine(lue);
       setGen(reglages);
       setBesoinSetup(false);
     } catch (e) {
@@ -189,21 +198,20 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
       const actif = creerProgramme
         ? await getOrCreateProgramme(user.id)
         : await lireProgrammeActif(user.id);
-      setProgramme(actif);
       /* ⚠️ V8 · L'ADAPTATION SE LIT AVANT L'ÉTAPE, PARCE QU'ELLE DÉCIDE
          DE L'ÉTAPE. Une requête, et seulement s'il y a un programme :
          sans programme il n'y a pas de cycle à adapter. Elle est
          rattachée au programme ACTIF, donc une nouvelle version du
          programme cesse d'être adaptée d'elle-même, sans écriture. */
       const couche = actif ? await adaptationDuJour(user.id, actif.programme.id, todayYmd()) : null;
-      setAdaptation(couche);
       const suivante = actif
         ? await etapeSuivanteDe(user.id, actif, (e) => etapeMasquee(e.id, couche))
         : null;
-      setEtape(suivante);
-      setModele(suivante
-        ? await modeleDeLEtape({ id: suivante.id, nom: suivante.nom }, contexteDe(reglages))
-        : null);
+      /* ⚠️ R2 · tour 22 · L'ÉTAPE ET SON MODÈLE SE PUBLIENT ENSEMBLE.
+         Publier l'étape avant d'avoir lu son modèle laissait l'écran,
+         le temps d'une requête, avec l'étape B et le modèle de A. */
+      const ctxModele = contexteDe(reglages);
+      const lu = suivante ? await modeleDeLEtape({ id: suivante.id, nom: suivante.nom }, ctxModele) : null;
       /* ⚠️ ET ON DEMANDE À LA BASE SI CETTE ÉTAPE A DÉJÀ UN JOUR.
          C'est la réparation du défaut du 2026-09-06 : le héros ne
          regardait que les intentions D'AUJOURD'HUI, et `etapeSuivante`
@@ -212,16 +220,24 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
          la reproposait « quand tu veux » un dimanche. La chercher dans
          la semaine chargée ne suffit pas : depuis que le sélecteur
          propose quinze jours, elle vit souvent au-delà. Une requête, sur
-         la clé de l'invariant lui-même, et seulement s'il y a une étape. */
-      /* R6 · LA RÉSERVATION DE CETTE OCCURRENCE-LÀ, pas de l'étape en
+         la clé de l'invariant lui-même, et seulement s'il y a une étape.
+         R6 · LA RÉSERVATION DE CETTE OCCURRENCE-LÀ, pas de l'étape en
          général : une occurrence = une ligne (`uniq_occurrence`). */
-      setReservation(suivante && actif
+      const resa = suivante && actif
         ? await reservationDeLOccurrence(user.id, actif.programme.id, suivante.rang)
+        : null;
+      if (!derniere()) return;
+      setProgramme(actif);
+      setAdaptation(couche);
+      setEtape(suivante);
+      setModele(suivante && lu
+        ? { ...lu, etapeId: suivante.id, rang: suivante.rang, lieu: ctxModele.lieu }
         : null);
+      setReservation(resa);
     } catch (e) {
       console.error("Programme load error", e);
     }
-    setPret(true);
+    if (derniere()) setPret(true);
   }, [user, creerProgramme]);
 
   useEffect(() => { void charger(); }, [charger]);
@@ -246,9 +262,10 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
   /* L'INSTANCE de l'étape : la PROJECTION de son modèle (R2). Rien n'est
      écrit tant que la séance n'est pas faite ou datée ; la copie se fige
      au lancement et voyage avec lui. */
+  const modeleDeLEtapeAffichee = etape && modele && modele.etapeId === etape.id && modele.rang === etape.rang ? modele : null;
   const instance = useMemo(
-    () => (etape && modele ? projeterPrescription(modele.lignes) : []),
-    [etape, modele],
+    () => (modeleDeLEtapeAffichee ? projeterPrescription(modeleDeLEtapeAffichee.lignes) : []),
+    [modeleDeLEtapeAffichee],
   );
 
   /* ⚠️ « AUCUNE ÉTAPE COMPATIBLE » N'EST PAS « PAS DE PROGRAMME ». Les
@@ -325,16 +342,23 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
      (programme, occurrence, étape, adaptation tracée, étapes masquées) est
      relu en mode STRICT : une adaptation illisible n'est pas une
      adaptation absente. Différent de l'affiché → refus, l'écran se relit. */
-  type ContexteHook = ContexteEtape & { occ: EtapeOccurrence; adaptationLue: Adaptation | null };
+  /* R2 · tour 22 · LA PRESCRIPTION FAIT PARTIE DU CONTEXTE VÉRIFIÉ. Sans
+     modèle de CETTE étape (pas encore lu, illisible, ou celui d'une autre),
+     il n'y a pas de contexte affiché, donc aucun geste. */
+  type ContexteHook = ContexteEtape & {
+    occ: EtapeOccurrence; adaptationLue: Adaptation | null;
+    prescription: string; modele: ModeleDeLOccurrence;
+  };
   const contexteAffiche = useMemo<ContexteHook | null>(() => (
-    etape && programme ? {
+    etape && programme && modeleDeLEtapeAffichee ? {
       programmeId: programme.programme.id,
       etapeId: etape.id, rang: etape.rang, nom: etape.nom,
       adaptationId: adaptation?.id ?? null,
       masquees: idsMasques(programme.cycle, adaptation),
-      occ: etape, adaptationLue: adaptation,
+      prescription: empreinteModele(modeleDeLEtapeAffichee),
+      occ: etape, adaptationLue: adaptation, modele: modeleDeLEtapeAffichee,
     } : null
-  ), [etape, programme, adaptation]);
+  ), [etape, programme, adaptation, modeleDeLEtapeAffichee]);
 
   const relireContexte = useCallback(async (): Promise<ContexteHook | null> => {
     if (!user || !programme) return null;
@@ -342,15 +366,22 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
     if (!actif || actif.programme.id !== programme.programme.id) return null;
     const couche = await adaptationDuJour(user.id, actif.programme.id, todayYmd(), "stricte");
     const occ = await etapeSuivanteDe(user.id, actif, (e) => etapeMasquee(e.id, couche));
-    if (!occ) return null;
+    if (!occ || !gen) return null;
+    /* Le modèle de l'étape RELUE, pour le lieu des réglages : une lecture
+       ratée est un refus (« illisible »), jamais une composition. */
+    const ctx = contexteDe(gen);
+    const lu = await modeleDeLEtape({ id: occ.id, nom: occ.nom }, ctx);
+    if (!lu) throw new Error("modele_illisible");
+    const frais: ModeleDeLOccurrence = { ...lu, etapeId: occ.id, rang: occ.rang, lieu: ctx.lieu };
     return {
       programmeId: actif.programme.id,
       etapeId: occ.id, rang: occ.rang, nom: occ.nom,
       adaptationId: couche?.id ?? null,
       masquees: idsMasques(actif.cycle, couche),
-      occ, adaptationLue: couche,
+      prescription: empreinteModele(frais),
+      occ, adaptationLue: couche, modele: frais,
     };
-  }, [user, programme]);
+  }, [user, programme, gen]);
 
   /* Refusé : on le dit, et on relit pour que l'écran montre la vraie suite. */
   const refuser = useCallback((raison: "illisible" | "changee") => {
@@ -409,19 +440,22 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
     /* Lancer une étape du cycle : on matérialise son instance À CET
        INSTANT, en mémoire, et on n'écrit RIEN. Si la séance n'est pas
        terminée, il n'en reste aucune trace. */
-    if (!quoi || !etape || !programme) return;
+    if (!quoi || !programme) return;
     const difficulte = levelToDifficulty(gen?.level ?? null);
     /* ⚠️ UNE ÉTAPE LIBRE FERMERA UNE OCCURRENCE À LA FIN : on vérifie
        qu'elle est toujours la suite avant de la lancer (tour 15). */
     if (!contexteAffiche) return;
-    void avecEtapeVerifiee(contexteAffiche, relireContexte, (c) => launchWorkout({
+    void avecEtapeVerifiee(contexteAffiche, relireContexte, (c) => {
+      /* La liste ET la prescription viennent du modèle RELU (tour 22). */
+      const liste = projeterPrescription(c.modele.lignes);
+      launchWorkout({
       sessionId: `etape-${c.etapeId}`,
       title: c.nom,
       duration: c.occ.dureeMin ?? 45,
       difficulty: difficulte,
       category: "Force",
       heroImage: heroImageForSeance({ title: c.nom }),
-      exerciseList: instance,
+      exerciseList: liste,
       cible: {
         genre: "etape",
         programmeId: c.programmeId,
@@ -435,14 +469,15 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
         title: c.nom,
         difficulty: difficulte,
         location: gen?.ctx ?? null,
-        exerciseList: instance,
+        exerciseList: liste,
         /* R2 · la prescription FIGÉE à cet instant : la fin de séance (et
            son rejeu depuis l'attente locale) l'écrit telle quelle. */
-        prescription: modele ? modele.lignes.map((l) => ({ ...l })) : null,
-        modeleId: modele?.modeleId ?? null,
+        prescription: c.modele.lignes.map((l) => ({ ...l })),
+        modeleId: c.modele.modeleId,
       },
-    })).then((v) => { if (!v.ok) refuser(v.raison); });
-  }, [jour, reservation, lancerIntention, etape, instance, modele, programme, gen, launchWorkout, contexteAffiche, relireContexte, refuser]);
+      });
+    }).then((v) => { if (!v.ok) refuser(v.raison); });
+  }, [jour, reservation, lancerIntention, etape, instance, programme, gen, launchWorkout, contexteAffiche, relireContexte, refuser]);
 
   /* ⚠️ LE SEUL ENDROIT DU PRODUIT QUI DATE UNE ÉTAPE, ET DONC LE SEUL
      QUI CRÉE UNE INTENTION PORTANT SON LIEN VERS LE PROGRAMME. Sans ce
@@ -451,7 +486,7 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
      héros reproposait la même étape le lendemain, indéfiniment. La
      consommation vient de l'INTENTION du geste, jamais du titre. */
   const daterEtape = useCallback(async (date: string): Promise<boolean> => {
-    if (!user || !etape || !programme || !modele || instance.length === 0) return false;
+    if (!user || !programme) return false;
     /* ⚠️ UNE SEULE RÉSERVATION PAR ÉTAPE, ET C'EST LA BASE QUI L'IMPOSE
        (`uniq_intention_par_etape`, V6). Redonner un jour à une étape déjà
        datée est donc un DÉPLACEMENT, pas un second ajout : sans ça, la
@@ -491,33 +526,21 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
           adaptation_id: c.adaptationId ?? null,
           consommee_le: null,
           lancement_id: null,
-        }, modele.modeleId, modele.lignes);
+        }, c.modele.modeleId, c.modele.lignes);
         if (r.resultat !== "ok" && r.resultat !== "deja") throw new Error("occurrence non écrite");
         if (r.resultat === "ok") { await appliquerRegleDuJour(user.id, date, r.id); return; }
         /* `deja` : elle existait (écrite ailleurs entre-temps) ; on la déplace. */
         const relue = await reservationDeLOccurrence(user.id, c.programmeId, c.rang);
         if (!relue) throw new Error("occurrence introuvable");
-        await saveDay(user.id, { ...relue, date }, "utilisateur");
+        await saveDay(user.id, deplacerReservation(relue, date), "utilisateur");
         return;
       }
-      /* ⚠️ UN DÉPLACEMENT GARDE LE CONTENU ÉCRIT, il ne le remplace pas par
-         l'instance du moment : la projection d'une occurrence prescrite ne
-         se modifie jamais à part (et l'ancienne réservation d'avant R2
-         garde ses exercices). */
-      const voulue = {
-        ...intentionDeLEtape({
-          date,
-          programmeId: c.programmeId,
-          etape: { id: c.etapeId, nom: c.nom },
-          rang: c.rang,
-          difficulty: levelToDifficulty(gen?.level ?? null),
-          location: gen?.ctx ?? null,
-          exerciseList: dejaPosee.exerciseList,
-          adaptationId: c.adaptationId,
-        }),
-        id: dejaPosee.id,
-      };
-      await saveDay(user.id, voulue, "utilisateur");
+      /* ⚠️ UN DÉPLACEMENT NE CHANGE QUE LA DATE (tour 22). Contenu, lieu,
+         difficulté, adaptation et prescription restent ceux de la
+         réservation : les reconstruire depuis les réglages du moment
+         ferait d'une séance préparée en salle une séance « maison » qui
+         garde ses machines. Changer le contenu est un autre geste. */
+      await saveDay(user.id, deplacerReservation(dejaPosee, date), "utilisateur");
       });
     } catch (e) {
       console.error("[journee] impossible de dater l'étape :", e);
@@ -528,7 +551,7 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
        et le héros passe de « quand tu veux » à la journée qui la porte. */
     if (typeof window !== "undefined") window.dispatchEvent(new Event(EVT_JOURNEE));
     return true;
-  }, [user, etape, programme, modele, instance, gen, contexteAffiche, relireContexte, refuser]);
+  }, [user, programme, gen, contexteAffiche, relireContexte, refuser]);
 
   return {
     etat, jour, extras, etape, reservation,

@@ -72,10 +72,17 @@ create table if not exists public.etape_exercices (
   unique (modele_id, emplacement),
   /* Une fourchette cohérente, avec sa cible de compatibilité dedans ; ou
      une durée. Jamais les deux, jamais aucune. */
-  check (
-    (mesure = 'reps' and reps_min >= 1 and reps_min <= reps_cible and reps_cible <= reps_max
+  /* ⚠️ CHAQUE VALEUR EXIGÉE EST NOMMÉE `is not null` (tour 22) : une
+     comparaison avec NULL rend NULL, et un CHECK qui rend NULL PASSE.
+     Sans ça, « reps » avec trois répétitions nulles était accepté. */
+  constraint etape_exercices_prescription_check check (
+    (mesure = 'reps'
+      and reps_min is not null and reps_cible is not null and reps_max is not null
+      and reps_min >= 1 and reps_min <= reps_cible and reps_cible <= reps_max
       and reps_max <= 100 and duree_s is null)
-    or (mesure = 'duree' and duree_s > 0 and reps_min is null and reps_max is null and reps_cible is null)
+    or (mesure = 'duree'
+      and duree_s is not null and duree_s > 0
+      and reps_min is null and reps_max is null and reps_cible is null)
   )
 );
 
@@ -117,10 +124,17 @@ create table if not exists public.occurrence_exercices (
   cree_le       timestamptz not null default now(),
   unique (intention_id, emplacement),
   check ((charge_cible is null) = (charge_origine = 'aucune')),
-  check (
-    (mesure = 'reps' and reps_min >= 1 and reps_min <= reps_cible and reps_cible <= reps_max
+  /* ⚠️ CHAQUE VALEUR EXIGÉE EST NOMMÉE `is not null` (tour 22) : une
+     comparaison avec NULL rend NULL, et un CHECK qui rend NULL PASSE.
+     Sans ça, « reps » avec trois répétitions nulles était accepté. */
+  constraint occurrence_exercices_prescription_check check (
+    (mesure = 'reps'
+      and reps_min is not null and reps_cible is not null and reps_max is not null
+      and reps_min >= 1 and reps_min <= reps_cible and reps_cible <= reps_max
       and reps_max <= 100 and duree_s is null)
-    or (mesure = 'duree' and duree_s > 0 and reps_min is null and reps_max is null and reps_cible is null)
+    or (mesure = 'duree'
+      and duree_s is not null and duree_s > 0
+      and reps_min is null and reps_max is null and reps_cible is null)
   )
 );
 

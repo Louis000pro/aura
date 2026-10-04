@@ -18,6 +18,7 @@
 import { readFileSync, readdirSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { sqlRemplissage } from "./r2-remplissage";
+import { empreinteModele, modeleDeLEtape, type ModeleDeLOccurrence } from "@/lib/prescription";
 import {
   lignesDuJournal, seriesConfirmees, exercicesFaits, repsPrescrites, type MarquesSeance,
   journalDe, nouvelleAttente, finaliserSeance, rejouerJournalEnAttente, lireAttente,
@@ -38,7 +39,7 @@ import {
 import { resolveGuide } from "@/lib/exerciseGuides";
 import { etapesDuCycle, etapeSuivante, nomDeProgramme, positionRefermee, POSITION_INITIALE } from "@/lib/programme";
 import { baseEtape, occurrenceSuivante, rangPourEtape } from "@/lib/occurrences";
-import { avecEtapeVerifiee, etatJournee, intentionDeLEtape, lancementDuJour, libelleReservation, repetitionDuJour } from "@/lib/journee";
+import { avecEtapeVerifiee, deplacerReservation, etatJournee, intentionDeLEtape, lancementDuJour, libelleReservation, repetitionDuJour } from "@/lib/journee";
 import {
   etatDepuisExp, missionsAuraVides,
   MISSIONS, MISSIONS_JOUR, MISSIONS_PREMIUM, MISSIONS_PREMIUM_SEMAINE, MISSIONS_SEMAINE,
@@ -5206,7 +5207,7 @@ verdict(
 
 /* ═══════════════════ R1 · LE JOURNAL DIT LA VÉRITÉ ═══════════════════ */
 {
-  const lire1 = (rel: string) => readFileSync(new URL("../" + rel, import.meta.url), "utf8");
+  const lire1 = (rel: string) => readFileSync(new URL("../" + rel, import.meta.url), "utf8").replace(/\r\n/g, "\n");
 
   /* ── La clé stable de chaque exercice ── */
   const cles = Object.values(CLES_EXERCICES);
@@ -5827,7 +5828,7 @@ verdict(
    finalisation R1 restée en attente reste récupérable.
    ════════════════════════════════════════════════════════════════════ */
 {
-  const lire1 = (rel: string) => readFileSync(new URL("../" + rel, import.meta.url), "utf8");
+  const lire1 = (rel: string) => readFileSync(new URL("../" + rel, import.meta.url), "utf8").replace(/\r\n/g, "\n");
   const cyc = (n: number) => Array.from({ length: n }, (_, i) => ({ id: "e" + (i + 1), position: i + 1, nom: "E" + (i + 1) }));
   const fe = (...rangs: number[]) => rangs.map((rang, i) => ({
     rang, etapeId: "e" + (((rang - 1) % 3) + 1), consommeeLe: `2026-10-0${1 + i}T10:00:00Z`,
@@ -6221,7 +6222,7 @@ verdict(
 /* ═══════════════════════════ R2 · la prescription ═══════════════════════════ */
 {
   console.log("\n— R2 · la séance prévue sait ce qu'elle demande —");
-  const lire1 = (rel: string) => readFileSync(new URL("../" + rel, import.meta.url), "utf8");
+  const lire1 = (rel: string) => readFileSync(new URL("../" + rel, import.meta.url), "utf8").replace(/\r\n/g, "\n");
   const LIEUX = Object.keys(BANQUE) as Lieu[];
   const ORIENTS: Orientation[] = ["force", "masse", "general"];
   const toutes = LIEUX.flatMap((lieu) => Object.entries(BANQUE[lieu]).flatMap(([nom, l]) => l.map((e) => ({ lieu, nom, e }))));
@@ -6321,22 +6322,103 @@ verdict(
   const fin = lire1("src/lib/finSeance.ts");
   const plan = lire1("src/lib/planning.ts");
   verdict("R2 · le contenu d'une étape vient de son modèle, plus d'un tirage",
-    !plan.includes("export function instanceDeLEtape") && journee.includes("projeterPrescription(modele.lignes)") && !/instanceDeLEtape\(/.test(journee),
+    !plan.includes("export function instanceDeLEtape") && journee.includes("projeterPrescription(modeleDeLEtapeAffichee.lignes)") && !/instanceDeLEtape\(/.test(journee),
     "`instanceDeLEtape` supprimée");
   verdict("R2 · la prescription se fige au lancement et voyage avec lui",
-    journee.includes("prescription: modele ? modele.lignes.map((l) => ({ ...l })) : null") && journee.includes("modeleId: modele?.modeleId ?? null"),
+    journee.includes("prescription: c.modele.lignes.map((l) => ({ ...l })),") && journee.includes("modeleId: c.modele.modeleId,"),
     "dans la cible, donc dans l'attente locale");
   verdict("R2 · la fermeture écrit la copie figée, jamais une recomposition",
     fin.includes("if (cible.prescription?.length)") && fin.includes("cible.prescription);") && !/composerEtape|modeleDeLEtape/.test(fin),
     "ecrire_occurrence, en une transaction");
   verdict("R2 · dater une étape écrit l'occurrence ET sa prescription ensemble",
-    journee.includes("statut: \"prevue\"") && journee.includes("}, modele.modeleId, modele.lignes);") && journee.includes("appliquerRegleDuJour(user.id, date, r.id)"),
+    journee.includes("statut: \"prevue\"") && journee.includes("}, c.modele.modeleId, c.modele.lignes);") && journee.includes("appliquerRegleDuJour(user.id, date, r.id)"),
     "et la règle repos/séance s'applique comme ailleurs");
-  verdict("R2 · déplacer une occurrence garde son contenu écrit",
-    journee.includes("exerciseList: dejaPosee.exerciseList,"), "la projection ne se réécrit jamais depuis l'instance du moment");
-  verdict("R2 · une lecture de modèle ratée ne compose rien à sa place",
-    lire1("src/lib/prescription.ts").includes("console.warn(\"[prescription] modèle illisible :\", error.message);\n    return null;"),
-    "on ne lance pas ce qu'on n'a pas su lire");
+  /* Tour 22 · 3 · déplacer ne change QUE la date. Le lieu actuel est
+     « maison » ; la réservation a été préparée en salle. */
+  {
+    const preparee = { id: "i1", date: "2026-10-08", type: "Force", title: "Push", difficulty: "Intermédiaire",
+      location: "salle" as const, adaptationId: "a1", etapeId: "e1", provenanceId: "e1", rang: 4,
+      exerciseList: [{ name: "Développé couché", sets: 4, reps: "6-12", rest: 120 }], status: "planned" as const };
+    const bougee = deplacerReservation(preparee, "2026-10-10");
+    const { date: d1, ...avant } = preparee;
+    const { date: d2, ...apres } = bougee;
+    verdict("R2 · déplacer une réservation ne change que sa date",
+      d1 === "2026-10-08" && d2 === "2026-10-10" && JSON.stringify(avant) === JSON.stringify(apres) && preparee.date === "2026-10-08",
+      `lieu ${bougee.location}, adaptation ${bougee.adaptationId}, ${bougee.exerciseList.length} exercice(s)`);
+    const dater = journee.slice(journee.indexOf("const daterEtape"), journee.indexOf("return {\n    etat,"));
+    verdict("R2 · dater une étape déjà posée la DÉPLACE, sans reconstruire son contexte",
+      (dater.match(/deplacerReservation\((dejaPosee|relue), date\)/g) ?? []).length === 2
+        && !dater.includes("intentionDeLEtape(")
+        && !/gen\?\.|levelToDifficulty/.test(dater.slice(dater.indexOf("UN DÉPLACEMENT NE CHANGE QUE LA DATE"))),
+      "ni lieu, ni difficulté, ni adaptation relus des réglages");
+  }
+  /* Tour 22 · 4 · une lecture de modèle ratée : le VRAI lecteur, un faux client. */
+  {
+    type Rep = { data: unknown; error: { code?: string; message: string } | null };
+    const client = (rep: Rep) => {
+      const ch: Record<string, unknown> = {};
+      for (const m of ["select", "eq"]) ch[m] = () => ch;
+      ch.maybeSingle = () => Promise.resolve(rep);
+      return { from: () => ch } as unknown as Parameters<typeof modeleDeLEtape>[2];
+    };
+    const e = { id: "e1", nom: "Push" };
+    const ctx = { lieu: "salle" as const, orientation: "masse" as const, niveau: null, version: 1 };
+    const panne = await modeleDeLEtape(e, ctx, client({ data: null, error: { message: "timeout" } }));
+    const absente = await modeleDeLEtape(e, ctx, client({ data: null, error: { code: "PGRST205", message: "no table" } }));
+    const rien = await modeleDeLEtape(e, ctx, client({ data: null, error: null }));
+    const vide = await modeleDeLEtape(e, ctx, client({ data: { id: "m1", etape_exercices: [] }, error: null }));
+    verdict("R2 · une lecture de modèle ratée ne compose rien à sa place",
+      panne === null && vide === null, `panne → ${panne === null ? "null" : "composé"} · modèle sans lignes → ${vide === null ? "null" : "composé"}`);
+    verdict("R2 · table absente ou aucun modèle écrit : la composition stable",
+      !!absente && absente.modeleId === null && absente.lignes.length > 0 && JSON.stringify(rien?.lignes) === JSON.stringify(absente.lignes),
+      `${absente?.lignes.length} lignes, identiques dans les deux cas`);
+  }
+  /* Tour 22 · 1 · une étape à jour avec le modèle de la précédente n'est pas
+     un contexte vérifié. Le VRAI `avecEtapeVerifiee`, la vraie empreinte. */
+  {
+    const ctx = { lieu: "salle" as const, orientation: "masse" as const, niveau: null, version: 1 };
+    const mod = (etapeId: string, nom: string, rang: number): ModeleDeLOccurrence =>
+      ({ modeleId: `m-${etapeId}`, lignes: composerEtape(nom, ctx), etapeId, rang, lieu: "salle" });
+    const A = mod("eA", "Push", 1);
+    const B = mod("eB", "Pull", 2);
+    const contexte = (etapeId: string, nom: string, rang: number, m: ModeleDeLOccurrence) => ({
+      programmeId: "p", etapeId, rang, nom, adaptationId: null, masquees: [] as string[],
+      prescription: empreinteModele(m), modele: m });
+    let lancees: string[] = [];
+    const lancer = (c: { modele: ModeleDeLOccurrence }) => { lancees.push(c.modele.etapeId); };
+    /* L'écran a l'étape B et encore le modèle de A ; la base dit B avec B. */
+    const melange = contexte("eB", "Pull", 2, A);
+    const r1 = await avecEtapeVerifiee(melange, async () => contexte("eB", "Pull", 2, B), lancer);
+    verdict("R2 · étape B affichée avec le modèle de A : aucune action",
+      !r1.ok && r1.raison === "changee" && lancees.length === 0, JSON.stringify(r1));
+    /* La lecture du modèle B est suspendue : le relire lève. */
+    const r2 = await avecEtapeVerifiee(contexte("eA", "Push", 1, A), async () => { throw new Error("modele_illisible"); }, lancer);
+    verdict("R2 · modèle illisible au moment du geste : refus", !r2.ok && r2.raison === "illisible" && lancees.length === 0, JSON.stringify(r2));
+    /* A → B pendant la lecture : l'écran montre encore A. */
+    const r3 = await avecEtapeVerifiee(contexte("eA", "Push", 1, A), async () => contexte("eB", "Pull", 2, B), lancer);
+    verdict("R2 · l'étape a changé (A → B) : aucune action avec le modèle de A", !r3.ok && lancees.length === 0, JSON.stringify(r3));
+    /* Même étape, autre lieu : autre prescription. */
+    const r4 = await avecEtapeVerifiee(contexte("eB", "Pull", 2, B), async () => contexte("eB", "Pull", 2, { ...B, lieu: "poids", lignes: composerEtape("Pull", { ...ctx, lieu: "poids" }) }), lancer);
+    verdict("R2 · même étape, prescription d'un autre lieu : refus", !r4.ok && lancees.length === 0, JSON.stringify(r4));
+    lancees = [];
+    const r5 = await avecEtapeVerifiee(contexte("eB", "Pull", 2, B), async () => contexte("eB", "Pull", 2, mod("eB", "Pull", 2)), lancer);
+    verdict("R2 · contexte confirmé : le lancement part avec le modèle RELU de B", r5.ok && lancees.join() === "eB", lancees.join() || "rien");
+
+    /* Le chemin dans le hook. */
+    const lecture = journee.slice(journee.indexOf("const charger = useCallback"), journee.indexOf("useEffect(() => { void charger(); }"));
+    verdict("R2 · l'étape n'est publiée qu'avec son modèle, après la dernière lecture",
+      lecture.indexOf("await modeleDeLEtape(") > 0 && lecture.indexOf("await modeleDeLEtape(") < lecture.indexOf("setEtape(suivante)")
+        && lecture.lastIndexOf("if (!derniere()) return;", lecture.indexOf("setEtape(suivante)")) > lecture.indexOf("await reservationDeLOccurrence(")
+        && /setModele\(suivante && lu\s*\? \{ \.\.\.lu, etapeId: suivante\.id, rang: suivante\.rang/.test(lecture),
+      "une réponse arrivée en retard ne publie rien");
+    const gestes = journee.slice(journee.indexOf("type ContexteHook"), journee.indexOf("return {\n    etat,"));
+    verdict("R2 · les gestes utilisent le modèle RELU, jamais celui de l'écran",
+      gestes.includes("prescription: empreinteModele(frais)") && gestes.includes("if (!lu) throw new Error(\"modele_illisible\")")
+        && gestes.includes("modele.etapeId === etape.id") === false && !/[^.]modele\.(lignes|modeleId)/.test(gestes.slice(gestes.indexOf("const lancerAujourdhui"))),
+      "`c.modele` partout ; un contexte sans modèle de CETTE étape n'existe pas");
+    verdict("R2 · un modèle d'une autre étape n'est jamais affiché comme le sien",
+      journee.includes("modele && modele.etapeId === etape.id && modele.rang === etape.rang ? modele : null"), "ni projeté, ni lancé");
+  }
   verdict("R2 · le modèle naît avec le programme",
     lire1("src/lib/programme.ts").includes("await ecrireModelesDuCycle("), "à la création, pour le lieu connu");
 
@@ -6356,7 +6438,7 @@ verdict(
     sqlR2.includes("new.exercise_list is distinct from old.exercise_list") && sqlR2.includes("delete from public.occurrence_exercices where intention_id = old.id"),
     "jamais une liste qui contredit des lignes restées en base");
   verdict("R2 · le remplissage des programmes existants est la génération, mot pour mot",
-    lire1("supabase/migrations/20261005_r2_modeles_existants.sql") === sqlRemplissage(),
+    lire1("supabase/migrations/20261005_r2_modeles_existants.sql") === sqlRemplissage().replace(/\r\n/g, "\n"),
     "jamais une seconde banque écrite à la main en SQL");
   verdict("R2 · SQL · un modèle écrit ne se recompose pas",
     sqlR2.includes("on conflict (programme_seance_id, lieu) do nothing") && sqlR2.includes("'cree', false"), "idempotent");
