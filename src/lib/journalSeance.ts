@@ -44,6 +44,8 @@
    ════════════════════════════════════════════════════════════════════ */
 
 import type { ExercicePrescrit } from "@/lib/banqueEtapes";
+import { chargeReglable, type ExerciceEffectif } from "@/lib/saisieSerie";
+import type { Remplacements } from "@/lib/remplacement";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Exercise } from "@/components/WorkoutGuideModal";
 import { cleExercice } from "@/lib/exerciceCle";
@@ -58,7 +60,20 @@ export type Validation = "bouton" | "minuteur_fini" | "minuteur_abrege";
 
 /** Ce que le tunnel sait d'une série, au moment où elle se termine. */
 export type Marque =
-  | { statut: "terminee"; validation: Validation; dureeS: number | null }
+  | {
+      statut: "terminee"; validation: Validation; dureeS: number | null;
+      /* R3 · ce qu'une série PRESCRITE en répétitions a déclaré : le
+         bouton dit « Fait · 10 × 60 kg », et c'est exactement ce qui
+         s'écrit. Absent d'une série sans prescription (rien de déclaré)
+         et d'un journal préparé avant R3. Une charge inconnue est `null`,
+         jamais zéro. */
+      reps?: number | null;
+      charge?: number | null;
+      /* R3 · l'exercice RÉELLEMENT fait sur cette série. Il diffère de la
+         prescription après un remplacement, et il se garde série par série
+         (tour 26 de Codex) : A, puis B, puis C restent trois faits. */
+      exercice?: ExerciceEffectif;
+    }
   | { statut: "passee" };
 
 /** Par emplacement d'exercice (son rang dans la séance), puis par série (base 0). */
@@ -83,6 +98,13 @@ export type LigneSerie = {
   fonction_prescrite?: string | null;
   reps_min_prescrites?: number | null;
   reps_max_prescrites?: number | null;
+  /* R3 · la charge déclarée, son unité et son type, et l'exercice prévu
+     quand un autre a été fait à sa place. Absents d'un journal d'avant R3 :
+     la base les laisse nuls. */
+  charge?: number | null;
+  charge_unite?: "kg" | null;
+  charge_type?: string | null;
+  exercice_prevu_cle?: string | null;
 };
 
 export type JournalSeance = {
@@ -134,32 +156,48 @@ export function exercicesFaits(marques: MarquesSeance): number {
  * l'est pas. Les confondre ferait dire à quelqu'un qu'il a sauté ce
  * qu'il n'a simplement pas eu le temps de faire.
  */
-export function lignesDuJournal(exercices: Exercise[], marques: MarquesSeance): LigneSerie[] {
+export function lignesDuJournal(exercices: Exercise[], marques: MarquesSeance, remplacements: Remplacements = {}): LigneSerie[] {
   const lignes: LigneSerie[] = [];
   exercices.forEach((ex, emplacement) => {
     const duree = !!(ex.auto || ex.hiit);
     /* R2 · une séance prescrite donne sa clé et sa fourchette ; sinon on
        garde la résolution par le nom (R1), sans rien inventer. */
     const pr = (ex as ExercicePrescrit).prescription ?? null;
+    /* R3 · l'exercice des séries qui restent : le remplacement courant, ou
+       la prescription. Une série TERMINÉE garde le sien, posé au moment
+       où elle a été validée. */
+    const courant: ExerciceEffectif | null = pr
+      ? (remplacements[emplacement] ?? { cle: pr.cle, nom: ex.name, chargeType: pr.charge_type })
+      : null;
     for (let s = 0; s < Math.max(1, ex.sets); s++) {
       const m = marques[emplacement]?.[s];
       const terminee = m?.statut === "terminee" ? m : null;
+      const effectif = pr ? (terminee?.exercice ?? courant) : null;
+      /* La déclaration n'existe que pour une série prescrite en
+         répétitions ; ailleurs, rien n'est affirmé (R1). */
+      const reps = pr && !duree && terminee && typeof terminee.reps === "number" ? terminee.reps : null;
+      const charge = pr && !duree && terminee && typeof terminee.charge === "number"
+        && terminee.charge > 0 && chargeReglable(effectif?.chargeType) ? terminee.charge : null;
       lignes.push({
         emplacement,
-        exercice_cle: pr?.cle ?? cleExercice(ex.name),
-        exercice_nom: ex.name,
+        exercice_cle: effectif?.cle ?? pr?.cle ?? cleExercice(ex.name),
+        exercice_nom: effectif?.nom ?? ex.name,
         serie: s + 1,
         statut: m ? m.statut : "non_atteinte",
         mesure: duree ? "duree" : "reps",
         reps_prescrites: duree ? null : repsPrescrites(ex.reps),
         duree_prescrite_s: duree ? (ex.auto ?? DUREE_EFFORT_HIIT) : null,
-        reps_declarees: null,
+        reps_declarees: reps,
         duree_s: terminee?.dureeS ?? null,
         validation: terminee?.validation ?? null,
         statut_prescrit: pr?.statut ?? null,
         fonction_prescrite: pr?.fonction ?? null,
         reps_min_prescrites: duree ? null : pr?.reps_min ?? null,
         reps_max_prescrites: duree ? null : pr?.reps_max ?? null,
+        charge,
+        charge_unite: charge === null ? null : "kg",
+        charge_type: pr ? (effectif?.chargeType ?? null) : null,
+        exercice_prevu_cle: pr && effectif && effectif.cle !== pr.cle ? pr.cle : null,
       });
     }
   });
@@ -178,6 +216,8 @@ export function journalDe(e: {
   /** L'instant réel du départ ; à défaut, on le déduit de la durée. */
   debutMs: number | null; dureeS: number;
   exercices: Exercise[]; marques: MarquesSeance;
+  /** R3 · les remplacements COURANTS, pour les séries qui restaient. */
+  remplacements?: Remplacements;
   /** L'instant de fin ; par défaut, maintenant. */
   finMs?: number;
 }): JournalSeance {
@@ -193,7 +233,7 @@ export function journalDe(e: {
     duree_s: e.dureeS,
     calories: Math.round((e.dureeS / 60) * 6.5),
     exercices: e.exercices,
-    series: lignesDuJournal(e.exercices, e.marques),
+    series: lignesDuJournal(e.exercices, e.marques, e.remplacements ?? {}),
   };
 }
 

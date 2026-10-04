@@ -4,7 +4,9 @@ import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { aiFetch } from "@/lib/aiFetch";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Pause, Play, BookmarkCheck, ChevronDown, ChevronRight, Check, Plus } from "lucide-react";
+import { X, Pause, Play, BookmarkCheck, ChevronDown, ChevronRight, Check, Plus, Pencil, ArrowLeftRight } from "lucide-react";
+import { createPortal } from "react-dom";
+import { Compteur, ReglageCharge } from "@/components/seance/ReglageCharge";
 import { AssistantSpark, VisageGuide, CelebrationGuide } from "@/components/AssistantMark";
 import { voix, type CleVoix } from "@/lib/guides";
 import { useGuideActif } from "@/context/GuideContext";
@@ -28,6 +30,16 @@ import {
   journalDe, nouveauLancement, nouvelleAttente, proprietaireDeLaSeance, seriesConfirmees,
   type EtatFin, type JournalSeance, type MarquesSeance, type Validation,
 } from "@/lib/journalSeance";
+import type { ExercicePrescrit } from "@/lib/banqueEtapes";
+import {
+  chargeReglable, cibleReps, crancherReps, declareDesRepetitions,
+  libelleCharge, libelleEnregistre, libelleFait, libelleFourchette, type TypeChargeReglable,
+} from "@/lib/saisieSerie";
+import {
+  equivalents, exerciceAffiche, exerciceCourant, lieuPourEquivalents, peutChanger, remplacer,
+  type Equivalent, type Remplacements,
+} from "@/lib/remplacement";
+import { choixApplicable, pasDeLEffort, pasDuRepos, repsADeclarer, type PositionTunnel, type SaisieReps } from "@/lib/transitionsTunnel";
 import { useAssistant } from "@/context/AssistantContext";
 import { GUIDE_SECTIONS, sectionSessionId } from "@/lib/guideSections";
 import { WAVE_1_EXERCISES } from "@/lib/workoutWave1";
@@ -876,6 +888,26 @@ export default function WorkoutGuideModal({
      main (« Valider », « Passer l'effort ») : posé par le bouton, lu par
      l'effet du minuteur. Sans ça, un minuteur abrégé passerait pour fini. */
   const validationRef = useRef<{ validation: Validation; dureeS: number | null } | null>(null);
+  /* ── R3 · ce que les séances PRESCRITES déclarent ──
+     `remplacements` : l'exercice des séries qui restent, par emplacement
+     (chaque série validée garde le sien dans sa marque). `chargeCourante` :
+     la charge saisie pour l'exercice en cours d'un emplacement ; elle
+     repart inconnue à chaque changement d'exercice, jamais héritée.
+     `correction` : la série qu'on corrige pendant le repos. */
+  const [remplacements, setRemplacements] = useState<Remplacements>({});
+  const [chargeCourante, setChargeCourante] = useState<Record<number, number | null>>({});
+  const [editCharge,    setEditCharge]    = useState(false);
+  const [correction,    setCorrection]    = useState<{ emplacement: number; serie: number; reps: number; charge: number | null } | null>(null);
+  /* Le panneau « Changer » retient la série de son ouverture : son choix
+     ne s'applique qu'à elle (tour 27). */
+  const [changer,       setChanger]       = useState<(PositionTunnel & { choisi: Equivalent | null }) | null>(null);
+  /* Les répétitions réellement faites, réglées AVANT « Fait » : elles ne
+     valent que pour la série où on les a saisies (tour 27). */
+  const [repsSaisie,    setRepsSaisie]    = useState<SaisieReps | null>(null);
+  const [editReps,      setEditReps]      = useState(false);
+  /* La vibration de fin de repos ne joue qu'une fois, même quand une
+     correction ouverte fait attendre la reprise. */
+  const finReposVibreeRef = useRef(false);
   const [startMs,       setStartMs]       = useState(0);
   const [elapsed,       setElapsed]       = useState(0);
   const [paused,        setPaused]        = useState(false);
@@ -951,6 +983,7 @@ export default function WorkoutGuideModal({
       dureeS: elapsed,
       exercices: exercises,
       marques: doneMap,
+      remplacements,
     });
     void finaliserSeance(dependancesReelles(supabase), nouvelleAttente({
       journal: journalRef.current,
@@ -1013,7 +1046,25 @@ export default function WorkoutGuideModal({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase]);
 
-  const cur      = exercises[exerciseIdx];
+  /* R3 · ce que l'écran montre : la prescription d'origine (séries,
+     répétitions, repos), avec le nom, le conseil et les muscles du
+     remplaçant. Le journal, lui, part de `exercises` et des marques. */
+  const exercisesAff = useMemo(
+    () => exercises.map((e, i) => exerciceAffiche(e as ExercicePrescrit, i, remplacements)),
+    [exercises, remplacements],
+  );
+  const cur      = exercisesAff[exerciseIdx];
+  const curPrescrit = exercises[exerciseIdx] as ExercicePrescrit | undefined;
+  const declare  = declareDesRepetitions(curPrescrit);
+  const effectif = curPrescrit ? exerciceCourant(curPrescrit, exerciseIdx, remplacements) : null;
+  const typeCharge = effectif?.chargeType ?? null;
+  const reglable = declare && chargeReglable(typeCharge);
+  const chargeCur = reglable ? (chargeCourante[exerciseIdx] ?? null) : null;
+  const cibleCur = cibleReps(cur);
+  const repsCur  = declare ? repsADeclarer(cibleCur, repsSaisie, { emplacement: exerciseIdx, serie: setIdx }) : null;
+  /* Le panneau ne vaut que pour la série où il a été ouvert ; tant qu'il
+     vaut, le 3-2-1 et le chrono sont suspendus. */
+  const choixOuvert = !!changer && choixApplicable(changer, { emplacement: exerciseIdx, serie: setIdx, enEffort: phase === "exercising" });
   const isHiit   = !!cur?.hiit;
   const isTimered = !!(cur?.auto || cur?.hiit);
   const totalSets = exercises.reduce((a, e) => a + e.sets, 0);
@@ -1028,7 +1079,7 @@ export default function WorkoutGuideModal({
   /* ── Skip the entire current exercise ── */
   const skipExercise = useCallback(() => {
     const nextEx = exerciseIdx + 1;
-    setShowInfo(false);
+    setShowInfo(false); setChanger(null); setEditReps(false);
     if (nextEx < exercises.length) {
       setExerciseIdx(nextEx); setSetIdx(0);
       setAutoCountdown(0);   setHiitSub("work");
@@ -1083,10 +1134,26 @@ export default function WorkoutGuideModal({
      à l’écran de fin au lieu d’imposer un compte à rebours devant une carte
      « Ensuite » vide et une phrase qui annonce un dernier exercice déjà fini. */
   const completeSet = useCallback((validation: Validation, dureeS: number | null = null) => {
+    /* R3 · une série prescrite garde l'exercice réellement fait ; en
+       répétitions, elle déclare exactement ce que le bouton affichait. */
+    const pr = exercises[exerciseIdx] as ExercicePrescrit | undefined;
+    const exo = pr ? exerciceCourant(pr, exerciseIdx, remplacements) : null;
+    const decl = declareDesRepetitions(pr);
+    const reps = decl ? repsADeclarer(cibleReps(pr), repsSaisie, { emplacement: exerciseIdx, serie: setIdx }) : null;
+    const charge = decl && chargeReglable(exo?.chargeType) ? (chargeCourante[exerciseIdx] ?? null) : null;
     setDoneMap(prev => ({
       ...prev,
-      [exerciseIdx]: { ...(prev[exerciseIdx] ?? {}), [setIdx]: { statut: "terminee", validation, dureeS } },
+      [exerciseIdx]: {
+        ...(prev[exerciseIdx] ?? {}),
+        [setIdx]: {
+          statut: "terminee", validation, dureeS,
+          ...(exo ? { exercice: exo } : {}),
+          ...(decl ? { reps, charge } : {}),
+        },
+      },
     }));
+    setEditCharge(false); setEditReps(false); setChanger(null);
+    finReposVibreeRef.current = false;
     const ex         = exercises[exerciseIdx];
     const dernierSet = setIdx + 1 >= (ex?.sets ?? 1);
     const resteUnExo = exerciseIdx + 1 < exercises.length;
@@ -1098,7 +1165,7 @@ export default function WorkoutGuideModal({
       setRestMode(dernierSet ? "exercise" : "set");
       setRestTotal(attente); setRestCountdown(attente); setPhase("resting");
     } else advance();
-  }, [exercises, exerciseIdx, setIdx, advance]);
+  }, [exercises, exerciseIdx, setIdx, advance, remplacements, chargeCourante, repsSaisie]);
 
   /* ── « Passer l'exercice » : un geste explicite, qui se dit au journal ──
      Les séries restantes sont « passées », pas « non atteintes » : c'est
@@ -1114,6 +1181,52 @@ export default function WorkoutGuideModal({
     skipExercise();
   }, [exercises, exerciseIdx, setIdx, skipExercise]);
 
+  /* ── R3 · Corriger la série qu'on vient d'enregistrer ──
+     Facultatif : sans y toucher, la série reste telle que le bouton l'a
+     dite. Une correction de charge vaut aussi pour les séries suivantes du
+     même exercice ; une correction de répétitions ne vaut que pour elle. */
+  const ouvrirCorrection = () => {
+    const m = doneMap[exerciseIdx]?.[setIdx];
+    if (!m || m.statut !== "terminee" || typeof m.reps !== "number") return;
+    setCorrection({ emplacement: exerciseIdx, serie: setIdx, reps: m.reps, charge: m.charge ?? null });
+  };
+  const enregistrerCorrection = () => {
+    if (!correction) return;
+    const { emplacement, serie, reps, charge } = correction;
+    const avant = doneMap[emplacement]?.[serie];
+    setDoneMap(prev => {
+      const m = prev[emplacement]?.[serie];
+      if (!m || m.statut !== "terminee") return prev;
+      return { ...prev, [emplacement]: { ...prev[emplacement], [serie]: { ...m, reps, charge } } };
+    });
+    /* La nouvelle charge suit, tant que l'exercice n'a pas changé depuis. */
+    const pr = exercises[emplacement] as ExercicePrescrit | undefined;
+    const courant = pr ? exerciceCourant(pr, emplacement, remplacements) : null;
+    if (avant?.statut === "terminee" && avant.exercice && courant && avant.exercice.cle === courant.cle) {
+      setChargeCourante(c => ({ ...c, [emplacement]: charge }));
+    }
+    setCorrection(null);
+  };
+
+  /* ── R3 · Changer d'exercice (pour cette séance seulement) ──
+     Les séries déjà faites restent à l'exercice d'origine (leur marque
+     porte l'exercice réellement fait). Le remplaçant prend la série en
+     cours et les suivantes, avec une charge inconnue. */
+  const appliquerRemplacement = (ouvert: PositionTunnel, par: Equivalent) => {
+    /* Refusé si le tunnel a bougé depuis l'ouverture : le choix ne tombe
+       jamais sur un autre exercice que celui qu'on regardait. */
+    if (!choixApplicable(ouvert, { emplacement: exerciseIdx, serie: setIdx, enEffort: phase === "exercising" })) {
+      setChanger(null); return;
+    }
+    const { emplacement } = ouvert;
+    const pr = exercises[emplacement] as ExercicePrescrit | undefined;
+    if (!pr) return;
+    setRemplacements(r => remplacer(pr, emplacement, r, par));
+    setChargeCourante(c => ({ ...c, [emplacement]: null }));
+    setEditCharge(false); setEditReps(false); setShowInfo(false); setChanger(null);
+    if (pr.auto) { setAutoCountdown(pr.auto); setPrep(3); }
+  };
+
   /* ── Pause / resume ── */
   const togglePause = useCallback(() => {
     if (!paused) {
@@ -1128,9 +1241,17 @@ export default function WorkoutGuideModal({
 
   /* ── Rest countdown ── */
   useEffect(() => {
-    if (phase !== "resting" || paused) return;
-    if (restCountdown <= 0) {
-      vibrer([70, 50, 70]); // fin de récup
+    if (phase !== "resting") return;
+    /* R3 · SAISIE PROTÉGÉE (décision 55) : une correction ouverte ne
+       disparaît jamais. Le compteur reste à zéro et la reprise attend
+       qu'on enregistre ou qu'on annule ; fermer la correction relance
+       cet effet, qui avance alors UNE fois. La décision vit dans
+       `pasDuRepos`, que le banc rejoue. */
+    const pas = pasDuRepos({ restant: restCountdown, enPause: paused, correctionOuverte: !!correction, vibree: finReposVibreeRef.current });
+    if (pas.action === "attendre") return;
+    if (pas.action === "zero") {
+      if (pas.vibrer) { vibrer([70, 50, 70]); finReposVibreeRef.current = true; } // fin de récup
+      if (!pas.reprendre) return;
       if (restMode === "exercise") { setRestMode("set"); skipExercise(); }
       else advance();
       return;
@@ -1138,21 +1259,25 @@ export default function WorkoutGuideModal({
     const t = setTimeout(() => setRestCountdown(c => c - 1), 1000);
     return () => clearTimeout(t);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phase, restCountdown, paused, restMode]);
+  }, [phase, restCountdown, paused, restMode, correction]);
 
   /* ── Décompte 3-2-1 avant chaque effort chronométré ── */
+  /* R3 · le choix d'un remplaçant suspend le 3-2-1 ET le chrono
+     (`pasDeLEffort`) : aucune série ne se valide derrière le panneau, et
+     l'annuler reprend là où on en était. */
   useEffect(() => {
-    if (phase !== "exercising" || paused || prep <= 0) return;
+    if (phase !== "exercising") return;
+    if (pasDeLEffort({ enPause: paused, choixOuvert, prep, chronometre: !!(cur?.auto || cur?.hiit), restant: autoCountdown }) !== "decompter_prep") return;
     const t = setTimeout(() => setPrep(p => p - 1), 1000);
     return () => clearTimeout(t);
-  }, [phase, prep, paused]);
+  }, [phase, prep, paused, choixOuvert, cur, autoCountdown]);
 
   /* ── Auto / HIIT countdown ── */
   useEffect(() => {
-    if (phase !== "exercising" || paused) return;
-    if (prep > 0) return; // on attend la fin du 3-2-1
-    if (!cur?.auto && !cur?.hiit) return;
-    if (autoCountdown <= 0) {
+    if (phase !== "exercising" || !cur) return;
+    const pas = pasDeLEffort({ enPause: paused, choixOuvert, prep, chronometre: !!(cur.auto || cur.hiit), restant: autoCountdown });
+    if (pas === "attendre" || pas === "decompter_prep") return;
+    if (pas === "terminer") {
       vibrer(90); // fin d'effort chronométré (ou fin d'un segment HIIT)
       if (cur.hiit && hiitSub === "work") { setHiitSub("rest"); setAutoCountdown(HIIT_REST); return; }
       /* Arrivé au bout tout seul, sauf si un bouton l'a abrégé juste avant. */
@@ -1164,7 +1289,7 @@ export default function WorkoutGuideModal({
     const t = setTimeout(() => setAutoCountdown(c => c - 1), 1000);
     return () => clearTimeout(t);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phase, autoCountdown, hiitSub, cur, paused, prep]);
+  }, [phase, autoCountdown, hiitSub, cur, paused, prep, choixOuvert]);
 
   /* ── Start ── */
   const startWorkout = () => {
@@ -1172,6 +1297,8 @@ export default function WorkoutGuideModal({
     debutRef.current = Date.now();
     proprietaireRef.current = user?.id ?? null;
     setExerciseIdx(0); setSetIdx(0); setDoneMap({}); setPaused(false); setShowInfo(false);
+    setRemplacements({}); setChargeCourante({}); setCorrection(null); setEditCharge(false); setChanger(null);
+    setRepsSaisie(null); setEditReps(false);
     setPhase("exercising");
     if (exercises[0]?.auto)      { setAutoCountdown(exercises[0].auto); setPrep(3); }
     else if (exercises[0]?.hiit) { setHiitSub("work"); setAutoCountdown(HIIT_WORK); setPrep(3); }
@@ -1406,6 +1533,16 @@ export default function WorkoutGuideModal({
                       <ChevronDown size={12} strokeWidth={2.4} style={{ color: TUN.t3 }} />
                     </motion.span>
                   </button>
+                  {/* R3 · « Changer » : seulement sur un exercice prescrit, tant
+                      qu'une série reste à faire (`peutChanger`). */}
+                  {peutChanger(curPrescrit, setIdx) && (
+                    <button onClick={() => setChanger({ emplacement: exerciseIdx, serie: setIdx, choisi: null })}
+                      className="inline-flex items-center gap-1.5 mt-3.5 ml-2 px-3 py-2 rounded-full cursor-pointer"
+                      style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.16)", color: TUN.t1 }}>
+                      <ArrowLeftRight size={12} strokeWidth={2.4} style={{ color: "#C9B8FF" }} />
+                      <span className="text-[11px] font-bold">Changer</span>
+                    </button>
+                  )}
                   <AnimatePresence initial={false}>
                     {showInfo && (
                       <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }}
@@ -1456,8 +1593,65 @@ export default function WorkoutGuideModal({
                 ) : (
                   <div className="relative z-[2] text-center mt-5">
                     <p className="text-[11px] font-extrabold tracking-[0.2em]" style={{ color: TUN.t2 }}>SÉRIE <b style={{ color: "#fff" }}>{setIdx + 1}</b> / {cur.sets}</p>
-                    <p className="vy-nombre text-[60px] leading-none mt-2" style={{ fontWeight: 800, color: "#fff" }}>{repsHero}</p>
-                    {repsSub && <p className="text-[13px] font-medium mt-1" style={{ color: TUN.t3 }}>{repsSub}</p>}
+                    {/* R3 · tour 27 : sur une série prescrite, toucher le nombre
+                        règle les répétitions réellement faites AVANT « Fait ».
+                        La cible prescrite reste affichée et ne change pas. */}
+                    {declare && repsCur !== null ? (
+                      editReps ? (
+                        <div className="mt-2 flex items-center justify-center gap-2">
+                          <Compteur valeur={String(repsCur)}
+                            onMoins={() => setRepsSaisie({ emplacement: exerciseIdx, serie: setIdx, reps: crancherReps(repsCur, -1) })}
+                            onPlus={() => setRepsSaisie({ emplacement: exerciseIdx, serie: setIdx, reps: crancherReps(repsCur, 1) })} />
+                          <button type="button" onClick={() => setEditReps(false)}
+                            className="ml-1 px-3.5 py-2 rounded-full text-[13px] font-bold cursor-pointer text-white"
+                            style={{ background: "linear-gradient(100deg,#8B5CF6,#C13BC1)" }}>
+                            OK
+                          </button>
+                        </div>
+                      ) : (
+                        <button type="button" onClick={() => setEditReps(true)} className="inline-flex items-center gap-2 mt-2 cursor-pointer"
+                          aria-label="Régler les répétitions faites">
+                          <span className="vy-nombre text-[60px] leading-none" style={{ fontWeight: 800, color: "#fff" }}>{repsCur}</span>
+                          <Pencil size={15} strokeWidth={2.2} style={{ color: TUN.lav }} />
+                        </button>
+                      )
+                    ) : (
+                      <p className="vy-nombre text-[60px] leading-none mt-2" style={{ fontWeight: 800, color: "#fff" }}>{repsHero}</p>
+                    )}
+                    {declare && repsCur !== null && cibleCur !== null && repsCur !== cibleCur && (
+                      <p className="text-[13px] font-medium mt-1" style={{ color: TUN.t3 }}>Cible {cibleCur}</p>
+                    )}
+                    {/* R3 · la fourchette remplace le mot « répétitions » quand la
+                        séance est prescrite ; elle ne demande aucune saisie. */}
+                    {(() => {
+                      const f = declare ? libelleFourchette(curPrescrit?.prescription?.reps_min, curPrescrit?.prescription?.reps_max) : null;
+                      const sous = f ?? repsSub;
+                      return sous ? <p className="text-[13px] font-medium mt-1" style={{ color: TUN.t3 }}>{sous}</p> : null;
+                    })()}
+                    {/* R3 · la charge, sous les répétitions, avec son crayon. Une
+                        charge inconnue reste inconnue : rien n'est inventé. */}
+                    {reglable && (
+                      editCharge ? (
+                        <div className="mt-3 flex justify-center">
+                          <ReglageCharge
+                            valeur={chargeCur}
+                            type={typeCharge as TypeChargeReglable}
+                            onChange={(v) => setChargeCourante(c => ({ ...c, [exerciseIdx]: v }))}
+                            onFin={() => setEditCharge(false)}
+                          />
+                        </div>
+                      ) : (
+                        <button onClick={() => setEditCharge(true)}
+                          className="inline-flex items-center gap-2 mt-3 px-3.5 py-2 rounded-full cursor-pointer"
+                          style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.14)", color: TUN.t1 }}
+                          aria-label="Modifier la charge">
+                          <span className="vy-nombre text-[16px]" style={{ fontWeight: 700 }}>
+                            {chargeCur === null ? "Charge ?" : libelleCharge(chargeCur, typeCharge as TypeChargeReglable)}
+                          </span>
+                          <Pencil size={13} strokeWidth={2.2} style={{ color: TUN.lav }} />
+                        </button>
+                      )
+                    )}
                     <div className="flex gap-2.5 justify-center mt-4">
                       {Array.from({ length: cur.sets }).map((_, i) => {
                         const isDone = doneMap[exerciseIdx]?.[i]?.statut === "terminee";
@@ -1505,7 +1699,20 @@ export default function WorkoutGuideModal({
                     Les séances du planning arrivent avec tip: "" (cf. toExercise
                     dans lib/planning.ts) : sans ce garde-fou, l'étincelle promet
                     « Le geste : » puis ne dit rien. Mieux vaut pas de carte. */}
-                {cur.tip && (
+                {/* R3 · charge inconnue : le Guide dit comment la choisir, À LA
+                    PLACE du conseil du geste (une seule phrase, pas une carte de
+                    plus). Décision 50. */}
+                {reglable && chargeCur === null ? (
+                  <div className="relative z-[2] flex gap-3 items-start rounded-2xl px-3.5 py-3.5 mt-5"
+                    style={{ background: "rgba(139,92,246,0.09)", border: "1px solid rgba(139,92,246,0.22)" }}>
+                    <span className="flex-shrink-0 mt-0.5">
+                      {guide ? <VisageGuide guide={guide} etat="explain" size={26} /> : <AssistantSpark px={17} />}
+                    </span>
+                    <p className="text-[13px] leading-relaxed" style={{ color: TUN.t2 }}>
+                      {voix(guide, "seance.charge.choisir", { reps: curPrescrit?.prescription?.reps_max ?? cibleCur ?? 12 })}
+                    </p>
+                  </div>
+                ) : cur.tip && (
                   <div className="relative z-[2] flex gap-3 items-start rounded-2xl px-3.5 py-3.5 mt-5"
                     style={{ background: "rgba(139,92,246,0.09)", border: "1px solid rgba(139,92,246,0.22)" }}>
                     <span className="flex-shrink-0 mt-0.5">
@@ -1513,6 +1720,70 @@ export default function WorkoutGuideModal({
                     </span>
                     <p className="text-[13px] leading-relaxed" style={{ color: TUN.t2 }}><b style={{ color: TUN.t1 }}>Le geste : </b>{cur.tip}</p>
                   </div>
+                )}
+
+                {/* R3 · « Changer » (écran 06). Dans un portail : la carte du
+                    tunnel est animée, donc un enfant `fixed` s'y caserait. */}
+                {changer && choixOuvert && curPrescrit?.prescription && typeof document !== "undefined" && createPortal(
+                  (() => {
+                    const ouvert = changer;
+                    const pr = curPrescrit.prescription!;
+                    const actuel = effectif ?? { cle: pr.cle, nom: curPrescrit.name, chargeType: pr.charge_type };
+                    const liste = equivalents({
+                      fonction: pr.fonction,
+                      mesure: curPrescrit.auto || curPrescrit.hiit ? "duree" : "reps",
+                      lieu: lieuPourEquivalents(cible?.genre === "etape" ? cible.location : null, curPrescrit.name),
+                      cleActuelle: actuel.cle,
+                    });
+                    /* L'exercice prévu redevient proposable quand on l'a quitté. */
+                    const prevu = { cle: pr.cle, nom: curPrescrit.name, chargeType: pr.charge_type, muscles: curPrescrit.muscles, tip: curPrescrit.tip };
+                    const choix = actuel.cle !== pr.cle && !liste.some((e) => e.cle === pr.cle) ? [prevu, ...liste] : liste;
+                    const restantes = curPrescrit.sets - setIdx;
+                    return (
+                      <div className="fixed inset-0 z-[106] flex items-end justify-center" style={{ background: "rgba(8,6,16,0.6)" }}
+                        onClick={() => setChanger(null)}>
+                        <div className="w-full max-w-md rounded-t-[var(--r-feuille)] p-5 pb-7" onClick={(e) => e.stopPropagation()}
+                          style={{ background: "#16122A", borderTop: "1px solid rgba(255,255,255,0.1)" }}>
+                          <p className="text-[16px] font-extrabold mb-1" style={{ color: "#fff" }}>Remplacer {actuel.nom.toLowerCase()}</p>
+                          {setIdx > 0 && (
+                            <p className="flex items-center gap-2 text-[13px] mb-3" style={{ color: TUN.t2 }}>
+                              <Check size={13} strokeWidth={2.6} style={{ color: TUN.teal }} />
+                              {setIdx === 1 ? "Ta série faite reste enregistrée." : `Tes ${setIdx} séries faites restent enregistrées.`}
+                            </p>
+                          )}
+                          {choix.length === 0 ? (
+                            <p className="text-[13px] py-4" style={{ color: TUN.t2 }}>Aucun mouvement équivalent ici pour celui-ci.</p>
+                          ) : (
+                            <div className="flex flex-col gap-2 mt-2 max-h-[50dvh] overflow-y-auto">
+                              {choix.map((e) => {
+                                const sel = changer.choisi?.cle === e.cle;
+                                return (
+                                  <button key={e.cle} onClick={() => setChanger({ ...ouvert, choisi: e })}
+                                    className="flex items-center gap-3 rounded-2xl p-3 text-left cursor-pointer"
+                                    style={{ background: sel ? "rgba(139,92,246,0.16)" : "rgba(255,255,255,0.05)", border: `1px solid ${sel ? "rgba(139,92,246,0.6)" : TUN.line}` }}>
+                                    <ExerciseThumb name={e.nom} size={44} />
+                                    <span className="min-w-0">
+                                      <b className="block text-[16px] font-bold truncate" style={{ color: "#fff" }}>{e.nom}</b>
+                                      <span className="block text-[13px]" style={{ color: TUN.t3 }}>
+                                        {restantes} série{restantes > 1 ? "s" : ""} restante{restantes > 1 ? "s" : ""}
+                                        {chargeReglable(e.chargeType) ? " · charge à choisir" : ""}
+                                      </span>
+                                    </span>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          )}
+                          <button disabled={!changer.choisi} onClick={() => changer.choisi && appliquerRemplacement(ouvert, changer.choisi)}
+                            className="w-full mt-4 py-4 rounded-2xl font-bold text-[16px] text-white cursor-pointer disabled:opacity-40"
+                            style={{ background: "linear-gradient(100deg,#8B5CF6,#C13BC1)" }}>
+                            Remplacer
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })(),
+                  document.body,
                 )}
               </motion.div>
             )}
@@ -1538,8 +1809,10 @@ export default function WorkoutGuideModal({
                         ? <Play size={34} strokeWidth={1.5} style={{ color: TUN.orange }} />
                         : <>
                             <span className="text-[11px] font-extrabold tracking-[0.3em]" style={{ color: TUN.orange }}>REPOS</span>
-                            <span className="vy-nombre text-[48px] leading-none" style={{ fontWeight: 800, color: "#fff" }}>{fmt(restCountdown)}</span>
-                            <span className="text-[11px] font-medium tabular-nums" style={{ color: TUN.t3 }}>sur {fmt(restTotal)}</span>
+                            <span className="vy-nombre text-[48px] leading-none" style={{ fontWeight: 800, color: "#fff" }}>{fmt(Math.max(0, restCountdown))}</span>
+                            <span className="text-[11px] font-medium tabular-nums" style={{ color: TUN.t3 }}>
+                              {restCountdown <= 0 ? "terminé" : `sur ${fmt(restTotal)}`}
+                            </span>
                           </>}
                     </div>
                   </motion.button>
@@ -1551,10 +1824,59 @@ export default function WorkoutGuideModal({
                   </div>
                 </div>
 
+                {/* R3 · ce qui vient d'être enregistré, et « Corriger ».
+                    Rien à remplir : sans y toucher, la série reste telle que
+                    le bouton l'a dite. */}
+                {(() => {
+                  const m = doneMap[exerciseIdx]?.[setIdx];
+                  if (!declare || !m || m.statut !== "terminee" || typeof m.reps !== "number") return null;
+                  const t = m.exercice?.chargeType ?? null;
+                  if (correction) {
+                    return (
+                      <div className="relative z-[2] mt-6 rounded-2xl p-4" style={{ background: "rgba(255,255,255,0.05)", border: `1px solid ${TUN.line}` }}>
+                        <p className="text-[13px] font-bold mb-3" style={{ color: "#fff" }}>Série {correction.serie + 1} · {m.exercice?.nom ?? cur?.name}</p>
+                        <div className="flex items-center justify-between mb-2.5">
+                          <span className="text-[13px]" style={{ color: TUN.t2 }}>Répétitions</span>
+                          <Compteur
+                            valeur={String(correction.reps)}
+                            onMoins={() => setCorrection(c => c && { ...c, reps: crancherReps(c.reps, -1) })}
+                            onPlus={() => setCorrection(c => c && { ...c, reps: crancherReps(c.reps, 1) })}
+                          />
+                        </div>
+                        {chargeReglable(t) && (
+                          <div className="flex items-center justify-between">
+                            <span className="text-[13px]" style={{ color: TUN.t2 }}>Charge</span>
+                            <ReglageCharge valeur={correction.charge} type={t} onChange={(v) => setCorrection(c => c && { ...c, charge: v })} />
+                          </div>
+                        )}
+                        <div className="flex gap-2.5 mt-4">
+                          <button onClick={() => setCorrection(null)} className="flex-1 py-3 rounded-xl text-[13px] font-semibold cursor-pointer"
+                            style={{ color: TUN.t2, background: "rgba(255,255,255,0.06)" }}>Annuler</button>
+                          <button onClick={enregistrerCorrection} className="flex-[2] py-3 rounded-xl text-[13px] font-bold cursor-pointer text-white"
+                            style={{ background: "linear-gradient(100deg,#8B5CF6,#C13BC1)" }}>
+                            {restCountdown <= 0 ? "Enregistrer et reprendre" : "Enregistrer"}
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  }
+                  return (
+                    <div className="relative z-[2] mt-6 flex items-center justify-between gap-3 px-1">
+                      <span className="flex items-center gap-2 text-[13px] font-semibold min-w-0" style={{ color: TUN.t1 }}>
+                        <Check size={14} strokeWidth={2.6} style={{ color: TUN.teal, flexShrink: 0 }} />
+                        <span className="truncate">{libelleEnregistre(setIdx + 1, m.reps, m.charge ?? null, t)}</span>
+                      </span>
+                      <button onClick={ouvrirCorrection} className="text-[13px] font-semibold cursor-pointer flex-shrink-0" style={{ color: TUN.lav }}>
+                        Corriger
+                      </button>
+                    </div>
+                  );
+                })()}
+
                 {/* Ensuite */}
                 {(() => {
                   const isLastSet = setIdx === (cur?.sets ?? 1) - 1;
-                  const nx  = isLastSet ? exercises[exerciseIdx + 1] : cur;
+                  const nx  = isLastSet ? exercisesAff[exerciseIdx + 1] : cur;
                   if (!nx) return null;
                   const sub = isLastSet
                     ? `${nx.sets} × ${nx.reps} · ${nx.muscles.join(" · ")}`.toUpperCase()
@@ -1803,7 +2125,8 @@ export default function WorkoutGuideModal({
                   className="w-full py-[18px] rounded-[22px] flex items-center justify-center gap-2 font-extrabold text-[16px] cursor-pointer text-white"
                   style={{ background: "linear-gradient(100deg,#8B5CF6,#C13BC1)", boxShadow: "0 10px 30px -6px rgba(193,59,193,0.45)" }}
                 >
-                  Série terminée ✓
+                  {/* R3 · le bouton dit ce qui sera enregistré. */}
+                  {declare && repsCur !== null ? libelleFait(repsCur, chargeCur, typeCharge) : "Série terminée ✓"}
                 </motion.button>
                 {exerciseIdx < exercises.length - 1 && (
                   <button onClick={passerExercice} className="text-[13px] font-semibold py-2 cursor-pointer" style={{ color: TUN.t3 }}>
