@@ -441,3 +441,13 @@ Correction de mon cadrage : `exercice_prevu_cle` était déjà recopiée par `en
 - **« Changer » suspend le temps.** Le 3-2-1 et le chrono attendent tant que le panneau est ouvert ; l'annuler reprend à la même seconde. Le panneau retient l'emplacement et la série de son ouverture, ne s'affiche que pour eux, et `appliquerRemplacement` refuse un choix devenu périmé (`choixApplicable`).
 - **Les décisions des effets sortent dans `src/lib/transitionsTunnel.ts`** (`pasDuRepos`, `pasDeLEffort`), pur. `check:programme` rejoue les passages de l'effet : repos à zéro avec correction ouverte puis enregistrer / annuler (une vibration, une seule reprise), chrono à une seconde de la fin derrière « Changer » puis remplacer / annuler (aucune validation derrière le panneau, une seule ensuite), 3-2-1 suspendu, choix périmé refusé, dernière série réglée à 7 (un journal à 7, prescription intacte). Des contrôles de source vérifient que les effets passent bien par ces fonctions. Quatre témoins vérifiés.
 - Limite : l'interface authentifiée n'a pas été jouée ; le banc exerce la logique de décision, pas le rendu React.
+
+## R3 · migration appliquée et vérifiée sur la vraie base (2026-10-05)
+
+Louis a collé `20261006_r3_charges.sql`. Vérifié par lecture : la fonction recopie `charge_unite, charge_type`, `anon` n'a pas le droit d'exécution, `authenticated` l'a. Puis trois blocs sous le rôle `authenticated`, avec deux vrais comptes, chacun annulé par une exception :
+
+- **Journal A → B → C puis retour à A (compte A)** : série 1 couché haltères 10 × 16 kg `par_haltere` · série 2 pompes 12, sans charge, `poids_du_corps`, prévu = couché · série 3 incliné haltères 7 × 17,5 kg, prévu = couché · série 4 retour au couché, 9, charge 0 écrite **nulle** (ni charge ni unité). Rejeu du même lancement : `deja = true`, 1 séance, 4 séries.
+- **Journal d'avant R3 (compte B)**, sans aucun champ de charge : accepté, charge, unité et type nuls.
+- **Journal de A envoyé sous B** : refusé, `proprietaire_different`.
+
+Base inchangée après coup : 31 séances, 15 séries, aucune ligne de test. Note du banc : les séries se numérotent à partir de 1 (`series_realisees_serie_check`) ; un premier essai à 0 a été refusé par la base et annulé.
