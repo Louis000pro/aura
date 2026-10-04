@@ -212,6 +212,8 @@ export function intentionDeLEtape(input: {
   date: string;
   programmeId: string;
   etape: { id: string; nom: string };
+  /** R6 · l'occurrence réservée. Un déplacement la garde (même ligne). */
+  rang?: number | null;
   difficulty: WorkoutDifficulty;
   location: Ctx | null;
   /** L'instance matérialisée à l'instant où l'on date : une intention
@@ -244,6 +246,7 @@ export function intentionDeLEtape(input: {
        programme propose, et le contenu vient de là aussi. Alors on le
        DIT, au lieu de compter sur un effet de bord. */
     provenanceId: input.etape.id,
+    rang: input.rang ?? null,
     adaptationId: input.adaptationId ?? null,
   };
 }

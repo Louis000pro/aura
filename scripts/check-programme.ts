@@ -30,6 +30,7 @@ import { CLES_EXERCICES, cleExercice } from "@/lib/exerciceCle";
 import { EXERCISE_LIBRARY } from "@/lib/exerciseLibrary";
 import { resolveGuide } from "@/lib/exerciseGuides";
 import { etapesDuCycle, etapeSuivante, nomDeProgramme, positionRefermee, POSITION_INITIALE } from "@/lib/programme";
+import { occurrenceSuivante, rangMinimal, rangPourEtape } from "@/lib/occurrences";
 import { etatJournee, intentionDeLEtape, lancementDuJour, libelleReservation, repetitionDuJour } from "@/lib/journee";
 import {
   etatDepuisExp, missionsAuraVides,
@@ -750,7 +751,7 @@ verdict(
   verdict(
     "V7A · la source de journée connaît la réservation de l'étape suivante",
     readFileSync(new URL("../src/hooks/useJournee.ts", import.meta.url), "utf8")
-      .includes("reservationDeLEtape(user.id, suivante.id)"),
+      .includes("reservationDeLOccurrence(user.id, actif.programme.id, suivante.rang)"),
     "elle la cherche en base, pas dans la semaine chargée",
   );
   verdict(
@@ -955,7 +956,7 @@ verdict(
      a lu, donc la chercher là rendrait le défaut intermittent. */
   verdict(
     "V7A · redonner un jour retrouve la réservation où qu'elle soit",
-    readFileSync(new URL("../src/hooks/useJournee.ts", import.meta.url), "utf8").includes("reservationDeLEtape("),
+    readFileSync(new URL("../src/hooks/useJournee.ts", import.meta.url), "utf8").includes("reservationDeLOccurrence(user.id, programme.programme.id, etape.rang)"),
     "la clé de l'invariant, interrogée en base",
   );
 }
@@ -2055,9 +2056,9 @@ verdict(
     );
     verdict(
       "V9A · il compose les autorités, il ne redécide rien",
-      MOTEUR.includes("lireProgrammeActif(") && MOTEUR.includes("positionConsommee(")
-        && MOTEUR.includes("etapeSuivante(") && MOTEUR.includes("etapeMasquee(")
-        && MOTEUR.includes("reservationDeLEtape(") && MOTEUR.includes("principale("),
+      MOTEUR.includes("lireProgrammeActif(") && MOTEUR.includes("lireOccurrences(")
+        && MOTEUR.includes("occurrenceSuivante(") && MOTEUR.includes("etapeMasquee(")
+        && MOTEUR.includes("reservationDeLOccurrence(") && MOTEUR.includes("principale("),
       "le curseur, le masquage, la réservation et la hiérarchie restent chez eux",
     );
     verdict(
@@ -2068,8 +2069,8 @@ verdict(
     );
     verdict(
       "V9A · le curseur ne se lit qu’UNE fois pour deux dérivations",
-      (MOTEUR.match(/positionConsommee\(/g) ?? []).length === 1
-        && (MOTEUR.match(/etapeSuivante[<(]/g) ?? []).length === 2,
+      (MOTEUR.match(/lireOccurrences\(/g) ?? []).length === 1
+        && (MOTEUR.match(/occurrenceSuivante[<(]/g) ?? []).length === 2,
       "passer deux fois par `etapeSuivanteDe` referait la requête pour rien",
     );
     verdict(
@@ -2684,7 +2685,7 @@ verdict(
   );
   verdict(
     "V9B · et la colonne `origine` est enfin RELUE",
-    PLAN9B.includes("etape_consommee_id, origine, created_at")
+    PLAN9B.includes("etape_consommee_id, rang, origine, created_at")
       && PLAN9B.includes("origine: (r.origine as Origine | null) ?? null,"),
     "sans elle, le Guide ne peut pas distinguer le mobilier d'une séance posée à la main",
   );
@@ -3441,7 +3442,7 @@ verdict(
   );
   verdict(
     "V9C · la réservation se cherche EN BASE, jamais dans la semaine chargée",
-    CIBLE9C.includes("await reservationDeLEtape(userId,"),
+    CIBLE9C.includes("await reservationDeLOccurrence(userId,"),
     "une étape datée au-delà de la fenêtre affichée rendrait le geste intermittent (leçon V7A)",
   );
   verdict(
@@ -4484,7 +4485,7 @@ verdict(
   );
   verdict(
     "V9C quater · SOURCE · l’étape visée se relit fraîche, jamais dans `etatMoteur`",
-    !CIBLE9F.includes("etatMoteur(") && CIBLE9F.includes("const compatible = etapeSuivante<EtapeCycle>("),
+    !CIBLE9F.includes("etatMoteur(") && CIBLE9F.includes("const occurrences = await lireOccurrences(userId, actif);"),
     "décider une écriture sur un cache de 30 s rouvrirait le double-fermage par un autre chemin",
   );
   verdict(
@@ -5801,6 +5802,207 @@ verdict(
     sql.includes('for select') && !/for (insert|update|delete)/i.test(sql) && sql.includes("auth.uid() = user_id"),
     "on écrit par enregistrer_seance",
   );
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   R6 · LES OCCURRENCES (critères de Codex, tours 11 et 12)
+   1. C₁ fait avant B₁ laisse B₁ proposée.
+   2. Déplacer une occurrence garde son identité.
+   3. Rejouer une finalisation ne consomme rien une seconde fois.
+   4. Refaire une séance crée un journal sans refermer l'occurrence.
+   Plus : aucune dette, l'historique repris sans changer de sens, et une
+   finalisation R1 restée en attente reste récupérable.
+   ════════════════════════════════════════════════════════════════════ */
+{
+  const lire1 = (rel: string) => readFileSync(new URL("../" + rel, import.meta.url), "utf8");
+  const cyc = (n: number) => Array.from({ length: n }, (_, i) => ({ id: "e" + (i + 1), position: i + 1, nom: "E" + (i + 1) }));
+  const fe = (...rangs: number[]) => rangs.map((rang, i) => ({
+    rang, etapeId: "e" + (((rang - 1) % 3) + 1), consommeeLe: `2026-10-0${1 + i}T10:00:00Z`,
+  }));
+  const C3 = cyc(3); // A, B, C
+
+  /* 1 · C avant B */
+  {
+    const etat = { depart: 1, fermes: fe(1, 3) };
+    const s = occurrenceSuivante(C3, etat);
+    verdict("R6 · C₁ fait avant B₁ laisse B₁ proposée", s?.rang === 2 && s.etape.id === "e2", `→ rang ${s?.rang} (${s?.etape.nom})`);
+    const apres = occurrenceSuivante(C3, { depart: 1, fermes: fe(1, 3, 2) });
+    verdict("R6 · B₁ faite ensuite, le cycle reprend après C₁", apres?.rang === 4 && apres.etape.id === "e1", `→ rang ${apres?.rang}`);
+    const ancien = etapeSuivante(C3, 3, 1);
+    verdict("R6 · témoin : l'ancien curseur aurait fait disparaître B", ancien?.id === "e1", "l'ancien curseur proposait " + ancien?.nom);
+    verdict("R6 · une B prévue sans rang reçoit B₁, pas B₂",
+      rangPourEtape(C3, etat, "e2", [1, 3]) === 2, "rang " + rangPourEtape(C3, etat, "e2", [1, 3]));
+    verdict("R6 · B₁ déjà réservée : la suivante libre est B₂",
+      rangPourEtape(C3, etat, "e2", [1, 2, 3]) === 5, "rang " + rangPourEtape(C3, etat, "e2", [1, 2, 3]));
+  }
+
+  /* Aucune dette (décision 35) : un tour de cycle, pas plus. */
+  {
+    const C5 = cyc(5);
+    const nonPush: number[] = [];
+    for (let r = 1; r <= 20; r++) if ((r - 1) % 5 !== 0) nonPush.push(r);
+    const etat = { depart: 1, fermes: nonPush.map((rang) => ({ rang, etapeId: "e" + (((rang - 1) % 5) + 1), consommeeLe: null })) };
+    const masque = (e: { id: string }) => e.id === "e1";
+    const pendant = occurrenceSuivante(C5, etat, masque);
+    verdict("R6 · pendant l'adaptation, l'étape masquée est traversée", pendant?.rang === 22, `→ rang ${pendant?.rang} (${pendant?.etape.nom})`);
+    const s = occurrenceSuivante(C5, etat);
+    verdict("R6 · quatre Push masquées n'en laissent qu'une à faire",
+      s?.rang === 16 && rangMinimal(etat, 5) === 16, `→ rang ${s?.rang}, rien sous ${rangMinimal(etat, 5)}`);
+    const avec16 = occurrenceSuivante(C5, { ...etat, fermes: [...etat.fermes, { rang: 16, etapeId: "e1", consommeeLe: null }] });
+    verdict("R6 · elle faite, le cycle reprend sans rattrapage", avec16?.rang === 21, `→ rang ${avec16?.rang}`);
+    const tout = occurrenceSuivante(C5, etat, () => true);
+    verdict("R6 · tout masqué : rien d'inventé", tout === null, "→ null");
+    verdict("R6 · cycle vide : rien", occurrenceSuivante([], { depart: 1, fermes: [] }) === null, "→ null");
+  }
+
+  /* Le plancher : un historique repris garde sa prochaine séance. */
+  {
+    /* Rejeu de la reprise SQL (`20261004_r6_occurrences.sql`, étape 5),
+       écrit ici pour la comparer à l'ancien curseur. */
+    const reprise = (ordinaux: number[], k: number, pi = 1) => {
+      let dernier = Math.min(Math.max(pi, 1), k) - 1;
+      let tour = 1;
+      const rangs: number[] = [];
+      for (const ord of ordinaux) {
+        if (ord <= dernier) tour++;
+        dernier = ord;
+        rangs.push((tour - 1) * k + ord);
+      }
+      return { rangs, depart: rangs.length ? rangs[rangs.length - 1] + 1 : Math.min(Math.max(pi, 1), k) };
+    };
+    /* Le cas réel le plus tordu de la base (2026-10-04) : Push, deux sauts
+       sous adaptation, puis Push au tour suivant. */
+    const C5 = cyc(5);
+    const r = reprise([1, 4, 5, 1], 5);
+    const etat = { depart: r.depart, fermes: r.rangs.map((rang) => ({ rang, etapeId: "e" + (((rang - 1) % 5) + 1), consommeeLe: null })) };
+    const n = occurrenceSuivante(C5, etat);
+    verdict("R6 · reprise · le cas réel garde sa prochaine séance",
+      JSON.stringify(r.rangs) === "[1,4,5,6]" && r.depart === 7 && n?.etape.id === etapeSuivante(C5, 1, 1)?.id,
+      `rangs ${r.rangs.join(",")}, départ ${r.depart}, prochaine ${n?.etape.nom}`);
+    verdict("R6 · reprise · les occurrences sautées par l'ancien curseur ne ressortent pas",
+      !!n && n.rang >= 7, `rien sous le rang ${r.depart}`);
+
+    /* Balayage : des historiques produits par l'ANCIEN moteur (toujours la
+       prochaine compatible, avec des masques au hasard), cycles de 1 à 6.
+       Après reprise, la prochaine séance doit être la même étape. */
+    let ecarts = 0, essais = 0;
+    let graine = 42;
+    const hasard = () => { graine = (graine * 1103515245 + 12345) % 2147483648; return graine / 2147483648; };
+    for (let k = 1; k <= 6; k++) {
+      const C = cyc(k);
+      for (let t = 0; t < 200; t++) {
+        const ordinaux: number[] = [];
+        let pos: number | null = null;
+        const longueur = Math.floor(hasard() * 15);
+        for (let i = 0; i < longueur; i++) {
+          const masque = new Set(C.filter(() => hasard() < 0.25).map((e) => e.id));
+          const s: { id: string; position: number } | null = etapeSuivante(C, pos, 1, (e) => masque.has(e.id));
+          if (!s) continue;
+          ordinaux.push(s.position);
+          pos = s.position;
+        }
+        const rep = reprise(ordinaux, k);
+        const e = { depart: rep.depart, fermes: rep.rangs.map((rang) => ({ rang, etapeId: "e" + (((rang - 1) % k) + 1), consommeeLe: null })) };
+        essais++;
+        if (occurrenceSuivante(C, e)?.etape.id !== etapeSuivante(C, pos, 1)?.id) ecarts++;
+      }
+    }
+    verdict("R6 · reprise · 1 200 historiques de l'ancien moteur gardent leur prochaine séance",
+      ecarts === 0, `${essais} historiques, ${ecarts} écart`);
+  }
+
+  /* 2 · Déplacer garde l'identité : le rang voyage avec la ligne. */
+  {
+    const l = lienProgramme({ programmeId: "p", etapeId: "e2", provenanceId: "e2", rang: 7 });
+    const sansRang = lienProgramme({ programmeId: "p", etapeId: "e2", provenanceId: "e2" });
+    const sansEtape = lienProgramme({ programmeId: "p", etapeId: null, provenanceId: "e2", rang: 7 });
+    verdict("R6 · un déplacement réécrit le même rang",
+      (l as Record<string, unknown>).rang === 7, "rang 7 réécrit tel quel");
+    verdict("R6 · un rang inconnu n'est pas écrit (la base garde le sien)",
+      !("rang" in sansRang), "colonne omise : un `update` ne l'efface pas");
+    verdict("R6 · sans étape, le rang tombe avec elle",
+      (sansEtape as Record<string, unknown>).rang === null, "rang null");
+    verdict("R6 · une réservation datée porte son occurrence",
+      intentionDeLEtape({ date: "2026-10-06", programmeId: "p", etape: { id: "e2", nom: "B" }, rang: 5, difficulty: "Intermédiaire", location: null, exerciseList: [] }).rang === 5,
+      "rang 5");
+  }
+
+  /* 3 · Rejouer ne consomme rien deux fois, et l'occurrence est la clé. */
+  {
+    const lignes: { lancement: string; rang: number | null }[] = [];
+    const vues: (number | null | undefined)[] = [];
+    const store: StoreFermeture = {
+      async parLancement(_u, l) { return { ok: true, id: lignes.some((y) => y.lancement === l) ? "x" : null }; },
+      async intention() { return { ok: true, resolue: null }; },
+      async reservation(_u, c) { vues.push(c.rang); return { ok: true, id: null }; },
+      async marquer() { return { ok: true, touchees: 0 }; },
+      async inserer(_u, c, fait) {
+        /* `uniq_occurrence` et `uniq_intention_lancement`, en mémoire. */
+        if (lignes.some((y) => y.lancement === fait.lancementId || (c.rang && y.rang === c.rang))) return "doublon";
+        lignes.push({ lancement: fait.lancementId, rang: c.rang ?? null });
+        return "ok";
+      },
+    };
+    const cible: CibleSeance = { genre: "etape", programmeId: "p", etapeId: "e2", rang: 2, type: "Force", title: "B", difficulty: "Intermédiaire", location: null, exerciseList: [] };
+    const fait = faitDeLaSeance({ lancement_id: "11111111-0000-4000-8000-000000000001", fin: "2026-10-04T10:00:00Z" });
+    const r1 = await fermerCible(store, "u", cible, fait);
+    const r2 = await fermerCible(store, "u", cible, fait);
+    const r3 = await fermerCible({ ...store, async parLancement() { return { ok: true, id: null }; } }, "u", cible, fait);
+    verdict("R6 · une finalisation rejouée ne ferme l'occurrence qu'une fois",
+      r1 === "fermee" && r2 === "deja" && r3 === "deja" && lignes.length === 1, `${r1}, ${r2}, ${r3} · ${lignes.length} ligne`);
+    /* Deux appareils, deux séances, la même occurrence : la seconde est
+       enregistrée dans le journal, elle ne ferme rien une seconde fois. */
+    const autre = faitDeLaSeance({ lancement_id: "11111111-0000-4000-8000-000000000002", fin: "2026-10-04T11:00:00Z" });
+    const r4 = await fermerCible(store, "u", cible, autre);
+    verdict("R6 · une seconde séance sur la même occurrence ne la ferme pas deux fois",
+      r4 === "deja" && lignes.length === 1, `${r4} · ${lignes.length} ligne`);
+    verdict("R6 · la réservation se cherche par OCCURRENCE", vues[0] === 2, "rang " + vues[0]);
+
+    /* Une finalisation R1 préparée AVANT R6 (sans rang) reste récupérable. */
+    const ancienne: CibleSeance = { genre: "etape", programmeId: "p", etapeId: "e3", type: "Force", title: "C", difficulty: "Intermédiaire", location: null, exerciseList: [] };
+    const r5 = await fermerCible(store, "u", ancienne, faitDeLaSeance({ lancement_id: "11111111-0000-4000-8000-000000000003", fin: "2026-10-04T12:00:00Z" }));
+    verdict("R6 · une finalisation R1 restée en attente se referme encore",
+      r5 === "fermee" && lignes.length === 2 && lignes[1].rang === null,
+      `${r5} · la base lui donnera son rang (attribuer_rang)`);
+  }
+
+  /* 4 · Refaire n'est jamais une fermeture. */
+  {
+    const journee = lire1("src/hooks/useJournee.ts");
+    verdict("R6 · refaire une séance ne déclare aucune cible",
+      journee.includes("cible: !options?.repetition && d.id ?"), "une répétition crée un journal, pas une fermeture");
+    const avant = occurrenceSuivante(C3, { depart: 1, fermes: fe(1) });
+    verdict("R6 · un journal sans occurrence ne bouge pas la suite",
+      avant?.rang === 2, "seules les lignes qui portent un rang comptent");
+    verdict("R6 · l'occurrence est figée au lancement",
+      journee.includes("rang: etape.rang,"), "la fin de séance ferme celle qu'on a lancée");
+  }
+
+  /* La base, en lisant le SQL. */
+  {
+    const sql = lire1("supabase/migrations/20261004_r6_occurrences.sql");
+    const sansCommentaires = sql.replace(/\/\*[\s\S]*?\*\//g, "");
+    verdict("R6 · SQL · une occurrence = une ligne",
+      sql.includes("create unique index if not exists uniq_occurrence") && sql.includes("(programme_id, rang)"), "uniq_occurrence");
+    verdict("R6 · SQL · le rang existe si et seulement si l'étape existe",
+      sql.includes("check ((etape_consommee_id is null) = (rang is null))"), "intentions_rang_si_etape");
+    verdict("R6 · SQL · un rang incohérent avec son étape est refusé",
+      sql.includes("occurrence_incoherente") && sql.includes("((new.rang - 1) % k) + 1 <> ord"), "vérifié par le déclencheur");
+    verdict("R6 · SQL · deux fermetures simultanées sont sérialisées",
+      sql.includes("pg_advisory_xact_lock"), "verrou par programme, pour la transaction");
+    verdict("R6 · SQL · même borne qu'en TypeScript (aucune dette)",
+      sql.includes("coalesce((select m from f) - (select n from k) + 1, 1)") && sql.includes("coalesce(rang_depart, position_initiale, 1)"),
+      "rang_minimal ≡ rangMinimal");
+    verdict("R6 · SQL · la reprise ne change le sens d'aucune ligne",
+      [...sansCommentaires.matchAll(/update public\.intentions_entrainement\s+set([\s\S]*?)\bwhere\b/gi)]
+        .every((m) => !/(statut|date|consommee_le)\s*=/.test(m[1])),
+      "ni statut, ni date, ni consommee_le");
+    verdict("R6 · SQL · rejouable",
+      sql.includes("continue when p.rang_depart is not null;") && sql.includes("and rang is null;"),
+      "un programme déjà repris ne l'est pas deux fois");
+    verdict("R6 · SQL · uniq_intention_par_etape reste en place",
+      !/drop index[^;]*uniq_intention_par_etape/i.test(sansCommentaires), "elle protège le code en production");
+  }
 }
 
 console.log("\n" + (echecs === 0 ? "Tout passe." : echecs + " échec(s)."));

@@ -77,6 +77,8 @@ export type GestePlanning =
       /** La réservation à REPRENDRE, ou `null` si l'étape n'a pas de jour. */
       reservationId: string | null;
       adaptationId: string | null;
+      /** R6 · l'occurrence passée (la prochaine, résolue par `viserEtape`). */
+      rang: number | null;
     }
   /** Changer la date d'une intention existante : même ligne, même identité. */
   | { type: "deplacer"; jour: PlanningDay }
@@ -411,7 +413,7 @@ export async function appliquerGeste(
       else await ajouterIntention(userId, geste.jour, origine);
       return geste.jour.date;
     case "sauter":
-      await sauterEtape(userId, geste.programmeId, geste.etape, geste.reservationId, geste.adaptationId);
+      await sauterEtape(userId, geste.programmeId, geste.etape, geste.reservationId, geste.adaptationId, geste.rang);
       /* Aucune date à montrer : le saut se date du jour où on le décide,
          et l'écran se recale dessus comme sur n'importe quel fait. */
       return null;

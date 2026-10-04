@@ -38,6 +38,10 @@
 
 import { createClient } from "@/lib/supabase";
 import { adaptationsDisponibles, cycleDeReference, schemaIntentions, todayYmd } from "@/lib/planning";
+import {
+  occurrenceSuivante,
+  type EtatOccurrences, type OccurrenceFermee,
+} from "@/lib/occurrences";
 import { libelleObjectif } from "@/lib/profilOnboarding";
 
 /** La première étape du cycle. Les positions sont numérotées à partir de
@@ -366,6 +370,10 @@ export async function consommerEtape(
   jour: { type: string; title: string; difficulty: string; location: string | null; exerciseList: unknown[] },
   /* R1 bis · le fait vient du JOURNAL : son jour, son heure, son lancement. */
   fait: { lancementId: string; consommeeLe: string; date: string },
+  /* R6 · l'occurrence que cette séance ferme. Absente d'une finalisation
+     préparée avant R6 : le déclencheur `attribuer_rang` lui donne alors la
+     première occurrence libre de son étape, exactement comme `rangPourEtape`. */
+  rang: number | null,
   /* V8 · l'adaptation sous laquelle cette séance a été matérialisée.
      Une TRACE, jamais une décision : rien ne la relit pour savoir quoi
      proposer. */
@@ -401,6 +409,7 @@ export async function consommerEtape(
     programme_id: programmeId,
     programme_seance_id: etapeId,
     etape_consommee_id: etapeId,
+    ...(rang ? { rang } : {}),
     consommee_le: fait.consommeeLe,
     lancement_id: fait.lancementId,
     ...(avecAdaptation ? { adaptation_id: adaptationId } : {}),
@@ -408,6 +417,10 @@ export async function consommerEtape(
   });
   if (!error) return "ok";
   if (error.code === "23505" && /uniq_intention_lancement/.test(error.message)) return "doublon";
+  /* R6 · Cette occurrence a déjà sa ligne (fermée par une autre séance, sur
+     un autre appareil). La séance reste enregistrée dans le journal ; elle
+     ne ferme rien une seconde fois. */
+  if (error.code === "23505" && /uniq_occurrence/.test(error.message)) return "doublon";
   console.error("[programme] fermeture de l'étape impossible :", error.message);
   return "echec";
 }
@@ -450,6 +463,8 @@ export async function sauterEtape(
   etape: { id: string; nom: string },
   reservationId: string | null = null,
   adaptationId: string | null = null,
+  /* R6 · l'occurrence passée. La réservation reprise porte déjà la sienne. */
+  rang: number | null = null,
 ): Promise<void> {
   const supabase = createClient();
   const sc = await schemaIntentions();
@@ -505,6 +520,7 @@ export async function sauterEtape(
     programme_id: programmeId,
     programme_seance_id: null,
     etape_consommee_id: etape.id,
+    ...(rang ? { rang } : {}),
     consommee_le: maintenant,
     ...(avecAdaptation ? { adaptation_id: adaptationId } : {}),
     updated_at: maintenant,
@@ -521,9 +537,17 @@ export async function sauterEtape(
    `etapeSuivanteDe`, dont le filtre est un ARGUMENT : on ne peut pas
    l'appeler sans voir qu'on a choisi de ne pas le passer. */
 
-/** La prochaine étape d'un programme DÉJÀ chargé : une requête, pas trois.
- *  C'est cette forme qu'utilisent les écrans, qui viennent d'appeler
- *  `getOrCreateProgramme` et n'ont aucune raison de le relire. */
+/** Une étape du cycle ET l'occurrence qui la porte (R6). */
+export type EtapeOccurrence = EtapeCycle & { rang: number };
+
+/**
+ * La prochaine occurrence d'un programme DÉJÀ chargé : deux petites
+ * requêtes en parallèle (les fermetures, le plancher).
+ *
+ * ⚠️ R6 · ELLE NE DÉRIVE PLUS DE LA DERNIÈRE ÉTAPE FAITE, MAIS DES
+ * OCCURRENCES ENCORE EN ATTENTE (`occurrences.ts`). Faire C₁ avant B₁
+ * laisse B₁ proposée ensuite.
+ */
 export async function etapeSuivanteDe(
   userId: string,
   actif: ProgrammeEtCycle,
@@ -531,9 +555,50 @@ export async function etapeSuivanteDe(
      l'aller chercher : `programme.ts` ne connaît pas les adaptations, et
      c'est ce qui garde la dépendance dans un seul sens. */
   masquee?: (etape: EtapeCycle) => boolean,
-): Promise<EtapeCycle | null> {
+): Promise<EtapeOccurrence | null> {
   if (actif.cycle.length === 0) return null;
-  return etapeSuivante(actif.cycle, await positionConsommee(userId, actif), actif.programme.positionInitiale, masquee);
+  const o = occurrenceSuivante(actif.cycle, await lireOccurrences(userId, actif), masquee);
+  return o ? { ...o.etape, rang: o.rang } : null;
+}
+
+/**
+ * Les occurrences fermées du programme actif, et son plancher.
+ *
+ * ⚠️ UNE LECTURE RATÉE REPART DU PLANCHER DU PROGRAMME, comme l'ancien
+ * curseur repartait du début (dette connue, décision 28) : on préfère
+ * proposer une séance que prétendre qu'il n'y a rien à faire. Le `warn`
+ * la rend visible dans les logs.
+ */
+export async function lireOccurrences(userId: string, actif: ProgrammeEtCycle): Promise<EtatOccurrences> {
+  const repli: EtatOccurrences = { depart: actif.programme.positionInitiale, fermes: [] };
+  const supabase = createClient();
+  try {
+    const sc = await schemaIntentions();
+    const [lignes, prog] = await Promise.all([
+      supabase
+        .from(sc.table)
+        .select("rang, etape_consommee_id, consommee_le")
+        .eq("user_id", userId)
+        .eq("programme_id", actif.programme.id)
+        .not("rang", "is", null)
+        .in(sc.colStatut, [sc.versBase.done, sc.versBase.skipped]),
+      supabase.from("programmes").select("rang_depart").eq("id", actif.programme.id).maybeSingle(),
+    ]);
+    if (lignes.error || prog.error) {
+      console.warn("[programme] occurrences illisibles :", lignes.error?.message ?? prog.error?.message);
+      return repli;
+    }
+    const fermes: OccurrenceFermee[] = ((lignes.data ?? []) as {
+      rang: number | null; etape_consommee_id: string | null; consommee_le: string | null;
+    }[])
+      .filter((l) => typeof l.rang === "number" && !!l.etape_consommee_id)
+      .map((l) => ({ rang: l.rang as number, etapeId: l.etape_consommee_id as string, consommeeLe: l.consommee_le }));
+    const depart = (prog.data as { rang_depart: number | null } | null)?.rang_depart ?? actif.programme.positionInitiale;
+    return { depart, fermes };
+  } catch (e) {
+    console.warn("[programme] occurrences illisibles :", (e as Error)?.message);
+    return repli;
+  }
 }
 
 /**
@@ -564,40 +629,6 @@ export function positionRefermee(
   return cycle.find((e) => e.id === derniere.etapeId)?.position ?? null;
 }
 
-/**
- * La position de la dernière étape refermée, ou `null`.
- *
- * ⚠️ EXPOSÉE EN V9A, ET C'EST CE QUI ÉVITE UNE SECONDE LECTURE DU
- * CURSEUR. Le Guide a besoin des DEUX étapes suivantes : celle que le
- * cycle donne, et celle que l'adaptation laisse passer. Passer deux fois
- * par `etapeSuivanteDe` referait cette requête pour rien ; on lit la
- * position une fois, et `etapeSuivante` (pure) la dérive deux fois.
- */
-export async function positionConsommee(userId: string, actif: ProgrammeEtCycle): Promise<number | null> {
-  const supabase = createClient();
-  try {
-    const sc = await schemaIntentions();
-    const { data } = await supabase
-      .from(sc.table)
-      .select("etape_consommee_id, consommee_le")
-      .eq("user_id", userId)
-      .eq("programme_id", actif.programme.id)
-      .not("etape_consommee_id", "is", null)
-      .in(sc.colStatut, [sc.versBase.done, sc.versBase.skipped])
-      .order("consommee_le", { ascending: false })
-      .limit(1);
-
-    const lignes = (data ?? []) as { etape_consommee_id: string | null; consommee_le: string | null }[];
-    return positionRefermee(
-      // La base a déjà écarté ce qui n'est pas résolu : `resolue` est donc
-      // vrai pour tout ce qui revient. On ne redemande pas le statut pour
-      // le redéduire, on dit ce que la requête garantit.
-      lignes.map((l) => ({ etapeId: l.etape_consommee_id, resolue: true, consommeeLe: l.consommee_le })),
-      actif.cycle,
-    );
-  } catch {
-    // On préfère repartir du début du cycle que de prétendre qu'il n'y a
-    // rien à faire.
-    return null;
-  }
-}
+/* R6 · `positionConsommee` A ÉTÉ SUPPRIMÉE : plus aucun appelant. Le
+   garde-fou du double saut lit la même chose dans `etapeCiblee.ts`, via
+   `positionDerniereFermee` sur les occurrences déjà lues pour décider. */

@@ -61,6 +61,11 @@ export type CibleSeance =
       genre: "etape";
       programmeId: string;
       etapeId: string;
+      /* R6 · l'occurrence figée au lancement. ABSENTE d'une finalisation
+         préparée avant R6 et restée en attente sur un téléphone : elle reste
+         récupérable, la réservation se cherche alors par étape et la base
+         donne le rang (`attribuer_rang`). */
+      rang?: number | null;
       type: string;
       title: string;
       difficulty: string;
@@ -105,8 +110,8 @@ export type StoreFermeture = {
   parLancement(userId: string, lancementId: string): Promise<{ ok: true; id: string | null } | { ok: false }>;
   /** `null` : introuvable ; sinon, est-elle déjà résolue ? */
   intention(userId: string, id: string): Promise<{ ok: true; resolue: boolean | null } | { ok: false }>;
-  /** La réservation en cours de cette étape, s'il y en a une. */
-  reservation(userId: string, etapeId: string): Promise<{ ok: true; id: string | null } | { ok: false }>;
+  /** La réservation en cours de cette occurrence (ou, sans rang, de cette étape). */
+  reservation(userId: string, cible: Extract<CibleSeance, { genre: "etape" }>): Promise<{ ok: true; id: string | null } | { ok: false }>;
   /** Marque faite, SEULEMENT si elle est encore prévue ; rend le nombre de lignes touchées. */
   marquer(userId: string, id: string, fait: FaitSeance): Promise<{ ok: true; touchees: number } | { ok: false }>;
   /** Écrit le fait d'une étape sans réservation. `doublon` : ce lancement l'a déjà écrit. */
@@ -154,7 +159,7 @@ export async function fermerCible(
        réservée. Insérer écrirait alors une SECONDE ligne portant la même
        étape, que `uniq_intention_par_etape` ne voit pas (elle ne couvre
        que les intentions PRÉVUES). On termine donc la réservation. */
-    const res = await store.reservation(userId, cible.etapeId);
+    const res = await store.reservation(userId, cible);
     if (!res.ok) return "echec";
     if (res.id) return await marquerVerifie(store, userId, res.id, fait);
     const ins = await store.inserer(userId, cible, fait);
@@ -185,11 +190,16 @@ export function storeFermeture(): StoreFermeture {
       const statut = (data as unknown as Record<string, unknown>)[sc.colStatut];
       return { ok: true, resolue: statut !== sc.versBase.planned };
     },
-    async reservation(userId, etapeId) {
+    async reservation(userId, cible) {
       const sc = await schemaIntentions();
-      const { data, error } = await supabase.from(sc.table).select("id")
-        .eq("user_id", userId).eq("etape_consommee_id", etapeId)
-        .eq(sc.colStatut, sc.versBase.planned).limit(1);
+      let q = supabase.from(sc.table).select("id")
+        .eq("user_id", userId).eq("etape_consommee_id", cible.etapeId)
+        .eq(sc.colStatut, sc.versBase.planned);
+      /* R6 · l'occurrence quand on la connaît ; sinon (finalisation d'avant
+         R6), la réservation de l'étape, unique tant que
+         `uniq_intention_par_etape` tient. */
+      if (cible.rang) q = q.eq("programme_id", cible.programmeId).eq("rang", cible.rang);
+      const { data, error } = await q.limit(1);
       if (error) return { ok: false };
       return { ok: true, id: data?.[0]?.id ? String(data[0].id) : null };
     },
@@ -219,7 +229,7 @@ export function storeFermeture(): StoreFermeture {
         difficulty: cible.difficulty,
         location: cible.location,
         exerciseList: cible.exerciseList,
-      }, fait, cible.adaptationId ?? null);
+      }, fait, cible.rang ?? null, cible.adaptationId ?? null);
     },
   };
 }

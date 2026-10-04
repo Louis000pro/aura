@@ -29,14 +29,14 @@ import { heroImageForSeance } from "@/lib/workoutArt";
 import { EVT_JOURNEE } from "@/lib/finSeance";
 import { etatJournee, intentionDeLEtape, lancementDuJour, libelleReservation, repetitionDuJour } from "@/lib/journee";
 import {
-  lireSemaine, ajouterIntention, saveDay, reservationDeLEtape, hasSeance, loadLieu, readVariant, ctxFromLieu,
+  lireSemaine, ajouterIntention, saveDay, reservationDeLOccurrence, hasSeance, loadLieu, readVariant, ctxFromLieu,
   weekDates, todayYmd, dayTitle, parDate, principale, supplements, seancesDuJour,
   weekdayIndex, prochainsJours, instanceDeLEtape,
   type PlanningDay, type GenInput, type CycleSemaine,
 } from "@/lib/planning";
 import {
   getOrCreateProgramme, lireProgrammeActif, etapeSuivanteDe,
-  type EtapeCycle, type ProgrammeEtCycle,
+  type EtapeOccurrence, type ProgrammeEtCycle,
 } from "@/lib/programme";
 import {
   adaptationDuJour, etapeMasquee, etapesCompatibles, idsMasques, libelleJour,
@@ -63,7 +63,7 @@ export type Journee = {
   jour: PlanningDay | null;
   /** Ce qui vient EN PLUS aujourd'hui (V6b). */
   extras: PlanningDay[];
-  etape: EtapeCycle | null;
+  etape: EtapeOccurrence | null;
   /** La réservation EN ATTENTE de l'étape suivante, où qu'elle soit datée
    *  (elle vit souvent hors de la semaine chargée). `null` = l'étape n'a
    *  pas encore de jour, et « quand tu veux » est alors la vérité. */
@@ -124,7 +124,7 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
   const [besoinSetup, setBesoinSetup] = useState(false);
   const [programme, setProgramme] = useState<ProgrammeEtCycle | null>(null);
   const [gen, setGen] = useState<GenInput | null>(null);
-  const [etape, setEtape] = useState<EtapeCycle | null>(null);
+  const [etape, setEtape] = useState<EtapeOccurrence | null>(null);
   const [reservation, setReservation] = useState<PlanningDay | null>(null);
   const [adaptation, setAdaptation] = useState<Adaptation | null>(null);
   const [niveau, setNiveau] = useState<string | null>(null);
@@ -205,7 +205,11 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
          la semaine chargée ne suffit pas : depuis que le sélecteur
          propose quinze jours, elle vit souvent au-delà. Une requête, sur
          la clé de l'invariant lui-même, et seulement s'il y a une étape. */
-      setReservation(suivante ? await reservationDeLEtape(user.id, suivante.id) : null);
+      /* R6 · LA RÉSERVATION DE CETTE OCCURRENCE-LÀ, pas de l'étape en
+         général : une occurrence = une ligne (`uniq_occurrence`). */
+      setReservation(suivante && actif
+        ? await reservationDeLOccurrence(user.id, actif.programme.id, suivante.rang)
+        : null);
     } catch (e) {
       console.error("Programme load error", e);
     }
@@ -372,6 +376,10 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
         genre: "etape",
         programmeId: programme.programme.id,
         etapeId: etape.id,
+        /* R6 · l'occurrence est FIGÉE au lancement (décision 22) : la fin
+           de séance ferme celle-ci, même si une autre a été fermée
+           entre-temps. */
+        rang: etape.rang,
         adaptationId: adaptation?.id ?? null,
         type: "Force",
         title: etape.nom,
@@ -403,12 +411,13 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
     try {
       /* La lecture est DANS le `try` : elle interroge la base comme
          l'écriture, donc elle échoue de la même façon. */
-      const dejaPosee = await reservationDeLEtape(user.id, etape.id);
+      const dejaPosee = await reservationDeLOccurrence(user.id, programme.programme.id, etape.rang);
       const voulue = {
         ...intentionDeLEtape({
           date,
           programmeId: programme.programme.id,
           etape: { id: etape.id, nom: etape.nom },
+          rang: etape.rang,
           difficulty: levelToDifficulty(gen?.level ?? null),
           location: gen?.ctx ?? null,
           exerciseList: instance,
