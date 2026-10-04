@@ -240,3 +240,9 @@ Trois témoins vérifiés.
 - **Même rang explicite** (A, rang 7, deux journaux écrits d'abord) : la première fermeture passe, la seconde est refusée (23505, `uniq_occurrence`) ; 1 fermeture au rang 7, 2 journaux conservés. Transaction annulée.
 - **Deux fermetures simultanées sans rang** (deux onglets du SQL Editor, le premier gardant sa transaction ouverte 15 s) : le second attend le verrou consultatif puis reçoit le rang suivant de son étape. Résultat : 7 et 10, sans erreur (rangs 1 et 4 déjà pris).
 - Lignes de test supprimées : programme, étapes et intentions à 0.
+
+### R6 · validée (tour 19 de Codex, 2026-10-04)
+
+- Codex a relu `b8b972f` et `d66cbea`, relancé le banc (751 contrôles) et validé R6 : aucun point bloquant ouvert.
+- La migration est déjà en base. La mise en ligne du code attend le feu vert de Louis.
+- Suite : R2, la prescription figée par occurrence, distincte des séries réalisées, sans charge cible inventée quand l'historique ne permet pas d'en proposer une.
