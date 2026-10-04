@@ -219,3 +219,9 @@ Trois témoins vérifiés.
 - **Affichage conservé ≠ cible vérifiée.** `avecEtapeVerifiee` (`journee.ts`) relit programme, adaptation et occurrences avant de dater l'étape ou de lancer une étape libre. Lecture ratée ou suite changée : refus, et l'écran se relit (`EVT_JOURNEE`). Une séance déjà lancée garde sa cible. Test comportemental au banc (affichage chargé → fermeture ailleurs → rafraîchissement raté → réservation tentée : zéro écriture).
 - **Date inconnue :** une vraie fermeture sans `consommee_le` ne déclare aucun retard, comme `<` avec NULL en SQL ; seule la fermeture imaginée de l'aperçu (`simulee`) a lieu « à l'instant ». En base le cas n'existe pas (`intentions_consommee_check`), S8b le vérifie.
 - Banc : 739 contrôles. Témoins : date inconnue traitée comme « maintenant » (1 échec), repli sur l'affichage conservé (3 échecs).
+
+### R6 · corrections du tour 16 de Codex (2026-10-04)
+
+- **Lecture stricte de l'adaptation avant un geste.** `lireAdaptations` / `adaptationDuJour` prennent un mode : `souple` pour l'affichage (une panne vaut « aucune », comportement V8 conservé), `stricte` avant de dater ou de lancer une étape (une panne lève → refus `illisible`). La décision vit dans `interpreterLectureAdaptations`, pure, que le banc rejoue avec une réponse d'erreur de la base.
+- **Le geste se fait sur le contexte relu, jamais sur l'affiché.** `ContexteEtape` = programme, étape, rang, nom, adaptation tracée, étapes masquées ; `avecEtapeVerifiee` compare le contexte entier et ne passe à l'action QUE le contexte relu. Même occurrence avec une autre adaptation, ou une étape renommée : refus `changee`.
+- Banc : 744 contrôles. Témoins : panne d'adaptation lue comme « aucune » (6 échecs), comparaison limitée à l'occurrence (4 échecs).

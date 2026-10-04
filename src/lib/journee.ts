@@ -267,21 +267,41 @@ export type CibleVerifiee =
   | { ok: true }
   | { ok: false; raison: "illisible" | "changee" };
 
-export async function avecEtapeVerifiee<E extends { id: string; rang: number }>(
-  affichee: E,
-  /** Relit la prochaine étape compatible. Lève si la lecture échoue. */
-  relire: () => Promise<E | null>,
-  agir: (etape: E) => Promise<void> | void,
+/**
+ * Tout ce dont dépend un geste sur l'étape affichée : le programme,
+ * l'occurrence, l'étape (nom compris, l'instance en dérive), l'adaptation
+ * qui sera tracée, et ce qu'elle masque. Une différence sur l'un d'eux et
+ * le geste n'a plus le sens que l'écran lui donnait (tour 16).
+ */
+export type ContexteEtape = {
+  programmeId: string;
+  etapeId: string;
+  rang: number;
+  nom: string;
+  adaptationId: string | null;
+  masquees: string[];
+};
+
+export function cleContexte(c: ContexteEtape): string {
+  return JSON.stringify([c.programmeId, c.etapeId, c.rang, c.nom, c.adaptationId, [...c.masquees].sort()]);
+}
+
+export async function avecEtapeVerifiee<C extends ContexteEtape>(
+  affiche: C,
+  /** Relit le contexte, frais et STRICT. Lève si une lecture échoue. */
+  relire: () => Promise<C | null>,
+  /** Ne reçoit que le contexte relu : jamais ce que l'écran gardait. */
+  agir: (frais: C) => Promise<void> | void,
 ): Promise<CibleVerifiee> {
-  let fraiche: E | null;
+  let frais: C | null;
   try {
-    fraiche = await relire();
+    frais = await relire();
   } catch {
     return { ok: false, raison: "illisible" };
   }
-  if (!fraiche || fraiche.id !== affichee.id || fraiche.rang !== affichee.rang) {
+  if (!frais || cleContexte(frais) !== cleContexte(affiche)) {
     return { ok: false, raison: "changee" };
   }
-  await agir(fraiche);
+  await agir(frais);
   return { ok: true };
 }

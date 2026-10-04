@@ -346,28 +346,58 @@ function versAdaptation(r: LigneAdaptation): Adaptation {
 }
 
 /**
+ * Ce que vaut une lecture d'adaptations, selon ce qu'on va en faire.
+ *
+ * - `souple` (l'affichage) : une erreur vaut « aucune adaptation ». C'est
+ *   ce qui rend V8 déployable avant sa migration, et un écran qui montre
+ *   une étape masquée n'écrit rien.
+ * - `stricte` (avant un geste qui écrit ou fermera une occurrence) : une
+ *   erreur LÈVE. Une adaptation inconnue n'est pas une adaptation absente
+ *   (tour 16 de Codex) : la confondre autoriserait de réserver une étape
+ *   que l'adaptation masque.
+ *
+ * ⚠️ Pure : elle reçoit la réponse de la base, elle ne la demande pas.
+ * C'est le même chemin que la vraie lecture, donc le banc le rejoue.
+ */
+export function interpreterLectureAdaptations(
+  reponse: { data: unknown; error: { message?: string } | null },
+  mode: "souple" | "stricte",
+): Adaptation[] {
+  if (reponse.error) {
+    if (mode === "stricte") throw new Error("adaptations_illisibles: " + (reponse.error.message ?? ""));
+    return [];
+  }
+  return ((reponse.data ?? []) as unknown as LigneAdaptation[]).map(versAdaptation);
+}
+
+/**
  * Les adaptations encore déclarées actives pour un programme.
  *
- * ⚠️ ELLE NE JETTE JAMAIS, ET C'EST CE QUI REND LA VAGUE DÉPLOYABLE
- * AVANT SA MIGRATION. Tant que la table n'existe pas, la lecture rend
- * une liste vide, donc « aucune adaptation », donc l'app se comporte
- * exactement comme avant V8.
+ * ⚠️ EN MODE SOUPLE ELLE NE JETTE JAMAIS, ET C'EST CE QUI REND LA VAGUE
+ * DÉPLOYABLE AVANT SA MIGRATION. Tant que la table n'existe pas, la
+ * lecture rend une liste vide, donc « aucune adaptation ». En mode strict,
+ * une table absente reste « aucune » (c'est une réponse), mais une lecture
+ * ratée lève.
  */
-export async function lireAdaptations(userId: string, programmeId: string): Promise<Adaptation[]> {
+export async function lireAdaptations(
+  userId: string,
+  programmeId: string,
+  mode: "souple" | "stricte" = "souple",
+): Promise<Adaptation[]> {
   if (!userId || !programmeId) return [];
   if (!(await adaptationsDisponibles())) return [];
   try {
     const supabase = createClient();
-    const { data, error } = await supabase
+    const reponse = await supabase
       .from("adaptations_entrainement")
       .select(COLS)
       .eq("user_id", userId)
       .eq("programme_id", programmeId)
       .eq("statut", "active")
       .order("debut", { ascending: false });
-    if (error) return [];
-    return ((data ?? []) as unknown as LigneAdaptation[]).map(versAdaptation);
-  } catch {
+    return interpreterLectureAdaptations(reponse, mode);
+  } catch (e) {
+    if (mode === "stricte") throw e;
     return [];
   }
 }
@@ -387,8 +417,11 @@ export async function adaptationDuJour(
   userId: string,
   programmeId: string,
   jour: string,
+  /* `stricte` avant un geste de cycle : une panne lève au lieu de valoir
+     « aucune adaptation ». */
+  mode: "souple" | "stricte" = "souple",
 ): Promise<Adaptation | null> {
-  const liste = await lireAdaptations(userId, programmeId);
+  const liste = await lireAdaptations(userId, programmeId, mode);
   const perimees = liste.filter((a) => estExpiree(a, jour));
   if (perimees.length > 0) void fermerAdaptations(perimees.map((a) => a.id));
   return adaptationActive(liste, jour);

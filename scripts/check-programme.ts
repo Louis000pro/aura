@@ -77,7 +77,7 @@ import {
   type EtatNutrition, type JourNutrition, type RepasDetail,
 } from "@/lib/guideNutrition";
 import {
-  adaptationActive, ajouterJours, chevauchent, datesEntre, estExpiree, etapeMasquee,
+  adaptationActive, ajouterJours, chevauchent, datesEntre, estExpiree, etapeMasquee, interpreterLectureAdaptations,
   etapesCompatibles, finParDefaut, idsMasques, libelleJour, REEVALUATION_SEMAINES,
   reservationsEnConflit, validerAxes, validerPeriode,
   type Adaptation,
@@ -956,7 +956,7 @@ verdict(
      a lu, donc la chercher là rendrait le défaut intermittent. */
   verdict(
     "V7A · redonner un jour retrouve la réservation où qu'elle soit",
-    readFileSync(new URL("../src/hooks/useJournee.ts", import.meta.url), "utf8").includes("reservationDeLOccurrence(user.id, programme.programme.id, etape.rang)"),
+    readFileSync(new URL("../src/hooks/useJournee.ts", import.meta.url), "utf8").includes("reservationDeLOccurrence(user.id, c.programmeId, c.rang)"),
     "la clé de l'invariant, interrogée en base",
   );
 }
@@ -5904,25 +5904,77 @@ verdict(
       apercu?.rang === 7, `→ rang ${apercu?.rang}`);
   }
   {
-    /* Tour 15 · affichage conservé ≠ cible vérifiée. Scénario : l'écran
-       montre B₁ ; B₁ est fermée ailleurs ; le rafraîchissement échoue ;
-       on tente de dater B₁. Aucune écriture ne doit partir. */
-    const affichee = { id: "e2", rang: 2 };
+    /* Tours 15 et 16 · affichage conservé ≠ contexte vérifié. Le
+       contexte relu passe par les VRAIES fonctions : l'interprétation de
+       la réponse de la base pour les adaptations, le masquage, la suite. */
+    type Ctx = import("@/lib/journee").ContexteEtape;
+    const ligneAdapt = (id: string, masque: string[]) => ({
+      id, user_id: "u", programme_id: "p", debut: "2026-10-01", fin: "2026-10-31", statut: "active",
+      motif: null, axes: { eviter_etapes: masque }, axes_version: 1, origine: "utilisateur", fermee_le: null,
+    });
+    const contexte = (
+      etat: Parameters<typeof occurrenceSuivante>[1],
+      reponse: { data: unknown; error: { message: string } | null },
+      mode: "souple" | "stricte",
+      noms: Record<string, string> = {},
+    ): Ctx | null => {
+      const cycle = C3.map((e) => ({ ...e, nom: noms[e.id] ?? e.nom }));
+      const couche = adaptationActive(interpreterLectureAdaptations(reponse, mode), "2026-10-04");
+      const occ = occurrenceSuivante(cycle, etat, (e) => etapeMasquee(e.id, couche));
+      if (!occ) return null;
+      return { programmeId: "p", etapeId: occ.etape.id, rang: occ.rang, nom: occ.etape.nom,
+        adaptationId: couche?.id ?? null, masquees: idsMasques(cycle, couche) };
+    };
+    const etat = { depart: 1, reserves: [], fermes: ferme(3, [1, 3]) };
+    const ok = { data: [], error: null };
+    const affiche = contexte(etat, ok, "stricte") as Ctx;
     let ecritures = 0;
-    const ecrire = () => { ecritures++; };
-    const rate = await avecEtapeVerifiee(affichee, async () => { throw new Error("réseau"); }, ecrire);
-    const changee = await avecEtapeVerifiee(affichee, async () => ({ id: "e1", rang: 7 }), ecrire);
-    const rien = await avecEtapeVerifiee(affichee, async () => null, ecrire);
-    verdict("R6 · lecture ratée : la réservation de l'ancienne cible est refusée",
-      !rate.ok && rate.raison === "illisible" && ecritures === 0, `${JSON.stringify(rate)} · ${ecritures} écriture`);
-    verdict("R6 · suite changée ailleurs : refusée aussi, l'écran se relit",
-      !changee.ok && changee.raison === "changee" && !rien.ok && ecritures === 0, `${JSON.stringify(changee)} · ${ecritures} écriture`);
-    const bon = await avecEtapeVerifiee(affichee, async () => ({ id: "e2", rang: 2 }), ecrire);
-    verdict("R6 · suite confirmée : l'action part, une fois", bon.ok && ecritures === 1, `${ecritures} écriture`);
+    let adaptationEcrite: string | null | undefined;
+    const ecrire = (c: Ctx) => { ecritures++; adaptationEcrite = c.adaptationId; };
+
+    /* Une adaptation masquant B a été créée ailleurs ; sa lecture échoue. */
+    const panne = { data: null, error: { message: "timeout" } };
+    const souple = contexte(etat, panne, "souple");
+    verdict("R6 · témoin : en lecture souple, la panne passe pour « aucune adaptation »",
+      souple?.etapeId === "e2", "c'est le défaut que la lecture stricte ferme");
+    const r1 = await avecEtapeVerifiee(affiche, async () => contexte(etat, panne, "stricte"), ecrire);
+    verdict("R6 · adaptation illisible : aucune réservation ni lancement",
+      !r1.ok && r1.raison === "illisible" && ecritures === 0, `${JSON.stringify(r1)} · ${ecritures} écriture`);
+
+    /* B₁ fermée ailleurs, rafraîchissement raté : le relire lève. */
+    const r2 = await avecEtapeVerifiee(affiche, async () => { throw new Error("occurrences_indisponibles"); }, ecrire);
+    verdict("R6 · occurrences illisibles : refus", !r2.ok && r2.raison === "illisible" && ecritures === 0, JSON.stringify(r2));
+
+    /* Une adaptation qui ne masque pas B apparaît : même étape, même rang,
+       mais l'adaptation tracée change. */
+    const autre = { data: [ligneAdapt("a2", ["e3"])], error: null };
+    const r3 = await avecEtapeVerifiee(affiche, async () => contexte(etat, autre, "stricte"), ecrire);
+    verdict("R6 · même occurrence, autre adaptation : refus, rien ne s'écrit",
+      !r3.ok && r3.raison === "changee" && ecritures === 0, JSON.stringify(r3));
+
+    /* L'étape est renommée en gardant son identité. */
+    const r4 = await avecEtapeVerifiee(affiche, async () => contexte(etat, ok, "stricte", { e2: "Dos" }), ecrire);
+    verdict("R6 · étape renommée : refus", !r4.ok && r4.raison === "changee" && ecritures === 0, JSON.stringify(r4));
+
+    /* B₁ fermée ailleurs, lecture réussie : la suite a changé. */
+    const r5 = await avecEtapeVerifiee(affiche, async () => contexte({ ...etat, fermes: ferme(3, [1, 3, 2]) }, ok, "stricte"), ecrire);
+    verdict("R6 · B₁ fermée ailleurs : refus", !r5.ok && r5.raison === "changee" && ecritures === 0, JSON.stringify(r5));
+
+    /* Contexte confirmé, avec une adaptation : l'action reçoit le contexte RELU. */
+    const avecA = { data: [ligneAdapt("a1", ["e3"])], error: null };
+    const afficheA = contexte(etat, avecA, "stricte") as Ctx;
+    const r6 = await avecEtapeVerifiee(afficheA, async () => contexte(etat, avecA, "stricte"), ecrire);
+    verdict("R6 · contexte confirmé : l'action part une fois, avec l'adaptation relue",
+      r6.ok && ecritures === 1 && adaptationEcrite === "a1", `${ecritures} écriture · adaptation ${adaptationEcrite}`);
+
     const hook = lire1("src/hooks/useJournee.ts");
-    verdict("R6 · dater l'étape et lancer une étape libre passent par la vérification",
-      (hook.match(/avecEtapeVerifiee\(etape, relireEtape,/g) ?? []).length === 2,
-      "les deux seuls gestes qui écrivent ou fermeront une occurrence");
+    verdict("R6 · dater et lancer passent par le contexte relu, en lecture stricte",
+      (hook.match(/avecEtapeVerifiee\(contexteAffiche, relireContexte, (async )?\(c\) =>/g) ?? []).length === 2
+        && hook.includes('todayYmd(), "stricte")'),
+      "les deux gestes, et l'adaptation lue strictement");
+    const deuxGestes = hook.slice(hook.indexOf("avecEtapeVerifiee(contexteAffiche"), hook.indexOf("return {\n    etat,"));
+    verdict("R6 · les gestes n'utilisent plus l'étape ni l'adaptation affichées",
+      !/etape\.(id|rang|nom)|adaptation\?\.id/.test(deuxGestes), "tout vient de `c`");
   }
   {
     /* Une lecture ratée n'invente rien. */
