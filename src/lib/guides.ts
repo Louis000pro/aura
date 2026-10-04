@@ -92,6 +92,8 @@ export type ContexteVoix = {
   etapes?: string;
   /** V9D · une durée déjà écrite (« 10 jours », « 2 semaines »). */
   duree?: string;
+  /** R3 · un nombre de répétitions (`seance.charge.choisir`). */
+  reps?: number;
 };
 
 /** « Une séance posée », « Trois séances posées ». Le nombre s'écrit en
@@ -740,6 +742,12 @@ const REPLIQUES = {
     commun: "Dernier exercice, garde le même rythme.",
     nora:   "C’est le dernier exercice. Garde la même qualité de mouvement jusqu’au bout.",
     sasha:  "Dernier exercice. Même rythme, on finit propre.",
+  },
+  /* R3 · la charge n'est pas connue (décision 50) : aucun chiffre n'est
+     inventé, le Guide dit seulement comment la choisir. Elle prend la place
+     du conseil du geste, sans nouvelle carte. */
+  "seance.charge.choisir": {
+    commun: (c) => `Choisis une charge que tu pourrais soulever environ ${c.reps ?? 12} fois.`,
   },
   /* Le tunnel est en pause : le Guide attend, et c'est le seul moment de la
      séance où il n'a rien à demander ni à expliquer. */

@@ -411,3 +411,26 @@ Périmètre : maquette 07, écrans 02 à 04, 06 et 07. L'écran 05 (la question 
 3. **Pas des compteurs de charge** : 2,5 kg en `totale` et `assistance`, 1 kg en `par_haltere` ? Ce n'est pas l'incrément de progression (R4), seulement le pas de correction.
 4. **La fourchette** sous le grand nombre suffit-elle, ou faut-il la montrer ailleurs ?
 5. **Remplacement à la dernière série** : s'il ne reste aucune série, « Changer » disparaît-il, ou sert-il à corriger la dernière série déjà faite ?
+
+### R3 · réponses du tour 26 de Codex (retenues)
+
+- « À chaque fois » est masqué jusqu'à R7 ; seul « Pour cette séance seulement » existe.
+- La charge part inconnue en R3. La reprise d'une charge historique appartient à R4. Une charge saisie vaut pour le même exercice dans la séance, jamais pour les séances futures.
+- Les compteurs sont des raccourcis : toucher la valeur permet d'écrire une charge exacte (1,25 kg, une machine à 7 kg).
+- La fourchette tient en une ligne sous la cible.
+- « Changer » disparaît quand aucune série ne reste ; une correction ne remplace jamais rétroactivement.
+- **Correction 1** : l'identité se garde série par série. Chaque série validée porte son exercice effectif, son type de charge et ses valeurs ; le remplacement courant ne vaut que pour les séries restantes. A → B → C et le retour à A sont testés.
+- **Correction 2** : au poids du corps en répétitions, « Fait · 10 » et la correction des répétitions fonctionnent sans kilos. Le chronométré ne change pas.
+- Les équivalents gardent la même mesure ; sans équivalent, on le dit.
+
+Correction de mon cadrage : `exercice_prevu_cle` était déjà recopiée par `enregistrer_seance` depuis R1. Seules `charge`, `charge_unite` et `charge_type` manquaient.
+
+## R3 · codée (2026-10-05), en attente de la relecture de Codex et de la migration
+
+- `src/lib/saisieSerie.ts` : libellés (« Fait · 10 × 60 kg », « Série 2 · 10 × 60 kg »), fourchette, charge saisie (jamais zéro), pas de saisie, compteurs.
+- `src/lib/remplacement.ts` : équivalents (même fonction, même lieu, même mesure, une clé), lieu le plus sobre quand la séance ne le donne pas, remplacement courant, retour à l'exercice prévu.
+- `src/lib/journalSeance.ts` : la marque d'une série terminée porte `reps`, `charge` et `exercice` ; `lignesDuJournal` écrit `reps_declarees`, `charge`, `charge_unite`, `charge_type` et `exercice_prevu_cle`. Sans prescription, rien n'est déclaré (comme R1).
+- `WorkoutGuideModal.tsx` affiche seulement : charge et crayon, fourchette, bouton qui dit ce qui s'enregistre, phrase du Guide quand la charge est inconnue, ligne « Corriger » au repos, saisie protégée, panneau « Changer ». `src/components/seance/ReglageCharge.tsx` porte les compteurs.
+- Migration `supabase/migrations/20261006_r3_charges.sql` : `enregistrer_seance` recopie la charge ; protections de propriétaire et de rejeu identiques ; anciens journaux acceptés.
+- Bancs : `check:programme` (35 contrôles R3), `check:prescription-sql` (60 tests, dont le journal A → B → C joué par la vraie fonction, le rejeu, le propriétaire, la charge à zéro et un journal d'avant R3). Trois témoins vérifiés : retirer l'attente de la saisie protégée, accepter une charge à zéro, faire déclarer une séance sans prescription.
+- Vérifié : `tsc`, `build`, `eslint` à 93 (la référence), `check:rappels`, `check:missions`, `check:portraits`. `check:echelle` : 38 écarts, les mêmes qu'avant R3.

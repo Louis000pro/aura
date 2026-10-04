@@ -15,6 +15,8 @@ import { readFileSync } from "node:fs";
 import {
   BANQUE, composerEtape, projeterPrescription, type Lieu, type Orientation,
 } from "@/lib/banqueEtapes";
+import { lignesDuJournal, type MarquesSeance } from "@/lib/journalSeance";
+import { remplacer } from "@/lib/remplacement";
 const db = new PGlite();
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const q = (s: string, p?: unknown[]) => db.query<any>(s, p);
@@ -210,6 +212,62 @@ for (const lieu of Object.keys(BANQUE) as Lieu[]) for (const nom of Object.keys(
   if (norm(sql) !== norm(JSON.parse(JSON.stringify(projeterPrescription(l))))) diff++;
 }
 t(`projection SQL ≡ TypeScript (${cas} compositions)`, diff === 0, `${diff} différence(s)`);
+
+/* ── R3 · le journal écrit la charge et l'exercice réellement fait ──
+   La migration est jouée deux fois, puis on écrit un journal construit par
+   le VRAI `lignesDuJournal` : A en série 1, B en série 2, C en série 3. */
+const mig3 = readFileSync(new URL("../supabase/migrations/20261006_r3_charges.sql", import.meta.url), "utf8");
+await ex(mig3);
+await ex(mig3);
+t("R3 · migration rejouable", true);
+await setUid(U);
+{
+  const exs = projeterPrescription(composerEtape("Push", { lieu: "halteres", orientation: "masse", niveau: null, version: 1 }));
+  const A = exs[0];
+  const B = { cle: "pompes", nom: "Pompes", chargeType: "poids_du_corps" as const };
+  const C = { cle: "developpeinclinehalteres", nom: "Développé incliné haltères", chargeType: "par_haltere" as const };
+  let r = remplacer(A, 0, {}, B);
+  r = remplacer(A, 0, r, C);
+  const marques: MarquesSeance = { 0: {
+    0: { statut: "terminee", validation: "bouton", dureeS: null, reps: 10, charge: 16, exercice: { cle: A.prescription!.cle, nom: A.name, chargeType: A.prescription!.charge_type } },
+    1: { statut: "terminee", validation: "bouton", dureeS: null, reps: 12, charge: null, exercice: B },
+  } };
+  const series = lignesDuJournal([{ ...A, sets: 4 }], marques, r);
+  const jr = await rpc("enregistrer_seance", { lancement_id: "88888888-8888-8888-8888-888888888888", proprietaire: U, titre: "Push", duree_s: 900, series });
+  const lu = (await q(`select serie, exercice_cle, exercice_prevu_cle, reps_declarees, charge, charge_unite, charge_type, statut
+    from series_realisees where workout_session_id=$1 order by serie`, [jr.id])).rows;
+  t("R3 · une ligne par série prévue", lu.length === 4);
+  t("R3 · série 1 : A, 10 × 16 kg par haltère, sans exercice prévu différent",
+    lu[0].exercice_cle === A.prescription!.cle && lu[0].reps_declarees === 10 && Number(lu[0].charge) === 16
+      && lu[0].charge_unite === "kg" && lu[0].charge_type === "par_haltere" && lu[0].exercice_prevu_cle === null, JSON.stringify(lu[0]));
+  t("R3 · série 2 : B gardée malgré le remplacement suivant, sans kilos, A comme prévu",
+    lu[1].exercice_cle === "pompes" && lu[1].reps_declarees === 12 && lu[1].charge === null && lu[1].charge_unite === null
+      && lu[1].charge_type === "poids_du_corps" && lu[1].exercice_prevu_cle === A.prescription!.cle, JSON.stringify(lu[1]));
+  t("R3 · séries restantes : C, non atteintes, rien de déclaré",
+    lu[2].exercice_cle === C.cle && lu[2].statut === "non_atteinte" && lu[2].reps_declarees === null && lu[2].charge === null
+      && lu[2].exercice_prevu_cle === A.prescription!.cle, JSON.stringify(lu[2]));
+  const rejeu = await rpc("enregistrer_seance", { lancement_id: "88888888-8888-8888-8888-888888888888", proprietaire: U, titre: "Push", duree_s: 900, series });
+  t("R3 · rejeu : même séance, aucune ligne de plus", rejeu.deja === true && rejeu.id === jr.id
+    && (await q(`select count(*)::int n from series_realisees where workout_session_id=$1`, [jr.id])).rows[0].n === 4);
+  /* Revenir à A efface le remplacement : les séries restantes refont A,
+     sans « exercice prévu » différent et sans charge reprise. */
+  const retour = remplacer(A, 0, r, { cle: A.prescription!.cle, nom: A.name, chargeType: A.prescription!.charge_type });
+  const lr = lignesDuJournal([{ ...A, sets: 4 }], marques, retour);
+  t("R3 · retour à A : séries restantes sur A, rien de transféré",
+    lr[2].exercice_cle === A.prescription!.cle && lr[2].exercice_prevu_cle === null && lr[2].charge === null
+      && lr[1].exercice_cle === "pompes");
+  t("R3 · le propriétaire est toujours vérifié", /proprietaire_different/.test(await err("enregistrer_seance",
+    { lancement_id: "99999999-9999-9999-9999-999999999999", proprietaire: V, duree_s: 60, series })));
+  const z = await rpc("enregistrer_seance", { lancement_id: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", proprietaire: U, duree_s: 60,
+    series: [{ ...series[0], charge: 0 }] });
+  t("R3 · une charge à zéro s'écrit inconnue, jamais zéro",
+    (await q(`select charge, charge_unite from series_realisees where workout_session_id=$1`, [z.id])).rows[0].charge === null);
+  const vieux = await rpc("enregistrer_seance", { lancement_id: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb", proprietaire: U, duree_s: 60,
+    series: [{ emplacement: 0, exercice_cle: null, exercice_nom: "x", serie: 1, statut: "terminee", mesure: "reps", reps_prescrites: 10, validation: "bouton" }] });
+  t("R3 · un journal d'avant R3 s'écrit encore, charge nulle",
+    (await q(`select charge, charge_type, exercice_prevu_cle from series_realisees where workout_session_id=$1`, [vieux.id])).rows
+      .every((x: Record<string, unknown>) => x.charge === null && x.charge_type === null && x.exercice_prevu_cle === null));
+}
 
 console.log(`${ok} OK, ${ko} échec(s)`);
 process.exit(ko === 0 ? 0 : 1);
