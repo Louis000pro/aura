@@ -45,12 +45,10 @@ import {
   datesEntre, ajouterJours, adaptationDuJour, etapeMasquee, idsMasques, libelleJour,
   type Adaptation,
 } from "@/lib/adaptation";
+import { lireProgrammeActif, lireOccurrences, type EtapeCycle } from "@/lib/programme";
+import { occurrenceSuivante } from "@/lib/occurrences";
 import {
-  lireProgrammeActif, etapeSuivante, positionConsommee,
-  type EtapeCycle,
-} from "@/lib/programme";
-import {
-  fetchRange, reservationDeLEtape, todayYmd, dayTitle, principale,
+  fetchRange, reservationDeLOccurrence, todayYmd, dayTitle, principale,
   type PlanningDay,
 } from "@/lib/planning";
 
@@ -148,11 +146,12 @@ async function lireContexte(userId: string) {
 /**
  * L'état du moteur, composé des autorités existantes.
  *
- * ⚠️ LE CURSEUR SE LIT UNE FOIS ET SE DÉRIVE DEUX FOIS. `etapeSuivanteDe`
- * ferait sa propre lecture à chaque appel, donc demander l'étape brute
- * PUIS l'étape compatible coûterait deux requêtes pour la même donnée.
- * On lit la position refermée (l'autorité, `positionConsommee`) et on
- * applique `etapeSuivante` (la règle, pure) avec puis sans le filtre.
+ * ⚠️ LES OCCURRENCES SE LISENT UNE FOIS ET SE DÉRIVENT DEUX FOIS (R6).
+ * `etapeSuivanteDe` ferait sa propre lecture à chaque appel, donc
+ * demander l'étape brute PUIS l'étape compatible coûterait deux lectures
+ * pour la même donnée. On lit les occurrences (l'autorité,
+ * `lireOccurrences`) et on applique `occurrenceSuivante` (la règle,
+ * pure) avec puis sans le filtre.
  */
 async function lireEtatMoteur(userId: string): Promise<EtatMoteur | null> {
   const aujourdhui = todayYmd();
@@ -173,7 +172,12 @@ async function lireEtatMoteur(userId: string): Promise<EtatMoteur | null> {
 
   try {
     const actif = await lireProgrammeActif(userId);
-    if (actif) {
+    /* ⚠️ LES OCCURRENCES SE LISENT AVANT DE RIEN AFFIRMER DU PROGRAMME.
+       Illisibles, le Guide ne dit rien du programme plutôt qu'une suite
+       inventée (tour 14). */
+    const occurrences = actif ? await lireOccurrences(userId, actif) : null;
+    if (actif && !occurrences) throw new Error("occurrences_indisponibles");
+    if (actif && occurrences) {
       programme = { id: actif.programme.id, nom: actif.programme.nom };
       cycle = actif.cycle.map((e) => ({ id: e.id, nom: e.nom, position: e.position }));
 
@@ -185,12 +189,11 @@ async function lireEtatMoteur(userId: string): Promise<EtatMoteur | null> {
         .map((id) => actif.cycle.find((e) => e.id === id)?.nom)
         .filter((n): n is string => !!n);
 
-      const position = await positionConsommee(userId, actif);
-      const depart = actif.programme.positionInitiale;
-      const brute = etapeSuivante(actif.cycle, position, depart);
-      const compatible = etapeSuivante<EtapeCycle>(
-        actif.cycle, position, depart, (e) => etapeMasquee(e.id, adaptation),
+      const brute = occurrenceSuivante(actif.cycle, occurrences)?.etape ?? null;
+      const suivante = occurrenceSuivante<EtapeCycle>(
+        actif.cycle, occurrences, (e) => etapeMasquee(e.id, adaptation),
       );
+      const compatible = suivante?.etape ?? null;
       if (brute) etapeBrute = { id: brute.id, nom: brute.nom };
       if (compatible) etape = { id: compatible.id, nom: compatible.nom };
 
@@ -198,8 +201,8 @@ async function lireEtatMoteur(userId: string): Promise<EtatMoteur | null> {
          CHARGÉE. Une étape datée au-delà de sept jours est hors de tout
          ce qu'on vient de lire : la chercher là rendrait le défaut
          intermittent, c'est-à-dire pire qu'un défaut franc. */
-      if (compatible) {
-        const r = await reservationDeLEtape(userId, compatible.id);
+      if (suivante) {
+        const r = await reservationDeLOccurrence(userId, actif.programme.id, suivante.rang);
         reserveLe = r?.date ?? null;
       }
     }

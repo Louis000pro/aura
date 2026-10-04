@@ -36,11 +36,9 @@ import {
   adaptationDuJour, etapeMasquee, libelleJour,
   type Adaptation,
 } from "@/lib/adaptation";
-import {
-  etapeSuivante, lireProgrammeActif, positionConsommee,
-  type EtapeCycle,
-} from "@/lib/programme";
-import { reservationDeLEtape, todayYmd, type PlanningDay } from "@/lib/planning";
+import { lireProgrammeActif, lireOccurrences, type EtapeCycle } from "@/lib/programme";
+import { occurrenceSuivante, positionDerniereFermee } from "@/lib/occurrences";
+import { reservationDeLOccurrence, todayYmd, type PlanningDay } from "@/lib/planning";
 import { etapeParNom, type EtapeNommee } from "@/lib/gestePlanning";
 
 /* ═══════════════════ La décision, pure ═══════════════════ */
@@ -259,6 +257,8 @@ export type EtapeVisee = {
   programmeId: string;
   /** L'étape que le geste va refermer. */
   etape: EtapeCycle;
+  /** R6 · l'occurrence qu'il va refermer : la prochaine, jamais une autre. */
+  rang: number;
   /** Ce que devient la prochaine étape UNE FOIS celle-ci refermée. */
   apres: EtapeCycle | null;
   /**
@@ -325,11 +325,17 @@ export async function viserEtape(
   if (!actif || actif.cycle.length === 0) return { ok: false, refus: "aucun_programme" };
 
   const adaptation = await adaptationDuJour(userId, actif.programme.id, todayYmd());
-  const position = await positionConsommee(userId, actif);
-  const depart = actif.programme.positionInitiale;
-  const compatible = etapeSuivante<EtapeCycle>(
-    actif.cycle, position, depart, (e) => etapeMasquee(e.id, adaptation),
-  );
+  /* R6 · les occurrences se lisent une fois, fraîches : une écriture en
+     dépend. La « dernière fermée » garde le garde-fou du double saut. */
+  const occurrences = await lireOccurrences(userId, actif);
+  /* ⚠️ SANS LECTURE FIABLE, AUCUN GESTE DE CYCLE NE SE PRÉPARE (tour 14).
+     Un programme lu de travers ressemblerait à un programme neuf, et la
+     carte proposerait de réserver ou de passer une occurrence fausse. */
+  if (!occurrences) return { ok: false, refus: "illisible" };
+  const position = positionDerniereFermee(actif.cycle, occurrences);
+  const masque = (e: EtapeCycle) => etapeMasquee(e.id, adaptation);
+  const suivante = occurrenceSuivante<EtapeCycle>(actif.cycle, occurrences, masque);
+  const compatible = suivante?.etape ?? null;
 
   const cycleNomme: EtapeNommee[] = actif.cycle.map((e) => ({ id: e.id, nom: e.nom }));
   const demande = cibleDemandee({ designation, nom }, cycleNomme);
@@ -371,6 +377,9 @@ export async function viserEtape(
   }
 
   const visee = etape as EtapeCycle;
+  /* Le verdict a vérifié que l'étape visée EST la prochaine compatible :
+     son occurrence est donc celle de `suivante`. */
+  const rang = (suivante as { rang: number }).rang;
 
   /* ⚠️ LA RÉSERVATION SE CHERCHE EN BASE, JAMAIS DANS LA SEMAINE
      CHARGÉE. Une étape datée au-delà de la fenêtre affichée est hors de
@@ -384,21 +393,19 @@ export async function viserEtape(
      de V7A, par un autre chemin. */
   let reservation: PlanningDay | null;
   try {
-    reservation = await reservationDeLEtape(userId, visee.id);
+    reservation = await reservationDeLOccurrence(userId, actif.programme.id, rang);
   } catch (e) {
     console.warn("[etapeCiblee] réservation illisible :", (e as Error)?.message);
     return { ok: false, refus: "illisible", nom: visee.nom };
   }
 
-  /* Ce que devient la prochaine étape une fois celle-ci refermée : on
-     dérive depuis SA position, avec le même filtre d'adaptation. La
+  /* Ce que devient la prochaine occurrence une fois celle-ci refermée :
+     même calcul, cette occurrence comptée comme fermée, rien d'écrit. La
      carte peut donc NOMMER la suite avant le clic. */
-  const apres = etapeSuivante<EtapeCycle>(
-    actif.cycle, visee.position, depart, (e) => etapeMasquee(e.id, adaptation),
-  );
+  const apres = occurrenceSuivante<EtapeCycle>(actif.cycle, occurrences, masque, [rang])?.etape ?? null;
 
   return {
     ok: true,
-    visee: { programmeId: actif.programme.id, etape: visee, apres, reservation, adaptation },
+    visee: { programmeId: actif.programme.id, etape: visee, rang, apres, reservation, adaptation },
   };
 }

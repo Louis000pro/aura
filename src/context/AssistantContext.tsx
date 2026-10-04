@@ -1087,8 +1087,9 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       sessionId: contenu.sessionId,
       status: "planned",
       programmeId,
-      /* CE QUI EST REFERMÉ : l'étape, déclarée. */
+      /* CE QUI EST REFERMÉ : l'étape, déclarée, et son occurrence (R6). */
       etapeId: etape.id,
+      rang: visee.rang,
       /* ⚠️ D'OÙ VIENT LE CONTENU : d'AILLEURS, donc `null`. C'est
          exactement le cas que `lienProgramme` ne savait pas représenter
          avant V9C, puisqu'il déduisait la provenance de la consommation.
@@ -1146,6 +1147,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
         etape: { id: etape.id, nom: etape.nom },
         reservationId: reservation?.id ?? null,
         adaptationId: adaptation?.id ?? null,
+        rang: res.visee.rang,
       },
       /* Un saut n'a aucun contenu : pas d'aperçu, donc pas de liste de
          mouvements dépliable. Ce n'est pas une séance. */

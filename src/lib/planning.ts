@@ -97,6 +97,13 @@ export interface PlanningDay {
    */
   provenanceId?: string | null;
   /**
+   * R6 · L'OCCURRENCE que la ligne réserve ou ferme (son rang dans le
+   * programme). Elle n'existe qu'avec `etapeId`. Absente d'une intention
+   * fabriquée sans elle : la base (`attribuer_rang`) donne alors la première
+   * occurrence libre de l'étape. Relue, pour qu'un déplacement la garde.
+   */
+  rang?: number | null;
+  /**
    * V8 · L'ADAPTATION SOUS LAQUELLE CETTE INTENTION A ÉTÉ MATÉRIALISÉE.
    *
    * ⚠️ ELLE TRACE, ELLE NE DÉCIDE RIEN. Aucune lecture ne s'en sert pour
@@ -569,25 +576,57 @@ export async function schemaIntentions(client?: ClientLike): Promise<SchemaInten
    sert qu'à tracer.
 
    Une requête par session, mémorisée, et le repli est le comportement
-   d'avant V8 : pas de colonne, pas d'adaptation, l'app d'hier. */
-let adaptationsResolu: boolean | null = null;
-let sondageAdaptations: Promise<boolean> | null = null;
+   d'avant V8 : pas de colonne, pas d'adaptation, l'app d'hier.
 
-export async function adaptationsDisponibles(client?: ClientLike): Promise<boolean> {
+   ⚠️ R6 · TROIS RÉPONSES, PAS DEUX. Une table ABSENTE (PostgreSQL 42P01,
+   PostgREST PGRST205) est une réponse : elle se mémorise. Une panne
+   (délai dépassé, réseau, refus d'accès) ne prouve rien : elle rend
+   `inconnue` et ne se mémorise PAS, donc la lecture suivante sonde à
+   nouveau. Mémoriser une panne comme une absence ferait passer, pour toute
+   la session, une adaptation réelle pour « aucune adaptation ». */
+export type EtatTableAdaptations = "presente" | "absente" | "inconnue";
+
+/** Pure : ce que dit la réponse du sondage. */
+export function classerSondageAdaptations(error: unknown): EtatTableAdaptations {
+  if (!error) return "presente";
+  const e = error as { code?: string; message?: string };
+  /* Les deux codes seulement, jamais le texte : « column … does not
+     exist » (42703) ne prouve pas l'absence de la table. */
+  return e.code === "42P01" || e.code === "PGRST205" ? "absente" : "inconnue";
+}
+
+let adaptationsResolu: Exclude<EtatTableAdaptations, "inconnue"> | null = null;
+let sondageAdaptations: Promise<EtatTableAdaptations> | null = null;
+
+export async function etatTableAdaptations(client?: ClientLike): Promise<EtatTableAdaptations> {
   if (adaptationsResolu !== null) return adaptationsResolu;
   if (sondageAdaptations) return sondageAdaptations;
   sondageAdaptations = (async () => {
+    let etat: EtatTableAdaptations;
     try {
       const c = client ?? (createClient() as unknown as ClientLike);
       const { error } = await c.from("adaptations_entrainement").select("id").limit(1);
-      adaptationsResolu = !error;
+      etat = classerSondageAdaptations(error);
     } catch {
-      adaptationsResolu = false;
+      etat = "inconnue";
     }
+    if (etat !== "inconnue") adaptationsResolu = etat;
     sondageAdaptations = null;
-    return adaptationsResolu;
+    return etat;
   })();
   return sondageAdaptations;
+}
+
+/** Lecture souple : seule une table confirmée compte. Une panne vaut
+ *  `false` pour CET appel (on lit sans la colonne), jamais pour la session. */
+export async function adaptationsDisponibles(client?: ClientLike): Promise<boolean> {
+  return (await etatTableAdaptations(client)) === "presente";
+}
+
+/** Pour le banc : oublie ce que le sondage a mémorisé. */
+export function oublierSondageAdaptations(): void {
+  adaptationsResolu = null;
+  sondageAdaptations = null;
 }
 
 /** Les colonnes à demander, avec le bon nom de statut.
@@ -597,7 +636,7 @@ export async function adaptationsDisponibles(client?: ClientLike): Promise<boole
  *  désigner celle qu'on modifie, et de quoi ordonner celles d'une même
  *  journée. `etape_consommee_id` porte la hiérarchie (l'étape d'abord). */
 function colonnes(s: SchemaIntentions, avecAdaptation: boolean): string {
-  return `id, date, type, title, difficulty, location, exercise_list, session_id, programme_id, programme_seance_id, etape_consommee_id, origine, created_at, ${s.colStatut}`
+  return `id, date, type, title, difficulty, location, exercise_list, session_id, programme_id, programme_seance_id, etape_consommee_id, rang, origine, created_at, ${s.colStatut}`
     + (avecAdaptation ? ", adaptation_id" : "");
 }
 
@@ -614,6 +653,7 @@ interface PlanningRow {
   programme_id?: string | null;
   programme_seance_id?: string | null;
   etape_consommee_id?: string | null;
+  rang?: number | null;
   adaptation_id?: string | null;
   origine?: string | null;
   created_at?: string | null;
@@ -650,6 +690,8 @@ function rowToDay(r: PlanningRow, s: SchemaIntentions): PlanningDay {
        effacerait la provenance, et l'adaptation cesserait de voir le
        conflit dès qu'on aurait bougé la séance d'un jour. */
     provenanceId: r.programme_seance_id ?? null,
+    /* R6 · relue pour la même raison : un déplacement garde l'occurrence. */
+    rang: r.rang ?? null,
     adaptationId: r.adaptation_id ?? null,
     /* ⚠️ RELUE EN V9B, ET SANS ELLE « refais ma semaine » NE PEUT PAS
        FAIRE LA DIFFÉRENCE entre le mobilier qu'il a le droit de retirer
@@ -723,16 +765,21 @@ export function refModele(sessionId: string | null | undefined): string | null {
  * par une séance du catalogue lui ferait alors refermer une étape que
  * personne ne lui a confiée.
  */
-export function lienProgramme(d: Pick<PlanningDay, "programmeId" | "etapeId" | "provenanceId">) {
+export function lienProgramme(d: Pick<PlanningDay, "programmeId" | "etapeId" | "provenanceId" | "rang">) {
   const prog = d.programmeId ?? null;
   /* D'OÙ VIENT LE CONTENU : ce que l'appelant DÉCLARE, et rien d'autre. */
   const provenance = prog ? d.provenanceId ?? null : null;
   /* QUELLE ÉTAPE EST REFERMÉE : seulement si on a déclaré la réserver. */
   const consommee = prog ? d.etapeId ?? null : null;
+  /* R6 · QUELLE OCCURRENCE. Écrite quand on la connaît ; omise sinon, et
+     c'est voulu : la base garde celle d'une ligne déplacée, et en donne une
+     à une ligne neuve. Sans étape, elle tombe avec elle. */
+  const rang = consommee ? d.rang ?? undefined : null;
   return {
     programme_id: provenance || consommee ? prog : null,
     programme_seance_id: provenance,
     etape_consommee_id: consommee,
+    ...(rang === undefined ? {} : { rang }),
   };
 }
 
@@ -1376,6 +1423,35 @@ export async function retirerIntention(userId: string, intentionId: string | nul
  * la terminer écrivait une SECONDE ligne portant la même étape. Pour
  * qu'il puisse dire « Push · mardi 8 » et lancer CETTE intention-là, il
  * lui faut sa date et son contenu, pas seulement sa clé.
+ */
+/**
+ * R6 · LA RÉSERVATION D'UNE OCCURRENCE PRÉCISE. C'est la clé de
+ * l'invariant `uniq_occurrence` : une occurrence = une ligne.
+ */
+export async function reservationDeLOccurrence(
+  userId: string, programmeId: string, rang: number,
+): Promise<PlanningDay | null> {
+  const supabase = createClient();
+  const sc = await schemaIntentions();
+  const avecAdaptation = await adaptationsDisponibles();
+  const { data, error } = await supabase
+    .from(sc.table)
+    .select(colonnes(sc, avecAdaptation))
+    .eq("user_id", userId)
+    .eq("programme_id", programmeId)
+    .eq("rang", rang)
+    .eq(sc.colStatut, sc.versBase.planned)
+    .limit(1);
+  if (error) throw new Error(error.message);
+  const ligne = (data ?? [])[0];
+  return ligne ? rowToDay(ligne as unknown as PlanningRow, sc) : null;
+}
+
+/**
+ * La réservation en cours d'une ÉTAPE, quelle que soit son occurrence.
+ * Ne sert plus qu'au repli d'une finalisation préparée avant R6 (sa cible
+ * ne connaît pas de rang) : tant que `uniq_intention_par_etape` tient,
+ * une étape n'a qu'une réservation à la fois.
  */
 export async function reservationDeLEtape(userId: string, etapeId: string): Promise<PlanningDay | null> {
   const supabase = createClient();

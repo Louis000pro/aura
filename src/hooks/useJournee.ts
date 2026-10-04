@@ -27,16 +27,16 @@ import { createClient } from "@/lib/supabase";
 import { levelToDifficulty } from "@/lib/assistantActions";
 import { heroImageForSeance } from "@/lib/workoutArt";
 import { EVT_JOURNEE } from "@/lib/finSeance";
-import { etatJournee, intentionDeLEtape, lancementDuJour, libelleReservation, repetitionDuJour } from "@/lib/journee";
+import { avecEtapeVerifiee, type ContexteEtape, etatJournee, intentionDeLEtape, lancementDuJour, libelleReservation, repetitionDuJour } from "@/lib/journee";
 import {
-  lireSemaine, ajouterIntention, saveDay, reservationDeLEtape, hasSeance, loadLieu, readVariant, ctxFromLieu,
+  lireSemaine, ajouterIntention, saveDay, reservationDeLOccurrence, hasSeance, loadLieu, readVariant, ctxFromLieu,
   weekDates, todayYmd, dayTitle, parDate, principale, supplements, seancesDuJour,
   weekdayIndex, prochainsJours, instanceDeLEtape,
   type PlanningDay, type GenInput, type CycleSemaine,
 } from "@/lib/planning";
 import {
   getOrCreateProgramme, lireProgrammeActif, etapeSuivanteDe,
-  type EtapeCycle, type ProgrammeEtCycle,
+  type EtapeOccurrence, type ProgrammeEtCycle,
 } from "@/lib/programme";
 import {
   adaptationDuJour, etapeMasquee, etapesCompatibles, idsMasques, libelleJour,
@@ -63,7 +63,7 @@ export type Journee = {
   jour: PlanningDay | null;
   /** Ce qui vient EN PLUS aujourd'hui (V6b). */
   extras: PlanningDay[];
-  etape: EtapeCycle | null;
+  etape: EtapeOccurrence | null;
   /** La réservation EN ATTENTE de l'étape suivante, où qu'elle soit datée
    *  (elle vit souvent hors de la semaine chargée). `null` = l'étape n'a
    *  pas encore de jour, et « quand tu veux » est alors la vérité. */
@@ -124,7 +124,7 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
   const [besoinSetup, setBesoinSetup] = useState(false);
   const [programme, setProgramme] = useState<ProgrammeEtCycle | null>(null);
   const [gen, setGen] = useState<GenInput | null>(null);
-  const [etape, setEtape] = useState<EtapeCycle | null>(null);
+  const [etape, setEtape] = useState<EtapeOccurrence | null>(null);
   const [reservation, setReservation] = useState<PlanningDay | null>(null);
   const [adaptation, setAdaptation] = useState<Adaptation | null>(null);
   const [niveau, setNiveau] = useState<string | null>(null);
@@ -205,7 +205,11 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
          la semaine chargée ne suffit pas : depuis que le sélecteur
          propose quinze jours, elle vit souvent au-delà. Une requête, sur
          la clé de l'invariant lui-même, et seulement s'il y a une étape. */
-      setReservation(suivante ? await reservationDeLEtape(user.id, suivante.id) : null);
+      /* R6 · LA RÉSERVATION DE CETTE OCCURRENCE-LÀ, pas de l'étape en
+         général : une occurrence = une ligne (`uniq_occurrence`). */
+      setReservation(suivante && actif
+        ? await reservationDeLOccurrence(user.id, actif.programme.id, suivante.rang)
+        : null);
     } catch (e) {
       console.error("Programme load error", e);
     }
@@ -307,6 +311,44 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
     return () => { annule = true; };
   }, [etat, user, today]);
 
+  /* R6 · tours 15 et 16 · UN GESTE SUR L'ÉTAPE AFFICHÉE SE FAIT SUR UN
+     CONTEXTE RELU, JAMAIS SUR CE QUE L'ÉCRAN GARDAIT. Le contexte entier
+     (programme, occurrence, étape, adaptation tracée, étapes masquées) est
+     relu en mode STRICT : une adaptation illisible n'est pas une
+     adaptation absente. Différent de l'affiché → refus, l'écran se relit. */
+  type ContexteHook = ContexteEtape & { occ: EtapeOccurrence; adaptationLue: Adaptation | null };
+  const contexteAffiche = useMemo<ContexteHook | null>(() => (
+    etape && programme ? {
+      programmeId: programme.programme.id,
+      etapeId: etape.id, rang: etape.rang, nom: etape.nom,
+      adaptationId: adaptation?.id ?? null,
+      masquees: idsMasques(programme.cycle, adaptation),
+      occ: etape, adaptationLue: adaptation,
+    } : null
+  ), [etape, programme, adaptation]);
+
+  const relireContexte = useCallback(async (): Promise<ContexteHook | null> => {
+    if (!user || !programme) return null;
+    const actif = await lireProgrammeActif(user.id);
+    if (!actif || actif.programme.id !== programme.programme.id) return null;
+    const couche = await adaptationDuJour(user.id, actif.programme.id, todayYmd(), "stricte");
+    const occ = await etapeSuivanteDe(user.id, actif, (e) => etapeMasquee(e.id, couche));
+    if (!occ) return null;
+    return {
+      programmeId: actif.programme.id,
+      etapeId: occ.id, rang: occ.rang, nom: occ.nom,
+      adaptationId: couche?.id ?? null,
+      masquees: idsMasques(actif.cycle, couche),
+      occ, adaptationLue: couche,
+    };
+  }, [user, programme]);
+
+  /* Refusé : on le dit, et on relit pour que l'écran montre la vraie suite. */
+  const refuser = useCallback((raison: "illisible" | "changee") => {
+    console.warn("[journee] étape non vérifiée :", raison);
+    if (typeof window !== "undefined") window.dispatchEvent(new Event(EVT_JOURNEE));
+  }, []);
+
   const lancerIntention = useCallback((d: PlanningDay, options?: { repetition?: boolean }) => {
     if (!hasSeance(d)) return;
     const titre = dayTitle(d);
@@ -360,27 +402,34 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
        terminée, il n'en reste aucune trace. */
     if (!quoi || !etape || !programme) return;
     const difficulte = levelToDifficulty(gen?.level ?? null);
-    launchWorkout({
-      sessionId: `etape-${etape.id}`,
-      title: etape.nom,
-      duration: etape.dureeMin ?? 45,
+    /* ⚠️ UNE ÉTAPE LIBRE FERMERA UNE OCCURRENCE À LA FIN : on vérifie
+       qu'elle est toujours la suite avant de la lancer (tour 15). */
+    if (!contexteAffiche) return;
+    void avecEtapeVerifiee(contexteAffiche, relireContexte, (c) => launchWorkout({
+      sessionId: `etape-${c.etapeId}`,
+      title: c.nom,
+      duration: c.occ.dureeMin ?? 45,
       difficulty: difficulte,
       category: "Force",
-      heroImage: heroImageForSeance({ title: etape.nom }),
+      heroImage: heroImageForSeance({ title: c.nom }),
       exerciseList: instance,
       cible: {
         genre: "etape",
-        programmeId: programme.programme.id,
-        etapeId: etape.id,
-        adaptationId: adaptation?.id ?? null,
+        programmeId: c.programmeId,
+        etapeId: c.etapeId,
+        /* R6 · l'occurrence est FIGÉE au lancement (décision 22) : la fin
+           de séance ferme celle-ci, même si une autre a été fermée
+           entre-temps. */
+        rang: c.rang,
+        adaptationId: c.adaptationId,
         type: "Force",
-        title: etape.nom,
+        title: c.nom,
         difficulty: difficulte,
         location: gen?.ctx ?? null,
         exerciseList: instance,
       },
-    });
-  }, [jour, reservation, lancerIntention, etape, instance, programme, adaptation, gen, launchWorkout]);
+    })).then((v) => { if (!v.ok) refuser(v.raison); });
+  }, [jour, reservation, lancerIntention, etape, instance, programme, gen, launchWorkout, contexteAffiche, relireContexte, refuser]);
 
   /* ⚠️ LE SEUL ENDROIT DU PRODUIT QUI DATE UNE ÉTAPE, ET DONC LE SEUL
      QUI CRÉE UNE INTENTION PORTANT SON LIEN VERS LE PROGRAMME. Sans ce
@@ -400,33 +449,42 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
        hors de la semaine courante, donc hors de tout ce que cet écran a
        lu : la chercher là aurait rendu le défaut intermittent, ce qui
        est pire qu'un défaut franc. */
+    if (!contexteAffiche) return false;
+    let v;
     try {
+      /* ⚠️ L'ÉTAPE AFFICHÉE PEUT ÊTRE UN AFFICHAGE CONSERVÉ (tour 15) :
+         on relit la suite avant d'écrire, et on refuse si on ne sait pas.
+         Chercher la réservation ne remplace pas lire les occurrences. */
+      v = await avecEtapeVerifiee(contexteAffiche, relireContexte, async (c) => {
       /* La lecture est DANS le `try` : elle interroge la base comme
          l'écriture, donc elle échoue de la même façon. */
-      const dejaPosee = await reservationDeLEtape(user.id, etape.id);
+      const dejaPosee = await reservationDeLOccurrence(user.id, c.programmeId, c.rang);
       const voulue = {
         ...intentionDeLEtape({
           date,
-          programmeId: programme.programme.id,
-          etape: { id: etape.id, nom: etape.nom },
+          programmeId: c.programmeId,
+          etape: { id: c.etapeId, nom: c.nom },
+          rang: c.rang,
           difficulty: levelToDifficulty(gen?.level ?? null),
           location: gen?.ctx ?? null,
           exerciseList: instance,
-          adaptationId: adaptation?.id ?? null,
+          adaptationId: c.adaptationId,
         }),
         id: dejaPosee?.id ?? null,
       };
       if (voulue.id) await saveDay(user.id, voulue, "utilisateur");
       else await ajouterIntention(user.id, voulue, "utilisateur");
+      });
     } catch (e) {
       console.error("[journee] impossible de dater l'étape :", e);
       return false;
     }
+    if (!v.ok) { refuser(v.raison); return false; }
     /* Les deux écrans se remettent d'accord : la semaine gagne une ligne,
        et le héros passe de « quand tu veux » à la journée qui la porte. */
     if (typeof window !== "undefined") window.dispatchEvent(new Event(EVT_JOURNEE));
     return true;
-  }, [user, etape, programme, instance, adaptation, gen]);
+  }, [user, etape, programme, instance, gen, contexteAffiche, relireContexte, refuser]);
 
   return {
     etat, jour, extras, etape, reservation,

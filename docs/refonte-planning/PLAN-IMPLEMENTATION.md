@@ -164,3 +164,138 @@ Trois témoins vérifiés.
 5. **SQL appliqué et exercé** : aucun doublon préalable dans `challenge_actions` ni `posts` ; 14 scénarios sous le rôle `authenticated` (comptes A et B réels), transaction annulée, tous conformes. Reste : l'essai simultané depuis deux sessions, qui demande une écriture réelle puis un nettoyage (accord de Louis requis).
 
 `check:programme` : 691 contrôles, trois témoins vérifiés. La fermeture transactionnelle reste prévue en R6.
+
+## R6 · codée (2026-10-04), en attente de la relecture de Codex et de la migration
+
+**Le modèle.** Chaque passage dans l'ordre du cycle est une occurrence, identifiée par son rang dans le programme : Push₁ = 1, Pull₁ = 2, …, Push₂ = k + 1. L'étape d'un rang se déduit de l'ordre du cycle ; la base la vérifie au lieu de la stocker deux fois.
+
+**La suite.** Elle se calcule depuis les occurrences encore ouvertes (`occurrenceSuivante`, `src/lib/occurrences.ts`), plus depuis la dernière étape faite. Deux bornes :
+- **Le plancher** (`programmes.rang_depart`) : aucune occurrence plus basse n'est proposée.
+- **Un tour de cycle** derrière la plus lointaine occurrence fermée. Au-delà, une occurrence non faite n'est pas due (décision 35). Sans cette borne, quatre semaines d'adaptation sur Push laisseraient quatre Push à rattraper.
+
+**Les quatre critères de Codex :**
+1. **C₁ avant B₁ laisse B₁ proposée.** En base, une fermeture de B écrite sans rang reçoit B₁ (`attribuer_rang`).
+2. **Déplacer garde l'identité.** Le rang est relu et réécrit tel quel. Une mise à jour qui ne le donne pas le laisse en place. Changer l'étape le recalcule.
+3. **Rejouer ne consomme rien deux fois.** C'est `uniq_occurrence` : une occurrence = une ligne. Une réservation devient la fermeture, sur la même ligne. Une seconde fermeture rend `doublon`, donc `deja`.
+4. **Refaire une séance** n'a pas de cible : un journal, aucune ligne qui porte un rang.
+
+**La migration** (`20261004_r6_occurrences.sql`) :
+- **Les intentions existantes gardent leur sens.** Aucun statut, aucune date et aucun `consommee_le` ne sont touchés. Chaque fermeture reçoit le rang que l'ancien curseur lui donnait, et le plancher est posé sur l'occurrence qu'il proposait. Le banc rejoue cette reprise sur 1 200 historiques produits par l'ancien moteur : la prochaine séance reste la même, avec 0 écart.
+- **Une finalisation R1 encore en attente reste récupérable.** Sa cible n'a pas de rang : la réservation se cherche alors par étape, et le déclencheur donne le rang à l'insertion.
+- **L'ancien code en production reste compatible.** Ses écritures sans rang en reçoivent un.
+- **À appliquer avant le code**, qui lit et écrit `rang`.
+- `uniq_intention_par_etape` reste en place jusqu'au placement groupé (décision 14).
+
+**Changement à valider :** une étape masquée par une adaptation reste due une fois, dans la limite d'un tour. À la fin de l'adaptation, la dernière occurrence non faite est proposée, puis le cycle reprend sans rattrapage. L'ancien moteur la renvoyait au tour suivant.
+
+**Ce que R6 ne fait pas encore :** réserver une occurrence qui n'est pas la prochaine. Aucun écran ne le propose : c'est le placement groupé (décision 14). Le modèle, la base et la fermeture l'acceptent déjà.
+
+**Vérifications.**
+- `check:programme` : 724 contrôles, trois témoins vérifiés (fenêtre retirée, ancien curseur, rang non transmis).
+- Typecheck, build, et eslint à 93, identique règle par règle.
+- **Scénarios joués sur la vraie base le 2026-10-04**, migration comprise, dans une transaction annulée collée par Louis (`r6-scenarios-base.sql`). Tous conformes :
+  - **M1 :** l'empreinte des 261 intentions est identique avant et après la migration.
+  - **M2 :** les rangs repris sont `1,4,5,6` avec un départ à 7, puis `1,2,3,4` avec un départ à 5. La réservation existante reçoit le rang 1, et plus aucune ligne n'a d'étape sans rang.
+  - **S1 :** A, puis C, puis B reçoivent les rangs 5, 7 et 6.
+  - **S2 :** une réservation déplacée puis fermée garde son rang 8.
+  - **S3 :** le rejeu est refusé par `uniq_intention_lancement`, la double fermeture par `uniq_occurrence`.
+  - **S4 :** un rang incohérent avec son étape est refusé.
+  - **S5 :** une répétition n'a pas de rang et le plancher ne bouge pas.
+  - **S6 :** changer l'étape recalcule le rang (Haut 9 devient Push 11).
+  - **S7 :** l'autre compte voit 0 ligne et son écriture est refusée. Le refus vient du déclencheur (`occurrence_sans_cycle`, 23514), qui ne voit pas le cycle d'autrui, avant même la RLS.
+- Reste à faire après l'application : l'essai simultané réel (deux fermetures sans rang sur le même programme), puis le nettoyage.
+
+### R6 · corrections du tour 14 de Codex (2026-10-04)
+
+1. **La borne globale « un tour derrière la plus lointaine fermeture » est retirée.** Elle faisait disparaître B₁ sans adaptation (A₁, C₁, A₂, C₂ fermées → B₂ proposée), contre la décision 35. Remplacée par une **base par étape** (`baseEtape` en TypeScript, `rang_base` en SQL) : une étape jamais fermée reste due depuis le plancher, sans limite ; fermée à l'heure, elle repart juste après ; fermée **en retard** (la suite avait déjà dépassé son occurrence suivante), elle rejoint la suite au lieu de rattraper. Une étape a donc **au plus une occurrence en attente**, et une adaptation ne fabrique pas de pile. Une **réservation** est l'occurrence en attente de son étape et garde sa place jusqu'à sa résolution (`EtatOccurrences.reserves`).
+2. **Une lecture d'occurrences ratée rend `null`**, plus un programme neuf. `viserEtape` refuse (`illisible`), `etapeSuivanteDe` lève (le héros garde son affichage précédent), le Guide ne dit rien du programme. Une séance déjà lancée garde sa cible et reste finalisable.
+3. Banc : 733 contrôles. Témoins vérifiés : sans la notion de retard (3 échecs), avec l'ancienne borne globale (3 échecs).
+4. S7 : le refus attendu est `23514` (`occurrence_sans_cycle`, le déclencheur ne voit pas le cycle d'autrui), pas `42501`.
+5. À rejouer sur la base : `r6-test-a-coller.sql` (ajout de S8, les bases par étape, attendu 6,7,8,9). Après application : essai simultané réel, et deux fermetures au même rang explicite (une seule fermeture, les deux séances dans le journal).
+
+### R6 · corrections du tour 15 de Codex (2026-10-04)
+
+- **Base réelle, nouvelle règle :** M1 à S7 inchangés et conformes, S8 `rang_base` = 6, 7, 8, 9 comme attendu.
+- **Affichage conservé ≠ cible vérifiée.** `avecEtapeVerifiee` (`journee.ts`) relit programme, adaptation et occurrences avant de dater l'étape ou de lancer une étape libre. Lecture ratée ou suite changée : refus, et l'écran se relit (`EVT_JOURNEE`). Une séance déjà lancée garde sa cible. Test comportemental au banc (affichage chargé → fermeture ailleurs → rafraîchissement raté → réservation tentée : zéro écriture).
+- **Date inconnue :** une vraie fermeture sans `consommee_le` ne déclare aucun retard, comme `<` avec NULL en SQL ; seule la fermeture imaginée de l'aperçu (`simulee`) a lieu « à l'instant ». En base le cas n'existe pas (`intentions_consommee_check`), S8b le vérifie.
+- Banc : 739 contrôles. Témoins : date inconnue traitée comme « maintenant » (1 échec), repli sur l'affichage conservé (3 échecs).
+
+### R6 · corrections du tour 16 de Codex (2026-10-04)
+
+- **Lecture stricte de l'adaptation avant un geste.** `lireAdaptations` / `adaptationDuJour` prennent un mode : `souple` pour l'affichage (une panne vaut « aucune », comportement V8 conservé), `stricte` avant de dater ou de lancer une étape (une panne lève → refus `illisible`). La décision vit dans `interpreterLectureAdaptations`, pure, que le banc rejoue avec une réponse d'erreur de la base.
+- **Le geste se fait sur le contexte relu, jamais sur l'affiché.** `ContexteEtape` = programme, étape, rang, nom, adaptation tracée, étapes masquées ; `avecEtapeVerifiee` compare le contexte entier et ne passe à l'action QUE le contexte relu. Même occurrence avec une autre adaptation, ou une étape renommée : refus `changee`.
+- Banc : 744 contrôles. Témoins : panne d'adaptation lue comme « aucune » (6 échecs), comparaison limitée à l'occurrence (4 échecs).
+
+### R6 · correction du tour 17 de Codex (2026-10-04)
+
+- **Le sondage de la table d'adaptations a trois réponses, pas deux.** `etatTableAdaptations` rend `presente`, `absente` (PostgreSQL 42P01 ou PostgREST PGRST205 : prouvé, mémorisé pour la session) ou `inconnue` (délai, réseau, refus d'accès : rien n'est prouvé, rien n'est mémorisé, la lecture suivante sonde à nouveau). Avant, toute erreur devenait `false` pour toute la session, et la lecture stricte rendait `[]` avant même d'interpréter quoi que ce soit.
+- `lireAdaptations` en mode strict lève sur `inconnue` (le geste est refusé `illisible`) ; une table absente reste « aucune ». `adaptationsDisponibles` (choix des colonnes, lecture souple) vaut `presente`, sans mémoriser une panne.
+- Banc : 750 contrôles. Le test traverse le vrai sondage et la vraie lecture avec un faux client : panne → `illisible`, zéro écriture ; rétablissement → nouveau sondage, l'adaptation est lue et le geste refusé `changee` ; table absente → « aucune », un seul sondage pour deux lectures. Témoins : mémoriser la panne (2 échecs), avaler la panne en strict (2 échecs).
+- Tour 18 : le classement ne lit plus le texte du message, seulement les codes `42P01` et `PGRST205`. Contre-exemple au banc : `42703` (« column … does not exist ») reste `inconnue` et la lecture stricte échoue. 751 contrôles ; témoin (classement par texte remis) : 2 échecs.
+
+### R6 · vérifications sur la vraie base (2026-10-04)
+
+- **Migration `20261004_r6_occurrences.sql` appliquée par Louis**, vérifiée en lecture : colonnes `rang` et `rang_depart`, déclencheur `intentions_attribuer_rang`, index `uniq_occurrence`, 4 contraintes, `rang_minimal` supprimée, 0 ligne portant une étape sans rang, 0 programme sans plancher.
+- **S8b** : une fermeture `faite` sans `consommee_le` est refusée (23514, `intentions_consommee_check`), rien n'est écrit.
+- **Même rang explicite** (A, rang 7, deux journaux écrits d'abord) : la première fermeture passe, la seconde est refusée (23505, `uniq_occurrence`) ; 1 fermeture au rang 7, 2 journaux conservés. Transaction annulée.
+- **Deux fermetures simultanées sans rang** (deux onglets du SQL Editor, le premier gardant sa transaction ouverte 15 s) : le second attend le verrou consultatif puis reçoit le rang suivant de son étape. Résultat : 7 et 10, sans erreur (rangs 1 et 4 déjà pris).
+- Lignes de test supprimées : programme, étapes et intentions à 0.
+
+### R6 · validée (tour 19 de Codex, 2026-10-04)
+
+- Codex a relu `b8b972f` et `d66cbea`, relancé le banc (751 contrôles) et validé R6 : aucun point bloquant ouvert.
+- La migration est déjà en base. La mise en ligne du code attend le feu vert de Louis.
+- Suite : R2, la prescription figée par occurrence, distincte des séries réalisées, sans charge cible inventée quand l'historique ne permet pas d'en proposer une.
+
+## R2 · cadrage (2026-10-04), soumis à Codex avant le code
+
+### Ce que le code fait aujourd'hui (constaté)
+
+- Une étape du cycle (`programme_seances`) ne porte qu'un **nom** (« Push »). Son contenu est recalculé à chaque lecture par `instanceDeLEtape(nom, gen)` : 5 exercices tirés d'une banque par lieu (`EX` dans `planning.ts`), mélangés avec la graine `user.id` + le lieu + `variant`.
+- `variant` vient de `readVariant(user.id)`, donc du **localStorage** : deux appareils peuvent proposer deux contenus différents pour la même occurrence. C'est exactement ce que la décision 44 interdit.
+- La prescription est une chaîne (`reps: "4x10"` → `sets` + `reps: "10"`), sans rôle, sans fourchette, sans type de charge. `repSchemeFor` la décide d'après les objectifs (5x5, 4x10, 3x15, 4x12).
+- **21 exercices de la banque des étapes n'ont aucune clé stable** (`cleExercice` rend `null`) : leur journal R1 s'écrit avec `exercice_cle = null`, donc aucune progression ne pourra jamais être calculée dessus. Liste : Squats, Squat haltères, Fentes haltères, Fentes marchées, Mollets debout, Mollets haltères, Chaise contre le mur, Tapis course, Tirage vertical, Tirage horizontal, Rowing buste penché, Rowing inversé sous table, Tractions (ou rowing serviette), Extensions triceps poulie, Extensions triceps haltère, Développé épaules haltères, Soulevé de terre roumain haltères, Hip thrust haltère, Crunch machine, Pompes serrées, Gainage dorsal.
+
+### Proposition
+
+**1. Deux tables, deux niveaux (décision 44).**
+
+- `etape_exercices` = **le modèle**, attaché à une étape d'une version de programme : `programme_seance_id` (cascade), `position`, `exercice_cle` (obligatoire), `exercice_nom` (copie d'affichage), `role` (`repere` | `complementaire`), `series`, `mesure` (`reps` | `duree`), `reps_min` / `reps_max` ou `duree_s`, `repos_s`, `charge_type` (`totale` | `par_haltere` | `assistance` | `poids_du_corps`, ou nul). Unique `(programme_seance_id, position)`. RLS par le programme, comme `programme_seances`. **Aucune charge** : elle appartient à la personne et à son matériel, pas au modèle.
+- `occurrence_exercices` = **la prescription figée** d'une occurrence : `intention_id` (cascade), `user_id`, `emplacement`, les mêmes colonnes de prescription recopiées, plus `charge_cible` (nulle), `charge_origine` (`aucune` | `historique` | `acceptee`) avec `charge_cible is null ⇔ charge_origine = 'aucune'`. Unique `(intention_id, emplacement)`. RLS propriétaire.
+- Pourquoi une table et pas un JSONB sur l'intention : R4 modifiera **une** cible acceptée, R3 et R4 liront ligne par ligne, et les contraintes (fourchette cohérente, charge jamais zéro par défaut) se tiennent en base.
+- `exercise_list` reste écrite à côté, dérivée de la prescription : c'est elle que les déploiements actuels et le tunnel lisent.
+
+**2. Quand la prescription se fige.**
+
+- **Dater une étape** (`intentionDeLEtape`) écrit l'intention ET ses lignes, dans une seule transaction (RPC `preparer_occurrence`, idempotente).
+- **Lancer une étape sans date** n'écrit toujours rien (règle V5) : la prescription est calculée à partir d'`etape_exercices`, qui vit en base, donc **identique sur tous les appareils** ; elle voyage dans la cible du lancement et s'écrit avec la fermeture (`consommerEtape`), dans la même transaction.
+- Les séances qui ne viennent pas d'une étape (catalogue, bibliothèque, impro, semaine régénérée qui ne porte que sa provenance) **n'ont pas de prescription** et gardent le comportement actuel.
+- Une nouvelle version du programme ne touche pas une prescription déjà figée.
+- Question pour R4, à ne pas trancher maintenant : une cible acceptée pour « la prochaine occurrence » a besoin d'une ligne où vivre si cette occurrence n'est pas encore écrite.
+
+**3. La composition d'une étape.**
+
+- `composerEtape(nom, lieu, niveau, objectifs)`, pure et déterministe, **sans `variant` ni localStorage**. Elle ne puise que des exercices qui ont une clé.
+- Rôles : les deux premiers exercices de chaque liste de la banque sont les repères (la banque est réordonnée pour que ce soient les mouvements principaux), les autres sont complémentaires. Écrit dans la banque, jamais deviné par le nom.
+- Fourchettes (décision 47) : force 4 à 6 sur les repères ; prise de masse 6 à 12 sur les principaux, 10 à 20 sur les accessoires ; par défaut (santé, reprise, perte de poids) 8 à 15. Les exercices tenus gardent une durée.
+- Appelée à la création du programme (`getOrCreateProgramme`). **Les 5 programmes actifs existants** n'ont pas de modèle : je propose un remplissage unique par script, avec l'accord de Louis, plutôt que de les laisser sur l'ancien calcul pour toujours. Leur contenu changera une fois, ce qui se dit dans la carte de mise à jour.
+
+**4. La banque doit n'avoir que des clés.** Chaque nom sans clé reçoit une décision explicite, écrite dans le code et vérifiée par le banc (aucun nom de la banque sans clé) :
+- même mouvement, nom différent : on remplace par le nom canonique (Squats → Squat, Chaise contre le mur → Chaise au mur, Tapis course → Tapis de course, Extensions triceps poulie / haltère → Extension triceps poulie / haltère, Rowing inversé sous table → Rowing inversé, Tractions (ou rowing serviette) → Tractions, Tirage vertical → Tirage poitrine, Tirage horizontal → Rowing assis poulie, Rowing buste penché → Rowing buste penché haltères, Mollets debout → Mollets) ;
+- même mouvement avec un autre matériel (Squat haltères, Fentes haltères, Soulevé de terre roumain haltères, Mollets haltères, Hip thrust haltère, Développé épaules haltères) : une variante garde son propre historique (décision 52), donc **pas** de clé partagée. Sans planche animée, elle ne peut pas entrer dans la bibliothèque : on la remplace par un exercice de la bibliothèque qui a la même fonction ;
+- sans équivalent (Crunch machine, Pompes serrées, Gainage dorsal, Fentes marchées) : même règle.
+
+**5. Le journal se rattache à la prescription.** `series_realisees` gagne `occurrence_exercice_id` (on delete set null), `role`, `reps_min_prescrites` et `reps_max_prescrites`. `reps_prescrites` reste remplie pour les séances sans prescription.
+
+**6. Ce que R2 ne fait pas.**
+- Aucune charge cible : `charge_cible` est toujours nulle en R2 (décision 50). La phrase « choisis une charge que tu pourrais soulever environ 12 fois » arrive en R3.
+- L'**incrément du matériel** : on ne connaît ni les haltères ni les disques de la personne. En écrire un serait inventer un chiffre. Je propose de le reporter en R4, qui en a besoin et qui peut poser la question.
+- Rien de visible dans le tunnel, sauf la fourchette écrite à la place d'un nombre unique (« 8 à 12 » au lieu de « 10 »), à trancher.
+
+### Questions pour Codex
+
+1. Une table de prescription plutôt qu'un JSONB : d'accord ?
+2. Figer au moment de dater, ou au lancement d'une étape sans date avec écriture à la fermeture : d'accord avec ce partage, sans écriture au lancement ?
+3. Remplissage unique des 5 programmes existants par script, ou ancien calcul conservé pour eux ?
+4. Incrément reporté en R4 ?
+5. Fourchette visible dès R2, ou nombre unique jusqu'à R3 ?

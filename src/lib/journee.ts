@@ -212,6 +212,8 @@ export function intentionDeLEtape(input: {
   date: string;
   programmeId: string;
   etape: { id: string; nom: string };
+  /** R6 · l'occurrence réservée. Un déplacement la garde (même ligne). */
+  rang?: number | null;
   difficulty: WorkoutDifficulty;
   location: Ctx | null;
   /** L'instance matérialisée à l'instant où l'on date : une intention
@@ -244,6 +246,62 @@ export function intentionDeLEtape(input: {
        programme propose, et le contenu vient de là aussi. Alors on le
        DIT, au lieu de compter sur un effet de bord. */
     provenanceId: input.etape.id,
+    rang: input.rang ?? null,
     adaptationId: input.adaptationId ?? null,
   };
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   R6 · L'AFFICHAGE CONSERVÉ N'EST PAS UNE CIBLE VÉRIFIÉE (tour 15).
+
+   Après un rafraîchissement raté, le héros garde l'étape qu'il montrait :
+   c'est mieux qu'un écran vide. Mais cette étape a pu être fermée ailleurs
+   entre-temps. Avant une écriture (dater l'étape) ou un lancement libre
+   (qui fermera une occurrence à la fin), on RELIT la suite et son
+   adaptation. Lecture ratée : on refuse. Suite changée : on refuse aussi,
+   l'écran se remet à jour et la personne voit la nouvelle étape avant de
+   rien décider. Une séance DÉJÀ lancée garde sa cible : ceci ne la touche
+   pas.
+   ════════════════════════════════════════════════════════════════════ */
+export type CibleVerifiee =
+  | { ok: true }
+  | { ok: false; raison: "illisible" | "changee" };
+
+/**
+ * Tout ce dont dépend un geste sur l'étape affichée : le programme,
+ * l'occurrence, l'étape (nom compris, l'instance en dérive), l'adaptation
+ * qui sera tracée, et ce qu'elle masque. Une différence sur l'un d'eux et
+ * le geste n'a plus le sens que l'écran lui donnait (tour 16).
+ */
+export type ContexteEtape = {
+  programmeId: string;
+  etapeId: string;
+  rang: number;
+  nom: string;
+  adaptationId: string | null;
+  masquees: string[];
+};
+
+export function cleContexte(c: ContexteEtape): string {
+  return JSON.stringify([c.programmeId, c.etapeId, c.rang, c.nom, c.adaptationId, [...c.masquees].sort()]);
+}
+
+export async function avecEtapeVerifiee<C extends ContexteEtape>(
+  affiche: C,
+  /** Relit le contexte, frais et STRICT. Lève si une lecture échoue. */
+  relire: () => Promise<C | null>,
+  /** Ne reçoit que le contexte relu : jamais ce que l'écran gardait. */
+  agir: (frais: C) => Promise<void> | void,
+): Promise<CibleVerifiee> {
+  let frais: C | null;
+  try {
+    frais = await relire();
+  } catch {
+    return { ok: false, raison: "illisible" };
+  }
+  if (!frais || cleContexte(frais) !== cleContexte(affiche)) {
+    return { ok: false, raison: "changee" };
+  }
+  await agir(frais);
+  return { ok: true };
 }
