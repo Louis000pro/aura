@@ -6018,7 +6018,15 @@ verdict(
         classerSondageAdaptations({ code: "42P01", message: "x" }) === "absente"
           && classerSondageAdaptations({ message: "timeout" }) === "inconnue"
           && classerSondageAdaptations({ code: "42501", message: "permission denied" }) === "inconnue"
+          && classerSondageAdaptations({ code: "42703", message: "column adaptations_entrainement.id does not exist" }) === "inconnue"
+          && classerSondageAdaptations({ message: "relation does not exist" }) === "inconnue"
           && classerSondageAdaptations(null) === "presente", "42P01/PGRST205 seulement");
+      oublierSondageAdaptations();
+      reponseSondage = { data: null, error: { code: "42703", message: "column adaptations_entrainement.id does not exist" } };
+      let colonneLeve = false;
+      try { await lireAdaptations("u", "p", "stricte", faux); } catch { colonneLeve = true; }
+      verdict("R6 · colonne manquante (42703) : pas une absence de table, la lecture stricte échoue",
+        colonneLeve, colonneLeve ? "lève" : "rendue « aucune »");
       oublierSondageAdaptations();
     }
 

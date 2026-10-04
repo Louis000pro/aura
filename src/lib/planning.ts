@@ -590,9 +590,9 @@ export type EtatTableAdaptations = "presente" | "absente" | "inconnue";
 export function classerSondageAdaptations(error: unknown): EtatTableAdaptations {
   if (!error) return "presente";
   const e = error as { code?: string; message?: string };
-  if (e.code === "42P01" || e.code === "PGRST205") return "absente";
-  if (/does not exist|could not find the table/i.test(e.message ?? "")) return "absente";
-  return "inconnue";
+  /* Les deux codes seulement, jamais le texte : « column … does not
+     exist » (42703) ne prouve pas l'absence de la table. */
+  return e.code === "42P01" || e.code === "PGRST205" ? "absente" : "inconnue";
 }
 
 let adaptationsResolu: Exclude<EtatTableAdaptations, "inconnue"> | null = null;
