@@ -359,3 +359,7 @@ Puis joué sous le rôle `authenticated` avec deux vrais comptes, dans des trans
 Note d'outillage : le connecteur Supabase expire au-delà d'une requête d'environ 6 Ko ; les essais se jouent par blocs courts.
 
 Remplissage à suivre : 10 programmes actifs, 38 étapes, donc 38 modèles attendus.
+
+## R2 · remplissage appliqué (2026-10-04)
+
+`20261005_r2_modeles_existants.sql` collé par Louis. Vérifié en base : 38 modèles pour 38 étapes de programmes actifs, aucune étape sans modèle, aucun modèle vide, 190 lignes (5 par modèle). Aucune occurrence écrite, intentions inchangées. R2 est complet côté base.
