@@ -232,3 +232,11 @@ Trois témoins vérifiés.
 - `lireAdaptations` en mode strict lève sur `inconnue` (le geste est refusé `illisible`) ; une table absente reste « aucune ». `adaptationsDisponibles` (choix des colonnes, lecture souple) vaut `presente`, sans mémoriser une panne.
 - Banc : 750 contrôles. Le test traverse le vrai sondage et la vraie lecture avec un faux client : panne → `illisible`, zéro écriture ; rétablissement → nouveau sondage, l'adaptation est lue et le geste refusé `changee` ; table absente → « aucune », un seul sondage pour deux lectures. Témoins : mémoriser la panne (2 échecs), avaler la panne en strict (2 échecs).
 - Tour 18 : le classement ne lit plus le texte du message, seulement les codes `42P01` et `PGRST205`. Contre-exemple au banc : `42703` (« column … does not exist ») reste `inconnue` et la lecture stricte échoue. 751 contrôles ; témoin (classement par texte remis) : 2 échecs.
+
+### R6 · vérifications sur la vraie base (2026-10-04)
+
+- **Migration `20261004_r6_occurrences.sql` appliquée par Louis**, vérifiée en lecture : colonnes `rang` et `rang_depart`, déclencheur `intentions_attribuer_rang`, index `uniq_occurrence`, 4 contraintes, `rang_minimal` supprimée, 0 ligne portant une étape sans rang, 0 programme sans plancher.
+- **S8b** : une fermeture `faite` sans `consommee_le` est refusée (23514, `intentions_consommee_check`), rien n'est écrit.
+- **Même rang explicite** (A, rang 7, deux journaux écrits d'abord) : la première fermeture passe, la seconde est refusée (23505, `uniq_occurrence`) ; 1 fermeture au rang 7, 2 journaux conservés. Transaction annulée.
+- **Deux fermetures simultanées sans rang** (deux onglets du SQL Editor, le premier gardant sa transaction ouverte 15 s) : le second attend le verrou consultatif puis reçoit le rang suivant de son étape. Résultat : 7 et 10, sans erreur (rangs 1 et 4 déjà pris).
+- Lignes de test supprimées : programme, étapes et intentions à 0.
