@@ -17,6 +17,7 @@ import {
 } from "@/lib/banqueEtapes";
 import { lignesDuJournal, type MarquesSeance } from "@/lib/journalSeance";
 import { remplacer } from "@/lib/remplacement";
+import { appliquerCibles, type CibleOuverte } from "@/lib/progression";
 const db = new PGlite();
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const q = (s: string, p?: unknown[]) => db.query<any>(s, p);
@@ -267,6 +268,163 @@ await setUid(U);
   t("R3 · un journal d'avant R3 s'écrit encore, charge nulle",
     (await q(`select charge, charge_type, exercice_prevu_cle from series_realisees where workout_session_id=$1`, [vieux.id])).rows
       .every((x: Record<string, unknown>) => x.charge === null && x.charge_type === null && x.exercice_prevu_cle === null));
+}
+
+/* ── R4 · la marge, la cible acceptée, le cran ──
+   Les six cas verrouillés du tour 29 de Codex, joués sur la vraie
+   migration, plus l'équivalence de la copie TypeScript et SQL. */
+const mig4 = readFileSync(new URL("../supabase/migrations/20261007_r4_progression.sql", import.meta.url), "utf8");
+await ex(mig4);
+await ex(mig4);
+t("R4 · migration rejouable", true);
+await setUid(U);
+{
+  const P4 = (await q(`insert into programmes(user_id) values ($1) returning id`, [U])).rows[0].id;
+  const E4 = (await q(`insert into programme_seances(programme_id, position, nom) values ($1,1,'Push') returning id`, [P4])).rows[0].id;
+  await q(`insert into programme_seances(programme_id, position, nom) values ($1,2,'Pull')`, [P4]); // cycle de 2
+  const L4 = composerEtape("Push", { lieu: "halteres", orientation: "masse", niveau: null, version: 1 });
+  const ir = L4.findIndex((l) => l.statut === "repere" && l.mesure === "reps" && (l.charge_type === "par_haltere" || l.charge_type === "totale"));
+  const ic = L4.findIndex((l) => l.statut === "complementaire" && l.mesure === "reps");
+  const rep = L4[ir];
+  const intention4 = (o: Record<string, unknown> = {}) => ({ programme_id: P4, etape_consommee_id: E4, programme_seance_id: E4, rang: 1, statut: "prevue",
+    date: "2026-10-08", type: "Force", title: "Push", difficulty: "Intermédiaire", location: "halteres", origine: "utilisateur",
+    adaptation_id: null, consommee_le: null, lancement_id: null, ...o });
+  const LA = "a1a1a1a1-0000-0000-0000-000000000001";
+  // la séance source : rang 1 fermée en étape libre, puis son journal avec la marge
+  const src = await rpc("ecrire_occurrence", { intention: intention4({ statut: "faite", consommee_le: "2026-10-05T10:00:00Z", lancement_id: LA }), modele_id: null, lignes: L4 });
+  t("R4 · source fermée", src.resultat === "ok", JSON.stringify(src));
+  const exs4 = projeterPrescription(L4);
+  const marques4: MarquesSeance = { [ir]: Object.fromEntries(Array.from({ length: rep.series }, (_, k) => [k, {
+    statut: "terminee", validation: "bouton", dureeS: null, reps: rep.reps_max, charge: 16,
+    exercice: { cle: rep.exercice_cle, nom: rep.exercice_nom, chargeType: rep.charge_type },
+    ...(k === rep.series - 1 ? { marge: "1_2" } : {}),
+  }])) } as MarquesSeance;
+  marques4[ic] = { 0: { statut: "terminee", validation: "bouton", dureeS: null, reps: 10, charge: null, marge: "3_plus" } } as MarquesSeance[number];
+  const series4 = lignesDuJournal(exs4, marques4);
+  const jA = await rpc("enregistrer_seance", { lancement_id: LA, proprietaire: U, titre: "Push", duree_s: 900, series: series4 });
+  const marges = (await q(`select emplacement, serie, marge from series_realisees where workout_session_id=$1 and marge is not null`, [jA.id])).rows;
+  t("R4 · la marge s'écrit sur la dernière série du repère, et nulle part ailleurs",
+    marges.length === 1 && marges[0].emplacement === ir && marges[0].serie === rep.series && marges[0].marge === "1_2", JSON.stringify(marges));
+
+  // corriger la marge
+  t("R4 · corriger la marge d'un repère", (await q(`select public.corriger_marge($1,$2,'3_plus') r`, [LA, ir])).rows[0].r.resultat === "ok"
+    && (await q(`select marge from series_realisees where workout_session_id=$1 and emplacement=$2 and serie=$3`, [jA.id, ir, rep.series])).rows[0].marge === "3_plus");
+  t("R4 · corriger la marge d'un complémentaire est refusé", (await q(`select public.corriger_marge($1,$2,'1_2') r`, [LA, ic])).rows[0].r.resultat === "pas_un_repere");
+  t("R4 · une marge hors vocabulaire est refusée", /marge_invalide/.test(await q(`select public.corriger_marge($1,$2,'beaucoup') r`, [LA, ir]).then(() => "").catch((e: Error) => e.message)));
+  await setUid(V);
+  t("R4 · la marge d'autrui est introuvable", (await q(`select public.corriger_marge($1,$2,'aucune') r`, [LA, ir])).rows[0].r.resultat === "introuvable");
+  t("R4 · accepter depuis la séance d'autrui : introuvable", (await rpc("accepter_cible", { lancement_id: LA, emplacement: ir, charge: 18, reps_cible: rep.reps_min })).resultat === "seance_introuvable");
+  await setUid(U);
+
+  // accepter
+  t("R4 · répétitions hors fourchette refusées", /reps_invalides/.test(await err("accepter_cible", { lancement_id: LA, emplacement: ir, charge: 18, reps_cible: 99 })));
+  t("R4 · une charge à zéro est refusée", /charge_invalide/.test(await err("accepter_cible", { lancement_id: LA, emplacement: ir, charge: 0, reps_cible: rep.reps_min })));
+  t("R4 · un complémentaire ne reçoit pas de cible", (await rpc("accepter_cible", { lancement_id: LA, emplacement: ic, charge: null, reps_cible: L4[ic].reps_min })).resultat === "pas_un_repere");
+  const acc = await rpc("accepter_cible", { lancement_id: LA, emplacement: ir, charge: 18, reps_cible: rep.reps_min, cran: 2 });
+  const cible = (await q(`select * from cibles_acceptees where id=$1`, [acc.cible_id])).rows[0];
+  t("R4 · accepter écrit une cible ouverte, qui vise l'occurrence suivante de l'étape",
+    acc.resultat === "ok" && cible && Number(cible.charge) === 18 && cible.reps_cible === rep.reps_min && cible.rang_source === 1
+      && cible.rang_vise === 3 && cible.consommee_le === null && cible.exercice_cle === rep.exercice_cle, JSON.stringify(acc));
+  t("R4 · le cran confirmé est retenu pour l'exercice", Number((await q(`select cran from crans_exercice where user_id=$1 and exercice_cle=$2`, [U, rep.exercice_cle])).rows[0]?.cran) === 2);
+
+  // l'équivalence de la copie
+  const ouverte: CibleOuverte = { id: cible.id, exercice_cle: cible.exercice_cle, charge_type: cible.charge_type, charge: Number(cible.charge),
+    reps_cible: cible.reps_cible, reps_min: cible.reps_min, reps_max: cible.reps_max, rang_vise: cible.rang_vise };
+  const tsLignes = appliquerCibles(L4, [ouverte], 3);
+  const sqlLignes = (await q(`select public.lignes_avec_cibles($1::jsonb,$2,$3,$4,3) r`, [JSON.stringify(tsLignes), U, P4, E4])).rows[0].r;
+  const pTs = JSON.stringify(projeterPrescription(tsLignes));
+  const pSql = JSON.stringify((await q(`select public.projeter_prescription($1::jsonb) r`, [JSON.stringify(sqlLignes)])).rows[0].r);
+  const canon = (v: unknown): unknown => Array.isArray(v) ? v.map(canon)
+    : v && typeof v === "object" ? Object.fromEntries(Object.entries(v as Record<string, unknown>).sort(([x], [y]) => x.localeCompare(y)).map(([k, w]) => [k, canon(w)])) : v;
+  const norm = (x: string) => JSON.stringify(canon(JSON.parse(x)));
+  t("R4 · la copie TypeScript et la copie SQL donnent la même projection", norm(pTs) === norm(pSql), `${pTs.slice(0, 200)} ≠ ${pSql.slice(0, 200)}`);
+  t("R4 · sans cible, la projection est celle d'avant R4",
+    !JSON.stringify(projeterPrescription(L4)).includes("cible_id") && !JSON.stringify((await q(`select public.projeter_prescription($1::jsonb) r`, [JSON.stringify(L4)])).rows[0].r).includes("cible_id"));
+  t("R4 · une occurrence plus proche que celle visée ne reçoit rien", appliquerCibles(L4, [ouverte], 2)[ir].cible_id === undefined
+    && (await q(`select public.lignes_avec_cibles($1::jsonb,$2,$3,$4,2) r`, [JSON.stringify(tsLignes), U, P4, E4])).rows[0].r[ir].cible_id === undefined);
+
+  // cas 1 · abandon : rien n'est écrit, la cible reste ouverte
+  t("R4 · cas 1 · un lancement abandonné ne consomme rien", (await q(`select consommee_le from cibles_acceptees where id=$1`, [cible.id])).rows[0].consommee_le === null);
+
+  // dater rang 3 en nommant la cible : copie, pas consommation
+  const d3 = await rpc("ecrire_occurrence", { intention: intention4({ rang: 3 }), modele_id: null, lignes: tsLignes });
+  const l3 = (await q(`select reps_cible, charge_cible, charge_origine, cible_id from occurrence_exercices where intention_id=$1 and emplacement=$2`, [d3.id, ir])).rows[0];
+  t("R4 · dater recopie la cible nommée", Number(l3.charge_cible) === 18 && l3.charge_origine === "acceptee" && l3.cible_id === cible.id && l3.reps_cible === rep.reps_min, JSON.stringify(l3));
+  t("R4 · la liste préparée porte la charge cible", (await q(`select exercise_list from intentions_entrainement where id=$1`, [d3.id])).rows[0].exercise_list[ir].prescription.charge_cible === 18);
+  t("R4 · préparer ne consomme pas", (await q(`select consommee_le from cibles_acceptees where id=$1`, [cible.id])).rows[0].consommee_le === null);
+  // cas 4 · deux appareils préparent la même occurrence
+  const d3b = await rpc("ecrire_occurrence", { intention: intention4({ rang: 3 }), modele_id: null, lignes: tsLignes });
+  t("R4 · cas 4 · un second appareil rend la même occurrence, une seule copie", d3b.resultat === "deja" && d3b.id === d3.id
+    && (await q(`select count(*)::int n from occurrence_exercices where cible_id=$1`, [cible.id])).rows[0].n === 1);
+  // cas 2 · retrait puis nouvelle datation
+  await q(`delete from intentions_entrainement where id=$1`, [d3.id]);
+  t("R4 · cas 2 · retirer l'occurrence garde la cible ouverte", (await q(`select consommee_le from cibles_acceptees where id=$1`, [cible.id])).rows[0].consommee_le === null);
+  const d3c = await rpc("ecrire_occurrence", { intention: intention4({ rang: 3, date: "2026-10-12" }), modele_id: null, lignes: tsLignes });
+  t("R4 · cas 2 · la redater recopie la cible", (await q(`select cible_id from occurrence_exercices where intention_id=$1 and emplacement=$2`, [d3c.id, ir])).rows[0].cible_id === cible.id);
+  // une ligne qui ne nomme pas la cible ne la reçoit pas
+  const d5 = await rpc("ecrire_occurrence", { intention: intention4({ rang: 5 }), modele_id: null, lignes: L4 });
+  t("R4 · une préparation qui n'a pas vu la cible ne la reçoit pas", (await q(`select count(*)::int n from occurrence_exercices where intention_id=$1 and cible_id is not null`, [d5.id])).rows[0].n === 0);
+  await q(`delete from intentions_entrainement where id=$1`, [d5.id]);
+  // cas 5 · corriger la marge après acceptation ne touche ni la cible ni la séance préparée
+  const avantCible = JSON.stringify((await q(`select charge, reps_cible, consommee_le from cibles_acceptees where id=$1`, [cible.id])).rows[0]);
+  const avantPrep = JSON.stringify((await q(`select reps_cible, charge_cible from occurrence_exercices where intention_id=$1 order by emplacement`, [d3c.id])).rows);
+  await q(`select public.corriger_marge($1,$2,'aucune')`, [LA, ir]);
+  t("R4 · cas 5 · corriger après acceptation ne change ni la cible ni la séance préparée",
+    JSON.stringify((await q(`select charge, reps_cible, consommee_le from cibles_acceptees where id=$1`, [cible.id])).rows[0]) === avantCible
+      && JSON.stringify((await q(`select reps_cible, charge_cible from occurrence_exercices where intention_id=$1 order by emplacement`, [d3c.id])).rows) === avantPrep);
+  // cas 3 · occurrence déjà préparée : accepter de nouveau doit la nommer
+  const nbAvant = (await q(`select count(*)::int n from cibles_acceptees`)).rows[0].n;
+  const refus = await rpc("accepter_cible", { lancement_id: LA, emplacement: ir, charge: 20, reps_cible: rep.reps_min, cran: 4 });
+  t("R4 · cas 3 · une séance préparée n'est pas réécrite sans être nommée",
+    refus.resultat === "occurrence_preparee" && refus.intention_id === d3c.id
+      && (await q(`select count(*)::int n from cibles_acceptees`)).rows[0].n === nbAvant
+      && Number((await q(`select charge from cibles_acceptees where id=$1`, [cible.id])).rows[0].charge) === 18
+      && Number((await q(`select cran from crans_exercice where user_id=$1 and exercice_cle=$2`, [U, rep.exercice_cle])).rows[0].cran) === 2, JSON.stringify(refus));
+  const appli = await rpc("accepter_cible", { lancement_id: LA, emplacement: ir, charge: 20, reps_cible: rep.reps_min, cran: 4, appliquer_a: d3c.id });
+  const lp = (await q(`select charge_cible, cible_id from occurrence_exercices where intention_id=$1 and emplacement=$2`, [d3c.id, ir])).rows[0];
+  t("R4 · cas 3 · nommée, elle reçoit la nouvelle cible, garde sa prescription et sa projection suit",
+    appli.resultat === "ok" && appli.applique_a === d3c.id && Number(lp.charge_cible) === 20 && lp.cible_id === appli.cible_id
+      && (await q(`select count(*)::int n from occurrence_exercices where intention_id=$1`, [d3c.id])).rows[0].n === L4.length
+      && (await q(`select exercise_list from intentions_entrainement where id=$1`, [d3c.id])).rows[0].exercise_list[ir].prescription.charge_cible === 20,
+    JSON.stringify([appli, lp]));
+  t("R4 · une seule cible ouverte par exercice de l'étape", (await q(`select count(*)::int n from cibles_acceptees where consommee_le is null and programme_id=$1`, [P4])).rows[0].n === 1);
+  // la faire : la cible est consommée une fois
+  await q(`update intentions_entrainement set statut='faite', consommee_le=now() where id=$1`, [d3c.id]);
+  const consommee = (await q(`select consommee_le from cibles_acceptees where id=$1`, [appli.cible_id])).rows[0].consommee_le;
+  t("R4 · faite, l'occurrence consomme sa cible", consommee !== null);
+  await q(`update intentions_entrainement set updated_at=now(), statut='faite' where id=$1`, [d3c.id]);
+  t("R4 · consommée une seule fois", String((await q(`select consommee_le from cibles_acceptees where id=$1`, [appli.cible_id])).rows[0].consommee_le) === String(consommee));
+  // une séance faite ou commencée ne change jamais : plus de séance préparée, accepter n'en touche aucune
+  const apres = await rpc("accepter_cible", { lancement_id: LA, emplacement: ir, charge: 22, reps_cible: rep.reps_min });
+  t("R4 · une séance faite n'est jamais réécrite", apres.resultat === "ok" && apres.applique_a === null
+    && Number((await q(`select charge_cible from occurrence_exercices where intention_id=$1 and emplacement=$2`, [d3c.id, ir])).rows[0].charge_cible) === 20);
+  // fermeture d'une étape libre qui a suivi la cible : consommée ; qui ne l'a pas vue : non
+  const c22 = (await q(`select * from cibles_acceptees where id=$1`, [apres.cible_id])).rows[0];
+  const ouverte22: CibleOuverte = { ...ouverte, id: c22.id, charge: Number(c22.charge), rang_vise: c22.rang_vise };
+  await rpc("ecrire_occurrence", { intention: intention4({ rang: 7, statut: "faite", consommee_le: "2026-10-09T10:00:00Z", lancement_id: "a1a1a1a1-0000-0000-0000-000000000007" }), modele_id: null, lignes: L4 });
+  t("R4 · une séance libre qui n'a pas suivi la cible ne la consomme pas", (await q(`select consommee_le from cibles_acceptees where id=$1`, [c22.id])).rows[0].consommee_le === null);
+  await rpc("ecrire_occurrence", { intention: intention4({ rang: 9, statut: "faite", consommee_le: "2026-10-11T10:00:00Z", lancement_id: "a1a1a1a1-0000-0000-0000-000000000009" }), modele_id: null, lignes: appliquerCibles(L4, [ouverte22], 9) });
+  t("R4 · une séance libre qui l'a suivie la consomme à la fermeture", (await q(`select consommee_le from cibles_acceptees where id=$1`, [c22.id])).rows[0].consommee_le !== null);
+
+  // cas 6 · une progression en répétitions au poids du corps
+  const Lp = composerEtape("Push", { lieu: "poids", orientation: "masse", niveau: null, version: 1 });
+  const ib = Lp.findIndex((l) => l.statut === "repere" && l.mesure === "reps" && l.charge_type === "poids_du_corps" && (l.reps_max ?? 0) > (l.reps_cible ?? 0));
+  if (ib >= 0) {
+    const P6 = (await q(`insert into programmes(user_id) values ($1) returning id`, [U])).rows[0].id;
+    const E6 = (await q(`insert into programme_seances(programme_id, position, nom) values ($1,1,'Push') returning id`, [P6])).rows[0].id;
+    const i6 = (o: Record<string, unknown>) => ({ ...intention4(o), programme_id: P6, etape_consommee_id: E6, programme_seance_id: E6 });
+    const LB = "a1a1a1a1-0000-0000-0000-0000000000b6";
+    await rpc("ecrire_occurrence", { intention: i6({ statut: "faite", consommee_le: "2026-10-05T10:00:00Z", lancement_id: LB }), modele_id: null, lignes: Lp });
+    await rpc("enregistrer_seance", { lancement_id: LB, proprietaire: U, titre: "Push", duree_s: 600, series: [] });
+    t("R4 · cas 6 · au poids du corps, une charge est refusée", /charge_sans_kilos/.test(await err("accepter_cible", { lancement_id: LB, emplacement: ib, charge: 5, reps_cible: Lp[ib].reps_cible! + 1 })));
+    const a6 = await rpc("accepter_cible", { lancement_id: LB, emplacement: ib, charge: null, reps_cible: Lp[ib].reps_cible! + 1 });
+    const c6 = (await q(`select * from cibles_acceptees where id=$1`, [a6.cible_id])).rows[0];
+    const o6: CibleOuverte = { id: c6.id, exercice_cle: c6.exercice_cle, charge_type: c6.charge_type, charge: null, reps_cible: c6.reps_cible, reps_min: c6.reps_min, reps_max: c6.reps_max, rang_vise: c6.rang_vise };
+    const dp = await rpc("ecrire_occurrence", { intention: i6({ rang: c6.rang_vise }), modele_id: null, lignes: appliquerCibles(Lp, [o6], c6.rang_vise) });
+    const l6 = (await q(`select reps_cible, charge_cible, charge_origine, cible_id from occurrence_exercices where intention_id=$1 and emplacement=$2`, [dp.id, ib])).rows[0];
+    t("R4 · cas 6 · une répétition de plus, sans charge et sans origine de charge",
+      l6.reps_cible === Lp[ib].reps_cible! + 1 && l6.charge_cible === null && l6.charge_origine === "aucune" && l6.cible_id === c6.id, JSON.stringify(l6));
+  } else t("R4 · cas 6 · un repère au poids du corps existe dans la banque", false);
 }
 
 console.log(`${ok} OK, ${ko} échec(s)`);

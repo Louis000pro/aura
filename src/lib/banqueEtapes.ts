@@ -232,6 +232,12 @@ export type LignePrescription = {
   charge_type: TypeCharge | null;
   /** « par jambe », « par côté »… vide sinon. */
   unite: string;
+  /* R4 · la cible ACCEPTÉE recopiée au figement : sa charge (nulle au
+     poids du corps ou en répétitions seules) et la ligne d'où elle vient.
+     Absentes d'une prescription sans cible. */
+  charge_cible?: number | null;
+  charge_origine?: "aucune" | "acceptee";
+  cible_id?: string | null;
 };
 
 /** L'orientation se lit dans les objectifs, avec les mêmes mots qu'avant R2. */
@@ -310,6 +316,9 @@ export type ExercicePrescrit = Exercise & {
     reps_min: number | null;
     reps_max: number | null;
     charge_type: TypeCharge | null;
+    /* R4 · présents seulement quand une cible acceptée a été recopiée. */
+    charge_cible?: number | null;
+    cible_id?: string;
   };
 };
 
@@ -347,6 +356,9 @@ export function projeterPrescription(lignes: LignePrescription[]): ExercicePresc
         reps_min: l.reps_min,
         reps_max: l.reps_max,
         charge_type: l.charge_type,
+        /* R4 · seulement s'il y a une cible : une prescription sans cible
+           garde exactement la projection d'avant. */
+        ...(l.cible_id ? { charge_cible: l.charge_cible ?? null, cible_id: l.cible_id } : {}),
       },
     };
   });

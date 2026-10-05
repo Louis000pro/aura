@@ -20,6 +20,8 @@
    `terminerSeance` qui referme, depuis le lanceur global.
    ════════════════════════════════════════════════════════════════════ */
 
+import { appliquerCibles, type CibleOuverte } from "@/lib/progression";
+import { ciblesOuvertes } from "@/lib/progressionBase";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useWorkoutLaunch } from "@/context/WorkoutLaunchContext";
@@ -348,6 +350,10 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
   type ContexteHook = ContexteEtape & {
     occ: EtapeOccurrence; adaptationLue: Adaptation | null;
     prescription: string; modele: ModeleDeLOccurrence;
+    /* R4 · les cibles acceptées encore ouvertes, relues avec le contexte.
+       Une lecture ratée n'en recopie aucune : elles restent ouvertes, donc
+       rien n'est perdu. */
+    cibles?: CibleOuverte[];
   };
   const contexteAffiche = useMemo<ContexteHook | null>(() => (
     etape && programme && modeleDeLEtapeAffichee ? {
@@ -373,7 +379,9 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
     const lu = await modeleDeLEtape({ id: occ.id, nom: occ.nom }, ctx);
     if (!lu) throw new Error("modele_illisible");
     const frais: ModeleDeLOccurrence = { ...lu, etapeId: occ.id, rang: occ.rang, lieu: ctx.lieu };
+    const cibles = (await ciblesOuvertes(user.id, actif.programme.id, occ.id)) ?? [];
     return {
+      cibles,
       programmeId: actif.programme.id,
       etapeId: occ.id, rang: occ.rang, nom: occ.nom,
       adaptationId: couche?.id ?? null,
@@ -447,7 +455,9 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
     if (!contexteAffiche) return;
     void avecEtapeVerifiee(contexteAffiche, relireContexte, (c) => {
       /* La liste ET la prescription viennent du modèle RELU (tour 22). */
-      const liste = projeterPrescription(c.modele.lignes);
+      /* R4 · les cibles acceptées se recopient dans la prescription figée. */
+      const lignesFigees = appliquerCibles(c.modele.lignes, c.cibles ?? [], c.rang);
+      const liste = projeterPrescription(lignesFigees);
       launchWorkout({
       sessionId: `etape-${c.etapeId}`,
       title: c.nom,
@@ -472,7 +482,7 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
         exerciseList: liste,
         /* R2 · la prescription FIGÉE à cet instant : la fin de séance (et
            son rejeu depuis l'attente locale) l'écrit telle quelle. */
-        prescription: c.modele.lignes.map((l) => ({ ...l })),
+        prescription: lignesFigees.map((l) => ({ ...l })),
         modeleId: c.modele.modeleId,
       },
       });
@@ -526,7 +536,7 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
           adaptation_id: c.adaptationId ?? null,
           consommee_le: null,
           lancement_id: null,
-        }, c.modele.modeleId, c.modele.lignes);
+        }, c.modele.modeleId, appliquerCibles(c.modele.lignes, c.cibles ?? [], c.rang));
         if (r.resultat !== "ok" && r.resultat !== "deja") throw new Error("occurrence non écrite");
         if (r.resultat === "ok") { await appliquerRegleDuJour(user.id, date, r.id); return; }
         /* `deja` : elle existait (écrite ailleurs entre-temps) ; on la déplace. */

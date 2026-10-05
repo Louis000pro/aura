@@ -553,3 +553,36 @@ Périmètre : maquette 07, écran 05 (la question après un repère) et la propo
 4. **Deux appareils préparent la même occurrence** : la préparation reste idempotente (R2), les deux lisent la même cible ouverte et écrivent la même copie, et la cible est consommée une seule fois.
 5. **Correction de marge** : avant acceptation, la proposition est recalculée ; après acceptation, la cible et la séance préparée ne bougent pas.
 6. **Proposition en répétitions** : acceptée, elle pose `reps_cible` sans charge et sans toucher `charge_origine`. Refusée, rien ne change.
+
+## R4 · codée (2026-10-05), en attente de la relecture de Codex et de la migration
+
+**Modules.**
+- `src/lib/progression.ts` est pur :
+  - `comparer`, `questionUtile` et `prochaineCible` partagent une même piste interne : la question et la proposition ont les mêmes critères ;
+  - `cranConfirme`, `cibleAcceptee`, `propositionsDeSeance`, `emplacementsAQuestion` (au plus 2) ;
+  - `chargeDeReference` (dernière réalisation complète et homogène, avec sa date) et `appliquerCibles`.
+- `src/lib/progressionBase.ts` gère les lectures et écritures. Une lecture ratée rend `null`, jamais « rien ».
+
+**Le tunnel.**
+- La question remplace la phrase du Guide dans le repos qui suit la dernière série d'un repère, sans toucher au chrono. La réponse va dans la marque de la série (`marge`).
+- Si le repère termine la séance, la question est facultative dans l'écran de fin. Elle s'écrit par `corriger_marge` une fois la séance enregistrée.
+- La charge de départ est l'objectif accepté (recopié dans la prescription), sinon « La dernière fois · mardi ». Après un remplacement, il n'y en a aucune.
+- « La prochaine fois » (`LaProchaineFois.tsx`) est une carte mise en avant, les autres derrière « Un autre ajustement proposé ». « Accepter » est désactivé tant que la séance n'est pas enregistrée ; « Garder » n'écrit rien.
+- Séance déjà préparée : le premier « Accepter » n'écrit rien. La base répond `occurrence_preparee`, la carte annonce « Ta séance de mardi 8 est déjà prête. On l'ajuste aussi ? », et seul « Ajuster mardi 8 » la modifie. L'annonce vient donc de la base au premier clic plutôt que d'une lecture préalable, ce qui couvre aussi une séance datée.
+
+**La copie.** `useJournee` recopie les cibles ouvertes (relues avec le contexte) dans la prescription figée, au lancement libre comme à la datation. La base reprend chaque cible **nommée** depuis sa table (`lignes_avec_cibles`), ou la retire.
+
+**Migration `20261007_r4_progression.sql`.**
+- `series_realisees.marge`, `crans_exercice`, `cibles_acceptees` (une seule ouverte par exercice d'étape), `occurrence_exercices.cible_id`.
+- La projection ne porte la cible que s'il y en a une : sans cible, la liste est identique à R2.
+- `prescription_suit_le_contenu` ignore la reprojection explicite d'`accepter_cible`.
+- `ecrire_occurrence` reprend la cible nommée. Une cible est consommée quand son occurrence est **faite**, par déclencheur sur les intentions et sur les lignes.
+- `enregistrer_seance` écrit la marge, sur un repère seulement.
+- `corriger_marge` vérifie le propriétaire et le repère.
+- `accepter_cible` relit sa source en base (séance, occurrence faite, ligne prescrite) et ne croit l'appareil sur rien d'autre.
+
+**Bancs.**
+- `check:programme` : contrôles R4 purs et de source, dont l'accord question = proposition sur 7 cas.
+- `check:prescription-sql` : 95 essais, dont les six cas verrouillés et l'équivalence de la copie TypeScript / SQL.
+- Cinq témoins vérifiés : hausse sur la seule dernière série, assistance qui augmente, consommation sans « faite », séance préparée réécrite sans être nommée, charge de départ après un remplacement.
+- `tsc`, `build`, `eslint` (93, la référence) passent. `check:echelle` : les mêmes 38 écarts qu'avant (comparaison ligne à ligne).

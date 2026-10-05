@@ -6325,13 +6325,15 @@ verdict(
     !plan.includes("export function instanceDeLEtape") && journee.includes("projeterPrescription(modeleDeLEtapeAffichee.lignes)") && !/instanceDeLEtape\(/.test(journee),
     "`instanceDeLEtape` supprimée");
   verdict("R2 · la prescription se fige au lancement et voyage avec lui",
-    journee.includes("prescription: c.modele.lignes.map((l) => ({ ...l })),") && journee.includes("modeleId: c.modele.modeleId,"),
+    /* R4 · la copie figée porte désormais les cibles acceptées recopiées. */
+    journee.includes("prescription: lignesFigees.map((l) => ({ ...l })),") && journee.includes("const lignesFigees = appliquerCibles(c.modele.lignes,")
+      && journee.includes("modeleId: c.modele.modeleId,"),
     "dans la cible, donc dans l'attente locale");
   verdict("R2 · la fermeture écrit la copie figée, jamais une recomposition",
     fin.includes("if (cible.prescription?.length)") && fin.includes("cible.prescription);") && !/composerEtape|modeleDeLEtape/.test(fin),
     "ecrire_occurrence, en une transaction");
   verdict("R2 · dater une étape écrit l'occurrence ET sa prescription ensemble",
-    journee.includes("statut: \"prevue\"") && journee.includes("}, c.modele.modeleId, c.modele.lignes);") && journee.includes("appliquerRegleDuJour(user.id, date, r.id)"),
+    journee.includes("statut: \"prevue\"") && journee.includes("}, c.modele.modeleId, appliquerCibles(c.modele.lignes, c.cibles ?? [], c.rang));") && journee.includes("appliquerRegleDuJour(user.id, date, r.id)"),
     "et la règle repos/séance s'applique comme ailleurs");
   /* Tour 22 · 3 · déplacer ne change QUE la date. Le lieu actuel est
      « maison » ; la réservation a été préparée en salle. */
@@ -6675,6 +6677,132 @@ verdict(
     sql3.includes("raise exception 'proprietaire_different'") && sql3.includes("return jsonb_build_object('id', v_id, 'deja', true);")
       && sql3.includes("on conflict (user_id, lancement_id) where lancement_id is not null do nothing")
       && sql3.includes("revoke all on function public.enregistrer_seance(jsonb) from public, anon;"), "propriétaire, rejeu, droits");
+}
+
+/* ═══════════════════════════ R4 · la progression ═══════════════════════════ */
+{
+  const lire1 = (rel: string) => readFileSync(new URL("../" + rel, import.meta.url), "utf8").replace(/\r\n/g, "\n");
+  const G = await import("@/lib/progression");
+  const pres = (o: Partial<import("@/lib/progression").PrescriptionExercice> = {}) => ({
+    cle: "developpecouchehalteres", statut: "repere" as const, charge_type: "par_haltere" as const,
+    reps_min: 8, reps_max: 12, reps_cible: 10, series: 3, ...o,
+  });
+  const serie = (reps: number, charge: number | null = 16, o: Record<string, unknown> = {}) => ({
+    exercice_cle: "developpecouchehalteres", statut: "terminee" as const, validation: "bouton",
+    reps_declarees: reps, charge, charge_type: "par_haltere", ...o,
+  });
+  const trois = (r: number, c: number | null = 16) => [serie(r, c), serie(r, c), serie(r, c)];
+
+  // comparabilité
+  verdict("R4 · comparable : trois séries pleines à la même charge", G.comparer(trois(10), pres()).comparable, "");
+  verdict("R4 · non comparable : A → B → A", !G.comparer([serie(10), serie(10, null, { exercice_cle: "pompes", charge_type: "poids_du_corps" }), serie(10)], pres()).comparable, "tour 29");
+  verdict("R4 · non comparable : une série non faite", !G.comparer([serie(10), serie(10), { ...serie(10), statut: "non_atteinte" as const, reps_declarees: null }], pres()).comparable, "");
+  verdict("R4 · non comparable : un minuteur au lieu du bouton", !G.comparer([serie(10), serie(10), serie(10, 16, { validation: "minuteur_fini" })], pres()).comparable, "");
+  verdict("R4 · non comparable : charges mêlées", !G.comparer([serie(10, 16), serie(10, 14), serie(10, 16)], pres()).comparable, "");
+  verdict("R4 · non comparable : charge inconnue", !G.comparer(trois(10, null), pres()).comparable, "");
+  verdict("R4 · non comparable : nombre de séries différent", !G.comparer(trois(10), pres({ series: 4 })).comparable, "");
+  verdict("R4 · non comparable : autre type de charge", !G.comparer(trois(10), pres({ charge_type: "totale" })).comparable, "");
+
+  // la question et le calcul partagent leurs critères
+  const cas: [string, ReturnType<typeof trois>, ReturnType<typeof pres>][] = [
+    ["sous la cible", [serie(10), serie(9), serie(10)], pres()],
+    ["dans la fourchette", trois(10), pres()],
+    ["haut de fourchette", trois(12), pres()],
+    ["seule la dernière au haut", [serie(10), serie(10), serie(12)], pres()],
+    ["complémentaire", trois(12), pres({ statut: "complementaire" })],
+    ["poids du corps au haut", trois(12, null).map((x) => ({ ...x, charge_type: "poids_du_corps" })), pres({ charge_type: "poids_du_corps" })],
+    ["poids du corps dans la fourchette", trois(10, null).map((x) => ({ ...x, charge_type: "poids_du_corps" })), pres({ charge_type: "poids_du_corps" })],
+  ];
+  let accord = 0;
+  for (const [, ser, p] of cas) {
+    const q = G.questionUtile(ser, p);
+    const prop = G.prochaineCible(ser, p, "1_2", 2);
+    if (q === (prop !== null)) accord++;
+  }
+  verdict(`R4 · la question est posée exactement quand une proposition est possible (${cas.length} cas)`, accord === cas.length, `${accord}/${cas.length}`);
+  verdict("R4 · seule la dernière série au haut : pas de hausse de charge", G.prochaineCible([serie(10), serie(10), serie(12)], pres(), "3_plus", 2)?.genre === "reps", "tour 29");
+  verdict("R4 · sous la cible : on garde, aucune baisse", G.prochaineCible([serie(10), serie(9), serie(10)], pres(), "3_plus", 2) === null, "");
+
+  // marge
+  for (const m of ["aucune", "inconnue", null] as const) {
+    verdict(`R4 · marge ${m ?? "ignorée"} : rien n'est proposé`, G.prochaineCible(trois(12), pres(), m, 2) === null, "");
+  }
+
+  // hausse de charge
+  const h = G.prochaineCible(trois(12), pres(), "1_2", 2);
+  verdict("R4 · haut de fourchette avec marge : un cran, répétitions au bas", h?.genre === "charge" && h.chargeProposee === 18 && h.repsCible === 8, JSON.stringify(h));
+  const sansCran = G.prochaineCible(trois(12), pres(), "1_2", null);
+  verdict("R4 · sans cran confirmé : choisir la prochaine charge, aucune valeur inventée", sansCran?.genre === "charge" && sansCran.chargeProposee === null, JSON.stringify(sansCran));
+  verdict("R4 · le cran confirmé est l'écart choisi", G.cranConfirme(16, 17.5, "par_haltere") === 1.5 && G.cranConfirme(16, 16, "par_haltere") === null && G.cranConfirme(16, 14, "par_haltere") === null, "");
+  verdict("R4 · une charge choisie qui ne progresse pas n'est pas acceptée", G.cibleAcceptee(sansCran!, 16, "par_haltere") === null && G.cibleAcceptee(sansCran!, 17, "par_haltere")?.cran === 1, "");
+
+  // assistance
+  const as = (r: number, c: number) => [0, 1, 2].map(() => serie(r, c, { charge_type: "assistance" }));
+  const a1 = G.prochaineCible(as(12, 20), pres({ charge_type: "assistance" }), "1_2", 5);
+  verdict("R4 · en assistance, progresser c'est diminuer l'assistance", a1?.genre === "charge" && a1.chargeProposee === 15, JSON.stringify(a1));
+  verdict("R4 · jamais une assistance à zéro ou en dessous", G.prochaineCible(as(12, 5), pres({ charge_type: "assistance" }), "1_2", 5) === null
+    && G.prochaineCible(as(12, 4), pres({ charge_type: "assistance" }), "1_2", 5) === null, "");
+  verdict("R4 · en assistance, le cran confirmé se lit dans le bon sens", G.cranConfirme(20, 17.5, "assistance") === 2.5 && G.cranConfirme(20, 22, "assistance") === null, "");
+
+  // répétitions
+  const rp = G.prochaineCible(trois(10), pres(), "1_2", 2);
+  verdict("R4 · dans la fourchette : une répétition de plus, PROPOSÉE", rp?.genre === "reps" && rp.repsCible === 11 && rp.charge === 16, JSON.stringify(rp));
+  const pdc = G.prochaineCible(trois(10, null).map((x) => ({ ...x, charge_type: "poids_du_corps" })), pres({ charge_type: "poids_du_corps" }), "3_plus", null);
+  verdict("R4 · au poids du corps : des répétitions, sans charge inventée", pdc?.genre === "reps" && pdc.charge === null, JSON.stringify(pdc));
+  verdict("R4 · au poids du corps au haut : on garde, sans annoncer de progression",
+    G.prochaineCible(trois(12, null).map((x) => ({ ...x, charge_type: "poids_du_corps" })), pres({ charge_type: "poids_du_corps" }), "3_plus", null) === null, "variantes reportées");
+
+  // deux questions au plus, dans l'ordre
+  const presEmpl = [pres(), pres(), null, pres(), pres()];
+  const q2 = G.emplacementsAQuestion(presEmpl, () => trois(12));
+  verdict("R4 · au plus deux questions, dans l'ordre de la séance", JSON.stringify(q2) === "[0,1]", JSON.stringify(q2));
+
+  // historique
+  const H = (sess: string, empl: number, serieN: number, charge: number | null, fin: string, o: Record<string, unknown> = {}) => ({
+    workout_session_id: sess, emplacement: empl, serie: serieN, exercice_cle: "developpecouchehalteres", statut: "terminee" as const,
+    validation: "bouton", reps_declarees: 10, charge, charge_type: "par_haltere", termine_le: fin, ...o,
+  });
+  const hist = [
+    H("s2", 0, 1, 12, "2026-10-04T10:00:00Z"), H("s2", 0, 2, 16, "2026-10-04T10:00:00Z"),            // charges mêlées
+    H("s3", 0, 1, 10, "2026-10-05T10:00:00Z"),                                                        // une série isolée, incomplète
+    H("s3", 0, 2, null, "2026-10-05T10:00:00Z", { statut: "non_atteinte", validation: null }),
+    H("s1", 0, 1, 16, "2026-10-01T10:00:00Z"), H("s1", 0, 2, 16, "2026-10-01T10:00:00Z"),            // complète, homogène
+  ];
+  const ref = G.chargeDeReference(hist, "developpecouchehalteres", "par_haltere");
+  verdict("R4 · la charge de départ vient de la dernière réalisation complète et homogène, avec sa date",
+    ref?.charge === 16 && ref.termineLe === "2026-10-01T10:00:00Z", JSON.stringify(ref));
+  verdict("R4 · jamais de référence de charge au poids du corps", G.chargeDeReference(hist, "developpecouchehalteres", "poids_du_corps") === null, "");
+
+  // copie des cibles
+  const L = composerEtape("Push", { lieu: "halteres", orientation: "masse", niveau: null, version: 1 });
+  const ir = L.findIndex((l) => l.statut === "repere" && l.mesure === "reps" && l.charge_type === "par_haltere");
+  const c = { id: "c1", exercice_cle: L[ir].exercice_cle, charge_type: L[ir].charge_type, charge: 18, reps_cible: L[ir].reps_min!, reps_min: L[ir].reps_min!, reps_max: L[ir].reps_max!, rang_vise: 5 };
+  verdict("R4 · une cible ne se recopie qu'à partir du rang visé", G.appliquerCibles(L, [c], 4)[ir].cible_id === undefined && G.appliquerCibles(L, [c], 5)[ir].cible_id === "c1"
+    && G.appliquerCibles(L, [c], 5)[ir].charge_origine === "acceptee", "");
+  verdict("R4 · une cible d'une autre fourchette ne se recopie pas", G.appliquerCibles(L, [{ ...c, reps_max: 99 }], 5)[ir].cible_id === undefined, "");
+  verdict("R4 · sans cible, la projection est celle d'avant", JSON.stringify(projeterPrescription(G.appliquerCibles(L, [], 5))) === JSON.stringify(projeterPrescription(L)), "");
+
+  // le chemin
+  const tunnel = lire1("src/components/WorkoutGuideModal.tsx");
+  verdict("R4 · la question du repos et la proposition passent par les mêmes critères",
+    tunnel.includes("emplacementsAQuestion(prescriptionsR4") && tunnel.includes("propositionsDeSeance(") && tunnel.includes("aQuestion.includes(exerciseIdx)"), "");
+  verdict("R4 · la question ne touche pas au chrono", !/repondreAuRepos[\s\S]{0,400}setRestCountdown/.test(tunnel), "");
+  verdict("R4 · après un remplacement, aucune charge de départ", /departDe = useCallback[\s\S]{0,300}remplacements\[e\]\) return null/.test(tunnel), "décision 56");
+  verdict("R4 · les réponses de fin s'écrivent après l'enregistrement", /if \(!sessionSaved\) return;[\s\S]{0,300}corrigerMarge\(lancementId/.test(tunnel), "");
+  const journee = lire1("src/hooks/useJournee.ts");
+  verdict("R4 · la prescription figée au lancement et à la datation reçoit les cibles",
+    journee.includes("appliquerCibles(c.modele.lignes, c.cibles ?? [], c.rang)") && (journee.match(/appliquerCibles\(/g) ?? []).length === 2, "");
+  const prochaine = lire1("src/components/seance/LaProchaineFois.tsx");
+  verdict("R4 · une séance préparée se nomme avant d'être ajustée",
+    prochaine.includes(`etat.genre === "preparee" ? etat.intentionId : null`) && prochaine.includes("déjà prête"), "tour 29");
+  verdict("R4 · « Garder » n'écrit rien", /onClick=\{\(\) => setEtat\(\{ genre: "gardee" \}\)\}/.test(prochaine), "");
+  const sql4 = lire1("supabase/migrations/20261007_r4_progression.sql");
+  verdict("R4 · SQL · une cible n'est consommée que par une occurrence faite",
+    sql4.includes("where i.id = p_intention and i.statut = 'faite'") && !/consommee_le = now\(\)[\s\S]{0,40}ecrire_occurrence/.test(sql4), "");
+  verdict("R4 · SQL · une séance préparée non nommée n'est pas réécrite",
+    sql4.includes("if v_prep.id is not null and v_appliquer is distinct from v_prep.id then"), "");
+  verdict("R4 · SQL · le journal garde les protections de R1",
+    sql4.includes("raise exception 'proprietaire_different'") && sql4.includes("on conflict (user_id, lancement_id) where lancement_id is not null do nothing"), "");
 }
 
 console.log("\n" + (echecs === 0 ? "Tout passe." : echecs + " échec(s)."));

@@ -43,6 +43,7 @@
    `check:programme` ; la lecture et l'écriture sont à côté.
    ════════════════════════════════════════════════════════════════════ */
 
+import type { Marge } from "@/lib/progression";
 import type { ExercicePrescrit } from "@/lib/banqueEtapes";
 import { chargeReglable, type ExerciceEffectif } from "@/lib/saisieSerie";
 import type { Remplacements } from "@/lib/remplacement";
@@ -73,6 +74,9 @@ export type Marque =
          prescription après un remplacement, et il se garde série par série
          (tour 26 de Codex) : A, puis B, puis C restent trois faits. */
       exercice?: ExerciceEffectif;
+      /* R4 · la marge déclarée après la DERNIÈRE série d'un repère
+         (décision 57). Absente = jamais posée ou ignorée. */
+      marge?: Marge | null;
     }
   | { statut: "passee" };
 
@@ -105,6 +109,8 @@ export type LigneSerie = {
   charge_unite?: "kg" | null;
   charge_type?: string | null;
   exercice_prevu_cle?: string | null;
+  /* R4 · la marge, sur la dernière série d'un repère seulement. */
+  marge?: Marge | null;
 };
 
 export type JournalSeance = {
@@ -198,6 +204,7 @@ export function lignesDuJournal(exercices: Exercise[], marques: MarquesSeance, r
         charge_unite: charge === null ? null : "kg",
         charge_type: pr ? (effectif?.chargeType ?? null) : null,
         exercice_prevu_cle: pr && effectif && effectif.cle !== pr.cle ? pr.cle : null,
+        marge: pr?.statut === "repere" && !duree && terminee && s === Math.max(1, ex.sets) - 1 ? (terminee.marge ?? null) : null,
       });
     }
   });

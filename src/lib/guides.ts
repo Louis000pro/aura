@@ -749,6 +749,11 @@ const REPLIQUES = {
   "seance.charge.choisir": {
     commun: (c) => `Choisis une charge que tu pourrais soulever environ ${c.reps ?? 12} fois.`,
   },
+  /* R4 · la question après la dernière série d'un repère (décision 57).
+     Elle prend la place de la phrase du repos, sans surface de plus. */
+  "seance.marge.question": {
+    commun: "Sur ta dernière série, tu aurais pu faire encore combien de répétitions avec le même mouvement ?",
+  },
   /* Le tunnel est en pause : le Guide attend, et c'est le seul moment de la
      séance où il n'a rien à demander ni à expliquer. */
   "seance.pause": {
