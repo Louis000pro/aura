@@ -498,3 +498,58 @@ Périmètre : maquette 07, écran 05 (la question après un repère) et la propo
 5. Une table `cibles_acceptees` consommée au figement, plutôt qu'une écriture dans une occurrence future ?
 6. La charge de départ historique « telle quelle » ?
 7. Les chaînes de variantes reportées ?
+
+## R4 · cadrage corrigé après le tour 29 de Codex (2026-10-05)
+
+**1. La marge.**
+- `series_realisees.marge` prend `aucune`, `1_2`, `3_plus` ou `inconnue` ; `null` veut dire jamais posée ou ignorée.
+- Elle décrit la **dernière série** d'un repère, pas les autres.
+- `corriger_marge(serie_id, marge)` vérifie que la série appartient au compte connecté, qu'elle est la dernière série prescrite de son emplacement, et que son rôle prescrit est `repere`.
+- Une correction recalcule une proposition **non encore acceptée**. Elle ne touche jamais une cible déjà acceptée ni une séance déjà préparée.
+
+**2. La question.**
+- Elle est posée **avec les mêmes critères que le calcul** (`questionUtile`, partagée avec `prochaineCible`). Les séries de l'exercice sont faites, comparables, et chacune atteint la cible en cours. Sinon la règle décide déjà seule et on ne demande rien.
+- Au plus 2 par séance.
+- Repère suivi d'un repos : la question remplace la phrase du Guide dans ce repos, sans toucher au chrono.
+- Repère qui termine la séance : la question est facultative dans l'écran de fin actuel, dans la même limite de 2. Elle s'écrit après l'enregistrement par `corriger_marge`, sans bloquer la finalisation.
+- Sans réponse, aucune cible ne change.
+
+**3. `prochaineCible(realisation, prescription, cibleEnCours, cran)`, pure.**
+- **Comparable** = même clé effective sur **toutes** les séries (A → B → A ne compte pas), même type de charge, même fourchette, même nombre de séries, toutes `terminee` par le bouton, une seule charge connue (ou aucune au poids du corps).
+- Toutes les séries au **haut de fourchette**, et marge `1_2` ou `3_plus` → **hausse de charge** : cible = charge + cran, répétitions au bas de la fourchette.
+  - Sans cran connu, on propose « Choisir la prochaine charge » avec saisie exacte, et l'écart confirmé devient le cran de cet exercice.
+  - En assistance, progresser veut dire **diminuer** l'assistance ; une proposition qui tomberait à 0 ou en dessous n'est pas faite.
+- Toutes les séries à la cible en cours mais **sous le haut**, avec la même marge → **une répétition de plus**, proposée et acceptée comme une hausse. C'est la progression au poids du corps.
+- Au poids du corps, au haut de fourchette : on garde, sans rien annoncer (les variantes sont reportées).
+- Sous la cible, marge `aucune` ou `inconnue`, absence de réponse, non comparable → on garde, aucune baisse automatique.
+- Une seule proposition par exercice. Une seule est mise en avant à la fin, les autres derrière « Un autre ajustement proposé ».
+
+**4. Les crans.**
+- Aucun cran par défaut comme recommandation.
+- `crans_exercice(user_id, exercice_cle, charge_type, cran)` retient le cran **confirmé**, c'est-à-dire l'écart accepté la dernière fois.
+- Les pas de R3 restent des raccourcis de saisie.
+
+**5. La cible acceptée.**
+- Elle vit dans `cibles_acceptees` : `user_id`, `programme_id`, `programme_seance_id`, `exercice_cle`, `charge_type`, `charge` (nulle au poids du corps), `reps_cible`, `reps_min`, `reps_max`, `rang_source`, `workout_session_id` source, `acceptee_le`, `consommee_le`.
+- Elle vise **l'occurrence suivante de la même étape** : `rang_source + longueur du cycle`. Si cette occurrence ne se fait pas, la cible reste valable pour la suivante. Une seule cible ouverte par `(user, programme, étape, exercice)`.
+- **Copie, pas consommation.** Elle est recopiée dans `occurrence_exercices` (`charge_cible`, `charge_origine = 'acceptee'`, `reps_cible`, `cible_id`) quand la prescription se fige. Elle n'est consommée que lorsque l'occurrence qui la porte est **faite**.
+- Un lancement libre garde la copie en mémoire, sans écriture ; la fermeture écrit l'occurrence avec `cible_id`, ce qui consomme la cible.
+- `charge_origine` ne décrit que la charge : une cible en répétitions seules a `charge_cible` nulle et `reps_cible` posée.
+- **Occurrence visée déjà préparée et pas commencée** : « Accepter » ne la réécrit pas en silence. La carte annonce avant le clic « S'applique à ta séance de mardi 8 », et l'acceptation met à jour cette prescription par une RPC explicite, `appliquer_cible`. Une séance commencée ou faite ne change jamais.
+
+**6. La charge de départ (`charge_origine = 'historique'`).**
+- C'est la charge de la dernière réalisation **complète et comparable** à charge homogène, sur la même clé et le même type, avec sa date affichée discrètement (« 60 kg · mardi »).
+- Jamais simplement la dernière série.
+- Une lecture ratée n'est pas « aucun historique » : la charge reste inconnue et rien n'est écrit.
+- Une occurrence déjà figée ne change pas à la lecture.
+
+**7. Variantes reportées.** Au poids du corps, au haut de fourchette, on garde la cible sans annoncer de progression.
+
+### Cas verrouillés (à tenir au banc)
+
+1. **Abandon après lancement libre** : rien n'est écrit, la cible reste ouverte et revient au lancement suivant.
+2. **Retrait puis nouvelle datation** : la prescription retirée disparaît avec l'intention, la cible reste ouverte et se recopie à la nouvelle datation.
+3. **Occurrence déjà préparée** : la proposition nomme la séance concernée. Accepter appelle `appliquer_cible` ; Garder ne touche rien. Une occurrence commencée ou faite est refusée.
+4. **Deux appareils préparent la même occurrence** : la préparation reste idempotente (R2), les deux lisent la même cible ouverte et écrivent la même copie, et la cible est consommée une seule fois.
+5. **Correction de marge** : avant acceptation, la proposition est recalculée ; après acceptation, la cible et la séance préparée ne bougent pas.
+6. **Proposition en répétitions** : acceptée, elle pose `reps_cible` sans charge et sans toucher `charge_origine`. Refusée, rien ne change.
