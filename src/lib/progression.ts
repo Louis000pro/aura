@@ -225,11 +225,12 @@ export function propositionsDeSeance(
 /** Une série lue en base, avec la date de sa séance. */
 export type SerieHistorique = SerieRealisee & {
   workout_session_id: string;
+  /** La fourchette que la séance historique prescrivait. */
+  reps_min_prescrites?: number | null;
+  reps_max_prescrites?: number | null;
   emplacement: number;
   serie: number;
   statut_prescrit?: string | null;
-  reps_min_prescrites?: number | null;
-  reps_max_prescrites?: number | null;
   /** La fin de la séance (ISO). */
   termine_le: string;
 };
@@ -247,9 +248,20 @@ export type ReferenceCharge = { charge: number; termineLe: string };
  * avant de regrouper fait disparaître B dans A → B → A, et les séries 1
  * et 3 de A passeraient pour une réalisation complète. Un groupe dont les
  * séries ne vont pas de 1 à n sans trou est exclu.
+ *
+ * ⚠️ COMPARABLE À LA PRESCRIPTION ACTUELLE (tour 31). La séance historique
+ * doit avoir prescrit la même fourchette et le même nombre de séries :
+ * 120 kg sur des séries de 3 à 5 ne disent rien d'une prescription de 8
+ * à 12.
  */
-export function chargeDeReference(series: SerieHistorique[], cle: string, type: TypeCharge | null): ReferenceCharge | null {
-  if (!chargeReglable(type)) return null;
+export type ReferencePrescrite = { cle: string; charge_type: TypeCharge | null; reps_min: number | null; reps_max: number | null; series: number };
+
+/** La clé d'une référence : l'exercice, son type, sa fourchette, ses séries. */
+export const cleReference = (p: ReferencePrescrite) => `${p.cle}|${p.charge_type ?? ""}|${p.reps_min ?? ""}-${p.reps_max ?? ""}|${p.series}`;
+
+export function chargeDeReference(series: SerieHistorique[], p: ReferencePrescrite): ReferenceCharge | null {
+  const { cle, charge_type: type } = p;
+  if (!chargeReglable(type) || p.reps_min == null || p.reps_max == null || !(p.series > 0)) return null;
   const groupes = new Map<string, SerieHistorique[]>();
   for (const s of series) {
     const k = `${s.workout_session_id}|${s.emplacement}`;
@@ -261,7 +273,8 @@ export function chargeDeReference(series: SerieHistorique[], cle: string, type: 
     .map((g) => g.sort((a, b) => a.serie - b.serie))
     .sort((a, b) => (a[0].termine_le < b[0].termine_le ? 1 : a[0].termine_le > b[0].termine_le ? -1 : 0));
   for (const g of candidats) {
-    if (!g.every((s, i) => s.serie === i + 1)) continue;
+    if (g.length !== p.series || !g.every((s, i) => s.serie === i + 1)) continue;
+    if (!g.every((s) => s.reps_min_prescrites === p.reps_min && s.reps_max_prescrites === p.reps_max)) continue;
     if (!g.every((s) => s.exercice_cle === cle && (s.charge_type ?? null) === type)) continue;
     if (!g.every((s) => s.statut === "terminee" && s.validation === "bouton")) continue;
     const c = g[0].charge ?? null;

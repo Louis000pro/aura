@@ -40,7 +40,7 @@ import {
   type Equivalent, type Remplacements,
 } from "@/lib/remplacement";
 import {
-  poserQuestion, prescriptionDe, propositionsDeSeance, questionUtile, type Marge, type ReferenceCharge,
+  cleReference, poserQuestion, prescriptionDe, propositionsDeSeance, questionUtile, type Marge, type ReferenceCharge,
 } from "@/lib/progression";
 import { fileDeMarges } from "@/lib/fileMarges";
 import { cleCharge, corrigerMarge, cransConfirmes, referencesDeCharge } from "@/lib/progressionBase";
@@ -1076,7 +1076,7 @@ export default function WorkoutGuideModal({
     const pr = (exercises[e] as ExercicePrescrit | undefined)?.prescription;
     if (!pr || !chargeReglable(pr.charge_type) || remplacements[e]) return null;
     if (typeof pr.charge_cible === "number" && pr.charge_cible > 0) return { charge: pr.charge_cible, origine: "acceptee" };
-    const ref = references?.get(cleCharge(pr.cle, pr.charge_type));
+    const ref = references?.get(cleReference({ ...pr, series: exercises[e]?.sets ?? 0 }));
     return ref ? { charge: ref.charge, origine: "historique", termineLe: ref.termineLe } : null;
   }, [exercises, remplacements, references]);
   /* R4 · une seule lecture au montage : les références de charge et les
@@ -1085,11 +1085,10 @@ export default function WorkoutGuideModal({
   useEffect(() => {
     if (!userId) return;
     const prescrits = exercises
-      .map((ex) => (ex as ExercicePrescrit).prescription)
-      .filter((p): p is NonNullable<ExercicePrescrit["prescription"]> => !!p && chargeReglable(p.charge_type));
+      .flatMap((ex) => { const p = (ex as ExercicePrescrit).prescription; return p && chargeReglable(p.charge_type) ? [{ ...p, series: ex.sets }] : []; });
     if (prescrits.length === 0) return;
     let vivant = true;
-    void referencesDeCharge(userId, prescrits.map((p) => ({ cle: p.cle, type: p.charge_type })))
+    void referencesDeCharge(userId, prescrits)
       .then((m) => { if (vivant) setReferences(m); });
     void cransConfirmes(userId, prescrits.map((p) => p.cle))
       .then((m) => { if (vivant) setCrans(m); });

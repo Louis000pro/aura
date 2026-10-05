@@ -13,7 +13,7 @@
 
 import { createClient } from "@/lib/supabase";
 import {
-  chargeDeReference, type CibleOuverte, type Marge, type ReferenceCharge, type SerieHistorique,
+  chargeDeReference, cleReference, type CibleOuverte, type Marge, type ReferenceCharge, type ReferencePrescrite, type SerieHistorique,
 } from "@/lib/progression";
 import type { TypeCharge } from "@/lib/banqueEtapes";
 
@@ -75,7 +75,7 @@ const SEANCES_EXAMINEES = 12;
  * réponse, la dernière séance lue peut être tronquée : elle est écartée.
  */
 export async function referencesDeCharge(
-  userId: string, exercices: { cle: string; type: TypeCharge | null }[], client?: ClientLike,
+  userId: string, exercices: ReferencePrescrite[], client?: ClientLike,
 ): Promise<Map<string, ReferenceCharge> | null> {
   const cles = [...new Set(exercices.map((e) => e.cle))];
   if (cles.length === 0) return new Map();
@@ -90,7 +90,7 @@ export async function referencesDeCharge(
   if (ids.length === 0) return new Map();
   const { data, error, count } = await supabase
     .from("series_realisees")
-    .select("workout_session_id, emplacement, serie, exercice_cle, statut, validation, reps_declarees, charge, charge_type, workout_sessions(termine_le)", { count: "exact" })
+    .select("workout_session_id, emplacement, serie, exercice_cle, statut, validation, reps_declarees, charge, charge_type, reps_min_prescrites, reps_max_prescrites, workout_sessions(termine_le)", { count: "exact" })
     .eq("user_id", userId).in("workout_session_id", ids)
     .order("workout_session_id").order("emplacement").order("serie")
     .limit(5000);
@@ -108,6 +108,8 @@ export function lignesHistorique(rows: unknown[], total: number | null): SerieHi
       exercice_cle: (r.exercice_cle ?? null) as string | null, statut: r.statut as SerieHistorique["statut"],
       validation: (r.validation ?? null) as string | null, reps_declarees: r.reps_declarees == null ? null : Number(r.reps_declarees),
       charge: r.charge == null ? null : Number(r.charge), charge_type: (r.charge_type ?? null) as string | null,
+      reps_min_prescrites: r.reps_min_prescrites == null ? null : Number(r.reps_min_prescrites),
+      reps_max_prescrites: r.reps_max_prescrites == null ? null : Number(r.reps_max_prescrites),
       termine_le: String(fin ?? ""),
     };
   });
@@ -118,12 +120,12 @@ export function lignesHistorique(rows: unknown[], total: number | null): SerieHi
   return series;
 }
 
-/** Les références, depuis des séries lues par séances entières. */
-export function referencesDepuisSeries(series: SerieHistorique[], exercices: { cle: string; type: TypeCharge | null }[]): Map<string, ReferenceCharge> {
+/** Les références, depuis des séries lues par séances entières, par prescription (`cleReference`). */
+export function referencesDepuisSeries(series: SerieHistorique[], exercices: ReferencePrescrite[]): Map<string, ReferenceCharge> {
   const sortie = new Map<string, ReferenceCharge>();
   for (const e of exercices) {
-    const ref = chargeDeReference(series, e.cle, e.type);
-    if (ref) sortie.set(cleCharge(e.cle, e.type), ref);
+    const ref = chargeDeReference(series, e);
+    if (ref) sortie.set(cleReference(e), ref);
   }
   return sortie;
 }
@@ -146,13 +148,15 @@ export type ResultatAcceptation =
   /** Une séance de cette étape est déjà prête : il faut la nommer pour l'ajuster. */
   | { resultat: "occurrence_preparee"; intentionId: string; date: string | null }
   | { resultat: "seance_introuvable" | "hors_programme" | "pas_un_repere" | "marge_non_confirmee"
-      | "occurrence_changee" | "occurrence_introuvable" | "echec" };
+      | "occurrence_changee" | "occurrence_introuvable" | "occurrence_occupee" | "non_comparable" | "proposition_invalide" | "echec" };
 
-const REFUS = ["seance_introuvable", "hors_programme", "pas_un_repere", "marge_non_confirmee", "occurrence_changee", "occurrence_introuvable"] as const;
+const REFUS = ["seance_introuvable", "hors_programme", "pas_un_repere", "marge_non_confirmee", "occurrence_changee",
+  "occurrence_introuvable", "occurrence_occupee", "non_comparable", "proposition_invalide"] as const;
 
 /**
- * Accepte une proposition. Rien ne s'écrit sur une séance préparée qu'on
- * n'a pas nommée. La marge d'où vient la proposition part avec elle et
+ * Accepte une proposition. Sur une séance préparée qu'on n'a pas nommée,
+ * aucune version n'est créée et aucune prescription ne change : seule la
+ * marge déclarée est enregistrée. La marge d'où vient la proposition part avec elle et
  * s'écrit dans la même transaction (tour 30).
  */
 export async function accepterCible(e: {

@@ -6772,29 +6772,39 @@ verdict(
   // historique
   const H = (sess: string, empl: number, serieN: number, charge: number | null, fin: string, o: Record<string, unknown> = {}) => ({
     workout_session_id: sess, emplacement: empl, serie: serieN, exercice_cle: "developpecouchehalteres", statut: "terminee" as const,
-    validation: "bouton", reps_declarees: 10, charge, charge_type: "par_haltere", termine_le: fin, ...o,
+    validation: "bouton", reps_declarees: 10, charge, charge_type: "par_haltere", reps_min_prescrites: 8, reps_max_prescrites: 12, termine_le: fin, ...o,
   });
+  const PR = (series: number, o: Record<string, unknown> = {}) => ({ cle: "developpecouchehalteres", charge_type: "par_haltere" as const, reps_min: 8, reps_max: 12, series, ...o });
   const hist = [
     H("s2", 0, 1, 12, "2026-10-04T10:00:00Z"), H("s2", 0, 2, 16, "2026-10-04T10:00:00Z"),            // charges mêlées
     H("s3", 0, 1, 10, "2026-10-05T10:00:00Z"),                                                        // une série isolée, incomplète
     H("s3", 0, 2, null, "2026-10-05T10:00:00Z", { statut: "non_atteinte", validation: null }),
     H("s1", 0, 1, 16, "2026-10-01T10:00:00Z"), H("s1", 0, 2, 16, "2026-10-01T10:00:00Z"),            // complète, homogène
   ];
-  const ref = G.chargeDeReference(hist, "developpecouchehalteres", "par_haltere");
+  const ref = G.chargeDeReference(hist, PR(2));
   verdict("R4 · la charge de départ vient de la dernière réalisation complète et homogène, avec sa date",
     ref?.charge === 16 && ref.termineLe === "2026-10-01T10:00:00Z", JSON.stringify(ref));
-  verdict("R4 · jamais de référence de charge au poids du corps", G.chargeDeReference(hist, "developpecouchehalteres", "poids_du_corps") === null, "");
+  verdict("R4 · jamais de référence de charge au poids du corps", G.chargeDeReference(hist, PR(2, { charge_type: "poids_du_corps" })) === null, "");
   {
     /* Tour 30 · A → B → A lu par séances entières : B est là, le groupe est refusé. */
     const aba = [
       H("s9", 0, 1, 16, "2026-10-06T10:00:00Z"),
       H("s9", 0, 2, null, "2026-10-06T10:00:00Z", { exercice_cle: "pompes", charge_type: "poids_du_corps" }),
       H("s9", 0, 3, 16, "2026-10-06T10:00:00Z"),
-      H("s1", 0, 1, 14, "2026-10-01T10:00:00Z"), H("s1", 0, 2, 14, "2026-10-01T10:00:00Z"),
+      H("s1", 0, 1, 14, "2026-10-01T10:00:00Z"), H("s1", 0, 2, 14, "2026-10-01T10:00:00Z"), H("s1", 0, 3, 14, "2026-10-01T10:00:00Z"),
     ];
-    verdict("R4 · A → B → A n'est jamais une référence", G.chargeDeReference(aba, "developpecouchehalteres", "par_haltere")?.charge === 14, "tour 30");
+    verdict("R4 · A → B → A n'est jamais une référence", G.chargeDeReference(aba, PR(3))?.charge === 14, "tour 30");
     const trous = [H("s9", 0, 1, 16, "2026-10-06T10:00:00Z"), H("s9", 0, 3, 16, "2026-10-06T10:00:00Z")];
-    verdict("R4 · les séries 1 et 3 seules ne font pas une réalisation complète", G.chargeDeReference(trous, "developpecouchehalteres", "par_haltere") === null, "tour 30");
+    verdict("R4 · les séries 1 et 3 seules ne font pas une réalisation complète", G.chargeDeReference(trous, PR(2)) === null, "tour 30");
+    /* Tour 31 · la séance historique doit avoir prescrit la même chose. */
+    const lourd = [
+      ...[1, 2, 3].map((n) => H("s8", 0, n, 120, "2026-10-06T10:00:00Z", { reps_min_prescrites: 3, reps_max_prescrites: 5, reps_declarees: 5 })),
+      ...[1, 2, 3].map((n) => H("s7", 0, n, 60, "2026-10-04T10:00:00Z")),
+      ...[1, 2, 3].map((n) => H("s1", 0, n, 50, "2026-10-01T10:00:00Z")),
+    ];
+    verdict("R4 · 120 kg sur 3 à 5 ne deviennent pas la charge d'une prescription 8 à 12", G.chargeDeReference(lourd, PR(3))?.charge === 60, "tour 31");
+    verdict("R4 · un autre nombre de séries prescrit n'est pas comparable", G.chargeDeReference(lourd.filter((x) => x.workout_session_id !== "s8"), PR(4)) === null, "tour 31");
+    verdict("R4 · la clé de référence distingue fourchette et séries", G.cleReference(PR(3)) !== G.cleReference(PR(4)) && G.cleReference(PR(3)) !== G.cleReference(PR(3, { reps_min: 3, reps_max: 5 })), "");
     const B = await import("@/lib/progressionBase");
     const lues = [
       { workout_session_id: "s1", emplacement: 0, serie: 1, exercice_cle: "developpecouchehalteres", statut: "terminee", validation: "bouton", reps_declarees: 10, charge: 14, charge_type: "par_haltere", workout_sessions: { termine_le: "2026-10-01T10:00:00Z" } },
@@ -6871,7 +6881,14 @@ verdict(
     sql4.includes("where i.id = p_intention and i.statut = 'faite'") && !/consommee_le = now\(\)[\s\S]{0,40}ecrire_occurrence/.test(sql4), "");
   verdict("R4 · SQL · une séance préparée non nommée n'est pas réécrite, et se revérifie sous verrou",
     sql4.includes("if v_prep.id is not null and v_appliquer is distinct from v_prep.id then")
-      && /i\.rang = v_vise and i\.statut = 'prevue'\s*for update;/.test(sql4) && sql4.includes("'occurrence_changee'"), "tour 30");
+      && /i\.rang = v_vise and i\.statut = 'prevue'\s*for update nowait;/.test(sql4) && sql4.includes("'occurrence_changee'"), "tour 30");
+  verdict("R4 · SQL · l'acceptation prend le verrou de programme de R6 avant de calculer le rang",
+    /perform pg_advisory_xact_lock\(hashtextextended\(v_int\.programme_id::text, 6\)\);\s*v_vise := public\.rang_suivant/.test(sql4)
+      && lire1("supabase/migrations/20261004_r6_occurrences.sql").includes("pg_advisory_xact_lock(hashtextextended(new.programme_id::text, 6))"), "tour 31");
+  verdict("R4 · SQL · la résolution (report) prend le même verrou",
+    /cibles_suivent_intention[\s\S]{0,700}pg_advisory_xact_lock\(hashtextextended\(i\.programme_id::text, 6\)\)/.test(sql4), "tour 31");
+  verdict("R4 · SQL · l'acceptation vérifie la réalisation entière avant de créer une version",
+    sql4.indexOf("'non_comparable'") > 0 && sql4.indexOf("'non_comparable'") < sql4.indexOf("insert into public.cibles_acceptees"), "tour 31");
   verdict("R4 · SQL · le journal garde les protections de R1",
     sql4.includes("raise exception 'proprietaire_different'") && sql4.includes("on conflict (user_id, lancement_id) where lancement_id is not null do nothing"), "");
 }

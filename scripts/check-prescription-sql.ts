@@ -511,6 +511,39 @@ await setUid(U);
     t("R4 · tour 30 · P1 · après une fermeture tardive, la cible vise l'occurrence que R6 donnera (5, pas 3)", v.resultat === "ok" && v.rang_vise === 5, JSON.stringify(v));
   }
   {
+    /* Tour 31 · la base vérifie la réalisation ENTIÈRE avant de créer une version. */
+    const exoIr = { cle: rep.exercice_cle, nom: rep.exercice_nom, chargeType: rep.charge_type };
+    const marque = (k: number, o: Record<string, unknown> = {}) => ({
+      statut: "terminee", validation: "bouton", dureeS: null, reps: rep.reps_max, charge: 16, exercice: exoIr,
+      ...(k === rep.series - 1 ? { marge: "1_2" } : {}), ...o,
+    });
+    let n = 0;
+    const essai = async (nom: string, parSerie: (k: number) => Record<string, unknown>, attendu: string, acceptation: Record<string, unknown> = {}) => {
+      const { P, E } = await nouveauProgramme();
+      const S = `c1c1c1c1-0000-0000-0000-${String(++n).padStart(12, "0")}`;
+      await rpc("ecrire_occurrence", { intention: occ(P, E, { rang: 1, statut: "faite", consommee_le: "2026-10-05T10:00:00Z", lancement_id: S }), modele_id: null, lignes: L4 });
+      const m = { [ir]: Object.fromEntries(Array.from({ length: rep.series }, (_, k) => [k, marque(k, parSerie(k))])) } as MarquesSeance;
+      await rpc("enregistrer_seance", { lancement_id: S, proprietaire: U, titre: "Push", duree_s: 900, series: lignesDuJournal(exs4, m) });
+      const avant = (await q(`select count(*)::int n from cibles_acceptees where programme_id=$1`, [P])).rows[0].n;
+      const r = await rpc("accepter_cible", { lancement_id: S, emplacement: ir, charge: 18, reps_cible: rep.reps_min, cran: 2, ...acceptation });
+      t(`R4 · tour 31 · ${nom}`, r.resultat === attendu && (attendu !== "ok") === ((await q(`select count(*)::int n from cibles_acceptees where programme_id=$1`, [P])).rows[0].n === avant), JSON.stringify(r));
+    };
+    await essai("une réalisation complète au haut de fourchette est acceptée", () => ({}), "ok");
+    await essai("première série non faite : refusée", (k) => k === 0 ? { statut: "non_atteinte", reps: null, charge: null } : {}, "non_comparable");
+    await essai("première série validée par le minuteur : refusée", (k) => k === 0 ? { validation: "minuteur_fini" } : {}, "non_comparable");
+    await essai("A → B → A : refusée", (k) => k === 1 ? { exercice: { cle: "pompes", nom: "Pompes", chargeType: "poids_du_corps" }, charge: null } : {}, "non_comparable");
+    await essai("charges mélangées : refusée", (k) => k === 0 ? { charge: 14 } : {}, "non_comparable");
+    await essai("une charge inconnue : refusée", (k) => k === 1 ? { charge: null } : {}, "non_comparable");
+    await essai("répétitions insuffisantes (sous la cible) : refusée", (k) => k === 1 ? { reps: rep.reps_cible! - 1 } : {}, "proposition_invalide");
+    await essai("sous la cible, même la forme « une répétition de plus » est refusée", (k) => k === 1 ? { reps: rep.reps_cible! - 1 } : {}, "proposition_invalide",
+      { charge: 16, reps_cible: Math.min(rep.reps_cible! + 1, rep.reps_max!), cran: null });
+    await essai("dans la fourchette, une hausse de charge n'est pas la proposition : refusée", (k) => k === 1 ? { reps: rep.reps_max! - 1 } : {}, "proposition_invalide");
+    await essai("dans la fourchette, une répétition de plus à la même charge est acceptée", (k) => k === 1 ? { reps: rep.reps_max! - 1 } : {}, "ok",
+      { charge: 16, reps_cible: Math.min(rep.reps_cible! + 1, rep.reps_max!), cran: null });
+    await essai("au haut, une charge qui ne progresse pas : refusée", () => ({}), "proposition_invalide", { charge: 16 });
+    await essai("au haut, des répétitions autres que le bas de fourchette : refusée", () => ({}), "proposition_invalide", { reps_cible: rep.reps_max });
+  }
+  {
     // une occurrence passée reporte la cible ; une confirmation sur une occurrence changée n'écrit rien
     const { P, E } = await nouveauProgramme();
     const S = "b5b5b5b5-0000-0000-0000-000000000001";

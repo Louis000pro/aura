@@ -8,7 +8,8 @@
    et rien ne s'écrit sur « Garder ».
 
    ⚠️ UNE SÉANCE DÉJÀ PRÉPARÉE SE NOMME AVANT D'ÊTRE AJUSTÉE (tour 29).
-   Le premier « Accepter » n'écrit rien si la prochaine séance de l'étape
+   Le premier « Accepter » ne crée aucune cible et ne touche aucune
+   prescription (seule la marge déclarée s'enregistre) si la prochaine séance de l'étape
    est déjà prête : la base le dit, la carte l'annonce (« Ta séance de
    mardi 8 est déjà prête »), et seul « Ajuster mardi 8 » la modifie.
 
@@ -67,6 +68,7 @@ function Carte({ p, lancementId, enregistree, marge }: { p: PropositionSeance; l
     if (r.resultat === "ok") setEtat({ genre: "acceptee", ajuste: appliquerA ? (etat.genre === "preparee" ? etat.date : null) : null });
     else if (r.resultat === "occurrence_preparee") setEtat({ genre: "preparee", intentionId: r.intentionId, date: r.date });
     else if (r.resultat === "seance_introuvable") setEtat({ genre: "erreur", texte: "Ta séance s'enregistre encore. Réessaie dans un instant." });
+    else if (r.resultat === "occurrence_occupee") setEtat({ genre: "erreur", texte: "Cette séance est en train de se terminer. Réessaie dans un instant." })
     else if (r.resultat === "occurrence_changee") setEtat({ genre: "erreur", texte: "Cette séance a changé entre-temps. Réessaie pour voir où en est la prochaine." });
     else setEtat({ genre: "erreur", texte: "Impossible d'enregistrer ce choix pour l'instant." });
   };

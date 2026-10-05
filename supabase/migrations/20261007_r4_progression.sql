@@ -25,9 +25,11 @@
    alors remises à la copie que le journal de ce lancement a suivie.
 
    ⚠️ UNE SÉANCE DÉJÀ PRÉPARÉE NE SE RÉÉCRIT PAS EN SILENCE.
-   `accepter_cible` refuse d'écrire tant que l'appareil ne nomme pas
-   l'occurrence préparée qu'il a annoncée, et revérifie son état, sous
-   verrou, dans la transaction qui l'ajuste.
+   `accepter_cible` ne crée aucune version et ne touche aucune
+   prescription tant que l'appareil ne nomme pas l'occurrence préparée
+   qu'il a annoncée ; seule la marge déclarée est enregistrée à ce premier
+   clic. Il revérifie son état, sous verrou, dans la transaction qui
+   l'ajuste.
    ════════════════════════════════════════════════════════════════════ */
 
 /* ─────────────── 1. La marge de la dernière série d'un repère ─────────────── */
@@ -483,6 +485,10 @@ begin
   select id, statut, programme_id, etape_consommee_id, rang into i
     from public.intentions_entrainement where id = new.id;
   if i.id is null or i.statut not in ('faite', 'passee') then return null; end if;
+  /* Le verrou de programme de R6, comme `accepter_cible` (tour 31). */
+  if i.programme_id is not null then
+    perform pg_advisory_xact_lock(hashtextextended(i.programme_id::text, 6));
+  end if;
   if i.statut = 'faite' then
     perform public.restaurer_copie_suivie(i.id);
     perform public.consommer_cibles(i.id);
@@ -678,6 +684,8 @@ declare
   v_cible     uuid;
   v_prep      record;
   v_derniere  record;
+  v_real      record;
+  v_reglable  boolean;
 begin
   if v_user is null then raise exception 'non_connecte' using errcode = '28000'; end if;
   if v_marge is not null and v_marge not in ('aucune', '1_2', '3_plus', 'inconnue') then
@@ -694,7 +702,7 @@ begin
      and programme_id is not null and etape_consommee_id is not null and rang is not null;
   if v_int.id is null then return jsonb_build_object('resultat', 'hors_programme'); end if;
 
-  select exercice_cle, charge_type, reps_min, reps_max, statut, mesure into v_ligne
+  select exercice_cle, charge_type, reps_min, reps_max, reps_cible, series, statut, mesure into v_ligne
     from public.occurrence_exercices
    where intention_id = v_int.id and emplacement = v_empl;
   if v_ligne.exercice_cle is null or v_ligne.statut <> 'repere' or v_ligne.mesure <> 'reps' then
@@ -708,6 +716,50 @@ begin
     if v_charge is not null and v_charge <= 0 then raise exception 'charge_invalide' using errcode = '22023'; end if;
   elsif v_charge is not null then
     raise exception 'charge_sans_kilos' using errcode = '22023';
+  end if;
+
+  /* La réalisation ENTIÈRE, relue en base (tour 31) : exactement les
+     critères de `prochaineCible`. Toutes les séries prévues, de 1 à n,
+     terminées par le bouton, sur la même clé réelle et le même type, avec
+     des répétitions déclarées, une seule charge connue (aucune au poids
+     du corps), la fourchette prescrite, et toutes au moins à la cible. */
+  v_reglable := v_ligne.charge_type in ('totale', 'par_haltere', 'assistance');
+  select count(*)::integer as n,
+         coalesce(min(s.serie) = 1 and max(s.serie) = count(*) and count(distinct s.serie) = count(*), false) as suite,
+         coalesce(bool_and(s.statut = 'terminee' and s.validation = 'bouton'), false) as faites,
+         coalesce(bool_and(s.exercice_cle = v_ligne.exercice_cle), false) as meme_cle,
+         coalesce(bool_and(s.charge_type is not distinct from v_ligne.charge_type), false) as meme_type,
+         coalesce(bool_and(s.reps_min_prescrites = v_ligne.reps_min and s.reps_max_prescrites = v_ligne.reps_max), false) as meme_fourchette,
+         coalesce(bool_and(s.reps_declarees is not null), false) as reps_connues,
+         coalesce(bool_and(s.reps_declarees >= v_ligne.reps_cible), false) as a_la_cible,
+         coalesce(bool_and(s.reps_declarees >= v_ligne.reps_max), false) as au_haut,
+         count(distinct s.charge)::integer as charges,
+         coalesce(bool_and(s.charge is not null), false) as charges_connues,
+         coalesce(bool_and(s.charge is null), false) as sans_charge,
+         min(s.charge) as charge
+    into v_real
+    from public.series_realisees s
+   where s.workout_session_id = v_session and s.user_id = v_user and s.emplacement = v_empl;
+  if v_real.n <> v_ligne.series or not v_real.suite or not v_real.faites or not v_real.meme_cle
+     or not v_real.meme_type or not v_real.meme_fourchette or not v_real.reps_connues
+     or (v_reglable and not (v_real.charges_connues and v_real.charges = 1))
+     or (not v_reglable and not v_real.sans_charge) then
+    return jsonb_build_object('resultat', 'non_comparable');
+  end if;
+  if not v_real.a_la_cible then
+    return jsonb_build_object('resultat', 'proposition_invalide');
+  end if;
+  /* Ce qu'on accepte doit être la proposition que cette réalisation ouvre. */
+  if v_real.au_haut then
+    /* Une charge au haut de fourchette partout : une hausse, aux reps du bas. */
+    if not v_reglable or v_charge is null or v_reps <> v_ligne.reps_min
+       or (v_ligne.charge_type = 'assistance' and v_charge >= v_real.charge)
+       or (v_ligne.charge_type <> 'assistance' and v_charge <= v_real.charge) then
+      return jsonb_build_object('resultat', 'proposition_invalide');
+    end if;
+  elsif v_reps <> least(v_ligne.reps_cible + 1, v_ligne.reps_max) or v_charge is distinct from v_real.charge then
+    /* Dans la fourchette : une répétition de plus, à la même charge. */
+    return jsonb_build_object('resultat', 'proposition_invalide');
   end if;
 
   /* La marge : celle que l'appareil a vue, écrite ici, puis vérifiée. */
@@ -724,20 +776,34 @@ begin
     return jsonb_build_object('resultat', 'marge_non_confirmee');
   end if;
 
-  /* L'occurrence visée, par les règles R6. */
+  /* L'occurrence visée, par les règles R6, SOUS LE VERROU DE PROGRAMME DE
+     R6 (tour 31), tenu jusqu'à la fin de la transaction. Une fermeture de
+     cette étape (`attribuer_rang` à l'écriture, le report en fin de
+     transaction) prend le même : l'acceptation calcule son rang après
+     elle, ou la fermeture reporte la version écrite avant elle. Jamais
+     une version ouverte sur une occurrence déjà résolue. */
+  perform pg_advisory_xact_lock(hashtextextended(v_int.programme_id::text, 6));
   v_vise := public.rang_suivant(v_int.programme_id, v_int.etape_consommee_id);
   if v_vise is null or v_vise <= v_int.rang then
     return jsonb_build_object('resultat', 'occurrence_introuvable');
   end if;
 
   /* Cette occurrence est-elle déjà préparée ? On la verrouille : son état
-     se revérifie ici, dans la transaction qui l'ajusterait. */
-  select i.id, i.date into v_prep
-    from public.intentions_entrainement i
-   where i.user_id = v_user and i.programme_id = v_int.programme_id
-     and i.etape_consommee_id = v_int.etape_consommee_id
-     and i.rang = v_vise and i.statut = 'prevue'
-   for update;
+     se revérifie ici, dans la transaction qui l'ajusterait.
+     ⚠️ SANS ATTENDRE : une fermeture par statut verrouille la ligne PUIS
+     prend le verrou de programme en fin de transaction ; l'attendre ici,
+     verrou de programme tenu, croiserait les deux. Une ligne occupée
+     répond `occurrence_occupee`, et on réessaie. */
+  begin
+    select i.id, i.date into v_prep
+      from public.intentions_entrainement i
+     where i.user_id = v_user and i.programme_id = v_int.programme_id
+       and i.etape_consommee_id = v_int.etape_consommee_id
+       and i.rang = v_vise and i.statut = 'prevue'
+     for update nowait;
+  exception when lock_not_available then
+    return jsonb_build_object('resultat', 'occurrence_occupee');
+  end;
   if v_prep.id is not null and v_appliquer is distinct from v_prep.id then
     return jsonb_build_object('resultat', 'occurrence_preparee', 'intention_id', v_prep.id, 'date', v_prep.date);
   end if;

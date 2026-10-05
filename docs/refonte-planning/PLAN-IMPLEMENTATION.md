@@ -618,3 +618,34 @@ Bancs :
 - Bases inchangées : eslint 93, `check:echelle` identique, `tsc` et `build` passent.
 
 Migration toujours **non appliquée**.
+
+## R4 · corrections du tour 31 de Codex (2026-10-05)
+
+1. **L'acceptation vérifie la réalisation entière.** Avant de créer une version, `accepter_cible` relit toutes les séries de l'emplacement. Elle vérifie les critères de `prochaineCible` :
+   - le nombre prescrit, de 1 à n sans trou ;
+   - des séries terminées par le bouton ;
+   - la même clé réelle et le même type ;
+   - la fourchette prescrite ;
+   - des répétitions déclarées ;
+   - une seule charge connue (aucune au poids du corps) ;
+   - toutes les séries au moins à la cible.
+
+   Ce qu'on accepte doit en plus être la proposition que cette réalisation ouvre :
+   - au haut de la fourchette : une charge qui progresse, aux répétitions du bas ;
+   - sinon : une répétition de plus, à la même charge.
+
+   Les refus `non_comparable` et `proposition_invalide` n'écrivent rien.
+2. **Le verrou de programme de R6.**
+   - `accepter_cible` prend `pg_advisory_xact_lock(hashtextextended(programme_id::text, 6))` avant `rang_suivant`, et le garde jusqu'à la fin. La résolution différée (copie, consommation, report) prend le même.
+   - Une fermeture d'étape libre le prend déjà par `attribuer_rang`. L'acceptation calcule donc son rang après la fermeture, ou la fermeture reporte la version écrite avant elle.
+   - Une occurrence préparée fermée par son statut verrouille sa ligne puis le verrou de programme en fin de transaction. L'acceptation, elle, verrouille l'occurrence nommée en `for update nowait` : une ligne occupée répond `occurrence_occupee`, sans interblocage.
+3. **La référence de charge est comparable à la prescription actuelle.**
+   - `chargeDeReference(series, prescription)` exige la même fourchette prescrite (`reps_min_prescrites`, `reps_max_prescrites`) et le même nombre de séries.
+   - Les références sont rangées par `cleReference` (exercice, type, fourchette, séries).
+4. **Commentaires.** Le premier clic sur une séance préparée enregistre la marge déclarée, mais ne crée aucune version et ne touche aucune prescription.
+
+Bancs :
+- `check:prescription-sql` : 124 essais. Refus couverts : première série non faite, validée au minuteur, A → B → A, charges mélangées, charge inconnue, répétitions sous la cible, hausse hors fourchette haute, charge qui ne progresse pas, mauvaises répétitions.
+- **`check:r4-concurrence`** (nouveau) : un vrai PostgreSQL 16 local, deux sessions `psql` pilotées pas à pas, quatre entrelacements acceptation / fermeture, et l'invariant « aucune version ouverte sur une occurrence résolue ». Sans le verrou, il reproduit le défaut décrit par Codex (cible bloquée au rang 3). Sans le `nowait`, il produit un interblocage.
+- `check:programme` passe. Témoins vérifiés.
+- Bases inchangées : eslint 93, `check:echelle` identique, `tsc` et `build` passent.
