@@ -586,3 +586,35 @@ Périmètre : maquette 07, écran 05 (la question après un repère) et la propo
 - `check:prescription-sql` : 95 essais, dont les six cas verrouillés et l'équivalence de la copie TypeScript / SQL.
 - Cinq témoins vérifiés : hausse sur la seule dernière série, assistance qui augmente, consommation sans « faite », séance préparée réécrite sans être nommée, charge de départ après un remplacement.
 - `tsc`, `build`, `eslint` (93, la référence) passent. `check:echelle` : les mêmes 38 écarts qu'avant (comparaison ligne à ligne).
+
+## R4 · corrections du tour 30 de Codex (2026-10-05)
+
+Codex a refusé `6ae3cf7` sur trois défauts P1 et deux P2, reproduits dans PGlite. Tous corrigés, chacun avec son contre-exemple au banc et un témoin vérifié (le défaut remis, le banc échoue).
+
+1. **La fermeture garde la copie du lancement.**
+   - Une cible devient une suite de **versions figées** : accepter de nouveau marque l'ancienne `remplacee_le` et en écrit une nouvelle ; un déclencheur refuse toute modification de ses valeurs (`cible_immuable`).
+   - Étape libre : `lignes_avec_cibles(…, p_statut)` relit à la fermeture la version nommée par le lancement **quel que soit son état** (ouverte, remplacée, consommée ailleurs). La copie reste celle du lancement, rejeu compris.
+   - Occurrence préparée, fermée par son statut : `restaurer_copie_suivie` remet ses lignes à la copie que le journal de **ce** lancement a suivie (`workout_sessions.exercises`), puis reprojette. Sans journal, rien n'est touché.
+2. **Une cible vise UNE occurrence.**
+   - `rang_vise = rang_suivant(programme, étape)`, traduction de `attribuer_rang` (R6) : l'occurrence déjà préparée, sinon le rang que R6 donnera. Une fermeture tardive la place donc plus loin que `source + k`.
+   - La copie exige `rang = rang_vise` exactement, en TypeScript et en SQL.
+   - Une occurrence résolue (faite sans suivre la version, ou passée) **reporte** la version ouverte sur l'occurrence suivante (`reporter_cibles`). Jamais en arrière, jamais à toutes les suivantes.
+   - La résolution est un déclencheur **différé en fin de transaction** : une étape libre écrit l'intention puis ses lignes, et l'ordre copie → consommation → report ne se joue qu'une fois les lignes là.
+3. **L'historique se lit par séances entières.** `referencesDeCharge` trouve d'abord les séances récentes, puis lit **toutes** leurs séries, sans filtre de clé. Une réponse coupée écarte la dernière séance lue. `chargeDeReference` exige des séries 1…n sans trou.
+4. **La marge.**
+   - Écrans de fin : `fileDeMarges` écrit dans l'ordre par emplacement, retient la dernière réponse **confirmée**, rejoue un échec.
+   - L'acceptation envoie la marge d'où vient la proposition : `accepter_cible` l'écrit dans la même transaction et refuse (`marge_non_confirmee`) si la marge en base ne l'autorise pas.
+5. **La charge reste corrigeable** même avec un cran connu : le réglage est prérempli avec la proposition, et la valeur choisie l'emporte ; son écart devient le cran.
+6. **Détails d'interface.**
+   - Le visage du Guide accompagne la question (« listen »).
+   - Le plafond de deux compte les questions **présentées** (`poserQuestion`, à la fin de la dernière série du repère), pas les exercices éligibles à l'instant.
+7. **Confirmation d'une séance préparée.**
+   - L'occurrence visée est verrouillée (`for update`) et revérifiée dans la transaction.
+   - Faite, passée ou retirée entre l'annonce et la confirmation : `occurrence_changee`, rien n'est écrit.
+
+Bancs :
+- `check:prescription-sql` : 112 essais, dont les scénarios de Codex : 18 → 20 → fermeture, rangs 3 et 5, fermeture tardive, occurrence passée, confirmation périmée, marge « Aucune », version immuable, consommation ailleurs.
+- `check:programme` : passe, avec A → B → A, séries 1 et 3, file de marges, plafond, charge corrigée.
+- Bases inchangées : eslint 93, `check:echelle` identique, `tsc` et `build` passent.
+
+Migration toujours **non appliquée**.

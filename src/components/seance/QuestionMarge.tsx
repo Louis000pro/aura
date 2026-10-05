@@ -6,8 +6,12 @@
    Trois réponses neutres, sans couleur de réussite ni de faute, et « Je ne
    sais pas », secondaire mais lisible. Il n'y a pas de « Passer » : ne pas
    répondre suffit, et rien ne change alors. La réponse reste modifiable.
+
+   ⚠️ LA QUESTION EST CELLE DU GUIDE : son visage l'accompagne (verrou
+   Nora/Sasha), l'étincelle ✦ quand aucun Guide n'est résolu.
    ════════════════════════════════════════════════════════════════════ */
 
+import type { ReactNode } from "react";
 import type { Marge } from "@/lib/progression";
 
 const PRINCIPALES: { marge: Marge; label: string }[] = [
@@ -16,8 +20,10 @@ const PRINCIPALES: { marge: Marge; label: string }[] = [
   { marge: "3_plus", label: "3 ou plus" },
 ];
 
-export default function QuestionMarge({ question, titre, reponse, onRepondre }: {
+export default function QuestionMarge({ question, titre, reponse, onRepondre, visage }: {
   question: string;
+  /** Le visage du Guide qui pose la question. */
+  visage: ReactNode;
   /** Le nom de l'exercice, quand la question n'est pas posée pendant son repos. */
   titre?: string;
   reponse: Marge | null;
@@ -26,7 +32,10 @@ export default function QuestionMarge({ question, titre, reponse, onRepondre }: 
   return (
     <div className="text-left">
       {titre && <p className="text-[13px] font-bold mb-1" style={{ color: "#fff" }}>{titre}</p>}
-      <p className="text-[13px] leading-snug" style={{ color: "#C9C2DD" }}>{question}</p>
+      <div className="flex gap-3 items-center">
+        <span className="flex-shrink-0">{visage}</span>
+        <p className="text-[13px] leading-snug" style={{ color: "#C9C2DD" }}>{question}</p>
+      </div>
       <div className="grid grid-cols-3 gap-2 mt-3">
         {PRINCIPALES.map(({ marge, label }) => {
           const choisie = reponse === marge;

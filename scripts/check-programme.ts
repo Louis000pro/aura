@@ -6735,6 +6735,11 @@ verdict(
   verdict("R4 · sans cran confirmé : choisir la prochaine charge, aucune valeur inventée", sansCran?.genre === "charge" && sansCran.chargeProposee === null, JSON.stringify(sansCran));
   verdict("R4 · le cran confirmé est l'écart choisi", G.cranConfirme(16, 17.5, "par_haltere") === 1.5 && G.cranConfirme(16, 16, "par_haltere") === null && G.cranConfirme(16, 14, "par_haltere") === null, "");
   verdict("R4 · une charge choisie qui ne progresse pas n'est pas acceptée", G.cibleAcceptee(sansCran!, 16, "par_haltere") === null && G.cibleAcceptee(sansCran!, 17, "par_haltere")?.cran === 1, "");
+  {
+    const c19 = G.cibleAcceptee(h!, 19, "par_haltere"), cDefaut = G.cibleAcceptee(h!, null, "par_haltere");
+    verdict("R4 · avec un cran connu, la charge proposée reste corrigeable avant d'accepter",
+      c19?.charge === 19 && c19.cran === 3 && cDefaut?.charge === 18 && cDefaut.cran === 2, `tour 30 · ${JSON.stringify([c19, cDefaut])}`);
+  }
 
   // assistance
   const as = (r: number, c: number) => [0, 1, 2].map(() => serie(r, c, { charge_type: "assistance" }));
@@ -6752,10 +6757,17 @@ verdict(
   verdict("R4 · au poids du corps au haut : on garde, sans annoncer de progression",
     G.prochaineCible(trois(12, null).map((x) => ({ ...x, charge_type: "poids_du_corps" })), pres({ charge_type: "poids_du_corps" }), "3_plus", null) === null, "variantes reportées");
 
-  // deux questions au plus, dans l'ordre
-  const presEmpl = [pres(), pres(), null, pres(), pres()];
-  const q2 = G.emplacementsAQuestion(presEmpl, () => trois(12));
-  verdict("R4 · au plus deux questions, dans l'ordre de la séance", JSON.stringify(q2) === "[0,1]", JSON.stringify(q2));
+  // deux questions au plus, comptées quand elles sont présentées
+  {
+    let posees: number[] = [];
+    posees = G.poserQuestion(posees, 0, true);
+    posees = G.poserQuestion(posees, 1, false);
+    posees = G.poserQuestion(posees, 3, true);
+    posees = G.poserQuestion(posees, 4, true);
+    verdict("R4 · au plus deux questions, dans l'ordre où elles se présentent", JSON.stringify(posees) === "[0,3]", JSON.stringify(posees));
+    verdict("R4 · une question déjà présentée compte, même si son exercice devient inéligible",
+      JSON.stringify(G.poserQuestion([0, 3], 5, true)) === "[0,3]" && JSON.stringify(G.poserQuestion([0, 3], 0, true)) === "[0,3]", "tour 30");
+  }
 
   // historique
   const H = (sess: string, empl: number, serieN: number, charge: number | null, fin: string, o: Record<string, unknown> = {}) => ({
@@ -6772,35 +6784,94 @@ verdict(
   verdict("R4 · la charge de départ vient de la dernière réalisation complète et homogène, avec sa date",
     ref?.charge === 16 && ref.termineLe === "2026-10-01T10:00:00Z", JSON.stringify(ref));
   verdict("R4 · jamais de référence de charge au poids du corps", G.chargeDeReference(hist, "developpecouchehalteres", "poids_du_corps") === null, "");
+  {
+    /* Tour 30 · A → B → A lu par séances entières : B est là, le groupe est refusé. */
+    const aba = [
+      H("s9", 0, 1, 16, "2026-10-06T10:00:00Z"),
+      H("s9", 0, 2, null, "2026-10-06T10:00:00Z", { exercice_cle: "pompes", charge_type: "poids_du_corps" }),
+      H("s9", 0, 3, 16, "2026-10-06T10:00:00Z"),
+      H("s1", 0, 1, 14, "2026-10-01T10:00:00Z"), H("s1", 0, 2, 14, "2026-10-01T10:00:00Z"),
+    ];
+    verdict("R4 · A → B → A n'est jamais une référence", G.chargeDeReference(aba, "developpecouchehalteres", "par_haltere")?.charge === 14, "tour 30");
+    const trous = [H("s9", 0, 1, 16, "2026-10-06T10:00:00Z"), H("s9", 0, 3, 16, "2026-10-06T10:00:00Z")];
+    verdict("R4 · les séries 1 et 3 seules ne font pas une réalisation complète", G.chargeDeReference(trous, "developpecouchehalteres", "par_haltere") === null, "tour 30");
+    const B = await import("@/lib/progressionBase");
+    const lues = [
+      { workout_session_id: "s1", emplacement: 0, serie: 1, exercice_cle: "developpecouchehalteres", statut: "terminee", validation: "bouton", reps_declarees: 10, charge: 14, charge_type: "par_haltere", workout_sessions: { termine_le: "2026-10-01T10:00:00Z" } },
+      { workout_session_id: "s2", emplacement: 0, serie: 1, exercice_cle: "developpecouchehalteres", statut: "terminee", validation: "bouton", reps_declarees: 10, charge: 16, charge_type: "par_haltere", workout_sessions: { termine_le: "2026-10-06T10:00:00Z" } },
+    ];
+    verdict("R4 · une réponse coupée écarte la dernière séance lue, peut-être tronquée",
+      B.lignesHistorique(lues, 3).every((x) => x.workout_session_id === "s1") && B.lignesHistorique(lues, 2).length === 2, "tour 30");
+  }
 
   // copie des cibles
   const L = composerEtape("Push", { lieu: "halteres", orientation: "masse", niveau: null, version: 1 });
   const ir = L.findIndex((l) => l.statut === "repere" && l.mesure === "reps" && l.charge_type === "par_haltere");
   const c = { id: "c1", exercice_cle: L[ir].exercice_cle, charge_type: L[ir].charge_type, charge: 18, reps_cible: L[ir].reps_min!, reps_min: L[ir].reps_min!, reps_max: L[ir].reps_max!, rang_vise: 5 };
-  verdict("R4 · une cible ne se recopie qu'à partir du rang visé", G.appliquerCibles(L, [c], 4)[ir].cible_id === undefined && G.appliquerCibles(L, [c], 5)[ir].cible_id === "c1"
-    && G.appliquerCibles(L, [c], 5)[ir].charge_origine === "acceptee", "");
+  verdict("R4 · une cible ne se recopie que sur l'occurrence exacte qu'elle vise", G.appliquerCibles(L, [c], 4)[ir].cible_id === undefined && G.appliquerCibles(L, [c], 5)[ir].cible_id === "c1"
+    && G.appliquerCibles(L, [c], 5)[ir].charge_origine === "acceptee" && G.appliquerCibles(L, [c], 7)[ir].cible_id === undefined, "tour 30");
   verdict("R4 · une cible d'une autre fourchette ne se recopie pas", G.appliquerCibles(L, [{ ...c, reps_max: 99 }], 5)[ir].cible_id === undefined, "");
   verdict("R4 · sans cible, la projection est celle d'avant", JSON.stringify(projeterPrescription(G.appliquerCibles(L, [], 5))) === JSON.stringify(projeterPrescription(L)), "");
 
   // le chemin
   const tunnel = lire1("src/components/WorkoutGuideModal.tsx");
   verdict("R4 · la question du repos et la proposition passent par les mêmes critères",
-    tunnel.includes("emplacementsAQuestion(prescriptionsR4") && tunnel.includes("propositionsDeSeance(") && tunnel.includes("aQuestion.includes(exerciseIdx)"), "");
+    tunnel.includes("poserQuestion(prev, exerciseIdx, questionUtile(series, p))") && tunnel.includes("propositionsDeSeance(") && tunnel.includes("aQuestion.includes(exerciseIdx)"), "");
+  verdict("R4 · le visage du Guide accompagne chaque question",
+    (tunnel.match(/<QuestionMarge [\s\S]{0,260}visage=\{guide \? <VisageGuide guide=\{guide\} etat="listen"/g) ?? []).length === 2, "verrou Nora/Sasha");
   verdict("R4 · la question ne touche pas au chrono", !/repondreAuRepos[\s\S]{0,400}setRestCountdown/.test(tunnel), "");
   verdict("R4 · après un remplacement, aucune charge de départ", /departDe = useCallback[\s\S]{0,300}remplacements\[e\]\) return null/.test(tunnel), "décision 56");
-  verdict("R4 · les réponses de fin s'écrivent après l'enregistrement", /if \(!sessionSaved\) return;[\s\S]{0,300}corrigerMarge\(lancementId/.test(tunnel), "");
+  verdict("R4 · les réponses de fin s'écrivent après l'enregistrement, par la file ordonnée",
+    /if \(!sessionSaved\) return;[\s\S]{0,200}fileMarges\.demander\(/.test(tunnel) && tunnel.includes("fileDeMarges((e, m) => corrigerMarge(lancementId, e, m))"), "tour 30");
+  {
+    const F = await import("@/lib/fileMarges");
+    // Des envois qui se terminent dans le désordre si on les laisse faire.
+    const base = new Map<number, string>(); const ordre: string[] = []; let echoue = 0;
+    const envoyer = async (e: number, m: string) => {
+      ordre.push(m);
+      await new Promise((r) => setTimeout(r, m === "1_2" ? 15 : 1));
+      if (echoue > 0) { echoue--; return false; }
+      base.set(e, m); return true;
+    };
+    const f = F.fileDeMarges(envoyer as never, async () => {});
+    const tick = () => new Promise((r) => setTimeout(r, 3));
+    // une réponse lente en vol, puis une rapide : la rapide ne passe pas devant
+    const ecrites: string[] = [];
+    const f3 = F.fileDeMarges((async (e: number, m: string) => {
+      await new Promise((r) => setTimeout(r, m === "1_2" ? 15 : 1));
+      ecrites.push(m); return true;
+    }) as never, async () => {});
+    void f3.demander(3, "1_2"); await tick(); await f3.demander(3, "aucune");
+    await new Promise((r) => setTimeout(r, 40));
+    verdict("R4 · deux écritures ne se terminent jamais à l'envers", JSON.stringify(ecrites) === '["1_2","aucune"]' && f3.confirmee(3) === "aucune", JSON.stringify(ecrites));
+    // 1 ou 2 confirmé, puis Aucune en vol, puis 1 ou 2 : la dernière est renvoyée
+    await f.demander(0, "1_2"); void f.demander(0, "aucune"); await tick(); await f.demander(0, "1_2");
+    verdict("R4 · « 1 ou 2 → Aucune → 1 ou 2 » : la base porte la dernière réponse", base.get(0) === "1_2" && f.confirmee(0) === "1_2", JSON.stringify(ordre));
+    echoue = 1;
+    const ok = await f.demander(1, "3_plus");
+    verdict("R4 · un échec d'écriture se rejoue", ok && base.get(1) === "3_plus", "");
+    echoue = 5;
+    const ko = await f.demander(2, "aucune");
+    echoue = 0;
+    const repris = await f.demander(2, "aucune");
+    verdict("R4 · après des échecs répétés, la même réponse se rejoue à la demande suivante", !ko && repris && base.get(2) === "aucune", "");
+  }
   const journee = lire1("src/hooks/useJournee.ts");
   verdict("R4 · la prescription figée au lancement et à la datation reçoit les cibles",
     journee.includes("appliquerCibles(c.modele.lignes, c.cibles ?? [], c.rang)") && (journee.match(/appliquerCibles\(/g) ?? []).length === 2, "");
   const prochaine = lire1("src/components/seance/LaProchaineFois.tsx");
   verdict("R4 · une séance préparée se nomme avant d'être ajustée",
     prochaine.includes(`etat.genre === "preparee" ? etat.intentionId : null`) && prochaine.includes("déjà prête"), "tour 29");
+  verdict("R4 · la marge part avec l'acceptation", prochaine.includes("cran: cible.cran, marge, appliquerA"), "tour 30");
+  verdict("R4 · le réglage de charge est là aussi quand une valeur est proposée",
+    prochaine.includes(`{pr.genre === "charge" && reglable && etat.genre !== "preparee" && (`), "tour 30");
   verdict("R4 · « Garder » n'écrit rien", /onClick=\{\(\) => setEtat\(\{ genre: "gardee" \}\)\}/.test(prochaine), "");
   const sql4 = lire1("supabase/migrations/20261007_r4_progression.sql");
   verdict("R4 · SQL · une cible n'est consommée que par une occurrence faite",
     sql4.includes("where i.id = p_intention and i.statut = 'faite'") && !/consommee_le = now\(\)[\s\S]{0,40}ecrire_occurrence/.test(sql4), "");
-  verdict("R4 · SQL · une séance préparée non nommée n'est pas réécrite",
-    sql4.includes("if v_prep.id is not null and v_appliquer is distinct from v_prep.id then"), "");
+  verdict("R4 · SQL · une séance préparée non nommée n'est pas réécrite, et se revérifie sous verrou",
+    sql4.includes("if v_prep.id is not null and v_appliquer is distinct from v_prep.id then")
+      && /i\.rang = v_vise and i\.statut = 'prevue'\s*for update;/.test(sql4) && sql4.includes("'occurrence_changee'"), "tour 30");
   verdict("R4 · SQL · le journal garde les protections de R1",
     sql4.includes("raise exception 'proprietaire_different'") && sql4.includes("on conflict (user_id, lancement_id) where lancement_id is not null do nothing"), "");
 }

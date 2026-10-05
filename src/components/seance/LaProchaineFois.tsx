@@ -13,13 +13,17 @@
    mardi 8 est déjà prête »), et seul « Ajuster mardi 8 » la modifie.
 
    ⚠️ SANS CRAN CONFIRMÉ, AUCUNE VALEUR N'EST PROPOSÉE : on choisit la
-   prochaine charge, en l'écrivant exactement.
+   prochaine charge, en l'écrivant exactement. AVEC un cran, la valeur
+   proposée reste corrigeable avant d'accepter (tour 30).
+
+   ⚠️ LA MARGE PART AVEC L'ACCEPTATION (tour 30) : la base l'écrit dans la
+   même transaction et refuse si elle n'autorise pas la proposition.
    ════════════════════════════════════════════════════════════════════ */
 
 import { useState } from "react";
 import { ChevronRight } from "lucide-react";
 import { ReglageCharge } from "@/components/seance/ReglageCharge";
-import { cibleAcceptee, type PropositionSeance } from "@/lib/progression";
+import { cibleAcceptee, type Marge, type PropositionSeance } from "@/lib/progression";
 import { accepterCible } from "@/lib/progressionBase";
 import { chargeReglable, libelleCharge, type TypeChargeReglable } from "@/lib/saisieSerie";
 
@@ -39,11 +43,11 @@ export function jourCourt(ymd: string | null): string {
   return d.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric" });
 }
 
-function Carte({ p, lancementId, enregistree }: { p: PropositionSeance; lancementId: string; enregistree: boolean }) {
+function Carte({ p, lancementId, enregistree, marge }: { p: PropositionSeance; lancementId: string; enregistree: boolean; marge: Marge | null }) {
   const [etat, setEtat] = useState<Etat>({ genre: "ouverte" });
   const pr = p.proposition;
   const reglable = chargeReglable(p.chargeType);
-  const [choisie, setChoisie] = useState<number | null>(pr.genre === "charge" ? pr.chargeActuelle : null);
+  const [choisie, setChoisie] = useState<number | null>(pr.genre === "charge" ? (pr.chargeProposee ?? pr.chargeActuelle) : null);
   const nomBas = p.nom.toLowerCase();
 
   const cible = cibleAcceptee(pr, choisie, p.chargeType);
@@ -57,12 +61,13 @@ function Carte({ p, lancementId, enregistree }: { p: PropositionSeance; lancemen
     : `Garder ${libelleCharge(pr.chargeActuelle, p.chargeType as TypeChargeReglable)}`;
 
   const envoyer = async (appliquerA: string | null) => {
-    if (!cible) return;
+    if (!cible || !marge) return;
     setEtat({ genre: "envoi" });
-    const r = await accepterCible({ lancementId, emplacement: p.emplacement, charge: cible.charge, repsCible: cible.repsCible, cran: cible.cran, appliquerA });
+    const r = await accepterCible({ lancementId, emplacement: p.emplacement, charge: cible.charge, repsCible: cible.repsCible, cran: cible.cran, marge, appliquerA });
     if (r.resultat === "ok") setEtat({ genre: "acceptee", ajuste: appliquerA ? (etat.genre === "preparee" ? etat.date : null) : null });
     else if (r.resultat === "occurrence_preparee") setEtat({ genre: "preparee", intentionId: r.intentionId, date: r.date });
     else if (r.resultat === "seance_introuvable") setEtat({ genre: "erreur", texte: "Ta séance s'enregistre encore. Réessaie dans un instant." });
+    else if (r.resultat === "occurrence_changee") setEtat({ genre: "erreur", texte: "Cette séance a changé entre-temps. Réessaie pour voir où en est la prochaine." });
     else setEtat({ genre: "erreur", texte: "Impossible d'enregistrer ce choix pour l'instant." });
   };
 
@@ -81,7 +86,7 @@ function Carte({ p, lancementId, enregistree }: { p: PropositionSeance; lancemen
           ? `Ta séance de ${jourCourt(etat.date)} est déjà prête. On l'ajuste aussi ?`
           : phrase}
       </p>
-      {pr.genre === "charge" && pr.chargeProposee === null && reglable && etat.genre !== "preparee" && (
+      {pr.genre === "charge" && reglable && etat.genre !== "preparee" && (
         <div className="mt-3 flex justify-center">
           <ReglageCharge valeur={choisie} type={p.chargeType as TypeChargeReglable} onChange={setChoisie} />
         </div>
@@ -89,7 +94,7 @@ function Carte({ p, lancementId, enregistree }: { p: PropositionSeance; lancemen
       {etat.genre === "erreur" && <p className="text-[13px] mt-2" style={{ color: "#FFB4A8" }}>{etat.texte}</p>}
       <div className="flex gap-2.5 mt-3">
         <button type="button"
-          disabled={!enregistree || !cible || etat.genre === "envoi"}
+          disabled={!enregistree || !cible || !marge || etat.genre === "envoi"}
           onClick={() => void envoyer(etat.genre === "preparee" ? etat.intentionId : null)}
           className="flex-[2] py-3 rounded-xl text-[13px] font-bold cursor-pointer text-white disabled:opacity-40"
           style={{ background: "linear-gradient(100deg,#8B5CF6,#C13BC1)" }}>
@@ -105,9 +110,11 @@ function Carte({ p, lancementId, enregistree }: { p: PropositionSeance; lancemen
   );
 }
 
-export default function LaProchaineFois({ propositions, lancementId, enregistree }: {
+export default function LaProchaineFois({ propositions, lancementId, enregistree, margeDe }: {
   propositions: PropositionSeance[];
   lancementId: string;
+  /** La marge d'où vient chaque proposition, envoyée avec l'acceptation. */
+  margeDe: (emplacement: number) => Marge | null;
   /** La séance est-elle enregistrée ? Accepter en a besoin pour relire sa source. */
   enregistree: boolean;
 }) {
@@ -118,7 +125,7 @@ export default function LaProchaineFois({ propositions, lancementId, enregistree
     <div className="w-full mt-4 rounded-2xl p-4 text-left" style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)" }}>
       <p className="text-[11px] font-bold mb-2" style={{ color: "#A79FC0" }}>La prochaine fois</p>
       <div className="flex flex-col gap-4">
-        {visibles.map((p) => <Carte key={p.emplacement} p={p} lancementId={lancementId} enregistree={enregistree} />)}
+        {visibles.map((p) => <Carte key={p.emplacement} p={p} lancementId={lancementId} enregistree={enregistree} marge={margeDe(p.emplacement)} />)}
       </div>
       {!toutes && propositions.length > 1 && (
         <button type="button" onClick={() => setToutes(true)}

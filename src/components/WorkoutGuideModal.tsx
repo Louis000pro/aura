@@ -40,8 +40,9 @@ import {
   type Equivalent, type Remplacements,
 } from "@/lib/remplacement";
 import {
-  emplacementsAQuestion, prescriptionDe, propositionsDeSeance, type Marge, type ReferenceCharge,
+  poserQuestion, prescriptionDe, propositionsDeSeance, questionUtile, type Marge, type ReferenceCharge,
 } from "@/lib/progression";
+import { fileDeMarges } from "@/lib/fileMarges";
 import { cleCharge, corrigerMarge, cransConfirmes, referencesDeCharge } from "@/lib/progressionBase";
 import QuestionMarge from "@/components/seance/QuestionMarge";
 import LaProchaineFois from "@/components/seance/LaProchaineFois";
@@ -919,7 +920,12 @@ export default function WorkoutGuideModal({
   /* Les réponses données dans l'écran de fin, quand le repère terminait
      la séance : elles s'écrivent après l'enregistrement (`corriger_marge`). */
   const [margesFin,     setMargesFin]     = useState<Record<number, Marge>>({});
-  const margesEnvoyeesRef = useRef<Set<string>>(new Set());
+  /* Écrites dans l'ordre, avec la dernière réponse confirmée, et rejouées
+     après un échec (`fileDeMarges`, tour 30). */
+  const [fileMarges] = useState(() => fileDeMarges((e, m) => corrigerMarge(lancementId, e, m)));
+  /* Les questions déjà présentées : c'est elles que compte le plafond de
+     deux, pas les exercices éligibles à l'instant (tour 30). */
+  const [questionsPosees, setQuestionsPosees] = useState<number[]>([]);
   /* La vibration de fin de repos ne joue qu'une fois, même quand une
      correction ouverte fait attendre la reprise. */
   const finReposVibreeRef = useRef(false);
@@ -1115,10 +1121,7 @@ export default function WorkoutGuideModal({
      puis les emplacements où la question a sa place (au plus deux). */
   const prescriptionsR4 = useMemo(() => exercises.map((e) => prescriptionDe(e as ExercicePrescrit)), [exercises]);
   const lignesCourantes = useMemo(() => lignesDuJournal(exercises, doneMap, remplacements), [exercises, doneMap, remplacements]);
-  const aQuestion = useMemo(
-    () => emplacementsAQuestion(prescriptionsR4, (e) => lignesCourantes.filter((l) => l.emplacement === e)),
-    [prescriptionsR4, lignesCourantes],
-  );
+  const aQuestion = questionsPosees;
   const margeDe = (e: number): Marge | null =>
     doneMap[e]?.[(exercises[e]?.sets ?? 1) - 1]?.statut === "terminee"
       ? ((doneMap[e]?.[(exercises[e]?.sets ?? 1) - 1] as { marge?: Marge | null }).marge ?? margesFin[e] ?? null)
@@ -1148,13 +1151,8 @@ export default function WorkoutGuideModal({
      enregistrée, sans bloquer sa finalisation. */
   useEffect(() => {
     if (!sessionSaved) return;
-    for (const [e, m] of Object.entries(margesFin)) {
-      const k = `${e}:${m}`;
-      if (margesEnvoyeesRef.current.has(k)) continue;
-      margesEnvoyeesRef.current.add(k);
-      void corrigerMarge(lancementId, Number(e), m);
-    }
-  }, [sessionSaved, margesFin, lancementId]);
+    for (const [e, m] of Object.entries(margesFin)) void fileMarges.demander(Number(e), m);
+  }, [sessionSaved, margesFin, fileMarges]);
 
   /* ── Elapsed clock ── */
   useEffect(() => {
@@ -1228,21 +1226,29 @@ export default function WorkoutGuideModal({
     const decl = declareDesRepetitions(pr);
     const reps = decl ? repsADeclarer(cibleReps(pr), repsSaisie, { emplacement: exerciseIdx, serie: setIdx }) : null;
     const charge = decl && chargeReglable(exo?.chargeType) ? chargeEnCours(exerciseIdx) : null;
+    const marque = {
+      statut: "terminee" as const, validation, dureeS,
+      ...(exo ? { exercice: exo } : {}),
+      ...(decl ? { reps, charge } : {}),
+    };
     setDoneMap(prev => ({
       ...prev,
-      [exerciseIdx]: {
-        ...(prev[exerciseIdx] ?? {}),
-        [setIdx]: {
-          statut: "terminee", validation, dureeS,
-          ...(exo ? { exercice: exo } : {}),
-          ...(decl ? { reps, charge } : {}),
-        },
-      },
+      [exerciseIdx]: { ...(prev[exerciseIdx] ?? {}), [setIdx]: marque },
     }));
     setEditCharge(false); setEditReps(false); setChanger(null);
     finReposVibreeRef.current = false;
     const ex         = exercises[exerciseIdx];
     const dernierSet = setIdx + 1 >= (ex?.sets ?? 1);
+    /* R4 · la dernière série d'un repère : sa question est présentée ici,
+       une fois pour toutes, si elle est utile et s'il reste de la place. */
+    if (dernierSet) {
+      const p = prescriptionDe(ex as ExercicePrescrit);
+      if (p) {
+        const series = lignesDuJournal(exercises, { ...doneMap, [exerciseIdx]: { ...(doneMap[exerciseIdx] ?? {}), [setIdx]: marque } }, remplacements)
+          .filter((l) => l.emplacement === exerciseIdx);
+        setQuestionsPosees((prev) => poserQuestion(prev, exerciseIdx, questionUtile(series, p)));
+      }
+    }
     const resteUnExo = exerciseIdx + 1 < exercises.length;
     if (dernierSet && !resteUnExo) { advance(); return; }
     const attente = dernierSet
@@ -1252,7 +1258,7 @@ export default function WorkoutGuideModal({
       setRestMode(dernierSet ? "exercise" : "set");
       setRestTotal(attente); setRestCountdown(attente); setPhase("resting");
     } else advance();
-  }, [exercises, exerciseIdx, setIdx, advance, remplacements, chargeEnCours, repsSaisie]);
+  }, [exercises, exerciseIdx, setIdx, advance, remplacements, chargeEnCours, repsSaisie, doneMap]);
 
   /* ── « Passer l'exercice » : un geste explicite, qui se dit au journal ──
      Les séries restantes sont « passées », pas « non atteintes » : c'est
@@ -2002,7 +2008,8 @@ export default function WorkoutGuideModal({
                 {aQuestion.includes(exerciseIdx) && setIdx === (cur?.sets ?? 1) - 1 ? (
                   <div className="relative z-[2] rounded-2xl px-3.5 py-3.5 mt-4"
                     style={{ background: "rgba(139,92,246,0.09)", border: "1px solid rgba(139,92,246,0.22)" }}>
-                    <QuestionMarge question={voix(guide, "seance.marge.question")} reponse={margeDe(exerciseIdx)} onRepondre={repondreAuRepos} />
+                    <QuestionMarge question={voix(guide, "seance.marge.question")} reponse={margeDe(exerciseIdx)} onRepondre={repondreAuRepos}
+                      visage={guide ? <VisageGuide guide={guide} etat="listen" size={26} /> : <AssistantSpark px={16} />} />
                   </div>
                 ) : (() => {
                   const cle = cleRepos(exerciseIdx, setIdx, cur?.sets ?? 1, exercises.length);
@@ -2077,12 +2084,14 @@ export default function WorkoutGuideModal({
                 {aQuestion.filter((e) => sansRepos(e) && !(doneMap[e]?.[(exercises[e]?.sets ?? 1) - 1] as { marge?: Marge | null } | undefined)?.marge).map((e) => (
                   <div key={`q-${e}`} className="w-full mt-4 rounded-2xl p-4" style={{ background: "rgba(139,92,246,0.09)", border: "1px solid rgba(139,92,246,0.22)" }}>
                     <QuestionMarge titre={exercisesAff[e]?.name} question={voix(guide, "seance.marge.question")} reponse={margesFin[e] ?? null}
+                      visage={guide ? <VisageGuide guide={guide} etat="listen" size={26} /> : <AssistantSpark px={16} />}
                       onRepondre={(m) => setMargesFin((prev) => ({ ...prev, [e]: m }))} />
                   </div>
                 ))}
                 <LaProchaineFois
                   lancementId={lancementId}
                   enregistree={sessionSaved}
+                  margeDe={margeDe}
                   propositions={propositionsDeSeance(
                     prescriptionsR4.flatMap((p, e) => p ? [{
                       emplacement: e, nom: exercises[e].name, prescription: p,

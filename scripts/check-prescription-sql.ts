@@ -273,6 +273,11 @@ await setUid(U);
 /* ── R4 · la marge, la cible acceptée, le cran ──
    Les six cas verrouillés du tour 29 de Codex, joués sur la vraie
    migration, plus l'équivalence de la copie TypeScript et SQL. */
+/* R4 dépend des deux règles R6 (`ordinal_etape`, `rang_base`) pour
+   trouver l'occurrence visée : elles sont recopiées de leur migration. */
+const r6 = readFileSync(new URL("../supabase/migrations/20261004_r6_occurrences.sql", import.meta.url), "utf8");
+await ex(`alter table public.programmes add column if not exists rang_depart int, add column if not exists position_initiale int;`);
+await ex(r6.slice(r6.indexOf("create or replace function public.ordinal_etape"), r6.indexOf("/* ─────────────── 3. Le déclencheur")));
 const mig4 = readFileSync(new URL("../supabase/migrations/20261007_r4_progression.sql", import.meta.url), "utf8");
 await ex(mig4);
 await ex(mig4);
@@ -322,16 +327,23 @@ await setUid(U);
   t("R4 · un complémentaire ne reçoit pas de cible", (await rpc("accepter_cible", { lancement_id: LA, emplacement: ic, charge: null, reps_cible: L4[ic].reps_min })).resultat === "pas_un_repere");
   const acc = await rpc("accepter_cible", { lancement_id: LA, emplacement: ir, charge: 18, reps_cible: rep.reps_min, cran: 2 });
   const cible = (await q(`select * from cibles_acceptees where id=$1`, [acc.cible_id])).rows[0];
-  t("R4 · accepter écrit une cible ouverte, qui vise l'occurrence suivante de l'étape",
+  t("R4 · accepter écrit une version ouverte, qui vise l'occurrence suivante de l'étape (R6)",
     acc.resultat === "ok" && cible && Number(cible.charge) === 18 && cible.reps_cible === rep.reps_min && cible.rang_source === 1
-      && cible.rang_vise === 3 && cible.consommee_le === null && cible.exercice_cle === rep.exercice_cle, JSON.stringify(acc));
+      && cible.rang_vise === 3 && acc.rang_vise === 3 && cible.consommee_le === null && cible.exercice_cle === rep.exercice_cle, JSON.stringify(acc));
   t("R4 · le cran confirmé est retenu pour l'exercice", Number((await q(`select cran from crans_exercice where user_id=$1 and exercice_cle=$2`, [U, rep.exercice_cle])).rows[0]?.cran) === 2);
+  t("R4 · tour 30 · une version ne se modifie jamais", /cible_immuable/.test(await q(`update cibles_acceptees set charge = 30 where id=$1`, [cible.id]).then(() => "").catch((e: Error) => e.message)));
 
   // l'équivalence de la copie
-  const ouverte: CibleOuverte = { id: cible.id, exercice_cle: cible.exercice_cle, charge_type: cible.charge_type, charge: Number(cible.charge),
-    reps_cible: cible.reps_cible, reps_min: cible.reps_min, reps_max: cible.reps_max, rang_vise: cible.rang_vise };
-  const tsLignes = appliquerCibles(L4, [ouverte], 3);
-  const sqlLignes = (await q(`select public.lignes_avec_cibles($1::jsonb,$2,$3,$4,3) r`, [JSON.stringify(tsLignes), U, P4, E4])).rows[0].r;
+  const ouverte = async (id: string): Promise<CibleOuverte> => {
+    const c = (await q(`select * from cibles_acceptees where id=$1`, [id])).rows[0];
+    return { id: c.id, exercice_cle: c.exercice_cle, charge_type: c.charge_type, charge: c.charge === null ? null : Number(c.charge),
+      reps_cible: c.reps_cible, reps_min: c.reps_min, reps_max: c.reps_max, rang_vise: c.rang_vise };
+  };
+  const o1 = await ouverte(cible.id);
+  const tsLignes = appliquerCibles(L4, [o1], 3);
+  const sqlCopie = async (lignesJ: unknown, rang: number, statut = "prevue") =>
+    (await q(`select public.lignes_avec_cibles($1::jsonb,$2,$3,$4,$5,$6) r`, [JSON.stringify(lignesJ), U, P4, E4, rang, statut])).rows[0].r;
+  const sqlLignes = await sqlCopie(tsLignes, 3);
   const pTs = JSON.stringify(projeterPrescription(tsLignes));
   const pSql = JSON.stringify((await q(`select public.projeter_prescription($1::jsonb) r`, [JSON.stringify(sqlLignes)])).rows[0].r);
   const canon = (v: unknown): unknown => Array.isArray(v) ? v.map(canon)
@@ -340,8 +352,10 @@ await setUid(U);
   t("R4 · la copie TypeScript et la copie SQL donnent la même projection", norm(pTs) === norm(pSql), `${pTs.slice(0, 200)} ≠ ${pSql.slice(0, 200)}`);
   t("R4 · sans cible, la projection est celle d'avant R4",
     !JSON.stringify(projeterPrescription(L4)).includes("cible_id") && !JSON.stringify((await q(`select public.projeter_prescription($1::jsonb) r`, [JSON.stringify(L4)])).rows[0].r).includes("cible_id"));
-  t("R4 · une occurrence plus proche que celle visée ne reçoit rien", appliquerCibles(L4, [ouverte], 2)[ir].cible_id === undefined
-    && (await q(`select public.lignes_avec_cibles($1::jsonb,$2,$3,$4,2) r`, [JSON.stringify(tsLignes), U, P4, E4])).rows[0].r[ir].cible_id === undefined);
+  t("R4 · une occurrence plus proche que celle visée ne reçoit rien", appliquerCibles(L4, [o1], 2)[ir].cible_id === undefined
+    && (await sqlCopie(tsLignes, 2))[ir].cible_id === undefined);
+  t("R4 · tour 30 · une occurrence PLUS LOIN que celle visée ne reçoit rien non plus", appliquerCibles(L4, [o1], 5)[ir].cible_id === undefined
+    && (await sqlCopie(tsLignes, 5))[ir].cible_id === undefined);
 
   // cas 1 · abandon : rien n'est écrit, la cible reste ouverte
   t("R4 · cas 1 · un lancement abandonné ne consomme rien", (await q(`select consommee_le from cibles_acceptees where id=$1`, [cible.id])).rows[0].consommee_le === null);
@@ -352,6 +366,12 @@ await setUid(U);
   t("R4 · dater recopie la cible nommée", Number(l3.charge_cible) === 18 && l3.charge_origine === "acceptee" && l3.cible_id === cible.id && l3.reps_cible === rep.reps_min, JSON.stringify(l3));
   t("R4 · la liste préparée porte la charge cible", (await q(`select exercise_list from intentions_entrainement where id=$1`, [d3.id])).rows[0].exercise_list[ir].prescription.charge_cible === 18);
   t("R4 · préparer ne consomme pas", (await q(`select consommee_le from cibles_acceptees where id=$1`, [cible.id])).rows[0].consommee_le === null);
+  // tour 30 · la même cible n'est pas copiée sur une autre occurrence de l'étape
+  const d5x = await rpc("ecrire_occurrence", { intention: intention4({ rang: 5 }), modele_id: null, lignes: appliquerCibles(L4, [{ ...o1, rang_vise: 5 }], 5) });
+  t("R4 · tour 30 · une cible copiée au rang 3 n'est pas copiée au rang 5",
+    (await q(`select count(*)::int n from occurrence_exercices where cible_id=$1`, [cible.id])).rows[0].n === 1
+      && (await q(`select count(*)::int n from occurrence_exercices where intention_id=$1 and cible_id is not null`, [d5x.id])).rows[0].n === 0);
+  await q(`delete from intentions_entrainement where id=$1`, [d5x.id]);
   // cas 4 · deux appareils préparent la même occurrence
   const d3b = await rpc("ecrire_occurrence", { intention: intention4({ rang: 3 }), modele_id: null, lignes: tsLignes });
   t("R4 · cas 4 · un second appareil rend la même occurrence, une seule copie", d3b.resultat === "deja" && d3b.id === d3.id
@@ -361,10 +381,6 @@ await setUid(U);
   t("R4 · cas 2 · retirer l'occurrence garde la cible ouverte", (await q(`select consommee_le from cibles_acceptees where id=$1`, [cible.id])).rows[0].consommee_le === null);
   const d3c = await rpc("ecrire_occurrence", { intention: intention4({ rang: 3, date: "2026-10-12" }), modele_id: null, lignes: tsLignes });
   t("R4 · cas 2 · la redater recopie la cible", (await q(`select cible_id from occurrence_exercices where intention_id=$1 and emplacement=$2`, [d3c.id, ir])).rows[0].cible_id === cible.id);
-  // une ligne qui ne nomme pas la cible ne la reçoit pas
-  const d5 = await rpc("ecrire_occurrence", { intention: intention4({ rang: 5 }), modele_id: null, lignes: L4 });
-  t("R4 · une préparation qui n'a pas vu la cible ne la reçoit pas", (await q(`select count(*)::int n from occurrence_exercices where intention_id=$1 and cible_id is not null`, [d5.id])).rows[0].n === 0);
-  await q(`delete from intentions_entrainement where id=$1`, [d5.id]);
   // cas 5 · corriger la marge après acceptation ne touche ni la cible ni la séance préparée
   const avantCible = JSON.stringify((await q(`select charge, reps_cible, consommee_le from cibles_acceptees where id=$1`, [cible.id])).rows[0]);
   const avantPrep = JSON.stringify((await q(`select reps_cible, charge_cible from occurrence_exercices where intention_id=$1 order by emplacement`, [d3c.id])).rows);
@@ -372,39 +388,151 @@ await setUid(U);
   t("R4 · cas 5 · corriger après acceptation ne change ni la cible ni la séance préparée",
     JSON.stringify((await q(`select charge, reps_cible, consommee_le from cibles_acceptees where id=$1`, [cible.id])).rows[0]) === avantCible
       && JSON.stringify((await q(`select reps_cible, charge_cible from occurrence_exercices where intention_id=$1 order by emplacement`, [d3c.id])).rows) === avantPrep);
-  // cas 3 · occurrence déjà préparée : accepter de nouveau doit la nommer
+  // tour 30 · la marge enregistrée doit autoriser la proposition
   const nbAvant = (await q(`select count(*)::int n from cibles_acceptees`)).rows[0].n;
-  const refus = await rpc("accepter_cible", { lancement_id: LA, emplacement: ir, charge: 20, reps_cible: rep.reps_min, cran: 4 });
+  const sansMarge = await rpc("accepter_cible", { lancement_id: LA, emplacement: ir, charge: 20, reps_cible: rep.reps_min, cran: 4 });
+  t("R4 · tour 30 · une marge « Aucune » en base refuse l'acceptation", sansMarge.resultat === "marge_non_confirmee"
+    && (await q(`select count(*)::int n from cibles_acceptees`)).rows[0].n === nbAvant, JSON.stringify(sansMarge));
+  // cas 3 · occurrence déjà préparée : accepter de nouveau doit la nommer ; la marge envoyée s'écrit avec
+  const refus = await rpc("accepter_cible", { lancement_id: LA, emplacement: ir, charge: 20, reps_cible: rep.reps_min, cran: 4, marge: "1_2" });
   t("R4 · cas 3 · une séance préparée n'est pas réécrite sans être nommée",
     refus.resultat === "occurrence_preparee" && refus.intention_id === d3c.id
       && (await q(`select count(*)::int n from cibles_acceptees`)).rows[0].n === nbAvant
-      && Number((await q(`select charge from cibles_acceptees where id=$1`, [cible.id])).rows[0].charge) === 18
       && Number((await q(`select cran from crans_exercice where user_id=$1 and exercice_cle=$2`, [U, rep.exercice_cle])).rows[0].cran) === 2, JSON.stringify(refus));
-  const appli = await rpc("accepter_cible", { lancement_id: LA, emplacement: ir, charge: 20, reps_cible: rep.reps_min, cran: 4, appliquer_a: d3c.id });
+  t("R4 · tour 30 · la marge envoyée avec l'acceptation s'écrit dans la même transaction",
+    (await q(`select marge from series_realisees where workout_session_id=$1 and emplacement=$2 and serie=$3`, [jA.id, ir, rep.series])).rows[0].marge === "1_2");
+  const appli = await rpc("accepter_cible", { lancement_id: LA, emplacement: ir, charge: 20, reps_cible: rep.reps_min, cran: 4, marge: "1_2", appliquer_a: d3c.id });
   const lp = (await q(`select charge_cible, cible_id from occurrence_exercices where intention_id=$1 and emplacement=$2`, [d3c.id, ir])).rows[0];
-  t("R4 · cas 3 · nommée, elle reçoit la nouvelle cible, garde sa prescription et sa projection suit",
+  t("R4 · cas 3 · nommée, elle reçoit la nouvelle version, garde sa prescription et sa projection suit",
     appli.resultat === "ok" && appli.applique_a === d3c.id && Number(lp.charge_cible) === 20 && lp.cible_id === appli.cible_id
       && (await q(`select count(*)::int n from occurrence_exercices where intention_id=$1`, [d3c.id])).rows[0].n === L4.length
       && (await q(`select exercise_list from intentions_entrainement where id=$1`, [d3c.id])).rows[0].exercise_list[ir].prescription.charge_cible === 20,
     JSON.stringify([appli, lp]));
-  t("R4 · une seule cible ouverte par exercice de l'étape", (await q(`select count(*)::int n from cibles_acceptees where consommee_le is null and programme_id=$1`, [P4])).rows[0].n === 1);
+  t("R4 · tour 30 · accepter de nouveau écrit une nouvelle version et garde l'ancienne intacte",
+    appli.cible_id !== cible.id && Number((await q(`select charge from cibles_acceptees where id=$1`, [cible.id])).rows[0].charge) === 18
+      && (await q(`select remplacee_le from cibles_acceptees where id=$1`, [cible.id])).rows[0].remplacee_le !== null);
+  t("R4 · une seule version ouverte par exercice de l'étape", (await q(`select count(*)::int n from cibles_acceptees where consommee_le is null and remplacee_le is null and programme_id=$1`, [P4])).rows[0].n === 1);
   // la faire : la cible est consommée une fois
   await q(`update intentions_entrainement set statut='faite', consommee_le=now() where id=$1`, [d3c.id]);
   const consommee = (await q(`select consommee_le from cibles_acceptees where id=$1`, [appli.cible_id])).rows[0].consommee_le;
   t("R4 · faite, l'occurrence consomme sa cible", consommee !== null);
   await q(`update intentions_entrainement set updated_at=now(), statut='faite' where id=$1`, [d3c.id]);
   t("R4 · consommée une seule fois", String((await q(`select consommee_le from cibles_acceptees where id=$1`, [appli.cible_id])).rows[0].consommee_le) === String(consommee));
-  // une séance faite ou commencée ne change jamais : plus de séance préparée, accepter n'en touche aucune
-  const apres = await rpc("accepter_cible", { lancement_id: LA, emplacement: ir, charge: 22, reps_cible: rep.reps_min });
+  // une séance faite ne change jamais : plus de séance préparée, accepter n'en touche aucune
+  const apres = await rpc("accepter_cible", { lancement_id: LA, emplacement: ir, charge: 22, reps_cible: rep.reps_min, marge: "1_2" });
   t("R4 · une séance faite n'est jamais réécrite", apres.resultat === "ok" && apres.applique_a === null
     && Number((await q(`select charge_cible from occurrence_exercices where intention_id=$1 and emplacement=$2`, [d3c.id, ir])).rows[0].charge_cible) === 20);
-  // fermeture d'une étape libre qui a suivi la cible : consommée ; qui ne l'a pas vue : non
+  t("R4 · tour 30 · la nouvelle version vise l'occurrence suivante selon R6", apres.rang_vise === 5, JSON.stringify(apres));
+  // une étape libre fermée sans la suivre : pas consommée, reportée à l'occurrence suivante
+  await rpc("ecrire_occurrence", { intention: intention4({ rang: 5, statut: "faite", consommee_le: "2026-10-09T10:00:00Z", lancement_id: "a1a1a1a1-0000-0000-0000-000000000005" }), modele_id: null, lignes: L4 });
   const c22 = (await q(`select * from cibles_acceptees where id=$1`, [apres.cible_id])).rows[0];
-  const ouverte22: CibleOuverte = { ...ouverte, id: c22.id, charge: Number(c22.charge), rang_vise: c22.rang_vise };
-  await rpc("ecrire_occurrence", { intention: intention4({ rang: 7, statut: "faite", consommee_le: "2026-10-09T10:00:00Z", lancement_id: "a1a1a1a1-0000-0000-0000-000000000007" }), modele_id: null, lignes: L4 });
-  t("R4 · une séance libre qui n'a pas suivi la cible ne la consomme pas", (await q(`select consommee_le from cibles_acceptees where id=$1`, [c22.id])).rows[0].consommee_le === null);
-  await rpc("ecrire_occurrence", { intention: intention4({ rang: 9, statut: "faite", consommee_le: "2026-10-11T10:00:00Z", lancement_id: "a1a1a1a1-0000-0000-0000-000000000009" }), modele_id: null, lignes: appliquerCibles(L4, [ouverte22], 9) });
+  t("R4 · une séance libre qui n'a pas suivi la cible ne la consomme pas, elle la reporte sur la suivante",
+    c22.consommee_le === null && c22.rang_vise === 7, JSON.stringify(c22));
+  await rpc("ecrire_occurrence", { intention: intention4({ rang: 7, statut: "faite", consommee_le: "2026-10-11T10:00:00Z", lancement_id: "a1a1a1a1-0000-0000-0000-000000000007" }), modele_id: null, lignes: appliquerCibles(L4, [await ouverte(c22.id)], 7) });
   t("R4 · une séance libre qui l'a suivie la consomme à la fermeture", (await q(`select consommee_le from cibles_acceptees where id=$1`, [c22.id])).rows[0].consommee_le !== null);
+
+  /* ── Tour 30 · la fermeture garde la copie du lancement ── */
+  const source = async (P: string, E: string, lanc: string, rang: number, quand: string, extra: Record<string, unknown> = {}) => {
+    await rpc("ecrire_occurrence", { intention: { ...intention4({ statut: "faite", consommee_le: quand, lancement_id: lanc, rang }), programme_id: P, etape_consommee_id: E, programme_seance_id: E, ...extra }, modele_id: null, lignes: L4 });
+    await rpc("enregistrer_seance", { lancement_id: lanc, proprietaire: U, titre: "Push", duree_s: 900, series: series4 });
+  };
+  const nouveauProgramme = async () => {
+    const P = (await q(`insert into programmes(user_id) values ($1) returning id`, [U])).rows[0].id;
+    const E = (await q(`insert into programme_seances(programme_id, position, nom) values ($1,1,'Push') returning id`, [P])).rows[0].id;
+    const E2 = (await q(`insert into programme_seances(programme_id, position, nom) values ($1,2,'Pull') returning id`, [P])).rows[0].id;
+    return { P, E, E2 };
+  };
+  const occ = (P: string, E: string, o: Record<string, unknown>) => ({ ...intention4(o), programme_id: P, etape_consommee_id: E, programme_seance_id: E });
+  const ligneIr = async (intent: string) => (await q(`select charge_cible, cible_id, reps_cible from occurrence_exercices where intention_id=$1 and emplacement=$2`, [intent, ir])).rows[0];
+  {
+    // étape libre : copie 18 au lancement, nouvelle acceptation à 20, puis fermeture
+    const { P, E } = await nouveauProgramme();
+    const S = "b1b1b1b1-0000-0000-0000-000000000001";
+    await source(P, E, S, 1, "2026-10-05T10:00:00Z");
+    const v1 = await rpc("accepter_cible", { lancement_id: S, emplacement: ir, charge: 18, reps_cible: rep.reps_min, cran: 2 });
+    const copieLancement = appliquerCibles(L4, [await ouverte(v1.cible_id)], 3);
+    const v2 = await rpc("accepter_cible", { lancement_id: S, emplacement: ir, charge: 20, reps_cible: rep.reps_min, cran: 4 });
+    const F = "b1b1b1b1-0000-0000-0000-000000000003";
+    const fermeture = { intention: occ(P, E, { rang: 3, statut: "faite", consommee_le: "2026-10-07T10:00:00Z", lancement_id: F }), modele_id: null, lignes: copieLancement };
+    const f1 = await rpc("ecrire_occurrence", fermeture);
+    const lf = await ligneIr(f1.id);
+    t("R4 · tour 30 · P1 · une étape libre se ferme avec la copie du lancement (18), pas la cible du moment (20)",
+      f1.resultat === "ok" && Number(lf.charge_cible) === 18 && lf.cible_id === v1.cible_id, JSON.stringify([f1, lf]));
+    t("R4 · tour 30 · la version suivie est consommée, la plus récente est reportée",
+      (await q(`select consommee_le from cibles_acceptees where id=$1`, [v1.cible_id])).rows[0].consommee_le !== null
+        && (await q(`select consommee_le, rang_vise from cibles_acceptees where id=$1`, [v2.cible_id])).rows[0].consommee_le === null
+        && (await q(`select rang_vise from cibles_acceptees where id=$1`, [v2.cible_id])).rows[0].rang_vise === 5);
+    const f2 = await rpc("ecrire_occurrence", fermeture);
+    t("R4 · tour 30 · le rejeu de la fermeture ne change rien", f2.resultat === "doublon" && Number((await ligneIr(f1.id)).charge_cible) === 18, JSON.stringify(f2));
+  }
+  {
+    // une copie dont la version a été consommée ailleurs reste intacte
+    const { P, E } = await nouveauProgramme();
+    const S = "b2b2b2b2-0000-0000-0000-000000000001";
+    await source(P, E, S, 1, "2026-10-05T10:00:00Z");
+    const v1 = await rpc("accepter_cible", { lancement_id: S, emplacement: ir, charge: 18, reps_cible: rep.reps_min, cran: 2 });
+    const copie = appliquerCibles(L4, [await ouverte(v1.cible_id)], 3);
+    await q(`update cibles_acceptees set consommee_le = now() where id=$1`, [v1.cible_id]);
+    const f = await rpc("ecrire_occurrence", { intention: occ(P, E, { rang: 3, statut: "faite", consommee_le: "2026-10-07T10:00:00Z", lancement_id: "b2b2b2b2-0000-0000-0000-000000000003" }), modele_id: null, lignes: copie });
+    const lf = await ligneIr(f.id);
+    t("R4 · tour 30 · une consommation par un autre appareil n'efface pas la copie à la fermeture", Number(lf.charge_cible) === 18 && lf.cible_id === v1.cible_id, JSON.stringify(lf));
+  }
+  {
+    // occurrence préparée : lancée avec 18, ajustée à 20 pendant la séance, fermée par son statut
+    const { P, E } = await nouveauProgramme();
+    const S = "b3b3b3b3-0000-0000-0000-000000000001";
+    await source(P, E, S, 1, "2026-10-05T10:00:00Z");
+    const v1 = await rpc("accepter_cible", { lancement_id: S, emplacement: ir, charge: 18, reps_cible: rep.reps_min, cran: 2 });
+    const copie = appliquerCibles(L4, [await ouverte(v1.cible_id)], 3);
+    const prep = await rpc("ecrire_occurrence", { intention: occ(P, E, { rang: 3 }), modele_id: null, lignes: copie });
+    const LP = "b3b3b3b3-0000-0000-0000-000000000003";
+    // le lancement : son journal garde la liste qu'il a suivie
+    await rpc("enregistrer_seance", { lancement_id: LP, proprietaire: U, titre: "Push", duree_s: 900, exercices: projeterPrescription(copie), series: [] });
+    const v2 = await rpc("accepter_cible", { lancement_id: S, emplacement: ir, charge: 20, reps_cible: rep.reps_min, cran: 4, appliquer_a: prep.id });
+    t("R4 · (préparée ajustée à 20 avant la fermeture)", v2.resultat === "ok" && Number((await ligneIr(prep.id)).charge_cible) === 20, JSON.stringify(v2));
+    await q(`update intentions_entrainement set statut='faite', consommee_le=now(), lancement_id=$2 where id=$1`, [prep.id, LP]);
+    const lf = await ligneIr(prep.id);
+    t("R4 · tour 30 · P1 · une occurrence préparée se ferme avec la copie de son lancement",
+      Number(lf.charge_cible) === 18 && lf.cible_id === v1.cible_id
+        && (await q(`select exercise_list from intentions_entrainement where id=$1`, [prep.id])).rows[0].exercise_list[ir].prescription.charge_cible === 18, JSON.stringify(lf));
+    t("R4 · tour 30 · elle consomme la version suivie et reporte l'autre",
+      (await q(`select consommee_le from cibles_acceptees where id=$1`, [v1.cible_id])).rows[0].consommee_le !== null
+        && (await q(`select consommee_le, rang_vise from cibles_acceptees where id=$1`, [v2.cible_id])).rows[0].rang_vise === 5
+        && (await q(`select consommee_le from cibles_acceptees where id=$1`, [v2.cible_id])).rows[0].consommee_le === null);
+  }
+  {
+    // R6 · une fermeture tardive place la prochaine occurrence plus loin que source + cycle
+    const { P, E, E2 } = await nouveauProgramme();
+    await rpc("ecrire_occurrence", { intention: occ(P, E2, { rang: 2, statut: "faite", consommee_le: "2026-10-01T10:00:00Z", lancement_id: "b4b4b4b4-0000-0000-0000-000000000002" }), modele_id: null, lignes: L4 });
+    await rpc("ecrire_occurrence", { intention: occ(P, E2, { rang: 4, statut: "faite", consommee_le: "2026-10-03T10:00:00Z", lancement_id: "b4b4b4b4-0000-0000-0000-000000000004" }), modele_id: null, lignes: L4 });
+    const S = "b4b4b4b4-0000-0000-0000-000000000001";
+    await source(P, E, S, 1, "2026-10-05T10:00:00Z");
+    const v = await rpc("accepter_cible", { lancement_id: S, emplacement: ir, charge: 18, reps_cible: rep.reps_min, cran: 2 });
+    t("R4 · tour 30 · P1 · après une fermeture tardive, la cible vise l'occurrence que R6 donnera (5, pas 3)", v.resultat === "ok" && v.rang_vise === 5, JSON.stringify(v));
+  }
+  {
+    // une occurrence passée reporte la cible ; une confirmation sur une occurrence changée n'écrit rien
+    const { P, E } = await nouveauProgramme();
+    const S = "b5b5b5b5-0000-0000-0000-000000000001";
+    await source(P, E, S, 1, "2026-10-05T10:00:00Z");
+    const v1 = await rpc("accepter_cible", { lancement_id: S, emplacement: ir, charge: 18, reps_cible: rep.reps_min, cran: 2 });
+    const prep = await rpc("ecrire_occurrence", { intention: occ(P, E, { rang: 3 }), modele_id: null, lignes: appliquerCibles(L4, [await ouverte(v1.cible_id)], 3) });
+    const annonce = await rpc("accepter_cible", { lancement_id: S, emplacement: ir, charge: 20, reps_cible: rep.reps_min, cran: 4 });
+    t("R4 · (annonce de la séance préparée)", annonce.resultat === "occurrence_preparee" && annonce.intention_id === prep.id);
+    // entre l'annonce et la confirmation, la séance est faite ailleurs
+    await q(`update intentions_entrainement set statut='faite', consommee_le=now() where id=$1`, [prep.id]);
+    const n0 = (await q(`select count(*)::int n from cibles_acceptees`)).rows[0].n;
+    const conf = await rpc("accepter_cible", { lancement_id: S, emplacement: ir, charge: 20, reps_cible: rep.reps_min, cran: 4, appliquer_a: prep.id });
+    t("R4 · tour 30 · la confirmation revérifie l'occurrence : faite entre-temps, rien n'est écrit",
+      conf.resultat === "occurrence_changee" && (await q(`select count(*)::int n from cibles_acceptees`)).rows[0].n === n0
+        && Number((await ligneIr(prep.id)).charge_cible) === 18, JSON.stringify(conf));
+    // une nouvelle cible vers 5, puis l'occurrence 5 est passée : reportée à 7
+    const v5 = await rpc("accepter_cible", { lancement_id: S, emplacement: ir, charge: 20, reps_cible: rep.reps_min, cran: 4 });
+    const p5 = await rpc("ecrire_occurrence", { intention: occ(P, E, { rang: 5 }), modele_id: null, lignes: appliquerCibles(L4, [await ouverte(v5.cible_id)], 5) });
+    await q(`update intentions_entrainement set statut='passee', consommee_le=now() where id=$1`, [p5.id]);
+    const c5 = (await q(`select consommee_le, rang_vise from cibles_acceptees where id=$1`, [v5.cible_id])).rows[0];
+    t("R4 · tour 30 · une occurrence passée ne consomme pas la cible, elle la reporte sur la suivante", v5.rang_vise === 5 && c5.consommee_le === null && c5.rang_vise === 7, JSON.stringify([v5, c5]));
+  }
 
   // cas 6 · une progression en répétitions au poids du corps
   const Lp = composerEtape("Push", { lieu: "poids", orientation: "masse", niveau: null, version: 1 });
@@ -415,7 +543,11 @@ await setUid(U);
     const i6 = (o: Record<string, unknown>) => ({ ...intention4(o), programme_id: P6, etape_consommee_id: E6, programme_seance_id: E6 });
     const LB = "a1a1a1a1-0000-0000-0000-0000000000b6";
     await rpc("ecrire_occurrence", { intention: i6({ statut: "faite", consommee_le: "2026-10-05T10:00:00Z", lancement_id: LB }), modele_id: null, lignes: Lp });
-    await rpc("enregistrer_seance", { lancement_id: LB, proprietaire: U, titre: "Push", duree_s: 600, series: [] });
+    const marquesB: MarquesSeance = { [ib]: Object.fromEntries(Array.from({ length: Lp[ib].series }, (_, k) => [k, {
+      statut: "terminee", validation: "bouton", dureeS: null, reps: Lp[ib].reps_cible, charge: null,
+      ...(k === Lp[ib].series - 1 ? { marge: "3_plus" } : {}),
+    }])) } as MarquesSeance;
+    await rpc("enregistrer_seance", { lancement_id: LB, proprietaire: U, titre: "Push", duree_s: 600, series: lignesDuJournal(projeterPrescription(Lp), marquesB) });
     t("R4 · cas 6 · au poids du corps, une charge est refusée", /charge_sans_kilos/.test(await err("accepter_cible", { lancement_id: LB, emplacement: ib, charge: 5, reps_cible: Lp[ib].reps_cible! + 1 })));
     const a6 = await rpc("accepter_cible", { lancement_id: LB, emplacement: ib, charge: null, reps_cible: Lp[ib].reps_cible! + 1 });
     const c6 = (await q(`select * from cibles_acceptees where id=$1`, [a6.cible_id])).rows[0];

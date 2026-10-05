@@ -172,10 +172,14 @@ export type CibleAcceptee = {
   cran: number | null;
 };
 
-/** La cible acceptée d'une proposition, avec la charge choisie à la main si besoin. */
+/**
+ * La cible acceptée d'une proposition. La charge CHOISIE l'emporte sur
+ * la charge proposée (tour 30) : avec ou sans cran connu, on corrige la
+ * valeur avant d'accepter, et l'écart choisi devient le cran.
+ */
 export function cibleAcceptee(prop: Proposition, chargeChoisie: number | null, type: TypeCharge | null): CibleAcceptee | null {
   if (prop.genre === "reps") return { charge: prop.charge, repsCible: prop.repsCible, cran: null };
-  const charge = chargeSaisie(prop.chargeProposee ?? chargeChoisie);
+  const charge = chargeSaisie(chargeChoisie ?? prop.chargeProposee);
   if (charge === null) return null;
   const cran = cranConfirme(prop.chargeActuelle, charge, type);
   /* Une charge qui ne progresse pas n'est pas une hausse : on refuse
@@ -237,6 +241,12 @@ export type ReferenceCharge = { charge: number; termineLe: string };
  * La charge de la dernière réalisation COMPLÈTE et comparable, à charge
  * homogène, sur la même clé et le même type. Jamais simplement la
  * dernière série : elle peut être un allègement isolé (tour 29).
+ *
+ * ⚠️ LES GROUPES DOIVENT ARRIVER ENTIERS (tour 30). On attend TOUTES les
+ * séries d'un emplacement, quelle que soit leur clé : filtrer par clé
+ * avant de regrouper fait disparaître B dans A → B → A, et les séries 1
+ * et 3 de A passeraient pour une réalisation complète. Un groupe dont les
+ * séries ne vont pas de 1 à n sans trou est exclu.
  */
 export function chargeDeReference(series: SerieHistorique[], cle: string, type: TypeCharge | null): ReferenceCharge | null {
   if (!chargeReglable(type)) return null;
@@ -251,6 +261,7 @@ export function chargeDeReference(series: SerieHistorique[], cle: string, type: 
     .map((g) => g.sort((a, b) => a.serie - b.serie))
     .sort((a, b) => (a[0].termine_le < b[0].termine_le ? 1 : a[0].termine_le > b[0].termine_le ? -1 : 0));
   for (const g of candidats) {
+    if (!g.every((s, i) => s.serie === i + 1)) continue;
     if (!g.every((s) => s.exercice_cle === cle && (s.charge_type ?? null) === type)) continue;
     if (!g.every((s) => s.statut === "terminee" && s.validation === "bouton")) continue;
     const c = g[0].charge ?? null;
@@ -271,14 +282,15 @@ export type CibleOuverte = {
   reps_cible: number;
   reps_min: number;
   reps_max: number;
-  /** La première occurrence de l'étape qu'elle vise. */
+  /** L'occurrence de l'étape qu'elle vise, et seulement celle-là. */
   rang_vise: number;
 };
 
 /**
  * Recopie les cibles ouvertes dans une prescription qui se fige. Une
  * cible ne s'applique qu'au même exercice, au même type de charge et à
- * la même fourchette, et à une occurrence de rang ≥ celui qu'elle vise.
+ * la même fourchette, et à l'occurrence EXACTE qu'elle vise (tour 30) :
+ * jamais à toutes les suivantes.
  * La base refait exactement la même copie (`ecrire_occurrence`) à partir
  * de la ligne qu'on lui nomme : le banc compare les deux.
  */
@@ -291,7 +303,7 @@ export function appliquerCibles<L extends {
   return lignes.map((l) => {
     if (l.mesure !== "reps" || l.reps_min == null || l.reps_max == null) return l;
     const c = cibles.find((x) => x.exercice_cle === l.exercice_cle && (x.charge_type ?? null) === (l.charge_type ?? null)
-      && x.reps_min === l.reps_min && x.reps_max === l.reps_max && rang >= x.rang_vise);
+      && x.reps_min === l.reps_min && x.reps_max === l.reps_max && rang === x.rang_vise);
     if (!c) return l;
     const reps = Math.min(Math.max(c.reps_cible, l.reps_min), l.reps_max);
     return {
@@ -321,17 +333,14 @@ export function prescriptionDe(ex: {
 }
 
 /**
- * Les emplacements où la question a sa place, dans l'ordre de la séance,
- * au plus deux (décision 53). `series(e)` rend les séries de
- * l'emplacement telles que le journal les écrirait.
+ * Pose la question d'un emplacement dont la dernière série vient de se
+ * terminer, si elle est utile et s'il reste de la place (décision 53).
+ *
+ * ⚠️ LE PLAFOND COMPTE LES QUESTIONS DÉJÀ PRÉSENTÉES (tour 30), pas les
+ * emplacements éligibles à l'instant : une question posée reste posée,
+ * même si une correction rend ensuite son exercice inéligible.
  */
-export function emplacementsAQuestion(
-  prescriptions: (PrescriptionExercice | null)[], series: (e: number) => SerieRealisee[],
-): number[] {
-  const sortie: number[] = [];
-  prescriptions.forEach((p, e) => {
-    if (sortie.length >= QUESTIONS_MAX || !p) return;
-    if (questionUtile(series(e), p)) sortie.push(e);
-  });
-  return sortie;
+export function poserQuestion(posees: number[], emplacement: number, utile: boolean): number[] {
+  if (!utile || posees.includes(emplacement) || posees.length >= QUESTIONS_MAX) return posees;
+  return [...posees, emplacement];
 }
