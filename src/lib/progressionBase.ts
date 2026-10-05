@@ -77,8 +77,20 @@ const SEANCES_EXAMINEES = 12;
 export async function referencesDeCharge(
   userId: string, exercices: ReferencePrescrite[], client?: ClientLike,
 ): Promise<Map<string, ReferenceCharge> | null> {
-  const cles = [...new Set(exercices.map((e) => e.cle))];
-  if (cles.length === 0) return new Map();
+  const series = await historiqueDesExercices(userId, exercices.map((e) => e.cle), client);
+  return series === null ? null : referencesDepuisSeries(series, exercices);
+}
+
+/**
+ * Les séries des séances récentes qui contiennent ces exercices, lues par
+ * séances ENTIÈRES (R5 : le fait marquant de la fin s'en sert aussi).
+ * `null` = lecture ratée, jamais « aucun historique ».
+ */
+export async function historiqueDesExercices(
+  userId: string, clesDemandees: string[], client?: ClientLike,
+): Promise<SerieHistorique[] | null> {
+  const cles = [...new Set(clesDemandees)];
+  if (cles.length === 0) return [];
   const supabase = client ?? createClient();
   const recentes = await supabase
     .from("series_realisees").select("workout_session_id")
@@ -87,7 +99,7 @@ export async function referencesDeCharge(
     .limit(400);
   if (recentes.error) { console.warn("[progression] historique illisible :", recentes.error.message); return null; }
   const ids = [...new Set((recentes.data ?? []).map((r) => String(r.workout_session_id)))].slice(0, SEANCES_EXAMINEES);
-  if (ids.length === 0) return new Map();
+  if (ids.length === 0) return [];
   const { data, error, count } = await supabase
     .from("series_realisees")
     .select("workout_session_id, emplacement, serie, exercice_cle, statut, validation, reps_declarees, charge, charge_type, reps_min_prescrites, reps_max_prescrites, workout_sessions(termine_le)", { count: "exact" })
@@ -95,7 +107,7 @@ export async function referencesDeCharge(
     .order("workout_session_id").order("emplacement").order("serie")
     .limit(5000);
   if (error) { console.warn("[progression] historique illisible :", error.message); return null; }
-  return referencesDepuisSeries(lignesHistorique(data ?? [], count), exercices);
+  return lignesHistorique(data ?? [], count);
 }
 
 /** Les lignes lues, sans la dernière séance si la réponse a été coupée. */

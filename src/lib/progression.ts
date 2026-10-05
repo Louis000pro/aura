@@ -259,11 +259,36 @@ export type ReferencePrescrite = { cle: string; charge_type: TypeCharge | null; 
 /** La clé d'une référence : l'exercice, son type, sa fourchette, ses séries. */
 export const cleReference = (p: ReferencePrescrite) => `${p.cle}|${p.charge_type ?? ""}|${p.reps_min ?? ""}-${p.reps_max ?? ""}|${p.series}`;
 
-export function chargeDeReference(series: SerieHistorique[], p: ReferencePrescrite): ReferenceCharge | null {
+/** Une réalisation passée, complète et comparable à une prescription. */
+export type RealisationReference = {
+  workoutSessionId: string;
+  /** La charge unique (`null` au poids du corps). */
+  charge: number | null;
+  /** Les répétitions déclarées, série 1 d'abord (`null` = non déclarées).
+   *  Elles ne servent pas à CHOISIR la référence : la charge de départ de
+   *  R4 n'en dépend pas, et une référence aux répétitions inconnues ne
+   *  doit pas faire remonter une séance plus ancienne. */
+  reps: (number | null)[];
+  termineLe: string;
+};
+
+/**
+ * R5 · LA DERNIÈRE RÉALISATION COMPLÈTE ET COMPARABLE d'une prescription,
+ * avec ses répétitions. C'est la seule règle de comparabilité de
+ * l'historique : `chargeDeReference` (R4) et le fait marquant de la fin
+ * de séance (R5) la partagent, pour ne jamais dire deux choses
+ * différentes de la même séance passée.
+ *
+ * `exclure` écarte une séance (celle qu'on vient de finir, au rejeu).
+ */
+export function realisationDeReference(
+  series: SerieHistorique[], p: ReferencePrescrite, exclure?: string | null,
+): RealisationReference | null {
   const { cle, charge_type: type } = p;
-  if (!chargeReglable(type) || p.reps_min == null || p.reps_max == null || !(p.series > 0)) return null;
+  if (p.reps_min == null || p.reps_max == null || !(p.series > 0)) return null;
   const groupes = new Map<string, SerieHistorique[]>();
   for (const s of series) {
+    if (exclure && s.workout_session_id === exclure) continue;
     const k = `${s.workout_session_id}|${s.emplacement}`;
     const g = groupes.get(k) ?? [];
     g.push(s);
@@ -278,10 +303,19 @@ export function chargeDeReference(series: SerieHistorique[], p: ReferencePrescri
     if (!g.every((s) => s.exercice_cle === cle && (s.charge_type ?? null) === type)) continue;
     if (!g.every((s) => s.statut === "terminee" && s.validation === "bouton")) continue;
     const c = g[0].charge ?? null;
-    if (c === null || !g.every((s) => s.charge === c)) continue;
-    return { charge: c, termineLe: g[0].termine_le };
+    if (chargeReglable(type)) {
+      if (c === null || !g.every((s) => s.charge === c)) continue;
+    } else if (g.some((s) => s.charge != null)) continue;
+    return { workoutSessionId: g[0].workout_session_id, charge: c, reps: g.map((s) => s.reps_declarees ?? null), termineLe: g[0].termine_le };
   }
   return null;
+}
+
+/** La charge de départ (R4), tirée de la même référence. */
+export function chargeDeReference(series: SerieHistorique[], p: ReferencePrescrite): ReferenceCharge | null {
+  if (!chargeReglable(p.charge_type)) return null;
+  const r = realisationDeReference(series, p);
+  return r && r.charge !== null ? { charge: r.charge, termineLe: r.termineLe } : null;
 }
 
 /* ── La cible acceptée, recopiée au figement ───────────────────────── */

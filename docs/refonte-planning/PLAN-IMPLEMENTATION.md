@@ -662,3 +662,61 @@ Bancs :
 - `20261007_r4_progression.sql` collée par Louis. Vérifié en base : tables, fonctions, déclencheur de résolution différé, RLS en lecture seule sur `cibles_acceptees` et `crans_exercice`, `accepter_cible` et `corriger_marge` exécutables par `authenticated` seulement.
 - 27 essais avec deux vrais comptes, dans des blocs annulés (base vérifiée vide après coup) : journal rejoué sans doublon, une seule marge écrite, marge hors vocabulaire refusée, B ne corrige ni n'accepte depuis la séance de A (`introuvable`, `seance_introuvable`) et ne voit rien de A, charges mélangées et clé inconnue `non_comparable`, sous la cible et charge sans progression `proposition_invalide`, aucune version écrite après les refus, acceptation sur le rang 3 avec son cran, rejeu sans seconde version ouverte, écriture et modification directes refusées, annonce `occurrence_preparee` sans écriture puis confirmation qui pose 20 sur la séance préparée, fermeture qui consomme la version suivie, aucune version ouverte sur une occurrence résolue. Une référence de version inventée, ou celle d'un autre compte, est retirée de la copie.
 - **Non joué sur Supabase : les entrelacements de concurrence.** Le connecteur n'ouvre qu'une session à la fois ; ils restent vérifiés sur PostgreSQL 16 local (`check:r4-concurrence`, 15 contrôles).
+
+## R5 · cadrage (2026-10-05), envoyé à Codex en parallèle du code
+
+Louis a choisi de finir le chantier puis de tout essayer à la fin. Le code de R5 avance donc sans attendre la réponse de Codex ; sa relecture reste obligatoire avant la vague suivante. La maquette 07 (écrans 08 à 10) a déjà le GO de Louis : pas de nouvelle maquette.
+
+Périmètre : la fin de séance du tunnel (`phase === "done"`), et rien d'autre. Aucune migration SQL.
+
+**1. Les quatre étages (décision 58), lus dans l'ordre, sans cartes empilées.**
+- **Le moment** : le Guide et son sceau, « Séance terminée », puis une ligne `38 min · 14 séries`. Les séries sont celles **confirmées** (`seriesConfirmees`), jamais le total prévu. La grille 2 × 2 (durée, séries, calories, exercices) disparaît : les calories estimées et le compte d'exercices ne sont pas des faits mesurés.
+- **Le fait marquant**, au plus un : une comparaison précise avec son périmètre (« Hip thrust : 12 à 60 kg sur ta première série, contre 10 mardi »).
+- **La proposition** : `LaProchaineFois`, inchangée dans sa logique (R4). La question facultative d'un repère qui terminait la séance reste juste au-dessus (écran 10).
+- **La vie** : une ligne avec filet, « 🔥 9 jours · Journée validée » à gauche et le rang à droite.
+- Puis « Voir mes N exercices › ».
+
+**2. Le fait marquant : `faitMarquant` (pure, `src/lib/recapSeance.ts`).**
+- Seulement un **repère**, dont la réalisation du jour est comparable (`comparer` de R4 : complète, au bouton, même clé, même type, une seule charge).
+- La référence est **la dernière réalisation complète et comparable de la même prescription** (même clé, même type, même fourchette, même nombre de séries), lue par séances entières comme en R4. `chargeDeReference` dérive désormais de cette même fonction (`realisationDeReference`) : une seule règle de comparabilité.
+- Deux formes de progrès, et seulement deux :
+  - **la charge** (charge totale ou par haltère : plus lourd ; assistance : moins d'assistance), toutes les séries au moins au bas de la fourchette → « 62,5 kg, contre 60 kg mardi » ;
+  - **les répétitions à la même charge** (ou au poids du corps) : aucune série en dessous de la référence et un total plus haut → on nomme la série au plus grand gain (« sur ta deuxième série »).
+- Égalité, recul, charges différentes dans le mauvais sens, référence absente ou lecture ratée → rien. On n'invente rien et l'étage disparaît (écran 09).
+- Un seul fait : le premier repère de la séance qui progresse.
+- La date dit « hier », un jour de la semaine sous 7 jours, sinon « le 14 sept. ».
+
+**3. Ce qui reste, en secondaire, sous la ligne « Voir mes exercices ».**
+- Le maillon du relais et le badge gagné : deux lignes compactes avec filet, mêmes destinations qu'aujourd'hui.
+- « Tu la gardes ? » (impro seulement) : inchangée, dans le pied, au-dessus de « Continuer ».
+- L'échec d'enregistrement et « Réessayer » : inchangés, toujours visibles.
+- L'invitation à laisser un avis : une ligne discrète, plus une carte colorée.
+- « Enregistrée dans ton profil » disparaît : c'est l'état normal, l'échec seul se dit.
+
+**4. Le pied.**
+- « Continuer » en violet plein (il remplace « Terminer »).
+- « Partager l'affiche » en lien discret, seulement une fois l'affiche gardée : il ouvre `EnvoyerAffiche` (la même feuille que le profil), avec `afficheDe(journal)`.
+
+**5. « Voir mes N exercices ».** Une feuille qui liste chaque exercice réellement fait et ses séries confirmées (« 10 × 60 kg », « 45 s »), une série passée dite comme telle. Pour un repère dont la marge a été donnée, la réponse se lit et se modifie là (décision 54), par `corrigerMarge` (la base ne touche jamais une cible déjà acceptée).
+
+### Questions pour Codex
+1. Le fait marquant limité aux repères, avec ces deux formes de progrès et ces refus ?
+2. La référence partagée avec `chargeDeReference` (`realisationDeReference`) ?
+3. Le retrait des calories et du compte d'exercices de l'écran de fin (ils restent sur l'affiche) ?
+4. La correction de marge dans le détail, sans recalcul de proposition déjà affichée au-delà de ce que R4 fait ?
+
+## R5 · codée (2026-10-05), en attente de la relecture de Codex
+
+Aucune migration SQL.
+
+- `src/lib/recapSeance.ts` (pur) : `faitMarquant`, `progresDe`, `quandRelatif` (jour de Paris, « hier », jour de la semaine, puis date), `serieNommee`, `texteSerie`.
+- `src/lib/progression.ts` : `realisationDeReference` est la règle unique de la référence historique ; `chargeDeReference` en dérive, **sans changer R4** (les répétitions déclarées ne servent pas à choisir la référence).
+- `src/lib/progressionBase.ts` : `historiqueDesExercices` (les mêmes deux lectures par séances entières) ; `referencesDeCharge` s'appuie dessus. Le tunnel lit l'historique de **tous** les exercices prescrits (le poids du corps compris) et en tire ses références de charge.
+- `WorkoutGuideModal.tsx`, écran de fin :
+  - le moment : Guide et sceau, « Séance terminée », `N min · N séries` confirmées. La phrase du Guide, le titre de la séance et la grille 2 × 2 partent (la maquette 08 ne les a pas) ;
+  - `LigneFait` (étage 2), la question facultative et `LaProchaineFois` (étage 3), la ligne série + rang (étage 4), « Voir mes N exercices » ;
+  - le relais, les badges, l'échec d'enregistrement et l'avis (en ligne discrète) viennent après ;
+  - le pied : « Tu la gardes ? » (impro), « Continuer » en violet plein, « Partager l'affiche » (`EnvoyerAffiche`, étage 106) une fois l'affiche gardée ;
+  - `DetailExercices` (portail, étage 106) : les séries confirmées, et la marge d'un repère modifiable (décision 54) par la file de R4 (`margesFin` → `corriger_marge`). `margeDe` lit désormais la dernière réponse donnée (`margesFin` d'abord).
+- Bancs : `check:programme` gagne 30 contrôles R5 (dont l'ordre des étages lu dans le source). Deux témoins vérifiés : sans le refus d'une série en recul, et sans le filtre des repères, le banc échoue chacun à sa ligne.
+- `tsc`, `build` passent ; eslint 93 (la référence) ; `check:echelle` passe de 38 à 37 écarts (un 14 px de la grille retirée) ; `check:rappels`, `check:missions`, `check:portraits` passent.

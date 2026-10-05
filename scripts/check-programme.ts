@@ -6901,5 +6901,109 @@ verdict(
     sql4.includes("raise exception 'proprietaire_different'") && sql4.includes("on conflict (user_id, lancement_id) where lancement_id is not null do nothing"), "");
 }
 
+/* ═══════════════════════ R5 · la fin de séance refaite ═══════════════════════ */
+{
+  const lire1 = (rel: string) => readFileSync(new URL("../" + rel, import.meta.url), "utf8").replace(/\r\n/g, "\n");
+  const R = await import("@/lib/recapSeance");
+  const G = await import("@/lib/progression");
+  const CLE = "hipthrust";
+  const pres = (o: Record<string, unknown> = {}) => ({
+    cle: CLE, statut: "repere" as const, charge_type: "totale" as const, reps_min: 8, reps_max: 12, reps_cible: 10, series: 3, ...o,
+  }) as import("@/lib/progression").PrescriptionExercice;
+  const s = (reps: number, charge: number | null = 60, o: Record<string, unknown> = {}) => ({
+    exercice_cle: CLE, statut: "terminee" as const, validation: "bouton", reps_declarees: reps, charge, charge_type: "totale", ...o,
+  });
+  const H = (sess: string, serieN: number, reps: number | null, charge: number | null, fin: string, o: Record<string, unknown> = {}) => ({
+    workout_session_id: sess, emplacement: 0, serie: serieN, exercice_cle: CLE, statut: "terminee" as const, validation: "bouton",
+    reps_declarees: reps, charge, charge_type: "totale", reps_min_prescrites: 8, reps_max_prescrites: 12, termine_le: fin, ...o,
+  });
+  const ref3 = (reps: number[], charge: number | null, fin = "2026-10-06T08:00:00Z", sess = "ref", o: Record<string, unknown> = {}) =>
+    reps.map((r, i) => H(sess, i + 1, r, charge, fin, o));
+  const E = (series: ReturnType<typeof s>[], o: Record<string, unknown> = {}) => [{ emplacement: 0, nom: "Hip thrust", prescription: pres(o), series }];
+
+  const f1 = R.faitMarquant(E([s(12), s(11), s(10)]), ref3([10, 10, 10], 60));
+  verdict("R5 · même charge, plus de répétitions : la série au plus grand gain, avec sa date",
+    f1?.genre === "reps" && f1.serie === 1 && f1.reps === 12 && f1.avant === 10 && f1.charge === 60, JSON.stringify(f1));
+  const f2 = R.faitMarquant(E([s(10, 62.5), s(9, 62.5), s(8, 62.5)]), ref3([12, 12, 12], 60));
+  verdict("R5 · plus de charge, toutes les séries dans la fourchette : un progrès de charge",
+    f2?.genre === "charge" && f2.charge === 62.5 && f2.avant === 60, JSON.stringify(f2));
+  verdict("R5 · plus de charge mais une série sous la fourchette : rien",
+    R.faitMarquant(E([s(10, 62.5), s(9, 62.5), s(7, 62.5)]), ref3([12, 12, 12], 60)) === null, "");
+  verdict("R5 · moins lourd : rien", R.faitMarquant(E([s(12, 55), s(12, 55), s(12, 55)]), ref3([10, 10, 10], 60)) === null, "");
+  const asg = R.faitMarquant(E([s(10, 15, { charge_type: "assistance" }), s(10, 15, { charge_type: "assistance" }), s(10, 15, { charge_type: "assistance" })], { charge_type: "assistance" }),
+    ref3([10, 10, 10], 20, undefined, "ref", { charge_type: "assistance" }));
+  verdict("R5 · en assistance, moins d'assistance est un progrès", asg?.genre === "charge" && asg.charge === 15 && asg.avant === 20, JSON.stringify(asg));
+  verdict("R5 · égalité : rien", R.faitMarquant(E([s(10), s(10), s(10)]), ref3([10, 10, 10], 60)) === null, "");
+  verdict("R5 · un total plus haut mais une série en recul : rien",
+    R.faitMarquant(E([s(12), s(12), s(9)]), ref3([10, 10, 10], 60)) === null, "aucune série sous la référence");
+  verdict("R5 · un complémentaire ne fait jamais de fait marquant",
+    R.faitMarquant(E([s(12), s(12), s(12)], { statut: "complementaire" }), ref3([10, 10, 10], 60)) === null, "");
+  verdict("R5 · réalisation du jour non comparable (minuteur) : rien",
+    R.faitMarquant(E([s(12), s(12), s(12, 60, { validation: "minuteur_fini" })]), ref3([10, 10, 10], 60)) === null, "");
+  verdict("R5 · pas de référence, ou historique illisible : rien (écran 09)",
+    R.faitMarquant(E([s(12), s(12), s(12)]), []) === null && R.faitMarquant(E([s(12), s(12), s(12)]), null) === null, "");
+  verdict("R5 · une référence d'une autre fourchette ne compte pas",
+    R.faitMarquant(E([s(12), s(12), s(12)]), ref3([10, 10, 10], 60, undefined, "ref", { reps_min_prescrites: 4, reps_max_prescrites: 6 })) === null, "");
+  verdict("R5 · une référence aux répétitions inconnues ne dit rien, et ne fait pas remonter une plus ancienne",
+    R.faitMarquant(E([s(12), s(12), s(12)]), [...ref3([null as unknown as number, 10, 10], 60, "2026-10-06T08:00:00Z", "recente"), ...ref3([8, 8, 8], 60, "2026-10-01T08:00:00Z", "vieille")]) === null, "");
+  verdict("R5 · la séance qu'on vient de finir ne se compare pas à elle-même",
+    R.faitMarquant(E([s(12), s(12), s(12)]), ref3([12, 12, 12], 60, undefined, "moi"), "moi") === null
+      && R.faitMarquant(E([s(12), s(12), s(12)]), [...ref3([12, 12, 12], 60, "2026-10-07T08:00:00Z", "moi"), ...ref3([10, 10, 10], 60)], "moi")?.genre === "reps", "");
+  const pdc = R.faitMarquant(E([s(15, null, { charge_type: "poids_du_corps" }), s(14, null, { charge_type: "poids_du_corps" }), s(12, null, { charge_type: "poids_du_corps" })], { charge_type: "poids_du_corps", reps_min: 8, reps_max: 20 }),
+    ref3([12, 12, 12], null, undefined, "ref", { charge_type: "poids_du_corps", reps_max_prescrites: 20 }));
+  verdict("R5 · au poids du corps : des répétitions, sans charge", pdc?.genre === "reps" && pdc.charge === null && pdc.reps === 15 && pdc.avant === 12, JSON.stringify(pdc));
+  {
+    const deux = [
+      { emplacement: 1, nom: "Squat", prescription: pres({ cle: "squat" }), series: [s(12, 60, { exercice_cle: "squat" })].concat([s(12, 60, { exercice_cle: "squat" }), s(12, 60, { exercice_cle: "squat" })]) },
+      ...E([s(12), s(12), s(12)]),
+    ];
+    const h = [...ref3([10, 10, 10], 60), ...ref3([10, 10, 10], 60, undefined, "ref2", { exercice_cle: "squat", emplacement: 0 })];
+    verdict("R5 · un seul fait, le premier repère de la séance", R.faitMarquant(deux, h)?.nom === "Hip thrust", "ordre des emplacements");
+  }
+  // la référence partagée avec R4
+  {
+    const h = [...ref3([10, 10, 10], 60, "2026-10-06T08:00:00Z", "a"), ...ref3([12, 12, 12], 55, "2026-10-01T08:00:00Z", "b")];
+    const p = { cle: CLE, charge_type: "totale" as const, reps_min: 8, reps_max: 12, series: 3 };
+    const r = G.realisationDeReference(h, p);
+    verdict("R5 · la charge de départ (R4) et le fait marquant lisent la même référence",
+      r?.workoutSessionId === "a" && G.chargeDeReference(h, p)?.charge === r.charge, JSON.stringify(r));
+    verdict("R5 · la charge de départ ne dépend toujours pas des répétitions déclarées (R4 inchangée)",
+      G.chargeDeReference(ref3([null as unknown as number, null as unknown as number, null as unknown as number], 60), p)?.charge === 60, "");
+  }
+  // dire le jour
+  const lun = new Date("2026-10-12T18:00:00+02:00");
+  verdict("R5 · « hier », un jour de la semaine, puis une date",
+    R.quandRelatif("2026-10-11T09:00:00+02:00", lun) === "hier"
+      && R.quandRelatif("2026-10-08T09:00:00+02:00", lun) === "jeudi"
+      && R.quandRelatif("2026-10-01T09:00:00+02:00", lun) === "le 1 oct.", [R.quandRelatif("2026-10-11T09:00:00+02:00", lun), R.quandRelatif("2026-10-08T09:00:00+02:00", lun), R.quandRelatif("2026-10-01T09:00:00+02:00", lun)].join(" | "));
+  verdict("R5 · le jour se lit à Paris, pas en UTC (23 h 30 la veille reste la veille)",
+    R.quandRelatif("2026-10-11T21:30:00Z", new Date("2026-10-12T07:00:00Z")) === "hier", R.quandRelatif("2026-10-11T21:30:00Z", new Date("2026-10-12T07:00:00Z")));
+  verdict("R5 · la série nommée", R.serieNommee(1) === "sur ta première série" && R.serieNommee(2) === "sur ta deuxième série" && R.serieNommee(9) === "sur ta série 9", "");
+  verdict("R5 · une série se dit comme elle a été confirmée",
+    R.texteSerie({ statut: "terminee", reps_declarees: 10, charge: 60, charge_type: "totale" }) === "10 × 60 kg"
+      && R.texteSerie({ statut: "terminee", reps_declarees: 15, charge_type: "poids_du_corps" }) === "15 répétitions"
+      && R.texteSerie({ statut: "terminee", duree_s: 45 }) === "45 s"
+      && R.texteSerie({ statut: "passee" }) === "Passée", "");
+
+  // le chemin : ce que l'écran montre
+  const t = lire1("src/components/WorkoutGuideModal.tsx");
+  const fin = t.slice(t.indexOf('{phase === "done" && (\n              <motion.div key="done"'), t.indexOf('{/* ══ CTA bas'));
+  verdict("R5 · le moment compte les séries CONFIRMÉES, jamais le total prévu",
+    fin.includes("seriesConfirmees(doneMap)") && !fin.includes("totalSets"), "décision 58");
+  verdict("R5 · plus de grille de chiffres (calories, exercices) sur l'écran de fin", !fin.includes("CALORIES") && !fin.includes("DURÉE RÉELLE"), "");
+  verdict("R5 · un seul fait marquant, venu de la règle pure", fin.includes("{fait && <LigneFait fait={fait} />}") && t.includes("faitMarquant(emplacementsFinis, historique, seanceIdFin)"), "");
+  verdict("R5 · les quatre étages dans l'ordre : moment, fait, proposition, série",
+    fin.indexOf("Séance terminée") < fin.indexOf("<LigneFait") && fin.indexOf("<LigneFait") < fin.indexOf("<LaProchaineFois")
+      && fin.indexOf("<LaProchaineFois") < fin.indexOf("Journée validée") && fin.indexOf("Journée validée") < fin.indexOf("Voir mes"), "");
+  verdict("R5 · relais, badges et avis restent, APRÈS les quatre étages",
+    fin.indexOf("<BandeMaillon") > fin.indexOf("Voir mes") && fin.indexOf("<BandeBadge") > fin.indexOf("Voir mes") && fin.indexOf("Laisser un avis") > fin.indexOf("Voir mes"), "");
+  verdict("R5 · un échec d'enregistrement se dit toujours", fin.includes("finIncomplete.texte") && fin.includes("Réessayer"), "R1");
+  verdict("R5 · « Continuer » est l'action, le partage passe par la même feuille que le profil",
+    t.includes(">\n                  Continuer\n") && t.includes("<EnvoyerAffiche data={afficheData}") && t.includes("afficheDe(journalRef.current, r.seanceId)"), "");
+  verdict("R5 · une marge changée dans le détail part par la file de R4 (corriger_marge)",
+    t.includes("onMarge={(e, m) => setMargesFin((prev) => ({ ...prev, [e]: m }))}") && t.includes("margesFin[e] ?? (doneMap[e]"), "décision 54");
+  verdict("R5 · le détail vit dans un portail au-dessus du tunnel", /function DetailExercices[\s\S]*?createPortal\([\s\S]*?zIndex: 106/.test(t), "");
+}
+
 console.log("\n" + (echecs === 0 ? "Tout passe." : echecs + " échec(s)."));
 process.exit(echecs === 0 ? 0 : 1);
