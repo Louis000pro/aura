@@ -451,3 +451,50 @@ Louis a collé `20261006_r3_charges.sql`. Vérifié par lecture : la fonction re
 - **Journal de A envoyé sous B** : refusé, `proprietaire_different`.
 
 Base inchangée après coup : 31 séances, 15 séries, aucune ligne de test. Note du banc : les séries se numérotent à partir de 1 (`series_realisees_serie_check`) ; un premier essai à 0 a été refusé par la base et annulé.
+
+## R4 · cadrage (2026-10-05), soumis à Codex avant code
+
+Périmètre : maquette 07, écran 05 (la question après un repère) et la proposition « La prochaine fois » de l'écran 08, posée dans l'écran de fin actuel. La refonte complète de la fin de séance reste R5.
+
+**1. La marge déclarée.** `series_realisees` gagne `marge` (`aucune` | `1_2` | `3_plus` | `inconnue`, nulle = jamais posée ou ignorée). Elle n'est écrite que sur la dernière série d'un repère réellement fait. « Ignorée » et « Je ne sais pas » restent distincts en base et identiques à l'écran (décision 57). La réponse reste modifiable après coup (décision 54) par une RPC propriétaire `corriger_marge(serie_id, marge)`.
+
+**2. Quand la question se pose (décisions 53, 54, 57).**
+- Après la dernière série d'un exercice **repère** réellement fait, dans le bloc du repos, à la place de la phrase du Guide.
+- Seulement si la réponse peut changer la prochaine cible : toutes les séries prescrites sont faites, à la même charge connue (ou au poids du corps), et la dernière atteint le haut de la fourchette. Sinon, la règle décide déjà seule.
+- Au plus 2 par séance (plafond, pas quota).
+- Si le repère termine la séance, il n'y a pas de repos : en R4 la question n'est pas posée ; R5 l'ajoute, facultative, dans le récapitulatif.
+
+**3. `prochaineCible(historique, prescription, materiel)`, pure.**
+- **Comparable** = même `exercice_cle`, même `charge_type`, même fourchette prescrite, toutes les séries prescrites `terminee` par le bouton, une seule charge connue.
+- Haut de fourchette atteint sur toutes les séries **et** marge `1_2` ou `3_plus` → proposer un cran de charge, répétitions repartant du bas.
+- Dans la fourchette → garder la charge, viser une répétition de plus. Rien à accepter, rien n'est proposé.
+- Sous la fourchette sur une série → aucune baisse automatique ; on garde la charge.
+- Marge `aucune`, `inconnue`, ignorée, charges mêlées, charge inconnue ou résultat non comparable → garder.
+- Une seule proposition par exercice ; à la fin, une seule mise en avant (le premier repère concerné), les autres derrière « Un autre ajustement proposé ».
+
+**4. Le cran (« matériel »).** On ne connaît ni les haltères ni les disques.
+- Proposition : un cran par défaut, 2,5 kg en `totale`, 2 kg en `par_haltere`, −5 kg en `assistance`.
+- La valeur proposée est visible avant « Accepter » et modifiable au même endroit, avec la saisie exacte de R3.
+- Aucune question de matériel en R4.
+
+**5. Où vit une cible acceptée** (question laissée ouverte en R2). La prochaine occurrence n'est souvent pas encore écrite.
+- Proposition : une table `cibles_acceptees(user_id, programme_seance_id, exercice_cle, charge_type, charge, reps_min, reps_max, acceptee_le, consommee_le)`, unique par `(user_id, programme_seance_id, exercice_cle)` tant que non consommée.
+- Elle est lue quand la prescription se fige (étape datée, ou lancement d'une étape libre) et recopiée dans `occurrence_exercices.charge_cible` avec `charge_origine = 'acceptee'`, puis marquée consommée.
+- « La prochaine occurrence » de cette étape, et rien d'autre (décision 44).
+
+**6. Charge de départ sans proposition acceptée.**
+- Proposition : la dernière charge déclarée sur la même clé et le même type, affichée telle quelle, sans hausse (`charge_origine = 'historique'`).
+- Sans historique, elle reste inconnue, comme en R3.
+
+**7. Poids du corps et maison (décision 49).**
+- En R4, la double progression ne joue qu'en répétitions : haut de fourchette atteint avec marge → aucune proposition de charge.
+- Les chaînes de variantes plus difficiles ne sont pas encore définies : je propose de les reporter, sans rien proposer d'inventé.
+
+### Questions pour Codex
+1. Colonne `marge` sur la série plus une RPC de correction : d'accord ?
+2. Les conditions de la question (§2), et la question non posée en R4 quand le repère finit la séance ?
+3. Les règles de `prochaineCible` (§3), notamment « rien de proposé dans la fourchette » ?
+4. Les crans par défaut, modifiables avant Accepter, sans question de matériel ?
+5. Une table `cibles_acceptees` consommée au figement, plutôt qu'une écriture dans une occurrence future ?
+6. La charge de départ historique « telle quelle » ?
+7. Les chaînes de variantes reportées ?
