@@ -518,12 +518,14 @@ await setUid(U);
       ...(k === rep.series - 1 ? { marge: "1_2" } : {}), ...o,
     });
     let n = 0;
-    const essai = async (nom: string, parSerie: (k: number) => Record<string, unknown>, attendu: string, acceptation: Record<string, unknown> = {}) => {
+    const essai = async (nom: string, parSerie: (k: number) => Record<string, unknown>, attendu: string, acceptation: Record<string, unknown> = {},
+      apres?: (S: string) => Promise<unknown>) => {
       const { P, E } = await nouveauProgramme();
       const S = `c1c1c1c1-0000-0000-0000-${String(++n).padStart(12, "0")}`;
       await rpc("ecrire_occurrence", { intention: occ(P, E, { rang: 1, statut: "faite", consommee_le: "2026-10-05T10:00:00Z", lancement_id: S }), modele_id: null, lignes: L4 });
       const m = { [ir]: Object.fromEntries(Array.from({ length: rep.series }, (_, k) => [k, marque(k, parSerie(k))])) } as MarquesSeance;
       await rpc("enregistrer_seance", { lancement_id: S, proprietaire: U, titre: "Push", duree_s: 900, series: lignesDuJournal(exs4, m) });
+      if (apres) await apres(S);
       const avant = (await q(`select count(*)::int n from cibles_acceptees where programme_id=$1`, [P])).rows[0].n;
       const r = await rpc("accepter_cible", { lancement_id: S, emplacement: ir, charge: 18, reps_cible: rep.reps_min, cran: 2, ...acceptation });
       t(`R4 · tour 31 · ${nom}`, r.resultat === attendu && (attendu !== "ok") === ((await q(`select count(*)::int n from cibles_acceptees where programme_id=$1`, [P])).rows[0].n === avant), JSON.stringify(r));
@@ -542,6 +544,12 @@ await setUid(U);
       { charge: 16, reps_cible: Math.min(rep.reps_cible! + 1, rep.reps_max!), cran: null });
     await essai("au haut, une charge qui ne progresse pas : refusée", () => ({}), "proposition_invalide", { charge: 16 });
     await essai("au haut, des répétitions autres que le bas de fourchette : refusée", () => ({}), "proposition_invalide", { reps_cible: rep.reps_max });
+    /* Tour 32 · une valeur INCONNUE sur une seule série ne passe pas : `bool_and` ignorait le NULL. */
+    const premiere = (cols: string) => (S: string) => q(
+      `update series_realisees set ${cols} where emplacement = $2 and serie = 1
+         and workout_session_id = (select id from workout_sessions where lancement_id = $1)`, [S, ir]);
+    await essai("tour 32 · une seule clé d'exercice inconnue : refusée", () => ({}), "non_comparable", {}, premiere("exercice_cle = null"));
+    await essai("tour 32 · une seule fourchette prescrite inconnue : refusée", () => ({}), "non_comparable", {}, premiere("reps_min_prescrites = null, reps_max_prescrites = null"));
   }
   {
     // une occurrence passée reporte la cible ; une confirmation sur une occurrence changée n'écrit rien

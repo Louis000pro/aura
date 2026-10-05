@@ -705,7 +705,8 @@ begin
   select exercice_cle, charge_type, reps_min, reps_max, reps_cible, series, statut, mesure into v_ligne
     from public.occurrence_exercices
    where intention_id = v_int.id and emplacement = v_empl;
-  if v_ligne.exercice_cle is null or v_ligne.statut <> 'repere' or v_ligne.mesure <> 'reps' then
+  if v_ligne.exercice_cle is null or v_ligne.statut is distinct from 'repere' or v_ligne.mesure is distinct from 'reps'
+     or v_ligne.reps_min is null or v_ligne.reps_max is null or v_ligne.reps_cible is null or v_ligne.series is null then
     return jsonb_build_object('resultat', 'pas_un_repere');
   end if;
 
@@ -722,17 +723,21 @@ begin
      critères de `prochaineCible`. Toutes les séries prévues, de 1 à n,
      terminées par le bouton, sur la même clé réelle et le même type, avec
      des répétitions déclarées, une seule charge connue (aucune au poids
-     du corps), la fourchette prescrite, et toutes au moins à la cible. */
+     du corps), la fourchette prescrite, et toutes au moins à la cible.
+     Chaque comparaison REFUSE l'inconnu (tour 32) : `bool_and` ignore les
+     NULL, donc une seule série à clé, fourchette ou validation inconnue
+     passerait si les autres disent vrai. D'où `is not distinct from` et
+     `coalesce(…, false)` DANS l'agrégat, jamais seulement autour. */
   v_reglable := v_ligne.charge_type in ('totale', 'par_haltere', 'assistance');
   select count(*)::integer as n,
          coalesce(min(s.serie) = 1 and max(s.serie) = count(*) and count(distinct s.serie) = count(*), false) as suite,
-         coalesce(bool_and(s.statut = 'terminee' and s.validation = 'bouton'), false) as faites,
-         coalesce(bool_and(s.exercice_cle = v_ligne.exercice_cle), false) as meme_cle,
+         coalesce(bool_and(coalesce(s.statut = 'terminee' and s.validation = 'bouton', false)), false) as faites,
+         coalesce(bool_and(s.exercice_cle is not distinct from v_ligne.exercice_cle), false) as meme_cle,
          coalesce(bool_and(s.charge_type is not distinct from v_ligne.charge_type), false) as meme_type,
-         coalesce(bool_and(s.reps_min_prescrites = v_ligne.reps_min and s.reps_max_prescrites = v_ligne.reps_max), false) as meme_fourchette,
+         coalesce(bool_and(s.reps_min_prescrites is not distinct from v_ligne.reps_min and s.reps_max_prescrites is not distinct from v_ligne.reps_max), false) as meme_fourchette,
          coalesce(bool_and(s.reps_declarees is not null), false) as reps_connues,
-         coalesce(bool_and(s.reps_declarees >= v_ligne.reps_cible), false) as a_la_cible,
-         coalesce(bool_and(s.reps_declarees >= v_ligne.reps_max), false) as au_haut,
+         coalesce(bool_and(coalesce(s.reps_declarees >= v_ligne.reps_cible, false)), false) as a_la_cible,
+         coalesce(bool_and(coalesce(s.reps_declarees >= v_ligne.reps_max, false)), false) as au_haut,
          count(distinct s.charge)::integer as charges,
          coalesce(bool_and(s.charge is not null), false) as charges_connues,
          coalesce(bool_and(s.charge is null), false) as sans_charge,

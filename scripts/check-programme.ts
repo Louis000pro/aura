@@ -6889,6 +6889,14 @@ verdict(
     /cibles_suivent_intention[\s\S]{0,700}pg_advisory_xact_lock\(hashtextextended\(i\.programme_id::text, 6\)\)/.test(sql4), "tour 31");
   verdict("R4 · SQL · l'acceptation vérifie la réalisation entière avant de créer une version",
     sql4.indexOf("'non_comparable'") > 0 && sql4.indexOf("'non_comparable'") < sql4.indexOf("insert into public.cibles_acceptees"), "tour 31");
+  {
+    /* Tour 32 · dans la vérification de la réalisation, aucun `bool_and` ne
+       compare avec un `=` ou un `>=` nu : un NULL serait ignoré. */
+    const bloc = sql4.slice(sql4.indexOf("into v_real") - 1600, sql4.indexOf("into v_real"));
+    const nus = (bloc.match(/bool_and\(s\.[a-z_]+ (=|>=) /g) ?? []);
+    verdict("R4 · SQL · la réalisation refuse l'inconnu (aucune comparaison nue dans un bool_and)",
+      nus.length === 0 && bloc.includes("s.exercice_cle is not distinct from v_ligne.exercice_cle"), nus.join(" | ") || "tour 32");
+  }
   verdict("R4 · SQL · le journal garde les protections de R1",
     sql4.includes("raise exception 'proprietaire_different'") && sql4.includes("on conflict (user_id, lancement_id) where lancement_id is not null do nothing"), "");
 }

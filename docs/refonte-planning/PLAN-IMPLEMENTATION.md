@@ -649,3 +649,10 @@ Bancs :
 - **`check:r4-concurrence`** (nouveau) : un vrai PostgreSQL 16 local, deux sessions `psql` pilotées pas à pas, quatre entrelacements acceptation / fermeture, et l'invariant « aucune version ouverte sur une occurrence résolue ». Sans le verrou, il reproduit le défaut décrit par Codex (cible bloquée au rang 3). Sans le `nowait`, il produit un interblocage.
 - `check:programme` passe. Témoins vérifiés.
 - Bases inchangées : eslint 93, `check:echelle` identique, `tsc` et `build` passent.
+
+### R4 · corrections du tour 32
+
+- **Une valeur inconnue sur une seule série ne passe plus.** `bool_and` ignore les comparaisons qui rendent NULL : une série à `exercice_cle` nulle, les autres à la bonne clé, donnait `true`, et le `coalesce` autour de l'agrégat ne voyait rien. Dans `accepter_cible`, chaque critère refuse désormais l'inconnu DANS l'agrégat : `is not distinct from` pour la clé et la fourchette prescrite, `coalesce(…, false)` pour la validation et les seuils de répétitions.
+- La ligne prescrite elle-même doit porter sa fourchette, sa cible et son nombre de séries, sinon `pas_un_repere`.
+- Banc SQL : une seule clé nulle → `non_comparable`, aucune version ; une seule fourchette prescrite nulle → idem (126 essais). Témoin : avec les anciennes comparaisons, les deux échouent. `check:programme` refuse toute comparaison nue (`=`, `>=`) dans un `bool_and` du bloc de réalisation (témoin vérifié).
+- Une validation inconnue sur une série terminée n'est pas jouable au banc : la base l'interdit déjà (`(statut = 'terminee') = (validation is not null)`). La protection reste dans l'agrégat.
