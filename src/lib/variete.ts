@@ -81,19 +81,36 @@ export function vivierDeFonction(fonction: Fonction, lieu: ContexteComposition["
 }
 
 /**
+ * Revue finale (P2) · LE PASSAGE d'une occurrence : combien de fois CETTE
+ * étape est déjà revenue avant elle (0 = sa première fois). Le rang est
+ * global au cycle (rang 2 = 2ᵉ étape au premier tour) : tourner sur lui
+ * faisait varier dès sa première fois une étape en 2ᵉ position, et
+ * donnait toujours la même variante à une étape dont le rang avance de
+ * k en k. Pure.
+ */
+export function passageDuRang(rang: number, longueurCycle: number): number {
+  if (!Number.isInteger(rang) || rang < 1 || !(longueurCycle >= 1)) return 0;
+  return Math.floor((rang - 1) / longueurCycle);
+}
+
+/**
  * Les lignes d'UNE occurrence : le modèle, avec ses complémentaires
- * renouvelés selon le mode et le rang. Pure. Les repères, l'ordre et les
- * emplacements ne changent jamais (l'emplacement relie le journal).
+ * renouvelés selon le mode et le PASSAGE de son étape (jamais le rang
+ * brut). Pure. La première fois d'une étape est son modèle, celui de
+ * l'aperçu. Les repères, l'ordre et les emplacements ne changent jamais
+ * (l'emplacement relie le journal).
  */
 export function varierLignes(
   modele: readonly LignePrescription[],
   rang: number | null,
   variete: Variete,
   ctx: ContexteComposition,
+  longueurCycle: number,
 ): LignePrescription[] {
   const lignes = modele.map((l) => ({ ...l }));
-  if (variete === "habituels" || rang === null || rang <= 1) return lignes;
-  const tour = rang - 2;
+  const passage = rang === null ? 0 : passageDuRang(rang, longueurCycle);
+  if (variete === "habituels" || passage < 1) return lignes;
+  const tour = passage - 1;
   const comp = lignes
     .map((l, i) => ({ l, i }))
     .filter(({ l }) => l.statut === "complementaire");
@@ -218,7 +235,9 @@ export function libelleAllege(zone: Zone): string {
  * volume là où ça vient de travailler. Pure.
  */
 export function allegerPourZone<T extends { fonction: Fonction; series: number }>(lignes: readonly T[], zone: Zone): T[] {
-  return lignes.map((l) => (zonesDeFonction(l.fonction).includes(zone) ? { ...l, series: Math.max(1, l.series - 1) } : { ...l }));
+  return lignes.map((l) => (zonesDeFonction(l.fonction).includes(zone) && l.series > 1
+    ? { ...l, series: l.series - 1, reduite: true }
+    : { ...l }));
 }
 
 /** La même règle, sur une liste déjà projetée (une séance écrite). La
@@ -228,7 +247,8 @@ export function allegerExercices<T extends { name: string; sets: number; prescri
 ): T[] {
   return liste.map((e) => {
     const f = e.prescription?.fonction ?? PROPRIETES[e.name]?.fonction;
-    return f && zonesDeFonction(f).includes(zone) ? { ...e, sets: Math.max(1, e.sets - 1) } : { ...e };
+    if (!f || !zonesDeFonction(f).includes(zone) || e.sets <= 1) return { ...e };
+    return { ...e, sets: e.sets - 1, ...(e.prescription ? { prescription: { ...e.prescription, reduite: true as const } } : {}) };
   });
 }
 

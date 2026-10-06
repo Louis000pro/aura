@@ -5,8 +5,9 @@
    paliers. Ce fichier fait deux choses, et il est PUR (ni horloge, ni
    base, ni écran) :
 
-   1. ESTIMER une séance : séries, repos, côtés, changements de matériel
-      et échauffement. Une estimation, pas un chronomètre : elle sert à
+   1. ESTIMER une séance : séries, repos, côtés et échauffement, avec
+      EXACTEMENT les attentes que le tunnel pose (revue finale) ; le tempo
+      et l'échauffement sont des hypothèses annoncées, à calibrer. Une estimation, pas un chronomètre : elle sert à
       dire « ≈ 16 min » honnêtement, et à raccourcir.
    2. RACCOURCIR une séance jusqu'à une durée : on retire d'abord des
       exercices et des séries, selon les priorités de la séance. Les
@@ -36,7 +37,6 @@
    sont prévus, et aucune séance ne les déclare aujourd'hui.
    ════════════════════════════════════════════════════════════════════ */
 
-import { trouverExercice } from "@/lib/exerciseLibrary";
 import type { LignePrescription, StatutExercice } from "@/lib/banqueEtapes";
 
 /** L'échauffement, compté dans toute estimation (« échauffement compris »). */
@@ -45,8 +45,29 @@ export const ECHAUFFEMENT_S = 300;
 export const TEMPO_REP_S = 3;
 /** Passer d'un côté à l'autre dans une même série. */
 export const CHANGEMENT_COTE_S = 10;
-/** Enchaîner deux exercices sur le même matériel (pas de station à changer). */
-export const TRANSITION_MEME_MATERIEL_S = 30;
+/** Un effort HIIT et sa récupération, comme le tunnel les décompte. */
+export const HIIT_EFFORT_S = 20;
+export const HIIT_RECUP_S = 10;
+
+/**
+ * « 45s », « 30 sec », « 2 min » → secondes, sinon `null`. LA lecture du
+ * tunnel (revue finale, P2) : l'estimation et le chrono comprennent une
+ * séance chronométrée de la même façon.
+ */
+export function secondesDeReps(reps: string): number | null {
+  const r = (reps || "").toLowerCase();
+  const min = r.match(/(\d+)\s*min/);
+  if (min) return (parseInt(min[1], 10) || 0) * 60 || null;
+  const sec = r.match(/(\d+)\s*(?:secondes?|sec|s)\b/);
+  if (sec) return parseInt(sec[1], 10) || null;
+  return null;
+}
+
+/** L'attente que le TUNNEL pose après la dernière série d'un exercice :
+ *  la transition déclarée, sinon le repos de série. */
+export function attenteApres(transitionS: number | undefined | null, reposS: number | undefined | null): number {
+  return (transitionS ?? 0) > 0 ? (transitionS as number) : Math.max(0, reposS ?? 0);
+}
 /** Les durées que la feuille propose d'un geste ; n'importe quelle autre se règle. */
 export const DUREES_RAPIDES = [10, 15, 20, 30] as const;
 /** La plus courte durée qu'on peut demander. */
@@ -62,17 +83,11 @@ export type ItemDuree = {
   /** 2 quand l'exercice se fait « par jambe », « par côté ». */
   cotes: 1 | 2;
   reposS: number;
-  /** La transition vers l'exercice suivant, quand le matériel change. */
+  /** L'attente vers l'exercice suivant, telle que le tunnel la pose. */
   transitionS: number;
-  /** Le matériel : deux exercices sur le même s'enchaînent plus vite. */
-  materiel: string;
 };
 
 const unilateral = (texte: string) => /\bpar\s+(jambe|côté|cote|bras|main)\b/i.test(texte);
-
-function materielDe(nom: string): string {
-  return trouverExercice(nom)?.equip ?? "inconnu";
-}
 
 /** Une ligne de prescription (R2) → ce que l'estimation lit. */
 export function itemDeLigne(l: LignePrescription): ItemDuree {
@@ -86,8 +101,7 @@ export function itemDeLigne(l: LignePrescription): ItemDuree {
     effortS: effort,
     cotes: unilateral(l.unite) ? 2 : 1,
     reposS: l.repos_s,
-    transitionS: l.transition_s,
-    materiel: materielDe(l.exercice_nom),
+    transitionS: attenteApres(l.transition_s, l.repos_s),
   };
 }
 
@@ -95,28 +109,25 @@ export function itemDeLigne(l: LignePrescription): ItemDuree {
  *  Le statut vient de sa prescription quand il en porte une ; sinon
  *  l'exercice n'est pas un repère déclaré. */
 export function itemDExercice(e: {
-  name: string; sets: number; reps?: string; rest?: number; restAfter?: number; auto?: number;
+  name: string; sets: number; reps?: string; rest?: number; restAfter?: number; auto?: number; hiit?: boolean;
   prescription?: { statut: StatutExercice };
 }): ItemDuree {
   const reps = String(e.reps ?? "");
   const n = Number.parseInt(reps, 10);
-  const effort = e.auto ?? (Number.isFinite(n) && n > 0 ? n * TEMPO_REP_S : 30);
+  /* Les mêmes durées que le tunnel : `auto`, sinon ce que « 45s » veut
+     dire pour lui, et l'effort HIIT ; sinon des répétitions au tempo. */
+  const chrono = e.hiit ? HIIT_EFFORT_S : (e.auto ?? secondesDeReps(reps));
+  const effort = chrono ?? (Number.isFinite(n) && n > 0 ? n * TEMPO_REP_S : 30);
+  const repos = e.hiit && !(e.rest && e.rest > 0) ? HIIT_RECUP_S : (e.rest ?? 0);
   return {
     nom: e.name,
     statut: e.prescription?.statut ?? "complementaire",
     series: Math.max(1, e.sets || 1),
     effortS: effort,
     cotes: unilateral(reps) ? 2 : 1,
-    reposS: e.rest ?? 60,
-    transitionS: e.restAfter ?? 90,
-    materiel: materielDe(e.name),
+    reposS: repos,
+    transitionS: attenteApres(e.restAfter, e.rest),
   };
-}
-
-function memeMateriel(a: ItemDuree, b: ItemDuree): boolean {
-  /* Deux machines différentes, c'est une station à changer ; le cardio
-     aussi. Le poids du corps et les haltères restent sous la main. */
-  return a.materiel === b.materiel && (a.materiel === "corps" || a.materiel === "fonte");
 }
 
 /** L'estimation, en secondes, échauffement compris. Pure. */
@@ -127,7 +138,7 @@ export function estimerSecondes(items: readonly ItemDuree[]): number {
     const serie = it.cotes * it.effortS + (it.cotes - 1) * CHANGEMENT_COTE_S;
     total += it.series * serie + (it.series - 1) * it.reposS;
     const suivant = items[i + 1];
-    if (suivant) total += memeMateriel(it, suivant) ? TRANSITION_MEME_MATERIEL_S : it.transitionS;
+    if (suivant) total += it.transitionS;
   });
   return total;
 }
@@ -218,14 +229,26 @@ export function appliquerVersion<T>(liste: readonly T[], v: VersionCourte, poser
   return v.garde.map(({ index, series }) => poserSeries(liste[index], series));
 }
 
-/** Les lignes de prescription d'une version courte. */
+/** Les lignes de prescription d'une version courte. Chaque ligne garde
+ *  SON emplacement (revue finale, P1) et dit si elle a perdu des séries. */
 export function lignesCourtes(lignes: readonly LignePrescription[], v: VersionCourte): LignePrescription[] {
-  return appliquerVersion(lignes, v, (l, s) => ({ ...l, series: s }));
+  return appliquerVersion(lignes, v, (l, s) => ({ ...l, series: s, ...(s < l.series ? { reduite: true } : {}) }));
 }
 
-/** Les exercices projetés d'une version courte. */
-export function exercicesCourts<T extends { sets: number }>(liste: readonly T[], v: VersionCourte): T[] {
-  return appliquerVersion(liste, v, (e, s) => ({ ...e, sets: s }));
+/** Les exercices projetés d'une version courte. L'identité de chaque
+ *  ligne est ÉPINGLÉE avant de compacter le tableau : une liste lue en
+ *  base sans emplacement (projection d'avant) le reçoit de sa position
+ *  dans la liste ENTIÈRE, la seule où index et emplacement coïncident. */
+export function exercicesCourts<T extends { sets: number; prescription?: { emplacement?: number; reduite?: true } }>(
+  liste: readonly T[], v: VersionCourte,
+): T[] {
+  const epinglee = liste.map((e, i) => (e.prescription
+    ? { ...e, prescription: { ...e.prescription, emplacement: e.prescription.emplacement ?? i } }
+    : e));
+  return appliquerVersion(epinglee, v, (e, s) => ({
+    ...e, sets: s,
+    ...(e.prescription && s < e.sets ? { prescription: { ...e.prescription, reduite: true as const } } : {}),
+  }));
 }
 
 /** « Rowing, face pull et gainage retirés » : la phrase de ce qui part. */

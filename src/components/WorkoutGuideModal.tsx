@@ -27,9 +27,10 @@ import { useAuth } from "@/context/AuthContext";
 import type { CibleSeance } from "@/lib/finSeance";
 import {
   DUREE_EFFORT_HIIT, afficheDe, dependancesReelles, etatFinDeSeance, exercicesFaits, finaliserSeance, lignesDuJournal,
-  journalDe, nouveauLancement, nouvelleAttente, proprietaireDeLaSeance, seriesConfirmees,
+  emplacementDe, journalDe, nouveauLancement, nouvelleAttente, proprietaireDeLaSeance, seriesConfirmees,
   type EtatFin, type JournalSeance, type MarquesSeance, type Validation,
 } from "@/lib/journalSeance";
+import { secondesDeReps } from "@/lib/dureeLibre";
 import type { ExercicePrescrit } from "@/lib/banqueEtapes";
 import {
   chargeReglable, cibleReps, crancherReps, declareDesRepetitions,
@@ -180,19 +181,8 @@ export interface WorkoutGuideModalProps {
 type GuidePhase = "intro" | "exercising" | "resting" | "done";
 type HiitSub    = "work" | "rest";
 
-/* Déduit une durée en secondes d'un libellé de reps (« 45s », « 30 sec »,
-   « 2 min », « 3x45s » → 45). null si ce n'est PAS un exercice chronométré
-   (« 12 reps », « Max reps », « 12 par jambe »…). Sert à lancer un vrai chrono
-   pour les gainages/tenues venus d'une séance custom (qui n'ont pas de champ auto). */
-function secondesDeReps(reps: string): number | null {
-  const r = (reps || "").toLowerCase();
-  const min = r.match(/(\d+)\s*min/);
-  if (min) return (parseInt(min[1], 10) || 0) * 60 || null;
-  const sec = r.match(/(\d+)\s*(?:secondes?|sec|s)\b/);
-  if (sec) return parseInt(sec[1], 10) || null;
-  return null;
-}
-
+/* `secondesDeReps` (« 45s », « 2 min » → secondes) vient de `dureeLibre` :
+   l'estimation d'une séance et ce chrono la lisent de la même façon. */
 /* Vibration (best-effort) : ignorée si le navigateur/appareil ne la supporte pas. */
 function vibrer(pattern: number | number[]) {
   if (typeof navigator !== "undefined" && "vibrate" in navigator) {
@@ -1292,10 +1282,17 @@ export default function WorkoutGuideModal({
   if (envoyerOuvert && !partageOuvert) setEnvoyerOuvert(false);
   const lignesCourantes = useMemo(() => lignesDuJournal(exercises, doneMap, remplacements), [exercises, doneMap, remplacements]);
   const aQuestion = questionsPosees;
-  const margeDe = (e: number): Marge | null =>
+  /* Revue finale (P1) · l'index du tunnel NAVIGUE, l'emplacement IDENTIFIE.
+     Dans une version courte ils divergent : tout ce qui part du tunnel
+     (journal, marge, acceptation) porte l'emplacement de la prescription. */
+  const idDe = (i: number) => emplacementDe(exercises[i], i);
+  const navDe = (id: number) => exercises.findIndex((ex, i) => emplacementDe(ex, i) === id);
+  const margeNav = (e: number): Marge | null =>
     doneMap[e]?.[(exercises[e]?.sets ?? 1) - 1]?.statut === "terminee"
       ? (margesFin[e] ?? (doneMap[e]?.[(exercises[e]?.sets ?? 1) - 1] as { marge?: Marge | null }).marge ?? null)
       : null;
+  /** La marge d'un emplacement PERSISTÉ. */
+  const margeDe = (id: number): Marge | null => { const e = navDe(id); return e < 0 ? null : margeNav(e); };
   /* Un repère sans repos derrière lui (dernier exercice, ou attente nulle) :
      sa question est facultative dans l'écran de fin. */
   const sansRepos = (e: number) => {
@@ -1306,8 +1303,8 @@ export default function WorkoutGuideModal({
   /* R4 · les propositions de la fin, et R5 · le fait marquant : les deux
      lisent les séries telles que le journal les écrit. */
   const emplacementsFinis = prescriptionsR4.flatMap((p, e) => p ? [{
-    emplacement: e, nom: exercises[e].name, prescription: p,
-    series: lignesCourantes.filter((l) => l.emplacement === e),
+    emplacement: idDe(e), nom: exercises[e].name, prescription: p,
+    series: lignesCourantes.filter((l) => l.emplacement === idDe(e)),
   }] : []);
   const propositionsFin = propositionsDeSeance(
     emplacementsFinis.map((x) => ({ ...x, marge: margeDe(x.emplacement) })),
@@ -1332,8 +1329,8 @@ export default function WorkoutGuideModal({
      enregistrée, sans bloquer sa finalisation. */
   useEffect(() => {
     if (!sessionSaved) return;
-    for (const [e, m] of Object.entries(margesFin)) void fileMarges.demander(Number(e), m);
-  }, [sessionSaved, margesFin, fileMarges]);
+    for (const [e, m] of Object.entries(margesFin)) void fileMarges.demander(emplacementDe(exercises[Number(e)], Number(e)), m);
+  }, [sessionSaved, margesFin, fileMarges, exercises]);
 
   /* ── Elapsed clock ── */
   useEffect(() => {
@@ -1426,7 +1423,7 @@ export default function WorkoutGuideModal({
       const p = prescriptionDe(ex as ExercicePrescrit);
       if (p) {
         const series = lignesDuJournal(exercises, { ...doneMap, [exerciseIdx]: { ...(doneMap[exerciseIdx] ?? {}), [setIdx]: marque } }, remplacements)
-          .filter((l) => l.emplacement === exerciseIdx);
+          .filter((l) => l.emplacement === emplacementDe(ex, exerciseIdx));
         setQuestionsPosees((prev) => poserQuestion(prev, exerciseIdx, questionUtile(series, p)));
       }
     }
@@ -2183,7 +2180,7 @@ export default function WorkoutGuideModal({
                 {aQuestion.includes(exerciseIdx) && setIdx === (cur?.sets ?? 1) - 1 ? (
                   <div className="relative z-[2] rounded-2xl px-3.5 py-3.5 mt-4"
                     style={{ background: "rgba(139,92,246,0.09)", border: "1px solid rgba(139,92,246,0.22)" }}>
-                    <QuestionMarge question={voix(guide, "seance.marge.question")} reponse={margeDe(exerciseIdx)} onRepondre={repondreAuRepos}
+                    <QuestionMarge question={voix(guide, "seance.marge.question")} reponse={margeNav(exerciseIdx)} onRepondre={repondreAuRepos}
                       visage={guide ? <VisageGuide guide={guide} etat="listen" size={26} /> : <AssistantSpark px={16} />} />
                   </div>
                 ) : (() => {
@@ -2517,8 +2514,8 @@ export default function WorkoutGuideModal({
           <DetailExercices
             lignes={lignesCourantes}
             margeDe={margeDe}
-            estRepere={(e) => prescriptionsR4[e]?.statut === "repere"}
-            onMarge={(e, m) => setMargesFin((prev) => ({ ...prev, [e]: m }))}
+            estRepere={(id) => prescriptionsR4[navDe(id)]?.statut === "repere"}
+            onMarge={(id, m) => { const e = navDe(id); if (e >= 0) setMargesFin((prev) => ({ ...prev, [e]: m })); }}
             onFermer={() => setDetailOuvert(false)}
             question={voix(guide, "seance.marge.question")}
             visage={guide ? <VisageGuide guide={guide} etat="listen" size={26} /> : <AssistantSpark px={16} />}

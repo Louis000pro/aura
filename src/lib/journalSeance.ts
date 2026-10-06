@@ -155,6 +155,20 @@ export function exercicesFaits(marques: MarquesSeance): number {
 }
 
 /**
+ * L'emplacement PERSISTÉ d'un exercice du tunnel (revue finale, P1).
+ * Une version courte (R8) ou plus légère (R7) retire des lignes : le
+ * tableau du tunnel est alors compact (0, 1, 2) alors que la prescription
+ * garde ses emplacements (0, 3, 4). L'index sert à naviguer ; l'identité
+ * écrite au journal, corrigée en marge et acceptée en cible est celle-ci.
+ * Sans prescription (catalogue, séance perso), la liste est entière et
+ * l'index EST l'emplacement.
+ */
+export function emplacementDe(ex: Exercise | undefined, index: number): number {
+  const e = (ex as ExercicePrescrit | undefined)?.prescription?.emplacement;
+  return typeof e === "number" && Number.isInteger(e) && e >= 0 ? e : index;
+}
+
+/**
  * Une ligne par série PRÉVUE, quoi qu'il lui soit arrivé.
  *
  * ⚠️ Une série sans marque est « non atteinte », pas « passée » : passer
@@ -185,7 +199,7 @@ export function lignesDuJournal(exercices: Exercise[], marques: MarquesSeance, r
       const charge = pr && !duree && terminee && typeof terminee.charge === "number"
         && terminee.charge > 0 && chargeReglable(effectif?.chargeType) ? terminee.charge : null;
       lignes.push({
-        emplacement,
+        emplacement: emplacementDe(ex, emplacement),
         exercice_cle: effectif?.cle ?? pr?.cle ?? cleExercice(ex.name),
         exercice_nom: effectif?.nom ?? ex.name,
         serie: s + 1,

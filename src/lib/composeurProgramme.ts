@@ -138,7 +138,12 @@ export function prioritesDeLIntention(intention: string | null): Zone[] | null {
 
 export type ChoixReservation = "garder" | "remplacer" | "retirer";
 
-export type ReservationAncienne = { id: string; date: string | null; titre: string };
+export type ReservationAncienne = {
+  id: string; date: string | null; titre: string;
+  /* Revue finale (P1) · l'état MONTRÉ dans l'aperçu : l'activation le
+     revérifie sous verrou, et refuse si la réservation a bougé depuis. */
+  rang?: number | null; etapeId?: string | null;
+};
 
 /** Ce qui s'écrit pour remplacer : l'occurrence du NOUVEAU programme qui
  *  prend ce jour. Les remplacements prennent les rangs 1, 2, 3… dans

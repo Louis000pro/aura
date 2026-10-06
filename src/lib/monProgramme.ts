@@ -29,19 +29,23 @@ export async function reservationsAChoisir(
   const supabase = client ?? createClient();
   const { data, error } = await supabase
     .from("intentions_entrainement")
-    .select("id, date, title")
+    .select("id, date, title, rang, etape_consommee_id")
     .eq("user_id", userId)
     .eq("programme_id", programmeId)
     .eq("statut", "prevue")
     .not("etape_consommee_id", "is", null)
     .order("date", { ascending: true, nullsFirst: false });
   if (error) throw new Error("reservations_illisibles: " + error.message);
-  return ((data ?? []) as { id: string; date: string | null; title: string | null }[])
-    .map((r) => ({ id: r.id, date: r.date, titre: r.title || "Séance" }));
+  return ((data ?? []) as { id: string; date: string | null; title: string | null; rang?: number | null; etape_consommee_id?: string | null }[])
+    .map((r) => ({ id: r.id, date: r.date, titre: r.title || "Séance", rang: r.rang ?? null, etapeId: r.etape_consommee_id ?? null }));
 }
 
 /** Ce que reçoit `activer_programme`. */
 export type DemandeActivation = {
+  /** Revue finale (P1) · l'identité de CETTE activation : rejouée après
+   *  une réponse perdue, la base la reconnaît au lieu de répondre
+   *  « programme changé ». */
+  activation_id: string;
   ancien_id: string | null;
   nom: string;
   intention: string;
@@ -49,6 +53,8 @@ export type DemandeActivation = {
   etapes: { position: number; nom: string; lignes: ReturnType<typeof composerEtape> }[];
   choix: Record<string, {
     choix: ChoixReservation; position?: number; rang?: number; titre?: string; type?: string;
+    /** L'état de la réservation tel que l'aperçu l'a montré. */
+    approuve: { date: string | null; rang: number | null; etape: string | null };
     /** R7 · les lignes de CETTE occurrence (sa variété, selon son rang). */
     lignes?: ReturnType<typeof composerEtape>;
   }>;
@@ -59,6 +65,7 @@ export type DemandeActivation = {
  * l'écriture partent du MÊME programme composé et des mêmes lignes.
  */
 export function preparerActivation(
+  activationId: string,
   ancienId: string | null,
   compose: ProgrammeCompose,
   gen: Pick<GenInput, "ctx" | "goals" | "level">,
@@ -75,14 +82,16 @@ export function preparerActivation(
   for (const r of reservations) {
     const c = choix[r.id] as ChoixReservation;
     const rep = parId.get(r.id);
+    const approuve = { date: r.date, rang: r.rang ?? null, etape: r.etapeId ?? null };
     sortie[r.id] = rep
       ? {
-        choix: c, position: rep.position, rang: rep.rang, titre: rep.nom, type: "Force",
-        lignes: varierLignes(modeles.get(rep.position) ?? [], rep.rang, variete, ctx),
+        choix: c, position: rep.position, rang: rep.rang, titre: rep.nom, type: "Force", approuve,
+        lignes: varierLignes(modeles.get(rep.position) ?? [], rep.rang, variete, ctx, compose.etapes.length),
       }
-      : { choix: c };
+      : { choix: c, approuve };
   }
   return {
+    activation_id: activationId,
     ancien_id: ancienId,
     nom: compose.nom,
     intention: compose.intention,
@@ -94,7 +103,7 @@ export function preparerActivation(
 
 export type ResultatActivation =
   | { ok: true; programmeId: string }
-  | { ok: false; raison: "programme_change" | "choix_incomplets" | "pas_ouvert" | "echec" };
+  | { ok: false; raison: "programme_change" | "choix_incomplets" | "apercu_perime" | "pas_ouvert" | "echec" | "incertain" };
 
 /** Active la nouvelle version. Ne jette pas : chaque issue a son nom. */
 export async function activerProgramme(demande: DemandeActivation, client?: Client): Promise<ResultatActivation> {
@@ -106,14 +115,17 @@ export async function activerProgramme(demande: DemandeActivation, client?: Clie
       /* La migration pas encore passée : la fonction n'existe pas. */
       if (code === "PGRST202" || code === "42883") return { ok: false, raison: "pas_ouvert" };
       console.error("[programme] activation impossible :", error.message);
-      return { ok: false, raison: "echec" };
+      /* Une erreur rendue PAR LA BASE (un code SQL ou PostgREST) annule
+         toute la transaction : rien n'est écrit. Sans code, la requête a
+         pu passer et la réponse se perdre : on ne l'affirme pas. */
+      return { ok: false, raison: code && /^(PGRST|[0-9A-Z]{5}$)/.test(code) ? "echec" : "incertain" };
     }
     const r = data as { resultat?: string; programme_id?: string } | null;
     if (r?.resultat === "ok" && r.programme_id) return { ok: true, programmeId: r.programme_id };
-    if (r?.resultat === "programme_change" || r?.resultat === "choix_incomplets") return { ok: false, raison: r.resultat };
+    if (r?.resultat === "programme_change" || r?.resultat === "choix_incomplets" || r?.resultat === "apercu_perime") return { ok: false, raison: r.resultat };
     return { ok: false, raison: "echec" };
   } catch (e) {
     console.error("[programme] activation impossible :", e);
-    return { ok: false, raison: "echec" };
+    return { ok: false, raison: "incertain" };
   }
 }

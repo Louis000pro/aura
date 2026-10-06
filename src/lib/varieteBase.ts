@@ -24,8 +24,9 @@ type Client = ReturnType<typeof createClient>;
 const COLONNE_ABSENTE = new Set(["42703", "PGRST204"]);
 /** La colonne n'existe pas encore : la migration R7 n'est pas passée. */
 function colonneAbsente(error: { code?: string; message?: string }): boolean {
-  return COLONNE_ABSENTE.has(error.code ?? "")
-    || /column .*variete.* does not exist|could not find the 'variete' column/i.test(error.message ?? "");
+  /* Revue finale (P2) · seule une absence PROUVÉE par son code autorise le
+     défaut. Un texte qui ressemble, sous un autre code, n'en est pas une. */
+  return COLONNE_ABSENTE.has(error.code ?? "");
 }
 
 /** Le réglage de variété, ou `null` si on ne sait pas. */

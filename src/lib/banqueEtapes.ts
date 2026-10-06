@@ -238,6 +238,10 @@ export type LignePrescription = {
   charge_cible?: number | null;
   charge_origine?: "aucune" | "acceptee";
   cible_id?: string | null;
+  /** Revue finale (P1) · la ligne a perdu des séries par rapport à sa
+   *  prescription complète (R8 courte, R7 plus légère). La base le
+   *  retrouve d'elle-même en comparant au modèle ; ici, c'est l'écran. */
+  reduite?: boolean;
 };
 
 /** L'orientation se lit dans les objectifs, avec les mêmes mots qu'avant R2. */
@@ -355,6 +359,37 @@ export function entreesDeZones(principale: Zone, seconde: Zone, lieu: Lieu): Ent
   return sortie;
 }
 
+/**
+ * Revue finale (P2) · CE QUE LA BANQUE N'A PAS : une séance de deux zones
+ * dont la priorité n'a pas ses trois exercices à ce lieu (abdos à la
+ * salle : un crunch, puis le dos remplit). On ne promet pas « 3 + 2 » :
+ * l'écran nomme la limite et ce que la séance travaille vraiment.
+ * `null` quand la séance est conforme à son nom. Pure.
+ */
+export function limiteDeLEtape(nomEtape: string, lieu: Lieu): { zone: Zone; trouves: number; surtout: Zone | null } | null {
+  if (BANQUE[lieu][nomEtape]) return null;
+  const zones = zonesDuNom(nomEtape);
+  if (!zones) return null;
+  const [principale, seconde] = zones;
+  const liste = entreesDeZones(principale, seconde, lieu).map((e) => e.nom);
+  const de = (z: Zone) => {
+    const noms = new Set(entreesDeZone(z, lieu).map((e) => e.nom));
+    return liste.filter((n) => noms.has(n)).length;
+  };
+  const trouves = de(principale);
+  if (trouves >= EXERCICES_ZONE_PRINCIPALE) return null;
+  return { zone: principale, trouves, surtout: de(seconde) > trouves ? seconde : null };
+}
+
+/** La phrase de cette limite, telle que l'aperçu la montre. */
+export function phraseLimite(l: { zone: Zone; trouves: number; surtout: Zone | null }): string {
+  const nom = (z: Zone) => LIBELLE_ZONE[z].toLowerCase();
+  const de = (z: Zone) => (/^[aeiouyéèê]/i.test(nom(z)) ? `d’${nom(z)}` : `de ${nom(z)}`);
+  const le = (z: Zone) => (z === "dos" ? "le dos" : `les ${nom(z)}`);
+  const n = l.trouves === 0 ? `Aucun exercice ${de(l.zone)} ici` : `${l.trouves} exercice${l.trouves > 1 ? "s" : ""} ${de(l.zone)} seulement ici`;
+  return l.surtout ? `${n} : la séance travaille surtout ${le(l.surtout)}.` : `${n}.`;
+}
+
 /** La liste d'une étape à un lieu : la banque, puis les zones (R9c),
  *  puis le repli historique. */
 export function entreesDe(nomEtape: string, lieu: Lieu): readonly EntreeBanque[] {
@@ -410,6 +445,15 @@ export function composerEtape(nomEtape: string, ctx: ContexteComposition): Ligne
  *  que le journal recopie. Le tunnel l'ignore. */
 export type ExercicePrescrit = Exercise & {
   prescription?: {
+    /* L'IDENTITÉ de la ligne dans sa prescription (revue finale, P1) :
+       une version courte ou plus légère retire des lignes, et l'index du
+       tableau cesse alors de la désigner. Le journal, la marge et
+       l'acceptation d'une cible n'utilisent QUE celle-ci. */
+    emplacement?: number;
+    /* La ligne a perdu des séries par rapport à sa prescription complète
+       (version courte R8, version plus légère R7) : elle ne propose
+       jamais de hausse pour la version complète. */
+    reduite?: true;
     cle: string;
     fonction: Fonction;
     statut: StatutExercice;
@@ -450,6 +494,7 @@ export function projeterPrescription(lignes: LignePrescription[]): ExercicePresc
       benefit: "",
       muscles: [],
       prescription: {
+        emplacement: l.emplacement,
         cle: l.exercice_cle,
         fonction: l.fonction,
         statut: l.statut,
@@ -459,6 +504,7 @@ export function projeterPrescription(lignes: LignePrescription[]): ExercicePresc
         /* R4 · seulement s'il y a une cible : une prescription sans cible
            garde exactement la projection d'avant. */
         ...(l.cible_id ? { charge_cible: l.charge_cible ?? null, cible_id: l.cible_id } : {}),
+        ...(l.reduite ? { reduite: true as const } : {}),
       },
     };
   });

@@ -38,7 +38,7 @@ import { cibleEncoreAffichee, type SeanceJournal } from "@/lib/semaine";
 import { decaler } from "@/lib/projection";
 import { createClient } from "@/lib/supabase";
 
-export type ResultatGeste = { ok: true } | { ok: false; raison: "changee" | "illisible" | "echec" | "masquee" };
+export type ResultatGeste = { ok: true } | { ok: false; raison: "changee" | "illisible" | "echec" | "masquee" | "partiel" };
 
 /**
  * Ce que l'écran montrait quand on a touché le geste : la cible PRÉCISE.
@@ -85,9 +85,9 @@ export async function changerDeJour(input: {
     if (etapeMasquee(etape.id, aLArrivee)) return { ok: false, raison: "masquee" };
 
     if (cible.reservationId) {
-      const bouge = await deplacerDateReservation(userId, cible.reservationId, cible.date, vers);
+      const bouge = await deplacerDateReservation(userId, cible.reservationId, cible.date, vers,
+        { programmeId: cible.programmeId, etapeId: cible.etapeId, rang: cible.rang });
       if (!bouge) return { ok: false, raison: "changee" };
-      await appliquerRegleDuJour(userId, vers, cible.reservationId);
       return { ok: true };
     }
 
@@ -104,7 +104,7 @@ export async function changerDeJour(input: {
        viennent de son rang et du réglage, relus. */
     const variete = await lireVariete(userId);
     if (!variete) return { ok: false, raison: "illisible" };
-    const modele = modeleDeLOccurrence(lu, { id: etape.id, rang: cible.rang }, contexteDe(gen), variete);
+    const modele = modeleDeLOccurrence(lu, { id: etape.id, rang: cible.rang }, contexteDe(gen), variete, actif.cycle.length);
     const cibles = (await ciblesOuvertes(userId, actif.programme.id, etape.id)) ?? [];
     const r = await ecrireOccurrence({
       programme_id: actif.programme.id,
@@ -148,6 +148,27 @@ export async function retirerLeJour(
    *  qu'on remet si le geste ne peut pas aller au bout. */
   avant: "seance_en_plus" | null = null,
 ): Promise<ResultatGeste> {
+  /* Revue finale (P2) · d'abord la fonction de la base : le retrait et
+     l'exception dans UNE transaction, jamais l'un sans l'autre. */
+  try {
+    const rpc = await createClient().rpc("retirer_le_jour", { p: { date, reservation_id: reservationId } });
+    if (!rpc.error) {
+      const r = (rpc.data as { resultat?: string } | null)?.resultat;
+      return r === "ok" ? { ok: true } : { ok: false, raison: "changee" };
+    }
+    const code = (rpc.error as { code?: string }).code;
+    if (code !== "PGRST202" && code !== "42883") {
+      console.error("[semaine] retirer le jour :", rpc.error.message);
+      /* Une erreur rendue par la base annule sa transaction : rien n'a changé. */
+      return { ok: false, raison: "echec" };
+    }
+  } catch (e) {
+    /* La requête a pu passer : on ne l'affirme pas, on relit. */
+    console.error("[semaine] retirer le jour :", e);
+    return { ok: false, raison: "partiel" };
+  }
+  /* Migration pas encore passée : en deux temps, en disant la vérité si
+     la compensation elle-même échoue. */
   try {
     await poserException(userId, date, "pas_de_seance");
   } catch (e) {
@@ -164,7 +185,11 @@ export async function retirerLeJour(
   }
   if (!raison) return { ok: true };
   try { await poserException(userId, date, avant); }
-  catch (e) { console.error("[semaine] annuler l'exception :", e); }
+  catch (e) {
+    console.error("[semaine] annuler l'exception :", e);
+    /* L'exception est restée posée : on ne prétend pas que rien n'a changé. */
+    return { ok: false, raison: "partiel" };
+  }
   return { ok: false, raison };
 }
 

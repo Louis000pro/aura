@@ -1381,20 +1381,38 @@ export async function libererMobilierAnnonce(userId: string, ids: string[]): Pro
  * ligne n'est réécrit (une correction concurrente de son contenu tient).
  * `false` : elle a bougé entre-temps, rien n'est écrit.
  */
-export async function deplacerDateReservation(userId: string, id: string, de: string, vers: string): Promise<boolean> {
+export async function deplacerDateReservation(
+  userId: string, id: string, de: string, vers: string,
+  /** Revue finale (P2) · la réservation telle que l'écran l'a montrée :
+   *  identifiant + date + statut ne voient pas une cible qui a changé. */
+  attendu: { programmeId: string; etapeId: string; rang: number | null },
+): Promise<boolean> {
   const supabase = createClient();
+  /* D'abord la fonction de la base : le déplacement et la règle du jour
+     d'arrivée dans UNE transaction. */
+  const rpc = await supabase.rpc("deplacer_reservation", {
+    p: { id, de, vers, programme_id: attendu.programmeId, etape_id: attendu.etapeId, rang: attendu.rang },
+  });
+  if (!rpc.error) return (rpc.data as { resultat?: string } | null)?.resultat === "ok";
+  const code = (rpc.error as { code?: string }).code;
+  if (code !== "PGRST202" && code !== "42883") throw new Error(rpc.error.message);
+  /* Migration pas encore passée : les mêmes conditions, en deux temps. */
   const sc = await schemaIntentions();
-  const { data, error } = await supabase
+  let q = supabase
     .from(sc.table)
     .update({ date: vers, updated_at: new Date().toISOString() })
     .eq("user_id", userId)
     .eq("id", id)
     .eq("date", de)
     .eq(sc.colStatut, sc.versBase.planned)
-    .not("etape_consommee_id", "is", null)
-    .select("id");
+    .eq("programme_id", attendu.programmeId)
+    .eq("etape_consommee_id", attendu.etapeId);
+  q = attendu.rang === null ? q.is("rang", null) : q.eq("rang", attendu.rang);
+  const { data, error } = await q.select("id");
   if (error) throw new Error(error.message);
-  return (data ?? []).length > 0;
+  if ((data ?? []).length === 0) return false;
+  await appliquerRegleDuJour(userId, vers, id);
+  return true;
 }
 
 /**

@@ -201,7 +201,11 @@ t("une étape au nom inconnu reçoit le repli Full Body, comme le code",
     === composerEtape("Full Body", { lieu: "salle", orientation: "force", niveau: null, version: 1 })[0].exercice_cle);
 t("aucune intention touchée", (await q(`select md5(string_agg(t::text, '|' order by id)) h from intentions_entrainement t`)).rows[0].h === avantI);
 
-/* La projection SQL ≡ la projection TypeScript, sur toutes les compositions. */
+/* La projection SQL ≡ la projection TypeScript, sur toutes les compositions.
+   ⚠️ Ici c'est la version R2 de la fonction : l'emplacement dans la
+   prescription n'arrive qu'avec la revue finale, comparée plus bas. */
+const sansEmplacement = <T extends { prescription?: object }>(l: T[]) =>
+  l.map((e) => ({ ...e, prescription: Object.fromEntries(Object.entries(e.prescription ?? {}).filter(([k]) => k !== "emplacement")) }));
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const norm = (x: unknown) => JSON.stringify(x, (_k, v: any) => v && typeof v === "object" && !Array.isArray(v)
   ? Object.fromEntries(Object.keys(v).sort().map((c) => [c, v[c]])) : v);
@@ -210,7 +214,7 @@ for (const lieu of Object.keys(BANQUE) as Lieu[]) for (const nom of Object.keys(
   const l = composerEtape(nom, { lieu, orientation: o, niveau: null, version: 1 });
   const sql = (await q("select public.projeter_prescription($1::jsonb) r", [JSON.stringify(l)])).rows[0].r;
   cas++;
-  if (norm(sql) !== norm(JSON.parse(JSON.stringify(projeterPrescription(l))))) diff++;
+  if (norm(sql) !== norm(JSON.parse(JSON.stringify(sansEmplacement(projeterPrescription(l)))))) diff++;
 }
 t(`projection SQL ≡ TypeScript (${cas} compositions)`, diff === 0, `${diff} différence(s)`);
 
@@ -344,7 +348,7 @@ await setUid(U);
   const sqlCopie = async (lignesJ: unknown, rang: number, statut = "prevue") =>
     (await q(`select public.lignes_avec_cibles($1::jsonb,$2,$3,$4,$5,$6) r`, [JSON.stringify(lignesJ), U, P4, E4, rang, statut])).rows[0].r;
   const sqlLignes = await sqlCopie(tsLignes, 3);
-  const pTs = JSON.stringify(projeterPrescription(tsLignes));
+  const pTs = JSON.stringify(sansEmplacement(projeterPrescription(tsLignes)));
   const pSql = JSON.stringify((await q(`select public.projeter_prescription($1::jsonb) r`, [JSON.stringify(sqlLignes)])).rows[0].r);
   const canon = (v: unknown): unknown => Array.isArray(v) ? v.map(canon)
     : v && typeof v === "object" ? Object.fromEntries(Object.entries(v as Record<string, unknown>).sort(([x], [y]) => x.localeCompare(y)).map(([k, w]) => [k, canon(w)])) : v;
@@ -598,6 +602,110 @@ await setUid(U);
     t("R4 · cas 6 · une répétition de plus, sans charge et sans origine de charge",
       l6.reps_cible === Lp[ib].reps_cible! + 1 && l6.charge_cible === null && l6.charge_origine === "aucune" && l6.cible_id === c6.id, JSON.stringify(l6));
   } else t("R4 · cas 6 · un repère au poids du corps existe dans la banque", false);
+}
+
+/* ── REVUE FINALE (Codex sur bc38de8) · la migration jouée pour de vrai ── */
+await ex(`
+alter table public.programmes add column if not exists nom text, add column if not exists intention text,
+  add column if not exists origine text, add column if not exists archive_le timestamptz;
+alter table public.programme_seances add column if not exists nature text, add column if not exists duree_min int,
+  add column if not exists origine text;
+alter table public.adaptations_entrainement add column if not exists programme_id uuid,
+  add column if not exists statut text, add column if not exists fermee_le timestamptz;
+create table if not exists public.exceptions_jour (user_id uuid not null, date date not null, genre text not null,
+  cree_le timestamptz not null default now(), primary key (user_id, date));
+`);
+const revue = readFileSync(new URL("../supabase/migrations/20261012_revue_finale.sql", import.meta.url), "utf8");
+await ex(revue);
+await ex(revue);
+t("Revue · migration rejouable", true);
+await setUid(U);
+{
+  /* 1 · la projection porte l'emplacement, y compris avec des trous. */
+  const L = composerEtape("Pull", { lieu: "salle", orientation: "masse", niveau: null, version: 1 });
+  const troues = [L[0], L[3], L[4]];
+  const sqlP = (await q(`select public.projeter_prescription($1::jsonb) as r`, [JSON.stringify(troues)])).rows[0].r;
+  t("Revue · projection SQL = TypeScript, emplacements compris (0, 3, 4)",
+    JSON.stringify(sqlP.map((e: { prescription: { emplacement: number } }) => e.prescription.emplacement)) === "[0,3,4]"
+      && norm(sqlP) === norm(JSON.parse(JSON.stringify(projeterPrescription(troues)))), norm(sqlP).slice(0, 200));
+  let casR = 0, diffR = 0;
+  for (const lieu of Object.keys(BANQUE) as Lieu[]) for (const nom of Object.keys(BANQUE[lieu])) for (const o of ["force", "masse", "general"] as Orientation[]) {
+    const l = composerEtape(nom, { lieu, orientation: o, niveau: null, version: 1 });
+    const sql = (await q("select public.projeter_prescription($1::jsonb) r", [JSON.stringify(l)])).rows[0].r;
+    casR++;
+    if (norm(sql) !== norm(JSON.parse(JSON.stringify(projeterPrescription(l))))) diffR++;
+  }
+  t(`Revue · projection SQL ≡ TypeScript avec l'emplacement (${casR} compositions)`, diffR === 0, `${diffR} différence(s)`);
+
+  /* 2 · une ligne réduite par rapport à son modèle ne propose rien. */
+  const PR = (await q(`insert into programmes(user_id) values ($1) returning id`, [U])).rows[0].id;
+  const ER = (await q(`insert into programme_seances(programme_id, position, nom) values ($1,1,'Pull') returning id`, [PR])).rows[0].id;
+  await q(`insert into programme_seances(programme_id, position, nom) values ($1,2,'Push')`, [PR]);
+  const mod = await rpc("ecrire_modele", { programme_seance_id: ER, lieu: "salle", orientation: "masse", niveau: null, version: 1, lignes: L });
+  const ir = L.findIndex((l) => l.statut === "repere" && l.mesure === "reps");
+  const courtes = L.map((l, i) => (i === ir ? { ...l, series: 2 } : l));
+  const LR = "e5e5e5e5-0000-0000-0000-000000000001";
+  const occ = await rpc("ecrire_occurrence", { intention: { programme_id: PR, etape_consommee_id: ER, programme_seance_id: ER, rang: 1, statut: "faite",
+    date: "2026-10-05", consommee_le: "2026-10-05T10:00:00Z", lancement_id: LR, type: "Force", title: "Pull", origine: "utilisateur" }, modele_id: mod.id, lignes: courtes });
+  const marques: MarquesSeance = { [ir]: Object.fromEntries(Array.from({ length: 2 }, (_, k) => [k, {
+    statut: "terminee", validation: "bouton", dureeS: null, reps: courtes[ir].reps_max, charge: 40, ...(k === 1 ? { marge: "3_plus" } : {}) }])) } as MarquesSeance;
+  await rpc("enregistrer_seance", { lancement_id: LR, proprietaire: U, titre: "Pull", duree_s: 600, series: lignesDuJournal(projeterPrescription(courtes), marques) });
+  const acc = await rpc("accepter_cible", { lancement_id: LR, emplacement: L[ir].emplacement, charge: 42.5, reps_cible: courtes[ir].reps_min, marge: "3_plus" });
+  t("Revue · un repère fait en 2 séries sur les 4 de son modèle : `version_reduite`, aucune cible écrite",
+    occ.resultat === "ok" && acc.resultat === "version_reduite"
+      && (await q(`select count(*)::int n from cibles_acceptees where programme_id=$1`, [PR])).rows[0].n === 0, JSON.stringify([occ, acc]));
+
+  /* 3 · l'activation vérifie l'aperçu et reconnaît son rejeu. */
+  const PA = (await q(`insert into programmes(user_id, statut) values ($1,'actif') returning id`, [V])).rows[0].id;
+  await q(`update programmes set statut='archive' where user_id=$1 and id<>$2`, [V, PA]);
+  const EA = (await q(`insert into programme_seances(programme_id, position, nom) values ($1,1,'Pull') returning id`, [PA])).rows[0].id;
+  await setUid(V);
+  const resa = await rpc("ecrire_occurrence", { intention: { programme_id: PA, etape_consommee_id: EA, programme_seance_id: EA, rang: 1, statut: "prevue",
+    date: "2026-10-08", type: "Force", title: "Pull", origine: "utilisateur" }, modele_id: null, lignes: L });
+  const ctxA = { lieu: "salle", orientation: "masse", niveau: null, version: 1, location: "salle" };
+  const demande = (activation: string, approuve: unknown, choix = "garder") => ({
+    activation_id: activation, ancien_id: PA, nom: "Dos & bras", intention: "priorites:dos", contexte: ctxA,
+    etapes: [{ position: 1, nom: "Dos & bras", lignes: composerEtape("Dos & bras", { lieu: "salle", orientation: "masse", niveau: null, version: 1 }) }],
+    choix: { [resa.id]: { choix, approuve } },
+  });
+  const ok8 = { date: "2026-10-08", rang: 1, etape: EA };
+  const A1 = "c3c3c3c3-0000-0000-0000-000000000001";
+  await q(`update intentions_entrainement set date='2026-10-12' where id=$1`, [resa.id]);
+  const perime = await rpc("activer_programme", demande(A1, ok8));
+  t("Revue · réservation montrée le 8, déplacée au 12 : `apercu_perime`, rien d'écrit",
+    perime.resultat === "apercu_perime" && (await q(`select statut from programmes where id=$1`, [PA])).rows[0].statut === "actif", JSON.stringify(perime));
+  t("Revue · une demande sans état approuvé est périmée", (await rpc("activer_programme", demande(A1, undefined))).resultat === "apercu_perime");
+  const ok12 = { ...ok8, date: "2026-10-12" };
+  const r1 = await rpc("activer_programme", demande(A1, ok12));
+  const r2 = await rpc("activer_programme", demande(A1, ok12));
+  t("Revue · la même activation rejouée après une réponse perdue rend la même version, sans « programme changé »",
+    r1.resultat === "ok" && r2.resultat === "ok" && r2.deja === true && r2.programme_id === r1.programme_id
+      && (await q(`select count(*)::int n from programmes where user_id=$1 and statut='actif'`, [V])).rows[0].n === 1, JSON.stringify([r1, r2]));
+  t("Revue · une AUTRE activation sur l'ancienne version : `programme_change`",
+    (await rpc("activer_programme", demande("c3c3c3c3-0000-0000-0000-000000000002", ok12))).resultat === "programme_change");
+  t("Revue · une activation sans identité est refusée", /activation_sans_identite/.test(await err("activer_programme", { ...demande(A1, ok12), activation_id: null })));
+
+  /* 4 · les gestes de la semaine, tout ou rien. */
+  await setUid(U);
+  const R = await rpc("ecrire_occurrence", { intention: { programme_id: PR, etape_consommee_id: ER, programme_seance_id: ER, rang: 3, statut: "prevue",
+    date: "2026-10-14", type: "Force", title: "Pull", origine: "utilisateur" }, modele_id: null, lignes: L });
+  const bouge = await rpc("retirer_le_jour", { date: "2026-10-13", reservation_id: R.id });
+  t("Revue · « Pas d'entraînement » sur une réservation qui n'y est plus : `changee`, AUCUNE exception posée",
+    bouge.resultat === "changee" && (await q(`select count(*)::int n from exceptions_jour where user_id=$1 and date='2026-10-13'`, [U])).rows[0].n === 0);
+  const vrai = await rpc("retirer_le_jour", { date: "2026-10-14", reservation_id: R.id });
+  t("Revue · sinon les deux ensemble : réservation retirée et exception posée",
+    vrai.resultat === "ok" && (await q(`select count(*)::int n from intentions_entrainement where id=$1`, [R.id])).rows[0].n === 0
+      && (await q(`select genre from exceptions_jour where user_id=$1 and date='2026-10-14'`, [U])).rows[0]?.genre === "pas_de_seance");
+  const D2 = await rpc("ecrire_occurrence", { intention: { programme_id: PR, etape_consommee_id: ER, programme_seance_id: ER, rang: 5, statut: "prevue",
+    date: "2026-10-15", type: "Force", title: "Pull", origine: "utilisateur" }, modele_id: null, lignes: L });
+  await q(`insert into intentions_entrainement(user_id, date, nature, type, title) values ($1,'2026-10-16','repos','Repos','Repos')`, [U]);
+  const mauvais = await rpc("deplacer_reservation", { id: D2.id, de: "2026-10-15", vers: "2026-10-16", programme_id: PR, etape_id: ER, rang: 3 });
+  t("Revue · déplacer une réservation dont le rang a changé : `changee`, la date ne bouge pas",
+    mauvais.resultat === "changee" && (await q(`select date::text d from intentions_entrainement where id=$1`, [D2.id])).rows[0].d === "2026-10-15");
+  const bon = await rpc("deplacer_reservation", { id: D2.id, de: "2026-10-15", vers: "2026-10-16", programme_id: PR, etape_id: ER, rang: 5 });
+  t("Revue · sinon la date bouge et le repos du jour d'arrivée s'en va, dans la même transaction",
+    bon.resultat === "ok" && (await q(`select date::text d from intentions_entrainement where id=$1`, [D2.id])).rows[0].d === "2026-10-16"
+      && (await q(`select count(*)::int n from intentions_entrainement where user_id=$1 and date='2026-10-16' and nature='repos'`, [U])).rows[0].n === 0);
 }
 
 console.log(`${ok} OK, ${ko} échec(s)`);

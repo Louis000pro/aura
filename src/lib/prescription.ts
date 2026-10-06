@@ -54,8 +54,9 @@ export function modeleDeLOccurrence(
   occ: { id: string; rang: number },
   ctx: ContexteComposition,
   variete: Variete,
+  longueurCycle: number,
 ): ModeleDeLOccurrence {
-  return { modeleId: lu.modeleId, lignes: varierLignes(lu.lignes, occ.rang, variete, ctx), etapeId: occ.id, rang: occ.rang, lieu: ctx.lieu };
+  return { modeleId: lu.modeleId, lignes: varierLignes(lu.lignes, occ.rang, variete, ctx, longueurCycle), etapeId: occ.id, rang: occ.rang, lieu: ctx.lieu };
 }
 
 /** Ce qui distingue deux prescriptions : l'étape, le lieu, le modèle, ses lignes. */

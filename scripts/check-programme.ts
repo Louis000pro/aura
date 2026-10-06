@@ -6298,7 +6298,10 @@ verdict(
     proj.length === EXERCICES_PAR_ETAPE && proj.every((x, i) => x.prescription?.cle === composerEtape("Push", { lieu: "halteres", orientation: "masse", niveau: null, version: 1 })[i].exercice_cle),
     proj.map((x) => `${x.name} ${x.sets}×${x.reps}`).join(" · "));
   const champsTs = new Set(Object.keys(proj[0]).concat(Object.keys(proj[0].prescription!)));
-  const champsSql = new Set([...sqlR2.slice(sqlR2.indexOf("function public.projeter_prescription"), sqlR2.indexOf("─── 6."))
+  /* La DERNIÈRE définition de la projection (revue finale : elle porte
+     l'emplacement). */
+  const sqlRevue = readFileSync("supabase/migrations/20261012_revue_finale.sql", "utf8");
+  const champsSql = new Set([...sqlRevue.slice(sqlRevue.indexOf("function public.projeter_prescription"), sqlRevue.indexOf("─── 2."))
     .matchAll(/'([a-zA-Z_]+)',/g)].map((m) => m[1]));
   const manquent = [...champsTs].filter((c) => !champsSql.has(c));
   verdict("R2 · la projection SQL porte les mêmes champs que TypeScript", manquent.length === 0,
@@ -6413,7 +6416,7 @@ verdict(
       lecture.indexOf("await modeleDeLEtape(") > 0 && lecture.indexOf("await modeleDeLEtape(") < lecture.indexOf("setEtape(suivante)")
         && lecture.lastIndexOf("if (!derniere()) return;", lecture.indexOf("setEtape(suivante)")) > lecture.indexOf("await reservationDeLOccurrence(")
         /* R7 · le modèle devient la prescription de CETTE occurrence. */
-        && /setModele\(suivante && lu && variete\s*\? modeleDeLOccurrence\(lu, suivante, ctxModele, variete\)/.test(lecture),
+        && /setModele\(suivante && lu && variete\s*\? modeleDeLOccurrence\(lu, suivante, ctxModele, variete, actif\?\.cycle\.length \?\? 1\)/.test(lecture),
       "une réponse arrivée en retard ne publie rien");
     const gestes = journee.slice(journee.indexOf("type ContexteHook"), journee.indexOf("return {\n    etat,"));
     verdict("R2 · les gestes utilisent le modèle RELU, jamais celui de l'écran",
@@ -7003,7 +7006,9 @@ verdict(
   verdict("R5 · « Continuer » est l'action, le partage passe par la même feuille que le profil",
     t.includes(">\n                  Continuer\n") && t.includes("<EnvoyerAffiche data={afficheData}") && t.includes("afficheDe(journalRef.current, r.seanceId)"), "");
   verdict("R5 · une marge changée dans le détail part par la file de R4 (corriger_marge)",
-    t.includes("onMarge={(e, m) => setMargesFin((prev) => ({ ...prev, [e]: m }))}") && t.includes("margesFin[e] ?? (doneMap[e]"), "décision 54");
+    t.includes("onMarge={(id, m) => { const e = navDe(id); if (e >= 0) setMargesFin((prev) => ({ ...prev, [e]: m })); }}") && t.includes("margesFin[e] ?? (doneMap[e]")
+      /* Revue finale · elle part avec l'emplacement PERSISTÉ, jamais l'index. */
+      && t.includes("fileMarges.demander(emplacementDe(exercises[Number(e)], Number(e)), m)"), "décision 54");
   verdict("R5 · le détail vit dans un portail au-dessus du tunnel", /function DetailExercices[\s\S]*?createPortal\([\s\S]*?zIndex: 106/.test(t), "");
 
   /* ── Tour 35 (Codex) ── */
@@ -7368,8 +7373,20 @@ verdict(
       && gestes.indexOf("rangEnAttente(") < gestes.indexOf("ecrireOccurrence(")
       && gestes.includes('if (!proj?.etat) return { ok: false, raison: "illisible" };'), "tour 42");
   verdict("R9b · déplacer une réservation = la date seule, au jour affiché ; jamais la ligne réécrite",
-    gestes.includes("deplacerDateReservation(userId, cible.reservationId, cible.date, vers)") && !gestes.includes("saveDay(")
+    gestes.includes("deplacerDateReservation(userId, cible.reservationId, cible.date, vers,") && !gestes.includes("saveDay(")
       && gestes.includes('if (r.resultat === "deja") return { ok: false, raison: "changee" };'), "tour 42");
+  /* Revue finale (P2) · tout ou rien, et la cible ENTIÈRE vérifiée. */
+  const planningSrc = lireB("src/lib/planning.ts");
+  const sqlRevueGestes = lireB("supabase/migrations/20261012_revue_finale.sql");
+  verdict("Revue · déplacer vérifie aussi programme, étape et rang, et applique la règle du jour dans la même transaction",
+    gestes.includes("{ programmeId: cible.programmeId, etapeId: cible.etapeId, rang: cible.rang }")
+      && planningSrc.includes('.rpc("deplacer_reservation"') && planningSrc.includes('.eq("etape_consommee_id", attendu.etapeId)')
+      && sqlRevueGestes.includes("and etape_consommee_id = nullif(p->>'etape_id', '')::uuid")
+      && sqlRevueGestes.includes("and rang is not distinct from nullif(p->>'rang', '')::int"), "");
+  verdict("Revue · « Pas d'entraînement » en une transaction ; une compensation ratée se dit « partiel », jamais « rien n'a changé »",
+    gestes.includes('.rpc("retirer_le_jour"') && gestes.includes('return { ok: false, raison: "partiel" };')
+      && sqlRevueGestes.includes("if v_n = 0 then return jsonb_build_object('resultat', 'changee'); end if;")
+      && sqlRevueGestes.indexOf("delete from public.intentions_entrainement\n     where id = v_resa") < sqlRevueGestes.indexOf("insert into public.exceptions_jour"), "");
   verdict("R9b · une adaptation qui masque l'étape au jour d'arrivée refuse, et la trace d'adaptation s'écrit",
     gestes.includes('if (etapeMasquee(etape.id, aLArrivee)) return { ok: false, raison: "masquee" };') && gestes.includes("adaptation_id: aLArrivee?.id ?? null"), "tour 42");
   verdict("R9b · « Pas d'entraînement » ne retire que la réservation encore là ce jour-là, et ne reste jamais à moitié",
@@ -7563,7 +7580,7 @@ verdict(
     JSON.stringify(plan?.map((r) => `${r.intentionId}:${r.rang}:${r.nom}`)) === JSON.stringify(["r1:1:Dos & fessiers", "r2:2:Haut du corps", "r4:3:Fessiers & dos"]),
     JSON.stringify(plan));
   const gen = { ctx: "salle" as const, goals: ["Prise de masse"], level: "debutant" };
-  const demande = M.preparerActivation("p-ancien", lina, gen, resas, tous, "peu");
+  const demande = M.preparerActivation("act-1", "p-ancien", lina, gen, resas, tous, "peu");
   verdict("R9c · l'aperçu est ce qui s'écrit : mêmes noms, mêmes exercices, même contexte",
     !!demande && demande.etapes.every((e) => JSON.stringify(e.lignes) === JSON.stringify(B.composerEtape(e.nom, contexteDe(gen))))
       && demande.contexte.orientation === "masse" && demande.ancien_id === "p-ancien"
@@ -7571,7 +7588,7 @@ verdict(
       && demande.choix.r3.choix === "garder" && demande.choix.r3.position === undefined
       && demande.choix.r4.position === 3 && demande.choix.r4.rang === 3, "");
   verdict("R9c · sans réponse pour chaque séance prévue, aucune demande d'activation",
-    M.preparerActivation("p", lina, gen, resas, { r1: "garder" }, "peu") === null, "");
+    M.preparerActivation("act-1", "p", lina, gen, resas, { r1: "garder" }, "peu") === null, "");
 
   /* Pannes injectées : la lecture lève, l'activation nomme chaque issue. */
   type Rep = { data: unknown; error: { code?: string; message: string } | null };
@@ -7587,16 +7604,38 @@ verdict(
   verdict("R9c · une lecture ratée des séances prévues lève, jamais « rien à décider »",
     leve && lues.length === 1 && lues[0].titre === "Séance", "");
   const rpc = (rep: Rep) => ({ rpc: () => Promise.resolve(rep) }) as unknown as Parameters<typeof M.activerProgramme>[1];
+  const feuilleProgRevue = readFileSync("src/components/programme/MonProgrammeSheet.tsx", "utf8");
+  {
+    const Bq = await import("@/lib/banqueEtapes");
+    const lim = Bq.limiteDeLEtape("Abdos & dos", "salle");
+    verdict("Revue · Abdos & dos à la salle : la limite est dite, pas « 3 + 2 »",
+      !!lim && lim.zone === "abdos" && lim.trouves === 1 && lim.surtout === "dos"
+        && Bq.phraseLimite(lim) === "1 exercice d’abdos seulement ici : la séance travaille surtout le dos."
+        && Bq.limiteDeLEtape("Dos & bras", "salle") === null && Bq.limiteDeLEtape("Push", "salle") === null,
+      lim ? Bq.phraseLimite(lim) : "aucune");
+    verdict("Revue · zéro jour choisi n'invente pas de fréquence, et la fréquence se dit « dans le cycle »",
+      feuilleProgRevue.includes('const aucunJour = !!calendrier?.choisi && calendrier.jours.length === 0;')
+        && feuilleProgRevue.includes('aucunJour ? "Aucun jour choisi"') && feuilleProgRevue.includes("fois dans le cycle.")
+        && !feuilleProgRevue.includes("fois par semaine.") && feuilleProgRevue.includes("phraseLimite(limites[i]!)"), "");
+  }
   const issues = await Promise.all([
     M.activerProgramme(demande!, rpc({ data: { resultat: "ok", programme_id: "nv" }, error: null })),
     M.activerProgramme(demande!, rpc({ data: { resultat: "programme_change" }, error: null })),
     M.activerProgramme(demande!, rpc({ data: { resultat: "choix_incomplets" }, error: null })),
     M.activerProgramme(demande!, rpc({ data: null, error: { code: "PGRST202", message: "absente" } })),
     M.activerProgramme(demande!, rpc({ data: null, error: { message: "timeout" } })),
+    M.activerProgramme(demande!, rpc({ data: null, error: { code: "23505", message: "remplacement_impossible" } })),
+    M.activerProgramme(demande!, rpc({ data: { resultat: "apercu_perime" }, error: null })),
   ]);
-  verdict("R9c · l'activation nomme ses issues : ok, programme changé, choix incomplets, pas ouverte, échec",
-    JSON.stringify(issues.map((r) => (r.ok ? "ok" : r.raison))) === JSON.stringify(["ok", "programme_change", "choix_incomplets", "pas_ouvert", "echec"]),
+  verdict("R9c · l'activation nomme ses issues : ok, programme changé, choix incomplets, pas ouverte, incertain, échec, aperçu périmé",
+    JSON.stringify(issues.map((r) => (r.ok ? "ok" : r.raison)))
+      === JSON.stringify(["ok", "programme_change", "choix_incomplets", "pas_ouvert", "incertain", "echec", "apercu_perime"]),
     JSON.stringify(issues));
+  verdict("Revue · une réponse perdue n'affirme jamais « rien n'a été modifié » ; le rejeu porte la même identité",
+    !feuilleProgRevue.includes("La connexion a coupé avant la réponse. Réessaie : si c’était déjà passé, rien ne sera fait deux fois.") ? false
+      : feuilleProgRevue.includes("if (activationRef.current?.cle !== cle) activationRef.current = { cle, id: crypto.randomUUID() };")
+        && !!demande && typeof demande.activation_id === "string"
+        && Object.values(demande.choix).every((c) => c.approuve && "date" in c.approuve && "rang" in c.approuve && "etape" in c.approuve), "");
 
   /* Le chemin : la base est le dernier mot. */
   const sql = readFileSync("supabase/migrations/20261010_r9c_activer_programme.sql", "utf8");
@@ -7616,8 +7655,18 @@ verdict(
     pageProg.indexOf('onClick={() => setSheet("programme")}') > 0
       && pageProg.indexOf('onClick={() => setSheet("programme")}') < pageProg.indexOf('data-tour-anchor="prog-forks"'), "");
   const base = readFileSync("src/lib/projectionBase.ts", "utf8");
+  const PB = await import("@/lib/projectionBase");
+  const occ = PB.joursOccupes([
+    { date: "2026-10-07", etape: "e-pull-ancien", programme: "ancien" },
+    { date: "2026-10-08", etape: "e-push", programme: "actif" },
+    { date: "2026-10-09", etape: null, programme: null },
+  ], "actif");
   verdict("R9c · une séance gardée d'une version archivée occupe son jour dans la projection",
-    base.includes(".or(`etape_consommee_id.is.null,programme_id.neq.${programmeId}`)"), "");
+    JSON.stringify(occ) === JSON.stringify(["2026-10-07", "2026-10-09"]) && base.includes("return joursOccupes("), JSON.stringify(occ));
+  const cron = readFileSync("src/app/api/cron/reminders/route.ts", "utf8");
+  verdict("Revue · le cron lit les MÊMES occupations et ne remplace pas une réservation gardée d'une autre version",
+    !cron.includes("occupes: []") && cron.includes("occupes: joursOccupes(")
+      && cron.includes("if (p.seanceProgramme && p.programmeDuJour !== prog.id) { p.seanceProgramme = false; continue; }"), "");
 }
 
 /* ── R7 · LA VARIÉTÉ. La VRAIE banque, la VRAIE variation, le VRAI
@@ -7644,8 +7693,8 @@ verdict(
       const modele = B.composerEtape(nom, ctx);
       for (const mode of modes) for (let rang = 1; rang <= 14; rang++) {
         cas++;
-        const l = V.varierLignes(modele, rang, mode, ctx);
-        if (JSON.stringify(l) !== JSON.stringify(V.varierLignes(modele, rang, mode, ctx))) deterministe = false;
+        const l = V.varierLignes(modele, rang, mode, ctx, 1);
+        if (JSON.stringify(l) !== JSON.stringify(V.varierLignes(modele, rang, mode, ctx, 1))) deterministe = false;
         if (l.length !== modele.length) emplacementsFixes = false;
         let diff = 0;
         l.forEach((x, i) => {
@@ -7680,15 +7729,15 @@ verdict(
      donc le même contenu, quel que soit le jour où on la fait. */
   const ctxSalle = ctxDe("salle");
   const push = B.composerEtape("Haut du corps", ctxSalle);
-  const r3 = V.varierLignes(push, 3, "peu", ctxSalle).map((x) => x.exercice_nom);
-  const r3plusTard = V.varierLignes(push, 3, "peu", ctxSalle).map((x) => x.exercice_nom);
-  const r4 = V.varierLignes(push, 4, "peu", ctxSalle).map((x) => x.exercice_nom);
+  const r3 = V.varierLignes(push, 3, "peu", ctxSalle, 1).map((x) => x.exercice_nom);
+  const r3plusTard = V.varierLignes(push, 3, "peu", ctxSalle, 1).map((x) => x.exercice_nom);
+  const r4 = V.varierLignes(push, 4, "peu", ctxSalle, 1).map((x) => x.exercice_nom);
   verdict("R7 · une séance manquée garde ses exercices ; la suivante a sa propre nouveauté",
     JSON.stringify(r3) === JSON.stringify(r3plusTard) && JSON.stringify(r3) !== JSON.stringify(r4), JSON.stringify([r3, r4]));
   const ligneInconnue = { ...push[push.length - 1], statut: "complementaire" as const, fonction: "cardio" as const };
   verdict("R7 · un complémentaire sans équivalent dans la banque du lieu reste ce qu'il est",
     V.vivierDeFonction("charniere_hanche", "halteres").length === 0
-      && JSON.stringify(V.varierLignes(B.composerEtape("Pull", ctxDe("poids")), 5, "beaucoup", ctxDe("poids")).filter((x) => x.statut === "repere"))
+      && JSON.stringify(V.varierLignes(B.composerEtape("Pull", ctxDe("poids")), 5, "beaucoup", ctxDe("poids"), 1).filter((x) => x.statut === "repere"))
         === JSON.stringify(B.composerEtape("Pull", ctxDe("poids")).filter((x) => x.statut === "repere"))
       && !!ligneInconnue, "");
 
@@ -7720,12 +7769,32 @@ verdict(
   const gen = { ctx: "salle" as const, goals: ["Prise de masse"], level: "debutant" };
   const resas = [{ id: "a", date: "2026-10-07", titre: "Push" }, { id: "b", date: "2026-10-09", titre: "Pull" }, { id: "c", date: "2026-10-12", titre: "Bas" }, { id: "d", date: "2026-10-14", titre: "Full" }];
   const tous = { a: "remplacer", b: "remplacer", c: "remplacer", d: "remplacer" } as const;
-  const dem = M.preparerActivation(null, prog, gen, resas, tous, "beaucoup")!;
+  const dem = M.preparerActivation("act-1", null, prog, gen, resas, tous, "beaucoup")!;
   const ctxG = contexteDe(gen);
   verdict("R7 · l'activation : chaque séance remplacée porte les exercices de son rang, la première est le modèle",
     !!dem && JSON.stringify(dem.choix.a.lignes) === JSON.stringify(B.composerEtape(prog.etapes[0].nom, ctxG))
-      && JSON.stringify(dem.choix.d.lignes) === JSON.stringify(V.varierLignes(B.composerEtape(prog.etapes[0].nom, ctxG), 4, "beaucoup", ctxG))
-      && JSON.stringify(dem.choix.d.lignes) !== JSON.stringify(dem.choix.a.lignes), "");
+      && JSON.stringify(dem.choix.d.lignes) === JSON.stringify(V.varierLignes(B.composerEtape(prog.etapes[0].nom, ctxG), 4, "beaucoup", ctxG, prog.etapes.length))
+      && JSON.stringify(dem.choix.d.lignes) !== JSON.stringify(dem.choix.a.lignes)
+      && JSON.stringify(dem.choix.b.lignes) === JSON.stringify(B.composerEtape(prog.etapes[1].nom, ctxG))
+      && JSON.stringify(dem.choix.c.lignes) === JSON.stringify(B.composerEtape(prog.etapes[2].nom, ctxG)), "");
+
+  /* Revue finale (P2) · la rotation suit le PASSAGE de chaque étape, pas
+     le rang global : toutes les longueurs de cycle, toutes les positions. */
+  let premiereModele = true, tourneParPassage = true, rangGlobalFige = false;
+  for (let k = 1; k <= 6; k++) for (let pos = 1; pos <= k; pos++) {
+    const mod = B.composerEtape("Haut du corps", ctxSalle);
+    const rangs = Array.from({ length: 6 }, (_, n) => pos + n * k);
+    const vues = rangs.map((r) => JSON.stringify(V.varierLignes(mod, r, "peu", ctxSalle, k)));
+    if (vues[0] !== JSON.stringify(mod)) premiereModele = false;
+    for (let n = 0; n < rangs.length; n++) if (V.passageDuRang(rangs[n], k) !== n) tourneParPassage = false;
+    if (k === 2 && pos === 2 && new Set(vues.slice(1)).size < 2) rangGlobalFige = true;
+  }
+  verdict("Revue · la première occurrence de chaque étape est son modèle (celui de l'aperçu), cycles de 1 à 6, toutes positions",
+    premiereModele, "");
+  verdict("Revue · le passage d'une étape avance d'un cran par tour, quelle que soit sa position",
+    tourneParPassage, "");
+  verdict("Revue · « Haut du corps » 2ᵉ d'un cycle de deux : ses passages successifs ne donnent plus tous la même variante",
+    !rangGlobalFige, "");
 
   /* Le réglage : erreur ≠ absence. */
   type Rep = { data: unknown; error: { code?: string; message: string } | null };
@@ -7854,21 +7923,71 @@ verdict(
   verdict(`R8 · Dos & fessiers en 17 min : les repères restent, ça compte, ≈ ${v17.minutes} min sur ${v17.minutesCompletes}`,
     reperes.length > 0 && reperes.every((i) => v17.garde.some((g) => g.index === i)) && v17.compte && v17.minutes <= 17 && v17.retires.length > 0, "");
 
+  /* Revue finale (P1) · l'identité de chaque ligne survit à la version
+     courte, sur les deux chemins (étape figée, intention réservée). */
+  {
+    const J = await import("@/lib/journalSeance");
+    const P = await import("@/lib/progression");
+    const lignesDF = B.composerEtape("Dos & fessiers", ctx);
+    const v11 = D.raccourcir(lignesDF.map((l) => D.itemDeLigne(l)), 11);
+    const attendus = v11.garde.map((g) => lignesDF[g.index].emplacement);
+    const marques = (liste: { sets: number }[]) => Object.fromEntries(liste.map((e, i) => [i, Object.fromEntries(
+      Array.from({ length: e.sets }, (_, s2) => [s2, { statut: "terminee", validation: "bouton", dureeS: null, reps: 10, charge: null }]))]));
+    const empl = (liste: Parameters<typeof J.lignesDuJournal>[0]) =>
+      [...new Set(J.lignesDuJournal(liste, marques(liste) as never).map((l) => l.emplacement))];
+    const etapeCourte = B.projeterPrescription(D.lignesCourtes(lignesDF, v11));
+    const brute = B.projeterPrescription(lignesDF).map((e) => ({ ...e, prescription: { ...e.prescription!, emplacement: undefined } }));
+    const intentionCourte = D.exercicesCourts(brute, v11);
+    verdict("Revue · version courte d'une étape : le journal écrit les emplacements de la prescription, pas l'index compact",
+      v11.retires.length > 0 && JSON.stringify(empl(etapeCourte)) === JSON.stringify(attendus), `${JSON.stringify(attendus)} / ${JSON.stringify(empl(etapeCourte))}`);
+    verdict("Revue · version courte d'une réservation (liste sans emplacement) : l'identité est épinglée avant de compacter",
+      JSON.stringify(empl(intentionCourte)) === JSON.stringify(attendus), JSON.stringify(empl(intentionCourte)));
+    const reduite = etapeCourte.find((e) => e.prescription?.statut === "repere" && e.prescription.reduite);
+    const pleine = B.projeterPrescription(lignesDF).find((e) => e.prescription?.statut === "repere");
+    const series = (n: number) => Array.from({ length: n }, () => ({ exercice_cle: pleine!.prescription!.cle, statut: "terminee" as const, validation: "bouton", reps_declarees: 99, charge: 40, charge_type: pleine!.prescription!.charge_type }));
+    const pr = P.prescriptionDe(pleine!)!;
+    verdict("Revue · un repère réduit ne propose jamais de hausse ni de question ; entier, il le peut",
+      P.prochaineCible(series(pr.series), { ...pr, reduite: true }, "3_plus", 2.5) === null
+        && P.prochaineCible(series(pr.series), pr, "3_plus", 2.5) !== null
+        && !P.questionUtile(series(pr.series), { ...pr, reduite: true })
+        && (!reduite || P.prescriptionDe(reduite)?.reduite === true), reduite ? reduite.name : "aucun repère réduit à 11 min");
+    const V2 = await import("@/lib/variete");
+    const leg = V2.allegerPourZone(lignesDF, "dos");
+    verdict("Revue · la version plus légère (R7) marque ses lignes réduites, et la projection le porte",
+      leg.some((l) => l.reduite) && B.projeterPrescription(leg).some((e) => e.prescription?.reduite === true)
+        && V2.allegerExercices(B.projeterPrescription(lignesDF), "dos").some((e) => e.prescription?.reduite === true), "");
+    const sqlRev = readFileSync("supabase/migrations/20261012_revue_finale.sql", "utf8");
+    verdict("Revue · la base refuse aussi : une ligne qui a moins de séries que son modèle rend `version_reduite`",
+      sqlRev.includes("if v_series_modele is not null and v_ligne.series < v_series_modele then")
+        && sqlRev.includes("return jsonb_build_object('resultat', 'version_reduite');"), "");
+  }
+
   /* L'estimation compte ce qu'elle dit compter. */
-  const base: Parameters<typeof D.estimerSecondes>[0][number] = { nom: "Squat", statut: "repere", series: 3, effortS: 30, cotes: 1, reposS: 90, transitionS: 90, materiel: "machine" };
+  const base: Parameters<typeof D.estimerSecondes>[0][number] = { nom: "Squat", statut: "repere", series: 3, effortS: 30, cotes: 1, reposS: 90, transitionS: 90 };
   const seul = D.estimerSecondes([base]);
   verdict("R8 · estimation : échauffement + séries + repos entre les séries (pas après la dernière)",
     seul === D.ECHAUFFEMENT_S + 3 * 30 + 2 * 90, String(seul));
   verdict("R8 · estimation : un exercice « par jambe » compte ses deux côtés",
     D.estimerSecondes([{ ...base, cotes: 2 }]) === D.ECHAUFFEMENT_S + 3 * (60 + D.CHANGEMENT_COTE_S) + 2 * 90, "");
-  const deux = (m1: string, m2: string) => D.estimerSecondes([{ ...base, materiel: m1 }, { ...base, materiel: m2 }]);
-  verdict("R8 · estimation : changer de machine coûte une transition, rester aux haltères beaucoup moins",
-    deux("machine", "machine") - deux("fonte", "fonte") === 90 - D.TRANSITION_MEME_MATERIEL_S, "");
+  /* Revue finale (P2) · l'estimation pose EXACTEMENT les attentes du
+     tunnel : la transition déclarée, sinon le repos de série ; « 45s »
+     sans `auto` dure 45 s, comme le chrono le décompte. */
+  verdict("Revue · estimation = tunnel : la transition déclarée entre deux exercices, sans raccourci de matériel",
+    D.estimerSecondes([base, base]) - 2 * seul + D.ECHAUFFEMENT_S === 90
+      && D.itemDExercice({ name: "A", sets: 3, reps: "10", rest: 60, restAfter: 0 }).transitionS === 60
+      && D.itemDExercice({ name: "A", sets: 3, reps: "10", rest: 60, restAfter: 120 }).transitionS === 120
+      && D.itemDExercice({ name: "A", sets: 3, reps: "10" }).reposS === 0, "");
+  verdict("Revue · « 45s » sans auto : 45 s dans l'estimation comme dans le chrono (pas 45 × 3 s)",
+    D.itemDExercice({ name: "Gainage", sets: 3, reps: "45s" }).effortS === 45 && D.secondesDeReps("2 min") === 120
+      && D.itemDExercice({ name: "Burpees", sets: 3, reps: "20 sec effort", rest: 0, hiit: true }).effortS === D.HIIT_EFFORT_S, "");
+  const tunnelSrc = readFileSync("src/components/WorkoutGuideModal.tsx", "utf8");
+  verdict("Revue · une seule lecture des durées : le tunnel importe `secondesDeReps` de dureeLibre",
+    tunnelSrc.includes('import { secondesDeReps } from "@/lib/dureeLibre";') && !tunnelSrc.includes("function secondesDeReps("), "");
   verdict("R8 · estimation : un exercice « par jambe » est reconnu dans la projection",
     D.itemDExercice({ name: "Fentes", sets: 3, reps: "10 par jambe" }).cotes === 2 && D.itemDExercice({ name: "Squat", sets: 3, reps: "10" }).cotes === 1, "");
 
   /* Une séance sans repère déclaré : on ne sait pas ce qui est essentiel. */
-  const libres = [0, 1, 2, 3].map((i) => ({ ...base, nom: `E${i}`, statut: "complementaire" as const, materiel: "fonte" }));
+  const libres = [0, 1, 2, 3].map((i) => ({ ...base, nom: `E${i}`, statut: "complementaire" as const }));
   const pleineLibre = D.estimerMinutes(libres);
   const presque = D.raccourcir(libres, pleineLibre - 1);
   const court = D.raccourcir(libres, 8);

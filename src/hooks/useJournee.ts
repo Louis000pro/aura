@@ -195,11 +195,21 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
     const numero = ++lectureEnCours.current;
     const derniere = () => numero === lectureEnCours.current;
     const supabase = createClient();
-    const { data: prof } = await supabase
+    const { data: prof, error: errProfil } = await supabase
       .from("profiles")
       .select("onboarding_level, onboarding_sessions_week, onboarding_goals")
       .eq("id", user.id)
       .maybeSingle();
+    /* Revue finale (P2) · ERREUR ≠ ABSENCE : un profil illisible n'est pas
+       un questionnaire jamais rempli. On garde ce qui est affiché et on dit
+       que la lecture a échoué, au lieu d'ouvrir la mise en route. */
+    if (errProfil) {
+      console.error("[journee] profil illisible :", errProfil.message);
+      if (!derniere()) return;
+      setIndisponible(true);
+      setPret(true);
+      return;
+    }
 
     const aRepondu = !!(prof && (prof.onboarding_level || prof.onboarding_sessions_week
       || (Array.isArray(prof.onboarding_goals) && prof.onboarding_goals.length > 0)));
@@ -331,7 +341,7 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
       setAdaptation(couche);
       setEtape(suivante);
       setModele(suivante && lu && variete
-        ? modeleDeLOccurrence(lu, suivante, ctxModele, variete)
+        ? modeleDeLOccurrence(lu, suivante, ctxModele, variete, actif?.cycle.length ?? 1)
         : null);
       setReservation(resa);
     } catch (e) {
@@ -357,7 +367,18 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
   }, [charger]);
 
   const parJour = useMemo(() => parDate(semaine), [semaine]);
-  const intentionsDuJour = useMemo(() => parJour[today] ?? [], [parJour, today]);
+  /* Revue finale (P2) · une réservation EN CONFLIT aujourd'hui (absence,
+     jour retiré, adaptation qui la masque) ne se propose pas d'elle-même
+     sur l'accueil : « Ma semaine » dit la même chose, et c'est là qu'on
+     choisit explicitement de la faire quand même. */
+  const resolutionAffichee = projection && projection.userId === (user?.id ?? null) ? projection : null;
+  const enConflit = useMemo(() => new Set((resolutionAffichee?.resolution?.jours ?? [])
+    .filter((j) => j.date === today && j.reservee && !!j.conflit)
+    .map((j) => `${resolutionAffichee?.programmeId}|${j.rang}`)), [resolutionAffichee, today]);
+  const intentionsDuJour = useMemo(
+    () => (parJour[today] ?? []).filter((d) => !(d.etapeId && enConflit.has(`${d.programmeId}|${d.rang}`))),
+    [parJour, today, enConflit],
+  );
   const jour = principale(intentionsDuJour);
   const extras = useMemo(() => supplements(intentionsDuJour), [intentionsDuJour]);
 
@@ -493,7 +514,7 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
     if (!lu) throw new Error("modele_illisible");
     const variete = await lireVariete(user.id);
     if (!variete) throw new Error("variete_illisible");
-    const frais: ModeleDeLOccurrence = modeleDeLOccurrence(lu, occ, ctx, variete);
+    const frais: ModeleDeLOccurrence = modeleDeLOccurrence(lu, occ, ctx, variete, actif.cycle.length);
     const cibles = (await ciblesOuvertes(user.id, actif.programme.id, occ.id)) ?? [];
     return {
       cibles,

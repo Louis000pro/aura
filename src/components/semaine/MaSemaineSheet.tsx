@@ -28,7 +28,8 @@ import ChoixJour from "@/components/entrainement/ChoixJour";
 import { Photo } from "@/components/entrainement/PhotoSeance";
 import { resolveArt } from "@/lib/workoutArt";
 import { contexteDe, dayTitle, fetchRange, type GenInput, type PlanningDay } from "@/lib/planning";
-import { modeleDeLEtape } from "@/lib/prescription";
+import { modeleDeLEtape, modeleDeLOccurrence } from "@/lib/prescription";
+import { lireVariete } from "@/lib/varieteBase";
 import { projeterPrescription } from "@/lib/banqueEtapes";
 import type { EtapeCycle, ProgrammeEtCycle } from "@/lib/programme";
 import { resolutionDuProgramme, type ResolutionProgramme } from "@/lib/projectionBase";
@@ -53,6 +54,7 @@ const RAISONS: Record<Exclude<ResultatGeste, { ok: true }>["raison"], string> = 
   illisible: "Je n’arrive pas à relire ta semaine, réessaie dans un instant.",
   echec: "Ça n’a pas pris, réessaie dans un instant.",
   masquee: "Ton adaptation met cette séance de côté ce jour-là.",
+  partiel: "Je ne sais pas si c’est passé jusqu’au bout : je relis ta semaine, regarde ce jour avant de recommencer.",
 };
 
 const CONFLITS = {
@@ -367,7 +369,12 @@ function FeuilleJour({ cible, userId, programme, gen, aujourdhui, reservable, on
   const jourLong = new Date(ligne.date + "T00:00:00").toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
   /* « Changer de jour » : une réservation se déplace ; une prévision ne se
      réserve que si elle est l'occurrence en attente de son étape. */
-  const faisable = !!((p && element?.genre === "prevu" && (element.proposee || reservation)) || pose);
+  /* Revue finale (P2) · une réservation en conflit ce jour-là ne se lance
+     pas comme si de rien n'était : on dit le conflit, et « La faire quand
+     même » est un choix explicite. */
+  const faisableBrut = !!((p && element?.genre === "prevu" && (element.proposee || reservation)) || pose);
+  const faisable = faisableBrut && !p?.conflit;
+  const outrePasse = faisableBrut && !!p?.conflit;
   const peutChanger = !!p && !p.conflit && (p.reservee ? !!reservation : reservable(p.etape.id, p.rang));
 
   const geste = async (f: () => Promise<ResultatGeste>, ok: string) => {
@@ -383,9 +390,15 @@ function FeuilleJour({ cible, userId, programme, gen, aujourdhui, reservable, on
     /* Une réservation montre SA prescription figée, jamais le modèle du
        lieu d'aujourd'hui. */
     if (reservation) { setExos((reservation.exerciseList ?? []).map((e) => e.name)); return; }
-    if (!p || !gen) return;
-    const m = await modeleDeLEtape({ id: p.etape.id, nom: p.etape.nom }, contexteDe(gen));
-    setExos(m ? projeterPrescription(m.lignes).map((e) => e.name) : []);
+    if (!p || !gen || !programme) return;
+    /* Revue finale (P2) · une prévision montre les exercices de SON
+       occurrence (variété R7 selon son passage), ceux qui seront réservés
+       et lancés, jamais le modèle brut. */
+    const ctx = contexteDe(gen);
+    const [m, variete] = await Promise.all([modeleDeLEtape({ id: p.etape.id, nom: p.etape.nom }, ctx), lireVariete(userId)]);
+    if (!m || !variete) { setExos([]); return; }
+    const occ = modeleDeLOccurrence(m, { id: p.etape.id, rang: p.rang }, ctx, variete, programme.cycle.length);
+    setExos(projeterPrescription(occ.lignes).map((e) => e.name));
   };
 
   return (
@@ -453,6 +466,11 @@ function FeuilleJour({ cible, userId, programme, gen, aujourdhui, reservable, on
                 <Play size={15} fill="#fff" /> La faire maintenant
               </motion.button>
             ) : null}
+
+            {outrePasse && p?.conflit && (
+              <Geste icone={<Play size={16} />} label="La faire quand même" sous={CONFLITS[p.conflit]}
+                disabled={envoi} onClick={() => { if (reservation) onLancerIntention(reservation); else onLancerTete(); }} />
+            )}
 
             {/* R8 · la même séance, pour le temps qu'on a (maquette 08 écran 07 :
                 « Version courte » s'ajoute ici avec la durée libre). Seulement

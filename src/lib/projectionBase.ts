@@ -113,14 +113,27 @@ export async function resolutionDuProgramme(
  */
 async function lireOccupes(userId: string, dates: string[], programmeId: string): Promise<string[]> {
   const sc = await schemaIntentions();
-  /* ⚠️ R9c · une réservation GARDÉE d'une version archivée occupe son
-     jour comme une séance posée : le nouveau programme ne s'y ajoute pas. */
   const { data, error } = await createClient()
     .from(sc.table)
-    .select("date, etape_consommee_id")
+    .select("date, etape_consommee_id, programme_id")
     .eq("user_id", userId)
-    .in("date", dates)
-    .or(`etape_consommee_id.is.null,programme_id.neq.${programmeId}`);
+    .in("date", dates);
   if (error) throw new Error("occupes_illisibles: " + error.message);
-  return [...new Set(((data ?? []) as { date: string }[]).map((x) => x.date))];
+  return joursOccupes(((data ?? []) as { date: string; etape_consommee_id: string | null; programme_id: string | null }[])
+    .map((x) => ({ date: x.date, etape: x.etape_consommee_id, programme: x.programme_id })), programmeId);
+}
+
+/**
+ * PURE · les jours occupés HORS du programme actif. Une seule règle pour
+ * l'écran et le cron (revue finale, P1) :
+ * · une intention sans étape (séance posée, supplément, repos) occupe ;
+ * · ⚠️ R9c · une réservation GARDÉE d'une autre version (archivée) occupe
+ *   son jour comme une séance posée : le nouveau programme ne s'y ajoute pas.
+ */
+export function joursOccupes(
+  lignes: readonly { date: string | null; etape: string | null; programme: string | null }[], programmeId: string,
+): string[] {
+  return [...new Set(lignes
+    .filter((l) => !!l.date && (l.etape === null || l.programme !== programmeId))
+    .map((l) => l.date as string))];
 }

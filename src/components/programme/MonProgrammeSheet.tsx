@@ -22,11 +22,11 @@
    et le même contexte que l'écriture (`preparerActivation`).
    ════════════════════════════════════════════════════════════════════ */
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { ChevronDown, ChevronRight, X } from "lucide-react";
 import FeuilleBas from "@/components/semaine/FeuilleBas";
-import { LIBELLE_ZONE, ZONES, composerEtape, type Zone } from "@/lib/banqueEtapes";
+import { LIBELLE_ZONE, ZONES, composerEtape, limiteDeLEtape, phraseLimite, type Zone } from "@/lib/banqueEtapes";
 import {
   composerProgramme, planDesRemplacements, prioritesDeLIntention, seancesDuChoix,
   type ChoixReservation, type ReservationAncienne,
@@ -96,6 +96,9 @@ export default function MonProgrammeSheet({ userId, programme, calendrier, gen, 
   const [erreur, setErreur] = useState<string | null>(null);
 
   const jours = calendrier?.choisi && calendrier.jours.length > 0 ? calendrier.jours : null;
+  /* Revue finale (P2) · des jours choisis, mais aucun : on ne retombe
+     pas sur une fréquence inventée, on le dit. */
+  const aucunJour = !!calendrier?.choisi && calendrier.jours.length === 0;
   const seances = seancesDuChoix(jours ? jours.length : gen?.sessions ?? 3);
   const compose = useMemo(
     () => (priorites ? composerProgramme({ priorites, seances }) : null),
@@ -104,6 +107,10 @@ export default function MonProgrammeSheet({ userId, programme, calendrier, gen, 
   const ctx = useMemo(() => (gen ? contexteDe(gen) : null), [gen]);
   const exercices = useMemo(
     () => (compose && ctx ? compose.etapes.map((e) => composerEtape(e.nom, ctx).map((l) => l.exercice_nom)) : []),
+    [compose, ctx],
+  );
+  const limites = useMemo(
+    () => (compose && ctx ? compose.etapes.map((e) => limiteDeLEtape(e.nom, ctx.lieu)) : []),
     [compose, ctx],
   );
   const identique = !!compose && !!programme
@@ -151,7 +158,8 @@ export default function MonProgrammeSheet({ userId, programme, calendrier, gen, 
   };
 
   const plan = compose && reservations ? planDesRemplacements(reservations, choix, compose.etapes) : null;
-  const blocage = !gen ? "Je n’arrive pas à lire tes réglages d’entraînement."
+  const blocage = aucunJour ? "Aucun jour choisi : choisis au moins un jour dans « Mes jours »."
+    : !gen ? "Je n’arrive pas à lire tes réglages d’entraînement."
     : variete === null ? "Je n’arrive pas à lire ton réglage d’exercices."
     : variete === undefined ? "Je lis tes réglages…"
     : identique ? "C’est déjà ton programme."
@@ -159,10 +167,17 @@ export default function MonProgrammeSheet({ userId, programme, calendrier, gen, 
     : !plan ? "Choisis quoi faire de chaque séance encore prévue."
     : null;
 
+  /* Revue finale (P1) · une activation garde SON identité tant que son
+     contenu ne change pas : rejouée après une réponse perdue, la base la
+     reconnaît. Un autre aperçu est une autre activation. */
+  const activationRef = useRef<{ cle: string; id: string } | null>(null);
   const activer = async () => {
     if (blocage || !compose || !gen || !reservations || !variete) { setRefus(true); return; }
-    const demande = preparerActivation(programme?.programme.id ?? null, compose, gen, reservations, choix, variete);
-    if (!demande) { setRefus(true); return; }
+    const brouillon = preparerActivation("", programme?.programme.id ?? null, compose, gen, reservations, choix, variete);
+    if (!brouillon) { setRefus(true); return; }
+    const cle = JSON.stringify(brouillon);
+    if (activationRef.current?.cle !== cle) activationRef.current = { cle, id: crypto.randomUUID() };
+    const demande = { ...brouillon, activation_id: activationRef.current.id };
     setEnvoi(true); setErreur(null);
     const r = await activerProgramme(demande);
     if (r.ok) {
@@ -173,7 +188,9 @@ export default function MonProgrammeSheet({ userId, programme, calendrier, gen, 
     setEnvoi(false);
     if (r.raison === "programme_change") setErreur("Ton programme a changé entre-temps. Ferme et rouvre pour voir le nouvel aperçu.");
     else if (r.raison === "choix_incomplets") { setErreur("Une séance prévue n’a pas encore de choix."); setLecture((n) => n + 1); }
+    else if (r.raison === "apercu_perime") { setErreur("Une séance prévue a bougé depuis l’aperçu. Rien n’a été modifié : vérifie à nouveau."); setLecture((n) => n + 1); }
     else if (r.raison === "pas_ouvert") setErreur("Le changement de programme n’est pas encore ouvert. Rien n’a été modifié.");
+    else if (r.raison === "incertain") setErreur("La connexion a coupé avant la réponse. Réessaie : si c’était déjà passé, rien ne sera fait deux fois.");
     else setErreur("Ça n’a pas pris. Rien n’a été modifié, réessaie dans un instant.");
   };
 
@@ -182,9 +199,9 @@ export default function MonProgrammeSheet({ userId, programme, calendrier, gen, 
     const noms = compose.passages.map((p, i) => (i === 0 ? LIBELLE_ZONE[p.zone] : LIBELLE_ZONE[p.zone].toLowerCase()));
     const fois = compose.passages[0].fois;
     if (compose.passages.every((p) => p.fois === fois)) {
-      return `${noms.join(" et ")} ${noms.length > 1 ? "reviennent" : "revient"} ${fois} fois par semaine.`;
+      return `${noms.join(" et ")} ${noms.length > 1 ? "reviennent" : "revient"} ${fois} fois dans le cycle.`;
     }
-    return compose.passages.map((p) => `${LIBELLE_ZONE[p.zone]} : ${p.fois} fois`).join(" · ") + " par semaine.";
+    return compose.passages.map((p) => `${LIBELLE_ZONE[p.zone]} : ${p.fois} fois`).join(" · ") + " dans le cycle.";
   })();
 
   return (
@@ -232,7 +249,7 @@ export default function MonProgrammeSheet({ userId, programme, calendrier, gen, 
                 style={{ borderTop: "1px solid rgba(var(--text-3-rgb),0.14)" }}>
                 <span className="text-[13px] font-semibold" style={{ color: "var(--text-1)" }}>Mes jours</span>
                 <span className="text-[13px] flex items-center gap-1" style={{ color: "var(--text-2)" }}>
-                  {jours ? jours.map((j) => ABR_JOURS[j - 1]).join(" · ") : `${seances} séance${seances > 1 ? "s" : ""} par semaine`}
+                  {aucunJour ? "Aucun jour choisi" : jours ? jours.map((j) => ABR_JOURS[j - 1]).join(" · ") : `${seances} séance${seances > 1 ? "s" : ""} par semaine`}
                   {onMesJours && <ChevronRight size={14} />}
                 </span>
               </button>
@@ -292,6 +309,9 @@ export default function MonProgrammeSheet({ userId, programme, calendrier, gen, 
                       <span className="block text-[13px]" style={{ color: "var(--text-3)" }}>
                         <span className="vy-nombre">{exercices[i]?.length ?? 0}</span> exercices
                       </span>
+                      {limites[i] && (
+                        <span className="block text-[13px]" style={{ color: "var(--text-2)" }}>{phraseLimite(limites[i]!)}</span>
+                      )}
                     </span>
                     {ouverte === i ? <ChevronDown size={16} style={{ color: "var(--text-3)" }} /> : <ChevronRight size={16} style={{ color: "var(--text-3)" }} />}
                   </button>

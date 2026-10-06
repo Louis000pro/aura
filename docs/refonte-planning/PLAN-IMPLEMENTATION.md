@@ -870,3 +870,19 @@ Louis demande d'enchaîner les vagues sans attendre chaque feu vert : Codex reli
 - **Lancement** : `lancerCourt(minutes)` et `lancerIntention(d, { courte })` recalculent sur la liste relue avec la même règle que l'aperçu ; une étape qui compte fige la prescription courte (variante explicite, décision 32) et se ferme normalement.
 - **Écrans** : le héros annonce la durée estimée (au lieu de 45 min en dur) et propose « J'ai moins de temps » ; la feuille d'un jour de « Ma semaine » gagne « Version courte » (maquette 08 écran 07), seulement quand la séance peut se faire maintenant. La feuille « Combien de temps as-tu ? » (maquette 06 écran 02) : − / + à la minute, durées d'un geste, ce qu'on garde avec ses séries, ce qui part, « Échauffement compris ≈ N min », et si ça compte.
 - Banc : +23 contrôles (1 848 cas balayés). Témoins : intention fermée sans rôle (3 échecs), repères retirés d'abord (2), repos raccourcis (1), « compte » sans les deux séries (1).
+
+## Revue finale de Codex (sur `bc38de8`) · corrigée (2026-10-06)
+
+Migration : `supabase/migrations/20261012_revue_finale.sql` (rejouable, remplace aussi `activer_programme` : inutile de recoller `20261010`).
+
+- **P1 · identité des lignes.** `prescription.emplacement` dans les projections TS et SQL ; `emplacementDe` au journal, à la marge et à l'acceptation. Le tunnel navigue par index, identifie par emplacement. `exercicesCourts` épingle l'emplacement avant de compacter une liste lue en base. Cas Codex rejoué : tirage 0, hip thrust 3 → journal 0 et 3.
+- **P1 · version réduite.** `reduite` sur les lignes qui perdent des séries (R8 courte, R7 plus légère) : ni question, ni proposition. En base, `accepter_cible` compare à la ligne du modèle et rend `version_reduite`. Retirer des complémentaires ne bloque pas les repères entiers.
+- **P1 · activation.** `activation_id` (index unique) : le rejeu rend la même version (`deja`). Chaque réservation est verrouillée et comparée à son état approuvé (date, rang, étape) ; une réservation disparue ou déplacée rend `apercu_perime`. Côté écran, une réponse perdue se dit « incertain », jamais « rien n'a été modifié ».
+- **P1 · cron.** Mêmes occupations que l'écran (`joursOccupes`, pur et partagé) ; une réservation gardée d'une autre version se rappelle telle quelle.
+- **P2 · variété.** Rotation par PASSAGE de l'étape (`passageDuRang`), plus par rang global ; la première fois de chaque étape est son modèle.
+- **P2 · durée.** L'estimation pose les attentes du tunnel (`attenteApres`), lit « 45s » comme lui (`secondesDeReps` partagé), compte le HIIT ; plus de raccourci de matériel.
+- **P2 · gestes.** `retirer_le_jour` et `deplacer_reservation` en une transaction ; le déplacement vérifie programme, étape et rang. Sans migration, repli en deux temps qui dit « partiel » si la compensation échoue.
+- **P2 · affichages.** « Voir les exercices » montre la variété de l'occurrence ; une réservation en conflit ne se lance plus d'elle-même (« La faire quand même » explicite, et l'accueil l'écarte) ; profil illisible ≠ questionnaire absent ; `lireVariete` n'accepte que les codes 42703 / PGRST204.
+- **P2 · composeur.** « Aucun jour choisi » au lieu d'une fréquence inventée, « N fois dans le cycle », et la limite de la banque dite (« 1 exercice d'abdos seulement ici : la séance travaille surtout le dos »).
+
+Restent des limites assumées, à présenter à Louis : le seuil « compte » (2 séries par repère) est une heuristique commune et pas un minimum déclaré par séance ; « À chaque fois » masqué ; pas de proposition de changement de repère ; Push salle sans vivier de complémentaires ; mobilier `systeme` non proposé en R9c ; la rotation ignore un `rang_depart` reporté (programmes d'avant R9c seulement).

@@ -25,7 +25,7 @@
  */
 import { lireCalendriers } from "@/lib/joursEntrainement";
 import { calendrierChoisi, decaler, enAbsence, resoudreJournee, seanceARappeler } from "@/lib/projection";
-import { entreeResolution, type FaitsResolution } from "@/lib/projectionBase";
+import { entreeResolution, joursOccupes, type FaitsResolution } from "@/lib/projectionBase";
 import type { EtatOccurrences } from "@/lib/occurrences";
 import { NextRequest, NextResponse } from "next/server";
 import webpush from "web-push";
@@ -165,6 +165,13 @@ type Portrait = {
   /** R9a · la séance prévue nommée vient d'une réservation du programme :
    *  elle passe par la résolution partagée avant d'être rappelée. */
   seanceProgramme: boolean;
+  /** Revue finale (P1) · le programme de la réservation nommée : une
+   *  réservation GARDÉE d'une version archivée n'est pas du programme
+   *  actif, elle se rappelle pour elle-même. */
+  programmeDuJour: string | null;
+  /** Les intentions du jour (toutes) : les MÊMES occupations que l'écran
+   *  (`lireOccupes`), lues dans la même requête. */
+  intentionsDuJour: { etape: string | null; programme: string | null }[];
   jourDeRepos: boolean;
   exp: number | null;
   pseudo: string | null;
@@ -225,7 +232,7 @@ async function portraits(
          côté serveur, donc il ne profite pas du sondage du navigateur.
          S'il gardait l'ancien contrat en dur, la première nuit après le
          renommage serait une nuit sans aucun rappel. */
-      admin.from(sc.table).select(`user_id, type, title, exercise_list, nature, etape_consommee_id, ${sc.colStatut}`).in("user_id", ids).eq("date", today),
+      admin.from(sc.table).select(`user_id, type, title, exercise_list, nature, etape_consommee_id, programme_id, ${sc.colStatut}`).in("user_id", ids).eq("date", today),
       admin.from("aura_mission_credits").select("user_id, points").in("user_id", ids),
       admin.from("notification_rappels").select("user_id, jour, cle, variante").in("user_id", ids).gte("jour", debutJournal).order("jour", { ascending: false }),
       lireProfils(admin, ids),
@@ -236,7 +243,7 @@ async function portraits(
     carte.set(id, {
       seancesTotal: 0, seances28: 0, presences28: 0, joursDepuisVenue: null,
       seanceFaite: false, repasNotes: false, noteHabituellement: false, serie: 0,
-      seancePrevue: null, seanceProgramme: false, jourDeRepos: false, exp: null, pseudo: null, guide: null, envois: [],
+      seancePrevue: null, seanceProgramme: false, programmeDuJour: null, intentionsDuJour: [], jourDeRepos: false, exp: null, pseudo: null, guide: null, envois: [],
     });
   }
 
@@ -281,6 +288,10 @@ async function portraits(
   for (const j of ((planningRes.data ?? []) as unknown as LigneIntention[])) {
     const p = carte.get(j.user_id as string);
     if (!p) continue;
+    p.intentionsDuJour.push({
+      etape: typeof j.etape_consommee_id === "string" ? j.etape_consommee_id : null,
+      programme: typeof j.programme_id === "string" ? j.programme_id : null,
+    });
     const type = String(j.type ?? "");
     const exos = Array.isArray(j.exercise_list) ? j.exercise_list.length : 0;
 
@@ -311,7 +322,10 @@ async function portraits(
        résolution partagée (tour 40). */
     const duProgramme = typeof j.etape_consommee_id === "string";
     if (!duProgramme) { p.seancePrevue = String(j.title || type); p.seanceProgramme = false; }
-    else if (!p.seancePrevue) { p.seancePrevue = String(j.title || type); p.seanceProgramme = true; }
+    else if (!p.seancePrevue) {
+      p.seancePrevue = String(j.title || type); p.seanceProgramme = true;
+      p.programmeDuJour = typeof j.programme_id === "string" ? j.programme_id : null;
+    }
   }
 
   /* ⚠️ R9a · LES JOURS D'ENTRAÎNEMENT (décision 26). Un jour choisi peut
@@ -637,6 +651,11 @@ async function appliquerJoursEntrainement(
     const p = carte.get(prog.user_id as string);
     const cal = calendriers.get(prog.user_id as string);
     if (!p || !cal) continue;
+    /* Revue finale (P1) · une réservation gardée d'une AUTRE version (le
+       programme a changé) n'est pas une séance du programme actif : elle
+       se rappelle telle qu'elle est nommée, jamais remplacée par la
+       résolution du nouveau. */
+    if (p.seanceProgramme && p.programmeDuJour !== prog.id) { p.seanceProgramme = false; continue; }
     const cycle = (etapes.data ?? []).filter((e) => e.programme_id === prog.id)
       .map((e) => ({ id: e.id as string, nom: String(e.nom ?? ""), position: Number(e.position) }));
     const etat: EtatOccurrences = {
@@ -650,7 +669,7 @@ async function appliquerJoursEntrainement(
       else etat.fermes.push({ rang: l.rang, etapeId: l.etape_consommee_id, consommeeLe: (l.consommee_le as string | null) ?? null });
     }
     const adaptations = adaptAbsente ? [] : (adapt.data ?? []).filter((a) => a.programme_id === prog.id) as unknown as FaitsResolution<{ id: string; position: number }>["adaptations"];
-    const resolution = resoudreJournee(entreeResolution({ cycle, etat, calendrier: cal, adaptations, aujourdhui: today, nbJours: 1, occupes: [] }));
+    const resolution = resoudreJournee(entreeResolution({ cycle, etat, calendrier: cal, adaptations, aujourdhui: today, nbJours: 1, occupes: joursOccupes(p.intentionsDuJour.map((l) => ({ ...l, date: today })), prog.id as string) }));
     p.seancePrevue = seanceARappeler({ seancePrevue: p.seancePrevue, seanceProgramme: p.seanceProgramme, resolution });
   }
 }

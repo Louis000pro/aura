@@ -50,6 +50,9 @@ export type PrescriptionExercice = {
   /** La cible en cours (le grand nombre du tunnel). */
   reps_cible: number | null;
   series: number;
+  /** Revue finale (P1) · la ligne a perdu des séries (version courte R8,
+   *  plus légère R7) : elle ne propose rien pour la version complète. */
+  reduite?: boolean;
 };
 
 /** Une série telle que le journal l'écrit (le sous-ensemble utile). */
@@ -114,7 +117,7 @@ function piste(series: SerieRealisee[], p: PrescriptionExercice): Piste | null {
 
 /** La question vaut-elle d'être posée ? Mêmes critères que le calcul. */
 export function questionUtile(series: SerieRealisee[], p: PrescriptionExercice): boolean {
-  return p.statut === "repere" && piste(series, p) !== null;
+  return p.statut === "repere" && !p.reduite && piste(series, p) !== null;
 }
 
 /** Au plus deux questions par séance (décision 53) : un plafond, pas un quota. */
@@ -140,6 +143,11 @@ export function prochaineCible(
   series: SerieRealisee[], p: PrescriptionExercice, marge: Marge | null, cran: number | null,
 ): Proposition | null {
   if (p.statut !== "repere") return null;
+  /* Une hausse calculée sur moins de séries s'appliquerait à la prochaine
+     séance COMPLÈTE, au volume plus grand : on garde (revue finale, P1).
+     Retirer des complémentaires ne réduit aucun repère : ceux qui restent
+     entiers progressent normalement. */
+  if (p.reduite) return null;
   if (!margePositive(marge)) return null;
   const pi = piste(series, p);
   if (!pi) return null;
@@ -368,7 +376,7 @@ export function appliquerCibles<L extends {
 /** La prescription d'un exercice du tunnel, si elle se mesure en répétitions. */
 export function prescriptionDe(ex: {
   sets: number; reps: string; auto?: number; hiit?: boolean;
-  prescription?: { cle: string; statut: "repere" | "complementaire"; charge_type: TypeCharge | null; reps_min: number | null; reps_max: number | null };
+  prescription?: { cle: string; statut: "repere" | "complementaire"; charge_type: TypeCharge | null; reps_min: number | null; reps_max: number | null; reduite?: true };
 } | undefined | null): PrescriptionExercice | null {
   const p = ex?.prescription;
   if (!ex || !p || ex.auto || ex.hiit) return null;
@@ -376,6 +384,7 @@ export function prescriptionDe(ex: {
   return {
     cle: p.cle, statut: p.statut, charge_type: p.charge_type,
     reps_min: p.reps_min, reps_max: p.reps_max, reps_cible: m ? Number(m[0]) : null, series: ex.sets,
+    ...(p.reduite ? { reduite: true } : {}),
   };
 }
 

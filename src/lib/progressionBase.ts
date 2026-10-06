@@ -160,10 +160,10 @@ export type ResultatAcceptation =
   /** Une séance de cette étape est déjà prête : il faut la nommer pour l'ajuster. */
   | { resultat: "occurrence_preparee"; intentionId: string; date: string | null }
   | { resultat: "seance_introuvable" | "hors_programme" | "pas_un_repere" | "marge_non_confirmee"
-      | "occurrence_changee" | "occurrence_introuvable" | "occurrence_occupee" | "non_comparable" | "proposition_invalide" | "echec" };
+      | "occurrence_changee" | "occurrence_introuvable" | "occurrence_occupee" | "non_comparable" | "version_reduite" | "proposition_invalide" | "echec" };
 
 const REFUS = ["seance_introuvable", "hors_programme", "pas_un_repere", "marge_non_confirmee", "occurrence_changee",
-  "occurrence_introuvable", "occurrence_occupee", "non_comparable", "proposition_invalide"] as const;
+  "occurrence_introuvable", "occurrence_occupee", "non_comparable", "version_reduite", "proposition_invalide"] as const;
 
 /**
  * Accepte une proposition. Sur une séance préparée qu'on n'a pas nommée,
