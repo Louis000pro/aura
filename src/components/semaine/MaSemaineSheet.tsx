@@ -22,7 +22,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowLeftRight, CalendarDays, Check, ChevronRight, ListChecks, Minus, Play, Plus, X } from "lucide-react";
+import { ArrowLeftRight, CalendarDays, Check, ChevronRight, ListChecks, Minus, Play, Plus, Timer, X } from "lucide-react";
 import FeuilleBas from "@/components/semaine/FeuilleBas";
 import ChoixJour from "@/components/entrainement/ChoixJour";
 import { Photo } from "@/components/entrainement/PhotoSeance";
@@ -62,7 +62,7 @@ const CONFLITS = {
 } as const;
 
 export default function MaSemaineSheet({
-  userId, programme, gen, aujourdhui, onClose, onLancerTete, onLancerIntention,
+  userId, programme, gen, aujourdhui, onClose, onLancerTete, onLancerIntention, onVersionCourte,
   onChoisirSeance, onMesJours, onAbsence, onChange,
 }: {
   userId: string;
@@ -73,6 +73,9 @@ export default function MaSemaineSheet({
   /** Lance la séance que l'app propose maintenant (la tête de la suite). */
   onLancerTete: () => void;
   onLancerIntention: (d: PlanningDay) => void;
+  /** R8 · « Version courte » : la séance de ce jour, raccourcie, maintenant.
+   *  `null` = la séance de tête (l'étape libre du héros). */
+  onVersionCourte?: (d: PlanningDay | null) => void;
   /** Ouvre le catalogue pour poser une séance sur ce jour. `liberer` :
    *  la réservation à retirer SEULEMENT une fois la séance enregistrée. */
   onChoisirSeance: (date: string, liberer: ALiberer) => void;
@@ -229,6 +232,7 @@ export default function MaSemaineSheet({
             onClose={() => setCible(null)}
             onLancerTete={() => { setCible(null); onLancerTete(); }}
             onLancerIntention={(d) => { setCible(null); onLancerIntention(d); }}
+            onVersionCourte={onVersionCourte ? (d) => { setCible(null); onVersionCourte(d); } : undefined}
             onChoisirSeance={(date, liberer) => { setCible(null); onChoisirSeance(date, liberer); }}
             onResultat={apres}
           />
@@ -333,7 +337,7 @@ function ElementLigne({ element: el, touchable, onOuvrir }: {
 
 /* ─── La feuille d'un jour : trois gestes, partout les mêmes ─────── */
 
-function FeuilleJour({ cible, userId, programme, gen, aujourdhui, reservable, onClose, onLancerTete, onLancerIntention, onChoisirSeance, onResultat }: {
+function FeuilleJour({ cible, userId, programme, gen, aujourdhui, reservable, onClose, onLancerTete, onLancerIntention, onVersionCourte, onChoisirSeance, onResultat }: {
   cible: Cible;
   userId: string;
   programme: ProgrammeEtCycle | null;
@@ -344,6 +348,7 @@ function FeuilleJour({ cible, userId, programme, gen, aujourdhui, reservable, on
   onClose: () => void;
   onLancerTete: () => void;
   onLancerIntention: (d: PlanningDay) => void;
+  onVersionCourte?: (d: PlanningDay | null) => void;
   onChoisirSeance: (date: string, liberer: ALiberer) => void;
   onResultat: (r: ResultatGeste, ok: string) => void;
 }) {
@@ -362,6 +367,7 @@ function FeuilleJour({ cible, userId, programme, gen, aujourdhui, reservable, on
   const jourLong = new Date(ligne.date + "T00:00:00").toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
   /* « Changer de jour » : une réservation se déplace ; une prévision ne se
      réserve que si elle est l'occurrence en attente de son étape. */
+  const faisable = !!((p && element?.genre === "prevu" && (element.proposee || reservation)) || pose);
   const peutChanger = !!p && !p.conflit && (p.reservee ? !!reservation : reservable(p.etape.id, p.rang));
 
   const geste = async (f: () => Promise<ResultatGeste>, ok: string) => {
@@ -435,7 +441,7 @@ function FeuilleJour({ cible, userId, programme, gen, aujourdhui, reservable, on
         ) : (
           <div className="flex flex-col">
             {/* L'action principale, quand il y en a une. */}
-            {(p && element?.genre === "prevu" && (element.proposee || reservation)) || pose ? (
+            {faisable ? (
               <motion.button whileTap={{ scale: 0.97 }} disabled={envoi}
                 onClick={() => {
                   if (pose) onLancerIntention(pose);
@@ -448,6 +454,13 @@ function FeuilleJour({ cible, userId, programme, gen, aujourdhui, reservable, on
               </motion.button>
             ) : null}
 
+            {/* R8 · la même séance, pour le temps qu'on a (maquette 08 écran 07 :
+                « Version courte » s'ajoute ici avec la durée libre). Seulement
+                quand elle peut se faire maintenant, comme le bouton du dessus. */}
+            {faisable && onVersionCourte && (
+              <Geste icone={<Timer size={16} />} label="Version courte" sous="Pour le temps que tu as"
+                disabled={envoi} onClick={() => onVersionCourte(pose ?? reservation ?? null)} />
+            )}
             {peutChanger && (
               <Geste icone={<ArrowLeftRight size={16} />} label="Changer de jour" onClick={() => setVue("jour")} />
             )}

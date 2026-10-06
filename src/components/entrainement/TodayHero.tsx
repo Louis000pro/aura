@@ -68,7 +68,7 @@ function Fait({ texte }: { texte: string }) {
 export default function TodayHero({
   state, day, etape, reserveLe, prevuLe = null, attendait = null, indisponible = false, onRetry, nbExos, nextLabel, doneStats, adaptationJusquau,
   onStart, onRedo, onImprovise, onOrganise, onShift, onReplace, onAdaptation,
-  recouvrement = null, onLeger,
+  recouvrement = null, onLeger, dureeMin = null, onCourt,
 }: {
   state: HeroState;
   day: PlanningDay | null;
@@ -113,6 +113,10 @@ export default function TodayHero({
      prévu », la version légère vient dessous, et changer de jour reste. */
   recouvrement?: { phrase: string; leger: string } | null;
   onLeger?: () => void;
+  /** R8 · l'estimation de ce que lance le bouton, échauffement compris. */
+  dureeMin?: number | null;
+  /** R8 · « J'ai moins de temps » : ouvre la version courte. */
+  onCourt?: () => void;
 }) {
   /* Skeleton — même silhouette que la carte, aucune culpabilité d'attente */
   if (state === "loading") {
@@ -173,7 +177,7 @@ export default function TodayHero({
             </p>
             <h2 className="text-[34px] md:text-[38px] leading-[1.02] font-extralight text-white">{dayTitle(day)}</h2>
             <p className="mt-2.5 mb-4 text-[16px] font-normal" style={{ color: "rgba(255,255,255,0.82)" }}>
-              <V>{day.type === "HIIT" ? 30 : 45}</V> min<S /><V>{day.exerciseList.length}</V> exercices<S />{day.difficulty}
+              <V>{dureeMin ?? (day.type === "HIIT" ? 30 : 45)}</V> min<S /><V>{day.exerciseList.length}</V> exercices<S />{day.difficulty}
             </p>
             {recouvrement && <Fait texte={recouvrement.phrase} />}
             <motion.button
@@ -200,6 +204,12 @@ export default function TodayHero({
                 style={{ color: "rgba(255,255,255,0.6)" }}>
                 Remplacer
               </button>
+              {onCourt && (
+                <button onClick={onCourt} className="text-[13px] font-semibold cursor-pointer bg-transparent border-none"
+                  style={{ color: "rgba(255,255,255,0.6)" }}>
+                  J&apos;ai moins de temps
+                </button>
+              )}
             </div>
           </>
         )}
@@ -226,6 +236,7 @@ export default function TodayHero({
               {prevuLe ?? reserveLe ?? "Quand tu veux"}
               {prevuLe && attendait && <><S />{attendait}</>}
               {nbExos > 0 && <><S /><V>{nbExos}</V> exercices</>}
+              {dureeMin && <><S />≈ <V>{dureeMin}</V> min</>}
             </p>
             {recouvrement && <Fait texte={recouvrement.phrase} />}
             <motion.button
@@ -248,6 +259,12 @@ export default function TodayHero({
                 style={{ color: "rgba(255,255,255,0.6)" }}>
                 {reserveLe || prevuLe ? "Changer de jour" : "Lui donner un jour"}
               </button>
+              {onCourt && (
+                <button onClick={onCourt} className="text-[13px] font-semibold cursor-pointer bg-transparent border-none"
+                  style={{ color: "rgba(255,255,255,0.6)" }}>
+                  J&apos;ai moins de temps
+                </button>
+              )}
             </div>
             {indisponible && (
               <button onClick={onRetry} className="block mx-auto mt-2 text-[11px] cursor-pointer bg-transparent border-none"

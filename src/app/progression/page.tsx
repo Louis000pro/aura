@@ -25,6 +25,7 @@ import {
 import WeeklyProgramme from "@/components/WeeklyProgramme";
 import AdaptationSheet from "@/components/entrainement/AdaptationSheet";
 import MaSemaineSheet, { type ALiberer } from "@/components/semaine/MaSemaineSheet";
+import VersionCourteSheet from "@/components/entrainement/VersionCourteSheet";
 import MesJoursSheet from "@/components/semaine/MesJoursSheet";
 import MonProgrammeSheet from "@/components/programme/MonProgrammeSheet";
 import AbsenceSheet from "@/components/semaine/AbsenceSheet";
@@ -2664,6 +2665,8 @@ export default function ProgressionPage() {
 
   /* ── UI ── */
   const [sheet, setSheet] = useState<null | "choisir" | "improviser" | "organiser" | "elan" | "semaine" | "adaptation" | "jours" | "absence" | "programme">(null);
+  /* R8 · la version courte ouverte depuis la feuille d'un jour. */
+  const [court, setCourt] = useState<{ titre: string; exercices: Exercise[]; lancer: (minutes: number) => void } | null>(null);
   /* R9c · « Mes jours » ouvert depuis « Mon programme » y revient. */
   const [joursDepuisProgramme, setJoursDepuisProgramme] = useState(false);
   /* R9b · le calendrier vient de la MÊME résolution que l'accueil. Un
@@ -3336,6 +3339,16 @@ export default function ProgressionPage() {
 
       {/* ══ Sheets ══ */}
       <AnimatePresence>
+        {court && (
+          <VersionCourteSheet
+            titre={court.titre}
+            exercices={court.exercices}
+            onClose={() => setCourt(null)}
+            onLancer={(m) => { const c = court; setCourt(null); c.lancer(m); }}
+          />
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
         {voirSemaine && joursChoisis && user && (
           <MaSemaineSheet
             userId={user.id}
@@ -3345,6 +3358,13 @@ export default function ProgressionPage() {
             onClose={() => { setSheet(null); void loadWeek(); }}
             onLancerTete={() => { setSheet(null); journee.lancerAujourdhui(); }}
             onLancerIntention={(d) => { setSheet(null); startDay(d); }}
+            onVersionCourte={(d) => {
+              setSheet(null);
+              /* La séance de tête : ce que le héros lancerait. Une intention :
+                 elle-même, raccourcie au lancement avec la même règle. */
+              if (d) setCourt({ titre: dayTitle(d), exercices: d.exerciseList, lancer: (m) => journee.lancerIntention(d, { courte: m }) });
+              else if (journee.aLancer) setCourt({ ...journee.aLancer, lancer: journee.lancerCourt });
+            }}
             onChoisirSeance={(date, liberer) => { setPourDate(date); setALiberer(liberer); setSheet("choisir"); }}
             onMesJours={() => setSheet("jours")}
             onAbsence={() => setSheet("absence")}

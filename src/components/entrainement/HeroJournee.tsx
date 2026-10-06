@@ -30,6 +30,7 @@ import { useJournee } from "@/hooks/useJournee";
 import { dayTitle, hasSeance } from "@/lib/planning";
 import ChoixJour from "./ChoixJour";
 import TodayHero from "./TodayHero";
+import VersionCourteSheet from "./VersionCourteSheet";
 
 export default function HeroJournee() {
   const router = useRouter();
@@ -37,6 +38,8 @@ export default function HeroJournee() {
   const j = useJournee();
   /* « Lui donner un jour » : le seul geste du héros qui écrit. */
   const [quand, setQuand] = useState(false);
+  /* R8 · « J'ai moins de temps ». */
+  const [court, setCourt] = useState(false);
   /* ⚠️ UNE FEUILLE DU BAS QUI RECOPIE LA COQUILLE DOIT AUSSI
      RECOPIER LE VERROU, et c'est la leçon déjà payée sur l'écran
      d'adaptation en V8 : sans lui, la barre de navigation reste
@@ -90,6 +93,8 @@ export default function HeroJournee() {
         onAdaptation={() => ouvrir("adaptation")}
         recouvrement={j.recouvrement}
         onLeger={j.lancerAllege}
+        dureeMin={j.dureeMin}
+        onCourt={j.aLancer ? () => setCourt(true) : undefined}
       />
 
       {/* ⚠️ CE QUI VIENT EN PLUS AUJOURD'HUI (V6b). Le héros ne montre
@@ -120,6 +125,17 @@ export default function HeroJournee() {
           ))}
         </div>
       )}
+
+      <AnimatePresence>
+        {court && j.aLancer && (
+          <VersionCourteSheet
+            titre={j.aLancer.titre}
+            exercices={j.aLancer.exercices}
+            onClose={() => setCourt(false)}
+            onLancer={(m) => { setCourt(false); j.lancerCourt(m); }}
+          />
+        )}
+      </AnimatePresence>
 
       <AnimatePresence>
         {quand && (

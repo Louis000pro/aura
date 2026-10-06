@@ -838,7 +838,7 @@ verdict(
   );
   verdict(
     "V7A · la répétition ne déclare aucune cible → aucun doublon de consommation",
-    journee.includes("!options?.repetition && d.id ? { genre: \"intention\", intentionId: d.id } : undefined")
+    journee.includes("!options?.repetition && compte && d.id ? { genre: \"intention\", intentionId: d.id } : undefined")
       && journalPush.filter((f) => f.etapeId === push5.id).length === 1,
     "sans cible, la fin de séance n'écrit rien dans les intentions",
   );
@@ -6183,7 +6183,7 @@ verdict(
   {
     const journee = lire1("src/hooks/useJournee.ts");
     verdict("R6 · refaire une séance ne déclare aucune cible",
-      journee.includes("cible: !options?.repetition && d.id ?"), "une répétition crée un journal, pas une fermeture");
+      journee.includes("cible: !options?.repetition && compte && d.id ?"), "une répétition crée un journal, pas une fermeture");
     const avant = occurrenceSuivante(C3, { depart: 1, fermes: fe(1), reserves: [] });
     verdict("R6 · un journal sans occurrence ne bouge pas la suite",
       avant?.rang === 2, "seules les lignes qui portent un rang comptent");
@@ -6327,7 +6327,7 @@ verdict(
   verdict("R2 · la prescription se fige au lancement et voyage avec lui",
     /* R4 · la copie figée porte désormais les cibles acceptées recopiées. */
     journee.includes("prescription: lignesFigees.map((l) => ({ ...l })),") && journee.includes("const pleines = appliquerCibles(c.modele.lignes,")
-      && journee.includes("const lignesFigees = allegerZone ? allegerPourZone(pleines, allegerZone) : pleines;")
+      && journee.includes(": allegerZone ? allegerPourZone(pleines, allegerZone) : pleines;")
       && journee.includes("modeleId: c.modele.modeleId,"),
     "dans la cible, donc dans l'attente locale");
   verdict("R2 · la fermeture écrit la copie figée, jamais une recomposition",
@@ -7779,6 +7779,124 @@ verdict(
   verdict("R7 · le héros : un fait, puis « La faire comme prévu », la version légère, et changer de jour",
     hero.includes('recouvrement ? "La faire comme prévu"') && hero.includes("{recouvrement.leger}")
       && (hero.match(/<Fait texte=\{recouvrement\.phrase\} \/>/g) ?? []).length === 2, "");
+}
+
+/* ── R8 · LA DURÉE LIBRE. La VRAIE banque, raccourcie minute par minute,
+   et les règles de retrait vérifiées sur chaque cas. ── */
+{
+  const B = await import("@/lib/banqueEtapes");
+  const D = await import("@/lib/dureeLibre");
+  const { contexteDe } = await import("@/lib/planning");
+  const lieux = ["salle", "halteres", "poids"] as const;
+  const etapes = [...Object.keys(B.BANQUE.salle), "Dos & fessiers", "Fessiers & dos", "Pectoraux & épaules", "Jambes & abdos", "Bras & dos"];
+  let tient = true, ordreGarde = true, reposIntacts = true, emplacements = true, retraitComplementaires = true;
+  let reperesApres = true, unAuMoins = true, monotone = true, complete = true, compteJuste = true, deterministe = true;
+  let cas = 0, comptes = 0, enPlus = 0;
+  for (const lieu of lieux) {
+    const ctx = contexteDe({ ctx: lieu, goals: ["Prise de masse"], level: "debutant" });
+    for (const nom of etapes) {
+      const lignes = B.composerEtape(nom, ctx);
+      const liste = B.projeterPrescription(lignes);
+      const items = liste.map(D.itemDExercice);
+      const pleine = D.estimerMinutes(items);
+      let seriesAvant = -1;
+      for (let m = D.DUREE_MIN; m <= 60; m++) {
+        cas++;
+        const v = D.raccourcir(items, m);
+        if (JSON.stringify(v) !== JSON.stringify(D.raccourcir(items, m))) deterministe = false;
+        const courtes = D.lignesCourtes(lignes, v);
+        const exos = D.exercicesCourts(liste, v);
+        if (!v.auPlusCourt && D.estimerMinutes(exos.map(D.itemDExercice)) > m) tient = false;
+        if (v.garde.length === 0) unAuMoins = false;
+        v.garde.forEach((g, k) => { if (k && g.index <= v.garde[k - 1].index) ordreGarde = false; });
+        courtes.forEach((l, k) => {
+          const o = lignes[v.garde[k].index];
+          if (l.repos_s !== o.repos_s || l.transition_s !== o.transition_s) reposIntacts = false;
+          if (l.emplacement !== o.emplacement || l.exercice_nom !== o.exercice_nom) emplacements = false;
+        });
+        /* Les complémentaires partent du dernier au premier, et un seul
+           d'entre eux peut avoir perdu des séries sans partir. */
+        const comp = items.map((it, i) => ({ it, i })).filter(({ it }) => it.statut === "complementaire").map(({ i }) => i);
+        const gardesComp = comp.filter((i) => !v.retires.includes(i));
+        if (gardesComp.some((i, k) => i !== comp[k])) retraitComplementaires = false;
+        if (gardesComp.filter((i) => v.reduits.includes(i)).length > 1) retraitComplementaires = false;
+        /* Un repère ne perd rien tant qu'un complémentaire reste. */
+        const repereTouche = items.some((it, i) => it.statut === "repere" && (v.retires.includes(i) || v.reduits.includes(i)));
+        if (repereTouche && gardesComp.length > 0) reperesApres = false;
+        const total = v.garde.reduce((a, g) => a + g.series, 0);
+        if (total < seriesAvant) monotone = false;
+        seriesAvant = total;
+        if (m >= pleine && (!v.complete || !v.compte)) complete = false;
+        const attendu = items.some((it) => it.statut === "repere")
+          ? items.every((it, i) => it.statut !== "repere" || (!v.retires.includes(i) && v.garde.find((g) => g.index === i)!.series >= Math.min(2, it.series)))
+          : v.retires.length === 0;
+        if (v.compte !== attendu) compteJuste = false;
+        if (v.compte) comptes++; else enPlus++;
+      }
+    }
+  }
+  verdict(`R8 · balayage de ${cas} cas (3 lieux, ${etapes.length} séances, 5 à 60 min) : la version tient dans le temps demandé, ou c'est le plus court possible`, tient, "");
+  verdict("R8 · l'ordre, les emplacements et les exercices gardés ne changent pas", ordreGarde && emplacements, "");
+  verdict("R8 · les repos et les transitions ne bougent jamais", reposIntacts, "");
+  verdict("R8 · les complémentaires partent du dernier au premier, une série à la fois", retraitComplementaires, "");
+  verdict("R8 · un repère ne perd rien tant qu'un complémentaire reste", reperesApres, "");
+  verdict("R8 · il reste toujours au moins un exercice, et plus de temps ne retire jamais de séries", unAuMoins && monotone, "");
+  verdict("R8 · assez de temps : la séance entière, qui compte", complete, "");
+  verdict(`R8 · « ça compte » = chaque repère est là avec au moins deux séries (${comptes} comptent, ${enPlus} se font en plus)`, compteJuste && comptes > 0 && enPlus > 0, "");
+  verdict("R8 · le calcul est déterministe", deterministe, "");
+
+  /* Le cas de la maquette 06 écran 02 : 17 minutes. */
+  const ctx = contexteDe({ ctx: "salle", goals: ["Prise de masse"], level: "debutant" });
+  const liste = B.projeterPrescription(B.composerEtape("Dos & fessiers", ctx));
+  const items = liste.map(D.itemDExercice);
+  const v17 = D.raccourcir(items, 17);
+  const reperes = items.flatMap((it, i) => (it.statut === "repere" ? [i] : []));
+  verdict(`R8 · Dos & fessiers en 17 min : les repères restent, ça compte, ≈ ${v17.minutes} min sur ${v17.minutesCompletes}`,
+    reperes.length > 0 && reperes.every((i) => v17.garde.some((g) => g.index === i)) && v17.compte && v17.minutes <= 17 && v17.retires.length > 0, "");
+
+  /* L'estimation compte ce qu'elle dit compter. */
+  const base: Parameters<typeof D.estimerSecondes>[0][number] = { nom: "Squat", statut: "repere", series: 3, effortS: 30, cotes: 1, reposS: 90, transitionS: 90, materiel: "machine" };
+  const seul = D.estimerSecondes([base]);
+  verdict("R8 · estimation : échauffement + séries + repos entre les séries (pas après la dernière)",
+    seul === D.ECHAUFFEMENT_S + 3 * 30 + 2 * 90, String(seul));
+  verdict("R8 · estimation : un exercice « par jambe » compte ses deux côtés",
+    D.estimerSecondes([{ ...base, cotes: 2 }]) === D.ECHAUFFEMENT_S + 3 * (60 + D.CHANGEMENT_COTE_S) + 2 * 90, "");
+  const deux = (m1: string, m2: string) => D.estimerSecondes([{ ...base, materiel: m1 }, { ...base, materiel: m2 }]);
+  verdict("R8 · estimation : changer de machine coûte une transition, rester aux haltères beaucoup moins",
+    deux("machine", "machine") - deux("fonte", "fonte") === 90 - D.TRANSITION_MEME_MATERIEL_S, "");
+  verdict("R8 · estimation : un exercice « par jambe » est reconnu dans la projection",
+    D.itemDExercice({ name: "Fentes", sets: 3, reps: "10 par jambe" }).cotes === 2 && D.itemDExercice({ name: "Squat", sets: 3, reps: "10" }).cotes === 1, "");
+
+  /* Une séance sans repère déclaré : on ne sait pas ce qui est essentiel. */
+  const libres = [0, 1, 2, 3].map((i) => ({ ...base, nom: `E${i}`, statut: "complementaire" as const, materiel: "fonte" }));
+  const pleineLibre = D.estimerMinutes(libres);
+  const presque = D.raccourcir(libres, pleineLibre - 1);
+  const court = D.raccourcir(libres, 8);
+  verdict("R8 · sans repère : retirer une série compte encore, retirer un exercice ne compte plus",
+    presque.retires.length === 0 && presque.compte && court.retires.length > 0 && !court.compte, "");
+  verdict("R8 · « Rowing, face pull et gainage retirés »",
+    D.phraseRetires(["Rowing", "Face pull", "Gainage"]) === "Rowing, face pull et gainage retirés" && D.phraseRetires([]) === null, "");
+
+  /* Le chemin. */
+  const src = readFileSync("src/lib/dureeLibre.ts", "utf8");
+  verdict("R8 · la durée libre est pure : ni hasard, ni horloge, ni base",
+    !/Math\.random|new Date|Date\.now|localStorage|createClient|\.from\(/.test(src), "");
+  const hook = readFileSync("src/hooks/useJournee.ts", "utf8");
+  verdict("R8 · une version courte qui perd le rôle ne ferme rien : ni l'étape, ni l'intention",
+    /if \(courte && !courte\.compte\) \{\s*launchWorkout\(\{[\s\S]*?exerciseList: liste,\s*\}\);\s*return;/.test(hook)
+      && !hook.slice(hook.indexOf("if (courte && !courte.compte)"), hook.indexOf("if (courte && !courte.compte)") + 600).split("return;")[0].includes("cible")
+      && hook.includes('cible: !options?.repetition && compte && d.id ?'), "");
+  verdict("R8 · le lancement recalcule sur la liste relue, avec la règle de l'aperçu",
+    hook.includes("raccourcir(projeterPrescription(pleines).map(itemDExercice), courteMin)")
+      && hook.includes("raccourcir(d.exerciseList.map(itemDExercice), options.courte)"), "");
+  const hero = readFileSync("src/components/entrainement/TodayHero.tsx", "utf8");
+  const jourSrc = readFileSync("src/components/semaine/MaSemaineSheet.tsx", "utf8");
+  const feuille = readFileSync("src/components/entrainement/VersionCourteSheet.tsx", "utf8");
+  verdict("R8 · « J'ai moins de temps » sur le héros, « Version courte » sur la feuille d'un jour",
+    (hero.match(/J&apos;ai moins de temps/g) ?? []).length === 2 && jourSrc.includes('label="Version courte"'), "");
+  verdict("R8 · la feuille dit ce qui reste, ce qui part, la durée et si ça compte",
+    feuille.includes("Échauffement compris ≈") && feuille.includes("Compte comme ta séance") && feuille.includes("reste à faire")
+      && feuille.includes("phraseRetires("), "");
 }
 
 console.log("\n" + (echecs === 0 ? "Tout passe." : echecs + " échec(s)."));

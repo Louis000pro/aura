@@ -48,6 +48,8 @@ import type { EtatJournee } from "@/lib/journee";
 import { projeterPrescription } from "@/lib/banqueEtapes";
 import { ecrireOccurrence, empreinteModele, modeleDeLEtape, modeleDeLOccurrence, type ModeleDeLOccurrence } from "@/lib/prescription";
 import { lireVariete, seriesRecentes } from "@/lib/varieteBase";
+import type { Exercise } from "@/components/WorkoutGuideModal";
+import { estimerMinutes, exercicesCourts, itemDExercice, lignesCourtes, raccourcir } from "@/lib/dureeLibre";
 import {
   allegerPourZone, allegerExercices, fonctionsDe, libelleAllege, phraseRecouvrement, recouvrement,
   type SerieRecente,
@@ -129,7 +131,7 @@ export type Journee = {
    *  l'étape du cycle, matérialisée à cet instant et jamais avant. */
   lancerAujourdhui: () => void;
   /** Lance une intention précise (un supplément, un autre jour). */
-  lancerIntention: (d: PlanningDay, options?: { repetition?: boolean }) => void;
+  lancerIntention: (d: PlanningDay, options?: { repetition?: boolean; courte?: number }) => void;
   /** Relance la séance DÉJÀ TERMINÉE aujourd'hui (« Refaire la séance »).
    *  C'est une répétition, donc un supplément : elle ne referme aucune
    *  étape et ne fait pas avancer le cycle. Ne fait rien s'il n'y a rien
@@ -143,6 +145,14 @@ export type Journee = {
   recouvrement: { phrase: string; leger: string } | null;
   /** R7 · la même séance, moins de séries là où ça vient de travailler. */
   lancerAllege: () => void;
+  /** R8 · ce que le bouton principal lancerait, vu par l'estimation, ou
+   *  `null` s'il ne lance rien. Sert à la feuille « J'ai moins de temps ». */
+  aLancer: { titre: string; exercices: Exercise[] } | null;
+  /** R8 · son estimation, échauffement compris, en minutes. */
+  dureeMin: number | null;
+  /** R8 · la même séance raccourcie à `minutes`. Elle ne referme la
+   *  séance prévue que si elle en garde le rôle (décision 38). */
+  lancerCourt: (minutes: number) => void;
 };
 
 export function useJournee({ creerProgramme = false }: { creerProgramme?: boolean } = {}): Journee {
@@ -502,9 +512,30 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
     if (typeof window !== "undefined") window.dispatchEvent(new Event(EVT_JOURNEE));
   }, []);
 
-  const lancerIntention = useCallback((d: PlanningDay, options?: { repetition?: boolean; allegerZone?: Zone }) => {
+  /* R8 · CE QUE LE BOUTON LANCERAIT, VU PAR L'ESTIMATION. La même
+     résolution que `lancer`, donc l'aperçu de la version courte porte sur
+     la séance qui partira, et pas sur une voisine. */
+  const aLancer = useMemo(() => {
+    if (etat !== "seance" && etat !== "etape") return null;
+    const quoi = lancementDuJour({ jour, reservation, etape, instancePrete: instance.length > 0 });
+    if (!quoi) return null;
+    if (quoi.genre === "intention") {
+      return hasSeance(quoi.intention)
+        ? { titre: dayTitle(quoi.intention), exercices: quoi.intention.exerciseList }
+        : null;
+    }
+    return etape && instance.length > 0 ? { titre: etape.nom, exercices: instance } : null;
+  }, [etat, jour, reservation, etape, instance]);
+
+  const lancerIntention = useCallback((d: PlanningDay, options?: { repetition?: boolean; allegerZone?: Zone; courte?: number }) => {
     if (!hasSeance(d)) return;
     const titre = dayTitle(d);
+    /* R8 · la version courte se calcule ICI, sur la liste qu'on lance, avec
+       la même règle que l'aperçu. Elle ne déclare la séance prévue comme
+       cible que si elle en garde le rôle : sinon elle se fait en plus et la
+       séance prévue reste à faire (décision 45). */
+    const courte = options?.courte ? raccourcir(d.exerciseList.map(itemDExercice), options.courte) : null;
+    const compte = !courte || courte.compte;
     launchWorkout({
       sessionId: `planning-${d.id ?? d.date}`,
       title: titre,
@@ -519,7 +550,8 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
       heroImage: heroImageForSeance({ title: `${titre} ${d.type}` }),
       /* R7 · « Version plus légère » : moins de séries là où ça vient de
          travailler, mêmes exercices, même séance. */
-      exerciseList: options?.allegerZone ? allegerExercices(d.exerciseList, options.allegerZone) : d.exerciseList,
+      exerciseList: courte ? exercicesCourts(d.exerciseList, courte)
+        : options?.allegerZone ? allegerExercices(d.exerciseList, options.allegerZone) : d.exerciseList,
       /* Sans identité, rien à refermer : une ligne sans `id` ne peut pas
          être marquée, et la marquer par sa date créditerait aussi le
          supplément du même jour (V6b).
@@ -531,7 +563,7 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
          l'instant de la répétition. Sans cible, la fin de séance n'écrit
          rien dans les intentions et le journal enregistre la séance pour
          ce qu'elle est, un supplément hors programme. */
-      cible: !options?.repetition && d.id ? { genre: "intention", intentionId: d.id } : undefined,
+      cible: !options?.repetition && compte && d.id ? { genre: "intention", intentionId: d.id } : undefined,
     });
   }, [launchWorkout]);
 
@@ -544,14 +576,17 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
     if (quoi) lancerIntention(quoi, { repetition: true });
   }, [jour, lancerIntention]);
 
-  const lancer = useCallback((allegerZone: Zone | null) => {
+  const lancer = useCallback((allegerZone: Zone | null, courteMin: number | null = null) => {
     /* ⚠️ LA DÉCISION EST UNE FONCTION PURE, ET ELLE VIT DANS `journee.ts`.
        Elle porte l'ordre qui compte : la séance datée aujourd'hui, puis
        la RÉSERVATION de l'étape où qu'elle soit posée, puis l'étape libre
        et elle seule. Décider dimanche de faire l'étape réservée mardi est
        légitime ; c'est cette ligne-là qu'on termine, jamais une seconde. */
     const quoi = lancementDuJour({ jour, reservation, etape, instancePrete: instance.length > 0 });
-    if (quoi?.genre === "intention") { lancerIntention(quoi.intention, allegerZone ? { allegerZone } : undefined); return; }
+    if (quoi?.genre === "intention") {
+      lancerIntention(quoi.intention, courteMin ? { courte: courteMin } : allegerZone ? { allegerZone } : undefined);
+      return;
+    }
     /* Lancer une étape du cycle : on matérialise son instance À CET
        INSTANT, en mémoire, et on n'écrit RIEN. Si la séance n'est pas
        terminée, il n'en reste aucune trace. */
@@ -563,13 +598,35 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
     void avecEtapeVerifiee(contexteAffiche, relireContexte, (c) => {
       /* La liste ET la prescription viennent du modèle RELU (tour 22). */
       /* R4 · les cibles acceptées se recopient dans la prescription figée. */
-      const pleines = appliquerCibles(c.modele.lignes, c.cibles ?? [], c.rang);
-      const lignesFigees = allegerZone ? allegerPourZone(pleines, allegerZone) : pleines;
+      const pleines = appliquerCibles(c.modele.lignes, c.cibles ?? [], c.rang)
+        .slice().sort((a, b) => a.emplacement - b.emplacement);
+      /* R8 · la version courte, calculée sur la liste RELUE avec la règle
+         de l'aperçu. Les emplacements gardés restent les leurs : le
+         journal les relie toujours à leur ligne. */
+      const courte = courteMin ? raccourcir(projeterPrescription(pleines).map(itemDExercice), courteMin) : null;
+      const lignesFigees = courte ? lignesCourtes(pleines, courte)
+        : allegerZone ? allegerPourZone(pleines, allegerZone) : pleines;
       const liste = projeterPrescription(lignesFigees);
+      /* ⚠️ UNE VERSION COURTE QUI PERD LE RÔLE NE FERME RIEN (décision 45).
+         Sans cible, la fin de séance n'écrit aucune occurrence : l'étape
+         reste la suivante, et la séance est enregistrée pour ce qu'elle
+         est. */
+      if (courte && !courte.compte) {
+        launchWorkout({
+          sessionId: `courte-${c.etapeId}`,
+          title: c.nom,
+          duration: courte.minutes,
+          difficulty: difficulte,
+          category: "Force",
+          heroImage: heroImageForSeance({ title: c.nom }),
+          exerciseList: liste,
+        });
+        return;
+      }
       launchWorkout({
       sessionId: `etape-${c.etapeId}`,
       title: c.nom,
-      duration: c.occ.dureeMin ?? 45,
+      duration: courte?.minutes ?? (c.occ.dureeMin ?? estimerMinutes(liste.map(itemDExercice))),
       difficulty: difficulte,
       category: "Force",
       heroImage: heroImageForSeance({ title: c.nom }),
@@ -598,6 +655,8 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
   }, [jour, reservation, lancerIntention, etape, instance, programme, gen, launchWorkout, contexteAffiche, relireContexte, refuser]);
 
   const lancerAujourdhui = useCallback(() => lancer(null), [lancer]);
+  const lancerCourt = useCallback((minutes: number) => lancer(null, minutes), [lancer]);
+
 
   /* R7 · « TON DOS A TRAVAILLÉ HIER » (décision 36). Un fait, calculé sur
      la séance que le bouton lancerait VRAIMENT (la même résolution que
@@ -709,5 +768,8 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
     lancerAujourdhui, lancerIntention, refaire, daterEtape,
     recouvrement: recouvre ? { phrase: phraseRecouvrement(recouvre), leger: libelleAllege(recouvre.zone) } : null,
     lancerAllege,
+    aLancer,
+    dureeMin: aLancer ? estimerMinutes(aLancer.exercices.map(itemDExercice)) : null,
+    lancerCourt,
   };
 }
