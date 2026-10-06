@@ -92,7 +92,7 @@ export async function resolutionDuProgramme(
       lireOccurrences(userId, actif),
       /* ⚠️ STRICTE : une panne lève, et la résolution est indisponible. */
       lireAdaptations(userId, actif.programme.id, "stricte"),
-      lireOccupes(userId, dates),
+      lireOccupes(userId, dates, actif.programme.id),
     ]);
     if (!etat) return null;
     const occupes = planning;
@@ -111,14 +111,16 @@ export async function resolutionDuProgramme(
  * supplément, repos posé). Strict : une erreur lève, au lieu de faire
  * passer un jour occupé pour libre.
  */
-async function lireOccupes(userId: string, dates: string[]): Promise<string[]> {
+async function lireOccupes(userId: string, dates: string[], programmeId: string): Promise<string[]> {
   const sc = await schemaIntentions();
+  /* ⚠️ R9c · une réservation GARDÉE d'une version archivée occupe son
+     jour comme une séance posée : le nouveau programme ne s'y ajoute pas. */
   const { data, error } = await createClient()
     .from(sc.table)
     .select("date, etape_consommee_id")
     .eq("user_id", userId)
     .in("date", dates)
-    .is("etape_consommee_id", null);
+    .or(`etape_consommee_id.is.null,programme_id.neq.${programmeId}`);
   if (error) throw new Error("occupes_illisibles: " + error.message);
   return [...new Set(((data ?? []) as { date: string }[]).map((x) => x.date))];
 }

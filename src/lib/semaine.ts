@@ -73,7 +73,7 @@ export type LigneSemaine<T> = {
 /** Une intention écrite qui RÉSERVE une occurrence du programme. */
 const reserve = (d: PlanningDay) => !!d.etapeId && d.status === "planned";
 
-export function lignesSemaine<T>(input: {
+export function lignesSemaine<T extends { id: string }>(input: {
   dates: string[];
   aujourdhui: string;
   intentions: PlanningDay[];
@@ -111,10 +111,12 @@ export function lignesSemaine<T>(input: {
     }
     /* Une réservation sans entrée de projection reste une trace. */
     for (const d of reservations) {
-      if (!projetes.some((p) => p.reservee && p.rang === d.rang)) elements.push({ genre: "pose", intention: d });
+      /* R9c · par le rang ET l'étape : une réservation gardée d'une version
+         archivée peut porter le même rang qu'une occurrence du nouveau programme. */
+      if (!projetes.some((p) => p.reservee && p.rang === d.rang && p.etape.id === d.etapeId)) elements.push({ genre: "pose", intention: d });
     }
     for (const p of projetes) {
-      const intention = p.reservee ? reservations.find((d) => d.rang === p.rang) ?? null : null;
+      const intention = p.reservee ? reservations.find((d) => d.rang === p.rang && d.etapeId === p.etape.id) ?? null : null;
       elements.push({ genre: "prevu", projete: p, proposee: !p.reservee && p.rang === input.rangPropose, intention });
     }
 

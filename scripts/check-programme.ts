@@ -7395,6 +7395,18 @@ verdict(
     absence.includes("Je m&apos;absente") && !/absent·e|\babsente?\b/i.test(absence.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "").replace(/Je m&apos;absente/g, "")), "");
   verdict("R9b · une lecture ratée dit qu'elle n'a pas pu lire, jamais une semaine vide",
     ecran.includes("if (!proj) { setIllisible(true); return; }") && ecran.includes("Je n&apos;arrive pas à lire ta semaine"), "");
+  /* R9c · une réservation GARDÉE d'une version archivée peut porter le même
+     rang qu'une occurrence du nouveau programme : l'appariement se fait par
+     le rang ET l'étape. */
+  {
+    const neuve = intention({ id: "neuve", date: "2026-10-10", title: "Haut du corps", etapeId: "B", rang: 2 });
+    const gardee = intention({ id: "gardee", date: "2026-10-10", title: "Push", etapeId: "ANCIENNE", rang: 2 });
+    const res = resoudre(cal(), { ...base, reserves: [{ rang: 2, etapeId: "B", date: "2026-10-10" }] }, [{ rang: 2, etapeId: "B", date: "2026-10-10" }]);
+    const el = lignes(cal(), [fait, gardee, neuve], res).find((x) => x.date === "2026-10-10")!.elements;
+    const lu = el.map((e) => e.genre + ":" + (e.genre === "prevu" ? e.intention?.id : e.genre === "pose" ? e.intention.id : "")).join(",");
+    verdict("R9c · une réservation gardée de l'ancienne version reste visible, sans voler l'intention de la nouvelle",
+      lu === "pose:gardee,prevu:neuve", lu);
+  }
 }
 
 /* ── R9a · tour 43 · ERREUR ≠ ABSENCE DANS LES CONTRATS DE LECTURE.
@@ -7454,6 +7466,156 @@ verdict(
   const garde = hook.indexOf("if (suivante && !lu) { indisponibleEtGarder(); return; }");
   verdict("R9a · tour 43 · une étape au modèle illisible part en indisponible, avant toute publication",
     garde > 0 && garde < hook.indexOf("setIndisponible(false);"), "");
+}
+
+/* ── R9c · LE PROGRAMME PAR PRIORITÉS. Le VRAI composeur, la VRAIE banque,
+   la VRAIE préparation de l'écriture, et des pannes injectées. ── */
+{
+  const C = await import("@/lib/composeurProgramme");
+  const B = await import("@/lib/banqueEtapes");
+  const M = await import("@/lib/monProgramme");
+  const { cycleDeReference, contexteDe } = await import("@/lib/planning");
+  const noms = (c: { etapes: { nom: string }[] }) => c.etapes.map((e) => e.nom).join(" · ");
+
+  const lina = C.composerProgramme({ priorites: ["dos", "fessiers"], seances: 3 });
+  verdict("R9c · Lina (dos puis fessiers, 3 jours) : Dos & fessiers · Haut du corps · Fessiers & dos",
+    noms(lina) === "Dos & fessiers · Haut du corps · Fessiers & dos"
+      && lina.passages.every((p) => p.fois === 2) && lina.nom === "Dos & fessiers", noms(lina));
+  const bras = C.composerProgramme({ priorites: ["bras", "epaules"], seances: 3 });
+  verdict("R9c · bras et épaules : le complément est le bas du corps", noms(bras) === "Bras & épaules · Bas du corps · Épaules & bras", noms(bras));
+
+  /* Balayage : toutes les priorités (une ou deux), de 1 à 6 jours. */
+  const combis: string[][] = [];
+  for (const a of B.ZONES) { combis.push([a]); for (const b of B.ZONES) if (b !== a) combis.push([a, b]); }
+  let fautes: string[] = [];
+  for (const pr of combis) for (let n = 1; n <= 6; n++) {
+    const c = C.composerProgramme({ priorites: pr as never, seances: n });
+    const liste = c.etapes.map((e) => e.nom);
+    if (liste.length !== n) fautes.push(`${pr}/${n}: ${liste.length} séances`);
+    if (new Set(liste).size !== liste.length) fautes.push(`${pr}/${n}: doublon`);
+    if (c.etapes.some((e, i) => e.position !== i + 1)) fautes.push(`${pr}/${n}: positions`);
+    if (n >= 2) for (const z of pr) {
+      const fois = liste.filter((nom) => (B.zonesDuNom(nom) ?? []).includes(z as never)).length;
+      if (fois < 2) fautes.push(`${pr}/${n}: ${z} ${fois}×`);
+    }
+    if (JSON.stringify(c) !== JSON.stringify(C.composerProgramme({ priorites: pr as never, seances: n }))) fautes.push(`${pr}/${n}: non déterministe`);
+  }
+  verdict("R9c · une séance par jour, noms uniques, et dès 2 jours chaque priorité revient au moins 2 fois (" + combis.length * 6 + " cas)",
+    fautes.length === 0, fautes.slice(0, 4).join(" ; "));
+  verdict("R9c · « Un peu de tout » reprend le cycle de référence, de 1 à 6 jours",
+    [1, 2, 3, 4, 5, 6].every((n) => noms(C.composerProgramme({ priorites: [], seances: n })) === cycleDeReference(n).join(" · ")), "");
+
+  /* La composition : 5 exercices, praticables, sans doublon, à chaque lieu. */
+  fautes = [];
+  for (const a of B.ZONES) for (const b of B.ZONES) {
+    if (a === b) continue;
+    const nom = B.nomDeZones(a, b);
+    const rond = B.zonesDuNom(nom);
+    if (!rond || rond[0] !== a || rond[1] !== b) fautes.push(`${nom}: nom illisible`);
+    for (const lieu of ["salle", "halteres", "poids"] as const) {
+      try {
+        const l = B.composerEtape(nom, { lieu, orientation: "general", niveau: null, version: B.COMPOSITION_VERSION });
+        if (l.length !== B.EXERCICES_PAR_ETAPE) fautes.push(`${nom}@${lieu}: ${l.length}`);
+        if (new Set(l.map((x) => x.exercice_cle)).size !== l.length) fautes.push(`${nom}@${lieu}: doublon`);
+        if (l.some((x) => x.fonction === "cardio")) fautes.push(`${nom}@${lieu}: cardio`);
+        const permis = new Set(Object.values(B.BANQUE[lieu]).flat().map((e) => e.nom));
+        if (l.some((x) => !permis.has(x.exercice_nom) && !permis.has(B.BANQUE[lieu]["Full Body"].find((e) => e.nom === x.exercice_nom)?.nom ?? ""))) {
+          const hors = l.filter((x) => ![...permis].some((p) => p === x.exercice_nom));
+          if (hors.length) fautes.push(`${nom}@${lieu}: hors banque ${hors.map((h) => h.exercice_nom)}`);
+        }
+      } catch (e) { fautes.push(`${nom}@${lieu}: ${(e as Error).message}`); }
+    }
+  }
+  verdict("R9c · chaque séance de zones : 5 exercices de la banque du lieu, sans doublon, aux 3 lieux (" + 42 * 3 + " cas)",
+    fautes.length === 0, fautes.slice(0, 4).join(" ; "));
+  const ctxSalle = { lieu: "salle" as const, orientation: "general" as const, niveau: null, version: B.COMPOSITION_VERSION };
+  const dosSalle = B.composerEtape("Dos & fessiers", ctxSalle);
+  verdict("R9c · « Dos & fessiers » en salle : trois du dos d'abord, puis deux des fessiers, un repère par zone",
+    dosSalle.slice(0, 3).every((l) => B.FONCTIONS_DE_ZONE.dos.includes(l.fonction))
+      && dosSalle.slice(3).every((l) => B.FONCTIONS_DE_ZONE.fessiers.includes(l.fonction))
+      && dosSalle[0].statut === "repere" && dosSalle[3].statut === "repere",
+    dosSalle.map((l) => l.exercice_nom + (l.statut === "repere" ? "*" : "")).join(", "));
+  verdict("R9c · les étapes historiques ne changent pas d'un exercice",
+    Object.keys(B.BANQUE.salle).every((nom) => JSON.stringify(B.entreesDe(nom, "salle")) === JSON.stringify(B.BANQUE.salle[nom]))
+      && JSON.stringify(B.entreesDe("Inconnue", "poids")) === JSON.stringify(B.BANQUE.poids["Full Body"]), "");
+
+  verdict("R9c · les priorités se relisent dans le programme",
+    JSON.stringify(C.prioritesDeLIntention(lina.intention)) === '["dos","fessiers"]'
+      && JSON.stringify(C.prioritesDeLIntention("priorites:equilibre")) === "[]"
+      && C.prioritesDeLIntention(null) === null && C.prioritesDeLIntention("Santé générale") === null
+      && JSON.stringify(C.prioritesValides(["dos", "dos", "inconnue", "bras", "abdos"])) === '["dos","bras"]', "");
+
+  /* Les réservations de l'ancienne version : rien ne s'efface sans choix. */
+  const resas = [
+    { id: "r2", date: "2026-10-14", titre: "Pull" },
+    { id: "r1", date: "2026-10-12", titre: "Push" },
+    { id: "r3", date: null, titre: "Bas du corps" },
+    { id: "r4", date: "2026-10-16", titre: "Push" },
+  ];
+  const tous = { r1: "remplacer", r2: "remplacer", r3: "garder", r4: "remplacer" } as const;
+  const plan = C.planDesRemplacements(resas, tous, lina.etapes);
+  verdict("R9c · un choix manquant, ou « remplacer » sans jour : rien ne se prépare",
+    C.planDesRemplacements(resas, { r1: "garder", r2: "retirer", r4: "garder" }, lina.etapes) === null
+      && C.planDesRemplacements(resas, { ...tous, r3: "remplacer" }, lina.etapes) === null, "");
+  verdict("R9c · les remplacements prennent les occurrences 1, 2, 3 du nouveau programme, dans l'ordre des jours",
+    JSON.stringify(plan?.map((r) => `${r.intentionId}:${r.rang}:${r.nom}`)) === JSON.stringify(["r1:1:Dos & fessiers", "r2:2:Haut du corps", "r4:3:Fessiers & dos"]),
+    JSON.stringify(plan));
+  const gen = { ctx: "salle" as const, goals: ["Prise de masse"], level: "debutant" };
+  const demande = M.preparerActivation("p-ancien", lina, gen, resas, tous);
+  verdict("R9c · l'aperçu est ce qui s'écrit : mêmes noms, mêmes exercices, même contexte",
+    !!demande && demande.etapes.every((e) => JSON.stringify(e.lignes) === JSON.stringify(B.composerEtape(e.nom, contexteDe(gen))))
+      && demande.contexte.orientation === "masse" && demande.ancien_id === "p-ancien"
+      && Object.keys(demande.choix).sort().join() === "r1,r2,r3,r4"
+      && demande.choix.r3.choix === "garder" && demande.choix.r3.position === undefined
+      && demande.choix.r4.position === 3 && demande.choix.r4.rang === 3, "");
+  verdict("R9c · sans réponse pour chaque séance prévue, aucune demande d'activation",
+    M.preparerActivation("p", lina, gen, resas, { r1: "garder" }) === null, "");
+
+  /* Pannes injectées : la lecture lève, l'activation nomme chaque issue. */
+  type Rep = { data: unknown; error: { code?: string; message: string } | null };
+  const lecture = (rep: Rep) => {
+    const ch: Record<string, unknown> = {};
+    for (const m of ["select", "eq", "not", "order"]) ch[m] = () => ch;
+    ch.then = (a: (v: Rep) => unknown, b?: (e: unknown) => unknown) => Promise.resolve(rep).then(a, b);
+    return { from: () => ch } as unknown as Parameters<typeof M.reservationsAChoisir>[2];
+  };
+  let leve = false;
+  try { await M.reservationsAChoisir("u", "p", lecture({ data: null, error: { message: "timeout" } })); } catch { leve = true; }
+  const lues = await M.reservationsAChoisir("u", "p", lecture({ data: [{ id: "x", date: null, title: null }], error: null }));
+  verdict("R9c · une lecture ratée des séances prévues lève, jamais « rien à décider »",
+    leve && lues.length === 1 && lues[0].titre === "Séance", "");
+  const rpc = (rep: Rep) => ({ rpc: () => Promise.resolve(rep) }) as unknown as Parameters<typeof M.activerProgramme>[1];
+  const issues = await Promise.all([
+    M.activerProgramme(demande!, rpc({ data: { resultat: "ok", programme_id: "nv" }, error: null })),
+    M.activerProgramme(demande!, rpc({ data: { resultat: "programme_change" }, error: null })),
+    M.activerProgramme(demande!, rpc({ data: { resultat: "choix_incomplets" }, error: null })),
+    M.activerProgramme(demande!, rpc({ data: null, error: { code: "PGRST202", message: "absente" } })),
+    M.activerProgramme(demande!, rpc({ data: null, error: { message: "timeout" } })),
+  ]);
+  verdict("R9c · l'activation nomme ses issues : ok, programme changé, choix incomplets, pas ouverte, échec",
+    JSON.stringify(issues.map((r) => (r.ok ? "ok" : r.raison))) === JSON.stringify(["ok", "programme_change", "choix_incomplets", "pas_ouvert", "echec"]),
+    JSON.stringify(issues));
+
+  /* Le chemin : la base est le dernier mot. */
+  const sql = readFileSync("supabase/migrations/20261010_r9c_activer_programme.sql", "utf8");
+  verdict("R9c · la fonction SQL refuse sans choix pour chaque réservation, et sur une version changée",
+    sql.includes("return jsonb_build_object('resultat', 'choix_incomplets');")
+      && sql.includes("if v_actif is distinct from v_ancien then") && sql.includes("for update;"), "");
+  verdict("R9c · elle archive, ferme les adaptations, crée cycle et modèles, et remplace par `ecrire_occurrence`",
+    sql.includes("set statut = 'archive', archive_le = now()") && sql.includes("set statut = 'terminee', fermee_le = now()")
+      && sql.includes("public.ecrire_modele(") && sql.includes("public.ecrire_occurrence(")
+      && sql.includes("raise exception 'remplacement_impossible") && !/statut\s*=\s*'(faite|passee)'/.test(sql), "");
+  const feuilleProg = readFileSync("src/components/programme/MonProgrammeSheet.tsx", "utf8");
+  const pageProg = readFileSync("src/app/progression/page.tsx", "utf8");
+  verdict("R9c · « Activer » refuse en le disant, jamais un bouton muet, et rien ne s'écrit avant l'aperçu",
+    feuilleProg.includes("aria-disabled={!!blocage || envoi}") && feuilleProg.includes("{refus && blocage &&")
+      && !/\.from\(|\.insert\(|\.update\(|\.delete\(/.test(feuilleProg) && feuilleProg.includes("preparerActivation("), "");
+  verdict("R9c · l'entrée « Mon programme » est en haut d'Entraînement",
+    pageProg.indexOf('onClick={() => setSheet("programme")}') > 0
+      && pageProg.indexOf('onClick={() => setSheet("programme")}') < pageProg.indexOf('data-tour-anchor="prog-forks"'), "");
+  const base = readFileSync("src/lib/projectionBase.ts", "utf8");
+  verdict("R9c · une séance gardée d'une version archivée occupe son jour dans la projection",
+    base.includes(".or(`etape_consommee_id.is.null,programme_id.neq.${programmeId}`)"), "");
 }
 
 console.log("\n" + (echecs === 0 ? "Tout passe." : echecs + " échec(s)."));

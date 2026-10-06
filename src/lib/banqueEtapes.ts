@@ -260,9 +260,109 @@ export function cibleCompat(min: number, max: number): number {
   return Math.round((min + max) / 2);
 }
 
-/** La liste d'une étape à un lieu, avec le repli historique. */
+/* ── R9c · LES ZONES : une séance composée autour de ce qu'on veut travailler ──
+
+   ⚠️ UNE SÉANCE DE ZONES SE LIT DANS SON NOM, ET RIEN QUE DANS SON NOM.
+   « Dos & fessiers » = trois exercices du dos, puis deux des fessiers ;
+   « Fessiers & dos », l'inverse. C'est ce qui garde la composition pure :
+   un modèle absent se recompose à l'identique depuis le nom de l'étape,
+   sur tous les appareils (même règle que les étapes historiques).
+   Les exercices viennent de la banque DU LIEU, classés par fonction : une
+   zone n'invente aucun exercice, donc rien d'impraticable n'y entre.
+   Les noms historiques (Push, Haut du corps…) ne changent pas d'un
+   exercice : leurs modèles écrits restent valides, d'où la même
+   `COMPOSITION_VERSION`. */
+
+export const ZONES = ["dos", "fessiers", "jambes", "pectoraux", "epaules", "bras", "abdos"] as const;
+export type Zone = (typeof ZONES)[number];
+
+export const LIBELLE_ZONE: Readonly<Record<Zone, string>> = {
+  dos: "Dos", fessiers: "Fessiers", jambes: "Jambes", pectoraux: "Pectoraux",
+  epaules: "Épaules", bras: "Bras", abdos: "Abdos",
+};
+
+/** Les fonctions de chaque zone, dans l'ordre où on les sert. */
+export const FONCTIONS_DE_ZONE: Readonly<Record<Zone, readonly Fonction[]>> = {
+  dos: ["tirage_vertical", "tirage_horizontal", "arriere_epaule", "extension_tronc"],
+  fessiers: ["extension_hanche", "charniere_hanche", "unilateral_jambe", "abduction_hanche"],
+  jambes: ["squat", "unilateral_jambe", "flexion_genou", "extension_genou", "mollets", "isometrie_jambes"],
+  pectoraux: ["poussee_horizontale", "ecarte_pectoraux"],
+  epaules: ["poussee_verticale", "epaule_isolation", "arriere_epaule"],
+  bras: ["biceps", "triceps"],
+  abdos: ["gainage", "flexion_tronc", "extension_tronc"],
+};
+
+/** Combien d'exercices la zone principale prend dans une séance de deux zones. */
+export const EXERCICES_ZONE_PRINCIPALE = 3;
+
+const sansAccents = (t: string) => t.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+
+/** Le nom d'une séance de deux zones : « Dos & fessiers ». */
+export function nomDeZones(principale: Zone, seconde: Zone): string {
+  return `${LIBELLE_ZONE[principale]} & ${LIBELLE_ZONE[seconde].toLowerCase()}`;
+}
+
+/** Les deux zones d'un nom de séance, ou `null` si ce n'en est pas un. */
+export function zonesDuNom(nom: string): [Zone, Zone] | null {
+  const parties = nom.split(" & ");
+  if (parties.length !== 2) return null;
+  const z = parties.map((x) => ZONES.find((zone) => sansAccents(LIBELLE_ZONE[zone]) === sansAccents(x)));
+  if (!z[0] || !z[1] || z[0] === z[1]) return null;
+  return [z[0], z[1]];
+}
+
+/** Les exercices d'une zone praticables à un lieu, alternés par fonction. */
+export function entreesDeZone(zone: Zone, lieu: Lieu): EntreeBanque[] {
+  const vus = new Set<string>();
+  const parFonction = FONCTIONS_DE_ZONE[zone].map((f) => {
+    const liste: EntreeBanque[] = [];
+    for (const etape of Object.values(BANQUE[lieu])) for (const e of etape) {
+      if (PROPRIETES[e.nom]?.fonction !== f || vus.has(e.nom) || PROPRIETES[e.nom]?.fonction === "cardio") continue;
+      vus.add(e.nom);
+      liste.push(e);
+    }
+    return liste;
+  });
+  const sortie: EntreeBanque[] = [];
+  for (let i = 0; parFonction.some((l) => i < l.length); i++) {
+    for (const l of parFonction) if (l[i]) sortie.push(l[i]);
+  }
+  return sortie;
+}
+
+/** La liste d'une séance de deux zones : 3 + 2, sans doublon, complétée
+ *  par le Full Body du lieu si la banque manque d'exercices (manque de
+ *  contenu signalé, jamais un exercice inventé). Le premier exercice de
+ *  chaque zone est le repère de la séance. */
+export function entreesDeZones(principale: Zone, seconde: Zone, lieu: Lieu): EntreeBanque[] {
+  const pris = new Set<string>();
+  const sortie: EntreeBanque[] = [];
+  const prendre = (liste: readonly EntreeBanque[], n: number, repere: boolean) => {
+    let premier = true;
+    for (const e of liste) {
+      if (sortie.length >= EXERCICES_PAR_ETAPE || n <= 0) return;
+      if (pris.has(e.nom)) continue;
+      pris.add(e.nom);
+      sortie.push({ ...e, statut: repere && premier && e.dureeS === undefined ? "repere" : "complementaire" });
+      premier = false;
+      n--;
+    }
+  };
+  prendre(entreesDeZone(principale, lieu), EXERCICES_ZONE_PRINCIPALE, true);
+  prendre(entreesDeZone(seconde, lieu), EXERCICES_PAR_ETAPE - sortie.length, true);
+  prendre(entreesDeZone(principale, lieu), EXERCICES_PAR_ETAPE - sortie.length, false);
+  prendre(BANQUE[lieu][ETAPE_DE_REPLI], EXERCICES_PAR_ETAPE - sortie.length, false);
+  return sortie;
+}
+
+/** La liste d'une étape à un lieu : la banque, puis les zones (R9c),
+ *  puis le repli historique. */
 export function entreesDe(nomEtape: string, lieu: Lieu): readonly EntreeBanque[] {
-  return BANQUE[lieu][nomEtape] ?? BANQUE[lieu][ETAPE_DE_REPLI];
+  const historique = BANQUE[lieu][nomEtape];
+  if (historique) return historique;
+  const zones = zonesDuNom(nomEtape);
+  if (zones) return entreesDeZones(zones[0], zones[1], lieu);
+  return BANQUE[lieu][ETAPE_DE_REPLI];
 }
 
 /** Prescrit UNE entrée de la banque. Pure. Lève si la banque est

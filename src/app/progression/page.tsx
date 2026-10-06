@@ -26,6 +26,7 @@ import WeeklyProgramme from "@/components/WeeklyProgramme";
 import AdaptationSheet from "@/components/entrainement/AdaptationSheet";
 import MaSemaineSheet, { type ALiberer } from "@/components/semaine/MaSemaineSheet";
 import MesJoursSheet from "@/components/semaine/MesJoursSheet";
+import MonProgrammeSheet from "@/components/programme/MonProgrammeSheet";
 import AbsenceSheet from "@/components/semaine/AbsenceSheet";
 import { libelleJour, type Adaptation } from "@/lib/adaptation";
 import { EVT_ADAPTATION } from "@/lib/adaptationDemandee";
@@ -2662,7 +2663,9 @@ export default function ProgressionPage() {
   const { semaine: week, setSemaine: setWeek, niveau: profileLevel, recharger: loadWeek } = journee;
 
   /* ── UI ── */
-  const [sheet, setSheet] = useState<null | "choisir" | "improviser" | "organiser" | "elan" | "semaine" | "adaptation" | "jours" | "absence">(null);
+  const [sheet, setSheet] = useState<null | "choisir" | "improviser" | "organiser" | "elan" | "semaine" | "adaptation" | "jours" | "absence" | "programme">(null);
+  /* R9c · « Mes jours » ouvert depuis « Mon programme » y revient. */
+  const [joursDepuisProgramme, setJoursDepuisProgramme] = useState(false);
   /* R9b · le calendrier vient de la MÊME résolution que l'accueil. Un
      compte qui a choisi ses jours (même zéro) voit « Ma semaine » à deux
      semaines, sans « Refais ma semaine » ; les autres gardent l'agenda
@@ -3164,6 +3167,27 @@ export default function ProgressionPage() {
           </p>
         </motion.div>
 
+        {/* ── R9c · Mon programme ──
+            L'entrée en haut d'Entraînement (GO de Louis sur la maquette 08).
+            Une ligne, pas une carte : le sujet de l'écran reste la
+            bibliothèque, le programme se règle en une touche. */}
+        {user && (
+          <button type="button" onClick={() => setSheet("programme")}
+            className="w-full flex items-center justify-between gap-3 py-2.5 mb-3 bg-transparent border-none cursor-pointer text-left"
+            style={{ borderBottom: "1px solid rgba(var(--text-3-rgb),0.16)" }}>
+            <span className="min-w-0">
+              <span className="vy-label block" style={{ color: "var(--text-3)" }}>Mon programme</span>
+              <span className="block text-[16px] font-semibold truncate" style={{ color: "var(--text-0)" }}>
+                {journee.programme ? journee.programme.programme.nom : "Choisir ce que je veux travailler"}
+              </span>
+            </span>
+            <span className="flex items-center gap-1 flex-shrink-0 text-[13px]" style={{ color: "var(--text-2)" }}>
+              {journee.programme && <><span className="vy-nombre">{journee.programme.cycle.length}</span> séances</>}
+              <ChevronRight size={16} />
+            </span>
+          </button>
+        )}
+
         {/* ⚠️ LE HÉROS « AUJOURD'HUI » N'EST PLUS ICI (V7A). Il vit sur
             l'accueil, l'écran où l'on arrive et où la question de la
             journée se pose vraiment. Entraînement redevient ce qu'il est :
@@ -3334,8 +3358,22 @@ export default function ProgressionPage() {
             userId={user.id}
             calendrier={calendrier}
             aujourdhui={today}
-            onClose={() => setSheet(joursChoisis ? "semaine" : null)}
-            onEnregistre={() => { void loadWeek(); setSheet("semaine"); }}
+            onClose={() => { setSheet(joursDepuisProgramme ? "programme" : joursChoisis ? "semaine" : null); setJoursDepuisProgramme(false); }}
+            onEnregistre={() => { void loadWeek(); setSheet(joursDepuisProgramme ? "programme" : "semaine"); setJoursDepuisProgramme(false); }}
+          />
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {sheet === "programme" && user && (
+          <MonProgrammeSheet
+            userId={user.id}
+            programme={journee.programme}
+            calendrier={calendrier}
+            gen={journee.gen}
+            aujourdhui={today}
+            onClose={() => setSheet(null)}
+            onMesJours={calendrier ? () => { setJoursDepuisProgramme(true); setSheet("jours"); } : undefined}
+            onActive={() => { setSheet(null); void loadWeek(); }}
           />
         )}
       </AnimatePresence>
