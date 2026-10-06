@@ -24,7 +24,7 @@
  * une serrure.
  */
 import { lireCalendriers } from "@/lib/joursEntrainement";
-import { aDesJours, decaler, enAbsence, resoudreJournee, seanceARappeler } from "@/lib/projection";
+import { calendrierChoisi, decaler, enAbsence, resoudreJournee, seanceARappeler } from "@/lib/projection";
 import { entreeResolution, type FaitsResolution } from "@/lib/projectionBase";
 import type { EtatOccurrences } from "@/lib/occurrences";
 import { NextRequest, NextResponse } from "next/server";
@@ -617,7 +617,7 @@ async function appliquerJoursEntrainement(
     const p = carte.get(id);
     if (!p) continue;
     if (enAbsence(cal, today)) { p.jourDeRepos = true; p.seancePrevue = null; continue; }
-    if (!aDesJours(cal) || p.seanceFaite || p.jourDeRepos) continue;
+    if (!calendrierChoisi(cal) || p.seanceFaite || p.jourDeRepos) continue;
     if (!p.seancePrevue || p.seanceProgramme) candidats.push(id);
   }
   if (candidats.length === 0) return;

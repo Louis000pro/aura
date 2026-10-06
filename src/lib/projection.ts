@@ -76,9 +76,14 @@ export function decaler(date: string, n: number): string {
   return d.toISOString().slice(0, 10);
 }
 
-/** Un calendrier qui place des séances : une règle, ou un jour en plus. */
-export function aDesJours(cal: Calendrier | null | undefined): boolean {
-  return !!cal && (normaliserJours(cal.jours).length > 0 || cal.exceptions.some((e) => e.genre === "seance_en_plus"));
+/**
+ * La personne a-t-elle choisi un calendrier ? Tour 41 · c'est la SEULE
+ * question qui renvoie au comportement historique. Zéro jour choisi reste
+ * une résolution valide : rien n'est prévu d'avance, mais les
+ * réservations existent toujours et leurs conflits se disent.
+ */
+export function calendrierChoisi(cal: Calendrier | null | undefined): boolean {
+  return !!cal?.choisi;
 }
 
 export function enAbsence(cal: Calendrier, date: string): Absence | null {
@@ -156,11 +161,12 @@ export type EntreeResolution<T> = {
 
 /**
  * La projection, jour par jour, à partir d'aujourd'hui. Rend `[]` sans
- * jour d'entraînement : on n'invente pas de calendrier.
+ * calendrier choisi : on n'invente pas de calendrier. Avec zéro jour, elle
+ * ne place rien mais rend les réservations et leurs conflits.
  */
 export function projeterJours<T extends { id: string; position: number }>(input: EntreeResolution<T>): JourProjete<T>[] {
   const { cycle, etat, calendrier, aujourdhui } = input;
-  if (cycle.length === 0 || !aDesJours(calendrier)) return [];
+  if (cycle.length === 0 || !calendrierChoisi(calendrier)) return [];
   const dates = [...new Set(input.dates.filter((d) => d >= aujourdhui))].sort();
   const occupes = new Set(input.occupes ?? []);
   const parId = new Map(cycle.map((e) => [e.id, e]));
@@ -235,11 +241,12 @@ export type ResolutionJournee<T> = {
 };
 
 /**
- * LA résolution partagée (décision 21). Sans jour d'entraînement, elle
- * rend `null` : l'appelant garde le comportement historique.
+ * LA résolution partagée (décision 21). Sans calendrier CHOISI, elle rend
+ * `null` : l'appelant garde le comportement historique. Choisi avec zéro
+ * jour, elle répond quand même (tour 41).
  */
 export function resoudreJournee<T extends { id: string; position: number }>(input: EntreeResolution<T>): ResolutionJournee<T> | null {
-  if (!aDesJours(input.calendrier)) return null;
+  if (!calendrierChoisi(input.calendrier)) return null;
   const jours = projeterJours(input);
   const tete = teteDeSuite(input);
   const place = tete ? jours.find((j) => !j.reservee && j.rang === tete.rang) ?? null : null;
@@ -268,7 +275,7 @@ const NOMS = ["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dima
  * elle que le cron applique, donc elle se vérifie hors ligne.
  *
  * - Une séance posée HORS programme garde son rappel : sa propre identité.
- * - Sans jour choisi (`resolution === null`) : comportement historique,
+ * - Sans calendrier choisi (`resolution === null`) : comportement historique,
  *   l'intention du jour se rappelle.
  * - Résolution INDISPONIBLE (`undefined`) : aucun rappel automatique pour
  *   une séance du programme, même déjà nommée.
@@ -292,7 +299,7 @@ export function seanceARappeler(input: {
  * - `indisponible` : la résolution a raté. On garde l'ensemble déjà
  *   affiché (étape, modèle, réservation) et on le dit ; jamais la suite
  *   brute à la place.
- * - `historique` : aucun jour choisi, la suite brute fait foi.
+ * - `historique` : aucun calendrier choisi, la suite brute fait foi.
  * - `resolue` : la résolution fait foi, y compris quand elle ne propose rien.
  */
 export type ChoixSuite<T> =

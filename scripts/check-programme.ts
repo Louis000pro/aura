@@ -7195,13 +7195,34 @@ verdict(
   verdict("R9a · héros : résolution ratée = indisponible (on garde l'affiché), sans choix = historique, valide = elle fait foi même vide",
     P.choixSuite(null).genre === "indisponible" && P.choixSuite({ resolution: null }).genre === "historique"
       && (() => { const c = P.choixSuite({ resolution: { jours: [], proposee: null, duJour: null } }); return c.genre === "resolue" && c.proposee === null; })(), "tour 40");
+
+  /* ── Tour 41 ── */
+  const zeroJour = cal({ jours: [], exceptions: [{ date: jeudi, genre: "pas_de_seance" }] });
+  const resZero = P.resoudreJournee({ cycle, etat: { ...base, reserves: [{ rang: 1, etapeId: "A", date: jeudi }] } as Etat, reservations: [{ rang: 1, etapeId: "A", date: jeudi }], calendrier: zeroJour, dates, aujourdhui: jeudi, faitAujourdhui: false, dernierJourFait: null });
+  verdict("R9a · zéro jour CHOISI reste une résolution : aucune prévision, la réservation reste et dit son conflit",
+    !!resZero && resZero.jours.length === 1 && resZero.jours[0].reservee && resZero.jours[0].conflit === "jour_retire"
+      && resZero.duJour === null && P.choixSuite({ resolution: resZero }).genre === "resolue", resZero ? resume(resZero.jours) : "null");
+  verdict("R9a · cron : zéro jour choisi retire le rappel de la réservation du jour retiré",
+    P.seanceARappeler({ seancePrevue: "Dos & fessiers", seanceProgramme: true, resolution: resZero }) === null, "tour 41");
+  verdict("R9a · seule l'absence de choix renvoie à l'historique",
+    P.resoudreJournee({ cycle, etat: base, reservations: [], calendrier: { ...P.CALENDRIER_VIDE, exceptions: [{ date: jeudi, genre: "seance_en_plus" }] }, dates, aujourdhui: jeudi, faitAujourdhui: false, dernierJourFait: null }) === null
+      && cron.includes("!calendrierChoisi(cal)") && !lire9("src/lib/projection.ts").includes("aDesJours"), "tour 41");
+  const hook41 = hook.replace(/\/\*[\s\S]*?\*\//g, "");
+  const iRes = hook41.indexOf("await resolutionDuProgramme(user.id, actif, todayYmd())");
+  const iBrute = hook41.indexOf("await etapeSuivanteDe(");
+  verdict("R9a · héros : la suite brute ne se lit qu'en mode historique, après le calendrier",
+    iRes > 0 && iBrute > iRes && hook41.slice(iBrute - 80, iBrute).includes('choix.genre === "historique"'), `${iRes} / ${iBrute}`);
+  verdict("R9a · héros : toute panne de la lecture du programme converge vers « indisponible »",
+    /catch \(e\) \{\s*console\.error\("Programme load error", e\);\s*indisponibleEtGarder\(\);/.test(hook41)
+      && hook41.includes('if (choix.genre === "indisponible") { indisponibleEtGarder(); return; }')
+      && /const indisponibleEtGarder = \(\) => \{\s*if \(!derniere\(\)\) return;/.test(hook41), "tour 41");
   const J = await import("@/lib/journee");
   verdict("R9a · héros : indisponible sans rien d'affiché ne dit ni « rien de prévu » ni une séance",
     J.etatJournee({ pret: true, besoinSetup: false, jour: null, etape: null, indisponible: true }) === "indisponible"
       && J.etatJournee({ pret: true, besoinSetup: false, jour: null, etape: { id: "A" }, indisponible: true }) === "etape", "");
   verdict("R9a · le hook garde l'ensemble affiché sur panne, et ne retombe jamais sur la suite brute",
-    hook.includes('if (choix.genre === "indisponible") {') && hook.includes('if (choix.genre === "indisponible") throw new Error("resolution_illisible");')
-      && !hook.includes("proposee.rang } : brute;") && hook.includes("programmeAfficheRef.current === actif.programme.id"), "tour 40");
+    hook.includes('if (choix.genre === "indisponible") { indisponibleEtGarder(); return; }') && hook.includes('if (choix.genre === "indisponible") throw new Error("resolution_illisible");')
+      && !hook.includes("proposee.rang } : brute;") && hook.includes("programmeAfficheRef.current === actifLu.programme.id"), "tour 40");
   verdict("R9a · cron : les réservations du programme passent par la résolution, et une panne les fait taire",
     cron.includes("if (!p.seancePrevue || p.seanceProgramme) candidats.push(id);") && cron.includes("taire(candidats)") && cron.includes("seanceARappeler({ seancePrevue: p.seancePrevue, seanceProgramme: p.seanceProgramme, resolution })"), "tour 40");
   const guide9 = lire9("src/lib/guideMoteur.ts");

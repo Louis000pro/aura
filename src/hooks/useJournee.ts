@@ -218,50 +218,58 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
        de donner ses réponses. Ici c'est le REPLI, pour les comptes qui
        ont répondu avant que le questionnaire ne sache le faire — et il
        n'est armé que sur Entraînement. L'accueil, lui, lit. */
+    /* ⚠️ Tour 41 · TOUTE CETTE LECTURE CONVERGE VERS UN SEUL « JE NE SAIS
+       PAS ». Une panne, où qu'elle survienne (programme, adaptation,
+       occurrences, résolution, modèle), garde l'ensemble déjà affiché et
+       le dit (« Programme non relu · Réessayer »), y compris au premier
+       chargement. Seule la dernière lecture publie. Un autre programme,
+       lui, ne garde rien de l'ancien. */
+    let actifLu: ProgrammeEtCycle | null | undefined;
+    let coucheLue: Adaptation | null = null;
+    const indisponibleEtGarder = () => {
+      if (!derniere()) return;
+      const memeProgramme = actifLu === undefined
+        || (!!actifLu && programmeAfficheRef.current === actifLu.programme.id);
+      setIndisponible(true);
+      if (!memeProgramme) {
+        setProgramme(actifLu ?? null);
+        programmeAfficheRef.current = actifLu?.programme.id ?? null;
+        setAdaptation(coucheLue);
+        setEtape(null);
+        setModele(null);
+        setReservation(null);
+        setProjection(null);
+      }
+      setPret(true);
+    };
     try {
+      /* ⚠️ LE PROGRAMME NE NAÎT QUE LÀ OÙ ON L'AUTORISE (V7A). Il se crée
+         normalement à la sortie du questionnaire, là où la personne vient
+         de donner ses réponses. Ici c'est le REPLI, pour les comptes qui
+         ont répondu avant que le questionnaire ne sache le faire — et il
+         n'est armé que sur Entraînement. L'accueil, lui, lit. */
       const actif = creerProgramme
         ? await getOrCreateProgramme(user.id)
         : await lireProgrammeActif(user.id);
+      actifLu = actif;
       /* ⚠️ V8 · L'ADAPTATION SE LIT AVANT L'ÉTAPE, PARCE QU'ELLE DÉCIDE
          DE L'ÉTAPE. Une requête, et seulement s'il y a un programme :
          sans programme il n'y a pas de cycle à adapter. Elle est
          rattachée au programme ACTIF, donc une nouvelle version du
          programme cesse d'être adaptée d'elle-même, sans écriture. */
       const couche = actif ? await adaptationDuJour(user.id, actif.programme.id, todayYmd()) : null;
-      const brute = actif
-        ? await etapeSuivanteDe(user.id, actif, (e) => etapeMasquee(e.id, couche))
-        : null;
-      /* R9a · AVEC DES JOURS D'ENTRAÎNEMENT, LA SÉANCE PROPOSÉE VIENT DE LA
+      coucheLue = couche;
+      /* R9a · AVEC UN CALENDRIER CHOISI, LA SÉANCE PROPOSÉE VIENT DE LA
          RÉSOLUTION PARTAGÉE (décision 21) : la tête de la suite hors
-         réservations futures. Une réservation plus tard reste faisable
-         maintenant par un geste explicite, mais ce n'est plus elle que le
-         héros propose. Sans jour choisi, rien ne change. Une lecture ratée
-         ne touche pas à ce que l'écran montrait. */
+         réservations futures. Sans calendrier choisi, la suite brute fait
+         foi, et elle ne se lit QUE dans ce cas (tour 41). */
       const proj = await resolutionDuProgramme(user.id, actif, todayYmd());
       const choix = choixSuite(proj);
-      /* ⚠️ Tour 40 · RÉSOLUTION INDISPONIBLE : on garde l'ensemble déjà
-         affiché (étape, modèle, réservation, résolution), et on le dit.
-         Jamais la suite brute à sa place : ce serait annoncer autre chose
-         que ce que le calendrier dirait. Un autre programme, en revanche,
-         ne garde rien de l'ancien. */
-      if (choix.genre === "indisponible") {
-        if (!derniere()) return;
-        const memeProgramme = !!actif && programmeAfficheRef.current === actif.programme.id;
-        setIndisponible(true);
-        if (!memeProgramme) {
-          setProgramme(actif);
-      programmeAfficheRef.current = actif?.programme.id ?? null;
-          setAdaptation(couche);
-          setEtape(null);
-          setModele(null);
-          setReservation(null);
-          setProjection(null);
-        }
-        setPret(true);
-        return;
-      }
+      /* ⚠️ Tour 40 · RÉSOLUTION INDISPONIBLE : jamais la suite brute à sa
+         place, ce serait annoncer autre chose que le calendrier. */
+      if (choix.genre === "indisponible") { indisponibleEtGarder(); return; }
       const suivante = choix.genre === "historique"
-        ? brute
+        ? (actif ? await etapeSuivanteDe(user.id, actif, (e) => etapeMasquee(e.id, couche)) : null)
         : choix.proposee ? { ...choix.proposee.etape, rang: choix.proposee.rang } : null;
       /* ⚠️ R2 · tour 22 · L'ÉTAPE ET SON MODÈLE SE PUBLIENT ENSEMBLE.
          Publier l'étape avant d'avoir lu son modèle laissait l'écran,
@@ -269,14 +277,9 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
       const ctxModele = contexteDe(reglages);
       const lu = suivante ? await modeleDeLEtape({ id: suivante.id, nom: suivante.nom }, ctxModele) : null;
       /* ⚠️ ET ON DEMANDE À LA BASE SI CETTE ÉTAPE A DÉJÀ UN JOUR.
-         C'est la réparation du défaut du 2026-09-06 : le héros ne
-         regardait que les intentions D'AUJOURD'HUI, et `etapeSuivante`
-         ne dérive son curseur que des étapes REFERMÉES. Une étape
-         réservée pour mardi était donc invisible aux deux, et l'accueil
-         la reproposait « quand tu veux » un dimanche. La chercher dans
-         la semaine chargée ne suffit pas : depuis que le sélecteur
-         propose quinze jours, elle vit souvent au-delà. Une requête, sur
-         la clé de l'invariant lui-même, et seulement s'il y a une étape.
+         C'est la réparation du défaut du 2026-09-06 : une étape réservée
+         pour mardi ne doit pas être reproposée « quand tu veux ». On la
+         cherche en base, jamais dans la semaine chargée.
          R6 · LA RÉSERVATION DE CETTE OCCURRENCE-LÀ, pas de l'étape en
          général : une occurrence = une ligne (`uniq_occurrence`). */
       const resa = suivante && actif
@@ -295,6 +298,8 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
       setReservation(resa);
     } catch (e) {
       console.error("Programme load error", e);
+      indisponibleEtGarder();
+      return;
     }
     if (derniere()) setPret(true);
   }, [user, creerProgramme]);
