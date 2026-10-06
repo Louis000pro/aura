@@ -58,6 +58,10 @@ export type OccurrenceFermee = {
   /** Une fermeture IMAGINÉE (« et après celle-ci ? ») : elle a lieu à
    *  l'instant, donc après toutes les autres. Jamais lue en base. */
   simulee?: boolean;
+  /** R9a · l'ordre des fermetures imaginées entre elles : la projection
+   *  en suppose plusieurs, l'une APRÈS l'autre. Sans cet ordre, une étape
+   *  réservée loin rattraperait ses tours d'un coup (tour 38). */
+  ordre?: number;
 };
 
 /** Une occurrence réservée : datée, encore prévue. */
@@ -90,7 +94,7 @@ export function etapeDuRang<T extends { position: number }>(cycle: T[], rang: nu
    ni « après » rien, donc aucun retard ne s'en déduit. C'est le sens de
    `consommee_le < …` en SQL quand l'une des deux dates est NULL (tour 15). */
 const instant = (f: OccurrenceFermee) =>
-  f.simulee ? Infinity : f.consommeeLe ? Date.parse(f.consommeeLe) : NaN;
+  f.simulee ? 1e15 + (f.ordre ?? 0) : f.consommeeLe ? Date.parse(f.consommeeLe) : NaN;
 
 /**
  * Le premier rang où l'étape peut avoir son occurrence en attente.
@@ -144,7 +148,7 @@ export function occurrenceSuivante<T extends { id: string; position: number }>(
 
   const fermes = [
     ...etat.fermes,
-    ...enPlus.map((rang) => ({ rang, etapeId: ordonne[(rang - 1) % k].id, consommeeLe: null, simulee: true })),
+    ...enPlus.map((rang, ordre) => ({ rang, etapeId: ordonne[(rang - 1) % k].id, consommeeLe: null, simulee: true, ordre })),
   ];
   const pris = new Set(fermes.map((f) => f.rang));
   const reserves = etat.reserves.filter((r) => !pris.has(r.rang));

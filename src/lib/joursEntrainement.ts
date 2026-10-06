@@ -24,7 +24,7 @@ export async function lireCalendrier(userId: string, depuis: string, client?: Cl
   const supabase = client ?? createClient();
   try {
     const [regle, ex, abs] = await Promise.all([
-      supabase.from("jours_entrainement").select("jours").eq("user_id", userId).maybeSingle(),
+      supabase.from("jours_entrainement").select("jours, effet_le").eq("user_id", userId).maybeSingle(),
       supabase.from("exceptions_jour").select("date, genre").eq("user_id", userId).gte("date", depuis),
       supabase.from("absences").select("id, debut, fin").eq("user_id", userId).gte("fin", depuis),
     ]);
@@ -33,8 +33,11 @@ export async function lireCalendrier(userId: string, depuis: string, client?: Cl
       console.warn("[jours] calendrier illisible :", regle.error?.message ?? ex.error?.message ?? abs.error?.message);
       return null;
     }
+    const ligne = regle.data as { jours?: unknown; effet_le?: string | null } | null;
     return {
-      jours: normaliserJours((regle.data as { jours?: unknown } | null)?.jours),
+      choisi: !!ligne,
+      jours: normaliserJours(ligne?.jours),
+      effetLe: ligne?.effet_le ?? null,
       exceptions: ((ex.data ?? []) as ExceptionJour[]).filter((e) => e.genre === "pas_de_seance" || e.genre === "seance_en_plus"),
       absences: (abs.data ?? []) as Absence[],
     };
@@ -49,7 +52,7 @@ export async function lireCalendriers(userIds: string[], depuis: string, client:
   const carte = new Map<string, Calendrier>();
   if (userIds.length === 0) return carte;
   const [regle, ex, abs] = await Promise.all([
-    client.from("jours_entrainement").select("user_id, jours").in("user_id", userIds),
+    client.from("jours_entrainement").select("user_id, jours, effet_le").in("user_id", userIds),
     client.from("exceptions_jour").select("user_id, date, genre").in("user_id", userIds).gte("date", depuis),
     client.from("absences").select("user_id, debut, fin").in("user_id", userIds).gte("fin", depuis),
   ]);
@@ -57,22 +60,37 @@ export async function lireCalendriers(userIds: string[], depuis: string, client:
   if (regle.error || ex.error || abs.error) return null;
   const de = (id: string) => {
     let c = carte.get(id);
-    if (!c) { c = { jours: [], exceptions: [], absences: [] }; carte.set(id, c); }
+    if (!c) { c = { choisi: false, jours: [], effetLe: null, exceptions: [], absences: [] }; carte.set(id, c); }
     return c;
   };
-  for (const r of (regle.data ?? []) as { user_id: string; jours: unknown }[]) de(r.user_id).jours = normaliserJours(r.jours);
+  for (const r of (regle.data ?? []) as { user_id: string; jours: unknown; effet_le: string | null }[]) {
+    const c = de(r.user_id);
+    c.choisi = true;
+    c.jours = normaliserJours(r.jours);
+    c.effetLe = r.effet_le ?? null;
+  }
   for (const r of (ex.data ?? []) as (ExceptionJour & { user_id: string })[]) de(r.user_id).exceptions.push({ date: r.date, genre: r.genre });
   for (const r of (abs.data ?? []) as (Absence & { user_id: string })[]) de(r.user_id).absences.push({ debut: r.debut, fin: r.fin });
   return carte;
 }
 
-/** Pose la règle de chaque semaine. Une liste vide retire la règle. */
-export async function enregistrerJours(userId: string, jours: number[]): Promise<void> {
+/**
+ * Pose la règle de chaque semaine, à partir de `effetLe` (aujourd'hui en
+ * général). Une liste VIDE s'enregistre : « aucun jour d'entraînement »
+ * est un choix, différent de ne jamais avoir répondu (tour 38).
+ */
+export async function enregistrerJours(userId: string, jours: number[], effetLe: string): Promise<void> {
   const supabase = createClient();
-  const propres = normaliserJours(jours);
-  const { error } = propres.length === 0
-    ? await supabase.from("jours_entrainement").delete().eq("user_id", userId)
-    : await supabase.from("jours_entrainement").upsert({ user_id: userId, jours: propres, maj_le: new Date().toISOString() });
+  const { error } = await supabase.from("jours_entrainement").upsert({
+    user_id: userId, jours: normaliserJours(jours), effet_le: effetLe, maj_le: new Date().toISOString(),
+  });
+  if (error) throw new Error(error.message);
+}
+
+/** Revient au comportement historique : plus aucune règle. */
+export async function oublierJours(userId: string): Promise<void> {
+  const supabase = createClient();
+  const { error } = await supabase.from("jours_entrainement").delete().eq("user_id", userId);
   if (error) throw new Error(error.message);
 }
 

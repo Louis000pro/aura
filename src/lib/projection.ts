@@ -1,29 +1,37 @@
 /* ════════════════════════════════════════════════════════════════════
    R9a · MES JOURS D'ENTRAÎNEMENT ET LA PROJECTION (décisions 17 à 29,
-   maquette 08 écrans 03 à 06)
+   maquette 08 écrans 03 à 06 ; corrections du tour 38 de Codex)
 
    Pure : aucune requête, aucune horloge implicite, aucun DOM. L'accueil,
-   « Ma semaine », le Guide et les rappels posent la même question à la
-   même fonction (décision 21).
+   « Ma semaine », le Guide ET le rappel du soir posent la même question
+   à la même fonction (`resoudreJournee`, décision 21) : le cron ne
+   recalcule rien à part, il lui donne les mêmes données.
 
    ⚠️ TROIS RESPONSABILITÉS (décision 17). Le programme dit QUOI et dans
    quel ordre (R6, `occurrenceSuivante`) ; les jours d'entraînement disent
-   QUAND on peut s'entraîner ; le journal garde ce qui a été fait. Cette
-   fonction ne fait que les croiser.
+   QUAND ; le journal garde ce qui a été fait. On ne fait que les croiser.
 
-   ⚠️ UNE PRÉVISION N'EST JAMAIS ÉCRITE (décisions 18 et 19). Le contenu
-   d'un jour à venir se calcule à la lecture, dans l'ordre du programme,
-   depuis les occurrences encore ouvertes. Une séance manquée glisse au
-   prochain jour d'entraînement ; le passage du temps ne consomme rien ;
-   aucun rattrapage n'ajoute de séance (24, 35). Seul un geste explicite
-   (« Changer de jour ») écrit une réservation, qui garde alors son jour.
+   ⚠️ UNE PRÉVISION N'EST JAMAIS ÉCRITE (décisions 18 et 19). Une séance
+   manquée glisse au prochain jour d'entraînement ; le temps ne consomme
+   rien ; aucun rattrapage n'ajoute de séance (24, 35).
 
-   ⚠️ UN JOUR D'ENTRAÎNEMENT N'EST PAS UNE SÉANCE (décision 20) : il vit
-   dans sa propre table, jamais comme une intention vide.
+   ⚠️ LA PROJECTION AVANCE JOUR PAR JOUR (tour 38). Une réservation future
+   n'est PAS supposée faite dès le départ : son étape est simplement
+   bloquée jusqu'à sa date (ses occurrences suivantes ne peuvent pas
+   passer devant elle), puis sa réalisation est supposée À SA DATE, dans
+   l'ordre. Les fermetures supposées sont ordonnées entre elles
+   (`ordre` dans `occurrences.ts`), sinon une étape bloquée longtemps
+   rattraperait ses tours d'un coup.
 
-   ⚠️ SANS JOUR CHOISI, RIEN NE CHANGE. On n'en déduit aucun du nombre de
-   séances par semaine : la projection est vide, et l'app garde son
-   comportement d'avant (« Quand tu veux »).
+   ⚠️ UNE RÉSERVATION EN CONFLIT RESTE UNE TRACE. Posée pendant une
+   absence ou sur une étape qu'une adaptation masque ce jour-là, elle est
+   rendue avec son conflit, jamais supprimée, et jamais supposée faite :
+   sa date passée, elle redevient l'occurrence en attente de son étape.
+
+   ⚠️ « AUCUN CHOIX » ≠ « ZÉRO JOUR CHOISI » (tour 38). Seul le premier
+   garde le comportement historique ; le second dit « aucun jour
+   d'entraînement ». Une règle a une DATE D'EFFET : choisir lundi un
+   jeudi n'invente pas « t'attendait lundi ».
    ════════════════════════════════════════════════════════════════════ */
 
 import { occurrenceSuivante, type EtatOccurrences } from "@/lib/occurrences";
@@ -35,13 +43,17 @@ export type ExceptionJour = { date: string; genre: "pas_de_seance" | "seance_en_
 export type Absence = { id?: string; debut: string; fin: string };
 
 export type Calendrier = {
-  /** La règle de chaque semaine. Vide = aucun jour choisi. */
+  /** La personne a-t-elle déjà répondu ? `false` = comportement historique. */
+  choisi: boolean;
+  /** La règle de chaque semaine. Peut être vide quand `choisi`. */
   jours: number[];
+  /** Le premier jour où la règle s'applique. */
+  effetLe: string | null;
   exceptions: ExceptionJour[];
   absences: Absence[];
 };
 
-export const CALENDRIER_VIDE: Calendrier = { jours: [], exceptions: [], absences: [] };
+export const CALENDRIER_VIDE: Calendrier = { choisi: false, jours: [], effetLe: null, exceptions: [], absences: [] };
 
 /** Une règle propre : entiers de 1 à 7, sans doublon, triés. */
 export function normaliserJours(jours: unknown): JourSemaine[] {
@@ -51,8 +63,7 @@ export function normaliserJours(jours: unknown): JourSemaine[] {
   return [...vus].sort((a, b) => a - b) as JourSemaine[];
 }
 
-/** Le jour de la semaine d'une date `YYYY-MM-DD` (1 = lundi). Calcul en
- *  UTC sur la chaîne : la date est déjà celle de la personne. */
+/** Le jour de la semaine d'une date `YYYY-MM-DD` (1 = lundi). */
 export function jourDeSemaine(date: string): JourSemaine {
   const d = new Date(`${date}T00:00:00Z`).getUTCDay();
   return (d === 0 ? 7 : d) as JourSemaine;
@@ -65,7 +76,7 @@ export function decaler(date: string, n: number): string {
   return d.toISOString().slice(0, 10);
 }
 
-/** Un calendrier qui dit quelque chose : une règle, ou au moins un jour en plus. */
+/** Un calendrier qui place des séances : une règle, ou un jour en plus. */
 export function aDesJours(cal: Calendrier | null | undefined): boolean {
   return !!cal && (normaliserJours(cal.jours).length > 0 || cal.exceptions.some((e) => e.genre === "seance_en_plus"));
 }
@@ -76,33 +87,38 @@ export function enAbsence(cal: Calendrier, date: string): Absence | null {
 
 /**
  * Ce jour est-il un jour d'entraînement ? L'absence l'emporte sur tout,
- * puis l'exception datée, puis la règle de la semaine.
+ * puis l'exception datée, puis la règle, qui ne vaut qu'à partir de sa
+ * date d'effet.
  */
 export function estJourEntrainement(cal: Calendrier, date: string): boolean {
   if (enAbsence(cal, date)) return false;
   const ex = cal.exceptions.find((e) => e.date === date);
   if (ex) return ex.genre === "seance_en_plus";
+  if (cal.effetLe && date < cal.effetLe) return false;
   return normaliserJours(cal.jours).includes(jourDeSemaine(date));
 }
 
 /** Une réservation en attente d'une occurrence, avec son jour. */
 export type ReservationDatee = { rang: number; etapeId: string; date: string | null };
 
+export type Conflit = "absence" | "adaptation";
+
 export type JourProjete<T> = {
   date: string;
   etape: T;
   rang: number;
-  /** Écrite par un geste (« Changer de jour ») : elle garde son jour. */
+  /** Écrite par un geste : elle garde son jour. */
   reservee: boolean;
+  /** Une réservation conservée mais en conflit ce jour-là. */
+  conflit: Conflit | null;
   /** Le jour où elle était attendue et n'a pas été faite, ou `null`. */
   attendaitLe: string | null;
 };
 
 /**
  * Le premier jour d'entraînement manqué : le plus ancien jour
- * d'entraînement passé, dans la fenêtre, postérieur au dernier jour où le
- * programme a avancé. C'est le « t'attendait mercredi » de la maquette.
- * Une seule date, jamais une liste : on ne compte pas les jours manqués.
+ * d'entraînement passé, dans la fenêtre, après le dernier jour où le
+ * programme a avancé et après la date d'effet de la règle.
  */
 export function premierJourManque(
   cal: Calendrier,
@@ -118,91 +134,127 @@ export function premierJourManque(
   return null;
 }
 
-/**
- * La projection : sur chaque jour d'entraînement de `dates` (aujourd'hui
- * et après), l'occurrence que le programme propose, dans l'ordre.
- *
- * - Une réservation datée aujourd'hui ou plus tard garde son jour, et son
- *   occurrence ne se projette nulle part ailleurs.
- * - Une réservation dont la date est passée et qui n'a pas été faite
- *   reste l'occurrence en attente de son étape (R6) : elle glisse au
- *   prochain jour d'entraînement, avec `attendaitLe` = sa date. Sa ligne
- *   n'est pas réécrite (décision 4) : on la montre ailleurs, c'est tout.
- * - Un jour qui porte déjà une séance du programme (une réservation, ou
- *   l'occurrence faite aujourd'hui) n'en reçoit pas une seconde.
- * - L'adaptation s'applique à la date de chaque jour projeté (décision 25).
- *
- * Rend `[]` sans jour choisi : on n'invente pas de calendrier.
- */
-export function projeterJours<T extends { id: string; position: number }>(input: {
+export type EntreeResolution<T> = {
   cycle: T[];
   etat: EtatOccurrences;
   reservations: ReservationDatee[];
   calendrier: Calendrier;
-  /** Aujourd'hui puis les jours suivants, triés. */
+  /** Aujourd'hui puis les jours suivants. */
   dates: string[];
   aujourdhui: string;
-  /** Le programme a déjà avancé aujourd'hui (une occurrence faite). */
+  /** Le programme a déjà avancé aujourd'hui. */
   faitAujourdhui: boolean;
-  /** Le dernier jour où le programme a avancé, pour `attendaitLe`. */
   dernierJourFait: string | null;
-  /** L'adaptation qui s'applique à cette date masque-t-elle l'étape ? */
+  /** Les jours qui portent déjà une séance ou un repos posés hors du
+   *  programme : la projection ne s'y ajoute pas (tour 38). */
+  occupes?: string[];
+  /** L'adaptation de cette date masque-t-elle l'étape ? */
   masqueeLe?: (etape: T, date: string) => boolean;
-}): JourProjete<T>[] {
+};
+
+/**
+ * La projection, jour par jour, à partir d'aujourd'hui. Rend `[]` sans
+ * jour d'entraînement : on n'invente pas de calendrier.
+ */
+export function projeterJours<T extends { id: string; position: number }>(input: EntreeResolution<T>): JourProjete<T>[] {
   const { cycle, etat, calendrier, aujourdhui } = input;
   if (cycle.length === 0 || !aDesJours(calendrier)) return [];
   const dates = [...new Set(input.dates.filter((d) => d >= aujourdhui))].sort();
+  const occupes = new Set(input.occupes ?? []);
+  const parId = new Map(cycle.map((e) => [e.id, e]));
+  const masque = (e: T, d: string) => !!input.masqueeLe && input.masqueeLe(e, d);
 
-  const aVenir = input.reservations.filter((r) => r.date !== null && r.date >= aujourdhui);
-  const enRetard = new Map(
+  const aVenir = input.reservations
+    .filter((r) => r.date !== null && r.date >= aujourdhui)
+    .sort((a, b) => (a.date as string).localeCompare(b.date as string) || a.rang - b.rang);
+  /* Le jour où chaque occurrence était attendue, si elle a glissé. */
+  const attendue = new Map<number, string>(
     input.reservations.filter((r) => r.date !== null && r.date < aujourdhui).map((r) => [r.rang, r.date as string]),
   );
-  /* Les occurrences déjà placées par un geste sont hors de la distribution. */
-  const places: number[] = aVenir.map((r) => r.rang);
-  const parId = new Map(cycle.map((e) => [e.id, e]));
+  /* Les réservations futures pas encore « passées » dans la simulation. */
+  const enAttente = new Set(aVenir.map((r) => r.rang));
+  const bloquee = (e: T) => aVenir.some((r) => enAttente.has(r.rang) && r.etapeId === e.id);
+
+  /* « t'attendait » ne se dit que de la vraie tête de la suite. */
+  const tete = teteDeSuite(input);
   const manque = premierJourManque(calendrier, aujourdhui, input.dernierJourFait);
 
-  /* « t'attendait mercredi » ne se dit que de la séance qui était
-     vraiment attendue : la tête de la suite, avant tout placement. Si
-     elle a été réservée ailleurs, la suivante n'hérite pas du reproche. */
-  const tete = occurrenceSuivante(cycle, etat, input.masqueeLe ? (e) => input.masqueeLe!(e, aujourdhui) : undefined, []);
+  const places: number[] = [];
   const sortie: JourProjete<T>[] = [];
   let premiere = true;
   for (const date of dates) {
-    const resa = aVenir.find((r) => r.date === date);
-    if (resa) {
-      const etape = parId.get(resa.etapeId);
-      if (etape) sortie.push({ date, etape, rang: resa.rang, reservee: true, attendaitLe: null });
-      continue;
+    const resas = aVenir.filter((r) => r.date === date);
+    for (const r of resas) {
+      enAttente.delete(r.rang);
+      const etape = parId.get(r.etapeId);
+      if (!etape) continue;
+      const conflit: Conflit | null = enAbsence(calendrier, date) ? "absence" : masque(etape, date) ? "adaptation" : null;
+      sortie.push({ date, etape, rang: r.rang, reservee: true, conflit, attendaitLe: null });
+      /* Faite à sa date dans la simulation, sauf en conflit : alors elle
+         reste due, et glissera comme une séance manquée. */
+      if (conflit) attendue.set(r.rang, date);
+      else places.push(r.rang);
     }
-    if (!estJourEntrainement(calendrier, date)) continue;
+    if (resas.length > 0) continue;
+    if (!estJourEntrainement(calendrier, date) || occupes.has(date)) continue;
     if (date === aujourdhui && input.faitAujourdhui) continue;
-    const o = occurrenceSuivante(cycle, etat, input.masqueeLe ? (e) => input.masqueeLe!(e, date) : undefined, places);
+    const o = occurrenceSuivante(cycle, etat, (e) => masque(e, date) || bloquee(e), places);
     if (!o) continue;
     places.push(o.rang);
-    const attendaitLe = enRetard.get(o.rang) ?? (premiere && tete?.rang === o.rang ? manque : null);
+    const attendaitLe = attendue.get(o.rang) ?? (premiere && tete?.rang === o.rang ? manque : null);
     premiere = false;
-    sortie.push({ date, etape: o.etape, rang: o.rang, reservee: false, attendaitLe });
+    sortie.push({ date, etape: o.etape, rang: o.rang, reservee: false, conflit: null, attendaitLe });
   }
   return sortie;
 }
 
-/** La prochaine séance projetée (la première de la liste), ou `null`. */
-export function prochaineProjetee<T>(projection: JourProjete<T>[]): JourProjete<T> | null {
-  return projection[0] ?? null;
+/**
+ * La tête de la suite : ce que le programme propose de faire MAINTENANT,
+ * hors réservations futures (leur étape attend sa date). Elle ne dépend
+ * ni de l'horizon lu ni du fait qu'aujourd'hui soit un jour
+ * d'entraînement : écran, Guide et cron rendent donc la même.
+ */
+export function teteDeSuite<T extends { id: string; position: number }>(input: EntreeResolution<T>): { etape: T; rang: number } | null {
+  const futures = input.reservations.filter((r) => r.date !== null && r.date >= input.aujourdhui);
+  return occurrenceSuivante(input.cycle, input.etat, (e) =>
+    (!!input.masqueeLe && input.masqueeLe(e, input.aujourdhui)) || futures.some((r) => r.etapeId === e.id));
 }
 
-/** « aujourd'hui », « demain », « vendredi », « lundi 12 » au-delà d'une semaine. */
+export type ResolutionJournee<T> = {
+  jours: JourProjete<T>[];
+  /** La séance que l'app propose de faire maintenant : la tête de la
+   *  suite, hors réservations futures (on peut toujours faire une
+   *  réservation plus tôt, par un geste explicite). */
+  proposee: { etape: T; rang: number; date: string | null; attendaitLe: string | null } | null;
+  /** Celle qui tombe aujourd'hui, et seulement aujourd'hui (le rappel). */
+  duJour: JourProjete<T> | null;
+};
+
+/**
+ * LA résolution partagée (décision 21). Sans jour d'entraînement, elle
+ * rend `null` : l'appelant garde le comportement historique.
+ */
+export function resoudreJournee<T extends { id: string; position: number }>(input: EntreeResolution<T>): ResolutionJournee<T> | null {
+  if (!aDesJours(input.calendrier)) return null;
+  const jours = projeterJours(input);
+  const tete = teteDeSuite(input);
+  const place = tete ? jours.find((j) => !j.reservee && j.rang === tete.rang) ?? null : null;
+  const proposee = tete ? { ...tete, date: place?.date ?? null, attendaitLe: place?.attendaitLe ?? null } : null;
+  const duJour = jours.find((j) => j.date === input.aujourdhui && !j.conflit) ?? null;
+  return { jours, proposee, duJour };
+}
+
+/** « aujourd'hui », « demain », « vendredi », « lundi 19 » au-delà d'une semaine. */
 export function libelleJourProjete(date: string, aujourdhui: string): string {
   if (date === aujourdhui) return "aujourd’hui";
   if (date === decaler(aujourdhui, 1)) return "demain";
-  const NOMS = ["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"];
   const nom = NOMS[jourDeSemaine(date) - 1];
   return date <= decaler(aujourdhui, 6) ? nom : `${nom} ${Number(date.slice(8, 10))}`;
 }
 
 /** « t'attendait mercredi » : le jour seul, sans reproche ni compte. */
 export function libelleAttente(date: string): string {
-  const NOMS = ["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"];
   return `t’attendait ${NOMS[jourDeSemaine(date) - 1]}`;
 }
+
+const NOMS = ["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"];

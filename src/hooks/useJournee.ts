@@ -47,7 +47,7 @@ import {
 import type { EtatJournee } from "@/lib/journee";
 import { projeterPrescription } from "@/lib/banqueEtapes";
 import { ecrireOccurrence, empreinteModele, modeleDeLEtape, type ModeleDeLOccurrence } from "@/lib/prescription";
-import { projectionDuProgramme, type ProjectionProgramme } from "@/lib/projectionBase";
+import { resolutionDuProgramme, type ResolutionProgramme } from "@/lib/projectionBase";
 import { libelleAttente, libelleJourProjete } from "@/lib/projection";
 
 const DAY_FULL = ["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"];
@@ -81,7 +81,7 @@ export type Journee = {
    * posé sur les jours d'entraînement, jamais écrit. `null` = lecture
    * ratée ou pas encore revenue ; `jours: []` = aucun jour choisi.
    */
-  projection: ProjectionProgramme | null;
+  projection: ResolutionProgramme | null;
   /** Le jour prévu de la prochaine séance, dit à voix haute, quand des
    *  jours sont choisis et qu'elle n'a pas de réservation. */
   prevuLe: string | null;
@@ -143,7 +143,7 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
   const [gen, setGen] = useState<GenInput | null>(null);
   const [etape, setEtape] = useState<EtapeOccurrence | null>(null);
   const [reservation, setReservation] = useState<PlanningDay | null>(null);
-  const [projection, setProjection] = useState<ProjectionProgramme | null>(null);
+  const [projection, setProjection] = useState<ResolutionProgramme | null>(null);
   /* R2 · le modèle de l'étape suivante pour ce lieu : écrit, ou composé
      en mémoire. `null` = pas d'étape, ou lecture ratée (on ne lance pas).
      ⚠️ Il porte l'occurrence pour laquelle il a été lu (tour 22). */
@@ -220,9 +220,18 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
          rattachée au programme ACTIF, donc une nouvelle version du
          programme cesse d'être adaptée d'elle-même, sans écriture. */
       const couche = actif ? await adaptationDuJour(user.id, actif.programme.id, todayYmd()) : null;
-      const suivante = actif
+      const brute = actif
         ? await etapeSuivanteDe(user.id, actif, (e) => etapeMasquee(e.id, couche))
         : null;
+      /* R9a · AVEC DES JOURS D'ENTRAÎNEMENT, LA SÉANCE PROPOSÉE VIENT DE LA
+         RÉSOLUTION PARTAGÉE (décision 21) : la tête de la suite hors
+         réservations futures. Une réservation plus tard reste faisable
+         maintenant par un geste explicite, mais ce n'est plus elle que le
+         héros propose. Sans jour choisi, rien ne change. Une lecture ratée
+         ne touche pas à ce que l'écran montrait. */
+      const proj = await resolutionDuProgramme(user.id, actif, todayYmd());
+      const proposee = proj?.resolution?.proposee ?? null;
+      const suivante = proposee ? { ...proposee.etape, rang: proposee.rang } : brute;
       /* ⚠️ R2 · tour 22 · L'ÉTAPE ET SON MODÈLE SE PUBLIENT ENSEMBLE.
          Publier l'étape avant d'avoir lu son modèle laissait l'écran,
          le temps d'une requête, avec l'étape B et le modèle de A. */
@@ -242,9 +251,6 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
       const resa = suivante && actif
         ? await reservationDeLOccurrence(user.id, actif.programme.id, suivante.rang)
         : null;
-      /* R9a · la projection sur les jours d'entraînement. Une lecture
-         ratée ne touche pas à ce que l'écran montrait. */
-      const proj = await projectionDuProgramme(user.id, actif, todayYmd());
       if (!derniere()) return;
       if (proj) setProjection(proj);
       setProgramme(actif);
@@ -302,7 +308,10 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
 
   /* R9a · la projection ne parle de la prochaine séance que si c'est la
      MÊME occurrence que celle du héros (même rang). */
-  const prochaine = projection?.jours.find((j) => !!etape && j.rang === etape.rang) ?? null;
+  const prochaine = projection && user && projection.userId === user.id
+    && projection.programmeId === (programme?.programme.id ?? null)
+    ? projection.resolution?.jours.find((j) => !j.reservee && !!etape && j.rang === etape.rang) ?? null
+    : null;
 
   /* Ce qu'il faut pour composer une semaine QUI SAIT D'OÙ ELLE VIENT :
      le cycle avec ses identifiants, et les étapes que l'adaptation
@@ -393,7 +402,12 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
     const actif = await lireProgrammeActif(user.id);
     if (!actif || actif.programme.id !== programme.programme.id) return null;
     const couche = await adaptationDuJour(user.id, actif.programme.id, todayYmd(), "stricte");
-    const occ = await etapeSuivanteDe(user.id, actif, (e) => etapeMasquee(e.id, couche));
+    const brute = await etapeSuivanteDe(user.id, actif, (e) => etapeMasquee(e.id, couche));
+    /* R9a · la MÊME résolution que l'affichage, relue stricte. */
+    const res = await resolutionDuProgramme(user.id, actif, todayYmd());
+    if (!res) throw new Error("resolution_illisible");
+    const proposee = res.resolution?.proposee ?? null;
+    const occ = proposee ? { ...proposee.etape, rang: proposee.rang } : brute;
     if (!occ || !gen) return null;
     /* Le modèle de l'étape RELUE, pour le lieu des réglages : une lecture
        ratée est un refus (« illisible »), jamais une composition. */
@@ -592,7 +606,7 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
        le héros ne montre plus l'étape. */
     reserveLe: reservation?.date ? libelleReservation(reservation.date, today) : null,
     projection,
-    prevuLe: !reservation && prochaine ? libelleJourProjete(prochaine.date, today) : null,
+    prevuLe: prochaine ? libelleJourProjete(prochaine.date, today) : null,
     attendait: prochaine?.attendaitLe ? libelleAttente(prochaine.attendaitLe) : null,
     adaptation,
     adaptationJusquau: adaptation ? libelleJour(adaptation.fin) : null,

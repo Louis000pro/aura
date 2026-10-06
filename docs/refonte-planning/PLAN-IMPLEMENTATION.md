@@ -795,3 +795,21 @@ Les quatre points sont acceptés : la hiérarchie de « Ma semaine », le retrai
 - **Rien de visible tant qu'aucun jour n'est choisi** : l'écran de choix arrive avec R9b.
 - Bancs : `check:programme` +25 contrôles R9a, dont le scénario de Lina (mercredi manqué, C avant B), réservation future et passée, absence, exception, jour en plus, adaptation datée, une séance par jour. Témoins : sans le marquage des rangs placés (6 échecs), sans l'absence (1 échec). eslint 93, `check:echelle` 37, build OK.
 - **Point à trancher (Codex)** : réserver une occurrence hors ordre peut faire se suivre deux séances de la même étape (B₂ réservée mardi, B₅ projetée mercredi). C'est l'ordre du cycle appliqué tel quel ; la décision 14 laisse le hors ordre à cadrer.
+
+### R9a · migration 20261008 appliquée par Louis (2026-10-06)
+
+Les trois tables existent. La correction du tour 38 demande une seconde migration (`20261009_r9a_jours_choix.sql`), pas encore appliquée.
+
+### R9a · corrections du tour 38 de Codex (2026-10-06)
+
+Points validés par Louis, consignés : « Refais ma semaine » disparaît pour un compte qui a choisi ses jours (il reste pour les autres). Réponses de Codex au cadrage (tour 37) : ordre R9a → R9b → R9c, stockage dédié, projection sans écriture, aucun jour inventé, aperçu avant retrait ; deux sollicitations par priorité = un choix de composition, jamais une garantie ni une dette ; changer ses jours ne recompose pas le programme.
+
+1. **La projection avance jour par jour.** Une réservation future n'est plus supposée faite dès le départ : son étape est bloquée jusqu'à sa date, puis sa réalisation est supposée À sa date. Les fermetures supposées sont ordonnées entre elles (`ordre` dans `occurrences.ts`) : une étape bloquée longtemps ne rattrape plus ses tours d'un coup. Contre-exemple de Codex (A₁ faite, B₂ le 14, tous les jours) : aucune B avant le 14.
+2. **Une seule résolution, nourrie des mêmes faits.** `entreeResolution` (pure, `projectionBase.ts`) puis `resoudreJournee` servent l'accueil, le Guide et le cron, qui ne fait plus de calcul à part (lectures groupées, même entrée). `proposee` = la tête de la suite hors réservations futures (`teteDeSuite`), indépendante de l'horizon ; `duJour` = celle qui tombe aujourd'hui. Le héros propose `proposee` et la relit STRICTE au lancement ; une réservation plus tard reste faisable par un geste explicite. Égalité prouvée par comportement : 400 scénarios, écran (14 j), Guide (8 j) et cron (1 j) rendent la même séance du jour et la même proposée (le banc a d'abord trouvé 6 écarts sur `proposee`, d'où `teteDeSuite`).
+3. **Une panne n'affirme rien.** Adaptations lues en mode strict, jours occupés lus sans avaler l'erreur ; une lecture ratée rend la résolution indisponible. Le cron se tait si les adaptations sont illisibles (table absente = aucune). Une résolution gardée porte son compte et son programme, et ne s'applique jamais à un autre.
+4. **« Aucun choix » ≠ « zéro jour ».** Une ligne à `jours = '{}'` est un choix ; seule l'absence de ligne garde le comportement historique. `effet_le` : la règle ne vaut qu'à partir de sa date, donc pas de « t'attendait lundi » pour une règle choisie jeudi.
+5. **Jours occupés et conflits.** Un jour qui porte une intention hors programme ne reçoit pas de prévision. Une réservation pendant une absence ou sous une adaptation est rendue avec son `conflit`, jamais supprimée ni supposée faite ; sa date passée, elle glisse comme une séance manquée.
+
+- Bancs : bloc R9a réécrit (27 contrôles comportementaux, dont l'égalité sur 400 scénarios). Témoins : l'ancien calcul (réservations supposées faites dès le départ) échoue au contre-exemple ; sans conflit, les deux contrôles de conflit échouent.
+- `docs/refonte-planning/r9a-test-a-coller.sql` : rejeu de la migration, correction du tour 38, puis scénarios dans une transaction annulée (zéro jour, jour 8 refusé, exceptions, doublon, chevauchement d'absence, bout à bout, bornes, droits entre deux comptes).
+- eslint 93, `check:echelle` 37, build OK.

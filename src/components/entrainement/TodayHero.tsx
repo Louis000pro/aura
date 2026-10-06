@@ -196,8 +196,8 @@ export default function TodayHero({
             </p>
             <h2 className="text-[34px] md:text-[38px] leading-[1.02] font-extralight text-white">{etape.nom}</h2>
             <p className="mt-2.5 mb-4 text-[16px] font-normal" style={{ color: "rgba(255,255,255,0.82)" }}>
-              {reserveLe ?? prevuLe ?? "Quand tu veux"}
-              {!reserveLe && attendait && <><S />{attendait}</>}
+              {prevuLe ?? reserveLe ?? "Quand tu veux"}
+              {prevuLe && attendait && <><S />{attendait}</>}
               {nbExos > 0 && <><S /><V>{nbExos}</V> exercices</>}
             </p>
             <motion.button

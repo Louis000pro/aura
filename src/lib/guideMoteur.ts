@@ -38,7 +38,7 @@
    que tous les écrans du planning émettent déjà après une écriture.
    ════════════════════════════════════════════════════════════════════ */
 
-import { projectionDuProgramme } from "@/lib/projectionBase";
+import { resolutionDuProgramme } from "@/lib/projectionBase";
 import { decaler } from "@/lib/projection";
 import { createClient } from "@/lib/supabase";
 import { EVT_JOURNEE } from "@/lib/finSeance";
@@ -117,7 +117,9 @@ export type EtatMoteur = {
   joursEntrainement?: number[];
   /** R9a · les séances que le programme pose sur ces jours, sur sept
    *  jours : des PRÉVISIONS, jamais écrites. */
-  projetees?: { date: string; nom: string; attendaitLe: string | null }[];
+  projetees?: { date: string; nom: string; attendaitLe: string | null; conflit: "absence" | "adaptation" | null; reservee: boolean }[];
+  /** R9a · la personne a répondu (même « aucun jour »). */
+  joursChoisis?: boolean;
   /** R9a · une absence en cours ou à venir dans la semaine. */
   absence?: { debut: string; fin: string } | null;
 };
@@ -179,6 +181,7 @@ async function lireEtatMoteur(userId: string): Promise<EtatMoteur | null> {
   let adaptation: Adaptation | null = null;
   let masquees: string[] = [];
   let joursEntrainement: number[] = [];
+  let joursChoisis = false;
   let projetees: NonNullable<EtatMoteur["projetees"]> = [];
   let absence: EtatMoteur["absence"] = null;
 
@@ -220,11 +223,19 @@ async function lireEtatMoteur(userId: string): Promise<EtatMoteur | null> {
 
       /* R9a · la même projection que l'accueil et « Ma semaine »
          (décision 21). Une lecture ratée laisse ces champs vides. */
-      const proj = await projectionDuProgramme(userId, actif, aujourdhui, 8);
+      const proj = await resolutionDuProgramme(userId, actif, aujourdhui, 8);
       if (proj) {
-        joursEntrainement = [...proj.calendrier.jours];
-        projetees = proj.jours.slice(0, MAX_A_VENIR).map((j) => ({ date: j.date, nom: j.etape.nom, attendaitLe: j.attendaitLe }));
+        joursEntrainement = proj.calendrier.choisi ? [...proj.calendrier.jours] : [];
+        joursChoisis = proj.calendrier.choisi;
+        projetees = (proj.resolution?.jours ?? []).slice(0, MAX_A_VENIR)
+          .map((j) => ({ date: j.date, nom: j.etape.nom, attendaitLe: j.attendaitLe, conflit: j.conflit, reservee: j.reservee }));
         absence = proj.calendrier.absences.find((a) => a.debut <= decaler(aujourdhui, 7) && a.fin >= aujourdhui) ?? null;
+        /* La prochaine étape du Guide est celle du héros (décision 21). */
+        const p = proj.resolution?.proposee;
+        if (p) {
+          etape = { id: p.etape.id, nom: p.etape.nom };
+          reserveLe = null;
+        }
       }
     }
   } catch (e) {
@@ -258,7 +269,7 @@ async function lireEtatMoteur(userId: string): Promise<EtatMoteur | null> {
   return {
     aujourdhui, programme, cycle, etapeBrute, etape, reserveLe,
     adaptation, masquees, aVenir, recent, contexte,
-    joursEntrainement, projetees, absence,
+    joursEntrainement, joursChoisis, projetees, absence,
   };
 }
 
@@ -367,9 +378,11 @@ export function resumeMoteur(etat: EtatMoteur | null): string | null {
     );
   }
 
-  if (etat.joursEntrainement && etat.joursEntrainement.length > 0) {
+  if (etat.joursChoisis) {
     const NOMS = ["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"];
-    lignes.push("Jours d’entraînement choisis : " + etat.joursEntrainement.map((j) => NOMS[j - 1]).join(", ") + ".");
+    lignes.push(etat.joursEntrainement && etat.joursEntrainement.length > 0
+      ? "Jours d’entraînement choisis : " + etat.joursEntrainement.map((j) => NOMS[j - 1]).join(", ") + "."
+      : "Jours d’entraînement : aucun, par choix.");
   }
   if (etat.absence) {
     lignes.push("Absence déclarée du " + libelleJour(etat.absence.debut) + " au " + libelleJour(etat.absence.fin) + " : rien n’est proposé pendant ces jours.");
@@ -379,6 +392,8 @@ export function resumeMoteur(etat: EtatMoteur | null): string | null {
       "Le programme pose ses prochaines séances sur ces jours (prévisions, rien n’est écrit) : "
       + etat.projetees
         .map((p) => libelleReservation(p.date, etat.aujourdhui) + " " + p.nom.slice(0, MAX_TITRE)
+          + (p.reservee ? " (réservée)" : "")
+          + (p.conflit === "absence" ? " (réservée pendant une absence)" : p.conflit === "adaptation" ? " (réservée, mais l’adaptation la met de côté)" : "")
           + (p.attendaitLe ? " (attendue " + libelleReservation(p.attendaitLe, etat.aujourdhui) + ", elle a glissé)" : ""))
         .join(" · ") + ".",
     );

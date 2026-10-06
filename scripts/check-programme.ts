@@ -765,7 +765,7 @@ verdict(
   verdict(
     "V7A · le héros annonce le jour de l'étape au lieu de « quand tu veux »",
     readFileSync(new URL("../src/components/entrainement/TodayHero.tsx", import.meta.url), "utf8")
-      .includes('{reserveLe ?? prevuLe ?? "Quand tu veux"}'),
+      .includes('{prevuLe ?? reserveLe ?? "Quand tu veux"}'),
     "« quand tu veux » ne reste vrai que sans réservation",
   );
 
@@ -7034,63 +7034,113 @@ verdict(
   verdict("R5 · « Continuer » porte l'ombre nommée", /boxShadow: "var\(--ombre-action\)" \}\}\s*>\s*Continuer/.test(t), "composition");
 }
 
-/* ═══════════════════════ R9a · jours d'entraînement et projection ═══════════════════════ */
+/* ═══════════════════════ R9a · jours d'entraînement et projection (tour 38) ═══════════════════════ */
 {
   const lire9 = (rel: string) => readFileSync(new URL("../" + rel, import.meta.url), "utf8").replace(/\r\n/g, "\n");
   const P = await import("@/lib/projection");
+  const PB = await import("@/lib/projectionBase");
+  type Cal = import("@/lib/projection").Calendrier;
   const cycle = [
     { id: "A", nom: "Dos & fessiers", position: 1 },
     { id: "B", nom: "Haut du corps", position: 2 },
     { id: "C", nom: "Fessiers & dos", position: 3 },
   ];
-  const LMV = { jours: [1, 3, 5], exceptions: [], absences: [] } as import("@/lib/projection").Calendrier;
+  const cal = (o: Partial<Cal> = {}): Cal => ({ choisi: true, jours: [1, 3, 5], effetLe: "2026-09-01", exceptions: [], absences: [], ...o });
+  const LMV = cal();
+  const TOUS = cal({ jours: [1, 2, 3, 4, 5, 6, 7] });
   // Jeudi 8 octobre 2026. Lundi 5 : A₁ faite. Mercredi 7 : rien.
   const jeudi = "2026-10-08";
   const dates = Array.from({ length: 14 }, (_, i) => P.decaler(jeudi, i));
-  const base = { depart: 1, fermes: [{ rang: 1, etapeId: "A", consommeeLe: "2026-10-05T08:00:00Z" }], reserves: [] as { rang: number; etapeId: string }[] };
-  const proj = (o: Partial<Parameters<typeof P.projeterJours>[0]> = {}) => P.projeterJours({
+  type Etat = import("@/lib/occurrences").EtatOccurrences;
+  const base: Etat = { depart: 1, fermes: [{ rang: 1, etapeId: "A", consommeeLe: "2026-10-05T08:00:00Z" }], reserves: [] };
+  const proj = (o: Partial<import("@/lib/projection").EntreeResolution<typeof cycle[number]>> = {}) => P.projeterJours({
     cycle, etat: base, reservations: [], calendrier: LMV, dates, aujourdhui: jeudi,
     faitAujourdhui: false, dernierJourFait: "2026-10-05", ...o,
   });
-  const resume = (l: ReturnType<typeof proj>) => l.map((j) => `${j.date.slice(8)}:${j.etape.id}${j.rang}${j.attendaitLe ? "<" + j.attendaitLe.slice(8) : ""}`).join(" ");
+  const resume = (l: ReturnType<typeof proj>) => l.map((j) => `${j.date.slice(8)}:${j.etape.id}${j.rang}${j.reservee ? "R" : ""}${j.conflit ? "!" + j.conflit : ""}${j.attendaitLe ? "<" + j.attendaitLe.slice(8) : ""}`).join(" ");
+  const resa = (rang: number, etapeId: string, date: string) => ({
+    etat: { ...base, reserves: [...base.reserves, { rang, etapeId, date }] } as Etat,
+    reservations: [{ rang, etapeId, date }],
+  });
 
-  verdict("R9a · sans jour choisi, aucune projection (on n'invente pas de calendrier)",
-    proj({ calendrier: P.CALENDRIER_VIDE }).length === 0, "décision 20");
+  verdict("R9a · sans jour choisi, aucune projection ni résolution (comportement historique)",
+    proj({ calendrier: P.CALENDRIER_VIDE }).length === 0 && P.resoudreJournee({ cycle, etat: base, reservations: [], calendrier: P.CALENDRIER_VIDE, dates, aujourdhui: jeudi, faitAujourdhui: false, dernierJourFait: null }) === null, "décision 20");
+  verdict("R9a · « zéro jour » choisi n'est pas « aucun choix » : rien de projeté, mais la réponse est gardée",
+    proj({ calendrier: cal({ jours: [] }) }).length === 0 && cal({ jours: [] }).choisi && !P.CALENDRIER_VIDE.choisi, "tour 38");
   verdict("R9a · mercredi manqué : Haut du corps glisse à vendredi, la suite d'un cran, rien d'entassé",
     resume(proj()) === "09:B2<07 12:C3 14:A4 16:B5 19:C6 21:A7", resume(proj()));
   const avecC = proj({ etat: { ...base, fermes: [...base.fermes, { rang: 3, etapeId: "C", consommeeLe: "2026-10-08T07:00:00Z" }] }, faitAujourdhui: true, dernierJourFait: jeudi });
   verdict("R9a · faire C avant B : B reste la prochaine, vendredi (maquette 08, écran 06)",
     avecC[0]?.date === "2026-10-09" && avecC[0]?.etape.id === "B" && avecC[1]?.etape.id === "A", resume(avecC));
-  const resaFutur = proj({ etat: { ...base, reserves: [{ rang: 2, etapeId: "B" }] }, reservations: [{ rang: 2, etapeId: "B", date: "2026-10-13" }] });
-  verdict("R9a · une réservation garde son jour, et son occurrence n'est projetée nulle part ailleurs",
-    resume(resaFutur).startsWith("09:C3 12:A4 13:B2") && resaFutur.filter((j) => j.rang === 2).length === 1 && resaFutur.find((j) => j.rang === 2)!.reservee, resume(resaFutur));
-  const resaPassee = proj({ etat: { ...base, reserves: [{ rang: 2, etapeId: "B" }] }, reservations: [{ rang: 2, etapeId: "B", date: "2026-10-06" }] });
-  verdict("R9a · une réservation passée non faite glisse au prochain jour, avec son jour d'attente (sans réécrire sa ligne)",
-    resaPassee[0]?.etape.id === "B" && resaPassee[0]?.attendaitLe === "2026-10-06" && !resaPassee[0]?.reservee, resume(resaPassee));
-  const absence = proj({ calendrier: { ...LMV, absences: [{ debut: "2026-10-09", fin: "2026-10-16" }] } });
+
+  /* Le contre-exemple de Codex : A₁ faite, B₂ réservée le 14, tous les jours. */
+  const codex = proj({ calendrier: TOUS, ...resa(2, "B", "2026-10-14") });
+  const avant14 = codex.filter((j) => j.date < "2026-10-14");
+  verdict("R9a · une réservation future n'est pas supposée faite : aucune B avant B₂ (contre-exemple du tour 38)",
+    avant14.every((j) => j.etape.id !== "B") && codex.find((j) => j.date === "2026-10-14")?.rang === 2, resume(codex));
+  const apres = codex.filter((j) => j.date > "2026-10-14").map((j) => j.etape.id);
+  verdict("R9a · après sa date, B reprend sa place une fois, sans rattraper ses tours",
+    apres.filter((x) => x === "B").length <= Math.ceil(apres.length / 3), resume(codex));
+  const passee = proj({ ...resa(2, "B", "2026-10-06") });
+  verdict("R9a · une réservation passée non faite glisse au prochain jour, avec son jour d'attente (ligne non réécrite)",
+    passee[0]?.etape.id === "B" && passee[0]?.rang === 2 && passee[0]?.attendaitLe === "2026-10-06" && !passee[0]?.reservee, resume(passee));
+  const resaAbs = proj({ calendrier: cal({ absences: [{ debut: "2026-10-12", fin: "2026-10-13" }] }), ...resa(2, "B", "2026-10-12") });
+  const enConflit = resaAbs.find((j) => j.rang === 2 && j.reservee);
+  verdict("R9a · une réservation pendant une absence reste une trace, marquée en conflit, puis glisse",
+    enConflit?.conflit === "absence" && resaAbs.some((j) => j.rang === 2 && !j.reservee && j.attendaitLe === "2026-10-12"), resume(resaAbs));
+  const resaAdapt = proj({ ...resa(2, "B", "2026-10-12"), masqueeLe: (e, d) => e.id === "B" && d === "2026-10-12" });
+  verdict("R9a · une réservation sous une adaptation reste une trace, marquée en conflit",
+    resaAdapt.find((j) => j.rang === 2 && j.reservee)?.conflit === "adaptation", resume(resaAdapt));
+  const absence = proj({ calendrier: cal({ absences: [{ debut: "2026-10-09", fin: "2026-10-16" }] }) });
   verdict("R9a · une absence suspend les propositions, et la suite reprend dans l'ordre au retour",
     resume(absence).startsWith("19:B2<07 21:C3"), resume(absence));
-  const pasCeJour = proj({ calendrier: { ...LMV, exceptions: [{ date: "2026-10-09", genre: "pas_de_seance" }] } });
+  const pasCeJour = proj({ calendrier: cal({ exceptions: [{ date: "2026-10-09", genre: "pas_de_seance" }] }) });
   verdict("R9a · « pas de séance ce jour-là » : la séance passe au jour d'entraînement suivant",
     resume(pasCeJour).startsWith("12:B2<07 14:C3"), resume(pasCeJour));
-  const enPlus = proj({ calendrier: { ...LMV, exceptions: [{ date: "2026-10-10", genre: "seance_en_plus" }] } });
+  const enPlus = proj({ calendrier: cal({ exceptions: [{ date: "2026-10-10", genre: "seance_en_plus" }] }) });
   verdict("R9a · un jour en plus cette semaine prend la séance suivante",
     resume(enPlus).startsWith("09:B2<07 10:C3 12:A4"), resume(enPlus));
+  const occupe = proj({ occupes: ["2026-10-09"] });
+  verdict("R9a · un jour déjà occupé hors programme ne reçoit pas de prévision en plus",
+    resume(occupe).startsWith("12:B2<07"), resume(occupe));
   const adapt = proj({ masqueeLe: (e, d) => e.id === "B" && d <= "2026-10-12" });
   verdict("R9a · l'adaptation s'applique à la date de chaque jour projeté (décision 25)",
     adapt[0]?.etape.id === "C" && adapt.some((j) => j.etape.id === "B" && j.date > "2026-10-12"), resume(adapt));
-  const auj = proj({ calendrier: { jours: [4], exceptions: [], absences: [] }, dernierJourFait: "2026-10-05" });
-  verdict("R9a · aujourd'hui est un jour d'entraînement : la séance du jour est aujourd'hui",
-    auj[0]?.date === jeudi, resume(auj));
+  verdict("R9a · date d'effet : une règle choisie aujourd'hui n'invente pas « t'attendait » avant elle",
+    proj({ calendrier: cal({ effetLe: jeudi }) })[0]?.attendaitLe === null, resume(proj({ calendrier: cal({ effetLe: jeudi }) })));
   verdict("R9a · aujourd'hui déjà fait : rien de plus aujourd'hui",
-    proj({ calendrier: { jours: [4], exceptions: [], absences: [] }, faitAujourdhui: true })[0]?.date === "2026-10-15", "");
-  verdict("R9a · une seule séance par jour, jamais deux (pas de rattrapage)",
+    proj({ calendrier: cal({ jours: [4] }), faitAujourdhui: true })[0]?.date === "2026-10-15", "");
+  verdict("R9a · une seule séance du programme par jour, jamais deux",
     new Set(proj().map((j) => j.date)).size === proj().length, "décision 35");
   verdict("R9a · « t'attendait » ne sort qu'une fois, sur la première séance",
     proj().filter((j) => j.attendaitLe).length === 1, "");
-  verdict("R9a · rien d'attendu quand le dernier jour d'entraînement a été fait",
-    proj({ dernierJourFait: "2026-10-07" })[0]?.attendaitLe === null, "");
-  verdict("R9a · les libellés : aujourd'hui, demain, vendredi, lundi 19",
+
+  /* ⚠️ L'ÉGALITÉ ÉCRAN / GUIDE / CRON, PROUVÉE PAR COMPORTEMENT : les trois
+     passent par `entreeResolution` puis `resoudreJournee`. Le cron demande
+     un jour, l'écran quatorze, le Guide huit : la séance du jour doit être
+     la même, sur des scénarios variés. */
+  let ecarts = 0, essais = 0;
+  const graine = (n: number) => () => { n = (n * 1103515245 + 12345) & 0x7fffffff; return n / 0x7fffffff; };
+  const rnd = graine(42);
+  for (let k = 0; k < 400; k++) {
+    const aujourdhui = P.decaler("2026-10-05", Math.floor(rnd() * 20));
+    const fermes: Etat["fermes"] = [];
+    let rang = 1;
+    for (let i = 0; i < Math.floor(rnd() * 6); i++) { if (rnd() < 0.8) fermes.push({ rang, etapeId: cycle[(rang - 1) % 3].id, consommeeLe: `${P.decaler(aujourdhui, -1 - i)}T08:00:00Z` }); rang++; }
+    const reserves: Etat["reserves"] = rnd() < 0.5 ? [{ rang: rang + 1, etapeId: cycle[rang % 3].id, date: P.decaler(aujourdhui, Math.floor(rnd() * 10) - 3) }] : [];
+    const calendrier = cal({ jours: [1, 2, 3, 4, 5, 6, 7].filter(() => rnd() < 0.5), absences: rnd() < 0.2 ? [{ debut: aujourdhui, fin: P.decaler(aujourdhui, 2) }] : [] });
+    const adaptations = rnd() < 0.3 ? [{ statut: "active" as const, debut: aujourdhui, fin: P.decaler(aujourdhui, 5), axes: { version: 1, eviter_etapes: ["B"] } }] : [];
+    const faits = { cycle, etat: { depart: 1, fermes, reserves }, calendrier, adaptations: adaptations as never, aujourdhui, occupes: [] as string[] };
+    const ecran = P.resoudreJournee(PB.entreeResolution({ ...faits, nbJours: 14 }));
+    const guide = P.resoudreJournee(PB.entreeResolution({ ...faits, nbJours: 8 }));
+    const cron = P.resoudreJournee(PB.entreeResolution({ ...faits, nbJours: 1 }));
+    const cle = (r: typeof ecran) => r?.duJour ? `${r.duJour.rang}` : "-";
+    essais++;
+    if (cle(ecran) !== cle(cron) || cle(guide) !== cle(cron) || ecran?.proposee?.rang !== guide?.proposee?.rang || ecran?.proposee?.rang !== cron?.proposee?.rang) ecarts++;
+  }
+  verdict("R9a · écran, Guide et rappel du soir rendent la même séance du jour (400 scénarios)", ecarts === 0, `${ecarts} écart(s) sur ${essais}`);
+
+  verdict("R9a · les libellés : aujourd'hui, demain, samedi, lundi 19, t'attendait mercredi",
     P.libelleJourProjete(jeudi, jeudi) === "aujourd’hui" && P.libelleJourProjete("2026-10-09", jeudi) === "demain"
       && P.libelleJourProjete("2026-10-10", jeudi) === "samedi" && P.libelleJourProjete("2026-10-19", jeudi) === "lundi 19"
       && P.libelleAttente("2026-10-07") === "t’attendait mercredi", "");
@@ -7101,19 +7151,23 @@ verdict(
 
   const src = lire9("src/lib/projection.ts");
   verdict("R9a · la projection est pure : aucune requête, aucune horloge", !/supabase|createClient|new Date\(\)|Date\.now/.test(src), "");
-  const sql = lire9("supabase/migrations/20261008_r9a_jours_entrainement.sql");
-  verdict("R9a · la migration est additive, en RLS propriétaire, et n'écrit aucune intention",
+  const sql = lire9("supabase/migrations/20261008_r9a_jours_entrainement.sql") + lire9("supabase/migrations/20261009_r9a_jours_choix.sql");
+  verdict("R9a · les migrations sont additives, en RLS propriétaire, et n'écrivent aucune intention",
     (sql.match(/enable row level security/g) ?? []).length === 3 && !/intentions_entrainement|insert into|update public\./i.test(sql), "");
-  verdict("R9a · une absence ne chevauche pas une autre", sql.includes("absences_sans_chevauchement"), "");
-  const hook = lire9("src/hooks/useJournee.ts");
-  verdict("R9a · l'accueil lit la même projection (décision 21), et ne l'écrit pas",
-    hook.includes("projectionDuProgramme(user.id, actif, todayYmd())") && lire9("src/components/entrainement/TodayHero.tsx").includes('reserveLe ?? prevuLe ?? "Quand tu veux"'), "");
-  verdict("R9a · le Guide lit la même projection", lire9("src/lib/guideMoteur.ts").includes("projectionDuProgramme(userId, actif, aujourdhui, 8)"), "");
-  const cron = lire9("src/app/api/cron/reminders/route.ts");
-  verdict("R9a · le rappel du soir suit les jours choisis et se tait pendant une absence",
-    cron.includes("appliquerJoursEntrainement(admin, ids, today, carte, sc)") && cron.includes("enAbsence(cal, today)") && cron.includes("occurrenceSuivante(cycle, etat"), "décision 26");
+  verdict("R9a · zéro jour accepté et date d'effet en base", sql.includes("between 0 and 7") && sql.includes("effet_le date not null"), "tour 38");
   const base9 = lire9("src/lib/projectionBase.ts");
-  verdict("R9a · la lecture de la projection n'écrit rien", !/\.(insert|update|upsert|delete)\(/.test(base9), "");
+  verdict("R9a · la résolution lit les adaptations en mode strict et les jours occupés sans avaler l'erreur",
+    base9.includes('lireAdaptations(userId, actif.programme.id, "stricte")') && base9.includes('throw new Error("occupes_illisibles'), "tour 38");
+  verdict("R9a · la lecture de la résolution n'écrit rien", !/\.(insert|update|upsert|delete)\(/.test(base9), "");
+  const hook = lire9("src/hooks/useJournee.ts");
+  verdict("R9a · le héros propose la séance de la résolution, relue stricte au lancement",
+    hook.includes("const proposee = proj?.resolution?.proposee ?? null;") && hook.includes('if (!res) throw new Error("resolution_illisible");'), "");
+  verdict("R9a · une résolution gardée ne vaut que pour son compte et son programme",
+    hook.includes("projection.userId === user.id") && hook.includes("projection.programmeId === (programme?.programme.id ?? null)"), "tour 38");
+  const cron = lire9("src/app/api/cron/reminders/route.ts");
+  verdict("R9a · le rappel du soir passe par le même résolveur, et se tait sur une adaptation illisible",
+    cron.includes("resoudreJournee(entreeResolution({") && cron.includes("(adapt.error && !adaptAbsente)") && !cron.includes("occurrenceSuivante("), "décision 26");
+  verdict("R9a · le Guide passe par la même résolution", lire9("src/lib/guideMoteur.ts").includes("resolutionDuProgramme(userId, actif, aujourdhui, 8)"), "");
 }
 
 console.log("\n" + (echecs === 0 ? "Tout passe." : echecs + " échec(s)."));
