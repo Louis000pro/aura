@@ -229,23 +229,38 @@ function versEtape(r: LigneEtape): EtapeCycle {
 const COLS_PROGRAMME = "id, nom, intention, statut, origine, position_initiale";
 const COLS_ETAPE = "id, position, nom, nature, duree_min, origine";
 
-/** Le programme actif et son cycle, s'ils existent déjà. */
-export async function lireProgrammeActif(userId: string): Promise<ProgrammeEtCycle | null> {
-  const supabase = createClient();
-  const { data } = await supabase
+type ClientProgramme = ReturnType<typeof createClient>;
+
+/**
+ * Le programme actif et son cycle, s'ils existent déjà.
+ *
+ * ⚠️ R9a · tour 43 · `null` veut dire « la base a répondu : aucun programme
+ * actif », et RIEN d'autre. Une requête en erreur LÈVE : rendue comme une
+ * absence, elle autorisait l'appelant à créer un programme, ou à publier
+ * un cycle vide par-dessus l'affichage précédent. « Je ne sais pas » n'est
+ * pas « il n'y a rien ».
+ */
+export async function lireProgrammeActif(
+  userId: string,
+  client?: ClientProgramme,
+): Promise<ProgrammeEtCycle | null> {
+  const supabase = client ?? createClient();
+  const { data, error } = await supabase
     .from("programmes")
     .select(COLS_PROGRAMME)
     .eq("user_id", userId)
     .eq("statut", "actif")
     .maybeSingle();
+  if (error) throw new Error("programme_illisible: " + error.message);
   if (!data) return null;
 
   const programme = versProgramme(data as LigneProgramme);
-  const { data: etapes } = await supabase
+  const { data: etapes, error: errEtapes } = await supabase
     .from("programme_seances")
     .select(COLS_ETAPE)
     .eq("programme_id", programme.id)
     .order("position", { ascending: true });
+  if (errEtapes) throw new Error("cycle_illisible: " + errEtapes.message);
 
   return { programme, cycle: ((etapes ?? []) as LigneEtape[]).map(versEtape) };
 }
@@ -256,25 +271,33 @@ export async function lireProgrammeActif(userId: string): Promise<ProgrammeEtCyc
  * Rend `null` quand il n'y a rien à créer : cible à zéro (réponse
  * assumée) ou aucune réponse du tout. Un `null` n'est pas une panne,
  * c'est « cette personne n'a pas de programme, et c'est normal ».
+ * Une panne, elle, LÈVE (tour 43) : lecture, contexte, création ou cycle.
  */
-export async function getOrCreateProgramme(userId: string): Promise<ProgrammeEtCycle | null> {
+export async function getOrCreateProgramme(
+  userId: string,
+  client?: ClientProgramme,
+): Promise<ProgrammeEtCycle | null> {
   if (!userId) return null;
 
-  const existant = await lireProgrammeActif(userId);
+  /* ⚠️ R9a · tour 43 · une lecture en panne LÈVE ici et ne crée rien :
+     seule une absence CONFIRMÉE autorise la création. */
+  const existant = await lireProgrammeActif(userId, client);
   if (existant) return existant;
 
-  const supabase = createClient();
+  const supabase = client ?? createClient();
 
   // ⚠️ La cible se lit dans `contexte_entrainement` et NULLE PART
   // AILLEURS : c'est sa source unique depuis V3, et `profiles` n'en est
   // plus qu'une copie tenue par le dual-write. Mesuré au moment d'écrire
   // ceci : les 40 comptes qui ont répondu ont leur contexte, les autres
   // n'ont rien répondu du tout.
-  const { data: ctx } = await supabase
+  const { data: ctx, error: errCtx } = await supabase
     .from("contexte_entrainement")
     .select("seances_cible, lieu, materiel")
     .eq("user_id", userId)
     .maybeSingle();
+  // Une réponse illisible n'est pas « aucune réponse » : on ne décide rien.
+  if (errCtx) throw new Error("contexte_illisible: " + errCtx.message);
 
   const etapes = etapesDuCycle((ctx as { seances_cible: number | null } | null)?.seances_cible);
   if (!etapes) return null;
@@ -317,10 +340,10 @@ export async function getOrCreateProgramme(userId: string): Promise<ProgrammeEtC
     // : le second se fait refuser par `uniq_programme_actif`. Ce n'est
     // pas une erreur, c'est l'invariant qui fait son travail. On relit
     // celui que l'autre vient de créer.
-    const rattrape = await lireProgrammeActif(userId);
+    const rattrape = await lireProgrammeActif(userId, client);
     if (rattrape) return rattrape;
-    console.warn("[programme] création impossible :", error?.message);
-    return null;
+    // Une création ratée n'est pas « personne n'a de programme ».
+    throw new Error("creation_impossible: " + (error?.message ?? "aucune ligne"));
   }
 
   const programme = versProgramme(cree as LigneProgramme);
@@ -344,8 +367,7 @@ export async function getOrCreateProgramme(userId: string): Promise<ProgrammeEtC
     // une étape. On défait. (C'est ce `DELETE` qui a révélé le défaut
     // corrigé par V4b : sans lui, il échouerait.)
     await supabase.from("programmes").delete().eq("id", programme.id);
-    console.warn("[programme] cycle impossible, programme annulé :", errEtapes?.message);
-    return null;
+    throw new Error("cycle_impossible: " + (errEtapes?.message ?? "aucune étape"));
   }
 
   const cycle = (etapesCreees as LigneEtape[]).map(versEtape);
@@ -362,6 +384,7 @@ export async function getOrCreateProgramme(userId: string): Promise<ProgrammeEtC
       niveau,
       version: COMPOSITION_VERSION,
     },
+    client,
   );
 
   return { programme, cycle };

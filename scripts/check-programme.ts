@@ -37,7 +37,7 @@ import {
   type Lieu, type Orientation, type ExercicePrescrit,
 } from "@/lib/banqueEtapes";
 import { resolveGuide } from "@/lib/exerciseGuides";
-import { etapesDuCycle, etapeSuivante, nomDeProgramme, positionRefermee, POSITION_INITIALE } from "@/lib/programme";
+import { etapesDuCycle, etapeSuivante, getOrCreateProgramme, lireProgrammeActif, nomDeProgramme, positionRefermee, POSITION_INITIALE } from "@/lib/programme";
 import { baseEtape, occurrenceSuivante, rangPourEtape } from "@/lib/occurrences";
 import { avecEtapeVerifiee, deplacerReservation, etatJournee, intentionDeLEtape, lancementDuJour, libelleReservation, repetitionDuJour } from "@/lib/journee";
 import {
@@ -7395,6 +7395,65 @@ verdict(
     absence.includes("Je m&apos;absente") && !/absent·e|\babsente?\b/i.test(absence.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "").replace(/Je m&apos;absente/g, "")), "");
   verdict("R9b · une lecture ratée dit qu'elle n'a pas pu lire, jamais une semaine vide",
     ecran.includes("if (!proj) { setIllisible(true); return; }") && ecran.includes("Je n&apos;arrive pas à lire ta semaine"), "");
+}
+
+/* ── R9a · tour 43 · ERREUR ≠ ABSENCE DANS LES CONTRATS DE LECTURE.
+   Le VRAI `lireProgrammeActif` et le VRAI `getOrCreateProgramme`, un faux
+   client qui sert une réponse par table et note toute écriture. ── */
+{
+  type Rep = { data: unknown; error: { message: string } | null };
+  const ok = (data: unknown): Rep => ({ data, error: null });
+  const ko: Rep = { data: null, error: { message: "timeout" } };
+  const faux = (reps: Record<string, Rep>) => {
+    const ecrit: string[] = [];
+    const client = {
+      from: (table: string) => {
+        const ch: Record<string, unknown> = {};
+        const rep = () => Promise.resolve(reps[table] ?? ok(null));
+        for (const m of ["select", "eq", "order", "limit"]) ch[m] = () => ch;
+        for (const m of ["insert", "update", "delete", "upsert"]) ch[m] = () => { ecrit.push(table + "." + m); return ch; };
+        ch.maybeSingle = rep; ch.single = rep;
+        ch.then = (a: (v: Rep) => unknown, b?: (e: unknown) => unknown) => rep().then(a, b);
+        return ch;
+      },
+      rpc: () => { ecrit.push("rpc"); return Promise.resolve(ok(null)); },
+    } as unknown as Parameters<typeof lireProgrammeActif>[1];
+    return { client, ecrit };
+  };
+  const leve = async (f: () => Promise<unknown>) => { try { await f(); return false; } catch { return true; } };
+  const prog = { id: "p1", nom: "P", intention: null, statut: "actif", origine: "systeme", position_initiale: 1 };
+  const etapes = [{ id: "e1", position: 1, nom: "Push", nature: "seance", duree_min: null, origine: "systeme" }];
+
+  const f1 = faux({ programmes: ko });
+  const f2 = faux({ programmes: ok(prog), programme_seances: ko });
+  const f3 = faux({ programmes: ok(null) });
+  const f4 = faux({ programmes: ok(prog), programme_seances: ok(etapes) });
+  const l1 = await leve(() => lireProgrammeActif("u", f1.client));
+  const l2 = await leve(() => lireProgrammeActif("u", f2.client));
+  const a3 = await lireProgrammeActif("u", f3.client);
+  const a4 = await lireProgrammeActif("u", f4.client);
+  verdict("R9a · tour 43 · panne sur `programmes` : lève, jamais « aucun programme »", l1, "");
+  verdict("R9a · tour 43 · panne sur `programme_seances` : lève, jamais un cycle vide", l2, "");
+  verdict("R9a · tour 43 · absence confirmée → null, programme lu → son cycle",
+    a3 === null && a4?.cycle.length === 1 && a4.cycle[0].nom === "Push", "");
+
+  const c1 = faux({ programmes: ko });
+  const c2 = faux({ programmes: ok(prog), programme_seances: ko });
+  const c3 = faux({ programmes: ok(null), contexte_entrainement: ko });
+  const g1 = await leve(() => getOrCreateProgramme("u", c1.client));
+  const g2 = await leve(() => getOrCreateProgramme("u", c2.client));
+  const g3 = await leve(() => getOrCreateProgramme("u", c3.client));
+  verdict("R9a · tour 43 · une panne de lecture ne crée jamais de programme",
+    g1 && g2 && g3 && c1.ecrit.length + c2.ecrit.length + c3.ecrit.length === 0,
+    `levées ${[g1, g2, g3].filter(Boolean).length}/3 · écritures ${[...c1.ecrit, ...c2.ecrit, ...c3.ecrit].join(",") || "aucune"}`);
+  const c4 = faux({ programmes: ok(null), contexte_entrainement: ok({ seances_cible: 0, lieu: null, materiel: null }) });
+  const g4 = await getOrCreateProgramme("u", c4.client);
+  verdict("R9a · tour 43 · cible à zéro (réponse confirmée) : null, rien d'écrit", g4 === null && c4.ecrit.length === 0, "");
+
+  const hook = readFileSync("src/hooks/useJournee.ts", "utf8");
+  const garde = hook.indexOf("if (suivante && !lu) { indisponibleEtGarder(); return; }");
+  verdict("R9a · tour 43 · une étape au modèle illisible part en indisponible, avant toute publication",
+    garde > 0 && garde < hook.indexOf("setIndisponible(false);"), "");
 }
 
 console.log("\n" + (echecs === 0 ? "Tout passe." : echecs + " échec(s)."));

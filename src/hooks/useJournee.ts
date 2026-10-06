@@ -276,6 +276,11 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
          le temps d'une requête, avec l'étape B et le modèle de A. */
       const ctxModele = contexteDe(reglages);
       const lu = suivante ? await modeleDeLEtape({ id: suivante.id, nom: suivante.nom }, ctxModele) : null;
+      /* ⚠️ R9a · tour 43 · `modeleDeLEtape` rend `null` quand il ne sait
+         pas (panne, modèle sans lignes) ; l'absence de modèle, elle, rend
+         la composition. Une étape sans modèle lisible n'est donc pas
+         publiable : on garde ce qui est affiché et on le dit. */
+      if (suivante && !lu) { indisponibleEtGarder(); return; }
       /* ⚠️ ET ON DEMANDE À LA BASE SI CETTE ÉTAPE A DÉJÀ UN JOUR.
          C'est la réparation du défaut du 2026-09-06 : une étape réservée
          pour mardi ne doit pas être reproposée « quand tu veux ». On la
