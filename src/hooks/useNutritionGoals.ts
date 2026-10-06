@@ -41,7 +41,7 @@ function useNutritionProfile(): OnboardingProfile {
     // 2) Base = source de vérité → corrige + rafraîchit le cache.
     let cancelled = false;
     createClient()
-      .from("profiles")
+      .from("mon_profil")
       .select(PROFILE_COLS)
       .eq("id", user.id)
       .maybeSingle()

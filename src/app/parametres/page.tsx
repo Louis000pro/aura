@@ -568,7 +568,7 @@ export default function ParametresPage() {
     let vivant = true;
     const supabase = createClient();
 
-    supabase.from("profiles")
+    supabase.from("mon_profil")
       .select("onboarding_weight,onboarding_goals")
       .eq("id", user.id)
       .maybeSingle()

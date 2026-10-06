@@ -189,6 +189,59 @@ NULL), `actif`, `inconnu` (la lecture a échoué). Seul `aucun` autorise une
 redirection ; confondre `aucun` et `inconnu` enfermerait dans l'écran de choix
 quelqu'un qui a déjà choisi et qui est hors ligne.
 
+## Sécurité (VERROUILLÉ, audit du 2026-10-06)
+
+Audit sur cinq points (secrets, RLS, identité, validation serveur, limites
+d'essais), toutes les failles fermées et en production. Ne rien défaire de
+ce qui suit sans en parler à Louis.
+
+- **Les droits d'un profil ne s'écrivent pas depuis le navigateur.** Le
+  trigger `proteger_colonnes_profil` (`20261006_profils_colonnes_protegees.sql`)
+  refuse à `anon` / `authenticated` de changer `is_admin`, `is_premium`,
+  `is_banned`, `is_certified`, `subscription_*`, `stripe_customer_id`,
+  `current_period_end`, `member_number` et `id`, et les force à leur valeur
+  neutre à l'INSERT. Avant, n'importe quel compte pouvait se passer admin
+  depuis la console. Ces colonnes ne s'écrivent qu'avec la clé service
+  (routes admin, webhook Stripe).
+- **Les colonnes privées de `profiles` ne se lisent que par leur propriétaire**
+  (`20261006_profils_colonnes_privees.sql`). La policy SELECT reste `USING (true)`
+  (la communauté doit voir pseudo, avatar, bio, rang), mais le SELECT est
+  accordé **colonne par colonne** : e-mail, nom, âge, taille, poids, genre,
+  régime, séances visées, lieu et matériel, et tout ce qui touche à Stripe
+  sont retirés. **Pour lire SES propres colonnes privées côté client :
+  `.from("mon_profil")`** (vue qui ne rend que la ligne de `auth.uid()`).
+  ⚠️ Une colonne ajoutée à `profiles` est privée par défaut ; l'ajouter au
+  GRANT si elle doit se voir chez les autres. ⚠️ **Jamais d'`upsert` sur
+  `profiles` côté client** : PostgREST écrit `SET col = EXCLUDED.col`, ce qui
+  exige le droit de lecture et échoue sur une colonne privée. Faire `update`
+  puis `insert` si aucune ligne (voir `enregistrerProfil`).
+- **Un compte e-mail se crée côté serveur, après vérification du code.**
+  `/api/auth/verify-otp` vérifie le jeton (`src/lib/jetonCode.ts` : HMAC avec
+  `AUTH_SECRET`, il porte l'empreinte du code et jamais le code) puis crée le
+  compte avec `admin.auth.admin.createUser({ email_confirm: true })`. Le client
+  n'appelle plus `signUp` : avant, le code n'était vérifié que dans la page et
+  on créait un compte confirmé sans jamais recevoir l'e-mail.
+- **Les essais sont limités en base, pas en mémoire.** `autoriserEssai()`
+  (`src/lib/rateLimit.ts`) passe par la RPC `autoriser_essai` (table
+  `limites_essais`, réservée à `service_role`), donc le compteur est commun à
+  toutes les instances Vercel. Connexion par pseudo (par identifiant ET par IP),
+  vérification d'e-mail, envoi de code, réinitialisation, et 5 essais par code
+  reçu. Le compteur en mémoire n'est plus qu'un repli si la base ne répond pas.
+- **Fermés au passage** : la policy « Service role full access » de
+  `push_subscriptions` (elle ouvrait la table à tous) et l'exécution publique
+  de `ouvrir_fil_entre` (`20261006_securite_lot2.sql`).
+- **Réglages Supabase** : « Confirm email » est ACTIVÉ (sans risque : nos
+  comptes e-mail naissent déjà confirmés). « Leaked password protection »
+  est réservé au plan Pro, pas activé. **Ne pas activer de Captcha** (il
+  casserait la connexion par pseudo, qui se fait côté serveur) et ne pas
+  monter la longueur minimale du mot de passe au-dessus de 6 sans changer
+  aussi `/api/auth/verify-otp`.
+- **Ce qui reste, et c'est assumé** : l'advisor Supabase signale des vues
+  SECURITY DEFINER (`season_scores`, `season_eclats`, `mon_profil`, cette
+  dernière voulue et filtrée sur `auth.uid()`), des fonctions SECURITY DEFINER
+  exécutables par `anon` et des `search_path` non fixés. Rien d'exploitable
+  identifié, à reprendre un jour en ménage.
+
 ## Chantiers en cours (juillet 2026)
 
 - **⭐ REFONTE DU PLANNING · R1 + R1 bis « LE JOURNAL DIT LA VÉRITÉ » (Claude + Codex, 2026-10-03, branche `claude/zen-franklin-huz5qv`, base `main`).**

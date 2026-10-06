@@ -404,7 +404,7 @@ export default function WeeklyProgramme({ cycle = null }: { cycle?: CycleSemaine
     if (!user) return;
     const supabase = createClient();
     supabase
-      .from("profiles")
+      .from("mon_profil")
       .select("onboarding_level, onboarding_sessions_week, onboarding_goals, onboarding_age, onboarding_weight")
       .eq("id", user.id)
       .maybeSingle()
