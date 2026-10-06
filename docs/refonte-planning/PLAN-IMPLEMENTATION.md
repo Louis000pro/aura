@@ -728,3 +728,55 @@ Aucune migration SQL.
 - **Le partage appartient au propriétaire du journal.** `afficheProprio` est posé depuis `journal.proprietaire` ; le bouton et la feuille `EnvoyerAffiche` n'existent que si le compte connecté est celui-là. Un autre compte connecté tunnel ouvert ne voit ni l'un ni l'autre ; le journal reste à son propriétaire.
 - Au passage : la question du détail passe par `guides.ts` (`seance.marge.question`), et « Continuer » porte `--ombre-action`.
 - Bancs : +11 contrôles (dont le cas exact de Codex). Témoins : sans le contrôle avancé, trois contrôles échouent ; avec un regroupement qui réunit les passages, A → B → A échoue. eslint 93, `check:echelle` 37, build OK.
+
+### R5 · validée techniquement (tour 36 de Codex, 2026-10-06)
+
+La feuille de partage se ferme au changement de compte et attend un nouveau geste au retour du propriétaire (`d4557a3`, ajustement pendant le rendu, sans effet). Essai global à prévoir : remplacements dans le détail, marge corrigée après le repos, parcours A → B → A avec le partage ouvert.
+
+## R9 · cadrage (2026-10-06), soumis à Codex avant le code
+
+### Ce que le code fait aujourd'hui (constaté)
+
+- **Le QUAND n'existe pas.** Aucun stockage des jours d'entraînement. Hors réservation, la prochaine occurrence est « Quand tu veux » (héros) ; « Ma semaine » n'affiche que les intentions écrites.
+- **Deux générateurs de semaine coexistent** : `reposerLaSemaine` / `previewWeek` (« Refais ma semaine », provenance seule, depuis l'étape 1 sans lire les occurrences) et le Guide (`plan_regen`). Les deux écrivent du mobilier `systeme`. C'est la cause du constat du tour 4 (une séance manquée disparaît derrière la suivante).
+- **Le programme ne dépend que du nombre de séances** : `buildSplit(n)` → `etapesDuCycle`. L'objectif ne sert qu'au nom et aux fourchettes (R2, `composerEtape`). Aucune priorité musculaire n'est demandée.
+- **Aucune absence.** Seules les adaptations (V8, un axe `eviter_etapes`) suspendent quelque chose.
+- Le contexte d'entraînement (`contexte_entrainement`) porte lieu, matériel, `seances_cible`, `duree_cible_min`.
+
+### Proposition : trois sous-vagues, dans cet ordre
+
+**R9a · Mes jours d'entraînement et la projection (décisions 17 à 29).** La valeur principale de la maquette 05 : rien ne se perd.
+- Table `jours_entrainement` : une **règle hebdomadaire** (`jours smallint[]`, 1 = lundi, sur `contexte_entrainement` ou une table dédiée, à trancher) + `exceptions_jour` datées (`date`, `genre` : `pas_de_seance` | `seance_en_plus`). Un jour d'entraînement n'est jamais une intention vide (décision 20). Une **absence** est une plage d'exceptions (`absence_debut`, `absence_fin`), pas une suppression.
+- **`projeterJours(dates, regle, exceptions, absence, occurrences, reservations, adaptations, aujourdhui)`, pure** : chaque jour d'entraînement futur reçoit, dans l'ordre, les occurrences encore ouvertes (R6 `occurrenceSuivante` répétée), après les réservations explicites qui gardent leur jour. Une occurrence non faite à une date passée glisse au prochain jour (décision 18), sans rattrapage ni compression (24, 35). Adaptation appliquée à la date de chaque jour projeté (25). Rien n'est écrit : une prévision se lit (décision 19, phrase commune).
+- **Une seule résolution** (`resolutionJournee`) pour l'accueil, « Ma semaine », le Guide (`etatMoteur`) et les rappels (21, 26) : le héros dit « Haut du corps · t'attendait mercredi » et le rappel ne part qu'un jour d'entraînement avec une occurrence projetée.
+- **Lancer fige** (22) : lancer une occurrence projetée la relit et la déclare `cible: etape` avec son rang (chemin R6 actuel, inchangé).
+- **Migration sans conversion silencieuse (27)** : aucun compte n'a de jours ; **on n'en invente pas** (pas de déduction depuis `seances_cible`). Tant qu'il n'en choisit pas, le comportement d'aujourd'hui reste. Le premier choix de jours montre un aperçu des semaines automatiques à venir (`origine = 'systeme'`, non faites) et propose de les retirer ; les faits, les sauts, les séances posées à la main ou par le Guide et les réservations ne bougent pas.
+- **« Refais ma semaine »** : décision 13 (comportement gardé pendant la refonte). Je propose qu'il disparaisse **pour un compte qui a choisi ses jours** (la projection fait son travail, sans écrire) et reste pour les autres. À trancher.
+
+**R9b · « Ma semaine » à deux semaines (décision 40, maquette 05 écrans 03, 08 à 10).**
+- Onglets « Cette semaine » / « Semaine prochaine », mêmes gestes ; « Après › » ouvre un aperçu en lecture seule.
+- Une ligne par jour : fait (teal), projeté (« Haut du corps · 45 min »), réservé, « Libre », « Pas de séance ce jour-là » (gris, sans alerte), passé sans séance (texte atténué, photo intacte).
+- Feuille d'un jour, quatre gestes : **Changer de jour** (réserver cette occurrence à une date : intention écrite avec son rang, comme `daterEtape`) · **Échanger contre une autre séance** (substitution déclarée, V9C) · **Version courte** (R8 : la ligne n'apparaît qu'avec R8) · **Pas d'entraînement ce jour-là** (exception datée, l'occurrence glisse).
+- « Je serai absent·e » → plage de dates ; la projection se suspend, les occurrences restent.
+- Extraction ciblée de `progression/page.tsx` (décision 11) dans `components/semaine/`.
+
+**R9c · Le programme par priorités (décisions 31, 32, 41 ; maquette 05 écrans 01, 02, 11).**
+- Écran « Mon programme » : une priorité, une seconde facultative, ou « Un peu de tout » ; jours, durée, lieu (repris du contexte).
+- **`composerProgramme(choix, contexte)`, pure et déterministe** : le nombre de séances = le nombre de jours ; chaque priorité est travaillée au moins deux fois par semaine quand il y a au moins trois jours ; noms d'étapes lisibles (« Dos & fessiers ») ; chaque étape reçoit son modèle R2 (`composerEtape` étendu pour prendre la priorité : les repères viennent de la zone prioritaire). Aucune règle sportive universelle (36).
+- **Aperçu avant activation**, puis nouvelle version (archive + `position_initiale`). Les occurrences encore réservées de l'ancienne version sont présentées une par une : **Garder / Remplacer / Retirer** (32). Rien ne s'efface sans choix.
+- Les comptes existants gardent leur programme jusqu'à ce qu'ils en choisissent un autre.
+
+### Ce que R9 ne fait pas
+- La version courte (R8), la variété (R7), le recouvrement « ton dos a travaillé hier » (décision 36, sans vague attribuée : je propose de le loger dans R7, qui choisit les complémentaires).
+- Un jour fixe récurrent pour une séance donnée (« lundi = Bas du corps », écarté par Louis, réponse B).
+
+### Questions pour Codex
+1. Trois sous-vagues dans l'ordre R9a → R9b → R9c (projection d'abord, composeur ensuite) : d'accord ?
+2. La règle hebdomadaire : colonne sur `contexte_entrainement` ou table dédiée ? Je penche pour la table (`regle_jours` + `exceptions_jour`), avec RLS propriétaire, pour ne pas mélanger le défaut de composition et le calendrier.
+3. Une projection jamais écrite, recalculée à chaque lecture, avec réservation explicite seulement au geste « Changer de jour » : d'accord ? Conséquence : `generateWeek` ne sert plus que si aucun jour n'est choisi.
+4. Aucun jour inventé pour les comptes existants, et l'aperçu de retrait du mobilier au premier choix : d'accord ?
+5. La règle « chaque priorité deux fois par semaine dès trois jours » : assez déterministe et assez peu « règle sportive universelle » ?
+
+### Pour Louis, avant le code
+- Une maquette 08 qui reprend 04 et 05 avec ce qui existe désormais (tunnel R3 à R5, héros), pour son GO.
+- La migration de R9a demande son accord explicite (décision 20).
