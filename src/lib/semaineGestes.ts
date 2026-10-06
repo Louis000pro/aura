@@ -28,7 +28,8 @@ import {
 } from "@/lib/planning";
 import { appliquerCibles } from "@/lib/progression";
 import { ciblesOuvertes } from "@/lib/progressionBase";
-import { ecrireOccurrence, modeleDeLEtape } from "@/lib/prescription";
+import { ecrireOccurrence, modeleDeLEtape, modeleDeLOccurrence } from "@/lib/prescription";
+import { lireVariete } from "@/lib/varieteBase";
 import { lireProgrammeActif } from "@/lib/programme";
 import { jourParis, resolutionDuProgramme } from "@/lib/projectionBase";
 import { poserException } from "@/lib/joursEntrainement";
@@ -97,8 +98,13 @@ export async function changerDeJour(input: {
     if (rangEnAttente(actif.cycle, proj.etat, etape.id) !== cible.rang) return { ok: false, raison: "changee" };
     if (await reservationDeLOccurrence(userId, actif.programme.id, cible.rang)) return { ok: false, raison: "changee" };
 
-    const modele = await modeleDeLEtape({ id: etape.id, nom: etape.nom }, contexteDe(gen));
-    if (!modele) return { ok: false, raison: "illisible" };
+    const lu = await modeleDeLEtape({ id: etape.id, nom: etape.nom }, contexteDe(gen));
+    if (!lu) return { ok: false, raison: "illisible" };
+    /* R7 · la MÊME occurrence que celle affichée : ses complémentaires
+       viennent de son rang et du réglage, relus. */
+    const variete = await lireVariete(userId);
+    if (!variete) return { ok: false, raison: "illisible" };
+    const modele = modeleDeLOccurrence(lu, { id: etape.id, rang: cible.rang }, contexteDe(gen), variete);
     const cibles = (await ciblesOuvertes(userId, actif.programme.id, etape.id)) ?? [];
     const r = await ecrireOccurrence({
       programme_id: actif.programme.id,

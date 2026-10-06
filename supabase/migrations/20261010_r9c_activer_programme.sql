@@ -136,8 +136,14 @@ begin
       v_etape_id := nullif(v_ids->>(v_rep->>'position'), '')::uuid;
       if v_etape_id is null then raise exception 'position_inconnue' using errcode = '22023'; end if;
       v_modele := nullif(v_modeles->>(v_rep->>'position'), '')::uuid;
-      select x->'lignes' into v_lignes from jsonb_array_elements(v_etapes) x
-       where (x->>'position') = (v_rep->>'position');
+      /* R7 · les lignes PROPRES à cette occurrence (sa variété, selon son
+         rang), sinon celles du modèle de l'étape. */
+      if jsonb_typeof(v_rep->'lignes') = 'array' then
+        v_lignes := v_rep->'lignes';
+      else
+        select x->'lignes' into v_lignes from jsonb_array_elements(v_etapes) x
+         where (x->>'position') = (v_rep->>'position');
+      end if;
       v_res := public.ecrire_occurrence(jsonb_build_object(
         'intention', jsonb_build_object(
           'programme_id', v_nouveau,

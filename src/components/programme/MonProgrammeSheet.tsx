@@ -13,6 +13,10 @@
      retirer (décision 32). « Activer » ne part qu'avec une réponse pour
      chacune, et la base le vérifie aussi.
 
+   R7 · « Mes exercices » (maquette 07 écran 01) : le réglage de variété,
+   à part. Il s'enregistre seul, sans changer de programme : il ne décide
+   que des séances pas encore préparées.
+
    ⚠️ L'APERÇU EST CE QUI S'ÉCRIT. Les noms viennent de
    `composerProgramme`, les exercices de `composerEtape` sur le même nom
    et le même contexte que l'écriture (`preparerActivation`).
@@ -33,6 +37,26 @@ import { libelleJourProjete, type Calendrier } from "@/lib/projection";
 import { ABR_JOURS } from "@/lib/semaine";
 import { EVT_JOURNEE } from "@/lib/finSeance";
 import type { ProgrammeEtCycle } from "@/lib/programme";
+import { LIBELLE_VARIETE, VARIETES, type Variete } from "@/lib/variete";
+import { ecrireVariete, lireVariete } from "@/lib/varieteBase";
+
+/* Une séance de six exercices, vue par chaque mode : les repères restent,
+   les autres restent ou changent (maquette 07 écran 01). */
+const POINTS: Record<Variete, ("repere" | "garde" | "nouveau")[]> = {
+  habituels: ["repere", "repere", "garde", "garde", "garde", "garde"],
+  peu: ["repere", "repere", "garde", "garde", "garde", "nouveau"],
+  beaucoup: ["repere", "repere", "garde", "nouveau", "nouveau", "nouveau"],
+};
+
+function Points({ mode }: { mode: Variete }) {
+  return (
+    <span className="flex items-center gap-1" aria-hidden>
+      {POINTS[mode].map((p, i) => p === "nouveau"
+        ? <span key={i} className="text-[13px] font-extrabold leading-none" style={{ color: "var(--exp-encre)" }}>+</span>
+        : <span key={i} className="w-2 h-2 rounded-full" style={{ background: p === "repere" ? "var(--text-0)" : "rgba(var(--text-3-rgb),0.45)" }} />)}
+    </span>
+  );
+}
 
 const LIEU: Record<string, string> = {
   salle: "En salle",
@@ -57,7 +81,11 @@ export default function MonProgrammeSheet({ userId, programme, calendrier, gen, 
   const connues = programme ? prioritesDeLIntention(programme.programme.intention) : null;
   /* `null` = rien choisi encore ; `[]` = « Un peu de tout ». */
   const [priorites, setPriorites] = useState<Zone[] | null>(connues);
-  const [etape, setEtape] = useState<"choix" | "apercu">("choix");
+  const [etape, setEtape] = useState<"choix" | "apercu" | "exercices">("choix");
+  /* R7 · `undefined` = en lecture ; `null` = illisible. */
+  const [variete, setVariete] = useState<Variete | null | undefined>(undefined);
+  const [varieteChoisie, setVarieteChoisie] = useState<Variete | null>(null);
+  const [varieteMsg, setVarieteMsg] = useState<string | null>(null);
   const [ouverte, setOuverte] = useState<number | null>(null);
   const [reservations, setReservations] = useState<ReservationAncienne[] | null>(programme ? null : []);
   const [illisible, setIllisible] = useState(false);
@@ -93,6 +121,27 @@ export default function MonProgrammeSheet({ userId, programme, calendrier, gen, 
     return () => { vivant = false; };
   }, [etape, programme, userId, lecture]);
 
+  useEffect(() => {
+    let vivant = true;
+    void lireVariete(userId).then((v) => { if (vivant) setVariete(v); });
+    return () => { vivant = false; };
+  }, [userId]);
+
+  const enregistrerVariete = async () => {
+    const v = varieteChoisie ?? variete;
+    if (!v) return;
+    setEnvoi(true); setVarieteMsg(null);
+    const r = await ecrireVariete(userId, v);
+    setEnvoi(false);
+    if (r === "ok") {
+      setVariete(v);
+      window.dispatchEvent(new Event(EVT_JOURNEE));
+      setEtape("choix");
+      return;
+    }
+    setVarieteMsg(r === "pas_ouvert" ? "Ce réglage n’est pas encore ouvert. Rien n’a changé." : "Ça n’a pas pris. Réessaie dans un instant.");
+  };
+
   const basculer = (z: Zone) => {
     setPriorites((p) => {
       const liste = p ?? [];
@@ -103,14 +152,16 @@ export default function MonProgrammeSheet({ userId, programme, calendrier, gen, 
 
   const plan = compose && reservations ? planDesRemplacements(reservations, choix, compose.etapes) : null;
   const blocage = !gen ? "Je n’arrive pas à lire tes réglages d’entraînement."
+    : variete === null ? "Je n’arrive pas à lire ton réglage d’exercices."
+    : variete === undefined ? "Je lis tes réglages…"
     : identique ? "C’est déjà ton programme."
     : reservations === null ? (illisible ? "Je n’arrive pas à voir tes séances déjà prévues." : "Je regarde tes séances déjà prévues…")
     : !plan ? "Choisis quoi faire de chaque séance encore prévue."
     : null;
 
   const activer = async () => {
-    if (blocage || !compose || !gen || !reservations) { setRefus(true); return; }
-    const demande = preparerActivation(programme?.programme.id ?? null, compose, gen, reservations, choix);
+    if (blocage || !compose || !gen || !reservations || !variete) { setRefus(true); return; }
+    const demande = preparerActivation(programme?.programme.id ?? null, compose, gen, reservations, choix, variete);
     if (!demande) { setRefus(true); return; }
     setEnvoi(true); setErreur(null);
     const r = await activerProgramme(demande);
@@ -140,7 +191,7 @@ export default function MonProgrammeSheet({ userId, programme, calendrier, gen, 
     <FeuilleBas onClose={onClose} niveau={105}>
       <div className="px-5 pt-1 pb-2 flex items-center justify-between flex-shrink-0">
         <p className="vy-sous" style={{ color: "var(--text-0)" }}>
-          {etape === "choix" ? "Mon programme" : programme ? "Ton nouveau programme" : "Ton programme"}
+          {etape === "choix" ? "Mon programme" : etape === "exercices" ? "Mes exercices" : programme ? "Ton nouveau programme" : "Ton programme"}
         </p>
         <button onClick={onClose} aria-label="Fermer" className="w-8 h-8 flex items-center justify-center cursor-pointer bg-transparent border-none">
           <X size={16} style={{ color: "var(--text-3)" }} />
@@ -189,7 +240,44 @@ export default function MonProgrammeSheet({ userId, programme, calendrier, gen, 
                 <span className="text-[13px] font-semibold" style={{ color: "var(--text-1)" }}>Où</span>
                 <span className="text-[13px]" style={{ color: "var(--text-2)" }}>{gen ? LIEU[gen.ctx] : "—"}</span>
               </div>
+              <button onClick={() => { setVarieteChoisie(null); setVarieteMsg(null); setEtape("exercices"); }}
+                disabled={variete === undefined}
+                className="w-full flex items-center justify-between py-3 bg-transparent border-none cursor-pointer text-left"
+                style={{ borderTop: "1px solid rgba(var(--text-3-rgb),0.14)" }}>
+                <span className="text-[13px] font-semibold" style={{ color: "var(--text-1)" }}>Mes exercices</span>
+                <span className="text-[13px] flex items-center gap-1" style={{ color: "var(--text-2)" }}>
+                  {variete ? LIBELLE_VARIETE[variete] : variete === null ? "Illisible" : "…"}
+                  <ChevronRight size={14} />
+                </span>
+              </button>
             </div>
+          </>
+        ) : etape === "exercices" ? (
+          <>
+            <div className="mt-1" role="radiogroup" aria-label="Mes exercices">
+              {VARIETES.map((m) => {
+                const on = (varieteChoisie ?? variete) === m;
+                return (
+                  <button key={m} role="radio" aria-checked={on} onClick={() => setVarieteChoisie(m)}
+                    className="w-full flex items-center justify-between gap-3 py-3.5 bg-transparent border-none cursor-pointer text-left"
+                    style={{ borderTop: "1px solid rgba(var(--text-3-rgb),0.14)" }}>
+                    <span className="flex flex-col gap-1.5">
+                      <span className="text-[16px] font-semibold" style={{ color: "var(--text-0)" }}>{LIBELLE_VARIETE[m]}</span>
+                      <Points mode={m} />
+                    </span>
+                    <span className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0"
+                      style={{ border: on ? "6px solid #8B5CF6" : "1.5px solid rgba(var(--text-3-rgb),0.5)" }} />
+                  </button>
+                );
+              })}
+            </div>
+            <div className="flex items-center gap-3 mt-3 text-[11px]" style={{ color: "var(--text-3)" }}>
+              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full" style={{ background: "var(--text-0)" }} />Repère</span>
+              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full" style={{ background: "rgba(var(--text-3-rgb),0.45)" }} />Gardé</span>
+              <span className="flex items-center gap-1"><span className="font-extrabold" style={{ color: "var(--exp-encre)" }}>+</span>Nouveau</span>
+            </div>
+            <p className="vy-corps mt-4" style={{ color: "var(--text-2)" }}>Tes exercices repères restent pour suivre tes progrès.</p>
+            {varieteMsg && <p className="text-[13px] mt-3" style={{ color: "var(--text-2)" }}>{varieteMsg}</p>}
           </>
         ) : compose && (
           <>
@@ -275,7 +363,20 @@ export default function MonProgrammeSheet({ userId, programme, calendrier, gen, 
 
       <div className="px-5 pt-3 flex flex-col gap-2 flex-shrink-0"
         style={{ paddingBottom: "calc(1rem + env(safe-area-inset-bottom))" }}>
-        {etape === "choix" ? (
+        {etape === "exercices" ? (
+          <>
+            <motion.button whileTap={{ scale: 0.97 }} aria-disabled={envoi || !(varieteChoisie ?? variete)}
+              onClick={() => { if (!envoi) void enregistrerVariete(); }}
+              className="w-full py-3 rounded-2xl text-[16px] font-extrabold text-white cursor-pointer border-none"
+              style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", boxShadow: "var(--ombre-action)", opacity: envoi ? 0.55 : 1 }}>
+              {envoi ? "Enregistrement…" : "Enregistrer"}
+            </motion.button>
+            <button disabled={envoi} onClick={() => setEtape("choix")}
+              className="w-full py-2 text-[13px] font-semibold cursor-pointer bg-transparent border-none" style={{ color: "var(--text-2)" }}>
+              Retour
+            </button>
+          </>
+        ) : etape === "choix" ? (
           <motion.button whileTap={{ scale: 0.97 }} aria-disabled={!priorites}
             onClick={() => { if (priorites) { setEtape("apercu"); setOuverte(null); setErreur(null); setRefus(false); } else setRefus(true); }}
             className="w-full py-3 rounded-2xl text-[16px] font-extrabold text-white cursor-pointer border-none"

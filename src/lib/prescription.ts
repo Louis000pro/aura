@@ -27,6 +27,7 @@ import { createClient } from "@/lib/supabase";
 import {
   composerEtape, type ContexteComposition, type LignePrescription,
 } from "@/lib/banqueEtapes";
+import { varierLignes, type Variete } from "@/lib/variete";
 
 /** Ce qu'une étape propose, avec ce qui permet de savoir d'où ça vient. */
 export type ModeleEtape = {
@@ -41,6 +42,21 @@ export type ModeleEtape = {
  * modèle qui appartient à une autre étape.
  */
 export type ModeleDeLOccurrence = ModeleEtape & { etapeId: string; rang: number; lieu: string };
+
+/**
+ * R7 · LE MODÈLE D'UNE ÉTAPE DEVIENT LA PRESCRIPTION D'UNE OCCURRENCE :
+ * ses complémentaires sont choisis selon le réglage et le RANG (pure,
+ * identique sur tous les appareils). C'est le seul passage : l'affichage,
+ * le lancement et la réservation reçoivent les mêmes lignes.
+ */
+export function modeleDeLOccurrence(
+  lu: ModeleEtape,
+  occ: { id: string; rang: number },
+  ctx: ContexteComposition,
+  variete: Variete,
+): ModeleDeLOccurrence {
+  return { modeleId: lu.modeleId, lignes: varierLignes(lu.lignes, occ.rang, variete, ctx), etapeId: occ.id, rang: occ.rang, lieu: ctx.lieu };
+}
 
 /** Ce qui distingue deux prescriptions : l'étape, le lieu, le modèle, ses lignes. */
 export function empreinteModele(m: ModeleDeLOccurrence): string {

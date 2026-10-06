@@ -88,6 +88,8 @@ export default function HeroJournee() {
         onShift={() => openAssistant("Décale ma séance d’aujourd’hui à un autre jour")}
         onReplace={() => openAssistant("Remplace ma séance d’aujourd’hui par autre chose")}
         onAdaptation={() => ouvrir("adaptation")}
+        recouvrement={j.recouvrement}
+        onLeger={j.lancerAllege}
       />
 
       {/* ⚠️ CE QUI VIENT EN PLUS AUJOURD'HUI (V6b). Le héros ne montre

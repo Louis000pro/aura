@@ -57,9 +57,18 @@ function S() {
    pure qui les décide : l'écran affiche, il ne juge pas. */
 export type HeroState = EtatJournee;
 
+/* R7 · un fait, posé au-dessus du choix. Ni alerte ni couleur d'énergie :
+   l'app constate, elle ne met pas en garde. */
+function Fait({ texte }: { texte: string }) {
+  return (
+    <p className="-mt-2 mb-3 text-[13px] font-semibold" style={{ color: "#fff" }}>{texte}</p>
+  );
+}
+
 export default function TodayHero({
   state, day, etape, reserveLe, prevuLe = null, attendait = null, indisponible = false, onRetry, nbExos, nextLabel, doneStats, adaptationJusquau,
   onStart, onRedo, onImprovise, onOrganise, onShift, onReplace, onAdaptation,
+  recouvrement = null, onLeger,
 }: {
   state: HeroState;
   day: PlanningDay | null;
@@ -99,6 +108,11 @@ export default function TodayHero({
   onReplace: () => void;
   /** Ouvre l'écran des adaptations, dans Entraînement. */
   onAdaptation: () => void;
+  /* R7 · « Ton dos a travaillé hier » (maquette 05 écran 07) : un fait,
+     et trois choix. Le bouton principal dit alors « La faire comme
+     prévu », la version légère vient dessous, et changer de jour reste. */
+  recouvrement?: { phrase: string; leger: string } | null;
+  onLeger?: () => void;
 }) {
   /* Skeleton — même silhouette que la carte, aucune culpabilité d'attente */
   if (state === "loading") {
@@ -161,14 +175,22 @@ export default function TodayHero({
             <p className="mt-2.5 mb-4 text-[16px] font-normal" style={{ color: "rgba(255,255,255,0.82)" }}>
               <V>{day.type === "HIIT" ? 30 : 45}</V> min<S /><V>{day.exerciseList.length}</V> exercices<S />{day.difficulty}
             </p>
+            {recouvrement && <Fait texte={recouvrement.phrase} />}
             <motion.button
               whileTap={{ scale: 0.97 }}
               onClick={onStart}
               className="w-full py-3.5 rounded-2xl flex items-center justify-center gap-2 cursor-pointer text-[16px] font-extrabold text-white"
               style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", boxShadow: "var(--ombre-action)" }}
             >
-              <Play size={14} strokeWidth={2.5} fill="#fff" /> C&apos;est parti
+              <Play size={14} strokeWidth={2.5} fill="#fff" /> {recouvrement ? "La faire comme prévu" : <>C&apos;est parti</>}
             </motion.button>
+            {recouvrement && onLeger && (
+              <button onClick={onLeger}
+                className="w-full mt-2 py-2.5 rounded-2xl text-[13px] font-semibold cursor-pointer"
+                style={{ background: "transparent", color: "#fff", border: "1px solid rgba(255,255,255,0.35)" }}>
+                {recouvrement.leger}
+              </button>
+            )}
             <div className="flex justify-center gap-5 mt-2.5">
               <button onClick={onShift} className="text-[13px] font-semibold cursor-pointer bg-transparent border-none"
                 style={{ color: "rgba(255,255,255,0.6)" }}>
@@ -205,14 +227,22 @@ export default function TodayHero({
               {prevuLe && attendait && <><S />{attendait}</>}
               {nbExos > 0 && <><S /><V>{nbExos}</V> exercices</>}
             </p>
+            {recouvrement && <Fait texte={recouvrement.phrase} />}
             <motion.button
               whileTap={{ scale: 0.97 }}
               onClick={onStart}
               className="w-full py-3.5 rounded-2xl flex items-center justify-center gap-2 cursor-pointer text-[16px] font-extrabold text-white"
               style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", boxShadow: "var(--ombre-action)" }}
             >
-              <Play size={14} strokeWidth={2.5} fill="#fff" /> C&apos;est parti
+              <Play size={14} strokeWidth={2.5} fill="#fff" /> {recouvrement ? "La faire comme prévu" : <>C&apos;est parti</>}
             </motion.button>
+            {recouvrement && onLeger && (
+              <button onClick={onLeger}
+                className="w-full mt-2 py-2.5 rounded-2xl text-[13px] font-semibold cursor-pointer"
+                style={{ background: "transparent", color: "#fff", border: "1px solid rgba(255,255,255,0.35)" }}>
+                {recouvrement.leger}
+              </button>
+            )}
             <div className="flex justify-center gap-5 mt-2.5">
               <button onClick={onOrganise} className="text-[13px] font-semibold cursor-pointer bg-transparent border-none"
                 style={{ color: "rgba(255,255,255,0.6)" }}>

@@ -851,3 +851,13 @@ Louis demande d'enchaîner les vagues sans attendre chaque feu vert : Codex reli
 - **Projection** : une réservation gardée d'une version archivée occupe son jour (`lireOccupes`), et « Ma semaine » apparie une réservation par rang ET étape.
 - Bancs : +21 contrôles R9c. Témoins : appariement sans étape (1 échec), choix manquant accepté (2), seconde séance prioritaire retirée (4), refus SQL retiré (1).
 - **Hors R9c, consigné** : le mobilier `systeme` de l'ancienne version (provenance seule, sans réservation) n'est pas proposé au choix ; il reste une séance posée sur son jour.
+
+## R7 · codée (2026-10-06)
+
+- **`variete.ts` (pur).** `varierLignes(modele, rang, mode, ctx)` : les repères, l'ordre et les emplacements ne bougent jamais ; chaque complémentaire tourne dans un cycle (l'exercice d'origine puis ceux de la MÊME fonction dans la banque du lieu, sans doublon). Rang 1 = le modèle. « habituels » : le modèle ; « peu » (défaut) : un seul emplacement renouvelable par occurrence, à tour de rôle ; « beaucoup » : chacun, décalé d'un cran par emplacement. Un complémentaire sans équivalent reste ce qu'il est.
+- **Déterministe par le rang (R6)** : même occurrence = mêmes exercices sur tous les appareils ; une séance manquée garde son rang, donc ses exercices. Une occurrence écrite garde sa prescription figée.
+- **Un seul passage modèle → occurrence** : `modeleDeLOccurrence` (prescription.ts), utilisé par l'affichage, la relecture avant lancement et « Changer de jour ». `preparerActivation` écrit pour chaque remplacement les lignes de son rang (`activer_programme` lit `choix[id].lignes`, sinon le modèle).
+- **Réglage** : `contexte_entrainement.variete` (migration `20261011_r7_variete.sql`, vocabulaire fermé, NULL = défaut). Lecture stricte : panne = on ne sait pas (le héros garde ce qu'il montrait, l'écriture refuse) ; colonne absente ou ligne absente = défaut. Écran « Mes exercices » dans Mon programme (maquette 07 écran 01), enregistré seul.
+- **« Ton dos a travaillé hier »** (décision 36, maquette 05 écran 07) : `recouvrement` compare les zones de la séance que le bouton lancerait vraiment aux séries terminées hier et aujourd'hui (abdos exclus). Héros : le fait, « La faire comme prévu », « Version plus légère pour le dos » (une série de moins sur les exercices de la zone, mêmes exercices et emplacements), et le geste de jour existant.
+- **Hors périmètre, consigné** : « À chaque fois » (garder ou remplacer un exercice pour toutes les occurrences futures) reste masqué ; proposer de changer un repère selon la pratique (décision 52) n'est pas fait.
+- Banc : +22 contrôles (1 386 cas balayés). Témoins : repères variés 2, panne lue comme défaut 1, garde retirée 1, rang 1 varié (le banc plante).

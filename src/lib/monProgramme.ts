@@ -12,6 +12,7 @@
 
 import { createClient } from "@/lib/supabase";
 import { composerEtape } from "@/lib/banqueEtapes";
+import { varierLignes, type Variete } from "@/lib/variete";
 import { contexteDe, type GenInput } from "@/lib/planning";
 import {
   planDesRemplacements,
@@ -46,7 +47,11 @@ export type DemandeActivation = {
   intention: string;
   contexte: { lieu: string; orientation: string; niveau: string | null; version: number; location: string };
   etapes: { position: number; nom: string; lignes: ReturnType<typeof composerEtape> }[];
-  choix: Record<string, { choix: ChoixReservation; position?: number; rang?: number; titre?: string; type?: string }>;
+  choix: Record<string, {
+    choix: ChoixReservation; position?: number; rang?: number; titre?: string; type?: string;
+    /** R7 · les lignes de CETTE occurrence (sa variété, selon son rang). */
+    lignes?: ReturnType<typeof composerEtape>;
+  }>;
 };
 
 /**
@@ -59,17 +64,22 @@ export function preparerActivation(
   gen: Pick<GenInput, "ctx" | "goals" | "level">,
   reservations: readonly ReservationAncienne[],
   choix: Readonly<Record<string, ChoixReservation | undefined>>,
+  variete: Variete,
 ): DemandeActivation | null {
   const plan = planDesRemplacements(reservations, choix, compose.etapes);
   if (!plan) return null;
   const ctx = contexteDe(gen);
   const parId = new Map(plan.map((r) => [r.intentionId, r]));
   const sortie: DemandeActivation["choix"] = {};
+  const modeles = new Map(compose.etapes.map((e) => [e.position, composerEtape(e.nom, ctx)]));
   for (const r of reservations) {
     const c = choix[r.id] as ChoixReservation;
     const rep = parId.get(r.id);
     sortie[r.id] = rep
-      ? { choix: c, position: rep.position, rang: rep.rang, titre: rep.nom, type: "Force" }
+      ? {
+        choix: c, position: rep.position, rang: rep.rang, titre: rep.nom, type: "Force",
+        lignes: varierLignes(modeles.get(rep.position) ?? [], rep.rang, variete, ctx),
+      }
       : { choix: c };
   }
   return {
@@ -77,7 +87,7 @@ export function preparerActivation(
     nom: compose.nom,
     intention: compose.intention,
     contexte: { lieu: ctx.lieu, orientation: ctx.orientation, niveau: ctx.niveau, version: ctx.version, location: gen.ctx },
-    etapes: compose.etapes.map((e) => ({ ...e, lignes: composerEtape(e.nom, ctx) })),
+    etapes: compose.etapes.map((e) => ({ ...e, lignes: modeles.get(e.position) ?? composerEtape(e.nom, ctx) })),
     choix: sortie,
   };
 }

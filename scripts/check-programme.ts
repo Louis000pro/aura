@@ -6326,7 +6326,8 @@ verdict(
     "`instanceDeLEtape` supprimée");
   verdict("R2 · la prescription se fige au lancement et voyage avec lui",
     /* R4 · la copie figée porte désormais les cibles acceptées recopiées. */
-    journee.includes("prescription: lignesFigees.map((l) => ({ ...l })),") && journee.includes("const lignesFigees = appliquerCibles(c.modele.lignes,")
+    journee.includes("prescription: lignesFigees.map((l) => ({ ...l })),") && journee.includes("const pleines = appliquerCibles(c.modele.lignes,")
+      && journee.includes("const lignesFigees = allegerZone ? allegerPourZone(pleines, allegerZone) : pleines;")
       && journee.includes("modeleId: c.modele.modeleId,"),
     "dans la cible, donc dans l'attente locale");
   verdict("R2 · la fermeture écrit la copie figée, jamais une recomposition",
@@ -6411,12 +6412,13 @@ verdict(
     verdict("R2 · l'étape n'est publiée qu'avec son modèle, après la dernière lecture",
       lecture.indexOf("await modeleDeLEtape(") > 0 && lecture.indexOf("await modeleDeLEtape(") < lecture.indexOf("setEtape(suivante)")
         && lecture.lastIndexOf("if (!derniere()) return;", lecture.indexOf("setEtape(suivante)")) > lecture.indexOf("await reservationDeLOccurrence(")
-        && /setModele\(suivante && lu\s*\? \{ \.\.\.lu, etapeId: suivante\.id, rang: suivante\.rang/.test(lecture),
+        /* R7 · le modèle devient la prescription de CETTE occurrence. */
+        && /setModele\(suivante && lu && variete\s*\? modeleDeLOccurrence\(lu, suivante, ctxModele, variete\)/.test(lecture),
       "une réponse arrivée en retard ne publie rien");
     const gestes = journee.slice(journee.indexOf("type ContexteHook"), journee.indexOf("return {\n    etat,"));
     verdict("R2 · les gestes utilisent le modèle RELU, jamais celui de l'écran",
       gestes.includes("prescription: empreinteModele(frais)") && gestes.includes("if (!lu) throw new Error(\"modele_illisible\")")
-        && gestes.includes("modele.etapeId === etape.id") === false && !/[^.]modele\.(lignes|modeleId)/.test(gestes.slice(gestes.indexOf("const lancerAujourdhui"))),
+        && gestes.includes("modele.etapeId === etape.id") === false && !/[^.]modele\.(lignes|modeleId)/.test(gestes.slice(gestes.indexOf("const lancer = useCallback"))),
       "`c.modele` partout ; un contexte sans modèle de CETTE étape n'existe pas");
     verdict("R2 · un modèle d'une autre étape n'est jamais affiché comme le sien",
       journee.includes("modele && modele.etapeId === etape.id && modele.rang === etape.rang ? modele : null"), "ni projeté, ni lancé");
@@ -7561,7 +7563,7 @@ verdict(
     JSON.stringify(plan?.map((r) => `${r.intentionId}:${r.rang}:${r.nom}`)) === JSON.stringify(["r1:1:Dos & fessiers", "r2:2:Haut du corps", "r4:3:Fessiers & dos"]),
     JSON.stringify(plan));
   const gen = { ctx: "salle" as const, goals: ["Prise de masse"], level: "debutant" };
-  const demande = M.preparerActivation("p-ancien", lina, gen, resas, tous);
+  const demande = M.preparerActivation("p-ancien", lina, gen, resas, tous, "peu");
   verdict("R9c · l'aperçu est ce qui s'écrit : mêmes noms, mêmes exercices, même contexte",
     !!demande && demande.etapes.every((e) => JSON.stringify(e.lignes) === JSON.stringify(B.composerEtape(e.nom, contexteDe(gen))))
       && demande.contexte.orientation === "masse" && demande.ancien_id === "p-ancien"
@@ -7569,7 +7571,7 @@ verdict(
       && demande.choix.r3.choix === "garder" && demande.choix.r3.position === undefined
       && demande.choix.r4.position === 3 && demande.choix.r4.rang === 3, "");
   verdict("R9c · sans réponse pour chaque séance prévue, aucune demande d'activation",
-    M.preparerActivation("p", lina, gen, resas, { r1: "garder" }) === null, "");
+    M.preparerActivation("p", lina, gen, resas, { r1: "garder" }, "peu") === null, "");
 
   /* Pannes injectées : la lecture lève, l'activation nomme chaque issue. */
   type Rep = { data: unknown; error: { code?: string; message: string } | null };
@@ -7616,6 +7618,167 @@ verdict(
   const base = readFileSync("src/lib/projectionBase.ts", "utf8");
   verdict("R9c · une séance gardée d'une version archivée occupe son jour dans la projection",
     base.includes(".or(`etape_consommee_id.is.null,programme_id.neq.${programmeId}`)"), "");
+}
+
+/* ── R7 · LA VARIÉTÉ. La VRAIE banque, la VRAIE variation, le VRAI
+   recouvrement, et le réglage lu avec des pannes injectées. ── */
+{
+  const B = await import("@/lib/banqueEtapes");
+  const V = await import("@/lib/variete");
+  const VB = await import("@/lib/varieteBase");
+  const M = await import("@/lib/monProgramme");
+  const C = await import("@/lib/composeurProgramme");
+  const { contexteDe } = await import("@/lib/planning");
+  const lieux = ["salle", "halteres", "poids"] as const;
+  const etapes = [...Object.keys(B.BANQUE.salle), "Dos & fessiers", "Fessiers & dos", "Pectoraux & épaules", "Jambes & abdos", "Bras & dos"];
+  const modes = V.VARIETES;
+  const ctxDe = (lieu: (typeof lieux)[number]) => contexteDe({ ctx: lieu, goals: ["Prise de masse"], level: "debutant" });
+
+  let reperesFixes = true, emplacementsFixes = true, sansDoublon = true, memeFonction = true, praticable = true;
+  let rang1Modele = true, habituelsModele = true, peuUnSeul = true, deterministe = true;
+  let changementsPeu = 0, changementsBeaucoup = 0, cas = 0;
+  for (const lieu of lieux) {
+    const ctx = ctxDe(lieu);
+    const permis = new Set(exercicesDisponibles(lieu).map((e) => e.name));
+    for (const nom of etapes) {
+      const modele = B.composerEtape(nom, ctx);
+      for (const mode of modes) for (let rang = 1; rang <= 14; rang++) {
+        cas++;
+        const l = V.varierLignes(modele, rang, mode, ctx);
+        if (JSON.stringify(l) !== JSON.stringify(V.varierLignes(modele, rang, mode, ctx))) deterministe = false;
+        if (l.length !== modele.length) emplacementsFixes = false;
+        let diff = 0;
+        l.forEach((x, i) => {
+          const m = modele[i];
+          if (x.emplacement !== m.emplacement) emplacementsFixes = false;
+          if (m.statut === "repere" && JSON.stringify(x) !== JSON.stringify(m)) reperesFixes = false;
+          if (x.exercice_nom !== m.exercice_nom) {
+            diff++;
+            if (x.fonction !== m.fonction) memeFonction = false;
+            if (!permis.has(x.exercice_nom)) praticable = false;
+          }
+        });
+        if (new Set(l.map((x) => x.exercice_nom)).size !== l.length) sansDoublon = false;
+        if (rang === 1 && diff > 0) rang1Modele = false;
+        if (mode === "habituels" && diff > 0) habituelsModele = false;
+        if (mode === "peu" && diff > 1) peuUnSeul = false;
+        if (mode === "peu") changementsPeu += diff;
+        if (mode === "beaucoup") changementsBeaucoup += diff;
+      }
+    }
+  }
+  verdict(`R7 · les repères ne bougent dans aucun mode (${cas} cas : 3 lieux, ${etapes.length} séances, 3 modes, rangs 1 à 14)`, reperesFixes, "");
+  verdict("R7 · l'ordre et les emplacements ne changent jamais (le journal s'y rattache)", emplacementsFixes, "");
+  verdict("R7 · un remplaçant a la MÊME fonction, il est praticable au lieu, et rien n'est en double", memeFonction && praticable && sansDoublon,
+    JSON.stringify({ memeFonction, praticable, sansDoublon }));
+  verdict("R7 · la première occurrence est le modèle tel qu'il est, et « habituels » le garde toujours", rang1Modele && habituelsModele, "");
+  verdict("R7 · « un peu » change au plus un exercice par séance ; « beaucoup » en change davantage",
+    peuUnSeul && changementsPeu > 0 && changementsBeaucoup > changementsPeu, `${changementsPeu} / ${changementsBeaucoup}`);
+  verdict("R7 · pure : les mêmes réglages et le même rang donnent la même séance, sur tous les appareils", deterministe, "");
+
+  /* Une séance manquée garde ses exercices : elle garde son rang (R6),
+     donc le même contenu, quel que soit le jour où on la fait. */
+  const ctxSalle = ctxDe("salle");
+  const push = B.composerEtape("Haut du corps", ctxSalle);
+  const r3 = V.varierLignes(push, 3, "peu", ctxSalle).map((x) => x.exercice_nom);
+  const r3plusTard = V.varierLignes(push, 3, "peu", ctxSalle).map((x) => x.exercice_nom);
+  const r4 = V.varierLignes(push, 4, "peu", ctxSalle).map((x) => x.exercice_nom);
+  verdict("R7 · une séance manquée garde ses exercices ; la suivante a sa propre nouveauté",
+    JSON.stringify(r3) === JSON.stringify(r3plusTard) && JSON.stringify(r3) !== JSON.stringify(r4), JSON.stringify([r3, r4]));
+  const ligneInconnue = { ...push[push.length - 1], statut: "complementaire" as const, fonction: "cardio" as const };
+  verdict("R7 · un complémentaire sans équivalent dans la banque du lieu reste ce qu'il est",
+    V.vivierDeFonction("charniere_hanche", "halteres").length === 0
+      && JSON.stringify(V.varierLignes(B.composerEtape("Pull", ctxDe("poids")), 5, "beaucoup", ctxDe("poids")).filter((x) => x.statut === "repere"))
+        === JSON.stringify(B.composerEtape("Pull", ctxDe("poids")).filter((x) => x.statut === "repere"))
+      && !!ligneInconnue, "");
+
+  /* « Ton dos a travaillé hier » */
+  const auj = "2026-10-06", hier = "2026-10-05";
+  const fessiersDos = B.composerEtape("Fessiers & dos", ctxSalle);
+  const lina = V.recouvrement(fessiersDos, [{ exercice_nom: "Rowing haltère", jour: hier }], auj, hier);
+  verdict("R7 · Lina : le rowing de jeudi et le tirage de vendredi se recoupent → « Ton dos a travaillé hier. »",
+    lina?.zone === "dos" && lina.quand === "hier" && V.phraseRecouvrement(lina) === "Ton dos a travaillé hier."
+      && V.libelleAllege("dos") === "Version plus légère pour le dos", JSON.stringify(lina));
+  verdict("R7 · rien à dire : séance d'avant-hier, abdos seuls, ou zone que la séance ne travaille pas",
+    V.recouvrement(fessiersDos, [{ exercice_nom: "Rowing haltère", jour: "2026-10-04" }], auj, hier) === null
+      && V.recouvrement(fessiersDos, [{ exercice_nom: "Crunch", jour: hier }], auj, hier) === null
+      && V.recouvrement(B.composerEtape("Bas du corps", ctxSalle), [{ exercice_nom: "Développé couché", jour: hier }], auj, hier) === null, "");
+  verdict("R7 · plus tôt aujourd'hui l'emporte sur hier, et la phrase s'accorde",
+    V.phraseRecouvrement(V.recouvrement(B.composerEtape("Bas du corps", ctxSalle),
+      [{ exercice_nom: "Squat", jour: hier }, { exercice_nom: "Presse à cuisses", jour: auj }], auj, hier)!) === "Tes jambes ont travaillé aujourd'hui.", "");
+  const leger = V.allegerPourZone(fessiersDos, "dos");
+  verdict("R7 · la version légère : une série de moins là où ça vient de travailler, mêmes exercices, mêmes emplacements",
+    leger.every((x, i) => x.exercice_nom === fessiersDos[i].exercice_nom && x.emplacement === fessiersDos[i].emplacement
+      && x.series === (V.zonesDeFonction(fessiersDos[i].fonction).includes("dos") ? Math.max(1, fessiersDos[i].series - 1) : fessiersDos[i].series))
+      && leger.some((x, i) => x.series !== fessiersDos[i].series), "");
+  const liste = B.projeterPrescription(fessiersDos);
+  verdict("R7 · la même règle sur une séance déjà écrite (liste projetée)",
+    V.allegerExercices(liste, "dos").every((e, i) => e.sets === leger[i].series), "");
+
+  /* L'activation écrit, pour chaque remplacement, les lignes de SON rang. */
+  const prog = C.composerProgramme({ priorites: ["dos", "fessiers"], seances: 3 });
+  const gen = { ctx: "salle" as const, goals: ["Prise de masse"], level: "debutant" };
+  const resas = [{ id: "a", date: "2026-10-07", titre: "Push" }, { id: "b", date: "2026-10-09", titre: "Pull" }, { id: "c", date: "2026-10-12", titre: "Bas" }, { id: "d", date: "2026-10-14", titre: "Full" }];
+  const tous = { a: "remplacer", b: "remplacer", c: "remplacer", d: "remplacer" } as const;
+  const dem = M.preparerActivation(null, prog, gen, resas, tous, "beaucoup")!;
+  const ctxG = contexteDe(gen);
+  verdict("R7 · l'activation : chaque séance remplacée porte les exercices de son rang, la première est le modèle",
+    !!dem && JSON.stringify(dem.choix.a.lignes) === JSON.stringify(B.composerEtape(prog.etapes[0].nom, ctxG))
+      && JSON.stringify(dem.choix.d.lignes) === JSON.stringify(V.varierLignes(B.composerEtape(prog.etapes[0].nom, ctxG), 4, "beaucoup", ctxG))
+      && JSON.stringify(dem.choix.d.lignes) !== JSON.stringify(dem.choix.a.lignes), "");
+
+  /* Le réglage : erreur ≠ absence. */
+  type Rep = { data: unknown; error: { code?: string; message: string } | null };
+  const cl = (rep: Rep) => {
+    const ch: Record<string, unknown> = {};
+    for (const m of ["select", "eq"]) ch[m] = () => ch;
+    ch.maybeSingle = () => Promise.resolve(rep);
+    ch.upsert = () => Promise.resolve(rep);
+    return { from: () => ch } as unknown as Parameters<typeof VB.lireVariete>[1];
+  };
+  const lus = await Promise.all([
+    VB.lireVariete("u", cl({ data: { variete: "beaucoup" }, error: null })),
+    VB.lireVariete("u", cl({ data: null, error: null })),
+    VB.lireVariete("u", cl({ data: { variete: null }, error: null })),
+    VB.lireVariete("u", cl({ data: null, error: { code: "42703", message: "column contexte_entrainement.variete does not exist" } })),
+    VB.lireVariete("u", cl({ data: null, error: { message: "timeout" } })),
+  ]);
+  verdict("R7 · le réglage : lu, absent (défaut), colonne pas encore créée (défaut), panne (on ne sait pas)",
+    JSON.stringify(lus) === JSON.stringify(["beaucoup", "peu", "peu", "peu", null]), JSON.stringify(lus));
+  const ecrits = await Promise.all([
+    VB.ecrireVariete("u", "habituels", cl({ data: null, error: null })),
+    VB.ecrireVariete("u", "habituels", cl({ data: null, error: { code: "PGRST204", message: "Could not find the 'variete' column" } })),
+    VB.ecrireVariete("u", "habituels", cl({ data: null, error: { code: "23514", message: "violates check constraint contexte_variete_check" } })),
+  ]);
+  verdict("R7 · l'enregistrement nomme ses issues, et une contrainte refusée n'est pas « pas ouvert »",
+    JSON.stringify(ecrits) === JSON.stringify(["ok", "pas_ouvert", "echec"]), JSON.stringify(ecrits));
+
+  /* Le chemin. */
+  const src = readFileSync("src/lib/variete.ts", "utf8");
+  verdict("R7 · la variété est pure : ni hasard, ni horloge, ni stockage, ni base",
+    !/Math\.random|new Date|Date\.now|localStorage|createClient|\.from\(/.test(src), "");
+  const hook = readFileSync("src/hooks/useJournee.ts", "utf8");
+  const gestes = readFileSync("src/lib/semaineGestes.ts", "utf8");
+  verdict("R7 · l'affichage, la relecture avant lancement et « Changer de jour » passent tous par `modeleDeLOccurrence`",
+    (hook.match(/modeleDeLOccurrence\(lu,/g) ?? []).length === 2 && gestes.includes("modeleDeLOccurrence(lu,")
+      && !/\{ \.\.\.lu, etapeId/.test(hook) && !/\{ \.\.\.lu, etapeId/.test(gestes), "");
+  verdict("R7 · un réglage illisible n'est jamais le défaut : l'écran garde ce qu'il montrait, l'écriture refuse",
+    hook.includes("if (suivante && !variete) { indisponibleEtGarder(); return; }")
+      && hook.includes('if (!variete) throw new Error("variete_illisible");')
+      && gestes.includes('if (!variete) return { ok: false, raison: "illisible" };'), "");
+  const sql = readFileSync("supabase/migrations/20261011_r7_variete.sql", "utf8");
+  const sql9c = readFileSync("supabase/migrations/20261010_r9c_activer_programme.sql", "utf8");
+  verdict("R7 · la base : un vocabulaire fermé, nul = défaut ; l'activation écrit les lignes propres à chaque remplacement",
+    sql.includes("check (variete is null or variete in ('habituels', 'peu', 'beaucoup'))") && !/update public\.contexte_entrainement/i.test(sql)
+      && sql9c.includes("v_lignes := v_rep->'lignes';"), "");
+  const feuille = readFileSync("src/components/programme/MonProgrammeSheet.tsx", "utf8");
+  verdict("R7 · le réglage dit la phrase commune et les trois choix, dans « Mon programme »",
+    feuille.includes("Tes exercices repères restent pour suivre tes progrès.") && feuille.includes("VARIETES.map(")
+      && feuille.includes("ecrireVariete(userId, v)"), "");
+  const hero = readFileSync("src/components/entrainement/TodayHero.tsx", "utf8");
+  verdict("R7 · le héros : un fait, puis « La faire comme prévu », la version légère, et changer de jour",
+    hero.includes('recouvrement ? "La faire comme prévu"') && hero.includes("{recouvrement.leger}")
+      && (hero.match(/<Fait texte=\{recouvrement\.phrase\} \/>/g) ?? []).length === 2, "");
 }
 
 console.log("\n" + (echecs === 0 ? "Tout passe." : echecs + " échec(s)."));

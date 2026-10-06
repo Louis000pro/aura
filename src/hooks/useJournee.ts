@@ -46,7 +46,13 @@ import {
 } from "@/lib/adaptation";
 import type { EtatJournee } from "@/lib/journee";
 import { projeterPrescription } from "@/lib/banqueEtapes";
-import { ecrireOccurrence, empreinteModele, modeleDeLEtape, type ModeleDeLOccurrence } from "@/lib/prescription";
+import { ecrireOccurrence, empreinteModele, modeleDeLEtape, modeleDeLOccurrence, type ModeleDeLOccurrence } from "@/lib/prescription";
+import { lireVariete, seriesRecentes } from "@/lib/varieteBase";
+import {
+  allegerPourZone, allegerExercices, fonctionsDe, libelleAllege, phraseRecouvrement, recouvrement,
+  type SerieRecente,
+} from "@/lib/variete";
+import type { Zone } from "@/lib/banqueEtapes";
 import { resolutionDuProgramme, type ResolutionProgramme } from "@/lib/projectionBase";
 import { choixSuite, libelleAttente, libelleJourProjete } from "@/lib/projection";
 
@@ -133,6 +139,10 @@ export type Journee = {
    *  son étape, donc la faire refermera bien le cycle. Rend `false` si
    *  l'écriture n'a pas pris. */
   daterEtape: (date: string) => Promise<boolean>;
+  /** R7 · « Ton dos a travaillé hier » : la phrase et le choix léger, ou `null`. */
+  recouvrement: { phrase: string; leger: string } | null;
+  /** R7 · la même séance, moins de séries là où ça vient de travailler. */
+  lancerAllege: () => void;
 };
 
 export function useJournee({ creerProgramme = false }: { creerProgramme?: boolean } = {}): Journee {
@@ -163,6 +173,10 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
   const [niveau, setNiveau] = useState<string | null>(null);
   const [doneStats, setDoneStats] = useState<{ minutes: number; kcal: number } | null>(null);
 
+  /* R7 · les séries faites hier et aujourd'hui, pour dire un recouvrement.
+     `null` = pas lu : on se tait, rien n'est bloqué. */
+  const [recentes, setRecentes] = useState<SerieRecente[] | null>(null);
+
   const today = todayYmd();
   const semaineDates = useMemo(() => weekDates(new Date(today + "T00:00:00")), [today]);
 
@@ -181,6 +195,11 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
       || (Array.isArray(prof.onboarding_goals) && prof.onboarding_goals.length > 0)));
     const { location, equip } = await loadLieu(user.id);
     if (!derniere()) return;
+    {
+      const debutHier = new Date(todayYmd() + "T00:00:00");
+      debutHier.setDate(debutHier.getDate() - 1);
+      void seriesRecentes(user.id, debutHier).then((r) => { if (derniere()) setRecentes(r); });
+    }
     setNiveau(prof?.onboarding_level ?? null);
 
     if (!aRepondu) {
@@ -276,6 +295,10 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
          le temps d'une requête, avec l'étape B et le modèle de A. */
       const ctxModele = contexteDe(reglages);
       const lu = suivante ? await modeleDeLEtape({ id: suivante.id, nom: suivante.nom }, ctxModele) : null;
+      /* R7 · le réglage de variété décide des complémentaires : illisible,
+         on ne publie pas un contenu que l'écriture ne reprendrait pas. */
+      const variete = suivante ? await lireVariete(user.id) : null;
+      if (suivante && !variete) { indisponibleEtGarder(); return; }
       /* ⚠️ R9a · tour 43 · `modeleDeLEtape` rend `null` quand il ne sait
          pas (panne, modèle sans lignes) ; l'absence de modèle, elle, rend
          la composition. Une étape sans modèle lisible n'est donc pas
@@ -297,8 +320,8 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
       programmeAfficheRef.current = actif?.programme.id ?? null;
       setAdaptation(couche);
       setEtape(suivante);
-      setModele(suivante && lu
-        ? { ...lu, etapeId: suivante.id, rang: suivante.rang, lieu: ctxModele.lieu }
+      setModele(suivante && lu && variete
+        ? modeleDeLOccurrence(lu, suivante, ctxModele, variete)
         : null);
       setReservation(resa);
     } catch (e) {
@@ -458,7 +481,9 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
     const ctx = contexteDe(gen);
     const lu = await modeleDeLEtape({ id: occ.id, nom: occ.nom }, ctx);
     if (!lu) throw new Error("modele_illisible");
-    const frais: ModeleDeLOccurrence = { ...lu, etapeId: occ.id, rang: occ.rang, lieu: ctx.lieu };
+    const variete = await lireVariete(user.id);
+    if (!variete) throw new Error("variete_illisible");
+    const frais: ModeleDeLOccurrence = modeleDeLOccurrence(lu, occ, ctx, variete);
     const cibles = (await ciblesOuvertes(user.id, actif.programme.id, occ.id)) ?? [];
     return {
       cibles,
@@ -477,7 +502,7 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
     if (typeof window !== "undefined") window.dispatchEvent(new Event(EVT_JOURNEE));
   }, []);
 
-  const lancerIntention = useCallback((d: PlanningDay, options?: { repetition?: boolean }) => {
+  const lancerIntention = useCallback((d: PlanningDay, options?: { repetition?: boolean; allegerZone?: Zone }) => {
     if (!hasSeance(d)) return;
     const titre = dayTitle(d);
     launchWorkout({
@@ -492,7 +517,9 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
          le ferait chercher une famille qui n'existe pas. Le titre suffit,
          et c'est déjà lui qui décide de la photo du héros. */
       heroImage: heroImageForSeance({ title: `${titre} ${d.type}` }),
-      exerciseList: d.exerciseList,
+      /* R7 · « Version plus légère » : moins de séries là où ça vient de
+         travailler, mêmes exercices, même séance. */
+      exerciseList: options?.allegerZone ? allegerExercices(d.exerciseList, options.allegerZone) : d.exerciseList,
       /* Sans identité, rien à refermer : une ligne sans `id` ne peut pas
          être marquée, et la marquer par sa date créditerait aussi le
          supplément du même jour (V6b).
@@ -517,14 +544,14 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
     if (quoi) lancerIntention(quoi, { repetition: true });
   }, [jour, lancerIntention]);
 
-  const lancerAujourdhui = useCallback(() => {
+  const lancer = useCallback((allegerZone: Zone | null) => {
     /* ⚠️ LA DÉCISION EST UNE FONCTION PURE, ET ELLE VIT DANS `journee.ts`.
        Elle porte l'ordre qui compte : la séance datée aujourd'hui, puis
        la RÉSERVATION de l'étape où qu'elle soit posée, puis l'étape libre
        et elle seule. Décider dimanche de faire l'étape réservée mardi est
        légitime ; c'est cette ligne-là qu'on termine, jamais une seconde. */
     const quoi = lancementDuJour({ jour, reservation, etape, instancePrete: instance.length > 0 });
-    if (quoi?.genre === "intention") { lancerIntention(quoi.intention); return; }
+    if (quoi?.genre === "intention") { lancerIntention(quoi.intention, allegerZone ? { allegerZone } : undefined); return; }
     /* Lancer une étape du cycle : on matérialise son instance À CET
        INSTANT, en mémoire, et on n'écrit RIEN. Si la séance n'est pas
        terminée, il n'en reste aucune trace. */
@@ -536,7 +563,8 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
     void avecEtapeVerifiee(contexteAffiche, relireContexte, (c) => {
       /* La liste ET la prescription viennent du modèle RELU (tour 22). */
       /* R4 · les cibles acceptées se recopient dans la prescription figée. */
-      const lignesFigees = appliquerCibles(c.modele.lignes, c.cibles ?? [], c.rang);
+      const pleines = appliquerCibles(c.modele.lignes, c.cibles ?? [], c.rang);
+      const lignesFigees = allegerZone ? allegerPourZone(pleines, allegerZone) : pleines;
       const liste = projeterPrescription(lignesFigees);
       launchWorkout({
       sessionId: `etape-${c.etapeId}`,
@@ -568,6 +596,25 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
       });
     }).then((v) => { if (!v.ok) refuser(v.raison); });
   }, [jour, reservation, lancerIntention, etape, instance, programme, gen, launchWorkout, contexteAffiche, relireContexte, refuser]);
+
+  const lancerAujourdhui = useCallback(() => lancer(null), [lancer]);
+
+  /* R7 · « TON DOS A TRAVAILLÉ HIER » (décision 36). Un fait, calculé sur
+     la séance que le bouton lancerait VRAIMENT (la même résolution que
+     `lancer`), contre les séries faites hier et aujourd'hui. Seulement
+     quand le héros propose une séance à faire. */
+  const recouvre = useMemo(() => {
+    if (!recentes || (etat !== "seance" && etat !== "etape")) return null;
+    const quoi = lancementDuJour({ jour, reservation, etape, instancePrete: instance.length > 0 });
+    if (!quoi) return null;
+    const liste = quoi.genre === "intention" ? quoi.intention.exerciseList : instance;
+    const hier = new Date(today + "T00:00:00");
+    hier.setDate(hier.getDate() - 1);
+    const p = (n: number) => String(n).padStart(2, "0");
+    const hierYmd = `${hier.getFullYear()}-${p(hier.getMonth() + 1)}-${p(hier.getDate())}`;
+    return recouvrement(fonctionsDe(liste), recentes, today, hierYmd);
+  }, [recentes, etat, jour, reservation, etape, instance, today]);
+  const lancerAllege = useCallback(() => { if (recouvre) lancer(recouvre.zone); }, [recouvre, lancer]);
 
   /* ⚠️ LE SEUL ENDROIT DU PRODUIT QUI DATE UNE ÉTAPE, ET DONC LE SEUL
      QUI CRÉE UNE INTENTION PORTANT SON LIEN VERS LE PROGRAMME. Sans ce
@@ -660,5 +707,7 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
     semaine, setSemaine, gen, programme, besoinSetup, niveau,
     recharger: () => { void charger(); },
     lancerAujourdhui, lancerIntention, refaire, daterEtape,
+    recouvrement: recouvre ? { phrase: phraseRecouvrement(recouvre), leger: libelleAllege(recouvre.zone) } : null,
+    lancerAllege,
   };
 }
