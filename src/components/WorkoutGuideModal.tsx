@@ -1285,6 +1285,11 @@ export default function WorkoutGuideModal({
   /* Le partage appartient au propriétaire du journal, jamais au compte
      connecté par hasard (R5, tour 35). */
   const partageOuvert = !!afficheData && !!user && user.id === afficheProprio;
+  /* Au changement de compte, la feuille se FERME (tour 36) : elle ne
+     revient pas toute seule au retour du propriétaire, il faut un nouveau
+     geste. Ajustement pendant le rendu, comme React le recommande pour un
+     état qui dépend d'une autre valeur, plutôt qu'un effet. */
+  if (envoyerOuvert && !partageOuvert) setEnvoyerOuvert(false);
   const lignesCourantes = useMemo(() => lignesDuJournal(exercises, doneMap, remplacements), [exercises, doneMap, remplacements]);
   const aQuestion = questionsPosees;
   const margeDe = (e: number): Marge | null =>

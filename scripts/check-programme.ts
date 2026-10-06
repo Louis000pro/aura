@@ -7027,6 +7027,8 @@ verdict(
   verdict("R5 · le partage appartient au propriétaire du journal",
     t.includes("setAfficheProprio(journalRef.current.proprietaire)") && t.includes("user.id === afficheProprio")
       && t.includes("{partageOuvert && afficheSaved && (") && t.includes("envoyerOuvert && partageOuvert && afficheData && user"), "tour 35");
+  verdict("R5 · au changement de compte, la feuille de partage se ferme (un nouveau geste est nécessaire)",
+    t.includes("if (envoyerOuvert && !partageOuvert) setEnvoyerOuvert(false);"), "tour 36");
   verdict("R5 · la question du détail passe par guides.ts",
     t.includes('question={voix(guide, "seance.marge.question")}') && !t.includes("Ta dernière série : tu aurais pu"), "Guides");
   verdict("R5 · « Continuer » porte l'ombre nommée", /boxShadow: "var\(--ombre-action\)" \}\}\s*>\s*Continuer/.test(t), "composition");
