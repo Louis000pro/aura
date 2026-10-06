@@ -48,7 +48,7 @@ import type { EtatJournee } from "@/lib/journee";
 import { projeterPrescription } from "@/lib/banqueEtapes";
 import { ecrireOccurrence, empreinteModele, modeleDeLEtape, type ModeleDeLOccurrence } from "@/lib/prescription";
 import { resolutionDuProgramme, type ResolutionProgramme } from "@/lib/projectionBase";
-import { libelleAttente, libelleJourProjete } from "@/lib/projection";
+import { choixSuite, libelleAttente, libelleJourProjete } from "@/lib/projection";
 
 const DAY_FULL = ["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"];
 
@@ -87,6 +87,9 @@ export type Journee = {
   prevuLe: string | null;
   /** « t'attendait mercredi », ou `null`. */
   attendait: string | null;
+  /** R9a · la résolution du programme a raté : ce qui est affiché date de
+   *  la dernière lecture réussie (tour 40). */
+  indisponible: boolean;
   /**
    * V8 · L'ADAPTATION QUI S'APPLIQUE AUJOURD'HUI, ou `null`.
    *
@@ -144,6 +147,11 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
   const [etape, setEtape] = useState<EtapeOccurrence | null>(null);
   const [reservation, setReservation] = useState<PlanningDay | null>(null);
   const [projection, setProjection] = useState<ResolutionProgramme | null>(null);
+  const [indisponible, setIndisponible] = useState(false);
+  /* Le programme dont l'écran montre la suite : une résolution ratée ne
+     garde l'affichage que pour CE programme. Une ref, lue dans `charger`
+     sans en faire une dépendance. */
+  const programmeAfficheRef = useRef<string | null>(null);
   /* R2 · le modèle de l'étape suivante pour ce lieu : écrit, ou composé
      en mémoire. `null` = pas d'étape, ou lecture ratée (on ne lance pas).
      ⚠️ Il porte l'occurrence pour laquelle il a été lu (tour 22). */
@@ -230,8 +238,31 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
          héros propose. Sans jour choisi, rien ne change. Une lecture ratée
          ne touche pas à ce que l'écran montrait. */
       const proj = await resolutionDuProgramme(user.id, actif, todayYmd());
-      const proposee = proj?.resolution?.proposee ?? null;
-      const suivante = proposee ? { ...proposee.etape, rang: proposee.rang } : brute;
+      const choix = choixSuite(proj);
+      /* ⚠️ Tour 40 · RÉSOLUTION INDISPONIBLE : on garde l'ensemble déjà
+         affiché (étape, modèle, réservation, résolution), et on le dit.
+         Jamais la suite brute à sa place : ce serait annoncer autre chose
+         que ce que le calendrier dirait. Un autre programme, en revanche,
+         ne garde rien de l'ancien. */
+      if (choix.genre === "indisponible") {
+        if (!derniere()) return;
+        const memeProgramme = !!actif && programmeAfficheRef.current === actif.programme.id;
+        setIndisponible(true);
+        if (!memeProgramme) {
+          setProgramme(actif);
+      programmeAfficheRef.current = actif?.programme.id ?? null;
+          setAdaptation(couche);
+          setEtape(null);
+          setModele(null);
+          setReservation(null);
+          setProjection(null);
+        }
+        setPret(true);
+        return;
+      }
+      const suivante = choix.genre === "historique"
+        ? brute
+        : choix.proposee ? { ...choix.proposee.etape, rang: choix.proposee.rang } : null;
       /* ⚠️ R2 · tour 22 · L'ÉTAPE ET SON MODÈLE SE PUBLIENT ENSEMBLE.
          Publier l'étape avant d'avoir lu son modèle laissait l'écran,
          le temps d'une requête, avec l'étape B et le modèle de A. */
@@ -252,8 +283,10 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
         ? await reservationDeLOccurrence(user.id, actif.programme.id, suivante.rang)
         : null;
       if (!derniere()) return;
-      if (proj) setProjection(proj);
+      setIndisponible(false);
+      setProjection(proj);
       setProgramme(actif);
+      programmeAfficheRef.current = actif?.programme.id ?? null;
       setAdaptation(couche);
       setEtape(suivante);
       setModele(suivante && lu
@@ -304,7 +337,7 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
     !!adaptation && !!programme && programme.cycle.length > 0
     && etapesCompatibles(programme.cycle, adaptation).length === 0;
 
-  const etat = etatJournee({ pret, besoinSetup, jour, etape, adaptationBloque });
+  const etat = etatJournee({ pret, besoinSetup, jour, etape, adaptationBloque, indisponible });
 
   /* R9a · la projection ne parle de la prochaine séance que si c'est la
      MÊME occurrence que celle du héros (même rang). */
@@ -404,10 +437,11 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
     const couche = await adaptationDuJour(user.id, actif.programme.id, todayYmd(), "stricte");
     const brute = await etapeSuivanteDe(user.id, actif, (e) => etapeMasquee(e.id, couche));
     /* R9a · la MÊME résolution que l'affichage, relue stricte. */
-    const res = await resolutionDuProgramme(user.id, actif, todayYmd());
-    if (!res) throw new Error("resolution_illisible");
-    const proposee = res.resolution?.proposee ?? null;
-    const occ = proposee ? { ...proposee.etape, rang: proposee.rang } : brute;
+    const choix = choixSuite(await resolutionDuProgramme(user.id, actif, todayYmd()));
+    if (choix.genre === "indisponible") throw new Error("resolution_illisible");
+    const occ = choix.genre === "historique"
+      ? brute
+      : choix.proposee ? { ...choix.proposee.etape, rang: choix.proposee.rang } : null;
     if (!occ || !gen) return null;
     /* Le modèle de l'étape RELUE, pour le lieu des réglages : une lecture
        ratée est un refus (« illisible »), jamais une composition. */
@@ -606,6 +640,7 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
        le héros ne montre plus l'étape. */
     reserveLe: reservation?.date ? libelleReservation(reservation.date, today) : null,
     projection,
+    indisponible,
     prevuLe: prochaine ? libelleJourProjete(prochaine.date, today) : null,
     attendait: prochaine?.attendaitLe ? libelleAttente(prochaine.attendaitLe) : null,
     adaptation,

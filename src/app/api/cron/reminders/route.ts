@@ -24,7 +24,7 @@
  * une serrure.
  */
 import { lireCalendriers } from "@/lib/joursEntrainement";
-import { aDesJours, decaler, enAbsence, resoudreJournee } from "@/lib/projection";
+import { aDesJours, decaler, enAbsence, resoudreJournee, seanceARappeler } from "@/lib/projection";
 import { entreeResolution, type FaitsResolution } from "@/lib/projectionBase";
 import type { EtatOccurrences } from "@/lib/occurrences";
 import { NextRequest, NextResponse } from "next/server";
@@ -162,6 +162,9 @@ type Portrait = {
   noteHabituellement: boolean;
   serie: number;
   seancePrevue: string | null;
+  /** R9a · la séance prévue nommée vient d'une réservation du programme :
+   *  elle passe par la résolution partagée avant d'être rappelée. */
+  seanceProgramme: boolean;
   jourDeRepos: boolean;
   exp: number | null;
   pseudo: string | null;
@@ -222,7 +225,7 @@ async function portraits(
          côté serveur, donc il ne profite pas du sondage du navigateur.
          S'il gardait l'ancien contrat en dur, la première nuit après le
          renommage serait une nuit sans aucun rappel. */
-      admin.from(sc.table).select(`user_id, type, title, exercise_list, nature, ${sc.colStatut}`).in("user_id", ids).eq("date", today),
+      admin.from(sc.table).select(`user_id, type, title, exercise_list, nature, etape_consommee_id, ${sc.colStatut}`).in("user_id", ids).eq("date", today),
       admin.from("aura_mission_credits").select("user_id, points").in("user_id", ids),
       admin.from("notification_rappels").select("user_id, jour, cle, variante").in("user_id", ids).gte("jour", debutJournal).order("jour", { ascending: false }),
       lireProfils(admin, ids),
@@ -233,7 +236,7 @@ async function portraits(
     carte.set(id, {
       seancesTotal: 0, seances28: 0, presences28: 0, joursDepuisVenue: null,
       seanceFaite: false, repasNotes: false, noteHabituellement: false, serie: 0,
-      seancePrevue: null, jourDeRepos: false, exp: null, pseudo: null, guide: null, envois: [],
+      seancePrevue: null, seanceProgramme: false, jourDeRepos: false, exp: null, pseudo: null, guide: null, envois: [],
     });
   }
 
@@ -303,7 +306,12 @@ async function portraits(
        retire cette contrainte : un rappel qui NOMME une vraie séance
        n'est jamais à côté de la plaque, un silence de trop l'est. */
     p.jourDeRepos = false;
-    p.seancePrevue = String(j.title || type);
+    /* R9a · une séance posée HORS programme l'emporte : elle se rappelle
+       pour elle-même. Une réservation du programme passe ensuite par la
+       résolution partagée (tour 40). */
+    const duProgramme = typeof j.etape_consommee_id === "string";
+    if (!duProgramme) { p.seancePrevue = String(j.title || type); p.seanceProgramme = false; }
+    else if (!p.seancePrevue) { p.seancePrevue = String(j.title || type); p.seanceProgramme = true; }
   }
 
   /* ⚠️ R9a · LES JOURS D'ENTRAÎNEMENT (décision 26). Un jour choisi peut
@@ -594,28 +602,38 @@ async function appliquerJoursEntrainement(
   carte: Map<string, Portrait>,
   sc: Awaited<ReturnType<typeof schemaIntentions>>,
 ): Promise<void> {
+  /* Une lecture ratée : aucune séance du PROGRAMME ne se rappelle, même
+     déjà nommée par l'intention du jour (on ne sait pas si elle tient). */
+  const taire = (qui: Iterable<string>) => {
+    for (const id of qui) {
+      const p = carte.get(id);
+      if (p) p.seancePrevue = seanceARappeler({ seancePrevue: p.seancePrevue, seanceProgramme: p.seanceProgramme, resolution: undefined });
+    }
+  };
   const calendriers = await lireCalendriers(ids, decaler(today, -7), admin as unknown as Parameters<typeof lireCalendriers>[2]);
-  if (!calendriers || calendriers.size === 0) return;
+  if (!calendriers) { taire(ids); return; }
   const candidats: string[] = [];
   for (const [id, cal] of calendriers) {
     const p = carte.get(id);
     if (!p) continue;
     if (enAbsence(cal, today)) { p.jourDeRepos = true; p.seancePrevue = null; continue; }
-    if (!p.seancePrevue && !p.seanceFaite && !p.jourDeRepos && aDesJours(cal)) candidats.push(id);
+    if (!aDesJours(cal) || p.seanceFaite || p.jourDeRepos) continue;
+    if (!p.seancePrevue || p.seanceProgramme) candidats.push(id);
   }
   if (candidats.length === 0) return;
 
   const progs = await admin.from("programmes").select("id, user_id, rang_depart, position_initiale").in("user_id", candidats).eq("statut", "actif");
-  if (progs.error || !progs.data?.length) return;
-  const progIds = progs.data.map((x) => x.id as string);
+  if (progs.error) { taire(candidats); return; }
+  const progIds = (progs.data ?? []).map((x) => x.id as string);
+  if (progIds.length === 0) return;
   const [etapes, lignes, adapt] = await Promise.all([
     admin.from("programme_seances").select("id, programme_id, nom, position").in("programme_id", progIds),
     admin.from(sc.table).select(`programme_id, rang, etape_consommee_id, consommee_le, date, ${sc.colStatut}`).in("programme_id", progIds).not("rang", "is", null),
     admin.from("adaptations_entrainement").select("programme_id, debut, fin, axes, statut").in("programme_id", progIds).eq("statut", "active"),
   ]);
   const adaptAbsente = adapt.error?.code === "42P01" || adapt.error?.code === "PGRST205";
-  if (etapes.error || lignes.error || (adapt.error && !adaptAbsente)) return;
-  for (const prog of progs.data) {
+  if (etapes.error || lignes.error || (adapt.error && !adaptAbsente)) { taire(candidats); return; }
+  for (const prog of progs.data ?? []) {
     const p = carte.get(prog.user_id as string);
     const cal = calendriers.get(prog.user_id as string);
     if (!p || !cal) continue;
@@ -632,7 +650,7 @@ async function appliquerJoursEntrainement(
       else etat.fermes.push({ rang: l.rang, etapeId: l.etape_consommee_id, consommeeLe: (l.consommee_le as string | null) ?? null });
     }
     const adaptations = adaptAbsente ? [] : (adapt.data ?? []).filter((a) => a.programme_id === prog.id) as unknown as FaitsResolution<{ id: string; position: number }>["adaptations"];
-    const res = resoudreJournee(entreeResolution({ cycle, etat, calendrier: cal, adaptations, aujourdhui: today, nbJours: 1, occupes: [] }));
-    if (res?.duJour) p.seancePrevue = res.duJour.etape.nom;
+    const resolution = resoudreJournee(entreeResolution({ cycle, etat, calendrier: cal, adaptations, aujourdhui: today, nbJours: 1, occupes: [] }));
+    p.seancePrevue = seanceARappeler({ seancePrevue: p.seancePrevue, seanceProgramme: p.seanceProgramme, resolution });
   }
 }

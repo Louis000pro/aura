@@ -58,7 +58,7 @@ function S() {
 export type HeroState = EtatJournee;
 
 export default function TodayHero({
-  state, day, etape, reserveLe, prevuLe = null, attendait = null, nbExos, nextLabel, doneStats, adaptationJusquau,
+  state, day, etape, reserveLe, prevuLe = null, attendait = null, indisponible = false, onRetry, nbExos, nextLabel, doneStats, adaptationJusquau,
   onStart, onRedo, onImprovise, onOrganise, onShift, onReplace, onAdaptation,
 }: {
   state: HeroState;
@@ -72,6 +72,11 @@ export default function TodayHero({
      mercredi » si elle a glissé. `null` sans jour choisi. */
   prevuLe?: string | null;
   attendait?: string | null;
+  /* R9a · tour 40 · la résolution du programme a raté. Ce qui est affiché
+     date de la dernière lecture réussie : on le dit, et on propose de
+     relire, au lieu d'annoncer autre chose. */
+  indisponible?: boolean;
+  onRetry?: () => void;
   nbExos: number;                                 // taille de son instance, calculée sans rien écrire
   nextLabel: string | null;                       // « Jambes · demain » (état repos)
   doneStats: { minutes: number; kcal: number } | null;
@@ -112,7 +117,7 @@ export default function TodayHero({
   const viz =
     state === "setup" ? WIDGET.setup
     : state === "done" ? WIDGET.done
-    : state === "repos" || state === "libre" || state === "aucune_compatible" ? WIDGET.repos
+    : state === "repos" || state === "libre" || state === "aucune_compatible" || state === "indisponible" ? WIDGET.repos
     : state === "etape" ? { img: resolveArt({ title: etape?.nom ?? "" }).img, pos: "center 24%" }
     : { img: resolveArt({ title: day ? `${day.title} ${day.type}` : "" }).img, pos: "center 24%" };
 
@@ -214,6 +219,12 @@ export default function TodayHero({
                 {reserveLe || prevuLe ? "Changer de jour" : "Lui donner un jour"}
               </button>
             </div>
+            {indisponible && (
+              <button onClick={onRetry} className="block mx-auto mt-2 text-[11px] cursor-pointer bg-transparent border-none"
+                style={{ color: "rgba(255,255,255,0.6)" }}>
+                Programme non relu · Réessayer
+              </button>
+            )}
           </>
         )}
 
@@ -250,6 +261,26 @@ export default function TodayHero({
                 J&apos;ai quand même envie de bouger
               </button>
             </div>
+          </>
+        )}
+
+        {state === "indisponible" && (
+          <>
+            <p className="text-[11px] font-semibold mb-1" style={{ color: "#9FD8C6" }}>
+              Ton programme
+            </p>
+            <h2 className="text-[34px] md:text-[38px] leading-[1.02] font-extralight text-white">Un instant.</h2>
+            <p className="text-[16px] font-normal mt-1.5 mb-3.5 leading-relaxed" style={{ color: "rgba(255,255,255,0.82)" }}>
+              Je n&apos;arrive pas à lire ton programme pour l&apos;instant.
+            </p>
+            <motion.button
+              whileTap={{ scale: 0.97 }}
+              onClick={onRetry}
+              className="w-full py-3 rounded-2xl flex items-center justify-center gap-2 cursor-pointer text-[16px] font-bold text-white"
+              style={{ background: "rgba(255,255,255,0.10)", border: "1px solid rgba(255,255,255,0.28)", backdropFilter: "blur(4px)" }}
+            >
+              Réessayer
+            </motion.button>
           </>
         )}
 

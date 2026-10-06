@@ -101,7 +101,9 @@ export function estJourEntrainement(cal: Calendrier, date: string): boolean {
 /** Une réservation en attente d'une occurrence, avec son jour. */
 export type ReservationDatee = { rang: number; etapeId: string; date: string | null };
 
-export type Conflit = "absence" | "adaptation";
+/** Ce qui empêche une réservation d'avoir lieu ce jour-là : une absence,
+ *  un jour retiré (« pas de séance ce jour-là »), ou une adaptation. */
+export type Conflit = "absence" | "jour_retire" | "adaptation";
 
 export type JourProjete<T> = {
   date: string;
@@ -188,7 +190,9 @@ export function projeterJours<T extends { id: string; position: number }>(input:
       enAttente.delete(r.rang);
       const etape = parId.get(r.etapeId);
       if (!etape) continue;
-      const conflit: Conflit | null = enAbsence(calendrier, date) ? "absence" : masque(etape, date) ? "adaptation" : null;
+      const conflit: Conflit | null = enAbsence(calendrier, date) ? "absence"
+        : calendrier.exceptions.some((e) => e.date === date && e.genre === "pas_de_seance") ? "jour_retire"
+        : masque(etape, date) ? "adaptation" : null;
       sortie.push({ date, etape, rang: r.rang, reservee: true, conflit, attendaitLe: null });
       /* Faite à sa date dans la simulation, sauf en conflit : alors elle
          reste due, et glissera comme une séance manquée. */
@@ -258,3 +262,47 @@ export function libelleAttente(date: string): string {
 }
 
 const NOMS = ["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"];
+
+/**
+ * Le rappel du soir pour la séance du programme (tour 40). PURE, et c'est
+ * elle que le cron applique, donc elle se vérifie hors ligne.
+ *
+ * - Une séance posée HORS programme garde son rappel : sa propre identité.
+ * - Sans jour choisi (`resolution === null`) : comportement historique,
+ *   l'intention du jour se rappelle.
+ * - Résolution INDISPONIBLE (`undefined`) : aucun rappel automatique pour
+ *   une séance du programme, même déjà nommée.
+ * - Sinon : la séance du jour de la résolution, ou rien. Une réservation
+ *   en conflit n'est jamais `duJour`.
+ */
+export function seanceARappeler(input: {
+  seancePrevue: string | null;
+  /** L'intention prévue aujourd'hui porte une étape du programme. */
+  seanceProgramme: boolean;
+  resolution: ResolutionJournee<{ nom: string }> | null | undefined;
+}): string | null {
+  if (input.seancePrevue && !input.seanceProgramme) return input.seancePrevue;
+  if (input.resolution === undefined) return null;
+  if (input.resolution === null) return input.seancePrevue;
+  return input.resolution.duJour?.etape.nom ?? null;
+}
+
+/**
+ * Ce que le héros doit faire de la suite (tour 40). PURE.
+ * - `indisponible` : la résolution a raté. On garde l'ensemble déjà
+ *   affiché (étape, modèle, réservation) et on le dit ; jamais la suite
+ *   brute à la place.
+ * - `historique` : aucun jour choisi, la suite brute fait foi.
+ * - `resolue` : la résolution fait foi, y compris quand elle ne propose rien.
+ */
+export type ChoixSuite<T> =
+  | { genre: "indisponible" }
+  | { genre: "historique" }
+  | { genre: "resolue"; proposee: { etape: T; rang: number } | null };
+
+export function choixSuite<T>(res: { resolution: ResolutionJournee<T> | null } | null): ChoixSuite<T> {
+  if (!res) return { genre: "indisponible" };
+  if (!res.resolution) return { genre: "historique" };
+  const p = res.resolution.proposee;
+  return { genre: "resolue", proposee: p ? { etape: p.etape, rang: p.rang } : null };
+}

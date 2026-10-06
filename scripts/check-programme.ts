@@ -7161,13 +7161,52 @@ verdict(
   verdict("R9a · la lecture de la résolution n'écrit rien", !/\.(insert|update|upsert|delete)\(/.test(base9), "");
   const hook = lire9("src/hooks/useJournee.ts");
   verdict("R9a · le héros propose la séance de la résolution, relue stricte au lancement",
-    hook.includes("const proposee = proj?.resolution?.proposee ?? null;") && hook.includes('if (!res) throw new Error("resolution_illisible");'), "");
+    hook.includes("const choix = choixSuite(proj);") && hook.includes("choixSuite(await resolutionDuProgramme(user.id, actif, todayYmd()))"), "");
   verdict("R9a · une résolution gardée ne vaut que pour son compte et son programme",
     hook.includes("projection.userId === user.id") && hook.includes("projection.programmeId === (programme?.programme.id ?? null)"), "tour 38");
   const cron = lire9("src/app/api/cron/reminders/route.ts");
   verdict("R9a · le rappel du soir passe par le même résolveur, et se tait sur une adaptation illisible",
     cron.includes("resoudreJournee(entreeResolution({") && cron.includes("(adapt.error && !adaptAbsente)") && !cron.includes("occurrenceSuivante("), "décision 26");
   verdict("R9a · le Guide passe par la même résolution", lire9("src/lib/guideMoteur.ts").includes("resolutionDuProgramme(userId, actif, aujourdhui, 8)"), "");
+
+  /* ── Tour 40 ── */
+  const resaAuj = { etat: { ...base, reserves: [{ rang: 2, etapeId: "B", date: jeudi }] } as Etat, reservations: [{ rang: 2, etapeId: "B", date: jeudi }] };
+  const retire = P.resoudreJournee({ cycle, etat: resaAuj.etat, reservations: resaAuj.reservations, calendrier: cal({ jours: [4], exceptions: [{ date: jeudi, genre: "pas_de_seance" }] }), dates, aujourdhui: jeudi, faitAujourdhui: false, dernierJourFait: "2026-10-05" });
+  verdict("R9a · une réservation un jour retiré reste une trace en conflit, et n'est pas la séance du jour",
+    retire?.jours.find((j) => j.rang === 2 && j.reservee)?.conflit === "jour_retire" && retire?.duJour === null, retire ? resume(retire.jours) : "null");
+  /* Le cas de Codex, de bout en bout par le chemin du cron : réservation A
+     aujourd'hui, déjà nommée par l'intention, puis masquée par une adaptation. */
+  const resaA = { depart: 1, fermes: [], reserves: [{ rang: 1, etapeId: "A", date: jeudi }] } as Etat;
+  const faitsCron = { cycle, etat: resaA, calendrier: cal({ jours: [4] }), aujourdhui: jeudi, occupes: [] as string[],
+    adaptations: [{ statut: "active" as const, debut: jeudi, fin: P.decaler(jeudi, 3), axes: { version: 1, eviter_etapes: ["A"] } }] as never };
+  const resCron = P.resoudreJournee(PB.entreeResolution({ ...faitsCron, nbJours: 1 }));
+  verdict("R9a · cron : une réservation déjà nommée puis masquée ne garde pas son rappel",
+    P.seanceARappeler({ seancePrevue: "Dos & fessiers", seanceProgramme: true, resolution: resCron }) === null, JSON.stringify(resCron?.duJour ?? null));
+  verdict("R9a · cron : une panne après la nomination retire le rappel d'une séance du programme",
+    P.seanceARappeler({ seancePrevue: "Dos & fessiers", seanceProgramme: true, resolution: undefined }) === null, "tour 40");
+  verdict("R9a · cron : une séance posée hors programme garde son rappel, même sur panne",
+    P.seanceARappeler({ seancePrevue: "HIIT 20/10", seanceProgramme: false, resolution: undefined }) === "HIIT 20/10"
+      && P.seanceARappeler({ seancePrevue: "HIIT 20/10", seanceProgramme: false, resolution: resCron }) === "HIIT 20/10", "");
+  verdict("R9a · cron : sans jour choisi, l'intention du jour se rappelle comme avant",
+    P.seanceARappeler({ seancePrevue: "Dos & fessiers", seanceProgramme: true, resolution: null }) === "Dos & fessiers", "historique");
+  const resSans = P.resoudreJournee(PB.entreeResolution({ ...faitsCron, adaptations: [] as never, nbJours: 1 }));
+  verdict("R9a · cron : la même réservation, sans adaptation, se rappelle par la résolution",
+    P.seanceARappeler({ seancePrevue: "Dos & fessiers", seanceProgramme: true, resolution: resSans }) === "Dos & fessiers", "");
+  verdict("R9a · héros : résolution ratée = indisponible (on garde l'affiché), sans choix = historique, valide = elle fait foi même vide",
+    P.choixSuite(null).genre === "indisponible" && P.choixSuite({ resolution: null }).genre === "historique"
+      && (() => { const c = P.choixSuite({ resolution: { jours: [], proposee: null, duJour: null } }); return c.genre === "resolue" && c.proposee === null; })(), "tour 40");
+  const J = await import("@/lib/journee");
+  verdict("R9a · héros : indisponible sans rien d'affiché ne dit ni « rien de prévu » ni une séance",
+    J.etatJournee({ pret: true, besoinSetup: false, jour: null, etape: null, indisponible: true }) === "indisponible"
+      && J.etatJournee({ pret: true, besoinSetup: false, jour: null, etape: { id: "A" }, indisponible: true }) === "etape", "");
+  verdict("R9a · le hook garde l'ensemble affiché sur panne, et ne retombe jamais sur la suite brute",
+    hook.includes('if (choix.genre === "indisponible") {') && hook.includes('if (choix.genre === "indisponible") throw new Error("resolution_illisible");')
+      && !hook.includes("proposee.rang } : brute;") && hook.includes("programmeAfficheRef.current === actif.programme.id"), "tour 40");
+  verdict("R9a · cron : les réservations du programme passent par la résolution, et une panne les fait taire",
+    cron.includes("if (!p.seancePrevue || p.seanceProgramme) candidats.push(id);") && cron.includes("taire(candidats)") && cron.includes("seanceARappeler({ seancePrevue: p.seancePrevue, seanceProgramme: p.seanceProgramme, resolution })"), "tour 40");
+  const guide9 = lire9("src/lib/guideMoteur.ts");
+  verdict("R9a · le Guide ne présente pas la suite brute quand la résolution a raté",
+    guide9.includes("resolutionIndisponible = true;") && guide9.includes("etat.programme && !etat.resolutionIndisponible"), "tour 40");
 }
 
 console.log("\n" + (echecs === 0 ? "Tout passe." : echecs + " échec(s)."));

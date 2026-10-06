@@ -73,6 +73,8 @@ export default function HeroJournee() {
         reserveLe={j.reserveLe}
         prevuLe={j.prevuLe}
         attendait={j.attendait}
+        indisponible={j.indisponible}
+        onRetry={j.recharger}
         nbExos={j.nbExos}
         nextLabel={j.nextLabel}
         doneStats={j.doneStats}

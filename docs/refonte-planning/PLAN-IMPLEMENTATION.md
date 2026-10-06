@@ -817,3 +817,13 @@ Points validés par Louis, consignés : « Refais ma semaine » disparaît pour 
 ### R9a · scénarios joués sur la vraie base (2026-10-06)
 
 `r9a-test-a-coller.sql` collé par Louis (rejeu de `20261008`, puis `20261009`, puis les scénarios, le tout annulé). Résultat : `T1 zero_jour=0 effet_aujourdhui=t ; T2 regle=3 ; T2b refus_jour_8 ; T3 refus_genre ; T3b refus_doublon ; T4 refus_chevauchement ; T4b bout_a_bout_ok ; T4c refus_fin_avant_debut ; T4d refus_trop_longue ; T5 visibles_par_autre=0 refus=42501 ; suppressions_par_autre=0`. Tous conformes. Relu ensuite en lecture seule : aucune ligne dans les trois tables, `effet_le` absente, contrainte d'origine en place, donc la base n'a rien gardé. `20261009` attend le feu vert de Codex.
+
+### R9a · corrections du tour 40 de Codex (2026-10-06)
+
+Feu vert de Codex pour appliquer `20261009` (validation SQL, distincte du code).
+
+1. **Le cron fait résoudre aussi les réservations déjà nommées.** Le portrait note si la séance du jour vient du programme (`seanceProgramme`, lu sur `etape_consommee_id`). Une séance posée hors programme garde son rappel ; une réservation du programme passe par `resoudreJournee` ; toute lecture ratée (calendriers, programmes, étapes, occurrences, adaptations) retire le rappel d'une séance du programme, même déjà nommée. La décision est une fonction pure, `seanceARappeler`, que le cron applique.
+2. **« Pas de séance ce jour-là » devant une réservation** : conflit `jour_retire`, la réservation reste une trace, n'est ni supposée faite ni `duJour`.
+3. **Le héros distingue trois cas** (`choixSuite`, pur) : résolution indisponible → on garde l'ensemble déjà affiché pour le même programme (étape, modèle, réservation, résolution) et on le dit (« Programme non relu · Réessayer », ou l'état `indisponible` s'il n'y avait rien) ; sans choix → historique ; résolution valide → elle fait foi, même vide. Jamais la suite brute à la place d'une résolution ratée. Le Guide, sur panne, n'annonce aucune prochaine séance et le dit.
+
+- Bancs : +11 contrôles, dont le cas de Codex par le chemin du cron (réservation nommée puis masquée), la panne après nomination, la séance hors programme gardée, l'historique, les trois cas du héros. Témoins : sans le conflit « jour retiré » et sans le silence sur panne, chacun échoue à sa ligne. eslint 93, `check:echelle` 37, build OK.

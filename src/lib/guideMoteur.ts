@@ -117,7 +117,9 @@ export type EtatMoteur = {
   joursEntrainement?: number[];
   /** R9a · les séances que le programme pose sur ces jours, sur sept
    *  jours : des PRÉVISIONS, jamais écrites. */
-  projetees?: { date: string; nom: string; attendaitLe: string | null; conflit: "absence" | "adaptation" | null; reservee: boolean }[];
+  projetees?: { date: string; nom: string; attendaitLe: string | null; conflit: "absence" | "jour_retire" | "adaptation" | null; reservee: boolean }[];
+  /** R9a · le calendrier n'a pas pu être résolu : ne rien affirmer. */
+  resolutionIndisponible?: boolean;
   /** R9a · la personne a répondu (même « aucun jour »). */
   joursChoisis?: boolean;
   /** R9a · une absence en cours ou à venir dans la semaine. */
@@ -182,6 +184,7 @@ async function lireEtatMoteur(userId: string): Promise<EtatMoteur | null> {
   let masquees: string[] = [];
   let joursEntrainement: number[] = [];
   let joursChoisis = false;
+  let resolutionIndisponible = false;
   let projetees: NonNullable<EtatMoteur["projetees"]> = [];
   let absence: EtatMoteur["absence"] = null;
 
@@ -230,12 +233,20 @@ async function lireEtatMoteur(userId: string): Promise<EtatMoteur | null> {
         projetees = (proj.resolution?.jours ?? []).slice(0, MAX_A_VENIR)
           .map((j) => ({ date: j.date, nom: j.etape.nom, attendaitLe: j.attendaitLe, conflit: j.conflit, reservee: j.reservee }));
         absence = proj.calendrier.absences.find((a) => a.debut <= decaler(aujourdhui, 7) && a.fin >= aujourdhui) ?? null;
-        /* La prochaine étape du Guide est celle du héros (décision 21). */
-        const p = proj.resolution?.proposee;
-        if (p) {
-          etape = { id: p.etape.id, nom: p.etape.nom };
+        /* La prochaine étape du Guide est celle du héros (décision 21).
+           Une résolution VALIDE fait foi, y compris quand elle ne propose
+           rien ; sans jour choisi (`resolution === null`), l'historique. */
+        if (proj.resolution) {
+          const p = proj.resolution.proposee;
+          etape = p ? { id: p.etape.id, nom: p.etape.nom } : null;
           reserveLe = null;
         }
+      } else {
+        /* ⚠️ Résolution indisponible : on ne présente pas la suite brute
+           comme le résultat du calendrier (tour 40). */
+        resolutionIndisponible = true;
+        etape = null;
+        reserveLe = null;
       }
     }
   } catch (e) {
@@ -269,7 +280,7 @@ async function lireEtatMoteur(userId: string): Promise<EtatMoteur | null> {
   return {
     aujourdhui, programme, cycle, etapeBrute, etape, reserveLe,
     adaptation, masquees, aVenir, recent, contexte,
-    joursEntrainement, joursChoisis, projetees, absence,
+    joursEntrainement, joursChoisis, projetees, absence, resolutionIndisponible,
   };
 }
 
@@ -366,7 +377,7 @@ export function resumeMoteur(etat: EtatMoteur | null): string | null {
     lignes.push(ligne);
   } else if (etat.programme && etat.masquees.length > 0) {
     lignes.push("Prochaine étape : aucune, l’adaptation en cours met tout le cycle de côté.");
-  } else if (etat.programme) {
+  } else if (etat.programme && !etat.resolutionIndisponible) {
     lignes.push("Prochaine étape : aucune.");
   }
 
@@ -378,6 +389,9 @@ export function resumeMoteur(etat: EtatMoteur | null): string | null {
     );
   }
 
+  if (etat.resolutionIndisponible) {
+    lignes.push("Calendrier d’entraînement momentanément illisible : n’annonce aucune prochaine séance ni aucun jour, dis seulement que tu ne peux pas le lire pour l’instant.");
+  }
   if (etat.joursChoisis) {
     const NOMS = ["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"];
     lignes.push(etat.joursEntrainement && etat.joursEntrainement.length > 0
@@ -393,7 +407,9 @@ export function resumeMoteur(etat: EtatMoteur | null): string | null {
       + etat.projetees
         .map((p) => libelleReservation(p.date, etat.aujourdhui) + " " + p.nom.slice(0, MAX_TITRE)
           + (p.reservee ? " (réservée)" : "")
-          + (p.conflit === "absence" ? " (réservée pendant une absence)" : p.conflit === "adaptation" ? " (réservée, mais l’adaptation la met de côté)" : "")
+          + (p.conflit === "absence" ? " (réservée pendant une absence)"
+            : p.conflit === "jour_retire" ? " (réservée un jour retiré)"
+            : p.conflit === "adaptation" ? " (réservée, mais l’adaptation la met de côté)" : "")
           + (p.attendaitLe ? " (attendue " + libelleReservation(p.attendaitLe, etat.aujourdhui) + ", elle a glissé)" : ""))
         .join(" · ") + ".",
     );
