@@ -36,17 +36,28 @@ export async function POST(req: NextRequest) {
     const fromAddress = cleanEnv(process.env.RESEND_FROM) || "Vaiiya <onboarding@resend.dev>";
     const subject = "Ton code Vaiiya · " + otp;
 
+    /* Le gabarit est pensé pour le PETIT écran d'abord : les styles en ligne
+       sont ceux du téléphone (ce que lit un client mail qui ignore <style>),
+       et la media query les agrandit au-delà de 520 px (ordinateur,
+       tablette). `white-space:nowrap` empêche le code de se couper en deux
+       lignes, ce qui le rendait illisible sur un petit téléphone. */
     const html =
-      "<!DOCTYPE html><html><body style='margin:0;padding:40px 20px;font-family:sans-serif;background:#faf8ff'>" +
-      "<div style='max-width:420px;margin:0 auto;background:#fff;border-radius:24px;padding:40px;box-shadow:0 4px 32px rgba(167,139,250,0.12)'>" +
-      "<div style='text-align:center;margin-bottom:32px'>" +
-      "<img src='https://vaiiya.fr/logo-vaiiya.png' alt='Vaiiya' width='64' height='64' style='display:inline-block;width:64px;height:64px' />" +
+      "<!DOCTYPE html><html><head><meta name='viewport' content='width=device-width,initial-scale=1'>" +
+      "<style>@media (min-width:520px){" +
+      ".vy-page{padding:40px 20px!important}" +
+      ".vy-carte{padding:40px!important}" +
+      ".vy-code{font-size:46px!important;letter-spacing:12px!important}" +
+      "}</style></head>" +
+      "<body class='vy-page' style='margin:0;padding:20px 10px;font-family:sans-serif;background:#faf8ff'>" +
+      "<div class='vy-carte' style='max-width:420px;margin:0 auto;background:#fff;border-radius:24px;padding:28px 18px;box-shadow:0 4px 32px rgba(167,139,250,0.12)'>" +
+      "<div style='text-align:center;margin-bottom:28px'>" +
+      "<img src='https://vaiiya.fr/logo-vaiiya.png' alt='Vaiiya' width='56' height='56' style='display:inline-block;width:56px;height:56px' />" +
       "<h1 style='margin:10px 0 2px;font-family:Arial,Helvetica,sans-serif;font-size:20px;font-weight:700;letter-spacing:0.08em;color:#2D3748'>VAIIYA</h1>" +
       "<p style='margin:0;font-size:11px;color:#A0AEC0'>Coach IA · Musculation · Nutrition</p></div>" +
       "<h2 style='text-align:center;font-size:17px;font-weight:400;color:#2D3748;margin:0 0 8px'>Code de confirmation</h2>" +
-      "<p style='text-align:center;font-size:13px;color:#718096;margin:0 0 28px'>Entre ce code dans l’application pour activer ton compte.</p>" +
-      "<div style='background:rgba(212,192,255,0.15);border:1.5px solid rgba(167,139,250,0.2);border-radius:16px;padding:28px 20px;text-align:center;margin-bottom:24px'>" +
-      "<span style='font-family:Arial,Helvetica,sans-serif;font-size:42px;font-weight:700;letter-spacing:8px;color:#A78BFA'>" + otp + "</span></div>" +
+      "<p style='text-align:center;font-size:13px;color:#718096;margin:0 0 24px'>Entre ce code dans l’application pour activer ton compte.</p>" +
+      "<div style='background:rgba(212,192,255,0.15);border:1.5px solid rgba(167,139,250,0.2);border-radius:16px;padding:22px 8px;text-align:center;margin-bottom:24px'>" +
+      "<span class='vy-code' style='font-family:Arial,Helvetica,sans-serif;font-size:32px;font-weight:700;letter-spacing:5px;white-space:nowrap;color:#8B5CF6'>" + otp + "</span></div>" +
       "<p style='text-align:center;font-size:12px;color:#A0AEC0'>Ce code expire dans <strong>10 minutes</strong>.</p>" +
       "<p style='text-align:center;font-size:11px;color:#A0AEC0;margin-top:24px'>Si tu n’as pas demandé ce code, ignore cet email.</p>" +
       "</div></body></html>";
