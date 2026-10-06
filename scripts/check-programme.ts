@@ -7269,9 +7269,9 @@ verdict(
   const resa = intention({ id: "res", date: "2026-10-10", title: "Haut du corps", etapeId: "B", rang: 2 });
   const etatResa: Etat = { ...base, reserves: [{ rang: 2, etapeId: "B", date: "2026-10-10" }] };
   const avecResa = lignes(cal(), [fait, resa], resoudre(cal(), etatResa, [{ rang: 2, etapeId: "B", date: "2026-10-10" }]));
-  verdict("R9b · une réservation n'apparaît qu'une fois, par la projection (qui connaît son conflit)",
-    avecResa.find((x) => x.date === "2026-10-10")!.elements.length === 1
-      && avecResa.find((x) => x.date === "2026-10-10")!.elements[0].genre === "prevu", r(avecResa));
+  const el10 = avecResa.find((x) => x.date === "2026-10-10")!.elements;
+  verdict("R9b · une réservation n'apparaît qu'une fois, portée par son intention et le conflit de la projection",
+    el10.length === 1 && el10[0].genre === "prevu" && el10[0].intention?.id === "res", r(avecResa));
   const pose = intention({ id: "p", date: "2026-10-09", title: "HIIT 20/10", origine: "utilisateur" });
   const avecPose = lignes(cal(), [fait, pose], resoudre(cal(), base));
   verdict("R9b · une séance posée hors programme s'affiche telle quelle sur son jour",
@@ -7307,9 +7307,47 @@ verdict(
   ], jeudi);
   verdict("R9b · premier choix des jours : seul le mobilier automatique à venir est proposé au retrait",
     mob.map((d) => d.id).join(",") === "m1", mob.map((d) => d.id).join(","));
-  verdict("R9b · « Changer de jour » ne vise qu'une séance encore placée par la projection",
-    S.occurrenceEncorePrevue(resoudre(cal()), "B", 2) && !S.occurrenceEncorePrevue(resoudre(cal()), "B", 3)
-      && !S.occurrenceEncorePrevue(null, "B", 2), "");
+  verdict("R9b · « Changer de jour » vise la cible affichée : même étape, même rang, MÊME JOUR",
+    S.cibleEncoreAffichee(resoudre(cal()), { etapeId: "B", rang: 2, date: "2026-10-09" })
+      && !S.cibleEncoreAffichee(resoudre(cal()), { etapeId: "B", rang: 2, date: "2026-10-12" })
+      && !S.cibleEncoreAffichee(resoudre(cal()), { etapeId: "B", rang: 3, date: "2026-10-09" })
+      && !S.cibleEncoreAffichee(null, { etapeId: "B", rang: 2, date: "2026-10-09" }), "tour 42");
+  const masqueB = (calendrier: Cal) => P.resoudreJournee({ cycle, etat: base, reservations: [], calendrier, dates: Array.from({ length: 11 }, (_, i) => P.decaler(jeudi, i)),
+    aujourdhui: jeudi, faitAujourdhui: false, dernierJourFait: "2026-10-05", masqueeLe: (e, d) => e.id === "B" && d === "2026-10-09" });
+  verdict("R9b · une adaptation apparue depuis l'affichage change la cible : refus",
+    !S.cibleEncoreAffichee(masqueB(cal()), { etapeId: "B", rang: 2, date: "2026-10-09" }), "tour 42");
+
+  /* ── Tour 42 ── */
+  const O = await import("@/lib/occurrences");
+  const avecB5: Etat = { ...base, reserves: [{ rang: 5, etapeId: "B", date: "2026-10-16" }] };
+  verdict("R9b · témoin : réserver B₅ ferait disparaître B₂ (la suite passerait à C₃)",
+    O.occurrenceSuivante(cycle, base)?.rang === 2 && O.occurrenceSuivante(cycle, avecB5)?.rang === 3, "tour 42");
+  verdict("R9b · seule l'occurrence en attente d'une étape se réserve (B₂ oui, B₅ non, C₃ hors ordre oui)",
+    O.rangEnAttente(cycle, base, "B") === 2 && O.rangEnAttente(cycle, base, "C") === 3
+      && O.rangEnAttente(cycle, { ...base, reserves: [{ rang: 2, etapeId: "B", date: "2026-10-17" }] }, "B") === 2, "décision 14");
+  const passee = intention({ id: "rp", date: "2026-10-07", title: "Haut du corps", etapeId: "B", rang: 2 });
+  const lPassee = lignes(cal(), [fait, passee], resoudre(cal(), { ...base, reserves: [{ rang: 2, etapeId: "B", date: "2026-10-07" }] }, [{ rang: 2, etapeId: "B", date: "2026-10-07" }]));
+  const mer = lPassee.find((x) => x.date === "2026-10-07")!;
+  verdict("R9b · une réservation passée encore prévue reste une trace, jamais « passé sans séance »",
+    mer.etat === "occupe" && mer.elements.length === 1 && mer.elements[0].genre === "pose", r(lPassee));
+  const substituee = intention({ id: "sub", date: "2026-10-10", title: "Express 12", etapeId: "B", rang: 2 });
+  const lSub = lignes(cal(), [fait, substituee], resoudre(cal(), etatResa, [{ rang: 2, etapeId: "B", date: "2026-10-10" }]));
+  const elSub = lSub.find((x) => x.date === "2026-10-10")!.elements[0];
+  verdict("R9b · une réservation substituée se montre sous SON titre, pas celui de l'étape",
+    elSub.genre === "prevu" && elSub.intention?.title === "Express 12", r(lSub));
+  const faitePlanning = intention({ id: "fp", date: "2026-10-06", title: "Dos & fessiers", status: "done", lancementId: "L1" });
+  const journal = [
+    { id: "w1", date: "2026-10-06", titre: "Dos & fessiers", dureeMin: 40, intentionId: null, lancementId: "L1" },
+    { id: "w2", date: "2026-10-06", titre: "HIIT 20/10", dureeMin: 20, intentionId: null, lancementId: "L2" },
+  ];
+  const lJ = S.lignesSemaine({ dates: semaine, aujourdhui: jeudi, intentions: [fait, faitePlanning], projetes: resoudre(cal())?.jours ?? [], journal, calendrier: cal(), rangPropose: 2 });
+  const mar = lJ.find((x) => x.date === "2026-10-06")!.elements.map((e) => e.genre).join(",");
+  verdict("R9b · le journal montre une séance faite hors planning, une seule fois si une intention la porte",
+    mar === "fait,realisee", mar);
+  const resaSamedi = resoudre(cal(), { ...base, reserves: [{ rang: 2, etapeId: "B", date: "2026-10-10" }] }, [{ rang: 2, etapeId: "B", date: "2026-10-10" }]);
+  const cVendredi = resaSamedi?.jours.find((j) => j.etape.id === "C");
+  verdict("R9b · « t'attendait » ne se déduit pas d'une tête précédée par une réservation plus tardive",
+    !!cVendredi && cVendredi.attendaitLe === null, JSON.stringify(cVendredi ?? null));
 
   const ecran = lireB("src/components/semaine/MaSemaineSheet.tsx");
   const gestes = lireB("src/lib/semaineGestes.ts");
@@ -7323,9 +7361,32 @@ verdict(
   verdict("R9b · « Refais ma semaine » n'existe pas pour un compte qui a choisi ses jours",
     !ecran.includes("Refais") && page.includes('sheet === "semaine" && !joursChoisis') && page.includes('sheet === "organiser" && !joursChoisis')
       && assistant.includes('say(voix(guideRef.current, "impasse.regen_jours_choisis"))'), "");
-  verdict("R9b · « Changer de jour » relit la projection AVANT d'écrire, et une panne refuse",
-    gestes.indexOf("occurrenceEncorePrevue(") > 0 && gestes.indexOf("occurrenceEncorePrevue(") < gestes.indexOf("ecrireOccurrence(")
-      && gestes.includes('if (!proj) return { ok: false, raison: "illisible" };'), "");
+  verdict("R9b · « Changer de jour » relit la cible précise ET l'occurrence en attente AVANT d'écrire, et une panne refuse",
+    gestes.indexOf("cibleEncoreAffichee(") > 0 && gestes.indexOf("cibleEncoreAffichee(") < gestes.indexOf("ecrireOccurrence(")
+      && gestes.indexOf("rangEnAttente(") < gestes.indexOf("ecrireOccurrence(")
+      && gestes.includes('if (!proj?.etat) return { ok: false, raison: "illisible" };'), "tour 42");
+  verdict("R9b · déplacer une réservation = la date seule, au jour affiché ; jamais la ligne réécrite",
+    gestes.includes("deplacerDateReservation(userId, cible.reservationId, cible.date, vers)") && !gestes.includes("saveDay(")
+      && gestes.includes('if (r.resultat === "deja") return { ok: false, raison: "changee" };'), "tour 42");
+  verdict("R9b · une adaptation qui masque l'étape au jour d'arrivée refuse, et la trace d'adaptation s'écrit",
+    gestes.includes('if (etapeMasquee(etape.id, aLArrivee)) return { ok: false, raison: "masquee" };') && gestes.includes("adaptation_id: aLArrivee?.id ?? null"), "tour 42");
+  verdict("R9b · « Pas d'entraînement » ne retire que la réservation encore là ce jour-là, et ne reste jamais à moitié",
+    gestes.includes("retirerReservationDuJour(userId, reservationId, date)") && gestes.includes("await poserException(userId, date, avant);"), "tour 42");
+  verdict("R9b · « Mettre une autre séance » ne retire rien avant l'enregistrement de la nouvelle",
+    !ecran.includes("retirerIntention") && page.includes("const ok = await planifierSeance(s, date);")
+      && page.indexOf("const ok = await planifierSeance(s, date);") < page.indexOf("await retirerReservationDuJour(user.id, liberer.id, liberer.date)")
+      && ecran.includes("elle n&apos;est ni faite, ni sautée"), "tour 42");
+  verdict("R9b · « Voir les exercices » d'une réservation lit sa prescription figée",
+    ecran.includes("if (reservation) { setExos((reservation.exerciseList ?? []).map((e) => e.name)); return; }"), "tour 42");
+  const mesJours = lireB("src/components/semaine/MesJoursSheet.tsx");
+  verdict("R9b · premier choix des jours : lecture ratée ≠ rien, retrait par identité, deux échecs distincts",
+    mesJours.includes("setMobilierIllisible(true)") && !mesJours.includes("setMobilier([]); });")
+      && mesJours.includes("libererMobilierAnnonce(userId, mobilier.map((d) => d.id)") && !mesJours.includes("libererMobilier(")
+      && mesJours.includes("Tes jours sont enregistrés, mais les anciennes séances sont encore là"), "tour 42");
+  verdict("R9b · « Refais ma semaine » refuse sur calendrier illisible",
+    assistant.includes('if (!cal) {\n        say(voix(guideRef.current, "impasse.regen_calendrier_illisible"));'), "tour 42");
+  verdict("R9b · photos naturelles : aucune prévision ni conflit atténué par l'opacité",
+    !/opacity:\s*prevuSeul|opacity:\s*p\?\.conflit/.test(ecran) && !page.includes('style={{ position: "absolute", inset: 0, opacity: 0.5 }}'), "verrou 2026-07-13");
   verdict("R9b · retirer une réservation la supprime, jamais un statut écrit (elle glisse)",
     !/statut:\s*"passee"|status:\s*"skipped"|marquerIntention/.test(gestes + ecran), "");
   verdict("R9b · la feuille d'un jour sort par un portail et verrouille la page",

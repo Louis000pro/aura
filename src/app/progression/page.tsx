@@ -24,7 +24,7 @@ import {
 } from "lucide-react";
 import WeeklyProgramme from "@/components/WeeklyProgramme";
 import AdaptationSheet from "@/components/entrainement/AdaptationSheet";
-import MaSemaineSheet from "@/components/semaine/MaSemaineSheet";
+import MaSemaineSheet, { type ALiberer } from "@/components/semaine/MaSemaineSheet";
 import MesJoursSheet from "@/components/semaine/MesJoursSheet";
 import AbsenceSheet from "@/components/semaine/AbsenceSheet";
 import { libelleJour, type Adaptation } from "@/lib/adaptation";
@@ -60,7 +60,7 @@ import {
   type AdviceTheme,
 } from "@/lib/adviceArticles";
 import {
-  lireSemaine, saveDay, ajouterIntention, hasSeance, seanceNonFaite, readLieu, ctxFromLieu,
+  lireSemaine, saveDay, ajouterIntention, retirerReservationDuJour, hasSeance, seanceNonFaite, readLieu, ctxFromLieu,
   weekDates, weekDatesForOffset, todayYmd, weekOffsetOf, dayTitle, lieuLabel, normalizeExercises,
   parDate, principale, seancesDuJour, ordonner,
   dayLabelLong, PLANNING_TYPE_BY_CATEGORY,
@@ -311,8 +311,12 @@ function WeekStrip({ week, dates, today, onOrganise, prevues }: {
               }}>
               {prevue && art ? (
                 <>
-                  <Photo img={art.img} pos="center 22%" style={{ position: "absolute", inset: 0, opacity: 0.5 }} />
+                  {/* Photo naturelle (verrou 2026-07-13) : « prévue » se dit
+                      par le chrome, un filet en pointillé, jamais par une
+                      photo atténuée (tour 42). */}
+                  <Photo img={art.img} pos="center 22%" style={{ position: "absolute", inset: 0 }} />
                   <div className="absolute inset-0" style={{ background: "var(--voile-carte)" }} />
+                  <div className="absolute inset-[3px]" style={{ borderRadius: "calc(var(--r-controle) - 3px)", border: "1.5px dashed rgba(255,255,255,0.75)" }} />
                 </>
               ) : isSeance && art ? (
                 <>
@@ -2684,6 +2688,9 @@ export default function ProgressionPage() {
   const [choisirCible, setChoisirCible] = useState<string | null>(null);
   /* Le jour pour lequel le catalogue est ouvert (« Je choisis » d'un jour). */
   const [pourDate, setPourDate] = useState<string | null>(null);
+  /* R9b · tour 42 · la réservation à retirer SEULEMENT une fois la nouvelle
+     séance enregistrée. Annuler le catalogue l'oublie : rien n'a changé. */
+  const [aLiberer, setALiberer] = useState<ALiberer>(null);
   const [activeArticle, setActiveArticle] = useState<AdviceArticle | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(null), 2500); };
@@ -3011,8 +3018,8 @@ export default function ProgressionPage() {
      ⚠️ ELLE AJOUTE, ELLE NE REMPLACE PLUS (V6b). C'était le dernier
      endroit du produit où poser une séance en détruisait une autre, et
      c'est précisément ce que la journée à deux séances rend inutile. */
-  const planifierSeance = async (s: MergedSession, date: string) => {
-    if (!user) return;
+  const planifierSeance = async (s: MergedSession, date: string): Promise<boolean> => {
+    if (!user) return false;
     const saved = readLieu(user.id);
     const jour: PlanningDay = {
       id: null,
@@ -3039,8 +3046,10 @@ export default function ProgressionPage() {
         window.dispatchEvent(new CustomEvent("programme-updated", { detail: { date } }));
       }
       showToast(`${s.title} · ${dayLabelLong(date)} ✓`);
+      return true;
     } catch {
       showToast("Impossible de l’ajouter à ta semaine");
+      return false;
     }
   };
 
@@ -3312,7 +3321,7 @@ export default function ProgressionPage() {
             onClose={() => { setSheet(null); void loadWeek(); }}
             onLancerTete={() => { setSheet(null); journee.lancerAujourdhui(); }}
             onLancerIntention={(d) => { setSheet(null); startDay(d); }}
-            onChoisirSeance={(date) => { setPourDate(date); setSheet("choisir"); }}
+            onChoisirSeance={(date, liberer) => { setPourDate(date); setALiberer(liberer); setSheet("choisir"); }}
             onMesJours={() => setSheet("jours")}
             onAbsence={() => setSheet("absence")}
             onChange={() => void loadWeek()}
@@ -3394,14 +3403,25 @@ export default function ProgressionPage() {
             onClose={() => {
               /* Venu d'un jour de la semaine : on y revient, pas au vide. */
               setSheet(pourDate ? "semaine" : null);
-              setChoisirCible(null); setPourDate(null);
+              setChoisirCible(null); setPourDate(null); setALiberer(null);
             }}
             onStart={pourDate
               ? (s) => {
                   /* Un mini-cours ne se pose pas sur un jour : il se lit. */
                   if (getAdviceArticle(s.id)) { startSession(s); return; }
-                  void planifierSeance(s, pourDate);
-                  setPourDate(null); setChoisirCible(null); setSheet("semaine");
+                  const date = pourDate;
+                  const liberer = aLiberer && aLiberer.date === date ? aLiberer : null;
+                  void (async () => {
+                    const ok = await planifierSeance(s, date);
+                    /* La réservation ne part qu'APRÈS l'enregistrement, et
+                       seulement si elle est encore prévue ce jour-là. */
+                    if (ok && liberer && user) {
+                      try { await retirerReservationDuJour(user.id, liberer.id, liberer.date); }
+                      catch { showToast("La séance du programme est restée sur ce jour"); }
+                      void loadWeek();
+                    }
+                  })();
+                  setPourDate(null); setALiberer(null); setChoisirCible(null); setSheet("semaine");
                 }
               : startSession}
             onUpgrade={() => { setSheet(null); router.push("/premium"); }}

@@ -1391,10 +1391,16 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       /* R9b · AVEC DES JOURS CHOISIS, LA SEMAINE SE REMPLIT SEULE, SANS
          RIEN ÉCRIRE : « refais ma semaine » n'a plus rien à faire (validé
          par Louis). Écrire du mobilier occuperait des jours d'entraînement
-         et ferait glisser les séances du programme. Une lecture ratée
-         laisse passer : c'est le comportement d'avant. */
+         et ferait glisser les séances du programme.
+         ⚠️ Tour 42 · UNE LECTURE RATÉE REFUSE : elle ne prouve pas que la
+         personne n'a pas choisi ses jours. L'historique ne vaut qu'après
+         une lecture qui le confirme. */
       const cal = await lireCalendrier(user.id, todayYmd());
-      if (cal?.choisi) {
+      if (!cal) {
+        say(voix(guideRef.current, "impasse.regen_calendrier_illisible"));
+        return;
+      }
+      if (cal.choisi) {
         say(voix(guideRef.current, "impasse.regen_jours_choisis"));
         return;
       }

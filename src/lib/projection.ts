@@ -211,7 +211,12 @@ export function projeterJours<T extends { id: string; position: number }>(input:
     const o = occurrenceSuivante(cycle, etat, (e) => masque(e, date) || bloquee(e), places);
     if (!o) continue;
     places.push(o.rang);
-    const attendaitLe = attendue.get(o.rang) ?? (premiere && tete?.rang === o.rang ? manque : null);
+    /* ⚠️ Tour 42 · « t'attendait » ne se déduit de la tête que si rien ne
+       la précède dans la suite : une occurrence plus ancienne réservée
+       plus tard (B₂ samedi) ne prouve pas que C₃ était attendue mercredi. */
+    const precedeeParUneReservation = aVenir.some((r) => r.rang < o.rang);
+    const attendaitLe = attendue.get(o.rang)
+      ?? (premiere && tete?.rang === o.rang && !precedeeParUneReservation ? manque : null);
     premiere = false;
     sortie.push({ date, etape: o.etape, rang: o.rang, reservee: false, conflit: null, attendaitLe });
   }

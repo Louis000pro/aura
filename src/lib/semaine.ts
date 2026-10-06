@@ -13,10 +13,16 @@
    passé sans séance n'est ni rouge ni « raté » : il est atténué, et sa
    séance glisse au prochain jour d'entraînement.
 
-   ⚠️ UNE RÉSERVATION N'APPARAÎT QU'UNE FOIS. Elle est à la fois une
-   intention écrite et une entrée de la projection (`reservee`). C'est la
-   projection qui la montre, parce qu'elle seule sait si elle est en
-   conflit ; l'intention écrite qui la porte est donc écartée ici.
+   ⚠️ UNE RÉSERVATION N'APPARAÎT QU'UNE FOIS, ET C'EST L'INTENTION ÉCRITE
+   QUI LA MONTRE (tour 42). Elle seule porte le vrai titre et la
+   prescription figée (une séance substituée garde son contenu). La
+   projection ne lui apporte que son conflit, associé par le rang. Une
+   réservation passée encore prévue reste une trace : sa journée n'est
+   jamais « passée sans séance ».
+
+   ⚠️ LE JOURNAL AUSSI (décision 10) : une séance faite sans cible de
+   planning (le catalogue, une impro) apparaît comme faite, une seule fois
+   si une intention faite la porte déjà.
    ════════════════════════════════════════════════════════════════════ */
 
 import {
@@ -37,10 +43,18 @@ export type EtatJourSemaine =
   /** Le jour porte quelque chose (fait, posé ou prévu). */
   | "occupe";
 
+/** Une séance du journal (`workout_sessions`), datée au jour de Paris. */
+export type SeanceJournal = { id: string; date: string; titre: string; dureeMin: number | null; intentionId: string | null; lancementId: string | null };
+
 export type ElementJour<T> =
   | { genre: "fait"; intention: PlanningDay }
+  /** Faite hors planning : seul le journal la connaît. */
+  | { genre: "realisee"; seance: SeanceJournal }
+  /** Posée hors programme, ou réservation sans entrée de projection
+   *  (passée encore prévue, ou au-delà de l'horizon lu). */
   | { genre: "pose"; intention: PlanningDay }
-  | { genre: "prevu"; projete: JourProjete<T>; proposee: boolean };
+  /** Le programme : `intention` porte la réservation quand elle existe. */
+  | { genre: "prevu"; projete: JourProjete<T>; proposee: boolean; intention: PlanningDay | null };
 
 export type LigneSemaine<T> = {
   date: string;
@@ -65,6 +79,8 @@ export function lignesSemaine<T>(input: {
   intentions: PlanningDay[];
   /** La projection de R9a, ou `[]`. */
   projetes: JourProjete<T>[];
+  /** Le journal des séances faites sur ces dates. */
+  journal?: SeanceJournal[];
   calendrier: Calendrier;
   /** Le rang de la séance que l'app propose maintenant (la tête de la suite). */
   rangPropose: number | null;
@@ -78,16 +94,28 @@ export function lignesSemaine<T>(input: {
     const elements: ElementJour<T>[] = [];
 
     const duJour = input.intentions.filter((d) => d.date === date && !estRepos(d));
-    for (const d of duJour.filter((x) => x.status === "done")) elements.push({ genre: "fait", intention: d });
-    /* Posées à la main, par le Guide, ou en supplément. Les réservations
-       passent par la projection (voir l'en-tête). */
+    const faites = duJour.filter((x) => x.status === "done");
+    for (const d of faites) elements.push({ genre: "fait", intention: d });
+    /* Le journal, dédupliqué par identité : une intention faite qui porte
+       déjà cette séance (son id ou son lancement) la montre déjà. */
+    for (const j of (input.journal ?? []).filter((x) => x.date === date)) {
+      const dejaLa = input.intentions.some((d) => d.status === "done"
+        && ((!!j.intentionId && d.id === j.intentionId) || (!!j.lancementId && d.lancementId === j.lancementId)));
+      if (!dejaLa) elements.push({ genre: "realisee", seance: j });
+    }
+    const projetes = passe ? [] : input.projetes.filter((j) => j.date === date);
+    const reservations = duJour.filter((x) => x.status === "planned" && reserve(x));
+    /* Posées à la main, par le Guide, ou en supplément. */
     for (const d of duJour.filter((x) => x.status === "planned" && !reserve(x))) {
       elements.push({ genre: "pose", intention: d });
     }
-    if (!passe) {
-      for (const p of input.projetes.filter((j) => j.date === date)) {
-        elements.push({ genre: "prevu", projete: p, proposee: !p.reservee && p.rang === input.rangPropose });
-      }
+    /* Une réservation sans entrée de projection reste une trace. */
+    for (const d of reservations) {
+      if (!projetes.some((p) => p.reservee && p.rang === d.rang)) elements.push({ genre: "pose", intention: d });
+    }
+    for (const p of projetes) {
+      const intention = p.reservee ? reservations.find((d) => d.rang === p.rang) ?? null : null;
+      elements.push({ genre: "prevu", projete: p, proposee: !p.reservee && p.rang === input.rangPropose, intention });
     }
 
     let etat: EtatJourSemaine;
@@ -151,14 +179,15 @@ export const ABR_JOURS = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
 export const LETTRES_JOURS = ["L", "M", "M", "J", "V", "S", "D"];
 
 /**
- * La séance `(etapeId, rang)` est-elle encore placée par la projection ?
- * C'est la vérification de « Changer de jour » avant d'écrire : une
- * séance qui a été faite, ou dont le rang a bougé, ne se réserve pas.
+ * La cible affichée est-elle ENCORE ce que la projection montre ? Même
+ * étape, même rang, même jour, non réservée et sans conflit. Tour 42 ·
+ * retrouver son rang ailleurs dans les 28 jours ne suffit pas : une
+ * adaptation ou un calendrier modifiés changeraient le sens du geste.
  */
-export function occurrenceEncorePrevue<T extends { id: string }>(
+export function cibleEncoreAffichee<T extends { id: string }>(
   resolution: { jours: JourProjete<T>[] } | null,
-  etapeId: string,
-  rang: number,
+  cible: { etapeId: string; rang: number; date: string },
 ): boolean {
-  return !!resolution?.jours.some((j) => !j.reservee && j.etape.id === etapeId && j.rang === rang);
+  return !!resolution?.jours.some((j) => !j.reservee && !j.conflit
+    && j.etape.id === cible.etapeId && j.rang === cible.rang && j.date === cible.date);
 }

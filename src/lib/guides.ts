@@ -292,6 +292,9 @@ const REPLIQUES = {
      distinct du précédent, et ce n'est pas un détail : celui-ci ne peut
      pas dire « redemande-moi lundi », puisque c'est précisément lundi
      qu'on est en train de préparer. */
+  "impasse.regen_calendrier_illisible": {
+    commun: "Je n’arrive pas à relire tes jours d’entraînement pour l’instant, donc je ne touche pas à ta semaine. Redemande-moi dans un instant.",
+  },
   "impasse.regen_jours_choisis": {
     commun: "Tu as choisi tes jours, ta semaine se remplit déjà toute seule dans l’ordre de ton programme 🙂 Tu peux changer une séance de jour depuis « Ma semaine », ou modifier tes jours.",
   },

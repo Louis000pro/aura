@@ -107,6 +107,9 @@ export interface PlanningDay {
    * occurrence libre de l'étape. Relue, pour qu'un déplacement la garde.
    */
   rang?: number | null;
+  /** R9b · tour 42 · le lancement qui l'a refermée (lu, jamais écrit ici) :
+   *  c'est lui qui déduplique la semaine contre le journal. */
+  lancementId?: string | null;
   /**
    * V8 · L'ADAPTATION SOUS LAQUELLE CETTE INTENTION A ÉTÉ MATÉRIALISÉE.
    *
@@ -596,7 +599,7 @@ export function oublierSondageAdaptations(): void {
  *  désigner celle qu'on modifie, et de quoi ordonner celles d'une même
  *  journée. `etape_consommee_id` porte la hiérarchie (l'étape d'abord). */
 function colonnes(s: SchemaIntentions, avecAdaptation: boolean): string {
-  return `id, date, type, title, difficulty, location, exercise_list, session_id, programme_id, programme_seance_id, etape_consommee_id, rang, origine, created_at, ${s.colStatut}`
+  return `id, date, type, title, difficulty, location, exercise_list, session_id, programme_id, programme_seance_id, etape_consommee_id, rang, origine, created_at, lancement_id, ${s.colStatut}`
     + (avecAdaptation ? ", adaptation_id" : "");
 }
 
@@ -614,6 +617,7 @@ interface PlanningRow {
   programme_seance_id?: string | null;
   etape_consommee_id?: string | null;
   rang?: number | null;
+  lancement_id?: string | null;
   adaptation_id?: string | null;
   origine?: string | null;
   created_at?: string | null;
@@ -652,6 +656,7 @@ function rowToDay(r: PlanningRow, s: SchemaIntentions): PlanningDay {
     provenanceId: r.programme_seance_id ?? null,
     /* R6 · relue pour la même raison : un déplacement garde l'occurrence. */
     rang: r.rang ?? null,
+    lancementId: r.lancement_id ?? null,
     adaptationId: r.adaptation_id ?? null,
     /* ⚠️ RELUE EN V9B, ET SANS ELLE « refais ma semaine » NE PEUT PAS
        FAIRE LA DIFFÉRENCE entre le mobilier qu'il a le droit de retirer
@@ -1345,6 +1350,71 @@ export async function libererMobilier(userId: string, dates: string[]): Promise<
     .is("etape_consommee_id", null)
     .in("date", dates);
   if (error) throw new Error(error.message);
+}
+
+/**
+ * R9b · tour 42 · Retire le mobilier ANNONCÉ, par ses identifiants. Les
+ * trois conditions de `estMobilier` restent en base : une ligne qui a
+ * changé de nature entre l'aperçu et la confirmation n'est pas retirée, et
+ * une ligne apparue entre-temps n'est jamais visée. Rend le nombre retiré.
+ */
+export async function libererMobilierAnnonce(userId: string, ids: string[]): Promise<number> {
+  if (ids.length === 0) return 0;
+  const supabase = createClient();
+  const sc = await schemaIntentions();
+  const { data, error } = await supabase
+    .from(sc.table)
+    .delete()
+    .eq("user_id", userId)
+    .eq(sc.colStatut, sc.versBase.planned)
+    .eq("origine", "systeme")
+    .is("etape_consommee_id", null)
+    .in("id", ids)
+    .select("id");
+  if (error) throw new Error(error.message);
+  return (data ?? []).length;
+}
+
+/**
+ * R9b · tour 42 · Déplace une RÉSERVATION : la date seule, et seulement si
+ * elle est encore prévue au jour que l'écran montrait. Rien d'autre de la
+ * ligne n'est réécrit (une correction concurrente de son contenu tient).
+ * `false` : elle a bougé entre-temps, rien n'est écrit.
+ */
+export async function deplacerDateReservation(userId: string, id: string, de: string, vers: string): Promise<boolean> {
+  const supabase = createClient();
+  const sc = await schemaIntentions();
+  const { data, error } = await supabase
+    .from(sc.table)
+    .update({ date: vers, updated_at: new Date().toISOString() })
+    .eq("user_id", userId)
+    .eq("id", id)
+    .eq("date", de)
+    .eq(sc.colStatut, sc.versBase.planned)
+    .not("etape_consommee_id", "is", null)
+    .select("id");
+  if (error) throw new Error(error.message);
+  return (data ?? []).length > 0;
+}
+
+/**
+ * R9b · tour 42 · Retire une réservation SI elle est encore prévue ce
+ * jour-là. Une réservation déplacée ailleurs depuis l'ouverture de l'écran
+ * n'est pas touchée par son ancien bouton. `false` : rien n'a été retiré.
+ */
+export async function retirerReservationDuJour(userId: string, id: string, date: string): Promise<boolean> {
+  const supabase = createClient();
+  const sc = await schemaIntentions();
+  const { data, error } = await supabase
+    .from(sc.table)
+    .delete()
+    .eq("user_id", userId)
+    .eq("id", id)
+    .eq("date", date)
+    .eq(sc.colStatut, sc.versBase.planned)
+    .select("id");
+  if (error) throw new Error(error.message);
+  return (data ?? []).length > 0;
 }
 
 /**

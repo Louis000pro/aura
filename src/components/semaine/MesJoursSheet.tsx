@@ -19,7 +19,7 @@ import { motion } from "framer-motion";
 import { X } from "lucide-react";
 import FeuilleBas from "@/components/semaine/FeuilleBas";
 import { enregistrerJours, oublierJours } from "@/lib/joursEntrainement";
-import { dayTitle, fetchRange, libererMobilier, type PlanningDay } from "@/lib/planning";
+import { dayTitle, fetchRange, libererMobilierAnnonce, type PlanningDay } from "@/lib/planning";
 import { decaler, normaliserJours, type Calendrier } from "@/lib/projection";
 import { ABR_JOURS, LETTRES_JOURS, mobilierAVenir } from "@/lib/semaine";
 
@@ -35,6 +35,12 @@ export default function MesJoursSheet({ userId, calendrier, aujourdhui, onClose,
 }) {
   const [jours, setJours] = useState<number[]>(normaliserJours(calendrier.jours));
   const [mobilier, setMobilier] = useState<PlanningDay[] | null>(calendrier.choisi ? [] : null);
+  /* ⚠️ Tour 42 · « JE N'AI PAS PU LIRE » N'EST PAS « IL N'Y A RIEN ». */
+  const [mobilierIllisible, setMobilierIllisible] = useState(false);
+  const [lecture, setLecture] = useState(0);
+  /* Les jours sont enregistrés mais le retrait a échoué : on ne redemande
+     que le retrait. */
+  const [joursEnregistres, setJoursEnregistres] = useState(false);
   const [envoi, setEnvoi] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
   const premiereFois = !calendrier.choisi;
@@ -45,25 +51,37 @@ export default function MesJoursSheet({ userId, calendrier, aujourdhui, onClose,
     let vivant = true;
     const dates = Array.from({ length: HORIZON_MOBILIER }, (_, i) => decaler(aujourdhui, i));
     fetchRange(userId, dates)
-      .then((m) => { if (vivant) setMobilier(mobilierAVenir(Object.values(m).flat(), aujourdhui)); })
-      .catch(() => { if (vivant) setMobilier([]); });
+      .then((m) => { if (vivant) { setMobilierIllisible(false); setMobilier(mobilierAVenir(Object.values(m).flat(), aujourdhui)); } })
+      .catch(() => { if (vivant) { setMobilier(null); setMobilierIllisible(true); } });
     return () => { vivant = false; };
-  }, [premiereFois, userId, aujourdhui]);
+  }, [premiereFois, userId, aujourdhui, lecture]);
 
   const basculer = (j: number) => setJours((p) => (p.includes(j) ? p.filter((x) => x !== j) : [...p, j].sort()));
 
+  /* ⚠️ Tour 42 · on ne retire QUE les lignes annoncées (par leur identité,
+     encore admissibles en base), et les deux échecs se distinguent. */
   const enregistrer = async (retirerMobilier: boolean) => {
     setEnvoi(true); setErreur(null);
-    try {
-      await enregistrerJours(userId, jours, aujourdhui);
-      if (retirerMobilier && mobilier && mobilier.length > 0) {
-        await libererMobilier(userId, [...new Set(mobilier.map((d) => d.date))]);
+    if (!joursEnregistres) {
+      try {
+        await enregistrerJours(userId, jours, aujourdhui);
+        setJoursEnregistres(true);
+      } catch {
+        setErreur("Tes jours n’ont pas été enregistrés. Réessaie dans un instant.");
+        setEnvoi(false);
+        return;
       }
-      onEnregistre();
-    } catch {
-      setErreur("Tes jours n’ont pas été enregistrés. Réessaie dans un instant.");
-      setEnvoi(false);
     }
+    if (retirerMobilier && mobilier && mobilier.length > 0) {
+      try {
+        await libererMobilierAnnonce(userId, mobilier.map((d) => d.id).filter((x): x is string => !!x));
+      } catch {
+        setErreur("Tes jours sont enregistrés, mais les anciennes séances sont encore là. Réessaie le retrait.");
+        setEnvoi(false);
+        return;
+      }
+    }
+    onEnregistre();
   };
 
   const revenir = async () => {
@@ -102,8 +120,17 @@ export default function MesJoursSheet({ userId, calendrier, aujourdhui, onClose,
           {jours.length === 0 ? "Aucun jour fixe : rien ne sera prévu d’avance." : "Chaque semaine, à partir d’aujourd’hui."}
         </p>
 
-        {premiereFois && mobilier === null && (
+        {premiereFois && mobilier === null && !mobilierIllisible && (
           <p className="vy-corps mt-5" style={{ color: "var(--text-3)" }}>Je regarde ce qui est déjà prévu…</p>
+        )}
+        {premiereFois && mobilierIllisible && (
+          <div className="mt-5">
+            <p className="vy-corps" style={{ color: "var(--text-2)" }}>Je n&apos;arrive pas à voir ce qui est déjà prévu.</p>
+            <button onClick={() => { setMobilierIllisible(false); setLecture((n) => n + 1); }}
+              className="mt-2 text-[13px] font-semibold bg-transparent border-none cursor-pointer p-0" style={{ color: "var(--exp-encre)" }}>
+              Réessayer
+            </button>
+          </div>
         )}
         {premiereFois && aRetirer > 0 && (
           <div className="mt-5">
@@ -138,9 +165,9 @@ export default function MesJoursSheet({ userId, calendrier, aujourdhui, onClose,
           onClick={() => void enregistrer(aRetirer > 0)}
           className="w-full py-3 rounded-2xl text-[16px] font-extrabold text-white cursor-pointer border-none"
           style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", boxShadow: "var(--ombre-action)", opacity: envoi ? 0.6 : 1 }}>
-          {aRetirer > 0 ? "Les retirer et garder mes jours" : "Garder ces jours"}
+          {joursEnregistres && aRetirer > 0 ? "Réessayer le retrait" : aRetirer > 0 ? "Les retirer et garder mes jours" : "Garder ces jours"}
         </motion.button>
-        {aRetirer > 0 && (
+        {aRetirer > 0 && !joursEnregistres && (
           <button disabled={envoi} onClick={() => void enregistrer(false)}
             className="w-full py-2 text-[13px] font-semibold cursor-pointer bg-transparent border-none" style={{ color: "var(--text-2)" }}>
             Les garder aussi

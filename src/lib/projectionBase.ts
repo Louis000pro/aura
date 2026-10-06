@@ -66,8 +66,11 @@ export type ResolutionProgramme = {
   userId: string;
   programmeId: string | null;
   calendrier: Calendrier;
-  /** `null` = aucun jour d'entraînement : comportement historique. */
+  /** `null` = aucun calendrier choisi : comportement historique. */
   resolution: ResolutionJournee<EtapeCycle> | null;
+  /** Tour 42 · les occurrences lues pour cette résolution : un geste
+   *  vérifie l'occurrence en attente de son étape sur ces mêmes faits. */
+  etat: EtatOccurrences | null;
 };
 
 /**
@@ -81,7 +84,7 @@ export async function resolutionDuProgramme(
 ): Promise<ResolutionProgramme | null> {
   const calendrier = await lireCalendrier(userId, decaler(aujourdhui, -7));
   if (!calendrier) return null;
-  const vide = { userId, programmeId: actif?.programme.id ?? null, calendrier, resolution: null };
+  const vide = { userId, programmeId: actif?.programme.id ?? null, calendrier, resolution: null, etat: null };
   if (!actif || actif.cycle.length === 0) return vide;
   const dates = Array.from({ length: nbJours }, (_, i) => decaler(aujourdhui, i));
   try {
@@ -96,7 +99,7 @@ export async function resolutionDuProgramme(
     const resolution = resoudreJournee(entreeResolution({
       cycle: actif.cycle, etat, calendrier, adaptations, aujourdhui, nbJours, occupes,
     }));
-    return { ...vide, resolution };
+    return { ...vide, resolution, etat };
   } catch (e) {
     console.warn("[projection] résolution indisponible :", (e as Error)?.message);
     return null;

@@ -27,19 +27,23 @@ import FeuilleBas from "@/components/semaine/FeuilleBas";
 import ChoixJour from "@/components/entrainement/ChoixJour";
 import { Photo } from "@/components/entrainement/PhotoSeance";
 import { resolveArt } from "@/lib/workoutArt";
-import { contexteDe, dayTitle, fetchRange, retirerIntention, type GenInput, type PlanningDay } from "@/lib/planning";
+import { contexteDe, dayTitle, fetchRange, type GenInput, type PlanningDay } from "@/lib/planning";
 import { modeleDeLEtape } from "@/lib/prescription";
 import { projeterPrescription } from "@/lib/banqueEtapes";
 import type { EtapeCycle, ProgrammeEtCycle } from "@/lib/programme";
 import { resolutionDuProgramme, type ResolutionProgramme } from "@/lib/projectionBase";
 import { decaler, libelleAttente, type JourProjete } from "@/lib/projection";
-import { ABR_JOURS, lignesSemaine, semaineDe, type ElementJour, type LigneSemaine } from "@/lib/semaine";
-import { changerDeJour, regleDuJour, retirerLeJour, type ResultatGeste } from "@/lib/semaineGestes";
+import { ABR_JOURS, lignesSemaine, semaineDe, type ElementJour, type LigneSemaine, type SeanceJournal } from "@/lib/semaine";
+import { changerDeJour, lireJournal, regleDuJour, retirerLeJour, type ResultatGeste } from "@/lib/semaineGestes";
+import { rangEnAttente } from "@/lib/occurrences";
 
 type Onglet = 0 | 1 | 2;
 const ONGLETS = ["Cette semaine", "Semaine prochaine", "Après"] as const;
 
-type Donnees = { intentions: PlanningDay[]; proj: ResolutionProgramme };
+type Donnees = { intentions: PlanningDay[]; journal: SeanceJournal[]; proj: ResolutionProgramme };
+
+/** La réservation à libérer une fois la nouvelle séance enregistrée. */
+export type ALiberer = { id: string; date: string } | null;
 
 /** Ce qu'on a touché pour ouvrir la feuille d'un jour. */
 type Cible = { ligne: LigneSemaine<EtapeCycle>; element: ElementJour<EtapeCycle> | null };
@@ -48,6 +52,7 @@ const RAISONS: Record<Exclude<ResultatGeste, { ok: true }>["raison"], string> = 
   changee: "Ta semaine a bougé entre-temps, je l’ai relue.",
   illisible: "Je n’arrive pas à relire ta semaine, réessaie dans un instant.",
   echec: "Ça n’a pas pris, réessaie dans un instant.",
+  masquee: "Ton adaptation met cette séance de côté ce jour-là.",
 };
 
 const CONFLITS = {
@@ -68,8 +73,9 @@ export default function MaSemaineSheet({
   /** Lance la séance que l'app propose maintenant (la tête de la suite). */
   onLancerTete: () => void;
   onLancerIntention: (d: PlanningDay) => void;
-  /** Ouvre le catalogue pour poser une séance sur ce jour. */
-  onChoisirSeance: (date: string) => void;
+  /** Ouvre le catalogue pour poser une séance sur ce jour. `liberer` :
+   *  la réservation à retirer SEULEMENT une fois la séance enregistrée. */
+  onChoisirSeance: (date: string, liberer: ALiberer) => void;
   onMesJours: () => void;
   onAbsence: () => void;
   /** Une écriture a eu lieu : l'accueil et la semaine se relisent. */
@@ -96,11 +102,12 @@ export default function MaSemaineSheet({
     Promise.all([
       fetchRange(userId, toutes),
       resolutionDuProgramme(userId, programme, aujourdhui, horizon),
-    ]).then(([m, proj]) => {
+      lireJournal(userId, toutes),
+    ]).then(([m, proj, journal]) => {
       if (!vivant) return;
       if (!proj) { setIllisible(true); return; }
       setIllisible(false);
-      setDonnees({ intentions: Object.values(m).flat(), proj });
+      setDonnees({ intentions: Object.values(m).flat(), journal, proj });
     }).catch(() => { if (vivant) setIllisible(true); });
     return () => { vivant = false; };
   }, [userId, programme, aujourdhui, semaines, lecture]);
@@ -115,6 +122,7 @@ export default function MaSemaineSheet({
       aujourdhui,
       intentions: donnees.intentions,
       projetes: res?.jours ?? [],
+      journal: donnees.journal,
       calendrier: donnees.proj.calendrier,
       rangPropose: res?.proposee?.rang ?? null,
     });
@@ -216,11 +224,12 @@ export default function MaSemaineSheet({
             programme={programme}
             gen={gen}
             aujourdhui={aujourdhui}
-            intentions={donnees.intentions}
+            reservable={(etapeId, rang) => !!programme && !!donnees.proj.etat
+              && rangEnAttente(programme.cycle, donnees.proj.etat, etapeId) === rang}
             onClose={() => setCible(null)}
             onLancerTete={() => { setCible(null); onLancerTete(); }}
             onLancerIntention={(d) => { setCible(null); onLancerIntention(d); }}
-            onChoisirSeance={(date) => { setCible(null); onChoisirSeance(date); }}
+            onChoisirSeance={(date, liberer) => { setCible(null); onChoisirSeance(date, liberer); }}
             onResultat={apres}
           />
         )}
@@ -269,7 +278,7 @@ function LigneJour({ ligne, premiere, lectureSeule, laFaireAujourdhui, onLancerT
             )}
           </button>
         ) : l.elements.map((el, n) => (
-          <ElementLigne key={n} element={el} touchable={!lectureSeule && el.genre !== "fait"} onOuvrir={() => onOuvrir(el)} />
+          <ElementLigne key={n} element={el} touchable={!lectureSeule && el.genre !== "fait" && el.genre !== "realisee"} onOuvrir={() => onOuvrir(el)} />
         ))}
       </div>
     </div>
@@ -281,29 +290,37 @@ function ElementLigne({ element: el, touchable, onOuvrir }: {
   touchable: boolean;
   onOuvrir: () => void;
 }) {
-  const titre = el.genre === "prevu" ? el.projete.etape.nom : dayTitle(el.intention);
-  const duree = el.genre === "prevu" ? (el.projete.etape.dureeMin ?? 45) : el.intention.type === "HIIT" ? 30 : 45;
+  /* Tour 42 · une réservation se montre par SON intention : le vrai titre,
+     même substitué. La projection n'apporte que son conflit. */
+  const intention = el.genre === "realisee" ? null : el.genre === "prevu" ? el.intention : el.intention;
+  const titre = el.genre === "realisee" ? el.seance.titre
+    : intention ? dayTitle(intention)
+    : el.genre === "prevu" ? el.projete.etape.nom : "";
+  const duree = el.genre === "realisee" ? (el.seance.dureeMin ?? 45)
+    : el.genre === "prevu" && !intention ? (el.projete.etape.dureeMin ?? 45)
+    : intention?.type === "HIIT" ? 30 : 45;
   const art = resolveArt({ title: titre });
   const p = el.genre === "prevu" ? el.projete : null;
-  const sous = el.genre === "fait" ? null
+  const fait = el.genre === "fait" || el.genre === "realisee";
+  const sous = fait ? null
     : p?.conflit ? CONFLITS[p.conflit]
     : p?.attendaitLe ? libelleAttente(p.attendaitLe)
-    : p?.reservee ? "réservée"
+    : p?.reservee || (el.genre === "pose" && !!el.intention.etapeId) ? "réservée"
     : p ? "prévue" : null;
-  const prevuSeul = el.genre === "prevu" && !el.projete.reservee;
+  /* ⚠️ Photos naturelles, toujours (verrou du 2026-07-13) : l'état se dit
+     par le texte et le chrome, jamais par une photo atténuée. */
   return (
     <button disabled={!touchable} onClick={onOuvrir}
       className="flex items-center gap-2.5 text-left bg-transparent border-none p-0 w-full"
-      style={{ cursor: touchable ? "pointer" : "default", opacity: p?.conflit ? 0.6 : 1 }}>
-      <Photo img={art.img} pos="center 22%" className="rounded-xl flex-shrink-0"
-        style={{ width: 40, height: 40, opacity: prevuSeul ? 0.75 : 1 }} />
+      style={{ cursor: touchable ? "pointer" : "default" }}>
+      <Photo img={art.img} pos="center 22%" className="rounded-xl flex-shrink-0" style={{ width: 40, height: 40 }} />
       <span className="flex-1 min-w-0">
         <span className="block text-[16px] font-semibold truncate" style={{ color: "var(--text-1)" }}>{titre}</span>
         <span className="block text-[13px] truncate" style={{ color: p?.attendaitLe ? "var(--exp-encre)" : "var(--text-3)" }}>
           <span className="vy-nombre">{duree}</span> min{sous ? ` · ${sous}` : ""}
         </span>
       </span>
-      {el.genre === "fait" ? (
+      {fait ? (
         <span className="text-[13px] font-semibold flex items-center gap-1 flex-shrink-0" style={{ color: "var(--teal-encre)" }}>
           Faite <Check size={13} strokeWidth={3} />
         </span>
@@ -316,32 +333,36 @@ function ElementLigne({ element: el, touchable, onOuvrir }: {
 
 /* ─── La feuille d'un jour : trois gestes, partout les mêmes ─────── */
 
-function FeuilleJour({ cible, userId, programme, gen, aujourdhui, intentions, onClose, onLancerTete, onLancerIntention, onChoisirSeance, onResultat }: {
+function FeuilleJour({ cible, userId, programme, gen, aujourdhui, reservable, onClose, onLancerTete, onLancerIntention, onChoisirSeance, onResultat }: {
   cible: Cible;
   userId: string;
   programme: ProgrammeEtCycle | null;
   gen: GenInput | null;
   aujourdhui: string;
-  intentions: PlanningDay[];
+  /** Cette occurrence est-elle celle en attente de son étape ? (tour 42) */
+  reservable: (etapeId: string, rang: number) => boolean;
   onClose: () => void;
   onLancerTete: () => void;
   onLancerIntention: (d: PlanningDay) => void;
-  onChoisirSeance: (date: string) => void;
+  onChoisirSeance: (date: string, liberer: ALiberer) => void;
   onResultat: (r: ResultatGeste, ok: string) => void;
 }) {
   const { ligne, element } = cible;
-  const [vue, setVue] = useState<"gestes" | "jour" | "exos">("gestes");
+  const [vue, setVue] = useState<"gestes" | "jour" | "exos" | "autre">("gestes");
   const [exos, setExos] = useState<string[] | null>(null);
   const [envoi, setEnvoi] = useState(false);
 
   const p: JourProjete<EtapeCycle> | null = element?.genre === "prevu" ? element.projete : null;
+  /* Tour 42 · l'intention qui porte la réservation vient de la ligne
+     elle-même, associée par identité, jamais retrouvée par l'étape. */
+  const reservation = element?.genre === "prevu" ? element.intention : null;
   const pose = element?.genre === "pose" ? element.intention : null;
-  /* L'intention écrite qui porte une réservation (pour la retirer ou la lancer). */
-  const reservation = p?.reservee
-    ? intentions.find((d) => d.etapeId === p.etape.id && d.rang === p.rang && d.status === "planned") ?? null
-    : null;
-  const titre = p ? p.etape.nom : pose ? dayTitle(pose) : ligne.etat === "pas_de_seance" ? "Pas de séance ce jour-là" : "Libre";
+  const titre = reservation ? dayTitle(reservation) : p ? p.etape.nom : pose ? dayTitle(pose)
+    : ligne.etat === "pas_de_seance" ? "Pas de séance ce jour-là" : "Libre";
   const jourLong = new Date(ligne.date + "T00:00:00").toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
+  /* « Changer de jour » : une réservation se déplace ; une prévision ne se
+     réserve que si elle est l'occurrence en attente de son étape. */
+  const peutChanger = !!p && !p.conflit && (p.reservee ? !!reservation : reservable(p.etape.id, p.rang));
 
   const geste = async (f: () => Promise<ResultatGeste>, ok: string) => {
     if (envoi) return;
@@ -352,7 +373,11 @@ function FeuilleJour({ cible, userId, programme, gen, aujourdhui, intentions, on
 
   const voirExos = async () => {
     setVue("exos");
-    if (!p || !gen || exos) return;
+    if (exos) return;
+    /* Une réservation montre SA prescription figée, jamais le modèle du
+       lieu d'aujourd'hui. */
+    if (reservation) { setExos((reservation.exerciseList ?? []).map((e) => e.name)); return; }
+    if (!p || !gen) return;
     const m = await modeleDeLEtape({ id: p.etape.id, nom: p.etape.nom }, contexteDe(gen));
     setExos(m ? projeterPrescription(m.lignes).map((e) => e.name) : []);
   };
@@ -377,10 +402,26 @@ function FeuilleJour({ cible, userId, programme, gen, aujourdhui, intentions, on
           <ChoixJour onChoisir={(date) => {
             if (!p || !programme || !gen) return;
             void geste(() => changerDeJour({
-              userId, programmeId: programme.programme.id, etapeId: p.etape.id, rang: p.rang,
-              date, aujourdhui, gen,
+              userId,
+              cible: { programmeId: programme.programme.id, etapeId: p.etape.id, rang: p.rang, date: ligne.date, reservationId: reservation?.id ?? null },
+              vers: date, aujourdhui, gen,
             }), "C’est noté ✓");
           }} />
+        ) : vue === "autre" ? (
+          <div>
+            <p className="vy-corps" style={{ color: "var(--text-1)" }}>
+              Tu choisis une séance du catalogue pour ce jour. « {titre} » passera au prochain jour d&apos;entraînement : elle n&apos;est ni faite, ni sautée.
+            </p>
+            <motion.button whileTap={{ scale: 0.97 }} disabled={envoi}
+              onClick={() => onChoisirSeance(ligne.date, reservation?.id ? { id: reservation.id, date: ligne.date } : null)}
+              className="w-full mt-4 py-3 rounded-2xl text-[16px] font-extrabold text-white cursor-pointer border-none"
+              style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", boxShadow: "var(--ombre-action)" }}>
+              Choisir la séance
+            </motion.button>
+            <button onClick={() => setVue("gestes")} className="w-full py-2 mt-1 text-[13px] font-semibold bg-transparent border-none cursor-pointer" style={{ color: "var(--text-2)" }}>
+              Garder « {titre} »
+            </button>
+          </div>
         ) : vue === "exos" ? (
           <div>
             {exos === null ? (
@@ -407,31 +448,24 @@ function FeuilleJour({ cible, userId, programme, gen, aujourdhui, intentions, on
               </motion.button>
             ) : null}
 
-            {p && !p.conflit && (
+            {peutChanger && (
               <Geste icone={<ArrowLeftRight size={16} />} label="Changer de jour" onClick={() => setVue("jour")} />
             )}
-            {(p || ligne.etat === "libre" || ligne.etat === "occupe") && !pose && (
+            {/* ⚠️ Tour 42 · CE N'EST PAS UNE SUBSTITUTION, et le nom le dit.
+                Rien n'est retiré avant que la nouvelle séance soit
+                enregistrée ; annuler le catalogue ne change rien. */}
+            {p && (
               <Geste icone={<ArrowLeftRight size={16} style={{ transform: "rotate(90deg)" }} />}
-                label={p ? "Échanger contre une autre séance" : "Choisir une séance"}
-                disabled={envoi}
-                onClick={() => {
-                  /* Une réservation se RETIRE (jamais marquée) : son
-                     occurrence redevient en attente et glisse au prochain
-                     jour d'entraînement. Puis on choisit l'autre séance. */
-                  if (reservation) {
-                    void (async () => {
-                      setEnvoi(true);
-                      try { await retirerIntention(userId, reservation.id); }
-                      catch { onResultat({ ok: false, raison: "echec" }, ""); return; }
-                      onChoisirSeance(ligne.date);
-                    })();
-                  } else onChoisirSeance(ligne.date);
-                }} />
+                label="Mettre une autre séance ce jour-là" disabled={envoi} onClick={() => setVue("autre")} />
+            )}
+            {!p && !pose && (ligne.etat === "libre" || ligne.etat === "occupe") && (
+              <Geste icone={<Plus size={16} />} label="Choisir une séance" disabled={envoi}
+                onClick={() => onChoisirSeance(ligne.date, null)} />
             )}
             {p && (
               <Geste icone={<Minus size={16} />} label="Pas d’entraînement ce jour-là" sous="La séance passe au jour suivant"
                 disabled={envoi}
-                onClick={() => void geste(() => retirerLeJour(userId, ligne.date, reservation?.id ?? null), "Jour retiré, la séance passe au suivant")} />
+                onClick={() => void geste(() => retirerLeJour(userId, ligne.date, reservation?.id ?? null, ligne.enPlus ? "seance_en_plus" : null), "Jour retiré, la séance passe au suivant")} />
             )}
             {ligne.etat === "pas_de_seance" && (
               <Geste icone={<Plus size={16} />} label="Remettre ce jour" disabled={envoi}

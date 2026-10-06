@@ -171,6 +171,34 @@ export function occurrenceSuivante<T extends { id: string; position: number }>(
 }
 
 /**
+ * R9b · tour 42 · L'occurrence EN ATTENTE d'une étape : sa réservation si
+ * elle en a une, sinon sa première occurrence non fermée à partir de
+ * `baseEtape`. C'est le calcul de `occurrenceSuivante`, pour une seule
+ * étape.
+ *
+ * ⚠️ C'EST LA SEULE OCCURRENCE D'UNE ÉTAPE QU'UN GESTE PEUT RÉSERVER.
+ * Une réservation devient l'occurrence en attente de son étape : réserver
+ * B₅ alors que B₂ est encore due ferait disparaître B₂ sans fermeture ni
+ * saut. Réserver C₃ avant B₂ reste permis (hors ordre, décision 14).
+ */
+export function rangEnAttente<T extends { id: string; position: number }>(
+  cycle: T[],
+  etat: EtatOccurrences,
+  etapeId: string,
+): number | null {
+  const ordonne = ordreDuCycle(cycle);
+  const k = ordonne.length;
+  const i = ordonne.findIndex((e) => e.id === etapeId);
+  if (k === 0 || i < 0) return null;
+  const pris = new Set(etat.fermes.map((f) => f.rang));
+  const reservee = etat.reserves.filter((r) => r.etapeId === etapeId && !pris.has(r.rang)).sort((a, b) => a.rang - b.rang)[0];
+  if (reservee) return reservee.rang;
+  let rang = premierRangDe(i + 1, k, baseEtape(etat, k, etapeId));
+  while (pris.has(rang)) rang += k;
+  return rang;
+}
+
+/**
  * Le rang qu'on donne à une fermeture ou une réservation écrite SANS rang :
  * la première occurrence de cette étape, à partir de `baseEtape`, que
  * personne n'occupe encore. C'est le calcul du déclencheur SQL
