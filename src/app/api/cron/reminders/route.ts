@@ -23,6 +23,9 @@
  * production, la route refuse tout (401). Une serrure optionnelle n'est pas
  * une serrure.
  */
+import { lireCalendriers } from "@/lib/joursEntrainement";
+import { enAbsence, estJourEntrainement } from "@/lib/projection";
+import { occurrenceSuivante, type EtatOccurrences } from "@/lib/occurrences";
 import { NextRequest, NextResponse } from "next/server";
 import webpush from "web-push";
 import { createAdminClient } from "@/lib/supabase-admin";
@@ -302,6 +305,13 @@ async function portraits(
     p.seancePrevue = String(j.title || type);
   }
 
+  /* ⚠️ R9a · LES JOURS D'ENTRAÎNEMENT (décision 26). Un jour choisi peut
+     déclencher un rappel, résolu au moment de l'envoi avec la même
+     logique que l'accueil : la prochaine séance du programme, jamais une
+     séance écrite pour l'occasion. Une absence fait taire le rappel
+     d'entraînement. Sans jour choisi, rien ne change. */
+  await appliquerJoursEntrainement(admin, ids, today, carte, sc);
+
   // Le socle de bienvenue, comme la RPC `etat_missions_aura`.
   if (!expRes.error) {
     for (const id of ids) {
@@ -566,4 +576,62 @@ export async function GET(req: NextRequest) {
     paliers: parPalier,
     ...(journalFiable ? {} : { migration_manquante: "notification_rappels" }),
   });
+}
+
+/**
+ * R9a · Pose `seancePrevue` sur un jour d'entraînement choisi, et le
+ * silence pendant une absence. La prochaine séance se calcule comme sur
+ * l'accueil (`occurrenceSuivante`, adaptation du jour comprise) ; rien
+ * n'est écrit. Une lecture ratée ne change rien : on se tait plutôt que
+ * de nommer une séance au hasard.
+ */
+async function appliquerJoursEntrainement(
+  admin: ReturnType<typeof createAdminClient>,
+  ids: string[],
+  today: string,
+  carte: Map<string, Portrait>,
+  sc: Awaited<ReturnType<typeof schemaIntentions>>,
+): Promise<void> {
+  const calendriers = await lireCalendriers(ids, today, admin as unknown as Parameters<typeof lireCalendriers>[2]);
+  if (!calendriers || calendriers.size === 0) return;
+  const candidats: string[] = [];
+  for (const [id, cal] of calendriers) {
+    const p = carte.get(id);
+    if (!p) continue;
+    if (enAbsence(cal, today)) { p.jourDeRepos = true; p.seancePrevue = null; continue; }
+    if (!p.seancePrevue && !p.seanceFaite && !p.jourDeRepos && estJourEntrainement(cal, today)) candidats.push(id);
+  }
+  if (candidats.length === 0) return;
+
+  const progs = await admin.from("programmes").select("id, user_id, rang_depart, position_initiale").in("user_id", candidats).eq("statut", "actif");
+  if (progs.error || !progs.data?.length) return;
+  const progIds = progs.data.map((x) => x.id as string);
+  const [etapes, lignes, adapt] = await Promise.all([
+    admin.from("programme_seances").select("id, programme_id, nom, position").in("programme_id", progIds),
+    admin.from(sc.table).select(`programme_id, rang, etape_consommee_id, consommee_le, ${sc.colStatut}`).in("programme_id", progIds).not("rang", "is", null),
+    admin.from("adaptations_entrainement").select("programme_id, debut, fin, axes, statut").in("programme_id", progIds).eq("statut", "active"),
+  ]);
+  if (etapes.error || lignes.error) return;
+  for (const prog of progs.data) {
+    const p = carte.get(prog.user_id as string);
+    if (!p) continue;
+    const cycle = (etapes.data ?? []).filter((e) => e.programme_id === prog.id)
+      .map((e) => ({ id: e.id as string, nom: String(e.nom ?? ""), position: Number(e.position) }));
+    const etat: EtatOccurrences = {
+      depart: Number(prog.rang_depart ?? prog.position_initiale ?? 1),
+      fermes: [], reserves: [],
+    };
+    for (const l of ((lignes.data ?? []) as unknown as Record<string, unknown>[]).filter((x) => x.programme_id === prog.id)) {
+      if (typeof l.rang !== "number" || typeof l.etape_consommee_id !== "string") continue;
+      const statut = sc.versCode[String(l[sc.colStatut] ?? "")];
+      if (statut === "planned") etat.reserves.push({ rang: l.rang, etapeId: l.etape_consommee_id });
+      else etat.fermes.push({ rang: l.rang, etapeId: l.etape_consommee_id, consommeeLe: (l.consommee_le as string | null) ?? null });
+    }
+    const couche = adapt.error ? null : (adapt.data ?? []).find((a) => a.programme_id === prog.id && a.debut <= today && today <= a.fin);
+    const masquees: string[] = Array.isArray((couche?.axes as { eviter_etapes?: unknown } | undefined)?.eviter_etapes)
+      ? ((couche!.axes as { eviter_etapes: string[] }).eviter_etapes)
+      : [];
+    const o = occurrenceSuivante(cycle, etat, (e) => masquees.includes(e.id));
+    if (o?.etape.nom) p.seancePrevue = o.etape.nom;
+  }
 }

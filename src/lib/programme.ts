@@ -601,7 +601,7 @@ export async function lireOccurrences(userId: string, actif: ProgrammeEtCycle): 
     const [lignes, prog] = await Promise.all([
       supabase
         .from(sc.table)
-        .select("rang, etape_consommee_id, consommee_le, " + sc.colStatut)
+        .select("rang, etape_consommee_id, consommee_le, date, " + sc.colStatut)
         .eq("user_id", userId)
         .eq("programme_id", actif.programme.id)
         .not("rang", "is", null)
@@ -617,7 +617,7 @@ export async function lireOccurrences(userId: string, actif: ProgrammeEtCycle): 
     for (const l of (lignes.data ?? []) as unknown as Record<string, unknown>[]) {
       const rang = l.rang, etapeId = l.etape_consommee_id;
       if (typeof rang !== "number" || typeof etapeId !== "string") continue;
-      if (l[sc.colStatut] === sc.versBase.planned) reserves.push({ rang, etapeId });
+      if (l[sc.colStatut] === sc.versBase.planned) reserves.push({ rang, etapeId, date: (l.date as string | null) ?? null });
       else fermes.push({ rang, etapeId, consommeeLe: (l.consommee_le as string | null) ?? null });
     }
     const depart = (prog.data as { rang_depart: number | null } | null)?.rang_depart ?? actif.programme.positionInitiale;

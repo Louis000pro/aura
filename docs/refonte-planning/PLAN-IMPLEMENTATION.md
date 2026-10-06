@@ -780,3 +780,18 @@ La feuille de partage se ferme au changement de compte et attend un nouveau gest
 ### Pour Louis, avant le code
 - Une maquette 08 qui reprend 04 et 05 avec ce qui existe désormais (tunnel R3 à R5, héros), pour son GO.
 - La migration de R9a demande son accord explicite (décision 20).
+
+### R9 · GO de Louis sur la maquette 08 (2026-10-06)
+
+Les quatre points sont acceptés : la hiérarchie de « Ma semaine », le retrait proposé du mobilier au premier choix des jours, « Je m'absente », l'entrée « Mon programme » en haut d'Entraînement. Le visuel pourra être retravaillé (Claude Design) sans toucher au moteur. Louis demande d'aller vite : R9a est codée sans attendre les réponses de Codex aux cinq questions du cadrage ; les choix faits sont ceux proposés.
+
+## R9a · codée (2026-10-06), en attente de la relecture de Codex et de la migration
+
+- **`src/lib/projection.ts` (pur).** `estJourEntrainement` (absence, puis exception datée, puis règle), `premierJourManque`, `projeterJours`. Chaque jour d'entraînement à partir d'aujourd'hui reçoit, dans l'ordre, l'occurrence suivante (`occurrenceSuivante` répétée, les rangs déjà placés passés en `enPlus`). Une réservation datée aujourd'hui ou plus tard garde son jour et sort de la distribution. Une réservation passée non faite reste l'occurrence en attente de son étape : elle glisse, avec `attendaitLe` = sa date, sans que sa ligne soit réécrite. « t'attendait » ne se dit que de la tête de la suite. L'adaptation s'applique à la date de chaque jour. Sans jour choisi : `[]`.
+- **Migration `20261008_r9a_jours_entrainement.sql`** : `jours_entrainement` (règle), `exceptions_jour` (`pas_de_seance` | `seance_en_plus`), `absences` (plage, sans chevauchement, 120 jours au plus). RLS propriétaire, additive, aucune intention écrite. **Pas encore appliquée.**
+- **`src/lib/joursEntrainement.ts`** : lecture à trois réponses (table absente = aucun jour, lecture ratée = `null`), écritures de la règle, des exceptions et des absences.
+- **`src/lib/projectionBase.ts`** : une seule lecture de la projection (occurrences avec leur date, adaptations, calendrier), partagée par l'accueil (`useJournee` → héros : « vendredi · t'attendait mercredi », « Changer de jour ») et le Guide (`etatMoteur` : jours, absence, prévisions sur sept jours). `lireOccurrences` rapporte maintenant la date des réservations.
+- **Rappel du soir** : un jour choisi sans séance écrite reçoit le nom de la prochaine séance du programme (adaptation du jour comprise) ; une absence fait taire le rappel d'entraînement. Une lecture ratée ne change rien.
+- **Rien de visible tant qu'aucun jour n'est choisi** : l'écran de choix arrive avec R9b.
+- Bancs : `check:programme` +25 contrôles R9a, dont le scénario de Lina (mercredi manqué, C avant B), réservation future et passée, absence, exception, jour en plus, adaptation datée, une séance par jour. Témoins : sans le marquage des rangs placés (6 échecs), sans l'absence (1 échec). eslint 93, `check:echelle` 37, build OK.
+- **Point à trancher (Codex)** : réserver une occurrence hors ordre peut faire se suivre deux séances de la même étape (B₂ réservée mardi, B₅ projetée mercredi). C'est l'ordre du cycle appliqué tel quel ; la décision 14 laisse le hors ordre à cadrer.

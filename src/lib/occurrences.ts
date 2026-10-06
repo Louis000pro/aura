@@ -61,7 +61,7 @@ export type OccurrenceFermee = {
 };
 
 /** Une occurrence réservée : datée, encore prévue. */
-export type OccurrenceReservee = { rang: number; etapeId: string };
+export type OccurrenceReservee = { rang: number; etapeId: string; /** R9a · son jour, quand on l'a lu. */ date?: string | null };
 
 /** Ce qu'il faut savoir des occurrences d'un programme, lu une fois. */
 export type EtatOccurrences = {

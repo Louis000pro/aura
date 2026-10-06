@@ -58,7 +58,7 @@ function S() {
 export type HeroState = EtatJournee;
 
 export default function TodayHero({
-  state, day, etape, reserveLe, nbExos, nextLabel, doneStats, adaptationJusquau,
+  state, day, etape, reserveLe, prevuLe = null, attendait = null, nbExos, nextLabel, doneStats, adaptationJusquau,
   onStart, onRedo, onImprovise, onOrganise, onShift, onReplace, onAdaptation,
 }: {
   state: HeroState;
@@ -67,6 +67,11 @@ export default function TodayHero({
   /* ⚠️ LE JOUR DE L'ÉTAPE, QUAND ELLE EN A UN. `null` veut dire « pas de
      réservation », et c'est le seul cas où « quand tu veux » est vrai. */
   reserveLe: string | null;
+  /* R9a · le jour où le programme pose cette séance sur les jours
+     d'entraînement (une prévision, jamais écrite), et « t'attendait
+     mercredi » si elle a glissé. `null` sans jour choisi. */
+  prevuLe?: string | null;
+  attendait?: string | null;
   nbExos: number;                                 // taille de son instance, calculée sans rien écrire
   nextLabel: string | null;                       // « Jambes · demain » (état repos)
   doneStats: { minutes: number; kcal: number } | null;
@@ -191,7 +196,8 @@ export default function TodayHero({
             </p>
             <h2 className="text-[34px] md:text-[38px] leading-[1.02] font-extralight text-white">{etape.nom}</h2>
             <p className="mt-2.5 mb-4 text-[16px] font-normal" style={{ color: "rgba(255,255,255,0.82)" }}>
-              {reserveLe ?? "Quand tu veux"}
+              {reserveLe ?? prevuLe ?? "Quand tu veux"}
+              {!reserveLe && attendait && <><S />{attendait}</>}
               {nbExos > 0 && <><S /><V>{nbExos}</V> exercices</>}
             </p>
             <motion.button
@@ -205,7 +211,7 @@ export default function TodayHero({
             <div className="flex justify-center gap-5 mt-2.5">
               <button onClick={onOrganise} className="text-[13px] font-semibold cursor-pointer bg-transparent border-none"
                 style={{ color: "rgba(255,255,255,0.6)" }}>
-                {reserveLe ? "Changer de jour" : "Lui donner un jour"}
+                {reserveLe || prevuLe ? "Changer de jour" : "Lui donner un jour"}
               </button>
             </div>
           </>

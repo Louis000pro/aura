@@ -38,6 +38,8 @@
    que tous les écrans du planning émettent déjà après une écriture.
    ════════════════════════════════════════════════════════════════════ */
 
+import { projectionDuProgramme } from "@/lib/projectionBase";
+import { decaler } from "@/lib/projection";
 import { createClient } from "@/lib/supabase";
 import { EVT_JOURNEE } from "@/lib/finSeance";
 import { libelleReservation } from "@/lib/journee";
@@ -111,6 +113,13 @@ export type EtatMoteur = {
   /** Le contexte d'entraînement, réduit à ce qui n'est écrit nulle part
    *  ailleurs dans le prompt. Le LIEU n'y est pas : il a déjà sa section. */
   contexte: { seancesCible: number | null; dureeCibleMin: number | null } | null;
+  /** R9a · les jours d'entraînement choisis (1 = lundi), vide sinon. */
+  joursEntrainement?: number[];
+  /** R9a · les séances que le programme pose sur ces jours, sur sept
+   *  jours : des PRÉVISIONS, jamais écrites. */
+  projetees?: { date: string; nom: string; attendaitLe: string | null }[];
+  /** R9a · une absence en cours ou à venir dans la semaine. */
+  absence?: { debut: string; fin: string } | null;
 };
 
 /* ═══════════════════ La lecture ═══════════════════ */
@@ -169,6 +178,9 @@ async function lireEtatMoteur(userId: string): Promise<EtatMoteur | null> {
   let reserveLe: string | null = null;
   let adaptation: Adaptation | null = null;
   let masquees: string[] = [];
+  let joursEntrainement: number[] = [];
+  let projetees: NonNullable<EtatMoteur["projetees"]> = [];
+  let absence: EtatMoteur["absence"] = null;
 
   try {
     const actif = await lireProgrammeActif(userId);
@@ -205,6 +217,15 @@ async function lireEtatMoteur(userId: string): Promise<EtatMoteur | null> {
         const r = await reservationDeLOccurrence(userId, actif.programme.id, suivante.rang);
         reserveLe = r?.date ?? null;
       }
+
+      /* R9a · la même projection que l'accueil et « Ma semaine »
+         (décision 21). Une lecture ratée laisse ces champs vides. */
+      const proj = await projectionDuProgramme(userId, actif, aujourdhui, 8);
+      if (proj) {
+        joursEntrainement = [...proj.calendrier.jours];
+        projetees = proj.jours.slice(0, MAX_A_VENIR).map((j) => ({ date: j.date, nom: j.etape.nom, attendaitLe: j.attendaitLe }));
+        absence = proj.calendrier.absences.find((a) => a.debut <= decaler(aujourdhui, 7) && a.fin >= aujourdhui) ?? null;
+      }
     }
   } catch (e) {
     // Le Guide dira ce qu'il sait du planning, et rien du programme.
@@ -237,6 +258,7 @@ async function lireEtatMoteur(userId: string): Promise<EtatMoteur | null> {
   return {
     aujourdhui, programme, cycle, etapeBrute, etape, reserveLe,
     adaptation, masquees, aVenir, recent, contexte,
+    joursEntrainement, projetees, absence,
   };
 }
 
@@ -342,6 +364,23 @@ export function resumeMoteur(etat: EtatMoteur | null): string | null {
     const motif = etat.adaptation.motif ? " Motif noté : " + etat.adaptation.motif.slice(0, MAX_MOTIF) + "." : "";
     lignes.push(
       "Adaptation en cours jusqu’au " + libelleJour(etat.adaptation.fin) + " : " + quoi + "." + motif,
+    );
+  }
+
+  if (etat.joursEntrainement && etat.joursEntrainement.length > 0) {
+    const NOMS = ["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"];
+    lignes.push("Jours d’entraînement choisis : " + etat.joursEntrainement.map((j) => NOMS[j - 1]).join(", ") + ".");
+  }
+  if (etat.absence) {
+    lignes.push("Absence déclarée du " + libelleJour(etat.absence.debut) + " au " + libelleJour(etat.absence.fin) + " : rien n’est proposé pendant ces jours.");
+  }
+  if (etat.projetees && etat.projetees.length > 0) {
+    lignes.push(
+      "Le programme pose ses prochaines séances sur ces jours (prévisions, rien n’est écrit) : "
+      + etat.projetees
+        .map((p) => libelleReservation(p.date, etat.aujourdhui) + " " + p.nom.slice(0, MAX_TITRE)
+          + (p.attendaitLe ? " (attendue " + libelleReservation(p.attendaitLe, etat.aujourdhui) + ", elle a glissé)" : ""))
+        .join(" · ") + ".",
     );
   }
 

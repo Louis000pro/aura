@@ -71,6 +71,8 @@ export default function HeroJournee() {
         day={j.jour}
         etape={j.etape}
         reserveLe={j.reserveLe}
+        prevuLe={j.prevuLe}
+        attendait={j.attendait}
         nbExos={j.nbExos}
         nextLabel={j.nextLabel}
         doneStats={j.doneStats}

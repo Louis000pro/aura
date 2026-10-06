@@ -47,6 +47,8 @@ import {
 import type { EtatJournee } from "@/lib/journee";
 import { projeterPrescription } from "@/lib/banqueEtapes";
 import { ecrireOccurrence, empreinteModele, modeleDeLEtape, type ModeleDeLOccurrence } from "@/lib/prescription";
+import { projectionDuProgramme, type ProjectionProgramme } from "@/lib/projectionBase";
+import { libelleAttente, libelleJourProjete } from "@/lib/projection";
 
 const DAY_FULL = ["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"];
 
@@ -74,6 +76,17 @@ export type Journee = {
   reservation: PlanningDay | null;
   /** Le jour de cette réservation, dit à voix haute : « mardi 8 ». */
   reserveLe: string | null;
+  /**
+   * R9a · LA PROJECTION sur cette semaine et la suivante : le programme
+   * posé sur les jours d'entraînement, jamais écrit. `null` = lecture
+   * ratée ou pas encore revenue ; `jours: []` = aucun jour choisi.
+   */
+  projection: ProjectionProgramme | null;
+  /** Le jour prévu de la prochaine séance, dit à voix haute, quand des
+   *  jours sont choisis et qu'elle n'a pas de réservation. */
+  prevuLe: string | null;
+  /** « t'attendait mercredi », ou `null`. */
+  attendait: string | null;
   /**
    * V8 · L'ADAPTATION QUI S'APPLIQUE AUJOURD'HUI, ou `null`.
    *
@@ -130,6 +143,7 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
   const [gen, setGen] = useState<GenInput | null>(null);
   const [etape, setEtape] = useState<EtapeOccurrence | null>(null);
   const [reservation, setReservation] = useState<PlanningDay | null>(null);
+  const [projection, setProjection] = useState<ProjectionProgramme | null>(null);
   /* R2 · le modèle de l'étape suivante pour ce lieu : écrit, ou composé
      en mémoire. `null` = pas d'étape, ou lecture ratée (on ne lance pas).
      ⚠️ Il porte l'occurrence pour laquelle il a été lu (tour 22). */
@@ -228,7 +242,11 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
       const resa = suivante && actif
         ? await reservationDeLOccurrence(user.id, actif.programme.id, suivante.rang)
         : null;
+      /* R9a · la projection sur les jours d'entraînement. Une lecture
+         ratée ne touche pas à ce que l'écran montrait. */
+      const proj = await projectionDuProgramme(user.id, actif, todayYmd());
       if (!derniere()) return;
+      if (proj) setProjection(proj);
       setProgramme(actif);
       setAdaptation(couche);
       setEtape(suivante);
@@ -281,6 +299,10 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
     && etapesCompatibles(programme.cycle, adaptation).length === 0;
 
   const etat = etatJournee({ pret, besoinSetup, jour, etape, adaptationBloque });
+
+  /* R9a · la projection ne parle de la prochaine séance que si c'est la
+     MÊME occurrence que celle du héros (même rang). */
+  const prochaine = projection?.jours.find((j) => !!etape && j.rang === etape.rang) ?? null;
 
   /* Ce qu'il faut pour composer une semaine QUI SAIT D'OÙ ELLE VIENT :
      le cycle avec ses identifiants, et les étapes que l'adaptation
@@ -569,6 +591,9 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
        cas l'intention EST celle du jour, donc l'état vaut « seance » et
        le héros ne montre plus l'étape. */
     reserveLe: reservation?.date ? libelleReservation(reservation.date, today) : null,
+    projection,
+    prevuLe: !reservation && prochaine ? libelleJourProjete(prochaine.date, today) : null,
+    attendait: prochaine?.attendaitLe ? libelleAttente(prochaine.attendaitLe) : null,
     adaptation,
     adaptationJusquau: adaptation ? libelleJour(adaptation.fin) : null,
     cycleSemaine,
