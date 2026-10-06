@@ -813,3 +813,7 @@ Points validés par Louis, consignés : « Refais ma semaine » disparaît pour 
 - Bancs : bloc R9a réécrit (27 contrôles comportementaux, dont l'égalité sur 400 scénarios). Témoins : l'ancien calcul (réservations supposées faites dès le départ) échoue au contre-exemple ; sans conflit, les deux contrôles de conflit échouent.
 - `docs/refonte-planning/r9a-test-a-coller.sql` : rejeu de la migration, correction du tour 38, puis scénarios dans une transaction annulée (zéro jour, jour 8 refusé, exceptions, doublon, chevauchement d'absence, bout à bout, bornes, droits entre deux comptes).
 - eslint 93, `check:echelle` 37, build OK.
+
+### R9a · scénarios joués sur la vraie base (2026-10-06)
+
+`r9a-test-a-coller.sql` collé par Louis (rejeu de `20261008`, puis `20261009`, puis les scénarios, le tout annulé). Résultat : `T1 zero_jour=0 effet_aujourdhui=t ; T2 regle=3 ; T2b refus_jour_8 ; T3 refus_genre ; T3b refus_doublon ; T4 refus_chevauchement ; T4b bout_a_bout_ok ; T4c refus_fin_avant_debut ; T4d refus_trop_longue ; T5 visibles_par_autre=0 refus=42501 ; suppressions_par_autre=0`. Tous conformes. Relu ensuite en lecture seule : aucune ligne dans les trois tables, `effet_le` absente, contrainte d'origine en place, donc la base n'a rien gardé. `20261009` attend le feu vert de Codex.
