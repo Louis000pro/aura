@@ -24,6 +24,9 @@ import {
 } from "lucide-react";
 import WeeklyProgramme from "@/components/WeeklyProgramme";
 import AdaptationSheet from "@/components/entrainement/AdaptationSheet";
+import MaSemaineSheet from "@/components/semaine/MaSemaineSheet";
+import MesJoursSheet from "@/components/semaine/MesJoursSheet";
+import AbsenceSheet from "@/components/semaine/AbsenceSheet";
 import { libelleJour, type Adaptation } from "@/lib/adaptation";
 import { EVT_ADAPTATION } from "@/lib/adaptationDemandee";
 import ChoixJour from "@/components/entrainement/ChoixJour";
@@ -227,13 +230,15 @@ function ForkCard({ kind, count, onClick }: {
    ③ Ma semaine — 7 pastilles + « Organiser ». Une phrase qui raconte,
    pas un tableau.
    ════════════════════════════════════════════════════════════════════ */
-function WeekStrip({ week, dates, today, onOrganise }: {
+function WeekStrip({ week, dates, today, onOrganise, prevues }: {
   week: PlanningDay[] | null;
   /** Les sept dates affichées, du lundi au dimanche. C'est ELLES qui font la
    *  colonne : le tableau `week` ne garantit ni sept entrées ni leur ordre. */
   dates: string[];
   today: string;
   onOrganise: () => void;
+  /** R9b · ce que le programme prévoit, jour par jour, sans rien écrire. */
+  prevues?: { date: string; nom: string }[];
 }) {
   const parJour = useMemo(() => parDate(week), [week]);
   const doneCount = week?.filter((d) => d.status === "done").length ?? 0;
@@ -243,7 +248,7 @@ function WeekStrip({ week, dates, today, onOrganise }: {
   if (week) {
     if (todayDay?.status === "done") {
       story = <><b style={{ color: "var(--exp-encre)", fontWeight: 700 }}>{doneCount} séance{doneCount > 1 ? "s" : ""} faite{doneCount > 1 ? "s" : ""}</b>, dont celle d&apos;aujourd&apos;hui.</>;
-    } else if (hasSeance(todayDay)) {
+    } else if (hasSeance(todayDay) || prevues?.some((x) => x.date === today)) {
       story = doneCount > 0
         ? <><b style={{ color: "var(--exp-encre)", fontWeight: 700 }}>{doneCount} séance{doneCount > 1 ? "s" : ""} faite{doneCount > 1 ? "s" : ""}</b>, la {doneCount + 1}<sup>e</sup> t&apos;attend aujourd&apos;hui.</>
         : <>Ta semaine commence, <b style={{ color: "var(--text-1)", fontWeight: 700 }}>première séance aujourd&apos;hui</b>.</>;
@@ -284,11 +289,14 @@ function WeekStrip({ week, dates, today, onOrganise }: {
           const isToday = date === today;
           const isDone = d?.status === "done";
           const isSeance = hasSeance(d);
-          const art = isSeance ? resolveArt({ title: `${d!.title} ${d!.type}` }) : null;
+          /* R9b · une séance PRÉVUE (jamais écrite) se voit, plus pâle. */
+          const prevue = !isSeance ? prevues?.find((x) => x.date === date) ?? null : null;
+          const art = isSeance ? resolveArt({ title: `${d!.title} ${d!.type}` })
+            : prevue ? resolveArt({ title: prevue.nom }) : null;
 
           return (
             <button key={date} onClick={onOrganise}
-              aria-label={`${DAY_FULL[i]}, ${isSeance ? dayTitle(d!) : "repos"}${nbSeances > 1 ? `, ${nbSeances} séances` : ""}`}
+              aria-label={`${DAY_FULL[i]}, ${isSeance ? dayTitle(d!) : prevue ? `${prevue.nom}, prévue` : "rien de prévu"}${nbSeances > 1 ? `, ${nbSeances} séances` : ""}`}
               className="relative flex-1 overflow-hidden cursor-pointer border-none p-0 block"
               style={{
                 height: 60, borderRadius: "var(--r-controle)", background: "#0f0d17",
@@ -301,7 +309,12 @@ function WeekStrip({ week, dates, today, onOrganise }: {
                    comme une séance ratée. */
                 opacity: seanceNonFaite(d, today) ? 0.5 : 1,
               }}>
-              {isSeance && art ? (
+              {prevue && art ? (
+                <>
+                  <Photo img={art.img} pos="center 22%" style={{ position: "absolute", inset: 0, opacity: 0.5 }} />
+                  <div className="absolute inset-0" style={{ background: "var(--voile-carte)" }} />
+                </>
+              ) : isSeance && art ? (
                 <>
                   <Photo img={art.img} pos="center 22%" style={{ position: "absolute", inset: 0 }} />
                   <div className="absolute inset-0" style={{ background: "var(--voile-carte)" }} />
@@ -326,8 +339,8 @@ function WeekStrip({ week, dates, today, onOrganise }: {
               )}
               <span className="absolute inset-x-0 bottom-[3px] text-center text-[11px] font-extrabold tracking-wide"
                 style={{
-                  color: isSeance ? "rgba(255,255,255,0.92)" : "var(--text-3)",
-                  textShadow: isSeance ? "0 1px 4px rgba(0,0,0,0.7)" : "none",
+                  color: isSeance || prevue ? "rgba(255,255,255,0.92)" : "var(--text-3)",
+                  textShadow: isSeance || prevue ? "0 1px 4px rgba(0,0,0,0.7)" : "none",
                 }}>
                 {letter}
               </span>
@@ -2129,7 +2142,7 @@ const BALANCE_BUCKET: Record<Family, string> = {
 const fmtDay = (ymd: string) =>
   new Date(ymd + "T00:00:00").toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
 
-function SemaineSheet({ week, today, fetchWeekAt, onClose, onStartDay, onAsk, onAddSession, onAddDay, onMove }: {
+function SemaineSheet({ week, today, fetchWeekAt, onClose, onStartDay, onAsk, onAddSession, onAddDay, onMove, onMesJours }: {
   week: PlanningDay[] | null;
   today: string;
   fetchWeekAt: (offset: number) => Promise<PlanningDay[] | null>;
@@ -2140,6 +2153,8 @@ function SemaineSheet({ week, today, fetchWeekAt, onClose, onStartDay, onAsk, on
   /** Ouvre le catalogue pour poser une séance choisie sur CE jour. */
   onAddDay: (date: string) => void;
   onMove: (intention: PlanningDay, msg: string) => Promise<void>;
+  /** R9b · choisir ses jours d'entraînement (absent si le calendrier est illisible). */
+  onMesJours?: () => void;
 }) {
   const { guide } = useGuideActif();
   const [offset, setOffset] = useState(0);
@@ -2326,6 +2341,13 @@ function SemaineSheet({ week, today, fetchWeekAt, onClose, onStartDay, onAsk, on
           style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.14)", color: "var(--text-2)" }}>
           <Plus size={14} strokeWidth={2.4} /> Séance
         </motion.button>
+        {onMesJours && (
+          <motion.button whileTap={{ scale: 0.96 }} onClick={onMesJours} aria-label="Mes jours d’entraînement"
+            className="px-3 rounded-2xl text-[13px] font-bold cursor-pointer flex items-center gap-1"
+            style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.14)", color: "var(--text-2)" }}>
+            <CalendarDays size={14} strokeWidth={2.2} /> Mes jours
+          </motion.button>
+        )}
       </div>
     </Sheet>
   );
@@ -2636,7 +2658,14 @@ export default function ProgressionPage() {
   const { semaine: week, setSemaine: setWeek, niveau: profileLevel, recharger: loadWeek } = journee;
 
   /* ── UI ── */
-  const [sheet, setSheet] = useState<null | "choisir" | "improviser" | "organiser" | "elan" | "semaine" | "adaptation">(null);
+  const [sheet, setSheet] = useState<null | "choisir" | "improviser" | "organiser" | "elan" | "semaine" | "adaptation" | "jours" | "absence">(null);
+  /* R9b · le calendrier vient de la MÊME résolution que l'accueil. Un
+     compte qui a choisi ses jours (même zéro) voit « Ma semaine » à deux
+     semaines, sans « Refais ma semaine » ; les autres gardent l'agenda
+     d'avant, avec une porte vers « Mes jours ». */
+  const calendrier = journee.projection?.calendrier ?? null;
+  const joursChoisis = !!calendrier?.choisi;
+  const voirSemaine = sheet === "semaine" || (sheet === "organiser" && joursChoisis);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editSession, setEditSession] = useState<WorkoutSession | null>(null);
   /* Séance pré-remplie : arrive de la bibliothèque (mouvements cochés) ou
@@ -3250,7 +3279,10 @@ export default function ProgressionPage() {
           }}
         >
           <div data-tour-anchor="prog-semaine" className="vy-filet">
-            <WeekStrip week={week} dates={semaineDates} today={today} onOrganise={() => setSheet("semaine")} />
+            <WeekStrip week={week} dates={semaineDates} today={today} onOrganise={() => setSheet("semaine")}
+              prevues={journee.projection?.resolution?.jours
+                .filter((j) => !j.reservee && !j.conflit)
+                .map((j) => ({ date: j.date, nom: j.etape.nom }))} />
           </div>
           {journee.programme && (
             <div className="vy-filet">
@@ -3271,7 +3303,46 @@ export default function ProgressionPage() {
 
       {/* ══ Sheets ══ */}
       <AnimatePresence>
-        {sheet === "semaine" && (
+        {voirSemaine && joursChoisis && user && (
+          <MaSemaineSheet
+            userId={user.id}
+            programme={journee.programme}
+            gen={journee.gen}
+            aujourdhui={today}
+            onClose={() => { setSheet(null); void loadWeek(); }}
+            onLancerTete={() => { setSheet(null); journee.lancerAujourdhui(); }}
+            onLancerIntention={(d) => { setSheet(null); startDay(d); }}
+            onChoisirSeance={(date) => { setPourDate(date); setSheet("choisir"); }}
+            onMesJours={() => setSheet("jours")}
+            onAbsence={() => setSheet("absence")}
+            onChange={() => void loadWeek()}
+          />
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {sheet === "jours" && user && calendrier && (
+          <MesJoursSheet
+            userId={user.id}
+            calendrier={calendrier}
+            aujourdhui={today}
+            onClose={() => setSheet(joursChoisis ? "semaine" : null)}
+            onEnregistre={() => { void loadWeek(); setSheet("semaine"); }}
+          />
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {sheet === "absence" && user && calendrier && (
+          <AbsenceSheet
+            userId={user.id}
+            calendrier={calendrier}
+            aujourdhui={today}
+            onClose={() => setSheet("semaine")}
+            onEnregistre={() => { void loadWeek(); setSheet("semaine"); }}
+          />
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {sheet === "semaine" && !joursChoisis && (
           <SemaineSheet
             week={week}
             today={today}
@@ -3282,11 +3353,12 @@ export default function ProgressionPage() {
             onAddSession={() => setSheet("choisir")}
             onAddDay={(date) => { setPourDate(date); setSheet("choisir"); }}
             onMove={deplacerIntention}
+            onMesJours={calendrier ? () => setSheet("jours") : undefined}
           />
         )}
       </AnimatePresence>
       <AnimatePresence>
-        {sheet === "organiser" && (
+        {sheet === "organiser" && !joursChoisis && (
           <OrganiserSheet
             cycle={journee.cycleSemaine}
             onClose={() => { setSheet(null); void loadWeek(); }}

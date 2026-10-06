@@ -13,6 +13,7 @@
    PAS appliqués ici (ils restent gérés par la page coach historique).
    ════════════════════════════════════════════════════════════════════ */
 
+import { lireCalendrier } from "@/lib/joursEntrainement";
 import {
   createContext, useCallback, useContext, useEffect, useMemo, useRef, useState,
 } from "react";
@@ -1387,6 +1388,16 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
     // cardio »… On génère la semaine SANS écrire (previewWeek) et on propose
     // une carte ; le passé et les jours déjà faits sont préservés.
     if (action.intent === "plan_regen") {
+      /* R9b · AVEC DES JOURS CHOISIS, LA SEMAINE SE REMPLIT SEULE, SANS
+         RIEN ÉCRIRE : « refais ma semaine » n'a plus rien à faire (validé
+         par Louis). Écrire du mobilier occuperait des jours d'entraînement
+         et ferait glisser les séances du programme. Une lecture ratée
+         laisse passer : c'est le comportement d'avant. */
+      const cal = await lireCalendrier(user.id, todayYmd());
+      if (cal?.choisi) {
+        say(voix(guideRef.current, "impasse.regen_jours_choisis"));
+        return;
+      }
       const supabase = createClient();
       const { data: prof } = await supabase
         .from("profiles")

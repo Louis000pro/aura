@@ -292,6 +292,9 @@ const REPLIQUES = {
      distinct du précédent, et ce n'est pas un détail : celui-ci ne peut
      pas dire « redemande-moi lundi », puisque c'est précisément lundi
      qu'on est en train de préparer. */
+  "impasse.regen_jours_choisis": {
+    commun: "Tu as choisi tes jours, ta semaine se remplit déjà toute seule dans l’ordre de ton programme 🙂 Tu peux changer une séance de jour depuis « Ma semaine », ou modifier tes jours.",
+  },
   "impasse.regen_semaine_prochaine_pleine": {
     commun: "Ta semaine prochaine est déjà posée entièrement à la main, je n’ai aucun jour à préparer 🙂 Retire une séance si tu veux que je la recompose.",
     nora:   "Ta semaine prochaine est déjà posée entièrement à la main : je n’ai aucun jour à préparer 🙂 Retire une séance et je recompose autour.",

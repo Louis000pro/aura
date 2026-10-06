@@ -7209,5 +7209,111 @@ verdict(
     guide9.includes("resolutionIndisponible = true;") && guide9.includes("etat.programme && !etat.resolutionIndisponible"), "tour 40");
 }
 
+/* ═══════════════════════ R9b · « Ma semaine » à deux semaines ═══════════════════════ */
+{
+  const lireB = (rel: string) => readFileSync(new URL("../" + rel, import.meta.url), "utf8").replace(/\r\n/g, "\n");
+  const P = await import("@/lib/projection");
+  const S = await import("@/lib/semaine");
+  type Cal = import("@/lib/projection").Calendrier;
+  type PD = import("@/lib/planning").PlanningDay;
+  const cycle = [
+    { id: "A", nom: "Dos & fessiers", position: 1 },
+    { id: "B", nom: "Haut du corps", position: 2 },
+    { id: "C", nom: "Fessiers & dos", position: 3 },
+  ];
+  const cal = (o: Partial<Cal> = {}): Cal => ({ choisi: true, jours: [1, 3, 5], effetLe: "2026-09-01", exceptions: [], absences: [], ...o });
+  const jeudi = "2026-10-08";
+  const semaine = S.semaineDe(jeudi);
+  const intention = (o: Partial<PD>): PD => ({
+    id: "i" + Math.random(), date: jeudi, type: "Force", title: "", difficulty: "Intermédiaire" as PD["difficulty"],
+    location: null, exerciseList: [{ name: "Squat" }] as PD["exerciseList"], sessionId: null, status: "planned", ...o,
+  });
+  type Etat = import("@/lib/occurrences").EtatOccurrences;
+  const base: Etat = { depart: 1, fermes: [{ rang: 1, etapeId: "A", consommeeLe: "2026-10-05T08:00:00Z" }], reserves: [] };
+  const resoudre = (calendrier: Cal, etat: Etat = base, reservations: { rang: number; etapeId: string; date: string }[] = []) =>
+    P.resoudreJournee({ cycle, etat, reservations, calendrier, dates: Array.from({ length: 11 }, (_, i) => P.decaler(jeudi, i)),
+      aujourdhui: jeudi, faitAujourdhui: false, dernierJourFait: "2026-10-05" });
+  const lignes = (calendrier: Cal, intentions: PD[], res = resoudre(calendrier)) => S.lignesSemaine({
+    dates: semaine, aujourdhui: jeudi, intentions, projetes: res?.jours ?? [], calendrier, rangPropose: res?.proposee?.rang ?? null,
+  });
+  const fait = intention({ id: "f1", date: "2026-10-05", title: "Dos & fessiers", status: "done", etapeId: "A", rang: 1 });
+  const lina = lignes(cal(), [fait]);
+  const r = (l: typeof lina) => l.map((x) => `${x.date.slice(8)}:${x.etat}${x.elements.map((e) => "/" + e.genre + (e.genre === "prevu" ? e.projete.etape.id + (e.proposee ? "*" : "") + (e.projete.attendaitLe ? "<" + e.projete.attendaitLe.slice(8) : "") : "")).join("")}`).join(" ");
+
+  verdict("R9b · semaine de Lina : lundi fait, mercredi passé sans séance, Haut du corps vendredi « t'attendait mercredi », proposée",
+    r(lina) === "05:occupe/fait 06:libre 07:passe_sans 08:libre 09:occupe/prevuB*<07 10:libre 11:libre", r(lina));
+  verdict("R9b · semaine prochaine : la suite reprend dans l'ordre, sans rattrapage (C lundi, A mercredi)",
+    (() => { const s2 = S.lignesSemaine({ dates: S.semaineDe("2026-10-12"), aujourdhui: jeudi, intentions: [fait], projetes: resoudre(cal())?.jours ?? [], calendrier: cal(), rangPropose: 2 });
+      return s2.filter((x) => x.elements.length).map((x) => x.date.slice(8) + (x.elements[0].genre === "prevu" ? x.elements[0].projete.etape.id : "?")).join(" ") === "12C 14A 16B"; })(), "");
+  const resa = intention({ id: "res", date: "2026-10-10", title: "Haut du corps", etapeId: "B", rang: 2 });
+  const etatResa: Etat = { ...base, reserves: [{ rang: 2, etapeId: "B", date: "2026-10-10" }] };
+  const avecResa = lignes(cal(), [fait, resa], resoudre(cal(), etatResa, [{ rang: 2, etapeId: "B", date: "2026-10-10" }]));
+  verdict("R9b · une réservation n'apparaît qu'une fois, par la projection (qui connaît son conflit)",
+    avecResa.find((x) => x.date === "2026-10-10")!.elements.length === 1
+      && avecResa.find((x) => x.date === "2026-10-10")!.elements[0].genre === "prevu", r(avecResa));
+  const pose = intention({ id: "p", date: "2026-10-09", title: "HIIT 20/10", origine: "utilisateur" });
+  const avecPose = lignes(cal(), [fait, pose], resoudre(cal(), base));
+  verdict("R9b · une séance posée hors programme s'affiche telle quelle sur son jour",
+    avecPose.find((x) => x.date === "2026-10-09")!.elements.some((e) => e.genre === "pose"), r(avecPose));
+  const absente = cal({ absences: [{ debut: "2026-10-09", fin: "2026-10-11" }] });
+  const retire = cal({ exceptions: [{ date: "2026-10-09", genre: "pas_de_seance" }] });
+  verdict("R9b · une absence se lit « en pause », un jour retiré « pas de séance », et la séance glisse au suivant",
+    lignes(absente, [fait]).find((x) => x.date === "2026-10-09")!.etat === "absence"
+      && lignes(retire, [fait]).find((x) => x.date === "2026-10-09")!.etat === "pas_de_seance"
+      && (resoudre(retire)?.jours[0].date === "2026-10-12"), r(lignes(retire, [fait])));
+  const repos = intention({ id: "z", date: "2026-10-06", title: "", type: "Repos", exerciseList: [] });
+  verdict("R9b · un repos posé n'est pas une séance : le jour reste libre à l'écran",
+    lignes(cal(), [fait, repos]).find((x) => x.date === "2026-10-06")!.etat === "libre", "");
+  verdict("R9b · un jour passé n'affiche jamais de prévision",
+    lignes(cal({ jours: [1, 2, 3, 4, 5, 6, 7] }), [fait]).filter((x) => x.passe).every((x) => x.elements.every((e) => e.genre !== "prevu")), "");
+  verdict("R9b · la semaine commence lundi, même un dimanche",
+    S.semaineDe("2026-10-11")[0] === "2026-10-05" && S.semaineDe("2026-10-05")[6] === "2026-10-11", "");
+  verdict("R9b · absence en deux touches : début puis fin, toucher avant le début recommence",
+    (() => { let p = S.choisirPlage({ debut: null, fin: null }, "2026-10-14"); p = S.choisirPlage(p, "2026-10-18");
+      const ok1 = p.debut === "2026-10-14" && p.fin === "2026-10-18";
+      const q = S.choisirPlage({ debut: "2026-10-14", fin: null }, "2026-10-12");
+      const t = S.choisirPlage(p, "2026-10-20");
+      return ok1 && q.debut === "2026-10-12" && q.fin === null && t.debut === "2026-10-20" && t.fin === null; })(), "");
+  verdict("R9b · « Du mercredi 14 au dimanche 18 », sans accord de genre",
+    S.libellePlage("2026-10-14", "2026-10-18") === "Du mercredi 14 au dimanche 18" && S.libellePlage("2026-10-14", null) === "Le mercredi 14", "");
+  const mob = S.mobilierAVenir([
+    intention({ id: "m1", date: "2026-10-09", origine: "systeme" }),
+    intention({ id: "m2", date: "2026-10-07", origine: "systeme" }),
+    intention({ id: "m3", date: "2026-10-10", origine: "utilisateur" }),
+    intention({ id: "m4", date: "2026-10-10", origine: "guide" }),
+    intention({ id: "m5", date: "2026-10-12", origine: "systeme", status: "done" }),
+    intention({ id: "m6", date: "2026-10-13", origine: "systeme", etapeId: "B", rang: 2 }),
+  ], jeudi);
+  verdict("R9b · premier choix des jours : seul le mobilier automatique à venir est proposé au retrait",
+    mob.map((d) => d.id).join(",") === "m1", mob.map((d) => d.id).join(","));
+  verdict("R9b · « Changer de jour » ne vise qu'une séance encore placée par la projection",
+    S.occurrenceEncorePrevue(resoudre(cal()), "B", 2) && !S.occurrenceEncorePrevue(resoudre(cal()), "B", 3)
+      && !S.occurrenceEncorePrevue(null, "B", 2), "");
+
+  const ecran = lireB("src/components/semaine/MaSemaineSheet.tsx");
+  const gestes = lireB("src/lib/semaineGestes.ts");
+  const feuille = lireB("src/components/semaine/FeuilleBas.tsx");
+  const absence = lireB("src/components/semaine/AbsenceSheet.tsx");
+  const page = lireB("src/app/progression/page.tsx");
+  const assistant = lireB("src/context/AssistantContext.tsx");
+  const composants = ["MaSemaineSheet", "MesJoursSheet", "AbsenceSheet", "FeuilleBas"].map((n) => lireB(`src/components/semaine/${n}.tsx`)).join("\n");
+  verdict("R9b · l'écran n'écrit aucune table lui-même (les gestes passent par les autorités)",
+    !/createClient|supabase\.|\.insert\(|\.update\(|\.upsert\(/.test(composants), "");
+  verdict("R9b · « Refais ma semaine » n'existe pas pour un compte qui a choisi ses jours",
+    !ecran.includes("Refais") && page.includes('sheet === "semaine" && !joursChoisis') && page.includes('sheet === "organiser" && !joursChoisis')
+      && assistant.includes('say(voix(guideRef.current, "impasse.regen_jours_choisis"))'), "");
+  verdict("R9b · « Changer de jour » relit la projection AVANT d'écrire, et une panne refuse",
+    gestes.indexOf("occurrenceEncorePrevue(") > 0 && gestes.indexOf("occurrenceEncorePrevue(") < gestes.indexOf("ecrireOccurrence(")
+      && gestes.includes('if (!proj) return { ok: false, raison: "illisible" };'), "");
+  verdict("R9b · retirer une réservation la supprime, jamais un statut écrit (elle glisse)",
+    !/statut:\s*"passee"|status:\s*"skipped"|marquerIntention/.test(gestes + ecran), "");
+  verdict("R9b · la feuille d'un jour sort par un portail et verrouille la page",
+    feuille.includes("createPortal(") && feuille.includes("lockBodyModal()"), "");
+  verdict("R9b · « Je m'absente », jamais « absente » ni « absent·e »",
+    absence.includes("Je m&apos;absente") && !/absent·e|\babsente?\b/i.test(absence.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "").replace(/Je m&apos;absente/g, "")), "");
+  verdict("R9b · une lecture ratée dit qu'elle n'a pas pu lire, jamais une semaine vide",
+    ecran.includes("if (!proj) { setIllisible(true); return; }") && ecran.includes("Je n&apos;arrive pas à lire ta semaine"), "");
+}
+
 console.log("\n" + (echecs === 0 ? "Tout passe." : echecs + " échec(s)."));
 process.exit(echecs === 0 ? 0 : 1);
