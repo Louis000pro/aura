@@ -69,6 +69,13 @@ export function progresDe(e: EmplacementFini, historique: SerieHistorique[], exc
   if (!ref) return null;
   const type = chargeReglable(p.charge_type) ? p.charge_type : null;
 
+  /* Pour ANNONCER un progrès, la référence doit être connue en entier,
+     quelle que soit la forme du progrès. La charge de départ de R4 se
+     contente de moins (elle rappelle une charge, elle n'affirme rien) :
+     on ne cherche pas pour autant une séance plus ancienne. */
+  const avant = ref.reps;
+  if (avant.length !== c.reps.length || !avant.every((r): r is number => typeof r === "number")) return null;
+
   /* La charge a bougé : seul un progrès dans le bon sens compte, et
      seulement si toutes les séries restent dans la fourchette. */
   if (type && c.charge !== null && ref.charge !== null && c.charge !== ref.charge) {
@@ -81,8 +88,6 @@ export function progresDe(e: EmplacementFini, historique: SerieHistorique[], exc
   /* Même charge (ou poids du corps) : plus de répétitions, aucune série
      en recul. On nomme la série au plus grand gain, la première en cas
      d'égalité. */
-  const avant = ref.reps;
-  if (avant.length !== c.reps.length || !avant.every((r): r is number => typeof r === "number")) return null;
   if (!c.reps.every((r, i) => r >= avant[i])) return null;
   const total = (xs: number[]) => xs.reduce((a, b) => a + b, 0);
   if (total(c.reps) <= total(avant)) return null;
@@ -158,4 +163,22 @@ export function texteSerie(s: {
   if (typeof s.reps_declarees === "number") return charge ? `${s.reps_declarees} × ${charge}` : `${s.reps_declarees} répétitions`;
   if (typeof s.duree_s === "number" && s.duree_s > 0) return `${s.duree_s} s`;
   return "Faite";
+}
+
+/**
+ * Les séries d'un emplacement, en sous-groupes CONSÉCUTIFS par exercice.
+ * Un remplacement en cours de route (A → B → C) donne trois groupes, et un
+ * retour à A en donne un quatrième : on ne réunit jamais deux passages
+ * séparés, sinon une charge se lirait sous le nom d'un autre mouvement.
+ */
+export function sousGroupesParExercice<L extends { serie: number; exercice_nom: string }>(
+  lignes: L[],
+): { nom: string; lignes: L[] }[] {
+  const groupes: { nom: string; lignes: L[] }[] = [];
+  for (const l of [...lignes].sort((a, b) => a.serie - b.serie)) {
+    const dernier = groupes[groupes.length - 1];
+    if (dernier && dernier.nom === l.exercice_nom) dernier.lignes.push(l);
+    else groupes.push({ nom: l.exercice_nom, lignes: [l] });
+  }
+  return groupes;
 }

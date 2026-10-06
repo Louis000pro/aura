@@ -720,3 +720,11 @@ Aucune migration SQL.
   - `DetailExercices` (portail, étage 106) : les séries confirmées, et la marge d'un repère modifiable (décision 54) par la file de R4 (`margesFin` → `corriger_marge`). `margeDe` lit désormais la dernière réponse donnée (`margesFin` d'abord).
 - Bancs : `check:programme` gagne 30 contrôles R5 (dont l'ordre des étages lu dans le source). Deux témoins vérifiés : sans le refus d'une série en recul, et sans le filtre des repères, le banc échoue chacun à sa ligne.
 - `tsc`, `build` passent ; eslint 93 (la référence) ; `check:echelle` passe de 38 à 37 écarts (un 14 px de la grille retirée) ; `check:rappels`, `check:missions`, `check:portraits` passent.
+
+### R5 · tour 35 (relecture de Codex) : trois corrections
+
+- **Le fait marquant exige une référence connue en entier, quelle que soit sa forme.** Le contrôle des répétitions de référence passait après la branche « charge » : 60 kg aux répétitions inconnues, puis 62,5 × 10, donnait un progrès de charge. Il passe avant les deux branches. La charge de départ de R4 garde cette même référence (elle rappelle une charge, elle n'affirme rien), sans chercher de séance plus ancienne.
+- **Le détail nomme chaque passage d'exercice.** `sousGroupesParExercice` découpe un emplacement en sous-groupes consécutifs : A → B → C donne trois groupes, A → B → A n'en réunit pas les deux A, et une première série passée garde son propre nom.
+- **Le partage appartient au propriétaire du journal.** `afficheProprio` est posé depuis `journal.proprietaire` ; le bouton et la feuille `EnvoyerAffiche` n'existent que si le compte connecté est celui-là. Un autre compte connecté tunnel ouvert ne voit ni l'un ni l'autre ; le journal reste à son propriétaire.
+- Au passage : la question du détail passe par `guides.ts` (`seance.marge.question`), et « Continuer » porte `--ombre-action`.
+- Bancs : +11 contrôles (dont le cas exact de Codex). Témoins : sans le contrôle avancé, trois contrôles échouent ; avec un regroupement qui réunit les passages, A → B → A échoue. eslint 93, `check:echelle` 37, build OK.

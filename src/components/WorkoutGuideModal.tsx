@@ -45,7 +45,7 @@ import {
 } from "@/lib/progression";
 import { fileDeMarges } from "@/lib/fileMarges";
 import { cleCharge, corrigerMarge, cransConfirmes, historiqueDesExercices, referencesDepuisSeries } from "@/lib/progressionBase";
-import { faitMarquant, quandRelatif, serieNommee, texteSerie, type FaitMarquant } from "@/lib/recapSeance";
+import { faitMarquant, quandRelatif, serieNommee, sousGroupesParExercice, texteSerie, type FaitMarquant } from "@/lib/recapSeance";
 import { perfDataToShare, type PerfShareData } from "@/lib/perfShareExport";
 import EnvoyerAffiche from "@/components/communaute/EnvoyerAffiche";
 import QuestionMarge from "@/components/seance/QuestionMarge";
@@ -800,8 +800,9 @@ type LigneDuDetail = {
   statut: "terminee" | "passee" | "non_atteinte";
   reps_declarees?: number | null; duree_s?: number | null; charge?: number | null; charge_type?: string | null;
 };
-function DetailExercices({ lignes, margeDe, estRepere, onMarge, onFermer, visage }: {
+function DetailExercices({ lignes, margeDe, estRepere, onMarge, onFermer, visage, question }: {
   lignes: LigneDuDetail[];
+  question: string;
   margeDe: (e: number) => Marge | null;
   estRepere: (e: number) => boolean;
   onMarge: (e: number, m: Marge) => void;
@@ -829,23 +830,30 @@ function DetailExercices({ lignes, margeDe, estRepere, onMarge, onFermer, visage
             const marge = margeDe(e);
             return (
               <div key={e} className="py-3" style={{ borderTop: `1px solid ${TUN.line}` }}>
-                <div className="flex items-center gap-3">
-                  <span className="flex-shrink-0 rounded-xl overflow-hidden flex items-center justify-center" style={{ width: 36, height: 36, background: "rgba(255,255,255,0.06)" }}>
-                    <ExerciseThumb name={ls[0].exercice_nom} size={34} />
-                  </span>
-                  <p className="text-[13px] font-bold" style={{ color: "#fff" }}>{ls[0].exercice_nom}</p>
-                </div>
-                <ul className="mt-2 flex flex-col gap-1">
-                  {ls.map((l) => (
-                    <li key={l.serie} className="flex justify-between text-[13px]">
-                      <span style={{ color: TUN.t3 }}>Série {l.serie}</span>
-                      <span className="vy-nombre" style={{ color: l.statut === "terminee" ? TUN.t1 : TUN.t3 }}>{texteSerie(l)}</span>
-                    </li>
-                  ))}
-                </ul>
+                {/* Un sous-groupe par passage d'exercice : le nom et la
+                    vignette vont avec LEURS séries, jamais avec celles d'un
+                    remplaçant (`sousGroupesParExercice`). */}
+                {sousGroupesParExercice(ls).map((g, i) => (
+                  <div key={`${g.nom}-${g.lignes[0].serie}`} className={i > 0 ? "mt-3" : undefined}>
+                    <div className="flex items-center gap-3">
+                      <span className="flex-shrink-0 rounded-xl overflow-hidden flex items-center justify-center" style={{ width: 36, height: 36, background: "rgba(255,255,255,0.06)" }}>
+                        <ExerciseThumb name={g.nom} size={34} />
+                      </span>
+                      <p className="text-[13px] font-bold" style={{ color: "#fff" }}>{g.nom}</p>
+                    </div>
+                    <ul className="mt-2 flex flex-col gap-1">
+                      {g.lignes.map((l) => (
+                        <li key={l.serie} className="flex justify-between text-[13px]">
+                          <span style={{ color: TUN.t3 }}>Série {l.serie}</span>
+                          <span className="vy-nombre" style={{ color: l.statut === "terminee" ? TUN.t1 : TUN.t3 }}>{texteSerie(l)}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
                 {estRepere(e) && marge !== null && (
                   <div className="mt-3">
-                    <QuestionMarge question="Ta dernière série : tu aurais pu faire encore combien de répétitions ?"
+                    <QuestionMarge question={question}
                       reponse={marge} visage={visage} onRepondre={(m) => onMarge(e, m)} />
                   </div>
                 )}
@@ -1090,6 +1098,11 @@ export default function WorkoutGuideModal({
   const [envoyerOuvert, setEnvoyerOuvert] = useState(false);
   const [detailOuvert,  setDetailOuvert]  = useState(false);
   const [seanceIdFin,   setSeanceIdFin]   = useState<string | null>(null);
+  /* Le propriétaire du journal dont l'affiche vient. Le partage n'existe
+     que pour LUI : si un autre compte se connecte tunnel ouvert, la feuille
+     se ferme et le bouton disparaît (le journal, lui, reste à son
+     propriétaire et se reprend à son retour). */
+  const [afficheProprio, setAfficheProprio] = useState<string | null>(null);
 
   const { user, session } = useAuth();
 
@@ -1148,6 +1161,7 @@ export default function WorkoutGuideModal({
         setAfficheSaved(true);
         if (r.seanceId && journalRef.current) {
           setAfficheData(perfDataToShare(afficheDe(journalRef.current, r.seanceId), { user: user?.pseudo }));
+          setAfficheProprio(journalRef.current.proprietaire);
         }
       }
       if (r.maillon) {
@@ -1268,6 +1282,9 @@ export default function WorkoutGuideModal({
      Les séries de chaque emplacement telles que le journal les écrirait,
      puis les emplacements où la question a sa place (au plus deux). */
   const prescriptionsR4 = useMemo(() => exercises.map((e) => prescriptionDe(e as ExercicePrescrit)), [exercises]);
+  /* Le partage appartient au propriétaire du journal, jamais au compte
+     connecté par hasard (R5, tour 35). */
+  const partageOuvert = !!afficheData && !!user && user.id === afficheProprio;
   const lignesCourantes = useMemo(() => lignesDuJournal(exercises, doneMap, remplacements), [exercises, doneMap, remplacements]);
   const aQuestion = questionsPosees;
   const margeDe = (e: number): Marge | null =>
@@ -2471,11 +2488,11 @@ export default function WorkoutGuideModal({
                     ne se propose qu'une fois gardée. */}
                 <motion.button whileTap={{ scale: 0.97 }} onClick={onClose}
                   className="w-full py-4 rounded-2xl flex items-center justify-center font-extrabold text-[16px] cursor-pointer text-white"
-                  style={{ background: "linear-gradient(100deg,#8B5CF6,#C13BC1)", boxShadow: "0 10px 30px -6px rgba(193,59,193,0.45)" }}
+                  style={{ background: "linear-gradient(100deg,#8B5CF6,#C13BC1)", boxShadow: "var(--ombre-action)" }}
                 >
                   Continuer
                 </motion.button>
-                {user && afficheSaved && afficheData && (
+                {partageOuvert && afficheSaved && (
                   <button type="button" onClick={() => setEnvoyerOuvert(true)}
                     className="text-[13px] font-semibold py-1 cursor-pointer" style={{ color: TUN.t3 }}>
                     Partager l&apos;affiche
@@ -2498,12 +2515,13 @@ export default function WorkoutGuideModal({
             estRepere={(e) => prescriptionsR4[e]?.statut === "repere"}
             onMarge={(e, m) => setMargesFin((prev) => ({ ...prev, [e]: m }))}
             onFermer={() => setDetailOuvert(false)}
+            question={voix(guide, "seance.marge.question")}
             visage={guide ? <VisageGuide guide={guide} etat="listen" size={26} /> : <AssistantSpark px={16} />}
           />
         )}
       </AnimatePresence>
       <AnimatePresence>
-        {envoyerOuvert && afficheData && user && (
+        {envoyerOuvert && partageOuvert && afficheData && user && (
           <EnvoyerAffiche data={afficheData} moi={user.id} accessToken={session?.access_token} onFermer={() => setEnvoyerOuvert(false)} />
         )}
       </AnimatePresence>

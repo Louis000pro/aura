@@ -7003,6 +7003,33 @@ verdict(
   verdict("R5 · une marge changée dans le détail part par la file de R4 (corriger_marge)",
     t.includes("onMarge={(e, m) => setMargesFin((prev) => ({ ...prev, [e]: m }))}") && t.includes("margesFin[e] ?? (doneMap[e]"), "décision 54");
   verdict("R5 · le détail vit dans un portail au-dessus du tunnel", /function DetailExercices[\s\S]*?createPortal\([\s\S]*?zIndex: 106/.test(t), "");
+
+  /* ── Tour 35 (Codex) ── */
+  const inconnues = ref3([null as unknown as number, null as unknown as number, null as unknown as number], 60);
+  verdict("R5 · référence aux répétitions inconnues : pas de progrès de CHARGE non plus (60 kg ? → 62,5 × 10)",
+    R.faitMarquant(E([s(10, 62.5), s(10, 62.5), s(10, 62.5)]), inconnues) === null, "tour 35");
+  verdict("R5 · … et cette même référence reste la charge de départ de R4 (60 kg)",
+    G.chargeDeReference(inconnues, pres())?.charge === 60, "R4 inchangée");
+  verdict("R5 · une seule série inconnue suffit à taire la hausse de charge",
+    R.faitMarquant(E([s(10, 62.5), s(10, 62.5), s(10, 62.5)]), ref3([10, null as unknown as number, 10], 60)) === null, "tour 35");
+  const L = (serie: number, nom: string, statut: "terminee" | "passee" = "terminee") => ({ serie, exercice_nom: nom, statut });
+  const abc = R.sousGroupesParExercice([L(3, "C"), L(1, "A"), L(2, "B")]);
+  verdict("R5 · détail A → B → C : trois groupes, chacun avec SES séries",
+    abc.map((g) => `${g.nom}:${g.lignes.map((l) => l.serie).join(",")}`).join(" ") === "A:1 B:2 C:3", JSON.stringify(abc));
+  const aba = R.sousGroupesParExercice([L(1, "A"), L(2, "B"), L(3, "A"), L(4, "A")]);
+  verdict("R5 · détail A → B → A : le retour à A n'est pas réuni au premier A",
+    aba.map((g) => `${g.nom}:${g.lignes.map((l) => l.serie).join(",")}`).join(" ") === "A:1 B:2 A:3,4", JSON.stringify(aba));
+  const passe = R.sousGroupesParExercice([L(1, "A", "passee"), L(2, "B"), L(3, "B")]);
+  verdict("R5 · première série passée puis remplacement : A garde sa série passée, B nomme les siennes",
+    passe.length === 2 && passe[0].nom === "A" && passe[0].lignes[0].statut === "passee" && passe[1].nom === "B" && passe[1].lignes.length === 2, JSON.stringify(passe));
+  verdict("R5 · le détail ne nomme plus un groupe par sa première ligne",
+    t.includes("sousGroupesParExercice(ls)") && !t.includes("ls[0].exercice_nom"), "");
+  verdict("R5 · le partage appartient au propriétaire du journal",
+    t.includes("setAfficheProprio(journalRef.current.proprietaire)") && t.includes("user.id === afficheProprio")
+      && t.includes("{partageOuvert && afficheSaved && (") && t.includes("envoyerOuvert && partageOuvert && afficheData && user"), "tour 35");
+  verdict("R5 · la question du détail passe par guides.ts",
+    t.includes('question={voix(guide, "seance.marge.question")}') && !t.includes("Ta dernière série : tu aurais pu"), "Guides");
+  verdict("R5 · « Continuer » porte l'ombre nommée", /boxShadow: "var\(--ombre-action\)" \}\}\s*>\s*Continuer/.test(t), "composition");
 }
 
 console.log("\n" + (echecs === 0 ? "Tout passe." : echecs + " échec(s)."));
