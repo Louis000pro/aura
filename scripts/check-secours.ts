@@ -388,7 +388,11 @@ console.log("\n── rateLimit : le chemin e-mail n'a pas bougé ──");
     return true;
   }
 
-  const { autoriserEnvoiEmail } = await import("@/lib/rateLimit");
+  // `autoriserEnvoiEmail` passe désormais par le compteur partagé en base
+  // (asynchrone). On vérifie ici le cœur en mémoire, qui reste son repli.
+  const { autoriserRafale } = await import("@/lib/rateLimit");
+  const autoriserEnvoiEmail = (u: string, m: string, max = 3) =>
+    autoriserRafale(u, m.toLowerCase().trim(), max, FENETRE_MS);
   const vrai = Date.now;
   let horloge = vrai();
   Date.now = () => horloge;

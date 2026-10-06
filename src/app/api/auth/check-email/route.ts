@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase-admin";
-import { autoriserRafale } from "@/lib/rateLimit";
+import { autoriserEssai } from "@/lib/rateLimit";
 
 const FORME_EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
     // Garde-fou anti-abus : on limite les vérifications par adresse. Le but est
     // d'éviter qu'un script énumère les comptes, pas d'arrêter une attaque
     // distribuée (compteur en mémoire, cf. rateLimit.ts).
-    if (!autoriserRafale("check-email", email.toLowerCase(), 30)) {
+    if (!(await autoriserEssai("check-email", email.toLowerCase(), 30))) {
       return Response.json({ error: "Trop de tentatives. Réessaie dans un moment." }, { status: 429 });
     }
 

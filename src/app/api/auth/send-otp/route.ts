@@ -1,7 +1,8 @@
-import { createHmac } from "crypto";
+import { randomInt } from "crypto";
 import { NextRequest } from "next/server";
-import { cleanEnv, getAuthSecret } from "@/lib/serverEnv";
+import { cleanEnv } from "@/lib/serverEnv";
 import { autoriserEnvoiEmail } from "@/lib/rateLimit";
+import { creerJeton } from "@/lib/jetonCode";
 
 export async function POST(req: NextRequest) {
   try {
@@ -11,7 +12,7 @@ export async function POST(req: NextRequest) {
       return Response.json({ error: "Email invalide" }, { status: 400 });
     }
 
-    if (!autoriserEnvoiEmail("otp", email)) {
+    if (!(await autoriserEnvoiEmail("otp", email))) {
       return Response.json(
         { error: "Trop de demandes. Réessaie dans une heure." },
         { status: 429 }
@@ -27,12 +28,10 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    const expires = Date.now() + 10 * 60 * 1000;
-
-    const data = JSON.stringify({ email, otp, expires });
-    const sig = createHmac("sha256", getAuthSecret()).update(data).digest("hex");
-    const token = Buffer.from(data).toString("base64") + "." + sig;
+    const otp = randomInt(100000, 1000000).toString();
+    // Le jeton rendu au navigateur ne contient qu'une empreinte du code,
+    // jamais le code lui-même (cf. lib/jetonCode.ts).
+    const token = creerJeton(email, otp, 10 * 60 * 1000);
 
     const fromAddress = cleanEnv(process.env.RESEND_FROM) || "Vaiiya <onboarding@resend.dev>";
     const subject = "Ton code Vaiiya · " + otp;
