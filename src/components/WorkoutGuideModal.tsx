@@ -748,6 +748,29 @@ const TUN = {
    chiffre du jour en teal (réussite, système D), l'ancien en encre neutre.
    La règle vit dans `recapSeance.ts` ; ici on ne fait que la dire.
    ════════════════════════════════════════════════════════════════════ */
+/* ── Les deux gestes de navigation sous le bouton principal ──
+   Secondaires (système D) : du texte en encre discrète, jamais une
+   surface. Le retour à gauche, le saut à droite, comme on lit une
+   séance. Un geste impossible ne s'affiche pas. */
+function NavExercice({ precedent, suivant }: { precedent: (() => void) | null; suivant: (() => void) | null }) {
+  if (!precedent && !suivant) return null;
+  const style = { color: TUN.t3 };
+  return (
+    <div className="w-full flex items-center justify-between">
+      {precedent ? (
+        <button onClick={precedent} className="text-[13px] font-semibold py-2 pr-3 cursor-pointer" style={style}>
+          ‹ Exercice précédent
+        </button>
+      ) : <span />}
+      {suivant ? (
+        <button onClick={suivant} className="text-[13px] font-semibold py-2 pl-3 cursor-pointer" style={style}>
+          Passer l&apos;exercice ›
+        </button>
+      ) : <span />}
+    </div>
+  );
+}
+
 function LigneFait({ fait }: { fait: FaitMarquant }) {
   const [maintenant] = useState(() => new Date());
   const quand = quandRelatif(fait.termineLe, maintenant);
@@ -1339,21 +1362,58 @@ export default function WorkoutGuideModal({
     return () => clearInterval(t);
   }, [phase, startMs, paused]);
 
+  /* ── Où reprendre un exercice ──
+     Depuis qu'on peut revenir en arrière, un exercice peut avoir déjà des
+     séries TERMINÉES quand on y entre. On reprend à la première qui ne
+     l'est pas, et un exercice entièrement terminé ne se refait pas tout
+     seul en avançant. Une série « passée » reste ouverte : la passer
+     n'est pas l'avoir faite. */
+  const premiereOuverte = useCallback((e: number): number => {
+    const n = exercises[e]?.sets ?? 1;
+    for (let s = 0; s < n; s++) if (doneMap[e]?.[s]?.statut !== "terminee") return s;
+    return -1;
+  }, [exercises, doneMap]);
+
+  /** Pose le tunnel sur une série, chrono et décompte compris. */
+  const entrerDans = useCallback((e: number, s: number) => {
+    setShowInfo(false); setChanger(null); setEditReps(false); setEditCharge(false);
+    validationRef.current = null;
+    setRestMode("set");
+    setExerciseIdx(e); setSetIdx(s);
+    setAutoCountdown(0); setHiitSub("work");
+    setPhase("exercising");
+    const ex = exercises[e];
+    if (ex?.auto)      { setAutoCountdown(ex.auto); setPrep(3); }
+    else if (ex?.hiit) { setHiitSub("work"); setAutoCountdown(HIIT_WORK); setPrep(3); }
+  }, [exercises]);
+
   /* ── Skip the entire current exercise ── */
   const skipExercise = useCallback(() => {
-    const nextEx = exerciseIdx + 1;
-    setShowInfo(false); setChanger(null); setEditReps(false);
-    if (nextEx < exercises.length) {
-      setExerciseIdx(nextEx); setSetIdx(0);
-      setAutoCountdown(0);   setHiitSub("work");
-      setPhase("exercising");
-      const e = exercises[nextEx];
-      if (e?.auto)      { setAutoCountdown(e.auto); setPrep(3); }
-      else if (e?.hiit) { setHiitSub("work"); setAutoCountdown(HIIT_WORK); setPrep(3); }
-    } else {
-      setPhase("done");
+    for (let e = exerciseIdx + 1; e < exercises.length; e++) {
+      const s = premiereOuverte(e);
+      if (s >= 0) { entrerDans(e, s); return; }
     }
-  }, [exercises, exerciseIdx]);
+    setShowInfo(false); setChanger(null); setEditReps(false);
+    setPhase("done");
+  }, [exercises, exerciseIdx, premiereOuverte, entrerDans]);
+
+  /* ── Revenir à l'exercice précédent ──
+     Le geste inverse de « Passer l'exercice ». On reprend l'exercice
+     d'avant à sa première série non terminée (ou au début s'il était
+     fini, pour pouvoir le refaire). Ses séries marquées « passées » sont
+     effacées : on est revenu dessus, il n'est plus sauté. Les séries
+     terminées ne bougent pas ; en refaire une remplace sa marque. */
+  const revenirExercice = useCallback(() => {
+    const prev = exerciseIdx - 1;
+    if (prev < 0) return;
+    setDoneMap(m => {
+      const parSerie = { ...(m[prev] ?? {}) };
+      for (const k of Object.keys(parSerie)) if (parSerie[Number(k)]?.statut === "passee") delete parSerie[Number(k)];
+      return { ...m, [prev]: parSerie };
+    });
+    const s = premiereOuverte(prev);
+    entrerDans(prev, s >= 0 ? s : 0);
+  }, [exerciseIdx, premiereOuverte, entrerDans]);
 
   /* ── Advance to next set / exercise ── */
   const advance = useCallback(() => {
@@ -1367,16 +1427,14 @@ export default function WorkoutGuideModal({
       else if (e?.hiit) { setHiitSub("work"); setAutoCountdown(HIIT_WORK); setPrep(3); }
     } else if (nextEx < exercises.length) {
       /* Plus aucune attente posée ici : l’unique temps du changement
-         d’exercice est décidé dans `completeSet`, juste en dessous. */
-      setExerciseIdx(nextEx); setSetIdx(0); setPhase("exercising");
-      const e = exercises[nextEx];
-      if (e?.auto)      { setAutoCountdown(e.auto); setPrep(3); }
-      else if (e?.hiit) { setHiitSub("work"); setAutoCountdown(HIIT_WORK); setPrep(3); }
-      else              setAutoCountdown(0);
+         d’exercice est décidé dans `completeSet`, juste en dessous. Le
+         passage à l’exercice suivant est celui de « Passer l’exercice » :
+         il saute ce qui est déjà terminé (on a pu revenir en arrière). */
+      skipExercise();
     } else {
       setPhase("done");
     }
-  }, [exercises, exerciseIdx, setIdx]);
+  }, [exercises, exerciseIdx, setIdx, skipExercise]);
 
   /* ── Complete a set ──
 
@@ -2388,11 +2446,10 @@ export default function WorkoutGuideModal({
                   {/* R3 · le bouton dit ce qui sera enregistré. */}
                   {declare && repsCur !== null ? libelleFait(repsCur, chargeCur, typeCharge) : "Série terminée ✓"}
                 </motion.button>
-                {exerciseIdx < exercises.length - 1 && (
-                  <button onClick={passerExercice} className="text-[13px] font-semibold py-2 cursor-pointer" style={{ color: TUN.t3 }}>
-                    Passer l&apos;exercice
-                  </button>
-                )}
+                <NavExercice
+                  precedent={exerciseIdx > 0 ? revenirExercice : null}
+                  suivant={exerciseIdx < exercises.length - 1 ? passerExercice : null}
+                />
               </motion.div>
             )}
 
@@ -2411,11 +2468,10 @@ export default function WorkoutGuideModal({
                 >
                   {isHiit && hiitSub === "work" ? "Passer l’effort" : "Valider ✓"}
                 </motion.button>
-                {exerciseIdx < exercises.length - 1 && (
-                  <button onClick={passerExercice} className="text-[13px] font-semibold py-2 cursor-pointer" style={{ color: TUN.t3 }}>
-                    Passer l&apos;exercice
-                  </button>
-                )}
+                <NavExercice
+                  precedent={exerciseIdx > 0 ? revenirExercice : null}
+                  suivant={exerciseIdx < exercises.length - 1 ? passerExercice : null}
+                />
               </motion.div>
             )}
 
