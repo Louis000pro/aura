@@ -902,3 +902,10 @@ Même migration finale (`20261012_revue_finale.sql`), toujours rejouable.
   - `check:prescription-sql` : 149 OK.
   - Deux témoins : la restauration remise sur l'ordinal fait échouer 3 contrôles ; la garde sans preuve, 3 autres.
   - `check:programme` : 3 contrôles en plus, et un témoin sur `lignesCourtes`.
+
+**Feu vert technique de Codex sur `ccb9dea` (2026-10-07).** Codex a relu la migration et rejoué `check:programme`, les 149 essais SQL et le typecheck. Il a aussi refait ses contre-exemples : une séance courte `[0,3]` lancée à 18 kg puis ajustée à 20 se ferme à 18 (v1 consommée, v2 non), et une séance courte sans modèle écrit rend `version_reduite`. La relecture technique est close. Avant la fusion il reste :
+- Louis colle cette version exacte de `20261012_revue_finale.sql` ;
+- les vérifications sur Supabase sous `authenticated` (droits entre comptes, cas corrigés) ;
+- le test visuel global ;
+- le choix produit sur `compte` : « deux séries par repère » à titre provisoire, ou un minimum déclaré pour chaque séance ;
+- le GO de Louis.
