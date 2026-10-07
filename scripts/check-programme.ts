@@ -7960,6 +7960,22 @@ verdict(
     verdict("Revue · la base refuse aussi : une ligne qui a moins de séries que son modèle rend `version_reduite`",
       sqlRev.includes("if v_series_modele is not null and v_ligne.series < v_series_modele then")
         && sqlRev.includes("return jsonb_build_object('resultat', 'version_reduite');"), "");
+
+    const courtes = D.lignesCourtes(lignesDF, v11);
+    const preuve = (l: { series: number; reduite?: boolean; series_completes?: number }, complet: number) =>
+      l.reduite === true && l.series_completes === complet && l.series < complet;
+    verdict("Vérif · chaque ligne réduite (courte R8, légère R7) porte le nombre de séries de sa version complète",
+      courtes.some((l) => l.reduite)
+        && courtes.every((l) => !l.reduite || preuve(l, lignesDF.find((x) => x.emplacement === l.emplacement)!.series))
+        && leg.every((l, i) => !l.reduite || preuve(l, lignesDF[i].series))
+        && courtes.filter((l) => !l.reduite).every((l) => l.series_completes === undefined), "");
+    verdict("Vérif · la base garde cette preuve sans modèle écrit, et refuse sans aucune preuve",
+      sqlRev.includes("add column if not exists series_completes smallint")
+        && sqlRev.includes("if v_series_completes is not null and v_ligne.series < v_series_completes then")
+        && sqlRev.includes("if v_series_completes is null and v_series_modele is null then"), "");
+    verdict("Vérif · la restauration lit l'emplacement explicite du journal, l'ordinal n'est qu'un repli ancien",
+      sqlRev.includes("create or replace function public.restaurer_copie_suivie")
+        && sqlRev.includes("case when v_explicite then (e.ex->'prescription'->>'emplacement')::smallint"), "");
   }
 
   /* L'estimation compte ce qu'elle dit compter. */

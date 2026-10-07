@@ -706,6 +706,132 @@ await setUid(U);
   t("Revue · sinon la date bouge et le repos du jour d'arrivée s'en va, dans la même transaction",
     bon.resultat === "ok" && (await q(`select date::text d from intentions_entrainement where id=$1`, [D2.id])).rows[0].d === "2026-10-16"
       && (await q(`select count(*)::int n from intentions_entrainement where user_id=$1 and date='2026-10-16' and nature='repos'`, [U])).rows[0].n === 0);
+
+  /* ── Vérification finale de Codex (sur ab89d67) ── */
+  await setUid(U);
+  /* Dos & fessiers en salle : tirage à 0, hip thrust (repère) à 3. */
+  const LD = composerEtape("Dos & fessiers", { lieu: "salle", orientation: "masse", niveau: null, version: 1 });
+  const k = LD.findIndex((l, i) => i >= 2 && l.statut === "repere" && l.mesure === "reps");
+  const programmeRF = async () => {
+    const P = (await q(`insert into programmes(user_id) values ($1) returning id`, [U])).rows[0].id;
+    const E = (await q(`insert into programme_seances(programme_id, position, nom) values ($1,1,'Pull') returning id`, [P])).rows[0].id;
+    await q(`insert into programme_seances(programme_id, position, nom) values ($1,2,'Push')`, [P]);
+    return { P, E };
+  };
+  const occRF = (P: string, E: string, o: Record<string, unknown>) => ({ programme_id: P, etape_consommee_id: E, programme_seance_id: E, rang: 1,
+    statut: "prevue", date: "2026-10-08", type: "Force", title: "Dos & fessiers", origine: "utilisateur", ...o });
+  /* Une séance faite, toutes les séries du repère au haut de fourchette à
+     40 kg, marge confirmée : la réalisation qui ouvre une hausse. */
+  const journalAuHaut = (lignes: typeof LD, lanc: string) => {
+    const exs = projeterPrescription(lignes);
+    const pos = exs.findIndex((e) => e.prescription?.emplacement === LD[k].emplacement);
+    const n = exs[pos].sets;
+    const marques = { [pos]: Object.fromEntries(Array.from({ length: n }, (_, k) => [k, {
+      statut: "terminee", validation: "bouton", dureeS: null, reps: LD[k].reps_max, charge: 40, ...(k === n - 1 ? { marge: "3_plus" } : {}) }])) } as MarquesSeance;
+    return rpc("enregistrer_seance", { lancement_id: lanc, proprietaire: U, titre: "Pull", duree_s: 600, series: lignesDuJournal(exs, marques) });
+  };
+  const hausse = (lanc: string, charge: number, o: Record<string, unknown> = {}) =>
+    rpc("accepter_cible", { lancement_id: lanc, emplacement: LD[k].emplacement, charge, reps_cible: LD[k].reps_min, marge: "3_plus", cran: 2.5, ...o });
+
+  /* 5 · version réduite SANS modèle écrit (R2 l'autorise). */
+  {
+    const { P, E } = await programmeRF();
+    const courte = LD.map((l, i) => (i === k ? { ...l, series: 2, reduite: true, series_completes: l.series } : l));
+    const LC = "f1f1f1f1-0000-0000-0000-000000000001";
+    const o = await rpc("ecrire_occurrence", { intention: occRF(P, E, { statut: "faite", consommee_le: "2026-10-05T10:00:00Z", lancement_id: LC }), modele_id: null, lignes: courte });
+    await journalAuHaut(courte, LC);
+    const a = await hausse(LC, 42.5);
+    const sc = (await q(`select series, series_completes from occurrence_exercices where intention_id=$1 and emplacement=$2`, [o.id, LD[k].emplacement])).rows[0];
+    t("Vérif · courte sans modèle écrit : la preuve est gardée (2 sur " + LD[k].series + ") et la hausse refusée (`version_reduite`), aucune cible",
+      o.resultat === "ok" && sc.series === 2 && sc.series_completes === LD[k].series && a.resultat === "version_reduite"
+        && (await q(`select count(*)::int n from cibles_acceptees where programme_id=$1`, [P])).rows[0].n === 0, JSON.stringify([o, sc, a]));
+    const el = (await q(`select exercise_list from intentions_entrainement where id=$1`, [o.id])).rows[0].exercise_list;
+    t("Vérif · la projection écrite porte la marque `reduite`", el.find((e: { prescription: { emplacement: number } }) => e.prescription.emplacement === LD[k].emplacement)?.prescription.reduite === true);
+  }
+  {
+    // le cas exact de Codex : `reduite` sans le nombre complet, modèle nul
+    const { P, E } = await programmeRF();
+    const courte = LD.map((l, i) => (i === k ? { ...l, series: 2, reduite: true } : l));
+    const LC = "f1f1f1f1-0000-0000-0000-000000000002";
+    await rpc("ecrire_occurrence", { intention: occRF(P, E, { statut: "faite", consommee_le: "2026-10-05T10:00:00Z", lancement_id: LC }), modele_id: null, lignes: courte });
+    await journalAuHaut(courte, LC);
+    const a = await hausse(LC, 42.5);
+    t("Vérif · réduite sans preuve et sans modèle : la comparabilité n'est pas établie, rien n'est créé",
+      a.resultat === "non_comparable" && (await q(`select count(*)::int n from cibles_acceptees where programme_id=$1`, [P])).rows[0].n === 0, JSON.stringify(a));
+  }
+  {
+    // une ligne écrite AVANT la vérification finale (ni modèle ni preuve) ne propose plus rien
+    const { P, E } = await programmeRF();
+    const LC = "f1f1f1f1-0000-0000-0000-000000000003";
+    const o = await rpc("ecrire_occurrence", { intention: occRF(P, E, { statut: "faite", consommee_le: "2026-10-05T10:00:00Z", lancement_id: LC }), modele_id: null, lignes: LD });
+    await q(`update occurrence_exercices set series_completes = null where intention_id=$1`, [o.id]);
+    await journalAuHaut(LD, LC);
+    t("Vérif · ancienne ligne sans modèle ni preuve : `non_comparable`", (await hausse(LC, 42.5)).resultat === "non_comparable");
+  }
+  {
+    // une séance complète sans modèle écrit propose toujours
+    const { P, E } = await programmeRF();
+    const LC = "f1f1f1f1-0000-0000-0000-000000000004";
+    await rpc("ecrire_occurrence", { intention: occRF(P, E, { statut: "faite", consommee_le: "2026-10-05T10:00:00Z", lancement_id: LC }), modele_id: null, lignes: LD });
+    await journalAuHaut(LD, LC);
+    const a = await hausse(LC, 42.5);
+    t("Vérif · complète sans modèle écrit : la hausse reste possible", a.resultat === "ok", JSON.stringify(a));
+  }
+
+  /* 6 · la restauration lit l'emplacement explicite du journal. */
+  {
+    const { P, E } = await programmeRF();
+    // une source qui ouvre une hausse : 42,5 kg visant la prochaine occurrence (rang 3)
+    const S = "f2f2f2f2-0000-0000-0000-000000000001";
+    await rpc("ecrire_occurrence", { intention: occRF(P, E, { statut: "faite", consommee_le: "2026-10-05T10:00:00Z", lancement_id: S }), modele_id: null, lignes: LD });
+    await journalAuHaut(LD, S);
+    const v1 = await hausse(S, 42.5);
+    const c1 = (await q(`select * from cibles_acceptees where id=$1`, [v1.cible_id])).rows[0];
+    const o1: CibleOuverte = { id: c1.id, exercice_cle: c1.exercice_cle, charge_type: c1.charge_type, charge: Number(c1.charge), reps_cible: c1.reps_cible,
+      reps_min: c1.reps_min, reps_max: c1.reps_max, rang_vise: c1.rang_vise };
+    const copie = appliquerCibles(LD, [o1], c1.rang_vise);
+    const prep = await rpc("ecrire_occurrence", { intention: occRF(P, E, { rang: c1.rang_vise }), modele_id: null, lignes: copie });
+    // lancée en version COURTE : la ligne 0 et le repère, rien entre les deux
+    const courte = [copie[0], copie[k]].map((l) => ({ ...l }));
+    const LP = "f2f2f2f2-0000-0000-0000-000000000002";
+    await rpc("enregistrer_seance", { lancement_id: LP, proprietaire: U, titre: "Pull", duree_s: 600, exercices: projeterPrescription(courte), series: [] });
+    const v2 = await hausse(S, 45, { appliquer_a: prep.id });
+    const ligne = async () => (await q(`select charge_cible, cible_id from occurrence_exercices where intention_id=$1 and emplacement=$2`, [prep.id, LD[k].emplacement])).rows[0];
+    const avant = await ligne();
+    await q(`update intentions_entrainement set statut='faite', consommee_le=now(), lancement_id=$2 where id=$1`, [prep.id, LP]);
+    const apres = await ligne();
+    const etat = async () => (await q(`select id, consommee_le is not null as consommee from cibles_acceptees where id = any($1) order by charge`, [[v1.cible_id, v2.cible_id]])).rows;
+    const e1 = await etat();
+    t("Vérif · (repère à un emplacement que la version courte décale : " + LD[k].emplacement + " devient 1)", k >= 2 && avant && Number(avant.charge_cible) === 45, JSON.stringify([k, avant, v2]));
+    t("Vérif · fermeture d'une courte ajustée : la charge suivie (42,5) est restaurée, pas l'ajustement (45)",
+      Number(apres.charge_cible) === 42.5 && apres.cible_id === v1.cible_id, JSON.stringify(apres));
+    t("Vérif · la version suivie est consommée, l'ajustement ne l'est pas",
+      e1[0].id === v1.cible_id && e1[0].consommee === true && e1[1].consommee === false, JSON.stringify(e1));
+    await q(`select public.restaurer_copie_suivie($1)`, [prep.id]);
+    await q(`select public.consommer_cibles($1)`, [prep.id]);
+    const rejeu = await ligne();
+    t("Vérif · rejouée, la restauration ne bouge plus rien",
+      Number(rejeu.charge_cible) === 42.5 && rejeu.cible_id === v1.cible_id && JSON.stringify(await etat()) === JSON.stringify(e1), JSON.stringify(rejeu));
+  }
+  {
+    // un journal ANCIEN (aucun emplacement explicite) garde le repli par ordinal
+    const { P, E } = await programmeRF();
+    const S = "f3f3f3f3-0000-0000-0000-000000000001";
+    await rpc("ecrire_occurrence", { intention: occRF(P, E, { statut: "faite", consommee_le: "2026-10-05T10:00:00Z", lancement_id: S }), modele_id: null, lignes: LD });
+    await journalAuHaut(LD, S);
+    const v1 = await hausse(S, 42.5);
+    const c1 = (await q(`select * from cibles_acceptees where id=$1`, [v1.cible_id])).rows[0];
+    const copie = appliquerCibles(LD, [{ id: c1.id, exercice_cle: c1.exercice_cle, charge_type: c1.charge_type, charge: Number(c1.charge), reps_cible: c1.reps_cible,
+      reps_min: c1.reps_min, reps_max: c1.reps_max, rang_vise: c1.rang_vise }], c1.rang_vise);
+    const prep = await rpc("ecrire_occurrence", { intention: occRF(P, E, { rang: c1.rang_vise }), modele_id: null, lignes: copie });
+    const ancien = projeterPrescription(copie).map((e) => { const { emplacement: _e, ...reste } = e.prescription ?? {}; void _e; return { ...e, prescription: reste }; });
+    const LP = "f3f3f3f3-0000-0000-0000-000000000002";
+    await rpc("enregistrer_seance", { lancement_id: LP, proprietaire: U, titre: "Pull", duree_s: 600, exercices: ancien, series: [] });
+    await hausse(S, 45, { appliquer_a: prep.id });
+    await q(`update intentions_entrainement set statut='faite', consommee_le=now(), lancement_id=$2 where id=$1`, [prep.id, LP]);
+    const l = (await q(`select charge_cible from occurrence_exercices where intention_id=$1 and emplacement=$2`, [prep.id, LD[k].emplacement])).rows[0];
+    t("Vérif · journal ancien sans emplacement : repli sur l'ordinal, la copie suivie est restaurée", Number(l.charge_cible) === 42.5, JSON.stringify(l));
+  }
 }
 
 console.log(`${ok} OK, ${ko} échec(s)`);

@@ -234,9 +234,9 @@ export function libelleAllege(zone: Zone): string {
  * emplacements ne changent pas : c'est la même séance, avec moins de
  * volume là où ça vient de travailler. Pure.
  */
-export function allegerPourZone<T extends { fonction: Fonction; series: number }>(lignes: readonly T[], zone: Zone): T[] {
+export function allegerPourZone<T extends { fonction: Fonction; series: number; series_completes?: number }>(lignes: readonly T[], zone: Zone): T[] {
   return lignes.map((l) => (zonesDeFonction(l.fonction).includes(zone) && l.series > 1
-    ? { ...l, series: l.series - 1, reduite: true }
+    ? { ...l, series: l.series - 1, reduite: true, series_completes: l.series_completes ?? l.series }
     : { ...l }));
 }
 

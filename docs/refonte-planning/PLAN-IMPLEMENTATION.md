@@ -886,3 +886,19 @@ Migration : `supabase/migrations/20261012_revue_finale.sql` (rejouable, remplace
 - **P2 · composeur.** « Aucun jour choisi » au lieu d'une fréquence inventée, « N fois dans le cycle », et la limite de la banque dite (« 1 exercice d'abdos seulement ici : la séance travaille surtout le dos »).
 
 Restent des limites assumées, à présenter à Louis : le seuil « compte » (2 séries par repère) est une heuristique commune et pas un minimum déclaré par séance ; « À chaque fois » masqué ; pas de proposition de changement de repère ; Push salle sans vivier de complémentaires ; mobilier `systeme` non proposé en R9c ; la rotation ignore un `rang_depart` reporté (programmes d'avant R9c seulement).
+
+## Vérification finale de Codex (sur `ab89d67`) · deux raccords corrigés (2026-10-07)
+
+Même migration finale (`20261012_revue_finale.sql`), toujours rejouable.
+
+- **La restauration lit l'emplacement du journal.** `restaurer_copie_suivie` est redéfinie : elle prend `prescription.emplacement` de chaque exercice suivi. L'ordinal ne sert qu'à un journal ancien où aucun exercice ne porte ce champ. Cas de Codex rejoué (Dos & fessiers court, hip thrust à 3 lancé à 42,5 kg, ajusté à 45 pendant la séance) : la fermeture restaure 42,5, consomme cette version et laisse l'ajustement ouvert. Le rejeu ne change rien.
+- **La preuve de la version complète survit sans modèle écrit.** Nouvelle colonne `occurrence_exercices.series_completes`, posée par `ecrire_occurrence` :
+  - une ligne réduite garde le nombre de séries de sa version complète, envoyé par l'écran (`lignesCourtes`, `allegerPourZone`) ;
+  - une ligne réduite sans ce nombre reste sans preuve ;
+  - une ligne entière vaut sa propre preuve.
+
+  `accepter_cible` rend `version_reduite` si la ligne a moins de séries que sa preuve ou que son modèle. Elle rend `non_comparable` si elle n'a ni l'une ni l'autre : c'est le cas exact de Codex, et aussi celui des lignes sans modèle écrites avant cette migration. La projection SQL porte `reduite` dans les deux sens (lignes envoyées, lignes relues).
+- **Bancs.**
+  - `check:prescription-sql` : 149 OK.
+  - Deux témoins : la restauration remise sur l'ordinal fait échouer 3 contrôles ; la garde sans preuve, 3 autres.
+  - `check:programme` : 3 contrôles en plus, et un témoin sur `lignesCourtes`.

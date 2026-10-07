@@ -242,6 +242,10 @@ export type LignePrescription = {
    *  prescription complète (R8 courte, R7 plus légère). La base le
    *  retrouve d'elle-même en comparant au modèle ; ici, c'est l'écran. */
   reduite?: boolean;
+  /** Vérification finale · le nombre de séries de la version COMPLÈTE,
+   *  posé sur une ligne réduite. La base le garde (`series_completes`) :
+   *  c'est la preuve de la réduction même sans modèle écrit. */
+  series_completes?: number;
 };
 
 /** L'orientation se lit dans les objectifs, avec les mêmes mots qu'avant R2. */
@@ -504,7 +508,7 @@ export function projeterPrescription(lignes: LignePrescription[]): ExercicePresc
         /* R4 · seulement s'il y a une cible : une prescription sans cible
            garde exactement la projection d'avant. */
         ...(l.cible_id ? { charge_cible: l.charge_cible ?? null, cible_id: l.cible_id } : {}),
-        ...(l.reduite ? { reduite: true as const } : {}),
+        ...(l.reduite || (l.series_completes ?? 0) > l.series ? { reduite: true as const } : {}),
       },
     };
   });

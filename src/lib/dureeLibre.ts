@@ -232,7 +232,10 @@ export function appliquerVersion<T>(liste: readonly T[], v: VersionCourte, poser
 /** Les lignes de prescription d'une version courte. Chaque ligne garde
  *  SON emplacement (revue finale, P1) et dit si elle a perdu des séries. */
 export function lignesCourtes(lignes: readonly LignePrescription[], v: VersionCourte): LignePrescription[] {
-  return appliquerVersion(lignes, v, (l, s) => ({ ...l, series: s, ...(s < l.series ? { reduite: true } : {}) }));
+  return appliquerVersion(lignes, v, (l, s) => ({
+    ...l, series: s,
+    ...(s < l.series ? { reduite: true, series_completes: l.series_completes ?? l.series } : {}),
+  }));
 }
 
 /** Les exercices projetés d'une version courte. L'identité de chaque

@@ -11,6 +11,11 @@
       perdu des séries par rapport à son modèle (`version_reduite`).
    3. `activer_programme` vérifie l'état APPROUVÉ des réservations, sous
       verrou, et reconnaît son propre rejeu (`activation_id`).
+   4. `retirer_le_jour` et `deplacer_reservation` : les gestes en une
+      transaction.
+   5. `occurrence_exercices.series_completes` : la preuve de la version
+      complète, même sans modèle écrit (`ecrire_occurrence` la pose).
+   6. `restaurer_copie_suivie` lit l'emplacement explicite du journal.
    ════════════════════════════════════════════════════════════════════ */
 
 
@@ -48,6 +53,12 @@ as $$
       ) || case when nullif(l->>'cible_id', '') is not null
                 then jsonb_build_object('charge_cible', (l->>'charge_cible')::numeric, 'cible_id', l->>'cible_id')
                 else '{}'::jsonb end
+        /* Vérification finale · la marque de réduction suit la ligne, qu'on
+           projette les lignes envoyées (`reduite`) ou celles relues en base
+           (`series_completes`). */
+        || case when coalesce((l->>'reduite')::boolean, false)
+                  or coalesce((l->>'series_completes')::int > (l->>'series')::int, false)
+                then jsonb_build_object('reduite', true) else '{}'::jsonb end
     )
     || case when l->>'mesure' = 'duree' then jsonb_build_object('auto', (l->>'duree_s')::int) else '{}'::jsonb end
     order by (l->>'emplacement')::int
@@ -84,6 +95,7 @@ declare
   v_reglable  boolean;
   v_modele_occ uuid;
   v_series_modele smallint;
+  v_series_completes smallint;
 begin
   if v_user is null then raise exception 'non_connecte' using errcode = '28000'; end if;
   if v_marge is not null and v_marge not in ('aucune', '1_2', '3_plus', 'inconnue') then
@@ -109,13 +121,20 @@ begin
   end if;
 
   /* Revue finale (P1) · une ligne qui a perdu des séries par rapport à
-     son MODÈLE (version courte R8, plus légère R7) ne propose rien pour
-     la version complète : la hausse viserait un volume plus grand que
-     celui qui a été fait. Les repères ne varient jamais (R7), donc la
-     ligne du modèle au même emplacement est bien la sienne. */
-  select oe.modele_id into v_modele_occ
+     sa version COMPLÈTE (courte R8, plus légère R7) ne propose rien : la
+     hausse viserait un volume plus grand que celui qui a été fait. Deux
+     preuves, et il en faut au moins une :
+     · `series_completes`, posée à l'écriture de l'occurrence (vérification
+       finale) : elle vaut même quand le modèle du lieu n'a pas été écrit ;
+     · le MODÈLE écrit, au même emplacement (les repères ne varient jamais).
+     Sans aucune des deux, la comparabilité avec la version complète n'est
+     pas établie : on refuse, on ne devine pas. */
+  select oe.modele_id, oe.series_completes into v_modele_occ, v_series_completes
     from public.occurrence_exercices oe
    where oe.intention_id = v_int.id and oe.emplacement = v_empl;
+  if v_series_completes is not null and v_ligne.series < v_series_completes then
+    return jsonb_build_object('resultat', 'version_reduite');
+  end if;
   if v_modele_occ is not null then
     select ee.series into v_series_modele
       from public.etape_exercices ee
@@ -123,6 +142,9 @@ begin
     if v_series_modele is not null and v_ligne.series < v_series_modele then
       return jsonb_build_object('resultat', 'version_reduite');
     end if;
+  end if;
+  if v_series_completes is null and v_series_modele is null then
+    return jsonb_build_object('resultat', 'non_comparable');
   end if;
 
   if v_reps is null or v_reps < v_ligne.reps_min or v_reps > v_ligne.reps_max then
@@ -536,3 +558,203 @@ end;
 $$;
 revoke all on function public.deplacer_reservation(jsonb) from public, anon;
 grant execute on function public.deplacer_reservation(jsonb) to authenticated;
+
+
+/* ─────────────── 5. La preuve de la version complète (vérification finale) ───────────────
+
+   `version_reduite` comparait la ligne à son MODÈLE écrit. Or R2 autorise
+   une occurrence sans modèle (le modèle du lieu composé en mémoire) : la
+   garde ne s'appliquait pas. Chaque ligne garde donc, à l'écriture, le
+   nombre de séries de sa version COMPLÈTE. Les lignes d'avant restent
+   nulles : sans modèle, elles ne proposent plus rien (comparabilité non
+   établie), avec modèle la comparaison au modèle tient toujours. */
+alter table public.occurrence_exercices add column if not exists series_completes smallint;
+do $$ begin
+  if not exists (select 1 from pg_constraint where conname = 'occurrence_series_completes_check') then
+    alter table public.occurrence_exercices add constraint occurrence_series_completes_check
+      check (series_completes is null or series_completes between series and 12);
+  end if;
+end $$;
+
+create or replace function public.ecrire_occurrence(p jsonb)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_user      uuid := auth.uid();
+  i           jsonb := p->'intention';
+  v_prog      uuid := nullif(i->>'programme_id', '')::uuid;
+  v_etape     uuid := nullif(i->>'etape_consommee_id', '')::uuid;
+  v_statut    text := i->>'statut';
+  v_rang      integer := nullif(i->>'rang', '')::integer;
+  v_adapt     uuid := nullif(i->>'adaptation_id', '')::uuid;
+  v_modele    uuid := nullif(p->>'modele_id', '')::uuid;
+  v_lignes    jsonb := coalesce(p->'lignes', '[]'::jsonb);
+  v_id        uuid;
+  v_contrainte text;
+begin
+  if v_user is null then raise exception 'non_connecte' using errcode = '28000'; end if;
+  if v_statut not in ('prevue', 'faite') then raise exception 'statut_invalide' using errcode = '22023'; end if;
+  if v_prog is null or v_etape is null then raise exception 'etape_manquante' using errcode = '22023'; end if;
+  if nullif(i->>'programme_seance_id', '')::uuid is distinct from v_etape then
+    raise exception 'provenance_differente' using errcode = '22023';
+  end if;
+  if not exists (select 1 from public.programmes where id = v_prog and user_id = v_user) then
+    raise exception 'programme_inconnu' using errcode = '42501';
+  end if;
+  if v_adapt is not null and not exists (
+    select 1 from public.adaptations_entrainement where id = v_adapt and user_id = v_user
+  ) then
+    raise exception 'adaptation_inconnue' using errcode = '42501';
+  end if;
+  if v_modele is not null and not exists (
+    select 1 from public.etape_modeles m where m.id = v_modele and m.programme_seance_id = v_etape
+  ) then
+    raise exception 'modele_inconnu' using errcode = '42501';
+  end if;
+  if jsonb_array_length(v_lignes) = 0 or jsonb_array_length(v_lignes) > 12 then
+    raise exception 'lignes_invalides' using errcode = '22023';
+  end if;
+
+  if v_statut = 'prevue' and v_rang is not null then
+    select id into v_id from public.intentions_entrainement
+     where user_id = v_user and programme_id = v_prog and rang = v_rang;
+    if v_id is not null then
+      return jsonb_build_object('resultat', 'deja', 'id', v_id, 'rang', v_rang);
+    end if;
+  end if;
+
+  /* R4 · la version nommée est reprise depuis la table, ou retirée. */
+  v_lignes := public.lignes_avec_cibles(v_lignes, v_user, v_prog, v_etape, v_rang, v_statut);
+
+  begin
+    insert into public.intentions_entrainement (
+      user_id, date, type, title, difficulty, location, exercise_list, session_id,
+      statut, nature, origine, consommee_le, programme_id, programme_seance_id,
+      etape_consommee_id, rang, adaptation_id, lancement_id, updated_at
+    ) values (
+      v_user,
+      nullif(i->>'date', '')::date,
+      coalesce(nullif(i->>'type', ''), 'Force'),
+      coalesce(i->>'title', ''),
+      coalesce(nullif(i->>'difficulty', ''), 'Intermédiaire'),
+      nullif(i->>'location', ''),
+      public.projeter_prescription(v_lignes),
+      null,
+      v_statut,
+      'seance',
+      coalesce(nullif(i->>'origine', ''), 'utilisateur'),
+      case when v_statut = 'faite' then (i->>'consommee_le')::timestamptz end,
+      v_prog, v_etape, v_etape, v_rang, v_adapt,
+      nullif(i->>'lancement_id', '')::uuid,
+      now()
+    )
+    returning id, rang into v_id, v_rang;
+  exception when unique_violation then
+    get stacked diagnostics v_contrainte = constraint_name;
+    if v_statut = 'prevue' and v_contrainte = 'uniq_occurrence' then
+      select id into v_id from public.intentions_entrainement
+       where user_id = v_user and programme_id = v_prog and rang = v_rang;
+      return jsonb_build_object('resultat', 'deja', 'id', v_id, 'rang', v_rang);
+    end if;
+    return jsonb_build_object('resultat', 'doublon', 'contrainte', v_contrainte);
+  end;
+
+  insert into public.occurrence_exercices (
+    intention_id, user_id, modele_id, emplacement, exercice_cle, exercice_nom, fonction, statut,
+    series, mesure, reps_min, reps_max, reps_cible, duree_s, repos_s, transition_s, charge_type, unite,
+    charge_cible, charge_origine, cible_id, series_completes
+  )
+  select v_id, v_user, v_modele, l.emplacement, l.exercice_cle, left(l.exercice_nom, 120), l.fonction, l.statut,
+         l.series, l.mesure, l.reps_min, l.reps_max, l.reps_cible, l.duree_s, l.repos_s, l.transition_s,
+         l.charge_type, coalesce(l.unite, ''),
+         l.charge_cible, coalesce(l.charge_origine, 'aucune'), l.cible_id,
+         /* Vérification finale · la preuve de la version complète. Une
+            ligne réduite sans son nombre complet (ou avec un nombre qui ne
+            dépasse pas le sien) reste SANS preuve : `accepter_cible`
+            refusera, il ne devinera pas. */
+         case when coalesce(l.reduite, false)
+              then case when l.series_completes > l.series and l.series_completes <= 12 then l.series_completes end
+              else case when l.series_completes between l.series and 12 then l.series_completes else l.series end
+         end
+    from jsonb_to_recordset(v_lignes) as l(
+      emplacement smallint, exercice_cle text, exercice_nom text, fonction text, statut text,
+      series smallint, mesure text, reps_min smallint, reps_max smallint, reps_cible smallint,
+      duree_s integer, repos_s integer, transition_s integer, charge_type text, unite text,
+      charge_cible numeric, charge_origine text, cible_id uuid,
+      reduite boolean, series_completes smallint
+    );
+
+  return jsonb_build_object('resultat', 'ok', 'id', v_id, 'rang', v_rang);
+end;
+$$;
+
+revoke all on function public.ecrire_occurrence(jsonb) from public, anon;
+grant execute on function public.ecrire_occurrence(jsonb) to authenticated;
+
+
+/* ─────────────── 6. La restauration lit l'emplacement du journal ─────────────── */
+
+create or replace function public.restaurer_copie_suivie(p_intention uuid)
+returns boolean
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  i      record;
+  v_exos jsonb;
+  n      integer;
+  v_explicite boolean;
+begin
+  select id, user_id, lancement_id into i from public.intentions_entrainement where id = p_intention;
+  if i.lancement_id is null then return false; end if;
+  select exercises into v_exos from public.workout_sessions
+   where user_id = i.user_id and lancement_id = i.lancement_id;
+  if v_exos is null or jsonb_typeof(v_exos) <> 'array' then return false; end if;
+
+  /* Vérification finale · l'emplacement EXPLICITE de chaque exercice
+     suivi (projection de la revue). Une version courte compacte la liste :
+     l'ordinal n'y désigne plus la ligne. L'ordinal ne sert de repli qu'à
+     un journal ANCIEN où aucun exercice ne porte ce champ ; dans un
+     journal qui le porte, un exercice sans lui n'est rattaché à rien. */
+  v_explicite := exists (
+    select 1 from jsonb_array_elements(v_exos) e(ex)
+     where jsonb_typeof(e.ex->'prescription'->'emplacement') = 'number');
+
+  with suivie as (
+    select case when v_explicite then (e.ex->'prescription'->>'emplacement')::smallint
+                else (e.n - 1)::smallint end as emplacement,
+           nullif(e.ex->'prescription'->>'cible_id', '')::uuid as cid,
+           e.ex->'prescription'->>'cle' as cle,
+           substring(e.ex->>'reps' from '[0-9]+')::smallint as reps
+      from jsonb_array_elements(v_exos) with ordinality as e(ex, n)
+     where not v_explicite or jsonb_typeof(e.ex->'prescription'->'emplacement') = 'number'
+  )
+  update public.occurrence_exercices oe
+     set cible_id = c.id,
+         charge_cible = c.charge,
+         charge_origine = case when c.charge is null then 'aucune' else 'acceptee' end,
+         reps_cible = coalesce(s.reps, oe.reps_cible)
+    from suivie s
+    left join public.cibles_acceptees c on c.id = s.cid and c.user_id = i.user_id
+   where oe.intention_id = i.id and oe.emplacement = s.emplacement
+     and oe.mesure = 'reps' and s.cle = oe.exercice_cle
+     and (oe.cible_id is distinct from c.id or oe.charge_cible is distinct from c.charge
+          or oe.reps_cible is distinct from coalesce(s.reps, oe.reps_cible))
+     and (c.id is null or (c.exercice_cle = oe.exercice_cle and c.charge_type is not distinct from oe.charge_type));
+  get diagnostics n = row_count;
+  if n > 0 then
+    perform set_config('vaiiya.reprojection', 'on', true);
+    update public.intentions_entrainement
+       set exercise_list = public.projeter_prescription((
+             select jsonb_agg(to_jsonb(oe)) from public.occurrence_exercices oe where oe.intention_id = i.id))
+     where id = i.id;
+    perform set_config('vaiiya.reprojection', '', true);
+  end if;
+  return true;
+end;
+$$;
+revoke all on function public.restaurer_copie_suivie(uuid) from public, anon, authenticated;
