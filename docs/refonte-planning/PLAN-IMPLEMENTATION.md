@@ -909,3 +909,24 @@ Même migration finale (`20261012_revue_finale.sql`), toujours rejouable.
 - le test visuel global ;
 - le choix produit sur `compte` : « deux séries par repère » à titre provisoire, ou un minimum déclaré pour chaque séance ;
 - le GO de Louis.
+
+### Migration finale appliquée et vérifiée sur la vraie base (2026-10-07)
+
+- **`20261012_revue_finale.sql` collée par Louis.** Vérifié en lecture :
+  - la colonne `series_completes` et son check sont en place ;
+  - `restaurer_copie_suivie` lit l'emplacement explicite ;
+  - `accepter_cible` porte les deux preuves et `non_comparable` ;
+  - `ecrire_occurrence` et `projeter_prescription` sont à jour ;
+  - `restaurer_copie_suivie` et `consommer_cibles` ne sont pas exécutables par `authenticated`.
+- **Règle `compte` : option A retenue par Louis, à titre provisoire.** Une séance raccourcie compte si chaque repère garde au moins 2 séries. Elle reste la même pour toutes les séances, sans minimum déclaré séance par séance.
+- **Essais sous `authenticated` avec deux vrais comptes**, dans des blocs annulés par une exception finale. Les données envoyées sont générées par les mêmes fonctions que les bancs. Les cas sont ceux de la vérification finale de Codex, sur Dos & fessiers en salle (hip thrust à l'emplacement 3).
+  - Séance courte avec preuve et sans modèle : la preuve `2/4` est stockée, la projection porte `reduite=true`, `accepter_cible` rend `version_reduite` et aucune cible n'est créée.
+  - Ligne réduite sans nombre et sans modèle (le cas exact de Codex) : la preuve reste nulle et le résultat est `non_comparable`, sans cible.
+  - Séance complète sans modèle : `ok`.
+  - Restauration (version courte `[0,3]` lancée à 42,5, ajustée à 45) : la fermeture restaure 42,5, consomme v1 et laisse v2 ouverte. Le rejeu ne bouge rien.
+  - Journal ancien sans emplacement : le repli sur l'ordinal donne le même résultat.
+  - Droits pour A : écrire directement la preuve touche 0 ligne ; appeler `restaurer_copie_suivie` ou `consommer_cibles` est refusé (`42501`).
+  - Droits pour B : il voit 0 occurrence, 0 cible et 0 intention de A. Accepter une cible sur la séance de A rend `seance_introuvable`. Modifier la preuve ou les intentions de A touche 0 ligne. Écrire dans un programme de A est refusé (`programme_inconnu`).
+  - Le déclencheur de fermeture est différé : les essais le forcent avec `set constraints … immediate`, sinon il ne joue qu'au moment où la transaction est validée.
+  - Après coup, la base a été relue : aucun programme, séance, intention, occurrence ni cible d'essai n'est resté.
+- **Reste :** le test visuel global de Louis, puis son GO pour la fusion.
