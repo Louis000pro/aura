@@ -1640,7 +1640,7 @@ export async function loadLieu(userId: string): Promise<Lieu> {
   try {
     const supabase = createClient();
     const { data, error } = await supabase
-      .from("profiles")
+      .from("mon_profil")
       .select("training_location, training_equipment")
       .eq("id", userId)
       .maybeSingle();

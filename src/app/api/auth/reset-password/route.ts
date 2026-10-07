@@ -10,7 +10,7 @@ export async function POST(req: NextRequest) {
     if (!email || !email.includes("@")) {
       return Response.json({ error: "Email invalide" }, { status: 400 });
     }
-    if (!autoriserEnvoiEmail("reset", email)) {
+    if (!(await autoriserEnvoiEmail("reset", email))) {
       return Response.json({ error: "Trop de demandes. Réessaie dans une heure." }, { status: 429 });
     }
 

@@ -52,6 +52,14 @@ export default function RappelProfil() {
   const [aRepondre, setARepondre] = useState(false);
   const [ecarte, setEcarte] = useState(false);
 
+  /* ⚠️ Ce composant vit dans le layout : il ne se remonte jamais. Lu une
+     seule fois, il gardait le « pas encore répondu » d'un compte neuf même
+     après le questionnaire, et le rappel revenait sur une inscription
+     pourtant complète. Tant qu'il est affiché, on relit donc à chaque
+     changement de page (en revenant de /bienvenue, en particulier) ; une
+     fois tu, plus aucune lecture. */
+  const relecture = aRepondre ? pathname : "";
+
   useEffect(() => {
     if (!user?.id || isLoading) return;
     let vivant = true;
@@ -68,7 +76,7 @@ export default function RappelProfil() {
       setARepondre(data?.onboarding_completed === false);
     })();
     return () => { vivant = false; };
-  }, [user?.id, isLoading]);
+  }, [user?.id, isLoading, relecture]);
 
   const muette = MUETTES.some((r) => pathname === r || pathname.startsWith(`${r}/`))
     || estSurfacePublique(pathname, true);

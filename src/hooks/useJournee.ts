@@ -196,7 +196,7 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
     const derniere = () => numero === lectureEnCours.current;
     const supabase = createClient();
     const { data: prof, error: errProfil } = await supabase
-      .from("profiles")
+      .from("mon_profil")
       .select("onboarding_level, onboarding_sessions_week, onboarding_goals")
       .eq("id", user.id)
       .maybeSingle();

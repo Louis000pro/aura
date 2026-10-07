@@ -89,9 +89,12 @@ export async function enregistrerProfil(userId: string, d: OnboardingData): Prom
   const complet = profilComplet(d);
 
   const supabase = createClient();
-  await supabase.from("profiles").upsert({
-    id:                       userId,
-    onboarding_age:           d.age             ? parseInt(d.age)             : null,
+  /* ⚠️ UPDATE, puis INSERT si la ligne manque, et JAMAIS un upsert : un
+     upsert PostgREST écrit `SET col = EXCLUDED.col`, et lire EXCLUDED d'une
+     colonne privée exige le droit SELECT dessus, retiré aux comptes depuis
+     20261006_profils_colonnes_privees.sql. L'upsert échouerait en silence. */
+  const reponses = {
+    onboarding_age:          d.age             ? parseInt(d.age)             : null,
     onboarding_height:        d.height          ? parseInt(d.height)          : null,
     onboarding_weight:        d.weight          ? parseFloat(d.weight)        : null,
     onboarding_gender:        d.gender          || null,
@@ -101,7 +104,9 @@ export async function enregistrerProfil(userId: string, d: OnboardingData): Prom
     onboarding_meals_day:     d.mealsPerDay     ? parseInt(d.mealsPerDay)     : null,
     onboarding_diet:          d.diet            || null,
     onboarding_completed:     complet,
-  }, { onConflict: "id" });
+  };
+  const { data: maj } = await supabase.from("profiles").update(reponses).eq("id", userId).select("id");
+  if (!maj?.length) await supabase.from("profiles").insert({ id: userId, ...reponses });
 
   /* ⚠️ Le poids saisi ici est AUSSI une pesée du jour. Cette écriture
      vivait dans le formulaire des Paramètres, donc le même poids donné à

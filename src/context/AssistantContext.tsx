@@ -651,7 +651,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
     const supabase = createClient();
 
     const { data: profile } = await supabase
-      .from("profiles")
+      .from("mon_profil")
       .select("onboarding_age, onboarding_height, onboarding_weight, onboarding_gender, onboarding_goals, onboarding_level, onboarding_sessions_week, onboarding_meals_day, onboarding_diet")
       .eq("id", user.id)
       .maybeSingle();
@@ -1406,7 +1406,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       }
       const supabase = createClient();
       const { data: prof } = await supabase
-        .from("profiles")
+        .from("mon_profil")
         .select("onboarding_level, onboarding_sessions_week, onboarding_goals")
         .eq("id", user.id)
         .maybeSingle();

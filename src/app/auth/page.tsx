@@ -176,7 +176,7 @@ const identifiantValide = (v: string) => {
 
 export default function AuthPage() {
   const router = useRouter();
-  const { signUp, signIn, signInIdentifiant, signInWithGoogle, resetPassword, user, isLoading } = useAuth();
+  const { signIn, signInIdentifiant, signInWithGoogle, resetPassword, user, isLoading } = useAuth();
 
   // Redirige vers le dashboard si déjà connecté
   useEffect(() => {
@@ -320,25 +320,18 @@ export default function AuthPage() {
     setOtpLoading(true);
     setOtpError(null);
 
-    // Étape 2 : vérifier le code
+    // Étape 2 : le serveur vérifie le code ET crée le compte. La page ne
+    // crée plus rien elle-même : sans le bon code, aucun compte n'existe.
     const verifyRes = await fetch("/api/auth/verify-otp", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ token: otpToken, otp: otpCode }),
+      body: JSON.stringify({ token: otpToken, otp: otpCode, pseudo, name, lastName, password }),
     });
-    const verifyJson = await verifyRes.json();
+    const verifyJson = await verifyRes.json().catch(() => ({}));
     if (!verifyRes.ok || verifyJson.error) {
       setOtpError(verifyJson.error ?? "Code incorrect ou expiré.");
       setOtpCode("");
       setOtpLoading(false);
-      return;
-    }
-
-    // Étape 3 : créer le compte Supabase (email confirmé = vrai)
-    const err = await signUp({ pseudo, name, lastName, email, password });
-    if (err && err.message !== "User already registered") {
-      setOtpLoading(false);
-      setOtpError(err.message);
       return;
     }
 

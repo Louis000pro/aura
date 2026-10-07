@@ -58,6 +58,37 @@ export function autoriserRafale(
  * Envoi d'e-mail : le cas historique, inchangé (même seau, même fenêtre d'une
  * heure, même normalisation de l'adresse).
  */
-export function autoriserEnvoiEmail(usage: string, email: string, maxParHeure = 3): boolean {
-  return autoriserRafale(usage, email.toLowerCase().trim(), maxParHeure, FENETRE_MS);
+export function autoriserEnvoiEmail(usage: string, email: string, maxParHeure = 3): Promise<boolean> {
+  return autoriserEssai(usage, email.toLowerCase().trim(), maxParHeure, FENETRE_MS);
+}
+
+/**
+ * Le compteur PARTAGÉ, à utiliser pour tout ce qui protège un compte
+ * (connexion, code reçu par e-mail, envoi d'e-mail). Il vit en base
+ * (`autoriser_essai`, 20261006_securite_lot2.sql), donc il est commun à
+ * toutes les instances Vercel et survit à un redémarrage.
+ *
+ * Si la base ne répond pas (SQL pas encore collé, panne), on retombe sur le
+ * compteur en mémoire plutôt que de bloquer tout le monde ou de tout laisser
+ * passer.
+ */
+export async function autoriserEssai(
+  usage: string,
+  cle: string,
+  max: number,
+  fenetreMs: number = FENETRE_MS,
+): Promise<boolean> {
+  try {
+    const { createAdminClient } = await import("@/lib/supabase-admin");
+    const { data, error } = await createAdminClient().rpc("autoriser_essai", {
+      p_cle: `${usage}:${cle}`,
+      p_max: max,
+      p_fenetre_s: Math.ceil(fenetreMs / 1000),
+    });
+    if (error || typeof data !== "boolean") throw error ?? new Error("réponse inattendue");
+    return data;
+  } catch (e) {
+    console.warn("[rateLimit] compteur partagé indisponible, repli en mémoire :", e instanceof Error ? e.message : e);
+    return autoriserRafale(usage, cle, max, fenetreMs);
+  }
 }

@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { createAdminClient } from "@/lib/supabase-admin";
-import { autoriserRafale } from "@/lib/rateLimit";
+import { autoriserEssai } from "@/lib/rateLimit";
 
 const FORME_EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -30,7 +30,13 @@ export async function POST(req: NextRequest) {
     }
 
     // Garde-fou anti-énumération : on limite les tentatives par identifiant.
-    if (!autoriserRafale("login-pseudo", identifiant.toLowerCase(), 30)) {
+    // Par identifiant ET par adresse IP : un robot qui essaie un mot de passe
+    // sur mille comptes différents ne passe plus sous le seuil par compte.
+    const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "inconnue";
+    if (
+      !(await autoriserEssai("login-pseudo", identifiant.toLowerCase(), 30)) ||
+      !(await autoriserEssai("login-ip", ip, 60))
+    ) {
       return Response.json({ error: "Trop de tentatives. Réessaie dans un moment." }, { status: 429 });
     }
 

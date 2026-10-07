@@ -142,7 +142,7 @@ export default function ParcoursBienvenue() {
     (async () => {
       const supabase = createClient();
       const { data: p } = await supabase
-        .from("profiles")
+        .from("mon_profil")
         .select("onboarding_age, onboarding_height, onboarding_weight, onboarding_gender, onboarding_goals, onboarding_level, onboarding_sessions_week, onboarding_meals_day, onboarding_diet, onboarding_completed")
         .eq("id", user.id)
         .maybeSingle();
