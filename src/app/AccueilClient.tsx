@@ -206,9 +206,10 @@ function Dashboard() {
 
     const enCache = lireRecap(user.id, parisDay);
     if (enCache) {
-      // Un admin le revoit à chaque ouverture : c'est comme ça qu'on le teste,
-      // puisque le « déjà vu » vit dans le navigateur et ne se remet pas à zéro.
-      if ((!enCache.vu || !!user.is_admin) && !journeeVide(enCache.faits)) {
+      /* Une fois par jour, pour tout le monde, admin compris : le rejouer à
+         chaque retour sur l'accueil pour pouvoir le tester le rendait
+         envahissant (signalé par Louis le 2026-10-05). */
+      if (!enCache.vu && !journeeVide(enCache.faits)) {
         void Promise.resolve().then(() => { if (toujoursValable()) setRecap(enCache); });
       }
       return;

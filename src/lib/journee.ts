@@ -45,6 +45,9 @@ export type EtatJournee =
   | "aucune_compatible"
   /** Rien de prévu, et ce n'est pas un repos. */
   | "libre"
+  /** R9a · la résolution du programme a raté et rien n'était affiché :
+   *  on ne dit ni « rien de prévu » ni une séance au hasard. */
+  | "indisponible"
   /** La séance principale du jour est terminée. */
   | "done";
 
@@ -64,6 +67,8 @@ export function etatJournee(input: {
    * masqué) et l'écran ne dit pas la même chose dans les deux cas.
    */
   adaptationBloque?: boolean;
+  /** R9a · la résolution du programme est indisponible (tour 40). */
+  indisponible?: boolean;
 }): EtatJournee {
   if (!input.pret) return "loading";
   if (input.besoinSetup) return "setup";
@@ -71,6 +76,7 @@ export function etatJournee(input: {
   if (hasSeance(input.jour)) return "seance";
   if (estRepos(input.jour)) return "repos";
   if (input.etape) return "etape";
+  if (input.indisponible) return "indisponible";
   /* ⚠️ APRÈS L'ÉTAPE, JAMAIS AVANT. Une adaptation qui masque une partie
      du cycle laisse une étape compatible : c'est elle qu'on propose, et
      cet état ne doit pas exister. Il n'apparaît que quand il ne reste

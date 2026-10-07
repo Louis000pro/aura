@@ -451,3 +451,482 @@ Louis a collé `20261006_r3_charges.sql`. Vérifié par lecture : la fonction re
 - **Journal de A envoyé sous B** : refusé, `proprietaire_different`.
 
 Base inchangée après coup : 31 séances, 15 séries, aucune ligne de test. Note du banc : les séries se numérotent à partir de 1 (`series_realisees_serie_check`) ; un premier essai à 0 a été refusé par la base et annulé.
+
+## R4 · cadrage (2026-10-05), soumis à Codex avant code
+
+Périmètre : maquette 07, écran 05 (la question après un repère) et la proposition « La prochaine fois » de l'écran 08, posée dans l'écran de fin actuel. La refonte complète de la fin de séance reste R5.
+
+**1. La marge déclarée.** `series_realisees` gagne `marge` (`aucune` | `1_2` | `3_plus` | `inconnue`, nulle = jamais posée ou ignorée). Elle n'est écrite que sur la dernière série d'un repère réellement fait. « Ignorée » et « Je ne sais pas » restent distincts en base et identiques à l'écran (décision 57). La réponse reste modifiable après coup (décision 54) par une RPC propriétaire `corriger_marge(serie_id, marge)`.
+
+**2. Quand la question se pose (décisions 53, 54, 57).**
+- Après la dernière série d'un exercice **repère** réellement fait, dans le bloc du repos, à la place de la phrase du Guide.
+- Seulement si la réponse peut changer la prochaine cible : toutes les séries prescrites sont faites, à la même charge connue (ou au poids du corps), et la dernière atteint le haut de la fourchette. Sinon, la règle décide déjà seule.
+- Au plus 2 par séance (plafond, pas quota).
+- Si le repère termine la séance, il n'y a pas de repos : en R4 la question n'est pas posée ; R5 l'ajoute, facultative, dans le récapitulatif.
+
+**3. `prochaineCible(historique, prescription, materiel)`, pure.**
+- **Comparable** = même `exercice_cle`, même `charge_type`, même fourchette prescrite, toutes les séries prescrites `terminee` par le bouton, une seule charge connue.
+- Haut de fourchette atteint sur toutes les séries **et** marge `1_2` ou `3_plus` → proposer un cran de charge, répétitions repartant du bas.
+- Dans la fourchette → garder la charge, viser une répétition de plus. Rien à accepter, rien n'est proposé.
+- Sous la fourchette sur une série → aucune baisse automatique ; on garde la charge.
+- Marge `aucune`, `inconnue`, ignorée, charges mêlées, charge inconnue ou résultat non comparable → garder.
+- Une seule proposition par exercice ; à la fin, une seule mise en avant (le premier repère concerné), les autres derrière « Un autre ajustement proposé ».
+
+**4. Le cran (« matériel »).** On ne connaît ni les haltères ni les disques.
+- Proposition : un cran par défaut, 2,5 kg en `totale`, 2 kg en `par_haltere`, −5 kg en `assistance`.
+- La valeur proposée est visible avant « Accepter » et modifiable au même endroit, avec la saisie exacte de R3.
+- Aucune question de matériel en R4.
+
+**5. Où vit une cible acceptée** (question laissée ouverte en R2). La prochaine occurrence n'est souvent pas encore écrite.
+- Proposition : une table `cibles_acceptees(user_id, programme_seance_id, exercice_cle, charge_type, charge, reps_min, reps_max, acceptee_le, consommee_le)`, unique par `(user_id, programme_seance_id, exercice_cle)` tant que non consommée.
+- Elle est lue quand la prescription se fige (étape datée, ou lancement d'une étape libre) et recopiée dans `occurrence_exercices.charge_cible` avec `charge_origine = 'acceptee'`, puis marquée consommée.
+- « La prochaine occurrence » de cette étape, et rien d'autre (décision 44).
+
+**6. Charge de départ sans proposition acceptée.**
+- Proposition : la dernière charge déclarée sur la même clé et le même type, affichée telle quelle, sans hausse (`charge_origine = 'historique'`).
+- Sans historique, elle reste inconnue, comme en R3.
+
+**7. Poids du corps et maison (décision 49).**
+- En R4, la double progression ne joue qu'en répétitions : haut de fourchette atteint avec marge → aucune proposition de charge.
+- Les chaînes de variantes plus difficiles ne sont pas encore définies : je propose de les reporter, sans rien proposer d'inventé.
+
+### Questions pour Codex
+1. Colonne `marge` sur la série plus une RPC de correction : d'accord ?
+2. Les conditions de la question (§2), et la question non posée en R4 quand le repère finit la séance ?
+3. Les règles de `prochaineCible` (§3), notamment « rien de proposé dans la fourchette » ?
+4. Les crans par défaut, modifiables avant Accepter, sans question de matériel ?
+5. Une table `cibles_acceptees` consommée au figement, plutôt qu'une écriture dans une occurrence future ?
+6. La charge de départ historique « telle quelle » ?
+7. Les chaînes de variantes reportées ?
+
+## R4 · cadrage corrigé après le tour 29 de Codex (2026-10-05)
+
+**1. La marge.**
+- `series_realisees.marge` prend `aucune`, `1_2`, `3_plus` ou `inconnue` ; `null` veut dire jamais posée ou ignorée.
+- Elle décrit la **dernière série** d'un repère, pas les autres.
+- `corriger_marge(serie_id, marge)` vérifie que la série appartient au compte connecté, qu'elle est la dernière série prescrite de son emplacement, et que son rôle prescrit est `repere`.
+- Une correction recalcule une proposition **non encore acceptée**. Elle ne touche jamais une cible déjà acceptée ni une séance déjà préparée.
+
+**2. La question.**
+- Elle est posée **avec les mêmes critères que le calcul** (`questionUtile`, partagée avec `prochaineCible`). Les séries de l'exercice sont faites, comparables, et chacune atteint la cible en cours. Sinon la règle décide déjà seule et on ne demande rien.
+- Au plus 2 par séance.
+- Repère suivi d'un repos : la question remplace la phrase du Guide dans ce repos, sans toucher au chrono.
+- Repère qui termine la séance : la question est facultative dans l'écran de fin actuel, dans la même limite de 2. Elle s'écrit après l'enregistrement par `corriger_marge`, sans bloquer la finalisation.
+- Sans réponse, aucune cible ne change.
+
+**3. `prochaineCible(realisation, prescription, cibleEnCours, cran)`, pure.**
+- **Comparable** = même clé effective sur **toutes** les séries (A → B → A ne compte pas), même type de charge, même fourchette, même nombre de séries, toutes `terminee` par le bouton, une seule charge connue (ou aucune au poids du corps).
+- Toutes les séries au **haut de fourchette**, et marge `1_2` ou `3_plus` → **hausse de charge** : cible = charge + cran, répétitions au bas de la fourchette.
+  - Sans cran connu, on propose « Choisir la prochaine charge » avec saisie exacte, et l'écart confirmé devient le cran de cet exercice.
+  - En assistance, progresser veut dire **diminuer** l'assistance ; une proposition qui tomberait à 0 ou en dessous n'est pas faite.
+- Toutes les séries à la cible en cours mais **sous le haut**, avec la même marge → **une répétition de plus**, proposée et acceptée comme une hausse. C'est la progression au poids du corps.
+- Au poids du corps, au haut de fourchette : on garde, sans rien annoncer (les variantes sont reportées).
+- Sous la cible, marge `aucune` ou `inconnue`, absence de réponse, non comparable → on garde, aucune baisse automatique.
+- Une seule proposition par exercice. Une seule est mise en avant à la fin, les autres derrière « Un autre ajustement proposé ».
+
+**4. Les crans.**
+- Aucun cran par défaut comme recommandation.
+- `crans_exercice(user_id, exercice_cle, charge_type, cran)` retient le cran **confirmé**, c'est-à-dire l'écart accepté la dernière fois.
+- Les pas de R3 restent des raccourcis de saisie.
+
+**5. La cible acceptée.**
+- Elle vit dans `cibles_acceptees` : `user_id`, `programme_id`, `programme_seance_id`, `exercice_cle`, `charge_type`, `charge` (nulle au poids du corps), `reps_cible`, `reps_min`, `reps_max`, `rang_source`, `workout_session_id` source, `acceptee_le`, `consommee_le`.
+- Elle vise **l'occurrence suivante de la même étape** : `rang_source + longueur du cycle`. Si cette occurrence ne se fait pas, la cible reste valable pour la suivante. Une seule cible ouverte par `(user, programme, étape, exercice)`.
+- **Copie, pas consommation.** Elle est recopiée dans `occurrence_exercices` (`charge_cible`, `charge_origine = 'acceptee'`, `reps_cible`, `cible_id`) quand la prescription se fige. Elle n'est consommée que lorsque l'occurrence qui la porte est **faite**.
+- Un lancement libre garde la copie en mémoire, sans écriture ; la fermeture écrit l'occurrence avec `cible_id`, ce qui consomme la cible.
+- `charge_origine` ne décrit que la charge : une cible en répétitions seules a `charge_cible` nulle et `reps_cible` posée.
+- **Occurrence visée déjà préparée et pas commencée** : « Accepter » ne la réécrit pas en silence. La carte annonce avant le clic « S'applique à ta séance de mardi 8 », et l'acceptation met à jour cette prescription par une RPC explicite, `appliquer_cible`. Une séance commencée ou faite ne change jamais.
+
+**6. La charge de départ (`charge_origine = 'historique'`).**
+- C'est la charge de la dernière réalisation **complète et comparable** à charge homogène, sur la même clé et le même type, avec sa date affichée discrètement (« 60 kg · mardi »).
+- Jamais simplement la dernière série.
+- Une lecture ratée n'est pas « aucun historique » : la charge reste inconnue et rien n'est écrit.
+- Une occurrence déjà figée ne change pas à la lecture.
+
+**7. Variantes reportées.** Au poids du corps, au haut de fourchette, on garde la cible sans annoncer de progression.
+
+### Cas verrouillés (à tenir au banc)
+
+1. **Abandon après lancement libre** : rien n'est écrit, la cible reste ouverte et revient au lancement suivant.
+2. **Retrait puis nouvelle datation** : la prescription retirée disparaît avec l'intention, la cible reste ouverte et se recopie à la nouvelle datation.
+3. **Occurrence déjà préparée** : la proposition nomme la séance concernée. Accepter appelle `appliquer_cible` ; Garder ne touche rien. Une occurrence commencée ou faite est refusée.
+4. **Deux appareils préparent la même occurrence** : la préparation reste idempotente (R2), les deux lisent la même cible ouverte et écrivent la même copie, et la cible est consommée une seule fois.
+5. **Correction de marge** : avant acceptation, la proposition est recalculée ; après acceptation, la cible et la séance préparée ne bougent pas.
+6. **Proposition en répétitions** : acceptée, elle pose `reps_cible` sans charge et sans toucher `charge_origine`. Refusée, rien ne change.
+
+## R4 · codée (2026-10-05), en attente de la relecture de Codex et de la migration
+
+**Modules.**
+- `src/lib/progression.ts` est pur :
+  - `comparer`, `questionUtile` et `prochaineCible` partagent une même piste interne : la question et la proposition ont les mêmes critères ;
+  - `cranConfirme`, `cibleAcceptee`, `propositionsDeSeance`, `emplacementsAQuestion` (au plus 2) ;
+  - `chargeDeReference` (dernière réalisation complète et homogène, avec sa date) et `appliquerCibles`.
+- `src/lib/progressionBase.ts` gère les lectures et écritures. Une lecture ratée rend `null`, jamais « rien ».
+
+**Le tunnel.**
+- La question remplace la phrase du Guide dans le repos qui suit la dernière série d'un repère, sans toucher au chrono. La réponse va dans la marque de la série (`marge`).
+- Si le repère termine la séance, la question est facultative dans l'écran de fin. Elle s'écrit par `corriger_marge` une fois la séance enregistrée.
+- La charge de départ est l'objectif accepté (recopié dans la prescription), sinon « La dernière fois · mardi ». Après un remplacement, il n'y en a aucune.
+- « La prochaine fois » (`LaProchaineFois.tsx`) est une carte mise en avant, les autres derrière « Un autre ajustement proposé ». « Accepter » est désactivé tant que la séance n'est pas enregistrée ; « Garder » n'écrit rien.
+- Séance déjà préparée : le premier « Accepter » n'écrit rien. La base répond `occurrence_preparee`, la carte annonce « Ta séance de mardi 8 est déjà prête. On l'ajuste aussi ? », et seul « Ajuster mardi 8 » la modifie. L'annonce vient donc de la base au premier clic plutôt que d'une lecture préalable, ce qui couvre aussi une séance datée.
+
+**La copie.** `useJournee` recopie les cibles ouvertes (relues avec le contexte) dans la prescription figée, au lancement libre comme à la datation. La base reprend chaque cible **nommée** depuis sa table (`lignes_avec_cibles`), ou la retire.
+
+**Migration `20261007_r4_progression.sql`.**
+- `series_realisees.marge`, `crans_exercice`, `cibles_acceptees` (une seule ouverte par exercice d'étape), `occurrence_exercices.cible_id`.
+- La projection ne porte la cible que s'il y en a une : sans cible, la liste est identique à R2.
+- `prescription_suit_le_contenu` ignore la reprojection explicite d'`accepter_cible`.
+- `ecrire_occurrence` reprend la cible nommée. Une cible est consommée quand son occurrence est **faite**, par déclencheur sur les intentions et sur les lignes.
+- `enregistrer_seance` écrit la marge, sur un repère seulement.
+- `corriger_marge` vérifie le propriétaire et le repère.
+- `accepter_cible` relit sa source en base (séance, occurrence faite, ligne prescrite) et ne croit l'appareil sur rien d'autre.
+
+**Bancs.**
+- `check:programme` : contrôles R4 purs et de source, dont l'accord question = proposition sur 7 cas.
+- `check:prescription-sql` : 95 essais, dont les six cas verrouillés et l'équivalence de la copie TypeScript / SQL.
+- Cinq témoins vérifiés : hausse sur la seule dernière série, assistance qui augmente, consommation sans « faite », séance préparée réécrite sans être nommée, charge de départ après un remplacement.
+- `tsc`, `build`, `eslint` (93, la référence) passent. `check:echelle` : les mêmes 38 écarts qu'avant (comparaison ligne à ligne).
+
+## R4 · corrections du tour 30 de Codex (2026-10-05)
+
+Codex a refusé `6ae3cf7` sur trois défauts P1 et deux P2, reproduits dans PGlite. Tous corrigés, chacun avec son contre-exemple au banc et un témoin vérifié (le défaut remis, le banc échoue).
+
+1. **La fermeture garde la copie du lancement.**
+   - Une cible devient une suite de **versions figées** : accepter de nouveau marque l'ancienne `remplacee_le` et en écrit une nouvelle ; un déclencheur refuse toute modification de ses valeurs (`cible_immuable`).
+   - Étape libre : `lignes_avec_cibles(…, p_statut)` relit à la fermeture la version nommée par le lancement **quel que soit son état** (ouverte, remplacée, consommée ailleurs). La copie reste celle du lancement, rejeu compris.
+   - Occurrence préparée, fermée par son statut : `restaurer_copie_suivie` remet ses lignes à la copie que le journal de **ce** lancement a suivie (`workout_sessions.exercises`), puis reprojette. Sans journal, rien n'est touché.
+2. **Une cible vise UNE occurrence.**
+   - `rang_vise = rang_suivant(programme, étape)`, traduction de `attribuer_rang` (R6) : l'occurrence déjà préparée, sinon le rang que R6 donnera. Une fermeture tardive la place donc plus loin que `source + k`.
+   - La copie exige `rang = rang_vise` exactement, en TypeScript et en SQL.
+   - Une occurrence résolue (faite sans suivre la version, ou passée) **reporte** la version ouverte sur l'occurrence suivante (`reporter_cibles`). Jamais en arrière, jamais à toutes les suivantes.
+   - La résolution est un déclencheur **différé en fin de transaction** : une étape libre écrit l'intention puis ses lignes, et l'ordre copie → consommation → report ne se joue qu'une fois les lignes là.
+3. **L'historique se lit par séances entières.** `referencesDeCharge` trouve d'abord les séances récentes, puis lit **toutes** leurs séries, sans filtre de clé. Une réponse coupée écarte la dernière séance lue. `chargeDeReference` exige des séries 1…n sans trou.
+4. **La marge.**
+   - Écrans de fin : `fileDeMarges` écrit dans l'ordre par emplacement, retient la dernière réponse **confirmée**, rejoue un échec.
+   - L'acceptation envoie la marge d'où vient la proposition : `accepter_cible` l'écrit dans la même transaction et refuse (`marge_non_confirmee`) si la marge en base ne l'autorise pas.
+5. **La charge reste corrigeable** même avec un cran connu : le réglage est prérempli avec la proposition, et la valeur choisie l'emporte ; son écart devient le cran.
+6. **Détails d'interface.**
+   - Le visage du Guide accompagne la question (« listen »).
+   - Le plafond de deux compte les questions **présentées** (`poserQuestion`, à la fin de la dernière série du repère), pas les exercices éligibles à l'instant.
+7. **Confirmation d'une séance préparée.**
+   - L'occurrence visée est verrouillée (`for update`) et revérifiée dans la transaction.
+   - Faite, passée ou retirée entre l'annonce et la confirmation : `occurrence_changee`, rien n'est écrit.
+
+Bancs :
+- `check:prescription-sql` : 112 essais, dont les scénarios de Codex : 18 → 20 → fermeture, rangs 3 et 5, fermeture tardive, occurrence passée, confirmation périmée, marge « Aucune », version immuable, consommation ailleurs.
+- `check:programme` : passe, avec A → B → A, séries 1 et 3, file de marges, plafond, charge corrigée.
+- Bases inchangées : eslint 93, `check:echelle` identique, `tsc` et `build` passent.
+
+Migration toujours **non appliquée**.
+
+## R4 · corrections du tour 31 de Codex (2026-10-05)
+
+1. **L'acceptation vérifie la réalisation entière.** Avant de créer une version, `accepter_cible` relit toutes les séries de l'emplacement. Elle vérifie les critères de `prochaineCible` :
+   - le nombre prescrit, de 1 à n sans trou ;
+   - des séries terminées par le bouton ;
+   - la même clé réelle et le même type ;
+   - la fourchette prescrite ;
+   - des répétitions déclarées ;
+   - une seule charge connue (aucune au poids du corps) ;
+   - toutes les séries au moins à la cible.
+
+   Ce qu'on accepte doit en plus être la proposition que cette réalisation ouvre :
+   - au haut de la fourchette : une charge qui progresse, aux répétitions du bas ;
+   - sinon : une répétition de plus, à la même charge.
+
+   Les refus `non_comparable` et `proposition_invalide` n'écrivent rien.
+2. **Le verrou de programme de R6.**
+   - `accepter_cible` prend `pg_advisory_xact_lock(hashtextextended(programme_id::text, 6))` avant `rang_suivant`, et le garde jusqu'à la fin. La résolution différée (copie, consommation, report) prend le même.
+   - Une fermeture d'étape libre le prend déjà par `attribuer_rang`. L'acceptation calcule donc son rang après la fermeture, ou la fermeture reporte la version écrite avant elle.
+   - Une occurrence préparée fermée par son statut verrouille sa ligne puis le verrou de programme en fin de transaction. L'acceptation, elle, verrouille l'occurrence nommée en `for update nowait` : une ligne occupée répond `occurrence_occupee`, sans interblocage.
+3. **La référence de charge est comparable à la prescription actuelle.**
+   - `chargeDeReference(series, prescription)` exige la même fourchette prescrite (`reps_min_prescrites`, `reps_max_prescrites`) et le même nombre de séries.
+   - Les références sont rangées par `cleReference` (exercice, type, fourchette, séries).
+4. **Commentaires.** Le premier clic sur une séance préparée enregistre la marge déclarée, mais ne crée aucune version et ne touche aucune prescription.
+
+Bancs :
+- `check:prescription-sql` : 124 essais. Refus couverts : première série non faite, validée au minuteur, A → B → A, charges mélangées, charge inconnue, répétitions sous la cible, hausse hors fourchette haute, charge qui ne progresse pas, mauvaises répétitions.
+- **`check:r4-concurrence`** (nouveau) : un vrai PostgreSQL 16 local, deux sessions `psql` pilotées pas à pas, quatre entrelacements acceptation / fermeture, et l'invariant « aucune version ouverte sur une occurrence résolue ». Sans le verrou, il reproduit le défaut décrit par Codex (cible bloquée au rang 3). Sans le `nowait`, il produit un interblocage.
+- `check:programme` passe. Témoins vérifiés.
+- Bases inchangées : eslint 93, `check:echelle` identique, `tsc` et `build` passent.
+
+### R4 · corrections du tour 32
+
+- **Une valeur inconnue sur une seule série ne passe plus.** `bool_and` ignore les comparaisons qui rendent NULL : une série à `exercice_cle` nulle, les autres à la bonne clé, donnait `true`, et le `coalesce` autour de l'agrégat ne voyait rien. Dans `accepter_cible`, chaque critère refuse désormais l'inconnu DANS l'agrégat : `is not distinct from` pour la clé et la fourchette prescrite, `coalesce(…, false)` pour la validation et les seuils de répétitions.
+- La ligne prescrite elle-même doit porter sa fourchette, sa cible et son nombre de séries, sinon `pas_un_repere`.
+- Banc SQL : une seule clé nulle → `non_comparable`, aucune version ; une seule fourchette prescrite nulle → idem (126 essais). Témoin : avec les anciennes comparaisons, les deux échouent. `check:programme` refuse toute comparaison nue (`=`, `>=`) dans un `bool_and` du bloc de réalisation (témoin vérifié).
+- Une validation inconnue sur une série terminée n'est pas jouable au banc : la base l'interdit déjà (`(statut = 'terminee') = (validation is not null)`). La protection reste dans l'agrégat.
+
+### R4 · appliquée et vérifiée sur Supabase (2026-10-05)
+
+- `20261007_r4_progression.sql` collée par Louis. Vérifié en base : tables, fonctions, déclencheur de résolution différé, RLS en lecture seule sur `cibles_acceptees` et `crans_exercice`, `accepter_cible` et `corriger_marge` exécutables par `authenticated` seulement.
+- 27 essais avec deux vrais comptes, dans des blocs annulés (base vérifiée vide après coup) : journal rejoué sans doublon, une seule marge écrite, marge hors vocabulaire refusée, B ne corrige ni n'accepte depuis la séance de A (`introuvable`, `seance_introuvable`) et ne voit rien de A, charges mélangées et clé inconnue `non_comparable`, sous la cible et charge sans progression `proposition_invalide`, aucune version écrite après les refus, acceptation sur le rang 3 avec son cran, rejeu sans seconde version ouverte, écriture et modification directes refusées, annonce `occurrence_preparee` sans écriture puis confirmation qui pose 20 sur la séance préparée, fermeture qui consomme la version suivie, aucune version ouverte sur une occurrence résolue. Une référence de version inventée, ou celle d'un autre compte, est retirée de la copie.
+- **Non joué sur Supabase : les entrelacements de concurrence.** Le connecteur n'ouvre qu'une session à la fois ; ils restent vérifiés sur PostgreSQL 16 local (`check:r4-concurrence`, 15 contrôles).
+
+## R5 · cadrage (2026-10-05), envoyé à Codex en parallèle du code
+
+Louis a choisi de finir le chantier puis de tout essayer à la fin. Le code de R5 avance donc sans attendre la réponse de Codex ; sa relecture reste obligatoire avant la vague suivante. La maquette 07 (écrans 08 à 10) a déjà le GO de Louis : pas de nouvelle maquette.
+
+Périmètre : la fin de séance du tunnel (`phase === "done"`), et rien d'autre. Aucune migration SQL.
+
+**1. Les quatre étages (décision 58), lus dans l'ordre, sans cartes empilées.**
+- **Le moment** : le Guide et son sceau, « Séance terminée », puis une ligne `38 min · 14 séries`. Les séries sont celles **confirmées** (`seriesConfirmees`), jamais le total prévu. La grille 2 × 2 (durée, séries, calories, exercices) disparaît : les calories estimées et le compte d'exercices ne sont pas des faits mesurés.
+- **Le fait marquant**, au plus un : une comparaison précise avec son périmètre (« Hip thrust : 12 à 60 kg sur ta première série, contre 10 mardi »).
+- **La proposition** : `LaProchaineFois`, inchangée dans sa logique (R4). La question facultative d'un repère qui terminait la séance reste juste au-dessus (écran 10).
+- **La vie** : une ligne avec filet, « 🔥 9 jours · Journée validée » à gauche et le rang à droite.
+- Puis « Voir mes N exercices › ».
+
+**2. Le fait marquant : `faitMarquant` (pure, `src/lib/recapSeance.ts`).**
+- Seulement un **repère**, dont la réalisation du jour est comparable (`comparer` de R4 : complète, au bouton, même clé, même type, une seule charge).
+- La référence est **la dernière réalisation complète et comparable de la même prescription** (même clé, même type, même fourchette, même nombre de séries), lue par séances entières comme en R4. `chargeDeReference` dérive désormais de cette même fonction (`realisationDeReference`) : une seule règle de comparabilité.
+- Deux formes de progrès, et seulement deux :
+  - **la charge** (charge totale ou par haltère : plus lourd ; assistance : moins d'assistance), toutes les séries au moins au bas de la fourchette → « 62,5 kg, contre 60 kg mardi » ;
+  - **les répétitions à la même charge** (ou au poids du corps) : aucune série en dessous de la référence et un total plus haut → on nomme la série au plus grand gain (« sur ta deuxième série »).
+- Égalité, recul, charges différentes dans le mauvais sens, référence absente ou lecture ratée → rien. On n'invente rien et l'étage disparaît (écran 09).
+- Un seul fait : le premier repère de la séance qui progresse.
+- La date dit « hier », un jour de la semaine sous 7 jours, sinon « le 14 sept. ».
+
+**3. Ce qui reste, en secondaire, sous la ligne « Voir mes exercices ».**
+- Le maillon du relais et le badge gagné : deux lignes compactes avec filet, mêmes destinations qu'aujourd'hui.
+- « Tu la gardes ? » (impro seulement) : inchangée, dans le pied, au-dessus de « Continuer ».
+- L'échec d'enregistrement et « Réessayer » : inchangés, toujours visibles.
+- L'invitation à laisser un avis : une ligne discrète, plus une carte colorée.
+- « Enregistrée dans ton profil » disparaît : c'est l'état normal, l'échec seul se dit.
+
+**4. Le pied.**
+- « Continuer » en violet plein (il remplace « Terminer »).
+- « Partager l'affiche » en lien discret, seulement une fois l'affiche gardée : il ouvre `EnvoyerAffiche` (la même feuille que le profil), avec `afficheDe(journal)`.
+
+**5. « Voir mes N exercices ».** Une feuille qui liste chaque exercice réellement fait et ses séries confirmées (« 10 × 60 kg », « 45 s »), une série passée dite comme telle. Pour un repère dont la marge a été donnée, la réponse se lit et se modifie là (décision 54), par `corrigerMarge` (la base ne touche jamais une cible déjà acceptée).
+
+### Questions pour Codex
+1. Le fait marquant limité aux repères, avec ces deux formes de progrès et ces refus ?
+2. La référence partagée avec `chargeDeReference` (`realisationDeReference`) ?
+3. Le retrait des calories et du compte d'exercices de l'écran de fin (ils restent sur l'affiche) ?
+4. La correction de marge dans le détail, sans recalcul de proposition déjà affichée au-delà de ce que R4 fait ?
+
+## R5 · codée (2026-10-05), en attente de la relecture de Codex
+
+Aucune migration SQL.
+
+- `src/lib/recapSeance.ts` (pur) : `faitMarquant`, `progresDe`, `quandRelatif` (jour de Paris, « hier », jour de la semaine, puis date), `serieNommee`, `texteSerie`.
+- `src/lib/progression.ts` : `realisationDeReference` est la règle unique de la référence historique ; `chargeDeReference` en dérive, **sans changer R4** (les répétitions déclarées ne servent pas à choisir la référence).
+- `src/lib/progressionBase.ts` : `historiqueDesExercices` (les mêmes deux lectures par séances entières) ; `referencesDeCharge` s'appuie dessus. Le tunnel lit l'historique de **tous** les exercices prescrits (le poids du corps compris) et en tire ses références de charge.
+- `WorkoutGuideModal.tsx`, écran de fin :
+  - le moment : Guide et sceau, « Séance terminée », `N min · N séries` confirmées. La phrase du Guide, le titre de la séance et la grille 2 × 2 partent (la maquette 08 ne les a pas) ;
+  - `LigneFait` (étage 2), la question facultative et `LaProchaineFois` (étage 3), la ligne série + rang (étage 4), « Voir mes N exercices » ;
+  - le relais, les badges, l'échec d'enregistrement et l'avis (en ligne discrète) viennent après ;
+  - le pied : « Tu la gardes ? » (impro), « Continuer » en violet plein, « Partager l'affiche » (`EnvoyerAffiche`, étage 106) une fois l'affiche gardée ;
+  - `DetailExercices` (portail, étage 106) : les séries confirmées, et la marge d'un repère modifiable (décision 54) par la file de R4 (`margesFin` → `corriger_marge`). `margeDe` lit désormais la dernière réponse donnée (`margesFin` d'abord).
+- Bancs : `check:programme` gagne 30 contrôles R5 (dont l'ordre des étages lu dans le source). Deux témoins vérifiés : sans le refus d'une série en recul, et sans le filtre des repères, le banc échoue chacun à sa ligne.
+- `tsc`, `build` passent ; eslint 93 (la référence) ; `check:echelle` passe de 38 à 37 écarts (un 14 px de la grille retirée) ; `check:rappels`, `check:missions`, `check:portraits` passent.
+
+### R5 · tour 35 (relecture de Codex) : trois corrections
+
+- **Le fait marquant exige une référence connue en entier, quelle que soit sa forme.** Le contrôle des répétitions de référence passait après la branche « charge » : 60 kg aux répétitions inconnues, puis 62,5 × 10, donnait un progrès de charge. Il passe avant les deux branches. La charge de départ de R4 garde cette même référence (elle rappelle une charge, elle n'affirme rien), sans chercher de séance plus ancienne.
+- **Le détail nomme chaque passage d'exercice.** `sousGroupesParExercice` découpe un emplacement en sous-groupes consécutifs : A → B → C donne trois groupes, A → B → A n'en réunit pas les deux A, et une première série passée garde son propre nom.
+- **Le partage appartient au propriétaire du journal.** `afficheProprio` est posé depuis `journal.proprietaire` ; le bouton et la feuille `EnvoyerAffiche` n'existent que si le compte connecté est celui-là. Un autre compte connecté tunnel ouvert ne voit ni l'un ni l'autre ; le journal reste à son propriétaire.
+- Au passage : la question du détail passe par `guides.ts` (`seance.marge.question`), et « Continuer » porte `--ombre-action`.
+- Bancs : +11 contrôles (dont le cas exact de Codex). Témoins : sans le contrôle avancé, trois contrôles échouent ; avec un regroupement qui réunit les passages, A → B → A échoue. eslint 93, `check:echelle` 37, build OK.
+
+### R5 · validée techniquement (tour 36 de Codex, 2026-10-06)
+
+La feuille de partage se ferme au changement de compte et attend un nouveau geste au retour du propriétaire (`d4557a3`, ajustement pendant le rendu, sans effet). Essai global à prévoir : remplacements dans le détail, marge corrigée après le repos, parcours A → B → A avec le partage ouvert.
+
+## R9 · cadrage (2026-10-06), soumis à Codex avant le code
+
+### Ce que le code fait aujourd'hui (constaté)
+
+- **Le QUAND n'existe pas.** Aucun stockage des jours d'entraînement. Hors réservation, la prochaine occurrence est « Quand tu veux » (héros) ; « Ma semaine » n'affiche que les intentions écrites.
+- **Deux générateurs de semaine coexistent** : `reposerLaSemaine` / `previewWeek` (« Refais ma semaine », provenance seule, depuis l'étape 1 sans lire les occurrences) et le Guide (`plan_regen`). Les deux écrivent du mobilier `systeme`. C'est la cause du constat du tour 4 (une séance manquée disparaît derrière la suivante).
+- **Le programme ne dépend que du nombre de séances** : `buildSplit(n)` → `etapesDuCycle`. L'objectif ne sert qu'au nom et aux fourchettes (R2, `composerEtape`). Aucune priorité musculaire n'est demandée.
+- **Aucune absence.** Seules les adaptations (V8, un axe `eviter_etapes`) suspendent quelque chose.
+- Le contexte d'entraînement (`contexte_entrainement`) porte lieu, matériel, `seances_cible`, `duree_cible_min`.
+
+### Proposition : trois sous-vagues, dans cet ordre
+
+**R9a · Mes jours d'entraînement et la projection (décisions 17 à 29).** La valeur principale de la maquette 05 : rien ne se perd.
+- Table `jours_entrainement` : une **règle hebdomadaire** (`jours smallint[]`, 1 = lundi, sur `contexte_entrainement` ou une table dédiée, à trancher) + `exceptions_jour` datées (`date`, `genre` : `pas_de_seance` | `seance_en_plus`). Un jour d'entraînement n'est jamais une intention vide (décision 20). Une **absence** est une plage d'exceptions (`absence_debut`, `absence_fin`), pas une suppression.
+- **`projeterJours(dates, regle, exceptions, absence, occurrences, reservations, adaptations, aujourdhui)`, pure** : chaque jour d'entraînement futur reçoit, dans l'ordre, les occurrences encore ouvertes (R6 `occurrenceSuivante` répétée), après les réservations explicites qui gardent leur jour. Une occurrence non faite à une date passée glisse au prochain jour (décision 18), sans rattrapage ni compression (24, 35). Adaptation appliquée à la date de chaque jour projeté (25). Rien n'est écrit : une prévision se lit (décision 19, phrase commune).
+- **Une seule résolution** (`resolutionJournee`) pour l'accueil, « Ma semaine », le Guide (`etatMoteur`) et les rappels (21, 26) : le héros dit « Haut du corps · t'attendait mercredi » et le rappel ne part qu'un jour d'entraînement avec une occurrence projetée.
+- **Lancer fige** (22) : lancer une occurrence projetée la relit et la déclare `cible: etape` avec son rang (chemin R6 actuel, inchangé).
+- **Migration sans conversion silencieuse (27)** : aucun compte n'a de jours ; **on n'en invente pas** (pas de déduction depuis `seances_cible`). Tant qu'il n'en choisit pas, le comportement d'aujourd'hui reste. Le premier choix de jours montre un aperçu des semaines automatiques à venir (`origine = 'systeme'`, non faites) et propose de les retirer ; les faits, les sauts, les séances posées à la main ou par le Guide et les réservations ne bougent pas.
+- **« Refais ma semaine »** : décision 13 (comportement gardé pendant la refonte). Je propose qu'il disparaisse **pour un compte qui a choisi ses jours** (la projection fait son travail, sans écrire) et reste pour les autres. À trancher.
+
+**R9b · « Ma semaine » à deux semaines (décision 40, maquette 05 écrans 03, 08 à 10).**
+- Onglets « Cette semaine » / « Semaine prochaine », mêmes gestes ; « Après › » ouvre un aperçu en lecture seule.
+- Une ligne par jour : fait (teal), projeté (« Haut du corps · 45 min »), réservé, « Libre », « Pas de séance ce jour-là » (gris, sans alerte), passé sans séance (texte atténué, photo intacte).
+- Feuille d'un jour, quatre gestes : **Changer de jour** (réserver cette occurrence à une date : intention écrite avec son rang, comme `daterEtape`) · **Échanger contre une autre séance** (substitution déclarée, V9C) · **Version courte** (R8 : la ligne n'apparaît qu'avec R8) · **Pas d'entraînement ce jour-là** (exception datée, l'occurrence glisse).
+- « Je serai absent·e » → plage de dates ; la projection se suspend, les occurrences restent.
+- Extraction ciblée de `progression/page.tsx` (décision 11) dans `components/semaine/`.
+
+**R9c · Le programme par priorités (décisions 31, 32, 41 ; maquette 05 écrans 01, 02, 11).**
+- Écran « Mon programme » : une priorité, une seconde facultative, ou « Un peu de tout » ; jours, durée, lieu (repris du contexte).
+- **`composerProgramme(choix, contexte)`, pure et déterministe** : le nombre de séances = le nombre de jours ; chaque priorité est travaillée au moins deux fois par semaine quand il y a au moins trois jours ; noms d'étapes lisibles (« Dos & fessiers ») ; chaque étape reçoit son modèle R2 (`composerEtape` étendu pour prendre la priorité : les repères viennent de la zone prioritaire). Aucune règle sportive universelle (36).
+- **Aperçu avant activation**, puis nouvelle version (archive + `position_initiale`). Les occurrences encore réservées de l'ancienne version sont présentées une par une : **Garder / Remplacer / Retirer** (32). Rien ne s'efface sans choix.
+- Les comptes existants gardent leur programme jusqu'à ce qu'ils en choisissent un autre.
+
+### Ce que R9 ne fait pas
+- La version courte (R8), la variété (R7), le recouvrement « ton dos a travaillé hier » (décision 36, sans vague attribuée : je propose de le loger dans R7, qui choisit les complémentaires).
+- Un jour fixe récurrent pour une séance donnée (« lundi = Bas du corps », écarté par Louis, réponse B).
+
+### Questions pour Codex
+1. Trois sous-vagues dans l'ordre R9a → R9b → R9c (projection d'abord, composeur ensuite) : d'accord ?
+2. La règle hebdomadaire : colonne sur `contexte_entrainement` ou table dédiée ? Je penche pour la table (`regle_jours` + `exceptions_jour`), avec RLS propriétaire, pour ne pas mélanger le défaut de composition et le calendrier.
+3. Une projection jamais écrite, recalculée à chaque lecture, avec réservation explicite seulement au geste « Changer de jour » : d'accord ? Conséquence : `generateWeek` ne sert plus que si aucun jour n'est choisi.
+4. Aucun jour inventé pour les comptes existants, et l'aperçu de retrait du mobilier au premier choix : d'accord ?
+5. La règle « chaque priorité deux fois par semaine dès trois jours » : assez déterministe et assez peu « règle sportive universelle » ?
+
+### Pour Louis, avant le code
+- Une maquette 08 qui reprend 04 et 05 avec ce qui existe désormais (tunnel R3 à R5, héros), pour son GO.
+- La migration de R9a demande son accord explicite (décision 20).
+
+### R9 · GO de Louis sur la maquette 08 (2026-10-06)
+
+Les quatre points sont acceptés : la hiérarchie de « Ma semaine », le retrait proposé du mobilier au premier choix des jours, « Je m'absente », l'entrée « Mon programme » en haut d'Entraînement. Le visuel pourra être retravaillé (Claude Design) sans toucher au moteur. Louis demande d'aller vite : R9a est codée sans attendre les réponses de Codex aux cinq questions du cadrage ; les choix faits sont ceux proposés.
+
+## R9a · codée (2026-10-06), en attente de la relecture de Codex et de la migration
+
+- **`src/lib/projection.ts` (pur).** `estJourEntrainement` (absence, puis exception datée, puis règle), `premierJourManque`, `projeterJours`. Chaque jour d'entraînement à partir d'aujourd'hui reçoit, dans l'ordre, l'occurrence suivante (`occurrenceSuivante` répétée, les rangs déjà placés passés en `enPlus`). Une réservation datée aujourd'hui ou plus tard garde son jour et sort de la distribution. Une réservation passée non faite reste l'occurrence en attente de son étape : elle glisse, avec `attendaitLe` = sa date, sans que sa ligne soit réécrite. « t'attendait » ne se dit que de la tête de la suite. L'adaptation s'applique à la date de chaque jour. Sans jour choisi : `[]`.
+- **Migration `20261008_r9a_jours_entrainement.sql`** : `jours_entrainement` (règle), `exceptions_jour` (`pas_de_seance` | `seance_en_plus`), `absences` (plage, sans chevauchement, 120 jours au plus). RLS propriétaire, additive, aucune intention écrite. **Pas encore appliquée.**
+- **`src/lib/joursEntrainement.ts`** : lecture à trois réponses (table absente = aucun jour, lecture ratée = `null`), écritures de la règle, des exceptions et des absences.
+- **`src/lib/projectionBase.ts`** : une seule lecture de la projection (occurrences avec leur date, adaptations, calendrier), partagée par l'accueil (`useJournee` → héros : « vendredi · t'attendait mercredi », « Changer de jour ») et le Guide (`etatMoteur` : jours, absence, prévisions sur sept jours). `lireOccurrences` rapporte maintenant la date des réservations.
+- **Rappel du soir** : un jour choisi sans séance écrite reçoit le nom de la prochaine séance du programme (adaptation du jour comprise) ; une absence fait taire le rappel d'entraînement. Une lecture ratée ne change rien.
+- **Rien de visible tant qu'aucun jour n'est choisi** : l'écran de choix arrive avec R9b.
+- Bancs : `check:programme` +25 contrôles R9a, dont le scénario de Lina (mercredi manqué, C avant B), réservation future et passée, absence, exception, jour en plus, adaptation datée, une séance par jour. Témoins : sans le marquage des rangs placés (6 échecs), sans l'absence (1 échec). eslint 93, `check:echelle` 37, build OK.
+- **Point à trancher (Codex)** : réserver une occurrence hors ordre peut faire se suivre deux séances de la même étape (B₂ réservée mardi, B₅ projetée mercredi). C'est l'ordre du cycle appliqué tel quel ; la décision 14 laisse le hors ordre à cadrer.
+
+### R9a · migration 20261008 appliquée par Louis (2026-10-06)
+
+Les trois tables existent. La correction du tour 38 demande une seconde migration (`20261009_r9a_jours_choix.sql`), pas encore appliquée.
+
+### R9a · corrections du tour 38 de Codex (2026-10-06)
+
+Points validés par Louis, consignés : « Refais ma semaine » disparaît pour un compte qui a choisi ses jours (il reste pour les autres). Réponses de Codex au cadrage (tour 37) : ordre R9a → R9b → R9c, stockage dédié, projection sans écriture, aucun jour inventé, aperçu avant retrait ; deux sollicitations par priorité = un choix de composition, jamais une garantie ni une dette ; changer ses jours ne recompose pas le programme.
+
+1. **La projection avance jour par jour.** Une réservation future n'est plus supposée faite dès le départ : son étape est bloquée jusqu'à sa date, puis sa réalisation est supposée À sa date. Les fermetures supposées sont ordonnées entre elles (`ordre` dans `occurrences.ts`) : une étape bloquée longtemps ne rattrape plus ses tours d'un coup. Contre-exemple de Codex (A₁ faite, B₂ le 14, tous les jours) : aucune B avant le 14.
+2. **Une seule résolution, nourrie des mêmes faits.** `entreeResolution` (pure, `projectionBase.ts`) puis `resoudreJournee` servent l'accueil, le Guide et le cron, qui ne fait plus de calcul à part (lectures groupées, même entrée). `proposee` = la tête de la suite hors réservations futures (`teteDeSuite`), indépendante de l'horizon ; `duJour` = celle qui tombe aujourd'hui. Le héros propose `proposee` et la relit STRICTE au lancement ; une réservation plus tard reste faisable par un geste explicite. Égalité prouvée par comportement : 400 scénarios, écran (14 j), Guide (8 j) et cron (1 j) rendent la même séance du jour et la même proposée (le banc a d'abord trouvé 6 écarts sur `proposee`, d'où `teteDeSuite`).
+3. **Une panne n'affirme rien.** Adaptations lues en mode strict, jours occupés lus sans avaler l'erreur ; une lecture ratée rend la résolution indisponible. Le cron se tait si les adaptations sont illisibles (table absente = aucune). Une résolution gardée porte son compte et son programme, et ne s'applique jamais à un autre.
+4. **« Aucun choix » ≠ « zéro jour ».** Une ligne à `jours = '{}'` est un choix ; seule l'absence de ligne garde le comportement historique. `effet_le` : la règle ne vaut qu'à partir de sa date, donc pas de « t'attendait lundi » pour une règle choisie jeudi.
+5. **Jours occupés et conflits.** Un jour qui porte une intention hors programme ne reçoit pas de prévision. Une réservation pendant une absence ou sous une adaptation est rendue avec son `conflit`, jamais supprimée ni supposée faite ; sa date passée, elle glisse comme une séance manquée.
+
+- Bancs : bloc R9a réécrit (27 contrôles comportementaux, dont l'égalité sur 400 scénarios). Témoins : l'ancien calcul (réservations supposées faites dès le départ) échoue au contre-exemple ; sans conflit, les deux contrôles de conflit échouent.
+- `docs/refonte-planning/r9a-test-a-coller.sql` : rejeu de la migration, correction du tour 38, puis scénarios dans une transaction annulée (zéro jour, jour 8 refusé, exceptions, doublon, chevauchement d'absence, bout à bout, bornes, droits entre deux comptes).
+- eslint 93, `check:echelle` 37, build OK.
+
+### R9a · scénarios joués sur la vraie base (2026-10-06)
+
+`r9a-test-a-coller.sql` collé par Louis (rejeu de `20261008`, puis `20261009`, puis les scénarios, le tout annulé). Résultat : `T1 zero_jour=0 effet_aujourdhui=t ; T2 regle=3 ; T2b refus_jour_8 ; T3 refus_genre ; T3b refus_doublon ; T4 refus_chevauchement ; T4b bout_a_bout_ok ; T4c refus_fin_avant_debut ; T4d refus_trop_longue ; T5 visibles_par_autre=0 refus=42501 ; suppressions_par_autre=0`. Tous conformes. Relu ensuite en lecture seule : aucune ligne dans les trois tables, `effet_le` absente, contrainte d'origine en place, donc la base n'a rien gardé. `20261009` attend le feu vert de Codex.
+
+### R9a · corrections du tour 40 de Codex (2026-10-06)
+
+Feu vert de Codex pour appliquer `20261009` (validation SQL, distincte du code).
+
+1. **Le cron fait résoudre aussi les réservations déjà nommées.** Le portrait note si la séance du jour vient du programme (`seanceProgramme`, lu sur `etape_consommee_id`). Une séance posée hors programme garde son rappel ; une réservation du programme passe par `resoudreJournee` ; toute lecture ratée (calendriers, programmes, étapes, occurrences, adaptations) retire le rappel d'une séance du programme, même déjà nommée. La décision est une fonction pure, `seanceARappeler`, que le cron applique.
+2. **« Pas de séance ce jour-là » devant une réservation** : conflit `jour_retire`, la réservation reste une trace, n'est ni supposée faite ni `duJour`.
+3. **Le héros distingue trois cas** (`choixSuite`, pur) : résolution indisponible → on garde l'ensemble déjà affiché pour le même programme (étape, modèle, réservation, résolution) et on le dit (« Programme non relu · Réessayer », ou l'état `indisponible` s'il n'y avait rien) ; sans choix → historique ; résolution valide → elle fait foi, même vide. Jamais la suite brute à la place d'une résolution ratée. Le Guide, sur panne, n'annonce aucune prochaine séance et le dit.
+
+- Bancs : +11 contrôles, dont le cas de Codex par le chemin du cron (réservation nommée puis masquée), la panne après nomination, la séance hors programme gardée, l'historique, les trois cas du héros. Témoins : sans le conflit « jour retiré » et sans le silence sur panne, chacun échoue à sa ligne. eslint 93, `check:echelle` 37, build OK.
+
+## R9b · codée (2026-10-06), relue par Codex en parallèle
+
+Louis demande d'enchaîner les vagues sans attendre chaque feu vert : Codex relit pendant que R9c avance.
+
+- **`src/lib/semaine.ts` (pur).** `lignesSemaine` croise les intentions écrites, la projection R9a et le calendrier : une ligne par jour, `fait` / `pose` / `prevu` (avec `proposee`, `attendaitLe`, `conflit`), sinon `absence`, `pas_de_seance`, `passe_sans`, `libre`. Une réservation n'apparaît qu'une fois, par la projection (qui connaît son conflit). Un jour passé n'affiche jamais de prévision. Plus `semaineDe`, `mobilierAVenir`, `choisirPlage`, `libellePlage`, `occurrenceEncorePrevue`.
+- **`src/lib/semaineGestes.ts`.** « Changer de jour » : une réservation existante se déplace (seule la date change) ; sinon on relit la résolution, on vérifie que la séance est ENCORE placée (`occurrenceEncorePrevue`), puis `ecrireOccurrence` comme le héros. Une panne refuse. « Pas d'entraînement ce jour-là » : exception datée, et une réservation de ce jour est SUPPRIMÉE (jamais marquée), donc elle glisse. « Remettre ce jour » et « M'entraîner ce jour-là » (jour en plus) passent par les exceptions.
+- **`components/semaine/`** : `MaSemaineSheet` (Cette semaine / Semaine prochaine / Après en lecture seule ; « La faire aujourd'hui » quand la proposée tombe un autre jour ; feuille d'un jour : La faire maintenant, Changer de jour, Échanger contre une autre séance, Pas d'entraînement ce jour-là, Voir les exercices), `MesJoursSheet` (premier choix : le mobilier automatique à venir est montré, « Les retirer et garder mes jours » / « Les garder aussi » ; ensuite « Ne plus avoir de jours fixes »), `AbsenceSheet` (« Je m'absente », deux touches, absences à venir retirables), `FeuilleBas` (portail + verrou de la page).
+- **« Échanger »** pose une séance du catalogue sur ce jour (chemin « Ajouter à ma semaine ») : le jour devient occupé, la séance du programme glisse au suivant. Sur une réservation, celle-ci est d'abord retirée.
+- **Entraînement** : un compte avec des jours choisis ouvre la nouvelle « Ma semaine » (aussi depuis « Organiser », qui n'écrit plus pour lui) ; les autres gardent l'agenda d'avant, avec un bouton « Mes jours ». Les pastilles montrent les séances prévues, plus pâles.
+- **Guide** : « refais ma semaine » répond, pour un compte qui a choisi ses jours, que la semaine se remplit seule (`impasse.regen_jours_choisis`), sans écrire.
+- Bancs : +20 contrôles R9b (semaine de Lina, semaine suivante sans rattrapage, réservation unique, absence, jour retiré, repos, mobilier, plage, sources). Témoin : sans l'exclusion des réservations écrites, le contrôle de doublon échoue. eslint 93, `check:echelle` 37, build OK.
+- **À trancher (Codex)** : « Changer de jour » sur une séance qui n'est pas la tête réserve hors ordre (point déjà ouvert en R9a, décision 14).
+
+## R9c · codée (2026-10-06), relue par Codex en parallèle
+
+- **`src/lib/composeurProgramme.ts` (pur).** `composerProgramme({ priorites, seances })` : une séance par jour choisi (1 à 6). Avec une ou deux priorités : « P1 & P2 », le complément (le groupe que les priorités ne touchent pas), « P2 & P1 », puis l'autre groupe, tout le corps, le cardio. Une seule priorité est associée à une zone voisine. Dès 2 jours, chaque priorité revient au moins deux fois (balayé sur 294 cas). « Un peu de tout » = `cycleDeReference`. `planDesRemplacements` : `null` tant qu'une réservation n'a pas son choix ; les remplacements prennent les rangs 1, 2, 3… du nouveau programme dans l'ordre des jours.
+- **`banqueEtapes.ts`.** Une séance de zones se lit dans son nom (« Dos & fessiers » = 3 du dos puis 2 des fessiers, depuis la banque DU LIEU, classée par fonction, repère en tête de chaque zone). Les étapes historiques ne changent pas d'un exercice : même `COMPOSITION_VERSION`.
+- **Migration `20261010_r9c_activer_programme.sql`** : `activer_programme(p)`, une transaction. Refuse si la version active n'est plus celle de l'aperçu (`programme_change`) ou si une réservation de l'ancienne version n'a pas de choix (`choix_incomplets`). Archive, ferme les adaptations de l'ancienne version, crée le programme (rang 1), son cycle, les modèles (`ecrire_modele`), puis garde / retire / remplace chaque réservation (`ecrire_occurrence`). **Pas encore appliquée** : d'ici là l'écran dit « pas encore ouvert » et rien ne change.
+- **`src/lib/monProgramme.ts`** : `reservationsAChoisir` (stricte), `preparerActivation` (pure : l'aperçu est ce qui s'écrit), `activerProgramme` (chaque issue nommée).
+- **`MonProgrammeSheet`** et une ligne « Mon programme » en haut d'Entraînement. Choix → aperçu (exercices dépliables) → choix par réservation → « Activer », refusé en le disant tant qu'il manque quelque chose.
+- **Projection** : une réservation gardée d'une version archivée occupe son jour (`lireOccupes`), et « Ma semaine » apparie une réservation par rang ET étape.
+- Bancs : +21 contrôles R9c. Témoins : appariement sans étape (1 échec), choix manquant accepté (2), seconde séance prioritaire retirée (4), refus SQL retiré (1).
+- **Hors R9c, consigné** : le mobilier `systeme` de l'ancienne version (provenance seule, sans réservation) n'est pas proposé au choix ; il reste une séance posée sur son jour.
+
+## R7 · codée (2026-10-06)
+
+- **`variete.ts` (pur).** `varierLignes(modele, rang, mode, ctx)` : les repères, l'ordre et les emplacements ne bougent jamais ; chaque complémentaire tourne dans un cycle (l'exercice d'origine puis ceux de la MÊME fonction dans la banque du lieu, sans doublon). Rang 1 = le modèle. « habituels » : le modèle ; « peu » (défaut) : un seul emplacement renouvelable par occurrence, à tour de rôle ; « beaucoup » : chacun, décalé d'un cran par emplacement. Un complémentaire sans équivalent reste ce qu'il est.
+- **Déterministe par le rang (R6)** : même occurrence = mêmes exercices sur tous les appareils ; une séance manquée garde son rang, donc ses exercices. Une occurrence écrite garde sa prescription figée.
+- **Un seul passage modèle → occurrence** : `modeleDeLOccurrence` (prescription.ts), utilisé par l'affichage, la relecture avant lancement et « Changer de jour ». `preparerActivation` écrit pour chaque remplacement les lignes de son rang (`activer_programme` lit `choix[id].lignes`, sinon le modèle).
+- **Réglage** : `contexte_entrainement.variete` (migration `20261011_r7_variete.sql`, vocabulaire fermé, NULL = défaut). Lecture stricte : panne = on ne sait pas (le héros garde ce qu'il montrait, l'écriture refuse) ; colonne absente ou ligne absente = défaut. Écran « Mes exercices » dans Mon programme (maquette 07 écran 01), enregistré seul.
+- **« Ton dos a travaillé hier »** (décision 36, maquette 05 écran 07) : `recouvrement` compare les zones de la séance que le bouton lancerait vraiment aux séries terminées hier et aujourd'hui (abdos exclus). Héros : le fait, « La faire comme prévu », « Version plus légère pour le dos » (une série de moins sur les exercices de la zone, mêmes exercices et emplacements), et le geste de jour existant.
+- **Hors périmètre, consigné** : « À chaque fois » (garder ou remplacer un exercice pour toutes les occurrences futures) reste masqué ; proposer de changer un repère selon la pratique (décision 52) n'est pas fait.
+- Banc : +22 contrôles (1 386 cas balayés). Témoins : repères variés 2, panne lue comme défaut 1, garde retirée 1, rang 1 varié (le banc plante).
+
+## R8 · codée (2026-10-06)
+
+- **`dureeLibre.ts` (pur).** `estimerSecondes` / `estimerMinutes` : échauffement (5 min) + séries (répétitions × 3 s, ou la durée tenue ; les deux côtés pour un « par jambe », avec 10 s pour changer de côté) + repos entre les séries (pas après la dernière) + transitions (la transition prévue quand le matériel change, 30 s quand on reste au poids du corps ou aux haltères). `itemDeLigne` / `itemDExercice` lisent une prescription ou une liste projetée.
+- **`raccourcir(items, minutes)`** : n'importe quelle durée (5 min au moins). On compare ce qui s'affiche (« ≈ 17 min ») à ce qui est demandé. Ordre de retrait : les complémentaires du dernier au premier, chacun perd ses séries une à une puis part ; ensuite les repères, du dernier au premier, jusqu'à deux séries, puis une, puis ils partent ; il reste toujours un exercice. Repos, transitions, ordre, emplacements et échauffement ne bougent jamais. Les enchaînements sans pause ne sont pas utilisés (aucune séance ne les déclare).
+- **« Ça compte » (décision 38)** : chaque repère gardé avec au moins deux séries (ou toutes les siennes s'il en avait moins). Une séance sans repère déclaré ne compte que si aucun exercice n'est retiré. Sinon la version courte se fait EN PLUS, sans cible : l'étape reste la suivante, l'intention reste prévue (décision 45).
+- **Lancement** : `lancerCourt(minutes)` et `lancerIntention(d, { courte })` recalculent sur la liste relue avec la même règle que l'aperçu ; une étape qui compte fige la prescription courte (variante explicite, décision 32) et se ferme normalement.
+- **Écrans** : le héros annonce la durée estimée (au lieu de 45 min en dur) et propose « J'ai moins de temps » ; la feuille d'un jour de « Ma semaine » gagne « Version courte » (maquette 08 écran 07), seulement quand la séance peut se faire maintenant. La feuille « Combien de temps as-tu ? » (maquette 06 écran 02) : − / + à la minute, durées d'un geste, ce qu'on garde avec ses séries, ce qui part, « Échauffement compris ≈ N min », et si ça compte.
+- Banc : +23 contrôles (1 848 cas balayés). Témoins : intention fermée sans rôle (3 échecs), repères retirés d'abord (2), repos raccourcis (1), « compte » sans les deux séries (1).
+
+## Revue finale de Codex (sur `bc38de8`) · corrigée (2026-10-06)
+
+Migration : `supabase/migrations/20261012_revue_finale.sql` (rejouable, remplace aussi `activer_programme` : inutile de recoller `20261010`).
+
+- **P1 · identité des lignes.** `prescription.emplacement` dans les projections TS et SQL ; `emplacementDe` au journal, à la marge et à l'acceptation. Le tunnel navigue par index, identifie par emplacement. `exercicesCourts` épingle l'emplacement avant de compacter une liste lue en base. Cas Codex rejoué : tirage 0, hip thrust 3 → journal 0 et 3.
+- **P1 · version réduite.** `reduite` sur les lignes qui perdent des séries (R8 courte, R7 plus légère) : ni question, ni proposition. En base, `accepter_cible` compare à la ligne du modèle et rend `version_reduite`. Retirer des complémentaires ne bloque pas les repères entiers.
+- **P1 · activation.** `activation_id` (index unique) : le rejeu rend la même version (`deja`). Chaque réservation est verrouillée et comparée à son état approuvé (date, rang, étape) ; une réservation disparue ou déplacée rend `apercu_perime`. Côté écran, une réponse perdue se dit « incertain », jamais « rien n'a été modifié ».
+- **P1 · cron.** Mêmes occupations que l'écran (`joursOccupes`, pur et partagé) ; une réservation gardée d'une autre version se rappelle telle quelle.
+- **P2 · variété.** Rotation par PASSAGE de l'étape (`passageDuRang`), plus par rang global ; la première fois de chaque étape est son modèle.
+- **P2 · durée.** L'estimation pose les attentes du tunnel (`attenteApres`), lit « 45s » comme lui (`secondesDeReps` partagé), compte le HIIT ; plus de raccourci de matériel.
+- **P2 · gestes.** `retirer_le_jour` et `deplacer_reservation` en une transaction ; le déplacement vérifie programme, étape et rang. Sans migration, repli en deux temps qui dit « partiel » si la compensation échoue.
+- **P2 · affichages.** « Voir les exercices » montre la variété de l'occurrence ; une réservation en conflit ne se lance plus d'elle-même (« La faire quand même » explicite, et l'accueil l'écarte) ; profil illisible ≠ questionnaire absent ; `lireVariete` n'accepte que les codes 42703 / PGRST204.
+- **P2 · composeur.** « Aucun jour choisi » au lieu d'une fréquence inventée, « N fois dans le cycle », et la limite de la banque dite (« 1 exercice d'abdos seulement ici : la séance travaille surtout le dos »).
+
+Restent des limites assumées, à présenter à Louis : le seuil « compte » (2 séries par repère) est une heuristique commune et pas un minimum déclaré par séance ; « À chaque fois » masqué ; pas de proposition de changement de repère ; Push salle sans vivier de complémentaires ; mobilier `systeme` non proposé en R9c ; la rotation ignore un `rang_depart` reporté (programmes d'avant R9c seulement).
+
+## Vérification finale de Codex (sur `ab89d67`) · deux raccords corrigés (2026-10-07)
+
+Même migration finale (`20261012_revue_finale.sql`), toujours rejouable.
+
+- **La restauration lit l'emplacement du journal.** `restaurer_copie_suivie` est redéfinie : elle prend `prescription.emplacement` de chaque exercice suivi. L'ordinal ne sert qu'à un journal ancien où aucun exercice ne porte ce champ. Cas de Codex rejoué (Dos & fessiers court, hip thrust à 3 lancé à 42,5 kg, ajusté à 45 pendant la séance) : la fermeture restaure 42,5, consomme cette version et laisse l'ajustement ouvert. Le rejeu ne change rien.
+- **La preuve de la version complète survit sans modèle écrit.** Nouvelle colonne `occurrence_exercices.series_completes`, posée par `ecrire_occurrence` :
+  - une ligne réduite garde le nombre de séries de sa version complète, envoyé par l'écran (`lignesCourtes`, `allegerPourZone`) ;
+  - une ligne réduite sans ce nombre reste sans preuve ;
+  - une ligne entière vaut sa propre preuve.
+
+  `accepter_cible` rend `version_reduite` si la ligne a moins de séries que sa preuve ou que son modèle. Elle rend `non_comparable` si elle n'a ni l'une ni l'autre : c'est le cas exact de Codex, et aussi celui des lignes sans modèle écrites avant cette migration. La projection SQL porte `reduite` dans les deux sens (lignes envoyées, lignes relues).
+- **Bancs.**
+  - `check:prescription-sql` : 149 OK.
+  - Deux témoins : la restauration remise sur l'ordinal fait échouer 3 contrôles ; la garde sans preuve, 3 autres.
+  - `check:programme` : 3 contrôles en plus, et un témoin sur `lignesCourtes`.
+
+**Feu vert technique de Codex sur `ccb9dea` (2026-10-07).** Codex a relu la migration et rejoué `check:programme`, les 149 essais SQL et le typecheck. Il a aussi refait ses contre-exemples : une séance courte `[0,3]` lancée à 18 kg puis ajustée à 20 se ferme à 18 (v1 consommée, v2 non), et une séance courte sans modèle écrit rend `version_reduite`. La relecture technique est close. Avant la fusion il reste :
+- Louis colle cette version exacte de `20261012_revue_finale.sql` ;
+- les vérifications sur Supabase sous `authenticated` (droits entre comptes, cas corrigés) ;
+- le test visuel global ;
+- le choix produit sur `compte` : « deux séries par repère » à titre provisoire, ou un minimum déclaré pour chaque séance ;
+- le GO de Louis.
+
+### Migration finale appliquée et vérifiée sur la vraie base (2026-10-07)
+
+- **`20261012_revue_finale.sql` collée par Louis.** Vérifié en lecture :
+  - la colonne `series_completes` et son check sont en place ;
+  - `restaurer_copie_suivie` lit l'emplacement explicite ;
+  - `accepter_cible` porte les deux preuves et `non_comparable` ;
+  - `ecrire_occurrence` et `projeter_prescription` sont à jour ;
+  - `restaurer_copie_suivie` et `consommer_cibles` ne sont pas exécutables par `authenticated`.
+- **Règle `compte` : option A retenue par Louis, à titre provisoire.** Une séance raccourcie compte si chaque repère garde au moins 2 séries. Elle reste la même pour toutes les séances, sans minimum déclaré séance par séance.
+- **Essais sous `authenticated` avec deux vrais comptes**, dans des blocs annulés par une exception finale. Les données envoyées sont générées par les mêmes fonctions que les bancs. Les cas sont ceux de la vérification finale de Codex, sur Dos & fessiers en salle (hip thrust à l'emplacement 3).
+  - Séance courte avec preuve et sans modèle : la preuve `2/4` est stockée, la projection porte `reduite=true`, `accepter_cible` rend `version_reduite` et aucune cible n'est créée.
+  - Ligne réduite sans nombre et sans modèle (le cas exact de Codex) : la preuve reste nulle et le résultat est `non_comparable`, sans cible.
+  - Séance complète sans modèle : `ok`.
+  - Restauration (version courte `[0,3]` lancée à 42,5, ajustée à 45) : la fermeture restaure 42,5, consomme v1 et laisse v2 ouverte. Le rejeu ne bouge rien.
+  - Journal ancien sans emplacement : le repli sur l'ordinal donne le même résultat.
+  - Droits pour A : écrire directement la preuve touche 0 ligne ; appeler `restaurer_copie_suivie` ou `consommer_cibles` est refusé (`42501`).
+  - Droits pour B : il voit 0 occurrence, 0 cible et 0 intention de A. Accepter une cible sur la séance de A rend `seance_introuvable`. Modifier la preuve ou les intentions de A touche 0 ligne. Écrire dans un programme de A est refusé (`programme_inconnu`).
+  - Le déclencheur de fermeture est différé : les essais le forcent avec `set constraints … immediate`, sinon il ne joue qu'au moment où la transaction est validée.
+  - Après coup, la base a été relue : aucun programme, séance, intention, occurrence ni cible d'essai n'est resté.
+- **Reste :** le test visuel global de Louis, puis son GO pour la fusion.

@@ -292,6 +292,12 @@ const REPLIQUES = {
      distinct du précédent, et ce n'est pas un détail : celui-ci ne peut
      pas dire « redemande-moi lundi », puisque c'est précisément lundi
      qu'on est en train de préparer. */
+  "impasse.regen_calendrier_illisible": {
+    commun: "Je n’arrive pas à relire tes jours d’entraînement pour l’instant, donc je ne touche pas à ta semaine. Redemande-moi dans un instant.",
+  },
+  "impasse.regen_jours_choisis": {
+    commun: "Tu as choisi tes jours, ta semaine se remplit déjà toute seule dans l’ordre de ton programme 🙂 Tu peux changer une séance de jour depuis « Ma semaine », ou modifier tes jours.",
+  },
   "impasse.regen_semaine_prochaine_pleine": {
     commun: "Ta semaine prochaine est déjà posée entièrement à la main, je n’ai aucun jour à préparer 🙂 Retire une séance si tu veux que je la recompose.",
     nora:   "Ta semaine prochaine est déjà posée entièrement à la main : je n’ai aucun jour à préparer 🙂 Retire une séance et je recompose autour.",
@@ -748,6 +754,11 @@ const REPLIQUES = {
      du conseil du geste, sans nouvelle carte. */
   "seance.charge.choisir": {
     commun: (c) => `Choisis une charge que tu pourrais soulever environ ${c.reps ?? 12} fois.`,
+  },
+  /* R4 · la question après la dernière série d'un repère (décision 57).
+     Elle prend la place de la phrase du repos, sans surface de plus. */
+  "seance.marge.question": {
+    commun: "Sur ta dernière série, tu aurais pu faire encore combien de répétitions avec le même mouvement ?",
   },
   /* Le tunnel est en pause : le Guide attend, et c'est le seul moment de la
      séance où il n'a rien à demander ni à expliquer. */

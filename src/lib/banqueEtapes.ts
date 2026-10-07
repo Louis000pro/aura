@@ -232,6 +232,20 @@ export type LignePrescription = {
   charge_type: TypeCharge | null;
   /** « par jambe », « par côté »… vide sinon. */
   unite: string;
+  /* R4 · la cible ACCEPTÉE recopiée au figement : sa charge (nulle au
+     poids du corps ou en répétitions seules) et la ligne d'où elle vient.
+     Absentes d'une prescription sans cible. */
+  charge_cible?: number | null;
+  charge_origine?: "aucune" | "acceptee";
+  cible_id?: string | null;
+  /** Revue finale (P1) · la ligne a perdu des séries par rapport à sa
+   *  prescription complète (R8 courte, R7 plus légère). La base le
+   *  retrouve d'elle-même en comparant au modèle ; ici, c'est l'écran. */
+  reduite?: boolean;
+  /** Vérification finale · le nombre de séries de la version COMPLÈTE,
+   *  posé sur une ligne réduite. La base le garde (`series_completes`) :
+   *  c'est la preuve de la réduction même sans modèle écrit. */
+  series_completes?: number;
 };
 
 /** L'orientation se lit dans les objectifs, avec les mêmes mots qu'avant R2. */
@@ -254,9 +268,140 @@ export function cibleCompat(min: number, max: number): number {
   return Math.round((min + max) / 2);
 }
 
-/** La liste d'une étape à un lieu, avec le repli historique. */
+/* ── R9c · LES ZONES : une séance composée autour de ce qu'on veut travailler ──
+
+   ⚠️ UNE SÉANCE DE ZONES SE LIT DANS SON NOM, ET RIEN QUE DANS SON NOM.
+   « Dos & fessiers » = trois exercices du dos, puis deux des fessiers ;
+   « Fessiers & dos », l'inverse. C'est ce qui garde la composition pure :
+   un modèle absent se recompose à l'identique depuis le nom de l'étape,
+   sur tous les appareils (même règle que les étapes historiques).
+   Les exercices viennent de la banque DU LIEU, classés par fonction : une
+   zone n'invente aucun exercice, donc rien d'impraticable n'y entre.
+   Les noms historiques (Push, Haut du corps…) ne changent pas d'un
+   exercice : leurs modèles écrits restent valides, d'où la même
+   `COMPOSITION_VERSION`. */
+
+export const ZONES = ["dos", "fessiers", "jambes", "pectoraux", "epaules", "bras", "abdos"] as const;
+export type Zone = (typeof ZONES)[number];
+
+export const LIBELLE_ZONE: Readonly<Record<Zone, string>> = {
+  dos: "Dos", fessiers: "Fessiers", jambes: "Jambes", pectoraux: "Pectoraux",
+  epaules: "Épaules", bras: "Bras", abdos: "Abdos",
+};
+
+/** Les fonctions de chaque zone, dans l'ordre où on les sert. */
+export const FONCTIONS_DE_ZONE: Readonly<Record<Zone, readonly Fonction[]>> = {
+  dos: ["tirage_vertical", "tirage_horizontal", "arriere_epaule", "extension_tronc"],
+  fessiers: ["extension_hanche", "charniere_hanche", "unilateral_jambe", "abduction_hanche"],
+  jambes: ["squat", "unilateral_jambe", "flexion_genou", "extension_genou", "mollets", "isometrie_jambes"],
+  pectoraux: ["poussee_horizontale", "ecarte_pectoraux"],
+  epaules: ["poussee_verticale", "epaule_isolation", "arriere_epaule"],
+  bras: ["biceps", "triceps"],
+  abdos: ["gainage", "flexion_tronc", "extension_tronc"],
+};
+
+/** Combien d'exercices la zone principale prend dans une séance de deux zones. */
+export const EXERCICES_ZONE_PRINCIPALE = 3;
+
+const sansAccents = (t: string) => t.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+
+/** Le nom d'une séance de deux zones : « Dos & fessiers ». */
+export function nomDeZones(principale: Zone, seconde: Zone): string {
+  return `${LIBELLE_ZONE[principale]} & ${LIBELLE_ZONE[seconde].toLowerCase()}`;
+}
+
+/** Les deux zones d'un nom de séance, ou `null` si ce n'en est pas un. */
+export function zonesDuNom(nom: string): [Zone, Zone] | null {
+  const parties = nom.split(" & ");
+  if (parties.length !== 2) return null;
+  const z = parties.map((x) => ZONES.find((zone) => sansAccents(LIBELLE_ZONE[zone]) === sansAccents(x)));
+  if (!z[0] || !z[1] || z[0] === z[1]) return null;
+  return [z[0], z[1]];
+}
+
+/** Les exercices d'une zone praticables à un lieu, alternés par fonction. */
+export function entreesDeZone(zone: Zone, lieu: Lieu): EntreeBanque[] {
+  const vus = new Set<string>();
+  const parFonction = FONCTIONS_DE_ZONE[zone].map((f) => {
+    const liste: EntreeBanque[] = [];
+    for (const etape of Object.values(BANQUE[lieu])) for (const e of etape) {
+      if (PROPRIETES[e.nom]?.fonction !== f || vus.has(e.nom) || PROPRIETES[e.nom]?.fonction === "cardio") continue;
+      vus.add(e.nom);
+      liste.push(e);
+    }
+    return liste;
+  });
+  const sortie: EntreeBanque[] = [];
+  for (let i = 0; parFonction.some((l) => i < l.length); i++) {
+    for (const l of parFonction) if (l[i]) sortie.push(l[i]);
+  }
+  return sortie;
+}
+
+/** La liste d'une séance de deux zones : 3 + 2, sans doublon, complétée
+ *  par le Full Body du lieu si la banque manque d'exercices (manque de
+ *  contenu signalé, jamais un exercice inventé). Le premier exercice de
+ *  chaque zone est le repère de la séance. */
+export function entreesDeZones(principale: Zone, seconde: Zone, lieu: Lieu): EntreeBanque[] {
+  const pris = new Set<string>();
+  const sortie: EntreeBanque[] = [];
+  const prendre = (liste: readonly EntreeBanque[], n: number, repere: boolean) => {
+    let premier = true;
+    for (const e of liste) {
+      if (sortie.length >= EXERCICES_PAR_ETAPE || n <= 0) return;
+      if (pris.has(e.nom)) continue;
+      pris.add(e.nom);
+      sortie.push({ ...e, statut: repere && premier && e.dureeS === undefined ? "repere" : "complementaire" });
+      premier = false;
+      n--;
+    }
+  };
+  prendre(entreesDeZone(principale, lieu), EXERCICES_ZONE_PRINCIPALE, true);
+  prendre(entreesDeZone(seconde, lieu), EXERCICES_PAR_ETAPE - sortie.length, true);
+  prendre(entreesDeZone(principale, lieu), EXERCICES_PAR_ETAPE - sortie.length, false);
+  prendre(BANQUE[lieu][ETAPE_DE_REPLI], EXERCICES_PAR_ETAPE - sortie.length, false);
+  return sortie;
+}
+
+/**
+ * Revue finale (P2) · CE QUE LA BANQUE N'A PAS : une séance de deux zones
+ * dont la priorité n'a pas ses trois exercices à ce lieu (abdos à la
+ * salle : un crunch, puis le dos remplit). On ne promet pas « 3 + 2 » :
+ * l'écran nomme la limite et ce que la séance travaille vraiment.
+ * `null` quand la séance est conforme à son nom. Pure.
+ */
+export function limiteDeLEtape(nomEtape: string, lieu: Lieu): { zone: Zone; trouves: number; surtout: Zone | null } | null {
+  if (BANQUE[lieu][nomEtape]) return null;
+  const zones = zonesDuNom(nomEtape);
+  if (!zones) return null;
+  const [principale, seconde] = zones;
+  const liste = entreesDeZones(principale, seconde, lieu).map((e) => e.nom);
+  const de = (z: Zone) => {
+    const noms = new Set(entreesDeZone(z, lieu).map((e) => e.nom));
+    return liste.filter((n) => noms.has(n)).length;
+  };
+  const trouves = de(principale);
+  if (trouves >= EXERCICES_ZONE_PRINCIPALE) return null;
+  return { zone: principale, trouves, surtout: de(seconde) > trouves ? seconde : null };
+}
+
+/** La phrase de cette limite, telle que l'aperçu la montre. */
+export function phraseLimite(l: { zone: Zone; trouves: number; surtout: Zone | null }): string {
+  const nom = (z: Zone) => LIBELLE_ZONE[z].toLowerCase();
+  const de = (z: Zone) => (/^[aeiouyéèê]/i.test(nom(z)) ? `d’${nom(z)}` : `de ${nom(z)}`);
+  const le = (z: Zone) => (z === "dos" ? "le dos" : `les ${nom(z)}`);
+  const n = l.trouves === 0 ? `Aucun exercice ${de(l.zone)} ici` : `${l.trouves} exercice${l.trouves > 1 ? "s" : ""} ${de(l.zone)} seulement ici`;
+  return l.surtout ? `${n} : la séance travaille surtout ${le(l.surtout)}.` : `${n}.`;
+}
+
+/** La liste d'une étape à un lieu : la banque, puis les zones (R9c),
+ *  puis le repli historique. */
 export function entreesDe(nomEtape: string, lieu: Lieu): readonly EntreeBanque[] {
-  return BANQUE[lieu][nomEtape] ?? BANQUE[lieu][ETAPE_DE_REPLI];
+  const historique = BANQUE[lieu][nomEtape];
+  if (historique) return historique;
+  const zones = zonesDuNom(nomEtape);
+  if (zones) return entreesDeZones(zones[0], zones[1], lieu);
+  return BANQUE[lieu][ETAPE_DE_REPLI];
 }
 
 /** Prescrit UNE entrée de la banque. Pure. Lève si la banque est
@@ -304,12 +449,24 @@ export function composerEtape(nomEtape: string, ctx: ContexteComposition): Ligne
  *  que le journal recopie. Le tunnel l'ignore. */
 export type ExercicePrescrit = Exercise & {
   prescription?: {
+    /* L'IDENTITÉ de la ligne dans sa prescription (revue finale, P1) :
+       une version courte ou plus légère retire des lignes, et l'index du
+       tableau cesse alors de la désigner. Le journal, la marge et
+       l'acceptation d'une cible n'utilisent QUE celle-ci. */
+    emplacement?: number;
+    /* La ligne a perdu des séries par rapport à sa prescription complète
+       (version courte R8, version plus légère R7) : elle ne propose
+       jamais de hausse pour la version complète. */
+    reduite?: true;
     cle: string;
     fonction: Fonction;
     statut: StatutExercice;
     reps_min: number | null;
     reps_max: number | null;
     charge_type: TypeCharge | null;
+    /* R4 · présents seulement quand une cible acceptée a été recopiée. */
+    charge_cible?: number | null;
+    cible_id?: string;
   };
 };
 
@@ -341,12 +498,17 @@ export function projeterPrescription(lignes: LignePrescription[]): ExercicePresc
       benefit: "",
       muscles: [],
       prescription: {
+        emplacement: l.emplacement,
         cle: l.exercice_cle,
         fonction: l.fonction,
         statut: l.statut,
         reps_min: l.reps_min,
         reps_max: l.reps_max,
         charge_type: l.charge_type,
+        /* R4 · seulement s'il y a une cible : une prescription sans cible
+           garde exactement la projection d'avant. */
+        ...(l.cible_id ? { charge_cible: l.charge_cible ?? null, cible_id: l.cible_id } : {}),
+        ...(l.reduite || (l.series_completes ?? 0) > l.series ? { reduite: true as const } : {}),
       },
     };
   });

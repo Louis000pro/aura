@@ -38,6 +38,8 @@
    que tous les écrans du planning émettent déjà après une écriture.
    ════════════════════════════════════════════════════════════════════ */
 
+import { resolutionDuProgramme } from "@/lib/projectionBase";
+import { decaler } from "@/lib/projection";
 import { createClient } from "@/lib/supabase";
 import { EVT_JOURNEE } from "@/lib/finSeance";
 import { libelleReservation } from "@/lib/journee";
@@ -111,6 +113,17 @@ export type EtatMoteur = {
   /** Le contexte d'entraînement, réduit à ce qui n'est écrit nulle part
    *  ailleurs dans le prompt. Le LIEU n'y est pas : il a déjà sa section. */
   contexte: { seancesCible: number | null; dureeCibleMin: number | null } | null;
+  /** R9a · les jours d'entraînement choisis (1 = lundi), vide sinon. */
+  joursEntrainement?: number[];
+  /** R9a · les séances que le programme pose sur ces jours, sur sept
+   *  jours : des PRÉVISIONS, jamais écrites. */
+  projetees?: { date: string; nom: string; attendaitLe: string | null; conflit: "absence" | "jour_retire" | "adaptation" | null; reservee: boolean }[];
+  /** R9a · le calendrier n'a pas pu être résolu : ne rien affirmer. */
+  resolutionIndisponible?: boolean;
+  /** R9a · la personne a répondu (même « aucun jour »). */
+  joursChoisis?: boolean;
+  /** R9a · une absence en cours ou à venir dans la semaine. */
+  absence?: { debut: string; fin: string } | null;
 };
 
 /* ═══════════════════ La lecture ═══════════════════ */
@@ -169,6 +182,11 @@ async function lireEtatMoteur(userId: string): Promise<EtatMoteur | null> {
   let reserveLe: string | null = null;
   let adaptation: Adaptation | null = null;
   let masquees: string[] = [];
+  let joursEntrainement: number[] = [];
+  let joursChoisis = false;
+  let resolutionIndisponible = false;
+  let projetees: NonNullable<EtatMoteur["projetees"]> = [];
+  let absence: EtatMoteur["absence"] = null;
 
   try {
     const actif = await lireProgrammeActif(userId);
@@ -205,6 +223,31 @@ async function lireEtatMoteur(userId: string): Promise<EtatMoteur | null> {
         const r = await reservationDeLOccurrence(userId, actif.programme.id, suivante.rang);
         reserveLe = r?.date ?? null;
       }
+
+      /* R9a · la même projection que l'accueil et « Ma semaine »
+         (décision 21). Une lecture ratée laisse ces champs vides. */
+      const proj = await resolutionDuProgramme(userId, actif, aujourdhui, 8);
+      if (proj) {
+        joursEntrainement = proj.calendrier.choisi ? [...proj.calendrier.jours] : [];
+        joursChoisis = proj.calendrier.choisi;
+        projetees = (proj.resolution?.jours ?? []).slice(0, MAX_A_VENIR)
+          .map((j) => ({ date: j.date, nom: j.etape.nom, attendaitLe: j.attendaitLe, conflit: j.conflit, reservee: j.reservee }));
+        absence = proj.calendrier.absences.find((a) => a.debut <= decaler(aujourdhui, 7) && a.fin >= aujourdhui) ?? null;
+        /* La prochaine étape du Guide est celle du héros (décision 21).
+           Une résolution VALIDE fait foi, y compris quand elle ne propose
+           rien ; sans jour choisi (`resolution === null`), l'historique. */
+        if (proj.resolution) {
+          const p = proj.resolution.proposee;
+          etape = p ? { id: p.etape.id, nom: p.etape.nom } : null;
+          reserveLe = null;
+        }
+      } else {
+        /* ⚠️ Résolution indisponible : on ne présente pas la suite brute
+           comme le résultat du calendrier (tour 40). */
+        resolutionIndisponible = true;
+        etape = null;
+        reserveLe = null;
+      }
     }
   } catch (e) {
     // Le Guide dira ce qu'il sait du planning, et rien du programme.
@@ -237,6 +280,7 @@ async function lireEtatMoteur(userId: string): Promise<EtatMoteur | null> {
   return {
     aujourdhui, programme, cycle, etapeBrute, etape, reserveLe,
     adaptation, masquees, aVenir, recent, contexte,
+    joursEntrainement, joursChoisis, projetees, absence, resolutionIndisponible,
   };
 }
 
@@ -333,7 +377,7 @@ export function resumeMoteur(etat: EtatMoteur | null): string | null {
     lignes.push(ligne);
   } else if (etat.programme && etat.masquees.length > 0) {
     lignes.push("Prochaine étape : aucune, l’adaptation en cours met tout le cycle de côté.");
-  } else if (etat.programme) {
+  } else if (etat.programme && !etat.resolutionIndisponible) {
     lignes.push("Prochaine étape : aucune.");
   }
 
@@ -342,6 +386,32 @@ export function resumeMoteur(etat: EtatMoteur | null): string | null {
     const motif = etat.adaptation.motif ? " Motif noté : " + etat.adaptation.motif.slice(0, MAX_MOTIF) + "." : "";
     lignes.push(
       "Adaptation en cours jusqu’au " + libelleJour(etat.adaptation.fin) + " : " + quoi + "." + motif,
+    );
+  }
+
+  if (etat.resolutionIndisponible) {
+    lignes.push("Calendrier d’entraînement momentanément illisible : n’annonce aucune prochaine séance ni aucun jour, dis seulement que tu ne peux pas le lire pour l’instant.");
+  }
+  if (etat.joursChoisis) {
+    const NOMS = ["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"];
+    lignes.push(etat.joursEntrainement && etat.joursEntrainement.length > 0
+      ? "Jours d’entraînement choisis : " + etat.joursEntrainement.map((j) => NOMS[j - 1]).join(", ") + "."
+      : "Jours d’entraînement : aucun, par choix.");
+  }
+  if (etat.absence) {
+    lignes.push("Absence déclarée du " + libelleJour(etat.absence.debut) + " au " + libelleJour(etat.absence.fin) + " : rien n’est proposé pendant ces jours.");
+  }
+  if (etat.projetees && etat.projetees.length > 0) {
+    lignes.push(
+      "Le programme pose ses prochaines séances sur ces jours (prévisions, rien n’est écrit) : "
+      + etat.projetees
+        .map((p) => libelleReservation(p.date, etat.aujourdhui) + " " + p.nom.slice(0, MAX_TITRE)
+          + (p.reservee ? " (réservée)" : "")
+          + (p.conflit === "absence" ? " (réservée pendant une absence)"
+            : p.conflit === "jour_retire" ? " (réservée un jour retiré)"
+            : p.conflit === "adaptation" ? " (réservée, mais l’adaptation la met de côté)" : "")
+          + (p.attendaitLe ? " (attendue " + libelleReservation(p.attendaitLe, etat.aujourdhui) + ", elle a glissé)" : ""))
+        .join(" · ") + ".",
     );
   }
 

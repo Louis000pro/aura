@@ -20,6 +20,8 @@
    `terminerSeance` qui referme, depuis le lanceur global.
    ════════════════════════════════════════════════════════════════════ */
 
+import { appliquerCibles, type CibleOuverte } from "@/lib/progression";
+import { ciblesOuvertes } from "@/lib/progressionBase";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useWorkoutLaunch } from "@/context/WorkoutLaunchContext";
@@ -44,7 +46,17 @@ import {
 } from "@/lib/adaptation";
 import type { EtatJournee } from "@/lib/journee";
 import { projeterPrescription } from "@/lib/banqueEtapes";
-import { ecrireOccurrence, empreinteModele, modeleDeLEtape, type ModeleDeLOccurrence } from "@/lib/prescription";
+import { ecrireOccurrence, empreinteModele, modeleDeLEtape, modeleDeLOccurrence, type ModeleDeLOccurrence } from "@/lib/prescription";
+import { lireVariete, seriesRecentes } from "@/lib/varieteBase";
+import type { Exercise } from "@/components/WorkoutGuideModal";
+import { estimerMinutes, exercicesCourts, itemDExercice, lignesCourtes, raccourcir } from "@/lib/dureeLibre";
+import {
+  allegerPourZone, allegerExercices, fonctionsDe, libelleAllege, phraseRecouvrement, recouvrement,
+  type SerieRecente,
+} from "@/lib/variete";
+import type { Zone } from "@/lib/banqueEtapes";
+import { resolutionDuProgramme, type ResolutionProgramme } from "@/lib/projectionBase";
+import { choixSuite, libelleAttente, libelleJourProjete } from "@/lib/projection";
 
 const DAY_FULL = ["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"];
 
@@ -72,6 +84,20 @@ export type Journee = {
   reservation: PlanningDay | null;
   /** Le jour de cette réservation, dit à voix haute : « mardi 8 ». */
   reserveLe: string | null;
+  /**
+   * R9a · LA PROJECTION sur cette semaine et la suivante : le programme
+   * posé sur les jours d'entraînement, jamais écrit. `null` = lecture
+   * ratée ou pas encore revenue ; `jours: []` = aucun jour choisi.
+   */
+  projection: ResolutionProgramme | null;
+  /** Le jour prévu de la prochaine séance, dit à voix haute, quand des
+   *  jours sont choisis et qu'elle n'a pas de réservation. */
+  prevuLe: string | null;
+  /** « t'attendait mercredi », ou `null`. */
+  attendait: string | null;
+  /** R9a · la résolution du programme a raté : ce qui est affiché date de
+   *  la dernière lecture réussie (tour 40). */
+  indisponible: boolean;
   /**
    * V8 · L'ADAPTATION QUI S'APPLIQUE AUJOURD'HUI, ou `null`.
    *
@@ -105,7 +131,7 @@ export type Journee = {
    *  l'étape du cycle, matérialisée à cet instant et jamais avant. */
   lancerAujourdhui: () => void;
   /** Lance une intention précise (un supplément, un autre jour). */
-  lancerIntention: (d: PlanningDay, options?: { repetition?: boolean }) => void;
+  lancerIntention: (d: PlanningDay, options?: { repetition?: boolean; courte?: number }) => void;
   /** Relance la séance DÉJÀ TERMINÉE aujourd'hui (« Refaire la séance »).
    *  C'est une répétition, donc un supplément : elle ne referme aucune
    *  étape et ne fait pas avancer le cycle. Ne fait rien s'il n'y a rien
@@ -115,6 +141,18 @@ export type Journee = {
    *  son étape, donc la faire refermera bien le cycle. Rend `false` si
    *  l'écriture n'a pas pris. */
   daterEtape: (date: string) => Promise<boolean>;
+  /** R7 · « Ton dos a travaillé hier » : la phrase et le choix léger, ou `null`. */
+  recouvrement: { phrase: string; leger: string } | null;
+  /** R7 · la même séance, moins de séries là où ça vient de travailler. */
+  lancerAllege: () => void;
+  /** R8 · ce que le bouton principal lancerait, vu par l'estimation, ou
+   *  `null` s'il ne lance rien. Sert à la feuille « J'ai moins de temps ». */
+  aLancer: { titre: string; exercices: Exercise[] } | null;
+  /** R8 · son estimation, échauffement compris, en minutes. */
+  dureeMin: number | null;
+  /** R8 · la même séance raccourcie à `minutes`. Elle ne referme la
+   *  séance prévue que si elle en garde le rôle (décision 38). */
+  lancerCourt: (minutes: number) => void;
 };
 
 export function useJournee({ creerProgramme = false }: { creerProgramme?: boolean } = {}): Journee {
@@ -128,6 +166,12 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
   const [gen, setGen] = useState<GenInput | null>(null);
   const [etape, setEtape] = useState<EtapeOccurrence | null>(null);
   const [reservation, setReservation] = useState<PlanningDay | null>(null);
+  const [projection, setProjection] = useState<ResolutionProgramme | null>(null);
+  const [indisponible, setIndisponible] = useState(false);
+  /* Le programme dont l'écran montre la suite : une résolution ratée ne
+     garde l'affichage que pour CE programme. Une ref, lue dans `charger`
+     sans en faire une dépendance. */
+  const programmeAfficheRef = useRef<string | null>(null);
   /* R2 · le modèle de l'étape suivante pour ce lieu : écrit, ou composé
      en mémoire. `null` = pas d'étape, ou lecture ratée (on ne lance pas).
      ⚠️ Il porte l'occurrence pour laquelle il a été lu (tour 22). */
@@ -139,6 +183,10 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
   const [niveau, setNiveau] = useState<string | null>(null);
   const [doneStats, setDoneStats] = useState<{ minutes: number; kcal: number } | null>(null);
 
+  /* R7 · les séries faites hier et aujourd'hui, pour dire un recouvrement.
+     `null` = pas lu : on se tait, rien n'est bloqué. */
+  const [recentes, setRecentes] = useState<SerieRecente[] | null>(null);
+
   const today = todayYmd();
   const semaineDates = useMemo(() => weekDates(new Date(today + "T00:00:00")), [today]);
 
@@ -147,16 +195,31 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
     const numero = ++lectureEnCours.current;
     const derniere = () => numero === lectureEnCours.current;
     const supabase = createClient();
-    const { data: prof } = await supabase
+    const { data: prof, error: errProfil } = await supabase
       .from("mon_profil")
       .select("onboarding_level, onboarding_sessions_week, onboarding_goals")
       .eq("id", user.id)
       .maybeSingle();
+    /* Revue finale (P2) · ERREUR ≠ ABSENCE : un profil illisible n'est pas
+       un questionnaire jamais rempli. On garde ce qui est affiché et on dit
+       que la lecture a échoué, au lieu d'ouvrir la mise en route. */
+    if (errProfil) {
+      console.error("[journee] profil illisible :", errProfil.message);
+      if (!derniere()) return;
+      setIndisponible(true);
+      setPret(true);
+      return;
+    }
 
     const aRepondu = !!(prof && (prof.onboarding_level || prof.onboarding_sessions_week
       || (Array.isArray(prof.onboarding_goals) && prof.onboarding_goals.length > 0)));
     const { location, equip } = await loadLieu(user.id);
     if (!derniere()) return;
+    {
+      const debutHier = new Date(todayYmd() + "T00:00:00");
+      debutHier.setDate(debutHier.getDate() - 1);
+      void seriesRecentes(user.id, debutHier).then((r) => { if (derniere()) setRecentes(r); });
+    }
     setNiveau(prof?.onboarding_level ?? null);
 
     if (!aRepondu) {
@@ -194,48 +257,97 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
        de donner ses réponses. Ici c'est le REPLI, pour les comptes qui
        ont répondu avant que le questionnaire ne sache le faire — et il
        n'est armé que sur Entraînement. L'accueil, lui, lit. */
+    /* ⚠️ Tour 41 · TOUTE CETTE LECTURE CONVERGE VERS UN SEUL « JE NE SAIS
+       PAS ». Une panne, où qu'elle survienne (programme, adaptation,
+       occurrences, résolution, modèle), garde l'ensemble déjà affiché et
+       le dit (« Programme non relu · Réessayer »), y compris au premier
+       chargement. Seule la dernière lecture publie. Un autre programme,
+       lui, ne garde rien de l'ancien. */
+    let actifLu: ProgrammeEtCycle | null | undefined;
+    let coucheLue: Adaptation | null = null;
+    const indisponibleEtGarder = () => {
+      if (!derniere()) return;
+      const memeProgramme = actifLu === undefined
+        || (!!actifLu && programmeAfficheRef.current === actifLu.programme.id);
+      setIndisponible(true);
+      if (!memeProgramme) {
+        setProgramme(actifLu ?? null);
+        programmeAfficheRef.current = actifLu?.programme.id ?? null;
+        setAdaptation(coucheLue);
+        setEtape(null);
+        setModele(null);
+        setReservation(null);
+        setProjection(null);
+      }
+      setPret(true);
+    };
     try {
+      /* ⚠️ LE PROGRAMME NE NAÎT QUE LÀ OÙ ON L'AUTORISE (V7A). Il se crée
+         normalement à la sortie du questionnaire, là où la personne vient
+         de donner ses réponses. Ici c'est le REPLI, pour les comptes qui
+         ont répondu avant que le questionnaire ne sache le faire — et il
+         n'est armé que sur Entraînement. L'accueil, lui, lit. */
       const actif = creerProgramme
         ? await getOrCreateProgramme(user.id)
         : await lireProgrammeActif(user.id);
+      actifLu = actif;
       /* ⚠️ V8 · L'ADAPTATION SE LIT AVANT L'ÉTAPE, PARCE QU'ELLE DÉCIDE
          DE L'ÉTAPE. Une requête, et seulement s'il y a un programme :
          sans programme il n'y a pas de cycle à adapter. Elle est
          rattachée au programme ACTIF, donc une nouvelle version du
          programme cesse d'être adaptée d'elle-même, sans écriture. */
       const couche = actif ? await adaptationDuJour(user.id, actif.programme.id, todayYmd()) : null;
-      const suivante = actif
-        ? await etapeSuivanteDe(user.id, actif, (e) => etapeMasquee(e.id, couche))
-        : null;
+      coucheLue = couche;
+      /* R9a · AVEC UN CALENDRIER CHOISI, LA SÉANCE PROPOSÉE VIENT DE LA
+         RÉSOLUTION PARTAGÉE (décision 21) : la tête de la suite hors
+         réservations futures. Sans calendrier choisi, la suite brute fait
+         foi, et elle ne se lit QUE dans ce cas (tour 41). */
+      const proj = await resolutionDuProgramme(user.id, actif, todayYmd());
+      const choix = choixSuite(proj);
+      /* ⚠️ Tour 40 · RÉSOLUTION INDISPONIBLE : jamais la suite brute à sa
+         place, ce serait annoncer autre chose que le calendrier. */
+      if (choix.genre === "indisponible") { indisponibleEtGarder(); return; }
+      const suivante = choix.genre === "historique"
+        ? (actif ? await etapeSuivanteDe(user.id, actif, (e) => etapeMasquee(e.id, couche)) : null)
+        : choix.proposee ? { ...choix.proposee.etape, rang: choix.proposee.rang } : null;
       /* ⚠️ R2 · tour 22 · L'ÉTAPE ET SON MODÈLE SE PUBLIENT ENSEMBLE.
          Publier l'étape avant d'avoir lu son modèle laissait l'écran,
          le temps d'une requête, avec l'étape B et le modèle de A. */
       const ctxModele = contexteDe(reglages);
       const lu = suivante ? await modeleDeLEtape({ id: suivante.id, nom: suivante.nom }, ctxModele) : null;
+      /* R7 · le réglage de variété décide des complémentaires : illisible,
+         on ne publie pas un contenu que l'écriture ne reprendrait pas. */
+      const variete = suivante ? await lireVariete(user.id) : null;
+      if (suivante && !variete) { indisponibleEtGarder(); return; }
+      /* ⚠️ R9a · tour 43 · `modeleDeLEtape` rend `null` quand il ne sait
+         pas (panne, modèle sans lignes) ; l'absence de modèle, elle, rend
+         la composition. Une étape sans modèle lisible n'est donc pas
+         publiable : on garde ce qui est affiché et on le dit. */
+      if (suivante && !lu) { indisponibleEtGarder(); return; }
       /* ⚠️ ET ON DEMANDE À LA BASE SI CETTE ÉTAPE A DÉJÀ UN JOUR.
-         C'est la réparation du défaut du 2026-09-06 : le héros ne
-         regardait que les intentions D'AUJOURD'HUI, et `etapeSuivante`
-         ne dérive son curseur que des étapes REFERMÉES. Une étape
-         réservée pour mardi était donc invisible aux deux, et l'accueil
-         la reproposait « quand tu veux » un dimanche. La chercher dans
-         la semaine chargée ne suffit pas : depuis que le sélecteur
-         propose quinze jours, elle vit souvent au-delà. Une requête, sur
-         la clé de l'invariant lui-même, et seulement s'il y a une étape.
+         C'est la réparation du défaut du 2026-09-06 : une étape réservée
+         pour mardi ne doit pas être reproposée « quand tu veux ». On la
+         cherche en base, jamais dans la semaine chargée.
          R6 · LA RÉSERVATION DE CETTE OCCURRENCE-LÀ, pas de l'étape en
          général : une occurrence = une ligne (`uniq_occurrence`). */
       const resa = suivante && actif
         ? await reservationDeLOccurrence(user.id, actif.programme.id, suivante.rang)
         : null;
       if (!derniere()) return;
+      setIndisponible(false);
+      setProjection(proj);
       setProgramme(actif);
+      programmeAfficheRef.current = actif?.programme.id ?? null;
       setAdaptation(couche);
       setEtape(suivante);
-      setModele(suivante && lu
-        ? { ...lu, etapeId: suivante.id, rang: suivante.rang, lieu: ctxModele.lieu }
+      setModele(suivante && lu && variete
+        ? modeleDeLOccurrence(lu, suivante, ctxModele, variete, actif?.cycle.length ?? 1)
         : null);
       setReservation(resa);
     } catch (e) {
       console.error("Programme load error", e);
+      indisponibleEtGarder();
+      return;
     }
     if (derniere()) setPret(true);
   }, [user, creerProgramme]);
@@ -255,7 +367,18 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
   }, [charger]);
 
   const parJour = useMemo(() => parDate(semaine), [semaine]);
-  const intentionsDuJour = useMemo(() => parJour[today] ?? [], [parJour, today]);
+  /* Revue finale (P2) · une réservation EN CONFLIT aujourd'hui (absence,
+     jour retiré, adaptation qui la masque) ne se propose pas d'elle-même
+     sur l'accueil : « Ma semaine » dit la même chose, et c'est là qu'on
+     choisit explicitement de la faire quand même. */
+  const resolutionAffichee = projection && projection.userId === (user?.id ?? null) ? projection : null;
+  const enConflit = useMemo(() => new Set((resolutionAffichee?.resolution?.jours ?? [])
+    .filter((j) => j.date === today && j.reservee && !!j.conflit)
+    .map((j) => `${resolutionAffichee?.programmeId}|${j.rang}`)), [resolutionAffichee, today]);
+  const intentionsDuJour = useMemo(
+    () => (parJour[today] ?? []).filter((d) => !(d.etapeId && enConflit.has(`${d.programmeId}|${d.rang}`))),
+    [parJour, today, enConflit],
+  );
   const jour = principale(intentionsDuJour);
   const extras = useMemo(() => supplements(intentionsDuJour), [intentionsDuJour]);
 
@@ -278,7 +401,14 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
     !!adaptation && !!programme && programme.cycle.length > 0
     && etapesCompatibles(programme.cycle, adaptation).length === 0;
 
-  const etat = etatJournee({ pret, besoinSetup, jour, etape, adaptationBloque });
+  const etat = etatJournee({ pret, besoinSetup, jour, etape, adaptationBloque, indisponible });
+
+  /* R9a · la projection ne parle de la prochaine séance que si c'est la
+     MÊME occurrence que celle du héros (même rang). */
+  const prochaine = projection && user && projection.userId === user.id
+    && projection.programmeId === (programme?.programme.id ?? null)
+    ? projection.resolution?.jours.find((j) => !j.reservee && !!etape && j.rang === etape.rang) ?? null
+    : null;
 
   /* Ce qu'il faut pour composer une semaine QUI SAIT D'OÙ ELLE VIENT :
      le cycle avec ses identifiants, et les étapes que l'adaptation
@@ -348,6 +478,10 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
   type ContexteHook = ContexteEtape & {
     occ: EtapeOccurrence; adaptationLue: Adaptation | null;
     prescription: string; modele: ModeleDeLOccurrence;
+    /* R4 · les cibles acceptées encore ouvertes, relues avec le contexte.
+       Une lecture ratée n'en recopie aucune : elles restent ouvertes, donc
+       rien n'est perdu. */
+    cibles?: CibleOuverte[];
   };
   const contexteAffiche = useMemo<ContexteHook | null>(() => (
     etape && programme && modeleDeLEtapeAffichee ? {
@@ -365,15 +499,25 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
     const actif = await lireProgrammeActif(user.id);
     if (!actif || actif.programme.id !== programme.programme.id) return null;
     const couche = await adaptationDuJour(user.id, actif.programme.id, todayYmd(), "stricte");
-    const occ = await etapeSuivanteDe(user.id, actif, (e) => etapeMasquee(e.id, couche));
+    const brute = await etapeSuivanteDe(user.id, actif, (e) => etapeMasquee(e.id, couche));
+    /* R9a · la MÊME résolution que l'affichage, relue stricte. */
+    const choix = choixSuite(await resolutionDuProgramme(user.id, actif, todayYmd()));
+    if (choix.genre === "indisponible") throw new Error("resolution_illisible");
+    const occ = choix.genre === "historique"
+      ? brute
+      : choix.proposee ? { ...choix.proposee.etape, rang: choix.proposee.rang } : null;
     if (!occ || !gen) return null;
     /* Le modèle de l'étape RELUE, pour le lieu des réglages : une lecture
        ratée est un refus (« illisible »), jamais une composition. */
     const ctx = contexteDe(gen);
     const lu = await modeleDeLEtape({ id: occ.id, nom: occ.nom }, ctx);
     if (!lu) throw new Error("modele_illisible");
-    const frais: ModeleDeLOccurrence = { ...lu, etapeId: occ.id, rang: occ.rang, lieu: ctx.lieu };
+    const variete = await lireVariete(user.id);
+    if (!variete) throw new Error("variete_illisible");
+    const frais: ModeleDeLOccurrence = modeleDeLOccurrence(lu, occ, ctx, variete, actif.cycle.length);
+    const cibles = (await ciblesOuvertes(user.id, actif.programme.id, occ.id)) ?? [];
     return {
+      cibles,
       programmeId: actif.programme.id,
       etapeId: occ.id, rang: occ.rang, nom: occ.nom,
       adaptationId: couche?.id ?? null,
@@ -389,9 +533,30 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
     if (typeof window !== "undefined") window.dispatchEvent(new Event(EVT_JOURNEE));
   }, []);
 
-  const lancerIntention = useCallback((d: PlanningDay, options?: { repetition?: boolean }) => {
+  /* R8 · CE QUE LE BOUTON LANCERAIT, VU PAR L'ESTIMATION. La même
+     résolution que `lancer`, donc l'aperçu de la version courte porte sur
+     la séance qui partira, et pas sur une voisine. */
+  const aLancer = useMemo(() => {
+    if (etat !== "seance" && etat !== "etape") return null;
+    const quoi = lancementDuJour({ jour, reservation, etape, instancePrete: instance.length > 0 });
+    if (!quoi) return null;
+    if (quoi.genre === "intention") {
+      return hasSeance(quoi.intention)
+        ? { titre: dayTitle(quoi.intention), exercices: quoi.intention.exerciseList }
+        : null;
+    }
+    return etape && instance.length > 0 ? { titre: etape.nom, exercices: instance } : null;
+  }, [etat, jour, reservation, etape, instance]);
+
+  const lancerIntention = useCallback((d: PlanningDay, options?: { repetition?: boolean; allegerZone?: Zone; courte?: number }) => {
     if (!hasSeance(d)) return;
     const titre = dayTitle(d);
+    /* R8 · la version courte se calcule ICI, sur la liste qu'on lance, avec
+       la même règle que l'aperçu. Elle ne déclare la séance prévue comme
+       cible que si elle en garde le rôle : sinon elle se fait en plus et la
+       séance prévue reste à faire (décision 45). */
+    const courte = options?.courte ? raccourcir(d.exerciseList.map(itemDExercice), options.courte) : null;
+    const compte = !courte || courte.compte;
     launchWorkout({
       sessionId: `planning-${d.id ?? d.date}`,
       title: titre,
@@ -404,7 +569,10 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
          le ferait chercher une famille qui n'existe pas. Le titre suffit,
          et c'est déjà lui qui décide de la photo du héros. */
       heroImage: heroImageForSeance({ title: `${titre} ${d.type}` }),
-      exerciseList: d.exerciseList,
+      /* R7 · « Version plus légère » : moins de séries là où ça vient de
+         travailler, mêmes exercices, même séance. */
+      exerciseList: courte ? exercicesCourts(d.exerciseList, courte)
+        : options?.allegerZone ? allegerExercices(d.exerciseList, options.allegerZone) : d.exerciseList,
       /* Sans identité, rien à refermer : une ligne sans `id` ne peut pas
          être marquée, et la marquer par sa date créditerait aussi le
          supplément du même jour (V6b).
@@ -416,7 +584,7 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
          l'instant de la répétition. Sans cible, la fin de séance n'écrit
          rien dans les intentions et le journal enregistre la séance pour
          ce qu'elle est, un supplément hors programme. */
-      cible: !options?.repetition && d.id ? { genre: "intention", intentionId: d.id } : undefined,
+      cible: !options?.repetition && compte && d.id ? { genre: "intention", intentionId: d.id } : undefined,
     });
   }, [launchWorkout]);
 
@@ -429,14 +597,17 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
     if (quoi) lancerIntention(quoi, { repetition: true });
   }, [jour, lancerIntention]);
 
-  const lancerAujourdhui = useCallback(() => {
+  const lancer = useCallback((allegerZone: Zone | null, courteMin: number | null = null) => {
     /* ⚠️ LA DÉCISION EST UNE FONCTION PURE, ET ELLE VIT DANS `journee.ts`.
        Elle porte l'ordre qui compte : la séance datée aujourd'hui, puis
        la RÉSERVATION de l'étape où qu'elle soit posée, puis l'étape libre
        et elle seule. Décider dimanche de faire l'étape réservée mardi est
        légitime ; c'est cette ligne-là qu'on termine, jamais une seconde. */
     const quoi = lancementDuJour({ jour, reservation, etape, instancePrete: instance.length > 0 });
-    if (quoi?.genre === "intention") { lancerIntention(quoi.intention); return; }
+    if (quoi?.genre === "intention") {
+      lancerIntention(quoi.intention, courteMin ? { courte: courteMin } : allegerZone ? { allegerZone } : undefined);
+      return;
+    }
     /* Lancer une étape du cycle : on matérialise son instance À CET
        INSTANT, en mémoire, et on n'écrit RIEN. Si la séance n'est pas
        terminée, il n'en reste aucune trace. */
@@ -447,11 +618,36 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
     if (!contexteAffiche) return;
     void avecEtapeVerifiee(contexteAffiche, relireContexte, (c) => {
       /* La liste ET la prescription viennent du modèle RELU (tour 22). */
-      const liste = projeterPrescription(c.modele.lignes);
+      /* R4 · les cibles acceptées se recopient dans la prescription figée. */
+      const pleines = appliquerCibles(c.modele.lignes, c.cibles ?? [], c.rang)
+        .slice().sort((a, b) => a.emplacement - b.emplacement);
+      /* R8 · la version courte, calculée sur la liste RELUE avec la règle
+         de l'aperçu. Les emplacements gardés restent les leurs : le
+         journal les relie toujours à leur ligne. */
+      const courte = courteMin ? raccourcir(projeterPrescription(pleines).map(itemDExercice), courteMin) : null;
+      const lignesFigees = courte ? lignesCourtes(pleines, courte)
+        : allegerZone ? allegerPourZone(pleines, allegerZone) : pleines;
+      const liste = projeterPrescription(lignesFigees);
+      /* ⚠️ UNE VERSION COURTE QUI PERD LE RÔLE NE FERME RIEN (décision 45).
+         Sans cible, la fin de séance n'écrit aucune occurrence : l'étape
+         reste la suivante, et la séance est enregistrée pour ce qu'elle
+         est. */
+      if (courte && !courte.compte) {
+        launchWorkout({
+          sessionId: `courte-${c.etapeId}`,
+          title: c.nom,
+          duration: courte.minutes,
+          difficulty: difficulte,
+          category: "Force",
+          heroImage: heroImageForSeance({ title: c.nom }),
+          exerciseList: liste,
+        });
+        return;
+      }
       launchWorkout({
       sessionId: `etape-${c.etapeId}`,
       title: c.nom,
-      duration: c.occ.dureeMin ?? 45,
+      duration: courte?.minutes ?? (c.occ.dureeMin ?? estimerMinutes(liste.map(itemDExercice))),
       difficulty: difficulte,
       category: "Force",
       heroImage: heroImageForSeance({ title: c.nom }),
@@ -472,12 +668,33 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
         exerciseList: liste,
         /* R2 · la prescription FIGÉE à cet instant : la fin de séance (et
            son rejeu depuis l'attente locale) l'écrit telle quelle. */
-        prescription: c.modele.lignes.map((l) => ({ ...l })),
+        prescription: lignesFigees.map((l) => ({ ...l })),
         modeleId: c.modele.modeleId,
       },
       });
     }).then((v) => { if (!v.ok) refuser(v.raison); });
   }, [jour, reservation, lancerIntention, etape, instance, programme, gen, launchWorkout, contexteAffiche, relireContexte, refuser]);
+
+  const lancerAujourdhui = useCallback(() => lancer(null), [lancer]);
+  const lancerCourt = useCallback((minutes: number) => lancer(null, minutes), [lancer]);
+
+
+  /* R7 · « TON DOS A TRAVAILLÉ HIER » (décision 36). Un fait, calculé sur
+     la séance que le bouton lancerait VRAIMENT (la même résolution que
+     `lancer`), contre les séries faites hier et aujourd'hui. Seulement
+     quand le héros propose une séance à faire. */
+  const recouvre = useMemo(() => {
+    if (!recentes || (etat !== "seance" && etat !== "etape")) return null;
+    const quoi = lancementDuJour({ jour, reservation, etape, instancePrete: instance.length > 0 });
+    if (!quoi) return null;
+    const liste = quoi.genre === "intention" ? quoi.intention.exerciseList : instance;
+    const hier = new Date(today + "T00:00:00");
+    hier.setDate(hier.getDate() - 1);
+    const p = (n: number) => String(n).padStart(2, "0");
+    const hierYmd = `${hier.getFullYear()}-${p(hier.getMonth() + 1)}-${p(hier.getDate())}`;
+    return recouvrement(fonctionsDe(liste), recentes, today, hierYmd);
+  }, [recentes, etat, jour, reservation, etape, instance, today]);
+  const lancerAllege = useCallback(() => { if (recouvre) lancer(recouvre.zone); }, [recouvre, lancer]);
 
   /* ⚠️ LE SEUL ENDROIT DU PRODUIT QUI DATE UNE ÉTAPE, ET DONC LE SEUL
      QUI CRÉE UNE INTENTION PORTANT SON LIEN VERS LE PROGRAMME. Sans ce
@@ -526,7 +743,7 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
           adaptation_id: c.adaptationId ?? null,
           consommee_le: null,
           lancement_id: null,
-        }, c.modele.modeleId, c.modele.lignes);
+        }, c.modele.modeleId, appliquerCibles(c.modele.lignes, c.cibles ?? [], c.rang));
         if (r.resultat !== "ok" && r.resultat !== "deja") throw new Error("occurrence non écrite");
         if (r.resultat === "ok") { await appliquerRegleDuJour(user.id, date, r.id); return; }
         /* `deja` : elle existait (écrite ailleurs entre-temps) ; on la déplace. */
@@ -559,6 +776,10 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
        cas l'intention EST celle du jour, donc l'état vaut « seance » et
        le héros ne montre plus l'étape. */
     reserveLe: reservation?.date ? libelleReservation(reservation.date, today) : null,
+    projection,
+    indisponible,
+    prevuLe: prochaine ? libelleJourProjete(prochaine.date, today) : null,
+    attendait: prochaine?.attendaitLe ? libelleAttente(prochaine.attendaitLe) : null,
     adaptation,
     adaptationJusquau: adaptation ? libelleJour(adaptation.fin) : null,
     cycleSemaine,
@@ -566,5 +787,10 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
     semaine, setSemaine, gen, programme, besoinSetup, niveau,
     recharger: () => { void charger(); },
     lancerAujourdhui, lancerIntention, refaire, daterEtape,
+    recouvrement: recouvre ? { phrase: phraseRecouvrement(recouvre), leger: libelleAllege(recouvre.zone) } : null,
+    lancerAllege,
+    aLancer,
+    dureeMin: aLancer ? estimerMinutes(aLancer.exercices.map(itemDExercice)) : null,
+    lancerCourt,
   };
 }

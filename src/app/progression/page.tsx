@@ -24,6 +24,11 @@ import {
 } from "lucide-react";
 import WeeklyProgramme from "@/components/WeeklyProgramme";
 import AdaptationSheet from "@/components/entrainement/AdaptationSheet";
+import MaSemaineSheet, { type ALiberer } from "@/components/semaine/MaSemaineSheet";
+import VersionCourteSheet from "@/components/entrainement/VersionCourteSheet";
+import MesJoursSheet from "@/components/semaine/MesJoursSheet";
+import MonProgrammeSheet from "@/components/programme/MonProgrammeSheet";
+import AbsenceSheet from "@/components/semaine/AbsenceSheet";
 import { libelleJour, type Adaptation } from "@/lib/adaptation";
 import { EVT_ADAPTATION } from "@/lib/adaptationDemandee";
 import ChoixJour from "@/components/entrainement/ChoixJour";
@@ -57,7 +62,7 @@ import {
   type AdviceTheme,
 } from "@/lib/adviceArticles";
 import {
-  lireSemaine, saveDay, ajouterIntention, hasSeance, seanceNonFaite, readLieu, ctxFromLieu,
+  lireSemaine, saveDay, ajouterIntention, retirerReservationDuJour, hasSeance, seanceNonFaite, readLieu, ctxFromLieu,
   weekDates, weekDatesForOffset, todayYmd, weekOffsetOf, dayTitle, lieuLabel, normalizeExercises,
   parDate, principale, seancesDuJour, ordonner,
   dayLabelLong, PLANNING_TYPE_BY_CATEGORY,
@@ -227,13 +232,15 @@ function ForkCard({ kind, count, onClick }: {
    ③ Ma semaine — 7 pastilles + « Organiser ». Une phrase qui raconte,
    pas un tableau.
    ════════════════════════════════════════════════════════════════════ */
-function WeekStrip({ week, dates, today, onOrganise }: {
+function WeekStrip({ week, dates, today, onOrganise, prevues }: {
   week: PlanningDay[] | null;
   /** Les sept dates affichées, du lundi au dimanche. C'est ELLES qui font la
    *  colonne : le tableau `week` ne garantit ni sept entrées ni leur ordre. */
   dates: string[];
   today: string;
   onOrganise: () => void;
+  /** R9b · ce que le programme prévoit, jour par jour, sans rien écrire. */
+  prevues?: { date: string; nom: string }[];
 }) {
   const parJour = useMemo(() => parDate(week), [week]);
   const doneCount = week?.filter((d) => d.status === "done").length ?? 0;
@@ -243,7 +250,7 @@ function WeekStrip({ week, dates, today, onOrganise }: {
   if (week) {
     if (todayDay?.status === "done") {
       story = <><b style={{ color: "var(--exp-encre)", fontWeight: 700 }}>{doneCount} séance{doneCount > 1 ? "s" : ""} faite{doneCount > 1 ? "s" : ""}</b>, dont celle d&apos;aujourd&apos;hui.</>;
-    } else if (hasSeance(todayDay)) {
+    } else if (hasSeance(todayDay) || prevues?.some((x) => x.date === today)) {
       story = doneCount > 0
         ? <><b style={{ color: "var(--exp-encre)", fontWeight: 700 }}>{doneCount} séance{doneCount > 1 ? "s" : ""} faite{doneCount > 1 ? "s" : ""}</b>, la {doneCount + 1}<sup>e</sup> t&apos;attend aujourd&apos;hui.</>
         : <>Ta semaine commence, <b style={{ color: "var(--text-1)", fontWeight: 700 }}>première séance aujourd&apos;hui</b>.</>;
@@ -284,11 +291,14 @@ function WeekStrip({ week, dates, today, onOrganise }: {
           const isToday = date === today;
           const isDone = d?.status === "done";
           const isSeance = hasSeance(d);
-          const art = isSeance ? resolveArt({ title: `${d!.title} ${d!.type}` }) : null;
+          /* R9b · une séance PRÉVUE (jamais écrite) se voit, plus pâle. */
+          const prevue = !isSeance ? prevues?.find((x) => x.date === date) ?? null : null;
+          const art = isSeance ? resolveArt({ title: `${d!.title} ${d!.type}` })
+            : prevue ? resolveArt({ title: prevue.nom }) : null;
 
           return (
             <button key={date} onClick={onOrganise}
-              aria-label={`${DAY_FULL[i]}, ${isSeance ? dayTitle(d!) : "repos"}${nbSeances > 1 ? `, ${nbSeances} séances` : ""}`}
+              aria-label={`${DAY_FULL[i]}, ${isSeance ? dayTitle(d!) : prevue ? `${prevue.nom}, prévue` : "rien de prévu"}${nbSeances > 1 ? `, ${nbSeances} séances` : ""}`}
               className="relative flex-1 overflow-hidden cursor-pointer border-none p-0 block"
               style={{
                 height: 60, borderRadius: "var(--r-controle)", background: "#0f0d17",
@@ -301,7 +311,16 @@ function WeekStrip({ week, dates, today, onOrganise }: {
                    comme une séance ratée. */
                 opacity: seanceNonFaite(d, today) ? 0.5 : 1,
               }}>
-              {isSeance && art ? (
+              {prevue && art ? (
+                <>
+                  {/* Photo naturelle (verrou 2026-07-13) : « prévue » se dit
+                      par le chrome, un filet en pointillé, jamais par une
+                      photo atténuée (tour 42). */}
+                  <Photo img={art.img} pos="center 22%" style={{ position: "absolute", inset: 0 }} />
+                  <div className="absolute inset-0" style={{ background: "var(--voile-carte)" }} />
+                  <div className="absolute inset-[3px]" style={{ borderRadius: "calc(var(--r-controle) - 3px)", border: "1.5px dashed rgba(255,255,255,0.75)" }} />
+                </>
+              ) : isSeance && art ? (
                 <>
                   <Photo img={art.img} pos="center 22%" style={{ position: "absolute", inset: 0 }} />
                   <div className="absolute inset-0" style={{ background: "var(--voile-carte)" }} />
@@ -326,8 +345,8 @@ function WeekStrip({ week, dates, today, onOrganise }: {
               )}
               <span className="absolute inset-x-0 bottom-[3px] text-center text-[11px] font-extrabold tracking-wide"
                 style={{
-                  color: isSeance ? "rgba(255,255,255,0.92)" : "var(--text-3)",
-                  textShadow: isSeance ? "0 1px 4px rgba(0,0,0,0.7)" : "none",
+                  color: isSeance || prevue ? "rgba(255,255,255,0.92)" : "var(--text-3)",
+                  textShadow: isSeance || prevue ? "0 1px 4px rgba(0,0,0,0.7)" : "none",
                 }}>
                 {letter}
               </span>
@@ -2129,7 +2148,7 @@ const BALANCE_BUCKET: Record<Family, string> = {
 const fmtDay = (ymd: string) =>
   new Date(ymd + "T00:00:00").toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
 
-function SemaineSheet({ week, today, fetchWeekAt, onClose, onStartDay, onAsk, onAddSession, onAddDay, onMove }: {
+function SemaineSheet({ week, today, fetchWeekAt, onClose, onStartDay, onAsk, onAddSession, onAddDay, onMove, onMesJours }: {
   week: PlanningDay[] | null;
   today: string;
   fetchWeekAt: (offset: number) => Promise<PlanningDay[] | null>;
@@ -2140,6 +2159,8 @@ function SemaineSheet({ week, today, fetchWeekAt, onClose, onStartDay, onAsk, on
   /** Ouvre le catalogue pour poser une séance choisie sur CE jour. */
   onAddDay: (date: string) => void;
   onMove: (intention: PlanningDay, msg: string) => Promise<void>;
+  /** R9b · choisir ses jours d'entraînement (absent si le calendrier est illisible). */
+  onMesJours?: () => void;
 }) {
   const { guide } = useGuideActif();
   const [offset, setOffset] = useState(0);
@@ -2326,6 +2347,13 @@ function SemaineSheet({ week, today, fetchWeekAt, onClose, onStartDay, onAsk, on
           style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.14)", color: "var(--text-2)" }}>
           <Plus size={14} strokeWidth={2.4} /> Séance
         </motion.button>
+        {onMesJours && (
+          <motion.button whileTap={{ scale: 0.96 }} onClick={onMesJours} aria-label="Mes jours d’entraînement"
+            className="px-3 rounded-2xl text-[13px] font-bold cursor-pointer flex items-center gap-1"
+            style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.14)", color: "var(--text-2)" }}>
+            <CalendarDays size={14} strokeWidth={2.2} /> Mes jours
+          </motion.button>
+        )}
       </div>
     </Sheet>
   );
@@ -2636,7 +2664,18 @@ export default function ProgressionPage() {
   const { semaine: week, setSemaine: setWeek, niveau: profileLevel, recharger: loadWeek } = journee;
 
   /* ── UI ── */
-  const [sheet, setSheet] = useState<null | "choisir" | "improviser" | "organiser" | "elan" | "semaine" | "adaptation">(null);
+  const [sheet, setSheet] = useState<null | "choisir" | "improviser" | "organiser" | "elan" | "semaine" | "adaptation" | "jours" | "absence" | "programme">(null);
+  /* R8 · la version courte ouverte depuis la feuille d'un jour. */
+  const [court, setCourt] = useState<{ titre: string; exercices: Exercise[]; lancer: (minutes: number) => void } | null>(null);
+  /* R9c · « Mes jours » ouvert depuis « Mon programme » y revient. */
+  const [joursDepuisProgramme, setJoursDepuisProgramme] = useState(false);
+  /* R9b · le calendrier vient de la MÊME résolution que l'accueil. Un
+     compte qui a choisi ses jours (même zéro) voit « Ma semaine » à deux
+     semaines, sans « Refais ma semaine » ; les autres gardent l'agenda
+     d'avant, avec une porte vers « Mes jours ». */
+  const calendrier = journee.projection?.calendrier ?? null;
+  const joursChoisis = !!calendrier?.choisi;
+  const voirSemaine = sheet === "semaine" || (sheet === "organiser" && joursChoisis);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editSession, setEditSession] = useState<WorkoutSession | null>(null);
   /* Séance pré-remplie : arrive de la bibliothèque (mouvements cochés) ou
@@ -2655,6 +2694,9 @@ export default function ProgressionPage() {
   const [choisirCible, setChoisirCible] = useState<string | null>(null);
   /* Le jour pour lequel le catalogue est ouvert (« Je choisis » d'un jour). */
   const [pourDate, setPourDate] = useState<string | null>(null);
+  /* R9b · tour 42 · la réservation à retirer SEULEMENT une fois la nouvelle
+     séance enregistrée. Annuler le catalogue l'oublie : rien n'a changé. */
+  const [aLiberer, setALiberer] = useState<ALiberer>(null);
   const [activeArticle, setActiveArticle] = useState<AdviceArticle | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(null), 2500); };
@@ -2982,8 +3024,8 @@ export default function ProgressionPage() {
      ⚠️ ELLE AJOUTE, ELLE NE REMPLACE PLUS (V6b). C'était le dernier
      endroit du produit où poser une séance en détruisait une autre, et
      c'est précisément ce que la journée à deux séances rend inutile. */
-  const planifierSeance = async (s: MergedSession, date: string) => {
-    if (!user) return;
+  const planifierSeance = async (s: MergedSession, date: string): Promise<boolean> => {
+    if (!user) return false;
     const saved = readLieu(user.id);
     const jour: PlanningDay = {
       id: null,
@@ -3010,8 +3052,10 @@ export default function ProgressionPage() {
         window.dispatchEvent(new CustomEvent("programme-updated", { detail: { date } }));
       }
       showToast(`${s.title} · ${dayLabelLong(date)} ✓`);
+      return true;
     } catch {
       showToast("Impossible de l’ajouter à ta semaine");
+      return false;
     }
   };
 
@@ -3125,6 +3169,27 @@ export default function ProgressionPage() {
             {dateLabel}
           </p>
         </motion.div>
+
+        {/* ── R9c · Mon programme ──
+            L'entrée en haut d'Entraînement (GO de Louis sur la maquette 08).
+            Une ligne, pas une carte : le sujet de l'écran reste la
+            bibliothèque, le programme se règle en une touche. */}
+        {user && (
+          <button type="button" onClick={() => setSheet("programme")}
+            className="w-full flex items-center justify-between gap-3 py-2.5 mb-3 bg-transparent border-none cursor-pointer text-left"
+            style={{ borderBottom: "1px solid rgba(var(--text-3-rgb),0.16)" }}>
+            <span className="min-w-0">
+              <span className="vy-label block" style={{ color: "var(--text-3)" }}>Mon programme</span>
+              <span className="block text-[16px] font-semibold truncate" style={{ color: "var(--text-0)" }}>
+                {journee.programme ? journee.programme.programme.nom : "Choisir ce que je veux travailler"}
+              </span>
+            </span>
+            <span className="flex items-center gap-1 flex-shrink-0 text-[13px]" style={{ color: "var(--text-2)" }}>
+              {journee.programme && <><span className="vy-nombre">{journee.programme.cycle.length}</span> séances</>}
+              <ChevronRight size={16} />
+            </span>
+          </button>
+        )}
 
         {/* ⚠️ LE HÉROS « AUJOURD'HUI » N'EST PLUS ICI (V7A). Il vit sur
             l'accueil, l'écran où l'on arrive et où la question de la
@@ -3250,7 +3315,10 @@ export default function ProgressionPage() {
           }}
         >
           <div data-tour-anchor="prog-semaine" className="vy-filet">
-            <WeekStrip week={week} dates={semaineDates} today={today} onOrganise={() => setSheet("semaine")} />
+            <WeekStrip week={week} dates={semaineDates} today={today} onOrganise={() => setSheet("semaine")}
+              prevues={journee.projection?.resolution?.jours
+                .filter((j) => !j.reservee && !j.conflit)
+                .map((j) => ({ date: j.date, nom: j.etape.nom }))} />
           </div>
           {journee.programme && (
             <div className="vy-filet">
@@ -3271,7 +3339,77 @@ export default function ProgressionPage() {
 
       {/* ══ Sheets ══ */}
       <AnimatePresence>
-        {sheet === "semaine" && (
+        {court && (
+          <VersionCourteSheet
+            titre={court.titre}
+            exercices={court.exercices}
+            onClose={() => setCourt(null)}
+            onLancer={(m) => { const c = court; setCourt(null); c.lancer(m); }}
+          />
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {voirSemaine && joursChoisis && user && (
+          <MaSemaineSheet
+            userId={user.id}
+            programme={journee.programme}
+            gen={journee.gen}
+            aujourdhui={today}
+            onClose={() => { setSheet(null); void loadWeek(); }}
+            onLancerTete={() => { setSheet(null); journee.lancerAujourdhui(); }}
+            onLancerIntention={(d) => { setSheet(null); startDay(d); }}
+            onVersionCourte={(d) => {
+              setSheet(null);
+              /* La séance de tête : ce que le héros lancerait. Une intention :
+                 elle-même, raccourcie au lancement avec la même règle. */
+              if (d) setCourt({ titre: dayTitle(d), exercices: d.exerciseList, lancer: (m) => journee.lancerIntention(d, { courte: m }) });
+              else if (journee.aLancer) setCourt({ ...journee.aLancer, lancer: journee.lancerCourt });
+            }}
+            onChoisirSeance={(date, liberer) => { setPourDate(date); setALiberer(liberer); setSheet("choisir"); }}
+            onMesJours={() => setSheet("jours")}
+            onAbsence={() => setSheet("absence")}
+            onChange={() => void loadWeek()}
+          />
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {sheet === "jours" && user && calendrier && (
+          <MesJoursSheet
+            userId={user.id}
+            calendrier={calendrier}
+            aujourdhui={today}
+            onClose={() => { setSheet(joursDepuisProgramme ? "programme" : joursChoisis ? "semaine" : null); setJoursDepuisProgramme(false); }}
+            onEnregistre={() => { void loadWeek(); setSheet(joursDepuisProgramme ? "programme" : "semaine"); setJoursDepuisProgramme(false); }}
+          />
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {sheet === "programme" && user && (
+          <MonProgrammeSheet
+            userId={user.id}
+            programme={journee.programme}
+            calendrier={calendrier}
+            gen={journee.gen}
+            aujourdhui={today}
+            onClose={() => setSheet(null)}
+            onMesJours={calendrier ? () => { setJoursDepuisProgramme(true); setSheet("jours"); } : undefined}
+            onActive={() => { setSheet(null); void loadWeek(); }}
+          />
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {sheet === "absence" && user && calendrier && (
+          <AbsenceSheet
+            userId={user.id}
+            calendrier={calendrier}
+            aujourdhui={today}
+            onClose={() => setSheet("semaine")}
+            onEnregistre={() => { void loadWeek(); setSheet("semaine"); }}
+          />
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {sheet === "semaine" && !joursChoisis && (
           <SemaineSheet
             week={week}
             today={today}
@@ -3282,11 +3420,12 @@ export default function ProgressionPage() {
             onAddSession={() => setSheet("choisir")}
             onAddDay={(date) => { setPourDate(date); setSheet("choisir"); }}
             onMove={deplacerIntention}
+            onMesJours={calendrier ? () => setSheet("jours") : undefined}
           />
         )}
       </AnimatePresence>
       <AnimatePresence>
-        {sheet === "organiser" && (
+        {sheet === "organiser" && !joursChoisis && (
           <OrganiserSheet
             cycle={journee.cycleSemaine}
             onClose={() => { setSheet(null); void loadWeek(); }}
@@ -3322,14 +3461,25 @@ export default function ProgressionPage() {
             onClose={() => {
               /* Venu d'un jour de la semaine : on y revient, pas au vide. */
               setSheet(pourDate ? "semaine" : null);
-              setChoisirCible(null); setPourDate(null);
+              setChoisirCible(null); setPourDate(null); setALiberer(null);
             }}
             onStart={pourDate
               ? (s) => {
                   /* Un mini-cours ne se pose pas sur un jour : il se lit. */
                   if (getAdviceArticle(s.id)) { startSession(s); return; }
-                  void planifierSeance(s, pourDate);
-                  setPourDate(null); setChoisirCible(null); setSheet("semaine");
+                  const date = pourDate;
+                  const liberer = aLiberer && aLiberer.date === date ? aLiberer : null;
+                  void (async () => {
+                    const ok = await planifierSeance(s, date);
+                    /* La réservation ne part qu'APRÈS l'enregistrement, et
+                       seulement si elle est encore prévue ce jour-là. */
+                    if (ok && liberer && user) {
+                      try { await retirerReservationDuJour(user.id, liberer.id, liberer.date); }
+                      catch { showToast("La séance du programme est restée sur ce jour"); }
+                      void loadWeek();
+                    }
+                  })();
+                  setPourDate(null); setALiberer(null); setChoisirCible(null); setSheet("semaine");
                 }
               : startSession}
             onUpgrade={() => { setSheet(null); router.push("/premium"); }}
