@@ -6,7 +6,7 @@
    feuille, pas une deuxième écrite ailleurs. */
 
 import { useState, useEffect, useMemo } from "react";
-import { Loader2, X, Link2, ChevronRight } from "lucide-react";
+import { Loader2, X, Link2, Check } from "lucide-react";
 import Sheet from "@/components/communaute/Sheet";
 import { PersonAvatar } from "@/components/communaute/ConversationAvatar";
 import { PseudoRang } from "@/components/rang/IdentiteRang";
@@ -26,9 +26,13 @@ import { refusRelais, type RefusRelais } from "@/lib/defiErreurs";
    fabriquait une discussion à un seul membre, que `titreConversation`
    nommait littéralement « Moi ».
 
-   Un ami choisi : le relais démarre dans votre fil et il reçoit une
-   notification. Le lien : l'attente vit sur /defi, avec le lien en
+   Des amis choisis (1 à 4, donc 5 avec toi) : un ami, le relais démarre
+   dans votre fil duo ; plusieurs, dans un nouveau groupe. Chacun reçoit
+   une notification. Le lien : l'attente vit sur /defi, avec le lien en
    grand, parce que c'est la seule chose qu'il reste à faire. */
+/** Jusqu'à 4 amis : 5 avec toi, la taille maximale d'un groupe. */
+const MAX_AMIS = 4;
+
 export default function AvecQui({ moi, onFermer, onFil, onLien }: {
   moi: string;
   onFermer: () => void;
@@ -40,6 +44,7 @@ export default function AvecQui({ moi, onFermer, onFil, onLien }: {
   const [charge, setCharge] = useState(true);
   const [occupe, setOccupe] = useState<string | null>(null);
   const [refus, setRefus]   = useState<RefusRelais | null>(null);
+  const [choisis, setChoisis] = useState<string[]>([]);
   const rangs = useRangs(useMemo(() => gens.map((g) => g.id), [gens]));
 
   useEffect(() => {
@@ -49,10 +54,17 @@ export default function AvecQui({ moi, onFermer, onFil, onLien }: {
       .finally(() => setCharge(false));
   }, [moi]);
 
-  const avec = async (ami: Personne) => {
-    setOccupe(ami.id);
+  const basculer = (id: string) => {
     setRefus(null);
-    const r = await lancerRelaisAvec(ami.id);
+    setChoisis((c) => c.includes(id) ? c.filter((x) => x !== id)
+      : c.length >= MAX_AMIS ? c : [...c, id]);
+  };
+
+  const lancer = async () => {
+    if (!choisis.length) return;
+    setOccupe("lancer");
+    setRefus(null);
+    const r = await lancerRelaisAvec(choisis);
     setOccupe(null);
     if (r.ok && typeof r.conversation_id === "string") { onFil(r.conversation_id); return; }
     setRefus(refusRelais(r));
@@ -96,11 +108,14 @@ export default function AvecQui({ moi, onFermer, onFil, onLien }: {
         ) : (
           gens.map((p) => {
             const rang = rangs.get(p.id);
+            const pris = choisis.includes(p.id);
+            const plein = !pris && choisis.length >= MAX_AMIS;
             return (
               <button
                 key={p.id}
-                onClick={() => void avec(p)}
-                disabled={occupe !== null}
+                onClick={() => basculer(p.id)}
+                disabled={occupe !== null || plein}
+                aria-pressed={pris}
                 className="flex w-full items-center gap-3 rounded-xl px-1 py-2.5 text-left disabled:opacity-50"
               >
                 <PersonAvatar personne={p} taille={38} rang={rang} />
@@ -119,14 +134,33 @@ export default function AvecQui({ moi, onFermer, onFil, onLien }: {
                     {p.pseudo}
                   </span>
                 )}
-                {occupe === p.id
-                  ? <Loader2 className="h-4.5 w-4.5 flex-shrink-0 animate-spin" style={{ color: "var(--text-3)" }} />
-                  : <ChevronRight className="h-4.5 w-4.5 flex-shrink-0" style={{ color: "var(--text-3)" }} />}
+                <span
+                  className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full border-2"
+                  style={pris
+                    ? { background: "#8B5CF6", borderColor: "#8B5CF6" }
+                    : { borderColor: "rgba(var(--text-3-rgb), .35)" }}
+                >
+                  {pris && <Check className="h-3.5 w-3.5 text-white" strokeWidth={3} />}
+                </span>
               </button>
             );
           })
         )}
       </div>
+
+      {choisis.length > 0 && (
+        <button
+          onClick={() => void lancer()}
+          disabled={occupe !== null}
+          className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 text-[16px] font-bold text-white disabled:opacity-60"
+          style={{ background: "linear-gradient(135deg, #8B5CF6, #C13BC1)", boxShadow: "var(--ombre-action)" }}
+        >
+          {occupe === "lancer" && <Loader2 className="h-4 w-4 animate-spin" />}
+          {choisis.length === 1 && gens.find((g) => g.id === choisis[0])
+            ? `Lancer le relais avec ${gens.find((g) => g.id === choisis[0])!.pseudo}`
+            : `Lancer le relais à ${choisis.length + 1}`}
+        </button>
+      )}
 
       <button
         onClick={() => void parLien()}

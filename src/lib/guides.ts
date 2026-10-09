@@ -944,9 +944,9 @@ const REPLIQUES = {
      Trois phrases, et les trois règles qui décident si un jour compte.
      Pas de quatrième : le reste s'apprend en jouant. */
   "relais.avecqui": {
-    commun: "Le relais se joue à deux, sur une semaine. Il faut quatre jours validés sur sept, jamais deux de suite par la même personne, et une séance d’au moins dix minutes. À chaque maillon, l’affiche se dévoile un peu.",
-    nora:   "Le relais se joue à deux, sur une semaine. Il vous faut quatre jours validés sur sept, jamais deux d’affilée par la même personne, et une séance d’au moins dix minutes pour que le jour compte. À chaque maillon franchi, l’affiche se dévoile un peu plus.",
-    sasha:  "Le relais se joue à deux, sur une semaine. Quatre jours validés sur sept, jamais deux de suite par la même personne, dix minutes minimum pour qu’un jour compte. Chaque maillon dévoile un peu l’affiche.",
+    commun: "Le relais se joue de deux à cinq, sur une semaine. Chacun fait ses quatre maillons, deux par jour au plus, et on passe au suivant quand tout le monde a fait le sien. À chaque maillon, l’affiche se dévoile un peu.",
+    nora:   "Le relais se joue de deux à cinq, sur une semaine. Chacun fait ses quatre maillons, deux par jour au plus, et on passe au suivant quand tout le monde a fait le sien. À chaque maillon, l’affiche se dévoile un peu.",
+    sasha:  "Le relais se joue de deux à cinq, sur une semaine. Chacun fait ses quatre maillons, deux par jour au plus, et on passe au suivant quand tout le monde a fait le sien. À chaque maillon, l’affiche se dévoile un peu.",
   },
 
   /* ── La montée de rang ──

@@ -534,12 +534,13 @@ export async function lancerRelaisDansConversation(convId: string): Promise<Repo
  * L'ordre compte : le fil existe avant le relais, donc il n'y a plus
  * de conversation à un seul membre, celle qui s'appelait « Moi ».
  */
-export async function lancerRelaisAvec(amiId: string): Promise<Reponse> {
+export async function lancerRelaisAvec(amis: string[]): Promise<Reponse> {
   // Import dynamique exprès : `messagerie.ts` est un gros module, et
   // `defi.ts` est tiré par le tunnel de séance et l'accueil, qui n'ont
   // rien à faire de la messagerie.
   const { creerConversation } = await import("@/lib/messagerie");
-  const conv = await creerConversation([amiId]);
+  // Un ami : votre fil duo (retrouvé s'il existe). Plusieurs : un groupe.
+  const conv = await creerConversation(amis);
   if (!conv.ok || !conv.conversation_id) {
     return { ok: false, raison: conv.raison ?? "conversation_impossible" };
   }
