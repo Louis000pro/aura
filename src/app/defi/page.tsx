@@ -15,7 +15,7 @@ import Image from "next/image";
 import { useAuth } from "@/context/AuthContext";
 import PosterDefi from "@/components/defi/PosterDefi";
 import {
-  chargerDefi, annulerRelais, lienInvitation, etatPoster,
+  chargerDefi, annulerRelais, lienInvitation, etatPoster, lancerRelaisInvite,
   joursRestants, fenetreFinie, etatCoop, niveauxCoop, type Coequipier,
   defiFactice, SERIES, CLE_DEVOILE, EVT_RELAIS, type Defi, type Membre,
 } from "@/lib/defi";
@@ -257,6 +257,73 @@ export default function DefiPage() {
       )}
     </div>
   );
+
+  /* ── En attente des réponses aux invitations ────────────────
+     Personne n'est engagé sans avoir dit oui : on montre où en est
+     chacun, et l'auteur peut partir avec ceux qui ont accepté. */
+  if (defi.statut === "inscription" && defi.invitations.length > 0) {
+    const enAttente = defi.invitations.filter((i) => i.statut === "en_attente").length;
+    const prets = defi.membres.length;
+    const suis = defi.auteur === user?.id;
+    const lancerMaintenant = async () => {
+      setCreation(true);
+      setErreur(null);
+      const r = await lancerRelaisInvite(defi.runId);
+      setCreation(false);
+      if (r.ok && typeof r.conversation_id === "string") { router.push(`/communaute/${r.conversation_id}`); return; }
+      if (r.ok) { void recharger(); return; }
+      setErreur("Impossible de lancer le relais pour le moment.");
+    };
+    const lignes = [
+      ...defi.membres.map((m) => ({ id: m.userId, pseudo: m.userId === user?.id ? "Toi" : m.pseudo, avatar: m.avatar, statut: "acceptee" as const })),
+      ...defi.invitations.filter((i) => i.statut !== "acceptee").map((i) => ({ id: i.userId, pseudo: i.pseudo, avatar: i.avatar, statut: i.statut })),
+    ];
+    const libelle = { acceptee: "Partant", en_attente: "Pas encore accepté", refusee: "A décliné", expiree: "Sans réponse" } as const;
+    return (
+      <Cadre equipier={equipier} fil={fil} effectif={defi.membres.length}>
+        <div className="mx-auto w-full max-w-[360px]">
+          <PosterDefi serie={defi.serie} etat={1} noms={noms} titre={serie.nom} className="shadow-2xl" />
+
+          <h1 className="mt-7 text-[26px] font-bold leading-tight" style={{ color: "var(--text-0)" }}>
+            {enAttente > 0 ? "On attend les réponses." : "Tout le monde a répondu."}
+          </h1>
+          <p className="mt-2 text-[16px] leading-relaxed" style={{ color: "var(--text-body)" }}>
+            Le relais démarre quand tout le monde a répondu, avec ceux qui ont
+            accepté. Personne n&apos;est engagé sans avoir dit oui.
+          </p>
+
+          <ul className="mt-5 flex flex-col gap-2.5">
+            {lignes.map((l) => (
+              <li key={l.id} className="flex items-center gap-3">
+                <Pdp avatar={l.avatar} pseudo={l.pseudo} ring={l.statut === "acceptee" ? "violet" : "jaune"} taille={32} />
+                <span className="min-w-0 flex-1 truncate text-[16px] font-medium" style={{ color: "var(--text-1)" }}>{l.pseudo}</span>
+                <span className="flex items-center gap-1 text-[13px]"
+                  style={{ color: l.statut === "acceptee" ? "var(--teal-encre)" : "var(--text-3)" }}>
+                  {l.statut === "acceptee" && <Check className="h-3.5 w-3.5" strokeWidth={3} />}
+                  {libelle[l.statut]}
+                </span>
+              </li>
+            ))}
+          </ul>
+
+          {suis && enAttente > 0 && prets >= 2 && (
+            <button
+              onClick={() => void lancerMaintenant()}
+              disabled={creation}
+              className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl px-5 py-4 text-[16px] font-semibold text-white disabled:opacity-60"
+              style={{ background: "linear-gradient(135deg, #8B5CF6, #C13BC1)" }}
+            >
+              {creation && <Loader2 className="h-4 w-4 animate-spin" />}
+              Lancer maintenant à {prets}
+            </button>
+          )}
+          {erreur && <p className="mt-3 text-center text-[13px]" style={{ color: "#E8620C" }}>{erreur}</p>}
+
+          {suis && arret}
+        </div>
+      </Cadre>
+    );
+  }
 
   if (defi.statut === "inscription") {
     const lien = defi.code ? lienInvitation(defi.code) : "";

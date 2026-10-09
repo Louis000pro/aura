@@ -10,6 +10,7 @@ import { useAuth } from "@/context/AuthContext";
 import AnnouncementCard from "@/components/AnnouncementCard";
 import { ANNOUNCEMENTS, getUnseenAnnouncementIds, markAnnouncementsSeen } from "@/lib/announcements";
 import { TYPES_NOTIF_VIVANTS, type NotifType } from "@/lib/notifsVivantes";
+import ReponseInvitation, { runDeLien } from "@/components/defi/ReponseInvitation";
 
 
 type Notif = {
@@ -27,6 +28,7 @@ type Notif = {
 function notifLabel(n: Notif): string {
   switch (n.type) {
     case "relais":  return `a franchi son maillon`;
+    case "relais_invitation": return `t’invite à un relais`;
     case "message": return `t’a envoyé un message`;
     // « t'a ajouté à ses amis » est vrai des deux côtés : une demande est
     // déjà un ajout, elle attend seulement d'être rendue.
@@ -38,6 +40,7 @@ function NotifIcon({ type }: { type: NotifType }) {
   const cfg: Record<NotifType, { icon: React.ReactNode; bg: string; color: string }> = {
     follow:  { icon: <UserPlus size={9} />,                     bg: "rgba(var(--violet-mid-rgb),0.6)", color: "var(--exp-encre)" },
     relais:  { icon: <Sparkles size={9} />,                     bg: "rgba(215,166,42,0.22)", color: "#D7A62A" },
+    relais_invitation: { icon: <Sparkles size={9} />,           bg: "rgba(139,92,246,0.16)", color: "#8B5CF6" },
     message: { icon: <MessageCircle size={9} fill="currentColor" />, bg: "rgba(139,92,246,0.16)", color: "#8B5CF6" },
   };
   const c = cfg[type] ?? cfg.follow;
@@ -274,8 +277,11 @@ export default function NotificationBell({ side = "right" }: { side?: "right" | 
                 </p>
               </div>
             ) : (
-              notifs.map((n, i) => (
-                <Link key={n.id} href={n.lien ?? (n.post_id ? `/profil` : `/profil/${encodeURIComponent(n.from_pseudo)}`)} onClick={() => setOpen(false)}>
+              notifs.map((n, i) => {
+                // Une invitation se règle ici même : la ligne n'est pas un
+                // lien, elle porte ses deux boutons.
+                const runInvite = n.type === "relais_invitation" ? runDeLien(n.lien) : null;
+                const ligne = (
                   <motion.div
                     initial={{ opacity: 0, x: -8 }}
                     animate={{ opacity: 1, x: 0 }}
@@ -313,6 +319,9 @@ export default function NotificationBell({ side = "right" }: { side?: "right" | 
                       <p className="text-[11px] mt-0.5" style={{ color: "var(--text-3)" }}>
                         {formatRelative(n.created_at)}
                       </p>
+                      {runInvite && (
+                        <ReponseInvitation runId={runInvite} moi={user.id} onFini={() => setOpen(false)} />
+                      )}
                     </div>
 
                     {/* Unread dot */}
@@ -320,8 +329,15 @@ export default function NotificationBell({ side = "right" }: { side?: "right" | 
                       <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: "var(--accent)" }} />
                     )}
                   </motion.div>
-                </Link>
-              ))
+                );
+                return runInvite
+                  ? <div key={n.id}>{ligne}</div>
+                  : (
+                    <Link key={n.id} href={n.lien ?? (n.post_id ? `/profil` : `/profil/${encodeURIComponent(n.from_pseudo)}`)} onClick={() => setOpen(false)}>
+                      {ligne}
+                    </Link>
+                  );
+              })
             )}
           </div>
         </motion.div>

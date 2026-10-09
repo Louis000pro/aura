@@ -9,6 +9,7 @@ import { useAuth } from "@/context/AuthContext";
 import AnnouncementCard from "@/components/AnnouncementCard";
 import { ANNOUNCEMENTS, getUnseenAnnouncementIds, markAnnouncementsSeen } from "@/lib/announcements";
 import { TYPES_NOTIF_VIVANTS, type NotifType } from "@/lib/notifsVivantes";
+import ReponseInvitation, { runDeLien } from "@/components/defi/ReponseInvitation";
 
 /* ─── Types ─────────────────────────────────────────────────── */
 
@@ -68,6 +69,7 @@ function TypeBadge({ type }: { type: NotifType }) {
     follow:  { icon: <UserPlus size={9} />,                 bg: "rgba(var(--violet-mid-rgb),0.6)", color: "var(--exp-encre)" },
     relais:  { icon: <Sparkle size={9} />,                  bg: "rgba(215,166,42,0.22)",  color: "#D7A62A" },
     message: { icon: <MessageCircle size={9} fill="currentColor" />, bg: "rgba(139,92,246,0.16)", color: "#8B5CF6" },
+    relais_invitation: { icon: <Sparkle size={9} />,        bg: "rgba(139,92,246,0.16)", color: "#8B5CF6" },
   };
   const cfg = cfgMap[type] ?? cfgMap.follow;
 
@@ -348,7 +350,7 @@ export default function NotificationsPage() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.04, duration: 0.25 }}
                   whileHover={{ y: -1, transition: { duration: 0.15 } }}
-                  onClick={() => { if (notif.lien) router.push(notif.lien); }}
+                  onClick={() => { if (notif.lien && notif.type !== "relais_invitation") router.push(notif.lien); }}
                   className="flex items-center gap-3 px-4 py-3.5 rounded-2xl mb-2 relative cursor-pointer"
                   style={{
                     background: notif.read
@@ -374,7 +376,9 @@ export default function NotificationsPage() {
                       <span className="font-semibold">@{notif.from_pseudo}</span>
                       {" "}
                       <span className="font-light">
-                        {notif.type === "relais"
+                        {notif.type === "relais_invitation"
+                          ? "t’invite à un relais"
+                          : notif.type === "relais"
                           ? "a franchi son maillon, l’affiche s’est dévoilée"
                           : notif.type === "message"
                           ? "t’a envoyé un message"
@@ -384,6 +388,9 @@ export default function NotificationsPage() {
                     <p className="text-[11px] mt-0.5" style={{ color: "var(--text-3)" }}>
                       {relativeTime(notif.created_at)}
                     </p>
+                    {notif.type === "relais_invitation" && user && runDeLien(notif.lien) && (
+                      <ReponseInvitation runId={runDeLien(notif.lien)!} moi={user.id} />
+                    )}
                   </div>
 
                   {/* Unread dot */}

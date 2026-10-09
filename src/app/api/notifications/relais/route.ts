@@ -30,6 +30,11 @@ export async function POST(req: NextRequest) {
     // peut engager quelqu'un sur sept jours sans qu'il l'apprenne
     // autrement qu'en ouvrant l'app par hasard.
     const lancement = evenement === "lance";
+    // « invitation » : l'auteur vient d'inviter des amis. Elle va aux
+    // invités en attente, qui ne sont pas encore membres.
+    // « demarre » : le dernier à répondre vient de faire partir le relais.
+    const invitation = evenement === "invitation";
+    const demarrage = evenement === "demarre";
 
     const admin = createAdminClient();
 
@@ -62,26 +67,46 @@ export async function POST(req: NextRequest) {
     // grimpe les siens). L'affiche complète se lit sur le statut.
     const faits   = actionsRes.count ?? 0;
     const pseudo  = acteurRes.data?.pseudo ?? "Quelqu’un";
-    const cible   = (membresRes.data ?? [])
+    let cible = (membresRes.data ?? [])
       .map((m) => m.user_id as string)
       .filter((id) => id !== actor_id);
+
+    if (invitation) {
+      const { data: invites } = await admin
+        .from("relais_invitations")
+        .select("user_id")
+        .eq("run_id", run_id)
+        .eq("invite_par", actor_id)
+        .eq("statut", "en_attente");
+      cible = (invites ?? []).map((i) => i.user_id as string);
+    }
 
     if (!cible.length) return NextResponse.json({ ok: true, envoyees: 0 });
 
     const complete = run.statut === "reussi";
     // Le message raconte, il ne réclame pas : c'est ce qui fait ouvrir
     // par curiosité au lieu de mettre une dette dans la poche de l'autre.
-    const titre = lancement
+    const titre = invitation
+      ? "Invitation à un relais"
+      : demarrage
+      ? "Le relais commence"
+      : lancement
       ? "Un relais commence"
       : complete
       ? "L’affiche est complète"
       : "L’affiche s’est dévoilée";
-    const corps = lancement
+    const corps = invitation
+      ? `${pseudo} t’invite à un relais. Accepte pour le rejoindre.`
+      : demarrage
+      ? `Tout le monde a répondu : ${run.target_days} maillons chacun, et l’affiche se dévoile.`
+      : lancement
       ? `${pseudo} a lancé un relais avec toi. ${run.target_days} maillons chacun, et l’affiche se dévoile.`
       : complete
       ? `${pseudo} a franchi le dernier maillon. Elle est à vous.`
       : `${pseudo} a franchi le maillon ${faits} sur ${run.target_days}.`;
-    const lien = run.conversation_id ? `/communaute/${run.conversation_id}` : "/communaute";
+    const lien = invitation
+      ? "/notifications"
+      : run.conversation_id ? `/communaute/${run.conversation_id}` : "/communaute";
 
     await Promise.allSettled(
       cible.map(async (userId) => {
@@ -90,8 +115,8 @@ export async function POST(req: NextRequest) {
           from_user_id:    actor_id,
           from_pseudo:     pseudo,
           from_avatar_url: acteurRes.data?.avatar_url ?? null,
-          type:            "relais",
-          lien,
+          type:            invitation ? "relais_invitation" : "relais",
+          lien:            invitation ? `/defi?invitation=${run_id}` : lien,
         });
 
         await sendPushToUser({ user_id: userId, categorie: "relais", title: titre, body: corps, url: lien });

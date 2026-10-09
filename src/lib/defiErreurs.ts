@@ -75,6 +75,15 @@ export function refusRelais(r: Brut | null | undefined): RefusRelais {
     case "invitation_invalide":
       return { texte: "Cette invitation n’est plus valable." };
 
+    case "invitation_passee":
+      return { texte: "Cette invitation est passée : le relais a démarré ou s’est arrêté." };
+
+    case "personne_na_accepte":
+      return { texte: "Personne n’a encore accepté ton invitation." };
+
+    case "relation_requise":
+      return { texte: "Tu ne peux inviter que des amis." };
+
     case "relais_en_cours":
       return {
         texte:

@@ -109,6 +109,11 @@ export type Defi = {
   conversationId: string | null;
   /** Quand le relais s'est fini (gagné, expiré ou arrêté). */
   finiLe: string | null;
+  /** Les invités d'un relais lancé depuis « Avec qui ? ». Vide pour un
+   *  relais lancé dans une conversation ou par lien. */
+  invitations: InvitationRelais[];
+  /** Qui a lancé le relais : seul l'auteur peut démarrer sans attendre. */
+  auteur: string | null;
 };
 
 /** Un relais fini ne s'efface pas tout de suite : deux jours pour le
@@ -257,6 +262,7 @@ type RunRow = {
   starts_on: string | null;
   ends_on: string | null;
   conversation_id: string | null;
+  created_by: string | null;
   fini_le: string | null;
 };
 
@@ -288,7 +294,7 @@ export async function chargerDefi(userId: string): Promise<Defi | null> {
   // retente donc sans elle, et le souvenir se contente de durer.
   const avec = await supabase
     .from("challenge_runs")
-    .select("id, statut, serie, target_days, window_days, max_membres, starts_on, ends_on, conversation_id, fini_le")
+    .select("id, statut, serie, target_days, window_days, max_membres, starts_on, ends_on, conversation_id, created_by, fini_le")
     .in("id", ids)
     .in("statut", ["inscription", "en_cours", "reussi", "termine"])
     .order("created_at", { ascending: false })
@@ -299,7 +305,7 @@ export async function chargerDefi(userId: string): Promise<Defi | null> {
   if (avec.error) {
     const sans = await supabase
       .from("challenge_runs")
-      .select("id, statut, serie, target_days, window_days, max_membres, starts_on, ends_on, conversation_id")
+      .select("id, statut, serie, target_days, window_days, max_membres, starts_on, ends_on, conversation_id, created_by")
       .in("id", ids)
       .in("statut", ["inscription", "en_cours", "reussi"])
       .order("created_at", { ascending: false })
@@ -310,10 +316,11 @@ export async function chargerDefi(userId: string): Promise<Defi | null> {
   const run = (lignes[0] as RunRow | undefined) ?? null;
   if (!run) return null;
 
-  const [membresRes, actionsRes, inviteRes] = await Promise.all([
+  const [membresRes, actionsRes, inviteRes, invitations] = await Promise.all([
     supabase.from("challenge_run_members").select("user_id").eq("run_id", run.id),
     supabase.from("challenge_actions").select("jour, user_id").eq("run_id", run.id).order("jour"),
     supabase.from("invites").select("code").eq("run_id", run.id).maybeSingle(),
+    run.statut === "inscription" ? chargerInvitations(run.id).catch(() => []) : Promise.resolve([]),
   ]);
 
   const membreIds = (membresRes.data ?? []).map((m) => m.user_id as string);
@@ -344,6 +351,8 @@ export async function chargerDefi(userId: string): Promise<Defi | null> {
     code: (inviteRes.data?.code as string | undefined) ?? null,
     conversationId: run.conversation_id ?? null,
     finiLe: run.fini_le ?? null,
+    invitations,
+    auteur: run.created_by ?? null,
   };
 
   return defiVisible(defi) ? defi : null;
@@ -431,6 +440,8 @@ export async function chargerRelaisAccueil(userId: string): Promise<RelaisAccuei
     code: null,
     conversationId: run.conversation_id ?? null,
     finiLe: null,
+    invitations: [],
+    auteur: null,
   };
 
   // La semaine passée ne s'annonce pas sur l'accueil : il n'y a plus rien
@@ -527,36 +538,107 @@ export async function lancerRelaisDansConversation(convId: string): Promise<Repo
   return reponse;
 }
 
-/**
- * Lancer un relais AVEC quelqu'un : c'est la porte normale.
- *
- * On ouvre (ou on retrouve) le fil duo, puis on y lance le relais.
- * L'ordre compte : le fil existe avant le relais, donc il n'y a plus
- * de conversation à un seul membre, celle qui s'appelait « Moi ».
- */
-export async function lancerRelaisAvec(amis: string[]): Promise<Reponse> {
-  // Import dynamique exprès : `messagerie.ts` est un gros module, et
-  // `defi.ts` est tiré par le tunnel de séance et l'accueil, qui n'ont
-  // rien à faire de la messagerie.
-  const { creerConversation } = await import("@/lib/messagerie");
-  // Un ami : votre fil duo (retrouvé s'il existe). Plusieurs : un groupe.
-  const conv = await creerConversation(amis);
-  if (!conv.ok || !conv.conversation_id) {
-    return { ok: false, raison: conv.raison ?? "conversation_impossible" };
-  }
-  const r = await lancerRelaisDansConversation(conv.conversation_id);
-  return r.ok ? { ...r, conversation_id: conv.conversation_id } : r;
+/* ── Les invitations ────────────────────────────────────────────
+   Choisir des amis dans « Avec qui ? » ne crée plus rien chez eux :
+   chacun reçoit une INVITATION (dans la cloche), et le relais démarre
+   quand tout le monde a répondu, avec ceux qui ont dit oui. Aucune
+   conversation n'existe avant ce moment-là (Louis, 2026-10-09). */
+export type StatutInvitation = "en_attente" | "acceptee" | "refusee" | "expiree";
+
+export type InvitationRelais = {
+  userId: string;
+  pseudo: string;
+  avatar: string | null;
+  statut: StatutInvitation;
+};
+
+/** Inviter 1 à 4 amis à un relais. Rien ne démarre avant leur réponse. */
+export async function inviterRelais(amis: string[]): Promise<Reponse> {
+  const supabase = createClient();
+  const { data, error } = await supabase.rpc("inviter_relais", { p_amis: amis });
+  if (error) return { ok: false, raison: error.message };
+  const r = data as Reponse;
+  if (r?.ok) notifierRelais(String(r.run_id ?? ""), "invitation");
+  return r;
+}
+
+/** Accepter ou refuser une invitation. Le dernier à répondre fait
+ *  démarrer le relais : `lance` et `conversation_id` le disent. */
+export async function repondreInvitation(runId: string, accepte: boolean): Promise<Reponse> {
+  const supabase = createClient();
+  const { data, error } = await supabase.rpc("repondre_invitation_relais", {
+    p_run: runId, p_accepte: accepte,
+  });
+  if (error) return { ok: false, raison: error.message };
+  const r = data as Reponse;
+  if (r?.lance) notifierRelais(runId, "demarre");
+  if (r?.ok) window.dispatchEvent(new Event(EVT_RELAIS));
+  return r;
+}
+
+/** L'auteur démarre sans attendre ceux qui n'ont pas répondu. */
+export async function lancerRelaisInvite(runId: string): Promise<Reponse> {
+  const supabase = createClient();
+  const { data, error } = await supabase.rpc("lancer_relais_invite", { p_run: runId });
+  if (error) return { ok: false, raison: error.message };
+  const r = data as Reponse;
+  if (r?.lance) notifierRelais(runId, "demarre");
+  return r;
+}
+
+/** Les invitations d'un relais, avec le visage de chacun. */
+async function chargerInvitations(runId: string): Promise<InvitationRelais[]> {
+  const supabase = createClient();
+  const { data } = await supabase
+    .from("relais_invitations")
+    .select("user_id, statut")
+    .eq("run_id", runId)
+    .order("created_at");
+  const lignes = data ?? [];
+  if (!lignes.length) return [];
+  const { data: profils } = await supabase
+    .from("profiles")
+    .select("id, pseudo, avatar_url")
+    .in("id", lignes.map((l) => l.user_id as string));
+  return lignes.map((l) => {
+    const p = profils?.find((x) => x.id === l.user_id);
+    return {
+      userId: l.user_id as string,
+      pseudo: p?.pseudo ?? "…",
+      avatar: p?.avatar_url ?? null,
+      statut: l.statut as StatutInvitation,
+    };
+  });
+}
+
+/** L'invitation encore ouverte que j'ai reçue pour ce relais, s'il y en a
+ *  une. Sert à la cloche : une invitation passée ne propose plus rien. */
+export async function invitationOuverte(runId: string, moi: string): Promise<boolean> {
+  const supabase = createClient();
+  const { data } = await supabase
+    .from("relais_invitations")
+    .select("statut, challenge_runs!inner(statut)")
+    .eq("run_id", runId)
+    .eq("user_id", moi)
+    .eq("statut", "en_attente")
+    .eq("challenge_runs.statut", "inscription")
+    .maybeSingle();
+  return !!data;
 }
 
 /** Prévenir l'équipier qu'un relais vient d'être lancé avec lui.
  *  Sans ça, on peut engager quelqu'un sur sept jours sans qu'il
  *  l'apprenne autrement qu'en ouvrant l'app. Jamais bloquant. */
 export function prevenirLancement(runId: string): void {
+  notifierRelais(runId, "lance");
+}
+
+function notifierRelais(runId: string, evenement: "lance" | "invitation" | "demarre"): void {
   if (!runId) return;
   void fetchAuth("/api/notifications/relais", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ run_id: runId, evenement: "lance" }),
+    body: JSON.stringify({ run_id: runId, evenement }),
   }).catch(() => {});
 }
 
@@ -725,6 +807,8 @@ export function defiFactice(quoi: string, moi: string, monPseudo: string): Defi 
     code: "APERCU00",
     conversationId: null,
     finiLe: gagne ? new Date().toISOString() : null,
+    invitations: [],
+    auteur: moi,
   };
 }
 

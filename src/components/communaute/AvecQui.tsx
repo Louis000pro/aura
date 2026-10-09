@@ -15,7 +15,7 @@ import { useGuideActif } from "@/context/GuideContext";
 import { voix } from "@/lib/guides";
 import { useRangs } from "@/lib/rangsPublics";
 import { mesRelations, type Personne } from "@/lib/messagerie";
-import { creerDefi, lancerRelaisAvec } from "@/lib/defi";
+import { creerDefi, inviterRelais } from "@/lib/defi";
 import { refusRelais, type RefusRelais } from "@/lib/defiErreurs";
 
 /* ─── « Avec qui ? » ─────────────────────────────────────────────
@@ -26,10 +26,12 @@ import { refusRelais, type RefusRelais } from "@/lib/defiErreurs";
    fabriquait une discussion à un seul membre, que `titreConversation`
    nommait littéralement « Moi ».
 
-   Des amis choisis (1 à 4, donc 5 avec toi) : un ami, le relais démarre
-   dans votre fil duo ; plusieurs, dans un nouveau groupe. Chacun reçoit
-   une notification. Le lien : l'attente vit sur /defi, avec le lien en
-   grand, parce que c'est la seule chose qu'il reste à faire. */
+   Des amis choisis (1 à 4, donc 5 avec toi) reçoivent une INVITATION,
+   dans leur cloche. Rien n'est créé chez eux tant qu'ils n'ont pas dit
+   oui (Louis, 2026-10-09) : le relais démarre quand tout le monde a
+   répondu, avec ceux qui ont accepté, et le fil (duo ou groupe) naît à
+   ce moment-là. L'attente vit sur /defi, qui montre qui a accepté.
+   Le lien : même écran d'attente, avec le lien en grand. */
 /** Jusqu'à 4 amis : 5 avec toi, la taille maximale d'un groupe. */
 const MAX_AMIS = 4;
 
@@ -64,9 +66,9 @@ export default function AvecQui({ moi, onFermer, onFil, onLien }: {
     if (!choisis.length) return;
     setOccupe("lancer");
     setRefus(null);
-    const r = await lancerRelaisAvec(choisis);
+    const r = await inviterRelais(choisis);
     setOccupe(null);
-    if (r.ok && typeof r.conversation_id === "string") { onFil(r.conversation_id); return; }
+    if (r.ok) { onLien(); return; }
     setRefus(refusRelais(r));
   };
 
@@ -149,6 +151,7 @@ export default function AvecQui({ moi, onFermer, onFil, onLien }: {
       </div>
 
       {choisis.length > 0 && (
+        <>
         <button
           onClick={() => void lancer()}
           disabled={occupe !== null}
@@ -157,9 +160,13 @@ export default function AvecQui({ moi, onFermer, onFil, onLien }: {
         >
           {occupe === "lancer" && <Loader2 className="h-4 w-4 animate-spin" />}
           {choisis.length === 1 && gens.find((g) => g.id === choisis[0])
-            ? `Lancer le relais avec ${gens.find((g) => g.id === choisis[0])!.pseudo}`
-            : `Lancer le relais à ${choisis.length + 1}`}
+            ? `Inviter ${gens.find((g) => g.id === choisis[0])!.pseudo}`
+            : `Inviter ${choisis.length} amis`}
         </button>
+        <p className="mt-1.5 text-center text-[11px]" style={{ color: "var(--text-3)" }}>
+          Le relais démarre quand {choisis.length === 1 ? "ton ami a" : "tout le monde a"} répondu.
+        </p>
+        </>
       )}
 
       <button

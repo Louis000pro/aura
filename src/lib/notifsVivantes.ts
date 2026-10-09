@@ -21,6 +21,6 @@
    les deux écrans. Les trois, ou aucun.
    ───────────────────────────────────────────────────────────── */
 
-export const TYPES_NOTIF_VIVANTS = ["follow", "relais", "message"] as const;
+export const TYPES_NOTIF_VIVANTS = ["follow", "relais", "message", "relais_invitation"] as const;
 
 export type NotifType = (typeof TYPES_NOTIF_VIVANTS)[number];
