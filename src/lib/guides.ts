@@ -1279,8 +1279,8 @@ const RAPPELS = {
       (c) => ({
         title: "L’affiche se joue aujourd’hui",
         body: (c.maillons ?? 1) > 1
-          ? `Il reste ${c.maillons} maillons et autant de jours. Dix minutes suffisent.`
-          : "Sans un maillon aujourd’hui, elle restera incomplète. Dix minutes suffisent.",
+          ? `Il te reste ${c.maillons} maillons, et la semaine touche à sa fin. Un maillon aujourd’hui garde l’affiche à portée.`
+          : "Sans ton dernier maillon aujourd’hui, elle restera incomplète. Une séance courte suffit.",
       }),
       { title: "Il reste ce soir",
         body: "Une séance de dix minutes, et l’affiche continue de se dévoiler." },

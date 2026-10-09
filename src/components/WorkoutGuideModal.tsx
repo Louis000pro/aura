@@ -941,7 +941,7 @@ function BandeMaillon({ maillon, onAller }: { maillon: MaillonFranchi; onAller: 
           {maillon.reussi
             ? `Elle est à vous${maillon.equipier ? ` et à ${maillon.equipier.pseudo}` : ""}.`
             : maillon.bloque
-              ? `Maillon ${maillon.maillon} fait · on attend ${maillon.equipier?.pseudo ?? "ton binôme"}.`
+              ? `Maillon ${maillon.maillon} fait · on attend ${maillon.enGroupe ? "le groupe" : (maillon.equipier?.pseudo ?? "ton binôme")}.`
               : `Maillon ${maillon.maillon} sur ${maillon.objectif} · continue !`}
         </small>
       </span>

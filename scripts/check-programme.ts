@@ -5361,7 +5361,7 @@ verdict(
         if (m.panne.maillon > 0) { m.panne.maillon--; return { etat: "echec" }; }
         if (m.maillons.some((x) => x.seanceId === seanceId)) return { etat: "refuse", raison: "deja_valide" };
         m.maillons.push({ runId, seanceId });
-        return { etat: "franchi", maillon: { serie: "sillage", objectif: 4, maillon: m.maillons.length, mine: 1, partner: 1, min: 1, bloque: false, reussi: false, conversationId: null, equipier: null } };
+        return { etat: "franchi", maillon: { serie: "sillage", objectif: 4, maillon: m.maillons.length, mine: 1, partner: 1, min: 1, bloque: false, reussi: false, conversationId: null, equipier: null, enGroupe: false } };
       },
       async garderAffiche(_u, seanceId) { m.affiches.add(seanceId); return "ok"; },
       stockage: {

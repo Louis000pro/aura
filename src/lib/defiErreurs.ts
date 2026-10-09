@@ -32,8 +32,17 @@ export function refusRelais(r: Brut | null | undefined): RefusRelais {
   const ou = typeof r?.conversation_id === "string" ? r.conversation_id : undefined;
 
   switch (raison) {
+    // `pas_un_duo` ne sort plus que d'une base où 20261007_relais_groupe.sql
+    // n'est pas encore passée : le bouton de groupe est déjà là, le serveur
+    // pas encore. On le dit au lieu de prétendre qu'il manque quelqu'un.
     case "pas_un_duo":
-      return { texte: "Le relais se joue à deux. Ouvre une discussion avec une seule personne." };
+      return { texte: "Les relais en groupe ne sont pas encore activés. Ça arrive très vite." };
+
+    case "trop_peu":
+      return { texte: "Il faut au moins deux personnes dans la discussion pour lancer un relais." };
+
+    case "trop_nombreux":
+      return { texte: "Le relais se joue jusqu’à cinq. Ouvre un groupe plus petit." };
 
     case "relais_deja_ici":
       return { texte: "Vous avez déjà un relais en cours ici." };
@@ -69,7 +78,7 @@ export function refusRelais(r: Brut | null | undefined): RefusRelais {
     case "relais_en_cours":
       return {
         texte:
-          "Ce fil porte un relais à deux. Arrêtez-le d’abord, ou ouvrez un autre groupe.",
+          "Un relais est en cours dans ce fil : on n’y ajoute personne avant la fin. Arrêtez-le d’abord, ou ouvrez un autre groupe.",
       };
 
     case "pas_membre":

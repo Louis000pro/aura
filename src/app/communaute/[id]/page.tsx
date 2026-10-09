@@ -632,11 +632,12 @@ export default function FilPage() {
         className="relative z-10 flex shrink-0 items-end gap-2 px-3 pt-2"
         style={{ paddingBottom: "calc(.75rem + env(safe-area-inset-bottom))" }}
       >
-        {/* ⚠️ Dans un groupe, `lancer_relais` refuse TOUJOURS (`pas_un_duo`) :
-            le bouton était visible, il promettait, il échouait. À trois
-            personnes ou plus, il n'a rien à faire là. Un relais déjà posé
-            garde son étincelle : elle ouvre l'affiche, elle ne lance rien. */}
-        {(conv.type === "duo" || conv.defi) && (
+        {/* Le relais se joue de 2 à 5 (20261007_relais_groupe.sql) : un duo
+            ou un groupe peut le lancer. Au-delà de 5, `lancer_relais` refuse,
+            donc le bouton n'apparaît pas (un fil ne dépasse pas 5 de toute
+            façon). Un relais déjà posé garde son étincelle : elle ouvre
+            l'affiche, elle ne lance rien. */}
+        {(conv.membres.length <= 5 || conv.defi) && (
         <button
           onClick={surEtincelle}
           disabled={occupe || envoi || photoEnCours}

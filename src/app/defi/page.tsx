@@ -16,7 +16,7 @@ import { useAuth } from "@/context/AuthContext";
 import PosterDefi from "@/components/defi/PosterDefi";
 import {
   chargerDefi, annulerRelais, lienInvitation, etatPoster,
-  joursRestants, fenetreFinie, etatCoop, niveauxCoop,
+  joursRestants, fenetreFinie, etatCoop, niveauxCoop, type Coequipier,
   defiFactice, SERIES, CLE_DEVOILE, EVT_RELAIS, type Defi, type Membre,
 } from "@/lib/defi";
 import { badgesDuDefi } from "@/lib/badges";
@@ -210,7 +210,10 @@ export default function DefiPage() {
   const coop     = etatCoop(defi, moi);
   const restants = joursRestants(defi);
   const serie    = SERIES[defi.serie as keyof typeof SERIES] ?? SERIES.sillage;
-  const equipier = defi.membres.find((m) => m.userId !== moi) ?? null;
+  // En groupe, on ne désigne personne : ni dans l'en-tête, ni dans
+  // l'attente. On parle du groupe, jamais de celui qui retarde.
+  const equipier = nv.equipier;
+  const attendu  = nv.enGroupe ? "le reste du groupe" : (equipier?.pseudo ?? "ton binôme");
   const fil      = defi.conversationId;
 
   /* La semaine peut être passée sans que la base l'ait encore écrit :
@@ -229,7 +232,7 @@ export default function DefiPage() {
         <div className="rounded-2xl border p-3.5"
           style={{ borderColor: "rgba(232,98,12,.35)", background: "rgba(232,98,12,.06)" }}>
           <p className="text-[13px] leading-relaxed" style={{ color: "var(--text-2)" }}>
-            Le relais s&apos;arrête pour vous deux. L&apos;affiche reste dans votre
+            Le relais s&apos;arrête pour toute l&apos;équipe. L&apos;affiche reste dans votre
             discussion, et vous pouvez en relancer un tout de suite.
           </p>
           <div className="mt-3 flex gap-2">
@@ -258,7 +261,7 @@ export default function DefiPage() {
   if (defi.statut === "inscription") {
     const lien = defi.code ? lienInvitation(defi.code) : "";
     return (
-      <Cadre equipier={equipier} fil={fil}>
+      <Cadre equipier={equipier} fil={fil} effectif={defi.membres.length}>
         <div className="mx-auto w-full max-w-[360px]">
           <PosterDefi serie={defi.serie} etat={1} noms={noms} titre={serie.nom} className="shadow-2xl" />
 
@@ -313,7 +316,7 @@ export default function DefiPage() {
   if (defi.statut === "reussi" || defi.statut === "termine" || finie) {
     const gagne = defi.statut === "reussi";
     return (
-      <Cadre equipier={equipier} fil={fil}>
+      <Cadre equipier={equipier} fil={fil} effectif={defi.membres.length}>
         <div className="mx-auto w-full max-w-[360px]">
           <PosterDefi
             serie={defi.serie}
@@ -386,7 +389,7 @@ export default function DefiPage() {
 
   /* ── En cours (co-op) ─────────────────────────────────────── */
   return (
-    <Cadre equipier={equipier} fil={fil}>
+    <Cadre equipier={equipier} fil={fil} effectif={defi.membres.length}>
       <div className="mx-auto w-full max-w-[360px]">
         {/* Le trésor à dévoiler */}
         <PosterDefi
@@ -408,10 +411,9 @@ export default function DefiPage() {
         <MonteeCoop
           objectif={defi.objectif}
           mine={nv.mine}
-          partner={nv.partner}
           restants={restants}
           moiAvatar={user?.avatar ?? null}
-          equipier={equipier}
+          autres={nv.autres}
         />
 
         {finie ? (
@@ -461,8 +463,10 @@ export default function DefiPage() {
         ) : coop.quoi === "bloque" ? (
           <BoiteAttente
             fait={`Ton maillon ${nv.mine} est fait`}
-            titre={`On attend ${coop.equipier?.pseudo ?? "ton binôme"}`}
-            texte={`Le maillon ${Math.min(nv.mine + 1, defi.objectif)} se débloque dès que ${coop.equipier?.pseudo ?? "ton binôme"} a fait le sien. Un petit coup de pression ?`}
+            titre={`On attend ${attendu}`}
+            texte={nv.enGroupe
+              ? `Le maillon ${Math.min(nv.mine + 1, defi.objectif)} se débloque dès que tout le monde a fait le sien. Un petit mot dans le groupe ?`
+              : `Le maillon ${Math.min(nv.mine + 1, defi.objectif)} se débloque dès que ${attendu} a fait le sien. Un petit coup de pression ?`}
             equipier={coop.equipier}
             fil={fil}
             onEcrire={() => fil && router.push(`/communaute/${fil}`)}
@@ -470,8 +474,10 @@ export default function DefiPage() {
         ) : coop.quoi === "fini_pour_moi" ? (
           <BoiteAttente
             fait={`Tu as bouclé tes ${defi.objectif} maillons`}
-            titre={`On attend ${coop.equipier?.pseudo ?? "ton binôme"}`}
-            texte={`L’affiche se complète dès que ${coop.equipier?.pseudo ?? "ton binôme"} a fini les siens.`}
+            titre={`On attend ${attendu}`}
+            texte={nv.enGroupe
+              ? "L’affiche se complète dès que tout le monde a fini les siens."
+              : `L’affiche se complète dès que ${attendu} a fini les siens.`}
             equipier={coop.equipier}
             fil={fil}
             onEcrire={() => fil && router.push(`/communaute/${fil}`)}
@@ -502,11 +508,14 @@ const NIVEAU_FR: Record<string, string> = {
    Les avatars sont les VRAIES photos de profil, avec un liseré de couleur
    (jaune = toi, violet = le binôme). On ne désigne jamais un retard comme
    une faute. */
-function MonteeCoop({ objectif, mine, partner, restants, moiAvatar, equipier }: {
-  objectif: number; mine: number; partner: number; restants: number;
-  moiAvatar: string | null; equipier: Membre | null;
+function MonteeCoop({ objectif, mine, restants, moiAvatar, autres }: {
+  objectif: number; mine: number; restants: number;
+  moiAvatar: string | null; autres: Coequipier[];
 }) {
-  const min = Math.min(mine, partner);
+  const min = Math.min(mine, ...autres.map((a) => a.faits));
+  // En groupe (3 à 5), les puces passent en grille de deux : côte à côte
+  // sur une seule ligne, cinq pseudos ne tiendraient pas sur un téléphone.
+  const enGroupe = autres.length > 1;
   return (
     <div className="mt-5 rounded-[22px] p-4"
       style={{ background: "rgb(var(--surface-rgb))", border: "1px solid rgba(var(--text-3-rgb), .12)", boxShadow: "var(--ombre-pose)" }}>
@@ -529,9 +538,12 @@ function MonteeCoop({ objectif, mine, partner, restants, moiAvatar, equipier }: 
           );
         })}
       </div>
-      <div className="mt-3.5 flex gap-2.5">
+      <div className={enGroupe ? "mt-3.5 grid grid-cols-2 gap-2.5" : "mt-3.5 flex gap-2.5"}>
         <JoueurChip avatar={moiAvatar} pseudo="Toi" ring="jaune" compte={`Maillon ${mine} / ${objectif}`} encre="var(--or-encre)" />
-        <JoueurChip avatar={equipier?.avatar ?? null} pseudo={equipier?.pseudo ?? "L’autre"} ring="violet" compte={`Maillon ${partner} / ${objectif}`} encre="var(--exp-encre)" />
+        {autres.map(({ membre, faits }) => (
+          <JoueurChip key={membre.userId} avatar={membre.avatar ?? null} pseudo={membre.pseudo}
+            ring="violet" compte={`Maillon ${faits} / ${objectif}`} encre="var(--exp-encre)" />
+        ))}
       </div>
     </div>
   );
@@ -589,16 +601,19 @@ function BoiteAttente({ fait, titre, texte, equipier, fil, onEcrire }: {
         style={{ color: "var(--or-encre)", background: "rgba(245,177,32,.14)", border: "1px solid rgba(245,177,32,.4)" }}>
         <Check className="h-3 w-3" strokeWidth={3} /> {fait}
       </span>
-      <div className="mb-2.5 flex justify-center">
-        <Pdp avatar={equipier?.avatar ?? null} pseudo={equipier?.pseudo ?? "?"} ring="violet" taille={56} pulse />
-      </div>
+      {/* En groupe, pas de visage : on n'en met pas un en avant. */}
+      {equipier && (
+        <div className="mb-2.5 flex justify-center">
+          <Pdp avatar={equipier.avatar ?? null} pseudo={equipier.pseudo} ring="violet" taille={56} pulse />
+        </div>
+      )}
       <p className="text-[16px] font-extrabold" style={{ color: "var(--text-0)" }}>{titre}</p>
       <p className="mt-1.5 text-[12.5px] leading-relaxed" style={{ color: "var(--text-2)" }}>{texte}</p>
       {fil && (
         <button onClick={onEcrire}
           className="mt-3.5 inline-flex items-center gap-2 rounded-2xl border px-5 py-3 text-[15px] font-bold"
           style={{ borderColor: "rgba(var(--text-3-rgb), .18)", color: "var(--exp-encre)" }}>
-          <MessageCircle className="h-4 w-4" /> Écrire à {equipier?.pseudo ?? "ton binôme"}
+          <MessageCircle className="h-4 w-4" /> {equipier ? `Écrire à ${equipier.pseudo}` : "Écrire au groupe"}
         </button>
       )}
     </div>
@@ -611,10 +626,12 @@ function BoiteAttente({ fait, titre, texte, equipier, fil, onEcrire }: {
    a alors rien derrière. Quand le relais a un fil, le retour y mène
    directement, avec le visage de l'équipier : cet écran montre
    l'affiche, la conversation est l'endroit où on se parle. */
-function Cadre({ children, equipier, fil }: {
+function Cadre({ children, equipier, fil, effectif = 0 }: {
   children: React.ReactNode;
   equipier?: Membre | null;
   fil?: string | null;
+  /** En groupe : le nombre de membres, à la place du visage de l'équipier. */
+  effectif?: number;
 }) {
   const router = useRouter();
   return (
@@ -655,6 +672,16 @@ function Cadre({ children, equipier, fil }: {
             <span className="truncate text-[16px] font-semibold" style={{ color: "var(--text-1)" }}>
               Avec {equipier.pseudo}
             </span>
+          </button>
+        )}
+        {!equipier && effectif > 2 && (
+          <button
+            onClick={() => (fil ? router.push(`/communaute/${fil}`) : undefined)}
+            disabled={!fil}
+            className="truncate text-[16px] font-semibold disabled:cursor-default"
+            style={{ color: "var(--text-1)" }}
+          >
+            En groupe · {effectif}
           </button>
         )}
       </div>

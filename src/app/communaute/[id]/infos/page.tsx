@@ -307,10 +307,9 @@ export default function InfosPage() {
       )}
 
       {/* ─── Le relais ─── */}
-      {/* ⚠️ Rien à dire dans un groupe qui n'en porte pas : `lancer_relais`
-          refuse toujours à trois personnes ou plus, donc une carte « Le
-          relais » avec un bouton mort valait moins que pas de carte. */}
-      {(conv.defi || !groupe) && (
+      {/* Le relais se joue de 2 à 5 (20261007_relais_groupe.sql) : un groupe
+          peut le lancer comme un duo. */}
+      {(conv.defi || conv.membres.length <= 5) && (
       <div className="mt-7 px-4">
         <p className="mb-2 pl-1 text-[11px] font-bold uppercase tracking-[.1em]" style={{ color: "var(--text-3)" }}>
           Le relais
@@ -325,7 +324,7 @@ export default function InfosPage() {
                 <b className="block text-[16px] font-semibold" style={{ color: "var(--text-0)" }}>
                   {conv.defi.statut === "reussi"
                     ? "L’affiche est à vous"
-                    : `${conv.defi.faits} jour${conv.defi.faits > 1 ? "s" : ""} sur ${conv.defi.objectif}`}
+                    : `Maillon ${conv.defi.faits} sur ${conv.defi.objectif}`}
                 </b>
                 <span className="mt-0.5 block text-[13px]" style={{ color: "var(--text-2)" }}>
                   Voir l&apos;affiche en grand
@@ -342,7 +341,7 @@ export default function InfosPage() {
               {confirmeAnnul ? (
                 <div className="p-3">
                   <p className="mb-2.5 text-[13px]" style={{ color: "var(--text-2)" }}>
-                    Le relais s&apos;arrête pour vous deux et l&apos;affiche reste ici.
+                    Le relais s&apos;arrête pour toute l&apos;équipe et l&apos;affiche reste ici.
                     Vous pourrez en relancer un tout de suite.
                   </p>
                   <div className="flex gap-2">
@@ -369,7 +368,7 @@ export default function InfosPage() {
             </div>
           )}
 
-          {!conv.defi && !groupe && (
+          {!conv.defi && conv.membres.length <= 5 && (
             <button onClick={lancer} disabled={occupe === "relais"}
               className="flex w-full items-center gap-3 p-3 text-left disabled:opacity-60">
               <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px]"
@@ -379,7 +378,9 @@ export default function InfosPage() {
               <span className="min-w-0 flex-1">
                 <b className="block text-[16px] font-semibold" style={{ color: "var(--exp-encre)" }}>Lancer un relais</b>
                 <span className="mt-0.5 block text-[13px]" style={{ color: "var(--text-2)" }}>
-                  4 jours sur 7, chacun son tour
+                  {groupe
+                    ? `À ${conv.membres.length} : 4 maillons chacun, on avance ensemble`
+                    : "4 maillons chacun, on avance ensemble"}
                 </span>
               </span>
             </button>

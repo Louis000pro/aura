@@ -244,6 +244,12 @@ ce qui suit sans en parler à Louis.
 
 ## Chantiers en cours (juillet 2026)
 
+- **⭐ LE RELAIS SE JOUE DE 2 À 5 (Louis, 2026-10-07).** Le relais co-op se généralise sans changer de règle : chacun grimpe ses 4 maillons, 2 par jour au plus, et on n'avance que quand **tout le monde** a fait le maillon en cours (en duo, c'est exactement l'ancienne règle). Il se lance depuis n'importe quel fil de 2 à 5 membres (l'étincelle du composer, ou « Lancer un relais » dans les infos) ; « Avec qui ? » et le lien d'invitation restent des duos.
+  - **SQL : `supabase/migrations/20261007_relais_groupe.sql`** (`valider_action_defi` : le « binôme » devient le plus lent des autres ; `lancer_relais` : 2 à 5 membres, taille notée dans `max_membres`). Testé en base dans une transaction annulée avec un groupe de trois.
+  - **⚠️ EN GROUPE, ON NE DÉSIGNE PERSONNE.** `niveauxCoop` rend `equipier = null` dès trois membres, et les écrans disent « on attend le groupe », jamais le pseudo de celui qui retarde. Les puces de progression de chacun restent visibles sur /defi : c'est un état, pas un reproche.
+  - **On n'ajoute toujours personne à un fil pendant un relais** (`relais_en_cours`). Badges et affiche vont à tous les membres.
+  - Au passage : la notification de maillon et le rappel du jour décisif comptaient encore à l'ancienne (alternance, « autant de jours ») ; ils suivent désormais le co-op, par personne.
+
 - **⭐ REFONTE DU PLANNING · R1 + R1 bis « LE JOURNAL DIT LA VÉRITÉ » (Claude + Codex, 2026-10-03, branche `claude/zen-franklin-huz5qv`, base `main`).**
   - Décisions dans `docs/refonte-planning/DECISIONS.md` (points 17 à 60). Maquettes 04 à 07 ; la 07 a le GO de Louis.
   - Plan dans `docs/refonte-planning/PLAN-IMPLEMENTATION.md`, ordre R1 → R6 → R2 → R3 → R4 → R5 → R9 → R7 → R8.

@@ -297,8 +297,8 @@ function BandeRelais({ relais, onNavigate }: {
   const e = relais.etat;
   const phrase =
     e.quoi === "a_moi"        ? `À toi de jouer · maillon ${e.maillon}.`
-  : e.quoi === "bloque"       ? `En attente de ${e.equipier?.pseudo ?? nom ?? "ton binôme"}.`
-  : e.quoi === "fini_pour_moi"? "Tu as fini, on attend ton binôme."
+  : e.quoi === "bloque"       ? (relais.enGroupe ? "En attente du groupe." : `En attente de ${e.equipier?.pseudo ?? nom ?? "ton binôme"}.`)
+  : e.quoi === "fini_pour_moi"? (relais.enGroupe ? "Tu as fini, on attend le groupe." : "Tu as fini, on attend ton binôme.")
   : e.quoi === "plafond_jour" ? "Reviens demain pour la suite."
   :                             "Ouvre ton relais.";
 

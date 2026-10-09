@@ -93,8 +93,6 @@ async function rappelsRelais(
 
   if (!runs?.length) return cibles;
 
-  const hierStr = shiftDateStr(today, -1);
-
   for (const run of runs) {
     const [actionsRes, membresRes] = await Promise.all([
       admin.from("challenge_actions").select("jour, user_id").eq("run_id", run.id),
@@ -102,25 +100,33 @@ async function rappelsRelais(
     ]);
 
     const actions = actionsRes.data ?? [];
-    if (actions.some((a) => a.jour === today)) continue;      // déjà franchi aujourd'hui
-
-    const manquants = (run.target_days as number) - actions.length;
-    if (manquants <= 0) continue;
+    const membres = (membresRes.data ?? []).map((m) => m.user_id as string);
+    const objectif = run.target_days as number;
 
     // Jours restants, aujourd'hui compris.
     const fin = new Date((run.ends_on as string) + "T12:00:00Z");
     const jour = new Date(today + "T12:00:00Z");
     const restants = Math.floor((fin.getTime() - jour.getTime()) / 86_400_000) + 1;
+    if (restants <= 0) continue;
 
-    if (restants <= 0 || manquants !== restants) continue;    // pas encore décisif
-
-    const bloque = actions.find((a) => a.jour === hierStr)?.user_id as string | undefined;
-
-    for (const m of membresRes.data ?? []) {
-      const uid = m.user_id as string;
-      if (uid === bloque) continue;
+    /* Le relais co-op (duo ou groupe) : chacun grimpe SES maillons, deux
+       par jour au plus, et on n'avance que quand tout le monde a fait le
+       maillon en cours. Le jour est décisif pour quelqu'un quand ce qui lui
+       reste ne tient plus qu'en jouant AUJOURD'HUI. On ne rappelle jamais
+       quelqu'un qui ne PEUT pas jouer (il attend les autres) ni quelqu'un
+       qui a déjà joué aujourd'hui : rien ne doit ressembler à un reproche. */
+    const faits = (id: string) => actions.filter((a) => a.user_id === id).length;
+    for (const uid of membres) {
+      const mine = faits(uid);
+      const reste = objectif - mine;
+      if (reste <= 0) continue;
+      if (actions.some((a) => a.user_id === uid && a.jour === today)) continue;
+      const autres = membres.filter((m) => m !== uid);
+      const bloque = autres.some((m) => faits(m) < mine);
+      if (bloque) continue;
+      if (Math.ceil(reste / 2) < restants) continue;       // pas encore décisif
       cibles.set(uid, {
-        maillons: manquants,
+        maillons: reste,
         url: run.conversation_id ? `/communaute/${run.conversation_id}` : "/defi",
       });
     }

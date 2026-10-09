@@ -155,17 +155,31 @@ export function joursDeLaFenetre(defi: Defi): string[] {
 /** Le maximum de maillons qu'une personne peut franchir dans une journée. */
 export const MAILLONS_PAR_JOUR = 2;
 
+/** Un autre membre de l'équipe et son nombre de maillons franchis. */
+export type Coequipier = { membre: Membre; faits: number };
+
 /** Combien de maillons chacun a franchis, l'avancée COMMUNE (le min, c'est
- *  ce que l'affiche montre) et combien j'en ai fait aujourd'hui. */
+ *  ce que l'affiche montre) et combien j'en ai fait aujourd'hui.
+ *
+ *  En groupe (3 à 5), `partner` est le PLUS LENT des autres : c'est lui qui
+ *  décide si je peux passer au maillon suivant, exactement comme la règle
+ *  serveur. `equipier` reste le seul autre membre en duo, et vaut `null` en
+ *  groupe : on ne désigne pas une personne qui retarde tout le monde. */
 export function niveauxCoop(defi: Defi, moi: string): {
-  mine: number; partner: number; min: number; equipier: Membre | null; aujourdhuiFaits: number;
+  mine: number; partner: number; min: number; equipier: Membre | null;
+  autres: Coequipier[]; enGroupe: boolean; aujourdhuiFaits: number;
 } {
-  const equipier = defi.membres.find((m) => m.userId !== moi) ?? null;
-  const mine = defi.actions.filter((a) => a.userId === moi).length;
-  const partner = equipier ? defi.actions.filter((a) => a.userId === equipier.userId).length : 0;
+  const compte = (id: string) => defi.actions.filter((a) => a.userId === id).length;
+  const autres = defi.membres
+    .filter((m) => m.userId !== moi)
+    .map((membre) => ({ membre, faits: compte(membre.userId) }));
+  const enGroupe = autres.length > 1;
+  const equipier = enGroupe ? null : (autres[0]?.membre ?? null);
+  const mine = compte(moi);
+  const partner = autres.length ? Math.min(...autres.map((a) => a.faits)) : 0;
   const jour = aujourdhui();
   const aujourdhuiFaits = defi.actions.filter((a) => a.userId === moi && a.jour === jour).length;
-  return { mine, partner, min: Math.min(mine, partner), equipier, aujourdhuiFaits };
+  return { mine, partner, min: Math.min(mine, partner), equipier, autres, enGroupe, aujourdhuiFaits };
 }
 
 export type EtatCoop =
@@ -224,8 +238,11 @@ export function fenetreFinie(defi: Defi): boolean {
 
 /** Le défi est-il encore mathématiquement gagnable ? */
 export function encoreJouable(defi: Defi): boolean {
-  const manquants = defi.objectif - defi.actions.length;
-  return manquants <= joursRestants(defi);
+  // Chacun doit encore pouvoir finir ses maillons, à 2 par jour.
+  const place = joursRestants(defi) * MAILLONS_PAR_JOUR;
+  return defi.membres.every(
+    (m) => defi.objectif - defi.actions.filter((a) => a.userId === m.userId).length <= place,
+  );
 }
 
 /* ── Accès aux données ───────────────────────────────────────── */
@@ -349,7 +366,10 @@ export type RelaisAccueil = {
   mine: number;
   partner: number;
   conversationId: string | null;
+  /** Le seul autre membre en duo ; `null` en groupe. */
   equipier: Membre | null;
+  /** Vrai à partir de trois : on parle alors du groupe, jamais d'une personne. */
+  enGroupe: boolean;
   /** Où j'en suis dans le relais co-op, aujourd'hui. */
   etat: EtatCoop;
 };
@@ -384,15 +404,17 @@ export async function chargerRelaisAccueil(userId: string): Promise<RelaisAccuei
     userId: a.user_id as string,
   }));
 
-  const autre = (membresRes.data ?? [])
+  const autresIds = (membresRes.data ?? [])
     .map((m) => m.user_id as string)
-    .find((id) => id !== userId) ?? null;
+    .filter((id) => id !== userId);
 
-  let equipier: Membre | null = null;
-  if (autre) {
+  // Les pseudos ne servent qu'en duo (« En attente de Marc »), mais les
+  // identifiants comptent toujours : c'est le plus lent qui débloque.
+  let autres: Membre[] = autresIds.map((id) => ({ userId: id, pseudo: "…", avatar: null }));
+  if (autresIds.length === 1) {
     const { data: p } = await supabase
-      .from("profiles").select("id, pseudo, avatar_url").eq("id", autre).maybeSingle();
-    equipier = { userId: autre, pseudo: (p?.pseudo as string) ?? "…", avatar: (p?.avatar_url as string) ?? null };
+      .from("profiles").select("id, pseudo, avatar_url").eq("id", autresIds[0]).maybeSingle();
+    autres = [{ userId: autresIds[0], pseudo: (p?.pseudo as string) ?? "…", avatar: (p?.avatar_url as string) ?? null }];
   }
 
   const partiel: Defi = {
@@ -403,8 +425,8 @@ export async function chargerRelaisAccueil(userId: string): Promise<RelaisAccuei
     fenetre: run.window_days,
     debut: run.starts_on,
     fin: run.ends_on,
-    maxMembres: 2,
-    membres: equipier ? [{ userId, pseudo: "", avatar: null }, equipier] : [],
+    maxMembres: Math.max(2, autres.length + 1),
+    membres: autres.length ? [{ userId, pseudo: "", avatar: null }, ...autres] : [],
     actions,
     code: null,
     conversationId: run.conversation_id ?? null,
@@ -424,7 +446,8 @@ export async function chargerRelaisAccueil(userId: string): Promise<RelaisAccuei
     mine: nv.mine,
     partner: nv.partner,
     conversationId: partiel.conversationId,
-    equipier,
+    equipier: nv.equipier,
+    enGroupe: nv.enGroupe,
     etat: etatCoop(partiel, userId),
   };
 }
@@ -592,7 +615,9 @@ export type MaillonFranchi = {
   reussi: boolean;
   /** Le fil à ouvrir : c'est là que vit l'équipier. */
   conversationId: string | null;
+  /** Le seul autre membre en duo ; `null` en groupe. */
   equipier: Membre | null;
+  enGroupe: boolean;
 };
 
 export type ResultatMaillon =
@@ -651,7 +676,10 @@ export async function validerMaillon(
       bloque: Boolean(reponse.bloque),
       reussi: Boolean(reponse.reussi),
       conversationId: memeRun?.conversationId ?? null,
-      equipier: memeRun?.membres.find((m) => m.userId !== userId) ?? null,
+      equipier: memeRun && memeRun.membres.length === 2
+        ? memeRun.membres.find((m) => m.userId !== userId) ?? null
+        : null,
+      enGroupe: (memeRun?.membres.length ?? 2) > 2,
     },
   };
 }

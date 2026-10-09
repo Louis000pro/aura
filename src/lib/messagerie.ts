@@ -10,6 +10,14 @@
 import { createClient } from "@/lib/supabase";
 import { decoderPhoto } from "./decoderImage";
 
+/** L'avancée COMMUNE d'un relais co-op : le nombre de maillons que TOUS les
+ *  membres ont franchis (le plus lent fixe l'affiche). En duo comme en
+ *  groupe, c'est ce que l'affiche et le sceau montrent. */
+function avanceeCommune(actions: { user_id: string }[], membres: string[]): number {
+  if (!membres.length) return 0;
+  return Math.min(...membres.map((id) => actions.filter((a) => a.user_id === id).length));
+}
+
 export type Personne = {
   id: string;
   pseudo: string;
@@ -277,8 +285,8 @@ export async function chargerConversations(userId: string): Promise<Conversation
 
   const runIds = (defisRes.data ?? []).map((d) => d.id as string);
   const actionsRes = runIds.length
-    ? await supabase.from("challenge_actions").select("run_id").in("run_id", runIds)
-    : { data: [] as { run_id: string }[], error: null };
+    ? await supabase.from("challenge_actions").select("run_id, user_id").in("run_id", runIds)
+    : { data: [] as { run_id: string; user_id: string }[], error: null };
   if (actionsRes.error) throw new Error(actionsRes.error.message);
   const actions = actionsRes.data;
 
@@ -324,7 +332,10 @@ export async function chargerConversations(userId: string): Promise<Conversation
             statut: run.statut as string,
             serie: (run.serie as string) ?? "sillage",
             objectif: run.target_days as number,
-            faits: (actions ?? []).filter((a) => a.run_id === run.id).length,
+            faits: avanceeCommune(
+              (actions ?? []).filter((a) => a.run_id === run.id),
+              (membresRes.data ?? []).filter((m) => m.conversation_id === convId).map((m) => m.user_id as string),
+            ),
           }
         : null,
       majLe: c.last_message_at as string,
@@ -390,13 +401,13 @@ async function chargerFilDepuisServeur(convId: string): Promise<FilCharge> {
   const run = brut && runEncoreVisible(brut) ? brut : undefined;
   if (run) {
     const { data: actions } = await supabase
-      .from("challenge_actions").select("run_id").eq("run_id", run.id);
+      .from("challenge_actions").select("run_id, user_id").eq("run_id", run.id);
     defi = {
       runId: run.id as string,
       statut: run.statut as string,
       serie: (run.serie as string) ?? "sillage",
       objectif: run.target_days as number,
-      faits: (actions ?? []).length,
+      faits: avanceeCommune(actions ?? [], ids),
     };
   }
 

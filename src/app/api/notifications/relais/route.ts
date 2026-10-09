@@ -54,10 +54,12 @@ export async function POST(req: NextRequest) {
 
     const [membresRes, actionsRes, acteurRes] = await Promise.all([
       admin.from("challenge_run_members").select("user_id").eq("run_id", run_id),
-      admin.from("challenge_actions").select("id", { count: "exact", head: true }).eq("run_id", run_id),
+      admin.from("challenge_actions").select("id", { count: "exact", head: true }).eq("run_id", run_id).eq("user_id", actor_id),
       admin.from("profiles").select("pseudo, avatar_url").eq("id", actor_id).maybeSingle(),
     ]);
 
+    // Les maillons franchis par CELUI qui vient de jouer (co-op : chacun
+    // grimpe les siens). L'affiche complète se lit sur le statut.
     const faits   = actionsRes.count ?? 0;
     const pseudo  = acteurRes.data?.pseudo ?? "Quelqu’un";
     const cible   = (membresRes.data ?? [])
@@ -66,7 +68,7 @@ export async function POST(req: NextRequest) {
 
     if (!cible.length) return NextResponse.json({ ok: true, envoyees: 0 });
 
-    const complete = run.statut === "reussi" || faits >= (run.target_days as number);
+    const complete = run.statut === "reussi";
     // Le message raconte, il ne réclame pas : c'est ce qui fait ouvrir
     // par curiosité au lieu de mettre une dette dans la poche de l'autre.
     const titre = lancement
@@ -75,10 +77,10 @@ export async function POST(req: NextRequest) {
       ? "L’affiche est complète"
       : "L’affiche s’est dévoilée";
     const corps = lancement
-      ? `${pseudo} a lancé un relais avec toi. Une affiche se dévoile en ${run.target_days} jours.`
+      ? `${pseudo} a lancé un relais avec toi. ${run.target_days} maillons chacun, et l’affiche se dévoile.`
       : complete
       ? `${pseudo} a franchi le dernier maillon. Elle est à vous.`
-      : `${pseudo} a franchi son maillon. ${faits} jour${faits > 1 ? "s" : ""} sur ${run.target_days}.`;
+      : `${pseudo} a franchi le maillon ${faits} sur ${run.target_days}.`;
     const lien = run.conversation_id ? `/communaute/${run.conversation_id}` : "/communaute";
 
     await Promise.allSettled(
