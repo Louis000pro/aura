@@ -13,7 +13,9 @@
   overflow: hidden;
   border: 1px solid rgba(var(--accent-rgb), 0.1);
   border-radius: 19px;
-  background: rgba(var(--surface-rgb), 0.9);
+  background: var(--verre-carte);
+  -webkit-backdrop-filter: blur(22px) saturate(170%);
+  backdrop-filter: blur(22px) saturate(170%);
   box-shadow: 0 10px 26px -22px rgba(var(--accent-rgb), 0.5);
 }
 

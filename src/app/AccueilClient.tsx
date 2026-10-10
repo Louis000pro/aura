@@ -39,7 +39,7 @@ import RecapHier from "@/components/accueil/RecapHier";
 ───────────────────────────────────────────────── */
 function LandingPage({ chiffres, avis }: { chiffres: ChiffresPublics; avis: ResumeAvis }) {
   return (
-    <div className="relative w-full" style={{ overflowX: "clip", background: "var(--page-bg)" }}>
+    <div className="relative w-full" style={{ overflowX: "clip", background: "transparent" }}>
       <LandingHero />
       <LandingStory chiffres={chiffres} avis={avis} />
     </div>

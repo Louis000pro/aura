@@ -225,7 +225,9 @@
   }
 
   body {
-    background: var(--page-bg);
+    /* Essai « verre » (2026-10-10) : le fond vit dans body::before, fixe,
+       pour que le verre des cartes ait toujours des couleurs à flouter. */
+    background: transparent;
     background-attachment: scroll;
     color: var(--text-1);
     font-family: var(--font-sans);
@@ -959,4 +961,63 @@ html.perf-lite .vy-verre-photo {
 html.perf-lite .vy-verre-epais { background: rgb(var(--surface-rgb)); }
 @media (min-width: 768px) {
   .vy-verre-epais { border-bottom: 1px solid var(--verre-bord); }
+}
+
+/* ─────────────────────────────────────────────────────────────
+   ESSAI « TOUT EN VERRE » (Louis, 2026-10-10, branche de travail).
+   Référence : un fond lilas → rose → pêche, et des cartes en verre
+   dépoli par-dessus. ⚠️ Ceci lève, pour l'essai, la règle verrouillée
+   « le verre uniquement sur une photo ou ce qui flotte ».
+   ───────────────────────────────────────────────────────────── */
+:root {
+  --verre-carte: rgba(255,255,255,.52);
+  --verre-carte-bord: rgba(255,255,255,.75);
+  --fond-verre:
+    radial-gradient(55% 40% at 8% 12%,  rgba(167,139,250,.75) 0%, transparent 70%),
+    radial-gradient(50% 38% at 95% 22%, rgba(244,143,206,.65) 0%, transparent 70%),
+    radial-gradient(60% 45% at 85% 88%, rgba(255,196,150,.70) 0%, transparent 70%),
+    radial-gradient(55% 42% at 10% 85%, rgba(140,170,255,.60) 0%, transparent 70%),
+    linear-gradient(160deg, #EFE8FF 0%, #F7E9F6 50%, #FFF0E6 100%);
+  --html-bg: #EFE8FF;
+  --page-bg: var(--fond-verre);
+}
+[data-theme="dark"] {
+  --verre-carte: rgba(28,22,46,.50);
+  --verre-carte-bord: rgba(255,255,255,.12);
+  --fond-verre:
+    radial-gradient(55% 40% at 8% 12%,  rgba(110,60,230,.55) 0%, transparent 70%),
+    radial-gradient(50% 38% at 95% 22%, rgba(193,59,193,.42) 0%, transparent 70%),
+    radial-gradient(60% 45% at 85% 88%, rgba(232,98,12,.30) 0%, transparent 70%),
+    radial-gradient(55% 42% at 10% 85%, rgba(50,80,200,.42) 0%, transparent 70%),
+    linear-gradient(160deg, #0D0918 0%, #120A1E 50%, #0A0812 100%);
+  --html-bg: #0D0918;
+  --page-bg: var(--fond-verre);
+}
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background: var(--fond-verre);
+  pointer-events: none;
+}
+
+/* Toutes les surfaces blanches écrites en style en ligne deviennent du
+   verre. React écrit « background:… » sans espace au rendu serveur et le
+   navigateur « background: … » avec : les deux formes sont listées. */
+[style*="background:rgb(var(--surface-rgb))"],
+[style*="background: rgb(var(--surface-rgb))"],
+[style*="background:rgba(var(--surface-rgb)"],
+[style*="background: rgba(var(--surface-rgb)"] {
+  background: var(--verre-carte) !important;
+  -webkit-backdrop-filter: blur(22px) saturate(170%);
+  backdrop-filter: blur(22px) saturate(170%);
+  box-shadow: inset 0 1px 0 var(--verre-reflet), 0 12px 32px -16px rgba(60,30,120,.35);
+}
+/* Les feuilles et la capsule gardent leur propre verre, plus couvrant. */
+.vy-verre-epais { background: var(--verre-fond-epais) !important; }
+html.perf-lite body::before { background: var(--html-bg); }
+html.perf-lite [style*="surface-rgb"] {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
 }
