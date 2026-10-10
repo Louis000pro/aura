@@ -177,7 +177,11 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
-  themeColor: "#FFFFFF",
+  // Essai verre : la barre d'état prend la couleur du haut du dégradé.
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#EFE8FF" },
+    { media: "(prefers-color-scheme: dark)", color: "#0D0918" },
+  ],
 };
 
 export default function RootLayout({

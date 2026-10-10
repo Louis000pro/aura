@@ -1021,3 +1021,20 @@ html.perf-lite [style*="surface-rgb"] {
   -webkit-backdrop-filter: none !important;
   backdrop-filter: none !important;
 }
+
+/* Le « toit » du haut, sous la photo de profil et la cloche : un vrai verre
+   qui reste en place, et dont le bord bas s'efface progressivement. */
+.vy-toit {
+  background: linear-gradient(to bottom, var(--toit-teinte) 0%, transparent 100%);
+  -webkit-backdrop-filter: blur(18px) saturate(170%);
+  backdrop-filter: blur(18px) saturate(170%);
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 62%, transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 0%, #000 62%, transparent 100%);
+}
+:root { --toit-teinte: rgba(239,232,255,.55); }
+[data-theme="dark"] { --toit-teinte: rgba(13,9,24,.55); }
+html.perf-lite .vy-toit {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  background: linear-gradient(to bottom, var(--html-bg) 40%, transparent 100%);
+}

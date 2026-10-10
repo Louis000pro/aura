@@ -293,11 +293,11 @@ export default function Navigation() {
             lieu de « tomber » dessus. Fondu vers le transparent = pas de barre
             lourde. ══ */}
       {user && !surfacePublique && !barrePropre && (
-        <div className="global-mobile-header md:hidden fixed top-0 left-0 right-0 z-30 pointer-events-none"
-          style={{
-            height: "calc(env(safe-area-inset-top) + 56px)",
-            background: "linear-gradient(to bottom, rgba(var(--surface-rgb),0.96) 0%, rgba(var(--surface-rgb),0.80) 42%, rgba(var(--surface-rgb),0) 100%)",
-          }} />
+        /* Essai verre (2026-10-10) : un vrai flou, pas un fondu blanc. Le
+           fondu blanc recouvrait le dégradé du fond en haut de l'écran.
+           Le bas du flou s'efface par un masque, sans trait net. */
+        <div className="global-mobile-header vy-toit md:hidden fixed top-0 left-0 right-0 z-30 pointer-events-none"
+          style={{ height: "calc(env(safe-area-inset-top) + 60px)" }} />
       )}
 
       {user && !surfacePublique && !barrePropre && (
