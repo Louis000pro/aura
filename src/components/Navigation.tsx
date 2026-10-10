@@ -292,18 +292,17 @@ export default function Navigation() {
             (avatar + cloche) pour que le contenu scrolle proprement dessous au
             lieu de « tomber » dessus. Fondu vers le transparent = pas de barre
             lourde. ══ */}
-      {user && !surfacePublique && !barrePropre && (
-        /* Essai verre (2026-10-10) : un vrai flou, pas un fondu blanc. Le
-           fondu blanc recouvrait le dégradé du fond en haut de l'écran.
-           Le bas du flou s'efface par un masque, sans trait net. */
-        <div className="global-mobile-header vy-toit md:hidden fixed top-0 left-0 right-0 z-30 pointer-events-none"
-          style={{ height: "calc(env(safe-area-inset-top) + 60px)" }} />
-      )}
+      {/* Essai verre (2026-10-10, retour de Louis) : PLUS AUCUN VOILE en haut.
+          Ni le fondu blanc d'avant, ni une bande floutée : les deux faisaient
+          un brouillard blanc sur les cartes. La photo de profil et la cloche
+          sont deux ronds de verre fixes, le contenu défile librement dessous. */}
 
       {user && !surfacePublique && !barrePropre && (
-        <div className="global-mobile-header md:hidden fixed top-0 right-0 z-40 flex items-center px-3"
+        <div className="global-mobile-header vy-fixe md:hidden fixed top-0 right-0 z-40 flex items-center px-3"
           style={{ paddingTop: "calc(env(safe-area-inset-top) + 8px)" }}>
-          <NotificationBell side="top" />
+          <div className="vy-verre rounded-full">
+            <NotificationBell side="top" />
+          </div>
         </div>
       )}
 
@@ -312,7 +311,7 @@ export default function Navigation() {
             Communauté (qui garde le sien dans sa propre barre). Limité aux onglets
             pour ne pas se poser sur les titres à gauche des pages secondaires. ══ */}
       {user && (pathname === "/" || pathname === "/progression" || pathname === "/nutrition") && (
-        <div className="global-mobile-header md:hidden fixed top-0 left-0 z-40 flex items-center px-3"
+        <div className="global-mobile-header vy-fixe md:hidden fixed top-0 left-0 z-40 flex items-center px-3"
           style={{ paddingTop: "calc(env(safe-area-inset-top) + 8px)" }}>
           {/* ⚠️ UN CARRÉ TRÈS ARRONDI A ÉTÉ ESSAYÉ ICI PUIS RETIRÉ LE MÊME JOUR
                 (Louis, 2026-09-07). L'idée était de séparer les deux portraits
@@ -324,7 +323,7 @@ export default function Navigation() {
                 problème ouvert, et il se réglera par la composition, pas par
                 le rayon de ce bouton. */}
           <button onClick={() => router.push("/profil")} aria-label="Mon profil"
-            data-tour-anchor="nav-profil" className="relative shrink-0 active:opacity-80 transition-opacity">
+            data-tour-anchor="nav-profil" className="vy-verre relative shrink-0 rounded-full p-[3px] active:opacity-80 transition-opacity">
             {user.avatar ? (
               <Image src={user.avatar} alt="" width={36} height={36}
                 className="h-9 w-9 rounded-full object-cover" unoptimized />
