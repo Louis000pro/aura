@@ -714,7 +714,9 @@
   border-radius: 14px;
   font-size: 16px;
   color: var(--text-1);
-  background: rgba(var(--surface-rgb), 0.72);
+  background: var(--verre-carte);
+  -webkit-backdrop-filter: blur(22px) saturate(170%);
+  backdrop-filter: blur(22px) saturate(170%);
   border: 1px solid rgba(var(--accent-rgb), 0.14);
   outline: none;
 }
@@ -732,7 +734,9 @@
   font-size: 13px;
   font-weight: 600;
   color: var(--text-1);
-  background: rgba(var(--surface-rgb), 0.72);
+  background: var(--verre-carte);
+  -webkit-backdrop-filter: blur(22px) saturate(170%);
+  backdrop-filter: blur(22px) saturate(170%);
   border: 1px solid rgba(var(--accent-rgb), 0.14);
   cursor: pointer;
   min-height: 40px;
@@ -885,7 +889,9 @@
   width: 100%;
   max-width: 560px;
   border-radius: var(--r-feuille) var(--r-feuille) 0 0;
-  background: rgb(var(--surface-rgb));
+  background: var(--verre-carte);
+  -webkit-backdrop-filter: blur(22px) saturate(170%);
+  backdrop-filter: blur(22px) saturate(170%);
   border-top: 1px solid rgba(var(--accent-rgb), 0.16);
   box-shadow: 0 -14px 44px rgba(10, 5, 28, 0.30);
   padding: 12px 20px calc(24px + env(safe-area-inset-bottom));
@@ -985,7 +991,9 @@
   gap: 8px;
   padding: 5px 6px 5px 10px;
   border-radius: 999px;
-  background: rgba(var(--surface-rgb), 0.86);
+  background: var(--verre-carte);
+  -webkit-backdrop-filter: blur(22px) saturate(170%);
+  backdrop-filter: blur(22px) saturate(170%);
   border: 1px dashed rgba(var(--accent-rgb), 0.35);
   backdrop-filter: blur(8px);
 }

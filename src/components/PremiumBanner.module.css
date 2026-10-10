@@ -38,9 +38,10 @@
   padding: 17px 17px 15px;
   background:
     radial-gradient(circle at 100% 0%, rgba(var(--accent-rgb), 0.1), transparent 34%),
-    rgb(var(--surface-rgb));
+    var(--verre-fond-epais);
   color: var(--text-0);
-  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(22px) saturate(170%);
+  backdrop-filter: blur(22px) saturate(170%);
 }
 
 .topline {
