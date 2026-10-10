@@ -151,7 +151,7 @@ export default function TodayHero({
       {/* Chips du haut */}
       <div className="absolute top-3.5 left-3.5 right-3.5 flex items-center justify-between z-10">
         <span className="px-3 py-1.5 rounded-full text-[11px] font-semibold"
-          style={{ background: "var(--verre-photo)", color: "#fff", border: "1px solid var(--verre-photo-bord)", backdropFilter: "blur(6px)" }}>
+          style={{ background: "var(--verre-photo)", color: "#fff", border: "1px solid var(--verre-photo-bord)", backdropFilter: "blur(16px) saturate(170%)", WebkitBackdropFilter: "blur(16px) saturate(170%)" }}>
           {state === "setup" ? "Première fois ici"
             : state === "etape" ? "Ton programme"
             : "Aujourd’hui"}

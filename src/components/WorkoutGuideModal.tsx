@@ -1746,12 +1746,12 @@ export default function WorkoutGuideModal({
                     style={{ background: "var(--voile-affiche)" }} />
                   <div className="absolute top-3.5 left-3.5 right-3.5 flex items-center gap-2">
                     <span className="text-[11px] font-bold text-white px-2.5 py-1.5 rounded-full"
-                      style={{ background: "var(--verre-photo)", backdropFilter: "blur(6px)", border: "1px solid var(--verre-photo-bord)" }}>
+                      style={{ background: "var(--verre-photo)", backdropFilter: "blur(16px) saturate(170%)", WebkitBackdropFilter: "blur(16px) saturate(170%)", border: "1px solid var(--verre-photo-bord)" }}>
                       ≈ {duration} min
                     </span>
                     <button onClick={onClose}
                       className="ml-auto w-8 h-8 rounded-full flex items-center justify-center cursor-pointer text-white"
-                      style={{ background: "var(--verre-photo)", backdropFilter: "blur(6px)", border: "1px solid var(--verre-photo-bord)" }}
+                      style={{ background: "var(--verre-photo)", backdropFilter: "blur(16px) saturate(170%)", WebkitBackdropFilter: "blur(16px) saturate(170%)", border: "1px solid var(--verre-photo-bord)" }}
                       aria-label="Fermer">
                       <X size={15} strokeWidth={2} />
                     </button>

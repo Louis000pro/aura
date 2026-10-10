@@ -408,7 +408,7 @@ function PhotoAnalysisModal({ onClose, onAdd, onBack }: {
                     <>
                       <div className="absolute top-1/2 left-1/2 rounded-full pointer-events-none" style={{ width: 150, height: 150, transform: "translate(-50%,-50%)", border: "1.5px dashed rgba(255,255,255,0.4)" }} />
                       <div className="absolute left-1/2 bottom-3 -translate-x-1/2 whitespace-nowrap text-[11px] font-semibold px-3 py-1.5 rounded-full pointer-events-none"
-                        style={{ background: "var(--verre-photo)", color: "#fff", backdropFilter: "blur(6px)" }}>
+                        style={{ background: "var(--verre-photo)", color: "#fff", backdropFilter: "blur(16px) saturate(170%)", WebkitBackdropFilter: "blur(16px) saturate(170%)" }}>
                         Cadre ton assiette
                       </div>
                     </>
@@ -930,7 +930,7 @@ function BarcodeScannerModal({ onClose, onAdd }: {
                     transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
                   />
                   <div className="absolute left-1/2 bottom-3 -translate-x-1/2 whitespace-nowrap text-[11px] font-semibold px-3 py-1.5 rounded-full pointer-events-none"
-                    style={{ background: "var(--verre-photo)", color: "#fff", backdropFilter: "blur(6px)" }}>
+                    style={{ background: "var(--verre-photo)", color: "#fff", backdropFilter: "blur(16px) saturate(170%)", WebkitBackdropFilter: "blur(16px) saturate(170%)" }}>
                     Centre le code-barres
                   </div>
                 </div>
@@ -1423,7 +1423,7 @@ function MenuScanModal({ objectiveLine, objectiveChip, goalKnown, initialResult,
                     <>
                       <div className="absolute pointer-events-none" style={{ left: "13%", right: "13%", top: "17%", bottom: "17%", border: "1.5px dashed rgba(255,255,255,0.4)", borderRadius: 10 }} />
                       <div className="absolute left-1/2 bottom-3 -translate-x-1/2 whitespace-nowrap text-[11px] font-semibold px-3 py-1.5 rounded-full pointer-events-none inline-flex items-center gap-1.5"
-                        style={{ background: "var(--verre-photo)", color: "#fff", backdropFilter: "blur(6px)" }}>
+                        style={{ background: "var(--verre-photo)", color: "#fff", backdropFilter: "blur(16px) saturate(170%)", WebkitBackdropFilter: "blur(16px) saturate(170%)" }}>
                         Cadre la carte entière
                       </div>
                     </>

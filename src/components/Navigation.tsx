@@ -346,16 +346,16 @@ export default function Navigation() {
           demandent un compte : les montrer à quelqu'un qui n'en a pas encore,
           c'est lui offrir des portes qui le renvoient à la connexion. */}
       {user && !isLoading && !surfacePublique && (
-      <nav className="mobile-nav fixed bottom-0 left-0 right-0 z-50 md:hidden" style={{ willChange: "transform" }}>
+      <nav
+        className="mobile-nav fixed left-3 right-3 z-50 md:hidden"
+        style={{ willChange: "transform", bottom: "calc(10px + env(safe-area-inset-bottom))" }}
+      >
+        {/* Le verre (essai du 2026-10-10) : la barre devient une capsule qui
+            flotte, et l'écran défile dessous au lieu de s'arrêter sur un
+            trait. Classe `vy-verre`, définie une fois dans globals.css. */}
         <div
-          className="relative flex items-stretch justify-around px-1"
-          style={{
-            background: "rgb(var(--surface-rgb))",
-            borderTop: "1px solid rgba(var(--accent-rgb),0.14)",
-            boxShadow: "0 -6px 24px rgba(var(--accent-rgb),0.10)",
-            paddingTop: 9,
-            paddingBottom: "calc(9px + env(safe-area-inset-bottom))",
-          }}
+          className="vy-verre relative flex items-stretch justify-around px-1 rounded-[32px]"
+          style={{ paddingTop: 8, paddingBottom: 8 }}
         >
           {/* 1. Accueil */}
           <NavIcon href={TABS[0].href} label={TABS[0].label} icon={TABS[0].icon} sub={TABS[0].sub} mobile tourAnchor={TABS[0].tourAnchor} />

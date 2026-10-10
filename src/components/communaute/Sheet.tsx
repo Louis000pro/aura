@@ -47,10 +47,9 @@ export default function Sheet({ children, onFermer, niveau = 90 }: {
       <motion.div
         role="dialog"
         aria-modal="true"
-        className="fixed inset-x-0 bottom-0 rounded-t-[var(--r-feuille)] px-5 pt-5 md:left-[88px] md:right-auto md:bottom-6 md:w-[440px] md:rounded-[26px]"
+        className="vy-verre-epais fixed inset-x-0 bottom-0 rounded-t-[var(--r-feuille)] px-5 pt-5 md:left-[88px] md:right-auto md:bottom-6 md:w-[440px] md:rounded-[26px]"
         style={{
           zIndex: niveau + 1,
-          background: "rgb(var(--surface-rgb))",
           paddingBottom: "calc(1.5rem + env(safe-area-inset-bottom))",
         }}
         initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}

@@ -33,11 +33,8 @@ export default function FeuilleBas({ onClose, children, hauteur, niveau = 100 }:
       <motion.div
         initial={{ y: 64, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 48, opacity: 0 }}
         transition={{ type: "spring", stiffness: 380, damping: 34 }}
-        className="relative w-full max-w-lg rounded-t-[var(--r-feuille)] md:rounded-[var(--r-feuille)] overflow-hidden flex flex-col"
+        className="vy-verre-epais relative w-full max-w-lg rounded-t-[var(--r-feuille)] md:rounded-[var(--r-feuille)] overflow-hidden flex flex-col"
         style={{
-          background: "rgb(var(--surface-rgb))",
-          border: "1px solid rgba(var(--accent-rgb),0.14)",
-          boxShadow: "0 -14px 44px rgba(0,0,0,0.35)",
           maxHeight: "90dvh",
           height: hauteur,
         }}

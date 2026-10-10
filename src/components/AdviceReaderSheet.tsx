@@ -71,7 +71,7 @@ export default function AdviceReaderSheet({
           style={{
             background: "var(--verre-photo)",
             border: "1px solid var(--verre-photo-bord)",
-            backdropFilter: "blur(6px)",
+            backdropFilter: "blur(16px) saturate(170%)", WebkitBackdropFilter: "blur(16px) saturate(170%)",
           }}
           aria-label="Fermer le cours"
         >
@@ -103,7 +103,7 @@ export default function AdviceReaderSheet({
             <div className="relative z-10 px-6 pb-6 pt-[calc(env(safe-area-inset-top)+88px)] text-white">
               <div className="flex items-center gap-2 mb-3">
                 <span className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-full text-[11px] font-black uppercase tracking-[0.14em]"
-                  style={{ background: "var(--verre-photo)", border: "1px solid var(--verre-photo-bord)", backdropFilter: "blur(6px)" }}>
+                  style={{ background: "var(--verre-photo)", border: "1px solid var(--verre-photo-bord)", backdropFilter: "blur(16px) saturate(170%)", WebkitBackdropFilter: "blur(16px) saturate(170%)" }}>
                   <BookOpen size={11} strokeWidth={2.2} aria-hidden />
                   {article.theme}
                 </span>

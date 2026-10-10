@@ -126,11 +126,8 @@ function Sheet({ onClose, children, maxHeight = "88vh", height }: {
       <motion.div
         initial={{ y: 64, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 48, opacity: 0 }}
         transition={{ type: "spring", stiffness: 380, damping: 34 }}
-        className="w-full max-w-lg rounded-t-[var(--r-feuille)] md:rounded-[var(--r-feuille)] overflow-hidden flex flex-col"
+        className="vy-verre-epais w-full max-w-lg rounded-t-[var(--r-feuille)] md:rounded-[var(--r-feuille)] overflow-hidden flex flex-col"
         style={{
-          background: "rgb(var(--surface-rgb))",
-          border: "1px solid rgba(var(--accent-rgb),0.14)",
-          boxShadow: "0 -14px 44px rgba(0,0,0,0.35)",
           maxHeight,
           height,
         }}
@@ -792,7 +789,7 @@ function SessionTile({ session, onStart, onManage, onPremium, canAccessPremium, 
             (hérité par les 3 points). */}
         {advice ? (
           <span className="absolute top-2 left-2 flex items-center gap-1 px-[7px] py-[4px] rounded-full"
-            style={{ background: "var(--verre-photo)", backdropFilter: "blur(6px)", border: "1px solid var(--verre-photo-bord)" }}>
+            style={{ background: "var(--verre-photo)", backdropFilter: "blur(16px) saturate(170%)", WebkitBackdropFilter: "blur(16px) saturate(170%)", border: "1px solid var(--verre-photo-bord)" }}>
             <BookOpen size={9} strokeWidth={2.4} className="flex-shrink-0 text-white" aria-hidden />
             <span className="text-[11px] leading-none font-semibold text-white">
               <span className="vy-nombre">{session.duration}</span> min · lire
@@ -800,7 +797,7 @@ function SessionTile({ session, onStart, onManage, onPremium, canAccessPremium, 
           </span>
         ) : (
           <span className="absolute top-2 left-2 flex items-center gap-[3px] px-[7px] py-[4px] rounded-full"
-            style={{ background: "var(--verre-photo)", backdropFilter: "blur(6px)", border: "1px solid var(--verre-photo-bord)", forcedColorAdjust: "none" }}
+            style={{ background: "var(--verre-photo)", backdropFilter: "blur(16px) saturate(170%)", WebkitBackdropFilter: "blur(16px) saturate(170%)", border: "1px solid var(--verre-photo-bord)", forcedColorAdjust: "none" }}
             aria-label={`Difficulté : ${session.difficulty}`}>
             {[0, 1, 2].map((i) => (
               <span key={i} className="w-1 h-1 rounded-full"
@@ -812,7 +809,7 @@ function SessionTile({ session, onStart, onManage, onPremium, canAccessPremium, 
         {/* Durée — badge discret */}
         {!advice && (
           <span className="absolute top-2 right-2 px-2 py-[3px] rounded-full text-[11px] font-extrabold tracking-[0.05em] text-white"
-            style={{ background: "var(--verre-photo)", backdropFilter: "blur(6px)", border: "1px solid var(--verre-photo-bord)" }}>
+            style={{ background: "var(--verre-photo)", backdropFilter: "blur(16px) saturate(170%)", WebkitBackdropFilter: "blur(16px) saturate(170%)", border: "1px solid var(--verre-photo-bord)" }}>
             {session.duration} MIN
           </span>
         )}
@@ -860,7 +857,7 @@ function SessionTile({ session, onStart, onManage, onPremium, canAccessPremium, 
       {!advice && !premiumLocked && (
         <motion.button whileTap={{ scale: 0.85 }} onClick={() => onManage(session)}
           className="absolute bottom-2 right-2 w-7 h-7 rounded-full flex items-center justify-center cursor-pointer border-none p-0"
-          style={{ background: "var(--verre-photo)", backdropFilter: "blur(6px)", border: "1px solid var(--verre-photo-bord)" }}
+          style={{ background: "var(--verre-photo)", backdropFilter: "blur(16px) saturate(170%)", WebkitBackdropFilter: "blur(16px) saturate(170%)", border: "1px solid var(--verre-photo-bord)" }}
           aria-label={session.perso ? `Gérer : ${session.title}` : `Options : ${session.title}`}>
           <MoreHorizontal size={14} strokeWidth={2.2} style={{ color: "rgba(255,255,255,0.88)" }} />
         </motion.button>
@@ -939,7 +936,7 @@ function PremiumPreviewSheet({ session, premiumCount, onClose, onUpgrade }: {
             whileTap={{ scale: 0.9 }}
             onClick={onClose}
             className="absolute top-3 right-3 w-8 h-8 rounded-full flex items-center justify-center text-white"
-            style={{ background: "var(--verre-photo)", border: "1px solid var(--verre-photo-bord)", backdropFilter: "blur(6px)" }}
+            style={{ background: "var(--verre-photo)", border: "1px solid var(--verre-photo-bord)", backdropFilter: "blur(16px) saturate(170%)", WebkitBackdropFilter: "blur(16px) saturate(170%)" }}
             aria-label="Fermer l’aperçu"
           >
             <X size={14} strokeWidth={2.2} />
