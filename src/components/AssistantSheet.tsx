@@ -215,7 +215,7 @@ function CarteProposition() {
       // Elle n'est rangée nulle part : le tunnel proposera de la garder une
       // fois terminée, comme une impro. Stock plein → on ne le propose pas du
       // tout, plutôt qu'un bouton qui refuse après l'effort.
-      ...(bibliothequePleine ? {} : { onGarder: () => { void garderSeance(s); } }),
+      ...(bibliothequePleine ? {} : { onGarder: () => garderSeance(s), aGarder: s }),
     });
     cancelSeance();
     close();

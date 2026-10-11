@@ -1,30 +1,19 @@
 "use client";
 
-/* ════════════════════════════════════════════════════════════════════
-   WorkoutLaunchContext — lanceur de séance GLOBAL.
-
-   Jusqu'ici, seule la page /progression savait ouvrir le tunnel
-   (WorkoutGuideModal en état local). L'assistant, lui, ne pouvait pas
-   proposer « fais-la maintenant » : il n'avait aucun moyen de lancer une
-   séance depuis n'importe où.
-
-   Ce provider, monté au niveau du layout, tient le tunnel une fois pour
-   toutes et expose launchWorkout(). Le tunnel s'auto-enregistre déjà
-   (workout_sessions + maillon de relais).
-
-   ⚠️ V7A : IL FERME AUSSI CE QUE LA SÉANCE REFERME, ET C'EST LE SEUL
-   ENDROIT QUI LE FAIT. La logique vivait dans `/progression`, le seul
-   écran qui savait lancer une séance du planning ; l'accueil sait le
-   faire maintenant, donc la garder là-bas aurait donné deux autorités
-   pour une même écriture. L'appelant déclare CE QU'IL LANCE (`cible`),
-   `terminerSeance` décide de ce qui s'écrit.
-   ════════════════════════════════════════════════════════════════════ */
-
-import { createContext, useCallback, useContext, useRef, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { createPortal } from "react-dom";
 import { AnimatePresence } from "framer-motion";
 import WorkoutGuideModal, { type Exercise } from "@/components/WorkoutGuideModal";
-import { useAuth } from "@/context/AuthContext";
+import { ConflitReprise } from "@/components/entrainement/SeanceInterrompue";
+import { useAuth, type User } from "@/context/AuthContext";
 import { terminerSeance, verrouDeFermeture, type CibleSeance } from "@/lib/finSeance";
+import {
+  avancementDeReprise, effacerReprise, lireReprise, observerReprise, prendreVerrouSeance, sauverReprise,
+  type AvancementSeance, type SeanceAReprendre, type SeanceInterrompue,
+} from "@/lib/seanceInterrompue";
+import { garderSeanceReprise } from "@/lib/garderSeanceReprise";
+import type { ProposedSeance } from "@/lib/assistantActions";
+import { verifierCibleReprise } from "@/lib/cibleReprise";
 
 export type WorkoutLaunchInput = {
   sessionId: string;
@@ -35,20 +24,24 @@ export type WorkoutLaunchInput = {
   category?: string;
   heroImage?: string;
   exerciseList?: Exercise[];
-  /** Proposé en fin de séance (« Tu la gardes ? ») quand la séance lancée
-   *  n'existe nulle part : sans ça, le travail disparaît à l'instant précis
-   *  où l'on vient de prouver qu'il marchait. */
-  onGarder?: () => void;
-  /** Ce que cette séance referme quand elle est terminée : une intention
-   *  datée, une étape du cycle, ou rien du tout (catalogue, impro, séance
-   *  perso). Absent = la séance a eu lieu et ne referme rien, ce qui est
-   *  la règle « une séance hors programme ne fait pas avancer le cycle ». */
+  onGarder?: () => void | boolean | Promise<boolean>;
+  /** Données de la séance à garder : les fonctions ne survivent pas à un reload. */
+  aGarder?: ProposedSeance;
+  /** Intention / étape refermée, jamais déduite du titre. Absent = supplément. */
   cible?: CibleSeance;
 };
 
-type Value = { launchWorkout: (w: WorkoutLaunchInput) => void };
-
+type Lancement = WorkoutLaunchInput & { userId: string; executionId: string; demarreeLe: number; reprise?: AvancementSeance };
+type Value = {
+  launchWorkout: (w: WorkoutLaunchInput) => void;
+  reprise: SeanceInterrompue | null;
+  reprendre: () => void;
+  abandonner: (executionId: string) => void;
+  erreurReprise: string | null;
+  repriseSupplement: boolean;
+};
 const Ctx = createContext<Value | null>(null);
+const RIEN = () => null;
 
 export function useWorkoutLaunch(): Value {
   const c = useContext(Ctx);
@@ -56,39 +49,167 @@ export function useWorkoutLaunch(): Value {
   return c;
 }
 
+/** Tous les accès ouvrent le même lecteur, porté dans body hors des transforms. */
 export function WorkoutLaunchProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
-  const [active, setActive] = useState<WorkoutLaunchInput | null>(null);
-  const launchWorkout = useCallback((w: WorkoutLaunchInput) => setActive(w), []);
-  /* Une fermeture par lancement, et le lancement EST son objet : un
-     callback rejoué ne peut plus écrire une seconde fois. */
-  const dejaFerme = useRef(verrouDeFermeture());
+  // Un changement de compte détruit le lecteur, ses callbacks et son verrou.
+  return <WorkoutLaunchSession key={user?.id ?? "sans-compte"} user={user}>{children}</WorkoutLaunchSession>;
+}
 
+function WorkoutLaunchSession({ children, user }: { children: React.ReactNode; user: User | null }) {
+  const userId = user?.id ?? null;
+  const [active, setActive] = useState<Lancement | null>(null);
+  const [attente, setAttente] = useState<{ userId: string; seance: WorkoutLaunchInput } | null>(null);
+  const [erreur, setErreur] = useState<{ userId: string; texte: string } | null>(null);
+  const [supplement, setSupplement] = useState<string | null>(null);
+  const lecture = useCallback(() => lireReprise(userId), [userId]);
+  const observer = useCallback((notifier: () => void) => observerReprise(userId, notifier), [userId]);
+  const brouillon = useSyncExternalStore(observer, lecture, RIEN);
+  const verrou = useRef<{ executionId: string; liberer: () => void } | null>(null);
+  const ouverture = useRef(false);
+  const vivant = useRef(true);
+  const dejaFerme = useRef(verrouDeFermeture());
+  const lecteur = active?.userId === userId ? active : null;
+  const demande = attente?.userId === userId ? attente.seance : null;
+
+  useEffect(() => {
+    vivant.current = true;
+    return () => {
+      vivant.current = false;
+      verrou.current?.liberer();
+      verrou.current = null;
+    };
+  }, [userId]);
+
+  const ouvrir = useCallback(async (w: WorkoutLaunchInput, ancien?: SeanceInterrompue) => {
+    if (!userId || ouverture.current) return;
+    ouverture.current = true;
+    try {
+      const liberer = await prendreVerrouSeance(userId);
+      if (!vivant.current) { liberer?.(); return; }
+      if (!liberer) {
+        setErreur({ userId, texte: "Cette séance est ouverte dans un autre onglet. Ferme-la là-bas pour la reprendre ici." });
+        if (!lireReprise(userId)) setAttente({ userId, seance: w });
+        return;
+      }
+      // Relire APRÈS le verrou : un autre onglet a pu terminer ou remplacer.
+      const courant = lireReprise(userId);
+      if (ancien && courant?.executionId !== ancien.executionId) {
+        liberer();
+        setErreur({ userId, texte: "Cette séance a changé dans un autre onglet. Retrouve sa dernière version ci-dessous." });
+        return;
+      }
+      if (!ancien && courant) { liberer(); setAttente({ userId, seance: w }); return; }
+      let contenu = w;
+      if (ancien && courant) {
+        const cible = await verifierCibleReprise(courant);
+        if (!vivant.current) { liberer(); return; }
+        if (cible === "inconnu") {
+          liberer();
+          setErreur({ userId, texte: "Impossible de vérifier ton planning pour l’instant. Vérifie ta connexion, puis réessaie." });
+          return;
+        }
+        if (cible === "modifie" && supplement !== courant.executionId) {
+          liberer(); setSupplement(courant.executionId);
+          setErreur({ userId, texte: "Ton planning ou ton programme a changé. Tu peux reprendre cette séance en supplément, sans modifier ton programme." });
+          return;
+        }
+        if (cible === "modifie") contenu = { ...w, cible: undefined };
+      }
+      const executionId = ancien?.executionId ?? crypto.randomUUID();
+      verrou.current = { executionId, liberer };
+      setErreur(null);
+      setSupplement(null);
+      setAttente(null);
+      setActive({ ...contenu, userId, executionId, demarreeLe: ancien?.demarreeLe ?? Date.now(), reprise: ancien ? avancementDeReprise(courant!) : undefined });
+    } finally { ouverture.current = false; }
+  }, [userId, supplement]);
+
+  const launchWorkout = useCallback((w: WorkoutLaunchInput) => {
+    if (!userId || lecteur) return;
+    const courant = lireReprise(userId);
+    if (courant) { setAttente({ userId, seance: w }); return; }
+    void ouvrir(w);
+  }, [userId, lecteur, ouvrir]);
+
+  const reprendre = useCallback(() => {
+    const courant = lireReprise(userId);
+    if (courant && !lecteur) void ouvrir(courant.seance, courant);
+  }, [userId, lecteur, ouvrir]);
+
+  const abandonner = useCallback((executionId: string) => {
+    if (!userId) return;
+    void prendreVerrouSeance(userId).then((liberer) => {
+      if (!liberer) { setErreur({ userId, texte: "Cette séance est encore ouverte dans un autre onglet." }); return; }
+      effacerReprise(userId, executionId);
+      liberer();
+      setErreur(null);
+    });
+  }, [userId]);
+
+  const fermer = useCallback((executionId: string) => {
+    if (verrou.current?.executionId === executionId) { verrou.current.liberer(); verrou.current = null; }
+    setActive((a) => a?.executionId === executionId ? null : a);
+  }, []);
+
+  const sauvegarder = useCallback((exercises: Exercise[], avancement: AvancementSeance) => {
+    if (!lecteur || verrou.current?.executionId !== lecteur.executionId) return;
+    const seance: SeanceAReprendre = {
+      sessionId: lecteur.sessionId, title: lecteur.title, duration: lecteur.duration,
+      difficulty: lecteur.difficulty, category: lecteur.category, heroImage: lecteur.heroImage,
+      exerciseList: exercises, cible: lecteur.cible, aGarder: lecteur.aGarder,
+    };
+    sauverReprise({ version: 1, userId: lecteur.userId, executionId: lecteur.executionId,
+      demarreeLe: lecteur.demarreeLe,
+      actualiseeLe: Date.now(), seance, avancement });
+  }, [lecteur]);
+
+  // Reprendre ne termine rien. Seule la vraie fin appelle l'autorité V7A.
+  const terminer = useCallback(() => {
+    if (!lecteur) return;
+    effacerReprise(lecteur.userId, lecteur.executionId);
+    if (lecteur.cible && dejaFerme.current(lecteur)) void terminerSeance(lecteur.userId, lecteur.cible);
+  }, [lecteur]);
+
+  const conflit = demande && !lecteur;
+  const visible = typeof document !== "undefined";
   return (
-    <Ctx.Provider value={{ launchWorkout }}>
+    <Ctx.Provider value={{ launchWorkout, reprise: lecteur ? null : brouillon, reprendre, abandonner,
+      erreurReprise: erreur?.userId === userId ? erreur.texte : null,
+      repriseSupplement: !!brouillon && supplement === brouillon.executionId }}>
       {children}
-      <AnimatePresence>
-        {active && (
-          <WorkoutGuideModal
-            sessionId={active.sessionId}
-            title={active.title}
-            accent={active.accent ?? "var(--accent)"}
-            duration={active.duration}
-            difficulty={active.difficulty}
-            category={active.category}
-            heroImage={active.heroImage}
-            exerciseList={active.exerciseList}
-            onGarder={active.onGarder}
-            onComplete={active.cible && user
-              ? () => {
-                  if (!dejaFerme.current(active)) return;
-                  void terminerSeance(user.id, active.cible!);
-                }
-              : undefined}
-            onClose={() => setActive(null)}
-          />
-        )}
-      </AnimatePresence>
+      {visible && createPortal(
+        <>
+          <AnimatePresence>
+            {lecteur && (
+              <WorkoutGuideModal key={lecteur.executionId}
+                sessionId={lecteur.sessionId} title={lecteur.title} accent={lecteur.accent ?? "var(--accent)"}
+                duration={lecteur.duration} difficulty={lecteur.difficulty} category={lecteur.category}
+                heroImage={lecteur.heroImage} exerciseList={lecteur.exerciseList}
+                executionId={lecteur.executionId} reprise={lecteur.reprise} onProgress={sauvegarder}
+                onGarder={lecteur.onGarder ?? (lecteur.aGarder && user
+                  ? () => garderSeanceReprise(user, { ...lecteur, exerciseList: lecteur.exerciseList ?? [] }) : undefined)}
+                onComplete={terminer} onClose={() => fermer(lecteur.executionId)} />
+            )}
+          </AnimatePresence>
+          {conflit && <ConflitReprise brouillon={brouillon} erreur={erreur?.userId === userId ? erreur.texte : null}
+            supplement={!!brouillon && supplement === brouillon.executionId}
+            onReprendre={reprendre} onFermer={() => setAttente(null)}
+            onRemplacer={async () => {
+              if (!userId || !demande) return;
+              const liberer = await prendreVerrouSeance(userId);
+              if (!liberer) { setErreur({ userId, texte: "Cette séance est encore ouverte dans un autre onglet." }); return; }
+              const courant = lireReprise(userId);
+              if (courant?.executionId !== brouillon?.executionId) {
+                liberer();
+                setErreur({ userId, texte: "La séance en pause a changé. Vérifie-la avant de l’abandonner." });
+                return;
+              }
+              if (courant) effacerReprise(userId, courant.executionId);
+              liberer();
+              void ouvrir(demande);
+            }} />}
+        </>, document.body)}
     </Ctx.Provider>
   );
 }

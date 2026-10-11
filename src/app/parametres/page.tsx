@@ -11,6 +11,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { createClient } from "@/lib/supabase";
+import { supprimerRepriseDuCompte } from "@/lib/seanceInterrompue";
 import { useTheme, type ThemePreference } from "@/hooks/useTheme";
 import { useVisualQuality, type VisualQuality } from "@/lib/perfMode";
 import { useGuidedTour } from "@/context/GuidedTourContext";
@@ -448,7 +449,7 @@ function DeleteAccountModal({ onClose }: { onClose: () => void }) {
           "Authorization": `Bearer ${sess.session.access_token}`,
         },
         body: JSON.stringify({ user_id: sess.session.user.id }),
-      }).catch(() => {});
+      }).then((r) => { if (r.ok) supprimerRepriseDuCompte(sess.session!.user.id); }).catch(() => {});
     }
     await signOut();
     setLoading(false);

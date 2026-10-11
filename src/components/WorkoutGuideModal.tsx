@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import type { AvancementSeance } from "@/lib/seanceInterrompue";
 import { useRouter } from "next/navigation";
 import { aiFetch } from "@/lib/aiFetch";
 import { motion, AnimatePresence } from "framer-motion";
@@ -139,7 +140,10 @@ export interface WorkoutGuideModalProps {
   exerciseList?: Exercise[];
   /** Présent = la séance n'existe nulle part (une impro) et peut être gardée.
       La page décide, le tunnel ne fait qu'afficher la proposition. */
-  onGarder?: () => void;
+  onGarder?: () => void | boolean | Promise<boolean>;
+  executionId?: string;
+  reprise?: AvancementSeance;
+  onProgress?: (exercises: Exercise[], avancement: AvancementSeance) => void;
 }
 
 type GuidePhase = "intro" | "exercising" | "resting" | "done";
@@ -825,7 +829,7 @@ function BandeBadge({ badges, onAller }: { badges: Badge[]; onAller: () => void 
 
 export default function WorkoutGuideModal({
   sessionId, title, duration, category, heroImage, onClose, onComplete, exerciseList,
-  onGarder,
+  onGarder, executionId, reprise, onProgress,
 }: WorkoutGuideModalProps) {
   const router = useRouter();
   // On injecte un `auto` (durée) déduit des reps pour les exos chronométrés d'une
@@ -842,19 +846,20 @@ export default function WorkoutGuideModal({
   const { open: openAssistant } = useAssistant();
   const { guide } = useGuideActif();
 
-  const [phase,         setPhase]         = useState<GuidePhase>("intro");
-  const [exerciseIdx,   setExerciseIdx]   = useState(0);
-  const [setIdx,        setSetIdx]        = useState(0);
-  const [restCountdown, setRestCountdown] = useState(0);
-  const [restTotal,     setRestTotal]     = useState(0);
-  const [restMode,      setRestMode]      = useState<"set" | "exercise">("set");
-  const [autoCountdown, setAutoCountdown] = useState(0);
-  const [prep,          setPrep]          = useState(0); // décompte 3-2-1 avant un effort chronométré
+  const [phase,         setPhase]         = useState<GuidePhase>(reprise?.phase ?? "intro");
+  const [exerciseIdx,   setExerciseIdx]   = useState(reprise?.exerciseIdx ?? 0);
+  const [setIdx,        setSetIdx]        = useState(reprise?.setIdx ?? 0);
+  const [restCountdown, setRestCountdown] = useState(reprise?.restCountdown ?? 0);
+  const [restTotal,     setRestTotal]     = useState(reprise?.restTotal ?? 0);
+  const [restMode,      setRestMode]      = useState<"set" | "exercise">(reprise?.restMode ?? "set");
+  const [autoCountdown, setAutoCountdown] = useState(reprise?.autoCountdown ?? 0);
+  const [prep,          setPrep]          = useState(reprise?.prep ?? 0);
   const [badgesGagnes,  setBadgesGagnes]  = useState<Badge[]>([]);
-  const [hiitSub,       setHiitSub]       = useState<HiitSub>("work");
-  const [doneMap,       setDoneMap]       = useState<Record<number, Record<number, boolean>>>({});
-  const [startMs,       setStartMs]       = useState(0);
-  const [elapsed,       setElapsed]       = useState(0);
+  const [hiitSub,       setHiitSub]       = useState<HiitSub>(reprise?.hiitSub ?? "work");
+  const [doneMap,       setDoneMap]       = useState<Record<number, Record<number, boolean>>>(reprise?.doneMap ?? {});
+  // Reconstituer l'origine, jamais réutiliser l'heure d'avant l'interruption.
+  const [startMs,       setStartMs]       = useState(() => reprise ? Date.now() - reprise.elapsed * 1000 : 0);
+  const [elapsed,       setElapsed]       = useState(reprise?.elapsed ?? 0);
   const [paused,        setPaused]        = useState(false);
   const [showInfo,      setShowInfo]      = useState(false);
   const [introOpen,     setIntroOpen]     = useState<number | null>(null); // exo déplié dans la liste "Au programme"
@@ -881,11 +886,43 @@ export default function WorkoutGuideModal({
      par l'équipier, deux jours de suite, séance trop courte. Aucune bande,
      aucun reproche. */
   const [maillon,       setMaillon]       = useState<MaillonFranchi | null>(null);
-  const [garde,         setGarde]         = useState<"idle" | "gardee" | "refusee">("idle");
+  const [garde,         setGarde]         = useState<"idle" | "gardee" | "refusee" | "chargement" | "echec">("idle");
 
   const { user } = useAuth();
 
   const pausedAtRef = useRef<number>(0);
+  const finDemandee = useRef(false);
+  const finEnregistree = useRef(false);
+
+  const memoriser = useCallback(() => {
+    if ((phase !== "exercising" && phase !== "resting") || finDemandee.current) return;
+    onProgress?.(exercises, { phase, exerciseIdx, setIdx, doneMap,
+      elapsed: paused || !startMs ? elapsed : Math.max(elapsed, Math.floor((Date.now() - startMs) / 1000)),
+      restCountdown, restTotal, restMode, autoCountdown, prep, hiitSub });
+  }, [phase, exerciseIdx, setIdx, doneMap, paused, startMs, elapsed, restCountdown, restTotal, restMode, autoCountdown, prep, hiitSub, exercises, onProgress]);
+
+  useEffect(() => { memoriser(); }, [memoriser]);
+  useEffect(() => {
+    const interrompre = () => {
+      if (phase !== "exercising" && phase !== "resting") return;
+      memoriser();
+      if (!paused) { pausedAtRef.current = Date.now(); setPaused(true); }
+    };
+    const visibilite = () => { if (document.visibilityState === "hidden") interrompre(); };
+    document.addEventListener("visibilitychange", visibilite);
+    window.addEventListener("pagehide", interrompre);
+    return () => { document.removeEventListener("visibilitychange", visibilite); window.removeEventListener("pagehide", interrompre); };
+  }, [phase, paused, memoriser]);
+
+  const quitter = () => { memoriser(); onClose(); };
+  const finir = useCallback(() => {
+    if (finDemandee.current) return;
+    finDemandee.current = true;
+    if (startMs && !paused) setElapsed(Math.floor((Date.now() - startMs) / 1000));
+    // Fermer le brouillon AVANT les effets de récompense, jamais restaurer done.
+    onComplete?.();
+    setPhase("done");
+  }, [onComplete, startMs, paused]);
 
   /* ── Masque la barre de navigation du bas tant que la séance guidée est ouverte
         (sinon, sur mobile, elle se superpose au bas de la modale). ── */
@@ -893,13 +930,14 @@ export default function WorkoutGuideModal({
 
   /* ── Notify parent + auto-save session when workout is done ── */
   useEffect(() => {
-    if (phase !== "done") return;
-    onComplete?.();
+    if (phase !== "done" || finEnregistree.current) return;
+    finEnregistree.current = true;
     // Auto-save to workout_sessions with actual elapsed time + exercises
     if (!user) return;
     const supabase = createClient();
     const resolvedCategory = category ?? (sessionId.includes("-") ? sessionId.split("-")[0] : null) ?? "force";
     supabase.from("workout_sessions").insert({
+      ...(executionId ? { id: executionId } : {}),
       user_id:          user.id,
       title,
       category:         resolvedCategory,
@@ -955,6 +993,7 @@ export default function WorkoutGuideModal({
     // Indépendant de l'enregistrement de la séance : si l'un rate, l'autre tient.
     const elapsedMin = Math.round(elapsed / 60) || 1;
     void supabase.from("posts").insert({
+      ...(executionId ? { id: executionId } : {}),
       user_id:  user.id,
       type:     "workout",
       caption:  "",
@@ -984,7 +1023,7 @@ export default function WorkoutGuideModal({
   /* ── Elapsed clock ── */
   useEffect(() => {
     if (phase === "intro" || phase === "done" || startMs === 0 || paused) return;
-    const t = setInterval(() => setElapsed(Math.floor((Date.now() - startMs) / 1000)), 1000);
+    const t = setInterval(() => { if (!document.hidden) setElapsed(Math.floor((Date.now() - startMs) / 1000)); }, 1000);
     return () => clearInterval(t);
   }, [phase, startMs, paused]);
 
@@ -1000,9 +1039,9 @@ export default function WorkoutGuideModal({
       if (e?.auto)      { setAutoCountdown(e.auto); setPrep(3); }
       else if (e?.hiit) { setHiitSub("work"); setAutoCountdown(HIIT_WORK); setPrep(3); }
     } else {
-      setPhase("done");
+      finir();
     }
-  }, [exercises, exerciseIdx]);
+  }, [exercises, exerciseIdx, finir]);
 
   /* ── Advance to next set / exercise ── */
   const advance = useCallback(() => {
@@ -1023,9 +1062,9 @@ export default function WorkoutGuideModal({
       else if (e?.hiit) { setHiitSub("work"); setAutoCountdown(HIIT_WORK); setPrep(3); }
       else              setAutoCountdown(0);
     } else {
-      setPhase("done");
+      finir();
     }
-  }, [exercises, exerciseIdx, setIdx]);
+  }, [exercises, exerciseIdx, setIdx, finir]);
 
   /* ── Complete a set ──
 
@@ -1046,6 +1085,7 @@ export default function WorkoutGuideModal({
      à l’écran de fin au lieu d’imposer un compte à rebours devant une carte
      « Ensuite » vide et une phrase qui annonce un dernier exercice déjà fini. */
   const completeSet = useCallback(() => {
+    if (paused || document.hidden || finDemandee.current) return;
     setDoneMap(prev => ({
       ...prev,
       [exerciseIdx]: { ...(prev[exerciseIdx] ?? {}), [setIdx]: true },
@@ -1061,7 +1101,7 @@ export default function WorkoutGuideModal({
       setRestMode(dernierSet ? "exercise" : "set");
       setRestTotal(attente); setRestCountdown(attente); setPhase("resting");
     } else advance();
-  }, [exercises, exerciseIdx, setIdx, advance]);
+  }, [exercises, exerciseIdx, setIdx, advance, paused]);
 
   /* ── Pause / resume ── */
   const togglePause = useCallback(() => {
@@ -1084,7 +1124,7 @@ export default function WorkoutGuideModal({
       else advance();
       return;
     }
-    const t = setTimeout(() => setRestCountdown(c => c - 1), 1000);
+    const t = setTimeout(() => { if (!document.hidden) setRestCountdown(c => c - 1); }, 1000);
     return () => clearTimeout(t);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase, restCountdown, paused, restMode]);
@@ -1092,7 +1132,7 @@ export default function WorkoutGuideModal({
   /* ── Décompte 3-2-1 avant chaque effort chronométré ── */
   useEffect(() => {
     if (phase !== "exercising" || paused || prep <= 0) return;
-    const t = setTimeout(() => setPrep(p => p - 1), 1000);
+    const t = setTimeout(() => { if (!document.hidden) setPrep(p => p - 1); }, 1000);
     return () => clearTimeout(t);
   }, [phase, prep, paused]);
 
@@ -1106,7 +1146,7 @@ export default function WorkoutGuideModal({
       if (cur.hiit && hiitSub === "work") { setHiitSub("rest"); setAutoCountdown(HIIT_REST); return; }
       completeSet(); return;
     }
-    const t = setTimeout(() => setAutoCountdown(c => c - 1), 1000);
+    const t = setTimeout(() => { if (!document.hidden) setAutoCountdown(c => c - 1); }, 1000);
     return () => clearTimeout(t);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase, autoCountdown, hiitSub, cur, paused, prep]);
@@ -1124,7 +1164,7 @@ export default function WorkoutGuideModal({
   const autoTotal  = isHiit ? (hiitSub === "work" ? HIIT_WORK : HIIT_REST) : (cur?.auto ?? 0);
   const autoOffset = CC * (1 - (autoTotal > 0 ? autoCountdown / autoTotal : 0));
   const restOffset = CC * (1 - (restTotal > 0 ? restCountdown / restTotal : 1));
-  const canPause   = (phase === "exercising" && isTimered) || phase === "resting";
+  const canPause   = phase === "exercising" || phase === "resting";
   const add15      = () => { setRestTotal(t => t + 15); setRestCountdown(c => c + 15); };
 
   /* ── Le player est TOUJOURS sombre (le « tunnel »), quel que soit le thème ── */
@@ -1207,7 +1247,7 @@ export default function WorkoutGuideModal({
                     {paused ? <Play size={13} strokeWidth={2} /> : <Pause size={13} strokeWidth={2} />}
                   </button>
                 )}
-                <button onClick={onClose}
+                <button onClick={quitter}
                   className="w-8 h-8 rounded-full flex items-center justify-center cursor-pointer"
                   style={{ background: "rgba(255,255,255,0.07)", border: `1px solid ${TUN.line}`, color: TUN.t2 }}
                   aria-label="Fermer">
@@ -1242,7 +1282,7 @@ export default function WorkoutGuideModal({
                       style={{ background: "var(--verre-photo)", backdropFilter: "blur(6px)", border: "1px solid var(--verre-photo-bord)" }}>
                       ≈ {duration} min
                     </span>
-                    <button onClick={onClose}
+                    <button onClick={quitter}
                       className="ml-auto w-8 h-8 rounded-full flex items-center justify-center cursor-pointer text-white"
                       style={{ background: "var(--verre-photo)", backdropFilter: "blur(6px)", border: "1px solid var(--verre-photo-bord)" }}
                       aria-label="Fermer">
@@ -1622,7 +1662,7 @@ export default function WorkoutGuideModal({
                     <BandeMaillon
                       maillon={maillon}
                       onAller={() => {
-                        onClose();
+                        quitter();
                         router.push(
                           maillon.conversationId
                             ? `/communaute/${maillon.conversationId}`
@@ -1637,7 +1677,7 @@ export default function WorkoutGuideModal({
                   {badgesGagnes.length > 0 && (
                     <BandeBadge
                       badges={badgesGagnes}
-                      onAller={() => { onClose(); router.push("/profil"); }}
+                      onAller={() => { quitter(); router.push("/profil"); }}
                     />
                   )}
                 </AnimatePresence>
@@ -1686,7 +1726,7 @@ export default function WorkoutGuideModal({
                       </p>
                       <div className="flex gap-2 mt-3">
                         <motion.button whileTap={{ scale: 0.97 }}
-                          onClick={() => { onClose(); router.push("/avis"); }}
+                          onClick={() => { quitter(); router.push("/avis"); }}
                           className="flex-1 py-2.5 rounded-xl font-bold text-[13px] cursor-pointer text-white"
                           style={{ background: "linear-gradient(100deg,#8B5CF6,#C13BC1)", boxShadow: "0 8px 22px -6px rgba(193,59,193,0.5)" }}>
                           Laisser un avis
@@ -1712,6 +1752,13 @@ export default function WorkoutGuideModal({
           style={{ borderTop: `1px solid ${isTunnel ? "rgba(255,255,255,0.08)" : "rgba(var(--accent-rgb),0.08)"}` }}>
           <AnimatePresence mode="wait">
 
+            {phase === "exercising" && paused && (
+              <motion.button key="resume" onClick={togglePause} className="w-full min-h-[52px] rounded-[var(--r-controle)] py-3 text-[16px] font-semibold text-white cursor-pointer flex items-center justify-center gap-2"
+                style={{ background: "linear-gradient(100deg,#8B5CF6,#C13BC1)", boxShadow: "var(--ombre-action)" }}>
+                <Play size={17} aria-hidden="true" /> Reprendre
+              </motion.button>
+            )}
+
             {phase === "intro" && (
               <motion.button key="start"
                 initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
@@ -1725,7 +1772,7 @@ export default function WorkoutGuideModal({
               </motion.button>
             )}
 
-            {phase === "exercising" && !isTimered && (
+            {phase === "exercising" && !isTimered && !paused && (
               <motion.div key="set-done" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
                 className="flex flex-col items-center gap-1.5">
                 <motion.button whileTap={{ scale: 0.97 }} onClick={completeSet}
@@ -1742,7 +1789,7 @@ export default function WorkoutGuideModal({
               </motion.div>
             )}
 
-            {phase === "exercising" && isTimered && (
+            {phase === "exercising" && isTimered && !paused && (
               <motion.div key="skip-timed" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
                 className="flex flex-col items-center gap-1.5">
                 <motion.button whileTap={{ scale: 0.97 }} onClick={() => setAutoCountdown(0)}
@@ -1807,10 +1854,16 @@ export default function WorkoutGuideModal({
                         </div>
                         <div className="flex gap-2 mt-3">
                           <motion.button whileTap={{ scale: 0.97 }}
-                            onClick={() => { onGarder(); setGarde("gardee"); }}
+                            aria-disabled={garde === "chargement"}
+                            onClick={async () => {
+                              if (garde === "chargement") return;
+                              setGarde("chargement");
+                              try { setGarde(await onGarder() === false ? "echec" : "gardee"); }
+                              catch { setGarde("echec"); }
+                            }}
                             className="flex-1 py-2.5 rounded-xl flex items-center justify-center gap-1.5 font-bold text-[13px] cursor-pointer text-white"
                             style={{ background: "linear-gradient(100deg,#8B5CF6,#C13BC1)", boxShadow: "0 8px 22px -6px rgba(193,59,193,0.5)" }}>
-                            <Plus size={14} strokeWidth={2.6} /> Garder la séance
+                            <Plus size={14} strokeWidth={2.6} /> {garde === "chargement" ? "Un instant…" : "Garder la séance"}
                           </motion.button>
                           <motion.button whileTap={{ scale: 0.97 }}
                             onClick={() => setGarde("refusee")}
@@ -1819,6 +1872,7 @@ export default function WorkoutGuideModal({
                             Non
                           </motion.button>
                         </div>
+                        {garde === "echec" && <p role="status" className="text-[13px] mt-3" style={{ color: TUN.t2 }}>Impossible de garder la séance. Vérifie ta connexion et tes places disponibles, puis réessaie.</p>}
                       </>
                     )}
                   </motion.div>
@@ -1834,7 +1888,7 @@ export default function WorkoutGuideModal({
                     <BookmarkCheck size={14} strokeWidth={2} /> Affiche ajoutée à ton profil
                   </div>
                 )}
-                <button onClick={onClose}
+                <button onClick={quitter}
                   className="w-full py-3.5 rounded-2xl flex items-center justify-center font-bold text-[16px] cursor-pointer"
                   style={{ background: "rgba(255,255,255,0.06)", color: TUN.t1, border: "1px solid rgba(255,255,255,0.12)" }}
                 >
