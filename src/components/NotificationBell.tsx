@@ -249,7 +249,7 @@ export default function NotificationBell({ side = "right" }: { side?: "right" | 
             style={{ borderBottom: "1px solid rgba(var(--accent-rgb),0.1)" }}
           >
             <span className="text-[16px] font-semibold flex items-center gap-1.5" style={{ color: "var(--text-1)" }}>
-              🔔 Notifications
+              Notifications
             </span>
             {unreadNotifs > 0 && (
               <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full" style={{ background: "rgba(var(--violet-mid-rgb),0.3)", color: "var(--exp-encre)" }}>

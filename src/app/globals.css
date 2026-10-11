@@ -1011,10 +1011,11 @@ html.perf-lite .vy-verre-epais { background: rgb(var(--surface-rgb)); }
      deux. Pas de jaune. L'image des bulles
      (`public/fond/vaiiya-bulles-v1.webp`) reste dans le dépôt. */
   --fond-verre:
-    radial-gradient(90% 45% at 15% 0%,  rgba(167,139,250,.22) 0%, transparent 70%),
-    radial-gradient(80% 40% at 100% 100%, rgba(244,164,222,.22) 0%, transparent 70%),
-    linear-gradient(180deg, #F8F5FF 0%, #FFFFFF 40%, #FFFFFF 65%, #FFF7FC 100%);
-  --html-bg: #F8F5FF;
+    radial-gradient(100% 50% at 10% 0%,  rgba(167,139,250,.42) 0%, transparent 72%),
+    radial-gradient(70% 35% at 100% 45%,  rgba(196,170,255,.22) 0%, transparent 70%),
+    radial-gradient(95% 48% at 100% 100%, rgba(244,164,222,.42) 0%, transparent 72%),
+    linear-gradient(180deg, #F2ECFF 0%, #FBF9FF 38%, #FFFFFF 58%, #FFF1FA 100%);
+  --html-bg: #F2ECFF;
   --page-bg: var(--fond-verre);
 }
 [data-theme="dark"] {

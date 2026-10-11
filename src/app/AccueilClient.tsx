@@ -288,7 +288,7 @@ function Dashboard() {
 
   return (
     <div
-      className="fixed inset-0 md:left-[88px] overflow-y-auto overscroll-none"
+      data-defile-page className="fixed inset-0 md:left-[88px] overflow-y-auto overscroll-none"
       style={{ background: "var(--page-bg)", height: "100dvh", WebkitOverflowScrolling: "touch" }}
     >
       <div

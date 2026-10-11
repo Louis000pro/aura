@@ -106,8 +106,8 @@ export default function Navigation() {
         flottent plus au-dessus du contenu.
         On écoute le défilement en CAPTURE sur tout le document, parce que
         l'accueil défile dans son propre conteneur et pas dans la fenêtre.
-        Un conteneur petit (un rail horizontal, une liste dans une carte) ne
-        compte pas : seul un défilement de page décide.
+        Seul un défilement de PAGE décide (la fenêtre, ou un conteneur marqué
+        `data-defile-page`) : jamais un panneau, une feuille ou un rail.
         L'état porte le chemin où il a été lu : changer de page repart d'un
         haut visible sans effet de remise à zéro. ── */
   const [defile, setDefile] = useState<{ chemin: string; bas: boolean }>({ chemin: "", bas: false });
@@ -117,8 +117,10 @@ export default function Navigation() {
       let y: number;
       if (cible === document || cible === document.documentElement || cible === document.body) {
         y = window.scrollY;
-      } else if (cible instanceof HTMLElement) {
-        if (cible.clientHeight < window.innerHeight * 0.5) return;
+      } else if (cible instanceof HTMLElement && cible.hasAttribute("data-defile-page")) {
+        // Seul le défilement de la PAGE compte : la fenêtre, ou un conteneur
+        // qui tient lieu de page (l'accueil). Faire défiler le panneau des
+        // notifications ou une feuille ne doit rien effacer.
         y = cible.scrollTop;
       } else return;
       const bas = y > 12;
