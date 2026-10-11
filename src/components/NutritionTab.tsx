@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { aiFetch, messageDeRefus } from "@/lib/aiFetch";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, X, Check, Camera, Upload, Loader2, Edit2, Barcode, Minus, ChevronLeft, ChevronRight, ChevronDown, CalendarDays, BookOpen, Heart, SwitchCamera, Star, Target, Image as ImageIcon } from "lucide-react";
+import { Plus, X, Check, Camera, Upload, Loader2, Edit2, Barcode, Minus, ChevronLeft, ChevronRight, CalendarDays, BookOpen, Heart, SwitchCamera, Star, Target, Image as ImageIcon } from "lucide-react";
 import { preparerPhotoIA } from "@/lib/photoIA";
 import HistoriqueMasque from "@/components/historique/HistoriqueMasque";
 import { debutHistorique, historiqueComplet } from "@/lib/historique";
@@ -95,80 +95,6 @@ function getMealTypeFromTime(): MealType {
 function nowHHMM() {
   const d = new Date();
   return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
-}
-
-/* ─── CalorieRing ───────────────────────────────────────────────────── */
-function CalorieRing({ consumed, goal }: { consumed: number; goal: number }) {
-  const R = 88, SW = 16, C = 2 * Math.PI * R;
-  const pct = Math.min(consumed / goal, 1);
-  return (
-    <div className="relative flex-shrink-0" style={{ width: 216, height: 216 }}>
-      <svg width="216" height="216" viewBox="0 0 216 216" style={{ transform: "rotate(-90deg)" }}>
-        <defs>
-          <linearGradient id="caloGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%"   stopColor="#FFD34E" />
-            <stop offset="52%"  stopColor="#FF9A3D" />
-            <stop offset="100%" stopColor="#FF7A1A" />
-          </linearGradient>
-        </defs>
-        <circle cx="108" cy="108" r={R} fill="none" stroke="rgba(var(--accent-rgb),0.16)" strokeWidth={SW} />
-        <motion.circle cx="108" cy="108" r={R} fill="none"
-          stroke="url(#caloGrad)" strokeWidth={SW} strokeLinecap="round"
-          style={{ filter: "drop-shadow(0 0 7px rgba(255,140,30,0.5))" }}
-          strokeDasharray={C}
-          initial={{ strokeDashoffset: C }}
-          animate={{ strokeDashoffset: C * (1 - pct) }}
-          transition={{ duration: 1.4, ease: "easeOut", delay: 0.2 }} />
-      </svg>
-      <div className="absolute inset-0 flex flex-col items-center justify-center gap-1">
-        <p className="vy-label" style={{ color: "var(--text-3)" }}>Consommé</p>
-        <motion.p
-          initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.4 }}
-          /* ⚠️ PAS `.vy-nombre` ICI, ET C'EST UNE MESURE, PAS UN GOUT.
-             `toLocaleString("fr-FR")` separe les milliers par une espace
-             insecable ; dans une chasse fixe cette espace occupe une CASE
-             ENTIERE, donc « 1 480 » se lit « 1 » puis « 480 », c'est-a-dire
-             deux valeurs au lieu d'une. Verifie a l'ecran a 40 px. La famille
-             du chiffre sert les valeurs qu'on regarde, mais pas celles qui
-             portent un separateur de milliers francais. */
-          className="text-[2.5rem] font-light leading-none" style={{ color: "var(--text-1)" }}>
-          {consumed.toLocaleString("fr-FR")}
-        </motion.p>
-        <p className="text-[11px] font-light" style={{ color: "var(--text-3)" }}>
-          kcal sur {goal.toLocaleString("fr-FR")}
-        </p>
-      </div>
-    </div>
-  );
-}
-
-/* ─── MacroBar ──────────────────────────────────────────────────────── */
-function MacroBar({ label, hint, consumed, goal, color }: { label: string; hint?: string; consumed: number; goal: number; color: string }) {
-  const pct = Math.min(Math.round((consumed / goal) * 100), 100);
-  return (
-    <div>
-      <div className="flex items-center justify-between mb-1">
-        <div className="flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: color }} />
-          <span className="text-[13px] font-medium" style={{ color: "var(--text-2)" }}>{label}</span>
-          <span className="text-[11px]" style={{ color: "var(--text-3)" }}>{pct}%</span>
-        </div>
-        <span className="text-[16px] font-semibold" style={{ color: "var(--text-1)" }}>
-          {consumed}g <span className="font-normal text-[11px]" style={{ color: "var(--text-3)" }}>/ {goal}g</span>
-        </span>
-      </div>
-      {hint && (
-        <p className="text-[11px] leading-snug mb-2 ml-4" style={{ color: "var(--text-3)" }}>{hint}</p>
-      )}
-      <div className="h-2 rounded-full overflow-hidden" style={{ background: "rgba(var(--accent-rgb),0.14)" }}>
-        <motion.div className="h-full rounded-full" style={{ background: color }}
-          initial={{ width: 0 }}
-          animate={{ width: `${pct}%` }}
-          transition={{ duration: 1, ease: "easeOut", delay: 0.35 }} />
-      </div>
-    </div>
-  );
 }
 
 
@@ -2225,6 +2151,7 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
      « aucun repas » d'une journée qui en a peut-être (lib/historique). */
   const debutHisto = debutHistorique(historiqueComplet(user));
   const jourMasque = !!debutHisto && toDateStr(selectedDate) < debutHisto;
+  const estAujourdhui = selectedDate.toDateString() === today.toDateString();
   const [weekDays, setWeekDays] = useState<Date[]>([]);
   const [showPhoto, setShowPhoto] = useState(false);
   const [showManual, setShowManual] = useState(false);
@@ -2235,7 +2162,6 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
   const [meals, setMeals] = useState<MealEntry[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
-  const [journalOpen, setJournalOpen] = useState(false); // journal relégué en pied, déplié à la demande
 
   /* « Noter un repas » depuis l'accueil arrive avec `?ajouter=repas` et ouvre
      DIRECTEMENT le formulaire de saisie (choix de Louis, 2026-09-22). On
@@ -2259,7 +2185,6 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
   const totalProt  = meals.reduce((s, m) => s + m.proteins, 0);
   const totalCarbs = meals.reduce((s, m) => s + m.carbs, 0);
   const totalFats  = meals.reduce((s, m) => s + m.fats, 0);
-  const remaining  = Math.max(goals.calories - totalCals, 0);
 
   /* ── Coups de cœur : tes plats les plus souvent enregistrés (ajout en 1 tap).
      Classés par FRÉQUENCE (et non plus par simple récence) ; la récence
@@ -2484,15 +2409,14 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
           </button>
         )}
         <div className="flex items-baseline justify-between gap-3">
-          <h1 className="text-[26px] font-extralight" style={{ color: "var(--text-1)" }}>
-            Suivi{" "}
-            <em className="not-italic font-light" style={{
+          <h1 className="text-[34px] leading-none" style={{ color: "var(--text-1)", fontWeight: 800, fontVariationSettings: "var(--w-voix)" }}>
+            <em className="not-italic" style={{
               background: "linear-gradient(135deg,var(--accent),var(--gold))",
               WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
               fontStyle: "italic",
               display: "inline-block", paddingRight: "0.14em",  // évite que l'italique coupe le « n » final
             }}>
-              nutrition
+              Nutrition
             </em>
           </h1>
           <p className="vy-label flex-shrink-0 text-right" style={{ color: "var(--text-3)" }}>
@@ -2503,32 +2427,6 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
             qu'un chiffre en dur, et les deux actions vivent maintenant dans
             « On mange où ? » — un seul endroit pour ajouter un repas. */}
       </motion.div>
-
-      {/* ── Recherche de recette : le raccourci direct (avec image) ──── */}
-      {calView === "journal" && (
-        <RecipeSearch onAdd={addRecipeMeal} />
-      )}
-
-      {/* ── On mange où ? — le nouveau #1 (dominant) ─────────── */}
-      {calView === "journal" && (
-        <div className="mb-6">
-          <MealSituationHero
-            name={user?.name}
-            userId={user?.id}
-            goals={goals}
-            consumed={{ calories: totalCals, proteins: totalProt, carbs: totalCarbs, fats: totalFats }}
-            eatenToday={meals.map((m) => m.name)}
-            onPhoto={() => setShowPhoto(true)}
-            onBarcode={() => setShowBarcode(true)}
-            onManual={() => setShowManual(true)}
-            onMenuScan={() => { setMenuResult(null); setPhotoFromMenu(false); setShowMenu(true); }}
-            onSkip={() => showToast("Noté, on ne t’embête pas.")}
-            classics={displayRecents}
-            onQuickAdd={(r) => { void quickAddRecent(r); }}
-            onLogIdea={(m) => { void addRecipeMeal(m); }}
-          />
-        </div>
-      )}
 
       {/* ── Calendar view ────────────────────────────────────── */}
       <AnimatePresence mode="wait">
@@ -2629,92 +2527,70 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
         </div>
       )}
 
-      {/* ── Journal du jour — relégué en pied, dépliable ────────── */}
-      {calView === "journal" && (
-        <button
-          onClick={() => setJournalOpen((o) => !o)}
-          className="w-full max-w-5xl flex items-center justify-between px-5 py-4 mb-4 cursor-pointer"
-          style={CARD}
-        >
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-              style={{ background: "rgba(var(--accent-rgb),0.12)" }}>
-              <BookOpen size={16} strokeWidth={1.8} style={{ color: "var(--exp-encre)" }} />
-            </div>
-            <div className="text-left">
-              <p className="vy-label" style={{ color: "var(--text-3)" }}>
-                Journal du jour
-              </p>
-              <p className="text-[16px] font-medium" style={{ color: "var(--text-1)" }}>
-                {totalCals.toLocaleString("fr-FR")}
-                <span className="font-normal" style={{ color: "var(--text-3)" }}> / {goals.calories.toLocaleString("fr-FR")} kcal</span>
-              </p>
-            </div>
+      {/* ── Aujourd'hui en deux tuiles (maquette bento, Louis 2026-10-11) ──
+          Ce qu'on a mangé, et les trois macros. Aucun objectif de calories à
+          atteindre ni anneau à remplir : on montre ce qui a été mangé, pas ce
+          qui manque. Les barres des macros sont lues contre les repères de
+          `useNutritionGoals`, plafonnées à plein. */}
+      {calView === "journal" && !jourMasque && (
+        <div className="grid gap-2.5 mb-6 max-w-5xl" style={{ gridTemplateColumns: "1.15fr 1fr" }}>
+          <div className="flex flex-col justify-between gap-1 p-3.5" style={CARD}>
+            <span className="vy-label" style={{ color: "var(--text-3)" }}>{estAujourdhui ? "Aujourd’hui" : selectedDate.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric" })}</span>
+            <strong className="text-[34px] leading-none" style={{ color: "var(--text-0)", fontWeight: 800, fontVariationSettings: "var(--w-voix)" }}>
+              {totalCals.toLocaleString("fr-FR")}
+            </strong>
+            <span className="text-[11px] font-semibold" style={{ color: "var(--text-3)" }}>
+              kcal · <span className="vy-nombre">{meals.length}</span> {meals.length > 1 ? "repas notés" : "repas noté"}
+            </span>
           </div>
-          <motion.div animate={{ rotate: journalOpen ? 180 : 0 }} transition={{ duration: 0.2 }}>
-            <ChevronDown size={18} strokeWidth={2} style={{ color: "var(--text-3)" }} />
-          </motion.div>
-        </button>
+          <div className="flex flex-col justify-center gap-2 p-3.5" style={CARD}>
+            {([
+              { label: "Protéines", val: totalProt,  goal: goals.proteins, color: "#8B5CF6" },
+              { label: "Glucides",  val: totalCarbs, goal: goals.carbs,    color: "#E8620C" },
+              { label: "Lipides",   val: totalFats,  goal: goals.fats,     color: "#2BD4A0" },
+            ]).map((m) => (
+              <div key={m.label} className="flex flex-col gap-1">
+                <span className="text-[11px] font-semibold" style={{ color: "var(--text-3)" }}>
+                  {m.label} <span className="vy-nombre" style={{ color: "var(--text-0)" }}>{Math.round(m.val)}</span> g
+                </span>
+                <span className="block h-[5px] rounded-full overflow-hidden" style={{ background: "rgba(var(--accent-rgb),0.12)" }}>
+                  <span className="block h-full rounded-full" style={{ width: `${Math.min(100, m.goal > 0 ? (m.val / m.goal) * 100 : 0)}%`, background: m.color }} />
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
       )}
 
-      {/* ── 2-column grid (détail du journal, déplié) ───────────── */}
-      {calView === "journal" && journalOpen && (
-      <div className="grid grid-cols-1 lg:grid-cols-[320px,1fr] gap-5 max-w-5xl">
+      {/* ── On mange où ? — le nouveau #1 (dominant) ─────────── */}
+      {calView === "journal" && (
+        <div className="mb-6">
+          <MealSituationHero
+            name={user?.name}
+            userId={user?.id}
+            goals={goals}
+            consumed={{ calories: totalCals, proteins: totalProt, carbs: totalCarbs, fats: totalFats }}
+            eatenToday={meals.map((m) => m.name)}
+            onPhoto={() => setShowPhoto(true)}
+            onBarcode={() => setShowBarcode(true)}
+            onManual={() => setShowManual(true)}
+            onMenuScan={() => { setMenuResult(null); setPhotoFromMenu(false); setShowMenu(true); }}
+            onSkip={() => showToast("Noté, on ne t’embête pas.")}
+            classics={displayRecents}
+            onQuickAdd={(r) => { void quickAddRecent(r); }}
+            onLogIdea={(m) => { void addRecipeMeal(m); }}
+          />
+        </div>
+      )}
 
-        {/* ── LEFT — L'anneau et les macros, UN SEUL groupe ──
-           Les deux blocs portaient EXACTEMENT le meme dessin (meme surface,
-           meme rayon, meme halo violet) a 16 px l'un de l'autre, et ils
-           repondent a une seule question : ou j'en suis aujourd'hui. Deux
-           surfaces pour une seule idee, c'est la forme qui fait « tableau de
-           bord genere ». Un cadre, deux sections, un filet entre elles.
-           Le filet vient de `.vy-filet + .vy-filet`, donc c'est le SECOND
-           enfant qui le porte : pas de trait orphelin si l'un disparait. */}
-        <motion.div
-          initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.12 }}
-          className="overflow-hidden self-start w-full" style={CARD}>
+      {/* ── Recherche de recette : le raccourci direct (avec image) ──── */}
+      {calView === "journal" && (
+        <RecipeSearch onAdd={addRecipeMeal} />
+      )}
 
-          {/* Calorie ring */}
-          <div className="vy-filet p-6">
-            <div className="flex flex-col items-center gap-5">
-              <CalorieRing consumed={totalCals} goal={goals.calories} />
-              <div className="w-full grid grid-cols-3 gap-2 text-center">
-                {[
-                  { label: "Restant", val: remaining, color: "var(--teal-encre)" },
-                  { label: "Brûlé",   val: goals.burned, color: "#FF7A1A" },
-                  { label: "Objectif",val: goals.calories, color: "#B79CFF" },
-                ].map(({ label, val, color }) => (
-                  <div key={label}>
-                    <p className="vy-label mb-0.5"
-                      style={{ color: "var(--text-3)" }}>{label}</p>
-                    <p className="text-[20px] font-light leading-tight" style={{ color }}>
-                      {val.toLocaleString("fr-FR")}
-                    </p>
-                    <p className="text-[11px]" style={{ color: "var(--text-3)" }}>kcal</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Macros */}
-          <div className="vy-filet p-5">
-            <div className="flex items-start justify-between mb-4">
-              <div>
-                <p className="vy-label" style={{ color: "var(--text-3)" }}>
-                  Macros du jour
-                </p>
-              </div>
-              <button className="text-[13px] font-semibold cursor-pointer flex-shrink-0" style={{ color: "var(--exp-encre)" }}>
-                Ajuster
-              </button>
-            </div>
-            <div className="flex flex-col gap-4">
-              <MacroBar label="Protéines" hint="Pour construire tes muscles"     consumed={totalProt}  goal={goals.proteins} color="#B79CFF" />
-              <MacroBar label="Glucides"  hint="Ton énergie pour la journée"      consumed={totalCarbs} goal={goals.carbs}    color="#FF9A3D" />
-              <MacroBar label="Lipides"   hint="Les graisses utiles à ton corps"  consumed={totalFats}  goal={goals.fats}     color="#2BD4A0" />
-            </div>
-          </div>
-        </motion.div>
+      {/* ── Les repas du jour : toujours visibles, plus repliés en pied. ── */}
+      {calView === "journal" && (
+      <div className="grid grid-cols-1 gap-5 max-w-5xl">
 
         {/* RIGHT — Meals */}
         <motion.div

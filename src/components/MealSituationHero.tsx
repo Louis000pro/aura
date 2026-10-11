@@ -108,13 +108,13 @@ const MEAL_SHARE_ADVISOR: Record<MealType, number> = {
 };
 
 /* Grande carte-image réutilisée à chaque niveau (racine + sous-choix) */
-function PhotoCard({ label, sub, Icon, gradient, img, onClick }: {
-  label: string; sub: string; Icon: Icon; gradient: string; img: string; onClick: () => void;
+function PhotoCard({ label, sub, Icon, gradient, img, onClick, hauteur = "56vh" }: {
+  label: string; sub: string; Icon: Icon; gradient: string; img: string; onClick: () => void; hauteur?: string;
 }) {
   return (
     <motion.button whileTap={{ scale: 0.97 }} onClick={onClick}
       className="relative overflow-hidden cursor-pointer text-left"
-      style={{ borderRadius: "var(--r-affiche)", minHeight: "56vh", background: gradient }}>
+      style={{ borderRadius: "var(--r-affiche)", minHeight: hauteur, background: gradient }}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={img} alt="" aria-hidden loading="lazy" decoding="async"
         onError={(e) => { e.currentTarget.style.display = "none"; }}
@@ -453,8 +453,12 @@ export default function MealSituationHero({
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
-      className="p-5 max-w-5xl"
-      style={{
+      className={sit === null ? "max-w-5xl" : "p-5 max-w-5xl"}
+      /* À la racine, « On mange où ? » est posé directement sur le fond
+         (maquette bento, Louis 2026-10-11) : la question, Nora et les trois
+         photos n'ont pas besoin d'un cadre. Dans un sous-niveau (formulaires,
+         listes), la carte revient. */
+      style={sit === null ? undefined : {
         borderRadius: "var(--r-bloc)",
         background: "rgb(var(--surface-rgb))",
         border: "1px solid rgba(var(--text-3-rgb),0.16)",
@@ -503,7 +507,7 @@ export default function MealSituationHero({
             initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }}
             className="grid grid-cols-3 gap-2.5 mt-4">
             {SITUATIONS.map((s) => (
-              <PhotoCard key={s.key} label={s.label} sub={s.sub} Icon={s.Icon} gradient={s.gradient} img={s.img}
+              <PhotoCard key={s.key} label={s.label} sub={s.sub} Icon={s.Icon} gradient={s.gradient} img={s.img} hauteur="24vh"
                 onClick={() => { setSit(s.key); setScreen("menu"); }} />
             ))}
           </motion.div>
