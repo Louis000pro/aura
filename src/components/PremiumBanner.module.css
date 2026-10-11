@@ -40,8 +40,6 @@
     radial-gradient(circle at 100% 0%, rgba(var(--accent-rgb), 0.1), transparent 34%),
     var(--verre-fond-epais);
   color: var(--text-0);
-  -webkit-backdrop-filter: blur(22px) saturate(170%);
-  backdrop-filter: blur(22px) saturate(170%);
 }
 
 .topline {
