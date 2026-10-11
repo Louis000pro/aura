@@ -951,6 +951,24 @@ html:not(.a-session) .mobile-nav { display: none !important; }
   box-shadow: inset 0 1px 0 rgba(255,255,255,.55), 0 8px 22px -10px rgba(0,0,0,.45);
   color: #fff;
 }
+/* LA BARRE DU BAS RESTE BLANCHE, PARTOUT (Louis, 2026-10-11).
+   Avec `.vy-verre` (62 % d'opacité, saturation 180 %), la capsule prenait
+   la couleur de ce qui passait dessous : grise sur une photo sombre,
+   teintée sur une autre. Elle doit être du verre BLANC, identique sur
+   chaque onglet : fond presque plein, pas de saturation (c'est elle qui
+   ramenait les couleurs de dessous), et un flou qui ne fait plus que
+   dépolir. Le reflet du haut et l'arête blanche gardent le côté verre. */
+html:not([data-theme="dark"]) .vy-nav-blanc {
+  background: linear-gradient(180deg, rgba(255,255,255,.97) 0%, rgba(255,255,255,.90) 100%);
+  -webkit-backdrop-filter: blur(18px);
+  backdrop-filter: blur(18px);
+  border: 1px solid rgba(255,255,255,1);
+  box-shadow: inset 0 1.5px 0 #fff,
+              inset 0 -8px 16px -14px rgba(139,92,246,.30),
+              0 0 0 .5px rgba(120,90,180,.16),
+              0 12px 32px -12px rgba(40,28,80,.32);
+}
+html.perf-lite:not([data-theme="dark"]) .vy-nav-blanc { background: #fff; -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
 /* Qualité visuelle allégée : moins de flou, un fond plus couvrant. */
 html.perf-lite .vy-verre,
 html.perf-lite .vy-verre-epais,
