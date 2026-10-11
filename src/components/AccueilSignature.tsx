@@ -4,7 +4,6 @@ import Image from "next/image";
 import { useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { ChevronRight } from "lucide-react";
-import GemmeRang from "@/components/GemmeRang";
 import { VisageGuide } from "@/components/AssistantMark";
 import MaJournee from "@/components/accueil/MaJournee";
 import FeuilleMissions from "@/components/accueil/FeuilleMissions";
@@ -22,9 +21,9 @@ import styles from "./AccueilSignature.module.css";
 
      ① l'entrée      qui m'accompagne, et un mot s'il a une raison
      ② le héros      ce que je fais maintenant  (V7A, inchangé)
-     ③ ma journée    ce qu'il me reste, et ce que Premium ajoute
+     ③ ma journée    en bento (essai verre, 2026-10-11) : série, rang et
+                     EXP, quêtes en anneau, puis le rail des quêtes
      ④ le relais     conditionnel, rare, humain
-     ⑤ où j'en suis  série, rang et EXP sur UNE ligne
 
    ⚠️ CE QUI A QUITTÉ CET ÉCRAN, ET IL NE FAUT PAS LE RAMENER : la liste
    complète des missions du jour, la section « Cette semaine », le coffre
@@ -34,7 +33,8 @@ import styles from "./AccueilSignature.module.css";
    hebdomadaires vivent aussi dans Profil › Progrès et les Premium sur
    /premium. Le `PremiumBanner` global est hors de ce chantier.
 
-   ⚠️ UN SEUL AFFICHAGE PRINCIPAL D'EXP, et c'est la ligne ⑤. L'ancien
+   ⚠️ UN SEUL AFFICHAGE PRINCIPAL D'EXP, et c'est la tuile du rang du
+   bento (dans `MaJournee`). L'ancien
    écran écrivait « EXP » quinze fois : une fois par sceau de mission,
    plus deux en-têtes de section, plus la bande de rang. Le seul autre
    endroit où le mot apparaît désormais est le sceau de la mission
@@ -50,7 +50,6 @@ export default function AccueilSignature({
   greeting,
   pseudo,
   aura,
-  auraLoaded,
   missionsLues,
   expGain,
   isPremium,
@@ -121,24 +120,15 @@ export default function AccueilSignature({
           aura={aura}
           jour={jour}
           premiumDebloque={premiumDebloque}
+          expGain={expGain}
+          reduce={!!reduce}
           onNavigate={onNavigate}
           onVoirTout={() => setFeuille(true)}
+          onOpenRangs={onOpenRangs}
         />
       )}
 
       {relais && <BandeRelais relais={relais} onNavigate={onNavigate} />}
-
-      {/* ⑤ Où j'en suis. Série, rang et EXP répondaient à la même question
-          sur DEUX surfaces de 142 px au total, en tête d'écran. Elles
-          tiennent sur une ligne, en bas, parce que « où j'en suis » n'est
-          pas la première question d'une journée. */}
-      <LigneEtat
-        aura={aura}
-        charge={auraLoaded}
-        expGain={expGain}
-        reduce={!!reduce}
-        onOpen={onOpenRangs}
-      />
 
       <AnimatePresence>
         {feuille && missionsLues && (
@@ -211,67 +201,6 @@ function Entree({
         {moment && <span className={styles.mot}>{voix(guide, moment.phrase, moment.ctx)}</span>}
       </span>
     </motion.button>
-  );
-}
-
-/* ── ⑤ OÙ J'EN SUIS ───────────────────────────────────────────────────
-   Une ligne : 🔥 série · gemme + rang · EXP / seuil. Elle ouvre la
-   galerie des rangs, exactement comme la bande d'avant.
-
-   Ce qu'on répare : la série et le rang portaient DEUX blocs de la même
-   famille, l'un sous l'autre, 142 px en tête d'écran, pour répondre à une
-   seule question. Ils ne disparaissent pas, ils cessent de commander la
-   page. */
-function LigneEtat({
-  aura,
-  charge,
-  expGain,
-  reduce,
-  onOpen,
-}: {
-  aura: EtatAura;
-  charge: boolean;
-  expGain: number | null;
-  reduce: boolean;
-  onOpen: () => void;
-}) {
-  const serie = aura.serie;
-
-  return (
-    <button type="button" className={styles.etat} onClick={onOpen}>
-      <span className={styles.etatSerie} data-done={aura.jourValide ? "" : undefined}>
-        <i aria-hidden="true">🔥</i>
-        {/* Tant que la base n'a pas répondu, un tiret : un « 0 » provisoire
-            chez quelqu'un qui en est à trente jours serait le pire des
-            messages possibles. */}
-        <b className="vy-nombre">{charge ? serie : "—"}</b>
-        <small>{serie > 1 || !charge ? "jours" : "jour"}</small>
-      </span>
-
-      <span className={styles.etatSep} aria-hidden="true" />
-
-      <span className={styles.etatRang}>
-        <GemmeRang rang={aura.rang} size={26} flotte={false} />
-        {aura.rang.nom}
-      </span>
-
-      <span className={styles.etatExp}>
-        <b className="vy-nombre">{charge ? aura.exp : "—"}</b> / {aura.seuilHaut} EXP
-        <AnimatePresence>
-          {expGain !== null && (
-            <motion.em
-              initial={reduce ? false : { opacity: 0, y: 7, scale: 0.8 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -8 }}
-            >
-              +{expGain}
-            </motion.em>
-          )}
-        </AnimatePresence>
-      </span>
-
-      <ChevronRight size={16} strokeWidth={2.4} className={styles.etatChevron} aria-hidden="true" />
-    </button>
   );
 }
 

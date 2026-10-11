@@ -1173,8 +1173,8 @@ verdict(
         du jour portant son propre gain via le composant partagé. ── */
   verdict(
     "V7B · un seul affichage d'EXP sur l'accueil lui-même",
-    (ACCUEIL.match(/EXP/g) ?? []).length === 1 && !ACCUEIL.includes("PLAFOND_JOUR_"),
-    "la ligne « où j'en suis », et rien d'autre",
+    (ACCUEIL.match(/EXP/g) ?? []).length + (JOURNEE.match(/EXP/g) ?? []).length === 1 && !ACCUEIL.includes("PLAFOND_JOUR_"),
+    "la tuile du rang du bento, et rien d'autre",
   );
   verdict(
     "V7B · l'accueil ne liste plus aucune famille de missions",
@@ -1261,10 +1261,9 @@ verdict(
     "V7B · une seule écriture de la ligne de mission dans tout le produit",
     [
       "src/components/accueil/FeuilleMissions.tsx",
-      "src/components/accueil/MaJournee.tsx",
       "src/app/premium/InfosPremium.tsx",
     ].every((f) => lire(f).includes("@/components/missions/LigneMission")),
-    "trois surfaces, un seul composant",
+    "deux surfaces, un seul composant (le bento de l'accueil a ses cartes à lui)",
   );
 }
 
