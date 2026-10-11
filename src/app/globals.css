@@ -997,21 +997,18 @@ html.perf-lite .vy-verre-epais { background: rgb(var(--surface-rgb)); }
      arête blanche, ombre douce) mais il est assez dépoli pour qu'aucun
      texte ne transparaisse : c'est le fond, plus contrasté, qui dit
      « verre », pas la transparence. */
-  --verre-carte: linear-gradient(145deg, rgba(255,255,255,.94) 0%, rgba(255,255,255,.80) 55%, rgba(255,255,255,.74) 100%);
+  --verre-carte: linear-gradient(145deg, rgba(255,255,255,.88) 0%, rgba(255,255,255,.74) 55%, rgba(255,255,255,.66) 100%);
   --verre-carte-bord: rgba(255,255,255,.95);
   /* Le bord du verre : sur un fond presque blanc, c'est la lumière sur la
      tranche et l'ombre colorée dessous qui le rendent visible. */
   --verre-carte-ombre: inset 0 1.5px 0 rgba(255,255,255,1), inset 0 -1.5px 3px rgba(139,92,246,.10), 0 0 0 .5px rgba(120,90,180,.18), 0 16px 36px -14px rgba(110,70,160,.36);
-  /* Surtout du BLANC (Louis, 2026-10-11) : le violet, le rose et le jaune
-     ne sont que des voiles légers. Le haut reste presque blanc, de la même
-     couleur que la barre d'état (`themeColor`, manifest, `--html-bg`). */
-  --fond-verre:
-    radial-gradient(62% 40% at 6% 20%,  rgba(178,146,255,.55) 0%, transparent 70%),
-    radial-gradient(58% 38% at 98% 50%, rgba(255,160,212,.48) 0%, transparent 70%),
-    radial-gradient(68% 40% at 20% 96%, rgba(255,214,110,.52) 0%, transparent 70%),
-    radial-gradient(40% 26% at 80% 6%,  rgba(255,200,170,.30) 0%, transparent 70%),
-    linear-gradient(180deg, #FCF9FF 0%, #FFFFFF 45%, #FFFCF5 100%);
-  --html-bg: #FCF9FF;
+  /* Le fond « bulles » (Louis, 2026-10-11, d'après deux fonds d'écran
+     qu'il a envoyés) : grandes sphères de verre floues, bleu lilas,
+     violet, rose, sur un blanc froid, sans jaune. C'est UNE image fixe
+     (`scripts/build-fond.mjs`), donc elle ne coûte rien au défilement.
+     La couleur de repli est la dernière couche. */
+  --fond-verre: url("/fond/vaiiya-bulles-v1.webp") center / cover no-repeat, #F1F0FF;
+  --html-bg: #EEF1FF;
   --page-bg: var(--fond-verre);
 }
 [data-theme="dark"] {
