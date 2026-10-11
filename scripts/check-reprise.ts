@@ -77,6 +77,11 @@ verifier("transition : prochain exercice affiché, dernier set reste coché", ()
 verifier("retour à un exercice terminé : les marques restent conservées", () => {
   const b = copie(); b.avancement.doneMap[0][1] = true; assert.ok(decoder(b));
 });
+verifier("transition après retour en arrière : prochain exercice réellement ouvert", () => {
+  const b = copie(); Object.assign(b.avancement, {phase:"resting",setIdx:2,restMode:"exercise",restCountdown:10,restTotal:45});
+  b.avancement.doneMap = {0:{0:true,1:true,2:true},1:{0:true,1:true},2:{0:true,1:{statut:"passee"}}};
+  assert.ok(decoder(b)); assert.deepEqual(positionDeReprise(b),{exerciseIdx:2,setIdx:1});
+});
 verifier("R3 : séries, charges, répétitions et remplaçants survivent ensemble", () => {
   const b = copie();
   const exercice = { cle: "pompes", nom: "Pompes", chargeType: "poids_du_corps" as const };
@@ -138,6 +143,14 @@ verifier("observer : un signal après sauvegarde, nettoyage sans rappel", () => 
   let appels = 0; const stop = observerReprise(MOI, () => appels++);
   sauverReprise({ ...base, executionId: RUN2 }); assert.equal(appels, 1); stop();
   sauverReprise({ ...base, executionId: RUN2 }); assert.equal(appels, 1);
+});
+verifier("autre onglet : journal R1 et abandon avertissent immédiatement le lecteur", () => {
+  let appels=0; const stop=observerReprise(MOI,()=>appels++);
+  for (const key of [`vaiiya_journal_attente_${MOI}`,`vaiiya:seance-interrompue:v1:fermee:${MOI}`]) {
+    const evenement=new Event("storage"); Object.defineProperty(evenement,"key",{value:key}); events.dispatchEvent(evenement);
+  }
+  assert.equal(appels,2); events.dispatchEvent(new Event("focus")); assert.equal(appels,3);
+  stop(); events.dispatchEvent(new Event("focus")); assert.equal(appels,3);
 });
 verifier("finalisation R1 en attente : le lecteur ne repart pas sur la dernière série", () => {
   store.set(`vaiiya_journal_attente_${MOI}`, JSON.stringify([{journal:{lancement_id:RUN2}}]));

@@ -1110,7 +1110,8 @@ export default function WorkoutGuideModal({
      par l'équipier, deux jours de suite, séance trop courte. Aucune bande,
      aucun reproche. */
   const [maillon,       setMaillon]       = useState<MaillonFranchi | null>(null);
-  const [garde,         setGarde]         = useState<"idle" | "gardee" | "refusee">("idle");
+  const [garde,         setGarde]         = useState<"idle" | "en_cours" | "echec" | "gardee" | "refusee">("idle");
+  const gardeEnCours = useRef(false);
   /* R5 · le rang après la séance (le dernier étage), l'affiche à envoyer,
      et la feuille « Voir mes exercices ». */
   const [rangFin,       setRangFin]       = useState<Rang | null>(null);
@@ -2564,18 +2565,26 @@ export default function WorkoutGuideModal({
                         </div>
                         <div className="flex gap-2 mt-3">
                           <motion.button whileTap={{ scale: 0.97 }}
-                            onClick={() => { onGarder(); setGarde("gardee"); }}
+                            disabled={garde === "en_cours"}
+                            onClick={async () => {
+                              if (gardeEnCours.current) return;
+                              gardeEnCours.current = true; setGarde("en_cours");
+                              try { setGarde(await onGarder() === false ? "echec" : "gardee"); }
+                              catch { setGarde("echec"); }
+                              finally { gardeEnCours.current = false; }
+                            }}
                             className="flex-1 py-2.5 rounded-xl flex items-center justify-center gap-1.5 font-bold text-[13px] cursor-pointer text-white"
                             style={{ background: "linear-gradient(100deg,#8B5CF6,#C13BC1)", boxShadow: "0 8px 22px -6px rgba(193,59,193,0.5)" }}>
-                            <Plus size={14} strokeWidth={2.6} /> Garder la séance
+                            <Plus size={14} strokeWidth={2.6} /> {garde === "en_cours" ? "Un instant…" : "Garder la séance"}
                           </motion.button>
                           <motion.button whileTap={{ scale: 0.97 }}
-                            onClick={() => setGarde("refusee")}
+                            disabled={garde === "en_cours"} onClick={() => setGarde("refusee")}
                             className="px-4 py-2.5 rounded-xl font-semibold text-[13px] cursor-pointer"
                             style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.14)", color: TUN.t2 }}>
                             Non
                           </motion.button>
                         </div>
+                        {garde === "echec" && <p role="status" className="text-[13px] mt-2" style={{ color: TUN.t2 }}>La séance n’a pas pu être ajoutée. Tu peux réessayer.</p>}
                       </>
                     )}
                   </motion.div>

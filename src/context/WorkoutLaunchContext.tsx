@@ -64,6 +64,7 @@ function WorkoutLaunchSession({ children, user }: { children: React.ReactNode; u
   const [erreur, setErreur] = useState<{ userId: string; texte: string } | null>(null);
   const [supplement, setSupplement] = useState<string | null>(null);
   const [repriseDifferee, setRepriseDifferee] = useState<string | null>(null);
+  const [sauvegardeFragile, setSauvegardeFragile] = useState(false);
   const lecture = useCallback(() => lireReprise(userId), [userId]);
   const observer = useCallback((notifier: () => void) => observerReprise(userId, notifier), [userId]);
   const brouillon = useSyncExternalStore(observer, lecture, RIEN);
@@ -106,7 +107,7 @@ function WorkoutLaunchSession({ children, user }: { children: React.ReactNode; u
         return;
       }
       // Relire APRÈS le verrou : un autre onglet a pu terminer ou remplacer.
-      const courant = lireReprise(userId);
+      let courant = lireReprise(userId);
       if (ancien && courant?.executionId !== ancien.executionId) {
         liberer();
         setErreur({ userId, texte: "Cette séance a changé dans un autre onglet. Retrouve sa dernière version ci-dessous." });
@@ -128,6 +129,12 @@ function WorkoutLaunchSession({ children, user }: { children: React.ReactNode; u
           return;
         }
         if (cible === "modifie") contenu = { ...w, cible: undefined };
+        courant = lireReprise(userId);
+        if (courant?.executionId !== ancien.executionId) {
+          liberer();
+          setErreur({ userId, texte: "Cette séance a changé pendant la vérification. Retrouve sa dernière version." });
+          return;
+        }
       }
       const executionId = ancien?.executionId ?? crypto.randomUUID();
       verrou.current = { executionId, liberer };
@@ -173,9 +180,10 @@ function WorkoutLaunchSession({ children, user }: { children: React.ReactNode; u
       difficulty: lecteur.difficulty, category: lecteur.category, heroImage: lecteur.heroImage,
       exerciseList: exercises, cible: lecteur.cible, aGarder: lecteur.aGarder, relaisRunId: lecteur.relaisRunId,
     };
-    sauverReprise({ version: 1, userId: lecteur.userId, executionId: lecteur.executionId,
+    const persiste = sauverReprise({ version: 1, userId: lecteur.userId, executionId: lecteur.executionId,
       demarreeLe: debutMs,
       actualiseeLe: Date.now(), seance, avancement });
+    setSauvegardeFragile(!persiste);
   }, [lecteur]);
 
   // R1 reste l'autorité : ici on retire seulement le brouillon du lecteur.
@@ -185,10 +193,11 @@ function WorkoutLaunchSession({ children, user }: { children: React.ReactNode; u
   }, [lecteur]);
 
   const conflit = !lecteur && (!!demande || (!!brouillon && repriseDifferee !== brouillon.executionId));
+  const messageReprise = erreur?.userId === userId ? erreur.texte : sauvegardeFragile ? "Ton navigateur ne peut pas sauvegarder ta place. Elle reste disponible tant que cette page est ouverte." : null;
   const visible = typeof document !== "undefined";
   return (
     <Ctx.Provider value={{ launchWorkout, reprise: lecteur ? null : brouillon, reprendre, abandonner,
-      erreurReprise: erreur?.userId === userId ? erreur.texte : null,
+      erreurReprise: messageReprise,
       repriseSupplement: !!brouillon && supplement === brouillon.executionId }}>
       {children}
       {visible && createPortal(
@@ -202,12 +211,12 @@ function WorkoutLaunchSession({ children, user }: { children: React.ReactNode; u
                 executionId={lecteur.executionId} reprise={lecteur.reprise} onProgress={sauvegarder}
                 demarreeLe={lecteur.demarreeLe} proprietaireReprise={lecteur.userId}
                 cible={lecteur.cible ?? null} relaisRunId={lecteur.relaisRunId}
-                onGarder={lecteur.onGarder ?? (lecteur.aGarder && user
-                  ? () => garderSeanceReprise(user, { ...lecteur, exerciseList: lecteur.exerciseList ?? [] }) : undefined)}
+                onGarder={lecteur.aGarder && user
+                  ? () => garderSeanceReprise(user, { ...lecteur, exerciseList: lecteur.exerciseList ?? [] }) : lecteur.onGarder}
                 onTerminee={terminer} onClose={() => fermer(lecteur.executionId)} />
             )}
           </AnimatePresence>
-          {conflit && <ConflitReprise brouillon={brouillon} erreur={erreur?.userId === userId ? erreur.texte : null}
+          {conflit && <ConflitReprise key={brouillon?.executionId ?? "sans-brouillon"} brouillon={brouillon} erreur={messageReprise}
             supplement={!!brouillon && supplement === brouillon.executionId}
             nouvelleSeance={!!demande}
             onReprendre={reprendre} onFermer={() => { setAttente(null); setRepriseDifferee(brouillon?.executionId ?? null); }}

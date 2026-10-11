@@ -214,11 +214,15 @@ export function observerReprise(userId: string | null, notifier: () => void): ()
   const locale = () => notifier();
   const externe = (e: StorageEvent) => {
     if (e.key === CLE + userId || e.key === null) { memoire.delete(userId); notifier(); }
+    else if (e.key === CLE + "fermee:" + userId || e.key === `vaiiya_journal_attente_${userId}`) notifier();
   };
+  const retour = () => notifier();
   window.addEventListener(EVT_REPRISE, locale);
   window.addEventListener("storage", externe);
+  window.addEventListener("pageshow", retour);
+  window.addEventListener("focus", retour);
   const t = window.setInterval(notifier, 60_000);
-  return () => { window.removeEventListener(EVT_REPRISE, locale); window.removeEventListener("storage", externe); window.clearInterval(t); };
+  return () => { window.removeEventListener(EVT_REPRISE, locale); window.removeEventListener("storage", externe); window.removeEventListener("pageshow", retour); window.removeEventListener("focus", retour); window.clearInterval(t); };
 }
 
 /** Le lancement propriétaire peut remplacer SON état, jamais celui d'un autre. */
@@ -272,7 +276,15 @@ export function marquesDeReprise(a?: AvancementSeance): Record<number, Record<nu
 export function positionDeReprise(b: SeanceInterrompue): { exerciseIdx: number; setIdx: number } {
   const a = b.avancement;
   if (a.phase !== "resting") return a;
-  if (a.restMode === "exercise") return { exerciseIdx: Math.min(a.exerciseIdx + 1, b.seance.exerciseList.length - 1), setIdx: 0 };
+  if (a.restMode === "exercise") {
+    // Le tunnel saute les exercices déjà terminés, y compris après un retour en arrière.
+    for (let e = a.exerciseIdx + 1; e < b.seance.exerciseList.length; e++) {
+      for (let s = 0; s < b.seance.exerciseList[e].sets; s++) {
+        if (!terminee(a.doneMap[e]?.[s])) return { exerciseIdx: e, setIdx: s };
+      }
+    }
+    return { exerciseIdx: a.exerciseIdx, setIdx: a.setIdx };
+  }
   return { exerciseIdx: a.exerciseIdx, setIdx: Math.min(a.setIdx + 1, b.seance.exerciseList[a.exerciseIdx].sets - 1) };
 }
 
