@@ -1006,11 +1006,15 @@ html.perf-lite .vy-verre-epais { background: rgb(var(--surface-rgb)); }
   /* Le bord du verre : sur un fond presque blanc, c'est la lumière sur la
      tranche et l'ombre colorée dessous qui le rendent visible. */
   --verre-carte-ombre: inset 0 1.5px 0 rgba(255,255,255,1), inset 0 -1.5px 3px rgba(139,92,246,.10), 0 0 0 .5px rgba(120,90,180,.18), 0 16px 36px -14px rgba(110,70,160,.36);
-  /* Fond BLANC (Louis, 2026-10-11) : les bulles et les voiles colorés
-     sont retirés. L'image `public/fond/vaiiya-bulles-v1.webp` reste dans
-     le dépôt si on y revient. */
-  --fond-verre: #FFFFFF;
-  --html-bg: #FFFFFF;
+  /* Fond BLANC avec un petit dégradé qui harmonise (Louis, 2026-10-11) :
+     un voile violet en haut, un voile rose en bas, du blanc entre les
+     deux. Pas de jaune. L'image des bulles
+     (`public/fond/vaiiya-bulles-v1.webp`) reste dans le dépôt. */
+  --fond-verre:
+    radial-gradient(90% 45% at 15% 0%,  rgba(167,139,250,.22) 0%, transparent 70%),
+    radial-gradient(80% 40% at 100% 100%, rgba(244,164,222,.22) 0%, transparent 70%),
+    linear-gradient(180deg, #F8F5FF 0%, #FFFFFF 40%, #FFFFFF 65%, #FFF7FC 100%);
+  --html-bg: #F8F5FF;
   --page-bg: var(--fond-verre);
 }
 [data-theme="dark"] {
