@@ -974,24 +974,30 @@ html.perf-lite .vy-verre-epais { background: rgb(var(--surface-rgb)); }
      gauche, plus transparent en bas à droite), un liseré blanc et une
      ligne de lumière en haut. C'est ce qui fait « liquid glass » sur un
      fond en dégradé, pour le prix d'une simple peinture. */
-  --verre-carte: linear-gradient(145deg, rgba(255,255,255,.62) 0%, rgba(255,255,255,.28) 60%, rgba(255,255,255,.20) 100%);
+  /* Retour de Louis (2026-10-11) : à .28 on lisait tout ce qui passait
+     derrière « Ma semaine ». Le verre reste un VERRE (reflet en biais,
+     arête blanche, ombre douce) mais il est assez dépoli pour qu'aucun
+     texte ne transparaisse : c'est le fond, plus contrasté, qui dit
+     « verre », pas la transparence. */
+  --verre-carte: linear-gradient(145deg, rgba(255,255,255,.94) 0%, rgba(255,255,255,.80) 55%, rgba(255,255,255,.74) 100%);
   --verre-carte-bord: rgba(255,255,255,.95);
   /* Le bord du verre : sur un fond presque blanc, c'est la lumière sur la
      tranche et l'ombre colorée dessous qui le rendent visible. */
-  --verre-carte-ombre: inset 0 1px 1px rgba(255,255,255,.95), inset 0 -1px 2px rgba(139,92,246,.07), 0 0 0 .5px rgba(120,90,180,.14), 0 14px 34px -14px rgba(110,70,160,.30);
+  --verre-carte-ombre: inset 0 1.5px 0 rgba(255,255,255,1), inset 0 -1.5px 3px rgba(139,92,246,.10), 0 0 0 .5px rgba(120,90,180,.18), 0 16px 36px -14px rgba(110,70,160,.36);
   /* Surtout du BLANC (Louis, 2026-10-11) : le violet, le rose et le jaune
      ne sont que des voiles légers. Le haut reste presque blanc, de la même
      couleur que la barre d'état (`themeColor`, manifest, `--html-bg`). */
   --fond-verre:
-    radial-gradient(60% 38% at 8% 22%,  rgba(196,170,255,.30) 0%, transparent 70%),
-    radial-gradient(55% 36% at 96% 52%, rgba(255,186,224,.26) 0%, transparent 70%),
-    radial-gradient(65% 38% at 22% 94%, rgba(255,224,140,.30) 0%, transparent 70%),
-    linear-gradient(180deg, #FDFBFF 0%, #FFFFFF 45%, #FFFDF8 100%);
-  --html-bg: #FDFBFF;
+    radial-gradient(62% 40% at 6% 20%,  rgba(178,146,255,.55) 0%, transparent 70%),
+    radial-gradient(58% 38% at 98% 50%, rgba(255,160,212,.48) 0%, transparent 70%),
+    radial-gradient(68% 40% at 20% 96%, rgba(255,214,110,.52) 0%, transparent 70%),
+    radial-gradient(40% 26% at 80% 6%,  rgba(255,200,170,.30) 0%, transparent 70%),
+    linear-gradient(180deg, #FCF9FF 0%, #FFFFFF 45%, #FFFCF5 100%);
+  --html-bg: #FCF9FF;
   --page-bg: var(--fond-verre);
 }
 [data-theme="dark"] {
-  --verre-carte: linear-gradient(135deg, rgba(40,32,64,.62) 0%, rgba(28,22,46,.46) 100%);
+  --verre-carte: linear-gradient(135deg, rgba(42,34,66,.92) 0%, rgba(30,24,48,.86) 100%);
   --verre-carte-ombre: inset 0 1px 0 rgba(255,255,255,.14), 0 0 0 .5px rgba(255,255,255,.08), 0 14px 34px -14px rgba(0,0,0,.6);
   --verre-carte-bord: rgba(255,255,255,.12);
   --fond-verre:
@@ -1036,7 +1042,7 @@ body::before {
    deviennent elles aussi du verre, plus léger. */
 html:not([data-theme="dark"]) [style*="background:rgba(var(--tint-violet-rgb)"],
 html:not([data-theme="dark"]) [style*="background: rgba(var(--tint-violet-rgb)"] {
-  background: linear-gradient(145deg, rgba(255,255,255,.55), rgba(255,255,255,.22)) !important;
+  background: linear-gradient(145deg, rgba(255,255,255,.90), rgba(255,255,255,.74)) !important;
   border-color: rgba(255,255,255,.9);
   box-shadow: inset 0 1px 1px rgba(255,255,255,.9), 0 0 0 .5px rgba(120,90,180,.12), 0 6px 16px -10px rgba(110,70,160,.25);
 }

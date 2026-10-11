@@ -100,6 +100,42 @@ export default function Navigation() {
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
+  /* ── La photo de profil et la cloche restent EN HAUT de la page (Louis,
+        2026-10-11) : on les voit tant qu'on est en haut, elles s'en vont dès
+        qu'on descend, et reviennent quand on remonte tout en haut. Elles ne
+        flottent plus au-dessus du contenu.
+        On écoute le défilement en CAPTURE sur tout le document, parce que
+        l'accueil défile dans son propre conteneur et pas dans la fenêtre.
+        Un conteneur petit (un rail horizontal, une liste dans une carte) ne
+        compte pas : seul un défilement de page décide.
+        L'état porte le chemin où il a été lu : changer de page repart d'un
+        haut visible sans effet de remise à zéro. ── */
+  const [defile, setDefile] = useState<{ chemin: string; bas: boolean }>({ chemin: "", bas: false });
+  useEffect(() => {
+    const surDefilement = (e: Event) => {
+      const cible = e.target;
+      let y: number;
+      if (cible === document || cible === document.documentElement || cible === document.body) {
+        y = window.scrollY;
+      } else if (cible instanceof HTMLElement) {
+        if (cible.clientHeight < window.innerHeight * 0.5) return;
+        y = cible.scrollTop;
+      } else return;
+      const bas = y > 12;
+      setDefile((p) => (p.bas === bas && p.chemin === pathname ? p : { chemin: pathname, bas }));
+    };
+    document.addEventListener("scroll", surDefilement, { capture: true, passive: true });
+    return () => document.removeEventListener("scroll", surDefilement, { capture: true });
+  }, [pathname]);
+  const enteteCache = defile.chemin === pathname && defile.bas;
+  const styleEntete: React.CSSProperties = {
+    paddingTop: "calc(env(safe-area-inset-top) + 8px)",
+    transform: enteteCache ? "translateY(-110%)" : "translateY(0)",
+    opacity: enteteCache ? 0 : 1,
+    pointerEvents: enteteCache ? "none" : undefined,
+    transition: "transform .28s ease, opacity .2s ease",
+  };
+
   /* ── Préchargement des routes principales → navigation instantanée ── */
   useEffect(() => {
     ["/", "/progression", "/nutrition", "/communaute"].forEach((r) => {
@@ -293,11 +329,12 @@ export default function Navigation() {
       {/* Essai verre (2026-10-10, retour de Louis) : PLUS AUCUN VOILE en haut.
           Ni le fondu blanc d'avant, ni une bande floutée : les deux faisaient
           un brouillard blanc sur les cartes. La photo de profil et la cloche
-          sont deux ronds de verre fixes, le contenu défile librement dessous. */}
+          sont deux ronds de verre en haut de page, qui s'effacent dès qu'on
+          descend (voir `enteteCache`). */}
 
       {user && !surfacePublique && !barrePropre && (
         <div className="global-mobile-header vy-fixe md:hidden fixed top-0 right-0 z-40 flex items-center px-3"
-          style={{ paddingTop: "calc(env(safe-area-inset-top) + 8px)" }}>
+          style={styleEntete}>
           <div className="vy-verre rounded-full">
             <NotificationBell side="top" />
           </div>
@@ -310,7 +347,7 @@ export default function Navigation() {
             pour ne pas se poser sur les titres à gauche des pages secondaires. ══ */}
       {user && (pathname === "/" || pathname === "/progression" || pathname === "/nutrition") && (
         <div className="global-mobile-header vy-fixe md:hidden fixed top-0 left-0 z-40 flex items-center px-3"
-          style={{ paddingTop: "calc(env(safe-area-inset-top) + 8px)" }}>
+          style={styleEntete}>
           {/* ⚠️ UN CARRÉ TRÈS ARRONDI A ÉTÉ ESSAYÉ ICI PUIS RETIRÉ LE MÊME JOUR
                 (Louis, 2026-09-07). L'idée était de séparer les deux portraits
                 ronds désormais empilés en haut à gauche (le compte, et le
