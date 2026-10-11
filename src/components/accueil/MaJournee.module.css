@@ -25,7 +25,7 @@
   border: 1px solid var(--verre-carte-bord);
   border-radius: var(--r-bloc);
   background: var(--verre-carte);
-  box-shadow: inset 0 1px 0 var(--verre-reflet), 0 12px 30px -18px rgba(120, 60, 110, 0.32);
+  box-shadow: var(--verre-carte-ombre);
   color: var(--text-0);
   text-align: left;
   transition: transform 0.15s ease;
@@ -235,7 +235,7 @@
   border: 1px solid var(--verre-carte-bord);
   border-radius: var(--r-bloc);
   background: var(--verre-carte);
-  box-shadow: inset 0 1px 0 var(--verre-reflet), 0 12px 30px -18px rgba(120, 60, 110, 0.32);
+  box-shadow: var(--verre-carte-ombre);
   color: var(--text-0);
   scroll-snap-align: start;
   text-align: left;
