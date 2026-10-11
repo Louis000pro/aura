@@ -914,14 +914,18 @@ html:not(.a-session) .mobile-nav { display: none !important; }
    ───────────────────────────────────────────────────────────── */
 :root {
   --verre-fond:        rgba(255,255,255,.62);
-  --verre-fond-epais:  rgba(255,255,255,.80);
+  /* .95 et pas .80 : une feuille s'ouvre presque toujours DANS un voile
+     qui a son propre backdrop-filter, et un flou imbriqué ne voit plus la
+     page (le voile devient sa racine). Sans flou réel, .80 laissait lire
+     tout l'écran à travers la feuille des goûts (Louis, 2026-10-11). */
+  --verre-fond-epais:  rgba(255,255,255,.95);
   --verre-bord:        rgba(255,255,255,.70);
   --verre-reflet:      rgba(255,255,255,.95);
   --verre-ombre:       0 12px 34px -12px rgba(40,28,80,.38);
 }
 [data-theme="dark"] {
   --verre-fond:        rgba(30,26,44,.52);
-  --verre-fond-epais:  rgba(24,21,34,.78);
+  --verre-fond-epais:  rgba(24,21,34,.95);
   --verre-bord:        rgba(255,255,255,.14);
   --verre-reflet:      rgba(255,255,255,.20);
   --verre-ombre:       0 14px 38px -12px rgba(0,0,0,.7);
@@ -1037,10 +1041,14 @@ body::before {
 /* Toutes les surfaces blanches écrites en style en ligne deviennent du
    verre. React écrit « background:… » sans espace au rendu serveur et le
    navigateur « background: … » avec : les deux formes sont listées. */
-[style*="background:rgb(var(--surface-rgb))"],
-[style*="background: rgb(var(--surface-rgb))"],
-[style*="background:rgba(var(--surface-rgb)"],
-[style*="background: rgba(var(--surface-rgb)"] {
+/* ⚠️ Ce qui FLOTTE (menus, panneau des notifications : `position: fixed`
+   en style en ligne) est exclu : ces panneaux s'ouvrent par-dessus du
+   texte, et en verre translucide sans flou on lisait la liste dessous
+   (Louis, 2026-10-11). Ils gardent leur fond presque plein et leur flou. */
+[style*="background:rgb(var(--surface-rgb))"]:not([style*="position:fixed"]):not([style*="position: fixed"]),
+[style*="background: rgb(var(--surface-rgb))"]:not([style*="position:fixed"]):not([style*="position: fixed"]),
+[style*="background:rgba(var(--surface-rgb)"]:not([style*="position:fixed"]):not([style*="position: fixed"]),
+[style*="background: rgba(var(--surface-rgb)"]:not([style*="position:fixed"]):not([style*="position: fixed"]) {
   /* ⚠️ PAS DE FLOU ICI (Louis, 2026-10-11 : « ça galère à s'ouvrir »).
      Ce sélecteur touche des dizaines de cartes par écran, et chaque
      backdrop-filter est un calque que le téléphone recalcule. Posées sur un

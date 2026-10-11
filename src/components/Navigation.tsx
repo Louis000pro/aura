@@ -101,8 +101,8 @@ export default function Navigation() {
   }, []);
 
   /* ── La photo de profil et la cloche restent EN HAUT de la page (Louis,
-        2026-10-11) : on les voit tant qu'on est en haut, elles s'en vont dès
-        qu'on descend, et reviennent quand on remonte tout en haut. Elles ne
+        2026-10-11) : on les voit tant qu'on est en haut, elles s'effacent en
+        fondu dès qu'on descend, et reviennent quand on remonte tout en haut. Elles ne
         flottent plus au-dessus du contenu.
         On écoute le défilement en CAPTURE sur tout le document, parce que
         l'accueil défile dans son propre conteneur et pas dans la fenêtre.
@@ -130,10 +130,11 @@ export default function Navigation() {
   const enteteCache = defile.chemin === pathname && defile.bas;
   const styleEntete: React.CSSProperties = {
     paddingTop: "calc(env(safe-area-inset-top) + 8px)",
-    transform: enteteCache ? "translateY(-110%)" : "translateY(0)",
+    /* Un FONDU sur place, jamais une glissade vers le haut (Louis,
+       2026-10-11 : « ils partent vers le haut et c'est dégueulasse »). */
     opacity: enteteCache ? 0 : 1,
     pointerEvents: enteteCache ? "none" : undefined,
-    transition: "transform .28s ease, opacity .2s ease",
+    transition: "opacity .25s ease",
   };
 
   /* ── Préchargement des routes principales → navigation instantanée ── */
