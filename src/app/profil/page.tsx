@@ -937,7 +937,7 @@ export default function ProfilPage() {
                  l'orange de l'ÉNERGIE (système D). Elle était en encre normale,
                  donc la flamme était le seul signe et elle se lisait comme un
                  emoji décoratif posé devant un chiffre. */
-              { label: "Série", value: `🔥 ${aura?.detail.streak ?? 0}`, clickable: false, tab: null, encre: "var(--feu-encre)" },
+              { label: "Série", value: `🔥 ${Math.max(1, aura?.detail.streak ?? 0)}`, clickable: false, tab: null, encre: "var(--feu-encre)" },
             ].map(({ label, value, clickable, tab, encre }, i) => (
               <div key={label} className="flex items-stretch flex-1">
                 {i > 0 && (

@@ -563,7 +563,7 @@ export default function PublicProfilePage() {
               { label: "Séances", value: String(pub.seances), tab: null, encre: "var(--text-1)" },
               /* La série se dit en orange partout : c'est le rôle ÉNERGIE du
                  système D, et c'est ce qui la sépare du teal de la réussite. */
-              { label: "Série", value: `🔥 ${pub.serie}`, tab: null, encre: "var(--feu-encre)" },
+              { label: "Série", value: `🔥 ${Math.max(1, pub.serie)}`, tab: null, encre: "var(--feu-encre)" },
             ] : []),
           ] as { label: string; value: string; tab: "Abonnés" | "Abonnements" | null; encre: string }[]).map(({ label, value, tab, encre }, i) => (
             <div key={label} className="flex items-center flex-1">

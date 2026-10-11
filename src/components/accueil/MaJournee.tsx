@@ -51,6 +51,9 @@ export default function MaJournee({
   const { fait, total } = compteMissionsJour(aura);
   const semaine = Math.max(0, Math.min(7, aura.detail.joursActifsSemaine));
   const part = total > 0 ? fait / total : 0;
+  // La série commence à UN jour, jamais à zéro (Louis, 2026-10-11) : voir
+  // « 0 jour » ne donne pas envie de continuer. Aujourd'hui compte déjà.
+  const serie = Math.max(1, aura.serie);
 
   // « Journée complète » se remplit toute seule : elle reste dans le compte,
   // pas dans le rail, où elle se lirait comme un geste à faire.
@@ -106,7 +109,7 @@ export default function MaJournee({
             <span className={styles.texte}>
               <small>Série</small>
               <strong>
-                <b className="vy-nombre">{aura.serie}</b> {aura.serie > 1 ? "jours" : "jour"}
+                <b className="vy-nombre">{serie}</b> {serie > 1 ? "jours" : "jour"}
               </strong>
             </span>
           </span>

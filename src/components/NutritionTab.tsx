@@ -2534,7 +2534,11 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
           `useNutritionGoals`, plafonnées à plein. */}
       {calView === "journal" && !jourMasque && (
         <div className="grid gap-2.5 mb-6 max-w-5xl" style={{ gridTemplateColumns: "1.15fr 1fr" }}>
-          <div className="flex flex-col justify-between gap-1 p-3.5" style={CARD}>
+          {/* Toucher une tuile ouvre l'ajout d'un repas (Louis, 2026-10-11) :
+              c'est là qu'on regarde ce qu'on a mangé, donc là qu'on veut
+              en ajouter. */}
+          <button type="button" onClick={() => setShowManual(true)} aria-label="Ajouter un repas"
+            className="flex flex-col justify-between gap-1 p-3.5 text-left cursor-pointer active:scale-[0.98] transition-transform" style={CARD}>
             <span className="vy-label" style={{ color: "var(--text-3)" }}>{estAujourdhui ? "Aujourd’hui" : selectedDate.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric" })}</span>
             <strong className="text-[34px] leading-none" style={{ color: "var(--text-0)", fontWeight: 800, fontVariationSettings: "var(--w-voix)" }}>
               {totalCals.toLocaleString("fr-FR")}
@@ -2542,8 +2546,10 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
             <span className="text-[11px] font-semibold" style={{ color: "var(--text-3)" }}>
               kcal · <span className="vy-nombre">{meals.length}</span> {meals.length > 1 ? "repas notés" : "repas noté"}
             </span>
-          </div>
-          <div className="flex flex-col justify-center gap-2 p-3.5" style={CARD}>
+            <span className="text-[11px] font-bold" style={{ color: "var(--exp-encre)" }}>+ Ajouter un repas</span>
+          </button>
+          <button type="button" onClick={() => setShowManual(true)} aria-label="Ajouter un repas"
+            className="flex flex-col justify-center gap-2 p-3.5 text-left cursor-pointer active:scale-[0.98] transition-transform" style={CARD}>
             {([
               { label: "Protéines", val: totalProt,  goal: goals.proteins, color: "#8B5CF6" },
               { label: "Glucides",  val: totalCarbs, goal: goals.carbs,    color: "#E8620C" },
@@ -2558,7 +2564,7 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
                 </span>
               </div>
             ))}
-          </div>
+          </button>
         </div>
       )}
 

@@ -3160,8 +3160,8 @@ export default function ProgressionPage() {
           initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
           className="mb-3.5 flex items-baseline justify-between gap-3"
         >
-          <h1 className="text-[26px] font-extralight tracking-tight" style={{ color: "var(--text-1)" }}>
-            <em className="not-italic font-light" style={{
+          <h1 className="text-[34px] leading-none" style={{ color: "var(--text-1)", fontWeight: 800, fontVariationSettings: "var(--w-voix)" }}>
+            <em className="not-italic" style={{
               background: "linear-gradient(135deg,var(--accent),var(--gold))",
               WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
               fontStyle: "italic",
