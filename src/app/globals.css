@@ -1002,13 +1002,11 @@ html.perf-lite .vy-verre-epais { background: rgb(var(--surface-rgb)); }
   /* Le bord du verre : sur un fond presque blanc, c'est la lumière sur la
      tranche et l'ombre colorée dessous qui le rendent visible. */
   --verre-carte-ombre: inset 0 1.5px 0 rgba(255,255,255,1), inset 0 -1.5px 3px rgba(139,92,246,.10), 0 0 0 .5px rgba(120,90,180,.18), 0 16px 36px -14px rgba(110,70,160,.36);
-  /* Le fond « bulles » (Louis, 2026-10-11, d'après deux fonds d'écran
-     qu'il a envoyés) : grandes sphères de verre floues, bleu lilas,
-     violet, rose, sur un blanc froid, sans jaune. C'est UNE image fixe
-     (`scripts/build-fond.mjs`), donc elle ne coûte rien au défilement.
-     La couleur de repli est la dernière couche. */
-  --fond-verre: url("/fond/vaiiya-bulles-v1.webp") center / cover no-repeat, #F1F0FF;
-  --html-bg: #EEF1FF;
+  /* Fond BLANC (Louis, 2026-10-11) : les bulles et les voiles colorés
+     sont retirés. L'image `public/fond/vaiiya-bulles-v1.webp` reste dans
+     le dépôt si on y revient. */
+  --fond-verre: #FFFFFF;
+  --html-bg: #FFFFFF;
   --page-bg: var(--fond-verre);
 }
 [data-theme="dark"] {
