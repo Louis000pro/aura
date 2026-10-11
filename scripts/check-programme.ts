@@ -7650,9 +7650,11 @@ verdict(
   verdict("R9c · « Activer » refuse en le disant, jamais un bouton muet, et rien ne s'écrit avant l'aperçu",
     feuilleProg.includes("aria-disabled={!!blocage || envoi}") && feuilleProg.includes("{refus && blocage &&")
       && !/\.from\(|\.insert\(|\.update\(|\.delete\(/.test(feuilleProg) && feuilleProg.includes("preparerActivation("), "");
-  verdict("R9c · l'entrée « Mon programme » est en haut d'Entraînement",
-    pageProg.indexOf('onClick={() => setSheet("programme")}') > 0
-      && pageProg.indexOf('onClick={() => setSheet("programme")}') < pageProg.indexOf('data-tour-anchor="prog-forks"'), "");
+  // Louis, 2026-10-11 : « Mon programme » a quitté le haut d'Entraînement
+  // (« pas super clair »). Le contrôle s'inverse : l'entrée ne revient pas
+  // en tête sans décision.
+  verdict("R9c · l'entrée « Mon programme » n'est plus en haut d'Entraînement",
+    !pageProg.includes('onClick={() => setSheet("programme")}'), "");
   const base = readFileSync("src/lib/projectionBase.ts", "utf8");
   const PB = await import("@/lib/projectionBase");
   const occ = PB.joursOccupes([

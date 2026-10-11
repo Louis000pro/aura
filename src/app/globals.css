@@ -1046,14 +1046,18 @@ body::before {
 /* Toutes les surfaces blanches écrites en style en ligne deviennent du
    verre. React écrit « background:… » sans espace au rendu serveur et le
    navigateur « background: … » avec : les deux formes sont listées. */
-/* ⚠️ Ce qui FLOTTE (menus, panneau des notifications : `position: fixed`
-   en style en ligne) est exclu : ces panneaux s'ouvrent par-dessus du
+/* ⚠️ Ce qui FLOTTE est exclu (Louis, 2026-10-11) : tout ce qui est
+   `fixed` (en style en ligne ou en classe : panneau des notifications,
+   conversation du Guide), toute feuille du bas (`rounded-t-…`), et tout
+   élément marqué `.vy-opaque`. Ces surfaces s'ouvrent par-dessus du
+   texte : elles restent blanches et pleines, jamais en verre. Pour les
+   panneaux `fixed` : ces panneaux s'ouvrent par-dessus du
    texte, et en verre translucide sans flou on lisait la liste dessous
    (Louis, 2026-10-11). Ils gardent leur fond presque plein et leur flou. */
-[style*="background:rgb(var(--surface-rgb))"]:not([style*="position:fixed"]):not([style*="position: fixed"]),
-[style*="background: rgb(var(--surface-rgb))"]:not([style*="position:fixed"]):not([style*="position: fixed"]),
-[style*="background:rgba(var(--surface-rgb)"]:not([style*="position:fixed"]):not([style*="position: fixed"]),
-[style*="background: rgba(var(--surface-rgb)"]:not([style*="position:fixed"]):not([style*="position: fixed"]) {
+[style*="background:rgb(var(--surface-rgb))"]:not([style*="position:fixed"]):not([style*="position: fixed"]):not([class*="fixed"]):not([class*="rounded-t-"]):not(.vy-opaque),
+[style*="background: rgb(var(--surface-rgb))"]:not([style*="position:fixed"]):not([style*="position: fixed"]):not([class*="fixed"]):not([class*="rounded-t-"]):not(.vy-opaque),
+[style*="background:rgba(var(--surface-rgb)"]:not([style*="position:fixed"]):not([style*="position: fixed"]):not([class*="fixed"]):not([class*="rounded-t-"]):not(.vy-opaque),
+[style*="background: rgba(var(--surface-rgb)"]:not([style*="position:fixed"]):not([style*="position: fixed"]):not([class*="fixed"]):not([class*="rounded-t-"]):not(.vy-opaque) {
   /* ⚠️ PAS DE FLOU ICI (Louis, 2026-10-11 : « ça galère à s'ouvrir »).
      Ce sélecteur touche des dizaines de cartes par écran, et chaque
      backdrop-filter est un calque que le téléphone recalcule. Posées sur un

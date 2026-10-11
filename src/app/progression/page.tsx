@@ -3173,26 +3173,10 @@ export default function ProgressionPage() {
           </p>
         </motion.div>
 
-        {/* ── R9c · Mon programme ──
-            L'entrée en haut d'Entraînement (GO de Louis sur la maquette 08).
-            Une ligne, pas une carte : le sujet de l'écran reste la
-            bibliothèque, le programme se règle en une touche. */}
-        {user && (
-          <button type="button" onClick={() => setSheet("programme")}
-            className="w-full flex items-center justify-between gap-3 py-2.5 mb-3 bg-transparent border-none cursor-pointer text-left"
-            style={{ borderBottom: "1px solid rgba(var(--text-3-rgb),0.16)" }}>
-            <span className="min-w-0">
-              <span className="vy-label block" style={{ color: "var(--text-3)" }}>Mon programme</span>
-              <span className="block text-[16px] font-semibold truncate" style={{ color: "var(--text-0)" }}>
-                {journee.programme ? journee.programme.programme.nom : "Choisir ce que je veux travailler"}
-              </span>
-            </span>
-            <span className="flex items-center gap-1 flex-shrink-0 text-[13px]" style={{ color: "var(--text-2)" }}>
-              {journee.programme && <><span className="vy-nombre">{journee.programme.cycle.length}</span> séances</>}
-              <ChevronRight size={16} />
-            </span>
-          </button>
-        )}
+        {/* « Mon programme » n'est plus en tête d'Entraînement (Louis,
+            2026-10-11 : « pas super clair »). ⚠️ C'était la seule entrée de
+            la feuille « programme » (`sheet === "programme"`), qui reste dans
+            le code mais ne s'ouvre plus d'ici. */}
 
         {/* ⚠️ LE HÉROS « AUJOURD'HUI » N'EST PLUS ICI (V7A). Il vit sur
             l'accueil, l'écran où l'on arrive et où la question de la

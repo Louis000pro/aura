@@ -407,8 +407,9 @@ export default function AssistantSheet() {
             style={{
               height: "min(88vh, 760px)",
               maxWidth: 640,
-              background: "rgba(var(--surface-rgb),0.97)",
-              backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)",
+              /* Blanche et pleine, jamais en verre (Louis, 2026-10-11) : la
+                 conversation se lit, rien ne doit transparaître dessous. */
+              background: "rgb(var(--surface-rgb))",
               borderTopLeftRadius: 28, borderTopRightRadius: 28,
               border: "1px solid rgba(var(--accent-rgb),0.18)",
               boxShadow: "0 -12px 48px rgba(0,0,0,0.28)",

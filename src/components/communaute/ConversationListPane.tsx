@@ -251,14 +251,7 @@ export default function ConversationListPane({
           )}
         </button>
 
-        <h1 className="flex-1 text-[26px] font-extralight tracking-tight" style={{ color: "var(--text-1)" }}>
-          <em className="not-italic font-light" style={{
-            background: "linear-gradient(135deg,var(--accent),var(--gold))",
-            WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
-            fontStyle: "italic",
-            display: "inline-block", paddingRight: "0.14em",
-          }}>Communauté</em>
-        </h1>
+        <span className="flex-1" />
 
         {/* La cloche vit ICI sur mobile : cet écran a sa propre barre du
             haut, donc la cloche flottante globale s'y poserait par-dessus
@@ -293,6 +286,17 @@ export default function ConversationListPane({
           <Plus className="h-5 w-5" />
         </button>
       </div>
+
+      {/* Le titre passe SOUS la photo de profil, en gras comme Nutrition et
+          Entraînement (Louis, 2026-10-11 : à côté de la photo, « c'est moche »). */}
+      <h1 className="px-4 pb-3 text-[34px] leading-none" style={{ color: "var(--text-1)", fontWeight: 800, fontVariationSettings: "var(--w-voix)" }}>
+        <em className="not-italic" style={{
+          background: "linear-gradient(135deg,var(--accent),var(--gold))",
+          WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
+          fontStyle: "italic",
+          display: "inline-block", paddingRight: "0.14em",
+        }}>Communauté</em>
+      </h1>
 
       {convs.length > 0 && (
         <div className="px-4 pb-3">
