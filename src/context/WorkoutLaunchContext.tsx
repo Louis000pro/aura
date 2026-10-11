@@ -74,17 +74,8 @@ function WorkoutLaunchSession({ children, user }: { children: React.ReactNode; u
   const lecteur = active?.userId === userId ? active : null;
   const demande = attente?.userId === userId ? attente.seance : null;
 
-  useEffect(() => {
-    const retour = () => {
-      if (!document.hidden && !active) setRepriseDifferee(null);
-    };
-    document.addEventListener("visibilitychange", retour);
-    window.addEventListener("pageshow", retour);
-    return () => {
-      document.removeEventListener("visibilitychange", retour);
-      window.removeEventListener("pageshow", retour);
-    };
-  }, [active]);
+  // « Plus tard » vaut pour tout ce passage dans Vaiiya. Un changement
+  // d'onglet, de visibilité ou de page ne redonne pas cette permission.
 
   useEffect(() => {
     vivant.current = true;
