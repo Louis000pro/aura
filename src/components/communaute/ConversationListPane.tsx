@@ -27,7 +27,7 @@ import FriendshipSheets, { type VueAmis } from "@/components/communaute/Friendsh
 import { PseudoRang } from "@/components/rang/IdentiteRang";
 import { useRangs } from "@/lib/rangsPublics";
 import { createClient } from "@/lib/supabase";
-import { imageEtat } from "@/lib/defi";
+import { imageEtat, SERIES, type SerieSlug } from "@/lib/defi";
 import {
   chargerConversations, titreConversation, autresMembres, mesRelations,
   creerConversation, reglerConversation, heureCourte, prechargerFil,
@@ -522,9 +522,24 @@ function Liste({ convs, moi, activeId, onPrefetch, onActions }: {
   );
   const rangs = useRangs(idsDuo);
 
+  // Le relais en cours remonte en haut, dans sa propre carte : c'est la
+  // seule chose de l'onglet qui avance d'un jour à l'autre. Il quitte la
+  // liste pour ne pas s'afficher deux fois.
+  const relais = convs.find((c) => c.defi?.statut === "en_cours");
+  const autresConvs = relais ? convs.filter((c) => c.id !== relais.id) : convs;
+
   return (
-    <div className="min-h-0 flex-1 overflow-y-auto pb-4">
-      {convs.map((c) => {
+    <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-4">
+      {relais && <CarteRelais conversation={relais} moi={moi} onPrefetch={onPrefetch} />}
+
+      {/* Une seule surface pour toutes les conversations, un filet entre
+          elles : une idée, un groupe (règle de composition). */}
+      {autresConvs.length > 0 && (
+      <div
+        className="overflow-hidden"
+        style={{ background: "rgba(var(--surface-rgb), .78)", borderRadius: "var(--r-bloc)" }}
+      >
+      {autresConvs.map((c, i) => {
         const titre  = titreConversation(c, moi);
         const autres = autresMembres(c, moi);
         const rang   = c.type === "duo" ? rangs.get(autres[0]?.id ?? "") : undefined;
@@ -548,7 +563,7 @@ function Liste({ convs, moi, activeId, onPrefetch, onActions }: {
                 : c.nonLus > 0
                 ? "rgba(var(--tint-violet-rgb),.18)"
                 : "transparent",
-              borderBottom: "1px solid rgba(var(--text-3-rgb), .10)",
+              borderTop: i > 0 ? "1px solid rgba(var(--text-3-rgb), .12)" : undefined,
             }}
           >
             <Link
@@ -617,7 +632,68 @@ function Liste({ convs, moi, activeId, onPrefetch, onActions }: {
           </div>
         );
       })}
+      </div>
+      )}
     </div>
+  );
+}
+
+/* ─── Le relais en cours ─────────────────────────────────────
+   L'affiche à son état du jour, avec qui on la dévoile, et les
+   maillons franchis en orange (l'effort, système D). Toucher la
+   carte ouvre le fil, là où vit l'équipier. */
+function CarteRelais({ conversation, moi, onPrefetch }: {
+  conversation: Conversation;
+  moi: string;
+  onPrefetch: (id: string) => void;
+}) {
+  const defi = conversation.defi!;
+  const etat = defi.faits <= 0 ? 1
+    : defi.faits >= defi.objectif ? 4
+    : Math.min(3, 1 + Math.round((3 * defi.faits) / defi.objectif));
+  const serie = SERIES[defi.serie as SerieSlug] ?? SERIES.sillage;
+  const reste = Math.max(0, defi.objectif - defi.faits);
+
+  return (
+    <Link
+      href={`/communaute/${conversation.id}`}
+      scroll={false}
+      onPointerEnter={() => onPrefetch(conversation.id)}
+      onPointerDown={() => onPrefetch(conversation.id)}
+      className="mb-3 flex items-center gap-3.5 p-3 text-left"
+      style={{ background: "rgba(var(--surface-rgb), .78)", borderRadius: "var(--r-bloc)" }}
+    >
+      <div
+        className="relative w-[58px] shrink-0 overflow-hidden"
+        style={{ aspectRatio: "9 / 16", borderRadius: "var(--r-controle)", boxShadow: "var(--ombre-pose)" }}
+      >
+        <Image src={imageEtat(serie.slug, etat)} alt="" fill sizes="58px" className="object-cover" />
+      </div>
+      <div className="min-w-0 flex-1">
+        <span className="vy-label block" style={{ color: "var(--feu-encre)" }}>Relais en cours</span>
+        <b className="mt-0.5 block truncate text-[16px]" style={{ color: "var(--text-0)", fontWeight: 700 }}>
+          {serie.nom} · avec {titreConversation(conversation, moi)}
+        </b>
+        <span className="mt-0.5 block text-[13px]" style={{ color: "var(--text-2)" }}>
+          {reste === 0
+            ? "L'affiche est dévoilée."
+            : reste === 1 ? "Encore 1 maillon pour la dévoiler." : `Encore ${reste} maillons pour la dévoiler.`}
+        </span>
+        <div className="mt-2 flex gap-1" aria-hidden>
+          {Array.from({ length: defi.objectif }, (_, k) => (
+            <span
+              key={k}
+              className="h-1.5 flex-1 rounded-full"
+              style={{
+                background: k < defi.faits
+                  ? "linear-gradient(90deg, #F5B120, #E8620C)"
+                  : "rgba(var(--text-3-rgb), .18)",
+              }}
+            />
+          ))}
+        </div>
+      </div>
+    </Link>
   );
 }
 
