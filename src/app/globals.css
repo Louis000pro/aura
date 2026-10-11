@@ -970,20 +970,26 @@ html.perf-lite .vy-verre-epais { background: rgb(var(--surface-rgb)); }
    « le verre uniquement sur une photo ou ce qui flotte ».
    ───────────────────────────────────────────────────────────── */
 :root {
-  --verre-carte: rgba(255,255,255,.62);
-  --verre-carte-bord: rgba(255,255,255,.75);
+  /* Le verre sans flou : un reflet en diagonale (plus clair en haut à
+     gauche, plus transparent en bas à droite), un liseré blanc et une
+     ligne de lumière en haut. C'est ce qui fait « liquid glass » sur un
+     fond en dégradé, pour le prix d'une simple peinture. */
+  --verre-carte: linear-gradient(135deg, rgba(255,255,255,.72) 0%, rgba(255,255,255,.42) 55%, rgba(255,255,255,.30) 100%);
+  --verre-carte-bord: rgba(255,255,255,.85);
+  /* Trois couleurs et rien d'autre (Louis, 2026-10-11) : violet, rose,
+     jaune. Pas de blanc, pas de beige, pas de rouge. Le haut est un violet
+     UNI, le même que la barre d'état (`themeColor` dans layout.tsx) et que
+     `--html-bg`, sinon on voit une coupure nette tout en haut. */
   --fond-verre:
-    radial-gradient(52% 38% at 6% 8%,   rgba(196,170,255,.70) 0%, transparent 70%),
-    radial-gradient(48% 36% at 96% 18%, rgba(255,182,214,.65) 0%, transparent 70%),
-    radial-gradient(50% 36% at 92% 62%, rgba(255,228,150,.60) 0%, transparent 70%),
-    radial-gradient(58% 40% at 8% 70%,  rgba(255,205,226,.50) 0%, transparent 70%),
-    radial-gradient(60% 42% at 50% 100%, rgba(240,220,190,.70) 0%, transparent 72%),
-    linear-gradient(170deg, #FFFFFF 0%, #FFF8FB 38%, #FFF9EE 72%, #F8EFE2 100%);
-  --html-bg: #FFF8FB;
+    radial-gradient(70% 34% at 18% 12%, rgba(190,160,255,.55) 0%, transparent 70%),
+    radial-gradient(60% 34% at 92% 50%, rgba(255,184,222,.55) 0%, transparent 70%),
+    radial-gradient(70% 36% at 12% 82%, rgba(255,222,130,.55) 0%, transparent 70%),
+    linear-gradient(180deg, #E6D9FF 0%, #EEDCFB 22%, #FAD9EE 50%, #FFE5DC 72%, #FFF0C4 100%);
+  --html-bg: #E6D9FF;
   --page-bg: var(--fond-verre);
 }
 [data-theme="dark"] {
-  --verre-carte: rgba(28,22,46,.50);
+  --verre-carte: linear-gradient(135deg, rgba(40,32,64,.62) 0%, rgba(28,22,46,.46) 100%);
   --verre-carte-bord: rgba(255,255,255,.12);
   --fond-verre:
     radial-gradient(55% 40% at 8% 12%,  rgba(110,60,230,.55) 0%, transparent 70%),

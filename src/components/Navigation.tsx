@@ -162,9 +162,16 @@ export default function Navigation() {
       return (
         <Link href={href} className="flex-1" aria-label={label} data-tour-anchor={tourAnchor}>
           <motion.div
-            className="flex flex-col items-center justify-center gap-1 py-1 px-1 cursor-pointer relative"
+            className="flex h-12 items-center justify-center cursor-pointer relative"
             whileTap={{ scale: 0.88 }} transition={{ duration: 0.12 }}
           >
+            {/* Icônes seules (Louis, 2026-10-11) : plus aucun libellé sous les
+                onglets. Le nom reste dans `aria-label` du lien. L'onglet
+                actif se reconnaît à sa couleur et à la pastille de verre. */}
+            {isActive && (
+              <span aria-hidden className="absolute h-10 w-12 rounded-full"
+                style={{ background: "rgba(var(--accent-rgb),0.14)" }} />
+            )}
             <div className="relative">
               <Icon size={23} strokeWidth={isActive ? 2.5 : 2}
                 style={{ color: isActive ? "var(--gold)" : "var(--nav-fg-inactive)", transition: "color 0.2s ease" }} />
@@ -176,15 +183,6 @@ export default function Navigation() {
                 </motion.span>
               )}
             </div>
-            {/* Libellé : uniquement l'onglet actif (option B). Hauteur réservée → icônes alignées.
-                ⚠️ CETTE HAUTEUR SUIT LA TAILLE DU TEXTE, elle ne se règle pas au jugé : avec
-                `leading-none`, un libellé de 11 px occupe 11 px, et `truncate` pose
-                `overflow: hidden`. Réservée à 10 px comme elle l'était quand le texte faisait
-                9 px, elle rognerait le bas des lettres. 13 px laisse la marge des jambages. */}
-            <span className="text-[11px] font-bold leading-none truncate max-w-full"
-              style={{ height: 13, color: "var(--gold)", opacity: isActive ? 1 : 0, transition: "opacity 0.2s ease" }}>
-              {label}
-            </span>
           </motion.div>
         </Link>
       );
@@ -353,8 +351,8 @@ export default function Navigation() {
             flotte, et l'écran défile dessous au lieu de s'arrêter sur un
             trait. Classe `vy-verre`, définie une fois dans globals.css. */}
         <div
-          className="vy-verre relative flex items-stretch justify-around px-1 rounded-[32px]"
-          style={{ paddingTop: 8, paddingBottom: 8 }}
+          className="vy-verre relative flex items-center justify-around px-2 rounded-full"
+          style={{ paddingTop: 6, paddingBottom: 6 }}
         >
           {/* 1. Accueil */}
           <NavIcon href={TABS[0].href} label={TABS[0].label} icon={TABS[0].icon} sub={TABS[0].sub} mobile tourAnchor={TABS[0].tourAnchor} />
@@ -363,9 +361,8 @@ export default function Navigation() {
 
           {/* 3. Assistant — glyphe SVG, colonne calquée sur celle des onglets
                 (glyphe + hauteur de libellé réservée) → centres alignés. */}
-          <div className="flex-1 flex flex-col items-center justify-center gap-1 px-1" data-tour-anchor="nav-assistant">
+          <div className="flex-1 flex h-12 items-center justify-center" data-tour-anchor="nav-assistant">
             <NavOrb size={44} glyph={25} />
-            <span aria-hidden style={{ height: 10 }} />
           </div>
 
           {/* 4. Nutrition */}

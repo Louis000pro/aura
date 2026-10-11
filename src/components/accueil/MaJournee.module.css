@@ -41,31 +41,72 @@
   font-weight: 700;
 }
 
-/* La série occupe toute la hauteur de gauche : c'est la tuile qu'on
-   regarde en premier. L'orange dit l'énergie (système D). */
-.serie {
+/* Le rang occupe toute la hauteur de gauche : c'est la tuile qu'on
+   regarde en premier. Un halo à la couleur de la gemme derrière elle,
+   plus un reflet violet → rose → jaune : la tuile change d'ambiance à
+   chaque montée de rang. */
+.rang {
   grid-row: span 2;
+  align-items: center;
   justify-content: space-between;
+  gap: 6px;
+  text-align: center;
   background:
-    linear-gradient(160deg, rgba(255, 211, 78, 0.34), rgba(255, 122, 26, 0.16)),
+    radial-gradient(60% 45% at 50% 38%, color-mix(in srgb, var(--halo, #c4b5fd) 70%, transparent) 0%, transparent 72%),
+    linear-gradient(160deg, rgba(196, 170, 255, 0.35), rgba(255, 184, 222, 0.22) 55%, rgba(255, 222, 130, 0.28)),
     var(--verre-carte);
 }
 
-.flamme {
-  font-size: 34px;
+.rang > small {
+  align-self: flex-start;
+}
+
+.gemme {
+  display: grid;
+  place-items: center;
+  filter: drop-shadow(0 8px 14px color-mix(in srgb, var(--halo-2, #8b5cf6) 55%, transparent));
+}
+
+.rangNom {
+  font-size: 20px;
+  font-weight: 800;
+  font-variation-settings: var(--w-voix);
   line-height: 1;
 }
 
-.valeur {
-  display: flex;
-  align-items: baseline;
-  gap: 5px;
+.progres {
+  display: block;
+  width: 100%;
+  height: 6px;
+  border-radius: 99px;
+  background: rgba(var(--accent-rgb), 0.16);
+  overflow: hidden;
 }
 
-.valeur b {
-  color: var(--text-0);
+.progres i {
+  display: block;
+  height: 100%;
+  border-radius: 99px;
+  background: linear-gradient(90deg, var(--violet, #8b5cf6), #c13bc1);
+}
+
+/* La série, plus petite, garde son orange (l'énergie, système D). */
+.serie {
+  justify-content: space-between;
+  gap: 8px;
+  background:
+    linear-gradient(160deg, rgba(255, 211, 78, 0.32), rgba(255, 122, 26, 0.14)),
+    var(--verre-carte);
+}
+
+.serieTete {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.flamme {
   font-size: 26px;
-  font-weight: 800;
   line-height: 1;
 }
 
@@ -83,10 +124,6 @@
 
 .jours i[data-on] {
   background: var(--feu-encre);
-}
-
-.statut {
-  color: var(--feu-encre) !important;
 }
 
 .ligne {

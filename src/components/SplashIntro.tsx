@@ -41,7 +41,7 @@ export default function SplashIntro() {
           initial={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.55, ease: "easeInOut" }}
-          style={{ background: "#ffffff" }}
+          style={{ background: "var(--fond-verre)" }}
         >
           {/* Logo + wordmark — remontés sur mobile pour s'aligner sur l'orbe */}
           <div className="flex flex-col items-center" style={{ transform: isMobile ? "translateY(-4vh)" : "none" }}>

@@ -6,8 +6,9 @@
 
    Sous le héros, une grille de trois tuiles de verre, puis les quêtes
    qui restent en cartes illustrées qui défilent sur le côté :
-     · la SÉRIE, en grand, avec les jours validés de la semaine ;
-     · le RANG, sa gemme, et l'EXP (le seul affichage d'EXP de l'accueil) ;
+     · le RANG, en grand : sa gemme, l'EXP (le seul affichage d'EXP de
+       l'accueil) et la barre jusqu'au rang suivant ;
+     · la SÉRIE, avec les jours validés de la semaine ;
      · l'avancée des QUÊTES du jour, en anneau ;
      · le rail : les quêtes du jour pas encore remplies, plus la mission
        Premium du jour.
@@ -17,6 +18,7 @@
    en garde le compte.
    ───────────────────────────────────────────────────────────────────── */
 
+import type React from "react";
 import Image from "next/image";
 import { AnimatePresence, motion } from "framer-motion";
 import { ChevronRight } from "lucide-react";
@@ -56,48 +58,62 @@ export default function MaJournee({
   const premium = apercuPremiumDuJour(jour);
   const rail: Mission[] = [...restantes, ...(premium && !aura.missions[premium.id]?.complete ? [premium] : [])];
 
+  const etendue = Math.max(1, aura.seuilHaut - aura.seuilBas);
+  const progres = Math.max(0, Math.min(1, (aura.exp - aura.seuilBas) / etendue));
+
   const R = 16;
   const C = 2 * Math.PI * R;
 
   return (
     <section className={styles.bloc} aria-label="Ma journée">
       <div className={styles.bento}>
+        {/* Le RANG prend la grande tuile (Louis, 2026-10-11). Son halo prend
+            la couleur de la gemme : Bronze cuivré, Argent froid, Or chaud…
+            donc la tuile change d'ambiance à chaque montée de rang. */}
+        <button
+          type="button"
+          className={`${styles.tuile} ${styles.rang}`}
+          style={{ "--halo": aura.rang.neon[0], "--halo-2": aura.rang.neon[1] } as React.CSSProperties}
+          onClick={onOpenRangs}
+        >
+          <small>Rang</small>
+          <span className={styles.gemme}>
+            <GemmeRang rang={aura.rang} size={64} flotte={false} />
+          </span>
+          <strong className={styles.rangNom}>{aura.rang.nom}</strong>
+          <span className={styles.exp}>
+            <b className="vy-nombre">{aura.exp}</b> / {aura.seuilHaut} EXP
+            <AnimatePresence>
+              {expGain !== null && (
+                <motion.em
+                  initial={reduce ? false : { opacity: 0, y: 6, scale: 0.8 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -8 }}
+                >
+                  +{expGain}
+                </motion.em>
+              )}
+            </AnimatePresence>
+          </span>
+          <span className={styles.progres} aria-hidden="true">
+            <i style={{ width: `${progres * 100}%` }} />
+          </span>
+        </button>
+
         <button type="button" className={`${styles.tuile} ${styles.serie}`} onClick={onOpenRangs}>
-          <small>Série</small>
-          <span className={styles.flamme} aria-hidden="true">🔥</span>
-          <span className={styles.valeur}>
-            <b className="vy-nombre">{aura.serie}</b>
-            <small>{aura.serie > 1 ? "jours" : "jour"}</small>
+          <span className={styles.serieTete}>
+            <span className={styles.flamme} aria-hidden="true">🔥</span>
+            <span className={styles.texte}>
+              <small>Série</small>
+              <strong>
+                <b className="vy-nombre">{aura.serie}</b> {aura.serie > 1 ? "jours" : "jour"}
+              </strong>
+            </span>
           </span>
           <span className={styles.jours} aria-label={`${semaine} jours validés cette semaine`}>
             {Array.from({ length: 7 }, (_, i) => (
               <i key={i} data-on={i < semaine ? "" : undefined} />
             ))}
-          </span>
-          <small className={styles.statut}>
-            {aura.jourValide ? "Journée validée" : "Une action pour continuer"}
-          </small>
-        </button>
-
-        <button type="button" className={`${styles.tuile} ${styles.ligne}`} onClick={onOpenRangs}>
-          <GemmeRang rang={aura.rang} size={34} flotte={false} />
-          <span className={styles.texte}>
-            <small>Rang</small>
-            <strong>{aura.rang.nom}</strong>
-            <span className={styles.exp}>
-              <b className="vy-nombre">{aura.exp}</b> / {aura.seuilHaut} EXP
-              <AnimatePresence>
-                {expGain !== null && (
-                  <motion.em
-                    initial={reduce ? false : { opacity: 0, y: 6, scale: 0.8 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: -8 }}
-                  >
-                    +{expGain}
-                  </motion.em>
-                )}
-              </AnimatePresence>
-            </span>
           </span>
         </button>
 
