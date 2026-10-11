@@ -14,6 +14,7 @@ import { useAuth } from "@/context/AuthContext";
 import { createClient } from "@/lib/supabase";
 import AccueilSignature from "@/components/AccueilSignature";
 import HeroJournee from "@/components/entrainement/HeroJournee";
+import { SeanceInterrompueAccueil } from "@/components/entrainement/SeanceInterrompue";
 import RangsModal from "@/components/rang/RangsModal";
 import { calculerAura, etatDepuisExp, type EtatAura } from "@/lib/aura";
 import { noterRang } from "@/lib/celebrationRang";
@@ -310,7 +311,7 @@ function Dashboard() {
           moment={motGuide}
           relais={relais}
           jour={parisDay}
-          heros={<HeroJournee />}
+          heros={<SeanceInterrompueAccueil><HeroJournee /></SeanceInterrompueAccueil>}
           onNavigate={(path) => router.push(path)}
           onOpenRangs={() => setShowRangs(true)}
         />

@@ -63,6 +63,7 @@ function WorkoutLaunchSession({ children, user }: { children: React.ReactNode; u
   const [attente, setAttente] = useState<{ userId: string; seance: WorkoutLaunchInput } | null>(null);
   const [erreur, setErreur] = useState<{ userId: string; texte: string } | null>(null);
   const [supplement, setSupplement] = useState<string | null>(null);
+  const [repriseDifferee, setRepriseDifferee] = useState<string | null>(null);
   const lecture = useCallback(() => lireReprise(userId), [userId]);
   const observer = useCallback((notifier: () => void) => observerReprise(userId, notifier), [userId]);
   const brouillon = useSyncExternalStore(observer, lecture, RIEN);
@@ -71,6 +72,18 @@ function WorkoutLaunchSession({ children, user }: { children: React.ReactNode; u
   const vivant = useRef(true);
   const lecteur = active?.userId === userId ? active : null;
   const demande = attente?.userId === userId ? attente.seance : null;
+
+  useEffect(() => {
+    const retour = () => {
+      if (!document.hidden && !active) setRepriseDifferee(null);
+    };
+    document.addEventListener("visibilitychange", retour);
+    window.addEventListener("pageshow", retour);
+    return () => {
+      document.removeEventListener("visibilitychange", retour);
+      window.removeEventListener("pageshow", retour);
+    };
+  }, [active]);
 
   useEffect(() => {
     vivant.current = true;
@@ -148,6 +161,7 @@ function WorkoutLaunchSession({ children, user }: { children: React.ReactNode; u
   }, [userId]);
 
   const fermer = useCallback((executionId: string) => {
+    setRepriseDifferee(executionId);
     if (verrou.current?.executionId === executionId) { verrou.current.liberer(); verrou.current = null; }
     setActive((a) => a?.executionId === executionId ? null : a);
   }, []);
@@ -170,7 +184,7 @@ function WorkoutLaunchSession({ children, user }: { children: React.ReactNode; u
     if (enregistree || finalisationGardee(lecteur.userId, lecteur.executionId)) effacerReprise(lecteur.userId, lecteur.executionId);
   }, [lecteur]);
 
-  const conflit = demande && !lecteur;
+  const conflit = !lecteur && (!!demande || (!!brouillon && repriseDifferee !== brouillon.executionId));
   const visible = typeof document !== "undefined";
   return (
     <Ctx.Provider value={{ launchWorkout, reprise: lecteur ? null : brouillon, reprendre, abandonner,
@@ -195,9 +209,10 @@ function WorkoutLaunchSession({ children, user }: { children: React.ReactNode; u
           </AnimatePresence>
           {conflit && <ConflitReprise brouillon={brouillon} erreur={erreur?.userId === userId ? erreur.texte : null}
             supplement={!!brouillon && supplement === brouillon.executionId}
-            onReprendre={reprendre} onFermer={() => setAttente(null)}
+            nouvelleSeance={!!demande}
+            onReprendre={reprendre} onFermer={() => { setAttente(null); setRepriseDifferee(brouillon?.executionId ?? null); }}
             onRemplacer={async () => {
-              if (!userId || !demande) return;
+              if (!userId) return;
               const liberer = await prendreVerrouSeance(userId);
               if (!liberer) { setErreur({ userId, texte: "Cette séance est encore ouverte dans un autre onglet." }); return; }
               const courant = lireReprise(userId);
@@ -208,7 +223,8 @@ function WorkoutLaunchSession({ children, user }: { children: React.ReactNode; u
               }
               if (courant) effacerReprise(userId, courant.executionId);
               liberer();
-              void ouvrir(demande);
+              setAttente(null);
+              if (demande) void ouvrir(demande);
             }} />}
         </>, document.body)}
     </Ctx.Provider>

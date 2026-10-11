@@ -59,10 +59,17 @@ export default function SeanceInterrompue() {
   return <RepriseCard key={reprise.executionId} brouillon={reprise} erreur={erreurReprise} supplement={repriseSupplement} onReprendre={reprendre} onAbandonner={() => abandonner(reprise.executionId)} />;
 }
 
+/** Sur l'accueil, la place gardée prend le rang de la séance du jour. */
+export function SeanceInterrompueAccueil({ children }: { children: React.ReactNode }) {
+  const { reprise } = useWorkoutLaunch();
+  return reprise ? <SeanceInterrompue /> : <>{children}</>;
+}
+
 /** Une autre séance ne peut pas écraser la place gardée sans décision. */
-export function ConflitReprise({ brouillon, erreur, supplement, onReprendre, onFermer, onRemplacer }: {
+export function ConflitReprise({ brouillon, erreur, supplement, onReprendre, onFermer, onRemplacer, nouvelleSeance = true }: {
   brouillon: Brouillon | null; erreur: string | null;
   supplement: boolean;
+  nouvelleSeance?: boolean;
   onReprendre: () => void; onFermer: () => void; onRemplacer: () => Promise<void>;
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
@@ -78,11 +85,11 @@ export function ConflitReprise({ brouillon, erreur, supplement, onReprendre, onF
   return (
     <dialog ref={dialog} aria-labelledby="reprise-conflit-titre" onCancel={(e) => { e.preventDefault(); onFermer(); }}
       className="fixed inset-0 m-auto w-[calc(100%_-_2rem)] max-w-md max-h-[90dvh] overflow-y-auto p-6 border-0 rounded-[var(--r-feuille)] backdrop:bg-black/50"
-      style={{ background: "rgb(var(--surface-rgb))", color: "var(--text-1)", boxShadow: "var(--ombre-flottant)" }}>
+      style={{ position: "fixed", background: "rgb(var(--surface-rgb))", color: "var(--text-1)", boxShadow: "var(--ombre-flottant)" }}>
       <button onClick={onFermer} aria-label="Fermer" className="absolute top-2 right-2 w-11 h-11 flex items-center justify-center cursor-pointer" style={encre}><X size={18} /></button>
-      <h2 id="reprise-conflit-titre" className="vy-titre mb-4 pr-6">{confirmer ? "Abandonner et commencer ?" : "Une séance est en pause."}</h2>
+      <h2 id="reprise-conflit-titre" className="text-[20px] font-bold mb-4 pr-8">{confirmer ? nouvelleSeance ? "Abandonner et commencer ?" : "Abandonner cette séance ?" : "On reprend ?"}</h2>
       {brouillon && <p className="text-[16px] font-semibold mb-3">{brouillon.seance.title}</p>}
-      <p className="vy-corps mb-5">{confirmer ? "La séance en pause ne sera pas enregistrée comme terminée." : "Retrouve ta place ou abandonne cette séance pour en commencer une autre."}</p>
+      <p className="vy-corps mb-5">{confirmer ? "La séance en pause ne sera pas enregistrée comme terminée." : nouvelleSeance ? "Retrouve ta place ou abandonne cette séance pour en commencer une autre." : "Ta place est gardée au dernier exercice et à la dernière série."}</p>
       {erreur && <p role="status" className="text-[13px] mb-4">{erreur}</p>}
       <button onClick={confirmer || !brouillon ? onFermer : onReprendre} className="w-full min-h-[52px] rounded-[var(--r-controle)] px-4 py-3 text-[16px] font-semibold text-white cursor-pointer" style={action}>
         {confirmer || !brouillon ? "Garder ma place" : supplement ? "Reprendre sans modifier le programme" : "Reprendre ma séance"}
@@ -94,7 +101,7 @@ export function ConflitReprise({ brouillon, erreur, supplement, onReprendre, onF
           if (!confirmer) { setConfirmer(true); return; }
           setOccupe(true);
           try { await onRemplacer(); } finally { setOccupe(false); }
-        }} className="min-h-11 text-[13px] cursor-pointer" style={encre}>{occupe ? "Un instant…" : "Abandonner et commencer"}</button>
+        }} className="min-h-11 text-[13px] cursor-pointer" style={encre}>{occupe ? "Un instant…" : nouvelleSeance ? "Abandonner et commencer" : "Abandonner la séance"}</button>
       </div>
     </dialog>
   );
