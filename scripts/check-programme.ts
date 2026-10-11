@@ -469,7 +469,7 @@ verdict(
   );
   verdict(
     "R1 · le lanceur global transmet la cible au tunnel, il ne referme plus rien lui-même",
-    lanceur.includes("cible={active.cible") && !lanceur.includes("terminerSeance(") && !lanceur.includes("onComplete="),
+    lanceur.includes("cible={lecteur.cible") && !lanceur.includes("terminerSeance(") && !lanceur.includes("onComplete="),
     "la cible part avec la séance, la finalisation du journal la referme",
   );
   /* ⚠️ ON BALAYE TOUT `src/`, ET PAS UNE LISTE ÉCRITE À LA MAIN.

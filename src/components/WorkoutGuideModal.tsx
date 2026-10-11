@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { marquesDeReprise, type AvancementSeance } from "@/lib/seanceInterrompue";
 import { useRouter } from "next/navigation";
 import { aiFetch } from "@/lib/aiFetch";
 import { motion, AnimatePresence } from "framer-motion";
@@ -171,7 +172,13 @@ export interface WorkoutGuideModalProps {
   exerciseList?: Exercise[];
   /** Présent = la séance n'existe nulle part (une impro) et peut être gardée.
       La page décide, le tunnel ne fait qu'afficher la proposition. */
-  onGarder?: () => void;
+  onGarder?: () => void | boolean | Promise<boolean>;
+  executionId?: string;
+  reprise?: AvancementSeance;
+  demarreeLe?: number;
+  proprietaireReprise?: string;
+  onProgress?: (exercises: Exercise[], avancement: AvancementSeance, debutMs: number) => void;
+  onTerminee?: (gardee: boolean) => void;
   /** Présent quand cette séance EST le maillon d'un relais (lancée par
    *  « Lancer mon maillon »). C'est la SEULE façon de franchir un maillon :
    *  une séance ordinaire ne valide plus rien côté relais. */
@@ -1000,7 +1007,7 @@ function BandeBadge({ badges, onAller }: { badges: Badge[]; onAller: () => void 
 
 export default function WorkoutGuideModal({
   sessionId, title, duration, category, heroImage, onClose, cible, exerciseList,
-  onGarder, relaisRunId,
+  onGarder, relaisRunId, executionId, reprise, demarreeLe, proprietaireReprise, onProgress, onTerminee,
 }: WorkoutGuideModalProps) {
   const router = useRouter();
   // On injecte un `auto` (durée) déduit des reps pour les exos chronométrés d'une
@@ -1017,40 +1024,40 @@ export default function WorkoutGuideModal({
   const { open: openAssistant } = useAssistant();
   const { guide } = useGuideActif();
 
-  const [phase,         setPhase]         = useState<GuidePhase>("intro");
-  const [exerciseIdx,   setExerciseIdx]   = useState(0);
-  const [setIdx,        setSetIdx]        = useState(0);
-  const [restCountdown, setRestCountdown] = useState(0);
-  const [restTotal,     setRestTotal]     = useState(0);
-  const [restMode,      setRestMode]      = useState<"set" | "exercise">("set");
-  const [autoCountdown, setAutoCountdown] = useState(0);
-  const [prep,          setPrep]          = useState(0); // décompte 3-2-1 avant un effort chronométré
+  const [phase,         setPhase]         = useState<GuidePhase>(reprise?.phase ?? "intro");
+  const [exerciseIdx,   setExerciseIdx]   = useState(reprise?.exerciseIdx ?? 0);
+  const [setIdx,        setSetIdx]        = useState(reprise?.setIdx ?? 0);
+  const [restCountdown, setRestCountdown] = useState(reprise?.restCountdown ?? 0);
+  const [restTotal,     setRestTotal]     = useState(reprise?.restTotal ?? 0);
+  const [restMode,      setRestMode]      = useState<"set" | "exercise">(reprise?.restMode ?? "set");
+  const [autoCountdown, setAutoCountdown] = useState(reprise?.autoCountdown ?? 0);
+  const [prep,          setPrep]          = useState(reprise?.prep ?? 0);
   const [badgesGagnes,  setBadgesGagnes]  = useState<Badge[]>([]);
-  const [hiitSub,       setHiitSub]       = useState<HiitSub>("work");
-  const [doneMap,       setDoneMap]       = useState<MarquesSeance>({});
+  const [hiitSub,       setHiitSub]       = useState<HiitSub>(reprise?.hiitSub ?? "work");
+  const [doneMap,       setDoneMap]       = useState<MarquesSeance>(() => marquesDeReprise(reprise));
   /* R1 · un identifiant par lancement, tiré une fois : la base refuse
      d'enregistrer deux fois le même, donc un appel rejoué ne double rien. */
-  const [lancementId] = useState(nouveauLancement);
+  const [lancementId] = useState(() => executionId ?? nouveauLancement());
   /* Comment la série chronométrée en cours se termine si on la valide à la
      main (« Valider », « Passer l'effort ») : posé par le bouton, lu par
      l'effet du minuteur. Sans ça, un minuteur abrégé passerait pour fini. */
-  const validationRef = useRef<{ validation: Validation; dureeS: number | null } | null>(null);
+  const validationRef = useRef<{ validation: Validation; dureeS: number | null } | null>(reprise?.validationEnCours ?? null);
   /* ── R3 · ce que les séances PRESCRITES déclarent ──
      `remplacements` : l'exercice des séries qui restent, par emplacement
      (chaque série validée garde le sien dans sa marque). `chargeCourante` :
      la charge saisie pour l'exercice en cours d'un emplacement ; elle
      repart inconnue à chaque changement d'exercice, jamais héritée.
      `correction` : la série qu'on corrige pendant le repos. */
-  const [remplacements, setRemplacements] = useState<Remplacements>({});
-  const [chargeCourante, setChargeCourante] = useState<Record<number, number | null>>({});
+  const [remplacements, setRemplacements] = useState<Remplacements>(reprise?.remplacements ?? {});
+  const [chargeCourante, setChargeCourante] = useState<Record<number, number | null>>(reprise?.chargeCourante ?? {});
   const [editCharge,    setEditCharge]    = useState(false);
-  const [correction,    setCorrection]    = useState<{ emplacement: number; serie: number; reps: number; charge: number | null } | null>(null);
+  const [correction,    setCorrection]    = useState<{ emplacement: number; serie: number; reps: number; charge: number | null } | null>(reprise?.correction ?? null);
   /* Le panneau « Changer » retient la série de son ouverture : son choix
      ne s'applique qu'à elle (tour 27). */
   const [changer,       setChanger]       = useState<(PositionTunnel & { choisi: Equivalent | null }) | null>(null);
   /* Les répétitions réellement faites, réglées AVANT « Fait » : elles ne
      valent que pour la série où on les a saisies (tour 27). */
-  const [repsSaisie,    setRepsSaisie]    = useState<SaisieReps | null>(null);
+  const [repsSaisie,    setRepsSaisie]    = useState<SaisieReps | null>(reprise?.repsSaisie ?? null);
   const [editReps,      setEditReps]      = useState(false);
   /* R4 · ce qui sert à la progression, lu une fois au montage. `null` =
      pas encore lu, ou illisible : la charge de départ reste alors
@@ -1061,18 +1068,18 @@ export default function WorkoutGuideModal({
   const [crans,         setCrans]         = useState<Map<string, number> | null>(null);
   /* Les réponses données dans l'écran de fin, quand le repère terminait
      la séance : elles s'écrivent après l'enregistrement (`corriger_marge`). */
-  const [margesFin,     setMargesFin]     = useState<Record<number, Marge>>({});
+  const [margesFin,     setMargesFin]     = useState<Record<number, Marge>>(reprise?.margesFin ?? {});
   /* Écrites dans l'ordre, avec la dernière réponse confirmée, et rejouées
      après un échec (`fileDeMarges`, tour 30). */
   const [fileMarges] = useState(() => fileDeMarges((e, m) => corrigerMarge(lancementId, e, m)));
   /* Les questions déjà présentées : c'est elles que compte le plafond de
      deux, pas les exercices éligibles à l'instant (tour 30). */
-  const [questionsPosees, setQuestionsPosees] = useState<number[]>([]);
+  const [questionsPosees, setQuestionsPosees] = useState<number[]>(reprise?.questionsPosees ?? []);
   /* La vibration de fin de repos ne joue qu'une fois, même quand une
      correction ouverte fait attendre la reprise. */
   const finReposVibreeRef = useRef(false);
-  const [startMs,       setStartMs]       = useState(0);
-  const [elapsed,       setElapsed]       = useState(0);
+  const [startMs,       setStartMs]       = useState(() => reprise ? Date.now() - reprise.elapsed * 1000 : 0);
+  const [elapsed,       setElapsed]       = useState(reprise?.elapsed ?? 0);
   const [paused,        setPaused]        = useState(false);
   const [showInfo,      setShowInfo]      = useState(false);
   const [introOpen,     setIntroOpen]     = useState<number | null>(null); // exo déplié dans la liste "Au programme"
@@ -1122,10 +1129,33 @@ export default function WorkoutGuideModal({
   /* R1 bis · le compte qui a COMMENCÉ la séance, figé au départ. Le
      journal et ses suites lui appartiennent, même si la session change
      avant la fin (`proprietaireDeLaSeance`). */
-  const proprietaireRef = useRef<string | null>(null);
+  const proprietaireRef = useRef<string | null>(reprise ? proprietaireReprise ?? null : null);
   const pausedAtRef = useRef<number>(0);
   /** L'instant réel du départ : `startMs` se décale à chaque pause. */
-  const debutRef = useRef<number | null>(null);
+  const debutRef = useRef<number | null>(reprise ? demarreeLe ?? null : null);
+
+  const memoriser = useCallback(() => {
+    if (phase !== "exercising" && phase !== "resting") return;
+    onProgress?.(exercises, { phase, exerciseIdx, setIdx, doneMap,
+      elapsed: paused || !startMs ? elapsed : Math.max(elapsed, Math.floor((Date.now() - startMs) / 1000)),
+      restCountdown, restTotal, restMode, autoCountdown: validationRef.current && hiitSub === "work" ? 0 : autoCountdown, prep, hiitSub,
+      remplacements, chargeCourante, repsSaisie, correction, margesFin, questionsPosees,
+      validationEnCours: validationRef.current,
+    }, debutRef.current ?? Date.now());
+  }, [phase, exerciseIdx, setIdx, doneMap, paused, startMs, elapsed, restCountdown, restTotal, restMode, autoCountdown, prep, hiitSub, exercises, onProgress, remplacements, chargeCourante, repsSaisie, correction, margesFin, questionsPosees]);
+  useEffect(() => { memoriser(); }, [memoriser]);
+  useEffect(() => {
+    const interrompre = () => {
+      if (phase !== "exercising" && phase !== "resting") return;
+      memoriser();
+      if (!paused) { pausedAtRef.current = Date.now(); setPaused(true); }
+    };
+    const visibilite = () => { if (document.hidden) interrompre(); };
+    document.addEventListener("visibilitychange", visibilite);
+    window.addEventListener("pagehide", interrompre);
+    return () => { document.removeEventListener("visibilitychange", visibilite); window.removeEventListener("pagehide", interrompre); };
+  }, [phase, paused, memoriser]);
+  const quitter = () => { memoriser(); onClose(); };
 
   /* ── Masque la barre de navigation du bas tant que la séance guidée est ouverte
         (sinon, sur mobile, elle se superpose au bas de la modale). ── */
@@ -1160,11 +1190,16 @@ export default function WorkoutGuideModal({
       marques: doneMap,
       remplacements,
     });
-    void finaliserSeance(dependancesReelles(supabase), nouvelleAttente({
+    const finalisation = finaliserSeance(dependancesReelles(supabase), nouvelleAttente({
       journal: journalRef.current,
       cible: cible ?? null,
       relaisRunId: relaisRunId ?? null,
-    })).then((r) => {
+    }));
+    // Le journal et ses suites sont maintenant dans l'attente R1. Ne plus
+    // proposer de refaire la dernière série sous le même lancement.
+    onTerminee?.(false);
+    void finalisation.then((r) => {
+      onTerminee?.(r.gardeeSurAppareil || r.journal === "enregistre");
       const etat = etatFinDeSeance(r);
       setFinIncomplete(etat.genre === "ok" ? null : etat);
       if (r.journal !== "enregistre") return;
@@ -1358,7 +1393,7 @@ export default function WorkoutGuideModal({
   /* ── Elapsed clock ── */
   useEffect(() => {
     if (phase === "intro" || phase === "done" || startMs === 0 || paused) return;
-    const t = setInterval(() => setElapsed(Math.floor((Date.now() - startMs) / 1000)), 1000);
+    const t = setInterval(() => { if (!document.hidden) setElapsed(Math.floor((Date.now() - startMs) / 1000)); }, 1000);
     return () => clearInterval(t);
   }, [phase, startMs, paused]);
 
@@ -1585,7 +1620,7 @@ export default function WorkoutGuideModal({
       else advance();
       return;
     }
-    const t = setTimeout(() => setRestCountdown(c => c - 1), 1000);
+    const t = setTimeout(() => { if (!document.hidden) setRestCountdown(c => c - 1); }, 1000);
     return () => clearTimeout(t);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase, restCountdown, paused, restMode, correction]);
@@ -1597,7 +1632,7 @@ export default function WorkoutGuideModal({
   useEffect(() => {
     if (phase !== "exercising") return;
     if (pasDeLEffort({ enPause: paused, choixOuvert, prep, chronometre: !!(cur?.auto || cur?.hiit), restant: autoCountdown }) !== "decompter_prep") return;
-    const t = setTimeout(() => setPrep(p => p - 1), 1000);
+    const t = setTimeout(() => { if (!document.hidden) setPrep(p => p - 1); }, 1000);
     return () => clearTimeout(t);
   }, [phase, prep, paused, choixOuvert, cur, autoCountdown]);
 
@@ -1615,7 +1650,7 @@ export default function WorkoutGuideModal({
       validationRef.current = null;
       completeSet(v.validation, v.dureeS); return;
     }
-    const t = setTimeout(() => setAutoCountdown(c => c - 1), 1000);
+    const t = setTimeout(() => { if (!document.hidden) setAutoCountdown(c => c - 1); }, 1000);
     return () => clearTimeout(t);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase, autoCountdown, hiitSub, cur, paused, prep, choixOuvert]);
@@ -1637,7 +1672,7 @@ export default function WorkoutGuideModal({
   const autoTotal  = isHiit ? (hiitSub === "work" ? HIIT_WORK : HIIT_REST) : (cur?.auto ?? 0);
   const autoOffset = CC * (1 - (autoTotal > 0 ? autoCountdown / autoTotal : 0));
   const restOffset = CC * (1 - (restTotal > 0 ? restCountdown / restTotal : 1));
-  const canPause   = (phase === "exercising" && isTimered) || phase === "resting";
+  const canPause   = phase === "exercising" || phase === "resting";
   const add15      = () => { setRestTotal(t => t + 15); setRestCountdown(c => c + 15); };
 
   /* ── Le player est TOUJOURS sombre (le « tunnel »), quel que soit le thème ── */
@@ -1714,7 +1749,7 @@ export default function WorkoutGuideModal({
                     {paused ? <Play size={13} strokeWidth={2} /> : <Pause size={13} strokeWidth={2} />}
                   </button>
                 )}
-                <button onClick={onClose}
+                <button onClick={quitter}
                   className="w-8 h-8 rounded-full flex items-center justify-center cursor-pointer"
                   style={{ background: "rgba(255,255,255,0.07)", border: `1px solid ${TUN.line}`, color: TUN.t2 }}
                   aria-label="Fermer">
@@ -1749,7 +1784,7 @@ export default function WorkoutGuideModal({
                       style={{ background: "var(--verre-photo)", backdropFilter: "blur(16px) saturate(170%)", WebkitBackdropFilter: "blur(16px) saturate(170%)", border: "1px solid var(--verre-photo-bord)" }}>
                       ≈ {duration} min
                     </span>
-                    <button onClick={onClose}
+                    <button onClick={quitter}
                       className="ml-auto w-8 h-8 rounded-full flex items-center justify-center cursor-pointer text-white"
                       style={{ background: "var(--verre-photo)", backdropFilter: "blur(16px) saturate(170%)", WebkitBackdropFilter: "blur(16px) saturate(170%)", border: "1px solid var(--verre-photo-bord)" }}
                       aria-label="Fermer">
@@ -2377,7 +2412,7 @@ export default function WorkoutGuideModal({
                   {badgesGagnes.length > 0 && (
                     <BandeBadge
                       badges={badgesGagnes}
-                      onAller={() => { onClose(); router.push("/profil"); }}
+                      onAller={() => { quitter(); router.push("/profil"); }}
                     />
                   )}
                 </AnimatePresence>
@@ -2403,7 +2438,7 @@ export default function WorkoutGuideModal({
                     passerait avant le reste. */}
                 {user && !avisMasque && (
                   <div className="flex items-center justify-between w-full py-2.5 text-[13px]" style={{ borderTop: `1px solid ${TUN.line}` }}>
-                    <button type="button" onClick={() => { onClose(); router.push("/avis"); }} className="font-semibold cursor-pointer" style={{ color: TUN.lav }}>
+                    <button type="button" onClick={() => { quitter(); router.push("/avis"); }} className="font-semibold cursor-pointer" style={{ color: TUN.lav }}>
                       Laisser un avis sur Vaiiya
                     </button>
                     <button type="button" onClick={() => setAvisMasque(true)} className="cursor-pointer" style={{ color: TUN.t3 }}>
@@ -2423,6 +2458,12 @@ export default function WorkoutGuideModal({
           style={{ borderTop: `1px solid ${isTunnel ? "rgba(255,255,255,0.08)" : "rgba(var(--accent-rgb),0.08)"}` }}>
           <AnimatePresence mode="wait">
 
+            {phase === "exercising" && paused && (
+              <motion.button key="resume" onClick={togglePause} className="w-full min-h-[52px] rounded-[var(--r-controle)] py-3 text-[16px] font-semibold text-white cursor-pointer flex items-center justify-center gap-2"
+                style={{ background: "linear-gradient(100deg,#8B5CF6,#C13BC1)", boxShadow: "var(--ombre-action)" }}>
+                <Play size={17} aria-hidden="true" /> Reprendre
+              </motion.button>
+            )}
             {phase === "intro" && (
               <motion.button key="start"
                 initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
@@ -2436,7 +2477,7 @@ export default function WorkoutGuideModal({
               </motion.button>
             )}
 
-            {phase === "exercising" && !isTimered && (
+            {phase === "exercising" && !isTimered && !paused && (
               <motion.div key="set-done" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
                 className="flex flex-col items-center gap-1.5">
                 <motion.button whileTap={{ scale: 0.97 }} onClick={() => completeSet("bouton")}
@@ -2453,7 +2494,7 @@ export default function WorkoutGuideModal({
               </motion.div>
             )}
 
-            {phase === "exercising" && isTimered && (
+            {phase === "exercising" && isTimered && !paused && (
               <motion.div key="skip-timed" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
                 className="flex flex-col items-center gap-1.5">
                 <motion.button whileTap={{ scale: 0.97 }} onClick={() => {
@@ -2544,7 +2585,7 @@ export default function WorkoutGuideModal({
                     (violet plein), le partage de l'affiche un lien discret.
                     L'affiche s'est gardée toute seule dans le profil ; elle
                     ne se propose qu'une fois gardée. */}
-                <motion.button whileTap={{ scale: 0.97 }} onClick={onClose}
+                <motion.button whileTap={{ scale: 0.97 }} onClick={quitter}
                   className="w-full py-4 rounded-2xl flex items-center justify-center font-extrabold text-[16px] cursor-pointer text-white"
                   style={{ background: "linear-gradient(100deg,#8B5CF6,#C13BC1)", boxShadow: "var(--ombre-action)" }}
                 >

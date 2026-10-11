@@ -55,7 +55,8 @@ type WorkoutSessionItem = {
   category?: string | null;
 };
 import NotificationBell from "@/components/NotificationBell";
-import WorkoutGuideModal, { type Exercise, resolveSessionId } from "@/components/WorkoutGuideModal";
+import { type Exercise, resolveSessionId } from "@/components/WorkoutGuideModal";
+import { useWorkoutLaunch } from "@/context/WorkoutLaunchContext";
 import { heroImageForSeance } from "@/lib/workoutArt";
 import type { WorkoutCategory } from "@/lib/assistantActions";
 import Link from "next/link";
@@ -114,7 +115,7 @@ function AvatarCropper({ src, onCancel, onCropped }: {
   };
 
   // Re-clamp l'offset quand le zoom change
-  useEffect(() => { setOffset((o) => clamp(o)); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [zoom, natural]);
+  useEffect(() => { setOffset((o) => clamp(o)); }, [zoom, natural]);
 
   const onPointerDown = (e: React.PointerEvent) => {
     drag.current = { x: e.clientX - offset.x, y: e.clientY - offset.y };
@@ -465,6 +466,7 @@ function EditProfileModal({
 /* ─────────────── Main Page ─────────────── */
 export default function ProfilPage() {
   const { user, session, refreshProfile } = useAuth();
+  const { launchWorkout } = useWorkoutLaunch();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<"collection" | "progres" | "amis">("collection");
   const [avecQui, setAvecQui] = useState(false);
@@ -506,10 +508,6 @@ export default function ProfilPage() {
     setUserPosts((prev) => prev.map((p) => p.id === id ? { ...p, views: (p.views ?? 0) + 1 } : p));
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedPost?.id]);
-  const [profileWorkout, setProfileWorkout] = useState<{
-    sessionId: string; title: string; accent: string; duration: number;
-    difficulty: string; category: string; exerciseList: Exercise[];
-  } | null>(null);
   const [editCaption, setEditCaption] = useState("");
   const [editBio, setEditBio] = useState("");
   const [editSaving, setEditSaving] = useState(false);
@@ -625,13 +623,14 @@ export default function ProfilPage() {
       showToast("Séance trop ancienne pour être rejouée 🙏");
       return;
     }
-    setProfileWorkout({
+    launchWorkout({
       sessionId: exList.length > 0 ? "profile-history" : builtinId!,
       title: session.title ?? "Séance",
       accent: "var(--accent)",
       duration: session.elapsed_seconds ? Math.round(session.elapsed_seconds / 60) : (session.duration_minutes || 30),
       difficulty: "Intermédiaire",
       category: session.category ?? "force",
+      heroImage: heroImageForSeance({ title: session.title ?? "Séance", category: session.category as WorkoutCategory }),
       exerciseList: exList,
     });
   };
@@ -1319,20 +1318,6 @@ export default function ProfilPage() {
           />
         )}
         {toast && <Toast message={toast} />}
-        {/* WorkoutGuideModal lancé depuis un post du profil */}
-        {profileWorkout && (
-          <WorkoutGuideModal
-            sessionId={profileWorkout.sessionId}
-            title={profileWorkout.title}
-            accent={profileWorkout.accent}
-            duration={profileWorkout.duration}
-            difficulty={profileWorkout.difficulty}
-            category={profileWorkout.category}
-            heroImage={heroImageForSeance({ title: profileWorkout.title, category: profileWorkout.category as WorkoutCategory })}
-            exerciseList={profileWorkout.exerciseList}
-            onClose={() => setProfileWorkout(null)}
-          />
-        )}
       </AnimatePresence>
 
       {/* ─── Post detail / edit modal ─── */}
@@ -1493,13 +1478,14 @@ export default function ProfilPage() {
                             whileTap={{ scale: 0.97 }}
                             onClick={() => {
                               setSelectedPost(null);
-                              setProfileWorkout({
+                              launchWorkout({
                                 sessionId:    hasEmbedded ? "profile-post" : builtinId!,
                                 title:        pd?.title ?? "Séance",
                                 accent:       "var(--accent)",
                                 duration:     dur,
                                 difficulty:   "Intermédiaire",
                                 category:     pd?.category ?? "force",
+                                heroImage: heroImageForSeance({ title: pd?.title ?? "Séance", category: pd?.category as WorkoutCategory }),
                                 exerciseList: exList,
                               });
                             }}

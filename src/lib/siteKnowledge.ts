@@ -74,6 +74,7 @@ export const SITE_FEATURES: SiteFeature[] = [
       "L’onglet Entraînement accueille avec la séance du jour (planning piloté par l’IA) : la lancer en un geste, improviser une séance selon son temps et son matériel, choisir dans le catalogue Vaiiya et ses séances personnelles, parcourir les mouvements animés, ou organiser sa semaine.",
     actions: [
       "lancer la séance du jour",
+      "reprendre une séance interrompue depuis l’encart dans Entraînement, sur le même appareil",
       "improviser une séance (temps + matériel)",
       "choisir, composer ou modifier une séance",
       "parcourir les mouvements et leurs fiches",

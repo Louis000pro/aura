@@ -9,7 +9,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
-import WorkoutGuideModal from "@/components/WorkoutGuideModal";
+import { useWorkoutLaunch } from "@/context/WorkoutLaunchContext";
 import {
   lireSemaine, reposerLaSemaine, ctxFromLieu, dayTitle, persistLieu, loadLieu,
   weekDatesForOffset, weekOffsetOf, weekdayIndex, todayWeekIndex, parDate, principale, supplements,
@@ -316,6 +316,15 @@ function HomeEquipQuestion({ onChoose, onBack }: { onChoose: (e: "halteres" | "p
  */
 export default function WeeklyProgramme({ cycle = null }: { cycle?: CycleSemaine | null } = {}) {
   const { user } = useAuth();
+  const { launchWorkout } = useWorkoutLaunch();
+  const lancerJour = (jour: PlanningDay) => launchWorkout({
+    sessionId: `planning-${jour.id ?? jour.date}`, title: dayTitle(jour),
+    duration: jour.type === "HIIT" ? 30 : 45, difficulty: jour.difficulty,
+    category: jour.type, exerciseList: jour.exerciseList,
+    // Refaire est un supplément : ne jamais déplacer le fait d'origine.
+    cible: jour.id && jour.status !== "done" && jour.status !== "skipped"
+      ? { genre: "intention", intentionId: jour.id } : undefined,
+  });
   /* ⚠️ UNE CLÉ, PAS L'OBJET. `generate` est un `useCallback` dont dépend
      l'effet d'auto-génération : un objet (comme un tableau) change
      d'identité à chaque rendu, donc l'effet repartirait en boucle. La
@@ -340,8 +349,6 @@ export default function WeeklyProgramme({ cycle = null }: { cycle?: CycleSemaine
   const forceNextRef = useRef(false);
   // Exercice dont on affiche le tuto vidéo (null = fermé)
   const [tuto, setTuto] = useState<string | null>(null);
-  // Jour dont on a lancé la séance dans le lecteur guidé (null = fermé)
-  const [launchDay, setLaunchDay] = useState<PlanningDay | null>(null);
   // Semaine consultée : 0 = cette semaine, +1 = la prochaine, etc.
   const [weekOffset, setWeekOffset] = useState(0);
 
@@ -729,7 +736,7 @@ export default function WeeklyProgramme({ cycle = null }: { cycle?: CycleSemaine
               key={selectedDay}
               day={currentDay}
               onTuto={setTuto}
-              onStart={() => setLaunchDay(currentDay)}
+              onStart={() => lancerJour(currentDay)}
             />
           )}
         </AnimatePresence>
@@ -746,7 +753,7 @@ export default function WeeklyProgramme({ cycle = null }: { cycle?: CycleSemaine
             </p>
             {extras.map((extra) => (
               <button key={extra.id ?? extra.title}
-                onClick={() => setLaunchDay(extra)}
+                onClick={() => lancerJour(extra)}
                 className="w-full flex items-center gap-2 py-1.5 text-left cursor-pointer border-none bg-transparent">
                 <span className="flex-1 min-w-0 text-[11px] font-semibold truncate" style={{ color: "var(--text-2)" }}>
                   {dayTitle(extra)}
@@ -766,34 +773,6 @@ export default function WeeklyProgramme({ cycle = null }: { cycle?: CycleSemaine
         {tuto && <ExerciseTutorial exercise={tuto} onClose={() => setTuto(null)} />}
       </AnimatePresence>
 
-      {/* Lecteur guidé de la séance — porté dans <body> pour échapper aux
-          transforms du drawer parent (sinon le `fixed` se cale sur le drawer). */}
-      {typeof document !== "undefined" && createPortal(
-        <AnimatePresence>
-          {launchDay && (
-            <WorkoutGuideModal
-              sessionId={`planning-${launchDay.id ?? launchDay.date}`}
-              title={dayTitle(launchDay)}
-              accent="var(--accent)"
-              duration={launchDay.type === "HIIT" ? 30 : 45}
-              difficulty={launchDay.difficulty}
-              category={launchDay.type}
-              exerciseList={launchDay.exerciseList}
-              onClose={() => setLaunchDay(null)}
-              /* ⚠️ IL PASSE PAR L'AUTORITÉ UNIQUE (V7A), COMME TOUT LE RESTE.
-                 Il appelait `marquerIntention` lui-même : c'était la seconde
-                 copie de « que faire quand la séance est finie », celle-là
-                 même que la vague existe pour supprimer. Elle écrivait la
-                 bonne chose, mais elle n'émettait AUCUN événement : le héros
-                 de l'accueil restait sur son état d'avant, et cet écran-ci
-                 ne se rafraîchissait pas non plus, alors qu'il écoute
-                 pourtant `programme-updated` juste au-dessus. */
-              cible={launchDay.id ? { genre: "intention", intentionId: launchDay.id } : null}
-            />
-          )}
-        </AnimatePresence>,
-        document.body,
-      )}
     </div>
   );
 }

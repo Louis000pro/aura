@@ -47,6 +47,8 @@ import {
 import { useAuth } from "@/context/AuthContext";
 import { useAssistant } from "@/context/AssistantContext";
 import { useWorkoutLaunch } from "@/context/WorkoutLaunchContext";
+import SeanceInterrompue from "@/components/entrainement/SeanceInterrompue";
+import { propositionAGarder } from "@/lib/garderSeanceReprise";
 import { useGuideActif } from "@/context/GuideContext";
 import { AssistantSpark, VisageGuide } from "@/components/AssistantMark";
 import { voix } from "@/lib/guides";
@@ -2857,6 +2859,11 @@ export default function ProgressionPage() {
   }, [user]);
 
   useEffect(() => { void fetchCustomSessions(); }, [fetchCustomSessions]);
+  useEffect(() => {
+    const actualiser = () => { void fetchCustomSessions(); };
+    window.addEventListener("custom-sessions-updated", actualiser);
+    return () => window.removeEventListener("custom-sessions-updated", actualiser);
+  }, [fetchCustomSessions]);
 
   /* Catalogue + perso fusionnés — les tiennes d'abord, c'est TA bibliothèque */
   const allSessions = useMemo<MergedSession[]>(() => [
@@ -2931,7 +2938,6 @@ export default function ProgressionPage() {
       heroImage: heroImageForSeance({ title: s.title, category: s.category }),
       exerciseList: s.exerciseList,
     });
-    showToast(`${s.title} démarrée ✓`);
   };
 
   /* ── Actions bibliothèque perso ── */
@@ -3192,6 +3198,7 @@ export default function ProgressionPage() {
             l'accueil, l'écran où l'on arrive et où la question de la
             journée se pose vraiment. Entraînement redevient ce qu'il est :
             le plan d'entraînement et sa bibliothèque. */}
+        <SeanceInterrompue />
 
         {/* ── ① bis · Recherche directe ──
             94 séances, la plupart dures à retrouver dans les familles :
@@ -3523,6 +3530,9 @@ export default function ProgressionPage() {
                 exerciseList: t.exerciseList,
                 onGarder: user && peutGarderUneSeance && t.exerciseList.length
                   ? () => garderImpro(t)
+                  : undefined,
+                aGarder: user && peutGarderUneSeance && t.exerciseList.length
+                  ? propositionAGarder(t)
                   : undefined,
               });
               showToast(`${t.title} prête ✦`);
