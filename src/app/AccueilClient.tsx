@@ -32,6 +32,7 @@ import { marquerPresence } from "@/lib/presence";
 import { aiFetch } from "@/lib/aiFetch";
 import { bornesHier, journeeVide, lireRecap, noterRecap, type FaitsRecap, type Recap } from "@/lib/recapJour";
 import RecapHier from "@/components/accueil/RecapHier";
+import PremierAccueil, { usePremierAccueil } from "@/components/accueil/PremierAccueil";
 
 /* ─────────────────────────────────────────────────
    LANDING PAGE — visiteur non connecté
@@ -155,6 +156,7 @@ function Dashboard() {
         traverse minuit redonne ainsi la parole au Guide, sans effet
         supplémentaire pour la lui reprendre. */
   const { guide, etat: etatGuide } = useGuideActif();
+  const premierAccueil = usePremierAccueil(user?.id);
   const { open: ouvrirAssistant } = useAssistant();
   const [motGuide, setMotGuide] = useState<MomentAccueil | null>(null);
   const jourEvalueRef = useRef<string | null>(null);
@@ -298,6 +300,17 @@ function Dashboard() {
           paddingBottom: "calc(96px + env(safe-area-inset-bottom))",
         }}
       >
+        {/* Un nouvel inscrit est accueilli avant tout le reste. Tant qu'on ne
+            sait pas encore (`null`), on ne montre rien plutôt que de faire
+            clignoter l'accueil habituel puis le bienvenue. */}
+        {premierAccueil.afficher === true && user ? (
+          <PremierAccueil
+            userId={user.id}
+            pseudo={user.pseudo ?? user.name ?? ""}
+            guide={guide}
+            onFermer={premierAccueil.fermer}
+          />
+        ) : premierAccueil.afficher === false && (
         <AccueilSignature
           greeting={greeting}
           pseudo={user?.pseudo ?? user?.name ?? ""}
@@ -315,6 +328,7 @@ function Dashboard() {
           onNavigate={(path) => router.push(path)}
           onOpenRangs={() => setShowRangs(true)}
         />
+        )}
 
         <RangsModal
           open={showRangs}

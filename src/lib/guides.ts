@@ -693,6 +693,12 @@ const REPLIQUES = {
     nora:   "Si tu utilises aussi la partie nutrition, ces quelques repères permettront de mieux l’adapter.",
     sasha:  "Si tu veux utiliser la nutrition aussi, on règle rapidement tes repères ici.",
   },
+  /* Le premier accueil (Louis, 2026-10-12) : la page d'accueil dit bonjour
+     à un nouvel inscrit, puis il choisit. Rien n'est imposé, et la phrase le
+     dit. Aucun accord de genre. */
+  "accueil.premier": {
+    commun: "Ça me fait plaisir que tu sois là. J’ai préparé une première séance à ta mesure, mais rien ne presse : tu peux aussi faire le tour d’abord.",
+  },
   "bienvenue.fin": {
     commun: "C’est enregistré. Vaiiya est adapté à ce que tu as indiqué.",
     nora:   "C’est enregistré. J’ai de quoi adapter Vaiiya à ce que tu m’as indiqué.",
