@@ -631,7 +631,7 @@ export default function ParametresPage() {
 
   const handleLogout = async () => {
     await logout();
-    router.replace("/");
+    router.replace("/auth");
   };
 
   /**

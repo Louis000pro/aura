@@ -8,6 +8,7 @@ import { GuidedTourProvider } from "@/context/GuidedTourContext";
 import RappelProfil from "@/components/RappelProfil";
 import GardeGuide from "@/components/GardeGuide";
 import GardePseudo from "@/components/GardePseudo";
+import GardeConnexion from "@/components/GardeConnexion";
 import GuidedTour from "@/components/GuidedTour/GuidedTour";
 import PWARegister from "@/components/PWARegister";
 import SplashIntro from "@/components/SplashIntro";
@@ -381,6 +382,7 @@ export default function RootLayout({
                     du réseau pour en sortir. */}
                 {/* Le pseudo passe AVANT le Guide : un compte Google choisit
                     d'abord son pseudo (GardePseudo), puis son Guide. */}
+                <GardeConnexion />
                 <GardePseudo />
                 <GardeGuide />
                 <Navigation />

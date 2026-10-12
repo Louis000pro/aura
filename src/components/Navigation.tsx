@@ -165,7 +165,7 @@ export default function Navigation() {
   // Pages publiques : accueil vitrine et invitation à un relais.
   if (!user && (pathname === "/" || pathname.startsWith("/rejoindre"))) return null;
 
-  const handleLogout = () => { logout(); router.push("/"); };
+  const handleLogout = () => { logout(); router.replace("/auth"); };
 
   /* Une surface publique n'affiche AUCUNE chrome applicative : ni la barre du
      bas, ni la cloche flottante, ni le rail desktop. Voir
