@@ -20,11 +20,11 @@
   --encre: #1C1626;
   --encre-2: #5C5468;
   --encre-3: #7B7389;
-  --cuivre: #B4570C;
+  --cuivre: #6D4BD6;
   --violet: #8B5CF6;
   --lien: #5B3FC4;
-  --creme: #FFFBF5;
-  --logo: linear-gradient(120deg, #A66CF4 0%, #E68FC6 52%, #FEB86E 100%);
+  --creme: #FFFFFF;
+  --logo: linear-gradient(120deg, #8B5CF6 0%, #C13BC1 100%);
   --action: linear-gradient(135deg, #8B5CF6 0%, #C13BC1 100%);
   --ease: cubic-bezier(.22, 1, .36, 1);
   position: relative;
@@ -160,7 +160,7 @@
   border: 1.5px solid transparent;
   background:
     linear-gradient(rgba(255, 255, 255, .9), rgba(255, 255, 255, .9)) padding-box,
-    linear-gradient(120deg, #A66CF4, #E68FC6, #FEB86E) border-box;
+    linear-gradient(120deg, #8B5CF6, #C13BC1) border-box;
   box-shadow: 0 10px 24px -14px rgba(120, 70, 200, .55);
 }
 .connexion span {
@@ -180,10 +180,12 @@
   padding: calc(env(safe-area-inset-top, 0px) + 92px) 0 56px;
   overflow: hidden;
   background:
-    radial-gradient(70% 55% at 85% 20%, rgba(254, 184, 110, .30), transparent 70%),
-    radial-gradient(60% 50% at 10% 15%, rgba(166, 108, 244, .26), transparent 70%),
-    radial-gradient(70% 60% at 50% 100%, rgba(230, 143, 198, .24), transparent 70%),
-    linear-gradient(180deg, #FFF4EC 0%, #FDF1FA 45%, var(--creme) 100%);
+    /* Le fond de l'accueil connecté (`--fond-verre`, mode clair), recopié en
+       dur parce que la vitrine ne suit pas le thème. Louis, 2026-10-12 :
+       « presque blanc », plus d'orange. */
+    radial-gradient(150% 75% at 0% 0%, rgba(167, 139, 250, .22) 0%, rgba(167, 139, 250, .1) 35%, transparent 75%),
+    radial-gradient(150% 75% at 100% 100%, rgba(244, 164, 222, .18) 0%, rgba(244, 164, 222, .08) 35%, transparent 75%),
+    linear-gradient(180deg, #F7F3FF 0%, #FCFBFF 45%, #FFFFFF 100%);
 }
 @media (min-width: 960px) { .heros { padding-top: 120px; display: flex; align-items: center; } }
 
@@ -196,12 +198,12 @@
 }
 .haloA {
   width: 520px; height: 520px; left: -160px; top: 30%;
-  background: radial-gradient(closest-side, rgba(166, 108, 244, .28), transparent);
+  background: radial-gradient(closest-side, rgba(167, 139, 250, .14), transparent);
   animation: derive 18s ease-in-out infinite alternate;
 }
 .haloB {
   width: 620px; height: 620px; right: -220px; top: -120px;
-  background: radial-gradient(closest-side, rgba(254, 184, 110, .34), transparent);
+  background: radial-gradient(closest-side, rgba(244, 164, 222, .12), transparent);
   animation: derive 22s ease-in-out infinite alternate-reverse;
 }
 @keyframes derive {
@@ -347,12 +349,15 @@
 .ecranHaut { display: flex; align-items: center; gap: 8px; padding: 0 2px; }
 .ecranHaut b { font-size: 16px; font-weight: 850; font-variation-settings: var(--w-voix); line-height: 1.05; }
 .ecranHaut small { display: block; font-size: 11px; color: var(--encre-3); }
+/* Juste la tête du Guide : ni cercle, ni fond, un fondu pour le bas
+   (Louis, 2026-10-12). */
 .avatarGuide {
-  width: 34px; height: 34px; border-radius: 50%;
-  overflow: hidden; flex-shrink: 0;
-  background: rgba(139, 92, 246, .14);
-  box-shadow: 0 0 0 2px #8B5CF6, 0 0 0 3.5px rgba(245, 177, 32, .5);
+  position: relative;
+  width: 40px; height: 50px; flex-shrink: 0;
+  -webkit-mask-image: linear-gradient(#000 62%, transparent);
+  mask-image: linear-gradient(#000 62%, transparent);
 }
+.avatarGuide img { width: 100%; height: 100%; object-fit: cover; object-position: top; }
 .seanceJour {
   position: relative;
   height: 46%;
@@ -486,9 +491,7 @@
 /* ═══════════════ 3 · LE GUIDE ═══════════════ */
 .guide {
   background:
-    radial-gradient(60% 50% at 20% 30%, rgba(166, 108, 244, .16), transparent 70%),
-    radial-gradient(50% 50% at 90% 80%, rgba(254, 184, 110, .18), transparent 70%),
-    #FBF8FF;
+    #FBF9FF;
 }
 .guideGrille { display: grid; gap: 44px; align-items: center; }
 @media (min-width: 960px) { .guideGrille { grid-template-columns: 1fr 1fr; gap: 64px; } }
@@ -597,7 +600,7 @@
   position: absolute;
   inset: -18%;
   border-radius: 50%;
-  background: radial-gradient(closest-side, rgba(230, 143, 198, .35), transparent);
+  background: radial-gradient(closest-side, rgba(167, 139, 250, .22), transparent);
   animation: pulse 3.2s ease-in-out infinite;
   z-index: -1;
 }
@@ -625,8 +628,7 @@
 /* ═══════════════ 5 · LE CHEMIN ═══════════════ */
 .chemin {
   background:
-    radial-gradient(60% 40% at 50% 0%, rgba(254, 184, 110, .25), transparent 70%),
-    linear-gradient(180deg, var(--creme), #FBF3FF);
+    #FFFFFF;
 }
 .etapes {
   margin: 44px 0 0;
@@ -669,7 +671,7 @@
 .pastilles span { padding: 4px 10px; border-radius: 999px; font-size: 11px; font-weight: 800; }
 
 /* ═══════════════ 6 · NUTRITION ═══════════════ */
-.nutrition { background: #FBF3FF; }
+.nutrition { background: #FBF9FF; }
 .nutriGrille { display: grid; gap: 44px; align-items: center; }
 @media (min-width: 960px) { .nutriGrille { grid-template-columns: .95fr 1.05fr; gap: 64px; } }
 .assiette {
@@ -757,15 +759,9 @@
 
 /* ═══════════════ 7 · LES RANGS ═══════════════ */
 .rangs {
-  color: #fff;
-  background:
-    radial-gradient(60% 50% at 50% 0%, rgba(166, 108, 244, .45), transparent 70%),
-    radial-gradient(50% 40% at 85% 100%, rgba(254, 184, 110, .25), transparent 70%),
-    linear-gradient(180deg, #1A1028, #120A1E);
+  /* Clair, comme le reste de la page (Louis, 2026-10-12). */
+  background: #FFFFFF;
 }
-.rangs .titre { color: #fff; }
-.rangs .chapo { color: rgba(255, 255, 255, .72); }
-.rangs .surtitre { color: #FEB86E; }
 .escalier {
   margin: 56px auto 0;
   max-width: 900px;
@@ -783,7 +779,7 @@
   position: absolute;
   inset: 12%;
   border-radius: 50%;
-  background: radial-gradient(closest-side, rgba(254, 184, 110, .5), transparent);
+  background: radial-gradient(closest-side, rgba(167, 139, 250, .28), transparent);
   z-index: -1;
   animation: pulse 4s ease-in-out infinite;
 }
@@ -796,17 +792,17 @@
   width: 100%;
   margin-top: 8px;
   border-radius: 14px 14px 0 0;
-  background: linear-gradient(180deg, rgba(255, 255, 255, .16), rgba(255, 255, 255, .03));
-  border: 1px solid rgba(255, 255, 255, .12);
+  background: linear-gradient(180deg, #F3EEFF, #FBF9FF);
+  border: 1px solid rgba(139, 92, 246, .14);
   border-bottom: 0;
   padding-top: 10px;
 }
 .socle b { display: block; font-size: 13px; font-weight: 800; }
-.socle span { display: block; margin-top: 2px; font-size: 11px; color: rgba(255, 255, 255, .6); }
+.socle span { display: block; margin-top: 2px; font-size: 11px; color: var(--encre-3); }
 @media (min-width: 768px) { .socle b { font-size: 16px; } }
 
 /* ═══════════════ 8 · LE RELAIS ═══════════════ */
-.relais { background: linear-gradient(180deg, #FFF6EE, var(--creme)); }
+.relais { background: #FBF9FF; }
 .relaisGrille { display: grid; gap: 44px; align-items: center; }
 @media (min-width: 960px) { .relaisGrille { grid-template-columns: 1fr 1fr; gap: 64px; } }
 .affiche {
@@ -839,7 +835,7 @@
 }
 .maillons i::after {
   content: ""; position: absolute; inset: 0;
-  background: linear-gradient(90deg, #A66CF4, #E68FC6, #FEB86E);
+  background: #8B5CF6;
   transform: scaleX(0); transform-origin: left;
   animation: maillon 10s linear infinite;
 }
@@ -872,8 +868,8 @@
   position: relative;
   overflow: hidden;
   background:
-    radial-gradient(80% 60% at 100% 0%, rgba(254, 184, 110, .45), transparent 70%),
-    linear-gradient(150deg, #FFF3D6, #FBE6FF);
+    #FFFFFF;
+  box-shadow: 0 0 0 1.5px rgba(245, 177, 32, .55), 0 30px 60px -44px rgba(80, 40, 140, .4);
 }
 .plus ul { grid-template-columns: 1fr !important; }
 .prix { margin-top: 18px; display: flex; align-items: baseline; gap: 6px; color: #8A5A06; }
@@ -902,10 +898,8 @@
   text-align: center;
   padding: 110px 0 120px;
   background:
-    radial-gradient(60% 70% at 50% 110%, rgba(230, 143, 198, .45), transparent 70%),
-    radial-gradient(50% 60% at 15% 100%, rgba(166, 108, 244, .35), transparent 70%),
-    radial-gradient(50% 60% at 85% 100%, rgba(254, 184, 110, .38), transparent 70%),
-    var(--creme);
+    radial-gradient(70% 60% at 50% 110%, rgba(167, 139, 250, .2), transparent 70%),
+    #FFFFFF;
 }
 .finLogo { width: 76px; height: auto; margin: 0 auto 22px; animation: flotte 7s ease-in-out infinite; }
 .finTitre {

@@ -107,7 +107,7 @@ function Telephone() {
           <span className={s.encoche} />
           <div className={s.ecranHaut}>
             <span className={s.avatarGuide}>
-              <Image src="/guides/nora-welcome-avatar-v1.webp" alt="" width={68} height={68} priority />
+              <Image src="/guides/nora-buste-v1.webp" alt="" width={80} height={100} priority />
             </span>
             <div>
               <b>Prête pour ta séance&nbsp;?</b>
@@ -295,7 +295,7 @@ function Guide() {
         <div className={s.conversation} data-conversation aria-label="Exemple de conversation avec ton Guide">
           <div className={`${s.message} ${s.moi}`} data-pas="1">J’ai 30 minutes ce soir, et des haltères.</div>
           <div className={`${s.message} ${s.lui}`} data-pas="2">
-            <Image src="/guides/nora-explain-avatar-v1.webp" alt="" width={32} height={32} style={{ borderRadius: "50%" }} />
+            <span className={s.avatarGuide} style={{ width: 32, height: 40 }}><Image src="/guides/nora-buste-v1.webp" alt="" width={64} height={80} /></span>
             <p>Parfait, de quoi faire une belle séance. Je te prépare ça.</p>
           </div>
           <div className={s.carteProp} data-pas="3">
