@@ -187,7 +187,6 @@ export default function Navigation() {
   /* Pages qui portent DÉJÀ leur propre barre du haut. Y superposer le voile
      et la cloche flottante ferait deux barres l'une sur l'autre : sur /admin,
      la cloche venait se poser exactement sur le bouton « Actualiser ». */
-  const barrePropre = pathname === "/profil" || pathname === "/communaute" || pathname === "/admin";
 
   const isProgActive = pathname === "/progression";
   const avatarLetter = (user?.pseudo ?? user?.name ?? "?")[0]?.toUpperCase() ?? "?";
@@ -346,7 +345,9 @@ export default function Navigation() {
           sont deux ronds de verre en haut de page, qui s'effacent dès qu'on
           descend (voir `enteteCache`). */}
 
-      {user && !surfacePublique && !barrePropre && (
+      {/* La cloche et la photo de profil ne vivent QUE sur l'accueil (Louis,
+          2026-10-12) : sur les autres onglets elles se posaient sur les titres. */}
+      {user && !surfacePublique && pathname === "/" && (
         <div className="global-mobile-header vy-fixe md:hidden fixed top-0 right-0 z-40 flex items-center px-3"
           style={styleEntete}>
           <div className="vy-verre rounded-full">
@@ -359,7 +360,7 @@ export default function Navigation() {
             là sur les onglets principaux (façon Snapchat), plus seulement
             Communauté (qui garde le sien dans sa propre barre). Limité aux onglets
             pour ne pas se poser sur les titres à gauche des pages secondaires. ══ */}
-      {user && (pathname === "/" || pathname === "/progression" || pathname === "/nutrition") && (
+      {user && pathname === "/" && (
         <div className="global-mobile-header vy-fixe md:hidden fixed top-0 left-0 z-40 flex items-center px-3"
           style={styleEntete}>
           {/* ⚠️ UN CARRÉ TRÈS ARRONDI A ÉTÉ ESSAYÉ ICI PUIS RETIRÉ LE MÊME JOUR

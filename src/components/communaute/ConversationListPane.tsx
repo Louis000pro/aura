@@ -19,7 +19,6 @@ import {
   Pin, Volume2, VolumeX, Archive, ArchiveRestore, UserPlus,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
-import NotificationBell from "@/components/NotificationBell";
 import ConversationAvatar, { PersonAvatar } from "@/components/communaute/ConversationAvatar";
 import Sheet from "@/components/communaute/Sheet";
 import AvecQui from "@/components/communaute/AvecQui";
@@ -239,29 +238,10 @@ export default function ConversationListPane({
           le haut, 12 px du bord, anneau de verre) : on passe d'un onglet à
           l'autre sans que rien ne saute. */}
       <div className="flex items-center gap-2.5 px-3 pb-3 pt-2">
-        {/* Mon avatar = le seul chemin vers mon profil dans toute l'app :
-            le raccourci flottant qui traînait sur chaque page a été retiré. */}
-        <button onClick={() => router.push("/profil")} aria-label="Mon profil"
-          data-tour-anchor="nav-profil" className="vy-verre relative shrink-0 rounded-full p-[3px] active:opacity-80 transition-opacity">
-          {user?.avatar ? (
-            <Image src={user.avatar} alt="" width={36} height={36}
-              className="h-9 w-9 rounded-full object-cover" unoptimized />
-          ) : (
-            <div className="flex h-9 w-9 items-center justify-center rounded-full text-[13px] font-bold text-white"
-              style={{ background: "linear-gradient(135deg, #8B5CF6, #C13BC1)" }}>
-              {(user?.pseudo ?? "?").charAt(0).toUpperCase()}
-            </div>
-          )}
-        </button>
-
+        {/* La photo de profil et la cloche ne vivent que sur l'accueil
+            (Louis, 2026-10-12). Il ne reste ici que les deux actions de
+            l'écran. */}
         <span className="flex-1" />
-
-        {/* La cloche vit ICI sur mobile : cet écran a sa propre barre du
-            haut, donc la cloche flottante globale s'y poserait par-dessus
-            le « + ». Sur desktop c'est la sidebar qui la porte. */}
-        <div className="vy-verre rounded-full md:hidden">
-          <NotificationBell side="top" />
-        </div>
 
         <button
           onClick={() => { setPseudoInvite(""); setVueAmis("ajouter"); }}
