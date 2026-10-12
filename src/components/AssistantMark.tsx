@@ -87,20 +87,23 @@ export function AssistantAvatar({ size, className = "" }: { size: number; classN
  *  (Premium, badges, textes) : seule l'entrée de l'assistant change. */
 export function MarqueAssistant({ guide, px }: { guide: GuideRef; px: number }) {
   if (!guide) return <AssistantSpark px={px} />;
+  /* Juste la tête du Guide (Louis, 2026-10-12) : ni fond, ni cercle, ni les
+     deux anneaux violet et or. Le fichier est déjà détouré ; un fondu le fait
+     disparaître au niveau des épaules au lieu de le couper net. */
   return (
     <span
-      className="inline-flex items-center justify-center rounded-full flex-shrink-0 select-none overflow-hidden"
+      className="inline-flex items-center justify-center flex-shrink-0 select-none"
       style={{
         width: px,
         height: px,
-        background: "rgba(var(--accent-rgb),0.14)",
-        boxShadow: "0 0 0 2px var(--accent), 0 0 0 3.5px rgba(var(--gold-rgb),0.55)",
+        WebkitMaskImage: "linear-gradient(to bottom, #000 58%, transparent 92%)",
+        maskImage: "linear-gradient(to bottom, #000 58%, transparent 92%)",
         forcedColorAdjust: "none",
       }}
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={`/guides/${guide}-welcome-avatar-v1.webp`} alt="" width={px} height={px} decoding="async"
-        style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+        style={{ width: "100%", height: "100%", objectFit: "contain" }} />
     </span>
   );
 }

@@ -3,8 +3,8 @@
 /* ════════════════════════════════════════════════════════════════════
    NavOrb — le bouton assistant au centre de la navigation.
 
-   Visuel (depuis le 2026-10-12, Louis) : la TÊTE du Guide choisi, cerclée
-   de violet. Sans Guide résolu, l'étincelle ✦ ci-dessous reprend la place.
+   Visuel (depuis le 2026-10-12, Louis) : la TÊTE du Guide choisi, seule :
+   ni fond, ni cercle, un fondu au niveau des épaules. Sans Guide résolu, l'étincelle ✦ ci-dessous reprend la place.
    Historique : l'étincelle ✦ (géométrie EXACTE de lucide « sparkles » — même
    grille 24, même trait que les icônes voisines) en bicolore : étoile
    violette (action) + petits éclats dorés. Hérite des couleurs du thème →
@@ -121,7 +121,7 @@ export default function NavOrb({ size = 48, glyph }: { size?: number; glyph?: nu
       >
         {/* L'étincelle s'efface pendant les états (micro / vumètre / spinner) */}
         <span style={{ opacity: quiet ? 0 : 1, transition: "opacity 0.15s ease", display: "flex" }}>
-          <MarqueAssistant guide={guide} px={px + 6} />
+          <MarqueAssistant guide={guide} px={px + 10} />
         </span>
 
         {/* Contenu d'état (couleurs du thème, plus de blanc) */}
