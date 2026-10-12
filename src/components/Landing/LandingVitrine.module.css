@@ -199,7 +199,6 @@
   letter-spacing: -.012em;
 }
 .h1 > span { display: block; will-change: transform; }
-.point { color: #7C4FE0; font-style: normal; }
 .mot { display: inline-block; animation: monte .8s var(--ease) both; }
 
 .herosTexte {
