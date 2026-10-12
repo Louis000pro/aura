@@ -235,11 +235,14 @@ export default function ConversationListPane({
       style={{ background: "rgb(var(--bg-rgb))" }}
     >
       {/* ─── Barre du haut ─── */}
-      <div className="flex items-center gap-3 px-4 pb-3 pt-4">
+      {/* Même cadre que la photo et la cloche des autres onglets (8 px sous
+          le haut, 12 px du bord, anneau de verre) : on passe d'un onglet à
+          l'autre sans que rien ne saute. */}
+      <div className="flex items-center gap-2.5 px-3 pb-3 pt-2">
         {/* Mon avatar = le seul chemin vers mon profil dans toute l'app :
             le raccourci flottant qui traînait sur chaque page a été retiré. */}
         <button onClick={() => router.push("/profil")} aria-label="Mon profil"
-          data-tour-anchor="nav-profil" className="relative shrink-0">
+          data-tour-anchor="nav-profil" className="vy-verre relative shrink-0 rounded-full p-[3px] active:opacity-80 transition-opacity">
           {user?.avatar ? (
             <Image src={user.avatar} alt="" width={36} height={36}
               className="h-9 w-9 rounded-full object-cover" unoptimized />
@@ -256,7 +259,7 @@ export default function ConversationListPane({
         {/* La cloche vit ICI sur mobile : cet écran a sa propre barre du
             haut, donc la cloche flottante globale s'y poserait par-dessus
             le « + ». Sur desktop c'est la sidebar qui la porte. */}
-        <div className="md:hidden">
+        <div className="vy-verre rounded-full md:hidden">
           <NotificationBell side="top" />
         </div>
 

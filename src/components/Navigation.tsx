@@ -13,7 +13,7 @@ import { useAuth } from "@/context/AuthContext";
 import { estSurfacePublique, estVitrinePure, estVitrineSiAnonyme } from "@/lib/surfacesPubliques";
 import NotificationBell from "@/components/NotificationBell";
 import NavOrb from "@/components/NavOrb";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 type TabItem = {
   href: string;
@@ -129,6 +129,14 @@ export default function Navigation() {
     document.addEventListener("scroll", surDefilement, { capture: true, passive: true });
     return () => document.removeEventListener("scroll", surDefilement, { capture: true });
   }, [pathname]);
+  /* Changer d'onglet repart du HAUT de la page (Louis, 2026-10-12). Sans ça,
+     la nouvelle page héritait de la position de défilement de l'ancienne :
+     le titre arrivait remonté de quelques dizaines de pixels, pile sous la
+     photo de profil et la cloche, qui elles réapparaissent à chaque page. */
+  useLayoutEffect(() => {
+    if (window.location.hash) return;
+    window.scrollTo(0, 0);
+  }, [pathname]);
   const enteteCache = defile.chemin === pathname && defile.bas;
   const styleEntete: React.CSSProperties = {
     paddingTop: "calc(env(safe-area-inset-top) + 8px)",
@@ -207,8 +215,11 @@ export default function Navigation() {
             {/* Icônes seules (Louis, 2026-10-11) : plus aucun libellé sous les
                 onglets. Le nom reste dans `aria-label` du lien. L'onglet
                 actif se reconnaît à sa couleur et à la pastille de verre. */}
+            {/* La pastille GLISSE d'un onglet à l'autre (Louis, 2026-10-12) :
+                un seul élément partagé par `layoutId`, framer anime sa place. */}
             {isActive && (
-              <span aria-hidden className="absolute h-10 w-12 rounded-full"
+              <motion.span aria-hidden layoutId="mobile-pill" className="absolute h-10 w-12 rounded-full"
+                transition={{ type: "spring", stiffness: 420, damping: 34 }}
                 style={{ background: "rgba(var(--accent-rgb),0.14)" }} />
             )}
             <div className="relative">
