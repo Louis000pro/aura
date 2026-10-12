@@ -45,7 +45,12 @@ export async function POST(req: Request) {
   if (!garde.ok) return garde.reponse;
 
   try {
-    const { description, category, difficulty, muscles, nutritionNote, materiel } = await req.json();
+    const { description, category, difficulty, muscles, nutritionNote, materiel, demande, profil } = await req.json();
+    /* Les mots EXACTS de la personne (Louis, 2026-10-12). La description
+       est reformulée en amont et perdait le détail qui compte : « j'ai un
+       haltère de 5 kg, je veux faire les bras » devenait « séance bras ».
+       On les garde, bornés, et ils priment sur la reformulation. */
+    const demandeTxt = typeof demande === "string" ? demande.trim().slice(0, 400) : "";
     if (!description?.trim())
       return NextResponse.json({ error: "description manquante" }, { status: 400 });
     if (String(description).length > PLAFONDS.texteCourtChars)
@@ -54,7 +59,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Clé API manquante" }, { status: 500 });
 
     // Extraire la durée cible si mentionnée dans la description (ex: "20min", "20 minutes")
-    const durationMatch = description.match(/(\d+)\s*min/i);
+    const durationMatch = description.match(/(\d+)\s*min/i) ?? demandeTxt.match(/(\d+)\s*min/i);
     const targetMinutes = durationMatch ? parseInt(durationMatch[1]) : null;
     const targetSeconds = targetMinutes ? targetMinutes * 60 : null;
 
@@ -97,6 +102,11 @@ MATERIEL (STRICT) : a la MAISON, SANS AUCUN materiel, poids du corps UNIQUEMENT.
     const materielFaits: string[] = Array.isArray(materiel)
       ? materiel.filter((m: unknown): m is string => typeof m === "string" && !!m.trim()).slice(0, 5).map((m: string) => m.trim().slice(0, 120))
       : [];
+    // Le matériel dit DANS ce message compte tout de suite : la mémoire ne
+    // le retient qu'après la réponse, donc trop tard pour cette séance-ci.
+    if (/halt[èe]re|kettlebell|[ée]lastique|\d+\s*kg\b|barre|banc|corde/i.test(demandeTxt)) {
+      materielFaits.unshift(demandeTxt.slice(0, 160));
+    }
     const materielTxt = materielFaits.join(" ; ");
     // Elle a dit avoir des haltères : la maison « au poids du corps » s'ouvre
     // aux haltères, sinon la liste fermée les retirerait.
@@ -109,6 +119,28 @@ MATERIEL (STRICT) : a la MAISON avec des HALTERES. Tu peux utiliser des halteres
       ? `
 MATERIEL QUE LA PERSONNE A DIT AVOIR : ${materielTxt}.
 Adapte les exercices ET les charges a ce materiel precis. Exemple : un seul haltere de 5 kg → charge legere, exercices unilateraux possibles, plus de repetitions ou un tempo lent ; precise le poids a utiliser dans le "tip" quand c est utile. N utilise jamais un materiel qu elle n a pas.`
+      : "";
+
+    /* Ce que la personne a répondu à l'inscription. Le générateur composait
+       pour un inconnu : un débutant de 55 ans et une sportive de 22 ans
+       recevaient la même séance. Rien n'est inventé : un champ vide n'est
+       pas écrit. */
+    const p = (profil && typeof profil === "object") ? profil as Record<string, unknown> : {};
+    const txt = (v: unknown) => (typeof v === "string" || typeof v === "number") && String(v).trim() ? String(v).trim().slice(0, 40) : null;
+    const objectifs = Array.isArray(p.objectifs) ? (p.objectifs as unknown[]).map(txt).filter(Boolean).slice(0, 4).join(", ") : null;
+    const lignesProfil = [
+      txt(p.age) && `age ${txt(p.age)} ans`,
+      txt(p.genre) && `genre ${txt(p.genre)}`,
+      txt(p.poids) && `poids ${txt(p.poids)} kg`,
+      txt(p.taille) && `taille ${txt(p.taille)} cm`,
+      txt(p.niveau) && `niveau ${txt(p.niveau)}`,
+      objectifs && `objectifs ${objectifs}`,
+      txt(p.seancesSemaine) && `${txt(p.seancesSemaine)} seances par semaine`,
+    ].filter(Boolean);
+    const profilConstraint = lignesProfil.length
+      ? `
+PROFIL DE LA PERSONNE (ses reponses a l inscription) : ${lignesProfil.join(" ; ")}.
+Adapte le choix des exercices, le volume, les repetitions, les repos et les charges a ce profil et a ses objectifs. Ne le cite pas dans le titre.`
       : "";
 
     // Bonus nutrition OPTIONNEL : présent seulement si le caller a un signal clair
@@ -138,10 +170,11 @@ Tu PEUX t en servir pour un LEGER ajustement (intensite, volume ou duree) ou pou
         {
           role: "user",
           content: `Genere une seance d entrainement basee sur :
-Description : "${description}"
+Description : "${description}"${demandeTxt ? `
+Ses mots exacts (ils priment sur la description) : "${demandeTxt}"` : ""}
 Categorie : ${category ?? "force"}
 Niveau : ${difficulty ?? "Intermediaire"}${Array.isArray(muscles) && muscles.length > 0 ? `
-Muscles cibles par l utilisateur : ${muscles.join(", ")}, la seance DOIT travailler prioritairement ces muscles.` : ""}${equipmentConstraint}${materielConstraint}${nutritionConstraint}
+Muscles cibles par l utilisateur : ${muscles.join(", ")}, la seance DOIT travailler prioritairement ces muscles.` : ""}${equipmentConstraint}${materielConstraint}${profilConstraint}${nutritionConstraint}
 ${durationConstraint}
 
 Retourne un JSON avec exactement ce format :

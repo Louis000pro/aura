@@ -312,6 +312,7 @@ Profil de ${ctx.pseudo || pseudo || "l’utilisateur"} :
 - Objectifs : ${goalsText}
 - Niveau : ${ctx.level || "non précisé"} | ${ctx.sessionsPerWeek || "?"} séances/semaine
 - Alimentation : régime ${ctx.diet || "non précisé"}, ${ctx.mealsPerDay || "?"} repas/jour
+Ces informations, c’est ce qu’il t’a répondu à son inscription : tu les CONNAIS, ne les lui redemande jamais. Sers-t’en dans chaque conseil (son âge, son niveau, son objectif et son rythme changent ce que tu proposes). S’il te demande ce que tu sais de lui, ou ce que tu en penses, résume-les simplement et tire une conclusion utile et bienveillante : ce que son objectif et son rythme impliquent concrètement, et par quoi commencer. Jamais de jugement sur son corps, jamais de diagnostic médical. Un champ marqué « ? » ou « non précisé », tu ne l’inventes pas.
 ${statsBlock}${richBlock}`;
 }
 

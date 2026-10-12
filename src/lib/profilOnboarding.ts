@@ -82,6 +82,9 @@ export function profilComplet(d: OnboardingData): boolean {
 
 /** Écrit les réponses dans `profiles` et rend l'état de complétude.
  *  Écrit aussi la copie locale que le coach relit (`vaiiya_ob_<id>`). */
+/** Émis après chaque enregistrement des réponses du questionnaire. */
+export const EVT_PROFIL = "vaiiya:profil-mis-a-jour";
+
 export async function enregistrerProfil(userId: string, d: OnboardingData): Promise<boolean> {
   // Copie côté client : le coach IA et l'écran Profil la relisent.
   try { localStorage.setItem(`vaiiya_ob_${userId}`, JSON.stringify(d)); } catch { /* ignore */ }
@@ -107,6 +110,9 @@ export async function enregistrerProfil(userId: string, d: OnboardingData): Prom
   };
   const { data: maj } = await supabase.from("profiles").update(reponses).eq("id", userId).select("id");
   if (!maj?.length) await supabase.from("profiles").insert({ id: userId, ...reponses });
+  /* Le Guide relit le profil tout de suite : sans ce signal, une
+     conversation ouverte avant la fin du questionnaire gardait l'ancien. */
+  if (typeof window !== "undefined") window.dispatchEvent(new Event(EVT_PROFIL));
 
   /* ⚠️ Le poids saisi ici est AUSSI une pesée du jour. Cette écriture
      vivait dans le formulaire des Paramètres, donc le même poids donné à

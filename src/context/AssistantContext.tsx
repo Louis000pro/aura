@@ -13,6 +13,7 @@
    PAS appliqués ici (ils restent gérés par la page coach historique).
    ════════════════════════════════════════════════════════════════════ */
 
+import { EVT_PROFIL } from "@/lib/profilOnboarding";
 import { lireCalendrier } from "@/lib/joursEntrainement";
 import {
   createContext, useCallback, useContext, useEffect, useMemo, useRef, useState,
@@ -553,6 +554,13 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
    *  retenu en mémoire sous « materiel ». Envoyé à la génération de séance. */
   const materielDit = () =>
     memoriesRef.current.filter((mm) => normalizeCategory(mm.category) === "materiel").map((mm) => mm.content);
+  /** Ce que le générateur de séance doit savoir de la personne : ses
+   *  réponses d'inscription. Sans elles, il composait pour un inconnu. */
+  const profilPourSeance = () => {
+    const u = userContextRef.current;
+    if (!u || u.skipped) return null;
+    return { age: u.age, genre: u.gender, poids: u.weight, taille: u.height, niveau: u.level, objectifs: u.goals, seancesSemaine: u.sessionsPerWeek };
+  };
   const dataLoadedRef = useRef(false);
   /* Le chargement du contexte est PARTAGÉ, pas seulement marqué comme
      démarré. `open()` le lance, `sendMessage` l'attend : sans cette
@@ -569,6 +577,15 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
     dataLoadedRef.current = false;
     chargementRef.current = null;
   }, [user?.id]);
+
+  /* Les réponses du questionnaire viennent de changer : le contexte se
+     relira au prochain message, pour que le Guide sache tout de suite ce
+     qu'on vient de lui dire (âge, objectifs, niveau, rythme…). */
+  useEffect(() => {
+    const relire = () => { dataLoadedRef.current = false; chargementRef.current = null; };
+    window.addEventListener(EVT_PROFIL, relire);
+    return () => window.removeEventListener(EVT_PROFIL, relire);
+  }, []);
 
   /* La demande mise en attente parce qu'il nous manquait le lieu. Elle repart
      dès qu'on l'apprend, PAR N'IMPORTE QUEL CHEMIN : la puce touchée, mais
@@ -660,7 +677,8 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       .eq("id", user.id)
       .maybeSingle();
 
-    if (profile && (profile.onboarding_age || profile.onboarding_weight || profile.onboarding_level)) {
+    const aRepondu = !!profile && Object.values(profile).some((v) => v !== null && v !== "" && !(Array.isArray(v) && v.length === 0));
+    if (aRepondu && profile) {
       userContextRef.current = {
         pseudo: user.pseudo,
         age: profile.onboarding_age?.toString(),
@@ -1781,7 +1799,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       const genRes = await aiFetch("/api/workout/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ description, category, difficulty, muscles, nutritionNote, materiel: materielDit() }),
+        body: JSON.stringify({ description, category, difficulty, muscles, nutritionNote, materiel: materielDit(), demande: text, profil: profilPourSeance() }),
       });
       if (!genRes.ok) throw new Error("generation HTTP " + genRes.status);
       const data = await genRes.json();
@@ -2097,7 +2115,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       const genRes = await aiFetch("/api/workout/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ description, category, difficulty, muscles, nutritionNote, materiel: materielDit() }),
+        body: JSON.stringify({ description, category, difficulty, muscles, nutritionNote, materiel: materielDit(), demande: text, profil: profilPourSeance() }),
       });
       if (!genRes.ok) throw new Error("generation HTTP " + genRes.status);
       const data = await genRes.json();
