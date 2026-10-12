@@ -397,7 +397,7 @@ export default function Navigation() {
       {user && !isLoading && !surfacePublique && (
       <nav
         className="mobile-nav fixed left-3 right-3 z-50 md:hidden"
-        style={{ willChange: "transform", bottom: "calc(10px + env(safe-area-inset-bottom))" }}
+        style={{ bottom: "calc(10px + env(safe-area-inset-bottom))" }}
       >
         {/* Le verre (essai du 2026-10-10) : la barre devient une capsule qui
             flotte, et l'écran défile dessous au lieu de s'arrêter sur un

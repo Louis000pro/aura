@@ -3145,20 +3145,14 @@ export default function ProgressionPage() {
   const improDefaultPlace: ImproPlace = lieu.location === "salle" ? "salle" : "maison";
   const improDefaultHalteres = lieu.equip === "halteres";
 
-  /* En-tête : la date du jour — cette page vit au présent */
-  const dateLabel = useMemo(() => {
-    const s = new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
-    return s.charAt(0).toUpperCase() + s.slice(1);
-  }, []);
-
   return (
-    <div className="min-h-screen flex flex-col px-5 pt-[calc(env(safe-area-inset-top)+16px)] pb-36 md:pl-28 md:pr-8 md:pt-12 md:pb-16 relative overflow-x-hidden">
+    <div className="min-h-screen flex flex-col px-5 pt-[calc(env(safe-area-inset-top)+28px)] pb-36 md:pl-28 md:pr-8 md:pt-12 md:pb-16 relative overflow-x-hidden">
       <div className="w-full max-w-xl flex flex-col">
 
         {/* ── En-tête : date + titre ── */}
         <motion.div
           initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
-          className="mb-3.5 flex items-baseline justify-between gap-3"
+          className="mb-4"
         >
           <h1 className="text-[34px] leading-none" style={{ color: "var(--text-1)", fontWeight: 800, fontVariationSettings: "var(--w-voix)" }}>
             <em className="not-italic" style={{
@@ -3168,9 +3162,6 @@ export default function ProgressionPage() {
               display: "inline-block", paddingRight: "0.14em",  // même traitement que « nutrition »
             }}>Entraînement</em>
           </h1>
-          <p className="vy-label flex-shrink-0 text-right" style={{ color: "var(--text-3)" }}>
-            {dateLabel}
-          </p>
         </motion.div>
 
         {/* « Mon programme » n'est plus en tête d'Entraînement (Louis,
