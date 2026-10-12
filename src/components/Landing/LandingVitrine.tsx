@@ -17,20 +17,21 @@
  *
  * ⚠️ LE « BUG À L'ENTRÉE » : rien ne doit apparaître puis disparaître.
  *   · L'intro au logo (`SplashIntro`) ne joue plus sur une page publique.
- *   · Le héros entre en CSS pur, dès le premier octet de HTML.
+ *   · Le héros (titre géant, puis Nora et Sasha) entre en CSS pur, dès le
+ *     premier octet de HTML. Maquette : `docs/maquettes/vitrine-nora-sasha.html`.
  *   · `useRevelation` ne cache que ce qui est SOUS le pli quand il s'arme :
  *     ce qu'on voit au premier affichage ne clignote jamais.
  *
  * ⚠️ POSITIONNEMENT PUBLIC (`docs/positionnement-public-vaiiya.md`) : aucun
  * chiffre d'utilisateurs, aucun faux avis, aucune promesse sur le corps,
- * aucun « abonne-toi ». Le téléphone, les bulles et le parcours décrivent
+ * aucun « abonne-toi ». La conversation et le parcours décrivent
  * l'app, pas une personne réelle.
  */
 
 import { useEffect, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, Camera, Check, ChefHat, Dumbbell, Flame, MessageCircle, Sparkles, Store, Trophy } from "lucide-react";
+import { ArrowRight, Camera, Check, ChefHat, Dumbbell, MessageCircle, Store, Trophy } from "lucide-react";
 import AnimationExercice from "@/components/exercices/AnimationExercice";
 import { resolveGuide } from "@/lib/exerciseGuides";
 import { RANGS } from "@/lib/aura";
@@ -97,91 +98,30 @@ function Surtitre({ children }: { children: React.ReactNode }) {
 
 /* ═══════════════ 1 · LE HÉROS ═══════════════ */
 
-const MOTS_TITRE = ["Deviens", "la", "personne"];
-
-function Telephone() {
-  return (
-    <div className={s.scene}>
-      <div className={s.telephone} aria-hidden>
-        <div className={s.ecran}>
-          <span className={s.encoche} />
-          <div className={s.ecranHaut}>
-            <span className={s.avatarGuide}>
-              <Image src="/guides/nora-buste-v1.webp" alt="" width={80} height={100} priority />
-            </span>
-            <div>
-              <b>Prête pour ta séance&nbsp;?</b>
-              <small>Ton Guide t’a préparé la suite</small>
-            </div>
-          </div>
-
-          <div className={s.seanceJour}>
-            <Image src="/entrainement/cat-fullbody.webp" alt="" fill sizes="280px" priority className="object-cover" />
-            <div className={s.seanceInfo}>
-              <small>Aujourd’hui</small>
-              <b>Full Body</b>
-              <small><span className="vy-nombre">25</span> min · <span className="vy-nombre">6</span> exercices</small>
-              <span className={s.seanceBouton}>Lancer la séance <ArrowRight size={12} strokeWidth={3} /></span>
-            </div>
-          </div>
-
-          <div className={s.bento}>
-            <div className={s.tuile}>
-              <small>Ta série</small>
-              <b className="vy-nombre" style={{ color: "#E8620C", fontWeight: 800 }}>21</b>
-              <div className={s.jours}>
-                {[1, 1, 1, 1, 1, 0, 0].map((f, i) => <i key={i} data-fait={f ? "" : undefined} />)}
-              </div>
-            </div>
-            <div className={s.tuile} style={{ alignItems: "center" }}>
-              <Image src="/rangs/rank-03-or.png" alt="" width={46} height={46} style={{ width: 46, height: 46, objectFit: "contain" }} />
-              <small style={{ color: "#1C1626", fontWeight: 800 }}>Rang Or</small>
-            </div>
-            <div className={s.tuile} style={{ gridColumn: "span 2", flexDirection: "row", alignItems: "center", gap: 10 }}>
-              <div className={s.anneau}>
-                <svg viewBox="0 0 52 52">
-                  <defs>
-                    <linearGradient id="vitrine-anneau" x1="0" x2="1">
-                      <stop offset="0" stopColor="#8B5CF6" />
-                      <stop offset="1" stopColor="#C13BC1" />
-                    </linearGradient>
-                  </defs>
-                  <circle className={s.anneauFond} cx="26" cy="26" r="22" />
-                  <circle className={s.anneauPlein} cx="26" cy="26" r="22" />
-                </svg>
-                <span className="vy-nombre">3/4</span>
-              </div>
-              <div>
-                <small>Missions du jour</small>
-                <b style={{ display: "block", fontSize: 16, fontWeight: 800 }}>Plus qu’un repas</b>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <span className={`${s.bulle} ${s.bulleA}`} aria-hidden>
-        <i style={{ background: "#FFF0E2", color: "#E8620C" }}><Flame size={16} /></i>
-        <span><b className="vy-nombre">21</b> jours de suite</span>
-      </span>
-      <span className={`${s.bulle} ${s.bulleB}`} aria-hidden>
-        <i style={{ background: "#F1EBFF", color: "#7C4FE0" }}><Sparkles size={16} /></i>
-        <span><b className="vy-nombre" style={{ color: "#6D4BD6" }}>+30</b> EXP</span>
-      </span>
-      <span className={`${s.bulle} ${s.bulleC}`} aria-hidden>
-        <i style={{ background: "#E3FAF2", color: "#0B8A68" }}><Check size={16} strokeWidth={3} /></i>
-        <span>Séance faite</span>
-      </span>
-    </div>
-  );
+/* Les deux lignes du titre s'écartent un peu au défilement. Elles partent
+   de leur place : rien n'est déplacé au premier affichage. */
+function useTitreQuiSouvre(titre: React.RefObject<HTMLHeadingElement | null>) {
+  useEffect(() => {
+    const h1 = titre.current;
+    if (!h1 || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const lignes = Array.from(h1.querySelectorAll<HTMLElement>("[data-sens]"));
+    let attente = false;
+    const bouger = () => {
+      attente = false;
+      const k = Math.min(window.scrollY / window.innerHeight, 1);
+      for (const l of lignes) l.style.transform = `translate3d(${Number(l.dataset.sens) * k * 18}vw,0,0)`;
+    };
+    const auDefilement = () => { if (!attente) { attente = true; requestAnimationFrame(bouger); } };
+    window.addEventListener("scroll", auDefilement, { passive: true });
+    return () => window.removeEventListener("scroll", auDefilement);
+  }, [titre]);
 }
 
 function Heros() {
+  const titre = useRef<HTMLHeadingElement>(null);
+  useTitreQuiSouvre(titre);
   return (
     <section className={s.heros}>
-      <span className={`${s.halo} ${s.haloA}`} aria-hidden />
-      <span className={`${s.halo} ${s.haloB}`} aria-hidden />
-
       <nav className={s.nav} aria-label="Vaiiya">
         <span className={s.marque}>
           <Image src="/marque/logo-degrade.png" alt="" width={34} height={34} priority />
@@ -193,32 +133,27 @@ function Heros() {
         </Link>
       </nav>
 
-      <div className={`${s.wrap} ${s.herosGrille}`}>
-        <div>
-          <span className={s.puce} style={{ animation: "none" }}>
-            <i aria-hidden>✦</i>
-            Entraînement, nutrition et Guide IA, en français
-          </span>
-          <h1 className={s.h1}>
-            {MOTS_TITRE.map((m, i) => (
-              <span key={m} className={s.mot} style={{ animationDelay: `${i * 0.08}s` }}>{m}&nbsp;</span>
-            ))}
-            <span className={`${s.mot} ${s.accent}`} style={{ animationDelay: ".26s" }}>qui y va.</span>
-          </h1>
-          <p className={s.herosTexte}>
-            Tes séances, tes repas et un Guide qui te connaît, réunis dans une seule appli.
-            Jusqu’au jour où t’entraîner ne demande plus d’effort pour commencer.
-          </p>
-          <div className={s.herosActions}>
-            <Bouton label="Commencer gratuitement" />
-            <a href={`#${DISCOVER_ANCHOR}`} className={s.lienDoux}>Voir ce qu’il y a dedans</a>
-          </div>
-          <p className={s.herosNote}>
-            <span>Gratuit, sans carte bancaire</span>
-            <span>Première séance en <b className="vy-nombre">12</b> min</span>
-          </p>
+      <h1 ref={titre} className={s.h1}>
+        <span data-sens="-1"><span className={s.mot}>Deviens</span></span>
+        <span data-sens="1"><span className={s.mot} style={{ animationDelay: ".1s" }}>qui y va<em className={s.point}>.</em></span></span>
+      </h1>
+      <p className={s.herosTexte}>
+        Tes séances, tes repas et <b>un Guide qui te connaît</b>, dans une seule appli.
+        Tu choisis Nora ou Sasha, et tu y vas.
+      </p>
+      <div className={s.herosActions}>
+        <Bouton label="Commencer gratuitement" />
+        <a href={`#${DISCOVER_ANCHOR}`} className={s.lienDoux}>Voir ce qu’il y a dedans</a>
+      </div>
+
+      <div className={s.duoHeros}>
+        <div className={`${s.guideHeros} ${s.noraHeros}`}>
+          <Image src="/guides/nora-master-v1.webp" alt="Nora, Guide Vaiiya" fill sizes="(min-width: 960px) 520px, 80vw" priority />
         </div>
-        <Telephone />
+        <div className={`${s.guideHeros} ${s.sashaHeros}`}>
+          <Image src="/guides/sasha-master-v1.webp" alt="Sasha, Guide Vaiiya" fill sizes="(min-width: 960px) 520px, 80vw" priority />
+        </div>
+        <div className={s.prenoms} aria-hidden><span>Nora</span><span>Sasha</span></div>
       </div>
     </section>
   );
