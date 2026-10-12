@@ -4,6 +4,7 @@ import { createContext, useContext, useState, useEffect, useRef } from "react";
 import { createClient } from "@/lib/supabase";
 import { fetchAuth } from "@/lib/fetchAuth";
 import type { Session, User as SBUser } from "@supabase/supabase-js";
+import { retenirCompte } from "@/lib/comptesConnus";
 
 export type User = {
   id: string;
@@ -259,6 +260,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { data } = await supabase.auth.getSession();
     if (data.session) enrichUser(data.session.user);
   };
+
+  /* Retient le compte sur cet appareil : l'écran de connexion montrera sa
+     photo quand on retapera son email ou son pseudo (voir comptesConnus). */
+  useEffect(() => {
+    if (user) retenirCompte({ email: user.email, pseudo: user.pseudo, avatar: user.avatar });
+  }, [user]);
 
   return (
     <AuthContext.Provider value={{

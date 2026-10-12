@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Eye, EyeOff,
@@ -12,6 +11,7 @@ import {
 import { useAuth } from "@/context/AuthContext";
 import { destinationDepuisUrl } from "@/lib/destinationInterne";
 import s from "./auth.module.css";
+import { compteConnu } from "@/lib/comptesConnus";
 
 /* Système « D » : le bouton d'action principal est TOUJOURS violet vers magenta,
    jamais violet vers or. Même couleur que le CTA de la page de présentation. */
@@ -24,6 +24,15 @@ const ENCRE_2 = "#5C5468";
 const ENCRE_3 = "#7B7389";
 const LIEN = "#5B3FC4";
 const DEGRADE_LOGO = "linear-gradient(100deg,#A66CF4,#E68FC6 55%,#FEB86E)";
+/* Les champs en verre (Louis, 2026-10-12) : pas de liseré coloré, une
+   surface claire et translucide avec un reflet en haut. */
+const VERRE = {
+  background: "rgba(255,255,255,0.58)",
+  border: "1px solid rgba(255,255,255,0.95)",
+  boxShadow: "inset 0 1px 0 rgba(255,255,255,0.95), 0 6px 18px -14px rgba(90,40,140,0.4)",
+  backdropFilter: "blur(14px) saturate(160%)",
+  WebkitBackdropFilter: "blur(14px) saturate(160%)",
+} as const;
 
 /* ── Champ input ── */
 function Field({
@@ -43,12 +52,12 @@ function Field({
        ignorait en silence et les champs n'avaient aucun contour. */
     <div className="relative flex items-center gap-3 px-4 py-3.5 rounded-2xl"
       style={{
-        border: "1.5px solid transparent",
-        background: focused
-          ? `linear-gradient(#fff,#fff) padding-box, ${DEGRADE_LOGO} border-box`
-          : "linear-gradient(#fff,#fff) padding-box, linear-gradient(rgba(28,22,38,0.1),rgba(28,22,38,0.1)) border-box",
-        boxShadow: focused ? "0 6px 18px -10px rgba(139,92,246,0.5)" : "none",
-        transition: "box-shadow 0.15s ease",
+        ...VERRE,
+        background: focused ? "rgba(255,255,255,0.86)" : VERRE.background,
+        boxShadow: focused
+          ? "inset 0 1px 0 rgba(255,255,255,0.95), 0 0 0 4px rgba(255,255,255,0.55), 0 10px 24px -14px rgba(90,40,140,0.45)"
+          : VERRE.boxShadow,
+        transition: "background 0.15s ease, box-shadow 0.15s ease",
       }}
     >
       <span style={{ color: focused ? "#8B5CF6" : ENCRE_3, transition: "color 0.15s ease" }}>
@@ -402,53 +411,25 @@ export default function AuthPage() {
       ? null
       : "Ta série t’attend là où tu l’as laissée.";
 
+  /* Déjà connecté sur cet appareil ? Sa photo au lieu d'une initiale. */
+  const connu = mode === "login" && etapeConnexion === 2 ? compteConnu(email) : null;
+
   const changerMode = (m: "login" | "signup") => {
     setMode(m); setError(null); setEtapeConnexion(1); setForgotMode(false);
   };
-
-  const bulles = (
-    <>
-      <span className={`${s.bulle} ${s.b1}`}>
-        <i style={{ background: "#FFF0E2" }}>🔥</i>
-        <span><b className="vy-nombre">21</b> jours</span>
-      </span>
-      <span className={`${s.bulle} ${s.b2}`}>
-        <Image src="/rangs/rank-03-or.png" alt="" width={26} height={26} />
-        <span>Rang <b>Or</b></span>
-      </span>
-      <span className={`${s.bulle} ${s.b3}`}>
-        <i style={{ background: "#F1EBFF", color: "#7C4FE0" }}>✦</i>
-        <span>Séance faite <b style={{ color: "#0B8A68" }}>✓</b></span>
-      </span>
-    </>
-  );
 
   return (
     <div className={s.page}>
       <div className={s.soleil} aria-hidden />
 
-      {/* ── Téléphone : le ciel, le logo et « VAIIYA » en blanc ── */}
-      <div className={s.ciel} data-court={mode === "signup" ? "" : undefined} aria-hidden>
-        {mode === "login" && bulles}
-        <div className={s.marque}>
-          <Image src="/marque/logo-degrade.png" alt="" width={mode === "signup" ? 46 : 64} height={mode === "signup" ? 46 : 64} priority />
-          <span className={s.mot}>VAIIYA</span>
-        </div>
-      </div>
-
       {/* ── Ordinateur : la phrase et les signes du chemin ── */}
       <div className={s.cote}>
-        <div className={s.coteMarque}>
-          <Image src="/marque/logo-degrade.png" alt="" width={34} height={34} priority style={{ filter: "saturate(1.35) contrast(1.1)" }} />
-          <span className={s.mot}>Vaiiya</span>
-        </div>
         <h1 className={s.coteTitre}>{titre}</h1>
         <p className={s.coteSous}>
           {mode === "signup"
             ? "Tes séances, tes repas et un assistant qui te connaît, réunis dans une seule appli. Gratuit, sans carte bancaire."
             : "Ta série, ton rang et ta séance du jour t’attendent là où tu les as laissés."}
         </p>
-        <div className={s.rangee} aria-hidden>{bulles}</div>
       </div>
 
       <div className={s.zone}>
@@ -545,13 +526,20 @@ export default function AuthPage() {
           {/* À l'étape 2, l'identifiant validé se rappelle en haut, avec la
              porte pour le corriger. */}
           {mode === "login" && etapeConnexion === 2 ? (
-            <div className="flex items-center gap-2.5 rounded-2xl py-2 pl-2 pr-3"
-              style={{ background:"#fff", border:"1px solid rgba(28,22,38,0.08)" }}>
-              <span className="w-8 h-8 rounded-full grid place-items-center text-[13px] font-extrabold text-white flex-shrink-0"
-                style={{ background:DEGRADE_LOGO }}>
-                {(email.trim()[0] ?? "?").toUpperCase()}
+            <div className="flex items-center gap-3 rounded-2xl py-2 pl-2 pr-3.5" style={VERRE}>
+              {connu?.avatar ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={connu.avatar} alt="" className="w-10 h-10 rounded-full object-cover flex-shrink-0" />
+              ) : (
+                <span className="w-10 h-10 rounded-full grid place-items-center text-[16px] font-extrabold text-white flex-shrink-0"
+                  style={{ background:DEGRADE_LOGO }}>
+                  {((connu?.pseudo ?? email.trim())[0] ?? "?").toUpperCase()}
+                </span>
+              )}
+              <span className="min-w-0 flex flex-col">
+                {connu?.pseudo && <span className="text-[16px] font-bold truncate" style={{ color:ENCRE }}>{connu.pseudo}</span>}
+                <span className={`truncate ${connu?.pseudo ? "text-[13px]" : "text-[16px] font-semibold"}`} style={{ color: connu?.pseudo ? ENCRE_3 : ENCRE }}>{email.trim()}</span>
               </span>
-              <span className="text-[13px] font-semibold truncate" style={{ color:ENCRE }}>{email.trim()}</span>
               <button type="button"
                 onClick={() => { setEtapeConnexion(1); setPassword(""); setError(null); setForgotMode(false); }}
                 className="ml-auto text-[13px] font-bold cursor-pointer flex-shrink-0" style={{ color:LIEN }}>
@@ -565,7 +553,7 @@ export default function AuthPage() {
                 whileTap={{ scale:0.97 }}
                 onClick={handleGoogle} disabled={googleLoading}
                 className="w-full flex items-center justify-center gap-3 py-3.5 rounded-2xl text-[16px] font-semibold cursor-pointer"
-                style={{ background:"#fff",border:"1px solid rgba(28,22,38,0.1)",color:ENCRE,boxShadow:"0 6px 16px -10px rgba(60,30,90,0.35)" }}>
+                style={{ ...VERRE, color:ENCRE }}>
                 {googleLoading ? (
                   <motion.div className="w-4 h-4 rounded-full border-2" style={{ borderColor:"rgba(139,92,246,0.2)",borderTopColor:"#8B5CF6" }}
                     animate={{ rotate:360 }} transition={{ duration:0.8,repeat:Infinity,ease:"linear" }} />
@@ -714,7 +702,8 @@ export default function AuthPage() {
             <p className="text-center text-[13px] font-semibold" style={{ color:ENCRE_2 }}>
               {mode === "login" ? "Pas encore de compte ? " : "Déjà un compte ? "}
               <button type="button" onClick={() => changerMode(mode === "login" ? "signup" : "login")}
-                className={`${s.grad} font-extrabold cursor-pointer`}>
+                className="font-extrabold cursor-pointer underline underline-offset-4 decoration-2"
+                style={{ color:ENCRE, textDecorationColor:"rgba(28,22,38,0.25)" }}>
                 {mode === "login" ? "Créer un compte" : "Se connecter"}
               </button>
             </p>

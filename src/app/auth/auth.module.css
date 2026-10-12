@@ -23,105 +23,42 @@
   background: radial-gradient(closest-side, rgba(255, 200, 120, .75), rgba(255, 170, 160, .25) 60%, transparent 74%);
 }
 
-/* ── Le ciel : le logo et les signes de ce qu'on vient chercher ── */
-.ciel {
-  position: relative;
-  flex: none;
-  height: 260px;
-  padding-top: env(safe-area-inset-top, 0px);
-  display: grid;
-  place-items: center;
-}
-.ciel[data-court] { height: 170px; }
-.marque {
-  position: relative;
-  z-index: 2;
-  display: grid;
-  justify-items: center;
-  gap: 8px;
-  margin-top: 24px;
-}
-.marque img { filter: saturate(1.35) contrast(1.1); }
-/* « VAIIYA » en blanc (demande de Louis) : une ombre douce aux couleurs du
-   ciel le détache du fond pâle sans le cerner. */
-.mot {
-  font-size: 16px;
-  font-weight: 600;
-  letter-spacing: .34em;
-  padding-left: .34em;
-  color: #fff;
-  text-shadow: 0 1px 2px rgba(120, 60, 140, .35), 0 2px 16px rgba(170, 90, 160, .45);
-}
-
-.bulle {
-  position: absolute;
-  z-index: 3;
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  padding: 6px 11px 6px 6px;
-  border-radius: 14px;
-  background: rgba(255, 255, 255, .86);
-  -webkit-backdrop-filter: blur(10px);
-  backdrop-filter: blur(10px);
-  box-shadow: 0 10px 24px -12px rgba(60, 30, 10, .45);
-  font-size: 13px;
-  font-weight: 650;
-  white-space: nowrap;
-  animation: flotte 6s ease-in-out infinite;
-}
-.bulle i {
-  font-style: normal;
-  width: 26px;
-  height: 26px;
-  border-radius: 9px;
-  display: grid;
-  place-items: center;
-  font-size: 13px;
-}
-.bulle img { object-fit: contain; }
-.b1 { left: 14px; top: calc(env(safe-area-inset-top, 0px) + 40px); }
-.b2 { right: 12px; top: calc(env(safe-area-inset-top, 0px) + 92px); animation-delay: -2s; }
-.b3 { right: 18px; top: calc(env(safe-area-inset-top, 0px) + 206px); animation-delay: -4s; }
-@keyframes flotte {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-5px); }
-}
-
 /* Le texte du côté gauche, sur ordinateur seulement. */
 .cote { display: none; }
 
 /* ── La carte de verre ── */
+/* Plus de logo ni de bulles (Louis, 2026-10-12) : le dégradé seul, et la
+   carte, plus grande, centrée dans l'écran. */
 .zone {
   position: relative;
   z-index: 2;
   flex: 1;
   display: flex;
+  align-items: center;
   justify-content: center;
-  padding: 0 12px calc(env(safe-area-inset-bottom, 0px) + 12px);
+  padding: calc(env(safe-area-inset-top, 0px) + 24px) 12px calc(env(safe-area-inset-bottom, 0px) + 24px);
 }
 .carte {
   position: relative;
   width: 100%;
-  max-width: 420px;
-  align-self: flex-start;
+  max-width: 460px;
   overflow: hidden;
-  padding: 24px 20px 20px;
-  border-radius: 30px;
-  background: rgba(255, 255, 255, .74);
+  padding: 34px 22px 24px;
+  border-radius: 32px;
+  background: rgba(255, 255, 255, .6);
   -webkit-backdrop-filter: blur(18px);
   backdrop-filter: blur(18px);
   border: 1px solid rgba(255, 255, 255, .92);
   box-shadow: 0 24px 50px -30px rgba(90, 40, 140, .5);
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 14px;
 }
 .titre {
   margin: 0;
   text-align: center;
-  font-size: 34px;
-  line-height: 1;
+  font-size: 40px;
+  line-height: .98;
   font-weight: 900;
   font-variation-settings: var(--w-voix);
   letter-spacing: -.02em;
@@ -141,11 +78,7 @@
   color: transparent;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .bulle { animation: none; }
-}
-
-/* ── Ordinateur : le ciel et la phrase à gauche, la carte à droite ── */
+/* ── Ordinateur : la phrase à gauche, la carte à droite ── */
 @media (min-width: 900px) {
   .page {
     display: grid;
@@ -153,7 +86,6 @@
     background: linear-gradient(120deg, #FFE3C8 0%, #FDDDF0 45%, #EFE6FF 100%);
   }
   .soleil { left: 22%; top: -180px; width: 720px; height: 720px; }
-  .ciel { display: none; }
   .cote {
     position: relative;
     z-index: 2;
@@ -163,12 +95,6 @@
     gap: 20px;
     padding: 56px clamp(32px, 6vw, 96px);
   }
-  .coteMarque {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-  .coteMarque .mot { font-size: 20px; letter-spacing: .2em; padding-left: 0; }
   .coteTitre {
     margin: 0;
     font-size: 64px;
@@ -179,9 +105,7 @@
     text-wrap: balance;
   }
   .coteSous { margin: 0; max-width: 36ch; font-size: 16px; line-height: 1.55; color: #5C5468; }
-  .rangee { display: flex; flex-wrap: wrap; gap: 10px; }
-  .rangee .bulle { position: static; animation: none; }
-  .zone { align-items: center; padding: 32px; }
-  .carte { align-self: center; padding: 28px 26px 22px; }
+  .zone { padding: 32px; }
+  .carte { padding: 32px 30px 24px; }
   .titreMobile { display: none; }
 }
