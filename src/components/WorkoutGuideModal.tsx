@@ -8,7 +8,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { X, Pause, Play, ChevronDown, ChevronRight, Check, Plus, Pencil, ArrowLeftRight } from "lucide-react";
 import { createPortal } from "react-dom";
 import { Compteur, ReglageCharge } from "@/components/seance/ReglageCharge";
-import { AssistantSpark, VisageGuide, CelebrationGuide } from "@/components/AssistantMark";
+import { AssistantSpark, VisageGuide, CelebrationGuide, MarqueAssistant } from "@/components/AssistantMark";
 import { voix, type CleVoix } from "@/lib/guides";
 import { useGuideActif } from "@/context/GuideContext";
 import ExerciseGuide from "@/components/ExerciseGuide";
@@ -1740,7 +1740,7 @@ export default function WorkoutGuideModal({
                   className="w-8 h-8 rounded-full flex items-center justify-center cursor-pointer"
                   style={{ background: "rgba(139,92,246,0.16)", border: "1px solid rgba(139,92,246,0.32)" }}
                   aria-label="Poser une question au coach IA">
-                  <AssistantSpark px={15} />
+                  {guide ? <MarqueAssistant guide={guide} px={26} /> : <AssistantSpark px={15} />}
                 </button>
                 {canPause && (
                   <button onClick={togglePause}

@@ -832,14 +832,14 @@ const REPLIQUES = {
     sasha:  "Invite quelqu’un, un maillon chacun son tour. Chaque séance dévoile un bout de l’image. Aucun score, et personne n’est montré du doigt.",
   },
   "visite.repere": {
-    commun: "Ton accueil, tes entraînements, ta nutrition, tes discussions. Et l’étincelle au centre, disponible depuis n’importe quel écran.",
-    nora:   "Ton accueil, tes entraînements, ta nutrition, tes discussions. Et l’étincelle au centre : c’est par là que tu me trouves, depuis n’importe quel écran.",
-    sasha:  "Accueil, entraînements, nutrition, discussions. L’étincelle au centre : c’est par là que tu me trouves, depuis n’importe quel écran.",
+    commun: "Ton accueil, tes entraînements, ta nutrition, tes discussions. Et le bouton au centre de la barre, disponible depuis n’importe quel écran.",
+    nora:   "Ton accueil, tes entraînements, ta nutrition, tes discussions. Et le bouton au centre de la barre : c’est par là que tu me trouves, depuis n’importe quel écran.",
+    sasha:  "Accueil, entraînements, nutrition, discussions. Le bouton au centre de la barre : c’est par là que tu me trouves, depuis n’importe quel écran.",
   },
   "visite.final": {
-    commun: "Commence par ce que tu veux. Si tu ne sais pas, touche l’étincelle et dis-lui simplement ce que tu as envie de faire aujourd’hui.",
-    nora:   "Commence par ce que tu veux. Et si tu ne sais pas, touche l’étincelle et dis-moi simplement ce que tu as envie de faire aujourd’hui.",
-    sasha:  "Commence par ce que tu veux. Si tu ne sais pas, touche l’étincelle et dis-moi ce que tu as envie de faire.",
+    commun: "Commence par ce que tu veux. Si tu ne sais pas, touche le bouton au centre de la barre et dis-lui simplement ce que tu as envie de faire aujourd’hui.",
+    nora:   "Commence par ce que tu veux. Et si tu ne sais pas, touche le bouton au centre de la barre et dis-moi simplement ce que tu as envie de faire aujourd’hui.",
+    sasha:  "Commence par ce que tu veux. Si tu ne sais pas, touche le bouton au centre de la barre et dis-moi ce que tu as envie de faire.",
   },
 
   /* ── Les états vides ──
@@ -1499,7 +1499,7 @@ const TON_COMMUN = `Tu ne te présentes jamais comme un robot ou un assistant, e
    « calme, méthodique, structurée » pour Nora, « direct, dynamique,
    spontané » pour Sasha, c'est-à-dire un biais de genre. Écrit sans
    accord de genre, exprès : la même phrase vaut pour les deux. */
-const TON_GUIDE = `Tu restes toujours dans le positif, avec chaleur, et tu encourages à chaque réponse : tu remarques ce qui avance, même un petit pas, et tu donnes envie de faire le suivant. Tu proposes d’abord, puis tu donnes la raison en une phrase courte. Des phrases simples et claires, sans rallonger pour rallonger.`;
+const TON_GUIDE = `Tu restes toujours dans le positif, avec chaleur, et tu encourages à chaque réponse : tu remarques ce qui avance, même un petit pas, et tu donnes envie de faire le suivant. Tu commences toujours par ce qui est bien dans son idée, avec enthousiasme, puis tu ajoutes la nuance. Tu proposes d’abord, puis tu donnes la raison en une phrase courte. Des phrases simples et claires, sans rallonger pour rallonger.`;
 
 /** La PREMIÈRE ligne du prompt : qui parle.
  *

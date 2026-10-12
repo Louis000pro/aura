@@ -11,7 +11,7 @@
    ════════════════════════════════════════════════════════════════════ */
 
 export const MEMORY_CATEGORIES = [
-  "sante", "nutrition", "planning", "objectif", "preference", "autre",
+  "sante", "nutrition", "planning", "objectif", "preference", "materiel", "autre",
 ] as const;
 
 export type MemoryCategory = (typeof MEMORY_CATEGORIES)[number];
@@ -22,6 +22,7 @@ export const MEMORY_CATEGORY_LABEL: Record<MemoryCategory, string> = {
   planning: "Planning",
   objectif: "Objectif",
   preference: "Préférence",
+  materiel: "Matériel",
   autre: "Autre",
 };
 
@@ -31,6 +32,7 @@ export const MEMORY_CATEGORY_EMOJI: Record<MemoryCategory, string> = {
   planning: "📅",
   objectif: "🎯",
   preference: "💜",
+  materiel: "🏋️",
   autre: "✦",
 };
 

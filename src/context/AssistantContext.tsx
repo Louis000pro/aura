@@ -549,6 +549,10 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
   const liveStatsRef = useRef<LiveStats | null>(null);
   const richProfileRef = useRef<Record<string, unknown> | null>(null);
   const memoriesRef = useRef<AiMemory[]>([]);
+  /** Le matériel que la personne a dit avoir (« j'ai un haltère de 5 kg »),
+   *  retenu en mémoire sous « materiel ». Envoyé à la génération de séance. */
+  const materielDit = () =>
+    memoriesRef.current.filter((mm) => normalizeCategory(mm.category) === "materiel").map((mm) => mm.content);
   const dataLoadedRef = useRef(false);
   /* Le chargement du contexte est PARTAGÉ, pas seulement marqué comme
      démarré. `open()` le lance, `sendMessage` l'attend : sans cette
@@ -1777,7 +1781,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       const genRes = await aiFetch("/api/workout/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ description, category, difficulty, muscles, nutritionNote }),
+        body: JSON.stringify({ description, category, difficulty, muscles, nutritionNote, materiel: materielDit() }),
       });
       if (!genRes.ok) throw new Error("generation HTTP " + genRes.status);
       const data = await genRes.json();
@@ -2093,7 +2097,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       const genRes = await aiFetch("/api/workout/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ description, category, difficulty, muscles, nutritionNote }),
+        body: JSON.stringify({ description, category, difficulty, muscles, nutritionNote, materiel: materielDit() }),
       });
       if (!genRes.ok) throw new Error("generation HTTP " + genRes.status);
       const data = await genRes.json();

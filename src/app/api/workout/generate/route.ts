@@ -45,7 +45,7 @@ export async function POST(req: Request) {
   if (!garde.ok) return garde.reponse;
 
   try {
-    const { description, category, difficulty, muscles, nutritionNote } = await req.json();
+    const { description, category, difficulty, muscles, nutritionNote, materiel } = await req.json();
     if (!description?.trim())
       return NextResponse.json({ error: "description manquante" }, { status: 400 });
     if (String(description).length > PLAFONDS.texteCourtChars)
@@ -76,7 +76,7 @@ Calcule mentalement le total avant de repondre et verifie qu il est proche de ${
     // (meme texte que les callers : "en salle de sport" / "a la maison avec
     // halteres" / "a la maison au poids du corps").
     const lieuLc = String(description).toLowerCase();
-    const ctx: "salle" | "halteres" | "poids" = /salle|gym|basic\s*fit/.test(lieuLc)
+    let ctx: "salle" | "halteres" | "poids" = /salle|gym|basic\s*fit/.test(lieuLc)
       ? "salle"
       : /halt[èe]re/.test(lieuLc) ? "halteres" : "poids";
     let equipmentConstraint = "";
@@ -90,6 +90,26 @@ MATERIEL (STRICT) : a la MAISON avec des HALTERES. Tu peux utiliser des halteres
       equipmentConstraint = `
 MATERIEL (STRICT) : a la MAISON, SANS AUCUN materiel, poids du corps UNIQUEMENT. INTERDIT formellement : halteres, barre, machine, poulie, kettlebell, elastique, banc, AINSI QUE tout exercice suspendu necessitant une barre de traction (PAS de tractions, PAS de releves de jambes suspendus) ou un poids additionnel (PAS de "leste", PAS de "charge"). Uniquement des exercices au sol ou debout, faisables dans une piece.`;
     }
+
+    // Le matériel que la personne a DIT avoir (« j'ai un haltère de 5 kg »),
+    // retenu par la mémoire du Guide (catégorie « materiel », Louis
+    // 2026-10-12). Bornes : 5 faits, 120 caractères chacun.
+    const materielFaits: string[] = Array.isArray(materiel)
+      ? materiel.filter((m: unknown): m is string => typeof m === "string" && !!m.trim()).slice(0, 5).map((m: string) => m.trim().slice(0, 120))
+      : [];
+    const materielTxt = materielFaits.join(" ; ");
+    // Elle a dit avoir des haltères : la maison « au poids du corps » s'ouvre
+    // aux haltères, sinon la liste fermée les retirerait.
+    if (ctx === "poids" && /halt[èe]re/i.test(materielTxt)) {
+      ctx = "halteres";
+      equipmentConstraint = `
+MATERIEL (STRICT) : a la MAISON avec des HALTERES. Tu peux utiliser des halteres + le poids du corps UNIQUEMENT. INTERDIT : machines, poulies, barre, banc de muscu, barre de traction, kettlebell, et tout exercice de salle.`;
+    }
+    const materielConstraint = materielTxt
+      ? `
+MATERIEL QUE LA PERSONNE A DIT AVOIR : ${materielTxt}.
+Adapte les exercices ET les charges a ce materiel precis. Exemple : un seul haltere de 5 kg → charge legere, exercices unilateraux possibles, plus de repetitions ou un tempo lent ; precise le poids a utiliser dans le "tip" quand c est utile. N utilise jamais un materiel qu elle n a pas.`
+      : "";
 
     // Bonus nutrition OPTIONNEL : présent seulement si le caller a un signal clair
     // pour AUJOURD'HUI. Soft par construction — jamais une contrainte dure.
@@ -121,7 +141,7 @@ Tu PEUX t en servir pour un LEGER ajustement (intensite, volume ou duree) ou pou
 Description : "${description}"
 Categorie : ${category ?? "force"}
 Niveau : ${difficulty ?? "Intermediaire"}${Array.isArray(muscles) && muscles.length > 0 ? `
-Muscles cibles par l utilisateur : ${muscles.join(", ")}, la seance DOIT travailler prioritairement ces muscles.` : ""}${equipmentConstraint}${nutritionConstraint}
+Muscles cibles par l utilisateur : ${muscles.join(", ")}, la seance DOIT travailler prioritairement ces muscles.` : ""}${equipmentConstraint}${materielConstraint}${nutritionConstraint}
 ${durationConstraint}
 
 Retourne un JSON avec exactement ce format :

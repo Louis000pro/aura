@@ -4,7 +4,7 @@ import { useState, useEffect, Fragment, type ReactNode } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import AiMemoryManager from "@/components/AiMemoryManager";
 import TasteProfileModal from "@/components/TasteProfileModal";
-import { AssistantSpark, VisageGuide } from "@/components/AssistantMark";
+import { AssistantSpark, MarqueAssistant, VisageGuide } from "@/components/AssistantMark";
 import GemmeRang from "@/components/GemmeRang";
 import { Lock, LogOut, ChevronRight, Eye, EyeOff, Check, AlertTriangle, X, Shield, Moon, Sun, Target, Compass, Gauge, Gem, Utensils, CreditCard, Sparkles, Star, type LucideIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -737,7 +737,7 @@ export default function ParametresPage() {
               onClick={() => setShowTasteModal(true)}
             />
             <Ligne
-              mark={<AssistantSpark px={18} />}
+              mark={<MarqueAssistant guide={guide} px={22} />}
               label={guide ? `Ce que ${PRENOM_GUIDE[guide]} retient de toi` : "Ce que ton Guide retient de toi"}
               sub="Consulter, corriger, effacer"
               value={nbMemoires === null ? undefined : nbMemoires === 1 ? "1 souvenir" : `${nbMemoires} souvenirs`}

@@ -26,7 +26,9 @@ import { motion, useReducedMotion } from "framer-motion";
 import { Home, Dumbbell, Utensils, MessageCircle, Check, Plus, Flame } from "lucide-react";
 import ExerciseGuide from "@/components/ExerciseGuide";
 import GemmeRang from "@/components/GemmeRang";
-import { AssistantSpark, BusteGuide } from "@/components/AssistantMark";
+import { AssistantSpark, BusteGuide, MarqueAssistant } from "@/components/AssistantMark";
+import { useGuideActif } from "@/context/GuideContext";
+import { PRENOM_GUIDE } from "@/lib/guides";
 import type { GuideRef } from "@/lib/guides";
 import { RANGS } from "@/lib/aura";
 
@@ -723,6 +725,7 @@ const ONGLETS = [
 ];
 
 export function SceneRepere() {
+  const { guide } = useGuideActif();
   const reduce = useReducedMotion();
   return (
     <div className="w-full flex flex-col items-center">
@@ -754,6 +757,9 @@ export function SceneRepere() {
                     animate={reduce ? undefined : { opacity: [0.45, 0.95, 0.45], scale: [0.9, 1.1, 0.9] }}
                     transition={{ duration: 3.2, repeat: Infinity, ease: "easeInOut" }}
                   />
+                  {guide ? (
+                    <span className="relative inline-flex"><MarqueAssistant guide={guide} px={40} /></span>
+                  ) : (
                   <span
                     className="relative inline-flex items-center justify-center"
                     style={{
@@ -766,6 +772,7 @@ export function SceneRepere() {
                   >
                     <AssistantSpark px={24} />
                   </span>
+                  )}
                   <span
                     style={{
                       marginTop: 6,
@@ -775,7 +782,7 @@ export function SceneRepere() {
                       color: OR_CLAIR,
                     }}
                   >
-                    L&apos;étincelle
+                    {guide ? PRENOM_GUIDE[guide] : "L’étincelle"}
                   </span>
                 </div>
               );
@@ -817,6 +824,7 @@ export function SceneRepere() {
 /* ═══════════════════ 8 · FINAL ═══════════════════ */
 
 export function SceneFinal() {
+  const { guide } = useGuideActif();
   const reduce = useReducedMotion();
   return (
     <div className="flex flex-col items-center">
@@ -840,7 +848,7 @@ export function SceneFinal() {
           transition={{ duration: 3.6, repeat: Infinity, ease: "easeInOut" }}
         />
         <span className="relative">
-          <AssistantSpark px={74} />
+          {guide ? <MarqueAssistant guide={guide} px={74} /> : <AssistantSpark px={74} />}
         </span>
       </motion.div>
     </div>

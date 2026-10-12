@@ -3,7 +3,9 @@
 /* ════════════════════════════════════════════════════════════════════
    NavOrb — le bouton assistant au centre de la navigation.
 
-   Visuel : l'étincelle ✦ (géométrie EXACTE de lucide « sparkles » — même
+   Visuel (depuis le 2026-10-12, Louis) : la TÊTE du Guide choisi, cerclée
+   de violet. Sans Guide résolu, l'étincelle ✦ ci-dessous reprend la place.
+   Historique : l'étincelle ✦ (géométrie EXACTE de lucide « sparkles » — même
    grille 24, même trait que les icônes voisines) en bicolore : étoile
    violette (action) + petits éclats dorés. Hérite des couleurs du thème →
    mode sombre automatique, net à toutes les tailles. Remplace l'ancien PNG
@@ -25,13 +27,15 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Mic } from "lucide-react";
 import { useAssistant } from "@/context/AssistantContext";
 import { useVoiceCapture } from "@/hooks/useVoiceCapture";
-import { AssistantSpark } from "@/components/AssistantMark";
+import { MarqueAssistant } from "@/components/AssistantMark";
+import { useGuideActif } from "@/context/GuideContext";
 
 const LONG_PRESS_MS = 350;
 
 export default function NavOrb({ size = 48, glyph }: { size?: number; glyph?: number }) {
   const px = glyph ?? Math.round(size * 0.56);
   const { open } = useAssistant();
+  const { guide } = useGuideActif();
   const voice = useVoiceCapture({ onTranscript: (t) => open(t) });
   const [pressing, setPressing] = useState(false);
 
@@ -117,7 +121,7 @@ export default function NavOrb({ size = 48, glyph }: { size?: number; glyph?: nu
       >
         {/* L'étincelle s'efface pendant les états (micro / vumètre / spinner) */}
         <span style={{ opacity: quiet ? 0 : 1, transition: "opacity 0.15s ease", display: "flex" }}>
-          <AssistantSpark px={px} />
+          <MarqueAssistant guide={guide} px={px + 6} />
         </span>
 
         {/* Contenu d'état (couleurs du thème, plus de blanc) */}

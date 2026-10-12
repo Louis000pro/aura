@@ -77,6 +77,34 @@ export function AssistantAvatar({ size, className = "" }: { size: number; classN
   );
 }
 
+/** ── LE BOUTON DE L'ASSISTANT ─────────────────────────────────────────
+ *  Ce qu'on touche pour parler à l'assistant : la tête du Guide choisi
+ *  (Nora ou Sasha), cerclée du violet de l'action. Sans Guide résolu
+ *  (choix pas fait, hors ligne), l'étincelle reprend sa place.
+ *
+ *  ⚠️ Décision de Louis (2026-10-12) : l'orbe de la barre du bas porte le
+ *  visage du Guide, plus l'étincelle. L'étincelle reste la MARQUE Vaiiya
+ *  (Premium, badges, textes) : seule l'entrée de l'assistant change. */
+export function MarqueAssistant({ guide, px }: { guide: GuideRef; px: number }) {
+  if (!guide) return <AssistantSpark px={px} />;
+  return (
+    <span
+      className="inline-flex items-center justify-center rounded-full flex-shrink-0 select-none overflow-hidden"
+      style={{
+        width: px,
+        height: px,
+        background: "rgba(var(--accent-rgb),0.14)",
+        boxShadow: "0 0 0 2px var(--accent), 0 0 0 3.5px rgba(var(--gold-rgb),0.55)",
+        forcedColorAdjust: "none",
+      }}
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={`/guides/${guide}-welcome-avatar-v1.webp`} alt="" width={px} height={px} decoding="async"
+        style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+    </span>
+  );
+}
+
 /** Le fondu du bas, en pixels et jamais en pourcentage : selon l'écran la
  *  boîte n'a pas toujours la hauteur du dessin, et un pourcentage mangerait
  *  beaucoup plus de personnage sur les petites. Même raison, même forme que

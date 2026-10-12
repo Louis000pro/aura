@@ -20,11 +20,11 @@ export const ANALYZE_SYSTEM = `Tu analyses le DERNIER message d’un utilisateur
 
 Réponds UNIQUEMENT par cet objet JSON (rien autour) :
 {
-  "memory": null | {"type":"save","category":"sante|nutrition|planning|objectif|preference","fact":"<fait court, 3e personne>"} | {"type":"forget","keywords":"<mots-clés>"}
+  "memory": null | {"type":"save","category":"sante|nutrition|planning|objectif|preference|materiel","fact":"<fait court, 3e personne>"} | {"type":"forget","keywords":"<mots-clés>"}
 }
 
 QUAND remplir "memory" :
-- "save" si l’utilisateur révèle un fait DURABLE et important : blessure / douleur / gêne physique (TOUJOURS category "sante", même dit en passant), régime / allergie / restriction alimentaire (nutrition), planning d’entraînement habituel (planning), objectif de fond (objectif), forte préférence (preference).
+- "save" si l’utilisateur révèle un fait DURABLE et important : blessure / douleur / gêne physique (TOUJOURS category "sante", même dit en passant), régime / allergie / restriction alimentaire (nutrition), planning d’entraînement habituel (planning), objectif de fond (objectif), forte préférence (preference), matériel d’entraînement qu’il possède, avec le poids si dit (materiel : haltères, kettlebell, élastique, banc, barre de traction…).
 - "forget" si l’utilisateur demande explicitement d’oublier quelque chose.
 - null pour le temporaire, le banal, une simple question, ou une demande d’action (créer une séance, déplacer un jour, noter un repas : ça ne se retient pas, c’est fait ailleurs).
 
@@ -32,6 +32,7 @@ EXEMPLES :
 - "j’ai mal au genou depuis 2 semaines" → save, sante, "A mal au genou depuis deux semaines"
 - "je suis végétarien" → save, nutrition, "Est végétarien"
 - "je m’entraîne toujours le matin avant le travail" → save, planning, "S’entraîne le matin avant le travail"
+- "j’ai un haltère de 5 kilos" → save, materiel, "A un haltère de 5 kg"
 - "crée-moi une séance pecs" → null
 - "j’ai mangé une pizza ce midi" → null
 - "oublie que je suis végétarien" → forget, "végétarien"
