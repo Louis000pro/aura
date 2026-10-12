@@ -9,18 +9,12 @@
   display: flex;
   flex-direction: column;
   color: #1C1626;
-  background: linear-gradient(180deg, #FFE3C8 0%, #FDDDF0 30%, #EFE6FF 56%, #FFFBF5 82%);
-}
-.soleil {
-  position: absolute;
-  left: 50%;
-  top: -140px;
-  width: 560px;
-  height: 560px;
-  transform: translateX(-50%);
-  border-radius: 50%;
-  pointer-events: none;
-  background: radial-gradient(closest-side, rgba(255, 200, 120, .75), rgba(255, 170, 160, .25) 60%, transparent 74%);
+  /* Le fond de l'accueil connecté, en dur (Louis, 2026-10-12) : on entre
+     dans la même lumière que celle qu'on trouvera une fois connecté. */
+  background:
+    radial-gradient(150% 75% at 0% 0%,     rgba(167,139,250,.30) 0%, rgba(167,139,250,.16) 35%, rgba(167,139,250,.05) 65%, transparent 90%),
+    radial-gradient(150% 75% at 100% 100%, rgba(244,164,222,.28) 0%, rgba(244,164,222,.14) 35%, rgba(244,164,222,.04) 65%, transparent 90%),
+    linear-gradient(180deg, #F3EEFF 0%, #FAF8FF 45%, #FFF6FB 100%);
 }
 
 /* Le texte du côté gauche, sur ordinateur seulement. */
@@ -72,7 +66,7 @@
   color: #5C5468;
 }
 .grad {
-  background: linear-gradient(100deg, #A66CF4, #E68FC6 55%, #FEB86E);
+  background: linear-gradient(100deg, #8B5CF6, #C13BC1);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -83,9 +77,7 @@
   .page {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    background: linear-gradient(120deg, #FFE3C8 0%, #FDDDF0 45%, #EFE6FF 100%);
   }
-  .soleil { left: 22%; top: -180px; width: 720px; height: 720px; }
   .cote {
     position: relative;
     z-index: 2;

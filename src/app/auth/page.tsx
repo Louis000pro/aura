@@ -23,7 +23,6 @@ const ENCRE = "#1C1626";
 const ENCRE_2 = "#5C5468";
 const ENCRE_3 = "#7B7389";
 const LIEN = "#5B3FC4";
-const DEGRADE_LOGO = "linear-gradient(100deg,#A66CF4,#E68FC6 55%,#FEB86E)";
 /* Les champs en verre (Louis, 2026-10-12) : pas de liseré coloré, une
    surface claire et translucide avec un reflet en haut. */
 const VERRE = {
@@ -420,7 +419,6 @@ export default function AuthPage() {
 
   return (
     <div className={s.page}>
-      <div className={s.soleil} aria-hidden />
 
       {/* ── Ordinateur : la phrase et les signes du chemin ── */}
       <div className={s.cote}>
@@ -527,15 +525,7 @@ export default function AuthPage() {
              porte pour le corriger. */}
           {mode === "login" && etapeConnexion === 2 ? (
             <div className="flex items-center gap-3 rounded-2xl py-2 pl-2 pr-3.5" style={VERRE}>
-              {connu?.avatar ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={connu.avatar} alt="" className="w-10 h-10 rounded-full object-cover flex-shrink-0" />
-              ) : (
-                <span className="w-10 h-10 rounded-full grid place-items-center text-[16px] font-extrabold text-white flex-shrink-0"
-                  style={{ background:DEGRADE_LOGO }}>
-                  {((connu?.pseudo ?? email.trim())[0] ?? "?").toUpperCase()}
-                </span>
-              )}
+              <PhotoConnue avatar={connu?.avatar} lettre={((connu?.pseudo ?? email.trim())[0] ?? "?").toUpperCase()} />
               <span className="min-w-0 flex flex-col">
                 {connu?.pseudo && <span className="text-[16px] font-bold truncate" style={{ color:ENCRE }}>{connu.pseudo}</span>}
                 <span className={`truncate ${connu?.pseudo ? "text-[13px]" : "text-[16px] font-semibold"}`} style={{ color: connu?.pseudo ? ENCRE_3 : ENCRE }}>{email.trim()}</span>
@@ -720,5 +710,23 @@ export default function AuthPage() {
         </motion.div>
       </div>
     </div>
+  );
+}
+
+/* La photo du compte reconnu, ou son initiale sur un fond sombre neutre
+   (Louis, 2026-10-12 : le dégradé derrière la lettre « fait trop IA »).
+   Une photo qui ne se charge pas (lien périmé) retombe sur l'initiale au
+   lieu de laisser une image cassée. */
+function PhotoConnue({ avatar, lettre }: { avatar?: string; lettre: string }) {
+  const [rate, setRate] = useState<string | null>(null);
+  if (avatar && rate !== avatar) {
+    // eslint-disable-next-line @next/next/no-img-element
+    return <img src={avatar} alt="" onError={() => setRate(avatar)} className="w-10 h-10 rounded-full object-cover flex-shrink-0" />;
+  }
+  return (
+    <span className="w-10 h-10 rounded-full grid place-items-center text-[16px] font-bold text-white flex-shrink-0"
+      style={{ background:"#2A2730" }}>
+      {lettre}
+    </span>
   );
 }

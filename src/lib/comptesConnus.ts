@@ -35,8 +35,14 @@ function lire(): CompteConnu[] {
 export function retenirCompte(c: CompteConnu): void {
   if (!c.email) return;
   try {
-    const autres = lire().filter((x) => norme(x.email) !== norme(c.email));
-    localStorage.setItem(CLE, JSON.stringify([c, ...autres].slice(0, MAX)));
+    const liste = lire();
+    const avant = liste.find((x) => norme(x.email) === norme(c.email));
+    const autres = liste.filter((x) => norme(x.email) !== norme(c.email));
+    // Une lecture du profil sans photo (repli, chargement partiel) ne doit
+    // jamais effacer celle qu'on connaissait déjà : c'est ce qui la faisait
+    // disparaître la plupart du temps.
+    const retenu = { ...c, avatar: c.avatar || avant?.avatar };
+    localStorage.setItem(CLE, JSON.stringify([retenu, ...autres].slice(0, MAX)));
   } catch { /* stockage bloqué : rien à retenir */ }
 }
 
