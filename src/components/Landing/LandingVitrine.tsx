@@ -86,7 +86,10 @@ function Heros() {
           <Image src="/marque/logo-degrade.png" alt="" width={34} height={34} priority className={styles.logo} />
           Vaiiya
         </span>
-        <Link href="/auth?mode=login" className={styles.connexion}>Se connecter</Link>
+        <Link href="/auth?mode=login" className={styles.connexion}>
+          Se connecter
+          <span aria-hidden><ArrowRight size={15} strokeWidth={2.5} /></span>
+        </Link>
       </nav>
 
       <div className={styles.photo}>
@@ -101,15 +104,15 @@ function Heros() {
         />
         <span className={`${styles.bulle} ${styles.b1}`}>
           <i style={{ background: "#FFF0E2" }}>🔥</i>
-          <span><b className="vy-nombre">21</b> jours de suite</span>
+          <span><b className="vy-nombre">21</b> jours</span>
         </span>
         <span className={`${styles.bulle} ${styles.b2}`}>
           <Image src="/rangs/rank-03-or.png" alt="" width={30} height={30} />
-          <span>Rang <b>Or</b> atteint</span>
+          <span>Rang <b>Or</b></span>
         </span>
         <span className={`${styles.bulle} ${styles.b3}`}>
           <i style={{ background: "#F1EBFF", color: "#7C4FE0" }}>✦</i>
-          <span>Séance du jour faite <b style={{ color: "#0B8A68" }}>✓</b></span>
+          <span>Séance faite <b style={{ color: "#0B8A68" }}>✓</b></span>
         </span>
       </div>
 
