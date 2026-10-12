@@ -5,7 +5,7 @@ import { chargerRelaisAccueil, type RelaisAccueil } from "@/lib/defi";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import LandingStory from "@/components/Landing/LandingStory";
-import LandingHero from "@/components/Landing/LandingHero";
+import LandingVitrine from "@/components/Landing/LandingVitrine";
 /* Le type seul : la coquille serveur (`app/page.tsx`) fait le comptage et
    descend trois entiers, pour que les données ne traversent pas jusqu'ici. */
 import type { ChiffresPublics } from "@/lib/chiffresPublics";
@@ -42,8 +42,8 @@ import PremierAccueil, { usePremierAccueil } from "@/components/accueil/PremierA
 function LandingPage({ chiffres, avis }: { chiffres: ChiffresPublics; avis: ResumeAvis }) {
   return (
     <div className="relative w-full" style={{ overflowX: "clip", background: "transparent" }}>
-      <LandingHero />
-      <LandingStory chiffres={chiffres} avis={avis} />
+      <LandingVitrine chiffres={chiffres} />
+      <LandingStory avis={avis} />
     </div>
   );
 }

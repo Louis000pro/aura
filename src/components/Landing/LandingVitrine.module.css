@@ -1,0 +1,194 @@
+/* La vitrine de vaiiya.fr. Toujours claire (décision de Louis, 2026-10-12) :
+   les couleurs sont écrites en dur et ne suivent pas le mode sombre de l'app. */
+
+.page {
+  background: #FFFBF5;
+  color: #1C1626;
+}
+
+/* ── Le héros ── */
+.haut {
+  position: relative;
+  background: linear-gradient(180deg, #FFE9CF 0%, #FFF4E6 55%, #FFFBF5 100%);
+}
+.nav {
+  position: absolute;
+  inset: 0 0 auto 0;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: calc(env(safe-area-inset-top, 0px) + 16px) 20px 16px;
+}
+/* Le logo est clair : on le ravive un peu pour qu'il tienne sur le fond pâle. */
+.logo { filter: saturate(1.35) contrast(1.1); }
+.connexion {
+  font-size: 13px;
+  font-weight: 650;
+  color: #1C1626;
+  padding: 9px 14px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, .75);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+.photo {
+  position: relative;
+  height: 470px;
+  overflow: hidden;
+}
+.photo::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, rgba(255, 233, 207, 0) 40%, #FFFBF5 98%),
+    linear-gradient(0deg, transparent 75%, rgba(255, 251, 245, .55));
+}
+.bulle {
+  position: absolute;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 13px 9px 9px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, .82);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  box-shadow: 0 12px 30px -14px rgba(60, 30, 10, .45);
+  font-size: 13px;
+  font-weight: 650;
+  color: #1C1626;
+  white-space: nowrap;
+  animation: flotte 6s ease-in-out infinite;
+}
+.bulle i {
+  font-style: normal;
+  width: 30px;
+  height: 30px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+}
+.bulle img { object-fit: contain; }
+.b1 { left: 16px; top: 96px; }
+.b2 { right: 14px; top: 190px; animation-delay: -2s; }
+.b3 { left: 26px; top: 292px; animation-delay: -4s; }
+@keyframes flotte {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+.mots {
+  position: relative;
+  z-index: 2;
+  margin-top: -70px;
+  padding: 0 20px 34px;
+}
+
+/* ── Le chemin ── */
+.chemin {
+  position: relative;
+  overflow: hidden;
+  padding-block: 56px 48px;
+  background: linear-gradient(180deg, #FFFBF5 0%, #FDEBFA 30%, #F2ECFF 70%, #FFFBF5 100%);
+}
+.soleil {
+  position: absolute;
+  left: 50%;
+  top: -160px;
+  width: 520px;
+  height: 520px;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(255, 196, 120, .6), rgba(255, 170, 150, .2) 55%, transparent 72%);
+  pointer-events: none;
+}
+.route {
+  position: relative;
+  list-style: none;
+  margin: 30px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 18px;
+}
+.route::before {
+  content: "";
+  position: absolute;
+  left: 31px;
+  top: 30px;
+  bottom: 30px;
+  width: 3px;
+  border-radius: 3px;
+  background: linear-gradient(180deg, #FEB86E, #E68FC6, #A66CF4);
+}
+.etape {
+  position: relative;
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr);
+  gap: 14px;
+  align-items: start;
+}
+.repere {
+  position: relative;
+  z-index: 1;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: #fff;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 10px 24px -12px rgba(90, 40, 140, .5);
+}
+.repere img { object-fit: contain; }
+.repere[data-affiche] img { border-radius: 6px; object-fit: cover; }
+.carte {
+  overflow: hidden;
+  border-radius: 24px;
+  background: rgba(255, 255, 255, .78);
+  border: 1px solid rgba(255, 255, 255, .9);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  box-shadow: 0 18px 40px -30px rgba(90, 40, 140, .5);
+}
+.etape[data-derniere] .carte { outline: 2px solid rgba(124, 79, 224, .35); }
+
+@media (prefers-reduced-motion: reduce) {
+  .bulle { animation: none; }
+}
+
+@media (min-width: 768px) {
+  .haut {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: center;
+    gap: 44px;
+    max-width: 1240px;
+    margin: 0 auto;
+    padding: 110px 44px 60px;
+    background: transparent;
+  }
+  .page { background: linear-gradient(180deg, #FFE9CF 0, #FFF4E6 520px, #FFFBF5 900px); }
+  .nav { padding-inline: 44px; }
+  .photo {
+    order: 2;
+    height: 600px;
+    border-radius: 36px;
+    box-shadow: 0 40px 80px -50px rgba(120, 60, 10, .6);
+  }
+  .photo::after { background: linear-gradient(180deg, transparent 60%, rgba(28, 14, 6, .18)); }
+  .mots { margin-top: 0; padding: 0; }
+  .route {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 16px;
+    align-items: end;
+    padding-top: 72px;
+  }
+  .route::before { display: none; }
+  .etape { grid-template-columns: minmax(0, 1fr); justify-items: center; }
+  .etape .carte { width: 100%; }
+  .etape:nth-child(2) { margin-bottom: 24px; }
+  .etape:nth-child(3) { margin-bottom: 48px; }
+  .etape:nth-child(4) { margin-bottom: 72px; }
+}

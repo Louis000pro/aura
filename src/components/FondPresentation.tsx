@@ -3,7 +3,7 @@
 /**
  * FondPresentation : le fond du haut de la page de présentation, figé.
  *
- * C'est la recette exacte du héros (LandingHero) : deux cercles pleins
+ * C'est la recette de l'ancien héros de la landing (remplacé le 2026-10-12 par LandingVitrine) : deux cercles pleins
  * fortement floutés plus une nappe chaude ancrée en bas. On garde les cercles
  * flous plutôt qu'un dégradé radial parce qu'un flou tient sa couleur sur tout
  * son cœur, là où un radial s'éteint dès le centre et rend le fond fade.
