@@ -244,6 +244,15 @@ ce qui suit sans en parler à Louis.
 
 ## Chantiers en cours (juillet 2026)
 
+- **MINI-CHANTIERS PAR PROMPTS (Louis, 2026-10-12).** Travail au long cours sur
+  **`codex/mini-chantiers-build-ia`**, créée depuis `origin/main` (`43d5f6e0`).
+  Louis transmet les prompts au fur et à mesure, notamment depuis Build IA.
+  Suivi : `docs/mini-chantiers-build-ia.md` (demande, diagnostic, décisions,
+  changements et vérifications pour chaque mini-chantier). Les décisions
+  verrouillées restent applicables ; toute modification d'interface
+  significative passe par une maquette validée explicitement avant code.
+  L'intégration dans `main` attend la validation de Louis sur un ensemble cohérent.
+
 - **⭐ LE VERRE PARTOUT ET L'ACCUEIL EN BENTO (Louis, 2026-10-10/11, passé en PROD le 2026-10-11).** Maquettes : `docs/maquettes/liquid-glass.html`, `trois-dispositions.html` (Louis a gardé la **A**, la capsule), `trois-accueils.html` (Louis a choisi le **bento**, la 2).
   - **⚠️ CE QUI EST LEVÉ, PAR DÉCISION DE LOUIS** : la règle de composition « le verre uniquement sur une photo ou un élément qui flotte » ne s'applique plus. Toutes les surfaces blanches deviennent du verre dépoli sur un fond pastel (blanc → rose, violet, jaune, beige). Les trois rôles de couleur du système D, eux, ne bougent pas.
   - **Où ça vit** : tout est en fin de `globals.css` (bloc « TOUT EN VERRE »). `body::before` porte le fond (`--fond-verre`), et un sélecteur d'attribut transforme en verre tout style en ligne `background: rgb(a)(var(--surface-rgb)…)` (les deux écritures, avec et sans espace, parce que React SSR et le navigateur n'écrivent pas pareil). Classes : `.vy-verre`, `.vy-verre-epais` (feuilles du bas), `.vy-fixe`. `html.perf-lite` coupe les flous.
