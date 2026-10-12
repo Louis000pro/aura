@@ -24,6 +24,11 @@ export default function SplashIntro() {
     // Une seule fois par session de navigation
     if (typeof window === "undefined") return;
     setIsMobile(window.matchMedia("(max-width: 767px)").matches);
+    // ⚠️ Jamais sur la vitrine publique (2026-10-12) : elle est déjà peinte
+    // au premier affichage, et l'intro venait la recouvrir puis s'effacer
+    // par-dessus, logo et titre superposés. C'était le « bug à l'entrée ».
+    // `a-session` est posée dans <head> quand un jeton Supabase existe.
+    if (!document.documentElement.classList.contains("a-session")) return;
     if (sessionStorage.getItem("vaiiya_splash")) return;
     sessionStorage.setItem("vaiiya_splash", "1");
     setShow(true);

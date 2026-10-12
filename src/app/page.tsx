@@ -27,7 +27,7 @@ export const metadata: Metadata = {
 
 export default async function Page() {
   /* Les chiffres de la landing sont comptés ici, côté serveur, et descendus en
-     props. Les importer directement dans `LandingStory` (composant client)
+     props. Les importer directement dans `LandingVitrine` (composant client)
      enverrait au navigateur le texte intégral des 26 mini-cours pour n'afficher
      qu'un nombre. Voir `lib/chiffresPublics.ts`.
 

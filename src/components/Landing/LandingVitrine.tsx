@@ -1,243 +1,448 @@
+"use client";
+
 /**
- * LandingVitrine : le haut de vaiiya.fr (visiteur non connecté).
+ * LandingVitrine : vaiiya.fr pour un visiteur non connecté.
  *
- * Maquette validée par Louis le 2026-10-12 (`docs/maquettes/page-vitrine.html`,
- * direction A « La lumière du matin » en tête, puis le chemin de la direction B
- * « Dans trois mois »). La page vend ce que Vaiiya change dans une vie, pas un
- * exercice : une identité (« Deviens la personne qui y va »), puis le chemin
- * pour y arriver, puis la journée, les rangs, et ce qui est relié.
+ * Refaite le 2026-10-12 à la demande de Louis (« une landing magnifique,
+ * bluffante, qui ne bugge pas quand on rentre dedans »), avec la skill
+ * ui-ux-pro-max pour la structure, le mouvement et la checklist. Ses
+ * propositions de couleurs et de polices n'ont PAS été reprises : la
+ * palette, Archivo et Martian Mono sont verrouillés.
  *
  * ⚠️ DÉCISIONS DE LOUIS À NE PAS DÉFAIRE.
- *   · Toujours CLAIRE à l'entrée. Les couleurs de ces sections sont écrites en
- *     dur exprès : elles ne suivent pas le mode sombre de l'app.
- *   · Les photos marquées « vitrine » (`/public/vitrine/`) sont retouchées aux
- *     couleurs du logo (violet, rose, jaune). C'est une EXCEPTION réservée à
- *     cette page : dans l'app, les photos de séance restent naturelles.
- *   · Le dégradé des mots d'accent est celui du LOGO (`DEGRADE_LOGO`), pas le
- *     violet → magenta des boutons, qui reste la couleur d'action.
+ *   · Toujours CLAIRE : couleurs écrites en dur dans le module CSS.
+ *   · Les mots d'accent prennent le dégradé du LOGO ; le bouton reste violet.
+ *   · Les photos de `/public/vitrine/` sont retouchées aux couleurs du logo :
+ *     exception réservée à cette page.
+ *
+ * ⚠️ LE « BUG À L'ENTRÉE » : rien ne doit apparaître puis disparaître.
+ *   · L'intro au logo (`SplashIntro`) ne joue plus sur une page publique.
+ *   · Le héros entre en CSS pur, dès le premier octet de HTML.
+ *   · `useRevelation` ne cache que ce qui est SOUS le pli quand il s'arme :
+ *     ce qu'on voit au premier affichage ne clignote jamais.
  *
  * ⚠️ POSITIONNEMENT PUBLIC (`docs/positionnement-public-vaiiya.md`) : aucun
- * chiffre d'utilisateurs, aucun faux avis, aucune promesse sur le corps. Le
- * chemin du jour 1 au mois 3 est présenté comme un EXEMPLE de parcours, et les
- * bulles posées sur la photo décrivent l'app, pas une personne réelle.
+ * chiffre d'utilisateurs, aucun faux avis, aucune promesse sur le corps,
+ * aucun « abonne-toi ». Le téléphone, les bulles et le parcours décrivent
+ * l'app, pas une personne réelle.
  */
 
+import { useEffect, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Camera, Check, ChefHat, Dumbbell, Flame, MessageCircle, Sparkles, Store, Trophy } from "lucide-react";
+import AnimationExercice from "@/components/exercices/AnimationExercice";
+import { resolveGuide } from "@/lib/exerciseGuides";
 import { RANGS } from "@/lib/aura";
 import { PLANS, formatPrice } from "@/lib/plans";
+import { SEO_PAGES, LEGAL_PAGES } from "@/lib/seoPages";
+import { SEUIL_AVIS_PUBLIC, type ResumeAvis } from "@/lib/avisTypes";
 import type { ChiffresPublics } from "@/lib/chiffresPublics";
-import styles from "./LandingVitrine.module.css";
+import s from "./LandingVitrine.module.css";
 
 /** Ancre de la section qui suit le héros (le lien « Voir ce qu'il y a dedans »). */
 export const DISCOVER_ANCHOR = "decouvrir";
 
-/** Le dégradé du logo, de haut en bas : violet, rose, pêche. */
-const DEGRADE_LOGO = "linear-gradient(120deg,#A66CF4 0%,#E68FC6 52%,#FEB86E 100%)";
-const MOT_ACCENT: React.CSSProperties = {
-  backgroundImage: DEGRADE_LOGO,
-  WebkitBackgroundClip: "text",
-  backgroundClip: "text",
-  color: "transparent",
-};
-const ACTION_BG = "linear-gradient(135deg,#8B5CF6 0%,#C13BC1 100%)";
+/* ═══════════════ La révélation au défilement ═══════════════
+   Un seul observateur pour toute la page. Il ne cache QUE ce qui est sous
+   le pli au moment où il s'arme : un élément déjà à l'écran ne passe jamais
+   par l'invisible, donc la page ne clignote pas à l'arrivée. */
+function useRevelation(racine: React.RefObject<HTMLDivElement | null>) {
+  useEffect(() => {
+    const el = racine.current;
+    if (!el) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    if (!("IntersectionObserver" in window)) return;
 
-const ENCRE = "#1C1626";
-const ENCRE_2 = "#5C5468";
-const ENCRE_3 = "#7B7389";
-const CUIVRE = "#B4570C";
+    const cibles = Array.from(el.querySelectorAll<HTMLElement>("[data-reveal], [data-conversation]"));
+    const pli = window.innerHeight * 0.92;
+    const io = new IntersectionObserver((entrees) => {
+      for (const e of entrees) {
+        if (!e.isIntersecting) continue;
+        const t = e.target as HTMLElement;
+        if (t.hasAttribute("data-conversation")) t.setAttribute("data-vu", "");
+        else requestAnimationFrame(() => t.removeAttribute("data-attente"));
+        io.unobserve(t);
+      }
+    }, { rootMargin: "0px 0px -8% 0px" });
 
-function BoutonPrincipal({ label, href = "/auth?mode=signup" }: { label: string; href?: string }) {
+    for (const t of cibles) {
+      if (t.getBoundingClientRect().top < pli) {
+        // Déjà visible : on la joue tout de suite, sans jamais la masquer.
+        if (t.hasAttribute("data-conversation")) t.setAttribute("data-vu", "");
+        continue;
+      }
+      if (t.hasAttribute("data-conversation")) t.setAttribute("data-armee", "");
+      else { t.classList.add(s.revele); t.setAttribute("data-attente", ""); }
+      io.observe(t);
+    }
+    return () => io.disconnect();
+  }, [racine]);
+}
+
+/* ═══════════════ Petites briques ═══════════════ */
+
+function Bouton({ label, href = "/auth?mode=signup" }: { label: string; href?: string }) {
   return (
-    <Link
-      href={href}
-      className="inline-flex items-center justify-center gap-2 rounded-[18px] px-6 py-4 text-[16px] font-bold text-white transition-transform active:scale-[.98]"
-      style={{ background: ACTION_BG, boxShadow: "0 14px 30px -12px rgba(139,92,246,.75)" }}
-    >
+    <Link href={href} className={s.bouton}>
       {label}
-      <ArrowRight size={17} strokeWidth={2.4} />
+      <ArrowRight size={18} strokeWidth={2.4} aria-hidden />
     </Link>
   );
 }
 
 function Surtitre({ children }: { children: React.ReactNode }) {
-  return <p className="mb-2.5 text-[13px] font-bold" style={{ color: CUIVRE }}>{children}</p>;
-}
-
-function Titre({ children, className = "" }: { children: React.ReactNode; className?: string }) {
-  return (
-    <h2
-      className={`text-[34px] md:text-[46px] leading-[1.02] ${className}`}
-      style={{ color: ENCRE, fontWeight: 850, fontVariationSettings: "var(--w-voix)", textWrap: "balance", letterSpacing: "-0.015em" }}
-    >
-      {children}
-    </h2>
-  );
+  return <p className={s.surtitre}>{children}</p>;
 }
 
 /* ═══════════════ 1 · LE HÉROS ═══════════════ */
 
+const MOTS_TITRE = ["Deviens", "la", "personne"];
+
+function Telephone() {
+  return (
+    <div className={s.scene}>
+      <div className={s.telephone} aria-hidden>
+        <div className={s.ecran}>
+          <span className={s.encoche} />
+          <div className={s.ecranHaut}>
+            <span className={s.avatarGuide}>
+              <Image src="/guides/nora-welcome-avatar-v1.webp" alt="" width={68} height={68} priority />
+            </span>
+            <div>
+              <b>Prête pour ta séance&nbsp;?</b>
+              <small>Ton Guide t’a préparé la suite</small>
+            </div>
+          </div>
+
+          <div className={s.seanceJour}>
+            <Image src="/entrainement/cat-fullbody.webp" alt="" fill sizes="280px" priority className="object-cover" />
+            <div className={s.seanceInfo}>
+              <small>Aujourd’hui</small>
+              <b>Full Body</b>
+              <small><span className="vy-nombre">25</span> min · <span className="vy-nombre">6</span> exercices</small>
+              <span className={s.seanceBouton}>Lancer la séance <ArrowRight size={12} strokeWidth={3} /></span>
+            </div>
+          </div>
+
+          <div className={s.bento}>
+            <div className={s.tuile}>
+              <small>Ta série</small>
+              <b className="vy-nombre" style={{ color: "#E8620C", fontWeight: 800 }}>21</b>
+              <div className={s.jours}>
+                {[1, 1, 1, 1, 1, 0, 0].map((f, i) => <i key={i} data-fait={f ? "" : undefined} />)}
+              </div>
+            </div>
+            <div className={s.tuile} style={{ alignItems: "center" }}>
+              <Image src="/rangs/rank-03-or.png" alt="" width={46} height={46} style={{ width: 46, height: 46, objectFit: "contain" }} />
+              <small style={{ color: "#1C1626", fontWeight: 800 }}>Rang Or</small>
+            </div>
+            <div className={s.tuile} style={{ gridColumn: "span 2", flexDirection: "row", alignItems: "center", gap: 10 }}>
+              <div className={s.anneau}>
+                <svg viewBox="0 0 52 52">
+                  <defs>
+                    <linearGradient id="vitrine-anneau" x1="0" x2="1">
+                      <stop offset="0" stopColor="#8B5CF6" />
+                      <stop offset="1" stopColor="#C13BC1" />
+                    </linearGradient>
+                  </defs>
+                  <circle className={s.anneauFond} cx="26" cy="26" r="22" />
+                  <circle className={s.anneauPlein} cx="26" cy="26" r="22" />
+                </svg>
+                <span className="vy-nombre">3/4</span>
+              </div>
+              <div>
+                <small>Missions du jour</small>
+                <b style={{ display: "block", fontSize: 16, fontWeight: 800 }}>Plus qu’un repas</b>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <span className={`${s.bulle} ${s.bulleA}`} aria-hidden>
+        <i style={{ background: "#FFF0E2", color: "#E8620C" }}><Flame size={16} /></i>
+        <span><b className="vy-nombre">21</b> jours de suite</span>
+      </span>
+      <span className={`${s.bulle} ${s.bulleB}`} aria-hidden>
+        <i style={{ background: "#F1EBFF", color: "#7C4FE0" }}><Sparkles size={16} /></i>
+        <span><b className="vy-nombre" style={{ color: "#6D4BD6" }}>+30</b> EXP</span>
+      </span>
+      <span className={`${s.bulle} ${s.bulleC}`} aria-hidden>
+        <i style={{ background: "#E3FAF2", color: "#0B8A68" }}><Check size={16} strokeWidth={3} /></i>
+        <span>Séance faite</span>
+      </span>
+    </div>
+  );
+}
+
 function Heros() {
   return (
-    <section className={styles.haut}>
-      <nav className={styles.nav}>
-        <span className="flex items-center gap-2 text-[20px] font-light tracking-[0.14em]" style={{ color: ENCRE }}>
-          <Image src="/marque/logo-degrade.png" alt="" width={34} height={34} priority className={styles.logo} />
+    <section className={s.heros}>
+      <span className={`${s.halo} ${s.haloA}`} aria-hidden />
+      <span className={`${s.halo} ${s.haloB}`} aria-hidden />
+
+      <nav className={s.nav} aria-label="Vaiiya">
+        <span className={s.marque}>
+          <Image src="/marque/logo-degrade.png" alt="" width={34} height={34} priority />
           Vaiiya
         </span>
-        <Link href="/auth?mode=login" className={styles.connexion}>
+        <Link href="/auth?mode=login" className={s.connexion}>
           Se connecter
           <span aria-hidden><ArrowRight size={15} strokeWidth={2.5} /></span>
         </Link>
       </nav>
 
-      <div className={styles.photo}>
-        <Image
-          src="/vitrine/coureuse-aube.webp"
-          alt="Une coureuse monte des marches au lever du soleil"
-          fill
-          priority
-          sizes="(min-width: 768px) 50vw, 100vw"
-          className="object-cover"
-          style={{ objectPosition: "center 30%" }}
-        />
-        <span className={`${styles.bulle} ${styles.b1}`}>
-          <i style={{ background: "#FFF0E2" }}>🔥</i>
-          <span><b className="vy-nombre">21</b> jours</span>
-        </span>
-        <span className={`${styles.bulle} ${styles.b2}`}>
-          <Image src="/rangs/rank-03-or.png" alt="" width={30} height={30} />
-          <span>Rang <b>Or</b></span>
-        </span>
-        <span className={`${styles.bulle} ${styles.b3}`}>
-          <i style={{ background: "#F1EBFF", color: "#7C4FE0" }}>✦</i>
-          <span>Séance faite <b style={{ color: "#0B8A68" }}>✓</b></span>
-        </span>
-      </div>
-
-      <div className={styles.mots}>
-        <p className="mb-3 text-[13px] font-semibold" style={{ color: ENCRE_3 }}>
-          Entraînement, nutrition et assistant IA, en français
-        </p>
-        <h1
-          className="text-[44px] md:text-[68px] leading-[.95]"
-          style={{ color: ENCRE, fontWeight: 900, fontVariationSettings: "var(--w-voix)", letterSpacing: "-0.025em", textWrap: "balance" }}
-        >
-          Deviens la personne <span style={MOT_ACCENT}>qui y va.</span>
-        </h1>
-        <p className="mt-4 mb-6 max-w-[38ch] text-[16px] leading-relaxed" style={{ color: ENCRE_2 }}>
-          Tes séances, tes repas et un assistant qui te connaît, réunis dans une seule appli.
-          Jusqu’au jour où t’entraîner ne demande plus d’effort pour commencer.
-        </p>
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-          <BoutonPrincipal label="Commencer gratuitement" />
-          <a href={`#${DISCOVER_ANCHOR}`} className="px-1.5 py-3 text-[16px] font-semibold" style={{ color: "#5B3FC4" }}>
-            Voir ce qu’il y a dedans
-          </a>
+      <div className={`${s.wrap} ${s.herosGrille}`}>
+        <div>
+          <span className={s.puce} style={{ animation: "none" }}>
+            <i aria-hidden>✦</i>
+            Entraînement, nutrition et Guide IA, en français
+          </span>
+          <h1 className={s.h1}>
+            {MOTS_TITRE.map((m, i) => (
+              <span key={m} className={s.mot} style={{ animationDelay: `${i * 0.08}s` }}>{m}&nbsp;</span>
+            ))}
+            <span className={`${s.mot} ${s.accent}`} style={{ animationDelay: ".26s" }}>qui y va.</span>
+          </h1>
+          <p className={s.herosTexte}>
+            Tes séances, tes repas et un Guide qui te connaît, réunis dans une seule appli.
+            Jusqu’au jour où t’entraîner ne demande plus d’effort pour commencer.
+          </p>
+          <div className={s.herosActions}>
+            <Bouton label="Commencer gratuitement" />
+            <a href={`#${DISCOVER_ANCHOR}`} className={s.lienDoux}>Voir ce qu’il y a dedans</a>
+          </div>
+          <p className={s.herosNote}>
+            <span>Gratuit, sans carte bancaire</span>
+            <span>Première séance en <b className="vy-nombre">12</b> min</span>
+          </p>
         </div>
-        <p className="mt-3 text-[13px]" style={{ color: ENCRE_3 }}>
-          Gratuit, sans carte bancaire. Ta première séance dure 12 minutes.
-        </p>
+        <Telephone />
       </div>
     </section>
   );
 }
 
-/* ═══════════════ 2 · LE CHEMIN (direction B) ═══════════════ */
+/* ═══════════════ 2 · LES MOUVEMENTS ═══════════════ */
+
+const RANGEE_1 = ["Squat", "Pompes", "Gainage", "Fentes", "Jumping jacks", "Burpees", "Développé couché", "Soulevé de terre classique"];
+const RANGEE_2 = ["Rowing barre", "Élévations latérales", "Kettlebell swing", "Crunch", "Mountain climbers", "Hip thrust", "Dead bug", "Superman"];
+const anime = (n: string) => !!resolveGuide(n);
+
+function Rangee({ noms, inverse = false }: { noms: string[]; inverse?: boolean }) {
+  const liste = noms.filter(anime);
+  return (
+    <div className={`${s.rail} ${inverse ? s.railInverse : ""}`}>
+      {/* La liste est rendue deux fois pour que la boucle n'ait pas de raccord ;
+          le second exemplaire est caché aux lecteurs d'écran. */}
+      {[0, 1].map((copie) => liste.map((nom) => (
+        <div key={`${copie}-${nom}`} className={s.mvt} aria-hidden={copie === 1 || undefined}>
+          <div className={s.mvtImage}>
+            <AnimationExercice nom={nom} taille="100%" label={copie === 0 ? nom : ""} />
+          </div>
+          <b>{nom}</b>
+        </div>
+      )))}
+    </div>
+  );
+}
+
+function Mouvements({ chiffres }: { chiffres: ChiffresPublics }) {
+  return (
+    <section id={DISCOVER_ANCHOR} className={`${s.mouvements} scroll-mt-4`}>
+      <div className={`${s.wrap} ${s.centre}`} data-reveal>
+        <Surtitre>Montrés, pas expliqués</Surtitre>
+        <h2 className={s.titre}>
+          <span className="vy-nombre" style={{ fontWeight: 800 }}>{chiffres.mouvements}</span> mouvements <span className={s.accent}>qui bougent.</span>
+        </h2>
+        <p className={s.chapo}>
+          Chaque exercice est montré pose après pose. Tu suis une des {chiffres.seances} séances guidées,
+          ou tu composes la tienne en deux minutes.
+        </p>
+      </div>
+      <div className={s.bandeau}>
+        <Rangee noms={RANGEE_1} />
+        <Rangee noms={RANGEE_2} inverse />
+      </div>
+    </section>
+  );
+}
+
+/* ═══════════════ 3 · LE GUIDE ═══════════════ */
+
+function Guide() {
+  return (
+    <section className={`${s.section} ${s.guide}`}>
+      <div className={`${s.wrap} ${s.guideGrille}`}>
+        <div data-reveal>
+          <Surtitre>Ton Guide personnel</Surtitre>
+          <h2 className={s.titre}>Nora ou Sasha. <span className={s.accent}>Tu choisis qui t’accompagne.</span></h2>
+          <p className={s.chapo}>
+            Tu lui dis ce que tu as, ce que tu veux, ce que tu as mangé. Il prépare, tu valides :
+            rien ne s’écrit sans ton accord.
+          </p>
+          <div className={s.duo}>
+            {(["nora", "sasha"] as const).map((g) => (
+              <div key={g} className={s.portrait}>
+                <Image src={`/guides/${g}-buste-v1.webp`} alt={`Portrait de ${g === "nora" ? "Nora" : "Sasha"}`} fill sizes="210px" className="object-cover" />
+                <span>{g === "nora" ? "Nora" : "Sasha"}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className={s.conversation} data-conversation aria-label="Exemple de conversation avec ton Guide">
+          <div className={`${s.message} ${s.moi}`} data-pas="1">J’ai 30 minutes ce soir, et des haltères.</div>
+          <div className={`${s.message} ${s.lui}`} data-pas="2">
+            <Image src="/guides/nora-explain-avatar-v1.webp" alt="" width={32} height={32} style={{ borderRadius: "50%" }} />
+            <p>Parfait, de quoi faire une belle séance. Je te prépare ça.</p>
+          </div>
+          <div className={s.carteProp} data-pas="3">
+            <div className={s.carteCorps}>
+              <small>Séance proposée · 30 min</small>
+              <b>Haut du corps · Haltères</b>
+              <div className={s.carteMvts}>
+                {["Développé couché", "Rowing barre", "Élévations latérales", "Pompes"].map((n) => (
+                  <div key={n} style={{ aspectRatio: "1" }}>
+                    <AnimationExercice nom={n} taille="100%" label="" />
+                  </div>
+                ))}
+              </div>
+              <span className={s.carteBouton}>Garder la séance <Check size={14} strokeWidth={3} /></span>
+              <span className={s.carteNote}>Tu valides, il l’ajoute.</span>
+            </div>
+          </div>
+          <div className={`${s.message} ${s.moi}`} data-pas="4">Top, je la fais maintenant.</div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ═══════════════ 4 · TOUT EST RELIÉ ═══════════════ */
+
+const NOEUDS = [
+  { x: 24, y: 20, titre: "Ta séance", texte: "Terminée, elle coche ta mission du jour.", icone: Dumbbell, fond: "#F1EBFF", couleur: "#7C4FE0" },
+  { x: 76, y: 20, titre: "Tes repas", texte: "Notés, ils tiennent ta série.", icone: ChefHat, fond: "#FFF0E2", couleur: "#E8620C" },
+  { x: 24, y: 80, titre: "Ton Guide", texte: "Il sait tout ça sans que tu recopies.", icone: MessageCircle, fond: "#FBE6FF", couleur: "#C13BC1" },
+  { x: 76, y: 80, titre: "Ton rang", texte: "Ton EXP monte à ton rythme.", icone: Trophy, fond: "#E3FAF2", couleur: "#0B8A68" },
+];
+
+function ToutRelie() {
+  return (
+    <section className={`${s.section} ${s.relie}`}>
+      <div className={`${s.wrap} ${s.centre}`}>
+        <div data-reveal>
+          <Surtitre>Tout au même endroit</Surtitre>
+          <h2 className={s.titre}>Et <span className={s.accent}>tout se parle.</span></h2>
+          <p className={s.chapo}>
+            Comme les branches du logo qui se rejoignent en un point : une séance terminée fait avancer ta semaine,
+            nourrit ton rang, et ton Guide le sait déjà.
+          </p>
+        </div>
+        <div className={s.constellation} data-reveal>
+          <svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden>
+            <defs>
+              <linearGradient id="vitrine-fil" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0" stopColor="#A66CF4" />
+                <stop offset=".55" stopColor="#E68FC6" />
+                <stop offset="1" stopColor="#FEB86E" />
+              </linearGradient>
+            </defs>
+            {NOEUDS.map((n) => {
+              const d = `M${n.x} ${n.y} Q ${(n.x + 50) / 2} ${n.y < 50 ? 50 : 50} 50 50`;
+              return (
+                <g key={n.titre}>
+                  <path className={s.fil} d={d} vectorEffect="non-scaling-stroke" />
+                  <path className={s.flux} d={d} vectorEffect="non-scaling-stroke" pathLength={242} />
+                </g>
+              );
+            })}
+          </svg>
+          <div className={s.coeur}>
+            <Image src="/marque/logo-degrade.png" alt="Le logo Vaiiya" width={120} height={120} />
+          </div>
+          {NOEUDS.map((n) => {
+            const Icone = n.icone;
+            return (
+              <div key={n.titre} className={s.noeud} style={{ left: `${n.x}%`, top: `${n.y}%` }}>
+                <b><i style={{ background: n.fond, color: n.couleur }}><Icone size={15} /></i>{n.titre}</b>
+                <span>{n.texte}</span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ═══════════════ 5 · LE CHEMIN ═══════════════ */
 
 type Etape = {
   quand: string;
   titre: string;
   texte: string;
   photo: string;
-  repere: { image: string; affiche?: boolean };
+  repere: string;
   pastilles: { texte: string; ton: "violet" | "feu" | "teal" }[];
 };
 
 const ETAPES: Etape[] = [
-  {
-    quand: "Jour 1",
-    titre: "12 minutes dans ton salon.",
-    texte: "Ta première séance, sans matériel. Tu la fais en entier.",
-    photo: "/entrainement/cat-sansmateriel.webp",
-    repere: { image: "/rangs/rank-01-bronze.png" },
-    pastilles: [{ texte: "+30 EXP", ton: "violet" }, { texte: "Bronze", ton: "violet" }],
-  },
-  {
-    quand: "Semaine 2",
-    titre: "Ta série tient, même les jours chargés.",
-    texte: "Une séance ou un repas noté suffit pour la garder.",
-    photo: "/entrainement/cardio-saut.webp",
-    repere: { image: "/rangs/rank-02-argent.png" },
-    pastilles: [{ texte: "🔥 10 jours", ton: "feu" }, { texte: "Argent", ton: "violet" }],
-  },
-  {
-    quand: "Mois 1",
-    titre: "Tu entraînes un ami avec toi.",
-    texte: "Votre relais révèle une affiche, séance après séance.",
-    photo: "/vitrine/course-ville.webp",
-    repere: { image: "/defis/sillage/04.webp", affiche: true },
-    pastilles: [{ texte: "Relais gagné ✓", ton: "teal" }],
-  },
-  {
-    quand: "Mois 3",
-    titre: "Tu y vas sans te poser la question.",
-    texte: "C’est devenu une partie de toi.",
-    photo: "/vitrine/coureuse-aube.webp",
-    repere: { image: "/rangs/rank-03-or.png" },
-    pastilles: [{ texte: "Or", ton: "violet" }, { texte: "🔥 63 jours", ton: "feu" }],
-  },
+  { quand: "Jour 1", titre: "12 minutes dans ton salon.", texte: "Ta première séance, sans matériel. Tu la fais en entier.",
+    photo: "/entrainement/cat-sansmateriel.webp", repere: "/rangs/rank-01-bronze.png",
+    pastilles: [{ texte: "+30 EXP", ton: "violet" }, { texte: "Bronze", ton: "violet" }] },
+  { quand: "Semaine 2", titre: "Ta série tient, même les jours chargés.", texte: "Une séance ou un repas noté suffit pour la garder.",
+    photo: "/entrainement/cardio-saut.webp", repere: "/rangs/rank-02-argent.png",
+    pastilles: [{ texte: "10 jours", ton: "feu" }, { texte: "Argent", ton: "violet" }] },
+  { quand: "Mois 1", titre: "Tu entraînes un ami avec toi.", texte: "Votre relais révèle une affiche, séance après séance.",
+    photo: "/vitrine/course-ville.webp", repere: "/defis/sillage/04.webp",
+    pastilles: [{ texte: "Relais gagné", ton: "teal" }] },
+  { quand: "Mois 3", titre: "Tu y vas sans te poser la question.", texte: "C’est devenu une partie de toi.",
+    photo: "/vitrine/coureuse-aube.webp", repere: "/rangs/rank-03-or.png",
+    pastilles: [{ texte: "Or", ton: "violet" }, { texte: "63 jours", ton: "feu" }] },
 ];
 
-const TON_PASTILLE = {
+const TON = {
   violet: { background: "#F3EEFF", color: "#5B3FC4" },
-  feu: { background: "#FFF0E2", color: CUIVRE },
+  feu: { background: "#FFF0E2", color: "#B4570C" },
   teal: { background: "#E3FAF2", color: "#0B7A5C" },
 };
 
 function Chemin() {
   return (
-    <section id={DISCOVER_ANCHOR} className={`${styles.chemin} scroll-mt-6`}>
-      <div className={styles.soleil} aria-hidden />
-      <div className="relative mx-auto max-w-[1140px] px-5 md:px-11 text-center">
-        <Surtitre>Dans trois mois</Surtitre>
-        <Titre className="mx-auto max-w-[16ch]">
-          Tu iras t’entraîner <span style={MOT_ACCENT}>sans y penser.</span>
-        </Titre>
-        <p className="mx-auto mt-3 max-w-[40ch] text-[16px]" style={{ color: ENCRE_2 }}>
-          Vaiiya transforme l’envie en habitude : une séance à ta mesure, des repas suivis, et quelqu’un pour te relancer au bon moment.
-        </p>
-
-        <ol className={styles.route}>
+    <section className={`${s.section} ${s.chemin}`}>
+      <div className={s.wrap}>
+        <div className={s.centre} data-reveal>
+          <Surtitre>Dans trois mois</Surtitre>
+          <h2 className={s.titre}>Tu iras t’entraîner <span className={s.accent}>sans y penser.</span></h2>
+          <p className={s.chapo}>
+            Vaiiya transforme l’envie en habitude : une séance à ta mesure, des repas suivis,
+            et quelqu’un pour te relancer au bon moment.
+          </p>
+        </div>
+        <ol className={s.etapes}>
           {ETAPES.map((e, i) => (
-            <li key={e.quand} className={styles.etape} data-derniere={i === ETAPES.length - 1 || undefined}>
-              <span className={styles.repere} data-affiche={e.repere.affiche || undefined}>
-                <Image src={e.repere.image} alt="" width={e.repere.affiche ? 40 : 46} height={e.repere.affiche ? 56 : 46} />
-              </span>
-              <div className={styles.carte}>
-                <div className="relative aspect-[16/9]">
-                  <Image src={e.photo} alt="" fill sizes="(min-width: 768px) 25vw, 80vw" className="object-cover" />
-                </div>
-                <div className="px-4 pt-3.5 pb-4 text-left">
-                  <span className="vy-nombre text-[13px] font-semibold" style={{ color: CUIVRE }}>{e.quand}</span>
-                  <h3 className="mt-1 text-[20px] leading-[1.15]" style={{ color: ENCRE, fontWeight: 850, fontVariationSettings: "var(--w-voix)" }}>
-                    {e.titre}
-                  </h3>
-                  <p className="mt-1 text-[13px]" style={{ color: ENCRE_2 }}>{e.texte}</p>
-                  <div className="mt-2.5 flex flex-wrap gap-1.5">
-                    {e.pastilles.map((p) => (
-                      <span key={p.texte} className="rounded-full px-2.5 py-1 text-[11px] font-bold" style={TON_PASTILLE[p.ton]}>
-                        {p.texte}
-                      </span>
-                    ))}
-                  </div>
+            <li key={e.quand} className={s.etape} data-derniere={i === ETAPES.length - 1 || undefined} data-reveal>
+              <div className={s.etapePhoto}>
+                <Image src={e.photo} alt="" fill sizes="(min-width: 960px) 25vw, 78vw" className="object-cover" />
+                <span className={s.etapeRepere}>
+                  <Image src={e.repere} alt="" width={40} height={40} style={{ width: 40, height: 40, objectFit: "contain", borderRadius: 8 }} />
+                </span>
+              </div>
+              <div className={s.etapeCorps}>
+                <span className="vy-nombre" style={{ fontSize: 13, color: "#B4570C" }}>{e.quand}</span>
+                <h3>{e.titre}</h3>
+                <p>{e.texte}</p>
+                <div className={s.pastilles}>
+                  {e.pastilles.map((p) => <span key={p.texte} style={TON[p.ton]}>{p.texte}</span>)}
                 </div>
               </div>
             </li>
           ))}
         </ol>
-        <p className="mt-5 text-[13px]" style={{ color: ENCRE_3 }}>
+        <p className="mt-4 text-center text-[13px]" style={{ color: "#7B7389" }}>
           Exemple de parcours. Le tien ira à ton rythme, et c’est très bien comme ça.
         </p>
       </div>
@@ -245,138 +450,265 @@ function Chemin() {
   );
 }
 
-/* ═══════════════ 3 · UNE JOURNÉE ═══════════════ */
+/* ═══════════════ 6 · NUTRITION ═══════════════ */
 
-const MOMENTS = [
-  { quand: "Le matin", texte: "Ta séance t’attend, prête, à ta mesure.", photo: "/entrainement/cat-debuter.webp" },
-  { quand: "À midi", texte: "Une photo de ton assiette, et c’est noté.", photo: "/recipes/poke-bowl-saumon-avocat.jpg" },
-  { quand: "Le soir", texte: "Tu vois le chemin que tu as fait.", photo: "/vitrine/bras-leves.webp" },
-];
-
-function Journee() {
+function Nutrition() {
   return (
-    <section className="mx-auto max-w-[1140px] px-5 md:px-11 py-14">
-      <Surtitre>Une journée avec Vaiiya</Surtitre>
-      <Titre>Tu n’as plus à te demander quoi faire.</Titre>
-      <div className="mt-6 grid gap-3.5 md:grid-cols-3">
-        {MOMENTS.map((m) => (
-          <div key={m.quand} className="relative aspect-[4/5] overflow-hidden rounded-[26px]">
-            <Image src={m.photo} alt="" fill sizes="(min-width: 768px) 33vw, 100vw" className="object-cover" />
-            <div className="absolute inset-x-0 bottom-0 px-5 pb-5 pt-16 text-white"
-              style={{ background: "linear-gradient(to top, rgba(28,14,6,.72), transparent)" }}>
-              <span className="text-[11px] font-bold uppercase tracking-[0.06em] opacity-85">{m.quand}</span>
-              <p className="mt-1 text-[20px] leading-[1.1]" style={{ fontWeight: 850, fontVariationSettings: "var(--w-voix)" }}>
-                {m.texte}
-              </p>
-            </div>
-          </div>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-/* ═══════════════ 4 · LES RANGS ═══════════════ */
-
-function Rangs() {
-  return (
-    <section className="mx-auto max-w-[1140px] px-5 md:px-11 pb-14">
-      <Surtitre>Ta progression</Surtitre>
-      <Titre>Six rangs. Chacun se mérite en revenant.</Titre>
-      <p className="mt-3 max-w-[44ch] text-[16px]" style={{ color: ENCRE_2 }}>
-        Chaque séance et chaque repas noté te rapportent de l’EXP. Personne contre qui te comparer : tu montes à ton rythme.
-      </p>
-      <div className="mt-6 overflow-x-auto rounded-[28px] bg-white px-3.5 py-5" style={{ boxShadow: "0 24px 50px -36px rgba(120,60,10,.4)" }}>
-        <ol className="grid min-w-[420px] grid-cols-6 items-end gap-1.5">
-          {RANGS.filter((r) => r.image).map((r, i) => {
-            const taille = 40 + i * 6;
-            return (
-              <li key={r.id} className="flex flex-col items-center gap-1 text-center">
-                <Image src={r.image!} alt="" width={taille} height={taille}
-                  style={{ width: taille, height: taille, objectFit: "contain", filter: "drop-shadow(0 8px 12px rgba(80,40,120,.25))" }} />
-                <b className="text-[13px]" style={{ color: ENCRE }}>{r.nom}</b>
-                <span className="vy-nombre text-[11px]" style={{ color: ENCRE_3 }}>{i === 0 ? "0 EXP" : r.min}</span>
-              </li>
-            );
-          })}
-        </ol>
-      </div>
-    </section>
-  );
-}
-
-/* ═══════════════ 5 · TOUT AU MÊME ENDROIT ═══════════════ */
-
-function ToutRelie({ chiffres }: { chiffres: ChiffresPublics }) {
-  const lignes = [
-    { titre: `${chiffres.seances} séances guidées`, texte: "À la maison ou à la salle, montrées mouvement par mouvement.", photo: "/entrainement/cardio-saut.webp" },
-    { titre: "La tienne, composée en deux minutes", texte: `Parmi ${chiffres.mouvements} mouvements animés.`, photo: "/entrainement/cat-renfo.webp" },
-    { titre: "Tes repas, sans prise de tête", texte: "Photo de l’assiette, recette avec tes restes, carte du resto.", photo: "/recipes/avocado-toast.jpg" },
-    { titre: "Un assistant qui agit", texte: "Il prépare, tu valides. Rien ne s’écrit sans ton accord.", photo: "/guides/nora-explain-avatar-v1.webp" },
-  ];
-  return (
-    <section className="mx-auto max-w-[1140px] px-5 md:px-11 pb-14">
-      <Surtitre>Tout au même endroit</Surtitre>
-      <Titre>Et tout se parle.</Titre>
-      <div className="mt-6 grid gap-2.5 md:grid-cols-2">
-        {lignes.map((l) => (
-          <div key={l.titre} className="flex items-center gap-3.5 rounded-[20px] bg-white p-3" style={{ boxShadow: "0 1px 2px rgba(60,30,10,.06)" }}>
-            <div className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-[14px]" style={{ background: "#F1EBFF" }}>
-              <Image src={l.photo} alt="" fill sizes="64px" className="object-cover" />
-            </div>
-            <div className="min-w-0">
-              <b className="block text-[16px]" style={{ color: ENCRE }}>{l.titre}</b>
-              <span className="text-[13px]" style={{ color: ENCRE_2 }}>{l.texte}</span>
-            </div>
-          </div>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-/* ═══════════════ 6 · LE RELAIS ET VAIIYA+ ═══════════════ */
-
-function Relais() {
-  return (
-    <section className="mx-auto grid max-w-[1140px] items-center gap-5 px-5 md:grid-cols-2 md:px-11 pb-16">
-      <div className="flex gap-2.5">
-        {["/defis/sillage/02.webp", "/defis/sillage/04.webp"].map((src) => (
-          <div key={src} className="relative aspect-[9/16] w-1/2 overflow-hidden rounded-[18px]" style={{ boxShadow: "0 20px 40px -24px rgba(40,20,80,.5)" }}>
-            <Image src={src} alt="" fill sizes="(min-width: 768px) 25vw, 50vw" className="object-cover" />
-          </div>
-        ))}
-      </div>
-      <div>
-        <Surtitre>À deux, c’est plus facile</Surtitre>
-        <Titre>Le relais : une affiche qui se révèle à chaque séance.</Titre>
-        <p className="mt-3 max-w-[44ch] text-[16px]" style={{ color: ENCRE_2 }}>
-          Lance-le avec un ami. Quatre séances à vous deux dans la semaine, et l’affiche est à vous.
-        </p>
-        <div className="mt-4 flex items-center justify-between gap-3 rounded-[22px] px-5 py-4"
-          style={{ background: "linear-gradient(135deg,#FFF3D6,#FBE6FF)" }}>
-          <div>
-            <b className="block text-[16px]" style={{ color: ENCRE }}>Vaiiya+ arrive bientôt</b>
-            <span className="text-[13px]" style={{ color: ENCRE_2 }}>Le compte gratuit garde les séances, les mouvements et les rangs, sans pub.</span>
-          </div>
-          <Link href="/premium" className="vy-nombre whitespace-nowrap text-[20px] font-bold" style={{ color: "#8A5A06" }}>
-            {formatPrice(PLANS.premium.priceCents)}/mois
-          </Link>
+    <section className={`${s.section} ${s.nutrition}`}>
+      <div className={`${s.wrap} ${s.nutriGrille}`}>
+        <div className={s.assiette} data-reveal>
+          <Image src="/recipes/poke-bowl-saumon-avocat.jpg" alt="Un poke bowl au saumon et à l’avocat, analysé par Vaiiya" fill sizes="(min-width: 960px) 460px, 100vw" className="object-cover" />
+          <span className={s.scan} aria-hidden />
+          <span className={s.ligneScan} aria-hidden />
+          <span className={`${s.macro} ${s.macroA}`} aria-hidden>Riz · <b className="vy-nombre">150</b> g</span>
+          <span className={`${s.macro} ${s.macroB}`} aria-hidden>Saumon · <b className="vy-nombre">120</b> g</span>
+          <span className={`${s.macro} ${s.macroC}`} aria-hidden>Avocat · <b className="vy-nombre">60</b> g</span>
+          <span className={s.resultat} aria-hidden>Estimation · ~<b className="vy-nombre">640</b>kcal</span>
+        </div>
+        <div data-reveal>
+          <Surtitre>Tes repas, sans prise de tête</Surtitre>
+          <h2 className={s.titre}>Une photo, <span className={s.accent}>et c’est noté.</span></h2>
+          <p className={s.chapo}>
+            Prends ton assiette en photo : Vaiiya estime les calories et les macros, élément par élément.
+          </p>
+          <ul className={s.listeNutri}>
+            <li><i style={{ background: "#FFF0E2", color: "#E8620C" }}><Camera size={17} /></i><div><b>Ton assiette en photo</b><span>Calories et macros estimées.</span></div></li>
+            <li><i style={{ background: "#F1EBFF", color: "#7C4FE0" }}><ChefHat size={17} /></i><div><b>Une recette avec tes restes</b><span>Tu dis ce que tu as, il propose.</span></div></li>
+            <li><i style={{ background: "#E3FAF2", color: "#0B8A68" }}><Store size={17} /></i><div><b>La carte du resto</b><span>Les plats rangés selon ton objectif.</span></div></li>
+          </ul>
         </div>
       </div>
     </section>
   );
 }
 
-export default function LandingVitrine({ chiffres }: { chiffres: ChiffresPublics }) {
+/* ═══════════════ 7 · LES RANGS ═══════════════ */
+
+function Rangs() {
+  const rangs = RANGS.filter((r) => r.image);
   return (
-    <div className={styles.page}>
+    <section className={`${s.section} ${s.rangs}`}>
+      <div className={`${s.wrap} ${s.centre}`}>
+        <div data-reveal>
+          <Surtitre>Ta progression</Surtitre>
+          <h2 className={s.titre}>Six rangs. <span className={s.accent}>Chacun se mérite en revenant.</span></h2>
+          <p className={s.chapo}>
+            Chaque séance et chaque repas noté te rapportent de l’EXP. Personne contre qui te comparer :
+            tu montes à ton rythme.
+          </p>
+        </div>
+        <ol className={s.escalier} data-reveal>
+          {rangs.map((r, i) => (
+            <li key={r.id} className={s.marche}>
+              <div className={s.gemme} style={{ maxWidth: 64 + i * 10 }}>
+                <Image src={r.image!} alt="" fill sizes="120px" style={{ objectFit: "contain", filter: "drop-shadow(0 14px 18px rgba(0,0,0,.35))" }} />
+              </div>
+              <div className={s.socle} style={{ height: 50 + i * 26 }}>
+                <b>{r.nom}</b>
+                <span className="vy-nombre">{r.min} EXP</span>
+              </div>
+            </li>
+          ))}
+        </ol>
+      </div>
+    </section>
+  );
+}
+
+/* ═══════════════ 8 · LE RELAIS ═══════════════ */
+
+function Relais() {
+  return (
+    <section className={`${s.section} ${s.relais}`}>
+      <div className={`${s.wrap} ${s.relaisGrille}`}>
+        <div className={s.affiche} data-reveal aria-label="L’affiche Sillage qui se dévoile en quatre étapes" role="img">
+          {["01", "02", "03", "04"].map((n) => (
+            <div key={n}>
+              <Image src={`/defis/sillage/${n}.webp`} alt="" fill sizes="300px" className="object-cover" />
+            </div>
+          ))}
+          <span className={s.afficheSignature}>✦ VAIIYA</span>
+        </div>
+        <div data-reveal>
+          <Surtitre>À deux, c’est plus facile</Surtitre>
+          <h2 className={s.titre}>Le relais : <span className={s.accent}>une affiche qui se révèle</span> à chaque séance.</h2>
+          <p className={s.chapo}>
+            Lance-le avec un ami. Quatre séances à vous deux dans la semaine, et l’affiche est à vous.
+            Pas de classement, pas de reproche : on avance ensemble.
+          </p>
+          <div className={s.maillons} aria-hidden><i /><i /><i /><i /></div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ═══════════════ 9 · L'OFFRE ═══════════════ */
+
+const INCLUS = [
+  "Les séances guidées du catalogue",
+  "Les mouvements animés, pour composer les tiennes",
+  "Ton Guide, Nora ou Sasha",
+  "La nutrition par photo",
+  "Ton planning de la semaine",
+  "Ton rang, ton EXP et tes missions",
+  "Le relais à deux avec un proche",
+  "Zéro pub",
+];
+
+function Offre() {
+  return (
+    <section className={`${s.section} ${s.offre}`}>
+      <div className={s.wrap}>
+        <div className={s.centre} data-reveal>
+          <Surtitre>Le compte gratuit</Surtitre>
+          <h2 className={s.titre}>Tu commences avec <span className={s.accent}>tout ça.</span></h2>
+          <p className={s.chapo}>Pas une version bridée le temps d’un essai : le compte gratuit, c’est le produit, pour de vrai.</p>
+        </div>
+        <div className={s.offreGrille}>
+          <div className={s.offreCarte} data-reveal>
+            <h3>Gratuit</h3>
+            <ul>
+              {INCLUS.map((b) => (
+                <li key={b}><span className={s.coche}><Check size={12} color="#04150F" strokeWidth={3.5} /></span>{b}</li>
+              ))}
+            </ul>
+          </div>
+          <div className={`${s.offreCarte} ${s.plus}`} data-reveal>
+            <h3>Vaiiya+</h3>
+            <span className={s.bientot}>Arrive bientôt</span>
+            <ul>
+              <li><span className={s.coche} style={{ background: "#F5B120" }}><Check size={12} color="#3A2600" strokeWidth={3.5} /></span>Les séances spécialisées</li>
+              <li><span className={s.coche} style={{ background: "#F5B120" }}><Check size={12} color="#3A2600" strokeWidth={3.5} /></span>Les missions en plus</li>
+              <li><span className={s.coche} style={{ background: "#F5B120" }}><Check size={12} color="#3A2600" strokeWidth={3.5} /></span>Le Guide sans limite</li>
+            </ul>
+            <p className={s.prix}><b className="vy-nombre">{formatPrice(PLANS.premium.priceCents)}</b><span>par mois, à l’ouverture</span></p>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ═══════════════ 10 · AVIS, FIN, PIED ═══════════════ */
+
+function Etoiles({ note }: { note: number }) {
+  return (
+    <span className="inline-flex gap-0.5" aria-label={`${note} sur 5`}>
+      {[1, 2, 3, 4, 5].map((n) => (
+        <svg key={n} width={15} height={15} viewBox="0 0 24 24" aria-hidden
+          fill={n <= note ? "#F5B120" : "transparent"} stroke={n <= note ? "#F5B120" : "#D9CFEF"} strokeWidth={1.6} strokeLinejoin="round">
+          <path d="M12 2.5l2.9 5.9 6.5.95-4.7 4.6 1.1 6.45L12 17.9l-5.8 3 1.1-6.45-4.7-4.6 6.5-.95z" />
+        </svg>
+      ))}
+    </span>
+  );
+}
+
+function Avis({ avis }: { avis: ResumeAvis }) {
+  if (avis.total < SEUIL_AVIS_PUBLIC) return null;
+  return (
+    <section className={`${s.section} ${s.avis}`}>
+      <div className={`${s.wrap} ${s.centre}`}>
+        <div data-reveal>
+          <Surtitre>Les avis</Surtitre>
+          <h2 className={s.titre}>Ils utilisent Vaiiya <span className={s.accent}>au quotidien.</span></h2>
+          <p className="mt-4 flex items-center justify-center gap-3" style={{ color: "#5C5468" }}>
+            <b className="vy-nombre" style={{ fontSize: 26, color: "#1C1626" }}>{avis.moyenne.toFixed(1).replace(".", ",")}</b>
+            <Etoiles note={Math.round(avis.moyenne)} />
+            <span className="text-[13px]">sur {avis.total} avis</span>
+          </p>
+        </div>
+        <div className={s.avisGrille}>
+          {avis.apercu.map((a) => (
+            <div key={a.id} className={s.avisCarte} data-reveal>
+              <div className="flex items-center gap-2.5 mb-2">
+                {a.avatar_url ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={a.avatar_url} alt="" width={36} height={36} className="w-9 h-9 rounded-full object-cover" />
+                ) : (
+                  <span className="w-9 h-9 rounded-full grid place-items-center text-white font-bold" style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)" }}>
+                    {a.pseudo.charAt(0).toUpperCase()}
+                  </span>
+                )}
+                <b className="text-[16px]">{a.pseudo}</b>
+              </div>
+              <Etoiles note={a.note} />
+              {a.texte.trim() && <p>{a.texte}</p>}
+            </div>
+          ))}
+        </div>
+        <div className="mt-8"><Link href="/avis" className={s.lienDoux}>Voir tous les avis</Link></div>
+      </div>
+    </section>
+  );
+}
+
+function Fin() {
+  return (
+    <section className={s.fin}>
+      <div className={s.wrap} data-reveal>
+        <Image src="/marque/logo-degrade.png" alt="" width={76} height={76} className={s.finLogo} />
+        <h2 className={s.finTitre}>Commence là où <span className={s.accent}>tu en es.</span></h2>
+        <p className={s.chapo} style={{ margin: "18px auto 30px" }}>Une séance suffit pour savoir si Vaiiya est fait pour toi.</p>
+        <Bouton label="Créer mon compte gratuit" />
+        <p className="mt-4 text-[13px]" style={{ color: "#7B7389" }}>
+          Sans carte bancaire · Déjà un compte ?{" "}
+          <Link href="/auth?mode=login" style={{ color: "#5B3FC4", fontWeight: 700 }}>Se connecter</Link>
+        </p>
+      </div>
+    </section>
+  );
+}
+
+function Pied() {
+  return (
+    <footer className={s.pied}>
+      <div className={s.wrap}>
+        <div className={s.piedGrille}>
+          <div>
+            <span className={s.marque}>
+              <Image src="/marque/logo-degrade.png" alt="" width={28} height={28} />
+              Vaiiya
+            </span>
+            <p>Tes séances, tes repas et ton Guide au même endroit. Application web, en français.</p>
+          </div>
+          <div>
+            <h4>Comprendre</h4>
+            <ul>{SEO_PAGES.map((l) => <li key={l.href}><Link href={l.href}>{l.label}</Link></li>)}</ul>
+          </div>
+          <div>
+            <h4>Vaiiya</h4>
+            <ul>
+              <li><Link href="/auth?mode=login">Se connecter</Link></li>
+              <li><Link href="/premium">Vaiiya+</Link></li>
+              {LEGAL_PAGES.map((l) => <li key={l.href}><Link href={l.href}>{l.label}</Link></li>)}
+            </ul>
+          </div>
+        </div>
+        <p className={s.copyright}>© {new Date().getFullYear()} Vaiiya · Entraînement · Nutrition · Guide IA</p>
+      </div>
+    </footer>
+  );
+}
+
+export default function LandingVitrine({ chiffres, avis }: { chiffres: ChiffresPublics; avis: ResumeAvis }) {
+  const racine = useRef<HTMLDivElement>(null);
+  useRevelation(racine);
+  return (
+    <div ref={racine} className={s.page}>
       <Heros />
+      <Mouvements chiffres={chiffres} />
+      <Guide />
+      <ToutRelie />
       <Chemin />
-      <Journee />
+      <Nutrition />
       <Rangs />
-      <ToutRelie chiffres={chiffres} />
       <Relais />
+      <Offre />
+      <Avis avis={avis} />
+      <Fin />
+      <Pied />
     </div>
   );
 }

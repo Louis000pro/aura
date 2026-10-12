@@ -1,7 +1,7 @@
 /* ════════════════════════════════════════════════════════════════════
    Les chiffres que la landing affiche au public.
 
-   Ils étaient écrits en dur dans `LandingStory`, avec un TODO qui demandait
+   Ils étaient écrits en dur dans l’ancienne `LandingStory`, avec un TODO qui demandait
    de les dériver. Deux des trois le sont maintenant, et le troisième ne peut
    pas l'être proprement. Le détail compte, parce qu'un chiffre faux sur la
    page d'accueil est le pire endroit où se tromper.
