@@ -1,21 +1,29 @@
-﻿"use client";
+"use client";
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Eye, EyeOff,
-  User, Mail, Lock, CheckCircle2, AtSign, UserCheck,
+  User, Mail, Lock, CheckCircle2, AtSign, UserCheck, ArrowRight,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { destinationDepuisUrl } from "@/lib/destinationInterne";
-import FondPresentation from "@/components/FondPresentation";
+import s from "./auth.module.css";
 
 /* Système « D » : le bouton d'action principal est TOUJOURS violet vers magenta,
    jamais violet vers or. Même couleur que le CTA de la page de présentation. */
 const ACTION_BG = "linear-gradient(135deg,#8B5CF6 0%,#C13BC1 100%)";
 const TEAL = "#2BD4A0"; // réussite
+/* L'entrée est toujours claire, comme la vitrine (Louis, 2026-10-12) : ses
+   encres sont écrites en dur et ne suivent pas le mode sombre. */
+const ENCRE = "#1C1626";
+const ENCRE_2 = "#5C5468";
+const ENCRE_3 = "#7B7389";
+const LIEN = "#5B3FC4";
+const DEGRADE_LOGO = "linear-gradient(100deg,#A66CF4,#E68FC6 55%,#FEB86E)";
 
 /* ── Champ input ── */
 function Field({
@@ -35,13 +43,15 @@ function Field({
        ignorait en silence et les champs n'avaient aucun contour. */
     <div className="relative flex items-center gap-3 px-4 py-3.5 rounded-2xl"
       style={{
-        background: "rgba(var(--tint-violet-rgb),0.62)",
-        border: focused ? "1px solid rgba(var(--accent-rgb),0.5)" : "1px solid rgba(var(--accent-rgb),0.16)",
-        boxShadow: focused ? "0 4px 20px rgba(var(--accent-rgb),0.14)" : "0 2px 8px rgba(var(--accent-rgb),0.04)",
-        transition: "border-color 0.15s ease, box-shadow 0.15s ease",
+        border: "1.5px solid transparent",
+        background: focused
+          ? `linear-gradient(#fff,#fff) padding-box, ${DEGRADE_LOGO} border-box`
+          : "linear-gradient(#fff,#fff) padding-box, linear-gradient(rgba(28,22,38,0.1),rgba(28,22,38,0.1)) border-box",
+        boxShadow: focused ? "0 6px 18px -10px rgba(139,92,246,0.5)" : "none",
+        transition: "box-shadow 0.15s ease",
       }}
     >
-      <span style={{ color: focused ? "var(--accent)" : "var(--text-3)", transition: "color 0.15s ease" }}>
+      <span style={{ color: focused ? "#8B5CF6" : ENCRE_3, transition: "color 0.15s ease" }}>
         {icon}
       </span>
       <input type={type} placeholder={placeholder} value={value} onChange={e => onChange(e.target.value)}
@@ -51,8 +61,8 @@ function Field({
         spellCheck={name === "username" || name === "email" ? false : undefined}
         onFocus={() => setFocused(true)} onBlur={() => setFocused(false)}
         required={required} autoFocus={autoFocus}
-        className="flex-1 bg-transparent text-[16px] outline-none placeholder:text-[var(--text-3)]"
-        style={{ color: "var(--text-1)" }} />
+        className="flex-1 min-w-0 bg-transparent text-[16px] outline-none placeholder:text-[#7B7389]"
+        style={{ color: ENCRE }} />
       {suffix}
     </div>
   );
@@ -72,7 +82,7 @@ function pwdStrength(p: string) {
   const levels = [
     { label: "Trop court",      color: "#E86A6A", bars: 1 },
     { label: "Faible",          color: "#E86A6A", bars: 1 },
-    { label: "Passable",        color: "var(--gold)", bars: 2 },
+    { label: "Passable",        color: "#D9900A", bars: 2 },
     { label: "Sécurisé",        color: TEAL, bars: 3 },
     { label: "Très sécurisé",   color: TEAL, bars: 4 },
     { label: "Excellent",       color: TEAL, bars: 5 },
@@ -88,7 +98,7 @@ function PasswordStrengthBar({ password }: { password: string }) {
       <div className="flex gap-1">
         {[1,2,3,4,5].map(i => (
           <div key={i} className="flex-1 h-1 rounded-full"
-            style={{ background: i <= s.bars ? s.color : "rgba(var(--accent-rgb),0.14)", transition: "background 0.3s ease" }} />
+            style={{ background: i <= s.bars ? s.color : "rgba(28,22,38,0.1)", transition: "background 0.3s ease" }} />
         ))}
       </div>
       <p className="text-[11px] font-semibold" style={{ color: s.color, transition: "color 0.3s ease" }}>
@@ -142,10 +152,10 @@ function OtpInput({ value, onChange }: { value: string; onChange: (v: string) =>
             onFocus={e => e.target.select()}
             className="w-11 h-14 text-center text-[20px] font-bold rounded-2xl outline-none"
             style={{
-              background: "rgba(var(--tint-violet-rgb),0.62)",
-              border: digit ? "1.5px solid rgba(var(--accent-rgb),0.55)" : "1.5px solid rgba(var(--accent-rgb),0.14)",
-              color: "var(--text-1)",
-              boxShadow: digit ? "0 4px 16px rgba(var(--accent-rgb),0.18)" : "0 2px 8px rgba(var(--accent-rgb),0.04)",
+              background: "#fff",
+              border: digit ? "1.5px solid rgba(139,92,246,0.55)" : "1.5px solid rgba(28,22,38,0.12)",
+              color: ENCRE,
+              boxShadow: digit ? "0 4px 16px rgba(139,92,246,0.18)" : "none",
               transition: "all 0.15s ease",
             }}
           />
@@ -199,7 +209,6 @@ export default function AuthPage() {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [signupSent, setSignupSent] = useState(false);
   const [error, setError]           = useState<string|null>(null);
-  const [isMobile, setIsMobile]     = useState(false);
 
   /* OTP */
   const [otpCode, setOtpCode]           = useState("");
@@ -218,9 +227,6 @@ export default function AuthPage() {
   useEffect(() => {
     const p = new URLSearchParams(window.location.search);
     if (p.get("mode") === "signup") setMode("signup");
-    // Le fond est statique : il ne reste que le flou de verre de la carte,
-    // qu'on coupe sur mobile pour ne pas faire ramer le GPU.
-    setIsMobile(window.matchMedia("(max-width: 767px)").matches);
   }, []);
 
   const canSubmit = mode === "signup"
@@ -384,32 +390,80 @@ export default function AuthPage() {
     setForgotSent(true);
   };
 
+  /* Le titre suit l'étape : c'est lui qui dit où l'on en est. */
+  const titre = mode === "signup"
+    ? <>Deviens la personne <span className={s.grad}>qui y va.</span></>
+    : etapeConnexion === 2
+      ? <>Plus qu’une <span className={s.grad}>étape.</span></>
+      : <>Te <span className={s.grad}>revoilà.</span></>;
+  const sousTitre = mode === "signup"
+    ? "Gratuit, sans carte bancaire."
+    : etapeConnexion === 2
+      ? null
+      : "Ta série t’attend là où tu l’as laissée.";
+
+  const changerMode = (m: "login" | "signup") => {
+    setMode(m); setError(null); setEtapeConnexion(1); setForgotMode(false);
+  };
+
+  const bulles = (
+    <>
+      <span className={`${s.bulle} ${s.b1}`}>
+        <i style={{ background: "#FFF0E2" }}>🔥</i>
+        <span><b className="vy-nombre">21</b> jours</span>
+      </span>
+      <span className={`${s.bulle} ${s.b2}`}>
+        <Image src="/rangs/rank-03-or.png" alt="" width={26} height={26} />
+        <span>Rang <b>Or</b></span>
+      </span>
+      <span className={`${s.bulle} ${s.b3}`}>
+        <i style={{ background: "#F1EBFF", color: "#7C4FE0" }}>✦</i>
+        <span>Séance faite <b style={{ color: "#0B8A68" }}>✓</b></span>
+      </span>
+    </>
+  );
+
   return (
-    <div className="relative min-h-screen flex items-center justify-center overflow-hidden"
-      style={{ background: "var(--page-bg)" }}>
+    <div className={s.page}>
+      <div className={s.soleil} aria-hidden />
 
-      <FondPresentation />
+      {/* ── Téléphone : le ciel, le logo et « VAIIYA » en blanc ── */}
+      <div className={s.ciel} data-court={mode === "signup" ? "" : undefined} aria-hidden>
+        {mode === "login" && bulles}
+        <div className={s.marque}>
+          <Image src="/marque/logo-degrade.png" alt="" width={mode === "signup" ? 46 : 64} height={mode === "signup" ? 46 : 64} priority />
+          <span className={s.mot}>VAIIYA</span>
+        </div>
+      </div>
 
-      <motion.div initial={{ opacity:0,y:36,scale:0.93 }} animate={{ opacity:1,y:0,scale:1 }}
-        transition={{ duration:0.6,ease:[0.25,0.46,0.45,0.94] }}
-        className="relative z-10 w-full max-w-md mx-4"
-      >
-        <div className="relative rounded-3xl px-8 py-10 overflow-hidden"
-          style={{ background: isMobile ? "rgba(var(--surface-rgb),0.96)" : "rgba(var(--surface-rgb),0.88)", backdropFilter: isMobile ? "none" : "blur(12px) saturate(180%)", border:"1px solid rgba(var(--accent-rgb),0.16)",boxShadow:"0 1px 0 rgba(var(--surface-rgb),0.95) inset,0 32px 80px -16px rgba(var(--accent-rgb),0.22)" }}>
+      {/* ── Ordinateur : la phrase et les signes du chemin ── */}
+      <div className={s.cote}>
+        <div className={s.coteMarque}>
+          <Image src="/marque/logo-degrade.png" alt="" width={34} height={34} priority style={{ filter: "saturate(1.35) contrast(1.1)" }} />
+          <span className={s.mot}>Vaiiya</span>
+        </div>
+        <h1 className={s.coteTitre}>{titre}</h1>
+        <p className={s.coteSous}>
+          {mode === "signup"
+            ? "Tes séances, tes repas et un assistant qui te connaît, réunis dans une seule appli. Gratuit, sans carte bancaire."
+            : "Ta série, ton rang et ta séance du jour t’attendent là où tu les as laissés."}
+        </p>
+        <div className={s.rangee} aria-hidden>{bulles}</div>
+      </div>
 
-          {/* Liseré violet en haut de la carte : la marque, pas un reflet blanc. */}
-          <div className="absolute top-0 left-0 right-0 h-px rounded-t-3xl"
-            style={{ background:"linear-gradient(90deg,transparent,rgba(var(--accent-rgb),0.55),transparent)" }} />
+      <div className={s.zone}>
+        <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
+          className={s.carte}>
 
           {/* Overlay OTP (inscription) */}
           <AnimatePresence>
             {signupSent && (
-              <motion.div initial={{ opacity:0,scale:0.92 }} animate={{ opacity:1,scale:1 }} exit={{ opacity:0,scale:0.92 }}
-                transition={{ duration:0.35,ease:[0.25,0.46,0.45,0.94] }}
-                className="absolute inset-0 z-50 flex flex-col items-center justify-center rounded-3xl gap-5 px-8 py-10"
-                style={{ background:"rgba(var(--surface-rgb),0.97)",backdropFilter:"blur(10px)" }}>
+              <motion.div initial={{ opacity:0,scale:0.96 }} animate={{ opacity:1,scale:1 }} exit={{ opacity:0,scale:0.96 }}
+                transition={{ duration:0.3,ease:[0.25,0.46,0.45,0.94] }}
+                className="absolute inset-0 z-50 flex flex-col items-center justify-center gap-5 px-6 py-8"
+                style={{ background:"rgba(255,255,255,0.97)" }}>
 
-                {/* Icône */}
                 <motion.div initial={{ scale:0,rotate:-180 }} animate={{ scale:1,rotate:0 }}
                   transition={{ type:"spring",bounce:0.5,delay:0.1 }}
                   className="w-16 h-16 rounded-2xl flex items-center justify-center"
@@ -417,179 +471,137 @@ export default function AuthPage() {
                   <Mail size={26} strokeWidth={1.6} color="#fff" />
                 </motion.div>
 
-                {/* Texte */}
-                <motion.div initial={{ opacity:0,y:8 }} animate={{ opacity:1,y:0 }} transition={{ delay:0.15 }}
-                  className="text-center">
-                  <p className="text-[20px] font-light mb-1" style={{ color:"var(--text-1)" }}>Code de confirmation</p>
-                  <p className="text-[13px] font-light leading-relaxed" style={{ color:"var(--text-2)" }}>
+                <div className="text-center">
+                  <p className="text-[20px] font-bold mb-1" style={{ color:ENCRE }}>Code de confirmation</p>
+                  <p className="text-[13px] leading-relaxed" style={{ color:ENCRE_2 }}>
                     Un code à 6 chiffres a été envoyé à<br/>
-                    <strong style={{ color:"var(--text-1)" }}>{email}</strong>
+                    <strong style={{ color:ENCRE }}>{email}</strong>
                   </p>
-                </motion.div>
+                </div>
 
-                {/* Saisie OTP */}
-                <motion.div initial={{ opacity:0,y:8 }} animate={{ opacity:1,y:0 }} transition={{ delay:0.2 }}
-                  className="w-full">
+                <div className="w-full">
                   <OtpInput value={otpCode} onChange={v => { setOtpCode(v); setOtpError(null); }} />
-                </motion.div>
+                </div>
 
-                {/* Erreur OTP */}
                 <AnimatePresence>
                   {otpError && (
                     <motion.p initial={{ opacity:0,y:-4,height:0 }} animate={{ opacity:1,y:0,height:"auto" }} exit={{ opacity:0,height:0 }}
-                      className="text-[13px] font-medium text-center -mt-2" style={{ color:"#E53E3E" }}>
+                      className="text-[13px] font-medium text-center -mt-2" style={{ color:"#C53030" }}>
                       {otpError}
                     </motion.p>
                   )}
                 </AnimatePresence>
 
-                {/* Bouton valider */}
-                <motion.div initial={{ opacity:0,y:8 }} animate={{ opacity:1,y:0 }} transition={{ delay:0.25 }}
-                  className="w-full">
-                  <motion.button
-                    disabled={otpCode.length < 6 || otpLoading}
-                    whileHover={otpCode.length === 6 && !otpLoading ? { scale:1.02,y:-1 } : {}}
-                    whileTap={otpCode.length === 6 && !otpLoading ? { scale:0.97 } : {}}
-                    onClick={handleVerifyOtp}
-                    className="relative w-full py-4 rounded-2xl text-[16px] font-semibold cursor-pointer overflow-hidden"
-                    style={{
-                      background:ACTION_BG,
-                      color:"#fff",
-                      opacity: otpCode.length < 6 || otpLoading ? 0.5 : 1,
-                      boxShadow:"0 4px 24px rgba(139,92,246,0.42),inset 0 1px 0 rgba(255,255,255,0.28)",
-                      transition:"opacity 0.2s",
-                    }}>
-                    <motion.div className="absolute inset-0 pointer-events-none"
-                      style={{ background:"linear-gradient(105deg,transparent 40%,rgba(255,255,255,0.3) 50%,transparent 60%)" }}
-                      animate={{ x:["-120%","120%"] }} transition={{ duration:2.5,repeat:Infinity,repeatDelay:1.2 }} />
-                    {otpLoading ? (
-                      <motion.div className="w-4 h-4 rounded-full border-2 mx-auto relative z-10"
-                        style={{ borderColor:"rgba(255,255,255,0.3)",borderTopColor:"#fff" }}
-                        animate={{ rotate:360 }} transition={{ duration:0.8,repeat:Infinity,ease:"linear" }} />
-                    ) : (
-                      <span className="relative z-10 flex items-center justify-center gap-2">
-                        <CheckCircle2 size={15} strokeWidth={2}/>
-                        Vérifier le code
-                      </span>
-                    )}
-                  </motion.button>
-                </motion.div>
+                <motion.button
+                  disabled={otpCode.length < 6 || otpLoading}
+                  whileTap={otpCode.length === 6 && !otpLoading ? { scale:0.97 } : {}}
+                  onClick={handleVerifyOtp}
+                  className="w-full py-4 rounded-2xl text-[16px] font-semibold cursor-pointer"
+                  style={{ background:ACTION_BG, color:"#fff", opacity: otpCode.length < 6 || otpLoading ? 0.5 : 1, boxShadow:"0 12px 24px -12px rgba(139,92,246,0.9)", transition:"opacity 0.2s" }}>
+                  {otpLoading ? (
+                    <motion.div className="w-4 h-4 rounded-full border-2 mx-auto"
+                      style={{ borderColor:"rgba(255,255,255,0.3)",borderTopColor:"#fff" }}
+                      animate={{ rotate:360 }} transition={{ duration:0.8,repeat:Infinity,ease:"linear" }} />
+                  ) : (
+                    <span className="flex items-center justify-center gap-2">
+                      <CheckCircle2 size={15} strokeWidth={2}/>
+                      Vérifier le code
+                    </span>
+                  )}
+                </motion.button>
 
-                {/* Actions secondaires */}
-                <motion.div initial={{ opacity:0 }} animate={{ opacity:1 }} transition={{ delay:0.3 }}
-                  className="flex flex-col items-center gap-1.5">
+                <div className="flex flex-col items-center gap-1.5">
                   <button onClick={handleResendOtp} disabled={resendCooldown > 0}
-                    className="text-[13px] font-medium cursor-pointer"
-                    style={{ color: resendCooldown > 0 ? "var(--text-3)" : "var(--accent)" }}>
+                    className="text-[13px] font-semibold cursor-pointer"
+                    style={{ color: resendCooldown > 0 ? ENCRE_3 : LIEN }}>
                     {resendCooldown > 0 ? `Renvoyer dans ${resendCooldown}s` : "Renvoyer le code"}
                   </button>
                   <button onClick={() => { setSignupSent(false); setOtpCode(""); setOtpError(null); }}
-                    className="text-[13px] cursor-pointer" style={{ color:"var(--text-3)" }}>
+                    className="text-[13px] cursor-pointer" style={{ color:ENCRE_3 }}>
                     Annuler
                   </button>
-                </motion.div>
+                </div>
               </motion.div>
             )}
           </AnimatePresence>
 
-          {/* Logo */}
-          <div className="flex flex-col items-center mb-7">
-            {/* Posé, sans pulsation ni anneau qui grandit : le logo se regarde,
-                il ne réclame pas l'attention. */}
-            <div className="relative w-24 h-24 rounded-3xl flex items-center justify-center mb-3"
-              style={{ background:"rgb(var(--surface-rgb))", border:"1px solid rgba(var(--accent-rgb),0.22)", boxShadow:"0 10px 30px -8px rgba(139,92,246,0.35)" }}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/logo-vaiiya.png" alt="Vaiiya" className="w-20 h-20 object-contain relative z-10" />
-            </div>
-            <h1 className="text-[20px] font-extralight tracking-[0.2em]" style={{ color:"var(--text-1)" }}>Vaiiya</h1>
-            <p className="text-[11px] font-light mt-0.5" style={{ color:"var(--text-3)" }}>Ton coach, tes séances, ta nutrition.</p>
+          {/* Sur téléphone, le titre vit dans la carte ; sur ordinateur, à gauche. */}
+          <div className={s.titreMobile}>
+            <h1 className={s.titre}>{titre}</h1>
+            {sousTitre && <p className={s.sous} style={{ marginTop: 8 }}>{sousTitre}</p>}
           </div>
 
           {/* Erreur globale */}
           <AnimatePresence>
             {error && (
               <motion.div initial={{ opacity:0,y:-8,height:0 }} animate={{ opacity:1,y:0,height:"auto" }} exit={{ opacity:0,height:0 }}
-                className="mb-4 px-4 py-3 rounded-2xl text-[13px] font-medium"
-                style={{ background:"rgba(252,129,129,0.12)",border:"1px solid rgba(252,129,129,0.25)",color:"#E53E3E" }}>
+                className="px-4 py-3 rounded-2xl text-[13px] font-medium"
+                style={{ background:"rgba(252,129,129,0.12)",border:"1px solid rgba(252,129,129,0.3)",color:"#C53030" }}>
                 {error}
               </motion.div>
             )}
           </AnimatePresence>
 
-          {/* ── Google ── */}
-          <motion.button type="button"
-            whileHover={{ scale:1.02,y:-1 }} whileTap={{ scale:0.97 }}
-            onClick={handleGoogle} disabled={googleLoading}
-            className="w-full flex items-center justify-center gap-3 py-3.5 rounded-2xl text-[16px] font-medium cursor-pointer mb-5"
-            style={{ background:"rgba(var(--surface-rgb),0.8)",border:"1px solid rgba(var(--accent-rgb),0.18)",backdropFilter:"blur(10px)",color:"var(--text-1)",boxShadow:"0 2px 12px rgba(var(--accent-rgb),0.08),inset 0 1px 0 rgba(var(--surface-rgb),0.95)" }}>
-            {googleLoading ? (
-              <motion.div className="w-4 h-4 rounded-full border-2" style={{ borderColor:"rgba(var(--accent-rgb),0.2)",borderTopColor:"var(--accent)" }}
-                animate={{ rotate:360 }} transition={{ duration:0.8,repeat:Infinity,ease:"linear" }} />
-            ) : (
-              <svg width="16" height="16" viewBox="0 0 24 24">
-                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-                <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
-                <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
-              </svg>
-            )}
-            Continuer avec Google
-          </motion.button>
-
-          <div className="flex items-center gap-3 mb-5">
-            <div className="flex-1 h-px" style={{ background:"rgba(var(--accent-rgb),0.12)" }} />
-            <span className="text-[11px]" style={{ color:"var(--text-3)" }}>ou</span>
-            <div className="flex-1 h-px" style={{ background:"rgba(var(--accent-rgb),0.12)" }} />
-          </div>
-
-          {/* Tabs */}
-          {/* Onglet actif = violet, comme partout dans l'app. */}
-          <div className="relative flex rounded-2xl p-1 mb-5 gap-1" style={{ background:"rgba(var(--tint-violet-rgb),0.5)",border:"1px solid rgba(var(--accent-rgb),0.12)" }}>
-            {(["login","signup"] as const).map(m => (
-              <button key={m} onClick={() => { setMode(m); setError(null); setEtapeConnexion(1); }}
-                className="relative flex-1 py-2.5 rounded-xl text-[16px] font-medium cursor-pointer z-10"
-                style={{ color:mode===m?"var(--accent)":"var(--text-3)" }}>
-                {mode===m && <motion.div layoutId="auth-tab" className="absolute inset-0 rounded-xl"
-                  style={{ background:"rgba(var(--surface-rgb),0.95)",border:"1px solid rgba(var(--accent-rgb),0.28)",boxShadow:"0 2px 12px rgba(var(--accent-rgb),0.18)" }}
-                  transition={{ type:"spring",bounce:0.25,duration:0.4 }} />}
-                <span className="relative z-10">{m==="login"?"Se connecter":"Créer un compte"}</span>
+          {/* À l'étape 2, l'identifiant validé se rappelle en haut, avec la
+             porte pour le corriger. */}
+          {mode === "login" && etapeConnexion === 2 ? (
+            <div className="flex items-center gap-2.5 rounded-2xl py-2 pl-2 pr-3"
+              style={{ background:"#fff", border:"1px solid rgba(28,22,38,0.08)" }}>
+              <span className="w-8 h-8 rounded-full grid place-items-center text-[13px] font-extrabold text-white flex-shrink-0"
+                style={{ background:DEGRADE_LOGO }}>
+                {(email.trim()[0] ?? "?").toUpperCase()}
+              </span>
+              <span className="text-[13px] font-semibold truncate" style={{ color:ENCRE }}>{email.trim()}</span>
+              <button type="button"
+                onClick={() => { setEtapeConnexion(1); setPassword(""); setError(null); setForgotMode(false); }}
+                className="ml-auto text-[13px] font-bold cursor-pointer flex-shrink-0" style={{ color:LIEN }}>
+                Changer
               </button>
-            ))}
-          </div>
-
-          {/* En inscription, un titre. En connexion, l'écran se passe de titre :
-             le champ (email, puis mot de passe) dit déjà où on en est. */}
-          {mode==="signup" && (
-            <div className="text-center mb-4">
-              <p className="text-[19px] font-semibold" style={{ color:"var(--text-1)" }}>Créer ton compte</p>
             </div>
+          ) : (
+            <>
+              {/* ── Google ── */}
+              <motion.button type="button"
+                whileTap={{ scale:0.97 }}
+                onClick={handleGoogle} disabled={googleLoading}
+                className="w-full flex items-center justify-center gap-3 py-3.5 rounded-2xl text-[16px] font-semibold cursor-pointer"
+                style={{ background:"#fff",border:"1px solid rgba(28,22,38,0.1)",color:ENCRE,boxShadow:"0 6px 16px -10px rgba(60,30,90,0.35)" }}>
+                {googleLoading ? (
+                  <motion.div className="w-4 h-4 rounded-full border-2" style={{ borderColor:"rgba(139,92,246,0.2)",borderTopColor:"#8B5CF6" }}
+                    animate={{ rotate:360 }} transition={{ duration:0.8,repeat:Infinity,ease:"linear" }} />
+                ) : (
+                  <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden>
+                    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
+                    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                  </svg>
+                )}
+                {mode === "signup" ? "S’inscrire avec Google" : "Continuer avec Google"}
+              </motion.button>
+
+              <div className="flex items-center gap-3">
+                <div className="flex-1 h-px" style={{ background:"rgba(28,22,38,0.1)" }} />
+                <span className="text-[11px]" style={{ color:ENCRE_3 }}>ou</span>
+                <div className="flex-1 h-px" style={{ background:"rgba(28,22,38,0.1)" }} />
+              </div>
+            </>
           )}
 
           {/* Form */}
-          <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-            <AnimatePresence mode="popLayout">
-              {mode === "signup" && (
-                <motion.div key="pseudo-field"
-                  initial={{ opacity:0,height:0 }} animate={{ opacity:1,height:"auto" }} exit={{ opacity:0,height:0 }}
-                  transition={{ duration:0.3 }} style={{ overflow:"hidden" }}>
-                  <Field icon={<AtSign size={15}/>} type="text" placeholder="Pseudo (ex: Atlas92 ou atlas_92)" value={pseudo} onChange={setPseudo} required autoFocus name="pseudo" autoComplete="nickname" />
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            <AnimatePresence mode="popLayout">
-              {mode === "signup" && (
-                <motion.div key="name-fields"
-                  initial={{ opacity:0,height:0 }} animate={{ opacity:1,height:"auto" }} exit={{ opacity:0,height:0 }}
-                  transition={{ duration:0.3 }} style={{ overflow:"hidden" }} className="grid grid-cols-2 gap-3">
+          <form onSubmit={handleSubmit} className="flex flex-col gap-2.5">
+            {mode === "signup" && (
+              <>
+                <Field icon={<AtSign size={15}/>} type="text" placeholder="Pseudo (ex : atlas92)" value={pseudo} onChange={setPseudo} required autoFocus name="pseudo" autoComplete="nickname" />
+                <div className="grid grid-cols-2 gap-2.5">
                   <Field icon={<User size={15}/>} type="text" placeholder="Prénom" value={name} onChange={setName} required name="given-name" autoComplete="given-name" />
                   <Field icon={<UserCheck size={15}/>} type="text" placeholder="Nom" value={lastName} onChange={setLastName} required name="family-name" autoComplete="family-name" />
-                </motion.div>
-              )}
-            </AnimatePresence>
+                </div>
+              </>
+            )}
 
             {/* À l'étape 2, l'email est validé et disparaît : on ne montre plus
-               que le mot de passe. On revient en arrière par « Changer d'email ». */}
+               que le mot de passe. On revient en arrière par « Changer ». */}
             {!(mode === "login" && etapeConnexion === 2) && (
               <Field
                 icon={<Mail size={15}/>}
@@ -620,50 +632,39 @@ export default function AuthPage() {
                   name="password" autoComplete={mode === "signup" ? "new-password" : "current-password"}
                   autoFocus={mode==="login" && etapeConnexion===2}
                   suffix={
-                    <button type="button" onClick={() => setShowPwd(v=>!v)} className="cursor-pointer flex-shrink-0">
-                      {showPwd ? <EyeOff size={14} style={{ color:"var(--text-3)" }}/> : <Eye size={14} style={{ color:"var(--text-3)" }}/>}
+                    <button type="button" onClick={() => setShowPwd(v=>!v)} className="cursor-pointer flex-shrink-0"
+                      aria-label={showPwd ? "Masquer le mot de passe" : "Afficher le mot de passe"}>
+                      {showPwd ? <EyeOff size={15} style={{ color:ENCRE_3 }}/> : <Eye size={15} style={{ color:ENCRE_3 }}/>}
                     </button>
                   } />
                 {mode === "signup" && <PasswordStrengthBar password={password} />}
-                {/* À l'étape mot de passe : soit on réinitialise, soit on revient
-                   en arrière pour corriger l'email. */}
-                {mode === "login" && etapeConnexion === 2 && (
-                  <div className="flex items-center justify-between">
-                    <button type="button"
-                      onClick={() => { setEtapeConnexion(1); setPassword(""); setError(null); setForgotMode(false); }}
-                      className="text-[13px] font-medium cursor-pointer hover:underline" style={{ color:"var(--text-3)" }}>
-                      Modifier
-                    </button>
-                    <button type="button" onClick={() => setForgotMode(v=>!v)}
-                      className="text-[13px] font-medium cursor-pointer hover:underline" style={{ color:"var(--accent)" }}>
-                      Mot de passe oublié ?
-                    </button>
-                  </div>
-                )}
               </div>
             )}
 
             <motion.button type="submit" disabled={loading||!canSubmit}
-              whileHover={!loading?{scale:1.02,y:-2}:{}} whileTap={!loading?{scale:0.97}:{}}
-              className="relative mt-1 w-full py-4 rounded-2xl text-[16px] font-semibold cursor-pointer overflow-hidden"
-              style={{ background:ACTION_BG,color:"#fff",boxShadow:"0 4px 24px rgba(139,92,246,0.42),inset 0 1px 0 rgba(255,255,255,0.28)",opacity:!canSubmit?0.6:1 }}>
-              <motion.div className="absolute inset-0 pointer-events-none"
-                style={{ background:"linear-gradient(105deg,transparent 40%,rgba(255,255,255,0.3) 50%,transparent 60%)" }}
-                animate={{ x:["-120%","120%"] }} transition={{ duration:2.5,repeat:Infinity,repeatDelay:1.2 }} />
-              <AnimatePresence mode="wait">
-                {loading ? (
-                  <motion.div key="l" initial={{ opacity:0,y:6 }} animate={{ opacity:1,y:0 }} exit={{ opacity:0,y:-6 }} className="flex items-center justify-center gap-2">
-                    <motion.div className="w-4 h-4 rounded-full border-2" style={{ borderColor:"rgba(255,255,255,0.3)",borderTopColor:"#fff" }}
-                      animate={{ rotate:360 }} transition={{ duration:0.8,repeat:Infinity,ease:"linear" }} />
-                    <span>{mode==="signup" ? "Création…" : etapeConnexion===1 ? "Vérification…" : "Connexion…"}</span>
-                  </motion.div>
-                ) : (
-                  <motion.div key="i" initial={{ opacity:0,y:6 }} animate={{ opacity:1,y:0 }} exit={{ opacity:0,y:-6 }} className="flex items-center justify-center">
-                    <span>{mode==="signup" ? "Créer mon compte" : etapeConnexion===1 ? "Continuer" : "Se connecter"}</span>
-                  </motion.div>
-                )}
-              </AnimatePresence>
+              whileTap={!loading?{scale:0.97}:{}}
+              className="mt-1 w-full flex items-center justify-center gap-2 py-4 rounded-2xl text-[16px] font-bold cursor-pointer"
+              style={{ background:ACTION_BG,color:"#fff",boxShadow:"0 14px 26px -12px rgba(139,92,246,0.9)",opacity:!canSubmit?0.6:1,transition:"opacity 0.2s" }}>
+              {loading ? (
+                <>
+                  <motion.span className="w-4 h-4 rounded-full border-2" style={{ borderColor:"rgba(255,255,255,0.3)",borderTopColor:"#fff" }}
+                    animate={{ rotate:360 }} transition={{ duration:0.8,repeat:Infinity,ease:"linear" }} />
+                  <span>{mode==="signup" ? "Création…" : etapeConnexion===1 ? "Vérification…" : "Connexion…"}</span>
+                </>
+              ) : (
+                <>
+                  <span>{mode==="signup" ? "Créer mon compte" : etapeConnexion===1 ? "Continuer" : "Se connecter"}</span>
+                  <ArrowRight size={16} strokeWidth={2.5} />
+                </>
+              )}
             </motion.button>
+
+            {mode === "login" && etapeConnexion === 2 && (
+              <button type="button" onClick={() => setForgotMode(v=>!v)}
+                className="text-[13px] font-semibold cursor-pointer mx-auto py-1" style={{ color:LIEN }}>
+                Mot de passe oublié ?
+              </button>
+            )}
           </form>
 
           {/* ── Mot de passe oublié ── */}
@@ -671,29 +672,29 @@ export default function AuthPage() {
             {forgotMode && (
               <motion.div key="forgot"
                 initial={{ opacity:0,height:0 }} animate={{ opacity:1,height:"auto" }} exit={{ opacity:0,height:0 }}
-                transition={{ duration:0.3 }} style={{ overflow:"hidden" }} className="mt-4">
-                <div className="rounded-2xl p-4" style={{ background:"rgba(var(--tint-violet-rgb),0.5)",border:"1px solid rgba(var(--accent-rgb),0.15)" }}>
+                transition={{ duration:0.3 }} style={{ overflow:"hidden" }}>
+                <div className="rounded-2xl p-4" style={{ background:"rgba(241,235,255,0.7)",border:"1px solid rgba(139,92,246,0.15)" }}>
                   {forgotSent ? (
                     <motion.div initial={{ opacity:0,scale:0.9 }} animate={{ opacity:1,scale:1 }} className="flex flex-col items-center gap-2 py-1">
-                      <CheckCircle2 size={28} style={{ color:"var(--accent)" }} strokeWidth={1.5}/>
-                      <p className="text-[13px] text-center font-light" style={{ color:"var(--text-1)" }}>
+                      <CheckCircle2 size={28} style={{ color:"#0B8A68" }} strokeWidth={1.5}/>
+                      <p className="text-[13px] text-center" style={{ color:ENCRE }}>
                         Email envoyé à <strong>{forgotEmail}</strong>.<br/>
-                        <span style={{ color:"var(--text-3)" }}>Vérifie ta boîte mail (et les spams).</span>
+                        <span style={{ color:ENCRE_3 }}>Vérifie ta boîte mail (et les spams).</span>
                       </p>
                       <button onClick={() => { setForgotMode(false); setForgotSent(false); setForgotEmail(""); }}
-                        className="text-[11px] cursor-pointer hover:underline" style={{ color:"var(--accent)" }}>Fermer</button>
+                        className="text-[13px] font-semibold cursor-pointer" style={{ color:LIEN }}>Fermer</button>
                     </motion.div>
                   ) : (
                     <form onSubmit={handleForgot} className="flex flex-col gap-3">
-                      <p className="text-[13px] font-light" style={{ color:"var(--text-2)" }}>Entre ton email pour recevoir un lien de réinitialisation.</p>
+                      <p className="text-[13px]" style={{ color:ENCRE_2 }}>Entre ton email pour recevoir un lien de réinitialisation.</p>
                       <Field icon={<Mail size={15}/>} type="email" placeholder="ton@email.com" value={forgotEmail} onChange={setForgotEmail} required name="email" autoComplete="email" />
                       <div className="flex gap-2">
                         <button type="button" onClick={() => setForgotMode(false)}
-                          className="flex-1 py-2.5 rounded-2xl text-[13px] font-medium cursor-pointer"
-                          style={{ background:"rgba(var(--surface-rgb),0.6)",border:"1px solid rgba(var(--accent-rgb),0.18)",color:"var(--text-2)" }}>Annuler</button>
+                          className="flex-1 py-2.5 rounded-2xl text-[13px] font-semibold cursor-pointer"
+                          style={{ background:"#fff",border:"1px solid rgba(28,22,38,0.1)",color:ENCRE_2 }}>Annuler</button>
                         <motion.button type="submit" disabled={forgotLoading||!forgotEmail.trim()}
-                          whileHover={{ scale:1.02 }} whileTap={{ scale:0.97 }}
-                          className="flex-1 py-2.5 rounded-2xl text-[13px] font-semibold cursor-pointer flex items-center justify-center"
+                          whileTap={{ scale:0.97 }}
+                          className="flex-1 py-2.5 rounded-2xl text-[13px] font-bold cursor-pointer flex items-center justify-center"
                           style={{ background:ACTION_BG,color:"#fff",opacity:!forgotEmail.trim()?0.6:1 }}>
                           {forgotLoading
                             ? <motion.div className="w-3.5 h-3.5 rounded-full border-2" style={{ borderColor:"rgba(255,255,255,0.3)",borderTopColor:"#fff" }}
@@ -708,16 +709,27 @@ export default function AuthPage() {
             )}
           </AnimatePresence>
 
-          <p className="text-center text-[11px] mt-6 font-light leading-relaxed" style={{ color:"var(--text-3)" }}>
+          {/* Passer de la connexion à l'inscription : une ligne, plus d'onglets. */}
+          {!(mode === "login" && etapeConnexion === 2) && (
+            <p className="text-center text-[13px] font-semibold" style={{ color:ENCRE_2 }}>
+              {mode === "login" ? "Pas encore de compte ? " : "Déjà un compte ? "}
+              <button type="button" onClick={() => changerMode(mode === "login" ? "signup" : "login")}
+                className={`${s.grad} font-extrabold cursor-pointer`}>
+                {mode === "login" ? "Créer un compte" : "Se connecter"}
+              </button>
+            </p>
+          )}
+
+          <p className="text-center text-[11px] leading-relaxed" style={{ color:ENCRE_3 }}>
             En continuant, tu acceptes nos{" "}
-            <Link href="/conditions" className="font-medium hover:underline" style={{ color:"var(--accent)" }}>Conditions générales</Link>
+            <Link href="/conditions" className="font-semibold hover:underline" style={{ color:LIEN }}>Conditions générales</Link>
             {", "}nos{" "}
-            <Link href="/mentions-legales" className="font-medium hover:underline" style={{ color:"var(--accent)" }}>Mentions légales</Link>
+            <Link href="/mentions-legales" className="font-semibold hover:underline" style={{ color:LIEN }}>Mentions légales</Link>
             {" "}et notre{" "}
-            <Link href="/confidentialite" className="font-medium hover:underline" style={{ color:"var(--accent)" }}>Politique de confidentialité</Link>.
+            <Link href="/confidentialite" className="font-semibold hover:underline" style={{ color:LIEN }}>Politique de confidentialité</Link>.
           </p>
-        </div>
-      </motion.div>
+        </motion.div>
+      </div>
     </div>
   );
 }
