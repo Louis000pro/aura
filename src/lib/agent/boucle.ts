@@ -13,6 +13,12 @@
    Elle ne sait rien du planning ni du fournisseur : les outils et l'appel
    au modèle lui sont donnés. C'est ce qui permet de la vérifier hors ligne
    avec un faux modèle, et de la brancher sur le vrai sans rien recopier.
+
+   Le CONTRÔLE DE FIN est facultatif : avant de laisser l'agent conclure,
+   le code relit ce qu'il a préparé et le renvoie au travail s'il trouve
+   un problème. Le code vérifie, le modèle corrige : c'est la réponse aux
+   premiers essais, où le modèle concluait en annonçant des changements
+   qu'il n'avait pas faits.
    ════════════════════════════════════════════════════════════════════ */
 
 /** Un outil : ce que l'agent peut faire, et la seule façon de le faire. */
@@ -61,9 +67,26 @@ export type CompteRendu = {
   jetonsEntree: number;
   jetonsSortie: number;
   dureeMs: number;
+  /** Chaque fois que le contrôle de fin a renvoyé l'agent au travail : ce
+   *  qu'il a trouvé. Vide sans contrôle, ou quand tout allait bien. */
+  relances: string[][];
   erreur?: string;
   limites?: Record<string, string>;
 };
+
+/** Le contrôle de fin : relit l'état préparé et le journal des gestes
+ *  (sans les tentatives de conclure), et rend les problèmes trouvés. */
+export type Controle<E> = (etat: E, journal: GesteJoue[]) => string[];
+
+/** Ce que le contrôle dit à l'agent. Le message précise que ce n'est pas
+ *  la personne qui parle, pour que l'agent ne lui réponde pas comme à elle. */
+function relance(problemes: string[], enParlant: boolean): string {
+  return [
+    "Contrôle automatique de Vaiiya (ce n'est pas la personne qui parle). Avant de conclure, règle ceci :",
+    ...problemes.map((p) => "- " + p),
+    enParlant ? "Termine ensuite par presenter_apercu : c'est lui qui montre l'aperçu à la personne." : "",
+  ].filter(Boolean).join("\n");
+}
 
 const COUPE = 600;
 
@@ -81,22 +104,48 @@ export async function jouerAgent<E>(entree: {
   etat: E;
   appeler: AppelerModele;
   etapesMax?: number;
+  /** Sans contrôle, l'agent conclut quand il veut. */
+  controle?: Controle<E>;
+  /** Combien de fois le contrôle peut le renvoyer au travail (2 par défaut).
+   *  Au-delà, on le laisse conclure, et c'est le correcteur qui juge. */
+  relancesMax?: number;
 }): Promise<CompteRendu> {
-  const { consigne, demande, outils, etat, appeler } = entree;
+  const { consigne, demande, outils, etat, appeler, controle } = entree;
   const etapesMax = entree.etapesMax ?? 12;
+  const relancesMax = entree.relancesMax ?? 2;
   const messages: MessageAgent[] = [
     { role: "system", content: consigne },
     { role: "user", content: demande },
   ];
   const etapes: EtapeJouee[] = [];
+  const relances: string[][] = [];
+  /* Un problème déjà signalé ne l'est pas deux fois : le code le montre,
+     l'agent décide. Sans ça, un agent qui choisit d'expliquer au lieu de
+     corriger serait bloqué jusqu'au plafond de relances. */
+  const signales = new Set<string>();
   let jetonsEntree = 0;
   let jetonsSortie = 0;
   let limites: Record<string, string> | undefined;
   const t0 = Date.now();
 
   const rendu = (fin: CompteRendu["fin"], messageFinal: string | null, erreur?: string): CompteRendu => ({
-    fin, messageFinal, etapes, jetonsEntree, jetonsSortie, dureeMs: Date.now() - t0, erreur, limites,
+    fin, messageFinal, etapes, jetonsEntree, jetonsSortie, dureeMs: Date.now() - t0, relances, erreur, limites,
   });
+
+  /** Les problèmes neufs que le contrôle trouve, s'il a encore le droit de
+   *  renvoyer l'agent au travail. Le journal exclut les tentatives de
+   *  conclure : un refus du contrôle n'est pas un geste à rattraper. */
+  const aRegler = (): string[] => {
+    if (!controle || relances.length >= relancesMax) return [];
+    const clos = new Set(outils.filter((o) => o.clot).map((o) => o.nom));
+    const journal = etapes.flatMap((e) => e.gestes).filter((g) => !clos.has(g.outil));
+    const neufs = controle(etat, journal).filter((p) => !signales.has(p));
+    if (neufs.length) {
+      neufs.forEach((p) => signales.add(p));
+      relances.push(neufs);
+    }
+    return neufs;
+  };
 
   for (let numero = 1; numero <= etapesMax; numero++) {
     const t = Date.now();
@@ -117,7 +166,11 @@ export async function jouerAgent<E>(entree: {
     // Aucun outil appelé : l'agent a fini en parlant, sans présenter d'aperçu.
     if (r.appels.length === 0) {
       if (r.finRaison === "length") return rendu("erreur", r.texte, "réponse coupée (budget de jetons)");
-      return rendu("texte", r.texte);
+      const problemes = aRegler();
+      if (problemes.length === 0) return rendu("texte", r.texte);
+      messages.push({ role: "assistant", content: r.texte ?? "" });
+      messages.push({ role: "user", content: relance(problemes, true) });
+      continue;
     }
 
     messages.push({
@@ -136,7 +189,9 @@ export async function jouerAgent<E>(entree: {
       } else {
         try {
           args = appel.arguments ? (JSON.parse(appel.arguments) as Record<string, unknown>) : {};
-          resultat = outil.executer(args, etat);
+          // Conclure passe d'abord par le contrôle : le code vérifie, le modèle corrige.
+          const problemes = outil.clot ? aRegler() : [];
+          resultat = problemes.length ? { erreur: relance(problemes, false) } : outil.executer(args, etat);
         } catch {
           resultat = { erreur: "Arguments illisibles : ils doivent être un objet JSON valide." };
         }

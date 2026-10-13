@@ -21,7 +21,7 @@
    plusieurs chemins mènent au bon résultat, et c'est le résultat que la
    personne verra dans l'aperçu.
    ════════════════════════════════════════════════════════════════════ */
-import type { Outil } from "../boucle";
+import type { Controle, Outil } from "../boucle";
 import { BORNES, type Periode } from "./formulations";
 
 export const ZONES = ["dos", "fessiers", "jambes", "pectoraux", "epaules", "bras", "abdos"] as const;
@@ -458,6 +458,44 @@ function lignesDuPlanning(e: EtatPlanning, du: string, au: string): string[] {
 
 function nomsEvites(ad: Adaptation, e: EtatPlanning) {
   return ad.eviter?.map((id) => e.cycle.find((c) => c.id === id)?.nom);
+}
+
+/* ─── Le contrôle de fin ───
+   Ce que le CODE vérifie avant de laisser l'agent conclure. Il ne connaît
+   pas la demande : il ne vérifie ni la durée ni la zone demandées. Il ne
+   tient que deux règles que Vaiiya garantit pour n'importe quelle demande :
+   1. un geste refusé ne reste pas sans suite ;
+   2. le nombre de séances d'une semaine ne change pas en silence (une
+      absence, elle, retire des séances par définition). */
+export function controlerPlanning(initial: EtatPlanning): Controle<EtatPlanning> {
+  const avant = projeter(initial, HORIZON);
+  return (e, journal) => {
+    const problemes: string[] = [];
+
+    // 1. Le dernier refus de chaque outil, s'il n'a pas été suivi d'un succès.
+    const refus = new Map<string, string>();
+    for (const g of journal) {
+      if (!g.refuse) { refus.delete(g.outil); continue; }
+      const r = g.resultat as { erreur?: unknown } | string;
+      refus.set(g.outil, typeof r === "object" && r?.erreur ? String(r.erreur) : String(r).slice(0, 160));
+    }
+    for (const [outil, raison] of refus) {
+      problemes.push(`« ${outil} » a été refusé (${raison}) et rien ne l'a remplacé : corrige le geste, ou dis dans ton message pourquoi tu y renonces.`);
+    }
+
+    // 2. Les semaines dont le nombre de séances a changé.
+    const apres = projeter(e, HORIZON);
+    for (let l = lundi(e.aujourdhui); l <= lundi(HORIZON); l = decaler(l, 7)) {
+      const dans = (j: JourProjete) => j.date >= l && j.date <= decaler(l, 6);
+      const n0 = avant.filter((j) => j.seance && dans(j)).length;
+      const n1 = apres.filter((j) => j.seance && dans(j)).length;
+      const absentes = apres.filter((j) => dans(j) && j.note === "absence" && avant.find((a) => a.date === j.date)?.seance).length;
+      if (n1 + absentes !== n0) {
+        problemes.push(`semaine du ${enClair(l)} : ${n0} séance(s) prévue(s) avant tes changements, ${n1} maintenant. Garde le même nombre (reporte sur un jour libre de la même semaine), sauf si la personne a demandé autre chose.`);
+      }
+    }
+    return problemes;
+  };
 }
 
 /* ─── Le correcteur ─── */

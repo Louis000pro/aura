@@ -12,7 +12,7 @@
    ci-dessous doit faire tomber le critère qu'il vise, et lui seul.
    ════════════════════════════════════════════════════════════════════ */
 import { jouerAgent, type AppelerModele } from "@/lib/agent/boucle";
-import { compteDeTest, corriger, OUTILS_PLANNING, projeter } from "@/lib/agent/banc/planningSimule";
+import { compteDeTest, controlerPlanning, corriger, OUTILS_PLANNING, projeter } from "@/lib/agent/banc/planningSimule";
 import { FORMULATIONS, type Periode } from "@/lib/agent/banc/formulations";
 import { consigneCourte, consigneLongue } from "@/lib/agent/banc/consigne";
 
@@ -40,11 +40,25 @@ function script(etapes: Geste[][], message = "Je t'ai préparé ça, tu valides 
   };
 }
 
-async function jouer(etapes: Geste[][], periode: Periode = "ce_mois", appeler?: AppelerModele) {
+async function jouer(etapes: Geste[][], periode: Periode = "ce_mois", appeler?: AppelerModele, avecControle = false) {
   const initial = compteDeTest();
   const etat = compteDeTest();
-  const cr = await jouerAgent({ consigne: "test", demande: "test", outils: OUTILS_PLANNING, etat, appeler: appeler ?? script(etapes) });
+  const cr = await jouerAgent({
+    consigne: "test", demande: "test", outils: OUTILS_PLANNING, etat, appeler: appeler ?? script(etapes),
+    controle: avecControle ? controlerPlanning(initial) : undefined,
+  });
   return { cr, etat, v: corriger(initial, etat, periode, cr.fin, cr.messageFinal) };
+}
+
+/** Un faux modèle qui joue des gestes, ou finit en parlant (une chaîne). */
+function scriptMixte(tours: (Geste[] | string)[]): AppelerModele {
+  let i = 0;
+  return async () => {
+    const tour = i < tours.length ? tours[i] : [["presenter_apercu", { message: "Voilà, tu valides ?" }] as Geste];
+    i++;
+    if (typeof tour === "string") return { texte: tour, appels: [], jetonsEntree: 1, jetonsSortie: 1, finRaison: "stop" };
+    return { texte: null, appels: tour.map(([nom, args], k) => ({ id: `m-${i}-${k}`, nom, arguments: JSON.stringify(args) })), jetonsEntree: 1, jetonsSortie: 1, finRaison: "tool_calls" };
+  };
 }
 
 const LIRE: Geste[] = [["lire_programme", {}], ["lire_planning", { du: "2026-10-13", au: "2026-10-31" }]];
@@ -145,6 +159,51 @@ async function main() {
   const adapter = OUTILS_PLANNING.find((o) => o.nom === "adapter_periode")!;
   const z = adapter.executer({ debut: "2026-10-13", fin: "2026-10-31", accent_zones: ["fesses"] }, compteDeTest()) as { ok?: boolean };
   verdict("adaptation : « fesses » se comprend comme fessiers", z.ok === true);
+
+  // ── Le contrôle de fin : deux règles, valables pour n'importe quelle demande ──
+  const controle = controlerPlanning(compteDeTest());
+  const refuse = { outil: "adapter_periode", arguments: {}, resultat: { erreur: "Une adaptation ne commence pas dans le passé." }, refuse: true };
+  const reussi = { outil: "adapter_periode", arguments: {}, resultat: { ok: true }, refuse: false };
+  const seulRefus = controle(compteDeTest(), [refuse]);
+  verdict("contrôle : un refus sans suite est signalé, avec sa raison",
+    seulRefus.length === 1 && seulRefus[0].includes("adapter_periode") && seulRefus[0].includes("dans le passé"), seulRefus.join(" | "));
+  verdict("contrôle : un refus suivi d'un succès ne l'est plus", controle(compteDeTest(), [refuse, reussi]).length === 0);
+  const sansMercredis = compteDeTest();
+  jours.executer({ du: "2026-10-13", au: "2026-10-31", retirer: ["mercredi"] }, sansMercredis);
+  const semaines = controle(sansMercredis, []);
+  verdict("contrôle : les trois semaines qui perdent une séance sont signalées",
+    semaines.length === 3 && semaines[0].startsWith("semaine du lundi 12 octobre : 2 séance(s) prévue(s) avant tes changements, 1 maintenant"), semaines.join(" | "));
+  const vacances = compteDeTest();
+  OUTILS_PLANNING.find((o) => o.nom === "poser_absence")!.executer({ debut: "2026-10-19", fin: "2026-10-25" }, vacances);
+  verdict("contrôle : une absence retire des séances sans être un problème", controle(vacances, []).length === 0, controle(vacances, []).join(" | "));
+  const parJoursComplet = compteDeTest();
+  jours.executer({ du: "2026-10-13", au: "2026-10-31", retirer: ["mercredi"], ajouter: ["jeudi"] }, parJoursComplet);
+  verdict("contrôle : mercredis reportés au jeudi, rien à redire", controle(parJoursComplet, []).length === 0);
+
+  /* L'essai raté du 2026-10-13 (B1), rejoué tel quel : adaptation datée
+     dans le passé (refusée, jamais retentée), mercredis retirés sans
+     report, puis conclusion en parlant. */
+  const B1: (Geste[] | string)[] = [
+    [["adapter_periode", { debut: "2026-10-01", fin: "2026-10-31", duree_max_min: 30, accent_zones: ["fessiers"] }]],
+    [["changer_jours_periode", { du: "2026-10-14", au: "2026-10-31", retirer: ["mercredi"] }]],
+    "Voici les changements préparés : pas de séance le mercredi, 30 minutes, focus fessiers.",
+  ];
+  const sansControle = await jouer([], "ce_mois", scriptMixte(B1));
+  verdict("B1 sans contrôle : échoue comme sur la préversion", !sansControle.v.reussi && sansControle.cr.fin === "texte", sansControle.v.details.join(" ; "));
+  const corrige: (Geste[] | string)[] = [
+    ...B1,
+    [ADAPTE_OCTOBRE, ["changer_jours_periode", { du: "2026-10-14", au: "2026-10-31", ajouter: ["jeudi"] }]],
+  ];
+  const avec = await jouer([], "ce_mois", scriptMixte(corrige), true);
+  verdict("B1 avec contrôle : renvoyé une fois au travail, puis réussi",
+    avec.v.reussi && avec.cr.fin === "apercu" && avec.cr.relances.length === 1 && avec.cr.relances[0].length === 4,
+    `${avec.cr.relances.length} relance(s), ${avec.cr.relances[0]?.length ?? 0} problème(s) ; ` + avec.v.details.join(" ; "));
+
+  // Un agent qui ignore le contrôle conclut quand même : le code signale, il ne bloque pas à l'infini.
+  const tetu = await jouer([], "ce_mois", scriptMixte([B1[1], [["presenter_apercu", { message: "Voilà." }]], [["presenter_apercu", { message: "Voilà." }]]]), true);
+  verdict("contrôle : signalé une fois, puis l'agent peut conclure",
+    tetu.cr.fin === "apercu" && tetu.cr.relances.length === 1 && !tetu.v.criteres.nombre,
+    `${tetu.cr.fin}, ${tetu.cr.relances.length} relance(s)`);
 
   console.log(echecs ? `\n${echecs} échec(s).` : "\nTout passe.");
   process.exit(echecs ? 1 : 0);
