@@ -98,6 +98,29 @@ async function main() {
   const unMois = await jouer([LIRE, [REPORTS_OCTOBRE], [["adapter_periode", { debut: "2026-10-13", fin: "2026-11-12", duree_max_min: 30, accent_zones: ["fessiers"] }]]], "un_mois");
   verdict("témoin « un mois, mercredis traités en octobre seulement » → mercredi", !unMois.v.criteres.mercredi, unMois.v.details.join(" ; "));
 
+  // Finir en parlant APRÈS avoir tout préparé vaut aperçu, avec un avertissement.
+  let tour = 0;
+  const parle: AppelerModele = async () => {
+    tour++;
+    if (tour === 1) return { texte: null, appels: [REPORTS_OCTOBRE, ADAPTE_OCTOBRE].map(([nom, args], k) => ({ id: `p-${k}`, nom, arguments: JSON.stringify(args) })), jetonsEntree: 1, jetonsSortie: 1, finRaison: "tool_calls" };
+    return { texte: "Je t'ai préparé ça, valide quand tu veux.", appels: [], jetonsEntree: 1, jetonsSortie: 1, finRaison: "stop" };
+  };
+  const enParlant = await jouer([], "ce_mois", parle);
+  verdict("finir en parlant après avoir tout préparé → réussi, avec avertissement",
+    enParlant.v.reussi && enParlant.v.avertissements.length === 1, enParlant.v.avertissements.join(" ; "));
+
+  // ── Ce que les outils rendent au modèle ──
+  const lire = OUTILS_PLANNING.find((o) => o.nom === "lire_planning")!;
+  const lu = lire.executer({ du: "2026-10-12", au: "2026-10-15" }, compteDeTest()) as { jours: string[] };
+  verdict("lecture compacte, une ligne par jour",
+    lu.jours.join(" | ") === "2026-10-12 lundi : Full Body (faite) | 2026-10-13 mardi : rien | 2026-10-14 mercredi : Haut du corps, 45 min | 2026-10-15 jeudi : rien",
+    lu.jours.join(" | "));
+  const poserSeul = OUTILS_PLANNING.find((o) => o.nom === "poser_exceptions")!;
+  const seul = poserSeul.executer({ exceptions: [{ date: "2026-10-14", genre: "pas_de_seance" }] }, compteDeTest()) as { consequences?: string[] };
+  verdict("retirer un mercredi sans report : la conséquence est dite", seul.consequences?.[0] === "semaine du lundi 12 octobre : 2 → 1 séance(s)", String(seul.consequences));
+  const paire = poserSeul.executer({ exceptions: [{ date: "2026-10-14", genre: "pas_de_seance" }, { date: "2026-10-15", genre: "seance_en_plus" }] }, compteDeTest()) as { consequences?: string[] };
+  verdict("un report dans la même semaine ne signale rien", !paire.consequences, String(paire.consequences));
+
   // ── Les refus des outils ──
   const etat = compteDeTest();
   const poser = OUTILS_PLANNING.find((o) => o.nom === "poser_exceptions")!;

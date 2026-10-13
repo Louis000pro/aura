@@ -148,6 +148,8 @@ export function projeter(e: EtatPlanning, au: string): JourProjete[] {
 
 /* ─── Les outils ─── */
 const erreur = (texte: string) => ({ erreur: texte });
+/** Jusqu'où l'on projette pour juger et pour compter : sept semaines. */
+const HORIZON = "2026-11-29";
 
 function normaliserZone(v: unknown): Zone | null {
   if (typeof v !== "string") return null;
@@ -178,7 +180,6 @@ export const OUTILS_PLANNING: Outil<EtatPlanning>[] = [
       cycle: e.cycle.map((c) => ({ etape: c.nom, zones: c.zones, duree_min: c.dureeMin })),
       prochaine_etape: e.cycle[e.prochaine].nom,
       adaptation: e.adaptation,
-      zones_connues: ZONES,
     }),
   },
   {
@@ -189,21 +190,7 @@ export const OUTILS_PLANNING: Outil<EtatPlanning>[] = [
       if (!dateValide(a.du) || !dateValide(a.au)) return erreur("Dates attendues au format AAAA-MM-JJ.");
       if (a.au < a.du) return erreur("« au » doit être après « du ».");
       if (ecart(a.du, a.au) > 61) return erreur("62 jours au plus par lecture.");
-      const du = a.du as string, au = a.au as string;
-      const futurs = au >= e.aujourdhui ? projeter(e, au) : [];
-      const jours: Record<string, unknown>[] = [];
-      for (let d = du; d <= au; d = decaler(d, 1)) {
-        const base = { date: d, jour: nomJour(d) };
-        if (d < e.aujourdhui) {
-          const f = e.faites.find((x) => x.date === d);
-          jours.push(f ? { ...base, seance: f.etape, statut: "faite" } : { ...base, seance: null });
-          continue;
-        }
-        const p = futurs.find((x) => x.date === d);
-        if (!p?.seance) { jours.push({ ...base, seance: null, ...(p?.note ? { note: p.note } : {}) }); continue; }
-        jours.push({ ...base, seance: p.seance.etape, duree_min: p.seance.dureeMin, accent: p.seance.accent, origine: p.seance.origine });
-      }
-      return { jours };
+      return { jours: lignesDuPlanning(e, a.du as string, a.au as string) };
     },
   },
   {
@@ -231,6 +218,8 @@ export const OUTILS_PLANNING: Outil<EtatPlanning>[] = [
       if (!liste || liste.length === 0) return erreur("Donne au moins une exception.");
       const faites: string[] = [];
       const refusees: string[] = [];
+      const touchees = new Set<string>();
+      const avant = projeter(e, HORIZON);
       for (const brut of liste as Record<string, unknown>[]) {
         const date = brut?.date, genre = brut?.genre;
         if (!dateValide(date)) { refusees.push(`${String(date)} : date illisible`); continue; }
@@ -242,11 +231,24 @@ export const OUTILS_PLANNING: Outil<EtatPlanning>[] = [
           if (habituel(e, date)) { refusees.push(`${date} : c'est déjà un jour habituel`); continue; }
         } else { refusees.push(`${date} : genre inconnu`); continue; }
         e.exceptions[date] = genre;
+        touchees.add(lundi(date));
         const ligne = `${enClair(date)} : ${genre === "pas_de_seance" ? "pas de séance" : "une séance en plus"}`;
         e.apercu.push(ligne);
         faites.push(ligne);
       }
-      return refusees.length ? { preparees: faites, refusees } : { preparees: faites };
+      /* Le geste dit ce qu'il change, comme une carte de Vaiiya nomme sa
+         conséquence : le nombre de séances des semaines touchées. */
+      const apres = projeter(e, HORIZON);
+      const consequences = [...touchees].sort().flatMap((l) => {
+        const compte = (jours: JourProjete[]) => jours.filter((j) => j.seance && j.date >= l && j.date <= decaler(l, 6)).length;
+        const n0 = compte(avant), n1 = compte(apres);
+        return n0 === n1 ? [] : [`semaine du ${enClair(l)} : ${n0} → ${n1} séance(s)`];
+      });
+      return {
+        preparees: faites,
+        ...(refusees.length ? { refusees } : {}),
+        ...(consequences.length ? { consequences } : {}),
+      };
     },
   },
   {
@@ -383,6 +385,26 @@ export const OUTILS_PLANNING: Outil<EtatPlanning>[] = [
   },
 ];
 
+/** Le planning en lignes courtes : chaque jour coûte une dizaine de jetons,
+ *  et la lecture repart au modèle à chaque étape de la boucle. */
+function lignesDuPlanning(e: EtatPlanning, du: string, au: string): string[] {
+  const futurs = au >= e.aujourdhui ? projeter(e, au) : [];
+  const lignes: string[] = [];
+  for (let d = du; d <= au; d = decaler(d, 1)) {
+    const tete = `${d} ${nomJour(d)} : `;
+    if (d < e.aujourdhui) {
+      const f = e.faites.find((x) => x.date === d);
+      lignes.push(tete + (f ? `${f.etape} (faite)` : "rien"));
+      continue;
+    }
+    const p = futurs.find((x) => x.date === d);
+    if (!p?.seance) { lignes.push(tete + "rien" + (p?.note ? ` (${p.note})` : "")); continue; }
+    const s = p.seance;
+    lignes.push(tete + `${s.etape}, ${s.dureeMin} min` + (s.accent ? `, accent ${s.accent.join("+")}` : "") + (s.origine === "séance en plus" ? " (séance en plus)" : ""));
+  }
+  return lignes;
+}
+
 function nomsEvites(ad: Adaptation, e: EtatPlanning) {
   return ad.eviter?.map((id) => e.cycle.find((c) => c.id === id)?.nom);
 }
@@ -395,8 +417,6 @@ export type Verdict = {
   avertissements: string[];
 };
 
-const HORIZON = "2026-11-29";
-
 export function corriger(initial: EtatPlanning, final: EtatPlanning, periode: Periode, fin: string, message: string | null): Verdict {
   const { finMin, finMax } = BORNES[periode];
   const avant = projeter(initial, HORIZON);
@@ -405,8 +425,12 @@ export function corriger(initial: EtatPlanning, final: EtatPlanning, periode: Pe
   const avertissements: string[] = [];
   const fenetre = apres.filter((j) => j.date <= finMin);
 
-  const apercu = fin === "apercu";
-  if (!apercu) details.push(fin === "texte" ? "a répondu sans présenter d'aperçu" : fin === "etapes_max" ? "n'a pas fini dans le nombre d'étapes" : "s'est arrêté sur une erreur");
+  /* Finir en parlant, après avoir préparé des changements, vaut aperçu : dans
+     l'app, l'écran montrerait les changements sous ce dernier message. Finir
+     en parlant SANS rien préparer, c'est une question ou un abandon. */
+  const apercu = fin === "apercu" || (fin === "texte" && final.apercu.length > 0);
+  if (fin === "texte" && apercu) avertissements.push("a fini en parlant au lieu d'appeler presenter_apercu");
+  if (!apercu) details.push(fin === "texte" ? "a répondu sans rien préparer" : fin === "etapes_max" ? "n'a pas fini dans le nombre d'étapes" : "s'est arrêté sur une erreur");
 
   const mercredis = fenetre.filter((j) => j.seance && jourIso(j.date) === 3);
   if (mercredis.length) details.push(`séance un mercredi : ${mercredis.map((j) => j.date).join(", ")}`);
