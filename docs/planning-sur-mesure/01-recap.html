@@ -152,11 +152,35 @@ html { scroll-behavior: smooth; }
   <li><strong>Le Guide voit tout ça</strong> et sait déplacer, retirer, remplacer, sauter, ajouter une séance, et ouvrir l'écran d'adaptation déjà rempli.</li>
 </ul>
 
+<h3>Ce que tu avais déjà demandé en octobre</h3>
+<p>Tes mots, relevés dans la conversation du 2 au 7 octobre :</p>
+<ul>
+  <li>« Un bon planning d'entraînement n'est pas seulement une roulette. Il faut que ce soit à l'image de ce qu'on veut travailler, renforcer et ce que l'utilisateur veut vraiment. »</li>
+  <li>« Je ne peux que sélectionner deux zones alors que c'est quand même censé être mon planning personnel. Si je veux travailler quatre zones au lieu de deux, je devrais pouvoir le faire. »</li>
+  <li>« Ça doit pas être du pipo, ça doit vraiment être bénéfique et améliorer le corps des gens. » Et tes mots d'ordre : perfectionnement, personnalisation, adaptation, concret, simplicité et performance.</li>
+  <li>« Il ne faut pas expliquer en petite police en dessous » : retirer un maximum de petites descriptions.</li>
+</ul>
+<p>Le 7 octobre, tu as jugé le résultat encore buggé, l'ancien planning mélangé au nouveau, et les exercices « sans aucune gueule ». Le 8, dans la conversation sur l'accueil, tu as écrit le cahier des charges du planning, que je reprends tel quel comme base :</p>
+<ol>
+  <li>Une seule entrée cohérente vers le planning.</li>
+  <li>Pouvoir suivre une proposition, ou organiser ses séances soi-même.</li>
+  <li>La semaine entière mise en avant.</li>
+  <li>Déplacer, remplacer, modifier ou retirer une séance.</li>
+  <li>Remplacer une séance et en ajouter une sont deux gestes différents.</li>
+  <li>Aucune limite arbitraire à deux zones du corps.</li>
+  <li>Modifier ses jours n'efface pas ses autres réglages.</li>
+  <li>Un lieu et un matériel habituels, avec des exceptions par jour ou par séance (maison par défaut, salle le mercredi).</li>
+  <li>Quelqu'un qui s'entraîne toujours en salle choisit ce défaut et s'arrête là, sans longue configuration.</li>
+</ol>
+<p>Tu avais aussi fait reproduire des écrans de référence. Ce qui s'en dégage : des fonds lilas très clairs, des cartes blanches douces, et le dégradé violet → magenta posé sur un seul élément à la fois. Dans une bande « Schedule », le jour actif devient une grande capsule en dégradé, à côté des autres jours en petites tuiles pâles. On y trouve aussi des onglets Jour, Semaine, Mois, Année, et des grands chiffres.</p>
+
 <h3>Ce qui manque face à ta demande</h3>
 <ol>
-  <li><strong>Les zones ne se choisissent qu'une fois, pour tout le programme.</strong> Et l'entrée « Mon programme » a quitté Entraînement le 11 octobre parce que tu la trouvais pas assez claire : aujourd'hui, plus personne ne peut choisir ses zones, sauf en demandant une séance au Guide. Rien pour « cette séance, plus de fessiers », rien pour « ce mois-ci, les bras ».</li>
+  <li><strong>Les zones ne se choisissent qu'une fois, pour tout le programme, et deux au plus.</strong> La limite à deux zones que tu avais refusée le 7 octobre est toujours dans le code. Et l'entrée « Mon programme » a quitté Entraînement le 11 octobre parce que tu la trouvais pas assez claire : aujourd'hui, plus personne ne peut choisir ses zones, sauf en demandant une séance au Guide. Rien pour « cette séance, plus de fessiers », rien pour « ce mois-ci, les bras ».</li>
   <li><strong>Le temps ne se règle que vers le bas, et séance par séance.</strong> Pas de « mardi 20 min, samedi 1 h », pas de « cette semaine je n'ai que 20 minutes », pas de séance plus longue. La durée visée par séance existe en base, mais seul le Guide la lit.</li>
   <li><strong>La période n'existe pas.</strong> Une adaptation datée sait seulement mettre une séance de côté. Pas de semaine légère, pas de vacances sans matériel, pas de focus d'un mois, pas de date à préparer.</li>
+  <li><strong>Le lieu est unique.</strong> Un seul lieu et un seul matériel pour tout le plan : pas de « maison par défaut, salle le mercredi », alors que tu l'avais demandé le 8 octobre.</li>
+  <li><strong>Toucher une séance propose peu de gestes</strong>, et pour un compte qui n'a pas choisi ses jours, l'ancien planning s'ouvre encore à côté du nouveau.</li>
   <li><strong>La bibliothèque limite le ciblage</strong> (tableau ci-dessous) : à la maison sans matériel, le moteur ne dispose d'aucun exercice animé pour le dos, d'un seul pour les épaules et de deux pour les fessiers.</li>
   <li><strong>Le planning est éclaté en huit feuilles</strong> qui portent les mots du moteur : Mon programme, Mes jours, Ma semaine, Organiser, Adaptation, Je m'absente, Je choisis, J'improvise. Chacune est juste ; ensemble, elles demandent de comprendre le moteur pour s'en servir.</li>
 </ol>
@@ -181,7 +205,7 @@ html { scroll-behavior: smooth; }
 </div>
 
 <h3>Ta demande, case par case</h3>
-<p>Tu as nommé trois réglages (les zones, le temps, les jours) et quatre portées (l'exercice, la séance, la semaine, le mois). Voilà ce qui existe déjà dans chaque case.</p>
+<p>Tu as nommé trois réglages (les zones, le temps, les jours) et quatre portées (l'exercice, la séance, la semaine, le mois). J'ajoute le lieu, que tu avais demandé en octobre. Voilà ce qui existe déjà dans chaque case.</p>
 <div class="tableau">
 <table class="large">
   <thead><tr><th></th><th>Un exercice</th><th>Une séance</th><th>Une semaine</th><th>Un mois</th><th>Toujours (le programme)</th></tr></thead>
@@ -189,6 +213,7 @@ html { scroll-behavior: smooth; }
     <tr><td><strong>Les zones</strong></td><td>« Changer » propose un exercice du même rôle, sans viser une zone</td><td>Seulement en demandant une séance au Guide</td><td>Rien</td><td>Rien</td><td>7 zones, 1 ou 2 priorités, mais l'entrée est cachée depuis le 11 octobre</td></tr>
     <tr><td><strong>Le temps</strong></td><td>Séries et répétitions modifiables dans une séance perso</td><td>Plus courte à la minute près ; jamais plus longue</td><td>Rien</td><td>Rien</td><td>Une durée visée en base, que seul le Guide lit</td></tr>
     <tr><td><strong>Les jours</strong></td><td>Sans objet</td><td>Changer de jour, la faire aujourd'hui</td><td>Exceptions, jour en plus, absence</td><td>Absence jusqu'à 120 jours</td><td>Mes jours d'entraînement</td></tr>
+    <tr><td><strong>Le lieu</strong></td><td>« Changer » en cours de séance (machine prise)</td><td>Seulement dans « J'improvise » ou en le disant au Guide</td><td>Rien</td><td>Rien</td><td>Un seul lieu et un seul matériel pour tout</td></tr>
   </tbody>
 </table>
 </div>
@@ -427,10 +452,10 @@ html { scroll-behavior: smooth; }
 
 <section id="lecture">
 <h2><span class="num">5</span>Ma lecture</h2>
-<p class="chapo">Un seul endroit, trois réglages, et un aperçu qui se recompose sous tes doigts. Par défaut le plan décide pour toi ; chaque réglage est à un geste.</p>
+<p class="chapo">Un seul endroit, quatre réglages, et un aperçu qui se recompose sous tes doigts. Par défaut le plan décide pour toi ; chaque réglage est à un geste ; et quelqu'un qui veut juste « salle, trois jours » s'arrête là.</p>
 
-<h3>Les trois réglages, à chaque portée</h3>
-<p>Tu as tout dit dans ta demande : les zones, le temps, les jours, et pour combien de temps. Je propose que ce soient les trois seuls réglages de l'écran, et qu'ils s'utilisent de la même façon à chaque portée. On apprend le geste une fois, on le retrouve partout.</p>
+<h3>Les réglages, à chaque portée</h3>
+<p>Tu as tout dit dans ta demande et en octobre : les zones, le temps, les jours, le lieu, et pour combien de temps. Je propose que ce soient les seuls réglages de l'écran, et qu'ils s'utilisent de la même façon à chaque portée. On apprend le geste une fois, on le retrouve partout.</p>
 <div class="tableau">
 <table class="large">
   <thead><tr><th>Portée</th><th>Ce que ça veut dire pour la personne</th><th>Ce que ça écrit dans le moteur (déjà là)</th></tr></thead>
@@ -446,7 +471,9 @@ html { scroll-behavior: smooth; }
 
 <h3>Les principes que je propose</h3>
 <ol>
-  <li><strong>Un seul écran pour régler son plan</strong>, en tête d'Entraînement. Les feuilles actuelles deviennent des étapes de cet écran, ou disparaissent.</li>
+  <li><strong>Un seul écran pour régler son plan</strong>, en tête d'Entraînement. Les feuilles actuelles deviennent des étapes de cet écran, ou disparaissent, et l'ancien planning disparaît pour de bon. Ton cahier des charges du 8 octobre est la base, point par point.</li>
+  <li><strong>Les zones sans limite arbitraire, mais avec leur coût.</strong> Chaque zone a trois états : insister, normal, ménager. On peut insister sur quatre zones si on veut ; l'aperçu dit alors ce que ça demande (« 4 séances de 45 min, ou on allège le reste »). La limite, c'est ton temps, rendu visible, pas un chiffre fixé par nous.</li>
+  <li><strong>Un lieu habituel et des exceptions</strong> : maison par défaut, salle le mercredi, et pendant les vacances, sans matériel. Changer ses jours ou son lieu n'efface jamais le reste.</li>
   <li><strong>On voit avant de valider.</strong> Chaque réglage recompose la semaine en direct et dit ce qui change en une ligne (« Vendredi passe à 25 min, fessiers en premier »).</li>
   <li><strong>Les règles viennent de la science, le Guide explique.</strong> Le temps choisi fixe le nombre d'exercices et le format ; la zone visée passe en premier, avec un tiers à la moitié de séries en plus, et le reste du corps reste entretenu ; un mois, c'est trois semaines qui montent et une plus légère. Nora ou Sasha disent pourquoi en une phrase, et ouvrent l'écran déjà rempli quand on leur demande en parlant.</li>
   <li><strong>Jamais de dette, jamais de reproche.</strong> Une zone visée n'est pas un quota, une semaine légère n'est pas un échec, une séance manquée attend toujours au prochain jour.</li>
@@ -519,7 +546,7 @@ html { scroll-behavior: smooth; }
   </li>
   <li>
     <h4>Qu'est-ce qui n'était pas clair dans « Mon programme » ?</h4>
-    <p>Les mots, le fait de choisir deux zones, les jours qui sont ailleurs, l'aperçu, l'activation ? Ta réponse me dit quoi ne pas refaire.</p>
+    <p>D'après octobre : la limite à deux zones, les jours à régler ailleurs, le lieu unique, l'ancien planning mélangé au nouveau, et le visuel. C'est bien ça, ou il y avait autre chose ? Ta réponse me dit quoi ne pas refaire.</p>
   </li>
   <li>
     <h4>Pour une semaine, pour un mois : quels modes veux-tu ?</h4>
@@ -554,7 +581,7 @@ html { scroll-behavior: smooth; }
   <li>
     <h4>La direction visuelle à maquetter</h4>
     <ul class="choix"><li><b>A</b>Le corps</li><li><b>B</b>Le temps qui se voit</li><li><b>C</b>Le mois en affiche</li><li>Un mélange</li></ul>
-    <p><span class="reco">Ma recommandation : A et B dans le même écran, C pour le mois.</span> Je peux aussi faire deux maquettes très différentes pour que tu compares.</p>
+    <p><span class="reco">Ma recommandation : A et B dans le même écran, C pour le mois.</span> Tes références d'octobre, avec la capsule en dégradé du jour actif, vont déjà dans le sens de B. Je peux aussi faire deux maquettes très différentes pour que tu compares.</p>
   </li>
   <li>
     <h4>Le contenu</h4>
