@@ -82,7 +82,9 @@ th, td { text-align: left; vertical-align: top; padding: 10px 14px; }
 th { font-weight: 650; color: var(--ink-2); font-size: 13.5px; border-bottom: 1px solid var(--line); white-space: nowrap; }
 td { border-top: 1px solid var(--line); }
 tr:first-child td { border-top: 0; }
-td.n, th.n { text-align: right; font-family: var(--chiffre); font-variation-settings: var(--w-nombre); font-variant-numeric: tabular-nums; white-space: nowrap; }
+td.n, th.n { text-align: right; }
+td.n { font-family: var(--chiffre); font-variation-settings: var(--w-nombre); font-variant-numeric: tabular-nums; white-space: nowrap; }
+th.n { white-space: normal; }
 td.faible { color: var(--energy); font-weight: 700; }
 table.large { min-width: 46rem; }
 caption { caption-side: bottom; text-align: left; padding: 10px 14px; font-size: 13.5px; color: var(--ink-3); border-top: 1px solid var(--line); }
@@ -111,6 +113,18 @@ details li { word-break: break-word; }
 
 .pied { margin-top: 64px; font-size: 14px; color: var(--ink-3); }
 
+@media (max-width: 640px) {
+  .tableau:has(table.large) { overflow: visible; }
+  table.large { min-width: 0; }
+  table.large thead { display: none; }
+  table.large, table.large tbody, table.large tr, table.large td { display: block; width: auto; }
+  table.large tr { padding: 14px 16px; border-top: 1px solid var(--line); }
+  table.large tr:first-child { border-top: 0; }
+  table.large td { border: 0; padding: 3px 0; text-align: left; }
+  table.large td::before { content: attr(data-label); display: block; font-size: 12.5px; font-weight: 650; color: var(--ink-3); }
+  table.large td:first-child { font-size: 16px; padding-bottom: 6px; }
+  table.large td:first-child::before { display: none; }
+}
 @media (max-width: 520px) {
   body { font-size: 16px; }
   .chapo { font-size: 17.5px; }
@@ -124,10 +138,10 @@ html { scroll-behavior: smooth; }
 
 <p class="surtitre">Vaiiya · Entraînement · récap du 13 octobre 2026</p>
 <h1>Le planning <em>sur mesure</em></h1>
-<p class="chapo">Ce qu'on a déjà construit, ce que font les autres, ce que dit la science et ce que dit le design. Puis ma lecture et les questions qui décident de la suite. Pas encore de maquette : elle viendra après tes réponses.</p>
+<p class="chapo">Ce qu’on a déjà construit, ce que font les autres, ce que dit la science et ce que dit le design. Puis ma lecture et les questions qui décident de la suite. Pas encore de maquette : elle viendra après tes réponses.</p>
 
 <nav class="sommaire" aria-label="Sommaire">
-  <a href="#existant"><b>1</b>Ce qu'on a déjà</a>
+  <a href="#existant"><b>1</b>Ce qu’on a déjà</a>
   <a href="#concurrents"><b>2</b>Les concurrents</a>
   <a href="#science"><b>3</b>La science</a>
   <a href="#design"><b>4</b>Le design</a>
@@ -137,30 +151,30 @@ html { scroll-behavior: smooth; }
 </nav>
 
 <section id="existant">
-<h2><span class="num">1</span>Ce qu'on a déjà construit</h2>
-<p>La conversation que tu cherchais existe : « Refonte planning et organisation des séances », ouverte le 2 octobre. Claude et Codex y ont co-décidé 60 points, produit huit maquettes, et codé neuf vagues (R1 à R9) jusqu'au 7 octobre. Tout est en production. Le dossier complet est dans <span class="nombre">docs/refonte-planning/</span>.</p>
+<h2><span class="num">1</span>Ce qu’on a déjà construit</h2>
+<p>La conversation que tu cherchais existe : « Refonte planning et organisation des séances », ouverte le 2 octobre. Claude et Codex y ont co-décidé 60 points, produit huit maquettes, et codé neuf vagues (R1 à R9) jusqu’au 7 octobre. Tout est en production. Le dossier complet est dans <span class="nombre">docs/refonte-planning/</span>.</p>
 
-<h3>Ce que le moteur sait faire aujourd'hui</h3>
+<h3>Ce que le moteur sait faire aujourd’hui</h3>
 <ul>
-  <li><strong>Un programme est un cycle de 1 à 6 séances.</strong> Une séance manquée t'attend au prochain jour d'entraînement : pas de dette, pas de rattrapage, rien ne se perd.</li>
-  <li><strong>Tes jours d'entraînement</strong> (une règle pour la semaine, des exceptions datées, des absences). La semaine se calcule à la lecture, sans rien écrire.</li>
-  <li><strong>Un programme par priorités</strong> : 7 zones (dos, fessiers, jambes, pectoraux, épaules, bras, abdos), une priorité et une seconde facultative, ou « Un peu de tout ».</li>
-  <li><strong>Chaque séance prévue a ses exercices repères</strong> (pour mesurer tes progrès) et ses complémentaires, qui changent selon trois réglages : mes exercices habituels, un peu de nouveauté, beaucoup de nouveauté.</li>
-  <li><strong>Dans le tunnel</strong> : la charge, « Fait · 10 × 16 kg », une question sur la marge restante, puis une proposition de progression à accepter ou à garder.</li>
-  <li><strong>La version courte</strong> : « J'ai moins de temps » calcule ce qu'on garde pour n'importe quelle durée, à la minute près.</li>
-  <li><strong>« Ton dos a travaillé hier »</strong> propose une version plus légère de la séance.</li>
-  <li><strong>Le Guide voit tout ça</strong> et sait déplacer, retirer, remplacer, sauter, ajouter une séance, et ouvrir l'écran d'adaptation déjà rempli.</li>
+  <li><strong>Un programme est un cycle de 1 à 6 séances.</strong> Une séance manquée t’attend au prochain jour d’entraînement : pas de dette, pas de rattrapage, rien ne se perd.</li>
+  <li><strong>Tes jours d’entraînement</strong> (une règle pour la semaine, des exceptions datées, des absences). La semaine se calcule à la lecture, sans rien écrire.</li>
+  <li><strong>Un programme par priorités</strong> : 7 zones (dos, fessiers, jambes, pectoraux, épaules, bras, abdos), une priorité et une seconde facultative, ou « Un peu de tout ».</li>
+  <li><strong>Chaque séance prévue a ses exercices repères</strong> (pour mesurer tes progrès) et ses complémentaires, qui changent selon trois réglages : mes exercices habituels, un peu de nouveauté, beaucoup de nouveauté.</li>
+  <li><strong>Dans le tunnel</strong> : la charge, « Fait · 10 × 16 kg », une question sur la marge restante, puis une proposition de progression à accepter ou à garder.</li>
+  <li><strong>La version courte</strong> : « J’ai moins de temps » calcule ce qu’on garde pour n’importe quelle durée, à la minute près.</li>
+  <li><strong>« Ton dos a travaillé hier »</strong> propose une version plus légère de la séance.</li>
+  <li><strong>Le Guide voit tout ça</strong> et sait déplacer, retirer, remplacer, sauter, ajouter une séance, et ouvrir l’écran d’adaptation déjà rempli.</li>
 </ul>
 
 <h3>Ce que tu avais déjà demandé en octobre</h3>
-<p>Tes mots, relevés dans la conversation du 2 au 7 octobre :</p>
+<p>Tes mots, relevés dans la conversation du 2 au 7 octobre :</p>
 <ul>
-  <li>« Un bon planning d'entraînement n'est pas seulement une roulette. Il faut que ce soit à l'image de ce qu'on veut travailler, renforcer et ce que l'utilisateur veut vraiment. »</li>
-  <li>« Je ne peux que sélectionner deux zones alors que c'est quand même censé être mon planning personnel. Si je veux travailler quatre zones au lieu de deux, je devrais pouvoir le faire. »</li>
-  <li>« Ça doit pas être du pipo, ça doit vraiment être bénéfique et améliorer le corps des gens. » Et tes mots d'ordre : perfectionnement, personnalisation, adaptation, concret, simplicité et performance.</li>
-  <li>« Il ne faut pas expliquer en petite police en dessous » : retirer un maximum de petites descriptions.</li>
+  <li>« Un bon planning d’entraînement n’est pas seulement une roulette. Il faut que ce soit à l’image de ce qu’on veut travailler, renforcer et ce que l’utilisateur veut vraiment. »</li>
+  <li>« Je ne peux que sélectionner deux zones alors que c’est quand même censé être mon planning personnel. Si je veux travailler quatre zones au lieu de deux, je devrais pouvoir le faire. »</li>
+  <li>« Ça doit pas être du pipo, ça doit vraiment être bénéfique et améliorer le corps des gens. » Et tes mots d’ordre : perfectionnement, personnalisation, adaptation, concret, simplicité et performance.</li>
+  <li>« Il ne faut pas expliquer en petite police en dessous » : retirer un maximum de petites descriptions.</li>
 </ul>
-<p>Le 7 octobre, tu as jugé le résultat encore buggé, l'ancien planning mélangé au nouveau, et les exercices « sans aucune gueule ». Le 8, dans la conversation sur l'accueil, tu as écrit le cahier des charges du planning, que je reprends tel quel comme base :</p>
+<p>Le 7 octobre, tu as jugé le résultat encore buggé, l’ancien planning mélangé au nouveau, et les exercices « sans aucune gueule ». Le 8, dans la conversation sur l’accueil, tu as écrit le cahier des charges du planning, que je reprends tel quel comme base :</p>
 <ol>
   <li>Une seule entrée cohérente vers le planning.</li>
   <li>Pouvoir suivre une proposition, ou organiser ses séances soi-même.</li>
@@ -168,21 +182,21 @@ html { scroll-behavior: smooth; }
   <li>Déplacer, remplacer, modifier ou retirer une séance.</li>
   <li>Remplacer une séance et en ajouter une sont deux gestes différents.</li>
   <li>Aucune limite arbitraire à deux zones du corps.</li>
-  <li>Modifier ses jours n'efface pas ses autres réglages.</li>
+  <li>Modifier ses jours n’efface pas ses autres réglages.</li>
   <li>Un lieu et un matériel habituels, avec des exceptions par jour ou par séance (maison par défaut, salle le mercredi).</li>
-  <li>Quelqu'un qui s'entraîne toujours en salle choisit ce défaut et s'arrête là, sans longue configuration.</li>
+  <li>Quelqu’un qui s’entraîne toujours en salle choisit ce défaut et s’arrête là, sans longue configuration.</li>
 </ol>
-<p>Tu avais aussi fait reproduire des écrans de référence. Ce qui s'en dégage : des fonds lilas très clairs, des cartes blanches douces, et le dégradé violet → magenta posé sur un seul élément à la fois. Dans une bande « Schedule », le jour actif devient une grande capsule en dégradé, à côté des autres jours en petites tuiles pâles. On y trouve aussi des onglets Jour, Semaine, Mois, Année, et des grands chiffres.</p>
+<p>Tu avais aussi fait reproduire des écrans de référence. Ce qui s’en dégage : des fonds lilas très clairs, des cartes blanches douces, et le dégradé violet → magenta posé sur un seul élément à la fois. Dans une bande « Schedule », le jour actif devient une grande capsule en dégradé, à côté des autres jours en petites tuiles pâles. On y trouve aussi des onglets Jour, Semaine, Mois, Année, et des grands chiffres.</p>
 
 <h3>Ce qui manque face à ta demande</h3>
 <ol>
-  <li><strong>Les zones ne se choisissent qu'une fois, pour tout le programme, et deux au plus.</strong> La limite à deux zones que tu avais refusée le 7 octobre est toujours dans le code. Et l'entrée « Mon programme » a quitté Entraînement le 11 octobre parce que tu la trouvais pas assez claire : aujourd'hui, plus personne ne peut choisir ses zones, sauf en demandant une séance au Guide. Rien pour « cette séance, plus de fessiers », rien pour « ce mois-ci, les bras ».</li>
-  <li><strong>Le temps ne se règle que vers le bas, et séance par séance.</strong> Pas de « mardi 20 min, samedi 1 h », pas de « cette semaine je n'ai que 20 minutes », pas de séance plus longue. La durée visée par séance existe en base, mais seul le Guide la lit.</li>
-  <li><strong>La période n'existe pas.</strong> Une adaptation datée sait seulement mettre une séance de côté. Pas de semaine légère, pas de vacances sans matériel, pas de focus d'un mois, pas de date à préparer.</li>
-  <li><strong>Le lieu est unique.</strong> Un seul lieu et un seul matériel pour tout le plan : pas de « maison par défaut, salle le mercredi », alors que tu l'avais demandé le 8 octobre.</li>
-  <li><strong>Toucher une séance propose peu de gestes</strong>, et pour un compte qui n'a pas choisi ses jours, l'ancien planning s'ouvre encore à côté du nouveau.</li>
-  <li><strong>La bibliothèque limite le ciblage</strong> (tableau ci-dessous) : à la maison sans matériel, le moteur ne dispose d'aucun exercice animé pour le dos, d'un seul pour les épaules et de deux pour les fessiers.</li>
-  <li><strong>Le planning est éclaté en huit feuilles</strong> qui portent les mots du moteur : Mon programme, Mes jours, Ma semaine, Organiser, Adaptation, Je m'absente, Je choisis, J'improvise. Chacune est juste ; ensemble, elles demandent de comprendre le moteur pour s'en servir.</li>
+  <li><strong>Les zones ne se choisissent qu’une fois, pour tout le programme, et deux au plus.</strong> La limite à deux zones que tu avais refusée le 7 octobre est toujours dans le code. Et l’entrée « Mon programme » a quitté Entraînement le 11 octobre parce que tu la trouvais pas assez claire : aujourd’hui, plus personne ne peut choisir ses zones, sauf en demandant une séance au Guide. Rien pour « cette séance, plus de fessiers », rien pour « ce mois-ci, les bras ».</li>
+  <li><strong>Le temps ne se règle que vers le bas, et séance par séance.</strong> Pas de « mardi 20 min, samedi 1 h », pas de « cette semaine je n’ai que 20 minutes », pas de séance plus longue. La durée visée par séance existe en base, mais seul le Guide la lit.</li>
+  <li><strong>La période n’existe pas.</strong> Une adaptation datée sait seulement mettre une séance de côté. Pas de semaine légère, pas de vacances sans matériel, pas de focus d’un mois, pas de date à préparer.</li>
+  <li><strong>Le lieu est unique.</strong> Un seul lieu et un seul matériel pour tout le plan : pas de « maison par défaut, salle le mercredi », alors que tu l’avais demandé le 8 octobre.</li>
+  <li><strong>Deux plannings cohabitent encore.</strong> Pour un compte qui n’a pas choisi ses jours, « Organiser » ouvre toujours l’ancien planning ; les autres ont le nouveau.</li>
+  <li><strong>La bibliothèque limite le ciblage</strong> (tableau ci-dessous) : à la maison sans matériel, le moteur ne dispose d’aucun exercice animé pour le dos, d’un seul pour les épaules et de deux pour les fessiers.</li>
+  <li><strong>Le planning est éclaté en huit feuilles</strong> qui portent les mots du moteur : Mon programme, Mes jours, Ma semaine, Organiser, Adaptation, Je m’absente, Je choisis, J’improvise. Chacune est juste ; ensemble, elles demandent de comprendre le moteur pour s’en servir.</li>
 </ol>
 
 <div class="tableau">
@@ -200,60 +214,60 @@ html { scroll-behavior: smooth; }
     <tr><td>Mobilité</td><td class="n">16</td><td class="n">16</td><td class="n">16</td></tr>
     <tr><td><strong>Total</strong></td><td class="n">54</td><td class="n">70</td><td class="n">102</td></tr>
   </tbody>
-  <caption>Les exercices animés que le moteur a le droit de proposer, selon le lieu (même règle que la génération de séance). En orange : deux ou moins, trop peu pour cibler la zone plusieurs semaines sans tourner en rond.</caption>
+  <caption>Les exercices animés que le moteur a le droit de proposer, selon le lieu (même règle que la génération de séance). En orange : deux ou moins, trop peu pour cibler la zone plusieurs semaines sans tourner en rond.</caption>
 </table>
 </div>
 
 <h3>Ta demande, case par case</h3>
-<p>Tu as nommé trois réglages (les zones, le temps, les jours) et quatre portées (l'exercice, la séance, la semaine, le mois). J'ajoute le lieu, que tu avais demandé en octobre. Voilà ce qui existe déjà dans chaque case.</p>
+<p>Tu as nommé trois réglages (les zones, le temps, les jours) et quatre portées (l’exercice, la séance, la semaine, le mois). J’ajoute le lieu, que tu avais demandé en octobre. Voilà ce qui existe déjà dans chaque case.</p>
 <div class="tableau">
 <table class="large">
   <thead><tr><th></th><th>Un exercice</th><th>Une séance</th><th>Une semaine</th><th>Un mois</th><th>Toujours (le programme)</th></tr></thead>
   <tbody>
-    <tr><td><strong>Les zones</strong></td><td>« Changer » propose un exercice du même rôle, sans viser une zone</td><td>Seulement en demandant une séance au Guide</td><td>Rien</td><td>Rien</td><td>7 zones, 1 ou 2 priorités, mais l'entrée est cachée depuis le 11 octobre</td></tr>
-    <tr><td><strong>Le temps</strong></td><td>Séries et répétitions modifiables dans une séance perso</td><td>Plus courte à la minute près ; jamais plus longue</td><td>Rien</td><td>Rien</td><td>Une durée visée en base, que seul le Guide lit</td></tr>
-    <tr><td><strong>Les jours</strong></td><td>Sans objet</td><td>Changer de jour, la faire aujourd'hui</td><td>Exceptions, jour en plus, absence</td><td>Absence jusqu'à 120 jours</td><td>Mes jours d'entraînement</td></tr>
-    <tr><td><strong>Le lieu</strong></td><td>« Changer » en cours de séance (machine prise)</td><td>Seulement dans « J'improvise » ou en le disant au Guide</td><td>Rien</td><td>Rien</td><td>Un seul lieu et un seul matériel pour tout</td></tr>
+    <tr><td><strong>Les zones</strong></td><td data-label="Un exercice">« Changer » propose un exercice du même rôle, sans viser une zone</td><td data-label="Une séance">Seulement en demandant une séance au Guide</td><td data-label="Une semaine">Rien</td><td data-label="Un mois">Rien</td><td data-label="Toujours (le programme)">7 zones, 1 ou 2 priorités, mais l’entrée est cachée depuis le 11 octobre</td></tr>
+    <tr><td><strong>Le temps</strong></td><td data-label="Un exercice">Séries et répétitions modifiables dans une séance perso</td><td data-label="Une séance">Plus courte à la minute près ; jamais plus longue</td><td data-label="Une semaine">Rien</td><td data-label="Un mois">Rien</td><td data-label="Toujours (le programme)">Une durée visée en base, que seul le Guide lit</td></tr>
+    <tr><td><strong>Les jours</strong></td><td data-label="Un exercice">Sans objet</td><td data-label="Une séance">Changer de jour, la faire aujourd’hui</td><td data-label="Une semaine">Exceptions, jour en plus, absence</td><td data-label="Un mois">Absence jusqu’à 120 jours</td><td data-label="Toujours (le programme)">Mes jours d’entraînement</td></tr>
+    <tr><td><strong>Le lieu</strong></td><td data-label="Un exercice">« Changer » en cours de séance (machine prise)</td><td data-label="Une séance">Seulement dans « J’improvise » ou en le disant au Guide</td><td data-label="Une semaine">Rien</td><td data-label="Un mois">Rien</td><td data-label="Toujours (le programme)">Un seul lieu et un seul matériel pour tout</td></tr>
   </tbody>
 </table>
 </div>
 
 <h3>Ce que les comptes utilisent vraiment</h3>
-<p>Relevé en lecture seule dans la base, aujourd'hui :</p>
+<p>Relevé en lecture seule dans la base, aujourd’hui :</p>
 <div class="chiffres">
   <div><span class="nombre">67</span><span>comptes</span></div>
   <div><span class="nombre">5</span><span>ont déjà terminé une séance (35 au total)</span></div>
   <div><span class="nombre">2</span><span>comptes actifs sur les 30 derniers jours</span></div>
-  <div><span class="nombre">1</span><span>compte a choisi ses jours d'entraînement</span></div>
+  <div><span class="nombre">1</span><span>compte a choisi ses jours d’entraînement</span></div>
   <div><span class="nombre">2</span><span>programmes choisis par zones, sur 11 actifs</span></div>
   <div><span class="nombre">0</span><span>charge notée dans le tunnel</span></div>
 </div>
 <div class="encart lecture">
-  <h4>Ce que j'en tire</h4>
-  <p>Le moteur est en avance sur l'écran. Il sait déjà presque tout ce que tu demandes, mais il le cache derrière des mots et des feuilles que personne n'ouvre. Le prochain saut n'est pas un moteur de plus : c'est un seul endroit où l'on règle son plan et où l'on voit tout de suite ce que ça change. Et comme presque personne ne s'en sert encore, on peut refaire l'écran sans rien casser chez personne.</p>
+  <h4>Ce que j’en tire</h4>
+  <p>Le moteur est en avance sur l’écran. Il sait déjà presque tout ce que tu demandes, mais il le cache derrière des mots et des feuilles que personne n’ouvre. Le prochain saut n’est pas un moteur de plus : c’est un seul endroit où l’on règle son plan et où l’on voit tout de suite ce que ça change. Et comme presque personne ne s’en sert encore, on peut refaire l’écran sans rien casser chez personne.</p>
 </div>
 </section>
 
 <section id="concurrents">
 <h2><span class="num">2</span>Ce que font les concurrents</h2>
-<p>Deux recherches en parallèle, une trentaine d'applis. Limite à connaître : les pages n'ont pas pu être ouvertes depuis cet environnement, tout vient des résultats de recherche (centres d'aide, annonces, tests). Les applis françaises (Fizzup, Basic-Fit, Fitness Park) et les tunnels à quiz (MadMuscles, BetterMe) ne sont pas vérifiés : ce que j'en dis est marqué comme tel.</p>
+<p>Deux recherches en parallèle, une trentaine d’applis. Limite à connaître : les pages n’ont pas pu être ouvertes depuis cet environnement, tout vient des résultats de recherche (centres d’aide, annonces, tests). Les applis françaises (Fizzup, Basic-Fit, Fitness Park) et les tunnels à quiz (MadMuscles, BetterMe) ne sont pas vérifiés : ce que j’en dis est marqué comme tel.</p>
 
 <h3>Quatre façons de faire</h3>
 <div class="tableau">
 <table class="large">
   <thead><tr><th>Famille</th><th>Qui</th><th>Comment ça marche</th><th>Le revers</th></tr></thead>
   <tbody>
-    <tr><td><strong>La séance du jour, calculée</strong></td><td>Fitbod, Tonal, Zing Coach</td><td>Une séance à la fois, choisie selon la récupération de chaque muscle (Fitbod l'estime de 0 à 100 %). La durée du jour fixe le nombre d'exercices.</td><td>Aucune vue de la semaine. Les séances paraissent aléatoires, la confiance se perd sur le « pourquoi ».</td></tr>
-    <tr><td><strong>Le bloc qui progresse</strong></td><td>RP Hypertrophy, JuggernautAI, JEFIT, Alpha Progression, Dr. Muscle</td><td>Des mésocycles de 4 à 12 semaines, avec décharge. Des questions courtes après les exercices (pump, courbatures, effort) ajoutent ou retirent des séries.</td><td>Jargon, salle supposée, séances longues, 13 à 50 $ par mois.</td></tr>
-    <tr><td><strong>Le plan à la carte</strong></td><td>Apple Fitness+, Peloton, Freeletics, Nike Training Club, Sweat</td><td>Quels jours, combien de minutes, combien de semaines. Une bibliothèque de séances ou de cours qu'on range dans ce cadre.</td><td>Peu de vraie adaptation. Apple : « très personnalisable, mais sans âme ». Presque pas de zones du corps.</td></tr>
-    <tr><td><strong>Le calendrier qui vit avec toi</strong></td><td>Runna, Garmin</td><td>Des modes nommés et datés quand la vie s'en mêle (« Not Feeling 100 % » de 3 à 14 jours, vacances de 3 à 21 jours), avec l'impact affiché avant de valider.</td><td>Réservé à la course. En février 2026, le WSJ a relié des blessures à des plans Runna jugés trop agressifs.</td></tr>
+    <tr><td data-label="Famille"><strong>La séance du jour, calculée</strong></td><td data-label="Qui">Fitbod, Tonal, Zing Coach</td><td data-label="Comment ça marche">Une séance à la fois, choisie selon la récupération de chaque muscle (Fitbod l’estime de 0 à 100 %). La durée du jour fixe le nombre d’exercices.</td><td data-label="Le revers">Aucune vue de la semaine. Les séances paraissent aléatoires, la confiance se perd sur le « pourquoi ».</td></tr>
+    <tr><td data-label="Famille"><strong>Le bloc qui progresse</strong></td><td data-label="Qui">RP Hypertrophy, JuggernautAI, JEFIT, Alpha Progression, Dr. Muscle</td><td data-label="Comment ça marche">Des mésocycles de 4 à 12 semaines, avec décharge. Des questions courtes après les exercices (pump, courbatures, effort) ajoutent ou retirent des séries.</td><td data-label="Le revers">Jargon, salle supposée, séances longues, 13 à 50 $ par mois.</td></tr>
+    <tr><td data-label="Famille"><strong>Le plan à la carte</strong></td><td data-label="Qui">Apple Fitness+, Peloton, Freeletics, Nike Training Club, Sweat</td><td data-label="Comment ça marche">Quels jours, combien de minutes, combien de semaines. Une bibliothèque de séances ou de cours qu’on range dans ce cadre.</td><td data-label="Le revers">Peu de vraie adaptation. Apple : « très personnalisable, mais sans âme ». Presque pas de zones du corps.</td></tr>
+    <tr><td data-label="Famille"><strong>Le calendrier qui vit avec toi</strong></td><td data-label="Qui">Runna, Garmin</td><td data-label="Comment ça marche">Des modes nommés et datés quand la vie s’en mêle (« Not Feeling 100 % » de 3 à 14 jours, vacances de 3 à 21 jours), avec l’impact affiché avant de valider.</td><td data-label="Le revers">Réservé à la course. En février 2026, le WSJ a relié des blessures à des plans Runna jugés trop agressifs.</td></tr>
   </tbody>
 </table>
 </div>
 
 <div class="encart">
-  <h4>Le plus proche de ta demande : MacroFactor Workouts (janvier 2026)</h4>
-  <p>On donne ses jours, ses minutes par séance et ses exclusions. On répartit <strong>5 points de focus entre les muscles</strong> et on peut en mettre jusqu'à 5 de côté. Le programme tourne en cycles et pas sur un calendrier : une séance manquée ne change rien. Une silhouette face et dos montre les séries moyennes par muscle ; toucher un muscle montre les exercices qui le travaillent. Leur défaut, souligné par les utilisateurs : une seule durée pour toute la semaine, et pas de cardio.</p>
+  <h4>Le plus proche de ta demande : MacroFactor Workouts (janvier 2026)</h4>
+  <p>On donne ses jours, ses minutes par séance et ses exclusions. On répartit <strong>5 points de focus entre les muscles</strong> et on peut en mettre jusqu’à 5 de côté. Le programme tourne en cycles et pas sur un calendrier : une séance manquée ne change rien. Une silhouette face et dos montre les séries moyennes par muscle ; toucher un muscle montre les exercices qui le travaillent. Leur défaut, souligné par les utilisateurs : une seule durée pour toute la semaine, et pas de cardio.</p>
 </div>
 
 <h3>Les zones et le temps chez les meilleurs</h3>
@@ -261,99 +275,99 @@ html { scroll-behavior: smooth; }
 <table class="large">
   <thead><tr><th>Appli</th><th>Cibler des zones</th><th>Régler le temps</th><th>La semaine, le mois</th></tr></thead>
   <tbody>
-    <tr><td>Fitbod</td><td>Muscles du jour, « plus / moins / exclure » un exercice, exercices focus sur 4 semaines</td><td>De 15 min à 1 h 30 par séance ; 4 exercices ≈ 27 à 51 min, 6 ≈ 39 à 63 min</td><td>Pas de calendrier : une séance à la fois</td></tr>
-    <tr><td>MacroFactor</td><td>5 points de focus, 5 groupes mis de côté</td><td>Une durée pour toutes les séances</td><td>Cycles, jours réordonnables par glisser-déposer</td></tr>
-    <tr><td>RP Hypertrophy</td><td>Chaque muscle : insister, maintenir ou ignorer</td><td>Pas de réglage de durée trouvé</td><td>Mésocycle de 4 à 6 semaines, puis décharge</td></tr>
-    <tr><td>Hevy Trainer</td><td>Un muscle à travailler en plus</td><td>Durée visée, « une estimation, pas une garantie »</td><td>« Modifier mon programme » distinct de « Nouveau programme »</td></tr>
-    <tr><td>Apple Fitness+</td><td>Non confirmé</td><td>Un total de minutes par jour, de 10 à 90</td><td>Plans de 2 à 8 semaines, séances manquées rattrapables</td></tr>
-    <tr><td>Peloton</td><td>Seulement dans Strength+</td><td>20-30 ou 30-45 min, 60 min au plus</td><td>Un plan neuf chaque lundi, avec sa justification écrite</td></tr>
-    <tr><td>Freeletics</td><td>Non, c'est demandé sur leur forum</td><td>« Adapter la séance » : 15, 30, 45 ou 60 min, sans matériel, en silence</td><td>Parcours de 9 à 12 semaines</td></tr>
-    <tr><td>Runna</td><td>Sans objet (course)</td><td>Volume et difficulté modifiables à tout moment</td><td>Modes datés, réalignement proposé après plusieurs séances manquées, blocs sur l'année</td></tr>
-    <tr><td>MadMuscles, BetterMe <em>(non vérifié)</em></td><td>On touche des zones sur une silhouette dès le quiz d'inscription</td><td>Questions du quiz</td><td>Plan vendu avant d'être montré</td></tr>
+    <tr><td data-label="Appli">Fitbod</td><td data-label="Cibler des zones">Muscles du jour, « plus / moins / exclure » un exercice, exercices focus sur 4 semaines</td><td data-label="Régler le temps">De 15 min à 1 h 30 par séance ; 4 exercices ≈ 27 à 51 min, 6 ≈ 39 à 63 min</td><td data-label="La semaine, le mois">Pas de calendrier : une séance à la fois</td></tr>
+    <tr><td data-label="Appli">MacroFactor</td><td data-label="Cibler des zones">5 points de focus, 5 groupes mis de côté</td><td data-label="Régler le temps">Une durée pour toutes les séances</td><td data-label="La semaine, le mois">Cycles, jours réordonnables par glisser-déposer</td></tr>
+    <tr><td data-label="Appli">RP Hypertrophy</td><td data-label="Cibler des zones">Chaque muscle : insister, maintenir ou ignorer</td><td data-label="Régler le temps">Pas de réglage de durée trouvé</td><td data-label="La semaine, le mois">Mésocycle de 4 à 6 semaines, puis décharge</td></tr>
+    <tr><td data-label="Appli">Hevy Trainer</td><td data-label="Cibler des zones">Un muscle à travailler en plus</td><td data-label="Régler le temps">Durée visée, « une estimation, pas une garantie »</td><td data-label="La semaine, le mois">« Modifier mon programme » distinct de « Nouveau programme »</td></tr>
+    <tr><td data-label="Appli">Apple Fitness+</td><td data-label="Cibler des zones">Non confirmé</td><td data-label="Régler le temps">Un total de minutes par jour, de 10 à 90</td><td data-label="La semaine, le mois">Plans de 2 à 8 semaines, séances manquées rattrapables</td></tr>
+    <tr><td data-label="Appli">Peloton</td><td data-label="Cibler des zones">Seulement dans Strength+</td><td data-label="Régler le temps">20-30 ou 30-45 min, 60 min au plus</td><td data-label="La semaine, le mois">Un plan neuf chaque lundi, avec sa justification écrite</td></tr>
+    <tr><td data-label="Appli">Freeletics</td><td data-label="Cibler des zones">Non, c’est demandé sur leur forum</td><td data-label="Régler le temps">« Adapter la séance » : 15, 30, 45 ou 60 min, sans matériel, en silence</td><td data-label="La semaine, le mois">Parcours de 9 à 12 semaines</td></tr>
+    <tr><td data-label="Appli">Runna</td><td data-label="Cibler des zones">Sans objet (course)</td><td data-label="Régler le temps">Volume et difficulté modifiables à tout moment</td><td data-label="La semaine, le mois">Modes datés, réalignement proposé après plusieurs séances manquées, blocs sur l’année</td></tr>
+    <tr><td data-label="Appli">MadMuscles, BetterMe <em>(non vérifié)</em></td><td data-label="Cibler des zones">On touche des zones sur une silhouette dès le quiz d’inscription</td><td data-label="Régler le temps">Questions du quiz</td><td data-label="La semaine, le mois">Plan vendu avant d’être montré</td></tr>
   </tbody>
 </table>
 </div>
 
 <h3>Ce qui marche partout</h3>
 <ol>
-  <li><strong>La durée est un réglage de premier rang</strong>, à deux étages : le budget habituel et l'ajustement du jour. Elle se traduit en nombre d'exercices. C'est l'ajustement du jour qui déçoit le plus souvent (Freeletics bloqué à 15 min sur certains parcours, Peloton plafonné à 60).</li>
-  <li><strong>Le ciblage marche avec un budget limité et trois états</strong> : viser, maintenir, mettre de côté (RP, MacroFactor). Tout prioriser revient à ne rien prioriser.</li>
-  <li><strong>L'unité qui parle est le nombre de séries par zone et par semaine</strong> (Fitbod compte une série pour le muscle principal, une demie pour un muscle secondaire).</li>
-  <li><strong>Les écarts de la vie méritent des modes nommés</strong>, limités dans le temps, avec l'impact montré avant de valider et un retour progressif (Runna).</li>
-  <li><strong>Le « fait pour moi » vient de l'explication</strong> plus que du nombre de réglages : une justification écrite du plan avec « accepter » ou « continuer à modifier » (Peloton), une contrainte validée en direct (Apple refuse un mélange qui ne tient pas dans les minutes choisies).</li>
-  <li><strong>Chaque modification annonce sa portée</strong> : cette séance, cette période, ou tout le programme (Hevy, MacroFactor).</li>
-  <li><strong>Les retours qui marchent sont courts et facultatifs</strong> : « trop facile, trop dur » (Dr. Muscle). JuggernautAI a raccourci ses questions d'avant séance.</li>
-  <li><strong>La silhouette du corps est le visuel attendu</strong>, mais partout elle regarde en arrière : la fatigue (Fitbod), les muscles de la semaine (Hevy), la carte musculaire après la séance (Strava, depuis mai 2026).</li>
+  <li><strong>La durée est un réglage de premier rang</strong>, à deux étages : le budget habituel et l’ajustement du jour. Elle se traduit en nombre d’exercices. C’est l’ajustement du jour qui déçoit le plus souvent (Freeletics bloqué à 15 min sur certains parcours, Peloton plafonné à 60).</li>
+  <li><strong>Le ciblage marche avec un budget limité et trois états</strong> : viser, maintenir, mettre de côté (RP, MacroFactor). Tout prioriser revient à ne rien prioriser.</li>
+  <li><strong>L’unité qui parle est le nombre de séries par zone et par semaine</strong> (Fitbod compte une série pour le muscle principal, une demie pour un muscle secondaire).</li>
+  <li><strong>Les écarts de la vie méritent des modes nommés</strong>, limités dans le temps, avec l’impact montré avant de valider et un retour progressif (Runna).</li>
+  <li><strong>Le « fait pour moi » vient de l’explication</strong> plus que du nombre de réglages : une justification écrite du plan avec « accepter » ou « continuer à modifier » (Peloton), une contrainte validée en direct (Apple refuse un mélange qui ne tient pas dans les minutes choisies).</li>
+  <li><strong>Chaque modification annonce sa portée</strong> : cette séance, cette période, ou tout le programme (Hevy, MacroFactor).</li>
+  <li><strong>Les retours qui marchent sont courts et facultatifs</strong> : « trop facile, trop dur » (Dr. Muscle). JuggernautAI a raccourci ses questions d’avant séance.</li>
+  <li><strong>La silhouette du corps est le visuel attendu</strong>, mais partout elle regarde en arrière : la fatigue (Fitbod), les muscles de la semaine (Hevy), la carte musculaire après la séance (Strava, depuis mai 2026).</li>
 </ol>
 
 <h3>Ce que personne ne fait bien</h3>
-<p>C'est là qu'on peut être premiers.</p>
+<p>C’est là qu’on peut être premiers.</p>
 <ol>
-  <li><strong>Les zones de bout en bout</strong> : les choisir, voir quelles séances les servent, raccourcir sans les perdre, constater ce qui a été fait. Chez tout le monde, c'est éparpillé entre le quiz, un filtre et une carte après coup.</li>
-  <li><strong>Une vue de ce qui vient</strong> : ce que la semaine ou le mois va travailler, comparé à ce qui a été fait.</li>
+  <li><strong>Les zones de bout en bout</strong> : les choisir, voir quelles séances les servent, raccourcir sans les perdre, constater ce qui a été fait. Chez tout le monde, c’est éparpillé entre le quiz, un filtre et une carte après coup.</li>
+  <li><strong>Une vue de ce qui vient</strong> : ce que la semaine ou le mois va travailler, comparé à ce qui a été fait.</li>
   <li><strong>Des modes de vie datés pour le renforcement et la maison.</strong> Runna le fait pour la course, personne pour nous.</li>
-  <li><strong>Le ciblage pour quelqu'un qui n'est pas expert et qui n'est pas en salle.</strong> Ailleurs : jargon (RIR, MEV, pump) et salle presque toujours supposée.</li>
+  <li><strong>Le ciblage pour quelqu’un qui n’est pas expert et qui n’est pas en salle.</strong> Ailleurs : jargon (RIR, MEV, pump) et salle presque toujours supposée.</li>
   <li><strong>Une raison par séance, en une phrase.</strong></li>
-  <li><strong>Personnaliser sans tunnel commercial</strong> : le secteur perd la confiance sur le paywall avant le plan et les renouvellements surprises. Nike Training Club, gratuit depuis 2020, garde 4,8 étoiles sur environ 275 000 avis.</li>
+  <li><strong>Personnaliser sans tunnel commercial</strong> : le secteur perd la confiance sur le paywall avant le plan et les renouvellements surprises. Nike Training Club, gratuit depuis 2020, garde 4,8 étoiles sur environ 275 000 avis.</li>
   <li><strong>Un acteur francophone</strong> du planning adaptatif avec un coach IA. Le seul mouvement vérifié est le partenariat Decathlon × Freeletics (avril 2025, pour 5 ans).</li>
 </ol>
 
 <div class="encart lecture">
   <h4>Où Vaiiya est déjà devant</h4>
-  <p>Une séance manquée glisse sans dette (seul MacroFactor l'écrit aussi). La version courte dit ce qui part et si la séance compte encore : aucune appli vérifiée ne le fait. Les adaptations ont une date de fin. Et le Guide modifie le planning dans l'appli avec une carte à valider, quand les leaders envoient leurs utilisateurs vers ChatGPT pour ça (Hevy depuis septembre 2026). Côté prix, la plupart des applis qui adaptent vraiment coûtent entre 13 et 50 $ par mois ; MacroFactor est l'exception, à 71,99 $ par an.</p>
+  <p>Une séance manquée glisse sans dette (seul MacroFactor l’écrit aussi). La version courte dit ce qui part et si la séance compte encore : aucune appli vérifiée ne le fait. Les adaptations ont une date de fin. Et le Guide modifie le planning dans l’appli avec une carte à valider, quand les leaders envoient leurs utilisateurs vers ChatGPT pour ça (Hevy depuis septembre 2026). Côté prix, la plupart des applis qui adaptent vraiment coûtent entre 13 et 50 $ par mois ; MacroFactor est l’exception, à 71,99 $ par an.</p>
 </div>
 </section>
 
 <section id="science">
 <h2><span class="num">3</span>Ce que dit la science</h2>
-<p>Ce qui fait une séance adaptée et une bonne séance, réduit à ce qu'un moteur peut appliquer. Les articles eux-mêmes n'ont pas pu être ouverts depuis cet environnement : les chiffres viennent des résumés publiés et de références connues, à revérifier avant tout usage public. Chaque règle porte son niveau de preuve dans les notes complètes (plusieurs méta-analyses, une seule étude, ou convention de terrain). Bonne nouvelle au passage : l'ACSM a publié en 2026 une nouvelle position officielle sur la musculation.</p>
+<p>Ce qui fait une séance adaptée et une bonne séance, réduit à ce qu’un moteur peut appliquer. Les articles eux-mêmes n’ont pas pu être ouverts depuis cet environnement : les chiffres viennent des résumés publiés et de références connues, à revérifier avant tout usage public. Chaque règle porte son niveau de preuve dans les notes complètes (plusieurs méta-analyses, une seule étude, ou convention de terrain). Bonne nouvelle au passage : l’ACSM a publié en 2026 une nouvelle position officielle sur la musculation.</p>
 
 <h3>Les principes, en huit phrases</h3>
 <ol>
   <li><strong>Toute musculation vaut mieux que rien</strong>, avec chaque grand groupe musculaire au moins deux fois par semaine (OMS 2020, ACSM 2026).</li>
-  <li><strong>Le volume de la semaine est le premier levier</strong> pour le muscle, avec des gains de plus en plus faibles. Repère : environ 10 séries par muscle et par semaine, chacune finie à 3 répétitions ou moins de l'échec. Quatre séries suffisent pour démarrer ou entretenir.</li>
-  <li><strong>À volume égal, la façon de découper la semaine compte peu.</strong> Full body ou haut et bas du corps, c'est une question de goût et d'agenda.</li>
-  <li><strong>On peut faire de 6 à 30 répétitions</strong> pour le muscle si l'effort est réel ; la charge lourde ne compte vraiment que pour la force.</li>
-  <li><strong>Aller jusqu'à l'échec n'est pas nécessaire</strong> : garder 1 à 3 répétitions en réserve suffit.</li>
-  <li><strong>Pour gagner du temps, on enchaîne deux exercices</strong> plutôt que de raccourcir les repos : mêmes résultats en 30 à 50 % de temps en moins, mais c'est plus dur. Au moins 60 s de repos, 90 à 120 s sur les gros mouvements.</li>
-  <li><strong>Cardio et musculation se combinent sans souci</strong> ; seule l'explosivité en souffre un peu.</li>
-  <li><strong>Rater une séance ne coûte presque rien</strong> : la force tient environ trois semaines. Ce qui coûte, c'est d'abandonner. On reprend, on ne rattrape pas.</li>
+  <li><strong>Le volume de la semaine est le premier levier</strong> pour le muscle, avec des gains de plus en plus faibles. Repère : environ 10 séries par muscle et par semaine, chacune finie à 3 répétitions ou moins de l’échec. Quatre séries suffisent pour démarrer ou entretenir.</li>
+  <li><strong>À volume égal, la façon de découper la semaine compte peu.</strong> Full body ou haut et bas du corps, c’est une question de goût et d’agenda.</li>
+  <li><strong>On peut faire de 6 à 30 répétitions</strong> pour le muscle si l’effort est réel ; la charge lourde ne compte vraiment que pour la force.</li>
+  <li><strong>Aller jusqu’à l’échec n’est pas nécessaire</strong> : garder 1 à 3 répétitions en réserve suffit.</li>
+  <li><strong>Pour gagner du temps, on enchaîne deux exercices</strong> plutôt que de raccourcir les repos : mêmes résultats en 30 à 50 % de temps en moins, mais c’est plus dur. Au moins 60 s de repos, 90 à 120 s sur les gros mouvements.</li>
+  <li><strong>Cardio et musculation se combinent sans souci</strong> ; seule l’explosivité en souffre un peu.</li>
+  <li><strong>Rater une séance ne coûte presque rien</strong> : la force tient environ trois semaines. Ce qui coûte, c’est d’abandonner. On reprend, on ne rattrape pas.</li>
 </ol>
 
-<h3>Adapter le temps : ce qui tient dans chaque durée</h3>
+<h3>Adapter le temps : ce qui tient dans chaque durée</h3>
 <div class="tableau">
 <table class="large">
   <thead><tr><th>Durée</th><th>Échauffement</th><th class="n">Exercices</th><th class="n">Séries</th><th>Format</th></tr></thead>
   <tbody>
-    <tr><td>10 à 15 min</td><td>2 min, fondu dans le premier tour</td><td class="n">3-4</td><td class="n">6-10</td><td>Circuit ou une série par minute, que des mouvements complets (jambes, poussée, tirage, tronc)</td></tr>
-    <tr><td>20 min</td><td>3 min</td><td class="n">4-5</td><td class="n">9-12</td><td>Exercices enchaînés par deux, ou circuit</td></tr>
-    <tr><td>30 min</td><td>4-5 min</td><td class="n">4-6</td><td class="n">12-15</td><td>Le principal en séries normales, le reste enchaîné par deux</td></tr>
-    <tr><td>45 min</td><td>5-7 min</td><td class="n">5-7</td><td class="n">15-20</td><td>Deux gros mouvements en séries normales, le reste enchaîné, fin intense possible</td></tr>
-    <tr><td>60 min</td><td>8-10 min</td><td class="n">6-8</td><td class="n">18-24</td><td>Séries normales, fin intense possible</td></tr>
+    <tr><td data-label="Durée">10 à 15 min</td><td data-label="Échauffement">2 min, fondu dans le premier tour</td><td data-label="Exercices" class="n">3-4</td><td data-label="Séries" class="n">6-10</td><td data-label="Format">Circuit ou une série par minute, que des mouvements complets (jambes, poussée, tirage, tronc)</td></tr>
+    <tr><td data-label="Durée">20 min</td><td data-label="Échauffement">3 min</td><td data-label="Exercices" class="n">4-5</td><td data-label="Séries" class="n">9-12</td><td data-label="Format">Exercices enchaînés par deux, ou circuit</td></tr>
+    <tr><td data-label="Durée">30 min</td><td data-label="Échauffement">4-5 min</td><td data-label="Exercices" class="n">4-6</td><td data-label="Séries" class="n">12-15</td><td data-label="Format">Le principal en séries normales, le reste enchaîné par deux</td></tr>
+    <tr><td data-label="Durée">45 min</td><td data-label="Échauffement">5-7 min</td><td data-label="Exercices" class="n">5-7</td><td data-label="Séries" class="n">15-20</td><td data-label="Format">Deux gros mouvements en séries normales, le reste enchaîné, fin intense possible</td></tr>
+    <tr><td data-label="Durée">60 min</td><td data-label="Échauffement">8-10 min</td><td data-label="Exercices" class="n">6-8</td><td data-label="Séries" class="n">18-24</td><td data-label="Format">Séries normales, fin intense possible</td></tr>
   </tbody>
-  <caption>Synthèse d'Iversen 2021 et des conventions de terrain. On ne retire jamais l'exercice principal ni la zone visée.</caption>
+  <caption>Synthèse d’Iversen 2021 et des conventions de terrain. On ne retire jamais l’exercice principal ni la zone visée.</caption>
 </table>
 </div>
-<p><strong>Quand le temps manque, l'ordre de retrait</strong> : l'échauffement général (on garde les séries de préparation du premier gros mouvement), puis le retour au calme, puis on enchaîne les exercices secondaires par deux, puis on retire l'isolation non prioritaire, puis on passe à deux séries par exercice, et en dernier recours un circuit. Notre version courte retire aujourd'hui des exercices et des séries, mais ne sait pas encore enchaîner, et ne sait pas allonger.</p>
+<p><strong>Quand le temps manque, l’ordre de retrait</strong> : l’échauffement général (on garde les séries de préparation du premier gros mouvement), puis le retour au calme, puis on enchaîne les exercices secondaires par deux, puis on retire l’isolation non prioritaire, puis on passe à deux séries par exercice, et en dernier recours un circuit. Notre version courte retire aujourd’hui des exercices et des séries, mais ne sait pas encore enchaîner, et ne sait pas allonger.</p>
 
 <h3>Cibler une zone</h3>
 <div class="tableau">
 <table>
   <thead><tr><th>Réglage</th><th>La règle</th></tr></thead>
   <tbody>
-    <tr><td>Combien de temps</td><td>4 à 8 semaines, puis une semaine plus légère et un retour à l'équilibre</td></tr>
+    <tr><td>Combien de temps</td><td>4 à 8 semaines, puis une semaine plus légère et un retour à l’équilibre</td></tr>
     <tr><td>Combien de zones</td><td>Une grande, ou deux petites (bras et épaules, par exemple)</td></tr>
-    <tr><td>Combien de travail</td><td>30 à 50 % de séries en plus sur la zone, soit 12 à 18 par semaine ; 2 à 4 de plus pour un débutant</td></tr>
-    <tr><td>Combien de fois</td><td>2 à 3 passages par semaine, 8 à 10 séries au plus par séance</td></tr>
+    <tr><td>Combien de travail</td><td>30 à 50 % de séries en plus sur la zone, soit 12 à 18 par semaine ; 2 à 4 de plus pour un débutant</td></tr>
+    <tr><td>Combien de fois</td><td>2 à 3 passages par semaine, 8 à 10 séries au plus par séance</td></tr>
     <tr><td>Où dans la séance</td><td>En premier</td></tr>
-    <tr><td>Quels exercices</td><td>2 ou 3 mouvements différents, dont un qui travaille le muscle étiré</td></tr>
-    <tr><td>Le reste du corps</td><td>En entretien : environ un tiers du volume habituel, jamais moins de 3 à 4 séries par muscle</td></tr>
-    <tr><td>Ce qu'on ne promet jamais</td><td>Faire fondre la graisse d'une zone : c'est un mythe, mesuré plusieurs fois</td></tr>
+    <tr><td>Quels exercices</td><td>2 ou 3 mouvements différents, dont un qui travaille le muscle étiré</td></tr>
+    <tr><td>Le reste du corps</td><td>En entretien : environ un tiers du volume habituel, jamais moins de 3 à 4 séries par muscle</td></tr>
+    <tr><td>Ce qu’on ne promet jamais</td><td>Faire fondre la graisse d’une zone : c’est un mythe, mesuré plusieurs fois</td></tr>
   </tbody>
 </table>
 </div>
 
-<h3>Un mois, c'est un bloc</h3>
+<h3>Un mois, c’est un bloc</h3>
 <div class="tableau">
 <table>
   <thead><tr><th>Semaine</th><th>Séries sur la zone visée</th><th>Effort</th></tr></thead>
@@ -363,52 +377,52 @@ html { scroll-behavior: smooth; }
     <tr><td>3</td><td>2 à 3 de plus</td><td>1 à 2 en réserve</td></tr>
     <tr><td>4, plus légère</td><td>40 à 50 % de moins</td><td>3 à 4 en réserve, mêmes charges</td></tr>
   </tbody>
-  <caption>Convention de terrain, avec la double progression qu'on a déjà. Une semaine plus légère allège sans arrêter. Pas de semaine légère prévue pour un débutant pendant les 8 à 12 premières semaines : on la propose s'il est fatigué, s'il stagne ou si sa semaine est chargée.</caption>
+  <caption>Convention de terrain, avec la double progression qu’on a déjà. Une semaine plus légère allège sans arrêter. Pas de semaine légère prévue pour un débutant pendant les 8 à 12 premières semaines : on la propose s’il est fatigué, s’il stagne ou si sa semaine est chargée.</caption>
 </table>
 </div>
 
 <h3>Ce qui fait tenir un plan</h3>
 <ul>
-  <li>Laisser choisir entre deux ou trois options équivalentes plutôt qu'imposer.</li>
-  <li>Garder de la marge au début : trois répétitions en réserve pendant les premières semaines.</li>
-  <li>Planifier en « si… alors » : quel jour, à quelle heure, où. C'est l'un des effets les plus solides de la psychologie du comportement.</li>
+  <li>Laisser choisir entre deux ou trois options équivalentes plutôt qu’imposer.</li>
+  <li>Garder de la marge au début : trois répétitions en réserve pendant les premières semaines.</li>
+  <li>Planifier en « si… alors » : quel jour, à quelle heure, où. C’est l’un des effets les plus solides de la psychologie du comportement.</li>
   <li>Toujours avoir une séance de 10 à 15 minutes sous la main.</li>
   <li>Démarrer un bloc un lundi ou en début de mois.</li>
   <li>Accueillir au retour, sans jamais compter les séances manquées.</li>
 </ul>
 
 <h3>Sans faire de médical</h3>
-<p>La personne peut déclarer une <strong>zone à ménager</strong> sans qu'on lui demande pourquoi. On continue tout le reste, et pour cette zone on adapte dans l'ordre : moins d'amplitude, moins de charge, une position soutenue, une position tenue sans bouger, un autre mouvement, et seulement à la fin l'exclusion. Le cycle menstruel n'a pas d'effet mesurable net sur la performance : on ne demande rien, mais tout le monde a un choix « journée difficile » qui ouvre la version légère. Ces règles sont des conventions, à faire relire par un kinésithérapeute.</p>
+<p>La personne peut déclarer une <strong>zone à ménager</strong> sans qu’on lui demande pourquoi. On continue tout le reste, et pour cette zone on adapte dans l’ordre : moins d’amplitude, moins de charge, une position soutenue, une position tenue sans bouger, un autre mouvement, et seulement à la fin l’exclusion. Le cycle menstruel n’a pas d’effet mesurable net sur la performance : on ne demande rien, mais tout le monde a un choix « journée difficile » qui ouvre la version légère. Ces règles sont des conventions, à faire relire par un kinésithérapeute.</p>
 
 <div class="encart lecture">
   <h4>Ce que la science change chez nous, vérifié dans le code</h4>
   <ul>
-    <li><strong>À 2 séances par semaine</strong>, le programme fait « Haut du corps » puis « Bas du corps » : chaque muscle n'est travaillé qu'une fois. Deux full body différents feraient mieux.</li>
-    <li><strong>À 4 ou 5 séances par semaine</strong>, les jambes ne passent qu'une fois.</li>
-    <li><strong>À la maison sans matériel, la séance « Pull » ne contient aucun tirage</strong> (superman, pont fessier, bird dog et gainage). Le code le reconnaît lui-même : la bibliothèque n'a aucun tirage praticable sans agrès.</li>
-    <li><strong>Rien pour l'arrière des cuisses à la maison</strong>, et en salle le « Bas du corps » prend le leg curl allongé alors que le leg curl assis, qu'on a, fait mieux.</li>
-    <li><strong>Le nombre d'exercices d'une séance est fixe</strong> (de 5 à 8 selon la séance) : seule la version courte en retire, rien ne le règle selon le temps choisi.</li>
-    <li><strong>Les repos sont courts</strong> sur les gros mouvements quand l'objectif est le muscle (60 s, parfois 45 s, au lieu de 90 à 120 s).</li>
+    <li><strong>À 2 séances par semaine</strong>, le programme fait « Haut du corps » puis « Bas du corps » : chaque muscle n’est travaillé qu’une fois. Deux full body différents feraient mieux.</li>
+    <li><strong>À 4 ou 5 séances par semaine</strong>, les jambes ne passent qu’une fois.</li>
+    <li><strong>À la maison sans matériel, la séance « Pull » ne contient aucun tirage</strong> (superman, pont fessier, bird dog et gainage). Le code le reconnaît lui-même : la bibliothèque n’a aucun tirage praticable sans agrès.</li>
+    <li><strong>Rien pour l’arrière des cuisses à la maison</strong>, et en salle le « Bas du corps » prend le leg curl allongé alors que le leg curl assis, qu’on a, fait mieux.</li>
+    <li><strong>Le nombre d’exercices d’une séance est fixe</strong> (de 5 à 8 selon la séance) : seule la version courte en retire, rien ne le règle selon le temps choisi.</li>
+    <li><strong>Les repos sont courts</strong> sur les gros mouvements quand l’objectif est le muscle (60 s, parfois 45 s, au lieu de 90 à 120 s).</li>
   </ul>
 </div>
 </section>
 
 <section id="design">
 <h2><span class="num">4</span>Ce que dit le design</h2>
-<p>Recherche faite surtout sur les sources officielles d'Apple (recommandations de design, sessions WWDC, Apple Design Awards) et de Google. Dribbble, Behance et Mobbin n'étaient pas lisibles depuis cet environnement.</p>
+<p>Recherche faite surtout sur les sources officielles d’Apple (recommandations de design, sessions WWDC, Apple Design Awards) et de Google. Dribbble, Behance et Mobbin n’étaient pas lisibles depuis cet environnement.</p>
 
 <div class="encart">
   <h4>La place est libre</h4>
-  <p>Aucune appli de planning d'entraînement n'a gagné d'Apple Design Award entre 2023 et 2026. En santé, ce qui gagne, c'est la bienveillance (Gentler Streak, prix Impact social 2024), la donnée rendue belle (Any Distance en 2023, Tide Guide en 2026) et l'inclusivité (Train Fitness, 2025). L'appli iPhone de l'année aux App Store Awards 2025 est Tiimo, un planning décrit comme « une frise de couleurs apaisantes ». Ça correspond exactement au « zéro culpabilisation » de Vaiiya.</p>
+  <p>Aucune appli de planning d’entraînement n’a gagné d’Apple Design Award entre 2023 et 2026. En santé, ce qui gagne, c’est la bienveillance (Gentler Streak, prix Impact social 2024), la donnée rendue belle (Any Distance en 2023, Tide Guide en 2026) et l’inclusivité (Train Fitness, 2025). L’appli iPhone de l’année aux App Store Awards 2025 est Tiimo, un planning décrit comme « une frise de couleurs apaisantes ». Ça correspond exactement au « zéro culpabilisation » de Vaiiya.</p>
 </div>
 
 <h3>Les cinq gestes des meilleurs plannings</h3>
 <ol>
-  <li><strong>Le temps se voit.</strong> Chez Structured et Tiimo, une durée est une longueur : on voit si la journée tient.</li>
-  <li><strong>Une seule chose en avant aujourd'hui.</strong> Oura a refait son appli en octobre 2025 autour de « One Big Thing ».</li>
-  <li><strong>Aujourd'hui est séparé de toujours.</strong> Chez Freeletics, « Adapter » ne change que la séance du jour.</li>
+  <li><strong>Le temps se voit.</strong> Chez Structured et Tiimo, une durée est une longueur : on voit si la journée tient.</li>
+  <li><strong>Une seule chose en avant aujourd’hui.</strong> Oura a refait son appli en octobre 2025 autour de « One Big Thing ».</li>
+  <li><strong>Aujourd’hui est séparé de toujours.</strong> Chez Freeletics, « Adapter » ne change que la séance du jour.</li>
   <li><strong>Une séance manquée passe au jour suivant</strong>, sans drame. Vaiiya le fait déjà.</li>
-  <li><strong>On ne voit qu'une semaine à l'avance</strong>, volontairement. Au-delà, c'est un aperçu.</li>
+  <li><strong>On ne voit qu’une semaine à l’avance</strong>, volontairement. Au-delà, c’est un aperçu.</li>
 </ol>
 
 <h3>Les motifs qui servent ta demande</h3>
@@ -416,68 +430,68 @@ html { scroll-behavior: smooth; }
 <table class="large">
   <thead><tr><th>Pour</th><th>Le motif</th><th>Où</th></tr></thead>
   <tbody>
-    <tr><td>Choisir des zones</td><td>Une silhouette face et dos ; toucher un muscle l'allume et ouvre ses exercices</td><td>MuscleWiki, Planfit, MacroFactor ; le surlignage immédiat de BetterMe, sans ses « zones à problème »</td></tr>
-    <tr><td>Limiter le ciblage</td><td>Deux zones au plus, et une zone mise de côté garde un peu de volume</td><td>Freeletics, RP, MacroFactor</td></tr>
-    <tr><td>Régler la durée</td><td>Un curseur gradué avec un retour en direct ; la durée dessinée comme une longueur</td><td>Recommandations d'Apple, Structured</td></tr>
-    <tr><td>Choisir les jours</td><td>Une bande de sept pastilles de 44 px : elle tient dans un écran de 390 px</td><td>Runna</td></tr>
-    <tr><td>Lire une semaine</td><td>Fait, à faire et total en tête ; jamais de rouge pour « non fait »</td><td>Runna (le modèle), TrainingPeaks (le contre-modèle)</td></tr>
-    <tr><td>Lire un mois</td><td>Comparer à sa propre histoire, jamais aux autres ; des points qui se relient</td><td>Gentler Streak</td></tr>
-    <tr><td>Réorganiser</td><td>L'élément suit le doigt, la destination s'allume si elle accepte, « Annuler » plutôt qu'une confirmation, et toujours une alternative en un toucher</td><td>Apple, « Designing Fluid Interfaces » et recommandations glisser-déposer</td></tr>
-    <tr><td>Valider un plan proposé</td><td>Un dernier écran modifiable ; modifier, annuler, réessayer à côté du résultat</td><td>Apple Fitness+, recommandations d'Apple sur l'IA générative</td></tr>
-    <tr><td>Dire pourquoi</td><td>Des raisons nommées et factuelles, sans jargon, des fourchettes plutôt que des pourcentages</td><td>Oura, recommandations d'Apple sur l'apprentissage automatique</td></tr>
+    <tr><td data-label="Pour">Choisir des zones</td><td data-label="Le motif">Une silhouette face et dos ; toucher un muscle l’allume et ouvre ses exercices</td><td data-label="Où">MuscleWiki, Planfit, MacroFactor ; le surlignage immédiat de BetterMe, sans ses « zones à problème »</td></tr>
+    <tr><td data-label="Pour">Limiter le ciblage</td><td data-label="Le motif">Deux zones au plus, et une zone mise de côté garde un peu de volume</td><td data-label="Où">Freeletics, RP, MacroFactor</td></tr>
+    <tr><td data-label="Pour">Régler la durée</td><td data-label="Le motif">Un curseur gradué avec un retour en direct ; la durée dessinée comme une longueur</td><td data-label="Où">Recommandations d’Apple, Structured</td></tr>
+    <tr><td data-label="Pour">Choisir les jours</td><td data-label="Le motif">Une bande de sept pastilles de 44 px : elle tient dans un écran de 390 px</td><td data-label="Où">Runna</td></tr>
+    <tr><td data-label="Pour">Lire une semaine</td><td data-label="Le motif">Fait, à faire et total en tête ; jamais de rouge pour « non fait »</td><td data-label="Où">Runna (le modèle), TrainingPeaks (le contre-modèle)</td></tr>
+    <tr><td data-label="Pour">Lire un mois</td><td data-label="Le motif">Comparer à sa propre histoire, jamais aux autres ; des points qui se relient</td><td data-label="Où">Gentler Streak</td></tr>
+    <tr><td data-label="Pour">Réorganiser</td><td data-label="Le motif">L’élément suit le doigt, la destination s’allume si elle accepte, « Annuler » plutôt qu’une confirmation, et toujours une alternative en un toucher</td><td data-label="Où">Apple, « Designing Fluid Interfaces » et recommandations glisser-déposer</td></tr>
+    <tr><td data-label="Pour">Valider un plan proposé</td><td data-label="Le motif">Un dernier écran modifiable ; modifier, annuler, réessayer à côté du résultat</td><td data-label="Où">Apple Fitness+, recommandations d’Apple sur l’IA générative</td></tr>
+    <tr><td data-label="Pour">Dire pourquoi</td><td data-label="Le motif">Des raisons nommées et factuelles, sans jargon, des fourchettes plutôt que des pourcentages</td><td data-label="Où">Oura, recommandations d’Apple sur l’apprentissage automatique</td></tr>
   </tbody>
 </table>
 </div>
 
-<h3>Les idées qui m'ont le plus marqué</h3>
+<h3>Les idées qui m’ont le plus marqué</h3>
 <ul>
-  <li><strong>L'empreinte</strong> : sur la silhouette, un contour violet pour ce qu'on a choisi de travailler, puis le remplissage teal au fil de la semaine pour ce qui a été fait. Choisir et constater sur le même dessin, sans un chiffre.</li>
-  <li><strong>Le temps qui se voit</strong> : « 45 » en très grand en Martian Mono, une barre de segments (l'effort en orange épais, le repos en orange fin), et les exercices retirés qui s'en vont sous tes yeux quand tu baisses la durée.</li>
-  <li><strong>La semaine en capsules</strong> : la hauteur suit la durée ; faite en teal avec sa coche, aujourd'hui en violet, prévue en contour, jour libre réduit à un point.</li>
-  <li><strong>Le ruban d'adaptation</strong> : une période spéciale dessinée comme un ruban de verre qui traverse les jours concernés (« Semaine chargée · jusqu'au 19 oct. »).</li>
-  <li><strong>Le mois en points</strong> : la carte de constance du profil prolongée vers l'avenir, en lecture seule au-delà de deux semaines.</li>
-  <li><strong>Le plan qui se pose</strong> : à la validation, les séances volent vers leurs jours en moins d'une seconde, un simple fondu en mouvement réduit.</li>
-  <li><strong>La phrase comprise</strong> : « jambes, 30 min, mardi » dite au Guide devient des réglages reconnus, visibles avant de valider.</li>
+  <li><strong>L’empreinte</strong> : sur la silhouette, un contour violet pour ce qu’on a choisi de travailler, puis le remplissage teal au fil de la semaine pour ce qui a été fait. Choisir et constater sur le même dessin, sans un chiffre.</li>
+  <li><strong>Le temps qui se voit</strong> : « 45 » en très grand en Martian Mono, une barre de segments (l’effort en orange épais, le repos en orange fin), et les exercices retirés qui s’en vont sous tes yeux quand tu baisses la durée.</li>
+  <li><strong>La semaine en capsules</strong> : la hauteur suit la durée ; faite en teal avec sa coche, aujourd’hui en violet, prévue en contour, jour libre réduit à un point.</li>
+  <li><strong>Le ruban d’adaptation</strong> : une période spéciale dessinée comme un ruban de verre qui traverse les jours concernés (« Semaine chargée · jusqu’au 19 oct. »).</li>
+  <li><strong>Le mois en points</strong> : la carte de constance du profil prolongée vers l’avenir, en lecture seule au-delà de deux semaines.</li>
+  <li><strong>Le plan qui se pose</strong> : à la validation, les séances volent vers leurs jours en moins d’une seconde, un simple fondu en mouvement réduit.</li>
+  <li><strong>La phrase comprise</strong> : « jambes, 30 min, mardi » dite au Guide devient des réglages reconnus, visibles avant de valider.</li>
 </ul>
 
 <h3>Les pièges</h3>
 <ul>
-  <li><strong>Le look « tableau de bord IA »</strong> : tuiles de chiffres identiques, anneaux qui imitent ceux d'Apple, carte de chaleur en pourcentages, étincelles et dégradés partout.</li>
-  <li><strong>Le verre dans le verre.</strong> Apple déconseille le verre dans le contenu et le verre posé sur du verre. Le « tout en verre » de Vaiiya est ta décision et je ne la rediscute pas, mais un planning est l'écran le plus dense : texte serré, cellules nombreuses, contraste sur le pastel clair. C'est là qu'il faudra le plus de soin.</li>
-  <li><strong>La culpabilité</strong> : le rouge pour « non fait », « série en danger », « zones à problème », une projection de poids.</li>
-  <li><strong>L'accessibilité</strong> : contraste de 4,5 pour 1 sur le texte courant, cibles de 44 px, fondus au lieu des mouvements quand le mouvement est réduit, et jamais la couleur seule (toujours doublée d'une coche, d'un mot ou d'une épaisseur).</li>
-  <li><strong>La silhouette</strong> : elle vient du personnage des exercices, jamais de Nora ou de Sasha, sans genre deviné, et pensée aussi pour les différences de membres.</li>
+  <li><strong>Le look « tableau de bord IA »</strong> : tuiles de chiffres identiques, anneaux qui imitent ceux d’Apple, carte de chaleur en pourcentages, étincelles et dégradés partout.</li>
+  <li><strong>Le verre dans le verre.</strong> Apple déconseille le verre dans le contenu et le verre posé sur du verre. Le « tout en verre » de Vaiiya est ta décision et je ne la rediscute pas, mais un planning est l’écran le plus dense : texte serré, cellules nombreuses, contraste sur le pastel clair. C’est là qu’il faudra le plus de soin.</li>
+  <li><strong>La culpabilité</strong> : le rouge pour « non fait », « série en danger », « zones à problème », une projection de poids.</li>
+  <li><strong>L’accessibilité</strong> : contraste de 4,5 pour 1 sur le texte courant, cibles de 44 px, fondus au lieu des mouvements quand le mouvement est réduit, et jamais la couleur seule (toujours doublée d’une coche, d’un mot ou d’une épaisseur).</li>
+  <li><strong>La silhouette</strong> : elle vient du personnage des exercices, jamais de Nora ou de Sasha, sans genre deviné, et pensée aussi pour les différences de membres.</li>
 </ul>
 </section>
 
 <section id="lecture">
 <h2><span class="num">5</span>Ma lecture</h2>
-<p class="chapo">Un seul endroit, quatre réglages, et un aperçu qui se recompose sous tes doigts. Par défaut le plan décide pour toi ; chaque réglage est à un geste ; et quelqu'un qui veut juste « salle, trois jours » s'arrête là.</p>
+<p class="chapo">Un seul endroit, quatre réglages, et un aperçu qui se recompose sous tes doigts. Par défaut le plan décide pour toi ; chaque réglage est à un geste ; et quelqu’un qui veut juste « salle, trois jours » s’arrête là.</p>
 
 <h3>Les réglages, à chaque portée</h3>
-<p>Tu as tout dit dans ta demande et en octobre : les zones, le temps, les jours, le lieu, et pour combien de temps. Je propose que ce soient les seuls réglages de l'écran, et qu'ils s'utilisent de la même façon à chaque portée. On apprend le geste une fois, on le retrouve partout.</p>
+<p>Tu as tout dit dans ta demande et en octobre : les zones, le temps, les jours, le lieu, et pour combien de temps. Je propose que ce soient les seuls réglages de l’écran, et qu’ils s’utilisent de la même façon à chaque portée. On apprend le geste une fois, on le retrouve partout.</p>
 <div class="tableau">
 <table class="large">
   <thead><tr><th>Portée</th><th>Ce que ça veut dire pour la personne</th><th>Ce que ça écrit dans le moteur (déjà là)</th></tr></thead>
   <tbody>
-    <tr><td><strong>Cette séance</strong></td><td>« Aujourd'hui, 25 min et plus de fessiers »</td><td>Une variante au lancement, comme la version courte. Elle ne change rien d'autre.</td></tr>
-    <tr><td><strong>Cette semaine</strong></td><td>« Semaine chargée, 20 min max »</td><td>Une adaptation datée, qui s'arrête toute seule. Le moteur sait déjà faire, il lui manque des axes (durée, zones, lieu).</td></tr>
-    <tr><td><strong>Ce mois-ci</strong></td><td>« Quatre semaines de focus bras »</td><td>La même adaptation datée, sur quatre semaines, avec une progression et une semaine plus légère proposée.</td></tr>
-    <tr><td><strong>Toujours</strong></td><td>« Mon plan, c'est fessiers et dos, 3 jours, 45 min »</td><td>Une nouvelle version du programme, avec aperçu avant de l'activer (R9c).</td></tr>
+    <tr><td data-label="Portée"><strong>Cette séance</strong></td><td data-label="Ce que ça veut dire pour la personne">« Aujourd’hui, 25 min et plus de fessiers »</td><td data-label="Ce que ça écrit dans le moteur (déjà là)">Une variante au lancement, comme la version courte. Elle ne change rien d’autre.</td></tr>
+    <tr><td data-label="Portée"><strong>Cette semaine</strong></td><td data-label="Ce que ça veut dire pour la personne">« Semaine chargée, 20 min max »</td><td data-label="Ce que ça écrit dans le moteur (déjà là)">Une adaptation datée, qui s’arrête toute seule. Le moteur sait déjà faire, il lui manque des axes (durée, zones, lieu).</td></tr>
+    <tr><td data-label="Portée"><strong>Ce mois-ci</strong></td><td data-label="Ce que ça veut dire pour la personne">« Quatre semaines de focus bras »</td><td data-label="Ce que ça écrit dans le moteur (déjà là)">La même adaptation datée, sur quatre semaines, avec une progression et une semaine plus légère proposée.</td></tr>
+    <tr><td data-label="Portée"><strong>Toujours</strong></td><td data-label="Ce que ça veut dire pour la personne">« Mon plan, c’est fessiers et dos, 3 jours, 45 min »</td><td data-label="Ce que ça écrit dans le moteur (déjà là)">Une nouvelle version du programme, avec aperçu avant de l’activer (R9c).</td></tr>
   </tbody>
 </table>
 </div>
-<p>C'est la bonne nouvelle de l'audit : le moteur a déjà la bonne forme. Une adaptation datée « ne modifie jamais le programme de référence » et s'arrête d'elle-même ; elle a été pensée pour recevoir d'autres axes, et la durée était justement l'axe suivant prévu. Le travail est surtout dans l'écran, dans les règles de composition et dans le contenu.</p>
+<p>C’est la bonne nouvelle de l’audit : le moteur a déjà la bonne forme. Une adaptation datée « ne modifie jamais le programme de référence » et s’arrête d’elle-même ; elle a été pensée pour recevoir d’autres axes, et la durée était justement l’axe suivant prévu. Le travail est surtout dans l’écran, dans les règles de composition et dans le contenu.</p>
 
 <h3>Les principes que je propose</h3>
 <ol>
-  <li><strong>Un seul écran pour régler son plan</strong>, en tête d'Entraînement. Les feuilles actuelles deviennent des étapes de cet écran, ou disparaissent, et l'ancien planning disparaît pour de bon. Ton cahier des charges du 8 octobre est la base, point par point.</li>
-  <li><strong>Les zones sans limite arbitraire, mais avec leur coût.</strong> Chaque zone a trois états : insister, normal, ménager. On peut insister sur quatre zones si on veut ; l'aperçu dit alors ce que ça demande (« 4 séances de 45 min, ou on allège le reste »). La limite, c'est ton temps, rendu visible, pas un chiffre fixé par nous.</li>
-  <li><strong>Un lieu habituel et des exceptions</strong> : maison par défaut, salle le mercredi, et pendant les vacances, sans matériel. Changer ses jours ou son lieu n'efface jamais le reste.</li>
-  <li><strong>On voit avant de valider.</strong> Chaque réglage recompose la semaine en direct et dit ce qui change en une ligne (« Vendredi passe à 25 min, fessiers en premier »).</li>
-  <li><strong>Les règles viennent de la science, le Guide explique.</strong> Le temps choisi fixe le nombre d'exercices et le format ; la zone visée passe en premier, avec un tiers à la moitié de séries en plus, et le reste du corps reste entretenu ; un mois, c'est trois semaines qui montent et une plus légère. Nora ou Sasha disent pourquoi en une phrase, et ouvrent l'écran déjà rempli quand on leur demande en parlant.</li>
-  <li><strong>Jamais de dette, jamais de reproche.</strong> Une zone visée n'est pas un quota, une semaine légère n'est pas un échec, une séance manquée attend toujours au prochain jour.</li>
-  <li><strong>Le texte disparaît derrière ce qu'on voit</strong>, comme tu l'as demandé en octobre : pas d'explication en petits caractères sous chaque élément.</li>
+  <li><strong>Un seul écran pour régler son plan</strong>, en tête d’Entraînement. Les feuilles actuelles deviennent des étapes de cet écran, ou disparaissent, et l’ancien planning disparaît pour de bon. Ton cahier des charges du 8 octobre est la base, point par point.</li>
+  <li><strong>Les zones sans limite arbitraire, mais avec leur coût.</strong> Chaque zone a trois états : insister, normal, ménager. On peut insister sur quatre zones si on veut ; l’aperçu dit alors ce que ça demande (« 4 séances de 45 min, ou on allège le reste »). La limite, c’est ton temps, rendu visible, pas un chiffre fixé par nous.</li>
+  <li><strong>Un lieu habituel et des exceptions</strong> : maison par défaut, salle le mercredi, et pendant les vacances, sans matériel. Changer ses jours ou son lieu n’efface jamais le reste.</li>
+  <li><strong>On voit avant de valider.</strong> Chaque réglage recompose la semaine en direct et dit ce qui change en une ligne (« Vendredi passe à 25 min, fessiers en premier »).</li>
+  <li><strong>Les règles viennent de la science, le Guide explique.</strong> Le temps choisi fixe le nombre d’exercices et le format ; la zone visée passe en premier, avec un tiers à la moitié de séries en plus, et le reste du corps reste entretenu ; un mois, c’est trois semaines qui montent et une plus légère. Nora ou Sasha disent pourquoi en une phrase, et ouvrent l’écran déjà rempli quand on leur demande en parlant.</li>
+  <li><strong>Jamais de dette, jamais de reproche.</strong> Une zone visée n’est pas un quota, une semaine légère n’est pas un échec, une séance manquée attend toujours au prochain jour.</li>
+  <li><strong>Le texte disparaît derrière ce qu’on voit</strong>, comme tu l’as demandé en octobre : pas d’explication en petits caractères sous chaque élément.</li>
 </ol>
 
 <h3>Trois directions visuelles</h3>
@@ -486,112 +500,112 @@ html { scroll-behavior: smooth; }
   <article>
     <span class="lettre">A</span>
     <h4>Le corps, et son empreinte</h4>
-    <p>Le personnage des exercices, de face et de dos, en grand au centre du plan. On touche une zone pour la viser : son contour s'allume en violet. Au fil de la semaine, les zones travaillées se remplissent de teal. Sous le corps, la semaine se recompose.</p>
-    <p>Unique à Vaiiya, parce que c'est le même personnage que dans les 102 animations. Demande un dessin découpé par zone, et ton accord sur la décision 41.</p>
+    <p>Le personnage des exercices, de face et de dos, en grand au centre du plan. On touche une zone pour la viser : son contour s’allume en violet. Au fil de la semaine, les zones travaillées se remplissent de teal. Sous le corps, la semaine se recompose.</p>
+    <p>Unique à Vaiiya, parce que c’est le même personnage que dans les 102 animations. Demande un dessin découpé par zone, et ton accord sur la décision 41.</p>
   </article>
   <article>
     <span class="lettre">B</span>
     <h4>Le temps qui se voit</h4>
-    <p>La semaine en capsules, une par séance, avec sa photo. La hauteur d'une capsule, c'est sa durée : on l'allonge pour donner plus de temps à un jour, les exercices arrivent ou s'en vont sous tes yeux. Une semaine chargée se voit plus basse, et la période traverse les jours comme un ruban de verre.</p>
-    <p>Le temps devient une matière qu'on façonne. Les boutons − et + restent là pour qui ne veut pas glisser.</p>
+    <p>La semaine en capsules, une par séance, avec sa photo. La hauteur d’une capsule, c’est sa durée : on l’allonge pour donner plus de temps à un jour, les exercices arrivent ou s’en vont sous tes yeux. Une semaine chargée se voit plus basse, et la période traverse les jours comme un ruban de verre.</p>
+    <p>Le temps devient une matière qu’on façonne. Les boutons − et + restent là pour qui ne veut pas glisser.</p>
   </article>
   <article>
     <span class="lettre">C</span>
     <h4>Le mois en affiche</h4>
-    <p>Le bloc de quatre semaines est une affiche, comme celles du relais, qui se dévoile à chaque séance faite. Le focus du mois, la semaine plus légère et la progression s'y lisent d'un coup d'œil, et elle se partage.</p>
-    <p>Le plus émouvant des trois, mais c'est une récompense plus qu'un outil de réglage : elle accompagne A ou B. Variante sobre : la carte de constance du profil, prolongée vers l'avenir.</p>
+    <p>Le bloc de quatre semaines est une affiche, comme celles du relais, qui se dévoile à chaque séance faite. Le focus du mois, la semaine plus légère et la progression s’y lisent d’un coup d’œil, et elle se partage.</p>
+    <p>Le plus émouvant des trois, mais c’est une récompense plus qu’un outil de réglage : elle accompagne A ou B. Variante sobre : la carte de constance du profil, prolongée vers l’avenir.</p>
   </article>
 </div>
 
 <h3>Le contenu, la vraie limite</h3>
-<p>Le meilleur moteur du monde tournera en rond avec deux exercices de fessiers. Pour cibler une zone à la maison pendant un mois, il faut au moins six mouvements animés par zone et par lieu. Ma première liste, à générer en planches comme les 102 autres :</p>
+<p>Le meilleur moteur du monde tournera en rond avec deux exercices de fessiers. Pour cibler une zone à la maison pendant un mois, il faut au moins six mouvements animés par zone et par lieu. Ma première liste, à générer en planches comme les 102 autres :</p>
 <ul>
-  <li><strong>Dos, sans matériel</strong> : Y-T-W allongé, reverse snow angel, rowing à la porte, planche inversée, superman tirage.</li>
-  <li><strong>Épaules, sans matériel</strong> : pompes déclinées, pike push-ups pieds surélevés, planche shoulder taps, inchworm, Y-raise au sol.</li>
-  <li><strong>Fessiers, sans matériel</strong> : pont fessier une jambe, hip thrust sur canapé, fente arrière, squat sumo, coquillage (clamshell), abduction allongée, frog pump.</li>
-  <li><strong>Arrière des cuisses, sans matériel</strong> : leg curl glissé sur une serviette, good morning, pont ischios pieds sur une chaise.</li>
-  <li><strong>Bras, sans matériel</strong> : pompes serrées, extension triceps au sol (sphinx), dips sur chaise pieds tendus.</li>
-  <li><strong>Avec haltères</strong> : hip thrust haltère, soulevé de terre roumain une jambe, fente arrière haltères, squat sumo haltère, rowing renegade, shrugs.</li>
+  <li><strong>Dos, sans matériel</strong> : Y-T-W allongé, reverse snow angel, rowing à la porte, planche inversée, superman tirage.</li>
+  <li><strong>Épaules, sans matériel</strong> : pompes déclinées, pike push-ups pieds surélevés, planche shoulder taps, inchworm, Y-raise au sol.</li>
+  <li><strong>Fessiers, sans matériel</strong> : pont fessier une jambe, hip thrust sur canapé, fente arrière, squat sumo, coquillage (clamshell), abduction allongée, frog pump.</li>
+  <li><strong>Arrière des cuisses, sans matériel</strong> : leg curl glissé sur une serviette, good morning, pont ischios pieds sur une chaise.</li>
+  <li><strong>Bras, sans matériel</strong> : pompes serrées, extension triceps au sol (sphinx), dips sur chaise pieds tendus.</li>
+  <li><strong>Avec haltères</strong> : hip thrust haltère, soulevé de terre roumain une jambe, fente arrière haltères, squat sumo haltère, rowing renegade, shrugs.</li>
 </ul>
-<p>Et une question à garder en tête : l'élastique de résistance coûte quelques euros et ouvre le dos, les biceps et l'arrière des épaules à la maison. Il n'existe pas encore comme matériel dans Vaiiya.</p>
+<p>Et une question à garder en tête : l’élastique de résistance coûte quelques euros et ouvre le dos, les biceps et l’arrière des épaules à la maison. Il n’existe pas encore comme matériel dans Vaiiya.</p>
 
 <h3>Par où je commencerais</h3>
-<p>Une proposition d'ordre, à confirmer avec tes réponses. Chaque étape est utile seule.</p>
+<p>Une proposition d’ordre, à confirmer avec tes réponses. Chaque étape est utile seule.</p>
 <ol>
-  <li><strong>Remettre les séances d'aplomb, sans rien changer à l'écran</strong> : deux full body à deux séances par semaine, les jambes deux fois à quatre ou cinq, le temps qui fixe le nombre d'exercices, les enchaînements par deux, la séance plus longue, des repos justes.</li>
-  <li><strong>Le contenu</strong> : la vingtaine de mouvements animés qui manquent, pour que viser une zone à la maison ait un sens.</li>
-  <li><strong>L'écran du plan</strong>, maquette d'abord : les zones, le temps, les jours, et la portée (cette séance, cette semaine, ce mois, toujours).</li>
-  <li><strong>Les modes datés</strong> : semaine chargée, semaine légère, vacances, focus d'une zone. Le moteur les reçoit comme de nouveaux axes d'adaptation.</li>
-  <li><strong>Le mois</strong> : le bloc de quatre semaines et sa vue.</li>
+  <li><strong>Remettre les séances d’aplomb, sans rien changer à l’écran</strong> : deux full body à deux séances par semaine, les jambes deux fois à quatre ou cinq, le temps qui fixe le nombre d’exercices, les enchaînements par deux, la séance plus longue, des repos justes.</li>
+  <li><strong>Le contenu</strong> : la vingtaine de mouvements animés qui manquent, pour que viser une zone à la maison ait un sens.</li>
+  <li><strong>L’écran du plan</strong>, maquette d’abord : les zones, le temps, les jours, et la portée (cette séance, cette semaine, ce mois, toujours).</li>
+  <li><strong>Les modes datés</strong> : semaine chargée, semaine légère, vacances, focus d’une zone. Le moteur les reçoit comme de nouveaux axes d’adaptation.</li>
+  <li><strong>Le mois</strong> : le bloc de quatre semaines et sa vue.</li>
 </ol>
 
 <h3>Ce que je propose de ne pas faire</h3>
 <ul>
-  <li>Promettre de « perdre du ventre » ou « d'affiner une zone » : la perte de gras localisée ne marche pas, les études sont nettes. On vise une zone pour la renforcer, jamais pour la faire fondre.</li>
+  <li>Promettre de « perdre du ventre » ou « d’affiner une zone » : la perte de gras localisée ne marche pas, les études sont nettes. On vise une zone pour la renforcer, jamais pour la faire fondre.</li>
   <li>Afficher des pourcentages de muscles, des jauges ou des retards à combler.</li>
-  <li>Ajouter une neuvième feuille. Le but est d'en retirer.</li>
-  <li>Laisser l'IA composer seule le programme : elle explique et propose, les règles composent.</li>
-  <li>Changer quoi que ce soit en douce. Le positionnement public dit aujourd'hui que Vaiiya « n'adapte rien automatiquement » et ne fait pas de « programme périodisé sur plusieurs semaines ». Tout changement de plan doit rester une proposition qu'on valide, et le jour où le bloc d'un mois existe, il faudra mettre ce document à jour avant d'en parler dehors.</li>
+  <li>Ajouter une neuvième feuille. Le but est d’en retirer.</li>
+  <li>Laisser l’IA composer seule le programme : elle explique et propose, les règles composent.</li>
+  <li>Changer quoi que ce soit en douce. Le positionnement public dit aujourd’hui que Vaiiya « n’adapte rien automatiquement » et ne fait pas de « programme périodisé sur plusieurs semaines ». Tout changement de plan doit rester une proposition qu’on valide, et le jour où le bloc d’un mois existe, il faudra mettre ce document à jour avant d’en parler dehors.</li>
 </ul>
 </section>
 
 <section id="questions">
-<h2><span class="num">6</span>Ce que j'ai besoin que tu tranches</h2>
-<p>Chaque question a ma recommandation. Tu peux répondre en vrac à la voix, par exemple « 1 C, 2 tout sauf la date, 3 d'accord… ».</p>
+<h2><span class="num">6</span>Ce que j’ai besoin que tu tranches</h2>
+<p>Chaque question a ma recommandation. Tu peux répondre en vrac à la voix, par exemple « 1 C, 2 tout sauf la date, 3 d’accord… ».</p>
 <ol class="questions">
   <li>
-    <h4>Où vit le plan sur mesure ?</h4>
-    <ul class="choix"><li><b>A</b>Un écran « Mon plan » en tête d'Entraînement</li><li><b>B</b>Tout passe par le Guide</li><li><b>C</b>Les deux : l'écran pour régler, le Guide comme raccourci qui l'ouvre déjà rempli</li></ul>
-    <p><span class="reco">Ma recommandation : C.</span> C'est déjà ce que fait le Guide pour les adaptations. L'écran remplace les feuilles éparpillées comme porte d'entrée.</p>
+    <h4>Où vit le plan sur mesure ?</h4>
+    <ul class="choix"><li><b>A</b>Un écran « Mon plan » en tête d’Entraînement</li><li><b>B</b>Tout passe par le Guide</li><li><b>C</b>Les deux : l’écran pour régler, le Guide comme raccourci qui l’ouvre déjà rempli</li></ul>
+    <p><span class="reco">Ma recommandation : C.</span> C’est déjà ce que fait le Guide pour les adaptations. L’écran remplace les feuilles éparpillées comme porte d’entrée.</p>
   </li>
   <li>
-    <h4>Qu'est-ce qui n'était pas clair dans « Mon programme » ?</h4>
-    <p>D'après octobre : la limite à deux zones, les jours à régler ailleurs, le lieu unique, l'ancien planning mélangé au nouveau, et le visuel. C'est bien ça, ou il y avait autre chose ? Ta réponse me dit quoi ne pas refaire.</p>
+    <h4>Qu’est-ce qui n’était pas clair dans « Mon programme » ?</h4>
+    <p>D’après octobre : la limite à deux zones, les jours à régler ailleurs, le lieu unique, l’ancien planning mélangé au nouveau, et le visuel. C’est bien ça, ou il y avait autre chose ? Ta réponse me dit quoi ne pas refaire.</p>
   </li>
   <li>
-    <h4>Pour une semaine, pour un mois : quels modes veux-tu ?</h4>
-    <ul class="choix"><li>Semaine chargée (moins de temps)</li><li>Semaine légère</li><li>Vacances ou déplacement (autre lieu, sans matériel)</li><li>Focus d'une zone sur 4 semaines</li><li>Préparer une date</li><li>Reprise après une pause</li></ul>
-    <p><span class="reco">Ma recommandation : les quatre premiers d'abord.</span> « Préparer une date » demande un vrai plan à rebours, on le garde pour après.</p>
+    <h4>Pour une semaine, pour un mois : quels modes veux-tu ?</h4>
+    <ul class="choix"><li>Semaine chargée (moins de temps)</li><li>Semaine légère</li><li>Vacances ou déplacement (autre lieu, sans matériel)</li><li>Focus d’une zone sur 4 semaines</li><li>Préparer une date</li><li>Reprise après une pause</li></ul>
+    <p><span class="reco">Ma recommandation : les quatre premiers d’abord.</span> « Préparer une date » demande un vrai plan à rebours, on le garde pour après.</p>
   </li>
   <li>
-    <h4>Les zones : quelle finesse ?</h4>
-    <ul class="choix"><li><b>A</b>Les 7 zones actuelles, plus cardio et mobilité comme qualités à viser</li><li><b>B</b>Une douzaine de zones (mollets, ischios, bas du dos, obliques…)</li></ul>
-    <p><span class="reco">Ma recommandation : A.</span> Sept zones se lisent sur une silhouette de téléphone et suffisent à la grande majorité des demandes. B demande beaucoup plus d'exercices.</p>
+    <h4>Les zones : quelle finesse ?</h4>
+    <ul class="choix"><li><b>A</b>Les 7 zones actuelles, plus cardio et mobilité comme qualités à viser</li><li><b>B</b>Une douzaine de zones (mollets, ischios, bas du dos, obliques…)</li></ul>
+    <p><span class="reco">Ma recommandation : A.</span> Sept zones se lisent sur une silhouette de téléphone et suffisent à la grande majorité des demandes. B demande beaucoup plus d’exercices.</p>
   </li>
   <li>
-    <h4>Le temps : quel réglage principal ?</h4>
-    <ul class="choix"><li><b>A</b>Par séance (« aujourd'hui j'ai 25 min »)</li><li><b>B</b>Par jour de la semaine (« mardi 20 min, samedi 1 h »)</li><li><b>C</b>Par période (« cette semaine, 20 min max »)</li></ul>
-    <p><span class="reco">Ma recommandation : B dans le plan</span>, A au moment de lancer (ça existe déjà, il manque juste « plus long »), et C par les modes de la question 3.</p>
+    <h4>Le temps : quel réglage principal ?</h4>
+    <ul class="choix"><li><b>A</b>Par séance (« aujourd’hui j’ai 25 min »)</li><li><b>B</b>Par jour de la semaine (« mardi 20 min, samedi 1 h »)</li><li><b>C</b>Par période (« cette semaine, 20 min max »)</li></ul>
+    <p><span class="reco">Ma recommandation : B dans le plan</span>, A au moment de lancer (ça existe déjà, il manque juste « plus long »), et C par les modes de la question 3.</p>
   </li>
   <li>
-    <h4>Le mois : un vrai bloc de 4 semaines ?</h4>
-    <p>Un bloc qui progresse, avec une semaine plus légère proposée (jamais imposée), lisible d'un coup d'œil. Ou on reste sur « cette semaine et la suivante » comme aujourd'hui.</p>
-    <p><span class="reco">Ma recommandation : oui au bloc visible</span>, modifiable sur deux semaines comme aujourd'hui, le reste en aperçu.</p>
+    <h4>Le mois : un vrai bloc de 4 semaines ?</h4>
+    <p>Un bloc qui progresse, avec une semaine plus légère proposée (jamais imposée), lisible d’un coup d’œil. Ou on reste sur « cette semaine et la suivante » comme aujourd’hui.</p>
+    <p><span class="reco">Ma recommandation : oui au bloc visible</span>, modifiable sur deux semaines comme aujourd’hui, le reste en aperçu.</p>
   </li>
   <li>
     <h4>La science dans le moteur</h4>
-    <p>OK pour composer avec des repères tirés des études (séries par zone et par semaine, fréquence, ordre, repos, ce qu'on retire quand le temps manque) ? Toujours comme guide de composition, jamais comme dette à rembourser. Ça revient sur la décision 36 de la refonte (« aucune règle sportive universelle »).</p>
-    <p><span class="reco">Ma recommandation : oui.</span> Sans ça, « les meilleures séances possibles » reste une intention.</p>
+    <p>OK pour composer avec des repères tirés des études (séries par zone et par semaine, fréquence, ordre, repos, ce qu’on retire quand le temps manque) ? Toujours comme guide de composition, jamais comme dette à rembourser. Ça revient sur la décision 36 de la refonte (« aucune règle sportive universelle »).</p>
+    <p><span class="reco">Ma recommandation : oui.</span> Sans ça, « les meilleures séances possibles » reste une intention.</p>
   </li>
   <li>
     <h4>La silhouette cliquable</h4>
-    <p>OK pour une silhouette où l'on touche une zone pour la viser, et qui montre en teal ce qui a été travaillé cette semaine ? Ça revient sur la décision 41 (« pas de jauges musculaires »).</p>
-    <p><span class="reco">Ma recommandation : oui</span>, si c'est le personnage Vaiiya des exercices et pas un écorché, et sans aucun pourcentage.</p>
+    <p>OK pour une silhouette où l’on touche une zone pour la viser, et qui montre en teal ce qui a été travaillé cette semaine ? Ça revient sur la décision 41 (« pas de jauges musculaires »).</p>
+    <p><span class="reco">Ma recommandation : oui</span>, si c’est le personnage Vaiiya des exercices et pas un écorché, et sans aucun pourcentage.</p>
   </li>
   <li>
     <h4>La direction visuelle à maquetter</h4>
     <ul class="choix"><li><b>A</b>Le corps</li><li><b>B</b>Le temps qui se voit</li><li><b>C</b>Le mois en affiche</li><li>Un mélange</li></ul>
-    <p><span class="reco">Ma recommandation : A et B dans le même écran, C pour le mois.</span> Tes références d'octobre, avec la capsule en dégradé du jour actif, vont déjà dans le sens de B. Je peux aussi faire deux maquettes très différentes pour que tu compares.</p>
+    <p><span class="reco">Ma recommandation : A et B dans le même écran, C pour le mois.</span> Tes références d’octobre, avec la capsule en dégradé du jour actif, vont déjà dans le sens de B. Je peux aussi faire deux maquettes très différentes pour que tu compares.</p>
   </li>
   <li>
     <h4>Le contenu</h4>
-    <p>Pour cibler une zone à la maison, il faut au moins six exercices animés par zone et par lieu. Ma première liste est dans la partie 5. Tu peux générer ces planches (ChatGPT, puis <span class="nombre">npm run guides</span>) ? Et veut-on ajouter l'élastique comme matériel ?</p>
-    <p><span class="reco">Ma recommandation : oui aux planches</span>, en commençant par le dos, les fessiers et l'arrière des cuisses à la maison. L'élastique, plus tard.</p>
+    <p>Pour cibler une zone à la maison, il faut au moins six exercices animés par zone et par lieu. Ma première liste est dans la partie 5. Tu peux générer ces planches (ChatGPT, puis <span class="nombre">npm run guides</span>) ? Et veut-on ajouter l’élastique comme matériel ?</p>
+    <p><span class="reco">Ma recommandation : oui aux planches</span>, en commençant par le dos, les fessiers et l’arrière des cuisses à la maison. L’élastique, plus tard.</p>
   </li>
   <li>
-    <h4>Gratuit ou Vaiiya+ ?</h4>
-    <p>Le plan sur mesure entier en gratuit, ou une partie (le mois, les modes, les focus) réservée à Vaiiya+ quand la vente ouvrira ?</p>
-    <p><span class="reco">Ma recommandation : tout gratuit tant que la vente est fermée</span>, comme pour les records. On placera la frontière quand il y aura des gens pour nous dire ce qu'ils utilisent.</p>
+    <h4>Gratuit ou Vaiiya+ ?</h4>
+    <p>Le plan sur mesure entier en gratuit, ou une partie (le mois, les modes, les focus) réservée à Vaiiya+ quand la vente ouvrira ?</p>
+    <p><span class="reco">Ma recommandation : tout gratuit tant que la vente est fermée</span>, comme pour les records. On placera la frontière quand il y aura des gens pour nous dire ce qu’ils utilisent.</p>
   </li>
 </ol>
 </section>
@@ -602,43 +616,43 @@ html { scroll-behavior: smooth; }
 <details>
   <summary>Applis de musculation</summary>
   <ul>
-    <li>Fitbod : <a href="https://fitbod.me/blog/fitbod-algorithm">l'algorithme</a>, <a href="https://help.fitbod.me/hc/en-us/articles/24739986755223-Weekly-Set-Targets">les séries par semaine</a>, <a href="https://help.fitbod.me/hc/en-us/articles/360006269014-Muscle-Recovery">la récupération</a></li>
-    <li>MacroFactor Workouts : <a href="https://help.macrofactorapp.com/en/articles/285-create-a-new-program-via-smart-generation">la génération</a>, <a href="https://help.macrofactorapp.com/en/articles/342-understanding-levels">les niveaux par muscle</a>, <a href="https://help.macrofactorapp.com/en/articles/382-what-happens-to-my-program-if-i-miss-workouts-or-take-time-off">les séances manquées</a></li>
-    <li>Hevy : <a href="https://help.hevyapp.com/hc/en-us/articles/43572343844247-How-Hevy-Trainer-Settings-Work">les réglages du Trainer</a>, <a href="https://www.hevyapp.com/features/muscle-group-workout-chart/">la carte des muscles</a></li>
-    <li>RP Hypertrophy : <a href="https://rpstrength.com/pages/hypertrophy-app">la présentation</a> · JuggernautAI : <a href="https://help.jtsstrength.com/en/articles/3-how-juggernautai-is-individualized-to-you">l'individualisation</a> · JEFIT : <a href="https://www.jefit.com/blog/adaptive-mesocycle-training-jefits-smarter-way-to-progress">les mésocycles</a></li>
+    <li>Fitbod : <a href="https://fitbod.me/blog/fitbod-algorithm">l’algorithme</a>, <a href="https://help.fitbod.me/hc/en-us/articles/24739986755223-Weekly-Set-Targets">les séries par semaine</a>, <a href="https://help.fitbod.me/hc/en-us/articles/360006269014-Muscle-Recovery">la récupération</a></li>
+    <li>MacroFactor Workouts : <a href="https://help.macrofactorapp.com/en/articles/285-create-a-new-program-via-smart-generation">la génération</a>, <a href="https://help.macrofactorapp.com/en/articles/342-understanding-levels">les niveaux par muscle</a>, <a href="https://help.macrofactorapp.com/en/articles/382-what-happens-to-my-program-if-i-miss-workouts-or-take-time-off">les séances manquées</a></li>
+    <li>Hevy : <a href="https://help.hevyapp.com/hc/en-us/articles/43572343844247-How-Hevy-Trainer-Settings-Work">les réglages du Trainer</a>, <a href="https://www.hevyapp.com/features/muscle-group-workout-chart/">la carte des muscles</a></li>
+    <li>RP Hypertrophy : <a href="https://rpstrength.com/pages/hypertrophy-app">la présentation</a> · JuggernautAI : <a href="https://help.jtsstrength.com/en/articles/3-how-juggernautai-is-individualized-to-you">l’individualisation</a> · JEFIT : <a href="https://www.jefit.com/blog/adaptive-mesocycle-training-jefits-smarter-way-to-progress">les mésocycles</a></li>
   </ul>
 </details>
 <details>
   <summary>Séances guidées et plans</summary>
   <ul>
-    <li>Apple Fitness+ : <a href="https://support.apple.com/guide/fitness-plus/apdf222051d8/ios">les plans</a>, <a href="https://www.bgr.com/tech/i-completed-a-custom-apple-fitness-plan-on-ios-17-heres-how-it-went/">un essai</a></li>
-    <li>Peloton : <a href="https://www.onepeloton.com/blog/what-is-peloton-iq">Peloton IQ</a>, <a href="https://www.pelobuddy.com/plan-ai-chatbot/">le chatbot du plan</a></li>
-    <li>Freeletics : <a href="https://www.freeletics.com/en/blog/posts/quick-adapt/">adapter la séance</a>, <a href="https://www.freeletics.com/en/blog/posts/freeletics-spaces-feature/">les lieux</a>, <a href="https://www.sgieurope.com/corporate/decathlon-partners-with-ai-powered-fitness-app-freeletics/114084.article">le partenariat Decathlon</a></li>
-    <li>Runna : <a href="https://support.runna.com/en/articles/13531498-how-to-use-not-feeling-100">« Not Feeling 100 % »</a>, <a href="https://support.runna.com/en/articles/10225691-how-to-add-a-holiday-in-the-runna-app">les vacances</a>, <a href="https://the5krunner.com/2026/02/21/runna-ai-marathon-training-injury/">l'affaire des blessures</a></li>
-    <li>Strava : <a href="https://press.strava.com/articles/strava-overhauls-strength-experience-with-expanded-partner-ecosystem-new-workout-log-and-muscle-maps">la carte musculaire</a></li>
+    <li>Apple Fitness+ : <a href="https://support.apple.com/guide/fitness-plus/apdf222051d8/ios">les plans</a>, <a href="https://www.bgr.com/tech/i-completed-a-custom-apple-fitness-plan-on-ios-17-heres-how-it-went/">un essai</a></li>
+    <li>Peloton : <a href="https://www.onepeloton.com/blog/what-is-peloton-iq">Peloton IQ</a>, <a href="https://www.pelobuddy.com/plan-ai-chatbot/">le chatbot du plan</a></li>
+    <li>Freeletics : <a href="https://www.freeletics.com/en/blog/posts/quick-adapt/">adapter la séance</a>, <a href="https://www.freeletics.com/en/blog/posts/freeletics-spaces-feature/">les lieux</a>, <a href="https://www.sgieurope.com/corporate/decathlon-partners-with-ai-powered-fitness-app-freeletics/114084.article">le partenariat Decathlon</a></li>
+    <li>Runna : <a href="https://support.runna.com/en/articles/13531498-how-to-use-not-feeling-100">« Not Feeling 100 % »</a>, <a href="https://support.runna.com/en/articles/10225691-how-to-add-a-holiday-in-the-runna-app">les vacances</a>, <a href="https://the5krunner.com/2026/02/21/runna-ai-marathon-training-injury/">l’affaire des blessures</a></li>
+    <li>Strava : <a href="https://press.strava.com/articles/strava-overhauls-strength-experience-with-expanded-partner-ecosystem-new-workout-log-and-muscle-maps">la carte musculaire</a></li>
   </ul>
 </details>
 <details>
   <summary>Science</summary>
   <ul>
-    <li>Recommandations : OMS 2020 (Bull et al., BJSM) ; ACSM 2026 (Currier et al., Medicine &amp; Science in Sports &amp; Exercise, 58(4):851-872) ; ANSES 2016 ; HAS 2022</li>
-    <li>Volume et fréquence : Schoenfeld et al. 2017 et 2019 ; Pelland et al. 2025 (Sports Medicine)</li>
-    <li>Effort et repos : Refalo et al. 2023 ; Robinson et al. 2024 ; Singer et al. 2024</li>
-    <li>Gagner du temps, entretenir : Iversen et al. 2021 (« No time to lift? ») ; Zhang et al. 2025 ; Bickel et al. 2011 ; Spiering et al. 2021</li>
-    <li>Cardio et musculation : Schumann et al. 2022 · Perte de gras localisée : Vispute 2011, Ramírez-Campillo 2013</li>
-    <li>Adhésion : Gollwitzer et Sheeran 2006 ; Lally et al. 2010 ; Teixeira et al. 2012</li>
+    <li>Recommandations : OMS 2020 (Bull et al., BJSM) ; ACSM 2026 (Currier et al., Medicine &amp ; Science in Sports &amp ; Exercise, 58(4) :851-872) ; ANSES 2016 ; HAS 2022</li>
+    <li>Volume et fréquence : Schoenfeld et al. 2017 et 2019 ; Pelland et al. 2025 (Sports Medicine)</li>
+    <li>Effort et repos : Refalo et al. 2023 ; Robinson et al. 2024 ; Singer et al. 2024</li>
+    <li>Gagner du temps, entretenir : Iversen et al. 2021 (« No time to lift ? ») ; Zhang et al. 2025 ; Bickel et al. 2011 ; Spiering et al. 2021</li>
+    <li>Cardio et musculation : Schumann et al. 2022 · Perte de gras localisée : Vispute 2011, Ramírez-Campillo 2013</li>
+    <li>Adhésion : Gollwitzer et Sheeran 2006 ; Lally et al. 2010 ; Teixeira et al. 2012</li>
   </ul>
 </details>
 <details>
   <summary>Design</summary>
   <ul>
     <li><a href="https://developer.apple.com/design/awards/">Apple Design Awards</a> · <a href="https://developer.apple.com/app-store/app-store-awards-2025/">App Store Awards 2025</a> · <a href="https://developer.apple.com/news/?id=3m0ht22s">Gentler Streak</a> · <a href="https://developer.apple.com/news/?id=4r9b23wx">Tide Guide</a></li>
-    <li>Recommandations d'Apple : <a href="https://developer.apple.com/design/human-interface-guidelines/">Human Interface Guidelines</a> · <a href="https://developer.apple.com/videos/play/wwdc2025/219/">Liquid Glass</a> · <a href="https://developer.apple.com/videos/play/wwdc2018/803/">Designing Fluid Interfaces</a></li>
-    <li><a href="https://www.techcrunch.com/2025/10/20/oura-launches-redesigned-app-and-cumulative-stress-feature">La refonte d'Oura</a> · <a href="https://builtformars.com/company/betterme">L'étude de BetterMe par Built for Mars</a></li>
+    <li>Recommandations d’Apple : <a href="https://developer.apple.com/design/human-interface-guidelines/">Human Interface Guidelines</a> · <a href="https://developer.apple.com/videos/play/wwdc2025/219/">Liquid Glass</a> · <a href="https://developer.apple.com/videos/play/wwdc2018/803/">Designing Fluid Interfaces</a></li>
+    <li><a href="https://www.techcrunch.com/2025/10/20/oura-launches-redesigned-app-and-cumulative-stress-feature">La refonte d’Oura</a> · <a href="https://builtformars.com/company/betterme">L’étude de BetterMe par Built for Mars</a></li>
   </ul>
 </details>
 </section>
 
-<p class="pied">Dossier de travail : <span class="nombre">docs/planning-sur-mesure/</span>. Les notes complètes de chaque recherche, avec toutes leurs sources, sont dans <span class="nombre">recherche/</span>.</p>
+<p class="pied">Dossier de travail : <span class="nombre">docs/planning-sur-mesure/</span>. Les notes complètes de chaque recherche, avec toutes leurs sources, sont dans <span class="nombre">recherche/</span>.</p>
 
 </div>
