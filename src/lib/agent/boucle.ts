@@ -2,7 +2,9 @@
    La boucle d'un agent : regarder, agir, vérifier, recommencer.
 
    ⚠️ PROTOTYPE DU TEST « AGENT » DU 2026-10-13. Rien dans l'app ne
-   l'appelle : seule la route de préversion /api/preuve-agent s'en sert.
+   l'appelle. La route qui le branchait sur la préversion a été retirée
+   après le test ; résultats et façon de la rejouer dans
+   docs/planning-sur-mesure/test-agent.md.
 
    Un agent n'est pas un autre modèle. C'est le même modèle, à qui l'on
    donne des outils et le droit de les appeler plusieurs fois de suite, en

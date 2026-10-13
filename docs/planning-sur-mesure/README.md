@@ -29,7 +29,9 @@ Piste proposée, pas encore validée, en trois étages :
 3. **Discret** : tout le reste se demande au Guide ; le réglage à la main reste au fond.
 
 Question ouverte : faire de Nora et Sasha de vrais agents (une demande menée de A à Z). Avis et conditions
-dans AGENTS.md, chantier « Le planning sur mesure ».
+dans AGENTS.md, chantier « Le planning sur mesure ». **Mesurée le 2026-10-13** (`test-agent.md`) : sans
+contrôle en code, l'agent réussit 0 fois sur 3 ; avec trois garde-fous en code, 3 fois sur 3. Pas tranchée pour autant :
+le passage de Groq au palier payant et la levée des verrous de V9 reviennent à Louis.
 
 ## Fichiers
 
@@ -37,6 +39,8 @@ dans AGENTS.md, chantier « Le planning sur mesure ».
   Publiée : https://claude.ai/artifact/UiQHjxkrygGy7pJ4QVAHXk
 - `01-recap-detaille.html` : la version complète pour les agents (ce qui existe, concurrents, science,
   design, pistes, onze questions). Autonome, elle s'ouvre dans un navigateur.
+- `test-agent.md` : le test « agent » du 2026-10-13 (montage, essais, leçons, ce qui bloque, comment le
+  rejouer).
 - `recherche/` : les notes de recherche complètes, avec leurs sources.
   - `A1-muscu.md` : applis de musculation et de salle qui adaptent un plan.
   - `A2-guidees.md` : séances guidées, cours, constructeurs de plan, acteurs français.

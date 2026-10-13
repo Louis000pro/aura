@@ -5,8 +5,9 @@
 
    Il ne parle à aucun modèle : un faux modèle joue des scripts d'appels
    d'outils, et l'on vérifie que la boucle, le planning simulé et le
-   correcteur disent ce qu'ils doivent dire. Le vrai test (le vrai modèle,
-   30 formulations) tourne sur la préversion, par /api/preuve-agent.
+   correcteur disent ce qu'ils doivent dire. Le vrai test (le vrai modèle)
+   a tourné sur une préversion, par une route temporaire retirée depuis :
+   voir docs/planning-sur-mesure/test-agent.md.
 
    Un correcteur qui ne sait pas échouer ne prouve rien : chaque témoin
    ci-dessous doit faire tomber le critère qu'il vise, et lui seul.
