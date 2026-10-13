@@ -135,7 +135,7 @@ function Heros() {
 
       <h1 ref={titre} className={s.h1}>
         <span data-sens="-1"><span className={s.mot}>Deviens</span></span>
-        <span data-sens="1"><span className={s.mot} style={{ animationDelay: ".1s" }}>qui y va</span></span>
+        <span data-sens="1"><span className={s.mot} style={{ animationDelay: ".1s" }}>qui tu veux</span></span>
       </h1>
       <p className={s.herosTexte}>
         Tes séances, tes repas et <b>un Guide qui te connaît</b>, dans une seule appli.
