@@ -78,7 +78,7 @@ export async function GET(req: NextRequest) {
       ecrire("bilan", {
         n, reussi: verdict.reussi, criteres: verdict.criteres, fin: cr.fin, erreur: cr.erreur,
         etapes: cr.etapes.length, gestes: gestes.length, refus: gestes.filter((g) => g.refuse).length,
-        relances: cr.relances.length, jetons: { entree: cr.jetonsEntree, sortie: cr.jetonsSortie }, dureeMs: cr.dureeMs,
+        relances: cr.relances.length, illisibles: cr.illisibles, jetons: { entree: cr.jetonsEntree, sortie: cr.jetonsSortie }, dureeMs: cr.dureeMs,
       });
       ecrire("reglage", reglage);
       ecrire("details", { details: verdict.details, avertissements: verdict.avertissements });

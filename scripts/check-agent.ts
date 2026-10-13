@@ -11,7 +11,7 @@
    Un correcteur qui ne sait pas échouer ne prouve rien : chaque témoin
    ci-dessous doit faire tomber le critère qu'il vise, et lui seul.
    ════════════════════════════════════════════════════════════════════ */
-import { jouerAgent, type AppelerModele } from "@/lib/agent/boucle";
+import { FIN_EN_PARLANT, jouerAgent, type AppelerModele } from "@/lib/agent/boucle";
 import { compteDeTest, controlerPlanning, corriger, OUTILS_PLANNING, projeter } from "@/lib/agent/banc/planningSimule";
 import { FORMULATIONS, type Periode } from "@/lib/agent/banc/formulations";
 import { consigneCourte, consigneLongue } from "@/lib/agent/banc/consigne";
@@ -195,9 +195,38 @@ async function main() {
     [ADAPTE_OCTOBRE, ["changer_jours_periode", { du: "2026-10-14", au: "2026-10-31", ajouter: ["jeudi"] }]],
   ];
   const avec = await jouer([], "ce_mois", scriptMixte(corrige), true);
-  verdict("B1 avec contrôle : renvoyé une fois au travail, puis réussi",
-    avec.v.reussi && avec.cr.fin === "apercu" && avec.cr.relances.length === 1 && avec.cr.relances[0].length === 4,
+  verdict("B1 avec contrôle : renvoyé une fois au travail (4 problèmes + fini en parlant), puis réussi",
+    avec.v.reussi && avec.cr.fin === "apercu" && avec.cr.relances.length === 1 && avec.cr.relances[0].length === 5 && avec.cr.relances[0][4] === FIN_EN_PARLANT,
     `${avec.cr.relances.length} relance(s), ${avec.cr.relances[0]?.length ?? 0} problème(s) ; ` + avec.v.details.join(" ; "));
+
+  // Finir en parlant sans rien à corriger : renvoyé une fois vers l'aperçu, pas deux.
+  const parleBien = await jouer([], "ce_mois", scriptMixte([[ADAPTE_OCTOBRE, ["changer_jours_periode", { du: "2026-10-13", au: "2026-10-31", retirer: ["mercredi"], ajouter: ["jeudi"] }]], "C'est prêt, tu valides ?"]), true);
+  verdict("contrôle : finir en parlant renvoie vers presenter_apercu, une fois",
+    parleBien.cr.fin === "apercu" && parleBien.v.reussi && parleBien.cr.relances.length === 1 && parleBien.cr.relances[0].join() === FIN_EN_PARLANT,
+    `${parleBien.cr.fin}, ${JSON.stringify(parleBien.cr.relances)}`);
+  const parleDeuxFois = await jouer([], "ce_mois", scriptMixte([[ADAPTE_OCTOBRE], "C'est prêt.", "C'est prêt, je te jure."]), true);
+  verdict("contrôle : s'il reparle, on le laisse conclure (et le correcteur juge)",
+    parleDeuxFois.cr.fin === "texte" && parleDeuxFois.cr.relances.length === 1, `${parleDeuxFois.cr.fin}, ${parleDeuxFois.cr.relances.length} relance(s)`);
+
+  /* Un nom d'outil écorché (C2 : « resenter_apercu ») : le fournisseur
+     refuse toute la réponse. La boucle le montre à l'agent au lieu de
+     s'arrêter, deux fois au plus. */
+  const ecorche = (fois: number, message = "400 Tool call validation failed: tool call validation failed: attempted to call tool 'resenter_apercu' which was not in request.tools"): AppelerModele => {
+    let tour = 0;
+    const suite = scriptMixte([[ADAPTE_OCTOBRE, ["changer_jours_periode", { du: "2026-10-13", au: "2026-10-31", retirer: ["mercredi"], ajouter: ["jeudi"] }]]]);
+    return async (m, o) => {
+      tour++;
+      if (tour > 1 && tour <= 1 + fois) throw Object.assign(new Error(message), { status: 400 });
+      return suite(m, o);
+    };
+  };
+  const rattrape = await jouer([], "ce_mois", ecorche(1), true);
+  verdict("appel d'outil illisible : rattrapé, puis réussi", rattrape.cr.fin === "apercu" && rattrape.v.reussi && rattrape.cr.illisibles === 1,
+    `${rattrape.cr.fin}, ${rattrape.cr.illisibles} illisible(s) ${rattrape.cr.erreur ?? ""}`);
+  const troisFois = await jouer([], "ce_mois", ecorche(3), true);
+  verdict("appel d'outil illisible trois fois : c'est une panne", troisFois.cr.fin === "erreur" && troisFois.cr.illisibles === 2, `${troisFois.cr.fin}, ${troisFois.cr.illisibles}`);
+  const autre400 = await jouer([], "ce_mois", ecorche(1, "400 context length exceeded"), true);
+  verdict("une autre erreur 400 reste une panne", autre400.cr.fin === "erreur" && autre400.cr.illisibles === 0, `${autre400.cr.fin}`);
 
   // Un agent qui ignore le contrôle conclut quand même : le code signale, il ne bloque pas à l'infini.
   const tetu = await jouer([], "ce_mois", scriptMixte([B1[1], [["presenter_apercu", { message: "Voilà." }]], [["presenter_apercu", { message: "Voilà." }]]]), true);

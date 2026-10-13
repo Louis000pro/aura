@@ -70,6 +70,9 @@ export type CompteRendu = {
   /** Chaque fois que le contrôle de fin a renvoyé l'agent au travail : ce
    *  qu'il a trouvé. Vide sans contrôle, ou quand tout allait bien. */
   relances: string[][];
+  /** Les appels d'outil que le fournisseur a refusés comme illisibles (un
+   *  nom d'outil écorché, par exemple) et que la boucle a rattrapés. */
+  illisibles: number;
   erreur?: string;
   limites?: Record<string, string>;
 };
@@ -78,15 +81,20 @@ export type CompteRendu = {
  *  (sans les tentatives de conclure), et rend les problèmes trouvés. */
 export type Controle<E> = (etat: E, journal: GesteJoue[]) => string[];
 
+const EN_TETE_CONTROLE = "Contrôle automatique de Vaiiya (ce n'est pas la personne qui parle).";
+
 /** Ce que le contrôle dit à l'agent. Le message précise que ce n'est pas
  *  la personne qui parle, pour que l'agent ne lui réponde pas comme à elle. */
-function relance(problemes: string[], enParlant: boolean): string {
-  return [
-    "Contrôle automatique de Vaiiya (ce n'est pas la personne qui parle). Avant de conclure, règle ceci :",
-    ...problemes.map((p) => "- " + p),
-    enParlant ? "Termine ensuite par presenter_apercu : c'est lui qui montre l'aperçu à la personne." : "",
-  ].filter(Boolean).join("\n");
+function relance(problemes: string[]): string {
+  return [`${EN_TETE_CONTROLE} Avant de conclure, règle ceci :`, ...problemes.map((p) => "- " + p)].join("\n");
 }
+
+/** Dans l'app, c'est l'aperçu qui montre les changements, jamais la phrase
+ *  du modèle : un agent qui conclut en parlant est renvoyé vers lui, une fois. */
+export const FIN_EN_PARLANT = "Tu as fini en parlant : termine par presenter_apercu, c'est lui qui montre l'aperçu à la personne.";
+
+/** Ce que rend le fournisseur quand un appel d'outil est mal formé. */
+const APPEL_ILLISIBLE = /tool call validation failed|tool_use_failed|failed to call a function|failed_generation/i;
 
 const COUPE = 600;
 
@@ -123,23 +131,24 @@ export async function jouerAgent<E>(entree: {
      l'agent décide. Sans ça, un agent qui choisit d'expliquer au lieu de
      corriger serait bloqué jusqu'au plafond de relances. */
   const signales = new Set<string>();
+  let illisibles = 0;
   let jetonsEntree = 0;
   let jetonsSortie = 0;
   let limites: Record<string, string> | undefined;
   const t0 = Date.now();
 
   const rendu = (fin: CompteRendu["fin"], messageFinal: string | null, erreur?: string): CompteRendu => ({
-    fin, messageFinal, etapes, jetonsEntree, jetonsSortie, dureeMs: Date.now() - t0, relances, erreur, limites,
+    fin, messageFinal, etapes, jetonsEntree, jetonsSortie, dureeMs: Date.now() - t0, relances, illisibles, erreur, limites,
   });
 
   /** Les problèmes neufs que le contrôle trouve, s'il a encore le droit de
    *  renvoyer l'agent au travail. Le journal exclut les tentatives de
    *  conclure : un refus du contrôle n'est pas un geste à rattraper. */
-  const aRegler = (): string[] => {
+  const aRegler = (enPlus: string[] = []): string[] => {
     if (!controle || relances.length >= relancesMax) return [];
     const clos = new Set(outils.filter((o) => o.clot).map((o) => o.nom));
     const journal = etapes.flatMap((e) => e.gestes).filter((g) => !clos.has(g.outil));
-    const neufs = controle(etat, journal).filter((p) => !signales.has(p));
+    const neufs = [...controle(etat, journal), ...enPlus].filter((p) => !signales.has(p));
     if (neufs.length) {
       neufs.forEach((p) => signales.add(p));
       relances.push(neufs);
@@ -154,7 +163,22 @@ export async function jouerAgent<E>(entree: {
       r = await appeler(messages, outils as Outil<unknown>[]);
     } catch (e) {
       const statut = (e as { status?: number }).status;
-      return rendu("erreur", null, (statut ? statut + " " : "") + (e as Error).message);
+      const texte = (e as Error).message ?? String(e);
+      /* Le fournisseur refuse une réponse dont l'appel d'outil est mal formé
+         (un nom d'outil écorché, des arguments hors schéma). Ce n'est pas une
+         panne, c'est un geste raté : on le montre à l'agent comme les autres.
+         Deux fois au plus par essai, ensuite c'en est une. */
+      if (statut === 400 && APPEL_ILLISIBLE.test(texte) && illisibles < 2) {
+        illisibles++;
+        const pourquoi = texte.slice(0, 220);
+        etapes.push({ numero, dureeMs: Date.now() - t, texte: `(appel d'outil refusé par le fournisseur : ${pourquoi})`, gestes: [] });
+        messages.push({
+          role: "user",
+          content: `${EN_TETE_CONTROLE} Ton dernier appel d'outil n'a pas pu être lu (${pourquoi}). Les outils qui existent : ${outils.map((o) => o.nom).join(", ")}. Refais ce geste.`,
+        });
+        continue;
+      }
+      return rendu("erreur", null, (statut ? statut + " " : "") + texte);
     }
     jetonsEntree += r.jetonsEntree;
     jetonsSortie += r.jetonsSortie;
@@ -166,10 +190,10 @@ export async function jouerAgent<E>(entree: {
     // Aucun outil appelé : l'agent a fini en parlant, sans présenter d'aperçu.
     if (r.appels.length === 0) {
       if (r.finRaison === "length") return rendu("erreur", r.texte, "réponse coupée (budget de jetons)");
-      const problemes = aRegler();
+      const problemes = aRegler([FIN_EN_PARLANT]);
       if (problemes.length === 0) return rendu("texte", r.texte);
       messages.push({ role: "assistant", content: r.texte ?? "" });
-      messages.push({ role: "user", content: relance(problemes, true) });
+      messages.push({ role: "user", content: relance(problemes) });
       continue;
     }
 
@@ -191,7 +215,7 @@ export async function jouerAgent<E>(entree: {
           args = appel.arguments ? (JSON.parse(appel.arguments) as Record<string, unknown>) : {};
           // Conclure passe d'abord par le contrôle : le code vérifie, le modèle corrige.
           const problemes = outil.clot ? aRegler() : [];
-          resultat = problemes.length ? { erreur: relance(problemes, false) } : outil.executer(args, etat);
+          resultat = problemes.length ? { erreur: relance(problemes) } : outil.executer(args, etat);
         } catch {
           resultat = { erreur: "Arguments illisibles : ils doivent être un objet JSON valide." };
         }
