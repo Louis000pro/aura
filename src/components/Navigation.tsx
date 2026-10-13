@@ -403,7 +403,7 @@ export default function Navigation() {
             flotte, et l'écran défile dessous au lieu de s'arrêter sur un
             trait. Classe `vy-verre`, définie une fois dans globals.css. */}
         <div
-          className="vy-verre vy-nav-blanc relative flex items-center justify-around px-2 rounded-full"
+          className="vy-verre vy-nav-blanc vy-lisere relative flex items-center justify-around px-2 rounded-full"
           style={{ paddingTop: 6, paddingBottom: 6 }}
         >
           {/* 1. Accueil */}

@@ -973,6 +973,43 @@ html:not([data-theme="dark"]) .vy-nav-blanc {
               0 12px 32px -12px rgba(40,28,80,.32);
 }
 html.perf-lite:not([data-theme="dark"]) .vy-nav-blanc { background: #fff; -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
+
+/* LE LISERÉ DE LA CAPSULE (Louis, 2026-10-13, après la maquette
+   `docs/maquettes/liquid-glass-react.html`). La seule part du Liquid Glass
+   qui se voit aussi sur iPhone : un trait de 1,5 px sur la tranche, en CSS,
+   sans le composant `liquid-glass-react` (sa déformation ne s'affiche pas
+   sous Safari, donc nulle part sur iPhone).
+   Le trait prend les deux couleurs du fond de Vaiiya, violet à gauche et
+   rose à droite, avec du blanc entre les deux : un verre reflète ce qui
+   l'entoure. ⚠️ Ce n'est PAS le reflet blanc en diagonale sur la surface
+   (`.lg-highlight`, retiré parce qu'il faisait « bâclé ») : rien ne touche
+   l'intérieur de la capsule, qui reste blanche.
+   ⚠️ Le trait recouvre le bord de 1 px (`inset: -1px`) au lieu de s'ajouter
+   à lui. Et en clair, le blanc du milieu ne se voit pas sur la capsule
+   blanche : ce sont les extrémités colorées qui dessinent le liseré. */
+:root {
+  --lisere: linear-gradient(135deg,
+    rgba(139,92,246,.70) 0%, rgba(196,181,253,.50) 22%,
+    rgba(255,255,255,.95) 45%, rgba(255,255,255,.95) 58%,
+    rgba(244,164,222,.60) 80%, rgba(193,59,193,.55) 100%);
+}
+[data-theme="dark"] {
+  --lisere: linear-gradient(135deg,
+    rgba(167,139,250,.55) 0%, rgba(255,255,255,.14) 33%,
+    rgba(255,255,255,.50) 66%, rgba(240,140,205,.45) 100%);
+}
+.vy-lisere::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1.5px;
+  background: var(--lisere);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
 /* Qualité visuelle allégée : moins de flou, un fond plus couvrant. */
 html.perf-lite .vy-verre,
 html.perf-lite .vy-verre-epais,
