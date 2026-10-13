@@ -166,6 +166,7 @@ function normaliserZone(v: unknown): Zone | null {
 }
 
 const DATE = { type: "string", description: "Date au format AAAA-MM-JJ." };
+const JOURS_SEMAINE = ["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"];
 
 export const OUTILS_PLANNING: Outil<EtatPlanning>[] = [
   {
@@ -249,6 +250,56 @@ export const OUTILS_PLANNING: Outil<EtatPlanning>[] = [
         ...(refusees.length ? { refusees } : {}),
         ...(consequences.length ? { consequences } : {}),
       };
+    },
+  },
+  {
+    nom: "changer_jours_periode",
+    description:
+      "Pour une période seulement, retire des jours habituels et en ajoute d'autres (par exemple sans le mercredi, avec le jeudi). Les dates sont calculées pour toi, jour par jour, et les jours habituels de fond ne changent pas.",
+    parametres: {
+      type: "object",
+      properties: {
+        du: DATE,
+        au: DATE,
+        retirer: { type: "array", items: { type: "string", enum: JOURS_SEMAINE }, description: "Jours habituels sans séance pendant la période." },
+        ajouter: { type: "array", items: { type: "string", enum: JOURS_SEMAINE }, description: "Jours qui portent une séance en plus pendant la période." },
+      },
+      required: ["du", "au"],
+    },
+    executer: (a, e) => {
+      if (!dateValide(a.du) || !dateValide(a.au)) return erreur("Dates attendues au format AAAA-MM-JJ.");
+      if (a.du < e.aujourdhui) return erreur("La période ne commence pas dans le passé.");
+      if (a.au < a.du) return erreur("« au » doit être après « du ».");
+      if (ecart(a.du, a.au) > 120) return erreur("120 jours au plus : au-delà, change les jours habituels pour de bon.");
+      const numero = (j: unknown) => { const i = JOURS.indexOf(String(j).toLowerCase().trim()); return i < 0 ? -1 : i === 0 ? 7 : i; };
+      const retirer = (Array.isArray(a.retirer) ? a.retirer : []).map(numero);
+      const ajouter = (Array.isArray(a.ajouter) ? a.ajouter : []).map(numero);
+      if (retirer.includes(-1) || ajouter.includes(-1)) return erreur("Jours attendus : lundi … dimanche.");
+      if (retirer.length + ajouter.length === 0) return erreur("Donne au moins un jour à retirer ou à ajouter.");
+      const nonHabituels = retirer.filter((j) => !e.joursHabituels.includes(j));
+      if (nonHabituels.length) return erreur(`Rien à retirer : ${nonHabituels.map((j) => JOURS[j % 7]).join(", ")} n'est pas un jour habituel (jours habituels : ${e.joursHabituels.map((j) => JOURS[j % 7]).join(", ")}).`);
+      const dejaHabituels = ajouter.filter((j) => e.joursHabituels.includes(j));
+      if (dejaHabituels.length) return erreur(`${dejaHabituels.map((j) => JOURS[j % 7]).join(", ")} porte déjà une séance chaque semaine.`);
+      const avant = projeter(e, HORIZON);
+      const touchees = new Set<string>();
+      let n = 0;
+      for (let d = a.du; d <= a.au; d = decaler(d, 1)) {
+        const j = jourIso(d);
+        if (retirer.includes(j)) { e.exceptions[d] = "pas_de_seance"; touchees.add(lundi(d)); n++; }
+        else if (ajouter.includes(j)) { e.exceptions[d] = "seance_en_plus"; touchees.add(lundi(d)); n++; }
+      }
+      const apres = projeter(e, HORIZON);
+      const consequences = [...touchees].sort().flatMap((l) => {
+        const compte = (jours: JourProjete[]) => jours.filter((x) => x.seance && x.date >= l && x.date <= decaler(l, 6)).length;
+        const n0 = compte(avant), n1 = compte(apres);
+        return n0 === n1 ? [] : [`semaine du ${enClair(l)} : ${n0} → ${n1} séance(s)`];
+      });
+      const quoi = [
+        retirer.length ? `sans séance le ${retirer.map((j) => JOURS[j % 7]).join(", ")}` : "",
+        ajouter.length ? `une séance le ${ajouter.map((j) => JOURS[j % 7]).join(", ")}` : "",
+      ].filter(Boolean).join(", ");
+      e.apercu.push(`du ${enClair(a.du)} au ${enClair(a.au)} : ${quoi}`);
+      return { ok: true, dates_touchees: n, ...(consequences.length ? { consequences } : {}) };
     },
   },
   {
@@ -348,7 +399,7 @@ export const OUTILS_PLANNING: Outil<EtatPlanning>[] = [
     description: "Change POUR DE BON les jours d'entraînement habituels de la semaine. Seulement si la personne veut un changement durable, jamais pour une période.",
     parametres: {
       type: "object",
-      properties: { jours: { type: "array", minItems: 1, maxItems: 7, items: { type: "string", enum: JOURS.slice(1).concat("dimanche") } } },
+      properties: { jours: { type: "array", minItems: 1, maxItems: 7, items: { type: "string", enum: JOURS_SEMAINE } } },
       required: ["jours"],
     },
     executer: (a, e) => {

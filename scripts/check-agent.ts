@@ -72,6 +72,15 @@ async function main() {
   const apresReport = projeter(bon.etat, "2026-10-17").filter((j) => j.seance).map((j) => j.date.slice(8));
   verdict("le report garde l'ordre : jeudi puis vendredi", apresReport.join(",") === "15,16", apresReport.join(","));
 
+  // Le même résultat par l'outil qui calcule les dates à la place du modèle.
+  const parJours = await jouer([LIRE, [["changer_jours_periode", { du: "2026-10-13", au: "2026-10-31", retirer: ["mercredi"], ajouter: ["jeudi"] }]], [ADAPTE_OCTOBRE]]);
+  verdict("par jours de la semaine : mercredis retirés, jeudis ajoutés, réussi",
+    parJours.v.reussi && Object.keys(parJours.etat.exceptions).sort().join(",") === "2026-10-14,2026-10-15,2026-10-21,2026-10-22,2026-10-28,2026-10-29",
+    Object.keys(parJours.etat.exceptions).sort().join(",") + " " + parJours.v.details.join(" ; "));
+  const jours = OUTILS_PLANNING.find((o) => o.nom === "changer_jours_periode")!;
+  const mauvais = jours.executer({ du: "2026-10-13", au: "2026-10-31", retirer: ["dimanche"] }, compteDeTest()) as { erreur?: string };
+  verdict("par jours de la semaine : retirer un jour qui n'est pas habituel est refusé", !!mauvais.erreur, mauvais.erreur);
+
   // ── Les témoins : chacun doit faire tomber SON critère ──
   const permanent = await jouer([LIRE, [["changer_jours_habituels", { jours: ["lundi", "jeudi", "vendredi"] }], ["changer_priorites", { zones: ["fessiers"] }]], [["adapter_periode", { debut: "2026-10-13", fin: "2026-10-31", duree_max_min: 30, accent_zones: ["fessiers"] }]]]);
   verdict("témoin « pour de bon » → périmètre", !permanent.v.criteres.perimetre && permanent.v.criteres.mercredi, permanent.v.details.join(" ; "));
