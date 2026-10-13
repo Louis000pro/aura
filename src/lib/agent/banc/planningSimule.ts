@@ -492,11 +492,12 @@ export function corriger(initial: EtatPlanning, final: EtatPlanning, periode: Pe
   const sansAccent = fenetre.filter((j) => j.seance && !j.seance.accent?.includes("fessiers"));
   if (sansAccent.length) details.push(`sans accent fessiers : ${sansAccent.map((j) => j.date).join(", ")}`);
 
-  // Le nombre de séances, semaine par semaine, jusqu'à la dernière semaine touchable.
+  // Le nombre de séances, semaine par semaine, jusqu'à la dernière semaine
+  // touchable : ni moins (une séance perdue), ni plus (personne n'en a demandé).
   let nombre = true;
   for (let l = lundi(initial.aujourdhui); l <= lundi(finMax); l = decaler(l, 7)) {
     const compte = (jours: JourProjete[]) => jours.filter((j) => j.seance && j.date >= l && j.date <= decaler(l, 6)).length;
-    if (compte(apres) < compte(avant)) {
+    if (compte(apres) !== compte(avant)) {
       nombre = false;
       details.push(`semaine du ${l} : ${compte(apres)} séance(s) au lieu de ${compte(avant)}`);
     }

@@ -72,6 +72,16 @@ export async function GET(req: NextRequest) {
     erreur: cr.erreur,
     message: cr.messageFinal,
     apercu: etat.apercu,
+    /* L'état final, lisible par une machine : on peut le recorriger hors
+       ligne si le correcteur change, sans rejouer (ni repayer) l'essai. */
+    etatFinal: {
+      exceptions: etat.exceptions,
+      absences: etat.absences,
+      adaptation: etat.adaptation,
+      joursHabituels: etat.joursHabituels,
+      joursChangesPourDeBon: etat.joursChangesPourDeBon,
+      prioritesPourDeBon: etat.prioritesPourDeBon,
+    },
     etapes: cr.etapes.length,
     gestes: cr.etapes.reduce((s, e) => s + e.gestes.length, 0),
     refus: cr.etapes.reduce((s, e) => s + e.gestes.filter((g) => g.refuse).length, 0),

@@ -93,6 +93,9 @@ async function main() {
   ] }]], [ADAPTE_OCTOBRE]]);
   verdict("témoin « mercredis retirés sans report » → nombre", !sansReport.v.criteres.nombre && sansReport.v.criteres.mercredi, sansReport.v.details.join(" ; "));
 
+  const enTrop = await jouer([LIRE, [REPORTS_OCTOBRE, ["poser_exceptions", { exceptions: [{ date: "2026-10-17", genre: "seance_en_plus" }] }]], [ADAPTE_OCTOBRE]]);
+  verdict("témoin « une séance en trop » → nombre", !enTrop.v.criteres.nombre && enTrop.v.criteres.mercredi, enTrop.v.details.join(" ; "));
+
   const tropLoin = await jouer([LIRE, [REPORTS_OCTOBRE], [["adapter_periode", { debut: "2026-10-13", fin: "2026-11-30", duree_max_min: 30, accent_zones: ["fessiers"] }]]], "fin_du_mois");
   verdict("témoin « adaptation trop longue » → périmètre", !tropLoin.v.criteres.perimetre, tropLoin.v.details.join(" ; "));
 
