@@ -1,0 +1,354 @@
+<title>Planning sur mesure</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&family=Martian+Mono:wdth,wght@75..112.5,100..800&display=swap">
+<style>
+/* Mise en page : une colonne de lecture (46rem) comme un dossier de travail ; les tableaux défilent dans leur propre cadre ; les choix égaux restent des cartes égales. */
+:root {
+  --bg: #FBF9FF;
+  --surface: #FFFFFF;
+  --wash: #F1EBFF;
+  --ink: #1C1730;
+  --ink-2: #4B4463;
+  --ink-3: #6F688A;
+  --line: rgba(28, 23, 48, .12);
+  --action-a: #8B5CF6;
+  --action-b: #C13BC1;
+  --action: #6D4BD6;
+  --energy: #B4500A;
+  --progress: #0B7F60;
+  --gold: #8A5A06;
+  --texte: "Archivo", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --chiffre: "Martian Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --w-voix: "wdth" 116;
+  --w-affiche: "wdth" 122;
+  --w-nombre: "wdth" 82;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0E0B15; --surface: #16121F; --wash: #211A33; --ink: #F5F2FB; --ink-2: #C8C0DB; --ink-3: #9C94B2;
+    --line: rgba(245, 242, 251, .13); --action: #C3AEFF; --energy: #F5B120; --progress: #3FE0B0; --gold: #F5B120;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0E0B15; --surface: #16121F; --wash: #211A33; --ink: #F5F2FB; --ink-2: #C8C0DB; --ink-3: #9C94B2;
+  --line: rgba(245, 242, 251, .13); --action: #C3AEFF; --energy: #F5B120; --progress: #3FE0B0; --gold: #F5B120;
+  color-scheme: dark;
+}
+
+body { background: var(--bg); color: var(--ink); font: 400 17px/1.62 var(--texte); -webkit-font-smoothing: antialiased; }
+.page { max-width: 46rem; margin: 0 auto; padding-inline: 20px; padding-block: 44px 96px; }
+a { color: var(--action); text-underline-offset: 3px; }
+a:focus-visible, summary:focus-visible { outline: 2px solid var(--action); outline-offset: 3px; border-radius: 4px; }
+p, li { max-width: 66ch; }
+strong { font-weight: 700; }
+
+.surtitre { font-size: 14px; font-weight: 600; color: var(--ink-3); margin: 0 0 14px; }
+h1 { font-size: clamp(2.5rem, 9vw, 3.9rem); line-height: .98; font-weight: 850; font-variation-settings: var(--w-affiche); letter-spacing: -.02em; margin: 0 0 22px; text-wrap: balance; }
+h1 em { font-style: normal; background: linear-gradient(120deg, var(--action-a), var(--action-b)); -webkit-background-clip: text; background-clip: text; color: transparent; padding-right: .06em; }
+.chapo { font-size: 19px; line-height: 1.55; color: var(--ink-2); margin: 0 0 28px; }
+
+.sommaire { display: flex; flex-wrap: wrap; gap: 8px 18px; padding-block: 14px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); margin-bottom: 8px; font-size: 15px; }
+.sommaire a { color: var(--ink-2); text-decoration: none; }
+.sommaire a:hover { color: var(--action); }
+.sommaire b { font-family: var(--chiffre); font-variation-settings: var(--w-nombre); font-weight: 600; color: var(--action); margin-right: 6px; font-size: 13px; }
+
+section { padding-top: 56px; }
+h2 { font-size: clamp(1.6rem, 5vw, 2.1rem); line-height: 1.08; font-weight: 800; font-variation-settings: var(--w-voix); letter-spacing: -.01em; margin: 0 0 16px; text-wrap: balance; }
+h2 .num { font-family: var(--chiffre); font-variation-settings: var(--w-nombre); font-size: .5em; font-weight: 600; color: var(--action); vertical-align: .55em; margin-right: 10px; }
+h3 { font-size: 1.16rem; font-weight: 750; font-variation-settings: var(--w-voix); margin: 34px 0 10px; line-height: 1.25; text-wrap: balance; }
+h4 { font-size: 1rem; font-weight: 700; margin: 22px 0 6px; }
+ul, ol { padding-left: 1.2em; }
+li { margin-block: 6px; }
+li::marker { color: var(--ink-3); }
+
+.nombre { font-family: var(--chiffre); font-variation-settings: var(--w-nombre); font-weight: 600; letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
+
+.encart { background: var(--wash); border-radius: 18px; padding: 18px 20px; margin-block: 22px; }
+.encart > :first-child { margin-top: 0; }
+.encart > :last-child { margin-bottom: 0; }
+.encart h4 { margin-top: 0; }
+.encart.lecture { background: transparent; border: 1.5px solid var(--action); }
+
+.chiffres { display: grid; grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 18px; overflow: hidden; margin-block: 22px; }
+.chiffres div { background: var(--surface); padding: 14px 16px; min-width: 0; }
+.chiffres .nombre { display: block; font-size: 1.7rem; line-height: 1.1; color: var(--ink); }
+.chiffres span:last-child { font-size: 14px; color: var(--ink-2); line-height: 1.35; display: block; margin-top: 4px; }
+
+.tableau { overflow-x: auto; margin-block: 18px 22px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: 15px; line-height: 1.45; }
+th, td { text-align: left; vertical-align: top; padding: 10px 14px; }
+th { font-weight: 650; color: var(--ink-2); font-size: 13.5px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+td { border-top: 1px solid var(--line); }
+tr:first-child td { border-top: 0; }
+td.n, th.n { text-align: right; font-family: var(--chiffre); font-variation-settings: var(--w-nombre); font-variant-numeric: tabular-nums; white-space: nowrap; }
+td.faible { color: var(--energy); font-weight: 700; }
+table.large { min-width: 46rem; }
+caption { caption-side: bottom; text-align: left; padding: 10px 14px; font-size: 13.5px; color: var(--ink-3); border-top: 1px solid var(--line); }
+
+.trois { display: grid; grid-template-columns: repeat(auto-fit, minmax(13.5rem, 1fr)); gap: 14px; margin-block: 22px; }
+.trois article { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 18px; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.trois article h4 { margin: 0; font-size: 1.1rem; font-variation-settings: var(--w-voix); }
+.trois article p { margin: 0; font-size: 15.5px; color: var(--ink-2); }
+.trois .lettre { font-family: var(--chiffre); font-variation-settings: var(--w-nombre); font-weight: 700; color: var(--action); font-size: 14px; }
+
+.questions { counter-reset: q; list-style: none; padding: 0; margin: 0; }
+.questions > li { counter-increment: q; position: relative; padding: 18px 0 18px 46px; border-top: 1px solid var(--line); max-width: none; margin: 0; }
+.questions > li::before { content: counter(q); position: absolute; left: 0; top: 18px; width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; background: linear-gradient(135deg, var(--action-a), var(--action-b)); color: #fff; font-family: var(--chiffre); font-variation-settings: var(--w-nombre); font-weight: 700; font-size: 14px; }
+.questions h4 { margin: 2px 0 8px; font-size: 1.06rem; }
+.questions p { margin: 6px 0; font-size: 16px; color: var(--ink-2); }
+.choix { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 6px; padding: 0; list-style: none; }
+.choix li { margin: 0; padding: 5px 12px; border-radius: 999px; border: 1px solid var(--line); font-size: 14.5px; background: var(--surface); }
+.choix li b { font-family: var(--chiffre); font-variation-settings: var(--w-nombre); color: var(--action); margin-right: 6px; }
+.reco { color: var(--action); font-weight: 650; }
+
+details { border-top: 1px solid var(--line); padding-block: 12px; }
+details:last-of-type { border-bottom: 1px solid var(--line); }
+summary { cursor: pointer; font-weight: 650; }
+details ul { font-size: 15px; }
+details li { word-break: break-word; }
+
+.pied { margin-top: 64px; font-size: 14px; color: var(--ink-3); }
+
+@media (max-width: 520px) {
+  body { font-size: 16px; }
+  .chapo { font-size: 17.5px; }
+  .questions > li { padding-left: 42px; }
+}
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+html { scroll-behavior: smooth; }
+</style>
+
+<div class="page">
+
+<p class="surtitre">Vaiiya · Entraînement · récap du 13 octobre 2026</p>
+<h1>Le planning <em>sur mesure</em></h1>
+<p class="chapo">Ce qu'on a déjà construit, ce que font les autres, ce que dit la science et ce que dit le design. Puis ma lecture et les questions qui décident de la suite. Pas encore de maquette : elle viendra après tes réponses.</p>
+
+<nav class="sommaire" aria-label="Sommaire">
+  <a href="#existant"><b>1</b>Ce qu'on a déjà</a>
+  <a href="#concurrents"><b>2</b>Les concurrents</a>
+  <a href="#science"><b>3</b>La science</a>
+  <a href="#design"><b>4</b>Le design</a>
+  <a href="#lecture"><b>5</b>Ma lecture</a>
+  <a href="#questions"><b>6</b>Tes réponses</a>
+</nav>
+
+<section id="existant">
+<h2><span class="num">1</span>Ce qu'on a déjà construit</h2>
+<p>La conversation que tu cherchais existe : « Refonte planning et organisation des séances », ouverte le 2 octobre. Claude et Codex y ont co-décidé 60 points, produit huit maquettes, et codé neuf vagues (R1 à R9) jusqu'au 7 octobre. Tout est en production. Le dossier complet est dans <span class="nombre">docs/refonte-planning/</span>.</p>
+
+<h3>Ce que le moteur sait faire aujourd'hui</h3>
+<ul>
+  <li><strong>Un programme est un cycle de 1 à 6 séances.</strong> Une séance manquée t'attend au prochain jour d'entraînement : pas de dette, pas de rattrapage, rien ne se perd.</li>
+  <li><strong>Tes jours d'entraînement</strong> (une règle pour la semaine, des exceptions datées, des absences). La semaine se calcule à la lecture, sans rien écrire.</li>
+  <li><strong>Un programme par priorités</strong> : 7 zones (dos, fessiers, jambes, pectoraux, épaules, bras, abdos), une priorité et une seconde facultative, ou « Un peu de tout ».</li>
+  <li><strong>Chaque séance prévue a ses exercices repères</strong> (pour mesurer tes progrès) et ses complémentaires, qui changent selon trois réglages : mes exercices habituels, un peu de nouveauté, beaucoup de nouveauté.</li>
+  <li><strong>Dans le tunnel</strong> : la charge, « Fait · 10 × 16 kg », une question sur la marge restante, puis une proposition de progression à accepter ou à garder.</li>
+  <li><strong>La version courte</strong> : « J'ai moins de temps » calcule ce qu'on garde pour n'importe quelle durée, à la minute près.</li>
+  <li><strong>« Ton dos a travaillé hier »</strong> propose une version plus légère de la séance.</li>
+  <li><strong>Le Guide voit tout ça</strong> et sait déplacer, retirer, remplacer, sauter, ajouter une séance, et ouvrir l'écran d'adaptation déjà rempli.</li>
+</ul>
+
+<h3>Ce qui manque face à ta demande</h3>
+<ol>
+  <li><strong>Les zones ne se choisissent qu'une fois, pour tout le programme.</strong> Et l'entrée « Mon programme » a quitté Entraînement le 11 octobre parce que tu la trouvais pas assez claire : aujourd'hui, plus personne ne peut choisir ses zones, sauf en demandant une séance au Guide. Rien pour « cette séance, plus de fessiers », rien pour « ce mois-ci, les bras ».</li>
+  <li><strong>Le temps ne se règle que vers le bas, et séance par séance.</strong> Pas de « mardi 20 min, samedi 1 h », pas de « cette semaine je n'ai que 20 minutes », pas de séance plus longue. La durée visée par séance existe en base, mais seul le Guide la lit.</li>
+  <li><strong>La période n'existe pas.</strong> Une adaptation datée sait seulement mettre une séance de côté. Pas de semaine légère, pas de vacances sans matériel, pas de focus d'un mois, pas de date à préparer.</li>
+  <li><strong>La bibliothèque limite le ciblage</strong> (tableau ci-dessous) : à la maison sans matériel, le moteur ne dispose d'aucun exercice animé pour le dos, d'un seul pour les épaules et de deux pour les fessiers.</li>
+  <li><strong>Le planning est éclaté en huit feuilles</strong> qui portent les mots du moteur : Mon programme, Mes jours, Ma semaine, Organiser, Adaptation, Je m'absente, Je choisis, J'improvise. Chacune est juste ; ensemble, elles demandent de comprendre le moteur pour s'en servir.</li>
+</ol>
+
+<div class="tableau">
+<table>
+  <thead><tr><th>Zone</th><th class="n">Maison, sans matériel</th><th class="n">Maison, haltères</th><th class="n">Salle</th></tr></thead>
+  <tbody>
+    <tr><td>Pectoraux</td><td class="n">3</td><td class="n">5</td><td class="n">8</td></tr>
+    <tr><td>Dos</td><td class="n faible">0</td><td class="n">3</td><td class="n">9</td></tr>
+    <tr><td>Épaules</td><td class="n faible">1</td><td class="n">7</td><td class="n">9</td></tr>
+    <tr><td>Bras</td><td class="n faible">2</td><td class="n">5</td><td class="n">9</td></tr>
+    <tr><td>Jambes</td><td class="n">9</td><td class="n">10</td><td class="n">18</td></tr>
+    <tr><td>Fessiers</td><td class="n faible">2</td><td class="n faible">2</td><td class="n">6</td></tr>
+    <tr><td>Abdos</td><td class="n">14</td><td class="n">14</td><td class="n">15</td></tr>
+    <tr><td>Cardio</td><td class="n">7</td><td class="n">8</td><td class="n">12</td></tr>
+    <tr><td>Mobilité</td><td class="n">16</td><td class="n">16</td><td class="n">16</td></tr>
+    <tr><td><strong>Total</strong></td><td class="n">54</td><td class="n">70</td><td class="n">102</td></tr>
+  </tbody>
+  <caption>Les exercices animés que le moteur a le droit de proposer, selon le lieu (même règle que la génération de séance). En orange : deux ou moins, trop peu pour cibler la zone plusieurs semaines sans tourner en rond.</caption>
+</table>
+</div>
+
+<h3>Ta demande, case par case</h3>
+<p>Tu as nommé trois réglages (les zones, le temps, les jours) et quatre portées (l'exercice, la séance, la semaine, le mois). Voilà ce qui existe déjà dans chaque case.</p>
+<div class="tableau">
+<table class="large">
+  <thead><tr><th></th><th>Un exercice</th><th>Une séance</th><th>Une semaine</th><th>Un mois</th><th>Toujours (le programme)</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Les zones</strong></td><td>« Changer » propose un exercice du même rôle, sans viser une zone</td><td>Seulement en demandant une séance au Guide</td><td>Rien</td><td>Rien</td><td>7 zones, 1 ou 2 priorités, mais l'entrée est cachée depuis le 11 octobre</td></tr>
+    <tr><td><strong>Le temps</strong></td><td>Séries et répétitions modifiables dans une séance perso</td><td>Plus courte à la minute près ; jamais plus longue</td><td>Rien</td><td>Rien</td><td>Une durée visée en base, que seul le Guide lit</td></tr>
+    <tr><td><strong>Les jours</strong></td><td>Sans objet</td><td>Changer de jour, la faire aujourd'hui</td><td>Exceptions, jour en plus, absence</td><td>Absence jusqu'à 120 jours</td><td>Mes jours d'entraînement</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h3>Ce que les comptes utilisent vraiment</h3>
+<p>Relevé en lecture seule dans la base, aujourd'hui :</p>
+<div class="chiffres">
+  <div><span class="nombre">67</span><span>comptes</span></div>
+  <div><span class="nombre">5</span><span>ont déjà terminé une séance (35 au total)</span></div>
+  <div><span class="nombre">2</span><span>comptes actifs sur les 30 derniers jours</span></div>
+  <div><span class="nombre">1</span><span>compte a choisi ses jours d'entraînement</span></div>
+  <div><span class="nombre">2</span><span>programmes choisis par zones, sur 11 actifs</span></div>
+  <div><span class="nombre">0</span><span>charge notée dans le tunnel</span></div>
+</div>
+<div class="encart lecture">
+  <h4>Ce que j'en tire</h4>
+  <p>Le moteur est en avance sur l'écran. Il sait déjà presque tout ce que tu demandes, mais il le cache derrière des mots et des feuilles que personne n'ouvre. Le prochain saut n'est pas un moteur de plus : c'est un seul endroit où l'on règle son plan et où l'on voit tout de suite ce que ça change. Et comme presque personne ne s'en sert encore, on peut refaire l'écran sans rien casser chez personne.</p>
+</div>
+</section>
+
+<!-- SECTION_CONCURRENTS -->
+
+<!-- SECTION_SCIENCE -->
+
+<!-- SECTION_DESIGN -->
+
+<section id="lecture">
+<h2><span class="num">5</span>Ma lecture</h2>
+<p class="chapo">Un seul endroit, trois réglages, et un aperçu qui se recompose sous tes doigts. Par défaut le plan décide pour toi ; chaque réglage est à un geste.</p>
+
+<h3>Les trois réglages, à chaque portée</h3>
+<p>Tu as tout dit dans ta demande : les zones, le temps, les jours, et pour combien de temps. Je propose que ce soient les trois seuls réglages de l'écran, et qu'ils s'utilisent de la même façon à chaque portée. On apprend le geste une fois, on le retrouve partout.</p>
+<div class="tableau">
+<table class="large">
+  <thead><tr><th>Portée</th><th>Ce que ça veut dire pour la personne</th><th>Ce que ça écrit dans le moteur (déjà là)</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Cette séance</strong></td><td>« Aujourd'hui, 25 min et plus de fessiers »</td><td>Une variante au lancement, comme la version courte. Elle ne change rien d'autre.</td></tr>
+    <tr><td><strong>Cette semaine</strong></td><td>« Semaine chargée, 20 min max »</td><td>Une adaptation datée, qui s'arrête toute seule. Le moteur sait déjà faire, il lui manque des axes (durée, zones, lieu).</td></tr>
+    <tr><td><strong>Ce mois-ci</strong></td><td>« Quatre semaines de focus bras »</td><td>La même adaptation datée, sur quatre semaines, avec une progression et une semaine plus légère proposée.</td></tr>
+    <tr><td><strong>Toujours</strong></td><td>« Mon plan, c'est fessiers et dos, 3 jours, 45 min »</td><td>Une nouvelle version du programme, avec aperçu avant de l'activer (R9c).</td></tr>
+  </tbody>
+</table>
+</div>
+<p>C'est la bonne nouvelle de l'audit : le moteur a déjà la bonne forme. Une adaptation datée « ne modifie jamais le programme de référence » et s'arrête d'elle-même ; elle a été pensée pour recevoir d'autres axes, et la durée était justement l'axe suivant prévu. Le travail est surtout dans l'écran, dans les règles de composition et dans le contenu.</p>
+
+<h3>Les principes que je propose</h3>
+<ol>
+  <li><strong>Un seul écran pour régler son plan</strong>, en tête d'Entraînement. Les feuilles actuelles deviennent des étapes de cet écran, ou disparaissent.</li>
+  <li><strong>On voit avant de valider.</strong> Chaque réglage recompose la semaine en direct et dit ce qui change en une ligne (« Vendredi passe à 25 min, fessiers en premier »).</li>
+  <li><strong>Les règles viennent de la science, le Guide explique.</strong> La composition suit des repères publiés ; Nora ou Sasha disent pourquoi en une phrase, et ouvrent l'écran déjà rempli quand on leur demande en parlant.</li>
+  <li><strong>Jamais de dette, jamais de reproche.</strong> Une zone visée n'est pas un quota, une semaine légère n'est pas un échec, une séance manquée attend toujours au prochain jour.</li>
+  <li><strong>Le texte disparaît derrière ce qu'on voit</strong>, comme tu l'as demandé en octobre : pas d'explication en petits caractères sous chaque élément.</li>
+</ol>
+
+<h3>Trois directions visuelles</h3>
+<p>Je te propose de choisir avant que je dessine. Les trois respectent le système de couleurs, le verre, Archivo et Martian Mono.</p>
+<div class="trois">
+  <article>
+    <span class="lettre">A</span>
+    <h4>Le corps</h4>
+    <p>Le personnage des exercices, de face et de dos, en grand au centre du plan. On touche une zone pour la viser, elle s'allume en violet. Les zones travaillées cette semaine brillent en teal. Sous le corps, la semaine se recompose.</p>
+    <p>Unique à Vaiiya, parce que c'est le même personnage que dans les 102 animations. Demande un dessin découpé par zone.</p>
+  </article>
+  <article>
+    <span class="lettre">B</span>
+    <h4>Le temps qui se voit</h4>
+    <p>La semaine en capsules verticales, une par séance, avec sa photo. La hauteur d'une capsule, c'est sa durée : on l'étire pour donner plus de temps à un jour, les exercices apparaissent dedans. Une semaine légère est visiblement plus basse. Le mois, ce sont quatre rangées de capsules.</p>
+    <p>Le temps devient une matière qu'on façonne. Il faut aussi des boutons − et + pour l'accessibilité.</p>
+  </article>
+  <article>
+    <span class="lettre">C</span>
+    <h4>Le mois en affiche</h4>
+    <p>Le bloc de quatre semaines est une affiche, comme celles du relais, qui se dévoile à chaque séance faite. Le focus du mois, la semaine légère et la progression s'y lisent d'un coup d'œil, et elle se partage.</p>
+    <p>Le plus émouvant des trois, mais c'est une récompense plus qu'un outil de réglage : elle accompagne A ou B.</p>
+  </article>
+</div>
+
+<h3>Le contenu, la vraie limite</h3>
+<p>Le meilleur moteur du monde tournera en rond avec deux exercices de fessiers. Pour cibler une zone à la maison pendant un mois, il faut au moins six mouvements animés par zone et par lieu. Ma première liste, à générer en planches comme les 102 autres :</p>
+<ul>
+  <li><strong>Dos, sans matériel</strong> : Y-T-W allongé, reverse snow angel, rowing à la porte, planche inversée, superman tirage.</li>
+  <li><strong>Épaules, sans matériel</strong> : pompes déclinées, pike push-ups pieds surélevés, planche shoulder taps, inchworm, Y-raise au sol.</li>
+  <li><strong>Fessiers, sans matériel</strong> : pont fessier une jambe, hip thrust sur canapé, fente arrière, squat sumo, coquillage (clamshell), abduction allongée, frog pump.</li>
+  <li><strong>Bras, sans matériel</strong> : pompes serrées, extension triceps au sol (sphinx), dips sur chaise pieds tendus.</li>
+  <li><strong>Avec haltères</strong> : hip thrust haltère, soulevé de terre roumain une jambe, fente arrière haltères, squat sumo haltère, rowing renegade, shrugs.</li>
+</ul>
+<p>Et une question à garder en tête : l'élastique de résistance coûte quelques euros et ouvre le dos, les biceps et l'arrière des épaules à la maison. Il n'existe pas encore comme matériel dans Vaiiya.</p>
+
+<h3>Ce que je propose de ne pas faire</h3>
+<ul>
+  <li>Promettre de « perdre du ventre » ou « d'affiner une zone » : la perte de gras localisée ne marche pas, les études sont nettes. On vise une zone pour la renforcer, jamais pour la faire fondre.</li>
+  <li>Afficher des pourcentages de muscles, des jauges ou des retards à combler.</li>
+  <li>Ajouter une neuvième feuille. Le but est d'en retirer.</li>
+  <li>Laisser l'IA composer seule le programme : elle explique et propose, les règles composent.</li>
+  <li>Changer quoi que ce soit en douce. Le positionnement public dit aujourd'hui que Vaiiya « n'adapte rien automatiquement » et ne fait pas de « programme périodisé sur plusieurs semaines ». Tout changement de plan doit rester une proposition qu'on valide, et le jour où le bloc d'un mois existe, il faudra mettre ce document à jour avant d'en parler dehors.</li>
+</ul>
+</section>
+
+<section id="questions">
+<h2><span class="num">6</span>Ce que j'ai besoin que tu tranches</h2>
+<p>Chaque question a ma recommandation. Tu peux répondre en vrac à la voix, par exemple « 1 C, 2 tout sauf la date, 3 d'accord… ».</p>
+<ol class="questions">
+  <li>
+    <h4>Où vit le plan sur mesure ?</h4>
+    <ul class="choix"><li><b>A</b>Un écran « Mon plan » en tête d'Entraînement</li><li><b>B</b>Tout passe par le Guide</li><li><b>C</b>Les deux : l'écran pour régler, le Guide comme raccourci qui l'ouvre déjà rempli</li></ul>
+    <p><span class="reco">Ma recommandation : C.</span> C'est déjà ce que fait le Guide pour les adaptations. L'écran remplace les feuilles éparpillées comme porte d'entrée.</p>
+  </li>
+  <li>
+    <h4>Qu'est-ce qui n'était pas clair dans « Mon programme » ?</h4>
+    <p>Les mots, le fait de choisir deux zones, les jours qui sont ailleurs, l'aperçu, l'activation ? Ta réponse me dit quoi ne pas refaire.</p>
+  </li>
+  <li>
+    <h4>Pour une semaine, pour un mois : quels modes veux-tu ?</h4>
+    <ul class="choix"><li>Semaine chargée (moins de temps)</li><li>Semaine légère</li><li>Vacances ou déplacement (autre lieu, sans matériel)</li><li>Focus d'une zone sur 4 semaines</li><li>Préparer une date</li><li>Reprise après une pause</li></ul>
+    <p><span class="reco">Ma recommandation : les quatre premiers d'abord.</span> « Préparer une date » demande un vrai plan à rebours, on le garde pour après.</p>
+  </li>
+  <li>
+    <h4>Les zones : quelle finesse ?</h4>
+    <ul class="choix"><li><b>A</b>Les 7 zones actuelles, plus cardio et mobilité comme qualités à viser</li><li><b>B</b>Une douzaine de zones (mollets, ischios, bas du dos, obliques…)</li></ul>
+    <p><span class="reco">Ma recommandation : A.</span> Sept zones se lisent sur une silhouette de téléphone et suffisent à la grande majorité des demandes. B demande beaucoup plus d'exercices.</p>
+  </li>
+  <li>
+    <h4>Le temps : quel réglage principal ?</h4>
+    <ul class="choix"><li><b>A</b>Par séance (« aujourd'hui j'ai 25 min »)</li><li><b>B</b>Par jour de la semaine (« mardi 20 min, samedi 1 h »)</li><li><b>C</b>Par période (« cette semaine, 20 min max »)</li></ul>
+    <p><span class="reco">Ma recommandation : B dans le plan</span>, A au moment de lancer (ça existe déjà, il manque juste « plus long »), et C par les modes de la question 3.</p>
+  </li>
+  <li>
+    <h4>Le mois : un vrai bloc de 4 semaines ?</h4>
+    <p>Un bloc qui progresse, avec une semaine plus légère proposée (jamais imposée), lisible d'un coup d'œil. Ou on reste sur « cette semaine et la suivante » comme aujourd'hui.</p>
+    <p><span class="reco">Ma recommandation : oui au bloc visible</span>, modifiable sur deux semaines comme aujourd'hui, le reste en aperçu.</p>
+  </li>
+  <li>
+    <h4>La science dans le moteur</h4>
+    <p>OK pour composer avec des repères tirés des études (séries par zone et par semaine, fréquence, ordre, repos, ce qu'on retire quand le temps manque) ? Toujours comme guide de composition, jamais comme dette à rembourser. Ça revient sur la décision 36 de la refonte (« aucune règle sportive universelle »).</p>
+    <p><span class="reco">Ma recommandation : oui.</span> Sans ça, « les meilleures séances possibles » reste une intention.</p>
+  </li>
+  <li>
+    <h4>La silhouette cliquable</h4>
+    <p>OK pour une silhouette où l'on touche une zone pour la viser, et qui montre en teal ce qui a été travaillé cette semaine ? Ça revient sur la décision 41 (« pas de jauges musculaires »).</p>
+    <p><span class="reco">Ma recommandation : oui</span>, si c'est le personnage Vaiiya des exercices et pas un écorché, et sans aucun pourcentage.</p>
+  </li>
+  <li>
+    <h4>La direction visuelle à maquetter</h4>
+    <ul class="choix"><li><b>A</b>Le corps</li><li><b>B</b>Le temps qui se voit</li><li><b>C</b>Le mois en affiche</li><li>Un mélange</li></ul>
+    <p><span class="reco">Ma recommandation : A et B dans le même écran, C pour le mois.</span> Je peux aussi faire deux maquettes très différentes pour que tu compares.</p>
+  </li>
+  <li>
+    <h4>Le contenu</h4>
+    <p>Pour cibler une zone à la maison, il faut au moins six exercices animés par zone et par lieu. Tu peux générer de nouvelles planches (ChatGPT, puis <span class="nombre">npm run guides</span>) si je te donne la liste exacte des mouvements manquants ?</p>
+    <p><span class="reco">Ma recommandation : oui</span>, une vingtaine de mouvements, en commençant par le dos, les épaules et les fessiers à la maison.</p>
+  </li>
+  <li>
+    <h4>Gratuit ou Vaiiya+ ?</h4>
+    <p>Le plan sur mesure entier en gratuit, ou une partie (le mois, les modes, les focus) réservée à Vaiiya+ quand la vente ouvrira ?</p>
+    <p><span class="reco">Ma recommandation : tout gratuit tant que la vente est fermée</span>, comme pour les records. On placera la frontière quand il y aura des gens pour nous dire ce qu'ils utilisent.</p>
+  </li>
+</ol>
+</section>
+
+<!-- SECTION_SOURCES -->
+
+<p class="pied">Dossier de travail : <span class="nombre">docs/planning-sur-mesure/</span>. Les notes complètes de chaque recherche, avec toutes leurs sources, sont dans <span class="nombre">recherche/</span>.</p>
+
+</div>
