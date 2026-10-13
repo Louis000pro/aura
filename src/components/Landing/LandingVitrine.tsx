@@ -165,20 +165,35 @@ const RANGEE_1 = ["Squat", "Pompes", "Gainage", "Fentes", "Jumping jacks", "Burp
 const RANGEE_2 = ["Rowing barre", "Élévations latérales", "Kettlebell swing", "Crunch", "Mountain climbers", "Hip thrust", "Dead bug", "Superman"];
 const anime = (n: string) => !!resolveGuide(n);
 
+/* ⚠️ Une MOITIÉ du rail doit être plus large que l'écran, sinon la fin du
+   rail entre à l'écran avant le raccord et la boucle saute. Huit cartes
+   font 1 312 px : c'était moins qu'un écran d'ordinateur, d'où un vide qui
+   grandissait à droite puis un saut (Louis, 2026-10-13). Deux tours par
+   moitié font 2 624 px. */
+const TOURS_PAR_MOITIE = 2;
+
 function Rangee({ noms, inverse = false }: { noms: string[]; inverse?: boolean }) {
   const liste = noms.filter(anime);
+  const moitie = Array.from({ length: TOURS_PAR_MOITIE }, () => liste).flat();
   return (
-    <div className={`${s.rail} ${inverse ? s.railInverse : ""}`}>
-      {/* La liste est rendue deux fois pour que la boucle n'ait pas de raccord ;
-          le second exemplaire est caché aux lecteurs d'écran. */}
-      {[0, 1].map((copie) => liste.map((nom) => (
-        <div key={`${copie}-${nom}`} className={s.mvt} aria-hidden={copie === 1 || undefined}>
-          <div className={s.mvtImage}>
-            <AnimationExercice nom={nom} taille="100%" label={copie === 0 ? nom : ""} />
-          </div>
-          <b>{nom}</b>
+    <div className={`${s.rail} ${inverse ? s.railInverse : ""}`} style={{ "--cartes": moitie.length } as React.CSSProperties}>
+      {/* Deux moitiés identiques : le rail recule d'exactement une moitié, puis
+          repart du début sans raccord. Seul le premier tour se lit à voix haute. */}
+      {[0, 1].map((copie) => (
+        <div key={copie} className={s.railMoitie} aria-hidden={copie === 1 || undefined}>
+          {moitie.map((nom, i) => {
+            const lu = copie === 0 && i < liste.length;
+            return (
+              <div key={`${i}-${nom}`} className={s.mvt} aria-hidden={(copie === 0 && !lu) || undefined}>
+                <div className={s.mvtImage}>
+                  <AnimationExercice nom={nom} taille="100%" label={lu ? nom : ""} />
+                </div>
+                <b>{nom}</b>
+              </div>
+            );
+          })}
         </div>
-      )))}
+      ))}
     </div>
   );
 }

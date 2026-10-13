@@ -277,20 +277,36 @@
 
 /* ═══════════════ 2 · LES MOUVEMENTS QUI DÉFILENT ═══════════════ */
 .mouvements { padding: 64px 0 72px; background: var(--creme); }
+/* ⚠️ LA BOUCLE EST CONTINUE SI ET SEULEMENT SI -50 % VAUT UNE MOITIÉ EXACTE.
+   Avec le `gap` posé sur le rail, il y avait un écart de moins entre les
+   deux moitiés qu'à l'intérieur : la boucle sautait d'un demi-écart. Le
+   `gap` vit donc DANS chaque moitié, et chacune finit par un écart
+   (`padding-right`), si bien que la seconde commence exactement là où la
+   première a commencé.
+   La vitesse ne dépend pas du nombre de cartes : la durée en découle
+   (`--cartes`, posé par le composant), soit 28 px/s à l'aller et 25 au
+   retour. Plafonné à 2 400 px : une moitié en fait 2 624. */
 .bandeau {
-  margin-top: 36px;
+  margin: 36px auto 0;
+  max-width: 2400px;
   overflow: hidden;
   -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
   mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
 }
 .rail {
   display: flex;
-  gap: 14px;
   width: max-content;
-  animation: defile 46s linear infinite;
+  animation: defile calc(var(--cartes, 16) * 5.75s) linear infinite;
+  will-change: transform;
 }
-.railInverse { animation-direction: reverse; animation-duration: 52s; margin-top: 14px; }
-.bandeau:hover .rail { animation-play-state: paused; }
+.railMoitie { display: flex; flex-shrink: 0; gap: 14px; padding-right: 14px; }
+.railInverse { animation-direction: reverse; animation-duration: calc(var(--cartes, 16) * 6.5s); margin-top: 14px; }
+/* La pause au survol ne vaut que pour une vraie souris : sur téléphone, un
+   toucher laisse `:hover` collé et le rail restait figé jusqu'au toucher
+   suivant. */
+@media (hover: hover) and (pointer: fine) {
+  .bandeau:hover .rail { animation-play-state: paused; }
+}
 @keyframes defile { to { transform: translate3d(-50%, 0, 0); } }
 .mvt {
   width: 150px;
@@ -372,10 +388,21 @@
 }
 .carteNote { margin-left: 8px; font-size: 11px; color: var(--encre-3); }
 
-/* La conversation se joue quand elle entre à l'écran */
+/* La conversation se joue quand elle entre à l'écran.
+   ⚠️ C'ÉTAIT LE « GRAND CARRÉ BLANC » (Louis, 2026-10-13) : `pop` n'était
+   défini nulle part dans ce module. Un nom de keyframes est LOCAL dans un
+   module CSS, donc il ne retrouvait pas non plus une animation globale :
+   l'animation n'existait pas, les messages restaient à l'opacité 0 posée
+   par `data-armee`, et seule la carte blanche vide s'affichait. D'où, en
+   plus de l'animation, l'état final écrit en clair sur `data-vu` : si
+   l'animation venait encore à manquer, les messages resteraient visibles. */
 .conversation [data-pas] { opacity: 1; }
 .conversation[data-armee] [data-pas] { opacity: 0; transform: translate3d(0, 12px, 0); }
-.conversation[data-vu] [data-pas] { animation: pop .55s var(--ease) both; }
+.conversation[data-vu] [data-pas] { opacity: 1; transform: none; animation: pop .55s var(--ease) both; }
+@keyframes pop {
+  from { opacity: 0; transform: translate3d(0, 12px, 0) scale(.98); }
+  to { opacity: 1; transform: none; }
+}
 .conversation[data-vu] [data-pas="2"] { animation-delay: .7s; }
 .conversation[data-vu] [data-pas="3"] { animation-delay: 1.5s; }
 .conversation[data-vu] [data-pas="4"] { animation-delay: 2.2s; }
@@ -547,9 +574,16 @@
   white-space: nowrap;
 }
 .macro b { font-weight: 800; }
-.macroA { left: 8%; top: 18%; }
-.macroB { right: 7%; top: 44%; }
-.macroC { left: 10%; bottom: 13%; }
+/* Chaque étiquette est CENTRÉE sur son aliment (Louis, 2026-10-13 : « le
+   saumon sur le riz »). La photo est carrée et le cadre en 4:5 en
+   `object-cover` : elle est rognée de 12,5 % de chaque côté, donc un point
+   (x, y) de l'image de 800 px tombe à x / 640 − 0,125 et y / 800 du cadre.
+   Points visés sur `poke-bowl-saumon-avocat.jpg` : riz (272, 568),
+   saumon (221, 280), avocat (464, 376). Changer de photo = refaire ces calculs. */
+.macroA, .macroB, .macroC { transform: translate(-50%, -50%); }
+.macroA { left: 30%; top: 71%; }
+.macroB { left: 22%; top: 35%; }
+.macroC { left: 60%; top: 47%; }
 .resultat {
   position: absolute;
   z-index: 3;
@@ -634,14 +668,23 @@
   box-shadow: 0 50px 80px -40px rgba(40, 20, 80, .6);
   transform: rotate(-3deg);
 }
-.affiche > div { position: absolute; inset: 0; animation: etat 10s linear infinite; opacity: 0; }
+/* ⚠️ L'AFFICHE ET LES QUATRE TRAITS SUIVENT UNE SEULE HORLOGE DE 12 s, ET
+   C'EST LA RÈGLE DE L'APP (`etatPoster` dans lib/defi.ts) : zéro séance =
+   état 01, puis 1 → 02, 2 → 03, 3 → 03, 4 → 04. Une séance toutes les 2 s,
+   l'affiche complète tient jusqu'à 95 %, puis tout repart d'un coup.
+   Avant (Louis, 2026-10-13 : « ils ne se suivent pas »), chaque trait
+   avait sa propre boucle décalée : le 4ᵉ restait plein pendant que le 1ᵉʳ
+   se vidait, et l'affiche ne parlait pas aux traits.
+   Les états s'EMPILENT (02 sur 01, 03 sur 02, 04 sur 03) : l'état 01 reste
+   en dessous, sans animation, et tous les autres s'effacent ensemble. */
+.affiche > div { position: absolute; inset: 0; opacity: 0; }
 .affiche > div:first-child { opacity: 1; }
-.affiche > div:nth-child(2) { animation-delay: 2.5s; }
-.affiche > div:nth-child(3) { animation-delay: 5s; }
-.affiche > div:nth-child(4) { animation-delay: 7.5s; }
-.affiche > div:first-child { animation-name: etatBase; }
-@keyframes etat { 0% { opacity: 0; } 6%, 25% { opacity: 1; } 31%, 100% { opacity: 0; } }
-@keyframes etatBase { 0%, 25% { opacity: 1; } 31%, 94% { opacity: 0; } 100% { opacity: 1; } }
+.affiche > div:nth-child(2) { animation: seance1 12s linear infinite; }
+.affiche > div:nth-child(3) { animation: seance2 12s linear infinite; }
+.affiche > div:nth-child(4) { animation: seance4 12s linear infinite; }
+@keyframes seance1 { 0%, 16.667% { opacity: 0; } 20.667%, 95% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes seance2 { 0%, 33.333% { opacity: 0; } 37.333%, 95% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes seance4 { 0%, 66.667% { opacity: 0; } 70.667%, 95% { opacity: 1; } 100% { opacity: 0; } }
 .afficheSignature {
   position: absolute; z-index: 2; inset: auto 0 18px; text-align: center;
   color: #fff; font-size: 13px; font-weight: 300; letter-spacing: .3em;
@@ -656,13 +699,15 @@
   content: ""; position: absolute; inset: 0;
   background: #8B5CF6;
   transform: scaleX(0); transform-origin: left;
-  animation: maillon 10s linear infinite;
 }
-.maillons i:nth-child(1)::after { animation-delay: 0s; }
-.maillons i:nth-child(2)::after { animation-delay: 2.5s; }
-.maillons i:nth-child(3)::after { animation-delay: 5s; }
-.maillons i:nth-child(4)::after { animation-delay: 7.5s; }
-@keyframes maillon { 0% { transform: scaleX(0); } 6%, 94% { transform: scaleX(1); } 100% { transform: scaleX(0); } }
+.maillons i:nth-child(1)::after { animation: trait1 12s linear infinite; }
+.maillons i:nth-child(2)::after { animation: trait2 12s linear infinite; }
+.maillons i:nth-child(3)::after { animation: trait3 12s linear infinite; }
+.maillons i:nth-child(4)::after { animation: trait4 12s linear infinite; }
+@keyframes trait1 { 0%, 16.667% { transform: scaleX(0); } 20.667%, 95% { transform: scaleX(1); } 100% { transform: scaleX(0); } }
+@keyframes trait2 { 0%, 33.333% { transform: scaleX(0); } 37.333%, 95% { transform: scaleX(1); } 100% { transform: scaleX(0); } }
+@keyframes trait3 { 0%, 50% { transform: scaleX(0); } 54%, 95% { transform: scaleX(1); } 100% { transform: scaleX(0); } }
+@keyframes trait4 { 0%, 66.667% { transform: scaleX(0); } 70.667%, 95% { transform: scaleX(1); } 100% { transform: scaleX(0); } }
 
 /* ═══════════════ 9 · LE COMPTE GRATUIT + VAIIYA+ ═══════════════ */
 .offre { background: var(--creme); }
@@ -758,5 +803,8 @@
   .conversation[data-armee] [data-pas] { opacity: 1; transform: none; }
   .rail { flex-wrap: nowrap; }
   .bandeau { overflow-x: auto; }
+  /* Sans mouvement, l'affiche finie et les quatre traits pleins disent la
+     même chose : le relais gagné. */
   .maillons i::after { transform: scaleX(1); }
+  .affiche > div:last-child { opacity: 1; }
 }
