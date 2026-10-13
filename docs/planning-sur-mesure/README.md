@@ -13,8 +13,10 @@ avant ses réponses (règle AGENTS.md : maquette d'abord, code après validation
 
 ## Fichiers
 
-- `01-recap.html` : le récap écrit (ce qui existe, concurrents, science, design, pistes, questions).
-  Autonome, il s'ouvre dans un navigateur. Publié pour Louis : https://claude.ai/artifact/UiQHjxkrygGy7pJ4QVAHXk
+- `01-recap.html` : la version courte et visuelle pour Louis (deux minutes, sept réponses à cocher).
+  Publiée : https://claude.ai/artifact/UiQHjxkrygGy7pJ4QVAHXk
+- `01-recap-detaille.html` : la version complète pour les agents (ce qui existe, concurrents, science,
+  design, pistes, onze questions). Autonome, elle s'ouvre dans un navigateur.
 - `recherche/` : les notes de recherche complètes, avec leurs sources.
   - `A1-muscu.md` : applis de musculation et de salle qui adaptent un plan.
   - `A2-guidees.md` : séances guidées, cours, constructeurs de plan, acteurs français.
