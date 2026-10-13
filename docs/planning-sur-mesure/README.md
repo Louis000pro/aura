@@ -8,8 +8,28 @@ exercices ; et beau au point de surprendre.
 Il fait suite à la refonte du planning d'octobre (`docs/refonte-planning/`, vagues R1 à R9, en production).
 Le moteur de cette refonte ne change pas ; ce chantier porte sur ce que la personne règle et voit.
 
-**Rien n'est décidé.** Le récap ci-dessous sert à poser les questions à Louis. Aucune maquette ni aucun code
-avant ses réponses (règle AGENTS.md : maquette d'abord, code après validation explicite).
+**Rien n'est codé.** Aucune maquette ni aucun code avant le GO de Louis (règle AGENTS.md : maquette d'abord,
+code après validation explicite).
+
+## Réorientation du 2026-10-13
+
+Après le récap, Louis : « bien trop compliqué pour quelque chose qui doit être accessible pour tous ».
+Les sept questions du récap sont donc caduques. La règle qui les remplace :
+
+- **L'évidence en grand, la personnalisation en plus petit.** Plus un réglage est personnel et niche, plus il
+  est discret. Discret ne veut pas dire inaccessible : il reste trouvable par qui le cherche.
+- Le modèle cité est Duolingo : on ouvre, c'est guidé, pas une forêt de réglages.
+- La grille « Mon plan » du récap (4 réglages × 4 portées) est abandonnée.
+
+Piste proposée, pas encore validée, en trois étages :
+
+1. **En grand** : la séance du jour et la semaine, un bouton, aucun réglage. La plupart des gens s'arrêteront
+   là, donc les séances par défaut doivent être excellentes (les écarts du moteur passent en premier).
+2. **En petit** : un « Ajuster » discret sur une séance, avec la durée et la zone.
+3. **Discret** : tout le reste se demande au Guide ; le réglage à la main reste au fond.
+
+Question ouverte : faire de Nora et Sasha de vrais agents (une demande menée de A à Z). Avis et conditions
+dans AGENTS.md, chantier « Le planning sur mesure ».
 
 ## Fichiers
 
