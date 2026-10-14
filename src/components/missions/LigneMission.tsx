@@ -66,7 +66,7 @@ export default function LigneMission({
   const route = debloquee ? mission.route : "/premium";
 
   /* ⚠️ LA CONDITION RESTE SOUS LE TITRE, elle ne se fait remplacer par
-     rien. « Ouvrir Vaiiya. Ne valide pas ta journée. » porte la règle la
+     rien. « Ouvrir Vaiiya. Tient ta série. » porte la règle la
      plus importante du système : c'est la seule phrase de l'app qui dit
      que venir ne suffit pas. Ce qu'il reste à faire prend donc la place
      de l'ancien « À FAIRE », qui n'apprenait rien. */

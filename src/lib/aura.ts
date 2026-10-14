@@ -204,9 +204,9 @@ export const MISSIONS: Mission[] = [
   {
     id: "connexion",
     titre: "Connexion du jour",
-    // ⚠️ Cette phrase porte la règle la plus importante du système : venir ne
-    // suffit pas. Ne pas l'adoucir, c'est elle qui rend la série lisible.
-    condition: "Ouvrir Vaiiya. Ne valide pas ta journée.",
+    // Depuis le 2026-10-14 (Louis), venir tient la série (`serie_aura`).
+    // Les missions de la semaine, elles, comptent toujours séance ou repas.
+    condition: "Ouvrir Vaiiya. Tient ta série.",
     exp: EXP_CONNEXION,
     periode: "jour",
     premium: false,

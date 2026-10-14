@@ -119,7 +119,7 @@ export default function FeuilleMissions({
         {/* La règle qui explique tout le reste, une fois, en bas. Elle ne
             se dit nulle part ailleurs depuis que l'accueil ne liste plus
             les missions. */}
-        <p className={styles.regle}>Ouvrir Vaiiya ne valide pas ta journée.</p>
+        <p className={styles.regle}>Ouvrir Vaiiya chaque jour suffit à tenir ta série.</p>
       </div>
     </Sheet>
   );
