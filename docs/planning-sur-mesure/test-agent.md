@@ -77,14 +77,24 @@ autorités du moteur servent d'outils, jamais une écriture directe en base.
 ## Ce qui bloque : le palier gratuit de Groq
 
 Les en-têtes de Groq le disent : 8 000 jetons par minute et 1 000 requêtes par jour sur `gpt-oss-120b`.
-Une demande à l'agent consomme 10 000 à 17 000 jetons. L'agent attend donc son quota, jusqu'à 44 s sur
-un essai, et quelques demandes par jour pèsent autant que des dizaines de messages au coach.
+Une demande à l'agent consomme 10 000 à 17 000 jetons, donc plus que le quota d'une minute à elle seule.
+L'agent attend son quota, jusqu'à 44 s sur un essai, et le coach partage ce même quota.
 
 Pour comparer, la production a fait ce jour-là 6 appels de conversation, 6 de mémoire, 4 récaps et 2
 générations de séance (table `ai_usage_daily`).
 
-En payant, une demande coûterait environ 0,2 à 0,3 centime : environ 0,15 $ par million de jetons en
-entrée et 0,60 $ en sortie. Ces prix viennent de sites tiers et restent à confirmer sur la page de Groq.
+**Le blocage vient du quota, pas du prix.** En payant, une demande coûterait environ 0,2 à 0,3 centime :
+environ 0,15 $ par million de jetons en entrée et 0,60 $ en sortie. Ces prix viennent de sites tiers et
+restent à confirmer sur la page de Groq. C'est à peu près le double d'un message au coach, qui fait déjà
+trois appels (aiguilleur, coach, mémoire) pour environ 8 000 à 9 000 jetons. Ce chiffre est estimé d'après
+la taille des consignes, il n'est pas mesuré : les 17 outils de l'aiguilleur pèsent à eux seuls 14 800
+caractères, et la consigne du coach environ 13 000. Une demande à l'agent mène une tâche entière, là où le
+coach fait une action par message.
+
+Sur les 30 jours jusqu'au 13 octobre, toute l'IA de Vaiiya (89 messages au coach, 77 récaps, 36 séances
+générées et une trentaine d'autres appels) aurait coûté environ 0,25 € au palier payant. Groq facture à
+l'usage, sans abonnement, en fin de mois ou à des paliers (1 $, 10 $…), et pas en dessous de 0,50 $
+([FAQ de facturation de Groq](https://console.groq.com/docs/billing-faqs)).
 
 ## La suite proposée
 
