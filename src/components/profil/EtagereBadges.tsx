@@ -37,12 +37,14 @@ export default function EtagereBadges({ slugs, titre, progres }: {
 
   return (
     <div className="mb-8">
-      <p
-        className="mb-3 text-[11px] font-bold uppercase tracking-[0.14em]"
-        style={{ color: "var(--text-3)" }}
-      >
-        {titre}
-      </p>
+      <div className="flex items-baseline justify-between mb-3.5">
+        <h2 className="vy-sous" style={{ margin: 0, color: "var(--text-0)" }}>{titre}</h2>
+        {badges.length > 0 && (
+          <span className="vy-nombre text-[13px]" style={{ color: "var(--text-2)" }}>
+            {badges.length} {badges.length > 1 ? "gagnés" : "gagné"}
+          </span>
+        )}
+      </div>
 
       {badges.length > 0 && (
         <div className="flex flex-wrap gap-5">

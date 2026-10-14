@@ -5,8 +5,8 @@ import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  X, Check, Lock, Crown, Camera, ChevronRight,
-  Pencil, Dumbbell, Play, Users, Sparkles, Settings, Trash2, Shield, Share2,
+  X, Check, Lock, Camera, ChevronRight,
+  Pencil, Dumbbell, Play, Settings, Trash2, Share2,
 } from "lucide-react";
 import PerformanceCard, { type PerformanceData } from "@/components/PerformanceCard";
 import PerfShareCard from "@/components/PerfShareCard";
@@ -469,6 +469,7 @@ export default function ProfilPage() {
   const { launchWorkout } = useWorkoutLaunch();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<"collection" | "progres" | "amis">("collection");
+  const [objectifsOuverts, setObjectifsOuverts] = useState(false);
   const [avecQui, setAvecQui] = useState(false);
   const [afficheAEnvoyer, setAfficheAEnvoyer] = useState<PerfShareData | null>(null);
   const [aura, setAura] = useState<EtatAura | null>(null);
@@ -695,6 +696,27 @@ export default function ProfilPage() {
     return () => { vivant = false; };
   }, [user?.id]);
 
+  /* Les dérivés de l'en-tête (maquette du 2026-10-14). */
+  const objectifs: string[] = [];
+  for (const id of profileGoals) {
+    const libelle = GOALS_LIST.find((g) => g.id === id)?.label;
+    if (libelle) objectifs.push(libelle);
+  }
+  const niveau = profileLevel ? (LEVELS_LIST.find((l) => l.id === profileLevel)?.label ?? profileLevel) : null;
+  const serieJours = Math.max(1, aura?.detail.streak ?? 0);
+  const rangSuivant = aura ? RANGS[RANGS.findIndex((r) => r.id === aura.rang.id) + 1] ?? null : null;
+  const membreDepuis = inscritLe
+    ? new Date(inscritLe).toLocaleDateString("fr-FR", new Date(inscritLe).getFullYear() === new Date().getFullYear() ? { month: "long" } : { month: "long", year: "numeric" })
+    : null;
+  const partagerProfil = async () => {
+    const url = `${window.location.origin}/profil/${encodeURIComponent(displayPseudo)}`;
+    try {
+      if (navigator.share) { await navigator.share({ title: `${displayPseudo} sur Vaiiya`, url }); return; }
+      await navigator.clipboard.writeText(url);
+      showToast("Lien du profil copié");
+    } catch { /* partage annulé : rien à dire */ }
+  };
+
   return (
     <div className="relative min-h-screen pb-28">
 
@@ -707,79 +729,108 @@ export default function ProfilPage() {
         }}
       />
 
-      {/* ─── Notifs + Premium + Settings — top RIGHT ─── */}
-      <div className="absolute top-4 right-4 z-40 flex items-center gap-2">
-        <NotificationBell side="top" />
-        {/* L'icône chaîne « provisoire » vers /defi a été retirée le
-            2026-08-30 : le relais a maintenant sa place, et c'est la
-            conversation. Cinq boutons y menaient dans l'app, aucun là où
-            l'on arrive ; celui-ci ouvrait un écran qui n'était relié à
-            rien et dont on ne ressortait que par le bouton du navigateur.
-            Les affiches gagnées, elles, restent dans la galerie ci-dessous. */}
-        <Link href="/premium">
-          <motion.div
-            whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.9 }}
-            className="w-9 h-9 rounded-2xl flex items-center justify-center cursor-pointer"
-            style={{
-              background: "linear-gradient(135deg,#8B5CF6,#C13BC1)",
-              boxShadow: "var(--ombre-action)",
-            }}
-            aria-label="Vaiiya+"
-          >
-            <Crown size={15} strokeWidth={2} style={{ color: "#fff" }} />
-          </motion.div>
-        </Link>
-        {/* Administration : l'écran existait déjà sur téléphone, mais au bout de
-            quatre taps (Profil → Paramètres → tout en bas). Il vit là où on le
-            cherche, et seulement pour un admin. */}
-        {user?.is_admin && (
-          <Link href="/admin">
-            <motion.div
-              whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.9 }}
-              /* Le verre, la bordure dorée et le halo sont partis : la cloche
-                 juste à côté est une icône NUE, donc c'était ce bouton-ci
-                 l'intrus. Une seule action colorée dans la rangée, la couronne. */
-              className="w-9 h-9 rounded-2xl flex items-center justify-center cursor-pointer"
-              aria-label="Administration"
+      {/* ─── LE PROFIL REFAIT (maquette « Le profil Vaiiya », validée par
+           Louis le 2026-10-14) ───
+           Le nom devient le titre de l'écran, la photo passe à droite, les
+           trois chiffres perdent leur carte, le rang dit ce qui reste à
+           faire, et les onglets se soulignent au lieu de se remplir de
+           violet. La couronne Vaiiya+ et le bouclier admin quittent la
+           rangée du haut : les deux vivent dans les Paramètres, et le violet
+           plein reste réservé à l'action. ─── */}
+      <div data-tour-anchor="profil-header" className="relative z-10 pt-14 px-5 md:px-8 max-w-3xl mx-auto">
+
+        <div className="flex items-center justify-between">
+          <span className="vy-label" style={{ color: "var(--text-2)" }}>Ton profil</span>
+          <div className="flex items-center gap-2.5">
+            <span className="w-11 h-11 rounded-full flex items-center justify-center" style={{ background: "rgba(var(--surface-rgb),0.62)", border: "1px solid rgba(255,255,255,0.6)", boxShadow: "var(--ombre-pose)" }}>
+              <NotificationBell side="top" />
+            </span>
+            <Link
+              href="/parametres"
+              aria-label="Paramètres"
+              className="w-11 h-11 rounded-full flex items-center justify-center"
+              style={{ background: "rgba(var(--surface-rgb),0.62)", border: "1px solid rgba(255,255,255,0.6)", boxShadow: "var(--ombre-pose)" }}
             >
-              <Shield size={17} strokeWidth={1.8} style={{ color: "var(--or-encre)" }} />
-            </motion.div>
-          </Link>
-        )}
-        <Link href="/parametres">
-          <motion.div
-            whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.9 }}
-            className="w-9 h-9 rounded-2xl flex items-center justify-center cursor-pointer"
-          >
-            <Settings size={17} strokeWidth={1.7} style={{ color: "var(--text-2)" }} />
-          </motion.div>
-        </Link>
-      </div>
+              <Settings size={19} strokeWidth={1.8} style={{ color: "var(--text-0)" }} />
+            </Link>
+          </div>
+        </div>
 
-      {/* ─── Header ─── */}
-      <div data-tour-anchor="profil-header" className="relative z-10 pt-12 px-5 md:px-8 max-w-3xl mx-auto">
-
-        {/* Avatar + pseudo + bio */}
+        {/* Le nom à gauche, en héros ; la photo à droite, dans son cadre de rang. */}
         <motion.div
-          initial={{ opacity: 0, y: -12 }}
+          initial={{ opacity: 0, y: -8 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-          className="flex flex-col items-center text-center mb-6"
+          transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+          className="flex items-start gap-4 mt-6"
         >
-          {/* Avatar — container 120x120, crayon en badge bottom-right en dehors.
-              AvatarRang pose par-dessus les décorations gagnées (cadre doré à l'Or,
-              anneau animé au Platine) : rien à activer, ça suit le rang. */}
-          <AvatarRang rang={rangCourant} cosmetiques={cosmetiques} size={120} className="mb-4">
-            {/* Cercle avatar cliquable */}
-            <motion.div
-              whileHover={{ scale: 1.03 }}
-              whileTap={{ scale: 0.96 }}
+          <div className="flex-1 min-w-0 flex flex-col gap-2 pt-1">
+            <div className="flex items-center gap-2 min-w-0">
+              <h1
+                className="min-w-0"
+                style={{ margin: 0, fontSize: 34, lineHeight: 1, fontWeight: 850, fontVariationSettings: "var(--w-affiche)", letterSpacing: "-0.02em", color: "var(--text-0)", overflowWrap: "anywhere" }}
+              >
+                <PseudoRang rang={rangCourant} cosmetiques={cosmetiques} pseudo={displayPseudo} tailleGemme={22} />
+              </h1>
+              {(user?.is_certified || user?.is_admin || user?.email === "teyprox@gmail.com") && (
+                <span
+                  title="Compte certifié"
+                  aria-label="Compte certifié"
+                  className="flex items-center justify-center rounded-full flex-shrink-0"
+                  style={{ width: 22, height: 22, background: "linear-gradient(135deg,#8B5CF6,#C13BC1)" }}
+                >
+                  <svg width="12" height="12" viewBox="0 0 13 13" fill="none" aria-hidden>
+                    <path d="M2.5 6.5L5 9L10.5 4" stroke="white" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </span>
+              )}
+            </div>
+
+            <TitreRang cosmetiques={cosmetiques} />
+
+            {/* Le rang et l'ancienneté, en une ligne discrète. */}
+            {aura && (
+              <div className="flex items-center gap-1.5 vy-label" style={{ color: "var(--text-2)" }}>
+                <GemmeRang rang={aura.rang} size={18} flotte={false} />
+                <span style={{ fontWeight: 700, color: "var(--or-encre)" }}>{aura.rang.nom}</span>
+                {membreDepuis && <><span>·</span><span>membre depuis {membreDepuis}</span></>}
+              </div>
+            )}
+
+            {/* Un objectif et le niveau ; le reste se déplie au toucher. Cinq
+                objectifs en violet prenaient deux lignes et se lisaient comme
+                une liste de mots-clés. */}
+            {(objectifs.length > 0 || niveau) && (
+              <p className="vy-corps" style={{ margin: 0, color: "var(--text-0)" }}>
+                {(objectifsOuverts ? objectifs : objectifs.slice(0, 1)).concat(niveau ? [niveau] : []).join(" · ")}
+                {!objectifsOuverts && objectifs.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => setObjectifsOuverts(true)}
+                    className="ml-1.5 cursor-pointer"
+                    style={{ fontSize: 13, fontWeight: 600, color: "var(--exp-encre)" }}
+                    aria-label={`Voir les ${objectifs.length - 1} autres objectifs`}
+                  >
+                    +{objectifs.length - 1}
+                  </button>
+                )}
+              </p>
+            )}
+
+            {profileBio && (
+              <p className="vy-label" style={{ margin: 0, color: "var(--text-2)", fontWeight: 400 }}>
+                « {profileBio} »
+              </p>
+            )}
+          </div>
+
+          <AvatarRang rang={rangCourant} cosmetiques={cosmetiques} size={108} className="flex-shrink-0 mt-0.5">
+            <button
+              type="button"
               onClick={() => setShowEdit(true)}
+              aria-label="Modifier la photo"
               className="absolute inset-0 cursor-pointer rounded-full"
             >
-              {/* Séparateur blanc */}
               <div className="absolute rounded-full" style={{ inset: 0, background: "rgb(var(--surface-rgb))" }} />
-              {/* Photo */}
               <div
                 className="absolute rounded-full overflow-hidden flex items-center justify-center text-[34px]"
                 style={{
@@ -787,224 +838,149 @@ export default function ProfilPage() {
                   background: displayAvatar ? "transparent" : "linear-gradient(135deg,rgba(var(--tint-violet-rgb),1),rgba(var(--tint-cream-rgb),1))",
                   color: "var(--exp-encre)",
                   fontWeight: 300,
-                  boxShadow: "var(--ombre-pose)",
                 }}
               >
                 {displayAvatar
                   // eslint-disable-next-line @next/next/no-img-element
-                  ? <img loading="lazy" decoding="async" src={displayAvatar} alt="avatar" className="w-full h-full object-cover" />
+                  ? <img loading="lazy" decoding="async" src={displayAvatar} alt="" className="w-full h-full object-cover" />
                   : <span>{displayPseudo.charAt(0).toUpperCase() || "?"}</span>}
               </div>
-            </motion.div>
-
-            {/* Crayon — badge bottom-right, légèrement en dehors du cercle */}
-            <motion.button
-              whileHover={{ scale: 1.15 }}
-              whileTap={{ scale: 0.9 }}
+            </button>
+            {/* Le crayon passe en encre sombre : le violet plein est l'action
+                de l'écran, et changer sa photo n'en est pas une. */}
+            <button
+              type="button"
               onClick={() => setShowEdit(true)}
-              className="absolute flex items-center justify-center rounded-full"
-              style={{
-                width: 32, height: 32,
-                bottom: -6, right: -6,
-                background: "linear-gradient(135deg,#8B5CF6,#C13BC1)",
-                boxShadow: "var(--ombre-action)",
-                border: "3px solid rgb(var(--surface-rgb))",
-                zIndex: 30,
-              }}
+              aria-label="Modifier le profil"
+              className="absolute flex items-center justify-center rounded-full cursor-pointer"
+              style={{ width: 34, height: 34, bottom: -2, right: -4, background: "var(--text-0)", border: "2px solid rgb(var(--surface-rgb))", zIndex: 30 }}
             >
-              <Pencil size={13} strokeWidth={2.3} style={{ color: "#fff" }} />
-            </motion.button>
+              <Pencil size={14} strokeWidth={2.2} style={{ color: "rgb(var(--surface-rgb))" }} />
+            </button>
           </AvatarRang>
-
-          {/* Pseudo + badge vérifié (+ gemme de rang à l'Argent, brillance à l'Éternel) */}
-          <div className="flex items-center gap-2">
-            <h1 className="vy-titre" style={{ color: "var(--text-0)" }}>
-              <PseudoRang
-                rang={rangCourant}
-                cosmetiques={cosmetiques}
-                pseudo={displayPseudo}
-                tailleGemme={22}
-              />
-            </h1>
-            {(user?.is_certified || user?.is_admin || user?.email === "teyprox@gmail.com") && (
-              <motion.div
-                initial={{ scale: 0, rotate: -20 }}
-                animate={{ scale: 1, rotate: 0 }}
-                transition={{ type: "spring", bounce: 0.5, delay: 0.3 }}
-                title="Compte certifié"
-                className="flex items-center justify-center rounded-full flex-shrink-0"
-                style={{
-                  width: 24, height: 24,
-                  background: "linear-gradient(135deg,#8B5CF6,#C13BC1)",
-                }}
-              >
-                <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
-                  <path d="M2.5 6.5L5 9L10.5 4" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              </motion.div>
-            )}
-          </div>
-
-          {/* Titre débloqué au Diamant */}
-          <TitreRang cosmetiques={cosmetiques} />
-
-          {/* Objectifs et niveau : une seule ligne, une seule idée. */}
-          {(profileGoals.length > 0 || profileLevel) && (
-            <p className="vy-label mt-2 max-w-[290px]" style={{ color: "var(--exp-encre)" }}>
-              {[
-                ...profileGoals
-                  .map((id) => GOALS_LIST.find((g) => g.id === id))
-                  .filter(Boolean)
-                  .map((g) => g!.label),
-                ...(profileLevel
-                  ? [LEVELS_LIST.find((l) => l.id === profileLevel)?.label ?? profileLevel]
-                  : []),
-              ].join(" · ")}
-            </p>
-          )}
-
-          {/* Bio */}
-          {profileBio && (
-            <p className="vy-corps mt-2.5 max-w-[280px]">
-              {profileBio}
-            </p>
-          )}
         </motion.div>
 
-        {/* ─── LE RANG ET LES TROIS CHIFFRES SONT UN SEUL ENSEMBLE ───
-             C'étaient deux cartes au style STRICTEMENT identique (même surface
-             translucide, même bordure violette, même halo, même verre dépoli),
-             posées l'une sous l'autre avec 12 px entre elles. Deux surfaces
-             pour une seule idée, « où j'en suis », c'est la forme qui fait
-             « tableau de bord généré ».
-             Le modèle est celui des Paramètres : UN groupe, des filets à
-             l'intérieur. La séparation vient du trait, pas d'une deuxième
-             surface. Et comme le bloc ne flotte au-dessus de rien, il n'a ni
-             ombre ni verre. ─── */}
-        <motion.section
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
-          className="mb-5 overflow-hidden"
-          style={{
-            borderRadius: "var(--r-bloc)",
-            background: "rgba(var(--surface-rgb),0.9)",
-            border: "1px solid rgba(var(--text-3-rgb),0.16)",
-          }}
-        >
-          {/* Le rang. `.vy-filet` porte le trait qui le sépare du trio :
-              la règle est `.vy-filet + .vy-filet`, donc c'est le SECOND qui
-              le reçoit, et un jour où l'un des deux disparaîtrait il n'y
-              aurait pas de trait orphelin. */}
-          <motion.button
-            whileTap={{ scale: 0.99 }}
-            /* Tant que l'aura n'est pas lue, la ligne montre un squelette : on
-               n'ouvre pas la galerie dessus, elle annoncerait « Bronze · 0 EXP »
-               comme rang courant à quelqu'un qui est peut-être Diamant. */
-            onClick={() => { if (aura) setShowRangs(true); }}
-            className="vy-filet w-full flex items-center gap-4 px-4 py-4 cursor-pointer text-left"
+        {/* Deux gestes de même rang, donc deux boutons discrets et égaux. */}
+        <div className="flex gap-2 mt-5">
+          <button
+            type="button"
+            onClick={() => setShowEdit(true)}
+            className="flex-1 h-11 rounded-full flex items-center justify-center cursor-pointer"
+            style={{ background: "rgba(var(--surface-rgb),0.7)", border: "1px solid rgba(var(--text-3-rgb),0.16)", fontSize: 13, fontWeight: 700, color: "var(--text-0)" }}
           >
-            {aura ? (
-              <>
-                <div className="flex-shrink-0"><GemmeRang rang={aura.rang} size={44} /></div>
-                <div className="flex-1 min-w-0">
-                  <span className="vy-label block">Ton rang</span>
-                  <p className="vy-sous mt-0.5" style={{ color: "var(--text-0)" }}>{aura.rang.nom}</p>
-                  <p className="vy-label mt-1" style={{ color: "var(--text-soft)" }}>
-                    <span style={{ color: "var(--exp-encre)", fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>{aura.exp}</span> / {aura.seuilHaut} EXP
-                  </p>
-                  <div className="h-[6px] rounded-full mt-2 overflow-hidden" style={{ background: "rgba(var(--tint-violet-rgb),0.9)" }}>
-                    <div className="h-full rounded-full" style={{
-                      width: `${Math.min(100, Math.max(4, ((aura.exp - aura.seuilBas) / Math.max(1, aura.seuilHaut - aura.seuilBas)) * 100))}%`,
-                      background: "linear-gradient(90deg,#8B5CF6,#C13BC1)",
-                    }} />
-                  </div>
-                </div>
-                <ChevronRight size={18} strokeWidth={2} style={{ color: "var(--text-3)" }} />
-              </>
-            ) : (
-              <div className="h-[60px] w-full animate-pulse" style={{ borderRadius: "var(--r-controle)", background: "rgba(var(--tint-violet-rgb),0.5)" }} />
-            )}
-          </motion.button>
+            Modifier le profil
+          </button>
+          <button
+            type="button"
+            onClick={partagerProfil}
+            className="flex-1 h-11 rounded-full flex items-center justify-center gap-1.5 cursor-pointer"
+            style={{ background: "rgba(var(--surface-rgb),0.7)", border: "1px solid rgba(var(--text-3-rgb),0.16)", fontSize: 13, fontWeight: 700, color: "var(--text-0)" }}
+          >
+            <Share2 size={15} strokeWidth={2} />
+            Partager
+          </button>
+        </div>
 
-          {/* Les trois chiffres : la même question, « où j'en suis », donc le
-              même ensemble. */}
-          <div className="vy-filet flex items-stretch">
-            {[
-              { label: "Amis", value: followingCount !== null ? String(followingCount) : "0", clickable: true, tab: "amis" as const, encre: "var(--text-0)" },
-              { label: "Séances", value: sessionCount !== null ? String(sessionCount) : "0", clickable: true, tab: "progres" as const, encre: "var(--text-0)" },
-              /* La série est le seul des trois qui porte une couleur, et c'est
-                 l'orange de l'ÉNERGIE (système D). Elle était en encre normale,
-                 donc la flamme était le seul signe et elle se lisait comme un
-                 emoji décoratif posé devant un chiffre. */
-              { label: "Série", value: `🔥 ${Math.max(1, aura?.detail.streak ?? 0)}`, clickable: false, tab: null, encre: "var(--feu-encre)" },
-            ].map(({ label, value, clickable, tab, encre }, i) => (
-              <div key={label} className="flex items-stretch flex-1">
-                {i > 0 && (
-                  <div className="w-px self-stretch my-4" style={{ background: "rgba(var(--text-3-rgb),0.16)" }} />
-                )}
-                <motion.button
-                  whileTap={clickable ? { scale: 0.96 } : {}}
-                  onClick={() => { if (tab) setActiveTab(tab); }}
-                  className="flex-1 flex flex-col items-center py-4"
-                  style={{ cursor: clickable ? "pointer" : "default" }}
-                >
-                  {/* Les trois chiffres du profil. Ils étaient à 24 px en graisse 900,
-                      soit la même présence qu'un titre de section : rien ne disait que
-                      c'était eux qu'on vient regarder ici. Ils grandissent, leur graisse
-                      descend (900 n'existait pas dans les fichiers de la police, le
-                      navigateur le fabriquait) et ils passent en chasse fixe, pour que
-                      la ligne ne se décale pas quand la série passe de 9 à 10. */}
-                  <span className="vy-nombre text-[26px] leading-none" style={{ color: encre }}>
-                    {value}
-                  </span>
-                  {/* ⚠️ L'encre, pas `--accent` : le violet décoratif tombe à 2,6:1 sur
-                      le blanc, et ce libellé porte une action. */}
-                  <span className="vy-label mt-2" style={{ color: clickable ? "var(--exp-encre)" : "var(--text-2)" }}>
-                    {label}
-                  </span>
-                </motion.button>
-              </div>
-            ))}
-          </div>
-        </motion.section>
-
-        {/* ─── Tabs ─── */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.3 }}
-          className="flex gap-1 mb-6 p-1"
-          style={{
-            borderRadius: "calc(var(--r-controle) + 4px)",
-            background: "rgba(var(--tint-violet-rgb),0.7)",
-          }}
+        {/* Les trois chiffres, sans carte : des traits suffisent à les séparer. */}
+        <div
+          className="grid grid-cols-3 mt-6"
+          style={{ borderTop: "1px solid rgba(var(--text-3-rgb),0.16)", borderBottom: "1px solid rgba(var(--text-3-rgb),0.16)" }}
         >
+          {[
+            { label: (followingCount ?? 0) > 1 ? "amis" : "ami", value: String(followingCount ?? 0), tab: "amis" as const, feu: false },
+            { label: (sessionCount ?? 0) > 1 ? "séances" : "séance", value: String(sessionCount ?? 0), tab: "progres" as const, feu: false },
+            { label: serieJours > 1 ? "jours de série" : "jour de série", value: String(serieJours), tab: null, feu: true },
+          ].map(({ label, value, tab, feu }, i) => (
+            <button
+              key={label}
+              type="button"
+              onClick={() => { if (tab) setActiveTab(tab); }}
+              className="flex flex-col items-start gap-0.5 py-4 text-left"
+              style={{ cursor: tab ? "pointer" : "default", paddingLeft: i === 0 ? 2 : 18, borderLeft: i > 0 ? "1px solid rgba(var(--text-3-rgb),0.16)" : "none" }}
+            >
+              <span className="vy-nombre flex items-center gap-1 text-[26px] leading-none" style={{ color: feu ? "var(--feu-encre)" : "var(--text-0)", fontWeight: 700 }}>
+                {feu && (
+                  <svg width="16" height="20" viewBox="0 0 24 28" aria-hidden>
+                    <defs><linearGradient id="profil-feu" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#F5B120" /><stop offset="1" stopColor="#E8620C" /></linearGradient></defs>
+                    <path d="M12 1c1 5 7 8 7 15a7 7 0 0 1-14 0c0-4 2-6 3-8 0 3 2 4 3 4-1-4 0-8 1-11Z" fill="url(#profil-feu)" />
+                  </svg>
+                )}
+                {value}
+              </span>
+              <span className="vy-label" style={{ color: "var(--text-2)", fontWeight: 400 }}>{label}</span>
+            </button>
+          ))}
+        </div>
+
+        {/* Le rang dit ce qui reste à faire, et montre le suivant. */}
+        <button
+          type="button"
+          /* Tant que l'aura n'est pas lue, on n'ouvre pas la galerie : elle
+             annoncerait « Bronze · 0 EXP » à quelqu'un qui est peut-être Diamant. */
+          onClick={() => { if (aura) setShowRangs(true); }}
+          className="w-full flex items-center gap-4 mt-4 p-4 pl-3.5 cursor-pointer text-left"
+          style={{ borderRadius: "var(--r-affiche)", background: "rgba(var(--surface-rgb),0.66)", border: "1px solid rgba(255,255,255,0.6)", boxShadow: "var(--ombre-pose)" }}
+        >
+          {aura ? (
+            <>
+              <div className="flex-shrink-0"><GemmeRang rang={aura.rang} size={58} flotte={false} /></div>
+              <div className="flex-1 min-w-0 flex flex-col gap-2">
+                <div className="flex items-baseline justify-between gap-2">
+                  <span className="vy-sous" style={{ color: "var(--text-0)" }}>{aura.rang.nom}</span>
+                  <span className="vy-nombre text-[13px]" style={{ color: "var(--text-2)" }}>
+                    <span style={{ color: "var(--exp-encre)", fontWeight: 700 }}>{aura.exp}</span> / {aura.seuilHaut} EXP
+                  </span>
+                </div>
+                <div className="h-2 rounded-full overflow-hidden" style={{ background: "rgba(139,92,246,0.14)" }}>
+                  <div className="h-full rounded-full" style={{
+                    width: `${Math.min(100, Math.max(4, ((aura.exp - aura.seuilBas) / Math.max(1, aura.seuilHaut - aura.seuilBas)) * 100))}%`,
+                    background: "linear-gradient(90deg,#8B5CF6,#C13BC1)",
+                  }} />
+                </div>
+                {rangSuivant ? (
+                  <div className="flex items-center justify-between gap-2 vy-label" style={{ color: "var(--text-2)", fontWeight: 400 }}>
+                    <span>Plus que <b style={{ color: "var(--text-0)" }}>{aura.restant} EXP</b> avant {rangSuivant.nom}</span>
+                    <span style={{ opacity: 0.55 }}><GemmeRang rang={rangSuivant} size={22} flotte={false} /></span>
+                  </div>
+                ) : (
+                  <span className="vy-label" style={{ color: "var(--text-2)", fontWeight: 400 }}>Le sommet. Tu y es.</span>
+                )}
+              </div>
+              <ChevronRight size={18} strokeWidth={2} style={{ color: "var(--text-3)", flexShrink: 0 }} />
+            </>
+          ) : (
+            <div className="h-[64px] w-full animate-pulse" style={{ borderRadius: "var(--r-controle)", background: "rgba(var(--tint-violet-rgb),0.5)" }} />
+          )}
+        </button>
+
+        {/* Les onglets se soulignent : c'est une navigation, pas trois boutons d'action. */}
+        <nav aria-label="Sections du profil" className="flex gap-6 mt-7 mb-6" style={{ borderBottom: "1px solid rgba(var(--text-3-rgb),0.16)" }}>
           {([
-            { id: "collection" as const, Icon: Sparkles, label: "Collection" },
-            { id: "progres"    as const, Icon: Dumbbell, label: "Progrès" },
-            { id: "amis"       as const, Icon: Users,    label: "Amis" },
-          ]).map(({ id, Icon, label }) => (
-            <motion.button
+            { id: "collection" as const, label: "Collection", compte: null },
+            { id: "progres"    as const, label: "Progrès",    compte: null },
+            { id: "amis"       as const, label: "Amis",       compte: followingCount },
+          ]).map(({ id, label, compte }) => (
+            <button
               key={id}
+              type="button"
               onClick={() => setActiveTab(id)}
-              className="vy-label flex-1 py-2 cursor-pointer flex items-center justify-center gap-1.5"
-              animate={{
-                background: activeTab === id ? "linear-gradient(135deg,#8B5CF6,#C13BC1)" : "transparent",
-                color: activeTab === id ? "#fff" : "var(--text-3)",
-              }}
+              aria-current={activeTab === id ? "page" : undefined}
+              className="pb-3 cursor-pointer flex items-baseline gap-1.5"
               style={{
-                borderRadius: "var(--r-controle)",
-                boxShadow: activeTab === id ? "var(--ombre-action)" : "none",
-                fontWeight: 600,
+                fontSize: 16,
+                fontWeight: activeTab === id ? 800 : 600,
+                color: activeTab === id ? "var(--text-0)" : "var(--text-3)",
+                borderBottom: activeTab === id ? "2px solid #8B5CF6" : "2px solid transparent",
+                marginBottom: -1,
               }}
             >
-              <Icon size={13} strokeWidth={2} />
-              <span>{label}</span>
-            </motion.button>
+              {label}
+              {compte ? <span className="vy-nombre text-[11px]">{compte}</span> : null}
+            </button>
           ))}
-        </motion.div>
+        </nav>
       </div>
+
 
       {/* ─── Tab content ─── */}
       <AnimatePresence mode="wait">
@@ -1018,11 +994,16 @@ export default function ProfilPage() {
             transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
             className="px-5 md:px-8 max-w-3xl mx-auto"
           >
-            {/* Affiches du relais — gagnées en clair, verrouillées en cadenas */}
-            <p className="vy-label mb-3" style={{ color: "var(--text-3)" }}>
-              Affiches du relais
-            </p>
-            <div className="grid grid-cols-2 gap-3 mb-8">
+            {/* Affiches du relais — gagnées en clair, verrouillées en cadenas.
+                Trois de front : la série tient en une rangée, on voit d'un
+                coup d'œil ce qui est gagné et ce qui reste. */}
+            <div className="flex items-baseline justify-between mb-3.5">
+              <h2 className="vy-sous" style={{ margin: 0, color: "var(--text-0)" }}>Affiches du relais</h2>
+              <span className="vy-nombre text-[13px]" style={{ color: "var(--text-2)" }}>
+                {(Object.keys(SERIES) as SerieSlug[]).filter((s) => badgeSlugs.has(`serie-${s}`)).length} / {Object.keys(SERIES).length}
+              </span>
+            </div>
+            <div className="grid grid-cols-3 gap-2.5 mb-8">
               {(Object.keys(SERIES) as SerieSlug[]).map((slug) => {
                 const serie = SERIES[slug];
                 const gagnee = badgeSlugs.has(`serie-${slug}`);
@@ -1044,27 +1025,31 @@ export default function ProfilPage() {
                        qu'aucun bloc ni aucun contrôle ne porte. Le liseré blanc
                        à 6 % ne séparait rien, il décorait. */
                     className={`relative overflow-hidden w-full text-left${gagnee ? "" : " cursor-pointer"}`}
-                    style={{ aspectRatio: "9/16", borderRadius: "var(--r-affiche)", boxShadow: "var(--ombre-pose)" }}
+                    style={{ aspectRatio: "9/16", borderRadius: "var(--r-bloc)", boxShadow: "var(--ombre-pose)", background: "#1C1626" }}
                   >
                     <Image
                       src={imageEtat(slug, 4)}
                       alt={serie.nom}
                       fill
-                      sizes="(max-width:768px) 45vw, 200px"
+                      sizes="(max-width:768px) 31vw, 200px"
                       className="object-cover"
-                      style={{ filter: gagnee ? "none" : "grayscale(1) brightness(0.5)" }}
+                      style={{ filter: gagnee ? "none" : "grayscale(1) brightness(0.45)" }}
                     />
-                    <div className="absolute inset-0" style={{ background: "var(--voile-affiche)" }} />
-                    {gagnee && <div className="absolute top-2.5 right-3 text-[13px] font-black" style={{ color: "rgba(255,255,255,0.9)" }}>✦</div>}
-                    <div className="absolute left-3 right-3 bottom-3" style={{ color: "#fff" }}>
-                      <p className="vy-sous">{serie.nom}</p>
-                      <p className="vy-label mt-0.5" style={{ color: "#fff", opacity: 0.78 }}>
-                        {gagnee ? "Dévoilée · à deux" : serie.promesse}
-                      </p>
-                    </div>
-                    {!gagnee && (
-                      <div className="absolute inset-0 grid place-items-center" style={{ background: "rgba(10,6,18,0.42)" }}>
-                        <Lock size={22} strokeWidth={2} style={{ color: "rgba(255,255,255,0.55)" }} />
+                    {gagnee ? (
+                      <>
+                        <div className="absolute inset-0" style={{ background: "var(--voile-affiche)" }} />
+                        <div className="absolute left-2.5 right-2.5 bottom-2.5" style={{ color: "#fff" }}>
+                          <p style={{ margin: 0, fontSize: 13, fontWeight: 800, fontVariationSettings: "var(--w-voix)" }}>{serie.nom}</p>
+                          <p style={{ margin: "2px 0 0", fontSize: 11, color: "rgba(255,255,255,0.78)" }}>Dévoilée à deux</p>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 p-2.5 text-center">
+                        <span className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: "rgba(255,255,255,0.16)", border: "1px solid rgba(255,255,255,0.3)" }}>
+                          <Lock size={14} strokeWidth={2.2} style={{ color: "#fff" }} />
+                        </span>
+                        <span style={{ fontSize: 13, fontWeight: 800, color: "#fff", fontVariationSettings: "var(--w-voix)" }}>{serie.nom}</span>
+                        <span style={{ fontSize: 11, color: "rgba(255,255,255,0.8)" }}>Avec qui ?</span>
                       </div>
                     )}
                   </Cadre>
@@ -1074,12 +1059,12 @@ export default function ProfilPage() {
 
             {/* L'étagère : ce que le relais a donné en plus des affiches.
                 Muette tant qu'on n'a rien gagné. */}
-            <EtagereBadges slugs={badgeSlugs} titre="Tes badges" progres={progresBadges} />
+            <EtagereBadges slugs={badgeSlugs} titre="Badges" progres={progresBadges} />
 
             {/* Tes affiches de perf (posts séance) */}
-            <p className="vy-label mb-3" style={{ color: "var(--text-3)" }}>
-              Tes affiches de perf
-            </p>
+            <h2 className="vy-sous" style={{ margin: "0 0 14px", color: "var(--text-0)" }}>
+              Affiches de séance
+            </h2>
             {(() => {
               const posters = userPosts.filter((p) => p.type === "workout" && p.performance_data);
               return posters.length === 0 ? (
