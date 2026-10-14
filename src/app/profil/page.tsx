@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   X, Check, Lock, Camera, ChevronRight, ChevronDown,
-  Pencil, Dumbbell, Play, Settings, Trash2, Share2,
+  Pencil, Play, Settings, Trash2, Share2,
 } from "lucide-react";
 import PerformanceCard, { type PerformanceData } from "@/components/PerformanceCard";
 import PerfShareCard from "@/components/PerfShareCard";
@@ -24,6 +24,8 @@ import { chargerBadgesAura } from "@/lib/badgesAura";
 import type { ProgresBadges } from "@/lib/badges";
 import EtagereBadges from "@/components/profil/EtagereBadges";
 import CouvertureSeance from "@/components/profil/CouvertureSeance";
+import FeuilleAfficheSeance from "@/components/profil/FeuilleAfficheSeance";
+import { type ReglageAffiche, ecrireReglagesAffiches, lireReglagesAffiches } from "@/lib/afficheSeance";
 import CourbePoids from "@/components/profil/CourbePoids";
 import CarteConstance from "@/components/profil/CarteConstance";
 import HistoriqueMasque from "@/components/historique/HistoriqueMasque";
@@ -55,6 +57,22 @@ type WorkoutSessionItem = {
   exercises?: unknown;
   category?: string | null;
 };
+
+/** L'affiche d'une séance du journal : son titre, sa date, sa durée et
+ *  son nombre d'exercices. On lit le journal, on n'invente aucun chiffre. */
+function afficheDeSeance(w: WorkoutSessionItem): PerformanceData {
+  const minutes = w.elapsed_seconds ? Math.round(w.elapsed_seconds / 60) : w.duration_minutes || 0;
+  const exos = Array.isArray(w.exercises) ? w.exercises.length : 0;
+  const metrics: PerformanceData["metrics"] = [];
+  if (minutes) metrics.push({ label: "Durée", value: String(minutes), unit: "min" });
+  if (exos) metrics.push({ label: "Exercices", value: String(exos), unit: exos > 1 ? "exercices" : "exercice" });
+  return {
+    type: "workout",
+    title: w.title || "Séance",
+    date: w.started_at ? new Date(w.started_at).toLocaleDateString("fr-FR", { day: "numeric", month: "short" }) : "",
+    metrics,
+  };
+}
 import NotificationBell from "@/components/NotificationBell";
 import { type Exercise, resolveSessionId } from "@/components/WorkoutGuideModal";
 import { useWorkoutLaunch } from "@/context/WorkoutLaunchContext";
@@ -514,6 +532,14 @@ export default function ProfilPage() {
   const [editBio, setEditBio] = useState("");
   const [editSaving, setEditSaving] = useState(false);
   const [workoutSessions, setWorkoutSessions] = useState<WorkoutSessionItem[]>([]);
+  const [afficheOuverte, setAfficheOuverte] = useState<WorkoutSessionItem | null>(null);
+  const [reglagesAffiches, setReglagesAffiches] = useState<Record<string, ReglageAffiche>>({});
+  useEffect(() => {
+    if (!user?.id) return;
+    const id = user.id;
+    // Lu après le montage : le stockage n'existe pas au rendu serveur.
+    queueMicrotask(() => setReglagesAffiches(lireReglagesAffiches(id)));
+  }, [user?.id]);
   /* Compte gratuit : l'écran MONTRE les 7 derniers jours, la base garde
      tout (lib/historique, conditions article 3). Un seul encart pour tout
      l'onglet, allumé dès qu'un des trois blocs a quelque chose de masqué. */
@@ -1156,69 +1182,21 @@ export default function ProfilPage() {
                 action={{ libelle: "Voir les séances", onClick: () => router.push("/progression") }}
               />
             ) : (
-              /* C'était le cas d'école : autant de cartes que de séances,
-                 toutes au même dessin, séparées par 12 px de vide. Une liste
-                 de choses de MÊME nature se pose en liste, pas en cartes :
-                 un seul contour, des filets entre les lignes. Le commentaire
-                 de `.vy-filet` dans globals.css dit exactement ça, et c'est
-                 son premier emploi réel. */
-              <div
-                className="overflow-hidden"
-                style={{
-                  borderRadius: "var(--r-bloc)",
-                  background: "rgba(var(--surface-rgb),0.9)",
-                  border: "1px solid rgba(var(--text-3-rgb),0.16)",
-                }}
-              >
-                {seancesVisibles.map((session) => {
-                  const durationMin = session.elapsed_seconds
-                    ? Math.round(session.elapsed_seconds / 60)
-                    : session.duration_minutes || null;
-                  return (
-                    <motion.div
-                      key={session.id}
-                      onClick={() => refaireSeance(session)}
-                      className="vy-filet flex items-center gap-3 px-4 py-3.5 cursor-pointer"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                    >
-                      <div className="w-10 h-10 flex items-center justify-center flex-shrink-0" style={{ borderRadius: "var(--r-controle)", background: "linear-gradient(135deg,var(--violet-mid),var(--cream-mid))" }}>
-                        <Dumbbell size={16} strokeWidth={1.5} style={{ color: "var(--exp-encre)" }} />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-[16px] font-semibold truncate" style={{ color: "var(--text-0)" }}>{session.title || "Séance"}</p>
-                        <p className="text-[11px] font-light mt-0.5" style={{ color: "var(--text-3)" }}>
-                          {session.started_at ? new Date(session.started_at).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" }) : "Date inconnue"}
-                          {durationMin ? ` · ${durationMin} min` : ""}
-                        </p>
-                      </div>
-                      <motion.button
-                        whileTap={{ scale: 0.85 }}
-                        onClick={(e) => { e.stopPropagation(); refaireSeance(session); }}
-                        className="h-8 px-3 flex items-center justify-center gap-1.5 flex-shrink-0 cursor-pointer"
-                        style={{ borderRadius: "var(--r-controle)", background: "rgba(var(--accent-rgb),0.12)" }}
-                        title="Refaire cette séance"
-                      >
-                        <Play size={12} strokeWidth={2.2} style={{ color: "var(--exp-encre)" }} />
-                        <span className="text-[13px] font-bold" style={{ color: "var(--exp-encre)" }}>Refaire</span>
-                      </motion.button>
-                      <motion.button
-                        whileTap={{ scale: 0.85 }}
-                        onClick={async (e) => {
-                          e.stopPropagation();
-                          const supabase = createClient();
-                          const { error } = await supabase.from("workout_sessions").delete().eq("id", session.id);
-                          if (!error) setWorkoutSessions(prev => prev.filter(s => s.id !== session.id));
-                        }}
-                        className="w-8 h-8 flex items-center justify-center flex-shrink-0 cursor-pointer"
-                        style={{ borderRadius: "var(--r-controle)", background: "rgba(252,129,129,0.12)" }}
-                        title="Supprimer cette séance"
-                      >
-                        <Trash2 size={13} strokeWidth={1.8} style={{ color: "#FC8181" }} />
-                      </motion.button>
-                    </motion.div>
-                  );
-                })}
+              /* ⭐ L'HISTORIQUE EST UNE GRILLE D'AFFICHES (Louis, 2026-10-14) :
+                 chaque séance faite devient sa couverture, et la toucher
+                 l'ouvre pour changer son mot, son fond, ou la supprimer.
+                 « Refaire » vit dans la feuille, en action discrète. */
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                {seancesVisibles.map((session) => (
+                  <CouvertureSeance
+                    key={session.id}
+                    compact
+                    data={afficheDeSeance(session)}
+                    mot={reglagesAffiches[session.id]?.mot}
+                    teinte={reglagesAffiches[session.id]?.teinte ?? 0}
+                    onClick={() => setAfficheOuverte(session)}
+                  />
+                ))}
               </div>
             )}
           </motion.div>
@@ -1300,6 +1278,27 @@ export default function ProfilPage() {
 
       {/* ─── Post detail / edit modal ─── */}
       <AnimatePresence>
+        {afficheOuverte && user && (
+          <FeuilleAfficheSeance
+            data={afficheDeSeance(afficheOuverte)}
+            reglage={reglagesAffiches[afficheOuverte.id] ?? {}}
+            onReglage={(r) => {
+              const tous = { ...reglagesAffiches, [afficheOuverte.id]: r };
+              setReglagesAffiches(tous);
+              ecrireReglagesAffiches(user.id, tous);
+            }}
+            onRefaire={() => { const s = afficheOuverte; setAfficheOuverte(null); refaireSeance(s); }}
+            onSupprimer={async () => {
+              const { error } = await createClient().from("workout_sessions").delete().eq("id", afficheOuverte.id);
+              if (error) { showToast("Impossible de supprimer la séance pour l'instant."); return false; }
+              setWorkoutSessions((prev) => prev.filter((w) => w.id !== afficheOuverte.id));
+              setAfficheOuverte(null);
+              return true;
+            }}
+            onFermer={() => setAfficheOuverte(null)}
+          />
+        )}
+
         {selectedPost && (
           <motion.div
             initial={{ opacity: 0 }}
