@@ -23,6 +23,7 @@ import { SERIES, imageEtat, type SerieSlug } from "@/lib/defi";
 import { chargerBadgesAura } from "@/lib/badgesAura";
 import type { ProgresBadges } from "@/lib/badges";
 import EtagereBadges from "@/components/profil/EtagereBadges";
+import CouvertureSeance from "@/components/profil/CouvertureSeance";
 import CourbePoids from "@/components/profil/CourbePoids";
 import CarteConstance from "@/components/profil/CarteConstance";
 import HistoriqueMasque from "@/components/historique/HistoriqueMasque";
@@ -1070,19 +1071,20 @@ export default function ProfilPage() {
                   action={{ libelle: "Voir les séances", onClick: () => router.push("/progression") }}
                 />
               ) : (
-                <div className="grid grid-cols-2 gap-4">
+                /* LE KIOSQUE (maquette « Le profil Vaiiya », 2026-10-14) :
+                   chaque affiche se lit comme une couverture de magazine.
+                   Le nom de la séance prend la carte, les deux premiers
+                   chiffres en bas. L'affiche partageable, elle, s'ouvre au
+                   toucher, comme avant. */
+                <div className="-mx-5 flex gap-3 overflow-x-auto px-5 pb-2" style={{ scrollbarWidth: "none" }}>
                   {posters.map((post, idx) => (
-                    <motion.div
+                    <CouvertureSeance
                       key={post.id}
-                      initial={{ opacity: 0, y: 14 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.32, delay: idx * 0.05 }}
-                      className="cursor-pointer flex justify-center"
-                      whileTap={{ scale: 0.98 }}
+                      data={post.performance_data as PerformanceData}
+                      numero={posters.length - idx}
+                      teinte={idx % 2}
                       onClick={() => { setSelectedPost(post); setEditingSelectedPost(false); setConfirmSupprAffiche(false); }}
-                    >
-                      <PerfShareCard data={perfDataToShare(post.performance_data as PerformanceData, { user: displayPseudo })} width="100%" />
-                    </motion.div>
+                    />
                   ))}
                 </div>
               );

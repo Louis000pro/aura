@@ -151,12 +151,12 @@ export function badgesEnEtagere(slugs: Iterable<string>): Badge[] {
  * Rend `null` quand tout est gagné : il n'y a alors rien à dire, et surtout
  * rien à réclamer.
  */
-export function prochainBadge(progres: ProgresBadges): { badge: Badge; reste: number } | null {
-  let meilleur: { badge: Badge; reste: number } | null = null;
+export function prochainBadge(progres: ProgresBadges): { badge: Badge; reste: number; seuil: number } | null {
+  let meilleur: { badge: Badge; reste: number; seuil: number } | null = null;
   for (const b of BADGES_DERIVES) {
     const reste = b.seuil - progres[b.famille];
     if (reste <= 0) continue;
-    if (!meilleur || reste < meilleur.reste) meilleur = { badge: b, reste };
+    if (!meilleur || reste < meilleur.reste) meilleur = { badge: b, reste, seuil: b.seuil };
   }
   return meilleur;
 }
