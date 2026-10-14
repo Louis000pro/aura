@@ -6,12 +6,9 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   X, Check, Lock, Camera, ChevronRight, ChevronDown,
-  Pencil, Play, Settings, Trash2, Share2,
+  Pencil, Settings, Share2,
 } from "lucide-react";
-import PerformanceCard, { type PerformanceData } from "@/components/PerformanceCard";
-import PerfShareCard from "@/components/PerfShareCard";
-import { perfDataToShare, type PerfShareData } from "@/lib/perfShareExport";
-import VideoPlayer from "@/components/VideoPlayer";
+import { type PerformanceData } from "@/components/PerformanceCard";
 import Image from "next/image";
 import GemmeRang from "@/components/GemmeRang";
 import EtatVideGuide from "@/components/EtatVideGuide";
@@ -32,7 +29,6 @@ import HistoriqueMasque from "@/components/historique/HistoriqueMasque";
 import { debutHistorique, estVisible, historiqueComplet } from "@/lib/historique";
 import WeighInPrompt from "@/components/WeighInPrompt";
 import AvecQui from "@/components/communaute/AvecQui";
-import EnvoyerAffiche from "@/components/communaute/EnvoyerAffiche";
 
 /* ─────────────── Tab data types ─────────────── */
 type UserPost = {
@@ -484,13 +480,12 @@ function EditProfileModal({
 
 /* ─────────────── Main Page ─────────────── */
 export default function ProfilPage() {
-  const { user, session, refreshProfile } = useAuth();
+  const { user, refreshProfile } = useAuth();
   const { launchWorkout } = useWorkoutLaunch();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<"collection" | "progres" | "amis">("collection");
   const [objectifsOuverts, setObjectifsOuverts] = useState(false);
   const [avecQui, setAvecQui] = useState(false);
-  const [afficheAEnvoyer, setAfficheAEnvoyer] = useState<PerfShareData | null>(null);
   const [aura, setAura] = useState<EtatAura | null>(null);
   const [amis, setAmis] = useState<{ id: string; pseudo: string; avatar_url?: string }[] | null>(null);
   const [badgeSlugs, setBadgeSlugs] = useState<Set<string>>(new Set());
@@ -515,24 +510,9 @@ export default function ProfilPage() {
   const [followingCount, setFollowingCount] = useState<number | null>(null);
   const [sessionCount, setSessionCount] = useState<number | null>(null);
   const [userPosts, setUserPosts] = useState<UserPost[]>([]);
-  const [selectedPost, setSelectedPost] = useState<UserPost | null>(null);
-  const [editingSelectedPost, setEditingSelectedPost] = useState(false);
-  // Suppression d'une affiche, en deux temps (pas de suppression accidentelle).
-  const [confirmSupprAffiche, setConfirmSupprAffiche] = useState(false);
-
-  // ── Compter une vue quand on ouvre une vidéo depuis le profil ──
-  useEffect(() => {
-    if (!selectedPost || selectedPost.media_type !== "video") return;
-    const id = selectedPost.id;
-    void createClient().rpc("increment_post_views", { p_post_id: id });
-    setUserPosts((prev) => prev.map((p) => p.id === id ? { ...p, views: (p.views ?? 0) + 1 } : p));
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedPost?.id]);
-  const [editCaption, setEditCaption] = useState("");
-  const [editBio, setEditBio] = useState("");
-  const [editSaving, setEditSaving] = useState(false);
   const [workoutSessions, setWorkoutSessions] = useState<WorkoutSessionItem[]>([]);
   const [afficheOuverte, setAfficheOuverte] = useState<WorkoutSessionItem | null>(null);
+  const [afficheGardee, setAfficheGardee] = useState<{ post: UserPost; numero: number; teinte: number } | null>(null);
   const [reglagesAffiches, setReglagesAffiches] = useState<Record<string, ReglageAffiche>>({});
   useEffect(() => {
     if (!user?.id) return;
@@ -1109,7 +1089,7 @@ export default function ProfilPage() {
                       data={post.performance_data as PerformanceData}
                       numero={posters.length - idx}
                       teinte={idx % 2}
-                      onClick={() => { setSelectedPost(post); setEditingSelectedPost(false); setConfirmSupprAffiche(false); }}
+                      onClick={() => setAfficheGardee({ post, numero: posters.length - idx, teinte: idx % 2 })}
                     />
                   ))}
                 </div>
@@ -1278,6 +1258,24 @@ export default function ProfilPage() {
 
       {/* ─── Post detail / edit modal ─── */}
       <AnimatePresence>
+        {afficheGardee && (
+          <FeuilleAfficheSeance
+            quoi="affiche"
+            data={afficheGardee.post.performance_data as PerformanceData}
+            numero={afficheGardee.numero}
+            reglage={{ teinte: afficheGardee.teinte }}
+            onSupprimer={async () => {
+              const id = afficheGardee.post.id;
+              const { error } = await createClient().from("posts").delete().eq("id", id);
+              if (error) { showToast("Impossible de supprimer l’affiche pour l’instant."); return false; }
+              setUserPosts((prev) => prev.filter((p) => p.id !== id));
+              setAfficheGardee(null);
+              return true;
+            }}
+            onFermer={() => setAfficheGardee(null)}
+          />
+        )}
+
         {afficheOuverte && user && (
           <FeuilleAfficheSeance
             data={afficheDeSeance(afficheOuverte)}
@@ -1298,358 +1296,11 @@ export default function ProfilPage() {
             onFermer={() => setAfficheOuverte(null)}
           />
         )}
-
-        {selectedPost && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-end md:items-center justify-center"
-            style={{ background: "rgba(0,0,0,0.55)", backdropFilter: "blur(10px)" }}
-            onClick={() => { setSelectedPost(null); setEditingSelectedPost(false); setConfirmSupprAffiche(false); }}
-          >
-            <motion.div
-              initial={{ y: 60, opacity: 0, scale: 0.96 }}
-              animate={{ y: 0, opacity: 1, scale: 1 }}
-              exit={{ y: 60, opacity: 0, scale: 0.96 }}
-              transition={{ type: "spring", bounce: 0.22, duration: 0.4 }}
-              className="w-full max-w-sm rounded-t-[var(--r-feuille)] md:rounded-[var(--r-feuille)] overflow-hidden"
-              style={{
-                background: "rgba(var(--surface-rgb),0.97)",
-                boxShadow: "0 -12px 48px rgba(var(--accent-rgb),0.2)",
-                maxHeight: "92dvh",
-                overflowY: "auto",
-              }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              {/* Header */}
-              <div className="flex items-center justify-between px-4 pt-4 pb-3">
-                <div className="flex items-center gap-2.5">
-                  <div
-                    className="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center text-[13px] font-semibold flex-shrink-0"
-                    style={{ background: displayAvatar ? "transparent" : "linear-gradient(135deg,var(--violet-mid),var(--cream-mid))", color: "var(--text-1)" }}
-                  >
-                    {displayAvatar
-                      // eslint-disable-next-line @next/next/no-img-element
-                      ? <img loading="lazy" decoding="async" src={displayAvatar} alt="avatar" className="w-full h-full object-cover" />
-                      : displayPseudo.charAt(0).toUpperCase()}
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-1">
-                      <p className="text-[16px] font-semibold" style={{ color: "var(--text-1)" }}>@{displayPseudo}</p>
-                      {user?.is_certified && (
-                        <div className="w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0"
-                          style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)" }}>
-                          <svg width="8" height="8" viewBox="0 0 13 13" fill="none">
-                            <path d="M2.5 6.5L5 9L10.5 4" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
-                          </svg>
-                        </div>
-                      )}
-                    </div>
-                    <p className="text-[11px]" style={{ color: "var(--text-3)" }}>
-                      {new Date(selectedPost.created_at).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  {/* Bouton modifier */}
-                  {!editingSelectedPost && (
-                    <motion.button
-                      whileTap={{ scale: 0.9 }}
-                      onClick={() => {
-                        setEditCaption(selectedPost.caption ?? "");
-                        setEditBio(selectedPost.description ?? "");
-                        setEditingSelectedPost(true);
-                      }}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[13px] font-semibold"
-                      style={{ background: "rgba(var(--accent-rgb),0.15)", color: "var(--exp-encre)" }}
-                    >
-                      <Pencil size={11} strokeWidth={2} />
-                      Modifier
-                    </motion.button>
-                  )}
-                  <motion.button
-                    whileTap={{ scale: 0.9 }}
-                    onClick={() => { setSelectedPost(null); setEditingSelectedPost(false); setConfirmSupprAffiche(false); }}
-                    className="w-7 h-7 rounded-full flex items-center justify-center"
-                    style={{ background: "rgba(var(--tint-violet-rgb),0.8)" }}
-                  >
-                    <X size={14} strokeWidth={2} style={{ color: "var(--text-3)" }} />
-                  </motion.button>
-                </div>
-              </div>
-
-              {/* ── Mode lecture ── */}
-              {!editingSelectedPost && (
-                <>
-                  {selectedPost.caption && (
-                    <p className="px-4 pb-2 text-[16px] font-semibold leading-snug" style={{ color: "var(--text-1)" }}>
-                      {selectedPost.caption}
-                    </p>
-                  )}
-                  {selectedPost.media_url && (
-                    <div className="mx-4 mb-3 rounded-2xl overflow-hidden">
-                      {selectedPost.media_type === "video"
-                        ? <VideoPlayer src={selectedPost.media_url} maxHeight={380} controls />
-                        // eslint-disable-next-line @next/next/no-img-element
-                        : <img loading="lazy" decoding="async" src={selectedPost.media_url} alt="" className="w-full object-cover rounded-2xl" style={{ maxHeight: 380 }} />
-                      }
-                    </div>
-                  )}
-                  {/* Séance → poster « aura » ; repas/jour → carte classique */}
-                  {selectedPost.type === "workout" && selectedPost.performance_data ? (
-                    <div className="px-4 pb-3 flex justify-center">
-                      <PerfShareCard
-                        data={perfDataToShare(selectedPost.performance_data as PerformanceData, { user: displayPseudo })}
-                        width="min(320px, 100%)"
-                      />
-                    </div>
-                  ) : selectedPost.performance_data && (["meal", "day"] as const).includes(
-                    (selectedPost.performance_data as { type?: string }).type as "meal" | "day"
-                  ) ? (
-                    <div className="px-4 pb-3">
-                      <PerformanceCard data={selectedPost.performance_data as PerformanceData} size="md" />
-                    </div>
-                  ) : null}
-
-                  {/* Envoyer l'affiche. La même feuille et les mêmes deux
-                      sorties qu'en fin de séance : une discussion, ou le
-                      dehors. Une affiche gardée doit rester envoyable, sinon
-                      elle n'est partageable que pendant les trente secondes
-                      qui suivent la séance. */}
-                  {selectedPost.type === "workout" && selectedPost.performance_data && (
-                    <div className="px-4 pb-3">
-                      <motion.button
-                        whileTap={{ scale: 0.97 }}
-                        onClick={() => setAfficheAEnvoyer(
-                          perfDataToShare(selectedPost.performance_data as PerformanceData, { user: displayPseudo })
-                        )}
-                        className="w-full py-3 rounded-2xl flex items-center justify-center gap-2 text-[16px] font-semibold cursor-pointer"
-                        style={{ background: "rgba(139,92,246,0.1)", color: "var(--exp-encre)", border: "1px solid rgba(139,92,246,0.3)" }}
-                      >
-                        <Share2 size={16} strokeWidth={2} /> Envoyer à quelqu&apos;un
-                      </motion.button>
-                    </div>
-                  )}
-
-                  {/* Bouton "Faire cette séance" pour les posts workout */}
-                  {selectedPost.type === "workout" && (() => {
-                    const pd = selectedPost.performance_data as PerformanceData & { exercise_list?: unknown[]; category?: string };
-                    const exList = (pd?.exercise_list ?? []) as Exercise[];
-                    const durMetric = pd?.metrics?.find(m => m.label === "Durée");
-                    const dur = durMetric ? parseInt(durMetric.value) || 30 : 30;
-                    const builtinId  = resolveSessionId(pd?.title ?? "");
-                    const hasEmbedded = exList.length > 0;
-                    const hasBuiltin  = !!builtinId;
-                    const unavailable = !hasEmbedded && !hasBuiltin;
-                    return (
-                      <div className="px-4 pt-2 pb-3">
-                        {unavailable ? (
-                          <div className="w-full py-3 rounded-2xl flex flex-col items-center justify-center gap-1 text-[11px]"
-                            style={{ background: "rgba(var(--tint-violet-rgb),0.5)", border: "1px solid rgba(var(--accent-rgb),0.15)", color: "var(--text-3)" }}>
-                            <span>Séance perso, exercices non embarqués</span>
-                            <span className="text-[11px]" style={{ color: "#C4B5FD" }}>Repartage via l&apos;écran de fin pour l&apos;activer</span>
-                          </div>
-                        ) : (
-                          <motion.button
-                            whileTap={{ scale: 0.97 }}
-                            onClick={() => {
-                              setSelectedPost(null);
-                              launchWorkout({
-                                sessionId:    hasEmbedded ? "profile-post" : builtinId!,
-                                title:        pd?.title ?? "Séance",
-                                accent:       "var(--accent)",
-                                duration:     dur,
-                                difficulty:   "Intermédiaire",
-                                category:     pd?.category ?? "force",
-                                heroImage: heroImageForSeance({ title: pd?.title ?? "Séance", category: pd?.category as WorkoutCategory }),
-                                exerciseList: exList,
-                              });
-                            }}
-                            className="w-full py-3 rounded-2xl flex items-center justify-center gap-2 text-[16px] font-semibold cursor-pointer"
-                            style={{
-                              background: "linear-gradient(135deg,rgba(var(--accent-rgb),0.18) 0%,rgba(var(--violet-mid-rgb),0.12) 100%)",
-                              border: "1px solid rgba(var(--accent-rgb),0.28)",
-                              color: "var(--exp-encre)",
-                            }}
-                          >
-                            <Play size={14} strokeWidth={2} />
-                            Faire cette séance
-                          </motion.button>
-                        )}
-                      </div>
-                    );
-                  })()}
-
-                  {selectedPost.description && (
-                    <p className="px-4 pb-3 text-[13px] font-light leading-relaxed" style={{ color: "var(--text-2)" }}>
-                      {selectedPost.description}
-                    </p>
-                  )}
-
-                  {/* Supprimer l'affiche, en deux temps. */}
-                  <div className="px-4 pb-1">
-                    {!confirmSupprAffiche ? (
-                      <button
-                        onClick={() => setConfirmSupprAffiche(true)}
-                        className="w-full py-2.5 rounded-2xl flex items-center justify-center gap-2 text-[13px] font-medium cursor-pointer"
-                        style={{ background: "transparent", color: "var(--text-3)" }}
-                      >
-                        <Trash2 size={13} strokeWidth={1.8} /> Supprimer l&apos;affiche
-                      </button>
-                    ) : (
-                      <div className="flex gap-2">
-                        <motion.button
-                          whileTap={{ scale: 0.97 }}
-                          onClick={async () => {
-                            const supabase = createClient();
-                            const { error } = await supabase.from("posts").delete().eq("id", selectedPost.id);
-                            if (error) { showToast("Suppression impossible, réessaie"); return; }
-                            setUserPosts((prev) => prev.filter((p) => p.id !== selectedPost.id));
-                            setSelectedPost(null);
-                            setConfirmSupprAffiche(false);
-                            showToast("Affiche supprimée");
-                          }}
-                          className="flex-1 py-2.5 rounded-2xl flex items-center justify-center gap-2 text-[13px] font-bold cursor-pointer text-white"
-                          style={{ background: "#E53E3E" }}
-                        >
-                          <Trash2 size={13} strokeWidth={2} /> Confirmer
-                        </motion.button>
-                        <button
-                          onClick={() => setConfirmSupprAffiche(false)}
-                          className="px-4 py-2.5 rounded-2xl text-[13px] font-semibold cursor-pointer"
-                          style={{ background: "rgba(var(--tint-violet-rgb),0.6)", color: "var(--text-2)" }}
-                        >
-                          Annuler
-                        </button>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="pb-3" />
-                </>
-              )}
-
-              {/* ── Mode édition ── */}
-              {editingSelectedPost && (
-                <div className="px-4 pb-5 flex flex-col gap-4">
-                  {/* Aperçu media */}
-                  {selectedPost.media_url && (
-                    <div className="rounded-2xl overflow-hidden">
-                      {selectedPost.media_type === "video"
-                        ? <VideoPlayer src={selectedPost.media_url} maxHeight={200} muted autoPlay />
-                        // eslint-disable-next-line @next/next/no-img-element
-                        : <img loading="lazy" decoding="async" src={selectedPost.media_url} alt="" className="w-full object-cover" style={{ maxHeight: 200 }} />
-                      }
-                    </div>
-                  )}
-
-                  {/* Titre */}
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-[11px] font-boldst" style={{ color: "var(--text-3)" }}>Titre</label>
-                    <input
-                      type="text"
-                      value={editCaption}
-                      onChange={(e) => setEditCaption(e.target.value)}
-                      maxLength={200}
-                      className="w-full rounded-2xl px-4 py-3 text-[16px] outline-none"
-                      style={{ background: "rgba(var(--tint-violet-rgb),0.5)", border: "1px solid rgba(var(--violet-mid-rgb),0.6)", color: "var(--text-1)" }}
-                      placeholder="Titre du post..."
-                      autoFocus
-                    />
-                  </div>
-
-                  {/* Bio */}
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-[11px] font-boldst" style={{ color: "var(--text-3)" }}>Bio</label>
-                    <textarea
-                      value={editBio}
-                      onChange={(e) => setEditBio(e.target.value)}
-                      rows={3}
-                      maxLength={500}
-                      className="w-full resize-none rounded-2xl px-4 py-3 text-[16px] outline-none leading-relaxed"
-                      style={{ background: "rgba(var(--tint-violet-rgb),0.5)", border: "1px solid rgba(var(--violet-mid-rgb),0.6)", color: "var(--text-1)" }}
-                      placeholder="Description du post..."
-                    />
-                  </div>
-
-                  {/* Boutons */}
-                  <div className="flex gap-2">
-                    <motion.button
-                      whileTap={{ scale: 0.97 }}
-                      onClick={() => setEditingSelectedPost(false)}
-                      className="flex-1 py-3 rounded-2xl text-[13px] font-semibold"
-                      style={{ background: "rgba(var(--tint-violet-rgb),0.6)", color: "var(--text-2)" }}
-                    >
-                      Annuler
-                    </motion.button>
-                    <motion.button
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      disabled={editSaving}
-                      onClick={async () => {
-                        setEditSaving(true);
-                        const supabase = createClient();
-                        const newCaption = editCaption.trim();
-                        const newBio = editBio.trim() || null;
-
-                        // Sauvegarde caption (toujours)
-                        const { error } = await supabase
-                          .from("posts")
-                          .update({ caption: newCaption })
-                          .eq("id", selectedPost.id);
-
-                        if (error) {
-                          console.error("update caption:", error);
-                          showToast("Modification non enregistrée, réessaie");
-                          setEditSaving(false);
-                          return;
-                        }
-
-                        // Sauvegarde description (si la colonne existe)
-                        await supabase
-                          .from("posts")
-                          .update({ description: newBio })
-                          .eq("id", selectedPost.id);
-
-                        // Mise à jour locale
-                        const updated = { ...selectedPost, caption: newCaption, description: newBio };
-                        setSelectedPost(updated);
-                        setUserPosts((prev) => prev.map((p) => p.id === selectedPost.id ? updated : p));
-                        setEditingSelectedPost(false);
-                        setEditSaving(false);
-                        showToast("Post modifié ✓");
-                      }}
-                      className="flex-[2] py-3 rounded-2xl text-[16px] font-bold"
-                      style={{
-                        background: editSaving ? "rgba(var(--violet-mid-rgb),0.5)" : "linear-gradient(135deg,#8B5CF6,#C13BC1)",
-                        color: "#fff",
-                        boxShadow: editSaving ? "none" : "var(--ombre-action)",
-                      }}
-                    >
-                      {editSaving ? "Sauvegarde..." : "Sauvegarder"}
-                    </motion.button>
-                  </div>
-                </div>
-              )}
-            </motion.div>
-          </motion.div>
-        )}
       </AnimatePresence>
 
       {/* La porte du relais, ouverte depuis une affiche verrouillée.
           C'est la MÊME feuille que dans la communauté, pas une seconde
           écrite ici : elle vit dans `components/communaute/AvecQui`. */}
-      <AnimatePresence>
-        {afficheAEnvoyer && user && (
-          <EnvoyerAffiche
-            data={afficheAEnvoyer}
-            moi={user.id}
-            accessToken={session?.access_token}
-            onFermer={() => setAfficheAEnvoyer(null)}
-          />
-        )}
-      </AnimatePresence>
 
       <AnimatePresence>
         {avecQui && user && (

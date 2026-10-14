@@ -155,7 +155,7 @@ export default function CarteConstance({ userId, inscritLe, serieRecord, debut =
                 key={jour}
                 cx={cx} cy={cy}
                 r={plein ? R_PLEIN : R_VIDE}
-                fill={plein ? "var(--teal-encre)" : "rgba(var(--text-3-rgb),0.42)"}
+                fill={plein ? "var(--poids-encre)" : "rgba(var(--text-3-rgb),0.42)"}
               />
             );
           }),

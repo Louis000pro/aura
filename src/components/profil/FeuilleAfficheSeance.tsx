@@ -17,11 +17,16 @@ import CouvertureSeance, { MOTS_PROPOSES, NB_FONDS, fondCouverture, motCouvertur
 import type { PerformanceData } from "@/components/PerformanceCard";
 import type { ReglageAffiche } from "@/lib/afficheSeance";
 
-export default function FeuilleAfficheSeance({ data, reglage, onReglage, onRefaire, onSupprimer, onFermer }: {
+/* ⚠️ Ouverte depuis Collection › Affiches de séance, elle ne porte QUE
+   « Supprimer » (Louis, 2026-10-14) : pas de mot, pas de fond, pas de
+   titre ni de description de post à modifier. Ce sont des affiches. */
+export default function FeuilleAfficheSeance({ data, reglage = {}, onReglage, onRefaire, onSupprimer, onFermer, quoi = "seance", numero }: {
   data: PerformanceData;
-  reglage: ReglageAffiche;
-  onReglage: (r: ReglageAffiche) => void;
-  onRefaire: () => void;
+  reglage?: ReglageAffiche;
+  onReglage?: (r: ReglageAffiche) => void;
+  onRefaire?: () => void;
+  quoi?: "seance" | "affiche";
+  numero?: number;
   onSupprimer: () => Promise<boolean>;
   onFermer: () => void;
 }) {
@@ -36,16 +41,17 @@ export default function FeuilleAfficheSeance({ data, reglage, onReglage, onRefai
     <Sheet onFermer={onFermer}>
       <div className="max-h-[78dvh] overflow-y-auto pb-1" style={{ scrollbarWidth: "none" }}>
         <div className="flex justify-center">
-          <CouvertureSeance data={data} mot={motActif} teinte={teinte} />
+          <CouvertureSeance data={data} mot={motActif} teinte={teinte} numero={numero} />
         </div>
         <p className="vy-sous mt-4 truncate text-center" style={{ color: "var(--text-0)" }}>{data.title || "Séance"}</p>
 
+        {onReglage && (<>
         <p className="vy-label mt-5 mb-2" style={{ color: "var(--text-3)" }}>Le mot</p>
         <div className="-mx-5 flex gap-2 overflow-x-auto px-5 pb-1" style={{ scrollbarWidth: "none" }}>
           {mots.map((m) => {
             const actif = m === motActif;
             return (
-              <button key={m} type="button" onClick={() => onReglage({ ...reglage, mot: m === motAuto ? null : m })}
+              <button key={m} type="button" onClick={() => onReglage?.({ ...reglage, mot: m === motAuto ? null : m })}
                 className="h-9 flex-shrink-0 rounded-full px-4 text-[13px] font-semibold"
                 style={{
                   background: actif ? "linear-gradient(135deg,#8B5CF6,#C13BC1)" : "rgba(var(--text-3-rgb),0.12)",
@@ -60,7 +66,7 @@ export default function FeuilleAfficheSeance({ data, reglage, onReglage, onRefai
         <p className="vy-label mt-4 mb-2" style={{ color: "var(--text-3)" }}>Le fond</p>
         <div className="flex gap-3">
           {Array.from({ length: NB_FONDS }, (_, i) => (
-            <button key={i} type="button" aria-label={`Fond ${i + 1}`} onClick={() => onReglage({ ...reglage, teinte: i })}
+            <button key={i} type="button" aria-label={`Fond ${i + 1}`} onClick={() => onReglage?.({ ...reglage, teinte: i })}
               className="h-11 w-11 rounded-full"
               style={{
                 background: fondCouverture(i),
@@ -69,10 +75,14 @@ export default function FeuilleAfficheSeance({ data, reglage, onReglage, onRefai
           ))}
         </div>
 
+        </>)}
+
         <div className="mt-6 flex items-center justify-between gap-3">
-          <button type="button" onClick={onRefaire} className="flex items-center gap-1.5 text-[13px] font-semibold" style={{ color: "var(--exp-encre)" }}>
-            <Play size={13} strokeWidth={2.2} /> Refaire la séance
-          </button>
+          {onRefaire ? (
+            <button type="button" onClick={onRefaire} className="flex items-center gap-1.5 text-[13px] font-semibold" style={{ color: "var(--exp-encre)" }}>
+              <Play size={13} strokeWidth={2.2} /> Refaire la séance
+            </button>
+          ) : <span />}
           {!confirmer ? (
             <button type="button" onClick={() => setConfirmer(true)} className="flex items-center gap-1.5 text-[13px] font-semibold" style={{ color: "#E5484D" }}>
               <Trash2 size={13} strokeWidth={2} /> Supprimer
@@ -81,13 +91,13 @@ export default function FeuilleAfficheSeance({ data, reglage, onReglage, onRefai
             <button type="button" disabled={enCours}
               onClick={async () => { setEnCours(true); const ok = await onSupprimer(); setEnCours(false); if (!ok) setConfirmer(false); }}
               className="h-9 rounded-full px-4 text-[13px] font-bold text-white" style={{ background: "#E5484D" }}>
-              {enCours ? "Suppression…" : "Oui, supprimer la séance"}
+              {enCours ? "Suppression…" : quoi === "seance" ? "Oui, supprimer la séance" : "Oui, supprimer l’affiche"}
             </button>
           )}
         </div>
         {confirmer && (
           <p className="mt-2 text-right text-[11px]" style={{ color: "var(--text-3)" }}>
-            La séance quitte ton historique, pour de bon.
+            {quoi === "seance" ? "La séance quitte ton historique, pour de bon." : "L’affiche quitte ton profil, pour de bon. Ta séance reste dans ton historique."}
           </p>
         )}
       </div>

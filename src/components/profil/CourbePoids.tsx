@@ -15,8 +15,8 @@
    ressemble à une variation normale, et une vraie tendance se voit
    quand même.
 
-   ⚠️ 2. LA COURBE EST TEAL DANS LES DEUX SENS. Le teal, dans le système
-   D, veut dire « le corps », pas « bravo ». Monter n'est pas un échec :
+   ⚠️ 2. LA COURBE EST BLEU-VIOLET DANS LES DEUX SENS (`--poids-encre`,
+   Louis, 2026-10-14 : elle était teal). Une seule couleur, jamais « bravo ». Monter n'est pas un échec :
    quelqu'un en prise de masse veut exactement ça. Pas de vert, pas de
    rouge, jamais.
 
@@ -183,11 +183,11 @@ export default function CourbePoids({ userId, onPeser, debut = null, onMasques }
         <span className="flex items-baseline gap-1.5 mt-1">
           <b
             className="vy-nombre text-[26px] leading-none"
-            style={{ color: "var(--teal-encre)" }}
+            style={{ color: "var(--poids-encre)" }}
           >
             {dernier.kg.toFixed(1).replace(".", ",")}
           </b>
-          <i className="not-italic text-[13px] font-bold" style={{ color: "var(--teal-encre)", opacity: 0.72 }}>kg</i>
+          <i className="not-italic text-[13px] font-bold" style={{ color: "var(--poids-encre)", opacity: 0.72 }}>kg</i>
         </span>
       ) : (
         <span className="vy-corps block mt-1.5">
@@ -207,14 +207,14 @@ export default function CourbePoids({ userId, onPeser, debut = null, onMasques }
           >
             <defs>
               <linearGradient id="vy-poids" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0" stopColor="#2BD4A0" stopOpacity="0.22" />
-                <stop offset="1" stopColor="#2BD4A0" stopOpacity="0" />
+                <stop offset="0" stopColor="#6E6BF5" stopOpacity="0.22" />
+                <stop offset="1" stopColor="#6E6BF5" stopOpacity="0" />
               </linearGradient>
             </defs>
             <path d={`${trace.d}L${LARGEUR - 3},${HAUTEUR}L3,${HAUTEUR}Z`} fill="url(#vy-poids)" />
-            <path d={trace.d} fill="none" stroke="var(--teal-encre)" strokeWidth="2"
+            <path d={trace.d} fill="none" stroke="var(--poids-encre)" strokeWidth="2"
                   strokeLinecap="round" strokeLinejoin="round" />
-            <circle cx={trace.fin[0]} cy={trace.fin[1]} r="3.6" fill="var(--teal-encre)" />
+            <circle cx={trace.fin[0]} cy={trace.fin[1]} r="3.6" fill="var(--poids-encre)" />
           </svg>
         </span>
       ) : (

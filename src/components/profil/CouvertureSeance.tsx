@@ -17,7 +17,7 @@ import type { PerformanceData } from "@/components/PerformanceCard";
 const FONDS = [
   "radial-gradient(90% 60% at 100% 0%, rgba(193,59,193,.75) 0%, transparent 65%), radial-gradient(90% 70% at 0% 100%, rgba(139,92,246,.85) 0%, transparent 65%), #120D1A",
   "radial-gradient(90% 60% at 0% 0%, rgba(245,177,32,.6) 0%, transparent 65%), radial-gradient(90% 70% at 100% 100%, rgba(139,92,246,.8) 0%, transparent 65%), #120D1A",
-  "radial-gradient(90% 60% at 100% 100%, rgba(43,212,160,.55) 0%, transparent 65%), radial-gradient(90% 70% at 0% 0%, rgba(139,92,246,.8) 0%, transparent 65%), #120D1A",
+  "radial-gradient(90% 60% at 100% 100%, rgba(79,123,255,.7) 0%, transparent 65%), radial-gradient(90% 70% at 0% 0%, rgba(139,92,246,.8) 0%, transparent 65%), #120D1A",
 ];
 
 /** Le nombre de fonds proposés quand on modifie une affiche. */
