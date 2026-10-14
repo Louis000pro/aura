@@ -5,7 +5,7 @@ import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  X, Check, Lock, Camera, ChevronRight,
+  X, Check, Lock, Camera, ChevronRight, ChevronDown,
   Pencil, Dumbbell, Play, Settings, Trash2, Share2,
 } from "lucide-react";
 import PerformanceCard, { type PerformanceData } from "@/components/PerformanceCard";
@@ -737,7 +737,7 @@ export default function ProfilPage() {
            violet. La couronne Vaiiya+ et le bouclier admin quittent la
            rangée du haut : les deux vivent dans les Paramètres, et le violet
            plein reste réservé à l'action. ─── */}
-      <div data-tour-anchor="profil-header" className="relative z-10 pt-14 px-5 md:px-8 max-w-3xl mx-auto">
+      <div data-tour-anchor="profil-header" className="relative z-10 pt-[72px] px-5 md:px-8 max-w-3xl mx-auto">
 
         <div className="flex items-center justify-between">
           <span className="vy-label" style={{ color: "var(--text-2)" }}>Ton profil</span>
@@ -769,20 +769,9 @@ export default function ProfilPage() {
                 className="min-w-0"
                 style={{ margin: 0, fontSize: 34, lineHeight: 1, fontWeight: 850, fontVariationSettings: "var(--w-affiche)", letterSpacing: "-0.02em", color: "var(--text-0)", overflowWrap: "anywhere" }}
               >
-                <PseudoRang rang={rangCourant} cosmetiques={cosmetiques} pseudo={displayPseudo} tailleGemme={22} />
+                {/* Sans la gemme : le rang s'écrit juste en dessous, une fois suffit. */}
+                <PseudoRang rang={rangCourant} cosmetiques={{ ...cosmetiques, badge: false }} pseudo={displayPseudo} />
               </h1>
-              {(user?.is_certified || user?.is_admin || user?.email === "teyprox@gmail.com") && (
-                <span
-                  title="Compte certifié"
-                  aria-label="Compte certifié"
-                  className="flex items-center justify-center rounded-full flex-shrink-0"
-                  style={{ width: 22, height: 22, background: "linear-gradient(135deg,#8B5CF6,#C13BC1)" }}
-                >
-                  <svg width="12" height="12" viewBox="0 0 13 13" fill="none" aria-hidden>
-                    <path d="M2.5 6.5L5 9L10.5 4" stroke="white" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                </span>
-              )}
             </div>
 
             <TitreRang cosmetiques={cosmetiques} />
@@ -802,15 +791,17 @@ export default function ProfilPage() {
             {(objectifs.length > 0 || niveau) && (
               <p className="vy-corps" style={{ margin: 0, color: "var(--text-0)" }}>
                 {(objectifsOuverts ? objectifs : objectifs.slice(0, 1)).concat(niveau ? [niveau] : []).join(" · ")}
-                {!objectifsOuverts && objectifs.length > 1 && (
+                {objectifs.length > 1 && (
                   <button
                     type="button"
-                    onClick={() => setObjectifsOuverts(true)}
-                    className="ml-1.5 cursor-pointer"
+                    onClick={() => setObjectifsOuverts((o) => !o)}
+                    className="ml-1.5 inline-flex items-center gap-0.5 cursor-pointer align-middle"
                     style={{ fontSize: 13, fontWeight: 600, color: "var(--exp-encre)" }}
-                    aria-label={`Voir les ${objectifs.length - 1} autres objectifs`}
+                    aria-expanded={objectifsOuverts}
+                    aria-label={objectifsOuverts ? "Replier les objectifs" : `Voir les ${objectifs.length - 1} autres objectifs`}
                   >
-                    +{objectifs.length - 1}
+                    {!objectifsOuverts && <span>+{objectifs.length - 1}</span>}
+                    <ChevronDown size={15} strokeWidth={2.2} style={{ transform: objectifsOuverts ? "rotate(180deg)" : "none", transition: "transform .2s" }} />
                   </button>
                 )}
               </p>
@@ -818,7 +809,7 @@ export default function ProfilPage() {
 
             {profileBio && (
               <p className="vy-label" style={{ margin: 0, color: "var(--text-2)", fontWeight: 400 }}>
-                « {profileBio} »
+                {profileBio}
               </p>
             )}
           </div>
@@ -1345,7 +1336,7 @@ export default function ProfilPage() {
                   <div>
                     <div className="flex items-center gap-1">
                       <p className="text-[16px] font-semibold" style={{ color: "var(--text-1)" }}>@{displayPseudo}</p>
-                      {(user?.is_certified || user?.is_admin || user?.email === "teyprox@gmail.com") && (
+                      {user?.is_certified && (
                         <div className="w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0"
                           style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)" }}>
                           <svg width="8" height="8" viewBox="0 0 13 13" fill="none">
