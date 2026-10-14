@@ -381,7 +381,7 @@ function LoadingSpinner() {
    CSS et non en React, pour que le rendu reste identique serveur et client. */
 export default function AccueilClient({ chiffres, avis }: { chiffres: ChiffresPublics; avis: ResumeAvis }) {
   const { user, isLoading, justLoggedIn, isNewUser, clearWelcome } = useAuth();
-  // Le popup animé "Bonsoir" est retiré au profit de l'intro logo (SplashIntro).
+  // Le popup animé "Bonsoir" est retiré.
   void justLoggedIn; void isNewUser; void clearWelcome;
 
   // Le script du <head> voit un jeton, pas une session valide : un jeton périmé

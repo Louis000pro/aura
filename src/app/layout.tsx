@@ -11,7 +11,6 @@ import GardePseudo from "@/components/GardePseudo";
 import GardeConnexion from "@/components/GardeConnexion";
 import GuidedTour from "@/components/GuidedTour/GuidedTour";
 import PWARegister from "@/components/PWARegister";
-import SplashIntro from "@/components/SplashIntro";
 import PremiumBanner from "@/components/PremiumBanner";
 import PresenceDuJour from "@/components/PresenceDuJour";
 import CelebrationRang from "@/components/rang/CelebrationRang";
@@ -344,7 +343,6 @@ export default function RootLayout({
       <body className="min-h-full notranslate" translate="no">
         {/* Voile léger derrière la barre d'état (lisibilité de l'horloge en mode plein écran) */}
         <div aria-hidden style={{ position: "fixed", top: 0, left: 0, right: 0, height: "env(safe-area-inset-top)", zIndex: 1, pointerEvents: "none", background: "linear-gradient(to bottom, rgba(45,33,80,0.18), transparent)" }} />
-        <SplashIntro />
         <AuthProvider>
           <PresenceDuJour />
           {/* ⚠️ `GuideProvider` ENGLOBE `AssistantProvider`, et l'ordre n'est

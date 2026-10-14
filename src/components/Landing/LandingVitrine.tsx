@@ -16,7 +16,7 @@
  *     exception réservée à cette page.
  *
  * ⚠️ LE « BUG À L'ENTRÉE » : rien ne doit apparaître puis disparaître.
- *   · L'intro au logo (`SplashIntro`) ne joue plus sur une page publique.
+ *   · L’intro au logo (`SplashIntro`) est supprimée (Louis, 2026-10-14).
  *   · Le héros (titre géant, puis Nora et Sasha) entre en CSS pur, dès le
  *     premier octet de HTML. Maquette : `docs/maquettes/vitrine-nora-sasha.html`.
  *   · `useRevelation` ne cache que ce qui est SOUS le pli quand il s'arme :
