@@ -1,12 +1,12 @@
 ﻿"use client";
 
-import { useState, useEffect, Fragment, type ReactNode } from "react";
+import { useState, useEffect, useSyncExternalStore, Fragment, type ReactNode } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import AiMemoryManager from "@/components/AiMemoryManager";
 import TasteProfileModal from "@/components/TasteProfileModal";
 import { AssistantSpark, MarqueAssistant, VisageGuide } from "@/components/AssistantMark";
 import GemmeRang from "@/components/GemmeRang";
-import { Lock, LogOut, ChevronRight, Eye, EyeOff, Check, AlertTriangle, X, Shield, Moon, Sun, Target, Compass, Gauge, Gem, Utensils, CreditCard, Sparkles, Star, type LucideIcon } from "lucide-react";
+import { Lock, LogOut, ChevronRight, Eye, EyeOff, Check, AlertTriangle, X, Shield, Moon, Sun, Target, Compass, Gauge, Gem, Utensils, CreditCard, Sparkles, Star, Volume2, type LucideIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
@@ -21,6 +21,7 @@ import { calculerAura, type EtatAura } from "@/lib/aura";
 import { libelleObjectif } from "@/lib/profilOnboarding";
 import { PLANS, VENTE_OUVERTE } from "@/lib/plans";
 import { ouvrirNouveautes } from "@/lib/nouveautes";
+import { sonsActifs, reglerSons, EVT_SONS } from "@/lib/sons";
 import { useGuideActif } from "@/context/GuideContext";
 import { PRENOM_GUIDE, type GuideId } from "@/lib/guides";
 
@@ -549,6 +550,13 @@ export default function ParametresPage() {
   const [toast, setToast] = useState<string | null>(null);
   const [pushLoading, setPushLoading]             = useState(false);
   const [pushEnabled, setPushEnabled]             = useState(false);
+  // Les sons sont un réglage de l'appareil (localStorage) : on les lit par
+  // un store externe, donc ni décalage d'hydratation ni effet de synchro.
+  const sons = useSyncExternalStore(
+    (rappel) => { window.addEventListener(EVT_SONS, rappel); return () => window.removeEventListener(EVT_SONS, rappel); },
+    sonsActifs,
+    () => false,
+  );
 
   // Ce que chaque ligne affiche à droite : on le lit une fois à l'ouverture.
   const [resumeCorps, setResumeCorps]   = useState<string | null>(null);
@@ -771,6 +779,14 @@ export default function ParametresPage() {
                   onChange={(k) => { setQuality(k); showToast(`Qualité : ${QUALITY_OPTS.find((o) => o.key === k)?.label}`); }}
                 />
               }
+            />
+            <Ligne
+              icon={Volume2}
+              label="Sons"
+              sub={sons ? "Le 3-2-1, la fin du repos, la séance finie" : "Coupés sur cet appareil"}
+              right={<Interrupteur on={sons} />}
+              chevron={false}
+              onClick={() => reglerSons(!sons)}
             />
             <Ligne
               icon={Shield}

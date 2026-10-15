@@ -1,5 +1,6 @@
 "use client";
 
+import { jouerSon } from "@/lib/sons";
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { marquesDeReprise, type AvancementSeance } from "@/lib/seanceInterrompue";
 import { useRouter } from "next/navigation";
@@ -1615,7 +1616,7 @@ export default function WorkoutGuideModal({
     const pas = pasDuRepos({ restant: restCountdown, enPause: paused, correctionOuverte: !!correction, vibree: finReposVibreeRef.current });
     if (pas.action === "attendre") return;
     if (pas.action === "zero") {
-      if (pas.vibrer) { vibrer([70, 50, 70]); finReposVibreeRef.current = true; } // fin de récup
+      if (pas.vibrer) { vibrer([70, 50, 70]); jouerSon("finRepos"); finReposVibreeRef.current = true; } // fin de récup
       if (!pas.reprendre) return;
       if (restMode === "exercise") { setRestMode("set"); skipExercise(); }
       else advance();
@@ -1625,6 +1626,32 @@ export default function WorkoutGuideModal({
     return () => clearTimeout(t);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase, restCountdown, paused, restMode, correction]);
+
+  /* ── Les sons du tunnel (lib/sons.ts) ──
+     Le 3-2-1 sonne parce que le téléphone est souvent posé : on doit
+     savoir que l'effort part sans regarder l'écran. Mêmes trois dernières
+     secondes à la fin d'un repos. Chaque son se joue sur un CHANGEMENT de
+     valeur (ref), jamais à chaque rendu. */
+  const prepPrecRef = useRef(prep);
+  useEffect(() => {
+    const avant = prepPrecRef.current;
+    prepPrecRef.current = prep;
+    if (phase !== "exercising" || paused || prep === avant) return;
+    if (prep > 0 && prep <= 3) jouerSon("tic");
+    else if (prep === 0 && avant > 0) jouerSon("go");
+  }, [prep, phase, paused]);
+
+  const reposPrecRef = useRef(restCountdown);
+  useEffect(() => {
+    const avant = reposPrecRef.current;
+    reposPrecRef.current = restCountdown;
+    if (phase !== "resting" || paused || restCountdown === avant) return;
+    if (restCountdown > 0 && restCountdown <= 3 && restCountdown < avant) jouerSon("tic");
+  }, [restCountdown, phase, paused]);
+
+  useEffect(() => {
+    if (phase === "done") jouerSon("seanceFinie");
+  }, [phase]);
 
   /* ── Décompte 3-2-1 avant chaque effort chronométré ── */
   /* R3 · le choix d'un remplaçant suspend le 3-2-1 ET le chrono
@@ -1643,7 +1670,7 @@ export default function WorkoutGuideModal({
     const pas = pasDeLEffort({ enPause: paused, choixOuvert, prep, chronometre: !!(cur.auto || cur.hiit), restant: autoCountdown });
     if (pas === "attendre" || pas === "decompter_prep") return;
     if (pas === "terminer") {
-      vibrer(90); // fin d'effort chronométré (ou fin d'un segment HIIT)
+      vibrer(90); jouerSon("finEffort"); // fin d'effort chronométré (ou fin d'un segment HIIT)
       if (cur.hiit && hiitSub === "work") { setHiitSub("rest"); setAutoCountdown(HIIT_REST); return; }
       /* Arrivé au bout tout seul, sauf si un bouton l'a abrégé juste avant. */
       const v = validationRef.current

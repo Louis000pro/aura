@@ -1,5 +1,6 @@
 "use client";
 
+import { jouerSon } from "@/lib/sons";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
@@ -51,7 +52,7 @@ export default function CelebrationRang() {
     const onMonte = (e: Event) => {
       const detail = (e as CustomEvent<DetailRangMonte>).detail;
       const trouve = RANGS.find((r) => r.id === detail?.rangId);
-      if (trouve) setRang(trouve);
+      if (trouve) { setRang(trouve); jouerSon("rang"); }
     };
     window.addEventListener(EVENEMENT_RANG_MONTE, onMonte);
     return () => window.removeEventListener(EVENEMENT_RANG_MONTE, onMonte);
