@@ -6,6 +6,8 @@ import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { ChevronRight } from "lucide-react";
 import { VisageGuide } from "@/components/AssistantMark";
 import MaJournee from "@/components/accueil/MaJournee";
+import FeuilleSerie from "@/components/accueil/FeuilleSerie";
+import { useAuth } from "@/context/AuthContext";
 import FeuilleMissions from "@/components/accueil/FeuilleMissions";
 import { useAssistant } from "@/context/AssistantContext";
 import { type EtatAura } from "@/lib/aura";
@@ -105,6 +107,8 @@ export default function AccueilSignature({
   const reduce = useReducedMotion();
   const premiumDebloque = isPremium || isAdmin;
   const [feuille, setFeuille] = useState(false);
+  const [feuilleSerie, setFeuilleSerie] = useState(false);
+  const { user } = useAuth();
 
   return (
     <div className={styles.home}>
@@ -125,10 +129,21 @@ export default function AccueilSignature({
           onNavigate={onNavigate}
           onVoirTout={() => setFeuille(true)}
           onOpenRangs={onOpenRangs}
+          onOpenSerie={() => setFeuilleSerie(true)}
         />
       )}
 
       {relais && <BandeRelais relais={relais} onNavigate={onNavigate} />}
+
+      <AnimatePresence>
+        {feuilleSerie && missionsLues && user?.id && (
+          <FeuilleSerie
+            userId={user.id}
+            serie={Math.max(1, aura.serie)}
+            onFermer={() => setFeuilleSerie(false)}
+          />
+        )}
+      </AnimatePresence>
 
       <AnimatePresence>
         {feuille && missionsLues && (

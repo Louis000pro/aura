@@ -36,6 +36,7 @@ export default function MaJournee({
   onNavigate,
   onVoirTout,
   onOpenRangs,
+  onOpenSerie,
 }: {
   aura: EtatAura;
   /** Le jour parisien courant, `YYYY-MM-DD` : il décide quelle mission
@@ -47,6 +48,8 @@ export default function MaJournee({
   onNavigate: (path: string) => void;
   onVoirTout: () => void;
   onOpenRangs: () => void;
+  /** La flamme ouvre les jours de la série, jamais les rangs (Louis, 2026-10-15). */
+  onOpenSerie: () => void;
 }) {
   const { fait, total } = compteMissionsJour(aura);
   const semaine = Math.max(0, Math.min(7, aura.detail.joursActifsSemaine));
@@ -103,7 +106,7 @@ export default function MaJournee({
           </span>
         </button>
 
-        <button type="button" className={`${styles.tuile} ${styles.serie}`} onClick={onOpenRangs}>
+        <button type="button" className={`${styles.tuile} ${styles.serie}`} onClick={onOpenSerie}>
           <span className={styles.serieTete}>
             <span className={styles.flamme} aria-hidden="true">🔥</span>
             <span className={styles.texte}>
