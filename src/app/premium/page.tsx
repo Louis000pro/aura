@@ -6,7 +6,7 @@ import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { Check, Sparkles, Crown } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
-import { PLANS, VENTE_OUVERTE, formatPrice, type PlanId } from "@/lib/plans";
+import { PLANS, VENTE_OUVERTE, formatPrice, annuelParMois, economieAnnuelle, type PlanId, type Periode } from "@/lib/plans";
 import PremiumCelebration from "@/components/PremiumCelebration";
 import { VitrinePied } from "@/components/seo/VitrineChrome";
 import InfosPremium from "./InfosPremium";
@@ -52,6 +52,8 @@ function PremiumInner() {
   // reconduit tout seul : le contrat doit être accepté explicitement, pas
   // supposé accepté parce qu'un lien traînait en bas de page.
   const [cguOk, setCguOk] = useState(false);
+  // L'annuel est proposé d'abord : c'est l'offre qu'on recommande.
+  const [periode, setPeriode] = useState<Periode>("an");
   const [isMobile, setIsMobile] = useState(false);
   const [activeIdx, setActiveIdx] = useState(1); // Premium centré par défaut
   const carouselRef = useRef<HTMLDivElement>(null);
@@ -154,7 +156,7 @@ function PremiumInner() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${session.access_token}`,
         },
-        body: JSON.stringify({ plan }),
+        body: JSON.stringify({ plan, periode }),
       });
       const data = await res.json();
       if (res.ok && data.url) { window.location.href = data.url; return; }
@@ -302,18 +304,16 @@ function PremiumInner() {
                   </div>
 
                   {/* Prix */}
-                  <div className="flex items-end gap-1.5 flex-wrap mb-2.5">
-                    <span className={`font-black ${highlight ? "text-[34px] md:text-[48px]" : "text-[26px]"}`} style={{ color: "var(--text-0)" }}>
-                      {p.priceCents === 0 ? "0 €" : formatPrice(p.priceCents)}
-                    </span>
-                    {p.priceCents > 0 && <span className="text-[16px] font-light mb-1.5" style={{ color: "var(--text-3)" }}>/mois</span>}
-                    {p.priceCents > 0 && (
-                      <span className="text-[11px] font-semibold mb-1.5 px-2 py-0.5 rounded-full"
-                        style={{ background: "rgba(167,139,250,0.1)", color: "var(--exp-encre)" }}>
-                        ≈ {(p.priceCents / 100 / 30).toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €/jour
+                  {highlight && p.priceAnnuelCents ? (
+                    <PrixVaiiyaPlus periode={periode} onPeriode={setPeriode} />
+                  ) : (
+                    <div className="flex items-end gap-1.5 flex-wrap mb-2.5">
+                      <span className={`font-black ${highlight ? "text-[34px] md:text-[48px]" : "text-[26px]"}`} style={{ color: "var(--text-0)" }}>
+                        {p.priceCents === 0 ? "0 €" : formatPrice(p.priceCents)}
                       </span>
-                    )}
-                  </div>
+                      {p.priceCents > 0 && <span className="text-[16px] font-light mb-1.5" style={{ color: "var(--text-3)" }}>/mois</span>}
+                    </div>
+                  )}
 
                   {/* Petite phrase entre le prix et le bouton (façon ChatGPT) */}
                   <p className="text-[16px] font-light mb-4" style={{ color: "var(--text-soft)", minHeight: 40 }}>{p.tagline}</p>
@@ -418,7 +418,9 @@ function PremiumInner() {
           <p className="text-center text-[11px] md:text-[13px] font-light mt-3 md:mt-6 flex-shrink-0" style={{ color: "var(--text-3)" }}>
             <strong style={{ color: "var(--exp-encre)" }}>0 € aujourd&apos;hui</strong>{" "}· annulable en 1 clic avant la fin de l&apos;essai · paiement sécurisé Stripe 🔒
             <br />
-            Puis {formatPrice(PLANS.premium.priceCents)}/mois, reconduit automatiquement, résiliable à tout moment.
+            Puis {periode === "an" && PLANS.premium.priceAnnuelCents
+              ? `${formatPrice(PLANS.premium.priceAnnuelCents)}/an`
+              : `${formatPrice(PLANS.premium.priceCents)}/mois`}, reconduit automatiquement, résiliable à tout moment.
             {" "}
             <Link href="/conditions" className="underline" style={{ color: "var(--text-2)" }}>Conditions</Link>
           </p>
@@ -486,6 +488,56 @@ function PremiumInner() {
           <PremiumCelebration onClose={() => { setCelebrate(false); router.replace("/"); }} />
         )}
       </AnimatePresence>
+    </div>
+  );
+}
+
+/**
+ * Le prix de Vaiiya+, avec son choix mois / année. Les deux chiffres viennent
+ * de plans.ts : l'économie et le prix ramené au mois sont CALCULÉS, jamais
+ * écrits à la main, pour qu'un changement de prix ne laisse pas un « −44 % »
+ * faux derrière lui.
+ */
+function PrixVaiiyaPlus({ periode, onPeriode }: { periode: Periode; onPeriode: (p: Periode) => void }) {
+  const p = PLANS.premium;
+  const parMois = annuelParMois(p);
+  const economie = economieAnnuelle(p);
+  const annuel = periode === "an";
+  return (
+    <div className="mb-2.5">
+      <div role="radiogroup" aria-label="Période de paiement"
+        className="inline-flex p-1 mb-3 gap-1"
+        style={{ borderRadius: 999, background: "rgba(139,92,246,0.08)" }}>
+        {(["mois", "an"] as const).map((v) => {
+          const actif = periode === v;
+          return (
+            <button key={v} role="radio" aria-checked={actif} onClick={() => onPeriode(v)}
+              className="px-3.5 py-1.5 text-[13px] font-semibold cursor-pointer flex items-center gap-1.5"
+              style={{
+                borderRadius: 999,
+                background: actif ? "rgb(var(--surface-rgb))" : "transparent",
+                color: actif ? "var(--text-0)" : "var(--text-3)",
+                boxShadow: actif ? "var(--ombre-pose)" : "none",
+              }}>
+              {v === "mois" ? "Au mois" : "À l’année"}
+              {v === "an" && economie ? (
+                <span className="text-[11px] font-bold" style={{ color: "var(--or-encre)" }}>−{economie} %</span>
+              ) : null}
+            </button>
+          );
+        })}
+      </div>
+      <div className="flex items-end gap-1.5 flex-wrap">
+        <span className="font-black text-[34px] md:text-[48px] vy-nombre" style={{ color: "var(--text-0)", fontWeight: 800 }}>
+          {annuel && parMois ? formatPrice(parMois) : formatPrice(p.priceCents)}
+        </span>
+        <span className="text-[16px] font-light mb-1.5" style={{ color: "var(--text-3)" }}>/mois</span>
+      </div>
+      <p className="text-[13px] mt-1" style={{ color: "var(--text-3)" }}>
+        {annuel && p.priceAnnuelCents
+          ? <>Soit <strong style={{ color: "var(--text-2)" }}>{formatPrice(p.priceAnnuelCents)}</strong> payés une fois par an</>
+          : <>Sans engagement, résiliable chaque mois</>}
+      </p>
     </div>
   );
 }

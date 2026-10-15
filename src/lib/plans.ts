@@ -40,6 +40,14 @@ export interface Plan {
   name: string;
   /** Prix mensuel TTC en centimes (0 = gratuit). */
   priceCents: number;
+  /**
+   * Prix ANNUEL TTC en centimes, prélevé en une fois (absent = pas d'offre
+   * annuelle). 59,99 € contre 8,99 € par mois (Louis, 2026-10-15) : l'annuel
+   * revient à 5 € par mois, soit 44 % de moins. L'écart est grand exprès,
+   * parce qu'une appli de sport se quitte surtout dans les deux premiers mois
+   * et que l'annuel est ce qui garde quelqu'un jusqu'aux résultats.
+   */
+  priceAnnuelCents?: number;
   currency: "eur";
   /** Jours d'essai gratuit (0 = pas d'essai). */
   trialDays: number;
@@ -102,7 +110,8 @@ export const PLANS: Record<PlanId, Plan> = {
   premium: {
     id: "premium",
     name: "Vaiiya+",
-    priceCents: 599,
+    priceCents: 899,
+    priceAnnuelCents: 5999,
     currency: "eur",
     trialDays: 3,
     tagline: "Tout Vaiiya",
@@ -133,7 +142,21 @@ export function isPaidPlan(id: string | null | undefined): boolean {
   return id === "premium";
 }
 
-/** Prix formaté pour l'affichage, ex. "5,99 €". */
+/** Prix formaté pour l'affichage, ex. "8,99 €". */
 export function formatPrice(cents: number): string {
   return (cents / 100).toLocaleString("fr-FR", { minimumFractionDigits: 2 }) + " €";
+}
+
+/** Les deux façons de payer Vaiiya+. */
+export type Periode = "mois" | "an";
+
+/** Ce que l'annuel coûte par mois, en centimes arrondis (5999 → 500). */
+export function annuelParMois(plan: Plan): number | null {
+  return plan.priceAnnuelCents ? Math.round(plan.priceAnnuelCents / 12) : null;
+}
+
+/** Le pourcentage économisé par l'annuel par rapport à douze mois payés (44). */
+export function economieAnnuelle(plan: Plan): number | null {
+  if (!plan.priceAnnuelCents || !plan.priceCents) return null;
+  return Math.round((1 - plan.priceAnnuelCents / (plan.priceCents * 12)) * 100);
 }

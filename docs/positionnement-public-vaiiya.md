@@ -153,7 +153,7 @@ Vérifiés sur `main` le 2026-08-10. À revérifier avant réemploi.
 | Mouvements animés | 102 | `lib/exerciseLibrary.ts` |
 | Fiches exercices publiques | 8 | `lib/exercicesPublics.ts` |
 | Rangs | 6 | `lib/aura.ts` |
-| Prix Vaiiya+ | 5,99 €/mois | `lib/plans.ts` (jamais réécrit à la main) |
+| Prix Vaiiya+ | 8,99 €/mois ou 59,99 €/an | `lib/plans.ts` (jamais réécrit à la main) |
 
 **Chiffres interdits en dur :** nombre d'utilisateurs, de comptes, de téléchargements,
 de séances réalisées. **52 comptes créés au 10 août 2026** est un instantané interne :
@@ -185,7 +185,7 @@ une faute à corriger.
 juridique tant que la structure n'est pas immatriculée).
 
 Ce qu'on peut écrire : ce que le compte gratuit contient, ce que Vaiiya+ ajoutera,
-son prix à venir (5,99 €/mois), et le fait que **l'abonnement n'est pas encore
+son prix à venir (8,99 €/mois, ou 59,99 €/an), et le fait que **l'abonnement n'est pas encore
 ouvert à la souscription**.
 
 Ce qu'on ne peut pas écrire : « abonne-toi », « essai gratuit de 3 jours »,

@@ -163,7 +163,7 @@ export default function InfosPremium({ premiumDebloque = false }: { premiumDeblo
         </h2>
         <p className="text-[16px] font-light leading-relaxed" style={{ color: "var(--text-body)" }}>
           {premium.name} est à <strong style={{ color: "var(--text-0)" }}>{formatPrice(premium.priceCents)} par mois</strong>, sans
-          engagement de durée, avec {premium.trialDays} jours d&apos;essai au démarrage. C&apos;est la seule
+          engagement de durée{premium.priceAnnuelCents ? <>, ou <strong style={{ color: "var(--text-0)" }}>{formatPrice(premium.priceAnnuelCents)} par an</strong>{" "}payés en une fois</> : null}, avec {premium.trialDays} jours d&apos;essai au démarrage. C&apos;est la seule
           offre payante de Vaiiya : il n&apos;y a pas de palier au-dessus, pas de supplément par
           fonctionnalité et pas d&apos;achat à l&apos;intérieur de l&apos;application.
         </p>

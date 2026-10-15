@@ -327,6 +327,14 @@ export default function RootLayout({
                           priceCurrency: "EUR",
                           description: "Vaiiya+, par mois, résiliable à tout moment.",
                         },
+                        ...(PLANS.premium.priceAnnuelCents
+                          ? [{
+                              "@type": "Offer",
+                              price: (PLANS.premium.priceAnnuelCents / 100).toFixed(2),
+                              priceCurrency: "EUR",
+                              description: "Vaiiya+, par an, payé en une fois.",
+                            }]
+                          : []),
                       ]
                     : {
                         "@type": "Offer",

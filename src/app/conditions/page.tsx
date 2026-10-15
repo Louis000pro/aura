@@ -50,6 +50,7 @@ export default function ConditionsPage() {
   const premium = PLANS.premium;
   const free = PLANS.free;
   const prix = formatPrice(premium.priceCents);
+  const prixAnnuel = premium.priceAnnuelCents ? formatPrice(premium.priceAnnuelCents) : null;
 
   return (
     <div className="min-h-screen px-4 md:px-8 pt-8 pb-28 max-w-3xl mx-auto">
@@ -111,7 +112,8 @@ export default function ConditionsPage() {
         <Section title="3. L’offre gratuite et l’abonnement Vaiiya+">
           <p>
             Vaiiya s&apos;utilise gratuitement, avec les limites indiquées ci-dessous et à l&apos;article 5.
-            L&apos;abonnement <strong>{premium.name}</strong> coûte <strong>{prix} par mois</strong>, toutes
+            L&apos;abonnement <strong>{premium.name}</strong> coûte <strong>{prix} par mois</strong>
+            {prixAnnuel && <>, ou <strong>{prixAnnuel} par an</strong>{" "}payés en une fois</>}, toutes
             taxes comprises, et donne accès à l&apos;ensemble des fonctionnalités.
           </p>
           <p>
@@ -139,8 +141,9 @@ export default function ConditionsPage() {
             se poursuit automatiquement et le premier prélèvement a lieu, sauf si vous avez résilié avant.
           </p>
           <p>
-            <strong>L&apos;abonnement se reconduit automatiquement chaque mois</strong>{" "}jusqu&apos;à
-            résiliation. Chaque échéance est prélevée d&apos;avance, pour le mois à venir.
+            <strong>L&apos;abonnement se reconduit automatiquement à chaque échéance</strong>{" "}(chaque
+            mois, ou chaque année pour la formule annuelle) jusqu&apos;à résiliation. Chaque échéance
+            est prélevée d&apos;avance, pour la période à venir.
           </p>
           <p>
             Les paiements sont traités par <strong>Stripe</strong>. Nous ne voyons ni ne conservons jamais

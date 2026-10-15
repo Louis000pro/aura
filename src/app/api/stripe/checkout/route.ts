@@ -1,7 +1,7 @@
 /**
  * POST /api/stripe/checkout
  * Crée une session Stripe Checkout (abonnement) avec essai gratuit.
- * Body: { plan: "premium" } + en-tête Authorization: Bearer <access_token>
+ * Body: { plan: "premium", periode?: "mois" | "an" } + en-tête Authorization: Bearer <access_token>
  * Renvoie { url } vers la page de paiement hébergée par Stripe.
  *
  * Le compte vient du TOKEN, jamais du corps de la requête : avant, n'importe
@@ -17,7 +17,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { createAdminClient } from "@/lib/supabase-admin";
-import { PLANS, VENTE_OUVERTE, isPaidPlan, type PlanId } from "@/lib/plans";
+import { PLANS, VENTE_OUVERTE, isPaidPlan, type PlanId, type Periode } from "@/lib/plans";
 import { souscriptionActiveChezStripe, synchroniserSouscription } from "@/lib/stripeSync";
 
 const SECRET = process.env.STRIPE_SECRET_KEY ?? "";
@@ -63,13 +63,17 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { plan } = (await req.json()) as { plan?: PlanId };
+    const { plan, periode: periodeDemandee } = (await req.json()) as { plan?: PlanId; periode?: Periode };
     if (!isPaidPlan(plan)) {
       return NextResponse.json({ error: "bad_request" }, { status: 400 });
     }
 
     const planId = plan as PlanId;
     const p = PLANS[planId];
+    // Le prix vient TOUJOURS de plans.ts, jamais du corps de la requête : on
+    // ne lit qu'un choix de période, et l'annuel n'existe que s'il est déclaré.
+    const annuel = periodeDemandee === "an" && !!p.priceAnnuelCents;
+    const periode: Periode = annuel ? "an" : "mois";
     const stripe = new Stripe(SECRET);
 
     const { data: profil } = await admin
@@ -112,8 +116,8 @@ export async function POST(req: NextRequest) {
           quantity: 1,
           price_data: {
             currency: p.currency,
-            unit_amount: p.priceCents,
-            recurring: { interval: "month" },
+            unit_amount: annuel ? p.priceAnnuelCents! : p.priceCents,
+            recurring: { interval: annuel ? "year" : "month" },
             product_data: {
               name: `Vaiiya ${p.name}`,
               description: p.tagline,
@@ -123,9 +127,9 @@ export async function POST(req: NextRequest) {
       ],
       subscription_data: {
         trial_period_days: p.trialDays || undefined,
-        metadata: { user_id: compte.id, plan: planId },
+        metadata: { user_id: compte.id, plan: planId, periode },
       },
-      metadata: { user_id: compte.id, plan: planId },
+      metadata: { user_id: compte.id, plan: planId, periode },
       allow_promotion_codes: true,
       // `session_id` permet à la page de retour de vérifier elle-même le
       // paiement si le webhook a échoué (voir /api/stripe/reconcile).
