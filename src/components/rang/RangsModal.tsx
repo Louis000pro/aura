@@ -3,33 +3,37 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
-import { ChevronLeft, ChevronRight, X } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, X } from "lucide-react";
 import GemmeRang from "@/components/GemmeRang";
 import ApercuRecompense from "@/components/rang/ApercuRecompense";
 import { rejouerCelebration } from "@/lib/celebrationRang";
-import { RANGS, RECOMPENSE_RANG, type Rang } from "@/lib/aura";
+import { RANGS, RECOMPENSE_RANG, progressionRang, type Rang } from "@/lib/aura";
 
 /**
  * LA GALERIE DES RANGS, UN RANG PAR ÉCRAN (maquette B, choisie par Louis le
- * 2026-10-15).
+ * 2026-10-15), ET L'ANNEAU SEULEMENT SUR TON RANG (piste 1, Louis, 2026-10-17).
  *
- * La gemme en très grand, entourée d'un ANNEAU qui se remplit : la progression
- * se lit en pourcentage ET en chiffres (« 625 / 800 EXP »), parce qu'un
- * pourcentage seul ne dit pas combien il reste à faire.
+ * La gemme en très grand. Sur TON rang, et sur lui seul, un ANNEAU se remplit
+ * vers le suivant : « 75 % vers Platine », puis « Plus que 110 EXP avant
+ * Platine ». Le pourcentage dit où tu en es, le nombre dit combien il reste.
  *
- * Ce que dit l'anneau, selon le rang regardé :
- *   · un rang déjà gagné → plein, « Gagné » ;
- *   · TON rang → ta progression vers le suivant (le seul chiffre utile ici) ;
- *   · un rang à venir → ta progression vers lui.
- * Le pourcentage est toujours `EXP / seuil visé` : c'est le même calcul que
- * les chiffres écrits dessous, donc les deux ne peuvent pas se contredire.
+ * ⚠️ Les autres rangs se REGARDENT, ils ne se mesurent pas : leur seuil, leur
+ * décoration, une puce « Le prochain » sur celui qui suit le tien, et aucun
+ * pourcentage. La première version posait un anneau partout, compté
+ * `EXP / seuil` depuis zéro : un Or à 690 EXP lisait 86 % sur son rang ET 86 %
+ * sur Platine (les deux visent 800), et 23 % sur l'Éternel. Ne pas remettre
+ * d'anneau ni de pourcentage sur un rang qui n'est pas le tien.
+ *
+ * ⚠️ Le pourcentage vient de `progressionRang` (`lib/aura.ts`), compté DANS le
+ * rang : c'est la même mesure que la carte du profil et la tuile de l'accueil.
+ * Ne jamais le recalculer ici.
  *
  * ⚠️ La décoration de chaque rang reste montrée EN VRAI sur le pseudo et la
  * photo (`ApercuRecompense`, décision du 2026-07-29) : une récompense qu'on ne
  * peut pas montrer ici ne doit pas être annoncée.
  *
- * Ouverte depuis le profil (carte « Ton rang »). La flamme de l'accueil, elle,
- * ouvre les jours de la série depuis le 2026-10-15.
+ * Ouverte depuis la carte « Ton rang » du profil et la tuile Rang de
+ * l'accueil. La flamme, elle, ouvre les jours de la série depuis le 2026-10-15.
  */
 export default function RangsModal({
   open,
@@ -192,8 +196,8 @@ function Carrousel({
             <Ecran
               key={rang.id}
               rang={rang}
-              suivant={RANGS[i + 1] ?? null}
-              courant={rang.id === rangActuelId}
+              courant={i === indexCourant}
+              prochain={i === indexCourant + 1}
               expActuel={expActuel}
               pseudo={pseudo}
               avatarUrl={avatarUrl}
@@ -251,15 +255,16 @@ function Carrousel({
 
 function Ecran({
   rang,
-  suivant,
   courant,
+  prochain,
   expActuel,
   pseudo,
   avatarUrl,
 }: {
   rang: Rang;
-  suivant: Rang | null;
   courant: boolean;
+  /** Le rang juste après le tien : il porte une puce, jamais un pourcentage. */
+  prochain: boolean;
   expActuel: number;
   pseudo: string;
   avatarUrl?: string | null;
@@ -267,60 +272,80 @@ function Ecran({
   const atteint = expActuel >= rang.min;
   const reco = RECOMPENSE_RANG[rang.id];
 
-  /* Le seuil que l'anneau vise. Ton rang regarde le suivant ; un rang gagné
-     est plein ; un rang à venir se mesure contre son propre seuil. */
-  const cible: number | null = courant ? (suivant?.min ?? null) : atteint ? null : rang.min;
-  const part = cible === null ? 1 : Math.max(0, Math.min(1, expActuel / cible));
-  const pourcent = Math.floor(part * 100);
+  /* Ta progression, et seulement sur ton rang : les autres n'en ont pas. */
+  const prog = courant ? progressionRang(expActuel) : null;
 
-  let titreAnneau: string;
-  let ligne: React.ReactNode;
-  if (courant && suivant) {
-    titreAnneau = `vers ${suivant.nom}`;
-    ligne = <>Plus que <b className="vy-nombre" style={{ color: "var(--exp-encre)" }}>{suivant.min - expActuel}</b> EXP avant {suivant.nom}</>;
-  } else if (courant) {
-    titreAnneau = "rang maximum";
-    ligne = <>Tu as atteint le dernier rang.</>;
+  /* La valeur sous la gemme. Elle occupe la même place sur tous les écrans,
+     pour que le nom et la décoration ne sautent pas quand on glisse : ta
+     progression sur ton rang, le prix d'un rang partout ailleurs. */
+  let valeur: React.ReactNode = null;
+  let mot: React.ReactNode;
+  let couleurMot = "var(--text-3)";
+  if (prog?.suivant) {
+    valeur = <>{prog.pourcent}&nbsp;%</>;
+    mot = `vers ${prog.suivant.nom}`;
+  } else if (prog) {
+    valeur = expActuel;
+    mot = "EXP au total";
   } else if (atteint) {
-    titreAnneau = "gagné";
-    ligne = <>Gagné à <b className="vy-nombre">{rang.min}</b> EXP</>;
+    couleurMot = "var(--teal-encre)";
+    if (rang.min > 0) valeur = rang.min;
+    mot = (
+      <>
+        {rang.min > 0 ? "EXP · gagné" : "Le point de départ"}{" "}
+        <Check size={14} strokeWidth={2.6} aria-hidden="true" style={{ display: "inline", verticalAlign: "-2px" }} />
+      </>
+    );
   } else {
-    titreAnneau = "pour l’atteindre";
-    ligne = <>Encore <b className="vy-nombre" style={{ color: "var(--exp-encre)" }}>{rang.min - expActuel}</b> EXP</>;
+    valeur = rang.min;
+    mot = "EXP pour l’atteindre";
   }
 
   return (
     <section className="snap-center shrink-0 w-full px-5" aria-label={rang.nom}>
       <div className="flex flex-col items-center pt-3">
-        <Anneau part={part} couleurs={rang.neon} eteint={!atteint && !courant}>
+        <Anneau part={prog ? prog.part : null} couleurs={rang.neon}>
           <div style={{ filter: atteint ? "none" : "grayscale(0.85) opacity(0.5)" }}>
             <GemmeRang rang={rang} size={150} />
           </div>
         </Anneau>
 
-        {/* Le pourcentage ET les chiffres, côte à côte. */}
-        <div className="mt-3 flex items-baseline gap-2">
-          <span className="vy-nombre" style={{ fontSize: 26, fontWeight: 800, color: "var(--text-0)" }}>{pourcent}&nbsp;%</span>
-          <span className="text-[13px]" style={{ color: "var(--text-3)" }}>{titreAnneau}</span>
+        <div className="mt-3 flex h-9 items-baseline gap-2">
+          {valeur !== null && (
+            <span className="vy-nombre" style={{ fontSize: 26, fontWeight: 800, color: "var(--text-0)" }}>{valeur}</span>
+          )}
+          <span className="text-[13px]" style={{ color: couleurMot }}>{mot}</span>
         </div>
-        {cible !== null && (
-          <p className="vy-nombre mt-0.5 text-[13px]" style={{ color: "var(--text-2)" }}>
-            {Math.min(expActuel, cible)} / {cible} EXP
-          </p>
-        )}
 
-        {courant && (
-          <span className="mt-4 inline-block rounded-full px-2.5 py-1 text-[11px] font-bold" style={{ background: "rgba(245,177,32,0.18)", color: "var(--or-encre)" }}>
-            Ton rang
+        {/* La puce, ou sa place vide : le nom reste à la même hauteur d'un
+            rang à l'autre. */}
+        {courant || prochain ? (
+          <span
+            className="mt-3 inline-flex h-[22px] items-center rounded-full px-2.5 text-[11px] font-bold"
+            style={courant
+              ? { background: "rgba(245,177,32,0.18)", color: "var(--or-encre)" }
+              : { background: "rgba(139,92,246,0.12)", color: "var(--exp-encre)" }}
+          >
+            {courant ? "Ton rang" : "Le prochain"}
           </span>
+        ) : (
+          <span className="mt-3 block h-[22px]" aria-hidden="true" />
         )}
         <h2
-          className={courant ? "mt-1" : "mt-4"}
+          className="mt-1"
           style={{ fontSize: 52, lineHeight: 0.95, fontWeight: 900, fontVariationSettings: "var(--w-affiche)", color: "var(--text-0)" }}
         >
           {rang.nom}
         </h2>
-        <p className="mt-2 text-[13px] text-center" style={{ color: "var(--text-2)" }}>{ligne}</p>
+        {/* Combien il reste, sur ton rang seulement. Ailleurs la ligne garde
+            sa place, pour que la décoration ne remonte pas d'un écran à
+            l'autre. */}
+        <p className="mt-2 min-h-[18px] text-[13px] text-center" style={{ color: "var(--text-2)" }}>
+          {prog?.suivant && (
+            <>Plus que <b className="vy-nombre" style={{ color: "var(--exp-encre)" }}>{prog.restant}</b> EXP avant {prog.suivant.nom}</>
+          )}
+          {prog && !prog.suivant && <>Tu as atteint le dernier rang.</>}
+        </p>
       </div>
 
       {reco && (
@@ -344,16 +369,16 @@ function Ecran({
   );
 }
 
-/** L'anneau de progression autour de la gemme, aux couleurs du rang. */
+/** L'anneau de progression autour de la gemme, aux couleurs du rang.
+ *  `part` à `null` : la même place, sans anneau. Seul ton rang en porte un,
+ *  mais la gemme reste au même endroit sur tous les écrans. */
 function Anneau({
   part,
   couleurs,
-  eteint,
   children,
 }: {
-  part: number;
+  part: number | null;
   couleurs: [string, string];
-  eteint: boolean;
   children: React.ReactNode;
 }) {
   const taille = 236;
@@ -363,28 +388,30 @@ function Anneau({
   const id = `anneau-${couleurs[0].slice(1)}-${couleurs[1].slice(1)}`;
   return (
     <div className="relative grid place-items-center" style={{ width: taille, height: taille }}>
-      <svg width={taille} height={taille} className="absolute inset-0 -rotate-90" aria-hidden="true">
-        <defs>
-          <linearGradient id={id} x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0" stopColor={eteint ? "#8B5CF6" : couleurs[0]} />
-            <stop offset="1" stopColor={eteint ? "#C13BC1" : couleurs[1]} />
-          </linearGradient>
-        </defs>
-        <circle cx={taille / 2} cy={taille / 2} r={r} fill="none" stroke="rgba(139,92,246,0.12)" strokeWidth={epaisseur} />
-        <motion.circle
-          cx={taille / 2}
-          cy={taille / 2}
-          r={r}
-          fill="none"
-          stroke={`url(#${id})`}
-          strokeWidth={epaisseur}
-          strokeLinecap="round"
-          strokeDasharray={tour}
-          initial={{ strokeDashoffset: tour }}
-          animate={{ strokeDashoffset: tour * (1 - part) }}
-          transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
-        />
-      </svg>
+      {part !== null && (
+        <svg width={taille} height={taille} className="absolute inset-0 -rotate-90" aria-hidden="true">
+          <defs>
+            <linearGradient id={id} x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stopColor={couleurs[0]} />
+              <stop offset="1" stopColor={couleurs[1]} />
+            </linearGradient>
+          </defs>
+          <circle cx={taille / 2} cy={taille / 2} r={r} fill="none" stroke="rgba(139,92,246,0.12)" strokeWidth={epaisseur} />
+          <motion.circle
+            cx={taille / 2}
+            cy={taille / 2}
+            r={r}
+            fill="none"
+            stroke={`url(#${id})`}
+            strokeWidth={epaisseur}
+            strokeLinecap="round"
+            strokeDasharray={tour}
+            initial={{ strokeDashoffset: tour }}
+            animate={{ strokeDashoffset: tour * (1 - part) }}
+            transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
+          />
+        </svg>
+      )}
       {children}
     </div>
   );

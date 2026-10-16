@@ -23,7 +23,7 @@ import Image from "next/image";
 import { AnimatePresence, motion } from "framer-motion";
 import { ChevronRight } from "lucide-react";
 import GemmeRang from "@/components/GemmeRang";
-import { MISSIONS_JOUR, resteMission, type EtatAura, type Mission } from "@/lib/aura";
+import { MISSIONS_JOUR, progressionRang, resteMission, type EtatAura, type Mission } from "@/lib/aura";
 import { apercuPremiumDuJour, compteMissionsJour, missionDebloquee } from "@/lib/missionsAccueil";
 import styles from "./MaJournee.module.css";
 
@@ -64,8 +64,8 @@ export default function MaJournee({
   const premium = apercuPremiumDuJour(jour);
   const rail: Mission[] = [...restantes, ...(premium && !aura.missions[premium.id]?.complete ? [premium] : [])];
 
-  const etendue = Math.max(1, aura.seuilHaut - aura.seuilBas);
-  const progres = Math.max(0, Math.min(1, (aura.exp - aura.seuilBas) / etendue));
+  // La même mesure que la galerie des rangs et le profil.
+  const { part: progres, suivant } = progressionRang(aura.exp);
 
   const R = 16;
   const C = 2 * Math.PI * R;
@@ -88,7 +88,7 @@ export default function MaJournee({
           </span>
           <strong className={styles.rangNom}>{aura.rang.nom}</strong>
           <span className={styles.exp}>
-            <b className="vy-nombre">{aura.exp}</b> / {aura.seuilHaut} EXP
+            <b className="vy-nombre">{aura.exp}</b>{suivant ? ` / ${suivant.min}` : ""} EXP
             <AnimatePresence>
               {expGain !== null && (
                 <motion.em

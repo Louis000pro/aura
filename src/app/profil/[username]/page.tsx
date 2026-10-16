@@ -12,7 +12,7 @@ import { useAuth } from "@/context/AuthContext";
 import FollowListModal from "@/components/FollowListModal";
 import GemmeRang from "@/components/GemmeRang";
 import { AvatarRang, PseudoRang, TitreRang } from "@/components/rang/IdentiteRang";
-import { calculerAura, cosmetiquesDuRang, etatDepuisExp, RANGS, type EtatAura } from "@/lib/aura";
+import { calculerAura, cosmetiquesDuRang, etatDepuisExp, progressionRang, RANGS, type EtatAura } from "@/lib/aura";
 import { chargerRang } from "@/lib/rangsPublics";
 import { chargerProfilPublic, type ProfilPublic } from "@/lib/profilPublic";
 import { libelleObjectif, LEVELS } from "@/lib/profilOnboarding";
@@ -274,6 +274,8 @@ export default function PublicProfilePage() {
   const initial = displayPseudo[0]?.toUpperCase() ?? "?";
   // Décorations de rang de la personne regardée (déduites de son rang, rien en base).
   const rangCourant = aura?.rang ?? RANGS[0];
+  // La même mesure que la galerie des rangs, le profil et l'accueil.
+  const progression = aura ? progressionRang(aura.exp) : null;
   const cosmetiques = cosmetiquesDuRang(aura?.rang.id ?? "");
   const isCertified = certified || profile?.is_admin === true;
 
@@ -534,11 +536,11 @@ export default function PublicProfilePage() {
               <span className="vy-label" style={{ color: "var(--text-3)" }}>Rang</span>
               <p className="text-[20px] font-black tracking-[-0.02em] leading-tight" style={{ color: "var(--text-0)" }}>{aura.rang.nom}</p>
               <p className="text-[13px] font-semibold mt-0.5" style={{ color: "var(--text-soft)" }}>
-                <span style={{ color: "var(--exp-encre)", fontVariantNumeric: "tabular-nums" }}>{aura.exp}</span> / {aura.seuilHaut} EXP
+                <span style={{ color: "var(--exp-encre)", fontVariantNumeric: "tabular-nums" }}>{aura.exp}</span>{progression?.suivant ? ` / ${progression.suivant.min}` : ""} EXP
               </p>
               <div className="h-[7px] rounded-full mt-2 overflow-hidden" style={{ background: "rgba(var(--tint-violet-rgb),0.9)" }}>
                 <div className="h-full rounded-full" style={{
-                  width: `${Math.min(100, Math.max(4, ((aura.exp - aura.seuilBas) / Math.max(1, aura.seuilHaut - aura.seuilBas)) * 100))}%`,
+                  width: `${Math.max(4, (progression?.part ?? 0) * 100)}%`,
                   background: "linear-gradient(90deg,#8B5CF6,#C13BC1)",
                 }} />
               </div>
