@@ -30,7 +30,6 @@ import {
   MISSIONS_PREMIUM,
   PLAFOND_JOUR_GRATUIT,
   PLAFOND_JOUR_PREMIUM,
-  ROUTE_MOT_DU_JOUR,
 } from "@/lib/aura";
 import { EXERCISE_LIBRARY } from "@/lib/exerciseLibrary";
 import { resolveGuide } from "@/lib/exerciseGuides";
@@ -146,22 +145,21 @@ verdict("le même mouvement pour une même date", mouvementDuJour("2026-11-03").
 
 /* ── La carte et ses 5 EXP ─────────────────────────────────────────────── */
 
-verdict("retournée ici aujourd'hui : elle s'ouvre retournée", carteRetournee({ retourneeLe: "2026-10-17", jour: "2026-10-17", missionFaite: false }), "cet appareil");
-verdict("retournée hier : elle se présente fermée", !carteRetournee({ retourneeLe: "2026-10-16", jour: "2026-10-17", missionFaite: false }), "un autre jour ne compte pas");
-verdict("retournée ailleurs aujourd'hui : la base suffit", carteRetournee({ retourneeLe: null, jour: "2026-10-17", missionFaite: true }), "un autre appareil");
+verdict("retournée ici aujourd'hui : elle s'ouvre retournée", carteRetournee({ retourneeLe: "2026-10-17", jour: "2026-10-17", dejaGagne: false }), "cet appareil");
+verdict("retournée hier : elle se présente fermée", !carteRetournee({ retourneeLe: "2026-10-16", jour: "2026-10-17", dejaGagne: false }), "un autre jour ne compte pas");
+verdict("retournée ailleurs aujourd'hui : la base suffit", carteRetournee({ retourneeLe: null, jour: "2026-10-17", dejaGagne: true }), "un autre appareil");
 {
-  const m = MISSIONS.find((x) => x.id === "mouvement");
-  verdict(
-    "le mouvement du jour est une mission du jour, gratuite, à 5 EXP",
-    !!m && m.periode === "jour" && !m.premium && m.exp === EXP_MOUVEMENT && EXP_MOUVEMENT === 5 && MISSIONS_JOUR.includes(m),
-    m ? `${m.titre} · +${m.exp}` : "absente",
-  );
-  verdict("toucher la mission ouvre le mot, pas une page", m?.route === ROUTE_MOT_DU_JOUR, String(m?.route));
+  /* Louis, 2026-10-17 au soir : la carte garde ses 5 EXP, mais elle n'est
+     plus une quête. Elle ne doit réapparaître ni dans le catalogue, ni dans
+     le compte du jour. */
+  const ids: string[] = MISSIONS.map((m) => m.id);
+  verdict("le mouvement du jour n'est plus une quête", !ids.includes("mouvement") && MISSIONS_JOUR.length === 4, `${MISSIONS_JOUR.length} missions du jour`);
+  verdict("sa carte rapporte toujours 5 EXP", EXP_MOUVEMENT === 5, `+${EXP_MOUVEMENT}`);
 }
 {
   const gratuit = EXP_CONNEXION_SUITE + MISSIONS_JOUR.filter((m) => m.id !== "connexion").reduce((s, m) => s + m.exp, 0);
   const premium = gratuit + MISSIONS_PREMIUM.reduce((s, m) => s + m.exp, 0);
-  verdict("le plafond du jour suit le catalogue", PLAFOND_JOUR_GRATUIT === gratuit && PLAFOND_JOUR_PREMIUM === premium, `${PLAFOND_JOUR_GRATUIT} et ${PLAFOND_JOUR_PREMIUM}`);
+  verdict("le plafond des missions suit le catalogue, sans la carte", PLAFOND_JOUR_GRATUIT === gratuit && PLAFOND_JOUR_PREMIUM === premium, `${PLAFOND_JOUR_GRATUIT} et ${PLAFOND_JOUR_PREMIUM}`);
 }
 
 /* ── Par la source ─────────────────────────────────────────────────────── */
@@ -184,11 +182,13 @@ const lire = (fichier: string) => readFileSync(path.join(RACINE, fichier), "utf8
   verdict("le sceau ne se pose que sur la réponse de la base", carte.includes("{gain && posee && <Sceau"), "gain confirmé");
   verdict("« +5 EXP » ne s'envole que d'un gain neuf, et jamais en mouvement réduit", carte.includes('envol={gain === "gagne" && eclore}') && carte.includes("const eclore = touchee && !reduce"), "envol");
   verdict("deux touchers ne lancent qu'une découverte", carte.includes("lancee.current") && carte.includes("if (phase !== \"fermee\" || lancee.current) return"), "garde");
+  verdict("la carte fermée n'annonce les 5 EXP que si la base sait les créditer", carte.includes("{bonus && (") && carte.includes("bonus ? `Découvrir le mouvement du jour, plus"), "bonus");
 }
 {
   const feuille = lire("src/components/accueil/FeuilleMotDuJour.tsx");
   verdict("le mot demande les 5 EXP à la base", feuille.includes("crediterMouvement(createClient())"), "decouvrir_mouvement_aura");
   verdict("le gain ne remonte que sur un crédit neuf", feuille.includes("if (r) onGain();") && feuille.includes("if (r === null) return;"), "true seulement");
+  verdict("sans le SQL, le mot ne demande rien et ne promet rien", feuille.includes("if (dejaGagne === null) return;") && feuille.includes("bonus={dejaGagne !== null}"), "dejaGagne null");
 }
 {
   const sql = lire("supabase/migrations/20261017_mouvement_du_jour.sql");
@@ -198,7 +198,7 @@ const lire = (fichier: string) => readFileSync(path.join(RACINE, fichier), "utf8
 }
 {
   const accueil = lire("src/components/AccueilSignature.tsx");
-  verdict("l'adresse de la mission ouvre le mot", accueil.includes("path === ROUTE_MOT_DU_JOUR ? ouvrirMot()"), "rail et feuille des missions");
+  verdict("le mot lit l'état de la carte à part, pas dans les missions", accueil.includes("dejaGagne={aura.mouvementDuJour}") && !accueil.includes("ROUTE_MOT_DU_JOUR"), "aura.mouvementDuJour");
   verdict("l'aura se relit à la fermeture du mot, après un gain", /gainMouvement\.current = false;\s*onAuraChange\?\.\(\)/.test(accueil) && lire("src/app/AccueilClient.tsx").includes("onAuraChange={() => setStatsTick("), "onAuraChange");
 }
 {

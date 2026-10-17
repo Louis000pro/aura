@@ -15,9 +15,9 @@
    suivre d'un appareil à l'autre demanderait une petite table.
 
    ⭐ RETOURNER LA CARTE RAPPORTE 5 EXP, UNE FOIS PAR JOUR (Louis,
-   2026-10-17). C'est la mission « mouvement » du catalogue, créditée par
-   `decouvrir_mouvement_aura` : la base garde le fait, l'écran ne compte
-   rien.
+   2026-10-17), crédités par `decouvrir_mouvement_aura` : la base garde le
+   fait, l'écran ne compte rien. ⚠️ CE N'EST PLUS UNE QUÊTE (Louis, le soir
+   même) : le gain reste, il ne s'annonce que sur la carte.
    ⚠️ « RETOURNÉE AUJOURD'HUI » N'EST PAS « DANS LE CARNET ». Le même
    mouvement revient tous les 102 jours : ce jour-là il est déjà au
    carnet, et la carte doit quand même se présenter fermée, sinon elle ne
@@ -109,14 +109,14 @@ export function noterRetournee(userId: string, jour: string): void {
 }
 
 /** Pure : la carte s'ouvre-t-elle déjà retournée ? Oui si cet appareil l'a
- *  retournée AUJOURD'HUI, ou si la base dit que la mission du jour est faite
+ *  retournée AUJOURD'HUI, ou si la base dit que ses 5 EXP sont déjà gagnés
  *  (retournée sur un autre appareil). Un autre jour ne compte jamais. */
-export function carteRetournee({ retourneeLe, jour, missionFaite }: {
+export function carteRetournee({ retourneeLe, jour, dejaGagne }: {
   retourneeLe: string | null;
   jour: string;
-  missionFaite: boolean;
+  dejaGagne: boolean;
 }): boolean {
-  return retourneeLe === jour || missionFaite;
+  return retourneeLe === jour || dejaGagne;
 }
 
 /** Les 5 EXP, demandés à la base. `true` : crédités à l'instant. `false` :

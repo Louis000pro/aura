@@ -6,9 +6,12 @@
 -- retourne, et ce geste rapporte +5 EXP, une seule fois par jour parisien.
 -- La revoir dans la journée ne rapporte rien de plus.
 --
--- C'est une mission du catalogue comme les autres (`MISSIONS` dans
--- src/lib/aura.ts, id « mouvement ») : elle s'affiche avec son gain AVANT
--- d'agir, et rien ne la crédite en cachette.
+-- Le gain s'affiche sur la carte AVANT de la retourner, et rien ne le
+-- crédite en cachette. ⚠️ CE N'EST PLUS UNE QUÊTE (Louis, le soir même) :
+-- l'app ne la montre ni dans le rail, ni dans « Voir tout », ni dans le
+-- compte du jour. La base la rend quand même avec les missions
+-- (`missions.mouvement`) : c'est là que la carte lit si elle a déjà
+-- rapporté aujourd'hui (`EtatAura.mouvementDuJour`).
 --
 -- ⚠️ LA BASE NE SAIT PAS QUEL MOUVEMENT EST CELUI DU JOUR, et n'en a pas
 -- besoin : la rotation vit côté écran (`mouvementDuJour`), la base ne garde

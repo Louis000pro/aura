@@ -68,6 +68,7 @@ export default function CarteMouvementDuJour({
   mouvement,
   ouverte,
   gain,
+  bonus,
   reduce,
   onDecouvrir,
   onRetournee,
@@ -78,6 +79,8 @@ export default function CarteMouvementDuJour({
   /** Déjà retournée aujourd'hui : la carte s'ouvre telle quelle, sans rien rejouer. */
   ouverte: boolean;
   gain: GainMouvement;
+  /** La base sait créditer les 5 EXP : la carte fermée peut les annoncer. */
+  bonus: boolean;
   reduce: boolean;
   /** Le toucher : c'est là que l'appelant demande le crédit. */
   onDecouvrir: () => void;
@@ -145,7 +148,7 @@ export default function CarteMouvementDuJour({
               type="button"
               onClick={toucher}
               disabled={phase === "eveil"}
-              aria-label={`Découvrir le mouvement du jour, plus ${EXP_MOUVEMENT} EXP`}
+              aria-label={bonus ? `Découvrir le mouvement du jour, plus ${EXP_MOUVEMENT} EXP` : "Découvrir le mouvement du jour"}
               className={`${styles.face} ${styles.fermee}`}
               data-eveil={phase === "eveil" ? "" : undefined}
               whileTap={reduce ? undefined : { scale: 0.97 }}
@@ -160,9 +163,11 @@ export default function CarteMouvementDuJour({
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={silhouette} alt="" aria-hidden="true" className={styles.silhouette} />
               )}
-              <span className={styles.pastille} aria-hidden="true">
-                <b className="vy-nombre">+{EXP_MOUVEMENT}</b> EXP
-              </span>
+              {bonus && (
+                <span className={styles.pastille} aria-hidden="true">
+                  <b className="vy-nombre">+{EXP_MOUVEMENT}</b> EXP
+                </span>
+              )}
               <span className={styles.titreFerme}>Touche pour le découvrir</span>
               <span className={styles.sousFerme}>Le même pour tout le monde, aujourd’hui</span>
             </motion.button>

@@ -11,7 +11,7 @@ import FeuilleMotDuJour from "@/components/accueil/FeuilleMotDuJour";
 import { useAuth } from "@/context/AuthContext";
 import FeuilleMissions from "@/components/accueil/FeuilleMissions";
 import { useAssistant } from "@/context/AssistantContext";
-import { ROUTE_MOT_DU_JOUR, type EtatAura } from "@/lib/aura";
+import type { EtatAura } from "@/lib/aura";
 import { PRENOM_GUIDE, type GuideRef } from "@/lib/guides";
 import type { MomentAccueil } from "@/lib/momentAccueil";
 import { lireMot, marquerMotLu } from "@/lib/motDuJour";
@@ -145,10 +145,6 @@ export default function AccueilSignature({
     }
   };
 
-  /* La mission du mouvement du jour n'a pas de page : son adresse ouvre le
-     mot, depuis le rail des quêtes comme depuis la feuille des missions. */
-  const naviguer = (path: string) => (path === ROUTE_MOT_DU_JOUR ? ouvrirMot() : onNavigate(path));
-
   return (
     <div className={styles.home}>
       <Entree guide={guide} greeting={greeting} pseudo={pseudo} moment={moment} motNonLu={motNonLu} onOuvrirMot={ouvrirMot} reduce={!!reduce} />
@@ -166,7 +162,7 @@ export default function AccueilSignature({
           premiumDebloque={premiumDebloque}
           expGain={expGain}
           reduce={!!reduce}
-          onNavigate={naviguer}
+          onNavigate={onNavigate}
           onVoirTout={() => setFeuille(true)}
           onOpenRangs={onOpenRangs}
           onOpenSerie={() => setFeuilleSerie(true)}
@@ -194,7 +190,7 @@ export default function AccueilSignature({
             serie={Math.max(1, aura.serie)}
             userId={user.id}
             jour={jour}
-            missionFaite={!!aura.missions.mouvement?.complete}
+            dejaGagne={aura.mouvementDuJour}
             onGain={() => { gainMouvement.current = true; }}
             onFermer={fermerMot}
             onRepondre={() => { fermerMot(); ouvrirAssistant(); }}
@@ -207,7 +203,7 @@ export default function AccueilSignature({
           <FeuilleMissions
             aura={aura}
             premiumDebloque={premiumDebloque}
-            onNavigate={naviguer}
+            onNavigate={onNavigate}
             onFermer={() => setFeuille(false)}
           />
         )}

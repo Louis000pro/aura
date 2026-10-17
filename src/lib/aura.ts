@@ -39,7 +39,12 @@ export const EXP_SEANCE = 30;
 export const EXP_REPAS = 5;
 export const EXP_JOURNEE = 10;
 /** Retourner la carte du mouvement du jour, une fois par jour (Louis,
- *  2026-10-17). Crédité par `decouvrir_mouvement_aura`. */
+ *  2026-10-17). Crédité par `decouvrir_mouvement_aura`.
+ *
+ *  ⚠️ CE N'EST PLUS UNE QUÊTE (Louis, le soir même) : elle n'apparaît ni
+ *  dans le rail, ni dans « Voir tout », ni dans le compte du jour. Le gain
+ *  reste, et il s'affiche là où il se gagne, sur la carte, AVANT de la
+ *  retourner : ce n'est donc pas un bonus caché. */
 export const EXP_MOUVEMENT = 5;
 
 export const EXP_DOUBLE = 20;
@@ -54,10 +59,13 @@ export const EXP_SEMAINE_PARFAITE = 100;
 /** Coup de pouce d'inscription : +10 offerts à tout compte. */
 export const EXP_BIENVENUE = 10;
 
-/** Ce qu'un compte gratuit peut gagner en une journée : 20 + 5 + 30 + 5 + 10. */
-export const PLAFOND_JOUR_GRATUIT = 70;
-/** Ce qu'un compte Premium peut gagner en une journée : 70 + 20 + 20 + 15 + 15. */
-export const PLAFOND_JOUR_PREMIUM = 140;
+/** Ce que les missions d'un compte gratuit rapportent au plus en une
+ *  journée : 20 + 30 + 5 + 10. La carte du mouvement du jour (+5) vient en
+ *  plus : elle n'est pas une mission, la feuille des missions ne la compte pas. */
+export const PLAFOND_JOUR_GRATUIT = 65;
+/** Ce que les missions d'un compte Premium rapportent au plus en une
+ *  journée : 65 + 20 + 20 + 15 + 15. La carte du jour vient en plus. */
+export const PLAFOND_JOUR_PREMIUM = 135;
 
 // ── Reset global de l'aura ──
 // Conservé pour mémoire : les crédits historiques repris par la migration de
@@ -164,7 +172,6 @@ export const PALIER_PROVISOIRE = 3000;
 
 export type MissionId =
   | "connexion"
-  | "mouvement"
   | "seance"
   | "repas"
   | "journee"
@@ -207,11 +214,6 @@ export type Mission = {
   route: string | null;
 };
 
-/** La mission du mouvement du jour n'ouvre pas une page : elle ouvre le mot
- *  du Guide, qui vit sur l'accueil. L'accueil reconnaît cette adresse et
- *  ouvre la feuille au lieu de naviguer (`AccueilSignature`). */
-export const ROUTE_MOT_DU_JOUR = "/?ouvrir=mot";
-
 export const MISSIONS: Mission[] = [
   {
     id: "connexion",
@@ -224,20 +226,6 @@ export const MISSIONS: Mission[] = [
     premium: false,
     image: "/missions/daily/connexion-v1.webp",
     route: null,
-  },
-  {
-    // Le deuxième rendez-vous du matin (Louis, 2026-10-17) : la carte du
-    // mot du Guide. Toucher la carte crédite, une fois par jour parisien ;
-    // la revoir dans la journée ne rapporte rien de plus. Elle ne valide
-    // pas la journée : c'est un coup d'œil, pas une action utile.
-    id: "mouvement",
-    titre: "Le mouvement du jour",
-    condition: "Retourner sa carte dans ton mot du jour.",
-    exp: EXP_MOUVEMENT,
-    periode: "jour",
-    premium: false,
-    image: "/missions/daily/mouvement-v1.webp",
-    route: ROUTE_MOT_DU_JOUR,
   },
   {
     id: "seance",
@@ -525,11 +513,14 @@ export type EtatAura = {
   };
   /** Progression réelle de chaque mission sur sa période parisienne. */
   missions: EtatMissionsAura;
+  /** La carte du mouvement du jour a-t-elle déjà rapporté ses 5 EXP
+   *  aujourd'hui ? `null` : la base ne connaît pas encore ce gain (le SQL
+   *  du mouvement du jour n'est pas collé), et la carte n'en promet aucun. */
+  mouvementDuJour: boolean | null;
 };
 
 const CIBLES: Record<MissionId, number> = {
   connexion: 1,
-  mouvement: 1,
   seance: 1,
   repas: 1,
   journee: 3,
@@ -613,6 +604,7 @@ export function etatDepuisExp(
   missions: EtatMissionsAura = missionsAuraVides(),
   serie = detail.streak,
   jourValide = false,
+  mouvementDuJour: boolean | null = null,
 ): EtatAura {
   const idx = indexDuRang(exp);
   const rang = RANGS[idx];
@@ -620,7 +612,7 @@ export function etatDepuisExp(
   const rangSuivant = RANGS[idx + 1];
   const seuilHaut = rangSuivant ? rangSuivant.min : Math.max(PALIER_PROVISOIRE, seuilBas + 1);
   const restant = Math.max(0, seuilHaut - exp);
-  return { exp, rang, seuilBas, seuilHaut, restant, serie, jourValide, detail, missions };
+  return { exp, rang, seuilBas, seuilHaut, restant, serie, jourValide, detail, missions, mouvementDuJour };
 }
 
 /**
@@ -646,7 +638,9 @@ export async function calculerAura(supabase: SB, userId: string): Promise<EtatAu
       serie?: number;
       jourValide?: boolean;
       detail?: Partial<EtatAura["detail"]>;
-      missions?: Partial<EtatMissionsAura>;
+      /* `mouvement` n'est pas une mission du catalogue : la base le rend
+         avec elles (`etat_missions_aura`), l'app le lit à part. */
+      missions?: Partial<EtatMissionsAura> & { mouvement?: { complete?: boolean } };
     };
 
     /* La version 1 de la RPC (avant le 2026-08-21) rendait `today` et
@@ -677,6 +671,7 @@ export async function calculerAura(supabase: SB, userId: string): Promise<EtatAu
       missions,
       serie,
       !!brut.jourValide,
+      brut.missions.mouvement ? !!brut.missions.mouvement.complete : null,
     );
   } catch {
     return null;

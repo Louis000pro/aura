@@ -16,6 +16,10 @@
    ⚠️ LES 5 EXP DE LA CARTE SONT DEMANDÉS À LA BASE (`crediterMouvement`),
    jamais comptés ici. Le gain ne remonte à l'accueil (`onGain`) que sur
    un crédit confirmé : c'est lui qui fait relire l'aura à la fermeture.
+   ⚠️ LA CARTE N'EST PLUS UNE QUÊTE (Louis, 2026-10-17 au soir) : ses 5 EXP
+   ne s'annoncent que sur elle. Tant que la base ne connaît pas ce gain
+   (`dejaGagne` à `null`, SQL pas collé), la carte n'en promet aucun et
+   ne le demande pas : un chiffre promis puis jamais crédité est un mensonge.
    ───────────────────────────────────────────────────────────────────── */
 
 import { useEffect, useRef, useState } from "react";
@@ -53,7 +57,7 @@ export default function FeuilleMotDuJour({
   serie,
   userId,
   jour,
-  missionFaite,
+  dejaGagne,
   onGain,
   onFermer,
   onRepondre,
@@ -64,8 +68,9 @@ export default function FeuilleMotDuJour({
   serie: number;
   userId: string;
   jour: string;
-  /** La base dit que la carte a déjà été retournée aujourd'hui (ici ou ailleurs). */
-  missionFaite: boolean;
+  /** La base dit que la carte a déjà rapporté ses 5 EXP aujourd'hui (ici ou
+   *  ailleurs). `null` : la base ne connaît pas encore ce gain. */
+  dejaGagne: boolean | null;
   /** Les 5 EXP viennent d'être crédités. */
   onGain: () => void;
   onFermer: () => void;
@@ -89,10 +94,11 @@ export default function FeuilleMotDuJour({
 
   /* ── La carte et ses 5 EXP ── */
   const [ouverteAuMontage] = useState(() =>
-    carteRetournee({ retourneeLe: lireRetournee(userId), jour, missionFaite }),
+    carteRetournee({ retourneeLe: lireRetournee(userId), jour, dejaGagne: dejaGagne === true }),
   );
-  const [gain, setGain] = useState<GainMouvement>(missionFaite ? "deja" : null);
+  const [gain, setGain] = useState<GainMouvement>(dejaGagne ? "deja" : null);
   const demander = () => {
+    if (dejaGagne === null) return;
     void crediterMouvement(createClient()).then((r) => {
       if (r === null) return;
       setGain(r ? "gagne" : "deja");
@@ -106,11 +112,11 @@ export default function FeuilleMotDuJour({
   };
   /* Retournée sur cet appareil sans que la base l'ait comptée (le réseau a
      lâché au mauvais moment) : on redemande le crédit en ouvrant le mot,
-     sinon la mission resterait « à faire » sans plus aucune carte à
-     toucher. La base ne crédite jamais deux fois. */
+     sinon les 5 EXP resteraient promis sans plus aucune carte à toucher.
+     La base ne crédite jamais deux fois. */
   const relance = useRef(false);
   useEffect(() => {
-    if (relance.current || !ouverteAuMontage || missionFaite) return;
+    if (relance.current || !ouverteAuMontage || dejaGagne !== false) return;
     relance.current = true;
     demander();
   });
@@ -189,6 +195,7 @@ export default function FeuilleMotDuJour({
             mouvement={mouvement}
             ouverte={ouverteAuMontage}
             gain={gain}
+            bonus={dejaGagne !== null}
             reduce={reduce}
             onDecouvrir={decouvrir}
             onRetournee={() => setCarnet(lireCarnet(userId))}
