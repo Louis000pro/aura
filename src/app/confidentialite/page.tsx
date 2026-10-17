@@ -134,7 +134,7 @@ export default function ConfidentialitePage() {
 
         <LegalSection title="Durée de conservation">
           <ul className="list-disc list-inside space-y-1">
-            <li><strong>Votre compte et votre suivi</strong> : tant que votre compte existe.</li>
+            <li><strong>Votre compte et votre suivi</strong> : tant que votre compte existe. Un compte qui n&apos;est plus utilisé depuis 3 ans est supprimé, après un e-mail de prévenance envoyé 30 jours avant.</li>
             <li><strong>À la suppression du compte</strong> : tout est effacé immédiatement (profil, suivi, pesées, mémoire du Guide, messages, photos), sauf les copies de sauvegarde techniques, écrasées sous 30 jours.</li>
             <li><strong>Compteurs d&apos;usage et de tentatives</strong> : quelques heures à deux jours.</li>
             <li><strong>Facturation</strong>, quand elle existera : 10 ans, comme l&apos;exige la loi.</li>
