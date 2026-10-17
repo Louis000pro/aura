@@ -1115,10 +1115,11 @@ verdict(
     gratuiteJour.titre,
   );
 
-  /* ── La feuille porte le catalogue entier : 4 + 4 + 3. ── */
+  /* ── La feuille porte le catalogue entier : 5 + 4 + 3. Le mouvement du
+        jour (2026-10-17) est la cinquième mission du jour. ── */
   verdict(
-    "V7B · la feuille = 4 du jour + 4 Premium + 3 de la semaine",
-    MISSIONS_JOUR.length === 4 && MISSIONS_PREMIUM.length === 4 && MISSIONS_SEMAINE.length === 3,
+    "V7B · la feuille = 5 du jour + 4 Premium + 3 de la semaine",
+    MISSIONS_JOUR.length === 5 && MISSIONS_PREMIUM.length === 4 && MISSIONS_SEMAINE.length === 3,
     MISSIONS_JOUR.length + " + " + MISSIONS_PREMIUM.length + " + " + MISSIONS_SEMAINE.length,
   );
   verdict(

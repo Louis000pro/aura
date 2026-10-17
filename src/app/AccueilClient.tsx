@@ -328,6 +328,7 @@ function Dashboard() {
           heros={<SeanceInterrompueAccueil><HeroJournee /></SeanceInterrompueAccueil>}
           onNavigate={(path) => router.push(path)}
           onOpenRangs={() => setShowRangs(true)}
+          onAuraChange={() => setStatsTick((t) => t + 1)}
         />
         )}
 

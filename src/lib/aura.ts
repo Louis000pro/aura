@@ -38,6 +38,9 @@ export const EXP_CONNEXION_SUITE = 20;
 export const EXP_SEANCE = 30;
 export const EXP_REPAS = 5;
 export const EXP_JOURNEE = 10;
+/** Retourner la carte du mouvement du jour, une fois par jour (Louis,
+ *  2026-10-17). Crédité par `decouvrir_mouvement_aura`. */
+export const EXP_MOUVEMENT = 5;
 
 export const EXP_DOUBLE = 20;
 export const EXP_MATIN = 20;
@@ -51,10 +54,10 @@ export const EXP_SEMAINE_PARFAITE = 100;
 /** Coup de pouce d'inscription : +10 offerts à tout compte. */
 export const EXP_BIENVENUE = 10;
 
-/** Ce qu'un compte gratuit peut gagner en une journée : 20 + 30 + 5 + 10. */
-export const PLAFOND_JOUR_GRATUIT = 65;
-/** Ce qu'un compte Premium peut gagner en une journée : 65 + 20 + 20 + 15 + 15. */
-export const PLAFOND_JOUR_PREMIUM = 135;
+/** Ce qu'un compte gratuit peut gagner en une journée : 20 + 5 + 30 + 5 + 10. */
+export const PLAFOND_JOUR_GRATUIT = 70;
+/** Ce qu'un compte Premium peut gagner en une journée : 70 + 20 + 20 + 15 + 15. */
+export const PLAFOND_JOUR_PREMIUM = 140;
 
 // ── Reset global de l'aura ──
 // Conservé pour mémoire : les crédits historiques repris par la migration de
@@ -161,6 +164,7 @@ export const PALIER_PROVISOIRE = 3000;
 
 export type MissionId =
   | "connexion"
+  | "mouvement"
   | "seance"
   | "repas"
   | "journee"
@@ -203,6 +207,11 @@ export type Mission = {
   route: string | null;
 };
 
+/** La mission du mouvement du jour n'ouvre pas une page : elle ouvre le mot
+ *  du Guide, qui vit sur l'accueil. L'accueil reconnaît cette adresse et
+ *  ouvre la feuille au lieu de naviguer (`AccueilSignature`). */
+export const ROUTE_MOT_DU_JOUR = "/?ouvrir=mot";
+
 export const MISSIONS: Mission[] = [
   {
     id: "connexion",
@@ -215,6 +224,20 @@ export const MISSIONS: Mission[] = [
     premium: false,
     image: "/missions/daily/connexion-v1.webp",
     route: null,
+  },
+  {
+    // Le deuxième rendez-vous du matin (Louis, 2026-10-17) : la carte du
+    // mot du Guide. Toucher la carte crédite, une fois par jour parisien ;
+    // la revoir dans la journée ne rapporte rien de plus. Elle ne valide
+    // pas la journée : c'est un coup d'œil, pas une action utile.
+    id: "mouvement",
+    titre: "Le mouvement du jour",
+    condition: "Retourner sa carte dans ton mot du jour.",
+    exp: EXP_MOUVEMENT,
+    periode: "jour",
+    premium: false,
+    image: "/missions/daily/mouvement-v1.webp",
+    route: ROUTE_MOT_DU_JOUR,
   },
   {
     id: "seance",
@@ -506,6 +529,7 @@ export type EtatAura = {
 
 const CIBLES: Record<MissionId, number> = {
   connexion: 1,
+  mouvement: 1,
   seance: 1,
   repas: 1,
   journee: 3,

@@ -13,13 +13,25 @@
    · le mot du jour dit des choses vraies, sans reproche, et ne dit
      « rien de prévu » qu'une fois la journée lue ;
    · le mouvement du jour est le même pour tout le monde, animé, et la
-     rotation passe par les 102 mouvements.
+     rotation passe par les 102 mouvements ;
+   · retourner sa carte rapporte +5 EXP, une fois par jour, et seule la
+     base le décide : l'écran ne fait monter « +5 » que sur sa réponse.
    ═══════════════════════════════════════════════════════════════════════ */
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { decideMontee } from "@/lib/monteeSerie";
 import { lignesDuMot, type PlanDuJour } from "@/lib/motDuJour";
-import { mouvementDuJour, exerciceDuMouvement } from "@/lib/mouvementDuJour";
+import { mouvementDuJour, exerciceDuMouvement, carteRetournee } from "@/lib/mouvementDuJour";
+import {
+  EXP_CONNEXION_SUITE,
+  EXP_MOUVEMENT,
+  MISSIONS,
+  MISSIONS_JOUR,
+  MISSIONS_PREMIUM,
+  PLAFOND_JOUR_GRATUIT,
+  PLAFOND_JOUR_PREMIUM,
+  ROUTE_MOT_DU_JOUR,
+} from "@/lib/aura";
 import { EXERCISE_LIBRARY } from "@/lib/exerciseLibrary";
 import { resolveGuide } from "@/lib/exerciseGuides";
 import { voix } from "@/lib/guides";
@@ -132,6 +144,26 @@ verdict("le même mouvement pour une même date", mouvementDuJour("2026-11-03").
   verdict("le tunnel reçoit le mouvement tel qu'une séance composée", ex.name === "Bicycle crunch" && ex.sets > 0 && !!ex.reps && ex.muscles.length > 0, `${ex.sets} × ${ex.reps}`);
 }
 
+/* ── La carte et ses 5 EXP ─────────────────────────────────────────────── */
+
+verdict("retournée ici aujourd'hui : elle s'ouvre retournée", carteRetournee({ retourneeLe: "2026-10-17", jour: "2026-10-17", missionFaite: false }), "cet appareil");
+verdict("retournée hier : elle se présente fermée", !carteRetournee({ retourneeLe: "2026-10-16", jour: "2026-10-17", missionFaite: false }), "un autre jour ne compte pas");
+verdict("retournée ailleurs aujourd'hui : la base suffit", carteRetournee({ retourneeLe: null, jour: "2026-10-17", missionFaite: true }), "un autre appareil");
+{
+  const m = MISSIONS.find((x) => x.id === "mouvement");
+  verdict(
+    "le mouvement du jour est une mission du jour, gratuite, à 5 EXP",
+    !!m && m.periode === "jour" && !m.premium && m.exp === EXP_MOUVEMENT && EXP_MOUVEMENT === 5 && MISSIONS_JOUR.includes(m),
+    m ? `${m.titre} · +${m.exp}` : "absente",
+  );
+  verdict("toucher la mission ouvre le mot, pas une page", m?.route === ROUTE_MOT_DU_JOUR, String(m?.route));
+}
+{
+  const gratuit = EXP_CONNEXION_SUITE + MISSIONS_JOUR.filter((m) => m.id !== "connexion").reduce((s, m) => s + m.exp, 0);
+  const premium = gratuit + MISSIONS_PREMIUM.reduce((s, m) => s + m.exp, 0);
+  verdict("le plafond du jour suit le catalogue", PLAFOND_JOUR_GRATUIT === gratuit && PLAFOND_JOUR_PREMIUM === premium, `${PLAFOND_JOUR_GRATUIT} et ${PLAFOND_JOUR_PREMIUM}`);
+}
+
 /* ── Par la source ─────────────────────────────────────────────────────── */
 
 const RACINE = path.resolve(import.meta.dirname, "..");
@@ -146,6 +178,28 @@ const lire = (fichier: string) => readFileSync(path.join(RACINE, fichier), "utf8
   const feuille = lire("src/components/accueil/FeuilleMotDuJour.tsx");
   verdict("le mot ne parle qu'avec les phrases de guides.ts", feuille.includes("lignesDuMot(") && feuille.includes("voix(guide"), "FeuilleMotDuJour.tsx");
   verdict("le mot attend la journée avant de dire « rien de prévu »", /etat === "loading" \? null/.test(feuille), "plan nul en chargement");
+}
+{
+  const carte = lire("src/components/accueil/MouvementDuJour.tsx");
+  verdict("le sceau ne se pose que sur la réponse de la base", carte.includes("{gain && posee && <Sceau"), "gain confirmé");
+  verdict("« +5 EXP » ne s'envole que d'un gain neuf, et jamais en mouvement réduit", carte.includes('envol={gain === "gagne" && eclore}') && carte.includes("const eclore = touchee && !reduce"), "envol");
+  verdict("deux touchers ne lancent qu'une découverte", carte.includes("lancee.current") && carte.includes("if (phase !== \"fermee\" || lancee.current) return"), "garde");
+}
+{
+  const feuille = lire("src/components/accueil/FeuilleMotDuJour.tsx");
+  verdict("le mot demande les 5 EXP à la base", feuille.includes("crediterMouvement(createClient())"), "decouvrir_mouvement_aura");
+  verdict("le gain ne remonte que sur un crédit neuf", feuille.includes("if (r) onGain();") && feuille.includes("if (r === null) return;"), "true seulement");
+}
+{
+  const sql = lire("supabase/migrations/20261017_mouvement_du_jour.sql");
+  const points = /'mouvement_du_jour', 'day', v_today::text, (\d+), false/.exec(sql)?.[1];
+  verdict("la base crédite le nombre du catalogue", Number(points) === EXP_MOUVEMENT, `${points} = ${EXP_MOUVEMENT}`);
+  verdict("l'état des missions porte la nouvelle", sql.includes("'mouvement', jsonb_build_object(") && /'mouvement_du_jour'\s*\]::text\[\]/.test(sql), "etat_missions_aura + CHECK");
+}
+{
+  const accueil = lire("src/components/AccueilSignature.tsx");
+  verdict("l'adresse de la mission ouvre le mot", accueil.includes("path === ROUTE_MOT_DU_JOUR ? ouvrirMot()"), "rail et feuille des missions");
+  verdict("l'aura se relit à la fermeture du mot, après un gain", /gainMouvement\.current = false;\s*onAuraChange\?\.\(\)/.test(accueil) && lire("src/app/AccueilClient.tsx").includes("onAuraChange={() => setStatsTick("), "onAuraChange");
 }
 {
   const accueil = lire("src/components/AccueilSignature.tsx");

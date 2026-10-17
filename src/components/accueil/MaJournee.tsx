@@ -353,7 +353,9 @@ export default function MaJournee({
         </button>
 
         {/* L'EXP gagnée depuis la dernière visite part de la série vers le
-            rang : la récompense de connexion existait, elle se voit enfin. */}
+            rang : la récompense de connexion existait, elle se voit enfin.
+            ⚠️ « +20 » seul, comme les deux autres gains du rang : le mot
+            « EXP » ne s'écrit qu'une fois sur l'accueil, à l'arrivée du jeton. */}
         {montee?.trajet && gagne > 0 && (
           <motion.span
             className={styles.jeton}
@@ -367,7 +369,7 @@ export default function MaJournee({
             }}
             transition={{ delay: T.jeton, duration: 0.85, times: [0, 0.2, 0.85, 1], ease: "easeInOut" }}
           >
-            +{gagne} EXP
+            +{gagne}
           </motion.span>
         )}
       </div>

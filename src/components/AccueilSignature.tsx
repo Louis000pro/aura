@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { ChevronRight } from "lucide-react";
 import { VisageGuide } from "@/components/AssistantMark";
@@ -11,7 +11,7 @@ import FeuilleMotDuJour from "@/components/accueil/FeuilleMotDuJour";
 import { useAuth } from "@/context/AuthContext";
 import FeuilleMissions from "@/components/accueil/FeuilleMissions";
 import { useAssistant } from "@/context/AssistantContext";
-import { type EtatAura } from "@/lib/aura";
+import { ROUTE_MOT_DU_JOUR, type EtatAura } from "@/lib/aura";
 import { PRENOM_GUIDE, type GuideRef } from "@/lib/guides";
 import type { MomentAccueil } from "@/lib/momentAccueil";
 import { lireMot, marquerMotLu } from "@/lib/motDuJour";
@@ -65,6 +65,7 @@ export default function AccueilSignature({
   heros,
   onNavigate,
   onOpenRangs,
+  onAuraChange,
 }: {
   greeting: string;
   pseudo: string;
@@ -105,6 +106,9 @@ export default function AccueilSignature({
   heros?: React.ReactNode;
   onNavigate: (path: string) => void;
   onOpenRangs: () => void;
+  /** Fait relire l'aura en base (le mouvement du jour vient de rapporter
+   *  son EXP). L'accueil ne compte jamais rien lui-même. */
+  onAuraChange?: () => void;
 }) {
   const reduce = useReducedMotion();
   const premiumDebloque = isPremium || isAdmin;
@@ -129,6 +133,22 @@ export default function AccueilSignature({
     setMotOuvert(true);
   };
 
+  /* Les 5 EXP du mouvement du jour : l'aura se relit à la FERMETURE du mot,
+     pas au crédit. Relue tout de suite, le « +5 » du rang se jouerait
+     derrière la feuille ; relue en la fermant, on le voit arriver. */
+  const gainMouvement = useRef(false);
+  const fermerMot = () => {
+    setMotOuvert(false);
+    if (gainMouvement.current) {
+      gainMouvement.current = false;
+      onAuraChange?.();
+    }
+  };
+
+  /* La mission du mouvement du jour n'a pas de page : son adresse ouvre le
+     mot, depuis le rail des quêtes comme depuis la feuille des missions. */
+  const naviguer = (path: string) => (path === ROUTE_MOT_DU_JOUR ? ouvrirMot() : onNavigate(path));
+
   return (
     <div className={styles.home}>
       <Entree guide={guide} greeting={greeting} pseudo={pseudo} moment={moment} motNonLu={motNonLu} onOuvrirMot={ouvrirMot} reduce={!!reduce} />
@@ -146,7 +166,7 @@ export default function AccueilSignature({
           premiumDebloque={premiumDebloque}
           expGain={expGain}
           reduce={!!reduce}
-          onNavigate={onNavigate}
+          onNavigate={naviguer}
           onVoirTout={() => setFeuille(true)}
           onOpenRangs={onOpenRangs}
           onOpenSerie={() => setFeuilleSerie(true)}
@@ -168,13 +188,16 @@ export default function AccueilSignature({
       <AnimatePresence>
         {motOuvert && missionsLues && user?.id && (
           <FeuilleMotDuJour
+            key={jour}
             guide={guide}
             moment={moment ?? motStocke?.moment ?? null}
             serie={Math.max(1, aura.serie)}
             userId={user.id}
             jour={jour}
-            onFermer={() => setMotOuvert(false)}
-            onRepondre={() => { setMotOuvert(false); ouvrirAssistant(); }}
+            missionFaite={!!aura.missions.mouvement?.complete}
+            onGain={() => { gainMouvement.current = true; }}
+            onFermer={fermerMot}
+            onRepondre={() => { fermerMot(); ouvrirAssistant(); }}
           />
         )}
       </AnimatePresence>
@@ -184,7 +207,7 @@ export default function AccueilSignature({
           <FeuilleMissions
             aura={aura}
             premiumDebloque={premiumDebloque}
-            onNavigate={onNavigate}
+            onNavigate={naviguer}
             onFermer={() => setFeuille(false)}
           />
         )}

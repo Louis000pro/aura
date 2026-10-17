@@ -13,16 +13,20 @@
    ⚠️ LA JOURNÉE SE LIT AVEC `useJournee`, la seule lecture de la journée
    du produit : tant qu'elle charge, le mot n'a pas de deuxième phrase,
    parce que « rien de prévu » ne s'écrit jamais avant d'avoir lu.
+   ⚠️ LES 5 EXP DE LA CARTE SONT DEMANDÉS À LA BASE (`crediterMouvement`),
+   jamais comptés ici. Le gain ne remonte à l'accueil (`onGain`) que sur
+   un crédit confirmé : c'est lui qui fait relire l'aura à la fermeture.
    ───────────────────────────────────────────────────────────────────── */
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { ChevronRight, Play } from "lucide-react";
 import Sheet from "@/components/communaute/Sheet";
 import { VisageGuide } from "@/components/AssistantMark";
 import ExerciseDetailSheet from "@/components/seance/ExerciseDetailSheet";
-import CarteMouvementDuJour from "@/components/accueil/MouvementDuJour";
+import CarteMouvementDuJour, { type GainMouvement } from "@/components/accueil/MouvementDuJour";
+import { createClient } from "@/lib/supabase";
 import { useJournee } from "@/hooks/useJournee";
 import { useWorkoutLaunch } from "@/context/WorkoutLaunchContext";
 import { dayTitle } from "@/lib/planning";
@@ -32,10 +36,14 @@ import type { MomentAccueil } from "@/lib/momentAccueil";
 import { EXERCISE_LIBRARY } from "@/lib/exerciseLibrary";
 import {
   ajouterAuCarnet,
+  carteRetournee,
+  crediterMouvement,
   exerciceDuMouvement,
   lireCarnet,
+  lireRetournee,
   minutesDuMouvement,
   mouvementDuJour,
+  noterRetournee,
   zoneDuMouvement,
 } from "@/lib/mouvementDuJour";
 
@@ -45,6 +53,8 @@ export default function FeuilleMotDuJour({
   serie,
   userId,
   jour,
+  missionFaite,
+  onGain,
   onFermer,
   onRepondre,
 }: {
@@ -54,6 +64,10 @@ export default function FeuilleMotDuJour({
   serie: number;
   userId: string;
   jour: string;
+  /** La base dit que la carte a déjà été retournée aujourd'hui (ici ou ailleurs). */
+  missionFaite: boolean;
+  /** Les 5 EXP viennent d'être crédités. */
+  onGain: () => void;
   onFermer: () => void;
   onRepondre: () => void;
 }) {
@@ -71,8 +85,39 @@ export default function FeuilleMotDuJour({
 
   const mouvement = mouvementDuJour(jour);
   const [carnet, setCarnet] = useState<string[]>(() => lireCarnet(userId));
-  const decouvert = carnet.includes(mouvement.name);
   const [fiche, setFiche] = useState(false);
+
+  /* ── La carte et ses 5 EXP ── */
+  const [ouverteAuMontage] = useState(() =>
+    carteRetournee({ retourneeLe: lireRetournee(userId), jour, missionFaite }),
+  );
+  const [gain, setGain] = useState<GainMouvement>(missionFaite ? "deja" : null);
+  const demander = () => {
+    void crediterMouvement(createClient()).then((r) => {
+      if (r === null) return;
+      setGain(r ? "gagne" : "deja");
+      if (r) onGain();
+    });
+  };
+  const decouvrir = () => {
+    noterRetournee(userId, jour);
+    ajouterAuCarnet(userId, mouvement.name);
+    demander();
+  };
+  /* Retournée sur cet appareil sans que la base l'ait comptée (le réseau a
+     lâché au mauvais moment) : on redemande le crédit en ouvrant le mot,
+     sinon la mission resterait « à faire » sans plus aucune carte à
+     toucher. La base ne crédite jamais deux fois. */
+  const relance = useRef(false);
+  useEffect(() => {
+    if (relance.current || !ouverteAuMontage || missionFaite) return;
+    relance.current = true;
+    demander();
+  });
+
+  // Le carnet compte aussi la carte retournée AILLEURS aujourd'hui.
+  const compte = carnet.length + (ouverteAuMontage && !carnet.includes(mouvement.name) ? 1 : 0);
+  const [compteAuMontage] = useState(compte);
 
   // Le mouvement se joue comme une séance de bibliothèque : un supplément,
   // qui ne referme aucune étape du programme.
@@ -125,15 +170,28 @@ export default function FeuilleMotDuJour({
             Le mouvement du jour
           </p>
           <p style={{ color: "var(--text-3)", fontSize: 11, fontWeight: 700 }}>
-            Ton carnet&nbsp;: <span className="vy-nombre" style={{ color: "var(--text-0)" }}>{carnet.length}</span> / {EXERCISE_LIBRARY.length}
+            Ton carnet&nbsp;:{" "}
+            <motion.span
+              key={compte}
+              className="vy-nombre inline-block"
+              style={{ color: "var(--text-0)" }}
+              initial={compte !== compteAuMontage && !reduce ? { scale: 1.9, y: -2 } : false}
+              animate={{ scale: 1, y: 0 }}
+              transition={{ type: "spring", stiffness: 480, damping: 14 }}
+            >
+              {compte}
+            </motion.span>{" "}
+            / {EXERCISE_LIBRARY.length}
           </p>
         </div>
         <div className="mt-2.5">
           <CarteMouvementDuJour
             mouvement={mouvement}
-            decouvert={decouvert}
+            ouverte={ouverteAuMontage}
+            gain={gain}
             reduce={reduce}
-            onDecouvrir={() => setCarnet(ajouterAuCarnet(userId, mouvement.name))}
+            onDecouvrir={decouvrir}
+            onRetournee={() => setCarnet(lireCarnet(userId))}
             onEssayer={essayer}
             onVoirFiche={() => setFiche(true)}
           />

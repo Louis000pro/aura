@@ -13,11 +13,23 @@
    bibliothèque : il garde une trace de ce qui a été découvert ici. Il vit
    sur l'appareil (comme le mot et le fond d'une affiche) : le faire
    suivre d'un appareil à l'autre demanderait une petite table.
+
+   ⭐ RETOURNER LA CARTE RAPPORTE 5 EXP, UNE FOIS PAR JOUR (Louis,
+   2026-10-17). C'est la mission « mouvement » du catalogue, créditée par
+   `decouvrir_mouvement_aura` : la base garde le fait, l'écran ne compte
+   rien.
+   ⚠️ « RETOURNÉE AUJOURD'HUI » N'EST PAS « DANS LE CARNET ». Le même
+   mouvement revient tous les 102 jours : ce jour-là il est déjà au
+   carnet, et la carte doit quand même se présenter fermée, sinon elle ne
+   se retournerait plus jamais et ne rapporterait plus rien.
    ───────────────────────────────────────────────────────────────────── */
 
 import { EXERCISE_LIBRARY, libelleReps, ZONES, type LibExercise } from "@/lib/exerciseLibrary";
 import { indexDuJour } from "@/lib/missionsAccueil";
 import type { Exercise } from "@/components/WorkoutGuideModal";
+import type { createClient } from "@/lib/supabase";
+
+type SB = ReturnType<typeof createClient>;
 
 export function mouvementDuJour(jour: string): LibExercise {
   const n = EXERCISE_LIBRARY.length;
@@ -72,4 +84,55 @@ export function ajouterAuCarnet(userId: string, nom: string): string[] {
     /* Stockage refusé : la découverte se voit quand même aujourd'hui. */
   }
   return suivant;
+}
+
+/* ── La carte retournée aujourd'hui ── */
+
+const cleRetournee = (userId: string) => `vaiiya_mouvement_retourne_${userId}`;
+
+/** Le jour où cet appareil a retourné la carte pour la dernière fois. */
+export function lireRetournee(userId: string): string | null {
+  try {
+    return localStorage.getItem(cleRetournee(userId));
+  } catch {
+    return null;
+  }
+}
+
+export function noterRetournee(userId: string, jour: string): void {
+  try {
+    localStorage.setItem(cleRetournee(userId), jour);
+  } catch {
+    /* Stockage refusé : la carte se représentera fermée à la prochaine
+       ouverture, et la base, elle, ne créditera pas deux fois. */
+  }
+}
+
+/** Pure : la carte s'ouvre-t-elle déjà retournée ? Oui si cet appareil l'a
+ *  retournée AUJOURD'HUI, ou si la base dit que la mission du jour est faite
+ *  (retournée sur un autre appareil). Un autre jour ne compte jamais. */
+export function carteRetournee({ retourneeLe, jour, missionFaite }: {
+  retourneeLe: string | null;
+  jour: string;
+  missionFaite: boolean;
+}): boolean {
+  return retourneeLe === jour || missionFaite;
+}
+
+/** Les 5 EXP, demandés à la base. `true` : crédités à l'instant. `false` :
+ *  ils l'étaient déjà aujourd'hui. `null` : on ne sait pas (pas de session,
+ *  réseau coupé, migration pas encore collée), et l'écran n'affiche alors
+ *  aucun gain : un gain qu'on n'a pas eu ne s'anime pas. */
+export async function crediterMouvement(supabase: SB): Promise<boolean | null> {
+  try {
+    const { data, error } = await supabase.rpc("decouvrir_mouvement_aura");
+    if (error) {
+      console.warn("[mouvement du jour] crédit refusé par la base :", error.message);
+      return null;
+    }
+    return typeof data === "boolean" ? data : null;
+  } catch (e) {
+    console.warn("[mouvement du jour] crédit impossible :", e);
+    return null;
+  }
 }
