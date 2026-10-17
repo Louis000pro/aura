@@ -26,7 +26,7 @@ import RetourLegal from "@/components/legal/RetourLegal";
 import { PLANS, formatPrice } from "@/lib/plans";
 import { LIMITES, QUOTAS_PUBLICS } from "@/lib/aiQuotas";
 
-const MAJ = "30 juillet 2026";
+const MAJ = "17 octobre 2026";
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -85,6 +85,11 @@ export default function ConditionsPage() {
             En créant un compte, vous acceptez les présentes conditions.
           </p>
           <p>
+            <strong>Nora et Sasha, les Guides de Vaiiya, sont des assistants d&apos;intelligence
+            artificielle</strong>, pas des personnes. Leurs réponses sont générées automatiquement et
+            peuvent comporter des erreurs.
+          </p>
+          <p>
             <strong>Vaiiya n&apos;est pas un service de santé.</strong>{" "}Les séances, les estimations
             nutritionnelles et les réponses de l&apos;assistant sont générées automatiquement, à titre
             informatif. Elles ne constituent ni un diagnostic, ni une prescription, ni un avis médical, et
@@ -101,7 +106,8 @@ export default function ConditionsPage() {
           </p>
           <p>
             Vous devez avoir au moins 15 ans pour créer un compte. En dessous, l&apos;accord d&apos;un
-            titulaire de l&apos;autorité parentale est nécessaire.
+            titulaire de l&apos;autorité parentale est nécessaire : écrivez-nous. Souscrire un abonnement
+            payant est réservé aux personnes majeures, ou aux mineurs avec l&apos;accord d&apos;un parent.
           </p>
           <p>
             Vous pouvez supprimer votre compte à tout moment depuis Paramètres. La suppression est
@@ -159,21 +165,42 @@ export default function ConditionsPage() {
         <Section title="4. Résiliation et rétractation">
           <p>
             <strong>Vous pouvez résilier à tout moment</strong>, sans motif et sans frais, depuis
-            Paramètres → Compte → « Gérer mon abonnement », ou depuis la page Vaiiya+. La résiliation
+            Paramètres → Compte → « Résilier mon abonnement », ou depuis la page Vaiiya+. Vous recevez
+            une confirmation par e-mail indiquant la date à laquelle la résiliation prend effet. La résiliation
             prend effet à la fin de la période déjà payée : vous gardez l&apos;accès jusque-là, et rien
             n&apos;est prélevé ensuite.
           </p>
           <p>
-            <strong>Droit de rétractation.</strong>{" "}Vous disposez de 14 jours pour vous rétracter d&apos;un
-            achat à distance. L&apos;abonnement donnant accès à un contenu numérique immédiatement, vous
-            acceptez, en souscrivant, que l&apos;exécution commence tout de suite et vous renoncez à votre
-            droit de rétractation pour la période déjà exécutée. Cela ne vous empêche jamais de résilier
-            comme indiqué ci-dessus.
+            <strong>Droit de rétractation.</strong>{" "}Vous disposez de <strong>14 jours</strong>{" "}à compter
+            de la souscription pour vous rétracter, sans motif. Si vous avez demandé que l&apos;accès
+            commence tout de suite (ce que fait la souscription), la rétractation reste possible : nous vous
+            remboursons alors sous 14 jours, déduction faite seulement de la part correspondant aux jours
+            déjà écoulés. Pendant l&apos;essai gratuit, rien n&apos;a été payé, donc rien n&apos;est dû.
+          </p>
+          <p>
+            Pour vous rétracter, écrivez à <strong>bonjour@vaiiya.fr</strong>, par exemple avec ce modèle :
+          </p>
+          <p className="text-[13px] rounded-2xl px-4 py-3" style={{ background: "rgba(var(--accent-rgb),0.06)" }}>
+            « Je vous notifie par la présente ma rétractation du contrat d&apos;abonnement Vaiiya+ souscrit le
+            [date], au nom de [nom], adresse e-mail du compte : [e-mail]. Date : [date]. »
           </p>
           <p>
             Nous pouvons suspendre ou fermer un compte en cas de manquement grave à ces conditions
             (fraude, contournement des limites, atteinte au service ou aux autres utilisateurs). Sauf
             fraude, un abonnement en cours est alors remboursé au prorata de la période non utilisée.
+          </p>
+        </Section>
+
+        <Section title="4 bis. Garantie légale de conformité">
+          <p>
+            Vaiiya+ est un service numérique : vous bénéficiez de la <strong>garantie légale de
+            conformité</strong>{" "}des contenus et services numériques (articles L224-25-12 et suivants du
+            Code de la consommation) pendant toute la durée de l&apos;abonnement.
+          </p>
+          <p>
+            Si le service n&apos;est pas conforme à ce qui est décrit (une fonctionnalité promise qui ne
+            marche pas), écrivez-nous : nous le mettons en conformité dans un délai raisonnable, sans frais.
+            À défaut, vous pouvez obtenir une réduction du prix ou résilier avec un remboursement au prorata.
           </p>
         </Section>
 
@@ -263,12 +290,14 @@ export default function ConditionsPage() {
             partie de la période d&apos;abonnement.
           </p>
           <p>
-            Nous pouvons en particulier <strong>suspendre, limiter, corriger, modifier ou retirer une
-            fonctionnalité sans préavis</strong>{" "}lorsque c&apos;est nécessaire pour : corriger une anomalie,
+            Nous pouvons en particulier <strong>suspendre, limiter ou corriger une fonctionnalité sans
+            préavis</strong>{" "}lorsque c&apos;est nécessaire pour : corriger une anomalie,
             protéger vos données ou celles des autres, contenir un abus ou une faille de sécurité, ou parce
             qu&apos;un prestataire dont nous dépendons (hébergement, base de données, paiement, modèles
             d&apos;intelligence artificielle) est indisponible, modifie ses conditions ou cesse son service.
-            Quand la situation le permet, nous prévenons dans l&apos;application.
+            Quand la situation le permet, nous prévenons dans l&apos;application. Retirer ou modifier
+            durablement une fonctionnalité de l&apos;abonnement ne se fait que pour un motif légitime, après
+            vous en avoir informé, et vous pouvez alors résilier et être remboursé au prorata.
           </p>
           <p>
             Certaines fonctionnalités sont <strong>récentes ou expérimentales</strong>{" "}et peuvent comporter
@@ -278,9 +307,7 @@ export default function ConditionsPage() {
           <p>
             Nous ne sommes pas responsables des indisponibilités qui ne nous sont pas imputables (panne d&apos;un
             prestataire, de votre appareil, de votre connexion, force majeure), ni des conséquences
-            indirectes d&apos;une interruption. Notre responsabilité, lorsqu&apos;elle est engagée, est
-            limitée aux sommes que vous avez versées au titre de l&apos;abonnement sur les douze derniers
-            mois.
+            indirectes d&apos;une interruption.
           </p>
           <p>
             <strong>Ce que cette clause ne fait pas :</strong>{" "}elle n&apos;autorise pas à vous facturer un

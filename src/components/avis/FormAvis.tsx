@@ -122,7 +122,7 @@ export default function FormAvis() {
 
       {(enAttente || envoye) && (
         <p className="text-[12px] mt-2 font-medium" style={{ color: "var(--accent)" }}>
-          Merci ✦ Ton avis est en attente de validation, il apparaîtra publiquement une fois vérifié.
+          Merci ✦ Ton avis est en attente de validation, il apparaîtra publiquement une fois relu.
         </p>
       )}
 

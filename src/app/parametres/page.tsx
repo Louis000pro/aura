@@ -847,12 +847,13 @@ export default function ParametresPage() {
             />
             {/* Résilier doit être aussi simple que souscrire : la ligne vit
                 dans les réglages, là où on la cherche, et pas seulement sur la
-                page de vente. */}
+                page de vente. Et elle s'appelle « Résilier » : la loi
+                demande une fonction clairement nommée (décret 2023-417). */}
             {user?.is_premium && (
               <Ligne
                 icon={CreditCard}
-                label="Gérer mon abonnement"
-                sub={portailErreur ?? "Factures, moyen de paiement, résiliation"}
+                label="Résilier mon abonnement"
+                sub={portailErreur ?? "Aussi : factures et moyen de paiement"}
                 right={portail ? <Pastille texte="Ouverture…" /> : undefined}
                 onClick={portail ? undefined : ouvrirPortail}
               />

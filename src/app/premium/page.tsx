@@ -365,13 +365,16 @@ function PremiumInner() {
                           <Link href="/conditions" className="underline" style={{ color: "var(--text-2)" }}>
                             conditions générales
                           </Link>{" "}
-                          et je demande que l&apos;accès commence tout de suite.
+                          et je demande que l&apos;accès commence tout de suite. Je pourrai me
+                          rétracter pendant 14 jours.
                         </span>
                       </label>
                       <motion.button whileTap={{ scale: 0.97 }} onClick={() => subscribe(id)} disabled={loading === id || verifPaiement}
                         className={`${styles.cta} py-2.5 md:py-4 text-[16px] font-bold text-white cursor-pointer disabled:opacity-60`}
                         style={{ borderRadius: "var(--r-controle)" }}>
-                        {loading === id ? "Redirection…" : verifPaiement ? "Vérification…" : "Démarrer mes 3 jours gratuits"}
+                        {/* L221-14 : le bouton doit dire qu'il engage à payer. « S'abonner »
+                            le dit ; « Démarrer mes 3 jours gratuits » ne le disait pas. */}
+                        {loading === id ? "Redirection…" : verifPaiement ? "Vérification…" : "S’abonner · 3 jours offerts"}
                       </motion.button>
                     </>
                   )}

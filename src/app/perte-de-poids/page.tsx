@@ -38,12 +38,13 @@ export default function PerteDePoidsPage() {
         Pour maigrir, tu dois consommer moins de calories que tu n&apos;en dépenses. Un déficit modéré de{" "}
         <strong>300 à 500 kcal par jour</strong>{" "}vise environ 0,5&nbsp;kg par semaine, un rythme
         généralement tenable dans la durée. Les régimes trop agressifs font souvent perdre du muscle et
-        reprendre vite.
+        reprendre vite. Si tu as moins de 18 ans, une pathologie ou un antécédent de trouble alimentaire,
+        parles-en d&apos;abord à un médecin : un déficit calorique n&apos;est pas anodin.
       </p>
 
       <h2>Pourquoi garder la musculation ?</h2>
       <p>
-        En déficit, la musculation protège ta masse musculaire : tu perds du gras, pas du muscle. Résultat,
+        En déficit, la musculation aide à préserver ta masse musculaire : tu perds surtout du gras plutôt que du muscle. Résultat,
         une silhouette plus dessinée et un métabolisme maintenu. Garde des charges sur des exercices
         polyarticulaires, comme en <Link href="/prise-de-masse">prise de masse</Link>, mais avec un apport
         calorique réduit.

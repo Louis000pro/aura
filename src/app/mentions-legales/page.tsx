@@ -66,13 +66,22 @@ export default function MentionsLegalesPage() {
         </LegalSection>
 
         <LegalSection title="Hébergement">
-          <p>Le site est hébergé par :</p>
+          <p>L&apos;application est hébergée par :</p>
           <ul className="list-none space-y-1.5 mt-2">
             <li><strong>Vercel Inc.</strong></li>
-            <li>340 S Lemon Ave #4133, Walnut, CA 91789, États-Unis</li>
+            <li>440 N Barranca Ave #4133, Covina, CA 91723, États-Unis</li>
             <li>
-              <a href="https://vercel.com" target="_blank" rel="noopener noreferrer" style={{ color: "var(--accent)" }} className="hover:underline">
+              <a href="https://vercel.com" target="_blank" rel="noopener noreferrer" style={{ color: "var(--exp-encre)" }} className="underline">
                 vercel.com
+              </a>
+            </li>
+          </ul>
+          <p className="mt-3">Les données (base, comptes, fichiers) sont hébergées par :</p>
+          <ul className="list-none space-y-1.5 mt-2">
+            <li><strong>Supabase Inc.</strong>, serveurs situés en Europe (Zurich, Suisse)</li>
+            <li>
+              <a href="https://supabase.com" target="_blank" rel="noopener noreferrer" style={{ color: "var(--exp-encre)" }} className="underline">
+                supabase.com
               </a>
             </li>
           </ul>
@@ -121,7 +130,6 @@ export default function MentionsLegalesPage() {
           <p>
             Pour toute question relative au site, à son fonctionnement ou aux présentes mentions légales,
             vous pouvez nous écrire à l&apos;adresse suivante :
-            {/* À COMPLÉTER : adresse email de contact officielle */}
             {" "}<strong>bonjour@vaiiya.fr</strong>.
           </p>
           <p>
@@ -133,7 +141,7 @@ export default function MentionsLegalesPage() {
         </LegalSection>
 
         <p className="text-center text-[11px] font-light mt-8" style={{ color: "var(--text-3)" }}>
-          Dernière mise à jour : 30 juillet 2026 · Vaiiya
+          Dernière mise à jour : 17 octobre 2026 · Vaiiya
         </p>
       </motion.div>
     </div>

@@ -22,7 +22,7 @@ export const metadata: Metadata = {
   // Le gabarit racine ajoute « · Vaiiya ».
   title: "Avis des membres",
   description:
-    "Ce que les membres pensent de Vaiiya, l'application web française d'entraînement et de nutrition avec assistant IA. Avis publics, laissés par de vrais utilisateurs.",
+    "Ce que les membres pensent de Vaiiya, l'application web française d'entraînement et de nutrition avec assistant IA. Avis publics laissés par des membres connectés, relus avant publication.",
   alternates: { canonical: "https://vaiiya.fr/avis" },
 };
 
@@ -105,6 +105,19 @@ export default async function AvisPage() {
           </li>
         ))}
       </ul>
+
+      {/* Information obligatoire sur le contrôle des avis (art. L111-7-2 et
+          D111-17 du Code de la consommation). */}
+      <section className="mt-8 text-[13px] leading-relaxed" style={{ color: "var(--text-3)" }}>
+        <h2 className="text-[13px] font-semibold mb-1.5" style={{ color: "var(--text-2)" }}>Comment ces avis sont publiés</h2>
+        <p>
+          Seul un compte Vaiiya connecté peut laisser un avis, une fois. Chaque avis est relu à la main avant
+          publication, en général sous quelques jours. Un avis n&apos;est refusé que s&apos;il est injurieux,
+          hors sujet, publicitaire ou contient des données personnelles, jamais à cause de sa note. Les avis
+          sont classés du plus récent au plus ancien et aucune contrepartie n&apos;est offerte pour en laisser
+          un. Nous ne vérifions pas l&apos;usage réel de l&apos;application par leur auteur.
+        </p>
+      </section>
     </div>
   );
 }
