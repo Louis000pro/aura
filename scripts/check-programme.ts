@@ -5745,11 +5745,15 @@ verdict(
     appelants.join(", "),
   );
   const tunnel = lire1("src/components/WorkoutGuideModal.tsx");
+  /* Une LECTURE de la table reste permise (le compte de séances qui ouvre
+     l'invitation à l'avis, 2026-10-17) : ce que la règle interdit, c'est
+     que le tunnel ÉCRIVE la séance lui-même, à côté de la finalisation. */
+  const accesSeances = [...tunnel.matchAll(/from\("workout_sessions"\)\s*\.(\w+)\(/g)].map((m) => m[1]);
   verdict(
     "R1 · SOURCE · le tunnel n'a plus de onComplete, il enregistre par finaliserSeance",
-    !/onComplete/.test(tunnel) && tunnel.includes("finaliserSeance(") && !tunnel.includes('from("workout_sessions")')
+    !/onComplete/.test(tunnel) && tunnel.includes("finaliserSeance(") && accesSeances.every((m) => m === "select")
       && !tunnel.includes('from("posts")') && !tunnel.includes("validerMaillon("),
-    "séance, maillon et affiche passent tous par la finalisation",
+    "séance, maillon et affiche passent tous par la finalisation ; la table ne s'y lit qu'en select",
   );
   verdict(
     "R1 · SOURCE · started_at reçoit l'heure du DÉBUT",
