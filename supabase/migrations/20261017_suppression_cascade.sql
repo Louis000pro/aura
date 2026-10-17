@@ -14,13 +14,22 @@
 
 -- 1. Les orphelins.
 delete from public.weight_logs w
- where not exists (select 1 from auth.users u where u.id = w.user_id);
+ where not exists (select 1 from auth.users u where u.id::text = w.user_id::text);
 delete from public.notifications n
  where not exists (select 1 from auth.users u where u.id = n.user_id)
     or (n.from_user_id is not null
         and not exists (select 1 from auth.users u where u.id = n.from_user_id));
 
 -- 2. Les clés.
+-- ⚠️ `weight_logs.user_id` était un TEXT : une clé étrangère vers
+-- auth.users(id) exige un uuid. On la convertit (toutes les valeurs ont la
+-- forme d'un uuid, vérifié le 2026-10-17). La policy porte sur la colonne,
+-- donc elle part le temps de la conversion et revient, sans le ::text.
+drop policy if exists "own weight logs" on public.weight_logs;
+alter table public.weight_logs alter column user_id type uuid using user_id::uuid;
+create policy "own weight logs" on public.weight_logs
+  for all using (auth.uid() = user_id);
+
 alter table public.weight_logs drop constraint if exists weight_logs_user_fkey;
 alter table public.weight_logs
   add constraint weight_logs_user_fkey
