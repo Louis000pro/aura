@@ -216,6 +216,10 @@ export default function AuthPage() {
   const [loading, setLoading]       = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [signupSent, setSignupSent] = useState(false);
+  /* La session est ouverte et la navigation part : on ne remontre plus le
+     formulaire. Sans ça, l'écran « Te revoilà » clignotait entre la
+     création du mot de passe et l'arrivée dans l'app. */
+  const [entree, setEntree] = useState(false);
   const [error, setError]           = useState<string|null>(null);
 
   /* OTP */
@@ -362,7 +366,9 @@ export default function AuthPage() {
       return;
     }
 
-    setSignupSent(false);
+    // ⚠️ On garde l'écran du code affiché : le refermer ici remontrait le
+    // formulaire de connexion le temps que la navigation se fasse.
+    setEntree(true);
     router.push(destinationApres());
   };
 
@@ -416,6 +422,10 @@ export default function AuthPage() {
   const changerMode = (m: "login" | "signup") => {
     setMode(m); setError(null); setEtapeConnexion(1); setForgotMode(false);
   };
+
+  // Déjà connecté (ou en train d'entrer) : la redirection est en route, on
+  // ne repeint pas un formulaire qui va disparaître dans la seconde.
+  if (entree || (!isLoading && user)) return <div className={s.page} aria-busy="true" />;
 
   return (
     <div className={s.page}>
