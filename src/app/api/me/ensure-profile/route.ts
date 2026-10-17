@@ -16,18 +16,6 @@ import { compteAppelant, refusAuth } from "@/lib/apiAuth";
  * poser le pseudo d'un compte Google encore vierge.
  */
 
-/* Génère un pseudo propre à partir d'un texte libre */
-function slugify(s: string): string {
-  return s
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "") // accents
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9]+/g, ".")
-    .replace(/^\.+|\.+$/g, "")
-    .slice(0, 24);
-}
-
 export async function POST(req: NextRequest) {
   try {
     const appelant = await compteAppelant(req);
@@ -47,7 +35,8 @@ export async function POST(req: NextRequest) {
       const { data: userData } = await supabase.auth.admin.getUserById(user_id);
       const u = userData?.user;
       if (u) {
-        metaEmail  = metaEmail  || u.email;
+        // L'adresse vient du compte, jamais du corps de la requête.
+        metaEmail  = u.email ?? null;
         metaPseudo = metaPseudo || (u.user_metadata?.pseudo as string | undefined);
         metaName   = metaName   || (u.user_metadata?.full_name as string | undefined) || (u.user_metadata?.name as string | undefined);
         metaAvatar = metaAvatar || (u.user_metadata?.avatar_url as string | undefined) || (u.user_metadata?.picture as string | undefined);
@@ -55,11 +44,13 @@ export async function POST(req: NextRequest) {
     } catch { /* ignore */ }
 
     // Candidat de pseudo : pseudo explicite → slug du nom → préfixe email → user_xxxxxx
+    // Jamais tiré du vrai nom ni de l'adresse e-mail : un pseudo se voit des
+    // autres, et « jean.dupont » le temps que la personne en choisisse un,
+    // c'est son identité publiée sans qu'elle l'ait décidé. L'écran de choix
+    // du pseudo (`pseudo_choisi = false`) prend le relais.
     const candidate =
       (metaPseudo && metaPseudo.trim()) ||
-      (metaName && slugify(metaName)) ||
-      (metaEmail && slugify(metaEmail.split("@")[0])) ||
-      `user_${user_id.slice(0, 6)}`;
+      `membre.${user_id.slice(0, 6)}`;
     const basePseudo = candidate || `user_${user_id.slice(0, 6)}`;
 
     // Le pseudo est-il DONNÉ par la personne (formulaire email) ou INVENTÉ

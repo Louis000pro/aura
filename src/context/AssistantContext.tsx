@@ -710,7 +710,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       supabase.from("followers").select("follower_id", { count: "exact", head: true }).eq("following_id", user.id),
       supabase.from("followers").select("following_id", { count: "exact", head: true }).eq("follower_id", user.id),
       supabase.from("posts").select("type, caption, performance_data, created_at").eq("user_id", user.id).order("created_at", { ascending: false }).limit(10),
-      supabase.from("profiles").select("bio, full_name").eq("id", user.id).maybeSingle(),
+      supabase.from("mon_profil").select("bio, full_name").eq("id", user.id).maybeSingle(),
       supabase.from("ai_memories").select("id, content, category, source, created_at").eq("user_id", user.id).order("created_at", { ascending: false }).limit(60),
     ]);
 

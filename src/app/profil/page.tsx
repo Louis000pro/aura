@@ -537,7 +537,8 @@ export default function ProfilPage() {
     const supabase = createClient();
 
     supabase
-      .from("profiles")
+      // `mon_profil` : le nom complet est une colonne privée (audit du 2026-10-17).
+      .from("mon_profil")
       .select("pseudo, avatar_url, full_name, bio, created_at")
       .eq("id", user.id)
       .maybeSingle()

@@ -58,7 +58,7 @@ export default function FollowListModal({
 
       const { data: profiles } = await supabase
         .from("profiles")
-        .select("id, pseudo, full_name, avatar_url")
+        .select("id, pseudo, avatar_url")
         .in("id", ids);
 
       setList(profiles ?? []);
@@ -102,7 +102,7 @@ export default function FollowListModal({
   };
 
   const filtered = query.trim()
-    ? list.filter((u) => (u.pseudo + (u.full_name ?? "")).toLowerCase().includes(query.toLowerCase()))
+    ? list.filter((u) => u.pseudo.toLowerCase().includes(query.toLowerCase()))
     : list;
 
   return (
@@ -169,7 +169,7 @@ export default function FollowListModal({
                     </div>
                   </Link>
                   <Link href={`/profil/${encodeURIComponent(u.pseudo)}`} onClick={onClose} className="flex-1 min-w-0">
-                    <p className="text-[16px] font-semibold truncate" style={{ color: "var(--text-1)" }}>{u.full_name || u.pseudo}</p>
+                    <p className="text-[16px] font-semibold truncate" style={{ color: "var(--text-1)" }}>{u.pseudo}</p>
                     <p className="text-[11px] font-light truncate" style={{ color: "var(--text-3)" }}>@{u.pseudo}</p>
                   </Link>
                   {!isOwn && user && (

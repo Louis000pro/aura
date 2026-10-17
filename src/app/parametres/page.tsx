@@ -12,6 +12,7 @@ import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { createClient } from "@/lib/supabase";
 import { supprimerRepriseDuCompte } from "@/lib/seanceInterrompue";
+import { oublierCompte, effacerDonneesLocales } from "@/lib/comptesConnus";
 import { useTheme, type ThemePreference } from "@/hooks/useTheme";
 import { useVisualQuality, type VisualQuality } from "@/lib/perfMode";
 import { useGuidedTour } from "@/context/GuidedTourContext";
@@ -439,19 +440,29 @@ function DeleteAccountModal({ onClose }: { onClose: () => void }) {
   const handleDelete = async () => {
     if (confirm !== "SUPPRIMER") { setError("Tape exactement SUPPRIMER pour confirmer."); return; }
     setLoading(true);
-    // We can only call admin.deleteUser with service role — so here we just sign out
-    // and show instructions. A real deletion would go via a server API route.
+    setError(null);
     const { data: sess } = await supabase.auth.getSession();
-    if (sess.session) {
-      await fetch("/api/account/delete", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${sess.session.access_token}`,
-        },
-        body: JSON.stringify({ user_id: sess.session.user.id }),
-      }).then((r) => { if (r.ok) supprimerRepriseDuCompte(sess.session!.user.id); }).catch(() => {});
+    if (!sess.session) { setLoading(false); setError("Ta session a expiré. Reconnecte-toi puis recommence."); return; }
+    const uid = sess.session.user.id;
+    const email = sess.session.user.email ?? "";
+    // Un échec se DIT : avant, il était avalé, on déconnectait quand même,
+    // et la personne croyait son compte supprimé alors qu'il existait encore.
+    const ok = await fetch("/api/account/delete", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${sess.session.access_token}`,
+      },
+      body: JSON.stringify({ user_id: uid }),
+    }).then((r) => r.ok).catch(() => false);
+    if (!ok) {
+      setLoading(false);
+      setError("La suppression n’a pas abouti. Rien n’a été effacé : réessaie, ou écris-nous à bonjour@vaiiya.fr.");
+      return;
     }
+    supprimerRepriseDuCompte(uid);
+    if (email) oublierCompte(email);
+    effacerDonneesLocales(uid);
     await signOut();
     setLoading(false);
     router.replace("/");
@@ -852,7 +863,7 @@ export default function ParametresPage() {
               sub="Mets à jour ta sécurité"
               onClick={() => setShowPasswordModal(true)}
             />
-            {(user?.is_admin || user?.email === "teyprox@gmail.com") && (
+            {user?.is_admin && (
               <Ligne
                 icon={Shield}
                 label="Administration"

@@ -190,7 +190,7 @@ export default function Navigation() {
 
   const isProgActive = pathname === "/progression";
   const avatarLetter = (user?.pseudo ?? user?.name ?? "?")[0]?.toUpperCase() ?? "?";
-  const isAdmin = user?.is_admin || user?.email === "teyprox@gmail.com";
+  const isAdmin = !!user?.is_admin;
 
   /* ── Helper: icône d'onglet ── */
   const NavIcon = ({

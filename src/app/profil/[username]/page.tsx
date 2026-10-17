@@ -112,7 +112,7 @@ export default function PublicProfilePage() {
 
     supabase
       .from("profiles")
-      .select("id, pseudo, full_name, bio, avatar_url, onboarding_goals, onboarding_level, is_admin")
+      .select("id, pseudo, bio, avatar_url, onboarding_goals, onboarding_level, is_admin")
       .ilike("pseudo", username.trim())
       .maybeSingle()
       .then(async ({ data, error }) => {

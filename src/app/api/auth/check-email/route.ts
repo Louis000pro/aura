@@ -27,6 +27,12 @@ export async function POST(req: NextRequest) {
     // Garde-fou anti-abus : on limite les vérifications par adresse. Le but est
     // d'éviter qu'un script énumère les comptes, pas d'arrêter une attaque
     // distribuée (compteur en mémoire, cf. rateLimit.ts).
+    // Et par adresse IP : sans elle, un script qui change d'adresse e-mail à
+    // chaque essai peut tester toute une liste et savoir qui a un compte.
+    const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "inconnue";
+    if (!(await autoriserEssai("check-email-ip", ip, 20))) {
+      return Response.json({ error: "Trop de tentatives. Réessaie dans un moment." }, { status: 429 });
+    }
     if (!(await autoriserEssai("check-email", email.toLowerCase(), 30))) {
       return Response.json({ error: "Trop de tentatives. Réessaie dans un moment." }, { status: 429 });
     }

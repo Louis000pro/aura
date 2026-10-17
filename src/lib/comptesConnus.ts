@@ -52,3 +52,28 @@ export function compteConnu(identifiant: string): CompteConnu | null {
   if (!id) return null;
   return lire().find((x) => norme(x.email) === id || norme(x.pseudo) === id) ?? null;
 }
+
+/** Oublie un compte sur cet appareil (sa suppression doit l'effacer ici
+ *  aussi : sinon son e-mail et sa photo ressortiraient à la connexion). */
+export function oublierCompte(email: string): void {
+  try {
+    const liste = lire().filter((x) => norme(x.email) !== norme(email));
+    localStorage.setItem(CLE, JSON.stringify(liste));
+  } catch { /* stockage bloqué : rien à oublier */ }
+}
+
+/** Retire de cet appareil tout ce qui est rangé sous l'identifiant d'un
+ *  compte (brouillons, caches, repères). */
+export function effacerDonneesLocales(userId: string): void {
+  for (const zone of [() => localStorage, () => sessionStorage]) {
+    try {
+      const s = zone();
+      const cles: string[] = [];
+      for (let i = 0; i < s.length; i++) {
+        const k = s.key(i);
+        if (k && k.includes(userId)) cles.push(k);
+      }
+      cles.forEach((k) => s.removeItem(k));
+    } catch { /* stockage bloqué */ }
+  }
+}

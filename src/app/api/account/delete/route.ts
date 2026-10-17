@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase-admin";
+import { supprimerCompte } from "@/lib/suppressionCompte";
 
 export async function POST(req: NextRequest) {
   try {
@@ -22,8 +23,8 @@ export async function POST(req: NextRequest) {
     }
     // ─────────────────────────────────────────────────────────────────────────
 
-    const { error } = await admin.auth.admin.deleteUser(user_id);
-    if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
+    const res = await supprimerCompte(admin, user_id);
+    if (!res.ok) return NextResponse.json({ ok: false, error: res.raison }, { status: 500 });
 
     return NextResponse.json({ ok: true });
   } catch {

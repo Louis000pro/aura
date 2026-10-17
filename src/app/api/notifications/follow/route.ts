@@ -5,6 +5,14 @@ import { sendPushToUser } from "@/lib/sendPushToUser";
 import { ensureProfileForUser } from "@/lib/ensureProfile";
 import { cleanEnv } from "@/lib/serverEnv";
 import { preferencesDe } from "@/lib/notificationPrefs";
+import { autoriserEssai } from "@/lib/rateLimit";
+
+/** Un pseudo est écrit par son propriétaire : il ne doit jamais entrer
+ *  tel quel dans du HTML envoyé à quelqu'un d'autre. */
+function echapper(t: string): string {
+  return t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -36,11 +44,16 @@ export async function POST(req: NextRequest) {
     if (!relation) {
       return Response.json({ error: "Relation introuvable" }, { status: 403 });
     }
+    // Une demande d'ami envoie un e-mail : sans plafond, ajouter puis retirer
+    // la même personne en boucle remplirait sa boîte.
+    if (!(await autoriserEssai("notif-ami", `${follower_id}:${followed_id}`, 3))) {
+      return Response.json({ ok: true, limite: true });
+    }
     // ─────────────────────────────────────────────────────────────────────────
 
     // Récupérer en parallèle : profil du follower + email du suivi
     const [followerRes, followedUserRes] = await Promise.all([
-      supabase.from("profiles").select("pseudo, full_name, avatar_url").eq("id", follower_id).maybeSingle(),
+      supabase.from("profiles").select("pseudo, avatar_url").eq("id", follower_id).maybeSingle(),
       supabase.auth.admin.getUserById(followed_id),
     ]);
 
@@ -58,9 +71,12 @@ export async function POST(req: NextRequest) {
       .eq("id", followed_id)
       .maybeSingle();
 
-    const followerName = follower?.full_name || `@${follower?.pseudo}` || "Quelqu’un";
-    const followerHandle = follower?.pseudo ? `@${follower.pseudo}` : "";
+    // Le pseudo, jamais le nom complet : c'est une donnée privée.
+    const followerName = follower?.pseudo ? `@${follower.pseudo}` : "Quelqu’un";
     const followedPseudo = followedProfile?.pseudo ?? "toi";
+    const nomHtml = echapper(followerName);
+    const initialeHtml = echapper(follower?.pseudo?.[0]?.toUpperCase() ?? "?");
+    const pseudoSuiviHtml = echapper(followedPseudo);
 
     /* Amis, pas abonnés (vocabulaire verrouillé depuis le 2026-07-25).
        La réciprocité se LIT en base au lieu d'être annoncée par l'appelant :
@@ -152,10 +168,9 @@ export async function POST(req: NextRequest) {
     <!-- Avatar + message -->
     <div style="background:linear-gradient(135deg,rgba(212,192,255,0.15),rgba(245,230,163,0.15));border:1px solid rgba(212,192,255,0.3);border-radius:20px;padding:28px 24px;text-align:center;margin-bottom:28px">
       <div style="width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,#D4C0FF,#F5E6A3);margin:0 auto 16px;display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:700;color:#2D3748;line-height:64px">
-        ${follower?.pseudo?.[0]?.toUpperCase() ?? "?"}
+        ${initialeHtml}
       </div>
-      <p style="margin:0 0 6px;font-size:17px;font-weight:600;color:#2D3748">${followerName}</p>
-      ${followerHandle ? `<p style="margin:0 0 16px;font-size:13px;color:#A78BFA">${followerHandle}</p>` : ""}
+      <p style="margin:0 0 16px;font-size:17px;font-weight:600;color:#2D3748">${nomHtml}</p>
       <p style="margin:0;font-size:15px;font-weight:300;color:#4A5568;line-height:1.6">
         ${texteRelation}
       </p>
@@ -178,7 +193,7 @@ export async function POST(req: NextRequest) {
     <hr style="border:none;border-top:1px solid rgba(212,192,255,0.3);margin:0 0 20px" />
 
     <p style="text-align:center;font-size:11px;color:#A0AEC0;margin:0">
-      Tu reçois cet email car tu as un compte Vaiiya (@${followedPseudo}).<br/>
+      Tu reçois cet email car tu as un compte Vaiiya (@${pseudoSuiviHtml}).<br/>
       <a href="${appUrl}/parametres" style="color:#A78BFA;text-decoration:none">Gérer mes notifications</a>
     </p>
 

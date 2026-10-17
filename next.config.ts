@@ -56,12 +56,31 @@ const nextConfig: NextConfig = {
   //
   // Chaque environnement Vercel a son propre build : la valeur de VERCEL_ENV
   // est donc figée correctement au moment du build, pas devinée à l'exécution.
+  //
+  // ── En-têtes de sécurité, partout (audit du 2026-10-17) ──────
+  // Pas de CSP pour l'instant : l'app charge MediaPipe, YouTube et Stripe,
+  // une politique mal réglée casserait ces écrans en silence. Ce qui suit ne
+  // casse rien et ferme les attaques les plus courantes :
+  //  · personne ne peut afficher Vaiiya dans un cadre (clickjacking) ;
+  //  · le navigateur ne devine pas le type d'un fichier ;
+  //  · une page ne transmet que l'origine du site aux sites qu'elle ouvre ;
+  //  · caméra et micro restent permis pour Vaiiya seul (scanner, analyse,
+  //    dictée), la géolocalisation et le paiement par le navigateur non.
   async headers() {
-    if (process.env.VERCEL_ENV === "production") return [];
+    const securite = [
+      { key: "X-Frame-Options", value: "DENY" },
+      { key: "X-Content-Type-Options", value: "nosniff" },
+      { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+      { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains" },
+      { key: "Permissions-Policy", value: "camera=(self), microphone=(self), geolocation=(), payment=()" },
+    ];
+    if (process.env.VERCEL_ENV === "production") {
+      return [{ source: "/:path*", headers: securite }];
+    }
     return [
       {
         source: "/:path*",
-        headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }],
+        headers: [...securite, { key: "X-Robots-Tag", value: "noindex, nofollow" }],
       },
     ];
   },

@@ -25,13 +25,14 @@ export async function ensureProfileForUser(userId: string): Promise<void> {
     const u = data?.user;
     if (u) {
       email = u.email ?? null;
-      pseudo = (u.user_metadata?.pseudo as string | undefined) ?? (u.email?.split("@")[0] ?? null);
+      // Jamais le début de l'adresse e-mail : un pseudo se voit des autres.
+      pseudo = (u.user_metadata?.pseudo as string | undefined) ?? null;
       fullName = (u.user_metadata?.full_name as string | undefined) ?? (u.user_metadata?.name as string | undefined) ?? pseudo;
       avatarUrl = (u.user_metadata?.avatar_url as string | undefined) ?? null;
     }
   } catch { /* ignore */ }
 
-  if (!pseudo) pseudo = `user_${userId.slice(0, 6)}`;
+  if (!pseudo) pseudo = `membre.${userId.slice(0, 6)}`;
   // Normalise les espaces (pas de pseudo avec espaces parasites)
   pseudo = pseudo.replace(/\s+/g, " ").trim();
   if (fullName) fullName = fullName.replace(/\s+/g, " ").trim();

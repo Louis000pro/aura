@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { exigerAdmin } from "@/lib/adminGuard";
+import { supprimerCompte } from "@/lib/suppressionCompte";
 
 /**
  * POST /api/admin/user
@@ -27,6 +28,11 @@ export async function POST(req: NextRequest) {
   const action   = body.action as string;
   const targetId = body.target_id as string;
   if (!action || !targetId) return NextResponse.json({ error: "params_manquants" }, { status: 400 });
+  // `target_id` entre dans un filtre PostgREST écrit à la main (`.or(...)`) :
+  // tout ce qui n'est pas un UUID est refusé avant d'y arriver.
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(targetId)) {
+    return NextResponse.json({ error: "cible_invalide" }, { status: 400 });
+  }
 
   try {
     switch (action) {
@@ -86,14 +92,10 @@ export async function POST(req: NextRequest) {
       }
 
       case "delete": {
-        await Promise.all([
-          admin.from("followers").delete().or(`follower_id.eq.${targetId},following_id.eq.${targetId}`),
-          admin.from("notifications").delete().or(`user_id.eq.${targetId},from_user_id.eq.${targetId}`),
-        ]);
-        const { error } = await admin.from("profiles").delete().eq("id", targetId);
-        if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-        // Supprime aussi le compte auth
-        try { await admin.auth.admin.deleteUser(targetId); } catch { /* ignore */ }
+        // Même chemin que la suppression demandée par la personne : abonnement
+        // Stripe arrêté, fichiers et pesées effacés, puis le compte.
+        const res = await supprimerCompte(admin, targetId);
+        if (!res.ok) return NextResponse.json({ error: res.raison }, { status: 500 });
         return NextResponse.json({ ok: true, deleted: true });
       }
 

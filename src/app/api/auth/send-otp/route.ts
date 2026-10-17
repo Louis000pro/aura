@@ -1,7 +1,7 @@
 import { randomInt } from "crypto";
 import { NextRequest } from "next/server";
 import { cleanEnv } from "@/lib/serverEnv";
-import { autoriserEnvoiEmail } from "@/lib/rateLimit";
+import { autoriserEnvoiEmail, autoriserEssai } from "@/lib/rateLimit";
 import { creerJeton } from "@/lib/jetonCode";
 
 export async function POST(req: NextRequest) {
@@ -10,6 +10,14 @@ export async function POST(req: NextRequest) {
     const email = body?.email;
     if (!email || typeof email !== "string" || !email.includes("@")) {
       return Response.json({ error: "Email invalide" }, { status: 400 });
+    }
+
+    // Limite par IP en plus de la limite par adresse : sans elle, un script
+    // peut faire envoyer des codes à des milliers d'adresses différentes,
+    // donc se servir de Vaiiya pour arroser des inconnus.
+    const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "inconnue";
+    if (!(await autoriserEssai("otp-ip", ip, 10))) {
+      return Response.json({ error: "Trop de demandes. Réessaie dans une heure." }, { status: 429 });
     }
 
     if (!(await autoriserEnvoiEmail("otp", email))) {
