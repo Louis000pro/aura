@@ -23,6 +23,8 @@ import {
 import { calculerAura, type Rang } from "@/lib/aura";
 import { noterRang } from "@/lib/celebrationRang";
 import { noterBadges } from "@/lib/celebrationBadge";
+import { peutProposerAvis, proposerAvis, SEANCES_AVANT_AVIS } from "@/lib/invitationAvis";
+import { motCouverture } from "@/components/profil/CouvertureSeance";
 import { chargerBadgesAura } from "@/lib/badgesAura";
 import type { Badge } from "@/lib/badges";
 import { useAuth } from "@/context/AuthContext";
@@ -1258,6 +1260,20 @@ export default function WorkoutGuideModal({
         if (neufs.length) setBadgesGagnes(neufs);
       })
       .catch(() => {});
+
+    /* La 3ᵉ séance terminée ouvre la question de l'avis, une seule fois par
+       personne. On ne compte que si la porte est encore ouverte : passé ce
+       jour, plus aucune séance ne paie cette lecture. */
+    if (peutProposerAvis(user.id)) {
+      const minutes = Math.max(1, Math.round(elapsed / 60));
+      const series = seriesConfirmees(doneMap);
+      void supabase.from("workout_sessions").select("id", { count: "exact", head: true }).eq("user_id", user.id)
+        .then(({ count }) => {
+          if (count === SEANCES_AVANT_AVIS) {
+            proposerAvis(user.id, { pourquoi: "seances", surtitre: "Séance terminée", mot: motCouverture(title || "Séance"), minutes, series });
+          }
+        });
+    }
   };
 
   useEffect(() => {

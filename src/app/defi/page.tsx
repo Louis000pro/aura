@@ -99,7 +99,7 @@ export default function DefiPage() {
      avis, une seule fois par personne (garde-fou dans `invitationAvis.ts`). */
   useEffect(() => {
     if (apercu || !user?.id) return;
-    if (defi?.statut === "reussi") proposerAvis(user.id);
+    if (defi?.statut === "reussi") proposerAvis(user.id, { pourquoi: "relais", surtitre: "Relais gagné", mot: "Relais" });
   }, [apercu, user?.id, defi?.statut]);
 
   /* Le maillon vient d'être franchi à la fin d'une séance :

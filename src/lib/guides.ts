@@ -973,6 +973,15 @@ const REPLIQUES = {
       ? `${c.rang}. ${c.exp} EXP, une action après l’autre. Tu l’as pris.`
       : `${c.rang}. C’est le début, et il compte.`),
   },
+
+  /* ── L'avis ────────────────────────────────────────────────────────
+     Demandé une seule fois, après un pic. On ne demande jamais un « bon »
+     avis, et la suite (Trustpilot) est proposée quelle que soit la note. */
+  "avis.question.seances": { commun: "Trois séances déjà. Vaiiya te plaît\u00a0?" },
+  "avis.question.rang":    { commun: (c) => `Te voilà ${c.rang}. Vaiiya te plaît\u00a0?` },
+  "avis.question.relais":  { commun: "Relais gagné. Vaiiya te plaît\u00a0?" },
+  "avis.ecrire": { commun: "Merci\u00a0! Tu veux dire en une phrase ce qui t’aide, ou ce qui manque\u00a0?" },
+  "avis.merci":  { commun: "On lit chaque avis. Si tu veux aller plus loin, tu peux aussi le dire sur Trustpilot\u00a0: c’est là que les gens nous découvrent." },
 } satisfies Record<string, Replique>;
 
 /** Toutes les clés existantes. Une faute de frappe ne compile pas. */

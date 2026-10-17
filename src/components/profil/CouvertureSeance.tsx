@@ -72,7 +72,7 @@ export function motCouverture(titre: string): string {
    lit sa vraie largeur, et on règle la taille pour qu'il remplisse
    exactement la largeur utile. Relu quand la carte change de taille et
    quand la police arrive (avant, le navigateur mesure le repli). */
-function useMotAjuste(mot: string, plafond: number) {
+export function useMotAjuste(mot: string, plafond: number) {
   const boite = useRef<HTMLDivElement>(null);
   const mesure = useRef<HTMLSpanElement>(null);
   const [taille, setTaille] = useState(0);
@@ -93,7 +93,7 @@ function useMotAjuste(mot: string, plafond: number) {
   return { boite, mesure, taille };
 }
 
-const STYLE_MOT: React.CSSProperties = {
+export const STYLE_MOT: React.CSSProperties = {
   lineHeight: 0.82, fontWeight: 900, fontVariationSettings: "'wdth' 125",
   letterSpacing: "-0.05em", whiteSpace: "nowrap",
 };

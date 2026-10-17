@@ -5,8 +5,8 @@
 // affichés sur la landing (§17). Ici, on invite à laisser un avis sur Trustpilot,
 // et on ne fait qu'ouvrir un lien : aucune donnée, aucune base.
 //
-// Un avis se demande APRÈS un pic de satisfaction, jamais au hasard : une montée
-// de rang, un relais gagné. On propose, on n'insiste pas, et on ne demande JAMAIS
+// Un avis se demande APRÈS un pic de satisfaction, jamais au hasard : la 3ᵉ
+// séance terminée, une montée de rang, un relais gagné. On propose, on n'insiste pas, et on ne demande JAMAIS
 // un « bon » avis (interdit par le positionnement §14/§17 comme par Trustpilot :
 // pas de review-gating, pas de récompense contre un avis).
 //
@@ -51,12 +51,27 @@ export function marquerAvis(userId: string, etat: "vu" | "fait"): void {
   }
 }
 
+/** Ce que l'écran de la question affiche en grand : le moment qui vient
+ *  d'avoir lieu. Le MOT est celui des couvertures du profil (`motCouverture`)
+ *  pour une séance, le nom du rang pour une montée de rang. */
+export type SceneAvis = {
+  pourquoi: "seances" | "rang" | "relais";
+  surtitre: string;
+  mot: string;
+  minutes?: number;
+  series?: number;
+};
+
 /**
- * À appeler à un moment de satisfaction (rang monté, relais gagné). Si la personne
- * n'a jamais vu l'invitation, déclenche son affichage ; sinon ne fait rien. Sans
- * effet serveur, idempotent, sûr à rappeler.
+ * À appeler à un moment de satisfaction (3ᵉ séance terminée, rang monté, relais
+ * gagné). Si la personne n'a jamais vu l'invitation, déclenche son affichage ;
+ * sinon ne fait rien. Sans effet serveur, idempotent, sûr à rappeler.
  */
-export function proposerAvis(userId: string): void {
+export function proposerAvis(userId: string, scene: SceneAvis): void {
   if (!peutProposerAvis(userId)) return;
-  window.dispatchEvent(new CustomEvent(EVENEMENT_PROPOSER_AVIS));
+  window.dispatchEvent(new CustomEvent<SceneAvis>(EVENEMENT_PROPOSER_AVIS, { detail: scene }));
 }
+
+/** La 3ᵉ séance est le moment choisi : assez pour avoir un avis, assez tôt
+ *  pour qu'il compte. Une seule lecture, et seulement si la porte est ouverte. */
+export const SEANCES_AVANT_AVIS = 3;

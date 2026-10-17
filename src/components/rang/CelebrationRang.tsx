@@ -63,8 +63,8 @@ export default function CelebrationRang() {
   // seule fois par personne dans `avis.ts`).
   const fermer = useCallback(() => {
     setRang(null);
-    if (user?.id) proposerAvis(user.id);
-  }, [user?.id]);
+    if (user?.id && rang) proposerAvis(user.id, { pourquoi: "rang", surtitre: "Nouveau rang", mot: rang.nom });
+  }, [user?.id, rang]);
 
   useEffect(() => {
     if (!rang) return;
