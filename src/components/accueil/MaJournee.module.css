@@ -128,12 +128,23 @@
 .serieTete {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 }
 
 .flamme {
   font-size: 26px;
   line-height: 1;
+}
+
+.serieNombre {
+  font-size: 26px;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--text-0);
+}
+
+.serie[data-chaude] .serieNombre {
+  color: #2a1a05;
 }
 
 .jours {

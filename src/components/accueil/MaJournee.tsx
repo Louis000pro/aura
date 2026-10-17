@@ -118,12 +118,12 @@ export default function MaJournee({
           onClick={onOpenSerie}
         >
           <span className={styles.serieTete}>
+            {/* Le nombre de jours d'affilée se colle à la flamme (Louis, 2026-10-17). */}
             <span className={styles.flamme} aria-hidden="true">🔥</span>
+            <b className={`${styles.serieNombre} vy-nombre`}>{serie}</b>
             <span className={styles.texte}>
-              <small>Série</small>
-              <strong>
-                <b className="vy-nombre">{serie}</b> {serie > 1 ? "jours" : "jour"}
-              </strong>
+              <small>{serie > 1 ? "jours" : "jour"}</small>
+              <small>{serie > 1 ? "d’affilée" : "de série"}</small>
             </span>
           </span>
           <span className={styles.jours} aria-label={`Jour ${allumes} sur 7`}>
