@@ -14,7 +14,7 @@
 //     Premium est « plus de missions », jamais « les mêmes qui rapportent
 //     plus ». On doit pouvoir prévoir son gain AVANT d'agir.
 //
-//  2. SE CONNECTER NE VALIDE PAS LA JOURNÉE. La connexion rapporte +5 EXP,
+//  2. SE CONNECTER NE VALIDE PAS LA JOURNÉE. La connexion rapporte +10 EXP (+20 d’affilée),
 //     mais seule une ACTION UTILE (une séance, un repas) valide la journée et
 //     tient la série. Récupération et mobilité sont des séances du catalogue :
 //     elles comptent déjà, sans catégorie nouvelle.
@@ -31,7 +31,10 @@ import type { createClient } from "@/lib/supabase";
 type SB = ReturnType<typeof createClient>;
 
 // ── Le barème. Des valeurs rondes, fixes, et rien d'autre. ──
-export const EXP_CONNEXION = 5;
+/** Connexion : 10 le premier jour d'une suite, 20 chaque jour d'affilée
+ *  ensuite (Louis, 2026-10-17). La base décide, `expMission` l'affiche. */
+export const EXP_CONNEXION = 10;
+export const EXP_CONNEXION_SUITE = 20;
 export const EXP_SEANCE = 30;
 export const EXP_REPAS = 5;
 export const EXP_JOURNEE = 10;
@@ -48,10 +51,10 @@ export const EXP_SEMAINE_PARFAITE = 100;
 /** Coup de pouce d'inscription : +10 offerts à tout compte. */
 export const EXP_BIENVENUE = 10;
 
-/** Ce qu'un compte gratuit peut gagner en une journée : 5 + 30 + 5 + 10. */
-export const PLAFOND_JOUR_GRATUIT = 50;
-/** Ce qu'un compte Premium peut gagner en une journée : 50 + 20 + 20 + 15 + 15. */
-export const PLAFOND_JOUR_PREMIUM = 120;
+/** Ce qu'un compte gratuit peut gagner en une journée : 20 + 30 + 5 + 10. */
+export const PLAFOND_JOUR_GRATUIT = 65;
+/** Ce qu'un compte Premium peut gagner en une journée : 65 + 20 + 20 + 15 + 15. */
+export const PLAFOND_JOUR_PREMIUM = 135;
 
 // ── Reset global de l'aura ──
 // Conservé pour mémoire : les crédits historiques repris par la migration de
@@ -206,7 +209,7 @@ export const MISSIONS: Mission[] = [
     titre: "Connexion du jour",
     // Depuis le 2026-10-14 (Louis), venir tient la série (`serie_aura`).
     // Les missions de la semaine, elles, comptent toujours séance ou repas.
-    condition: "Ouvrir Vaiiya. Tient ta série.",
+    condition: "Ouvrir Vaiiya. Double dès le 2ᵉ jour d’affilée.",
     exp: EXP_CONNEXION,
     periode: "jour",
     premium: false,
@@ -610,4 +613,14 @@ export async function calculerAura(supabase: SB, userId: string): Promise<EtatAu
   } catch {
     return null;
   }
+}
+
+/** Ce que rapporte une mission AUJOURD'HUI. Seule la connexion varie : elle
+ *  double quand on est venu la veille (série d'au moins deux jours). Le
+ *  serveur reste l'autorité, ceci ne fait que l'afficher. */
+export function expMission(mission: Mission, aura: { serie: number } | null): number {
+  if (mission.id === "connexion") {
+    return aura && aura.serie >= 2 ? EXP_CONNEXION_SUITE : EXP_CONNEXION;
+  }
+  return mission.exp;
 }

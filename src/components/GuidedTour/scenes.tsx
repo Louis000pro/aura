@@ -549,7 +549,7 @@ export function SceneNutrition() {
 /* ═══════════════════ 5 · LE RANG ET LES MISSIONS ═══════════════════ */
 
 const MISSIONS = [
-  { nom: "Connexion du jour", exp: "+5" },
+  { nom: "Connexion du jour", exp: "+10" },
   { nom: "Séance terminée", exp: "+30" },
   { nom: "Repas noté", exp: "+5" },
 ];

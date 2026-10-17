@@ -41,6 +41,7 @@ export default function LigneMission({
   mission,
   etat,
   debloquee,
+  exp,
   onNavigate,
 }: {
   mission: Mission;
@@ -60,6 +61,8 @@ export default function LigneMission({
    *  jamais à la main : un abonné ne doit jamais voir sa propre mission
    *  présentée comme inaccessible. */
   debloquee: boolean;
+  /** Ce que la mission rapporte aujourd’hui, si ça diffère du catalogue. */
+  exp?: number;
   onNavigate: (path: string) => void;
 }) {
   const premium = mission.premium;
@@ -112,7 +115,7 @@ export default function LigneMission({
               </svg>
             </>
           )}
-          <strong>+{mission.exp}</strong>
+          <strong>+{exp ?? mission.exp}</strong>
           <em>EXP</em>
         </span>
         {etatTexte && <small>{etatTexte}</small>}

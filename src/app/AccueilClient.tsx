@@ -265,7 +265,7 @@ function Dashboard() {
 
   /* ── La présence du jour ──
      ⚠️ CET EFFET NE FAIT PLUS QU'UNE CHOSE, ET ELLE EST INDISPENSABLE.
-     `marquerPresence` crédite la connexion du jour (+5 EXP) et tient la
+     `marquerPresence` crédite la connexion du jour (+10, +20 le lendemain) et tient la
      série ; `setStatsTick` fait recalculer l'aura APRÈS, sinon la course
      entre les deux effets afficherait 0 EXP et « Jour 0 ».
 

@@ -26,6 +26,7 @@ import {
   MISSIONS_PREMIUM,
   MISSIONS_SEMAINE,
   PLAFOND_JOUR_GRATUIT,
+  expMission,
   PLAFOND_JOUR_PREMIUM,
   type EtatAura,
   type Mission,
@@ -52,7 +53,7 @@ export default function FeuilleMissions({
      seule EXP, celle du rang. */
   const expDuJour = [...MISSIONS_JOUR, ...MISSIONS_PREMIUM]
     .filter((m) => aura.missions[m.id]?.earned)
-    .reduce((total, m) => total + m.exp, 0);
+    .reduce((total, m) => total + expMission(m, aura), 0);
   const plafondDuJour = premiumDebloque ? PLAFOND_JOUR_PREMIUM : PLAFOND_JOUR_GRATUIT;
 
   /* Ce que les missions Premium ajoutent en une journée. Calculé, jamais
@@ -67,6 +68,7 @@ export default function FeuilleMissions({
           mission={mission}
           etat={aura.missions[mission.id]}
           debloquee={missionDebloquee(mission, premiumDebloque)}
+          exp={expMission(mission, aura)}
           onNavigate={(path) => {
             onFermer();
             onNavigate(path);

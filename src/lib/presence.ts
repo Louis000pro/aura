@@ -12,7 +12,7 @@
    - elle est idempotente (le registre de crédits refuse le doublon).
 
    ⚠️ ELLE NE TIENT PLUS LA SÉRIE (refonte du 2026-08-21). Se connecter
-   rapporte +5 EXP mais ne valide PAS la journée : il faut une action
+   rapporte +10 EXP (+20 d’affilée) mais ne valide PAS la journée : il faut une action
    utile, une séance ou un repas. La série est DÉRIVÉE du registre de
    crédits par `serie_aura`, en base, et le client ne peut donc plus la
    déclarer. C'est ce qui empêche « j'ouvre l'app tous les matins » de
