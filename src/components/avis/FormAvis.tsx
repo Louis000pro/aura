@@ -86,12 +86,12 @@ export default function FormAvis() {
     return (
       <div className="rounded-2xl p-5 mb-6 text-center"
         style={{ background: "rgba(var(--tint-violet-rgb),0.5)", border: "1px solid rgba(var(--accent-rgb),0.16)" }}>
-        <p className="text-[15px] font-semibold mb-1" style={{ color: "var(--text-1)" }}>Ton avis compte</p>
+        <p className="text-[16px] font-semibold mb-1" style={{ color: "var(--text-1)" }}>Ton avis compte</p>
         <p className="text-[13px] mb-4" style={{ color: "var(--text-3)" }}>
           Crée ton compte (ou connecte-toi) pour laisser un avis sur Vaiiya.
         </p>
         <Link href="/auth?mode=signup&next=/avis">
-          <span className="inline-flex items-center justify-center py-3 px-6 rounded-2xl text-[15px] font-semibold cursor-pointer"
+          <span className="inline-flex items-center justify-center py-3 px-6 rounded-2xl text-[16px] font-semibold cursor-pointer"
             style={{ background: ACTION, color: "#fff" }}>
             Laisser un avis
           </span>
@@ -105,7 +105,7 @@ export default function FormAvis() {
   return (
     <div className="rounded-2xl p-4 mb-6"
       style={{ background: "rgba(var(--tint-violet-rgb),0.5)", border: "1px solid rgba(var(--accent-rgb),0.16)" }}>
-      <p className="text-[15px] font-semibold mb-2" style={{ color: "var(--text-1)" }}>
+      <p className="text-[16px] font-semibold mb-2" style={{ color: "var(--text-1)" }}>
         {mien ? "Ton avis" : "Ton avis sur Vaiiya"}
       </p>
       <Etoiles note={note} taille={26} onPick={setNote} />
@@ -121,7 +121,7 @@ export default function FormAvis() {
       <p className="text-[11px] mt-1" style={{ color: "var(--text-3)" }}>Ton avis est public, avec ton pseudo.</p>
 
       {(enAttente || envoye) && (
-        <p className="text-[12px] mt-2 font-medium" style={{ color: "var(--accent)" }}>
+        <p className="text-[13px] mt-2 font-medium" style={{ color: "var(--accent)" }}>
           Merci ✦ Ton avis est en attente de validation, il apparaîtra publiquement une fois vérifié.
         </p>
       )}

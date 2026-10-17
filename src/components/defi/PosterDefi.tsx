@@ -162,7 +162,7 @@ export default function PosterDefi({
               style={{
                 // Se cale sur la largeur du poster : jamais rogné, toujours
                 // centré (le textIndent compense l'espace de fin de tracking).
-                fontSize: "clamp(12px, 13cqw, 30px)",
+                fontSize: "clamp(11px, 13cqw, 30px)",
                 letterSpacing: "0.12em",
                 textIndent: "0.12em",
                 color: "#FBF4E6",

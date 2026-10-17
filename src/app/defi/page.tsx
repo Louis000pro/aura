@@ -468,7 +468,7 @@ export default function DefiPage() {
           devoile={devoile}
           className="shadow-2xl"
         />
-        <p className="mt-3 text-center text-[12.5px] font-medium" style={{ color: "var(--text-3)" }}>
+        <p className="mt-3 text-center text-[13px] font-medium" style={{ color: "var(--text-3)" }}>
           {finie
             ? "L’affiche reste comme elle est."
             : <>Vous dévoilez <b style={{ color: "var(--exp-encre)" }}>{serie.nom}</b> ensemble</>}
@@ -484,7 +484,7 @@ export default function DefiPage() {
         />
 
         {finie ? (
-          <p className="mt-4 text-center text-[14px] leading-relaxed" style={{ color: "var(--text-2)" }}>
+          <p className="mt-4 text-center text-[16px] leading-relaxed" style={{ color: "var(--text-2)" }}>
             La semaine est finie. Vous en relancerez une quand vous voulez.
           </p>
         ) : coop.quoi === "a_moi" ? (
@@ -494,13 +494,13 @@ export default function DefiPage() {
               style={{ background: "linear-gradient(135deg, rgba(139,92,246,.10), rgba(193,59,193,.06))", border: "1px solid rgba(139,92,246,.22)" }}>
               <span className="text-[11px] font-extrabold uppercase tracking-[0.14em]" style={{ color: "var(--or-encre)" }}>Ta marche</span>
               <div className="mt-1 flex items-baseline gap-2">
-                <b className="text-[24px] font-extrabold leading-none" style={{ color: "var(--text-0)" }}>Maillon {coop.maillon}</b>
+                <b className="text-[20px] font-extrabold leading-none" style={{ color: "var(--text-0)" }}>Maillon {coop.maillon}</b>
                 <span className="text-[13px] font-bold" style={{ color: "var(--exp-encre)" }}>· {coop.maillon} mouvement{coop.maillon > 1 ? "s" : ""}</span>
               </div>
               <p className="mt-1.5 text-[13px] leading-relaxed" style={{ color: "var(--text-1)" }}>
                 Une séance courte, donnée par le relais. Termine-la et ton maillon est franchi.
               </p>
-              <span className="mt-2.5 inline-block rounded-full px-2.5 py-1 text-[10px] font-extrabold tracking-[0.05em]"
+              <span className="mt-2.5 inline-block rounded-full px-2.5 py-1 text-[11px] font-extrabold tracking-[0.05em]"
                 style={{ background: "rgba(245,177,32,.16)", color: "var(--or-encre)", border: "1px solid rgba(245,177,32,.4)" }}>
                 À ton niveau · {NIVEAU_FR[niveau]}
               </span>
@@ -523,7 +523,7 @@ export default function DefiPage() {
               <Dumbbell className="h-5 w-5" />
               Lancer mon maillon
             </button>
-            <p className="mt-3 text-center text-[12px]" style={{ color: "var(--text-3)" }}>
+            <p className="mt-3 text-center text-[13px]" style={{ color: "var(--text-3)" }}>
               2 maillons par jour maximum · finissable en 2 jours.
             </p>
           </>
@@ -550,7 +550,7 @@ export default function DefiPage() {
             onEcrire={() => fil && router.push(`/communaute/${fil}`)}
           />
         ) : coop.quoi === "plafond_jour" ? (
-          <p className="mt-4 text-center text-[14px] leading-relaxed" style={{ color: "var(--text-2)" }}>
+          <p className="mt-4 text-center text-[16px] leading-relaxed" style={{ color: "var(--text-2)" }}>
             Tu as fait tes 2 maillons du jour. Reviens demain pour la suite.
           </p>
         ) : null}
@@ -649,7 +649,7 @@ function JoueurChip({ avatar, pseudo, ring, compte, encre }: {
       style={{ background: "rgba(var(--text-3-rgb), .07)", border: "1px solid rgba(var(--text-3-rgb), .10)" }}>
       <Pdp avatar={avatar} pseudo={pseudo} ring={ring} />
       <span className="min-w-0">
-        <b className="block truncate text-[12px] font-extrabold leading-none" style={{ color: "var(--text-0)" }}>{pseudo}</b>
+        <b className="block truncate text-[13px] font-extrabold leading-none" style={{ color: "var(--text-0)" }}>{pseudo}</b>
         <span className="mt-1 block text-[11px] font-bold" style={{ color: encre }}>{compte}</span>
       </span>
     </div>
@@ -675,10 +675,10 @@ function BoiteAttente({ fait, titre, texte, equipier, fil, onEcrire }: {
         </div>
       )}
       <p className="text-[16px] font-extrabold" style={{ color: "var(--text-0)" }}>{titre}</p>
-      <p className="mt-1.5 text-[12.5px] leading-relaxed" style={{ color: "var(--text-2)" }}>{texte}</p>
+      <p className="mt-1.5 text-[13px] leading-relaxed" style={{ color: "var(--text-2)" }}>{texte}</p>
       {fil && (
         <button onClick={onEcrire}
-          className="mt-3.5 inline-flex items-center gap-2 rounded-2xl border px-5 py-3 text-[15px] font-bold"
+          className="mt-3.5 inline-flex items-center gap-2 rounded-2xl border px-5 py-3 text-[16px] font-bold"
           style={{ borderColor: "rgba(var(--text-3-rgb), .18)", color: "var(--exp-encre)" }}>
           <MessageCircle className="h-4 w-4" /> {equipier ? `Écrire à ${equipier.pseudo}` : "Écrire au groupe"}
         </button>

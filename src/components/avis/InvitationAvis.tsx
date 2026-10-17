@@ -104,10 +104,10 @@ export default function InvitationAvis() {
                 <Star className="h-[18px] w-[18px]" fill="currentColor" />
               </span>
               <div className="min-w-0">
-                <p className="text-[14px] font-bold leading-tight" style={{ color: "var(--text-0)" }}>
+                <p className="text-[16px] font-bold leading-tight" style={{ color: "var(--text-0)" }}>
                   Tu aimes Vaiiya&nbsp;?
                 </p>
-                <p className="mt-1 text-[12px] leading-snug" style={{ color: "var(--text-soft)" }}>
+                <p className="mt-1 text-[13px] leading-snug" style={{ color: "var(--text-soft)" }}>
                   Ton avis aide d’autres personnes à nous découvrir. 30&nbsp;secondes, si le cœur t’en dit.
                 </p>
               </div>
@@ -116,7 +116,7 @@ export default function InvitationAvis() {
             <button
               type="button"
               onClick={donnerAvis}
-              className="mt-3 w-full rounded-2xl py-3 text-[15px] font-bold text-white active:opacity-90"
+              className="mt-3 w-full rounded-2xl py-3 text-[16px] font-bold text-white active:opacity-90"
               style={{
                 background: "linear-gradient(135deg,#8B5CF6,#C13BC1)",
                 boxShadow: "0 8px 22px rgba(139,92,246,0.30)",

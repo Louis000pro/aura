@@ -79,7 +79,7 @@ export default async function AvisPage() {
 
       {/* La liste des avis approuvés (rendue côté serveur). */}
       {total === 0 && (
-        <p className="text-[14px]" style={{ color: "var(--text-3)" }}>Aucun avis pour l’instant. Sois le premier.</p>
+        <p className="text-[16px]" style={{ color: "var(--text-3)" }}>Aucun avis pour l’instant. Sois le premier.</p>
       )}
       <ul className="flex flex-col gap-3">
         {avis.map((a) => (
@@ -93,11 +93,11 @@ export default async function AvisPage() {
                 <span className="w-[30px] h-[30px] rounded-full flex items-center justify-center text-[13px] font-bold text-white"
                   style={{ background: "linear-gradient(135deg,#8B5CF6 0%,#C13BC1 100%)" }}>{a.pseudo.charAt(0).toUpperCase()}</span>
               )}
-              <b className="text-[14px] font-semibold flex-1 truncate" style={{ color: "var(--text-1)" }}>{a.pseudo}</b>
+              <b className="text-[16px] font-semibold flex-1 truncate" style={{ color: "var(--text-1)" }}>{a.pseudo}</b>
               <Etoiles note={a.note} taille={14} />
             </div>
             {a.texte.trim() && (
-              <p className="text-[15px] leading-relaxed" style={{ color: "var(--text-2)" }}>{a.texte}</p>
+              <p className="text-[16px] leading-relaxed" style={{ color: "var(--text-2)" }}>{a.texte}</p>
             )}
             <p className="text-[11px] mt-1.5" style={{ color: "var(--text-3)" }}>
               {new Date(a.created_at).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}

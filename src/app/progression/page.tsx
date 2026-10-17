@@ -3212,7 +3212,7 @@ export default function ProgressionPage() {
                 <div className="mt-2 rounded-2xl overflow-hidden"
                   style={{ background: "rgba(var(--surface-rgb),0.9)", border: "1px solid rgba(var(--accent-rgb),0.12)" }}>
                   {resultatsRecherche.length === 0 ? (
-                    <p className="px-4 py-4 text-[14px]" style={{ color: "var(--text-3)" }}>
+                    <p className="px-4 py-4 text-[16px]" style={{ color: "var(--text-3)" }}>
                       Aucune séance pour « {recherche.trim()} ».
                     </p>
                   ) : (
@@ -3227,10 +3227,10 @@ export default function ProgressionPage() {
                             <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: s.accent || "var(--accent)" }} />
                             <span className="flex-1 min-w-0">
                               <span className="flex items-center gap-1.5">
-                                <b className="text-[15px] font-semibold truncate" style={{ color: "var(--text-1)" }}>{s.title}</b>
+                                <b className="text-[16px] font-semibold truncate" style={{ color: "var(--text-1)" }}>{s.title}</b>
                                 {verrou && <Lock size={12} style={{ color: "var(--gold)", flexShrink: 0 }} />}
                               </span>
-                              <span className="text-[12px] truncate block" style={{ color: "var(--text-3)" }}>
+                              <span className="text-[13px] truncate block" style={{ color: "var(--text-3)" }}>
                                 {s.duration} min · {s.difficulty}{s.perso ? " · à toi" : ""}
                               </span>
                             </span>

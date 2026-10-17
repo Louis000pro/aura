@@ -48,7 +48,7 @@ export default function ModerationAvisPage() {
         <ChevronLeft size={14} strokeWidth={2.5} /> Administration
       </button>
 
-      <h1 className="text-[24px] font-extralight tracking-tight mb-1" style={{ color: "var(--text-1)" }}>
+      <h1 className="text-[26px] font-extralight tracking-tight mb-1" style={{ color: "var(--text-1)" }}>
         Modération des avis
       </h1>
       <p className="text-[13px] mb-6" style={{ color: "var(--text-3)" }}>
@@ -56,7 +56,7 @@ export default function ModerationAvisPage() {
       </p>
 
       {charge && liste.length === 0 && (
-        <p className="text-[14px]" style={{ color: "var(--text-3)" }}>Rien à modérer. ✦</p>
+        <p className="text-[16px]" style={{ color: "var(--text-3)" }}>Rien à modérer. ✦</p>
       )}
 
       <ul className="flex flex-col gap-3">
@@ -71,25 +71,25 @@ export default function ModerationAvisPage() {
                 <span className="w-[30px] h-[30px] rounded-full flex items-center justify-center text-[13px] font-bold text-white"
                   style={{ background: "linear-gradient(135deg,#8B5CF6 0%,#C13BC1 100%)" }}>{a.pseudo.charAt(0).toUpperCase()}</span>
               )}
-              <b className="text-[14px] font-semibold flex-1 truncate" style={{ color: "var(--text-1)" }}>{a.pseudo}</b>
+              <b className="text-[16px] font-semibold flex-1 truncate" style={{ color: "var(--text-1)" }}>{a.pseudo}</b>
               <span className="inline-flex items-center gap-1 text-[13px] font-semibold" style={{ color: "var(--gold)" }}>
                 {a.note} <Star size={13} fill="var(--gold)" style={{ color: "var(--gold)" }} />
               </span>
             </div>
             {a.texte.trim()
-              ? <p className="text-[15px] leading-relaxed" style={{ color: "var(--text-2)" }}>{a.texte}</p>
+              ? <p className="text-[16px] leading-relaxed" style={{ color: "var(--text-2)" }}>{a.texte}</p>
               : <p className="text-[13px] italic" style={{ color: "var(--text-3)" }}>(note seule, sans texte)</p>}
             <p className="text-[11px] mt-1.5 mb-3" style={{ color: "var(--text-3)" }}>
               {new Date(a.created_at).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}
             </p>
             <div className="flex gap-2">
               <button onClick={() => moderer(a.id, "approuve")} disabled={enCours === a.id}
-                className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-[14px] font-semibold text-white cursor-pointer"
+                className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-[16px] font-semibold text-white cursor-pointer"
                 style={{ background: "linear-gradient(135deg,#8B5CF6 0%,#C13BC1 100%)", opacity: enCours === a.id ? 0.5 : 1 }}>
                 <Check size={15} strokeWidth={2.6} /> Approuver
               </button>
               <button onClick={() => moderer(a.id, "rejete")} disabled={enCours === a.id}
-                className="flex items-center justify-center gap-1.5 py-2.5 px-4 rounded-xl text-[14px] font-medium cursor-pointer"
+                className="flex items-center justify-center gap-1.5 py-2.5 px-4 rounded-xl text-[16px] font-medium cursor-pointer"
                 style={{ background: "rgba(var(--surface-rgb),0.8)", color: "var(--text-2)", border: "1px solid rgba(var(--accent-rgb),0.16)" }}>
                 <X size={15} strokeWidth={2.4} /> Rejeter
               </button>

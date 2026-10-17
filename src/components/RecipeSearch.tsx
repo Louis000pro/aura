@@ -93,7 +93,7 @@ export default function RecipeSearch({ onAdd }: { onAdd: (m: LoggedMeal) => void
             <div className="mt-2 rounded-2xl overflow-hidden"
               style={{ background: "rgba(var(--surface-rgb),0.9)", border: "1px solid rgba(var(--accent-rgb),0.12)" }}>
               {resultats.length === 0 ? (
-                <p className="px-4 py-4 text-[14px]" style={{ color: "var(--text-3)" }}>
+                <p className="px-4 py-4 text-[16px]" style={{ color: "var(--text-3)" }}>
                   Aucune recette pour « {q.trim()} ».
                 </p>
               ) : (
@@ -105,8 +105,8 @@ export default function RecipeSearch({ onAdd }: { onAdd: (m: LoggedMeal) => void
                       style={{ borderTop: i === 0 ? "none" : "1px solid rgba(var(--accent-rgb),0.08)" }}>
                       <Vignette recipe={r} />
                       <span className="flex-1 min-w-0">
-                        <b className="text-[15px] font-semibold truncate block" style={{ color: "var(--text-1)" }}>{r.nom}</b>
-                        <span className="text-[12px] truncate block" style={{ color: "var(--text-3)" }}>
+                        <b className="text-[16px] font-semibold truncate block" style={{ color: "var(--text-1)" }}>{r.nom}</b>
+                        <span className="text-[13px] truncate block" style={{ color: "var(--text-3)" }}>
                           {r.mealTypes[0] ? `${LABEL_TYPE[r.mealTypes[0]]} · ` : ""}{r.calories} kcal
                         </span>
                       </span>
