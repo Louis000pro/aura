@@ -110,7 +110,13 @@ export default function MaJournee({
           </span>
         </button>
 
-        <button type="button" className={`${styles.tuile} ${styles.serie}`} onClick={onOpenSerie}>
+        <button
+          type="button"
+          className={`${styles.tuile} ${styles.serie}`}
+          // Dès deux jours d'affilée, la tuile se réchauffe (Louis, 2026-10-17).
+          data-chaude={serie >= 2 ? "" : undefined}
+          onClick={onOpenSerie}
+        >
           <span className={styles.serieTete}>
             <span className={styles.flamme} aria-hidden="true">🔥</span>
             <span className={styles.texte}>
