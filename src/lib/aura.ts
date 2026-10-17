@@ -534,6 +534,54 @@ const DETAIL_VIDE: EtatAura["detail"] = {
   streak: 0,
 };
 
+/** La place du rang atteint dans `RANGS` : le dernier dont `min` <= exp. */
+function indexDuRang(exp: number): number {
+  let idx = 0;
+  for (let i = 0; i < RANGS.length; i++) {
+    if (exp >= RANGS[i].min) idx = i;
+  }
+  return idx;
+}
+
+/** Où l'on en est DANS son rang. Voir `progressionRang`. */
+export type ProgressionRang = {
+  rang: Rang;
+  /** `null` au dernier rang : il n'y a plus de chemin. */
+  suivant: Rang | null;
+  /** De 0 à 1, pour dessiner (anneau, barre). */
+  part: number;
+  /** Arrondi vers le BAS, pour écrire : 99,6 % ne doit pas se lire « 100 % ». */
+  pourcent: number;
+  /** EXP qui manquent avant le suivant (0 au dernier rang). */
+  restant: number;
+};
+
+/**
+ * La progression vers le rang suivant, comptée DANS le rang en cours : 0 au
+ * seuil du rang qu'on a, 1 au seuil du suivant.
+ *
+ * ⭐ LA SEULE MESURE DE PROGRESSION DU PRODUIT. La galerie des rangs, la carte
+ * du profil (la sienne et celle d'un ami) et la tuile de l'accueil la lisent
+ * toutes : trois d'entre elles recopiaient la formule à la main, la quatrième
+ * en avait une autre.
+ *
+ * ⚠️ JAMAIS `exp / seuil du suivant` (Louis, 2026-10-17). C'était le calcul de
+ * la galerie : un Or à 690 EXP y lisait 86 % vers Platine, l'écran de Platine
+ * affichait AUSSI 86 % (les deux visent 800, donc le même chiffre par
+ * construction), et l'Éternel affichait 23 % à quelqu'un qui n'a pas encore
+ * Platine. Compté depuis 0, on croit même avoir fait 44 % du chemin le jour
+ * où l'on devient Or. Dans le rang, ce même compte est à 75 %, et c'est le
+ * chiffre que montrait déjà la barre du profil.
+ */
+export function progressionRang(exp: number): ProgressionRang {
+  const idx = indexDuRang(exp);
+  const rang = RANGS[idx];
+  const suivant = RANGS[idx + 1] ?? null;
+  if (!suivant) return { rang, suivant: null, part: 1, pourcent: 100, restant: 0 };
+  const part = Math.max(0, Math.min(1, (exp - rang.min) / Math.max(1, suivant.min - rang.min)));
+  return { rang, suivant, part, pourcent: Math.floor(part * 100), restant: Math.max(0, suivant.min - exp) };
+}
+
 /** Décompose une EXP en rang courant + progression vers le suivant. */
 export function etatDepuisExp(
   exp: number,
@@ -542,11 +590,7 @@ export function etatDepuisExp(
   serie = detail.streak,
   jourValide = false,
 ): EtatAura {
-  // Rang courant = le dernier rang dont `min` <= exp.
-  let idx = 0;
-  for (let i = 0; i < RANGS.length; i++) {
-    if (exp >= RANGS[i].min) idx = i;
-  }
+  const idx = indexDuRang(exp);
   const rang = RANGS[idx];
   const seuilBas = rang.min;
   const rangSuivant = RANGS[idx + 1];

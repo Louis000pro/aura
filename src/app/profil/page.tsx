@@ -14,7 +14,7 @@ import GemmeRang from "@/components/GemmeRang";
 import EtatVideGuide from "@/components/EtatVideGuide";
 import RangsModal from "@/components/rang/RangsModal";
 import { AvatarRang, PseudoRang, TitreRang } from "@/components/rang/IdentiteRang";
-import { calculerAura, cosmetiquesDuRang, RANGS, type EtatAura } from "@/lib/aura";
+import { calculerAura, cosmetiquesDuRang, progressionRang, RANGS, type EtatAura } from "@/lib/aura";
 import { noterRang } from "@/lib/celebrationRang";
 import { SERIES, imageEtat, type SerieSlug } from "@/lib/defi";
 import { chargerBadgesAura } from "@/lib/badgesAura";
@@ -711,7 +711,9 @@ export default function ProfilPage() {
   }
   const niveau = profileLevel ? (LEVELS_LIST.find((l) => l.id === profileLevel)?.label ?? profileLevel) : null;
   const serieJours = Math.max(1, aura?.detail.streak ?? 0);
-  const rangSuivant = aura ? RANGS[RANGS.findIndex((r) => r.id === aura.rang.id) + 1] ?? null : null;
+  // La même mesure que la galerie des rangs et la tuile de l'accueil.
+  const progression = aura ? progressionRang(aura.exp) : null;
+  const rangSuivant = progression?.suivant ?? null;
   const membreDepuis = inscritLe
     ? new Date(inscritLe).toLocaleDateString("fr-FR", new Date(inscritLe).getFullYear() === new Date().getFullYear() ? { month: "long" } : { month: "long", year: "numeric" })
     : null;
@@ -926,12 +928,12 @@ export default function ProfilPage() {
                 <div className="flex items-baseline justify-between gap-2">
                   <span className="vy-sous" style={{ color: "var(--text-0)" }}>{aura.rang.nom}</span>
                   <span className="vy-nombre text-[13px]" style={{ color: "var(--text-2)" }}>
-                    <span style={{ color: "var(--exp-encre)", fontWeight: 700 }}>{aura.exp}</span> / {aura.seuilHaut} EXP
+                    <span style={{ color: "var(--exp-encre)", fontWeight: 700 }}>{aura.exp}</span>{rangSuivant ? ` / ${rangSuivant.min}` : ""} EXP
                   </span>
                 </div>
                 <div className="h-2 rounded-full overflow-hidden" style={{ background: "rgba(139,92,246,0.14)" }}>
                   <div className="h-full rounded-full" style={{
-                    width: `${Math.min(100, Math.max(4, ((aura.exp - aura.seuilBas) / Math.max(1, aura.seuilHaut - aura.seuilBas)) * 100))}%`,
+                    width: `${Math.max(4, (progression?.part ?? 0) * 100)}%`,
                     background: "linear-gradient(90deg,#8B5CF6,#C13BC1)",
                   }} />
                 </div>
