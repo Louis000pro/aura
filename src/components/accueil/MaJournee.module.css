@@ -101,9 +101,13 @@
 
 /* Deux jours d'affilée ou plus : la tuile passe au jaune-orangé franc. */
 .serie[data-chaude] {
-  border-color: rgba(245, 177, 32, 0.55);
+  border-color: #e9a400;
   /* Opaque exprès : le texte y est toujours sombre, en clair comme en sombre. */
-  background: linear-gradient(160deg, #ffe07a, #ffab45);
+  /* Or franc : clair en haut, doré profond en bas, avec un reflet. */
+  background:
+    radial-gradient(120% 80% at 20% 0%, rgba(255, 250, 220, 0.85), rgba(255, 250, 220, 0) 55%),
+    linear-gradient(160deg, #ffe45c 0%, #ffcc1f 45%, #f5a800 100%);
+  box-shadow: 0 6px 18px rgba(245, 168, 0, 0.35);
   color: #2a1a05;
 }
 
@@ -118,7 +122,7 @@
 }
 
 .serie[data-chaude] .jours i[data-on] {
-  background: #c2410c;
+  background: #8a5a06;
 }
 
 .serieTete {
