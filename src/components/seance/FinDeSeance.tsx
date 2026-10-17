@@ -13,9 +13,9 @@
    positif : moins d'assistance s'écrit « 4 kg d'assistance en moins »,
    jamais « −4 kg ». Un écart nul ou en recul ne s'affiche pas du tout.
 
-   ⚠️ LE VERT NE DIT QUE « SÉANCE FAITE ». Le progrès, la lueur et les
-   confettis sont violet → rose : c'est la marque qui célèbre, le teal
-   reste le sceau de la séance validée.
+   ⚠️ AUCUN VERT SUR CET ÉCRAN (Louis, 2026-10-17). Le sceau « Séance
+   faite », le progrès, la lueur et les confettis sont violet → rose :
+   c'est la marque qui célèbre.
    ════════════════════════════════════════════════════════════════════ */
 
 import type { ReactNode } from "react";
@@ -58,10 +58,10 @@ export function CouvertureFin({ titre, guide, fete }: { titre: string; guide: Re
           transition={{ duration: 2.6, delay: p.d, ease: [0.2, 0.7, 0.3, 1] }} />
       ))}
 
-      {/* Le sceau : le seul vert de l'écran. */}
-      <p className="relative flex items-center justify-center gap-2 text-[13px] font-bold" style={{ color: "#3FE0B0" }}>
-        <span aria-hidden="true" className="inline-flex items-center justify-center" style={{ width: 20, height: 20, borderRadius: "50%", background: "#2BD4A0" }}>
-          <svg width="11" height="11" viewBox="0 0 11 11"><path d="M2 5.8l2.3 2.2L9 3" fill="none" stroke="#062B21" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
+      {/* Le sceau, en violet → rose comme le reste de l'écran. */}
+      <p className="relative flex items-center justify-center gap-2 text-[13px] font-bold" style={{ color: ENCRE.lav }}>
+        <span aria-hidden="true" className="inline-flex items-center justify-center" style={{ width: 20, height: 20, borderRadius: "50%", background: "linear-gradient(135deg, #8B5CF6, #C13BC1)" }}>
+          <svg width="11" height="11" viewBox="0 0 11 11"><path d="M2 5.8l2.3 2.2L9 3" fill="none" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
         </span>
         Séance faite
       </p>
