@@ -110,7 +110,8 @@ const ECRANS = [
   "src/components/accueil/FeuilleSerie.tsx",
   "src/app/profil/page.tsx",
   "src/app/profil/[username]/page.tsx",
-  "src/components/WorkoutGuideModal.tsx",
+  /* La fin de séance dessine la sienne dans ses morceaux (2026-10-17). */
+  "src/components/seance/FinDeSeance.tsx",
   "src/components/accueil/RecapHier.tsx",
 ];
 for (const fichier of ECRANS) {

@@ -6995,21 +6995,31 @@ verdict(
       && R.texteSerie({ statut: "terminee", duree_s: 45 }) === "45 s"
       && R.texteSerie({ statut: "passee" }) === "Passée", "");
 
+  {
+    const base = { emplacement: 0, nom: "Développé couché", termineLe: "2026-10-10T18:00:00Z" };
+    const g1 = R.gainDuFait({ ...base, genre: "charge", type: "totale", charge: 67.5, avant: 60 });
+    const g2 = R.gainDuFait({ ...base, genre: "charge", type: "assistance", charge: 20, avant: 24 });
+    const g3 = R.gainDuFait({ ...base, genre: "charge", type: "totale", charge: 60, avant: 61.5 });
+    verdict("Fin de séance · le gain se dit « +7,5 kg »", g1?.valeur === "+7,5" && g1.unite === "kg", JSON.stringify(g1));
+    verdict("Fin de séance · moins d'assistance se dit en positif, jamais avec un moins", !!g2 && !g2.valeur.includes("-") && !g2.valeur.includes("−") && g2.libelle.includes("en moins"), JSON.stringify(g2));
+    verdict("Fin de séance · un recul ne s'affiche jamais (aucun chiffre négatif)", g3 === null, JSON.stringify(g3));
+  }
+
   // le chemin : ce que l'écran montre
   const t = lire1("src/components/WorkoutGuideModal.tsx");
   const fin = t.slice(t.indexOf('{phase === "done" && (\n              <motion.div key="done"'), t.indexOf('{/* ══ CTA bas'));
   verdict("R5 · le moment compte les séries CONFIRMÉES, jamais le total prévu",
     fin.includes("seriesConfirmees(doneMap)") && !fin.includes("totalSets"), "décision 58");
   verdict("R5 · plus de grille de chiffres (calories, exercices) sur l'écran de fin", !fin.includes("CALORIES") && !fin.includes("DURÉE RÉELLE"), "");
-  verdict("R5 · un seul fait marquant, venu de la règle pure", fin.includes("{fait && <LigneFait fait={fait} />}") && t.includes("faitMarquant(emplacementsFinis, historique, seanceIdFin)"), "");
-  verdict("R5 · les quatre étages dans l'ordre : moment, fait, proposition, série",
-    fin.indexOf("Séance terminée") < fin.indexOf("<LigneFait") && fin.indexOf("<LigneFait") < fin.indexOf("<LaProchaineFois")
-      && fin.indexOf("<LaProchaineFois") < fin.indexOf("Journée validée") && fin.indexOf("Journée validée") < fin.indexOf("Voir mes"), "");
+  verdict("R5 · un seul fait marquant, venu de la règle pure", fin.includes("{fait && gainFin && <CarteProgres fait={fait} gain={gainFin} />}") && t.includes("faitMarquant(emplacementsFinis, historique, seanceIdFin)"), "");
+  verdict("R5 · les étages dans l'ordre de la maquette du 2026-10-17 : moment, fait, série, proposition",
+    fin.indexOf("<TitreFin") < fin.indexOf("<CarteProgres") && fin.indexOf("<CarteProgres") < fin.indexOf("<SerieEtRang")
+      && fin.indexOf("<SerieEtRang") < fin.indexOf("<LaProchaineFois") && fin.indexOf("<LaProchaineFois") < fin.indexOf("Voir mes"), "");
   verdict("R5 · relais, badges et avis restent, APRÈS les quatre étages",
-    fin.indexOf("<BandeMaillon") > fin.indexOf("Voir mes") && fin.indexOf("<BandeBadge") > fin.indexOf("Voir mes") && fin.indexOf("Laisser un avis") > fin.indexOf("Voir mes"), "");
+    fin.indexOf("<BandeMaillon") > fin.indexOf("Voir mes") && fin.indexOf("<BandeBadge") > fin.indexOf("Voir mes") && fin.indexOf("<CoinAvis") > fin.indexOf("Voir mes"), "");
   verdict("R5 · un échec d'enregistrement se dit toujours", fin.includes("finIncomplete.texte") && fin.includes("Réessayer"), "R1");
   verdict("R5 · « Continuer » est l'action, le partage passe par la même feuille que le profil",
-    t.includes(">\n                  Continuer\n") && t.includes("<EnvoyerAffiche data={afficheData}") && t.includes("afficheDe(journalRef.current, r.seanceId)"), "");
+    t.includes(">\n                  Continuer\n") && t.includes("<EnvoyerAffiche data={{\n            ...afficheData,") && t.includes("afficheDe(journalRef.current, r.seanceId)"), "");
   verdict("R5 · une marge changée dans le détail part par la file de R4 (corriger_marge)",
     t.includes("onMarge={(id, m) => { const e = navDe(id); if (e >= 0) setMargesFin((prev) => ({ ...prev, [e]: m })); }}") && t.includes("margesFin[e] ?? (doneMap[e]")
       /* Revue finale · elle part avec l'emplacement PERSISTÉ, jamais l'index. */

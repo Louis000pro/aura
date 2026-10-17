@@ -836,6 +836,22 @@ const REPLIQUES = {
     nora:   "Tu l’as menée jusqu’au bout, et ça se lit dans ces chiffres. Belle séance.",
     sasha:  "Séance bouclée, rien lâché. Ça, c’est fait.",
   },
+  /* Le titre de la fin de séance, au-dessus des chiffres. Deux jours :
+     celui où un progrès vérifiable existe (le fait marquant), et tous les
+     autres, qui méritent aussi d'être fiers. Jamais de chiffre ici : ils
+     sont juste en dessous, et ils viennent du journal. */
+  "seance.fin.titre.fait": {
+    commun: "Ça se lit dans tes chiffres.",
+  },
+  "seance.fin.titre.calme": {
+    commun: "Une séance de plus pour toi.",
+  },
+  "seance.fin.fait": {
+    commun: "Celle-là, tu peux la garder longtemps.",
+  },
+  "seance.fin.calme": {
+    commun: "Pas de nouveau record aujourd’hui, et c’est comme ça qu’on avance.",
+  },
 
   /* ── La visite guidée ──
      Le mot « guidée » était dans le nom depuis toujours, et pourtant les

@@ -10,18 +10,18 @@ import { X, Pause, Play, ChevronDown, ChevronRight, Check, Plus, Pencil, ArrowLe
 import { createPortal } from "react-dom";
 import { Compteur, ReglageCharge } from "@/components/seance/ReglageCharge";
 import { AssistantSpark, VisageGuide, CelebrationGuide, MarqueAssistant } from "@/components/AssistantMark";
-import { voix, type CleVoix } from "@/lib/guides";
+import { voix, nomGuide, type CleVoix } from "@/lib/guides";
+import { CouvertureFin, TitreFin, ChiffresFin, CarteProgres, SerieEtRang, CoinAvis, gainDuFait } from "@/components/seance/FinDeSeance";
 import { useGuideActif } from "@/context/GuideContext";
 import ExerciseGuide from "@/components/ExerciseGuide";
 import ExerciseThumb from "@/components/seance/ExerciseThumb";
-import FlammeSerie from "@/components/serie/FlammeSerie";
 import { createClient } from "@/lib/supabase";
 import { lockBodyModal } from "@/lib/bodyModal";
 import {
   CLE_DEVOILE, EVT_RELAIS, etatPoster, imageEtat,
   type MaillonFranchi,
 } from "@/lib/defi";
-import { calculerAura, type Rang } from "@/lib/aura";
+import { calculerAura } from "@/lib/aura";
 import { noterRang } from "@/lib/celebrationRang";
 import { noterBadges } from "@/lib/celebrationBadge";
 import { peutProposerAvis, proposerAvis, SEANCES_AVANT_AVIS } from "@/lib/invitationAvis";
@@ -51,7 +51,7 @@ import {
 } from "@/lib/progression";
 import { fileDeMarges } from "@/lib/fileMarges";
 import { cleCharge, corrigerMarge, cransConfirmes, historiqueDesExercices, referencesDepuisSeries } from "@/lib/progressionBase";
-import { faitMarquant, quandRelatif, serieNommee, sousGroupesParExercice, texteSerie, type FaitMarquant } from "@/lib/recapSeance";
+import { faitMarquant, sousGroupesParExercice, texteSerie } from "@/lib/recapSeance";
 import { perfDataToShare, type PerfShareData } from "@/lib/perfShareExport";
 import EnvoyerAffiche from "@/components/communaute/EnvoyerAffiche";
 import QuestionMarge from "@/components/seance/QuestionMarge";
@@ -782,32 +782,6 @@ function NavExercice({ precedent, suivant }: { precedent: (() => void) | null; s
   );
 }
 
-function LigneFait({ fait }: { fait: FaitMarquant }) {
-  const [maintenant] = useState(() => new Date());
-  const quand = quandRelatif(fait.termineLe, maintenant);
-  const up = { color: TUN.teal, fontWeight: 800 } as const;
-  return (
-    <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
-      className="flex items-center gap-3 w-full mt-3 py-2.5 text-left"
-      style={{ borderTop: `1px solid ${TUN.line}` }}>
-      <span className="flex-shrink-0 rounded-xl flex items-center justify-center overflow-hidden"
-        style={{ width: 40, height: 40, background: "rgba(43,212,160,0.10)" }}>
-        <ExerciseThumb name={fait.nom} size={38} />
-      </span>
-      <p className="text-[13px] leading-snug" style={{ color: TUN.t2 }}>
-        <b style={{ color: TUN.t1 }}>{fait.nom}</b>{" : "}
-        {fait.genre === "charge" ? (
-          <><span className="vy-nombre" style={up}>{libelleCharge(fait.charge, fait.type)}</span>, contre <span className="vy-nombre">{libelleCharge(fait.avant, fait.type)}</span> {quand}.</>
-        ) : (
-          <><span className="vy-nombre" style={up}>{fait.reps}</span>
-            {fait.charge !== null && fait.type ? <> à <span className="vy-nombre">{libelleCharge(fait.charge, fait.type)}</span></> : " répétitions"}
-            {" "}{serieNommee(fait.serie)}, contre <span className="vy-nombre">{fait.avant}</span> {quand}.</>
-        )}
-      </p>
-    </motion.div>
-  );
-}
-
 /* ════════════════════════════════════════════════════════════════════
    R5 · « VOIR MES N EXERCICES »
 
@@ -1118,7 +1092,7 @@ export default function WorkoutGuideModal({
   const gardeEnCours = useRef(false);
   /* R5 · le rang après la séance (le dernier étage), l'affiche à envoyer,
      et la feuille « Voir mes exercices ». */
-  const [rangFin,       setRangFin]       = useState<Rang | null>(null);
+  const [expFin,        setExpFin]        = useState<number | null>(null);
   const [afficheData,   setAfficheData]   = useState<PerfShareData | null>(null);
   const [envoyerOuvert, setEnvoyerOuvert] = useState(false);
   const [detailOuvert,  setDetailOuvert]  = useState(false);
@@ -1246,7 +1220,7 @@ export default function WorkoutGuideModal({
       .then((etat) => {
         if (!etat) return;
         noterRang(user.id, etat.rang);
-        setRangFin(etat.rang);
+        setExpFin(etat.exp);
         if (etat.jourValide) setSerieDuJour(etat.serie);
       })
       .catch(() => {});
@@ -1388,6 +1362,7 @@ export default function WorkoutGuideModal({
     (cle, type) => crans?.get(cleCharge(cle, type)) ?? null,
   );
   const fait = phase === "done" ? faitMarquant(emplacementsFinis, historique, seanceIdFin) : null;
+  const gainFin = fait ? gainDuFait(fait) : null;
   const repondreAuRepos = (m: Marge) => setDoneMap((prev) => {
     const marque = prev[exerciseIdx]?.[setIdx];
     if (!marque || marque.statut !== "terminee") return prev;
@@ -2351,47 +2326,28 @@ export default function WorkoutGuideModal({
                     réussite, système D), les chiffres restent intacts juste
                     en dessous, et lui n'ajoute qu'une phrase.
                     Sans Guide résolu, l'écran d'avant revient à l'identique. */}
-                {guide ? (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.4, delay: 0.05 }}
-                    className="relative"
-                  >
-                    <CelebrationGuide guide={guide} hauteur="clamp(120px, 20vh, 168px)" />
-                    <motion.span
-                      initial={{ scale: 0, rotate: -12 }} animate={{ scale: 1, rotate: 0 }}
-                      transition={{ type: "spring", stiffness: 240, delay: 0.35 }}
-                      className="absolute flex items-center justify-center"
-                      style={{ right: -12, bottom: 4, width: 46, height: 46, borderRadius: "50%", border: "2.5px solid rgba(168,85,247,0.9)", background: "rgba(20,15,38,0.88)", boxShadow: "0 0 30px rgba(139,92,246,0.45)" }}
-                    >
-                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#D9C6FF" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5" /></svg>
-                    </motion.span>
-                  </motion.div>
-                ) : (
-                  <motion.div
-                    initial={{ scale: 0, rotate: -12 }} animate={{ scale: 1, rotate: 0 }}
-                    transition={{ type: "spring", stiffness: 240, delay: 0.05 }}
-                    className="flex items-center justify-center"
-                    style={{ width: 92, height: 92, borderRadius: "50%", border: "3px solid rgba(168,85,247,0.9)", background: "rgba(139,92,246,0.14)", boxShadow: "0 0 44px rgba(139,92,246,0.45)", backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)" }}
-                  >
-                    <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="#D9C6FF" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5" /></svg>
-                  </motion.div>
-                )}
-                {/* ── R5 · LES QUATRE ÉTAGES (décision 58) ──
-                    Lus dans l'ordre, séparés par des filets, jamais quatre
-                    cartes : le moment, un fait marquant éventuel, une
-                    proposition au plus, puis la série et le rang. Sans
-                    comparaison fiable, les étages 2 et 3 disparaissent et
-                    l'écran reste calme (écran 09). */}
-                <h2 className="mt-3" style={{ fontSize: 26, fontWeight: 850, fontVariationSettings: "var(--w-voix)", lineHeight: 1, color: "#fff" }}>Séance terminée</h2>
-                <p className="vy-nombre text-[13px] mt-2" style={{ color: TUN.t2 }}>
-                  <b style={{ color: TUN.t1, fontWeight: 700 }}>{Math.max(1, Math.round(elapsed / 60))} min</b>
-                  {" · "}
-                  <b style={{ color: TUN.t1, fontWeight: 700 }}>{seriesConfirmees(doneMap)}</b> série{seriesConfirmees(doneMap) > 1 ? "s" : ""}
-                </p>
+                {/* ── LA FIN DONT ON EST FIER (maquette du 2026-10-17) ──
+                    Le mot de la séance en géant, le Guide devant, puis les
+                    chiffres, le progrès et la série. Les morceaux vivent
+                    dans `seance/FinDeSeance.tsx` ; le tunnel ne leur donne
+                    que ce que le journal a enregistré. */}
+                <CouvertureFin titre={title} fete={!!gainFin}
+                  guide={guide ? <CelebrationGuide guide={guide} hauteur="clamp(210px, 32vh, 260px)" /> : null} />
+                <TitreFin
+                  titre={voix(guide, gainFin ? "seance.fin.titre.fait" : "seance.fin.titre.calme")}
+                  phrase={voix(guide, gainFin ? "seance.fin.fait" : "seance.fin.calme")}
+                  nom={guide ? nomGuide(guide) : null} />
+                <ChiffresFin items={[
+                  { v: Math.max(1, Math.round(elapsed / 60)), l: "minutes" },
+                  { v: seriesConfirmees(doneMap), l: seriesConfirmees(doneMap) > 1 ? "séries" : "série" },
+                  { v: exercicesFaits(doneMap), l: exercicesFaits(doneMap) > 1 ? "mouvements" : "mouvement" },
+                ]} />
 
-                {/* 2 · Le fait marquant : une comparaison précise et vérifiable. */}
-                {fait && <LigneFait fait={fait} />}
+                {/* 2 · Le progrès : vérifiable, et jamais un chiffre négatif. */}
+                {fait && gainFin && <CarteProgres fait={fait} gain={gainFin} />}
+
+                {/* 4 · La série et le rang, un seul groupe à filet. */}
+                <SerieEtRang serie={serieDuJour} exp={expFin} />
 
                 {/* 3 · La question facultative d'un repère qui terminait la
                     séance (écran 10), puis « La prochaine fois ». */}
@@ -2408,29 +2364,6 @@ export default function WorkoutGuideModal({
                   margeDe={margeDe}
                   propositions={propositionsFin}
                 />
-
-                {/* 4 · La série et le rang, sur une ligne. Orange : 🔥 = énergie. */}
-                {(serieDuJour !== null || rangFin) && (
-                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }}
-                    className="flex items-center justify-between w-full mt-3 py-2.5 text-[13px] font-bold"
-                    style={{ borderTop: `1px solid ${TUN.line}` }}>
-                    <span className="flex items-center gap-1.5" style={{ color: "#F5B120" }}>
-                      {/* La même flamme que l'accueil, au palier de la série. */}
-                      {serieDuJour !== null && (
-                        <>
-                          <FlammeSerie jours={serieDuJour} taille={14} />
-                          {`${serieDuJour} jour${serieDuJour > 1 ? "s" : ""} · Journée validée`}
-                        </>
-                      )}
-                    </span>
-                    {rangFin && (
-                      <span className="flex items-center gap-1.5" style={{ color: "#C3AEFF" }}>
-                        <i aria-hidden="true" className="block" style={{ width: 11, height: 11, borderRadius: 3, transform: "rotate(45deg)", background: `linear-gradient(135deg, ${rangFin.neon[0]}, ${rangFin.neon[1]})` }} />
-                        {rangFin.nom}
-                      </span>
-                    )}
-                  </motion.div>
-                )}
 
                 {/* Le reste est un geste plus loin. */}
                 {exercicesFaits(doneMap) > 0 && (
@@ -2488,14 +2421,7 @@ export default function WorkoutGuideModal({
                     de Louis), mais en ligne discrète : plus une carte qui
                     passerait avant le reste. */}
                 {user && !avisMasque && (
-                  <div className="flex items-center justify-between w-full py-2.5 text-[13px]" style={{ borderTop: `1px solid ${TUN.line}` }}>
-                    <button type="button" onClick={() => { quitter(); router.push("/avis"); }} className="font-semibold cursor-pointer" style={{ color: TUN.lav }}>
-                      Laisser un avis sur Vaiiya
-                    </button>
-                    <button type="button" onClick={() => setAvisMasque(true)} className="cursor-pointer" style={{ color: TUN.t3 }}>
-                      Plus tard
-                    </button>
-                  </div>
+                  <CoinAvis onAvis={() => { quitter(); router.push("/avis"); }} onPlusTard={() => setAvisMasque(true)} />
                 )}
               </motion.div>
             )}
@@ -2652,8 +2578,8 @@ export default function WorkoutGuideModal({
                 </motion.button>
                 {partageOuvert && afficheSaved && (
                   <button type="button" onClick={() => setEnvoyerOuvert(true)}
-                    className="text-[13px] font-semibold py-1 cursor-pointer" style={{ color: TUN.t3 }}>
-                    Partager l&apos;affiche
+                    className="text-[13px] font-bold min-h-[44px] cursor-pointer" style={{ color: TUN.lav }}>
+                    Partager l&apos;affiche ›
                   </button>
                 )}
               </motion.div>
@@ -2680,7 +2606,15 @@ export default function WorkoutGuideModal({
       </AnimatePresence>
       <AnimatePresence>
         {envoyerOuvert && partageOuvert && afficheData && user && (
-          <EnvoyerAffiche data={afficheData} moi={user.id} accessToken={session?.access_token} onFermer={() => setEnvoyerOuvert(false)} />
+          <EnvoyerAffiche data={{
+            ...afficheData,
+            bg: heroImage ?? afficheData.bg,
+            /* Le progrès du jour sur l'affiche, en rose : jamais négatif. */
+            gain: fait && gainFin ? {
+              v: gainFin.valeur,
+              l: gainFin.libelle.includes("assistance") ? `${gainFin.unite} ${gainFin.libelle}` : `${gainFin.unite} · ${fait.nom}`,
+            } : null,
+          }} moi={user.id} accessToken={session?.access_token} onFermer={() => setEnvoyerOuvert(false)} />
         )}
       </AnimatePresence>
     </motion.div>

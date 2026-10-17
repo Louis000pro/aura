@@ -25,7 +25,7 @@ import {
   comparer, realisationDeReference,
   type PrescriptionExercice, type SerieHistorique, type SerieRealisee,
 } from "@/lib/progression";
-import { chargeReglable, libelleCharge, type TypeChargeReglable } from "@/lib/saisieSerie";
+import { chargeReglable, libelleCharge, nombreFr, type TypeChargeReglable } from "@/lib/saisieSerie";
 
 /** Un emplacement de la séance qu'on vient de finir. */
 export type EmplacementFini = {
@@ -129,6 +129,25 @@ function jourParis(d: Date): string {
  * (moins d'une semaine), sinon « le 14 sept. ». `maintenant` est passé
  * exprès : le banc choisit son jour.
  */
+/* ── Le gain du fait marquant, TOUJOURS en positif (Louis, 2026-10-17) ──
+   Moins d'assistance s'écrit « 4 kg d'assistance en moins », jamais
+   « −4 kg ». Un écart nul ou en recul rend `null` : rien ne s'affiche. */
+export type Gain = { valeur: string; unite: string; libelle: string };
+
+export function gainDuFait(fait: FaitMarquant): Gain | null {
+  if (fait.genre === "charge") {
+    if (fait.type === "assistance") {
+      const ecart = fait.avant - fait.charge;
+      return ecart > 0 ? { valeur: nombreFr(ecart), unite: "kg", libelle: "d’assistance en moins" } : null;
+    }
+    const ecart = fait.charge - fait.avant;
+    if (ecart <= 0) return null;
+    return { valeur: `+${nombreFr(ecart)}`, unite: "kg", libelle: fait.type === "par_haltere" ? "par haltère" : "aux mêmes répétitions" };
+  }
+  const ecart = fait.reps - fait.avant;
+  return ecart > 0 ? { valeur: `+${ecart}`, unite: ecart > 1 ? "répétitions" : "répétition", libelle: "à la même charge" } : null;
+}
+
 export function quandRelatif(termineLe: string, maintenant: Date): string {
   const d = new Date(termineLe);
   if (Number.isNaN(d.getTime())) return "la dernière fois";
