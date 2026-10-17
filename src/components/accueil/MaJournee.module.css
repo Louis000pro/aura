@@ -10,6 +10,7 @@
 }
 
 .bento {
+  position: relative;
   display: grid;
   grid-template-columns: 1fr 1fr;
   grid-template-rows: auto auto;
@@ -97,6 +98,10 @@
    dès deux jours d'affilée, et il ne restait plus rien à gagner ensuite.
    Le palier se décide dans `lib/flammesSerie.ts`, jamais ici. */
 .serie {
+  /* Les couleurs des sept traits, redéfinies par chaque habit : la montée
+     les fait passer de l'une à l'autre (`traitNeuf`). */
+  --trait: rgba(232, 98, 12, 0.16);
+  --trait-on: var(--feu-encre);
   justify-content: space-between;
   gap: 8px;
 }
@@ -191,35 +196,134 @@
   flex: 1;
   height: 6px;
   border-radius: 3px;
-  background: rgba(232, 98, 12, 0.16);
+  background: var(--trait);
 }
 
 .jours i[data-on] {
-  background: var(--feu-encre);
+  background: var(--trait-on);
 }
 
-.serie[data-palier="feu"] .jours i {
-  background: rgba(255, 255, 255, 0.55);
+.serie[data-palier="feu"] {
+  --trait: rgba(255, 255, 255, 0.55);
+  --trait-on: #c9400a;
 }
 
-.serie[data-palier="feu"] .jours i[data-on] {
-  background: #c9400a;
+.serie[data-palier="brasier"] {
+  --trait: rgba(255, 255, 255, 0.6);
+  --trait-on: #a86200;
 }
 
-.serie[data-palier="brasier"] .jours i {
-  background: rgba(255, 255, 255, 0.6);
+.serie[data-palier="sacre"] {
+  --trait: rgba(255, 255, 255, 0.65);
+  --trait-on: #9a7a00;
 }
 
-.serie[data-palier="brasier"] .jours i[data-on] {
-  background: #a86200;
+/* ── LA FLAMME MONTE (Louis, 2026-10-17, page « Revenir chaque jour ») ──
+   Une fois, à l'ouverture où la série a grandi : la flamme prend son
+   souffle, le chiffre roule, un trait s'allume, puis l'EXP part vers le
+   rang. Les temps vivent dans `MaJournee.tsx` (`T`) ; ici, les formes. */
+.flammeBoite {
+  position: relative;
+  display: block;
+  flex: none;
+  width: 26px;
+  height: 31px;
 }
 
-.serie[data-palier="sacre"] .jours i {
-  background: rgba(255, 255, 255, 0.65);
+.flammeVivante {
+  display: block;
+  transform-origin: 50% 100%;
 }
 
-.serie[data-palier="sacre"] .jours i[data-on] {
-  background: #9a7a00;
+.etincelle {
+  position: absolute;
+  left: 11px;
+  top: 2px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #ffd860;
+  pointer-events: none;
+}
+
+.onde {
+  position: absolute;
+  left: 50%;
+  top: 55%;
+  width: 30px;
+  height: 30px;
+  margin: -15px 0 0 -15px;
+  border: 2px solid #ffc23a;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.rouleauBoite {
+  display: inline-block;
+  height: 26px;
+  overflow: hidden;
+}
+
+.rouleau {
+  display: flex;
+  flex-direction: column;
+}
+
+.rouleauBoite .serieNombre {
+  display: block;
+  height: 26px;
+  line-height: 26px;
+}
+
+.rouleauExp {
+  display: inline-block;
+  height: 1.3em;
+  overflow: hidden;
+  vertical-align: bottom;
+}
+
+.rouleauExp b {
+  display: block;
+  line-height: 1.3em;
+}
+
+.jours i[data-neuf] {
+  animation: traitNeuf 0.35s ease-out 0.55s both;
+}
+
+@keyframes traitNeuf {
+  from { background: var(--trait); }
+  to { background: var(--trait-on); }
+}
+
+/* Le jour d'une nouvelle flamme, la tuile change d'habit dans un éclat. */
+.serie[data-eclat] {
+  animation: eclat 0.6s ease-out;
+}
+
+@keyframes eclat {
+  0% { transform: scale(1); }
+  40% {
+    transform: scale(1.045);
+    box-shadow: 0 0 0 6px rgba(255, 214, 90, 0.35), 0 8px 26px rgba(230, 180, 0, 0.5);
+  }
+  100% { transform: scale(1); }
+}
+
+.jeton {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 3;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #8b5cf6, #c13bc1);
+  box-shadow: 0 6px 14px rgba(139, 92, 246, 0.45);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  white-space: nowrap;
+  pointer-events: none;
 }
 
 /* En mode sombre, la pêche et l'orange deviennent des teintes posées sur
@@ -245,12 +349,9 @@
   color: var(--text-0);
 }
 
-:global([data-theme="dark"]) .serie[data-palier="feu"] .jours i {
-  background: rgba(255, 255, 255, 0.14);
-}
-
-:global([data-theme="dark"]) .serie[data-palier="feu"] .jours i[data-on] {
-  background: #ff8a3d;
+:global([data-theme="dark"]) .serie[data-palier="feu"] {
+  --trait: rgba(255, 255, 255, 0.14);
+  --trait-on: #ff8a3d;
 }
 
 .ligne {

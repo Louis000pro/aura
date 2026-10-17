@@ -7,12 +7,14 @@ import { ChevronRight } from "lucide-react";
 import { VisageGuide } from "@/components/AssistantMark";
 import MaJournee from "@/components/accueil/MaJournee";
 import FeuilleSerie from "@/components/accueil/FeuilleSerie";
+import FeuilleMotDuJour from "@/components/accueil/FeuilleMotDuJour";
 import { useAuth } from "@/context/AuthContext";
 import FeuilleMissions from "@/components/accueil/FeuilleMissions";
 import { useAssistant } from "@/context/AssistantContext";
 import { type EtatAura } from "@/lib/aura";
-import { voix, type GuideRef } from "@/lib/guides";
+import { PRENOM_GUIDE, type GuideRef } from "@/lib/guides";
 import type { MomentAccueil } from "@/lib/momentAccueil";
+import { lireMot, marquerMotLu } from "@/lib/motDuJour";
 import { etatPoster, imageEtat, type RelaisAccueil } from "@/lib/defi";
 import styles from "./AccueilSignature.module.css";
 
@@ -109,10 +111,27 @@ export default function AccueilSignature({
   const [feuille, setFeuille] = useState(false);
   const [feuilleSerie, setFeuilleSerie] = useState(false);
   const { user } = useAuth();
+  const { open: ouvrirAssistant } = useAssistant();
+
+  /* ── Le mot du jour (Louis, 2026-10-17) ──
+     Un mot par jour, gardé sur l'appareil avec son état « lu ». Il attend
+     l'aura de la base : la flamme qu'il cite doit être celle de la base,
+     pas celle du cache. Le mot du Guide sur l'accueil (`moment`) y entre :
+     calculé une fois par jour, il est gardé pour un mot ouvert plus tard. */
+  const [motOuvert, setMotOuvert] = useState(false);
+  const [luLe, setLuLe] = useState<string | null>(null);
+  const motStocke = user?.id ? lireMot(user.id, jour) : null;
+  const motNonLu = missionsLues && !!user?.id && luLe !== jour && !motStocke?.lu;
+  const ouvrirMot = () => {
+    if (!user?.id) return;
+    marquerMotLu(user.id, jour);
+    setLuLe(jour);
+    setMotOuvert(true);
+  };
 
   return (
     <div className={styles.home}>
-      <Entree guide={guide} greeting={greeting} pseudo={pseudo} moment={moment} reduce={!!reduce} />
+      <Entree guide={guide} greeting={greeting} pseudo={pseudo} moment={moment} motNonLu={motNonLu} onOuvrirMot={ouvrirMot} reduce={!!reduce} />
 
       {heros}
 
@@ -122,6 +141,7 @@ export default function AccueilSignature({
       {missionsLues && (
         <MaJournee
           aura={aura}
+          userId={user?.id}
           jour={jour}
           premiumDebloque={premiumDebloque}
           expGain={expGain}
@@ -141,6 +161,20 @@ export default function AccueilSignature({
             userId={user.id}
             serie={Math.max(1, aura.serie)}
             onFermer={() => setFeuilleSerie(false)}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {motOuvert && missionsLues && user?.id && (
+          <FeuilleMotDuJour
+            guide={guide}
+            moment={moment ?? motStocke?.moment ?? null}
+            serie={Math.max(1, aura.serie)}
+            userId={user.id}
+            jour={jour}
+            onFermer={() => setMotOuvert(false)}
+            onRepondre={() => { setMotOuvert(false); ouvrirAssistant(); }}
           />
         )}
       </AnimatePresence>
@@ -183,24 +217,33 @@ function Entree({
   greeting,
   pseudo,
   moment,
+  motNonLu,
+  onOuvrirMot,
   reduce,
 }: {
   guide: GuideRef;
   greeting: string;
   pseudo: string;
   moment: MomentAccueil | null;
+  /** Le mot du jour attend d'être lu : la pastille, et le geste l'ouvre. */
+  motNonLu: boolean;
+  onOuvrirMot: () => void;
   reduce: boolean;
 }) {
   const { open } = useAssistant();
-  const parle = !!moment;
 
+  /* ⭐ LE MOT DU JOUR (Louis, 2026-10-17) : tant qu'il n'est pas lu, une
+     pastille sur le visage et « Sasha t'a laissé un mot » sous le bonjour,
+     comme un message qui attend. La phrase du Guide pour l'accueil n'est
+     plus écrite ici : elle ouvre le mot. Une fois lu, l'entrée redevient
+     la porte de la conversation. */
   return (
     <motion.button
       type="button"
       className={styles.entree}
-      data-parle={parle ? "" : undefined}
-      onClick={() => open()}
-      aria-label="Parler à ton Guide"
+      data-parle={motNonLu ? "" : undefined}
+      onClick={() => (motNonLu ? onOuvrirMot() : open())}
+      aria-label={motNonLu ? "Lire le mot du jour de ton Guide" : "Parler à ton Guide"}
       initial={reduce ? false : { opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35, ease: "easeOut" }}
@@ -208,12 +251,30 @@ function Entree({
       {/* Sans Guide résolu (choix pas fait, SQL pas collé, hors ligne),
           `VisageGuide` rend l'étincelle ✦ : la zone reste, et elle ouvre
           la même conversation. */}
-      <VisageGuide guide={guide} etat={moment?.etat ?? "welcome"} size={parle ? 40 : 34} />
+      <span className={styles.visage}>
+        <VisageGuide guide={guide} etat={moment?.etat ?? "welcome"} size={motNonLu ? 40 : 34} />
+        {motNonLu && (
+          <motion.span
+            className={styles.pastille}
+            aria-hidden="true"
+            initial={reduce ? false : { scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ delay: 0.4, type: "spring", stiffness: 420, damping: 18 }}
+          >
+            1
+          </motion.span>
+        )}
+      </span>
       <span className={styles.entreeTxt}>
         <span className={styles.salut}>
           {greeting}, <b className={styles.pseudo}>{pseudo}</b>
         </span>
-        {moment && <span className={styles.mot}>{voix(guide, moment.phrase, moment.ctx)}</span>}
+        {motNonLu && (
+          <span className={styles.motNonLu}>
+            {guide ? `${PRENOM_GUIDE[guide]} t’a laissé un mot` : "Ton mot du jour est arrivé"}
+            <ChevronRight size={14} strokeWidth={2.6} aria-hidden="true" />
+          </span>
+        )}
       </span>
     </motion.button>
   );

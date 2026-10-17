@@ -28,14 +28,18 @@ export type PalierFlamme = {
   nom: string;
   /** Le nombre de jours d'affilée à partir duquel cette flamme brûle. */
   des: number;
+  /** Le nom avec son article, pour une phrase : « le Brasier ». */
+  le: string;
+  /** « ta flamme est au Feu », « à la Flamme ». */
+  au: string;
 };
 
 export const PALIERS_FLAMME: readonly PalierFlamme[] = [
-  { id: "lueur", nom: "Lueur", des: 1 },
-  { id: "flamme", nom: "Flamme", des: 3 },
-  { id: "feu", nom: "Feu", des: 7 },
-  { id: "brasier", nom: "Brasier", des: 30 },
-  { id: "sacre", nom: "Feu sacré", des: 100 },
+  { id: "lueur", nom: "Lueur", des: 1, le: "la Lueur", au: "à la Lueur" },
+  { id: "flamme", nom: "Flamme", des: 3, le: "la Flamme", au: "à la Flamme" },
+  { id: "feu", nom: "Feu", des: 7, le: "le Feu", au: "au Feu" },
+  { id: "brasier", nom: "Brasier", des: 30, le: "le Brasier", au: "au Brasier" },
+  { id: "sacre", nom: "Feu sacré", des: 100, le: "le Feu sacré", au: "au Feu sacré" },
 ];
 
 export type EtatFlamme = {

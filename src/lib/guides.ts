@@ -94,7 +94,24 @@ export type ContexteVoix = {
   duree?: string;
   /** R3 · un nombre de répétitions (`seance.charge.choisir`). */
   reps?: number;
+  /** Le mot du jour · la flamme de la série, déjà accordée par l'appelant
+   *  (« au Feu » ou « le Feu », selon la phrase). */
+  flamme?: string;
+  /** Le mot du jour · la flamme suivante, avec son article (« le Brasier »). */
+  suivante?: string;
+  /** Le mot du jour · les jours avant la flamme suivante. */
+  restant?: number;
 };
+
+/** « Douze jours », « 42 jours » : en lettres jusqu'à vingt, comme on le
+ *  dit, puis en chiffres. Majuscule incluse, la phrase commence par lui. */
+function joursDaffilee(n = 1): string {
+  const mots = ["", "Un", "Deux", "Trois", "Quatre", "Cinq", "Six", "Sept", "Huit", "Neuf", "Dix",
+    "Onze", "Douze", "Treize", "Quatorze", "Quinze", "Seize", "Dix-sept", "Dix-huit", "Dix-neuf", "Vingt"];
+  return `${mots[n] ?? String(n)} ${n > 1 ? "jours" : "jour"} d’affilée`;
+}
+
+const jours = (n = 0) => `${n} ${n > 1 ? "jours" : "jour"}`;
 
 /** « Une séance posée », « Trois séances posées ». Le nombre s'écrit en
  *  lettres, parce qu'une semaine n'en porte jamais plus de sept et qu'un
@@ -584,6 +601,45 @@ const REPLIQUES = {
     commun: "On fait quoi aujourd’hui ?",
     nora:   "On regarde ta journée ensemble ?",
     sasha:  "On fait quoi aujourd’hui ?",
+  },
+
+  /* ── Le mot du jour (Louis, 2026-10-17, page « Revenir chaque jour ») ──
+     Chaque matin, le Guide laisse un mot qu'on ouvre comme un message :
+     où en est la flamme, puis ce que la journée propose. Deux phrases
+     VRAIES, lues dans la série et dans la journée, jamais un reproche :
+     une séance prévue hier et pas faite n'y est pas citée. Les nombres
+     viennent de l'appelant (`lib/motDuJour.ts`), jamais d'une estimation. */
+  "matin.flamme": {
+    commun: (c: ContexteVoix) => `${joursDaffilee(c.serie)}, ta flamme est ${c.flamme ?? ""}. Plus que ${jours(c.restant)} avant ${c.suivante ?? ""}.`,
+  },
+  "matin.flamme.debut": {
+    commun: (c: ContexteVoix) => `Premier jour de ta série : ta flamme s’allume. Plus que ${jours(c.restant)} avant ${c.suivante ?? ""}.`,
+  },
+  /* Le jour où une flamme arrive. La tuile de l'accueil le montre déjà ;
+     le mot le dit avec des mots, une fois. */
+  "matin.flamme.nouvelle": {
+    commun: (c: ContexteVoix) => `${joursDaffilee(c.serie)} : ta flamme devient ${c.flamme ?? ""}.`,
+  },
+  "matin.flamme.sommet": {
+    commun: (c: ContexteVoix) => `${joursDaffilee(c.serie)} : ta flamme est au Feu sacré, à son plus beau.`,
+  },
+  "matin.plan.seance": {
+    commun: (c: ContexteVoix) => `Aujourd’hui, ${c.titre ?? "ta séance"} t’attend.`,
+  },
+  "matin.plan.etape": {
+    commun: (c: ContexteVoix) => `Ton programme te propose ${c.etape ?? "ta prochaine séance"}, quand tu veux.`,
+  },
+  "matin.plan.etape_jour": {
+    commun: (c: ContexteVoix) => `Ta prochaine séance, ${c.etape ?? ""}, est prévue ${c.jour ?? ""}.`,
+  },
+  "matin.plan.fait": {
+    commun: "Ta séance du jour est déjà faite. Profite du reste de la journée.",
+  },
+  "matin.plan.repos": {
+    commun: "Aujourd’hui, c’est repos. Passer ici suffit à tenir ta flamme.",
+  },
+  "matin.plan.libre": {
+    commun: "Rien de prévu aujourd’hui. Si l’envie te prend, je te prépare quelque chose.",
   },
 
   /* ── Sa mémoire ──
