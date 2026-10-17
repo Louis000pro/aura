@@ -8,7 +8,7 @@
    qui restent en cartes illustrées qui défilent sur le côté :
      · le RANG, en grand : sa gemme, l'EXP (le seul affichage d'EXP de
        l'accueil) et la barre jusqu'au rang suivant ;
-     · la SÉRIE, avec les jours validés de la semaine ;
+     · la SÉRIE, avec ses jours en sept traits (jour 1 à jour 7) ;
      · l'avancée des QUÊTES du jour, en anneau ;
      · le rail : les quêtes du jour pas encore remplies, plus la mission
        Premium du jour.
@@ -52,11 +52,15 @@ export default function MaJournee({
   onOpenSerie: () => void;
 }) {
   const { fait, total } = compteMissionsJour(aura);
-  const semaine = Math.max(0, Math.min(7, aura.detail.joursActifsSemaine));
   const part = total > 0 ? fait / total : 0;
   // La série commence à UN jour, jamais à zéro (Louis, 2026-10-11) : voir
   // « 0 jour » ne donne pas envie de continuer. Aujourd'hui compte déjà.
   const serie = Math.max(1, aura.serie);
+  // Les sept traits suivent la SÉRIE, pas la semaine civile (Louis, 2026-10-17) :
+  // jour 1 = un trait, jour 7 = les sept, puis un nouveau tour de sept repart.
+  // Avant, ils comptaient les jours avec séance ou repas : un jour où l'on
+  // n'avait fait qu'ouvrir Vaiiya tenait la flamme mais n'allumait rien.
+  const allumes = ((serie - 1) % 7) + 1;
 
   // « Journée complète » se remplit toute seule : elle reste dans le compte,
   // pas dans le rail, où elle se lirait comme un geste à faire.
@@ -116,9 +120,9 @@ export default function MaJournee({
               </strong>
             </span>
           </span>
-          <span className={styles.jours} aria-label={`${semaine} jours validés cette semaine`}>
+          <span className={styles.jours} aria-label={`Jour ${allumes} sur 7`}>
             {Array.from({ length: 7 }, (_, i) => (
-              <i key={i} data-on={i < semaine ? "" : undefined} />
+              <i key={i} data-on={i < allumes ? "" : undefined} />
             ))}
           </span>
         </button>
