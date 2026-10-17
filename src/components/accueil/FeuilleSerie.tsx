@@ -24,27 +24,30 @@
    LA FLAMME EST CELLE DE L'ACCUEIL (Louis, 2026-10-17) : `FlammeSerie`,
    au palier que décide `lib/flammesSerie.ts`. Le dessin plat qui vivait
    ici est supprimé.
+
+   LE CALENDRIER EST UNE TRAÎNÉE QUI CHAUFFE (Louis, 2026-10-17, page « La
+   traînée » du canevas) : `CalendrierSerie`, d'après `lib/traineeSerie.ts`.
+   Chaque jour prend la couleur de la flamme qu'il avait allumée, le ruban
+   ne se coupe plus en fin de semaine, et la prochaine flamme attend sur sa
+   date. La rangée des cinq flammes, juste au-dessus, en est la légende.
    ───────────────────────────────────────────────────────────────────── */
 
 import { useEffect, useMemo, useState } from "react";
 import { Check, ChevronLeft, ChevronRight } from "lucide-react";
 import Sheet from "@/components/communaute/Sheet";
+import CalendrierSerie from "@/components/serie/CalendrierSerie";
 import FlammeSerie from "@/components/serie/FlammeSerie";
 import { createClient } from "@/lib/supabase";
 import { chargerBadgesAura } from "@/lib/badgesAura";
 import { parisDateStr, shiftDateStr } from "@/lib/dates";
 import { etatFlamme, PALIERS_FLAMME } from "@/lib/flammesSerie";
+import { rangsDesJours } from "@/lib/traineeSerie";
 
 /** Combien de mois on peut remonter. Au-delà, la série a déjà été comptée. */
 const MOIS_MAX = 12;
-const JOURS_SEMAINE = ["L", "M", "M", "J", "V", "S", "D"];
 
 function moisDe(jour: string): { annee: number; mois: number } {
   return { annee: Number(jour.slice(0, 4)), mois: Number(jour.slice(5, 7)) - 1 };
-}
-
-function cle(annee: number, mois: number, j: number): string {
-  return `${annee}-${String(mois + 1).padStart(2, "0")}-${String(j).padStart(2, "0")}`;
 }
 
 export default function FeuilleSerie({
@@ -83,19 +86,19 @@ export default function FeuilleSerie({
     return () => { vivant = false; };
   }, [userId, aujourdhui]);
 
-  const { titre, cases, joursDuMois } = useMemo(() => {
+  const { titre, annee, mois, joursDuMois } = useMemo(() => {
     const base = moisDe(aujourdhui);
     const d = new Date(Date.UTC(base.annee, base.mois - decalage, 1));
     const annee = d.getUTCFullYear();
     const mois = d.getUTCMonth();
-    const nbJours = new Date(Date.UTC(annee, mois + 1, 0)).getUTCDate();
-    const vide = (d.getUTCDay() + 6) % 7; // lundi = 0
-    const liste: (string | null)[] = Array.from({ length: vide }, () => null);
-    for (let j = 1; j <= nbJours; j++) liste.push(cle(annee, mois, j));
+    const prefixe = `${annee}-${String(mois + 1).padStart(2, "0")}-`;
     const nom = d.toLocaleDateString("fr-FR", { month: "long", year: "numeric", timeZone: "UTC" });
-    const compte = actifs ? liste.filter((c) => c && actifs.has(c)).length : 0;
-    return { titre: nom.charAt(0).toUpperCase() + nom.slice(1), cases: liste, joursDuMois: compte };
+    const compte = actifs ? [...actifs].filter((j) => j.startsWith(prefixe)).length : 0;
+    return { titre: nom.charAt(0).toUpperCase() + nom.slice(1), annee, mois, joursDuMois: compte };
   }, [aujourdhui, decalage, actifs]);
+  // Le rang de chaque jour dans sa série, sur tout ce qui a été lu (douze
+  // mois) : une série qui a commencé le mois d'avant garde sa couleur.
+  const rangs = useMemo(() => rangsDesJours(actifs ?? []), [actifs]);
 
   const record_ = record !== null ? Math.max(record, serie) : null;
   const flamme = etatFlamme(serie);
@@ -189,47 +192,7 @@ export default function FeuilleSerie({
         </button>
       </div>
 
-      <div className="mt-2 grid grid-cols-7 gap-y-1.5 text-center">
-        {JOURS_SEMAINE.map((j, i) => (
-          <span key={i} style={{ fontSize: 11, fontWeight: 600, color: "var(--text-3)" }}>{j}</span>
-        ))}
-        {cases.map((c, i) => {
-          if (!c) return <span key={i} />;
-          const futur = c > aujourdhui;
-          const actif = !!actifs?.has(c);
-          const estAujourdhui = c === aujourdhui;
-          // Un jour actif relié à son voisin forme un ruban : la série se
-          // voit d'un coup d'œil, sans compter.
-          const avant = actif && actifs!.has(shiftDateStr(c, -1)) && i % 7 !== 0;
-          const apres = actif && actifs!.has(shiftDateStr(c, 1)) && i % 7 !== 6;
-          return (
-            <span key={i} className="relative flex items-center justify-center h-10">
-              {(avant || apres) && (
-                <i aria-hidden="true" className="absolute top-1/2 -translate-y-1/2 h-8"
-                  style={{
-                    left: avant ? 0 : "50%",
-                    right: apres ? 0 : "50%",
-                    background: "rgba(245,177,32,0.22)",
-                  }} />
-              )}
-              <span
-                className="relative flex items-center justify-center w-8 h-8 rounded-full vy-nombre"
-                style={{
-                  fontSize: 13,
-                  fontWeight: actif ? 800 : 500,
-                  color: actif ? "#fff" : futur ? "var(--text-3)" : "var(--text-2)",
-                  opacity: futur ? 0.45 : 1,
-                  background: actif ? "linear-gradient(160deg,#F5B120,#E8620C)" : "transparent",
-                  boxShadow: estAujourdhui ? "0 0 0 2px var(--feu-encre)" : "none",
-                }}
-                aria-label={actif ? `${c}, jour de ta série` : c}
-              >
-                {Number(c.slice(8))}
-              </span>
-            </span>
-          );
-        })}
-      </div>
+      <CalendrierSerie annee={annee} mois={mois} rangs={rangs} aujourdhui={aujourdhui} />
 
       <p className="mt-4 text-center" style={{ fontSize: 13, color: "var(--text-3)" }}>
         Ouvrir Vaiiya chaque jour suffit à tenir ta série.

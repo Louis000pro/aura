@@ -92,10 +92,17 @@
 }
 
 /* LA SÉRIE CHANGE D'HABIT À CHAQUE FLAMME (Louis, 2026-10-17, page « La
-   série » du canevas). Lueur : le verre nu. Flamme : la pêche. Feu :
+   série » du canevas). Lueur : une braise. Flamme : la pêche. Feu :
    l'orange. Brasier : l'or. Feu sacré : l'or lumineux, avec une aura.
    ⚠️ L'or n'arrive qu'à 30 jours : avant, la tuile passait au jaune franc
    dès deux jours d'affilée, et il ne restait plus rien à gagner ensuite.
+   ⚠️ LA LUEUR N'EST PLUS LE VERRE NU (Louis, même jour, page « La
+   traînée » : « au début c'est moins ouf qu'à la toute fin, mais ça ne
+   veut pas dire que le début ne doit pas être beau »). La flamme y allume
+   une braise autour d'elle : les fonds partent de son centre (25 px, 28 px).
+   ⚠️ ENTRE DEUX FLAMMES, L'HABIT NE BOUGE PAS. Une couleur qui changerait
+   d'un trentième par jour ne se verrait pas : chaque flamme est un moment
+   qu'on remarque. Ce qui avance chaque jour, c'est la traînée et les traits.
    Le palier se décide dans `lib/flammesSerie.ts`, jamais ici. */
 .serie {
   /* Les couleurs des sept traits, redéfinies par chaque habit : la montée
@@ -106,11 +113,25 @@
   gap: 8px;
 }
 
-.serie[data-palier="flamme"] {
-  border-color: rgba(255, 190, 140, 0.95);
-  background: linear-gradient(160deg, rgba(255, 230, 204, 0.97) 0%, rgba(255, 204, 160, 0.9) 100%);
+.serie[data-palier="lueur"] {
+  --trait: rgba(240, 110, 70, 0.16);
+  --trait-on: #ee6a3a;
+  border-color: rgba(255, 172, 135, 0.85);
+  background:
+    radial-gradient(circle at 25px 28px, rgba(255, 120, 70, 0.42) 0%, rgba(255, 120, 70, 0.17) 26px, rgba(255, 120, 70, 0) 64px),
+    var(--verre-carte);
+  box-shadow: var(--verre-carte-ombre), 0 10px 22px -12px rgba(255, 110, 60, 0.45);
 }
 
+.serie[data-palier="flamme"] {
+  border-color: rgba(255, 190, 140, 0.95);
+  background:
+    radial-gradient(70% 95% at 16% 36%, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0) 62%),
+    linear-gradient(160deg, rgba(255, 230, 204, 0.97) 0%, rgba(255, 204, 160, 0.92) 100%);
+  box-shadow: 0 6px 16px rgba(245, 122, 26, 0.18);
+}
+
+.serie[data-palier="lueur"] small,
 .serie[data-palier="flamme"] small {
   color: #94603f;
 }
@@ -326,13 +347,32 @@
   pointer-events: none;
 }
 
-/* En mode sombre, la pêche et l'orange deviennent des teintes posées sur
-   le verre sombre : deux aplats clairs y éblouiraient. */
-:global([data-theme="dark"]) .serie[data-palier="flamme"] {
-  border-color: rgba(255, 170, 110, 0.35);
+/* En mode sombre, la Lueur, la Flamme et le Feu sont une LUMIÈRE qui part
+   de la flamme et grandit d'un habit à l'autre : deux aplats clairs y
+   éblouiraient, et une teinte posée à plat sur le verre tournait au brun.
+   Brasier et Feu sacré restent opaques, texte foncé. */
+:global([data-theme="dark"]) .serie[data-palier="lueur"] {
+  --trait: rgba(255, 255, 255, 0.12);
+  --trait-on: #ff8a5c;
+  border-color: rgba(255, 140, 100, 0.32);
   background:
-    linear-gradient(160deg, rgba(255, 160, 90, 0.24), rgba(255, 120, 50, 0.12)),
+    radial-gradient(circle at 25px 28px, rgba(255, 110, 60, 0.46) 0%, rgba(255, 110, 60, 0.18) 28px, rgba(255, 110, 60, 0) 70px),
     var(--verre-carte);
+  box-shadow: var(--verre-carte-ombre);
+}
+
+:global([data-theme="dark"]) .serie[data-palier="lueur"] small {
+  color: var(--text-3);
+}
+
+:global([data-theme="dark"]) .serie[data-palier="flamme"] {
+  --trait: rgba(255, 255, 255, 0.12);
+  --trait-on: #ffa24a;
+  border-color: rgba(255, 170, 110, 0.42);
+  background:
+    radial-gradient(circle at 25px 28px, rgba(255, 140, 50, 0.6) 0%, rgba(255, 140, 50, 0.26) 40px, rgba(255, 140, 50, 0.1) 120px),
+    var(--verre-carte);
+  box-shadow: var(--verre-carte-ombre);
 }
 
 :global([data-theme="dark"]) .serie[data-palier="flamme"] small {
@@ -340,18 +380,14 @@
 }
 
 :global([data-theme="dark"]) .serie[data-palier="feu"] {
-  border-color: rgba(255, 150, 60, 0.55);
-  background:
-    radial-gradient(80% 100% at 14% 30%, rgba(255, 170, 80, 0.28), rgba(255, 170, 80, 0) 60%),
-    linear-gradient(160deg, rgba(255, 160, 60, 0.42), rgba(255, 110, 30, 0.24)),
-    var(--verre-carte);
-  box-shadow: var(--verre-carte-ombre);
-  color: var(--text-0);
-}
-
-:global([data-theme="dark"]) .serie[data-palier="feu"] {
   --trait: rgba(255, 255, 255, 0.14);
-  --trait-on: #ff8a3d;
+  --trait-on: #ffc04a;
+  border-color: rgba(255, 175, 80, 0.62);
+  background:
+    radial-gradient(circle at 25px 28px, rgba(255, 175, 60, 0.72) 0%, rgba(255, 150, 50, 0.38) 52px, rgba(255, 130, 40, 0.2) 150px),
+    var(--verre-carte);
+  box-shadow: var(--verre-carte-ombre), 0 8px 22px -10px rgba(255, 140, 30, 0.45);
+  color: var(--text-0);
 }
 
 .ligne {

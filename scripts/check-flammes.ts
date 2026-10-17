@@ -136,8 +136,11 @@ for (const fichier of ECRANS) {
   const tuile = code("src/components/accueil/MaJournee.tsx");
   verdict("la tuile prend l'habit de son palier", /data-palier=\{flamme\.palier\.id\}/.test(tuile) && !tuile.includes("data-chaude"), "data-palier");
   const css = lire("src/components/accueil/MaJournee.module.css");
-  const sansHabit = PALIERS_FLAMME.filter((p) => p.id !== "lueur" && !css.includes(`.serie[data-palier="${p.id}"] {`));
-  verdict("chaque flamme (sauf la Lueur, en verre nu) a son habit", sansHabit.length === 0 && !css.includes("data-chaude"), sansHabit.map((p) => p.id).join(", ") || "les quatre");
+  // La Lueur aussi depuis la page « La traînée » (Louis, 2026-10-17) : une braise, plus le verre nu.
+  // En début de ligne : `:global([data-theme="dark"]) .serie[...]` contient le même
+  // sélecteur, et un habit sombre seul ne doit pas passer pour l'habit clair (témoin vérifié).
+  const sansHabit = PALIERS_FLAMME.filter((p) => !new RegExp(`^\\.serie\\[data-palier="${p.id}"\\] \\{`, "m").test(css));
+  verdict("chaque flamme a son habit, la Lueur comprise", sansHabit.length === 0 && !css.includes("data-chaude"), sansHabit.map((p) => p.id).join(", ") || "les cinq");
 }
 
 {
