@@ -39,6 +39,7 @@ import { createClient } from "@/lib/supabase";
 import {
   MEMORY_CATEGORY_LABEL, MEMORY_CATEGORY_EMOJI, normalizeCategory, type AiMemory,
 } from "@/lib/aiMemory";
+import { memoireActive, reglerMemoire } from "@/lib/memoireGuide";
 
 export default function AiMemoryManager({ onClose }: { onClose: () => void }) {
   const { user } = useAuth();
@@ -46,6 +47,15 @@ export default function AiMemoryManager({ onClose }: { onClose: () => void }) {
   const [memories, setMemories] = useState<AiMemory[]>([]);
   const [loading, setLoading] = useState(true);
   const [clearing, setClearing] = useState(false);
+  // `null` tant qu'on n'a pas lu le réglage : l'interrupteur ne ment pas.
+  const [active, setActive] = useState<boolean | null>(null);
+  useEffect(() => { void memoireActive().then(setActive); }, []);
+  const basculer = async () => {
+    if (active === null) return;
+    const suivant = !active;
+    setActive(suivant);
+    if (!(await reglerMemoire(suivant))) setActive(!suivant);
+  };
 
   useEffect(() => {
     if (!user?.id) { setLoading(false); return; }
@@ -101,6 +111,31 @@ export default function AiMemoryManager({ onClose }: { onClose: () => void }) {
           <motion.button whileTap={{ scale: 0.9 }} onClick={onClose} className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer flex-shrink-0" style={{ background: "rgba(var(--tint-violet-rgb),0.8)" }}>
             <X size={14} strokeWidth={2} style={{ color: "var(--text-3)" }} />
           </motion.button>
+        </div>
+
+        {/* Couper la mémoire, c'est retirer son accord à ce traitement
+            (RGPD art. 9). Ce qui était retenu reste visible et effaçable. */}
+        <div className="flex-shrink-0 mx-5 mb-3 flex items-center justify-between gap-3">
+          <p className="text-[13px] leading-snug" style={{ color: "var(--text-2)" }}>
+            {active === false
+              ? "Mémoire coupée : je n’apprends plus rien de nos conversations."
+              : "Je retiens ce qui m’aide à te conseiller, d’une conversation à l’autre."}
+          </p>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={active === true}
+            aria-label="Mémoire du Guide"
+            disabled={active === null}
+            onClick={basculer}
+            className="flex-shrink-0 w-11 h-6 rounded-full relative cursor-pointer transition-colors"
+            style={{ background: active ? "#8B5CF6" : "rgba(var(--violet-mid-rgb),0.45)" }}
+          >
+            <span
+              className="absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all"
+              style={{ left: active ? 22 : 2, boxShadow: "0 1px 3px rgba(0,0,0,0.2)" }}
+            />
+          </button>
         </div>
 
         {/* Liste */}

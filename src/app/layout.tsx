@@ -6,6 +6,7 @@ import MainWrapper from "@/components/MainWrapper";
 import { AuthProvider } from "@/context/AuthContext";
 import { GuidedTourProvider } from "@/context/GuidedTourContext";
 import RappelProfil from "@/components/RappelProfil";
+import DemandeConsentement from "@/components/DemandeConsentement";
 import GardeGuide from "@/components/GardeGuide";
 import GardePseudo from "@/components/GardePseudo";
 import GardeConnexion from "@/components/GardeConnexion";
@@ -394,6 +395,7 @@ export default function RootLayout({
                 <Navigation />
                 <MainWrapper>{children}</MainWrapper>
                 <RappelProfil />
+                <DemandeConsentement />
                 <GuidedTour />
                 {/* Le récap de mise à jour : une fois par compte, puis dans
                     Paramètres. Il vit DANS le fournisseur de la visite guidée

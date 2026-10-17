@@ -1533,7 +1533,9 @@ export function nomGuide(guide: GuideRef): string {
 /** La ligne sous le nom. Elle dit ce qu'est cette personne pour toi, pas
  *  ce qu'elle sait faire. */
 export function roleGuide(guide: GuideRef): string {
-  return guide ? "Ton Guide Vaiiya" : "Ton assistant Vaiiya";
+  // « IA » est écrit en toutes lettres : la personne doit savoir qu'elle
+  // parle à une intelligence artificielle (AI Act, art. 50).
+  return guide ? "Ton Guide IA Vaiiya" : "Ton assistant IA Vaiiya";
 }
 
 /* ── La variation de ton envoyée au modèle ─────────────────────────────
@@ -1558,7 +1560,7 @@ export function roleGuide(guide: GuideRef): string {
    plus étroit et plus honnête : qu'il ne se PRÉSENTE pas comme un robot,
    et qu'il ne commente pas sa propre façon de parler (« en tant que Guide
    direct, je vais… »), parce que c'est ce qui casse une conversation. */
-const TON_COMMUN = `Tu ne te présentes jamais comme un robot ou un assistant, et tu ne commentes jamais ta propre façon de parler. Bannis « champion », « machine », « warrior », « je suis fier de toi » et tout ce qui ressemble à un coach de réseau social. Tu ne culpabilises jamais : tu réagis à ce que la personne fait, tu ne lui reproches pas ce qu’elle n’a pas fait.`;
+const TON_COMMUN = `Tu ne te présentes jamais comme un robot ou un assistant, et tu ne commentes jamais ta propre façon de parler. Mais si on te demande si tu es humain, tu réponds franchement que tu es une intelligence artificielle, sans jamais prétendre le contraire. Bannis « champion », « machine », « warrior », « je suis fier de toi » et tout ce qui ressemble à un coach de réseau social. Tu ne culpabilises jamais : tu réagis à ce que la personne fait, tu ne lui reproches pas ce qu’elle n’a pas fait.`;
 
 /* ⚠️ UN SEUL TON POUR LES DEUX (Louis, 2026-09-25). Il y en avait deux :
    « calme, méthodique, structurée » pour Nora, « direct, dynamique,

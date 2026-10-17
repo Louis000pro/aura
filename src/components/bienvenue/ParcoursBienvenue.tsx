@@ -53,7 +53,8 @@ import { loadLieu, persistLieu } from "@/lib/planning";
 import { voix } from "@/lib/guides";
 import type { GuideId } from "@/lib/guides";
 import ChoixGuide from "./ChoixGuide";
-import EtapesProfil, { MOMENTS, ORDRE, SECTIONS, champsManquants, momentDe, type Entrainement, type Section } from "./EtapesProfil";
+import EtapesProfil, { MOMENTS, ORDRE, SECTIONS, champsManquants, momentDe, refusAge, type Entrainement, type Section } from "./EtapesProfil";
+import { enregistrerConsentement, lireConsentement } from "@/lib/consentementSante";
 import { prechargerMoments } from "@/components/AssistantMark";
 import PortraitGuide from "./PortraitGuide";
 import s from "./bienvenue.module.css";
@@ -92,6 +93,11 @@ export default function ParcoursBienvenue() {
    *  C'est lui qui autorise la phrase « Il manque… » : sans tentative,
    *  pas de reproche. */
   const [manqueVu, setManqueVu] = useState(false);
+  /* L'accord pour les données de santé (RGPD art. 9). `null` tant qu'on
+     ne sait pas si le compte l'a déjà donné : la case ne s'affiche pas
+     cochée d'avance, elle reprend seulement un accord déjà enregistré. */
+  const [consenti, setConsenti] = useState(false);
+  const [consentEnregistre, setConsentEnregistre] = useState(false);
 
   /** Les réponses telles qu'elles ont été lues, pour que « Recommencer »
    *  reparte du vrai profil et pas d'un formulaire à moitié modifié. */
@@ -131,6 +137,17 @@ export default function ParcoursBienvenue() {
     const retour = `/bienvenue${suffixe ? `?${suffixe}` : ""}`;
     router.replace(`/auth?next=${encodeURIComponent(retour)}`);
   }, [isLoading, user, destination, revue, router]);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    let annule = false;
+    void lireConsentement().then((c) => {
+      if (annule || !c) return;
+      setConsenti(true);
+      setConsentEnregistre(true);
+    });
+    return () => { annule = true; };
+  }, [user?.id]);
 
   /* Ce que le compte a déjà répondu. On repart de ses réponses plutôt que
      d'un formulaire vide : un compte existant ne doit jamais avoir
@@ -240,6 +257,9 @@ export default function ParcoursBienvenue() {
     // ⚠️ La porte d'écriture du questionnaire. En revue elle reste
     // fermée : ni les dix colonnes `onboarding_*`, ni le lieu.
     if (revue || !user?.id) return;
+    if (consenti && !consentEnregistre) {
+      if (await enregistrerConsentement()) setConsentEnregistre(true);
+    }
     await enregistrerProfil(user.id, data);
     // Le lieu vit dans ses propres colonnes, avec sa propre fonction : on
     // ne pousse QUE ce qui est renseigné, pour ne pas effacer un réglage
@@ -307,13 +327,15 @@ export default function ParcoursBienvenue() {
      ⚠️ La phrase n'apparaît qu'APRÈS une tentative. L'afficher en
      arrivant sur l'étape reviendrait à reprocher une question avant de
      l'avoir posée. */
-  const manquants = index >= 0 ? champsManquants(etape as Section, data, entrainement) : [];
-  const bloque = manquants.length > 0;
+  const manquants = index >= 0 ? champsManquants(etape as Section, data, entrainement, consenti) : [];
+  const ageRefuse = index >= 0 ? refusAge(etape as Section, data) : null;
+  const bloque = manquants.length > 0 || !!ageRefuse;
 
   /** « ton âge, ta taille et ton poids » : la virgule partout, « et »
    *  pour le dernier. Composé ici parce que seul l'appelant sait
    *  combien d'éléments il annonce. */
-  const phraseManque = manquants.length === 0 ? null
+  const phraseManque = ageRefuse ? ageRefuse
+    : manquants.length === 0 ? null
     : manquants.length === 1 ? `Il manque ${manquants[0]}.`
     : `Il manque ${manquants.slice(0, -1).join(", ")} et ${manquants[manquants.length - 1]}.`;
 
@@ -488,6 +510,8 @@ export default function ParcoursBienvenue() {
                   setData={setData}
                   entrainement={entrainement}
                   setEntrainement={setEntrainement}
+                  consenti={consenti}
+                  setConsenti={setConsenti}
                 />
               </div>
 

@@ -496,6 +496,12 @@ export default function AssistantSheet() {
                       </motion.button>
                     ))}
                   </div>
+                  {/* Ce que la personne doit savoir avant de parler : à qui
+                      (AI Act, art. 50) et ce que ça vaut (pas un avis
+                      médical). Discret, mais sur l'écran, pas dans un lien. */}
+                  <p className="vy-label" style={{ color: "var(--text-3)" }}>
+                    Réponses générées par une IA. Conseils généraux, pas un avis médical.
+                  </p>
                 </motion.div>
               )}
 

@@ -13,6 +13,7 @@
    PAS appliqués ici (ils restent gérés par la page coach historique).
    ════════════════════════════════════════════════════════════════════ */
 
+import { memoireActive } from "@/lib/memoireGuide";
 import { EVT_PROFIL } from "@/lib/profilOnboarding";
 import { lireCalendrier } from "@/lib/joursEntrainement";
 import {
@@ -1856,6 +1857,8 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
      cet appel : elles viennent maintenant du même tour que le texte. ── */
   const extractMemory = useCallback(async (text: string, context: string) => {
     if (!user?.id || !text.trim()) return;
+    // Mémoire coupée par la personne : on n'apprend plus rien.
+    if (!(await memoireActive())) return;
     try {
       const res = await aiFetch("/api/assistant/analyze", {
         method: "POST",
@@ -2286,7 +2289,9 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
           moteur,
           richProfile: rich,
           currentPage: pathname,
-          memories: memoriesRef.current,
+          // Mémoire coupée : rien n'est envoyé au modèle. `memoryEnabled`
+          // reste vrai, il commande aussi le format de la réponse.
+          memories: (await memoireActive()) ? memoriesRef.current : [],
           memoryEnabled: true,
           // Le prénom et la manière de parler du Guide. Le serveur en tire
           // un bloc de ton COURT ; les règles et les données ne changent pas.

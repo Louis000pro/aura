@@ -262,7 +262,9 @@ export default function ChoixGuide({
         </button>
       </div>
 
-      <p className={s.note}>Tu pourras changer dans tes paramètres.</p>
+      {/* AI Act, art. 50 : on dit qu'il s'agit d'une IA AVANT la première
+          conversation, pas seulement dans un pied de page. */}
+      <p className={s.note}>Nora et Sasha sont des assistants d’intelligence artificielle. Tu pourras changer dans tes paramètres.</p>
 
       {erreur && <p className={s.erreur} role="alert">{erreur}</p>}
 

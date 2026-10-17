@@ -690,6 +690,26 @@
 
 .champs { display: flex; flex-direction: column; gap: 16px; }
 
+/* L'accord pour les données de santé : une case à part, jamais cochée
+   d'avance (RGPD art. 9). */
+.accord {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--text-1);
+  cursor: pointer;
+}
+.accord input {
+  flex: 0 0 auto;
+  width: 20px;
+  height: 20px;
+  margin-top: 1px;
+  accent-color: #8B5CF6;
+}
+.accord a { color: var(--exp-encre); text-decoration: underline; }
+
 .libelle {
   display: block;
   font-size: 11px;

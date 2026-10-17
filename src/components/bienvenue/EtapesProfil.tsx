@@ -25,6 +25,7 @@
 import { GOALS, LEVELS, GENDERS, SESSIONS, MEALS, DIETS, type OnboardingData } from "@/lib/profilOnboarding";
 import type { CleVoix, MomentGuide } from "@/lib/guides";
 import s from "./bienvenue.module.css";
+import { AGE_MINIMUM } from "@/lib/consentementSante";
 
 /** Le lieu et le matériel, aux seules valeurs que le reste du code sait
  *  lire (`planning.ts` : readLieu, persistLieu, ctxFromLieu). */
@@ -133,9 +134,11 @@ export function champsManquants(
   section: Section,
   data: OnboardingData,
   entrainement: Entrainement,
+  consenti = true,
 ): string[] {
   const manque: string[] = [];
   if (section === "corps") {
+    if (!consenti) manque.push("ton accord pour utiliser ces informations");
     if (!nombreDonne(data.age)) manque.push("ton âge");
     if (!nombreDonne(data.height)) manque.push("ta taille");
     if (!nombreDonne(data.weight)) manque.push("ton poids");
@@ -157,6 +160,16 @@ export function champsManquants(
     if (!data.diet) manque.push("ton type d’alimentation");
   }
   return manque;
+}
+
+/** Le seul contrôle de vraisemblance du questionnaire, et ce n'est pas un
+ *  jugement : c'est la loi. En dessous de 15 ans, on ne peut pas consentir
+ *  seul au traitement de ses données de santé. */
+export function refusAge(section: Section, data: OnboardingData): string | null {
+  if (section !== "corps" || !nombreDonne(data.age)) return null;
+  return Number(data.age) < AGE_MINIMUM
+    ? `Vaiiya est ouvert à partir de ${AGE_MINIMUM} ans. En dessous, il faut l’accord d’un parent : écris-nous à bonjour@vaiiya.fr.`
+    : null;
 }
 
 /* ── Briques ─────────────────────────────────────────────────────── */
@@ -197,13 +210,15 @@ function Nombre({ id, label, unite, valeur, onChange, aide }: {
 /* ── Les sections ────────────────────────────────────────────────── */
 
 export default function EtapesProfil({
-  section, data, setData, entrainement, setEntrainement,
+  section, data, setData, entrainement, setEntrainement, consenti = true, setConsenti,
 }: {
   section: Section;
   data: OnboardingData;
   setData: (patch: Partial<OnboardingData>) => void;
   entrainement: Entrainement;
   setEntrainement: (patch: Partial<Entrainement>) => void;
+  consenti?: boolean;
+  setConsenti?: (v: boolean) => void;
 }) {
   if (section === "corps") {
     return (
@@ -239,6 +254,23 @@ export default function EtapesProfil({
             Vaiiya en tient compte pour certains calculs et conseils. Sans lien avec ton Guide.
           </span>
         </div>
+        {/* ⚠️ RGPD art. 9 : un accord EXPLICITE, par un geste à part, jamais
+            coché d'avance. La preuve (date, version) part dans le compte au
+            passage à l'étape suivante (`enregistrerConsentement`). */}
+        {setConsenti && (
+          <label className={s.accord}>
+            <input
+              type="checkbox"
+              checked={consenti}
+              onChange={(e) => setConsenti(e.target.checked)}
+            />
+            <span>
+              J’accepte que Vaiiya utilise ces informations, mon alimentation et ce que je dis de ma santé à mon Guide
+              pour personnaliser mes conseils. Je peux retirer mon accord à tout moment.{" "}
+              <a href="/confidentialite#sante" target="_blank" rel="noopener">En savoir plus</a>
+            </span>
+          </label>
+        )}
       </div>
     );
   }
