@@ -40,16 +40,20 @@ import { EQUIPS, libelleReps, estAnime, type LibExercise } from "@/lib/exerciseL
 
 export default function ExerciseDetailSheet({
   exo,
-  choisi,
-  dejaDansLaSeance,
+  choisi = false,
+  dejaDansLaSeance = false,
   onBasculer,
+  action,
   onClose,
 }: {
   exo: LibExercise;
-  choisi: boolean;
+  choisi?: boolean;
   /** Déjà présent dans la séance en cours d'écriture : plus rien à faire. */
-  dejaDansLaSeance: boolean;
-  onBasculer: () => void;
+  dejaDansLaSeance?: boolean;
+  onBasculer?: () => void;
+  /** Un autre geste que la sélection, pour une fiche ouverte hors de la
+   *  composition d'une séance (le mouvement du jour : « L'essayer »). */
+  action?: React.ReactNode;
   onClose: () => void;
 }) {
   const { guide } = useGuideActif();
@@ -153,7 +157,7 @@ export default function ExerciseDetailSheet({
             borderTop: "1px solid rgba(var(--tint-violet-rgb),0.8)",
             paddingBottom: "calc(1rem + env(safe-area-inset-bottom))",
           }}>
-          {dejaDansLaSeance ? (
+          {action ? action : dejaDansLaSeance ? (
             <div className="w-full py-3.5 rounded-2xl text-[16px] font-semibold flex items-center justify-center gap-2"
               style={{ background: "rgba(43,212,160,0.1)", color: "var(--teal-encre)", border: "1px solid rgba(43,212,160,0.25)" }}>
               <Check size={15} strokeWidth={2.4} /> Déjà dans ta séance

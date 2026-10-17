@@ -27,6 +27,7 @@ import {
   type MomentAccueil,
 } from "@/lib/momentAccueil";
 import { observeParisDay, parisDateStr } from "@/lib/dates";
+import { noterMomentDuJour } from "@/lib/motDuJour";
 import { marquerPresence } from "@/lib/presence";
 import { aiFetch } from "@/lib/aiFetch";
 import { bornesHier, journeeVide, lireRecap, noterRecap, type FaitsRecap, type Recap } from "@/lib/recapJour";
@@ -174,6 +175,8 @@ function Dashboard() {
       if (!moment) return;
       setMotGuide(moment);
       noterDejaVu(user.id, parisDay, moment);
+      // Il ouvre le mot du jour, qu'on peut lire plus tard dans la journée.
+      noterMomentDuJour(user.id, parisDay, moment);
     })();
     return () => { vivant = false; };
   }, [user, aura, auraLoaded, etatGuide, parisDay]);
@@ -325,6 +328,7 @@ function Dashboard() {
           heros={<SeanceInterrompueAccueil><HeroJournee /></SeanceInterrompueAccueil>}
           onNavigate={(path) => router.push(path)}
           onOpenRangs={() => setShowRangs(true)}
+          onAuraChange={() => setStatsTick((t) => t + 1)}
         />
         )}
 

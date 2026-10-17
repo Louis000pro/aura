@@ -1115,7 +1115,9 @@ verdict(
     gratuiteJour.titre,
   );
 
-  /* ── La feuille porte le catalogue entier : 4 + 4 + 3. ── */
+  /* ── La feuille porte le catalogue entier : 4 + 4 + 3. Le mouvement du
+        jour a été une cinquième mission le 2026-10-17, puis Louis l'a retiré
+        des quêtes le soir même : sa carte garde ses 5 EXP, à part. ── */
   verdict(
     "V7B · la feuille = 4 du jour + 4 Premium + 3 de la semaine",
     MISSIONS_JOUR.length === 4 && MISSIONS_PREMIUM.length === 4 && MISSIONS_SEMAINE.length === 3,

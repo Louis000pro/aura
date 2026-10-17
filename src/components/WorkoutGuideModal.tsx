@@ -14,6 +14,7 @@ import { voix, type CleVoix } from "@/lib/guides";
 import { useGuideActif } from "@/context/GuideContext";
 import ExerciseGuide from "@/components/ExerciseGuide";
 import ExerciseThumb from "@/components/seance/ExerciseThumb";
+import FlammeSerie from "@/components/serie/FlammeSerie";
 import { createClient } from "@/lib/supabase";
 import { lockBodyModal } from "@/lib/bodyModal";
 import {
@@ -2413,8 +2414,14 @@ export default function WorkoutGuideModal({
                   <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }}
                     className="flex items-center justify-between w-full mt-3 py-2.5 text-[13px] font-bold"
                     style={{ borderTop: `1px solid ${TUN.line}` }}>
-                    <span style={{ color: "#F5B120" }}>
-                      {serieDuJour !== null ? `🔥 ${serieDuJour} jour${serieDuJour > 1 ? "s" : ""} · Journée validée` : ""}
+                    <span className="flex items-center gap-1.5" style={{ color: "#F5B120" }}>
+                      {/* La même flamme que l'accueil, au palier de la série. */}
+                      {serieDuJour !== null && (
+                        <>
+                          <FlammeSerie jours={serieDuJour} taille={14} />
+                          {`${serieDuJour} jour${serieDuJour > 1 ? "s" : ""} · Journée validée`}
+                        </>
+                      )}
                     </span>
                     {rangFin && (
                       <span className="flex items-center gap-1.5" style={{ color: "#C3AEFF" }}>

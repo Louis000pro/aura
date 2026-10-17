@@ -12,6 +12,7 @@ import { useAuth } from "@/context/AuthContext";
 import FollowListModal from "@/components/FollowListModal";
 import GemmeRang from "@/components/GemmeRang";
 import { AvatarRang, PseudoRang, TitreRang } from "@/components/rang/IdentiteRang";
+import FlammeSerie from "@/components/serie/FlammeSerie";
 import { calculerAura, cosmetiquesDuRang, etatDepuisExp, progressionRang, RANGS, type EtatAura } from "@/lib/aura";
 import { chargerRang } from "@/lib/rangsPublics";
 import { chargerProfilPublic, type ProfilPublic } from "@/lib/profilPublic";
@@ -565,9 +566,9 @@ export default function PublicProfilePage() {
               { label: "Séances", value: String(pub.seances), tab: null, encre: "var(--text-1)" },
               /* La série se dit en orange partout : c'est le rôle ÉNERGIE du
                  système D, et c'est ce qui la sépare du teal de la réussite. */
-              { label: "Série", value: `🔥 ${Math.max(1, pub.serie)}`, tab: null, encre: "var(--feu-encre)" },
+              { label: "Série", value: String(Math.max(1, pub.serie)), tab: null, encre: "var(--feu-encre)", serie: Math.max(1, pub.serie) },
             ] : []),
-          ] as { label: string; value: string; tab: "Abonnés" | "Abonnements" | null; encre: string }[]).map(({ label, value, tab, encre }, i) => (
+          ] as { label: string; value: string; tab: "Abonnés" | "Abonnements" | null; encre: string; serie?: number }[]).map(({ label, value, tab, encre, serie }, i) => (
             <div key={label} className="flex items-center flex-1">
               {i > 0 && (
                 <div
@@ -581,7 +582,9 @@ export default function PublicProfilePage() {
                 whileHover={tab ? { backgroundColor: "rgba(var(--accent-rgb),0.07)" } : undefined}
                 className={`flex-1 flex flex-col items-center py-1 rounded-xl ${tab ? "cursor-pointer" : ""}`}
               >
-                <span className="text-[20px] font-black leading-none" style={{ color: encre, letterSpacing: "-0.03em" }}>
+                <span className="inline-flex items-center gap-1 text-[20px] font-black leading-none" style={{ color: encre, letterSpacing: "-0.03em" }}>
+                  {/* La même flamme que sur son accueil, au palier de sa série. */}
+                  {serie !== undefined && <FlammeSerie jours={serie} taille={14} />}
                   {value}
                 </span>
                 <span

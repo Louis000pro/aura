@@ -1,0 +1,175 @@
+/* ─────────────────────────────────────────────────────────────────────
+   LA TRAÎNÉE QUI CHAUFFE (Louis, 2026-10-17, page « La traînée » du
+   canevas « Les rangs et le profil »).
+
+   UNE GAMME DE CINQ FEUX, réglée sur l'INTENSITÉ et pas seulement sur la
+   teinte : le début est doux (un corail), la couleur s'avive à la Flamme,
+   puis elle BRILLE (un halo au Feu, plus large au Brasier, un petit soleil
+   au Feu sacré). Premier essai en maquette : des ronds rouge foncé pour la
+   Lueur, et le début pesait plus lourd que l'or de la fin, l'inverse de ce
+   que voulait Louis (« au début c'est moins ouf qu'à la toute fin, mais ça
+   ne veut pas dire que le début ne doit pas être beau »).
+
+   ⚠️ LE CHIFFRE EST BRUN SUR TOUS LES RONDS, à 4,5 pour 1 au moins sur les
+   deux bouts de chaque dégradé : `check:trainee` le mesure. Le blanc sur
+   l'orange clair d'avant faisait moins de 3 pour 1.
+   ⚠️ LA GRAISSE DU CHIFFRE SE POSE EN LIGNE dans le composant : le rond
+   porte `.vy-nombre`, qui la ramènerait à 600.
+   ⚠️ LE RUBAN SE LIT DANS LES VARIABLES `--ruban-<palier>`, posées ici :
+   `CalendrierSerie` ne connaît que le nom du palier, jamais une couleur.
+   ───────────────────────────────────────────────────────────────────── */
+
+.grille {
+  --ruban-lueur: rgba(255, 140, 100, 0.18);
+  --ruban-flamme: rgba(255, 140, 45, 0.2);
+  --ruban-feu: rgba(255, 175, 30, 0.24);
+  --ruban-brasier: rgba(250, 195, 30, 0.3);
+  --ruban-sacre: rgba(255, 214, 60, 0.38);
+  --chemin: rgba(226, 120, 30, 0.38);
+  display: grid;
+  margin-top: 8px;
+  grid-template-columns: repeat(7, 1fr);
+  row-gap: 6px;
+  text-align: center;
+}
+
+/* En sombre, le ruban est une lumière posée sur la feuille : plus dense, il
+   tournerait au brun. */
+:global([data-theme="dark"]) .grille {
+  --ruban-lueur: rgba(255, 140, 100, 0.17);
+  --ruban-flamme: rgba(255, 140, 45, 0.19);
+  --ruban-feu: rgba(255, 175, 30, 0.21);
+  --ruban-brasier: rgba(250, 200, 40, 0.24);
+  --ruban-sacre: rgba(255, 222, 100, 0.3);
+  --chemin: rgba(255, 190, 110, 0.42);
+}
+
+.semaine {
+  color: var(--text-3);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.jour {
+  position: relative;
+  display: flex;
+  height: 40px;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Le ruban et le chemin vivent derrière le rond, à sa hauteur. Leur
+   largeur (du centre ou du bord de la case) est posée par le composant. */
+.ruban,
+.chemin {
+  position: absolute;
+  top: 4px;
+  height: 32px;
+  pointer-events: none;
+}
+
+/* Le chemin jusqu'à la prochaine flamme passe AUTOUR des chiffres, jamais
+   à travers (premier essai : une ligne pointillée qui barrait le 18 et le 19). */
+.chemin {
+  box-sizing: border-box;
+  border-top: 1.2px dashed var(--chemin);
+  border-bottom: 1.2px dashed var(--chemin);
+}
+
+.rond {
+  position: relative;
+  display: flex;
+  width: 32px;
+  height: 32px;
+  box-sizing: border-box;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  color: var(--text-2);
+  font-size: 13px;
+}
+
+.rond[data-futur] {
+  color: var(--text-3);
+  opacity: 0.45;
+}
+
+/* ── La gamme : une flamme, un rond ── */
+.rond[data-feu="lueur"] {
+  --rond: linear-gradient(160deg, #ffc4a6 0%, #ff9566 100%);
+  --encre: #7a240a;
+  --halo: none;
+  --profond: #f07446;
+  --lueur: rgba(255, 130, 90, 0.55);
+}
+
+.rond[data-feu="flamme"] {
+  --rond: linear-gradient(160deg, #ffb65e 0%, #ff8326 100%);
+  --encre: #4a1c04;
+  --halo: none;
+  --profond: #f26a0c;
+  --lueur: rgba(255, 130, 40, 0.6);
+}
+
+.rond[data-feu="feu"] {
+  --rond: linear-gradient(160deg, #ffd25c 0%, #ffa01a 100%);
+  --encre: #3a1a05;
+  --halo: 0 2px 8px rgba(255, 150, 20, 0.4);
+  --profond: #f08a00;
+  --lueur: rgba(255, 160, 30, 0.65);
+}
+
+.rond[data-feu="brasier"] {
+  --rond: linear-gradient(160deg, #ffeb8e 0%, #f9b800 100%);
+  --encre: #2a1a05;
+  --halo: 0 0 0 1px rgba(240, 170, 0, 0.35), 0 0 12px 1px rgba(255, 190, 30, 0.55);
+  --profond: #e0a000;
+  --lueur: rgba(255, 190, 30, 0.7);
+}
+
+.rond[data-feu="sacre"] {
+  --rond: radial-gradient(circle at 50% 38%, #ffffff 0%, #fff4b8 42%, #ffd23a 100%);
+  --encre: #2a1a05;
+  --halo: 0 0 0 1.5px #eab800, 0 0 16px 3px rgba(255, 200, 40, 0.75);
+  --profond: #e0a800;
+  --lueur: rgba(255, 206, 60, 0.85);
+}
+
+.rond[data-actif] {
+  background: var(--rond);
+  box-shadow: var(--halo);
+  color: var(--encre);
+}
+
+/* Aujourd'hui pas encore compté : un simple cercle, comme avant. */
+.rond[data-aujourdhui] {
+  box-shadow: 0 0 0 2px var(--feu-encre);
+}
+
+/* Aujourd'hui compté : la tête de la traînée, qui brûle. */
+.rond[data-actif][data-aujourdhui] {
+  box-shadow:
+    0 0 0 2px var(--verre-fond-epais),
+    0 0 0 4px var(--profond),
+    0 0 16px 4px var(--lueur);
+}
+
+/* Le jour où la flamme suivante naîtrait, si la série continue. */
+.rond[data-prochaine] {
+  border: 1.5px dashed var(--profond);
+  background: var(--verre-fond-epais);
+  color: var(--text-2);
+}
+
+/* La petite flamme d'un jour où une flamme est née, ou de la prochaine.
+   Le contour couleur de feuille la détache du rond qu'elle chevauche. */
+.badge {
+  position: absolute;
+  top: -9px;
+  right: -7px;
+  display: block;
+  filter:
+    drop-shadow(0 0 1.2px var(--verre-fond-epais))
+    drop-shadow(0 0 1.2px var(--verre-fond-epais))
+    drop-shadow(0 0 0.6px var(--verre-fond-epais));
+}

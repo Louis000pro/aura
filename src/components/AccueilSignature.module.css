@@ -49,6 +49,42 @@
   min-width: 0;
 }
 
+/* Le mot du jour qui attend (Louis, 2026-10-17) : une pastille sur le
+   visage du Guide, comme un message pas encore lu. */
+.visage {
+  position: relative;
+  display: block;
+  flex: none;
+}
+
+.pastille {
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  display: flex;
+  width: 18px;
+  height: 18px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #8b5cf6, #c13bc1);
+  box-shadow: 0 0 0 2px var(--html-bg, #fff);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.motNonLu {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-top: 2px;
+  color: var(--exp-encre);
+  font-size: 13px;
+  font-weight: 700;
+}
+
 .salut {
   display: block;
   color: var(--text-2);
@@ -72,17 +108,8 @@
   -webkit-text-fill-color: transparent;
 }
 
-/* La phrase du Guide, quand il en a une. Elle est rare par construction :
-   `momentAccueil.ts` ne la laisse sortir qu'une fois par jour parisien et
-   seulement sur l'un de ses six moments. V7B n'en ajoute aucun. */
-.mot {
-  display: block;
-  margin-top: 2px;
-  color: var(--text-soft);
-  font-size: 13px;
-  line-height: 1.45;
-  text-wrap: pretty;
-}
+/* La phrase du Guide pour l'accueil n'est plus écrite sous le bonjour :
+   depuis le 2026-10-17 elle ouvre le mot du jour (`FeuilleMotDuJour`). */
 
 /* ── ④ LA BANDE DU RELAIS ─────────────────────────────────────────────
    Après « Ma journée », JAMAIS avant : le relais est un extra, pas le

@@ -1,0 +1,350 @@
+/* ─────────────────────────────────────────────────────────────────────
+   LA CARTE DU MOUVEMENT DU JOUR : deux faces sur la même tuile.
+
+   La face fermée est le NÉGATIF de la face ouverte : la silhouette est à
+   la place exacte du personnage, « Touche pour le découvrir » à la place
+   de son nom, la pastille « +5 EXP » à la place du sceau gagné. Quand la
+   carte se retourne, rien ne change de place : tout prend vie.
+
+   ⚠️ LES DEUX FACES ONT LA MÊME HAUTEUR (`.scene`). C'est ce qui permet à
+   la carte de tourner sans que la feuille saute ; ce qui grandit après,
+   la consigne et les boutons, se déplie en dessous.
+   ⚠️ On n'anime que `transform` et `opacity` (le reflet, la lueur, la
+   silhouette), jamais un flou.
+   ───────────────────────────────────────────────────────────────────── */
+
+.scene {
+  position: relative;
+  height: 236px;
+  perspective: 900px;
+}
+
+.face {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  overflow: hidden;
+  padding: 0 18px 16px;
+  border-radius: 22px;
+  text-align: center;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+/* ── La face fermée ──────────────────────────────────────────────────── */
+
+.fermee {
+  cursor: pointer;
+  color: #fff;
+  background:
+    radial-gradient(70% 60% at 50% 38%, rgba(193, 59, 193, 0.35), transparent 70%),
+    linear-gradient(160deg, #241443, #3a1d63);
+  box-shadow: 0 14px 30px -14px rgba(60, 20, 110, 0.6);
+}
+
+/* Un reflet passe sur la carte de temps en temps : quelque chose attend
+   dessous. Au toucher, il repasse d'un coup, plus fort. */
+.fermee::after {
+  content: "";
+  position: absolute;
+  top: -30%;
+  bottom: -30%;
+  left: 0;
+  width: 38%;
+  background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.13), transparent);
+  transform: translateX(-180%) skewX(-14deg);
+  animation: reflet 4.6s ease-in-out 1.4s infinite;
+  pointer-events: none;
+}
+
+.fermee[data-eveil]::after {
+  background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.34), transparent);
+  animation: balayage 0.36s ease-in forwards;
+}
+
+@keyframes reflet {
+  0%,
+  64% {
+    transform: translateX(-180%) skewX(-14deg);
+  }
+  100% {
+    transform: translateX(380%) skewX(-14deg);
+  }
+}
+
+@keyframes balayage {
+  from {
+    transform: translateX(-180%) skewX(-14deg);
+  }
+  to {
+    transform: translateX(380%) skewX(-14deg);
+  }
+}
+
+/* La lumière qui monte derrière la silhouette au toucher. */
+.lueur {
+  position: absolute;
+  top: 2px;
+  left: 50%;
+  width: 200px;
+  height: 160px;
+  margin-left: -100px;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(226, 140, 255, 0.78), rgba(139, 92, 246, 0.32) 60%, transparent);
+  opacity: 0;
+  transform: scale(0.7);
+  transition: opacity 0.3s ease-out, transform 0.36s ease-out;
+  pointer-events: none;
+}
+
+.fermee[data-eveil] .lueur {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* `margin-left` et pas `translateX` : la transformation reste libre pour
+   le gonflement de l'éveil. */
+.silhouette {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  width: 132px;
+  height: 132px;
+  margin-left: -66px;
+  filter: brightness(0) invert(1);
+  opacity: 0.16;
+  transition: opacity 0.3s ease-out, transform 0.36s cubic-bezier(0.3, 1.5, 0.6, 1);
+  pointer-events: none;
+}
+
+.fermee[data-eveil] .silhouette {
+  opacity: 0.95;
+  transform: scale(1.06);
+}
+
+.pastille {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  padding: 4px 9px;
+  border: 1.5px solid rgba(255, 255, 255, 0.5);
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+}
+
+.pastille b,
+.sceau b {
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.titreFerme {
+  position: relative;
+  font-size: 20px;
+  font-weight: 800;
+  font-variation-settings: var(--w-voix);
+  line-height: 1.15;
+}
+
+.sousFerme {
+  position: relative;
+  margin-top: 4px;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 13px;
+}
+
+.pastille,
+.titreFerme,
+.sousFerme {
+  transition: opacity 0.2s ease-out, transform 0.2s ease-out;
+}
+
+.fermee[data-eveil] .pastille,
+.fermee[data-eveil] .titreFerme,
+.fermee[data-eveil] .sousFerme {
+  opacity: 0;
+  transform: translateY(5px);
+}
+
+/* ── La face ouverte ─────────────────────────────────────────────────── */
+
+.ouverte {
+  background:
+    radial-gradient(62% 52% at 50% 34%, rgba(167, 139, 250, 0.26), transparent 72%),
+    var(--verre-carte);
+  border: 1px solid var(--verre-carte-bord);
+  box-shadow: var(--verre-carte-ombre);
+}
+
+.personnage {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  width: 136px;
+  height: 136px;
+  margin-left: -68px;
+}
+
+.nom {
+  position: relative;
+  display: -webkit-box;
+  max-width: 100%;
+  overflow: hidden;
+  color: var(--text-0);
+  font-size: 20px;
+  font-weight: 800;
+  font-variation-settings: var(--w-voix);
+  line-height: 1.12;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.muscles {
+  position: relative;
+  max-width: 100%;
+  margin-top: 5px;
+  overflow: hidden;
+  color: var(--exp-encre);
+  font-size: 13px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Le sceau gagné : la pastille fermée, remplie. Le même dessin que le sceau
+   d'une mission validée (`LigneMission`), pour que les deux se lisent comme
+   une seule chose. */
+.sceau {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 9px;
+  border-radius: 999px;
+  color: #fff;
+  background: linear-gradient(135deg, #8b5cf6, #c13bc1);
+  box-shadow: 0 6px 14px -8px rgba(139, 92, 246, 0.9);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+}
+
+/* « +5 EXP » qui s'élève au-dessus du personnage, une fois, au moment où le
+   sceau se pose. Il reste DANS la carte : parti du sceau, il se faisait
+   couper par le bord du haut. Le halo de la couleur de la surface le garde
+   lisible par-dessus le personnage, dans les deux thèmes. */
+.envol {
+  position: absolute;
+  top: 66px;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 5px;
+  color: var(--exp-encre);
+  font-weight: 800;
+  text-shadow: 0 0 10px rgb(var(--surface-rgb)), 0 0 3px rgb(var(--surface-rgb));
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.envol b {
+  font-size: 26px;
+  font-weight: 800;
+}
+
+.envol small {
+  font-size: 13px;
+  letter-spacing: 0.06em;
+}
+
+/* ── L'éclosion : centrée sur le personnage, sous ses pieds. ─────────── */
+
+.eclosion {
+  position: absolute;
+  top: 80px;
+  left: 50%;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.halo,
+.onde,
+.eclat {
+  position: absolute;
+  left: 0;
+  top: 0;
+}
+
+.halo {
+  width: 190px;
+  height: 190px;
+  margin: -95px 0 0 -95px;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(193, 59, 193, 0.34), rgba(139, 92, 246, 0.16) 62%, transparent);
+}
+
+.onde {
+  width: 120px;
+  height: 120px;
+  margin: -60px 0 0 -60px;
+  border: 1.5px solid rgba(139, 92, 246, 0.5);
+  border-radius: 50%;
+}
+
+.eclat {
+  display: block;
+}
+
+.point {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+}
+
+/* ── Ce qui se déplie sous la carte ──────────────────────────────────── */
+
+.suite {
+  overflow: hidden;
+}
+
+.suiteCorps {
+  padding: 12px 2px 2px;
+}
+
+.consigne {
+  color: var(--text-2);
+  font-size: 13px;
+  line-height: 1.45;
+  text-align: center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fermee::after {
+    display: none;
+    animation: none;
+  }
+
+  .lueur,
+  .silhouette,
+  .pastille,
+  .titreFerme,
+  .sousFerme {
+    transition: none;
+  }
+}

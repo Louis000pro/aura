@@ -10,6 +10,7 @@
 }
 
 .bento {
+  position: relative;
   display: grid;
   grid-template-columns: 1fr 1fr;
   grid-template-rows: auto auto;
@@ -90,49 +91,94 @@
   background: linear-gradient(90deg, var(--violet, #8b5cf6), #c13bc1);
 }
 
-/* La série, plus petite, garde son orange (l'énergie, système D). */
+/* LA SÉRIE CHANGE D'HABIT À CHAQUE FLAMME (Louis, 2026-10-17, page « La
+   série » du canevas). Lueur : une braise. Flamme : la pêche. Feu :
+   l'orange. Brasier : l'or. Feu sacré : l'or lumineux, avec une aura.
+   ⚠️ L'or n'arrive qu'à 30 jours : avant, la tuile passait au jaune franc
+   dès deux jours d'affilée, et il ne restait plus rien à gagner ensuite.
+   ⚠️ LA LUEUR N'EST PLUS LE VERRE NU (Louis, même jour, page « La
+   traînée » : « au début c'est moins ouf qu'à la toute fin, mais ça ne
+   veut pas dire que le début ne doit pas être beau »). La flamme y allume
+   une braise autour d'elle : les fonds partent de son centre (25 px, 28 px).
+   ⚠️ ENTRE DEUX FLAMMES, L'HABIT NE BOUGE PAS. Une couleur qui changerait
+   d'un trentième par jour ne se verrait pas : chaque flamme est un moment
+   qu'on remarque. Ce qui avance chaque jour, c'est la traînée et les traits.
+   Le palier se décide dans `lib/flammesSerie.ts`, jamais ici. */
 .serie {
+  /* Les couleurs des sept traits, redéfinies par chaque habit : la montée
+     les fait passer de l'une à l'autre (`traitNeuf`). */
+  --trait: rgba(232, 98, 12, 0.16);
+  --trait-on: var(--feu-encre);
   justify-content: space-between;
   gap: 8px;
+}
+
+.serie[data-palier="lueur"] {
+  --trait: rgba(240, 110, 70, 0.16);
+  --trait-on: #ee6a3a;
+  border-color: rgba(255, 172, 135, 0.85);
   background:
-    linear-gradient(160deg, rgba(255, 211, 78, 0.32), rgba(255, 122, 26, 0.14)),
+    radial-gradient(circle at 25px 28px, rgba(255, 120, 70, 0.42) 0%, rgba(255, 120, 70, 0.17) 26px, rgba(255, 120, 70, 0) 64px),
     var(--verre-carte);
+  box-shadow: var(--verre-carte-ombre), 0 10px 22px -12px rgba(255, 110, 60, 0.45);
 }
 
-/* Deux jours d'affilée ou plus : la tuile passe au jaune-orangé franc. */
-.serie[data-chaude] {
-  border-color: rgba(214, 178, 40, 0.45);
-  /* Opaque exprès : le texte y est toujours sombre, en clair comme en sombre. */
-  /* Or doux (Louis, 2026-10-17) : la série ne doit pas taper plus fort que
-     la séance du jour. Un doré pâle, sans reflet ni halo. */
-  background: linear-gradient(160deg, #fff7d6 0%, #f8e8a8 55%, #efd685 100%);
-  box-shadow: 0 4px 12px rgba(180, 140, 0, 0.14);
+.serie[data-palier="flamme"] {
+  border-color: rgba(255, 190, 140, 0.95);
+  background:
+    radial-gradient(70% 95% at 16% 36%, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0) 62%),
+    linear-gradient(160deg, rgba(255, 230, 204, 0.97) 0%, rgba(255, 204, 160, 0.92) 100%);
+  box-shadow: 0 6px 16px rgba(245, 122, 26, 0.18);
+}
+
+.serie[data-palier="lueur"] small,
+.serie[data-palier="flamme"] small {
+  color: #94603f;
+}
+
+/* Feu, Brasier et Feu sacré sont opaques et chauds : le texte y est
+   toujours foncé. Brasier et Feu sacré le restent en mode sombre. */
+.serie[data-palier="feu"] {
+  border-color: #ff9c45;
+  background:
+    radial-gradient(80% 100% at 14% 30%, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0) 60%),
+    linear-gradient(160deg, #ffd29a 0%, #ffa857 100%);
+  box-shadow: 0 6px 18px rgba(255, 120, 30, 0.3);
+  color: #3a1a05;
+}
+
+.serie[data-palier="brasier"] {
+  border-color: #efae1f;
+  background:
+    radial-gradient(90% 110% at 14% 30%, rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0) 60%),
+    linear-gradient(160deg, #ffe68e 0%, #ffc23a 100%);
+  box-shadow: 0 6px 20px rgba(240, 160, 20, 0.38);
   color: #2a1a05;
 }
 
-.serie[data-chaude] small,
-.serie[data-chaude] strong,
-.serie[data-chaude] b {
+.serie[data-palier="sacre"] {
+  border-color: #e6c200;
+  background:
+    radial-gradient(120% 90% at 20% 0%, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0) 55%),
+    linear-gradient(160deg, #fff8c6 0%, #ffe347 50%, #f2c800 100%);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.6),
+    0 0 0 4px rgba(255, 214, 90, 0.32),
+    0 8px 26px rgba(230, 180, 0, 0.5);
   color: #2a1a05;
 }
 
-.serie[data-chaude] .jours i {
-  background: rgba(255, 255, 255, 0.7);
-}
-
-.serie[data-chaude] .jours i[data-on] {
-  background: #c09a2a;
+.serie[data-palier="feu"] small,
+.serie[data-palier="brasier"] small,
+.serie[data-palier="sacre"] small {
+  color: inherit;
+  opacity: 0.74;
 }
 
 .serieTete {
   display: flex;
   align-items: center;
   gap: 6px;
-}
-
-.flamme {
-  font-size: 26px;
-  line-height: 1;
 }
 
 .serieNombre {
@@ -142,8 +188,24 @@
   color: var(--text-0);
 }
 
-.serie[data-chaude] .serieNombre {
-  color: #2a1a05;
+.serie[data-palier="feu"] .serieNombre,
+.serie[data-palier="brasier"] .serieNombre,
+.serie[data-palier="sacre"] .serieNombre {
+  color: inherit;
+}
+
+/* Le jour où une flamme arrive, son nom remplace « d'affilée ». */
+.serie small.nouvelle {
+  color: var(--feu-encre);
+  font-weight: 800;
+  opacity: 1;
+  white-space: nowrap;
+}
+
+.serie[data-palier="feu"] small.nouvelle,
+.serie[data-palier="brasier"] small.nouvelle,
+.serie[data-palier="sacre"] small.nouvelle {
+  color: inherit;
 }
 
 .jours {
@@ -155,11 +217,177 @@
   flex: 1;
   height: 6px;
   border-radius: 3px;
-  background: rgba(232, 98, 12, 0.2);
+  background: var(--trait);
 }
 
 .jours i[data-on] {
-  background: var(--feu-encre);
+  background: var(--trait-on);
+}
+
+.serie[data-palier="feu"] {
+  --trait: rgba(255, 255, 255, 0.55);
+  --trait-on: #c9400a;
+}
+
+.serie[data-palier="brasier"] {
+  --trait: rgba(255, 255, 255, 0.6);
+  --trait-on: #a86200;
+}
+
+.serie[data-palier="sacre"] {
+  --trait: rgba(255, 255, 255, 0.65);
+  --trait-on: #9a7a00;
+}
+
+/* ── LA FLAMME MONTE (Louis, 2026-10-17, page « Revenir chaque jour ») ──
+   Une fois, à l'ouverture où la série a grandi : la flamme prend son
+   souffle, le chiffre roule, un trait s'allume, puis l'EXP part vers le
+   rang. Les temps vivent dans `MaJournee.tsx` (`T`) ; ici, les formes. */
+.flammeBoite {
+  position: relative;
+  display: block;
+  flex: none;
+  width: 26px;
+  height: 31px;
+}
+
+.flammeVivante {
+  display: block;
+  transform-origin: 50% 100%;
+}
+
+.etincelle {
+  position: absolute;
+  left: 11px;
+  top: 2px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #ffd860;
+  pointer-events: none;
+}
+
+.onde {
+  position: absolute;
+  left: 50%;
+  top: 55%;
+  width: 30px;
+  height: 30px;
+  margin: -15px 0 0 -15px;
+  border: 2px solid #ffc23a;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.rouleauBoite {
+  display: inline-block;
+  height: 26px;
+  overflow: hidden;
+}
+
+.rouleau {
+  display: flex;
+  flex-direction: column;
+}
+
+.rouleauBoite .serieNombre {
+  display: block;
+  height: 26px;
+  line-height: 26px;
+}
+
+.rouleauExp {
+  display: inline-block;
+  height: 1.3em;
+  overflow: hidden;
+  vertical-align: bottom;
+}
+
+.rouleauExp b {
+  display: block;
+  line-height: 1.3em;
+}
+
+.jours i[data-neuf] {
+  animation: traitNeuf 0.35s ease-out 0.55s both;
+}
+
+@keyframes traitNeuf {
+  from { background: var(--trait); }
+  to { background: var(--trait-on); }
+}
+
+/* Le jour d'une nouvelle flamme, la tuile change d'habit dans un éclat. */
+.serie[data-eclat] {
+  animation: eclat 0.6s ease-out;
+}
+
+@keyframes eclat {
+  0% { transform: scale(1); }
+  40% {
+    transform: scale(1.045);
+    box-shadow: 0 0 0 6px rgba(255, 214, 90, 0.35), 0 8px 26px rgba(230, 180, 0, 0.5);
+  }
+  100% { transform: scale(1); }
+}
+
+.jeton {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 3;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #8b5cf6, #c13bc1);
+  box-shadow: 0 6px 14px rgba(139, 92, 246, 0.45);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+/* En mode sombre, la Lueur, la Flamme et le Feu sont une LUMIÈRE qui part
+   de la flamme et grandit d'un habit à l'autre : deux aplats clairs y
+   éblouiraient, et une teinte posée à plat sur le verre tournait au brun.
+   Brasier et Feu sacré restent opaques, texte foncé. */
+:global([data-theme="dark"]) .serie[data-palier="lueur"] {
+  --trait: rgba(255, 255, 255, 0.12);
+  --trait-on: #ff8a5c;
+  border-color: rgba(255, 140, 100, 0.32);
+  background:
+    radial-gradient(circle at 25px 28px, rgba(255, 110, 60, 0.46) 0%, rgba(255, 110, 60, 0.18) 28px, rgba(255, 110, 60, 0) 70px),
+    var(--verre-carte);
+  box-shadow: var(--verre-carte-ombre);
+}
+
+:global([data-theme="dark"]) .serie[data-palier="lueur"] small {
+  color: var(--text-3);
+}
+
+:global([data-theme="dark"]) .serie[data-palier="flamme"] {
+  --trait: rgba(255, 255, 255, 0.12);
+  --trait-on: #ffa24a;
+  border-color: rgba(255, 170, 110, 0.42);
+  background:
+    radial-gradient(circle at 25px 28px, rgba(255, 140, 50, 0.6) 0%, rgba(255, 140, 50, 0.26) 40px, rgba(255, 140, 50, 0.1) 120px),
+    var(--verre-carte);
+  box-shadow: var(--verre-carte-ombre);
+}
+
+:global([data-theme="dark"]) .serie[data-palier="flamme"] small {
+  color: var(--text-2);
+}
+
+:global([data-theme="dark"]) .serie[data-palier="feu"] {
+  --trait: rgba(255, 255, 255, 0.14);
+  --trait-on: #ffc04a;
+  border-color: rgba(255, 175, 80, 0.62);
+  background:
+    radial-gradient(circle at 25px 28px, rgba(255, 175, 60, 0.72) 0%, rgba(255, 150, 50, 0.38) 52px, rgba(255, 130, 40, 0.2) 150px),
+    var(--verre-carte);
+  box-shadow: var(--verre-carte-ombre), 0 8px 22px -10px rgba(255, 140, 30, 0.45);
+  color: var(--text-0);
 }
 
 .ligne {
