@@ -339,6 +339,9 @@ export default function AssistantSheet() {
   useEffect(() => {
     const el = scrollRef.current;
     if (!el) return;
+    /* Sans message, l'écran d'accueil commence par la tête du Guide :
+       descendre en bas la couperait (la mention IA l'a rallongé). */
+    if (messages.length === 0) { el.scrollTo({ top: 0 }); return; }
     el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
     // La carte s'anime et grandit après le 1er rendu : on re-scroll une fois sa
     // hauteur stabilisée pour que son bouton de validation reste atteignable.
