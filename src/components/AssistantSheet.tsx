@@ -20,7 +20,7 @@ import CarteSeance from "@/components/assistant/CarteSeance";
 import { useWorkoutLaunch } from "@/context/WorkoutLaunchContext";
 import { useVoiceCapture } from "@/hooks/useVoiceCapture";
 import { CATEGORY_LABEL } from "@/lib/assistantActions";
-import { PLANS, SORTIE_PREMIUM, VENTE_OUVERTE } from "@/lib/plans";
+import { VENTE_OUVERTE } from "@/lib/plans";
 import { useRouter } from "next/navigation";
 import { heroImageForSeance } from "@/lib/workoutArt";
 import { BusteGuide, ReflexionGuide, VisageGuide, prechargerGuide } from "@/components/AssistantMark";
@@ -227,25 +227,20 @@ function CarteProposition() {
       titre={s.title}
       meta={[CATEGORY_LABEL[s.category], `${s.duration} min`, s.difficulty].join(" · ")}
       exercices={s.exerciseList.map((ex) => ({ name: ex.name, dose: `${ex.sets} × ${ex.reps}`, muscles: ex.muscles }))}
-      /* Stock gratuit plein : la carte ne propose que ce qui reste possible.
-         Un bouton « Garder » qui refuserait au clic, ou un mur découvert après
-         l'effort, ce serait le contraire de la règle — le plafond se voit
-         AVANT. S'entraîner, lui, n'est jamais limité. */
-      options={bibliothequePleine ? [] : [
-        { id: "now", label: "La faire maintenant", onClick: faireMaintenant },
-        { id: "day", label: "Choisir un jour", actif: ouvert, onClick: ouvrirJours },
+      /* Deux sorties seulement (Louis, 2026-10-17) : la faire maintenant
+         (l'action, en violet), ou la programmer, qui ouvre les jours. Un
+         jour choisi, le bouton dit lequel. Plus de « Garder la séance » :
+         elle finissait dans une bibliothèque que personne ne voyait. */
+      options={[
+        { id: "day", label: "Programmer", actif: ouvert, onClick: ouvrirJours },
       ]}
       jours={ouvert ? jours : null}
       jourChoisi={jourChoisi}
       onJour={(d) => setJourChoisi((v) => (v === d ? null : d))}
-      cta={bibliothequePleine
-        ? "La faire maintenant"
-        : jourChoisi ? `Garder et programmer ${libelleJour(jours, jourChoisi)}` : "Garder la séance"}
-      onValider={bibliothequePleine ? faireMaintenant : () => confirmSeance(jourChoisi)}
+      cta={jourChoisi ? `Programmer ${libelleJour(jours, jourChoisi)}` : "La faire maintenant"}
+      onValider={jourChoisi ? () => confirmSeance(jourChoisi) : faireMaintenant}
       onFermer={cancelSeance}
-      hint={bibliothequePleine
-        ? `Tes ${PLANS.free.limits.sessionsMax} séances gardées sont prises. Libère une place dans Mes séances. ${SORTIE_PREMIUM}`
-        : jourChoisi ? "Elle rejoint aussi tes séances" : null}
+      hint={ouvert && !jourChoisi ? "Choisis le jour" : null}
     />
   );
 }

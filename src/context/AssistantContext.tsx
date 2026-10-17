@@ -32,7 +32,7 @@ import { assembleSeance, seanceToRow, normalizeCategory as normalizeWorkoutCateg
 import { normaliserChoix, type AssistantAction, type ChatEvent, type QuestionCliquable } from "@/lib/assistantTools";
 import { voix, voixAction, CHOIX_LIEU, CHOIX_EQUIP, CHOIX_PORTEE, type EtatGuide, type GuideRef, type TonGuide } from "@/lib/guides";
 import { useGuideActif } from "@/context/GuideContext";
-import { PLANS, SORTIE_PREMIUM } from "@/lib/plans";
+import { PLANS } from "@/lib/plans";
 import {
   /* ⚠️ `saveDay` A DISPARU DE CETTE LISTE EN V9C, ET C'EST LE POINT.
      `confirmSeance` était le dernier écrivain caché du contexte : il
@@ -2635,32 +2635,22 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
      (liée par `sessionId`, même plomberie que « poser une séance de la
      biblio »). Avant, il fallait créer, PUIS répondre à une deuxième carte qui
      demandait quand la faire — deux cartes pour une seule intention. ── */
+  /* ⭐ PROGRAMMER N'EST PLUS « GARDER » (Louis, 2026-10-17). La carte
+     proposait « Garder la séance », et la séance finissait dans une
+     bibliothèque que personne n'allait voir. Il n'y a plus que deux
+     sorties : la faire maintenant, ou la programmer sur un jour. Une
+     intention est auto-suffisante (titre + exercices), donc programmer
+     n'écrit RIEN dans `custom_sessions` et ne touche pas au plafond des
+     séances gardées : `sessionId` reste nul. */
   const confirmSeance = useCallback(async (jour?: string | null) => {
-    if (!user?.id || !pendingSeance) return;
+    if (!user?.id || !pendingSeance || !jour) return;
     const s = pendingSeance;
-    if (await verifierPlaces()) {
-      setMemoryNotice(`Tes ${PLANS.free.limits.sessionsMax} séances gardées sont prises. Libère une place. ${SORTIE_PREMIUM}`);
-      return;
-    }
-    const ok = await garderSeance(s);
-    if (!ok) { setMemoryNotice("Oups, impossible de garder la séance."); return; }
-    // La séance est gardée : c'est une action validée qui aboutit, le Guide
-    // le montre quelques secondes. Jamais sur l'échec, évidemment.
-    setReussite((n) => n + 1);
-
-    if (!jour) {
-      setPendingSeance(null);
-      setMemoryNotice(`« ${s.title} » est dans tes séances ✓`);
-      return;
-    }
 
     // Programmer la séance sur un jour, c'est le coach qui modifie le
     // planning : ça compte dans les modifications de la semaine (gratuit).
-    // La séance, elle, est déjà gardée, on ne fait pas croire l'inverse.
     const permis = await consommerModifPlanning();
     if (!permis.ok) {
       setPendingSeance(null);
-      setMemoryNotice("Gardée dans tes séances ✓");
       setMessages((prev) => [...prev, { role: "assistant" as const, content: permis.message, id: uid(), ton: "explain" as const }]);
       return;
     }
@@ -2687,21 +2677,19 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
         difficulty: normalizeDifficulty(s.difficulty),
         location: ctxFromLieu(saved.location, saved.equip),
         exerciseList: normalizeExercises(s.exerciseList),
-        sessionId: s.id,
+        sessionId: null,
         status: "planned",
       };
       await appliquerGeste(user.id, cible ? { type: "remplacer", jour: pose } : { type: "ajouter", jour: pose }, "guide");
       if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent("programme-updated", { detail: { date: jour } }));
       setPendingSeance(null);
-      setMemoryNotice(`Gardée et programmée · ${dayLabelLong(jour)} ✓${libelleQuota(permis.quota)}`);
+      setReussite((n) => n + 1);
+      setMemoryNotice(`Programmée · ${dayLabelLong(jour)} ✓${libelleQuota(permis.quota)}`);
       setTimeout(() => setIsOpen(false), 1100);
     } catch {
-      // La séance EST gardée : on ne fait pas croire l'inverse, on ne signale
-      // que ce qui a raté.
-      setPendingSeance(null);
-      setMemoryNotice("Gardée, mais impossible de la programmer.");
+      setMemoryNotice("Oups, impossible de la programmer. Réessaie.");
     }
-  }, [user?.id, pendingSeance, garderSeance, verifierPlaces]);
+  }, [user?.id, pendingSeance]);
 
   const cancelSeance = useCallback(() => setPendingSeance(null), []);
 
