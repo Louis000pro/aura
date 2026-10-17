@@ -90,50 +90,69 @@
   background: linear-gradient(90deg, var(--violet, #8b5cf6), #c13bc1);
 }
 
-/* La série, plus petite, garde son orange (l'énergie, système D). */
+/* LA SÉRIE CHANGE D'HABIT À CHAQUE FLAMME (Louis, 2026-10-17, page « La
+   série » du canevas). Lueur : le verre nu. Flamme : la pêche. Feu :
+   l'orange. Brasier : l'or. Feu sacré : l'or lumineux, avec une aura.
+   ⚠️ L'or n'arrive qu'à 30 jours : avant, la tuile passait au jaune franc
+   dès deux jours d'affilée, et il ne restait plus rien à gagner ensuite.
+   Le palier se décide dans `lib/flammesSerie.ts`, jamais ici. */
 .serie {
   justify-content: space-between;
   gap: 8px;
-  background:
-    linear-gradient(160deg, rgba(255, 211, 78, 0.32), rgba(255, 122, 26, 0.14)),
-    var(--verre-carte);
 }
 
-/* Deux jours d'affilée ou plus : la tuile passe au jaune-orangé franc. */
-.serie[data-chaude] {
+.serie[data-palier="flamme"] {
+  border-color: rgba(255, 190, 140, 0.95);
+  background: linear-gradient(160deg, rgba(255, 230, 204, 0.97) 0%, rgba(255, 204, 160, 0.9) 100%);
+}
+
+.serie[data-palier="flamme"] small {
+  color: #94603f;
+}
+
+/* Feu, Brasier et Feu sacré sont opaques et chauds : le texte y est
+   toujours foncé. Brasier et Feu sacré le restent en mode sombre. */
+.serie[data-palier="feu"] {
+  border-color: #ff9c45;
+  background:
+    radial-gradient(80% 100% at 14% 30%, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0) 60%),
+    linear-gradient(160deg, #ffd29a 0%, #ffa857 100%);
+  box-shadow: 0 6px 18px rgba(255, 120, 30, 0.3);
+  color: #3a1a05;
+}
+
+.serie[data-palier="brasier"] {
+  border-color: #efae1f;
+  background:
+    radial-gradient(90% 110% at 14% 30%, rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0) 60%),
+    linear-gradient(160deg, #ffe68e 0%, #ffc23a 100%);
+  box-shadow: 0 6px 20px rgba(240, 160, 20, 0.38);
+  color: #2a1a05;
+}
+
+.serie[data-palier="sacre"] {
   border-color: #e6c200;
-  /* Opaque exprès : le texte y est toujours sombre, en clair comme en sombre. */
-  /* Or franc : clair en haut, doré profond en bas, avec un reflet. */
   background:
-    radial-gradient(120% 80% at 20% 0%, rgba(255, 250, 220, 0.85), rgba(255, 250, 220, 0) 55%),
-    linear-gradient(160deg, #fff6a8 0%, #ffe347 45%, #f2c800 100%);
-  box-shadow: 0 6px 18px rgba(230, 195, 0, 0.35);
+    radial-gradient(120% 90% at 20% 0%, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0) 55%),
+    linear-gradient(160deg, #fff8c6 0%, #ffe347 50%, #f2c800 100%);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.6),
+    0 0 0 4px rgba(255, 214, 90, 0.32),
+    0 8px 26px rgba(230, 180, 0, 0.5);
   color: #2a1a05;
 }
 
-.serie[data-chaude] small,
-.serie[data-chaude] strong,
-.serie[data-chaude] b {
-  color: #2a1a05;
-}
-
-.serie[data-chaude] .jours i {
-  background: rgba(255, 255, 255, 0.6);
-}
-
-.serie[data-chaude] .jours i[data-on] {
-  background: #b89400;
+.serie[data-palier="feu"] small,
+.serie[data-palier="brasier"] small,
+.serie[data-palier="sacre"] small {
+  color: inherit;
+  opacity: 0.74;
 }
 
 .serieTete {
   display: flex;
   align-items: center;
   gap: 6px;
-}
-
-.flamme {
-  font-size: 26px;
-  line-height: 1;
 }
 
 .serieNombre {
@@ -143,8 +162,24 @@
   color: var(--text-0);
 }
 
-.serie[data-chaude] .serieNombre {
-  color: #2a1a05;
+.serie[data-palier="feu"] .serieNombre,
+.serie[data-palier="brasier"] .serieNombre,
+.serie[data-palier="sacre"] .serieNombre {
+  color: inherit;
+}
+
+/* Le jour où une flamme arrive, son nom remplace « d'affilée ». */
+.serie small.nouvelle {
+  color: var(--feu-encre);
+  font-weight: 800;
+  opacity: 1;
+  white-space: nowrap;
+}
+
+.serie[data-palier="feu"] small.nouvelle,
+.serie[data-palier="brasier"] small.nouvelle,
+.serie[data-palier="sacre"] small.nouvelle {
+  color: inherit;
 }
 
 .jours {
@@ -156,11 +191,66 @@
   flex: 1;
   height: 6px;
   border-radius: 3px;
-  background: rgba(232, 98, 12, 0.2);
+  background: rgba(232, 98, 12, 0.16);
 }
 
 .jours i[data-on] {
   background: var(--feu-encre);
+}
+
+.serie[data-palier="feu"] .jours i {
+  background: rgba(255, 255, 255, 0.55);
+}
+
+.serie[data-palier="feu"] .jours i[data-on] {
+  background: #c9400a;
+}
+
+.serie[data-palier="brasier"] .jours i {
+  background: rgba(255, 255, 255, 0.6);
+}
+
+.serie[data-palier="brasier"] .jours i[data-on] {
+  background: #a86200;
+}
+
+.serie[data-palier="sacre"] .jours i {
+  background: rgba(255, 255, 255, 0.65);
+}
+
+.serie[data-palier="sacre"] .jours i[data-on] {
+  background: #9a7a00;
+}
+
+/* En mode sombre, la pêche et l'orange deviennent des teintes posées sur
+   le verre sombre : deux aplats clairs y éblouiraient. */
+:global([data-theme="dark"]) .serie[data-palier="flamme"] {
+  border-color: rgba(255, 170, 110, 0.35);
+  background:
+    linear-gradient(160deg, rgba(255, 160, 90, 0.24), rgba(255, 120, 50, 0.12)),
+    var(--verre-carte);
+}
+
+:global([data-theme="dark"]) .serie[data-palier="flamme"] small {
+  color: var(--text-2);
+}
+
+:global([data-theme="dark"]) .serie[data-palier="feu"] {
+  border-color: rgba(255, 150, 60, 0.55);
+  background:
+    radial-gradient(80% 100% at 14% 30%, rgba(255, 170, 80, 0.28), rgba(255, 170, 80, 0) 60%),
+    linear-gradient(160deg, rgba(255, 160, 60, 0.42), rgba(255, 110, 30, 0.24)),
+    var(--verre-carte);
+  box-shadow: var(--verre-carte-ombre);
+  color: var(--text-0);
+}
+
+:global([data-theme="dark"]) .serie[data-palier="feu"] .jours i {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+:global([data-theme="dark"]) .serie[data-palier="feu"] .jours i[data-on] {
+  background: #ff8a3d;
 }
 
 .ligne {

@@ -21,6 +21,7 @@ import { CelebrationGuide, VisageGuide } from "@/components/AssistantMark";
 import { nomGuide, type GuideRef } from "@/lib/guides";
 import { lockBodyModal } from "@/lib/bodyModal";
 import { nettoyerRecap, type Recap } from "@/lib/recapJour";
+import FlammeSerie from "@/components/serie/FlammeSerie";
 
 type Case = { valeur: number; unite?: string; libelle: string; encre: string };
 
@@ -113,7 +114,7 @@ export default function RecapHier({
               {f.serie > 1 && (
                 <span className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[13px] font-bold"
                   style={{ background: "rgba(245,177,32,0.14)", color: "var(--feu-encre)" }}>
-                  <span aria-hidden="true">🔥</span>
+                  <FlammeSerie jours={f.serie} taille={14} />
                   <span>Série de <span className="vy-nombre" style={{ fontWeight: 800 }}>{f.serie}</span>&nbsp;jours</span>
                 </span>
               )}

@@ -20,14 +20,20 @@
    ⚠️ LE NOMBRE NE SE RECALCULE PAS ICI. La série en cours vient de l'aura
    (base), la plus longue de `badges_aura`. La feuille ne fait que lire
    quels jours ont été actifs pour les dessiner.
+
+   LA FLAMME EST CELLE DE L'ACCUEIL (Louis, 2026-10-17) : `FlammeSerie`,
+   au palier que décide `lib/flammesSerie.ts`. Le dessin plat qui vivait
+   ici est supprimé.
    ───────────────────────────────────────────────────────────────────── */
 
 import { useEffect, useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight } from "lucide-react";
 import Sheet from "@/components/communaute/Sheet";
+import FlammeSerie from "@/components/serie/FlammeSerie";
 import { createClient } from "@/lib/supabase";
 import { chargerBadgesAura } from "@/lib/badgesAura";
 import { parisDateStr, shiftDateStr } from "@/lib/dates";
+import { etatFlamme, PALIERS_FLAMME } from "@/lib/flammesSerie";
 
 /** Combien de mois on peut remonter. Au-delà, la série a déjà été comptée. */
 const MOIS_MAX = 12;
@@ -39,24 +45,6 @@ function moisDe(jour: string): { annee: number; mois: number } {
 
 function cle(annee: number, mois: number, j: number): string {
   return `${annee}-${String(mois + 1).padStart(2, "0")}-${String(j).padStart(2, "0")}`;
-}
-
-export function Flamme({ taille = 44 }: { taille?: number }) {
-  return (
-    <svg width={taille} height={taille * 1.2} viewBox="0 0 40 48" aria-hidden="true">
-      <defs>
-        <linearGradient id="flamme-serie" x1="0" y1="1" x2="0" y2="0">
-          <stop offset="0" stopColor="#E8620C" />
-          <stop offset="1" stopColor="#F5B120" />
-        </linearGradient>
-      </defs>
-      <path
-        d="M20 2c2 8 12 13 12 25 0 9-6 17-12 17S8 36 8 27c0-6 3-9 5-12 1 4 3 6 5 6-1-7 0-13 2-19z"
-        fill="url(#flamme-serie)"
-      />
-      <path d="M20 26c3 4 6 6 6 11 0 4-3 7-6 7s-6-3-6-7c0-3 2-5 3-7 1 2 2 3 3 3-1-3-1-5 0-7z" fill="#FFE3A3" opacity=".85" />
-    </svg>
-  );
 }
 
 export default function FeuilleSerie({
@@ -110,16 +98,29 @@ export default function FeuilleSerie({
   }, [aujourdhui, decalage, actifs]);
 
   const record_ = record !== null ? Math.max(record, serie) : null;
+  const flamme = etatFlamme(serie);
 
   return (
     <Sheet onFermer={onFermer}>
       <div className="flex items-center gap-3.5">
-        <Flamme taille={40} />
+        <FlammeSerie jours={serie} taille={56} />
         <div>
           <p className="vy-label" style={{ color: "var(--feu-encre)" }}>Ta série</p>
           <p style={{ color: "var(--text-0)", fontSize: 34, lineHeight: 1.05, fontWeight: 800 }}>
             <span className="vy-nombre" style={{ fontWeight: 800 }}>{serie}</span>{" "}
             <span style={{ fontSize: 20, fontWeight: 700 }}>{serie > 1 ? "jours de suite" : "jour"}</span>
+          </p>
+          {/* La seule mesure de la feuille : la flamme suivante, jamais un
+              pourcentage sur une flamme qui n'est pas la tienne. */}
+          <p className="mt-1" style={{ fontSize: 13, color: "var(--text-2)" }}>
+            <b style={{ color: "var(--feu-encre)", fontWeight: 800 }}>{flamme.palier.nom}</b>
+            {flamme.suivant ? (
+              <>
+                {" · plus que "}
+                <b className="vy-nombre" style={{ color: "var(--text-0)", fontWeight: 800 }}>{flamme.restant}</b>
+                {` ${flamme.restant > 1 ? "jours" : "jour"} avant ${flamme.suivant.nom}`}
+              </>
+            ) : " · ta flamme est à son plus beau"}
           </p>
         </div>
       </div>
@@ -128,6 +129,42 @@ export default function FeuilleSerie({
           Ta plus longue : <b className="vy-nombre" style={{ color: "var(--text-1, var(--text-0))" }}>{record_}</b> jours
         </p>
       )}
+
+      {/* Les cinq flammes. Elles suivent la série EN COURS : après une
+          coupure on repart de la Lueur, et ce qui a été tenu une fois vit
+          dans les badges de régularité, pas ici. */}
+      <p className="vy-label mt-5 mb-2" style={{ color: "var(--text-2)" }}>Tes flammes</p>
+      <div className="grid grid-cols-5 gap-1">
+        {PALIERS_FLAMME.map((p) => {
+          const courant = p.id === flamme.palier.id;
+          const tenue = p.des <= serie;
+          const unite = p.des > 1 ? "jours" : "jour";
+          return (
+            <div
+              key={p.id}
+              className="flex flex-col items-center gap-1 rounded-[14px] px-0.5 pt-2.5 pb-2"
+              style={{ background: courant ? "rgba(232,98,12,0.10)" : "transparent" }}
+            >
+              <span className="flex h-11 items-end">
+                <FlammeSerie palier={p.id} taille={36} eteinte={!tenue} />
+              </span>
+              <span style={{ fontSize: 11, fontWeight: courant ? 800 : 700, whiteSpace: "nowrap", color: courant ? "var(--feu-encre)" : tenue ? "var(--text-0)" : "var(--text-3)" }}>
+                {p.nom}
+              </span>
+              <span className="inline-flex items-center gap-0.5" style={{ fontSize: 11, whiteSpace: "nowrap", color: courant ? "var(--feu-encre)" : tenue ? "var(--teal-encre)" : "var(--text-3)" }}>
+                {courant ? (
+                  <b style={{ fontWeight: 700 }}>Ta flamme</b>
+                ) : (
+                  <>
+                    {tenue && <><Check size={11} strokeWidth={3} aria-hidden="true" /><span className="sr-only">atteinte, </span></>}
+                    <span className="vy-nombre" style={{ fontWeight: 400 }}>{p.des}</span>&nbsp;{unite}
+                  </>
+                )}
+              </span>
+            </div>
+          );
+        })}
+      </div>
 
       <div className="mt-5 flex items-center justify-between">
         <button type="button" aria-label="Mois précédent"

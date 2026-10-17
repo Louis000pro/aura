@@ -14,6 +14,7 @@ import GemmeRang from "@/components/GemmeRang";
 import EtatVideGuide from "@/components/EtatVideGuide";
 import RangsModal from "@/components/rang/RangsModal";
 import { AvatarRang, PseudoRang, TitreRang } from "@/components/rang/IdentiteRang";
+import FlammeSerie from "@/components/serie/FlammeSerie";
 import { calculerAura, cosmetiquesDuRang, progressionRang, RANGS, type EtatAura } from "@/lib/aura";
 import { noterRang } from "@/lib/celebrationRang";
 import { SERIES, imageEtat, type SerieSlug } from "@/lib/defi";
@@ -899,12 +900,8 @@ export default function ProfilPage() {
               style={{ cursor: tab ? "pointer" : "default", paddingLeft: i === 0 ? 2 : 18, borderLeft: i > 0 ? "1px solid rgba(var(--text-3-rgb),0.16)" : "none" }}
             >
               <span className="vy-nombre flex items-center gap-1 text-[26px] leading-none" style={{ color: feu ? "var(--feu-encre)" : "var(--text-0)", fontWeight: 700 }}>
-                {feu && (
-                  <svg width="16" height="20" viewBox="0 0 24 28" aria-hidden>
-                    <defs><linearGradient id="profil-feu" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#F5B120" /><stop offset="1" stopColor="#E8620C" /></linearGradient></defs>
-                    <path d="M12 1c1 5 7 8 7 15a7 7 0 0 1-14 0c0-4 2-6 3-8 0 3 2 4 3 4-1-4 0-8 1-11Z" fill="url(#profil-feu)" />
-                  </svg>
-                )}
+                {/* La même flamme que l'accueil, au palier de la série. */}
+                {feu && <FlammeSerie jours={serieJours} taille={16} />}
                 {value}
               </span>
               <span className="vy-label" style={{ color: "var(--text-2)", fontWeight: 400 }}>{label}</span>

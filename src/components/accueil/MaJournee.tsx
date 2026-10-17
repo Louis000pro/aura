@@ -23,7 +23,9 @@ import Image from "next/image";
 import { AnimatePresence, motion } from "framer-motion";
 import { ChevronRight } from "lucide-react";
 import GemmeRang from "@/components/GemmeRang";
+import FlammeSerie from "@/components/serie/FlammeSerie";
 import { MISSIONS_JOUR, progressionRang, resteMission, type EtatAura, type Mission } from "@/lib/aura";
+import { etatFlamme } from "@/lib/flammesSerie";
 import { apercuPremiumDuJour, compteMissionsJour, missionDebloquee } from "@/lib/missionsAccueil";
 import styles from "./MaJournee.module.css";
 
@@ -61,6 +63,8 @@ export default function MaJournee({
   // Avant, ils comptaient les jours avec séance ou repas : un jour où l'on
   // n'avait fait qu'ouvrir Vaiiya tenait la flamme mais n'allumait rien.
   const allumes = ((serie - 1) % 7) + 1;
+  // La flamme et l'habit de la tuile suivent le palier de la série.
+  const flamme = etatFlamme(serie);
 
   // « Journée complète » se remplit toute seule : elle reste dans le compte,
   // pas dans le rail, où elle se lirait comme un geste à faire.
@@ -113,17 +117,22 @@ export default function MaJournee({
         <button
           type="button"
           className={`${styles.tuile} ${styles.serie}`}
-          // Dès deux jours d'affilée, la tuile se réchauffe (Louis, 2026-10-17).
-          data-chaude={serie >= 2 ? "" : undefined}
+          // La tuile change d'habit à chaque flamme (Louis, 2026-10-17) : le
+          // verre nu, la pêche, l'orange, l'or, puis l'or lumineux.
+          data-palier={flamme.palier.id}
+          aria-label={`${serie} ${serie > 1 ? "jours d’affilée" : "jour de série"}, flamme ${flamme.palier.nom}${flamme.nouvelle ? ", nouvelle aujourd’hui" : ""}`}
           onClick={onOpenSerie}
         >
           <span className={styles.serieTete}>
             {/* Le nombre de jours d'affilée se colle à la flamme (Louis, 2026-10-17). */}
-            <span className={styles.flamme} aria-hidden="true">🔥</span>
+            <FlammeSerie jours={serie} taille={26} />
             <b className={`${styles.serieNombre} vy-nombre`}>{serie}</b>
             <span className={styles.texte}>
               <small>{serie > 1 ? "jours" : "jour"}</small>
-              <small>{serie > 1 ? "d’affilée" : "de série"}</small>
+              {/* Le jour où une flamme arrive, son nom remplace « d'affilée ». */}
+              {flamme.nouvelle
+                ? <small className={styles.nouvelle}>{flamme.palier.nom}</small>
+                : <small>{serie > 1 ? "d’affilée" : "de série"}</small>}
             </span>
           </span>
           <span className={styles.jours} aria-label={`Jour ${allumes} sur 7`}>
