@@ -226,22 +226,11 @@ export default function FilPotes({ moi, monPseudo, monAvatar, onAjouterAmi }: {
               <MiniAffiche affiche={a} />
 
               {a.auteur.id === moi ? (
-                /* Mon affiche : les mêmes réactions, en lecture seule (on ne
-                   réagit pas à la sienne), avec ce que les potes en ont dit. */
-                <div className="px-3 py-3">
-                  <div className="flex items-center gap-2" aria-label={resumeReactions(a)}>
-                    {SORTES.map((s) => (
-                      <span key={s.id} aria-hidden className="flex min-h-9 items-center gap-1.5 rounded-full px-3 text-[13px] font-semibold"
-                        style={{ background: "rgba(var(--tint-violet-rgb), .35)", color: "var(--exp-encre)" }}>
-                        {s.libelle}
-                        <span className="vy-nombre" style={{ fontWeight: 700 }}>{a.reactions[s.id].length}</span>
-                      </span>
-                    ))}
-                  </div>
-                  <p className="mt-2 text-[11px]" style={{ color: "var(--text-3)" }}>
-                    Tes potes réagissent ici et te répondent en message privé.
-                  </p>
-                </div>
+                /* Mon affiche : on ne se dit pas bravo à soi-même, on voit
+                   qui l'a dit. */
+                <p className="px-3.5 py-3 text-[13px]" style={{ color: "var(--text-3)" }}>
+                  {quiADitBravo(a.reactions.feu, prenoms) ?? "Tes potes peuvent te dire bravo ici."}
+                </p>
               ) : (
               <div className="flex items-center gap-2 px-3 py-3">
                 {SORTES.map((s) => {
@@ -370,12 +359,6 @@ function FeuilleMonAffiche({ affiche, moi, onFermer, onMot, onRetiree }: {
       {erreur && <p className="mt-2 text-[13px]" style={{ color: "#D93A3A" }}>{erreur}</p>}
     </Sheet>
   );
-}
-
-/** « Tes potes la voient · Feu 2 · Costaud 1 » sous mon affiche. */
-function resumeReactions(a: AfficheDuFil): string {
-  const parties = SORTES.filter((s) => a.reactions[s.id].length > 0).map((s) => `${s.libelle} ${a.reactions[s.id].length}`);
-  return ["Tes potes la voient", ...parties].join(" · ");
 }
 
 type Moment =

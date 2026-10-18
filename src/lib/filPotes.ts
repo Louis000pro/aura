@@ -18,10 +18,13 @@ import type { PerformanceData } from "@/components/PerformanceCard";
 import type { Personne } from "@/lib/messagerie";
 
 export type SorteReaction = "feu" | "costaud" | "pareil";
+/** Une seule réaction sous une affiche : « Bravo » (Louis, 2026-10-18 :
+ *  « je veux pas de like, juste un bouton bravo », comme sous les
+ *  événements). Elle s'écrit sous la sorte `feu` de `reactions_affiche`,
+ *  qui existait déjà : aucune migration. Les sortes `costaud` et `pareil`
+ *  restent permises en base mais ne s'affichent plus. */
 export const SORTES: { id: SorteReaction; libelle: string }[] = [
-  { id: "feu", libelle: "Feu" },
-  { id: "costaud", libelle: "Costaud" },
-  { id: "pareil", libelle: "Je fais pareil" },
+  { id: "feu", libelle: "Bravo" },
 ];
 
 export type AfficheDuFil = {
