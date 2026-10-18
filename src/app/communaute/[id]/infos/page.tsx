@@ -12,6 +12,8 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
+import Link from "next/link";
+import { lienProfil } from "@/lib/lienProfil";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft, Loader2, Pencil, Check, X, UserPlus, LogOut, Sparkles, Camera,
@@ -235,13 +237,20 @@ export default function InfosPage() {
       {/* ─── Identité ─── */}
       <div className="flex flex-col items-center px-6 pt-2">
         <div className="relative">
-          <ConversationAvatar
-            conversation={conv}
-            autres={autres}
-            titre={titre}
-            taille={96}
-            afficherDefi={false}
-          />
+          {/* En duo, la photo est celle de l'autre : la toucher ouvre son profil. */}
+          {!groupe && autres[0] ? (
+            <Link href={lienProfil(autres[0].id, autres[0].pseudo, moi)} aria-label={`Voir le profil de ${autres[0].pseudo}`} className="block rounded-full">
+              <ConversationAvatar conversation={conv} autres={autres} titre={titre} taille={96} afficherDefi={false} />
+            </Link>
+          ) : (
+            <ConversationAvatar
+              conversation={conv}
+              autres={autres}
+              titre={titre}
+              taille={96}
+              afficherDefi={false}
+            />
+          )}
 
           {groupe && (
             <button
@@ -399,7 +408,8 @@ export default function InfosPage() {
             const rang = rangs.get(p.id);
             const nom = p.id === moi ? "Toi" : p.pseudo;
             return (
-              <div key={p.id} className="flex items-center gap-3 p-3"
+              <Link key={p.id} href={lienProfil(p.id, p.pseudo, moi)} aria-label={`Voir le profil de ${nom}`}
+                className="flex items-center gap-3 p-3 transition-colors hover:bg-[rgba(var(--text-3-rgb),.05)]"
                 style={{ borderTop: i ? "1px solid rgba(var(--text-3-rgb), .14)" : "none" }}>
                 <Avatar personne={p} taille={34} rang={rang} />
                 {rang ? (
@@ -417,7 +427,7 @@ export default function InfosPage() {
                     {nom}
                   </span>
                 )}
-              </div>
+              </Link>
             );
           })}
 

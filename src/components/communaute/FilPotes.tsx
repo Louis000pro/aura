@@ -26,6 +26,7 @@ import Sheet from "@/components/communaute/Sheet";
 import { PersonAvatar } from "@/components/communaute/ConversationAvatar";
 import { motCouverture, useMotAjuste, STYLE_MOT } from "@/components/profil/CouvertureSeance";
 import { creerConversation, type Personne } from "@/lib/messagerie";
+import { lienProfil } from "@/lib/lienProfil";
 import GemmeRang from "@/components/GemmeRang";
 import FlammeSerie from "@/components/serie/FlammeSerie";
 import { RANGS } from "@/lib/aura";
@@ -363,11 +364,6 @@ function FeuilleMonAffiche({ affiche, moi, onFermer, onMot, onRetiree }: {
       {erreur && <p className="mt-2 text-[13px]" style={{ color: "#D93A3A" }}>{erreur}</p>}
     </Sheet>
   );
-}
-
-/** Toucher une photo ouvre le compte : le mien sur `/profil`, celui d'un pote sur `/profil/<pseudo>`. */
-function lienProfil(id: string, pseudo: string, moi: string): string {
-  return id === moi ? "/profil" : `/profil/${encodeURIComponent(pseudo)}`;
 }
 
 type Moment =
