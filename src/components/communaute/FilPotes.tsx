@@ -20,6 +20,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Loader2, MessageCircle, MoreHorizontal, UserPlus, X } from "lucide-react";
 import Sheet from "@/components/communaute/Sheet";
 import { PersonAvatar } from "@/components/communaute/ConversationAvatar";
@@ -145,7 +146,8 @@ export default function FilPotes({ moi, monPseudo, monAvatar, onAjouterAmi }: {
         {rangee.map((p) => {
           const actif = presence.get(p.id) ?? false;
           return (
-            <div key={p.id} className="flex w-[62px] flex-shrink-0 flex-col items-center gap-1.5">
+            <Link key={p.id} href={lienProfil(p.id, p.pseudo, moi)} aria-label={`Voir le profil de ${p.moi ? "toi" : p.pseudo}`}
+              className="flex w-[62px] flex-shrink-0 flex-col items-center gap-1.5">
               <span
                 className="flex items-center justify-center rounded-full p-[3px]"
                 style={{ background: actif ? "linear-gradient(135deg, #8B5CF6, #C13BC1)" : "rgba(var(--text-3-rgb), .2)" }}
@@ -156,7 +158,7 @@ export default function FilPotes({ moi, monPseudo, monAvatar, onAjouterAmi }: {
                 </span>
               </span>
               <span className="w-full truncate text-center text-[11px]" style={{ color: "var(--text-2)" }}>{p.pseudo}</span>
-            </div>
+            </Link>
           );
         })}
         <button onClick={onAjouterAmi} className="flex w-[62px] flex-shrink-0 flex-col items-center gap-1.5" aria-label="Ajouter un ami">
@@ -206,11 +208,13 @@ export default function FilPotes({ moi, monPseudo, monAvatar, onAjouterAmi }: {
             <article key={a.id} className="overflow-hidden"
               style={{ borderRadius: "var(--r-bloc)", background: "rgb(var(--surface-rgb))", boxShadow: "var(--ombre-pose)" }}>
               <header className="flex items-center gap-2.5 px-3.5 pb-2.5 pt-3">
-                <PersonAvatar personne={a.auteur} taille={34} />
-                <span className="min-w-0 flex-1">
-                  <b className="block truncate text-[16px]" style={{ color: "var(--text-0)" }}>{a.auteur.pseudo}</b>
-                  <span className="block text-[11px]" style={{ color: "var(--text-3)" }}>{quandAffiche(a.creeLe)}</span>
-                </span>
+                <Link href={lienProfil(a.auteur.id, a.auteur.pseudo, moi)} className="flex min-w-0 flex-1 items-center gap-2.5">
+                  <PersonAvatar personne={a.auteur} taille={34} />
+                  <span className="min-w-0 flex-1">
+                    <b className="block truncate text-[16px]" style={{ color: "var(--text-0)" }}>{a.auteur.pseudo}</b>
+                    <span className="block text-[11px]" style={{ color: "var(--text-3)" }}>{quandAffiche(a.creeLe)}</span>
+                  </span>
+                </Link>
                 {a.auteur.id === moi && (
                   <button onClick={() => setGerer(a)} aria-label="Gérer mon affiche"
                     className="flex h-9 w-9 items-center justify-center rounded-full" style={{ color: "var(--text-2)" }}>
@@ -361,6 +365,11 @@ function FeuilleMonAffiche({ affiche, moi, onFermer, onMot, onRetiree }: {
   );
 }
 
+/** Toucher une photo ouvre le compte : le mien sur `/profil`, celui d'un pote sur `/profil/<pseudo>`. */
+function lienProfil(id: string, pseudo: string, moi: string): string {
+  return id === moi ? "/profil" : `/profil/${encodeURIComponent(pseudo)}`;
+}
+
 type Moment =
   | { k: "aff"; at: string; a: AfficheDuFil }
   | { k: "evts"; at: string; cle: string; liste: EvenementFil[] };
@@ -401,12 +410,13 @@ function LigneEvenement({ e, moi, prenoms, onBravo }: {
   const bravos = cEstMoi ? quiADitBravo(e.bravos, prenoms) : null;
   return (
     <div className="vy-filet flex items-center gap-3 px-3.5 py-3.5">
-      <span className="relative flex-shrink-0">
+      <Link href={lienProfil(e.auteur.id, e.auteur.pseudo, moi)} aria-label={`Voir le profil de ${cEstMoi ? "toi" : e.auteur.pseudo}`}
+        className="relative flex-shrink-0">
         <PersonAvatar personne={e.auteur} taille={44} />
         <span className="absolute -bottom-1 -right-1 flex h-[22px] w-[22px] items-center justify-center">
           <SigneEvenement e={e} />
         </span>
-      </span>
+      </Link>
       <span className="min-w-0 flex-1">
         <span className="block text-[16px] leading-snug" style={{ color: "var(--text-1)" }}>
           {phrase.map((m, i) => m.gras ? <b key={i} style={{ color: "var(--text-0)" }}>{m.t}</b> : <span key={i}>{m.t}</span>)}
