@@ -224,6 +224,18 @@ export default function RootLayout({
             rendu React reste identique serveur et client. */}
         <script dangerouslySetInnerHTML={{ __html: `(function(){try{var s=/(^|;\\s*)sb-[^=]*-auth-token/.test(document.cookie);if(!s){try{for(var i=0;i<localStorage.length;i++){var k=localStorage.key(i);if(k&&k.indexOf('sb-')===0&&k.indexOf('-auth-token')>0){s=true;break;}}}catch(e){}}if(s){document.documentElement.classList.add('a-session');}}catch(e){}})();` }} />
 
+        {/* LA PAGE SANS STYLE SE RÉPARE TOUTE SEULE (bug vu par Louis le
+            2026-10-18 sur /auth : du texte brut, aucune mise en page). Une
+            feuille de style qui ne se charge pas (réseau qui vacille au
+            démarrage de la PWA, document d'un ancien build servi depuis le
+            cache hors ligne) ne déclenche AUCUNE frontière d'erreur : rien ne
+            casse, la page s'affiche simplement nue. On le détecte au `load` :
+            `--surface-rgb` est posée par globals.css, donc si elle est vide,
+            le CSS n'est pas là. On purge alors le cache HTML du service worker
+            et on recharge, UNE fois par minute au plus (marque en
+            sessionStorage), pour ne jamais boucler. */}
+        <script dangerouslySetInnerHTML={{ __html: `(function(){function v(){try{if(getComputedStyle(document.documentElement).getPropertyValue('--surface-rgb').trim())return;var k='vaiiya_css_reprise',n=Date.now(),t=0;try{t=+sessionStorage.getItem(k)||0;}catch(e){}if(n-t<60000)return;try{sessionStorage.setItem(k,String(n));}catch(e){}try{var c=navigator.serviceWorker&&navigator.serviceWorker.controller;if(c)c.postMessage({type:'vaiiya-purge'});}catch(e){}setTimeout(function(){location.reload();},300);}catch(e){}}if(document.readyState==='complete'){setTimeout(v,0);}else{window.addEventListener('load',function(){setTimeout(v,0);});}})();` }} />
+
         {/* Données structurées JSON-LD — aide Google à comprendre Vaiiya */}
         <script
           type="application/ld+json"

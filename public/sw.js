@@ -1,4 +1,5 @@
-// Vaiiya Service Worker — v11 (HTML réseau-strict + purge ciblée à la demande)
+// Vaiiya Service Worker — v12 (une seconde tentative sur les chunks)
+// v11 (HTML réseau-strict + purge ciblée à la demande)
 //
 // ⚠️ v11 N'A CHANGÉ AUCUNE STRATÉGIE DE CACHE. Le seul ajout est un
 // gestionnaire `message` qui permet à l'écran de secours (`app/error.tsx`) de
@@ -59,7 +60,9 @@ self.addEventListener("fetch", (e) => {
       caches.open(STATIC_CACHE).then((cache) =>
         cache.match(e.request).then((cached) =>
           cached ||
-          fetch(e.request).then((res) => {
+          // Un réseau qui vacille au démarrage faisait échouer la feuille de
+          // style, et la page s'affichait en texte brut : on retente une fois.
+          fetch(e.request).catch(() => fetch(e.request)).then((res) => {
             if (res.ok) cache.put(e.request, res.clone());
             return res;
           })

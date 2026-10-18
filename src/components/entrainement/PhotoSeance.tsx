@@ -20,15 +20,52 @@ export const WIDGET: Record<"repos" | "done" | "setup" | "improvise", {
 };
 
 /** Photo naturelle — la banque parle d'elle-même. Juste l'image, cadrée,
-    sur fond sombre le temps du chargement. Le scrim vit chez l'appelant. */
-export function Photo({ img, pos = "center 25%", className, style, children }: {
+    sur fond sombre le temps du chargement. Le scrim vit chez l'appelant.
+
+    ⚠️ UNE VRAIE `<img>`, PLUS UN `background-image` (2026-10-18, Louis :
+    « l'image de la séance prend trop de temps à se charger »). Une image
+    de fond n'est découverte qu'une fois le style calculé, et elle ne
+    reçoit jamais de priorité réseau. `prioritaire` la passe en
+    `fetchPriority="high"` : c'est le héros de l'accueil, la première
+    chose qu'on regarde. */
+export function Photo({ img, pos = "center 25%", className, style, children, prioritaire = false }: {
   img: string; pos?: string;
   className?: string; style?: React.CSSProperties; children?: React.ReactNode;
+  prioritaire?: boolean;
 }) {
   return (
     <div className={className} style={{ position: "relative", overflow: "hidden", background: "#101018", ...style }}>
-      <div aria-hidden style={{ position: "absolute", inset: 0, backgroundImage: `url(/entrainement/${img}.webp)`, backgroundSize: "cover", backgroundPosition: pos }} />
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={`/entrainement/${img}.webp`}
+        alt=""
+        aria-hidden
+        decoding="async"
+        loading={prioritaire ? "eager" : "lazy"}
+        fetchPriority={prioritaire ? "high" : "auto"}
+        style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: pos }}
+      />
       {children}
     </div>
   );
+}
+
+/** Le héros de l'accueil attend sa journée avant de savoir quelle photo
+ *  montrer : on retient la dernière montrée sur cet appareil et on la
+ *  télécharge pendant le squelette. Le jour suivant, c'est presque
+ *  toujours la même famille de séance, donc l'image est déjà là. */
+const CLE_DERNIERE = "vaiiya_photo_heros";
+
+export function retenirPhotoHeros(img: string) {
+  try { localStorage.setItem(CLE_DERNIERE, img); } catch { /* stockage bloqué */ }
+}
+
+export function prechargerPhotoHeros() {
+  try {
+    const img = localStorage.getItem(CLE_DERNIERE);
+    if (!img || !/^[a-z0-9-]+$/i.test(img)) return;
+    const el = new Image();
+    el.fetchPriority = "high";
+    el.src = `/entrainement/${img}.webp`;
+  } catch { /* stockage bloqué */ }
 }

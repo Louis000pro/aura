@@ -19,6 +19,7 @@
    mobile-first de l'accueil est V7B.
    ════════════════════════════════════════════════════════════════════ */
 
+import { useEffect } from "react";
 import { motion } from "framer-motion";
 import { Check, Moon, Play } from "lucide-react";
 import { AssistantSpark } from "@/components/AssistantMark";
@@ -26,7 +27,7 @@ import { resolveArt } from "@/lib/workoutArt";
 import { dayTitle, lieuLabel, type PlanningDay } from "@/lib/planning";
 import type { EtatJournee } from "@/lib/journee";
 import type { EtapeCycle } from "@/lib/programme";
-import { Photo, WIDGET } from "./PhotoSeance";
+import { Photo, WIDGET, prechargerPhotoHeros, retenirPhotoHeros } from "./PhotoSeance";
 
 /* ════════════════════════════════════════════════════════════════════
    LA VALEUR MESURÉE PORTE LE VISAGE DU CHIFFRE.
@@ -118,6 +119,19 @@ export default function TodayHero({
   /** R8 · « J'ai moins de temps » : ouvre la version courte. */
   onCourt?: () => void;
 }) {
+  const viz =
+    state === "setup" ? WIDGET.setup
+    : state === "done" ? WIDGET.done
+    : state === "repos" || state === "libre" || state === "aucune_compatible" || state === "indisponible" ? WIDGET.repos
+    : state === "etape" ? { img: resolveArt({ title: etape?.nom ?? "" }).img, pos: "center 24%" }
+    : { img: resolveArt({ title: day ? `${day.title} ${day.type}` : "" }).img, pos: "center 24%" };
+
+  /* La photo part dès le squelette : on précharge la dernière montrée
+     sur cet appareil, puis on retient celle d'aujourd'hui. */
+  const chargement = state === "loading";
+  useEffect(() => { if (chargement) prechargerPhotoHeros(); }, [chargement]);
+  useEffect(() => { if (!chargement) retenirPhotoHeros(viz.img); }, [chargement, viz.img]);
+
   /* Skeleton — même silhouette que la carte, aucune culpabilité d'attente */
   if (state === "loading") {
     return (
@@ -132,13 +146,6 @@ export default function TodayHero({
     );
   }
 
-  const viz =
-    state === "setup" ? WIDGET.setup
-    : state === "done" ? WIDGET.done
-    : state === "repos" || state === "libre" || state === "aucune_compatible" || state === "indisponible" ? WIDGET.repos
-    : state === "etape" ? { img: resolveArt({ title: etape?.nom ?? "" }).img, pos: "center 24%" }
-    : { img: resolveArt({ title: day ? `${day.title} ${day.type}` : "" }).img, pos: "center 24%" };
-
   return (
     <motion.div
       initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }}
@@ -146,7 +153,7 @@ export default function TodayHero({
       className="overflow-hidden relative"
       style={{ minHeight: state === "seance" || state === "etape" ? 400 : 320, borderRadius: "var(--r-affiche)", boxShadow: "var(--ombre-pose)" }}
     >
-      <Photo img={viz.img} pos={viz.pos} style={{ position: "absolute", inset: 0 }} />
+      <Photo img={viz.img} pos={viz.pos} prioritaire style={{ position: "absolute", inset: 0 }} />
 
       {/* Chips du haut */}
       <div className="absolute top-3.5 left-3.5 right-3.5 flex items-center justify-between z-10">
