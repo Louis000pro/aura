@@ -20,7 +20,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, MessageCircle, UserPlus } from "lucide-react";
+import { Loader2, MessageCircle, MoreHorizontal, UserPlus, X } from "lucide-react";
+import Sheet from "@/components/communaute/Sheet";
 import { PersonAvatar } from "@/components/communaute/ConversationAvatar";
 import { motCouverture, useMotAjuste, STYLE_MOT } from "@/components/profil/CouvertureSeance";
 import { creerConversation, type Personne } from "@/lib/messagerie";
@@ -34,7 +35,7 @@ import {
 } from "@/lib/evenementsFil";
 import {
   mesAmis, chargerFilPotes, presenceAmis, basculerReaction, poserBrouillon, quandAffiche,
-  SORTES, type AfficheDuFil, type SorteReaction,
+  ecrireMot, retirerDuFil, supprimerAffiche, MOT_MAX, SORTES, type AfficheDuFil, type SorteReaction,
 } from "@/lib/filPotes";
 
 export default function FilPotes({ moi, monPseudo, monAvatar, onAjouterAmi }: {
@@ -48,6 +49,8 @@ export default function FilPotes({ moi, monPseudo, monAvatar, onAjouterAmi }: {
   const [fil, setFil] = useState<AfficheDuFil[]>([]);
   const [evts, setEvts] = useState<EvenementFil[]>([]);
   const [montrer, setMontrer] = useState<boolean | null>(null);
+  /** Mon affiche dont le menu « ⋯ » est ouvert. */
+  const [gerer, setGerer] = useState<AfficheDuFil | null>(null);
   const [presence, setPresence] = useState<Map<string, boolean>>(new Map());
   const [erreur, setErreur] = useState(false);
   const [ouverture, setOuverture] = useState<string | null>(null);
@@ -208,7 +211,17 @@ export default function FilPotes({ moi, monPseudo, monAvatar, onAjouterAmi }: {
                   <b className="block truncate text-[16px]" style={{ color: "var(--text-0)" }}>{a.auteur.pseudo}</b>
                   <span className="block text-[11px]" style={{ color: "var(--text-3)" }}>{quandAffiche(a.creeLe)}</span>
                 </span>
+                {a.auteur.id === moi && (
+                  <button onClick={() => setGerer(a)} aria-label="Gérer mon affiche"
+                    className="flex h-9 w-9 items-center justify-center rounded-full" style={{ color: "var(--text-2)" }}>
+                    <MoreHorizontal className="h-5 w-5" />
+                  </button>
+                )}
               </header>
+
+              {a.mot && (
+                <p className="mx-3.5 mb-2.5 whitespace-pre-line text-[16px] leading-snug" style={{ color: "var(--text-1)" }}>{a.mot}</p>
+              )}
 
               <MiniAffiche affiche={a} />
 
@@ -247,6 +260,16 @@ export default function FilPotes({ moi, monPseudo, monAvatar, onAjouterAmi }: {
         </div>
       )}
 
+      {gerer && (
+        <FeuilleMonAffiche
+          affiche={gerer}
+          moi={moi}
+          onFermer={() => setGerer(null)}
+          onMot={(mot) => { setFil((l) => l.map((x) => x.id === gerer.id ? { ...x, mot } : x)); setGerer(null); }}
+          onRetiree={() => { setFil((l) => l.filter((x) => x.id !== gerer.id)); setGerer(null); }}
+        />
+      )}
+
       {montrer !== null && (
         <button onClick={() => void changerMontrer()} role="switch" aria-checked={montrer}
           className="mt-6 flex w-full items-center gap-3 px-1 py-2 text-left">
@@ -261,6 +284,70 @@ export default function FilPotes({ moi, monPseudo, monAvatar, onAjouterAmi }: {
         </button>
       )}
     </div>
+  );
+}
+
+/** Le menu de mon affiche : changer le mot, la retirer du fil, la supprimer. */
+function FeuilleMonAffiche({ affiche, moi, onFermer, onMot, onRetiree }: {
+  affiche: AfficheDuFil; moi: string;
+  onFermer: () => void; onMot: (mot: string) => void; onRetiree: () => void;
+}) {
+  const [mot, setMot] = useState(affiche.mot);
+  const [occupe, setOccupe] = useState(false);
+  const [confirmer, setConfirmer] = useState(false);
+  const [erreur, setErreur] = useState<string | null>(null);
+
+  const faire = async (geste: () => Promise<boolean>, ensuite: () => void) => {
+    setOccupe(true); setErreur(null);
+    const ok = await geste();
+    setOccupe(false);
+    if (ok) ensuite(); else setErreur("Ça n’a pas abouti. Réessaie.");
+  };
+
+  const ligne = "flex min-h-12 w-full items-center px-1 text-left text-[16px] font-semibold disabled:opacity-60";
+  return (
+    <Sheet onFermer={onFermer}>
+      <div className="mb-3 flex items-center justify-between">
+        <b className="text-[20px] font-bold" style={{ color: "var(--text-0)" }}>Ton affiche</b>
+        <button onClick={onFermer} aria-label="Fermer"><X className="h-5 w-5" style={{ color: "var(--text-3)" }} /></button>
+      </div>
+
+      <label htmlFor="mot-fil" className="vy-label mb-1.5 block" style={{ color: "var(--text-3)" }}>Ton petit mot</label>
+      <textarea
+        id="mot-fil" value={mot} rows={2} maxLength={MOT_MAX}
+        onChange={(e) => setMot(e.target.value.slice(0, MOT_MAX))}
+        placeholder="Dur aujourd’hui mais fait."
+        className="w-full resize-none px-3 py-2.5 text-[16px] outline-none"
+        style={{ borderRadius: "var(--r-controle)", background: "rgba(var(--tint-violet-rgb), .3)", color: "var(--text-0)" }}
+      />
+      {mot.trim() !== affiche.mot && (
+        <button onClick={() => void faire(() => ecrireMot(moi, affiche.id, mot), () => onMot(mot.trim()))} disabled={occupe}
+          className="mt-2 min-h-11 w-full text-[16px] font-semibold text-white disabled:opacity-60"
+          style={{ borderRadius: "var(--r-controle)", background: "linear-gradient(135deg, #8B5CF6, #C13BC1)", boxShadow: "var(--ombre-action)" }}>
+          Enregistrer le mot
+        </button>
+      )}
+
+      <div className="mt-4">
+        <button className={`vy-filet ${ligne}`} style={{ color: "var(--text-1)" }} disabled={occupe}
+          onClick={() => void faire(() => retirerDuFil(moi, affiche.id), onRetiree)}>
+          Retirer du fil
+          <span className="ml-auto text-[11px] font-normal" style={{ color: "var(--text-3)" }}>Elle reste dans ton profil</span>
+        </button>
+        {confirmer ? (
+          <button className={`vy-filet ${ligne}`} style={{ color: "#D93A3A" }} disabled={occupe}
+            onClick={() => void faire(() => supprimerAffiche(moi, affiche.id), onRetiree)}>
+            Oui, supprimer l’affiche
+            <span className="ml-auto text-[11px] font-normal" style={{ color: "var(--text-3)" }}>La séance reste dans ton historique</span>
+          </button>
+        ) : (
+          <button className={`vy-filet ${ligne}`} style={{ color: "#D93A3A" }} disabled={occupe} onClick={() => setConfirmer(true)}>
+            Supprimer l’affiche
+          </button>
+        )}
+      </div>
+      {erreur && <p className="mt-2 text-[13px]" style={{ color: "#D93A3A" }}>{erreur}</p>}
+    </Sheet>
   );
 }
 

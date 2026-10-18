@@ -29,7 +29,7 @@ import {
   chargerConversations, titreConversation, autresMembres, envoyerPhoto,
   type Conversation,
 } from "@/lib/messagerie";
-import { afficheDansFil, montrerDansFil } from "@/lib/filPotes";
+import { afficheDansFil, montrerDansFil, ecrireMotSeance, MOT_MAX } from "@/lib/filPotes";
 import { renderPerfCardBlob, sharePerfCard, type PerfShareData } from "@/lib/perfShareExport";
 
 export default function EnvoyerAffiche({ data, moi, accessToken, seanceId, onFermer }: {
@@ -48,11 +48,28 @@ export default function EnvoyerAffiche({ data, moi, accessToken, seanceId, onFer
   /** `null` : l'affiche n'est pas (encore) en base, la ligne ne s'affiche pas. */
   const [dansFil, setDansFil] = useState<boolean | null>(null);
   const [filOccupe, setFilOccupe] = useState(false);
+  /** Le petit mot posé sur l'affiche, et ce qui est déjà enregistré. */
+  const [mot, setMot] = useState("");
+  const [motEnBase, setMotEnBase] = useState("");
+  const [motOccupe, setMotOccupe] = useState(false);
 
   useEffect(() => {
     if (!seanceId) return;
-    void afficheDansFil(moi, seanceId).then(setDansFil);
+    void afficheDansFil(moi, seanceId).then((r) => {
+      setDansFil(r ? r.dansFil : null);
+      setMot(r?.mot ?? "");
+      setMotEnBase(r?.mot ?? "");
+    });
   }, [moi, seanceId]);
+
+  const enregistrerMot = async () => {
+    if (!seanceId) return;
+    setMotOccupe(true);
+    const ok = await ecrireMotSeance(moi, seanceId, mot);
+    setMotOccupe(false);
+    if (ok) setMotEnBase(mot.trim());
+    else setErreur("Impossible d’enregistrer ton mot. Réessaie.");
+  };
 
   const basculerFil = async () => {
     if (!seanceId || dansFil === null) return;
@@ -120,6 +137,33 @@ export default function EnvoyerAffiche({ data, moi, accessToken, seanceId, onFer
             <span className="absolute top-0.5 h-5 w-5 rounded-full bg-white transition-all" style={{ left: dansFil ? 18 : 2 }} />
           </span>
         </button>
+      )}
+
+      {dansFil && (
+        <div className="mb-3">
+          <label htmlFor="mot-affiche" className="vy-label mb-1.5 block" style={{ color: "var(--text-3)" }}>
+            Un petit mot (facultatif)
+          </label>
+          <div className="flex items-end gap-2">
+            <textarea
+              id="mot-affiche"
+              value={mot}
+              onChange={(e) => setMot(e.target.value.slice(0, MOT_MAX))}
+              rows={2}
+              maxLength={MOT_MAX}
+              placeholder="Dur aujourd’hui mais fait."
+              className="min-w-0 flex-1 resize-none px-3 py-2.5 text-[16px] outline-none"
+              style={{ borderRadius: "var(--r-controle)", background: "rgba(var(--tint-violet-rgb), .3)", color: "var(--text-0)" }}
+            />
+            {mot.trim() !== motEnBase && (
+              <button onClick={() => void enregistrerMot()} disabled={motOccupe}
+                className="min-h-11 px-4 text-[13px] font-semibold text-white disabled:opacity-60"
+                style={{ borderRadius: "var(--r-controle)", background: "linear-gradient(135deg, #8B5CF6, #C13BC1)" }}>
+                {motOccupe ? <Loader2 className="h-4 w-4 animate-spin" /> : "Enregistrer"}
+              </button>
+            )}
+          </div>
+        </div>
       )}
 
       <div className="max-h-[38vh] overflow-y-auto">

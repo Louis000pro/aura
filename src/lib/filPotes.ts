@@ -29,6 +29,8 @@ export type AfficheDuFil = {
   auteur: Personne;
   creeLe: string;
   data: PerformanceData;
+  /** Le petit mot posé sur l'affiche (« Dur aujourd'hui mais fait »), ou vide. */
+  mot: string;
   /** Par sorte : qui a réagi. */
   reactions: Record<SorteReaction, string[]>;
 };
@@ -68,7 +70,7 @@ export async function chargerFilPotes(moi: Personne, amisSeuls: Personne[]): Pro
   const depuis = new Date(Date.now() - FENETRE_JOURS * 86_400_000).toISOString();
   const { data, error } = await supabase
     .from("posts")
-    .select("id, user_id, performance_data, created_at")
+    .select("id, user_id, performance_data, caption, created_at")
     .eq("type", "workout").eq("audience", "friends")
     .in("user_id", amis.map((a) => a.id))
     .gte("created_at", depuis)
@@ -83,6 +85,7 @@ export async function chargerFilPotes(moi: Personne, amisSeuls: Personne[]): Pro
       auteur: parId.get(p.user_id as string)!,
       creeLe: p.created_at as string,
       data: p.performance_data as PerformanceData,
+      mot: ((p.caption as string | null) ?? "").trim(),
       reactions: reactionsVides(),
     }));
   if (!affiches.length) return affiches;
@@ -122,14 +125,50 @@ export async function presenceAmis(): Promise<Map<string, boolean>> {
 
 /* ── Mon affiche dans le fil ─────────────────────────────────── */
 
-/** L'affiche de cette séance est-elle montrée à mes amis ? `null` = pas d'affiche. */
-export async function afficheDansFil(moi: string, seanceId: string): Promise<boolean | null> {
+/** L'affiche de cette séance est-elle montrée à mes amis, et avec quel mot ?
+ *  `null` = pas d'affiche. */
+export async function afficheDansFil(moi: string, seanceId: string): Promise<{ dansFil: boolean; mot: string } | null> {
   const { data, error } = await createClient()
-    .from("posts").select("audience")
+    .from("posts").select("audience, caption")
     .eq("user_id", moi).eq("type", "workout").eq("performance_data->>seance_id", seanceId)
     .maybeSingle();
   if (error || !data) return null;
-  return data.audience === "friends";
+  return { dansFil: data.audience === "friends", mot: ((data.caption as string | null) ?? "").trim() };
+}
+
+/** La longueur d'un petit mot : une phrase, pas un article. */
+export const MOT_MAX = 200;
+
+/** Pose (ou efface) le petit mot de l'affiche de cette séance. */
+export async function ecrireMotSeance(moi: string, seanceId: string, mot: string): Promise<boolean> {
+  const { data, error } = await createClient()
+    .from("posts").update({ caption: mot.trim().slice(0, MOT_MAX) })
+    .eq("user_id", moi).eq("type", "workout").eq("performance_data->>seance_id", seanceId)
+    .select("id");
+  return !error && (data?.length ?? 0) > 0;
+}
+
+/** Pose (ou efface) le petit mot d'une affiche du fil, par son id. */
+export async function ecrireMot(moi: string, postId: string, mot: string): Promise<boolean> {
+  const { data, error } = await createClient()
+    .from("posts").update({ caption: mot.trim().slice(0, MOT_MAX) })
+    .eq("id", postId).eq("user_id", moi).select("id");
+  return !error && (data?.length ?? 0) > 0;
+}
+
+/** Retire mon affiche du fil : elle reste dans mon profil. */
+export async function retirerDuFil(moi: string, postId: string): Promise<boolean> {
+  const { data, error } = await createClient()
+    .from("posts").update({ audience: "private" })
+    .eq("id", postId).eq("user_id", moi).select("id");
+  return !error && (data?.length ?? 0) > 0;
+}
+
+/** Supprime mon affiche pour de bon (du fil ET du profil). La séance, elle,
+ *  reste dans l'historique : on ne réécrit jamais le journal. */
+export async function supprimerAffiche(moi: string, postId: string): Promise<boolean> {
+  const { error } = await createClient().from("posts").delete().eq("id", postId).eq("user_id", moi);
+  return !error;
 }
 
 /** Montre (ou retire) l'affiche de cette séance du fil de mes amis. */
