@@ -15,23 +15,27 @@
    partager son affiche hors de Vaiiya est la seule boucle
    d'acquisition automatique du produit.
 
-   ⚠️ AUCUN FIL D'ACTIVITÉ N'EST ROUVERT. On choisit un fil et on y
-   envoie une image ; personne ne reçoit rien qu'il n'ait pas déjà
-   accepté de recevoir.
+   ⭐ 2026-10-18 (maquette « Progresser avec ses potes ») : la première
+   ligne montre l'affiche dans LE FIL DE TES POTES (amis réciproques
+   seulement, jamais un inconnu). C'est un choix, éteint par défaut,
+   et on peut le retirer.
    ───────────────────────────────────────────────────────────── */
 
 import { useState, useEffect } from "react";
-import { Loader2, X, Check, Share2 } from "lucide-react";
+import { Loader2, X, Check, Share2, Users } from "lucide-react";
 import Sheet from "@/components/communaute/Sheet";
 import ConversationAvatar from "@/components/communaute/ConversationAvatar";
 import {
   chargerConversations, titreConversation, autresMembres, envoyerPhoto,
   type Conversation,
 } from "@/lib/messagerie";
+import { afficheDansFil, montrerDansFil } from "@/lib/filPotes";
 import { renderPerfCardBlob, sharePerfCard, type PerfShareData } from "@/lib/perfShareExport";
 
-export default function EnvoyerAffiche({ data, moi, accessToken, onFermer }: {
+export default function EnvoyerAffiche({ data, moi, accessToken, seanceId, onFermer }: {
   data: PerfShareData;
+  /** La séance de l'affiche : sans elle, pas de ligne « fil des potes ». */
+  seanceId?: string | null;
   moi: string;
   accessToken?: string;
   onFermer: () => void;
@@ -41,6 +45,23 @@ export default function EnvoyerAffiche({ data, moi, accessToken, onFermer }: {
   const [occupe, setOccupe] = useState<string | null>(null);
   const [envoye, setEnvoye] = useState<string | null>(null);
   const [erreur, setErreur] = useState<string | null>(null);
+  /** `null` : l'affiche n'est pas (encore) en base, la ligne ne s'affiche pas. */
+  const [dansFil, setDansFil] = useState<boolean | null>(null);
+  const [filOccupe, setFilOccupe] = useState(false);
+
+  useEffect(() => {
+    if (!seanceId) return;
+    void afficheDansFil(moi, seanceId).then(setDansFil);
+  }, [moi, seanceId]);
+
+  const basculerFil = async () => {
+    if (!seanceId || dansFil === null) return;
+    setFilOccupe(true);
+    const ok = await montrerDansFil(moi, seanceId, !dansFil);
+    setFilOccupe(false);
+    if (ok) setDansFil(!dansFil);
+    else setErreur("Impossible de changer qui voit ton affiche. Réessaie.");
+  };
 
   useEffect(() => {
     void chargerConversations(moi)
@@ -76,6 +97,30 @@ export default function EnvoyerAffiche({ data, moi, accessToken, onFermer }: {
       <p className="mb-3 text-[13px]" style={{ color: "var(--text-2)" }}>
         Ton affiche part dans la discussion, comme une photo.
       </p>
+
+      {dansFil !== null && (
+        <button
+          role="switch"
+          aria-checked={dansFil}
+          onClick={() => void basculerFil()}
+          disabled={filOccupe}
+          className="mb-3 flex w-full items-center gap-3 px-3.5 py-3 text-left disabled:opacity-60"
+          style={{ borderRadius: "var(--r-bloc)", background: "rgba(var(--tint-violet-rgb), .45)" }}
+        >
+          <span className="flex h-[38px] w-[38px] flex-shrink-0 items-center justify-center rounded-xl text-white"
+            style={{ background: "linear-gradient(135deg, #8B5CF6, #C13BC1)" }}>
+            <Users className="h-4.5 w-4.5" />
+          </span>
+          <span className="min-w-0 flex-1">
+            <b className="block text-[16px] font-semibold" style={{ color: "var(--text-0)" }}>Dans le fil de tes potes</b>
+            <small className="block text-[13px]" style={{ color: "var(--text-3)" }}>Seuls tes amis la voient.</small>
+          </span>
+          <span aria-hidden className="relative h-6 w-10 flex-shrink-0 rounded-full transition-colors"
+            style={{ background: dansFil ? "linear-gradient(135deg, #8B5CF6, #C13BC1)" : "rgba(var(--text-3-rgb), .3)" }}>
+            <span className="absolute top-0.5 h-5 w-5 rounded-full bg-white transition-all" style={{ left: dansFil ? 18 : 2 }} />
+          </span>
+        </button>
+      )}
 
       <div className="max-h-[38vh] overflow-y-auto">
         {charge ? (

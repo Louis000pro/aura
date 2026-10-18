@@ -23,6 +23,7 @@ import ConversationAvatar, { PersonAvatar } from "@/components/communaute/Conver
 import Sheet from "@/components/communaute/Sheet";
 import AvecQui from "@/components/communaute/AvecQui";
 import FriendshipSheets, { type VueAmis } from "@/components/communaute/FriendshipSheets";
+import FilPotes from "@/components/communaute/FilPotes";
 import { PseudoRang } from "@/components/rang/IdentiteRang";
 import { useRangs } from "@/lib/rangsPublics";
 import { createClient } from "@/lib/supabase";
@@ -55,6 +56,19 @@ export default function ConversationListPane({
   const [vueAmis, setVueAmis] = useState<VueAmis>(null);
   const [nombreDemandes, setNombreDemandes] = useState(0);
   const [pseudoInvite, setPseudoInvite] = useState("");
+  /* Deux onglets (maquette « Progresser avec ses potes », 2026-10-18) :
+     ce que font tes potes, et vos discussions. Le fil n'existe que sur
+     mobile et dans le panneau : il ne montre QUE des amis. */
+  const [onglet, setOnglet] = useState<"fil" | "messages">(() => {
+    if (activeId) return "messages";
+    if (typeof window === "undefined") return "fil";
+    try { return sessionStorage.getItem("vaiiya:communaute:onglet") === "messages" ? "messages" : "fil"; } catch { return "fil"; }
+  });
+  const choisirOnglet = (o: "fil" | "messages") => {
+    setOnglet(o);
+    try { sessionStorage.setItem("vaiiya:communaute:onglet", o); } catch { /* stockage bloqué */ }
+  };
+  const nonLusTotal = convs.reduce((n, c) => n + (c.archivee || c.sourde ? 0 : c.nonLus), 0);
 
   const recharger = useCallback(async () => {
     if (!user) return;
@@ -281,6 +295,30 @@ export default function ConversationListPane({
         }}>Communauté</em>
       </h1>
 
+      <div role="tablist" className="mx-4 mb-3 flex gap-5 border-b" style={{ borderColor: "rgba(var(--text-3-rgb), .14)" }}>
+        {(["fil", "messages"] as const).map((o) => (
+          <button key={o} role="tab" aria-selected={onglet === o} onClick={() => choisirOnglet(o)}
+            className="-mb-px flex items-center gap-1.5 border-b-2 pb-2 text-[16px] font-semibold"
+            style={{ borderColor: onglet === o ? "var(--accent)" : "transparent", color: onglet === o ? "var(--text-0)" : "var(--text-3)" }}>
+            {o === "fil" ? "Le fil" : "Messages"}
+            {o === "messages" && nonLusTotal > 0 && (
+              <span className="vy-nombre flex min-w-5 items-center justify-center rounded-full px-1.5 text-[11px] text-white"
+                style={{ background: "linear-gradient(135deg, #8B5CF6, #C13BC1)", fontWeight: 700 }}>
+                {nonLusTotal > 9 ? "9+" : nonLusTotal}
+              </span>
+            )}
+          </button>
+        ))}
+      </div>
+
+      {onglet === "fil" && user ? (
+        <FilPotes
+          moi={user.id}
+          monPseudo={user.pseudo}
+          monAvatar={user.avatar ?? null}
+          onAjouterAmi={() => { setPseudoInvite(""); setVueAmis("ajouter"); }}
+        />
+      ) : (<>
       {convs.length > 0 && (
         <div className="px-4 pb-3">
           <label
@@ -370,6 +408,7 @@ export default function ConversationListPane({
               setSheet("actions");
             }}
           />}
+      </>)}
 
       <AnimatePresence>
         {sheet === "actions" && selection && (

@@ -2614,7 +2614,7 @@ export default function WorkoutGuideModal({
               v: gainFin.valeur,
               l: gainFin.libelle.includes("assistance") ? `${gainFin.unite} ${gainFin.libelle}` : `${gainFin.unite} · ${fait.nom}`,
             } : null,
-          }} moi={user.id} accessToken={session?.access_token} onFermer={() => setEnvoyerOuvert(false)} />
+          }} moi={user.id} accessToken={session?.access_token} seanceId={seanceIdFin} onFermer={() => setEnvoyerOuvert(false)} />
         )}
       </AnimatePresence>
     </motion.div>

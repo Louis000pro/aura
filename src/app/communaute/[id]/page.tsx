@@ -14,6 +14,7 @@
    lignes système.
    ───────────────────────────────────────────────────────────── */
 
+import { lireBrouillon, effacerBrouillon } from "@/lib/filPotes";
 import { useState, useEffect, useLayoutEffect, useRef, useCallback, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
@@ -75,7 +76,8 @@ export default function FilPage() {
   const [charge, setCharge]     = useState(() => !cacheInitial);
   const [chargeAvant, setChargeAvant] = useState(false);
   const [encoreAvant, setEncoreAvant] = useState(false);
-  const [texte, setTexte]       = useState("");
+  const [texte, setTexte]       = useState(() => lireBrouillon(convId));
+  useEffect(() => { effacerBrouillon(convId); }, [convId]);
   const [envoi, setEnvoi]       = useState(false);
   const [photoEnCours, setPhotoEnCours] = useState(false);
   const [repondA, setRepondA]   = useState<Message | null>(null);
