@@ -15,6 +15,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { indexRang, type Rang } from "@/lib/aura";
+import { publierEvenement } from "@/lib/evenementsFil";
 
 export const EVENEMENT_RANG_MONTE = "aura:rang-monte";
 
@@ -48,6 +49,9 @@ export function noterRang(userId: string, rang: Rang): void {
 
   if (vu === null) return; // premier passage : on mémorise, on ne fête pas
   if (indexRang(rang.id) <= indexRang(vu)) return; // descente ou rang inconnu : rien
+
+  // La montée se raconte aussi dans le fil des potes (une seule fois par rang).
+  publierEvenement(userId, "rang", `rang:${rang.id}`, { rang: rang.id });
 
   window.dispatchEvent(
     new CustomEvent<DetailRangMonte>(EVENEMENT_RANG_MONTE, { detail: { rangId: rang.id } }),

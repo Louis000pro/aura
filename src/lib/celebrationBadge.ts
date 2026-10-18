@@ -21,6 +21,7 @@
    ───────────────────────────────────────────────────────────────────── */
 
 import { badgeParSlug, type Badge } from "@/lib/badges";
+import { publierEvenement } from "@/lib/evenementsFil";
 
 /** Clé par compte : sur un appareil partagé, le badge de l'un ne fête pas l'autre. */
 const cle = (userId: string) => `vaiiya_badges_vus_${userId}`;
@@ -59,8 +60,11 @@ export function noterBadges(userId: string, slugs: Iterable<string>): Badge[] {
   }
 
   const connus = new Set(vus);
-  return courants
+  const neufs = courants
     .filter((s) => !connus.has(s))
     .map(badgeParSlug)
     .filter((b): b is Badge => b !== null);
+  // Un badge qu'on fête se raconte aussi dans le fil des potes.
+  for (const b of neufs) publierEvenement(userId, "badge", `badge:${b.slug}`, { slug: b.slug });
+  return neufs;
 }

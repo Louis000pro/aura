@@ -8,8 +8,14 @@
    dessous, les affiches que mes AMIS ont choisi de montrer, avec
    trois réactions d'un geste et une réponse en message privé.
 
+   Entre les affiches, les ÉVÉNEMENTS de mes amis (maquette « Le fil
+   des événements », 2026-10-18) : une séance faite, un rang, une
+   flamme, un badge. Ceux qui se suivent sont posés dans un seul
+   groupe à filets, chacun avec son « Bravo ».
+
    ⚠️ CE QUI N'EST PAS ICI, ET NE DOIT PAS Y VENIR : un inconnu,
-   un classement, un commentaire public, un compteur de vues.
+   un classement, un commentaire public, un compteur de vues, une
+   absence ou une série cassée.
    ───────────────────────────────────────────────────────────── */
 
 import { useCallback, useEffect, useState } from "react";
@@ -18,6 +24,14 @@ import { Loader2, MessageCircle, UserPlus } from "lucide-react";
 import { PersonAvatar } from "@/components/communaute/ConversationAvatar";
 import { motCouverture, useMotAjuste, STYLE_MOT } from "@/components/profil/CouvertureSeance";
 import { creerConversation, type Personne } from "@/lib/messagerie";
+import GemmeRang from "@/components/GemmeRang";
+import FlammeSerie from "@/components/serie/FlammeSerie";
+import { RANGS } from "@/lib/aura";
+import type { IdFlamme } from "@/lib/flammesSerie";
+import {
+  chargerEvenements, basculerBravo, phraseEvenement, lireMontrerSeances, reglerMontrerSeances,
+  type EvenementFil,
+} from "@/lib/evenementsFil";
 import {
   mesAmis, chargerFilPotes, presenceAmis, basculerReaction, poserBrouillon, quandAffiche,
   SORTES, type AfficheDuFil, type SorteReaction,
@@ -32,18 +46,23 @@ export default function FilPotes({ moi, monPseudo, monAvatar, onAjouterAmi }: {
   const router = useRouter();
   const [amis, setAmis] = useState<Personne[] | null>(null);
   const [fil, setFil] = useState<AfficheDuFil[]>([]);
+  const [evts, setEvts] = useState<EvenementFil[]>([]);
+  const [montrer, setMontrer] = useState<boolean | null>(null);
   const [presence, setPresence] = useState<Map<string, boolean>>(new Map());
   const [erreur, setErreur] = useState(false);
   const [ouverture, setOuverture] = useState<string | null>(null);
 
   const lire = useCallback(async () => {
     const a = await mesAmis(moi);
-    const [f, p] = await Promise.all([chargerFilPotes(a), presenceAmis()]);
-    return { a, f, p };
-  }, [moi]);
+    const [f, p, e] = await Promise.all([
+      chargerFilPotes(a), presenceAmis(),
+      chargerEvenements({ id: moi, pseudo: monPseudo, avatar: monAvatar }, a),
+    ]);
+    return { a, f, p, e };
+  }, [moi, monPseudo, monAvatar]);
 
-  const appliquer = useCallback((r: { a: Personne[]; f: AfficheDuFil[]; p: Map<string, boolean> }) => {
-    setAmis(r.a); setFil(r.f); setPresence(r.p); setErreur(false);
+  const appliquer = useCallback((r: { a: Personne[]; f: AfficheDuFil[]; p: Map<string, boolean>; e: EvenementFil[] }) => {
+    setAmis(r.a); setFil(r.f); setPresence(r.p); setEvts(r.e); setErreur(false);
   }, []);
   const echec = useCallback(() => { setErreur(true); setAmis((x) => x ?? []); }, []);
 
@@ -54,6 +73,28 @@ export default function FilPotes({ moi, monPseudo, monAvatar, onAjouterAmi }: {
     lire().then((r) => { if (actif) appliquer(r); }, () => { if (actif) echec(); });
     return () => { actif = false; };
   }, [lire, appliquer, echec]);
+
+  useEffect(() => {
+    let actif = true;
+    void lireMontrerSeances().then((v) => { if (actif) setMontrer(v); }, () => {});
+    return () => { actif = false; };
+  }, []);
+
+  const changerMontrer = async () => {
+    if (montrer === null) return;
+    const v = !montrer;
+    setMontrer(v);
+    if (!(await reglerMontrerSeances(v))) setMontrer(!v);
+  };
+
+  const direBravo = async (e: EvenementFil) => {
+    const mettre = !e.bravos.includes(moi);
+    const maj = (l: EvenementFil[], m: boolean) => l.map((x) => x.id !== e.id ? x : {
+      ...x, bravos: m ? [...x.bravos, moi] : x.bravos.filter((id) => id !== moi),
+    });
+    setEvts((l) => maj(l, mettre));
+    if (!(await basculerBravo(e.id, moi, mettre))) setEvts((l) => maj(l, !mettre));
+  };
 
   const reagir = async (a: AfficheDuFil, sorte: SorteReaction) => {
     const mettre = !a.reactions[sorte].includes(moi);
@@ -83,6 +124,9 @@ export default function FilPotes({ moi, monPseudo, monAvatar, onAjouterAmi }: {
       </div>
     );
   }
+
+  const moments = enMoments(fil, evts);
+  const prenoms = new Map(amis.map((a) => [a.id, a.pseudo]));
 
   const rangee: (Personne & { moi?: boolean })[] = [
     { id: moi, pseudo: "Toi", avatar: monAvatar, moi: true },
@@ -128,7 +172,7 @@ export default function FilPotes({ moi, monPseudo, monAvatar, onAjouterAmi }: {
       )}
 
       {/* ─── Le fil ─── */}
-      {fil.length === 0 ? (
+      {moments.length === 0 ? (
         <div className="px-4 pt-6 text-center">
           <p className="text-[16px] font-semibold" style={{ color: "var(--text-1)" }}>
             {amis.length === 0 ? "Ajoute tes potes" : "Rien de neuf pour l’instant"}
@@ -136,7 +180,7 @@ export default function FilPotes({ moi, monPseudo, monAvatar, onAjouterAmi }: {
           <p className="mx-auto mt-1.5 max-w-[290px] text-[13px] leading-relaxed" style={{ color: "var(--text-3)" }}>
             {amis.length === 0
               ? "Quand vous serez amis, vous verrez les séances que chacun choisit de montrer."
-              : "Quand un pote montre sa séance, elle arrive ici. La tienne aussi, depuis la fin de séance."}
+              : "Quand un pote fait une séance, gagne un rang ou une flamme, ça arrive ici."}
           </p>
           {amis.length === 0 && (
             <button onClick={onAjouterAmi}
@@ -148,7 +192,13 @@ export default function FilPotes({ moi, monPseudo, monAvatar, onAjouterAmi }: {
         </div>
       ) : (
         <div className="flex flex-col gap-4">
-          {fil.map((a) => (
+          {moments.map((m) => m.k === "evts" ? (
+            <div key={m.cle} style={{ borderRadius: "var(--r-bloc)", background: "rgb(var(--surface-rgb))", boxShadow: "var(--ombre-pose)" }}>
+              {m.liste.map((e) => (
+                <LigneEvenement key={e.id} e={e} moi={moi} prenoms={prenoms} onBravo={() => void direBravo(e)} />
+              ))}
+            </div>
+          ) : ((a) => (
             <article key={a.id} className="overflow-hidden"
               style={{ borderRadius: "var(--r-bloc)", background: "rgb(var(--surface-rgb))", boxShadow: "var(--ombre-pose)" }}>
               <header className="flex items-center gap-2.5 px-3.5 pb-2.5 pt-3">
@@ -184,10 +234,113 @@ export default function FilPotes({ moi, monPseudo, monAvatar, onAjouterAmi }: {
                 </button>
               </div>
             </article>
-          ))}
+          ))(m.a))}
+          <p className="pt-1 text-center text-[13px]" style={{ color: "var(--text-3)" }}>C’est tout pour l’instant.</p>
         </div>
       )}
+
+      {montrer !== null && (
+        <button onClick={() => void changerMontrer()} role="switch" aria-checked={montrer}
+          className="mt-6 flex w-full items-center gap-3 px-1 py-2 text-left">
+          <span className="min-w-0 flex-1">
+            <span className="block text-[13px] font-semibold" style={{ color: "var(--text-1)" }}>Montrer mes séances à mes potes</span>
+            <span className="block text-[11px]" style={{ color: "var(--text-3)" }}>Une ligne dans leur fil quand tu finis une séance.</span>
+          </span>
+          <span aria-hidden className="relative h-6 w-10 flex-shrink-0 rounded-full transition-colors"
+            style={{ background: montrer ? "linear-gradient(135deg, #8B5CF6, #C13BC1)" : "rgba(var(--text-3-rgb), .3)" }}>
+            <span className="absolute top-0.5 h-5 w-5 rounded-full bg-white transition-all" style={{ left: montrer ? 18 : 2 }} />
+          </span>
+        </button>
+      )}
     </div>
+  );
+}
+
+type Moment =
+  | { k: "aff"; at: string; a: AfficheDuFil }
+  | { k: "evts"; at: string; cle: string; liste: EvenementFil[] };
+
+/** Affiches et événements dans l'ordre du temps ; les événements qui se
+ *  suivent tiennent dans un seul groupe. */
+function enMoments(fil: AfficheDuFil[], evts: EvenementFil[]): Moment[] {
+  const tout = [
+    ...fil.map((a) => ({ at: a.creeLe, a, e: null as EvenementFil | null })),
+    ...evts.map((e) => ({ at: e.creeLe, a: null as AfficheDuFil | null, e })),
+  ].sort((x, y) => y.at.localeCompare(x.at));
+  const out: Moment[] = [];
+  for (const x of tout) {
+    if (x.a) { out.push({ k: "aff", at: x.at, a: x.a }); continue; }
+    const der = out[out.length - 1];
+    if (der && der.k === "evts") der.liste.push(x.e!);
+    else out.push({ k: "evts", at: x.at, cle: `evts-${x.e!.id}`, liste: [x.e!] });
+  }
+  return out;
+}
+
+/** « Marc et Sarah ont dit bravo », « Marc a dit bravo », « 4 bravos ». */
+function quiADitBravo(ids: string[], prenoms: Map<string, string>): string | null {
+  if (!ids.length) return null;
+  const noms = ids.map((id) => prenoms.get(id)).filter((n): n is string => !!n);
+  if (noms.length !== ids.length || noms.length > 2) return `${ids.length} bravo${ids.length > 1 ? "s" : ""}`;
+  return noms.length === 1 ? `${noms[0]} a dit bravo` : `${noms[0]} et ${noms[1]} ont dit bravo`;
+}
+
+function LigneEvenement({ e, moi, prenoms, onBravo }: {
+  e: EvenementFil; moi: string; prenoms: Map<string, string>; onBravo: () => void;
+}) {
+  const cEstMoi = e.auteur.id === moi;
+  const phrase = phraseEvenement(e, cEstMoi);
+  if (!phrase) return null;
+  const mien = e.bravos.includes(moi);
+  const minutes = e.sorte === "seance" && Number.isFinite(Number(e.data.minutes)) ? Number(e.data.minutes) : null;
+  const bravos = cEstMoi ? quiADitBravo(e.bravos, prenoms) : null;
+  return (
+    <div className="vy-filet flex items-center gap-3 px-3.5 py-3.5">
+      <span className="relative flex-shrink-0">
+        <PersonAvatar personne={e.auteur} taille={44} />
+        <span className="absolute -bottom-1 -right-1 flex h-[22px] w-[22px] items-center justify-center">
+          <SigneEvenement e={e} />
+        </span>
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block text-[16px] leading-snug" style={{ color: "var(--text-1)" }}>
+          {phrase.map((m, i) => m.gras ? <b key={i} style={{ color: "var(--text-0)" }}>{m.t}</b> : <span key={i}>{m.t}</span>)}
+        </span>
+        <span className="mt-0.5 block text-[11px]" style={{ color: "var(--text-3)" }}>
+          {quandAffiche(e.creeLe)}
+          {minutes !== null && <> · <span className="vy-nombre">{minutes}</span> min</>}
+          {bravos && <> · {bravos}</>}
+        </span>
+      </span>
+      {!cEstMoi && (
+        <button onClick={onBravo} aria-pressed={mien}
+          className="flex min-h-9 flex-shrink-0 items-center gap-1.5 rounded-full px-3.5 text-[13px] font-semibold"
+          style={mien
+            ? { background: "linear-gradient(135deg, #8B5CF6, #C13BC1)", color: "#fff" }
+            : { background: "rgba(var(--tint-violet-rgb), .5)", color: "var(--exp-encre)" }}>
+          Bravo
+          {e.bravos.length > 0 && <span className="vy-nombre" style={{ fontWeight: 700 }}>{e.bravos.length}</span>}
+        </button>
+      )}
+    </div>
+  );
+}
+
+/** Le petit signe posé sur la photo : la gemme, la flamme, le badge, la coche. */
+function SigneEvenement({ e }: { e: EvenementFil }) {
+  if (e.sorte === "rang") {
+    const rang = RANGS.find((r) => r.id === e.data.rang);
+    if (rang) return <GemmeRang rang={rang} size={22} flotte={false} />;
+  }
+  if (e.sorte === "flamme") return <FlammeSerie palier={e.data.palier as IdFlamme} taille={18} />;
+  const violet = "linear-gradient(135deg, #8B5CF6, #C13BC1)";
+  return (
+    <span aria-hidden className="flex h-[22px] w-[22px] items-center justify-center rounded-full"
+      style={{ background: violet, border: "2px solid rgb(var(--surface-rgb))" }}>
+      {e.sorte === "badge"
+        ? <svg width="11" height="11" viewBox="0 0 24 24"><path d="M12 2l3 6.5 7 1-5 5 1.2 7L12 18l-6.2 3.5L7 14.5l-5-5 7-1z" fill="#fff" /></svg>
+        : <svg width="11" height="11" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" /></svg>}
+    </span>
   );
 }
 

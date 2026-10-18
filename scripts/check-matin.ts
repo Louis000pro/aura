@@ -170,7 +170,7 @@ const lire = (fichier: string) => readFileSync(path.join(RACINE, fichier), "utf8
 {
   const tuile = lire("src/components/accueil/MaJournee.tsx");
   verdict("la tuile décide sa montée avec la règle unique", tuile.includes("decideMontee(") && tuile.includes("noterVuSerie("), "MaJournee.tsx");
-  verdict("la montée ne joue pas quand il faut réduire les animations", /reduce \? null : decideMontee\(/.test(tuile), "reduce");
+  verdict("la montée ne joue pas quand il faut réduire les animations", (/reduce \? null : decideMontee\(/.test(tuile) || (/const brut = decideMontee\(/.test(tuile) && /reduce \? null : brut/.test(tuile))), "reduce");
 }
 {
   const feuille = lire("src/components/accueil/FeuilleMotDuJour.tsx");

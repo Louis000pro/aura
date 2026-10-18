@@ -34,8 +34,12 @@ import FlammeSerie from "@/components/serie/FlammeSerie";
 import { MISSIONS_JOUR, progressionRang, resteMission, type EtatAura, type Mission } from "@/lib/aura";
 import { etatFlamme } from "@/lib/flammesSerie";
 import { decideMontee, lireVuSerie, noterVuSerie, type Montee } from "@/lib/monteeSerie";
+import { publierFlamme } from "@/lib/evenementsFil";
 import { apercuPremiumDuJour, compteMissionsJour, missionDebloquee } from "@/lib/missionsAccueil";
 import styles from "./MaJournee.module.css";
+
+/** Le jour parisien, `YYYY-MM-DD` : la clé d'une flamme dans le fil. */
+const jourParis = () => new Date().toLocaleDateString("fr-CA", { timeZone: "Europe/Paris" });
 
 /** Les temps de la montée, en secondes : chaque geste répond au précédent. */
 const T = { souffle: 0.15, chiffre: 0.35, bascule: 0.75, jeton: 0.8, rang: 1.55, fin: 3.4 };
@@ -56,7 +60,10 @@ function useMontee(
   useEffect(() => {
     if (!userId) return;
     const actuel = { serie, exp };
-    const m = reduce ? null : decideMontee(lireVuSerie(userId), actuel);
+    const brut = decideMontee(lireVuSerie(userId), actuel);
+    // Une flamme qui naît se raconte dans le fil des potes, animation ou non.
+    if (brut && brut.palierApres !== brut.palierAvant) publierFlamme(userId, brut.palierApres, brut.aSerie, jourParis());
+    const m = reduce ? null : brut;
     if (!m) {
       noterVuSerie(userId, actuel);
       return;
