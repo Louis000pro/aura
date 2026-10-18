@@ -115,7 +115,7 @@ export default function AccueilSignature({
   const [feuille, setFeuille] = useState(false);
   const [feuilleSerie, setFeuilleSerie] = useState(false);
   const { user } = useAuth();
-  const { open: ouvrirAssistant } = useAssistant();
+  const { open: ouvrirAssistant, ouvrirSurQuestion } = useAssistant();
 
   /* ── Le mot du jour (Louis, 2026-10-17) ──
      Un mot par jour, gardé sur l'appareil avec son état « lu ». Il attend
@@ -191,9 +191,12 @@ export default function AccueilSignature({
             userId={user.id}
             jour={jour}
             dejaGagne={aura.mouvementDuJour}
+            relais={relais ? { quoi: relais.etat.quoi, maillon: relais.etat.quoi === "a_moi" ? relais.etat.maillon : undefined } : null}
+            premium={premiumDebloque}
             onGain={() => { gainMouvement.current = true; }}
             onFermer={fermerMot}
             onRepondre={() => { fermerMot(); ouvrirAssistant(); }}
+            onQuestion={(q) => { fermerMot(); ouvrirSurQuestion(q); }}
           />
         )}
       </AnimatePresence>

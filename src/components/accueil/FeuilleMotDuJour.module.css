@@ -1,0 +1,296 @@
+/* ─────────────────────────────────────────────────────────────────────
+   LA FEUILLE DU MOT DU JOUR (maquette « Le mot du jour », GO de Louis le
+   2026-10-18) : l'en-tête du Guide, sa bulle, le conseil du jour, puis le
+   mouvement du jour.
+
+   ⚠️ AUCUNE COULEUR DE SURFACE ÉCRITE À LA MAIN : les fonds se posent en
+   transparence d'une encre (`--text-1-rgb`, `--tint-violet-rgb`), donc ils
+   suivent le thème sans bloc sombre à part. Les trois encres du conseil
+   sont celles du système D : violet pour comprendre, teal pour le corps,
+   orange pour l'énergie.
+   ⚠️ On n'anime que `transform` et `opacity`, jamais un flou, et rien
+   quand il faut réduire les animations.
+   ───────────────────────────────────────────────────────────────────── */
+
+/* La feuille partagée ne borne pas sa hauteur : le mot défile en lui-même,
+   sinon son bas passerait sous le bord d'un petit écran. */
+.defile {
+  max-height: min(78dvh, 720px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  margin: 0 -20px;
+  padding: 0 20px 4px;
+  scrollbar-width: none;
+}
+.defile::-webkit-scrollbar { display: none; }
+
+.bulle {
+  margin-top: 14px;
+  padding: 14px 16px;
+  border-radius: 4px 20px 20px 20px;
+  background: rgba(139, 92, 246, 0.08);
+}
+.ligne {
+  font-size: 16px;
+  line-height: 1.45;
+  color: var(--text-1);
+}
+.ligne + .ligne { margin-top: 8px; }
+.ligneForte {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 800;
+  color: var(--text-0);
+}
+.ligneForte > svg { flex: none; }
+
+.squelette {
+  height: 13px;
+  border-radius: 99px;
+  background: rgba(var(--text-3-rgb), 0.22);
+}
+.squelette + .squelette { margin-top: 10px; width: 72%; }
+
+/* ── Le conseil ─────────────────────────────────────────────────────── */
+
+.conseil {
+  margin-top: 12px;
+  padding: 13px 14px 15px;
+  border-radius: 18px;
+  background: rgba(var(--text-1-rgb), 0.045);
+  --famille: var(--exp-encre);
+}
+.conseil[data-encre="teal"] { --famille: var(--teal-encre); }
+.conseil[data-encre="feu"] { --famille: var(--feu-encre); }
+
+.titre {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 10px;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--famille);
+}
+.titre::before {
+  content: "";
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 99px;
+  background: var(--famille);
+}
+
+.rangee {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+.rangeeCentre { align-items: center; }
+.corps { flex: 1; min-width: 0; }
+.texte {
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--text-1);
+}
+.question {
+  margin-top: 2px;
+  font-size: 16px;
+  line-height: 1.4;
+  font-weight: 600;
+  color: var(--text-0);
+}
+.note {
+  margin-top: 10px;
+  font-size: 13px;
+  color: var(--text-2);
+}
+
+.lien {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  margin-top: 6px;
+  padding: 4px 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--exp-encre);
+  cursor: pointer;
+}
+
+/* Le compte de la minute de respiration : la place du lien, sans en être un. */
+.etat {
+  margin-top: 6px;
+  padding: 4px 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--teal-encre);
+}
+
+/* La scène claire d'un mouvement : la vignette repose sur son ombre. */
+.scene {
+  position: relative;
+  flex: none;
+  width: 82px;
+  height: 82px;
+  border-radius: 16px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(var(--tint-violet-rgb), 0.85);
+  box-shadow: inset 0 0 0 1px rgba(139, 92, 246, 0.1);
+  cursor: pointer;
+}
+.scene::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: 7px;
+  width: 50px;
+  height: 12px;
+  margin-left: -25px;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(70, 48, 130, 0.2), rgba(70, 48, 130, 0));
+  pointer-events: none;
+}
+.scene > * { position: relative; z-index: 1; }
+
+.nombre {
+  flex: none;
+  min-width: 56px;
+  font-size: 26px;
+  line-height: 1;
+  color: var(--exp-encre);
+}
+
+/* ── Respire ── */
+.souffle {
+  position: relative;
+  flex: none;
+  width: 92px;
+  height: 92px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.cercle {
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  background: radial-gradient(circle at 50% 40%, rgba(43, 212, 160, 0.55), rgba(43, 212, 160, 0.16));
+}
+.phase {
+  position: relative;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--teal-encre);
+}
+
+/* ── Le visage du Guide qui pose la question ── */
+.visage {
+  flex: none;
+  width: 30px;
+  height: 30px;
+}
+
+/* ── Reprendre : une séance courte, d'un geste ── */
+.seance {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.photo {
+  flex: none;
+  width: 62px;
+  height: 62px;
+  border-radius: 14px;
+  object-fit: cover;
+  object-position: 50% 25%;
+}
+.seanceTitre {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--text-0);
+}
+.seanceMeta {
+  margin-top: 2px;
+  font-size: 13px;
+  color: var(--text-2);
+}
+.lancer {
+  flex: none;
+  padding: 9px 14px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #8B5CF6, #C13BC1);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 800;
+  box-shadow: var(--ombre-action);
+  cursor: pointer;
+}
+
+/* ── Le mini-défi ── */
+.defi {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+  padding: 7px 12px;
+  border-radius: 999px;
+  border: 1.5px solid rgba(var(--text-3-rgb), 0.45);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-2);
+  cursor: pointer;
+}
+.defi[data-fait] {
+  border-color: transparent;
+  background: #2BD4A0;
+  color: #08160F;
+}
+
+/* ── Ta semaine ── */
+.semaine {
+  display: flex;
+  justify-content: space-between;
+}
+.jour {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+}
+.pastille {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid rgba(var(--text-3-rgb), 0.4);
+}
+.pastille[data-etat="valide"] {
+  border-color: transparent;
+  background: #2BD4A0;
+  color: #08160F;
+}
+.pastille[data-etat="aujourdhui"] { border: 2px solid #2BD4A0; }
+.lettre {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-3);
+}
+.compte {
+  margin-top: 12px;
+  font-size: 13px;
+  color: var(--text-2);
+}
+.compte :global(.vy-nombre) { color: var(--text-0); }
+.mission {
+  margin-top: 4px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--teal-encre);
+}

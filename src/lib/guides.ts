@@ -94,24 +94,7 @@ export type ContexteVoix = {
   duree?: string;
   /** R3 · un nombre de répétitions (`seance.charge.choisir`). */
   reps?: number;
-  /** Le mot du jour · la flamme de la série, déjà accordée par l'appelant
-   *  (« au Feu » ou « le Feu », selon la phrase). */
-  flamme?: string;
-  /** Le mot du jour · la flamme suivante, avec son article (« le Brasier »). */
-  suivante?: string;
-  /** Le mot du jour · les jours avant la flamme suivante. */
-  restant?: number;
 };
-
-/** « Douze jours », « 42 jours » : en lettres jusqu'à vingt, comme on le
- *  dit, puis en chiffres. Majuscule incluse, la phrase commence par lui. */
-function joursDaffilee(n = 1): string {
-  const mots = ["", "Un", "Deux", "Trois", "Quatre", "Cinq", "Six", "Sept", "Huit", "Neuf", "Dix",
-    "Onze", "Douze", "Treize", "Quatorze", "Quinze", "Seize", "Dix-sept", "Dix-huit", "Dix-neuf", "Vingt"];
-  return `${mots[n] ?? String(n)} ${n > 1 ? "jours" : "jour"} d’affilée`;
-}
-
-const jours = (n = 0) => `${n} ${n > 1 ? "jours" : "jour"}`;
 
 /** « Une séance posée », « Trois séances posées ». Le nombre s'écrit en
  *  lettres, parce qu'une semaine n'en porte jamais plus de sept et qu'un
@@ -603,45 +586,6 @@ const REPLIQUES = {
     sasha:  "On fait quoi aujourd’hui ?",
   },
 
-  /* ── Le mot du jour (Louis, 2026-10-17, page « Revenir chaque jour ») ──
-     Chaque matin, le Guide laisse un mot qu'on ouvre comme un message :
-     où en est la flamme, puis ce que la journée propose. Deux phrases
-     VRAIES, lues dans la série et dans la journée, jamais un reproche :
-     une séance prévue hier et pas faite n'y est pas citée. Les nombres
-     viennent de l'appelant (`lib/motDuJour.ts`), jamais d'une estimation. */
-  "matin.flamme": {
-    commun: (c: ContexteVoix) => `${joursDaffilee(c.serie)}, ta flamme est ${c.flamme ?? ""}. Plus que ${jours(c.restant)} avant ${c.suivante ?? ""}.`,
-  },
-  "matin.flamme.debut": {
-    commun: (c: ContexteVoix) => `Premier jour de ta série : ta flamme s’allume. Plus que ${jours(c.restant)} avant ${c.suivante ?? ""}.`,
-  },
-  /* Le jour où une flamme arrive. La tuile de l'accueil le montre déjà ;
-     le mot le dit avec des mots, une fois. */
-  "matin.flamme.nouvelle": {
-    commun: (c: ContexteVoix) => `${joursDaffilee(c.serie)} : ta flamme devient ${c.flamme ?? ""}.`,
-  },
-  "matin.flamme.sommet": {
-    commun: (c: ContexteVoix) => `${joursDaffilee(c.serie)} : ta flamme est au Feu sacré, à son plus beau.`,
-  },
-  "matin.plan.seance": {
-    commun: (c: ContexteVoix) => `Aujourd’hui, ${c.titre ?? "ta séance"} t’attend.`,
-  },
-  "matin.plan.etape": {
-    commun: (c: ContexteVoix) => `Ton programme te propose ${c.etape ?? "ta prochaine séance"}, quand tu veux.`,
-  },
-  "matin.plan.etape_jour": {
-    commun: (c: ContexteVoix) => `Ta prochaine séance, ${c.etape ?? ""}, est prévue ${c.jour ?? ""}.`,
-  },
-  "matin.plan.fait": {
-    commun: "Ta séance du jour est déjà faite. Profite du reste de la journée.",
-  },
-  "matin.plan.repos": {
-    commun: "Aujourd’hui, c’est repos. Passer ici suffit à tenir ta flamme.",
-  },
-  "matin.plan.libre": {
-    commun: "Rien de prévu aujourd’hui. Si l’envie te prend, je te prépare quelque chose.",
-  },
-
   /* ── Sa mémoire ──
      Il parle de lui, donc c'est bien lui qui parle. */
   "memoire.oubliee": {
@@ -1072,6 +1016,725 @@ export function voix(_guide: GuideRef, cle: CleVoix, ctx: ContexteVoix = {}): st
   const rendu = r.commun;
   return typeof rendu === "function" ? rendu(ctx) : rendu;
 }
+
+/* ════════════════════════════════════════════════════════════════════
+   LE MOT DU JOUR · LA BANQUE (Louis, GO du 2026-10-18 sur la page « Le
+   mot du jour » du canevas « Les rangs et le profil »).
+
+   Chaque jour, le Guide laisse un mot de trois pièces : une ACCROCHE (ce
+   qui compte aujourd'hui), les FAITS du jour (sa flamme, son programme),
+   puis un CONSEIL. Ce bloc n'écrit que les mots. Ce qui choisit vit dans
+   `lib/motDuJour.ts`, pur, et `check:matin` le vérifie.
+
+   ⚠️ TOUT RESTE VRAI LE JOUR OÙ C'EST DIT. Les faits viennent de la base,
+   jamais d'une estimation. Les conseils ne promettent rien sur le corps
+   et ne sont pas des avis médicaux.
+   ⚠️ JAMAIS UN REPROCHE : ni séance manquée, ni série coupée, ni « il
+   faudrait ». Une flamme qui repart d'une Lueur se dit comme un départ.
+   ⚠️ AUCUN ACCORD DE GENRE (ni « prêt », ni « content », ni « fier »),
+   et Nora et Sasha disent la même chose (`voix` ne lit plus les
+   variantes depuis le 2026-09-25).
+   ⚠️ UN NOMBRE SE MARQUE ⟦12⟧ : l'écran le pose dans le visage du
+   chiffre (`.vy-nombre`), `texteBrut` le rend en clair (lecteur d'écran,
+   question reprise par le Guide). Un nombre écrit en lettres reste du
+   texte, comme on le dit.
+   ⚠️ LA TYPOGRAPHIE SE POSE AU RENDU (`typoMatin`) : espace insécable
+   avant « : ; ? ! % », apostrophe courbe. La banque s'écrit donc avec des
+   espaces ordinaires, et l'écran reçoit toujours le bon caractère.
+   ════════════════════════════════════════════════════════════════════ */
+
+/** Ce qu'une pièce du mot peut insérer. Tout vient de l'appelant. */
+export type ContexteMatin = {
+  /** Les jours de la série en cours. */
+  serie?: number;
+  /** La flamme du jour, avec sa préposition (« au Feu ») ou son article (« le Feu »). */
+  au?: string;
+  le?: string;
+  /** La flamme suivante, avec son article (« le Brasier ») ou seule (« Brasier »). */
+  suivanteLe?: string;
+  suivanteNom?: string;
+  /** Les jours avant la flamme suivante. */
+  restant?: number;
+  /** Une séance : son titre, et sa durée en minutes quand on la connaît. */
+  titre?: string;
+  minutes?: number;
+  /** L'étape du programme, et le jour qui lui est déjà donné (« mardi 8 »). */
+  etape?: string;
+  jour?: string;
+  /** Un rang à portée : l'EXP qui reste et son nom. */
+  manque?: number;
+  rang?: string;
+  /** Les repas notés hier. */
+  repas?: number;
+  /** Le maillon du relais qui attend. */
+  maillon?: number;
+  /** Le mois qui commence (« novembre »). */
+  mois?: string;
+};
+
+type TexteMatin = string | ((c: ContexteMatin) => string);
+export type PieceMatin = { id: string; texte: TexteMatin };
+export type ConseilMatin = {
+  id: string;
+  texte: string;
+  /** Le chiffre posé en grand à côté du texte (« 7 h »). */
+  nombre?: string;
+  /** Le nom EXACT d'un mouvement de la bibliothèque : sa vignette animée
+   *  accompagne le conseil, et sa fiche s'ouvre d'un geste. */
+  mouvement?: string;
+  /** Respirer : inspire, garde, expire, attends, en secondes. */
+  rythme?: readonly [number, number, number, number];
+};
+
+const nb = (v: number | string | undefined) => `⟦${v ?? ""}⟧`;
+const NOMBRE = /⟦([^⟧]*)⟧/g;
+
+/** Le texte découpé en morceaux : ce qui est un nombre, et le reste. */
+export function morceauxMatin(s: string): { texte: string; nombre: boolean }[] {
+  const out: { texte: string; nombre: boolean }[] = [];
+  let i = 0;
+  for (const m of s.matchAll(NOMBRE)) {
+    const debut = m.index ?? 0;
+    if (debut > i) out.push({ texte: s.slice(i, debut), nombre: false });
+    out.push({ texte: m[1], nombre: true });
+    i = debut + m[0].length;
+  }
+  if (i < s.length) out.push({ texte: s.slice(i), nombre: false });
+  return out;
+}
+
+/** Le texte sans ses marques de nombre. */
+export function texteBrut(s: string): string {
+  return s.replace(NOMBRE, "$1");
+}
+
+/** Espace insécable et apostrophe courbe, posées au rendu. */
+export function typoMatin(s: string): string {
+  return s
+    .replace(/'/g, "’")
+    .replace(/ ([:;?!%])/g, " $1")
+    .replace(/ °/g, " °")
+    .replace(/« /g, "« ")
+    .replace(/ »/g, " »");
+}
+
+const LETTRES = ["zéro", "un", "deux", "trois", "quatre", "cinq", "six", "sept", "huit", "neuf", "dix",
+  "onze", "douze", "treize", "quatorze", "quinze", "seize", "dix-sept", "dix-huit", "dix-neuf", "vingt"];
+/* Les paliers ronds s'écrivent aussi en lettres : « Trente jours d’affilée ». */
+const RONDS: Record<number, string> = { 30: "trente", 40: "quarante", 50: "cinquante", 60: "soixante", 100: "cent" };
+/** En lettres jusqu'à vingt et aux paliers ronds, comme on le dit, puis en chiffres. */
+const enLettres = (n = 0) => LETTRES[n] ?? RONDS[n] ?? nb(n);
+const maj = (s = "") => s.charAt(0).toUpperCase() + s.slice(1);
+/** « ⟦18⟧ jours » : un compte qu'on lit comme une donnée. */
+const nJours = (n = 0) => `${nb(n)} ${n > 1 ? "jours" : "jour"}`;
+/** « douze jours », « ⟦42⟧ jours ». */
+const depuis = (n = 0) => `${enLettres(n)} ${n > 1 ? "jours" : "jour"}`;
+/** « Douze jours d’affilée ». */
+const affilee = (n = 0) => maj(`${depuis(n)} d’affilée`);
+const deMois = (m = "") => (/^[aeiouéèêh]/i.test(m) ? `d’${m}` : `de ${m}`);
+
+const pieces = (prefixe: string, textes: TexteMatin[]): PieceMatin[] =>
+  textes.map((texte, i) => ({ id: `${prefixe}.${i + 1}`, texte }));
+const conseils = (prefixe: string, liste: Omit<ConseilMatin, "id">[]): ConseilMatin[] =>
+  liste.map((c, i) => ({ id: `${prefixe}.${i + 1}`, ...c }));
+
+/** La phrase d'une pièce, typographie comprise. */
+export function direMatin(p: PieceMatin, c: ContexteMatin = {}): string {
+  return typoMatin(typeof p.texte === "function" ? p.texte(c) : p.texte);
+}
+
+export const MATIN = {
+  /* ── LES ACCROCHES ──────────────────────────────────────────────── */
+
+  /** Le jour de la semaine, lundi d'abord. */
+  jour: [
+    pieces("jour.lundi", [
+      "Lundi, nouvelle semaine : page blanche.",
+      "Lundi. Une semaine neuve, à écrire comme tu veux.",
+      "Début de semaine : on pose le rythme, sans se presser.",
+      "Lundi, le jour où tout recommence, dans le bon sens.",
+      "Nouvelle semaine : une séance aujourd’hui, et elle part du bon pied.",
+      "Lundi : sept jours devant toi, et rien à rattraper.",
+    ]),
+    pieces("jour.mardi", [
+      "Mardi : la semaine a pris son élan.",
+      "Mardi, le bon jour pour garder le rythme, ou en trouver un.",
+      "Mardi. Rien d’extraordinaire, et c’est souvent là que les habitudes se construisent.",
+      "Mardi : un jour ordinaire, parfait pour avancer.",
+      "Deuxième jour de la semaine : on continue tranquillement.",
+      "Mardi. Pas besoin d’un grand plan, un petit pas suffit.",
+    ]),
+    pieces("jour.mercredi", [
+      "Mercredi, le milieu de la semaine.",
+      "Mercredi : la moitié de la semaine est déjà derrière toi.",
+      "Milieu de semaine : un bon moment pour faire le point.",
+      "Mercredi. Une séance aujourd’hui coupe la semaine en deux belles moitiés.",
+      "Mercredi : on souffle un peu, et on repart.",
+      "Mercredi, le sommet de la semaine : la suite descend toute seule.",
+    ]),
+    pieces("jour.jeudi", [
+      "Jeudi : le week-end se rapproche.",
+      "Jeudi. Encore un peu d’élan, et la semaine est belle.",
+      "Jeudi, souvent le jour le plus chargé. Dix minutes de mouvement aident à souffler.",
+      "Jeudi : la semaine tient bon.",
+      "Jeudi. Une séance aujourd’hui, et le week-end arrive léger.",
+      "Jeudi : plus que deux jours avant le week-end.",
+    ]),
+    pieces("jour.vendredi", [
+      "Vendredi : une séance aujourd’hui, et le week-end commence léger.",
+      "Vendredi. La semaine se termine, profite de cette énergie.",
+      "C’est vendredi : un dernier effort avant de souffler.",
+      "Vendredi, le jour où tout paraît plus léger.",
+      "Vendredi : la semaine se boucle, à ton rythme.",
+      "Vendredi. Ce que tu fais aujourd’hui, le week-end te le rendra.",
+    ]),
+    pieces("jour.samedi", [
+      "Samedi : du temps pour toi.",
+      "Samedi. Une séance sans regarder l’heure, ça te dit ?",
+      "C’est le week-end : bouger, c’est aussi marcher, nager ou danser.",
+      "Samedi : le bon jour pour essayer une séance que tu n’as jamais faite.",
+      "Samedi. Repos ou séance, les deux comptent.",
+      "Week-end : le rythme ralentit, et c’est très bien comme ça.",
+    ]),
+    pieces("jour.dimanche", [
+      "Dimanche : le bon moment pour regarder ta semaine.",
+      "Dimanche. Une journée calme pour souffler.",
+      "Dimanche : on prépare la semaine qui vient, tranquillement.",
+      "Dimanche. Une marche, une séance douce, ou rien du tout : à toi de voir.",
+      "Fin de semaine : le bon jour pour une séance de mobilité.",
+      "Dimanche. Demain commence une semaine neuve.",
+    ]),
+  ],
+
+  /** Le moment de la journée, à l'heure où le mot est ouvert. */
+  moment: {
+    aube: pieces("moment.aube", [
+      "Le jour se lève à peine, et tu es déjà là.",
+      "Bonjour. Le matin, tout est encore possible.",
+      "Un matin tout neuf. Un verre d’eau, et c’est parti.",
+      "Début de journée : le moment parfait pour une séance courte.",
+      "Le matin, le corps se réveille doucement : prends le temps de t’étirer.",
+      "Bonjour. Une journée entière devant toi.",
+    ]),
+    midi: pieces("moment.midi", [
+      "Midi : une pause qui peut aussi devenir une séance.",
+      "Pause de midi. Dix minutes de marche, et l’après-midi passe mieux.",
+      "Il est midi : le bon moment pour noter ton repas.",
+      "Milieu de journée : on souffle un instant.",
+      "Midi. La journée est à moitié faite.",
+      "L’heure du déjeuner : prends le temps de manger tranquillement.",
+    ]),
+    apresmidi: pieces("moment.apresmidi", [
+      "L’après-midi avance, la journée aussi.",
+      "Un petit coup de mou cet après-midi ? Deux minutes debout aident à repartir.",
+      "L’après-midi : encore de quoi glisser une séance avant ce soir.",
+      "Il reste une belle partie de la journée.",
+      "Après-midi. Un verre d’eau, et la suite de la journée.",
+      "L’après-midi, le corps est souvent au mieux de sa forme pour l’effort.",
+    ]),
+    soir: pieces("moment.soir", [
+      "La journée touche à sa fin.",
+      "Bonsoir. Le moment de ralentir.",
+      "Ce soir, une séance courte ou un peu de mobilité, à toi de voir.",
+      "La soirée commence : prends un moment pour toi.",
+      "Fin de journée : ce qui a été fait aujourd’hui compte.",
+      "Le soir, quelques étirements préparent une bonne nuit.",
+    ]),
+    nuit: pieces("moment.nuit", [
+      "Il est tard : ce soir, le plus utile est sans doute de bien dormir.",
+      "Tard dans la soirée. Une bonne nuit fait partie du programme.",
+      "Il est tard. Demain sera une belle journée pour bouger.",
+      "À cette heure-ci, le meilleur entraînement, c’est le sommeil.",
+      "La nuit est là : laisse ton corps récupérer.",
+      "Encore debout ? Le repos aussi fait progresser.",
+    ]),
+  },
+
+  /** Une séance terminée hier, dont on connaît le titre. */
+  hierSeance: pieces("hier.seance", [
+    (c) => `Hier, tu as terminé ${c.titre}. Aujourd’hui, ton corps se reconstruit.`,
+    (c) => `Hier, ${c.titre}${c.minutes ? ` en ${nb(c.minutes)} minutes` : ""}. Bien joué.`,
+    (c) => `Ta séance d’hier, ${c.titre}, est dans la boîte.`,
+    (c) => `Hier, tu as fait ${c.titre}. Et te revoilà aujourd’hui.`,
+    (c) => `${c.titre}, c’était hier. Aujourd’hui, à toi de choisir la suite.`,
+    (c) => `Belle séance hier : ${c.titre}.`,
+    (c) => `Hier, tu as bougé : ${c.titre}. Aujourd’hui peut être plus calme.`,
+    (c) => `${c.titre} hier, et te voilà aujourd’hui : c’est comme ça que ça avance.`,
+    (c) => `Hier, tu as terminé ${c.titre}. Un peu plus d’eau aujourd’hui aide ton corps à récupérer.`,
+    (c) => `Une séance hier : ${c.titre}. Tout ce que tu fais s’additionne.`,
+    (c) => `Hier, ${c.titre}. Aujourd’hui, on garde l’élan, à ton rythme.`,
+    (c) => `Hier, ${c.titre}. Le fil continue aujourd’hui.`,
+  ]),
+  /** Une séance hier dont le titre n'est pas lisible. */
+  hierSeanceAnonyme: pieces("hier.anonyme", [
+    "Hier, tu as terminé une séance. Aujourd’hui, ton corps se reconstruit.",
+    "Une séance hier : tout ce que tu fais s’additionne.",
+  ]),
+  /** Pas de séance hier, mais des repas notés. */
+  hierRepas: pieces("hier.repas", [
+    (c) => `Hier, tu as noté ${nb(c.repas)} repas : ton carnet se remplit.`,
+    "Hier, ton carnet de repas a avancé. C’est la base pour y voir clair.",
+    (c) => `Hier, ${nb(c.repas)} repas ${(c.repas ?? 0) > 1 ? "notés" : "noté"}. Petit geste, grande clarté.`,
+    "Hier, tu as pris le temps de noter ce que tu as mangé. Ça aide à voir ce qui te convient.",
+  ]),
+
+  /** Un rang à portée d'une séance (`momentAccueil`, cas « palier »). */
+  palier: pieces("palier", [
+    (c) => `Plus que ${nb(c.manque)} EXP avant ${c.rang} : une séance suffit.`,
+    (c) => `${c.rang} est à ${nb(c.manque)} EXP. Une séance, et tu y es.`,
+    (c) => `Encore ${nb(c.manque)} EXP, et ton rang passe à ${c.rang}.`,
+    (c) => `${c.rang} n’est plus très loin : ${nb(c.manque)} EXP.`,
+    (c) => `Une séance aujourd’hui, et ${c.rang} est à toi.`,
+    (c) => `${nb(c.manque)} EXP te séparent de ${c.rang}.`,
+  ]),
+
+  /* Le retour après une absence. On dit ce qui n'a pas bougé, jamais ce
+     qui s'est arrêté (même règle que `retour.*`). */
+  retourCourt: pieces("retour.court", [
+    "Ça fait plaisir de te revoir.",
+    "Te revoilà. Ta place n’a pas bougé.",
+    "Te revoilà, et c’est tout ce qui compte.",
+    "Bon retour. On reprend là où tu veux.",
+  ]),
+  retourLong: pieces("retour.long", [
+    "Ça fait plaisir de te revoir. Tout est encore là.",
+    "Te revoilà. Il n’y a rien à rattraper.",
+    "Bon retour. On repart tout doucement, à ton rythme.",
+    "Te revoilà. Tes séances et ta place t’attendaient.",
+  ]),
+  /** Les premiers jours, avant deux séances. */
+  debut: pieces("debut", [
+    "On commence quand tu veux.",
+    "Bienvenue dans tes premiers jours sur Vaiiya.",
+    "Les débuts, c’est le meilleur moment : tout est à découvrir.",
+    "Premiers pas ensemble : on y va doucement.",
+    "Tu découvres Vaiiya, et je suis là pour t’accompagner.",
+  ]),
+
+  /* Le relais. ⚠️ On ne nomme jamais celui qui attend ou qui retarde :
+     on dit où en est l'affiche. */
+  relais: {
+    a_moi: pieces("relais.a_moi", [
+      "Ton relais t’attend : une séance aujourd’hui, et l’affiche se dévoile un peu plus.",
+      (c) => `Ton maillon ${nb(c.maillon)} attend ta séance du jour.`,
+      "Dix minutes de séance suffisent pour franchir ton maillon du jour.",
+      "Aujourd’hui, ta séance fait aussi avancer le relais.",
+      "L’affiche du relais attend la suite : à toi de jouer.",
+    ]),
+    bloque: pieces("relais.bloque", [
+      "Ton maillon est franchi : le relais avance au rythme de chacun.",
+      "De ton côté, le relais est à jour.",
+      "Ta part du relais est faite : l’affiche attend la suite.",
+      "Ton dernier maillon est posé. La suite du relais arrive.",
+    ]),
+    plafond_jour: pieces("relais.plafond", [
+      "Deux maillons aujourd’hui : c’est le maximum du jour, la suite demain.",
+      "Ton relais a bien avancé aujourd’hui. La suite se joue demain.",
+    ]),
+    fini_pour_moi: pieces("relais.fini_moi", [
+      "Tous tes maillons sont franchis : l’affiche se termine avec les derniers.",
+      "Ta part du relais est complète.",
+      "Tu as franchi tous tes maillons. L’affiche est presque complète.",
+    ]),
+    fini: pieces("relais.fini", [
+      "Relais bouclé : l’affiche est entièrement dévoilée.",
+      "L’affiche du relais est complète. Bravo à vous.",
+      "Votre affiche est complète : elle rejoint ta collection.",
+    ]),
+  } as Partial<Record<string, PieceMatin[]>>,
+
+  /** L'âge du compte, au jour près. */
+  anniv: {
+    7: { id: "anniv.7", texte: "Une semaine que tu es sur Vaiiya." },
+    30: { id: "anniv.30", texte: "Il y a un mois, tu ouvrais Vaiiya pour la première fois." },
+    100: { id: "anniv.100", texte: "Cent jours depuis ton arrivée sur Vaiiya." },
+    182: { id: "anniv.182", texte: "Six mois que tu es sur Vaiiya." },
+    365: { id: "anniv.365", texte: "Il y a un an, tu ouvrais Vaiiya pour la première fois." },
+  } as Partial<Record<number, PieceMatin>>,
+
+  /** Le premier jour du mois. */
+  mois: pieces("mois", [
+    (c) => `Premier jour ${deMois(c.mois)} : un mois tout neuf.`,
+    (c) => `${maj(c.mois)} commence : une page blanche, et tout l’espace pour y écrire.`,
+    "Nouveau mois, même envie : on avance à ton rythme.",
+    (c) => `Le premier ${c.mois}, c’est le bon jour pour se fixer une petite envie.`,
+    "Un nouveau mois commence : on avance pas à pas.",
+    (c) => `Bienvenue en ${c.mois}. Un mois neuf, à écrire comme tu veux.`,
+  ]),
+
+  /** Les trois premiers jours d'une saison, et la rentrée. */
+  saison: {
+    printemps: pieces("saison.printemps", [
+      "Le printemps commence : les jours rallongent, et l’envie de bouger avec.",
+      "Premiers jours du printemps. Une séance dehors, ça te dit ?",
+      "Le printemps est là : la lumière revient, une marche au soleil compte aussi.",
+    ]),
+    ete: pieces("saison.ete", [
+      "L’été commence : les journées sont au plus long.",
+      "Premiers jours de l’été : bouge plutôt le matin ou le soir, quand il fait plus frais.",
+      "L’été est là : une gourde à portée de main, et c’est parti.",
+    ]),
+    automne: pieces("saison.automne", [
+      "L’automne commence : les jours raccourcissent, une séance à midi profite de la lumière.",
+      "Premiers jours d’automne : le bon moment pour installer une routine qui tiendra tout l’hiver.",
+      "L’automne est là. Une marche dans les feuilles compte aussi.",
+    ]),
+    hiver: pieces("saison.hiver", [
+      "L’hiver commence : à partir de maintenant, les jours rallongent.",
+      "Premiers jours d’hiver : une séance chez toi n’attend pas la météo.",
+      "L’hiver est là : un bon échauffement compte encore plus quand il fait froid.",
+    ]),
+    rentree: pieces("saison.rentree", [
+      "C’est la rentrée : le bon moment pour poser une nouvelle routine.",
+      "Septembre, nouveau départ. On reprend un rythme, à ton allure.",
+      "Rentrée : une séance par semaine, c’est déjà un vrai début.",
+    ]),
+  } as Record<"printemps" | "ete" | "automne" | "hiver" | "rentree", PieceMatin[]>,
+
+  /** Les jours validés de la semaine viennent d'atteindre 3, 5 ou 7. */
+  semaine: {
+    3: pieces("semaine.3", [
+      "Trois jours validés cette semaine : la Semaine active est à toi.",
+      "Trois jours validés, et la semaine n’est pas finie.",
+      "Déjà trois jours validés cette semaine. Belle régularité.",
+      "Trois jours sur la semaine : la Semaine active est faite.",
+    ]),
+    5: pieces("semaine.5", [
+      "Cinq jours validés cette semaine. C’est une vraie routine.",
+      "Cinq jours sur sept, déjà : la semaine est belle.",
+      "Cinq jours validés : ta semaine tient bon.",
+      "Déjà cinq jours validés cette semaine.",
+    ]),
+    7: pieces("semaine.7", [
+      "Sept jours validés : ta semaine est parfaite.",
+      "Une semaine complète, sept jours sur sept.",
+      "Sept sur sept cette semaine. Rien à ajouter.",
+      "La Semaine parfaite est à toi : sept jours validés.",
+    ]),
+  } as Partial<Record<number, PieceMatin[]>>,
+
+  /* ── LES FAITS : LA FLAMME ──────────────────────────────────────── */
+  flamme: {
+    /** Le premier jour d'une série, sans absence derrière. */
+    debut: pieces("flamme.debut", [
+      (c) => `Premier jour de ta série : ta flamme s’allume. Plus que ${nJours(c.restant)} avant ${c.suivanteLe}.`,
+      (c) => `Ta flamme s’allume aujourd’hui : une Lueur. ${maj(c.suivanteLe)} arrive dans ${nJours(c.restant)}.`,
+      (c) => `Une Lueur pour commencer. Encore ${nJours(c.restant)}, et elle devient ${c.suivanteLe}.`,
+      (c) => `Ta série commence aujourd’hui. Dans ${nJours(c.restant)}, ta flamme grandit.`,
+      (c) => `Jour un de ta série : ta Lueur est allumée. ${maj(c.suivanteLe)} arrive dans ${nJours(c.restant)}.`,
+    ]),
+    /** Le premier jour d'une série, au retour d'une absence. */
+    repart: pieces("flamme.repart", [
+      "Ta flamme repart d’une Lueur, et c’est exactement comme ça qu’elle grandit.",
+      (c) => `Une nouvelle Lueur s’allume aujourd’hui. Dans ${nJours(c.restant)}, c’est déjà ${c.suivanteLe}.`,
+      (c) => `Ta série repart aujourd’hui. ${maj(c.suivanteLe)} est à ${nJours(c.restant)}.`,
+      "Une Lueur, pour recommencer en douceur.",
+      (c) => `Ta flamme se rallume. Encore ${nJours(c.restant)}, et elle grandit.`,
+    ]),
+    /** Une série qui tient, entre deux flammes. */
+    courante: pieces("flamme.courante", [
+      (c) => `${affilee(c.serie)}, ta flamme est ${c.au}. Plus que ${nJours(c.restant)} avant ${c.suivanteLe}.`,
+      (c) => `Ta flamme tient depuis ${depuis(c.serie)} : encore ${nJours(c.restant)} avant ${c.suivanteLe}.`,
+      (c) => `${affilee(c.serie)}. Ta flamme est ${c.au}, et ${c.suivanteLe} arrive dans ${nJours(c.restant)}.`,
+      (c) => `Ta série compte ${depuis(c.serie)}. Prochaine flamme : ${c.suivanteNom}, dans ${nJours(c.restant)}.`,
+      (c) => `${affilee(c.serie)} : ta flamme est ${c.au}, et elle grandit encore. ${maj(c.suivanteLe)} dans ${nJours(c.restant)}.`,
+      (c) => `${affilee(c.serie)}. Dans ${nJours(c.restant)}, ta flamme devient ${c.suivanteLe}.`,
+      (c) => `${affilee(c.serie)}, et ta flamme est ${c.au}. ${maj(c.suivanteLe)} t’attend dans ${nJours(c.restant)}.`,
+      (c) => `Ta flamme brûle depuis ${depuis(c.serie)}. Encore ${nJours(c.restant)}, et c’est ${c.suivanteLe}.`,
+    ]),
+    /** Le jour où une flamme arrive : c'est l'accroche du mot. */
+    nouvelle: pieces("flamme.nouvelle", [
+      (c) => `${affilee(c.serie)} : ta flamme devient ${c.le}.`,
+      (c) => `Nouvelle flamme aujourd’hui : ${c.le}, après ${depuis(c.serie)} d’affilée.`,
+      (c) => `${affilee(c.serie)}, et ta flamme passe ${c.au}.`,
+    ]),
+    /** Sous une nouvelle flamme : la suivante. */
+    suite: pieces("flamme.suite", [
+      (c) => `Plus que ${nJours(c.restant)} avant ${c.suivanteLe}.`,
+      (c) => `${maj(c.suivanteLe)} t’attend dans ${nJours(c.restant)}.`,
+      (c) => `Prochaine flamme : ${c.suivanteNom}, dans ${nJours(c.restant)}.`,
+    ]),
+    /** Sous le Feu sacré tout neuf : il n'y a pas de suivante. */
+    sacre: pieces("flamme.sacre", [
+      "C’est la plus belle flamme de Vaiiya.",
+      "Il n’y a pas de flamme plus haute.",
+    ]),
+    /** Au-delà de cent jours. */
+    sommet: pieces("flamme.sommet", [
+      (c) => `${affilee(c.serie)} : ta flamme est au Feu sacré, à son plus beau.`,
+      (c) => `Ta flamme est au Feu sacré depuis ${nJours((c.serie ?? 100) - 99)}.`,
+      (c) => `${affilee(c.serie)}. Le Feu sacré, la plus belle flamme de Vaiiya, est la tienne.`,
+      (c) => `Feu sacré, ${depuis(c.serie)} d’affilée. Rien ne brille plus fort.`,
+      (c) => `${affilee(c.serie)}, toujours au Feu sacré.`,
+    ]),
+  },
+
+  /* ── LES FAITS : LE PROGRAMME ───────────────────────────────────── */
+  plan: {
+    seance: pieces("plan.seance", [
+      (c) => `Aujourd’hui, ${c.titre} t’attend.`,
+      (c) => `Au programme aujourd’hui : ${c.titre}.`,
+      (c) => `Ta séance du jour : ${c.titre}, quand tu veux.`,
+      (c) => `Aujourd’hui, c’est ${c.titre}.`,
+      (c) => `${c.titre} est au programme du jour.`,
+    ]),
+    /** Même chose, quand le conseil du jour est le geste d'un de ses mouvements. */
+    seanceGeste: pieces("plan.seance.geste", [
+      (c) => `Aujourd’hui, ${c.titre} t’attend : voilà le geste d’un de ses mouvements.`,
+      (c) => `Au programme : ${c.titre}. Un de ses mouvements a son geste juste en dessous.`,
+      (c) => `${c.titre} est au programme du jour, et voilà un geste à garder en tête.`,
+      (c) => `Ta séance du jour : ${c.titre}. Juste en dessous, un geste qui en fait partie.`,
+    ]),
+    etape: pieces("plan.etape", [
+      (c) => `Ton programme te propose ${c.etape}, quand tu veux.`,
+      (c) => `Prochaine étape de ton programme : ${c.etape}.`,
+      (c) => `${c.etape} est la suite de ton programme : tu choisis le moment.`,
+      (c) => `Ton programme continue avec ${c.etape}, quand ça t’arrange.`,
+      (c) => `La suite, c’est ${c.etape}. Aujourd’hui ou un autre jour, à toi de voir.`,
+    ]),
+    etapeGeste: pieces("plan.etape.geste", [
+      (c) => `Ton programme te propose ${c.etape}, quand tu veux : voilà un geste qui en fait partie.`,
+      (c) => `Prochaine étape : ${c.etape}. Juste en dessous, un de ses mouvements.`,
+      (c) => `La suite de ton programme, c’est ${c.etape}. Voilà le geste d’un de ses mouvements.`,
+    ]),
+    /** L'étape a déjà un jour, plus tard. */
+    etapeJour: pieces("plan.etape.jour", [
+      (c) => `Ta prochaine séance, ${c.etape}, est prévue ${c.jour}.`,
+      (c) => `${c.etape} t’attend ${c.jour}.`,
+      (c) => `Prochaine étape : ${c.etape}, ${c.jour}.`,
+    ]),
+    fait: pieces("plan.fait", [
+      "Ta séance du jour est déjà faite. Profite du reste de la journée.",
+      (c) => `Ta séance est faite${c.titre ? ` : ${c.titre}` : ""}${c.minutes ? `, ${nb(c.minutes)} minutes` : ""}.`,
+      "Séance faite aujourd’hui. Le reste de la journée est à toi.",
+      "C’est fait pour aujourd’hui : bois un peu d’eau, et savoure.",
+    ]),
+    repos: pieces("plan.repos", [
+      "Aujourd’hui, c’est repos. Passer ici suffit à tenir ta flamme.",
+      "Jour de repos : c’est là que le corps se reconstruit.",
+      "Repos aujourd’hui, comme prévu. Ta flamme tient avec ta visite.",
+      "Aujourd’hui, on récupère : le repos fait partie du programme.",
+    ]),
+    libre: pieces("plan.libre", [
+      "Rien de prévu aujourd’hui. Si l’envie te prend, je te prépare quelque chose.",
+      "Aucune séance prévue aujourd’hui : la journée est libre.",
+      "Journée libre. Une envie de bouger ? Dis-le-moi, je te prépare une séance.",
+      "Rien au planning aujourd’hui. Une marche compte aussi.",
+    ]),
+    /** Au retour d'une absence : la séance courte du conseil, juste en dessous. */
+    retour: pieces("plan.retour", [
+      "Rien à rattraper : une séance courte aujourd’hui, et c’est reparti.",
+      "Pas besoin de tout reprendre d’un coup : une séance courte suffit.",
+      "On repart en douceur : juste en dessous, une séance courte.",
+    ]),
+    /** Les premiers jours : la première séance, juste en dessous. */
+    commencer: pieces("plan.commencer", [
+      "Pour commencer, une séance courte t’attend juste en dessous.",
+      "Juste en dessous, une première séance courte.",
+      "Le plus simple pour commencer est juste en dessous.",
+    ]),
+  },
+};
+
+/* ── LES CONSEILS ────────────────────────────────────────────────────
+   ⚠️ Des faits établis, formulés prudemment (« souvent », « en général »),
+   et rien qui ressemble à un diagnostic ou à une promesse sur le corps.
+   Un `mouvement` est le nom EXACT d'une entrée de la bibliothèque :
+   `check:matin` vérifie qu'il existe et qu'il est animé. */
+export const CONSEILS_MATIN = {
+  /** « Le savais-tu ? ». */
+  savais: conseils("savais", [
+    { nombre: "150", texte: "L’OMS conseille aux adultes 150 à 300 minutes d’activité modérée par semaine, à répartir comme on veut." },
+    { nombre: "2", texte: "Renforcer ses muscles au moins deux jours par semaine fait aussi partie des recommandations de l’OMS." },
+    { nombre: "48 h", texte: "Après une séance intense, un muscle a souvent besoin de 48 à 72 heures pour récupérer." },
+    { nombre: "600", texte: "Le corps humain compte plus de 600 muscles." },
+    { nombre: "206", texte: "Le squelette d’un adulte compte 206 os." },
+    { nombre: "60 %", texte: "L’eau représente environ 60 % du poids d’un adulte." },
+    { nombre: "40 %", texte: "Les muscles représentent jusqu’à 40 % du poids du corps." },
+    { nombre: "66", texte: "Il faut en moyenne 66 jours pour qu’une habitude devienne automatique, avec de grands écarts d’une personne à l’autre." },
+    { texte: "Pour l’OMS, chaque minute d’activité compte : il n’y a plus de durée minimale pour qu’un effort soit utile." },
+    { nombre: "2 %", texte: "Perdre 2 % de son poids en eau suffit à faire baisser les performances." },
+    { nombre: "3", texte: "Le squat fait travailler trois grands groupes à la fois : quadriceps, fessiers et ischio-jambiers." },
+    { texte: "Le grand fessier est le plus gros muscle du corps." },
+    { texte: "Le tendon d’Achille est le tendon le plus solide du corps." },
+    { nombre: "20 %", texte: "Au repos, le cerveau consomme environ 20 % de l’énergie du corps." },
+    { nombre: "60", texte: "Au repos, le cœur d’un adulte bat en général entre 60 et 100 fois par minute." },
+    { texte: "Après une pause, les muscles retrouvent plus vite un niveau déjà atteint : on parle de mémoire musculaire." },
+    { texte: "Un muscle se renforce surtout pendant la récupération, pas pendant la séance elle-même." },
+    { texte: "Le cœur est un muscle : comme les autres, il se renforce avec l’entraînement." },
+    { nombre: "5 min", texte: "Cinq à dix minutes d’échauffement préparent les muscles et les articulations à l’effort." },
+    { nombre: "30 s", texte: "Un étirement se tient en général 20 à 30 secondes, sans à-coups." },
+    { texte: "L’échauffement augmente la température des muscles, ce qui les rend plus souples." },
+    { texte: "Les os aussi s’adaptent à l’effort : porter, sauter et pousser les rendent plus solides." },
+    { texte: "Le diaphragme est le principal muscle de la respiration." },
+    { texte: "Rire fait travailler les abdominaux." },
+    { nombre: "10 min", texte: "Dix minutes de marche, c’est environ mille pas." },
+    { texte: "Expirer pendant l’effort et inspirer au retour aide à garder un rythme régulier." },
+    { texte: "L’OMS conseille aussi de limiter le temps passé en position assise, et de le couper par des moments actifs." },
+    { texte: "Après une séance, le corps continue de dépenser un peu plus d’énergie que d’habitude pendant quelques heures." },
+    { texte: "La souplesse se travaille à tout âge, en s’étirant un peu, souvent." },
+    { texte: "Varier les mouvements fait travailler les muscles sous des angles différents." },
+  ]),
+  /** Le soir : le sommeil, sous la même forme que « Le savais-tu ? ». */
+  sommeil: conseils("sommeil", [
+    { nombre: "7 h", texte: "On recommande aux adultes au moins sept heures de sommeil par nuit." },
+    { nombre: "90 min", texte: "Un cycle de sommeil dure environ 90 minutes." },
+    { texte: "Une grande part de l’hormone de croissance est libérée pendant le sommeil profond." },
+    { texte: "Le sommeil aide aussi la mémoire : un geste appris dans la journée se consolide la nuit." },
+    { nombre: "5 h", texte: "La caféine met environ cinq heures à perdre la moitié de son effet." },
+    { nombre: "18 °C", texte: "Une chambre fraîche, autour de 18 °C, est souvent conseillée pour bien dormir." },
+    { texte: "Se coucher et se lever à heures régulières aide le corps à trouver son rythme." },
+    { texte: "La lumière des écrans le soir peut retarder l’endormissement." },
+    { nombre: "20 min", texte: "Une sieste de 10 à 20 minutes repose sans gêner le sommeil de la nuit." },
+    { texte: "Après une séance du soir, une douche tiède et un peu de calme aident à redescendre avant de dormir." },
+    { texte: "C’est pendant le sommeil que le corps répare ce que la séance a sollicité." },
+  ]),
+  /** Une minute de respiration, avec son rythme. */
+  respire: conseils("respire", [
+    { rythme: [5, 0, 5, 0], mouvement: "Cohérence cardiaque", texte: "Inspire cinq secondes, expire cinq secondes. Six respirations par minute : une minute suffit pour se poser." },
+    { rythme: [4, 0, 6, 0], texte: "Inspire quatre secondes, expire six secondes : une expiration plus longue aide à se poser." },
+    { rythme: [4, 4, 4, 4], texte: "Inspire quatre secondes, garde l’air quatre secondes, expire quatre secondes, attends quatre secondes. Quatre tours." },
+    { rythme: [5, 0, 5, 0], texte: "Inspire par le nez en gonflant le ventre, puis expire lentement par la bouche. Six fois." },
+    { rythme: [4, 0, 6, 0], texte: "Une main sur le ventre, une sur la poitrine : laisse surtout bouger celle du bas." },
+    { rythme: [5, 0, 5, 0], texte: "Épaules relâchées, mâchoire desserrée : trois grandes respirations, et c’est tout." },
+    { rythme: [5, 0, 5, 0], texte: "Ferme les yeux et compte dix respirations lentes, en suivant le cercle." },
+    { rythme: [4, 0, 4, 0], texte: "Inspire en levant les bras, expire en les laissant redescendre. Cinq fois, lentement." },
+  ]),
+  /** Récupérer : un geste doux, parfois avec son mouvement. */
+  recup: conseils("recup", [
+    { mouvement: "Cercles de hanches", texte: "Jour calme : cinq minutes de mobilité des hanches suffisent." },
+    { texte: "Une marche tranquille de vingt minutes aide le corps à récupérer sans le fatiguer." },
+    { texte: "Des courbatures après un nouvel effort, c’est normal : elles s’atténuent en général en quelques jours." },
+    { texte: "Après une séance, boire de l’eau aide le corps à récupérer." },
+    { mouvement: "Posture de l'enfant", texte: "La posture de l’enfant détend le bas du dos en une minute." },
+    { mouvement: "Cat-cow", texte: "Le chat-vache réveille la colonne en douceur : dix allers-retours, lentement." },
+    { texte: "Un jour sans séance n’est pas un jour vide : c’est là que le progrès s’installe." },
+    { texte: "Rouler doucement les épaules en arrière dix fois relâche le haut du dos après une journée sur écran." },
+    { texte: "Repos ne veut pas dire immobile : bouger doucement aide les muscles à récupérer." },
+    { texte: "Si un muscle tire encore, une séance d’une autre zone lui laisse le temps de récupérer." },
+    { mouvement: "Étirement mollet au mur", texte: "Contre un mur, trente secondes par mollet : idéal après une journée debout." },
+    { mouvement: "Étirement pectoraux au mur", texte: "Ouvre la poitrine contre un mur : un bon geste après une journée penchée sur un écran." },
+    { mouvement: "Torsion allongée", texte: "Une torsion allongée relâche le dos avant de dormir." },
+    { mouvement: "Pigeon", texte: "Le pigeon ouvre les hanches en douceur : une minute de chaque côté." },
+    { mouvement: "Thread the needle", texte: "Pour le haut du dos, le thread the needle fait tourner la colonne sans forcer." },
+    { texte: "Alterner les zones d’une séance à l’autre laisse chaque muscle se reconstruire." },
+    { mouvement: "World's greatest stretch", texte: "Un seul mouvement pour presque tout le corps : le world’s greatest stretch." },
+  ]),
+  /** Dans l'assiette. ⚠️ Jamais un régime ni une prescription. */
+  nutrition: conseils("nutrition", [
+    { texte: "Un peu de protéines à chaque repas aide les muscles à se réparer." },
+    { texte: "Un verre d’eau au réveil, c’est une bonne façon de commencer la journée." },
+    { texte: "Des légumes de plusieurs couleurs dans l’assiette, c’est plus de variété sans rien compter." },
+    { texte: "Un repas qui tient au corps associe souvent des protéines, des féculents et des légumes." },
+    { texte: "Manger lentement laisse le temps de sentir qu’on n’a plus faim." },
+    { texte: "Un yaourt et quelques fruits secs font une collation simple avant une séance." },
+    { texte: "Après l’effort, un repas avec des protéines et des glucides aide à récupérer." },
+    { texte: "Pour une séance de moins d’une heure, l’eau suffit." },
+    { texte: "Les lentilles et les pois chiches apportent à la fois des protéines et des fibres." },
+    { texte: "Préparer un repas d’avance, c’est une décision de moins quand la journée est chargée." },
+    { texte: "Les œufs sont l’une des sources de protéines les plus simples à cuisiner." },
+    { texte: "Le petit-déjeuner n’est pas obligatoire : ce qui compte, c’est ce qui te convient." },
+    { texte: "Les féculents complets tiennent plus longtemps au corps que leur version raffinée." },
+    { texte: "Une gourde à portée de main, et on boit sans y penser." },
+    { texte: "Aucun aliment n’est interdit : c’est l’ensemble de la semaine qui compte." },
+    { texte: "Le fromage blanc et le skyr sont riches en protéines et faciles à emporter." },
+    { texte: "Les épices et les herbes donnent du goût sans rien changer au reste de l’assiette." },
+    { texte: "Un fruit avant une séance du matin donne un peu d’énergie sans peser." },
+    { texte: "Cuisiner en double, c’est un repas d’avance pour demain." },
+    { texte: "Une photo suffit pour noter un repas, et ça prend dix secondes." },
+  ]),
+  /** Un mini-défi du quotidien. ⚠️ Il ne rapporte rien : pas d'EXP. */
+  defi: conseils("defi", [
+    { texte: "Prends l’escalier au moins une fois aujourd’hui." },
+    { texte: "Marche pendant un appel au lieu de rester sur ta chaise." },
+    { texte: "Dix squats pendant que l’eau chauffe." },
+    { texte: "Une minute de gainage avant le dîner." },
+    { texte: "Marche dix minutes après le déjeuner." },
+    { texte: "Bois un grand verre d’eau avant chaque repas." },
+    { texte: "Range ton téléphone dix minutes avant de dormir." },
+    { texte: "Fais un tour à pied, même court." },
+    { texte: "Vingt montées sur la pointe des pieds en te brossant les dents." },
+    { texte: "Descends un arrêt plus tôt, ou gare-toi un peu plus loin." },
+    { texte: "Trois fois dans la journée, redresse-toi et respire profondément." },
+    { texte: "Tiens trente secondes en chaise contre un mur." },
+    { texte: "Mets une chanson et bouge jusqu’à la fin." },
+    { texte: "Étire ton dos dix secondes chaque fois que tu te lèves." },
+    { texte: "Dix pompes avant midi, sur les genoux si tu veux." },
+    { texte: "Un repas sans écran aujourd’hui." },
+    { texte: "Cinq minutes de mobilité au réveil : épaules, hanches, chevilles." },
+    { texte: "Note ton prochain repas avec une photo." },
+    { texte: "Avant de t’asseoir pour le dîner, dix fentes." },
+    { texte: "Lève-toi et étire-toi une minute à chaque heure de travail." },
+  ]),
+  /** Une question. La réponse ouvre la conversation avec le Guide. */
+  question: conseils("question", [
+    { texte: "Qu’est-ce qui t’a fait du bien cette semaine ?" },
+    { texte: "Quel mouvement aimerais-tu réussir dans un mois ?" },
+    { texte: "À quel moment de la journée préfères-tu t’entraîner ?" },
+    { texte: "Qu’est-ce qui te donne envie de bouger, en ce moment ?" },
+    { texte: "Si tu avais vingt minutes aujourd’hui, tu en ferais quoi ?" },
+    { texte: "Quelle séance t’a le plus plu jusqu’ici ?" },
+    { texte: "Qu’est-ce qui rendrait ta semaine plus simple ?" },
+    { texte: "Tu préfères les séances courtes et intenses, ou longues et calmes ?" },
+    { texte: "Il y a un exercice que tu évites ? Dis-moi lequel, on trouvera une autre façon de faire." },
+    { texte: "Qu’est-ce que tu aimerais faire plus facilement dans trois mois ?" },
+    { texte: "Comment tu te sens après une séance, en général ?" },
+    { texte: "Qu’est-ce que tu manges quand tu as besoin d’énergie ?" },
+    { texte: "Si tu devais garder une seule habitude de Vaiiya, ce serait laquelle ?" },
+  ]),
+  /** Les questions des premières semaines. */
+  questionDebut: conseils("question.debut", [
+    { texte: "Qu’est-ce qui t’a donné envie de commencer ?" },
+    { texte: "Qu’est-ce que tu aimerais réussir, d’ici un mois ?" },
+    { texte: "Il y a une activité que tu aimes déjà ? On peut partir de là." },
+  ]),
+  /** La question d'un jour qui compte : une flamme, un anniversaire. */
+  evenement: {
+    feu: { id: "question.feu", texte: "Sept jours d’affilée. Qu’est-ce qui t’aide à revenir chaque jour ?" },
+    brasier: { id: "question.brasier", texte: "Trente jours, ce n’est pas un hasard. Qu’est-ce qui t’a aidé à tenir ?" },
+    sacre: { id: "question.sacre", texte: "Cent jours. Si tu devais donner un conseil à quelqu’un qui commence, ce serait lequel ?" },
+    anniv30: { id: "question.anniv30", texte: "Un mois avec Vaiiya : qu’est-ce qui t’a le plus aidé ?" },
+    anniv365: { id: "question.anniv365", texte: "Une année ensemble. Qu’est-ce que tu retiens de ces douze mois ?" },
+  } as Record<"feu" | "brasier" | "sacre" | "anniv30" | "anniv365", ConseilMatin>,
+  /** Sous la séance courte d'un retour. */
+  reprendre: conseils("reprendre", [
+    { texte: "Une séance courte suffit pour reprendre le fil." },
+    { texte: "Une séance courte, et tout se remet en route." },
+    { texte: "Le plus dur, c’est la première minute. Le reste suit." },
+    { texte: "Douze minutes sans matériel : de quoi reprendre en douceur." },
+    { texte: "Pas besoin d’en faire beaucoup : l’important, c’est de recommencer." },
+    { texte: "Tu choisis le rythme, je m’occupe du reste." },
+  ]),
+  /** Sous la première séance des premiers jours. */
+  commencer: conseils("commencer", [
+    { texte: "Une première séance courte, pour voir comment ça se passe." },
+    { texte: "Je te guide mouvement par mouvement, du début à la fin." },
+    { texte: "Le plus simple pour découvrir : une séance courte, à ton rythme." },
+  ]),
+};
+
+/** Le texte d'un conseil, typographie comprise. */
+export function direConseil(c: ConseilMatin): string {
+  return typoMatin(c.texte);
+}
+
+/** « ⟦5⟧ jours validés · ⟦3⟧ séances · ⟦9⟧ repas notés ». Un compte à
+ *  zéro ne s'écrit pas : « 0 séance » se lirait comme un reproche. */
+export function compteSemaine({ jours, seances, repas }: { jours: number; seances: number; repas: number }): string {
+  const parts: string[] = [];
+  if (jours > 0) parts.push(`${nb(jours)} ${jours > 1 ? "jours validés" : "jour validé"}`);
+  if (seances > 0) parts.push(`${nb(seances)} ${seances > 1 ? "séances" : "séance"}`);
+  if (repas > 0) parts.push(`${nb(repas)} repas ${repas > 1 ? "notés" : "noté"}`);
+  return parts.join(" · ");
+}
+
+/** Sous la semaine du dimanche : la mission de la semaine gagnée, ou à
+ *  portée d'une action aujourd'hui. Le titre et l'EXP viennent du
+ *  catalogue (`MISSIONS`), jamais d'ici. */
+export const SEMAINE_MATIN = {
+  faite: (titre: string, exp: number) => typoMatin(`La ${titre} est faite : +${exp} EXP.`),
+  enVue: (titre: string) => typoMatin(`Une séance ou un repas noté aujourd’hui, et la ${titre} est à toi.`),
+};
 
 /* Intent d'un outil → clé de réplique. Ajouter une capacité à l'✦, c'est
    donc aussi ajouter sa phrase ici (sinon elle tombe sur `action.defaut`,

@@ -243,6 +243,9 @@ interface LiveStats {
 type AssistantContextValue = {
   isOpen: boolean;
   open: (prefill?: string) => void;
+  /** Ouvre la conversation sur une question que le Guide pose (le mot du
+   *  jour) : la réponse de la personne part avec elle. */
+  ouvrirSurQuestion: (question: string) => void;
   close: () => void;
   toggle: () => void;
   clear: () => void;
@@ -2605,6 +2608,26 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
     if (qui) void etatMoteur(qui).catch(() => null);
     if (prefill && prefill.trim()) sendMessage(prefill);
   }, [contextePret, sendMessage, user?.id]);
+  /* Le mot du jour pose une question : la conversation s'ouvre dessus.
+     ⚠️ UN TOUR DE LA PERSONNE, MASQUÉ, PASSE DEVANT. `/api/chat` commence
+     l'historique sur un message de la personne (`sanitizeHistory`) : une
+     question du Guide posée en premier y serait jetée, et le coach lirait
+     la réponse sans savoir à quoi elle répond. */
+  const ouvrirSurQuestion = useCallback((question: string) => {
+    const q = question.trim();
+    if (q) {
+      setMessages((prev) => {
+        const derniere = prev[prev.length - 1];
+        if (derniere?.role === "assistant" && derniere.content === q) return prev;
+        return [
+          ...prev,
+          { role: "user" as const, content: "J’ouvre le mot du jour que tu m’as laissé.", id: uid(), masque: true },
+          { role: "assistant" as const, content: q, id: uid(), ton: "listen" as const },
+        ];
+      });
+    }
+    open();
+  }, [open]);
   const close = useCallback(() => setIsOpen(false), []);
   const toggle = useCallback(() => setIsOpen((v) => !v), []);
   const clear = useCallback(() => {
@@ -2965,7 +2988,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
   }, [memoryNotice]);
 
   return (
-    <Ctx.Provider value={{ isOpen, open, close, toggle, clear, messages, isStreaming, sendMessage, repondreQuestion, pseudo: user?.pseudo, memoryNotice, pendingSeance, pendingPlan, pendingRecipe, pendingMeal, actionLoading, etatGuide, noterSaisie: setSaisie, bibliothequePleine, confirmSeance, garderSeance, cancelSeance, confirmPlan, basculerEnPlus, retargetPlan, cancelPlan, chargerJours, confirmRecipe, cancelRecipe, confirmMeal, cancelMeal, quotaChat, messagesEpuises }}>
+    <Ctx.Provider value={{ isOpen, open, ouvrirSurQuestion, close, toggle, clear, messages, isStreaming, sendMessage, repondreQuestion, pseudo: user?.pseudo, memoryNotice, pendingSeance, pendingPlan, pendingRecipe, pendingMeal, actionLoading, etatGuide, noterSaisie: setSaisie, bibliothequePleine, confirmSeance, garderSeance, cancelSeance, confirmPlan, basculerEnPlus, retargetPlan, cancelPlan, chargerJours, confirmRecipe, cancelRecipe, confirmMeal, cancelMeal, quotaChat, messagesEpuises }}>
       {children}
     </Ctx.Provider>
   );
