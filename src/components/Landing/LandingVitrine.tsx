@@ -28,7 +28,7 @@
  * l'app, pas une personne réelle.
  */
 
-import { useEffect, useRef } from "react";
+import { useEffect, useId, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, Camera, Check, ChefHat, Dumbbell, MessageCircle, Store, Trophy } from "lucide-react";
@@ -117,6 +117,87 @@ function useTitreQuiSouvre(titre: React.RefObject<HTMLHeadingElement | null>) {
   }, [titre]);
 }
 
+/* ── L'ESCALIER DE LUMIÈRE ──
+   Des marches descendent des deux bords vers le centre et désignent le
+   bouton. Ce ne sont PAS des aplats : ce qui dessine la forme, ce sont
+   les arêtes, un filet violet → magenta et son halo, posés sur des
+   paliers à peine teintés. Modèle de disposition donné par Louis le
+   2026-10-19, maquette `docs/maquettes/vitrine-heros-v3.html` (piste A).
+
+   ⚠️ TOUT EST CALCULÉ AU RENDU, donc présent dès le premier octet de
+   HTML. Une forme construite en JavaScript après coup, c'est exactement
+   le « bug à l'entrée » qu'on a supprimé : une page qui se remplit.
+
+   ⚠️ `vector-effect="non-scaling-stroke"` est obligatoire. Le SVG est
+   étiré en largeur (`preserveAspectRatio="none"`) pour que les marches
+   touchent les deux bords quelle que soit la fenêtre : sans lui, les
+   arêtes verticales maigrissent pendant que les horizontales épaississent. */
+const ESC_L = 1440;
+const ESC_H = 460;
+
+/** Un escalier symétrique : du bord vers le centre, `marches` paliers qui
+ *  descendent, un plat au milieu, puis le miroir. */
+function cheminEscalier(haut: number, bas: number, marches: number, plat: number) {
+  const pas = (ESC_L - plat) / 2 / marches;
+  const chute = (bas - haut) / marches;
+  let d = `M 0 ${haut}`;
+  for (let i = 0; i < marches; i++) d += ` h ${pas} v ${chute}`;
+  d += ` h ${plat}`;
+  for (let i = 0; i < marches; i++) d += ` v ${-chute} h ${pas}`;
+  return d;
+}
+
+/* Deux niveaux, pas trois : au-delà, les arêtes se lisent comme des
+   créneaux et la forme cesse de désigner quoi que ce soit. */
+const NIVEAUX = [
+  { haut: 26, bas: 292, marches: 4, plat: 300, opacite: 0.9, trait: 1.3 },
+  { haut: 182, bas: 404, marches: 3, plat: 520, opacite: 0.38, trait: 0.9 },
+];
+
+function Escalier() {
+  // Les dégradés et le filtre prennent leur identifiant ici : deux SVG
+  // qui partageraient les leurs prendraient les couleurs du premier.
+  const k = `esc${useId().replace(/[^a-zA-Z0-9_-]/g, "")}`;
+  return (
+    <svg className={s.escalier} viewBox={`0 0 ${ESC_L} ${ESC_H}`} preserveAspectRatio="none" aria-hidden focusable="false">
+      <defs>
+        <linearGradient id={`${k}t`} x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0" stopColor="#8B5CF6" stopOpacity=".25" />
+          <stop offset=".25" stopColor="#8B5CF6" />
+          <stop offset=".5" stopColor="#C13BC1" />
+          <stop offset=".75" stopColor="#8B5CF6" />
+          <stop offset="1" stopColor="#8B5CF6" stopOpacity=".25" />
+        </linearGradient>
+        <linearGradient id={`${k}a`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#8B5CF6" stopOpacity=".055" />
+          <stop offset="1" stopColor="#C13BC1" stopOpacity=".02" />
+        </linearGradient>
+        <filter id={`${k}h`} x="-20%" y="-60%" width="140%" height="220%">
+          <feGaussianBlur stdDeviation="10" />
+        </filter>
+      </defs>
+      {NIVEAUX.map((n) => {
+        const d = cheminEscalier(n.haut, n.bas, n.marches, n.plat);
+        return (
+          <g key={n.haut}>
+            <path d={`${d} V ${ESC_H} H 0 Z`} fill={`url(#${k}a)`} opacity={n.opacite * 0.9} />
+            <path d={d} fill="none" stroke={`url(#${k}t)`} strokeWidth={n.trait * 4} vectorEffect="non-scaling-stroke" filter={`url(#${k}h)`} opacity={n.opacite * 0.42} />
+            <path d={d} fill="none" stroke={`url(#${k}t)`} strokeWidth={n.trait} vectorEffect="non-scaling-stroke" opacity={n.opacite} />
+          </g>
+        );
+      })}
+    </svg>
+  );
+}
+
+/* ⚠️ CES TROIS MENTIONS SONT DES FAITS, ET CHACUNE EST UN CLAIM AUTORISÉ
+   (`docs/positionnement-public-vaiiya.md` §13). Les deux nombres ont été
+   recomptés dans le code le 2026-10-19 : `workoutSessions` en porte 53 et
+   `EXERCISE_LIBRARY` 102. Les modules ne sont pas importés ici pour ne pas
+   charger leurs données sur une page publique ; à revérifier avant d'y
+   toucher. Aucun chiffre d'utilisateurs, jamais. */
+const PREUVES = ["102 mouvements animés", "53 séances guidées", "Gratuit, sans carte bancaire"];
+
 function Heros() {
   const titre = useRef<HTMLHeadingElement>(null);
   useTitreQuiSouvre(titre);
@@ -133,25 +214,39 @@ function Heros() {
         </Link>
       </nav>
 
-      <h1 ref={titre} className={s.h1}>
-        <span data-sens="-1"><span className={s.mot}>Deviens</span></span>
-        <span data-sens="1"><span className={s.mot} style={{ animationDelay: ".1s" }}>qui tu veux</span></span>
-      </h1>
-      <p className={s.herosTexte}>
-        Tes séances, tes repas et <b>un Guide qui te connaît</b>, dans une seule appli.
-        Tu choisis Nora ou Sasha, et tu y vas.
-      </p>
-      <div className={s.herosActions}>
-        <Bouton label="Commencer gratuitement" />
-        <a href={`#${DISCOVER_ANCHOR}`} className={s.lienDoux}>Voir ce qu’il y a dedans</a>
+      {/* Le bloc de texte ne grandit jamais au point de pousser les Guides
+          sous le pli : c'est le défaut de la version d'avant, où le titre
+          se réglait sur la largeur seule. */}
+      <div className={s.herosBloc}>
+        <h1 ref={titre} className={s.h1}>
+          <span data-sens="-1"><span className={s.mot}>Deviens</span></span>
+          <span data-sens="1"><span className={s.mot} style={{ animationDelay: ".1s" }}>qui tu veux</span></span>
+        </h1>
+        <p className={s.herosTexte}>
+          Tes séances, tes repas et <b>un Guide qui te connaît</b>, dans une seule appli.
+          Tu choisis Nora ou Sasha, et tu y vas.
+        </p>
+        {/* Le bouton et son lien passent l'un SOUS l'autre : côte à côte,
+            ils se disputaient la ligne et le lien se lisait comme un second
+            bouton. Le violet plein reste la seule action. */}
+        <div className={s.herosActions}>
+          <Bouton label="Commencer gratuitement" />
+          <a href={`#${DISCOVER_ANCHOR}`} className={s.lienDoux}>Voir ce qu’il y a dedans</a>
+        </div>
+        <p className={s.preuve}>
+          {PREUVES.map((p) => <span key={p}>{p}</span>)}
+        </p>
       </div>
 
-      <div className={s.duoHeros}>
-        <div className={`${s.guideHeros} ${s.noraHeros}`}>
-          <Image src="/guides/nora-master-v1.webp" alt="Nora, Guide Vaiiya" fill sizes="(min-width: 960px) 520px, 80vw" priority />
-        </div>
-        <div className={`${s.guideHeros} ${s.sashaHeros}`}>
-          <Image src="/guides/sasha-master-v1.webp" alt="Sasha, Guide Vaiiya" fill sizes="(min-width: 960px) 520px, 80vw" priority />
+      <div className={s.scene}>
+        <Escalier />
+        <div className={s.duoHeros}>
+          <div className={`${s.guideHeros} ${s.noraHeros}`}>
+            <Image src="/guides/nora-master-v1.webp" alt="Nora, Guide Vaiiya" fill sizes="(min-width: 960px) 420px, 60vw" priority />
+          </div>
+          <div className={`${s.guideHeros} ${s.sashaHeros}`}>
+            <Image src="/guides/sasha-master-v1.webp" alt="Sasha, Guide Vaiiya" fill sizes="(min-width: 960px) 420px, 60vw" priority />
+          </div>
         </div>
         <div className={s.prenoms} aria-hidden><span>Nora</span><span>Sasha</span></div>
       </div>

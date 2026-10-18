@@ -182,16 +182,37 @@
 .heros {
   position: relative;
   overflow: hidden;
-  padding: calc(env(safe-area-inset-top, 0px) + 92px) 0 0;
+  /* Le héros tient dans UN écran, Nora et Sasha compris. Avant, le titre
+     se réglait sur la seule largeur : sur un écran large et court il
+     mangeait toute la hauteur et les Guides arrivaient sous le pli,
+     coupés au front (Louis, 2026-10-19 : « on voit quasi rien »).
+     ⚠️ `height`, et pas `min-height` : avec une hauteur minimale, le bloc
+     de texte pouvait pousser la scène au-delà de l'écran et les Guides
+     repassaient dessous. Ici c'est la SCÈNE qui absorbe ce qui reste, et
+     elle ne descend jamais sous son plancher. Mesuré à 1440 x 900 :
+     1002 px de héros avant, 900 après. */
+  height: 100vh;
+  height: 100svh;
+  min-height: 600px;
+  display: flex;
+  flex-direction: column;
+  padding: calc(env(safe-area-inset-top, 0px) + 80px) 0 0;
   background: var(--creme);
   text-align: center;
 }
-@media (min-width: 768px) { .heros { padding-top: 112px; } }
+@media (min-width: 768px) { .heros { padding-top: 88px; } }
+
+.herosBloc { position: relative; z-index: 20; flex: 0 0 auto; }
 
 .h1 {
   margin: 0;
   padding: 0 12px;
-  font-size: clamp(64px, 11.5vw, 176px);
+  /* ⚠️ LA HAUTEUR COMMANDE AUTANT QUE LA LARGEUR. `min()` prend le plus
+     contraignant des deux, et la borne basse de 64 px garde un titre franc
+     sur téléphone. La ligne en `vh` est le repli des navigateurs qui ne
+     connaissent pas `svh`. */
+  font-size: clamp(64px, min(12vw, 13vh), 132px);
+  font-size: clamp(64px, min(12vw, 13svh), 132px);
   line-height: .84;
   font-weight: 900;
   font-variation-settings: "wdth" 62;
@@ -202,7 +223,7 @@
 .mot { display: inline-block; animation: monte .8s var(--ease) both; }
 
 .herosTexte {
-  margin: 20px auto 0;
+  margin: 16px auto 0;
   max-width: 40ch;
   padding: 0 20px;
   font-size: 16px;
@@ -211,37 +232,96 @@
   animation: monte .8s var(--ease) .25s both;
 }
 .herosTexte b { color: var(--encre); font-weight: 700; }
-@media (min-width: 768px) { .herosTexte { font-size: 20px; } }
+/* 52ch plutôt que 40 : la phrase tient alors en deux lignes au lieu de
+   trois, et c'est trente pixels rendus aux Guides. */
+@media (min-width: 768px) { .herosTexte { font-size: 20px; max-width: 52ch; } }
+
+/* Le bouton et son lien l'un SOUS l'autre : côte à côte, ils se
+   disputaient la ligne et le lien se lisait comme un second bouton. */
 .herosActions {
-  margin-top: 24px;
+  margin-top: 20px;
   display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
+  flex-direction: column;
   align-items: center;
-  gap: 14px 22px;
+  gap: 8px;
   padding: 0 20px;
   animation: monte .8s var(--ease) .35s both;
 }
+
+/* Trois faits sous le bouton, à la place de la rangée de logos clients
+   du modèle : on n'en a pas, et on n'en invente pas. Chacun est un claim
+   autorisé du positionnement public. */
+.preuve {
+  margin: 14px auto 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px 14px;
+  padding: 0 20px;
+  font-size: 11px;
+  font-weight: 750;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--encre-3);
+  animation: monte .8s var(--ease) .45s both;
+}
+.preuve span { display: inline-flex; align-items: center; gap: 14px; }
+.preuve span + span::before {
+  content: "";
+  width: 3px; height: 3px; border-radius: 50%;
+  background: currentColor; opacity: .55;
+}
+/* Sur un téléphone, les trois mentions passent à la ligne de toute façon,
+   et le point médian se retrouvait alors en TÊTE de ligne, comme une puce
+   de liste orpheline. On empile proprement et on retire les points. */
+@media (max-width: 520px) {
+  .preuve { flex-direction: column; align-items: center; gap: 4px; }
+  .preuve span { gap: 0; }
+  .preuve span + span::before { display: none; }
+}
+
 @keyframes monte {
   from { opacity: 0; transform: translate3d(0, 26px, 0); }
   to { opacity: 1; transform: none; }
 }
 
-/* Les deux Guides : Nora garde son geste vers la gauche, Sasha est
-   retourné pour ouvrir vers la droite, leurs dos se rejoignent au centre. */
-.duoHeros {
+/* ⚠️ L'ÉCRAN LARGE ET COURT EST LE CAS QUI CASSE (mesuré à 1366 x 660 :
+   la scène tombait sur son plancher, le bas des Guides passait sous le
+   bord et les prénoms disparaissaient). On rend alors au bas de l'écran
+   ce que les marges prenaient. La règle vaut aussi pour un téléphone
+   couché, qui est exactement le même problème. */
+@media (min-width: 768px) and (max-height: 740px) {
+  .heros { padding-top: 68px; }
+  .herosTexte { margin-top: 12px; }
+  .herosActions { margin-top: 14px; }
+  .preuve { margin-top: 10px; }
+}
+
+/* ── La scène : tout le bas de l'écran, et elle ne pousse jamais le texte ── */
+.scene {
   position: relative;
-  width: min(1100px, 118vw);
-  height: min(70svh, 700px, 112vw);
-  min-height: 340px;
-  /* Centré par la marge : l'animation d'entrée occupe déjà `transform`. */
-  margin: 8px 0 0 calc(50% - min(550px, 59vw));
+  z-index: 10;
+  flex: 1 1 auto;
+  min-height: 200px;
+  margin-top: 10px;
+}
+.escalier { position: absolute; inset: 0; width: 100%; height: 100%; display: block; z-index: 1; }
+
+/* Les deux Guides : Nora garde son geste vers la gauche, Sasha est
+   retourné pour ouvrir vers la droite, leurs dos se rejoignent au centre.
+   ⚠️ Le duo ne se centre PAS par `transform` : l'animation d'entrée
+   l'occupe déjà. Il est pleine largeur, et chaque Guide se place par son
+   propre décalage depuis le milieu. */
+.duoHeros {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
   animation: monte 1s var(--ease) .15s both;
 }
 .duoHeros::after {
   content: "";
-  position: absolute; inset: auto 0 0 0; height: 30%; z-index: 3;
-  background: linear-gradient(to bottom, rgba(255, 255, 255, 0), var(--creme) 85%);
+  position: absolute; inset: auto 0 0 0; height: 26%; z-index: 3;
+  background: linear-gradient(to bottom, rgba(255, 255, 255, 0), var(--creme) 86%);
 }
 .guideHeros {
   position: absolute;
@@ -249,16 +329,16 @@
   height: 100%;
   aspect-ratio: 1086 / 1448;
   left: 50%;
-  filter: drop-shadow(0 30px 40px rgba(60, 30, 110, .16));
+  filter: drop-shadow(0 22px 30px rgba(60, 30, 110, .15));
 }
 .guideHeros img { width: 100%; height: 100%; object-fit: contain; }
 .noraHeros { transform: translateX(-79%); z-index: 2; }
 .sashaHeros { transform: translateX(-21%) scaleX(-1); z-index: 1; }
 .prenoms {
-  position: absolute; z-index: 4; inset: auto 0 22px 0;
-  display: flex; justify-content: center; gap: clamp(96px, 24vw, 290px);
-  font-size: 13px; font-weight: 900; font-variation-settings: "wdth" 80;
-  letter-spacing: .3em; text-transform: uppercase; color: var(--encre-2);
+  position: absolute; z-index: 4; inset: auto 0 14px 0;
+  display: flex; justify-content: center; gap: clamp(76px, 19vw, 230px);
+  font-size: 11px; font-weight: 900; font-variation-settings: "wdth" 80;
+  letter-spacing: .3em; text-transform: uppercase; color: var(--encre-3);
 }
 
 /* La tête du Guide dans la conversation : ni cercle, ni fond, un fondu en bas. */
