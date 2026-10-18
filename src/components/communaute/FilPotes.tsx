@@ -54,9 +54,10 @@ export default function FilPotes({ moi, monPseudo, monAvatar, onAjouterAmi }: {
 
   const lire = useCallback(async () => {
     const a = await mesAmis(moi);
+    const moiP = { id: moi, pseudo: monPseudo, avatar: monAvatar };
     const [f, p, e] = await Promise.all([
-      chargerFilPotes(a), presenceAmis(),
-      chargerEvenements({ id: moi, pseudo: monPseudo, avatar: monAvatar }, a),
+      chargerFilPotes(moiP, a), presenceAmis(),
+      chargerEvenements(moiP, a),
     ]);
     return { a, f, p, e };
   }, [moi, monPseudo, monAvatar]);
@@ -211,6 +212,12 @@ export default function FilPotes({ moi, monPseudo, monAvatar, onAjouterAmi }: {
 
               <MiniAffiche affiche={a} />
 
+              {a.auteur.id === moi ? (
+                /* Mon affiche : on ne réagit pas à la sienne, on voit ce que les potes en disent. */
+                <p className="px-3.5 py-3 text-[13px]" style={{ color: "var(--text-3)" }}>
+                  {resumeReactions(a)}
+                </p>
+              ) : (
               <div className="flex items-center gap-2 px-3 py-3">
                 {SORTES.map((s) => {
                   const qui = a.reactions[s.id];
@@ -233,6 +240,7 @@ export default function FilPotes({ moi, monPseudo, monAvatar, onAjouterAmi }: {
                   {ouverture === a.id ? <Loader2 className="h-4.5 w-4.5 animate-spin" /> : <MessageCircle className="h-5 w-5" />}
                 </button>
               </div>
+              )}
             </article>
           ))(m.a))}
           <p className="pt-1 text-center text-[13px]" style={{ color: "var(--text-3)" }}>C’est tout pour l’instant.</p>
@@ -254,6 +262,12 @@ export default function FilPotes({ moi, monPseudo, monAvatar, onAjouterAmi }: {
       )}
     </div>
   );
+}
+
+/** « Tes potes la voient · Feu 2 · Costaud 1 » sous mon affiche. */
+function resumeReactions(a: AfficheDuFil): string {
+  const parties = SORTES.filter((s) => a.reactions[s.id].length > 0).map((s) => `${s.libelle} ${a.reactions[s.id].length}`);
+  return ["Tes potes la voient", ...parties].join(" · ");
 }
 
 type Moment =

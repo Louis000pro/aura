@@ -59,9 +59,11 @@ function reactionsVides(): Record<SorteReaction, string[]> {
   return { feu: [], costaud: [], pareil: [] };
 }
 
-/** Les affiches que mes amis montrent, des quatorze derniers jours. */
-export async function chargerFilPotes(amis: Personne[]): Promise<AfficheDuFil[]> {
-  if (!amis.length) return [];
+/** Les affiches que mes amis montrent, et les miennes, des quatorze
+ *  derniers jours. Sans les miennes, une affiche que je viens de partager
+ *  ne se voyait nulle part et le fil semblait cassé. */
+export async function chargerFilPotes(moi: Personne, amisSeuls: Personne[]): Promise<AfficheDuFil[]> {
+  const amis = [moi, ...amisSeuls];
   const supabase = createClient();
   const depuis = new Date(Date.now() - FENETRE_JOURS * 86_400_000).toISOString();
   const { data, error } = await supabase
