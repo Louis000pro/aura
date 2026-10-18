@@ -20,9 +20,9 @@
    ───────────────────────────────────────────────────────────────────── */
 
 .grille {
-  --ruban-lueur: rgba(255, 140, 100, 0.18);
-  --ruban-flamme: rgba(255, 140, 45, 0.2);
-  --ruban-feu: rgba(255, 175, 30, 0.24);
+  --ruban-lueur: rgba(255, 160, 120, 0.14);
+  --ruban-flamme: rgba(230, 200, 130, 0.24);
+  --ruban-feu: rgba(235, 200, 110, 0.3);
   --ruban-brasier: rgba(250, 195, 30, 0.3);
   --ruban-sacre: rgba(255, 214, 60, 0.38);
   --chemin: rgba(226, 120, 30, 0.38);
@@ -36,9 +36,9 @@
 /* En sombre, le ruban est une lumière posée sur la feuille : plus dense, il
    tournerait au brun. */
 :global([data-theme="dark"]) .grille {
-  --ruban-lueur: rgba(255, 140, 100, 0.17);
-  --ruban-flamme: rgba(255, 140, 45, 0.19);
-  --ruban-feu: rgba(255, 175, 30, 0.21);
+  --ruban-lueur: rgba(255, 160, 120, 0.14);
+  --ruban-flamme: rgba(235, 210, 150, 0.17);
+  --ruban-feu: rgba(240, 210, 130, 0.2);
   --ruban-brasier: rgba(250, 200, 40, 0.24);
   --ruban-sacre: rgba(255, 222, 100, 0.3);
   --chemin: rgba(255, 190, 110, 0.42);
@@ -96,27 +96,27 @@
 
 /* ── La gamme : une flamme, un rond ── */
 .rond[data-feu="lueur"] {
-  --rond: linear-gradient(160deg, #ffc4a6 0%, #ff9566 100%);
-  --encre: #7a240a;
+  --rond: linear-gradient(160deg, #ffd9c4 0%, #ffbb98 100%);
+  --encre: #7a2c10;
   --halo: none;
-  --profond: #f07446;
-  --lueur: rgba(255, 130, 90, 0.55);
+  --profond: #f29a72;
+  --lueur: rgba(255, 150, 110, 0.4);
 }
 
 .rond[data-feu="flamme"] {
-  --rond: linear-gradient(160deg, #ffb65e 0%, #ff8326 100%);
-  --encre: #4a1c04;
+  --rond: linear-gradient(160deg, #fbf0cf 0%, #f2dca2 100%);
+  --encre: #4a3408;
   --halo: none;
-  --profond: #f26a0c;
-  --lueur: rgba(255, 130, 40, 0.6);
+  --profond: #d9b964;
+  --lueur: rgba(230, 200, 120, 0.55);
 }
 
 .rond[data-feu="feu"] {
-  --rond: linear-gradient(160deg, #ffd25c 0%, #ffa01a 100%);
-  --encre: #3a1a05;
-  --halo: 0 2px 8px rgba(255, 150, 20, 0.4);
-  --profond: #f08a00;
-  --lueur: rgba(255, 160, 30, 0.65);
+  --rond: linear-gradient(160deg, #fbe8ad 0%, #efcd72 100%);
+  --encre: #3a2a05;
+  --halo: 0 2px 8px rgba(215, 175, 60, 0.32);
+  --profond: #d4a93c;
+  --lueur: rgba(235, 195, 90, 0.6);
 }
 
 .rond[data-feu="brasier"] {
