@@ -226,10 +226,22 @@ export default function FilPotes({ moi, monPseudo, monAvatar, onAjouterAmi }: {
               <MiniAffiche affiche={a} />
 
               {a.auteur.id === moi ? (
-                /* Mon affiche : on ne réagit pas à la sienne, on voit ce que les potes en disent. */
-                <p className="px-3.5 py-3 text-[13px]" style={{ color: "var(--text-3)" }}>
-                  {resumeReactions(a)}
-                </p>
+                /* Mon affiche : les mêmes réactions, en lecture seule (on ne
+                   réagit pas à la sienne), avec ce que les potes en ont dit. */
+                <div className="px-3 py-3">
+                  <div className="flex items-center gap-2" aria-label={resumeReactions(a)}>
+                    {SORTES.map((s) => (
+                      <span key={s.id} aria-hidden className="flex min-h-9 items-center gap-1.5 rounded-full px-3 text-[13px] font-semibold"
+                        style={{ background: "rgba(var(--tint-violet-rgb), .35)", color: "var(--exp-encre)" }}>
+                        {s.libelle}
+                        <span className="vy-nombre" style={{ fontWeight: 700 }}>{a.reactions[s.id].length}</span>
+                      </span>
+                    ))}
+                  </div>
+                  <p className="mt-2 text-[11px]" style={{ color: "var(--text-3)" }}>
+                    Tes potes réagissent ici et te répondent en message privé.
+                  </p>
+                </div>
               ) : (
               <div className="flex items-center gap-2 px-3 py-3">
                 {SORTES.map((s) => {
@@ -294,7 +306,8 @@ function FeuilleMonAffiche({ affiche, moi, onFermer, onMot, onRetiree }: {
 }) {
   const [mot, setMot] = useState(affiche.mot);
   const [occupe, setOccupe] = useState(false);
-  const [confirmer, setConfirmer] = useState(false);
+  /** Retirer et supprimer se confirment d'un second toucher. */
+  const [confirmer, setConfirmer] = useState<"retirer" | "supprimer" | null>(null);
   const [erreur, setErreur] = useState<string | null>(null);
 
   const faire = async (geste: () => Promise<boolean>, ensuite: () => void) => {
@@ -329,19 +342,27 @@ function FeuilleMonAffiche({ affiche, moi, onFermer, onMot, onRetiree }: {
       )}
 
       <div className="mt-4">
-        <button className={`vy-filet ${ligne}`} style={{ color: "var(--text-1)" }} disabled={occupe}
-          onClick={() => void faire(() => retirerDuFil(moi, affiche.id), onRetiree)}>
-          Retirer du fil
-          <span className="ml-auto text-[11px] font-normal" style={{ color: "var(--text-3)" }}>Elle reste dans ton profil</span>
-        </button>
-        {confirmer ? (
+        {confirmer === "retirer" ? (
+          <button className={`vy-filet ${ligne}`} style={{ color: "#D93A3A" }} disabled={occupe}
+            onClick={() => void faire(() => retirerDuFil(moi, affiche.id), onRetiree)}>
+            Oui, retirer du fil
+            <span className="ml-auto text-[11px] font-normal" style={{ color: "var(--text-3)" }}>Elle reste dans ton profil</span>
+          </button>
+        ) : (
+          <button className={`vy-filet ${ligne}`} style={{ color: "var(--text-1)" }} disabled={occupe}
+            onClick={() => setConfirmer("retirer")}>
+            Retirer du fil
+            <span className="ml-auto text-[11px] font-normal" style={{ color: "var(--text-3)" }}>Elle reste dans ton profil</span>
+          </button>
+        )}
+        {confirmer === "supprimer" ? (
           <button className={`vy-filet ${ligne}`} style={{ color: "#D93A3A" }} disabled={occupe}
             onClick={() => void faire(() => supprimerAffiche(moi, affiche.id), onRetiree)}>
             Oui, supprimer l’affiche
             <span className="ml-auto text-[11px] font-normal" style={{ color: "var(--text-3)" }}>La séance reste dans ton historique</span>
           </button>
         ) : (
-          <button className={`vy-filet ${ligne}`} style={{ color: "#D93A3A" }} disabled={occupe} onClick={() => setConfirmer(true)}>
+          <button className={`vy-filet ${ligne}`} style={{ color: "#D93A3A" }} disabled={occupe} onClick={() => setConfirmer("supprimer")}>
             Supprimer l’affiche
           </button>
         )}
