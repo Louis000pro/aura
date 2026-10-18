@@ -28,9 +28,11 @@ import { imageEtat, SERIES, type SerieSlug } from "@/lib/defi";
 
 const EN_LETTRES = ["", "une", "deux", "trois", "quatre", "cinq", "six", "sept"];
 
-export default function LigneEnsemble({ serie, nombre }: {
+export default function LigneEnsemble({ serie, nombre, nu = false }: {
   serie: SerieSlug;
   nombre: number;
+  /** Sans surface propre : posée dans un groupe à filet (le bloc du rang). */
+  nu?: boolean;
 }) {
   // Au-delà de sept, le chiffre reprend la main : une phrase qui
   // épelle « treize » se lit moins vite qu'elle ne s'écrit.
@@ -38,8 +40,8 @@ export default function LigneEnsemble({ serie, nombre }: {
 
   return (
     <div
-      className="mt-5 flex items-center gap-3 rounded-2xl px-3.5 py-3"
-      style={{
+      className={nu ? "flex items-center gap-3 px-4 py-3.5" : "mt-5 flex items-center gap-3 rounded-2xl px-3.5 py-3"}
+      style={nu ? undefined : {
         background: "rgba(var(--tint-violet-rgb),0.45)",
         border: "1px solid rgba(var(--accent-rgb),0.14)",
       }}
@@ -51,7 +53,7 @@ export default function LigneEnsemble({ serie, nombre }: {
         <Image src={imageEtat(serie, 4)} alt="" fill sizes="44px" className="object-cover" />
       </div>
 
-      <p className="min-w-0 flex-1 text-[13px] leading-snug" style={{ color: "var(--text-2)" }}>
+      <p className={`min-w-0 flex-1 leading-snug ${nu ? "text-[16px]" : "text-[13px]"}`} style={{ color: nu ? "var(--text-0)" : "var(--text-2)" }}>
         {nombre === 1 ? (
           <>
             Vous avez dévoilé{" "}

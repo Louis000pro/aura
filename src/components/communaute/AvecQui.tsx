@@ -35,8 +35,10 @@ import { refusRelais, type RefusRelais } from "@/lib/defiErreurs";
 /** Jusqu'à 4 amis : 5 avec toi, la taille maximale d'un groupe. */
 const MAX_AMIS = 4;
 
-export default function AvecQui({ moi, onFermer, onFil, onLien }: {
+export default function AvecQui({ moi, onFermer, onFil, onLien, preselection }: {
   moi: string;
+  /** Un ami déjà coché (ouvert depuis son profil). */
+  preselection?: string;
   onFermer: () => void;
   onFil: (conversationId: string) => void;
   onLien: () => void;
@@ -46,7 +48,7 @@ export default function AvecQui({ moi, onFermer, onFil, onLien }: {
   const [charge, setCharge] = useState(true);
   const [occupe, setOccupe] = useState<string | null>(null);
   const [refus, setRefus]   = useState<RefusRelais | null>(null);
-  const [choisis, setChoisis] = useState<string[]>([]);
+  const [choisis, setChoisis] = useState<string[]>(preselection ? [preselection] : []);
   const rangs = useRangs(useMemo(() => gens.map((g) => g.id), [gens]));
 
   useEffect(() => {

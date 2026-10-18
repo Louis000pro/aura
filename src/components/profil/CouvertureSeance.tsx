@@ -133,7 +133,7 @@ export default function CouvertureSeance({ data, numero, teinte = 0, mot, compac
       {/* La largeur utile, mesurée ; le mot vit dedans et n'en sort pas. */}
       <div ref={boite} aria-hidden className="absolute overflow-hidden" style={{ left: marge, right: marge, top: compact ? 30 : 50 }}>
         <span ref={mesure} className="pointer-events-none invisible absolute left-0 top-0" style={{ ...STYLE_MOT, fontSize: 100 }}>{texte}</span>
-        <span className="block" style={{ ...STYLE_MOT, fontSize: taille || 1, color: "rgba(255,255,255,.95)", opacity: taille ? 1 : 0 }}>{texte}</span>
+        <span className="block text-center" style={{ ...STYLE_MOT, fontSize: taille || 1, color: "rgba(255,255,255,.95)", opacity: taille ? 1 : 0 }}>{texte}</span>
       </div>
 
       {chiffres.length > 0 && (
@@ -142,7 +142,7 @@ export default function CouvertureSeance({ data, numero, teinte = 0, mot, compac
           style={{ left: marge, right: marge, bottom: compact ? 10 : 18, paddingTop: compact ? 8 : 12, gridTemplateColumns: `repeat(${chiffres.length}, minmax(0, 1fr))`, borderTop: "1px solid rgba(255,255,255,.22)" }}
         >
           {chiffres.map((m, i) => (
-            <div key={i} className="min-w-0" style={i ? { borderLeft: "1px solid rgba(255,255,255,.22)", paddingLeft: compact ? 8 : 14 } : undefined}>
+            <div key={i} className="min-w-0 text-center" style={i ? { borderLeft: "1px solid rgba(255,255,255,.22)" } : undefined}>
               <span className={`vy-nombre block truncate leading-none ${compact ? "text-[20px]" : "text-[34px]"}`} style={{ fontWeight: 800 }}>
                 {m.value}
               </span>

@@ -4,7 +4,7 @@ import { useState, useEffect, useLayoutEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  UserPlus, UserCheck, ArrowLeft, Check, Lock, UserMinus,
+  UserPlus, UserCheck, ArrowLeft, Check, Lock, UserMinus, Share2, MessageCircle, Loader2,
 } from "lucide-react";
 import Image from "next/image";
 import { createClient } from "@/lib/supabase";
@@ -21,6 +21,10 @@ import { SERIES, imageEtat, relaisPartage, type SerieSlug, type RelaisPartage } 
 import { chargerBadgesAura } from "@/lib/badgesAura";
 import EtagereBadges from "@/components/profil/EtagereBadges";
 import LigneEnsemble from "@/components/profil/LigneEnsemble";
+import CouvertureSeance from "@/components/profil/CouvertureSeance";
+import AvecQui from "@/components/communaute/AvecQui";
+import { creerConversation } from "@/lib/messagerie";
+import type { PerformanceData } from "@/components/PerformanceCard";
 
 /* Les colonnes `goals` et `level` ont quitté ce type, et ce n'est pas un
    allègement : elles n'existent dans AUCUNE migration et ne sont écrites par
@@ -38,7 +42,11 @@ type Profile = {
   onboarding_goals?: string[] | null;
   onboarding_level?: string | null;
   is_admin?: boolean;
+  created_at?: string | null;
 };
+
+/** Une affiche de séance partagée avec ses potes. */
+type AfficheAmi = { id: string; data: PerformanceData; mot: string | null };
 
 
 export default function PublicProfilePage() {
@@ -72,6 +80,9 @@ export default function PublicProfilePage() {
   // et ne rien remettre laisserait, le temps d'une requête, la ligne d'un
   // ami sur le profil du suivant. On compare, on ne réinitialise pas.
   const [ensemble, setEnsemble] = useState<{ pour: string; data: RelaisPartage | null } | null>(null);
+  const [affiches, setAffiches] = useState<AfficheAmi[]>([]);
+  const [avecQui, setAvecQui] = useState(false);
+  const [ouvreFil, setOuvreFil] = useState(false);
 
   // Ce que vous avez fait ensemble. Effet séparé : le profil visité et ma
   // session n'arrivent pas au même moment, et l'effet du profil ne se
@@ -112,7 +123,7 @@ export default function PublicProfilePage() {
 
     supabase
       .from("profiles")
-      .select("id, pseudo, bio, avatar_url, onboarding_goals, onboarding_level, is_admin")
+      .select("id, pseudo, bio, avatar_url, onboarding_goals, onboarding_level, is_admin, created_at")
       .ilike("pseudo", username.trim())
       .maybeSingle()
       .then(async ({ data, error }) => {
@@ -160,6 +171,23 @@ export default function PublicProfilePage() {
            badge est fait pour se voir de l'extérieur, le détail de ce qui
            reste à quelqu'un d'autre ne l'est pas. */
         void chargerBadgesAura(data.id).then(({ slugs }) => setBadgeSlugs(slugs)).catch(() => {});
+
+        /* Ses affiches de séance partagées avec ses potes. La policy de
+           `posts` filtre déjà : seuls les amis réciproques les reçoivent. */
+        void supabase
+          .from("posts")
+          .select("id, performance_data, caption")
+          .eq("user_id", data.id)
+          .eq("type", "workout")
+          .eq("audience", "friends")
+          .order("created_at", { ascending: false })
+          .limit(12)
+          .then(({ data: ps, error: errP }) => {
+            if (errP || !ps) return;
+            setAffiches(ps
+              .filter((p) => p.performance_data)
+              .map((p) => ({ id: p.id as string, data: p.performance_data as PerformanceData, mot: null })));
+          });
 
         if (user && user.id !== data.id) {
           const { data: followData } = await supabase
@@ -217,6 +245,25 @@ export default function PublicProfilePage() {
   const showToast = (msg: string) => {
     setToast(msg);
     setTimeout(() => setToast(null), 2500);
+  };
+
+  /** Ouvre (ou retrouve) votre conversation à deux. */
+  const ecrire = async () => {
+    if (!profile || ouvreFil) return;
+    setOuvreFil(true);
+    const r = await creerConversation([profile.id]);
+    setOuvreFil(false);
+    if (!r?.ok || !r.conversation_id) { showToast("Impossible d’ouvrir la conversation"); return; }
+    router.push(`/communaute/${r.conversation_id}`);
+  };
+
+  const partagerProfil = async () => {
+    const url = `${window.location.origin}/profil/${encodeURIComponent(profile?.pseudo ?? username)}`;
+    try {
+      if (navigator.share) { await navigator.share({ title: `${profile?.pseudo ?? username} sur Vaiiya`, url }); return; }
+      await navigator.clipboard.writeText(url);
+      showToast("Lien copié");
+    } catch { /* partage annulé */ }
   };
 
   const handleFriendButton = () => {
@@ -279,28 +326,20 @@ export default function PublicProfilePage() {
   const progression = aura ? progressionRang(aura.exp) : null;
   const cosmetiques = cosmetiquesDuRang(aura?.rang.id ?? "");
   const isCertified = certified || profile?.is_admin === true;
+  const rangSuivant = progression?.suivant ?? null;
+  const serieJours = Math.max(1, pub?.serie ?? 0);
+  const inscritLe = profile?.created_at ?? null;
+  const membreDepuis = inscritLe
+    ? new Date(inscritLe).toLocaleDateString("fr-FR", new Date(inscritLe).getFullYear() === new Date().getFullYear() ? { month: "long" } : { month: "long", year: "numeric" })
+    : null;
+  const niveau = profile?.onboarding_level
+    ? LEVELS.find((l) => l.id === profile.onboarding_level)?.label ?? null
+    : null;
+  const objectif = profile?.onboarding_goals?.[0] ? libelleObjectif(profile.onboarding_goals[0]) : null;
+  const identite = [objectif, niveau].filter(Boolean).join(" · ");
 
   return (
-    <div className="min-h-screen px-6 pt-10 pb-12 max-w-2xl mx-auto relative overflow-x-hidden">
-      {/* Blobs */}
-      <div
-        className="fixed top-0 left-0 pointer-events-none -z-10"
-        style={{
-          width: 320,
-          height: 320,
-          background: "radial-gradient(circle, rgba(var(--violet-mid-rgb),0.35) 0%, transparent 70%)",
-          filter: "blur(70px)",
-        }}
-      />
-      <div
-        className="fixed bottom-0 right-0 pointer-events-none -z-10"
-        style={{
-          width: 300,
-          height: 300,
-          background: "radial-gradient(circle, rgba(var(--cream-mid-rgb),0.3) 0%, transparent 70%)",
-          filter: "blur(70px)",
-        }}
-      />
+    <div className="min-h-screen px-5 pt-6 pb-28 max-w-2xl mx-auto relative overflow-x-hidden md:max-w-5xl md:px-10 md:pt-10">
 
       {/* ── Sticky mini-header (visible quand on scrolle) ── */}
       <AnimatePresence>
@@ -314,311 +353,274 @@ export default function PublicProfilePage() {
             style={{
               background: "rgba(var(--surface-rgb),0.92)",
               backdropFilter: "blur(16px)",
-              borderBottom: "1px solid rgba(var(--violet-mid-rgb),0.2)",
+              borderBottom: "1px solid rgba(var(--text-3-rgb),0.12)",
             }}
           >
-            <motion.button whileTap={{ scale: 0.9 }} onClick={() => router.back()} className="flex items-center gap-1 cursor-pointer" style={{ color: "var(--text-3)" }}>
-              <ArrowLeft size={15} strokeWidth={1.5} />
-            </motion.button>
-            <div
-              className="w-7 h-7 rounded-full overflow-hidden flex items-center justify-center text-[11px] font-semibold flex-shrink-0"
-              style={{ background: displayAvatar ? "transparent" : "linear-gradient(135deg,var(--violet-mid),var(--cream-mid))", color: "var(--text-1)" }}
-            >
-              {displayAvatar
-                // eslint-disable-next-line @next/next/no-img-element
-                ? <img loading="lazy" decoding="async" src={displayAvatar} alt="" className="w-full h-full object-cover" />
-                : initial}
-            </div>
-            <p className="text-[16px] font-semibold flex-1" style={{ color: "var(--text-1)" }}>@{displayPseudo}</p>
-            {!isOwnProfile && user && (
-              <motion.button
-                whileTap={{ scale: 0.9 }}
-                onClick={handleFriendButton}
-                disabled={followLoading}
-                className="px-3 py-1.5 rounded-xl text-[13px] font-semibold cursor-pointer"
-                style={isFollowing
-                  ? { background: "rgba(var(--tint-violet-rgb),0.7)", color: "var(--exp-encre)", border: "1px solid rgba(var(--accent-rgb),0.2)" }
-                  : { background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", color: "#fff" }
-                }
+            <button type="button" aria-label="Retour" onClick={() => router.back()} className="flex items-center cursor-pointer" style={{ color: "var(--text-2)" }}>
+              <ArrowLeft size={17} strokeWidth={2} />
+            </button>
+            <p className="text-[16px] font-semibold flex-1 truncate" style={{ color: "var(--text-0)" }}>{displayPseudo}</p>
+            {!isOwnProfile && user && isFollowing && (
+              <button
+                type="button"
+                onClick={() => void ecrire()}
+                disabled={ouvreFil}
+                className="px-4 h-9 rounded-full text-[13px] font-bold cursor-pointer text-white"
+                style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)" }}
               >
-                {isFollowing ? "Ami" : "Ajouter"}
-              </motion.button>
+                Écrire
+              </button>
             )}
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Back */}
-      <motion.button
-        initial={{ opacity: 0, x: -10 }}
-        animate={{ opacity: 1, x: 0 }}
-        onClick={() => router.back()}
-        whileTap={{ scale: 0.93 }}
-        className="flex items-center gap-2 mb-8 cursor-pointer"
-        style={{ color: "var(--text-3)" }}
-      >
-        <ArrowLeft size={16} strokeWidth={1.5} />
-        <span className="text-[16px] font-medium">Retour</span>
-      </motion.button>
+      {/* Retour et partage : deux ronds de verre, comme sur mon profil. */}
+      <div className="flex items-center justify-between">
+        <button
+          type="button"
+          onClick={() => router.back()}
+          aria-label="Retour"
+          className="w-11 h-11 rounded-full flex items-center justify-center cursor-pointer"
+          style={{ background: "rgba(var(--surface-rgb),0.62)", border: "1px solid rgba(255,255,255,0.6)", boxShadow: "var(--ombre-pose)" }}
+        >
+          <ArrowLeft size={19} strokeWidth={2} style={{ color: "var(--text-0)" }} />
+        </button>
+        <button
+          type="button"
+          onClick={() => void partagerProfil()}
+          aria-label="Partager son profil"
+          className="w-11 h-11 rounded-full flex items-center justify-center cursor-pointer"
+          style={{ background: "rgba(var(--surface-rgb),0.62)", border: "1px solid rgba(255,255,255,0.6)", boxShadow: "var(--ombre-pose)" }}
+        >
+          <Share2 size={18} strokeWidth={2} style={{ color: "var(--text-0)" }} />
+        </button>
+      </div>
 
-      {/* Profile card */}
-      <motion.div
-        initial={{ opacity: 0, y: 16 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="p-6 mb-6 relative overflow-hidden"
-        style={{
-          /* Cette carte était peinte en dur (#faf8ff vers #fffef8). Elle porte
-             le pseudo, la bio, le rang et les chiffres, tous en `--text-0` :
-             en mode sombre, ce blanc cassé rendait un texte presque blanc sur
-             un aplat presque blanc. Le voile violet des jetons dit la même
-             chose et suit le thème. */
-          background: "linear-gradient(135deg, rgba(var(--tint-violet-rgb),0.75) 0%, rgba(var(--tint-cream-rgb),0.75) 100%)",
-          border: "1px solid rgba(var(--violet-mid-rgb),0.35)",
-          boxShadow: "var(--ombre-pose), inset 0 1px 0 rgba(var(--surface-rgb),0.95)",
-          borderRadius: "var(--r-affiche)",
-        }}
-      >
+      {/* Sur ordinateur, deux colonnes : qui est la personne à gauche, ce
+          qu'elle a gagné à droite. Sur téléphone, une seule. */}
+      <div className="md:grid md:grid-cols-[400px_minmax(0,1fr)] md:gap-12 md:items-start">
+      <div>
+        {/* Le nom à gauche, en héros ; la photo à droite, dans son cadre de rang. */}
         <motion.div
-          className="absolute -top-12 -right-12 w-52 h-52 rounded-full pointer-events-none"
-          style={{ background: "radial-gradient(circle, rgba(var(--violet-mid-rgb),0.35) 0%, transparent 70%)" }}
-          animate={{ scale: [1, 1.12, 1] }}
-          transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
-        />
-
-        <div className="flex flex-col items-center text-center relative z-10 mb-4">
-          {/* Avatar — porte les décorations de rang de la personne (cadre à l'Or,
-              anneau au Platine) : c'est ici qu'elles se voient par les autres. */}
-          <AvatarRang rang={rangCourant} cosmetiques={cosmetiques} size={88} className="mb-3">
-            <div
-              className="absolute inset-0"
-              style={{
-                borderRadius: "50%",
-                padding: 3,
-                background: "linear-gradient(135deg,var(--violet-mid) 0%,var(--cream-mid) 100%)",
-                boxShadow: "var(--ombre-pose)",
-              }}
-            >
-              <div
-                className="w-full h-full rounded-full overflow-hidden flex items-center justify-center text-[26px] font-semibold"
-                style={{ background: displayAvatar ? "transparent" : "linear-gradient(135deg,rgba(var(--tint-violet-rgb),1) 0%,rgba(var(--tint-cream-rgb),1) 100%)", color: "var(--text-1)" }}
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+          className="flex items-start gap-4 mt-6"
+        >
+          <div className="flex-1 min-w-0 flex flex-col gap-2 pt-1">
+            <div className="flex items-center gap-2 min-w-0">
+              <h1
+                className="min-w-0"
+                style={{ margin: 0, fontSize: 34, lineHeight: 1, fontWeight: 850, fontVariationSettings: "var(--w-affiche)", letterSpacing: "-0.02em", color: "var(--text-0)", overflowWrap: "anywhere" }}
               >
-                {displayAvatar
-                  // eslint-disable-next-line @next/next/no-img-element
-                  ? <img loading="lazy" decoding="async" src={displayAvatar} alt="avatar" className="w-full h-full object-cover" />
-                  : <span>{initial}</span>}
-              </div>
+                {/* Sans la gemme : le rang s'écrit juste en dessous, une fois suffit. */}
+                <PseudoRang rang={rangCourant} cosmetiques={{ ...cosmetiques, badge: false }} pseudo={displayPseudo} />
+              </h1>
+              {isCertified && (
+                <span
+                  className="flex-shrink-0 flex items-center justify-center rounded-full"
+                  title="Compte certifié"
+                  style={{ width: 20, height: 20, background: "linear-gradient(135deg,#8B5CF6,#C13BC1)" }}
+                >
+                  <Check size={11} strokeWidth={3} color="#fff" />
+                </span>
+              )}
             </div>
-          </AvatarRang>
 
-          {/* Pseudo + badge certifié */}
-          <div className="flex items-center gap-2 justify-center">
-            <h1 className="text-[26px] font-black tracking-[-0.03em] leading-none" style={{ color: "var(--text-0)" }}>
-              <PseudoRang
-                rang={rangCourant}
-                cosmetiques={cosmetiques}
-                pseudo={displayPseudo}
-                tailleGemme={22}
-              />
-            </h1>
-            {isCertified && (
-              <motion.div
-                initial={{ scale: 0, rotate: -20 }}
-                animate={{ scale: 1, rotate: 0 }}
-                transition={{ type: "spring", bounce: 0.5, delay: 0.2 }}
-                className="flex-shrink-0 flex items-center justify-center rounded-full"
-                title="Compte certifié"
-                style={{ width: 22, height: 22, background: "linear-gradient(135deg,#8B5CF6,#C13BC1)" }}
-              >
-                <svg width="11" height="11" viewBox="0 0 13 13" fill="none">
-                  <path d="M2.5 6.5L5 9L10.5 4" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              </motion.div>
+            <TitreRang cosmetiques={cosmetiques} />
+
+            {/* Le rang et l'ancienneté, en une ligne discrète. */}
+            {aura && (
+              <div className="flex items-center gap-1.5 vy-label" style={{ color: "var(--text-2)" }}>
+                <GemmeRang rang={aura.rang} size={18} flotte={false} />
+                <span style={{ fontWeight: 700, color: "var(--or-encre)" }}>{aura.rang.nom}</span>
+                {membreDepuis && <><span>·</span><span>membre depuis {membreDepuis}</span></>}
+              </div>
+            )}
+
+            {/* Ses objectifs et son niveau sur une ligne. C'est de l'IDENTITÉ,
+                pas de la donnée de santé : jamais l'âge, le poids ni la taille. */}
+            {identite && (
+              <p className="vy-corps" style={{ margin: 0, color: "var(--exp-encre)", fontSize: 13, fontWeight: 600 }}>
+                {identite}
+              </p>
+            )}
+
+            {profile?.bio && (
+              <p className="vy-corps" style={{ margin: 0, color: "var(--text-2)" }}>
+                {profile.bio}
+              </p>
             )}
           </div>
 
-          {/* Titre débloqué au Diamant */}
-          <TitreRang cosmetiques={cosmetiques} />
-
-          {/* Ses objectifs. C'est de l'IDENTITÉ, pas de la donnée de santé :
-              on montre le libellé (« Prise de masse »), jamais l'âge, le poids
-              ni la taille, qui vivent dans les colonnes voisines et n'ont rien
-              à faire dehors. */}
-          {profile?.onboarding_goals && profile.onboarding_goals.length > 0 && (
-            <p className="text-[13px] font-semibold mt-1.5 max-w-[260px]" style={{ color: "var(--exp-encre)" }}>
-              {profile.onboarding_goals.map(libelleObjectif).join(" · ")}
-            </p>
-          )}
-
-          {/* Bio */}
-          {profile?.bio && (
-            <p className="text-[16px] mt-1.5 max-w-xs leading-relaxed" style={{ color: "var(--text-2)" }}>
-              {profile.bio}
-            </p>
-          )}
-
-          {/* Son niveau */}
-          {profile?.onboarding_level && (
-            <span
-              className="inline-block mt-2 text-[11px] font-bold px-2.5 py-1 rounded-full"
-              style={{ background: "rgba(var(--violet-mid-rgb),0.3)", color: "var(--exp-encre)", border: "1px solid rgba(var(--accent-rgb),0.25)" }}
-            >
-              {LEVELS.find((l) => l.id === profile.onboarding_level)?.label ?? profile.onboarding_level}
-            </span>
-          )}
-        </div>
-
-        {/* Follow button row */}
-        <div className="flex justify-center relative z-10">
-          <div className="flex gap-2">
-
-          {!isOwnProfile && user && (
-            <>
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.92 }}
-                onClick={handleFriendButton}
-                disabled={followLoading}
-                className="flex items-center gap-1.5 px-4 py-2.5 text-[16px] font-semibold cursor-pointer flex-shrink-0"
-                style={
-                  isFollowing
-                    ? {
-                        borderRadius: "var(--r-controle)",
-                        background: "rgba(var(--tint-violet-rgb),0.7)",
-                        color: "var(--exp-encre)",
-                        border: "1px solid rgba(var(--accent-rgb),0.2)",
-                      }
-                    : {
-                        /* Le bouton principal de l'écran est TOUJOURS violet
-                           plein (système D). Il était en lavande pâle avec du
-                           texte sombre : il se lisait comme désactivé. */
-                        borderRadius: "var(--r-controle)",
-                        background: "linear-gradient(135deg,#8B5CF6,#C13BC1)",
-                        color: "#fff",
-                        boxShadow: "var(--ombre-action)",
-                      }
-                }
-              >
-                {isFollowing ? (
-                  <><UserCheck size={13} strokeWidth={2} />Ami</>
-                ) : (
-                  <><UserPlus size={13} strokeWidth={2} />Ajouter</>
-                )}
-              </motion.button>
-            </>
-          )}
-
-          {isOwnProfile && (
-            <motion.button
-              whileTap={{ scale: 0.93 }}
-              onClick={() => router.push("/profil")}
-              className="px-4 py-2 text-[13px] font-semibold cursor-pointer"
+          {/* Avatar : il porte les décorations de rang de la personne (cadre à
+              l'Or, anneau au Platine), c'est ici qu'elles se voient des autres. */}
+          <AvatarRang rang={rangCourant} cosmetiques={cosmetiques} size={108} className="flex-shrink-0 mt-0.5">
+            <div className="absolute rounded-full" style={{ inset: 0, background: "rgb(var(--surface-rgb))" }} />
+            <div
+              className="absolute rounded-full overflow-hidden flex items-center justify-center text-[34px]"
               style={{
-                borderRadius: "var(--r-controle)",
-                background: "rgba(var(--tint-violet-rgb),0.6)",
+                inset: 3,
+                background: displayAvatar ? "transparent" : "linear-gradient(135deg,rgba(var(--tint-violet-rgb),1),rgba(var(--tint-cream-rgb),1))",
                 color: "var(--exp-encre)",
-                border: "1px solid rgba(var(--accent-rgb),0.15)",
+                fontWeight: 300,
               }}
             >
-              Modifier
-            </motion.button>
-          )}
-          </div>
-        </div>
-
-        {/* ─── Rang (l'aura) ─── */}
-        {aura && (
-          <div
-            className="flex items-center gap-4 mt-4 pt-4 relative z-10"
-            style={{ borderTop: "1px solid rgba(var(--accent-rgb),0.1)" }}
-          >
-            <div className="flex-shrink-0"><GemmeRang rang={aura.rang} size={44} /></div>
-            <div className="flex-1 min-w-0">
-              <span className="vy-label" style={{ color: "var(--text-3)" }}>Rang</span>
-              <p className="text-[20px] font-black tracking-[-0.02em] leading-tight" style={{ color: "var(--text-0)" }}>{aura.rang.nom}</p>
-              <p className="text-[13px] font-semibold mt-0.5" style={{ color: "var(--text-soft)" }}>
-                <span style={{ color: "var(--exp-encre)", fontVariantNumeric: "tabular-nums" }}>{aura.exp}</span>{progression?.suivant ? ` / ${progression.suivant.min}` : ""} EXP
-              </p>
-              <div className="h-[7px] rounded-full mt-2 overflow-hidden" style={{ background: "rgba(var(--tint-violet-rgb),0.9)" }}>
-                <div className="h-full rounded-full" style={{
-                  width: `${Math.max(4, (progression?.part ?? 0) * 100)}%`,
-                  background: "linear-gradient(90deg,#8B5CF6,#C13BC1)",
-                }} />
-              </div>
+              {displayAvatar
+                // eslint-disable-next-line @next/next/no-img-element
+                ? <img loading="lazy" decoding="async" src={displayAvatar} alt="" className="w-full h-full object-cover" />
+                : <span>{initial}</span>}
             </div>
+          </AvatarRang>
+        </motion.div>
+
+        {/* Ami + Écrire. Entre amis, écrire est l'action utile, donc le
+            violet ; « Ami » reste en retrait et demande confirmation avant
+            de retirer quoi que ce soit. */}
+        {!isOwnProfile && user && (
+          <div className="flex gap-2 mt-5">
+            {isFollowing ? (
+              <>
+                <button
+                  type="button"
+                  onClick={handleFriendButton}
+                  disabled={followLoading}
+                  className="flex-1 h-11 rounded-full flex items-center justify-center gap-1.5 cursor-pointer"
+                  style={{ background: "rgba(139,92,246,0.12)", fontSize: 13, fontWeight: 700, color: "var(--exp-encre)" }}
+                >
+                  <UserCheck size={15} strokeWidth={2.2} />
+                  Ami
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void ecrire()}
+                  disabled={ouvreFil}
+                  className="flex-1 h-11 rounded-full flex items-center justify-center gap-1.5 cursor-pointer text-white"
+                  style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", boxShadow: "var(--ombre-action)", fontSize: 13, fontWeight: 700 }}
+                >
+                  {ouvreFil ? <Loader2 size={15} className="animate-spin" /> : <MessageCircle size={15} strokeWidth={2.2} />}
+                  Écrire
+                </button>
+              </>
+            ) : (
+              <button
+                type="button"
+                onClick={handleFriendButton}
+                disabled={followLoading}
+                className="flex-1 h-11 rounded-full flex items-center justify-center gap-1.5 cursor-pointer text-white"
+                style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", boxShadow: "var(--ombre-action)", fontSize: 13, fontWeight: 700 }}
+              >
+                <UserPlus size={15} strokeWidth={2.2} />
+                Ajouter
+              </button>
+            )}
           </div>
         )}
 
-        {/* Les chiffres.
+        {isOwnProfile && (
+          <div className="flex gap-2 mt-5">
+            <button
+              type="button"
+              onClick={() => router.push("/profil")}
+              className="flex-1 h-11 rounded-full flex items-center justify-center cursor-pointer"
+              style={{ background: "rgba(var(--surface-rgb),0.7)", border: "1px solid rgba(var(--text-3-rgb),0.16)", fontSize: 13, fontWeight: 700, color: "var(--text-0)" }}
+            >
+              Modifier mon profil
+            </button>
+          </div>
+        )}
+
+        {/* Les chiffres, sans carte : des traits suffisent à les séparer.
             « Amis » se compte de partout (`followers` est en `USING (true)`).
             « Séances » et « Série » viennent du serveur : tant que
-            `profil_public` n'est pas collée, ils ne s'affichent PAS. Un chiffre
-            qu'on ne peut pas prouver n'a pas sa place à côté de deux qui sont
-            vrais : l'écran en montrait trois, dont deux valaient zéro pour tout
-            le monde depuis toujours. */}
+            `profil_public` ne répond pas, ils ne s'affichent PAS. Un chiffre
+            qu'on ne peut pas prouver n'a pas sa place à côté d'un vrai. */}
         <div
-          className="flex items-center mt-4 pt-4 relative z-10"
-          style={{ borderTop: "1px solid rgba(var(--accent-rgb),0.1)" }}
+          className="grid mt-6"
+          style={{
+            gridTemplateColumns: `repeat(${pub ? 3 : 1}, minmax(0, 1fr))`,
+            borderTop: "1px solid rgba(var(--text-3-rgb),0.16)",
+            borderBottom: "1px solid rgba(var(--text-3-rgb),0.16)",
+          }}
         >
           {([
-            { label: "Amis", value: String(followingCount), tab: "Abonnements" as const, encre: "var(--text-1)" },
+            { label: followingCount > 1 ? "amis" : "ami", value: String(followingCount), liste: true, feu: false },
             ...(pub ? [
-              { label: "Séances", value: String(pub.seances), tab: null, encre: "var(--text-1)" },
+              { label: pub.seances > 1 ? "séances" : "séance", value: String(pub.seances), liste: false, feu: false },
               /* La série se dit en orange partout : c'est le rôle ÉNERGIE du
                  système D, et c'est ce qui la sépare du teal de la réussite. */
-              { label: "Série", value: String(Math.max(1, pub.serie)), tab: null, encre: "var(--feu-encre)", serie: Math.max(1, pub.serie) },
+              { label: serieJours > 1 ? "jours de série" : "jour de série", value: String(serieJours), liste: false, feu: true },
             ] : []),
-          ] as { label: string; value: string; tab: "Abonnés" | "Abonnements" | null; encre: string; serie?: number }[]).map(({ label, value, tab, encre, serie }, i) => (
-            <div key={label} className="flex items-center flex-1">
-              {i > 0 && (
-                <div
-                  className="w-px self-stretch mx-2"
-                  style={{ background: "rgba(var(--accent-rgb),0.15)" }}
-                />
-              )}
-              <motion.div
-                onClick={() => tab && setShowFollowList(tab)}
-                whileTap={tab ? { scale: 0.94 } : undefined}
-                whileHover={tab ? { backgroundColor: "rgba(var(--accent-rgb),0.07)" } : undefined}
-                className={`flex-1 flex flex-col items-center py-1 rounded-xl ${tab ? "cursor-pointer" : ""}`}
-              >
-                <span className="inline-flex items-center gap-1 text-[20px] font-black leading-none" style={{ color: encre, letterSpacing: "-0.03em" }}>
-                  {/* La même flamme que sur son accueil, au palier de sa série. */}
-                  {serie !== undefined && <FlammeSerie jours={serie} taille={14} />}
-                  {value}
-                </span>
-                <span
-                  className="text-[11px] font-bold mt-1.5"
-                  style={{ color: tab ? "var(--accent)" : "var(--text-3)" }}
-                >
-                  {label}
-                </span>
-              </motion.div>
-            </div>
+          ]).map(({ label, value, liste, feu }, i) => (
+            <button
+              key={label}
+              type="button"
+              onClick={() => { if (liste) setShowFollowList("Abonnements"); }}
+              className="flex flex-col items-start gap-0.5 py-4 text-left"
+              style={{ cursor: liste ? "pointer" : "default", paddingLeft: i === 0 ? 2 : 18, borderLeft: i > 0 ? "1px solid rgba(var(--text-3-rgb),0.16)" : "none" }}
+            >
+              <span className="vy-nombre flex items-center gap-1 text-[26px] leading-none" style={{ color: feu ? "var(--feu-encre)" : "var(--text-0)", fontWeight: 700 }}>
+                {/* La même flamme que sur son accueil, au palier de sa série. */}
+                {feu && <FlammeSerie jours={serieJours} taille={16} />}
+                {value}
+              </span>
+              <span className="vy-label" style={{ color: "var(--text-2)", fontWeight: 400 }}>{label}</span>
+            </button>
           ))}
         </div>
-      </motion.div>
 
-      {/* Ce que vous avez fait ensemble. Muette si vous n'avez jamais
-          joué à deux, donc invisible sur le profil d'un inconnu. */}
-      {profile && ensemble?.pour === profile.id && ensemble.data && (
-        <LigneEnsemble serie={ensemble.data.serie} nombre={ensemble.data.nombre} />
-      )}
+        {/* Son rang, puis ce que vous avez fait ensemble : un seul groupe,
+            un filet entre les deux. Pas de gemme suivante en filigrane : Louis
+            l'a retirée de la maquette, deux gemmes pour un rang c'était une
+            de trop. */}
+        {aura && (
+          <div
+            className="mt-4 overflow-hidden"
+            style={{ borderRadius: "var(--r-affiche)", background: "rgba(var(--surface-rgb),0.66)", border: "1px solid rgba(255,255,255,0.6)", boxShadow: "var(--ombre-pose)" }}
+          >
+            <div className="vy-filet flex items-center gap-4 p-4 pl-3.5">
+              <div className="flex-shrink-0"><GemmeRang rang={aura.rang} size={58} flotte={false} /></div>
+              <div className="flex-1 min-w-0 flex flex-col gap-2">
+                <span className="vy-sous" style={{ color: "var(--text-0)" }}>{aura.rang.nom}</span>
+                <div className="h-2 rounded-full overflow-hidden" style={{ background: "rgba(139,92,246,0.14)" }}>
+                  <div className="h-full rounded-full" style={{
+                    width: `${Math.max(4, (progression?.part ?? 0) * 100)}%`,
+                    background: "linear-gradient(90deg,#8B5CF6,#C13BC1)",
+                  }} />
+                </div>
+                {rangSuivant ? (
+                  <span className="vy-label" style={{ color: "var(--text-2)", fontWeight: 400 }}>
+                    Plus que <b className="vy-nombre" style={{ color: "var(--exp-encre)", fontWeight: 700 }}>{aura.restant}</b> EXP avant {rangSuivant.nom}
+                  </span>
+                ) : (
+                  <span className="vy-label" style={{ color: "var(--text-2)", fontWeight: 400 }}>Le sommet.</span>
+                )}
+              </div>
+            </div>
+            {/* Ce que vous avez fait ensemble. Muette si vous n'avez jamais
+                joué à deux, donc invisible sur le profil d'un inconnu. */}
+            {profile && ensemble?.pour === profile.id && ensemble.data && (
+              <div className="vy-filet">
+                <LigneEnsemble serie={ensemble.data.serie} nombre={ensemble.data.nombre} nu />
+              </div>
+            )}
+          </div>
+        )}
+      </div>
 
-      {/* LES ONGLETS ONT DISPARU, ET IL N'EN RESTE QU'UNE PAGE.
-          « Séances » listait les trois dernières séances de la personne : la
-          requête ne rendait JAMAIS rien (RLS propriétaire), et le jour où elle
-          aurait rendu quelque chose, c'aurait été un fil d'activité, refusé
-          depuis juillet. « Ses affiches de perf » était vide par construction
-          elle aussi : depuis le 30 août une affiche s'écrit en `private`, donc
-          la policy de `posts` ne la montre qu'à son auteur.
-          Ce qui reste est ce qui se gagne à deux, ou ce qui se voit par
-          nature : son rang, ses affiches de relais, ses badges, et la ligne
-          « ensemble » juste au-dessus. */}
-      <p className="mb-3 text-[11px] font-bold" style={{ color: "var(--text-3)" }}>
-        Affiches du relais
-      </p>
-      <div className="grid grid-cols-2 gap-3 mb-8">
+      <div className="mt-8 md:mt-6">
+      {/* IL N'Y A PAS D'ONGLETS : une seule page. Ce qui reste est ce qui se
+          gagne à deux, ou ce qui se voit par nature : ses affiches de relais,
+          les affiches qu'il ou elle partage avec ses potes, ses badges.
+          Jamais un fil d'activité, jamais une comparaison. */}
+      <div className="flex items-baseline justify-between mb-3">
+        <h2 className="vy-sous" style={{ margin: 0, color: "var(--text-0)" }}>Affiches du relais</h2>
+        <span className="vy-nombre text-[13px]" style={{ color: "var(--text-2)" }}>
+          {(Object.keys(SERIES) as SerieSlug[]).filter((s) => badgeSlugs.has(`serie-${s}`)).length} / {Object.keys(SERIES).length}
+        </span>
+      </div>
+      <div className="grid grid-cols-3 gap-2 md:max-w-[520px] md:gap-3.5">
         {(Object.keys(SERIES) as SerieSlug[]).map((slug) => {
           const serie = SERIES[slug];
           const gagnee = badgeSlugs.has(`serie-${slug}`);
@@ -626,37 +628,81 @@ export default function PublicProfilePage() {
             <div
               key={slug}
               className="relative overflow-hidden"
-              style={{ borderRadius: "var(--r-affiche)", aspectRatio: "9/16", border: "1px solid rgba(255,255,255,0.06)", boxShadow: "var(--ombre-pose)" }}
+              style={{ borderRadius: "var(--r-bloc)", aspectRatio: "9/16", boxShadow: "var(--ombre-pose)", background: "#2A2536" }}
             >
               <Image
                 src={imageEtat(slug, 4)}
-                alt={serie.nom}
+                alt={gagnee ? `Affiche ${serie.nom}` : `Affiche ${serie.nom}, pas encore dévoilée`}
                 fill
-                sizes="(max-width:768px) 45vw, 200px"
+                sizes="(max-width:768px) 30vw, 170px"
                 className="object-cover"
-                style={{ filter: gagnee ? "none" : "grayscale(1) brightness(0.5)" }}
+                style={{ filter: gagnee ? "none" : "grayscale(1) brightness(0.45)" }}
               />
-              <div className="absolute inset-0" style={{ background: "var(--voile-affiche)" }} />
-              {gagnee && <div className="absolute top-2.5 right-3 text-[13px] font-black" style={{ color: "rgba(255,255,255,0.9)" }}>&#10022;</div>}
-              <div className="absolute left-3 right-3 bottom-3" style={{ color: "#fff" }}>
-                <p className="text-[13px] font-black leading-tight">{serie.nom}</p>
-                <p className="text-[11px] font-semibold mt-0.5" style={{ opacity: 0.75 }}>
-                  {gagnee ? "Dévoilée · à deux" : serie.promesse}
-                </p>
-              </div>
+              {gagnee && <div className="absolute inset-0" style={{ background: "linear-gradient(180deg, rgba(10,6,18,0) 55%, rgba(10,6,18,0.7) 100%)" }} />}
+              {gagnee && <div className="absolute top-2 right-2.5 text-[13px]" style={{ color: "#fff" }}>&#10022;</div>}
               {!gagnee && (
-                <div className="absolute inset-0 grid place-items-center" style={{ background: "rgba(10,6,18,0.42)" }}>
-                  <Lock size={22} strokeWidth={2} style={{ color: "rgba(255,255,255,0.55)" }} />
+                <div className="absolute inset-0 grid place-items-center">
+                  <Lock size={20} strokeWidth={2} style={{ color: "rgba(255,255,255,0.6)" }} />
                 </div>
               )}
+              <div className="absolute left-2.5 right-2 bottom-2.5" style={{ color: "#fff" }}>
+                <p className="text-[13px] font-extrabold leading-tight">{serie.nom}</p>
+                <p className="text-[11px] mt-0.5" style={{ opacity: gagnee ? 0.8 : 0.7 }}>
+                  {gagnee ? "Dévoilée à deux" : "À dévoiler"}
+                </p>
+              </div>
             </div>
           );
         })}
       </div>
+      {!isOwnProfile && user && isFollowing && (
+        <button
+          type="button"
+          onClick={() => setAvecQui(true)}
+          className="min-h-[44px] flex items-center text-[13px] font-bold cursor-pointer mt-1"
+          style={{ color: "var(--exp-encre)" }}
+        >
+          Lancer un relais avec {displayPseudo} →
+        </button>
+      )}
 
-      {/* Un badge se voit du dehors, sinon il ne decore personne. */}
-      <EtagereBadges slugs={badgeSlugs} titre="Ses badges" />
+      {/* Les affiches de séance qu'il ou elle partage avec ses potes. La
+          policy de `posts` ne les rend qu'aux amis réciproques : un inconnu
+          ne voit rien, et la section disparaît. */}
+      {affiches.length > 0 && (
+        <>
+          <div className="flex items-baseline justify-between mt-7 mb-3">
+            <h2 className="vy-sous" style={{ margin: 0, color: "var(--text-0)" }}>Ses affiches</h2>
+            <span className="vy-label" style={{ color: "var(--text-2)", fontWeight: 400 }}>Partagées avec ses potes</span>
+          </div>
+          <div className="-mx-5 flex gap-3 overflow-x-auto px-5 pb-2 md:mx-0 md:px-0 md:flex-wrap md:overflow-visible" style={{ scrollbarWidth: "none" }}>
+            {affiches.map((a, idx) => (
+              <CouvertureSeance key={a.id} data={a.data} mot={a.mot} teinte={idx % 2} />
+            ))}
+          </div>
+        </>
+      )}
 
+      {/* Un badge se voit du dehors, sinon il ne décore personne. */}
+      <div className="mt-7">
+        <EtagereBadges slugs={badgeSlugs} titre="Ses badges" />
+      </div>
+      </div>
+      </div>
+
+      {/* La porte du relais : la même feuille que dans la communauté, avec
+          cette personne déjà cochée. */}
+      <AnimatePresence>
+        {avecQui && user && profile && (
+          <AvecQui
+            moi={user.id}
+            preselection={profile.id}
+            onFermer={() => setAvecQui(false)}
+            onFil={(id) => { setAvecQui(false); router.push(`/communaute/${id}`); }}
+            onLien={() => { setAvecQui(false); router.push("/defi"); }}
+          />
+        )}
+      </AnimatePresence>
       {/* Une relation d'amitié ne se retire jamais sur un clic accidentel. */}
       <AnimatePresence>
         {showRemoveConfirm && profile && (
@@ -703,7 +749,7 @@ export default function PublicProfilePage() {
                 Retirer {profile.pseudo} de tes amis ?
               </h2>
               <p className="mx-auto mt-2 max-w-xs text-center text-[13px] leading-relaxed" style={{ color: "var(--text-3)" }}>
-                Cette action supprimera votre lien d&apos;amitié. Votre conversation restera disponible.
+                Vous ne verrez plus vos affiches dans vos fils. Votre conversation reste disponible.
               </p>
               <div className="mt-5 grid gap-2">
                 <button
