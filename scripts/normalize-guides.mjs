@@ -23,9 +23,13 @@
    Le script est idempotent et peut etre relance apres `npm run guides`.
    ============================================================================ */
 
-import { readdir, unlink, writeFile } from "node:fs/promises";
+import { readdir, readFile, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 import sharp from "sharp";
+
+// Sous Windows, sharp garde ouvert le fichier qu'il a lu, et on ne pourrait
+// plus l'écraser : chaque frame est donc lue en mémoire, sans cache.
+sharp.cache(false);
 
 const OUT = path.join("public", "entrainement", "guides");
 const CANVAS = 1024;
@@ -64,7 +68,7 @@ function unionBox(boxes) {
 }
 
 async function readFrame(file) {
-  const { data, info } = await sharp(file)
+  const { data, info } = await sharp(await readFile(file))
     .ensureAlpha()
     .raw()
     .toBuffer({ resolveWithObject: true });
