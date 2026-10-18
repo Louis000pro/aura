@@ -17,25 +17,31 @@ import { chargeSaisie, crancherCharge, nombreFr, type TypeChargeReglable } from 
 
 const BOUTON = "w-10 h-10 rounded-full flex items-center justify-center cursor-pointer";
 const FOND = { background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.14)", color: "#F0ECFA" };
+/* Le tunnel est tout clair depuis le 2026-10-18 ; la fin de séance, elle,
+   reste noire : les deux encres vivent ici, choisies par `clair`. */
+const FOND_CLAIR = { background: "rgba(255,255,255,0.85)", border: "1px solid rgba(26,32,44,0.1)", color: "#2D3748" };
+const encre = (clair?: boolean) => (clair ? "#1A202C" : "#fff");
 
 /** − valeur + : un compteur simple (les répétitions). */
-export function Compteur({ valeur, onMoins, onPlus }: { valeur: string; onMoins: () => void; onPlus: () => void }) {
+export function Compteur({ valeur, onMoins, onPlus, clair }: { valeur: string; onMoins: () => void; onPlus: () => void; clair?: boolean }) {
   return (
     <div className="flex items-center gap-3">
-      <button type="button" onClick={onMoins} className={BOUTON} style={FOND} aria-label="Moins"><Minus size={16} /></button>
-      <span className="vy-nombre text-[20px] w-12 text-center" style={{ fontWeight: 700, color: "#fff" }}>{valeur}</span>
-      <button type="button" onClick={onPlus} className={BOUTON} style={FOND} aria-label="Plus"><Plus size={16} /></button>
+      <button type="button" onClick={onMoins} className={BOUTON} style={clair ? FOND_CLAIR : FOND} aria-label="Moins"><Minus size={16} /></button>
+      <span className="vy-nombre text-[20px] w-12 text-center" style={{ fontWeight: 700, color: encre(clair) }}>{valeur}</span>
+      <button type="button" onClick={onPlus} className={BOUTON} style={clair ? FOND_CLAIR : FOND} aria-label="Plus"><Plus size={16} /></button>
     </div>
   );
 }
 
 /** − charge + ; toucher la valeur ouvre la saisie exacte. */
-export function ReglageCharge({ valeur, type, onChange, onFin }: {
+export function ReglageCharge({ valeur, type, onChange, onFin, clair }: {
   valeur: number | null;
   type: TypeChargeReglable;
   onChange: (v: number | null) => void;
   /** Présent sous les répétitions : un « OK » referme le réglage. */
   onFin?: () => void;
+  /** Les encres du tunnel clair. */
+  clair?: boolean;
 }) {
   const [saisie, setSaisie] = useState<string | null>(null);
   const suffixe = type === "par_haltere" ? "kg / haltère" : "kg";
@@ -45,7 +51,7 @@ export function ReglageCharge({ valeur, type, onChange, onFin }: {
   };
   return (
     <div className="flex items-center gap-3">
-      <button type="button" onClick={() => onChange(crancherCharge(valeur, type, -1))} className={BOUTON} style={FOND} aria-label="Moins lourd">
+      <button type="button" onClick={() => onChange(crancherCharge(valeur, type, -1))} className={BOUTON} style={clair ? FOND_CLAIR : FOND} aria-label="Moins lourd">
         <Minus size={16} />
       </button>
       {saisie !== null ? (
@@ -57,19 +63,21 @@ export function ReglageCharge({ valeur, type, onChange, onFin }: {
           onBlur={valider}
           onKeyDown={(e) => { if (e.key === "Enter") valider(); }}
           className="vy-nombre w-20 text-center rounded-lg py-1.5 text-[20px] outline-none"
-          style={{ fontWeight: 700, color: "#fff", background: "rgba(255,255,255,0.08)", border: "1px solid rgba(201,184,255,0.5)" }}
+          style={clair
+            ? { fontWeight: 700, color: "#1A202C", background: "rgba(255,255,255,0.9)", border: "1px solid rgba(109,75,214,0.45)" }
+            : { fontWeight: 700, color: "#fff", background: "rgba(255,255,255,0.08)", border: "1px solid rgba(201,184,255,0.5)" }}
           aria-label={`Charge en ${suffixe}`}
         />
       ) : (
         <button type="button" onClick={() => setSaisie(valeur === null ? "" : nombreFr(valeur))}
           className="flex flex-col items-center w-20 cursor-pointer" aria-label="Écrire la charge exacte">
-          <span className="vy-nombre text-[20px] leading-none" style={{ fontWeight: 700, color: "#fff" }}>
+          <span className="vy-nombre text-[20px] leading-none" style={{ fontWeight: 700, color: encre(clair) }}>
             {valeur === null ? "?" : nombreFr(valeur)}
           </span>
-          <span className="text-[11px] mt-1" style={{ color: "#A79FC0" }}>{suffixe}</span>
+          <span className="text-[11px] mt-1" style={{ color: clair ? "#718096" : "#A79FC0" }}>{suffixe}</span>
         </button>
       )}
-      <button type="button" onClick={() => onChange(crancherCharge(valeur, type, 1))} className={BOUTON} style={FOND} aria-label="Plus lourd">
+      <button type="button" onClick={() => onChange(crancherCharge(valeur, type, 1))} className={BOUTON} style={clair ? FOND_CLAIR : FOND} aria-label="Plus lourd">
         <Plus size={16} />
       </button>
       {onFin && (

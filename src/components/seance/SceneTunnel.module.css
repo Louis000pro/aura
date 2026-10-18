@@ -1,0 +1,168 @@
+/* ─────────────────────────────────────────────────────────────────────
+   LA SCÈNE DU TUNNEL. Toujours claire, comme le tunnel (Louis,
+   2026-10-18) : les encres sont écrites en dur, le thème ne la touche pas.
+   On n'anime que l'opacité des poses et la largeur de la barre (par
+   `transform`), jamais un flou.
+   ───────────────────────────────────────────────────────────────────── */
+
+.scene {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 170px;
+  margin: 8px 10px 0;
+  /* Le personnage se mesure sur la scène : un carré du plus petit côté. */
+  container-type: size;
+}
+
+/* Le personnage : un CARRÉ du plus petit côté de la scène, posé au sol.
+   ⚠️ Un carré, pas une boîte étirée : dans une boîte plus haute que large,
+   l'image se centrerait et ses pieds quitteraient l'ombre, posée à la ligne
+   de sol du canevas. La première écriture sert de repli aux navigateurs
+   qui ne connaissent pas les unités de conteneur. */
+.perso {
+  position: absolute;
+  left: 50%;
+  bottom: 14px;
+  height: calc(100% - 14px);
+  max-width: calc(100% - 8px);
+  aspect-ratio: 1 / 1;
+  height: min(calc(100cqh - 14px), calc(100cqw - 8px));
+  width: min(calc(100cqh - 14px), calc(100cqw - 8px));
+  transform: translateX(-50%);
+}
+.pose {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  transition: opacity 500ms ease-in-out;
+}
+/* L'ombre tombe sur la ligne de sol du canevas (972 / 1024). */
+.ombre {
+  position: absolute;
+  left: 20%;
+  right: 20%;
+  top: calc(94.9% - 10px);
+  height: 20px;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(70, 48, 130, 0.2), rgba(70, 48, 130, 0));
+}
+/* Sans animation (un exercice écrit à la main) : un halo, jamais une photo. */
+.halo {
+  position: absolute;
+  inset: 12%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(139, 92, 246, 0.16), transparent 62%);
+}
+
+/* Toute la scène s'ouvre sur la fiche ; l'invitation du haut le dit. */
+.ouvrir {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  cursor: pointer;
+  border-radius: 26px;
+}
+.ouvrir:focus-visible { outline: 2px solid #8B5CF6; outline-offset: 2px; }
+
+/* La rangée du haut laisse passer le doigt jusqu'à la scène, sauf sur
+   les pastilles (« Changer » est un bouton). */
+.haut {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  right: 2px;
+  z-index: 2;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  pointer-events: none;
+}
+.coin {
+  display: flex;
+  gap: 6px;
+  min-width: 0;
+  pointer-events: auto;
+}
+/* Une action secondaire : de l'encre, sans surface à elle. */
+.agrandir {
+  margin-left: auto;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 4px;
+  color: #6D4BD6;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.pastille {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  max-width: 100%;
+  padding: 7px 11px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.78);
+  border: 1px solid rgba(255, 255, 255, 0.95);
+  box-shadow: 0 2px 10px rgba(60, 40, 110, 0.12);
+  color: #3B2F63;
+  font-size: 13px;
+  font-weight: 700;
+}
+button.pastille { cursor: pointer; }
+
+/* Le chrono file au pied du personnage. */
+.piste {
+  position: absolute;
+  left: 18px;
+  right: 18px;
+  bottom: 0;
+  height: 6px;
+  border-radius: 99px;
+  overflow: hidden;
+  background: rgba(26, 32, 44, 0.08);
+}
+.barre {
+  height: 100%;
+  border-radius: 99px;
+  transform-origin: left center;
+  transition: transform 1s linear;
+  background: linear-gradient(90deg, #FF7A1A, #F5B120);
+  box-shadow: 0 0 10px rgba(255, 122, 26, 0.45);
+}
+.barre[data-encre="teal"] {
+  background: linear-gradient(90deg, #12B886, #2BD4A0);
+  box-shadow: 0 0 10px rgba(43, 212, 160, 0.4);
+}
+
+/* La pause : la scène s'assombrit sous un rond. */
+.voile {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: 26px;
+  background: rgba(26, 20, 48, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+.rondPause {
+  width: 76px;
+  height: 76px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  background: rgba(11, 7, 20, 0.62);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pose, .barre { transition: none; }
+}
