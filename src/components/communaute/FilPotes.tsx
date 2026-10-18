@@ -12,12 +12,16 @@
    un classement, un commentaire public, un compteur de vues.
    ───────────────────────────────────────────────────────────── */
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Loader2, MessageCircle, UserPlus } from "lucide-react";
 import { PersonAvatar } from "@/components/communaute/ConversationAvatar";
 import { motCouverture, useMotAjuste, STYLE_MOT } from "@/components/profil/CouvertureSeance";
 import { creerConversation, type Personne } from "@/lib/messagerie";
+import GemmeRang from "@/components/GemmeRang";
+import { useRangs } from "@/lib/rangsPublics";
+import { progressionRang } from "@/lib/aura";
 import {
   mesAmis, chargerFilPotes, presenceAmis, basculerReaction, poserBrouillon, quandAffiche,
   SORTES, type AfficheDuFil, type SorteReaction,
@@ -76,6 +80,9 @@ export default function FilPotes({ moi, monPseudo, monAvatar, onAjouterAmi }: {
     router.push(`/communaute/${r.conversation_id}`);
   };
 
+  const idsRangs = useMemo(() => [moi, ...(amis ?? []).map((a) => a.id)], [moi, amis]);
+  const rangs = useRangs(idsRangs);
+
   if (amis === null) {
     return (
       <div className="flex flex-1 justify-center pt-10">
@@ -125,6 +132,43 @@ export default function FilPotes({ moi, monPseudo, monAvatar, onAjouterAmi }: {
           style={{ background: "rgba(232,98,12,.1)", color: "#E8620C" }}>
           Impossible d’actualiser le fil. Toucher pour réessayer.
         </button>
+      )}
+
+      {/* ─── Les rangs de la bande (Louis, 2026-10-18 : le fil est vide au
+          début, les rangs, eux, existent déjà). Rangés par prénom, toi en
+          premier : on montre où chacun en est, jamais qui est devant. ─── */}
+      {amis.length > 0 && rangs.size > 0 && (
+        <section className="mb-5">
+          <p className="vy-label mb-2" style={{ color: "var(--text-3)" }}>Les rangs de la bande</p>
+          <div className="overflow-hidden px-3.5"
+            style={{ borderRadius: "var(--r-bloc)", background: "rgb(var(--surface-rgb))", boxShadow: "var(--ombre-pose)" }}>
+            {rangee.map((p) => {
+              const r = rangs.get(p.id);
+              if (!r) return null;
+              const prog = progressionRang(r.exp);
+              const contenu = (
+                <>
+                  <PersonAvatar personne={p} taille={34} />
+                  <span className="min-w-0 flex-1">
+                    <b className="block truncate text-[16px]" style={{ color: "var(--text-0)" }}>{p.pseudo}</b>
+                    <span className="block truncate text-[13px]" style={{ color: "var(--text-3)" }}>
+                      {prog.suivant ? `Plus que ${prog.restant} EXP avant ${prog.suivant.nom}` : "Au sommet"}
+                    </span>
+                  </span>
+                  <span className="flex flex-shrink-0 items-center gap-1.5">
+                    <GemmeRang rang={r.rang} size={26} flotte={false} />
+                    <span className="text-[13px] font-semibold" style={{ color: "var(--text-1)" }}>{r.rang.nom}</span>
+                  </span>
+                </>
+              );
+              const classe = "flex min-h-[58px] items-center gap-3 border-t first:border-t-0";
+              const bord = { borderColor: "rgba(var(--text-3-rgb), .12)" };
+              return p.moi
+                ? <div key={p.id} className={classe} style={bord}>{contenu}</div>
+                : <Link key={p.id} href={`/profil/${encodeURIComponent(p.pseudo)}`} className={classe} style={bord}>{contenu}</Link>;
+            })}
+          </div>
+        </section>
       )}
 
       {/* ─── Le fil ─── */}
