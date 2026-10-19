@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Le rythme de la vitrine</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wdth,wght@0,62..125,100..900&display=swap" rel="stylesheet">
+<style>
+/* ════════════════════════════════════════════════════════════════
+   MAQUETTE — Le rythme de vaiiya.fr après le héros.
+   Mesures relevées dans le navigateur le 2026-10-19, à 390 x 844,
+   sur la page réelle. Les hauteurs des miniatures sont à l'échelle.
+   ════════════════════════════════════════════════════════════════ */
+:root{
+  --encre:#1C1626; --encre-2:#5C5468; --encre-3:#7B7389;
+  --violet:#8B5CF6; --magenta:#C13BC1; --lien:#5B3FC4;
+  --logo:linear-gradient(120deg,#8B5CF6 0%,#C13BC1 100%);
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:#EEECF2;color:var(--encre);font-family:Archivo,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+.doc{max-width:1180px;margin:0 auto;padding:40px 24px 120px}
+h1{margin:0;font-size:30px;font-weight:900;font-variation-settings:"wdth" 108;letter-spacing:-.02em}
+.intro{margin:8px 0 0;max-width:68ch;font-size:15px;line-height:1.65;color:var(--encre-2)}
+.temoin{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--encre-3)}
+h2.part{margin:52px 0 6px;font-size:21px;font-weight:850;font-variation-settings:"wdth" 108}
+h2.part b{font-weight:850;background-image:var(--logo);-webkit-background-clip:text;background-clip:text;color:transparent}
+.part + p{margin:0 0 18px;max-width:72ch;font-size:14px;line-height:1.65;color:var(--encre-2)}
+
+/* ── La vue d'ensemble : deux colonnes de miniatures ── */
+.vue{display:grid;grid-template-columns:1fr 1fr;gap:28px;align-items:start}
+.col{background:#fff;border-radius:16px;padding:16px;box-shadow:0 18px 44px -28px rgba(40,24,80,.45)}
+.col > h3{margin:0 0 4px;font-size:16px;font-weight:850}
+.col > .mesure{margin:0 0 14px;font-size:12px;font-weight:700;color:var(--encre-3)}
+.col > .mesure b{color:var(--encre);font-variation-settings:"wdth" 100}
+.pile{position:relative;display:flex;flex-direction:column;gap:3px}
+.bloc{
+  position:relative;border-radius:7px;padding:7px 10px;overflow:hidden;
+  display:flex;flex-direction:column;justify-content:center;
+  background:#F7F5FB;border:1px solid rgba(28,22,38,.07);
+}
+.bloc .t{font-size:11.5px;font-weight:800;line-height:1.2}
+.bloc .s{font-size:10px;font-weight:750;letter-spacing:.07em;text-transform:uppercase;color:#9B7BE8;margin-bottom:2px}
+.bloc .c{font-size:10px;color:var(--encre-3);line-height:1.3;margin-top:2px}
+.bloc .px{position:absolute;right:7px;bottom:5px;font-size:9.5px;font-weight:750;color:#A9A3B5}
+.bloc[data-forme="montre"]{background:linear-gradient(120deg,#EDE6FD,#FBEAF6);border-color:rgba(139,92,246,.2)}
+.bloc[data-forme="face"]{background:#FFFFFF;border-color:rgba(139,92,246,.22);border-left:3px solid transparent;border-image:linear-gradient(180deg,#8B5CF6,#C13BC1) 1}
+.bloc[data-heros]{background:#fff;border-color:rgba(139,92,246,.3)}
+.bloc[data-coupe]{opacity:.42}
+.centre{text-align:center;align-items:center}
+
+/* Le fil d'escalier qui relie les sections (levier 3) */
+.fil{position:absolute;inset:0;pointer-events:none;z-index:2}
+.fil svg{width:100%;height:100%;display:block;overflow:visible}
+
+/* ── Les deux sections en vraie taille ── */
+.cadres{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:10px}
+.cadre{position:relative;background:#fff;border-radius:16px;overflow:hidden;container-type:size;aspect-ratio:390/700;
+  box-shadow:0 18px 44px -28px rgba(40,24,80,.45),0 0 0 1px rgba(28,22,38,.07)}
+.cadre > .etiq{position:absolute;z-index:5;top:10px;left:10px;font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;
+  color:#fff;background:rgba(28,22,38,.72);padding:4px 8px;border-radius:999px}
+.ec{position:absolute;inset:0;display:flex;flex-direction:column;padding:8cqh 5cqw 0}
+
+.sur{display:inline-flex;align-items:center;gap:7px;margin:0 0 9px;font-size:max(11px,1.6cqh);font-weight:700;color:#6D4BD6}
+.sur::before{content:"";width:16px;height:2px;border-radius:2px;background:var(--logo)}
+.tt{margin:0;font-size:max(20px,4.2cqh);line-height:1.04;font-weight:850;font-variation-settings:"wdth" 108;letter-spacing:-.02em}
+.tt i{font-style:normal;background-image:var(--logo);-webkit-background-clip:text;background-clip:text;color:transparent}
+.ch{margin:2.2cqh 0 0;font-size:max(11px,1.9cqh);line-height:1.5;color:var(--encre-2)}
+.vis{margin-top:3cqh;border-radius:12px;background:linear-gradient(120deg,#EDE6FD,#FBEAF6);border:1px solid rgba(139,92,246,.18);
+  display:grid;place-items:center;font-size:max(10px,1.5cqh);font-weight:750;color:#8B5CF6;letter-spacing:.06em;text-transform:uppercase}
+.plein{margin:3cqh -5cqw 0;border-radius:0}
+
+/* L'arête en marches, reprise du héros */
+.arete{position:absolute;left:0;right:0;height:5cqh;z-index:3}
+.arete svg{width:100%;height:100%;display:block}
+
+@media (max-width:860px){ .vue,.cadres{grid-template-columns:1fr} }
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="doc">
+
+  <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:20px;flex-wrap:wrap">
+    <div>
+      <h1>Le rythme de la vitrine</h1>
+      <p class="intro">Le héros a maintenant une signature : l'escalier de lumière. Les neuf sections d'en dessous ne le savent pas encore, et surtout elles se ressemblent toutes. Mesuré sur la page réelle à 390 × 844 : <b>9 836 px de haut</b>, <b>neuf surtitres de forme identique</b>, et neuf fois le même patron (petit trait violet, titre à mot d'accent, chapo centré, visuel). Rien ne déborde, rien n'est coupé : ce n'est pas un défaut technique, c'est un défaut de rythme.</p>
+    </div>
+    <span class="temoin" id="temoin">police…</span>
+  </div>
+
+  <h2 class="part">La page d'un coup d'œil · <b>avant et après</b></h2>
+  <p>Chaque bloc est à l'échelle de sa hauteur réelle. À gauche, ce qui est en ligne. À droite, la proposition.</p>
+
+  <div class="vue">
+    <div class="col">
+      <h3>Aujourd'hui</h3>
+      <p class="mesure">10 sections · <b>9 836 px</b> · 11,6 écrans de téléphone</p>
+      <div class="pile" id="avant"></div>
+    </div>
+    <div class="col">
+      <h3>Proposition</h3>
+      <p class="mesure">10 sections · <b>≈ 7 400 px</b> · 8,8 écrans</p>
+      <div class="pile" id="apres"><div class="fil" id="fil"></div></div>
+    </div>
+  </div>
+
+  <h2 class="part">Trois leviers, <b>et rien d'autre</b></h2>
+  <p>Aucune section ne disparaît, aucun texte n'est inventé, aucune couleur ne bouge. Ce qui change, c'est la forme que prend chaque section et ce qui les relie.</p>
+
+  <ol style="max-width:74ch;font-size:14.5px;line-height:1.7;color:var(--encre-2);padding-left:20px">
+    <li><b style="color:var(--encre)">Les neuf surtitres partent.</b> « Ta progression » au-dessus de « Six rangs. Chacun se mérite en revenant. » ne dit rien que le titre ne dise. C'est la règle de composition déjà verrouillée : ne pas sur-expliquer les écrans. Neuf fois trente pixels, et surtout neuf fois la même ouverture.</li>
+    <li><b style="color:var(--encre)">Trois formes au lieu d'une, et la forme suit le contenu.</b> Ce qui <b style="color:var(--encre)">montre</b> (les mouvements, l'assiette, l'affiche du relais) prend toute la largeur et parle court. Ce qui <b style="color:var(--encre)">explique</b> (tout se parle, les rangs) reste centré et serré. Ce qui <b style="color:var(--encre)">se joue à deux</b> (le Guide, le relais) se met en face-à-face. L'asymétrie traduit alors une vraie différence de contenu, elle n'est pas décorative.</li>
+    <li><b style="color:var(--encre)">L'escalier descend toute la page.</b> Les marches du héros deviennent le fil : entre deux sections, une arête en marches, le même filet violet → magenta, au lieu d'un simple changement de fond. C'est ce qui fait qu'on reconnaît la page à n'importe quel endroit du défilement.</li>
+  </ol>
+
+  <h2 class="part">Deux sections <b>en vraie taille</b></h2>
+  <p>À gauche une section qui explique, à droite une section qui montre. Même contenu qu'aujourd'hui, mot pour mot.</p>
+
+  <div class="cadres">
+    <div class="cadre">
+      <span class="etiq">Explique · centré, serré</span>
+      <div class="ec centre" style="text-align:center;align-items:center">
+        <h2 class="tt">Six rangs.<br><i>Chacun se mérite en revenant.</i></h2>
+        <p class="ch" style="max-width:30em">Chaque séance et chaque repas noté te rapportent de l'EXP. Personne contre qui te comparer : tu montes à ton rythme.</p>
+        <div class="vis" style="width:100%;height:30cqh">Les six gemmes en escalier</div>
+      </div>
+      <div class="arete" style="bottom:0" id="aA"></div>
+    </div>
+
+    <div class="cadre">
+      <span class="etiq">Montre · pleine largeur</span>
+      <div class="ec">
+        <h2 class="tt"><span style="font-family:'Martian Mono',Archivo,monospace;font-weight:800">102</span> mouvements <i>qui bougent.</i></h2>
+        <p class="ch">Chaque exercice est montré pose après pose.</p>
+        <div class="vis plein" style="height:26cqh">Rail 1 · les mouvements défilent</div>
+        <div class="vis plein" style="height:26cqh;margin-top:1.4cqh">Rail 2 · en sens inverse</div>
+      </div>
+      <div class="arete" style="bottom:0" id="aB"></div>
+    </div>
+  </div>
+
+  <h2 class="part">Ce que je ne touche pas</h2>
+  <p style="max-width:74ch">Le héros validé ce matin, les photos de <code>public/vitrine/</code>, le dégradé violet → rose des mots d'accent, le fond presque blanc, l'absence d'orange et de section sombre, Nora et Sasha, les chiffres publics (102 et 53, recomptés), le prix lu dans <code>PLANS</code>, et le fait que la vente reste fermée. Aucune migration SQL.</p>
+
+</div>
+
+<script>
+document.fonts.ready.then(() => {
+  const ok = document.fonts.check('900 40px Archivo');
+  const t = document.getElementById('temoin');
+  t.textContent = ok ? 'Archivo ✓' : '⚠ police de repli';
+  t.style.color = ok ? '#0B8A68' : '#B3261E';
+});
+
+/* Les hauteurs de gauche sont celles MESURÉES dans le navigateur, à 390 x 844. */
+const AVANT = [
+  ["Deviens qui tu veux", "", 844, "heros", "Le héros, refait ce matin"],
+  ["102 mouvements qui bougent.", "Montrés, pas expliqués", 765, "", ""],
+  ["Nora ou Sasha.", "Ton Guide personnel", 1173, "", ""],
+  ["Et tout se parle.", "Tout au même endroit", 763, "", ""],
+  ["Tu iras t'entraîner sans y penser.", "Dans trois mois", 892, "", ""],
+  ["Une photo, et c'est noté.", "Tes repas, sans prise de tête", 1102, "", ""],
+  ["Six rangs.", "Ta progression", 706, "", "Réparée aujourd'hui"],
+  ["Le relais.", "À deux, c'est plus facile", 1042, "", ""],
+  ["Tu commences avec tout ça.", "Le compte gratuit", 1119, "", ""],
+  ["Commence là où tu en es.", "Les avis", 642, "", ""],
+];
+
+/* À droite : mêmes sections, forme choisie selon ce qu'elles font. */
+const APRES = [
+  ["Deviens qui tu veux", "", 844, "heros", "Inchangé"],
+  ["102 mouvements qui bougent.", "", 620, "montre", "Pleine largeur, chapo d'une ligne"],
+  ["Nora ou Sasha.", "", 1000, "face", "Face-à-face : lui à gauche, la conversation à droite"],
+  ["Et tout se parle.", "", 600, "", "Centré, serré"],
+  ["Tu iras t'entraîner sans y penser.", "", 780, "montre", "Le chemin prend la largeur"],
+  ["Une photo, et c'est noté.", "", 860, "montre", "L'assiette d'abord, le texte sous elle"],
+  ["Six rangs.", "", 640, "", "Centré, serré"],
+  ["Le relais.", "", 900, "face", "Face-à-face : l'affiche à gauche"],
+  ["Tu commences avec tout ça.", "", 1000, "", "Les deux colonnes se resserrent"],
+  ["Commence là où tu en es.", "", 600, "", "Inchangé"],
+];
+
+const ECHELLE = 0.075;
+function peindre(cible, lignes) {
+  const hote = document.getElementById(cible);
+  for (const [titre, surtitre, px, forme, note] of lignes) {
+    const d = document.createElement("div");
+    d.className = "bloc" + (surtitre ? "" : "");
+    if (forme) d.dataset.forme = forme;
+    if (forme === "heros") d.dataset.heros = "";
+    d.style.height = Math.round(px * ECHELLE) + "px";
+    d.innerHTML =
+      (surtitre ? `<span class="s">— ${surtitre}</span>` : "") +
+      `<span class="t">${titre}</span>` +
+      (note ? `<span class="c">${note}</span>` : "") +
+      `<span class="px">${px} px</span>`;
+    hote.append(d);
+  }
+}
+peindre("avant", AVANT);
+peindre("apres", APRES);
+
+/* ── Le fil d'escalier qui relie les sections de la colonne de droite ── */
+function marches(largeur, hauteur, n) {
+  const pas = largeur / n, chute = hauteur / n;
+  let d = `M 0 0`;
+  for (let i = 0; i < n; i++) d += ` v ${chute} h ${pas}`;
+  return d;
+}
+const fil = document.getElementById("fil");
+const hFil = APRES.reduce((a, l) => a + Math.round(l[2] * ECHELLE) + 3, 0);
+fil.innerHTML = `<svg viewBox="0 0 60 ${hFil}" preserveAspectRatio="none">
+  <defs><linearGradient id="gf" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#8B5CF6" stop-opacity=".1"/>
+    <stop offset=".25" stop-color="#8B5CF6"/>
+    <stop offset=".6" stop-color="#C13BC1"/>
+    <stop offset="1" stop-color="#8B5CF6" stop-opacity=".1"/>
+  </linearGradient></defs>
+  <path d="${marches(56, hFil, APRES.length)}" fill="none" stroke="url(#gf)" stroke-width="1.6"
+        vector-effect="non-scaling-stroke" transform="translate(2,0)"/>
+</svg>`;
+
+/* ── Les arêtes en marches sous les deux sections en vraie taille ── */
+for (const id of ["aA", "aB"]) {
+  document.getElementById(id).innerHTML = `<svg viewBox="0 0 390 40" preserveAspectRatio="none">
+    <defs><linearGradient id="ga${id}" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#8B5CF6" stop-opacity=".2"/>
+      <stop offset=".5" stop-color="#C13BC1"/>
+      <stop offset="1" stop-color="#8B5CF6" stop-opacity=".2"/>
+    </linearGradient></defs>
+    <path d="M 0 34 h 78 v -10 h 78 v -10 h 78 v 10 h 78 v 10 h 78" fill="none"
+          stroke="url(#ga${id})" stroke-width="1.4" vector-effect="non-scaling-stroke"/>
+  </svg>`;
+}
+</script>
+</body>
+</html>
