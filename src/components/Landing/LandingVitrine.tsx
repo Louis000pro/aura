@@ -159,7 +159,7 @@ function Escalier() {
   // qui partageraient les leurs prendraient les couleurs du premier.
   const k = `esc${useId().replace(/[^a-zA-Z0-9_-]/g, "")}`;
   return (
-    <svg className={s.escalier} viewBox={`0 0 ${ESC_L} ${ESC_H}`} preserveAspectRatio="none" aria-hidden focusable="false">
+    <svg className={s.escalierHeros} viewBox={`0 0 ${ESC_L} ${ESC_H}`} preserveAspectRatio="none" aria-hidden focusable="false">
       <defs>
         <linearGradient id={`${k}t`} x1="0" y1="0" x2="1" y2="0">
           <stop offset="0" stopColor="#8B5CF6" stopOpacity=".25" />
