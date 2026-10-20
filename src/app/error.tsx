@@ -62,7 +62,7 @@ export default function Error({
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        background: "linear-gradient(135deg, #faf8ff 0%, #fffef8 100%)",
+        background: "linear-gradient(135deg, #faf8ff 0%, #fdf6fd 100%)",
         padding: "40px 24px",
       }}
     >
@@ -78,8 +78,8 @@ export default function Error({
             height: 80,
             borderRadius: 9999,
             background:
-              "linear-gradient(135deg, rgba(240,235,255,0.9) 0%, rgba(255,251,240,0.9) 100%)",
-            boxShadow: "0 8px 32px rgba(167,139,250,0.18)",
+              "linear-gradient(135deg, rgba(240,235,255,0.9) 0%, rgba(252,236,250,0.9) 100%)",
+            boxShadow: "0 8px 32px rgba(139,92,246,0.18)",
             fontSize: 34,
           }}
         >
@@ -113,12 +113,12 @@ export default function Error({
             padding: "12px 32px",
             borderRadius: 16,
             border: "none",
-            background: "linear-gradient(135deg, #A78BFA, #D4A843)",
+            background: "linear-gradient(135deg, #8B5CF6, #C13BC1)",
             color: "#fff",
             fontSize: 13,
             fontWeight: 600,
             cursor: "pointer",
-            boxShadow: "0 6px 20px rgba(167,139,250,0.3)",
+            boxShadow: "0 6px 20px rgba(139,92,246,0.3)",
           }}
         >
           Réessayer

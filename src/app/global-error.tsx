@@ -45,7 +45,7 @@ export default function GlobalError({
 
   return (
     <html>
-      <body style={{ margin: 0, padding: 0, background: "linear-gradient(135deg, #faf8ff 0%, #fffef8 100%)", minHeight: "100dvh", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "sans-serif" }}>
+      <body style={{ margin: 0, padding: 0, background: "linear-gradient(135deg, #faf8ff 0%, #fdf6fd 100%)", minHeight: "100dvh", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "sans-serif" }}>
         <div style={{ textAlign: "center", padding: "40px 24px", maxWidth: 480 }}>
           <div style={{ fontSize: 48, marginBottom: 16 }}>⚠️</div>
           <h1 style={{ fontSize: 26, fontWeight: 300, color: "#2D3748", marginBottom: 8 }}>
@@ -56,7 +56,7 @@ export default function GlobalError({
           </p>
           <button
             onClick={reset}
-            style={{ padding: "12px 32px", borderRadius: 16, border: "none", background: "linear-gradient(135deg, #A78BFA, #D4A843)", color: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer" }}
+            style={{ padding: "12px 32px", borderRadius: 16, border: "none", background: "linear-gradient(135deg, #8B5CF6, #C13BC1)", color: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer" }}
           >
             Réessayer
           </button>
