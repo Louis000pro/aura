@@ -17,6 +17,11 @@ import type { GuideRef } from "./guides";
 const PHOTOS_PAR_GUIDE: Record<string, string> = {
   "push-couche-v5": "push-couche-v5",
   improvise: "improvise-v1",
+  "core-planche": "core-planche-v1",
+  "push-pompes": "push-pompes-v1",
+  "pull-traction": "pull-traction-v1",
+  "legs-fentes": "legs-fentes-v1",
+  "legs-squat": "legs-squat-v1",
 };
 
 /** Le nom de fichier (sans `.webp`) à montrer pour ce Guide. */
