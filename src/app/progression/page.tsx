@@ -167,7 +167,7 @@ type FanCard = { img: string; pos: string; wv: string; hv: string; dir: -1 | 0 |
 const CHOISIS_FAN: FanCard[] = [
   { img: "legs-squat",    pos: "center 32%", wv: "clamp(66px,44cqh,100px)", hv: "clamp(70px,47cqh,104px)", dir: -1, rot: -11, z: 1, sway: 0.095 },
   { img: "pull-traction", pos: "center 26%", wv: "clamp(66px,44cqh,100px)", hv: "clamp(70px,47cqh,104px)", dir:  1, rot:  11, z: 2, sway: 0.095 },
-  { img: "push-couche",   pos: "center 30%", wv: "clamp(75px,51cqh,112px)", hv: "clamp(80px,54cqh,120px)", dir:  0, rot:   0, z: 3, sway: 0    },
+  { img: "push-couche-v2",   pos: "center 30%", wv: "clamp(75px,51cqh,112px)", hv: "clamp(80px,54cqh,120px)", dir:  0, rot:   0, z: 3, sway: 0    },
 ];
 
 function ForkCard({ kind, count, onClick }: {
