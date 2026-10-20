@@ -15,7 +15,7 @@
 import type { GuideRef } from "./guides";
 
 const PHOTOS_PAR_GUIDE: Record<string, string> = {
-  "push-couche-v5": "push-couche-v5",
+  "push-couche-v5": "push-couche-v6",
   improvise: "improvise-v1",
   "core-planche": "core-planche-v1",
   "push-pompes": "push-pompes-v1",
