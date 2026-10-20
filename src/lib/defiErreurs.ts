@@ -82,7 +82,13 @@ export function refusRelais(r: Brut | null | undefined): RefusRelais {
       return { texte: "Personne n’a encore accepté ton invitation." };
 
     case "relation_requise":
-      return { texte: "Tu ne peux inviter que des amis." };
+      return { texte: "Tu ne peux inviter que tes amis. Une demande d’ami doit d’abord être acceptée." };
+
+    // Un relais engage l'autre pendant une semaine : dans un fil à deux,
+    // il ne se lance qu'entre amis (2026-10-21), comme on ne s'y écrit
+    // qu'entre amis.
+    case "pas_amis":
+      return { texte: "Pour lancer un relais à deux, il faut d’abord une demande d’ami acceptée." };
 
     case "relais_en_cours":
       return {

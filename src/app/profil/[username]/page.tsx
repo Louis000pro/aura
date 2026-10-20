@@ -23,7 +23,7 @@ import EtagereBadges from "@/components/profil/EtagereBadges";
 import LigneEnsemble from "@/components/profil/LigneEnsemble";
 import CouvertureSeance from "@/components/profil/CouvertureSeance";
 import AvecQui from "@/components/communaute/AvecQui";
-import { creerConversation } from "@/lib/messagerie";
+import { accepterDemandeAmi, creerConversation, demanderAmi, relationAmi, type RelationAmi } from "@/lib/messagerie";
 import type { PerformanceData } from "@/components/PerformanceCard";
 
 /* Les colonnes `goals` et `level` ont quitté ce type, et ce n'est pas un
@@ -67,7 +67,13 @@ export default function PublicProfilePage() {
      pour tout le monde, toujours. `null` = on ne sait pas, donc on n'affiche
      rien ; jamais un zéro qui a l'air vrai. */
   const [pub, setPub] = useState<ProfilPublic | null>(null);
-  const [isFollowing, setIsFollowing] = useState(false);
+  /* ⚠️ UNE DEMANDE N'EST PAS UNE AMITIÉ (Louis, 2026-10-21). Cet écran
+     lisait seulement « je la suis » : dès qu'on touchait « Ajouter », il
+     affichait « Ami », « Écrire » et « Lancer un relais », donc on pouvait
+     écrire à quelqu'un qui n'avait rien accepté. La relation se lit
+     maintenant dans les deux sens. `null` = pas encore lue (ou lecture
+     ratée) : on n'affiche alors aucune action. */
+  const [relation, setRelation] = useState<RelationAmi | null>(null);
   const [followLoading, setFollowLoading] = useState(false);
   const [showRemoveConfirm, setShowRemoveConfirm] = useState(false);
   const [showFollowList, setShowFollowList] = useState<"Abonnés" | "Abonnements" | null>(null);
@@ -140,11 +146,14 @@ export default function PublicProfilePage() {
 
         // Le nombre d'amis se compte ici : `followers` est lisible de tous
         // (`USING (true)`), c'est le seul des trois chiffres qui l'était.
-        const { count: amisCount } = await supabase
-          .from("followers")
-          .select("following_id", { count: "exact", head: true })
-          .eq("follower_id", data.id);
-        setFollowingCount(amisCount ?? 0);
+        // ⚠️ Seulement les amitiés ACCEPTÉES (2026-10-21) : il comptait
+        // aussi les demandes qu'il ou elle a envoyées et qui attendent.
+        const [ilSuit, leSuivent] = await Promise.all([
+          supabase.from("followers").select("following_id").eq("follower_id", data.id),
+          supabase.from("followers").select("follower_id").eq("following_id", data.id),
+        ]);
+        const suiveurs = new Set((leSuivent.data ?? []).map((r) => r.follower_id as string));
+        setFollowingCount((ilSuit.data ?? []).filter((r) => suiveurs.has(r.following_id as string)).length);
 
         /* Les trois chiffres, et le rang.
            Un seul appel dans le cas normal : `profil_public` rend l'EXP, les
@@ -190,53 +199,59 @@ export default function PublicProfilePage() {
           });
 
         if (user && user.id !== data.id) {
-          const { data: followData } = await supabase
-            .from("followers")
-            .select("follower_id")
-            .eq("follower_id", user.id)
-            .eq("following_id", data.id)
-            .maybeSingle();
-          setIsFollowing(!!followData);
+          setRelation(await relationAmi(user.id, data.id));
         }
 
         setLoading(false);
       });
   }, [username, user]);
 
-  const handleFollow = async () => {
-    if (!user || !profile || isOwnProfile) return;
-    const supabase = createClient();
+  /* Une demande passe par `demander_ami` (elle notifie et, si l'autre
+     m'avait déjà demandé, elle ouvre notre fil), une acceptation par
+     `accepter_demande_ami`. Retirer un ami et annuler sa demande, c'est le
+     même geste : on supprime SON propre lien. */
+  const agirAmi = async () => {
+    if (!user || !profile || isOwnProfile || relation === null || followLoading) return;
     setFollowLoading(true);
 
-    if (isFollowing) {
-      const { error } = await supabase
+    if (relation === "ami" || relation === "envoyee") {
+      const { error } = await createClient()
         .from("followers")
         .delete()
         .eq("follower_id", user.id)
         .eq("following_id", profile.id);
-      if (error) { console.error("unfollow:", error); showToast("Impossible de retirer, réessaie"); setFollowLoading(false); return; }
-      setIsFollowing(false);
+      if (error) { console.error("retrait ami:", error); showToast("Impossible, réessaie"); setFollowLoading(false); return; }
+      // Ce qui reste est SON lien vers moi, s'il existe : une demande reçue.
+      setRelation(relation === "ami" ? "recue" : "aucune");
+      if (relation === "ami") setFollowingCount((n) => Math.max(0, n - 1));
       setShowRemoveConfirm(false);
-      showToast("Retiré de tes amis");
+      showToast(relation === "ami" ? "Retiré de tes amis" : "Demande annulée");
+    } else if (relation === "recue") {
+      const r = await accepterDemandeAmi(profile.id);
+      if (!r.ok) { showToast("Impossible d’accepter, réessaie"); setFollowLoading(false); return; }
+      setRelation("ami");
+      setFollowingCount((n) => n + 1);
+      showToast("Vous êtes amis");
     } else {
-      const { error } = await supabase
-        .from("followers")
-        .upsert(
-          { follower_id: user.id, following_id: profile.id },
-          { onConflict: "follower_id,following_id", ignoreDuplicates: true }
-        );
-      if (error) { console.error("follow:", error); showToast("Impossible d’ajouter, réessaie"); setFollowLoading(false); return; }
-      // Notification in-app + email via route admin (insertion unique)
-      void supabase.auth.getSession().then(({ data: { session } }) => {
-        if (!session) return;
-        fetch("/api/notifications/follow", {
-          method: "POST",
-          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${session.access_token}` },
-          body: JSON.stringify({ follower_id: user.id, followed_id: profile.id }),
-        }).catch(() => {});
-      });
-      setIsFollowing(true);
-      showToast("Ami ajouté.");
+      const r = await demanderAmi(profile.id);
+      if (!r.ok) { showToast("Impossible d’envoyer la demande, réessaie"); setFollowLoading(false); return; }
+      if (r.statut === "ami") {
+        setRelation("ami");
+        setFollowingCount((n) => n + 1);
+        showToast("Vous êtes amis");
+      } else {
+        setRelation("envoyee");
+        showToast("Demande envoyée");
+        // Notification in-app + e-mail via la route serveur (insertion unique).
+        void createClient().auth.getSession().then(({ data: { session } }) => {
+          if (!session) return;
+          fetch("/api/notifications/follow", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "Authorization": `Bearer ${session.access_token}` },
+            body: JSON.stringify({ follower_id: user.id, followed_id: profile.id }),
+          }).catch(() => {});
+        });
+      }
     }
 
     setFollowLoading(false);
@@ -267,11 +282,11 @@ export default function PublicProfilePage() {
   };
 
   const handleFriendButton = () => {
-    if (isFollowing) {
+    if (relation === "ami" || relation === "envoyee") {
       setShowRemoveConfirm(true);
       return;
     }
-    void handleFollow();
+    void agirAmi();
   };
 
   if (loading) {
@@ -360,7 +375,7 @@ export default function PublicProfilePage() {
               <ArrowLeft size={17} strokeWidth={2} />
             </button>
             <p className="text-[16px] font-semibold flex-1 truncate" style={{ color: "var(--text-0)" }}>{displayPseudo}</p>
-            {!isOwnProfile && user && isFollowing && (
+            {!isOwnProfile && user && relation === "ami" && (
               <button
                 type="button"
                 onClick={() => void ecrire()}
@@ -477,10 +492,16 @@ export default function PublicProfilePage() {
 
         {/* Ami + Écrire. Entre amis, écrire est l'action utile, donc le
             violet ; « Ami » reste en retrait et demande confirmation avant
-            de retirer quoi que ce soit. */}
+            de retirer quoi que ce soit.
+
+            ⚠️ « Écrire » N'EXISTE QU'ENTRE AMIS (2026-10-21). Une demande
+            envoyée se lit « Demande envoyée », en retrait, et ne donne
+            aucune autre porte : ni écrire, ni lancer un relais. Une demande
+            reçue s'accepte d'ici, en violet. */}
         {!isOwnProfile && user && (
+          <>
           <div className="flex gap-2 mt-5">
-            {isFollowing ? (
+            {relation === "ami" ? (
               <>
                 <button
                   type="button"
@@ -503,7 +524,18 @@ export default function PublicProfilePage() {
                   Écrire
                 </button>
               </>
-            ) : (
+            ) : relation === "envoyee" ? (
+              <button
+                type="button"
+                onClick={handleFriendButton}
+                disabled={followLoading}
+                className="flex-1 h-11 rounded-full flex items-center justify-center gap-1.5 cursor-pointer"
+                style={{ background: "rgba(var(--text-3-rgb),0.1)", fontSize: 13, fontWeight: 700, color: "var(--text-1)" }}
+              >
+                <Check size={15} strokeWidth={2.4} />
+                Demande envoyée
+              </button>
+            ) : relation === "recue" || relation === "aucune" ? (
               <button
                 type="button"
                 onClick={handleFriendButton}
@@ -511,11 +543,28 @@ export default function PublicProfilePage() {
                 className="flex-1 h-11 rounded-full flex items-center justify-center gap-1.5 cursor-pointer text-white"
                 style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", boxShadow: "var(--ombre-action)", fontSize: 13, fontWeight: 700 }}
               >
-                <UserPlus size={15} strokeWidth={2.2} />
-                Ajouter
+                {followLoading
+                  ? <Loader2 size={15} className="animate-spin" />
+                  : relation === "recue" ? <UserCheck size={15} strokeWidth={2.2} /> : <UserPlus size={15} strokeWidth={2.2} />}
+                {relation === "recue" ? "Accepter" : "Ajouter"}
               </button>
+            ) : (
+              /* La relation n'est pas encore lue : la place du bouton est
+                 gardée, pour que rien ne saute quand elle arrive. */
+              <div aria-hidden className="flex-1 h-11" />
             )}
           </div>
+          {relation === "envoyee" && (
+            <p className="mt-2 text-[13px]" style={{ color: "var(--text-2)" }}>
+              Vous pourrez vous écrire dès que {displayPseudo} aura accepté.
+            </p>
+          )}
+          {relation === "recue" && (
+            <p className="mt-2 text-[13px]" style={{ color: "var(--text-2)" }}>
+              {displayPseudo} t’a envoyé une demande d’ami. Accepte pour pouvoir vous écrire.
+            </p>
+          )}
+          </>
         )}
 
         {isOwnProfile && (
@@ -655,7 +704,7 @@ export default function PublicProfilePage() {
           );
         })}
       </div>
-      {!isOwnProfile && user && isFollowing && (
+      {!isOwnProfile && user && relation === "ami" && (
         <button
           type="button"
           onClick={() => setAvecQui(true)}
@@ -746,10 +795,12 @@ export default function PublicProfilePage() {
                 className="mt-4 text-center text-[20px] font-bold"
                 style={{ color: "var(--text-0)" }}
               >
-                Retirer {profile.pseudo} de tes amis ?
+                {relation === "envoyee" ? `Annuler ta demande à ${profile.pseudo} ?` : `Retirer ${profile.pseudo} de tes amis ?`}
               </h2>
               <p className="mx-auto mt-2 max-w-xs text-center text-[13px] leading-relaxed" style={{ color: "var(--text-3)" }}>
-                Vous ne verrez plus vos affiches dans vos fils. Votre conversation reste disponible.
+                {relation === "envoyee"
+                  ? "Tu pourras en envoyer une autre plus tard."
+                  : "Vous ne verrez plus vos affiches dans vos fils. Votre conversation reste lisible, mais pour vous écrire à nouveau, il faudra une demande acceptée."}
               </p>
               <div className="mt-5 grid gap-2">
                 <button
@@ -759,11 +810,11 @@ export default function PublicProfilePage() {
                   className="rounded-2xl px-4 py-3 text-[16px] font-semibold text-white"
                   style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)" }}
                 >
-                  Garder comme ami
+                  {relation === "envoyee" ? "Garder ma demande" : "Garder comme ami"}
                 </button>
                 <button
                   type="button"
-                  onClick={() => void handleFollow()}
+                  onClick={() => void agirAmi()}
                   disabled={followLoading}
                   className="flex items-center justify-center gap-2 rounded-2xl px-4 py-3 text-[16px] font-semibold disabled:opacity-50"
                   style={{ color: "var(--text-2)", background: "rgba(var(--text-3-rgb),.08)" }}
@@ -773,7 +824,7 @@ export default function PublicProfilePage() {
                   ) : (
                     <UserMinus className="h-4 w-4" />
                   )}
-                  Retirer de mes amis
+                  {relation === "envoyee" ? "Annuler la demande" : "Retirer de mes amis"}
                 </button>
               </div>
             </motion.div>
@@ -806,11 +857,10 @@ export default function PublicProfilePage() {
         )}
       </AnimatePresence>
 
-      {/* Liste des abonnés / abonnements (cliquable depuis les stats) */}
+      {/* Ses amis (cliquable depuis les chiffres) */}
       <AnimatePresence>
         {showFollowList && profile && (
           <FollowListModal
-            type={showFollowList}
             ownerId={profile.id}
             onClose={() => setShowFollowList(null)}
           />

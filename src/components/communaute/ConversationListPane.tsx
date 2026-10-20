@@ -29,7 +29,7 @@ import { useRangs } from "@/lib/rangsPublics";
 import { createClient } from "@/lib/supabase";
 import { imageEtat, SERIES, type SerieSlug } from "@/lib/defi";
 import {
-  chargerConversations, titreConversation, autresMembres, mesRelations,
+  chargerConversations, titreConversation, autresMembres, mesAmis,
   creerConversation, reglerConversation, heureCourte, prechargerFil,
   type Conversation, type Personne,
 } from "@/lib/messagerie";
@@ -769,7 +769,7 @@ function NouvelleDiscussion({ moi, onFermer, onCree }: {
   const rangs = useRangs(useMemo(() => gens.map((g) => g.id), [gens]));
 
   useEffect(() => {
-    void mesRelations(moi)
+    void mesAmis(moi)
       .then((g) => setGens(g))
       .catch(() => setErreur("Impossible de charger tes contacts."))
       .finally(() => setCharge(false));
@@ -791,7 +791,7 @@ function NouvelleDiscussion({ moi, onFermer, onCree }: {
         : r.raison === "groupe_complet"
         ? "Un groupe peut réunir cinq personnes maximum."
         : r.raison === "relation_requise"
-        ? "Tu peux écrire uniquement aux personnes déjà liées à ton compte."
+        ? "Tu peux écrire uniquement à tes amis. Une demande d’ami doit d’abord être acceptée."
         : "Impossible de créer la discussion.",
     );
   };

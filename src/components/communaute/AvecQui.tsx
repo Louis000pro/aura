@@ -14,7 +14,7 @@ import { VisageGuide } from "@/components/AssistantMark";
 import { useGuideActif } from "@/context/GuideContext";
 import { voix } from "@/lib/guides";
 import { useRangs } from "@/lib/rangsPublics";
-import { mesRelations, type Personne } from "@/lib/messagerie";
+import { mesAmis, type Personne } from "@/lib/messagerie";
 import { creerDefi, inviterRelais } from "@/lib/defi";
 import { refusRelais, type RefusRelais } from "@/lib/defiErreurs";
 
@@ -52,7 +52,7 @@ export default function AvecQui({ moi, onFermer, onFil, onLien, preselection }: 
   const rangs = useRangs(useMemo(() => gens.map((g) => g.id), [gens]));
 
   useEffect(() => {
-    void mesRelations(moi)
+    void mesAmis(moi)
       .then(setGens)
       .catch(() => setRefus({ texte: "Impossible de charger tes contacts." }))
       .finally(() => setCharge(false));

@@ -35,7 +35,8 @@ import {
   chargerFil, chargerMessagesAvant, chargerMessage, chargerReactions,
   envoyerMessage, envoyerPhoto, marquerLu, titreConversation, autresMembres,
   reagir, supprimerMessage, heureExacte, memeJour, libelleJour, lireFilEnCache,
-  type Conversation, type Message,
+  relationAmi, accepterDemandeAmi, demanderAmi,
+  type Conversation, type Message, type RelationAmi,
 } from "@/lib/messagerie";
 
 /** Les réactions proposées à l'appui long. Cinq, pas plus : au-delà
@@ -96,6 +97,45 @@ export default function FilPage() {
   );
   const rangsDuo = useRangs(useMemo(() => (idDuo ? [idDuo] : []), [idDuo]));
   const rangAutre = idDuo ? rangsDuo.get(idDuo) : undefined;
+
+  /* ⚠️ À DEUX, ON NE S'ÉCRIT QU'ENTRE AMIS (Louis, 2026-10-21 : « il faut
+     une acceptation pour commencer à parler »). Un fil à deux pouvait
+     s'ouvrir sur une simple demande, et on y écrivait aussitôt. La
+     relation se relit ici ; tant qu'elle n'est pas « ami », la saisie
+     laisse la place à ce qui manque. La base tient la même règle.
+     La réponse porte la personne qu'elle décrit : on compare au lieu de
+     remettre l'état à zéro, et un autre fil n'hérite jamais de la sienne.
+     `null` = pas encore lue ou lecture ratée : dans le doute on ne ferme
+     rien, c'est la base qui refusera. */
+  const [relationDuo, setRelationDuo] = useState<{ pour: string; relation: RelationAmi | null } | null>(null);
+  const moiId = user?.id ?? "";
+  useEffect(() => {
+    if (!idDuo || !moiId) return;
+    let vivant = true;
+    void relationAmi(moiId, idDuo).then((relation) => {
+      if (vivant) setRelationDuo({ pour: idDuo, relation });
+    });
+    return () => { vivant = false; };
+  }, [idDuo, moiId]);
+  const relationAutre = relationDuo && relationDuo.pour === idDuo ? relationDuo.relation : null;
+  const ecritureFermee = !!idDuo && relationAutre !== null && relationAutre !== "ami";
+  const [amiEnCours, setAmiEnCours] = useState(false);
+  const agirAmi = async () => {
+    if (!idDuo || amiEnCours || (relationAutre !== "recue" && relationAutre !== "aucune")) return;
+    setAmiEnCours(true);
+    const r = relationAutre === "recue" ? await accepterDemandeAmi(idDuo) : await demanderAmi(idDuo);
+    setAmiEnCours(false);
+    if (!r.ok) { setErreur("Impossible pour l’instant. Réessaie dans un moment."); return; }
+    const devient: RelationAmi = relationAutre === "recue" || ("statut" in r && r.statut === "ami") ? "ami" : "envoyee";
+    setRelationDuo({ pour: idDuo, relation: devient });
+    if (devient === "envoyee" && session?.access_token) {
+      void fetch("/api/notifications/follow", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ follower_id: moiId, followed_id: idDuo }),
+      }).catch(() => {});
+    }
+  };
 
   const listeRef = useRef<HTMLDivElement>(null);
   const basRef   = useRef<HTMLDivElement>(null);
@@ -610,7 +650,7 @@ export default function FilPage() {
       </div>
 
       {/* ─── La réponse en cours ─── */}
-      {repondA && (
+      {repondA && !ecritureFermee && (
         <div
           className="relative z-10 mx-3 mb-1 flex items-center gap-2 rounded-t-xl px-3 py-2"
           style={{ background: c.carte, borderLeft: "2.5px solid #D7A62A" }}
@@ -629,7 +669,36 @@ export default function FilPage() {
         </div>
       )}
 
-      {/* ─── Composer ─── */}
+      {/* ─── Composer ───
+          À deux et sans amitié acceptée, il laisse la place à ce qui
+          manque : une demande en attente, une demande à accepter, ou une
+          demande à envoyer. Les messages déjà là restent lisibles. */}
+      {ecritureFermee ? (
+        <div
+          className="relative z-10 flex shrink-0 flex-col items-center gap-2.5 px-5 pt-3 text-center"
+          style={{ paddingBottom: "calc(1rem + env(safe-area-inset-bottom))", borderTop: `1px solid ${c.trait}` }}
+        >
+          <p className="max-w-sm text-[13px] leading-relaxed" style={{ color: c.t2 }}>
+            {relationAutre === "envoyee"
+              ? `Ta demande d’ami est envoyée. Vous pourrez vous écrire dès que ${autres[0]?.pseudo ?? titre} l’aura acceptée.`
+              : relationAutre === "recue"
+              ? `${autres[0]?.pseudo ?? titre} t’a envoyé une demande d’ami. Accepte-la pour pouvoir vous écrire.`
+              : "Pour vous écrire, il faut d’abord une demande d’ami acceptée."}
+          </p>
+          {(relationAutre === "recue" || relationAutre === "aucune") && (
+            <button
+              type="button"
+              onClick={() => void agirAmi()}
+              disabled={amiEnCours}
+              className="flex min-h-[44px] items-center justify-center gap-2 rounded-full px-6 text-[16px] font-semibold text-white disabled:opacity-60"
+              style={{ background: "linear-gradient(135deg, #8B5CF6, #C13BC1)" }}
+            >
+              {amiEnCours && <Loader2 className="h-4 w-4 animate-spin" />}
+              {relationAutre === "recue" ? "Accepter" : "Envoyer une demande"}
+            </button>
+          )}
+        </div>
+      ) : (
       <div
         className="relative z-10 flex shrink-0 items-end gap-2 px-3 pt-2"
         style={{ paddingBottom: "calc(.75rem + env(safe-area-inset-bottom))" }}
@@ -698,6 +767,7 @@ export default function FilPage() {
           {envoi ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
         </button>
       </div>
+      )}
 
       {/* ─── Appui long ─── */}
       <AnimatePresence>

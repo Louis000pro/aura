@@ -884,6 +884,23 @@ export type ResultatRechercheAmi = Personne & { relation: RelationAmi };
    ne les appelait depuis le passage à la recherche partielle ci-dessous, qui
    résout les relations EN MASSE en une seule requête. */
 
+/** Où j'en suis avec UNE personne : son profil et un fil à deux en ont
+ *  besoin (2026-10-21), parce qu'on n'y écrit qu'entre amis réciproques.
+ *  `null` = la lecture a échoué : on ne sait pas, et ne pas savoir n'est
+ *  ni « amis » ni « inconnus ». */
+export async function relationAmi(moi: string, autre: string): Promise<RelationAmi | null> {
+  if (!moi || !autre || moi === autre) return null;
+  const supabase = createClient();
+  const [sortante, entrante] = await Promise.all([
+    supabase.from("followers").select("follower_id").eq("follower_id", moi).eq("following_id", autre).maybeSingle(),
+    supabase.from("followers").select("follower_id").eq("follower_id", autre).eq("following_id", moi).maybeSingle(),
+  ]);
+  if (sortante.error || entrante.error) return null;
+  const suit = !!sortante.data;
+  const suiviPar = !!entrante.data;
+  return suit && suiviPar ? "ami" : suit ? "envoyee" : suiviPar ? "recue" : "aucune";
+}
+
 /** Recherche PARTIELLE (choix de Louis, 2026-07-25) : les suggestions ne
  * s'affichent qu'après 2 caractères saisis. On retrouve les pseudos qui
  * commencent par la saisie en premier, puis ceux qui la contiennent, sans
@@ -1014,7 +1031,15 @@ export async function ignorerDemandeAmi(demandeur: string) {
   return data as { ok: boolean; raison?: string };
 }
 
-export async function mesRelations(userId: string): Promise<Personne[]> {
+/* ── Mes amis : ceux qui ont ACCEPTÉ ──
+   ⚠️ UNE DEMANDE N'EST PAS UNE AMITIÉ (Louis, 2026-10-21 : « il faut une
+   acceptation pour commencer à parler »). Cette liste rendait les gens que
+   je suis ET ceux qui me suivent, donc une demande envoyée (ou reçue)
+   suffisait pour ouvrir une discussion, lancer un relais ou ajouter
+   quelqu'un à un groupe. Elle ne rend plus que les amis réciproques :
+   c'est elle qui alimente « Nouvelle discussion », « Avec qui ? » et
+   l'ajout de membres. La base tient la même règle (`sont_en_relation`). */
+export async function mesAmis(userId: string): Promise<Personne[]> {
   const supabase = createClient();
   const [suivis, suiveurs] = await Promise.all([
     supabase.from("followers").select("following_id").eq("follower_id", userId),
@@ -1023,10 +1048,9 @@ export async function mesRelations(userId: string): Promise<Personne[]> {
   const relationsError = suivis.error ?? suiveurs.error;
   if (relationsError) throw new Error(relationsError.message);
 
-  const ids = [...new Set([
-    ...(suivis.data ?? []).map((r) => r.following_id as string),
-    ...(suiveurs.data ?? []).map((r) => r.follower_id as string),
-  ])].filter((id) => id !== userId);
+  const meSuivent = new Set((suiveurs.data ?? []).map((r) => r.follower_id as string));
+  const ids = [...new Set((suivis.data ?? []).map((r) => r.following_id as string))]
+    .filter((id) => id !== userId && meSuivent.has(id));
 
   if (!ids.length) return [];
 

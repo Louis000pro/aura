@@ -26,9 +26,9 @@ import { useRangs, type RangPublic } from "@/lib/rangsPublics";
 import { imageEtat, etatPoster, lancerRelaisDansConversation, annulerRelais } from "@/lib/defi";
 import { refusRelais } from "@/lib/defiErreurs";
 import {
-  chargerFil, titreConversation, autresMembres, mesRelations, majConversation,
-  ajouterMembres, quitterConversation,
-  type Conversation, type Personne,
+  chargerFil, titreConversation, autresMembres, mesAmis, majConversation,
+  ajouterMembres, quitterConversation, relationAmi,
+  type Conversation, type Personne, type RelationAmi,
 } from "@/lib/messagerie";
 
 export default function InfosPage() {
@@ -50,6 +50,29 @@ export default function InfosPage() {
   // Les décorations de rang de chaque membre : c'est l'écran où l'on regarde
   // qui est là, donc l'endroit naturel pour les voir toutes.
   const rangs = useRangs(useMemo(() => (conv?.membres ?? []).map((m) => m.id), [conv]));
+
+  /* Un relais engage l'autre pendant une semaine : dans un fil à deux, il
+     ne se lance qu'entre amis (Louis, 2026-10-21 : « il faut une
+     acceptation pour commencer à parler »), et la base tient la même
+     règle (`pas_amis`). Un bouton qui ne peut pas marcher n'existe pas.
+     La réponse porte le compte qu'elle décrit, pour ne jamais montrer la
+     relation d'un fil sur le suivant. */
+  const moiId = user?.id ?? "";
+  const idDuo = useMemo(
+    () => (conv?.type === "duo" ? conv.membres.find((m) => m.id !== moiId)?.id ?? "" : ""),
+    [conv, moiId],
+  );
+  const [relationDuo, setRelationDuo] = useState<{ pour: string; relation: RelationAmi | null } | null>(null);
+  useEffect(() => {
+    if (!idDuo || !moiId) return;
+    let vivant = true;
+    void relationAmi(moiId, idDuo).then((relation) => {
+      if (vivant) setRelationDuo({ pour: idDuo, relation });
+    });
+    return () => { vivant = false; };
+  }, [idDuo, moiId]);
+  const relationAutre = relationDuo && relationDuo.pour === idDuo ? relationDuo.relation : null;
+  const duoSansAmitie = !!idDuo && relationAutre !== null && relationAutre !== "ami";
 
   const fichierRef = useRef<HTMLInputElement>(null);
 
@@ -377,7 +400,7 @@ export default function InfosPage() {
             </div>
           )}
 
-          {!conv.defi && conv.membres.length <= 5 && (
+          {!conv.defi && conv.membres.length <= 5 && !duoSansAmitie && (
             <button onClick={lancer} disabled={occupe === "relais"}
               className="flex w-full items-center gap-3 p-3 text-left disabled:opacity-60">
               <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px]"
@@ -516,7 +539,7 @@ function AjouterDesGens({ moi, dejaLa, convId, onFermer, onAjoute }: {
   const [erreur, setErreur]   = useState<string | null>(null);
 
   useEffect(() => {
-    void mesRelations(moi)
+    void mesAmis(moi)
       .then((g) => setGens(g.filter((p) => !dejaLa.includes(p.id))))
       .catch(() => setErreur("Impossible de charger tes contacts."))
       .finally(() => setCharge(false));
@@ -534,7 +557,7 @@ function AjouterDesGens({ moi, dejaLa, convId, onFermer, onAjoute }: {
       r.raison === "groupe_complet"
         ? "Ce groupe compte déjà cinq personnes."
         : r.raison === "relation_requise"
-        ? "Tu peux ajouter uniquement une personne déjà liée à ton compte."
+        ? "Tu peux ajouter uniquement tes amis. Une demande d’ami doit d’abord être acceptée."
         // Une troisième personne cassait le relais EN SILENCE : le fil
         // devenait un groupe, l'affiche restait épinglée pour trois, et la
         // nouvelle personne ne pouvait jamais franchir un maillon.

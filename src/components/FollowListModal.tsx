@@ -1,12 +1,19 @@
 "use client";
 
 /* ════════════════════════════════════════════════════════════════════
-   FollowListModal — liste des abonnés / abonnements d'un profil.
+   FollowListModal · les amis d'un profil.
 
    • `ownerId` : DE QUI on affiche la liste (le profil consulté).
-   • L'acteur (qui suit / se désabonne, et l'état des boutons) est
-     TOUJOURS l'utilisateur connecté (useAuth) — qu'on soit sur son propre
-     profil ou sur celui de quelqu'un d'autre.
+   • L'acteur (l'état des boutons, la demande) est TOUJOURS l'utilisateur
+     connecté (useAuth), qu'on soit sur son propre profil ou sur celui de
+     quelqu'un d'autre.
+
+   ⚠️ UNE DEMANDE N'EST PAS UNE AMITIÉ (Louis, 2026-10-21). La liste
+   montrait tous ceux que le profil suit, demandes en attente comprises,
+   et chaque ligne disait « Ami » dès que JE suivais la personne. Elle ne
+   montre plus que les amitiés acceptées, et chaque ligne dit où j'en suis
+   vraiment. « Ami » n'est plus un bouton : retirer un ami se fait depuis
+   son profil, avec une confirmation, jamais d'un toucher dans une liste.
    ════════════════════════════════════════════════════════════════════ */
 
 import { useState, useEffect } from "react";
@@ -15,6 +22,7 @@ import { Search, X, UserCheck, UserPlus } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
+import { accepterDemandeAmi, demanderAmi, type RelationAmi } from "@/lib/messagerie";
 
 type RealFollowUser = {
   id: string;
@@ -24,11 +32,9 @@ type RealFollowUser = {
 };
 
 export default function FollowListModal({
-  type,
   ownerId,
   onClose,
 }: {
-  type: "Abonnés" | "Abonnements";
   ownerId: string;
   onClose: () => void;
 }) {
@@ -36,25 +42,24 @@ export default function FollowListModal({
   const [query, setQuery] = useState("");
   const [list, setList] = useState<RealFollowUser[]>([]);
   const [loading, setLoading] = useState(true);
-  const [followingIds, setFollowingIds] = useState<Set<string>>(new Set());
+  /* Où J'en suis avec chaque personne de la liste. */
+  const [relations, setRelations] = useState<Map<string, RelationAmi>>(new Map());
+  const [enCours, setEnCours] = useState<string | null>(null);
 
   useEffect(() => {
     const supabase = createClient();
     setLoading(true);
 
     const fetchList = async () => {
-      // Récupérer les IDs des membres de la liste (abonnés OU abonnements d'ownerId)
-      const col = type === "Abonnés" ? "follower_id" : "following_id";
-      const filter = type === "Abonnés" ? "following_id" : "follower_id";
+      // Les amis d'ownerId : ceux qu'il ou elle suit ET qui le ou la suivent.
+      const [suit, suivi] = await Promise.all([
+        supabase.from("followers").select("following_id").eq("follower_id", ownerId),
+        supabase.from("followers").select("follower_id").eq("following_id", ownerId),
+      ]);
+      const leSuivent = new Set((suivi.data ?? []).map((r) => r.follower_id as string));
+      const ids = (suit.data ?? []).map((r) => r.following_id as string).filter((id) => leSuivent.has(id));
 
-      const { data: rows } = await supabase
-        .from("followers")
-        .select(col)
-        .eq(filter, ownerId);
-
-      if (!rows || rows.length === 0) { setList([]); setLoading(false); return; }
-
-      const ids = (rows as Record<string, string>[]).map((r) => r[col]);
+      if (ids.length === 0) { setList([]); setLoading(false); return; }
 
       const { data: profiles } = await supabase
         .from("profiles")
@@ -63,34 +68,38 @@ export default function FollowListModal({
 
       setList(profiles ?? []);
 
-      // État des boutons : qui l'UTILISATEUR CONNECTÉ suit déjà
+      // Mes propres liens, dans les deux sens, pour dire la vraie relation.
       if (user) {
-        const { data: myFollows } = await supabase
-          .from("followers")
-          .select("following_id")
-          .eq("follower_id", user.id);
-        setFollowingIds(new Set((myFollows ?? []).map((r) => r.following_id as string)));
+        const [mesSuivis, mesSuiveurs] = await Promise.all([
+          supabase.from("followers").select("following_id").eq("follower_id", user.id),
+          supabase.from("followers").select("follower_id").eq("following_id", user.id),
+        ]);
+        const jeSuis = new Set((mesSuivis.data ?? []).map((r) => r.following_id as string));
+        const meSuivent = new Set((mesSuiveurs.data ?? []).map((r) => r.follower_id as string));
+        setRelations(new Map(ids.map((id) => [id,
+          jeSuis.has(id) && meSuivent.has(id) ? "ami"
+          : jeSuis.has(id) ? "envoyee"
+          : meSuivent.has(id) ? "recue"
+          : "aucune"] as [string, RelationAmi])));
       }
       setLoading(false);
     };
 
     fetchList();
-  }, [type, ownerId, user]);
+  }, [ownerId, user]);
 
-  const handleFollow = async (profile: RealFollowUser) => {
-    if (!user) return;
-    const supabase = createClient();
-    const isF = followingIds.has(profile.id);
-    setFollowingIds((prev) => {
-      const next = new Set(prev);
-      isF ? next.delete(profile.id) : next.add(profile.id);
-      return next;
-    });
-    if (isF) {
-      await supabase.from("followers").delete().eq("follower_id", user.id).eq("following_id", profile.id);
-    } else {
-      await supabase.from("followers").insert({ follower_id: user.id, following_id: profile.id });
-      void supabase.auth.getSession().then(({ data: { session } }) => {
+  const agir = async (profile: RealFollowUser) => {
+    if (!user || enCours) return;
+    const actuelle = relations.get(profile.id) ?? "aucune";
+    if (actuelle !== "recue" && actuelle !== "aucune") return;
+    setEnCours(profile.id);
+    const r = actuelle === "recue" ? await accepterDemandeAmi(profile.id) : await demanderAmi(profile.id);
+    setEnCours(null);
+    if (!r.ok) return;
+    const devient: RelationAmi = actuelle === "recue" || ("statut" in r && r.statut === "ami") ? "ami" : "envoyee";
+    setRelations((prev) => new Map(prev).set(profile.id, devient));
+    if (devient === "envoyee") {
+      void createClient().auth.getSession().then(({ data: { session } }) => {
         if (!session) return;
         fetch("/api/notifications/follow", {
           method: "POST",
@@ -155,7 +164,7 @@ export default function FollowListModal({
             </div>
           ) : (
             filtered.map((u, i) => {
-              const isF = followingIds.has(u.id);
+              const relation = relations.get(u.id) ?? "aucune";
               const isOwn = u.id === user?.id;
               return (
                 <motion.div key={u.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }} className="flex items-center gap-3 px-4 py-2.5">
@@ -172,20 +181,24 @@ export default function FollowListModal({
                     <p className="text-[16px] font-semibold truncate" style={{ color: "var(--text-1)" }}>{u.pseudo}</p>
                     <p className="text-[11px] font-light truncate" style={{ color: "var(--text-3)" }}>@{u.pseudo}</p>
                   </Link>
-                  {!isOwn && user && (
-                    <motion.button
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.92 }}
-                      onClick={() => handleFollow(u)}
-                      className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-[13px] font-semibold cursor-pointer flex-shrink-0"
-                      style={isF
-                        ? { background: "rgba(0,0,0,0.05)", color: "var(--text-2)", border: "1px solid rgba(0,0,0,0.08)" }
-                        : { background: "linear-gradient(135deg,var(--violet-mid) 0%,var(--cream-mid) 100%)", color: "var(--text-1)", boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.7)" }
-                      }
+                  {!isOwn && user && (relation === "ami" || relation === "envoyee" ? (
+                    <span
+                      className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-[13px] font-semibold flex-shrink-0"
+                      style={{ background: "rgba(0,0,0,0.05)", color: "var(--text-2)", border: "1px solid rgba(0,0,0,0.08)" }}
                     >
-                      {isF ? <><UserCheck size={11} strokeWidth={2.5} />Ami</> : <><UserPlus size={11} strokeWidth={2.5} />Ajouter</>}
+                      <UserCheck size={11} strokeWidth={2.5} />{relation === "ami" ? "Ami" : "Envoyée"}
+                    </span>
+                  ) : (
+                    <motion.button
+                      whileTap={{ scale: 0.92 }}
+                      onClick={() => void agir(u)}
+                      disabled={enCours === u.id}
+                      className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-[13px] font-semibold cursor-pointer flex-shrink-0 text-white disabled:opacity-60"
+                      style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)" }}
+                    >
+                      {relation === "recue" ? <><UserCheck size={11} strokeWidth={2.5} />Accepter</> : <><UserPlus size={11} strokeWidth={2.5} />Ajouter</>}
                     </motion.button>
-                  )}
+                  ))}
                 </motion.div>
               );
             })
