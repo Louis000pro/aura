@@ -247,20 +247,25 @@ export default function ConversationListPane({
       className={`flex min-h-screen flex-col md:h-[100dvh] md:min-h-0 ${className}`}
       style={{ background: "rgb(var(--bg-rgb))" }}
     >
-      {/* ─── Barre du haut ─── */}
-      {/* Même cadre que la photo et la cloche des autres onglets (8 px sous
-          le haut, 12 px du bord, anneau de verre) : on passe d'un onglet à
-          l'autre sans que rien ne saute. */}
-      <div className="flex items-center gap-2.5 px-3 pb-3 pt-2">
-        {/* La photo de profil et la cloche ne vivent que sur l'accueil
-            (Louis, 2026-10-12). Il ne reste ici que les deux actions de
-            l'écran. */}
-        <span className="flex-1" />
+      {/* ─── En-tête : le titre et les deux actions sur UNE ligne ───
+          Louis, 2026-10-20 : la rangée de boutons posée au-dessus du titre
+          laissait un grand vide en haut. Les boutons descendent au niveau de
+          « Communauté », et le titre se pose à la même hauteur que celui
+          d'Entraînement (28 px sous la zone sûre). */}
+      <div className="flex items-center gap-2.5 px-4 pb-3 pt-7 md:pt-10">
+        <h1 className="min-w-0 flex-1 text-[34px] leading-none" style={{ color: "var(--text-1)", fontWeight: 800, fontVariationSettings: "var(--w-voix)" }}>
+          <em className="not-italic" style={{
+            background: "var(--degrade-titre)",
+            WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
+            fontStyle: "italic",
+            display: "inline-block", paddingRight: "0.14em",
+          }}>Communauté</em>
+        </h1>
 
         <button
           onClick={() => { setPseudoInvite(""); setVueAmis("ajouter"); }}
           aria-label="Ajouter un ami"
-          className="relative flex h-9 w-9 items-center justify-center rounded-full"
+          className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full"
           style={{ background: "rgba(var(--tint-violet-rgb), .52)", color: "var(--accent)" }}
         >
           <UserPlus className="h-4.5 w-4.5" />
@@ -277,23 +282,12 @@ export default function ConversationListPane({
         <button
           onClick={() => setSheet("choix")}
           aria-label="Nouvelle discussion"
-          className="flex h-9 w-9 items-center justify-center rounded-full text-white"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-white"
           style={{ background: "linear-gradient(135deg, #8B5CF6, #C13BC1)" }}
         >
           <Plus className="h-5 w-5" />
         </button>
       </div>
-
-      {/* Le titre passe SOUS la photo de profil, en gras comme Nutrition et
-          Entraînement (Louis, 2026-10-11 : à côté de la photo, « c'est moche »). */}
-      <h1 className="px-4 pb-3 text-[34px] leading-none" style={{ color: "var(--text-1)", fontWeight: 800, fontVariationSettings: "var(--w-voix)" }}>
-        <em className="not-italic" style={{
-          background: "var(--degrade-titre)",
-          WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
-          fontStyle: "italic",
-          display: "inline-block", paddingRight: "0.14em",
-        }}>Communauté</em>
-      </h1>
 
       <div role="tablist" className="mx-4 mb-3 flex gap-5 border-b" style={{ borderColor: "rgba(var(--text-3-rgb), .14)" }}>
         {(["fil", "messages"] as const).map((o) => (
