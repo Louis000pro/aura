@@ -43,7 +43,7 @@ export default function MouvementsRow({ onOuvrir }: {
           Les mouvements
         </h3>
         <span className="text-[11px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 flex-shrink-0"
-          style={{ background: "linear-gradient(135deg,var(--accent),var(--gold))", color: "#fff" }}>
+          style={{ background: "linear-gradient(135deg,#D19A1E,#8A5A06)", color: "#fff" }}>
           <Sparkles size={8} strokeWidth={2.6} />
           {EXERCISE_LIBRARY.length} animés
         </span>
