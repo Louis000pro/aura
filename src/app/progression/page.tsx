@@ -341,14 +341,18 @@ function WeekStrip({ week, dates, today, onOrganise, prevues }: {
                   )}
                 </>
               ) : (
-                <div className="absolute inset-0 flex items-center justify-center"
+                /* Piste A de « Ma semaine en clair » (Louis, 2026-10-20) : un
+                   jour libre porte sa date, plus une lune. */
+                <div className="absolute inset-0 flex justify-center"
                   style={{ background: "rgba(var(--accent-rgb),0.07)", border: "1px dashed rgba(var(--accent-rgb),0.3)", borderRadius: "var(--r-controle)" }}>
-                  <Moon size={13} strokeWidth={1.8} style={{ color: "var(--text-3)", opacity: 0.7 }} />
+                  <span className="vy-nombre text-[13px]" style={{ marginTop: 13, color: "var(--exp-encre)" }}>
+                    {Number(date.slice(8))}
+                  </span>
                 </div>
               )}
               <span className="absolute inset-x-0 bottom-[3px] text-center text-[11px] font-extrabold tracking-wide"
                 style={{
-                  color: isSeance || prevue ? "rgba(255,255,255,0.92)" : "var(--text-3)",
+                  color: isSeance || prevue ? "rgba(255,255,255,0.92)" : "var(--text-2)",
                   textShadow: isSeance || prevue ? "0 1px 4px rgba(0,0,0,0.7)" : "none",
                 }}>
                 {letter}
