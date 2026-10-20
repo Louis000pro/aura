@@ -15,7 +15,7 @@ import type { WorkoutCategory } from "@/lib/assistantActions";
 export type Family = "push" | "pull" | "legs" | "core" | "full" | "cardio";
 
 export const FAMILY: Record<Family, { label: string; base: string; glow: string; variants: string[] }> = {
-  push:   { label: "Poussée",   base: "#E8481F", glow: "#FF7A4D", variants: ["push-couche-v4", "push-militaire", "push-dips", "push-pompes", "push-halteres", "push-ecarte"] },
+  push:   { label: "Poussée",   base: "#E8481F", glow: "#FF7A4D", variants: ["push-couche-v5", "push-militaire", "push-dips", "push-pompes", "push-halteres", "push-ecarte"] },
   pull:   { label: "Tirage",    base: "#1E5FD0", glow: "#4C93FF", variants: ["pull-traction", "pull-rowing", "pull-curl", "pull-poulie", "pull-horizontal", "pull-marteau"] },
   legs:   { label: "Jambes",    base: "#0E9E56", glow: "#2FD98A", variants: ["legs-squat", "legs-fentes", "legs-souleve", "legs-goblet", "legs-presse", "legs-hipthrust"] },
   core:   { label: "Gainage",   base: "#0F8E86", glow: "#2BD4A0", variants: ["core-planche", "core-abdos", "core-lateral", "core-releve", "core-roue", "core-twist"] },
@@ -25,10 +25,10 @@ export const FAMILY: Record<Family, { label: string; base: string; glow: string;
 
 /** Le « cerveau » : muscle / mouvement nommé → image précise. Sinon repli famille. */
 const IMG_RULES: { re: RegExp; img: string; fam: Family }[] = [
-  { re: /pector|\bpec|couch|bench/,                                          img: "push-couche-v4",   fam: "push" },
+  { re: /pector|\bpec|couch|bench/,                                          img: "push-couche-v5",   fam: "push" },
   { re: /dips?/,                                                             img: "push-dips",     fam: "push" },
   { re: /épaule|epaule|deltoï|deltoi|militaire|overhead|shoulder/,           img: "push-militaire",fam: "push" },
-  { re: /\bpush\b|poussé|pousse/,                                            img: "push-couche-v4",   fam: "push" },
+  { re: /\bpush\b|poussé|pousse/,                                            img: "push-couche-v5",   fam: "push" },
   { re: /traction|pull[- ]?up|tirage vertical|dorsaux|grand dorsal|\blats?\b/, img: "pull-traction", fam: "pull" },
   { re: /rowing|\brow\b|tirage horizontal|rhombo|trapèze|trapeze/,           img: "pull-rowing",   fam: "pull" },
   { re: /biceps|\bcurl/,                                                     img: "pull-curl",     fam: "pull" },
