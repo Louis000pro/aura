@@ -19,7 +19,7 @@
    mobile-first de l'accueil est V7B.
    ════════════════════════════════════════════════════════════════════ */
 
-import { useEffect } from "react";
+import { useEffect, useSyncExternalStore } from "react";
 import { motion } from "framer-motion";
 import { Check, Moon, Play } from "lucide-react";
 import { AssistantSpark } from "@/components/AssistantMark";
@@ -27,7 +27,7 @@ import { resolveArt } from "@/lib/workoutArt";
 import { dayTitle, lieuLabel, type PlanningDay } from "@/lib/planning";
 import type { EtatJournee } from "@/lib/journee";
 import type { EtapeCycle } from "@/lib/programme";
-import { Photo, WIDGET, prechargerPhotoHeros, retenirPhotoHeros } from "./PhotoSeance";
+import { Photo, WIDGET, photoHerosRetenue, retenirPhotoHeros } from "./PhotoSeance";
 
 /* ════════════════════════════════════════════════════════════════════
    LA VALEUR MESURÉE PORTE LE VISAGE DU CHIFFRE.
@@ -65,6 +65,9 @@ function Fait({ texte }: { texte: string }) {
     <p className="-mt-2 mb-3 text-[13px] font-semibold" style={{ color: "#fff" }}>{texte}</p>
   );
 }
+
+/* La photo retenue ne change pas pendant qu'on regarde : rien à écouter. */
+const sansAbonnement = () => () => {};
 
 export default function TodayHero({
   state, day, etape, reserveLe, prevuLe = null, attendait = null, indisponible = false, onRetry, nbExos, nextLabel, doneStats, adaptationJusquau,
@@ -126,13 +129,25 @@ export default function TodayHero({
     : state === "etape" ? { img: resolveArt({ title: etape?.nom ?? "" }).img, pos: "center 24%" }
     : { img: resolveArt({ title: day ? `${day.title} ${day.type}` : "" }).img, pos: "center 24%" };
 
-  /* La photo part dès le squelette : on précharge la dernière montrée
-     sur cet appareil, puis on retient celle d'aujourd'hui. */
+  /* ⚠️ LA PHOTO N'ATTEND PAS LA JOURNÉE (Louis, 2026-10-20 : « l'image
+     met encore du temps à charger »). Le héros dépend d'une dizaine de
+     lectures en base enchaînées ; la photo, elle, change rarement d'un
+     jour à l'autre. Pendant le chargement on montre donc la dernière
+     photo vue sur cet appareil, SANS texte ni bouton (on n'affirme rien
+     tant qu'on ne sait pas), puis on retient celle d'aujourd'hui. Lue
+     dans un effet : le serveur ne connaît pas le localStorage. */
   const chargement = state === "loading";
-  useEffect(() => { if (chargement) prechargerPhotoHeros(); }, [chargement]);
+  const photoVue = useSyncExternalStore(sansAbonnement, photoHerosRetenue, () => null);
   useEffect(() => { if (!chargement) retenirPhotoHeros(viz.img); }, [chargement, viz.img]);
 
   /* Skeleton — même silhouette que la carte, aucune culpabilité d'attente */
+  if (state === "loading" && photoVue) {
+    return (
+      <Photo img={photoVue} prioritaire style={{ height: 400, borderRadius: "var(--r-affiche)", boxShadow: "var(--ombre-pose)" }}>
+        <div aria-hidden style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(10,8,20,0) 45%, rgba(10,8,20,0.55) 100%)" }} />
+      </Photo>
+    );
+  }
   if (state === "loading") {
     return (
       <div className="overflow-hidden relative" style={{ height: 380, borderRadius: "var(--r-affiche)", background: "rgba(var(--surface-rgb),0.7)", border: "1px solid rgba(var(--accent-rgb),0.12)" }}>
@@ -148,7 +163,7 @@ export default function TodayHero({
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }}
+      initial={photoVue ? false : { opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.45 }}
       className="overflow-hidden relative"
       style={{ minHeight: state === "seance" || state === "etape" ? 400 : 320, borderRadius: "var(--r-affiche)", boxShadow: "var(--ombre-pose)" }}

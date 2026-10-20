@@ -60,12 +60,10 @@ export function retenirPhotoHeros(img: string) {
   try { localStorage.setItem(CLE_DERNIERE, img); } catch { /* stockage bloqué */ }
 }
 
-export function prechargerPhotoHeros() {
+/** La dernière photo montrée sur cet appareil, ou `null`. */
+export function photoHerosRetenue(): string | null {
   try {
     const img = localStorage.getItem(CLE_DERNIERE);
-    if (!img || !/^[a-z0-9-]+$/i.test(img)) return;
-    const el = new Image();
-    el.fetchPriority = "high";
-    el.src = `/entrainement/${img}.webp`;
-  } catch { /* stockage bloqué */ }
+    return img && /^[a-z0-9-]+$/i.test(img) ? img : null;
+  } catch { return null; }
 }
