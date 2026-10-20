@@ -14,14 +14,14 @@
      2026-08-19 : dans un chat, c'est une personne qui parle, pas une
      marque. Sans Guide résolu, il retombe sur `AssistantAvatar`, donc
      l'app d'avant reste intacte tant que personne n'a choisi.
-   • `BusteGuide`      : le grand personnage de la feuille vide.
-   • `ReflexionGuide`  : le personnage à mi-taille, pendant l'attente.
+   • `BusteGuide`      : le grand personnage du questionnaire et de la visite.
+   • `EnteteGuide`     : le Guide qui se tient en haut de la conversation.
    • `CelebrationGuide`: le personnage de la fin de séance.
 
    ── QUATRE TAILLES, QUATRE FICHIERS, ZÉRO RECADRAGE CSS ────────────
    Chaque emplacement a SON fichier, taillé par `npm run portraits` :
    `<guide>-<état>-avatar-v1.webp` (256 carré), `<guide>-buste-v1.webp`
-   (512 x 640), `<guide>-think-reflexion-v1.webp` (320 x 400) et
+   (512 x 640), `<guide>-<état>-entete-v1.webp` (400 x 500) et
    `<guide>-encourage-celebration-v1.webp` (448 x 560). Un même
    fichier étiré puis recadré au CSS pour trois usages, c'est ce qui
    avait coupé la mèche de Nora dans le questionnaire : le CSS ne sait ni
@@ -29,7 +29,7 @@
    posées sur la tête MESURÉE, et le CSS n'a qu'à remplir sa boîte.
 
    ⚠️ NE JAMAIS METTRE UN PORTRAIT DANS UNE BOÎTE QUI N'A PAS SON RATIO.
-   Les avatars sont carrés, le buste, la réflexion et la célébration sont
+   Les avatars sont carrés, le buste, l'en-tête et la célébration sont
    en 4:5, comme leurs fichiers. Un autre ratio ferait rogner `cover`, et il rognerait
    d'abord l'air garanti au-dessus du crâne.
 
@@ -289,16 +289,30 @@ export function BusteGuide({
   );
 }
 
-/** Le personnage à mi-taille, pendant que le Guide travaille. C'est le SEUL
- *  cadrage où la pose se lit (la tête n'y occupe que 44 % de la hauteur, donc
- *  on voit les bras), et le seul moment de la conversation où un personnage
- *  plus grand apporte quelque chose : une attente de plusieurs secondes.
- *  Partout ailleurs, l'avatar compact suffit. */
-export function ReflexionGuide({ guide, hauteur }: { guide: GuideRef; hauteur: number | string }) {
-  // Sans Guide, rien : la bulle d'attente garde son seul rond qui tourne,
-  // comme avant. Mieux vaut pas de personnage qu'une place vide.
-  if (!guide) return null;
-  return <Portrait guide={guide} fichier="think-reflexion" hauteur={hauteur} bande={16} lumiere={false} />;
+/** ── LE GUIDE EN HAUT DE LA CONVERSATION ─────────────────────────────
+ *  La version 3 de la conversation (maquette « La conversation du Guide »,
+ *  validée par Louis le 2026-10-20) : le Guide se tient en haut à gauche,
+ *  assez grand pour qu'on voie son geste, à côté de son nom et de ce qu'il
+ *  fait en ce moment. C'est lui qui porte l'état vivant de la conversation,
+ *  donc les bulles n'ont plus de pastille ronde.
+ *
+ *  Son fichier est le cadrage `entete` : la tête à 40 % de la hauteur, et
+ *  CENTRÉ SUR LE CRÂNE. Les cinq poses se relaient au même endroit en
+ *  fondu ; centré sur la bande de la tête, le poing levé d'`encourage`
+ *  ferait glisser tout le corps de côté à chaque changement d'état.
+ *
+ *  Pas de lumière derrière lui : l'en-tête porte déjà le fond de l'aube. */
+export function EnteteGuide({ guide, etat, hauteur }: { guide: GuideRef; etat: EtatGuide; hauteur: number }) {
+  // Sans Guide résolu, la marque reprend la place, à une taille qui tient
+  // dans le même coin.
+  if (!guide) {
+    return (
+      <span className="flex items-center justify-center" style={{ width: Math.round(hauteur * 0.8), height: hauteur }}>
+        <AssistantAvatar size={Math.round(hauteur * 0.42)} />
+      </span>
+    );
+  }
+  return <Portrait guide={guide} fichier={`${etat}-entete`} hauteur={hauteur} bande={30} lumiere={false} />;
 }
 
 /** Le personnage de la FIN DE SÉANCE, et de nulle part ailleurs. C'est le
@@ -317,18 +331,19 @@ export function CelebrationGuide({ guide, hauteur }: { guide: GuideRef; hauteur:
 }
 
 /** ── LE PRÉCHARGEMENT ─────────────────────────────────────────────────
- *  Les cinq visages se relaient dans la même pastille, au fil de la
- *  conversation. Sans préchargement, le premier passage à `think` déclenche
- *  un téléchargement PENDANT le fondu : la pastille se vide, puis le visage
- *  apparaît d'un coup. Les six fichiers pèsent ensemble une centaine de Ko,
- *  ils sont statiques et mis en cache par le navigateur : on les demande une
- *  fois, à l'ouverture de la feuille. */
-export function prechargerGuide(guide: GuideRef) {
+ *  Les cinq visages se relaient au même endroit, au fil de la conversation
+ *  ou de la visite. Sans préchargement, le premier passage à `think`
+ *  déclenche un téléchargement PENDANT le fondu : la place se vide, puis le
+ *  visage apparaît d'un coup. Les fichiers sont statiques et mis en cache
+ *  par le navigateur : on les demande une fois, à l'ouverture.
+ *
+ *  `cadrage` dit lesquels : les pastilles (visite guidée) ou le Guide en
+ *  haut de la conversation. On ne télécharge que ce que l'écran affiche. */
+export function prechargerGuide(guide: GuideRef, cadrage: "avatar" | "entete" = "avatar") {
   if (!guide || typeof window === "undefined") return;
   const etats: EtatGuide[] = ["welcome", "listen", "think", "explain", "encourage"];
-  for (const e of etats) new Image().src = `/guides/${guide}-${e}-avatar-v1.webp`;
-  new Image().src = `/guides/${guide}-think-reflexion-v1.webp`;
-  new Image().src = `/guides/${guide}-buste-v1.webp`;
+  for (const e of etats) new Image().src = `/guides/${guide}-${e}-${cadrage}-v1.webp`;
+  if (cadrage === "avatar") new Image().src = `/guides/${guide}-buste-v1.webp`;
 }
 
 /** Les poses d'un parcours, demandées d'avance.

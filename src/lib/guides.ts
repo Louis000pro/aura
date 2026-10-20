@@ -484,17 +484,20 @@ const REPLIQUES = {
   },
 
   /* ── La feuille vide ──
-     Première phrase de la conversation : c'est là que la différence
-     Nora / Sasha s'entendra le plus tôt. */
+     Ses deux premières bulles. ⚠️ Plus d'étincelle collée au salut : ✦ est
+     la marque de Vaiiya, et dans la bouche du Guide elle disait « IA » avant
+     de dire son prénom (diagnostic du 2026-10-19). Et plus de « Je
+     t'écoute » : c'est désormais ce que dit l'en-tête, sous son nom, et
+     c'était la phrase d'accueil de tous les assistants. */
   "accueil.salut": {
-    commun: (c: ContexteVoix) => `Salut${c.pseudo ? `, ${c.pseudo}` : ""} ✦`,
-    nora:   (c: ContexteVoix) => `Bonjour${c.pseudo ? ` ${c.pseudo}` : ""} 🙂`,
-    sasha:  (c: ContexteVoix) => `Salut${c.pseudo ? ` ${c.pseudo}` : ""} 👋`,
+    commun: (c: ContexteVoix) => `Salut${c.pseudo ? `, ${c.pseudo}` : ""}.`,
+    nora:   (c: ContexteVoix) => `Bonjour${c.pseudo ? ` ${c.pseudo}` : ""}.`,
+    sasha:  (c: ContexteVoix) => `Salut${c.pseudo ? ` ${c.pseudo}` : ""}.`,
   },
   "accueil.invite": {
-    commun: "Je t’écoute.",
-    nora:   "Je t’écoute.",
-    sasha:  "Vas-y, je t’écoute.",
+    commun: "Dis-moi où tu en es aujourd’hui.",
+    nora:   "Dis-moi où tu en es aujourd’hui.",
+    sasha:  "Dis-moi où tu en es aujourd’hui.",
   },
 
   /* ════════════════════════════════════════════════════════════════

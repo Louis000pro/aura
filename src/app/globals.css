@@ -82,6 +82,14 @@
      « les écritures en vert, mets-les en bleu et violet »).
      #3A5BD9 = 5,9:1 sur blanc · #A3B8FF sur la surface sombre. */
   --bleu-encre: #3A5BD9;
+  /* Tes messages dans la conversation avec le Guide (version 3, Louis,
+     2026-10-20) : une bulle d'ENCRE, à droite. ⚠️ Plus de dégradé violet :
+     le violet veut dire « action » dans le système D, et le dégradé lavande
+     était le marqueur le plus visible du « fait par IA ». Les bulles du
+     Guide, elles, prennent le voile violet (`--tint-violet-rgb`).
+     Mesuré : blanc sur #251E47 = 15:1 · blanc sur #5B47B8 (sombre) = 6,9:1. */
+  --bulle-moi: #251E47;
+  --bulle-moi-texte: #FFFFFF;
   /* Surfaces translucides (base RGB) */
   --surface-rgb:      255, 255, 255;   /* verre blanc            */
   --tint-violet-rgb:  240, 235, 255;   /* #F0EBFF — voile violet */
@@ -195,6 +203,10 @@
   --degrade-titre: linear-gradient(135deg, #FFD34E 0%, #F5B120 100%);
   --exp-encre: #C3AEFF;     /* 9,4:1 sur la surface sombre */
   --exp-trait: rgba(195, 174, 255, 0.42);
+  /* Une encre presque noire ne se verrait pas sur la surface sombre : la
+     bulle passe au violet profond, le texte reste blanc. */
+  --bulle-moi: #5B47B8;
+  --bulle-moi-texte: #FFFFFF;
   --feu-encre: #F5B120;     /* 8,4:1 sur la surface sombre */
   --teal-encre: #3FE0B0;    /* 10,8:1 sur la surface sombre */
   --poids-encre: #A3A6FF;   /* 8,1:1 sur la surface sombre */

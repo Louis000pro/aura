@@ -10,12 +10,13 @@
    ════════════════════════════════════════════════════════════════════ */
 
 import { Fragment, useEffect, useRef, useState } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { motion, AnimatePresence } from "framer-motion";
-import { Send, X, Mic, Square, Check, Utensils } from "lucide-react";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
+import { Send, ChevronDown, Mic, Square, Check, Utensils } from "lucide-react";
 import { useAssistant } from "@/context/AssistantContext";
 import type { QuestionCliquable } from "@/lib/assistantTools";
-import type { JourDispo } from "@/context/AssistantContext";
+import type { AttenteAction, JourDispo } from "@/context/AssistantContext";
 import CarteSeance from "@/components/assistant/CarteSeance";
 import { useWorkoutLaunch } from "@/context/WorkoutLaunchContext";
 import { useVoiceCapture } from "@/hooks/useVoiceCapture";
@@ -23,9 +24,10 @@ import { CATEGORY_LABEL } from "@/lib/assistantActions";
 import { VENTE_OUVERTE } from "@/lib/plans";
 import { useRouter } from "next/navigation";
 import { heroImageForSeance } from "@/lib/workoutArt";
-import { BusteGuide, ReflexionGuide, VisageGuide, prechargerGuide } from "@/components/AssistantMark";
+import { EnteteGuide, prechargerGuide } from "@/components/AssistantMark";
 import { useGuideActif } from "@/context/GuideContext";
 import { voix, nomGuide, roleGuide } from "@/lib/guides";
+import type { EtatGuide } from "@/lib/guides";
 
 /** Libellé lisible d'un moment de repas (valeurs canoniques du journal).
  *  ⚠️ `gouter` se dit « Goûter », jamais « Collation » (choix de Louis,
@@ -134,46 +136,114 @@ function AssistantContent({ text }: { text: string }) {
   );
 }
 
-/* ── Les réponses cliquables ──
-   Posées SOUS la bulle du coach, jamais dedans : une carte, chez nous, annonce
-   une écriture à valider. Une question ne demande rien à valider, elle ne doit
-   donc pas en porter le costume.
+/* ── LES BULLES ──
+   Version 3 de la conversation (maquette « La conversation du Guide »,
+   validée par Louis le 2026-10-20 : « c'est plus clair »). La version
+   d'avant ressemblait à tous les chatbots, et l'essai en grandes phrases
+   d'affiche avait l'inverse comme défaut : « on ne sait plus trop qu'on
+   parle à quelqu'un ». Le repère, c'est l'échange gauche / droite d'une
+   messagerie : les messages du Guide à gauche, sur son voile violet, le
+   coin tourné vers lui (il se tient en haut à gauche) ; les tiens à droite,
+   en encre.
 
-   Une fois répondue, la puce choisie reste seule, en teal (la couleur du
-   « fait ✓ » dans tout le site) et n'est plus cliquable. Une question laissée
-   sans réponse s'efface dès qu'un message arrive après elle : on ne répond
-   qu'une fois, et jamais à une question sortie de son contexte. */
+   ⚠️ Plus de pastille ronde devant chaque bulle : le Guide est déjà là, en
+   grand, dans l'en-tête, et c'est lui qui porte l'état vivant. Et plus de
+   dégradé violet sur tes messages : le violet veut dire « action ». */
+const BULLE = "px-4 py-2.5 text-[16px] leading-relaxed";
+const BULLE_GUIDE: CSSProperties = {
+  background: "rgb(var(--tint-violet-rgb))",
+  color: "var(--text-0)",
+  borderRadius: "6px 20px 20px 20px",
+};
+const BULLE_MOI: CSSProperties = {
+  background: "var(--bulle-moi)",
+  color: "var(--bulle-moi-texte)",
+  borderRadius: "20px 20px 6px 20px",
+};
+
+/* Ce que tu peux lui répondre, déjà écrit, de TON côté. En pointillés :
+   ce n'est pas encore envoyé, et ça se voit avant de toucher. Une fois
+   choisi, ça devient ta bulle d'encre. */
+function Brouillon({ children, onClick, rang = 0 }: { children: ReactNode; onClick: () => void; rang?: number }) {
+  return (
+    <motion.button type="button"
+      initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.04 + rang * 0.05 }}
+      whileTap={{ scale: 0.97 }}
+      onClick={onClick}
+      className="max-w-[84%] px-4 py-2.5 text-[16px] font-semibold leading-snug text-right cursor-pointer"
+      style={{
+        minHeight: 44,
+        borderRadius: "20px 20px 6px 20px",
+        border: "1.5px dashed rgba(var(--accent-rgb),0.6)",
+        background: "rgba(var(--surface-rgb),0.9)",
+        color: "var(--exp-encre)",
+      }}>
+      {children}
+    </motion.button>
+  );
+}
+
+/* ── Les réponses cliquables ──
+   Elles attendent sous la question, de ton côté, en brouillons. Une carte,
+   chez nous, annonce une écriture à valider ; une question ne demande rien
+   à valider, elle n'en porte donc pas le costume.
+
+   Une fois répondue, la réponse choisie DEVIENT ta bulle : c'est la seule
+   trace (le message envoyé au coach reste masqué), donc rien ne s'écrit
+   deux fois. Une question laissée sans réponse s'efface dès qu'un message
+   arrive après elle : on ne répond qu'une fois, et jamais hors contexte. */
 function QuestionChips({ q, actif, onChoisir }: {
   q: QuestionCliquable;
   actif: boolean;
   onChoisir: (choix: string) => void;
 }) {
-  const TEAL = "#2BD4A0";
   if (q.repondu) {
     return (
-      <div className="flex flex-wrap gap-1.5 pl-9">
-        <span className="px-3 py-1.5 rounded-full text-[13px] font-semibold flex items-center gap-1.5"
-          style={{ background: "rgba(43,212,160,0.12)", color: TEAL, border: `1px solid rgba(43,212,160,0.45)` }}>
-          <Check size={12} strokeWidth={3} /> {q.repondu}
-        </span>
+      <div className="flex justify-end">
+        <p className={BULLE} style={{ ...BULLE_MOI, maxWidth: "84%", wordBreak: "break-word" }}>{q.repondu}</p>
       </div>
     );
   }
   if (!actif) return null; // question dépassée : on ne la laisse pas cliquable
   return (
-    <div className="flex flex-wrap gap-1.5 pl-9">
+    <div className="flex flex-col items-end gap-2">
       {q.choix.map((c, i) => (
-        <motion.button key={c} type="button"
-          initial={{ opacity: 0, scale: 0.94 }} animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.05 + i * 0.05 }}
-          whileTap={{ scale: 0.95 }}
-          onClick={() => onChoisir(c)}
-          className="px-3.5 py-2 rounded-full text-[13px] font-medium cursor-pointer"
-          style={{ background: "rgba(var(--accent-rgb),0.10)", color: "var(--text-1)", border: "1px solid rgba(var(--accent-rgb),0.26)" }}>
-          {c}
-        </motion.button>
+        <Brouillon key={c} rang={i} onClick={() => onChoisir(c)}>{c}</Brouillon>
       ))}
     </div>
+  );
+}
+
+/* Ce que fait le Guide, en trois mots sous son nom, comme dans une
+   messagerie. ⚠️ C'est un LIBELLÉ D'INTERFACE, pas une parole du Guide : il
+   décrit son état, il ne parle pas, donc il vit ici et pas dans guides.ts.
+   Il se lit sur les mêmes signaux que son visage (`etatGuide`, l'action en
+   cours), jamais dans le texte. Aucun accord de genre : les mêmes mots
+   valent pour Nora et pour Sasha. */
+function statutGuide(etat: EtatGuide, attente: AttenteAction | null): string {
+  if (attente === "seance") return "prépare ta séance…";
+  if (attente === "recette") return "écrit ta recette…";
+  if (attente === "repas") return "estime ton repas…";
+  if (etat === "think") return "t’écrit…";
+  if (etat === "encourage") return "c’est fait";
+  return "t’écoute";
+}
+
+/* Le point de présence : teal, la couleur de ce qui va bien (système D). Il
+   bat doucement pour dire « je suis là », et ne bouge pas du tout quand on a
+   demandé moins de mouvement. */
+function PointPresence() {
+  const reduire = useReducedMotion();
+  return (
+    <span aria-hidden className="relative flex-shrink-0" style={{ width: 9, height: 9 }}>
+      {!reduire && (
+        <motion.span className="absolute inset-0 rounded-full" style={{ background: "#2BD4A0" }}
+          animate={{ scale: [1, 2.4], opacity: [0.5, 0] }}
+          transition={{ duration: 2.2, repeat: Infinity, ease: "easeOut" }} />
+      )}
+      <span className="absolute inset-0 rounded-full" style={{ background: "#2BD4A0" }} />
+    </span>
   );
 }
 
@@ -314,11 +384,16 @@ export default function AssistantSheet() {
 
   useEffect(() => { setMounted(true); }, []);
 
-  /* Les cinq visages se relaient dans la même pastille. On les demande à
-     l'ouverture de la feuille : sans ça, le premier passage à « think »
-     téléchargerait son fichier PENDANT le fondu, et la pastille se
-     viderait le temps de l'aller-retour. */
-  useEffect(() => { if (isOpen) prechargerGuide(guide); }, [isOpen, guide]);
+  /* Les cinq poses se relaient au même endroit, dans l'en-tête. On les
+     demande à l'ouverture de la feuille : sans ça, le premier passage à
+     « think » téléchargerait son fichier PENDANT le fondu, et la place du
+     Guide se viderait le temps de l'aller-retour. */
+  useEffect(() => { if (isOpen) prechargerGuide(guide, "entete"); }, [isOpen, guide]);
+
+  /* Une carte épinglée en bas prend de la hauteur : l'en-tête se resserre
+     alors, sinon sur un petit téléphone il ne resterait presque rien de la
+     conversation entre le Guide et la carte. */
+  const compact = !!(pendingSeance || pendingPlan || pendingRecipe || pendingMeal);
 
   // La saisie grandit VERTICALEMENT avec le texte (on voit tout ce qu'on écrit,
   // on peut se relire et se corriger — plus de ligne unique qui défile à l'horizontale).
@@ -413,124 +488,124 @@ export default function AssistantSheet() {
               boxShadow: "0 -12px 48px rgba(0,0,0,0.28)",
             }}
           >
-            {/* Poignée + header */}
-            <div className="relative flex-shrink-0">
-              <div className="flex justify-center pt-2.5 pb-1">
-                <div className="w-10 h-1 rounded-full" style={{ background: "rgba(var(--accent-rgb),0.35)" }} />
-              </div>
-              <div className="flex items-center gap-3 px-4 pb-3 pt-1"
-                style={{ borderBottom: "1px solid rgba(var(--accent-rgb),0.12)" }}>
-                {/* Le visage de l'en-tête est le seul qui CHANGE en place :
-                    il porte l'état vivant de la conversation. D'où le fondu
-                    croisé, court : un visage qui claque d'une image à
-                    l'autre se remarque plus que ce qu'il raconte. */}
-                <span className="relative flex-shrink-0" style={{ width: 36, height: 36 }}>
+            {/* ── L'EN-TÊTE : LE GUIDE, SON NOM, CE QU'IL FAIT ──
+                Version 3 : on doit voir d'un coup d'œil qu'on parle à
+                quelqu'un. Le Guide se tient en haut à gauche, assez grand
+                pour qu'on voie son geste, et la ligne sous son nom dit ce
+                qu'il fait en ce moment (« t'écoute », « prépare ta
+                séance… »), comme une messagerie. Son visage est le seul qui
+                CHANGE en place, d'où le fondu croisé, court : une pose qui
+                claque d'une image à l'autre se remarque plus que ce qu'elle
+                raconte.
+
+                Le fond est l'aube de l'app (`--fond-verre`), opaque : rien
+                ne transparaît dessous, la règle du 2026-10-11 tient. Il se
+                fond dans la surface en bas, pour que la conversation commence
+                sans trait. */}
+            <div className="relative flex-shrink-0 overflow-hidden"
+              style={{ height: compact ? 96 : 176, background: "var(--fond-verre)", transition: "height .28s cubic-bezier(.22,1,.36,1)" }}>
+              <div aria-hidden className="absolute inset-x-0 bottom-0 pointer-events-none"
+                style={{ height: 56, background: "linear-gradient(to bottom, rgba(var(--surface-rgb),0), rgb(var(--surface-rgb)))" }} />
+              <div className="absolute"
+                style={{ left: -2, top: 8, transform: `scale(${compact ? 0.5 : 1})`, transformOrigin: "top left", transition: "transform .28s cubic-bezier(.22,1,.36,1)" }}>
+                <span className="relative block" style={{ width: 136, height: 170 }}>
                   <AnimatePresence initial={false}>
                     <motion.span key={etatGuide} className="absolute inset-0"
                       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                       transition={{ duration: 0.22 }}>
-                      <VisageGuide guide={guide} etat={etatGuide} size={36} />
+                      <EnteteGuide guide={guide} etat={etatGuide} hauteur={170} />
                     </motion.span>
                   </AnimatePresence>
                 </span>
-                <div className="flex-1 min-w-0">
-                  {/* Un seul mot pour désigner Nora et Sasha : « Guide ».
-                      L'en-tête disait « Ton assistant », les cartes disaient
-                      « le coach » et le produit dit ✦ : trois noms pour un
-                      seul interlocuteur. */}
-                  <p className="text-[16px] font-semibold leading-tight truncate" style={{ color: "var(--text-0)" }}>{nomGuide(guide)}</p>
-                  <p className="text-[11px] font-medium truncate" style={{ color: "var(--exp-encre)" }}>{roleGuide(guide)}</p>
-                </div>
-                <button onClick={close} aria-label="Fermer"
-                  className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer flex-shrink-0"
-                  style={{ background: "rgba(var(--accent-rgb),0.10)" }}>
-                  <X size={16} strokeWidth={2} style={{ color: "var(--text-2)" }} />
-                </button>
               </div>
+              <div className="absolute min-w-0"
+                style={{ left: compact ? 80 : 142, right: 64, top: compact ? 20 : 56, transition: "left .28s cubic-bezier(.22,1,.36,1), top .28s cubic-bezier(.22,1,.36,1)" }}>
+                {/* Un seul mot pour désigner Nora et Sasha : « Guide ».
+                    L'en-tête disait « Ton assistant », les cartes disaient
+                    « le coach » et le produit dit ✦ : trois noms pour un
+                    seul interlocuteur. */}
+                <p className={`${compact ? "text-[20px]" : "text-[26px]"} truncate`}
+                  style={{ lineHeight: 1.05, fontWeight: 800, fontVariationSettings: "var(--w-voix)", letterSpacing: "-0.02em", color: "var(--text-0)" }}>
+                  {nomGuide(guide)}
+                </p>
+                <p role="status" aria-live="polite" className="flex items-center gap-2 mt-1.5 text-[13px] font-semibold" style={{ color: "var(--text-1)" }}>
+                  <PointPresence />
+                  <span className="truncate">{statutGuide(etatGuide, actionLoading)}</span>
+                </p>
+                {/* « IA » en toutes lettres, toujours visible (AI Act, art. 50). */}
+                <p className="mt-1 text-[11px] font-medium truncate" style={{ color: "var(--text-body)" }}>{roleGuide(guide)}</p>
+              </div>
+              <button onClick={close} aria-label="Fermer la conversation"
+                className="absolute flex items-center justify-center cursor-pointer"
+                style={{ right: 12, top: 12, width: 44, height: 44, borderRadius: 999, background: "rgba(var(--surface-rgb),0.72)", border: "1px solid rgba(var(--accent-rgb),0.16)" }}>
+                <ChevronDown size={20} strokeWidth={2} style={{ color: "var(--text-1)" }} />
+              </button>
             </div>
 
             {/* Messages */}
             <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-3 min-h-0"
               style={{ scrollbarWidth: "none" }}>
               {messages.length === 0 && (
-                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-                  className="flex flex-col items-center justify-center gap-5 flex-1 text-center px-4">
-                  {/* ⚠️ LE GRAND PERSONNAGE NE VIT QU'ICI. Avant le premier
-                      message, la seule chose à dire est « voilà qui te
-                      parle », et une étincelle de 80 px ne le disait pas.
-                      Dès que la conversation commence, il disparaît : dans
-                      le fil, ce sont les avatars compacts, sinon le chat
-                      devient une galerie d'illustrations.
-
-                      Pas de flottement perpétuel : le personnage ne lévite
-                      pas, il arrive. La hauteur respire avec l'écran, parce
-                      que la feuille fait 88 % de la hauteur du téléphone et
-                      qu'en dessous il y a encore le salut, la phrase et
-                      quatre suggestions. */}
-                  <motion.div
-                    initial={{ opacity: 0, y: 8, scale: 0.97 }} animate={{ opacity: 1, y: 0, scale: 1 }}
-                    transition={{ duration: 0.34, ease: [0.22, 0.61, 0.36, 1] }}
-                    className="flex items-center justify-center">
-                    <BusteGuide guide={guide} hauteur="clamp(132px, 26vh, 216px)" />
-                  </motion.div>
-                  <div>
-                    <p className="text-[16px] font-semibold mb-1" style={{ color: "var(--text-0)" }}>
-                      {voix(guide, "accueil.salut", { pseudo: pseudo ?? "" })}
-                    </p>
-                    <p className="text-[13px] font-light leading-relaxed" style={{ color: "var(--text-soft)" }}>
-                      {voix(guide, "accueil.invite")}
-                    </p>
-                  </div>
-                  <div className="w-full self-stretch flex flex-col">
-                    {SUGGESTIONS.map((s, i) => (
-                      <motion.button key={s}
-                        initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.08 + i * 0.06 }}
-                        whileTap={{ scale: 0.99 }}
-                        onClick={() => sendMessage(s)}
-                        className="vy-filet w-full text-left py-3 px-1 text-[16px] font-normal cursor-pointer bg-transparent border-none"
-                        style={{ color: "var(--text-1)" }}>
-                        {s}
-                      </motion.button>
-                    ))}
-                  </div>
+                <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+                  className="flex flex-col flex-1">
                   {/* Ce que la personne doit savoir avant de parler : à qui
                       (AI Act, art. 50) et ce que ça vaut (pas un avis
-                      médical). Discret, mais sur l'écran, pas dans un lien. */}
-                  <p className="vy-label" style={{ color: "var(--text-3)" }}>
+                      médical). EN HAUT : sur la capture de Louis du
+                      2026-10-19, cette ligne était sous le pli, donc
+                      personne ne la voyait. */}
+                  <p className="text-[11px] text-center mb-3" style={{ color: "var(--text-body)" }}>
                     Réponses générées par une IA. Conseils généraux, pas un avis médical.
                   </p>
+                  {/* Le Guide parle en premier, dans ses bulles : le grand
+                      personnage centré sur une page vide est parti, il se
+                      tient désormais dans l'en-tête. */}
+                  <div className="flex flex-col gap-1">
+                    <div className="flex justify-start">
+                      <p className={BULLE} style={{ ...BULLE_GUIDE, maxWidth: "84%" }}>
+                        {voix(guide, "accueil.salut", { pseudo: pseudo ?? "" })}
+                      </p>
+                    </div>
+                    <div className="flex justify-start">
+                      <p className={BULLE} style={{ ...BULLE_GUIDE, maxWidth: "84%" }}>
+                        {voix(guide, "accueil.invite")}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex-1 min-h-6" />
+                  {/* Ce que quelqu'un DIT en ouvrant, déjà écrit, de son côté.
+                      Elles partent telles quelles au coach. */}
+                  <div className="flex flex-col items-end gap-2">
+                    {SUGGESTIONS.map((s, i) => (
+                      <Brouillon key={s} rang={i} onClick={() => sendMessage(s)}>{s}</Brouillon>
+                    ))}
+                  </div>
                 </motion.div>
               )}
 
               <AnimatePresence initial={false}>
-                {visibles.map((msg, i) => (
+                {visibles.map((msg, i) => {
+                  /* Deux messages de suite du même côté se serrent, comme
+                     dans une messagerie : c'est une même prise de parole. */
+                  const precedent = visibles[i - 1];
+                  const suite = !!precedent && precedent.role === msg.role && !precedent.question;
+                  return (
                   <Fragment key={msg.id}>
                   <motion.div
-                    initial={{ opacity: 0, y: 8, scale: 0.97 }} animate={{ opacity: 1, y: 0, scale: 1 }}
-                    transition={{ duration: 0.26, ease: [0.25, 0.46, 0.45, 0.94] }}
-                    className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"} items-end gap-2`}>
-                    {msg.role === "assistant" && (
-                      /* Le visage de CETTE bulle : le ton écrit à sa création,
-                         et « think » tant qu'elle s'écrit encore. Il ne bouge
-                         plus une fois la bulle finie, donc le fil relu montre
-                         bien ce que le Guide faisait à chaque tour. */
-                      <VisageGuide guide={guide} size={28} className="mb-0.5"
-                        etat={msg.streaming ? "think" : (msg.ton ?? "explain")} />
-                    )}
-                    <div className="px-4 py-2.5 rounded-3xl text-[16px] font-light leading-relaxed"
+                    initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.24, ease: [0.25, 0.46, 0.45, 0.94] }}
+                    className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+                    style={suite ? { marginTop: -8 } : undefined}>
+                    <div className={BULLE}
                       style={{
-                        maxWidth: "80%", wordBreak: "break-word", whiteSpace: "pre-wrap",
-                        ...(msg.role === "user"
-                          ? { background: "linear-gradient(135deg, var(--accent), var(--violet-mid))", color: "#fff", borderBottomRightRadius: 8 }
-                          : { background: "rgba(var(--tint-violet-rgb),0.6)", color: "var(--text-1)", borderBottomLeftRadius: 8, border: "1px solid rgba(var(--accent-rgb),0.10)" }),
+                        maxWidth: "84%", wordBreak: "break-word", whiteSpace: "pre-wrap",
+                        ...(msg.role === "user" ? BULLE_MOI : BULLE_GUIDE),
                       }}>
                       {msg.role === "assistant" ? <AssistantContent text={msg.content} /> : msg.content}
                       {msg.streaming && msg.role === "assistant" && msg.content === "" && (
-                        <span className="flex items-center gap-1 py-0.5">
+                        <span className="flex items-center gap-1 py-1.5" aria-label={`${nomGuide(guide)} écrit`}>
                           {[0, 1, 2].map((i) => (
-                            <motion.span key={i} className="block w-1.5 h-1.5 rounded-full" style={{ background: "var(--text-3)" }}
-                              animate={{ y: [0, -4, 0], opacity: [0.4, 1, 0.4] }}
+                            <motion.span key={i} className="block w-1.5 h-1.5 rounded-full" style={{ background: "var(--exp-encre)" }}
+                              animate={{ y: [0, -4, 0], opacity: [0.35, 1, 0.35] }}
                               transition={{ duration: 0.9, repeat: Infinity, delay: i * 0.15 }} />
                           ))}
                         </span>
@@ -549,7 +624,8 @@ export default function AssistantSheet() {
                     />
                   )}
                   </Fragment>
-                ))}
+                  );
+                })}
               </AnimatePresence>
             </div>
 
@@ -571,32 +647,26 @@ export default function AssistantSheet() {
 
               {/* Génération en cours */}
               {actionLoading && (
-                /* ── LE SEUL AUTRE MOMENT OÙ LE GUIDE EST GRAND ──
-                   Une génération dure plusieurs secondes, et c'est la seule
-                   attente de la feuille qui se compte comme ça. Le portrait
-                   de réflexion y gagne sa place : c'est le seul cadrage où
-                   la pose se lit (on voit les bras), et le seul instant où
-                   un personnage plus grand dit quelque chose de vrai. Il
-                   part avec la carte qu'il annonçait.
+                /* ── IL ÉCRIT ──
+                   Trois points dans sa bulle, comme quelqu'un qui tape. Ce
+                   qu'il fait vraiment est dit en haut, sous son nom
+                   (« prépare ta séance… »), là où son visage passe en pose de
+                   réflexion : c'est l'en-tête qui le montre grand, plus un
+                   second portrait posé dans le fil.
 
-                   Il est POSÉ À CÔTÉ de la bulle, pas dedans : un
-                   personnage enfermé dans une pastille redeviendrait une
-                   vignette, ce que la direction du Guide refuse. */
-                <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
-                  className="self-start max-w-[92%] flex items-end gap-1.5">
-                  <ReflexionGuide guide={guide} hauteur={92} />
-                  <div className="flex items-center gap-2.5 px-4 py-3 rounded-3xl mb-1.5"
-                    style={{ background: "rgba(var(--tint-violet-rgb),0.6)", border: "1px solid rgba(var(--accent-rgb),0.12)" }}>
-                    <motion.span className="w-4 h-4 rounded-full border-2" style={{ borderColor: "var(--violet-mid)", borderTopColor: "var(--accent)" }}
-                      animate={{ rotate: 360 }} transition={{ duration: 0.9, repeat: Infinity, ease: "linear" }} />
-                    {/* La bulle nomme ce qu'elle attend. Elle disait « une
-                        séance » aux trois actions qui font patienter, donc
-                        elle en promettait une à qui venait de raconter son
-                        déjeuner. */}
-                    <span className="text-[13px] font-light" style={{ color: "var(--text-1)" }}>
-                      {voix(guide, `attente.${actionLoading}`)}
-                    </span>
-                  </div>
+                   La phrase d'attente du Guide reste lue par un lecteur
+                   d'écran. Elle nomme ce qu'elle attend : elle disait « une
+                   séance » aux trois actions qui font patienter, donc elle en
+                   promettait une à qui venait de raconter son déjeuner. */
+                <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="self-start">
+                  <p role="status" aria-label={voix(guide, `attente.${actionLoading}`)}
+                    className="flex items-center gap-1.5 px-4" style={{ ...BULLE_GUIDE, height: 44 }}>
+                    {[0, 1, 2].map((i) => (
+                      <motion.span key={i} className="block w-1.5 h-1.5 rounded-full" style={{ background: "var(--exp-encre)" }}
+                        animate={{ y: [0, -4, 0], opacity: [0.35, 1, 0.35] }}
+                        transition={{ duration: 0.9, repeat: Infinity, delay: i * 0.15 }} />
+                    ))}
+                  </p>
                 </motion.div>
               )}
 
@@ -766,7 +836,10 @@ export default function AssistantSheet() {
                     }}
                     placeholder={voice.state === "recording" ? "Écoute en cours…"
                       : questionEnAttente ? "ou écris ta réponse…"
-                      : "Pose ta question…"}
+                      /* À quelqu'un, pas à une machine : « Pose ta question »
+                         mettait la personne en position de demander. */
+                      : guide ? `Écris à ${nomGuide(guide)}…`
+                      : "Écris ton message…"}
                     disabled={isStreaming || voice.state !== "idle"}
                     className="flex-1 bg-transparent text-[16px] leading-relaxed outline-none disabled:opacity-60 resize-none py-1"
                     style={{ color: "var(--text-0)", maxHeight: 132 }}

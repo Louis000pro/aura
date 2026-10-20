@@ -57,12 +57,21 @@
    buste      . 4:5, la tete occupe une part fixe de la hauteur et jamais
                 plus d'une part fixe de la largeur. Sert le questionnaire
                 de /bienvenue ET l'ecran vide du chat.
-   reflexion  . 4:5 plus large : la tete n'occupe que 44 % de la hauteur, donc
-                on voit les EPAULES ET LES BRAS. C'est le seul cadrage ou la
-                pose se lit, et c'est fait pour : il ne sert qu'a l'attente,
-                le seul moment ou un personnage un peu plus grand apporte
-                quelque chose.
-   celebration. 4:5 comme le buste, mais cadre comme `reflexion` : la tete
+   entete     . 4:5, la tete a 40 % de la hauteur comme `pose`, pour les CINQ
+                etats : c'est le Guide qui se tient en haut de la conversation
+                et qui change de pose a chaque moment (version 3 de la
+                conversation, validee par Louis le 2026-10-20).
+                /!\ IL EST CENTRE SUR LE CRANE, PAS SUR LA BANDE DE LA TETE,
+                et c'est sa seule difference avec les autres. Les cinq poses
+                se relaient au meme endroit, en fondu : le poing leve
+                d'`encourage` ou la main au menton de `think` elargissent la
+                bande mesuree de la tete, donc un cadrage centre sur elle
+                ferait glisser tout le corps de cote a chaque changement
+                d'etat. Le haut du crane, lui, ne bouge pas d'une pose a
+                l'autre. Meme raison pour `largeurTete` a 0,95 : c'est la
+                HAUTEUR de la tete qui fixe le zoom, jamais sa largeur, sinon
+                le poing leve ferait reculer la camera.
+   celebration. 4:5 comme le buste, mais plus large : la tete
                 n'occupe que 44 % de la hauteur, donc le POING LEVE de la
                 pose `encourage` entre dans l'image. Il ne sert qu'a la fin
                 de seance. Cadrer cette pose comme un buste ne marche pas :
@@ -121,7 +130,7 @@ const SEUIL_ALPHA = 8;
  *  master, qui laisse deja la bonne respiration au-dessus de la fenetre du
  *  questionnaire (celle-ci commence a 2 % de la hauteur).
  *  /!\ C'est aussi la reserve dans laquelle les cadrages viennent chercher
- *  leur air au-dessus du crane : la baisser ferait echouer `reflexion`. */
+ *  leur air au-dessus du crane : la baisser ferait echouer `celebration`. */
 const LIGNE_TETE = 0.056;
 
 /** -- LES CADRAGES ---------------------------------------------------------
@@ -132,29 +141,31 @@ const LIGNE_TETE = 0.056;
  *  larges et son crane est peint 81 px a droite du centre de sa toile, donc
  *  un cadrage centre sur le FICHIER lui coupait la meche droite.
  *  `air` : ce qu'on laisse au-dessus du crane, en part de la hauteur.
+ *  `centrage` : "crane" pose l'axe de la fenetre sur le haut du crane au lieu
+ *  du milieu de la bande de la tete (voir `entete` dans l'en-tete).
  *  /!\ `air x hauteur` doit rester sous LIGNE_TETE x hauteur du fichier,
  *  sinon la fenetre sort par le haut et le script refuse. */
 const CADRAGES = {
   buste:     { l: 512, h: 640, hauteurTete: 0.52, largeurTete: 0.76, air: 0.12 },
-  reflexion: { l: 320, h: 400, hauteurTete: 0.44, largeurTete: 0.62, air: 0.07 },
   celebration: { l: 448, h: 560, hauteurTete: 0.44, largeurTete: 0.70, air: 0.07 },
   avatar:    { l: 256, h: 256, hauteurTete: 0.55, largeurTete: 0.80, air: 0.10 },
   pose:      { l: 512, h: 640, hauteurTete: 0.40, largeurTete: 0.66, air: 0.07 },
+  entete:    { l: 400, h: 500, hauteurTete: 0.40, largeurTete: 0.95, air: 0.07, centrage: "crane" },
 };
 
 /** Qui recoit quoi. Un cadrage coute un fichier a telecharger : on ne genere
  *  que ce que l'ecran affiche vraiment.
  *    avatar     . les cinq etats, ils se relaient dans la meme pastille, dans
- *                 la conversation comme dans le tunnel de seance
- *    buste      . welcome seul, le grand personnage de l'ecran vide de chat
- *                 et du questionnaire de /bienvenue
- *    reflexion  . think seul, c'est l'attente
- *    celebration. encourage seul, la fin de seance */
+ *                 le tunnel de seance, l'accueil et la visite guidee
+ *    buste      . welcome seul, le grand personnage du questionnaire de
+ *                 /bienvenue et de l'ouverture de la visite guidee
+ *    celebration. encourage seul, la fin de seance
+ *    entete     . les cinq etats, le Guide en haut de la conversation */
 const ETATS_PAR_CADRAGE = {
   avatar: ["welcome", "listen", "think", "explain", "encourage"],
   buste: ["welcome"],
-  reflexion: ["think"],
   celebration: ["encourage"],
+  entete: ["welcome", "listen", "think", "explain", "encourage"],
   // `pose` n'appartient a aucun etat : c'est le cadrage des MOMENTS, voir
   // CADRAGES_MOMENT plus bas. La liste vide n'est pas un oubli.
   pose: [],
@@ -307,7 +318,20 @@ async function tete(buf, boite) {
     if (bords[y][0] < gauche) gauche = bords[y][0];
     if (bords[y][1] > droite) droite = bords[y][1];
   }
-  return { crane: boite.top, cou, gauche, droite, hauteur: cou - boite.top + 1, largeur: droite - gauche + 1 };
+
+  // L'axe du crane : le milieu du premier quart de la tete, la ou aucune
+  // main ne monte jamais (le poing leve et la main au menton restent plus
+  // bas). C'est lui qui garde le meme axe d'une pose a l'autre.
+  const finCrane = boite.top + Math.max(4, Math.round(0.25 * (cou - boite.top + 1)));
+  let sommeAxe = 0, lignesAxe = 0;
+  for (let y = boite.top; y <= finCrane; y++) {
+    if (bords[y][0] < 0) continue;
+    sommeAxe += (bords[y][0] + bords[y][1]) / 2;
+    lignesAxe++;
+  }
+  const axeCrane = lignesAxe ? sommeAxe / lignesAxe : (gauche + droite) / 2;
+
+  return { crane: boite.top, cou, gauche, droite, axeCrane, hauteur: cou - boite.top + 1, largeur: droite - gauche + 1 };
 }
 
 /** -- LA FENETRE -----------------------------------------------------------
@@ -324,7 +348,7 @@ async function fenetre(buf, boite, t, cadrage) {
   const hauteur = Math.round(Math.max(parHauteur, parLargeur));
   const largeur = Math.round((hauteur * cadrage.l) / cadrage.h);
 
-  const cx = (t.gauche + t.droite) / 2;
+  const cx = cadrage.centrage === "crane" ? t.axeCrane : (t.gauche + t.droite) / 2;
   const left = Math.round(cx - largeur / 2);
   const top = Math.round(t.crane - cadrage.air * hauteur);
 
