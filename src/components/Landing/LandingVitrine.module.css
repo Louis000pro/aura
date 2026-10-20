@@ -305,14 +305,6 @@
   min-height: 200px;
   margin-top: 10px;
 }
-/* ⚠️ PAS `.escalier` : ce nom appartient DÉJÀ à l'escalier des six rangs,
-   plus bas dans ce fichier. Un module CSS n'a qu'un espace de noms : la
-   seconde déclaration n'a pas redit `position`, donc l'`absolute` d'ici
-   s'appliquait à la liste des rangs, qui sortait du flux et se posait
-   par-dessus son propre titre. Mesuré le 2026-10-19 : la section faisait
-   409 px pour 321 px de texte, le tout superposé. */
-.escalierHeros { position: absolute; inset: 0; width: 100%; height: 100%; display: block; z-index: 1; }
-
 /* Les deux Guides : Nora garde son geste vers la gauche, Sasha est
    retourné pour ouvrir vers la droite, leurs dos se rejoignent au centre.
    ⚠️ Le duo ne se centre PAS par `transform` : l'animation d'entrée
