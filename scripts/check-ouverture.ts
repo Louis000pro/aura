@@ -20,6 +20,8 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { composerOuverture, situationDuJour, estSoir, SERIE_DITE, type FaitsOuverture, type Ouverture, type SituationOuverture } from "@/lib/ouvertureGuide";
 import type { EtatJournee } from "@/lib/journee";
+import { jourDit, joursAuChoix, lendemain, reponsesProposition, type JourPropose, type ReponseProposition } from "@/lib/propositionSeance";
+import { voix } from "@/lib/guides";
 
 let echecs = 0;
 let total = 0;
@@ -208,6 +210,82 @@ const textes = (o: Ouverture) => o.brouillons.map((b) => b.texte);
   verdict("un tour masqué de la personne passe devant les bulles du Guide", /content: "J’ouvre la conversation\.", id: uid\(\), masque: true/.test(ctx));
   verdict("le coach reçoit l'ouverture devant la réponse", /\[\.\.\.messages, \.\.\.prelude, userMsg\]\.slice\(-10\)/.test(ctx));
   verdict("le fil la garde aussi, à sa place", /\[\.\.\.prev, \.\.\.prelude, userMsg,/.test(ctx));
+}
+
+/* ── 7. La séance accrochée à la bulle (version 3, 2026-10-21) ─────────
+   Elle se pose sous la bulle du Guide avec UN bouton, « On y va » ; le
+   reste se répond en pointillés (« Plutôt demain », « Un autre jour »,
+   « Autre chose »). Le choix est pur (`lib/propositionSeance.ts`). */
+{
+  const AUJ = "2026-10-21"; // un mercredi
+  const plus = (ymd: string, n: number) => { let d = ymd; for (let i = 0; i < n; i++) d = lendemain(d); return d; };
+  const sept = (p: Record<number, Partial<JourPropose>> = {}): JourPropose[] =>
+    Array.from({ length: 7 }, (_, i) => ({ ymd: plus(AUJ, i), occupe: null, bloque: false, ...(p[i] ?? {}) }));
+  const textesR = (r: ReponseProposition[]) => r.map((x) => x.texte);
+
+  verdict("demain se dit « demain »", jourDit(plus(AUJ, 1), AUJ) === "demain");
+  verdict("après-demain se dit par son nom", jourDit(plus(AUJ, 2), AUJ) === "vendredi" && jourDit(plus(AUJ, 6), AUJ) === "mardi");
+  verdict("aujourd’hui, avec son apostrophe courbe", jourDit(AUJ, AUJ) === "aujourd’hui");
+  verdict("le lendemain traverse les mois, les années et le 29 février",
+    lendemain("2026-10-31") === "2026-11-01" && lendemain("2026-12-31") === "2027-01-01" && lendemain("2028-02-28") === "2028-02-29");
+  const noms = joursAuChoix(sept(), AUJ).map((r) => r.jour);
+  verdict("sur les jours proposés, un nom ne revient jamais deux fois", new Set(noms).size === noms.length && noms.length === 6, noms.join(", "));
+
+  verdict("les trois réponses, dans l'ordre", JSON.stringify(textesR(reponsesProposition({ jours: sept(), aujourdhui: AUJ, coach: true })))
+    === JSON.stringify(["Plutôt demain", "Un autre jour", "Autre chose"]));
+  verdict("avant d'avoir lu les jours, on propose quand même", JSON.stringify(textesR(reponsesProposition({ jours: null, aujourdhui: AUJ, coach: true })))
+    === JSON.stringify(["Plutôt demain", "Un autre jour", "Autre chose"]));
+  const sansCoach = textesR(reponsesProposition({ jours: sept(), aujourdhui: AUJ, coach: false }));
+  verdict("plus de messages : « Autre chose » se tait, programmer reste possible",
+    !sansCoach.includes("Autre chose") && sansCoach.includes("Plutôt demain") && sansCoach.includes("Un autre jour"));
+  const prisDemain = reponsesProposition({ jours: sept({ 1: { occupe: "Push" } }), aujourdhui: AUJ, coach: true })[0];
+  verdict("demain déjà pris se dit avant le clic, sans salir ta réponse",
+    prisDemain.genre === "jour" && prisDemain.pris && prisDemain.texte === "Plutôt demain");
+  verdict("demain déjà fait n'est pas proposé",
+    !textesR(reponsesProposition({ jours: sept({ 1: { bloque: true } }), aujourdhui: AUJ, coach: true })).includes("Plutôt demain"));
+  verdict("« Un autre jour » disparaît s'il n'y a plus aucun autre jour",
+    !textesR(reponsesProposition({ jours: sept({ 2: { bloque: true }, 3: { bloque: true }, 4: { bloque: true }, 5: { bloque: true }, 6: { bloque: true } }), aujourdhui: AUJ, coach: true })).includes("Un autre jour"));
+  const choix = joursAuChoix(sept({ 4: { bloque: true } }), AUJ);
+  verdict("« Un autre jour » : à partir de demain, sans aujourd’hui ni un jour déjà fait, dans l'ordre",
+    choix[0]?.ymd === plus(AUJ, 1) && !choix.some((r) => r.ymd === AUJ || r.ymd === plus(AUJ, 4))
+      && choix.every((r, i) => i === 0 || r.ymd > choix[i - 1].ymd));
+  verdict("ta réponse dit le jour comme on le dit", choix[1]?.texte === "Plutôt vendredi" && choix[1]?.jour === "vendredi");
+
+  const dits = (["nora", "sasha", null] as const).flatMap((g) => [
+    voix(g, "proposition.programmee", { titre: "Épaules au calme", jour: "demain" }),
+    voix(g, "proposition.quel_jour"),
+  ]);
+  verdict("le Guide confirme la séance et son jour", dits[0] === `C’est calé${NBSP}: «${NBSP}Épaules au calme${NBSP}» demain.`, dits[0]);
+  verdict("Nora et Sasha le disent pareil", dits[0] === dits[2] && dits[2] === dits[4] && dits[1] === dits[3] && dits[3] === dits[5]);
+  verdict("« Quel jour te va ? », avec son espace insécable", dits[1] === `Quel jour te va${NBSP}?`);
+  verdict("aucun tiret cadratin ni étincelle dans ces phrases", dits.every((t) => !t.includes(String.fromCharCode(0x2014)) && !t.includes("✦")));
+
+  /* Le chemin, lu dans le source. */
+  const feuille = lire("src/components/AssistantSheet.tsx");
+  const piece = lire("src/components/assistant/SeanceAccrochee.tsx");
+  const ctx = lire("src/context/AssistantContext.tsx");
+  verdict("la séance s'accroche sous SA bulle, dans le fil", /pendingSeance && i === ancre && <CarteProposition key=\{pendingSeance\.id\} \/>/.test(feuille));
+  const epingle = feuille.slice(feuille.indexOf("Zone d'action ÉPINGLÉE"));
+  verdict("elle n'est plus épinglée en bas", epingle.length > 0 && !epingle.includes("<CarteProposition"));
+  verdict("l'en-tête garde sa taille quand une séance est proposée", /const compact = !!\(pendingPlan \|\| pendingRecipe \|\| pendingMeal\);/.test(feuille));
+  verdict("l'attente se montre dans le fil, plus dans la zone épinglée", !epingle.includes("<PointsSaisie") && /\{actionLoading && \(\s*<motion\.div[\s\S]{0,400}<PointsSaisie \/>/.test(feuille));
+  verdict("un seul bouton sur la séance, et c'est « On y va »",
+    (piece.match(/<(motion\.)?button\b/g) ?? []).length === 1 && />\s*On y va\s*</.test(piece));
+  verdict("les mouvements animés se voient tout de suite", /<ExerciseThumb name=\{nom\}/.test(piece) && !/detail &&/.test(piece));
+  verdict("ses réponses sont des brouillons, de ton côté", /function ReponsesSeance\(\)[\s\S]*reponsesProposition\(/.test(feuille) && /function ReponsesSeance\(\)[\s\S]*<Brouillon/.test(feuille));
+  verdict("elles n'attendent que tant qu'elle est la dernière chose dite",
+    /const reponsesSeance = !!pendingSeance && !isStreaming && !actionLoading\s*&& \(ancre === -1 \|\| ancre === visibles\.length - 1\);/.test(feuille));
+  verdict("« Autre chose » parle au coach, un jour se programme sans lui",
+    /else \{ cancelSeance\(\); sendMessage\(r\.texte\); \}/.test(feuille) && /programmerSeance\(\{ ymd: r\.ymd, trace: r\.texte, jour: r\.jour \}\)/.test(feuille));
+  verdict("la bulle de ce tour est passée à l'action, et la séance s'y accroche",
+    /void runAction\(recue, trimmed, assistantId\)/.test(ctx) && /setSeanceAccrochee\(bulle \?\? null\);\s*setPendingSeance\(assembleSeance\(/.test(ctx));
+  const debut = ctx.indexOf("const programmerSeance = useCallback(");
+  const corps = ctx.slice(debut, ctx.indexOf("}, [user?.id, pendingSeance, persist]);", debut));
+  verdict("programmer laisse ta réponse et celle du Guide dans le fil",
+    debut > 0 && corps.includes("content: r.trace") && corps.includes('"proposition.programmee"'));
+  verdict("programmer ne ferme plus la conversation et ne dépense aucun message",
+    debut > 0 && !corps.includes("setIsOpen(false)") && !corps.includes("/api/chat") && !corps.includes("sendRef"));
+  verdict("un échec retire ta réponse, pour pouvoir réessayer", debut > 0 && /prev\.filter\(\(m\) => m\.id !== trace\.id\)/.test(corps));
 }
 
 console.log(`\n${total - echecs}/${total} contrôles passent.`);

@@ -35,7 +35,7 @@ import { useGuideActif } from "@/context/GuideContext";
 import { PLANS } from "@/lib/plans";
 import {
   /* ⚠️ `saveDay` A DISPARU DE CETTE LISTE EN V9C, ET C'EST LE POINT.
-     `confirmSeance` était le dernier écrivain caché du contexte : il
+     `confirmSeance` (devenue `programmerSeance`) était le dernier écrivain caché du contexte : il
      appelait l'autorité d'écriture directement, donc il décidait seul
      quelle ligne du jour serait réécrite. Tout passe désormais par
      `appliquerGeste`. Un `saveDay` qui réapparaîtrait ici, c'est
@@ -274,9 +274,13 @@ type AssistantContextValue = {
   noterOuverture: (bulles: string[] | null) => void;
   /** Le stock gratuit de séances gardées est plein : la carte n'offre alors que ce qui reste possible. */
   bibliothequePleine: boolean;
-  /** Garde la séance proposée. `jour` la pose aussi sur le planning, en UNE
-   *  validation : le jour se choisit maintenant AVANT de valider, plus après. */
-  confirmSeance: (jour?: string | null) => void;
+  /** La bulle du Guide à laquelle la séance proposée est accrochée, ou
+   *  `null` quand on ne la connaît pas (elle se pose alors en fin de fil). */
+  seanceAccrochee: string | null;
+  /** Programme la séance proposée sur un jour, depuis sa réponse en
+   *  pointillés : `trace` devient ta bulle, `jour` est ce que le Guide en
+   *  redit (« demain », « jeudi »). Aucun message au coach. */
+  programmerSeance: (r: { ymd: string; trace: string; jour: string }) => void;
   /** Range une séance proposée dans la bibliothèque (aussi utilisé APRÈS une séance lancée sans l'avoir gardée). */
   garderSeance: (s: ProposedSeance) => Promise<boolean>;
   cancelSeance: () => void;
@@ -514,6 +518,11 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
   const messagesEpuises = !!quotaChat && quotaChat.utilises >= quotaChat.plafond;
   const [memoryNotice, setMemoryNotice] = useState<string | null>(null);
   const [pendingSeance, setPendingSeance] = useState<ProposedSeance | null>(null);
+  /* La bulle du Guide qui porte la séance proposée (version 3, 2026-10-21) :
+     la séance s'y accroche comme une pièce jointe, et y reste même si la
+     conversation continue en dessous. Posée en même temps que la séance,
+     par le tour qui l'a demandée : rien ne la devine après coup. */
+  const [seanceAccrochee, setSeanceAccrochee] = useState<string | null>(null);
   const [pendingPlan, setPendingPlan] = useState<PendingPlan | null>(null);
   const [pendingRecipe, setPendingRecipe] = useState<PendingRecipe | null>(null);
   const [pendingMeal, setPendingMeal] = useState<PendingMeal | null>(null);
@@ -1888,7 +1897,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
      L'action arrive du MÊME appel que sa phrase (outils de /api/chat), donc
      le texte et la carte ne peuvent plus se contredire. Ajouter une capacité :
      une entrée dans `assistantTools.ts`, une branche ici, une carte si ça écrit. ── */
-  const runAction = useCallback(async (action: AssistantAction, text: string) => {
+  const runAction = useCallback(async (action: AssistantAction, text: string, bulle?: string) => {
     if (!user?.id || !action?.intent) return;
 
     // La question du coach (ask_choice) est rattachée à sa bulle dans
@@ -2137,6 +2146,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       if (!data || data.error) throw new Error("generation: " + (data?.error ?? "réponse vide"));
 
       await verifierPlaces();
+      setSeanceAccrochee(bulle ?? null);
       setPendingSeance(assembleSeance({
         title: data.title,
         category,
@@ -2479,7 +2489,8 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
 
       // L'action ne part que si rien ne manque. Sinon elle repartira toute
       // seule après la réponse (`relance`).
-      if (recue && !manque) void runAction(recue, trimmed);
+      // La bulle de ce tour est passée avec : une séance proposée s'y accroche.
+      if (recue && !manque) void runAction(recue, trimmed, assistantId);
 
       const navMatch = accumulated.match(/\[NAV\]\s*([^[\]]+?)\s*\[\/NAV\]/i);
       if (navMatch) {
@@ -2676,7 +2687,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
   }, [historyKey]);
 
   /* ── Ranger une séance dans la bibliothèque ──
-     Sortie de `confirmSeance` parce qu'elle sert aussi APRÈS coup : une séance
+     Sortie de la validation de la carte parce qu'elle sert aussi APRÈS coup : une séance
      lancée depuis la carte n'est enregistrée nulle part, et le tunnel propose
      de la garder une fois terminée (même carte « Tu la gardes ? » que l'impro).
      Sans ça, on jette le travail à l'instant où il vient de faire ses preuves. */
@@ -2689,29 +2700,44 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
     return !error;
   }, [user?.id, verifierPlaces]);
 
-  /* ── Validation de la carte séance ──
-     Une SEULE validation fait tout : la séance rejoint la bibliothèque, et si
-     un jour a été choisi sur la carte, elle est posée dessus dans la foulée
-     (liée par `sessionId`, même plomberie que « poser une séance de la
-     biblio »). Avant, il fallait créer, PUIS répondre à une deuxième carte qui
-     demandait quand la faire — deux cartes pour une seule intention. ── */
-  /* ⭐ PROGRAMMER N'EST PLUS « GARDER » (Louis, 2026-10-17). La carte
+  /* ── Programmer la séance proposée ──
+     ⭐ PROGRAMMER N'EST PLUS « GARDER » (Louis, 2026-10-17). La carte
      proposait « Garder la séance », et la séance finissait dans une
      bibliothèque que personne n'allait voir. Il n'y a plus que deux
      sorties : la faire maintenant, ou la programmer sur un jour. Une
      intention est auto-suffisante (titre + exercices), donc programmer
      n'écrit RIEN dans `custom_sessions` et ne touche pas au plafond des
      séances gardées : `sessionId` reste nul. */
-  const confirmSeance = useCallback(async (jour?: string | null) => {
-    if (!user?.id || !pendingSeance || !jour) return;
+  /* ⭐ VERSION 3 (2026-10-21) : ON LE LUI RÉPOND. La séance s'accroche à la
+     bulle du Guide avec un seul bouton, « On y va » ; la programmer est une
+     RÉPONSE (« Plutôt demain », « Plutôt jeudi »), en pointillés, de ton
+     côté. Elle devient ta bulle d'encre, c'est la seule trace, et le Guide
+     répond à son tour (`proposition.programmee`) : la conversation ne se
+     ferme plus toute seule, on peut continuer à lui parler. Aucun message
+     au coach n'est dépensé, rien n'est envoyé au modèle. */
+  const programmerSeance = useCallback(async (r: { ymd: string; trace: string; jour: string }) => {
+    if (!user?.id || !pendingSeance) return;
     const s = pendingSeance;
+    const jour = r.ymd;
+    const trace: AssistantMsg = { role: "user", content: r.trace, id: uid() };
+    const dire = (content: string) => setMessages((prev) => {
+      const next = [...prev, { role: "assistant" as const, content, id: uid(), ton: "explain" as const }];
+      persist(next);
+      return next;
+    });
+    setMessages((prev) => {
+      const next = [...prev, trace];
+      persist(next);
+      return next;
+    });
 
     // Programmer la séance sur un jour, c'est le coach qui modifie le
     // planning : ça compte dans les modifications de la semaine (gratuit).
+    // ⚠️ La séance reste proposée après un refus : « On y va » reste juste
+    // au-dessus, s'entraîner maintenant ne coûte aucune modification.
     const permis = await consommerModifPlanning();
     if (!permis.ok) {
-      setPendingSeance(null);
-      setMessages((prev) => [...prev, { role: "assistant" as const, content: permis.message, id: uid(), ton: "explain" as const }]);
+      dire(permis.message);
       return;
     }
 
@@ -2744,12 +2770,22 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent("programme-updated", { detail: { date: jour } }));
       setPendingSeance(null);
       setReussite((n) => n + 1);
-      setMemoryNotice(`Programmée · ${dayLabelLong(jour)} ✓${libelleQuota(permis.quota)}`);
-      setTimeout(() => setIsOpen(false), 1100);
+      dire(voix(guideRef.current, "proposition.programmee", { titre: s.title, jour: r.jour }));
+      // Le compte de la semaine, pour un compte gratuit seulement : le Guide
+      // vient de dire le reste, un second « Programmée » ferait doublon.
+      const quota = libelleQuota(permis.quota);
+      if (quota) setMemoryNotice(`Planning modifié${quota}`);
     } catch {
+      /* Rien ne s'est écrit : ta réponse repart avec, pour que la séance et
+         ses réponses reviennent telles quelles et qu'on puisse réessayer. */
+      setMessages((prev) => {
+        const next = prev.filter((m) => m.id !== trace.id);
+        persist(next);
+        return next;
+      });
       setMemoryNotice("Oups, impossible de la programmer. Réessaie.");
     }
-  }, [user?.id, pendingSeance]);
+  }, [user?.id, pendingSeance, persist]);
 
   const cancelSeance = useCallback(() => setPendingSeance(null), []);
 
@@ -3025,7 +3061,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
   }, [memoryNotice]);
 
   return (
-    <Ctx.Provider value={{ isOpen, open, ouvrirSurQuestion, close, toggle, clear, messages, isStreaming, sendMessage, repondreQuestion, pseudo: user?.pseudo, memoryNotice, pendingSeance, pendingPlan, pendingRecipe, pendingMeal, actionLoading, etatGuide, noterSaisie: setSaisie, noterOuverture, bibliothequePleine, confirmSeance, garderSeance, cancelSeance, confirmPlan, basculerEnPlus, retargetPlan, cancelPlan, chargerJours, confirmRecipe, cancelRecipe, confirmMeal, cancelMeal, quotaChat, messagesEpuises }}>
+    <Ctx.Provider value={{ isOpen, open, ouvrirSurQuestion, close, toggle, clear, messages, isStreaming, sendMessage, repondreQuestion, pseudo: user?.pseudo, memoryNotice, pendingSeance, pendingPlan, pendingRecipe, pendingMeal, actionLoading, etatGuide, noterSaisie: setSaisie, noterOuverture, bibliothequePleine, seanceAccrochee, programmerSeance, garderSeance, cancelSeance, confirmPlan, basculerEnPlus, retargetPlan, cancelPlan, chargerJours, confirmRecipe, cancelRecipe, confirmMeal, cancelMeal, quotaChat, messagesEpuises }}>
       {children}
     </Ctx.Provider>
   );

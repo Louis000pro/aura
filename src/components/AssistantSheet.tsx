@@ -17,11 +17,13 @@ import { useAssistant } from "@/context/AssistantContext";
 import type { QuestionCliquable } from "@/lib/assistantTools";
 import type { AttenteAction, JourDispo } from "@/context/AssistantContext";
 import CarteSeance from "@/components/assistant/CarteSeance";
+import SeanceAccrochee from "@/components/assistant/SeanceAccrochee";
 import OuvertureGuide from "@/components/assistant/OuvertureGuide";
+import { joursAuChoix, reponsesProposition, type ReponseJour } from "@/lib/propositionSeance";
+import { localDateStr } from "@/lib/dates";
 import { BULLE, BULLE_GUIDE, BULLE_MOI, Brouillon, PointsSaisie } from "@/components/assistant/bulles";
 import { useWorkoutLaunch } from "@/context/WorkoutLaunchContext";
 import { useVoiceCapture } from "@/hooks/useVoiceCapture";
-import { CATEGORY_LABEL } from "@/lib/assistantActions";
 import { VENTE_OUVERTE } from "@/lib/plans";
 import { useRouter } from "next/navigation";
 import { heroImageForSeance } from "@/lib/workoutArt";
@@ -40,13 +42,6 @@ const MEAL_LABEL: Record<string, string> = {
   "gouter": "Goûter",
   "diner": "Dîner",
 };
-
-/** Le jour tel qu'il est écrit sur sa puce (« demain », « ven. 1 ») : le bouton
- *  de validation doit dire EXACTEMENT ce qui a été touché. */
-function libelleJour(jours: JourDispo[] | null, ymd: string | null): string {
-  const j = jours?.find((x) => x.ymd === ymd);
-  return (j?.label ?? "").toLowerCase();
-}
 
 /* ── Rendu lisible des réponses de l'✦ ──
    Le modèle glisse parfois du markdown (**gras**, listes en *, titres #, `code`).
@@ -191,27 +186,18 @@ function PointPresence() {
   );
 }
 
-/* ── La carte d'une séance proposée pour la bibliothèque ──
-   Elle tient son propre état de choix (jour ouvert, jour touché) et porte une
-   `key` liée à la proposition : une nouvelle séance repart donc à zéro sans
-   qu'aucun effet n'ait à la remettre à plat. Garder le jour d'une carte
-   précédente ferait programmer la mauvaise séance. */
+/* ── La séance proposée, accrochée à la bulle du Guide ──
+   Version 3 (2026-10-21) : elle vit DANS le fil, sous la bulle qui
+   l'annonce, et n'a qu'un bouton, « On y va ». La programmer ou demander
+   autre chose, c'est ce qu'on lui répond (`ReponsesSeance`, plus bas). */
 function CarteProposition() {
-  const { pendingSeance, confirmSeance, garderSeance, cancelSeance, chargerJours, close, bibliothequePleine } = useAssistant();
+  const { pendingSeance, garderSeance, cancelSeance, close, bibliothequePleine } = useAssistant();
   const { launchWorkout } = useWorkoutLaunch();
-  const [jours, setJours] = useState<JourDispo[] | null>(null);
-  const [jourChoisi, setJourChoisi] = useState<string | null>(null);
-  const [ouvert, setOuvert] = useState(false);
 
   if (!pendingSeance) return null;
   const s = pendingSeance;
 
-  const ouvrirJours = () => {
-    setOuvert((v) => !v);
-    if (!jours) void chargerJours().then(setJours);
-  };
-
-  /* « La faire maintenant » lance la séance SANS rien garder ni programmer :
+  /* « On y va » lance la séance SANS rien garder ni programmer :
      s'entraîner ne doit jamais obliger à ranger quelque chose d'abord. */
   const faireMaintenant = () => {
     launchWorkout({
@@ -236,26 +222,86 @@ function CarteProposition() {
   };
 
   return (
-    <CarteSeance
-      kicker="Proposition"
+    <SeanceAccrochee
       titre={s.title}
-      meta={[CATEGORY_LABEL[s.category], `${s.duration} min`, s.difficulty].join(" · ")}
-      exercices={s.exerciseList.map((ex) => ({ name: ex.name, dose: `${ex.sets} × ${ex.reps}`, muscles: ex.muscles }))}
-      /* Deux sorties seulement (Louis, 2026-10-17) : la faire maintenant
-         (l'action, en violet), ou la programmer, qui ouvre les jours. Un
-         jour choisi, le bouton dit lequel. Plus de « Garder la séance » :
-         elle finissait dans une bibliothèque que personne ne voyait. */
-      options={[
-        { id: "day", label: "Programmer", actif: ouvert, onClick: ouvrirJours },
-      ]}
-      jours={ouvert ? jours : null}
-      jourChoisi={jourChoisi}
-      onJour={(d) => setJourChoisi((v) => (v === d ? null : d))}
-      cta={jourChoisi ? `Programmer ${libelleJour(jours, jourChoisi)}` : "La faire maintenant"}
-      onValider={jourChoisi ? () => confirmSeance(jourChoisi) : faireMaintenant}
-      onFermer={cancelSeance}
-      hint={ouvert && !jourChoisi ? "Choisis le jour" : null}
+      minutes={s.duration}
+      mouvements={s.exerciseList.map((ex) => ex.name)}
+      onLancer={faireMaintenant}
     />
+  );
+}
+
+/* ── Ce que tu peux répondre à la séance proposée ──
+   En pointillés, de ton côté, comme tout ce qu'on répond au Guide : une
+   réponse choisie devient ta bulle d'encre. « Plutôt demain » et un autre
+   jour programment la séance sans passer par le coach (aucun message
+   dépensé) ; « Autre chose » lui parle, donc il n'existe que s'il reste
+   des messages. Elle porte une `key` liée à la proposition : une nouvelle
+   séance repart à zéro, jamais avec le choix de la précédente. */
+function ReponsesSeance() {
+  const { pendingSeance, programmerSeance, cancelSeance, sendMessage, chargerJours, messagesEpuises } = useAssistant();
+  const { guide } = useGuideActif();
+  const [jours, setJours] = useState<JourDispo[] | null>(null);
+  const [autreJour, setAutreJour] = useState(false);
+  /* Le jour se lit une fois : « demain » ne doit pas changer de sens sous
+     les yeux parce qu'on a passé minuit en hésitant. */
+  const [aujourdhui] = useState(() => localDateStr());
+
+  /* Les sept prochains jours, pour dire AVANT le clic ce qui y est déjà
+     prévu (« pris »), comme le faisait la carte. */
+  useEffect(() => {
+    let vivant = true;
+    void chargerJours().then((j) => { if (vivant) setJours(j); });
+    return () => { vivant = false; };
+  }, [chargerJours]);
+
+  if (!pendingSeance) return null;
+  const choisir = (r: ReponseJour) => programmerSeance({ ymd: r.ymd, trace: r.texte, jour: r.jour });
+  const libelle = (r: ReponseJour) => (
+    <>
+      {r.texte}
+      {r.pris && <span className="font-medium" style={{ color: "var(--text-3)" }}> · pris</span>}
+    </>
+  );
+
+  /* « Un autre jour » : ta réponse, puis le Guide qui demande lequel. Ces
+     deux bulles ne vivent qu'ici, le temps de choisir ; c'est le jour
+     choisi qui reste dans le fil. */
+  if (autreJour) {
+    const liste = jours ? joursAuChoix(jours, aujourdhui) : null;
+    return (
+      <>
+        <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="flex justify-end">
+          <p className={BULLE} style={{ ...BULLE_MOI, maxWidth: "84%" }}>Un autre jour</p>
+        </motion.div>
+        <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="flex justify-start">
+          <p className={BULLE} style={{ ...BULLE_GUIDE, maxWidth: "84%" }}>{voix(guide, "proposition.quel_jour")}</p>
+        </motion.div>
+        {liste && (
+          <div className="flex flex-wrap justify-end gap-2">
+            {liste.map((r, i) => (
+              <Brouillon key={r.ymd} rang={i} delai={0.3} onClick={() => choisir(r)}>{libelle(r)}</Brouillon>
+            ))}
+          </div>
+        )}
+      </>
+    );
+  }
+
+  const reponses = reponsesProposition({ jours, aujourdhui, coach: !messagesEpuises });
+  return (
+    <div className="flex flex-col items-end gap-2">
+      {reponses.map((r, i) => (
+        <Brouillon key={r.texte} rang={i} delai={0.3}
+          onClick={() => {
+            if (r.genre === "jour") choisir(r);
+            else if (r.genre === "autre_jour") setAutreJour(true);
+            else { cancelSeance(); sendMessage(r.texte); }
+          }}>
+          {r.genre === "jour" ? libelle(r) : r.texte}
+        </Brouillon>
+      ))}
+    </div>
   );
 }
 
@@ -313,7 +359,7 @@ function CartePlanning() {
 }
 
 export default function AssistantSheet() {
-  const { isOpen, close, messages, isStreaming, sendMessage, repondreQuestion, memoryNotice, pendingSeance, pendingPlan, pendingRecipe, pendingMeal, actionLoading, etatGuide, noterSaisie, confirmRecipe, cancelRecipe, confirmMeal, cancelMeal, quotaChat, messagesEpuises } = useAssistant();
+  const { isOpen, close, messages, isStreaming, sendMessage, repondreQuestion, memoryNotice, pendingSeance, seanceAccrochee, pendingPlan, pendingRecipe, pendingMeal, actionLoading, etatGuide, noterSaisie, confirmRecipe, cancelRecipe, confirmMeal, cancelMeal, quotaChat, messagesEpuises } = useAssistant();
   const router = useRouter();
   /* Qui parle dans cette conversation. `null` tant que le choix n'a pas
      été fait (ou que la lecture a échoué) : tout retombe alors sur ✦ et
@@ -336,8 +382,10 @@ export default function AssistantSheet() {
 
   /* Une carte épinglée en bas prend de la hauteur : l'en-tête se resserre
      alors, sinon sur un petit téléphone il ne resterait presque rien de la
-     conversation entre le Guide et la carte. */
-  const compact = !!(pendingSeance || pendingPlan || pendingRecipe || pendingMeal);
+     conversation entre le Guide et la carte. ⚠️ Pas pour une séance
+     proposée (2026-10-21) : elle vit dans le fil, sous la bulle du Guide,
+     et l'en-tête garde sa taille. */
+  const compact = !!(pendingPlan || pendingRecipe || pendingMeal);
 
   // La saisie grandit VERTICALEMENT avec le texte (on voit tout ce qu'on écrit,
   // on peut se relire et se corriger — plus de ligne unique qui défile à l'horizontale).
@@ -397,6 +445,15 @@ export default function AssistantSheet() {
   // Une question est en attente → on rappelle qu'on peut aussi taper.
   const derniere = visibles[visibles.length - 1];
   const questionEnAttente = !!derniere?.question && !derniere.question.repondu && !isStreaming;
+
+  /* La séance proposée s'accroche à SA bulle et y reste, même si la
+     conversation continue en dessous. Une bulle qu'on ne retrouve pas (la
+     séance est arrivée par un autre chemin) : elle se pose en fin de fil.
+     Ses réponses, elles, n'attendent que tant qu'elle est la dernière chose
+     que le Guide a dite : après, on lui répondrait hors contexte. */
+  const ancre = pendingSeance && seanceAccrochee ? visibles.findIndex((m) => m.id === seanceAccrochee) : -1;
+  const reponsesSeance = !!pendingSeance && !isStreaming && !actionLoading
+    && (ancre === -1 || ancre === visibles.length - 1);
 
   if (!mounted) return null;
 
@@ -540,10 +597,39 @@ export default function AssistantSheet() {
                       onChoisir={(c) => repondreQuestion(msg.id, c)}
                     />
                   )}
+                  {pendingSeance && i === ancre && <CarteProposition key={pendingSeance.id} />}
                   </Fragment>
                   );
                 })}
               </AnimatePresence>
+
+              {pendingSeance && ancre === -1 && <CarteProposition key={pendingSeance.id} />}
+
+              {/* ── IL PRÉPARE QUELQUE CHOSE ──
+                  Trois points dans sa bulle, dans le fil, comme quelqu'un qui
+                  tape. Ce qu'il fait vraiment est dit en haut, sous son nom
+                  (« prépare ta séance… »). La phrase d'attente du Guide reste
+                  lue par un lecteur d'écran, et elle nomme ce qu'elle attend :
+                  elle disait « une séance » aux trois actions qui font
+                  patienter, donc elle en promettait une à qui venait de
+                  raconter son déjeuner. */}
+              {actionLoading && (
+                <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="flex justify-start"
+                  style={derniere?.role === "assistant" ? { marginTop: -8 } : undefined}>
+                  <p role="status" aria-label={voix(guide, `attente.${actionLoading}`)}
+                    className="flex items-center gap-1.5 px-4" style={{ ...BULLE_GUIDE, height: 44 }}>
+                    <PointsSaisie />
+                  </p>
+                </motion.div>
+              )}
+
+              {/* Ce que tu peux répondre à la séance, en bas, de ton côté. */}
+              {reponsesSeance && pendingSeance && (
+                <>
+                  <div aria-hidden className="flex-1 min-h-3" />
+                  <ReponsesSeance key={pendingSeance.id} />
+                </>
+              )}
             </div>
 
             {/* Zone d'action ÉPINGLÉE au-dessus de la saisie : la carte reste
@@ -562,28 +648,9 @@ export default function AssistantSheet() {
             <div className="flex-shrink-0 min-h-0 px-3 pb-2.5 pt-0.5 flex flex-col gap-2 overflow-y-auto overscroll-contain"
               style={{ maxHeight: "62%", scrollbarWidth: "none" }}>
 
-              {/* Génération en cours */}
-              {actionLoading && (
-                /* ── IL ÉCRIT ──
-                   Trois points dans sa bulle, comme quelqu'un qui tape. Ce
-                   qu'il fait vraiment est dit en haut, sous son nom
-                   (« prépare ta séance… »), là où son visage passe en pose de
-                   réflexion : c'est l'en-tête qui le montre grand, plus un
-                   second portrait posé dans le fil.
-
-                   La phrase d'attente du Guide reste lue par un lecteur
-                   d'écran. Elle nomme ce qu'elle attend : elle disait « une
-                   séance » aux trois actions qui font patienter, donc elle en
-                   promettait une à qui venait de raconter son déjeuner. */
-                <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="self-start">
-                  <p role="status" aria-label={voix(guide, `attente.${actionLoading}`)}
-                    className="flex items-center gap-1.5 px-4" style={{ ...BULLE_GUIDE, height: 44 }}>
-                    <PointsSaisie />
-                  </p>
-                </motion.div>
-              )}
-
-              {pendingSeance && <CarteProposition key={pendingSeance.id} />}
+              {/* La séance proposée et l'attente vivent dans le fil (version 3,
+                  2026-10-21). Restent épinglées ici les cartes qui changent
+                  un jour du planning, une recette et un repas à noter. */}
               {pendingPlan && <CartePlanning key={`${pendingPlan.title}-${pendingPlan.preview?.date ?? ""}`} />}
 
               {/* ── Carte RECETTE ── */}

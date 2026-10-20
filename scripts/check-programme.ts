@@ -3428,7 +3428,7 @@ verdict(
      qu'en base. ── */
 
   verdict(
-    "V9C · `confirmSeance` n'est plus un écrivain caché",
+    "V9C · `programmerSeance` (ex-`confirmSeance`) n'est plus un écrivain caché",
     !CTX9C.includes("saveDay(") && CTX9C.includes("await appliquerGeste(user.id, cible ?"),
     "elle appelait l'autorité d'écriture en direct, donc elle décidait seule quelle ligne réécrire",
   );

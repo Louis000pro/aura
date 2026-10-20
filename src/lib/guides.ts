@@ -134,6 +134,7 @@ type Replique = { commun: Rendu; nora?: Rendu; sasha?: Rendu };
      retour.*   ce qu'il dit en arrivant sur l'accueil de l'app
      memoire.*  ce qu'il dit de sa propre mémoire, et sur son écran
      attente.*  ce qu'il dit pendant qu'il travaille
+     proposition.* ce qu'il répond autour d'une séance qu'il propose
      panne.*    quand la réponse ne vient pas
      seance.*   pendant l'entraînement
      visite.*   les chapitres de la visite guidée
@@ -695,6 +696,18 @@ const REPLIQUES = {
     commun: "J’estime ce repas…",
     nora:   "J’estime ce que ça représente…",
     sasha:  "J’estime ce repas…",
+  },
+
+  /* ── Autour d'une séance qu'il propose ──
+     La séance se pose sous sa bulle, avec un seul bouton, « On y va ».
+     Ce qu'on peut lui répondre (« Plutôt demain », « Un autre jour »,
+     « Autre chose ») s'écrit dans `propositionSeance.ts` : ce sont les
+     mots de la personne. Ici, ce qu'il répond à son tour. */
+  "proposition.quel_jour": {
+    commun: "Quel jour te va ?",
+  },
+  "proposition.programmee": {
+    commun: (c: ContexteVoix) => `C’est calé : « ${c.titre ?? ""} » ${c.jour ?? ""}.`,
   },
 
   /* ── Quand ça ne répond pas ──
@@ -2200,7 +2213,7 @@ export const PRENOM_GUIDE: Record<GuideId, string> = {
    rhétorique. Les signaux existent déjà, ils sont exacts et ils sont à
    nous : une question posée par le CODE porte son objet `question`, une
    réponse en cours porte `streaming`, une carte validée passe par
-   `confirmSeance` et compagnie. On lit ces signaux, rien d'autre.
+   `programmerSeance` et compagnie. On lit ces signaux, rien d'autre.
 
    Le visage vit dans `AssistantContext` (`etatGuide`), parce que c'est
    lui qui tient tous ces signaux. L'écran ne fait que l'afficher.
