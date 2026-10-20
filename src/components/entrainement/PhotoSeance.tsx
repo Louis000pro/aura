@@ -9,6 +9,9 @@
    d'elle-même, et il n'y a qu'une façon de la cadrer.
    ════════════════════════════════════════════════════════════════════ */
 
+import { useGuideActif } from "@/context/GuideContext";
+import { photoDuGuide } from "@/lib/photosGuide";
+
 /** Ambiances des états fixes (widgets) — couleur appliquée in-app, comme la banque. */
 export const WIDGET: Record<"repos" | "done" | "setup" | "improvise", {
   img: string; pos: string;
@@ -33,11 +36,12 @@ export function Photo({ img, pos = "center 25%", className, style, children, pri
   className?: string; style?: React.CSSProperties; children?: React.ReactNode;
   prioritaire?: boolean;
 }) {
+  const { guide } = useGuideActif();
   return (
     <div className={className} style={{ position: "relative", overflow: "hidden", background: "#101018", ...style }}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        src={`/entrainement/${img}.webp`}
+        src={`/entrainement/${photoDuGuide(img, guide)}.webp`}
         alt=""
         aria-hidden
         decoding="async"

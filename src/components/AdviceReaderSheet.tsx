@@ -5,6 +5,8 @@ import { motion } from "framer-motion";
 import { ArrowUpRight, BookOpen, Check, Clock, X } from "lucide-react";
 import { lockBodyModal } from "@/lib/bodyModal";
 import type { AdviceArticle } from "@/lib/adviceArticles";
+import { useGuideActif } from "@/context/GuideContext";
+import { photoDuGuide } from "@/lib/photosGuide";
 
 export default function AdviceReaderSheet({
   article,
@@ -15,6 +17,7 @@ export default function AdviceReaderSheet({
 }) {
   const scroller = useRef<HTMLDivElement>(null);
   const [progress, setProgress] = useState(0);
+  const { guide } = useGuideActif();
 
   useEffect(() => {
     const unlockBody = lockBodyModal();
@@ -90,7 +93,7 @@ export default function AdviceReaderSheet({
               aria-hidden
               className="absolute inset-0"
               style={{
-                backgroundImage: `url(/entrainement/${article.image}.webp)`,
+                backgroundImage: `url(/entrainement/${photoDuGuide(article.image, guide)}.webp)`,
                 backgroundPosition: article.imagePosition ?? "center 28%",
                 backgroundSize: "cover",
               }}

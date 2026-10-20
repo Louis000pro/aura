@@ -50,6 +50,7 @@ import { useWorkoutLaunch } from "@/context/WorkoutLaunchContext";
 import SeanceInterrompue from "@/components/entrainement/SeanceInterrompue";
 import { propositionAGarder } from "@/lib/garderSeanceReprise";
 import { useGuideActif } from "@/context/GuideContext";
+import { photoDuGuide } from "@/lib/photosGuide";
 import { AssistantSpark, VisageGuide } from "@/components/AssistantMark";
 import { voix } from "@/lib/guides";
 import { createClient } from "@/lib/supabase";
@@ -176,6 +177,7 @@ function ForkCard({ kind, count, onClick }: {
   onClick: () => void;
 }) {
   const isIA = kind === "improvise";
+  const { guide } = useGuideActif();
   return (
     <motion.button
       whileTap={{ scale: 0.97 }}
@@ -207,7 +209,7 @@ function ForkCard({ kind, count, onClick }: {
               transform: `translateX(calc(-50% + (${c.dir} * ${CHOISIS_DX}))) rotate(${c.rot}deg)`,
               transformOrigin: "center",
               borderRadius: 9,
-              backgroundImage: `url(/entrainement/${c.img}.webp)`, backgroundSize: "cover", backgroundPosition: c.pos,
+              backgroundImage: `url(/entrainement/${photoDuGuide(c.img, guide)}.webp)`, backgroundSize: "cover", backgroundPosition: c.pos,
               boxShadow: "0 7px 15px rgba(0,0,0,0.55), 0 1px 2px rgba(0,0,0,0.4), inset 0 0 0 1.5px rgba(255,255,255,0.55)",
             }} />
           ))}

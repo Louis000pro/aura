@@ -1,5 +1,6 @@
 "use client";
 
+import { cheminDuGuide } from "@/lib/photosGuide";
 import { jouerSon } from "@/lib/sons";
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { marquesDeReprise, type AvancementSeance } from "@/lib/seanceInterrompue";
@@ -2235,7 +2236,7 @@ export default function WorkoutGuideModal({
                 {/* Héros — la photo de la séance en plein cadre */}
                 <div className="relative flex-shrink-0" style={{ height: 232 }}>
                   {heroImage ? (
-                    <img src={heroImage} alt="" className="w-full h-full object-cover" style={{ objectPosition: "50% 28%" }} />
+                    <img src={cheminDuGuide(heroImage, guide)} alt="" className="w-full h-full object-cover" style={{ objectPosition: "50% 28%" }} />
                   ) : (
                     <div className="w-full h-full" style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)" }} />
                   )}
@@ -2587,7 +2588,7 @@ export default function WorkoutGuideModal({
         {envoyerOuvert && partageOuvert && afficheData && user && (
           <EnvoyerAffiche data={{
             ...afficheData,
-            bg: heroImage ?? afficheData.bg,
+            bg: heroImage ? cheminDuGuide(heroImage, guide) : afficheData.bg,
             /* Le progrès du jour sur l'affiche, en rose : jamais négatif. */
             gain: fait && gainFin ? {
               v: gainFin.valeur,
