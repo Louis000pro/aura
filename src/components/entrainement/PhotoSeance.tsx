@@ -19,7 +19,7 @@ export const WIDGET: Record<"repos" | "done" | "setup" | "improvise", {
   repos:     { img: "repos",     pos: "68% center" },
   done:      { img: "done",      pos: "center 40%" },
   setup:     { img: "setup",     pos: "center 45%" },
-  improvise: { img: "improvise", pos: "center 40%" },
+  improvise: { img: "improvise", pos: "center 6%" },
 };
 
 /** Photo naturelle — la banque parle d'elle-même. Juste l'image, cadrée,

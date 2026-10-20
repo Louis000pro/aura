@@ -153,10 +153,10 @@ function Sheet({ onClose, children, maxHeight = "88vh", height }: {
     livres sur une étagère (maquette `docs/maquettes/je-choisis.html`, piste B,
     choisie par Louis le 2026-10-20). Chaque photo suit le Guide choisi. */
 const CHOISIS_TRANCHES: { img: string; pos: string }[] = [
-  { img: "push-pompes",   pos: "center 35%" },
-  { img: "legs-squat",    pos: "center 35%" },
-  { img: "pull-traction", pos: "center 25%" },
-  { img: "legs-fentes",   pos: "center 35%" },
+  { img: "push-pompes",   pos: "22% 60%" },
+  { img: "legs-squat",    pos: "40% 30%" },
+  { img: "pull-traction", pos: "48% 15%" },
+  { img: "legs-fentes",   pos: "49% 30%" },
 ];
 
 function ForkCard({ kind, count, onClick }: {
