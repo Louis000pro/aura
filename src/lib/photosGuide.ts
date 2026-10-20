@@ -16,6 +16,7 @@ import type { GuideRef } from "./guides";
 
 const PHOTOS_PAR_GUIDE: Record<string, string> = {
   "push-couche-v5": "push-couche-v5",
+  improvise: "improvise-v1",
 };
 
 /** Le nom de fichier (sans `.webp`) à montrer pour ce Guide. */
