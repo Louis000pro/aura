@@ -351,7 +351,7 @@ const ADVICE_DRAFTS: AdviceDraft[] = [
     theme: "Entraînement",
     readingMinutes: 2,
     access: "free",
-    image: "push-couche-v2",
+    image: "push-couche-v3",
     intro: "Raccourcir toutes les pauses donne une séance intense. Ça ne donne pas forcément une meilleure séance, surtout si chaque série suivante perd des répétitions et de la qualité.",
     sections: [
       {
