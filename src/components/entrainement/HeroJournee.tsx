@@ -32,10 +32,14 @@ import ChoixJour from "./ChoixJour";
 import TodayHero from "./TodayHero";
 import VersionCourteSheet from "./VersionCourteSheet";
 
-export default function HeroJournee() {
+export default function HeroJournee({ onPret }: {
+  /** L'accueil attend ce signal pour se montrer d'un seul bloc. */
+  onPret?: () => void;
+} = {}) {
   const router = useRouter();
   const { open: openAssistant } = useAssistant();
   const j = useJournee();
+  useEffect(() => { if (j.etat !== "loading") onPret?.(); }, [j.etat, onPret]);
   /* « Lui donner un jour » : le seul geste du héros qui écrit. */
   const [quand, setQuand] = useState(false);
   /* R8 · « J'ai moins de temps ». */

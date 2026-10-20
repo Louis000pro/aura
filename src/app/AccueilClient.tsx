@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { chargerRelaisAccueil, type RelaisAccueil } from "@/lib/defi";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
@@ -33,6 +33,7 @@ import { aiFetch } from "@/lib/aiFetch";
 import { bornesHier, journeeVide, lireRecap, noterRecap, type FaitsRecap, type Recap } from "@/lib/recapJour";
 import RecapHier from "@/components/accueil/RecapHier";
 import PremierAccueil, { usePremierAccueil } from "@/components/accueil/PremierAccueil";
+import SqueletteAccueil from "@/components/accueil/SqueletteAccueil";
 
 /* ─────────────────────────────────────────────────
    LANDING PAGE — visiteur non connecté
@@ -156,6 +157,22 @@ function Dashboard() {
         supplémentaire pour la lui reprendre. */
   const { guide, etat: etatGuide } = useGuideActif();
   const premierAccueil = usePremierAccueil(user?.id);
+
+  /* ── L'accueil se montre d'un seul bloc (Louis, 2026-10-20) ──
+     Il se montait morceau par morceau. On attend les deux pièces qui
+     prennent le plus de place, le héros et la journée, et on les montre
+     ensemble. Jamais plus d'une seconde et demie : passé ce délai, on
+     montre ce qu'on a, plutôt qu'un écran qui a l'air bloqué. Les deux
+     signaux ne redescendent jamais, donc l'accueil ne se recache pas
+     quand il se relit après une séance. */
+  const [heroPret, setHeroPret] = useState(false);
+  const signalerHero = useCallback(() => setHeroPret(true), []);
+  const [delaiPasse, setDelaiPasse] = useState(false);
+  useEffect(() => {
+    const t = window.setTimeout(() => setDelaiPasse(true), 1500);
+    return () => window.clearTimeout(t);
+  }, []);
+  const revele = (heroPret && missionsLues && premierAccueil.afficher !== null) || delaiPasse;
   const { open: ouvrirAssistant } = useAssistant();
   const [motGuide, setMotGuide] = useState<MomentAccueil | null>(null);
   const jourEvalueRef = useRef<string | null>(null);
@@ -311,7 +328,11 @@ function Dashboard() {
             guide={guide}
             onFermer={premierAccueil.fermer}
           />
-        ) : premierAccueil.afficher === false && (
+        ) : premierAccueil.afficher !== true && (
+        <div className="relative" aria-busy={!revele}>
+        {!revele && <div className="absolute inset-x-0 top-0"><SqueletteAccueil /></div>}
+        <div style={{ opacity: revele ? 1 : 0, transition: "opacity 0.28s ease" }}>
+        {premierAccueil.afficher === false && (
         <AccueilSignature
           greeting={greeting}
           pseudo={user?.pseudo ?? user?.name ?? ""}
@@ -325,11 +346,14 @@ function Dashboard() {
           moment={motGuide}
           relais={relais}
           jour={parisDay}
-          heros={<SeanceInterrompueAccueil><HeroJournee /></SeanceInterrompueAccueil>}
+          heros={<SeanceInterrompueAccueil onPret={signalerHero}><HeroJournee onPret={signalerHero} /></SeanceInterrompueAccueil>}
           onNavigate={(path) => router.push(path)}
           onOpenRangs={() => setShowRangs(true)}
           onAuraChange={() => setStatsTick((t) => t + 1)}
         />
+        )}
+        </div>
+        </div>
         )}
 
         <RangsModal

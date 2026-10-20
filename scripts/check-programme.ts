@@ -505,7 +505,7 @@ verdict(
      `lireProgrammeActif`, et l'écart ne se voit qu'en base. */
   verdict(
     "V7A · le hook ne crée un programme que si on l'y autorise",
-    hook.includes("creerProgramme = false") && hook.includes("? await getOrCreateProgramme(") && hook.includes(": await lireProgrammeActif("),
+    hook.includes("creerProgramme = false") && hook.includes("creerProgramme ? null : enAvance(lireProgrammeActif(") && hook.includes(": await getOrCreateProgramme("),
     "creerProgramme ? créer : lire",
   );
   verdict(
@@ -527,7 +527,7 @@ verdict(
   /* ── Le héros a bien changé d'écran ── */
   verdict(
     "V7A · le héros est monté sur l'accueil",
-    lire("src/app/AccueilClient.tsx").includes("<HeroJournee />"),
+    lire("src/app/AccueilClient.tsx").includes("<HeroJournee"),
     "AccueilClient → HeroJournee",
   );
   verdict(
@@ -6418,8 +6418,10 @@ verdict(
     /* Le chemin dans le hook. */
     const lecture = journee.slice(journee.indexOf("const charger = useCallback"), journee.indexOf("useEffect(() => { void charger(); }"));
     verdict("R2 · l'étape n'est publiée qu'avec son modèle, après la dernière lecture",
-      lecture.indexOf("await modeleDeLEtape(") > 0 && lecture.indexOf("await modeleDeLEtape(") < lecture.indexOf("setEtape(suivante)")
-        && lecture.lastIndexOf("if (!derniere()) return;", lecture.indexOf("setEtape(suivante)")) > lecture.indexOf("await reservationDeLOccurrence(")
+      /* 2026-10-20 · le modèle, la variété et la réservation se lisent en
+         parallèle (Promise.all) : la règle reste « lu avant publié ». */
+      lecture.indexOf("modeleDeLEtape(") > 0 && lecture.indexOf("modeleDeLEtape(") < lecture.indexOf("setEtape(suivante)")
+        && lecture.lastIndexOf("if (!derniere()) return;", lecture.indexOf("setEtape(suivante)")) > lecture.indexOf("reservationDeLOccurrence(")
         /* R7 · le modèle devient la prescription de CETTE occurrence. */
         && /setModele\(suivante && lu && variete\s*\? modeleDeLOccurrence\(lu, suivante, ctxModele, variete, actif\?\.cycle\.length \?\? 1\)/.test(lecture),
       "une réponse arrivée en retard ne publie rien");
@@ -7230,7 +7232,7 @@ verdict(
     P.resoudreJournee({ cycle, etat: base, reservations: [], calendrier: { ...P.CALENDRIER_VIDE, exceptions: [{ date: jeudi, genre: "seance_en_plus" }] }, dates, aujourdhui: jeudi, faitAujourdhui: false, dernierJourFait: null }) === null
       && cron.includes("!calendrierChoisi(cal)") && !lire9("src/lib/projection.ts").includes("aDesJours"), "tour 41");
   const hook41 = hook.replace(/\/\*[\s\S]*?\*\//g, "");
-  const iRes = hook41.indexOf("await resolutionDuProgramme(user.id, actif, todayYmd())");
+  const iRes = hook41.indexOf("resolutionDuProgramme(user.id, actif, todayYmd())");
   const iBrute = hook41.indexOf("await etapeSuivanteDe(");
   verdict("R9a · héros : la suite brute ne se lit qu'en mode historique, après le calendrier",
     iRes > 0 && iBrute > iRes && hook41.slice(iBrute - 80, iBrute).includes('choix.genre === "historique"'), `${iRes} / ${iBrute}`);

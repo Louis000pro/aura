@@ -60,8 +60,11 @@ export default function SeanceInterrompue() {
 }
 
 /** Sur l'accueil, la place gardée prend le rang de la séance du jour. */
-export function SeanceInterrompueAccueil({ children }: { children: React.ReactNode }) {
+export function SeanceInterrompueAccueil({ children, onPret }: { children: React.ReactNode; onPret?: () => void }) {
   const { reprise } = useWorkoutLaunch();
+  /* La reprise se lit sur l'appareil : elle est prête tout de suite, et
+     l'accueil n'a pas à attendre un héros qui ne se montrera pas. */
+  useEffect(() => { if (reprise) onPret?.(); }, [reprise, onPret]);
   return reprise ? <SeanceInterrompue /> : <>{children}</>;
 }
 

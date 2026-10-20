@@ -195,6 +195,19 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
     const numero = ++lectureEnCours.current;
     const derniere = () => numero === lectureEnCours.current;
     const supabase = createClient();
+    /* ⚡ 2026-10-20 · LES LECTURES PARTENT ENSEMBLE. Elles s'enchaînaient
+       une par une (profil, lieu, semaine, programme, adaptation…), donc
+       l'accueil se montait morceau par morceau. Tout ce qui ne dépend de
+       rien part tout de suite ; l'ordre de PUBLICATION, lui, ne change
+       pas. Seules les lectures partent en avance : la création d'un
+       programme (`creerProgramme`) attend toujours le profil. Le `.catch`
+       vide ne fait que marquer la promesse comme suivie : l'`await` plus
+       bas reçoit l'erreur comme avant. */
+    const enAvance = <T,>(p: Promise<T>) => { p.catch(() => {}); return p; };
+    const lieuP = enAvance(loadLieu(user.id));
+    const semaineP = enAvance(lireSemaine(user.id, weekDates()));
+    const actifP = creerProgramme ? null : enAvance(lireProgrammeActif(user.id));
+    const varieteP = enAvance(lireVariete(user.id));
     const { data: prof, error: errProfil } = await supabase
       .from("mon_profil")
       .select("onboarding_level, onboarding_sessions_week, onboarding_goals")
@@ -213,7 +226,7 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
 
     const aRepondu = !!(prof && (prof.onboarding_level || prof.onboarding_sessions_week
       || (Array.isArray(prof.onboarding_goals) && prof.onboarding_goals.length > 0)));
-    const { location, equip } = await loadLieu(user.id);
+    const { location, equip } = await lieuP;
     if (!derniere()) return;
     {
       const debutHier = new Date(todayYmd() + "T00:00:00");
@@ -243,7 +256,7 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
     try {
       /* ⚠️ LIRE N'ÉCRIT PLUS RIEN (V5). Une semaine sans ligne est une
          semaine sans rien de prévu, et c'est une réponse valide. */
-      const lue = await lireSemaine(user.id, weekDates());
+      const lue = await semaineP;
       if (!derniere()) return;
       setSemaine(lue);
       setGen(reglages);
@@ -287,22 +300,23 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
          de donner ses réponses. Ici c'est le REPLI, pour les comptes qui
          ont répondu avant que le questionnaire ne sache le faire — et il
          n'est armé que sur Entraînement. L'accueil, lui, lit. */
-      const actif = creerProgramme
-        ? await getOrCreateProgramme(user.id)
-        : await lireProgrammeActif(user.id);
+      const actif = actifP ? await actifP : await getOrCreateProgramme(user.id);
       actifLu = actif;
       /* ⚠️ V8 · L'ADAPTATION SE LIT AVANT L'ÉTAPE, PARCE QU'ELLE DÉCIDE
          DE L'ÉTAPE. Une requête, et seulement s'il y a un programme :
          sans programme il n'y a pas de cycle à adapter. Elle est
          rattachée au programme ACTIF, donc une nouvelle version du
          programme cesse d'être adaptée d'elle-même, sans écriture. */
+      /* La résolution ne dépend pas de l'adaptation : les deux partent
+         ensemble, et c'est l'étape suivante qui les attend toutes les deux. */
+      const projP = enAvance(resolutionDuProgramme(user.id, actif, todayYmd()));
       const couche = actif ? await adaptationDuJour(user.id, actif.programme.id, todayYmd()) : null;
       coucheLue = couche;
       /* R9a · AVEC UN CALENDRIER CHOISI, LA SÉANCE PROPOSÉE VIENT DE LA
          RÉSOLUTION PARTAGÉE (décision 21) : la tête de la suite hors
          réservations futures. Sans calendrier choisi, la suite brute fait
          foi, et elle ne se lit QUE dans ce cas (tour 41). */
-      const proj = await resolutionDuProgramme(user.id, actif, todayYmd());
+      const proj = await projP;
       const choix = choixSuite(proj);
       /* ⚠️ Tour 40 · RÉSOLUTION INDISPONIBLE : jamais la suite brute à sa
          place, ce serait annoncer autre chose que le calendrier. */
@@ -314,10 +328,18 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
          Publier l'étape avant d'avoir lu son modèle laissait l'écran,
          le temps d'une requête, avec l'étape B et le modèle de A. */
       const ctxModele = contexteDe(reglages);
-      const lu = suivante ? await modeleDeLEtape({ id: suivante.id, nom: suivante.nom }, ctxModele) : null;
+      /* Le modèle, la variété et la réservation ne dépendent que de
+         l'étape : ils se lisent en même temps. */
+      const [lu, varieteLue, resa] = suivante
+        ? await Promise.all([
+            modeleDeLEtape({ id: suivante.id, nom: suivante.nom }, ctxModele),
+            varieteP,
+            actif ? reservationDeLOccurrence(user.id, actif.programme.id, suivante.rang) : Promise.resolve(null),
+          ])
+        : [null, null, null];
       /* R7 · le réglage de variété décide des complémentaires : illisible,
          on ne publie pas un contenu que l'écriture ne reprendrait pas. */
-      const variete = suivante ? await lireVariete(user.id) : null;
+      const variete = suivante ? varieteLue : null;
       if (suivante && !variete) { indisponibleEtGarder(); return; }
       /* ⚠️ R9a · tour 43 · `modeleDeLEtape` rend `null` quand il ne sait
          pas (panne, modèle sans lignes) ; l'absence de modèle, elle, rend
@@ -330,9 +352,6 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
          cherche en base, jamais dans la semaine chargée.
          R6 · LA RÉSERVATION DE CETTE OCCURRENCE-LÀ, pas de l'étape en
          général : une occurrence = une ligne (`uniq_occurrence`). */
-      const resa = suivante && actif
-        ? await reservationDeLOccurrence(user.id, actif.programme.id, suivante.rang)
-        : null;
       if (!derniere()) return;
       setIndisponible(false);
       setProjection(proj);
