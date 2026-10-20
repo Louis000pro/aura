@@ -51,7 +51,7 @@ import SeanceInterrompue from "@/components/entrainement/SeanceInterrompue";
 import { propositionAGarder } from "@/lib/garderSeanceReprise";
 import { useGuideActif } from "@/context/GuideContext";
 import { photoDuGuide } from "@/lib/photosGuide";
-import { AssistantSpark, VisageGuide } from "@/components/AssistantMark";
+import { VisageGuide } from "@/components/AssistantMark";
 import { voix } from "@/lib/guides";
 import { createClient } from "@/lib/supabase";
 import { lockBodyModal } from "@/lib/bodyModal";
@@ -189,13 +189,11 @@ function ForkCard({ kind, count, onClick }: {
         <>
           <Photo img={WIDGET.improvise.img} pos={WIDGET.improvise.pos}
             style={{ position: "absolute", inset: 0 }} />
-          <span className="absolute top-3 right-3"><AssistantSpark px={22} /></span>
         </>
       ) : (
         <div aria-hidden className="absolute inset-0" style={{ isolation: "isolate", containerType: "size" }}>
-          {/* fond en profondeur — la bibliothèque derrière l'éventail */}
-          <div style={{ position: "absolute", inset: 0, backgroundImage: "url(/entrainement/pull-rowing.webp)", backgroundSize: "cover", backgroundPosition: "center", filter: "blur(4px) brightness(0.42)", transform: "scale(1.12)" }} />
-          <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(var(--voile-photo-rgb),0.5), rgba(var(--voile-photo-rgb),0.72))" }} />
+          {/* fond blanc derrière l'éventail (Louis, 2026-10-20) */}
+          <div style={{ position: "absolute", inset: 0, background: "#FFFFFF" }} />
           {/* halo — centré sur la carte du milieu, suit sa hauteur */}
           <div style={{ position: "absolute", left: "50%", top: "calc(100cqh - 64px - (clamp(80px,54cqh,120px) / 2))", width: 96, height: 96, transform: "translate(-50%,-50%)", background: "radial-gradient(circle, rgba(155,130,255,0.35), transparent 68%)", filter: "blur(6px)" }} />
           {/* l'éventail de séances — grandit avec la hauteur de la carte */}
