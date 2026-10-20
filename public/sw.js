@@ -1,4 +1,10 @@
-// Vaiiya Service Worker — v12 (une seconde tentative sur les chunks)
+// Vaiiya Service Worker — v13 (navigation preload)
+// v13 : au démarrage à froid (icône de l'iPhone), le navigateur doit d'abord
+// réveiller ce service worker avant qu'il ne demande la page au réseau. Avec
+// le « navigation preload », la requête part EN MÊME TEMPS que le réveil : la
+// page arrive plus tôt, et la stratégie ne change pas (réseau strict, donc un
+// déploiement reste visible tout de suite). Safari le gère depuis iOS 15.4.
+// v12 (une seconde tentative sur les chunks)
 // v11 (HTML réseau-strict + purge ciblée à la demande)
 //
 // ⚠️ v11 N'A CHANGÉ AUCUNE STRATÉGIE DE CACHE. Le seul ajout est un
@@ -33,6 +39,7 @@ self.addEventListener("activate", (e) => {
   e.waitUntil(
     caches.keys()
       .then((keys) => Promise.all(keys.filter((k) => !KEEP.includes(k)).map((k) => caches.delete(k))))
+      .then(() => self.registration.navigationPreload?.enable().catch(() => {}))
       .then(() => self.clients.claim())
   );
 });
@@ -80,7 +87,10 @@ self.addEventListener("fetch", (e) => {
     e.respondWith((async () => {
       const cache = await caches.open(HTML_CACHE);
       try {
-        const net = await fetch(e.request);
+        // La réponse préchargée pendant le réveil du service worker, sinon
+        // une requête normale (navigateur sans preload, ou preload refusé).
+        const pre = await Promise.resolve(e.preloadResponse).catch(() => undefined);
+        const net = pre || (await fetch(e.request));
         if (net && net.ok) cache.put(e.request, net.clone());
         return net;
       } catch {

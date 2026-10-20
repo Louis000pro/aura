@@ -1,15 +1,11 @@
 "use client";
-
 import Image from "next/image";
 import { useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { ChevronRight } from "lucide-react";
 import { VisageGuide } from "@/components/AssistantMark";
 import MaJournee from "@/components/accueil/MaJournee";
-import FeuilleSerie from "@/components/accueil/FeuilleSerie";
-import FeuilleMotDuJour from "@/components/accueil/FeuilleMotDuJour";
 import { useAuth } from "@/context/AuthContext";
-import FeuilleMissions from "@/components/accueil/FeuilleMissions";
 import { useAssistant } from "@/context/AssistantContext";
 import type { EtatAura } from "@/lib/aura";
 import { PRENOM_GUIDE, type GuideRef } from "@/lib/guides";
@@ -17,6 +13,13 @@ import type { MomentAccueil } from "@/lib/momentAccueil";
 import { lireMot, marquerMotLu } from "@/lib/motDuJour";
 import { etatPoster, imageEtat, type RelaisAccueil } from "@/lib/defi";
 import styles from "./AccueilSignature.module.css";
+
+import dynamic from "next/dynamic";
+// Les trois feuilles ne s'ouvrent qu'au toucher : elles se téléchargent à part
+// pour ne pas ralentir le lancement de l'accueil (Louis, 2026-10-20).
+const FeuilleSerie = dynamic(() => import("@/components/accueil/FeuilleSerie"), { ssr: false });
+const FeuilleMotDuJour = dynamic(() => import("@/components/accueil/FeuilleMotDuJour"), { ssr: false });
+const FeuilleMissions = dynamic(() => import("@/components/accueil/FeuilleMissions"), { ssr: false });
 
 /* ═══════════════════════════════════════════════════════════════════════
    V7B · L'ACCUEIL RÉPOND À LA JOURNÉE.

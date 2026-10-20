@@ -3,7 +3,11 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence } from "framer-motion";
-import WorkoutGuideModal, { type Exercise } from "@/components/WorkoutGuideModal";
+import dynamic from "next/dynamic";
+import type { Exercise } from "@/components/WorkoutGuideModal";
+// Le lecteur de séance pèse ~300 Ko : il ne se télécharge plus au lancement
+// de l'app (voir `Differes.tsx`, qui le précharge une fois l'app au repos).
+const WorkoutGuideModal = dynamic(() => import("@/components/WorkoutGuideModal"), { ssr: false });
 import { ConflitReprise } from "@/components/entrainement/SeanceInterrompue";
 import { useAuth, type User } from "@/context/AuthContext";
 import type { CibleSeance } from "@/lib/finSeance";

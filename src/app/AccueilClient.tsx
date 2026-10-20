@@ -14,7 +14,6 @@ import { createClient } from "@/lib/supabase";
 import AccueilSignature from "@/components/AccueilSignature";
 import HeroJournee from "@/components/entrainement/HeroJournee";
 import { SeanceInterrompueAccueil } from "@/components/entrainement/SeanceInterrompue";
-import RangsModal from "@/components/rang/RangsModal";
 import { calculerAura, etatDepuisExp, type EtatAura } from "@/lib/aura";
 import { noterRang } from "@/lib/celebrationRang";
 import { useGuideActif } from "@/context/GuideContext";
@@ -31,9 +30,15 @@ import { noterMomentDuJour } from "@/lib/motDuJour";
 import { marquerPresence } from "@/lib/presence";
 import { aiFetch } from "@/lib/aiFetch";
 import { bornesHier, journeeVide, lireRecap, noterRecap, type FaitsRecap, type Recap } from "@/lib/recapJour";
-import RecapHier from "@/components/accueil/RecapHier";
-import PremierAccueil, { usePremierAccueil } from "@/components/accueil/PremierAccueil";
+import { usePremierAccueil } from "@/components/accueil/usePremierAccueil";
 import SqueletteAccueil from "@/components/accueil/SqueletteAccueil";
+
+import dynamic from "next/dynamic";
+// Trois écrans qui ne s'affichent qu'à la demande (ou presque jamais) : ils ne
+// pèsent plus sur le lancement de l'app (Louis, 2026-10-20).
+const RangsModal = dynamic(() => import("@/components/rang/RangsModal"), { ssr: false });
+const RecapHier = dynamic(() => import("@/components/accueil/RecapHier"), { ssr: false });
+const PremierAccueil = dynamic(() => import("@/components/accueil/PremierAccueil"), { ssr: false });
 
 /* ─────────────────────────────────────────────────
    LANDING PAGE — visiteur non connecté

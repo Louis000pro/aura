@@ -6,21 +6,18 @@ import MainWrapper from "@/components/MainWrapper";
 import { AuthProvider } from "@/context/AuthContext";
 import { GuidedTourProvider } from "@/context/GuidedTourContext";
 import RappelProfil from "@/components/RappelProfil";
-import DemandeConsentement from "@/components/DemandeConsentement";
 import GardeGuide from "@/components/GardeGuide";
 import GardePseudo from "@/components/GardePseudo";
 import GardeConnexion from "@/components/GardeConnexion";
-import GuidedTour from "@/components/GuidedTour/GuidedTour";
 import PWARegister from "@/components/PWARegister";
+import { AssistantSheetDiffere, DemandeConsentementDiffere, GuidedTourDiffere, PopupNouveautesDiffere, PrechargeDifferes } from "@/components/Differes";
 import PremiumBanner from "@/components/PremiumBanner";
 import PresenceDuJour from "@/components/PresenceDuJour";
 import CelebrationRang from "@/components/rang/CelebrationRang";
 import InvitationAvis from "@/components/avis/InvitationAvis";
-import PopupNouveautes from "@/components/maj/PopupNouveautes";
 import { GuideProvider } from "@/context/GuideContext";
 import { AssistantProvider } from "@/context/AssistantContext";
 import { WorkoutLaunchProvider } from "@/context/WorkoutLaunchContext";
-import AssistantSheet from "@/components/AssistantSheet";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { PLANS, VENTE_OUVERTE } from "@/lib/plans";
@@ -194,6 +191,14 @@ export default function RootLayout({
       <head>
         {/* Empêche les extensions de traduction (Google Translate, Opera) de casser React */}
         <meta name="google" content="notranslate" />
+
+        {/* La première chose que fait l'app ouverte, c'est parler à Supabase
+            (session, profil, journée). On ouvre la connexion pendant que le
+            JavaScript se télécharge, au lieu d'attendre qu'il le demande :
+            la poignée de main TLS ne se paie plus au démarrage. */}
+        {process.env.NEXT_PUBLIC_SUPABASE_URL && (
+          <link rel="preconnect" href={new URL(process.env.NEXT_PUBLIC_SUPABASE_URL).origin} crossOrigin="anonymous" />
+        )}
 
         {/* Écrans de démarrage iOS (PWA standalone) — logo Vaiiya au lieu d'un écran blanc */}
         <link rel="apple-touch-startup-image" media="screen and (device-width:375px) and (device-height:667px) and (-webkit-device-pixel-ratio:2)" href="/splash/splash-750x1334.png?v=5" />
@@ -407,14 +412,15 @@ export default function RootLayout({
                 <Navigation />
                 <MainWrapper>{children}</MainWrapper>
                 <RappelProfil />
-                <DemandeConsentement />
-                <GuidedTour />
+                <DemandeConsentementDiffere />
+                <GuidedTourDiffere />
                 {/* Le récap de mise à jour : une fois par compte, puis dans
                     Paramètres. Il vit DANS le fournisseur de la visite guidée
                     pour ne jamais s'ouvrir par dessus elle. */}
-                <PopupNouveautes />
+                <PopupNouveautesDiffere />
                 <PWARegister />
-                <AssistantSheet />
+                <AssistantSheetDiffere />
+                <PrechargeDifferes />
                 <PremiumBanner />
               </GuidedTourProvider>
             </WorkoutLaunchProvider>
