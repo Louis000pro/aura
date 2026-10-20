@@ -268,6 +268,10 @@ type AssistantContextValue = {
   /** La feuille signale qu'un message est en cours d'écriture : le Guide
    *  écoute. Elle seule voit le champ de saisie, d'où ce passe-plat. */
   noterSaisie: (actif: boolean) => void;
+  /** La feuille signale l'ouverture qu'elle montre sur une conversation
+   *  vide (`null` quand elle cesse de la montrer) : le premier message
+   *  envoyé la fait entrer dans le fil, devant lui. */
+  noterOuverture: (bulles: string[] | null) => void;
   /** Le stock gratuit de séances gardées est plein : la carte n'offre alors que ce qui reste possible. */
   bibliothequePleine: boolean;
   /** Garde la séance proposée. `jour` la pose aussi sur le planning, en UNE
@@ -598,6 +602,11 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
      sa séance. Vu de l'utilisateur, la première demande ne donnait jamais de
      carte. */
   const attenteRef = useRef<string | null>(null);
+  /* L'ouverture que la feuille MONTRE en ce moment, sur une conversation
+     vide (`ouvertureGuide.ts`). Ce n'est que de l'affichage tant que la
+     personne n'a rien répondu : rien n'est écrit, et elle se recompose à
+     chaque ouverture. Le premier message envoyé l'emporte avec lui. */
+  const ouvertureRef = useRef<string[] | null>(null);
   /* `sendMessage` est défini plus bas ; `runAction` doit pouvoir relancer une
      demande. Un ref évite de tout réordonner (et la boucle de dépendances). */
   const sendRef = useRef<((text: string, masque?: boolean) => void) | null>(null);
@@ -2194,7 +2203,29 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
 
     const userMsg: AssistantMsg = { role: "user", content: trimmed, id: uid(), ...(masque ? { masque: true } : {}) };
     const assistantId = uid();
-    setMessages((prev) => [...prev, userMsg, { role: "assistant", content: "", id: assistantId, streaming: true }]);
+
+    /* ── L'OUVERTURE ENTRE DANS LE FIL AVEC LA PREMIÈRE RÉPONSE ──
+       (2026-10-20). Le Guide a parlé en premier, de ta journée, mais ses
+       bulles n'étaient que de l'affichage. Quelle que soit la façon de
+       répondre (une réponse proposée, un message tapé, la dictée), elles
+       passent DEVANT ta réponse, dans le fil et dans ce que reçoit le
+       coach : sans elles, « Décale-la à demain » ne voudrait rien dire.
+
+       ⚠️ UN TOUR DE LA PERSONNE, MASQUÉ, PASSE DEVANT, pour la raison de
+       `ouvrirSurQuestion` : `/api/chat` commence l'historique sur un
+       message de la personne et jetterait sinon les bulles du Guide. */
+    const ouverture = messages.length === 0 ? ouvertureRef.current : null;
+    ouvertureRef.current = null;
+    const prelude: AssistantMsg[] = ouverture ? [
+      { role: "user", content: "J’ouvre la conversation.", id: uid(), masque: true },
+      ...ouverture.map((b, i): AssistantMsg => ({
+        role: "assistant", content: b, id: uid(),
+        // La dernière bulle pose la question : elle écoute.
+        ton: i === ouverture.length - 1 ? "listen" : "explain",
+      })),
+    ] : [];
+
+    setMessages((prev) => [...prev, ...prelude, userMsg, { role: "assistant", content: "", id: assistantId, streaming: true }]);
     setIsStreaming(true);
 
     /* Le plafond du coach est tenu par le SERVEUR (`garderIA`), et son refus
@@ -2216,7 +2247,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
     // 1 req/s, et /api/chat en consomme désormais DEUX à la suite
     // (l'aiguilleur puis le coach) : on décale d'autant cet appel secondaire,
     // dont rien à l'écran ne dépend, pour lui laisser la voie libre.
-    const recentContext = messages
+    const recentContext = [...messages, ...prelude]
       .slice(-4)
       .map((m) => `${m.role === "user" ? "Utilisateur" : "Coach"}: ${m.content}`)
       .join("\n");
@@ -2224,7 +2255,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
 
     // On n'envoie que les derniers échanges au modèle (limite la taille de requête
     // → évite le 413 « request too large » sur les longues conversations).
-    const history = [...messages, userMsg].slice(-10).map((m) => ({ role: m.role, content: m.content }));
+    const history = [...messages, ...prelude, userMsg].slice(-10).map((m) => ({ role: m.role, content: m.content }));
 
     /* ⚠️ V9A · LE MOTEUR SE RELIT, IL NE SE MET PAS EN CACHE DE SESSION.
        `ensureContext()` charge une fois et ne relit jamais (`dataLoadedRef`)
@@ -2629,6 +2660,12 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
     open();
   }, [open]);
   const close = useCallback(() => setIsOpen(false), []);
+  /* La feuille dit ce qu'elle montre en ouvrant (ou `null` quand elle cesse
+     de le montrer). Un ref, pas un état : rien à l'écran n'en dépend, seul
+     le prochain envoi le lit. */
+  const noterOuverture = useCallback((bulles: string[] | null) => {
+    ouvertureRef.current = bulles && bulles.length > 0 ? bulles : null;
+  }, []);
   const toggle = useCallback(() => setIsOpen((v) => !v), []);
   const clear = useCallback(() => {
     setMessages([]);
@@ -2988,7 +3025,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
   }, [memoryNotice]);
 
   return (
-    <Ctx.Provider value={{ isOpen, open, ouvrirSurQuestion, close, toggle, clear, messages, isStreaming, sendMessage, repondreQuestion, pseudo: user?.pseudo, memoryNotice, pendingSeance, pendingPlan, pendingRecipe, pendingMeal, actionLoading, etatGuide, noterSaisie: setSaisie, bibliothequePleine, confirmSeance, garderSeance, cancelSeance, confirmPlan, basculerEnPlus, retargetPlan, cancelPlan, chargerJours, confirmRecipe, cancelRecipe, confirmMeal, cancelMeal, quotaChat, messagesEpuises }}>
+    <Ctx.Provider value={{ isOpen, open, ouvrirSurQuestion, close, toggle, clear, messages, isStreaming, sendMessage, repondreQuestion, pseudo: user?.pseudo, memoryNotice, pendingSeance, pendingPlan, pendingRecipe, pendingMeal, actionLoading, etatGuide, noterSaisie: setSaisie, noterOuverture, bibliothequePleine, confirmSeance, garderSeance, cancelSeance, confirmPlan, basculerEnPlus, retargetPlan, cancelPlan, chargerJours, confirmRecipe, cancelRecipe, confirmMeal, cancelMeal, quotaChat, messagesEpuises }}>
       {children}
     </Ctx.Provider>
   );

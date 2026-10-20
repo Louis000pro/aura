@@ -10,7 +10,6 @@
    ════════════════════════════════════════════════════════════════════ */
 
 import { Fragment, useEffect, useRef, useState } from "react";
-import type { CSSProperties, ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { Send, ChevronDown, Mic, Square, Check, Utensils } from "lucide-react";
@@ -18,6 +17,8 @@ import { useAssistant } from "@/context/AssistantContext";
 import type { QuestionCliquable } from "@/lib/assistantTools";
 import type { AttenteAction, JourDispo } from "@/context/AssistantContext";
 import CarteSeance from "@/components/assistant/CarteSeance";
+import OuvertureGuide from "@/components/assistant/OuvertureGuide";
+import { BULLE, BULLE_GUIDE, BULLE_MOI, Brouillon, PointsSaisie } from "@/components/assistant/bulles";
 import { useWorkoutLaunch } from "@/context/WorkoutLaunchContext";
 import { useVoiceCapture } from "@/hooks/useVoiceCapture";
 import { CATEGORY_LABEL } from "@/lib/assistantActions";
@@ -46,19 +47,6 @@ function libelleJour(jours: JourDispo[] | null, ymd: string | null): string {
   const j = jours?.find((x) => x.ymd === ymd);
   return (j?.label ?? "").toLowerCase();
 }
-
-/* Ce que quelqu'un DIT en ouvrant, pas ce qu'un menu propose. Les quatre
-   entrées d'avant (« Mon plan cette semaine », « Bilan nutrition du jour »)
-   étaient des rubriques : on choisissait dans un sommaire au lieu de parler.
-   Elles sont envoyées telles quelles au coach, donc elles doivent ressembler à
-   une phrase de quelqu'un. Aucun adjectif accordé : « fatigué » aurait mis tout
-   le monde au masculin. */
-const SUGGESTIONS = [
-  "Fais-moi une séance jambes",
-  "J’ai 30 minutes ce soir",
-  "Je mange quoi ce midi ?",
-  "Passe en mode sombre",
-];
 
 /* ── Rendu lisible des réponses de l'✦ ──
    Le modèle glisse parfois du markdown (**gras**, listes en *, titres #, `code`).
@@ -136,53 +124,9 @@ function AssistantContent({ text }: { text: string }) {
   );
 }
 
-/* ── LES BULLES ──
-   Version 3 de la conversation (maquette « La conversation du Guide »,
-   validée par Louis le 2026-10-20 : « c'est plus clair »). La version
-   d'avant ressemblait à tous les chatbots, et l'essai en grandes phrases
-   d'affiche avait l'inverse comme défaut : « on ne sait plus trop qu'on
-   parle à quelqu'un ». Le repère, c'est l'échange gauche / droite d'une
-   messagerie : les messages du Guide à gauche, sur son voile violet, le
-   coin tourné vers lui (il se tient en haut à gauche) ; les tiens à droite,
-   en encre.
-
-   ⚠️ Plus de pastille ronde devant chaque bulle : le Guide est déjà là, en
-   grand, dans l'en-tête, et c'est lui qui porte l'état vivant. Et plus de
-   dégradé violet sur tes messages : le violet veut dire « action ». */
-const BULLE = "px-4 py-2.5 text-[16px] leading-relaxed";
-const BULLE_GUIDE: CSSProperties = {
-  background: "rgb(var(--tint-violet-rgb))",
-  color: "var(--text-0)",
-  borderRadius: "6px 20px 20px 20px",
-};
-const BULLE_MOI: CSSProperties = {
-  background: "var(--bulle-moi)",
-  color: "var(--bulle-moi-texte)",
-  borderRadius: "20px 20px 6px 20px",
-};
-
-/* Ce que tu peux lui répondre, déjà écrit, de TON côté. En pointillés :
-   ce n'est pas encore envoyé, et ça se voit avant de toucher. Une fois
-   choisi, ça devient ta bulle d'encre. */
-function Brouillon({ children, onClick, rang = 0 }: { children: ReactNode; onClick: () => void; rang?: number }) {
-  return (
-    <motion.button type="button"
-      initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.04 + rang * 0.05 }}
-      whileTap={{ scale: 0.97 }}
-      onClick={onClick}
-      className="max-w-[84%] px-4 py-2.5 text-[16px] font-semibold leading-snug text-right cursor-pointer"
-      style={{
-        minHeight: 44,
-        borderRadius: "20px 20px 6px 20px",
-        border: "1.5px dashed rgba(var(--accent-rgb),0.6)",
-        background: "rgba(var(--surface-rgb),0.9)",
-        color: "var(--exp-encre)",
-      }}>
-      {children}
-    </motion.button>
-  );
-}
+/* Les bulles (le Guide à gauche, toi à droite) et les réponses en
+   pointillés vivent dans `assistant/bulles.tsx` : la feuille et son
+   ouverture les dessinent pareil. */
 
 /* ── Les réponses cliquables ──
    Elles attendent sous la question, de ton côté, en brouillons. Une carte,
@@ -369,7 +313,7 @@ function CartePlanning() {
 }
 
 export default function AssistantSheet() {
-  const { isOpen, close, messages, isStreaming, sendMessage, repondreQuestion, pseudo, memoryNotice, pendingSeance, pendingPlan, pendingRecipe, pendingMeal, actionLoading, etatGuide, noterSaisie, confirmRecipe, cancelRecipe, confirmMeal, cancelMeal, quotaChat, messagesEpuises } = useAssistant();
+  const { isOpen, close, messages, isStreaming, sendMessage, repondreQuestion, memoryNotice, pendingSeance, pendingPlan, pendingRecipe, pendingMeal, actionLoading, etatGuide, noterSaisie, confirmRecipe, cancelRecipe, confirmMeal, cancelMeal, quotaChat, messagesEpuises } = useAssistant();
   const router = useRouter();
   /* Qui parle dans cette conversation. `null` tant que le choix n'a pas
      été fait (ou que la lecture a échoué) : tout retombe alors sur ✦ et
@@ -545,40 +489,17 @@ export default function AssistantSheet() {
             {/* Messages */}
             <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-3 min-h-0"
               style={{ scrollbarWidth: "none" }}>
+              {/* LE GUIDE PARLE EN PREMIER, ET DE TA JOURNÉE (2026-10-20).
+                  Une séance en pause, la séance du jour, la prochaine étape,
+                  ce qui est fait, le repos, la flamme : `OuvertureGuide`
+                  le lit et le dit, sans appel d'IA, et tes réponses
+                  attendent déjà de ton côté. Il n'est monté que sur une
+                  conversation ouverte et vide, donc la journée ne se lit
+                  qu'au moment où quelqu'un l'ouvre vraiment. */}
               {messages.length === 0 && (
                 <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
                   className="flex flex-col flex-1">
-                  {/* Ce que la personne doit savoir avant de parler : à qui
-                      (AI Act, art. 50) et ce que ça vaut (pas un avis
-                      médical). EN HAUT : sur la capture de Louis du
-                      2026-10-19, cette ligne était sous le pli, donc
-                      personne ne la voyait. */}
-                  <p className="text-[11px] text-center mb-3" style={{ color: "var(--text-body)" }}>
-                    Réponses générées par une IA. Conseils généraux, pas un avis médical.
-                  </p>
-                  {/* Le Guide parle en premier, dans ses bulles : le grand
-                      personnage centré sur une page vide est parti, il se
-                      tient désormais dans l'en-tête. */}
-                  <div className="flex flex-col gap-1">
-                    <div className="flex justify-start">
-                      <p className={BULLE} style={{ ...BULLE_GUIDE, maxWidth: "84%" }}>
-                        {voix(guide, "accueil.salut", { pseudo: pseudo ?? "" })}
-                      </p>
-                    </div>
-                    <div className="flex justify-start">
-                      <p className={BULLE} style={{ ...BULLE_GUIDE, maxWidth: "84%" }}>
-                        {voix(guide, "accueil.invite")}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex-1 min-h-6" />
-                  {/* Ce que quelqu'un DIT en ouvrant, déjà écrit, de son côté.
-                      Elles partent telles quelles au coach. */}
-                  <div className="flex flex-col items-end gap-2">
-                    {SUGGESTIONS.map((s, i) => (
-                      <Brouillon key={s} rang={i} onClick={() => sendMessage(s)}>{s}</Brouillon>
-                    ))}
-                  </div>
+                  <OuvertureGuide />
                 </motion.div>
               )}
 
@@ -603,11 +524,7 @@ export default function AssistantSheet() {
                       {msg.role === "assistant" ? <AssistantContent text={msg.content} /> : msg.content}
                       {msg.streaming && msg.role === "assistant" && msg.content === "" && (
                         <span className="flex items-center gap-1 py-1.5" aria-label={`${nomGuide(guide)} écrit`}>
-                          {[0, 1, 2].map((i) => (
-                            <motion.span key={i} className="block w-1.5 h-1.5 rounded-full" style={{ background: "var(--exp-encre)" }}
-                              animate={{ y: [0, -4, 0], opacity: [0.35, 1, 0.35] }}
-                              transition={{ duration: 0.9, repeat: Infinity, delay: i * 0.15 }} />
-                          ))}
+                          <PointsSaisie />
                         </span>
                       )}
                       {msg.streaming && msg.role === "assistant" && msg.content !== "" && (
@@ -661,11 +578,7 @@ export default function AssistantSheet() {
                 <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="self-start">
                   <p role="status" aria-label={voix(guide, `attente.${actionLoading}`)}
                     className="flex items-center gap-1.5 px-4" style={{ ...BULLE_GUIDE, height: 44 }}>
-                    {[0, 1, 2].map((i) => (
-                      <motion.span key={i} className="block w-1.5 h-1.5 rounded-full" style={{ background: "var(--exp-encre)" }}
-                        animate={{ y: [0, -4, 0], opacity: [0.35, 1, 0.35] }}
-                        transition={{ duration: 0.9, repeat: Infinity, delay: i * 0.15 }} />
-                    ))}
+                    <PointsSaisie />
                   </p>
                 </motion.div>
               )}

@@ -94,6 +94,17 @@ export type ContexteVoix = {
   duree?: string;
   /** R3 · un nombre de répétitions (`seance.charge.choisir`). */
   reps?: number;
+  /** L'ouverture · le soir (18 h à 5 h) : « Bonsoir » plutôt que « Salut ». */
+  soir?: boolean;
+  /** L'ouverture · le mouvement où une séance s'est arrêtée (à partir de 1),
+   *  et le nombre de mouvements de cette séance. */
+  position?: number;
+  total?: number;
+  /** L'ouverture · une durée estimée, en minutes. */
+  minutes?: number;
+  /** L'ouverture · la flamme qui arrive AUJOURD'HUI, avec son article
+   *  (« le Feu »). Absente les autres jours. */
+  flamme?: string;
 };
 
 /** « Une séance posée », « Trois séances posées ». Le nombre s'écrit en
@@ -119,6 +130,7 @@ type Replique = { commun: Rendu; nora?: Rendu; sasha?: Rendu };
      question.* les précisions qu'il demande (le CODE décide, pas le modèle)
      impasse.*  ce qu'il répond quand il ne peut pas agir
      accueil.*  la feuille de chat vide
+     ouverture.* ce qu'il dit de ta journée en ouvrant la conversation
      retour.*   ce qu'il dit en arrivant sur l'accueil de l'app
      memoire.*  ce qu'il dit de sa propre mémoire, et sur son écran
      attente.*  ce qu'il dit pendant qu'il travaille
@@ -490,14 +502,60 @@ const REPLIQUES = {
      t'écoute » : c'est désormais ce que dit l'en-tête, sous son nom, et
      c'était la phrase d'accueil de tous les assistants. */
   "accueil.salut": {
-    commun: (c: ContexteVoix) => `Salut${c.pseudo ? `, ${c.pseudo}` : ""}.`,
-    nora:   (c: ContexteVoix) => `Bonjour${c.pseudo ? ` ${c.pseudo}` : ""}.`,
-    sasha:  (c: ContexteVoix) => `Salut${c.pseudo ? ` ${c.pseudo}` : ""}.`,
+    commun: (c: ContexteVoix) => `${c.soir ? "Bonsoir" : "Salut"}${c.pseudo ? `, ${c.pseudo}` : ""}.`,
+    nora:   (c: ContexteVoix) => `${c.soir ? "Bonsoir" : "Salut"}${c.pseudo ? `, ${c.pseudo}` : ""}.`,
+    sasha:  (c: ContexteVoix) => `${c.soir ? "Bonsoir" : "Salut"}${c.pseudo ? `, ${c.pseudo}` : ""}.`,
   },
   "accueil.invite": {
     commun: "Dis-moi où tu en es aujourd’hui.",
     nora:   "Dis-moi où tu en es aujourd’hui.",
     sasha:  "Dis-moi où tu en es aujourd’hui.",
+  },
+
+  /* ════════════════════════════════════════════════════════════════
+     L'OUVERTURE DE LA CONVERSATION (Louis, 2026-10-20, version 3 de la
+     maquette « La conversation du Guide »).
+
+     Le Guide parle en premier, et de TA journée : une séance en pause,
+     la séance du jour, la prochaine étape, ce qui est fait, le repos, la
+     flamme. Tout vient de ce que l'app a déjà lu, et les phrases sont
+     écrites ici : l'ouverture ne coûte AUCUN appel d'IA, le coach ne prend
+     la main qu'à ta réponse.
+
+     ⚠️ LE CHOIX DE CE QU'IL DIT N'EST PAS ICI. Il est dans
+     `ouvertureGuide.ts`, pur, et `check:ouverture` le vérifie.
+     ⚠️ JAMAIS UN REPROCHE : une séance en pause n'est pas « abandonnée »,
+     un jour libre n'est pas un jour manqué. AUCUN ACCORD DE GENRE.
+     ⚠️ UN NOM DE SÉANCE SE MET ENTRE GUILLEMETS : « Haut du corps » au
+     milieu d'une phrase se lit mal sans eux.
+     ════════════════════════════════════════════════════════════════ */
+  /** Après le salut, dans la même bulle, à partir de trois jours. Le jour
+   *  où une flamme arrive, c'est elle qu'on dit (la même règle que la
+   *  tuile de l'accueil : `etatFlamme(...).nouvelle`). */
+  "ouverture.flamme": {
+    commun: (c: ContexteVoix) => c.flamme
+      ? `${affileeDit(c.serie)} : ta flamme devient ${c.flamme}.`
+      : `${affileeDit(c.serie)}, ${["chapeau", "ta flamme tient", "ça se voit"][(c.serie ?? 0) % 3]}.`,
+  },
+  "ouverture.reprise": {
+    commun: (c: ContexteVoix) => `Ta séance « ${c.titre ?? ""} » est en pause${c.position && c.total && c.total > 1 ? `, au mouvement ${c.position} sur ${c.total}` : ""}. On la termine ?`,
+  },
+  "ouverture.seance": {
+    commun: (c: ContexteVoix) => `Aujourd’hui, c’est « ${c.titre ?? ""} »${c.minutes ? `, environ ${c.minutes} min` : ""}. On y va ?`,
+  },
+  "ouverture.etape": {
+    commun: (c: ContexteVoix) => `Ta prochaine séance, c’est « ${c.titre ?? ""} »${c.jour ? `, prévue ${c.jour}` : ", quand tu veux"}.`,
+  },
+  "ouverture.faite": {
+    commun: (c: ContexteVoix) => c.titre
+      ? `Ta séance « ${c.titre} » est faite pour aujourd’hui. Bien joué.`
+      : "Ta séance du jour est faite. Bien joué.",
+  },
+  "ouverture.repos": {
+    commun: "Aujourd’hui, c’est repos. Ton corps construit pendant que tu récupères.",
+  },
+  "ouverture.libre": {
+    commun: "Rien de prévu aujourd’hui. On bouge quand tu veux.",
   },
 
   /* ════════════════════════════════════════════════════════════════
@@ -1134,6 +1192,9 @@ const nJours = (n = 0) => `${nb(n)} ${n > 1 ? "jours" : "jour"}`;
 const depuis = (n = 0) => `${enLettres(n)} ${n > 1 ? "jours" : "jour"}`;
 /** « Douze jours d’affilée ». */
 const affilee = (n = 0) => maj(`${depuis(n)} d’affilée`);
+/** La même chose pour une bulle de conversation (`ouverture.flamme`) :
+ *  sans la marque ⟦ ⟧ du mot du jour, qu'une bulle n'affiche pas. */
+const affileeDit = (n = 0) => maj(`${LETTRES[n] ?? RONDS[n] ?? String(n)} ${n > 1 ? "jours" : "jour"} d’affilée`);
 const deMois = (m = "") => (/^[aeiouéèêh]/i.test(m) ? `d’${m}` : `de ${m}`);
 
 const pieces = (prefixe: string, textes: TexteMatin[]): PieceMatin[] =>
