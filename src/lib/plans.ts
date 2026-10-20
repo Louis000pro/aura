@@ -42,8 +42,8 @@ export interface Plan {
   priceCents: number;
   /**
    * Prix ANNUEL TTC en centimes, prélevé en une fois (absent = pas d'offre
-   * annuelle). 59,99 € contre 8,99 € par mois (Louis, 2026-10-15) : l'annuel
-   * revient à 5 € par mois, soit 44 % de moins. L'écart est grand exprès,
+   * annuelle). 59,99 € contre 9,99 € par mois (Louis, 2026-10-15, mensuel monté à 9,99 € le 2026-10-20) : l'annuel
+   * revient à 5 € par mois, soit 50 % de moins. L'écart est grand exprès,
    * parce qu'une appli de sport se quitte surtout dans les deux premiers mois
    * et que l'annuel est ce qui garde quelqu'un jusqu'aux résultats.
    */
@@ -110,7 +110,7 @@ export const PLANS: Record<PlanId, Plan> = {
   premium: {
     id: "premium",
     name: "Vaiiya+",
-    priceCents: 899,
+    priceCents: 999,
     priceAnnuelCents: 5999,
     currency: "eur",
     trialDays: 3,
@@ -142,7 +142,7 @@ export function isPaidPlan(id: string | null | undefined): boolean {
   return id === "premium";
 }
 
-/** Prix formaté pour l'affichage, ex. "8,99 €". */
+/** Prix formaté pour l'affichage, ex. "9,99 €". */
 export function formatPrice(cents: number): string {
   return (cents / 100).toLocaleString("fr-FR", { minimumFractionDigits: 2 }) + " €";
 }
