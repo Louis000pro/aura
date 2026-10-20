@@ -16,7 +16,13 @@ import type { GuideRef } from "./guides";
 
 const PHOTOS_PAR_GUIDE: Record<string, string> = {
   "push-couche-v5": "push-couche-v6",
-  improvise: "improvise-v1",
+  /* Accueil (repos, jour libre, premier lieu), séance faite et
+     « J’improvise » : la même photo, Guide debout bras croisés
+     (Louis, 2026-10-20, « pour le moment »). */
+  improvise: "accueil-v1",
+  repos: "accueil-v1",
+  done: "accueil-v1",
+  setup: "accueil-v1",
   "core-planche": "core-planche-v1",
   "push-pompes": "push-pompes-v1",
   "pull-traction": "pull-traction-v1",
