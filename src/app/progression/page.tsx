@@ -300,7 +300,11 @@ function WeekStrip({ week, dates, today, onOrganise, prevues }: {
               aria-label={`${DAY_FULL[i]}, ${isSeance ? dayTitle(d!) : prevue ? `${prevue.nom}, prévue` : "rien de prévu"}${nbSeances > 1 ? `, ${nbSeances} séances` : ""}`}
               className="relative flex-1 overflow-hidden cursor-pointer border-none p-0 block"
               style={{
-                height: 60, borderRadius: "var(--r-controle)", background: "#0f0d17",
+                height: 60, borderRadius: "var(--r-controle)",
+                /* Le fond sombre n'existe que SOUS une photo (le temps qu'elle
+                   arrive). Un jour libre suit le thème : sombre en clair, ce
+                   n'était qu'une case noire (Louis, 2026-10-20). */
+                background: isSeance || prevue ? "#0f0d17" : "transparent",
                 outline: isToday ? "2px solid #8B5CF6" : undefined,
                 outlineOffset: isToday ? 2 : undefined,
                 /* Une séance passée et jamais faite s'estompe. Le prédicat
@@ -338,7 +342,7 @@ function WeekStrip({ week, dates, today, onOrganise, prevues }: {
                 </>
               ) : (
                 <div className="absolute inset-0 flex items-center justify-center"
-                  style={{ background: "rgba(255,255,255,0.04)", border: "1px dashed rgba(var(--accent-rgb),0.22)", borderRadius: "var(--r-controle)" }}>
+                  style={{ background: "rgba(var(--accent-rgb),0.07)", border: "1px dashed rgba(var(--accent-rgb),0.3)", borderRadius: "var(--r-controle)" }}>
                   <Moon size={13} strokeWidth={1.8} style={{ color: "var(--text-3)", opacity: 0.7 }} />
                 </div>
               )}
