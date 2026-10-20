@@ -130,7 +130,7 @@ export default function PremierAccueil({ userId, pseudo, guide, onFermer }: {
           style={{ color: "var(--text-0)", fontWeight: 800, fontVariationSettings: "var(--w-voix)", textWrap: "balance" }}>
           Bienvenue,{" "}
           <em style={{
-            background: "linear-gradient(135deg,var(--accent),var(--gold))",
+            background: "var(--degrade-titre)",
             WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
             fontStyle: "italic", display: "inline-block", paddingRight: "0.14em",
           }}>{pseudo}</em>

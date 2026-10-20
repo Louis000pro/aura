@@ -2500,7 +2500,7 @@ function CarteJournee({ intention, date, idx, isToday, dropHover, open, onToggle
               <Check size={10} strokeWidth={3.2} style={{ color: "var(--teal-encre)" }} />
             </span>
           ) : isToday ? (
-            <span className="flex-shrink-0 text-[11px] font-extrabold tracking-wide" style={{ backgroundImage: "linear-gradient(135deg,var(--accent),var(--gold))", WebkitBackgroundClip: "text", backgroundClip: "text", WebkitTextFillColor: "transparent", color: "transparent" }}>AUJOURD&apos;HUI</span>
+            <span className="flex-shrink-0 text-[11px] font-extrabold tracking-wide" style={{ backgroundImage: "var(--degrade-titre)", WebkitBackgroundClip: "text", backgroundClip: "text", WebkitTextFillColor: "transparent", color: "transparent" }}>AUJOURD&apos;HUI</span>
           ) : (
             <ChevronRight size={14} strokeWidth={2.4} className="flex-shrink-0"
               style={{ color: "var(--text-3)", transform: open ? "rotate(90deg)" : "none", transition: "transform 0.18s" }} />
@@ -3156,7 +3156,7 @@ export default function ProgressionPage() {
         >
           <h1 className="text-[34px] leading-none" style={{ color: "var(--text-1)", fontWeight: 800, fontVariationSettings: "var(--w-voix)" }}>
             <em className="not-italic" style={{
-              background: "linear-gradient(135deg,var(--accent),var(--gold))",
+              background: "var(--degrade-titre)",
               WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
               fontStyle: "italic",
               display: "inline-block", paddingRight: "0.14em",  // même traitement que « nutrition »

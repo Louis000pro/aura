@@ -100,7 +100,7 @@
 .pseudo {
   display: inline-block;
   padding-right: 0.08em;
-  background: linear-gradient(135deg, var(--accent), var(--gold));
+  background: var(--degrade-titre);
   background-clip: text;
   color: transparent;
   font-weight: 700;

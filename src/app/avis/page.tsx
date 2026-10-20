@@ -60,7 +60,7 @@ export default async function AvisPage() {
       <h1 className="text-[26px] font-extralight tracking-tight" style={{ color: "var(--text-1)" }}>
         Vos{" "}
         <em className="not-italic font-light" style={{
-          background: "linear-gradient(135deg,var(--accent),var(--gold))",
+          background: "var(--degrade-titre)",
           WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", fontStyle: "italic",
           display: "inline-block", paddingRight: "0.14em",
         }}>avis</em>

@@ -2411,7 +2411,7 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
         <div className="flex items-baseline justify-between gap-3">
           <h1 className="text-[34px] leading-none" style={{ color: "var(--text-1)", fontWeight: 800, fontVariationSettings: "var(--w-voix)" }}>
             <em className="not-italic" style={{
-              background: "linear-gradient(135deg,var(--accent),var(--gold))",
+              background: "var(--degrade-titre)",
               WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
               fontStyle: "italic",
               display: "inline-block", paddingRight: "0.14em",  // évite que l'italique coupe le « n » final

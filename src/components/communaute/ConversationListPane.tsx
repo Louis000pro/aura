@@ -288,7 +288,7 @@ export default function ConversationListPane({
           Entraînement (Louis, 2026-10-11 : à côté de la photo, « c'est moche »). */}
       <h1 className="px-4 pb-3 text-[34px] leading-none" style={{ color: "var(--text-1)", fontWeight: 800, fontVariationSettings: "var(--w-voix)" }}>
         <em className="not-italic" style={{
-          background: "linear-gradient(135deg,var(--accent),var(--gold))",
+          background: "var(--degrade-titre)",
           WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
           fontStyle: "italic",
           display: "inline-block", paddingRight: "0.14em",
