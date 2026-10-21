@@ -748,7 +748,7 @@ export default function ProfilPage() {
            violet. La couronne Vaiiya+ et le bouclier admin quittent la
            rangée du haut : les deux vivent dans les Paramètres, et le violet
            plein reste réservé à l'action. ─── */}
-      <div data-tour-anchor="profil-header" className="relative z-10 pt-[72px] px-5 md:px-8 max-w-3xl mx-auto">
+      <div data-tour-anchor="profil-header" className="relative z-10 pt-7 md:pt-10 px-5 md:px-8 max-w-3xl mx-auto">
 
         <div className="flex items-center justify-between">
           <span className="vy-label" style={{ color: "var(--text-2)" }}>Ton profil</span>
