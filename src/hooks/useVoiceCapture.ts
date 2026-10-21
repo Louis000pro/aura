@@ -48,6 +48,12 @@ export function useVoiceCapture({
   const rafRef = useRef<number | null>(null);
   // onTranscript via ref : évite de recréer start() à chaque rendu du parent
   const onTranscriptRef = useRef(onTranscript);
+  // Annuler = l'enregistrement s'arrête sans rien transcrire (glisser pour
+  // annuler du « maintenir pour parler »). Et un arrêt demandé avant que le
+  // micro soit ouvert (doigt relevé pendant la demande d'accès) est gardé
+  // pour être appliqué dès l'ouverture.
+  const annuleRef = useRef(false);
+  const arretDemandeRef = useRef(false);
   useEffect(() => { onTranscriptRef.current = onTranscript; }, [onTranscript]);
 
   const cleanup = useCallback(() => {
@@ -67,6 +73,8 @@ export function useVoiceCapture({
   }, [cleanup]);
 
   const start = useCallback(async () => {
+    annuleRef.current = false;
+    arretDemandeRef.current = false;
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       streamRef.current = stream;
@@ -85,7 +93,7 @@ export function useVoiceCapture({
         const blob = new Blob(chunksRef.current, { type: mime || "audio/webm" });
         cleanup();
 
-        if (blob.size < 1000) { setState("idle"); return; }
+        if (annuleRef.current || blob.size < 1000) { setState("idle"); return; }
 
         try {
           const form = new FormData();
@@ -95,7 +103,7 @@ export function useVoiceCapture({
           const data = await res.json();
           if (data?.text?.trim()) onTranscriptRef.current(data.text.trim());
         } catch {
-          setError("Transcription échouée 🙏");
+          setError("La transcription n’a pas marché. Réessaie.");
           setTimeout(() => setError(null), 2500);
         } finally {
           setState("idle");
@@ -124,8 +132,9 @@ export function useVoiceCapture({
 
       recorder.start();
       setState("recording");
+      if (arretDemandeRef.current) recorder.stop();
     } catch {
-      setError("Micro inaccessible 🙏");
+      setError("Le micro n’est pas accessible.");
       setTimeout(() => setError(null), 2500);
       setState("idle");
     }
@@ -134,8 +143,15 @@ export function useVoiceCapture({
   const stop = useCallback(() => {
     if (mediaRecorderRef.current?.state === "recording") {
       mediaRecorderRef.current.stop();
+    } else {
+      arretDemandeRef.current = true;
     }
   }, []);
 
-  return { state, levels, error, start, stop };
+  const cancel = useCallback(() => {
+    annuleRef.current = true;
+    stop();
+  }, [stop]);
+
+  return { state, levels, error, start, stop, cancel };
 }

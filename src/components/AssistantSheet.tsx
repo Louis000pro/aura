@@ -12,7 +12,8 @@
 import { Fragment, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
-import { Send, ChevronDown, Mic, Square, Check, Utensils } from "lucide-react";
+import { Send, ChevronDown, Check, Utensils } from "lucide-react";
+import MicroMaintenir from "@/components/assistant/MicroMaintenir";
 import { useAssistant } from "@/context/AssistantContext";
 import type { QuestionCliquable } from "@/lib/assistantTools";
 import type { AttenteAction, JourDispo } from "@/context/AssistantContext";
@@ -804,7 +805,7 @@ export default function AssistantSheet() {
               {messagesEpuises && quotaChat ? (
                 <MessagesEpuises plafond={quotaChat.plafond} onPremium={() => { close(); router.push("/premium"); }} />
               ) : (
-              <form onSubmit={submit} className="flex items-end gap-2">
+              <form onSubmit={submit} className="relative flex items-end gap-2">
                 <div className="flex-1 flex items-center px-4 py-2 rounded-3xl"
                   style={{ background: "rgba(var(--tint-violet-rgb),0.5)", border: "1px solid rgba(var(--accent-rgb),0.18)" }}>
                   <textarea
@@ -827,19 +828,8 @@ export default function AssistantSheet() {
                   />
                 </div>
 
-                {/* Micro */}
-                <motion.button type="button" whileTap={{ scale: 0.92 }}
-                  onClick={() => (voice.state === "recording" ? voice.stop() : voice.start())}
-                  disabled={isStreaming || voice.state === "processing"}
-                  className="w-11 h-11 flex items-center justify-center rounded-2xl flex-shrink-0 cursor-pointer"
-                  style={voice.state === "recording"
-                    ? { background: "linear-gradient(135deg, #FC8181, #F56565)" }
-                    : { background: "rgba(var(--accent-rgb),0.12)" }}
-                  aria-label={voice.state === "recording" ? "Arrêter" : "Parler"}>
-                  {voice.state === "recording"
-                    ? <Square size={15} strokeWidth={2.4} style={{ color: "#fff" }} />
-                    : <Mic size={17} strokeWidth={2} style={{ color: "var(--exp-encre)" }} />}
-                </motion.button>
+                {/* Micro : maintenir pour parler, glisser pour annuler */}
+                <MicroMaintenir voix={voice} desactive={isStreaming} />
 
                 {/* Envoyer — au repos, le bouton reste PARFAITEMENT lisible :
                     une flèche violette sur fond pâle, exactement comme le micro
