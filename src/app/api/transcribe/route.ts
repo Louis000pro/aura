@@ -9,6 +9,27 @@
 import { NextRequest, NextResponse } from "next/server";
 import { garderIA, PLAFONDS, refusTaille } from "@/lib/aiLimits";
 
+/* Sur un silence, Whisper n'écrit pas rien : il invente les phrases qu'il a
+   le plus vues en fin de vidéo (« Sous-titrage Société Radio-Canada »,
+   « Merci d'avoir regardé »). Une transcription qui n'est QUE ça est
+   rendue vide, donc rien ne part au Guide. */
+const HALLUCINATIONS = [
+  /sous[- ]?titr/,
+  /soci[eé]t[eé] radio[- ]?canada/,
+  /amara\.org/,
+  /merci d'avoir regard/,
+  /merci de (votre attention|m'avoir|nous avoir)/,
+  /abonnez[- ]vous/,
+  /n'oubliez pas de (vous abonner|liker)/,
+  /^\W*(\.\.\.|…)?\W*$/,
+];
+
+function nettoyer(texte: string): string {
+  const t = texte.trim();
+  const bas = t.toLowerCase().replace(/[’]/g, "'");
+  return HALLUCINATIONS.some((r) => r.test(bas)) ? "" : t;
+}
+
 export async function POST(req: NextRequest) {
   const garde = await garderIA(req, "vocal");
   if (!garde.ok) return garde.reponse;
@@ -49,7 +70,7 @@ export async function POST(req: NextRequest) {
     }
 
     const data = await groqRes.json();
-    return NextResponse.json({ text: data.text ?? "" });
+    return NextResponse.json({ text: nettoyer(String(data.text ?? "")) });
   } catch (err) {
     console.error("Transcribe route error:", err);
     return NextResponse.json({ error: "Internal error" }, { status: 500 });

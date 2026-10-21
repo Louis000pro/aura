@@ -54,6 +54,10 @@ export function useVoiceCapture({
   // pour être appliqué dès l'ouverture.
   const annuleRef = useRef(false);
   const arretDemandeRef = useRef(false);
+  // Le niveau le plus fort entendu pendant l'enregistrement : s'il est resté
+  // au ras du silence, on n'envoie rien (Whisper inventerait une phrase).
+  const picRef = useRef(0);
+  const vumetreRef = useRef(false);
   useEffect(() => { onTranscriptRef.current = onTranscript; }, [onTranscript]);
 
   const cleanup = useCallback(() => {
@@ -75,6 +79,8 @@ export function useVoiceCapture({
   const start = useCallback(async () => {
     annuleRef.current = false;
     arretDemandeRef.current = false;
+    picRef.current = 0;
+    vumetreRef.current = false;
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       streamRef.current = stream;
@@ -93,7 +99,8 @@ export function useVoiceCapture({
         const blob = new Blob(chunksRef.current, { type: mime || "audio/webm" });
         cleanup();
 
-        if (annuleRef.current || blob.size < 1000) { setState("idle"); return; }
+        const silence = vumetreRef.current && picRef.current < 0.12;
+        if (annuleRef.current || blob.size < 1000 || silence) { setState("idle"); return; }
 
         try {
           const form = new FormData();
@@ -123,6 +130,10 @@ export function useVoiceCapture({
         const data = new Uint8Array(analyser.frequencyBinCount);
         const tick = () => {
           analyser.getByteFrequencyData(data);
+          vumetreRef.current = true;
+          let max = 0;
+          for (let i = 0; i < data.length; i++) if (data[i] > max) max = data[i];
+          picRef.current = Math.max(picRef.current, max / 255);
           setLevels([0.05, 0.15, 0.3, 0.5, 0.7].map((r) =>
             Math.min(1, (data[Math.floor(r * data.length)] ?? 0) / 180)));
           rafRef.current = requestAnimationFrame(tick);
