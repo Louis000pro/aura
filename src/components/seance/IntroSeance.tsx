@@ -43,9 +43,6 @@ type Etape = "pret" | "3" | "2" | "1" | "go";
 /* Le moment (en ms) où chaque étape commence, puis la fin. */
 const PLAN: [Etape, number][] = [["pret", 0], ["3", 1000], ["2", 1700], ["1", 2400], ["go", 3100]];
 const FIN = 3800;
-/* Le Guide disparaît d'un coup, sans fondu, entre le « 1 » et le GO
-   (Louis : « pas par le bas, juste le faire disparaître entre le 1 et le go »). */
-const DEPART_GUIDE = 2800;
 
 const MOT: React.CSSProperties = {
   fontWeight: 900, fontVariationSettings: "'wdth' 125", letterSpacing: "-0.05em",
@@ -54,7 +51,6 @@ const MOT: React.CSSProperties = {
 
 export default function IntroSeance({ guide, onFin }: { guide: GuideId; onFin: () => void }) {
   const [etape, setEtape] = useState<Etape>("pret");
-  const [guideParti, setGuideParti] = useState(false);
   const fini = useRef(false);
   const finir = useRef(onFin);
   useEffect(() => { finir.current = onFin; }, [onFin]);
@@ -65,13 +61,13 @@ export default function IntroSeance({ guide, onFin }: { guide: GuideId; onFin: (
       setEtape(e);
       jouerSon(e === "go" ? "go" : "tic");
     }, ms));
-    t.push(window.setTimeout(() => setGuideParti(true), DEPART_GUIDE));
     t.push(window.setTimeout(terminer, FIN));
     return () => t.forEach(clearTimeout);
   }, []);
 
   const passer = () => { if (!fini.current) { fini.current = true; finir.current(); } };
-  const guideVisible = !guideParti && etape !== "go";
+  /* Le Guide disparaît d'un coup, sans fondu, pile quand GO apparaît (Louis). */
+  const guideVisible = etape !== "go";
 
   return createPortal(
     <motion.div
