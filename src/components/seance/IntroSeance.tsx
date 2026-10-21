@@ -43,7 +43,7 @@ type Etape = "pret" | "3" | "2" | "1" | "go";
 /* Le moment (en ms) où chaque étape commence, puis la fin. */
 const PLAN: [Etape, number][] = [["pret", 0], ["3", 1000], ["2", 1700], ["1", 2400], ["go", 3100]];
 const FIN = 3800;
-/* Le Guide s'efface sur place pendant la fin du « 1 », avant que GO arrive
+/* Le Guide disparaît d'un coup, sans fondu, entre le « 1 » et le GO
    (Louis : « pas par le bas, juste le faire disparaître entre le 1 et le go »). */
 const DEPART_GUIDE = 2800;
 
@@ -121,7 +121,7 @@ export default function IntroSeance({ guide, onFin }: { guide: GuideId; onFin: (
             }}
             initial={{ y: "40%", scale: 0.9, opacity: 0 }}
             animate={{ y: 0, scale: 1, opacity: 1 }}
-            exit={{ opacity: 0, transition: { duration: 0.3, ease: "easeOut" } }}
+            exit={{ opacity: 0, transition: { duration: 0 } }}
             transition={{ duration: 0.52, ease: [0.2, 0.8, 0.2, 1] }}
           >
             {/* Une petite pulsation à chaque chiffre : la clé relance l'animation. */}
