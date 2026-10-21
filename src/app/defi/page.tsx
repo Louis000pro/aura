@@ -15,7 +15,7 @@ import Image from "next/image";
 import { useAuth } from "@/context/AuthContext";
 import PosterDefi from "@/components/defi/PosterDefi";
 import {
-  chargerDefi, annulerRelais, lienInvitation, etatPoster, lancerRelaisInvite,
+  chargerDefi, annulerRelais, lienInvitation, etatPoster, lancerRelaisInvite, lancerRelaisDansConversation,
   joursRestants, fenetreFinie, etatCoop, niveauxCoop, type Coequipier,
   defiFactice, SERIES, CLE_DEVOILE, EVT_RELAIS, type Defi, type Membre,
 } from "@/lib/defi";
@@ -26,6 +26,7 @@ import { partagerAffiche } from "@/lib/defiShareExport";
 import { proposerAvis } from "@/lib/invitationAvis";
 import { createClient } from "@/lib/supabase";
 import { useWorkoutLaunch } from "@/context/WorkoutLaunchContext";
+import { refusRelais } from "@/lib/defiErreurs";
 import {
   genererMaillon, sessionIdMaillon, dureeMaillon, niveauDepuisProfil,
 } from "@/lib/relaisSeance";
@@ -47,6 +48,7 @@ export default function DefiPage() {
   const [debloques, setDebloques] = useState<string[]>([]);
   const [carte, setCarte] = useState<"repos" | "occupe" | "fait" | "rate">("repos");
   const [confirmeArret, setConfirmeArret] = useState(false);
+  const [sortie, setSortie] = useState<string | null>(null);
 
   /* /defi?apercu=1..4 ou ?apercu=gagne → on REGARDE un écran sans
      jouer la semaine. Rien n'est lu ni écrit en base. */
@@ -379,6 +381,23 @@ export default function DefiPage() {
     );
   }
 
+  /* « En relancer un » relance VRAIMENT : un nouveau relais dans la
+     même discussion, avec les mêmes personnes. Sans fil (vieux relais),
+     on retombe sur la Communauté, où « Avec qui ? » prend le relais. */
+  const relancer = async () => {
+    if (creation) return;
+    if (!fil) { router.push("/communaute"); return; }
+    setCreation(true);
+    setErreur(null);
+    setSortie(null);
+    const r = await lancerRelaisDansConversation(fil);
+    setCreation(false);
+    if (r?.ok) { window.dispatchEvent(new Event(EVT_RELAIS)); router.push(`/communaute/${fil}`); return; }
+    const refus = refusRelais(r);
+    setErreur(refus.texte);
+    setSortie(refus.ou ?? null);
+  };
+
   /* ── Fini : gagné, ou semaine passée ────────────────────── */
   if (defi.statut === "reussi" || defi.statut === "termine" || finie) {
     const gagne = defi.statut === "reussi";
@@ -408,13 +427,24 @@ export default function DefiPage() {
               et sans nommer personne, c'est la règle du 21 juillet. */}
           {!gagne && (
             <button
-              onClick={() => router.push("/communaute")}
+              onClick={relancer}
+              disabled={creation}
               className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl px-5 py-4 text-[16px] font-semibold text-white transition-transform active:scale-[.98]"
               style={{ background: "linear-gradient(135deg, #8B5CF6, #C13BC1)" }}
             >
-              <MessageCircle className="h-5 w-5" />
+              {creation ? <Loader2 className="h-5 w-5 animate-spin" /> : <MessageCircle className="h-5 w-5" />}
               En relancer un
             </button>
+          )}
+          {!gagne && erreur && (
+            <p className="mt-3 text-center text-[13px]" style={{ color: "#E8620C" }}>
+              {erreur}
+              {sortie && (
+                <button onClick={() => router.push(`/communaute/${sortie}`)} className="ml-1 underline">
+                  Y aller
+                </button>
+              )}
+            </p>
           )}
 
           {gagne && (
