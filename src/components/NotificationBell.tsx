@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
-import { Bell, MessageCircle, UserPlus, Sparkles } from "lucide-react";
+import { Bell, MessageCircle, UserPlus, Sparkles, PartyPopper } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase";
@@ -30,6 +30,7 @@ function notifLabel(n: Notif): string {
     case "relais":  return `a franchi son maillon`;
     case "relais_invitation": return `t’invite à un relais`;
     case "message": return `t’a envoyé un message`;
+    case "bravo":   return `t’a dit bravo`;
     // « t'a ajouté à ses amis » est vrai des deux côtés : une demande est
     // déjà un ajout, elle attend seulement d'être rendue.
     default:        return `t’a ajouté à ses amis`;
@@ -42,6 +43,7 @@ function NotifIcon({ type }: { type: NotifType }) {
     relais:  { icon: <Sparkles size={9} />,                     bg: "rgba(215,166,42,0.22)", color: "#D7A62A" },
     relais_invitation: { icon: <Sparkles size={9} />,           bg: "rgba(139,92,246,0.16)", color: "#8B5CF6" },
     message: { icon: <MessageCircle size={9} fill="currentColor" />, bg: "rgba(139,92,246,0.16)", color: "#8B5CF6" },
+    bravo:   { icon: <PartyPopper size={9} />,                  bg: "rgba(193,59,193,0.16)", color: "#C13BC1" },
   };
   const c = cfg[type] ?? cfg.follow;
   return (

@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { MessageCircle, UserPlus, Bell, CheckCheck, Sparkle } from "lucide-react";
+import { MessageCircle, UserPlus, Bell, CheckCheck, Sparkle, PartyPopper } from "lucide-react";
 import { createClient } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import AnnouncementCard from "@/components/AnnouncementCard";
@@ -70,6 +70,7 @@ function TypeBadge({ type }: { type: NotifType }) {
     relais:  { icon: <Sparkle size={9} />,                  bg: "rgba(215,166,42,0.22)",  color: "#D7A62A" },
     message: { icon: <MessageCircle size={9} fill="currentColor" />, bg: "rgba(139,92,246,0.16)", color: "#8B5CF6" },
     relais_invitation: { icon: <Sparkle size={9} />,        bg: "rgba(139,92,246,0.16)", color: "#8B5CF6" },
+    bravo:   { icon: <PartyPopper size={9} />,              bg: "rgba(193,59,193,0.16)", color: "#C13BC1" },
   };
   const cfg = cfgMap[type] ?? cfgMap.follow;
 
@@ -382,6 +383,8 @@ export default function NotificationsPage() {
                           ? "a franchi son maillon, l’affiche s’est dévoilée"
                           : notif.type === "message"
                           ? "t’a envoyé un message"
+                          : notif.type === "bravo"
+                          ? "t’a dit bravo"
                           : "t’a ajouté à ses amis"}
                       </span>
                     </p>

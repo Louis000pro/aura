@@ -74,13 +74,32 @@ export async function chargerEvenements(moi: Personne, amis: Personne[]): Promis
   return evts;
 }
 
+/** Prévient la personne félicitée (Louis, 2026-10-21). Le serveur relit le
+ *  bravo, retrouve à qui il revient et n'envoie qu'une fois par ami et par
+ *  chose félicitée. Sans attente et sans erreur visible : la notification ne
+ *  doit jamais faire échouer le bravo. */
+export function notifierBravo(cible: "affiche" | "evenement", id: string): void {
+  if (typeof window === "undefined") return;
+  void createClient().auth.getSession().then(({ data }) => {
+    const jeton = data.session?.access_token;
+    if (!jeton) return;
+    return fetch("/api/notifications/bravo", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${jeton}` },
+      body: JSON.stringify({ cible, id }),
+    });
+  }).catch(() => {});
+}
+
 /** Dit (ou retire) bravo. Rend vrai si l'écriture a abouti. */
 export async function basculerBravo(evenementId: string, moi: string, mettre: boolean): Promise<boolean> {
   const supabase = createClient();
   const { error } = mettre
     ? await supabase.from("bravos_evenement").insert({ evenement_id: evenementId, user_id: moi })
     : await supabase.from("bravos_evenement").delete().eq("evenement_id", evenementId).eq("user_id", moi);
-  return !error || error.code === "23505";
+  const ok = !error || error.code === "23505";
+  if (ok && mettre && !error) notifierBravo("evenement", evenementId);
+  return ok;
 }
 
 /** Publie un de mes événements. Sans effet si la table n'existe pas ou si

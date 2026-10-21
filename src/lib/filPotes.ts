@@ -13,6 +13,7 @@
    au lieu de casser l'écran.
    ───────────────────────────────────────────────────────────── */
 
+import { notifierBravo } from "@/lib/evenementsFil";
 import { createClient } from "@/lib/supabase";
 import type { PerformanceData } from "@/components/PerformanceCard";
 import type { Personne } from "@/lib/messagerie";
@@ -114,7 +115,10 @@ export async function basculerReaction(postId: string, moi: string, sorte: Sorte
   const { error } = mettre
     ? await supabase.from("reactions_affiche").insert({ post_id: postId, user_id: moi, sorte })
     : await supabase.from("reactions_affiche").delete().eq("post_id", postId).eq("user_id", moi).eq("sorte", sorte);
-  return !error || error.code === "23505";
+  const ok = !error || error.code === "23505";
+  // Le bravo s'écrit sous la sorte `feu` : c'est lui qui prévient l'auteur.
+  if (ok && mettre && !error && sorte === "feu") notifierBravo("affiche", postId);
+  return ok;
 }
 
 /** Moi et mes amis, et qui s'est entraîné aujourd'hui. Vide sans la migration. */
