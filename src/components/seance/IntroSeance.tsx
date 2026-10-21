@@ -5,7 +5,7 @@
 
    On appuie sur « C'est parti » : le Guide monte en grand, « PRÊT ? » s'écrit
    derrière lui dans le mot géant de Vaiiya, puis 3, 2, 1 (un toutes les
-   0,7 s), il s'en va et « GO » prend l'écran. La séance démarre ensuite.
+   0,7 s), il s'efface sur place et « GO » prend l'écran. La séance démarre ensuite.
 
    Les règles, à ne pas défaire :
    - **Toujours clair**, comme le tunnel : fond presque blanc, lueur lavande,
@@ -43,6 +43,9 @@ type Etape = "pret" | "3" | "2" | "1" | "go";
 /* Le moment (en ms) où chaque étape commence, puis la fin. */
 const PLAN: [Etape, number][] = [["pret", 0], ["3", 1000], ["2", 1700], ["1", 2400], ["go", 3100]];
 const FIN = 3800;
+/* Le Guide s'efface sur place pendant la fin du « 1 », avant que GO arrive
+   (Louis : « pas par le bas, juste le faire disparaître entre le 1 et le go »). */
+const DEPART_GUIDE = 2800;
 
 const MOT: React.CSSProperties = {
   fontWeight: 900, fontVariationSettings: "'wdth' 125", letterSpacing: "-0.05em",
@@ -51,6 +54,7 @@ const MOT: React.CSSProperties = {
 
 export default function IntroSeance({ guide, onFin }: { guide: GuideId; onFin: () => void }) {
   const [etape, setEtape] = useState<Etape>("pret");
+  const [guideParti, setGuideParti] = useState(false);
   const fini = useRef(false);
   const finir = useRef(onFin);
   useEffect(() => { finir.current = onFin; }, [onFin]);
@@ -61,12 +65,13 @@ export default function IntroSeance({ guide, onFin }: { guide: GuideId; onFin: (
       setEtape(e);
       jouerSon(e === "go" ? "go" : "tic");
     }, ms));
+    t.push(window.setTimeout(() => setGuideParti(true), DEPART_GUIDE));
     t.push(window.setTimeout(terminer, FIN));
     return () => t.forEach(clearTimeout);
   }, []);
 
   const passer = () => { if (!fini.current) { fini.current = true; finir.current(); } };
-  const guideVisible = etape !== "go";
+  const guideVisible = !guideParti && etape !== "go";
 
   return createPortal(
     <motion.div
@@ -116,7 +121,7 @@ export default function IntroSeance({ guide, onFin }: { guide: GuideId; onFin: (
             }}
             initial={{ y: "40%", scale: 0.9, opacity: 0 }}
             animate={{ y: 0, scale: 1, opacity: 1 }}
-            exit={{ y: "30%", opacity: 0, transition: { duration: 0.28, ease: "easeIn" } }}
+            exit={{ opacity: 0, transition: { duration: 0.3, ease: "easeOut" } }}
             transition={{ duration: 0.52, ease: [0.2, 0.8, 0.2, 1] }}
           >
             {/* Une petite pulsation à chaque chiffre : la clé relance l'animation. */}
