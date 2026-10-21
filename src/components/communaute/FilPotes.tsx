@@ -19,6 +19,7 @@
    ───────────────────────────────────────────────────────────── */
 
 import { useCallback, useEffect, useState } from "react";
+import SemaineEnsemble from "@/components/communaute/SemaineEnsemble";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Loader2, MessageCircle, MoreHorizontal, UserPlus, X } from "lucide-react";
@@ -36,7 +37,7 @@ import {
   type EvenementFil,
 } from "@/lib/evenementsFil";
 import {
-  mesAmis, chargerFilPotes, presenceAmis, basculerReaction, poserBrouillon, quandAffiche,
+  mesAmis, chargerFilPotes, presenceAmis, basculerReaction, chargerSemaineEnsemble, type SemaineEnsemble as Semaine, poserBrouillon, quandAffiche,
   ecrireMot, retirerDuFil, supprimerAffiche, MOT_MAX, SORTES, type AfficheDuFil, type SorteReaction,
 } from "@/lib/filPotes";
 
@@ -54,21 +55,22 @@ export default function FilPotes({ moi, monPseudo, monAvatar, onAjouterAmi }: {
   /** Mon affiche dont le menu « ⋯ » est ouvert. */
   const [gerer, setGerer] = useState<AfficheDuFil | null>(null);
   const [presence, setPresence] = useState<Map<string, boolean>>(new Map());
+  const [semaine, setSemaine] = useState<Semaine | null>(null);
   const [erreur, setErreur] = useState(false);
   const [ouverture, setOuverture] = useState<string | null>(null);
 
   const lire = useCallback(async () => {
     const a = await mesAmis(moi);
     const moiP = { id: moi, pseudo: monPseudo, avatar: monAvatar };
-    const [f, p, e] = await Promise.all([
+    const [f, p, e, s] = await Promise.all([
       chargerFilPotes(moiP, a), presenceAmis(),
-      chargerEvenements(moiP, a),
+      chargerEvenements(moiP, a), chargerSemaineEnsemble(),
     ]);
-    return { a, f, p, e };
+    return { a, f, p, e, s };
   }, [moi, monPseudo, monAvatar]);
 
-  const appliquer = useCallback((r: { a: Personne[]; f: AfficheDuFil[]; p: Map<string, boolean>; e: EvenementFil[] }) => {
-    setAmis(r.a); setFil(r.f); setPresence(r.p); setEvts(r.e); setErreur(false);
+  const appliquer = useCallback((r: { a: Personne[]; f: AfficheDuFil[]; p: Map<string, boolean>; e: EvenementFil[]; s: Semaine | null }) => {
+    setAmis(r.a); setFil(r.f); setPresence(r.p); setEvts(r.e); setSemaine(r.s); setErreur(false);
   }, []);
   const echec = useCallback(() => { setErreur(true); setAmis((x) => x ?? []); }, []);
 
@@ -170,6 +172,12 @@ export default function FilPotes({ moi, monPseudo, monAvatar, onAjouterAmi }: {
           <span className="text-[11px]" style={{ color: "var(--text-3)" }}>Ajouter</span>
         </button>
       </div>
+
+      {/* ─── La semaine ensemble : seulement s'il y a une bande ─── */}
+      {semaine && amis.length > 0 && (
+        <SemaineEnsemble semaine={semaine} moi={moi}
+          bande={[{ id: moi, pseudo: monPseudo, avatar: monAvatar }, ...amis]} />
+      )}
 
       {erreur && (
         <button onClick={() => void charger()} className="mb-3 w-full rounded-xl px-3 py-2.5 text-left text-[13px] font-medium"

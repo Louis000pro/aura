@@ -222,3 +222,37 @@ export function quandAffiche(iso: string): string {
   if (jour(d) === jour(hier)) return "hier";
   return d.toLocaleDateString("fr-FR", { weekday: "long", timeZone: "Europe/Paris" });
 }
+
+/* ── La semaine ensemble ─────────────────────────────────────── */
+
+/** Séances visées par membre de la bande, chaque semaine (Louis, 2026-10-21). */
+export const SEANCES_PAR_MEMBRE = 3;
+
+export type SemaineEnsemble = {
+  /** Lundi de la semaine, AAAA-MM-JJ (heure de Paris). */
+  debut: string;
+  /** Les séances de toute la bande. Jamais par personne : on ne compare personne. */
+  seances: number;
+  /** Qui a déjà bougé cette semaine. */
+  aBouge: Set<string>;
+  /** Les jours (AAAA-MM-JJ) où quelqu'un de la bande a bougé. */
+  jours: Set<string>;
+  membres: number;
+  objectif: number;
+};
+
+/** `null` = lecture ratée (ou SQL absent) : on n'affiche rien plutôt qu'un zéro. */
+export async function chargerSemaineEnsemble(): Promise<SemaineEnsemble | null> {
+  const { data, error } = await createClient().rpc("semaine_ensemble");
+  if (error || !data || typeof data !== "object") return null;
+  const d = data as { debut: string; seances: number; membres: { user_id: string; a_bouge: boolean }[]; jours: string[] };
+  const membres = Array.isArray(d.membres) ? d.membres : [];
+  return {
+    debut: d.debut,
+    seances: Number(d.seances) || 0,
+    aBouge: new Set(membres.filter((m) => m.a_bouge).map((m) => m.user_id)),
+    jours: new Set(Array.isArray(d.jours) ? d.jours : []),
+    membres: membres.length,
+    objectif: membres.length * SEANCES_PAR_MEMBRE,
+  };
+}
