@@ -476,12 +476,16 @@
 }
 
 /* Le rail déborde jusqu'au bord de l'écran : c'est ce qui dit qu'il
-   défile. */
+   défile. ⚠️ Un conteneur qui défile en x rogne aussi en y : les cartes
+   n'ont donc pas d'ombre (elle se coupait net sous le rail et entre les
+   cartes, Louis 2026-10-21), et le rail garde 3 px d'air à gauche, sinon
+   le bord de la première carte est mangé. */
 .rail {
   display: flex;
   gap: 10px;
-  margin-right: -16px;
-  padding: 2px 16px 6px 0;
+  margin: 0 -16px 0 -3px;
+  padding: 3px 16px 3px 3px;
+  scroll-padding-left: 3px;
   overflow-x: auto;
   scroll-snap-type: x mandatory;
   scrollbar-width: none;
@@ -502,7 +506,7 @@
   border: 1px solid var(--verre-carte-bord);
   border-radius: var(--r-bloc);
   background: var(--verre-carte);
-  box-shadow: var(--verre-carte-ombre);
+  box-shadow: none;
   color: var(--text-0);
   scroll-snap-align: start;
   text-align: left;
