@@ -169,7 +169,8 @@ function statutGuide(etat: EtatGuide, attente: AttenteAction | null): string {
   return "t’écoute";
 }
 
-/* Le point de présence : teal, la couleur de ce qui va bien (système D). Il
+/* Le point de présence : violet → rose de la marque (Louis, 2026-10-21 ; il
+   était teal). Il
    bat doucement pour dire « je suis là », et ne bouge pas du tout quand on a
    demandé moins de mouvement. */
 function PointPresence() {
@@ -177,11 +178,11 @@ function PointPresence() {
   return (
     <span aria-hidden className="relative flex-shrink-0" style={{ width: 9, height: 9 }}>
       {!reduire && (
-        <motion.span className="absolute inset-0 rounded-full" style={{ background: "#2BD4A0" }}
+        <motion.span className="absolute inset-0 rounded-full" style={{ background: "#8B5CF6" }}
           animate={{ scale: [1, 2.4], opacity: [0.5, 0] }}
           transition={{ duration: 2.2, repeat: Infinity, ease: "easeOut" }} />
       )}
-      <span className="absolute inset-0 rounded-full" style={{ background: "#2BD4A0" }} />
+      <span className="absolute inset-0 rounded-full" style={{ background: "linear-gradient(135deg, #8B5CF6, #C13BC1)" }} />
     </span>
   );
 }
