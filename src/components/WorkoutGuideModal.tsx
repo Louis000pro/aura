@@ -13,6 +13,7 @@ import { AssistantSpark, VisageGuide, CelebrationGuide, MarqueAssistant } from "
 import { voix, nomGuide, type CleVoix } from "@/lib/guides";
 import { CouvertureFin, TitreFin, ChiffresFin, CarteProgres, SerieEtRang, CoinAvis, gainDuFait } from "@/components/seance/FinDeSeance";
 import { useGuideActif } from "@/context/GuideContext";
+import IntroSeance, { introDuJourAJouer, noterIntroDuJour } from "@/components/seance/IntroSeance";
 import SceneTunnel, { PastilleScene } from "@/components/seance/SceneTunnel";
 import ExerciseDetailSheet from "@/components/seance/ExerciseDetailSheet";
 import { trouverExercice, type LibExercise } from "@/lib/exerciseLibrary";
@@ -1673,6 +1674,19 @@ export default function WorkoutGuideModal({
   }, [phase, autoCountdown, hiitSub, cur, paused, prep, choixOuvert]);
 
   /* ── Start ── */
+  /* La première séance du jour s'ouvre sur l'intro « Prêt ? » (IntroSeance) ;
+     son 3-2-1 remplace celui du premier effort chronométré. */
+  const [introOuverte, setIntroOuverte] = useState(false);
+  const lancerSeance = () => {
+    if (user?.id && introDuJourAJouer(user.id, guide)) {
+      noterIntroDuJour(user.id);
+      setIntroOuverte(true);
+      return;
+    }
+    startWorkout();
+  };
+  const sansDecompteRef = useRef(false);
+  const finIntro = () => { setIntroOuverte(false); sansDecompteRef.current = true; startWorkout(); };
   const startWorkout = () => {
     setStartMs(Date.now());
     debutRef.current = Date.now();
@@ -1681,8 +1695,10 @@ export default function WorkoutGuideModal({
     setRemplacements({}); setChargeCourante({}); setCorrection(null); setEditCharge(false); setChanger(null);
     setRepsSaisie(null); setEditReps(false);
     setPhase("exercising");
-    if (exercises[0]?.auto)      { setAutoCountdown(exercises[0].auto); setPrep(3); }
-    else if (exercises[0]?.hiit) { setHiitSub("work"); setAutoCountdown(HIIT_WORK); setPrep(3); }
+    const prep0 = sansDecompteRef.current ? 0 : 3;
+    sansDecompteRef.current = false;
+    if (exercises[0]?.auto)      { setAutoCountdown(exercises[0].auto); setPrep(prep0); }
+    else if (exercises[0]?.hiit) { setHiitSub("work"); setAutoCountdown(HIIT_WORK); setPrep(prep0); }
   };
 
   /* ── Timers ── */
@@ -1711,6 +1727,7 @@ export default function WorkoutGuideModal({
       className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center"
       style={{ background: "rgba(8,5,16,0.62)", backdropFilter: "blur(12px)" }}
     >
+      {introOuverte && guide && <IntroSeance guide={guide} onFin={finIntro} />}
       <motion.div
         initial={{ y: 80, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 80, opacity: 0 }}
         transition={{ type: "spring", stiffness: 380, damping: 36 }}
@@ -2445,7 +2462,7 @@ export default function WorkoutGuideModal({
               <motion.button key="start"
                 initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
                 whileTap={{ scale: 0.97 }}
-                onClick={startWorkout}
+                onClick={lancerSeance}
                 className="w-full py-4 rounded-2xl flex items-center justify-center gap-2 font-bold text-[16px] cursor-pointer text-white"
                 style={{ background: "linear-gradient(100deg,#8B5CF6,#C13BC1)", boxShadow: "0 10px 30px -6px rgba(193,59,193,0.45)" }}
               >
