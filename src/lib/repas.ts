@@ -73,6 +73,12 @@ export function heureMaintenant(): string {
   return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
 }
 
+/** 2300 → « 2 300 », avec une espace insécable ordinaire (U+00A0) : celle
+ *  de `toLocaleString("fr-FR")` est l'espace FINE, que le produit n'emploie pas. */
+export function milliers(n: number): string {
+  return String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+}
+
 /** « 08:12 » → « 8 h 12 », avec des espaces insécables. */
 export function heureLisible(hhmm: string): string {
   const [h, m] = hhmm.split(":");
@@ -80,6 +86,30 @@ export function heureLisible(hhmm: string): string {
   if (!Number.isFinite(heures) || m === undefined) return hhmm;
   return `${heures} h ${m.slice(0, 2)}`;
 }
+
+/** Les plats déjà mangés, du plus fréquent au plus rare (la récence
+ *  départage). Les macros sont celles de la dernière fois. Les lignes
+ *  arrivent du plus récent au plus ancien. */
+export function classerRecents(
+  lignes: { food_name: string; calories: number; proteins: number; carbs: number; fats: number }[],
+  max = 8,
+): RecentMeal[] {
+  const parNom = new Map<string, RecentMeal & { rang: number }>();
+  lignes.forEach((r, i) => {
+    const cle = (r.food_name ?? "").trim().toLowerCase();
+    if (!cle) return;
+    const deja = parNom.get(cle);
+    if (deja) deja.count = (deja.count ?? 1) + 1;
+    else parNom.set(cle, { name: r.food_name, calories: r.calories, proteins: r.proteins, carbs: r.carbs, fats: r.fats, count: 1, rang: i });
+  });
+  return [...parNom.values()]
+    .sort((a, b) => ((b.count ?? 1) - (a.count ?? 1)) || (a.rang - b.rang))
+    .slice(0, max)
+    .map(({ name, calories, proteins, carbs, fats, count }) => ({ name, calories, proteins, carbs, fats, count }));
+}
+
+/** Le nom d'un plat, comparable : sans casse ni espaces en trop. */
+export const nomComparable = (s: string) => s.trim().toLowerCase();
 
 /** Une ligne de `nutrition_logs` devenue un repas de l'écran. */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

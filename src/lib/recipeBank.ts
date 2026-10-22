@@ -3031,8 +3031,11 @@ export function mealCalorieTarget(needs: DayNeeds): number {
 }
 
 /* Range un pool de recettes par fit avec la journée. Retourne une nouvelle liste
-   (la meilleure d'abord). Pool ≤ 1 ou objectif inconnu → inchangé. */
-export function rankRecipes(pool: Recipe[], needs: DayNeeds): Recipe[] {
+   (la meilleure d'abord). Pool ≤ 1 ou objectif inconnu → inchangé.
+   `alea` départage les quasi-ex æquo. Par défaut Math.random ; l'écran
+   Nutrition lui passe un tirage fixé pour la journée, pour que l'ordre ne
+   change pas à chaque rendu (lib/collectionsRecettes). */
+export function rankRecipes(pool: Recipe[], needs: DayNeeds, alea: () => number = Math.random): Recipe[] {
   if (pool.length <= 1 || needs.goalCalories <= 0) return pool;
   const ideal = mealCalorieTarget(needs);
   const liked = needs.likedBases.map(norm).filter(Boolean);
@@ -3066,7 +3069,7 @@ export function rankRecipes(pool: Recipe[], needs: DayNeeds): Recipe[] {
       const repeat = avoid.some((a) => a.includes(rid) || rid.includes(a)) ? 1 : 0;
 
       // petit aléa pour départager les quasi-ex æquo (variété honnête, sans mentir sur le fit)
-      const jitter = Math.random() * 0.12;
+      const jitter = alea() * 0.12;
       const score = calScore * 3 + protScore * 1.2 + tasteScore * 0.8 - repeat * 2 + jitter;
       return { r, score, i };
     })

@@ -10,7 +10,9 @@ import { aiFetch } from "@/lib/aiFetch";
 import { MEAL_META, heureMaintenant, momentActuel, type MealType, type MealEntry } from "@/lib/repas";
 
 /* ─── ManualModal ────────────────────────────────────────────────────── */
-export default function ManualModal({ onClose, onAdd }: {
+export default function ManualModal({ onClose, onAdd, typeInitial }: {
+  /** Le moment déjà choisi dans « Ajouter un repas » : il prime sur l'estimation. */
+  typeInitial?: MealType;
   onClose: () => void;
   onAdd: (meal: Omit<MealEntry, "id">) => void;
 }) {
@@ -19,7 +21,7 @@ export default function ManualModal({ onClose, onAdd }: {
   const [proteins, setProteins] = useState("");
   const [carbs, setCarbs] = useState("");
   const [fats, setFats] = useState("");
-  const [mealType, setMealType] = useState<MealType>(momentActuel());
+  const [mealType, setMealType] = useState<MealType>(typeInitial ?? momentActuel());
   const [estimating, setEstimating] = useState(false);
   const [estimated, setEstimated] = useState(false);
   const [estimateError, setEstimateError] = useState<string | null>(null);
@@ -48,7 +50,7 @@ export default function ManualModal({ onClose, onAdd }: {
       if (data.proteins !== undefined) setProteins(String(data.proteins));
       if (data.carbs !== undefined) setCarbs(String(data.carbs));
       if (data.fats !== undefined) setFats(String(data.fats));
-      if (data.mealType) setMealType(data.mealType as MealType);
+      if (data.mealType && !typeInitial) setMealType(data.mealType as MealType);
       setEstimated(true);
     } catch {
       setEstimateError("Impossible d’estimer, remplis manuellement.");

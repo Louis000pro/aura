@@ -1,24 +1,21 @@
 "use client";
 
 /* ════════════════════════════════════════════════════════════════════
-   RecipeSearch — barre de recherche de recettes du suivi nutrition.
+   RecipeSearch : chercher une recette de la banque par son nom.
 
    On tape un plat (« poulet », « saumon », « bowl »…) et on tombe sur les
-   recettes de la banque curée (recipeBank), CHACUNE AVEC SON IMAGE. Toucher
-   un résultat ouvre la fiche partagée RecipeSheet ; « Ajouter à mes repas »
-   loggue via `onAdd` (NutritionTab). C'est le raccourci direct vers une
-   recette, sans passer par « On mange où ? ».
+   recettes de la banque curée (recipeBank), CHACUNE AVEC SON IMAGE.
+   Toucher un résultat ouvre la fiche partagée de l'écran (`onOuvrir`) :
+   une seule RecipeSheet dans tout l'écran Nutrition.
 
    L'aiguille et la botte de foin sont sans accent : « crepe » trouve « crêpe ».
    ════════════════════════════════════════════════════════════════════ */
 
 import { useMemo, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
 import { Search, X, ChevronRight } from "lucide-react";
-import { RECIPES, type Recipe, type MealType } from "@/lib/recipeBank";
-import RecipeSheet from "@/components/RecipeSheet";
-
-type LoggedMeal = { name: string; calories: number; proteins: number; carbs: number; fats: number };
+import { RECIPES, type Recipe } from "@/lib/recipeBank";
+import { dureeRecette } from "@/lib/collectionsRecettes";
+import ns from "@/components/nutrition/Nutrition.module.css";
 
 const sansAccent = (v: string) =>
   v.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
@@ -26,31 +23,11 @@ const sansAccent = (v: string) =>
 const hayOf = (r: Recipe) =>
   sansAccent(`${r.nom} ${r.description ?? ""} ${(r.tags ?? []).join(" ")}`);
 
-const LABEL_TYPE: Record<MealType, string> = {
-  "petit-dejeuner": "Petit-déj",
-  "dejeuner": "Déjeuner",
-  "gouter": "Goûter",
-  "diner": "Dîner",
-};
-
-/* Vignette : l'image de la recette, repli sur un dégradé si le fichier
-   manque (mêmes règles que RecipeSheet). */
-function Vignette({ recipe }: { recipe: Recipe }) {
-  const [erreur, setErreur] = useState(false);
-  if (erreur || !recipe.image) {
-    return <span className="w-12 h-12 rounded-xl flex-shrink-0"
-      style={{ background: "linear-gradient(135deg,rgba(139,92,246,0.35),rgba(193,59,193,0.28))" }} />;
-  }
-  return (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img src={recipe.image} alt="" onError={() => setErreur(true)}
-      className="w-12 h-12 rounded-xl object-cover flex-shrink-0" />
-  );
-}
-
-export default function RecipeSearch({ onAdd }: { onAdd: (m: LoggedMeal) => void }) {
+export default function RecipeSearch({ onOuvrir, autoFocus = false }: {
+  onOuvrir: (r: Recipe) => void;
+  autoFocus?: boolean;
+}) {
   const [q, setQ] = useState("");
-  const [ouverte, setOuverte] = useState<Recipe | null>(null);
 
   const resultats = useMemo<Recipe[]>(() => {
     const query = sansAccent(q.trim());
@@ -63,73 +40,52 @@ export default function RecipeSearch({ onAdd }: { onAdd: (m: LoggedMeal) => void
   }, [q]);
 
   return (
-    /* max-w-5xl : même largeur que le panneau « On mange où ? » juste en
-       dessous, sinon la barre dépasse à droite au-delà des cartes. */
-    <div className="mb-4 max-w-5xl">
-      <div className="relative flex items-center gap-2.5 px-4 py-3 rounded-2xl"
-        style={{ background: "rgba(var(--tint-violet-rgb),0.55)", border: "1px solid rgba(var(--accent-rgb),0.16)" }}>
+    <div className="flex flex-col gap-2">
+      {/* ⚠️ `flexDirection` en style : un module CSS n'est dans aucune couche,
+          il l'emporte sur les utilitaires Tailwind, donc `flex-row` perdrait. */}
+      <label className={`${ns.bloc} items-center gap-2.5 px-4`} style={{ minHeight: 48, flexDirection: "row" }}>
         <Search size={16} style={{ color: "var(--text-3)", flexShrink: 0 }} />
         <input
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          placeholder="Chercher une recette (poulet, bowl, saumon…)"
-          className="flex-1 bg-transparent text-[16px] outline-none placeholder:text-[var(--text-3)]"
+          autoFocus={autoFocus}
+          placeholder="Poulet, bowl, saumon…"
+          className="min-w-0 flex-1 bg-transparent text-[16px] outline-none placeholder:text-[var(--text-3)]"
           style={{ color: "var(--text-1)" }}
           aria-label="Chercher une recette"
         />
         {q && (
-          <button type="button" onClick={() => setQ("")} aria-label="Effacer" className="flex-shrink-0 cursor-pointer">
+          <button type="button" onClick={() => setQ("")} aria-label="Effacer" className="flex h-11 w-8 flex-shrink-0 items-center justify-center cursor-pointer">
             <X size={15} style={{ color: "var(--text-3)" }} />
           </button>
         )}
-      </div>
+      </label>
 
-      <AnimatePresence>
-        {q.trim().length >= 2 && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.2 }} style={{ overflow: "hidden" }}
-          >
-            <div className="mt-2 rounded-2xl overflow-hidden"
-              style={{ background: "rgba(var(--surface-rgb),0.9)", border: "1px solid rgba(var(--accent-rgb),0.12)" }}>
-              {resultats.length === 0 ? (
-                <p className="px-4 py-4 text-[14px]" style={{ color: "var(--text-3)" }}>
-                  Aucune recette pour « {q.trim()} ».
-                </p>
-              ) : (
-                <div className="max-h-[48vh] overflow-y-auto">
-                  {resultats.map((r, i) => (
-                    <button key={r.id} type="button"
-                      onClick={() => setOuverte(r)}
-                      className="w-full flex items-center gap-3 px-3 py-2.5 text-left cursor-pointer"
-                      style={{ borderTop: i === 0 ? "none" : "1px solid rgba(var(--accent-rgb),0.08)" }}>
-                      <Vignette recipe={r} />
-                      <span className="flex-1 min-w-0">
-                        <b className="text-[15px] font-semibold truncate block" style={{ color: "var(--text-1)" }}>{r.nom}</b>
-                        <span className="text-[12px] truncate block" style={{ color: "var(--text-3)" }}>
-                          {r.mealTypes[0] ? `${LABEL_TYPE[r.mealTypes[0]]} · ` : ""}{r.calories} kcal
-                        </span>
-                      </span>
-                      <ChevronRight size={16} style={{ color: "var(--text-3)", flexShrink: 0 }} />
-                    </button>
-                  ))}
-                </div>
-              )}
+      {q.trim().length >= 2 && (
+        <div className={`${ns.bloc} overflow-hidden`}>
+          {resultats.length === 0 ? (
+            <p className="px-4 py-4 text-[13px]" style={{ color: "var(--text-3)" }}>
+              Aucune recette pour «&nbsp;{q.trim()}&nbsp;».
+            </p>
+          ) : (
+            <div className="max-h-[48vh] overflow-y-auto">
+              {resultats.map((r) => (
+                <button key={r.id} type="button" onClick={() => onOuvrir(r)}
+                  className="vy-filet flex w-full items-center gap-3 px-3 py-2.5 text-left cursor-pointer">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={r.image} alt="" loading="lazy" decoding="async"
+                    className="h-12 w-12 flex-shrink-0 object-cover" style={{ borderRadius: "var(--r-controle)", background: "rgba(var(--accent-rgb),0.10)" }} />
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-[16px] font-semibold" style={{ color: "var(--text-1)" }}>{r.nom}</span>
+                    <span className="block truncate text-[13px]" style={{ color: "var(--text-3)" }}>{dureeRecette(r)}</span>
+                  </span>
+                  <ChevronRight size={16} style={{ color: "var(--text-3)", flexShrink: 0 }} />
+                </button>
+              ))}
             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {ouverte && (
-          <RecipeSheet
-            key="recipe-search"
-            recipe={ouverte}
-            onClose={() => setOuverte(null)}
-            onLog={(m) => { onAdd(m); setOuverte(null); setQ(""); }}
-          />
-        )}
-      </AnimatePresence>
+          )}
+        </div>
+      )}
     </div>
   );
 }

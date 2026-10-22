@@ -1,0 +1,151 @@
+/* ════════════════════════════════════════════════════════════════════
+   Les surfaces de l'écran Nutrition (direction 2 de la maquette « La
+   nutrition accueillante », Louis, 2026-10-22).
+
+   Le verre vient des jetons de globals.css (`--verre-carte` et ses deux
+   compagnons), redéfinis en sombre : rien ici n'écrit une surface en dur.
+   Seul le voile chaud de la question a sa version sombre, plus douce,
+   parce qu'il se pose PAR-DESSUS le verre.
+   ════════════════════════════════════════════════════════════════════ */
+
+/* Une affiche : la question du repas, une carte de repas du détail. */
+.carte {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  border-radius: var(--r-affiche);
+  background: var(--verre-carte);
+  border: 1px solid var(--verre-carte-bord);
+  box-shadow: var(--verre-carte-ombre);
+  color: var(--text-0);
+}
+
+/* Un groupe posé sur la page : « Aujourd'hui », une tuile du détail. */
+.bloc {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  border-radius: var(--r-bloc);
+  background: var(--verre-carte);
+  border: 1px solid var(--verre-carte-bord);
+  box-shadow: var(--verre-carte-ombre);
+  color: var(--text-0);
+  text-align: left;
+}
+
+/* Le voile chaud : or → rose → lilas, par-dessus le verre. Déclaré APRÈS
+   `.carte` et `.bloc` : à poids égal, c'est la dernière règle qui gagne. */
+.chaud {
+  background:
+    linear-gradient(160deg, rgba(255, 222, 130, 0.34), rgba(255, 184, 222, 0.24) 55%, rgba(196, 170, 255, 0.32)),
+    var(--verre-carte);
+}
+:global([data-theme="dark"]) .chaud {
+  background:
+    linear-gradient(160deg, rgba(255, 200, 90, 0.16), rgba(193, 59, 193, 0.14) 55%, rgba(110, 60, 230, 0.2)),
+    var(--verre-carte);
+}
+
+/* L'action de l'écran : violet → magenta, en pilule. Une seule par vue. */
+.pilule {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 0 20px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #8b5cf6, #c13bc1);
+  box-shadow: var(--ombre-action);
+  color: #fff;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* Une photo de repas posée comme un polaroid : un bord clair, une ombre,
+   un léger biais. Le bord suit le thème. */
+.polaroid {
+  --polaroid-bord: #ffffff;
+  position: absolute;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 4px solid var(--polaroid-bord);
+  background: var(--polaroid-bord);
+  box-shadow: 0 10px 22px -10px rgba(45, 25, 90, 0.45);
+}
+:global([data-theme="dark"]) .polaroid {
+  --polaroid-bord: #2a2140;
+}
+
+/* Un bouton rond de verre (retour, mois). 44 px : la cible tactile. */
+.rond {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  background: var(--verre-carte);
+  border: 1px solid var(--verre-carte-bord);
+  box-shadow: var(--verre-carte-ombre);
+  color: var(--text-0);
+  cursor: pointer;
+}
+
+/* Une pastille de choix (moment du repas, filtre d'une collection). */
+.puce {
+  flex: 1;
+  min-height: 44px;
+  padding: 0 4px;
+  border-radius: 999px;
+  border: 1px solid rgba(var(--text-3-rgb), 0.28);
+  background: var(--verre-carte);
+  color: var(--text-1);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.puce[aria-checked="true"],
+.puce[aria-pressed="true"] {
+  border-color: transparent;
+  background: linear-gradient(135deg, #8b5cf6, #c13bc1);
+  box-shadow: var(--ombre-action);
+  color: #fff;
+}
+
+/* Une rangée qui défile sur le côté, sans barre visible. */
+.rail {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-padding-inline: 16px;
+  scrollbar-width: none;
+  overscroll-behavior-x: contain;
+}
+.rail::-webkit-scrollbar {
+  display: none;
+}
+.rail > * {
+  scroll-snap-align: start;
+}
+
+/* Retirer un repas : un rouge doux, lisible dans les deux thèmes. */
+.danger {
+  color: #b3434e;
+  background: rgba(224, 106, 115, 0.12);
+}
+:global([data-theme="dark"]) .danger {
+  color: #ff8a93;
+  background: rgba(224, 106, 115, 0.16);
+}
+
+/* Le voile sous un texte posé sur une photo. */
+.voileBas {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(14, 10, 28, 0) 40%, rgba(14, 10, 28, 0.72) 100%);
+  pointer-events: none;
+}

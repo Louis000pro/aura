@@ -1,25 +1,25 @@
 "use client";
 
 /* ════════════════════════════════════════════════════════════════════
-   MealSituationHero — le nouveau #1 de la page nutrition.
+   MealSituationHero : la question du repas, en tête de l'écran Nutrition.
 
-   Question « On mange où ? » → triple choix contextuel. Navigation PAR CARTES,
-   SUR PLACE (chaque niveau = 3 grandes cartes-images). « Une idée » pioche dans
-   la BANQUE DE RECETTES curée (src/lib/recipeBank.ts → RecipeSheet). « À finir »
-   GÉNÈRE une recette à partir de tes restes via /api/nutrition/recipe (fiche
-   sans image = GeneratedRecipeSheet). Voir [[nutrition-onmangeou-redesign]].
+   Le Guide pose UNE question, datée par le repas qui vient (« Tu manges où
+   ce midi ? »), et trois portes photo y répondent. Chaque porte ouvre ses
+   trois sous-choix dans la MÊME carte, sur place. « Une idée » pioche dans
+   la banque de recettes (lib/collectionsRecettes → RecipeSheet), « À
+   finir » génère une recette à partir des restes (/api/nutrition/recipe).
+   Voir [[nutrition-onmangeou-redesign]].
 
-   ⚠️ C'EST LE GUIDE QUI POSE LA QUESTION (2026-08-29). La nutrition était
-   le seul pilier où Nora et Sasha n'existaient nulle part, alors que son
-   point d'entrée est la question la plus humaine du produit. Son visage
-   `listen` (celui qui attend une réponse) remplace la puce violette qui
-   précédait « Dis-moi où », et cette phrase vit maintenant dans
-   `guides.ts`. Les trois cartes ne bougent pas d'un pixel, et le titre
-   « On mange où ? » non plus : c'est un mot de l'app.
+   ⚠️ REFAITE LE 2026-10-22 (direction 2 de la maquette « La nutrition
+   accueillante », variante 8, validée par Louis). Le titre « On mange
+   où ? » et la phrase du Guide en dessous sont devenus une seule question
+   (`nutrition.question.<moment>` dans guides.ts). La carte est un cadre
+   serré au voile chaud, les photos sont en 3:5 pour prendre la place, et
+   le Guide parle à côté de la question, sans pastille.
 
-   ⚠️ IL NE PARLE QU'À LA RACINE. Une fois entré dans « Maison » ou
-   « Resto », on navigue dans des listes : ce n'est plus un seuil, et le
-   Guide s'y tairait pour rien.
+   ⚠️ LES DEUX LIENS « J'ai déjà mangé · Je saute ce repas » SONT PARTIS.
+   Le premier ouvrait la saisie, qu'« Ajouter un repas » porte juste en
+   dessous ; le second n'écrivait rien, il affichait seulement un message.
    ════════════════════════════════════════════════════════════════════ */
 
 import { useState, useRef, useEffect } from "react";
@@ -29,13 +29,14 @@ import { AssistantSpark, VisageGuide } from "@/components/AssistantMark";
 import { useGuideActif } from "@/context/GuideContext";
 import { voix } from "@/lib/guides";
 import {
-  Home, UtensilsCrossed, Sandwich, Sparkles, Heart, Camera, Barcode,
-  Plus, BookOpen, ShoppingBag, ChevronLeft, ChevronRight, Carrot,
+  Home, Heart, Plus, ChevronLeft, ChevronRight, Carrot,
   Store, Check, X, Loader2, Flame, ArrowRight, ArrowLeft, ChefHat, Pencil, Search,
   CupSoda, IceCreamCone, Droplet, Coffee, Soup, Salad, GlassWater, Croissant,
 } from "lucide-react";
 import { loadTasteProfileLocal } from "@/lib/tasteProfile";
-import { pickRecipes, rankRecipes, fitReason, type Recipe, type MealType, type DayNeeds } from "@/lib/recipeBank";
+import { fitReason, rankRecipes, type Recipe, type DayNeeds } from "@/lib/recipeBank";
+import { besoinsDuJour, convient, poolDuMoment, regimeConnu } from "@/lib/collectionsRecettes";
+import { momentActuel, type MealType } from "@/lib/repas";
 import RecipeSheet from "@/components/RecipeSheet";
 import GeneratedRecipeSheet, { type GeneratedRecipe } from "@/components/GeneratedRecipeSheet";
 import OrderRecapSheet from "@/components/OrderRecapSheet";
@@ -44,22 +45,22 @@ import {
   type OrderCategory, type OrderEstimate,
 } from "@/lib/orderEstimate";
 import { rankGenres, GENRE_PROFILE, type AdvisorNeeds, type RankedGenre } from "@/lib/orderAdvisor";
+import ns from "@/components/nutrition/Nutrition.module.css";
 
 type Classic = { name: string; calories: number; proteins: number; carbs: number; fats: number; count?: number };
 type LoggedMeal = { name: string; calories: number; proteins: number; carbs: number; fats: number };
 type DayTotals = { calories: number; proteins: number; carbs: number; fats: number };
 
 type Props = {
-  name?: string | null;
   userId?: string | null;
+  /** Le repas qui vient, d'après l'heure du téléphone. `null` avant l'hydratation. */
+  moment: MealType | null;
   goals?: DayTotals;      // objectifs du jour
   consumed?: DayTotals;   // déjà mangé aujourd'hui
   eatenToday?: string[];  // noms des plats déjà loggés (anti-répétition)
   onPhoto: () => void;
   onBarcode: () => void;
-  onManual: () => void;
   onMenuScan: () => void;   // « La carte » du resto → photo + classement IA
-  onSkip: () => void;
   classics: Classic[];
   onQuickAdd: (r: Classic) => void;
   onLogIdea: (m: LoggedMeal) => void;
@@ -69,37 +70,18 @@ type SituationKey = "maison" | "resto" | "pouce";
 type Screen = "menu" | "finish" | "classics" | "livraison" | "livraison-form" | "livraison-advisor";
 type Icon = typeof Home;
 
-const SITUATIONS: { key: SituationKey; label: string; sub: string; Icon: Icon; gradient: string; img: string }[] = [
-  {
-    key: "maison", label: "À la maison", sub: "je cuisine", Icon: Home,
-    img: "/nutrition/maison.jpg",
-    gradient: "radial-gradient(circle at 30% 22%,#FFDD93,transparent 46%),radial-gradient(circle at 76% 66%,#E8620C,transparent 52%),linear-gradient(158deg,#F5A83C,#A8430F)",
-  },
-  {
-    key: "resto", label: "Resto & livraison", sub: "on me sert", Icon: UtensilsCrossed,
-    img: "/nutrition/resto.jpg",
-    gradient: "radial-gradient(circle at 26% 24%,#D6BBFF,transparent 46%),radial-gradient(circle at 80% 70%,#C13BC1,transparent 52%),linear-gradient(158deg,#7A4FD0,#432170)",
-  },
-  {
-    // « Sur le pouce » ne disait rien à personne (test fait par Louis autour
-    // de lui) : on nomme la chose, pas l'expression. La clé reste `pouce`,
-    // elle sert aux chemins d'images (/nutrition/pouce-*.jpg).
-    key: "pouce", label: "Sandwich & snack", sub: "acheté tout prêt", Icon: Sandwich,
-    img: "/nutrition/pouce.jpg",
-    gradient: "radial-gradient(circle at 30% 24%,#C4F7E4,transparent 46%),radial-gradient(circle at 78% 70%,#2BD4A0,transparent 52%),linear-gradient(158deg,#54DCB0,#0E8A67)",
-  },
+/* Les trois portes. La clé `pouce` reste : elle nomme les fichiers d'images
+   (/nutrition/pouce-*.jpg). « Sur le pouce » ne disait rien à personne
+   (test fait par Louis autour de lui) : on nomme la chose. */
+const SITUATIONS: { key: SituationKey; label: string; sub?: string; img: string }[] = [
+  { key: "maison", label: "À la maison", img: "/nutrition/maison.jpg" },
+  { key: "resto", label: "Resto, cantine", sub: "ou livraison", img: "/nutrition/resto.jpg" },
+  { key: "pouce", label: "Sandwich, snack", sub: "acheté tout prêt", img: "/nutrition/pouce.jpg" },
 ];
 
-function greeting(): { hello: string; moment: string } {
-  const h = new Date().getHours();
-  const moment = h < 10 ? "ce matin" : h < 15 ? "ce midi" : h < 18 ? "cet aprèm" : "ce soir";
-  const hello = h < 18 ? "Bonjour" : "Bonsoir";
-  return { hello, moment };
-}
-
-const mealTypeNow = (): MealType => {
-  const h = new Date().getHours();
-  return h < 10 ? "petit-dejeuner" : h < 15 ? "dejeuner" : h < 18 ? "gouter" : "diner";
+/* Le moment dit dans une phrase du conseiller de livraison. */
+const MOMENT_PHRASE: Record<MealType, string> = {
+  "petit-dejeuner": "Ce matin", "dejeuner": "Ce midi", "gouter": "Cet après-midi", "diner": "Ce soir",
 };
 
 /* Part typique du repas dans la journée (pour cibler « Conseille-moi »). */
@@ -107,24 +89,25 @@ const MEAL_SHARE_ADVISOR: Record<MealType, number> = {
   "petit-dejeuner": 0.25, "dejeuner": 0.35, "gouter": 0.1, "diner": 0.32,
 };
 
-/* Grande carte-image réutilisée à chaque niveau (racine + sous-choix) */
-function PhotoCard({ label, sub, Icon, gradient, img, onClick, hauteur = "56vh" }: {
-  label: string; sub: string; Icon: Icon; gradient: string; img: string; onClick: () => void; hauteur?: string;
+/* Une porte : la photo d'abord, le mot ensuite, sous la photo et jamais
+   dessus. 3:5 à trois de front, 4:5 quand il n'y en a que deux. */
+function Porte({ label, sub, img, onClick, ratio = "3 / 5" }: {
+  label: string; sub?: string; img: string; onClick: () => void; ratio?: string;
 }) {
   return (
     <motion.button whileTap={{ scale: 0.97 }} onClick={onClick}
-      className="relative overflow-hidden cursor-pointer text-left"
-      style={{ borderRadius: "var(--r-affiche)", minHeight: hauteur, background: gradient }}>
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={img} alt="" aria-hidden loading="lazy" decoding="async"
-        onError={(e) => { e.currentTarget.style.display = "none"; }}
-        className="absolute inset-0 w-full h-full object-cover" />
-      <Icon size={34} strokeWidth={1.5} className="absolute" style={{ top: 12, right: 12, color: "rgba(255,255,255,0.30)" }} />
-      <div className="absolute inset-x-0 bottom-0" style={{ height: "46%", background: "var(--voile-affiche)" }} />
-      <div className="absolute inset-x-0 bottom-0 p-3.5">
-        <p className="text-[16px] font-medium leading-tight" style={{ color: "#fff" }}>{label}</p>
-        <p className="text-[11px] mt-0.5" style={{ color: "rgba(255,255,255,0.85)" }}>{sub}</p>
-      </div>
+      className="flex min-w-0 flex-col gap-1.5 text-left cursor-pointer">
+      <span className="relative block w-full overflow-hidden"
+        style={{ aspectRatio: ratio, borderRadius: "var(--r-bloc)", background: "rgba(var(--accent-rgb),0.10)", boxShadow: "var(--ombre-pose)" }}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={img} alt="" aria-hidden loading="lazy" decoding="async"
+          onError={(e) => { e.currentTarget.style.display = "none"; }}
+          className="absolute inset-0 h-full w-full object-cover" />
+      </span>
+      <span className="flex flex-col px-1">
+        <span className="text-[13px] font-bold leading-tight" style={{ color: "var(--text-0)" }}>{label}</span>
+        {sub && <span className="text-[11px] leading-tight mt-px" style={{ color: "var(--text-3)" }}>{sub}</span>}
+      </span>
     </motion.button>
   );
 }
@@ -162,10 +145,10 @@ const PORTIONS: { key: PortionKey; label: string; sub: string; phrase: string }[
   { key: "grande",  label: "Grande",  sub: "bien remplie", phrase: "grande portion, une assiette bien remplie" },
 ];
 
-type SubChoice = { key: string; label: string; sub: string; Icon: Icon; run: () => void };
+type SubChoice = { key: string; label: string; sub: string; run: () => void };
 
 export default function MealSituationHero({
-  name, userId, goals, consumed, eatenToday, onPhoto, onBarcode, onManual, onMenuScan, onSkip,
+  userId, moment, goals, consumed, eatenToday, onPhoto, onBarcode, onMenuScan,
   classics, onQuickAdd, onLogIdea,
 }: Props) {
   const { guide } = useGuideActif();
@@ -214,7 +197,9 @@ export default function MealSituationHero({
   const [restResult, setRestResult] = useState<LoggedMeal | null>(null);
   const [restEdit, setRestEdit] = useState(false);
 
-  const { hello, moment } = greeting();
+  /* Le repas dont on parle. Les gestes se font après l'hydratation : si
+     l'heure n'est pas encore connue, on la lit au moment du geste. */
+  const quand = (): MealType => moment ?? momentActuel();
 
   const resetLiv = () => {
     setEnseigne(""); setArticles([]); setArticleInput("");
@@ -261,26 +246,22 @@ export default function MealSituationHero({
     thinkTimer.current = setTimeout(() => setThinking(false), ms);
   };
 
-  // Besoins de la journée pour classer « Une idée » (Levier A).
-  const buildDayNeeds = (): DayNeeds => {
-    const g = goals ?? { calories: 2000, proteins: 0, carbs: 0, fats: 0 };
-    const c = consumed ?? { calories: 0, proteins: 0, carbs: 0, fats: 0 };
-    const t = userId ? loadTasteProfileLocal(userId) : null;
-    return {
-      mealType: mealTypeNow(),
-      goalCalories: g.calories,
-      remaining: Math.max(g.calories - c.calories, 0),
-      proteinRemaining: Math.max(g.proteins - c.proteins, 0),
-      likedBases: t?.bases ?? [],
-      avoidNames: eatenToday ?? [],
-    };
-  };
+  // Besoins de la journée pour classer « Une idée » (Levier A). Même calcul
+  // que les idées posées sous la question (lib/collectionsRecettes).
+  const buildDayNeeds = (): DayNeeds => besoinsDuJour({
+    moment: quand(),
+    objectif: goals ?? { calories: 2000, proteins: 0 },
+    mange: consumed ?? { calories: 0, proteins: 0 },
+    dejaManges: eatenToday ?? [],
+    aimes: (userId ? loadTasteProfileLocal(userId)?.bases : null) ?? [],
+  });
 
-  const openRecipes = (quick: boolean, list?: Recipe[]) => {
-    // « Une idée » (list absente) = on classe selon la journée ; « À finir » garde
-    // son propre classement par ingrédients.
+  const openRecipes = (list?: Recipe[]) => {
+    // « Une idée » (list absente) = les recettes du moment, jamais une entrée
+    // seule, classées selon la journée ; « À finir » garde son propre ordre.
     const needs = list ? null : buildDayNeeds();
-    let pool = list ?? pickRecipes({ mealType: mealTypeNow(), diet: readDiet(), quick });
+    const regime = regimeConnu(readDiet());
+    let pool = list ?? poolDuMoment(quand()).filter((r) => convient(r, regime));
     if (needs) pool = rankRecipes(pool, needs);
     setRecipeNeeds(needs);
     setRecipeList(pool);
@@ -316,14 +297,14 @@ export default function MealSituationHero({
     try {
       const taste = userId ? loadTasteProfileLocal(userId) : null;
       const calorieTarget = goals?.calories
-        ? Math.round(goals.calories * MEAL_SHARE_ADVISOR[mealTypeNow()])
+        ? Math.round(goals.calories * MEAL_SHARE_ADVISOR[quand()])
         : null;
       const res = await aiFetch("/api/nutrition/recipe", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ingredients, diet: readDiet(), taste,
-          mealType: mealTypeNow(), portions: 1, calorieTarget,
+          mealType: quand(), portions: 1, calorieTarget,
         }),
       });
       const json = await res.json();
@@ -371,7 +352,7 @@ export default function MealSituationHero({
       goalCalories: goals ? g.calories : 0,   // 0 = objectif inconnu → pas de « X kcal restantes »
       remaining: Math.max(g.calories - c.calories, 0),
       proteinRemaining: Math.max(g.proteins - c.proteins, 0),
-      mealShare: MEAL_SHARE_ADVISOR[mealTypeNow()],
+      mealShare: MEAL_SHARE_ADVISOR[quand()],
       likedPlaces: t?.places ?? [],
     };
   };
@@ -416,19 +397,19 @@ export default function MealSituationHero({
   /* Exactement 3 sous-choix par situation (même structure que la racine) */
   const subChoices = (key: SituationKey): SubChoice[] => {
     if (key === "maison") return [
-      { key: "idee",       label: "Une idée",       sub: "qui me tente",    Icon: Sparkles, run: () => openRecipes(false) },
-      { key: "finir",      label: "À finir",        sub: "avec tes restes", Icon: Carrot,   run: () => setScreen("finish") },
-      { key: "classiques", label: "Mes classiques", sub: "mes habitudes",   Icon: Heart,    run: () => setScreen("classics") },
+      { key: "idee",       label: "Une idée",       sub: "qui me tente",    run: () => openRecipes() },
+      { key: "finir",      label: "À finir",        sub: "avec tes restes", run: () => setScreen("finish") },
+      { key: "classiques", label: "Mes classiques", sub: "mes habitudes",   run: () => setScreen("classics") },
     ];
     if (key === "resto") return [
-      { key: "assiette",  label: "Mon assiette",      sub: "je la scanne",       Icon: Camera,      run: onPhoto },
-      { key: "carte",     label: "La carte",          sub: "je la photographie", Icon: BookOpen,    run: onMenuScan },
-      { key: "livraison", label: "Je me fais livrer", sub: "à la maison",        Icon: ShoppingBag, run: () => setScreen("livraison") },
+      { key: "assiette",  label: "Mon assiette",      sub: "je la scanne",       run: onPhoto },
+      { key: "carte",     label: "La carte",          sub: "je la photographie", run: onMenuScan },
+      { key: "livraison", label: "Je me fais livrer", sub: "à la maison",        run: () => setScreen("livraison") },
     ];
     return [
-      { key: "code",       label: "Code-barres",    sub: "produit emballé", Icon: Barcode, run: onBarcode },
-      { key: "photo",      label: "Une photo",      sub: "on l’estime",     Icon: Camera,  run: onPhoto },
-      { key: "classiques", label: "Mes classiques", sub: "mes habitudes",   Icon: Heart,   run: () => setScreen("classics") },
+      { key: "code",       label: "Code-barres",    sub: "produit emballé", run: onBarcode },
+      { key: "photo",      label: "Une photo",      sub: "on l’estime",     run: onPhoto },
+      { key: "classiques", label: "Mes classiques", sub: "mes habitudes",   run: () => setScreen("classics") },
     ];
   };
 
@@ -450,78 +431,58 @@ export default function MealSituationHero({
   const currentRecipe = recipeList[recipeIndex];
   const currentFit = recipeNeeds && currentRecipe ? fitReason(currentRecipe, recipeNeeds) : null;
 
+  /* La question du moment. Avant l'hydratation (heure du téléphone pas encore
+     lue), la forme sans moment : jamais une heure fausse. */
+  const question = voix(guide, moment ? (`nutrition.question.${moment}` as const) : "nutrition.question");
+
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
-      className={sit === null ? "max-w-5xl" : "p-5 max-w-5xl"}
-      /* À la racine, « On mange où ? » est posé directement sur le fond
-         (maquette bento, Louis 2026-10-11) : la question, Nora et les trois
-         photos n'ont pas besoin d'un cadre. Dans un sous-niveau (formulaires,
-         listes), la carte revient. */
-      style={sit === null ? undefined : {
-        borderRadius: "var(--r-bloc)",
-        background: "rgb(var(--surface-rgb))",
-        border: "1px solid rgba(var(--text-3-rgb),0.16)",
-        boxShadow: "var(--ombre-pose)",
-      }}
+    <motion.section
+      initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}
+      className={`${ns.carte} ${ns.chaud}`}
+      style={{ padding: "14px 8px 12px", gap: 12 }}
     >
-      {/* En-tête : racine = question ; sous-niveau = retour + titre */}
+      {/* En-tête : racine = le Guide et sa question ; sous-niveau = retour + titre */}
       {sit === null ? (
-        <>
-          <p className="vy-label" style={{ color: "var(--text-3)" }}>
-            {hello}{name ? ` ${name}` : ""} · {moment}
-          </p>
-          {/* Le visage prend la place de la puce violette : la question
-              change de bouche, pas de mise en page. Sans Guide résolu,
-              `VisageGuide` retombe sur l'étincelle ✦ et la phrase reste
-              exactement celle d'avant. */}
-          <div className="flex items-center gap-2.5 mt-1">
-            <VisageGuide guide={guide} etat="listen" size={36} />
-            <div className="min-w-0">
-              <h2 className="text-[26px] font-light leading-none" style={{ color: "var(--text-1)" }}>On mange où&nbsp;?</h2>
-              <p className="text-[13px] mt-1.5" style={{ color: "var(--text-3)" }}>
-                {voix(guide, "nutrition.question")}
-              </p>
-            </div>
-          </div>
-        </>
+        <div className="flex items-center gap-3 px-1.5">
+          {/* Sans Guide résolu, `VisageGuide` retombe sur l'étincelle ✦. */}
+          <span className="flex-shrink-0 rounded-full" style={{ boxShadow: "0 0 0 2px rgb(var(--surface-rgb))" }}>
+            <VisageGuide guide={guide} etat="listen" size={44} />
+          </span>
+          <h2 className="min-w-0 text-[26px] font-light"
+            style={{ color: "var(--text-0)", lineHeight: 1.08, letterSpacing: "-0.01em", textWrap: "balance" }}>
+            {question}
+          </h2>
+        </div>
       ) : (
-        <div className="flex items-center gap-2.5">
-          <motion.button whileTap={{ scale: 0.9 }} onClick={goBack}
-            className="w-9 h-9 flex items-center justify-center cursor-pointer flex-shrink-0"
-            style={{ borderRadius: "var(--r-controle)", background: "rgba(var(--tint-violet-rgb),0.8)" }}>
-            <ChevronLeft size={16} strokeWidth={2} style={{ color: "var(--text-2)" }} />
+        <div className="flex items-center gap-2.5 px-1.5">
+          <motion.button whileTap={{ scale: 0.9 }} onClick={goBack} aria-label="Revenir" className={ns.rond}>
+            <ChevronLeft size={19} strokeWidth={2.2} />
           </motion.button>
-          <div>
-            <p className="vy-label" style={{ color: "var(--text-3)" }}>{sitObj?.sub}</p>
-            <h2 className="text-[20px] font-light" style={{ color: "var(--text-1)" }}>{heading}</h2>
-          </div>
+          <h2 className="min-w-0 text-[20px] font-light leading-tight" style={{ color: "var(--text-0)" }}>{heading}</h2>
         </div>
       )}
 
       {/* Contenu — change SUR PLACE */}
       <AnimatePresence mode="wait">
-        {/* Racine : les 3 grandes portes */}
+        {/* Racine : les trois portes */}
         {sit === null && (
           <motion.div key="root"
             initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }}
-            className="grid grid-cols-3 gap-2.5 mt-4">
-            {SITUATIONS.map((s) => (
-              <PhotoCard key={s.key} label={s.label} sub={s.sub} Icon={s.Icon} gradient={s.gradient} img={s.img} hauteur="24vh"
-                onClick={() => { setSit(s.key); setScreen("menu"); }} />
+            className="grid grid-cols-3 gap-1.5">
+            {SITUATIONS.map((p) => (
+              <Porte key={p.key} label={p.label} sub={p.sub} img={p.img}
+                onClick={() => { setSit(p.key); setScreen("menu"); }} />
             ))}
           </motion.div>
         )}
 
-        {/* Sous-choix : encore 3 grandes cartes */}
+        {/* Sous-choix : encore trois portes, dans la même carte */}
         {sit !== null && screen === "menu" && (
           <motion.div key={`menu-${sit}`}
             initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 12 }}
-            className="grid grid-cols-3 gap-2.5 mt-4">
+            className="grid grid-cols-3 gap-1.5">
             {subChoices(sit).map((c) => (
-              <PhotoCard key={c.key} label={c.label} sub={c.sub} Icon={c.Icon}
-                gradient={sitObj?.gradient ?? ""} img={`/nutrition/${sit}-${c.key}.jpg`}
-                onClick={c.run} />
+              <Porte key={c.key} label={c.label} sub={c.sub} img={`/nutrition/${sit}-${c.key}.jpg`} onClick={c.run} />
             ))}
           </motion.div>
         )}
@@ -530,7 +491,7 @@ export default function MealSituationHero({
         {sit !== null && screen === "classics" && (
           <motion.div key="classics"
             initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 12 }}
-            className="mt-4">
+            className="px-1.5">
             {classics.length === 0 ? (
               <div className="flex flex-col items-center text-center gap-2.5 py-9">
                 <div className="w-12 h-12 rounded-2xl flex items-center justify-center"
@@ -581,7 +542,7 @@ export default function MealSituationHero({
         {sit !== null && screen === "finish" && (
           <motion.div key="finish"
             initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 12 }}
-            className="flex flex-col gap-3 mt-4">
+            className="flex flex-col gap-3 px-1.5">
 
             {/* Bascule : cuisiner un plat / estimer un reste */}
             <div className="flex gap-1 p-1 rounded-2xl"
@@ -768,12 +729,10 @@ export default function MealSituationHero({
         {sit !== null && screen === "livraison" && (
           <motion.div key="livraison"
             initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 12 }}
-            className="grid grid-cols-2 gap-2.5 mt-4">
-            <PhotoCard label="Je sais ce que je prends" sub="je le note" Icon={ShoppingBag}
-              gradient={sitObj?.gradient ?? ""} img="/nutrition/livraison-jesais.jpg"
+            className="grid grid-cols-2 gap-1.5">
+            <Porte label="Je sais ce que je prends" sub="je le note" img="/nutrition/livraison-jesais.jpg" ratio="4 / 5"
               onClick={() => { setFormStep(1); setScreen("livraison-form"); }} />
-            <PhotoCard label="Conseille-moi" sub="on choisit pour toi" Icon={Sparkles}
-              gradient={sitObj?.gradient ?? ""} img="/nutrition/livraison-conseil.jpg"
+            <Porte label="Conseille-moi" sub="on choisit pour toi" img="/nutrition/livraison-conseil.jpg" ratio="4 / 5"
               onClick={openAdvisor} />
           </motion.div>
         )}
@@ -782,7 +741,7 @@ export default function MealSituationHero({
         {sit !== null && screen === "livraison-form" && (
           <motion.div key="livraison-form"
             initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 12 }}
-            className="mt-4">
+            className="px-1.5">
             <AnimatePresence mode="wait" initial={false}>
               <motion.div key={`step-${formStep}`}
                 initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }}
@@ -951,7 +910,7 @@ export default function MealSituationHero({
         {sit !== null && screen === "livraison-advisor" && (
           <motion.div key="livraison-advisor"
             initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 12 }}
-            className="mt-4">
+            className="px-1.5">
             {advice.length === 0 ? (
               <div className="flex flex-col items-center text-center gap-2 py-10">
                 <AssistantSpark px={24} />
@@ -966,7 +925,7 @@ export default function MealSituationHero({
                     <>Il te reste <span style={{ color: "var(--text-1)", fontWeight: 600 }}>{advisorNeeds.remaining} kcal</span>
                     {advisorNeeds.proteinRemaining >= 15 && <> · <span style={{ color: "var(--text-1)", fontWeight: 600 }}>{advisorNeeds.proteinRemaining} g</span> de protéines à couvrir</>}</>
                   ) : (
-                    <>{moment.charAt(0).toUpperCase() + moment.slice(1)}, voilà où je partirais.</>
+                    <>{MOMENT_PHRASE[quand()]}, voilà où je partirais.</>
                   )}
                 </p>
               </div>
@@ -1040,15 +999,6 @@ export default function MealSituationHero({
         )}
       </AnimatePresence>
 
-      {/* Filet anti-culpabilité — uniquement à la racine */}
-      {sit === null && (
-        <div className="flex items-center justify-center gap-3 mt-3.5">
-          <button onClick={onManual} className="text-[11px] cursor-pointer" style={{ color: "var(--text-3)" }}>J&apos;ai déjà mangé</button>
-          <span className="text-[11px]" style={{ color: "var(--text-3)", opacity: 0.5 }}>·</span>
-          <button onClick={onSkip} className="text-[11px] cursor-pointer" style={{ color: "var(--text-3)" }}>Je saute ce repas</button>
-        </div>
-      )}
-
       {/* Fiche recette (banque curée) */}
       <AnimatePresence>
         {recipeOpen && (
@@ -1119,6 +1069,6 @@ export default function MealSituationHero({
           />
         )}
       </AnimatePresence>
-    </motion.div>
+    </motion.section>
   );
 }

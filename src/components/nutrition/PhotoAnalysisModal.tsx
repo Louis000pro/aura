@@ -29,7 +29,9 @@ type AnalysisResult = {
 /* ─── PhotoAnalysisModal ─────────────────────────────────────────────── */
 type PhotoPhase = "select" | "analyzing" | "result" | "edit";
 
-export default function PhotoAnalysisModal({ onClose, onAdd, onBack }: {
+export default function PhotoAnalysisModal({ onClose, onAdd, onBack, typeInitial }: {
+  /** Le moment déjà choisi dans « Ajouter un repas » : il prime sur l'heure. */
+  typeInitial?: MealType;
   onClose: () => void;
   onAdd: (meal: Omit<MealEntry, "id">) => void;
   onBack?: () => void;   // présent quand on arrive depuis la carte → revenir au classement (misclic)
@@ -95,7 +97,7 @@ export default function PhotoAnalysisModal({ onClose, onAdd, onBack }: {
           throw new Error(err.error ?? "Analyse échouée");
         }
         const data: AnalysisResult = await res.json();
-        setEditData({ ...data });
+        setEditData({ ...data, mealType: typeInitial ?? data.mealType });
         setPhase("result");
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : "Erreur inconnue";

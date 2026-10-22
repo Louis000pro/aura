@@ -3,9 +3,10 @@
 /* ════════════════════════════════════════════════════════════════════
    GeneratedRecipeSheet — la fiche d'une recette ÉCRITE PAR L'IA (sans image).
 
-   Carte partagée par tout ce qui génère une recette via /api/nutrition/recipe :
-   « Recettes par thème » (RecipesByTheme) et « À finir · avec tes restes »
-   (MealSituationHero). Purement présentationnelle : le parent gère le fetch
+   La fiche de « À finir · avec tes restes » (MealSituationHero), qui génère
+   une recette via /api/nutrition/recipe. Les « recettes par thème » qui la
+   partageaient sont parties le 2026-10-22, remplacées par les collections de
+   la banque. Purement présentationnelle : le parent gère le fetch
    (loading / error / recipe) et le log ; ici on affiche tags, macros,
    ingrédients, étapes, allergènes, note sécurité + « ajouter à ma journée ».
    Voir [[nutrition-unification-refonte]], [[nutrition-onmangeou-redesign]].

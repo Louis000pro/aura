@@ -38,20 +38,22 @@ interface BarcodeEstimated {
   mealType: MealType;
 }
 
-export default function BarcodeScannerModal({ onClose, onAdd }: {
+export default function BarcodeScannerModal({ onClose, onAdd, typeInitial }: {
+  /** Le moment déjà choisi dans « Ajouter un repas » : il prime sur l'heure. */
+  typeInitial?: MealType;
   onClose: () => void;
   onAdd: (meal: Omit<MealEntry, "id">) => void;
 }) {
   const [phase, setPhase] = useState<BarcodePhase>("scan");
   const [product, setProduct] = useState<BarcodeProduct | null>(null);
   const [grams, setGrams] = useState("100");
-  const [mealType, setMealType] = useState<MealType>(momentActuel());
+  const [mealType, setMealType] = useState<MealType>(typeInitial ?? momentActuel());
   const [error, setError] = useState<string | null>(null);
   // Fallback IA
   const [fallbackName, setFallbackName] = useState("");
   const [estimating, setEstimating] = useState(false);
   const [estimated, setEstimated] = useState<BarcodeEstimated | null>(null);
-  const [estimateMealType, setEstimateMealType] = useState<MealType>(momentActuel());
+  const [estimateMealType, setEstimateMealType] = useState<MealType>(typeInitial ?? momentActuel());
 
   const scannerRef = useRef<HTMLDivElement>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -122,9 +124,9 @@ export default function BarcodeScannerModal({ onClose, onAdd }: {
         proteins: data.proteins || 0,
         carbs: data.carbs || 0,
         fats: data.fats || 0,
-        mealType: data.mealType || momentActuel(),
+        mealType: typeInitial ?? (data.mealType || momentActuel()),
       });
-      setEstimateMealType(data.mealType || momentActuel());
+      setEstimateMealType(typeInitial ?? (data.mealType || momentActuel()));
     } catch {
       setError("Estimation impossible pour ce produit.");
     } finally {

@@ -973,13 +973,25 @@ const REPLIQUES = {
      mais de la parole sans bouche. Elle passe ici, et le visage `listen`
      prend la place de la puce violette qui la précédait.
 
-     ⚠️ LE TITRE « On mange où ? » NE BOUGE PAS et n'entre pas dans cette
-     couche. C'est l'en-tête de l'écran, il est identique pour les deux
-     Guides, et le déplacer ici laisserait croire qu'il peut varier. */
+     ⚠️ REFAIT LE 2026-10-22 (direction 2 de la maquette « La nutrition
+     accueillante ») : le titre « On mange où ? » et la phrase en dessous
+     ont fusionné en UNE question, posée par le Guide et datée par le repas
+     qui vient. `nutrition.question` seule ne sert qu'au tout premier
+     rendu, avant que le téléphone ait donné l'heure (lib/useHorloge). */
   "nutrition.question": {
-    commun: "Dis-moi où, je m’occupe du reste.",
-    nora:   "Dis-moi juste où tu manges, je m’occupe du reste.",
-    sasha:  "Dis-moi où tu manges. Je m’occupe du reste.",
+    commun: "Tu manges où ?",
+  },
+  "nutrition.question.petit-dejeuner": {
+    commun: "Tu prends ton petit-déj où ?",
+  },
+  "nutrition.question.dejeuner": {
+    commun: "Tu manges où ce midi ?",
+  },
+  "nutrition.question.gouter": {
+    commun: "Tu prends ton goûter où ?",
+  },
+  "nutrition.question.diner": {
+    commun: "Et ce soir, tu manges où ?",
   },
 
   /* ── La lecture de la semaine ──
