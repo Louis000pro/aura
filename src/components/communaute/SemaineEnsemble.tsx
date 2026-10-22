@@ -15,9 +15,9 @@
    personne (`semaine_ensemble`).
    ───────────────────────────────────────────────────────────── */
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, X } from "lucide-react";
 import Sheet from "@/components/communaute/Sheet";
 import { PersonAvatar } from "@/components/communaute/ConversationAvatar";
 import type { Personne } from "@/lib/messagerie";
@@ -91,6 +91,20 @@ export default function SemaineEnsemble({ semaine, bande, moi }: {
   moi: string;
 }) {
   const [ouverte, setOuverte] = useState(false);
+
+  // Le bouton retour du téléphone ferme la feuille au lieu de quitter
+  // la Communauté : on pose une entrée d'historique à l'ouverture, et
+  // fermer à la main la consomme pour ne rien laisser derrière.
+  useEffect(() => {
+    if (!ouverte) return;
+    history.pushState({ semaineEnsemble: true }, "");
+    const surRetour = () => setOuverte(false);
+    window.addEventListener("popstate", surRetour);
+    return () => {
+      window.removeEventListener("popstate", surRetour);
+      if (history.state?.semaineEnsemble) history.back();
+    };
+  }, [ouverte]);
   const part = semaine.objectif ? semaine.seances / semaine.objectif : 0;
   const ontBouge = bande.filter((p) => semaine.aBouge.has(p.id));
   const aujourdhui = new Date().toLocaleDateString("fr-CA", { timeZone: "Europe/Paris" });
@@ -98,7 +112,7 @@ export default function SemaineEnsemble({ semaine, bande, moi }: {
 
   const compte = (grand: boolean) => (
     <span className="flex items-baseline gap-1.5">
-      <span className="vy-nombre" style={{ fontSize: grand ? 56 : 34, fontWeight: 800, color: "var(--text-0)", lineHeight: 1 }}>
+      <span className="vy-nombre" style={{ fontSize: grand ? 44 : 34, fontWeight: 800, color: "var(--text-0)", lineHeight: 1 }}>
         {semaine.seances}
       </span>
       <span className="vy-nombre text-[16px]" style={{ color: "var(--text-3)" }}>/ {semaine.objectif} séances</span>
@@ -139,12 +153,17 @@ export default function SemaineEnsemble({ semaine, bande, moi }: {
 
       {ouverte && (
         <Sheet onFermer={() => setOuverte(false)}>
-          <div className="flex flex-col gap-5 px-4 pb-6 pt-1">
+          <div className="relative flex flex-col gap-5 px-1 pb-4 pt-1">
+            <button onClick={() => setOuverte(false)} aria-label="Fermer"
+              className="absolute -right-1 -top-1 flex h-10 w-10 items-center justify-center rounded-full"
+              style={{ background: "rgba(var(--text-3-rgb), .12)", color: "var(--text-1)" }}>
+              <X className="h-5 w-5" />
+            </button>
             <div className="flex flex-col items-center gap-3 text-center">
               <span className="text-[13px] font-semibold" style={{ color: "var(--text-3)" }}>{libelleSemaine(semaine.debut)}</span>
               <h2 className="vy-titre" style={{ color: "var(--text-0)" }}>La semaine ensemble</h2>
               <span className="relative flex items-center justify-center">
-                <Anneau part={part} taille={190} epaisseur={14} />
+                <Anneau part={part} taille={150} epaisseur={12} />
                 <span className="absolute flex flex-col items-center">{compte(true)}</span>
               </span>
               <p className="max-w-[300px] text-[16px] leading-snug" style={{ color: "var(--text-1)" }}>
