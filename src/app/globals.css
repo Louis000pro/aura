@@ -331,6 +331,9 @@
     input, textarea, select {
       font-size: 16px !important;
     }
+    /* Un champ dont le chiffre EST le héros (la pesée) : plus grand que 16 px,
+       donc iOS ne zoome pas non plus, et la règle du dessus ne l'écrase pas. */
+    input.champ-geant { font-size: 40px !important; }
   }
 }
 

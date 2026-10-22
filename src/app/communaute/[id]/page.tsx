@@ -20,8 +20,8 @@ import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  ArrowLeft, Send, Loader2, ChevronRight, ChevronUp, Sparkles, Reply, Copy, Trash2, X,
-  ImagePlus,
+  ArrowLeft, Loader2, ChevronRight, ChevronUp, Sparkles, Reply, Copy, Trash2, X,
+  Camera, Mic, Image as ImageIcon,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
@@ -31,9 +31,10 @@ import { useRangs } from "@/lib/rangsPublics";
 import { imageEtat, etatPoster, lancerRelaisDansConversation } from "@/lib/defi";
 import { useTheme } from "@/hooks/useTheme";
 import { refusRelais, type RefusRelais } from "@/lib/defiErreurs";
+import { useEnregistreurVocal, BarreEnregistrement, LecteurVocal } from "@/components/communaute/Vocal";
 import {
   chargerFil, chargerMessagesAvant, chargerMessage, chargerReactions,
-  envoyerMessage, envoyerPhoto, marquerLu, titreConversation, autresMembres,
+  envoyerMessage, envoyerPhoto, envoyerVocal, marquerLu, titreConversation, autresMembres,
   reagir, supprimerMessage, heureExacte, memeJour, libelleJour, lireFilEnCache,
   relationAmi, accepterDemandeAmi, demanderAmi,
   type Conversation, type Message, type RelationAmi,
@@ -144,6 +145,11 @@ export default function FilPage() {
   const hauteurAvant = useRef<number | null>(null);
   const ignorerAutoScroll = useRef(false);
   const photoRef = useRef<HTMLInputElement>(null);
+  const cameraRef = useRef<HTMLInputElement>(null);
+  const [vocalEnCours, setVocalEnCours] = useState(false);
+  // Le son fini part par une ref : la fonction d'envoi est déclarée plus bas.
+  const vocalFini = useRef<(son: Blob, secondes: number) => void>(() => {});
+  const vocal = useEnregistreurVocal((son, secondes) => vocalFini.current(son, secondes));
   const initialiseeRef = useRef(Boolean(cacheInitial));
 
   const recharger = useCallback(async () => {
@@ -371,6 +377,25 @@ export default function FilPage() {
     setRepondA(null);
     if (r.messageId) void ajouterMessage(r.messageId);
   };
+
+  const envoyerUnVocal = async (son: Blob, secondes: number) => {
+    if (!user) return;
+    const cite = repondA?.id ?? null;
+    setVocalEnCours(true);
+    setErreur(null);
+    const r = await envoyerVocal(convId, user.id, son, secondes, cite, session?.access_token);
+    setVocalEnCours(false);
+    if (!r.ok) {
+      setErreur(/mime|bucket|row-level security|check constraint/i.test(String(r.raison ?? ""))
+        ? "Les messages vocaux ne sont pas encore activés côté serveur."
+        : "Le vocal n’est pas parti. Réessaie.");
+      return;
+    }
+    setRepondA(null);
+    if (r.messageId) void ajouterMessage(r.messageId);
+  };
+
+  useEffect(() => { vocalFini.current = (son, secondes) => { void envoyerUnVocal(son, secondes); }; });
 
   const surEtincelle = async () => {
     if (!conv) return;
@@ -660,7 +685,7 @@ export default function FilPage() {
               {repondA.userId === moi ? "Toi" : conv.membres.find((p) => p.id === repondA.userId)?.pseudo ?? "…"}
             </b>
             <span className="block truncate text-[13px]" style={{ color: c.t2 }}>
-              {repondA.type === "image" ? "📷 Photo" : repondA.contenu}
+              {repondA.type === "image" ? "📷 Photo" : repondA.type === "audio" ? "🎤 Message vocal" : repondA.contenu}
             </span>
           </span>
           <button onClick={() => setRepondA(null)} aria-label="Annuler la réponse">
@@ -703,27 +728,10 @@ export default function FilPage() {
         className="relative z-10 flex shrink-0 items-end gap-2 px-3 pt-2"
         style={{ paddingBottom: "calc(.75rem + env(safe-area-inset-bottom))" }}
       >
-        {/* Le relais se joue de 2 à 5 (20261007_relais_groupe.sql) : un duo
-            ou un groupe peut le lancer. Au-delà de 5, `lancer_relais` refuse,
-            donc le bouton n'apparaît pas (un fil ne dépasse pas 5 de toute
-            façon). Un relais déjà posé garde son étincelle : elle ouvre
-            l'affiche, elle ne lance rien. */}
-        {(conv.membres.length <= 5 || conv.defi) && (
-        <button
-          onClick={surEtincelle}
-          disabled={occupe || envoi || photoEnCours}
-          aria-label={conv.defi ? "Voir l’affiche" : "Lancer un relais"}
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full disabled:opacity-50"
-          style={{
-            background: "rgba(215,166,42,.16)",
-            border: "1px solid rgba(215,166,42,.45)",
-            color: "#D7A62A",
-          }}
-        >
-          {occupe ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-[18px] w-[18px]" />}
-        </button>
-        )}
-
+        {/* Une seule pilule, comme Instagram : l'appareil photo à gauche,
+            la saisie, puis le micro, la galerie et l'étincelle du relais.
+            Dès qu'on écrit, les trois icônes de droite laissent la place à
+            « Envoyer » : un seul geste possible à la fois. */}
         <input
           ref={photoRef}
           type="file"
@@ -731,41 +739,102 @@ export default function FilPage() {
           className="hidden"
           onChange={(e) => void envoyerUnePhoto(e.target.files?.[0])}
         />
-        <button
-          onClick={() => photoRef.current?.click()}
-          disabled={envoi || photoEnCours}
-          aria-label="Envoyer une photo"
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full disabled:opacity-50"
-          style={{ background: c.carte, border: `1px solid ${c.trait}`, color: c.t2 }}
-        >
-          {photoEnCours
-            ? <Loader2 className="h-4 w-4 animate-spin" />
-            : <ImagePlus className="h-[18px] w-[18px]" />}
-        </button>
-
-        <textarea
-          value={texte}
-          disabled={photoEnCours}
-          onChange={(e) => { setTexte(e.target.value); signalerFrappe(); }}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void envoyer(); }
-          }}
-          maxLength={4000}
-          rows={1}
-          placeholder="Message…"
-          className="max-h-28 min-h-[40px] flex-1 resize-none rounded-[20px] border px-4 py-2.5 text-[16px] outline-none"
-          style={{ borderColor: c.trait, background: c.carte, color: c.t1 }}
+        <input
+          ref={cameraRef}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          className="hidden"
+          onChange={(e) => void envoyerUnePhoto(e.target.files?.[0])}
         />
 
-        <button
-          onClick={envoyer}
-          disabled={!texte.trim() || envoi || photoEnCours}
-          aria-label="Envoyer"
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-white disabled:opacity-40"
-          style={{ background: "linear-gradient(135deg, #8B5CF6, #C13BC1)" }}
+        {vocal.actif ? (
+          <BarreEnregistrement
+            secondes={vocal.secondes}
+            onAnnuler={() => vocal.arreter(false)}
+            onEnvoyer={() => vocal.arreter(true)}
+            couleurs={c}
+          />
+        ) : (
+        <div
+          className="flex min-h-[48px] min-w-0 flex-1 items-end gap-1 rounded-[24px] py-1 pl-1 pr-1.5"
+          style={{ background: c.carte, border: `1px solid ${c.trait}` }}
         >
-          {envoi ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-        </button>
+          <button
+            onClick={() => cameraRef.current?.click()}
+            disabled={envoi || photoEnCours || vocalEnCours}
+            aria-label="Prendre une photo"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-white disabled:opacity-50"
+            style={{ background: "linear-gradient(135deg, #8B5CF6, #C13BC1)" }}
+          >
+            {photoEnCours || vocalEnCours
+              ? <Loader2 className="h-4 w-4 animate-spin" />
+              : <Camera className="h-[19px] w-[19px]" />}
+          </button>
+
+          <textarea
+            value={texte}
+            disabled={photoEnCours || vocalEnCours}
+            onChange={(e) => { setTexte(e.target.value); signalerFrappe(); }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void envoyer(); }
+            }}
+            maxLength={4000}
+            rows={1}
+            placeholder="Votre message…"
+            className="max-h-28 min-h-[40px] w-0 min-w-0 flex-1 resize-none bg-transparent px-2 py-2 text-[16px] outline-none"
+            style={{ color: c.t1 }}
+          />
+
+          {texte.trim() ? (
+            <button
+              onClick={envoyer}
+              disabled={envoi || photoEnCours}
+              aria-label="Envoyer"
+              className="flex h-10 shrink-0 items-center px-2.5 text-[16px] font-semibold disabled:opacity-40"
+              style={{ color: "#8B5CF6" }}
+            >
+              {envoi ? <Loader2 className="h-4 w-4 animate-spin" /> : "Envoyer"}
+            </button>
+          ) : (
+            <span className="flex shrink-0 items-center">
+              <button
+                onClick={() => void vocal.demarrer()}
+                disabled={envoi || photoEnCours || vocalEnCours}
+                aria-label="Enregistrer un message vocal"
+                className="flex h-10 w-9 items-center justify-center disabled:opacity-50"
+                style={{ color: c.t1 }}
+              >
+                <Mic className="h-[21px] w-[21px]" strokeWidth={1.8} />
+              </button>
+              <button
+                onClick={() => photoRef.current?.click()}
+                disabled={envoi || photoEnCours || vocalEnCours}
+                aria-label="Envoyer une photo de ta galerie"
+                className="flex h-10 w-9 items-center justify-center disabled:opacity-50"
+                style={{ color: c.t1 }}
+              >
+                <ImageIcon className="h-[21px] w-[21px]" strokeWidth={1.8} />
+              </button>
+              {/* Le relais se joue de 2 à 5 (20261007_relais_groupe.sql) :
+                  au-delà, `lancer_relais` refuse, donc l'étincelle n'apparaît
+                  pas. Un relais déjà posé garde son étincelle : elle ouvre
+                  l'affiche, elle ne lance rien. */}
+              {(conv.membres.length <= 5 || conv.defi) && (
+                <button
+                  onClick={surEtincelle}
+                  disabled={occupe || envoi || photoEnCours}
+                  aria-label={conv.defi ? "Voir l’affiche" : "Lancer un relais"}
+                  className="flex h-10 w-9 items-center justify-center disabled:opacity-50"
+                  style={{ color: "#D7A62A" }}
+                >
+                  {occupe ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-[21px] w-[21px]" strokeWidth={1.8} />}
+                </button>
+              )}
+            </span>
+          )}
+        </div>
+        )}
       </div>
       )}
 
@@ -845,7 +914,7 @@ function Bulle({ message: m, moi, conv, couleur: c, surAffiche, cite, onMenu }: 
               {cite.userId === moi ? "Toi" : conv.membres.find((p) => p.id === cite.userId)?.pseudo ?? "…"}
             </b>
             <span className="block truncate text-[13px]">
-              {cite.type === "image" ? "📷 Photo" : cite.contenu}
+              {cite.type === "image" ? "📷 Photo" : cite.type === "audio" ? "🎤 Message vocal" : cite.contenu}
             </span>
           </span>
         )}
@@ -865,6 +934,8 @@ function Bulle({ message: m, moi, conv, couleur: c, surAffiche, cite, onMenu }: 
           ) : (
             <span className="block px-2 py-1.5">Photo indisponible</span>
           )
+        ) : m.type === "audio" ? (
+          <LecteurVocal url={m.mediaUrl} duree={m.mediaWidth ?? 0} aMoi={aMoi} />
         ) : m.contenu}
       </div>
 

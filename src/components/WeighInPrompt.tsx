@@ -12,10 +12,11 @@
 
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Scale, X } from "lucide-react";
+import { X } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { createClient } from "@/lib/supabase";
 import { localDateStr, addDaysStr, daysSince } from "@/lib/dates";
+import { lockBodyModal } from "@/lib/bodyModal";
 
 const DAYS_BETWEEN = 30;
 
@@ -34,6 +35,7 @@ export default function WeighInPrompt({ ouvert, onFermer }: {
   const [showAuto, setShowAuto] = useState(false);
   const show = pilote ? ouvert : showAuto;
   const [lastWeight, setLastWeight] = useState<number | null>(null);
+  const [lastDate, setLastDate] = useState<string | null>(null);
   const [value, setValue] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -57,12 +59,15 @@ export default function WeighInPrompt({ ouvert, onFermer }: {
       .then(({ data }) => {
         if (cancelled) return;
         const row = data as { weight_kg: number; date: string } | null;
-        if (row) setLastWeight(row.weight_kg);
+        if (row) { setLastWeight(Number(row.weight_kg)); setLastDate(row.date); }
         if (!pilote && (!row || daysSince(row.date) >= DAYS_BETWEEN)) setShowAuto(true);
       });
 
     return () => { cancelled = true; };
   }, [user?.id, pilote]);
+
+  // La barre du bas s'efface sous la feuille, comme sous toutes les autres.
+  useEffect(() => (show ? lockBodyModal() : undefined), [show]);
 
   const later = () => {
     if (pilote) { onFermer?.(); return; }
@@ -89,64 +94,96 @@ export default function WeighInPrompt({ ouvert, onFermer }: {
     }
   };
 
+  const kgDit = parseFloat(value.replace(",", "."));
+  const valide = Number.isFinite(kgDit) && kgDit >= 20 && kgDit <= 400;
+  const derniere = lastWeight !== null && lastDate
+    ? `Dernière pesée : ${lastWeight.toFixed(1).replace(".", ",")} kg, le ${new Date(lastDate + "T12:00:00").toLocaleDateString("fr-FR", { day: "numeric", month: "long" })}.`
+    : null;
+
   return (
     <AnimatePresence>
       {show && (
         <motion.div
           initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-          className="fixed inset-0 z-[60] flex items-end md:items-center justify-center px-4"
-          style={{ background: "rgba(0,0,0,0.25)", backdropFilter: "blur(10px)" }}
+          className="fixed inset-0 z-[60] flex items-end md:items-center justify-center md:px-4"
+          style={{ background: "rgba(0,0,0,0.3)" }}
           onClick={later}
         >
+          {/* Une vraie feuille du bas sur téléphone : pleine largeur, collée au
+              bord, et elle garde la place de la barre d'accueil de l'iPhone.
+              Avant, elle flottait avec des marges latérales mais touchait le
+              bas de l'écran : on aurait dit une carte coupée. */}
           <motion.div
-            initial={{ opacity: 0, y: 80, scale: 0.96 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 40, scale: 0.97 }}
-            transition={{ type: "spring", bounce: 0.28, duration: 0.5 }}
+            role="dialog" aria-modal="true" aria-labelledby="pesee-titre"
+            initial={{ y: 60, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 40, opacity: 0 }}
+            transition={{ type: "spring", bounce: 0.18, duration: 0.45 }}
             onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-sm rounded-t-[var(--r-feuille)] md:rounded-[var(--r-feuille)] px-6 pt-7 pb-8 md:pb-7"
-            style={{ background: "rgb(var(--surface-rgb))", boxShadow: "0 -8px 40px rgba(var(--accent-rgb),0.18)" }}
+            className="w-full md:max-w-sm rounded-t-[var(--r-feuille)] md:rounded-[var(--r-feuille)] px-6 pt-3 md:pt-6"
+            style={{
+              background: "rgb(var(--surface-rgb))",
+              boxShadow: "0 -12px 40px rgba(0,0,0,0.14)",
+              paddingBottom: "calc(20px + env(safe-area-inset-bottom))",
+            }}
           >
-            <div className="flex items-center justify-between mb-1">
-              <div
-                className="flex items-center justify-center rounded-2xl"
-                style={{ width: 44, height: 44, background: "linear-gradient(135deg,rgba(var(--accent-rgb),0.16),rgba(var(--gold-rgb),0.14))" }}
-              >
-                <Scale size={22} style={{ color: "var(--accent)" }} strokeWidth={2} />
+            <div className="mx-auto mb-3 h-1 w-10 rounded-full md:hidden" style={{ background: "rgba(var(--text-3-rgb),0.3)" }} />
+
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h2 id="pesee-titre" className="vy-titre" style={{ color: "var(--text-0)" }}>
+                  {pilote ? "Ta pesée du jour" : "On fait le point ?"}
+                </h2>
+                <p className="vy-corps mt-1" style={{ color: "var(--text-2)" }}>
+                  {pilote
+                    ? "Elle s’ajoute à ta courbe et garde ton objectif ajusté."
+                    : "Ça fait un moment. Tu pèses combien aujourd’hui ? Ça garde ton objectif ajusté à toi."}
+                </p>
               </div>
-              <button onClick={later} aria-label="Fermer" style={{ color: "var(--text-3)" }}>
+              <button
+                onClick={later} aria-label="Fermer"
+                className="-mr-2 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full"
+                style={{ color: "var(--text-3)" }}
+              >
                 <X size={20} />
               </button>
             </div>
 
-            <h2 className="text-[20px] font-light mt-3" style={{ color: "var(--text-1)" }}>
-              On fait le point ? 💜
-            </h2>
-            <p className="text-[16px] mt-1.5 mb-5" style={{ color: "var(--text-3)", lineHeight: 1.5 }}>
-              Ça fait un moment, tu pèses combien aujourd&apos;hui&nbsp;? Ça garde ton objectif bien ajusté à toi.
-            </p>
-
-            <div className="flex items-center gap-3 mb-5">
+            {/* Le chiffre est le héros : grand, centré, dans le visage des
+                valeurs. Champ texte avec clavier décimal, donc ni flèches de
+                navigateur ni virgule refusée. */}
+            <label
+              className="mt-5 flex items-baseline justify-center gap-2 rounded-[var(--r-bloc)] px-4 py-4"
+              style={{ background: "rgba(var(--text-3-rgb),0.08)" }}
+            >
               <input
-                type="number" inputMode="decimal" autoFocus
-                value={value} onChange={(e) => setValue(e.target.value)}
-                placeholder={lastWeight ? String(lastWeight) : "70"}
-                className="flex-1 rounded-2xl px-4 py-3 text-[20px] outline-none"
-                style={{ border: "1.5px solid rgba(var(--text-3-rgb),0.35)", background: "transparent", color: "var(--text-1)" }}
+                type="text" inputMode="decimal" autoComplete="off" autoFocus
+                aria-label="Ton poids en kilos"
+                value={value}
+                onChange={(e) => setValue(e.target.value.replace(/[^0-9.,]/g, "").slice(0, 5))}
+                placeholder={lastWeight !== null ? lastWeight.toFixed(1).replace(".", ",") : "70"}
+                className="champ-geant vy-nombre w-[4.2ch] bg-transparent text-right outline-none"
+                style={{ fontSize: 40, fontWeight: 700, color: "var(--poids-encre)", lineHeight: 1.1 }}
                 onKeyDown={(e) => { if (e.key === "Enter") save(); }}
               />
-              <span className="text-[16px] font-semibold" style={{ color: "var(--text-3)" }}>kg</span>
-            </div>
+              <span className="text-[20px] font-semibold" style={{ color: "var(--text-3)" }}>kg</span>
+            </label>
+
+            {derniere && (
+              <p className="mt-2 text-center text-[13px]" style={{ color: "var(--text-3)" }}>{derniere}</p>
+            )}
 
             <button
               onClick={save}
-              disabled={saving || !value}
-              className="w-full rounded-2xl py-3.5 text-[16px] font-semibold text-white disabled:opacity-50"
+              disabled={saving || !valide}
+              className="mt-5 w-full rounded-2xl py-3.5 text-[16px] font-semibold text-white disabled:opacity-50"
               style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", boxShadow: "var(--ombre-action)" }}
             >
-              {saving ? "..." : "Enregistrer"}
+              {saving ? "Enregistrement…" : "Enregistrer"}
             </button>
-            <button onClick={later} className="w-full mt-2 py-2.5 text-[16px] font-medium" style={{ color: "var(--text-3)" }}>
-              Plus tard
-            </button>
+            {!pilote && (
+              <button onClick={later} className="w-full mt-1 py-2.5 text-[16px] font-medium" style={{ color: "var(--text-3)" }}>
+                Plus tard
+              </button>
+            )}
           </motion.div>
         </motion.div>
       )}

@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
     if (
       messageError
       || !message
-      || !["texte", "image"].includes(message.type)
+      || !["texte", "image", "audio"].includes(message.type)
       || message.user_id !== caller.id
     ) {
       return NextResponse.json({ ok: false, error: "message_invalide" }, { status: 403 });
@@ -75,6 +75,8 @@ export async function POST(req: NextRequest) {
     const lien = `/communaute/${message.conversation_id}`;
     const apercu = message.type === "image"
       ? "📷 Photo"
+      : message.type === "audio"
+      ? "🎤 Message vocal"
       : String(message.contenu).replace(/\s+/g, " ").trim().slice(0, 110);
 
     const resultats = await Promise.allSettled(

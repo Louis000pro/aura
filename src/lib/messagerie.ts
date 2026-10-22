@@ -37,7 +37,7 @@ export type Message = {
   id: string;
   userId: string | null;   // null = message système
   contenu: string;
-  type: "texte" | "systeme" | "image";
+  type: "texte" | "systeme" | "image" | "audio";
   mediaPath: string | null;
   mediaUrl: string | null;
   mediaWidth: number | null;
@@ -132,7 +132,7 @@ type ApercuConversation = {
   dernier_id: string | null;
   dernier_user_id: string | null;
   dernier_contenu: string | null;
-  dernier_type: "texte" | "systeme" | "image" | null;
+  dernier_type: "texte" | "systeme" | "image" | "audio" | null;
   dernier_media_path?: string | null;
   dernier_media_width?: number | null;
   dernier_media_height?: number | null;
@@ -147,7 +147,7 @@ type MessageBrut = {
   id: string;
   user_id: string | null;
   contenu: string;
-  type: "texte" | "systeme" | "image";
+  type: "texte" | "systeme" | "image" | "audio";
   created_at: string;
   repond_a: string | null;
   media_path?: string | null;
@@ -315,7 +315,7 @@ export async function chargerConversations(userId: string): Promise<Conversation
             id: apercu.dernier_id as string,
             userId: (apercu.dernier_user_id as string | null) ?? null,
             contenu: apercu.dernier_contenu as string,
-            type: apercu.dernier_type as "texte" | "systeme" | "image",
+            type: apercu.dernier_type as "texte" | "systeme" | "image" | "audio",
             mediaPath: apercu.dernier_media_path ?? null,
             mediaUrl: null,
             mediaWidth: apercu.dernier_media_width ?? null,
@@ -456,7 +456,7 @@ async function chargerFilDepuisServeur(convId: string): Promise<FilCharge> {
       id: m.id as string,
       userId: (m.user_id as string | null) ?? null,
       contenu: m.contenu as string,
-      type: m.type as "texte" | "systeme" | "image",
+      type: m.type as "texte" | "systeme" | "image" | "audio",
       mediaPath: (m.media_path as string | null | undefined) ?? null,
       mediaUrl: m.media_path ? urlsPhotos.get(m.media_path as string) ?? null : null,
       mediaWidth: (m.media_width as number | null | undefined) ?? null,
@@ -554,7 +554,7 @@ export async function chargerMessagesAvant(
         id: m.id as string,
         userId: (m.user_id as string | null) ?? null,
         contenu: m.contenu as string,
-        type: m.type as "texte" | "systeme" | "image",
+        type: m.type as "texte" | "systeme" | "image" | "audio",
         mediaPath: (m.media_path as string | null | undefined) ?? null,
         mediaUrl: m.media_path ? urlsPhotos.get(m.media_path as string) ?? null : null,
         mediaWidth: (m.media_width as number | null | undefined) ?? null,
@@ -751,6 +751,58 @@ export async function envoyerPhoto(
         media_path: chemin,
         media_width: width,
         media_height: height,
+      })
+      .select("id")
+      .single();
+
+    if (error) {
+      await supabase.storage.from("conversation-media").remove([chemin]);
+      return { ok: false, raison: error.message };
+    }
+    notifierMessage(data.id as string, accessToken);
+    return { ok: true, messageId: data.id as string };
+  } catch (error) {
+    return { ok: false, raison: error instanceof Error ? error.message : "envoi_impossible" };
+  }
+}
+
+/** Un message vocal : le fichier dans le même bucket privé que les photos,
+ *  la durée (1 à 60 s) dans `media_width` (voir 20261022_messages_vocaux.sql). */
+export async function envoyerVocal(
+  convId: string,
+  userId: string,
+  son: Blob,
+  dureeSecondes: number,
+  repondA?: string | null,
+  accessToken?: string,
+) {
+  try {
+    const supabase = createClient();
+    const contentType = (son.type || "audio/webm").split(";")[0];
+    const extension = contentType.includes("mp4") || contentType.includes("aac") ? "m4a"
+      : contentType.includes("ogg") ? "ogg"
+      : contentType.includes("mpeg") ? "mp3" : "webm";
+    const identifiant = typeof crypto.randomUUID === "function"
+      ? crypto.randomUUID()
+      : `${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}`;
+    const chemin = `${convId}/${userId}/${Date.now()}-${identifiant}.${extension}`;
+    const { error: uploadError } = await supabase.storage
+      .from("conversation-media")
+      .upload(chemin, son, { upsert: false, contentType, cacheControl: "31536000" });
+    if (uploadError) return { ok: false, raison: uploadError.message };
+
+    const duree = Math.min(60, Math.max(1, Math.round(dureeSecondes)));
+    const { data, error } = await supabase
+      .from("messages")
+      .insert({
+        conversation_id: convId,
+        user_id: userId,
+        contenu: "Message vocal",
+        type: "audio",
+        repond_a: repondA ?? null,
+        media_path: chemin,
+        media_width: duree,
+        media_height: null,
       })
       .select("id")
       .single();
