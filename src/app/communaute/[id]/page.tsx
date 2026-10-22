@@ -21,7 +21,7 @@ import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft, Loader2, ChevronRight, ChevronUp, Sparkles, Reply, Copy, Trash2, X,
-  Camera, Mic, Image as ImageIcon,
+  Mic, Image as ImageIcon,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
@@ -43,6 +43,20 @@ import {
 /** Les réactions proposées à l'appui long. Cinq, pas plus : au-delà
  *  on choisit au lieu de réagir. */
 const EMOJIS = ["🔥", "💪", "👏", "😂", "❤️"];
+
+// L'appareil photo plein, façon Instagram : un corps blanc massif et
+// l'objectif évidé. Le trait fin de lucide disparaissait sur le dégradé.
+function AppareilPlein() {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        fill="#fff"
+        fillRule="evenodd"
+        d="M9.2 3.5h5.6c.7 0 1.3.4 1.6 1l.8 1.5h2.3A2.5 2.5 0 0 1 22 8.5v9a2.5 2.5 0 0 1-2.5 2.5h-15A2.5 2.5 0 0 1 2 17.5v-9A2.5 2.5 0 0 1 4.5 6h2.3l.8-1.5c.3-.6.9-1 1.6-1ZM12 9a3.9 3.9 0 1 0 0 7.8A3.9 3.9 0 0 0 12 9Zm0 2a1.9 1.9 0 1 1 0 3.8 1.9 1.9 0 0 1 0-3.8Z"
+      />
+    </svg>
+  );
+}
 
 function FilSkeleton() {
   return (
@@ -769,7 +783,7 @@ export default function FilPage() {
           >
             {photoEnCours || vocalEnCours
               ? <Loader2 className="h-4 w-4 animate-spin" />
-              : <Camera className="h-[19px] w-[19px]" />}
+              : <AppareilPlein />}
           </button>
 
           <textarea
