@@ -121,11 +121,11 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
-      { url: "/icons/icon-48.png?v=6", type: "image/png", sizes: "48x48" },
-      { url: "/icons/icon-96.png?v=6", type: "image/png", sizes: "96x96" },
+      { url: "/icons/icon-48.png?v=7", type: "image/png", sizes: "48x48" },
+      { url: "/icons/icon-96.png?v=7", type: "image/png", sizes: "96x96" },
     ],
-    shortcut: "/icons/icon-48.png?v=6",
-    apple: "/icons/apple-touch-icon.png?v=5",
+    shortcut: "/icons/icon-48.png?v=7",
+    apple: "/icons/apple-touch-icon.png?v=7",
   },
   manifest: "/manifest.json",
   appleWebApp: {

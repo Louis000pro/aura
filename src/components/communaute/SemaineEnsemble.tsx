@@ -110,12 +110,16 @@ export default function SemaineEnsemble({ semaine, bande, moi }: {
   const aujourdhui = new Date().toLocaleDateString("fr-CA", { timeZone: "Europe/Paris" });
   const dates = datesDeLaSemaine(semaine.debut);
 
+  /* Le compte vit DANS l'anneau : le nombre, puis « sur 9 » dessous.
+     Écrit sur une ligne (« 4 / 9 séances »), il débordait du cercle. */
   const compte = (grand: boolean) => (
-    <span className="flex items-baseline gap-1.5">
-      <span className="vy-nombre" style={{ fontSize: grand ? 44 : 34, fontWeight: 800, color: "var(--text-0)", lineHeight: 1 }}>
+    <span className="absolute inset-0 flex flex-col items-center justify-center">
+      <span className="vy-nombre" style={{ fontSize: grand ? 44 : 24, fontWeight: 800, color: "var(--text-0)", lineHeight: 1 }}>
         {semaine.seances}
       </span>
-      <span className="vy-nombre text-[16px]" style={{ color: "var(--text-3)" }}>/ {semaine.objectif} séances</span>
+      <span className="mt-1" style={{ fontSize: grand ? 13 : 11, color: "var(--text-3)", lineHeight: 1 }}>
+        sur {semaine.objectif}
+      </span>
     </span>
   );
 
@@ -129,9 +133,14 @@ export default function SemaineEnsemble({ semaine, bande, moi }: {
           <ChevronRight className="h-4 w-4" style={{ color: "var(--text-3)" }} />
         </span>
         <span className="flex items-center gap-4">
-          <Anneau part={part} taille={78} epaisseur={8} />
-          <span className="flex min-w-0 flex-col gap-1">
+          <span className="relative flex-shrink-0">
+            <Anneau part={part} taille={78} epaisseur={8} />
             {compte(false)}
+          </span>
+          <span className="flex min-w-0 flex-col gap-1">
+            <span className="text-[16px] font-semibold" style={{ color: "var(--text-0)" }}>
+              {semaine.seances} séance{semaine.seances > 1 ? "s" : ""} faite{semaine.seances > 1 ? "s" : ""} ensemble
+            </span>
             <span className="text-[13px] leading-snug" style={{ color: "var(--text-2)" }}>{phrase(semaine)}</span>
           </span>
         </span>
@@ -153,9 +162,9 @@ export default function SemaineEnsemble({ semaine, bande, moi }: {
 
       {ouverte && (
         <Sheet onFermer={() => setOuverte(false)}>
-          <div className="relative flex flex-col gap-5 px-1 pb-4 pt-1">
+          <div className="flex flex-col gap-5 px-1 pb-4">
             <button onClick={() => setOuverte(false)} aria-label="Fermer"
-              className="absolute -right-1 -top-1 flex h-10 w-10 items-center justify-center rounded-full"
+              className="-mb-5 flex h-10 w-10 items-center justify-center self-end rounded-full"
               style={{ background: "rgba(var(--text-3-rgb), .12)", color: "var(--text-1)" }}>
               <X className="h-5 w-5" />
             </button>
@@ -164,7 +173,7 @@ export default function SemaineEnsemble({ semaine, bande, moi }: {
               <h2 className="vy-titre" style={{ color: "var(--text-0)" }}>La semaine ensemble</h2>
               <span className="relative flex items-center justify-center">
                 <Anneau part={part} taille={150} epaisseur={12} />
-                <span className="absolute flex flex-col items-center">{compte(true)}</span>
+                {compte(true)}
               </span>
               <p className="max-w-[300px] text-[16px] leading-snug" style={{ color: "var(--text-1)" }}>
                 {phrase(semaine)} Chaque séance de chacun compte.
