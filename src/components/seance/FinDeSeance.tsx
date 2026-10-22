@@ -16,6 +16,10 @@
    ⚠️ AUCUN VERT SUR CET ÉCRAN (Louis, 2026-10-17). Le sceau « Séance
    faite », le progrès, la lueur et les confettis sont violet → rose :
    c'est la marque qui célèbre.
+
+   ⚠️ L'ÉCRAN EST CLAIR depuis le 2026-10-22 (Louis, maquette « Les
+   records Vaiiya », écran 4) : le même fond que l'effort et le repos, des
+   encres écrites en dur, quel que soit le thème.
    ════════════════════════════════════════════════════════════════════ */
 
 import type { ReactNode } from "react";
@@ -30,8 +34,8 @@ import { progressionRang, type Rang } from "@/lib/aura";
 import { texteRecord, dateRecord, ecartRecord, type RecordMouvement, type Marche, type Perf } from "@/lib/records";
 import { palierFlamme } from "@/lib/flammesSerie";
 
-const ENCRE = { t1: "#F4F1FB", t2: "#A79FC0", doux: "#CFC7E6", lav: "#C9B8FF", rose: "#F0ABFC", exp: "#C3AEFF" };
-const FILET = "1px solid rgba(244,241,251,0.10)";
+const ENCRE = { t1: "#1F1B2E", t2: "#6B6580", doux: "#4A4560", lav: "#6B4BD6", rose: "#9B3BB5", exp: "#6D4BD6" };
+const FILET = "1px solid rgba(31,27,46,0.10)";
 
 /* ── 1 · La couverture : le mot de la séance, le Guide devant ── */
 const CONFETTIS = [
@@ -47,8 +51,8 @@ export function CouvertureFin({ titre, guide, fete }: { titre: string; guide: Re
   const { boite, mesure, taille } = useMotAjuste(mot, 132);
   return (
     <div className="relative w-full" style={{ height: guide ? 320 : 170 }}>
-      <div aria-hidden="true" className="pointer-events-none absolute" style={{ left: "-20%", right: "-20%", top: -80, height: 420, background: "radial-gradient(closest-side, rgba(139,92,246,0.40), rgba(139,92,246,0))" }} />
-      <div aria-hidden="true" className="pointer-events-none absolute" style={{ left: "10%", right: "10%", top: 120, height: 280, background: "radial-gradient(closest-side, rgba(193,59,193,0.24), rgba(193,59,193,0))" }} />
+      <div aria-hidden="true" className="pointer-events-none absolute" style={{ left: "-20%", right: "-20%", top: -80, height: 420, background: "radial-gradient(closest-side, rgba(139,92,246,0.22), rgba(139,92,246,0))" }} />
+      <div aria-hidden="true" className="pointer-events-none absolute" style={{ left: "10%", right: "10%", top: 120, height: 280, background: "radial-gradient(closest-side, rgba(193,59,193,0.14), rgba(193,59,193,0))" }} />
 
       {/* Les confettis : les seuls jours de record, une seule chute. */}
       {fete && !reduit && CONFETTIS.map((p, i) => (
@@ -70,7 +74,7 @@ export function CouvertureFin({ titre, guide, fete }: { titre: string; guide: Re
       {/* Le mot se mesure et remplit la largeur, comme sur les affiches du profil. */}
       <div ref={boite} aria-hidden="true" className="absolute overflow-hidden text-center" style={{ left: 0, right: 0, top: 34 }}>
         <span ref={mesure} className="pointer-events-none invisible absolute left-0 top-0" style={{ ...STYLE_MOT, fontSize: 100 }}>{mot}</span>
-        <span className="block" style={{ ...STYLE_MOT, lineHeight: 1, fontSize: taille || 1, color: ENCRE.t1, opacity: taille ? 1 : 0 }}>{mot}</span>
+        <span className="block" style={{ ...STYLE_MOT, lineHeight: 1, fontSize: taille || 1, color: "rgba(107,75,214,0.16)", opacity: taille ? 1 : 0 }}>{mot}</span>
       </div>
 
       {guide && (
@@ -118,10 +122,10 @@ export function CarteProgres({ fait, gain }: { fait: FaitMarquant; gain: Gain })
   return (
     <motion.section initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}
       className="relative w-full mt-5 overflow-hidden text-left"
-      style={{ borderRadius: "var(--r-affiche)", background: "linear-gradient(160deg, #3B1C70 0%, #4C1553 58%, #2A0F33 100%)", border: "1px solid rgba(240,171,252,0.38)" }}>
+      style={{ borderRadius: "var(--r-affiche)", background: "linear-gradient(160deg, #F3EDFF 0%, #FBEAF7 58%, #FFF4FA 100%)", border: "1px solid rgba(193,59,193,0.28)", boxShadow: "0 8px 24px rgba(139,92,246,0.12)" }}>
       <div className="flex items-baseline justify-between px-5 pt-4">
         <span className="text-[13px] font-bold" style={{ color: ENCRE.rose }}>Ce qui a changé</span>
-        <span className="text-[13px]" style={{ color: "#DCC4F2" }}>{quand}</span>
+        <span className="text-[13px]" style={{ color: ENCRE.t2 }}>{quand}</span>
       </div>
       <div className="flex items-end gap-1.5 px-5 pt-1.5">
         <div className="flex-1 min-w-0">
@@ -130,14 +134,14 @@ export function CarteProgres({ fait, gain }: { fait: FaitMarquant; gain: Gain })
             <span className="vy-nombre" style={{ fontSize: 58, fontWeight: 800, color: ENCRE.rose }}>{gain.valeur}</span>
             <span className="text-[20px] font-extrabold" style={{ color: ENCRE.rose }}> {gain.unite}</span>
           </p>
-          <p className="mt-2 text-[13px]" style={{ color: "#EBDDF7" }}>{gain.libelle}</p>
+          <p className="mt-2 text-[13px]" style={{ color: ENCRE.doux }}>{gain.libelle}</p>
         </div>
         <span className="flex-shrink-0"><ExerciseThumb name={fait.nom} size={92} /></span>
       </div>
       <div className="flex items-center gap-2.5 mx-5 mt-4 mb-5">
         <div className="flex-1">
-          <p className="text-[11px]" style={{ color: "#DCC4F2" }}>Avant</p>
-          <p className="vy-nombre text-[20px]" style={{ color: "#DCC4F2", fontWeight: 700 }}>{avant}</p>
+          <p className="text-[11px]" style={{ color: ENCRE.t2 }}>Avant</p>
+          <p className="vy-nombre text-[20px]" style={{ color: ENCRE.t2, fontWeight: 700 }}>{avant}</p>
         </div>
         <svg width="76" height="20" viewBox="0 0 84 20" aria-hidden="true"><path d="M2 10h74" stroke={ENCRE.rose} strokeWidth="2" strokeDasharray="3 5" strokeLinecap="round" /><path d="M72 4l7 6-7 6" fill="none" stroke={ENCRE.rose} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
         <div className="flex-1 text-right">
@@ -156,7 +160,7 @@ export function CarteRecord({ record, avant, apres }: { record: RecordMouvement;
   return (
     <motion.section initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}
       className="w-full mt-5 text-left" style={{ borderRadius: 20, padding: 1.5, background: "linear-gradient(135deg, #8B5CF6, #C13BC1)" }}>
-      <div className="flex items-center gap-3.5 px-4 py-3.5" style={{ borderRadius: 19, background: "#18122A" }}>
+      <div className="flex items-center gap-3.5 px-4 py-3.5" style={{ borderRadius: 19, background: "#FFFFFF", boxShadow: "0 8px 24px rgba(139,92,246,0.14)" }}>
         <span className="flex h-[42px] w-[42px] flex-shrink-0 items-center justify-center rounded-full"
           style={{ background: "linear-gradient(135deg, #8B5CF6, #C13BC1)" }}>
           <svg width="20" height="20" viewBox="0 0 24 24" fill="#fff" aria-hidden="true"><path d="M12 2l2.6 6.6L21 9.3l-5 4.4 1.6 6.8L12 17l-5.6 3.5L8 13.7 3 9.3l6.4-.7z" /></svg>
@@ -166,7 +170,7 @@ export function CarteRecord({ record, avant, apres }: { record: RecordMouvement;
           <span className="text-[16px] font-semibold" style={{ color: ENCRE.t1 }}>{record.nom}, {texteRecord(record.mesure, apres)}</span>
           <span className="text-[13px]" style={{ color: ENCRE.t2 }}>Ton record d’avant : {texteRecord(record.mesure, avant)}, le {dateRecord(avant.quand)}.</span>
         </span>
-        <b className="vy-nombre flex-shrink-0" style={{ fontSize: 26, fontWeight: 800, color: ENCRE.t1 }}>{ecartRecord(record.mesure, avant, apres)}</b>
+        <b className="vy-nombre flex-shrink-0" style={{ fontSize: 26, fontWeight: 800, background: "linear-gradient(135deg, #8B5CF6, #C13BC1)", WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent" }}>{ecartRecord(record.mesure, avant, apres)}</b>
       </div>
     </motion.section>
   );
@@ -179,13 +183,13 @@ export function SerieEtRang({ serie, exp }: { serie: number | null; exp: number 
   return (
     <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}
       className="relative w-full mt-4 text-left"
-      style={{ borderRadius: "var(--r-bloc)", background: "rgba(244,241,251,0.05)", border: "1px solid rgba(244,241,251,0.09)" }}>
+      style={{ borderRadius: "var(--r-bloc)", background: "rgba(255,255,255,0.72)", border: "1px solid rgba(31,27,46,0.08)" }}>
       {serie !== null && (
         <div className="flex items-center gap-3 px-3.5 py-3">
           <FlammeSerie jours={serie} taille={30} />
           <div className="flex-1 min-w-0">
             <p className="text-[16px] font-bold" style={{ color: ENCRE.t1 }}>
-              <span className="vy-nombre" style={{ fontWeight: 800, color: "#F5B120" }}>{serie}</span> jour{serie > 1 ? "s" : ""} d’affilée
+              <span className="vy-nombre" style={{ fontWeight: 800, color: "#C2580A" }}>{serie}</span> jour{serie > 1 ? "s" : ""} d’affilée
             </p>
             <p className="text-[13px] mt-0.5" style={{ color: ENCRE.t2 }}>{palierFlamme(serie).nom} · journée validée</p>
           </div>
@@ -198,7 +202,7 @@ export function SerieEtRang({ serie, exp }: { serie: number | null; exp: number 
 
 function LigneRang({ rang, suivant, part, restant, haut }: { rang: Rang; suivant: Rang | null; part: number; restant: number; haut: boolean }) {
   return (
-    <div className="flex items-center gap-3 px-3.5 py-3" style={haut ? { borderTop: "1px solid rgba(244,241,251,0.08)" } : undefined}>
+    <div className="flex items-center gap-3 px-3.5 py-3" style={haut ? { borderTop: "1px solid rgba(31,27,46,0.08)" } : undefined}>
       {rang.image
         // eslint-disable-next-line @next/next/no-img-element
         ? <img src={rang.image} alt="" aria-hidden="true" style={{ width: 32, height: 32, objectFit: "contain" }} />
@@ -208,7 +212,7 @@ function LigneRang({ rang, suivant, part, restant, haut }: { rang: Rang; suivant
           <span className="font-bold" style={{ color: ENCRE.t1 }}>{rang.nom}</span>
           {suivant && <span style={{ color: ENCRE.t2 }}>plus que <span className="vy-nombre" style={{ color: ENCRE.t1, fontWeight: 700 }}>{restant}</span> avant {suivant.nom}</span>}
         </div>
-        <div className="mt-2 h-1.5 rounded-full overflow-hidden" style={{ background: "rgba(244,241,251,0.1)" }}>
+        <div className="mt-2 h-1.5 rounded-full overflow-hidden" style={{ background: "rgba(31,27,46,0.08)" }}>
           <motion.div className="h-full rounded-full" style={{ background: "linear-gradient(90deg, #8B5CF6, #C13BC1)" }}
             initial={{ width: `${Math.max(0, part * 100 - 12)}%` }} animate={{ width: `${part * 100}%` }}
             transition={{ duration: 1.4, delay: 0.9, ease: [0.2, 0.8, 0.2, 1] }} />
@@ -223,7 +227,7 @@ function LigneRang({ rang, suivant, part, restant, haut }: { rang: Rang; suivant
 export function CoinAvis({ onAvis, onPlusTard }: { onAvis: () => void; onPlusTard: () => void }) {
   return (
     <div className="flex items-center gap-3 w-full mt-4 px-3.5 py-3 text-left"
-      style={{ borderRadius: "var(--r-bloc)", background: "rgba(139,92,246,0.10)", border: "1px solid rgba(201,184,255,0.22)" }}>
+      style={{ borderRadius: "var(--r-bloc)", background: "rgba(139,92,246,0.07)", border: "1px solid rgba(139,92,246,0.20)" }}>
       <span aria-hidden="true" className="flex flex-shrink-0 gap-0.5">
         {[0, 1, 2, 3, 4].map((i) => (
           <svg key={i} width="13" height="13" viewBox="0 0 24 24"><path d="M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4 6.1 20.5l1.2-6.5L2.5 9.4l6.6-.9z" fill="#F5B120" /></svg>

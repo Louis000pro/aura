@@ -686,17 +686,18 @@ export function resolveSessionId(title: string): string | null {
 }
 
 /* ─── Component ──────────────────────────────────────────── */
-/* Les encres du tunnel, toujours sombre quel que soit le thème. */
+/* Les encres de la fin de séance, CLAIRE quel que soit le thème depuis le
+   2026-10-22 (Louis, maquette « Les records Vaiiya », écran 4 en clair). */
 const TUN = {
-  t1: "#F0ECFA", t2: "#A79FC0", t3: "#6E6690", lav: "#C9B8FF",
-  line: "rgba(255,255,255,0.08)",
-  violet: "#8B5CF6", orange: "#F5B120", ring2: "#FF7A1A", teal: "#2BD4A0",
+  t1: "#1F1B2E", t2: "#6B6580", t3: "#9A93AE", lav: "#6B4BD6",
+  line: "rgba(31,27,46,0.08)",
+  violet: "#8B5CF6", orange: "#F5B120", ring2: "#FF7A1A", teal: "#0B8A68",
 };
 
 /* Le tunnel est TOUT CLAIR depuis le 2026-10-18 (Louis : la composition de
    la piste A, « juste pour le fond je veux le tout clair »). Ses encres sont
    écrites en dur, comme celles de la vitrine : il ne suit pas le thème. La
-   fin de séance, elle, reste noire (décision du 2026-09-25) et garde `TUN`. */
+   fin de séance l'a suivi le 2026-10-22 (Louis) : même fond, encres `TUN`. */
 const CLAIR = {
   fond: "radial-gradient(150% 75% at 0% 0%, rgba(167,139,250,.30) 0%, rgba(167,139,250,.16) 35%, rgba(167,139,250,.05) 65%, transparent 90%), radial-gradient(150% 75% at 100% 100%, rgba(244,164,222,.28) 0%, rgba(244,164,222,.14) 35%, rgba(244,164,222,.04) 65%, transparent 90%), linear-gradient(180deg, #F3EEFF 0%, #FAF8FF 45%, #FFF6FB 100%)",
   t0: "#1A202C", t1: "#2D3748", t2: "#718096", t3: "#A0AEC0",
@@ -769,13 +770,13 @@ function DetailExercices({ lignes, margeDe, estRepere, onMarge, onFermer, visage
   return createPortal(
     <motion.div className="fixed inset-0 flex items-end justify-center" style={{ zIndex: 106 }}
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-      <button type="button" aria-label="Fermer" onClick={onFermer} className="absolute inset-0 cursor-pointer" style={{ background: "rgba(5,3,12,0.6)" }} />
+      <button type="button" aria-label="Fermer" onClick={onFermer} className="absolute inset-0 cursor-pointer" style={{ background: "rgba(26,20,40,0.35)" }} />
       <motion.div role="dialog" aria-label="Mes exercices"
         initial={{ y: 40 }} animate={{ y: 0 }} exit={{ y: 40 }} transition={{ type: "spring", damping: 30, stiffness: 320 }}
         className="relative w-full max-w-md flex flex-col"
-        style={{ maxHeight: "82dvh", background: "#120D22", borderTopLeftRadius: "var(--r-feuille)", borderTopRightRadius: "var(--r-feuille)", border: `1px solid ${TUN.line}`, borderBottom: "none" }}>
+        style={{ maxHeight: "82dvh", background: "#FFFFFF", borderTopLeftRadius: "var(--r-feuille)", borderTopRightRadius: "var(--r-feuille)", border: `1px solid ${TUN.line}`, borderBottom: "none" }}>
         <div className="flex items-center justify-between px-5 pt-4 pb-2">
-          <h3 className="text-[16px] font-bold" style={{ color: "#fff" }}>Mes exercices</h3>
+          <h3 className="text-[16px] font-bold" style={{ color: TUN.t1 }}>Mes exercices</h3>
           <button type="button" onClick={onFermer} aria-label="Fermer" className="cursor-pointer p-1" style={{ color: TUN.t2 }}><X size={18} /></button>
         </div>
         <div className="overflow-y-auto px-5 pb-6">
@@ -789,10 +790,10 @@ function DetailExercices({ lignes, margeDe, estRepere, onMarge, onFermer, visage
                 {sousGroupesParExercice(ls).map((g, i) => (
                   <div key={`${g.nom}-${g.lignes[0].serie}`} className={i > 0 ? "mt-3" : undefined}>
                     <div className="flex items-center gap-3">
-                      <span className="flex-shrink-0 rounded-xl overflow-hidden flex items-center justify-center" style={{ width: 36, height: 36, background: "rgba(255,255,255,0.06)" }}>
+                      <span className="flex-shrink-0 rounded-xl overflow-hidden flex items-center justify-center" style={{ width: 36, height: 36, background: "rgba(139,92,246,0.07)" }}>
                         <ExerciseThumb name={g.nom} size={34} />
                       </span>
-                      <p className="text-[13px] font-bold" style={{ color: "#fff" }}>{g.nom}</p>
+                      <p className="text-[13px] font-bold" style={{ color: TUN.t1 }}>{g.nom}</p>
                     </div>
                     <ul className="mt-2 flex flex-col gap-1">
                       {g.lignes.map((l) => (
@@ -806,7 +807,7 @@ function DetailExercices({ lignes, margeDe, estRepere, onMarge, onFermer, visage
                 ))}
                 {estRepere(e) && marge !== null && (
                   <div className="mt-3">
-                    <QuestionMarge question={question}
+                    <QuestionMarge clair question={question}
                       reponse={marge} visage={visage} onRepondre={(m) => onMarge(e, m)} />
                   </div>
                 )}
@@ -843,9 +844,9 @@ function BandeMaillon({ maillon, onAller }: { maillon: MaillonFranchi; onAller: 
     return () => clearTimeout(t);
   }, [avant, apres]);
 
-  // Le tunnel est toujours sombre : l'or decor y tient ses 8,4:1.
-  const or = "#F5B120";
-  const encre = "#A79FC0";
+  // La fin de séance est claire : l'or y devient une encre (5,9:1 sur blanc).
+  const or = "#8A5A06";
+  const encre = "#6B6580";
 
   return (
     <motion.button
@@ -858,7 +859,7 @@ function BandeMaillon({ maillon, onAller }: { maillon: MaillonFranchi; onAller: 
     >
       <span
         className="relative flex-shrink-0 overflow-hidden"
-        style={{ width: 32, height: 44, borderRadius: 7, background: "rgba(0,0,0,0.35)" }}
+        style={{ width: 32, height: 44, borderRadius: 7, background: "rgba(31,27,46,0.12)" }}
         aria-hidden="true"
       >
         <AnimatePresence mode="sync">
@@ -911,7 +912,7 @@ function BandeBadge({ badges, onAller }: { badges: Badge[]; onAller: () => void 
       initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.9 }}
       className="flex items-center gap-3 w-full max-w-[19rem] px-3.5 py-2.5 rounded-2xl mt-2.5 text-left"
-      style={{ background: "rgba(139,92,246,0.13)", border: "1px solid rgba(139,92,246,0.35)" }}
+      style={{ background: "rgba(139,92,246,0.08)", border: "1px solid rgba(139,92,246,0.28)" }}
     >
       <span
         className="relative flex-shrink-0 grid place-items-center overflow-hidden rounded-full"
@@ -925,15 +926,15 @@ function BandeBadge({ badges, onAller }: { badges: Badge[]; onAller: () => void 
       </span>
 
       <span className="flex-1 min-w-0">
-        <strong className="block text-[13px] font-bold" style={{ color: "#C3AEFF" }}>
+        <strong className="block text-[13px] font-bold" style={{ color: "#6D4BD6" }}>
           {autres > 0 ? `${badges.length} badges gagnés` : "Badge gagné"}
         </strong>
-        <small className="block text-[11px]" style={{ color: "#A79FC0" }}>
+        <small className="block text-[11px]" style={{ color: "#6B6580" }}>
           {premier.nom}{autres > 0 ? ` et ${autres} autre${autres > 1 ? "s" : ""}` : ""}
         </small>
       </span>
 
-      <ChevronRight size={16} strokeWidth={2.5} style={{ color: "#C3AEFF", flexShrink: 0 }} />
+      <ChevronRight size={16} strokeWidth={2.5} style={{ color: "#6D4BD6", flexShrink: 0 }} />
     </motion.button>
   );
 }
@@ -1741,8 +1742,8 @@ export default function WorkoutGuideModal({
   const autoTotal  = isHiit ? (hiitSub === "work" ? HIIT_WORK : HIIT_REST) : (cur?.auto ?? 0);
   const add15      = () => { setRestTotal(t => t + 15); setRestCountdown(c => c + 15); };
 
-  /* ── La fin de séance reste sombre, quel que soit le thème (2026-09-25) ;
-     l'effort et le repos sont clairs depuis le 2026-10-18. ── */
+  /* ── L'effort et le repos sont clairs depuis le 2026-10-18, la fin de
+     séance depuis le 2026-10-22 : tout le tunnel l'est, quel que soit le thème. ── */
   const isTunnel = phase !== "intro";
   /* L'effort et le repos prennent tout l'écran, et leur squelette ne bouge
      plus : la scène en haut, la console, le bouton au même endroit. */
@@ -1774,10 +1775,10 @@ export default function WorkoutGuideModal({
           background: CLAIR.fond,
           boxShadow: "0 -4px 60px rgba(0,0,0,0.3)",
         } : {
-          background: isTunnel ? "#0B0714" : "rgba(var(--surface-rgb),0.98)",
+          background: isTunnel ? CLAIR.fond : "rgba(var(--surface-rgb),0.98)",
           backdropFilter: "blur(24px)",
           boxShadow: isTunnel
-            ? "0 -4px 60px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.06)"
+            ? "0 -4px 60px rgba(0,0,0,0.3)"
             : "0 -4px 60px rgba(var(--accent-rgb),0.12), 0 0 0 1px rgba(var(--surface-rgb),0.9)",
           maxHeight: "94dvh",
         }}
@@ -2423,8 +2424,8 @@ export default function WorkoutGuideModal({
                 {/* 3 · La question facultative d'un repère qui terminait la
                     séance (écran 10), puis « La prochaine fois ». */}
                 {aQuestion.filter((e) => sansRepos(e) && !(doneMap[e]?.[(exercises[e]?.sets ?? 1) - 1] as { marge?: Marge | null } | undefined)?.marge).map((e) => (
-                  <div key={`q-${e}`} className="w-full mt-3 rounded-2xl p-3.5" style={{ background: "rgba(139,92,246,0.09)", border: "1px solid rgba(139,92,246,0.22)" }}>
-                    <QuestionMarge titre={exercisesAff[e]?.name} question={voix(guide, "seance.marge.question")} reponse={margesFin[e] ?? null}
+                  <div key={`q-${e}`} className="w-full mt-3 rounded-2xl p-3.5" style={{ background: "rgba(139,92,246,0.07)", border: "1px solid rgba(139,92,246,0.20)" }}>
+                    <QuestionMarge clair titre={exercisesAff[e]?.name} question={voix(guide, "seance.marge.question")} reponse={margesFin[e] ?? null}
                       visage={guide ? <VisageGuide guide={guide} etat="listen" size={26} /> : <AssistantSpark px={16} />}
                       onRepondre={(m) => setMargesFin((prev) => ({ ...prev, [e]: m }))} />
                   </div>
@@ -2480,7 +2481,7 @@ export default function WorkoutGuideModal({
                     normal) ; seul l'échec se dit. */}
                 {finIncomplete && (
                   <div className="flex items-center gap-3 w-full px-4 py-3 rounded-2xl mt-3 text-left"
-                    style={{ background: "rgba(255,255,255,0.05)", border: `1px solid ${TUN.line}` }}>
+                    style={{ background: "rgba(255,255,255,0.7)", border: `1px solid ${TUN.line}` }}>
                     <span className="flex-1 text-[13px]" style={{ color: TUN.t2 }}>{finIncomplete.texte}</span>
                     <button onClick={() => { setFinIncomplete(null); enregistrer(); }} className="text-[13px] font-bold cursor-pointer flex-shrink-0" style={{ color: TUN.lav }}>
                       Réessayer
@@ -2503,7 +2504,7 @@ export default function WorkoutGuideModal({
         {/* ══ CTA bas : la fiche et la fin (l'effort et le repos ont le leur) ══ */}
         {(phase === "intro" || phase === "done") && (
         <div className="px-5 pb-6 pt-3 flex-shrink-0"
-          style={{ borderTop: `1px solid ${isTunnel ? "rgba(255,255,255,0.08)" : "rgba(var(--accent-rgb),0.08)"}` }}>
+          style={{ borderTop: `1px solid ${isTunnel ? TUN.line : "rgba(var(--accent-rgb),0.08)"}` }}>
           <AnimatePresence mode="wait">
 
             {phase === "intro" && (
@@ -2551,15 +2552,15 @@ export default function WorkoutGuideModal({
                                 className="rounded-xl flex items-center justify-center overflow-hidden"
                                 style={{
                                   width: 36, height: 40, marginLeft: i === 0 ? 0 : -10,
-                                  background: "rgba(255,255,255,0.07)",
-                                  border: "1px solid rgba(255,255,255,0.14)",
+                                  background: "rgba(255,255,255,0.85)",
+                                  border: "1px solid rgba(139,92,246,0.18)",
                                 }}>
                                 <ExerciseThumb name={e.name} size={34} delay={i * 200} />
                               </span>
                             ))}
                           </div>
                           <div className="min-w-0">
-                            <p className="text-[13px] font-bold text-white leading-tight">Tu la gardes ?</p>
+                            <p className="text-[13px] font-bold leading-tight" style={{ color: TUN.t1 }}>Tu la gardes ?</p>
                             <p className="text-[11px] leading-snug mt-1" style={{ color: TUN.t2 }}>
                               Elle rejoint tes séances, tu pourras la relancer ou la modifier.
                             </p>
@@ -2582,7 +2583,7 @@ export default function WorkoutGuideModal({
                           <motion.button whileTap={{ scale: 0.97 }}
                             disabled={garde === "en_cours"} onClick={() => setGarde("refusee")}
                             className="px-4 py-2.5 rounded-xl font-semibold text-[13px] cursor-pointer"
-                            style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.14)", color: TUN.t2 }}>
+                            style={{ background: "rgba(255,255,255,0.7)", border: "1px solid rgba(31,27,46,0.10)", color: TUN.t2 }}>
                             Non
                           </motion.button>
                         </div>

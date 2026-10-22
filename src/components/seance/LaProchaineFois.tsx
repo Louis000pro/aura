@@ -74,16 +74,16 @@ function Carte({ p, lancementId, enregistree, marge }: { p: PropositionSeance; l
   };
 
   if (etat.genre === "acceptee") {
-    return <p className="text-[13px] font-semibold" style={{ color: "#C9B8FF" }}>
+    return <p className="text-[13px] font-semibold" style={{ color: "#6B4BD6" }}>
       C&apos;est noté pour la prochaine fois{etat.ajuste ? `, dès ta séance de ${jourCourt(etat.ajuste)}` : ""}.
     </p>;
   }
   if (etat.genre === "gardee") {
-    return <p className="text-[13px]" style={{ color: "#A79FC0" }}>On garde la même cible.</p>;
+    return <p className="text-[13px]" style={{ color: "#6B6580" }}>On garde la même cible.</p>;
   }
   return (
     <div>
-      <p className="text-[13px] leading-snug" style={{ color: "#E9E4F7" }}>
+      <p className="text-[13px] leading-snug" style={{ color: "#1F1B2E" }}>
         {etat.genre === "preparee"
           ? `Ta séance de ${jourCourt(etat.date)} est déjà prête. On l'ajuste aussi ?`
           : phrase}
@@ -93,7 +93,7 @@ function Carte({ p, lancementId, enregistree, marge }: { p: PropositionSeance; l
           <ReglageCharge valeur={choisie} type={p.chargeType as TypeChargeReglable} onChange={setChoisie} />
         </div>
       )}
-      {etat.genre === "erreur" && <p className="text-[13px] mt-2" style={{ color: "#FFB4A8" }}>{etat.texte}</p>}
+      {etat.genre === "erreur" && <p className="text-[13px] mt-2" style={{ color: "#B42318" }}>{etat.texte}</p>}
       <div className="flex gap-2.5 mt-3">
         <button type="button"
           disabled={!enregistree || !cible || !marge || etat.genre === "envoi"}
@@ -104,7 +104,7 @@ function Carte({ p, lancementId, enregistree, marge }: { p: PropositionSeance; l
         </button>
         <button type="button" onClick={() => setEtat({ genre: "gardee" })}
           className="flex-1 py-3 rounded-xl text-[13px] font-semibold cursor-pointer"
-          style={{ color: "#C9C2DD", background: "rgba(255,255,255,0.06)" }}>
+          style={{ color: "#4A4560", background: "rgba(31,27,46,0.06)" }}>
           {garder}
         </button>
       </div>
@@ -124,14 +124,14 @@ export default function LaProchaineFois({ propositions, lancementId, enregistree
   if (propositions.length === 0) return null;
   const visibles = toutes ? propositions : propositions.slice(0, 1);
   return (
-    <div className="w-full mt-4 rounded-2xl p-4 text-left" style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)" }}>
-      <p className="text-[11px] font-bold mb-2" style={{ color: "#A79FC0" }}>La prochaine fois</p>
+    <div className="w-full mt-4 rounded-2xl p-4 text-left" style={{ background: "rgba(255,255,255,0.7)", border: "1px solid rgba(31,27,46,0.08)" }}>
+      <p className="text-[11px] font-bold mb-2" style={{ color: "#6B6580" }}>La prochaine fois</p>
       <div className="flex flex-col gap-4">
         {visibles.map((p) => <Carte key={p.emplacement} p={p} lancementId={lancementId} enregistree={enregistree} marge={margeDe(p.emplacement)} />)}
       </div>
       {!toutes && propositions.length > 1 && (
         <button type="button" onClick={() => setToutes(true)}
-          className="inline-flex items-center gap-1 mt-3 text-[13px] font-semibold cursor-pointer" style={{ color: "#C9B8FF" }}>
+          className="inline-flex items-center gap-1 mt-3 text-[13px] font-semibold cursor-pointer" style={{ color: "#6B4BD6" }}>
           {propositions.length === 2 ? "Un autre ajustement proposé" : `${propositions.length - 1} autres ajustements proposés`}
           <ChevronRight size={14} />
         </button>
