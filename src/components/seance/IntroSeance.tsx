@@ -19,7 +19,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, useAnimate } from "framer-motion";
 import type { GuideId } from "@/lib/guides";
 import { parisDateStr } from "@/lib/dates";
 import { jouerSon } from "@/lib/sons";
@@ -51,11 +51,35 @@ const MOT: React.CSSProperties = {
 
 export default function IntroSeance({ guide, onFin }: { guide: GuideId; onFin: () => void }) {
   const [etape, setEtape] = useState<Etape>("pret");
+  /* ⚠️ Rien ne part avant que l'image du Guide soit décodée (au plus 0,8 s
+     d'attente) : sinon, sur un réseau lent, il arrivait en plein décompte. */
+  const [charge, setCharge] = useState(false);
   const fini = useRef(false);
   const finir = useRef(onFin);
   useEffect(() => { finir.current = onFin; }, [onFin]);
+  const src = `/guides/${guide}-master-v1.webp`;
+  const [portrait, animer] = useAnimate();
 
   useEffect(() => {
+    let vivant = true;
+    const pret = () => { if (vivant) setCharge(true); };
+    const img = new Image();
+    img.src = src;
+    const attente = window.setTimeout(pret, 800);
+    img.decode().then(pret, pret);
+    return () => { vivant = false; clearTimeout(attente); };
+  }, [src]);
+
+  /* La petite pulsation de chaque chiffre se JOUE sur l'image, elle ne la
+     remonte pas : une clé qui changeait à chaque chiffre faisait recharger
+     le portrait, qui clignotait au 3, au 2 et au 1. */
+  useEffect(() => {
+    if (etape === "pret" || etape === "go" || !portrait.current) return;
+    void animer(portrait.current, { scale: [1, 1.025, 1] }, { duration: 0.3 });
+  }, [etape, animer, portrait]);
+
+  useEffect(() => {
+    if (!charge) return;
     const terminer = () => { if (!fini.current) { fini.current = true; finir.current(); } };
     const t = PLAN.slice(1).map(([e, ms]) => window.setTimeout(() => {
       setEtape(e);
@@ -63,7 +87,7 @@ export default function IntroSeance({ guide, onFin }: { guide: GuideId; onFin: (
     }, ms));
     t.push(window.setTimeout(terminer, FIN));
     return () => t.forEach(clearTimeout);
-  }, []);
+  }, [charge]);
 
   const passer = () => { if (!fini.current) { fini.current = true; finir.current(); } };
   /* Le Guide disparaît d'un coup, sans fondu, pile quand GO apparaît (Louis). */
@@ -79,12 +103,14 @@ export default function IntroSeance({ guide, onFin }: { guide: GuideId; onFin: (
     >
       <span className="sr-only" aria-live="assertive">{etape === "pret" ? "Prêt ?" : etape === "go" ? "Go" : etape}</span>
 
-      <AnimatePresence>
-        {etape === "pret" && (
+      {/* Un mot à la fois : le suivant n'entre qu'une fois le précédent parti,
+          sinon deux chiffres géants se superposaient le temps d'un fondu. */}
+      <AnimatePresence mode="wait">
+        {charge && etape === "pret" && (
           <motion.div key="pret" aria-hidden
             className="absolute inset-x-0 flex justify-center"
             style={{ ...MOT, top: "20cqh", fontSize: "19cqw", paddingInline: "4cqw" }}
-            initial={{ opacity: 0, scale: 1.25 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }}
+            initial={{ opacity: 0, scale: 1.25 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, transition: { duration: 0.1 } }}
             transition={{ duration: 0.48, delay: 0.08, ease: [0.2, 0.8, 0.2, 1] }}
           >Prêt ?</motion.div>
         )}
@@ -92,7 +118,7 @@ export default function IntroSeance({ guide, onFin }: { guide: GuideId; onFin: (
           <motion.div key={etape} aria-hidden
             className="absolute inset-x-0 flex justify-center"
             style={{ ...MOT, top: "9cqh", fontSize: "78cqw" }}
-            initial={{ opacity: 0, scale: 1.35 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.96 }}
+            initial={{ opacity: 0, scale: 1.35 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, transition: { duration: 0.08 } }}
             transition={{ duration: 0.22, ease: [0.2, 0.9, 0.2, 1] }}
           >{etape}</motion.div>
         )}
@@ -107,7 +133,7 @@ export default function IntroSeance({ guide, onFin }: { guide: GuideId; onFin: (
       </AnimatePresence>
 
       <AnimatePresence>
-        {guideVisible && (
+        {charge && guideVisible && (
           <motion.div key="guide" aria-hidden
             className="absolute"
             style={{
@@ -120,11 +146,10 @@ export default function IntroSeance({ guide, onFin }: { guide: GuideId; onFin: (
             exit={{ opacity: 0, transition: { duration: 0 } }}
             transition={{ duration: 0.52, ease: [0.2, 0.8, 0.2, 1] }}
           >
-            {/* Une petite pulsation à chaque chiffre : la clé relance l'animation. */}
-            <motion.div key={etape} animate={etape === "pret" ? undefined : { scale: [1, 1.025, 1] }} transition={{ duration: 0.3 }}>
+            <div ref={portrait} style={{ willChange: "transform" }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={`/guides/${guide}-master-v1.webp`} alt="" className="block h-auto w-full" draggable={false} />
-            </motion.div>
+              <img src={src} alt="" className="block h-auto w-full" draggable={false} />
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
