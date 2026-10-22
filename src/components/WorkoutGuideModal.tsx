@@ -60,6 +60,7 @@ import { perfDataToShare, type PerfShareData } from "@/lib/perfShareExport";
 import EnvoyerAffiche from "@/components/communaute/EnvoyerAffiche";
 import QuestionMarge from "@/components/seance/QuestionMarge";
 import LaProchaineFois from "@/components/seance/LaProchaineFois";
+import { afficheDuRecordBattu, partagerAfficheRecord } from "@/lib/recordShareExport";
 import { choixApplicable, pasDeLEffort, pasDuRepos, repsADeclarer, type PositionTunnel, type SaisieReps } from "@/lib/transitionsTunnel";
 import { useAssistant } from "@/context/AssistantContext";
 import { GUIDE_SECTIONS, sectionSessionId } from "@/lib/guideSections";
@@ -2603,10 +2604,18 @@ export default function WorkoutGuideModal({
                 >
                   Continuer
                 </motion.button>
+                {/* Un record battu a son affiche à lui, au propriétaire du journal seulement. */}
+                {partageOuvert && recordFin && (
+                  <button type="button"
+                    onClick={() => { void partagerAfficheRecord(afficheDuRecordBattu(recordFin.record, recordFin.avant, recordFin.apres, user?.pseudo)); }}
+                    className="text-[13px] font-bold min-h-[44px] cursor-pointer" style={{ color: TUN.lav }}>
+                    Partager l&apos;affiche du record ›
+                  </button>
+                )}
                 {partageOuvert && afficheSaved && (
                   <button type="button" onClick={() => setEnvoyerOuvert(true)}
                     className="text-[13px] font-bold min-h-[44px] cursor-pointer" style={{ color: TUN.lav }}>
-                    Partager l&apos;affiche ›
+                    {recordFin ? "Partager l’affiche de la séance ›" : "Partager l’affiche ›"}
                   </button>
                 )}
               </motion.div>

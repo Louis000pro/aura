@@ -19,6 +19,8 @@ import { ChevronRight, Share2, X } from "lucide-react";
 import ExerciseThumb from "@/components/seance/ExerciseThumb";
 import ExerciseDetailSheet from "@/components/seance/ExerciseDetailSheet";
 import Sheet from "@/components/communaute/Sheet";
+import { useAuth } from "@/context/AuthContext";
+import { partagerAfficheRecord } from "@/lib/recordShareExport";
 import { trouverExercice } from "@/lib/exerciseLibrary";
 import {
   lireRecords, valeurRecord, uniteRecord, texteRecord, dateRecord, dateCourte, phraseChemin,
@@ -179,12 +181,22 @@ export function FicheRecord({ record: r, onFermer }: { record: RecordMouvement; 
   const hauteur = (v: number) => (max === min ? 84 : 30 + ((v - min) / (max - min)) * 54);
   const chemin = phraseChemin(r);
 
+  const { user } = useAuth();
+  const [envoi, setEnvoi] = useState(false);
+  /* L'affiche du record (`recordShareExport`) : le chiffre, ce qu'il y
+     avait avant, l'escalier. Le texte seul ne reste qu'en dernier recours. */
   const partager = async () => {
-    const texte = `Mon record sur Vaiiya · ${r.nom} : ${texteRecord(r.mesure, r.meilleur)}.`;
+    if (envoi) return;
+    setEnvoi(true);
     try {
-      if (navigator.share) await navigator.share({ text: texte, url: "https://vaiiya.fr" });
-      else await navigator.clipboard?.writeText(`${texte} https://vaiiya.fr`);
+      const avant = r.marches.length > 1 ? r.marches[r.marches.length - 2] : null;
+      const res = await partagerAfficheRecord({ nom: r.nom, mesure: r.mesure, meilleur: r.meilleur, avant, marches: r.marches, user: user?.pseudo });
+      if (res === "error") {
+        const texte = `Mon record sur Vaiiya · ${r.nom} : ${texteRecord(r.mesure, r.meilleur)}.`;
+        if (navigator.share) await navigator.share({ text: texte, url: "https://vaiiya.fr" });
+      }
     } catch { /* partage annulé */ }
+    finally { setEnvoi(false); }
   };
 
   return (
@@ -248,7 +260,7 @@ export function FicheRecord({ record: r, onFermer }: { record: RecordMouvement; 
             <button type="button" onClick={partager}
               className="flex min-h-[52px] items-center justify-center gap-2 rounded-2xl text-[16px] font-semibold text-white cursor-pointer"
               style={{ background: DEGRADE, boxShadow: "var(--ombre-action)" }}>
-              <Share2 size={17} /> Partager mon record
+              <Share2 size={17} /> {envoi ? "Un instant…" : "Partager mon record"}
             </button>
             {exo && (
               <button type="button" onClick={() => setMouvement(true)}

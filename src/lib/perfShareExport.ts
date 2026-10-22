@@ -28,7 +28,7 @@ export type PerfShareData = {
 
 const DEFAULT_BRAND = "✦ VAIIYA";
 
-function loadImage(src: string): Promise<HTMLImageElement> {
+export function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.crossOrigin = "anonymous";
@@ -154,7 +154,11 @@ export function perfDataToShare(
 
 /** Partage natif (mobile) si dispo, sinon téléchargement du PNG. */
 export async function sharePerfCard(data: PerfShareData, filename = "vaiiya-perf.png"): Promise<"shared" | "downloaded" | "error"> {
-  const blob = await renderPerfCardBlob(data);
+  return partagerPng(await renderPerfCardBlob(data), filename);
+}
+
+/** Partage natif d'un PNG si l'appareil sait, sinon téléchargement. */
+export async function partagerPng(blob: Blob | null, filename: string): Promise<"shared" | "downloaded" | "error"> {
   if (!blob) return "error";
 
   const file = new File([blob], filename, { type: "image/png" });
