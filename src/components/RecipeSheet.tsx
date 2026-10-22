@@ -6,11 +6,16 @@
    + sélecteur de portions + onglets Ingrédients/Ustensiles avec vignettes photo
    + étapes cochables + « Je fais ça ». Alimentée par la banque curée
    (src/lib/recipeBank.ts). Voir [[nutrition-onmangeou-redesign]].
+
+   Le cœur, en haut à droite de la photo, met la recette dans les favoris
+   ou l'en retire (2026-10-23). Il remplace le bouton « Sauver », qui ne
+   gardait rien : il s'effaçait dès qu'on changeait de recette. Pas de
+   cœur tant que les favoris ne sont pas connus (`favori` absent).
    ════════════════════════════════════════════════════════════════════ */
 
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { ChevronLeft, Bookmark, Minus, Plus, Check, RefreshCw, Utensils, Carrot, Sparkles } from "lucide-react";
+import { ChevronLeft, Heart, Minus, Plus, Check, RefreshCw, Utensils, Carrot, Sparkles } from "lucide-react";
 import { type Recipe, scaledQty, ingredientImg, utensilImg } from "@/lib/recipeBank";
 
 type LoggedMeal = { name: string; calories: number; proteins: number; carbs: number; fats: number };
@@ -47,11 +52,14 @@ function Thumb({ src, kind }: { src: string; kind: "ing" | "ust" }) {
 }
 
 export default function RecipeSheet({
-  recipe, loading = false, fitNote, onClose, onLog, onOther, hasOther,
+  recipe, loading = false, fitNote, favori, onFavori, onClose, onLog, onOther, hasOther,
 }: {
   recipe: Recipe;
   loading?: boolean;
   fitNote?: string | null;   // « pourquoi cette idée », honnête, selon la journée
+  /** Dans les favoris ? Absent (ou `null`) tant qu'on ne le sait pas : pas de cœur. */
+  favori?: boolean | null;
+  onFavori?: () => void;
   onClose: () => void;
   onLog: (m: LoggedMeal) => void;
   onOther?: () => void;
@@ -60,10 +68,9 @@ export default function RecipeSheet({
   const [portions, setPortions] = useState(recipe.portions);
   const [tab, setTab] = useState<"ing" | "ust">("ing");
   const [checked, setChecked] = useState<Set<number>>(new Set());
-  const [saved, setSaved] = useState(false);
 
   // Réinitialise si on passe à une autre recette (« Autre »).
-  useEffect(() => { setPortions(recipe.portions); setTab("ing"); setChecked(new Set()); setSaved(false); }, [recipe.id]);
+  useEffect(() => { setPortions(recipe.portions); setTab("ing"); setChecked(new Set()); }, [recipe.id]);
 
   // Masque la barre du bas pendant la fiche (comme les autres modales).
   useEffect(() => {
@@ -104,9 +111,9 @@ export default function RecipeSheet({
                 initial={{ x: "-100%" }} animate={{ x: "200%" }}
                 transition={{ duration: 1.45, repeat: Infinity, ease: "easeInOut" }} />
               <button onClick={onClose} aria-label="Fermer"
-                className="absolute top-3 left-3 w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer"
+                className="absolute top-3 left-3 w-11 h-11 rounded-full flex items-center justify-center cursor-pointer"
                 style={{ background: "rgba(20,12,24,0.42)", backdropFilter: "blur(6px)" }}>
-                <ChevronLeft size={18} strokeWidth={2} style={{ color: "#fff" }} />
+                <ChevronLeft size={19} strokeWidth={2.2} style={{ color: "#fff" }} />
               </button>
             </div>
             <div className="px-5 pt-4 flex items-center gap-2">
@@ -141,15 +148,20 @@ export default function RecipeSheet({
               onError={(e) => { e.currentTarget.style.display = "none"; }}
               className="absolute inset-0 w-full h-full object-cover" />
             <button onClick={onClose} aria-label="Fermer"
-              className="absolute top-3 left-3 w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer"
+              className="absolute top-3 left-3 w-11 h-11 rounded-full flex items-center justify-center cursor-pointer"
               style={{ background: "rgba(20,12,24,0.42)", backdropFilter: "blur(6px)" }}>
-              <ChevronLeft size={18} strokeWidth={2} style={{ color: "#fff" }} />
+              <ChevronLeft size={19} strokeWidth={2.2} style={{ color: "#fff" }} />
             </button>
-            <button onClick={() => setSaved((s) => !s)} aria-label="Sauver"
-              className="absolute top-3 right-3 w-8 h-8 rounded-full flex items-center justify-center cursor-pointer"
-              style={{ background: "rgba(20,12,24,0.42)", backdropFilter: "blur(6px)" }}>
-              <Bookmark size={16} strokeWidth={2} style={{ color: "#fff", fill: saved ? "#fff" : "transparent" }} />
-            </button>
+            {typeof favori === "boolean" && onFavori && (
+              <button type="button" onClick={onFavori} aria-pressed={favori}
+                aria-label={favori ? "Retirer de mes favoris" : "Mettre dans mes favoris"}
+                className="absolute top-3 right-3 w-11 h-11 rounded-full flex items-center justify-center cursor-pointer"
+                style={favori
+                  ? { background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", boxShadow: "var(--ombre-action)" }
+                  : { background: "rgba(20,12,24,0.42)", backdropFilter: "blur(6px)" }}>
+                <Heart size={19} strokeWidth={2.2} aria-hidden style={{ color: "#fff", fill: favori ? "#fff" : "transparent" }} />
+              </button>
+            )}
           </div>
 
           {/* Titre + tags */}

@@ -22,6 +22,13 @@
 
    ⚠️ CHAQUE ÉCRITURE DU JOURNAL SIGNALE LE GUIDE (`signalerRepas`), et les
    six écritures restent ICI : `check:programme` les compte dans ce fichier.
+
+   LES FAVORIS (2026-10-23, maquette « Les favoris ») vivent dans le compte
+   (`favoris_nutrition`, hooks/useFavorisNutrition). Le cœur se met sur la
+   fiche d'une recette et sur un plat ; on les retrouve dans « Mes
+   favoris » (bande en tête de « Trouver une recette », puis vue pleine)
+   et dans « Mes classiques ». Une liste de plats se fige à l'ouverture
+   d'une vue : un plat touché ne change pas de place sous le doigt.
    ════════════════════════════════════════════════════════════════════ */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -40,13 +47,14 @@ import {
   COLLECTIONS, DEMANDE_AU_GUIDE, besoinsDuJour, ideesDuMoment, recettesDe, regimeConnu, type IdCollection,
 } from "@/lib/collectionsRecettes";
 import {
-  classerRecents, heureMaintenant, ligneVersRepas, momentActuel, nomComparable,
+  classerRecents, heureMaintenant, ligneVersRepas, momentActuel,
   type MealEntry, type MealType, type NouveauRepas, type RecentMeal,
 } from "@/lib/repas";
+import { PLAFOND_FAVORIS, compteFavoris, platsProposes, type SorteFavori } from "@/lib/favorisNutrition";
 import { useNutritionGoals } from "@/hooks/useNutritionGoals";
 import { useJourLocal, useMomentRepas } from "@/hooks/useHorloge";
 import { useRetourTelephone } from "@/hooks/useRetourTelephone";
-import { useEpinglesRepas } from "@/hooks/useEpinglesRepas";
+import { useFavorisNutrition, type ResultatFavori } from "@/hooks/useFavorisNutrition";
 import WeighInPrompt from "@/components/WeighInPrompt";
 import TastePrefsPrompt from "@/components/TastePrefsPrompt";
 import MealSituationHero from "@/components/MealSituationHero";
@@ -57,18 +65,26 @@ import TrouverRecette from "@/components/nutrition/TrouverRecette";
 import ComprendreNutrition from "@/components/nutrition/ComprendreNutrition";
 import CollectionRecettes from "@/components/nutrition/CollectionRecettes";
 import JourneeNutrition from "@/components/nutrition/JourneeNutrition";
+import VueFavoris from "@/components/nutrition/VueFavoris";
 import FeuilleAjoutRepas from "@/components/nutrition/FeuilleAjoutRepas";
 import PhotoAnalysisModal from "@/components/nutrition/PhotoAnalysisModal";
 import BarcodeScannerModal from "@/components/nutrition/BarcodeScannerModal";
 import MenuScanModal, { type MenuScanResult } from "@/components/nutrition/MenuScanModal";
 import ManualModal from "@/components/nutrition/ManualModal";
 
-type Vue = { nom: "accueil" } | { nom: "journee" } | { nom: "collection"; id: IdCollection };
+type Vue =
+  | { nom: "accueil" } | { nom: "journee" } | { nom: "collection"; id: IdCollection }
+  | { nom: "favoris"; plats: RecentMeal[] };
 type Fiche = { liste: Recipe[]; index: number; besoins: DayNeeds | null };
 type LoggedMeal = { name: string; calories: number; proteins: number; carbs: number; fats: number };
 
 const MOMENT_PHRASE: Record<MealType, string> = {
   "petit-dejeuner": "petit-déjeuner", "dejeuner": "déjeuner", "gouter": "goûter", "diner": "dîner",
+};
+
+const MOTS_FAVORI: Record<SorteFavori, { mis: string; retire: string }> = {
+  recette: { mis: "Recette ajoutée à tes favoris", retire: "Recette retirée de tes favoris" },
+  plat: { mis: "Plat ajouté à tes favoris", retire: "Plat retiré de tes favoris" },
 };
 
 /** Le régime déclaré sur l'appareil (lu seulement une fois le compte connu). */
@@ -106,6 +122,7 @@ export default function NutritionTab() {
   }, []);
   useRetourTelephone(vue.nom === "journee", "nutritionJournee", fermerVue);
   useRetourTelephone(vue.nom === "collection", "nutritionCollection", fermerVue);
+  useRetourTelephone(vue.nom === "favoris", "nutritionFavoris", fermerVue);
 
   const jourAffiche = vue.nom === "journee" ? (jourDetail ?? aujourdhui) : aujourdhui;
   /* Un jour hors de la fenêtre gratuite ne se lit pas : on ne dit pas
@@ -139,7 +156,7 @@ export default function NutritionTab() {
     };
   }, [repasDuJour]);
 
-  /* ── Les derniers repas (fréquence, puis récence) et les épinglés ── */
+  /* ── Les derniers repas (fréquence, puis récence) ── */
   const [recents, setRecents] = useState<RecentMeal[]>([]);
   const [versionRecents, setVersionRecents] = useState(0);
   useEffect(() => {
@@ -147,14 +164,9 @@ export default function NutritionTab() {
     let annule = false;
     createClient().from("nutrition_logs").select("food_name, calories, proteins, carbs, fats")
       .eq("user_id", uid).order("date", { ascending: false }).order("time", { ascending: false }).limit(200)
-      .then(({ data }) => { if (!annule && data) setRecents(classerRecents(data)); });
+      .then(({ data }) => { if (!annule && data) setRecents(classerRecents(data, 9)); });
     return () => { annule = true; };
   }, [uid, versionRecents]);
-  const { epingles, estEpingle, basculer, indiceVu } = useEpinglesRepas(uid);
-  const derniersRepas = useMemo(() => {
-    const cles = new Set(epingles.map((p) => nomComparable(p.name)));
-    return [...epingles, ...recents.filter((r) => !cles.has(nomComparable(r.name)))].slice(0, Math.max(8, epingles.length));
-  }, [epingles, recents]);
 
   /* ── Le message du bas ── */
   const [toast, setToast] = useState<string | null>(null);
@@ -165,6 +177,23 @@ export default function NutritionTab() {
     minuteurToast.current = setTimeout(() => setToast(null), 2800);
   }, []);
 
+  /* ── Les favoris : le cœur change tout de suite, la base confirme ── */
+  const favoris = useFavorisNutrition(uid);
+  /* « Mes plats » : les favoris d'abord, puis les derniers repas. */
+  const plats = useMemo(() => platsProposes(favoris.plats, recents), [favoris.plats, recents]);
+  /* Pas de cœur tant que les favoris ne sont pas connus. */
+  const estPlatFavori = favoris.connu ? favoris.estPlat : null;
+  const estRecetteFavorite = favoris.connu ? favoris.estRecette : null;
+  const suivreFavori = (sorte: SorteFavori, geste: { devient: boolean; ecrit: Promise<ResultatFavori> }) => {
+    montrer(geste.devient ? MOTS_FAVORI[sorte].mis : MOTS_FAVORI[sorte].retire);
+    void geste.ecrit.then((r) => {
+      if (r === "plein") montrer(`Tu as déjà ${PLAFOND_FAVORIS} favoris. Retire un favori pour en garder un autre.`);
+      else if (r === "echec") montrer(geste.devient ? "Le favori n’a pas pu être gardé. Réessaie." : "Le favori n’a pas pu être retiré. Réessaie.");
+    });
+  };
+  const coeurRecette = (r: Recipe) => suivreFavori("recette", favoris.basculerRecette(r));
+  const coeurPlat = (r: RecentMeal) => suivreFavori("plat", favoris.basculerPlat(r));
+
   /* ── Les modales d'ajout, et où elles écrivent ── */
   const [cible, setCible] = useState<{ date: string; type?: MealType }>({ date: "" });
   const [showPhoto, setShowPhoto] = useState(false);
@@ -174,7 +203,7 @@ export default function NutritionTab() {
   const [menuResult, setMenuResult] = useState<MenuScanResult | null>(null);  // gardé : retour photo → carte sans relire
   const [photoFromMenu, setPhotoFromMenu] = useState(false);
   const [objectifCarte, setObjectifCarte] = useState<{ ligne: string; puce: string; connu: boolean } | null>(null);
-  const [ajout, setAjout] = useState<{ type: MealType; date: string } | null>(null);
+  const [ajout, setAjout] = useState<{ type: MealType; date: string; plats: RecentMeal[] } | null>(null);
 
   const jourDuJour = () => aujourdhui ?? localDateStr();
   const dateDeCible = () => cible.date || jourDuJour();
@@ -185,7 +214,7 @@ export default function NutritionTab() {
     else setShowManual(true);
   };
   const ouvrirAjout = (type?: MealType, date?: string) =>
-    setAjout({ type: type ?? moment ?? momentActuel(), date: date ?? jourAffiche ?? jourDuJour() });
+    setAjout({ type: type ?? moment ?? momentActuel(), date: date ?? jourAffiche ?? jourDuJour(), plats });
 
   /* « Noter un repas » depuis l'accueil arrive avec `?ajouter=repas` et ouvre
      DIRECTEMENT la saisie (choix de Louis, 2026-09-22). L'adresse se nettoie
@@ -387,8 +416,16 @@ export default function NutritionTab() {
                 onPhoto={() => ouvrirModale("photo")}
                 onBarcode={() => ouvrirModale("codebarres")}
                 onMenuScan={ouvrirCarte}
-                classics={derniersRepas}
-                onQuickAdd={(r) => { void quickAddRecent(r, undefined, jourDuJour()); }}
+                plats={plats}
+                estPlatFavori={estPlatFavori}
+                recettesFavorites={favoris.recettes}
+                estRecetteFavorite={estRecetteFavorite}
+                onAjouterPlat={(r) => quickAddRecent(r, undefined, jourDuJour())}
+                onRetirerPlat={(id) => deleteMeal(id, jourDuJour())}
+                onCoeurPlat={coeurPlat}
+                onCoeurRecette={coeurRecette}
+                onOuvrirRecette={(r, liste) => ouvrirRecette(r, liste, false)}
+                onVoirFavoris={() => ouvrirVue({ nom: "favoris", plats: favoris.plats })}
                 onLogIdea={(m) => { void addRecipeMeal(m, jourDuJour()); }}
               />
               <CarteAujourdhui
@@ -399,13 +436,15 @@ export default function NutritionTab() {
             </div>
             <div className="flex min-w-0 flex-col gap-7">
               {moment && (
-                <IdeesDuMoment key={moment} moment={moment} recettes={idees}
+                <IdeesDuMoment key={moment} moment={moment} recettes={idees} estFavori={favoris.estRecette}
                   onOuvrir={(r, liste) => ouvrirRecette(r, liste, true)} />
               )}
               <TrouverRecette
                 collections={collections}
+                favoris={favoris.connu ? { recettes: favoris.recettes, plats: favoris.plats } : null}
                 onCollection={(id) => ouvrirVue({ nom: "collection", id })}
                 onRecette={(r) => ouvrirRecette(r, [r], false)}
+                onFavoris={() => ouvrirVue({ nom: "favoris", plats: favoris.plats })}
               />
               <ComprendreNutrition premiumDebloque={premiumDebloque} />
             </div>
@@ -437,9 +476,26 @@ export default function NutritionTab() {
             id={vue.id}
             recettes={recettesDe(vue.id, regime)}
             guide={guide}
+            estFavori={favoris.estRecette}
             onRetour={fermerVue}
             onOuvrir={(r, liste) => ouvrirRecette(r, liste, false)}
             onDemander={() => ouvrirAssistant(DEMANDE_AU_GUIDE[vue.id])}
+          />
+        </div>
+      )}
+
+      {vue.nom === "favoris" && (
+        <div className="max-w-[560px]">
+          <VueFavoris
+            recettes={favoris.recettes}
+            plats={vue.plats.length > 0 ? vue.plats : favoris.plats}
+            compte={compteFavoris(favoris.recettes.length, favoris.plats.length)}
+            estPlatFavori={estPlatFavori}
+            onRetour={fermerVue}
+            onOuvrir={(r, liste) => ouvrirRecette(r, liste, false)}
+            onAjouterPlat={(r) => quickAddRecent(r, undefined, jourDuJour())}
+            onRetirerPlat={(id) => deleteMeal(id, jourDuJour())}
+            onCoeurPlat={coeurPlat}
           />
         </div>
       )}
@@ -452,16 +508,15 @@ export default function NutritionTab() {
             typeInitial={ajout.type}
             date={ajout.date}
             aujourdhui={aujourdhui}
-            recents={derniersRepas}
-            estEpingle={estEpingle}
-            indiceVu={indiceVu}
+            plats={ajout.plats.length > 0 ? ajout.plats : plats}
+            estFavori={estPlatFavori}
             onFermer={() => setAjout(null)}
             onPhoto={(type) => { const d = ajout.date; setAjout(null); ouvrirModale("photo", type, d); }}
             onCodeBarres={(type) => { const d = ajout.date; setAjout(null); ouvrirModale("codebarres", type, d); }}
             onEcrire={(type) => { const d = ajout.date; setAjout(null); ouvrirModale("ecrire", type, d); }}
             onAjouterRecent={(r, type) => quickAddRecent(r, type, ajout.date)}
             onRetirer={(id) => deleteMeal(id, ajout.date)}
-            onEpingler={(r) => { const epingle = basculer(r); montrer(epingle ? `${r.name} épinglé` : `${r.name} n’est plus épinglé`); }}
+            onCoeur={coeurPlat}
           />
         )}
       </AnimatePresence>
@@ -503,6 +558,8 @@ export default function NutritionTab() {
             key="recette"
             recipe={recetteOuverte}
             fitNote={fiche.besoins ? fitReason(recetteOuverte, fiche.besoins) : null}
+            favori={estRecetteFavorite ? estRecetteFavorite(recetteOuverte.id) : null}
+            onFavori={() => coeurRecette(recetteOuverte)}
             onClose={() => setFiche(null)}
             onLog={(m) => { void addRecipeMeal(m, jourDuJour()); setFiche(null); }}
             onOther={fiche.liste.length > 1 ? () => setFiche((f) => (f ? { ...f, index: (f.index + 1) % f.liste.length } : f)) : undefined}

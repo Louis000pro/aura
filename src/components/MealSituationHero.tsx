@@ -20,6 +20,12 @@
    ⚠️ LES DEUX LIENS « J'ai déjà mangé · Je saute ce repas » SONT PARTIS.
    Le premier ouvrait la saisie, qu'« Ajouter un repas » porte juste en
    dessous ; le second n'écrivait rien, il affichait seulement un message.
+
+   « Mes classiques » (2026-10-23, maquette « Les favoris ») : à la maison,
+   tes recettes favorites en rangée puis tes plats ; pour un sandwich ou
+   un snack, tes plats seuls (une recette se cuisine). Les plats sont les
+   mêmes dans les deux portes : l'app ne note pas où un repas a été mangé.
+   La liste se fige à l'ouverture, pour qu'un plat touché ne bouge pas.
    ════════════════════════════════════════════════════════════════════ */
 
 import { useState, useRef, useEffect } from "react";
@@ -36,10 +42,11 @@ import {
 import { loadTasteProfileLocal } from "@/lib/tasteProfile";
 import { fitReason, rankRecipes, type Recipe, type DayNeeds } from "@/lib/recipeBank";
 import { besoinsDuJour, convient, poolDuMoment, regimeConnu } from "@/lib/collectionsRecettes";
-import { momentActuel, type MealType } from "@/lib/repas";
+import { momentActuel, type MealType, type RecentMeal } from "@/lib/repas";
 import RecipeSheet from "@/components/RecipeSheet";
 import GeneratedRecipeSheet, { type GeneratedRecipe } from "@/components/GeneratedRecipeSheet";
 import OrderRecapSheet from "@/components/OrderRecapSheet";
+import GrillePlats from "@/components/nutrition/GrillePlats";
 import {
   estimateOrder, guessPlace, ambianceImg, CATEGORY_ORDER, CATEGORY_LABEL, EXTRAS_BY_CATEGORY,
   type OrderCategory, type OrderEstimate,
@@ -47,7 +54,6 @@ import {
 import { rankGenres, GENRE_PROFILE, type AdvisorNeeds, type RankedGenre } from "@/lib/orderAdvisor";
 import ns from "@/components/nutrition/Nutrition.module.css";
 
-type Classic = { name: string; calories: number; proteins: number; carbs: number; fats: number; count?: number };
 type LoggedMeal = { name: string; calories: number; proteins: number; carbs: number; fats: number };
 type DayTotals = { calories: number; proteins: number; carbs: number; fats: number };
 
@@ -61,8 +67,20 @@ type Props = {
   onPhoto: () => void;
   onBarcode: () => void;
   onMenuScan: () => void;   // « La carte » du resto → photo + classement IA
-  classics: Classic[];
-  onQuickAdd: (r: Classic) => void;
+  /** « Mes plats » : les favoris d'abord, puis les derniers repas. */
+  plats: RecentMeal[];
+  /** `null` tant que les favoris ne sont pas connus : aucun cœur. */
+  estPlatFavori: ((nom: string) => boolean) | null;
+  recettesFavorites: Recipe[];
+  estRecetteFavorite: ((id: string) => boolean) | null;
+  /** Rend l'identifiant du repas écrit, ou `null` si l'écriture a échoué. */
+  onAjouterPlat: (r: RecentMeal) => Promise<string | null>;
+  onRetirerPlat: (id: string) => Promise<void> | void;
+  onCoeurPlat: (r: RecentMeal) => void;
+  onCoeurRecette: (r: Recipe) => void;
+  /** Une recette favorite s'ouvre dans la fiche de l'écran. */
+  onOuvrirRecette: (r: Recipe, liste: Recipe[]) => void;
+  onVoirFavoris: () => void;
   onLogIdea: (m: LoggedMeal) => void;
 };
 
@@ -149,11 +167,14 @@ type SubChoice = { key: string; label: string; sub: string; run: () => void };
 
 export default function MealSituationHero({
   userId, moment, goals, consumed, eatenToday, onPhoto, onBarcode, onMenuScan,
-  classics, onQuickAdd, onLogIdea,
+  plats, estPlatFavori, recettesFavorites, estRecetteFavorite,
+  onAjouterPlat, onRetirerPlat, onCoeurPlat, onCoeurRecette, onOuvrirRecette, onVoirFavoris, onLogIdea,
 }: Props) {
   const { guide } = useGuideActif();
   const [sit, setSit] = useState<SituationKey | null>(null);
   const [screen, setScreen] = useState<Screen>("menu");
+  // « Mes plats » tels qu'ils étaient en ouvrant « Mes classiques ».
+  const [classiquesFiges, setClassiquesFiges] = useState<RecentMeal[] | null>(null);
 
   const [ingredients, setIngredients] = useState<string[]>([]);
   const [ingInput, setIngInput] = useState("");
@@ -212,10 +233,11 @@ export default function MealSituationHero({
   };
   const resetGen = () => { setGenOpen(false); setGenLoading(false); setGenError(false); setGenRecipe(null); };
   const reset = () => {
-    setSit(null); setScreen("menu");
+    setSit(null); setScreen("menu"); setClassiquesFiges(null);
     setIngredients([]); setIngInput("");
     resetLiv(); resetRest(); resetGen();
   };
+  const ouvrirClassiques = () => { setClassiquesFiges(plats); setScreen("classics"); };
   const goBack = () => {
     if (!sit) return reset();
     if (screen === "livraison-form") {
@@ -399,7 +421,7 @@ export default function MealSituationHero({
     if (key === "maison") return [
       { key: "idee",       label: "Une idée",       sub: "qui me tente",    run: () => openRecipes() },
       { key: "finir",      label: "À finir",        sub: "avec tes restes", run: () => setScreen("finish") },
-      { key: "classiques", label: "Mes classiques", sub: "mes habitudes",   run: () => setScreen("classics") },
+      { key: "classiques", label: "Mes classiques", sub: "mes habitudes",   run: ouvrirClassiques },
     ];
     if (key === "resto") return [
       { key: "assiette",  label: "Mon assiette",      sub: "je la scanne",       run: onPhoto },
@@ -409,9 +431,13 @@ export default function MealSituationHero({
     return [
       { key: "code",       label: "Code-barres",    sub: "produit emballé", run: onBarcode },
       { key: "photo",      label: "Une photo",      sub: "on l’estime",     run: onPhoto },
-      { key: "classiques", label: "Mes classiques", sub: "mes habitudes",   run: () => setScreen("classics") },
+      { key: "classiques", label: "Mes classiques", sub: "mes habitudes",   run: ouvrirClassiques },
     ];
   };
+
+  /* Une liste figée vide (les plats n'étaient pas encore lus) suit la source. */
+  const platsClassiques = classiquesFiges && classiquesFiges.length > 0 ? classiquesFiges : plats;
+  const recettesClassiques = sit === "maison" ? recettesFavorites : [];
 
   const sitObj = SITUATIONS.find((s) => s.key === sit) ?? null;
   const baseSuggestions = (() => {
@@ -487,54 +513,57 @@ export default function MealSituationHero({
           </motion.div>
         )}
 
-        {/* Mes classiques — tes plats connus, ajout en 1 tap (pastilles, épuré) */}
+        {/* Mes classiques : les recettes favorites (à la maison), puis les plats */}
         {sit !== null && screen === "classics" && (
           <motion.div key="classics"
             initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 12 }}
-            className="px-1.5">
-            {classics.length === 0 ? (
+            className="flex flex-col gap-4 px-1.5">
+            {recettesClassiques.length > 0 && (
+              <div className="flex flex-col gap-1">
+                <div className="flex min-h-11 items-center justify-between gap-3">
+                  <span className="text-[13px] font-bold" style={{ color: "var(--text-2)" }}>Mes recettes favorites</span>
+                  <button type="button" onClick={onVoirFavoris} className="min-h-11 pl-3 text-[13px] font-semibold cursor-pointer"
+                    style={{ color: "var(--exp-encre)" }}>
+                    Tout voir
+                  </button>
+                </div>
+                {/* La rangée va jusqu'au bord de la carte, et garde de la place
+                    dessous : une rangée qui défile coupe l'ombre de ses photos. */}
+                <div className={`${ns.rail} -mb-3 -mr-3.5 pb-3 pr-3.5`} style={{ gap: 8 }}>
+                  {recettesClassiques.map((r) => (
+                    <button key={r.id} type="button" onClick={() => onOuvrirRecette(r, recettesClassiques)}
+                      className="flex flex-shrink-0 flex-col gap-1.5 text-left cursor-pointer" style={{ width: 96 }}>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={r.image} alt="" loading="lazy" decoding="async" className="block object-cover"
+                        style={{ width: 96, height: 128, borderRadius: "var(--r-bloc)", boxShadow: "var(--ombre-pose)", background: "rgba(var(--accent-rgb),0.10)" }} />
+                      <span className="line-clamp-2 text-[13px] font-bold leading-snug" style={{ color: "var(--text-0)" }}>{r.nom}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {platsClassiques.length > 0 && (
+              <div className="flex flex-col gap-2">
+                <span className="text-[13px] font-bold" style={{ color: "var(--text-2)" }}>Mes plats</span>
+                <GrillePlats plats={platsClassiques} estFavori={estPlatFavori} hauteur={110}
+                  onAjouter={onAjouterPlat} onRetirer={onRetirerPlat} onCoeur={onCoeurPlat} />
+              </div>
+            )}
+
+            {recettesClassiques.length === 0 && platsClassiques.length === 0 && (
               <div className="flex flex-col items-center text-center gap-2.5 py-9">
                 <div className="w-12 h-12 rounded-2xl flex items-center justify-center"
                   style={{ background: "rgba(139,92,246,0.12)", border: "1px solid rgba(139,92,246,0.28)" }}>
                   <Heart size={20} strokeWidth={1.8} style={{ color: "var(--exp-encre)" }} />
                 </div>
                 <p className="text-[13px] font-light leading-relaxed max-w-[15rem]" style={{ color: "var(--text-3)" }}>
-                  Tes plats habituels apparaîtront ici dès que tu en auras enregistré quelques-uns.
+                  {sit === "maison"
+                    ? "Tes recettes favorites et tes plats habituels apparaîtront ici."
+                    : "Tes plats habituels apparaîtront ici dès que tu en auras enregistré quelques-uns."}
                 </p>
               </div>
-            ) : (<>
-              <p className="text-[11px] font-light mb-2 ml-0.5" style={{ color: "var(--text-3)" }}>
-                Un tap pour le rajouter à ta journée.
-              </p>
-              <div className="grid grid-cols-2 gap-2">
-                {classics.map((r, i) => {
-                  // Liseré = macro dominante EN ÉNERGIE (P·4 / G·4 / L·9), triptyque Système D.
-                  // Sans macros connues → neutre. Colore sans juger (pas de rouge « mauvais »).
-                  const p = (r.proteins || 0) * 4, c = (r.carbs || 0) * 4, f = (r.fats || 0) * 9;
-                  const mx = Math.max(p, c, f);
-                  const accent = mx <= 0 ? "rgba(var(--violet-mid-rgb),0.55)"
-                    : mx === p ? "#8B5CF6" : mx === c ? "#EF9F27" : "#2BD4A0";
-                  return (
-                    <motion.button key={i} whileTap={{ scale: 0.97 }} onClick={() => { onQuickAdd(r); reset(); }}
-                      className="relative overflow-hidden text-left rounded-2xl p-3 pl-3.5 pr-8 cursor-pointer"
-                      style={{ background: "rgba(var(--tint-violet-rgb),0.5)", border: "1px solid rgba(var(--violet-mid-rgb),0.35)" }}>
-                      <span aria-hidden className="absolute left-0 top-0 bottom-0" style={{ width: 4, background: accent }} />
-                      <p className="text-[13px] font-semibold leading-tight"
-                        style={{ color: "var(--text-1)", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", minHeight: "2.4em" }}>
-                        {r.name}
-                      </p>
-                      <p className="text-[11px] font-semibold mt-1.5" style={{ color: "#E8620C", fontVariantNumeric: "tabular-nums" }}>
-                        {r.calories} kcal
-                      </p>
-                      <span className="absolute top-2 right-2 w-5 h-5 rounded-full flex items-center justify-center"
-                        style={{ background: "rgba(139,92,246,0.14)", border: "1px solid rgba(139,92,246,0.3)" }}>
-                        <Plus size={12} strokeWidth={2.5} style={{ color: "var(--exp-encre)" }} />
-                      </span>
-                    </motion.button>
-                  );
-                })}
-              </div>
-            </>)}
+            )}
           </motion.div>
         )}
 
@@ -1008,6 +1037,8 @@ export default function MealSituationHero({
               recipe={currentRecipe}
               loading={thinking}
               fitNote={currentFit}
+              favori={estRecetteFavorite ? estRecetteFavorite(currentRecipe.id) : null}
+              onFavori={() => onCoeurRecette(currentRecipe)}
               onClose={closeRecipe}
               onLog={(m) => { onLogIdea(m); closeRecipe(); }}
               onOther={recipeList.length > 1 ? nextRecipe : undefined}

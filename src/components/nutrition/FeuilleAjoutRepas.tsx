@@ -11,15 +11,17 @@
    Le moment choisi ici part dans la modale qui s'ouvre (photo, code-barres,
    saisie) : elle le montre déjà coché, et on peut encore le changer là-bas.
 
-   Un dernier repas ajouté se coche ; le toucher une seconde fois le
-   retire. L'appui long épingle un plat (il passe devant les autres).
+   « Mes plats » : les favoris d'abord, puis les derniers repas (la même
+   grille que « Mes classiques », GrillePlats). Un plat ajouté se coche ;
+   le toucher une seconde fois le retire. Le cœur le met dans les favoris :
+   il remplace l'appui long du 2026-10-22, que personne ne trouvait.
    ════════════════════════════════════════════════════════════════════ */
 
-import { useRef, useState } from "react";
-import { Barcode, Camera, Check, Heart, PenLine, Plus, X } from "lucide-react";
+import { useState } from "react";
+import { Barcode, Camera, PenLine, X } from "lucide-react";
 import Sheet from "@/components/communaute/Sheet";
-import ImageRepas from "@/components/nutrition/ImageRepas";
-import { MOMENTS, MOMENT_COURT, nomComparable, type MealType, type RecentMeal } from "@/lib/repas";
+import GrillePlats from "@/components/nutrition/GrillePlats";
+import { MOMENTS, MOMENT_COURT, type MealType, type RecentMeal } from "@/lib/repas";
 import ns from "@/components/nutrition/Nutrition.module.css";
 
 /** « 2026-10-20 » → « lundi 20 octobre ». */
@@ -29,15 +31,16 @@ function jourEnLettres(date: string): string {
 }
 
 export default function FeuilleAjoutRepas({
-  typeInitial, date, aujourdhui, recents, estEpingle, indiceVu,
-  onFermer, onPhoto, onCodeBarres, onEcrire, onAjouterRecent, onRetirer, onEpingler,
+  typeInitial, date, aujourdhui, plats, estFavori,
+  onFermer, onPhoto, onCodeBarres, onEcrire, onAjouterRecent, onRetirer, onCoeur,
 }: {
   typeInitial: MealType;
   date: string;
   aujourdhui: string;
-  recents: RecentMeal[];
-  estEpingle: (nom: string) => boolean;
-  indiceVu: boolean;
+  /** Figés à l'ouverture : un plat touché ne change pas de place. */
+  plats: RecentMeal[];
+  /** `null` tant que les favoris ne sont pas connus. */
+  estFavori: ((nom: string) => boolean) | null;
   onFermer: () => void;
   onPhoto: (type: MealType) => void;
   onCodeBarres: (type: MealType) => void;
@@ -45,39 +48,12 @@ export default function FeuilleAjoutRepas({
   /** Rend l'identifiant du repas écrit, ou `null` si l'écriture a échoué. */
   onAjouterRecent: (r: RecentMeal, type: MealType) => Promise<string | null>;
   onRetirer: (id: string) => Promise<void> | void;
-  onEpingler: (r: RecentMeal) => void;
+  onCoeur: (r: RecentMeal) => void;
 }) {
   const [type, setType] = useState<MealType>(typeInitial);
-  const [ajoutes, setAjoutes] = useState<Record<string, string>>({});
-  const [enCours, setEnCours] = useState<string | null>(null);
   const [toutVoir, setToutVoir] = useState(false);
 
-  // Appui long = épingler ; un simple toucher = ajouter (jamais les deux).
-  const minuteur = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const longFait = useRef(false);
-  const appuyer = (r: RecentMeal) => {
-    longFait.current = false;
-    minuteur.current = setTimeout(() => { longFait.current = true; onEpingler(r); }, 480);
-  };
-  const lacher = () => { if (minuteur.current) { clearTimeout(minuteur.current); minuteur.current = null; } };
-
-  const toucher = async (r: RecentMeal) => {
-    if (longFait.current) { longFait.current = false; return; }
-    const cle = nomComparable(r.name);
-    if (enCours) return;
-    setEnCours(cle);
-    const deja = ajoutes[cle];
-    if (deja) {
-      await onRetirer(deja);
-      setAjoutes((a) => { const s = { ...a }; delete s[cle]; return s; });
-    } else {
-      const id = await onAjouterRecent(r, type);
-      if (id) setAjoutes((a) => ({ ...a, [cle]: id }));
-    }
-    setEnCours(null);
-  };
-
-  const visibles = toutVoir ? recents : recents.slice(0, 3);
+  const visibles = toutVoir ? plats : plats.slice(0, 3);
 
   return (
     <Sheet onFermer={onFermer} niveau={90}>
@@ -136,51 +112,19 @@ export default function FeuilleAjoutRepas({
           ))}
         </div>
 
-        {recents.length > 0 && (
+        {plats.length > 0 && (
           <div className="flex flex-col gap-2.5">
             <div className="flex items-baseline justify-between gap-3">
-              <span className="text-[16px] font-bold" style={{ color: "var(--text-0)" }}>Mes derniers repas</span>
-              {recents.length > 3 && (
+              <span className="text-[16px] font-bold" style={{ color: "var(--text-0)" }}>Mes plats</span>
+              {plats.length > 3 && (
                 <button type="button" onClick={() => setToutVoir((v) => !v)} className="min-h-11 pl-3 text-[13px] font-semibold cursor-pointer"
                   style={{ color: "var(--exp-encre)" }}>
                   {toutVoir ? "Voir moins" : "Tout voir"}
                 </button>
               )}
             </div>
-            {!indiceVu && (
-              <span className="-mt-1.5 text-[11px]" style={{ color: "var(--text-3)" }}>Appui long sur un plat pour l’épingler en premier.</span>
-            )}
-            <div className="grid grid-cols-3 gap-2.5">
-              {visibles.map((r) => {
-                const cle = nomComparable(r.name);
-                const fait = !!ajoutes[cle];
-                const epingle = estEpingle(r.name);
-                return (
-                  <button key={cle} type="button" aria-pressed={fait}
-                    aria-label={fait ? `${r.name}, ajouté. Toucher pour le retirer` : `Ajouter ${r.name}`}
-                    onPointerDown={() => appuyer(r)} onPointerUp={lacher} onPointerLeave={lacher} onPointerMove={lacher}
-                    onContextMenu={(e) => e.preventDefault()}
-                    onClick={() => { void toucher(r); }}
-                    className="flex min-w-0 flex-col gap-1.5 text-left cursor-pointer" style={{ WebkitTouchCallout: "none", opacity: enCours === cle ? 0.6 : 1 }}>
-                    <span className="relative block">
-                      <ImageRepas nom={r.name} className="block w-full" icone={24}
-                        style={{ height: 118, borderRadius: "var(--r-bloc)", boxShadow: "0 10px 22px -14px rgba(45,25,90,.5)" }} />
-                      {epingle && (
-                        <span aria-hidden className="absolute left-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-full"
-                          style={{ background: "rgba(255,255,255,0.92)" }}>
-                          <Heart size={12} strokeWidth={2.5} style={{ color: "#8B5CF6", fill: "#8B5CF6" }} />
-                        </span>
-                      )}
-                      <span aria-hidden className="absolute bottom-[7px] right-[7px] flex h-[30px] w-[30px] items-center justify-center rounded-full text-white"
-                        style={{ background: fait ? "#0B8A68" : "linear-gradient(135deg,#8B5CF6,#C13BC1)", boxShadow: "0 0 0 2px #fff" }}>
-                        {fait ? <Check size={16} strokeWidth={3} /> : <Plus size={16} strokeWidth={3} />}
-                      </span>
-                    </span>
-                    <span className="line-clamp-2 text-[13px] font-semibold leading-snug" style={{ color: "var(--text-0)" }}>{r.name}</span>
-                  </button>
-                );
-              })}
-            </div>
+            <GrillePlats plats={visibles} estFavori={estFavori}
+              onAjouter={(r) => onAjouterRecent(r, type)} onRetirer={onRetirer} onCoeur={onCoeur} />
           </div>
         )}
       </div>

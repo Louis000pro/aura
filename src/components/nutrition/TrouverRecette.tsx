@@ -7,18 +7,25 @@
    tuiles blanches à emoji) : ce sont les recettes de la banque, avec
    leurs vraies photos, rangées par ce qu'on cherche (lib/collectionsRecettes).
    Une collection vide pour le régime déclaré ne s'affiche pas.
+
+   « Mes favoris » ouvre la rubrique, dès qu'il y en a un (BandeFavoris).
    ════════════════════════════════════════════════════════════════════ */
 
 import { useState } from "react";
 import { Search, X } from "lucide-react";
 import type { Recipe } from "@/lib/recipeBank";
+import type { RecentMeal } from "@/lib/repas";
 import { imageRecette, type CollectionRecettes, type IdCollection } from "@/lib/collectionsRecettes";
 import RecipeSearch from "@/components/RecipeSearch";
+import BandeFavoris from "@/components/nutrition/BandeFavoris";
 
-export default function TrouverRecette({ collections, onCollection, onRecette }: {
+export default function TrouverRecette({ collections, favoris, onCollection, onRecette, onFavoris }: {
   collections: CollectionRecettes[];
+  /** `null` tant que les favoris ne sont pas connus. */
+  favoris: { recettes: Recipe[]; plats: RecentMeal[] } | null;
   onCollection: (id: IdCollection) => void;
   onRecette: (r: Recipe) => void;
+  onFavoris: () => void;
 }) {
   const [cherche, setCherche] = useState(false);
 
@@ -37,6 +44,8 @@ export default function TrouverRecette({ collections, onCollection, onRecette }:
       </div>
 
       {cherche && <RecipeSearch onOuvrir={onRecette} autoFocus />}
+
+      {favoris && <BandeFavoris recettes={favoris.recettes} plats={favoris.plats} onOuvrir={onFavoris} />}
 
       <div className="grid grid-cols-3" style={{ gap: "14px 8px" }}>
         {collections.map((c) => (

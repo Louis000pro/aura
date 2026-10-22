@@ -22,6 +22,10 @@ import {
 import { photoDuRepas, estRecetteVaiiya } from "@/lib/photoRepas";
 import { classerRecents, heureLisible, milliers, momentDuRepas, MOMENTS } from "@/lib/repas";
 import { voix } from "@/lib/guides";
+import {
+  PLAFOND_FAVORIS, clePlat, compteFavoris, epinglesAReprendre, favoriDePlat, favoriDeRecette, favoriLu,
+  platsFavoris, platsProposes, recettesFavorites, trierFavoris, type Favori,
+} from "@/lib/favorisNutrition";
 
 let echecs = 0;
 function verdict(nom: string, bon: boolean, detail: string) {
@@ -165,8 +169,84 @@ const fichierPublic = (chemin: string) => existsSync(new URL("../public" + chemi
   verdict("« J'ai déjà mangé · Je saute ce repas » sont partis", !hero.includes("Je saute ce repas") && !hero.includes("déjà mangé"), "l'ajout vit sous la question");
   verdict("la question est datée par le moment du téléphone", hero.includes("`nutrition.question.${moment}`") && ecran.includes("useMomentRepas"), "jamais l'heure du serveur");
   verdict("un total de calories à quatre chiffres ne prend pas le chiffre mono", journee.includes("v < 1000") && journee.includes("milliers("), "l'espace des milliers prendrait une case entière");
-  verdict("une écriture du journal ne vit qu'ici", !/nutrition_logs"\)[\s\S]{0,60}?\.(insert|delete)\(/.test(net(lire("src/components/nutrition/FeuilleAjoutRepas.tsx")) + journee),
-    "la feuille et le détail demandent, l'écran écrit et signale");
+  const demandeurs = [
+    "src/components/nutrition/FeuilleAjoutRepas.tsx", "src/components/nutrition/GrillePlats.tsx",
+    "src/components/nutrition/VueFavoris.tsx", "src/hooks/useFavorisNutrition.ts",
+  ].map((f) => net(lire(f))).join("\n");
+  verdict("une écriture du journal ne vit qu'ici", !/nutrition_logs"\)[\s\S]{0,60}?\.(insert|delete)\(/.test(demandeurs + journee),
+    "la feuille, les grilles et le détail demandent, l'écran écrit et signale");
+}
+
+/* ── 9 · Les favoris : ce qu'ils sont ── */
+{
+  const brut = JSON.stringify([
+    { name: "Yaourt grec au miel", calories: 180.4, proteins: 10, carbs: 20, fats: 6 },
+    { name: "  yaourt GREC au miel ", calories: 1 },
+    { name: "" }, { calories: 3 }, null, "texte",
+    { name: "Pâtes bolo", calories: -5, proteins: "12", carbs: null },
+  ]);
+  const reprises = epinglesAReprendre(brut);
+  verdict("les plats épinglés deviennent des favoris, sans doublon ni ligne vide",
+    reprises.length === 2 && reprises[0].name === "Yaourt grec au miel" && reprises[0].calories === 180, reprises.map((r) => r.name).join(", "));
+  verdict("une macro impossible devient zéro, jamais négative",
+    reprises[1]?.calories === 0 && reprises[1]?.proteins === 12 && reprises[1]?.carbs === 0, JSON.stringify(reprises[1]));
+  verdict("des épingles illisibles ne cassent rien",
+    epinglesAReprendre("{pas du json").length === 0 && epinglesAReprendre(null).length === 0 && epinglesAReprendre('{"name":"x"}').length === 0, "");
+
+  const plat = favoriDePlat({ name: "  Sandwich Jambon-Beurre ", calories: 420.6, proteins: 18, carbs: 45, fats: 17 }, "2026-10-23T10:00:00Z");
+  verdict("un plat se retrouve par son nom comparable", plat.cle === "sandwich jambon-beurre" && plat.nom === "Sandwich Jambon-Beurre" && plat.calories === 421, `${plat.cle} · ${plat.calories}`);
+
+  const [r1, r2] = RECIPES;
+  const disparue: Favori = { sorte: "recette", cle: "recette-disparue", nom: "Disparue", calories: null, proteins: null, carbs: null, fats: null, ajouteLe: "2026-10-23T08:00:00Z" };
+  const favs = trierFavoris([favoriDeRecette(r1, "2026-10-20T08:00:00Z"), favoriDeRecette(r2, "2026-10-22T08:00:00Z"), disparue, plat]);
+  const recettes = recettesFavorites(favs);
+  verdict("une recette favorite qui a quitté la banque ne s'affiche plus", recettes.length === 2, recettes.map((r) => r.id).join(", "));
+  verdict("la plus récente passe devant", recettes[0]?.id === r2.id, recettes[0]?.id ?? "rien");
+  verdict("un plat favori se remet avec ses macros", platsFavoris(favs)[0]?.calories === 421, "");
+
+  const recentsTest = [
+    { name: "Sandwich jambon-beurre", calories: 400, proteins: 1, carbs: 1, fats: 1 },
+    ...Array.from({ length: 12 }, (_, i) => ({ name: `Plat ${i}`, calories: 100, proteins: 1, carbs: 1, fats: 1 })),
+  ];
+  const proposes = platsProposes(platsFavoris(favs), recentsTest);
+  verdict("« Mes plats » : les favoris d'abord, un plat n'y est qu'une fois",
+    proposes[0]?.name === "Sandwich Jambon-Beurre" && proposes.filter((x) => clePlat(x.name) === "sandwich jambon-beurre").length === 1,
+    proposes.slice(0, 3).map((x) => x.name).join(", "));
+  verdict("« Mes plats » : trois rangées de trois", proposes.length === 9, `${proposes.length}`);
+  const beaucoup = Array.from({ length: 14 }, (_, i) => ({ name: `Favori ${i}`, calories: 1, proteins: 1, carbs: 1, fats: 1 }));
+  verdict("« Mes plats » : tous les favoris restent, même au-delà de neuf", platsProposes(beaucoup, recentsTest).length === 14, "");
+
+  verdict("« 6 recettes · 3 plats », le nombre collé à son mot", compteFavoris(6, 3) === "6 recettes · 3 plats", JSON.stringify(compteFavoris(6, 3)));
+  verdict("le singulier, et rien pour ce qui vaut zéro",
+    compteFavoris(1, 0) === "1 recette" && compteFavoris(0, 1) === "1 plat" && compteFavoris(0, 0) === "", "");
+
+  verdict("une ligne qui ne ressemble à rien est ignorée",
+    favoriLu({ sorte: "autre", cle: "x", nom: "x" }) === null && favoriLu({ sorte: "plat", cle: "", nom: "x" }) === null && favoriLu(null) === null, "");
+  verdict("une ligne de la base garde sa date", favoriLu({ sorte: "plat", cle: "x", nom: "X", created_at: "2026-10-23T09:00:00Z" })?.ajouteLe === "2026-10-23T09:00:00Z", "");
+
+  const sql = lire("supabase/migrations/20261023_favoris_nutrition.sql");
+  verdict("le plafond de l'écran est celui de la base", sql.includes(`>= ${PLAFOND_FAVORIS}`), `${PLAFOND_FAVORIS}`);
+  verdict("la table est en RLS, propriétaire seulement, fermée à anon, et part avec le compte",
+    sql.includes("enable row level security") && (sql.match(/user_id = auth\.uid\(\)/g) ?? []).length === 3
+      && sql.includes("revoke all on table public.favoris_nutrition from anon") && sql.includes("on delete cascade"),
+    "lire, ajouter, retirer : les siens");
+}
+
+/* ── 10 · Les favoris dans le chemin ── */
+{
+  const fiche = net(lire("src/components/RecipeSheet.tsx"));
+  verdict("le bouton « Sauver » qui ne gardait rien est parti", !fiche.includes("Bookmark") && !fiche.includes("Sauver") && fiche.includes("aria-pressed={favori}"), "le cœur le remplace");
+  const feuille = net(lire("src/components/nutrition/FeuilleAjoutRepas.tsx"));
+  verdict("l'appui long a quitté « Ajouter un repas »", !feuille.includes("onPointerDown") && !feuille.includes("Appui long") && !feuille.includes("480"), "le cœur se voit");
+  verdict("les épingles de l'appareil sont parties",
+    !existsSync(new URL("../src/hooks/useEpinglesRepas.ts", import.meta.url)) && !net(lire("src/components/NutritionTab.tsx")).includes("useEpinglesRepas"),
+    "elles entrent dans le compte");
+  const crochet = net(lire("src/hooks/useFavorisNutrition.ts"));
+  verdict("les favoris n'écrivent que dans leur table", !crochet.includes("nutrition_logs") && crochet.includes('"favoris_nutrition"'), "jamais dans le journal");
+  verdict("pas de cœur tant que les favoris ne sont pas connus",
+    net(lire("src/components/nutrition/GrillePlats.tsx")).includes("favori !== null") && net(lire("src/components/NutritionTab.tsx")).includes("favoris.connu ? favoris.estPlat : null"),
+    "un cœur vide serait faux");
+  verdict("« Sandwich, snack » ne montre pas de recettes", net(lire("src/components/MealSituationHero.tsx")).includes('sit === "maison" ? recettesFavorites : []'), "une recette se cuisine");
 }
 
 console.log(echecs ? `\n${echecs} échec(s).` : "\nTout passe.");

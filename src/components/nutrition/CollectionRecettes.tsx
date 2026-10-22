@@ -15,17 +15,20 @@
 import { useState } from "react";
 import { ChevronLeft } from "lucide-react";
 import type { Recipe } from "@/lib/recipeBank";
-import { collection, dureeRecette, imageRecette, natureDe, type IdCollection } from "@/lib/collectionsRecettes";
+import { collection, imageRecette, natureDe, type IdCollection } from "@/lib/collectionsRecettes";
 import { PRENOM_GUIDE, type GuideRef } from "@/lib/guides";
 import { VisageGuide } from "@/components/AssistantMark";
+import CarteRecette from "@/components/nutrition/CarteRecette";
 import ns from "@/components/nutrition/Nutrition.module.css";
 
 type Filtre = "tout" | "petit-dej" | "plat";
 
-export default function CollectionRecettes({ id, recettes, guide, onRetour, onOuvrir, onDemander }: {
+export default function CollectionRecettes({ id, recettes, guide, estFavori, onRetour, onOuvrir, onDemander }: {
   id: IdCollection;
   recettes: Recipe[];
   guide: GuideRef;
+  /** Un petit cœur sur la photo d'une recette favorite. */
+  estFavori: (id: string) => boolean;
   onRetour: () => void;
   onOuvrir: (r: Recipe, liste: Recipe[]) => void;
   onDemander: () => void;
@@ -75,14 +78,7 @@ export default function CollectionRecettes({ id, recettes, guide, onRetour, onOu
 
       <div className="grid grid-cols-2" style={{ gap: "18px 10px" }}>
         {visibles.map((r) => (
-          <button key={r.id} type="button" onClick={() => onOuvrir(r, visibles)} className="flex min-w-0 flex-col gap-1.5 text-left cursor-pointer">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={r.image} alt="" loading="lazy" decoding="async"
-              className="block w-full object-cover"
-              style={{ aspectRatio: "1 / 1", borderRadius: "var(--r-bloc)", boxShadow: "var(--ombre-pose)", background: "rgba(var(--accent-rgb),0.10)" }} />
-            <span className="line-clamp-2 px-0.5 text-[16px] font-bold leading-snug" style={{ color: "var(--text-0)" }}>{r.nom}</span>
-            <span className="px-0.5 text-[11px] font-semibold" style={{ color: "var(--text-3)" }}>{dureeRecette(r)}</span>
-          </button>
+          <CarteRecette key={r.id} recette={r} favori={estFavori(r.id)} onOuvrir={() => onOuvrir(r, visibles)} />
         ))}
       </div>
 

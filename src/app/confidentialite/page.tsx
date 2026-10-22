@@ -59,7 +59,7 @@ export default function ConfidentialitePage() {
           <ul className="list-disc list-inside space-y-1">
             <li><strong>Compte :</strong> adresse e-mail, pseudo, nom (si vous le donnez ou si vous vous connectez avec Google), photo de profil, bio, Guide choisi.</li>
             <li><strong>Questionnaire :</strong> âge, taille, poids, genre, objectifs, niveau, rythme d&apos;entraînement, lieu et matériel, nombre de repas, type d&apos;alimentation.</li>
-            <li><strong>Suivi :</strong> séances et séries réalisées, planning, pesées, repas notés, série de jours, EXP et rang, badges.</li>
+            <li><strong>Suivi :</strong> séances et séries réalisées, planning, pesées, repas notés, recettes et plats mis en favori, série de jours, EXP et rang, badges.</li>
             <li><strong>Assistant (votre Guide) :</strong> vos messages, et ce qu&apos;il retient de vous d&apos;une conversation à l&apos;autre (préférences, matériel, objectifs, et ce que vous lui dites de votre santé).</li>
             <li><strong>Photos et voix :</strong> photos de repas et de cartes de restaurant envoyées pour analyse, enregistrements de dictée vocale.</li>
             <li><strong>Social :</strong> amis, conversations et messages (texte et photos), relais, affiches de séance.</li>
