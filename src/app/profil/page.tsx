@@ -26,6 +26,7 @@ import FeuilleAfficheSeance from "@/components/profil/FeuilleAfficheSeance";
 import { type ReglageAffiche, ecrireReglagesAffiches, lireReglagesAffiches } from "@/lib/afficheSeance";
 import CourbePoids from "@/components/profil/CourbePoids";
 import CarteConstance from "@/components/profil/CarteConstance";
+import RecordsProgres from "@/components/profil/RecordsProgres";
 import HistoriqueMasque from "@/components/historique/HistoriqueMasque";
 import { debutHistorique, estVisible, historiqueComplet } from "@/lib/historique";
 import WeighInPrompt from "@/components/WeighInPrompt";
@@ -1139,6 +1140,9 @@ export default function ProfilPage() {
                 />
               </div>
             )}
+
+            {/* Les records : ce que le journal des séries a de meilleur, mouvement par mouvement. */}
+            {user && <RecordsProgres userId={user.id} />}
 
             {historiqueMasque && <HistoriqueMasque className="mb-6" />}
 

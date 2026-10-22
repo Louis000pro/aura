@@ -7013,7 +7013,7 @@ verdict(
   verdict("R5 · le moment compte les séries CONFIRMÉES, jamais le total prévu",
     fin.includes("seriesConfirmees(doneMap)") && !fin.includes("totalSets"), "décision 58");
   verdict("R5 · plus de grille de chiffres (calories, exercices) sur l'écran de fin", !fin.includes("CALORIES") && !fin.includes("DURÉE RÉELLE"), "");
-  verdict("R5 · un seul fait marquant, venu de la règle pure", fin.includes("{fait && gainFin && <CarteProgres fait={fait} gain={gainFin} />}") && t.includes("faitMarquant(emplacementsFinis, historique, seanceIdFin)"), "");
+  verdict("R5 · un seul fait marquant, venu de la règle pure : un nouveau record passe devant le progrès", fin.includes(": fait && gainFin && <CarteProgres fait={fait} gain={gainFin} />}") && fin.includes("{recordFin\n") && t.includes("faitMarquant(emplacementsFinis, historique, seanceIdFin)"), "records 2026-10-22");
   verdict("R5 · les étages dans l'ordre de la maquette du 2026-10-17 : moment, fait, série, proposition",
     fin.indexOf("<TitreFin") < fin.indexOf("<CarteProgres") && fin.indexOf("<CarteProgres") < fin.indexOf("<SerieEtRang")
       && fin.indexOf("<SerieEtRang") < fin.indexOf("<LaProchaineFois") && fin.indexOf("<LaProchaineFois") < fin.indexOf("Voir mes"), "");

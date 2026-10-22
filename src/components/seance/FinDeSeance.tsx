@@ -27,6 +27,7 @@ import { nombreFr } from "@/lib/saisieSerie";
 import { quandRelatif, type FaitMarquant, type Gain } from "@/lib/recapSeance";
 export { gainDuFait } from "@/lib/recapSeance";
 import { progressionRang, type Rang } from "@/lib/aura";
+import { texteRecord, dateRecord, ecartRecord, type RecordMouvement, type Marche, type Perf } from "@/lib/records";
 import { palierFlamme } from "@/lib/flammesSerie";
 
 const ENCRE = { t1: "#F4F1FB", t2: "#A79FC0", doux: "#CFC7E6", lav: "#C9B8FF", rose: "#F0ABFC", exp: "#C3AEFF" };
@@ -143,6 +144,29 @@ export function CarteProgres({ fait, gain }: { fait: FaitMarquant; gain: Gain })
           <p className="text-[11px]" style={{ color: ENCRE.rose }}>Aujourd’hui</p>
           <p className="vy-nombre text-[20px]" style={{ color: ENCRE.t1, fontWeight: 800 }}>{apres}</p>
         </div>
+      </div>
+    </motion.section>
+  );
+}
+
+/* ── 4 bis · Un nouveau record : la seule carte qui brille, parce que
+   c'est la seule nouvelle. Elle prend la place de « Ce qui a changé » :
+   un seul fait marquant à la fois. ── */
+export function CarteRecord({ record, avant, apres }: { record: RecordMouvement; avant: Marche; apres: Perf }) {
+  return (
+    <motion.section initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}
+      className="w-full mt-5 text-left" style={{ borderRadius: 20, padding: 1.5, background: "linear-gradient(135deg, #8B5CF6, #C13BC1)" }}>
+      <div className="flex items-center gap-3.5 px-4 py-3.5" style={{ borderRadius: 19, background: "#18122A" }}>
+        <span className="flex h-[42px] w-[42px] flex-shrink-0 items-center justify-center rounded-full"
+          style={{ background: "linear-gradient(135deg, #8B5CF6, #C13BC1)" }}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="#fff" aria-hidden="true"><path d="M12 2l2.6 6.6L21 9.3l-5 4.4 1.6 6.8L12 17l-5.6 3.5L8 13.7 3 9.3l6.4-.7z" /></svg>
+        </span>
+        <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+          <span className="text-[13px] font-semibold" style={{ color: ENCRE.rose }}>Nouveau record</span>
+          <span className="text-[16px] font-semibold" style={{ color: ENCRE.t1 }}>{record.nom}, {texteRecord(record.mesure, apres)}</span>
+          <span className="text-[13px]" style={{ color: ENCRE.t2 }}>Ton record d’avant : {texteRecord(record.mesure, avant)}, le {dateRecord(avant.quand)}.</span>
+        </span>
+        <b className="vy-nombre flex-shrink-0" style={{ fontSize: 26, fontWeight: 800, color: ENCRE.t1 }}>{ecartRecord(record.mesure, avant, apres)}</b>
       </div>
     </motion.section>
   );

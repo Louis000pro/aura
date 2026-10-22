@@ -11,7 +11,7 @@ import { createPortal } from "react-dom";
 import { Compteur, ReglageCharge } from "@/components/seance/ReglageCharge";
 import { AssistantSpark, VisageGuide, CelebrationGuide, MarqueAssistant } from "@/components/AssistantMark";
 import { voix, nomGuide, type CleVoix } from "@/lib/guides";
-import { CouvertureFin, TitreFin, ChiffresFin, CarteProgres, SerieEtRang, CoinAvis, gainDuFait } from "@/components/seance/FinDeSeance";
+import { CouvertureFin, TitreFin, ChiffresFin, CarteProgres, CarteRecord, SerieEtRang, CoinAvis, gainDuFait } from "@/components/seance/FinDeSeance";
 import { useGuideActif } from "@/context/GuideContext";
 import IntroSeance, { introDuJourAJouer, noterIntroDuJour } from "@/components/seance/IntroSeance";
 import SceneTunnel, { PastilleScene } from "@/components/seance/SceneTunnel";
@@ -55,6 +55,7 @@ import {
 import { fileDeMarges } from "@/lib/fileMarges";
 import { cleCharge, corrigerMarge, cransConfirmes, historiqueDesExercices, referencesDepuisSeries } from "@/lib/progressionBase";
 import { faitMarquant, sousGroupesParExercice, texteSerie } from "@/lib/recapSeance";
+import { lireRecords, recordsParCle, cleRecord, recordBattu, perfDe, depasse, valeurRecord, type RecordMouvement, type Perf } from "@/lib/records";
 import { perfDataToShare, type PerfShareData } from "@/lib/perfShareExport";
 import EnvoyerAffiche from "@/components/communaute/EnvoyerAffiche";
 import QuestionMarge from "@/components/seance/QuestionMarge";
@@ -998,6 +999,8 @@ export default function WorkoutGuideModal({
      la charge de départ (R4) et le fait marquant de la fin s'en servent. */
   const [historique,    setHistorique]    = useState<SerieHistorique[] | null>(null);
   const [crans,         setCrans]         = useState<Map<string, number> | null>(null);
+  /* Les records d'avant la séance, mouvement par mouvement (`lib/records`). */
+  const [records,       setRecords]       = useState<Map<string, RecordMouvement> | null>(null);
   /* Les réponses données dans l'écran de fin, quand le repère terminait
      la séance : elles s'écrivent après l'enregistrement (`corriger_marge`). */
   const [margesFin,     setMargesFin]     = useState<Record<number, Marge>>(reprise?.margesFin ?? {});
@@ -1252,6 +1255,16 @@ export default function WorkoutGuideModal({
     }
     return () => { vivant = false; };
   }, [userId, exercises]);
+  /* Les records se lisent une fois, au montage, sur les mouvements prescrits :
+     ce sont les seuls où l'on déclare un chiffre. */
+  useEffect(() => {
+    if (!userId) return;
+    const cles = exercises.flatMap((ex) => { const p = (ex as ExercicePrescrit).prescription; return p ? [p.cle] : []; });
+    if (cles.length === 0) return;
+    let vivant = true;
+    void lireRecords(userId, cles).then((r) => { if (vivant && r) setRecords(recordsParCle(r)); });
+    return () => { vivant = false; };
+  }, [userId, exercises]);
   const chargeEnCours = useCallback(
     (e: number): number | null => (e in chargeCourante ? (chargeCourante[e] ?? null) : (departDe(e)?.charge ?? null)),
     [chargeCourante, departDe],
@@ -1324,6 +1337,29 @@ export default function WorkoutGuideModal({
   });
   const cibleCur = cibleReps(cur);
   const repsCur  = declare ? repsADeclarer(cibleCur, repsSaisie, { emplacement: exerciseIdx, serie: setIdx }) : null;
+  /* Le record du mouvement en cours, et ce que la série en cours en fait. */
+  const recordCur = effectif ? records?.get(cleRecord(effectif.cle, effectif.nom)) : undefined;
+  const battuCur = recordCur && repsCur !== null
+    ? recordBattu(recordCur, perfDe(recordCur.mesure, { reps: repsCur, dureeS: null, charge: chargeCur }))
+    : null;
+  /* La fin : le premier mouvement dont le meilleur de la séance dépasse son record d'avant. */
+  const recordFin = phase === "done" && records ? (() => {
+    const meilleurs = new Map<string, Perf>();
+    for (const l of lignesCourantes) {
+      if (l.statut !== "terminee") continue;
+      const r = records.get(cleRecord(l.exercice_cle, l.exercice_nom));
+      if (!r) continue;
+      const p = perfDe(r.mesure, { reps: l.reps_declarees, dureeS: l.duree_s, charge: l.charge ?? null });
+      const deja = meilleurs.get(r.cle);
+      if (p && (!deja || depasse(r.mesure, p, deja))) meilleurs.set(r.cle, p);
+    }
+    for (const [cle, p] of meilleurs) {
+      const r = records.get(cle)!;
+      const b = recordBattu(r, p);
+      if (b) return { record: r, ...b };
+    }
+    return null;
+  })() : null;
   /* Le panneau ne vaut que pour la série où il a été ouvert ; tant qu'il
      vaut, le 3-2-1 et le chrono sont suspendus. */
   const choixOuvert = !!changer && choixApplicable(changer, { emplacement: exerciseIdx, serie: setIdx, enEffort: phase === "exercising" });
@@ -1932,6 +1968,15 @@ export default function WorkoutGuideModal({
                           })()}
                         </div>
                       )}
+                      {/* Le record du mouvement : la marque ne s'allume que quand
+                          la série en cours le dépasse. Elle ne dit rien avant. */}
+                      {battuCur && phase === "exercising" && (
+                        <span className="inline-flex items-center gap-1.5 self-start mt-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold text-white"
+                          style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)" }}>
+                          <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l2.6 6.6L21 9.3l-5 4.4 1.6 6.8L12 17l-5.6 3.5L8 13.7 3 9.3l6.4-.7z" /></svg>
+                          Nouveau record · avant {valeurRecord(recordCur!.mesure, battuCur.avant)}
+                        </span>
+                      )}
                     </div>
                     <div className="flex flex-col items-end gap-2 flex-shrink-0 pb-1.5">
                       <span className="text-[13px] font-semibold" style={{ color: CLAIR.t2 }}>Série {setIdx + 1} sur {cur.sets}</span>
@@ -2354,11 +2399,11 @@ export default function WorkoutGuideModal({
                     chiffres, le progrès et la série. Les morceaux vivent
                     dans `seance/FinDeSeance.tsx` ; le tunnel ne leur donne
                     que ce que le journal a enregistré. */}
-                <CouvertureFin titre={title} fete={!!gainFin}
+                <CouvertureFin titre={title} fete={!!gainFin || !!recordFin}
                   guide={guide ? <CelebrationGuide guide={guide} hauteur="clamp(210px, 32vh, 260px)" /> : null} />
                 <TitreFin
-                  titre={voix(guide, gainFin ? "seance.fin.titre.fait" : "seance.fin.titre.calme")}
-                  phrase={voix(guide, gainFin ? "seance.fin.fait" : "seance.fin.calme")}
+                  titre={voix(guide, gainFin || recordFin ? "seance.fin.titre.fait" : "seance.fin.titre.calme")}
+                  phrase={voix(guide, gainFin || recordFin ? "seance.fin.fait" : "seance.fin.calme")}
                   nom={guide ? nomGuide(guide) : null} />
                 <ChiffresFin items={[
                   { v: Math.max(1, Math.round(elapsed / 60)), l: "minutes" },
@@ -2367,7 +2412,10 @@ export default function WorkoutGuideModal({
                 ]} />
 
                 {/* 2 · Le progrès : vérifiable, et jamais un chiffre négatif. */}
-                {fait && gainFin && <CarteProgres fait={fait} gain={gainFin} />}
+                {/* Un nouveau record passe devant : un seul fait marquant à la fois. */}
+                {recordFin
+                  ? <CarteRecord record={recordFin.record} avant={recordFin.avant} apres={recordFin.apres} />
+                  : fait && gainFin && <CarteProgres fait={fait} gain={gainFin} />}
 
                 {/* 4 · La série et le rang, un seul groupe à filet. */}
                 <SerieEtRang serie={serieDuJour} exp={expFin} />
