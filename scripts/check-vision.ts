@@ -59,7 +59,10 @@ ok(momentDuRepas(8) === "petit-dejeuner" && momentDuRepas(12) === "dejeuner"
   "le moment du repas se déduit de l'heure");
 
 // 8. Contrôles de SOURCE : le chemin de la photo.
-const nutri = readFileSync("src/components/NutritionTab.tsx", "utf8");
+/* Les deux envois vivent dans leurs modales depuis le 2026-10-22 : elles sont
+   sorties de NutritionTab.tsx, le contrôle les lit là où elles sont. */
+const nutri = ["src/components/nutrition/PhotoAnalysisModal.tsx", "src/components/nutrition/MenuScanModal.tsx"]
+  .map((f) => readFileSync(f, "utf8")).join("\n");
 ok((nutri.match(/preparerPhotoIA\(file/g) ?? []).length === 2, "les deux envois (assiette et carte) préparent la photo avant l'envoi");
 ok(!/image: base64, mimeType: file\.type/.test(nutri), "aucun envoi ne part avec la photo brute");
 const route = readFileSync("src/app/api/nutrition/analyze/route.ts", "utf8");

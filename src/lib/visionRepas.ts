@@ -156,13 +156,10 @@ export function calculerRepas(brut: Record<string, unknown>): AnalyseRepas | nul
   };
 }
 
-/** Le moment du repas, d'après l'heure LOCALE de la personne (jamais le modèle). */
-export function momentDuRepas(heure: number): "petit-dejeuner" | "dejeuner" | "gouter" | "diner" {
-  if (heure >= 4 && heure < 11) return "petit-dejeuner";
-  if (heure >= 11 && heure < 15) return "dejeuner";
-  if (heure >= 15 && heure < 18) return "gouter";
-  return "diner";
-}
+/* Le moment du repas, d'après l'heure LOCALE de la personne (jamais le
+   modèle). La règle vit dans `lib/repas`, que l'écran lit aussi : une seule
+   borne pour la route et pour l'écran. */
+export { momentDuRepas } from "./repas";
 
 /* ── L'appel au modèle de vision, avec repli ────────────────────────────
    Une seule écriture pour l'analyse d'assiette ET la lecture de carte :
