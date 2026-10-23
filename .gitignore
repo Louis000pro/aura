@@ -46,5 +46,8 @@ seed_videos/
 # planches brutes des pictogrammes de missions (entree de `npm run missions`)
 /missions-src
 
+# photos brutes des recettes exportees de ChatGPT, avant conversion en 800 x 800
+/recettes-src
+
 # Fichiers de travail de la CLI Supabase (recrees a chaque appel)
 supabase/.temp/
