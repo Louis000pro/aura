@@ -102,6 +102,8 @@ export default function FilPage() {
   const [modifie, setModifie]   = useState<Message | null>(null);
   const brouillonAvantModif     = useRef("");
   const [menu, setMenu]         = useState<Message | null>(null);
+  // Un appui court ouvre les réactions, un appui long les actions.
+  const [modeMenu, setModeMenu] = useState<"reactions" | "actions">("actions");
   const [ecrivent, setEcrivent] = useState<string[]>([]);
   const [occupe, setOccupe]     = useState(false);
   const [erreur, setErreur]     = useState<string | null>(null);
@@ -654,7 +656,7 @@ export default function FilPage() {
       )}
 
       {/* ─── Les messages ─── */}
-      <div ref={listeRef} className="relative z-10 flex-1 overflow-y-auto px-3 py-2">
+      <div ref={listeRef} className="relative z-10 flex-1 select-none overflow-y-auto px-3 py-2" style={{ WebkitUserSelect: "none", WebkitTouchCallout: "none" }}>
         {encoreAvant && (
           <div className="flex justify-center pb-2 pt-1">
             <button
@@ -717,7 +719,7 @@ export default function FilPage() {
                     couleur={c}
                     surAffiche={surAffiche}
                     cite={m.repondA ? messages.find((x) => x.id === m.repondA) ?? null : null}
-                    onMenu={() => setMenu(m)}
+                    onMenu={(mode) => { setModeMenu(mode); setMenu(m); }}
                   />
                 )}
               </div>
@@ -926,6 +928,7 @@ export default function FilPage() {
         {menu && user && (
           <MenuMessage
             message={menu}
+            mode={modeMenu}
             moi={moi}
             mienne={menu.reactions.find((r) => r.userIds.includes(moi))?.emoji ?? null}
             onFermer={() => setMenu(null)}
@@ -946,7 +949,7 @@ type Couleurs = { t0: string; t1: string; t2: string; t3: string; carte: string;
 
 function Bulle({ message: m, moi, conv, couleur: c, surAffiche, cite, onMenu }: {
   message: Message; moi: string; conv: Conversation; couleur: Couleurs;
-  surAffiche: boolean; cite: Message | null; onMenu: () => void;
+  surAffiche: boolean; cite: Message | null; onMenu: (mode: "reactions" | "actions") => void;
 }) {
   const aMoi = m.userId === moi;
   const auteur = conv.membres.find((x) => x.id === m.userId);
@@ -956,7 +959,18 @@ function Bulle({ message: m, moi, conv, couleur: c, surAffiche, cite, onMenu }: 
   const timer = useRef<number | null>(null);
   const debut = useRef<{ x: number; y: number } | null>(null);
 
+  // Vrai dès que le doigt a bougé ou que l'appui long a déjà ouvert le
+  // menu : le relâcher n'ouvre alors pas les réactions par-dessus.
+  const annule = useRef(false);
+
   const stop = () => { if (timer.current) { window.clearTimeout(timer.current); timer.current = null; } };
+
+  // Le téléphone sélectionne du texte sur un appui long : on retire toute
+  // sélection au moment où le menu s'ouvre.
+  const ouvrir = (mode: "reactions" | "actions") => {
+    window.getSelection?.()?.removeAllRanges();
+    onMenu(mode);
+  };
 
   return (
     <div className={`flex flex-col ${aMoi ? "items-end" : "items-start"}`}>
@@ -967,20 +981,34 @@ function Bulle({ message: m, moi, conv, couleur: c, surAffiche, cite, onMenu }: 
       )}
 
       <div
-        onContextMenu={(e) => { e.preventDefault(); onMenu(); }}
+        onContextMenu={(e) => { e.preventDefault(); stop(); annule.current = true; ouvrir("actions"); }}
         onPointerDown={(e) => {
+          // Le bouton lecture d'un vocal et le lien d'une photo gardent
+          // leur propre toucher : ils ne lancent ni réactions ni actions.
+          const interactif = (e.target as HTMLElement).closest("button, a");
+          annule.current = !!interactif;
           debut.current = { x: e.clientX, y: e.clientY };
-          timer.current = window.setTimeout(onMenu, 420);
+          stop();
+          timer.current = window.setTimeout(() => {
+            timer.current = null;
+            annule.current = true;
+            navigator.vibrate?.(12);
+            ouvrir("actions");
+          }, 420);
         }}
         onPointerMove={(e) => {
           if (!debut.current) return;
           const d = Math.hypot(e.clientX - debut.current.x, e.clientY - debut.current.y);
-          if (d > 8) stop();
+          if (d > 8) { stop(); annule.current = true; }
         }}
-        onPointerUp={stop}
-        onPointerCancel={stop}
-        onPointerLeave={stop}
-        className={`max-w-[80%] select-none [-webkit-touch-callout:none] text-[16px] leading-snug ${m.type === "image" ? "p-1" : "px-3.5 py-2"}`}
+        onPointerUp={() => {
+          const court = timer.current !== null && !annule.current;
+          stop();
+          debut.current = null;
+          if (court) ouvrir("reactions");
+        }}
+        onPointerCancel={() => { stop(); annule.current = true; }}
+        className={`max-w-[80%] cursor-pointer select-none [-webkit-touch-callout:none] text-[16px] leading-snug ${m.type === "image" ? "p-1" : "px-3.5 py-2"}`}
         style={
           aMoi
             ? { background: "linear-gradient(135deg, #8B5CF6, #C13BC1)", color: "#fff",
@@ -1158,20 +1186,23 @@ function DefiEpingle({ defi, etat, surAffiche, onOuvrir }: {
 }
 
 /* ─── Le menu d'appui long ───────────────────────────────────── */
-function MenuMessage({ message, moi, mienne, onFermer, onReaction, onRepondre, onCopier, onSupprimer, onModifier }: {
-  message: Message; moi: string; mienne: string | null;
+function MenuMessage({ message, mode, moi, mienne, onFermer, onReaction, onRepondre, onCopier, onSupprimer, onModifier }: {
+  message: Message; mode: "reactions" | "actions"; moi: string; mienne: string | null;
   onFermer: () => void; onReaction: (emoji: string) => void;
   onRepondre: () => void; onCopier: () => void; onSupprimer: () => void; onModifier: () => void;
 }) {
   // Supprimer se confirme d'un second toucher : un message parti ne revient pas.
   const [confirmer, setConfirmer] = useState(false);
+  // Le doigt qui se relève après un appui long ne doit pas refermer la
+  // feuille qu'il vient d'ouvrir.
+  const [ouvertLe] = useState(() => Date.now());
   const aMoi = message.userId === moi;
 
   const actions = useMemo(() => [
-    { cle: "repondre", libelle: "Répondre",  Icone: Reply, action: onRepondre, danger: false },
     ...(message.type === "texte"
       ? [{ cle: "copier", libelle: "Copier", Icone: Copy, action: onCopier, danger: false }]
       : []),
+    { cle: "repondre", libelle: "Répondre",  Icone: Reply, action: onRepondre, danger: false },
     ...(aMoi && message.type === "texte"
       ? [{ cle: "modif", libelle: "Modifier", Icone: Pencil, action: onModifier, danger: false }]
       : []),
@@ -1191,7 +1222,7 @@ function MenuMessage({ message, moi, mienne, onFermer, onReaction, onRepondre, o
       <motion.div
         className="fixed inset-0 z-[90] bg-black/50"
         initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-        onClick={onFermer}
+        onClick={() => { if (Date.now() - ouvertLe > 400) onFermer(); }}
       />
       <motion.div
         role="dialog"
@@ -1206,7 +1237,8 @@ function MenuMessage({ message, moi, mienne, onFermer, onReaction, onRepondre, o
       >
         <div className="mx-auto mb-4 h-1 w-10 rounded-full" style={{ background: "rgba(var(--text-3-rgb), .35)" }} />
 
-        <div className="mb-3 flex justify-between px-1">
+        {mode === "reactions" && (
+        <div className="mb-1 flex justify-between px-1">
           {EMOJIS.map((e) => (
             <button
               key={e}
@@ -1218,8 +1250,9 @@ function MenuMessage({ message, moi, mienne, onFermer, onReaction, onRepondre, o
             </button>
           ))}
         </div>
+        )}
 
-        {actions.map(({ cle, libelle, Icone, action, danger }) => (
+        {mode === "actions" && actions.map(({ cle, libelle, Icone, action, danger }) => (
           <button
             key={cle}
             onClick={action}
