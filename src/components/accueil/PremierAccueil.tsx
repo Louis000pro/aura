@@ -25,6 +25,7 @@ import { ChevronRight } from "lucide-react";
 import { readLieu } from "@/lib/planning";
 import { workoutSessions } from "@/lib/catalogueSeances";
 import { heroImageForSeance } from "@/lib/workoutArt";
+import { cheminDuGuide } from "@/lib/photosGuide";
 import { voix, nomGuide, type GuideRef } from "@/lib/guides";
 import { BusteGuide } from "@/components/AssistantMark";
 import { useWorkoutLaunch } from "@/context/WorkoutLaunchContext";
@@ -100,7 +101,7 @@ export default function PremierAccueil({ userId, pseudo, guide, onFermer }: {
           style={{ borderRadius: "var(--r-bloc)", background: "linear-gradient(135deg, #8B5CF6, #C13BC1)", boxShadow: "var(--ombre-action)" }}
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={photo} alt="" className="h-14 w-14 shrink-0 object-cover" style={{ borderRadius: "var(--r-controle)" }} />
+          <img src={cheminDuGuide(photo, guide)} alt="" className="h-14 w-14 shrink-0 object-cover" style={{ borderRadius: "var(--r-controle)" }} />
           <span className="min-w-0 flex-1">
             <b className="block text-[16px]" style={{ fontWeight: 800 }}>Commencer ma première séance</b>
             <span className="vy-nombre block text-[11px] opacity-90">

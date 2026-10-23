@@ -221,9 +221,17 @@ export function GuideProvider({ children }: { children: React.ReactNode }) {
 
   /* Dérivé au rendu : tant que la lecture en cours ne porte pas sur le
      compte courant, on n'expose ni son état ni son Guide. */
+  /* ⚠️ Le cache se lit AUSSI ici, au rendu, et pas seulement dans
+     l'effet (2026-10-23, Louis : « je suis avec Sasha et j'ai encore les
+     images sombres d'avant »). Sans ça, chaque ouverture passait par une
+     image en « chargement », donc sans Guide : les photos partaient en
+     version neutre, se téléchargeaient, puis basculaient. Le cache n'est
+     écrit qu'après une confirmation de la base, donc il dit la vérité
+     d'hier, et la lecture en cours la corrige si elle a changé. */
   const aJour = lu && lu.pour === userId;
-  const etat: EtatGuide = aJour ? lu.etat : userId ? "chargement" : "inconnu";
-  const guide: GuideRef = aJour ? lu.guide : null;
+  const cache = !aJour && userId ? lireCache(userId) : null;
+  const etat: EtatGuide = aJour ? lu.etat : cache ? "actif" : userId ? "chargement" : "inconnu";
+  const guide: GuideRef = aJour ? lu.guide : cache;
 
   return (
     <Ctx.Provider value={{ etat, guide, choisirGuide, relire }}>

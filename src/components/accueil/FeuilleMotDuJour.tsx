@@ -46,6 +46,8 @@ import { dayTitle, readLieu } from "@/lib/planning";
 import { parisHour } from "@/lib/dates";
 import { workoutSessions } from "@/lib/catalogueSeances";
 import { heroImageForSeance } from "@/lib/workoutArt";
+import { cheminDuGuide } from "@/lib/photosGuide";
+import { useGuideActif } from "@/context/GuideContext";
 import { PRENOM_GUIDE, morceauxMatin, texteBrut, type GuideRef } from "@/lib/guides";
 import {
   basculerDefi, choisirMot, conseilDuMot, defiFait, lignesDuMot, lireChoixDuJour, lireFaitsMot,
@@ -531,9 +533,10 @@ function SeanceCourte({ debut, texte, userId, onLancer }: {
   onLancer: (id: string) => void;
 }) {
   const [id] = useState(() => (debut && readLieu(userId).location === "salle" ? "salle-decouverte" : "express-12"));
+  const { guide } = useGuideActif();
   const s = workoutSessions.find((x) => x.id === id);
   if (!s) return <p className={styles.texte}>{texte}</p>;
-  const photo = heroImageForSeance({ title: s.title, category: s.category });
+  const photo = cheminDuGuide(heroImageForSeance({ title: s.title, category: s.category }), guide);
   return (
     <>
       <div className={styles.seance}>
