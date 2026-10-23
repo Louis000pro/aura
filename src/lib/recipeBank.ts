@@ -395,7 +395,7 @@ export const RECIPES: Recipe[] = [
       { nom: "Oignon rouge", qte: 0.5, unite: "" },
       { nom: "Feuilles de laitue", qte: 2, unite: "" },
       { nom: "Yaourt à la grecque", qte: 1, unite: "pot" },
-      { nom: "Moutarde douce", qte: 1, unite: "cc" },
+      { nom: "Moutarde douce", qte: 1, unite: "c. à café" },
       { nom: "Huile d’olive", qte: 1, unite: "filet" },
     ],
     ustensiles: ["Poêle grill", "Couteau", "Planche à découper", "Bol"],
@@ -430,9 +430,9 @@ export const RECIPES: Recipe[] = [
       { nom: "Pain complet (pour les croutons)", qte: 50, unite: "g" },
       { nom: "Copeaux de parmesan", qte: 20, unite: "g" },
       { nom: "Yaourt blanc nature 0%", qte: 1, unite: "pot" },
-      { nom: "Jus de citron", qte: 1, unite: "cc" },
-      { nom: "Moutarde", qte: 1, unite: "cc" },
-      { nom: "Huile d’olive", qte: 1, unite: "cs" },
+      { nom: "Jus de citron", qte: 1, unite: "c. à café" },
+      { nom: "Moutarde", qte: 1, unite: "c. à café" },
+      { nom: "Huile d’olive", qte: 1, unite: "c. à soupe" },
       { nom: "Ail en poudre", qte: 1, unite: "pincée" },
     ],
     ustensiles: ["Poêle", "Saladier", "Couteau", "Planche à découper", "Bol"],
@@ -869,7 +869,7 @@ export const RECIPES: Recipe[] = [
     diet: ["vegetarien"],
     tags: ["riche en fibres", "healthy", "rapide"],
     ingredients: [
-      { nom: "Pain complet", qte: 2, unite: "tranches" },
+      { nom: "Pain complet", qte: 2, unite: "tranche" },
       { nom: "Avocat", qte: 1, unite: "" },
       { nom: "Jus de citron", qte: 10, unite: "ml" },
       { nom: "Huile d’olive", qte: 10, unite: "ml" },
@@ -1227,7 +1227,7 @@ export const RECIPES: Recipe[] = [
       { nom: "Poudre d’amande", qte: 30, unite: "g" },
       { nom: "Cacao en poudre non sucré", qte: 20, unite: "g" },
       { nom: "Levure chimique", qte: 6, unite: "g" },
-      { nom: "Sel", qte: 1, unite: "pincee" },
+      { nom: "Sel", qte: 1, unite: "pincée" },
       { nom: "Œuf", qte: 1, unite: "" },
       { nom: "Compote de pommes sans sucre", qte: 100, unite: "g" },
       { nom: "Lait demi-écrémé", qte: 100, unite: "ml" },
@@ -1267,7 +1267,7 @@ export const RECIPES: Recipe[] = [
       { nom: "Flocons d’avoine", qte: 40, unite: "g" },
       { nom: "Levure chimique", qte: 6, unite: "g" },
       { nom: "Sucre complet", qte: 35, unite: "g" },
-      { nom: "Sel", qte: 1, unite: "pincee" },
+      { nom: "Sel", qte: 1, unite: "pincée" },
       { nom: "Œuf", qte: 1, unite: "" },
       { nom: "Yaourt nature", qte: 100, unite: "g" },
       { nom: "Huile de colza", qte: 20, unite: "ml" },
@@ -1354,7 +1354,7 @@ export const RECIPES: Recipe[] = [
       { nom: "Cacao en poudre non sucré", qte: 10, unite: "g" },
       { nom: "Huile de colza", qte: 15, unite: "ml" },
       { nom: "Extrait de vanille", qte: 5, unite: "ml" },
-      { nom: "Sel", qte: 1, unite: "pincee" },
+      { nom: "Sel", qte: 1, unite: "pincée" },
     ],
     ustensiles: ["Saladier", "Casserole", "Fouet", "Spatule", "Moule carré", "Four"],
     steps: [
@@ -1389,7 +1389,7 @@ export const RECIPES: Recipe[] = [
       { nom: "Sucre complet", qte: 30, unite: "g" },
       { nom: "Gousse de vanille", qte: 1, unite: "" },
       { nom: "Fécule de maïs", qte: 8, unite: "g" },
-      { nom: "Sel", qte: 1, unite: "pincee" },
+      { nom: "Sel", qte: 1, unite: "pincée" },
       { nom: "Cannelle moulue", qte: 1, unite: "g" },
     ],
     ustensiles: ["Casserole", "Spatule en bois", "Petit fouet", "Bol"],
@@ -1427,7 +1427,7 @@ export const RECIPES: Recipe[] = [
       { nom: "Miel", qte: 10, unite: "g" },
       { nom: "Extrait de vanille", qte: 5, unite: "ml" },
       { nom: "Citron", qte: 0.5, unite: "" },
-      { nom: "Sel", qte: 1, unite: "pincee" },
+      { nom: "Sel", qte: 1, unite: "pincée" },
     ],
     ustensiles: ["Saladier", "Fouet", "Spatule", "Moule à madeleines", "Casserole", "Réfrigérateur", "Four"],
     steps: [
@@ -1703,10 +1703,10 @@ export const RECIPES: Recipe[] = [
     tags: ["boisson", "rafraîchissant", "été"],
     ingredients: [
       { nom: "Eau", qte: 600, unite: "ml" },
-      { nom: "Thé noir", qte: 2, unite: "sachets" },
+      { nom: "Thé noir", qte: 2, unite: "sachet" },
       { nom: "Pêche", qte: 2, unite: "" },
       { nom: "Sirop d’agave", qte: 20, unite: "g" },
-      { nom: "Menthe fraîche", qte: 8, unite: "feuilles" },
+      { nom: "Menthe fraîche", qte: 8, unite: "feuille" },
       { nom: "Jus de citron", qte: 10, unite: "ml" },
       { nom: "Glaçons", qte: 10, unite: "" },
     ],
@@ -1740,7 +1740,7 @@ export const RECIPES: Recipe[] = [
       { nom: "Citron jaune", qte: 3, unite: "" },
       { nom: "Eau fraîche", qte: 500, unite: "ml" },
       { nom: "Sirop d’agave", qte: 25, unite: "g" },
-      { nom: "Menthe fraîche", qte: 12, unite: "feuilles" },
+      { nom: "Menthe fraîche", qte: 12, unite: "feuille" },
       { nom: "Glaçons", qte: 10, unite: "" },
       { nom: "Rondelle de citron", qte: 4, unite: "" },
     ],
@@ -2057,7 +2057,7 @@ export const RECIPES: Recipe[] = [
       { nom: "Jaune d'œuf", qte: 2, unite: "" },
       { nom: "Sucre", qte: 50, unite: "g" },
       { nom: "Extrait de vanille", qte: 5, unite: "ml" },
-      { nom: "Sel", qte: 1, unite: "pincee" },
+      { nom: "Sel", qte: 1, unite: "pincée" },
     ],
     ustensiles: ["Casserole", "Fouet", "Saladier", "Spatule", "Boîte hermétique", "Congélateur"],
     steps: [
@@ -2087,7 +2087,7 @@ export const RECIPES: Recipe[] = [
     diet: [],
     tags: ["rapide", "gourmand", "revisité"],
     ingredients: [
-      { nom: "Pain de mie complet", qte: 4, unite: "tranches" },
+      { nom: "Pain de mie complet", qte: 4, unite: "tranche" },
       { nom: "Blanc de poulet", qte: 160, unite: "g" },
       { nom: "Emmental râpé", qte: 80, unite: "g" },
       { nom: "Pesto", qte: 30, unite: "g" },
@@ -2967,6 +2967,45 @@ export const RECIPES: Recipe[] = [
     carbs: 34,
     fats: 30,
   },
+  {
+    id: "veloute-de-potimarron-et-chataignes",
+    nom: "Velouté de potimarron et châtaignes",
+    description: "Un velouté doux et onctueux au potimarron et aux châtaignes, parfait pour une entrée d’hiver festive et réconfortante.",
+    image: "/recipes/veloute-de-potimarron-et-chataignes.jpg",
+    mealTypes: ["diner"],
+    portions: 2,
+    prepMin: 15,
+    cookMin: 25,
+    difficulty: "facile",
+    diet: ["vegetarien", "sans-gluten"],
+    tags: ["festif", "réconfortant", "riche en fibres"],
+    ingredients: [
+      { nom: "Potimarron", qte: 500, unite: "g" },
+      { nom: "Châtaigne cuite", qte: 150, unite: "g" },
+      { nom: "Oignon", qte: 1, unite: "" },
+      { nom: "Pomme de terre", qte: 150, unite: "g" },
+      { nom: "Huile d’olive", qte: 1, unite: "c. à soupe" },
+      { nom: "Bouillon de légumes", qte: 700, unite: "ml" },
+      { nom: "Crème fraîche", qte: 40, unite: "g" },
+      { nom: "Noix de muscade", qte: 1, unite: "pincée" },
+      { nom: "Sel", qte: 2, unite: "pincée" },
+      { nom: "Poivre noir", qte: 1, unite: "pincée" },
+    ],
+    ustensiles: ["Couteau", "Planche à découper", "Casserole", "Mixeur plongeant", "Louche"],
+    steps: [
+      "Laver le potimarron, retirer les graines et le couper en morceaux avec sa peau, puis éplucher et couper la pomme de terre et l’oignon.",
+      "Faire revenir l’oignon dans l’huile d’olive pendant 3 minutes à feu moyen.",
+      "Ajouter le potimarron, la pomme de terre et 100 g de châtaignes, puis remuer pendant 2 minutes.",
+      "Verser le bouillon de légumes, porter à ébullition puis cuire 20 minutes à feu doux.",
+      "Mixer avec 30 g de crème fraîche, la noix de muscade, le sel et le poivre jusqu’à obtenir un velouté lisse.",
+      "Concasser le reste des châtaignes au couteau.",
+      "Servir chaud avec un filet du reste de crème et les châtaignes concassées sur le dessus.",
+    ],
+    calories: 433,
+    proteins: 8,
+    carbs: 62,
+    fats: 15,
+  },
 ];
 
 /* ─── Sélection ─── */
@@ -3103,12 +3142,23 @@ export function fitReason(r: Recipe, needs: DayNeeds): string | null {
   return null;
 }
 
-/* Quantité mise à l'échelle du nombre de portions choisi. */
+/* Une unité qui se compte prend un s à partir de deux (« 2 gousses »,
+   mais « 1,5 tranche »). Les unités s'écrivent au singulier dans la banque. */
+const PLURIEL_UNITE: Record<string, string> = {
+  gousse: "gousses", tranche: "tranches", pincée: "pincées", feuille: "feuilles",
+  bâton: "bâtons", sachet: "sachets", pot: "pots", filet: "filets",
+};
+
+/* Quantité mise à l'échelle du nombre de portions choisi, écrite à la
+   française : virgule décimale, et une espace insécable avant l'unité. */
 export function scaledQty(ing: RecipeIngredient, portions: number, base: number): string {
   if (!ing.qte) return ing.unite ? ing.unite : "—";
   const factor = base > 0 ? portions / base : 1;
   const v = ing.qte * factor;
   const rounded = Math.round(v * 100) / 100;
-  const val = Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(rounded < 1 ? 2 : 1);
-  return ing.unite ? `${val} ${ing.unite}` : val;
+  const val = Number.isInteger(rounded)
+    ? String(rounded)
+    : String(Number(rounded.toFixed(rounded < 1 ? 2 : 1))).replace(".", ",");
+  const unite = rounded >= 2 ? (PLURIEL_UNITE[ing.unite] ?? ing.unite) : ing.unite;
+  return unite ? `${val} ${unite}` : val;
 }

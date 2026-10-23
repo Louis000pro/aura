@@ -105,6 +105,7 @@ export const NATURE: Record<string, NatureRecette> = {
   "brochettes-boeuf-poivron-oignon": "plat",
   "panzanella-toscane": "plat",
   "salade-nicoise": "plat",
+  "veloute-de-potimarron-et-chataignes": "entree",
 };
 
 /** La nature d'une recette. Sans entrée écrite (une recette toute neuve),
