@@ -17,6 +17,7 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { ChevronLeft, Heart, Minus, Plus, Check, RefreshCw, Utensils, Carrot, Sparkles } from "lucide-react";
 import { type Recipe, scaledQty, ingredientImg, utensilImg } from "@/lib/recipeBank";
+import { enHeures } from "@/lib/collectionsRecettes";
 import { lockBodyModal } from "@/lib/bodyModal";
 
 type LoggedMeal = { name: string; calories: number; proteins: number; carbs: number; fats: number };
@@ -177,7 +178,7 @@ export default function RecipeSheet({
                 <span key={t} className="text-[11px] px-2.5 py-1 rounded-full" style={{ background: "rgba(var(--tint-violet-rgb),0.7)", color: "var(--text-2)", border: "1px solid rgba(var(--violet-mid-rgb),0.35)" }}>{t}</span>
               ))}
               <span className="text-[11px] px-2.5 py-1 rounded-full" style={{ background: "rgba(var(--tint-violet-rgb),0.7)", color: "var(--text-2)", border: "1px solid rgba(var(--violet-mid-rgb),0.35)" }}>
-                {recipe.prepMin + recipe.cookMin > 0 ? `prêt en ${recipe.prepMin + recipe.cookMin} min` : "rapide"}
+                {recipe.prepMin + recipe.cookMin > 0 ? `prêt en ${enHeures(recipe.prepMin + recipe.cookMin)}` : "rapide"}
               </span>
             </div>
           </div>

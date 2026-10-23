@@ -117,6 +117,36 @@ export const NATURE: Record<string, NatureRecette> = {
   "porridge-poire-cannelle": "petit-dej",
   "crumble-pomme-poire-a-l-avoine": "dessert",
   "chocolat-chaud-proteine": "boisson",
+  "pain-perdu-proteine-a-la-cannelle": "petit-dej",
+  "oeufs-cocotte-epinards-jambon": "petit-dej",
+  "granola-maison-pomme-cannelle": "petit-dej",
+  "bowl-de-skyr-kiwi-et-clementine": "petit-dej",
+  "harira-aux-lentilles-et-pois-chiches": "plat",
+  "pho-au-boeuf": "plat",
+  "minestrone-d-hiver": "plat",
+  "pot-au-feu": "plat",
+  "boeuf-bourguignon": "plat",
+  "blanquette-de-veau-legere": "plat",
+  "petit-sale-aux-lentilles": "plat",
+  "tartiflette-allegee": "plat",
+  "lasagnes-epinards-ricotta": "plat",
+  "galettes-de-sarrasin-completes": "plat",
+  "omelette-aux-champignons-et-ciboulette": "plat",
+  "poulet-tikka-masala": "plat",
+  "mafe-de-poulet": "plat",
+  "curry-thai-de-legumes-au-tofu": "plat",
+  "moules-marinieres-et-frites-au-four": "plat",
+  "noix-de-saint-jacques-puree-de-celeri": "plat",
+  "magret-de-canard-a-l-orange": "plat",
+  "verrines-avocat-crevettes": "entree",
+  "buche-roulee-au-chocolat": "dessert",
+  "galette-des-rois-frangipane": "dessert",
+  "vin-chaud-sans-alcool": "boisson",
+  "soupe-a-l-oignon-gratinee": "entree",
+  "houmous-de-betterave": "entree",
+  "salade-d-agrumes-et-grenade": "dessert",
+  "poires-pochees-aux-epices": "dessert",
+  "golden-latte-au-curcuma": "boisson",
 };
 
 /** La nature d'une recette. Sans entrée écrite (une recette toute neuve),
@@ -149,6 +179,11 @@ export const REPOS: Record<string, { min: number; texte?: string }> = {
   "boules-d-energie-canadiennes": { min: 20 },
   "gambas-grillees-ail-persil": { min: 10 },
   "blinis-au-saumon-fume": { min: 5 },
+  "granola-maison-pomme-cannelle": { min: 20 },
+  "lasagnes-epinards-ricotta": { min: 5 },
+  "poulet-tikka-masala": { min: 30 },
+  "buche-roulee-au-chocolat": { min: 120, texte: "2 h au frais" },
+  "galette-des-rois-frangipane": { min: 30 },
   "salade-de-pates-d-ete": { min: 10 },
   "coleslaw-maison": { min: 10 },
   "panzanella-toscane": { min: 10 },
@@ -165,11 +200,18 @@ export function minutesTotales(r: Recipe): number {
   return r.prepMin + r.cookMin + (REPOS[r.id]?.min ?? 0);
 }
 
+/** « 45 min », ou « 3 h 20 » à partir d’une heure : « 200 min » ne se lit pas. */
+export function enHeures(minutes: number): string {
+  if (minutes < 60) return `${minutes} min`;
+  const h = Math.floor(minutes / 60), m = minutes % 60;
+  return m ? `${h} h ${String(m).padStart(2, "0")}` : `${h} h`;
+}
+
 /** « 20 min », ou « 10 min · une nuit au frais » quand le repos est long. */
 export function dureeRecette(r: Recipe): string {
   const repos = REPOS[r.id];
-  if (repos?.texte) return `${r.prepMin + r.cookMin} min · ${repos.texte}`;
-  return `${minutesTotales(r)} min`;
+  if (repos?.texte) return `${enHeures(r.prepMin + r.cookMin)} · ${repos.texte}`;
+  return enHeures(minutesTotales(r));
 }
 
 /* ── Le régime ─────────────────────────────────────────────────────────
