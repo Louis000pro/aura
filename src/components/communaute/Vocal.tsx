@@ -7,9 +7,12 @@
    saisie (point qui bat, chrono, « Annuler », flèche d'envoi). Une
    minute au plus : à 60 s l'enregistrement s'arrête et part tout seul.
 
-   ⚠️ 32 kbit/s, mono, et `audio/mp4` en priorité : c'est le format que
-   Safari ET Chrome savent relire, et une minute pèse ~240 Ko. Le coût en
-   stockage reste négligeable (voir 20261022_messages_vocaux.sql).
+   ⚠️ 128 kbit/s et `audio/mp4` en priorité : c'est le format que Safari
+   ET Chrome savent relire. 32 kbit/s rendait une voix étouffée et
+   métallique (Louis, 2026-10-23). Une minute pèse ~1 Mo, sous la limite
+   de 5 Mo du bucket. Le micro est demandé à 48 kHz, et la suppression de
+   bruit agressive est coupée : c'est elle qui « mâche » la voix. On garde
+   l'annulation d'écho et le gain automatique.
    ───────────────────────────────────────────────────────────────────── */
 
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -64,10 +67,15 @@ export function useEnregistreurVocal(onFini: (son: Blob, secondes: number) => vo
       return;
     }
     try {
-      const s = await navigator.mediaDevices.getUserMedia({ audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true } });
+      const s = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          channelCount: 1, sampleRate: 48000, sampleSize: 16,
+          echoCancellation: true, autoGainControl: true, noiseSuppression: false,
+        },
+      });
       flux.current = s;
       const mimeType = formatEnregistrable();
-      const r = new MediaRecorder(s, { ...(mimeType ? { mimeType } : {}), audioBitsPerSecond: 32000 });
+      const r = new MediaRecorder(s, { ...(mimeType ? { mimeType } : {}), audioBitsPerSecond: 128000 });
       morceaux.current = [];
       garder.current = true;
       r.ondataavailable = (e) => { if (e.data.size > 0) morceaux.current.push(e.data); };
@@ -172,8 +180,11 @@ export function LecteurVocal({ url, duree, aMoi }: { url: string | null; duree: 
   const part = duree > 0 ? Math.min(1, pos / duree) : 0;
 
   return (
-    <span className="flex w-[210px] max-w-full items-center gap-2.5 py-0.5" onPointerDown={(e) => e.stopPropagation()}>
+    <span className="flex w-[210px] max-w-full items-center gap-2.5 py-0.5">
+      {/* Seul le bouton arrête l'appui long : le reste de la bulle doit
+          rester appuyable, sinon un vocal ne se supprime jamais. */}
       <button
+        onPointerDown={(e) => e.stopPropagation()}
         type="button" onClick={basculer} disabled={!url}
         aria-label={lecture ? "Mettre en pause" : "Écouter le message vocal"}
         className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full disabled:opacity-50"

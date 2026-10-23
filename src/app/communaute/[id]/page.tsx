@@ -21,7 +21,7 @@ import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft, Loader2, ChevronRight, ChevronUp, Sparkles, Reply, Copy, Trash2, X,
-  Mic, Image as ImageIcon,
+  Mic, Image as ImageIcon, Pencil,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
@@ -35,7 +35,7 @@ import { useEnregistreurVocal, BarreEnregistrement, LecteurVocal } from "@/compo
 import {
   chargerFil, chargerMessagesAvant, chargerMessage, chargerReactions,
   envoyerMessage, envoyerPhoto, envoyerVocal, marquerLu, titreConversation, autresMembres,
-  reagir, supprimerMessage, heureExacte, memeJour, libelleJour, lireFilEnCache,
+  reagir, supprimerMessage, modifierMessage, heureExacte, memeJour, libelleJour, lireFilEnCache,
   relationAmi, accepterDemandeAmi, demanderAmi,
   type Conversation, type Message, type RelationAmi,
 } from "@/lib/messagerie";
@@ -97,6 +97,10 @@ export default function FilPage() {
   const [envoi, setEnvoi]       = useState(false);
   const [photoEnCours, setPhotoEnCours] = useState(false);
   const [repondA, setRepondA]   = useState<Message | null>(null);
+  // Le message qu'on corrige : la saisie porte son texte, « Envoyer »
+  // devient « Modifier ». Le brouillon d'avant revient à l'annulation.
+  const [modifie, setModifie]   = useState<Message | null>(null);
+  const brouillonAvantModif     = useRef("");
   const [menu, setMenu]         = useState<Message | null>(null);
   const [ecrivent, setEcrivent] = useState<string[]>([]);
   const [occupe, setOccupe]     = useState(false);
@@ -257,10 +261,24 @@ export default function FilPage() {
       )
       .on(
         "postgres_changes",
-        { event: "DELETE", schema: "public", table: "messages", filter: `conversation_id=eq.${convId}` },
+        // ⚠️ Sans filtre : Supabase ne sait pas filtrer un DELETE (la ligne
+        // n'existe plus, seul son id voyage). Un id d'un autre fil ne
+        // correspond simplement à rien ici.
+        { event: "DELETE", schema: "public", table: "messages" },
         (payload) => {
           const ancien = payload.old as Record<string, unknown>;
           if (ancien.id) setMessages((actuels) => actuels.filter((m) => m.id !== ancien.id));
+        },
+      )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "messages", filter: `conversation_id=eq.${convId}` },
+        (payload) => {
+          const n = payload.new as Record<string, unknown>;
+          if (!n.id) return;
+          setMessages((actuels) => actuels.map((m) => m.id === n.id
+            ? { ...m, contenu: (n.contenu as string) ?? m.contenu, modifieLe: (n.modifie_le as string | null) ?? m.modifieLe ?? null }
+            : m));
         },
       )
       .on(
@@ -350,7 +368,40 @@ export default function FilPage() {
     }
   };
 
+  const commencerModif = (m: Message) => {
+    setMenu(null);
+    setRepondA(null);
+    brouillonAvantModif.current = texte;
+    setModifie(m);
+    setTexte(m.contenu);
+  };
+
+  const annulerModif = () => {
+    setModifie(null);
+    setTexte(brouillonAvantModif.current);
+  };
+
+  const enregistrerModif = async () => {
+    if (!modifie || envoi) return;
+    const contenu = texte.trim();
+    if (!contenu) return;
+    if (contenu === modifie.contenu) { annulerModif(); return; }
+    setEnvoi(true);
+    const r = await modifierMessage(modifie.id, contenu);
+    setEnvoi(false);
+    if (!r.ok) {
+      setErreur("Le message n’a pas pu être modifié. Réessaie.");
+      return;
+    }
+    const id = modifie.id;
+    setMessages((prev) => prev.map((x) => x.id === id ? { ...x, contenu: r.contenu ?? contenu, modifieLe: r.modifieLe ?? new Date().toISOString() } : x));
+    setErreur(null);
+    setModifie(null);
+    setTexte(brouillonAvantModif.current);
+  };
+
   const envoyer = async () => {
+    if (modifie) { await enregistrerModif(); return; }
     if (!user || !texte.trim() || envoi || photoEnCours) return;
     const contenu = texte.trim();
     const cite = repondA?.id ?? null;
@@ -446,6 +497,7 @@ export default function FilPage() {
 
   const surSuppression = async (m: Message) => {
     setMenu(null);
+    if (modifie?.id === m.id) annulerModif();
     const r = await supprimerMessage(m.id);
     if (!r.ok) {
       setErreur("Le message n’a pas pu être supprimé.");
@@ -688,6 +740,23 @@ export default function FilPage() {
         <div ref={basRef} />
       </div>
 
+      {/* ─── Le message qu'on corrige ─── */}
+      {modifie && !ecritureFermee && (
+        <div
+          className="relative z-10 mx-3 mb-1 flex items-center gap-2 rounded-t-xl px-3 py-2"
+          style={{ background: c.carte, borderLeft: "2.5px solid #8B5CF6" }}
+        >
+          <Pencil className="h-4 w-4 shrink-0" style={{ color: "#8B5CF6" }} />
+          <span className="min-w-0 flex-1">
+            <b className="block text-[11px] font-bold" style={{ color: "#8B5CF6" }}>Modifier le message</b>
+            <span className="block truncate text-[13px]" style={{ color: c.t2 }}>{modifie.contenu}</span>
+          </span>
+          <button onClick={annulerModif} aria-label="Annuler la modification">
+            <X className="h-4 w-4" style={{ color: c.t3 }} />
+          </button>
+        </div>
+      )}
+
       {/* ─── La réponse en cours ─── */}
       {repondA && !ecritureFermee && (
         <div
@@ -804,11 +873,11 @@ export default function FilPage() {
             <button
               onClick={envoyer}
               disabled={envoi || photoEnCours}
-              aria-label="Envoyer"
+              aria-label={modifie ? "Enregistrer la modification" : "Envoyer"}
               className="flex h-10 shrink-0 items-center px-2.5 text-[16px] font-semibold disabled:opacity-40"
               style={{ color: "#8B5CF6" }}
             >
-              {envoi ? <Loader2 className="h-4 w-4 animate-spin" /> : "Envoyer"}
+              {envoi ? <Loader2 className="h-4 w-4 animate-spin" /> : modifie ? "Modifier" : "Envoyer"}
             </button>
           ) : (
             <span className="flex shrink-0 items-center">
@@ -864,6 +933,7 @@ export default function FilPage() {
             onRepondre={() => { setRepondA(menu); setMenu(null); }}
             onCopier={() => { void navigator.clipboard?.writeText(menu.contenu); setMenu(null); }}
             onSupprimer={() => surSuppression(menu)}
+            onModifier={() => commencerModif(menu)}
           />
         )}
       </AnimatePresence>
@@ -909,7 +979,8 @@ function Bulle({ message: m, moi, conv, couleur: c, surAffiche, cite, onMenu }: 
         }}
         onPointerUp={stop}
         onPointerCancel={stop}
-        className={`max-w-[80%] select-none text-[16px] leading-snug ${m.type === "image" ? "p-1" : "px-3.5 py-2"}`}
+        onPointerLeave={stop}
+        className={`max-w-[80%] select-none [-webkit-touch-callout:none] text-[16px] leading-snug ${m.type === "image" ? "p-1" : "px-3.5 py-2"}`}
         style={
           aMoi
             ? { background: "linear-gradient(135deg, #8B5CF6, #C13BC1)", color: "#fff",
@@ -968,7 +1039,7 @@ function Bulle({ message: m, moi, conv, couleur: c, surAffiche, cite, onMenu }: 
       )}
 
       <span className="mx-1 mt-[3px] text-[11px] tabular-nums" style={{ color: c.t3 }}>
-        {heureExacte(m.createdAt)}
+        {heureExacte(m.createdAt)}{m.modifieLe ? " · modifié" : ""}
       </span>
     </div>
   );
@@ -1087,11 +1158,13 @@ function DefiEpingle({ defi, etat, surAffiche, onOuvrir }: {
 }
 
 /* ─── Le menu d'appui long ───────────────────────────────────── */
-function MenuMessage({ message, moi, mienne, onFermer, onReaction, onRepondre, onCopier, onSupprimer }: {
+function MenuMessage({ message, moi, mienne, onFermer, onReaction, onRepondre, onCopier, onSupprimer, onModifier }: {
   message: Message; moi: string; mienne: string | null;
   onFermer: () => void; onReaction: (emoji: string) => void;
-  onRepondre: () => void; onCopier: () => void; onSupprimer: () => void;
+  onRepondre: () => void; onCopier: () => void; onSupprimer: () => void; onModifier: () => void;
 }) {
+  // Supprimer se confirme d'un second toucher : un message parti ne revient pas.
+  const [confirmer, setConfirmer] = useState(false);
   const aMoi = message.userId === moi;
 
   const actions = useMemo(() => [
@@ -1099,10 +1172,19 @@ function MenuMessage({ message, moi, mienne, onFermer, onReaction, onRepondre, o
     ...(message.type === "texte"
       ? [{ cle: "copier", libelle: "Copier", Icone: Copy, action: onCopier, danger: false }]
       : []),
-    ...(aMoi
-      ? [{ cle: "suppr", libelle: "Supprimer", Icone: Trash2, action: onSupprimer, danger: true }]
+    ...(aMoi && message.type === "texte"
+      ? [{ cle: "modif", libelle: "Modifier", Icone: Pencil, action: onModifier, danger: false }]
       : []),
-  ], [aMoi, message.type, onRepondre, onCopier, onSupprimer]);
+    ...(aMoi
+      ? [{
+          cle: "suppr",
+          libelle: confirmer ? "Supprimer pour tout le monde" : "Supprimer",
+          Icone: Trash2,
+          action: confirmer ? onSupprimer : () => setConfirmer(true),
+          danger: true,
+        }]
+      : []),
+  ], [aMoi, message.type, onRepondre, onCopier, onSupprimer, onModifier, confirmer]);
 
   return (
     <>

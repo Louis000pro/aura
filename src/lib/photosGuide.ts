@@ -28,6 +28,7 @@ const PHOTOS_PAR_GUIDE: Record<string, string> = {
   "pull-traction": "pull-traction-v2",
   "legs-fentes": "legs-fentes-v2",
   "legs-squat": "legs-squat-v2",
+  "haut-corps": "haut-corps-v1",
 };
 
 /** Le nom de fichier (sans `.webp`) à montrer pour ce Guide. */

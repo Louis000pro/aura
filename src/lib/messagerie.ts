@@ -44,6 +44,8 @@ export type Message = {
   mediaHeight: number | null;
   createdAt: string;
   repondA: string | null;
+  /** Date de la dernière correction de l'auteur, ou null. */
+  modifieLe?: string | null;
   reactions: Reaction[];
 };
 
@@ -140,7 +142,7 @@ type ApercuConversation = {
 };
 
 const COLONNES_MESSAGE =
-  "id, user_id, contenu, type, created_at, repond_a, media_path, media_width, media_height";
+  "id, user_id, contenu, type, created_at, repond_a, media_path, media_width, media_height, modifie_le";
 const COLONNES_MESSAGE_ANCIENNES = "id, user_id, contenu, type, created_at, repond_a";
 
 type MessageBrut = {
@@ -153,6 +155,7 @@ type MessageBrut = {
   media_path?: string | null;
   media_width?: number | null;
   media_height?: number | null;
+  modifie_le?: string | null;
 };
 
 function migrationMediasManquante(message: string) {
@@ -463,6 +466,7 @@ async function chargerFilDepuisServeur(convId: string): Promise<FilCharge> {
       mediaHeight: (m.media_height as number | null | undefined) ?? null,
       createdAt: m.created_at as string,
       repondA: (m.repond_a as string | null) ?? null,
+      modifieLe: (m.modifie_le as string | null | undefined) ?? null,
       reactions: reactionsDe(m.id as string),
     })),
     encoreAvant,
@@ -561,6 +565,7 @@ export async function chargerMessagesAvant(
         mediaHeight: (m.media_height as number | null | undefined) ?? null,
         createdAt: m.created_at as string,
         repondA: (m.repond_a as string | null) ?? null,
+        modifieLe: (m.modifie_le as string | null | undefined) ?? null,
         reactions: [...parEmoji].map(([emoji, userIds]) => ({ emoji, userIds })),
       };
     }),
@@ -623,6 +628,7 @@ export async function chargerMessage(convId: string, messageId: string): Promise
     mediaHeight: brut.media_height ?? null,
     createdAt: brut.created_at,
     repondA: brut.repond_a,
+    modifieLe: brut.modifie_le ?? null,
     reactions,
   };
 }
@@ -832,6 +838,19 @@ export async function reagir(messageId: string, userId: string, emoji: string, a
   const { error } = await supabase.from("message_reactions")
     .upsert({ message_id: messageId, user_id: userId, emoji }, { onConflict: "message_id,user_id" });
   return { ok: !error, raison: error?.message };
+}
+
+/** Corrige un message texte. Seul l'auteur le peut (RLS), et seul le
+ *  texte change : la base pose `modifie_le` elle-même. */
+export async function modifierMessage(messageId: string, contenu: string) {
+  const texte = contenu.trim();
+  if (!texte || texte.length > 4000) return { ok: false, raison: "longueur" };
+  const supabase = createClient();
+  const { data, error } = await supabase.from("messages")
+    .update({ contenu: texte }).eq("id", messageId)
+    .select("contenu, modifie_le").maybeSingle();
+  if (error || !data) return { ok: false, raison: error?.message ?? "aucune_ligne" };
+  return { ok: true, contenu: data.contenu as string, modifieLe: (data.modifie_le as string | null) ?? null };
 }
 
 export async function supprimerMessage(messageId: string) {

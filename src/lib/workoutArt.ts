@@ -25,6 +25,11 @@ export const FAMILY: Record<Family, { label: string; base: string; glow: string;
 
 /** Le « cerveau » : muscle / mouvement nommé → image précise. Sinon repli famille. */
 const IMG_RULES: { re: RegExp; img: string; fam: Family }[] = [
+  // « Haut du corps » a sa photo : la traction de Nora et Sasha (Louis,
+  // 2026-10-23). Sans Guide résolu, `haut-corps` est la photo d'avant.
+  // Famille « full » comme avant : l'équilibre de la semaine ne bouge pas.
+  // Une séance de récup (« relâché ») garde sa photo calme.
+  { re: /haut du corps(?! rel)|upper body/,                                  img: "haut-corps",    fam: "full" },
   { re: /pector|\bpec|couch|bench/,                                          img: "push-couche-v5",   fam: "push" },
   { re: /dips?/,                                                             img: "push-dips",     fam: "push" },
   { re: /épaule|epaule|deltoï|deltoi|militaire|overhead|shoulder/,           img: "push-militaire",fam: "push" },
