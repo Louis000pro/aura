@@ -10,6 +10,19 @@ import { aiFetch } from "@/lib/aiFetch";
 import { MEAL_META, heureMaintenant, momentActuel, type MealType, type MealEntry } from "@/lib/repas";
 import { lockBodyModal } from "@/lib/bodyModal";
 
+/* Le violet → magenta est l'action, partout (système D). Le bouton qui
+   n'est pas encore prêt reste neutre, sans dégradé. */
+const ACTION: React.CSSProperties = {
+  background: "linear-gradient(135deg,#8B5CF6,#C13BC1)",
+  color: "#fff",
+  boxShadow: "var(--ombre-action)",
+};
+const ACTION_ATTENTE: React.CSSProperties = { ...ACTION, opacity: 0.75 };
+const SECONDAIRE: React.CSSProperties = {
+  background: "rgba(var(--tint-violet-rgb),0.6)",
+  color: "var(--text-3)",
+};
+
 /* ─── ManualModal ────────────────────────────────────────────────────── */
 export default function ManualModal({ onClose, onAdd, typeInitial }: {
   /** Le moment déjà choisi dans « Ajouter un repas » : il prime sur l'estimation. */
@@ -22,7 +35,7 @@ export default function ManualModal({ onClose, onAdd, typeInitial }: {
   const [proteins, setProteins] = useState("");
   const [carbs, setCarbs] = useState("");
   const [fats, setFats] = useState("");
-  const [mealType, setMealType] = useState<MealType>(typeInitial ?? momentActuel());
+  const [mealType] = useState<MealType>(typeInitial ?? momentActuel());
   const [estimating, setEstimating] = useState(false);
   const [estimated, setEstimated] = useState(false);
   const [estimateError, setEstimateError] = useState<string | null>(null);
@@ -48,10 +61,9 @@ export default function ManualModal({ onClose, onAdd, typeInitial }: {
       if (data.proteins !== undefined) setProteins(String(data.proteins));
       if (data.carbs !== undefined) setCarbs(String(data.carbs));
       if (data.fats !== undefined) setFats(String(data.fats));
-      if (data.mealType && !typeInitial) setMealType(data.mealType as MealType);
       setEstimated(true);
     } catch {
-      setEstimateError("Impossible d’estimer, remplis manuellement.");
+      setEstimateError("L’estimation n’a pas marché. Réessaie, ou remplis les chiffres toi-même.");
     } finally {
       setEstimating(false);
     }
@@ -94,85 +106,68 @@ export default function ManualModal({ onClose, onAdd, typeInitial }: {
         }}
         onClick={e => e.stopPropagation()}>
 
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-start justify-between mb-4">
           <div>
-            <h2 className="text-[20px] font-light" style={{ color: "var(--text-1)" }}>Décrire un repas</h2>
+            {/* Le moment a déjà été choisi dans « Ajouter un repas » : on le
+                rappelle, on ne le redemande pas (Louis, 2026-10-23). */}
+            <p className="vy-label" style={{ color: "var(--text-3)" }}>
+              {MEAL_META[mealType].icon} {MEAL_META[mealType].label}
+            </p>
+            <h2 className="vy-sous" style={{ color: "var(--text-1)" }}>Écrire mon repas</h2>
           </div>
-          <motion.button whileTap={{ scale: 0.9 }} onClick={onClose}
-            className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer"
+          <motion.button whileTap={{ scale: 0.9 }} onClick={onClose} aria-label="Fermer"
+            className="w-9 h-9 rounded-full flex items-center justify-center cursor-pointer flex-shrink-0"
             style={{ background: "rgba(var(--tint-violet-rgb),0.8)" }}>
-            <X size={14} strokeWidth={2} style={{ color: "var(--text-3)" }} />
+            <X size={15} strokeWidth={2} style={{ color: "var(--text-3)" }} />
           </motion.button>
         </div>
 
         <div className="flex flex-col gap-3 mb-4">
 
-          {/* Champ description + bouton estimer */}
+          {/* Ce qu'on a mangé, puis Estimer */}
           <div>
-            <label className="vy-label mb-1.5 block" style={{ color: "var(--text-3)" }}>
-              Ce que tu as mangé
-            </label>
-            <div className="flex gap-2">
-              <input
-                type="text" value={name}
-                onChange={e => { setName(e.target.value); setEstimated(false); setEstimateError(null); }}
-                onKeyDown={e => { if (e.key === "Enter" && name.trim()) estimate(); }}
-                placeholder="Ex : 5 madeleines et un bol de lait…"
-                autoFocus
-                className="flex-1 px-4 py-2.5 rounded-xl text-[16px] outline-none"
-                style={{ background: "rgba(var(--tint-violet-rgb),0.5)", border: "1px solid rgba(var(--violet-mid-rgb),0.5)", color: "var(--text-1)" }}
-              />
-              <motion.button
-                whileTap={{ scale: 0.93 }}
-                onClick={estimate}
-                disabled={!name.trim() || estimating}
-                className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-[13px] font-semibold cursor-pointer flex-shrink-0"
-                style={{
-                  background: name.trim() && !estimating
-                    ? "linear-gradient(135deg,var(--violet-mid),var(--cream-mid))"
-                    : "rgba(220,220,220,0.4)",
-                  color: name.trim() && !estimating ? "var(--text-1)" : "var(--text-3)",
-                  boxShadow: name.trim() ? "inset 0 1px 0 rgba(var(--surface-rgb),0.9)" : "none",
-                  minWidth: 80,
-                  justifyContent: "center",
-                }}>
-                {estimating ? (
-                  <motion.div animate={{ rotate: 360 }} transition={{ duration: 0.9, repeat: Infinity, ease: "linear" }}>
-                    <Loader2 size={13} strokeWidth={2} />
-                  </motion.div>
-                ) : (
-                  <>Estimer</>
-                )}
-              </motion.button>
-            </div>
-            <p className="text-[11px] mt-1.5 font-light" style={{ color: "var(--text-3)" }}>
-              L&apos;IA calcule automatiquement les calories & macros, ou appuie sur Entrée
-            </p>
+            <textarea
+              value={name}
+              onChange={e => { setName(e.target.value); setEstimated(false); setEstimateError(null); }}
+              onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey && name.trim()) { e.preventDefault(); estimate(); } }}
+              placeholder="Ex : 5 madeleines et un bol de lait"
+              rows={2}
+              autoFocus
+              className="w-full px-4 py-3 rounded-[var(--r-bloc)] text-[16px] outline-none resize-none"
+              style={{ background: "rgba(var(--tint-violet-rgb),0.5)", border: "1px solid rgba(var(--violet-mid-rgb),0.5)", color: "var(--text-1)" }}
+            />
+            <motion.button
+              whileTap={{ scale: 0.97 }}
+              onClick={estimate}
+              disabled={!name.trim() || estimating}
+              className="mt-2 w-full flex items-center justify-center gap-2 py-3 rounded-full text-[16px] font-semibold cursor-pointer"
+              style={name.trim() && !estimating && !estimated ? ACTION : estimating ? ACTION_ATTENTE : SECONDAIRE}>
+              {estimating ? (
+                <><Loader2 size={16} strokeWidth={2.2} className="animate-spin" />Estimation…</>
+              ) : estimated ? (
+                <>Estimer à nouveau</>
+              ) : (
+                <>Estimer les calories</>
+              )}
+            </motion.button>
           </div>
 
-          {/* Erreur estimation */}
           {estimateError && (
-            <div className="px-3 py-2 rounded-xl text-[13px]" style={{ background: "rgba(252,129,129,0.1)", color: "#E53E3E" }}>
-              ⚠️ {estimateError}
-            </div>
+            <p className="text-[13px]" style={{ color: "#C53030" }}>{estimateError}</p>
           )}
 
-          {/* Résultat estimation */}
           <AnimatePresence>
             {estimated && kcal && (
-              <motion.div
+              <motion.p
                 initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-                className="flex items-center gap-2 px-3 py-2 rounded-xl"
-                style={{ background: "rgba(var(--accent-rgb),0.08)", border: "1px solid rgba(var(--accent-rgb),0.15)" }}>
-                <Check size={12} strokeWidth={2.5} style={{ color: "var(--exp-encre)" }} />
-                <span className="text-[13px] font-medium" style={{ color: "var(--exp-encre)" }}>
-                  Estimation, à corriger si besoin
-                </span>
-              </motion.div>
+                className="flex items-center gap-1.5 text-[13px] font-medium" style={{ color: "var(--exp-encre)" }}>
+                <Check size={13} strokeWidth={2.5} />
+                Estimation, à corriger si besoin
+              </motion.p>
             )}
           </AnimatePresence>
 
-          {/* Champs nutritionnels */}
+          {/* Les chiffres, modifiables */}
           <div className="grid grid-cols-2 gap-2">
             {[
               { label: "Calories (kcal)", val: kcal,     set: setKcal,     ph: "420" },
@@ -181,53 +176,25 @@ export default function ManualModal({ onClose, onAdd, typeInitial }: {
               { label: "Lipides (g)",     val: fats,      set: setFats,     ph: "15"  },
             ].map(({ label, val, set, ph }) => (
               <div key={label}>
-                <label className="vy-label mb-1 block"
-                  style={{ color: "var(--text-3)" }}>{label}</label>
-                <motion.input
-                  type="number" value={val} onChange={e => set(e.target.value)} placeholder={ph}
-                  animate={estimated && val ? { borderColor: "rgba(var(--accent-rgb),0.5)" } : {}}
-                  className="w-full px-3 py-2.5 rounded-xl text-[16px] outline-none"
+                <label className="vy-label mb-1 block" style={{ color: "var(--text-3)" }}>{label}</label>
+                <input
+                  type="number" inputMode="numeric" value={val} onChange={e => set(e.target.value)} placeholder={ph}
+                  className="w-full px-3 py-2.5 rounded-[var(--r-controle)] text-[16px] outline-none"
                   style={{
-                    background: estimated && val ? "rgba(var(--tint-violet-rgb),0.6)" : "rgba(var(--tint-violet-rgb),0.5)",
-                    border: "1px solid rgba(var(--violet-mid-rgb),0.5)",
+                    background: "rgba(var(--tint-violet-rgb),0.5)",
+                    border: estimated && val ? "1px solid rgba(139,92,246,0.45)" : "1px solid rgba(var(--violet-mid-rgb),0.5)",
                     color: "var(--text-1)",
                   }}
                 />
               </div>
             ))}
           </div>
-
-          {/* Type de repas */}
-          <div>
-            <label className="vy-label mb-1.5 block" style={{ color: "var(--text-3)" }}>
-              Type de repas
-            </label>
-            <div className="grid grid-cols-2 gap-1.5">
-              {(Object.keys(MEAL_META) as MealType[]).map(mt => (
-                <motion.button key={mt} whileTap={{ scale: 0.95 }}
-                  onClick={() => setMealType(mt)}
-                  className="py-2 rounded-xl text-[11px] font-medium cursor-pointer flex items-center justify-center gap-1.5"
-                  style={{
-                    background: mealType === mt ? "rgba(var(--accent-rgb),0.15)" : "rgba(var(--tint-violet-rgb),0.5)",
-                    border: mealType === mt ? "1px solid rgba(var(--accent-rgb),0.35)" : "1px solid rgba(var(--violet-mid-rgb),0.3)",
-                    color: mealType === mt ? "var(--text-1)" : "var(--text-2)",
-                  }}>
-                  <span style={{ fontSize: 13 }}>{MEAL_META[mt].icon}</span>
-                  <span>{MEAL_META[mt].label}</span>
-                </motion.button>
-              ))}
-            </div>
-          </div>
         </div>
 
-        <motion.button whileHover={{ scale: valid ? 1.02 : 1 }} whileTap={{ scale: valid ? 0.97 : 1 }}
+        <motion.button whileTap={{ scale: valid ? 0.97 : 1 }}
           onClick={submit} disabled={!valid}
-          className="w-full py-3.5 rounded-2xl text-[16px] font-semibold cursor-pointer"
-          style={{
-            background: valid ? "linear-gradient(135deg,var(--violet-mid) 0%,var(--cream-mid) 100%)" : "rgba(220,220,220,0.45)",
-            color: valid ? "var(--text-1)" : "var(--text-3)",
-            boxShadow: valid ? "inset 0 1px 0 rgba(var(--surface-rgb),0.9)" : "none",
-          }}>
+          className="w-full py-3.5 rounded-full text-[16px] font-semibold cursor-pointer"
+          style={valid ? ACTION : SECONDAIRE}>
           Enregistrer
         </motion.button>
       </motion.div>

@@ -1,6 +1,6 @@
-﻿import Groq from "groq-sdk";
 import { NextResponse } from "next/server";
 import { garderIA, PLAFONDS, refusTaille } from "@/lib/aiLimits";
+import { llm, optionsIA, hasLLMKey, CLE_ATTENDUE } from "@/lib/llm";
 
 export const runtime = "nodejs";
 export const maxDuration = 20;
@@ -13,9 +13,7 @@ export async function POST(req: Request) {
     const { description, enseigne, origin, niveau } = await req.json();
     if (!description?.trim()) return NextResponse.json({ error: "description manquante" }, { status: 400 });
     if (String(description).length > PLAFONDS.texteCourtChars) return refusTaille("Ce texte");
-    if (!process.env.GROQ_API_KEY) return NextResponse.json({ error: "GROQ_API_KEY manquante" }, { status: 500 });
-
-    const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+    if (!hasLLMKey()) return NextResponse.json({ error: `${CLE_ATTENDUE} manquante` }, { status: 500 });
 
     // Contexte « commande » (livraison / resto) : l'enseigne affine fortement
     // l'estimation (fast-food = plus gras & portions généreuses qu'un resto).
@@ -68,11 +66,14 @@ Exemples de precision :
 
 Retourne UNIQUEMENT le JSON.`;
 
-    const response = await groq.chat.completions.create({
-      // llama-3.3-70b-versatile a été retiré de Groq (model_not_found) : on
-      // prend le même modèle que les deux autres routes nutrition, qui est en
-      // service et rend bien du JSON.
-      model: "meta-llama/llama-4-scout-17b-16e-instruct",
+    /* Le texte passe par le même fournisseur que le Guide (lib/llm.ts).
+       Il avait son propre modèle Groq, codé en dur, et Groq l'a retiré deux
+       fois (llama-3.3-70b, puis llama-4-scout le 2026-10-23) : l'estimation
+       tombait en panne en silence. Le modèle « outil » rend du JSON et vit
+       à un seul endroit. */
+    const response = await llm.chat.completions.create({
+      ...optionsIA("outil", 320),
+      response_format: { type: "json_object" },
       messages: [
         {
           role: "system",
@@ -80,7 +81,6 @@ Retourne UNIQUEMENT le JSON.`;
         },
         { role: "user", content: userContent },
       ],
-      max_tokens: 320,
       temperature: 0.1,
     });
 
