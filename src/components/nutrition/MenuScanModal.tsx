@@ -7,6 +7,7 @@ import { aiFetch } from "@/lib/aiFetch";
 import { preparerPhotoIA } from "@/lib/photoIA";
 import { createClient } from "@/lib/supabase";
 import { AssistantSpark } from "@/components/AssistantMark";
+import { lockBodyModal } from "@/lib/bodyModal";
 
 /* ─── MenuScanModal ──────────────────────────────────────────────────────
    « La carte » du resto en photo → l'IA lit et CLASSE les plats selon
@@ -47,10 +48,7 @@ export default function MenuScanModal({ objectiveLine, objectiveChip, goalKnown,
   const [camReady, setCamReady] = useState(false);
   const [facingMode, setFacingMode] = useState<"environment" | "user">("environment");
 
-  useEffect(() => {
-    document.body.classList.add("modal-open");
-    return () => document.body.classList.remove("modal-open");
-  }, []);
+  useEffect(() => lockBodyModal(), []);
 
   const analyze = async (file: File) => {
     setPhase("analyzing");

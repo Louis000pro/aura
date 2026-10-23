@@ -2,6 +2,7 @@
 
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { lockBodyModal } from "@/lib/bodyModal";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   Check, Copy, Loader2, Search, Share2, UserPlus, Users, X,
@@ -109,6 +110,8 @@ export default function FriendshipSheets({
 }
 
 function Sheet({ children, onFermer }: { children: React.ReactNode; onFermer: () => void }) {
+  // La barre du bas passait par-dessus la feuille (Louis, 2026-10-23).
+  useEffect(() => lockBodyModal(), []);
   return (
     <>
       <motion.div

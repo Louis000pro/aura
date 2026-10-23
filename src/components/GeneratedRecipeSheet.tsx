@@ -15,6 +15,7 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Plus, Loader2, Check, RefreshCw, AlertTriangle, Shuffle } from "lucide-react";
+import { lockBodyModal } from "@/lib/bodyModal";
 
 export type GeneratedRecipe = {
   nom: string; theme: string; portions: number; prepMin: number; cookMin: number;
@@ -44,11 +45,7 @@ export default function GeneratedRecipeSheet({
   const [added, setAdded] = useState(false);
 
   // Masque la barre du bas pendant l'ouverture (sinon superposition au bouton).
-  useEffect(() => {
-    if (open) document.body.classList.add("modal-open");
-    else document.body.classList.remove("modal-open");
-    return () => document.body.classList.remove("modal-open");
-  }, [open]);
+  useEffect(() => (open ? lockBodyModal() : undefined), [open]);
 
   // Réinitialise l'état « ajouté » à chaque nouvelle recette / ouverture.
   useEffect(() => { setAdded(false); }, [recipe, open]);

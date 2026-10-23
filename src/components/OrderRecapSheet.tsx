@@ -12,6 +12,7 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { ChevronLeft, Check, Flame, Pencil } from "lucide-react";
 import { ambianceImg, NIVEAU_LABEL, type OrderEstimate, type OrderOrigin } from "@/lib/orderEstimate";
+import { lockBodyModal } from "@/lib/bodyModal";
 
 type LoggedMeal = { name: string; calories: number; proteins: number; carbs: number; fats: number };
 
@@ -34,10 +35,7 @@ export default function OrderRecapSheet({
   const [fats, setFats] = useState(estimate.fats);
 
   // Masque la barre du bas pendant la fiche (comme les autres modales).
-  useEffect(() => {
-    document.body.classList.add("modal-open");
-    return () => document.body.classList.remove("modal-open");
-  }, []);
+  useEffect(() => lockBodyModal(), []);
 
   const macros = [
     { key: "prot", label: "prot.", v: prot, set: setProt, c: "#8B5CF6" },

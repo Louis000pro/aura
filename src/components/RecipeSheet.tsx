@@ -17,6 +17,7 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { ChevronLeft, Heart, Minus, Plus, Check, RefreshCw, Utensils, Carrot, Sparkles } from "lucide-react";
 import { type Recipe, scaledQty, ingredientImg, utensilImg } from "@/lib/recipeBank";
+import { lockBodyModal } from "@/lib/bodyModal";
 
 type LoggedMeal = { name: string; calories: number; proteins: number; carbs: number; fats: number };
 
@@ -73,10 +74,7 @@ export default function RecipeSheet({
   useEffect(() => { setPortions(recipe.portions); setTab("ing"); setChecked(new Set()); }, [recipe.id]);
 
   // Masque la barre du bas pendant la fiche (comme les autres modales).
-  useEffect(() => {
-    document.body.classList.add("modal-open");
-    return () => document.body.classList.remove("modal-open");
-  }, []);
+  useEffect(() => lockBodyModal(), []);
 
   const toggleStep = (i: number) =>
     setChecked((prev) => { const n = new Set(prev); n.has(i) ? n.delete(i) : n.add(i); return n; });

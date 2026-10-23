@@ -13,6 +13,7 @@ import { preparerPhotoIA } from "@/lib/photoIA";
 import { AssistantSpark } from "@/components/AssistantMark";
 import MacroTiles from "@/components/MacroTiles";
 import { MEAL_META, heureMaintenant, type MealType, type MealEntry } from "@/lib/repas";
+import { lockBodyModal } from "@/lib/bodyModal";
 
 type AnalysisResult = {
   foodName: string;
@@ -48,10 +49,7 @@ export default function PhotoAnalysisModal({ onClose, onAdd, onBack, typeInitial
   const [facingMode, setFacingMode] = useState<"environment" | "user">("environment");
 
   // Masque la barre de nav du bas tant que la modale est ouverte (sinon elle recouvre les boutons sur mobile).
-  useEffect(() => {
-    document.body.classList.add("modal-open");
-    return () => document.body.classList.remove("modal-open");
-  }, []);
+  useEffect(() => lockBodyModal(), []);
 
   const analyze = async (file: File) => {
     setPhase("analyzing");

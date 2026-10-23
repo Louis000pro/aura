@@ -11,6 +11,7 @@ import { aiFetch } from "@/lib/aiFetch";
 import { AssistantSpark } from "@/components/AssistantMark";
 import MacroTiles from "@/components/MacroTiles";
 import { MEAL_META, heureMaintenant, momentActuel, type MealType, type MealEntry } from "@/lib/repas";
+import { lockBodyModal } from "@/lib/bodyModal";
 
 /* ─── BarcodeScannerModal ────────────────────────────────────────────── */
 type BarcodePhase = "scan" | "loading" | "result" | "fallback";
@@ -61,10 +62,7 @@ export default function BarcodeScannerModal({ onClose, onAdd, typeInitial }: {
   const didStop = useRef(false);
 
   // Masque la barre de nav du bas tant que la modale est ouverte (sinon elle recouvre les boutons sur mobile).
-  useEffect(() => {
-    document.body.classList.add("modal-open");
-    return () => document.body.classList.remove("modal-open");
-  }, []);
+  useEffect(() => lockBodyModal(), []);
 
   const stopScanner = async () => {
     if (html5QrRef.current && !didStop.current) {
