@@ -62,6 +62,13 @@ Retourne un JSON avec :
 Exemples de precision :
 - "5 madeleines" = environ 250 kcal, 4g prot, 36g gluc, 10g lip
 - "un bol de lait entier 250ml" = environ 160 kcal, 8g prot, 12g gluc, 9g lip
+- "un tacos" (tacos francais facon O'Tacos, taille M, frites et sauce fromagere dedans) = environ 1000 kcal, 45g prot, 95g gluc, 50g lip
+- "un tacos frites" = le tacos francais ci-dessus PLUS une portion de frites (~350 kcal), soit environ 1350 kcal
+- "un kebab frites" = environ 1100 kcal
+- "un burger frites" en fast-food = environ 900 kcal
+- "une pizza" entiere (une personne) = environ 900 a 1100 kcal
+- En France, "tacos" veut dire le tacos francais (galette roulee, grillee), pas le petit taco mexicain, sauf si la personne le precise.
+- Une portion se compte telle qu'on la sert reellement, jamais une demi-portion. Dans le doute, prends la portion standard servie, pas la plus petite.
 - Additionne tout si plusieurs aliments
 
 Retourne UNIQUEMENT le JSON.`;
@@ -69,10 +76,11 @@ Retourne UNIQUEMENT le JSON.`;
     /* Le texte passe par le même fournisseur que le Guide (lib/llm.ts).
        Il avait son propre modèle Groq, codé en dur, et Groq l'a retiré deux
        fois (llama-3.3-70b, puis llama-4-scout le 2026-10-23) : l'estimation
-       tombait en panne en silence. Le modèle « outil » rend du JSON et vit
-       à un seul endroit. */
+       tombait en panne en silence. Rôle « coach » et pas « outil » : le
+       petit modèle sous-estimait grossièrement le fast-food (un tacos
+       frites à 500 kcal, Louis le 2026-10-23). */
     const response = await llm.chat.completions.create({
-      ...optionsIA("outil", 320),
+      ...optionsIA("coach", 320),
       response_format: { type: "json_object" },
       messages: [
         {
