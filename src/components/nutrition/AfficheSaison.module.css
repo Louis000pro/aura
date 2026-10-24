@@ -126,16 +126,17 @@
 .chutes { position: absolute; inset: 0; z-index: 1; pointer-events: none; }
 .chute { position: absolute; top: -36px; animation: chute linear infinite; }
 .lente { top: -24px; animation-name: chute-lente; }
-.feuille, .flocon { display: block; animation: balance ease-in-out infinite alternate; }
+.feuille, .petale, .flocon { display: block; animation: balance ease-in-out infinite alternate; }
 .flocon { animation-name: tourne; }
-.feuille path:first-child { fill: var(--feuille); }
+.feuille path:first-child, .petale path:first-child { fill: var(--teinte); }
 .nervure { fill: none; stroke: var(--nervure); stroke-width: 1; }
-.teinte1 { --feuille: var(--feuille-1); }
-.teinte2 { --feuille: var(--feuille-2); }
-.teinte3 { --feuille: var(--feuille-3); }
-.teinte4 { --feuille: var(--feuille-4); }
-.teinte5 { --feuille: var(--feuille-5); }
-.teinte6 { --feuille: var(--feuille-6); }
+/* Les teintes numérotées d'un moment : ses feuilles, ses pétales, ses braises. */
+.teinte1 { --teinte: var(--teinte-1); }
+.teinte2 { --teinte: var(--teinte-2); }
+.teinte3 { --teinte: var(--teinte-3); }
+.teinte4 { --teinte: var(--teinte-4); }
+.teinte5 { --teinte: var(--teinte-5); }
+.teinte6 { --teinte: var(--teinte-6); }
 .floconOmbre path { fill: none; stroke: var(--flocon-ombre); stroke-width: 3.2; stroke-linecap: round; stroke-linejoin: round; }
 .floconTrait path { fill: none; stroke: #FFFFFF; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 @keyframes chute {
@@ -209,19 +210,161 @@
 .disque { position: absolute; inset: 0; border-radius: 50%; background: var(--disque); }
 @keyframes rayons { to { transform: rotate(360deg); } }
 
-/* Le décor posé : aucune chute, aucun scintillement, le soleil immobile.
-   Les feuilles et les flocons restent là où ils tomberaient. */
-@media (prefers-reduced-motion: reduce) {
-  .chute, .feuille, .flocon, .vapeur path, .ampoule, .rayons { animation: none; }
-  .chute { opacity: 0.9; transform: translateY(var(--y)); }
-  .feuille, .flocon { transform: rotate(var(--r)); }
-  .vapeur path { opacity: 0.35; }
+/* La pluie (gratins) : des gouttes en biais, de 2 px sur 26. */
+.pluie { position: absolute; inset: 0; z-index: 1; pointer-events: none; }
+.goutte {
+  position: absolute; top: -40px; width: 2px; height: 26px; border-radius: 2px;
+  background: linear-gradient(180deg, transparent, var(--goutte));
+  animation: pluie linear infinite;
 }
-:global(html.perf-lite) .chute, :global(html.perf-lite) .feuille, :global(html.perf-lite) .flocon,
-:global(html.perf-lite) .vapeur path, :global(html.perf-lite) .ampoule, :global(html.perf-lite) .rayons { animation: none; }
+@keyframes pluie {
+  0% { transform: translate(0, 0) rotate(11deg); opacity: 0; }
+  6% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { transform: translate(-148px, 760px) rotate(11deg); opacity: 0; }
+}
+
+/* Le givre (mijoté) : la brume des deux bords, les cristaux, les éclats.
+   Il s'efface en haut et en bas comme la lumière. */
+.givre {
+  position: absolute; inset: 0; z-index: 1; pointer-events: none;
+  background:
+    linear-gradient(90deg, var(--givre-brume) 0, transparent 52px),
+    linear-gradient(270deg, var(--givre-brume) 0, transparent 52px);
+  -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 9%, #000 88%, transparent 100%);
+  mask-image: linear-gradient(180deg, transparent 0%, #000 9%, #000 88%, transparent 100%);
+}
+.cristal { position: absolute; display: block; overflow: visible; }
+.cristalOmbre path { fill: none; stroke: var(--givre-ombre); stroke-width: 3.2; stroke-linecap: round; stroke-linejoin: round; }
+.cristalTrait path { fill: none; stroke: var(--givre-trait); stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.eclat { position: absolute; display: block; fill: var(--givre-trait); animation: eclat ease-in-out infinite alternate; }
+@keyframes eclat {
+  0% { opacity: 0.15; transform: scale(0.55); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+/* La tranche d'orange (agrumes), en haut à droite, derrière les produits.
+   Son cadre ne tourne pas : sur le téléphone, son masque la fait naître
+   dans le fond de la page avec la lumière, au lieu de la couper net au
+   bord de l'affiche (le cadre commence 76 px plus haut). */
+.trancheCadre {
+  position: absolute; right: -96px; top: -110px; z-index: 1;
+  width: 300px; height: 300px; pointer-events: none;
+  -webkit-mask-image: linear-gradient(180deg, transparent 76px, #000 150px);
+  mask-image: linear-gradient(180deg, transparent 76px, #000 150px);
+}
+.tranche { display: block; width: 100%; height: 100%; animation: tranche 160s linear infinite; }
+.zeste { fill: var(--zeste); }
+.albedo { fill: var(--albedo); }
+.pulpe { fill: var(--pulpe); stroke: var(--albedo); stroke-width: 3.4; stroke-linejoin: round; }
+@keyframes tranche { to { transform: rotate(360deg); } }
+
+/* La crêpe (crêpes) : à plat, elle monte de 58 px en faisant un tour
+   complet, puis retombe. */
+.crepeScene { position: absolute; left: 24px; top: 76px; z-index: 1; width: 68px; height: 68px; perspective: 360px; pointer-events: none; }
+.crepe { display: block; width: 68px; height: 68px; transform: rotateX(62deg); animation: saute 4.2s infinite; }
+.pate { fill: var(--pate); stroke: var(--pate-bord); stroke-width: 3; }
+.tache { fill: var(--pate-tache); }
+.crepeOmbre {
+  position: absolute; left: 30px; top: 126px; z-index: 1; width: 56px; height: 10px;
+  border-radius: 50%; background: radial-gradient(closest-side, var(--pate-ombre), transparent);
+  animation: saute-ombre 4.2s infinite;
+}
+@keyframes saute {
+  0%, 24% { transform: translateY(0) rotateX(62deg); animation-timing-function: cubic-bezier(0.2, 0.75, 0.35, 1); }
+  50% { transform: translateY(-58px) rotateX(242deg); animation-timing-function: cubic-bezier(0.65, 0, 0.8, 0.25); }
+  76%, 100% { transform: translateY(0) rotateX(422deg); }
+}
+@keyframes saute-ombre {
+  0%, 24% { transform: scale(1); opacity: 1; animation-timing-function: cubic-bezier(0.2, 0.75, 0.35, 1); }
+  50% { transform: scale(0.55); opacity: 0.45; animation-timing-function: cubic-bezier(0.65, 0, 0.8, 0.25); }
+  76%, 100% { transform: scale(1); opacity: 1; }
+}
+
+/* Les aigrettes (salades) partent du bas et montent en se balançant. */
+.envols { position: absolute; inset: 0; z-index: 1; pointer-events: none; }
+.envol { position: absolute; bottom: -40px; animation: envol linear infinite; }
+.aigrette { display: block; overflow: visible; transform-origin: 50% 90%; animation: flotte ease-in-out infinite alternate; }
+.aigretteOmbre path { fill: none; stroke: var(--aigrette-ombre); stroke-width: 2.4; stroke-linecap: round; }
+.aigretteOmbre ellipse { fill: var(--aigrette-ombre); }
+.aigretteTrait path { fill: none; stroke: var(--aigrette-trait); stroke-width: 1; stroke-linecap: round; }
+.aigretteTrait ellipse { fill: var(--aigrette-graine); }
+@keyframes envol {
+  0% { transform: translate(0, 0); opacity: 0; }
+  9% { opacity: 0.95; }
+  86% { opacity: 0.95; }
+  100% { transform: translate(var(--dx), -740px); opacity: 0; }
+}
+@keyframes flotte {
+  0% { transform: rotate(-16deg); }
+  100% { transform: rotate(14deg); }
+}
+
+/* Les braises (barbecue) montent du bas et s'éteignent en route. */
+.braises { position: absolute; inset: 0; z-index: 1; pointer-events: none; }
+.braise { position: absolute; bottom: -14px; animation: braise linear infinite; }
+.braisePoint {
+  display: block; border-radius: 50%;
+  background: var(--teinte); box-shadow: 0 0 7px 2px var(--braise-halo);
+  animation: vacille ease-in-out infinite alternate;
+}
+@keyframes braise {
+  0% { transform: translate(0, 0); opacity: 0; }
+  8% { opacity: 1; }
+  72% { opacity: 0.85; }
+  100% { transform: translate(var(--dx), -600px); opacity: 0; }
+}
+@keyframes vacille {
+  0% { opacity: 0.5; transform: scale(0.75); }
+  100% { opacity: 1; transform: scale(1.15); }
+}
+
+/* Le cahier (rentrée) : sa marge rouge, ses carreaux et ses lignes, sous
+   tout le reste, et qui s'efface en haut et en bas comme la lumière. */
+.cahier {
+  position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  background:
+    linear-gradient(90deg, transparent 0 9px, var(--cahier-marge) 9px 11px, transparent 11px),
+    repeating-linear-gradient(90deg, transparent 0 31px, var(--cahier-carreau) 31px 32px),
+    repeating-linear-gradient(180deg, transparent 0 31px, var(--cahier-forte) 31px 32px),
+    repeating-linear-gradient(180deg, transparent 0 7px, var(--cahier-ligne) 7px 8px);
+  -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 11%, #000 76%, transparent 100%);
+  mask-image: linear-gradient(180deg, transparent 0%, #000 11%, #000 76%, transparent 100%);
+}
+@media (min-width: 768px) {
+  .givre, .cahier, .trancheCadre { -webkit-mask-image: none; mask-image: none; }
+}
+
+/* Le décor posé : rien ne tombe, ne monte, ne tourne, ne saute ni ne
+   scintille. Ce qui tombait ou montait reste à sa place de repos (`--y`),
+   choisie pour ne jamais toucher un texte. ⚠️ Les deux listes sont la
+   même : `check:nutrition` refuse une animation arrêtée dans l'une et pas
+   dans l'autre. */
+@media (prefers-reduced-motion: reduce) {
+  .chute, .lente, .feuille, .petale, .flocon, .vapeur path, .ampoule, .rayons, .goutte, .eclat,
+  .tranche, .crepe, .crepeOmbre, .envol, .aigrette, .braise, .braisePoint { animation: none; }
+  .chute { opacity: 0.9; transform: translateY(var(--y)); }
+  .feuille, .petale, .flocon, .aigrette { transform: rotate(var(--r)); }
+  .vapeur path { opacity: 0.35; }
+  .goutte { opacity: 0.8; transform: translateY(var(--y)) rotate(11deg); }
+  .eclat { opacity: 0.8; }
+  .envol { opacity: 0.9; transform: translateY(var(--y)); }
+  .braise { opacity: 0.85; transform: translateY(var(--y)); }
+}
+:global(html.perf-lite) .chute, :global(html.perf-lite) .lente, :global(html.perf-lite) .feuille,
+:global(html.perf-lite) .petale, :global(html.perf-lite) .flocon, :global(html.perf-lite) .vapeur path,
+:global(html.perf-lite) .ampoule, :global(html.perf-lite) .rayons, :global(html.perf-lite) .goutte,
+:global(html.perf-lite) .eclat, :global(html.perf-lite) .tranche, :global(html.perf-lite) .crepe,
+:global(html.perf-lite) .crepeOmbre, :global(html.perf-lite) .envol, :global(html.perf-lite) .aigrette,
+:global(html.perf-lite) .braise, :global(html.perf-lite) .braisePoint { animation: none; }
 :global(html.perf-lite) .chute { opacity: 0.9; transform: translateY(var(--y)); }
-:global(html.perf-lite) .feuille, :global(html.perf-lite) .flocon { transform: rotate(var(--r)); }
+:global(html.perf-lite) .feuille, :global(html.perf-lite) .petale, :global(html.perf-lite) .flocon,
+:global(html.perf-lite) .aigrette { transform: rotate(var(--r)); }
 :global(html.perf-lite) .vapeur path { opacity: 0.35; }
+:global(html.perf-lite) .goutte { opacity: 0.8; transform: translateY(var(--y)) rotate(11deg); }
+:global(html.perf-lite) .eclat { opacity: 0.8; }
+:global(html.perf-lite) .envol { opacity: 0.9; transform: translateY(var(--y)); }
+:global(html.perf-lite) .braise { opacity: 0.85; transform: translateY(var(--y)); }
 
 /* ════════════════════════════════════════════════════════════════════
    Les douze lumières. Chaque moment pose : sa lumière en haut à droite et
@@ -230,13 +373,14 @@
    saison sur la nuit de la page, et des encres claires.
    ════════════════════════════════════════════════════════════════════ */
 
-/* Agrumes · 1er au 19 janvier */
+/* Agrumes · 1er au 19 janvier · la tranche d'orange */
 .agrumes {
   --lueur-haut: radial-gradient(90% 55% at 90% 6%, rgba(255, 186, 90, 0.55) 0%, rgba(255, 206, 140, 0.22) 45%, rgba(255, 214, 160, 0) 75%);
   --lueur-bas: radial-gradient(70% 45% at 0% 78%, rgba(255, 150, 120, 0.14) 0%, rgba(255, 150, 120, 0) 70%);
   --bande: rgba(255, 240, 217, 0.94); --bande-bas: rgba(254, 233, 211, 0.96);
   --encre-surtitre: #A0480F; --encre-titre: #7A320A; --encre-phrase: #7A4A26; --encre-duree: #6F5B4C;
   --ombre-produit: rgba(140, 70, 10, 0.22);
+  --zeste: rgba(242, 146, 40, 0.30); --albedo: rgba(255, 251, 240, 0.62); --pulpe: rgba(250, 162, 62, 0.30);
 }
 :global([data-theme="dark"]) .agrumes {
   --lueur-haut: radial-gradient(90% 55% at 90% 6%, rgba(255, 160, 70, 0.30) 0%, rgba(255, 160, 70, 0.12) 45%, rgba(255, 160, 70, 0) 75%);
@@ -244,15 +388,17 @@
   --bande: rgba(70, 34, 10, 0.62); --bande-bas: rgba(62, 28, 8, 0.66);
   --encre-surtitre: #FFB878; --encre-titre: #FFDDBA; --encre-phrase: #EECBA8; --encre-duree: #BCA58F;
   --ombre-produit: rgba(0, 0, 0, 0.55);
+  --zeste: rgba(255, 160, 70, 0.22); --albedo: rgba(255, 226, 190, 0.10); --pulpe: rgba(255, 160, 70, 0.16);
 }
 
-/* Crêpes · 20 janvier au 2 février (3 recettes : ne s'affiche pas encore) */
+/* Crêpes · 20 janvier au 2 février · la crêpe qui saute (3 recettes : ne s'affiche pas encore) */
 .crepes {
   --lueur-haut: radial-gradient(90% 55% at 90% 6%, rgba(255, 206, 150, 0.50) 0%, rgba(255, 220, 180, 0.20) 45%, rgba(255, 220, 180, 0) 75%);
   --lueur-bas: radial-gradient(70% 45% at 0% 78%, rgba(200, 150, 90, 0.12) 0%, rgba(200, 150, 90, 0) 70%);
   --bande: rgba(252, 241, 220, 0.94); --bande-bas: rgba(249, 234, 211, 0.96);
   --encre-surtitre: #8C5B22; --encre-titre: #6B4416; --encre-phrase: #725235; --encre-duree: #6E5D4E;
   --ombre-produit: rgba(110, 70, 20, 0.22);
+  --pate: #F3CF8F; --pate-bord: #DFA95C; --pate-tache: rgba(166, 100, 34, 0.42); --pate-ombre: rgba(110, 70, 20, 0.26);
 }
 :global([data-theme="dark"]) .crepes {
   --lueur-haut: radial-gradient(90% 55% at 90% 6%, rgba(255, 190, 110, 0.26) 0%, rgba(255, 190, 110, 0.10) 45%, rgba(255, 190, 110, 0) 75%);
@@ -260,6 +406,7 @@
   --bande: rgba(62, 42, 18, 0.62); --bande-bas: rgba(54, 36, 14, 0.66);
   --encre-surtitre: #F0C089; --encre-titre: #FFE2C0; --encre-phrase: #E8D0B4; --encre-duree: #B8A894;
   --ombre-produit: rgba(0, 0, 0, 0.55);
+  --pate: #E8BF7F; --pate-bord: #C99447; --pate-tache: rgba(110, 62, 18, 0.50); --pate-ombre: rgba(0, 0, 0, 0.42);
 }
 
 /* Matins d'hiver · 3 février à la fin du mois · la neige */
@@ -280,13 +427,16 @@
   --flocon-ombre: rgba(120, 160, 230, 0.25);
 }
 
-/* Pâques · les deux semaines avant le dimanche de Pâques */
+/* Pâques · les deux semaines avant le dimanche de Pâques · les pétales */
 .paques {
   --lueur-haut: radial-gradient(90% 55% at 90% 6%, rgba(255, 236, 170, 0.55) 0%, rgba(255, 240, 200, 0.22) 45%, rgba(255, 240, 200, 0) 75%);
   --lueur-bas: radial-gradient(70% 45% at 0% 78%, rgba(160, 214, 160, 0.20) 0%, rgba(160, 214, 160, 0) 70%);
   --bande: rgba(251, 237, 242, 0.94); --bande-bas: rgba(246, 234, 240, 0.96);
   --encre-surtitre: #9A4A66; --encre-titre: #4F2A1C; --encre-phrase: #6B4A4A; --encre-duree: #6D5A60;
   --ombre-produit: rgba(90, 50, 40, 0.22);
+  --nervure: rgba(170, 60, 100, 0.30);
+  --teinte-1: #EE9AB4; --teinte-2: #F3B3C7; --teinte-3: #E9849F;
+  --teinte-4: #F5BFD0; --teinte-5: #EFA5BD; --teinte-6: #E57C9A;
 }
 :global([data-theme="dark"]) .paques {
   --lueur-haut: radial-gradient(90% 55% at 90% 6%, rgba(255, 214, 150, 0.22) 0%, rgba(255, 214, 150, 0.09) 45%, rgba(255, 214, 150, 0) 75%);
@@ -294,15 +444,19 @@
   --bande: rgba(58, 30, 46, 0.62); --bande-bas: rgba(50, 26, 40, 0.66);
   --encre-surtitre: #F5A8C4; --encre-titre: #FFE0D6; --encre-phrase: #E9C8CC; --encre-duree: #B9A4AC;
   --ombre-produit: rgba(0, 0, 0, 0.55);
+  --nervure: rgba(90, 20, 50, 0.40);
+  --teinte-1: #F5A8C4; --teinte-2: #F9C8D7; --teinte-3: #EE96B6;
+  --teinte-4: #FBD6E1; --teinte-5: #F3B4C9; --teinte-6: #EA8DAD;
 }
 
-/* Salades · juin */
+/* Salades · juin · les aigrettes */
 .salades {
   --lueur-haut: radial-gradient(90% 55% at 90% 6%, rgba(255, 244, 190, 0.55) 0%, rgba(240, 250, 200, 0.22) 45%, rgba(240, 250, 200, 0) 75%);
   --lueur-bas: radial-gradient(70% 45% at 0% 78%, rgba(120, 200, 120, 0.16) 0%, rgba(120, 200, 120, 0) 70%);
   --bande: rgba(236, 246, 228, 0.94); --bande-bas: rgba(230, 242, 223, 0.96);
   --encre-surtitre: #3F7A2A; --encre-titre: #23481A; --encre-phrase: #3E5A33; --encre-duree: #556350;
   --ombre-produit: rgba(40, 80, 30, 0.22);
+  --aigrette-trait: #FFFFFF; --aigrette-ombre: rgba(52, 92, 44, 0.40); --aigrette-graine: #8B6B3D;
 }
 :global([data-theme="dark"]) .salades {
   --lueur-haut: radial-gradient(90% 55% at 90% 6%, rgba(200, 240, 150, 0.18) 0%, rgba(200, 240, 150, 0.07) 45%, rgba(200, 240, 150, 0) 75%);
@@ -310,15 +464,18 @@
   --bande: rgba(20, 46, 24, 0.62); --bande-bas: rgba(16, 40, 20, 0.66);
   --encre-surtitre: #9FD88A; --encre-titre: #DDF4C8; --encre-phrase: #C6DDB8; --encre-duree: #A3B49B;
   --ombre-produit: rgba(0, 0, 0, 0.55);
+  --aigrette-trait: rgba(242, 250, 236, 0.88); --aigrette-ombre: rgba(0, 0, 0, 0.30); --aigrette-graine: #C9A46A;
 }
 
-/* Barbecue · 1er au 20 juillet */
+/* Barbecue · 1er au 20 juillet · les braises */
 .barbecue {
   --lueur-haut: radial-gradient(90% 55% at 90% 6%, rgba(255, 214, 140, 0.55) 0%, rgba(255, 226, 170, 0.22) 45%, rgba(255, 226, 170, 0) 75%);
   --lueur-bas: radial-gradient(70% 45% at 0% 78%, rgba(255, 140, 90, 0.14) 0%, rgba(255, 140, 90, 0) 70%);
   --bande: rgba(231, 241, 250, 0.94); --bande-bas: rgba(226, 237, 248, 0.96);
   --encre-surtitre: #B5502F; --encre-titre: #1E3D5C; --encre-phrase: #3F546B; --encre-duree: #56606E;
   --ombre-produit: rgba(40, 50, 80, 0.22);
+  --braise-halo: rgba(255, 138, 60, 0.55);
+  --teinte-1: #FF8A3D; --teinte-2: #FFB04D; --teinte-3: #FF6A3D;
 }
 :global([data-theme="dark"]) .barbecue {
   --lueur-haut: radial-gradient(90% 55% at 90% 6%, rgba(255, 170, 90, 0.26) 0%, rgba(255, 170, 90, 0.10) 45%, rgba(255, 170, 90, 0) 75%);
@@ -326,6 +483,8 @@
   --bande: rgba(16, 30, 52, 0.62); --bande-bas: rgba(14, 26, 46, 0.66);
   --encre-surtitre: #FFB08A; --encre-titre: #DCEBFF; --encre-phrase: #C8D6E8; --encre-duree: #A1ABBD;
   --ombre-produit: rgba(0, 0, 0, 0.55);
+  --braise-halo: rgba(255, 150, 70, 0.70);
+  --teinte-1: #FFA04D; --teinte-2: #FFC266; --teinte-3: #FF7A45;
 }
 
 /* Glaces · 21 juillet au 31 août · le soleil */
@@ -348,13 +507,15 @@
   --disque: radial-gradient(circle, rgba(255, 196, 120, 0.60) 0%, rgba(255, 190, 110, 0.35) 16%, rgba(255, 180, 100, 0) 36%);
 }
 
-/* Rentrée · septembre */
+/* Rentrée · septembre · le cahier */
 .rentree {
   --lueur-haut: radial-gradient(90% 55% at 90% 6%, rgba(255, 220, 150, 0.48) 0%, rgba(255, 230, 180, 0.20) 45%, rgba(255, 230, 180, 0) 75%);
   --lueur-bas: radial-gradient(70% 45% at 0% 78%, rgba(220, 90, 80, 0.12) 0%, rgba(220, 90, 80, 0) 70%);
   --bande: rgba(238, 245, 228, 0.94); --bande-bas: rgba(232, 241, 222, 0.96);
   --encre-surtitre: #B03A2E; --encre-titre: #6A1F1A; --encre-phrase: #5A4A3A; --encre-duree: #5E6152;
   --ombre-produit: rgba(60, 70, 30, 0.22);
+  --cahier-marge: rgba(206, 70, 62, 0.42); --cahier-carreau: rgba(72, 92, 168, 0.13);
+  --cahier-forte: rgba(72, 92, 168, 0.20); --cahier-ligne: rgba(72, 92, 168, 0.09);
 }
 :global([data-theme="dark"]) .rentree {
   --lueur-haut: radial-gradient(90% 55% at 90% 6%, rgba(255, 200, 120, 0.22) 0%, rgba(255, 200, 120, 0.09) 45%, rgba(255, 200, 120, 0) 75%);
@@ -362,6 +523,8 @@
   --bande: rgba(30, 40, 18, 0.62); --bande-bas: rgba(26, 34, 14, 0.66);
   --encre-surtitre: #FF9F92; --encre-titre: #FFD8D0; --encre-phrase: #D8D5BE; --encre-duree: #A9AE98;
   --ombre-produit: rgba(0, 0, 0, 0.55);
+  --cahier-marge: rgba(255, 124, 112, 0.34); --cahier-carreau: rgba(192, 206, 255, 0.08);
+  --cahier-forte: rgba(192, 206, 255, 0.13); --cahier-ligne: rgba(192, 206, 255, 0.055);
 }
 
 /* Soupes · 20 octobre au 9 novembre · les feuilles et la vapeur */
@@ -372,8 +535,8 @@
   --encre-surtitre: #8F4E2C; --encre-titre: #5E2A14; --encre-phrase: #7A4A33; --encre-duree: #6E5A4D;
   --ombre-produit: rgba(110, 50, 10, 0.26);
   --vapeur: #C58A62;
-  --feuille-1: #D98A3A; --feuille-2: #D9A441; --feuille-3: #C9652E;
-  --feuille-4: #B5502F; --feuille-5: #A8653A; --feuille-6: #E39A3B;
+  --teinte-1: #D98A3A; --teinte-2: #D9A441; --teinte-3: #C9652E;
+  --teinte-4: #B5502F; --teinte-5: #A8653A; --teinte-6: #E39A3B;
 }
 :global([data-theme="dark"]) .soupes {
   --lueur-haut: radial-gradient(90% 55% at 90% 6%, rgba(255, 146, 72, 0.32) 0%, rgba(255, 150, 80, 0.12) 45%, rgba(255, 150, 80, 0) 75%);
@@ -383,17 +546,18 @@
   --ombre-produit: rgba(0, 0, 0, 0.55);
   --vapeur: rgba(255, 228, 204, 0.6);
   --nervure: rgba(60, 20, 5, 0.45);
-  --feuille-1: #F0A24A; --feuille-2: #E6B455; --feuille-3: #DE6E3E;
-  --feuille-4: #C9583A; --feuille-5: #C27A4E; --feuille-6: #E8954A;
+  --teinte-1: #F0A24A; --teinte-2: #E6B455; --teinte-3: #DE6E3E;
+  --teinte-4: #C9583A; --teinte-5: #C27A4E; --teinte-6: #E8954A;
 }
 
-/* Gratins · 10 au 30 novembre */
+/* Gratins · 10 au 30 novembre · la pluie */
 .gratins {
   --lueur-haut: radial-gradient(90% 55% at 90% 6%, rgba(255, 196, 120, 0.52) 0%, rgba(255, 210, 150, 0.22) 45%, rgba(255, 214, 170, 0) 75%);
   --lueur-bas: radial-gradient(70% 45% at 0% 78%, rgba(196, 130, 60, 0.14) 0%, rgba(196, 130, 60, 0) 70%);
   --bande: rgba(251, 236, 214, 0.94); --bande-bas: rgba(247, 229, 204, 0.96);
   --encre-surtitre: #8A5524; --encre-titre: #57330F; --encre-phrase: #6F4A2A; --encre-duree: #6E5A4D;
   --ombre-produit: rgba(110, 60, 10, 0.24);
+  --goutte: rgba(96, 108, 140, 0.50);
 }
 :global([data-theme="dark"]) .gratins {
   --lueur-haut: radial-gradient(90% 55% at 90% 6%, rgba(255, 170, 80, 0.30) 0%, rgba(255, 170, 80, 0.12) 45%, rgba(255, 170, 80, 0) 75%);
@@ -401,15 +565,17 @@
   --bande: rgba(62, 40, 16, 0.64); --bande-bas: rgba(54, 34, 14, 0.68);
   --encre-surtitre: #F2BE7E; --encre-titre: #FFE2BC; --encre-phrase: #EAD0B0; --encre-duree: #B9A58F;
   --ombre-produit: rgba(0, 0, 0, 0.55);
+  --goutte: rgba(214, 224, 246, 0.42);
 }
 
-/* Mijoté · 1er au 14 décembre */
+/* Mijoté · 1er au 14 décembre · le givre */
 .mijote {
   --lueur-haut: radial-gradient(90% 55% at 90% 6%, rgba(236, 140, 104, 0.44) 0%, rgba(240, 170, 140, 0.20) 45%, rgba(240, 170, 140, 0) 75%);
   --lueur-bas: radial-gradient(70% 45% at 0% 78%, rgba(150, 60, 40, 0.12) 0%, rgba(150, 60, 40, 0) 70%);
   --bande: rgba(248, 228, 219, 0.94); --bande-bas: rgba(244, 220, 210, 0.96);
   --encre-surtitre: #8A3A2A; --encre-titre: #5A1F14; --encre-phrase: #73402F; --encre-duree: #6F5650;
   --ombre-produit: rgba(100, 30, 20, 0.24);
+  --givre-brume: rgba(255, 255, 255, 0.62); --givre-trait: #FFFFFF; --givre-ombre: rgba(140, 64, 52, 0.30);
 }
 :global([data-theme="dark"]) .mijote {
   --lueur-haut: radial-gradient(90% 55% at 90% 6%, rgba(240, 120, 90, 0.28) 0%, rgba(240, 120, 90, 0.11) 45%, rgba(240, 120, 90, 0) 75%);
@@ -417,6 +583,7 @@
   --bande: rgba(62, 20, 16, 0.64); --bande-bas: rgba(54, 16, 14, 0.68);
   --encre-surtitre: #F2A08A; --encre-titre: #FFD5C8; --encre-phrase: #E9BFB2; --encre-duree: #B89F99;
   --ombre-produit: rgba(0, 0, 0, 0.55);
+  --givre-brume: rgba(206, 222, 255, 0.12); --givre-trait: rgba(228, 238, 255, 0.80); --givre-ombre: rgba(0, 0, 0, 0.40);
 }
 
 /* Fêtes · 15 au 31 décembre · la guirlande */

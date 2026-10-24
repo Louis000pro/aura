@@ -20,9 +20,11 @@
    trou, pas une saison.
 
    Ajouter un moment, c'est une entrée ici (deux dates, des recettes de la
-   banque, quatre ou cinq produits de `public/saison/`) et sa lumière dans
-   `AfficheSaison.module.css`, en clair et en sombre. `check:nutrition`
-   refuse un moment sans l'une des deux.
+   banque, quatre ou cinq produits de `public/saison/`, son motif) et sa
+   lumière dans `AfficheSaison.module.css`, en clair et en sombre, avec
+   les couleurs de son motif. `check:nutrition` refuse un moment à qui il
+   manque sa lumière ou une couleur de son motif, dans l'un des deux
+   thèmes.
    ════════════════════════════════════════════════════════════════════ */
 
 import { RECIPES, type DietKey, type Recipe } from "@/lib/recipeBank";
@@ -34,8 +36,12 @@ export type IdMoment =
   | "agrumes" | "crepes" | "matins-hiver" | "paques" | "salades" | "barbecue"
   | "glaces" | "rentree" | "soupes" | "gratins" | "mijote" | "fetes";
 
-/** Ce qui bouge sur l'affiche. Un moment qui n'a pas encore été dessiné n'en a pas. */
-export type MotifSaison = "feuilles" | "guirlande" | "neige" | "soleil" | null;
+/** Le décor de l'affiche, un par moment : ce qui tombe, s'envole, tourne
+ *  ou scintille derrière le texte et les photos (le cahier, lui, ne bouge
+ *  pas). Chaque motif se dessine dans `AfficheSaison.tsx`. */
+export type MotifSaison =
+  | "tranche" | "crepe" | "neige" | "petales" | "aigrettes" | "braises"
+  | "soleil" | "cahier" | "feuilles" | "pluie" | "givre" | "guirlande";
 
 /** Ce que l'affiche dessine pour un produit : le carré de sa vignette, sa
  *  place et sa taille en pixels dans la boîte de la nature morte
@@ -186,10 +192,9 @@ export function poser(p: PoseProduit): ProduitSaison {
 
 const nature = (poses: PoseProduit[]) => poses.map(poser);
 
-/* Les douze moments, dans l'ordre de l'année. Les quatre premiers dessinés
-   (soupes, fêtes, matins d'hiver, glaces) ont leur motif ; les autres ont
-   leur lumière et leurs produits, et leur motif viendra quand il sera
-   dessiné. */
+/* Les douze moments, dans l'ordre de l'année, chacun avec son motif
+   (maquettes « La saison, en décor » et « Les huit autres moments »,
+   validées par Louis le 2026-10-24). */
 export const MOMENTS_SAISON: MomentSaison[] = [
   {
     id: "agrumes", titre: "Agrumes", surtitre: "C’est l’hiver",
@@ -203,7 +208,7 @@ export const MOMENTS_SAISON: MomentSaison[] = [
       { nom: "citron-jaune", cx: 56, w: 84, devant: 4 },
       { nom: "citron-vert", cx: 296, h: 70, devant: 4 },
     ]),
-    motif: null, vapeur: false,
+    motif: "tranche", vapeur: false,
   },
   {
     id: "crepes", titre: "Crêpes", surtitre: "Pour la Chandeleur",
@@ -217,7 +222,7 @@ export const MOMENTS_SAISON: MomentSaison[] = [
       { nom: "oeuf", cx: 166, h: 74, devant: 2 },
       { nom: "citron-jaune", cx: 288, w: 88, devant: 4 },
     ]),
-    motif: null, vapeur: false,
+    motif: "crepe", vapeur: false,
   },
   {
     id: "matins-hiver", titre: "Matins d’hiver", surtitre: "C’est l’hiver",
@@ -246,7 +251,7 @@ export const MOMENTS_SAISON: MomentSaison[] = [
       { nom: "pepites-chocolat", cx: 98, w: 86, devant: 6 },
       { nom: "noisettes", cx: 298, h: 58, devant: 4 },
     ]),
-    motif: null, vapeur: false,
+    motif: "petales", vapeur: false,
   },
   {
     id: "salades", titre: "Salades", surtitre: "Les beaux jours",
@@ -260,7 +265,7 @@ export const MOMENTS_SAISON: MomentSaison[] = [
       { nom: "radis", cx: 60, w: 90, devant: 4 },
       { nom: "tomate", cx: 288, h: 84, devant: 4 },
     ]),
-    motif: null, vapeur: false,
+    motif: "aigrettes", vapeur: false,
   },
   {
     id: "barbecue", titre: "Barbecue", surtitre: "C’est l’été",
@@ -274,7 +279,7 @@ export const MOMENTS_SAISON: MomentSaison[] = [
       { nom: "citron-vert", cx: 44, h: 60, devant: 4 },
       { nom: "oignon-rouge", cx: 292, h: 78, devant: 4 },
     ]),
-    motif: null, vapeur: false,
+    motif: "braises", vapeur: false,
   },
   {
     id: "glaces", titre: "Glaces", surtitre: "C’est l’été",
@@ -303,7 +308,7 @@ export const MOMENTS_SAISON: MomentSaison[] = [
       { nom: "tomates-cerises", cx: 62, w: 96, devant: 4 },
       { nom: "avocat", cx: 286, h: 88, devant: 4 },
     ]),
-    motif: null, vapeur: false,
+    motif: "cahier", vapeur: false,
   },
   {
     id: "soupes", titre: "Soupes", surtitre: "C’est l’automne",
@@ -331,7 +336,7 @@ export const MOMENTS_SAISON: MomentSaison[] = [
       { nom: "oignon", cx: 56, h: 84, devant: 4 },
       { nom: "tete-d-ail", cx: 296, h: 78, devant: 4 },
     ]),
-    motif: null, vapeur: false,
+    motif: "pluie", vapeur: false,
   },
   {
     id: "mijote", titre: "Mijoté", surtitre: "Les premiers froids",
@@ -345,7 +350,7 @@ export const MOMENTS_SAISON: MomentSaison[] = [
       { nom: "oignon", cx: 56, h: 82, devant: 4 },
       { nom: "carotte", cx: 262, w: 136, devant: 4 },
     ]),
-    motif: null, vapeur: false,
+    motif: "givre", vapeur: false,
   },
   {
     id: "fetes", titre: "Fêtes", surtitre: "Le temps des fêtes",

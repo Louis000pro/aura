@@ -363,8 +363,6 @@ const fichierPublic = (chemin: string) => existsSync(new URL("../public" + chemi
   const sansNuit = MOMENTS_SAISON.filter((m) => !css.includes(`:global([data-theme="dark"]) .${m.id} {`)).map((m) => m.id);
   verdict("chaque moment a sa lumière en clair", sansJour.length === 0, sansJour.join(", ") || `${MOMENTS_SAISON.length} classes`);
   verdict("chaque moment a sa lumière en sombre", sansNuit.length === 0, sansNuit.join(", ") || `${MOMENTS_SAISON.length} classes`);
-  verdict("le décor s'arrête quand le téléphone demande moins de mouvement, et sur un appareil modeste",
-    css.includes("@media (prefers-reduced-motion: reduce)") && css.includes(":global(html.perf-lite) .chute"), "rien ne tombe, rien ne tourne");
   verdict("la lumière s'efface par un masque, lueurs comprises", /\.affiche::before \{[\s\S]*?mask-image: linear-gradient/.test(css),
     "aucune ligne nette au bord de l'affiche");
   const boiteNature = css.match(/^\.nature \{([^}]*)\}/m)?.[1] ?? "";
@@ -389,6 +387,84 @@ const fichierPublic = (chemin: string) => existsSync(new URL("../public" + chemi
   verdict("l'affiche n'écrit rien", !/supabase|createClient|nutrition_logs|\.(insert|upsert|delete)\(/.test(affiche), "elle montre, l'écran ouvre");
   const vue = net(lire("src/components/nutrition/CollectionRecettes.tsx"));
   verdict("« Midi et soir » ne garde que des plats", vue.includes('natureDe(r) === "plat"') && !vue.includes('!== "petit-dej"'), "un chocolat chaud n'est pas un dîner");
+
+  /* Le décor. Chaque moment a son motif, chaque motif se dessine dans
+     l'affiche, et toute animation du module s'arrête dans les deux cas
+     (mouvement réduit, appareil modeste) : la liste se lit dans le CSS,
+     elle ne s'écrit pas ici. */
+  const motifs = MOMENTS_SAISON.map((m) => m.motif);
+  const doubles = motifs.filter((m, i) => motifs.indexOf(m) !== i);
+  verdict("chaque moment a son motif, et aucun motif ne sert deux fois", doubles.length === 0, doubles.join(", ") || `${motifs.length} motifs`);
+  const nonDessines = motifs.filter((m) => !new RegExp(`\\b${m}: <[A-Z]`).test(affiche));
+  verdict("chaque motif se dessine dans l'affiche", nonDessines.length === 0, nonDessines.join(", ") || "DECOR_AFFICHE et DECOR_TETE");
+
+  const cssNet = css.replace(/\/\*[\s\S]*?\*\//g, "");
+  const keyframes = [...cssNet.matchAll(/@keyframes ([\w-]+)/g)].map((m) => m[1]);
+  const keyframesDoubles = keyframes.filter((k, i) => keyframes.indexOf(k) !== i);
+  verdict("chaque animation du module porte un nom qui n'est qu'à elle", keyframesDoubles.length === 0,
+    keyframesDoubles.join(", ") || `${keyframes.length} animations`);
+  const reduit = cssNet.match(/@media \(prefers-reduced-motion: reduce\) \{([\s\S]*?)\n\}/)?.[1] ?? "";
+  const horsBlocs = cssNet.replace(/@keyframes [\w-]+ \{(?:[^{}]*\{[^{}]*\})*[^{}]*\}/g, "")
+    .replace(/@media \(prefers-reduced-motion: reduce\) \{[\s\S]*?\n\}/, "");
+  const regles = (texte: string) => [...texte.matchAll(/([^{}]+)\{([^{}]*)\}/g)]
+    .map((m) => ({ selecteurs: m[1].split(",").map((x) => x.trim()).filter(Boolean), corps: m[2] }));
+  const animes = new Set(regles(horsBlocs)
+    .filter((r) => /(^|;|\s)animation(-name)?:(?!\s*none)/.test(r.corps))
+    .flatMap((r) => r.selecteurs)
+    .filter((x) => !x.startsWith(":global(html.perf-lite)") && !x.startsWith("@")));
+  const arretes = (liste: { selecteurs: string[]; corps: string }[]) =>
+    new Set(liste.filter((r) => /animation:\s*none/.test(r.corps)).flatMap((r) => r.selecteurs));
+  const arretReduit = arretes(regles(reduit));
+  const arretModeste = arretes(regles(horsBlocs));
+  const oubliesReduit = [...animes].filter((x) => !arretReduit.has(x));
+  const oubliesModeste = [...animes].filter((x) => !arretModeste.has(`:global(html.perf-lite) ${x}`));
+  verdict("toute animation du décor s'arrête quand le téléphone demande moins de mouvement", animes.size > 10 && oubliesReduit.length === 0,
+    oubliesReduit.join(", ") || `${animes.size} éléments animés`);
+  verdict("toute animation du décor s'arrête sur un appareil modeste", animes.size > 10 && oubliesModeste.length === 0,
+    oubliesModeste.join(", ") || `${animes.size} éléments animés`);
+
+  /* Les couleurs : en sombre, un moment redéfinit tout ce qu'il pose en
+     clair, et chaque motif trouve les siennes chez son moment. */
+  const bloc = (selecteur: string) => {
+    const debut = css.indexOf(`\n${selecteur} {`);
+    return debut < 0 ? "" : css.slice(debut, css.indexOf("\n}", debut));
+  };
+  const variables = (texte: string) => new Set([...texte.matchAll(/(--[\w-]+):/g)].map((m) => m[1]));
+  const nuitIncomplete = MOMENTS_SAISON.flatMap((m) => {
+    const nuit = variables(bloc(`:global([data-theme="dark"]) .${m.id}`));
+    return [...variables(bloc(`.${m.id}`))].filter((v) => !nuit.has(v)).map((v) => `${m.id}:${v}`);
+  });
+  verdict("en sombre, chaque moment redéfinit toutes ses couleurs du clair", nuitIncomplete.length === 0,
+    nuitIncomplete.join(", ") || `${MOMENTS_SAISON.length} moments`);
+  const TEINTES = (n: number) => Array.from({ length: n }, (_, i) => `--teinte-${i + 1}`);
+  const COULEURS_MOTIF: Record<string, string[]> = {
+    tranche: ["--zeste", "--albedo", "--pulpe"],
+    crepe: ["--pate", "--pate-bord", "--pate-tache", "--pate-ombre"],
+    neige: ["--flocon-ombre"],
+    petales: [...TEINTES(6), "--nervure"],
+    aigrettes: ["--aigrette-trait", "--aigrette-ombre", "--aigrette-graine"],
+    braises: [...TEINTES(3), "--braise-halo"],
+    soleil: ["--rayon", "--disque"],
+    cahier: ["--cahier-marge", "--cahier-carreau", "--cahier-forte", "--cahier-ligne"],
+    feuilles: TEINTES(6),
+    pluie: ["--goutte"],
+    givre: ["--givre-brume", "--givre-trait", "--givre-ombre"],
+    guirlande: ["--fil", "--douille"],
+  };
+  const sansCouleur = MOMENTS_SAISON.flatMap((m) => {
+    const attendues = COULEURS_MOTIF[m.motif];
+    if (!attendues) return [`${m.id}:${m.motif} sans table`];
+    const jour = variables(bloc(`.${m.id}`)), nuit = variables(bloc(`:global([data-theme="dark"]) .${m.id}`));
+    return attendues.filter((v) => !jour.has(v) || !nuit.has(v)).map((v) => `${m.id}:${v}`);
+  });
+  verdict("chaque motif trouve ses couleurs chez son moment, en clair et en sombre", sansCouleur.length === 0,
+    sansCouleur.join(", ") || "les douze");
+  const sansVapeur = MOMENTS_SAISON.filter((m) => m.vapeur
+    && !(variables(bloc(`.${m.id}`)).has("--vapeur") && variables(bloc(`:global([data-theme="dark"]) .${m.id}`)).has("--vapeur"))).map((m) => m.id);
+  verdict("la vapeur a sa couleur, en clair et en sombre", sansVapeur.length === 0, sansVapeur.join(", ") || "");
+  const lues = new Set([...cssNet.matchAll(/var\((--[\w-]+)/g)].map((m) => m[1]));
+  const inutiles = Object.values(COULEURS_MOTIF).flat().filter((v) => !lues.has(v));
+  verdict("chaque couleur attendue d'un motif est lue par le module", inutiles.length === 0, inutiles.join(", ") || "");
 }
 
 console.log(echecs ? `\n${echecs} échec(s).` : "\nTout passe.");
