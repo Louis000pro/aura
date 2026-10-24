@@ -14,10 +14,13 @@
 //     supprimée) n'est pas un évènement, et sûrement pas un reproche.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { indexRang, type Rang } from "@/lib/aura";
+import { useSyncExternalStore } from "react";
+import { indexRang, RANGS, type Rang } from "@/lib/aura";
 import { publierEvenement } from "@/lib/evenementsFil";
 
 export const EVENEMENT_RANG_MONTE = "aura:rang-monte";
+/** Le rang mémorisé a changé (premier passage compris) : ce qui le montre se relit. */
+export const EVENEMENT_RANG_CONNU = "aura:rang-connu";
 
 export type DetailRangMonte = { rangId: string };
 
@@ -46,6 +49,7 @@ export function noterRang(userId: string, rang: Rang): void {
   } catch {
     /* ignore */
   }
+  window.dispatchEvent(new Event(EVENEMENT_RANG_CONNU));
 
   if (vu === null) return; // premier passage : on mémorise, on ne fête pas
   if (indexRang(rang.id) <= indexRang(vu)) return; // descente ou rang inconnu : rien
@@ -69,4 +73,41 @@ export function rejouerCelebration(rangId: string): void {
       new CustomEvent<DetailRangMonte>(EVENEMENT_RANG_MONTE, { detail: { rangId } }),
     );
   }, 260);
+}
+
+/**
+ * Le dernier rang que CET appareil a vu pour ce compte, ou `null`.
+ *
+ * C'est ce que montrent les écrans qui n'ont pas l'aura sous la main : la
+ * photo de l'accueil (son cadre) et la musique de fin de séance. Il est tenu
+ * par `noterRang`, qu'appellent tous les écrans qui lisent l'aura en base :
+ * jamais un rang deviné, au pire celui d'il y a quelques minutes.
+ */
+export function rangMemorise(userId: string | null | undefined): Rang | null {
+  if (!userId || typeof window === "undefined") return null;
+  try {
+    const id = localStorage.getItem(cle(userId));
+    return RANGS.find((r) => r.id === id) ?? null;
+  } catch {
+    return null;
+  }
+}
+
+function abonner(rappel: () => void): () => void {
+  window.addEventListener(EVENEMENT_RANG_CONNU, rappel);
+  window.addEventListener("storage", rappel);
+  return () => {
+    window.removeEventListener(EVENEMENT_RANG_CONNU, rappel);
+    window.removeEventListener("storage", rappel);
+  };
+}
+
+/** Le rang mémorisé, suivi : `null` au rendu serveur et tant qu'aucun écran ne l'a lu. */
+export function useRangMemorise(userId: string | null | undefined): Rang | null {
+  const id = useSyncExternalStore(
+    abonner,
+    () => rangMemorise(userId)?.id ?? null,
+    () => null,
+  );
+  return id ? RANGS.find((r) => r.id === id) ?? null : null;
 }

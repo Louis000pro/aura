@@ -104,6 +104,9 @@ export type EntreeMot = {
   /** Vaiiya+ : les missions Premium de la semaine comptent. */
   premium: boolean;
   historique: HistoriqueMot;
+  /** Les jokers de la série, tels que la base les compte. `null` (ou absent) :
+   *  la base n'en pose pas encore, le mot n'en parle pas. */
+  jokers?: { hierCouvert: boolean; restants: number } | null;
 };
 
 export type ChoixMot = {
@@ -224,6 +227,8 @@ export function choisirAccroche(e: EntreeMot): string | null {
     if (pool?.length) files.push({ pool, fenetre });
   };
 
+  // Un joker a gardé la série cette nuit : c'est ce que le Guide dit d'abord.
+  if (e.jokers?.hierCouvert) ajouter(MATIN.joker, 0);
   if (m === "absence.longue") ajouter(MATIN.retourLong);
   if (m === "absence.courte") ajouter(MATIN.retourCourt);
   if (m === "debut") ajouter(MATIN.debut);
@@ -357,7 +362,7 @@ export function choisirMot(e: EntreeMot): ChoixMot {
 const ACCROCHES = new Map<string, PieceMatin>();
 for (const pool of [
   ...MATIN.jour, ...Object.values(MATIN.moment),
-  MATIN.hierSeance, MATIN.hierSeanceAnonyme, MATIN.hierRepas, MATIN.palier,
+  MATIN.hierSeance, MATIN.hierSeanceAnonyme, MATIN.hierRepas, MATIN.palier, MATIN.joker,
   MATIN.retourCourt, MATIN.retourLong, MATIN.debut, MATIN.mois,
   ...Object.values(MATIN.relais), ...Object.values(MATIN.saison), ...Object.values(MATIN.semaine),
   Object.values(MATIN.anniv),
@@ -393,6 +398,7 @@ function contexteAccroche(e: EntreeMot): ContexteMatin {
     rang: e.moment?.ctx?.rang,
     maillon: e.relais?.maillon,
     mois: MOIS[(mois || 1) - 1],
+    jokers: e.jokers?.restants,
   };
 }
 

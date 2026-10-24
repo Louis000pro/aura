@@ -3,7 +3,8 @@
  *
  * ⚠️ PEU DE SONS, ET JAMAIS SUR UN BOUTON. Un son par moment qu'on ne
  * regarde pas : le 3-2-1 avant un effort, la fin d'un effort, la fin d'un
- * repos (le téléphone est posé), la séance terminée, et la montée de rang.
+ * repos (le téléphone est posé). La séance terminée et le passage de rang
+ * jouent la MUSIQUE DU RANG, qui vit dans `musiqueRang.ts` (2026-10-24).
  * Un clic sonore sur chaque bouton deviendrait du bruit en deux jours.
  *
  * ⚠️ AUCUN FICHIER AUDIO. Les sons sont synthétisés par Web Audio : rien à
@@ -18,7 +19,7 @@
  * (comme le thème) : c'est un réglage de l'appareil, pas du compte.
  */
 
-export type Son = "tic" | "go" | "finEffort" | "finRepos" | "seanceFinie" | "rang";
+export type Son = "tic" | "go" | "finEffort" | "finRepos";
 
 const CLE = "vaiiya_sons";
 export const EVT_SONS = "vaiiya:sons";
@@ -35,6 +36,12 @@ export function reglerSons(actifs: boolean): void {
 }
 
 let ctx: AudioContext | null = null;
+
+/** Le contexte audio de l'app, réveillé au premier geste. Partagé avec la
+ *  musique des rangs : un seul contexte, un seul réveil sur iOS. */
+export function contexteAudio(): AudioContext | null {
+  return contexte();
+}
 
 function contexte(): AudioContext | null {
   if (typeof window === "undefined") return null;
@@ -73,7 +80,7 @@ function note(c: AudioContext, freq: number, debut: number, duree: number, volum
 }
 
 /* Les notes : une gamme majeure de do, rien de strident. */
-const DO5 = 523.25, MI5 = 659.25, SOL5 = 783.99, DO6 = 1046.5, MI6 = 1318.5, SOL4 = 392.0;
+const DO5 = 523.25, SOL5 = 783.99, DO6 = 1046.5;
 
 export function jouerSon(son: Son): void {
   if (!sonsActifs()) return;
@@ -85,10 +92,5 @@ export function jouerSon(son: Son): void {
     case "go":          note(c, DO6, t, 0.22, 0.16); break;
     case "finEffort":   note(c, SOL5, t, 0.16); note(c, DO5, t + 0.12, 0.28); break;
     case "finRepos":    note(c, DO5, t, 0.14); note(c, SOL5, t + 0.11, 0.26); break;
-    case "seanceFinie": [DO5, MI5, SOL5, DO6].forEach((f, i) => note(c, f, t + i * 0.11, 0.5, 0.14)); break;
-    case "rang":
-      note(c, SOL4, t, 0.4, 0.1, "triangle");
-      [DO5, MI5, SOL5, DO6, MI6].forEach((f, i) => note(c, f, t + 0.08 + i * 0.09, 0.7, 0.12));
-      break;
   }
 }

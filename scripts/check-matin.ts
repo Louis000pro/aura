@@ -138,6 +138,45 @@ const feu: ContexteMatin = { serie: 12, au: "au Feu", le: "le Feu", suivanteLe: 
   const sommets = MATIN.flamme.sommet.map((p) => texteBrut(direMatin(p, { serie: 140 })));
   verdict("au dernier palier, plus de « plus que »", sommets.every((p) => p.includes("Feu sacré") && !p.includes("Plus que")), sommets[1]);
 }
+
+/* ── Le joker de la nuit (2026-10-24, maquette « Le passage de rang ») ── */
+{
+  const maquette = texteBrut(direMatin(MATIN.joker[0], { jokers: 1 }));
+  verdict(
+    "la phrase de la maquette, mot pour mot",
+    maquette === "Hier, ton joker a gardé ta série. Il t’en reste un ce mois-ci.",
+    maquette,
+  );
+  const dernier = MATIN.joker.map((p) => texteBrut(direMatin(p, { jokers: 0 })));
+  verdict("le dernier joker du mois dit quand reviennent les suivants", dernier.every((p) => p.includes("le 1er")), dernier[0]);
+
+  const couvert = { hierCouvert: true, restants: 2 };
+  const l = lire(entree({ jokers: couvert }));
+  verdict(
+    "un joker posé cette nuit ouvre le mot",
+    !!l.choix.accroche?.startsWith("joker.") && texteBrut(l.lignes[0].texte).includes("joker") && texteBrut(l.lignes[0].texte).includes("deux"),
+    texteBrut(l.lignes[0].texte),
+  );
+  const retour: MomentAccueil = { cle: "absence.courte", phrase: "retour.absence.courte", etat: "welcome", ctx: {} };
+  verdict(
+    "il passe avant le retour, après une nouvelle flamme",
+    !!lire(entree({ jokers: couvert, moment: retour })).choix.accroche?.startsWith("joker.")
+      && lire(entree({ jokers: couvert, serie: 7 })).choix.accroche === ACCROCHE_FLAMME,
+    "joker, puis flamme en premier le jour d'un palier",
+  );
+  const muets = [entree(), entree({ jokers: null }), entree({ jokers: { hierCouvert: false, restants: 1 } })];
+  verdict(
+    "sans joker cette nuit, le mot n'en parle pas",
+    muets.every((e) => !lire(e).choix.accroche?.startsWith("joker.")),
+    "trois cas",
+  );
+  verdict(
+    "le joker revient chaque fois qu'il se pose",
+    !!lire(entree({ jokers: couvert, historique: { pieces: Object.fromEntries(MATIN.joker.map((p) => [p.id, "2026-10-16"])), familles: {} } }))
+      .choix.accroche?.startsWith("joker."),
+    "aucune fenêtre de trente jours",
+  );
+}
 {
   const l = brut(entree({ serie: 3, plan: null }));
   const m = brut(entree({ serie: 5, plan: null }));
@@ -284,7 +323,7 @@ simuler("une année de repos, le soir", 365, () => ({ heure: 21, serie: 12, plan
 function toutesLesPieces(): { id: string; texte: string }[] {
   const plein: ContexteMatin = {
     ...feu, titre: "Push", minutes: 32, etape: "Pull", jour: "mardi 8", manque: 20, rang: "Platine",
-    repas: 3, maillon: 3, mois: "octobre",
+    repas: 3, maillon: 3, mois: "octobre", jokers: 2,
   };
   const out: { id: string; texte: string }[] = [];
   const marcher = (v: unknown) => {
@@ -385,6 +424,11 @@ const lireSource = (fichier: string) => readFileSync(path.join(RACINE, fichier),
   verdict("le choix du jour se garde et se relit", feuille.includes("lireChoixDuJour(") && feuille.includes("noterChoixDuJour("), "une fois par jour");
   verdict("le mot attend la journée avant de dire « rien de prévu »", /etat === "loading" \? null/.test(feuille), "plan nul en chargement");
   verdict("la question du jour ouvre la conversation sur elle", feuille.includes("onQuestion(texteBrut(") && lireSource("src/components/AccueilSignature.tsx").includes("ouvrirSurQuestion(q)"), "onQuestion");
+  verdict(
+    "le mot lit les jokers que la base a comptés",
+    /historique, jokers \}/.test(feuille) && /jokers=\{aura\.jokers \?/.test(lireSource("src/components/AccueilSignature.tsx")),
+    "aura.jokers → FeuilleMotDuJour",
+  );
   const ctx = lireSource("src/context/AssistantContext.tsx");
   const corps = ctx.slice(ctx.indexOf("const ouvrirSurQuestion"), ctx.indexOf("const close = useCallback"));
   verdict("un tour de la personne, masqué, passe devant la question", /role: "user" as const[^}]*masque: true/.test(corps) && /role: "assistant" as const, content: q/.test(corps), "sanitizeHistory");

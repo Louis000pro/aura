@@ -27,6 +27,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import type { createClient } from "@/lib/supabase";
+import { lireJokers, noterJokersBase, type EtatJokers } from "@/lib/jokers";
 
 type SB = ReturnType<typeof createClient>;
 
@@ -351,85 +352,126 @@ export const MISSIONS_PREMIUM_SEMAINE = MISSIONS_SEMAINE.filter((m) => m.premium
 /** Les missions qui VALIDENT la journée. La connexion n'en fait pas partie. */
 export const ACTIONS_UTILES: MissionId[] = ["seance", "repas"];
 
-// ── Récompenses de rang ──
-// Principe validé avec Louis : que du STATUT / COSMÉTIQUE, jamais du fonctionnel.
-// On ne verrouille aucune fonction d'entraînement derrière un rang (tout le monde
-// doit pouvoir s'entraîner). Grimper = débloquer de la fierté visible.
-// Chaque récompense se lit depuis `rang.id` déjà calculé : aucune migration SQL.
+// ── Récompenses de rang (refonte du 2026-10-24, maquette « Le passage de
+// rang », version 2, validée par Louis) ──
 //
-// ⚠️ RÈGLE (2026-07-29, remontée de Louis) : on n'annonce QUE ce qui existe et se
-// VOIT. Chaque entrée ci-dessous est réellement rendue par `IdentiteRang.tsx` et
-// se montre en aperçu dans la galerie des rangs. Ajouter une récompense = 1) une
-// entrée ici avec son `apercu`, 2) son rendu dans `IdentiteRang.tsx`. Pas d'entrée
-// « vitrine » sans rendu : c'est exactement ce qui rendait l'écran incompréhensible.
+// Trois choses à chaque passage, et rien d'invisible :
+//   · LA CARTE, gravée à ton nom avec la date du rang (CarteRang) ;
+//   · LE CADRE de ta photo, propre à chaque rang dès l'Argent (AvatarRang),
+//     sur l'accueil, le profil et dans les conversations ;
+//   · LES JOKERS de série, rechargés le 1er du mois : 1 à Argent, 2 à Or,
+//     3 dès Platine. Le Diamant et l'Éternel ajoutent ce qu'ils donnaient
+//     déjà : le titre et le pseudo lumineux.
 //
-// Deux anciennes promesses ont été retirées : les « thèmes d'accent » (Or/Diamant)
-// contredisaient le système de couleur VERROUILLÉ (violet = action partout), et le
-// « flair en tête du classement » de l'Éternel décrivait un classement qui n'existe
-// pas et n'existera pas (limite dure du rang : jamais de comparaison sociale).
-export type ApercuCosmetique = "exp" | "badge" | "cadre" | "anneau" | "titre" | "brillant";
-
-export type Recompense = {
-  /** Emoji d'illustration de la récompense. */
-  emoji: string;
-  /** Titre court de ce qu'on débloque. */
-  titre: string;
-  /** Une ligne d'explication. */
-  desc: string;
-  /** Quel cosmétique la galerie doit montrer en aperçu réel. */
-  apercu: ApercuCosmetique;
-};
+// ⚠️ Que du STATUT et de la série, jamais du fonctionnel : aucun rang ne
+// ferme une séance ni une fonction d'entraînement. Le rang reste personnel,
+// sans classement, et ne parle que de régularité, jamais du corps.
+//
+// ⚠️ RÈGLE (2026-07-29, toujours vraie) : on n'annonce QUE ce qui existe et
+// se VOIT. Chaque cadeau ci-dessous est rendu pour de vrai par
+// `VisuelCadeau.tsx`, dans la scène comme dans la galerie. Les jokers ne
+// s'annoncent que si la base sait les poser (`jokersActifs`, lib/jokers.ts) :
+// tant que le SQL n'est pas collé, ils n'apparaissent nulle part.
+//
+// ⚠️ Remplacés et retirés le 2026-10-24 : la gemme à côté du pseudo
+// (Argent), le liseré doré (Or) et l'anneau animé (Platine). Le cadre du
+// rang dit tout ça à lui seul, sur la photo.
 
 /** Le titre débloqué au Diamant, affiché sous le pseudo. */
 export const TITRE_DIAMANT = "Inarrêtable";
 
-export const RECOMPENSE_RANG: Record<string, Recompense> = {
+/** Les jokers de série que chaque rang recharge le 1er du mois.
+ *  ⚠️ La base porte la même règle (`jokers_par_mois_aura`) :
+ *  `check:passage-sql` vérifie que les deux disent la même chose, et
+ *  `check:rangs` que les cadeaux de la scène la suivent. */
+export const JOKERS_PAR_MOIS: Record<string, number> = {
+  bronze: 0,
+  argent: 1,
+  or: 2,
+  platine: 3,
+  diamant: 3,
+  eternel: 3,
+};
+
+export function jokersParMois(rangId: string): number {
+  return JOKERS_PAR_MOIS[rangId] ?? 0;
+}
+
+export type GenreCadeau = "carte" | "cadre" | "joker" | "titre" | "brillant";
+
+export type Cadeau = {
+  genre: GenreCadeau;
+  /** Ce que la scène écrit sous le cadeau. */
+  titre: string;
+  /** Les jokers : combien par mois. */
+  n?: number;
+};
+
+export type RecompensesRang = {
+  /** Les cadeaux de la scène, dans l'ordre où ils s'ouvrent. Le Bronze n'a
+   *  pas de passage : sa carte se reçoit à l'inscription. */
+  cadeaux: Cadeau[];
+  /** Ce que la galerie écrit, ligne par ligne : la carte, le cadre, le reste. */
+  galerie: {
+    carte: string;
+    cadre: string | null;
+    /** Ce qui suit le titre ou le pseudo lumineux, montrés en vrai juste
+     *  avant (« sous ton nom »). Les jokers s'ajoutent à part. */
+    plus: string | null;
+  };
+};
+
+export const RECOMPENSES_RANG: Record<string, RecompensesRang> = {
   bronze: {
-    emoji: "🎁",
-    titre: "Coup de pouce de bienvenue",
-    desc: `+${EXP_BIENVENUE} EXP offerts pour lancer ton aventure.`,
-    apercu: "exp",
+    cadeaux: [],
+    galerie: { carte: "Ta première carte, dès l’inscription", cadre: null, plus: null },
   },
   argent: {
-    emoji: "🏷️",
-    titre: "Badge de rang",
-    desc: "Ta gemme s’affiche à côté de ton pseudo, sur ton profil et celui que voient les autres.",
-    apercu: "badge",
+    cadeaux: [
+      { genre: "carte", titre: "Ta carte Argent" },
+      { genre: "cadre", titre: "Ton cadre Argent" },
+      { genre: "joker", titre: "1 joker par mois", n: 1 },
+    ],
+    galerie: { carte: "Carte Argent, un reflet la traverse", cadre: "Cadre argent", plus: null },
   },
   or: {
-    emoji: "🖼️",
-    titre: "Cadre doré",
-    desc: "Un liseré doré encadre ta photo de profil.",
-    apercu: "cadre",
+    cadeaux: [
+      { genre: "carte", titre: "Ta carte Or" },
+      { genre: "cadre", titre: "Ton cadre Or" },
+      { genre: "joker", titre: "2 jokers par mois", n: 2 },
+    ],
+    galerie: { carte: "Carte Or, gravée de cercles", cadre: "Cadre or, avec sa lueur", plus: null },
   },
   platine: {
-    emoji: "💫",
-    titre: "Anneau animé",
-    desc: "Un halo tourne lentement autour de ta photo.",
-    apercu: "anneau",
+    cadeaux: [
+      { genre: "carte", titre: "Ta carte Platine" },
+      { genre: "cadre", titre: "Ton cadre Platine" },
+      { genre: "joker", titre: "3 jokers par mois", n: 3 },
+    ],
+    galerie: { carte: "Carte Platine, nacrée", cadre: "Cadre platine, une lumière tourne autour", plus: null },
   },
   diamant: {
-    emoji: "📛",
-    titre: `Titre « ${TITRE_DIAMANT} »`,
-    desc: "Un titre s’affiche sous ton pseudo, sur ton profil.",
-    apercu: "titre",
+    cadeaux: [
+      { genre: "carte", titre: "Ta carte Diamant" },
+      { genre: "cadre", titre: "Ton cadre Diamant" },
+      { genre: "titre", titre: `Le titre ${TITRE_DIAMANT}` },
+    ],
+    galerie: { carte: "Carte Diamant, holographique", cadre: "Cadre diamant, taillé en facettes", plus: "sous ton nom, sur ton profil" },
   },
   eternel: {
-    emoji: "✨",
-    titre: "Pseudo brillant",
-    desc: "Ton pseudo passe en dégradé lumineux, visible par les autres.",
-    apercu: "brillant",
+    cadeaux: [
+      { genre: "carte", titre: "Ta carte Éternel" },
+      { genre: "cadre", titre: "Ton cadre Éternel" },
+      { genre: "brillant", titre: "Ton pseudo en lumière" },
+    ],
+    galerie: { carte: "Carte Éternel, vivante", cadre: "Cadre éternel, or et violet, avec son halo", plus: "en lumière, visible par les autres" },
   },
 };
 
-/** Ce que le rang `rangId` a débloqué, en CUMULÉ (un Platine garde son cadre d'Or). */
+/** Ce que le rang `rangId` a débloqué sur l'identité, en CUMULÉ. */
 export type Cosmetiques = {
-  /** Gemme du rang à côté du pseudo (Argent et plus). */
-  badge: boolean;
-  /** Liseré doré autour de la photo (Or et plus). */
-  cadre: boolean;
-  /** Halo qui tourne autour de la photo (Platine et plus). */
-  anneau: boolean;
+  /** Le cadre de la photo : celui du rang atteint, dès l'Argent. `null` au Bronze. */
+  cadre: string | null;
   /** Titre sous le pseudo (Diamant et plus), ou null. */
   titre: string | null;
   /** Pseudo en dégradé lumineux (Éternel). */
@@ -444,12 +486,15 @@ export function indexRang(rangId: string): number {
 export function cosmetiquesDuRang(rangId: string): Cosmetiques {
   const i = indexRang(rangId);
   return {
-    badge: i >= indexRang("argent"),
-    cadre: i >= indexRang("or"),
-    anneau: i >= indexRang("platine"),
+    cadre: i >= indexRang("argent") ? rangId : null,
     titre: i >= indexRang("diamant") ? TITRE_DIAMANT : null,
     brillant: i >= indexRang("eternel"),
   };
+}
+
+/** Le rang juste avant (le Bronze pour lui-même) : la scène part de lui. */
+export function rangPrecedent(rangId: string): Rang {
+  return RANGS[Math.max(0, indexRang(rangId) - 1)];
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -517,6 +562,9 @@ export type EtatAura = {
    *  aujourd'hui ? `null` : la base ne connaît pas encore ce gain (le SQL
    *  du mouvement du jour n'est pas collé), et la carte n'en promet aucun. */
   mouvementDuJour: boolean | null;
+  /** Les jokers de série du mois. `null` : la base ne sait pas encore en
+   *  poser (le SQL du 2026-10-24 n'est pas collé), et l'app n'en parle pas. */
+  jokers: EtatJokers | null;
 };
 
 const CIBLES: Record<MissionId, number> = {
@@ -605,6 +653,7 @@ export function etatDepuisExp(
   serie = detail.streak,
   jourValide = false,
   mouvementDuJour: boolean | null = null,
+  jokers: EtatJokers | null = null,
 ): EtatAura {
   const idx = indexDuRang(exp);
   const rang = RANGS[idx];
@@ -612,7 +661,7 @@ export function etatDepuisExp(
   const rangSuivant = RANGS[idx + 1];
   const seuilHaut = rangSuivant ? rangSuivant.min : Math.max(PALIER_PROVISOIRE, seuilBas + 1);
   const restant = Math.max(0, seuilHaut - exp);
-  return { exp, rang, seuilBas, seuilHaut, restant, serie, jourValide, detail, missions, mouvementDuJour };
+  return { exp, rang, seuilBas, seuilHaut, restant, serie, jourValide, detail, missions, mouvementDuJour, jokers };
 }
 
 /**
@@ -641,6 +690,9 @@ export async function calculerAura(supabase: SB, userId: string): Promise<EtatAu
       /* `mouvement` n'est pas une mission du catalogue : la base le rend
          avec elles (`etat_missions_aura`), l'app le lit à part. */
       missions?: Partial<EtatMissionsAura> & { mouvement?: { complete?: boolean } };
+      /* Les jokers de série (migration du 2026-10-24). Absents tant que le
+         SQL n'est pas collé : l'app n'en parle alors nulle part. */
+      jokers?: unknown;
     };
 
     /* La version 1 de la RPC (avant le 2026-08-21) rendait `today` et
@@ -665,6 +717,9 @@ export async function calculerAura(supabase: SB, userId: string): Promise<EtatAu
       streak: serie,
     };
 
+    const jokers = lireJokers(brut.jokers);
+    noterJokersBase(jokers !== null);
+
     return etatDepuisExp(
       Number(brut.exp ?? EXP_BIENVENUE),
       detail,
@@ -672,6 +727,7 @@ export async function calculerAura(supabase: SB, userId: string): Promise<EtatAu
       serie,
       !!brut.jourValide,
       brut.missions.mouvement ? !!brut.missions.mouvement.complete : null,
+      jokers,
     );
   } catch {
     return null;

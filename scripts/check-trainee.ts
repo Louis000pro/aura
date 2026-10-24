@@ -17,7 +17,9 @@
    · un jour sans n'est jamais colorié ;
    · le chiffre se lit sur chaque rond (4,5 pour 1 au moins), et la gamme
      brille de plus en plus : doux au début, éclatant à la fin ;
-   · la Lueur de la tuile n'est plus le verre nu.
+   · la Lueur de la tuile n'est plus le verre nu ;
+   · un jour gardé par un joker (2026-10-24) relie la série sans compter,
+     n'a pas de flamme et laisse passer le ruban.
    ═══════════════════════════════════════════════════════════════════════ */
 import { readFileSync } from "node:fs";
 import path from "node:path";
@@ -131,6 +133,67 @@ function octobre(actifs: string[], aujourdhui = "2026-10-17") {
   verdict("le rang continue d'un mois à l'autre", rangs.get("2026-10-01") === 4, `le 1er octobre au rang ${rangs.get("2026-10-01")}`);
 }
 
+/* ── Les jokers : un jour couvert garde la série sans compter ──────────── */
+function octobreJoker(actifs: string[], couverts: string[], aujourdhui: string) {
+  const garde = new Set(couverts);
+  const rangs = rangsDesJours(actifs, garde);
+  const cases = grilleTrainee({ annee: 2026, mois: 9, rangs, aujourdhui, couverts: garde }).filter((c): c is CaseJour => c !== null);
+  return { rangs, garde, cases, jour: (n: number) => cases[n - 1] };
+}
+{
+  // La semaine de la maquette : du 13 au 19, le 16 gardé par un joker.
+  const actifs = [...plage("2026-10-13", "2026-10-15"), ...plage("2026-10-17", "2026-10-19")];
+  const { rangs, jour } = octobreJoker(actifs, ["2026-10-16"], "2026-10-19");
+  verdict(
+    "le jour d'après un joker continue la série",
+    rangs.get("2026-10-17") === 4 && rangs.get("2026-10-19") === 6,
+    `le 17 au rang ${rangs.get("2026-10-17")}, le 19 au rang ${rangs.get("2026-10-19")}`,
+  );
+  verdict("le jour couvert ne compte pas et n'a pas de flamme", !rangs.has("2026-10-16") && jour(16).joker && !jour(16).serie, "le 16");
+  verdict(
+    "le ruban traverse le jour couvert",
+    jour(15).ruban?.droite === "bord" && jour(16).ruban?.gauche === "bord" && jour(16).ruban?.droite === "bord" && jour(17).ruban?.gauche === "bord",
+    "du 15 au 17",
+  );
+  verdict(
+    "il garde la couleur de la flamme qu'il protège",
+    jour(16).ruban?.palier === jour(15).serie?.palier && jour(16).ruban?.vers === jour(17).serie?.palier,
+    `${jour(16).ruban?.palier} vers ${jour(16).ruban?.vers}`,
+  );
+  verdict("seul le jour couvert porte le bouclier", jour(15).joker === false && jour(17).joker === false, "ni la veille ni le lendemain");
+  verdict("sans le joker, le même trou casse la série", rangsDesJours(actifs).get("2026-10-17") === 1, "le 17 repart d'une Lueur");
+}
+{
+  // À partir de Platine : trois jours couverts d'affilée.
+  const { rangs, jour } = octobreJoker([...plage("2026-10-08", "2026-10-10"), "2026-10-14"], plage("2026-10-11", "2026-10-13"), "2026-10-14");
+  verdict(
+    "trois jokers d'affilée gardent la même série",
+    rangs.get("2026-10-14") === 4 && [11, 12, 13].every((n) => jour(n).joker && !!jour(n).ruban),
+    `le 14 au rang ${rangs.get("2026-10-14")}`,
+  );
+}
+{
+  // Argent : un seul joker, et le jour d'après sans rien casse la série.
+  const { rangs, jour } = octobreJoker([...plage("2026-10-10", "2026-10-12"), "2026-10-15"], ["2026-10-13"], "2026-10-15");
+  verdict(
+    "après le joker, un jour sans rien casse la série",
+    rangs.get("2026-10-15") === 1 && jour(13).ruban?.droite === "centre" && !jour(14).ruban && !jour(14).joker,
+    "le 15 repart d'une Lueur",
+  );
+}
+{
+  // Hier gardé par un joker, aujourd'hui pas encore compté : la série tient.
+  const { garde, rangs, jour } = octobreJoker(plage("2026-10-12", "2026-10-15"), ["2026-10-16"], "2026-10-17");
+  const suite = prochaineFlamme(rangs, "2026-10-17", garde);
+  verdict(
+    "hier couvert, la série tient jusqu'à minuit",
+    suite?.depuis === "2026-10-16" && suite?.date === "2026-10-19" && suite?.palier.id === "feu",
+    `${suite?.palier.id ?? "rien"} le ${suite?.date ?? "?"}`,
+  );
+  verdict("le chemin part du jour couvert", jour(16).chemin?.droite === true && jour(19).prochaine === "feu", "du 16 au 19");
+  verdict("sans le joker, la série d'hier est finie", prochaineFlamme(rangsDesJours(plage("2026-10-12", "2026-10-15")), "2026-10-17") === null, "rien à attendre");
+}
+
 /* ── La gamme, dans le vrai module CSS ─────────────────────────────────── */
 
 const RACINE = path.resolve(import.meta.dirname, "..");
@@ -195,6 +258,16 @@ const contraste = (a: string, b: string) => {
     "CalendrierSerie.tsx",
   );
   verdict("aucune couleur écrite dans le calendrier", !/#[0-9a-fA-F]{3,8}\b|rgba?\(/.test(calendrier), "toutes dans le module");
+  verdict(
+    "le calendrier reçoit les jours couverts et les dessine",
+    /grilleTrainee\(\{[^}]*couverts/.test(calendrier) && calendrier.includes("data-joker") && calendrier.includes("<IconeJoker"),
+    "un bouclier sur le jour gardé",
+  );
+  verdict(
+    "le jour couvert a son rond, sans couleur de flamme",
+    /\.rond\[data-joker\]\s*\{[^}]*dashed/.test(code("src/components/serie/CalendrierSerie.module.css")),
+    "pointillés dorés",
+  );
 
   const regle = code("src/lib/traineeSerie.ts");
   verdict(
@@ -208,6 +281,11 @@ const contraste = (a: string, b: string) => {
     "la feuille montre la traînée",
     feuille.includes("<CalendrierSerie") && feuille.includes("rangsDesJours(") && !feuille.includes("rgba(245,177,32") && !feuille.includes("i % 7"),
     "plus de ruban beige ni de coupure en fin de ligne",
+  );
+  verdict(
+    "la feuille compte la série avec ses jokers",
+    /rangsDesJours\([^)]*garde\)/.test(feuille) && /<CalendrierSerie[^>]*couverts=\{garde\}/.test(feuille),
+    "les mêmes jours couverts pour le rang et le dessin",
   );
 
   const tuile = code("src/components/accueil/MaJournee.module.css");

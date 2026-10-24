@@ -13,7 +13,7 @@ import FollowListModal from "@/components/FollowListModal";
 import GemmeRang from "@/components/GemmeRang";
 import { AvatarRang, PseudoRang, TitreRang } from "@/components/rang/IdentiteRang";
 import FlammeSerie from "@/components/serie/FlammeSerie";
-import { calculerAura, cosmetiquesDuRang, etatDepuisExp, progressionRang, RANGS, type EtatAura } from "@/lib/aura";
+import { calculerAura, cosmetiquesDuRang, etatDepuisExp, progressionRang, type EtatAura } from "@/lib/aura";
 import { chargerRang } from "@/lib/rangsPublics";
 import { chargerProfilPublic, type ProfilPublic } from "@/lib/profilPublic";
 import { libelleObjectif, LEVELS } from "@/lib/profilOnboarding";
@@ -336,7 +336,6 @@ export default function PublicProfilePage() {
   const displayAvatar = profile?.avatar_url ?? "";
   const initial = displayPseudo[0]?.toUpperCase() ?? "?";
   // Décorations de rang de la personne regardée (déduites de son rang, rien en base).
-  const rangCourant = aura?.rang ?? RANGS[0];
   // La même mesure que la galerie des rangs, le profil et l'accueil.
   const progression = aura ? progressionRang(aura.exp) : null;
   const cosmetiques = cosmetiquesDuRang(aura?.rang.id ?? "");
@@ -430,7 +429,7 @@ export default function PublicProfilePage() {
                 style={{ margin: 0, fontSize: 34, lineHeight: 1, fontWeight: 850, fontVariationSettings: "var(--w-affiche)", letterSpacing: "-0.02em", color: "var(--text-0)", overflowWrap: "anywhere" }}
               >
                 {/* Sans la gemme : le rang s'écrit juste en dessous, une fois suffit. */}
-                <PseudoRang rang={rangCourant} cosmetiques={{ ...cosmetiques, badge: false }} pseudo={displayPseudo} />
+                <PseudoRang cosmetiques={cosmetiques} pseudo={displayPseudo} />
               </h1>
               {isCertified && (
                 <span
@@ -471,7 +470,7 @@ export default function PublicProfilePage() {
 
           {/* Avatar : il porte les décorations de rang de la personne (cadre à
               l'Or, anneau au Platine), c'est ici qu'elles se voient des autres. */}
-          <AvatarRang rang={rangCourant} cosmetiques={cosmetiques} size={108} className="flex-shrink-0 mt-0.5">
+          <AvatarRang cosmetiques={cosmetiques} size={108} className="flex-shrink-0 mt-0.5">
             <div className="absolute rounded-full" style={{ inset: 0, background: "rgb(var(--surface-rgb))" }} />
             <div
               className="absolute rounded-full overflow-hidden flex items-center justify-center text-[34px]"

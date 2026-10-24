@@ -101,6 +101,7 @@ export default function FeuilleMotDuJour({
   dejaGagne,
   relais,
   premium,
+  jokers = null,
   onGain,
   onFermer,
   onRepondre,
@@ -119,6 +120,8 @@ export default function FeuilleMotDuJour({
   relais: { quoi: EtatCoop["quoi"]; maillon?: number } | null;
   /** Vaiiya+ : la mission Premium de la semaine compte. */
   premium: boolean;
+  /** Les jokers de la série (`aura.jokers`), ou `null` si la base n'en pose pas. */
+  jokers?: { hierCouvert: boolean; restants: number } | null;
   /** Les 5 EXP viennent d'être crédités. */
   onGain: () => void;
   onFermer: () => void;
@@ -159,7 +162,7 @@ export default function FeuilleMotDuJour({
     minutes: j.doneStats?.minutes ?? null,
   };
   const pret = (plan !== null || attenteFinie) && (faits !== undefined || attenteFinie);
-  const entree: EntreeMot = { jour, heure, serie, moment, plan, faits: faits ?? null, relais, premium, historique };
+  const entree: EntreeMot = { jour, heure, serie, moment, plan, faits: faits ?? null, relais, premium, historique, jokers };
   // Le choix du jour se garde à la première ouverture, et se relit ensuite.
   const stocke = lireChoixDuJour(userId, jour);
   const choix = stocke ?? (pret ? choisirMot(entree) : null);

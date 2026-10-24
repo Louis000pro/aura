@@ -202,7 +202,7 @@ export function PersonAvatar({
   if (!rang) return photo;
 
   return (
-    <AvatarRang rang={rang.rang} cosmetiques={rang.cosmetiques} size={taille} className="shrink-0">
+    <AvatarRang cosmetiques={rang.cosmetiques} size={taille} className="shrink-0">
       {photo}
     </AvatarRang>
   );

@@ -22,6 +22,11 @@
    chiffre, trait, puis l'EXP qui part vers le rang). `lib/monteeSerie.ts`
    décide si elle joue ; ce fichier ne fait que la dessiner, une fois, et
    jamais quand il faut réduire les animations.
+
+   LES JOKERS DU MOIS (2026-10-24, maquette « Le passage de rang ») vivent
+   sous les sept traits : pleins ceux qui restent, gris ceux déjà posés.
+   Ils viennent de la base (`aura.jokers`) et ne s'affichent pas tant
+   qu'elle n'en pose pas.
    ───────────────────────────────────────────────────────────────────── */
 
 import type React from "react";
@@ -30,16 +35,32 @@ import Image from "next/image";
 import { AnimatePresence, motion } from "framer-motion";
 import { ChevronRight } from "lucide-react";
 import GemmeRang from "@/components/GemmeRang";
+import { IconeJoker, RangeeJokers } from "@/components/rang/Joker";
 import FlammeSerie from "@/components/serie/FlammeSerie";
 import { MISSIONS_JOUR, progressionRang, resteMission, type EtatAura, type Mission } from "@/lib/aura";
 import { etatFlamme } from "@/lib/flammesSerie";
 import { decideMontee, lireVuSerie, noterVuSerie, type Montee } from "@/lib/monteeSerie";
 import { publierFlamme } from "@/lib/evenementsFil";
 import { apercuPremiumDuJour, compteMissionsJour, missionDebloquee } from "@/lib/missionsAccueil";
+import { nJokers, type EtatJokers } from "@/lib/jokers";
 import styles from "./MaJournee.module.css";
 
 /** Le jour parisien, `YYYY-MM-DD` : la clé d'une flamme dans le fil. */
 const jourParis = () => new Date().toLocaleDateString("fr-CA", { timeZone: "Europe/Paris" });
+
+/** Ce que la tuile écrit à côté des jokers : court, la tuile est étroite. */
+function texteJokers(j: EtatJokers): string {
+  if (j.parMois === 0) return "Joker dès l’Argent";
+  if (j.restants === 0) return "De retour le 1er";
+  return nJokers(j.restants);
+}
+
+/** La même chose, en entier, pour un lecteur d'écran. */
+function phraseJokers(j: EtatJokers): string {
+  if (j.parMois === 0) return "ton premier joker arrive avec l’Argent";
+  if (j.restants === 0) return "tes jokers reviennent le 1er du mois";
+  return `${nJokers(j.restants)} ce mois-ci`;
+}
 
 /** Les temps de la montée, en secondes : chaque geste répond au précédent. */
 const T = { souffle: 0.15, chiffre: 0.35, bascule: 0.75, jeton: 0.8, rang: 1.55, fin: 3.4 };
@@ -265,7 +286,7 @@ export default function MaJournee({
           // verre nu, la pêche, l'orange, l'or, puis l'or lumineux.
           data-palier={flamme.palier.id}
           data-eclat={montee && changePalier && !avant ? "" : undefined}
-          aria-label={`${serie} ${serie > 1 ? "jours d’affilée" : "jour de série"}, flamme ${etatFlamme(serie).palier.nom}${etatFlamme(serie).nouvelle ? ", nouvelle aujourd’hui" : ""}`}
+          aria-label={`${serie} ${serie > 1 ? "jours d’affilée" : "jour de série"}, flamme ${etatFlamme(serie).palier.nom}${etatFlamme(serie).nouvelle ? ", nouvelle aujourd’hui" : ""}${aura.jokers ? `, ${phraseJokers(aura.jokers)}` : ""}`}
           onClick={onOpenSerie}
         >
           <span className={styles.serieTete}>
@@ -335,6 +356,16 @@ export default function MaJournee({
               />
             ))}
           </span>
+          {aura.jokers && (
+            <span className={styles.jokers}>
+              {aura.jokers.parMois === 0 ? (
+                <IconeJoker taille={13} eteint />
+              ) : (
+                <RangeeJokers pleins={aura.jokers.restants} eteints={aura.jokers.utilises} taille={13} />
+              )}
+              <small>{texteJokers(aura.jokers)}</small>
+            </span>
+          )}
         </button>
 
         <button type="button" className={`${styles.tuile} ${styles.ligne}`} onClick={onVoirTout}>

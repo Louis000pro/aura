@@ -437,13 +437,10 @@ export default function InfosPage() {
                 <Avatar personne={p} taille={34} rang={rang} />
                 {rang ? (
                   <PseudoRang
-                    rang={rang.rang}
                     cosmetiques={rang.cosmetiques}
                     pseudo={nom}
-                    classNameEnveloppe="flex min-w-0 flex-1 items-center gap-1.5"
-                    className="truncate text-[16px] font-medium"
+                    className="min-w-0 flex-1 truncate text-[16px] font-medium"
                     style={{ color: "var(--text-1)" }}
-                    tailleGemme={14}
                   />
                 ) : (
                   <span className="min-w-0 flex-1 truncate text-[16px] font-medium" style={{ color: "var(--text-1)" }}>
@@ -502,7 +499,7 @@ function Avatar({ personne, taille = 34, rang }: { personne?: Personne; taille?:
   const photo = <AvatarNu personne={personne} taille={taille} />;
   if (!rang) return photo;
   return (
-    <AvatarRang rang={rang.rang} cosmetiques={rang.cosmetiques} size={taille} className="shrink-0">
+    <AvatarRang cosmetiques={rang.cosmetiques} size={taille} className="shrink-0">
       {photo}
     </AvatarRang>
   );

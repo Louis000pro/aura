@@ -30,11 +30,16 @@
    Chaque jour prend la couleur de la flamme qu'il avait allumée, le ruban
    ne se coupe plus en fin de semaine, et la prochaine flamme attend sur sa
    date. La rangée des cinq flammes, juste au-dessus, en est la légende.
+
+   LES JOURS GARDÉS PAR UN JOKER (2026-10-24) viennent de l'aura
+   (`aura.jokers.couverts`, lus en base par `serie_jokers_aura`) : ils
+   relient la série sans compter, et le calendrier y pose un bouclier.
    ───────────────────────────────────────────────────────────────────── */
 
 import { useEffect, useMemo, useState } from "react";
 import { Check, ChevronLeft, ChevronRight } from "lucide-react";
 import Sheet from "@/components/communaute/Sheet";
+import { IconeJoker } from "@/components/rang/Joker";
 import CalendrierSerie from "@/components/serie/CalendrierSerie";
 import FlammeSerie from "@/components/serie/FlammeSerie";
 import { createClient } from "@/lib/supabase";
@@ -53,11 +58,14 @@ function moisDe(jour: string): { annee: number; mois: number } {
 export default function FeuilleSerie({
   userId,
   serie,
+  couverts = [],
   onFermer,
 }: {
   userId: string;
   /** La série en cours, telle que l'accueil l'affiche déjà. */
   serie: number;
+  /** Les jours gardés par un joker (`YYYY-MM-DD`). */
+  couverts?: string[];
   onFermer: () => void;
 }) {
   const aujourdhui = parisDateStr();
@@ -97,8 +105,15 @@ export default function FeuilleSerie({
     return { titre: nom.charAt(0).toUpperCase() + nom.slice(1), annee, mois, joursDuMois: compte };
   }, [aujourdhui, decalage, actifs]);
   // Le rang de chaque jour dans sa série, sur tout ce qui a été lu (douze
-  // mois) : une série qui a commencé le mois d'avant garde sa couleur.
-  const rangs = useMemo(() => rangsDesJours(actifs ?? []), [actifs]);
+  // mois) : une série qui a commencé le mois d'avant garde sa couleur. Un
+  // jour gardé par un joker relie la série sans compter.
+  const cleCouverts = couverts.join(",");
+  const garde = useMemo(() => new Set(cleCouverts ? cleCouverts.split(",") : []), [cleCouverts]);
+  const rangs = useMemo(() => rangsDesJours(actifs ?? [], garde), [actifs, garde]);
+  const jokersDuMois = useMemo(() => {
+    const prefixe = `${annee}-${String(mois + 1).padStart(2, "0")}-`;
+    return [...garde].filter((j) => j.startsWith(prefixe)).length;
+  }, [garde, annee, mois]);
 
   const record_ = record !== null ? Math.max(record, serie) : null;
   const flamme = etatFlamme(serie);
@@ -192,7 +207,14 @@ export default function FeuilleSerie({
         </button>
       </div>
 
-      <CalendrierSerie annee={annee} mois={mois} rangs={rangs} aujourdhui={aujourdhui} />
+      <CalendrierSerie annee={annee} mois={mois} rangs={rangs} aujourdhui={aujourdhui} couverts={garde} />
+      {/* La légende du bouclier, seulement quand le mois en porte un. */}
+      {jokersDuMois > 0 && (
+        <p className="mt-2 flex items-center justify-center gap-1.5" style={{ fontSize: 13, color: "var(--or-encre)", fontWeight: 650 }}>
+          <IconeJoker taille={14} />
+          {jokersDuMois > 1 ? "Jours gardés par un joker" : "Jour gardé par un joker"}
+        </p>
+      )}
 
       <p className="mt-4 text-center" style={{ fontSize: 13, color: "var(--text-3)" }}>
         Ouvrir Vaiiya chaque jour suffit à tenir ta série.

@@ -597,13 +597,10 @@ function Liste({ convs, moi, activeId, onPrefetch, onActions }: {
                 <div className="flex min-w-0 items-center gap-1.5">
                   {rang ? (
                     <PseudoRang
-                      rang={rang.rang}
                       cosmetiques={rang.cosmetiques}
                       pseudo={titre}
-                      classNameEnveloppe="flex min-w-0 items-center gap-1.5"
                       className="block min-w-0 truncate text-[16px]"
                       style={{ color: "var(--text-0)", fontWeight: c.nonLus > 0 ? 750 : 600 }}
-                      tailleGemme={14}
                     />
                   ) : (
                     <b
@@ -837,13 +834,10 @@ function NouvelleDiscussion({ moi, onFermer, onCree }: {
                 <PersonAvatar personne={p} taille={38} rang={rang} />
                 {rang ? (
                   <PseudoRang
-                    rang={rang.rang}
                     cosmetiques={rang.cosmetiques}
                     pseudo={p.pseudo}
-                    classNameEnveloppe="flex min-w-0 flex-1 items-center gap-1.5"
-                    className="truncate text-[16px] font-medium"
+                    className="min-w-0 flex-1 truncate text-[16px] font-medium"
                     style={{ color: "var(--text-1)" }}
-                    tailleGemme={14}
                   />
                 ) : (
                   <span className="flex-1 truncate text-[16px] font-medium" style={{ color: "var(--text-1)" }}>

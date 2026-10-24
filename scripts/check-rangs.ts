@@ -14,7 +14,7 @@
    ═══════════════════════════════════════════════════════════════════════ */
 import { readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
-import { progressionRang, RANGS } from "@/lib/aura";
+import { cosmetiquesDuRang, JOKERS_PAR_MOIS, progressionRang, RANGS, RECOMPENSES_RANG, TITRE_DIAMANT } from "@/lib/aura";
 
 let echecs = 0;
 function verdict(nom: string, bon: boolean, detail: string) {
@@ -120,6 +120,42 @@ for (const fichier of [
   "src/components/accueil/MaJournee.tsx",
 ]) {
   verdict(`${fichier} lit progressionRang`, lire(fichier).includes("progressionRang("), "la même mesure");
+}
+
+/* ── Ce que chaque rang donne (2026-10-24, maquette « Le passage de rang ») ── */
+{
+  const sansRecompense = RANGS.filter((r) => !RECOMPENSES_RANG[r.id] || JOKERS_PAR_MOIS[r.id] === undefined).map((r) => r.id);
+  verdict("chaque rang a ses récompenses et ses jokers", sansRecompense.length === 0, sansRecompense.join(", ") || `${RANGS.length} rangs`);
+
+  const jokers = RANGS.map((r) => JOKERS_PAR_MOIS[r.id]);
+  verdict(
+    "1 joker à Argent, 2 à Or, 3 dès Platine",
+    jokers.join(" ") === "0 1 2 3 3 3" && jokers.every((n, i) => i === 0 || n >= jokers[i - 1]),
+    jokers.join(" "),
+  );
+
+  const decalages = RANGS.flatMap((r) =>
+    RECOMPENSES_RANG[r.id]?.cadeaux.filter((c) => c.genre === "joker" && c.n !== JOKERS_PAR_MOIS[r.id]).map(() => r.id) ?? [],
+  );
+  verdict("la scène annonce les jokers que le rang donne vraiment", decalages.length === 0, decalages.join(", ") || "les mêmes nombres");
+
+  const sansCarteNiCadre = RANGS.slice(1).filter((r) => {
+    const genres = RECOMPENSES_RANG[r.id].cadeaux.map((c) => c.genre);
+    return genres[0] !== "carte" || genres[1] !== "cadre" || genres.length !== 3;
+  });
+  verdict(
+    "chaque passage ouvre trois cadeaux : la carte, le cadre, puis le reste",
+    sansCarteNiCadre.length === 0 && RECOMPENSES_RANG.bronze.cadeaux.length === 0,
+    sansCarteNiCadre.map((r) => r.id).join(", ") || "de l'Argent à l'Éternel, rien au Bronze",
+  );
+
+  const c = (id: string) => cosmetiquesDuRang(id);
+  verdict(
+    "le cadre dès l'Argent, le titre au Diamant, la lumière à l'Éternel",
+    c("bronze").cadre === null && c("argent").cadre === "argent" && c("eternel").cadre === "eternel"
+      && c("platine").titre === null && c("diamant").titre === TITRE_DIAMANT && !c("diamant").brillant && c("eternel").brillant,
+    "cumulé, déduit du rang",
+  );
 }
 
 console.log(echecs === 0 ? "\nTout passe." : `\n${echecs} échec(s).`);

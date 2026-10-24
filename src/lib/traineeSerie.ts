@@ -20,19 +20,42 @@
    ⚠️ LA TRAÎNÉE NE SE COUPE PAS EN FIN DE SEMAINE : au bout de la ligne,
    le ruban va jusqu'au bord et reprend au début de la suivante. Avant, une
    série du jeudi au mercredi se lisait comme deux séries.
+   ⚠️ UN JOUR COUVERT PAR UN JOKER GARDE LA SÉRIE SANS COMPTER (Louis,
+   2026-10-24, maquette « Le passage de rang ») : le jour d'après prend le
+   rang qui suit celui de la veille du joker, et le ruban traverse le jour
+   couvert. Lui n'a aucune couleur de flamme, il porte un bouclier. Les jours
+   couverts viennent de la base (`serie_jokers_aura`), jamais d'ici.
    ───────────────────────────────────────────────────────────────────── */
 
 import { shiftDateStr } from "./dates";
 import { etatFlamme, palierFlamme, type IdFlamme, type PalierFlamme } from "./flammesSerie";
 
-/** Le rang de chaque jour actif dans SA série : 1 = son premier jour. */
-export function rangsDesJours(actifs: Iterable<string>): Map<string, number> {
+/**
+ * Le rang de chaque jour actif dans SA série : 1 = son premier jour. Un jour
+ * couvert par un joker ne compte pas, mais il relie : le jour qui le suit
+ * continue la série de la veille du joker.
+ */
+export function rangsDesJours(actifs: Iterable<string>, couverts: Iterable<string> = []): Map<string, number> {
   // En `YYYY-MM-DD`, l'ordre alphabétique EST l'ordre des jours : la veille
   // est toujours rangée avant le jour qui la suit.
   const jours = [...new Set(actifs)].sort();
+  const garde = new Set(couverts);
   const rangs = new Map<string, number>();
-  for (const jour of jours) rangs.set(jour, (rangs.get(shiftDateStr(jour, -1)) ?? 0) + 1);
+  for (const jour of jours) rangs.set(jour, (rangPorte(rangs, garde, shiftDateStr(jour, -1)) ?? 0) + 1);
   return rangs;
+}
+
+/**
+ * Le rang que la série porte ce jour-là : le sien pour un jour tenu, celui
+ * du dernier jour tenu pour un jour couvert (un joker garde la flamme, il
+ * n'en allume pas). `null` pour un jour sans.
+ */
+export function rangPorte(rangs: ReadonlyMap<string, number>, couverts: ReadonlySet<string>, date: string): number | null {
+  let jour = date;
+  // Un jour couvert suit toujours un jour tenu ou un autre jour couvert :
+  // on remonte jusqu'au premier qui n'est pas un joker.
+  for (let i = 0; i < 400 && !rangs.has(jour) && couverts.has(jour); i++) jour = shiftDateStr(jour, -1);
+  return rangs.get(jour) ?? null;
 }
 
 /** La flamme née ce jour-là (le 3ᵉ, le 7ᵉ, le 30ᵉ, le 100ᵉ jour), sinon `null`. */
@@ -45,20 +68,26 @@ export type ProchaineFlamme = {
   /** Le jour où la flamme suivante naîtra, si la série continue. */
   date: string;
   palier: PalierFlamme;
-  /** La tête de la série : le dernier jour déjà tenu. */
+  /** La tête de la série : le dernier jour tenu, ou gardé par un joker. */
   depuis: string;
 };
 
 /**
  * La prochaine flamme, posée sur sa date. La tête de la série est
- * aujourd'hui s'il compte déjà, sinon hier : une série tient jusqu'à minuit.
- * `null` sans série en cours, et au Feu sacré, qui n'a pas de suite.
+ * aujourd'hui s'il compte déjà, sinon hier, tenu ou couvert : une série
+ * tient jusqu'à minuit. `null` sans série en cours, et au Feu sacré, qui
+ * n'a pas de suite.
  */
-export function prochaineFlamme(rangs: ReadonlyMap<string, number>, aujourdhui: string): ProchaineFlamme | null {
+export function prochaineFlamme(
+  rangs: ReadonlyMap<string, number>,
+  aujourdhui: string,
+  couverts: ReadonlySet<string> = new Set(),
+): ProchaineFlamme | null {
   const hier = shiftDateStr(aujourdhui, -1);
-  const depuis = rangs.has(aujourdhui) ? aujourdhui : rangs.has(hier) ? hier : null;
+  const depuis = rangs.has(aujourdhui) ? aujourdhui : rangs.has(hier) || couverts.has(hier) ? hier : null;
   if (!depuis) return null;
-  const rang = rangs.get(depuis) ?? 1;
+  const rang = rangPorte(rangs, couverts, depuis);
+  if (!rang) return null;
   const { suivant } = etatFlamme(rang);
   if (!suivant) return null;
   return { date: shiftDateStr(depuis, suivant.des - rang), palier: suivant, depuis };
@@ -82,8 +111,10 @@ export type CaseJour = {
   colonne: number;
   aujourdhui: boolean;
   futur: boolean;
-  /** Ce jour dans la série : `null` pour un jour sans. */
+  /** Ce jour dans la série : `null` pour un jour sans, et pour un jour couvert. */
   serie: { rang: number; palier: IdFlamme; nee: IdFlamme | null } | null;
+  /** Un joker a gardé la série ce jour-là : pas de flamme, le ruban continue. */
+  joker: boolean;
   /** Le ruban derrière le jour. Sa moitié droite passe à la couleur du lendemain (`vers`). */
   ruban: { gauche: BordRuban; droite: BordRuban; palier: IdFlamme; vers: IdFlamme } | null;
   /** La flamme qui naîtrait ce jour-là si la série continue. */
@@ -105,12 +136,16 @@ export function grilleTrainee({
   mois,
   rangs,
   aujourdhui,
+  couverts,
 }: {
   annee: number;
   mois: number;
   rangs: ReadonlyMap<string, number>;
   aujourdhui: string;
+  /** Les jours gardés par un joker (`YYYY-MM-DD`). */
+  couverts?: ReadonlySet<string>;
 }): (CaseJour | null)[] {
+  const garde = couverts ?? new Set<string>();
   const debut = new Date(Date.UTC(annee, mois, 1));
   const nbJours = new Date(Date.UTC(annee, mois + 1, 0)).getUTCDate();
   const vides = (debut.getUTCDay() + 6) % 7;
@@ -118,17 +153,21 @@ export function grilleTrainee({
   // chemin pointillé qui file jusqu'au bout du calendrier sans arriver
   // nulle part ne dirait rien. La phrase au-dessus du calendrier donne déjà
   // le nombre de jours.
-  const suite = prochaineFlamme(rangs, aujourdhui);
+  const suite = prochaineFlamme(rangs, aujourdhui, garde);
   const prochaine = suite && suite.date.startsWith(cle(debut.getUTCFullYear(), debut.getUTCMonth(), 1).slice(0, 8)) ? suite : null;
   const cases: (CaseJour | null)[] = Array.from({ length: vides }, () => null);
+  // Un jour tenu porte son rang, un jour couvert celui de la flamme qu'il garde.
+  const porte = (d: string) => rangPorte(rangs, garde, d);
 
   for (let numero = 1; numero <= nbJours; numero++) {
     const date = cle(debut.getUTCFullYear(), debut.getUTCMonth(), numero);
     const rang = rangs.get(date);
+    const joker = rang === undefined && garde.has(date);
+    const ici = porte(date);
     const lendemain = shiftDateStr(date, 1);
-    const avant = rang !== undefined && rangs.has(shiftDateStr(date, -1));
-    const apres = rang !== undefined && rangs.has(lendemain);
-    const palier = rang !== undefined ? palierFlamme(rang).id : null;
+    const avant = ici !== null && porte(shiftDateStr(date, -1)) !== null;
+    const apres = ici !== null && porte(lendemain) !== null;
+    const palier = ici !== null ? palierFlamme(ici).id : null;
 
     let chemin: CaseJour["chemin"] = null;
     if (prochaine) {
@@ -144,13 +183,14 @@ export function grilleTrainee({
       aujourdhui: date === aujourdhui,
       futur: date > aujourdhui,
       serie: rang !== undefined && palier ? { rang, palier, nee: flammeNee(rang) } : null,
+      joker,
       ruban:
         palier && (avant || apres)
           ? {
               gauche: !avant ? "centre" : numero === 1 ? "fondu" : "bord",
               droite: !apres ? "centre" : numero === nbJours ? "fondu" : "bord",
               palier,
-              vers: apres ? palierFlamme(rangs.get(lendemain) ?? 1).id : palier,
+              vers: apres ? palierFlamme(porte(lendemain) ?? 1).id : palier,
             }
           : null,
       prochaine: prochaine && date === prochaine.date && rang === undefined ? prochaine.palier.id : null,

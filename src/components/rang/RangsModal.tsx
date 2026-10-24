@@ -5,9 +5,12 @@ import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { Check, ChevronLeft, ChevronRight, X } from "lucide-react";
 import GemmeRang from "@/components/GemmeRang";
-import ApercuRecompense from "@/components/rang/ApercuRecompense";
+import VisuelCadeau from "@/components/rang/VisuelCadeau";
+import { PseudoRang, TitreRang } from "@/components/rang/IdentiteRang";
 import { rejouerCelebration } from "@/lib/celebrationRang";
-import { RANGS, RECOMPENSE_RANG, progressionRang, type Rang } from "@/lib/aura";
+import { RANGS, RECOMPENSES_RANG, TITRE_DIAMANT, jokersParMois, progressionRang, type GenreCadeau, type Rang } from "@/lib/aura";
+import { nJokers } from "@/lib/jokers";
+import { useJokersActifs } from "@/hooks/useJokersActifs";
 
 /**
  * LA GALERIE DES RANGS, UN RANG PAR ÉCRAN (maquette B, choisie par Louis le
@@ -28,9 +31,11 @@ import { RANGS, RECOMPENSE_RANG, progressionRang, type Rang } from "@/lib/aura";
  * rang : c'est la même mesure que la carte du profil et la tuile de l'accueil.
  * Ne jamais le recalculer ici.
  *
- * ⚠️ La décoration de chaque rang reste montrée EN VRAI sur le pseudo et la
- * photo (`ApercuRecompense`, décision du 2026-07-29) : une récompense qu'on ne
- * peut pas montrer ici ne doit pas être annoncée.
+ * ⚠️ Ce que chaque rang donne reste montré EN VRAI (`VisuelCadeau`,
+ * décision du 2026-07-29) : la carte, le cadre autour de TA photo, les
+ * jokers, le titre. Depuis la refonte du 2026-10-24, c'est un groupe à
+ * filets, une ligne par cadeau. Les jokers ne s'y écrivent que si la base
+ * sait les poser (`useJokersActifs`).
  *
  * Ouverte depuis la carte « Ton rang » du profil et la tuile Rang de
  * l'accueil. La flamme, elle, ouvre les jours de la série depuis le 2026-10-15.
@@ -270,7 +275,7 @@ function Ecran({
   avatarUrl?: string | null;
 }) {
   const atteint = expActuel >= rang.min;
-  const reco = RECOMPENSE_RANG[rang.id];
+  const jokersBase = useJokersActifs();
 
   /* Ta progression, et seulement sur ton rang : les autres n'en ont pas. */
   const prog = courant ? progressionRang(expActuel) : null;
@@ -348,24 +353,79 @@ function Ecran({
         </p>
       </div>
 
-      {reco && (
-        <div
-          className="mt-5 flex items-center gap-3.5 px-4 py-3.5"
-          style={{ borderRadius: "var(--r-bloc)", background: "rgb(var(--surface-rgb))", boxShadow: "var(--ombre-pose)" }}
-        >
-          <div className="shrink-0" style={{ filter: atteint ? "none" : "grayscale(0.6) opacity(0.75)" }}>
-            <ApercuRecompense kind={reco.apercu} rang={rang} pseudo={pseudo} avatarUrl={avatarUrl} />
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="text-[11px] font-bold" style={{ color: atteint ? "var(--teal-encre)" : "var(--text-3)" }}>
-              {atteint ? "Débloqué" : "À débloquer"}
-            </p>
-            <p className="text-[16px] font-bold leading-tight" style={{ color: "var(--text-0)" }}>{reco.titre}</p>
-            <p className="mt-0.5 text-[13px] leading-snug" style={{ color: "var(--text-3)" }}>{reco.desc}</p>
-          </div>
-        </div>
-      )}
+      <CeQueDonne rang={rang} atteint={atteint} pseudo={pseudo} avatarUrl={avatarUrl} jokersBase={jokersBase} />
     </section>
+  );
+}
+
+/** Ce que le rang donne : la carte, le cadre, les jokers, puis le titre ou
+ *  le pseudo lumineux. Une ligne par cadeau, dans un seul groupe à filets. */
+function CeQueDonne({
+  rang,
+  atteint,
+  pseudo,
+  avatarUrl,
+  jokersBase,
+}: {
+  rang: Rang;
+  atteint: boolean;
+  pseudo: string;
+  avatarUrl?: string | null;
+  jokersBase: boolean;
+}) {
+  const r = RECOMPENSES_RANG[rang.id];
+  if (!r) return null;
+  const jokers = jokersBase ? jokersParMois(rang.id) : 0;
+  const lignes: { genre: GenreCadeau | null; texte: string }[] = [{ genre: "carte", texte: r.galerie.carte }];
+  if (r.galerie.cadre) lignes.push({ genre: "cadre", texte: r.galerie.cadre });
+  if (jokers > 0) lignes.push({ genre: "joker", texte: `${nJokers(jokers)} par mois` });
+  if (r.galerie.plus) lignes.push({ genre: rang.id === "eternel" ? "brillant" : "titre", texte: r.galerie.plus });
+  if (!r.galerie.cadre) {
+    lignes.push({ genre: null, texte: jokersBase ? "Le cadre et les jokers arrivent avec l’Argent." : "Le cadre arrive avec l’Argent." });
+  }
+
+  return (
+    <div
+      className="mt-5 px-4 pt-3 pb-1"
+      style={{ borderRadius: "var(--r-bloc)", background: "rgb(var(--surface-rgb))", boxShadow: "var(--ombre-pose)" }}
+    >
+      <p className="text-[11px] font-bold" style={{ color: atteint ? "var(--teal-encre)" : "var(--text-3)" }}>
+        {atteint ? "Débloqué" : "À débloquer"}
+      </p>
+      <ul className="m-0 list-none p-0">
+        {lignes.map((l, i) => (
+          <li
+            key={i}
+            className="flex min-h-[56px] items-center gap-3 py-2"
+            style={{ borderTop: i ? "1px solid rgba(var(--text-3-rgb),0.14)" : "none" }}
+          >
+            <span
+              className="grid h-11 w-11 shrink-0 place-items-center"
+              style={{ filter: atteint ? "none" : "grayscale(0.6) opacity(0.75)" }}
+            >
+              {(l.genre === "carte" || l.genre === "cadre" || l.genre === "joker") && (
+                <VisuelCadeau
+                  genre={l.genre}
+                  rang={rang}
+                  carte={{ pseudo }}
+                  avatarUrl={avatarUrl}
+                  n={1}
+                  taille={l.genre === "carte" ? 62 : 44}
+                />
+              )}
+            </span>
+            <span className="flex min-w-0 flex-1 flex-wrap items-center gap-x-1.5 gap-y-1 text-[13px] leading-snug" style={{ color: l.genre ? "var(--text-0)" : "var(--text-3)" }}>
+              {/* Le titre et le pseudo lumineux se montrent tels qu'ils se posent. */}
+              {l.genre === "titre" && <TitreRang cosmetiques={{ cadre: null, titre: TITRE_DIAMANT, brillant: false }} />}
+              {l.genre === "brillant" && (
+                <PseudoRang cosmetiques={{ cadre: null, titre: null, brillant: true }} pseudo={pseudo.trim() || "toi"} className="text-[16px] font-black" />
+              )}
+              <span>{l.texte}</span>
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
 

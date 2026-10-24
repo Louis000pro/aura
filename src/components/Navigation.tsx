@@ -13,6 +13,10 @@ import { useAuth } from "@/context/AuthContext";
 import { estSurfacePublique, estVitrinePure, estVitrineSiAnonyme } from "@/lib/surfacesPubliques";
 import NotificationBell from "@/components/NotificationBell";
 import NavOrb from "@/components/NavOrb";
+import { AvatarRang } from "@/components/rang/IdentiteRang";
+import { PhotoRonde } from "@/components/rang/VisuelCadeau";
+import { useRangMemorise } from "@/lib/celebrationRang";
+import { cosmetiquesDuRang } from "@/lib/aura";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 type TabItem = {
@@ -146,6 +150,12 @@ export default function Navigation() {
     pointerEvents: enteteCache ? "none" : undefined,
     transition: "opacity .25s ease",
   };
+
+  /* Le cadre du rang sur la photo de l'accueil, tous les jours (refonte du
+     2026-10-24). Le rang est celui que cet appareil a vu en dernier : la
+     barre n'a pas l'aura sous la main, et elle ne la relit pas pour ça. */
+  const monRang = useRangMemorise(user?.id);
+  const cadreAccueil = monRang ? cosmetiquesDuRang(monRang.id) : null;
 
   /* ── Préchargement des routes principales → navigation instantanée ── */
   useEffect(() => {
@@ -373,8 +383,15 @@ export default function Navigation() {
                 problème ouvert, et il se réglera par la composition, pas par
                 le rayon de ce bouton. */}
           <button onClick={() => router.push("/profil")} aria-label="Mon profil"
-            data-tour-anchor="nav-profil" className="vy-verre relative shrink-0 rounded-full p-[3px] active:opacity-80 transition-opacity">
-            {user.avatar ? (
+            data-tour-anchor="nav-profil"
+            className={`${cadreAccueil?.cadre ? "p-[4px]" : "vy-verre p-[3px]"} relative shrink-0 rounded-full active:opacity-80 transition-opacity`}>
+            {/* Dès l'Argent, le cadre du rang remplace le rond de verre : deux
+                anneaux autour d'une photo de 38 px, c'en serait un de trop. */}
+            {cadreAccueil?.cadre ? (
+              <AvatarRang cosmetiques={cadreAccueil} size={36}>
+                <PhotoRonde avatarUrl={user.avatar} pseudo={user.pseudo ?? ""} />
+              </AvatarRang>
+            ) : user.avatar ? (
               <Image src={user.avatar} alt="" width={36} height={36}
                 className="h-9 w-9 rounded-full object-cover" unoptimized />
             ) : (

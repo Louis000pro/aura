@@ -179,6 +179,7 @@ export default function AccueilSignature({
           <FeuilleSerie
             userId={user.id}
             serie={Math.max(1, aura.serie)}
+            couverts={aura.jokers?.couverts}
             onFermer={() => setFeuilleSerie(false)}
           />
         )}
@@ -196,6 +197,7 @@ export default function AccueilSignature({
             dejaGagne={aura.mouvementDuJour}
             relais={relais ? { quoi: relais.etat.quoi, maillon: relais.etat.quoi === "a_moi" ? relais.etat.maillon : undefined } : null}
             premium={premiumDebloque}
+            jokers={aura.jokers ? { hierCouvert: aura.jokers.hierCouvert, restants: aura.jokers.restants } : null}
             onGain={() => { gainMouvement.current = true; }}
             onFermer={fermerMot}
             onRepondre={() => { fermerMot(); ouvrirAssistant(); }}

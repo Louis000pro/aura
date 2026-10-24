@@ -1156,6 +1156,8 @@ export type ContexteMatin = {
   maillon?: number;
   /** Le mois qui commence (« novembre »). */
   mois?: string;
+  /** Les jokers qui restent ce mois-ci, le matin où un joker a gardé hier. */
+  jokers?: number;
 };
 
 type TexteMatin = string | ((c: ContexteMatin) => string);
@@ -1221,6 +1223,9 @@ const affilee = (n = 0) => maj(`${depuis(n)} d’affilée`);
  *  sans la marque ⟦ ⟧ du mot du jour, qu'une bulle n'affiche pas. */
 const affileeDit = (n = 0) => maj(`${LETTRES[n] ?? RONDS[n] ?? String(n)} ${n > 1 ? "jours" : "jour"} d’affilée`);
 const deMois = (m = "") => (/^[aeiouéèêh]/i.test(m) ? `d’${m}` : `de ${m}`);
+/** « Il t’en reste un ce mois-ci. » : un compte de jokers se dit en lettres. */
+const resteJokers = (n = 0) =>
+  n > 0 ? `Il t’en reste ${enLettres(n)} ce mois-ci.` : "Tes prochains jokers arrivent le 1er.";
 
 const pieces = (prefixe: string, textes: TexteMatin[]): PieceMatin[] =>
   textes.map((texte, i) => ({ id: `${prefixe}.${i + 1}`, texte }));
@@ -1365,6 +1370,14 @@ export const MATIN = {
     "Hier, ton carnet de repas a avancé. C’est la base pour y voir clair.",
     (c) => `Hier, ${nb(c.repas)} repas ${(c.repas ?? 0) > 1 ? "notés" : "noté"}. Petit geste, grande clarté.`,
     "Hier, tu as pris le temps de noter ce que tu as mangé. Ça aide à voir ce qui te convient.",
+  ]),
+
+  /* Hier, un joker a gardé la série (2026-10-24, maquette « Le passage de
+     rang »). On dit ce qu'il a gardé, jamais ce qui n'a pas été fait. */
+  joker: pieces("joker", [
+    (c) => `Hier, ton joker a gardé ta série. ${resteJokers(c.jokers)}`,
+    (c) => `Un joker s’est posé hier, et ta série continue. ${resteJokers(c.jokers)}`,
+    (c) => `Ta série a tenu hier grâce à un joker. ${resteJokers(c.jokers)}`,
   ]),
 
   /** Un rang à portée d'une séance (`momentAccueil`, cas « palier »). */

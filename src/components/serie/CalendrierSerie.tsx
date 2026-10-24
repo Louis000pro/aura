@@ -12,10 +12,14 @@
    Ce composant ne DÉCIDE rien : `lib/traineeSerie.ts` dit, case par case,
    quel rang, quelle flamme, quel ruban, quel chemin. Il ne fait que les
    dessiner, et il ne colorie jamais un jour sans.
+
+   Un jour gardé par un joker (2026-10-24) : un rond en pointillés dorés,
+   un petit bouclier, aucune couleur de flamme, et le ruban continue.
    ───────────────────────────────────────────────────────────────────── */
 
 import type { CSSProperties } from "react";
 import { useMemo } from "react";
+import { IconeJoker } from "@/components/rang/Joker";
 import FlammeSerie from "@/components/serie/FlammeSerie";
 import { PALIERS_FLAMME, type IdFlamme } from "@/lib/flammesSerie";
 import { grilleTrainee, type BordRuban, type CaseJour } from "@/lib/traineeSerie";
@@ -52,6 +56,7 @@ function description(c: CaseJour): string {
     morceaux.push(`jour ${c.serie.rang} de ta série`);
     if (c.serie.nee) morceaux.push(`nouvelle flamme : ${NOM[c.serie.nee]}`);
   }
+  if (c.joker) morceaux.push("un joker a gardé ta série");
   if (c.prochaine) morceaux.push(`ta flamme devient ${NOM[c.prochaine]} si tu continues`);
   return morceaux.join(", ");
 }
@@ -61,6 +66,7 @@ export default function CalendrierSerie({
   mois,
   rangs,
   aujourdhui,
+  couverts,
 }: {
   annee: number;
   /** De 0 (janvier) à 11, comme `Date`. */
@@ -68,8 +74,13 @@ export default function CalendrierSerie({
   /** Le rang de chaque jour actif dans sa série (`rangsDesJours`). */
   rangs: ReadonlyMap<string, number>;
   aujourdhui: string;
+  /** Les jours gardés par un joker. */
+  couverts?: ReadonlySet<string>;
 }) {
-  const cases = useMemo(() => grilleTrainee({ annee, mois, rangs, aujourdhui }), [annee, mois, rangs, aujourdhui]);
+  const cases = useMemo(
+    () => grilleTrainee({ annee, mois, rangs, aujourdhui, couverts }),
+    [annee, mois, rangs, aujourdhui, couverts],
+  );
 
   return (
     <div className={styles.grille}>
@@ -92,11 +103,12 @@ export default function CalendrierSerie({
               className={`${styles.rond} vy-nombre`}
               data-feu={c.serie?.palier ?? c.prochaine ?? undefined}
               data-actif={c.serie ? "" : undefined}
+              data-joker={c.joker ? "" : undefined}
               data-aujourdhui={c.aujourdhui ? "" : undefined}
               data-prochaine={c.prochaine ? "" : undefined}
               data-futur={c.futur && !c.prochaine ? "" : undefined}
               // La graisse se pose en ligne : `.vy-nombre` ramènerait le chiffre à 600.
-              style={{ fontWeight: c.serie ? 800 : c.prochaine ? 700 : 500 }}
+              style={{ fontWeight: c.serie ? 800 : c.prochaine || c.joker ? 700 : 500 }}
             >
               <span aria-hidden="true">{c.numero}</span>
               <span className="sr-only">{description(c)}</span>
@@ -108,6 +120,11 @@ export default function CalendrierSerie({
               {c.prochaine && (
                 <span className={styles.badge} aria-hidden="true">
                   <FlammeSerie palier={c.prochaine} taille={13} eteinte />
+                </span>
+              )}
+              {c.joker && (
+                <span className={styles.badge} aria-hidden="true">
+                  <IconeJoker taille={14} />
                 </span>
               )}
             </span>

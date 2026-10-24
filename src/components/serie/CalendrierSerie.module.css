@@ -161,6 +161,15 @@
   color: var(--text-2);
 }
 
+/* Un jour gardé par un joker : aucune couleur de flamme, un rond en
+   pointillés dorés et un petit bouclier ; le ruban, lui, continue. Le fond
+   est celui de la feuille, pour que le ruban s'arrête au bord du rond. */
+.rond[data-joker] {
+  border: 1.5px dashed #c9922a;
+  background: var(--verre-fond-epais);
+  color: var(--or-encre);
+}
+
 /* La petite flamme d'un jour où une flamme est née, ou de la prochaine.
    Le contour couleur de feuille la détache du rond qu'elle chevauche. */
 .badge {

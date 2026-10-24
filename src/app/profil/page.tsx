@@ -13,6 +13,9 @@ import Image from "next/image";
 import GemmeRang from "@/components/GemmeRang";
 import EtatVideGuide from "@/components/EtatVideGuide";
 import RangsModal from "@/components/rang/RangsModal";
+import CarteRang from "@/components/rang/CarteRang";
+import FeuilleCarte from "@/components/rang/FeuilleCarte";
+import { TEINTE_CARTE, cartesDuCompte, dateCourteCarte, donneesCarte, rangsDesCartes, type CartesRang } from "@/lib/cartesRang";
 import { AvatarRang, PseudoRang, TitreRang } from "@/components/rang/IdentiteRang";
 import FlammeSerie from "@/components/serie/FlammeSerie";
 import { calculerAura, cosmetiquesDuRang, progressionRang, RANGS, type EtatAura } from "@/lib/aura";
@@ -502,6 +505,9 @@ export default function ProfilPage() {
   const [pesee, setPesee] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
   const [showRangs, setShowRangs] = useState(false);
+  /* Les cartes de rang (2026-10-24) : une par rang atteint, gravée au pseudo. */
+  const [cartes, setCartes] = useState<CartesRang | null>(null);
+  const [carteOuverte, setCarteOuverte] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [profilePseudo, setProfilePseudo] = useState(user?.pseudo ?? "");
   const [profileAvatar, setProfileAvatar] = useState(user?.avatar ?? "");
@@ -563,6 +569,13 @@ export default function ProfilPage() {
   }, [user?.id]);
 
   /* Rang (aura), amis (les gens que je suis) + affiches gagnées */
+  useEffect(() => {
+    if (!user?.id) return;
+    let vivant = true;
+    void cartesDuCompte(createClient(), user.id).then((c) => { if (vivant) setCartes(c); });
+    return () => { vivant = false; };
+  }, [user?.id]);
+
   useEffect(() => {
     if (!user?.id) return;
     const supabase = createClient();
@@ -782,7 +795,7 @@ export default function ProfilPage() {
                 style={{ margin: 0, fontSize: 34, lineHeight: 1, fontWeight: 850, fontVariationSettings: "var(--w-affiche)", letterSpacing: "-0.02em", color: "var(--text-0)", overflowWrap: "anywhere" }}
               >
                 {/* Sans la gemme : le rang s'écrit juste en dessous, une fois suffit. */}
-                <PseudoRang rang={rangCourant} cosmetiques={{ ...cosmetiques, badge: false }} pseudo={displayPseudo} />
+                <PseudoRang cosmetiques={cosmetiques} pseudo={displayPseudo} />
               </h1>
             </div>
 
@@ -795,6 +808,19 @@ export default function ProfilPage() {
                 <span style={{ fontWeight: 700, color: "var(--or-encre)" }}>{aura.rang.nom}</span>
                 {membreDepuis && <><span>·</span><span>membre depuis {membreDepuis}</span></>}
               </div>
+            )}
+
+            {/* Ta carte du rang, en un toucher (refonte du 2026-10-24). */}
+            {aura && (
+              <button
+                type="button"
+                onClick={() => setCarteOuverte(aura.rang.id)}
+                className="inline-flex items-center gap-2 self-start rounded-full cursor-pointer active:opacity-80"
+                style={{ minHeight: 40, padding: "8px 14px 8px 10px", background: "rgba(139,92,246,0.1)", color: "var(--exp-encre)", fontSize: 13, fontWeight: 750 }}
+              >
+                <span aria-hidden="true" style={{ width: 14, height: 19, borderRadius: 3, background: TEINTE_CARTE[aura.rang.id], boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.4)" }} />
+                Ma carte {aura.rang.nom}
+              </button>
             )}
 
             {/* Un objectif et le niveau ; le reste se déplie au toucher. Cinq
@@ -826,7 +852,7 @@ export default function ProfilPage() {
             )}
           </div>
 
-          <AvatarRang rang={rangCourant} cosmetiques={cosmetiques} size={108} className="flex-shrink-0 mt-0.5">
+          <AvatarRang cosmetiques={cosmetiques} size={108} className="flex-shrink-0 mt-0.5">
             <button
               type="button"
               onClick={() => setShowEdit(true)}
@@ -993,6 +1019,41 @@ export default function ProfilPage() {
             transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
             className="px-5 md:px-8 max-w-3xl mx-auto"
           >
+            {/* Tes cartes de rang, de la dernière à la première. Toucher en
+                ouvre une en grand, prête à partager. */}
+            {aura && (
+              <>
+                <div className="flex items-baseline justify-between mb-3.5">
+                  <h2 className="vy-sous" style={{ margin: 0, color: "var(--text-0)" }}>Tes cartes</h2>
+                  <span className="vy-nombre text-[13px]" style={{ color: "var(--text-2)" }}>{rangsDesCartes(aura.rang.id).length}</span>
+                </div>
+                <div className="-mx-5 mb-8 flex gap-3 overflow-x-auto px-5 pb-2" style={{ scrollbarWidth: "none" }}>
+                  {rangsDesCartes(aura.rang.id).map((id, k) => {
+                    const r = RANGS.find((x) => x.id === id) ?? RANGS[0];
+                    const d = donneesCarte(cartes, id, displayPseudo);
+                    const quand = dateCourteCarte(id === "bronze" ? d.inscritLe : d.atteintLe);
+                    return (
+                      <button
+                        key={id}
+                        type="button"
+                        onClick={() => setCarteOuverte(id)}
+                        className="flex shrink-0 cursor-pointer flex-col items-center gap-1.5 text-center"
+                        style={{ width: 84 }}
+                        aria-label={`Ta carte ${r.nom}`}
+                      >
+                        <span className="block w-full" style={{ borderRadius: 7, boxShadow: k === 0 ? "0 0 0 2px #8B5CF6, 0 8px 18px -8px rgba(60,30,120,0.5)" : "none" }}>
+                          <CarteRang rang={r} donnees={d} decor />
+                        </span>
+                        <span style={{ fontSize: 11, lineHeight: 1.25, color: "var(--text-2)" }}>
+                          {r.nom}{quand ? ` · ${quand}` : ""}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </>
+            )}
+
             {/* Affiches du relais — gagnées en clair, verrouillées en cadenas.
                 Trois de front : la série tient en une rangée, on voit d'un
                 coup d'œil ce qui est gagné et ce qui reste. */}
@@ -1233,6 +1294,15 @@ export default function ProfilPage() {
           d'ici. Une seule porte pour se peser dans toute l'app : une seconde
           saisie écrirait la même colonne avec ses propres règles. */}
       <WeighInPrompt ouvert={pesee} onFermer={() => setPesee(false)} />
+
+      {carteOuverte && user?.id && (
+        <FeuilleCarte
+          rang={RANGS.find((r) => r.id === carteOuverte) ?? RANGS[0]}
+          userId={user.id}
+          pseudo={displayPseudo}
+          onFermer={() => setCarteOuverte(null)}
+        />
+      )}
 
       <RangsModal
         open={showRangs}

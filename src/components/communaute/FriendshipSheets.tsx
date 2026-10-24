@@ -440,13 +440,10 @@ function AjouterAmi({
             <span className="min-w-0 flex-1">
               {rang ? (
                 <PseudoRang
-                  rang={rang.rang}
                   cosmetiques={rang.cosmetiques}
                   pseudo={personne.pseudo}
-                  classNameEnveloppe="flex min-w-0 items-center gap-1.5"
-                  className="block truncate text-[16px] font-bold"
+                  className="min-w-0 block truncate text-[16px] font-bold"
                   style={{ color: "var(--text-0)" }}
-                  tailleGemme={15}
                 />
               ) : (
                 <b className="block truncate text-[16px]" style={{ color: "var(--text-0)" }}>
@@ -561,13 +558,10 @@ function DemandesAmi({
               <span className="min-w-0 flex-1">
                 {rang ? (
                   <PseudoRang
-                    rang={rang.rang}
                     cosmetiques={rang.cosmetiques}
                     pseudo={personne.pseudo}
-                    classNameEnveloppe="flex min-w-0 items-center gap-1.5"
-                    className="block truncate text-[16px] font-bold"
+                    className="min-w-0 block truncate text-[16px] font-bold"
                     style={{ color: "var(--text-0)" }}
-                    tailleGemme={14}
                   />
                 ) : (
                   <b className="block truncate text-[16px]" style={{ color: "var(--text-0)" }}>

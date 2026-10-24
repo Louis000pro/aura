@@ -25,7 +25,8 @@ import {
   type MaillonFranchi,
 } from "@/lib/defi";
 import { calculerAura } from "@/lib/aura";
-import { noterRang } from "@/lib/celebrationRang";
+import { noterRang, rangMemorise } from "@/lib/celebrationRang";
+import { jouerFinSeance } from "@/lib/musiqueRang";
 import { noterBadges } from "@/lib/celebrationBadge";
 import { peutProposerAvis, proposerAvis, SEANCES_AVANT_AVIS } from "@/lib/invitationAvis";
 import { motCouverture } from "@/components/profil/CouvertureSeance";
@@ -1677,9 +1678,14 @@ export default function WorkoutGuideModal({
     if (restCountdown > 0 && restCountdown <= 3 && restCountdown < avant) jouerSon("tic");
   }, [restCountdown, phase, paused]);
 
+  /* La séance finie joue la musique DU RANG, en court (Louis, 2026-10-24) :
+     on entend son rang chaque fois qu'on termine. Le rang est celui que cet
+     appareil a vu en dernier ; si la séance le fait monter, la scène du
+     passage prend le relais et chasse cette musique. */
+  const compteSon = user?.id;
   useEffect(() => {
-    if (phase === "done") jouerSon("seanceFinie");
-  }, [phase]);
+    if (phase === "done") jouerFinSeance(rangMemorise(compteSon)?.id);
+  }, [phase, compteSon]);
 
   /* ── Décompte 3-2-1 avant chaque effort chronométré ── */
   /* R3 · le choix d'un remplaçant suspend le 3-2-1 ET le chrono

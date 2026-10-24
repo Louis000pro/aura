@@ -609,13 +609,10 @@ export default function FilPage() {
           <span className="min-w-0 flex-1">
             {rangAutre ? (
               <PseudoRang
-                rang={rangAutre.rang}
                 cosmetiques={rangAutre.cosmetiques}
                 pseudo={titre}
-                classNameEnveloppe="flex min-w-0 items-center gap-1.5"
-                className="block truncate text-[16px] font-semibold"
+                className="min-w-0 block truncate text-[16px] font-semibold"
                 style={{ color: c.t0 }}
-                tailleGemme={14}
               />
             ) : (
               <b className="block truncate text-[16px] font-semibold" style={{ color: c.t0 }}>{titre}</b>

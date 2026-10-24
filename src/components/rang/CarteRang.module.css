@@ -1,0 +1,349 @@
+/* ─────────────────────────────────────────────────────────────────────
+   LA CARTE DE RANG. Six couches posées l'une sur l'autre, puis le
+   contenu, puis le bord de métal :
+     matière · motif · poussière (Éternel) · holo (Platine et plus) ·
+     paillettes (Diamant, Éternel) · reflet
+   Le reflet et l'holo suivent `--mx/--my/--px/--py` : le doigt, ou une
+   lente dérive quand personne ne la touche (`useInclinaison`).
+
+   ⚠️ Les matières sont FIXES, identiques en clair et en sombre : la carte
+   porte sa propre nuit, comme une affiche.
+   ───────────────────────────────────────────────────────────────────── */
+
+.carte {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 5 / 7;
+  border-radius: 6.5% / 4.64%;
+  container-type: inline-size;
+  overflow: hidden;
+  isolation: isolate;
+  color: var(--c-ink);
+  font-family: var(--titrage);
+  --mx: 50%;
+  --my: 30%;
+  --px: 0.5;
+  --py: 0.3;
+  --rx: 0deg;
+  --ry: 0deg;
+  --c-holo: none;
+  --c-holo-a: 0;
+  --c-motif: none;
+  transform: perspective(900px) rotateX(var(--rx)) rotateY(var(--ry));
+  box-shadow: 0 1.5cqw 0 -0.5cqw rgba(255, 255, 255, 0.05) inset, 0 6cqw 12cqw -5cqw rgba(8, 4, 20, 0.75);
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.couche {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+.matiere {
+  background: var(--c-bg);
+}
+
+.motif {
+  background: var(--c-motif);
+}
+
+.holo {
+  background: var(--c-holo);
+  background-size: 240% 240%;
+  background-position: calc(var(--px) * 100%) calc(var(--py) * 100%);
+  mix-blend-mode: color-dodge;
+  opacity: var(--c-holo-a);
+}
+
+.paillettes {
+  opacity: 0;
+  background-image: radial-gradient(circle, rgba(255, 255, 255, 0.95) 0 0.55px, transparent 1.3px);
+  background-size: 9% 6.5%;
+  mix-blend-mode: screen;
+  -webkit-mask: radial-gradient(circle at var(--mx) var(--my), #000 0, rgba(0, 0, 0, 0.45) 24%, transparent 48%);
+  mask: radial-gradient(circle at var(--mx) var(--my), #000 0, rgba(0, 0, 0, 0.45) 24%, transparent 48%);
+}
+
+.poussiere {
+  opacity: 0;
+}
+
+.reflet {
+  background:
+    radial-gradient(circle at var(--mx) var(--my), rgb(var(--c-ref) / 0.42), rgb(var(--c-ref) / 0.1) 26%, transparent 52%),
+    linear-gradient(115deg, transparent calc(var(--px) * 100% - 24%), rgba(255, 255, 255, 0.13) calc(var(--px) * 100% - 7%), transparent calc(var(--px) * 100% + 10%));
+  mix-blend-mode: screen;
+}
+
+.bord {
+  padding: 1.15cqw;
+  background: var(--c-metal);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+}
+
+.contenu {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 6.5cqw 7.5cqw 7.5cqw;
+}
+
+.haut {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 3.9cqw;
+  font-weight: 750;
+  color: var(--c-ink2);
+}
+
+.marque {
+  display: inline-flex;
+  align-items: center;
+  gap: 1.4cqw;
+  color: var(--c-ink);
+  letter-spacing: 0.01em;
+}
+
+.etincelle {
+  width: 4.4cqw;
+  height: 4.4cqw;
+  flex: none;
+}
+
+/* Le visage du chiffre vient de `.vy-nombre`, posé dans le composant. */
+.numero {
+  font-size: 3.6cqw;
+}
+
+.zoneGemme {
+  position: relative;
+  margin-top: 4cqw;
+  height: 50cqw;
+  display: grid;
+  place-items: center;
+}
+
+.zoneGemme::before {
+  content: "";
+  position: absolute;
+  width: 80cqw;
+  height: 80cqw;
+  left: 50%;
+  top: 50%;
+  translate: -50% -50%;
+  background: radial-gradient(circle, rgb(var(--c-glow) / 0.42), transparent 60%);
+}
+
+.gemme {
+  position: relative;
+  height: 50cqw;
+  width: auto;
+  -webkit-user-drag: none;
+}
+
+.nom {
+  margin: 2.6cqw 0 0;
+  line-height: 0.9;
+  font-weight: 900;
+  font-variation-settings: var(--w-affiche);
+  letter-spacing: -0.01em;
+  padding: 0 0.04em;
+  background: var(--c-nom);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  filter: drop-shadow(0 0.5cqw 0 rgba(0, 0, 0, 0.45));
+}
+
+.trait {
+  display: block;
+  width: 100%;
+  height: 1px;
+  margin-top: auto;
+  background: var(--c-metal);
+  opacity: 0.55;
+}
+
+.pseudo {
+  align-self: flex-start;
+  margin: 3.6cqw 0 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 6.4cqw;
+  line-height: 1.1;
+  font-weight: 800;
+  font-variation-settings: var(--w-voix);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--c-ink);
+  text-shadow: 0 0.4cqw 0 rgba(0, 0, 0, 0.35);
+}
+
+.date {
+  align-self: flex-start;
+  margin: 1.2cqw 0 0;
+  font-size: 3.7cqw;
+  color: var(--c-ink2);
+}
+
+.pour {
+  align-self: flex-start;
+  margin: 3.6cqw 0 0;
+  font-size: 3.2cqw;
+  color: var(--c-ink2);
+}
+
+.faits {
+  align-self: flex-start;
+  margin-top: 1cqw;
+  display: flex;
+  gap: 7cqw;
+}
+
+.fait {
+  display: grid;
+  text-align: left;
+}
+
+.fait b {
+  font-size: 6.6cqw;
+  line-height: 1.05;
+  color: var(--c-ink);
+  font-weight: 700;
+}
+
+.fait span {
+  font-size: 3.3cqw;
+  color: var(--c-ink2);
+}
+
+.depart {
+  align-self: flex-start;
+  margin: 3.6cqw 0 0;
+  font-size: 4.4cqw;
+  font-weight: 700;
+  color: var(--c-ink2);
+}
+
+/* ── Les six matières ── */
+
+.carte[data-rang="bronze"] {
+  --c-bg: linear-gradient(160deg, #5c3418 0%, #36200e 48%, #1c0f06 100%);
+  --c-motif: repeating-linear-gradient(90deg, rgba(255, 214, 170, 0.05) 0 1px, transparent 1px 3px);
+  --c-metal: linear-gradient(135deg, #f7cf98, #c07a3a 40%, #6b3a14 62%, #e9a86a);
+  --c-nom: linear-gradient(180deg, #ffe4c4 0%, #efae72 46%, #a35d26 54%, #f6c893 100%);
+  --c-ink: #fbe8d3;
+  --c-ink2: rgba(251, 232, 211, 0.7);
+  --c-ref: 255 206 150;
+  --c-glow: 232 160 90;
+}
+
+.carte[data-rang="argent"] {
+  --c-bg: linear-gradient(160deg, #4a525e 0%, #2a3038 48%, #14171b 100%);
+  --c-motif: repeating-linear-gradient(100deg, rgba(255, 255, 255, 0.055) 0 1px, transparent 1px 2.4px);
+  --c-metal: linear-gradient(135deg, #ffffff, #aeb8c6 38%, #5f6876 60%, #e9eef5);
+  --c-nom: linear-gradient(180deg, #ffffff 0%, #e2e8f0 46%, #8e9aac 54%, #f3f6fa 100%);
+  --c-ink: #f2f5f9;
+  --c-ink2: rgba(242, 245, 249, 0.7);
+  --c-ref: 235 242 255;
+  --c-glow: 210 222 238;
+}
+
+.carte[data-rang="or"] {
+  --c-bg: linear-gradient(160deg, #5a3f0a 0%, #33240a 48%, #1a1204 100%);
+  --c-motif: repeating-radial-gradient(circle at 50% 27%, rgba(255, 214, 110, 0.08) 0 0.6cqw, transparent 0.6cqw 2.6cqw);
+  --c-metal: linear-gradient(135deg, #fff0b8, #f0b523 38%, #8a5a06 60%, #ffe08a);
+  --c-nom: linear-gradient(180deg, #fff6cf 0%, #ffd34e 46%, #c98208 54%, #ffe7a0 100%);
+  --c-ink: #fff3d6;
+  --c-ink2: rgba(255, 243, 214, 0.7);
+  --c-ref: 255 224 150;
+  --c-glow: 255 196 60;
+}
+
+.carte[data-rang="platine"] {
+  --c-bg: linear-gradient(160deg, #4b4868 0%, #2c2a45 48%, #16152a 100%);
+  --c-motif: repeating-conic-gradient(from 0deg at 50% 27%, rgba(235, 230, 255, 0.07) 0deg 2deg, transparent 2deg 9deg);
+  --c-metal: linear-gradient(135deg, #ffffff, #d9d2f5 38%, #7d77a8 60%, #f4f1ff);
+  --c-nom: linear-gradient(180deg, #ffffff 0%, #eee9ff 46%, #a69dd8 54%, #f8f6ff 100%);
+  --c-ink: #f5f3ff;
+  --c-ink2: rgba(245, 243, 255, 0.7);
+  --c-ref: 240 235 255;
+  --c-glow: 214 204 255;
+  --c-holo: linear-gradient(115deg, transparent 30%, rgba(255, 200, 236, 0.28) 40%, rgba(190, 236, 255, 0.28) 50%, rgba(214, 204, 255, 0.28) 60%, transparent 70%);
+  --c-holo-a: 0.55;
+}
+
+.carte[data-rang="diamant"] {
+  --c-bg: linear-gradient(160deg, #1d3d70 0%, #0f2244 48%, #060e22 100%);
+  --c-motif: repeating-conic-gradient(from 7deg at 50% 27%, rgba(200, 230, 255, 0.08) 0deg 14deg, rgba(0, 0, 0, 0.1) 14deg 28deg);
+  --c-metal: linear-gradient(135deg, #ffffff, #a8d8ff 34%, #3a6aa8 58%, #e6f5ff);
+  --c-nom: linear-gradient(180deg, #ffffff 0%, #d6eeff 44%, #7fb6f0 54%, #eaf6ff 100%);
+  --c-ink: #eef7ff;
+  --c-ink2: rgba(238, 247, 255, 0.72);
+  --c-ref: 220 238 255;
+  --c-glow: 150 205 255;
+  --c-holo: repeating-linear-gradient(115deg, rgba(255, 90, 170, 0) 0%, rgba(255, 90, 170, 0.34) 5%, rgba(255, 214, 90, 0.34) 10%, rgba(90, 255, 200, 0.34) 15%, rgba(90, 180, 255, 0.34) 20%, rgba(190, 110, 255, 0.34) 25%, rgba(255, 90, 170, 0) 30%);
+  --c-holo-a: 0.85;
+}
+
+.carte[data-rang="eternel"] {
+  --c-bg: radial-gradient(120% 80% at 50% 26%, #5b2bc4 0%, #2d1270 42%, #12062e 100%);
+  --c-motif:
+    radial-gradient(0.5cqw 0.5cqw at 14% 20%, #fff 50%, transparent 55%),
+    radial-gradient(0.4cqw 0.4cqw at 80% 12%, #ffe9a8 50%, transparent 55%),
+    radial-gradient(0.35cqw 0.35cqw at 88% 44%, #fff 50%, transparent 55%),
+    radial-gradient(0.45cqw 0.45cqw at 9% 58%, #c9a8ff 50%, transparent 55%),
+    radial-gradient(0.3cqw 0.3cqw at 70% 64%, #fff 50%, transparent 55%),
+    radial-gradient(0.4cqw 0.4cqw at 24% 86%, #ffe9a8 50%, transparent 55%),
+    radial-gradient(0.3cqw 0.3cqw at 92% 90%, #fff 50%, transparent 55%);
+  --c-metal: linear-gradient(135deg, #ffe9a8, #e8a015 30%, #8b5cf6 55%, #ffe9a8 80%, #c9a8ff);
+  --c-nom: linear-gradient(180deg, #fff3c6 0%, #ffd36b 40%, #c9a8ff 62%, #fff0d2 100%);
+  --c-ink: #fff6e2;
+  --c-ink2: rgba(255, 246, 226, 0.72);
+  --c-ref: 255 230 170;
+  --c-glow: 200 160 255;
+  --c-holo: repeating-linear-gradient(115deg, rgba(255, 200, 90, 0) 0%, rgba(255, 200, 90, 0.32) 6%, rgba(200, 150, 255, 0.32) 12%, rgba(255, 240, 200, 0.32) 18%, rgba(255, 200, 90, 0) 24%);
+  --c-holo-a: 0.8;
+}
+
+.carte:is([data-rang="diamant"], [data-rang="eternel"]) .paillettes {
+  opacity: 0.9;
+}
+
+.carte[data-rang="eternel"] .poussiere {
+  opacity: 0.75;
+  background-image:
+    radial-gradient(circle, rgba(255, 215, 120, 0.95) 0 0.35cqw, transparent 0.7cqw),
+    radial-gradient(circle, rgba(220, 190, 255, 0.85) 0 0.3cqw, transparent 0.6cqw);
+  background-size: 13% 9.5%, 17% 12%;
+  background-position: 0 0, 30% 40%;
+  animation: poussiere 16s linear infinite;
+}
+
+@keyframes poussiere {
+  to {
+    background-position: 0 -100%, 30% -60%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .poussiere {
+    animation: none !important;
+  }
+}
+
+:global(html.perf-lite) .poussiere {
+  animation: none !important;
+}

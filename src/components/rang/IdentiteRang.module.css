@@ -1,0 +1,151 @@
+/* ─────────────────────────────────────────────────────────────────────
+   LE CADRE DU RANG AUTOUR DE LA PHOTO (Louis, 2026-10-24, maquette « Le
+   passage de rang », version 2). Un cadre par rang dès l'Argent ; l'Or
+   ajoute une lueur, le Platine une lumière qui tourne, le Diamant des
+   facettes, l'Éternel son aura qui respire.
+
+   Tout se mesure sur `--s`, le diamètre de la photo : le même cadre se
+   pose à 34 px dans une ligne de conversation et à 108 px sur le profil.
+   Il déborde de 9 % autour de la photo, avec un fin jour entre les deux.
+
+   ⚠️ Les couleurs sont FIXES, identiques en clair et en sombre : ce sont
+   des matières (argent, or, platine), pas des encres de l'interface.
+   ───────────────────────────────────────────────────────────────────── */
+
+.av {
+  position: relative;
+  display: inline-block;
+  flex: none;
+  vertical-align: middle;
+  --ep: calc(var(--s) * 0.055);
+}
+
+.aura,
+.cadre,
+.lumiere {
+  position: absolute;
+  inset: calc(var(--s) * -0.09);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+/* L'anneau seul : un disque dont on efface le centre. */
+.cadre,
+.lumiere {
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - var(--ep)), #000 calc(100% - var(--ep) + 0.6px));
+  mask: radial-gradient(farthest-side, transparent calc(100% - var(--ep)), #000 calc(100% - var(--ep) + 0.6px));
+}
+
+.cadre {
+  background: var(--cadre, transparent);
+}
+
+.lumiere {
+  display: none;
+  background: conic-gradient(from 0deg, transparent 0 60%, rgba(255, 255, 255, 0.95) 73%, transparent 86%);
+  animation: tourne 3.4s linear infinite;
+}
+
+.aura {
+  display: none;
+  box-shadow: 0 0 calc(var(--s) * 0.2) calc(var(--s) * 0.015) rgb(var(--aura) / 0.6);
+}
+
+.av[data-cadre="argent"] {
+  --cadre: conic-gradient(from 210deg, #ffffff, #9aa6b8, #f2f6fc, #6a7280, #ffffff);
+}
+
+.av[data-cadre="or"] {
+  --cadre: conic-gradient(from 210deg, #fff0b8, #e8a015, #ffd34e, #8a5a06, #fff0b8);
+  --ep: calc(var(--s) * 0.065);
+  --aura: 245 184 32;
+}
+
+.av[data-cadre="platine"] {
+  --cadre: conic-gradient(from 210deg, #ffffff, #d9d2f5, #f7f4ff, #8e86c2, #ffffff);
+  --ep: calc(var(--s) * 0.065);
+  --aura: 214 204 255;
+}
+
+.av[data-cadre="diamant"] {
+  --cadre: repeating-conic-gradient(from 0deg, #ffffff 0deg 10deg, #a8d8ff 10deg 20deg, #5b8fd0 20deg 30deg, #e6f5ff 30deg 40deg);
+  --ep: calc(var(--s) * 0.075);
+  --aura: 150 205 255;
+}
+
+.av[data-cadre="eternel"] {
+  --cadre: conic-gradient(from 0deg, #ffe9a8, #8b5cf6, #e8a015, #c9a8ff, #ffe9a8);
+  --ep: calc(var(--s) * 0.08);
+  --aura: 176 128 255;
+}
+
+.av:is([data-cadre="or"], [data-cadre="platine"], [data-cadre="diamant"], [data-cadre="eternel"]) .aura {
+  display: block;
+}
+
+.av:is([data-cadre="platine"], [data-cadre="diamant"], [data-cadre="eternel"]) .lumiere {
+  display: block;
+}
+
+.av[data-cadre="diamant"] .lumiere {
+  animation-duration: 2.4s;
+}
+
+.av[data-cadre="eternel"] .lumiere {
+  background: conic-gradient(from 0deg, transparent 0 52%, rgba(255, 233, 168, 1) 70%, transparent 86%);
+  animation-duration: 2.8s;
+}
+
+.av[data-cadre="eternel"] .aura {
+  animation: respire 2.8s ease-in-out infinite;
+}
+
+@keyframes tourne {
+  to {
+    rotate: 360deg;
+  }
+}
+
+@keyframes respire {
+  50% {
+    opacity: 0.55;
+  }
+}
+
+/* Ce qui bouge s'arrête quand il faut réduire les animations, et sur les
+   appareils qui saccadent (`perf-lite`) : le cadre, lui, reste. */
+@media (prefers-reduced-motion: reduce) {
+  .lumiere,
+  .aura {
+    animation: none !important;
+  }
+}
+
+:global(html.perf-lite) .lumiere,
+:global(html.perf-lite) .aura {
+  animation: none !important;
+}
+
+/* ── Le titre du Diamant, sous le pseudo ── */
+.titre {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  margin-top: 4px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--exp-encre);
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.12), rgba(193, 59, 193, 0.12));
+  box-shadow: inset 0 0 0 1px rgba(109, 75, 214, 0.3);
+}
+
+/* Sur la nuit de la scène : la même pastille, en lumière. */
+.titre[data-nuit] {
+  color: #d6c6ff;
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.28), rgba(193, 59, 193, 0.28));
+  box-shadow: inset 0 0 0 1px rgba(214, 198, 255, 0.45);
+}

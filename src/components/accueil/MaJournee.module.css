@@ -227,6 +227,23 @@
   background: var(--trait-on);
 }
 
+/* Les jokers du mois (2026-10-24) : pleins ceux qui restent, gris ceux
+   déjà posés. Leur texte prend l'encre des petits textes de la tuile, que
+   chaque habit règle déjà pour qu'elle se lise. */
+.jokers {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  margin-top: -2px;
+}
+
+.jokers small {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
 .serie[data-palier="feu"] {
   --trait: rgba(255, 255, 255, 0.6);
   --trait-on: #a87a1c;
