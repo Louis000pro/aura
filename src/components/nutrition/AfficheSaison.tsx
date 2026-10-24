@@ -6,10 +6,10 @@
    clair et en sombre, Louis, 2026-10-24).
 
    Sur le téléphone, elle prend toute la largeur : sa lumière naît et
-   s'éteint dans le fond de la page. Quatre produits de la saison se
-   posent sur le haut du mot, et le motif du moment bouge derrière le
-   texte et derrière les photos, jamais par-dessus. Sur ordinateur, c'est
-   un bloc arrondi.
+   s'éteint dans le fond de la page. Quatre ou cinq produits de la saison
+   se posent derrière le mot, sur une même ligne (`NATURE_MORTE`), et le
+   motif du moment bouge derrière le texte et derrière les photos, jamais
+   par-dessus. Sur ordinateur, c'est un bloc arrondi.
 
    ⚠️ LE MOT SE MESURE, comme `useMotAjuste` : « Barbecue » ou « Agrumes »
    ne tiennent pas à 76 px sur un téléphone, donc la taille descend
@@ -198,7 +198,7 @@ export default function AfficheSaison({ actif, estFavori, onOuvrir, onVoirTout }
           {moment.produits.map((p) => (
             // eslint-disable-next-line @next/next/no-img-element
             <img key={p.nom} src={imageProduit(p.nom)} alt="" decoding="async" className={s.produit}
-              style={{ left: p.x, top: p.y, width: p.taille, height: p.taille, transform: p.angle ? `rotate(${p.angle}deg)` : undefined }} />
+              style={{ left: p.x, top: p.y, width: p.taille, height: p.taille }} />
           ))}
         </div>
       </div>

@@ -13,6 +13,7 @@
      · la photo d'un repas noté dit vraiment ce plat, ou il n'y en a pas.
    ═══════════════════════════════════════════════════════════════════════ */
 import { existsSync, readFileSync, readdirSync } from "node:fs";
+import sharp from "sharp";
 import { RECIPES } from "@/lib/recipeBank";
 import {
   COLLECTIONS, MINUTES_IDEE, MINUTES_RAPIDE, NATURE, PROTEINES_APRES_SPORT, REPOS,
@@ -27,7 +28,7 @@ import {
   platsFavoris, platsProposes, recettesFavorites, trierFavoris, type Favori,
 } from "@/lib/favorisNutrition";
 import {
-  MOMENTS_SAISON, SEUIL_MOMENT, dimancheDePaques, imageProduit, jourEnLettres, momentDuJour,
+  MOMENTS_SAISON, NATURE_MORTE, SEUIL_MOMENT, VISIBLE, dimancheDePaques, imageProduit, jourEnLettres, momentDuJour,
 } from "@/lib/momentsSaison";
 
 let echecs = 0;
@@ -261,13 +262,48 @@ const fichierPublic = (chemin: string) => existsSync(new URL("../public" + chemi
   const doublons = MOMENTS_SAISON.filter((m) => new Set(m.recettes).size !== m.recettes.length).map((m) => m.id);
   verdict("aucune recette en double dans un moment", doublons.length === 0, doublons.join(", ") || `${MOMENTS_SAISON.length} moments`);
 
-  const quatre = MOMENTS_SAISON.filter((m) => m.produits.length !== 4).map((m) => m.id);
-  verdict("chaque moment pose quatre produits", quatre.length === 0, quatre.join(", ") || "");
+  const nombre = MOMENTS_SAISON.filter((m) => m.produits.length < 4 || m.produits.length > 5).map((m) => m.id);
+  verdict("chaque moment pose quatre ou cinq produits", nombre.length === 0, nombre.join(", ") || "");
   const manquantes = MOMENTS_SAISON.flatMap((m) => m.produits.filter((p) => !fichierPublic(imageProduit(p.nom))).map((p) => `${m.id}:${p.nom}`));
   verdict("chaque produit a sa vignette dans public/saison", manquantes.length === 0, manquantes.join(", ") || "");
   const servies = new Set(MOMENTS_SAISON.flatMap((m) => m.produits.map((p) => `${p.nom}.webp`)));
-  const orphelines = readdirSync(new URL("../public/saison", import.meta.url)).filter((f) => !servies.has(f));
+  const dossier = new URL("../public/saison/", import.meta.url);
+  const fichiers = readdirSync(dossier).filter((f) => f.endsWith(".webp"));
+  const orphelines = fichiers.filter((f) => !servies.has(f));
   verdict("aucune vignette de public/saison ne traîne sans moment", orphelines.length === 0, orphelines.join(", ") || `${servies.size} vignettes`);
+
+  /* La nature morte se compose par ce qu'on voit de chaque produit : la
+     partie visible de chaque vignette se remesure sur son fichier (alpha
+     au-dessus de 25), puis chaque produit posé se mesure dans sa boîte. */
+  const ecarts: string[] = [];
+  for (const f of fichiers) {
+    const nom = f.replace(/\.webp$/, "");
+    const { data, info } = await sharp(readFileSync(new URL(f, dossier))).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+    let x0 = info.width, y0 = info.height, x1 = -1, y1 = -1;
+    for (let y = 0; y < info.height; y++) for (let x = 0; x < info.width; x++) {
+      if (data[(y * info.width + x) * 4 + 3] > 25) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); }
+    }
+    const mesure = [x0 / info.width, y0 / info.height, (x1 + 1) / info.width, (y1 + 1) / info.height];
+    const ecrite = VISIBLE[nom];
+    if (!ecrite || ecrite.some((v, i) => Math.abs(v - mesure[i]) > 0.003)) ecarts.push(nom);
+  }
+  const sansFichier = Object.keys(VISIBLE).filter((nom) => !fichiers.includes(`${nom}.webp`));
+  verdict("la partie visible de chaque vignette est celle de son fichier", ecarts.length === 0 && sansFichier.length === 0,
+    [...ecarts, ...sansFichier.map((n) => `${n} sans fichier`)].join(", ") || `${fichiers.length} vignettes remesurées`);
+
+  const { largeur, sol, marge } = NATURE_MORTE;
+  const pres = 0.5; // au demi-pixel près : un écart plus petit ne se voit pas
+  const auBord: string[] = [], horsLigne: string[] = [];
+  for (const m of MOMENTS_SAISON) for (const p of m.produits) {
+    const [gx, hy, dx, by] = VISIBLE[p.nom] ?? [0, 0, 1, 1];
+    const gauche = p.x + p.taille * gx, droite = p.x + p.taille * dx, haut = p.y + p.taille * hy, bas = p.y + p.taille * by;
+    if (gauche < marge - pres || droite > largeur - marge + pres || haut < -pres) auBord.push(`${m.id}:${p.nom}`);
+    if (bas < sol - pres || bas > sol + 6 + pres) horsLigne.push(`${m.id}:${p.nom}`);
+  }
+  verdict(`aucun produit ne s'approche à moins de ${marge} px des bords de la nature morte`, auBord.length === 0,
+    auBord.join(", ") || "rien n'est coupé au bord de l'écran");
+  verdict("tous les produits se posent sur la ligne commune", horsLigne.length === 0,
+    horsLigne.join(", ") || `à ${sol} px, jusqu'à 6 px plus bas au premier plan`);
 
   const PAQUES: Record<number, string> = {
     2008: "2008-03-23", 2024: "2024-03-31", 2025: "2025-04-20", 2026: "2026-04-05", 2027: "2027-03-28",
@@ -331,6 +367,16 @@ const fichierPublic = (chemin: string) => existsSync(new URL("../public" + chemi
     css.includes("@media (prefers-reduced-motion: reduce)") && css.includes(":global(html.perf-lite) .chute"), "rien ne tombe, rien ne tourne");
   verdict("la lumière s'efface par un masque, lueurs comprises", /\.affiche::before \{[\s\S]*?mask-image: linear-gradient/.test(css),
     "aucune ligne nette au bord de l'affiche");
+  const boiteNature = css.match(/^\.nature \{([^}]*)\}/m)?.[1] ?? "";
+  verdict("la boîte de la nature morte est la même dans la lib et dans le CSS",
+    boiteNature.includes(`width: ${NATURE_MORTE.largeur}px`) && boiteNature.includes(`height: ${NATURE_MORTE.hauteur}px`),
+    `${NATURE_MORTE.largeur} × ${NATURE_MORTE.hauteur}`);
+  const zNature = Number(boiteNature.match(/z-index: (\d+)/)?.[1]);
+  const zMot = Number(css.match(/^\.titreBoite \{[^}]*z-index: (\d+)/m)?.[1]);
+  verdict("les produits passent derrière le mot", zNature < zMot, `${zNature} contre ${zMot}`);
+  verdict("le mot garde son contour, de la couleur de sa bande",
+    /^\.titre \{[^}]*-webkit-text-stroke: \d+px var\(--bande\);[^}]*paint-order: stroke fill;/m.test(css),
+    "ses accents restent lisibles devant un produit");
 
   const ecran = net(lire("src/components/NutritionTab.tsx"));
   const iIdee = ecran.indexOf("<IdeesDuMoment"), iSaison = ecran.indexOf("<AfficheSaison"), iTrouver = ecran.indexOf("<TrouverRecette");

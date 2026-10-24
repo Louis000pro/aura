@@ -4,9 +4,10 @@
    niveau 2, en clair et en sombre).
 
    Un moment, c'est une affiche entre « Une idée » et « Trouver une
-   recette » : un mot géant, quatre produits de la saison, une phrase, et
-   ses recettes, toutes déjà dans la banque. Ce fichier est PUR (aucune
-   lecture, aucune horloge) : on lui donne le jour, il rend le moment.
+   recette » : un mot géant, quatre ou cinq produits de la saison, une
+   phrase, et ses recettes, toutes déjà dans la banque. Ce fichier est PUR
+   (aucune lecture, aucune horloge) : on lui donne le jour, il rend le
+   moment.
 
    ⚠️ UN SEUL MOMENT À LA FOIS, AUX MÊMES DATES CHAQUE ANNÉE. Pâques est
    le seul qui bouge : il se calcule (`dimancheDePaques`). Entre deux
@@ -19,7 +20,7 @@
    trou, pas une saison.
 
    Ajouter un moment, c'est une entrée ici (deux dates, des recettes de la
-   banque, quatre produits de `public/saison/`) et sa lumière dans
+   banque, quatre ou cinq produits de `public/saison/`) et sa lumière dans
    `AfficheSaison.module.css`, en clair et en sombre. `check:nutrition`
    refuse un moment sans l'une des deux.
    ════════════════════════════════════════════════════════════════════ */
@@ -36,10 +37,10 @@ export type IdMoment =
 /** Ce qui bouge sur l'affiche. Un moment qui n'a pas encore été dessiné n'en a pas. */
 export type MotifSaison = "feuilles" | "guirlande" | "neige" | "soleil" | null;
 
-/** Un produit de la nature morte : sa vignette, sa place et sa taille en
- *  pixels dans la boîte de 256 × 164 posée en haut à droite de l'affiche.
- *  Le premier de la liste est derrière les autres. */
-export type ProduitSaison = { nom: string; x: number; y: number; taille: number; angle: number };
+/** Ce que l'affiche dessine pour un produit : le carré de sa vignette, sa
+ *  place et sa taille en pixels dans la boîte de la nature morte
+ *  (`NATURE_MORTE`). Le premier de la liste est au fond. */
+export type ProduitSaison = { nom: string; x: number; y: number; taille: number };
 
 export type MomentSaison = {
   id: IdMoment;
@@ -100,6 +101,91 @@ const fixe = (m1: number, j1: number, m2: number, j2: number) =>
 
 const finFevrier = (a: number) => new Date(Date.UTC(a, 2, 0)).getUTCDate();
 
+/* ── La nature morte ──────────────────────────────────────────────────
+
+   Une boîte de 340 × 172, calée sur le bord droit de l'affiche (donc sur
+   le bord de l'écran, sur un téléphone) et posée DERRIÈRE le mot : le mot
+   commence à 144 px du haut de la boîte, et le haut de ses minuscules
+   tombe vers 163 px. Tous les produits se posent sur une même ligne
+   (`NATURE_MORTE.sol`), que les minuscules cachent. La boîte vit aussi
+   dans `.nature` du module CSS, et `check:nutrition` vérifie qu'ils
+   disent la même chose.
+
+   ⚠️ UN PRODUIT SE PLACE PAR CE QU'ON VOIT DE LUI, jamais par le carré de
+   sa vignette : chaque image a sa propre marge transparente (le lait est
+   un carton étroit au milieu de son carré, les œufs en chocolat une bande
+   basse). `VISIBLE` donne la partie visible de chaque vignette, et
+   `check:nutrition` la remesure sur les fichiers de `public/saison/`.
+
+   Le gabarit : un petit produit à gauche, un moyen, le héros (le plus
+   haut, vers les deux tiers de la largeur), puis un dernier, plus bas, à
+   droite. Les Soupes laissent leur gauche à la vapeur. Rien ne pivote, et
+   rien ne s'approche à moins de 8 px des bords de la boîte. */
+
+export const NATURE_MORTE = { largeur: 340, hauteur: 172, sol: 168, marge: 8 } as const;
+
+/** La partie visible de chaque vignette (alpha au-dessus de 25 sur 255),
+ *  en fractions de son côté : [gauche, haut, droite, bas]. */
+export const VISIBLE: Record<string, readonly [number, number, number, number]> = {
+  "anis-etoile": [0, 0.0778, 0.9889, 0.9917],
+  "avocat": [0.025, 0.0278, 0.9778, 0.9389],
+  "cannelle": [0.0833, 0.1361, 0.9056, 0.8056],
+  "caramels": [0.0806, 0.2528, 0.9028, 0.8361],
+  "carotte": [0.025, 0.2278, 0.9806, 0.7833],
+  "cerneaux-de-noix": [0.0278, 0.1389, 0.9278, 0.8389],
+  "champignons": [0.075, 0.0667, 0.9194, 0.9389],
+  "citron-jaune": [0.0111, 0.1028, 0.9861, 0.8944],
+  "citron-vert": [0.0222, 0.0472, 0.9333, 0.9722],
+  "concombre": [0.05, 0.175, 0.9639, 0.8556],
+  "emmental": [0.1917, 0.1222, 0.7639, 0.9083],
+  "figues": [0.0028, 0.0972, 1, 0.9028],
+  "fraises": [0.0639, 0.0778, 0.9361, 0.8944],
+  "framboise": [0, 0.0917, 1, 0.9083],
+  "graines-de-grenade": [0.0889, 0.1861, 0.8972, 0.7583],
+  "lait": [0.3111, 0.0139, 0.6861, 0.9861],
+  "laitue": [0.0028, 0.15, 0.9778, 0.925],
+  "mangue": [0.0278, 0.0861, 0.9611, 0.8889],
+  "menthe-fraiche": [0.1056, 0.0167, 0.8944, 0.9722],
+  "navet": [0.0556, 0.1694, 0.9417, 0.8417],
+  "noisettes": [0, 0.0194, 1, 0.975],
+  "oeuf": [0.2056, 0.0833, 0.8083, 0.9222],
+  "oeufs-chocolat": [0, 0.2472, 1, 0.7528],
+  "oignon-rouge": [0.0389, 0.0361, 0.9667, 0.9611],
+  "oignon": [0.0639, 0.0556, 0.9333, 0.9389],
+  "orange": [0.0028, 0.0472, 0.9944, 0.9083],
+  "pamplemousse-rose": [0.0667, 0.2194, 0.95, 0.7444],
+  "pepites-chocolat": [0.025, 0.2306, 0.9806, 0.8167],
+  "poire": [0.1861, 0.0139, 0.8139, 0.9861],
+  "poireau": [0.0556, 0.0472, 0.9222, 0.9778],
+  "poivron-jaune": [0.0056, 0.0833, 0.9944, 0.9167],
+  "poivron-rouge": [0.0361, 0.1639, 0.95, 0.85],
+  "pomme-de-terre": [0.0222, 0.2194, 0.9778, 0.7778],
+  "pomme": [0.0111, 0.2194, 0.9833, 0.7917],
+  "pommes-rouges": [0.05, 0.0917, 0.95, 0.9111],
+  "potimarron": [0, 0.0917, 1, 0.9083],
+  "radis": [0.0694, 0.175, 0.9333, 0.7972],
+  "tete-d-ail": [0.125, 0.0611, 0.875, 0.8944],
+  "thym": [0.1583, 0.0194, 0.8444, 0.9806],
+  "tomate": [0.0361, 0.0556, 0.9639, 0.9444],
+  "tomates-cerises": [0.05, 0.2111, 0.95, 0.7444],
+};
+
+/** Un produit tel qu'on le compose : son centre `cx`, et sa hauteur `h` ou
+ *  sa largeur `w`, en pixels VISIBLES dans la boîte. `devant` le pose de
+ *  quelques pixels sous la ligne commune, au premier plan. */
+type PoseProduit = { nom: string; cx: number; devant?: number } & ({ h: number } | { w: number });
+
+/** Le carré de la vignette qui montre ce qu'on veut voir. Une vignette sans
+ *  mesure se pose comme un carré plein, et `check:nutrition` la refuse. */
+export function poser(p: PoseProduit): ProduitSaison {
+  const [x0, y0, x1, y1] = VISIBLE[p.nom] ?? [0, 0, 1, 1];
+  const taille = "h" in p ? p.h / (y1 - y0) : p.w / (x1 - x0);
+  const sol = NATURE_MORTE.sol + (p.devant ?? 0);
+  return { nom: p.nom, x: p.cx - (taille * (x0 + x1)) / 2, y: sol - taille * y1, taille };
+}
+
+const nature = (poses: PoseProduit[]) => poses.map(poser);
+
 /* Les douze moments, dans l'ordre de l'année. Les quatre premiers dessinés
    (soupes, fêtes, matins d'hiver, glaces) ont leur motif ; les autres ont
    leur lumière et leurs produits, et leur motif viendra quand il sera
@@ -111,12 +197,12 @@ export const MOMENTS_SAISON: MomentSaison[] = [
     demande: "Tu as une autre idée de recette aux agrumes ?",
     periode: fixe(1, 1, 1, 19),
     recettes: ["salade-d-agrumes-et-grenade", "bowl-de-skyr-kiwi-et-clementine", "magret-de-canard-a-l-orange", "verrines-avocat-crevettes", "vin-chaud-sans-alcool"],
-    produits: [
-      { nom: "orange", x: 96, y: -14, taille: 148, angle: 6 },
-      { nom: "citron-jaune", x: 186, y: 94, taille: 72, angle: -10 },
-      { nom: "citron-vert", x: 0, y: 60, taille: 96, angle: -8 },
-      { nom: "pamplemousse-rose", x: 66, y: 40, taille: 126, angle: 0 },
-    ],
+    produits: nature([
+      { nom: "pamplemousse-rose", cx: 128, w: 140 },
+      { nom: "orange", cx: 232, h: 132 },
+      { nom: "citron-jaune", cx: 56, w: 84, devant: 4 },
+      { nom: "citron-vert", cx: 296, h: 70, devant: 4 },
+    ]),
     motif: null, vapeur: false,
   },
   {
@@ -125,12 +211,12 @@ export const MOMENTS_SAISON: MomentSaison[] = [
     demande: "Tu as une autre idée de crêpes ou de pancakes ?",
     periode: fixe(1, 20, 2, 2),
     recettes: ["crepes-moelleuses", "galettes-de-sarrasin-completes", "pancakes-proteines"],
-    produits: [
-      { nom: "lait", x: 150, y: -10, taille: 110, angle: 0 },
-      { nom: "citron-jaune", x: 188, y: 98, taille: 66, angle: -12 },
-      { nom: "oeuf", x: 8, y: 74, taille: 80, angle: -8 },
-      { nom: "banane", x: 70, y: 40, taille: 130, angle: -8 },
-    ],
+    produits: nature([
+      { nom: "lait", cx: 220, h: 150 },
+      { nom: "caramels", cx: 106, w: 90, devant: 2 },
+      { nom: "oeuf", cx: 166, h: 74, devant: 2 },
+      { nom: "citron-jaune", cx: 288, w: 88, devant: 4 },
+    ]),
     motif: null, vapeur: false,
   },
   {
@@ -139,12 +225,13 @@ export const MOMENTS_SAISON: MomentSaison[] = [
     demande: "Tu as une autre idée de petit-déjeuner chaud pour l’hiver ?",
     periode: (a) => [iso(a, 2, 3), iso(a, 2, finFevrier(a))],
     recettes: ["porridge-poire-cannelle", "chocolat-chaud-proteine", "pain-perdu-proteine-a-la-cannelle", "oeufs-cocotte-epinards-jambon", "granola-maison-pomme-cannelle", "bowl-de-skyr-kiwi-et-clementine", "golden-latte-au-curcuma"],
-    produits: [
-      { nom: "lait", x: 152, y: -8, taille: 104, angle: 0 },
-      { nom: "poire", x: 94, y: 18, taille: 116, angle: -6 },
-      { nom: "pomme", x: 2, y: 66, taille: 92, angle: 4 },
-      { nom: "cerneaux-de-noix", x: 178, y: 94, taille: 70, angle: 10 },
-    ],
+    produits: nature([
+      { nom: "lait", cx: 250, h: 150 },
+      { nom: "poire", cx: 196, h: 118 },
+      { nom: "pomme", cx: 124, w: 120, devant: 2 },
+      { nom: "cannelle", cx: 56, w: 84, devant: 4 },
+      { nom: "cerneaux-de-noix", cx: 294, w: 74, devant: 4 },
+    ]),
     motif: "neige", vapeur: false,
   },
   {
@@ -153,12 +240,12 @@ export const MOMENTS_SAISON: MomentSaison[] = [
     demande: "Tu as une autre idée de dessert au chocolat pour Pâques ?",
     periode: (a) => { const p = dimancheDePaques(a); return [decaler(p, -13), p]; },
     recettes: ["brookie-fondant", "brownie-fondant-au-chocolat", "muffins-chocolat-moelleux", "mugcake-banane-cacao", "energy-balls-chocolat-amande", "barres-proteinees-maison-chocolat-cacahuete"],
-    produits: [
-      { nom: "amandes", x: 110, y: -4, taille: 120, angle: 0 },
-      { nom: "cerneaux-de-noix", x: 186, y: 96, taille: 70, angle: 8 },
-      { nom: "banane", x: 0, y: 56, taille: 104, angle: -14 },
-      { nom: "oeuf", x: 100, y: 44, taille: 104, angle: -6 },
-    ],
+    produits: nature([
+      { nom: "oeuf", cx: 44, h: 80 },
+      { nom: "oeufs-chocolat", cx: 198, w: 204 },
+      { nom: "pepites-chocolat", cx: 98, w: 86, devant: 6 },
+      { nom: "noisettes", cx: 298, h: 58, devant: 4 },
+    ]),
     motif: null, vapeur: false,
   },
   {
@@ -167,12 +254,12 @@ export const MOMENTS_SAISON: MomentSaison[] = [
     demande: "Tu as une autre idée de salade fraîche ?",
     periode: fixe(6, 1, 6, 30),
     recettes: ["salade-de-pates-estivale-a-la-feta", "salade-de-pates-d-ete", "fusilli-mediterraneens", "salade-nicoise", "panzanella-toscane", "tartare-tomates-burrata", "salade-cesar-legere-et-croustillante"],
-    produits: [
-      { nom: "roquette", x: 66, y: -12, taille: 160, angle: -4 },
-      { nom: "avocat", x: 184, y: 94, taille: 76, angle: 8 },
-      { nom: "concombre", x: 0, y: 60, taille: 98, angle: -10 },
-      { nom: "tomate", x: 94, y: 38, taille: 124, angle: 2 },
-    ],
+    produits: nature([
+      { nom: "concombre", cx: 124, w: 120 },
+      { nom: "laitue", cx: 222, w: 160 },
+      { nom: "radis", cx: 60, w: 90, devant: 4 },
+      { nom: "tomate", cx: 288, h: 84, devant: 4 },
+    ]),
     motif: null, vapeur: false,
   },
   {
@@ -181,12 +268,12 @@ export const MOMENTS_SAISON: MomentSaison[] = [
     demande: "Tu as une autre idée de recette pour le barbecue ?",
     periode: fixe(7, 1, 7, 20),
     recettes: ["brochettes-halloumi-legumes", "brochettes-boeuf-poivron-oignon", "gambas-grillees-ail-persil", "poisson-entier-a-la-plancha", "burger-maison-gourmand-equilibre", "coleslaw-maison"],
-    produits: [
-      { nom: "poivron-jaune", x: 100, y: -12, taille: 140, angle: 10 },
-      { nom: "citron-vert", x: 186, y: 98, taille: 68, angle: -8 },
-      { nom: "oignon-rouge", x: 2, y: 60, taille: 94, angle: -6 },
-      { nom: "poivron-rouge", x: 74, y: 38, taille: 128, angle: -6 },
-    ],
+    produits: nature([
+      { nom: "poivron-rouge", cx: 204, w: 148 },
+      { nom: "poivron-jaune", cx: 112, h: 86, devant: 2 },
+      { nom: "citron-vert", cx: 44, h: 60, devant: 4 },
+      { nom: "oignon-rouge", cx: 292, h: 78, devant: 4 },
+    ]),
     motif: null, vapeur: false,
   },
   {
@@ -195,12 +282,13 @@ export const MOMENTS_SAISON: MomentSaison[] = [
     demande: "Tu as une autre idée de glace ou de sorbet maison ?",
     periode: fixe(7, 21, 8, 31),
     recettes: ["batonnets-glaces-smoothie-mangue-passion", "granite-citron-menthe", "creme-glacee-vanille-maison", "sorbet-framboise-minute", "esquimaux-yaourt-fruits-rouges", "frozen-yogurt-fruits-rouges", "nice-cream-banane", "semifreddo-amande", "banana-split", "cheesecake-glace-sans-cuisson"],
-    produits: [
-      { nom: "citron-jaune", x: 134, y: 6, taille: 88, angle: 8 },
-      { nom: "mangue", x: 58, y: 42, taille: 96, angle: -6 },
-      { nom: "framboise", x: 156, y: 76, taille: 86, angle: 4 },
-      { nom: "menthe-fraiche", x: 6, y: 90, taille: 64, angle: -18 },
-    ],
+    produits: nature([
+      { nom: "menthe-fraiche", cx: 262, h: 104 },
+      { nom: "mangue", cx: 204, w: 140 },
+      { nom: "fraises", cx: 118, h: 90, devant: 2 },
+      { nom: "citron-jaune", cx: 54, w: 78, devant: 4 },
+      { nom: "framboise", cx: 290, w: 84, devant: 4 },
+    ]),
     motif: "soleil", vapeur: false,
   },
   {
@@ -209,12 +297,12 @@ export const MOMENTS_SAISON: MomentSaison[] = [
     demande: "Tu as une autre idée de repas facile à emporter ?",
     periode: fixe(9, 1, 9, 30),
     recettes: ["wrap-poulet-crudites-sauce-yaourt", "bowl-mexicain-poulet-mais-haricots-noirs", "buddha-bowl-pois-chiches-rotis-houmous", "bowl-de-poulet-quinoa-et-avocat", "quesadillas-jambon-fromage", "muffins-sales-epinards-feta-tomates-sechees", "overnight-oats-chocolat-noisette"],
-    produits: [
-      { nom: "epinards", x: 72, y: -14, taille: 156, angle: -6 },
-      { nom: "citron-vert", x: 186, y: 98, taille: 68, angle: 8 },
-      { nom: "tomates-cerises", x: 0, y: 62, taille: 98, angle: -6 },
-      { nom: "avocat", x: 96, y: 38, taille: 120, angle: 4 },
-    ],
+    produits: nature([
+      { nom: "pommes-rouges", cx: 218, h: 128 },
+      { nom: "figues", cx: 132, w: 118, devant: 2 },
+      { nom: "tomates-cerises", cx: 62, w: 96, devant: 4 },
+      { nom: "avocat", cx: 286, h: 88, devant: 4 },
+    ]),
     motif: null, vapeur: false,
   },
   {
@@ -223,12 +311,12 @@ export const MOMENTS_SAISON: MomentSaison[] = [
     demande: "Tu as une autre idée de soupe ou de velouté ?",
     periode: fixe(10, 20, 11, 9),
     recettes: ["veloute-de-potimarron-et-chataignes", "minestrone-d-hiver", "harira-aux-lentilles-et-pois-chiches", "pho-au-boeuf", "ramen-au-poulet-et-oeuf-mollet", "veloute-de-carottes"],
-    produits: [
-      { nom: "poireau", x: 70, y: -12, taille: 172, angle: -4 },
-      { nom: "navet", x: 186, y: 96, taille: 70, angle: 10 },
-      { nom: "carotte", x: 0, y: 58, taille: 100, angle: -12 },
-      { nom: "potimarron", x: 92, y: 36, taille: 130, angle: 3 },
-    ],
+    produits: nature([
+      { nom: "poireau", cx: 214, h: 150 },
+      { nom: "potimarron", cx: 246, w: 146, devant: 2 },
+      { nom: "carotte", cx: 190, w: 110, devant: 4 },
+      { nom: "navet", cx: 288, h: 66, devant: 6 },
+    ]),
     motif: "feuilles", vapeur: true,
   },
   {
@@ -237,12 +325,12 @@ export const MOMENTS_SAISON: MomentSaison[] = [
     demande: "Tu as une autre idée de gratin ?",
     periode: fixe(11, 10, 11, 30),
     recettes: ["gratin-de-chou-fleur", "tartiflette-allegee", "lasagnes-epinards-ricotta", "endives-au-jambon-gratinees", "hachis-parmentier-a-la-patate-douce", "soupe-a-l-oignon-gratinee"],
-    produits: [
-      { nom: "oignon", x: 74, y: -14, taille: 150, angle: -6 },
-      { nom: "emmental-rape", x: 178, y: 98, taille: 78, angle: -6 },
-      { nom: "epinards", x: 0, y: 58, taille: 100, angle: -10 },
-      { nom: "pomme-de-terre", x: 88, y: 40, taille: 128, angle: 4 },
-    ],
+    produits: nature([
+      { nom: "emmental", cx: 244, h: 128 },
+      { nom: "pomme-de-terre", cx: 150, w: 150, devant: 2 },
+      { nom: "oignon", cx: 56, h: 84, devant: 4 },
+      { nom: "tete-d-ail", cx: 296, h: 78, devant: 4 },
+    ]),
     motif: null, vapeur: false,
   },
   {
@@ -251,12 +339,12 @@ export const MOMENTS_SAISON: MomentSaison[] = [
     demande: "Tu as une autre idée de plat mijoté ?",
     periode: fixe(12, 1, 12, 14),
     recettes: ["pot-au-feu", "boeuf-bourguignon", "blanquette-de-veau-legere", "petit-sale-aux-lentilles", "mafe-de-poulet", "poulet-tikka-masala", "chili-con-carne", "chili-sin-carne", "tajine-d-agneau-aux-abricots-citron-confit-et-couscous"],
-    produits: [
-      { nom: "panais", x: 64, y: -10, taille: 168, angle: -14 },
-      { nom: "ail", x: 184, y: 96, taille: 70, angle: 8 },
-      { nom: "champignons", x: 2, y: 62, taille: 94, angle: -6 },
-      { nom: "oignon-rouge", x: 94, y: 34, taille: 124, angle: 4 },
-    ],
+    produits: nature([
+      { nom: "thym", cx: 210, h: 140 },
+      { nom: "champignons", cx: 134, h: 104, devant: 2 },
+      { nom: "oignon", cx: 56, h: 82, devant: 4 },
+      { nom: "carotte", cx: 262, w: 136, devant: 4 },
+    ]),
     motif: null, vapeur: false,
   },
   {
@@ -265,12 +353,12 @@ export const MOMENTS_SAISON: MomentSaison[] = [
     demande: "Tu as une autre idée de recette pour les fêtes ?",
     periode: fixe(12, 15, 12, 31),
     recettes: ["blinis-au-saumon-fume", "noix-de-saint-jacques-puree-de-celeri", "buche-roulee-au-chocolat", "magret-de-canard-a-l-orange", "verrines-avocat-crevettes", "salade-d-agrumes-et-grenade", "vin-chaud-sans-alcool", "chocolat-chaud-proteine"],
-    produits: [
-      { nom: "orange", x: 122, y: -2, taille: 112, angle: 6 },
-      { nom: "graines-de-grenade", x: 42, y: 36, taille: 132, angle: -4 },
-      { nom: "cerneaux-de-noix", x: 172, y: 92, taille: 76, angle: -8 },
-      { nom: "anis-etoile", x: 8, y: 98, taille: 54, angle: 12 },
-    ],
+    produits: nature([
+      { nom: "orange", cx: 226, h: 128 },
+      { nom: "graines-de-grenade", cx: 124, w: 130, devant: 2 },
+      { nom: "anis-etoile", cx: 48, w: 62, devant: 4 },
+      { nom: "cerneaux-de-noix", cx: 294, w: 76, devant: 4 },
+    ]),
     motif: "guirlande", vapeur: false,
   },
 ];

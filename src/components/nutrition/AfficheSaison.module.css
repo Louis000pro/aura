@@ -35,13 +35,17 @@
 }
 .avecGuirlande { padding-top: 74px; }
 
-/* ── Le haut : le surtitre, la vapeur, la nature morte ── */
+/* ── Le haut : le surtitre, la vapeur, la nature morte ──
+   La nature morte passe DERRIÈRE le mot (1 contre 2), et devant les
+   motifs, qui viennent avant elle. Sa boîte est celle de `NATURE_MORTE`
+   (lib/momentsSaison) : sur un téléphone, son bord droit est celui de
+   l'écran. */
 .tete { position: relative; height: 132px; }
 .surtitre {
   position: absolute; left: 0; top: 4px; z-index: 2;
   font-size: 13px; font-weight: 700; color: var(--encre-surtitre);
 }
-.nature { position: absolute; right: -30px; top: -8px; z-index: 3; width: 256px; height: 164px; }
+.nature { position: absolute; right: -16px; top: -12px; z-index: 1; width: 340px; height: 172px; }
 .produit {
   position: absolute; display: block; object-fit: contain;
   filter: drop-shadow(0 12px 10px var(--ombre-produit));
@@ -56,7 +60,14 @@
   letter-spacing: -0.02em;
   white-space: nowrap;
 }
-.titre { margin: 0; font-size: 76px; line-height: 0.9; color: var(--encre-titre); }
+/* Le contour, de la couleur de la bande, garde les lettres et leurs
+   accents lisibles devant un produit de la même teinte. `paint-order` le
+   peint SOUS la lettre : sans lui, il mangerait 3,5 px de chaque trait. */
+.titre {
+  margin: 0; font-size: 76px; line-height: 0.9; color: var(--encre-titre);
+  -webkit-text-stroke: 7px var(--bande);
+  paint-order: stroke fill;
+}
 .ligne { display: block; }
 .mesure { position: absolute; left: 0; top: 0; visibility: hidden; pointer-events: none; font-size: 100px; }
 .mesure > span { display: block; width: max-content; }
