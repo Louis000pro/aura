@@ -6,8 +6,9 @@
 
    De haut en bas : la question du Guide sur le repas qui vient, avec trois
    portes photo · « Aujourd'hui », les repas du jour en polaroids et l'ajout
-   · une idée de recette pour ce repas · six collections de la banque ·
-   les mini-cours de nutrition. Le détail de la journée (« Ma journée ») et
+   · une idée de recette pour ce repas · l'affiche du moment de l'année,
+   seulement entre ses dates (lib/momentsSaison) · six collections de la
+   banque · les mini-cours de nutrition. Le détail de la journée (« Ma journée ») et
    une collection s'ouvrent en vue pleine, et le retour du téléphone les
    referme (useRetourTelephone).
 
@@ -44,8 +45,10 @@ import { localDateStr } from "@/lib/dates";
 import { loadTasteProfileLocal } from "@/lib/tasteProfile";
 import { fitReason, type DayNeeds, type Recipe } from "@/lib/recipeBank";
 import {
-  COLLECTIONS, DEMANDE_AU_GUIDE, besoinsDuJour, ideesDuMoment, recettesDe, regimeConnu, type IdCollection,
+  COLLECTIONS, DEMANDE_AU_GUIDE, besoinsDuJour, collection, ideesDuMoment, imageRecette, recettesDe, regimeConnu,
+  type IdCollection,
 } from "@/lib/collectionsRecettes";
+import { apercuMoment, momentDuJour, type MomentActif } from "@/lib/momentsSaison";
 import {
   classerRecents, heureMaintenant, ligneVersRepas, momentActuel,
   type MealEntry, type MealType, type NouveauRepas, type RecentMeal,
@@ -61,6 +64,7 @@ import MealSituationHero from "@/components/MealSituationHero";
 import RecipeSheet from "@/components/RecipeSheet";
 import CarteAujourdhui from "@/components/nutrition/CarteAujourdhui";
 import IdeesDuMoment from "@/components/nutrition/IdeesDuMoment";
+import AfficheSaison from "@/components/nutrition/AfficheSaison";
 import TrouverRecette from "@/components/nutrition/TrouverRecette";
 import ComprendreNutrition from "@/components/nutrition/ComprendreNutrition";
 import CollectionRecettes from "@/components/nutrition/CollectionRecettes";
@@ -74,7 +78,7 @@ import ManualModal from "@/components/nutrition/ManualModal";
 
 type Vue =
   | { nom: "accueil" } | { nom: "journee" } | { nom: "collection"; id: IdCollection }
-  | { nom: "favoris"; plats: RecentMeal[] };
+  | { nom: "favoris"; plats: RecentMeal[] } | { nom: "saison"; actif: MomentActif };
 type Fiche = { liste: Recipe[]; index: number; besoins: DayNeeds | null };
 type LoggedMeal = { name: string; calories: number; proteins: number; carbs: number; fats: number };
 
@@ -105,6 +109,7 @@ export default function NutritionTab() {
   const aujourdhui = useJourLocal();
   const uid = user?.id ?? null;
   const premiumDebloque = !!(user?.is_premium || user?.is_admin);
+  const estAdmin = !!user?.is_admin;
   const premierJour = session?.user?.created_at ? localDateStr(new Date(session.user.created_at)) : null;
 
   /* ── Les vues : l'écran, le détail de la journée, une collection ── */
@@ -123,6 +128,7 @@ export default function NutritionTab() {
   useRetourTelephone(vue.nom === "journee", "nutritionJournee", fermerVue);
   useRetourTelephone(vue.nom === "collection", "nutritionCollection", fermerVue);
   useRetourTelephone(vue.nom === "favoris", "nutritionFavoris", fermerVue);
+  useRetourTelephone(vue.nom === "saison", "nutritionSaison", fermerVue);
 
   const jourAffiche = vue.nom === "journee" ? (jourDetail ?? aujourdhui) : aujourdhui;
   /* Un jour hors de la fenêtre gratuite ne se lit pas : on ne dit pas
@@ -369,6 +375,18 @@ export default function NutritionTab() {
     [besoins, moment, aujourdhui, regime],
   );
   const collections = useMemo(() => COLLECTIONS.filter((c) => recettesDe(c.id, regime).length > 0), [regime]);
+  const vueCollection = vue.nom === "collection" ? collection(vue.id) : null;
+
+  /* ── Le moment de l'année (lib/momentsSaison) ──
+     Il se lit sur le jour du téléphone, comme le reste de l'écran, et rien
+     ne s'affiche entre deux moments. Un compte administrateur peut en
+     regarder un autre avant ses dates avec `?saison=<id>` dans l'adresse. */
+  const [apercuSaison] = useState(() => (typeof window === "undefined" ? null : new URLSearchParams(window.location.search).get("saison")));
+  const saison = useMemo(() => {
+    if (!aujourdhui) return null;
+    if (apercuSaison && estAdmin) return apercuMoment(apercuSaison, aujourdhui, regime);
+    return momentDuJour(aujourdhui, regime);
+  }, [aujourdhui, regime, apercuSaison, estAdmin]);
 
   /* Une seule fiche recette pour tout l'écran. Les besoins du jour ne
      servent qu'aux idées : une collection se parcourt, elle ne se classe pas. */
@@ -439,6 +457,11 @@ export default function NutritionTab() {
                 <IdeesDuMoment key={moment} moment={moment} recettes={idees} estFavori={favoris.estRecette}
                   onOuvrir={(r, liste) => ouvrirRecette(r, liste, true)} />
               )}
+              {saison && (
+                <AfficheSaison key={saison.moment.id} actif={saison} estFavori={favoris.estRecette}
+                  onOuvrir={(r, liste) => ouvrirRecette(r, liste, false)}
+                  onVoirTout={() => ouvrirVue({ nom: "saison", actif: saison })} />
+              )}
               <TrouverRecette
                 collections={collections}
                 favoris={favoris.connu ? { recettes: favoris.recettes, plats: favoris.plats } : null}
@@ -470,16 +493,34 @@ export default function NutritionTab() {
         </div>
       )}
 
-      {vue.nom === "collection" && (
+      {vue.nom === "collection" && vueCollection && (
         <div className="max-w-[560px]">
           <CollectionRecettes
-            id={vue.id}
+            titre={vueCollection.titre}
+            sousTitre={vueCollection.sousTitre}
+            heros={imageRecette(vueCollection.heros)}
             recettes={recettesDe(vue.id, regime)}
             guide={guide}
             estFavori={favoris.estRecette}
             onRetour={fermerVue}
             onOuvrir={(r, liste) => ouvrirRecette(r, liste, false)}
             onDemander={() => ouvrirAssistant(DEMANDE_AU_GUIDE[vue.id])}
+          />
+        </div>
+      )}
+
+      {vue.nom === "saison" && (
+        <div className="max-w-[560px]">
+          <CollectionRecettes
+            titre={vue.actif.moment.titre}
+            sousTitre={vue.actif.phrase}
+            heros={vue.actif.recettes[0].image}
+            recettes={vue.actif.recettes}
+            guide={guide}
+            estFavori={favoris.estRecette}
+            onRetour={fermerVue}
+            onOuvrir={(r, liste) => ouvrirRecette(r, liste, false)}
+            onDemander={() => ouvrirAssistant(vue.actif.moment.demande)}
           />
         </div>
       )}

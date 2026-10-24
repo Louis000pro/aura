@@ -12,7 +12,7 @@
        seule, jamais une nuit au frais le matin même) ;
      · la photo d'un repas noté dit vraiment ce plat, ou il n'y en a pas.
    ═══════════════════════════════════════════════════════════════════════ */
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { RECIPES } from "@/lib/recipeBank";
 import {
   COLLECTIONS, MINUTES_IDEE, MINUTES_RAPIDE, NATURE, PROTEINES_APRES_SPORT, REPOS,
@@ -26,6 +26,9 @@ import {
   PLAFOND_FAVORIS, clePlat, compteFavoris, epinglesAReprendre, favoriDePlat, favoriDeRecette, favoriLu,
   platsFavoris, platsProposes, recettesFavorites, trierFavoris, type Favori,
 } from "@/lib/favorisNutrition";
+import {
+  MOMENTS_SAISON, SEUIL_MOMENT, dimancheDePaques, imageProduit, jourEnLettres, momentDuJour,
+} from "@/lib/momentsSaison";
 
 let echecs = 0;
 function verdict(nom: string, bon: boolean, detail: string) {
@@ -247,6 +250,99 @@ const fichierPublic = (chemin: string) => existsSync(new URL("../public" + chemi
     net(lire("src/components/nutrition/GrillePlats.tsx")).includes("favori !== null") && net(lire("src/components/NutritionTab.tsx")).includes("favoris.connu ? favoris.estPlat : null"),
     "un cœur vide serait faux");
   verdict("« Sandwich, snack » ne montre pas de recettes", net(lire("src/components/MealSituationHero.tsx")).includes('sit === "maison" ? recettesFavorites : []'), "une recette se cuisine");
+}
+
+/* ── 11 · Les moments de l'année (lib/momentsSaison, l'affiche de saison) ── */
+{
+  const ids = new Set(RECIPES.map((r) => r.id));
+  const inconnues = MOMENTS_SAISON.flatMap((m) => m.recettes.filter((id) => !ids.has(id)).map((id) => `${m.id}:${id}`));
+  verdict("chaque recette d'un moment est dans la banque", inconnues.length === 0,
+    inconnues.join(", ") || `${MOMENTS_SAISON.reduce((t, m) => t + m.recettes.length, 0)} recettes`);
+  const doublons = MOMENTS_SAISON.filter((m) => new Set(m.recettes).size !== m.recettes.length).map((m) => m.id);
+  verdict("aucune recette en double dans un moment", doublons.length === 0, doublons.join(", ") || `${MOMENTS_SAISON.length} moments`);
+
+  const quatre = MOMENTS_SAISON.filter((m) => m.produits.length !== 4).map((m) => m.id);
+  verdict("chaque moment pose quatre produits", quatre.length === 0, quatre.join(", ") || "");
+  const manquantes = MOMENTS_SAISON.flatMap((m) => m.produits.filter((p) => !fichierPublic(imageProduit(p.nom))).map((p) => `${m.id}:${p.nom}`));
+  verdict("chaque produit a sa vignette dans public/saison", manquantes.length === 0, manquantes.join(", ") || "");
+  const servies = new Set(MOMENTS_SAISON.flatMap((m) => m.produits.map((p) => `${p.nom}.webp`)));
+  const orphelines = readdirSync(new URL("../public/saison", import.meta.url)).filter((f) => !servies.has(f));
+  verdict("aucune vignette de public/saison ne traîne sans moment", orphelines.length === 0, orphelines.join(", ") || `${servies.size} vignettes`);
+
+  const PAQUES: Record<number, string> = {
+    2008: "2008-03-23", 2024: "2024-03-31", 2025: "2025-04-20", 2026: "2026-04-05", 2027: "2027-03-28",
+    2028: "2028-04-16", 2029: "2029-04-01", 2030: "2030-04-21", 2038: "2038-04-25",
+  };
+  const faussesPaques = Object.entries(PAQUES).filter(([a, d]) => dimancheDePaques(Number(a)) !== d);
+  verdict("Pâques tombe le bon dimanche, même au plus tôt et au plus tard", faussesPaques.length === 0,
+    faussesPaques.map(([a]) => `${a} : ${dimancheDePaques(Number(a))}`).join(", ") || `${Object.keys(PAQUES).length} années`);
+
+  const chevauchements: string[] = [], desordre: string[] = [];
+  for (let a = 2024; a <= 2045; a++) {
+    const periodes = MOMENTS_SAISON.map((m) => ({ id: m.id, p: m.periode(a) }));
+    for (const { id, p } of periodes) {
+      if (!(p[0] <= p[1] && p[0].startsWith(`${a}-`) && p[1].startsWith(`${a}-`))) desordre.push(`${a}:${id}`);
+    }
+    for (let i = 0; i < periodes.length; i++) {
+      for (let j = i + 1; j < periodes.length; j++) {
+        const [d1, f1] = periodes[i].p, [d2, f2] = periodes[j].p;
+        if (d1 <= f2 && d2 <= f1) chevauchements.push(`${a} : ${periodes[i].id} et ${periodes[j].id}`);
+      }
+    }
+  }
+  verdict("deux moments ne se chevauchent jamais, de 2024 à 2045", chevauchements.length === 0, chevauchements.slice(0, 4).join(", ") || "22 années");
+  verdict("chaque moment commence avant de finir, dans la même année", desordre.length === 0, desordre.slice(0, 4).join(", ") || "");
+
+  const cas: [string, string | null][] = [
+    ["2026-10-24", "soupes"], ["2026-10-19", null], ["2026-11-09", "soupes"], ["2026-11-10", "gratins"],
+    ["2026-12-31", "fetes"], ["2027-01-01", "agrumes"], ["2027-01-25", null], ["2027-02-28", "matins-hiver"],
+    ["2028-02-29", "matins-hiver"], ["2026-03-22", null], ["2026-03-23", "paques"], ["2026-04-05", "paques"],
+    ["2026-04-06", null], ["2026-05-15", null], ["2026-08-31", "glaces"], ["2026-09-01", "rentree"],
+  ];
+  const fauxJours = cas.filter(([j, attendu]) => (momentDuJour(j, [])?.moment.id ?? null) !== attendu);
+  verdict("le bon moment à la bonne date, et rien entre deux", fauxJours.length === 0,
+    fauxJours.map(([j, a]) => `${j} : ${momentDuJour(j, [])?.moment.id ?? "rien"} au lieu de ${a ?? "rien"}`).join(", ") || `${cas.length} dates`);
+  verdict("les crêpes (trois recettes) ne s'affichent pas", momentDuJour("2027-01-25", []) === null, "il en manque une");
+  verdict(`un moment qui garde moins de ${SEUIL_MOMENT} recettes pour le régime ne s'affiche pas`,
+    momentDuJour("2026-12-05", ["vegetarien"]) === null && momentDuJour("2026-12-05", [])?.moment.id === "mijote",
+    "le mijoté en végétarien n'en garde qu'une");
+  const vege = momentDuJour("2026-10-24", ["vegetarien"]);
+  verdict("le rail ne garde que ce qui convient au régime",
+    !!vege && vege.recettes.length === SEUIL_MOMENT && vege.recettes.every((r) => convient(r, ["vegetarien"])),
+    vege?.recettes.map((r) => r.id).join(", ") ?? "rien");
+
+  const soupes = momentDuJour("2026-10-24", []);
+  verdict("la phrase dit jusqu'à quand, avec l'espace insécable",
+    soupes?.phrase === "Des soupes et des veloutés, jusqu’au 9 novembre.", JSON.stringify(soupes?.phrase));
+  verdict("le 29 février s'écrit les années bissextiles", momentDuJour("2028-02-10", [])?.phrase.endsWith("29 février.") === true,
+    momentDuJour("2028-02-10", [])?.phrase ?? "");
+  verdict("le premier du mois s'écrit « 1er »", jourEnLettres("2029-04-01") === "1er avril", jourEnLettres("2029-04-01"));
+  const textes = MOMENTS_SAISON.flatMap((m) => [m.titre, m.surtitre, m.phrase, m.demande]);
+  const fautes = textes.filter((t) => /'|—| [?!:;]|^\s|\s$/.test(t));
+  verdict("les textes des moments suivent la typographie française", fautes.length === 0, fautes.join(" | ") || `${textes.length} textes`);
+  verdict("une demande au Guide est une question", MOMENTS_SAISON.every((m) => m.demande.endsWith(" ?")), "");
+
+  const css = lire("src/components/nutrition/AfficheSaison.module.css");
+  const sansJour = MOMENTS_SAISON.filter((m) => !new RegExp(`^\\.${m.id} \\{`, "m").test(css)).map((m) => m.id);
+  const sansNuit = MOMENTS_SAISON.filter((m) => !css.includes(`:global([data-theme="dark"]) .${m.id} {`)).map((m) => m.id);
+  verdict("chaque moment a sa lumière en clair", sansJour.length === 0, sansJour.join(", ") || `${MOMENTS_SAISON.length} classes`);
+  verdict("chaque moment a sa lumière en sombre", sansNuit.length === 0, sansNuit.join(", ") || `${MOMENTS_SAISON.length} classes`);
+  verdict("le décor s'arrête quand le téléphone demande moins de mouvement, et sur un appareil modeste",
+    css.includes("@media (prefers-reduced-motion: reduce)") && css.includes(":global(html.perf-lite) .chute"), "rien ne tombe, rien ne tourne");
+  verdict("la lumière s'efface par un masque, lueurs comprises", /\.affiche::before \{[\s\S]*?mask-image: linear-gradient/.test(css),
+    "aucune ligne nette au bord de l'affiche");
+
+  const ecran = net(lire("src/components/NutritionTab.tsx"));
+  const iIdee = ecran.indexOf("<IdeesDuMoment"), iSaison = ecran.indexOf("<AfficheSaison"), iTrouver = ecran.indexOf("<TrouverRecette");
+  verdict("l'affiche vit entre « Une idée » et « Trouver une recette »", iIdee >= 0 && iIdee < iSaison && iSaison < iTrouver, "");
+  verdict("le moment se lit sur le jour du téléphone",
+    ecran.includes("momentDuJour(aujourdhui, regime)") && ecran.includes("if (!aujourdhui) return null"), "jamais l'horloge du serveur");
+  verdict("l'aperçu d'un autre moment est réservé à l'administration", ecran.includes("apercuSaison && estAdmin"), "?saison=<id>");
+  const affiche = net(lire("src/components/nutrition/AfficheSaison.tsx"));
+  verdict("le mot géant se mesure, il ne se devine pas", affiche.includes("ResizeObserver") && affiche.includes("document.fonts?.ready"), "plafond 76 px");
+  verdict("l'affiche n'écrit rien", !/supabase|createClient|nutrition_logs|\.(insert|upsert|delete)\(/.test(affiche), "elle montre, l'écran ouvre");
+  const vue = net(lire("src/components/nutrition/CollectionRecettes.tsx"));
+  verdict("« Midi et soir » ne garde que des plats", vue.includes('natureDe(r) === "plat"') && !vue.includes('!== "petit-dej"'), "un chocolat chaud n'est pas un dîner");
 }
 
 console.log(echecs ? `\n${echecs} échec(s).` : "\nTout passe.");

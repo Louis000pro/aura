@@ -1,0 +1,429 @@
+/* ════════════════════════════════════════════════════════════════════
+   L'affiche de saison (AfficheSaison.tsx, lib/momentsSaison).
+
+   Chaque moment est une classe qui pose sa lumière et ses encres, en clair
+   puis en sombre. La mise en page, elle, ne change pas d'un moment à
+   l'autre.
+
+   ⚠️ UN NOM DE KEYFRAMES EST LOCAL À CE MODULE : les animations des motifs
+   vivent ici, jamais dans globals.css.
+   ════════════════════════════════════════════════════════════════════ */
+
+.affiche {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  margin: 0 -16px;
+  padding: 34px 16px 30px;
+  overflow: hidden;
+  /* Les valeurs des motifs qu'un moment ne redéfinit pas. */
+  --nervure: rgba(90, 35, 10, 0.35);
+  --flocon-ombre: transparent;
+}
+/* La lumière vit sur une couche à part, et c'est un MASQUE qui la fait
+   naître et s'éteindre dans le fond de la page, en haut comme en bas.
+   ⚠️ Un fondu posé sur la seule bande ne suffit pas : les lueurs sont des
+   ellipses qui dépassent les bords, et l'affiche les coupait net (une
+   ligne visible sous « Voir les recettes »). */
+.affiche::before {
+  content: "";
+  position: absolute; inset: 0; z-index: -1;
+  background: var(--lueur-haut), var(--lueur-bas), linear-gradient(180deg, var(--bande), var(--bande-bas));
+  -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 11%, #000 76%, transparent 100%);
+  mask-image: linear-gradient(180deg, transparent 0%, #000 11%, #000 76%, transparent 100%);
+}
+.avecGuirlande { padding-top: 74px; }
+
+/* ── Le haut : le surtitre, la vapeur, la nature morte ── */
+.tete { position: relative; height: 132px; }
+.surtitre {
+  position: absolute; left: 0; top: 4px; z-index: 2;
+  font-size: 13px; font-weight: 700; color: var(--encre-surtitre);
+}
+.nature { position: absolute; right: -30px; top: -8px; z-index: 3; width: 256px; height: 164px; }
+.produit {
+  position: absolute; display: block; object-fit: contain;
+  filter: drop-shadow(0 12px 10px var(--ombre-produit));
+}
+
+/* ── Le mot ── */
+.titreBoite { position: relative; z-index: 2; }
+.mot {
+  font-family: var(--titrage);
+  font-weight: 900;
+  font-variation-settings: var(--w-affiche);
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+}
+.titre { margin: 0; font-size: 76px; line-height: 0.9; color: var(--encre-titre); }
+.ligne { display: block; }
+.mesure { position: absolute; left: 0; top: 0; visibility: hidden; pointer-events: none; font-size: 100px; }
+.mesure > span { display: block; width: max-content; }
+
+.phrase {
+  position: relative; z-index: 2;
+  margin: 18px 0 14px;
+  font-size: 16px; line-height: 1.4; color: var(--encre-phrase);
+}
+
+/* ── Les recettes ── */
+.rail {
+  position: relative; z-index: 2;
+  display: flex; gap: 10px;
+  overflow-x: auto;
+  margin: 0 -16px; padding: 2px 16px 16px;
+  scrollbar-width: none;
+}
+.rail::-webkit-scrollbar { display: none; }
+.recette {
+  flex: 0 0 148px;
+  display: flex; flex-direction: column; gap: 6px;
+  text-align: left; cursor: pointer;
+}
+.photoBoite { position: relative; display: block; }
+.photo {
+  display: block; width: 100%; aspect-ratio: 3 / 4; object-fit: cover;
+  border-radius: var(--r-bloc); box-shadow: var(--ombre-pose);
+  background: rgba(var(--accent-rgb), 0.10);
+}
+.nom {
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden;
+  padding: 0 2px; font-size: 13px; font-weight: 700; line-height: 1.25; color: var(--text-0);
+}
+.duree { padding: 0 2px; font-size: 11px; color: var(--encre-duree); }
+.lien {
+  position: relative; z-index: 2;
+  align-self: flex-start;
+  display: flex; align-items: center; gap: 6px;
+  min-height: 44px; margin-top: -10px;
+  font-size: 13px; font-weight: 600; color: var(--exp-encre);
+  cursor: pointer;
+}
+
+/* Sur ordinateur, l'affiche ne touche pas les bords : un bloc arrondi.
+   ⚠️ Ce bloc reste APRÈS les règles qu'il remplace : à force égale, la
+   dernière écrite l'emporte. */
+@media (min-width: 768px) {
+  .affiche { margin: 0; padding: 30px 22px 22px; border-radius: var(--r-affiche); }
+  .affiche::before { -webkit-mask-image: none; mask-image: none; }
+  .avecGuirlande { padding-top: 70px; }
+  .rail { margin: 0 -22px; padding: 2px 22px 16px; }
+}
+
+/* ── Les motifs ── */
+.chutes { position: absolute; inset: 0; z-index: 1; pointer-events: none; }
+.chute { position: absolute; top: -36px; animation: chute linear infinite; }
+.lente { top: -24px; animation-name: chute-lente; }
+.feuille, .flocon { display: block; animation: balance ease-in-out infinite alternate; }
+.flocon { animation-name: tourne; }
+.feuille path:first-child { fill: var(--feuille); }
+.nervure { fill: none; stroke: var(--nervure); stroke-width: 1; }
+.teinte1 { --feuille: var(--feuille-1); }
+.teinte2 { --feuille: var(--feuille-2); }
+.teinte3 { --feuille: var(--feuille-3); }
+.teinte4 { --feuille: var(--feuille-4); }
+.teinte5 { --feuille: var(--feuille-5); }
+.teinte6 { --feuille: var(--feuille-6); }
+.floconOmbre path { fill: none; stroke: var(--flocon-ombre); stroke-width: 3.2; stroke-linecap: round; stroke-linejoin: round; }
+.floconTrait path { fill: none; stroke: #FFFFFF; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+@keyframes chute {
+  0% { transform: translateY(0); opacity: 0; }
+  7% { opacity: 0.95; }
+  86% { opacity: 0.95; }
+  100% { transform: translateY(760px); opacity: 0; }
+}
+@keyframes chute-lente {
+  0% { transform: translateY(0); opacity: 0; }
+  6% { opacity: 1; }
+  88% { opacity: 1; }
+  100% { transform: translateY(800px); opacity: 0; }
+}
+@keyframes balance {
+  0% { transform: translateX(-14px) rotate(-38deg); }
+  100% { transform: translateX(14px) rotate(32deg); }
+}
+@keyframes tourne {
+  0% { transform: translateX(-10px) rotate(-50deg); }
+  100% { transform: translateX(10px) rotate(50deg); }
+}
+
+.vapeur { position: absolute; left: 34px; top: 50px; z-index: 2; width: 110px; height: 92px; overflow: visible; }
+.vapeur path {
+  fill: none; stroke: var(--vapeur); stroke-width: 3.6; stroke-linecap: round;
+  opacity: 0; animation: vapeur 4.8s ease-in-out infinite;
+}
+.vapeur .v2 { animation-delay: 1.6s; }
+.vapeur .v3 { animation-delay: 3.2s; }
+@keyframes vapeur {
+  0% { opacity: 0; transform: translateY(14px); }
+  35% { opacity: 0.55; }
+  75% { opacity: 0.35; }
+  100% { opacity: 0; transform: translateY(-16px); }
+}
+
+.guirlande { position: absolute; left: 0; right: 0; top: 12px; z-index: 1; height: 64px; pointer-events: none; }
+.fil { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.fil path { fill: none; stroke: var(--fil); stroke-width: 1.3; }
+.ampoule {
+  position: absolute; width: 7px; height: 10px; margin-left: -3.5px;
+  border-radius: 45% 45% 50% 50%;
+  background: var(--lampe); box-shadow: 0 0 8px 2px var(--lampe);
+  animation: scintille ease-in-out infinite alternate;
+}
+.ampoule::before {
+  content: ""; position: absolute; left: 2px; top: -4px; width: 3px; height: 4px;
+  border-radius: 1px; background: var(--douille);
+}
+.ampoule::after {
+  content: ""; position: absolute; left: 1.4px; top: 1.6px; width: 2px; height: 3.2px;
+  border-radius: 50%; background: rgba(255, 255, 255, 0.8);
+}
+.lampe0 { --lampe: #FFC98A; }
+.lampe1 { --lampe: #FF9FA8; }
+.lampe2 { --lampe: #FFD9A6; }
+.lampe3 { --lampe: #F48C8C; }
+.lampe4 { --lampe: #FFB980; }
+@keyframes scintille { 0% { opacity: 0.5; } 100% { opacity: 1; } }
+:global([data-theme="dark"]) .ampoule { box-shadow: 0 0 12px 3px var(--lampe); }
+
+.soleil { position: absolute; right: -110px; top: -100px; z-index: 1; width: 360px; height: 360px; pointer-events: none; }
+.rayons {
+  position: absolute; inset: 0; border-radius: 50%;
+  background: repeating-conic-gradient(from 0deg, var(--rayon) 0deg 6deg, transparent 6deg 20deg);
+  -webkit-mask-image: radial-gradient(circle, #000 0%, #000 22%, rgba(0, 0, 0, 0.5) 40%, transparent 60%);
+  mask-image: radial-gradient(circle, #000 0%, #000 22%, rgba(0, 0, 0, 0.5) 40%, transparent 60%);
+  animation: rayons 80s linear infinite;
+}
+.disque { position: absolute; inset: 0; border-radius: 50%; background: var(--disque); }
+@keyframes rayons { to { transform: rotate(360deg); } }
+
+/* Le décor posé : aucune chute, aucun scintillement, le soleil immobile.
+   Les feuilles et les flocons restent là où ils tomberaient. */
+@media (prefers-reduced-motion: reduce) {
+  .chute, .feuille, .flocon, .vapeur path, .ampoule, .rayons { animation: none; }
+  .chute { opacity: 0.9; transform: translateY(var(--y)); }
+  .feuille, .flocon { transform: rotate(var(--r)); }
+  .vapeur path { opacity: 0.35; }
+}
+:global(html.perf-lite) .chute, :global(html.perf-lite) .feuille, :global(html.perf-lite) .flocon,
+:global(html.perf-lite) .vapeur path, :global(html.perf-lite) .ampoule, :global(html.perf-lite) .rayons { animation: none; }
+:global(html.perf-lite) .chute { opacity: 0.9; transform: translateY(var(--y)); }
+:global(html.perf-lite) .feuille, :global(html.perf-lite) .flocon { transform: rotate(var(--r)); }
+:global(html.perf-lite) .vapeur path { opacity: 0.35; }
+
+/* ════════════════════════════════════════════════════════════════════
+   Les douze lumières. Chaque moment pose : sa lumière en haut à droite et
+   en bas à gauche, sa bande (en haut, puis en bas), ses quatre encres et
+   l'ombre de ses produits. Puis la même chose en sombre : la lumière de la
+   saison sur la nuit de la page, et des encres claires.
+   ════════════════════════════════════════════════════════════════════ */
+
+/* Agrumes · 1er au 19 janvier */
+.agrumes {
+  --lueur-haut: radial-gradient(90% 55% at 90% 6%, rgba(255, 186, 90, 0.55) 0%, rgba(255, 206, 140, 0.22) 45%, rgba(255, 214, 160, 0) 75%);
+  --lueur-bas: radial-gradient(70% 45% at 0% 78%, rgba(255, 150, 120, 0.14) 0%, rgba(255, 150, 120, 0) 70%);
+  --bande: rgba(255, 240, 217, 0.94); --bande-bas: rgba(254, 233, 211, 0.96);
+  --encre-surtitre: #A0480F; --encre-titre: #7A320A; --encre-phrase: #7A4A26; --encre-duree: #6F5B4C;
+  --ombre-produit: rgba(140, 70, 10, 0.22);
+}
+:global([data-theme="dark"]) .agrumes {
+  --lueur-haut: radial-gradient(90% 55% at 90% 6%, rgba(255, 160, 70, 0.30) 0%, rgba(255, 160, 70, 0.12) 45%, rgba(255, 160, 70, 0) 75%);
+  --lueur-bas: radial-gradient(70% 45% at 0% 78%, rgba(255, 120, 90, 0.14) 0%, rgba(255, 120, 90, 0) 70%);
+  --bande: rgba(70, 34, 10, 0.62); --bande-bas: rgba(62, 28, 8, 0.66);
+  --encre-surtitre: #FFB878; --encre-titre: #FFDDBA; --encre-phrase: #EECBA8; --encre-duree: #BCA58F;
+  --ombre-produit: rgba(0, 0, 0, 0.55);
+}
+
+/* Crêpes · 20 janvier au 2 février (3 recettes : ne s'affiche pas encore) */
+.crepes {
+  --lueur-haut: radial-gradient(90% 55% at 90% 6%, rgba(255, 206, 150, 0.50) 0%, rgba(255, 220, 180, 0.20) 45%, rgba(255, 220, 180, 0) 75%);
+  --lueur-bas: radial-gradient(70% 45% at 0% 78%, rgba(200, 150, 90, 0.12) 0%, rgba(200, 150, 90, 0) 70%);
+  --bande: rgba(252, 241, 220, 0.94); --bande-bas: rgba(249, 234, 211, 0.96);
+  --encre-surtitre: #8C5B22; --encre-titre: #6B4416; --encre-phrase: #725235; --encre-duree: #6E5D4E;
+  --ombre-produit: rgba(110, 70, 20, 0.22);
+}
+:global([data-theme="dark"]) .crepes {
+  --lueur-haut: radial-gradient(90% 55% at 90% 6%, rgba(255, 190, 110, 0.26) 0%, rgba(255, 190, 110, 0.10) 45%, rgba(255, 190, 110, 0) 75%);
+  --lueur-bas: radial-gradient(70% 45% at 0% 78%, rgba(200, 150, 90, 0.12) 0%, rgba(200, 150, 90, 0) 70%);
+  --bande: rgba(62, 42, 18, 0.62); --bande-bas: rgba(54, 36, 14, 0.66);
+  --encre-surtitre: #F0C089; --encre-titre: #FFE2C0; --encre-phrase: #E8D0B4; --encre-duree: #B8A894;
+  --ombre-produit: rgba(0, 0, 0, 0.55);
+}
+
+/* Matins d'hiver · 3 février à la fin du mois · la neige */
+.matins-hiver {
+  --lueur-haut: radial-gradient(85% 50% at 86% 8%, rgba(255, 255, 255, 0.95) 0%, rgba(240, 246, 255, 0.5) 40%, rgba(230, 240, 255, 0) 75%);
+  --lueur-bas: radial-gradient(70% 45% at 4% 72%, rgba(140, 176, 232, 0.22) 0%, rgba(140, 176, 232, 0) 70%);
+  --bande: rgba(229, 238, 252, 0.95); --bande-bas: rgba(225, 232, 250, 0.96);
+  --encre-surtitre: #3A5A8C; --encre-titre: #1F3561; --encre-phrase: #3E4F72; --encre-duree: #56607A;
+  --ombre-produit: rgba(40, 60, 110, 0.22);
+  --flocon-ombre: rgba(70, 100, 160, 0.40);
+}
+:global([data-theme="dark"]) .matins-hiver {
+  --lueur-haut: radial-gradient(85% 50% at 86% 8%, rgba(170, 200, 255, 0.26) 0%, rgba(150, 180, 240, 0.10) 45%, rgba(150, 180, 240, 0) 75%);
+  --lueur-bas: radial-gradient(70% 45% at 4% 72%, rgba(80, 120, 220, 0.18) 0%, rgba(80, 120, 220, 0) 70%);
+  --bande: rgba(16, 28, 64, 0.64); --bande-bas: rgba(14, 24, 58, 0.68);
+  --encre-surtitre: #A9C4F5; --encre-titre: #DCE7FF; --encre-phrase: #C3D2EE; --encre-duree: #A3ADC8;
+  --ombre-produit: rgba(0, 0, 0, 0.55);
+  --flocon-ombre: rgba(120, 160, 230, 0.25);
+}
+
+/* Pâques · les deux semaines avant le dimanche de Pâques */
+.paques {
+  --lueur-haut: radial-gradient(90% 55% at 90% 6%, rgba(255, 236, 170, 0.55) 0%, rgba(255, 240, 200, 0.22) 45%, rgba(255, 240, 200, 0) 75%);
+  --lueur-bas: radial-gradient(70% 45% at 0% 78%, rgba(160, 214, 160, 0.20) 0%, rgba(160, 214, 160, 0) 70%);
+  --bande: rgba(251, 237, 242, 0.94); --bande-bas: rgba(246, 234, 240, 0.96);
+  --encre-surtitre: #9A4A66; --encre-titre: #4F2A1C; --encre-phrase: #6B4A4A; --encre-duree: #6D5A60;
+  --ombre-produit: rgba(90, 50, 40, 0.22);
+}
+:global([data-theme="dark"]) .paques {
+  --lueur-haut: radial-gradient(90% 55% at 90% 6%, rgba(255, 214, 150, 0.22) 0%, rgba(255, 214, 150, 0.09) 45%, rgba(255, 214, 150, 0) 75%);
+  --lueur-bas: radial-gradient(70% 45% at 0% 78%, rgba(120, 200, 140, 0.12) 0%, rgba(120, 200, 140, 0) 70%);
+  --bande: rgba(58, 30, 46, 0.62); --bande-bas: rgba(50, 26, 40, 0.66);
+  --encre-surtitre: #F5A8C4; --encre-titre: #FFE0D6; --encre-phrase: #E9C8CC; --encre-duree: #B9A4AC;
+  --ombre-produit: rgba(0, 0, 0, 0.55);
+}
+
+/* Salades · juin */
+.salades {
+  --lueur-haut: radial-gradient(90% 55% at 90% 6%, rgba(255, 244, 190, 0.55) 0%, rgba(240, 250, 200, 0.22) 45%, rgba(240, 250, 200, 0) 75%);
+  --lueur-bas: radial-gradient(70% 45% at 0% 78%, rgba(120, 200, 120, 0.16) 0%, rgba(120, 200, 120, 0) 70%);
+  --bande: rgba(236, 246, 228, 0.94); --bande-bas: rgba(230, 242, 223, 0.96);
+  --encre-surtitre: #3F7A2A; --encre-titre: #23481A; --encre-phrase: #3E5A33; --encre-duree: #556350;
+  --ombre-produit: rgba(40, 80, 30, 0.22);
+}
+:global([data-theme="dark"]) .salades {
+  --lueur-haut: radial-gradient(90% 55% at 90% 6%, rgba(200, 240, 150, 0.18) 0%, rgba(200, 240, 150, 0.07) 45%, rgba(200, 240, 150, 0) 75%);
+  --lueur-bas: radial-gradient(70% 45% at 0% 78%, rgba(90, 170, 90, 0.14) 0%, rgba(90, 170, 90, 0) 70%);
+  --bande: rgba(20, 46, 24, 0.62); --bande-bas: rgba(16, 40, 20, 0.66);
+  --encre-surtitre: #9FD88A; --encre-titre: #DDF4C8; --encre-phrase: #C6DDB8; --encre-duree: #A3B49B;
+  --ombre-produit: rgba(0, 0, 0, 0.55);
+}
+
+/* Barbecue · 1er au 20 juillet */
+.barbecue {
+  --lueur-haut: radial-gradient(90% 55% at 90% 6%, rgba(255, 214, 140, 0.55) 0%, rgba(255, 226, 170, 0.22) 45%, rgba(255, 226, 170, 0) 75%);
+  --lueur-bas: radial-gradient(70% 45% at 0% 78%, rgba(255, 140, 90, 0.14) 0%, rgba(255, 140, 90, 0) 70%);
+  --bande: rgba(231, 241, 250, 0.94); --bande-bas: rgba(226, 237, 248, 0.96);
+  --encre-surtitre: #B5502F; --encre-titre: #1E3D5C; --encre-phrase: #3F546B; --encre-duree: #56606E;
+  --ombre-produit: rgba(40, 50, 80, 0.22);
+}
+:global([data-theme="dark"]) .barbecue {
+  --lueur-haut: radial-gradient(90% 55% at 90% 6%, rgba(255, 170, 90, 0.26) 0%, rgba(255, 170, 90, 0.10) 45%, rgba(255, 170, 90, 0) 75%);
+  --lueur-bas: radial-gradient(70% 45% at 0% 78%, rgba(255, 110, 80, 0.14) 0%, rgba(255, 110, 80, 0) 70%);
+  --bande: rgba(16, 30, 52, 0.62); --bande-bas: rgba(14, 26, 46, 0.66);
+  --encre-surtitre: #FFB08A; --encre-titre: #DCEBFF; --encre-phrase: #C8D6E8; --encre-duree: #A1ABBD;
+  --ombre-produit: rgba(0, 0, 0, 0.55);
+}
+
+/* Glaces · 21 juillet au 31 août · le soleil */
+.glaces {
+  --lueur-haut: radial-gradient(85% 50% at 86% 10%, rgba(255, 222, 140, 0.60) 0%, rgba(255, 230, 170, 0.24) 45%, rgba(255, 236, 190, 0) 75%);
+  --lueur-bas: radial-gradient(70% 45% at 4% 74%, rgba(255, 150, 130, 0.16) 0%, rgba(255, 150, 130, 0) 70%);
+  --bande: rgba(255, 243, 222, 0.95); --bande-bas: rgba(255, 236, 224, 0.96);
+  --encre-surtitre: #A3402F; --encre-titre: #8E1F43; --encre-phrase: #7A3B3B; --encre-duree: #6E5A55;
+  --ombre-produit: rgba(140, 60, 30, 0.22);
+  --rayon: rgba(255, 200, 100, 0.30);
+  --disque: radial-gradient(circle, rgba(255, 236, 170, 0.95) 0%, rgba(255, 230, 160, 0.7) 16%, rgba(255, 226, 150, 0) 36%);
+}
+:global([data-theme="dark"]) .glaces {
+  --lueur-haut: radial-gradient(85% 50% at 86% 10%, rgba(255, 170, 90, 0.30) 0%, rgba(255, 170, 90, 0.12) 45%, rgba(255, 170, 90, 0) 75%);
+  --lueur-bas: radial-gradient(70% 45% at 4% 74%, rgba(255, 110, 110, 0.14) 0%, rgba(255, 110, 110, 0) 70%);
+  --bande: rgba(76, 26, 36, 0.60); --bande-bas: rgba(68, 22, 34, 0.64);
+  --encre-surtitre: #FFB199; --encre-titre: #FFD0C4; --encre-phrase: #EBC2BA; --encre-duree: #BCA4A0;
+  --ombre-produit: rgba(0, 0, 0, 0.55);
+  --rayon: rgba(255, 184, 100, 0.20);
+  --disque: radial-gradient(circle, rgba(255, 196, 120, 0.60) 0%, rgba(255, 190, 110, 0.35) 16%, rgba(255, 180, 100, 0) 36%);
+}
+
+/* Rentrée · septembre */
+.rentree {
+  --lueur-haut: radial-gradient(90% 55% at 90% 6%, rgba(255, 220, 150, 0.48) 0%, rgba(255, 230, 180, 0.20) 45%, rgba(255, 230, 180, 0) 75%);
+  --lueur-bas: radial-gradient(70% 45% at 0% 78%, rgba(220, 90, 80, 0.12) 0%, rgba(220, 90, 80, 0) 70%);
+  --bande: rgba(238, 245, 228, 0.94); --bande-bas: rgba(232, 241, 222, 0.96);
+  --encre-surtitre: #B03A2E; --encre-titre: #6A1F1A; --encre-phrase: #5A4A3A; --encre-duree: #5E6152;
+  --ombre-produit: rgba(60, 70, 30, 0.22);
+}
+:global([data-theme="dark"]) .rentree {
+  --lueur-haut: radial-gradient(90% 55% at 90% 6%, rgba(255, 200, 120, 0.22) 0%, rgba(255, 200, 120, 0.09) 45%, rgba(255, 200, 120, 0) 75%);
+  --lueur-bas: radial-gradient(70% 45% at 0% 78%, rgba(220, 90, 80, 0.14) 0%, rgba(220, 90, 80, 0) 70%);
+  --bande: rgba(30, 40, 18, 0.62); --bande-bas: rgba(26, 34, 14, 0.66);
+  --encre-surtitre: #FF9F92; --encre-titre: #FFD8D0; --encre-phrase: #D8D5BE; --encre-duree: #A9AE98;
+  --ombre-produit: rgba(0, 0, 0, 0.55);
+}
+
+/* Soupes · 20 octobre au 9 novembre · les feuilles et la vapeur */
+.soupes {
+  --lueur-haut: radial-gradient(90% 55% at 90% 6%, rgba(255, 188, 118, 0.55) 0%, rgba(255, 206, 160, 0.24) 45%, rgba(255, 214, 176, 0) 75%);
+  --lueur-bas: radial-gradient(70% 45% at 0% 78%, rgba(214, 122, 76, 0.16) 0%, rgba(214, 122, 76, 0) 70%);
+  --bande: rgba(251, 232, 214, 0.94); --bande-bas: rgba(248, 225, 206, 0.96);
+  --encre-surtitre: #8F4E2C; --encre-titre: #5E2A14; --encre-phrase: #7A4A33; --encre-duree: #6E5A4D;
+  --ombre-produit: rgba(110, 50, 10, 0.26);
+  --vapeur: #C58A62;
+  --feuille-1: #D98A3A; --feuille-2: #D9A441; --feuille-3: #C9652E;
+  --feuille-4: #B5502F; --feuille-5: #A8653A; --feuille-6: #E39A3B;
+}
+:global([data-theme="dark"]) .soupes {
+  --lueur-haut: radial-gradient(90% 55% at 90% 6%, rgba(255, 146, 72, 0.32) 0%, rgba(255, 150, 80, 0.12) 45%, rgba(255, 150, 80, 0) 75%);
+  --lueur-bas: radial-gradient(70% 45% at 0% 78%, rgba(200, 90, 50, 0.16) 0%, rgba(200, 90, 50, 0) 70%);
+  --bande: rgba(58, 26, 16, 0.64); --bande-bas: rgba(50, 22, 14, 0.68);
+  --encre-surtitre: #F0B27A; --encre-titre: #FFD9B8; --encre-phrase: #EBC7A8; --encre-duree: #B8A99C;
+  --ombre-produit: rgba(0, 0, 0, 0.55);
+  --vapeur: rgba(255, 228, 204, 0.6);
+  --nervure: rgba(60, 20, 5, 0.45);
+  --feuille-1: #F0A24A; --feuille-2: #E6B455; --feuille-3: #DE6E3E;
+  --feuille-4: #C9583A; --feuille-5: #C27A4E; --feuille-6: #E8954A;
+}
+
+/* Gratins · 10 au 30 novembre */
+.gratins {
+  --lueur-haut: radial-gradient(90% 55% at 90% 6%, rgba(255, 196, 120, 0.52) 0%, rgba(255, 210, 150, 0.22) 45%, rgba(255, 214, 170, 0) 75%);
+  --lueur-bas: radial-gradient(70% 45% at 0% 78%, rgba(196, 130, 60, 0.14) 0%, rgba(196, 130, 60, 0) 70%);
+  --bande: rgba(251, 236, 214, 0.94); --bande-bas: rgba(247, 229, 204, 0.96);
+  --encre-surtitre: #8A5524; --encre-titre: #57330F; --encre-phrase: #6F4A2A; --encre-duree: #6E5A4D;
+  --ombre-produit: rgba(110, 60, 10, 0.24);
+}
+:global([data-theme="dark"]) .gratins {
+  --lueur-haut: radial-gradient(90% 55% at 90% 6%, rgba(255, 170, 80, 0.30) 0%, rgba(255, 170, 80, 0.12) 45%, rgba(255, 170, 80, 0) 75%);
+  --lueur-bas: radial-gradient(70% 45% at 0% 78%, rgba(196, 130, 60, 0.14) 0%, rgba(196, 130, 60, 0) 70%);
+  --bande: rgba(62, 40, 16, 0.64); --bande-bas: rgba(54, 34, 14, 0.68);
+  --encre-surtitre: #F2BE7E; --encre-titre: #FFE2BC; --encre-phrase: #EAD0B0; --encre-duree: #B9A58F;
+  --ombre-produit: rgba(0, 0, 0, 0.55);
+}
+
+/* Mijoté · 1er au 14 décembre */
+.mijote {
+  --lueur-haut: radial-gradient(90% 55% at 90% 6%, rgba(236, 140, 104, 0.44) 0%, rgba(240, 170, 140, 0.20) 45%, rgba(240, 170, 140, 0) 75%);
+  --lueur-bas: radial-gradient(70% 45% at 0% 78%, rgba(150, 60, 40, 0.12) 0%, rgba(150, 60, 40, 0) 70%);
+  --bande: rgba(248, 228, 219, 0.94); --bande-bas: rgba(244, 220, 210, 0.96);
+  --encre-surtitre: #8A3A2A; --encre-titre: #5A1F14; --encre-phrase: #73402F; --encre-duree: #6F5650;
+  --ombre-produit: rgba(100, 30, 20, 0.24);
+}
+:global([data-theme="dark"]) .mijote {
+  --lueur-haut: radial-gradient(90% 55% at 90% 6%, rgba(240, 120, 90, 0.28) 0%, rgba(240, 120, 90, 0.11) 45%, rgba(240, 120, 90, 0) 75%);
+  --lueur-bas: radial-gradient(70% 45% at 0% 78%, rgba(170, 60, 40, 0.16) 0%, rgba(170, 60, 40, 0) 70%);
+  --bande: rgba(62, 20, 16, 0.64); --bande-bas: rgba(54, 16, 14, 0.68);
+  --encre-surtitre: #F2A08A; --encre-titre: #FFD5C8; --encre-phrase: #E9BFB2; --encre-duree: #B89F99;
+  --ombre-produit: rgba(0, 0, 0, 0.55);
+}
+
+/* Fêtes · 15 au 31 décembre · la guirlande */
+.fetes {
+  --lueur-haut: radial-gradient(85% 50% at 88% 12%, rgba(255, 204, 150, 0.55) 0%, rgba(255, 214, 176, 0.22) 45%, rgba(255, 220, 190, 0) 75%);
+  --lueur-bas: radial-gradient(60% 40% at 6% 72%, rgba(214, 96, 110, 0.12) 0%, rgba(214, 96, 110, 0) 70%);
+  --bande: rgba(250, 232, 226, 0.94); --bande-bas: rgba(247, 226, 224, 0.96);
+  --encre-surtitre: #8C2F3F; --encre-titre: #6B1A2B; --encre-phrase: #7A3340; --encre-duree: #6D5A60;
+  --ombre-produit: rgba(110, 30, 40, 0.24);
+  --fil: rgba(122, 75, 69, 0.45);
+  --douille: #6E4A44;
+}
+:global([data-theme="dark"]) .fetes {
+  --lueur-haut: radial-gradient(85% 50% at 88% 12%, rgba(255, 170, 110, 0.30) 0%, rgba(255, 170, 110, 0.12) 45%, rgba(255, 170, 110, 0) 75%);
+  --lueur-bas: radial-gradient(60% 40% at 6% 72%, rgba(214, 96, 110, 0.18) 0%, rgba(214, 96, 110, 0) 70%);
+  --bande: rgba(70, 18, 32, 0.62); --bande-bas: rgba(62, 16, 30, 0.66);
+  --encre-surtitre: #F4A7AE; --encre-titre: #FFD3CC; --encre-phrase: #EBC0C0; --encre-duree: #B9A2A6;
+  --ombre-produit: rgba(0, 0, 0, 0.55);
+  --fil: rgba(242, 210, 196, 0.35);
+  --douille: #8E7066;
+}
