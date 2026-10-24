@@ -28,7 +28,8 @@ import {
   platsFavoris, platsProposes, recettesFavorites, trierFavoris, type Favori,
 } from "@/lib/favorisNutrition";
 import {
-  MOMENTS_SAISON, NATURE_MORTE, SEUIL_MOMENT, VISIBLE, dimancheDePaques, imageProduit, jourEnLettres, momentDuJour,
+  MOMENTS_SAISON, NATURE_MORTE, SEUIL_MOMENT, VISIBLE, dimancheDePaques, imageProduit, jourEnLettres, momentActif, momentDuJour,
+  recettesDuMoment,
 } from "@/lib/momentsSaison";
 
 let echecs = 0;
@@ -331,20 +332,26 @@ const fichierPublic = (chemin: string) => existsSync(new URL("../public" + chemi
 
   const cas: [string, string | null][] = [
     ["2026-10-24", "soupes"], ["2026-10-19", null], ["2026-11-09", "soupes"], ["2026-11-10", "gratins"],
-    ["2026-12-31", "fetes"], ["2027-01-01", "agrumes"], ["2027-01-25", null], ["2027-02-28", "matins-hiver"],
+    ["2026-12-31", "fetes"], ["2027-01-01", "agrumes"], ["2027-01-25", "crepes"], ["2027-02-28", "matins-hiver"],
     ["2028-02-29", "matins-hiver"], ["2026-03-22", null], ["2026-03-23", "paques"], ["2026-04-05", "paques"],
     ["2026-04-06", null], ["2026-05-15", null], ["2026-08-31", "glaces"], ["2026-09-01", "rentree"],
   ];
   const fauxJours = cas.filter(([j, attendu]) => (momentDuJour(j, [])?.moment.id ?? null) !== attendu);
   verdict("le bon moment à la bonne date, et rien entre deux", fauxJours.length === 0,
     fauxJours.map(([j, a]) => `${j} : ${momentDuJour(j, [])?.moment.id ?? "rien"} au lieu de ${a ?? "rien"}`).join(", ") || `${cas.length} dates`);
-  verdict("les crêpes (trois recettes) ne s'affichent pas", momentDuJour("2027-01-25", []) === null, "il en manque une");
+  verdict("les trous que le lot 3 comble s'affichent : les crêpes, le mijoté en végétarien",
+    momentDuJour("2027-01-25", [])?.moment.id === "crepes" && momentDuJour("2026-12-05", ["vegetarien"])?.moment.id === "mijote",
+    `crêpes ${momentDuJour("2027-01-25", [])?.recettes.length ?? 0}, mijoté végétarien ${momentDuJour("2026-12-05", ["vegetarien"])?.recettes.length ?? 0}`);
+  const agrumesVegan = momentActif(MOMENTS_SAISON.find((m) => m.id === "agrumes")!, "2027-01-10", ["vegan"]);
   verdict(`un moment qui garde moins de ${SEUIL_MOMENT} recettes pour le régime ne s'affiche pas`,
-    momentDuJour("2026-12-05", ["vegetarien"]) === null && momentDuJour("2026-12-05", [])?.moment.id === "mijote",
-    "le mijoté en végétarien n'en garde qu'une");
+    recettesDuMoment(MOMENTS_SAISON.find((m) => m.id === "agrumes")!, ["vegan"]).length === SEUIL_MOMENT - 1
+      && agrumesVegan === null && momentDuJour("2027-01-10", [])?.moment.id === "agrumes",
+    "les agrumes en végan n'en gardent que trois");
   const vege = momentDuJour("2026-10-24", ["vegetarien"]);
+  const soupes0 = MOMENTS_SAISON.find((m) => m.id === "soupes")!.recettes.map((id) => RECIPES.find((r) => r.id === id)!);
   verdict("le rail ne garde que ce qui convient au régime",
-    !!vege && vege.recettes.length === SEUIL_MOMENT && vege.recettes.every((r) => convient(r, ["vegetarien"])),
+    !!vege && vege.recettes.length === soupes0.filter((r) => convient(r, ["vegetarien"])).length
+      && vege.recettes.length < soupes0.length && vege.recettes.every((r) => convient(r, ["vegetarien"])),
     vege?.recettes.map((r) => r.id).join(", ") ?? "rien");
 
   const soupes = momentDuJour("2026-10-24", []);
