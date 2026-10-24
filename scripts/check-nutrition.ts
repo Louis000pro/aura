@@ -77,6 +77,10 @@ const fichierPublic = (chemin: string) => existsSync(new URL("../public" + chemi
   const sport = recettesDe("apres-sport");
   verdict(`« Après le sport » : au moins ${PROTEINES_APRES_SPORT} g de protéines par portion`,
     sport.every((r) => r.proteins >= PROTEINES_APRES_SPORT), `la moins riche : ${Math.min(...sport.map((r) => r.proteins))} g`);
+  const shakers = sport.filter((r) => natureDe(r) === "boisson");
+  verdict("« Après le sport » garde les shakers et commence par eux",
+    shakers.length >= 7 && sport.slice(0, shakers.length).every((r) => natureDe(r) === "boisson"),
+    `${shakers.length} shakers sur ${sport.length} recettes`);
   const desserts = recettesDe("desserts");
   verdict("« Desserts » : que des desserts", desserts.every((r) => natureDe(r) === "dessert"), `${desserts.length} desserts`);
   const pates = recettesDe("pates-riz");

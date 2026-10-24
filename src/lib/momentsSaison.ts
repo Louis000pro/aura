@@ -201,7 +201,7 @@ export const MOMENTS_SAISON: MomentSaison[] = [
     phrase: "Des recettes aux agrumes",
     demande: "Tu as une autre idée de recette aux agrumes ?",
     periode: fixe(1, 1, 1, 19),
-    recettes: ["salade-d-agrumes-et-grenade", "bowl-de-skyr-kiwi-et-clementine", "magret-de-canard-a-l-orange", "verrines-avocat-crevettes", "vin-chaud-sans-alcool", "poulet-au-citron-et-aux-olives", "tartare-de-saumon-aux-agrumes", "salade-de-fenouil-a-l-orange-et-aux-olives", "gateau-moelleux-a-l-orange-et-aux-amandes", "crepes-suzette-sans-alcool"],
+    recettes: ["salade-d-agrumes-et-grenade", "bowl-de-skyr-kiwi-et-clementine", "magret-de-canard-a-l-orange", "verrines-avocat-crevettes", "vin-chaud-sans-alcool", "poulet-au-citron-et-aux-olives", "tartare-de-saumon-aux-agrumes", "salade-de-fenouil-a-l-orange-et-aux-olives", "gateau-moelleux-a-l-orange-et-aux-amandes", "crepes-suzette-sans-alcool", "tarte-au-citron-meringuee"],
     produits: nature([
       { nom: "pamplemousse-rose", cx: 128, w: 140 },
       { nom: "orange", cx: 232, h: 132 },
@@ -215,7 +215,7 @@ export const MOMENTS_SAISON: MomentSaison[] = [
     phrase: "Des crêpes, des galettes et des pancakes",
     demande: "Tu as une autre idée de crêpes ou de pancakes ?",
     periode: fixe(1, 20, 2, 2),
-    recettes: ["crepes-moelleuses", "crepes-suzette-sans-alcool", "galettes-de-sarrasin-completes", "galettes-de-sarrasin-poireaux-et-chevre", "crepes-au-jambon-gratinees", "pancakes-proteines"],
+    recettes: ["crepes-moelleuses", "crepes-suzette-sans-alcool", "galettes-de-sarrasin-completes", "galettes-de-sarrasin-poireaux-et-chevre", "crepes-au-jambon-gratinees", "galette-saucisse", "crepes-aux-epinards-et-a-la-ricotta", "galettes-au-saumon-fume-et-creme-a-l-aneth", "crepes-aux-pommes-et-caramel-au-beurre-sale", "gateau-de-crepes-au-chocolat", "crepes-vegetales-aux-poires-et-au-sirop-d-erable", "crepes-proteinees-au-skyr", "pancakes-proteines"],
     produits: nature([
       { nom: "lait", cx: 220, h: 150 },
       { nom: "caramels", cx: 106, w: 90, devant: 2 },
@@ -229,7 +229,7 @@ export const MOMENTS_SAISON: MomentSaison[] = [
     phrase: "Des petits-déjeuners pour les matins froids",
     demande: "Tu as une autre idée de petit-déjeuner chaud pour l’hiver ?",
     periode: (a) => [iso(a, 2, 3), iso(a, 2, finFevrier(a))],
-    recettes: ["porridge-poire-cannelle", "chocolat-chaud-proteine", "pain-perdu-proteine-a-la-cannelle", "oeufs-cocotte-epinards-jambon", "granola-maison-pomme-cannelle", "bowl-de-skyr-kiwi-et-clementine", "golden-latte-au-curcuma", "porridge-de-quinoa-pomme-cannelle", "oeufs-brouilles-au-saumon-fume-et-a-l-avocat", "banana-bread-aux-noix", "chai-latte-maison"],
+    recettes: ["porridge-poire-cannelle", "chocolat-chaud-proteine", "pain-perdu-proteine-a-la-cannelle", "oeufs-cocotte-epinards-jambon", "granola-maison-pomme-cannelle", "bowl-de-skyr-kiwi-et-clementine", "golden-latte-au-curcuma", "porridge-de-quinoa-pomme-cannelle", "oeufs-brouilles-au-saumon-fume-et-a-l-avocat", "banana-bread-aux-noix", "chai-latte-maison", "bowl-cake-pomme-cannelle", "omelette-aux-blancs-d-oeufs-epinards-et-feta"],
     produits: nature([
       { nom: "lait", cx: 250, h: 150 },
       { nom: "poire", cx: 196, h: 118 },
@@ -244,7 +244,7 @@ export const MOMENTS_SAISON: MomentSaison[] = [
     phrase: "Des recettes au chocolat",
     demande: "Tu as une autre idée de dessert au chocolat pour Pâques ?",
     periode: (a) => { const p = dimancheDePaques(a); return [decaler(p, -13), p]; },
-    recettes: ["brookie-fondant", "brownie-fondant-au-chocolat", "muffins-chocolat-moelleux", "mugcake-banane-cacao", "energy-balls-chocolat-amande", "barres-proteinees-maison-chocolat-cacahuete"],
+    recettes: ["brookie-fondant", "brownie-fondant-au-chocolat", "muffins-chocolat-moelleux", "mugcake-banane-cacao", "energy-balls-chocolat-amande", "barres-proteinees-maison-chocolat-cacahuete", "cookies-proteines-aux-pepites-de-chocolat", "mousse-au-chocolat-proteinee", "gateau-de-crepes-au-chocolat", "fondant-au-chocolat-coeur-coulant", "nids-de-paques-au-chocolat"],
     produits: nature([
       { nom: "oeuf", cx: 44, h: 80 },
       { nom: "oeufs-chocolat", cx: 198, w: 204 },
@@ -258,7 +258,7 @@ export const MOMENTS_SAISON: MomentSaison[] = [
     phrase: "Des salades et des plats frais",
     demande: "Tu as une autre idée de salade fraîche ?",
     periode: fixe(6, 1, 6, 30),
-    recettes: ["salade-de-pates-estivale-a-la-feta", "salade-de-pates-d-ete", "fusilli-mediterraneens", "salade-nicoise", "panzanella-toscane", "tartare-tomates-burrata", "salade-cesar-legere-et-croustillante"],
+    recettes: ["salade-de-pates-estivale-a-la-feta", "salade-de-pates-d-ete", "fusilli-mediterraneens", "salade-nicoise", "panzanella-toscane", "tartare-tomates-burrata", "salade-cesar-legere-et-croustillante", "taboule-libanais", "salade-grecque", "salade-de-pasteque-feta-et-menthe", "salade-de-riz-au-thon-et-au-mais", "salade-de-quinoa-pois-chiches-et-legumes-croquants"],
     produits: nature([
       { nom: "concombre", cx: 124, w: 120 },
       { nom: "laitue", cx: 222, w: 160 },
@@ -272,7 +272,7 @@ export const MOMENTS_SAISON: MomentSaison[] = [
     phrase: "Des recettes pour le barbecue",
     demande: "Tu as une autre idée de recette pour le barbecue ?",
     periode: fixe(7, 1, 7, 20),
-    recettes: ["brochettes-halloumi-legumes", "brochettes-boeuf-poivron-oignon", "gambas-grillees-ail-persil", "poisson-entier-a-la-plancha", "burger-maison-gourmand-equilibre", "coleslaw-maison"],
+    recettes: ["brochettes-halloumi-legumes", "brochettes-boeuf-poivron-oignon", "gambas-grillees-ail-persil", "poisson-entier-a-la-plancha", "burger-maison-gourmand-equilibre", "coleslaw-maison", "brochettes-de-poulet-citron-paprika", "brochettes-de-legumes-et-tofu-marine", "epis-de-mais-grilles-au-beurre-et-au-paprika", "salade-de-pommes-de-terre-a-la-moutarde", "cotelettes-d-agneau-grillees-au-romarin", "aubergines-grillees-au-yaourt-et-a-la-menthe"],
     produits: nature([
       { nom: "poivron-rouge", cx: 204, w: 148 },
       { nom: "poivron-jaune", cx: 112, h: 86, devant: 2 },
@@ -286,7 +286,7 @@ export const MOMENTS_SAISON: MomentSaison[] = [
     phrase: "Des sorbets, des esquimaux et des granités",
     demande: "Tu as une autre idée de glace ou de sorbet maison ?",
     periode: fixe(7, 21, 8, 31),
-    recettes: ["batonnets-glaces-smoothie-mangue-passion", "granite-citron-menthe", "creme-glacee-vanille-maison", "sorbet-framboise-minute", "esquimaux-yaourt-fruits-rouges", "frozen-yogurt-fruits-rouges", "nice-cream-banane", "semifreddo-amande", "banana-split", "cheesecake-glace-sans-cuisson"],
+    recettes: ["batonnets-glaces-smoothie-mangue-passion", "granite-citron-menthe", "creme-glacee-vanille-maison", "sorbet-framboise-minute", "esquimaux-yaourt-fruits-rouges", "frozen-yogurt-fruits-rouges", "nice-cream-banane", "semifreddo-amande", "banana-split", "cheesecake-glace-sans-cuisson", "glace-proteinee-au-chocolat"],
     produits: nature([
       { nom: "menthe-fraiche", cx: 262, h: 104 },
       { nom: "mangue", cx: 204, w: 140 },
@@ -301,7 +301,7 @@ export const MOMENTS_SAISON: MomentSaison[] = [
     phrase: "Des repas faciles à emporter",
     demande: "Tu as une autre idée de repas facile à emporter ?",
     periode: fixe(9, 1, 9, 30),
-    recettes: ["wrap-poulet-crudites-sauce-yaourt", "bowl-mexicain-poulet-mais-haricots-noirs", "buddha-bowl-pois-chiches-rotis-houmous", "bowl-de-poulet-quinoa-et-avocat", "quesadillas-jambon-fromage", "muffins-sales-epinards-feta-tomates-sechees", "overnight-oats-chocolat-noisette"],
+    recettes: ["wrap-poulet-crudites-sauce-yaourt", "bowl-mexicain-poulet-mais-haricots-noirs", "buddha-bowl-pois-chiches-rotis-houmous", "bowl-de-poulet-quinoa-et-avocat", "quesadillas-jambon-fromage", "muffins-sales-epinards-feta-tomates-sechees", "overnight-oats-chocolat-noisette", "meal-prep-poulet-riz-et-brocoli", "spaghetti-aux-boulettes-de-dinde", "salade-de-riz-au-thon-et-au-mais", "salade-de-quinoa-pois-chiches-et-legumes-croquants", "frittata-aux-legumes"],
     produits: nature([
       { nom: "pommes-rouges", cx: 218, h: 128 },
       { nom: "figues", cx: 132, w: 118, devant: 2 },
@@ -315,7 +315,7 @@ export const MOMENTS_SAISON: MomentSaison[] = [
     phrase: "Des soupes et des veloutés",
     demande: "Tu as une autre idée de soupe ou de velouté ?",
     periode: fixe(10, 20, 11, 9),
-    recettes: ["veloute-de-potimarron-et-chataignes", "minestrone-d-hiver", "harira-aux-lentilles-et-pois-chiches", "pho-au-boeuf", "ramen-au-poulet-et-oeuf-mollet", "veloute-de-carottes", "soupe-poireaux-pommes-de-terre", "soupe-de-pois-casses", "veloute-de-champignons", "soupe-thaie-au-poulet-et-au-lait-de-coco"],
+    recettes: ["veloute-de-potimarron-et-chataignes", "minestrone-d-hiver", "harira-aux-lentilles-et-pois-chiches", "pho-au-boeuf", "ramen-au-poulet-et-oeuf-mollet", "veloute-de-carottes", "soupe-poireaux-pommes-de-terre", "soupe-de-pois-casses", "veloute-de-champignons", "soupe-thaie-au-poulet-et-au-lait-de-coco", "veloute-de-chou-fleur-au-curry-et-lait-de-coco"],
     produits: nature([
       { nom: "poireau", cx: 214, h: 150 },
       { nom: "potimarron", cx: 246, w: 146, devant: 2 },
@@ -329,7 +329,7 @@ export const MOMENTS_SAISON: MomentSaison[] = [
     phrase: "Des plats qui gratinent au four",
     demande: "Tu as une autre idée de gratin ?",
     periode: fixe(11, 10, 11, 30),
-    recettes: ["gratin-de-chou-fleur", "tartiflette-allegee", "lasagnes-epinards-ricotta", "endives-au-jambon-gratinees", "hachis-parmentier-a-la-patate-douce", "soupe-a-l-oignon-gratinee", "gratin-dauphinois-leger", "parmentier-vegetarien-aux-lentilles", "brandade-de-cabillaud-gratinee", "gratin-de-pates-au-poulet-et-au-brocoli", "crepes-au-jambon-gratinees"],
+    recettes: ["gratin-de-chou-fleur", "tartiflette-allegee", "lasagnes-epinards-ricotta", "endives-au-jambon-gratinees", "hachis-parmentier-a-la-patate-douce", "soupe-a-l-oignon-gratinee", "gratin-dauphinois-leger", "parmentier-vegetarien-aux-lentilles", "brandade-de-cabillaud-gratinee", "gratin-de-pates-au-poulet-et-au-brocoli", "crepes-au-jambon-gratinees", "gratin-de-butternut-au-lait-de-coco-et-aux-noisettes"],
     produits: nature([
       { nom: "emmental", cx: 244, h: 128 },
       { nom: "pomme-de-terre", cx: 150, w: 150, devant: 2 },

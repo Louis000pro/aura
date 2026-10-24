@@ -177,6 +177,56 @@ export const NATURE: Record<string, NatureRecette> = {
   "gnocchis-poeles-a-la-butternut-et-a-la-sauge": "plat",
   "tarte-fine-aux-pommes": "dessert",
   "salade-tiede-de-lentilles-betterave-et-chevre": "plat",
+  "gainer-maison-banane-avoine-et-cacahuete": "boisson",
+  "cafe-frappe-proteine": "boisson",
+  "shaker-fruits-rouges-et-skyr": "boisson",
+  "shaker-chocolat-noisette": "boisson",
+  "smoothie-vert-proteine": "boisson",
+  "shaker-vegetal-mangue-coco": "boisson",
+  "shaker-vanille-amande-au-fromage-blanc": "boisson",
+  "bowl-cake-pomme-cannelle": "petit-dej",
+  "crepes-proteinees-au-skyr": "petit-dej",
+  "omelette-aux-blancs-d-oeufs-epinards-et-feta": "petit-dej",
+  "galettes-de-riz-au-beurre-de-cacahuete-et-banane": "encas",
+  "cookies-proteines-aux-pepites-de-chocolat": "encas",
+  "glace-proteinee-au-chocolat": "dessert",
+  "mousse-au-chocolat-proteinee": "dessert",
+  "tiramisu-proteine-au-skyr": "dessert",
+  "meal-prep-poulet-riz-et-brocoli": "plat",
+  "steak-hache-patate-douce-rotie-et-haricots-verts": "plat",
+  "spaghetti-aux-boulettes-de-dinde": "plat",
+  "brochettes-de-poulet-citron-paprika": "plat",
+  "escalope-de-dinde-a-la-moutarde-et-grenailles-roties": "plat",
+  "cabillaud-en-papillote-courgettes-et-quinoa": "plat",
+  "nuggets-de-poulet-au-four": "plat",
+  "saumon-laque-au-soja-riz-et-pak-choi": "plat",
+  "pates-completes-au-thon-tomates-cerises-et-capres": "plat",
+  "bowl-coreen-au-boeuf-facon-bibimbap": "plat",
+  "bowl-de-tofu-croustillant-nouilles-de-riz-et-edamame": "plat",
+  "fajitas-de-poulet-aux-poivrons": "plat",
+  "galette-saucisse": "plat",
+  "crepes-aux-epinards-et-a-la-ricotta": "plat",
+  "galettes-au-saumon-fume-et-creme-a-l-aneth": "plat",
+  "crepes-aux-pommes-et-caramel-au-beurre-sale": "dessert",
+  "gateau-de-crepes-au-chocolat": "dessert",
+  "crepes-vegetales-aux-poires-et-au-sirop-d-erable": "dessert",
+  "fondant-au-chocolat-coeur-coulant": "dessert",
+  "nids-de-paques-au-chocolat": "encas",
+  "brochettes-de-legumes-et-tofu-marine": "plat",
+  "epis-de-mais-grilles-au-beurre-et-au-paprika": "entree",
+  "salade-de-pommes-de-terre-a-la-moutarde": "entree",
+  "cotelettes-d-agneau-grillees-au-romarin": "plat",
+  "aubergines-grillees-au-yaourt-et-a-la-menthe": "entree",
+  "taboule-libanais": "entree",
+  "salade-grecque": "plat",
+  "salade-de-pasteque-feta-et-menthe": "entree",
+  "salade-de-riz-au-thon-et-au-mais": "plat",
+  "salade-de-quinoa-pois-chiches-et-legumes-croquants": "plat",
+  "frittata-aux-legumes": "plat",
+  "gratin-de-butternut-au-lait-de-coco-et-aux-noisettes": "plat",
+  "tarte-au-citron-meringuee": "dessert",
+  "falafels-au-four-et-sauce-tahini": "plat",
+  "veloute-de-chou-fleur-au-curry-et-lait-de-coco": "entree",
 };
 
 /** La nature d'une recette. Sans entrée écrite (une recette toute neuve),
@@ -226,6 +276,17 @@ export const REPOS: Record<string, { min: number; texte?: string }> = {
   "gratin-dauphinois-leger": { min: 5 },
   "roti-de-dinde-aux-marrons": { min: 10 },
   "truffes-au-chocolat-noir": { min: 120, texte: "2 h au frais" },
+  "cookies-proteines-aux-pepites-de-chocolat": { min: 10 },
+  "glace-proteinee-au-chocolat": { min: 180, texte: "3 h au congélateur" },
+  "mousse-au-chocolat-proteinee": { min: 120, texte: "2 h au frais" },
+  "tiramisu-proteine-au-skyr": { min: 240, texte: "4 h au frais" },
+  "brochettes-de-poulet-citron-paprika": { min: 30 },
+  "galette-saucisse": { min: 30 },
+  "gateau-de-crepes-au-chocolat": { min: 120, texte: "2 h au frais" },
+  "nids-de-paques-au-chocolat": { min: 60, texte: "1 h au frais" },
+  "brochettes-de-legumes-et-tofu-marine": { min: 30 },
+  "cotelettes-d-agneau-grillees-au-romarin": { min: 30 },
+  "tarte-au-citron-meringuee": { min: 60, texte: "1 h de repos" },
 };
 
 /** Le temps que la recette demande vraiment, repos compris. */
@@ -300,7 +361,8 @@ export const COLLECTIONS: CollectionRecettes[] = [
     id: "apres-sport", titre: "Après le sport",
     sousTitre: `Au moins ${PROTEINES_APRES_SPORT} g de protéines par portion.`,
     tuile: "bowl-de-poulet-quinoa-et-avocat", heros: "bowl-mexicain-poulet-mais-haricots-noirs",
-    garde: (r) => repas(r) && r.proteins >= PROTEINES_APRES_SPORT,
+    // Les shakers en font partie : c'est ce qu'on boit juste après une séance.
+    garde: (r) => (repas(r) || natureDe(r) === "boisson") && r.proteins >= PROTEINES_APRES_SPORT,
   },
   {
     id: "pates-riz", titre: "Pâtes et riz",
@@ -328,7 +390,7 @@ export const COLLECTIONS: CollectionRecettes[] = [
 export const DEMANDE_AU_GUIDE: Record<IdCollection, string> = {
   "rapide": `Tu as une autre idée de recette rapide, prête en ${MINUTES_RAPIDE} minutes ou moins ?`,
   "vegetarien": "Tu as une autre idée de recette végétarienne ?",
-  "apres-sport": "Tu as une autre idée de plat riche en protéines, pour après le sport ?",
+  "apres-sport": "Tu as une autre idée de recette riche en protéines, pour après le sport ?",
   "pates-riz": "Tu as une autre idée de plat de pâtes ou de riz ?",
   "salades-bowls": "Tu as une autre idée de salade ou de bowl ?",
   "desserts": "Tu as une autre idée de dessert ?",
@@ -339,11 +401,18 @@ export function collection(id: IdCollection): CollectionRecettes {
 }
 
 /** Les recettes d'une collection, compatibles avec le régime déclaré. La
- *  collection « Rapide » se lit de la plus courte à la plus longue. */
+ *  collection « Rapide » se lit de la plus courte à la plus longue, et
+ *  « Après le sport » commence par les shakers. */
 export function recettesDe(id: IdCollection, regime: DietKey[] = []): Recipe[] {
   const c = collection(id);
   const liste = RECIPES.filter((r) => c.garde(r) && convient(r, regime));
-  return id === "rapide" ? [...liste].sort((a, b) => minutesTotales(a) - minutesTotales(b)) : liste;
+  if (id === "rapide") return [...liste].sort((a, b) => minutesTotales(a) - minutesTotales(b));
+  // Dans l'ordre de la banque, les shakers du lot 4 arrivaient après tous les plats.
+  if (id === "apres-sport") {
+    const boisson = (r: Recipe) => natureDe(r) === "boisson";
+    return [...liste.filter(boisson), ...liste.filter((r) => !boisson(r))];
+  }
+  return liste;
 }
 
 /** L'image d'une recette, d'après son identifiant. */
