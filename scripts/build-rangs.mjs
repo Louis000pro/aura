@@ -15,105 +15,104 @@
    posent trois problemes qu'aucune feuille de style ne peut rattraper :
 
    1. AUCUNE TRANSPARENCE. Les six sont opaques, fond creme cuit dans l'image.
-      Or la gemme s'affiche a cote d'un pseudo, dans une ligne de conversation,
-      sur un profil : en mode sombre, ce fond devient un carre creme derriere
-      chaque badge, sur les douze surfaces d'un coup. On detoure donc le
-      FICHIER, jamais l'affichage : un blend-mode ou un mask CSS ne saurait pas
-      ou s'arreter et casserait ailleurs.
+      En mode sombre, ce fond deviendrait un carre creme derriere chaque badge,
+      sur les douze surfaces d'un coup. On detoure donc le FICHIER, jamais
+      l'affichage.
 
    2. PAS LA MEME ECHELLE. La gemme occupe 74 % de la hauteur pour le Bronze et
-      96 % pour l'Eternel. Affichees a une hauteur commune, les six sauteraient
-      de taille le long de l'echelle. On ramene donc les six a la MEME hauteur
-      de dessin.
+      96 % pour l'Eternel. On ramene les six a la MEME hauteur de dessin.
 
    3. 44 % DE LARGEUR UTILE. Le reste est du vide. A 18 px dans une ligne de
-      conversation, il restait environ 8 px de gemme reelle : illisible.
-
-   C'est la demarche de `normalize-guides.mjs` et de `build-portraits.mjs` : le
-   fichier se conforme a un contrat, le CSS n'a qu'une seule regle, et le
-   dessin lui-meme n'est JAMAIS retouche.
+      conversation, il restait environ 8 px de gemme reelle.
 
    ==========================================================================
-   -- LE DETOURAGE : CE QUI A ETE COMPRIS LE 2026-08-20 ---------------------
+   -- LE DETOURAGE, VERSION 3 (2026-10-24) ----------------------------------
    ==========================================================================
 
-   /!\ LE FAIT CENTRAL, MESURE, QUI COMMANDE TOUT LE RESTE :
-   DES MORCEAUX DU DESSIN ONT EXACTEMENT LA COULEUR DU FOND.
+   /!\ LA VERSION 2 LAISSAIT TROIS DEFAUTS, VUS PAR LOUIS SUR FOND SOMBRE :
 
-   Releve sur une ligne de l'Eternel (fond a 250,244,241) :
-       un reflet d'aile ...... 255,252,251   -> PLUS CLAIR que le fond
-       un filigrane dore ..... 252,245,224   -> a 17 du fond
+     - un HALO BLANC DENTELE autour du Diamant et de l'Eternel. Leurs planches
+       portent une lueur blanche autour de l'embleme, PLUS CLAIRE que le fond
+       creme. La v2 n'acceptait comme fond que du creme eventuellement
+       assombri (facteur <= 1,06) : la lueur etait donc classee « dessin » et
+       gardee, opaque, sur une vingtaine de pixels ;
+     - un LISERE CREME le long des bords du Bronze, de l'Argent et de l'Or, et
+       des taches sous les mains. C'est l'ombre portee : pres du bord elle est
+       raide et teintee de chaud (residu chromatique jusqu'a 31), donc ni
+       « creme », ni « creme assombri » ;
+     - du CREME DANS LES CREUX entre le cristal et les ailes du Bronze et de
+       l'Or : le couloir est pince a un ou deux pixels, la v2 le fermait.
 
-   Consequence : AUCUNE regle « ce pixel ressemble au creme donc il degage »
-   ne peut fonctionner, a aucun seuil. Trop stricte, il reste des taches ; trop
-   large, elle perce le dessin. Deux versions successives s'y sont cassees et
-   toutes deux ont ete signalees par Louis :
+   -- LA REGLE QUI MARCHE : LE FOND EST LISSE, LE DESSIN A UN BORD ------------
+   La couleur ne separe pas le fond du dessin (des morceaux du dessin ont
+   exactement la couleur du fond, cf. plus bas). Le RELIEF, si : le fond, la
+   lueur et l'ombre portee sont des degrades doux, alors que l'embleme est
+   cerne d'un trait net. Mesure au filtre de Sobel, sur la planche adoucie
+   (flou de rayon 1), en niveaux par pixel :
 
-     - v1, seuil large + rampe de frange etalee : les filigranes de l'Eternel
-       et les pointes de cristal du Bronze et de l'Or partaient en lambeaux.
-     - v2, resserrement + detection de « poches plates » a l'interieur : les
-       facettes pales du sommet du cristal, plates et claires, ont ete prises
-       pour du fond et SUPPRIMEES. Invisible sur fond blanc, trou beant sur
-       fond noir. C'est le « ca mange de la matiere » du 2026-08-20.
+       fond creme ................... 0 a 2
+       lueur du Diamant, de l'Eternel  1 a 6
+       ombre portee, gemmes pales .... 3 a 6
+       ombre portee, gemmes metal .... 6 a 14   (raide pres du bord)
+       trait du contour, gemmes pales  14 a 37  (le plus pale : la main droite
+                                                 du Diamant, 14,5)
+       trait du contour, gemmes metal  55 a 84
 
-   Les heuristiques de forme (planeite, teinte, taille de composante) sont
-   donc ABANDONNEES. Ne pas les reintroduire : elles jugent le dessin, et le
-   dessin a le droit d'etre plat, clair et creme.
+   Un pixel est donc du FOND s'il est relie au bord de l'image par un chemin
+   de pixels lisses (gradient sous le seuil). Le remplissage traverse le
+   creme, la lueur et l'ombre, et s'arrete sur le trait. Tout ce qu'il
+   n'atteint pas est garde, quelle que soit sa couleur : les facettes pales
+   et cremes A L'INTERIEUR du trait restent intactes, c'est ce qui protege le
+   Platine et le Diamant.
 
-   -- LA REGLE QUI MARCHE : GEOMETRIQUE, PAS CHROMATIQUE ---------------------
-   Un pixel est du fond s'il est RELIE AU BORD DE L'IMAGE par un chemin de
-   fond. Point. La couleur ne sert qu'a decider si on peut TRAVERSER un pixel,
-   jamais a decider si un pixel isole est du dessin.
+   -- POURQUOI UN SEUIL PAR PLANCHE ------------------------------------------
+   Les deux familles ne se chevauchent pas, mais elles ne se rangent pas sous
+   un seul seuil : l'ombre raide des gemmes metal (jusqu'a 14) depasse le
+   trait le plus pale des gemmes pales (14,5).
+     - 18 pour le Bronze, l'Argent et l'Or : l'ombre passe, le trait (55 et
+       plus) arrete tout.
+     - 8 pour le Platine, le Diamant et l'Eternel : la lueur et l'ombre
+       passent, le trait arrete. Verifie : a 11, le cadre du cristal de
+       l'Eternel est deja entame.
+   Une planche inconnue prend 8 : au pire il reste un peu d'ombre, jamais un
+   trou dans le dessin.
 
-   Un reflet creme au milieu d'une aile n'est relie a rien : il est garde,
-   quelle que soit sa couleur. Une facette pale au sommet du cristal est
-   enfermee par le trait du contour : gardee. Les fentes entre les ailes, elles,
-   sont ouvertes vers le haut : atteintes, donc retirees, ce qui est voulu.
+   -- LES GARDE-FOUS --------------------------------------------------------
+   - PASSAGE : on remplit sur la zone lisse ERODEE de 2 px, puis on redilate
+     dans la zone lisse. Un filet de moins de 5 px de large (une fuite par un
+     trait qui palit) est coupe ; un vrai fond, large, passe.
+   - Rien de tres colore ne se traverse (ecart au fond >= 165), meme lisse.
+   - Les ILOTS : apres le remplissage, toute piece detachee de moins de 0,5 %
+     de l'embleme est retiree (des miettes d'ombre sous les mains).
+   - Le BORD est adouci (un flou 3 x 3 seuille a la moitie, deux fois), puis
+     DEMELE : ses deux derniers pixels melangent le trait et le creme, et sur
+     fond noir ils dessinaient un fil clair. Chacun recoit un alpha partiel
+     et la couleur du dessin seul, calcules contre le fond retire tout pres
+     et l'interieur proche (p = a x dessin + (1 - a) x fond). Quand les deux
+     se ressemblent trop, le pixel reste opaque.
+   - Les COULEURS sont etalees sous les pixels transparents voisins du bord :
+     la reduction a 320 x 512 ne peut pas y aller chercher du creme.
+   - L'anticrenelage vient de la reduction elle-meme : la planche fait
+     1254 px, le dessin final 492, chaque pixel final couvre environ six
+     pixels sources.
 
-   -- CE QUI RENDAIT LES FENTES INATTEIGNABLES : L'OMBRE PORTEE --------------
-   Le creme y est ombre. Un test « ecart au creme » l'arrete net au seuil de la
-   fente, d'ou les taches claires. La correction n'est pas d'elargir le seuil
-   (c'est ce qui perce le Platine) mais de reconnaitre ce qu'est une ombre :
-   du fond MULTIPLIE par un facteur. Sa CHROMATICITE ne bouge pas.
+   -- CE QUE LA V2 AVAIT APPRIS, ET QUI RESTE VRAI ---------------------------
+   Des morceaux du dessin ont exactement la couleur du fond (un reflet d'aile
+   de l'Eternel est meme plus clair que lui). Aucune regle « ce pixel
+   ressemble au creme donc il degage » ne peut fonctionner, et les heuristiques
+   de forme (facettes plates, petites poches) ont mange le sommet du cristal
+   du Platine en 2026-08. Ne pas les reintroduire.
 
-   On teste donc : existe-t-il k tel que pixel ~ k x fond ? Si oui, c'est du
-   fond, eclaire ou ombre. Sinon c'est du dessin, clair ou sombre.
-   C'est ce que font `traversable` et TOL_CHROMA ci-dessous.
+   -- COMMENT CONTROLER -----------------------------------------------------
+   RENDRE LES SIX SUR FOND NOIR et les regarder de pres, bords et creux
+   compris. Sur fond blanc, un halo blanc ou un trou dans une facette pale ne
+   se voient pas : c'est exactement ce qui est passe deux fois. Le journal
+   donne le nombre de pixels retires et d'ilots supprimes, pour comparer deux
+   versions d'une meme planche.
 
-   -- POURQUOI LE SEUIL EST A 4 ET PAS PLUS ---------------------------------
-   Mesure sur les planches, residu chromatique moyen par anneau depuis le
-   contour :
-
-       Bronze   anneau 1 : 8,4    anneau 2 : 22,0   anneau 3+ : 31 a 47
-       Platine  anneau 1 : 5,8    anneau 2 :  9,5   anneau 3+ : 10 a 11
-
-   Le corps du Platine vit a 11 de residu. Toute tolerance a 6 ou plus le
-   classe comme fond et le devore : verifie a l'oeil, ses ailes deviennent
-   noires. 4 est donc un plafond impose par la planche la plus pale, pas un
-   reglage de confort. Si une future planche est encore plus proche du fond,
-   c'est la PLANCHE qu'il faut refaire, avec un fond franchement colore.
-
-   -- ET LE HALO ? IL FAIT UN PIXEL -----------------------------------------
-   Le meme releve dit que la transition tient dans l'anneau 1 : au deuxieme
-   anneau on est deja dans la matiere. Il n'y a donc aucune « frange » de
-   plusieurs pixels a raboter, et c'est precisement ce rabotage qui abimait le
-   dessin en v1. L'anneau 1, lui, est un vrai melange fond + dessin : il recoit
-   un alpha PROPORTIONNEL, calcule contre la couleur du dessin voisin, pas
-   contre une rampe arbitraire. Un pixel a mi-chemin recoit 50 %, et un pixel
-   pose sur un trait pale n'est pas plus entame qu'un autre.
-
-   -- COMMENT CONTROLER UNE FUTURE PLANCHE ----------------------------------
-   /!\ Le mauvais controle, celui qui a laisse passer les deux bugs : compter
-   les « pixels franchement colores entames ». Il repond toujours zero, parce
-   que ni le blanc du Platine ni une dorure pale ne sont franchement colores.
-
-   Le bon controle, c'est de RENDRE LES SIX SUR FOND NOIR et de les regarder.
-   Sur fond blanc les deux bugs etaient invisibles : un trou dans une facette
-   pale ne se voit que quand il y a du noir derriere. Le journal donne bien une
-   mesure du creme restant, mais il ne peut pas servir d'alarme : les gemmes
-   pales SONT cremes sur des dizaines de milliers de pixels, un seuil accuserait
-   donc le Platine et le Diamant a chaque construction. C'est un reperage entre
-   deux versions d'une meme planche, pas un feu rouge.
+   Pour une future planche : demander un PNG deja transparent, ou un fond
+   franchement colore (vert ou bleu sature). C'est la planche qui rend le
+   detourage difficile, pas le script.
 
    -- LE CANEVAS ------------------------------------------------------------
    Les six sortent en 320 x 512, dessin de 492 px de haut, centre. Les trois
@@ -136,86 +135,41 @@ const CANEVAS = { largeur: 320, hauteur: 512 };
 /** Hauteur du dessin dans le canevas. Le reste est de l'air, en haut et en bas. */
 const HAUTEUR_DESSIN = 492;
 
-/** Ecart chromatique maximal a « fond x k » pour traverser un pixel.
- *
- *  /!\ 4, ET NE PAS L'AUGMENTER. Le corps du Platine vit a 11 de residu : a 6
- *  ses ailes deviennent noires, a 12 l'Argent y passe aussi. Cf. l'en-tete. */
-const TOL_CHROMA = 4;
-/** Bornes du facteur d'eclairement admis pour du fond. Sous K_MIN c'est trop
- *  sombre pour etre l'ombre portee, donc c'est du dessin ; au dessus de K_MAX
- *  c'est plus clair que le fond lui-meme, donc du bruit de compression. */
-const K_MIN = 0.5;
-const K_MAX = 1.06;
-
-/** En deca, le dessin voisin est trop proche du fond pour servir de reference
- *  au calcul d'alpha de l'anneau 1 : on garde le pixel opaque plutot que de
- *  diviser par presque rien. Prudence volontaire, elle ne peut que CONSERVER. */
-const REF_MIN = 20;
-
-/** Largeur de passage minimale du remplissage, en rayon (le passage fait donc
- *  2 x PASSAGE + 1 pixels).
- *
- *  A quoi ca sert : meme a TOL_CHROMA = 4, le contour du Platine a un endroit
- *  ou il palit assez pour laisser un filet de pixels traversables. Le
- *  remplissage s'y faufile et vide toute l'aile droite derriere. Sur fond
- *  blanc ca ne se voit pas du tout ; sur fond noir l'aile a disparu.
- *
- *  Baisser encore TOL_CHROMA ne reglerait rien, parce que le filet est un
- *  vrai degrade continu du fond vers le dessin : il existe a n'importe quel
- *  seuil. La bonne grandeur n'est pas la couleur, c'est la LARGEUR. Un fond
- *  reel est large (les fentes entre les ailes font des dizaines de pixels sur
- *  une planche de 1254) ; une fuite est un filet.
- *
- *  On erode donc la zone traversable, on remplit, puis on redilate en restant
- *  dans la zone traversable : tout ce qui est plus etroit que le passage est
- *  coupe, et rien d'autre ne change.
- *
- *  -- CE QUE CA COUTE, ET POURQUOI ON L'ACCEPTE ---------------------------
- *  Le couloir entre le cristal et l'aile, chez le Bronze et chez l'Or, est
- *  pince a un ou deux pixels a mi-hauteur. Il est donc coupe lui aussi, et il
- *  reste une bande creme dans cet espace negatif : environ 25 x 107 px sur le
- *  canevas de 320 x 512, invisible a 18, 34 et 52 px, discernable a 116.
- *
- *  /!\ NE PAS CHERCHER A RECUPERER CETTE BANDE PAR UNE REGLE : c'est verifie,
- *  aucune ne separe les deux cas. Trois pistes ont ete mesurees puis jetees :
- *    - passer a 0 (aucune contrainte de largeur) : nettoie la bande, mais vide
- *      deux facettes de l'aile droite du Platine ;
- *    - hysteresis chromatique : le couloir du Bronze est a 2,4 de residu, les
- *      facettes du Platine a 3,0. Les distributions se recouvrent ;
- *    - franchir un pincement seulement vers du fond « franchement clair »
- *      (ecart <= 15) : le couloir du Bronze est a 9,1 d'ecart, les facettes du
- *      Platine a 5,1 a 8,0. Le Platine ET l'Eternel y ont perdu de la matiere.
- *
- *  La raison est dans les planches, pas dans le code : ces gemmes contiennent
- *  des zones que RIEN, localement ou regionalement, ne distingue du fond. Le
- *  vrai correctif est en amont, dans le fichier source : soit un PNG deja
- *  transparent, soit un fond franchement colore (un vert ou un bleu sature)
- *  au lieu d'un creme qui est aussi une couleur du dessin.
- *
- *  Le sens de l'echec est donc choisi : il reste du fond, on ne mange jamais
- *  de dessin. Un reste se voit tout de suite et ne detruit rien ; un trou dans
- *  une facette pale est invisible sur fond blanc et a echappe deux fois. */
-const PASSAGE = 1;
-
-/*  Demi-largeur de la recherche de l'axe de symetrie, en demi-pixels, autour du
- *  centre de la boite du dessin. Les six planches tombent a moins de 8 demi-
- *  pixels du centre ; on cherche large sans se ruiner, la boucle ne coute que
- *  quelques millisecondes. */
-const AXE_RECHERCHE = 12;
-
+/** Gradient (niveaux par pixel) sous lequel un pixel est « lisse », donc
+ *  traversable par le fond. Un par planche : voir l'en-tete pour les mesures.
+ *  /!\ Ne pas monter celui des gemmes pales : a 11, l'Eternel perd le cadre
+ *  de son cristal. */
+const SEUIL_BORD = {
+  "rank-01-bronze.png": 18,
+  "rank-02-argent.png": 18,
+  "rank-03-or.png": 18,
+  "rank-04-platine.png": 8,
+  "rank-05-diamant.png": 8,
+  "rank-06-eternel.png": 8,
+};
+const SEUIL_PAR_DEFAUT = 8;
+/** Ecart au fond au-dela duquel rien ne se traverse, meme lisse. L'ombre la
+ *  plus foncee, juste sous la pointe du cristal du Bronze, est a 148 : a 130,
+ *  elle restait en poche creme entre les deux mains. Le corps d'une gemme
+ *  metal (180 et plus) reste infranchissable. */
+const ECART_MAX = 165;
+/** Rayon de l'erosion du remplissage : un passage de moins de 2 x 2 + 1 px
+ *  de large est coupe. */
+const PASSAGE = 2;
+/** Une piece detachee plus petite que cette part de l'embleme est retiree. */
+const ILOT_MAX = 0.005;
+/** Rayon d'etalement des couleurs sous le bord transparent. */
+const ETALEMENT = 4;
+/** Ecart minimal entre le dessin et le fond voisins pour demeler un pixel du
+ *  bord. En dessous, les deux se ressemblent trop : le pixel reste opaque. */
+const ECART_DEMELAGE = 40;
 
 const check = process.argv.includes("--check");
 
-/** Ecart maximal par canal entre un pixel et une couleur. */
-function ecart(r, g, b, c) {
-  return Math.max(Math.abs(r - c[0]), Math.abs(g - c[1]), Math.abs(b - c[2]));
-}
-
-/** Min ou max d'un masque binaire sur un carre de rayon r, en deux passes
- *  separables (lignes puis colonnes). `mode` vaut 0 pour l'erosion, 1 pour la
- *  dilatation. Les bords sont traites comme du fond : l'erosion ne doit pas
- *  effacer la marge par laquelle le remplissage demarre. */
-function morpho(src, W, H, r, mode) {
+/** Erosion (dil = false) ou dilatation (dil = true) d'un masque binaire sur un
+ *  carre de rayon r, en deux passes separables. Hors image : fond pour la
+ *  dilatation, plein pour l'erosion (le remplissage demarre au bord). */
+function morpho(src, W, H, r, dil) {
   const tmp = new Uint8Array(W * H);
   const out = new Uint8Array(W * H);
   const passe = (entree, sortie, horizontal) => {
@@ -223,12 +177,11 @@ function morpho(src, W, H, r, mode) {
     const NB = horizontal ? H : W;
     for (let b = 0; b < NB; b++) {
       for (let a = 0; a < NA; a++) {
-        let v = mode === 0 ? 1 : 0;
+        let v = dil ? 0 : 1;
         for (let d = -r; d <= r; d++) {
           const na = a + d;
-          const p = na < 0 || na >= NA ? 1 : entree[horizontal ? b * W + na : na * W + b];
-          if (mode === 0) { if (!p) { v = 0; break; } }
-          else if (p) { v = 1; break; }
+          const p = na < 0 || na >= NA ? (dil ? 0 : 1) : entree[horizontal ? b * W + na : na * W + b];
+          if (dil) { if (p) { v = 1; break; } } else if (!p) { v = 0; break; }
         }
         sortie[horizontal ? b * W + a : a * W + b] = v;
       }
@@ -239,12 +192,48 @@ function morpho(src, W, H, r, mode) {
   return out;
 }
 
-/** Detoure une planche. Rend le RGBA modifie, la boite du dessin et un journal. */
-async function detourer(fichier) {
-  const { data: rgb, info } = await sharp(fichier)
-    .removeAlpha()
-    .raw()
-    .toBuffer({ resolveWithObject: true });
+/** Remplissage en 4-connexite depuis `graines`, dans les pixels ou `ok` vaut 1. */
+function remplir(graines, ok, W, H) {
+  const vu = new Uint8Array(W * H);
+  const pile = [];
+  for (const s of graines) if (ok[s] && !vu[s]) { vu[s] = 1; pile.push(s); }
+  while (pile.length) {
+    const i = pile.pop();
+    const x = i % W;
+    if (x > 0 && ok[i - 1] && !vu[i - 1]) { vu[i - 1] = 1; pile.push(i - 1); }
+    if (x < W - 1 && ok[i + 1] && !vu[i + 1]) { vu[i + 1] = 1; pile.push(i + 1); }
+    if (i >= W && ok[i - W] && !vu[i - W]) { vu[i - W] = 1; pile.push(i - W); }
+    if (i < W * (H - 1) && ok[i + W] && !vu[i + W]) { vu[i + W] = 1; pile.push(i + W); }
+  }
+  return vu;
+}
+
+/** Flou 3 x 3 d'un masque binaire puis seuil a la moitie : arrondit les
+ *  marches d'un pixel sans deplacer le bord. */
+function adoucir(masque, W, H) {
+  const out = new Uint8Array(W * H);
+  for (let y = 0; y < H; y++) {
+    for (let x = 0; x < W; x++) {
+      let s = 0, n = 0;
+      for (let dy = -1; dy <= 1; dy++) {
+        const ny = y + dy;
+        if (ny < 0 || ny >= H) continue;
+        for (let dx = -1; dx <= 1; dx++) {
+          const nx = x + dx;
+          if (nx < 0 || nx >= W) continue;
+          s += masque[ny * W + nx]; n++;
+        }
+      }
+      out[y * W + x] = s * 2 >= n ? 1 : 0;
+    }
+  }
+  return out;
+}
+
+/** Detoure une planche. Rend le RGBA, la boite du dessin et un journal. */
+async function detourer(fichier, seuil) {
+  const { data: rgb, info } = await sharp(fichier).removeAlpha().raw().toBuffer({ resolveWithObject: true });
+  const { data: lisse } = await sharp(fichier).removeAlpha().blur(1).raw().toBuffer({ resolveWithObject: true });
   const W = info.width;
   const H = info.height;
   const N = W * H;
@@ -258,158 +247,155 @@ async function detourer(fichier) {
   for (let x = 0; x < W; x += 3) { note(x, 0); note(x, 1); note(x, H - 2); note(x, H - 1); }
   for (let y = 0; y < H; y += 3) { note(0, y); note(1, y); note(W - 2, y); note(W - 1, y); }
   const fond = ech.map((a) => { a.sort((p, q) => p - q); return a[a.length >> 1]; });
-  const lumFond = 0.299 * fond[0] + 0.587 * fond[1] + 0.114 * fond[2];
 
-  // -- Etape 1 : quels pixels sont TRAVERSABLES.
-  // Un pixel est du fond s'il est le fond multiplie par un facteur : meme
-  // chromaticite, luminance libre dans [K_MIN, K_MAX]. C'est ce qui laisse
-  // passer l'ombre portee, qui bloquait l'entree des fentes entre les ailes.
+  // -- Etape 1 : les pixels LISSES, donc traversables par le fond.
+  // Gradient de Sobel par canal sur la planche adoucie, le plus fort des trois.
   const traversable = new Uint8Array(N);
-  for (let i = 0; i < N; i++) {
-    const r = rgb[i * 3], g = rgb[i * 3 + 1], b = rgb[i * 3 + 2];
-    const k = (0.299 * r + 0.587 * g + 0.114 * b) / lumFond;
-    if (k < K_MIN || k > K_MAX) continue;
-    if (ecart(r, g, b, [k * fond[0], k * fond[1], k * fond[2]]) <= TOL_CHROMA) traversable[i] = 1;
-  }
-
-  // -- Etape 2 : le remplissage depuis les bords. SEULE source de verite.
-  // Ce qui n'est pas atteint est garde, quelle que soit sa couleur : c'est ce
-  // qui protege les reflets cremes et les facettes pales du cristal.
-  // On remplit sur la version ERODEE du traversable (les filets plus etroits
-  // que le passage sont coupes), puis on redilate en restant dans le
-  // traversable : le fond retrouve exactement son bord, sans la fuite.
-  const large = morpho(traversable, W, H, PASSAGE, 0);
-  const noyau = new Uint8Array(N);
-  const pile = [];
-  const pousser = (x, y) => {
-    const i = y * W + x;
-    if (!noyau[i] && large[i]) { noyau[i] = 1; pile.push(i); }
-  };
-  for (let x = 0; x < W; x++) { pousser(x, 0); pousser(x, H - 1); }
-  for (let y = 0; y < H; y++) { pousser(0, y); pousser(W - 1, y); }
-  while (pile.length) {
-    const i = pile.pop();
-    const x = i % W, y = (i / W) | 0;
-    if (x > 0) pousser(x - 1, y);
-    if (x < W - 1) pousser(x + 1, y);
-    if (y > 0) pousser(x, y - 1);
-    if (y < H - 1) pousser(x, y + 1);
-  }
-  const etale = morpho(noyau, W, H, PASSAGE, 1);
-  const dehors = new Uint8Array(N);
-  for (let i = 0; i < N; i++) if (etale[i] && traversable[i]) dehors[i] = 1;
-
-  // -- Etape 3 : l'anneau 1 recoit un alpha proportionnel.
-  // p = a x dessin + (1 - a) x fond, donc a vaut la distance de p au fond
-  // rapportee a celle du dessin voisin. Reference = le pixel garde le plus
-  // eloigne du fond dans le voisinage 5x5, hors anneau 1 lui-meme.
-  const alpha = new Uint8Array(N);
-  for (let i = 0; i < N; i++) alpha[i] = dehors[i] ? 0 : 255;
-
-  const anneau = [];
-  for (let y = 0; y < H; y++) {
-    for (let x = 0; x < W; x++) {
+  for (let y = 1; y < H - 1; y++) {
+    for (let x = 1; x < W - 1; x++) {
       const i = y * W + x;
-      if (dehors[i]) continue;
-      if (
-        (x > 0 && dehors[i - 1]) || (x < W - 1 && dehors[i + 1]) ||
-        (y > 0 && dehors[i - W]) || (y < H - 1 && dehors[i + W])
-      ) anneau.push(i);
+      const ecart = Math.max(
+        Math.abs(rgb[i * 3] - fond[0]), Math.abs(rgb[i * 3 + 1] - fond[1]), Math.abs(rgb[i * 3 + 2] - fond[2])
+      );
+      if (ecart >= ECART_MAX) continue;
+      let g = 0;
+      for (let c = 0; c < 3; c++) {
+        const v = (dx, dy) => lisse[((y + dy) * W + (x + dx)) * 3 + c];
+        const gx = (v(1, -1) + 2 * v(1, 0) + v(1, 1)) - (v(-1, -1) + 2 * v(-1, 0) + v(-1, 1));
+        const gy = (v(-1, 1) + 2 * v(0, 1) + v(1, 1)) - (v(-1, -1) + 2 * v(0, -1) + v(1, -1));
+        const m = Math.sqrt(gx * gx + gy * gy) / 4;
+        if (m > g) g = m;
+      }
+      if (g < seuil) traversable[i] = 1;
     }
   }
-  const estAnneau = new Uint8Array(N);
-  for (const i of anneau) estAnneau[i] = 1;
+  // La premiere et la derniere ligne/colonne n'ont pas de voisins pour le
+  // gradient : elles sont du fond par construction (la planche a de la marge).
+  for (let x = 0; x < W; x++) { traversable[x] = 1; traversable[(H - 1) * W + x] = 1; }
+  for (let y = 0; y < H; y++) { traversable[y * W] = 1; traversable[y * W + W - 1] = 1; }
 
-  let adoucis = 0;
-  for (const i of anneau) {
-    const x = i % W, y = (i / W) | 0;
-    let ref = 0;
-    for (let dy = -2; dy <= 2; dy++) {
-      const ny = y + dy;
-      if (ny < 0 || ny >= H) continue;
-      for (let dx = -2; dx <= 2; dx++) {
-        const nx = x + dx;
-        if (nx < 0 || nx >= W) continue;
-        const j = ny * W + nx;
-        if (dehors[j] || estAnneau[j]) continue;
-        const d = ecart(rgb[j * 3], rgb[j * 3 + 1], rgb[j * 3 + 2], fond);
-        if (d > ref) ref = d;
+  // -- Etape 2 : le remplissage depuis les bords, sur la zone lisse erodee,
+  // puis redilate dans la zone lisse. SEULE source de verite pour le fond.
+  const large = morpho(traversable, W, H, PASSAGE, false);
+  const bord = [];
+  for (let x = 0; x < W; x++) bord.push(x, (H - 1) * W + x);
+  for (let y = 0; y < H; y++) bord.push(y * W, y * W + W - 1);
+  const noyau = remplir(bord, large, W, H);
+  const etale = morpho(noyau, W, H, PASSAGE, true);
+  let masque = new Uint8Array(N);
+  let retires = 0;
+  for (let i = 0; i < N; i++) {
+    if (etale[i] && traversable[i]) retires++;
+    else masque[i] = 1;
+  }
+
+  // -- Etape 3 : les ilots. On etiquette les pieces du masque et on retire
+  // celles qui pesent moins de ILOT_MAX de la plus grosse (l'embleme).
+  const etiquette = new Int32Array(N).fill(-1);
+  const tailles = [];
+  for (let s = 0; s < N; s++) {
+    if (!masque[s] || etiquette[s] >= 0) continue;
+    const id = tailles.length;
+    let n = 0;
+    const pile = [s];
+    etiquette[s] = id;
+    while (pile.length) {
+      const i = pile.pop();
+      n++;
+      const x = i % W;
+      for (const j of [x > 0 ? i - 1 : -1, x < W - 1 ? i + 1 : -1, i >= W ? i - W : -1, i < W * (H - 1) ? i + W : -1]) {
+        if (j >= 0 && masque[j] && etiquette[j] < 0) { etiquette[j] = id; pile.push(j); }
       }
     }
-    if (ref < REF_MIN) continue; // dessin trop pale ici : on garde opaque.
-    const d = ecart(rgb[i * 3], rgb[i * 3 + 1], rgb[i * 3 + 2], fond);
-    const a = Math.round((255 * Math.min(d, ref)) / ref);
-    if (a < 255) { alpha[i] = a; adoucis++; }
+    tailles.push(n);
   }
+  const plusGrosse = Math.max(...tailles);
+  let ilots = 0;
+  for (let i = 0; i < N; i++) {
+    if (masque[i] && tailles[etiquette[i]] < plusGrosse * ILOT_MAX) masque[i] = 0;
+  }
+  for (const t of tailles) if (t < plusGrosse * ILOT_MAX) ilots++;
 
-  // -- Etape 4 : la symetrie. Demandee par Louis le 2026-08-20, sur le Bronze.
-  //
-  // Les six emblemes sont symetriques par construction. Le detourage, lui, ne
-  // l'est pas : sur le Bronze un defaut du contour a laisse le remplissage
-  // entrer dans la paume GAUCHE et pas dans la droite. Le fond creme servait
-  // donc de fond de coupe d'un cote et disparaissait de l'autre. De loin ce
-  // n'est pas une tache qu'on voit, c'est une asymetrie, et l'oeil ne voit
-  // plus qu'elle.
-  //
-  // La correction ne RETIRE rien : elle rend a chaque cote ce que son miroir a
-  // garde. alpha = max(alpha, alpha du miroir), donc un pixel opaque quelque
-  // part le devient de l'autre cote, jamais l'inverse. C'est le meme sens
-  // d'echec que tout le reste du script, et surtout ce n'est PAS la regle des
-  // poches, celle qui supprimait et qui a mange le sommet du cristal.
-  //
-  // L'axe ne se suppose pas au milieu du canevas : on prend celui qui met le
-  // plus de matiere d'accord avec elle-meme, cherche autour du centre de la
-  // boite du dessin. Il travaille en demi-pixels (l'axe tombe entre deux
-  // colonnes quand la largeur est paire), d'ou le `x miroir = axe - x`.
-  let symetrie = { axe: 0, rendus: 0 };
-  {
-    let bx0 = W, bx1 = -1;
-    for (let i = 0; i < N; i++) {
-      if (alpha[i] <= 8) continue;
-      const x = i % W;
-      if (x < bx0) bx0 = x;
-      if (x > bx1) bx1 = x;
-    }
-    const centre2 = bx0 + bx1;
-    let axe = centre2, desaccordMin = Infinity;
-    for (let c = centre2 - AXE_RECHERCHE; c <= centre2 + AXE_RECHERCHE; c++) {
-      let d = 0;
-      for (let y = 0; y < H; y++) {
-        for (let x = bx0; x <= bx1; x++) {
-          const xm = c - x;
-          if (xm < 0 || xm >= W) continue;
-          if ((alpha[y * W + x] > 127) !== (alpha[y * W + xm] > 127)) d++;
+  // -- Etape 4 : le bord. Adouci deux fois, puis DEMELE.
+  // Les deux derniers pixels du contour melangent le dessin et ce qu'il y a
+  // juste derriere (creme, ombre, lueur). Gardes tels quels, ils dessinent un
+  // fil clair sur fond noir. Chacun recoit donc un alpha partiel et la
+  // couleur du dessin seul : p = a x dessin + (1 - a) x fond, avec « fond »
+  // = la moyenne du fond retire tout pres, et « dessin » = la moyenne de
+  // l'interieur proche. Si les deux se ressemblent trop (le bord blanc d'une
+  // gemme pale contre une lueur blanche), on ne peut rien decider : le pixel
+  // reste opaque, c'est le sens d'echec choisi depuis la v1.
+  masque = adoucir(adoucir(masque, W, H), W, H);
+  const interieur = morpho(masque, W, H, 3, false);
+  const coeur2 = morpho(masque, W, H, 2, false);
+  const alpha = new Float32Array(N);
+  const couleur = Float32Array.from(rgb);
+  let demeles = 0;
+  for (let i = 0; i < N; i++) alpha[i] = masque[i];
+  for (let y = 4; y < H - 4; y++) {
+    for (let x = 4; x < W - 4; x++) {
+      const i = y * W + x;
+      if (!masque[i] || coeur2[i]) continue;
+      let fr = 0, fg = 0, fb = 0, fn = 0, dr = 0, dg = 0, db = 0, dn = 0;
+      for (let dy = -4; dy <= 4; dy++) {
+        for (let dx = -4; dx <= 4; dx++) {
+          const j = i + dy * W + dx;
+          if (interieur[j]) { dr += rgb[j * 3]; dg += rgb[j * 3 + 1]; db += rgb[j * 3 + 2]; dn++; }
+          else if (!masque[j] && Math.abs(dx) <= 3 && Math.abs(dy) <= 3) { fr += rgb[j * 3]; fg += rgb[j * 3 + 1]; fb += rgb[j * 3 + 2]; fn++; }
         }
       }
-      if (d < desaccordMin) { desaccordMin = d; axe = c; }
-    }
-    const copie = Uint8Array.from(alpha);
-    let rendus = 0;
-    for (let y = 0; y < H; y++) {
-      for (let x = 0; x < W; x++) {
-        const xm = axe - x;
-        if (xm < 0 || xm >= W) continue;
-        const m = copie[y * W + xm];
-        const i = y * W + x;
-        if (m > alpha[i]) { alpha[i] = m; rendus++; }
+      if (!fn || !dn) continue;
+      fr /= fn; fg /= fn; fb /= fn; dr /= dn; dg /= dn; db /= dn;
+      const vr = dr - fr, vg = dg - fg, vb = db - fb;
+      const l2 = vr * vr + vg * vg + vb * vb;
+      if (l2 < ECART_DEMELAGE * ECART_DEMELAGE) continue;
+      const a = Math.max(0, Math.min(1, ((rgb[i * 3] - fr) * vr + (rgb[i * 3 + 1] - fg) * vg + (rgb[i * 3 + 2] - fb) * vb) / l2));
+      if (a >= 0.98) continue;
+      alpha[i] = a;
+      demeles++;
+      if (a > 0.05) {
+        couleur[i * 3] = Math.max(0, Math.min(255, (rgb[i * 3] - (1 - a) * fr) / a));
+        couleur[i * 3 + 1] = Math.max(0, Math.min(255, (rgb[i * 3 + 1] - (1 - a) * fg) / a));
+        couleur[i * 3 + 2] = Math.max(0, Math.min(255, (rgb[i * 3 + 2] - (1 - a) * fb) / a));
       }
     }
-    symetrie = { axe: axe / 2, rendus };
-    // `dehors` a servi a construire l'anneau, il sert encore au garde-fou et au
-    // compte des pixels retires : on le remet d'accord avec l'alpha, sinon les
-    // deux mesures du bas parleraient d'une image qui n'existe plus.
-    for (let i = 0; i < N; i++) if (alpha[i] > 0) dehors[i] = 0;
+  }
+
+  // -- Etape 5 : les couleurs etalees sous le bord transparent.
+  let connu = new Uint8Array(N);
+  for (let i = 0; i < N; i++) connu[i] = alpha[i] > 0.05 ? 1 : 0;
+  for (let tour = 0; tour < ETALEMENT; tour++) {
+    const suivant = Uint8Array.from(connu);
+    for (let y = 1; y < H - 1; y++) {
+      for (let x = 1; x < W - 1; x++) {
+        const i = y * W + x;
+        if (connu[i]) continue;
+        let r = 0, g = 0, b = 0, n = 0;
+        for (let dy = -1; dy <= 1; dy++) {
+          for (let dx = -1; dx <= 1; dx++) {
+            const j = i + dy * W + dx;
+            if (!connu[j]) continue;
+            r += couleur[j * 3]; g += couleur[j * 3 + 1]; b += couleur[j * 3 + 2]; n++;
+          }
+        }
+        if (n) {
+          couleur[i * 3] = r / n; couleur[i * 3 + 1] = g / n; couleur[i * 3 + 2] = b / n;
+          suivant[i] = 1;
+        }
+      }
+    }
+    connu = suivant;
   }
 
   // -- Sortie RGBA + boite du dessin.
   const out = Buffer.alloc(N * 4);
   let x0 = W, y0 = H, x1 = -1, y1 = -1;
   for (let i = 0; i < N; i++) {
-    out[i * 4] = rgb[i * 3];
-    out[i * 4 + 1] = rgb[i * 3 + 1];
-    out[i * 4 + 2] = rgb[i * 3 + 2];
-    out[i * 4 + 3] = alpha[i];
-    if (alpha[i] > 8) {
+    out[i * 4] = Math.round(couleur[i * 3]);
+    out[i * 4 + 1] = Math.round(couleur[i * 3 + 1]);
+    out[i * 4 + 2] = Math.round(couleur[i * 3 + 2]);
+    out[i * 4 + 3] = Math.round(alpha[i] * 255);
+    if (masque[i]) {
       const x = i % W, y = (i / W) | 0;
       if (x < x0) x0 = x;
       if (x > x1) x1 = x;
@@ -418,55 +404,12 @@ async function detourer(fichier) {
     }
   }
 
-  // -- Controle : reste-t-il une TACHE de fond dans un espace negatif ?
-  //
-  // On cherche la plus grande zone connexe de pixels GARDES qui ont la couleur
-  // du fond ET qui TOUCHENT le fond retire. Les deux conditions comptent : les
-  // gemmes pales (Platine, Diamant) sont cremes sur des dizaines de milliers de
-  // pixels, donc la couleur seule accuserait tout le monde et le garde-fou ne
-  // dirait plus rien. Un reste de fente, lui, est par construction accroche au
-  // fond qui l'entoure ; un reflet au milieu d'une aile ne l'est pas.
-  //
-  // On ne retire rien ici : on SIGNALE. Retirer sur ce critere reviendrait a
-  // la regle des poches, celle qui a supprime le sommet du cristal.
-  const creme = new Uint8Array(N);
-  for (let i = 0; i < N; i++) {
-    if (alpha[i] < 250) continue;
-    const r = rgb[i * 3], g = rgb[i * 3 + 1], b = rgb[i * 3 + 2];
-    const k = (0.299 * r + 0.587 * g + 0.114 * b) / lumFond;
-    if (k < 0.82 || k > K_MAX) continue;
-    if (ecart(r, g, b, [k * fond[0], k * fond[1], k * fond[2]]) <= 6) creme[i] = 1;
-  }
-  let plusGrandeCreme = 0;
-  const vue = new Uint8Array(N);
-  for (let s = 0; s < N; s++) {
-    if (!creme[s] || vue[s]) continue;
-    let taille = 0;
-    let touche = false;
-    const f = [s];
-    vue[s] = 1;
-    while (f.length) {
-      const i = f.pop();
-      taille++;
-      const x = i % W, y = (i / W) | 0;
-      for (const j of [x > 0 ? i - 1 : -1, x < W - 1 ? i + 1 : -1, y > 0 ? i - W : -1, y < H - 1 ? i + W : -1]) {
-        if (j < 0) continue;
-        if (dehors[j]) touche = true;
-        if (creme[j] && !vue[j]) { vue[j] = 1; f.push(j); }
-      }
-    }
-    if (touche && taille > plusGrandeCreme) plusGrandeCreme = taille;
-  }
-
-  let retires = 0;
-  for (let i = 0; i < N; i++) if (dehors[i]) retires++;
-
   return {
     data: out,
     W,
     H,
     boite: { x0, y0, largeur: x1 - x0 + 1, hauteur: y1 - y0 + 1 },
-    journal: { fond, retires, adoucis, plusGrandeCreme, symetrie },
+    journal: { fond, seuil, retires, ilots, demeles },
   };
 }
 
@@ -486,7 +429,8 @@ async function main() {
 
   let refus = 0;
   for (const nom of planches) {
-    const { data, W, H, boite, journal } = await detourer(path.join(SRC, nom));
+    const seuil = SEUIL_BORD[nom] ?? SEUIL_PAR_DEFAUT;
+    const { data, W, H, boite, journal } = await detourer(path.join(SRC, nom), seuil);
 
     const echelle = HAUTEUR_DESSIN / boite.hauteur;
     const largeurFinale = Math.round(boite.largeur * echelle);
@@ -501,7 +445,7 @@ async function main() {
 
     const dessin = await sharp(data, { raw: { width: W, height: H, channels: 4 } })
       .extract({ left: boite.x0, top: boite.y0, width: boite.largeur, height: boite.hauteur })
-      .resize(largeurFinale, HAUTEUR_DESSIN, { fit: "fill" })
+      .resize(largeurFinale, HAUTEUR_DESSIN, { fit: "fill", kernel: "lanczos3" })
       .png()
       .toBuffer();
 
@@ -529,11 +473,9 @@ async function main() {
         " -> " + CANEVAS.largeur + "x" + CANEVAS.hauteur + " (dessin " + largeurFinale + " px de large, " + ko + " ko)"
     );
     console.log(
-      "    fond " + journal.fond.join(",") +
-        "   retire " + journal.retires + " px" +
-        "   anneau adouci " + journal.adoucis + " px" +
-        "   creme au contact du fond, plus grande zone " + journal.plusGrandeCreme + " px" +
-        "   symetrie axe " + journal.symetrie.axe.toFixed(1) + ", rendu " + journal.symetrie.rendus + " px"
+      "    fond " + journal.fond.join(",") + "   seuil " + journal.seuil +
+        "   retire " + journal.retires + " px   ilots retires " + journal.ilots +
+        "   bord demele " + journal.demeles + " px"
     );
     if (!check) await writeFile(path.join(OUT, nom), sortie);
   }
