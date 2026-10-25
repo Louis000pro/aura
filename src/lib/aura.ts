@@ -57,8 +57,15 @@ export const EXP_SEMAINE_ACTIVE = 30;
 export const EXP_SEMAINE_REGULIERE = 50;
 export const EXP_SEMAINE_PARFAITE = 100;
 
-/** Coup de pouce d'inscription : +10 offerts à tout compte. */
-export const EXP_BIENVENUE = 10;
+/** Coup de pouce d'inscription : 50 offerts à tout compte (Louis, 2026-10-25).
+ *  Le premier jour, une séance et un repas suffisent alors pour l'Argent :
+ *  50 + connexion 10 + séance 30 + repas 5 + journée complète 10 = 105.
+ *  Même constante en base (le `50 +` de etat_missions_aura et de ses
+ *  voisines, 20261025_exp_bienvenue_relais.sql). */
+export const EXP_BIENVENUE = 50;
+
+/** Un relais gagné rapporte cette EXP à chaque membre, une fois par relais. */
+export const EXP_RELAIS = 100;
 
 /** Ce que les missions d'un compte gratuit rapportent au plus en une
  *  journée : 20 + 30 + 5 + 10. La carte du mouvement du jour (+5) vient en

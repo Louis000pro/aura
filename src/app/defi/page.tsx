@@ -27,6 +27,7 @@ import { proposerAvis } from "@/lib/invitationAvis";
 import { createClient } from "@/lib/supabase";
 import { useWorkoutLaunch } from "@/context/WorkoutLaunchContext";
 import { refusRelais } from "@/lib/defiErreurs";
+import { EXP_RELAIS } from "@/lib/aura";
 import {
   genererMaillon, sessionIdMaillon, dureeMaillon, niveauDepuisProfil,
 } from "@/lib/relaisSeance";
@@ -418,7 +419,7 @@ export default function DefiPage() {
           </h1>
           <p className="mt-2 text-[16px] leading-relaxed" style={{ color: "var(--text-body)" }}>
             {gagne
-              ? `« ${serie.nom} » rejoint ta galerie. Tu peux la réutiliser en fond de tes prochains posters de perf.`
+              ? `« ${serie.nom} » rejoint ta galerie, et chacun de vous gagne ${EXP_RELAIS} EXP. Tu peux la réutiliser en fond de tes prochains posters de perf.`
               : `Vous êtes allés à ${faits} jour${faits > 1 ? "s" : ""} sur ${defi.objectif}. L’affiche garde ce que vous avez dévoilé.`}
           </p>
 
