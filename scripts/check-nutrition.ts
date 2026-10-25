@@ -15,11 +15,11 @@
    ═══════════════════════════════════════════════════════════════════════ */
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import sharp from "sharp";
-import { RECIPES } from "@/lib/recipeBank";
+import { RECIPES, type DietKey } from "@/lib/recipeBank";
 import {
-  ENVIES, ENVIES_ACCUEIL, FAMILLES, MATINS_SALES, MAX_PUCES, MINUTES_IDEE, MINUTES_RAPIDE, NATURE, NB_ENVIES_ACCUEIL,
-  ORDRE_PUCES, PROTEINES_APRES_SPORT, REPOS, SEUIL_ENVIE,
-  besoinsDuJour, convient, demandeAuGuide, dureeRecette, envie, enviesAccueil, enviesDeFamille, estEnvie, ideesDuMoment,
+  ENVIES, FAMILLES, MATINS_SALES, MAX_PUCES, MINUTES_IDEE, MINUTES_RAPIDE, NATURE, NB_ENVIES_DU_JOUR,
+  ORDRE_PUCES, PROTEINES_APRES_SPORT, REPOS, ROULEMENT, SEUIL_ENVIE,
+  besoinsDuJour, convient, demandeAuGuide, dureeRecette, envie, enviesDeFamille, enviesDuJour, ideesDuMoment, numeroDuJour,
   minutesTotales, momentDeRecette, natureDe, photoEnvie, poolDuMoment, pucesDe, recettesDe, regimeConnu,
   type IdEnvie,
 } from "@/lib/collectionsRecettes";
@@ -154,12 +154,38 @@ const fichierPublic = (chemin: string) => existsSync(new URL("../public" + chemi
   verdict("les textes des envies suivent la typographie française", fautes.length === 0, fautes.join(" | ") || `${textes.length} textes`);
   verdict("un sous-titre dit ce qui fait entrer une recette, en une phrase", ENVIES.every((e) => e.sousTitre.endsWith(".")), "");
 
-  /* L'écran : neuf envies, même pour un régime qui en vide plusieurs. */
-  verdict("neuf envies sur l'écran", enviesAccueil().length === NB_ENVIES_ACCUEIL, enviesAccueil().join(", "));
-  const vegan = enviesAccueil(["vegan"]);
-  verdict("en végan, une envie trop maigre cède sa place à la suivante",
-    vegan.length === NB_ENVIES_ACCUEIL && vegan.every((id) => recettesDe(id, ["vegan"]).length >= SEUIL_ENVIE), vegan.join(", "));
-  verdict("l'ordre de l'écran ne cite que des envies qui existent", ENVIES_ACCUEIL.every((id) => estEnvie(id)), `${ENVIES_ACCUEIL.length} envies`);
+  /* L'écran : neuf envies qui changent chaque jour (Louis, 2026-10-25), rejouées sur deux ans pour chaque régime. */
+  const JOURS = Array.from({ length: 730 }, (_, i) => new Date(Date.UTC(2026, 9, 1) + i * 86_400_000).toISOString().slice(0, 10));
+  verdict("neuf envies sur l'écran, chaque jour", JOURS.every((j) => enviesDuJour(j).length === NB_ENVIES_DU_JOUR), enviesDuJour("2026-10-25").join(", "));
+  verdict("le même jour donne les mêmes envies", enviesDuJour("2026-10-25").join() === enviesDuJour("2026-10-25").join() && enviesDuJour("2026-10-25").join() !== enviesDuJour("2026-10-26").join(), "le jour du téléphone, jamais le hasard");
+  verdict("le roulement contient chaque envie une fois", ROULEMENT.length === ENVIES.length && new Set(ROULEMENT).size === ENVIES.length, `${ROULEMENT.length} envies`);
+  const REGIMES_TEST: DietKey[][] = [[], ["vegetarien"], ["vegan"], ["sans-gluten"], ["sans-lactose"]];
+  const repetes: string[] = [], tropMaigres: string[] = [], peuMelees: string[] = [];
+  for (const regime of REGIMES_TEST) {
+    const nom = regime.join("+") || "sans régime";
+    let hier: IdEnvie[] = [];
+    for (const j of JOURS) {
+      const jour = enviesDuJour(j, regime);
+      if (jour.length !== NB_ENVIES_DU_JOUR) tropMaigres.push(`${nom} ${j} : ${jour.length} envies`);
+      if (jour.some((x) => hier.includes(x))) repetes.push(`${nom} ${j}`);
+      if (jour.some((x) => recettesDe(x, regime).length < SEUIL_ENVIE)) tropMaigres.push(`${nom} ${j}`);
+      if (new Set(jour.map((x) => envie(x).famille)).size < 5) peuMelees.push(`${nom} ${j}`);
+      hier = jour;
+    }
+  }
+  verdict("deux jours de suite ne partagent aucune envie, pour chaque régime", repetes.length === 0, repetes.slice(0, 3).join(", ") || "deux ans, cinq régimes");
+  verdict("une envie trop maigre pour le régime sort du tour, et il en reste neuf", tropMaigres.length === 0, tropMaigres.slice(0, 3).join(", ") || "");
+  verdict("chaque jour mêle au moins cinq familles", peuMelees.length === 0, peuMelees.slice(0, 3).join(", ") || "");
+  const derniere = new Map<IdEnvie, number>();
+  let ecart = 0;
+  JOURS.forEach((j, i) => { for (const x of enviesDuJour(j)) { if (derniere.has(x)) ecart = Math.max(ecart, i - derniere.get(x)!); derniere.set(x, i); } });
+  verdict("chaque envie revient au moins tous les cinq jours", ecart <= 5 && derniere.size === ENVIES.length, `${ecart} jours au plus, ${derniere.size} envies`);
+  verdict("le numéro du jour suit le calendrier, changements d'année et 29 février compris",
+    numeroDuJour("2027-01-01") === numeroDuJour("2026-12-31") + 1 && numeroDuJour("2028-03-01") === numeroDuJour("2028-02-29") + 1
+      && numeroDuJour("2028-02-29") === numeroDuJour("2028-02-28") + 1, String(numeroDuJour("2026-10-25")));
+  const photos = ENVIES.map((e) => e.tuile);
+  verdict("une photo n'est la tuile que d'une seule envie", new Set(photos).size === photos.length, photos.filter((p, i) => photos.indexOf(p) !== i).join(", ") || `${photos.length} photos`);
+  verdict("« Poisson » ne montre plus le poisson entier à la plancha", envie("poisson").tuile !== "poisson-entier-a-la-plancha", envie("poisson").tuile);
   const photoVegan = photoEnvie("legumes", ["vegan"]);
   verdict("la photo d'une envie convient au régime", RECIPES.some((r) => r.image === photoVegan && convient(r, ["vegan"])), photoVegan);
   verdict("« Toutes les envies » ne montre pas une envie à moins de deux recettes",
@@ -172,7 +198,7 @@ const fichierPublic = (chemin: string) => existsSync(new URL("../public" + chemi
   verdict("les accents et la casse ne comptent pas", regimeConnu(["Végétarien"]).join() === "vegetarien", regimeConnu(["Végétarien"]).join());
   const sorbet = RECIPES.find((r) => r.id === "sorbet-framboise-minute")!;
   verdict("une recette végétalienne convient à un végétarien", convient(sorbet, ["vegetarien"]), sorbet.diet.join(", "));
-  verdict("un végétarien garde ses neuf envies sur l'écran", enviesAccueil(["vegetarien"]).length === NB_ENVIES_ACCUEIL, enviesAccueil(["vegetarien"]).join(", "));
+  verdict("un végétarien garde neuf envies sur l'écran", enviesDuJour("2026-10-25", ["vegetarien"]).length === NB_ENVIES_DU_JOUR, enviesDuJour("2026-10-25", ["vegetarien"]).join(", "));
   const viande = recettesDe("sport", ["vegetarien"], ["sucre"]).filter((r) => !convient(r, ["vegetarien"]));
   verdict("une envie filtrée ne rend rien d'incompatible", viande.length === 0, viande.map((r) => r.id).join(", ") || "rien");
 }
@@ -493,6 +519,8 @@ const fichierPublic = (chemin: string) => existsSync(new URL("../public" + chemi
     ecran.includes('useRetourTelephone(envieVue !== null, "nutritionEnvie", fermerEnvie)') && ecran.includes('useRetourTelephone(vue.nom === "envies", "nutritionEnvies", fermerVue)'),
     "le retour du téléphone ne ferme qu'elle");
   verdict("la demande au Guide reprend les envies choisies", ecran.includes("demandeAuGuide(envieVue.id, envieVue.filtres)"), "");
+  verdict("les envies du jour se lisent sur le jour du téléphone", ecran.includes("? enviesDuJour(aujourdhui, regime)") && trouver.includes("NB_ENVIES_DU_JOUR"),
+    "des tuiles vides tant que le jour n'est pas connu");
   const vues = ["src/components/nutrition/TrouverRecette.tsx", "src/components/nutrition/ToutesLesEnvies.tsx", "src/components/nutrition/TuileEnvie.tsx"].map((f) => net(lire(f))).join("\n");
   verdict("les envies n'écrivent rien", !/supabase|createClient|nutrition_logs|\.(insert|upsert|delete)\(/.test(vues), "elles montrent, l'écran ouvre");
   verdict("le moment se lit sur le jour du téléphone",

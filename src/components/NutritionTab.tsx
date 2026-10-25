@@ -47,7 +47,7 @@ import { localDateStr } from "@/lib/dates";
 import { loadTasteProfileLocal } from "@/lib/tasteProfile";
 import { RECIPES, fitReason, type DayNeeds, type Recipe } from "@/lib/recipeBank";
 import {
-  FAMILLES, besoinsDuJour, convient, demandeAuGuide, envie, enviesAccueil, enviesDeFamille, ideesDuMoment,
+  FAMILLES, besoinsDuJour, convient, demandeAuGuide, envie, enviesDeFamille, enviesDuJour, ideesDuMoment,
   momentDeRecette, photoEnvie, pucesDe, recettesDe, regimeConnu, type IdEnvie,
 } from "@/lib/collectionsRecettes";
 import { apercuMoment, momentDuJour, type MomentActif } from "@/lib/momentsSaison";
@@ -402,11 +402,15 @@ export default function NutritionTab() {
     () => (besoins && moment && aujourdhui ? ideesDuMoment({ moment, regime, besoins, graine: `${aujourdhui}:${moment}` }) : []),
     [besoins, moment, aujourdhui, regime],
   );
-  /* Neuf envies sur l'écran, toutes dans leur vue : une envie à moins de
-     deux recettes pour le régime ne s'affiche nulle part. */
+  /* Neuf envies sur l'écran, qui changent chaque jour, et toutes dans leur
+     vue : une envie à moins de deux recettes pour le régime ne s'affiche
+     nulle part. Tant que le jour du téléphone n'est pas connu, l'écran pose
+     des tuiles vides (`null`). */
   const enviesDuFil = useMemo(
-    () => enviesAccueil(regime).map((id) => ({ id, label: envie(id).label, image: photoEnvie(id, regime) })),
-    [regime],
+    () => (aujourdhui
+      ? enviesDuJour(aujourdhui, regime).map((id) => ({ id, label: envie(id).label, image: photoEnvie(id, regime) }))
+      : null),
+    [aujourdhui, regime],
   );
   const famillesEnvies = useMemo(
     () => FAMILLES.map((f) => ({

@@ -480,7 +480,8 @@ export const ENVIES: Envie[] = [
   { id: "poulet", label: "Poulet", famille: "ingredient", tuile: "brochettes-de-poulet-citron-paprika", demande: "avec du poulet",
     sousTitre: "Du poulet ou de la dinde.",
     garde: (r) => ingredients(r).some((i) => /poulet|dinde/.test(i) && !/bouillon/.test(i)) },
-  { id: "poisson", label: "Poisson", famille: "ingredient", tuile: "poisson-entier-a-la-plancha", demande: "avec du poisson",
+  /* Pas le poisson entier à la plancha (Louis, 2026-10-25 : « elle donne pas envie ») : le saumon laqué. */
+  { id: "poisson", label: "Poisson", famille: "ingredient", tuile: "saumon-laque-au-soja-riz-et-pak-choi", demande: "avec du poisson",
     sousTitre: "Du poisson ou des fruits de mer.",
     garde: (r) => ingredients(r).some((i) => POISSON.test(i) && !/bouillon|sauce/.test(i)) },
   { id: "viande", label: "Viande", famille: "ingredient", tuile: "cotelettes-d-agneau-grillees-au-romarin", demande: "avec de la viande",
@@ -555,13 +556,29 @@ export const ENVIES: Envie[] = [
     sousTitre: `Au moins ${PROTEINES_APRES_SPORT} g de protéines par portion.`, garde: (r) => r.proteins >= PROTEINES_APRES_SPORT },
 ];
 
-/** Les neuf envies de l'écran Nutrition, dans l'ordre où on les préfère :
- *  une envie trop maigre pour le régime cède sa place à la suivante. */
-export const ENVIES_ACCUEIL: IdEnvie[] = [
-  "sucre", "reconfort", "frais", "vite", "legumes", "fromage", "pates", "asie", "sport",
-  "chocolat", "soupe", "salade", "italie", "mediterranee", "sanscuisson", "petitdej",
-];
-export const NB_ENVIES_ACCUEIL = 9;
+/* ── Les envies du jour ────────────────────────────────────────────────
+   Les neuf envies de l'écran Nutrition changent chaque jour (Louis,
+   2026-10-25 : « un roulement journalier, histoire que l'Asie ne soit pas
+   toujours mise en avant »). Les 38 envies tournent dans un ordre fixe où
+   les familles s'entremêlent (`ROULEMENT`), et chaque jour prend les neuf
+   suivantes : deux jours qui se suivent ne partagent aucune envie, et une
+   envie revient tous les quatre ou cinq jours. Une envie trop maigre pour
+   le régime sort du tour. Le jour vient du téléphone (useJourLocal). */
+export const NB_ENVIES_DU_JOUR = 9;
+
+/** Les envies dans l'ordre du roulement : chaque famille s'étale sur tout le
+ *  tour, au prorata de sa taille, pour qu'une journée mêle les familles. */
+export const ROULEMENT: IdEnvie[] = (() => {
+  const place = new Map<IdEnvie, number>();
+  for (const f of FAMILLES) {
+    const membres = ENVIES.filter((e) => e.famille === f.id);
+    membres.forEach((e, i) => place.set(e.id, (i + 0.5) / membres.length));
+  }
+  const rangFamille = (e: Envie) => FAMILLES.findIndex((f) => f.id === e.famille);
+  return [...ENVIES]
+    .sort((a, b) => (place.get(a.id) ?? 0) - (place.get(b.id) ?? 0) || rangFamille(a) - rangFamille(b))
+    .map((e) => e.id);
+})();
 
 /* L'ordre des puces d'une envie : ce qu'on mange d'abord (un plat, un
    dessert, une boisson), puis le temps, puis le reste. Une puce qui ne
@@ -621,9 +638,20 @@ export function photoEnvie(id: IdEnvie, regime: DietKey[] = []): string {
   return recettesDe(id, regime)[0]?.image ?? imageRecette(e.tuile);
 }
 
-/** Les envies de l'écran Nutrition pour ce régime. */
-export function enviesAccueil(regime: DietKey[] = []): IdEnvie[] {
-  return ENVIES_ACCUEIL.filter((id) => recettesDe(id, regime).length >= SEUIL_ENVIE).slice(0, NB_ENVIES_ACCUEIL);
+/** Le numéro d'un jour « AAAA-MM-JJ », en jours depuis 1970. Il se lit
+ *  sur la chaîne, en UTC : la chaîne est déjà le jour du téléphone, la
+ *  repasser par un fuseau ferait sauter le roulement d'un cran. */
+export function numeroDuJour(jour: string): number {
+  const [a, m, j] = jour.split("-").map(Number);
+  return Math.floor(Date.UTC(a, m - 1, j) / 86_400_000);
+}
+
+/** Les neuf envies de l'écran Nutrition, ce jour-là, pour ce régime. */
+export function enviesDuJour(jour: string, regime: DietKey[] = []): IdEnvie[] {
+  const tour = ROULEMENT.filter((id) => recettesDe(id, regime).length >= SEUIL_ENVIE);
+  if (tour.length <= NB_ENVIES_DU_JOUR) return tour;
+  const debut = (((numeroDuJour(jour) * NB_ENVIES_DU_JOUR) % tour.length) + tour.length) % tour.length;
+  return Array.from({ length: NB_ENVIES_DU_JOUR }, (_, i) => tour[(debut + i) % tour.length]);
 }
 
 /** Les envies d'une famille qui s'affichent pour ce régime, avec leur nombre de recettes. */
