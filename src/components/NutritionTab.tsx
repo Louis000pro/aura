@@ -8,11 +8,13 @@
    portes photo · « Aujourd'hui », les repas du jour en polaroids et l'ajout
    · une idée de recette pour ce repas · l'affiche du moment de l'année,
    seulement entre ses dates (lib/momentsSaison) · « Envie de quoi ? », la
-   banque rangée par envie (lib/collectionsRecettes) · les mini-cours de
-   nutrition. Le détail de la journée (« Ma journée »), « Toutes les
-   envies » et une envie s'ouvrent en vue pleine, et le retour du téléphone
-   les referme (useRetourTelephone). Une envie s'ouvre par-dessus la vue
-   d'où elle vient : la refermer y ramène.
+   banque rangée par envie (lib/collectionsRecettes) · les cours de
+   nutrition (lib/coursNutrition). Le détail de la journée (« Ma
+   journée »), « Toutes les envies », « Tous les cours » et une envie
+   s'ouvrent en vue pleine, et le retour du téléphone les referme
+   (useRetourTelephone). Une envie s'ouvre par-dessus la vue d'où elle
+   vient : la refermer y ramène. Un cours s'ouvre dans son lecteur,
+   par-dessus tout le reste, et son bouton du bas ouvre une envie.
 
    ⚠️ CE QUI EST PARTI, ET NE DOIT PAS REVENIR : la rangée des sept jours
    (les jours se parcourent dans le détail), les deux tuiles de chiffres en
@@ -35,6 +37,7 @@
    ════════════════════════════════════════════════════════════════════ */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { Check } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
@@ -56,10 +59,12 @@ import {
   type MealEntry, type MealType, type NouveauRepas, type RecentMeal,
 } from "@/lib/repas";
 import { PLAFOND_FAVORIS, compteFavoris, platsProposes, type SorteFavori } from "@/lib/favorisNutrition";
+import { COURS, type Cours } from "@/lib/coursNutrition";
 import { useNutritionGoals } from "@/hooks/useNutritionGoals";
 import { useJourLocal, useMomentRepas } from "@/hooks/useHorloge";
 import { useRetourTelephone } from "@/hooks/useRetourTelephone";
 import { useFavorisNutrition, type ResultatFavori } from "@/hooks/useFavorisNutrition";
+import { useCoursLus } from "@/hooks/useCoursLus";
 import WeighInPrompt from "@/components/WeighInPrompt";
 import TastePrefsPrompt from "@/components/TastePrefsPrompt";
 import MealSituationHero from "@/components/MealSituationHero";
@@ -69,6 +74,9 @@ import IdeesDuMoment from "@/components/nutrition/IdeesDuMoment";
 import AfficheSaison from "@/components/nutrition/AfficheSaison";
 import TrouverRecette from "@/components/nutrition/TrouverRecette";
 import ComprendreNutrition from "@/components/nutrition/ComprendreNutrition";
+import TousLesCours from "@/components/nutrition/TousLesCours";
+import LecteurCours from "@/components/nutrition/LecteurCours";
+import ApercuCours from "@/components/nutrition/ApercuCours";
 import CollectionRecettes from "@/components/nutrition/CollectionRecettes";
 import ToutesLesEnvies from "@/components/nutrition/ToutesLesEnvies";
 import JourneeNutrition from "@/components/nutrition/JourneeNutrition";
@@ -80,7 +88,7 @@ import MenuScanModal, { type MenuScanResult } from "@/components/nutrition/MenuS
 import ManualModal from "@/components/nutrition/ManualModal";
 
 type Vue =
-  | { nom: "accueil" } | { nom: "journee" } | { nom: "envies" }
+  | { nom: "accueil" } | { nom: "journee" } | { nom: "envies" } | { nom: "cours" }
   | { nom: "favoris"; plats: RecentMeal[] } | { nom: "saison"; actif: MomentActif };
 type Fiche = { liste: Recipe[]; index: number; besoins: DayNeeds | null };
 type LoggedMeal = { name: string; calories: number; proteins: number; carbs: number; fats: number };
@@ -107,6 +115,7 @@ export default function NutritionTab() {
   const { user, session } = useAuth();
   const { guide } = useGuideActif();
   const { open: ouvrirAssistant } = useAssistant();
+  const router = useRouter();
   const { goals } = useNutritionGoals();
   const moment = useMomentRepas();
   const aujourdhui = useJourLocal();
@@ -132,6 +141,7 @@ export default function NutritionTab() {
   useRetourTelephone(vue.nom === "envies", "nutritionEnvies", fermerVue);
   useRetourTelephone(vue.nom === "favoris", "nutritionFavoris", fermerVue);
   useRetourTelephone(vue.nom === "saison", "nutritionSaison", fermerVue);
+  useRetourTelephone(vue.nom === "cours", "nutritionCours", fermerVue);
 
   /* Une envie s'ouvre PAR-DESSUS la vue d'où elle vient (l'écran ou
      « Toutes les envies »), avec ses propres filtres : la refermer ramène
@@ -151,6 +161,34 @@ export default function NutritionTab() {
     ...v, filtres: v.filtres.includes(id) ? v.filtres.filter((x) => x !== id) : [...v.filtres, id],
   });
   useRetourTelephone(envieVue !== null, "nutritionEnvie", fermerEnvie);
+
+  /* Un cours s'ouvre dans son lecteur, par-dessus l'écran ou « Tous les
+     cours ». Un cours Vaiiya+ ouvre son aperçu chez un compte gratuit. */
+  const lus = useCoursLus(uid);
+  const [coursOuvert, setCoursOuvert] = useState<Cours | null>(null);
+  const [apercuCours, setApercuCours] = useState<Cours | null>(null);
+  const fermerCours = useCallback(() => setCoursOuvert(null), []);
+  useRetourTelephone(coursOuvert !== null, "nutritionLecture", fermerCours);
+  const ouvrirCours = (co: Cours) =>
+    (co.acces === "vaiiya+" && !premiumDebloque ? setApercuCours(co) : setCoursOuvert(co));
+  /* ⚠️ L'ENVIE ATTEND QUE LE LECTEUR AIT RENDU SA PLACE DANS L'HISTORIQUE.
+     Fermer le lecteur rejoue `history.back()`, qui est asynchrone : si
+     l'envie posait son entrée tout de suite, ce retour la retirerait, et
+     l'envie se refermerait aussitôt ouverte. On l'ouvre donc au `popstate`
+     du lecteur, avec un délai de secours si ce retour n'arrive pas. */
+  const envieDepuisCours = (id: IdEnvie) => {
+    let fait = false;
+    const ouvrir = () => {
+      if (fait) return;
+      fait = true;
+      window.removeEventListener("popstate", ouvrir);
+      window.clearTimeout(secours);
+      ouvrirEnvie(id);
+    };
+    window.addEventListener("popstate", ouvrir);
+    const secours = window.setTimeout(ouvrir, 800);
+    setCoursOuvert(null);
+  };
 
   const jourAffiche = vue.nom === "journee" ? (jourDetail ?? aujourdhui) : aujourdhui;
   /* Un jour hors de la fenêtre gratuite ne se lit pas : on ne dit pas
@@ -516,7 +554,8 @@ export default function NutritionTab() {
                 onRecette={(r) => ouvrirRecette(r, [r], false)}
                 onFavoris={() => ouvrirVue({ nom: "favoris", plats: favoris.plats })}
               />
-              <ComprendreNutrition premiumDebloque={premiumDebloque} />
+              <ComprendreNutrition cours={COURS} lus={lus} premiumDebloque={premiumDebloque}
+                onOuvrir={ouvrirCours} onTous={() => ouvrirVue({ nom: "cours" })} />
             </div>
           </div>
         </div>
@@ -543,6 +582,12 @@ export default function NutritionTab() {
       {!envieVue && vue.nom === "envies" && (
         <div className="max-w-[560px]">
           <ToutesLesEnvies familles={famillesEnvies} nbRecettes={nbRecettes} onRetour={fermerVue} onEnvie={ouvrirEnvie} />
+        </div>
+      )}
+
+      {!envieVue && vue.nom === "cours" && (
+        <div className="max-w-[560px]">
+          <TousLesCours cours={COURS} lus={lus} premiumDebloque={premiumDebloque} onRetour={fermerVue} onOuvrir={ouvrirCours} />
         </div>
       )}
 
@@ -663,6 +708,19 @@ export default function NutritionTab() {
             onOther={fiche.liste.length > 1 ? () => setFiche((f) => (f ? { ...f, index: (f.index + 1) % f.liste.length } : f)) : undefined}
             hasOther={fiche.liste.length > 1}
           />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {coursOuvert && (
+          <LecteurCours key={coursOuvert.id} cours={coursOuvert} uid={uid} onFermer={fermerCours} onEnvie={envieDepuisCours} />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {apercuCours && (
+          <ApercuCours key={apercuCours.id} cours={apercuCours} onFermer={() => setApercuCours(null)}
+            onPremium={() => { setApercuCours(null); router.push("/premium"); }} />
         )}
       </AnimatePresence>
 

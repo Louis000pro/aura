@@ -1,0 +1,498 @@
+/* ════════════════════════════════════════════════════════════════════
+   Les cours de nutrition, version B de la maquette « Distinguer un cours
+   d’une recette » (Louis, 2026-10-25) : un cours est une fiche, le texte
+   d’abord et la photo sur le côté ; une recette reste une photo.
+
+   Toutes les tailles sont sur les marches de l’échelle (11, 13, 16, 20,
+   34 pour le titre d’un cours ouvert) : `npm run check:echelle` le tient.
+   Le verre vient des jetons de globals.css, redéfinis en sombre.
+   ════════════════════════════════════════════════════════════════════ */
+
+/* ── La fiche de la rangée : la photo à gauche, le texte à droite ── */
+.fiche {
+  display: flex;
+  flex-shrink: 0;
+  width: 290px;
+  height: 132px;
+  overflow: hidden;
+  border-radius: var(--r-bloc);
+  background: var(--verre-carte);
+  border: 1px solid var(--verre-carte-bord);
+  box-shadow: var(--verre-carte-ombre);
+  color: var(--text-0);
+  text-align: left;
+  cursor: pointer;
+}
+/* Un cours Vaiiya+ : le cadre or → magenta de 3 px, et le rayon intérieur
+   qui va avec (18 − 3), sinon les angles s’épaississent. */
+.ficheVerrou {
+  padding: 3px;
+  border: 0;
+  background: linear-gradient(90deg, #f5b120, #c13bc1);
+}
+/* Le verre est translucide : posé sur le dégradé du cadre, il le laisse
+   passer et tout le texte prend une teinte rose. Une surface pleine dessous. */
+.ficheVerrou > .ficheCorps {
+  border-radius: 15px;
+  background: var(--verre-carte), rgb(var(--surface-rgb));
+}
+/* Le cadre prend 6 px de hauteur : le texte se resserre d'autant, sinon la
+   troisième ligne du titre passe sous la pastille Vaiiya+. */
+.ficheVerrou .ficheTexte {
+  padding: 11px 13px 9px;
+}
+.ficheCorps {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+.fichePhoto {
+  position: relative;
+  flex-shrink: 0;
+  width: 98px;
+  height: 100%;
+  background: rgba(var(--accent-rgb), 0.1);
+}
+.fichePhoto img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.ficheTexte {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  padding: 14px 14px 12px;
+}
+.ficheTitre {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+  font-size: 16px;
+  line-height: 1.2;
+  font-weight: 750;
+  font-variation-settings: var(--w-voix);
+  color: var(--text-0);
+}
+.ficheBas {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--exp-encre);
+}
+
+/* La ligne du format : un livre, puis « Flash · 2 min ». C’est ce qui dit
+   « cours » au premier coup d’œil, là où une recette n’a qu’une photo. */
+.format {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--exp-encre);
+}
+.lu {
+  color: var(--teal-encre);
+}
+.plus {
+  align-self: flex-start;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #f5b120;
+  color: #3a2400;
+  font-size: 11px;
+  font-weight: 700;
+}
+.cadenas {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  background: #f5b120;
+  color: #3a2400;
+}
+
+/* ── « Tous les cours » : le sommaire ─────────────────────────────── */
+.sommaire {
+  display: flex;
+  flex-direction: column;
+  padding: 0 14px;
+  border-radius: var(--r-bloc);
+  background: var(--verre-carte);
+  border: 1px solid var(--verre-carte-bord);
+  box-shadow: var(--verre-carte-ombre);
+}
+.ligne {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 80px;
+  padding: 12px 0;
+  color: var(--text-0);
+  text-align: left;
+  cursor: pointer;
+}
+.lignePhoto {
+  position: relative;
+  flex-shrink: 0;
+  width: 56px;
+  height: 56px;
+  overflow: hidden;
+  border-radius: var(--r-controle);
+  background: rgba(var(--accent-rgb), 0.1);
+}
+.lignePhoto img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.lignePhoto .cadenas {
+  top: 4px;
+  left: 4px;
+  width: 22px;
+  height: 22px;
+}
+.ligneTexte {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.ligneTitre {
+  font-size: 16px;
+  line-height: 1.25;
+  font-weight: 650;
+  color: var(--text-0);
+}
+.ligneFormat {
+  color: var(--text-2);
+}
+.voirTout {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  min-height: 48px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--exp-encre);
+  cursor: pointer;
+}
+
+/* ── Le lecteur : une page claire, le titre d’abord ───────────────── */
+.voile {
+  position: fixed;
+  inset: 0;
+  z-index: 155;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgba(8, 5, 16, 0.6);
+}
+.page {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 560px;
+  height: 100dvh;
+  overflow: hidden;
+  background-color: var(--html-bg);
+  background-image: var(--fond-verre);
+  color: var(--text-0);
+}
+@media (min-width: 768px) {
+  .voile {
+    align-items: center;
+    padding: 16px;
+  }
+  .page {
+    height: 92dvh;
+    border-radius: var(--r-affiche);
+    border: 1px solid var(--verre-carte-bord);
+    box-shadow: var(--ombre-flottant);
+  }
+}
+.progres {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 3;
+  height: 3px;
+  background: rgba(var(--text-3-rgb), 0.18);
+}
+.progres > span {
+  display: block;
+  height: 100%;
+  background: #2bd4a0;
+  transition: width 150ms linear;
+}
+/* « Fermer » flotte au-dessus du texte qui défile : c’est le seul verre
+   flouté de la page, parce que c’est le seul élément qui flotte. */
+.fermer {
+  position: absolute;
+  top: calc(env(safe-area-inset-top) + 12px);
+  right: 16px;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 0 14px;
+  border-radius: 999px;
+  background: var(--verre-carte);
+  border: 1px solid var(--verre-carte-bord);
+  box-shadow: var(--verre-carte-ombre);
+  -webkit-backdrop-filter: blur(14px) saturate(160%);
+  backdrop-filter: blur(14px) saturate(160%);
+  color: var(--text-0);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.defile {
+  flex: 1;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.defile::-webkit-scrollbar {
+  display: none;
+}
+.contenu {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  padding: calc(env(safe-area-inset-top) + 68px) 20px calc(env(safe-area-inset-bottom) + 40px);
+}
+.entete {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.entete .format {
+  flex-wrap: wrap;
+}
+/* Fluide : 34 px dès 390 px de large, un peu moins en dessous, sinon le
+   titre d'un flash passe sur quatre lignes à 360 px. */
+.titre {
+  margin: 0;
+  font-size: clamp(26px, 8.7vw, 34px);
+  line-height: 1.06;
+  font-weight: 800;
+  font-variation-settings: var(--w-voix);
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+  color: var(--text-0);
+}
+.sousTitre {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--text-2);
+}
+.intro {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+.intro > div {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+.intro p {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.62;
+  font-weight: 600;
+  color: var(--text-0);
+}
+.photo {
+  display: block;
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+  border-radius: var(--r-bloc);
+  background: rgba(var(--accent-rgb), 0.1);
+}
+.partie {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.partie h2 {
+  margin: 0;
+  font-size: 20px;
+  line-height: 1.2;
+  font-weight: 750;
+  font-variation-settings: var(--w-voix);
+  text-wrap: balance;
+  color: var(--text-0);
+}
+.partie p {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.7;
+  color: var(--text-1);
+}
+
+/* Les quatre encadrés : l’exemple, le doute, ce qu’on retient, l’essai. */
+.encadre {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 18px 18px 20px;
+  border-radius: var(--r-bloc);
+  border: 1px solid transparent;
+}
+.encadre h2 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+}
+.encadre p {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.62;
+  color: var(--text-0);
+}
+.exemple {
+  background: rgba(139, 92, 246, 0.08);
+  border-color: rgba(139, 92, 246, 0.18);
+}
+.exemple h2,
+.essai h2 {
+  color: var(--exp-encre);
+}
+.exemple p {
+  font-weight: 500;
+}
+/* Ce que les études ne tranchent pas : un cadre en pointillés, neutre. */
+.doute {
+  background: rgba(var(--text-1-rgb), 0.04);
+  border: 1px dashed rgba(var(--text-1-rgb), 0.26);
+}
+.doute h2 {
+  color: var(--text-2);
+}
+.doute p {
+  color: var(--text-1);
+}
+.retenir {
+  background: rgba(43, 212, 160, 0.1);
+  border-color: rgba(11, 138, 104, 0.22);
+}
+.retenir h2 {
+  color: var(--teal-encre);
+}
+.retenir p {
+  font-size: 20px;
+  line-height: 1.35;
+  font-weight: 750;
+  font-variation-settings: var(--w-voix);
+  text-wrap: balance;
+}
+.essai {
+  background: rgba(139, 92, 246, 0.1);
+  border-color: rgba(139, 92, 246, 0.22);
+}
+.essai p {
+  line-height: 1.55;
+  font-weight: 600;
+}
+:global([data-theme="dark"]) .exemple {
+  background: rgba(139, 92, 246, 0.14);
+  border-color: rgba(195, 174, 255, 0.22);
+}
+:global([data-theme="dark"]) .retenir {
+  background: rgba(43, 212, 160, 0.12);
+  border-color: rgba(63, 224, 176, 0.26);
+}
+:global([data-theme="dark"]) .essai {
+  background: rgba(139, 92, 246, 0.16);
+  border-color: rgba(195, 174, 255, 0.26);
+}
+.finale {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* ── Les sources, groupées, avec la date de vérification ──────────── */
+.sources {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding-top: 18px;
+  border-top: 1px solid rgba(var(--text-3-rgb), 0.24);
+}
+.sources h2 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-0);
+}
+.sources h3 {
+  margin: 0 0 2px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-2);
+}
+.sourcesNote {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-2);
+}
+.groupe {
+  display: flex;
+  flex-direction: column;
+}
+.lien {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  padding: 7px 0;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--text-1);
+}
+.lien svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--text-3);
+}
+.revenir {
+  align-self: center;
+  min-height: 44px;
+  padding: 0 16px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--exp-encre);
+  cursor: pointer;
+}
+.attente {
+  height: 16px;
+  border-radius: 8px;
+  background: rgba(var(--text-3-rgb), 0.16);
+}

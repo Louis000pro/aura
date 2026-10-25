@@ -331,7 +331,7 @@ export default function JourneeNutrition({
                   className={`${ns.bloc} justify-between cursor-pointer`}
                   style={{ padding: 12, gap: 8, background: "linear-gradient(145deg, rgba(139,92,246,.16), rgba(193,59,193,.12)), var(--verre-carte)" }}>
                   <span className="text-[11px] font-bold" style={{ color: "var(--exp-encre)" }}>Comprendre</span>
-                  <span className="text-[13px] font-bold leading-snug" style={{ color: "var(--text-0)" }}>Les mini-cours sur la nutrition</span>
+                  <span className="text-[13px] font-bold leading-snug" style={{ color: "var(--text-0)" }}>Les cours sur la nutrition</span>
                   <ArrowRight size={16} strokeWidth={2.4} style={{ color: "var(--exp-encre)" }} />
                 </button>
               </div>

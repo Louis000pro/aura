@@ -10,6 +10,7 @@
     "check:seo-spacing": "node scripts/check-seo-spacing.mjs",
     "check:missions": "node scripts/check-missions.mjs",
     "check:nutrition": "node --experimental-strip-types --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --import ./scripts/check-ia-alias.mjs scripts/check-nutrition.ts",
+    "check:cours": "node --experimental-strip-types --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --import ./scripts/check-ia-alias.mjs scripts/check-cours.ts",
     "check:vision": "node --experimental-strip-types --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --import ./scripts/check-ia-alias.mjs scripts/check-vision.ts",
     "check:vignettes": "node scripts/build-vignettes.mjs --check && node --experimental-strip-types --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --import ./scripts/check-ia-alias.mjs scripts/check-vignettes.ts",
     "check:echelle": "node scripts/check-echelle.mjs",
