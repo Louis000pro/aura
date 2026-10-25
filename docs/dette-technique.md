@@ -59,36 +59,3 @@ semaine ne doit pas écraser une modification en cours dans la feuille
 pendant le passage du dimanche au lundi, sur cet écran précis. Un
 rafraîchissement, une navigation ou une réouverture suffisent à corriger, et
 la PWA recharge le HTML au réseau d'abord.
-
----
-
-## Avec « réduire les animations », chaque page se reconstruit au chargement
-
-**Découvert** le 2026-10-24, en vérifiant la scène du passage de rang en
-mouvement réduit. **Pas corrigé dans ce chantier** : le défaut vient de la
-transition entre les pages, que le chantier ne touche pas.
-
-**Ce qui se passe.** `src/app/template.tsx` (depuis le 2026-05-16) enveloppe
-chaque page dans un `motion.div` à l'opacité 0,55, sauf quand
-`useReducedMotion()` est vrai : il rend alors la page nue. Or ce hook vaut
-`null` au serveur et `true` dans le navigateur d'une personne qui a coché
-« réduire les animations ». Le HTML du serveur porte donc l'enveloppe, le
-premier rendu du navigateur ne la porte pas, et React jette l'hydratation :
-« Hydration failed because the server rendered HTML didn't match the
-client », puis il reconstruit toute la page dans le navigateur. La seconde
-erreur de la console (« Encountered a script tag while rendering React
-component ») en découle : en reconstruisant, il rend aussi le script du
-layout.
-
-**Comment le reproduire.** Ouvrir n'importe quelle page en développement avec
-`prefers-reduced-motion: reduce` émulé (DevTools, Rendering). Sans réglage,
-la console reste vide.
-
-**Ce que ça coûte.** Rien ne casse à l'écran, mais pour ces personnes le rendu
-du serveur ne sert à rien : la page est refaite entière à chaque chargement
-complet, ce qui coûte du temps sur un petit téléphone.
-
-**Le remède, quand on le fera.** Rendre toujours le même `motion.div`, avec la
-même opacité de départ, et ne changer que la durée (`duration: 0` en
-mouvement réduit). La structure devient identique au serveur et au
-navigateur, et l'opacité saute à 1 sans animation.
