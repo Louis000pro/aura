@@ -44,6 +44,14 @@ Le lot 1 remplace quatre des cinq anciens cours nutrition de
 - « Créatine : le solide et le marketing » (`conseil-creatine`) devient
   **« Créatine : ce que disent les études »**.
 
+Après la première relecture (25 octobre), Louis a demandé que les encadrés de
+fin restent exceptionnels : « À retenir » partout, l'exemple concret, « Ce
+qu'on ne sait pas encore » et « Essaie ça » seulement là où ils apportent
+quelque chose. Il en reste quatre (cours 2, 3, 4 et 7). Les affirmations qui
+ne vivaient que dans les encadrés retirés ont quitté ce carnet ; les nuances
+utiles sont passées dans le corps des cours (fibres, protéines, balance,
+vitamine D, compléments, créatine).
+
 Le cinquième, « Perdre du gras sans déclarer la guerre à ton corps »
 (`conseil-perdre-gras`), **n'est pas réécrit seul** : le dossier gratuit du
 lot 0 « Perdre du poids : comment ça marche » couvre déjà le déficit, le
@@ -75,7 +83,7 @@ moyen : 7,54 g pour 100 g), et dans « Essaie ça », « un yaourt grec » devie
 | Les protéines construisent et renouvellent les muscles, la peau, les cheveux, les ongles et les os, et servent à fabriquer enzymes, hormones, hémoglobine et anticorps. | Anses, « Les protéines » (page lue). ISSN, protéines et exercice (Jäger 2017), cohérent sur le rôle du muscle. | solide |
 | 20 acides aminés, dont 9 indispensables (le corps ne les fabrique pas). | Anses, « Les protéines ». ISSN 2017 (acides aminés indispensables, leucine). | solide |
 | Les protéines végétales sont un peu moins complètes (céréales pauvres en lysine, légumes secs en acides aminés soufrés) ; en France, pas besoin d'associer systématiquement céréales et légumes secs à chaque repas. | Anses, « Les protéines » (« pas à craindre d'insuffisance d'apport justifiant de recommander une combinaison systématique »). van Vliet, Burd et van Loon, J Nutr 2015 (lu pour le lot 0 : moins d'acides aminés indispensables dans les protéines végétales). Santé publique France 2019 (légumes secs et féculents dans une alimentation variée). | probable (une source sur le point précis) |
-| Référence en protéines : 0,83 g par kilo et par jour pour un adulte en bonne santé ; 10 à 20 % de l'énergie de la journée ; plafond de 20 % fixé par prudence ; aucune limite haute de sécurité définie faute de données. | Anses, « Les protéines ». Anses, rapport 2016 sur les repères du PNNS (« par prudence », « grande tolérance apparente »). | solide |
+| Référence en protéines : 0,83 g par kilo et par jour pour un adulte en bonne santé. | Anses, « Les protéines ». Hudson et al., Adv Nutr 2020 (0,8 g/kg/j comme apport minimal recommandé, lu pour le lot 0). | solide |
 | L'amidon (pain, pâtes, riz, pommes de terre, légumes secs) est un glucide complexe, digéré et absorbé surtout sous forme de glucose. | Anses, « Les sucres dans l'alimentation ». Anses 2016 (glucides complexes à privilégier). | solide |
 | Les glucides sont un carburant majeur du cerveau et des muscles, qui en gardent une réserve limitée, le glycogène. | Position commune Academy of Nutrition and Dietetics, Dietitians of Canada et ACSM (Thomas 2016). ISSN, recommandations de nutrition sportive (Kerksick 2018). | solide |
 | Glucides : 40 à 55 % de l'énergie, en privilégiant les glucides complexes ; sucres : pas plus de 100 g par jour (hors sucres du lait) ; OMS : sucres libres sous 10 % de l'énergie, si possible 5 %. | Anses 2016. Anses, « Les sucres dans l'alimentation ». OMS, recommandation sur les sucres (2015, lue pour le lot 0). | solide |
@@ -85,8 +93,6 @@ moyen : 7,54 g pour 100 g), et dans « Essaie ça », « un yaourt grec » devie
 | 4 kcal par gramme de protéines et de glucides, 9 pour les lipides, 7 pour l'alcool, 2 pour les fibres. | Règlement (UE) n° 1169/2011, annexe XIV (coefficients de l'étiquetage). | solide (texte de loi) |
 | Les pourcentages des étiquettes se calculent sur un adulte de référence : 2 000 kcal, 50 g de protéines, 260 g de glucides dont 90 g de sucres, 70 g de graisses dont 20 g de saturées, 6 g de sel. | Règlement (UE) n° 1169/2011, annexe XIII, partie B. | solide (texte de loi) |
 | Les besoins réels dépendent de l'âge, du gabarit et de l'activité. | Harvard, « Healthy Eating Plate ». Position commune 2016 (besoins selon la charge d'entraînement). | solide |
-| Les boissons sucrées et les sucres liquides contribuent à la prise de poids. | Anses, « Les sucres dans l'alimentation ». Santé publique France 2019 (boissons sucrées à limiter). | probable |
-| La qualité des aliments compte autant que les pourcentages (« une variable importante, voire critique »). | Anses 2016. Position commune 2016 (choisir des sources de glucides riches en nutriments), cohérent. | probable |
 
 Ce que le cours ne dit pas, exprès : « les glucides font grossir », « le gras
 est mauvais », un pourcentage idéal, une cible de calories personnelle.
@@ -101,7 +107,7 @@ est mauvais », un pourcentage idéal, une cible de calories personnelle.
 | 30 g de fibres par jour pour un adulte. | Anses 2016 (apport satisfaisant de 30 g par jour). NHS, « How to get more fibre into your diet » (page revue le 2 mars 2026). | solide |
 | Au Royaume-Uni, les adultes en mangent environ 20 g par jour ; en France, même des menus optimisés peinent à atteindre 30 g chez les femmes. | NHS (moyenne d'environ 20 g). Anses 2016 (menus optimisés, tolérance à 25 g chez les femmes). | probable (deux pays, deux mesures différentes) |
 | Une alimentation riche en fibres est liée à moins de maladies cardiovasculaires, d'AVC, de diabète de type 2 et de cancer colorectal, et aide le transit. | NHS. Reynolds et al., The Lancet 2019 (185 cohortes, 58 essais : 15 à 30 % de mortalité et d'incidence en moins entre les plus gros et les plus petits mangeurs de fibres). Anses 2016 (risque réduit dès 25 g, plus nettement à 30 g, y compris cancer du sein). | solide pour l'association, débattu pour la cause (études d'observation) |
-| Le bénéfice le plus marqué apparaît vers 25 à 29 g par jour ; dans les essais, les fibres font baisser le poids, la tension systolique et le cholestérol total ; certitude modérée ; essais de compléments exclus. | Reynolds 2019. Anses 2016 (seuils 25 et 30 g), cohérent. | probable |
+| Le bénéfice le plus marqué apparaît vers 25 à 29 g par jour ; dans les essais, les fibres font baisser le poids, la tension systolique et le cholestérol total. | Reynolds 2019 (certitude jugée modérée par les auteurs ; essais de compléments exclus). Anses 2016 (seuils 25 et 30 g), cohérent. | probable |
 | Sources : céréales complètes, légumes secs, légumes, fruits, fruits à coque ; au moins un féculent complet par jour, légumes secs au moins deux fois par semaine. | NHS (liste des sources). Santé publique France 2019. | solide |
 | Pain complet : 5,6 g de fibres pour 100 g ; lentilles cuites : 4,2 g (Ciqual) à 7,9 g (USDA) ; pois chiches cuits : 4,8 à 7,6 g ; haricots blancs cuits : 6,3 g ; riz blanc cuit : 0,3 g. | Ciqual 2013 (pain complet, lentilles, pois chiches, haricots blancs). USDA FoodData Central (lentilles, pois chiches, riz blanc). | probable (tables divergentes : le cours donne des fourchettes ; à recouper avec Ciqual 2025) |
 | Une journée à environ 30 g : deux tartines de pain complet au beurre de cacahuète et une orange (8,3 g), des spaghetti complets à la sauce lentilles et tomates (11 g), du poulet avec une pomme de terre au four avec la peau, des carottes et des haricots verts (11,2 g). | NHS (exemple de journée donné par la page). | probable (une source, exemple chiffré par elle) |
@@ -143,7 +149,7 @@ Réécriture de « Les protéines, sans vivre avec une calculette ».
 | Musculation régulière : 1,2 à 2 g par kilo et par jour (ISSN : 1,4 à 2). | Position commune 2016. Jäger, ISSN 2017. Kerksick, ISSN 2018. | solide |
 | Méta-analyse de 49 essais : les gains de masse maigre plafonnent autour de 1,6 g par kilo (intervalle 1,0 à 2,2) ; environ 2,2 g pour maximiser ; effet faible comparé à l'entraînement lui-même. | Morton et al., Br J Sports Med 2018 (résumé et texte complet). Kerksick 2018 (1,62 g/kg comme point de départ). | solide |
 | Répartir les protéines : 0,3 g par kilo toutes les 3 à 5 h ; ISSN : 20 à 40 g par prise, toutes les 3 à 4 h. | Position commune 2016. ISSN 2017. | solide |
-| Une répartition régulière augmente la fabrication de muscle sur une journée ; sur 8 semaines, chez des personnes âgées, aucune différence. | Areta et al., J Physiol 2013 (4 × 20 g meilleur que 8 × 10 g ou 2 × 40 g). Mamerow et al., J Nutr 2014 (+25 % sur 24 h). Kim et al., Clin Nutr 2018 (8 semaines, aucune différence). | débattu (bloc « Ce qu'on ne sait pas encore ») |
+| Sur une journée, une répartition régulière augmente la fabrication de protéines musculaires (4 × 20 g mieux que 2 × 40 g ou 8 × 10 g ; +25 % sur 24 h avec des repas égaux). | Areta et al., J Physiol 2013. Mamerow et al., J Nutr 2014. | probable (études d'une journée ou d'une semaine ; sur 8 semaines, chez des personnes âgées, Kim et al., Clin Nutr 2018 ne trouve aucune différence : le cours ne dit que « sur une journée ») |
 | Les besoins s'atteignent en général avec l'alimentation ; les poudres sont un moyen pratique, efficaces avec la musculation sans plus. | Position commune 2016. ISSN 2017. Maughan et al., CIO 2018. | solide |
 | Poulet cuit 26,2 g de protéines pour 100 g (USDA : 31 g) ; œuf dur 13,5 g, œuf cru 12,3 g ; thon au naturel 24,5 g ; tofu 11,5 g ; lentilles cuites 8,1 g (USDA : 9 g) ; fromage blanc 7,54 g ; lait demi-écrémé 3,3 g ; pain complet 9 g. | Ciqual 2013 (toutes ces valeurs). USDA FoodData Central (poulet, lentilles). | probable (à recouper avec Ciqual 2025) |
 | Avec une maladie ou un traitement, demander conseil avant de changer beaucoup son alimentation. | NHS, traitement de l'obésité (lu pour le lot 0 : en parler à un professionnel avec une maladie ou un traitement). Anses, compléments pour sportifs (en parler à un professionnel de santé). | probable (règle de prudence) |
@@ -163,7 +169,6 @@ Réécriture de « Les glucides ne sont pas l’ennemi de ta séance ».
 | Repères par charge : léger 3 à 5 g par kilo et par jour, modéré (environ 1 h par jour) 5 à 7, endurance (1 à 3 h par jour) 6 à 10, extrême (4 à 5 h par jour) 8 à 12 ; forme générale (30 à 40 min, trois fois par semaine) 3 à 5. | Position commune 2016 (tableau 1). Kerksick, ISSN 2018. | solide |
 | Tant que les besoins totaux sont couverts, la répartition se décide selon le confort de chacun. | Position commune 2016. Aragon et Schoenfeld, JISSN 2013 (l'apport total compte plus que le moment, lu pour le lot 0). | probable |
 | En musculation, après un repas normal, les glucides n'améliorent pas une séance de moins d'une dizaine de séries par muscle ; à long terme, aucune influence dans 15 études sur 17. | Henselmans et al., Nutrients 2022. Escobar et al., Br J Nutr 2016. | probable |
-| Les repères pour la musculation viennent surtout d'études d'endurance ; la recherche propre aux sports de force est rare. | Escobar 2016. Slater et Phillips, J Sports Sci 2011. | probable |
 | Privilégier céréales complètes, légumes et fruits ; garder les sucres rapides et produits sportifs pour les recharges rapides ; sucres : pas plus de 100 g par jour. | Kerksick, ISSN 2018. Anses, « Les sucres dans l'alimentation ». Anses 2016 (glucides complexes à faible index glycémique). | solide |
 | Pendant l'effort : 30 à 60 g par heure, jusqu'à 90 g au-delà de 2 h 30 ; bénéfice net surtout au-delà de 90 min. | Position commune 2016. Burke et al. 2011. Kerksick 2018. | solide |
 | Pour un effort intense d'environ une heure, se rincer la bouche avec une boisson sucrée peut aider. | Position commune 2016 (rinçage de bouche pour 45 à 75 min). Burke et al. 2011. | probable |
@@ -188,8 +193,6 @@ Réécriture de « Boire assez, sans faire de ta gourde un devoir ».
 | Boire plus que ses pertes peut causer une hyponatrémie (trop peu de sel dans le sang) ; 10 à 20 % des marathoniens testés, cas graves rares, plus fréquente chez les femmes et au-delà de 4 h ; prendre du poids pendant l'effort signe un excès. | NATA 2017. Position commune 2016 (sportifs de loisir qui boivent plus que leurs pertes ; femmes plus à risque). | solide |
 | Se peser avant et après permet d'estimer sa sueur (le poids perdu pendant l'effort est surtout de l'eau : un kilo, à peu près un litre) ; après l'effort, boire 1,25 à 1,5 l par kilo perdu. | ACSM 2007. Position commune 2016. | solide |
 | La couleur des urines est un repère personnel, à juger dans un récipient transparent et de préférence le matin. | NATA 2017. | probable (une source) |
-| Les pastilles de sel ont peu de preuves. | NATA 2017. | probable (une source) |
-| Les crampes viennent surtout de la fatigue du muscle ; la déshydratation et les électrolytes peuvent y être associés. | Position commune 2016. | débattu (bloc « Ce qu'on ne sait pas encore ») |
 
 Ce que le cours ne dit pas, exprès : « boire 2 litres par jour », « boire
 avant d'avoir soif », « les crampes viennent du manque de magnésium ».
@@ -205,7 +208,7 @@ avant d'avoir soif », « les crampes viennent du manque de magnésium ».
 | Pendant les fêtes de fin d'année, +1,35 % en moyenne, pas entièrement reperdu les mois suivants. | Turicchi 2020. | probable (une étude) |
 | Le poids monte d'environ 0,45 kg pendant les règles, par de l'eau ; la sensation de rétention est la plus forte le premier jour des règles. | Kanellakis et al., Am J Hum Biol 2023 (42 femmes). Wagner et al., IJSNEM 2026 (21 femmes actives : écart lié à l'hydratation). White et al., Obstet Gynecol Int 2011 (765 cycles). | probable |
 | Se peser régulièrement est associé à plus de perte de poids, sans effet psychologique négatif retrouvé chez les personnes qui cherchent à maigrir. | Zheng et al., Obesity 2015 (17 études). Steinberg et al., Obesity 2013 (essai : -6,55 % contre -0,35 % en six mois, pesée bien vécue). | solide |
-| Chez d'autres personnes, surtout les femmes et les plus jeunes, la pesée est liée à une humeur, une estime de soi ou une image du corps moins bonnes. | Pacanowski, Linde et Neumark-Sztainer, Curr Obes Rep 2015 (20 articles). | débattu (bloc « Ce qu'on ne sait pas encore ») |
+| Chez d'autres personnes, surtout les femmes et les plus jeunes, la pesée est liée à une humeur, une estime de soi ou une image du corps moins bonnes ; on peut espacer les pesées ou s'en passer. | Pacanowski, Linde et Neumark-Sztainer, Curr Obes Rep 2015 (20 articles). | débattu |
 
 Ce que le cours ne dit pas, exprès : « pèse-toi tous les jours », « ne te
 pèse jamais », un poids idéal, l'indice de masse corporelle.
@@ -223,9 +226,7 @@ pèse jamais », un poids idéal, l'indice de masse corporelle.
 | Manger en faisant autre chose fait manger un peu plus au repas, et davantage ensuite. | Robinson et al., AJCN 2013 (24 études). Hollands 2015 (l'environnement du repas change les quantités), cohérent. | probable |
 | Huiles : colza, noix et olive, tous les jours en petite quantité. | Santé publique France 2019. Harvard (huiles végétales). | solide |
 | Les jours d'entraînement chargés, l'assiette du sportif fait plus de place aux féculents. | Reguant-Closa et al., IJSNEM 2019 et Nutrients 2020 (« Athlete's Plate »). Position commune 2016 (glucides selon la charge). | probable |
-| Des diététiciens qui ont composé ces assiettes ont respecté les repères d'énergie, de glucides, de lipides et de fibres, mais dépassé ceux des protéines (1,9 à 2,9 g par kilo). | Reguant-Closa 2019. | probable (une étude, bloc « Ce qu'on ne sait pas encore ») |
 | Des portions, des paquets et de la vaisselle plus grands font manger plus, adultes comme enfants. | Hollands et al., Cochrane 2015 (72 études, qualité moyenne). Robinson et al., AJCN 2013 (ne pas voir ce qu'on a mangé augmente la prise), cohérent. | probable |
-| Les besoins varient selon l'âge, le gabarit et l'activité. | Harvard. Position commune 2016. | solide |
 
 Ce que le cours ne dit pas, exprès : « la méthode de la main », une taille
 d'assiette précise, un nombre de calories par repas.
@@ -251,7 +252,6 @@ journée », « sauter le petit-déjeuner fait maigrir ».
 | Affirmation | Sources lues | Niveau |
 |---|---|---|
 | À calories égales, un gros petit-déjeuner ou un gros dîner donnent la même perte de poids et la même dépense ; moins de faim avec le gros petit-déjeuner. | Ruddick-Collins et al., Cell Metab 2022 (30 personnes, deux fois 4 semaines). Betts 2014 (pas d'adaptation du métabolisme de repos selon l'horaire du premier repas), cohérent. | probable |
-| Un essai plus ancien avait trouvé plus de perte de poids avec 700 kcal au petit-déjeuner qu'au dîner. | Jakubowicz et al., Obesity 2013. Ruddick-Collins 2022 (non reproduit). | débattu (bloc « Ce qu'on ne sait pas encore ») |
 | Repas décalés d'environ 4 h : plus de faim, leptine -16 % à l'éveil, 59 kcal de dépense en moins par jour d'éveil, gènes du tissu adipeux orientés vers le stockage ; quelques jours en laboratoire. | Vujović et al., Cell Metab 2022 (16 adultes, résumé et texte). Cummings et al., Diabetes 2001 (la ghréline règle la faim autour des repas), cohérent. | probable (mécanismes, pas de perte de poids mesurée) |
 
 Ce que le cours ne dit pas, exprès : « après 20 h, ça se transforme en
@@ -270,7 +270,7 @@ graisse », une heure limite pour dîner.
 | Royaume-Uni : tout le monde devrait envisager 10 microgrammes (400 UI) par jour en automne et en hiver ; 1 microgramme = 40 UI. | NHS, « Vitamin D ». | solide (politique britannique, sa page officielle) |
 | Groupes plus à risque de manque : personnes âgées, nourrissons, grossesse, ménopause, peaux mates ou foncées, alimentation sans produits animaux ; nourrissons : surdosages avec des compléments, préférer les médicaments sur prescription. | Anses, « Vitamine D ». NHS (toute l'année pour les personnes peu dehors ou à la peau foncée). | solide |
 | Ne pas dépasser 100 microgrammes (4 000 UI) par jour chez l'adulte ; l'excès donne une hypercalcémie. | EFSA, limite supérieure 2023 (EFSA Journal). NHS. Anses (signes de l'excès). | solide |
-| 2 000 UI par jour pendant cinq ans n'ont pas réduit les cancers, les accidents cardiovasculaires ni les fractures chez des adultes en bonne santé. | Manson et al., NEJM 2019 (VITAL). LeBoff et al., NEJM 2022 (VITAL, fractures). | solide (bloc « Ce qu'on ne sait pas encore » pour les autres bénéfices) |
+| 2 000 UI par jour pendant cinq ans n'ont pas réduit les cancers, les accidents cardiovasculaires ni les fractures chez des adultes en bonne santé. | Manson et al., NEJM 2019 (VITAL). LeBoff et al., NEJM 2022 (VITAL, fractures). | solide |
 
 Ce que le cours ne dit pas, exprès : « tout le monde manque de vitamine D »,
 « la vitamine D protège du Covid », une dose à prendre sans avis.
@@ -324,10 +324,10 @@ Réécriture de « Créatine : le solide et le marketing ».
 | 3 à 5 g par jour ; la phase de charge (20 g par jour pendant 5 à 7 jours) n'est pas nécessaire : 3 g par jour pendant 28 jours remplissent autant les muscles. | Antonio 2021. CIO 2018 (charge puis 3 à 5 g). | solide |
 | La forme monohydrate est la plus étudiée ; elle se dégrade dans un liquide qui attend. | Kreider 2017. Antonio 2021. | solide |
 | La prise de poids du début est surtout de l'eau dans le muscle (1 à 2 kg après une charge) ; elle peut gêner l'endurance et les sports à catégories de poids ; la créatine n'augmente pas la masse grasse. | CIO 2018. Antonio 2021 (eau intracellulaire, pas toujours de rétention ; « does not increase fat mass »). | solide |
-| Adolescents : une revue de 2021 juge la créatine sûre et peut-être utile à cet âge ; l'Anses déconseille les compléments pour sportifs aux mineurs. | Antonio 2021. Anses 2016. | débattu (bloc « Ce qu'on ne sait pas encore ») |
+| Adolescents : une revue de 2021 juge la créatine sûre et peut-être utile à cet âge ; l'Anses déconseille les compléments pour sportifs aux mineurs. | Antonio 2021. Anses 2016. | débattu |
 | Pas d'effet néfaste sur les reins chez les personnes en bonne santé aux doses recommandées ; sûre jusqu'à 30 g par jour pendant 5 ans dans les études. | Antonio 2021. Kreider 2017. | solide |
 | Elle ne provoque ni déshydratation ni crampes. | Antonio 2021. Kreider 2017. | probable |
-| Chute des cheveux : une seule étude sur une hormone, jamais reproduite, aucune chute rapportée. | Antonio 2021. | débattu (bloc « Ce qu'on ne sait pas encore ») |
+| Chute des cheveux : une seule étude sur une hormone, jamais reproduite, aucune chute rapportée. | Antonio 2021. | probable (une revue) |
 | 170 g de bœuf apportent environ 0,7 g de créatine. | Antonio 2021. | probable (une source) |
 | Réservée aux adultes ; compléments pour sportifs déconseillés avec une maladie du cœur, des reins ou du foie, chez les mineurs, pendant la grossesse. | Règlement 432/2012. Anses 2016. | solide |
 
@@ -347,7 +347,6 @@ fait gonfler », une marque, un moment idéal de prise.
 | Teneurs indicatives : expresso 80 mg, café filtre (200 ml) 90 mg, thé noir 50 mg, canette de cola 40 mg, canette de boisson énergisante 80 mg, 50 g de chocolat noir 25 mg. | EFSA 2015. | probable (une source, valeurs indicatives) |
 | Agitation, tremblements, troubles du rythme cardiaque, surtout à forte dose et sans habitude ; risque de coup de chaleur à l'effort par forte chaleur ; anxiété possible dès 210 mg par jour ; compléments de caféine déconseillés avant et pendant le sport. | Anses 2016 (avis). CIO 2018 (effets secondaires aux doses élevées), cohérent. | probable |
 | Grossesse et allaitement : pas plus de 200 mg par jour ; adolescents : 3 mg par kilo et par jour. | EFSA 2015. Anses 2016 (compléments à éviter chez les mineurs et pendant la grossesse). | solide |
-| On ne sait pas bien si l'habitude de boire du café réduit l'effet ; pas d'études chez les femmes enceintes ni chez les personnes d'âge moyen ou âgées qui font un exercice intense. | Guest 2021. EFSA 2015. | débattu (bloc « Ce qu'on ne sait pas encore ») |
 
 Ce que le cours ne dit pas, exprès : aucune marque de pré-workout, « plus
 c'est fort, mieux c'est », aucune dose au-delà de 200 mg en une prise.
