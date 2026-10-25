@@ -34,24 +34,43 @@ export type NouveauRepas = Omit<MealEntry, "id">;
 /** Un plat déjà mangé, proposé à nouveau en un geste. */
 export type RecentMeal = { name: string; calories: number; proteins: number; carbs: number; fats: number; count?: number };
 
-/** Les quatre moments, dans l'ordre de la journée. */
+/* ⚠️ « gouter » EST L'EXTRA DEPUIS LE 2026-10-25 (Louis : des extras pour
+   les petits grignotages et les petites boissons de la journée, un shaker
+   par exemple). La valeur reste « gouter » en base et dans le code, comme
+   `is_premium` pour Vaiiya+ : la contrainte CHECK de nutrition_logs ne
+   connaît que ces quatre valeurs, et les goûters déjà notés deviennent des
+   extras sans migration. Seul le nom affiché change. Un extra se note à
+   n'importe quelle heure, autant de fois qu'on veut, et il n'a jamais de
+   case « rien d'ajouté ». */
+export const EXTRA: MealType = "gouter";
+
+/** Les quatre moments, dans l'ordre de la journée (l'extra tient l'après-midi). */
 export const MOMENTS: MealType[] = ["petit-dejeuner", "dejeuner", "gouter", "diner"];
 
+/** Les trois repas : eux seuls ont une case « rien d'ajouté ». */
+export const REPAS_PRINCIPAUX: MealType[] = ["petit-dejeuner", "dejeuner", "diner"];
+
+/** Ce qu'on choisit en ajoutant : les trois repas, puis l'extra. */
+export const CHOIX_MOMENT: MealType[] = [...REPAS_PRINCIPAUX, EXTRA];
+
+export const estExtra = (m: { mealType: MealType }) => m.mealType === EXTRA;
+
 /* Les emoji restent dans les modales d'ajout, qui les portaient déjà. Le
-   nouvel écran n'en pose aucun. */
+   nouvel écran n'en pose aucun. L'ordre des clés est celui des pastilles
+   de ces modales : l'extra vient après le dîner. */
 export const MEAL_META: Record<MealType, { label: string; icon: string }> = {
   "petit-dejeuner": { label: "Petit-déjeuner", icon: "🌅" },
   "dejeuner":       { label: "Déjeuner",       icon: "☀️" },
-  "gouter":         { label: "Goûter",         icon: "🍎" },
   "diner":          { label: "Dîner",          icon: "🌙" },
+  "gouter":         { label: "Extra",          icon: "🍎" },
 };
 
 /** Le nom court d'un moment, pour une pastille où la place manque. */
 export const MOMENT_COURT: Record<MealType, string> = {
   "petit-dejeuner": "Petit-déj",
   "dejeuner": "Déjeuner",
-  "gouter": "Goûter",
   "diner": "Dîner",
+  "gouter": "Extra",
 };
 
 /** Le moment du repas, d'après l'heure LOCALE de la personne (jamais le modèle). */

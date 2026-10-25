@@ -449,7 +449,7 @@ export const ASSISTANT_TOOLS: Tool[] = [
           mealType: {
             type: "string",
             enum: ["petit-dejeuner", "dejeuner", "gouter", "diner"],
-            description: "Le moment, s’il est dit ou évident. À omettre sinon.",
+            description: "Le moment, s’il est dit ou évident. « gouter » est un extra, pris entre les repas (un shaker, un fruit). À omettre sinon.",
           },
         },
         required: ["food"],

@@ -14,7 +14,7 @@
    ════════════════════════════════════════════════════════════════════ */
 
 import { ChevronRight, Plus } from "lucide-react";
-import { MEAL_META, heureLisible, type MealEntry } from "@/lib/repas";
+import { MEAL_META, estExtra, heureLisible, type MealEntry } from "@/lib/repas";
 import ImageRepas from "@/components/nutrition/ImageRepas";
 import ns from "@/components/nutrition/Nutrition.module.css";
 
@@ -47,13 +47,27 @@ function MiniDonut({ repas }: { repas: MealEntry[] }) {
   );
 }
 
+/** « 2 repas · 3 extras », « 1 extra », « 2 repas » : ce que la journée porte. */
+function compteDuJour(repas: MealEntry[]): string {
+  const extras = repas.filter(estExtra).length;
+  const principaux = repas.length - extras;
+  return [
+    principaux > 0 ? `${principaux} repas` : null,
+    extras > 0 ? `${extras} ${extras > 1 ? "extras" : "extra"}` : null,
+  ].filter(Boolean).join(" · ");
+}
+
 export default function CarteAujourdhui({ repas, onDetail, onAjouter }: {
   /** `null` tant que la base n'a pas répondu. */
   repas: MealEntry[] | null;
   onDetail: () => void;
   onAjouter: () => void;
 }) {
-  const derniers = repas ? repas.slice(-2) : [];
+  /* Les repas d'abord : les extras se comptent, mais une pomme ou un shaker
+     ne prend la photo et le nom que les jours où il n'y a pas de repas. */
+  const principaux = repas ? repas.filter((m) => !estExtra(m)) : [];
+  const montres = principaux.length > 0 ? principaux : repas ?? [];
+  const derniers = montres.slice(-2);
 
   return (
     <section className={ns.bloc} style={{ padding: 14, gap: 14 }} aria-label="Aujourd’hui">
@@ -101,10 +115,10 @@ export default function CarteAujourdhui({ repas, onDetail, onAjouter }: {
               <span className="text-[11px] font-bold" style={{ color: "var(--text-3)" }}>
                 {repas.length === 1
                   ? `${MEAL_META[repas[0].mealType]?.label ?? "Repas"} · ${heureLisible(repas[0].time)}`
-                  : `${repas.length} repas`}
+                  : compteDuJour(repas)}
               </span>
               <span className="line-clamp-2 text-[16px] font-bold leading-snug" style={{ color: "var(--text-0)" }}>
-                {repas.map((m) => m.name).join(", ")}
+                {montres.map((m) => m.name).join(", ")}
               </span>
             </span>
           </>

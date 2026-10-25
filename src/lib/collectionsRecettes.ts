@@ -4,8 +4,9 @@
 
    Trois choses vivent ici, toutes PURES (aucune lecture, aucune horloge) :
    ce qu'est chaque recette (un plat, un petit-déjeuner, un dessert…), le
-   temps qu'elle demande VRAIMENT, et les six collections de « Trouver une
-   recette ». L'écran ne décide rien : il affiche ce que ce fichier rend.
+   temps qu'elle demande VRAIMENT, et les envies de « Envie de quoi ? »
+   (38 envies, leurs règles et leurs puces). L'écran ne décide rien : il
+   affiche ce que ce fichier rend.
 
    ⚠️ LA NATURE D'UNE RECETTE S'ÉCRIT À LA MAIN, ET UN BANC LE VÉRIFIE.
    Le champ `mealTypes` de la banque ne suffit pas : le tzatziki, le
@@ -20,7 +21,7 @@
    ════════════════════════════════════════════════════════════════════ */
 
 import { RECIPES, rankRecipes, type Recipe, type DayNeeds, type DietKey } from "@/lib/recipeBank";
-import type { MealType } from "@/lib/repas";
+import { EXTRA, momentDuRepas, type MealType } from "@/lib/repas";
 
 export type NatureRecette = "plat" | "petit-dej" | "entree" | "encas" | "dessert" | "boisson";
 
@@ -323,96 +324,330 @@ export function convient(r: Recipe, regime: DietKey[]): boolean {
   return regime.every((d) => r.diet.includes(d) || (d === "vegetarien" && r.diet.includes("vegan")));
 }
 
-/* ── Les six collections ──────────────────────────────────────────────── */
-export type IdCollection = "rapide" | "vegetarien" | "apres-sport" | "pates-riz" | "salades-bowls" | "desserts";
+/* ── Les envies (Louis, 2026-10-25) ───────────────────────────────────
+   « Trouver une recette » se range par ENVIE, plus par plat : on fouille
+   la banque sans savoir ce qu'on veut (sucré, frais, faire vite…). La
+   loupe reste là pour chercher un plat précis. 38 envies en 7 familles ;
+   une recette entre dans plusieurs envies, et dans la vue d'une envie les
+   autres envies s'additionnent comme des filtres (sucré, puis chocolat,
+   puis faire vite). Maquette : page « Envies et extras » du canevas.
+
+   ⚠️ UN MOT PEUT EN CONTENIR UN AUTRE. « Semoule » contient « moule »,
+   « oignon nouveau » contient « veau », « bœuf » contient « œuf ». Les
+   règles qui lisent un nom posent leurs bornes, et check:nutrition rejoue
+   ces pièges.
+
+   ⚠️ LES RECETTES SALÉES DU MATIN S'ÉCRIVENT À LA MAIN (`MATINS_SALES`) :
+   sans elles, une omelette du petit-déjeuner serait « sucrée ». Le banc
+   refuse un petit-déjeuner ou un encas qui n'est ni dans la liste ni
+   sucré par ses ingrédients. */
 
 export const PROTEINES_APRES_SPORT = 25;
 export const MINUTES_RAPIDE = 25;
 
-export type CollectionRecettes = {
-  id: IdCollection;
-  titre: string;
-  /** Ce qui fait entrer une recette dans la collection, dit tel quel. */
+export type IdFamille = "saveur" | "humeur" | "plat" | "ingredient" | "ailleurs" | "temps" | "moment";
+export const FAMILLES: { id: IdFamille; nom: string }[] = [
+  { id: "saveur", nom: "Une saveur" },
+  { id: "humeur", nom: "Une humeur" },
+  { id: "plat", nom: "Un plat" },
+  { id: "ingredient", nom: "Un ingrédient" },
+  { id: "ailleurs", nom: "Ailleurs" },
+  { id: "temps", nom: "Le temps qu’on a" },
+  { id: "moment", nom: "Un moment" },
+];
+
+export type IdEnvie =
+  | "sucre" | "chocolat" | "fruite" | "fromage" | "epice"
+  | "reconfort" | "frais" | "leger" | "regaler" | "croustillant"
+  | "pates" | "riz" | "soupe" | "gratin" | "salade" | "mains"
+  | "legumes" | "poulet" | "poisson" | "viande" | "oeufs"
+  | "asie" | "italie" | "mediterranee" | "mexique" | "classique"
+  | "vite" | "sanscuisson" | "avance" | "longtemps"
+  | "petitdej" | "repas" | "grignoter" | "dessert" | "boire" | "apero" | "recevoir" | "sport";
+
+export type Envie = {
+  id: IdEnvie;
+  label: string;
+  famille: IdFamille;
+  /** Ce qui fait entrer une recette dans l'envie, dit tel quel. */
   sousTitre: string;
-  /** La photo de la tuile, puis celle du haut de la page : deux recettes de la collection. */
+  /** La photo de la tuile et du haut de la page : une recette de l'envie. */
   tuile: string;
-  heros: string;
+  /** Ce qui suit « une autre idée de recette » dans la demande au Guide. */
+  demande: string;
   garde: (r: Recipe) => boolean;
 };
 
-const repas = (r: Recipe) => natureDe(r) === "plat" || natureDe(r) === "petit-dej";
-const FECULENT = /\b(pates|riz|rigatoni|fusilli|spaghetti|penne|tagliatelle|nouilles)\b/;
-const sansAccent = (v: string) => v.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+const net = (v: string) => v.toLowerCase().replace(/œ/g, "oe").normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/’/g, "'");
+const nom = (r: Recipe) => net(r.nom);
+const ingredients = (r: Recipe) => r.ingredients.map((i) => net(i.nom));
+const aTag = (r: Recipe, ...t: string[]) => r.tags.some((x) => t.includes(net(x)));
+const parmi = (...ids: string[]) => { const s = new Set(ids); return (r: Recipe) => s.has(r.id); };
 
-export const COLLECTIONS: CollectionRecettes[] = [
-  {
-    id: "rapide", titre: "Rapide",
-    sousTitre: `Des recettes prêtes en ${MINUTES_RAPIDE} minutes ou moins.`,
-    tuile: "quesadillas-jambon-fromage", heros: "shakshuka-express",
-    garde: (r) => repas(r) && minutesTotales(r) <= MINUTES_RAPIDE,
-  },
-  {
-    id: "vegetarien", titre: "Végétarien",
-    sousTitre: "Des recettes sans viande ni poisson.",
-    tuile: "curry-de-lentilles-corail-et-epinards", heros: "buddha-bowl-pois-chiches-rotis-houmous",
-    garde: (r) => repas(r) && (r.diet.includes("vegetarien") || r.diet.includes("vegan")),
-  },
-  {
-    id: "apres-sport", titre: "Après le sport",
-    sousTitre: `Au moins ${PROTEINES_APRES_SPORT} g de protéines par portion.`,
-    tuile: "bowl-de-poulet-quinoa-et-avocat", heros: "bowl-mexicain-poulet-mais-haricots-noirs",
-    // Les shakers en font partie : c'est ce qu'on boit juste après une séance.
-    garde: (r) => (repas(r) || natureDe(r) === "boisson") && r.proteins >= PROTEINES_APRES_SPORT,
-  },
-  {
-    id: "pates-riz", titre: "Pâtes et riz",
-    sousTitre: "Des plats à base de pâtes ou de riz.",
-    tuile: "fusilli-mediterraneens", heros: "pates-bolognaise-maison",
-    garde: (r) => natureDe(r) === "plat" && r.ingredients.some((i) => FECULENT.test(sansAccent(i.nom))),
-  },
-  {
-    id: "salades-bowls", titre: "Salades et bowls",
+/** Les petits-déjeuners et les encas salés. Tout le reste du matin et des encas est sucré. */
+export const MATINS_SALES = new Set([
+  "avocado-toast", "oeufs-cocotte-epinards-jambon", "oeufs-brouilles-au-saumon-fume-et-a-l-avocat",
+  "omelette-aux-blancs-d-oeufs-epinards-et-feta", "muffins-sales-epinards-feta-tomates-sechees",
+]);
+export const estSale = (r: Recipe) => { const n = natureDe(r); return n === "plat" || n === "entree" || MATINS_SALES.has(r.id); };
+const sucre = (r: Recipe) => !estSale(r);
+/* Un repas salé : un plat, un petit-déjeuner salé, ou une entrée qui se
+   mange comme un repas. Les tartinades de l'apéro n'en sont pas. */
+const repasSale = (r: Recipe) => natureDe(r) === "plat"
+  || (natureDe(r) === "petit-dej" && MATINS_SALES.has(r.id))
+  || (natureDe(r) === "entree" && /soupe|veloute|salade|taboule/.test(nom(r)));
+const vegetal = (r: Recipe) => r.diet.includes("vegetarien") || r.diet.includes("vegan");
+
+const FROMAGE = /emmental|parmesan|mozzarella|reblochon|comte|gruyere|raclette|cheddar|chevre|feta|ricotta|burrata|halloumi|mascarpone|camembert|brie|roquefort|pecorino|beaufort/;
+const FRUIT = /pomme|poire|banane|fraise|framboise|myrtille|mangue|citron|orange|agrume|kiwi|clementine|peche|passion|fruits rouges|grenade|abricot|cerise|ananas/;
+const POISSON = /saumon|cabillaud|thon|crevette|gambas|\bmoules?\b|saint-jacques|poisson|sardine|maquereau|truite|dorade|merlu|colin|crabe|calamar/;
+const VIANDE = /boeuf|\bveau\b|agneau|porc|steak|saucisse|lardon|canard|magret|guanciale|chorizo|jambon|bacon/;
+const PATES = /\b(pates|rigatoni|fusilli|spaghetti|penne|tagliatelle|lasagnes?|gnocchis?)\b/;
+
+export const ENVIES: Envie[] = [
+  /* Une saveur */
+  { id: "sucre", label: "Sucré", famille: "saveur", tuile: "crepes-moelleuses", demande: "sucrée",
+    sousTitre: "Des petits-déjeuners, des encas, des desserts et des boissons.", garde: sucre },
+  { id: "chocolat", label: "Chocolat", famille: "saveur", tuile: "fondant-au-chocolat-coeur-coulant", demande: "au chocolat",
+    sousTitre: "Du chocolat ou du cacao dans la recette.",
+    garde: (r) => ingredients(r).some((i) => /chocolat|cacao|pepites/.test(i)) || aTag(r, "chocolat") },
+  { id: "fruite", label: "Fruité", famille: "saveur", tuile: "smoothie-bowl-fruits-rouges", demande: "fruitée",
+    sousTitre: "Des recettes sucrées autour d’un fruit.",
+    garde: (r) => sucre(r) && (FRUIT.test(nom(r)) || aTag(r, "fruite", "fruits", "riche en fruits")) },
+  { id: "fromage", label: "Fromage", famille: "saveur", tuile: "tartiflette-allegee", demande: "avec du fromage",
+    sousTitre: "Du fromage dedans, fondu ou en morceaux.",
+    garde: (r) => estSale(r) && ingredients(r).some((i) => FROMAGE.test(i)) },
+  { id: "epice", label: "Épicé", famille: "saveur", tuile: "poulet-tikka-masala", demande: "épicée",
+    sousTitre: "Des plats relevés au curry, au piment ou au cumin.",
+    garde: parmi("curry-de-lentilles-corail-et-epinards", "tajine-d-agneau-aux-abricots-citron-confit-et-couscous", "shakshuka-express",
+      "buddha-bowl-pois-chiches-rotis-houmous", "chili-sin-carne", "chili-con-carne", "bowl-mexicain-poulet-mais-haricots-noirs",
+      "harira-aux-lentilles-et-pois-chiches", "pho-au-boeuf", "poulet-tikka-masala", "curry-thai-de-legumes-au-tofu",
+      "soupe-thaie-au-poulet-et-au-lait-de-coco", "curry-de-pois-chiches-et-patate-douce", "poulet-au-citron-et-aux-olives",
+      "bowl-coreen-au-boeuf-facon-bibimbap", "fajitas-de-poulet-aux-poivrons", "falafels-au-four-et-sauce-tahini",
+      "veloute-de-chou-fleur-au-curry-et-lait-de-coco") },
+
+  /* Une humeur */
+  { id: "reconfort", label: "Réconfort", famille: "humeur", tuile: "veloute-de-potimarron-et-chataignes", demande: "réconfortante",
+    sousTitre: "Des plats chauds et des douceurs qui réconfortent.",
+    garde: (r) => aTag(r, "reconfortant", "mijote", "plat mijote") },
+  { id: "frais", label: "Frais", famille: "humeur", tuile: "salade-grecque", demande: "fraîche",
+    sousTitre: "Des recettes qui se mangent ou se boivent froides.",
+    garde: (r) => !/tiede/.test(nom(r)) && (aTag(r, "frais", "rafraichissant", "glace", "glace maison") || (estSale(r) && r.cookMin === 0)
+      || /sorbet|granite|glace|smoothie|citronnade|frozen|esquimau|milkshake|frappe|tartare|taboule|verrine|salade de|salade grecque|panzanella|poke/.test(nom(r))) },
+  { id: "leger", label: "Léger", famille: "humeur", tuile: "gambas-grillees-ail-persil", demande: "légère",
+    sousTitre: "Des plats de 400 kcal ou moins par portion.",
+    garde: (r) => repasSale(r) && r.calories <= 400 },
+  { id: "regaler", label: "Me régaler", famille: "humeur", tuile: "burger-maison-gourmand-equilibre", demande: "gourmande",
+    sousTitre: "Des recettes gourmandes, pour se faire plaisir.",
+    garde: (r) => aTag(r, "gourmand") || parmi("fish-chips-maison", "quesadillas-jambon-fromage", "lasagnes-epinards-ricotta",
+      "cheesecake-glace-sans-cuisson", "creme-glacee-vanille-maison", "crepes-moelleuses", "nuggets-de-poulet-au-four",
+      "pates-bolognaise-maison", "galette-saucisse", "tarte-fine-aux-pommes")(r) },
+  /* Une coupure conditionnelle (­) dans les deux mots qui touchent le bord
+     d'une tuile à 360 px : « Crous-tillant », « Méditer-ranée ». Elle ne
+     se voit que si le mot doit passer à la ligne. */
+  { id: "croustillant", label: "Crous­tillant", famille: "humeur", tuile: "fish-chips-maison", demande: "croustillante",
+    sousTitre: "Des recettes qui croustillent sous la dent.",
+    garde: parmi("salade-cesar-legere-et-croustillante", "fish-chips-maison", "guacamole-nachos", "crumble-pomme-poire-a-l-avoine",
+      "granola-maison-pomme-cannelle", "moules-marinieres-et-frites-au-four", "nuggets-de-poulet-au-four",
+      "bowl-de-tofu-croustillant-nouilles-de-riz-et-edamame", "falafels-au-four-et-sauce-tahini", "bruschetta-tomate-basilic",
+      "galettes-de-riz-au-beurre-de-cacahuete-et-banane", "cookies-proteines-aux-pepites-de-chocolat", "tarte-fine-aux-pommes",
+      "croque-monsieur-poulet-pesto-revisite", "galettes-de-sarrasin-completes") },
+
+  /* Un plat */
+  { id: "pates", label: "Pâtes", famille: "plat", tuile: "spaghetti-aux-boulettes-de-dinde", demande: "de pâtes",
+    sousTitre: "Des plats de pâtes, de gnocchis ou de lasagnes.",
+    garde: (r) => natureDe(r) === "plat" && !/soupe|minestrone/.test(nom(r)) && (PATES.test(nom(r)) || ingredients(r).some((i) => PATES.test(i))) },
+  { id: "riz", label: "Riz", famille: "plat", tuile: "risotto-cremeux-aux-champignons", demande: "avec du riz",
+    sousTitre: "Des plats avec du riz.",
+    garde: (r) => natureDe(r) === "plat" && (/risotto/.test(nom(r))
+      || ingredients(r).some((i) => /\briz\b/.test(i) && !/(nouilles|vermicelles|galettes?|feuilles?|farine) de riz/.test(i))) },
+  { id: "soupe", label: "Soupe", famille: "plat", tuile: "ramen-au-poulet-et-oeuf-mollet", demande: "de soupe",
+    sousTitre: "Des soupes, des veloutés et des bouillons.",
+    garde: (r) => /soupe|veloute|ramen|\bpho\b|harira|minestrone|pot-au-feu/.test(nom(r)) },
+  { id: "gratin", label: "Gratin", famille: "plat", tuile: "gratin-dauphinois-leger", demande: "de gratin",
+    sousTitre: "Des plats gratinés au four.",
+    garde: (r) => natureDe(r) !== "entree" && /gratin|lasagne|parmentier|tartiflette|brandade/.test(nom(r)) },
+  { id: "salade", label: "Salades et bowls", famille: "plat", tuile: "salade-cesar-legere-et-croustillante", demande: "de salade ou de bowl",
     sousTitre: "Des salades et des bols composés.",
-    tuile: "salade-nicoise", heros: "poke-bowl-saumon-avocat",
-    garde: (r) => repas(r) && /salade|bowl|poke|panzanella/.test(sansAccent(r.nom)),
-  },
-  {
-    id: "desserts", titre: "Desserts",
-    sousTitre: "Des desserts à préparer toi-même.",
-    tuile: "brownie-fondant-au-chocolat", heros: "cheesecake-glace-sans-cuisson",
-    garde: (r) => natureDe(r) === "dessert",
-  },
+    garde: (r) => (natureDe(r) === "plat" || natureDe(r) === "entree") && /salade|bowl|poke|panzanella|taboule/.test(nom(r)) },
+  { id: "mains", label: "Avec les mains", famille: "plat", tuile: "quesadillas-jambon-fromage", demande: "à manger avec les mains",
+    sousTitre: "Des recettes qui se mangent avec les doigts.",
+    garde: (r) => /burger|wrap|quesadilla|croque|fajita|nuggets|fish|galette-saucisse/.test(nom(r)) },
+
+  /* Un ingrédient */
+  { id: "legumes", label: "Légumes", famille: "ingredient", tuile: "buddha-bowl-pois-chiches-rotis-houmous", demande: "sans viande ni poisson",
+    sousTitre: "Des plats sans viande ni poisson.", garde: (r) => repasSale(r) && vegetal(r) },
+  { id: "poulet", label: "Poulet", famille: "ingredient", tuile: "brochettes-de-poulet-citron-paprika", demande: "avec du poulet",
+    sousTitre: "Du poulet ou de la dinde.",
+    garde: (r) => ingredients(r).some((i) => /poulet|dinde/.test(i) && !/bouillon/.test(i)) },
+  { id: "poisson", label: "Poisson", famille: "ingredient", tuile: "poisson-entier-a-la-plancha", demande: "avec du poisson",
+    sousTitre: "Du poisson ou des fruits de mer.",
+    garde: (r) => ingredients(r).some((i) => POISSON.test(i) && !/bouillon|sauce/.test(i)) },
+  { id: "viande", label: "Viande", famille: "ingredient", tuile: "cotelettes-d-agneau-grillees-au-romarin", demande: "avec de la viande",
+    sousTitre: "Du bœuf, du veau, de l’agneau, du porc ou du canard.",
+    garde: (r) => ingredients(r).some((i) => VIANDE.test(i) && !/bouillon/.test(i)) },
+  { id: "oeufs", label: "Œufs", famille: "ingredient", tuile: "oeufs-cocotte-epinards-jambon", demande: "avec des œufs",
+    sousTitre: "Des plats où l’œuf compte.",
+    garde: (r) => estSale(r) && /(^|[\s-])oeufs?(\s|$)|omelette|frittata|shakshuka/.test(nom(r)) },
+
+  /* Ailleurs */
+  { id: "asie", label: "Asie", famille: "ailleurs", tuile: "bowl-coreen-au-boeuf-facon-bibimbap", demande: "d’Asie",
+    sousTitre: "Des plats d’Asie, de l’Inde à la Corée.",
+    garde: (r) => /ramen|\bpho\b|wok|cantonais|poke|thai|soja|bibimbap|coreen|nouilles|tikka|masala/.test(nom(r)) },
+  { id: "italie", label: "Italie", famille: "ailleurs", tuile: "lasagnes-epinards-ricotta", demande: "italienne",
+    sousTitre: "Des recettes venues d’Italie.",
+    garde: parmi("pates-bolognaise-maison", "rigatoni-creme-parmesan-guanciale", "fusilli-mediterraneens", "semifreddo-amande",
+      "risotto-cremeux-aux-champignons", "bruschetta-tomate-basilic", "tartare-tomates-burrata", "panzanella-toscane",
+      "minestrone-d-hiver", "lasagnes-epinards-ricotta", "gnocchis-poeles-a-la-butternut-et-a-la-sauge", "tiramisu-proteine-au-skyr",
+      "spaghetti-aux-boulettes-de-dinde", "pates-completes-au-thon-tomates-cerises-et-capres", "frittata-aux-legumes") },
+  { id: "mediterranee", label: "Méditer­ranée", famille: "ailleurs", tuile: "falafels-au-four-et-sauce-tahini", demande: "méditerranéenne",
+    sousTitre: "Du Maroc au Liban, en passant par la Grèce.",
+    garde: (r) => /tajine|harira|houmous|falafel|taboule|tzatziki|grecque|shakshuka|caviar d'aubergine|aubergines grillees|halloumi|citron et aux olives|fenouil a l'orange|pasteque, feta/.test(nom(r)) },
+  { id: "mexique", label: "Mexique", famille: "ailleurs", tuile: "guacamole-nachos", demande: "mexicaine",
+    sousTitre: "Des recettes tex-mex et mexicaines.",
+    garde: (r) => /chili|mexicain|quesadilla|guacamole|nachos|fajita/.test(nom(r)) },
+  { id: "classique", label: "Un classique", famille: "ailleurs", tuile: "boeuf-bourguignon", demande: "d’un grand classique français",
+    sousTitre: "Les grands classiques de la cuisine française.",
+    garde: parmi("boeuf-bourguignon", "blanquette-de-veau-legere", "pot-au-feu", "coq-au-vin", "petit-sale-aux-lentilles",
+      "tartiflette-allegee", "gratin-dauphinois-leger", "soupe-a-l-oignon-gratinee", "hachis-parmentier-a-la-patate-douce",
+      "endives-au-jambon-gratinees", "brandade-de-cabillaud-gratinee", "moules-marinieres-et-frites-au-four",
+      "galettes-de-sarrasin-completes", "galettes-de-sarrasin-poireaux-et-chevre", "galette-saucisse", "crepes-moelleuses",
+      "crepes-suzette-sans-alcool", "crepes-au-jambon-gratinees", "poulet-roti-aux-marrons-et-panais", "madeleines-a-la-coque",
+      "financiers-amande", "pain-d-epices", "gateau-au-yaourt-moelleux", "riz-au-lait-vanille", "tarte-fine-aux-pommes",
+      "tarte-au-citron-meringuee", "galette-des-rois-frangipane", "buche-roulee-au-chocolat", "croque-monsieur-poulet-pesto-revisite",
+      "soupe-poireaux-pommes-de-terre", "magret-de-canard-a-l-orange", "filet-mignon-aux-deux-pommes", "crumble-pomme-poire-a-l-avoine") },
+
+  /* Le temps qu'on a */
+  { id: "vite", label: "Faire vite", famille: "temps", tuile: "wrap-poulet-crudites-sauce-yaourt", demande: `prête en ${MINUTES_RAPIDE} minutes ou moins`,
+    sousTitre: `Prêt en ${MINUTES_RAPIDE} minutes ou moins, repos compris.`, garde: (r) => minutesTotales(r) <= MINUTES_RAPIDE },
+  { id: "sanscuisson", label: "Sans cuisson", famille: "temps", tuile: "tartare-de-saumon-aux-agrumes", demande: "sans cuisson",
+    sousTitre: "Rien à cuire, ni au four ni à la poêle.", garde: (r) => r.cookMin === 0 },
+  { id: "avance", label: "D’avance", famille: "temps", tuile: "meal-prep-poulet-riz-et-brocoli", demande: "à préparer d’avance",
+    sousTitre: "Se prépare la veille ou pour plusieurs jours.",
+    garde: (r) => aTag(r, "meal prep", "a emporter") || /nuit/.test(REPOS[r.id]?.texte ?? "") },
+  { id: "longtemps", label: "Prendre mon temps", famille: "temps", tuile: "pot-au-feu", demande: "qui mijote longtemps",
+    sousTitre: "Des recettes qui mijotent ou cuisent longtemps.",
+    garde: (r) => (natureDe(r) === "plat" || natureDe(r) === "dessert") && r.prepMin + r.cookMin >= 70 },
+
+  /* Un moment */
+  { id: "petitdej", label: "Petit-déj", famille: "moment", tuile: "pancakes-proteines", demande: "pour le petit-déjeuner",
+    sousTitre: "Des petits-déjeuners, sucrés ou salés.", garde: (r) => natureDe(r) === "petit-dej" },
+  { id: "repas", label: "Un vrai repas", famille: "moment", tuile: "bowl-de-poulet-quinoa-et-avocat", demande: "pour midi ou pour le soir",
+    sousTitre: "Des plats pour midi ou pour le soir.", garde: (r) => natureDe(r) === "plat" },
+  { id: "grignoter", label: "Grignoter", famille: "moment", tuile: "cookies-proteines-aux-pepites-de-chocolat", demande: "à grignoter",
+    sousTitre: "Des encas pour entre les repas.",
+    garde: (r) => natureDe(r) === "encas" || parmi("madeleines-a-la-coque", "financiers-amande", "muffins-chocolat-moelleux",
+      "muffins-myrtilles-flocons-d-avoine", "pain-d-epices", "banana-bread-aux-noix", "truffes-au-chocolat-noir")(r) },
+  { id: "dessert", label: "Un dessert", famille: "moment", tuile: "tarte-au-citron-meringuee", demande: "de dessert",
+    sousTitre: "Des desserts à préparer toi-même.", garde: (r) => natureDe(r) === "dessert" },
+  { id: "boire", label: "Boire", famille: "moment", tuile: "shaker-fruits-rouges-et-skyr", demande: "à boire, comme un shaker",
+    sousTitre: "Des shakers et des boissons, chaudes ou fraîches.", garde: (r) => natureDe(r) === "boisson" },
+  { id: "apero", label: "L’apéro", famille: "moment", tuile: "bruschetta-tomate-basilic", demande: "pour l’apéro",
+    sousTitre: "De quoi grignoter à plusieurs.",
+    garde: parmi("tzatziki-concombre-yaourt", "melon-jambon-cru", "bruschetta-tomate-basilic", "guacamole-nachos", "blinis-au-saumon-fume",
+      "verrines-avocat-crevettes", "houmous-de-betterave", "caviar-d-aubergine", "tartare-de-saumon-aux-agrumes",
+      "epis-de-mais-grilles-au-beurre-et-au-paprika", "salade-de-pasteque-feta-et-menthe", "muffins-sales-epinards-feta-tomates-sechees",
+      "aubergines-grillees-au-yaourt-et-a-la-menthe") },
+  { id: "recevoir", label: "Recevoir", famille: "moment", tuile: "magret-de-canard-a-l-orange", demande: "pour recevoir",
+    sousTitre: "Des recettes pour les fêtes et les invités.", garde: (r) => aTag(r, "festif") },
+  { id: "sport", label: "Après le sport", famille: "moment", tuile: "steak-hache-patate-douce-rotie-et-haricots-verts",
+    demande: "riche en protéines, pour après le sport",
+    sousTitre: `Au moins ${PROTEINES_APRES_SPORT} g de protéines par portion.`, garde: (r) => r.proteins >= PROTEINES_APRES_SPORT },
 ];
 
-/* Ce que la personne demande au Guide en touchant « Demander une autre
-   idée » au bas d'une collection. Ce sont SES mots (comme une suggestion
-   de la conversation), donc ils vivent ici et pas dans guides.ts. */
-export const DEMANDE_AU_GUIDE: Record<IdCollection, string> = {
-  "rapide": `Tu as une autre idée de recette rapide, prête en ${MINUTES_RAPIDE} minutes ou moins ?`,
-  "vegetarien": "Tu as une autre idée de recette végétarienne ?",
-  "apres-sport": "Tu as une autre idée de recette riche en protéines, pour après le sport ?",
-  "pates-riz": "Tu as une autre idée de plat de pâtes ou de riz ?",
-  "salades-bowls": "Tu as une autre idée de salade ou de bowl ?",
-  "desserts": "Tu as une autre idée de dessert ?",
-};
+/** Les neuf envies de l'écran Nutrition, dans l'ordre où on les préfère :
+ *  une envie trop maigre pour le régime cède sa place à la suivante. */
+export const ENVIES_ACCUEIL: IdEnvie[] = [
+  "sucre", "reconfort", "frais", "vite", "legumes", "fromage", "pates", "asie", "sport",
+  "chocolat", "soupe", "salade", "italie", "mediterranee", "sanscuisson", "petitdej",
+];
+export const NB_ENVIES_ACCUEIL = 9;
 
-export function collection(id: IdCollection): CollectionRecettes {
-  return COLLECTIONS.find((c) => c.id === id) ?? COLLECTIONS[0];
+/* L'ordre des puces d'une envie : ce qu'on mange d'abord (un plat, un
+   dessert, une boisson), puis le temps, puis le reste. Une puce qui ne
+   change rien à la liste (toutes les recettes, ou une seule) ne s'affiche pas. */
+export const ORDRE_PUCES: IdEnvie[] = [
+  "repas", "petitdej", "dessert", "grignoter", "boire", "apero", "vite", "sanscuisson", "sport", "sucre", "legumes", "leger", "reconfort",
+  "frais", "regaler", "chocolat", "fruite", "fromage", "epice", "croustillant", "avance", "longtemps", "recevoir", "pates", "riz",
+  "soupe", "gratin", "salade", "mains", "poulet", "poisson", "viande", "oeufs", "asie", "italie", "mediterranee", "mexique", "classique",
+];
+export const MAX_PUCES = 14;
+/** Une envie ne s'affiche qu'à partir de deux recettes pour le régime. */
+export const SEUIL_ENVIE = 2;
+
+export function envie(id: IdEnvie): Envie {
+  return ENVIES.find((e) => e.id === id) ?? ENVIES[0];
 }
 
-/** Les recettes d'une collection, compatibles avec le régime déclaré. La
- *  collection « Rapide » se lit de la plus courte à la plus longue, et
- *  « Après le sport » commence par les shakers. */
-export function recettesDe(id: IdCollection, regime: DietKey[] = []): Recipe[] {
-  const c = collection(id);
-  const liste = RECIPES.filter((r) => c.garde(r) && convient(r, regime));
-  if (id === "rapide") return [...liste].sort((a, b) => minutesTotales(a) - minutesTotales(b));
-  // Dans l'ordre de la banque, les shakers du lot 4 arrivaient après tous les plats.
-  if (id === "apres-sport") {
+export function estEnvie(id: string): id is IdEnvie {
+  return ENVIES.some((e) => e.id === id);
+}
+
+/** Les recettes d'une envie, compatibles avec le régime, et avec chaque
+ *  envie ajoutée comme filtre. « Faire vite » se lit de la plus courte à
+ *  la plus longue, et « Après le sport » commence par les shakers : dans
+ *  l'ordre de la banque, ils arrivaient après tous les plats. */
+export function recettesDe(id: IdEnvie, regime: DietKey[] = [], filtres: IdEnvie[] = []): Recipe[] {
+  const gardes = [envie(id), ...filtres.map(envie)].map((e) => e.garde);
+  const liste = RECIPES.filter((r) => convient(r, regime) && gardes.every((g) => g(r)));
+  if (id === "vite") return [...liste].sort((a, b) => minutesTotales(a) - minutesTotales(b));
+  if (id === "sport") {
     const boisson = (r: Recipe) => natureDe(r) === "boisson";
     return [...liste.filter(boisson), ...liste.filter((r) => !boisson(r))];
   }
   return liste;
+}
+
+export type PuceEnvie = { id: IdEnvie; label: string; choisie: boolean };
+
+/** Les envies qui affinent une envie ouverte : celles déjà choisies d'abord,
+ *  puis celles qui changent vraiment la liste, dans `ORDRE_PUCES`. */
+export function pucesDe(id: IdEnvie, regime: DietKey[] = [], filtres: IdEnvie[] = []): PuceEnvie[] {
+  const liste = recettesDe(id, regime, filtres);
+  const autres = ORDRE_PUCES
+    .filter((x) => x !== id && !filtres.includes(x))
+    .map((x) => ({ x, n: liste.filter(envie(x).garde).length }))
+    .filter(({ n }) => n >= 2 && n < liste.length)
+    .slice(0, MAX_PUCES)
+    .map(({ x }) => ({ id: x, label: envie(x).label, choisie: false }));
+  return [...filtres.map((f) => ({ id: f, label: envie(f).label, choisie: true })), ...autres];
+}
+
+/** La photo d'une envie : sa tuile, ou la première recette qui convient au régime. */
+export function photoEnvie(id: IdEnvie, regime: DietKey[] = []): string {
+  const e = envie(id);
+  const tuile = RECIPES.find((r) => r.id === e.tuile);
+  if (tuile && convient(tuile, regime)) return tuile.image;
+  return recettesDe(id, regime)[0]?.image ?? imageRecette(e.tuile);
+}
+
+/** Les envies de l'écran Nutrition pour ce régime. */
+export function enviesAccueil(regime: DietKey[] = []): IdEnvie[] {
+  return ENVIES_ACCUEIL.filter((id) => recettesDe(id, regime).length >= SEUIL_ENVIE).slice(0, NB_ENVIES_ACCUEIL);
+}
+
+/** Les envies d'une famille qui s'affichent pour ce régime, avec leur nombre de recettes. */
+export function enviesDeFamille(famille: IdFamille, regime: DietKey[] = []): { id: IdEnvie; n: number }[] {
+  return ENVIES.filter((e) => e.famille === famille)
+    .map((e) => ({ id: e.id, n: recettesDe(e.id, regime).length }))
+    .filter(({ n }) => n >= SEUIL_ENVIE);
+}
+
+/* Ce que la personne demande au Guide en touchant « Demander une autre
+   idée » au bas d'une envie. Ce sont SES mots (comme une suggestion de la
+   conversation), donc ils vivent ici et pas dans guides.ts. Les envies
+   ajoutées comme filtres entrent dans la phrase. */
+export function demandeAuGuide(id: IdEnvie, filtres: IdEnvie[] = []): string {
+  const morceaux = [id, ...filtres].map((x) => envie(x).demande);
+  const fin = morceaux.length > 1 ? `${morceaux.slice(0, -1).join(", ")} et ${morceaux[morceaux.length - 1]}` : morceaux[0];
+  return `Tu as une autre idée de recette ${fin} ?`;
+}
+
+/** Le moment d'une recette ajoutée à la journée : un encas ou une boisson
+ *  est un extra, le reste suit l'heure. */
+export function momentDeRecette(r: Recipe, heure: number): MealType {
+  const n = natureDe(r);
+  return n === "encas" || n === "boisson" ? EXTRA : momentDuRepas(heure);
 }
 
 /** L'image d'une recette, d'après son identifiant. */

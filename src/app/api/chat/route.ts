@@ -130,7 +130,7 @@ function mealTypeLabel(t?: string): string {
     "petitdejeuner": "Petit-déjeuner", "petitdej": "Petit-déjeuner", "breakfast": "Petit-déjeuner",
     "dejeuner": "Déjeuner", "lunch": "Déjeuner", "midi": "Déjeuner",
     "diner": "Dîner", "dinner": "Dîner", "soir": "Dîner",
-    "gouter": "Goûter", "snack": "Collation", "collation": "Collation",
+    "gouter": "Extra", "snack": "Extra", "collation": "Extra", "extra": "Extra",
   };
   return map[k] ?? t;
 }

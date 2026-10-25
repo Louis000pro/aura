@@ -442,7 +442,8 @@ function normalizeMealType(raw?: string): string {
   const t = (raw || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
   if (/petit|matin|breakfast/.test(t)) return "petit-dejeuner";
   if (/dejeun|midi|lunch/.test(t)) return "dejeuner";
-  if (/gout|collation|snack/.test(t)) return "gouter";
+  // « gouter » est l'extra du journal : ce qu'on prend entre les repas.
+  if (/gout|collation|snack|extra|en-?cas|grignot|shaker/.test(t)) return "gouter";
   if (/diner|soir|dinner/.test(t)) return "diner";
   return "";
 }

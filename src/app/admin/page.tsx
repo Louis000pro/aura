@@ -179,7 +179,7 @@ function depuis(iso: string): string {
 
 const CRENEAUX: Record<string, string> = {
   petit_dejeuner: "Petit-déjeuner", petitdejeuner: "Petit-déjeuner", "petit-dejeuner": "Petit-déjeuner",
-  dejeuner: "Déjeuner", diner: "Dîner", gouter: "Goûter", collation: "Goûter",
+  dejeuner: "Déjeuner", diner: "Dîner", gouter: "Extra", collation: "Extra",
 };
 
 /* ═══════════════════════ L'écran ═══════════════════════ */

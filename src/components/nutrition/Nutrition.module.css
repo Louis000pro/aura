@@ -115,6 +115,82 @@
   color: #fff;
 }
 
+/* Une puce qui garde sa largeur, dans une rangée qui défile : les envies
+   qui affinent une envie ouverte. */
+.puceRail {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 15px;
+  white-space: nowrap;
+}
+
+/* Une envie en photo (« Envie de quoi ? », « Toutes les envies »). Le mot
+   se pose sur le voile sombre du bas : il reste blanc dans les deux thèmes. */
+.tuileEnvie {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+  border-radius: var(--r-bloc);
+  box-shadow: var(--ombre-pose);
+  background: rgba(var(--accent-rgb), 0.1);
+  text-align: left;
+  cursor: pointer;
+}
+.tuileEnvie img {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.motEnvie {
+  position: absolute;
+  left: 10px;
+  right: 8px;
+  bottom: 9px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  color: #fff;
+}
+/* Les mots trop longs pour la tuile portent leur coupure dans leur nom
+   (lib/collectionsRecettes : « Méditer-ranée ») : tous les navigateurs ne
+   savent pas couper le français tout seuls. */
+.motEnvie b {
+  font-size: 16px;
+  font-weight: 750;
+  line-height: 1.1;
+  hyphens: manual;
+  overflow-wrap: break-word;
+}
+.motEnvie small {
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.88);
+}
+
+/* L'en-tête d'une famille d'envies : le nom, puis un filet jusqu'au bord. */
+.famille {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-2);
+  white-space: nowrap;
+}
+.famille::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: rgba(var(--text-3-rgb), 0.24);
+}
+
 /* Une rangée qui défile sur le côté, sans barre visible. */
 .rail {
   display: flex;

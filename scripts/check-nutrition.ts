@@ -6,8 +6,9 @@
 
    ⚠️ IL EXERCE LE VRAI CODE (lib/collectionsRecettes, lib/photoRepas,
    lib/repas), puis il lit la source de l'écran pour les propriétés du
-   chemin. Ce qu'il protège tient en trois phrases :
-     · une collection dit ce qu'elle contient, et ne contient que ça ;
+   chemin. Ce qu'il protège tient en quatre phrases :
+     · une envie dit ce qu'elle contient, et ne contient que ça ;
+     · un extra se note autant qu'on veut, et n'a jamais de case vide ;
      · une idée pour ce repas se prépare pour ce repas (jamais une entrée
        seule, jamais une nuit au frais le matin même) ;
      · la photo d'un repas noté dit vraiment ce plat, ou il n'y en a pas.
@@ -16,12 +17,14 @@ import { existsSync, readFileSync, readdirSync } from "node:fs";
 import sharp from "sharp";
 import { RECIPES } from "@/lib/recipeBank";
 import {
-  COLLECTIONS, MINUTES_IDEE, MINUTES_RAPIDE, NATURE, PROTEINES_APRES_SPORT, REPOS,
-  besoinsDuJour, convient, dureeRecette, ideesDuMoment, minutesTotales, natureDe, poolDuMoment,
-  recettesDe, regimeConnu,
+  ENVIES, ENVIES_ACCUEIL, FAMILLES, MATINS_SALES, MAX_PUCES, MINUTES_IDEE, MINUTES_RAPIDE, NATURE, NB_ENVIES_ACCUEIL,
+  ORDRE_PUCES, PROTEINES_APRES_SPORT, REPOS, SEUIL_ENVIE,
+  besoinsDuJour, convient, demandeAuGuide, dureeRecette, envie, enviesAccueil, enviesDeFamille, estEnvie, ideesDuMoment,
+  minutesTotales, momentDeRecette, natureDe, photoEnvie, poolDuMoment, pucesDe, recettesDe, regimeConnu,
+  type IdEnvie,
 } from "@/lib/collectionsRecettes";
 import { photoDuRepas, estRecetteVaiiya } from "@/lib/photoRepas";
-import { classerRecents, heureLisible, milliers, momentDuRepas, MOMENTS } from "@/lib/repas";
+import { CHOIX_MOMENT, EXTRA, MEAL_META, MOMENT_COURT, REPAS_PRINCIPAUX, classerRecents, heureLisible, milliers, momentDuRepas, MOMENTS } from "@/lib/repas";
 import { voix } from "@/lib/guides";
 import {
   PLAFOND_FAVORIS, clePlat, compteFavoris, epinglesAReprendre, favoriDePlat, favoriDeRecette, favoriLu,
@@ -53,41 +56,114 @@ const fichierPublic = (chemin: string) => existsSync(new URL("../public" + chemi
   verdict("chaque recette a sa photo sur le disque", images.length === 0, images.join(", ") || "toutes là");
 }
 
-/* ── 2 · Les six collections disent vrai ── */
+/* ── 2 · Les envies disent vrai ── */
 {
-  for (const c of COLLECTIONS) {
-    const liste = recettesDe(c.id);
-    verdict(`« ${c.titre} » n'est pas vide`, liste.length >= 6, `${liste.length} recettes`);
-    const tuile = RECIPES.find((r) => r.id === c.tuile);
-    const heros = RECIPES.find((r) => r.id === c.heros);
-    verdict(`« ${c.titre} » : ses deux photos sont des recettes de la collection`,
-      !!tuile && !!heros && c.garde(tuile) && c.garde(heros), `${c.tuile} · ${c.heros}`);
-  }
-  const rapide = recettesDe("rapide");
-  const tropLongues = rapide.filter((r) => minutesTotales(r) > MINUTES_RAPIDE || !!REPOS[r.id]?.texte);
-  verdict(`« Rapide » : tout est prêt en ${MINUTES_RAPIDE} minutes, repos compris`, tropLongues.length === 0,
-    tropLongues.map((r) => `${r.id} ${minutesTotales(r)} min`).join(", ") || `${rapide.length} recettes`);
-  verdict("« Rapide » ne garde ni gambas (10 min de marinade) ni overnight oats (une nuit)",
-    !rapide.some((r) => r.id === "gambas-grillees-ail-persil" || r.id === "overnight-oats-chocolat-noisette"),
-    "le repos entre dans le compte");
-  verdict("« Rapide » se lit de la plus courte à la plus longue",
-    rapide.every((r, i) => i === 0 || minutesTotales(rapide[i - 1]) <= minutesTotales(r)), dureeRecette(rapide[0]));
-  const veg = recettesDe("vegetarien");
-  verdict("« Végétarien » : ni viande ni poisson", veg.every((r) => r.diet.includes("vegetarien") || r.diet.includes("vegan")), `${veg.length} recettes`);
-  const sport = recettesDe("apres-sport");
+  const ids = ENVIES.map((e) => e.id);
+  verdict("38 envies, chacune une seule fois", ids.length === 38 && new Set(ids).size === ids.length, `${ids.length} envies`);
+  const sansFamille = ENVIES.filter((e) => !FAMILLES.some((f) => f.id === e.famille)).map((e) => e.id);
+  const famillesVides = FAMILLES.filter((f) => !ENVIES.some((e) => e.famille === f.id)).map((f) => f.id);
+  verdict("chaque envie vit dans une famille, et chaque famille a ses envies", sansFamille.length === 0 && famillesVides.length === 0,
+    [...sansFamille, ...famillesVides].join(", ") || `${FAMILLES.length} familles`);
+  const maigres = ENVIES.filter((e) => recettesDe(e.id).length < 6).map((e) => `${e.id} ${recettesDe(e.id).length}`);
+  verdict("chaque envie garde au moins six recettes", maigres.length === 0, maigres.join(", ") || "");
+  const tuiles = ENVIES.filter((e) => { const r = RECIPES.find((x) => x.id === e.tuile); return !r || !e.garde(r); }).map((e) => e.id);
+  verdict("la photo d'une envie est une recette de l'envie", tuiles.length === 0, tuiles.join(", ") || "");
+  const seules = RECIPES.filter((r) => ENVIES.filter((e) => e.garde(r)).length < 2).map((r) => r.id);
+  verdict("chaque recette se trouve par au moins deux envies", seules.length === 0, seules.join(", ") || `${RECIPES.length} recettes`);
+
+  const vite = recettesDe("vite");
+  const tropLongues = vite.filter((r) => minutesTotales(r) > MINUTES_RAPIDE || !!REPOS[r.id]?.texte);
+  verdict(`« Faire vite » : tout est prêt en ${MINUTES_RAPIDE} minutes, repos compris`, tropLongues.length === 0,
+    tropLongues.map((r) => `${r.id} ${minutesTotales(r)} min`).join(", ") || `${vite.length} recettes`);
+  verdict("« Faire vite » ne garde ni gambas (10 min de marinade) ni overnight oats (une nuit)",
+    !vite.some((r) => r.id === "gambas-grillees-ail-persil" || r.id === "overnight-oats-chocolat-noisette"), "le repos entre dans le compte");
+  verdict("« Faire vite » se lit de la plus courte à la plus longue",
+    vite.every((r, i) => i === 0 || minutesTotales(vite[i - 1]) <= minutesTotales(r)), dureeRecette(vite[0]));
+  const legumes = recettesDe("legumes");
+  verdict("« Légumes » : ni viande ni poisson", legumes.every((r) => convient(r, ["vegetarien"])), `${legumes.length} recettes`);
+  const sport = recettesDe("sport");
   verdict(`« Après le sport » : au moins ${PROTEINES_APRES_SPORT} g de protéines par portion`,
     sport.every((r) => r.proteins >= PROTEINES_APRES_SPORT), `la moins riche : ${Math.min(...sport.map((r) => r.proteins))} g`);
   const shakers = sport.filter((r) => natureDe(r) === "boisson");
   verdict("« Après le sport » garde les shakers et commence par eux",
     shakers.length >= 7 && sport.slice(0, shakers.length).every((r) => natureDe(r) === "boisson"),
-    `${shakers.length} shakers sur ${sport.length} recettes`);
-  const desserts = recettesDe("desserts");
-  verdict("« Desserts » : que des desserts", desserts.every((r) => natureDe(r) === "dessert"), `${desserts.length} desserts`);
-  const pates = recettesDe("pates-riz");
-  verdict("« Pâtes et riz » : jamais le quinoa ni le couscous seuls",
-    !pates.some((r) => r.id === "bowl-de-poulet-quinoa-et-avocat" || r.id.startsWith("tajine")), `${pates.length} plats`);
-  const entrees = COLLECTIONS.flatMap((c) => recettesDe(c.id)).filter((r) => natureDe(r) === "entree");
-  verdict("aucune entrée seule dans une collection", entrees.length === 0, entrees.map((r) => r.id).join(", ") || "aucune");
+    `${shakers.length} boissons sur ${sport.length} recettes`);
+  verdict("« Un dessert » : que des desserts", recettesDe("dessert").every((r) => natureDe(r) === "dessert"), `${recettesDe("dessert").length} desserts`);
+  verdict("« Boire » : que des boissons", recettesDe("boire").every((r) => natureDe(r) === "boisson"), `${recettesDe("boire").length} boissons`);
+  const riz = recettesDe("riz");
+  verdict("« Riz » : jamais le quinoa, le couscous ni les nouilles de riz",
+    !riz.some((r) => ["bowl-de-poulet-quinoa-et-avocat", "pho-au-boeuf", "bowl-de-tofu-croustillant-nouilles-de-riz-et-edamame"].includes(r.id) || r.id.startsWith("tajine")),
+    `${riz.length} plats`);
+  const pasDesPlats = (["repas", "pates", "riz"] as IdEnvie[]).flatMap((id) => recettesDe(id).filter((r) => natureDe(r) !== "plat").map((r) => `${id}:${r.id}`));
+  verdict("« Un vrai repas », « Pâtes » et « Riz » : que des plats", pasDesPlats.length === 0, pasDesPlats.join(", ") || "le tzatziki n'est pas un repas");
+
+  /* Les pièges des mots, rejoués sur les recettes de la banque qui les portent. */
+  const dans = (id: IdEnvie, recette: string) => recettesDe(id).some((r) => r.id === recette);
+  verdict("« semoule » ne fait pas des moules : le tajine et le poulet aux olives ne sont pas du poisson",
+    !dans("poisson", "tajine-d-agneau-aux-abricots-citron-confit-et-couscous") && !dans("poisson", "poulet-au-citron-et-aux-olives")
+      && dans("poisson", "moules-marinieres-et-frites-au-four"), "les vraies moules restent du poisson");
+  verdict("« oignon nouveau » ne fait pas du veau", !dans("viande", "taboule-libanais") && !dans("viande", "poke-bowl-saumon-avocat"), "le taboulé reste végétarien");
+  verdict("« bœuf » ne fait pas des œufs", !["boeuf-bourguignon", "pho-au-boeuf", "wok-de-boeuf-aux-legumes-croquants"].some((id) => dans("oeufs", id)), "");
+  verdict("un bouillon ne fait pas de la viande", !dans("viande", "veloute-de-potimarron-et-chataignes") && !dans("poulet", "veloute-de-carottes"), "");
+
+  /* Sucré, salé : un petit-déjeuner ou un encas salé s'écrit à la main dans
+     MATINS_SALES. Un matin qui n'y est pas doit être sucré par ses ingrédients. */
+  const SUCRE = /sucre|miel|sirop|chocolat|cacao|banane|pomme|poire|fruit|fraise|framboise|myrtille|mangue|kiwi|clementine|confiture|cannelle|vanille|datte|erable|raisin|compote|coco|caramel|pepites/;
+  const SALE = /jambon|saumon|thon|poulet|feta|avocat|epinard|tomate|lardon|bacon|champignon|poivron|oignon|parmesan|emmental|gruyere|ciboulette/;
+  const nom = (v: string) => v.toLowerCase().replace(/œ/g, "oe").normalize("NFD").replace(/[̀-ͯ]/g, "");
+  const douteux = RECIPES.filter((r) => (natureDe(r) === "petit-dej" || natureDe(r) === "encas") && !MATINS_SALES.has(r.id))
+    .filter((r) => { const i = r.ingredients.map((x) => nom(x.nom)).join(" "); return !SUCRE.test(i) || SALE.test(i); }).map((r) => r.id);
+  verdict("un matin ou un encas salé est écrit dans MATINS_SALES", douteux.length === 0, douteux.join(", ") || "les autres sont sucrés");
+  const salesInconnus = [...MATINS_SALES].filter((id) => { const r = RECIPES.find((x) => x.id === id); return !r || !["petit-dej", "encas"].includes(natureDe(r)); });
+  verdict("MATINS_SALES ne liste que des matins et des encas de la banque", salesInconnus.length === 0, salesInconnus.join(", ") || `${MATINS_SALES.size} recettes`);
+  const sucre = recettesDe("sucre");
+  verdict("« Sucré » : aucun plat, aucune entrée, aucun matin salé",
+    sucre.every((r) => natureDe(r) !== "plat" && natureDe(r) !== "entree" && !MATINS_SALES.has(r.id)), `${sucre.length} recettes`);
+
+  /* Les puces : elles s'additionnent, et chacune change vraiment la liste. */
+  const cas = recettesDe("sucre", [], ["chocolat", "vite"]);
+  verdict("Sucré, puis chocolat et faire vite : la liste de la maquette", cas.length === 6, cas.map((r) => r.id).join(", "));
+  const p = pucesDe("sucre", [], ["chocolat", "vite"]);
+  verdict("les puces choisies passent en tête", p[0]?.id === "chocolat" && p[0].choisie && p[1]?.id === "vite" && p[1].choisie && !p[2]?.choisie,
+    p.map((x) => (x.choisie ? `[${x.label}]` : x.label)).join(" · "));
+  const inutiles: string[] = [];
+  for (const e of ENVIES) {
+    const liste = recettesDe(e.id);
+    for (const x of pucesDe(e.id)) {
+      const n = liste.filter(envie(x.id).garde).length;
+      if (x.id === e.id || x.choisie || n < 2 || n >= liste.length) inutiles.push(`${e.id}+${x.id}`);
+    }
+    if (pucesDe(e.id).length > MAX_PUCES) inutiles.push(`${e.id} : trop de puces`);
+  }
+  verdict(`une puce change vraiment la liste, et il y en a ${MAX_PUCES} au plus`, inutiles.length === 0, inutiles.slice(0, 6).join(", ") || `${ENVIES.length} envies`);
+  const intersection = recettesDe("sport", [], ["sucre"]).map((r) => r.id).join();
+  const attendue = recettesDe("sport").filter((r) => recettesDe("sucre").includes(r)).map((r) => r.id).join();
+  verdict("deux envies ensemble gardent ce qui est dans les deux", intersection === attendue && intersection.length > 0, `${recettesDe("sport", [], ["sucre"]).length} recettes`);
+  const ordre = new Set(ORDRE_PUCES);
+  verdict("chaque envie peut devenir une puce", ENVIES.every((e) => ordre.has(e.id)) && ordre.size === ENVIES.length,
+    ENVIES.filter((e) => !ordre.has(e.id)).map((e) => e.id).join(", ") || `${ORDRE_PUCES.length} puces`);
+
+  /* Les mots : ceux de l'écran et ceux qu'on demande au Guide. */
+  verdict("la demande au Guide reprend les envies choisies",
+    demandeAuGuide("sucre", ["chocolat", "vite"]) === `Tu as une autre idée de recette sucrée, au chocolat et prête en ${MINUTES_RAPIDE} minutes ou moins ?`,
+    JSON.stringify(demandeAuGuide("sucre", ["chocolat", "vite"])));
+  const demandes = ENVIES.map((e) => demandeAuGuide(e.id));
+  verdict("une demande au Guide est une question", demandes.every((d) => d.endsWith(" ?")), `${demandes.length} demandes`);
+  const textes = [...ENVIES.flatMap((e) => [e.label, e.sousTitre, demandeAuGuide(e.id)]), ...FAMILLES.map((f) => f.nom)];
+  const fautes = textes.filter((t) => /'|—| [?!:;]|^\s|\s$/.test(t));
+  verdict("les textes des envies suivent la typographie française", fautes.length === 0, fautes.join(" | ") || `${textes.length} textes`);
+  verdict("un sous-titre dit ce qui fait entrer une recette, en une phrase", ENVIES.every((e) => e.sousTitre.endsWith(".")), "");
+
+  /* L'écran : neuf envies, même pour un régime qui en vide plusieurs. */
+  verdict("neuf envies sur l'écran", enviesAccueil().length === NB_ENVIES_ACCUEIL, enviesAccueil().join(", "));
+  const vegan = enviesAccueil(["vegan"]);
+  verdict("en végan, une envie trop maigre cède sa place à la suivante",
+    vegan.length === NB_ENVIES_ACCUEIL && vegan.every((id) => recettesDe(id, ["vegan"]).length >= SEUIL_ENVIE), vegan.join(", "));
+  verdict("l'ordre de l'écran ne cite que des envies qui existent", ENVIES_ACCUEIL.every((id) => estEnvie(id)), `${ENVIES_ACCUEIL.length} envies`);
+  const photoVegan = photoEnvie("legumes", ["vegan"]);
+  verdict("la photo d'une envie convient au régime", RECIPES.some((r) => r.image === photoVegan && convient(r, ["vegan"])), photoVegan);
+  verdict("« Toutes les envies » ne montre pas une envie à moins de deux recettes",
+    FAMILLES.every((f) => enviesDeFamille(f.id, ["vegan"]).every(({ n }) => n >= SEUIL_ENVIE)), "");
 }
 
 /* ── 3 · Le régime : végétalien vaut végétarien, une clé inconnue ne vide rien ── */
@@ -96,10 +172,9 @@ const fichierPublic = (chemin: string) => existsSync(new URL("../public" + chemi
   verdict("les accents et la casse ne comptent pas", regimeConnu(["Végétarien"]).join() === "vegetarien", regimeConnu(["Végétarien"]).join());
   const sorbet = RECIPES.find((r) => r.id === "sorbet-framboise-minute")!;
   verdict("une recette végétalienne convient à un végétarien", convient(sorbet, ["vegetarien"]), sorbet.diet.join(", "));
-  const vegCollections = COLLECTIONS.filter((c) => recettesDe(c.id, ["vegetarien"]).length > 0).length;
-  verdict("un végétarien garde au moins quatre collections", vegCollections >= 4, `${vegCollections} collections`);
-  const viande = recettesDe("apres-sport", ["vegetarien"]).filter((r) => !convient(r, ["vegetarien"]));
-  verdict("une collection filtrée ne rend rien d'incompatible", viande.length === 0, viande.map((r) => r.id).join(", ") || "rien");
+  verdict("un végétarien garde ses neuf envies sur l'écran", enviesAccueil(["vegetarien"]).length === NB_ENVIES_ACCUEIL, enviesAccueil(["vegetarien"]).join(", "));
+  const viande = recettesDe("sport", ["vegetarien"], ["sucre"]).filter((r) => !convient(r, ["vegetarien"]));
+  verdict("une envie filtrée ne rend rien d'incompatible", viande.length === 0, viande.map((r) => r.id).join(", ") || "rien");
 }
 
 /* ── 4 · Les idées du moment ── */
@@ -149,7 +224,16 @@ const fichierPublic = (chemin: string) => existsSync(new URL("../public" + chemi
 {
   verdict("le moment suit l'heure de l'analyse photo",
     momentDuRepas(10) === "petit-dejeuner" && momentDuRepas(11) === "dejeuner" && momentDuRepas(15) === "gouter" && momentDuRepas(18) === "diner" && momentDuRepas(3) === "diner",
-    "10 h petit-déjeuner, 11 h déjeuner, 15 h goûter, 18 h dîner");
+    "10 h petit-déjeuner, 11 h déjeuner, 15 h extra, 18 h dîner");
+  verdict("le créneau « gouter » s'affiche « Extra »", MEAL_META[EXTRA].label === "Extra" && MOMENT_COURT[EXTRA] === "Extra", "la valeur reste « gouter » en base");
+  verdict("trois repas ont une case « rien d'ajouté », l'extra jamais", REPAS_PRINCIPAUX.length === 3 && !REPAS_PRINCIPAUX.includes(EXTRA), REPAS_PRINCIPAUX.join(", "));
+  verdict("l'extra se choisit en dernier, après le dîner", CHOIX_MOMENT[CHOIX_MOMENT.length - 1] === EXTRA && CHOIX_MOMENT.length === 4, CHOIX_MOMENT.map((m) => MOMENT_COURT[m]).join(" · "));
+  const shaker = RECIPES.find((x) => x.id === "shaker-chocolat-noisette")!;
+  const cookie = RECIPES.find((x) => x.id === "cookies-proteines-aux-pepites-de-chocolat")!;
+  const plat = RECIPES.find((x) => x.id === "bowl-de-poulet-quinoa-et-avocat")!;
+  verdict("une boisson ou un encas de la banque part en extra, à toute heure",
+    momentDeRecette(shaker, 12) === EXTRA && momentDeRecette(cookie, 8) === EXTRA && momentDeRecette(plat, 12) === "dejeuner" && momentDeRecette(plat, 20) === "diner",
+    "un plat suit l'heure");
   verdict("« 08:12 » s'écrit « 8 h 12 » avec des espaces insécables", heureLisible("08:12") === "8 h 12", JSON.stringify(heureLisible("08:12")));
   verdict("les milliers prennent l'espace insécable ordinaire, pas l'espace fine", milliers(2300) === "2 300" && milliers(950) === "950", JSON.stringify(milliers(2300)));
   const r = classerRecents([
@@ -173,7 +257,7 @@ const fichierPublic = (chemin: string) => existsSync(new URL("../public" + chemi
   const ecran = net(lire("src/components/NutritionTab.tsx"));
   const hero = net(lire("src/components/MealSituationHero.tsx"));
   const journee = net(lire("src/components/nutrition/JourneeNutrition.tsx"));
-  verdict("les recettes par thème générées par l'IA sont parties", !ecran.includes("RecipesByTheme") && !existsSync(new URL("../src/components/RecipesByTheme.tsx", import.meta.url)), "remplacées par les collections en photo");
+  verdict("les recettes par thème générées par l'IA sont parties", !ecran.includes("RecipesByTheme") && !existsSync(new URL("../src/components/RecipesByTheme.tsx", import.meta.url)), "remplacées par les envies en photo");
   verdict("la rangée des sept jours a quitté l'écran", !ecran.includes("getMondayWeek") && !ecran.includes("weekDays"), "les jours se parcourent dans le détail");
   verdict("« J'ai déjà mangé · Je saute ce repas » sont partis", !hero.includes("Je saute ce repas") && !hero.includes("déjà mangé"), "l'ajout vit sous la question");
   verdict("la question est datée par le moment du téléphone", hero.includes("`nutrition.question.${moment}`") && ecran.includes("useMomentRepas"), "jamais l'heure du serveur");
@@ -182,6 +266,18 @@ const fichierPublic = (chemin: string) => existsSync(new URL("../public" + chemi
     "src/components/nutrition/FeuilleAjoutRepas.tsx", "src/components/nutrition/GrillePlats.tsx",
     "src/components/nutrition/VueFavoris.tsx", "src/hooks/useFavorisNutrition.ts",
   ].map((f) => net(lire(f))).join("\n");
+  verdict("« Ma journée » : un extra n'a jamais de case « rien d'ajouté »",
+    journee.includes("REPAS_PRINCIPAUX.filter((t) => !repas.some") && !journee.includes("MOMENTS.filter") && journee.includes("Ajouter un extra"),
+    "la liste des extras finit sur « Ajouter un extra »");
+  verdict("les extras comptent dans les chiffres du jour", journee.includes("(repas ?? []).reduce((t, m) => t + (m[cle] || 0), 0)") && journee.includes("d’extras"),
+    "le total prend toute la journée, et dit la part des extras");
+  verdict("une recette ajoutée depuis sa fiche suit sa nature", ecran.includes("momentDeRecette(recetteOuverte"), "un shaker part en extra");
+  const ajout = net(lire("src/components/nutrition/FeuilleAjoutRepas.tsx"));
+  verdict("« Ajouter un extra » montre les derniers extras", ajout.includes("CHOIX_MOMENT.map") && ajout.includes("extra ? extras : plats") && ajout.includes('"Ajouter un extra"'),
+    "et « Mes plats » pour un repas");
+  verdict("les derniers extras se lisent dans le journal", ecran.includes('meal_type === EXTRA') && ecran.includes('"food_name, calories, proteins, carbs, fats, meal_type"'), "");
+  const ailleurs = ["src/components/AssistantSheet.tsx", "src/app/admin/page.tsx", "src/app/api/chat/route.ts"].filter((f) => /"Goûter"|"Collation"/.test(net(lire(f))));
+  verdict("le créneau se dit « Extra » partout, jamais « Goûter » ni « Collation »", ailleurs.length === 0, ailleurs.join(", ") || "l'✦, l'administration, le coach");
   verdict("une écriture du journal ne vit qu'ici", !/nutrition_logs"\)[\s\S]{0,60}?\.(insert|delete)\(/.test(demandeurs + journee),
     "la feuille, les grilles et le détail demandent, l'écran écrit et signale");
 }
@@ -389,7 +485,16 @@ const fichierPublic = (chemin: string) => existsSync(new URL("../public" + chemi
 
   const ecran = net(lire("src/components/NutritionTab.tsx"));
   const iIdee = ecran.indexOf("<IdeesDuMoment"), iSaison = ecran.indexOf("<AfficheSaison"), iTrouver = ecran.indexOf("<TrouverRecette");
-  verdict("l'affiche vit entre « Une idée » et « Trouver une recette »", iIdee >= 0 && iIdee < iSaison && iSaison < iTrouver, "");
+  verdict("l'affiche vit entre « Une idée » et « Envie de quoi ? »", iIdee >= 0 && iIdee < iSaison && iSaison < iTrouver, "");
+  const trouver = net(lire("src/components/nutrition/TrouverRecette.tsx"));
+  verdict("« Envie de quoi ? » pose des envies en photo et ouvre « Toutes les envies »",
+    trouver.includes("<TuileEnvie") && trouver.includes("onToutes") && trouver.includes("Envie de quoi&nbsp;?"), "la loupe garde la recherche");
+  verdict("une envie s'ouvre par-dessus la vue d'où elle vient",
+    ecran.includes('useRetourTelephone(envieVue !== null, "nutritionEnvie", fermerEnvie)') && ecran.includes('useRetourTelephone(vue.nom === "envies", "nutritionEnvies", fermerVue)'),
+    "le retour du téléphone ne ferme qu'elle");
+  verdict("la demande au Guide reprend les envies choisies", ecran.includes("demandeAuGuide(envieVue.id, envieVue.filtres)"), "");
+  const vues = ["src/components/nutrition/TrouverRecette.tsx", "src/components/nutrition/ToutesLesEnvies.tsx", "src/components/nutrition/TuileEnvie.tsx"].map((f) => net(lire(f))).join("\n");
+  verdict("les envies n'écrivent rien", !/supabase|createClient|nutrition_logs|\.(insert|upsert|delete)\(/.test(vues), "elles montrent, l'écran ouvre");
   verdict("le moment se lit sur le jour du téléphone",
     ecran.includes("momentDuJour(aujourdhui, regime)") && ecran.includes("if (!aujourdhui) return null"), "jamais l'horloge du serveur");
   verdict("l'aperçu d'un autre moment est réservé à l'administration", ecran.includes("apercuSaison && estAdmin"), "?saison=<id>");

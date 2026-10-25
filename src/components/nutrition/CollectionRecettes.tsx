@@ -2,21 +2,26 @@
 
 /* ════════════════════════════════════════════════════════════════════
    Une collection de recettes, en vue pleine dans l'écran Nutrition : une
-   des six collections, ou les recettes du moment de l'année.
+   envie (lib/collectionsRecettes), ou les recettes du moment de l'année.
 
    La photo d'une recette de la collection en haut, ce qui fait entrer une
-   recette dedans dit tel quel, puis la grille. Le filtre n'apparaît que si
-   la collection mélange petits-déjeuners et plats ; il n'y a pas de
-   « Déjeuner » contre « Dîner » parce que la banque ne les distingue pas
-   vraiment : un plat se mange midi ou soir.
+   recette dedans dit tel quel, puis la grille.
+
+   Une envie s'affine par d'autres envies (`puces`) : sucré, puis
+   chocolat, puis faire vite. Une puce choisie passe en tête et se retire
+   d'un toucher ; les autres ne s'affichent que si elles changent vraiment
+   la liste. Sans puces (le moment de l'année), le filtre « Petit-déj ·
+   Midi et soir » n'apparaît que si la collection mélange les deux ; il
+   n'y a pas de « Déjeuner » contre « Dîner » parce que la banque ne les
+   distingue pas vraiment : un plat se mange midi ou soir.
 
    Le retour du téléphone ferme la vue (useRetourTelephone, dans l'écran).
    ════════════════════════════════════════════════════════════════════ */
 
 import { useState } from "react";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, X } from "lucide-react";
 import type { Recipe } from "@/lib/recipeBank";
-import { natureDe } from "@/lib/collectionsRecettes";
+import { natureDe, type IdEnvie, type PuceEnvie } from "@/lib/collectionsRecettes";
 import { PRENOM_GUIDE, type GuideRef } from "@/lib/guides";
 import { VisageGuide } from "@/components/AssistantMark";
 import CarteRecette from "@/components/nutrition/CarteRecette";
@@ -24,13 +29,16 @@ import ns from "@/components/nutrition/Nutrition.module.css";
 
 type Filtre = "tout" | "petit-dej" | "plat";
 
-export default function CollectionRecettes({ titre, sousTitre, heros, recettes, guide, estFavori, onRetour, onOuvrir, onDemander }: {
+export default function CollectionRecettes({ titre, sousTitre, heros, recettes, puces, onPuce, guide, estFavori, onRetour, onOuvrir, onDemander }: {
   titre: string;
   /** Ce qui fait entrer une recette dans la collection, dit tel quel. */
   sousTitre: string;
   /** La photo du haut : celle d'une recette de la collection. */
   heros: string;
   recettes: Recipe[];
+  /** Les envies qui affinent une envie ouverte (absentes pour le moment de l'année). */
+  puces?: PuceEnvie[];
+  onPuce?: (id: IdEnvie) => void;
   guide: GuideRef;
   /** Un petit cœur sur la photo d'une recette favorite. */
   estFavori: (id: string) => boolean;
@@ -45,7 +53,7 @@ export default function CollectionRecettes({ titre, sousTitre, heros, recettes, 
      n'est pas un dîner), qui restent sous « Tout ». */
   const aDesPetitsDej = recettes.some((r) => natureDe(r) === "petit-dej");
   const aDesPlats = recettes.some((r) => natureDe(r) === "plat");
-  const filtrable = aDesPetitsDej && aDesPlats;
+  const filtrable = !puces && aDesPetitsDej && aDesPlats;
   const visibles = !filtrable || filtre === "tout"
     ? recettes
     : recettes.filter((r) => natureDe(r) === (filtre === "petit-dej" ? "petit-dej" : "plat"));
@@ -68,6 +76,26 @@ export default function CollectionRecettes({ titre, sousTitre, heros, recettes, 
           <p className="text-[16px]" style={{ color: "rgba(255,255,255,0.92)" }}>{sousTitre}</p>
         </div>
       </section>
+
+      {puces && puces.length > 0 && (
+        /* La rangée va d'un bord à l'autre : une puce coupée au bord dit qu'il y en a d'autres. */
+        <div className={ns.rail} role="group" aria-label="Affiner"
+          style={{ gap: 6, margin: "0 -16px", padding: "2px 16px 8px", scrollSnapType: "none" }}>
+          {puces.map((p) => (
+            <button key={p.id} type="button" aria-pressed={p.choisie} onClick={() => onPuce?.(p.id)}
+              className={`${ns.puce} ${ns.puceRail}`}>
+              {p.label}
+              {p.choisie && <X size={12} strokeWidth={3} aria-hidden />}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {puces && (
+        <p className="-mt-1.5 px-0.5 text-[13px] font-semibold" style={{ color: "var(--text-3)" }}>
+          {visibles.length} {visibles.length > 1 ? "recettes" : "recette"}
+        </p>
+      )}
 
       {filtrable && (
         <div className="flex gap-1.5" role="group" aria-label="Filtrer les recettes">

@@ -5,14 +5,20 @@
    la maquette « La nutrition accueillante », Louis, 2026-10-22).
 
    Ce qu'on a mangé d'abord, une affiche par repas (sa photo quand on en a
-   une qui dit vraiment ce plat), puis les moments encore vides, puis les
-   chiffres, chacun avec une phrase qui dit à quoi il sert. Les jours se
-   parcourent avec la pastille du haut, le mois s'ouvre par le bouton
-   calendrier.
+   une qui dit vraiment ce plat), puis les repas encore vides, puis les
+   extras en liste, puis les chiffres, chacun avec une phrase qui dit à
+   quoi il sert. Les jours se parcourent avec la pastille du haut, le mois
+   s'ouvre par le bouton calendrier.
 
-   ⚠️ « RIEN D'AJOUTÉ » N'EST PAS UN REPROCHE. Un moment vide est une porte
+   ⚠️ « RIEN D'AJOUTÉ » N'EST PAS UN REPROCHE. Un repas vide est une porte
    pour ajouter, pas une case rouge. Et un jour hors de la fenêtre gratuite
    ne se présente jamais comme vide : il porte l'encart Vaiiya+ (lib/historique).
+
+   ⚠️ UN EXTRA N'A JAMAIS DE CASE VIDE (Louis, 2026-10-25). Ce qu'on prend
+   entre les repas (un shaker, un fruit, un café au lait) se note autant de
+   fois qu'on veut, à n'importe quelle heure : la liste des extras finit sur
+   « Ajouter un extra », jamais sur « rien d'ajouté ». Les extras comptent
+   dans les chiffres du jour.
    ════════════════════════════════════════════════════════════════════ */
 
 import { useState } from "react";
@@ -24,7 +30,7 @@ import ImageRepas from "@/components/nutrition/ImageRepas";
 import Sheet from "@/components/communaute/Sheet";
 import { photoDuRepas, estRecetteVaiiya } from "@/lib/photoRepas";
 import { localDateStr, shiftDateStr } from "@/lib/dates";
-import { MEAL_META, MOMENTS, heureLisible, milliers, type MealEntry, type MealType } from "@/lib/repas";
+import { EXTRA, MEAL_META, REPAS_PRINCIPAUX, estExtra, heureLisible, milliers, type MealEntry, type MealType } from "@/lib/repas";
 import { useRetourTelephone } from "@/hooks/useRetourTelephone";
 import ns from "@/components/nutrition/Nutrition.module.css";
 
@@ -169,7 +175,10 @@ export default function JourneeNutrition({
   const peutApres = date < aujourdhui;
 
   const total = (cle: "calories" | "proteins" | "carbs" | "fats") => (repas ?? []).reduce((t, m) => t + (m[cle] || 0), 0);
-  const vides = repas ? MOMENTS.filter((t) => !repas.some((m) => m.mealType === t)) : [];
+  const principaux = (repas ?? []).filter((m) => !estExtra(m));
+  const extras = (repas ?? []).filter(estExtra);
+  const kcalExtras = extras.reduce((t, m) => t + (m.calories || 0), 0);
+  const vides = repas ? REPAS_PRINCIPAUX.filter((t) => !repas.some((m) => m.mealType === t)) : [];
   const repere = Math.round(objectifs.calories / 50) * 50;
 
   return (
@@ -220,13 +229,13 @@ export default function JourneeNutrition({
               <span aria-hidden className="h-40 w-full animate-pulse" style={{ borderRadius: "var(--r-affiche)", background: "rgba(var(--text-3-rgb),0.14)" }} />
             ) : (
               <>
-                {repas.map((m) => <CarteRepas key={m.id} repas={m} onOuvrir={() => setOuvert(m)} />)}
+                {principaux.map((m) => <CarteRepas key={m.id} repas={m} onOuvrir={() => setOuvert(m)} />)}
                 {vides.length > 0 && (
                   <div className="grid grid-cols-2 gap-2.5">
                     {vides.map((t) => (
                       <button key={t} type="button" onClick={() => onAjouter(t)}
-                        aria-label={`Ajouter ${t === "gouter" ? "mon goûter" : t === "diner" ? "mon dîner" : t === "dejeuner" ? "mon déjeuner" : "mon petit-déjeuner"}`}
-                        className={`${ns.bloc} items-center justify-between gap-2 cursor-pointer`}
+                        aria-label={`Ajouter ${t === "diner" ? "mon dîner" : t === "dejeuner" ? "mon déjeuner" : "mon petit-déjeuner"}`}
+                        className={`${ns.bloc} items-center justify-between gap-2 cursor-pointer odd:last:col-span-2`}
                         style={{ flexDirection: "row", minHeight: 64, padding: 12 }}>
                         <span className="flex min-w-0 flex-col gap-0.5">
                           <span className="text-[16px] font-bold" style={{ color: "var(--text-0)" }}>{MEAL_META[t].label}</span>
@@ -245,6 +254,43 @@ export default function JourneeNutrition({
           </section>
 
           {!masque && repas !== null && (
+            <section className="flex flex-col gap-3" aria-label="Les extras">
+              <div className="flex items-baseline justify-between gap-3">
+                <h2 className="text-[20px]" style={{ color: "var(--text-0)", fontWeight: 750, fontVariationSettings: "var(--w-voix)" }}>
+                  Les extras
+                </h2>
+                {extras.length > 0 && (
+                  <span className="text-[13px]" style={{ color: "var(--text-3)" }}>{extras.length} · {milliers(kcalExtras)}&nbsp;kcal</span>
+                )}
+              </div>
+              <div className={`${ns.bloc} overflow-hidden`}>
+                {extras.map((m) => (
+                  <button key={m.id} type="button" onClick={() => setOuvert(m)}
+                    className="vy-filet flex min-h-16 items-center gap-3 px-3.5 py-2.5 text-left cursor-pointer">
+                    <ImageRepas nom={m.name} className="h-11 w-11 flex-shrink-0" style={{ borderRadius: 12 }} icone={18} />
+                    <span className="flex min-w-0 flex-col gap-0.5">
+                      <span className="line-clamp-2 text-[16px] font-bold leading-snug" style={{ color: "var(--text-0)" }}>{m.name}</span>
+                      <span className="text-[11px]" style={{ color: "var(--text-3)" }}>{heureLisible(m.time)}</span>
+                    </span>
+                    <span className="ml-auto flex-shrink-0" style={{ color: "var(--text-0)" }}>
+                      <Kcal n={m.calories} taille={16} graisse={700} /> <span className="text-[11px]" style={{ color: "var(--text-3)" }}>kcal</span>
+                    </span>
+                  </button>
+                ))}
+                <button type="button" onClick={() => onAjouter(EXTRA)}
+                  className="vy-filet flex min-h-16 items-center gap-2.5 px-3.5 py-2.5 text-left text-[13px] font-bold cursor-pointer"
+                  style={{ color: "var(--exp-encre)" }}>
+                  <span aria-hidden className="flex h-11 w-11 flex-shrink-0 items-center justify-center"
+                    style={{ borderRadius: 12, border: "1.5px dashed rgba(109,75,214,0.45)" }}>
+                    <Plus size={18} strokeWidth={2.4} />
+                  </span>
+                  Ajouter un extra
+                </button>
+              </div>
+            </section>
+          )}
+
+          {!masque && repas !== null && (
             <section className="flex flex-col gap-3" aria-label="Les chiffres du jour">
               <h2 className="text-[20px]" style={{ color: "var(--text-0)", fontWeight: 750, fontVariationSettings: "var(--w-voix)" }}>
                 Les chiffres du jour
@@ -256,7 +302,7 @@ export default function JourneeNutrition({
                   <span className="text-[13px]" style={{ color: "var(--text-2)" }}>{estAujourdhui ? "kcal aujourd’hui" : "kcal ce jour-là"}</span>
                 </span>
                 <span className="text-[13px] leading-relaxed" style={{ color: "var(--text-2)" }}>
-                  L’énergie que t’apportent les aliments. Repère pour toi&nbsp;: environ {milliers(repere)}&nbsp;kcal par jour.
+                  L’énergie que t’apportent les aliments{kcalExtras > 0 ? `, dont ${milliers(kcalExtras)} kcal d’extras` : ""}. Repère pour toi&nbsp;: environ {milliers(repere)}&nbsp;kcal par jour.
                 </span>
               </div>
               <div className="grid grid-cols-2 gap-2.5">

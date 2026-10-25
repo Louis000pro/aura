@@ -51,7 +51,7 @@ Additionne TOUS les articles. Retourne UNIQUEMENT le JSON.`
 Retourne un JSON avec :
 {
   "foodName": "nom court et clair du repas en francais",
-  "mealType": "petit-dejeuner" | "dejeuner" | "gouter" | "diner",
+  "mealType": "petit-dejeuner" | "dejeuner" | "gouter" | "diner" ("gouter" = un extra pris entre les repas : shaker, fruit, boisson, encas),
   "calories": total kcal (nombre entier),
   "proteins": proteines totales en g (nombre entier),
   "carbs": glucides totaux en g (nombre entier),

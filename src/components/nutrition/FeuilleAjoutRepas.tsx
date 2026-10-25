@@ -3,10 +3,15 @@
 /* ════════════════════════════════════════════════════════════════════
    « Ajouter un repas » : la seule porte d'ajout de l'écran Nutrition.
 
-   On choisit le moment (préchoisi sur le repas qui vient, ou sur le moment
-   vide qu'on a touché dans le détail), puis la façon : la photo de
-   l'assiette en grand, le code-barres et l'écrire en dessous, et les
-   derniers repas en un geste.
+   On choisit le moment (préchoisi sur le repas qui vient, ou sur le repas
+   vide qu'on a touché dans le détail), puis la façon : la photo en grand,
+   le code-barres et l'écrire en dessous, et les derniers repas en un geste.
+
+   L'EXTRA (Louis, 2026-10-25) est le quatrième choix : ce qu'on prend
+   entre les repas, un shaker, un fruit, un café au lait. La feuille devient
+   « Ajouter un extra », et la liste du bas montre les derniers extras au
+   lieu des plats. Un encas ou une boisson de la banque, ajouté depuis sa
+   fiche, part en extra tout seul (`momentDeRecette`).
 
    Le moment choisi ici part dans la modale qui s'ouvre (photo, code-barres,
    saisie) : elle le montre déjà coché, et on peut encore le changer là-bas.
@@ -21,7 +26,7 @@ import { useState } from "react";
 import { Barcode, Camera, PenLine, X } from "lucide-react";
 import Sheet from "@/components/communaute/Sheet";
 import GrillePlats from "@/components/nutrition/GrillePlats";
-import { MOMENTS, MOMENT_COURT, type MealType, type RecentMeal } from "@/lib/repas";
+import { CHOIX_MOMENT, EXTRA, MOMENT_COURT, type MealType, type RecentMeal } from "@/lib/repas";
 import ns from "@/components/nutrition/Nutrition.module.css";
 
 /** « 2026-10-20 » → « lundi 20 octobre ». */
@@ -31,7 +36,7 @@ function jourEnLettres(date: string): string {
 }
 
 export default function FeuilleAjoutRepas({
-  typeInitial, date, aujourdhui, plats, estFavori,
+  typeInitial, date, aujourdhui, plats, extras, estFavori,
   onFermer, onPhoto, onCodeBarres, onEcrire, onAjouterRecent, onRetirer, onCoeur,
 }: {
   typeInitial: MealType;
@@ -39,6 +44,8 @@ export default function FeuilleAjoutRepas({
   aujourdhui: string;
   /** Figés à l'ouverture : un plat touché ne change pas de place. */
   plats: RecentMeal[];
+  /** Les derniers extras, figés à l'ouverture comme les plats. */
+  extras: RecentMeal[];
   /** `null` tant que les favoris ne sont pas connus. */
   estFavori: ((nom: string) => boolean) | null;
   onFermer: () => void;
@@ -53,7 +60,9 @@ export default function FeuilleAjoutRepas({
   const [type, setType] = useState<MealType>(typeInitial);
   const [toutVoir, setToutVoir] = useState(false);
 
-  const visibles = toutVoir ? plats : plats.slice(0, 3);
+  const extra = type === EXTRA;
+  const liste = extra ? extras : plats;
+  const visibles = toutVoir ? liste : liste.slice(0, 3);
 
   return (
     <Sheet onFermer={onFermer} niveau={90}>
@@ -61,7 +70,7 @@ export default function FeuilleAjoutRepas({
         <div className="flex items-start justify-between gap-3">
           <div className="flex min-w-0 flex-col gap-1">
             <h2 className="text-[26px] leading-tight" style={{ color: "var(--text-0)", fontWeight: 800, fontVariationSettings: "var(--w-voix)" }}>
-              Ajouter un repas
+              {extra ? "Ajouter un extra" : "Ajouter un repas"}
             </h2>
             {date !== aujourdhui && (
               <span className="text-[13px]" style={{ color: "var(--text-3)" }}>Pour le {jourEnLettres(date)}</span>
@@ -74,12 +83,20 @@ export default function FeuilleAjoutRepas({
           </button>
         </div>
 
-        <div role="radiogroup" aria-label="Quel repas" className="flex gap-1.5">
-          {MOMENTS.map((m) => (
-            <button key={m} type="button" role="radio" aria-checked={type === m} onClick={() => setType(m)} className={ns.puce}>
-              {MOMENT_COURT[m]}
-            </button>
-          ))}
+        <div className="flex flex-col gap-2">
+          <div role="radiogroup" aria-label="Quel repas" className="flex gap-1.5">
+            {CHOIX_MOMENT.map((m) => (
+              <button key={m} type="button" role="radio" aria-checked={type === m}
+                onClick={() => { setType(m); setToutVoir(false); }} className={ns.puce}>
+                {MOMENT_COURT[m]}
+              </button>
+            ))}
+          </div>
+          {extra && (
+            <p className="mx-0.5 text-[13px] leading-snug" style={{ color: "var(--text-3)" }}>
+              Ce que tu prends entre les repas, à n’importe quelle heure.
+            </p>
+          )}
         </div>
 
         <button type="button" onClick={() => onPhoto(type)}
@@ -90,7 +107,7 @@ export default function FeuilleAjoutRepas({
             <Camera size={24} strokeWidth={2} />
           </span>
           <span className="flex flex-col gap-1">
-            <span className="text-[16px] font-bold">Prendre mon assiette en photo</span>
+            <span className="text-[16px] font-bold">{extra ? "Le prendre en photo" : "Prendre mon assiette en photo"}</span>
             <span className="text-[13px]" style={{ color: "rgba(255,255,255,0.9)" }}>Les calories sont estimées à partir de la photo.</span>
           </span>
         </button>
@@ -98,7 +115,7 @@ export default function FeuilleAjoutRepas({
         <div className="-mt-1.5 grid grid-cols-2 gap-2.5">
           {[
             { cle: "code", titre: "Code-barres", sous: "Pour un produit emballé", Icone: Barcode, agir: () => onCodeBarres(type) },
-            { cle: "ecrire", titre: "L’écrire", sous: "Par exemple : un yaourt", Icone: PenLine, agir: () => onEcrire(type) },
+            { cle: "ecrire", titre: "L’écrire", sous: extra ? "Par exemple : un café au lait" : "Par exemple : un yaourt", Icone: PenLine, agir: () => onEcrire(type) },
           ].map(({ cle, titre, sous, Icone, agir }) => (
             <button key={cle} type="button" onClick={agir} className={`${ns.bloc} cursor-pointer`} style={{ minHeight: 104, padding: 12, gap: 10 }}>
               <span className="flex h-10 w-10 items-center justify-center rounded-full" style={{ background: "rgba(139,92,246,0.12)", color: "var(--exp-encre)" }}>
@@ -112,17 +129,18 @@ export default function FeuilleAjoutRepas({
           ))}
         </div>
 
-        {plats.length > 0 && (
+        {liste.length > 0 && (
           <div className="flex flex-col gap-2.5">
             <div className="flex items-baseline justify-between gap-3">
-              <span className="text-[16px] font-bold" style={{ color: "var(--text-0)" }}>Mes plats</span>
-              {plats.length > 3 && (
+              <span className="text-[16px] font-bold" style={{ color: "var(--text-0)" }}>{extra ? "Mes extras" : "Mes plats"}</span>
+              {liste.length > 3 && (
                 <button type="button" onClick={() => setToutVoir((v) => !v)} className="min-h-11 pl-3 text-[13px] font-semibold cursor-pointer"
                   style={{ color: "var(--exp-encre)" }}>
                   {toutVoir ? "Voir moins" : "Tout voir"}
                 </button>
               )}
             </div>
+            {/* Sans clé : un plat déjà ajouté garde sa coche quand on change de moment. */}
             <GrillePlats plats={visibles} estFavori={estFavori}
               onAjouter={(r) => onAjouterRecent(r, type)} onRetirer={onRetirer} onCoeur={onCoeur} />
           </div>

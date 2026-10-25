@@ -34,13 +34,13 @@ import { voix, nomGuide, roleGuide } from "@/lib/guides";
 import type { EtatGuide } from "@/lib/guides";
 
 /** Libellé lisible d'un moment de repas (valeurs canoniques du journal).
- *  ⚠️ `gouter` se dit « Goûter », jamais « Collation » (choix de Louis,
- *  2026-08-11) : c'est déjà le mot de l'écran Nutrition et du coach, et
- *  l'✦ était le seul endroit à nommer autrement le même créneau. */
+ *  ⚠️ `gouter` se dit « Extra » depuis le 2026-10-25 (Louis) : ce qu'on prend
+ *  entre les repas, un shaker, un fruit. C'est le mot de l'écran Nutrition
+ *  (lib/repas), et la valeur reste « gouter » en base. */
 const MEAL_LABEL: Record<string, string> = {
   "petit-dejeuner": "Petit-déjeuner",
   "dejeuner": "Déjeuner",
-  "gouter": "Goûter",
+  "gouter": "Extra",
   "diner": "Dîner",
 };
 
