@@ -149,7 +149,7 @@ Vérifiés sur `main` le 2026-08-10. À revérifier avant réemploi.
 | Chiffre | Valeur | Source dans le code |
 |---|---|---|
 | Séances guidées au catalogue | 53 | catalogue de `app/progression` + vagues `workoutWave1..6` |
-| Mini-cours | 26 (16 gratuits, 10 Vaiiya+) | `lib/adviceArticles.ts` |
+| Mini-cours | 39 : 21 conseils d’entraînement (13 gratuits, 8 Vaiiya+) et 18 cours de nutrition (16 gratuits, 2 Vaiiya+), recomptés le 2026-10-25 | `lib/adviceArticles.ts` et `lib/coursNutrition.ts`, additionnés par `lib/chiffresPublics.ts` |
 | Mouvements animés | 102 | `lib/exerciseLibrary.ts` |
 | Fiches exercices publiques | 8 | `lib/exercicesPublics.ts` |
 | Rangs | 6 | `lib/aura.ts` |

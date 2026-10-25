@@ -145,15 +145,20 @@ export default function LecteurCours({ cours, uid, onFermer, onEnvie }: {
                   </section>
                 ))}
 
-                <section className={`${c.encadre} ${c.exemple}`}>
-                  <h2>Exemple concret</h2>
-                  <Paragraphes liste={texte.exemple} />
-                </section>
+                {/* Ces deux encadrés restent l’exception : seulement s’ils existent. */}
+                {texte.exemple && texte.exemple.length > 0 && (
+                  <section className={`${c.encadre} ${c.exemple}`}>
+                    <h2>Exemple concret</h2>
+                    <Paragraphes liste={texte.exemple} />
+                  </section>
+                )}
 
-                <section className={`${c.encadre} ${c.doute}`}>
-                  <h2>Ce qu’on ne sait pas encore</h2>
-                  <Paragraphes liste={texte.doute} />
-                </section>
+                {texte.doute && texte.doute.length > 0 && (
+                  <section className={`${c.encadre} ${c.doute}`}>
+                    <h2>Ce qu’on ne sait pas encore</h2>
+                    <Paragraphes liste={texte.doute} />
+                  </section>
+                )}
 
                 <div className={c.finale}>
                   <section ref={retenir} className={`${c.encadre} ${c.retenir}`}>

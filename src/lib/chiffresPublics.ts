@@ -6,7 +6,7 @@
    pas l'être proprement. Le détail compte, parce qu'un chiffre faux sur la
    page d'accueil est le pire endroit où se tromper.
 
-   ⚠️ Ce module importe les tableaux de données complets (les 26 mini-cours
+   ⚠️ Ce module importe les tableaux de données complets (les mini-cours
    contiennent le texte intégral des articles). Il ne doit donc JAMAIS être
    importé depuis un composant client : il vit dans la coquille serveur de
    l'accueil (`app/page.tsx`), qui passe les nombres en props. Les données
@@ -14,6 +14,7 @@
    ════════════════════════════════════════════════════════════════════ */
 
 import { ADVICE_ARTICLES } from "./adviceArticles";
+import { COURS } from "./coursNutrition";
 import { EXERCISE_LIBRARY } from "./exerciseLibrary";
 import { RECIPES } from "./recipeBank";
 import { fichesPubliees } from "./exercicesPublics";
@@ -25,7 +26,7 @@ import { fichesPubliees } from "./exercicesPublics";
  * ailleurs tirerait tout l'écran Entraînement dans la landing.
  *
  * Le nombre a donc été recompté sur la source, le 2026-08-10 : **53 `id`
- * uniques** dans le tableau littéral `workoutSessions`. Les 26 mini-cours n'y
+ * uniques** dans le tableau littéral `workoutSessions`. Les mini-cours n'y
  * sont pas comptés : ils arrivent par un `...ADVICE_ARTICLES` étalé dans le
  * même tableau, et ils ont leur propre chiffre ci-dessous.
  *
@@ -43,7 +44,9 @@ const SEANCES_CATALOGUE = 53;
 export type ChiffresPublics = {
   /** Séances guidées du catalogue permanent. Compté à la main, voir ci-dessus. */
   seances: number;
-  /** Mini-cours de « Conseils & progresser » : 16 gratuits + 10 Premium. */
+  /** Mini-cours : ceux de « Conseils & progresser » (21 au 2026-10-25 : 13 gratuits,
+   *  8 Vaiiya+) et les cours de nutrition (18 : 16 gratuits, 2 Vaiiya+). L'index
+   *  des cours de nutrition ne porte pas leurs textes : il ne pèse rien ici. */
   miniCours: number;
   /** Mouvements de la bibliothèque, tous animés par un personnage-guide. */
   mouvements: number;
@@ -55,7 +58,7 @@ export type ChiffresPublics = {
 
 export const CHIFFRES_PUBLICS: ChiffresPublics = {
   seances: SEANCES_CATALOGUE,
-  miniCours: ADVICE_ARTICLES.length,
+  miniCours: ADVICE_ARTICLES.length + COURS.length,
   mouvements: EXERCISE_LIBRARY.length,
   recettes: RECIPES.length,
   fiches: fichesPubliees().length,

@@ -22,12 +22,18 @@
    nombre et son unité, dans les milliers) se pose au rendu (`typoCours`).
 
    ⚠️ LA DURÉE SE CALCULE, ELLE NE S’ÉCRIT PAS À LA MAIN : 220 mots par
-   minute sur tout ce qui se lit (l’intro, les parties et les quatre
-   encadrés, sans les titres ni les sources). L’index la recopie pour que
-   la rangée l’affiche sans charger le texte, et `npm run check:cours`
-   refuse un index qui ne dit plus la même chose que son texte. Le format
-   suit la durée : un flash se lit en deux minutes au plus, un cours en
-   trois à cinq, un dossier en sept et plus.
+   minute sur tout ce qui se lit (l’intro, les parties et les encadrés,
+   sans les titres ni les sources). L’index la recopie pour que la rangée
+   l’affiche sans charger le texte, et `npm run check:cours` refuse un
+   index qui ne dit plus la même chose que son texte. Le format suit la
+   durée : un flash se lit en deux minutes au plus, un cours en trois à
+   cinq, un dossier en sept et plus.
+
+   ⚠️ LES ENCADRÉS DE FIN RESTENT L’EXCEPTION (Louis, 2026-10-25 : « il ne
+   faut pas blablater pour blablater »). « À retenir » termine chaque cours.
+   L’exemple concret, « Ce qu’on ne sait pas encore » et « Essaie ça »
+   n’existent que s’ils apportent quelque chose qu’on ne peut pas dire
+   ailleurs : jamais des cases à remplir.
    ════════════════════════════════════════════════════════════════════ */
 
 import type { IdEnvie } from "@/lib/collectionsRecettes";
@@ -96,10 +102,14 @@ export type GroupeSources = { groupe: string; liens: { label: string; url: strin
 export type TexteCours = {
   intro: string[];
   sections: SectionCours[];
-  exemple: string[];
-  /** « Ce qu’on ne sait pas encore » : ce que les études ne tranchent pas. */
-  doute: string[];
+  /** Seulement quand la personne doit appliquer un calcul ou une méthode à son cas. */
+  exemple?: string[];
+  /** « Ce qu’on ne sait pas encore » : seulement quand une question ouverte
+   *  change ce que la personne ferait. Sinon la nuance tient dans le corps. */
+  doute?: string[];
+  /** Le seul encadré de chaque cours. */
   retenir: string;
+  /** Seulement pour un changement concret dans les habitudes, jamais un devoir. */
   essai?: string;
   sources: GroupeSources[];
 };
@@ -127,6 +137,111 @@ export const COURS: Cours[] = [
     format: "dossier", minutes: 7, acces: "gratuit", theme: "poids",
     photo: "buddha-bowl-pois-chiches-rotis-houmous", envie: "leger", lot: 0, verifieLe: "2026-10-25",
   },
+  {
+    id: "faim-envie",
+    titre: "Faim ou envie : comment faire la différence",
+    sousTitre: "L’une répond à un besoin d’énergie, l’autre au plaisir. Les deux sont normales, et elles se mélangent souvent.",
+    format: "flash", minutes: 2, acces: "gratuit", theme: "rapport",
+    photo: "truffes-au-chocolat-noir", envie: "regaler", lot: 1, verifieLe: "2026-10-25",
+  },
+  {
+    id: "balance-chaque-jour",
+    titre: "Pourquoi la balance bouge chaque jour",
+    sousTitre: "Ton poids monte et descend chaque semaine, et chaque mois si tu as des règles. Voici comment le lire sur plusieurs jours.",
+    format: "flash", minutes: 2, acces: "gratuit", theme: "poids",
+    photo: "minestrone-d-hiver", lot: 1, verifieLe: "2026-10-25",
+  },
+  {
+    id: "petit-dejeuner",
+    titre: "Faut-il prendre un petit-déjeuner ?",
+    sousTitre: "Dans les essais, le prendre ou le sauter ne change pas le poids. Ton appétit et tes horaires peuvent décider.",
+    format: "flash", minutes: 1, acces: "gratuit", theme: "quotidien",
+    photo: "bircher-muesli-pomme-noisette", envie: "petitdej", lot: 1, verifieLe: "2026-10-25",
+  },
+  {
+    id: "manger-tard",
+    titre: "Manger tard fait-il grossir ?",
+    sousTitre: "À calories égales, l’heure change peu le poids. Elle pourrait jouer sur ta faim.",
+    format: "flash", minutes: 1, acces: "gratuit", theme: "regimes",
+    photo: "poulet-au-citron-et-aux-olives", lot: 1, verifieLe: "2026-10-25",
+  },
+  {
+    id: "proteines-glucides-lipides",
+    titre: "Protéines, glucides, lipides : à quoi sert chacun",
+    sousTitre: "Ce que chacun fait dans ton corps, ce qu’il apporte en calories, et comment réunir les trois dans une assiette.",
+    format: "cours", minutes: 3, acces: "gratuit", theme: "bases",
+    photo: "saumon-roti-et-patate-douce", envie: "repas", lot: 1, verifieLe: "2026-10-25",
+  },
+  {
+    id: "fibres",
+    titre: "Les fibres : à quoi elles servent et où les trouver",
+    sousTitre: "Ce qu’elles font, combien en manger, et une journée qui atteint les 30 g conseillés.",
+    format: "cours", minutes: 3, acces: "gratuit", theme: "bases",
+    photo: "chili-sin-carne", envie: "legumes", lot: 1, verifieLe: "2026-10-25",
+  },
+  {
+    id: "avant-seance",
+    titre: "Que manger avant une séance",
+    sousTitre: "Pour une séance d’une heure, ton dernier repas suffit souvent. Pour un effort plus long, voici quoi manger et quand.",
+    format: "flash", minutes: 2, acces: "gratuit", theme: "entrainement",
+    photo: "galettes-de-riz-au-beurre-de-cacahuete-et-banane", envie: "grignoter", lot: 1, verifieLe: "2026-10-25",
+  },
+  {
+    id: "proteines-par-jour",
+    titre: "Les protéines : combien par jour, et comment les répartir",
+    sousTitre: "Les repères selon ton entraînement, et une journée qui les atteint avec des aliments ordinaires.",
+    format: "flash", minutes: 2, acces: "gratuit", theme: "entrainement",
+    photo: "bowl-de-tofu-croustillant-nouilles-de-riz-et-edamame", envie: "oeufs", lot: 1, verifieLe: "2026-10-25",
+  },
+  {
+    id: "glucides-entrainement",
+    titre: "Combien de glucides quand tu t’entraînes",
+    sousTitre: "Ton temps d’entraînement décide de la quantité. Pour quelques séances par semaine, une alimentation normale suffit.",
+    format: "flash", minutes: 2, acces: "gratuit", theme: "entrainement",
+    photo: "pates-completes-au-thon-tomates-cerises-et-capres", envie: "pates", lot: 1, verifieLe: "2026-10-25",
+  },
+  {
+    id: "boire-effort",
+    titre: "Combien boire quand tu fais du sport",
+    sousTitre: "Ta soif est un bon guide pour la plupart des séances. Pour les longues, une balance suffit à connaître tes pertes.",
+    format: "flash", minutes: 2, acces: "gratuit", theme: "entrainement",
+    photo: "citronnade-maison-a-la-menthe", envie: "boire", lot: 1, verifieLe: "2026-10-25",
+  },
+  {
+    id: "assiette-sans-peser",
+    titre: "Faire une assiette sans rien peser",
+    sousTitre: "Des proportions qui s’appliquent à une assiette, un bol ou une boîte à emporter, sans balance de cuisine.",
+    format: "flash", minutes: 2, acces: "gratuit", theme: "quotidien",
+    photo: "cabillaud-en-papillote-courgettes-et-quinoa", envie: "repas", lot: 1, verifieLe: "2026-10-25",
+  },
+  {
+    id: "vitamine-d-hiver",
+    titre: "La vitamine D en hiver",
+    sousTitre: "En hiver, en France, ta peau n’en fabrique presque plus. Voici ce que disent les agences de santé.",
+    format: "flash", minutes: 2, acces: "gratuit", theme: "complements",
+    photo: "oeufs-brouilles-au-saumon-fume-et-a-l-avocat", envie: "poisson", lot: 1, verifieLe: "2026-10-25",
+  },
+  {
+    id: "complements-sport",
+    titre: "Les compléments pour le sport : ce qui a des preuves",
+    sousTitre: "Quelques produits ont des preuves solides. Pour les autres, les bénéfices restent incertains, et certains contiennent ce qu’ils ne déclarent pas.",
+    format: "flash", minutes: 2, acces: "gratuit", theme: "complements",
+    photo: "shaker-chocolat-noisette", lot: 1, verifieLe: "2026-10-25",
+  },
+  {
+    id: "creatine",
+    titre: "Créatine : ce que disent les études",
+    sousTitre: "Ce qu’elle fait, la dose utile, et ce que disent les études sur l’eau, les reins et les cheveux.",
+    format: "flash", minutes: 2, acces: "vaiiya+", theme: "complements",
+    photo: "wok-de-boeuf-aux-legumes-croquants", lot: 1, verifieLe: "2026-10-25",
+  },
+  {
+    id: "cafeine-effort",
+    titre: "La caféine avant l’effort",
+    sousTitre: "Elle améliore la performance de beaucoup de sportifs. La dose, le moment, et les précautions pour le cœur et le sommeil.",
+    format: "flash", minutes: 2, acces: "vaiiya+", theme: "complements",
+    photo: "cafe-frappe-proteine", lot: 1, verifieLe: "2026-10-25",
+  },
 ];
 
 /* ── Les textes, chacun dans son morceau de code ──────────────────────
@@ -137,6 +252,21 @@ export const TEXTES: Record<string, () => Promise<{ default: TexteCours }>> = {
   "jus-orange": () => import("@/lib/textesCours/jus-orange"),
   "apres-seance": () => import("@/lib/textesCours/apres-seance"),
   "perdre-du-poids": () => import("@/lib/textesCours/perdre-du-poids"),
+  "faim-envie": () => import("@/lib/textesCours/faim-envie"),
+  "balance-chaque-jour": () => import("@/lib/textesCours/balance-chaque-jour"),
+  "petit-dejeuner": () => import("@/lib/textesCours/petit-dejeuner"),
+  "manger-tard": () => import("@/lib/textesCours/manger-tard"),
+  "proteines-glucides-lipides": () => import("@/lib/textesCours/proteines-glucides-lipides"),
+  "fibres": () => import("@/lib/textesCours/fibres"),
+  "avant-seance": () => import("@/lib/textesCours/avant-seance"),
+  "proteines-par-jour": () => import("@/lib/textesCours/proteines-par-jour"),
+  "glucides-entrainement": () => import("@/lib/textesCours/glucides-entrainement"),
+  "boire-effort": () => import("@/lib/textesCours/boire-effort"),
+  "assiette-sans-peser": () => import("@/lib/textesCours/assiette-sans-peser"),
+  "vitamine-d-hiver": () => import("@/lib/textesCours/vitamine-d-hiver"),
+  "complements-sport": () => import("@/lib/textesCours/complements-sport"),
+  "creatine": () => import("@/lib/textesCours/creatine"),
+  "cafeine-effort": () => import("@/lib/textesCours/cafeine-effort"),
 };
 
 const charges = new Map<string, Promise<TexteCours>>();
@@ -167,8 +297,8 @@ export function paragraphesLus(t: TexteCours): string[] {
   return [
     ...t.intro,
     ...t.sections.flatMap((s) => s.paragraphes),
-    ...t.exemple,
-    ...t.doute,
+    ...(t.exemple ?? []),
+    ...(t.doute ?? []),
     t.retenir,
     ...(t.essai ? [t.essai] : []),
   ];
@@ -186,7 +316,7 @@ export function formatDeLaDuree(minutes: number): FormatCours | null {
 }
 
 const NBSP = " ";
-const UNITES = "g|kg|mg|kcal|kJ|ml|cl|l|h|min|minutes|heures|jours|semaines|mois|ans|fois";
+const UNITES = "g|kg|mg|microgrammes|µg|UI|kcal|kJ|ml|cl|l|h|min|minutes|heures|jours|semaines|mois|ans|fois|€";
 
 /** La typographie française, posée au rendu. */
 export function typoCours(s: string): string {
@@ -195,7 +325,9 @@ export function typoCours(s: string): string {
     .replace(/« /g, `«${NBSP}`)
     .replace(/ »/g, `${NBSP}»`)
     .replace(/ ([:;?!%])/g, `${NBSP}$1`)
-    .replace(/(\d) (\d{3})(?!\d)/g, `$1${NBSP}$2`)
+    // Lu sans consommer les chiffres, pour qu’un numéro en trois groupes
+    // (« 0810 037 037 ») se pose en un seul passage.
+    .replace(/(?<=\d) (?=\d{3}(?!\d))/g, NBSP)
     .replace(new RegExp(`(\\d) (${UNITES})(?![\\p{L}’'])`, "gu"), `$1${NBSP}$2`);
 }
 

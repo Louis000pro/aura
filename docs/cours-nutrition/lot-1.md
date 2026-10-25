@@ -483,7 +483,7 @@ En hiver, ta vitamine D vient surtout de ton assiette : du poisson gras une fois
 
 **Intro**
 
-Il est 16 h et tu as envie de chocolat. Faim ou envie ? Les chercheurs distinguent les deux, même si elles se mélangent souvent dans la vie de tous les jours. Savoir laquelle parle t’aide à choisir ce que tu manges, sans culpabilité.
+Il est 16 h et tu as envie de chocolat. Faim ou envie ? Les chercheurs distinguent les deux, même si elles se mélangent souvent dans la vie de tous les jours. Savoir laquelle parle t’aide à choisir ce que tu manges.
 
 **La faim, un signal de ton corps**
 

@@ -15,14 +15,12 @@ export type AdviceTheme =
   | "Entraînement"
   | "Progression"
   | "Récupération"
-  | "Nutrition"
   | "Mental & confiance";
 
 export const ADVICE_THEMES: AdviceTheme[] = [
   "Entraînement",
   "Progression",
   "Récupération",
-  "Nutrition",
   "Mental & confiance",
 ];
 
@@ -67,18 +65,6 @@ const SOURCES = {
     label: "AASM & Sleep Research Society, durée de sommeil chez l’adulte",
     url: "https://aasm.org/resources/pdf/pressroom/adult-sleep-duration-consensus.pdf",
   },
-  protein: {
-    label: "ISSN, protéines et exercice",
-    url: "https://pubmed.ncbi.nlm.nih.gov/28642676/",
-  },
-  nutrition: {
-    label: "Academy of Nutrition, Dietitians of Canada & ACSM, nutrition et performance",
-    url: "https://pubmed.ncbi.nlm.nih.gov/26891166/",
-  },
-  creatine: {
-    label: "ISSN, efficacité et sécurité de la créatine",
-    url: "https://pubmed.ncbi.nlm.nih.gov/28615996/",
-  },
   failure: {
     label: "Grgic et al., entraînement à l’échec ou non",
     url: "https://pubmed.ncbi.nlm.nih.gov/33497853/",
@@ -98,10 +84,6 @@ const SOURCES = {
   warmup: {
     label: "Kłobuchowski et al., échauffement, performance et prévention",
     url: "https://pubmed.ncbi.nlm.nih.gov/42188564/",
-  },
-  hydration: {
-    label: "NATA, hydratation des personnes actives",
-    url: "https://pubmed.ncbi.nlm.nih.gov/28985128/",
   },
   adherence: {
     label: "Teixeira et al., motivation autonome et régularité",
@@ -130,10 +112,6 @@ const SOURCES = {
   periodization: {
     label: "Moesgaard et al., périodisation, force et hypertrophie",
     url: "https://pubmed.ncbi.nlm.nih.gov/35044672/",
-  },
-  diets: {
-    label: "ISSN, alimentation et composition corporelle",
-    url: "https://pubmed.ncbi.nlm.nih.gov/28630601/",
   },
 } satisfies Record<string, AdviceSource>;
 
@@ -410,106 +388,6 @@ const ADVICE_DRAFTS: AdviceDraft[] = [
     takeaway: "Le sommeil n’est pas la récompense après le travail : il fait partie du travail.",
     tryThis: "Choisis cette semaine une seule heure de lever stable, y compris après une soirée un peu plus tardive.",
     sources: [SOURCES.sleep],
-  },
-  {
-    id: "conseil-proteines",
-    title: "Les protéines, sans vivre avec une calculette",
-    subtitle: "Assez pour soutenir tes muscles, sans transformer chaque repas en examen.",
-    theme: "Nutrition",
-    readingMinutes: 3,
-    access: "free",
-    image: "pull-marteau",
-    intro: "Oui, les protéines comptent. Non, tu n’as pas besoin de promener une balance de cuisine au restaurant pour être quelqu’un de sérieux.",
-    sections: [
-      {
-        title: "Commence par les repas",
-        paragraphs: [
-          "Place une source de protéines identifiable dans tes principaux repas : œufs, poisson, viande, produits laitiers, tofu, tempeh, légumineuses ou une combinaison végétale qui te convient.",
-        ],
-      },
-      {
-        title: "Un repère, pas une loi gravée",
-        paragraphs: [
-          "Chez les personnes actives, les recommandations sportives se situent souvent autour de 1,4 à 2,0 g par kilo de poids corporel et par jour. Ce chiffre est une fourchette générale, pas une obligation de viser le maximum.",
-          "Répartir l’apport sur la journée est pratique. L’ensemble quotidien compte davantage qu’une fenêtre magique de trente minutes.",
-        ],
-      },
-      {
-        title: "La poudre est un outil",
-        paragraphs: [
-          "Un shaker peut dépanner quand manger est compliqué. Il n’a aucun pouvoir spécial si ton alimentation couvre déjà tes besoins.",
-        ],
-      },
-    ],
-    takeaway: "Cherche une présence régulière de protéines, pas une perfection au gramme près.",
-    tryThis: "Regarde tes trois prochains repas et ajoute simplement une source de protéines là où elle manque.",
-    sources: [SOURCES.protein, SOURCES.nutrition],
-  },
-  {
-    id: "conseil-glucides",
-    title: "Les glucides ne sont pas l’ennemi de ta séance",
-    subtitle: "Ton corps sait très bien quoi faire du riz, du pain et des fruits.",
-    theme: "Nutrition",
-    readingMinutes: 3,
-    access: "free",
-    image: "cardio-bike",
-    intro: "Les glucides ont passé quelques années au tribunal d’internet. Pendant ce temps, tes muscles continuaient tranquillement à utiliser leurs réserves de glycogène pour produire des efforts soutenus.",
-    sections: [
-      {
-        title: "Ils alimentent particulièrement l’intensité",
-        paragraphs: [
-          "Musculation volumineuse, HIIT, course rapide : ces efforts utilisent beaucoup les glucides disponibles. En manquer n’est pas toujours dangereux, mais peut rendre la séance inutilement plate.",
-        ],
-      },
-      {
-        title: "Adapte la quantité à la journée",
-        paragraphs: [
-          "Une grosse journée d’entraînement peut accueillir davantage de féculents, fruits ou céréales qu’un jour très calme. Il n’est pas nécessaire de copier l’alimentation d’un athlète d’endurance si tu fais une séance de trente minutes.",
-        ],
-      },
-      {
-        title: "Avant la séance, reste simple",
-        paragraphs: [
-          "Si tu as faim, un repas digeste quelques heures avant ou une petite collation peut aider. Teste ce que ton ventre tolère : la meilleure théorie perd toujours contre une séance passée à digérer.",
-        ],
-      },
-    ],
-    takeaway: "Les glucides sont un carburant à ajuster, pas un ennemi à bannir.",
-    tryThis: "Avant une séance exigeante, teste une collation familière avec des glucides et compare ton énergie.",
-    sources: [SOURCES.nutrition],
-  },
-  {
-    id: "conseil-hydratation",
-    title: "Boire assez, sans faire de ta gourde un devoir",
-    subtitle: "L’objectif n’est ni de finir desséché, ni de battre un record d’eau.",
-    theme: "Nutrition",
-    readingMinutes: 2,
-    access: "free",
-    image: "cardio-rameur",
-    intro: "Les besoins en eau changent énormément selon la chaleur, ta transpiration, la durée de l’effort et ce que tu as déjà bu. Un chiffre universel au litre près serait surtout universellement faux.",
-    sections: [
-      {
-        title: "Arrive normalement hydraté",
-        paragraphs: [
-          "Bois régulièrement dans la journée et garde de l’eau accessible pendant la séance. Pour la majorité des entraînements ordinaires, l’eau fait très bien le travail.",
-        ],
-      },
-      {
-        title: "Les électrolytes ont un contexte",
-        paragraphs: [
-          "Ils deviennent plus intéressants lors d’efforts longs, très chauds ou particulièrement transpirants. Ce n’est pas parce qu’une boisson est fluorescente qu’elle est nécessaire.",
-        ],
-      },
-      {
-        title: "Trop boire existe aussi",
-        paragraphs: [
-          "Forcer de grandes quantités sans tenir compte de la soif ni des pertes n’améliore pas automatiquement la performance. Le but est de remplacer raisonnablement ce que tu perds, pas de te remplir.",
-        ],
-      },
-    ],
-    takeaway: "Hydrate-toi selon l’effort et le climat, pas selon un défi trouvé en ligne.",
-    tryThis: "Pour une séance chaude ou longue, pèse-toi avant et après une fois : l’écart t’aidera à comprendre ta transpiration personnelle.",
-    sources: [SOURCES.hydration],
   },
   {
     id: "conseil-seance-sautee",
@@ -878,73 +756,6 @@ const ADVICE_DRAFTS: AdviceDraft[] = [
     sources: [SOURCES.split, SOURCES.acsm2026],
   },
   {
-    id: "conseil-perdre-gras",
-    title: "Perdre du gras sans déclarer la guerre à ton corps",
-    subtitle: "Un déficit raisonnable vaut mieux qu’une vie entière en mode punition.",
-    theme: "Nutrition",
-    readingMinutes: 3,
-    access: "premium",
-    image: "cardio-stepper",
-    intro: "Pour perdre du gras, l’apport énergétique doit finir par être inférieur à la dépense sur la durée. Cette phrase est simple. La vivre sans abîmer ton énergie, ton rapport à la nourriture et tes entraînements demande plus de nuance.",
-    sections: [
-      {
-        title: "Crée un écart que tu peux habiter",
-        paragraphs: [
-          "Un déficit très agressif donne parfois des résultats rapides sur la balance, mais augmente aussi faim, fatigue et risque d’abandon. Commence par des changements mesurés : portions, boissons, grignotages automatiques ou densité des repas.",
-        ],
-      },
-      {
-        title: "Protège ce que tu veux garder",
-        paragraphs: [
-          "La musculation, un apport suffisant en protéines et une perte progressive aident à conserver davantage de masse maigre. Continue aussi de manger des glucides autour des séances si cela soutient ta performance.",
-        ],
-      },
-      {
-        title: "Ne laisse pas la balance devenir ton humeur",
-        paragraphs: [
-          "L’eau, le sel, le transit et le cycle menstruel peuvent déplacer le poids à court terme. Observe une tendance sur plusieurs semaines et garde d’autres repères : tour de taille, vêtements, énergie, force.",
-          "Si la restriction devient anxieuse, compulsive ou envahit tes journées, parle-en à un professionnel de santé qualifié.",
-        ],
-      },
-    ],
-    takeaway: "La meilleure perte de gras est assez lente pour préserver ta vie autour.",
-    tryThis: "Choisis un seul changement alimentaire soutenable pour les deux prochaines semaines, sans toucher au reste.",
-    sources: [SOURCES.diets, SOURCES.nutrition],
-  },
-  {
-    id: "conseil-creatine",
-    title: "Créatine : le solide et le marketing",
-    subtitle: "Un supplément utile, beaucoup moins mystérieux que son rayon.",
-    theme: "Nutrition",
-    readingMinutes: 3,
-    access: "premium",
-    image: "pull-poulie",
-    intro: "La créatine monohydrate fait partie des compléments les mieux étudiés pour les efforts brefs et répétés. Ce qui n’empêche pas les marques de lui ajouter des noms de vaisseaux spatiaux et un pot noir mat.",
-    sections: [
-      {
-        title: "Ce qu’elle peut faire",
-        paragraphs: [
-          "Elle augmente les réserves musculaires de créatine, ce qui peut soutenir la performance sur des efforts intenses répétés et, avec l’entraînement, aider les gains de force ou de masse maigre.",
-        ],
-      },
-      {
-        title: "La version simple suffit",
-        paragraphs: [
-          "La créatine monohydrate est la forme de référence. Une prise quotidienne de 3 à 5 g est une pratique courante. Une phase de charge peut saturer plus vite les réserves, mais elle n’est pas nécessaire pour obtenir l’effet à terme.",
-        ],
-      },
-      {
-        title: "Ce qu’il faut savoir avant",
-        paragraphs: [
-          "Une hausse initiale du poids liée à l’eau dans le muscle peut arriver ; ce n’est pas une prise de gras. Chez les personnes en bonne santé, les données disponibles sont rassurantes aux doses étudiées. En cas de maladie rénale, de grossesse, de traitement ou de doute médical, demande un avis professionnel avant toute supplémentation.",
-        ],
-      },
-    ],
-    takeaway: "Si tu en prends, monohydrate, dose simple, régularité, le reste est souvent surtout un emballage.",
-    tryThis: "Avant d’acheter, vérifie que l’étiquette dit uniquement « créatine monohydrate » et compare le prix par dose.",
-    sources: [SOURCES.creatine],
-  },
-  {
     id: "conseil-cycle-menstruel",
     title: "Cycle menstruel : observe-toi avant d’obéir à un calendrier",
     subtitle: "Les moyennes de groupe ne connaissent pas tes symptômes.",
@@ -1182,57 +993,6 @@ const CONCRETE_CONTENT: Record<string, AdviceRewrite> = {
     "Protège d’abord un temps de sommeil suffisant. Après une nuit courte, adapte la charge ou le volume selon tes sensations au lieu de vouloir prouver ton niveau.",
     "Choisis une heure de lever réaliste à garder cinq jours cette semaine et prépare une version allégée de ta prochaine séance.",
   ),
-  "conseil-proteines": clear(
-    "Protéines : combien et comment les répartir",
-    "Quelques sources régulières dans la journée suffisent souvent sans compter chaque gramme.",
-    4,
-    "Les protéines fournissent les éléments utilisés pour entretenir et construire les tissus musculaires. Les personnes qui s’entraînent en ont généralement besoin d’un peu plus, mais le calcul exact n’est pas obligatoire pour bien commencer.",
-    [
-      ["Un repère chiffré, si tu en veux un",
-        "Une fourchette souvent utilisée pour une personne active est d’environ 1,4 à 2 grammes de protéines par kilo de poids corporel et par jour. Ce repère n’est pas un examen à réussir au gramme près et doit être adapté en cas de problème médical.",
-        "Tu peux répartir les apports sur trois ou quatre repas plutôt que tout concentrer le soir."],
-      ["Une méthode sans calcul",
-        "À chaque repas principal, ajoute une vraie source : œufs, poisson, viande, tofu, tempeh, légumineuses, skyr ou autre produit laitier selon tes choix. Une portion de la taille de ta paume est un repère visuel simple.",
-        "La poudre est seulement un aliment pratique. Elle n’est utile que si elle facilite tes apports."],
-    ],
-    "Une personne de 70 kg peut viser environ 100 à 140 g par jour si elle souhaite utiliser le repère chiffré. Sans compter précisément, elle peut prévoir des œufs au petit-déjeuner, du poulet ou du tofu au déjeuner, un skyr en collation et des lentilles avec le dîner.",
-    "Mets une source de protéines dans 3 ou 4 prises alimentaires de la journée. Le total régulier compte davantage qu’un repas ou un shaker parfait.",
-    "Regarde tes trois prochains repas et ajoute une source identifiable de protéines à celui qui n’en contient presque pas.",
-  ),
-  "conseil-glucides": clear(
-    "Glucides : à quoi servent-ils pour l’entraînement",
-    "Pain, riz, pâtes, pommes de terre, céréales et fruits peuvent soutenir les efforts intenses.",
-    4,
-    "Les glucides sont stockés notamment sous forme de glycogène dans les muscles et le foie. Ce carburant est particulièrement utile pour les séries répétées, les circuits et les sports intenses. Les supprimer n’est pas nécessaire pour progresser ou perdre du gras.",
-    [
-      ["Adapte la quantité à ton activité",
-        "Un jour avec une séance longue ou intense peut justifier davantage de féculents ou de fruits qu’un jour très calme. Il n’existe pas une quantité unique valable pour tout le monde.",
-        "La quantité totale d’aliments et l’équilibre de la semaine comptent davantage que le fait de manger des glucides après une heure précise."],
-      ["Avant une séance, choisis ce que tu digères",
-        "Une à trois heures avant, un repas ou une collation contenant des glucides et peu d’aliments très gras peut faciliter la digestion. Si tu t’entraînes très tôt et te sens bien à jeun, tu n’es pas obligé de manger.",
-        "Teste avec des aliments familiers plutôt que d’inventer une règle le jour d’une séance importante."],
-    ],
-    "Tu déjeunes à midi et t’entraînes à 18 h. Vers 16 h 30, une banane avec un yaourt ou une tartine peut apporter de l’énergie sans repas lourd. Si tu as déjà bien mangé et n’as pas faim, cette collation n’est pas obligatoire.",
-    "Les glucides sont un carburant utile, surtout pour les efforts intenses. Ajuste leur quantité à ton activité, ta faim et ta digestion au lieu de les interdire.",
-    "Avant une séance exigeante, teste une collation familière contenant des glucides et compare ton énergie avec une séance similaire.",
-  ),
-  "conseil-hydratation": clear(
-    "Hydratation : combien boire autour d’une séance",
-    "Bois régulièrement, puis augmente selon la chaleur, la durée et ta transpiration.",
-    4,
-    "Les besoins en eau varient fortement. Une petite personne qui marche dans une salle fraîche ne perd pas autant qu’une personne très transpirante qui court une heure en été. Un objectif universel au litre près serait donc trompeur.",
-    [
-      ["Utilise des signaux pratiques",
-        "Arriver sans forte soif et avec des urines plutôt claires indique souvent une hydratation correcte. Pendant une séance de moins d’une heure dans des conditions normales, boire selon la soif convient à beaucoup de personnes.",
-        "Pour un effort long, chaud ou très transpirant, garde une gourde accessible et bois par petites prises."],
-      ["Quand penser aux électrolytes",
-        "De l’eau suffit généralement pour une séance courte. Du sodium peut devenir utile si l’effort dure longtemps, s’il fait chaud ou si tu transpires beaucoup. Les boissons très concentrées ne sont pas automatiquement meilleures.",
-        "Boire excessivement et très vite peut aussi être dangereux. L’objectif est de remplacer raisonnablement les pertes, pas de forcer plusieurs litres."],
-    ],
-    "Après une heure de course par temps chaud, ton poids passe de 70,0 à 69,3 kg : tu as perdu environ 0,7 kg malgré ce que tu as bu. Cette mesure ponctuelle indique que tu transpires beaucoup dans ces conditions et qu’il faut prévoir davantage d’eau la prochaine fois, pas boire cette quantité à chaque séance.",
-    "Bois selon ta soif pour les séances ordinaires. Prévois davantage d’eau et éventuellement du sodium pour les efforts longs, chauds ou très transpirants.",
-    "Pour ta prochaine séance chaude, note simplement ce que tu bois et si tu termines avec une forte soif. Ajuste progressivement, sans te forcer.",
-  ),
   "conseil-seance-sautee": clear(
     "Que faire après avoir raté une séance",
     "Ne double pas automatiquement le travail : replace la séance ou reprends le programme normalement.",
@@ -1420,40 +1180,6 @@ const CONCRETE_CONTENT: Record<string, AdviceRewrite> = {
     "Tu peux t’entraîner lundi, mercredi et samedi : trois full body donnent trois occasions de travailler chaque mouvement. Si tu préfères quatre jours courts, un haut du corps lundi/jeudi et un bas du corps mardi/samedi répartit le travail sans séances interminables.",
     "Avec 2 ou 3 jours, commence par du full body. Avec 4 jours, full body ou haut/bas fonctionnent. Choisis ensuite selon la durée et tes préférences.",
     "Choisis ton format d’après le nombre de jours que tu peux tenir pendant huit semaines normales.",
-  ),
-  "conseil-perdre-gras": clear(
-    "Perdre du gras sans régime extrême",
-    "Un déficit calorique modéré, des protéines et de la musculation protègent mieux ta forme.",
-    5,
-    "La perte de gras demande généralement de consommer un peu moins d’énergie que ce que le corps dépense sur la durée. Réduire brutalement les aliments peut faire baisser le poids vite, mais augmente souvent la faim, la fatigue et le risque d’abandon.",
-    [
-      ["Crée un déficit supportable",
-        "Commence par une ou deux modifications : réduire les boissons caloriques, ajuster une portion très dense ou ajouter des légumes et des aliments rassasiants. Une perte moyenne lente est souvent plus facile à maintenir.",
-        "Le poids varie chaque jour avec l’eau, le sel et la digestion. Observe une moyenne sur plusieurs semaines."],
-      ["Protège le muscle et l’énergie",
-        "Garde une alimentation suffisamment protéinée et continue la musculation. Évite de multiplier en même temps un gros déficit, beaucoup de cardio et un volume élevé de musculation.",
-        "Si l’humeur, le sommeil, les performances ou le cycle menstruel se dégradent fortement, le plan est peut-être trop agressif. Un professionnel peut aider."],
-    ],
-    "Au lieu de supprimer pain, dessert et dîner, tu gardes tes repas, remplaces le soda quotidien par une boisson sans calories et réduis légèrement une portion de grignotage. Après trois semaines, regarde la moyenne du poids et ton énergie avant de modifier autre chose.",
-    "Vise des changements alimentaires modérés que tu peux garder. Suis la tendance sur plusieurs semaines et protège protéines, sommeil et musculation.",
-    "Choisis un seul changement alimentaire réaliste pour les deux prochaines semaines et laisse le reste stable.",
-  ),
-  "conseil-creatine": clear(
-    "Créatine : effets, dose et précautions",
-    "La créatine monohydrate est la forme la mieux étudiée ; 3 à 5 g par jour suffisent généralement.",
-    4,
-    "La créatine aide les muscles à régénérer rapidement de l’énergie lors d’efforts courts et intenses. Elle peut améliorer légèrement la force, le nombre de répétitions et, avec l’entraînement, la prise de masse musculaire.",
-    [
-      ["Comment la prendre simplement",
-        "Choisis de la créatine monohydrate. Une dose quotidienne de 3 à 5 g fonctionne pour la plupart des adultes. L’heure importe peu ; la régularité compte davantage. Une phase de charge peut saturer plus vite les muscles mais n’est pas obligatoire.",
-        "Tu peux la mélanger à de l’eau ou à un repas. Les versions plus coûteuses ne montrent pas clairement un meilleur effet."],
-      ["Ce qu’il faut savoir",
-        "Une hausse de poids de un à deux kilos peut apparaître au début à cause de l’eau stockée dans les muscles. Ce n’est pas une prise de gras. De légers troubles digestifs peuvent survenir avec une grosse dose prise d’un coup.",
-        "En cas de maladie rénale, grossesse, traitement ou doute médical, demande un avis professionnel avant d’en prendre."],
-    ],
-    "Tu achètes un sachet indiquant uniquement « créatine monohydrate ». Tu prends 3 g chaque jour avec le déjeuner. Après deux semaines, la balance monte de 0,8 kg sans changement visible de gras : cette variation peut venir de l’eau musculaire et n’impose pas d’arrêter.",
-    "Si tu choisis la créatine, prends 3 à 5 g de monohydrate chaque jour. La phase de charge et les formes coûteuses ne sont pas nécessaires.",
-    "Avant d’acheter, vérifie la mention « créatine monohydrate », le prix par dose et l’absence de mélange inutile.",
   ),
   "conseil-cycle-menstruel": clear(
     "Cycle menstruel : faut-il adapter ses séances ?",

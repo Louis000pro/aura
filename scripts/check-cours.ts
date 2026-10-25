@@ -60,14 +60,27 @@ for (const c of COURS) {
   const t = textes.get(c.id);
   if (!t) continue;
   const titres = t.sections.map((s) => s.titre);
-  verdict(`« ${c.id} » : une intro, des parties, un exemple, un doute et un « À retenir »`,
+  verdict(`« ${c.id} » : une intro, des parties et un « À retenir »`,
     t.intro.length > 0 && t.sections.length > 0 && t.sections.every((s) => s.paragraphes.length > 0)
-    && t.exemple.length > 0 && t.doute.length > 0 && t.retenir.trim().length > 0);
+    && t.retenir.trim().length > 0);
+  verdict(`« ${c.id} » : un encadré facultatif présent n'est jamais vide`,
+    (t.exemple === undefined || t.exemple.length > 0) && (t.doute === undefined || t.doute.length > 0)
+    && (t.essai === undefined || t.essai.trim().length > 0));
   verdict(`« ${c.id} » : deux parties ne portent pas le même titre`, new Set(titres).size === titres.length);
   const paras = paragraphesLus(t);
   const malFinis = paras.filter((p) => !/[.?!…»)]$/.test(p.trim()));
   verdict(`« ${c.id} » : chaque paragraphe finit par une ponctuation`, malFinis.length === 0, malFinis[0]?.slice(-40) ?? "");
 }
+
+/* Les encadrés de fin restent l'exception (Louis, 2026-10-25 : « il ne faut
+   pas blablater pour blablater ») : « À retenir » partout, l'exemple, le doute
+   et « Essaie ça » seulement là où ils servent. */
+const avecEncadre = COURS.filter((c) => {
+  const t = textes.get(c.id);
+  return !!t && (!!t.exemple || !!t.doute || !!t.essai);
+});
+verdict("les encadrés facultatifs restent l'exception (au plus un cours sur deux en porte un)",
+  avecEncadre.length * 2 <= COURS.length, `${avecEncadre.length} sur ${COURS.length}`);
 
 /* ── 3. La durée suit le texte, et le format suit la durée ─────────── */
 for (const c of COURS) {
@@ -120,6 +133,10 @@ const cas: [string, string][] = [
   ["1,25 à 1,5 l par kilo perdu", `1,25 à 1,5${NBSP}l par kilo perdu`],
   ["En 2018, l'essai DIETFITS", "En 2018, l’essai DIETFITS"],
   ["Pour une personne de 70 kg, ça donne 18 à 21 g.", `Pour une personne de 70${NBSP}kg, ça donne 18 à 21${NBSP}g.`],
+  ["2 000 UI par jour", `2${NBSP}000${NBSP}UI par jour`],
+  ["15 microgrammes par jour", `15${NBSP}microgrammes par jour`],
+  ["pour 0,06 € la minute", `pour 0,06${NBSP}€ la minute`],
+  ["répond au 0810 037 037, quatre jours", `répond au 0810${NBSP}037${NBSP}037, quatre jours`],
 ];
 for (const [brut, attendu] of cas) {
   verdict(`typoCours : « ${brut} »`, typoCours(brut) === attendu, JSON.stringify(typoCours(brut)));
@@ -199,6 +216,8 @@ verdict("le lecteur charge son texte à l'ouverture", lecteur.includes("chargerT
 verdict("le lecteur montre la photo du plat, jamais une salle de sport",
   lecteur.includes("imageRecette(cours.photo)") && !lecteur.includes("/entrainement/"));
 verdict("le lecteur signe le cours du visage du Guide", lecteur.includes("<VisageGuide"));
+verdict("le lecteur ne dessine l'exemple et le doute que s'ils existent",
+  lecteur.includes("texte.exemple && texte.exemple.length > 0") && lecteur.includes("texte.doute && texte.doute.length > 0"));
 verdict("le lecteur note le cours lu à son « À retenir »", lecteur.includes("ref={retenir}") && lecteur.includes("marquerLu("));
 const rangee = lire("src/components/nutrition/ComprendreNutrition.tsx");
 verdict("la rangée garde son ancre (le détail de la journée y renvoie)", rangee.includes('id="nutrition-comprendre"'));
