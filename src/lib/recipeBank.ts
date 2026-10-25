@@ -7,9 +7,9 @@
    générer. Voir [[nutrition-onmangeou-redesign]].
 
    Ajout d'une recette : coller l'objet dans RECIPES (id = slug du nom, image =
-   /recipes/<id>.jpg). Les vignettes d'ingrédients/ustensiles (petites photos)
-   viendront d'une bibliothèque bornée : /ingredients/<slug>.png, /utensils/…
-   (fallback icône tant qu'absentes).
+   /recipes/<id>.jpg). La vignette d'un ingrédient ou d'un ustensile se
+   choisit dans lib/vignettesRecettes.ts : un nom qu'aucune règle ne reconnaît
+   fait échouer `npm run check:vignettes`.
    ════════════════════════════════════════════════════════════════════ */
 
 export type MealType = "petit-dejeuner" | "dejeuner" | "gouter" | "diner";
@@ -52,11 +52,6 @@ export function slugify(s: string): string {
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
 }
-
-/* Vignette d'un ingrédient / ustensile : chemin deviné dans la bibliothèque.
-   Le composant tente l'image et retombe sur une icône si 404. */
-export const ingredientImg = (nom: string) => `/ingredients/${slugify(nom)}.png`;
-export const utensilImg = (nom: string) => `/utensils/${slugify(nom)}.png`;
 
 /* ─── La banque (2 exemples le temps que la vraie collection arrive) ─── */
 export const RECIPES: Recipe[] = [

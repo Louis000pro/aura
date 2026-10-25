@@ -3,7 +3,7 @@
 /* ════════════════════════════════════════════════════════════════════
    RecipeSheet — la fiche recette « aboutie » (inspirée de ShapeYou, PAS clonée :
    ADN Vaiiya, violet=action). Photo du plat + anneaux macros (couleurs Système D)
-   + sélecteur de portions + onglets Ingrédients/Ustensiles avec vignettes photo
+   + sélecteur de portions + onglets Ingrédients/Ustensiles avec leurs vignettes
    + étapes cochables + « Je fais ça ». Alimentée par la banque curée
    (src/lib/recipeBank.ts). Voir [[nutrition-onmangeou-redesign]].
 
@@ -16,7 +16,8 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { ChevronLeft, Heart, Minus, Plus, Check, RefreshCw, Utensils, Carrot, Sparkles } from "lucide-react";
-import { type Recipe, scaledQty, ingredientImg, utensilImg } from "@/lib/recipeBank";
+import { type Recipe, scaledQty } from "@/lib/recipeBank";
+import { cheminIngredient, cheminUstensile } from "@/lib/vignettesRecettes";
 import { enHeures } from "@/lib/collectionsRecettes";
 import { lockBodyModal } from "@/lib/bodyModal";
 
@@ -38,17 +39,26 @@ function Sk({ w = "100%", h, circle = false, r = 8 }: { w?: number | string; h: 
   );
 }
 
-/* Vignette : la photo si elle existe, sinon une icône de secours dessous. */
-function Thumb({ src, kind }: { src: string; kind: "ing" | "ust" }) {
+/* Vignette d'un ingrédient ou d'un ustensile (lib/vignettesRecettes) : une
+   icône posée au centre de sa pastille, jamais rognée. Un nom qu'aucune règle
+   ne reconnaît, ou une image qui ne charge pas (hors ligne), garde le
+   pictogramme gris. Jamais l'icône par-dessus le pictogramme : ses parties
+   transparentes le laisseraient voir. L'image porte sa source en `key` : les
+   lignes se suivent par position, et sans elle « Autre idée » laissait
+   l'icône de la recette d'avant le temps que la nouvelle charge. */
+function Thumb({ src, kind }: { src: string | null; kind: "ing" | "ust" }) {
+  const [rate, setRate] = useState<string | null>(null);
   const Fallback = kind === "ing" ? Carrot : Utensils;
   return (
-    <span className="relative w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden"
-      style={{ background: "rgba(var(--tint-violet-rgb),0.5)", border: "1px solid rgba(var(--violet-mid-rgb),0.3)" }}>
-      <Fallback size={18} strokeWidth={1.6} style={{ color: "var(--text-3)" }} />
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={src} alt="" aria-hidden loading="lazy" decoding="async"
-        onError={(e) => { e.currentTarget.style.display = "none"; }}
-        className="absolute inset-0 w-full h-full object-cover" />
+    <span className="w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0"
+      style={{ background: "var(--puce-vignette)", border: "1px solid rgba(var(--violet-mid-rgb),0.3)" }}>
+      {src && rate !== src ? (
+        /* eslint-disable-next-line @next/next/no-img-element */
+        <img key={src} src={src} alt="" aria-hidden width={34} height={34} loading="lazy" decoding="async"
+          onError={() => setRate(src)} className="w-[34px] h-[34px] object-contain" />
+      ) : (
+        <Fallback size={18} strokeWidth={1.6} style={{ color: "var(--text-3)" }} />
+      )}
     </span>
   );
 }
@@ -229,14 +239,14 @@ export default function RecipeSheet({
             {tab === "ing"
               ? recipe.ingredients.map((it, i) => (
                 <div key={i} className="flex items-center gap-3 py-2.5" style={{ borderBottom: i < recipe.ingredients.length - 1 ? "1px solid rgba(var(--accent-rgb),0.07)" : "none" }}>
-                  <Thumb src={ingredientImg(it.nom)} kind="ing" />
+                  <Thumb src={cheminIngredient(it.nom)} kind="ing" />
                   <span className="flex-1 text-[16px]" style={{ color: "var(--text-1)" }}>{it.nom}</span>
                   <span className="text-[13px] font-medium" style={{ color: "#E8620C" }}>{scaledQty(it, portions, recipe.portions)}</span>
                 </div>
               ))
               : recipe.ustensiles.map((u, i) => (
                 <div key={i} className="flex items-center gap-3 py-2.5" style={{ borderBottom: i < recipe.ustensiles.length - 1 ? "1px solid rgba(var(--accent-rgb),0.07)" : "none" }}>
-                  <Thumb src={utensilImg(u)} kind="ust" />
+                  <Thumb src={cheminUstensile(u)} kind="ust" />
                   <span className="flex-1 text-[16px]" style={{ color: "var(--text-1)" }}>{u}</span>
                 </div>
               ))}

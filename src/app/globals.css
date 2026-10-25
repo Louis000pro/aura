@@ -94,6 +94,10 @@
   --surface-rgb:      255, 255, 255;   /* verre blanc            */
   --tint-violet-rgb:  240, 235, 255;   /* #F0EBFF — voile violet */
   --tint-cream-rgb:   255, 251, 240;   /* #FFFBF0 — voile crème  */
+  /* La pastille d'une vignette de recette (ingrédient, ustensile). En sombre
+     elle s'éclaircit d'un cran : l'ombre des emojis Fluent disparaîtrait
+     sur un fond presque noir. */
+  --puce-vignette: rgba(240, 235, 255, 0.5);
   --violet-mid: #D4C0FF;    --violet-mid-rgb: 212, 192, 255;
   --cream-mid:  #F5E6A3;    --cream-mid-rgb:  245, 230, 163;
   --glass-sheen: 255, 255, 255;        /* liseré lumineux du verre */
@@ -214,6 +218,7 @@
   --surface-rgb:     22, 18, 30;       /* carte sombre sur fond noir (distincte, discrète) */
   --tint-violet-rgb: 40, 33, 60;
   --tint-cream-rgb:  40, 33, 55;
+  --puce-vignette: #29223E;
   --violet-mid: #5A4B92;    --violet-mid-rgb: 90, 75, 146;
   --cream-mid:  #6E5CA0;    --cream-mid-rgb:  110, 92, 160;
   --glass-sheen: 188, 176, 236;

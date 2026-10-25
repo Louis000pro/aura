@@ -4,6 +4,19 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import RetourLegal from "@/components/legal/RetourLegal";
 
+/* La licence MIT des emojis Fluent, telle que Microsoft la publie
+   (scripts/vignettes/fluent/LICENSE). Elle exige d'accompagner toute copie :
+   on la recopie mot pour mot, en anglais. */
+const LICENCE_FLUENT = `MIT License
+
+Copyright (c) Microsoft Corporation.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE`;
+
 /* ── Section block ──────────────────────────────────────── */
 function LegalSection({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -90,9 +103,10 @@ export default function MentionsLegalesPage() {
         <LegalSection title="Propriété intellectuelle">
           <p>
             L&apos;ensemble des contenus présents sur le site et l&apos;application Vaiiya (structure, textes,
-            graphismes, interface, logo, ainsi que la marque <strong>Vaiiya</strong>) sont la propriété
-            exclusive de l&apos;éditeur ou de ses partenaires et sont protégés par les lois françaises et
-            internationales relatives à la propriété intellectuelle.
+            graphismes, interface, logo, ainsi que la marque <strong>Vaiiya</strong>) sont, sauf mention
+            contraire dans la section « Crédits », la propriété exclusive de l&apos;éditeur ou de ses
+            partenaires et sont protégés par les lois françaises et internationales relatives à la
+            propriété intellectuelle.
           </p>
           <p>
             Toute reproduction, représentation, modification ou exploitation, totale ou partielle, de ces
@@ -105,6 +119,22 @@ export default function MentionsLegalesPage() {
             l&apos;utilisateur accorde toutefois à l&apos;éditeur une licence non exclusive et gratuite d&apos;affichage
             et de diffusion de ce contenu, dans le seul but de faire fonctionner le service (affichage du
             profil, des conversations et des fonctionnalités associées).
+          </p>
+        </LegalSection>
+
+        <LegalSection title="Crédits">
+          <p>
+            Dans les recettes, les vignettes des ingrédients et des ustensiles reprennent ou adaptent les
+            emojis <strong>Fluent Emoji</strong> de Microsoft, publiés sous licence MIT. Les autres sont
+            dessinées pour Vaiiya, dans le même style.
+          </p>
+          <p>
+            <a href="https://github.com/microsoft/fluentui-emoji" target="_blank" rel="noopener noreferrer" style={{ color: "var(--exp-encre)" }} className="underline">
+              github.com/microsoft/fluentui-emoji
+            </a>
+          </p>
+          <p className="text-[13px] whitespace-pre-line" style={{ color: "var(--text-3)" }}>
+            {LICENCE_FLUENT}
           </p>
         </LegalSection>
 
@@ -141,7 +171,7 @@ export default function MentionsLegalesPage() {
         </LegalSection>
 
         <p className="text-center text-[11px] font-light mt-8" style={{ color: "var(--text-3)" }}>
-          Dernière mise à jour : 17 octobre 2026 · Vaiiya
+          Dernière mise à jour : 25 octobre 2026 · Vaiiya
         </p>
       </motion.div>
     </div>
