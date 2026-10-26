@@ -52,7 +52,9 @@ export function noterRang(userId: string, rang: Rang): void {
   window.dispatchEvent(new Event(EVENEMENT_RANG_CONNU));
 
   if (vu === null) return; // premier passage : on mémorise, on ne fête pas
-  if (indexRang(rang.id) <= indexRang(vu)) return; // descente ou rang inconnu : rien
+  // Rang mémorisé inconnu, ou descente : rien. Sans le premier test, un
+  // identifiant inconnu valait -1, et même le Bronze passait pour une montée.
+  if (indexRang(vu) < 0 || indexRang(rang.id) <= indexRang(vu)) return;
 
   // La montée se raconte aussi dans le fil des potes (une seule fois par rang).
   publierEvenement(userId, "rang", `rang:${rang.id}`, { rang: rang.id });

@@ -74,10 +74,17 @@ export type ContexteVoix = {
   /** Le nombre de jours de la série en cours (`retour.serie`). */
   serie?: number;
   /** Un nombre de séances. `rappel.veilleuse` : depuis toujours.
-   *  `semaine.*` : posées sur la semaine qu'on regarde. */
+   *  `semaine.*` : posées sur la semaine qu'on regarde.
+   *  `rang.montee.*` : faites jusqu'au rang qu'on vient de gagner. */
   seances?: number;
-  /** L'EXP du palier qu'on vient d'atteindre (`rang.montee`). */
-  exp?: number;
+  /** `rang.montee.*` : les séances faites depuis le rang d'avant (depuis
+   *  l'inscription pour l'Argent), lues sur les cartes des deux rangs. */
+  seancesDepuis?: number;
+  /** `rang.montee.*` : le jour du parcours où le rang est tombé (1 = le
+   *  jour de l'inscription). */
+  jours?: number;
+  /** `rang.montee.*` : le jour de l'inscription, déjà écrit (« 6 mai »). */
+  debut?: string;
   /** Maillons qui manquent à un relais (`rappel.relais_decisif`). */
   maillons?: number;
   /** V9C · le nom d'une ÉTAPE du cycle (`impasse.etape_*`). Distinct de
@@ -1057,23 +1064,55 @@ const REPLIQUES = {
     sasha:  "Le relais se joue de deux à cinq, sur une semaine. Chacun fait ses quatre maillons, deux par jour au plus, et on passe au suivant quand tout le monde a fait le sien. À chaque maillon, l’affiche se dévoile un peu.",
   },
 
-  /* ── La montée de rang ──
-     Il tend la récompense, il ne commente pas la scène : la gemme dit
-     déjà le rang, la carte du dessous dit déjà ce qui est débloqué. Ce
-     qui manquait, c'est quelqu'un pour te la donner.
-     ⚠️ Le palier à zéro (Bronze, ou une célébration rejouée par un
-     admin) a sa propre phrase : « 0 EXP » sous une gemme se lirait comme
-     une erreur de calcul. */
-  "rang.montee": {
-    commun: (c) => (c.exp
-      ? `Te voilà ${c.rang}. ${c.exp} EXP, posés une action après l’autre.`
-      : `Te voilà ${c.rang}. C’est le début, et il compte déjà.`),
-    nora:   (c) => (c.exp
-      ? `Te voilà ${c.rang}. ${c.exp} EXP, posés une action après l’autre. Tu as tenu, et ça se voit.`
-      : `Te voilà ${c.rang}. C’est le début, et il compte déjà.`),
-    sasha:  (c) => (c.exp
-      ? `${c.rang}. ${c.exp} EXP, une action après l’autre. Tu l’as pris.`
-      : `${c.rang}. C’est le début, et il compte.`),
+  /* ── La montée de rang (Louis, 2026-10-26 : « quand tu passes d'un
+     rang, le guide te dit toujours la même chose […] aucune
+     personnalisation, aucune originalité ») ──
+     Avant, une phrase pour les cinq rangs, où seuls le nom et le seuil
+     changeaient (« Te voilà Or. 350 EXP, posés une action après
+     l’autre. »). Désormais une phrase PAR RANG, et chacune parle de TON
+     chemin, lu sur la carte du rang (`contexteMontee`, lib/motRang.ts) :
+     les séances faites, celles depuis le rang d'avant, le jour où tu as
+     commencé. Elle ne redit ni le rang (la gemme et le nom le disent en
+     grand) ni les cadeaux (les tuiles du dessous les montrent).
+     ⚠️ UN CHIFFRE NE SE DIT QUE SI LA CARTE LE PORTE. Sans elle (la base
+     n'a pas répondu, ou un admin rejoue un rang pas encore atteint), le
+     rang garde sa phrase, sans chiffre.
+     ⚠️ JAMAIS UN PETIT CHIFFRE QUI RAPETISSE : « une séance depuis
+     l’Argent » ne se dit pas, on prend un autre angle.
+     ⚠️ DEUX LIGNES AU PLUS dans la bulle à 360 px : `check:rangs` borne
+     la plus longue de chaque rang.
+     Le Bronze n'a pas de phrase : on l'a dès l'inscription, il ne se
+     gagne jamais (`cleMontee` le refuse). */
+  "rang.montee.argent": {
+    commun: (c) => (c.jours === 1
+      ? "Ton premier rang arrive dès ton premier jour."
+      : c.seances
+        ? `Ton premier rang arrive après ${seancesDites(c.seances)}.`
+        : "Te voilà Argent, ton premier rang."),
+  },
+  "rang.montee.or": {
+    commun: (c) => ((c.seancesDepuis ?? 0) >= 2
+      ? `Tu as fait ${seancesDites(c.seancesDepuis)} depuis l’Argent, et te voilà Or.`
+      : (c.seances ?? 0) >= 2
+        ? `Te voilà Or, avec ${seancesDites(c.seances)} depuis ton arrivée.`
+        : "Te voilà Or, ton deuxième rang."),
+  },
+  "rang.montee.platine": {
+    commun: (c) => (c.debut && (c.seances ?? 0) >= 2
+      ? `Tu as commencé le ${c.debut}. Depuis, tu as fait ${seancesDites(c.seances)}.`
+      : c.debut
+        ? `Tu as commencé le ${c.debut}, et te voilà Platine.`
+        : "Te voilà Platine. Il reste deux rangs au-dessus du tien."),
+  },
+  "rang.montee.diamant": {
+    commun: (c) => ((c.seances ?? 0) >= 3
+      ? `Après ${seancesDites(c.seances)}, il ne reste que l’Éternel au-dessus de toi.`
+      : "Il ne reste que l’Éternel au-dessus de toi."),
+  },
+  "rang.montee.eternel": {
+    commun: (c) => ((c.seances ?? 0) >= 3
+      ? `C’est le dernier rang de Vaiiya. Tu l’as atteint en ${seancesDites(c.seances)}.`
+      : "C’est le dernier rang de Vaiiya, et tu l’as atteint."),
   },
 
   /* ── L'avis ────────────────────────────────────────────────────────
@@ -1222,6 +1261,14 @@ const affilee = (n = 0) => maj(`${depuis(n)} d’affilée`);
 /** La même chose pour une bulle de conversation (`ouverture.flamme`) :
  *  sans la marque ⟦ ⟧ du mot du jour, qu'une bulle n'affiche pas. */
 const affileeDit = (n = 0) => maj(`${LETTRES[n] ?? RONDS[n] ?? String(n)} ${n > 1 ? "jours" : "jour"} d’affilée`);
+/** « une séance », « vingt séances », « 120 séances » (`rang.montee.*`) :
+ *  en lettres jusqu'à vingt et aux paliers ronds, comme on le dit, puis en
+ *  chiffres, collés à leur mot par une espace insécable. */
+const seancesDites = (n = 0) => {
+  if (n === 1) return "une séance";
+  const mot = LETTRES[n] ?? RONDS[n];
+  return mot ? `${mot} séances` : `${n} séances`;
+};
 const deMois = (m = "") => (/^[aeiouéèêh]/i.test(m) ? `d’${m}` : `de ${m}`);
 /** « Il t’en reste un ce mois-ci. » : un compte de jokers se dit en lettres. */
 const resteJokers = (n = 0) =>

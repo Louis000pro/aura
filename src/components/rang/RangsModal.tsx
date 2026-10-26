@@ -8,6 +8,7 @@ import GemmeRang from "@/components/GemmeRang";
 import VisuelCadeau from "@/components/rang/VisuelCadeau";
 import { PseudoRang, TitreRang } from "@/components/rang/IdentiteRang";
 import { rejouerCelebration } from "@/lib/celebrationRang";
+import { cleMontee } from "@/lib/motRang";
 import { RANGS, RECOMPENSES_RANG, TITRE_DIAMANT, jokersParMois, progressionRang, type GenreCadeau, type Rang } from "@/lib/aura";
 import { nJokers } from "@/lib/jokers";
 import { useJokersActifs } from "@/hooks/useJokersActifs";
@@ -104,7 +105,8 @@ export default function RangsModal({
                   Admin · rejouer la célébration
                 </p>
                 <div className="mt-2 flex flex-wrap gap-1.5">
-                  {RANGS.map((rang) => (
+                  {/* Seuls les rangs qui se gagnent : le Bronze, on l'a dès l'inscription. */}
+                  {RANGS.filter((r) => cleMontee(r.id)).map((rang) => (
                     <button
                       key={rang.id}
                       type="button"

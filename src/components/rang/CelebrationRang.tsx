@@ -6,6 +6,9 @@ import { useAuth } from "@/context/AuthContext";
 import { VisageGuide } from "@/components/AssistantMark";
 import { useGuideActif } from "@/context/GuideContext";
 import { voix } from "@/lib/guides";
+import { createClient } from "@/lib/supabase";
+import { cartesDuCompte } from "@/lib/cartesRang";
+import { cleMontee, contexteMontee } from "@/lib/motRang";
 import VisuelCadeau from "@/components/rang/VisuelCadeau";
 import FeuilleCarte from "@/components/rang/FeuilleCarte";
 import { moteurParticules, type MoteurParticules } from "@/components/rang/particulesRang";
@@ -51,7 +54,8 @@ export default function CelebrationRang() {
     const onMonte = (e: Event) => {
       const id = (e as CustomEvent<DetailRangMonte>).detail?.rangId;
       const rang = RANGS.find((r) => r.id === id);
-      if (rang) setScene({ rang, cle: Date.now() });
+      // Le Bronze ne se gagne jamais (on l'a dès l'inscription) : pas de scène.
+      if (rang && cleMontee(rang.id)) setScene({ rang, cle: Date.now() });
     };
     window.addEventListener(EVENEMENT_RANG_MONTE, onMonte);
     return () => window.removeEventListener(EVENEMENT_RANG_MONTE, onMonte);
@@ -146,6 +150,23 @@ function Scene({ rang, onFermer }: { rang: Rang; onFermer: () => void }) {
   const lumiere = LUMIERE[rang.id] ?? LUMIERE.argent;
   const lumiereAvant = LUMIERE[avant.id] ?? LUMIERE.bronze;
   const pseudo = user?.pseudo ?? user?.name ?? "";
+  const userId = user?.id;
+
+  /* La phrase du Guide : celle du rang sans chiffre d'abord, puis celle de
+     TON chemin dès que la carte du rang répond (lib/motRang.ts). Une fois
+     la bulle à l'écran, elle ne change plus : une phrase qui se réécrit
+     sous les yeux se lit comme une erreur. */
+  const cleMot = cleMontee(rang.id);
+  const [mot, setMot] = useState(() => (cleMot ? voix(guide, cleMot) : ""));
+  const bulleVue = useRef(false);
+  useEffect(() => {
+    if (!cleMot || !userId) return;
+    let vivant = true;
+    void cartesDuCompte(createClient(), userId).then((cartes) => {
+      if (vivant && !bulleVue.current) setMot(voix(guide, cleMot, contexteMontee(cartes, rang.id)));
+    });
+    return () => { vivant = false; };
+  }, [cleMot, userId, guide, rang.id]);
 
   const racine = useRef<HTMLDivElement>(null);
   const secousse = useRef<HTMLDivElement>(null);
@@ -253,7 +274,7 @@ function Scene({ rang, onFermer }: { rang: Rang; onFermer: () => void }) {
       });
       plus(T.label, () => montrer(label.current, FONDU, { duration: 300 }));
       plus(T.nom, () => { ajusterNom(); montrer(nomBoite.current, FONDU, { duration: 400 }); });
-      plus(T.guide, () => montrer(bulle.current, FONDU, { duration: 300 }));
+      plus(T.guide, () => { bulleVue.current = true; montrer(bulle.current, FONDU, { duration: 300 }); });
       T.cadeaux.forEach((ms, i) => plus(ms, () => montrer(tuiles.current[i], FONDU, { duration: 300 })));
       plus(T.actions, finir);
     } else {
@@ -349,7 +370,7 @@ function Scene({ rang, onFermer }: { rang: Rang; onFermer: () => void }) {
         vibrer(18);
         plus(480, () => nom.current?.classList.add(styles.brille));
       });
-      plus(T.guide, () => montrer(bulle.current, MONTE));
+      plus(T.guide, () => { bulleVue.current = true; montrer(bulle.current, MONTE); });
       // Les cadeaux s'ouvrent l'un après l'autre ; la carte se retourne.
       T.cadeaux.forEach((ms, i) => plus(ms, () => {
         const el = tuiles.current[i];
@@ -449,7 +470,7 @@ function Scene({ rang, onFermer }: { rang: Rang; onFermer: () => void }) {
           </div>
           <div className={styles.guide} ref={bulle}>
             <VisageGuide guide={guide} etat="encourage" size={38} />
-            <p>{voix(guide, "rang.montee", { rang: rang.nom, exp: rang.min })}</p>
+            <p>{mot}</p>
           </div>
           {cadeaux.length > 0 && (
             <div className={styles.cadeaux}>
