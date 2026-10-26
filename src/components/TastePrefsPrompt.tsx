@@ -15,10 +15,11 @@
 
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, X, Plus } from "lucide-react";
+import { X, Plus } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { createClient } from "@/lib/supabase";
 import { addDaysStr, daysSince } from "@/lib/dates";
+import { lockBodyModal } from "@/lib/bodyModal";
 import {
   type TasteProfile,
   Q_COOKING, Q_TIME, Q_INGREDIENTS,
@@ -89,6 +90,9 @@ export default function TastePrefsPrompt() {
     return () => { cancelled = true; };
   }, [user?.id]);
 
+  // La barre du bas s'efface et le fond ne défile plus, comme la pesée.
+  useEffect(() => (show ? lockBodyModal() : undefined), [show]);
+
   const later = () => {
     if (user?.id) {
       try { localStorage.setItem(`vaiiya_taste_snooze_${user.id}`, addDaysStr(4)); } catch { /* ignore */ }
@@ -124,35 +128,47 @@ export default function TastePrefsPrompt() {
       {show && (
         <motion.div
           initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-          className="fixed inset-0 z-[60] flex items-end md:items-center justify-center px-4"
-          style={{ background: "rgba(0,0,0,0.25)", backdropFilter: "blur(10px)" }}
+          className="fixed inset-0 z-[60] flex items-end md:items-center justify-center md:px-4"
+          style={{ background: "rgba(0,0,0,0.3)" }}
           onClick={later}
         >
+          {/* Une vraie feuille du bas sur téléphone, comme la pesée : pleine
+              largeur, collée au bord, opaque, et elle garde la place de la
+              barre d'accueil de l'iPhone. Avant, elle flottait avec des marges
+              latérales et se faisait couper par le bas de l'écran. */}
           <motion.div
-            initial={{ opacity: 0, y: 80, scale: 0.96 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 40, scale: 0.97 }}
-            transition={{ type: "spring", bounce: 0.28, duration: 0.5 }}
+            role="dialog" aria-modal="true" aria-labelledby="gouts-titre"
+            initial={{ y: 60, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 40, opacity: 0 }}
+            transition={{ type: "spring", bounce: 0.18, duration: 0.45 }}
             onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-sm rounded-t-[var(--r-feuille)] md:rounded-[var(--r-feuille)] vy-verre-epais px-6 pt-7 pb-8 md:pb-7 flex flex-col overflow-hidden"
-            style={{ boxShadow: "0 -8px 40px rgba(var(--accent-rgb),0.18)", maxHeight: "86vh" }}
+            className="w-full md:max-w-md rounded-t-[var(--r-feuille)] md:rounded-[var(--r-feuille)] px-6 pt-3 md:pt-6 flex flex-col overflow-hidden"
+            style={{
+              background: "rgb(var(--surface-rgb))",
+              boxShadow: "0 -12px 40px rgba(0,0,0,0.14)",
+              maxHeight: "88dvh",
+              paddingBottom: "calc(16px + env(safe-area-inset-bottom))",
+            }}
           >
-            <div className="flex items-center justify-between mb-1 flex-shrink-0">
-              <div
-                className="flex items-center justify-center rounded-2xl"
-                style={{ width: 44, height: 44, background: "linear-gradient(135deg,rgba(var(--accent-rgb),0.16),rgba(var(--gold-rgb),0.14))" }}
-              >
-                <Sparkles size={22} style={{ color: "var(--accent)" }} strokeWidth={2} />
+            <div className="mx-auto mb-3 h-1 w-10 flex-shrink-0 rounded-full md:hidden" style={{ background: "rgba(var(--text-3-rgb),0.3)" }} />
+
+            <div className="flex items-start justify-between gap-3 flex-shrink-0">
+              <div className="min-w-0">
+                <h2 id="gouts-titre" className="vy-titre" style={{ color: "var(--text-0)" }}>
+                  On personnalise tes plats&nbsp;?
+                </h2>
+                <p className="vy-corps mt-1" style={{ color: "var(--text-2)" }}>
+                  Quelques questions rapides pour te proposer des repas qui te ressemblent vraiment.
+                </p>
               </div>
-              <button onClick={later} aria-label="Fermer" style={{ color: "#CBD5E0" }}>
+              <button
+                onClick={later} aria-label="Fermer"
+                className="-mr-2 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full"
+                style={{ color: "var(--text-3)" }}
+              >
                 <X size={20} />
               </button>
             </div>
-
-            <h2 className="text-[20px] font-light mt-3 flex-shrink-0" style={{ color: "var(--text-1)" }}>
-              On personnalise tes plats&nbsp;?
-            </h2>
-            <p className="text-[16px] mt-1.5 mb-4 flex-shrink-0" style={{ color: "var(--text-3)", lineHeight: 1.5 }}>
-              Quelques questions rapides pour te proposer des repas qui te ressemblent vraiment.
-            </p>
+            <div className="mb-4 flex-shrink-0" />
 
             {/* Contenu scrollable (fondu en bas = indice qu'il y a plus dessous) */}
             <div className="relative flex-1 min-h-0 flex flex-col">
@@ -177,7 +193,7 @@ export default function TastePrefsPrompt() {
               <Question label="Tes bases préférées ?">
                 {BASE_GROUPS.map((g) => (
                   <div key={g.group} className="mb-2">
-                    <p className="text-[11px] font-semibold tracking-widest uppercase mb-1" style={{ color: "#CBD5E0" }}>{g.group}</p>
+                    <p className="text-[11px] font-semibold tracking-widest uppercase mb-1" style={{ color: "var(--text-3)" }}>{g.group}</p>
                     <div className="flex flex-wrap gap-1">
                       {g.items.map((it) => {
                         const on = bases.includes(it.label);
@@ -185,9 +201,9 @@ export default function TastePrefsPrompt() {
                           <button key={it.label} onClick={() => toggleBase(it.label)} type="button"
                             className="flex items-center gap-1 px-2 py-1 rounded-full cursor-pointer select-none"
                             style={{
-                              background: on ? "linear-gradient(135deg,var(--violet-mid),var(--cream-mid))" : "rgba(var(--tint-violet-rgb),0.5)",
-                              border: on ? "1px solid rgba(var(--accent-rgb),0.4)" : "1px solid rgba(var(--violet-mid-rgb),0.35)",
-                              color: on ? "var(--text-1)" : "var(--text-2)", fontSize: 11, fontWeight: 500,
+                              background: on ? "linear-gradient(135deg,#8B5CF6,#C13BC1)" : "rgba(var(--tint-violet-rgb),0.5)",
+                              border: on ? "1px solid transparent" : "1px solid rgba(var(--violet-mid-rgb),0.35)",
+                              color: on ? "#fff" : "var(--text-2)", fontSize: 11, fontWeight: 500,
                             }}>
                             <span style={{ fontSize: 11 }}>{it.emoji}</span>{it.label}
                           </button>
@@ -203,7 +219,7 @@ export default function TastePrefsPrompt() {
                     {customBases.map((b) => (
                       <button key={b} onClick={() => toggleBase(b)} type="button"
                         className="flex items-center gap-1 px-2 py-1 rounded-full cursor-pointer select-none"
-                        style={{ background: "linear-gradient(135deg,var(--violet-mid),var(--cream-mid))", border: "1px solid rgba(var(--accent-rgb),0.4)", color: "var(--text-1)", fontSize: 11, fontWeight: 500 }}>
+                        style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", border: "1px solid transparent", color: "#fff", fontSize: 11, fontWeight: 500 }}>
                         {b}<X size={11} strokeWidth={2.5} />
                       </button>
                     ))}
@@ -215,7 +231,7 @@ export default function TastePrefsPrompt() {
                     onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addCustom(); } }}
                     placeholder="Ajouter un aliment…"
                     className="flex-1 rounded-xl px-3 py-2 text-[13px] outline-none"
-                    style={{ border: "1.5px solid #E2E8F0", color: "var(--text-1)" }}
+                    style={{ border: "1.5px solid rgba(var(--text-3-rgb),0.25)", background: "transparent", color: "var(--text-1)" }}
                   />
                   <button onClick={addCustom} type="button" aria-label="Ajouter"
                     className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 cursor-pointer"
@@ -226,7 +242,7 @@ export default function TastePrefsPrompt() {
               </Question>
               </div>
               <div aria-hidden className="pointer-events-none absolute left-0 right-0 bottom-0 h-6"
-                style={{ background: "linear-gradient(to top, #FFFFFF, rgba(var(--surface-rgb),0))" }} />
+                style={{ background: "linear-gradient(to top, rgb(var(--surface-rgb)), rgba(var(--surface-rgb),0))" }} />
             </div>
 
             {/* Pied (fixe) */}
@@ -235,11 +251,11 @@ export default function TastePrefsPrompt() {
                 onClick={save}
                 disabled={saving || !canSave}
                 className="w-full rounded-2xl py-3.5 text-[16px] font-semibold text-white disabled:opacity-50"
-                style={{ background: "linear-gradient(135deg,var(--accent),var(--gold))", boxShadow: "var(--ombre-action)" }}
+                style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", boxShadow: "var(--ombre-action)" }}
               >
                 {saving ? "..." : "Enregistrer mes goûts"}
               </button>
-              <button onClick={later} className="w-full mt-2 py-2.5 text-[16px] font-medium" style={{ color: "var(--text-3)" }}>
+              <button onClick={later} className="w-full mt-1 py-2.5 text-[16px] font-medium" style={{ color: "var(--text-3)" }}>
                 Plus tard
               </button>
             </div>
@@ -269,9 +285,9 @@ function Segmented({ options, value, onSelect }: { options: string[]; value: str
           <button key={o} onClick={() => onSelect(o)} type="button"
             className="flex-1 rounded-xl px-2 py-2 cursor-pointer select-none"
             style={{
-              background: on ? "linear-gradient(135deg,var(--violet-mid),var(--cream-mid))" : "rgba(var(--tint-violet-rgb),0.5)",
-              border: on ? "1px solid rgba(var(--accent-rgb),0.4)" : "1px solid rgba(var(--violet-mid-rgb),0.35)",
-              color: on ? "var(--text-1)" : "var(--text-2)", fontSize: 11, fontWeight: 500,
+              background: on ? "linear-gradient(135deg,#8B5CF6,#C13BC1)" : "rgba(var(--tint-violet-rgb),0.5)",
+              border: on ? "1px solid transparent" : "1px solid rgba(var(--violet-mid-rgb),0.35)",
+              color: on ? "#fff" : "var(--text-2)", fontSize: 11, fontWeight: 500,
             }}>
             {o}
           </button>

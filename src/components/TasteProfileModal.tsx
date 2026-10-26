@@ -111,8 +111,8 @@ export default function TasteProfileModal({ onClose, onSaved }: { onClose: () =>
             </div>
           ) : success ? (
             <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="flex flex-col items-center gap-3 py-10">
-              <div className="w-14 h-14 rounded-full flex items-center justify-center" style={{ background: "linear-gradient(135deg, var(--violet-mid), var(--cream-mid))" }}>
-                <Check size={24} strokeWidth={2.5} style={{ color: "var(--text-1)" }} />
+              <div className="w-14 h-14 rounded-full flex items-center justify-center" style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)" }}>
+                <Check size={24} strokeWidth={2.5} style={{ color: "#fff" }} />
               </div>
               <p className="text-[16px] font-semibold" style={{ color: "var(--text-1)" }}>Goûts mis à jour.</p>
               <p className="text-[13px] font-light text-center" style={{ color: "var(--text-3)" }}>Ton menu de la semaine va s&apos;adapter</p>
@@ -232,7 +232,7 @@ function Chip({ on, onClick, children }: { on: boolean; onClick: () => void; chi
     <motion.button whileTap={{ scale: 0.93 }} onClick={onClick} type="button"
       className="flex items-center gap-1 px-2 py-1 rounded-full cursor-pointer select-none text-[13px] font-medium"
       style={on
-        ? { background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--accent) 100%)", color: "#fff", boxShadow: "var(--ombre-action)" }
+        ? { background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", color: "#fff", boxShadow: "var(--ombre-action)" }
         : { background: "rgba(var(--tint-violet-rgb),0.6)", color: "var(--text-2)", border: "1px solid rgba(var(--accent-rgb),0.15)" }
       }>
       {children}

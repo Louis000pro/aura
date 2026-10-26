@@ -49,7 +49,7 @@ export default function PlacesTop3Picker({
             <div className="absolute inset-0" style={{ background: "var(--voile-carte)" }} />
             {on && (
               <span className="absolute top-1 right-1 w-4 h-4 rounded-full flex items-center justify-center text-[11px] font-semibold"
-                style={{ background: "var(--accent)", color: "#fff" }}>
+                style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", color: "#fff" }}>
                 {rank + 1}
               </span>
             )}
