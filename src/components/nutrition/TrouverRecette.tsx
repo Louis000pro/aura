@@ -3,7 +3,9 @@
 /* ════════════════════════════════════════════════════════════════════
    « Envie de quoi ? » : neuf envies en photo, « Mes favoris » et la
    recherche (Louis, 2026-10-25 : on fouille la banque par envie, sans
-   savoir ce qu'on veut ; la loupe sert à chercher un plat précis).
+   savoir ce qu'on veut ; la loupe sert à chercher un plat précis, et
+   depuis le 2026-10-26 elle lit aussi une envie tapée, « sans gluten »
+   ou « rapide » : lib/rechercheRecettes).
 
    Les envies et leurs règles vivent dans lib/collectionsRecettes. L'écran
    reçoit les neuf du jour, déjà choisies pour le régime (elles tournent
@@ -15,7 +17,7 @@
 
 import { useState } from "react";
 import { ChevronRight, Search, X } from "lucide-react";
-import type { Recipe } from "@/lib/recipeBank";
+import type { DietKey, Recipe } from "@/lib/recipeBank";
 import type { RecentMeal } from "@/lib/repas";
 import { NB_ENVIES_DU_JOUR, type IdEnvie } from "@/lib/collectionsRecettes";
 import RecipeSearch from "@/components/RecipeSearch";
@@ -25,11 +27,13 @@ import ns from "@/components/nutrition/Nutrition.module.css";
 
 export type TuileDEnvie = { id: IdEnvie; label: string; image: string };
 
-export default function TrouverRecette({ envies, nbEnvies, favoris, onEnvie, onToutes, onRecette, onFavoris }: {
+export default function TrouverRecette({ envies, nbEnvies, regime, favoris, onEnvie, onToutes, onRecette, onFavoris }: {
   /** Les envies du jour ; `null` tant que le jour du téléphone n'est pas connu. */
   envies: TuileDEnvie[] | null;
   /** Le nombre d'envies de « Toutes les envies », pour ce régime. */
   nbEnvies: number;
+  /** Le régime de la personne : la loupe fait passer devant ce qui lui convient. */
+  regime: DietKey[];
   /** `null` tant que les favoris ne sont pas connus. */
   favoris: { recettes: Recipe[]; plats: RecentMeal[] } | null;
   onEnvie: (id: IdEnvie) => void;
@@ -53,7 +57,7 @@ export default function TrouverRecette({ envies, nbEnvies, favoris, onEnvie, onT
         </button>
       </div>
 
-      {cherche && <RecipeSearch onOuvrir={onRecette} autoFocus />}
+      {cherche && <RecipeSearch onOuvrir={onRecette} regime={regime} autoFocus />}
 
       {favoris && <BandeFavoris recettes={favoris.recettes} plats={favoris.plats} onOuvrir={onFavoris} />}
 

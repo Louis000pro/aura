@@ -548,6 +548,7 @@ export default function NutritionTab() {
               <TrouverRecette
                 envies={enviesDuFil}
                 nbEnvies={nbEnvies}
+                regime={regime}
                 favoris={favoris.connu ? { recettes: favoris.recettes, plats: favoris.plats } : null}
                 onEnvie={ouvrirEnvie}
                 onToutes={() => ouvrirVue({ nom: "envies" })}

@@ -34,6 +34,7 @@ import {
   MOMENTS_SAISON, NATURE_MORTE, SEUIL_MOMENT, VISIBLE, dimancheDePaques, imageProduit, jourEnLettres, momentActif, momentDuJour,
   recettesDuMoment,
 } from "@/lib/momentsSaison";
+import { MAX_APPROCHANTES, chercherRecettes, ditsDesIntentions, lireSaisie, normaliser } from "@/lib/rechercheRecettes";
 
 let echecs = 0;
 function verdict(nom: string, bon: boolean, detail: string) {
@@ -110,7 +111,7 @@ const fichierPublic = (chemin: string) => existsSync(new URL("../public" + chemi
      MATINS_SALES. Un matin qui n'y est pas doit être sucré par ses ingrédients. */
   const SUCRE = /sucre|miel|sirop|chocolat|cacao|banane|pomme|poire|fruit|fraise|framboise|myrtille|mangue|kiwi|clementine|confiture|cannelle|vanille|datte|erable|raisin|compote|coco|caramel|pepites/;
   const SALE = /jambon|saumon|thon|poulet|feta|avocat|epinard|tomate|lardon|bacon|champignon|poivron|oignon|parmesan|emmental|gruyere|ciboulette/;
-  const nom = (v: string) => v.toLowerCase().replace(/œ/g, "oe").normalize("NFD").replace(/[̀-ͯ]/g, "");
+  const nom = (v: string) => v.toLowerCase().replace(/œ/g, "oe").normalize("NFD").replace(/[\u0300-\u036f]/g, "");
   const douteux = RECIPES.filter((r) => (natureDe(r) === "petit-dej" || natureDe(r) === "encas") && !MATINS_SALES.has(r.id))
     .filter((r) => { const i = r.ingredients.map((x) => nom(x.nom)).join(" "); return !SUCRE.test(i) || SALE.test(i); }).map((r) => r.id);
   verdict("un matin ou un encas salé est écrit dans MATINS_SALES", douteux.length === 0, douteux.join(", ") || "les autres sont sucrés");
@@ -609,6 +610,145 @@ const fichierPublic = (chemin: string) => existsSync(new URL("../public" + chemi
   const lues = new Set([...cssNet.matchAll(/var\((--[\w-]+)/g)].map((m) => m[1]));
   const inutiles = Object.values(COULEURS_MOTIF).flat().filter((v) => !lues.has(v));
   verdict("chaque couleur attendue d'un motif est lue par le module", inutiles.length === 0, inutiles.join(", ") || "");
+}
+
+/* ── 12 · La loupe (lib/rechercheRecettes) : l'écriture, l'intention, et un régime qui ne se relâche jamais ── */
+{
+  const ids = (q: string, regime: DietKey[] = []) => chercherRecettes(q, regime).recettes.map((r) => r.id);
+  const memes = (a: string[], b: string[]) => a.length === b.length && a.every((x, i) => x === b[i]);
+  const lu = (q: string) => lireSaisie(q).termes.map((t) =>
+    t.sorte === "intention" ? `${t.sans ? "-" : ""}${t.intention.id}` : t.sorte === "mot" ? `${t.sans ? "-" : ""}«${t.cle}»`
+      : t.sorte === "expression" ? `«${t.suite.join(" ")}»` : "chiffre").join(" ");
+
+  /* L'écriture : la ligature, la casse, les accents, les pluriels. */
+  verdict("« Œ » se défait en « oe », les accents et les majuscules tombent", normaliser("Bœuf BOURGUIGNON, Œufs brouillés") === "boeuf bourguignon oeufs brouilles",
+    normaliser("Bœuf BOURGUIGNON, Œufs brouillés"));
+  // Témoin : l'ancienne loupe (accents retirés, morceaux de texte comparés) ne connaissait pas « œ ».
+  const ancienne = (q: string) => {
+    const sans = (v: string) => v.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    return RECIPES.filter((r) => sans(q).split(/\s+/).every((m) => sans(`${r.nom} ${r.description} ${r.tags.join(" ")}`).includes(m)));
+  };
+  verdict("témoin : l'ancienne loupe ne trouvait rien pour « oeuf » ni pour « boeuf »", ancienne("oeuf").length === 0 && ancienne("boeuf").length === 0,
+    `${ancienne("oeuf").length} et ${ancienne("boeuf").length}`);
+  const boeuf = ids("bœuf");
+  verdict("« boeuf », « Bœuf », « BOEUF » et « bœuf » donnent la même liste", boeuf.length > 0 && ["boeuf", "Bœuf", "BOEUF"].every((q) => memes(ids(q), boeuf)),
+    `${boeuf.length} recettes, d'abord ${boeuf[0]}`);
+  verdict("« oeuf » trouve les œufs cocotte, et pas le bœuf bourguignon (« œuf » est dans « bœuf »)",
+    ids("oeuf").includes("oeufs-cocotte-epinards-jambon") && !ids("oeuf").includes("boeuf-bourguignon") && memes(ids("oeuf"), ids("Œufs")), `${ids("oeuf").length} recettes`);
+  verdict("« bœuf bourguignon » ouvre sur le bœuf bourguignon, sans le bourguignon de champignons",
+    ids("bœuf bourguignon")[0] === "boeuf-bourguignon" && !ids("BOEUF BOURGUIGNON").includes("bourguignon-de-champignons"), ids("bœuf bourguignon").join(", "));
+  verdict("le pluriel et les accents ne comptent pas : « crepe » = « Crêpes », « gateaux » = « gâteau »",
+    ids("crepe").length >= 6 && memes(ids("crepe"), ids("Crêpes")) && memes(ids("gateaux"), ids("gâteau")), `${ids("crepe").length} crêpes`);
+
+  /* Les fautes de frappe et l'oreille. */
+  const fautes: Record<string, string> = {
+    bourgignon: "boeuf-bourguignon", spagetti: "spaghetti-aux-boulettes-de-dinde", kinoa: "bowl-de-poulet-quinoa-et-avocat",
+    humus: "houmous-de-betterave", tartiflète: "tartiflette-allegee", lazagne: "lasagnes-epinards-ricotta",
+    tagine: "tajine-d-agneau-aux-abricots-citron-confit-et-couscous", carote: "veloute-de-carottes", brocolli: "meal-prep-poulet-riz-et-brocoli",
+    bolognese: "pates-bolognaise-maison",
+  };
+  const ratees = Object.entries(fautes).filter(([q, id]) => !ids(q).includes(id)).map(([q]) => q);
+  verdict("une faute de frappe, ou un mot écrit comme il se prononce, trouve la recette", ratees.length === 0, ratees.join(", ") || Object.keys(fautes).join(", "));
+  verdict("une correction garde sa première lettre : « quiche » ne devient pas « riche », ni « raclette » « galette »",
+    lu("quiche") === "oeufs" && lu("raclette") === "fromage", `${lu("quiche")} · ${lu("raclette")}`);
+
+  /* Les régimes, et leurs façons de les dire. */
+  const sansGluten = RECIPES.filter((r) => r.diet.includes("sans-gluten"));
+  const gf = chercherRecettes("sans gluten");
+  verdict("« sans gluten » : toutes les recettes sans gluten, et rien d'autre", gf.recettes.length === sansGluten.length
+    && gf.recettes.every((r) => r.diet.includes("sans-gluten")), `${gf.recettes.length} sur ${sansGluten.length}`);
+  verdict("« sans gluten » ouvre sur des plats", gf.recettes.slice(0, 5).every((r) => natureDe(r) === "plat"), gf.recettes.slice(0, 5).map((r) => r.id).join(", "));
+  const glutens = ["sans glu", "sans glutten", "pas de gluten", "SANS GLUTEN", "céliaque"].filter((q) => !memes(ids(q), gf.recettes.map((r) => r.id)));
+  verdict("« sans glu » (en cours), « sans glutten », « pas de gluten » : la même liste", glutens.length === 0, glutens.join(", ") || "cinq façons");
+  const vege = RECIPES.filter((r) => r.diet.includes("vegetarien") || r.diet.includes("vegan")).map((r) => r.id).sort().join();
+  const veges = ["végétarien", "vege", "végé", "veggie", "végétariennes", "vegeterien", "sans viande", "pas de viande"]
+    .filter((q) => ids(q).sort().join() !== vege);
+  verdict("« végé », « vegeterien », « sans viande »… : les recettes végétariennes ou véganes, toutes", veges.length === 0, veges.join(", ") || "huit façons");
+  const vegans = ["vegan", "végétalien", "100% végétal"].filter((q) => !ids(q).length || chercherRecettes(q).recettes.some((r) => !r.diet.includes("vegan")));
+  verdict("« vegan », « végétalien », « 100 % végétal » : que des recettes véganes", vegans.length === 0, vegans.join(", ") || "trois façons");
+
+  /* ⚠️ Un régime ne se relâche jamais, même quand rien ne réunit tout. */
+  const regimes: [string, (r: (typeof RECIPES)[number]) => boolean][] = [
+    ["sans gluten", (r) => r.diet.includes("sans-gluten")], ["sans lactose", (r) => r.diet.includes("sans-lactose")],
+    ["vegan", (r) => r.diet.includes("vegan")], ["végétarien", (r) => r.diet.includes("vegetarien") || r.diet.includes("vegan")],
+  ];
+  const plats = ["poulet", "pâtes", "lasagnes", "burger", "chocolat", "boeuf bourguignon", "crêpes", "rapide", "dessert", "saumon", "kangourou"];
+  const relaches = regimes.flatMap(([regime, tient]) => plats.flatMap((p) =>
+    [`${p} ${regime}`, `${regime} ${p}`].filter((q) => chercherRecettes(q).recettes.some((r) => !tient(r)))));
+  verdict("un régime tient avec chaque plat, dans les deux sens, même en résultats approchants", relaches.length === 0,
+    relaches.join(", ") || `${regimes.length * plats.length * 2} saisies`);
+  const lasagnes = chercherRecettes("lasagnes sans gluten");
+  verdict("« lasagnes sans gluten » : les plus proches, sans gluten, et la ligne le dit", lasagnes.approchant && lasagnes.recettes.length > 0
+    && lasagnes.recettes.length <= MAX_APPROCHANTES && (lasagnes.aide ?? "").endsWith("sans gluten."), lasagnes.aide ?? "aucune ligne");
+
+  /* Les envies et les mots qui ne disent rien. */
+  const sansNom = ENVIES.filter((e) => { const l = lireSaisie(e.label.replace(/\u00ad/g, "")).termes;
+    return l.length !== 1 || l[0].sorte !== "intention" || l[0].intention.id !== e.id; }).map((e) => e.id);
+  verdict("chaque envie se tape par son nom", sansNom.length === 0, sansNom.join(", ") || `${ENVIES.length} envies`);
+  const doubles = ditsDesIntentions().filter((d) => d.intentions.length > 1);
+  verdict("une façon de dire ne désigne qu'une seule intention", doubles.length === 0, doubles.map((d) => `${d.cle} : ${d.intentions.join("/")}`).join(", ") || "");
+  verdict("« je veux un truc avec du poulet » se lit « poulet »", memes(ids("je veux un truc avec du poulet"), ids("poulet")), lu("je veux un truc avec du poulet"));
+  const rapide = chercherRecettes("poulet rapide").recettes;
+  verdict("« poulet rapide » : du poulet prêt en 25 minutes au plus", rapide.length > 0 && rapide.every((r) => envie("poulet").garde(r) && minutesTotales(r) <= MINUTES_RAPIDE),
+    rapide.map((r) => r.id).join(", "));
+  verdict("« poulet sans gluten » ne se lit pas à travers l'ingrédient « poulet sans peau »", lu("poulet sans gluten") === "poulet sans-gluten", lu("poulet sans gluten"));
+  verdict("« fish and chips » trouve le fish & chips sans se plaindre de « and »",
+    ids("fish and chips")[0] === "fish-chips-maison" && !chercherRecettes("fish and chips").ignores.length, lu("fish and chips"));
+
+  /* « sans … », « pas … » */
+  const champignons = chercherRecettes("sans champignons").recettes;
+  verdict("« sans champignons » : aucune recette n'a de champignon", champignons.length > 100
+    && champignons.every((r) => !r.ingredients.some((i) => /champignon/i.test(i.nom))), `${champignons.length} recettes`);
+  const alcool = ids("sans alcool");
+  verdict("« sans alcool » garde le vin chaud sans alcool et la niçoise (vinaigre de vin), retire le coq au vin",
+    alcool.includes("vin-chaud-sans-alcool") && alcool.includes("salade-nicoise") && !alcool.includes("coq-au-vin"), `${alcool.length} recettes`);
+  verdict("« sans porc » retire aussi le jambon, les lardons et le bacon",
+    chercherRecettes("sans porc").recettes.every((r) => !r.ingredients.some((i) => /porc|jambon|lardon|bacon|guanciale|saucisse/i.test(i.nom))), "");
+  verdict("« pas épicé » retire les plats épicés", chercherRecettes("pas épicé").recettes.every((r) => !envie("epice").garde(r)), lu("pas épicé"));
+
+  /* Un mot peut en contenir un autre. */
+  verdict("« pomme » ne ramène pas la pomme de terre ; « pomme de terre » si",
+    !ids("pomme").includes("soupe-poireaux-pommes-de-terre") && ids("pomme de terre").includes("soupe-poireaux-pommes-de-terre"), `${ids("pomme").length} pommes`);
+  verdict("« noix » ne ramène ni les haricots noirs, ni la noix de coco, ni les Saint-Jacques",
+    ids("noix").includes("banana-bread-aux-noix") && !ids("noix").includes("bowl-mexicain-poulet-mais-haricots-noirs")
+    && !ids("noix").includes("noix-de-saint-jacques-puree-de-celeri"), ids("noix").join(", "));
+  verdict("« fromage blanc » trouve le shaker au fromage blanc, et pas les endives au jambon",
+    ids("fromage blanc").includes("shaker-vanille-amande-au-fromage-blanc") && !ids("fromage blanc").includes("endives-au-jambon-gratinees"), ids("fromage blanc").join(", "));
+
+  /* Les chiffres. */
+  verdict("« moins de 400 kcal » : toutes à 400 kcal ou moins", chercherRecettes("moins de 400 kcal").recettes.every((r) => r.calories <= 400), "");
+  verdict("« 30g de protéines » : toutes à 30 g ou plus", chercherRecettes("30g de protéines").recettes.every((r) => r.proteins >= 30), "");
+  verdict("« en 15 minutes » : toutes prêtes en 15 minutes", chercherRecettes("en 15 minutes").recettes.every((r) => minutesTotales(r) <= 15), "");
+  verdict("« pour 4 personnes » ne vide rien", memes(ids("poulet pour 4 personnes"), ids("poulet")), lu("poulet pour 4 personnes"));
+  const vingt = chercherRecettes("poulet 20 min").recettes;
+  verdict("« poulet 20 min » : le poulet passe avant une omelette rapide", vingt.length > 0 && envie("poulet").garde(vingt[0]), vingt.slice(0, 3).map((r) => r.id).join(", "));
+
+  /* Ce que la banque n'a pas, ce qui ne dit rien, et la ligne d'aide. */
+  const pizza = chercherRecettes("pizza");
+  verdict("« pizza » le dit, et montre des recettes italiennes", pizza.aide === "Pas encore de pizza. Voici des recettes italiennes."
+    && pizza.recettes.length > 0 && pizza.recettes.every((r) => envie("italie").garde(r)), pizza.aide ?? "");
+  const kangourou = chercherRecettes("poulet kangourou");
+  verdict("un mot qui ne mène à rien le dit, et ne vide pas le reste", kangourou.aide === "Rien pour «\u00a0kangourou\u00a0»."
+    && memes(kangourou.recettes.map((r) => r.id), ids("poulet")), kangourou.aide ?? "");
+  verdict("rien à chercher, rien à montrer ; un mot inconnu seul, « aucune recette »",
+    chercherRecettes("je veux").vide && !chercherRecettes("kangourou").recettes.length && !chercherRecettes("kangourou").vide, "");
+  verdict("« sans gluten » dit ce qu'elle a compris", gf.aide === `Sans gluten · ${gf.recettes.length} recettes`, gf.aide ?? "");
+  verdict("une recherche lue telle quelle n'a pas de ligne d'aide", chercherRecettes("poulet").aide === null && chercherRecettes("crêpes").aide === null, "");
+  verdict("une faute corrigée se montre", (chercherRecettes("bourgignon").aide ?? "").startsWith("Bourguignon"), chercherRecettes("bourgignon").aide ?? "");
+
+  /* Le régime de la personne passe devant, sans rien cacher. */
+  const pates = chercherRecettes("pâtes", ["vegetarien"]).recettes;
+  const bascule = pates.findIndex((r) => !convient(r, ["vegetarien"]));
+  verdict("le régime de la personne passe devant, et rien n'est caché", bascule > 0 && pates.slice(bascule).every((r) => !convient(r, ["vegetarien"]))
+    && pates.length === ids("pâtes").length, `${bascule} végétariennes d'abord sur ${pates.length}`);
+
+  /* Le chemin. */
+  const loupe = net(lire("src/components/RecipeSearch.tsx"));
+  verdict("la loupe passe par lib/rechercheRecettes et ne filtre rien elle-même",
+    loupe.includes("chercherRecettes(") && !loupe.includes("RECIPES") && !loupe.includes(".includes(m)"), "");
+  verdict("la loupe n'ajoute aucun réglage : ni case, ni liste, ni puce", !/type="checkbox"|<select|aria-pressed|role="switch"/.test(loupe), "");
+  verdict("le régime arrive jusqu'à la loupe", net(lire("src/components/nutrition/TrouverRecette.tsx")).includes("regime={regime}")
+    && net(lire("src/components/NutritionTab.tsx")).includes("regime={regime}"), "");
 }
 
 console.log(echecs ? `\n${echecs} échec(s).` : "\nTout passe.");
