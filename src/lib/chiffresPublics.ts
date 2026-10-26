@@ -44,8 +44,8 @@ const SEANCES_CATALOGUE = 53;
 export type ChiffresPublics = {
   /** Séances guidées du catalogue permanent. Compté à la main, voir ci-dessus. */
   seances: number;
-  /** Mini-cours : ceux de « Conseils & progresser » (21 au 2026-10-25 : 13 gratuits,
-   *  8 Vaiiya+) et les cours de nutrition (18 : 16 gratuits, 2 Vaiiya+). L'index
+  /** Mini-cours : ceux de « Conseils & progresser » (21 au 2026-10-26 : 13 gratuits,
+   *  8 Vaiiya+) et les cours de nutrition (62 : 43 gratuits, 19 Vaiiya+). L'index
    *  des cours de nutrition ne porte pas leurs textes : il ne pèse rien ici. */
   miniCours: number;
   /** Mouvements de la bibliothèque, tous animés par un personnage-guide. */

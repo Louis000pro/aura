@@ -17,7 +17,7 @@ progresser » (les protéines, les glucides, boire, la créatine). Le cinquième
 seul : le dossier « Perdre du poids : comment ça marche » du lot 0 et le cours
 « Pourquoi la balance bouge chaque jour » couvrent tout ce qu’il disait.
 
-**Une correction proposée pour le lot 0.** « Que manger après une séance »
+**Une correction proposée pour le lot 0** (appliquée le 26 octobre 2026). « Que manger après une séance »
 annonce environ 15 g de protéines pour 150 g de yaourt grec. Ce chiffre vient
 d’un yaourt grec égoutté américain. La table française Ciqual donne 3,8 à 4 g
 pour 100 g pour un yaourt au lait entier : un yaourt vendu « à la grecque » en

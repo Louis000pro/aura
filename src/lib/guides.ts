@@ -897,9 +897,9 @@ const REPLIQUES = {
     sasha:  "Le mouvement s’anime, le compte à rebours part, le repos s’enchaîne. Tu suis, je gère le reste. Cent-deux mouvements dessinés un par un.",
   },
   "visite.catalogue": {
-    commun: "Sans matériel, à la salle, mobilité, cardio, récupération. Vingt-six mini-cours pour comprendre ce que tu fais. Et si rien ne te va, tu pioches parmi les mouvements animés pour composer la tienne.",
-    nora:   "Sans matériel, à la salle, mobilité, cardio, récupération, plus vingt-six mini-cours pour comprendre ce que tu fais. Et si rien ne te va, dis-le-moi : on compose la tienne à partir des mouvements animés.",
-    sasha:  "Sans matériel, salle, mobilité, cardio, récupération. Vingt-six mini-cours en plus. Rien ne te va ? Dis-le-moi, on compose la tienne.",
+    commun: "Sans matériel, à la salle, mobilité, cardio, récupération. Vingt et un mini-cours pour comprendre ce que tu fais. Et si rien ne te va, tu pioches parmi les mouvements animés pour composer la tienne.",
+    nora:   "Sans matériel, à la salle, mobilité, cardio, récupération, plus vingt et un mini-cours pour comprendre ce que tu fais. Et si rien ne te va, dis-le-moi : on compose la tienne à partir des mouvements animés.",
+    sasha:  "Sans matériel, salle, mobilité, cardio, récupération. Vingt et un mini-cours en plus. Rien ne te va ? Dis-le-moi, on compose la tienne.",
   },
   "visite.assistant": {
     commun: "Demande-lui de poser une séance jeudi, de noter ton repas, de refaire ta semaine : elle le prépare dans la foulée. Rien ne s’enregistre tant que tu n’as pas touché la carte.",

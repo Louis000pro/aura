@@ -31,13 +31,13 @@ const texte: TexteCours = {
       paragraphes: ["À quantité égale, les protéines végétales font un peu moins pour le muscle : elles se digèrent moins complètement et contiennent moins de leucine. Les chercheurs proposent deux pistes, encore à l’étude : en manger un peu plus, ou mélanger les sources, par exemple des lentilles avec du riz. En 2021, un essai a comparé de jeunes hommes végans et omnivores qui mangeaient tous 1,6 g de protéines par kilo et par jour : après douze semaines de musculation, les deux groupes avaient gagné autant de muscle et de force."],
     },
   ],
-  exemple: ["Tu pèses 65 kg et tu t’entraînes à 18 h. Ta portion de protéines après la séance tourne autour de 16 à 20 g. Si tu dînes vers 20 h, ton dîner fait le travail : 100 g de blanc de poulet cuit en apportent déjà environ 31 g, avec du riz et des légumes à côté. Si tu ne dînes qu’à 22 h, prends en rentrant un yaourt grec nature de 150 g, qui apporte environ 15 g de protéines, avec une banane."],
+  exemple: ["Tu pèses 65 kg et tu t’entraînes à 18 h. Ta portion de protéines après la séance tourne autour de 16 à 20 g. Si tu dînes vers 20 h, ton dîner fait le travail : 100 g de blanc de poulet cuit en apportent déjà environ 31 g, avec du riz et des légumes à côté. Si tu ne dînes qu’à 22 h, prends en rentrant 200 g de fromage blanc, qui apportent environ 15 g de protéines, avec une banane."],
   doute: [
     "Combien de protéines un seul repas peut-il utiliser ? En 2016, les recommandations estimaient qu’au-delà de 40 g, l’effet n’augmentait plus. En 2023, une étude a donné 25 g ou 100 g de protéines après une séance : avec 100 g, la réponse du muscle était plus forte et durait encore douze heures plus tard. On ne sait pas encore ce que ça change sur des mois d’entraînement.",
     "L’importance du moment exact reste aussi discutée. Une analyse de 2013 ne trouvait plus d’effet du moment une fois la quantité totale de protéines prise en compte, mais seulement trois des études qu’elle rassemblait comparaient des quantités égales.",
   ],
   retenir: "Ton prochain repas suffit s’il arrive dans les trois ou quatre heures après la séance : mets-y environ 0,3 g de protéines par kilo de ton poids, des glucides et de l’eau. Les glucides deviennent urgents seulement si une autre séance intense arrive dans les huit heures.",
-  essai: "Calcule une fois ta portion : ton poids multiplié par 0,3. Puis regarde ce que tu manges d’habitude après tes séances, et ajoute une source de protéines s’il en manque : des œufs, un yaourt grec, du poisson, du tofu ou des lentilles.",
+  essai: "Calcule une fois ta portion : ton poids multiplié par 0,3. Puis regarde ce que tu manges d’habitude après tes séances, et ajoute une source de protéines s’il en manque : des œufs, du fromage blanc, du poisson, du tofu ou des lentilles.",
   sources: [
     {
       groupe: "Recommandations officielles",
@@ -61,7 +61,7 @@ const texte: TexteCours = {
       groupe: "Tables de composition",
       liens: [
         { label: "USDA · FoodData Central (blanc de poulet rôti)", url: "https://fdc.nal.usda.gov/food-details/171477/nutrients" },
-        { label: "USDA · FoodData Central (yaourt grec nature)", url: "https://fdc.nal.usda.gov/food-details/170903/nutrients" },
+        { label: "Anses · Table Ciqual 2013 (fromage blanc)", url: "https://informationsnutritionnelles.fr/fromage-blanc-nature-ou-aux-fruits" },
       ],
     },
   ],

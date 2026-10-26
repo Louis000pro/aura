@@ -137,6 +137,8 @@ const cas: [string, string][] = [
   ["15 microgrammes par jour", `15${NBSP}microgrammes par jour`],
   ["pour 0,06 € la minute", `pour 0,06${NBSP}€ la minute`],
   ["répond au 0810 037 037, quatre jours", `répond au 0810${NBSP}037${NBSP}037, quatre jours`],
+  ["réglé entre 0 et 5 °C.", `réglé entre 0 et 5${NBSP}°C.`],
+  ["environ 1,2 heure de plus", `environ 1,2${NBSP}heure de plus`],
 ];
 for (const [brut, attendu] of cas) {
   verdict(`typoCours : « ${brut} »`, typoCours(brut) === attendu, JSON.stringify(typoCours(brut)));
@@ -179,9 +181,14 @@ verdict("aucun accord de genre pour la personne qui lit", l.length === 0, premie
 const REPROCHE = /\bcraqu|kilos en trop|\btrich|\bculpabil|\b(?:faire|fait|fais|faites) (?:un|des) écarts?\b|\bmauvais aliments?\b|\baliments? interdits?\b|\bil faut absolument\b/iu;
 l = fautes(REPROCHE);
 verdict("aucun reproche (craquer, kilos en trop, tricher, faire un écart…)", l.length === 0, premiere(l));
+/* Un mot cité entre guillemets est un mot qu'on examine : « Les cures « détox » »
+   nomme l'idée reçue pour la démonter. Hors guillemets, il passerait pour vrai. */
 const PROMESSE = /\bmiracle|brûle[- ]graisses?|\bdétox|ventre plat|sans effort|garanti|\bfenêtre anabolique de|métabolisme se bloque/iu;
-l = fautes(PROMESSE);
-verdict("aucune promesse ni idée reçue présentée comme vraie", l.length === 0, premiere(l));
+const horsGuillemets = (s: string) => s.replace(/«[^»]*»/g, "«»");
+l = tout.filter((x) => PROMESSE.test(horsGuillemets(x.s)));
+verdict("aucune promesse ni idée reçue présentée comme vraie (un mot cité entre guillemets reste permis)", l.length === 0, premiere(l));
+verdict("la règle des promesses tient : citée entre guillemets la cure passe, sans guillemets elle est refusée",
+  !PROMESSE.test(horsGuillemets("Les cures « détox » promettent")) && PROMESSE.test(horsGuillemets("Une cure détox nettoie le corps")));
 
 /* ── 7. Les règles du sommaire ─────────────────────────────────────── */
 const fauxCours = (format: Cours["format"], theme: Cours["theme"] = "bases"): Cours => ({

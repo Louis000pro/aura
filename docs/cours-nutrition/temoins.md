@@ -90,7 +90,7 @@ Après une séance ordinaire, boire selon ta soif suffit dans la plupart des cas
 
 **Exemple concret**
 
-Tu pèses 65 kg et tu t’entraînes à 18 h. Ta portion de protéines après la séance tourne autour de 16 à 20 g. Si tu dînes vers 20 h, ton dîner fait le travail : 100 g de blanc de poulet cuit en apportent déjà environ 31 g, avec du riz et des légumes à côté. Si tu ne dînes qu’à 22 h, prends en rentrant un yaourt grec nature de 150 g, qui apporte environ 15 g de protéines, avec une banane.
+Tu pèses 65 kg et tu t’entraînes à 18 h. Ta portion de protéines après la séance tourne autour de 16 à 20 g. Si tu dînes vers 20 h, ton dîner fait le travail : 100 g de blanc de poulet cuit en apportent déjà environ 31 g, avec du riz et des légumes à côté. Si tu ne dînes qu’à 22 h, prends en rentrant 200 g de fromage blanc, qui apportent environ 15 g de protéines, avec une banane.
 
 **Ce qu’on ne sait pas encore**
 
@@ -104,7 +104,7 @@ Ton prochain repas suffit s’il arrive dans les trois ou quatre heures après l
 
 **Essaie ça**
 
-Calcule une fois ta portion : ton poids multiplié par 0,3. Puis regarde ce que tu manges d’habitude après tes séances, et ajoute une source de protéines s’il en manque : des œufs, un yaourt grec, du poisson, du tofu ou des lentilles.
+Calcule une fois ta portion : ton poids multiplié par 0,3. Puis regarde ce que tu manges d’habitude après tes séances, et ajoute une source de protéines s’il en manque : des œufs, du fromage blanc, du poisson, du tofu ou des lentilles.
 
 ---
 

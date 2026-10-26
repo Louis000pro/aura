@@ -84,7 +84,9 @@ le diabète » (liens faibles et observationnels). La vitamine C n'est pas cité
 | Boire selon la soif suffit souvent ; après beaucoup de sueur, 1,25 à 1,5 l par kilo perdu, parce que les urines continuent ; le sel aide à garder l'eau. | Position commune 2016 (125 à 150 % du déficit ; le sodium aide à retenir les liquides ; la soif est en général un bon indicateur). Position NATA 2017 (McDermott) : hydratation suffisante sans excès. | solide |
 | Protéines végétales un peu moins efficaces à quantité égale (digestion, leucine) ; pistes proposées : un peu plus, ou mélanger les sources. | van Vliet 2015 (les auteurs précisent que l'effet de ces pistes reste à étudier ; le cours les présente comme des pistes). | probable |
 | Végans et omnivores à 1,6 g/kg : mêmes gains de muscle et de force en 12 semaines. | Hevia-Larraín et al., Sports Medicine 2021 (19 + 19 jeunes hommes non entraînés ; « no between-group differences »). | probable (un essai) |
-| 100 g de blanc de poulet cuit : environ 31 g de protéines ; yaourt grec nature : environ 10 g pour 100 g. | USDA FoodData Central 171477 et 170903. | probable (à recouper avec Ciqual 2025) |
+| 100 g de blanc de poulet cuit : environ 31 g de protéines ; fromage blanc : environ 7,5 g pour 100 g, donc 200 g pour environ 15 g. | USDA FoodData Central 171477. Ciqual 2013, fromage blanc nature ou aux fruits (lu pour le lot 1). | probable (à recouper avec Ciqual 2025) |
+
+**Correction du 26 octobre 2026.** Le texte proposait d’abord 150 g de yaourt grec nature pour environ 15 g de protéines : ce chiffre vient d’un yaourt grec égoutté américain (USDA 170903, environ 10 g pour 100 g). Un yaourt au lait entier vendu en France, même « à la grecque », en apporte bien moins (Ciqual 2013 : 3,8 à 4 g pour 100 g). Le cours dit désormais 200 g de fromage blanc, et sa table de composition affichée est Ciqual.
 | Plafond par repas : en 2016, pas de gain démontré au-delà de 40 g ; en 2023, 100 g prolongent la réponse au-delà de 12 h ; effet sur des mois inconnu. | Position commune 2016. Trommelen et al., Cell Reports Medicine 2023 (25 g contre 100 g ; réponse « plus forte et plus longue, au-delà de 12 h »). | débattu (bloc « Ce qu'on ne sait pas encore ») |
 | Le moment exact : plus d'effet une fois la quantité totale prise en compte, mais seulement trois études incluses avaient des quantités égales. | Schoenfeld, Aragon et Krieger, JISSN 2013 (résumé ; discussion : « Only 3 studies that employed matched protein intake » ; limites : « paucity of timing studies that attempted to match protein intake »). Position commune 2016 (penche pour une prise rapide), qui illustre le désaccord. | débattu |
 
@@ -177,4 +179,5 @@ calories personnelle, aucun médicament nommé, aucun reproche (« écart »,
 - USDA FoodData Central, orange crue (169097) : https://fdc.nal.usda.gov/food-details/169097/nutrients
 - USDA FoodData Central, jus d'orange (169098) : https://fdc.nal.usda.gov/food-details/169098/nutrients
 - USDA FoodData Central, blanc de poulet rôti (171477) : https://fdc.nal.usda.gov/food-details/171477/nutrients
-- USDA FoodData Central, yaourt grec nature (170903) : https://fdc.nal.usda.gov/food-details/170903/nutrients
+- USDA FoodData Central, yaourt grec nature (170903) : https://fdc.nal.usda.gov/food-details/170903/nutrients (plus affiché depuis la correction du 26 octobre 2026)
+- Ciqual 2013 (miroir sous licence ouverte), fromage blanc nature ou aux fruits : https://informationsnutritionnelles.fr/fromage-blanc-nature-ou-aux-fruits
