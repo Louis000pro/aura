@@ -50,6 +50,30 @@ Niveaux :
   (lettre de Beale, Monteyne 2023, Johnston 2014, Doucet 2001, avis Anses 2016
   cité par le Sénat, page NHS d'Irlande du Nord).
 
+## Allègement du 26 octobre 2026
+
+À la relecture du lot 1, Louis a demandé que les encadrés de fin restent
+exceptionnels (« il ne faut pas blablater pour blablater »). Le 26 octobre, il a
+validé la même règle pour le lot 0 : cinq encadrés sur huit sont retirés.
+
+- « Un jus d'orange compte-t-il comme un fruit ? » perd son exemple concret
+  (il répétait « À retenir ») et « Ce qu'on ne sait pas encore » (les liens
+  entre jus, diabète et poids, qui ne changeaient rien à ce que la personne
+  fait). Muraki 2013 et Nguyen 2024 ne sont plus affichés.
+- « Que manger après une séance » garde son exemple concret (le calcul pour
+  65 kg), et perd « Ce qu'on ne sait pas encore » (le plafond de protéines par
+  repas, le moment exact) et « Essaie ça » (qui redisait l'exemple). Trommelen
+  2023 et Schoenfeld, Aragon et Krieger 2013 ne sont plus affichés ; le flash
+  « La fenêtre anabolique existe-t-elle ? » du lot 2 traite du moment.
+- « Perdre du poids : comment ça marche » perd l'exemple de la raclette (les
+  flashs « Pourquoi la balance bouge chaque jour » et « Après un repas trop
+  copieux » le racontent), et garde « Ce qu'on ne sait pas encore » et « Essaie
+  ça ». Il reste un dossier de 7 minutes : sans son doute, il tomberait à
+  6 minutes, une durée qui n'a pas de format.
+
+Les lignes qui ne portaient que sur les encadrés retirés ont quitté les
+tableaux ; leurs liens restent dans la liste du bas.
+
 ---
 
 ## 1. « Un jus d'orange compte-t-il comme un fruit ? » (flash)
@@ -65,7 +89,6 @@ Niveaux :
 | Avant un déjeuner, une pomme entière fait manger environ 15 % de calories en moins sur l'ensemble du repas (pomme comprise) que l'absence d'en-cas ; la pomme rassasie plus que la compote et le jus ; ajouter des fibres au jus ne change rien. | Flood-Obbagy et Rolls, Appetite 2009 (58 adultes, mêmes calories). Haber et al., The Lancet 1977 (jus moins rassasiant que la purée, purée moins que la pomme). | probable |
 | Le jus se boit onze fois plus vite que les pommes ne se mangent. | Haber et al. 1977 (fait mesuré ; aucune conclusion pratique n'en est tirée seule). | probable |
 | Depuis le 28 octobre 2013, aucun sucre ne peut être ajouté à un « jus » vendu dans l'Union européenne ; un nectar peut en contenir. | Directive 2012/12/UE, résumé officiel du Parlement européen (date d'application, nectars, fin de l'allégation « sans sucres ajoutés »). | solide (texte de loi) |
-| Les liens entre jus, diabète de type 2 et poids viennent surtout d'études d'observation ; chez l'enfant, lien faible avec le poids ; chez l'adulte, aucune association dans les essais randomisés. | Muraki et al., BMJ 2013 (risque de diabète : 1,08 par trois verres de plus par semaine ; plus faible avec les myrtilles, le raisin, les pommes). Nguyen et al., JAMA Pediatrics 2024 (+0,03 d'IMC par verre quotidien chez l'enfant ; aucune association dans les essais chez l'adulte). | débattu (c'est le contenu du bloc) |
 
 Ce que le cours ne dit pas, exprès : « le jus fait grossir », « le jus donne
 le diabète » (liens faibles et observationnels). La vitamine C n'est pas citée.
@@ -77,7 +100,7 @@ le diabète » (liens faibles et observationnels). La vitamine C n'est pas cité
 | Affirmation | Sources lues | Niveau |
 |---|---|---|
 | Après une séance de musculation, le muscle reste plus réceptif aux protéines pendant au moins 24 h, avec un effet qui diminue avec le temps. | ISSN, protéines et exercice (Jäger 2017), point 8. Position commune Academy of Nutrition and Dietetics, Dietitians of Canada et ACSM (Thomas 2016) : la synthèse répond aux apports des 24 h qui suivent. | solide |
-| Pas d'urgence à la minute : le repas qui suit suffit s'il arrive dans les trois ou quatre heures (cinq ou six après un gros repas mixte avant la séance). | Aragon et Schoenfeld, JISSN 2013. ISSN 2017, point 8 (le moment est surtout une question de tolérance). Position commune 2016 (repas et collations au choix, si les apports totaux suffisent). | probable (la position commune 2016 penche encore vers une prise rapide : voir le bloc « Ce qu'on ne sait pas encore ») |
+| Pas d'urgence à la minute : le repas qui suit suffit s'il arrive dans les trois ou quatre heures (cinq ou six après un gros repas mixte avant la séance). | Aragon et Schoenfeld, JISSN 2013. ISSN 2017, point 8 (le moment est surtout une question de tolérance). Position commune 2016 (repas et collations au choix, si les apports totaux suffisent). | probable (la position commune 2016 penche encore vers une prise rapide ; depuis l'allègement, ce débat est traité par le flash « La fenêtre anabolique existe-t-elle ? » du lot 2) |
 | 0,25 à 0,3 g de protéines par kilo après la séance, puis toutes les trois à cinq heures. ISSN : 20 à 40 g par prise. | Position commune 2016 (0,25 à 0,3 g/kg, soit 15 à 25 g ; 0,3 g/kg toutes les 3 à 5 h). ISSN 2017 (0,25 g/kg ou 20 à 40 g ; toutes les 3 à 4 h). | solide |
 | Leucine : rôle de déclencheur ; 0,7 à 3 g par prise ; moins abondante dans les protéines végétales. | ISSN 2017, point 6 (700 à 3 000 mg). van Vliet, Burd et van Loon, J Nutr 2015 (faible teneur en leucine des protéines végétales). | solide |
 | Glycogène reconstitué à environ 5 % par heure ; une séance par jour : des repas normaux suffisent ; deuxième séance dans les 8 h : 1 à 1,2 g de glucides par kilo et par heure pendant 4 h. | Position commune 2016 (tableau et texte). Aragon et Schoenfeld 2013 (l'apport total de glucides compte plus que le moment). | solide |
@@ -87,8 +110,6 @@ le diabète » (liens faibles et observationnels). La vitamine C n'est pas cité
 | 100 g de blanc de poulet cuit : environ 31 g de protéines ; fromage blanc : environ 7,5 g pour 100 g, donc 200 g pour environ 15 g. | USDA FoodData Central 171477. Ciqual 2013, fromage blanc nature ou aux fruits (lu pour le lot 1). | probable (à recouper avec Ciqual 2025) |
 
 **Correction du 26 octobre 2026.** Le texte proposait d’abord 150 g de yaourt grec nature pour environ 15 g de protéines : ce chiffre vient d’un yaourt grec égoutté américain (USDA 170903, environ 10 g pour 100 g). Un yaourt au lait entier vendu en France, même « à la grecque », en apporte bien moins (Ciqual 2013 : 3,8 à 4 g pour 100 g). Le cours dit désormais 200 g de fromage blanc, et sa table de composition affichée est Ciqual.
-| Plafond par repas : en 2016, pas de gain démontré au-delà de 40 g ; en 2023, 100 g prolongent la réponse au-delà de 12 h ; effet sur des mois inconnu. | Position commune 2016. Trommelen et al., Cell Reports Medicine 2023 (25 g contre 100 g ; réponse « plus forte et plus longue, au-delà de 12 h »). | débattu (bloc « Ce qu'on ne sait pas encore ») |
-| Le moment exact : plus d'effet une fois la quantité totale prise en compte, mais seulement trois études incluses avaient des quantités égales. | Schoenfeld, Aragon et Krieger, JISSN 2013 (résumé ; discussion : « Only 3 studies that employed matched protein intake » ; limites : « paucity of timing studies that attempted to match protein intake »). Position commune 2016 (penche pour une prise rapide), qui illustre le désaccord. | débattu |
 
 Ce que le cours ne dit pas, exprès : « fenêtre de 30 minutes », « 30 g de
 protéines au maximum par repas », « le shaker est indispensable ».
@@ -148,11 +169,11 @@ calories personnelle, aucun médicament nommé, aucun reproche (« écart »,
 ### Études
 - Flood-Obbagy et Rolls, Appetite 2009 : https://pubmed.ncbi.nlm.nih.gov/19110020/
 - Haber et al., The Lancet 1977 : https://pubmed.ncbi.nlm.nih.gov/71495/
-- Muraki et al., BMJ 2013 : https://www.bmj.com/content/347/bmj.f5001
-- Nguyen et al., JAMA Pediatrics 2024 : https://doi.org/10.1001/jamapediatrics.2023.6124
+- Muraki et al., BMJ 2013 : https://www.bmj.com/content/347/bmj.f5001 (plus affiché depuis l’allègement du 26 octobre 2026)
+- Nguyen et al., JAMA Pediatrics 2024 : https://doi.org/10.1001/jamapediatrics.2023.6124 (plus affiché depuis l’allègement du 26 octobre 2026)
 - Aragon et Schoenfeld, JISSN 2013 : https://pmc.ncbi.nlm.nih.gov/articles/PMC3577439/
-- Schoenfeld, Aragon et Krieger, JISSN 2013 : https://pmc.ncbi.nlm.nih.gov/articles/PMC3879660/
-- Trommelen et al., Cell Reports Medicine 2023 : https://doi.org/10.1016/j.xcrm.2023.101324
+- Schoenfeld, Aragon et Krieger, JISSN 2013 : https://pmc.ncbi.nlm.nih.gov/articles/PMC3879660/ (plus affiché depuis l’allègement du 26 octobre 2026)
+- Trommelen et al., Cell Reports Medicine 2023 : https://doi.org/10.1016/j.xcrm.2023.101324 (plus affiché depuis l’allègement du 26 octobre 2026)
 - van Vliet, Burd et van Loon, J Nutr 2015 : https://doi.org/10.3945/jn.114.204305
 - Hevia-Larraín et al., Sports Medicine 2021 : https://doi.org/10.1007/s40279-021-01434-9
 - Hall et al., The Lancet 2011 : https://pmc.ncbi.nlm.nih.gov/articles/PMC3880593/

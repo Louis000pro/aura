@@ -22,8 +22,6 @@ const texte: TexteCours = {
       paragraphes: ["Depuis 2013, aucun sucre ne peut être ajouté à un produit vendu sous le nom de « jus » dans l’Union européenne. Un « nectar », lui, peut contenir du sucre ajouté. Le smoothie garde la pulpe mixée, mais le NHS le range dans la même limite que le jus : 150 ml par jour pour les deux réunis."],
     },
   ],
-  exemple: ["Chaque matin, tu bois un grand verre de 25 cl de jus d’orange. Tu peux passer à un verre de 15 cl, bu pendant le petit-déjeuner, ce qui ménage aussi tes dents. Ou tu le remplaces par une orange en quartiers : tu gardes le goût, avec les fibres."],
-  doute: ["Les grandes études qui relient le jus au diabète de type 2 ou à la prise de poids sont surtout des études d’observation : elles montrent un lien, sans prouver que le jus en est la cause. Chez l’enfant, le lien avec le poids est faible. Chez l’adulte, les essais où un groupe boit du jus et l’autre non n’ont pas trouvé d’effet sur le poids."],
   retenir: "En France, un jus ne compte pas comme une portion de fruits. Si tu en bois, garde-le à un verre par jour, pendant un repas, et croque l’orange quand tu peux.",
   sources: [
     {
@@ -42,8 +40,6 @@ const texte: TexteCours = {
       liens: [
         { label: "Flood-Obbagy et Rolls · Appetite, 2009", url: "https://pubmed.ncbi.nlm.nih.gov/19110020/" },
         { label: "Haber et al. · The Lancet, 1977", url: "https://pubmed.ncbi.nlm.nih.gov/71495/" },
-        { label: "Muraki et al. · BMJ, 2013", url: "https://www.bmj.com/content/347/bmj.f5001" },
-        { label: "Nguyen et al. · JAMA Pediatrics, 2024", url: "https://doi.org/10.1001/jamapediatrics.2023.6124" },
       ],
     },
     {

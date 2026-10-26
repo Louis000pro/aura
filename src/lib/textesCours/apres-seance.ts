@@ -32,12 +32,7 @@ const texte: TexteCours = {
     },
   ],
   exemple: ["Tu pèses 65 kg et tu t’entraînes à 18 h. Ta portion de protéines après la séance tourne autour de 16 à 20 g. Si tu dînes vers 20 h, ton dîner fait le travail : 100 g de blanc de poulet cuit en apportent déjà environ 31 g, avec du riz et des légumes à côté. Si tu ne dînes qu’à 22 h, prends en rentrant 200 g de fromage blanc, qui apportent environ 15 g de protéines, avec une banane."],
-  doute: [
-    "Combien de protéines un seul repas peut-il utiliser ? En 2016, les recommandations estimaient qu’au-delà de 40 g, l’effet n’augmentait plus. En 2023, une étude a donné 25 g ou 100 g de protéines après une séance : avec 100 g, la réponse du muscle était plus forte et durait encore douze heures plus tard. On ne sait pas encore ce que ça change sur des mois d’entraînement.",
-    "L’importance du moment exact reste aussi discutée. Une analyse de 2013 ne trouvait plus d’effet du moment une fois la quantité totale de protéines prise en compte, mais seulement trois des études qu’elle rassemblait comparaient des quantités égales.",
-  ],
   retenir: "Ton prochain repas suffit s’il arrive dans les trois ou quatre heures après la séance : mets-y environ 0,3 g de protéines par kilo de ton poids, des glucides et de l’eau. Les glucides deviennent urgents seulement si une autre séance intense arrive dans les huit heures.",
-  essai: "Calcule une fois ta portion : ton poids multiplié par 0,3. Puis regarde ce que tu manges d’habitude après tes séances, et ajoute une source de protéines s’il en manque : des œufs, du fromage blanc, du poisson, du tofu ou des lentilles.",
   sources: [
     {
       groupe: "Recommandations officielles",
@@ -51,8 +46,6 @@ const texte: TexteCours = {
       groupe: "Études",
       liens: [
         { label: "Aragon et Schoenfeld · JISSN, 2013", url: "https://pmc.ncbi.nlm.nih.gov/articles/PMC3577439/" },
-        { label: "Schoenfeld, Aragon et Krieger · JISSN, 2013", url: "https://pmc.ncbi.nlm.nih.gov/articles/PMC3879660/" },
-        { label: "Trommelen et al. · Cell Reports Medicine, 2023", url: "https://doi.org/10.1016/j.xcrm.2023.101324" },
         { label: "van Vliet, Burd et van Loon · Journal of Nutrition, 2015", url: "https://doi.org/10.3945/jn.114.204305" },
         { label: "Hevia-Larraín et al. · Sports Medicine, 2021", url: "https://doi.org/10.1007/s40279-021-01434-9" },
       ],

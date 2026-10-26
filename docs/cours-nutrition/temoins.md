@@ -37,14 +37,6 @@ En 2009, des chercheurs ont donné à 58 adultes, avant le déjeuner, une pomme,
 
 Depuis 2013, aucun sucre ne peut être ajouté à un produit vendu sous le nom de « jus » dans l’Union européenne. Un « nectar », lui, peut contenir du sucre ajouté. Le smoothie garde la pulpe mixée, mais le NHS le range dans la même limite que le jus : 150 ml par jour pour les deux réunis.
 
-**Exemple concret**
-
-Chaque matin, tu bois un grand verre de 25 cl de jus d’orange. Tu peux passer à un verre de 15 cl, bu pendant le petit-déjeuner, ce qui ménage aussi tes dents. Ou tu le remplaces par une orange en quartiers : tu gardes le goût, avec les fibres.
-
-**Ce qu’on ne sait pas encore**
-
-Les grandes études qui relient le jus au diabète de type 2 ou à la prise de poids sont surtout des études d’observation : elles montrent un lien, sans prouver que le jus en est la cause. Chez l’enfant, le lien avec le poids est faible. Chez l’adulte, les essais où un groupe boit du jus et l’autre non n’ont pas trouvé d’effet sur le poids.
-
 **À retenir**
 
 En France, un jus ne compte pas comme une portion de fruits. Si tu en bois, garde-le à un verre par jour, pendant un repas, et croque l’orange quand tu peux.
@@ -92,19 +84,9 @@ Après une séance ordinaire, boire selon ta soif suffit dans la plupart des cas
 
 Tu pèses 65 kg et tu t’entraînes à 18 h. Ta portion de protéines après la séance tourne autour de 16 à 20 g. Si tu dînes vers 20 h, ton dîner fait le travail : 100 g de blanc de poulet cuit en apportent déjà environ 31 g, avec du riz et des légumes à côté. Si tu ne dînes qu’à 22 h, prends en rentrant 200 g de fromage blanc, qui apportent environ 15 g de protéines, avec une banane.
 
-**Ce qu’on ne sait pas encore**
-
-Combien de protéines un seul repas peut-il utiliser ? En 2016, les recommandations estimaient qu’au-delà de 40 g, l’effet n’augmentait plus. En 2023, une étude a donné 25 g ou 100 g de protéines après une séance : avec 100 g, la réponse du muscle était plus forte et durait encore douze heures plus tard. On ne sait pas encore ce que ça change sur des mois d’entraînement.
-
-L’importance du moment exact reste aussi discutée. Une analyse de 2013 ne trouvait plus d’effet du moment une fois la quantité totale de protéines prise en compte, mais seulement trois des études qu’elle rassemblait comparaient des quantités égales.
-
 **À retenir**
 
 Ton prochain repas suffit s’il arrive dans les trois ou quatre heures après la séance : mets-y environ 0,3 g de protéines par kilo de ton poids, des glucides et de l’eau. Les glucides deviennent urgents seulement si une autre séance intense arrive dans les huit heures.
-
-**Essaie ça**
-
-Calcule une fois ta portion : ton poids multiplié par 0,3. Puis regarde ce que tu manges d’habitude après tes séances, et ajoute une source de protéines s’il en manque : des œufs, du fromage blanc, du poisson, du tofu ou des lentilles.
 
 ---
 
@@ -182,10 +164,6 @@ Faire du sport sans changer son alimentation fait perdre peu de poids : dans la 
 **Quand en parler à un professionnel**
 
 Parles-en à un médecin ou à un diététicien si tu as une maladie ou un traitement, pendant une grossesse, si tu as moins de 18 ans, ou si tu veux perdre beaucoup de poids. Les régimes à très basses calories, sous 800 kcal par jour, ne conviennent pas à tout le monde : le NHS conseille de les suivre avec un diététicien. Et si la nourriture, la balance ou ton corps prennent beaucoup de place dans tes pensées, ou si tu sautes des repas pour compenser ce que tu as mangé, c’est un bon moment pour en parler.
-
-**Exemple concret**
-
-Lundi matin, ta balance affiche 72,4 kg. Mardi matin, après une raclette entre amis, elle affiche 73,1 kg. Tu n’as pas pris 700 g de graisse en une soirée : il faudrait pour ça manger plusieurs milliers de calories de plus que ce que tu dépenses. La raclette a apporté du sel, des glucides et un repas encore en digestion, donc de l’eau et du poids qui repartent dans les jours suivants. Regarde plutôt la moyenne de la semaine.
 
 **Ce qu’on ne sait pas encore**
 
