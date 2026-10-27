@@ -228,16 +228,16 @@ export type SourcesCatalogue = {
 export type LireCatalogue = () => Promise<SourcesCatalogue>;
 
 /**
- * ⚠️ IMPORT DYNAMIQUE, ET CE N'EST PAS UNE COQUETTERIE. `exerciseData` vit
- * dans `WorkoutGuideModal`, qui importe `useAssistant` : un import statique
- * refermerait un cycle sur le contexte le plus haut de l'app. Le tunnel est
- * déjà monté globalement, donc rien n'est téléchargé en plus. C'est aussi
- * ce qui garde le banc d'essai hors ligne : rien n'est chargé tant qu'on
- * n'appelle pas.
+ * ⚠️ IMPORT DYNAMIQUE, ET CE N'EST PAS UNE COQUETTERIE. Ce module part avec
+ * l'assistant, chargé par toutes les pages au démarrage : un import statique
+ * y ajouterait les exercices de tout le catalogue. `exerciseData` et
+ * `SESSION_SLUGS` vivent dans `lib/exercicesCatalogue.ts` (ils vivaient
+ * dans le lecteur de séance jusqu'au 2026-10-27). C'est aussi ce qui garde
+ * le banc d'essai hors ligne : rien n'est chargé tant qu'on n'appelle pas.
  */
 const catalogueParDefaut: LireCatalogue = async () => {
-  const [tunnel, catalogue] = await Promise.all([
-    import("@/components/WorkoutGuideModal"),
+  const [exercices, catalogue] = await Promise.all([
+    import("@/lib/exercicesCatalogue"),
     import("@/lib/catalogueSeances"),
   ]);
   return {
@@ -245,8 +245,8 @@ const catalogueParDefaut: LireCatalogue = async () => {
       id: s.id, title: s.title, category: s.category,
       difficulty: s.difficulty, access: s.access, contentType: s.contentType,
     })),
-    slugs: tunnel.SESSION_SLUGS,
-    exos: tunnel.exerciseData,
+    slugs: exercices.SESSION_SLUGS,
+    exos: exercices.exerciseData,
   };
 };
 

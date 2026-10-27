@@ -3537,7 +3537,10 @@ verdict(
   const lire9D = (f: string) => readFileSync(new URL("../" + f, import.meta.url), "utf8");
   const CTX9D = lire9D("src/context/AssistantContext.tsx");
   const NOM9D = lire9D("src/lib/contenuNomme.ts");
-  const TUNNEL9D = lire9D("src/components/WorkoutGuideModal.tsx");
+  /* La table des titres et les exercices du catalogue vivent dans
+     lib/exercicesCatalogue.ts depuis le 2026-10-27 (ils étaient dans le
+     lecteur de séance, qui partait alors avec l'écran Entraînement). */
+  const TUNNEL9D = lire9D("src/lib/exercicesCatalogue.ts");
 
   /* ⚠️ LA VRAIE SÉANCE, PAS UNE COPIE DE TEST. Le banc lit `express-12`
      dans le fichier du catalogue : c'est le seul moyen que « même
@@ -3814,7 +3817,7 @@ verdict(
       const n = TUNNEL9D.split("SESSION_SLUGS: Record<string, string> = {").length - 1;
       return n === 1
         && TUNNEL9D.includes("if (SESSION_SLUGS[title]) return SESSION_SLUGS[title];")
-        && NOM9D.includes("tunnel.SESSION_SLUGS")
+        && NOM9D.includes("exercices.SESSION_SLUGS")
         && !NOM9D.includes("express-12");
     })(),
     "en recopier une seconde, c'est garantir qu'une séance existe pour un écran et pas pour l'autre",

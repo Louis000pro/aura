@@ -105,3 +105,28 @@ export function TitreRang({ cosmetiques, nuit = false }: { cosmetiques: Cosmetiq
     </span>
   );
 }
+
+/* Vit ici, avec le cadre qui l'entoure, et pas dans VisuelCadeau : la barre
+   du haut l'affiche sur toutes les pages, et l'importer depuis VisuelCadeau
+   tirait au démarrage la carte de rang entière, avec sa feuille de style. */
+/** La photo du compte, ou son initiale sur le violet de la marque. */
+export function PhotoRonde({ avatarUrl, pseudo, style }: { avatarUrl?: string | null; pseudo: string; style?: CSSProperties }) {
+  return (
+    <span
+      className="absolute inset-0 grid place-items-center overflow-hidden rounded-full"
+      style={{
+        background: avatarUrl ? "transparent" : "linear-gradient(135deg,#8B5CF6,#C13BC1)",
+        color: "#fff",
+        fontWeight: 800,
+        fontSize: "calc(var(--s) * 0.42)",
+        lineHeight: 1,
+        ...style,
+      }}
+    >
+      {avatarUrl
+        // eslint-disable-next-line @next/next/no-img-element
+        ? <img src={avatarUrl} alt="" className="h-full w-full object-cover" decoding="async" />
+        : (pseudo.charAt(0).toUpperCase() || "V")}
+    </span>
+  );
+}

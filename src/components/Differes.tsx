@@ -11,10 +11,12 @@
    dès que le téléphone a fini de démarrer, donc ils sont prêts bien avant
    qu'on les ouvre.
 
-   ⚠️ CelebrationRang et InvitationAvis restent chargés tout de suite : ils
-   écoutent des évènements qui peuvent partir dès l'arrivée sur l'accueil
-   (la montée de rang se constate au premier calcul de l'EXP). Chargés plus
-   tard, ils rateraient leur moment. */
+   ⚠️ Les ÉCOUTEURS de CelebrationRang et d'InvitationAvis restent chargés
+   tout de suite : ils écoutent des évènements qui peuvent partir dès
+   l'arrivée sur l'accueil (la montée de rang se constate au premier calcul
+   de l'EXP). Chargés plus tard, ils rateraient leur moment. La scène du
+   passage de rang, elle, est un morceau à part (SceneRang, 2026-10-27),
+   préchargé ici : l'écouteur garde l'évènement le temps qu'elle arrive. */
 
 import dynamic from "next/dynamic";
 import { useEffect } from "react";
@@ -39,6 +41,8 @@ export function PrechargeDifferes() {
       for (const f of Object.values(charger)) void f().catch(() => {});
       // Le lecteur de séance est le plus lourd de l'app : on le chauffe aussi.
       void import("@/components/WorkoutGuideModal").catch(() => {});
+      // La scène du passage de rang, pour qu'elle joue sans attendre.
+      void import("@/components/rang/SceneRang").catch(() => {});
     };
     const w = window as Window & { requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number };
     if (w.requestIdleCallback) {

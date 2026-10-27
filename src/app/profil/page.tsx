@@ -74,7 +74,8 @@ function afficheDeSeance(w: WorkoutSessionItem): PerformanceData {
   };
 }
 import NotificationBell from "@/components/NotificationBell";
-import { type Exercise, resolveSessionId } from "@/components/WorkoutGuideModal";
+import type { Exercise } from "@/components/WorkoutGuideModal";
+import { resolveSessionId } from "@/lib/exercicesCatalogue";
 import { useWorkoutLaunch } from "@/context/WorkoutLaunchContext";
 import { heroImageForSeance } from "@/lib/workoutArt";
 import type { WorkoutCategory } from "@/lib/assistantActions";

@@ -114,12 +114,17 @@ const POUSSIERE = Array.from({ length: 14 }, (_, i) => ({
 }));
 
 export default function GuidedTour() {
-  const { isOpen, stepIndex, totalSteps, next, prev, close } = useGuidedTour();
+  const { isOpen, stepIndex, next, prev, close, declarerChapitres } = useGuidedTour();
+  const totalSteps = CHAPITRES.length;
   const { user } = useAuth();
   const { guide } = useGuideActif();
   const reduce = useReducedMotion();
   const [sens, setSens] = useState(1);
   const precedent = useRef(stepIndex);
+
+  /* Le contexte ne connaît pas la liste (elle tire les scènes) : la visite
+     lui dit combien elle a de chapitres, avant tout « suivant ». */
+  useEffect(() => { declarerChapitres(totalSteps); }, [declarerChapitres, totalSteps]);
 
   /* Le sens de l'animation suit le sens de lecture. */
   useEffect(() => {

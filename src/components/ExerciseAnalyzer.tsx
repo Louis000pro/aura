@@ -233,8 +233,11 @@ export default function ExerciseAnalyzer() {
       try {
         const vision = await import("@mediapipe/tasks-vision");
         const { PoseLandmarker, FilesetResolver, DrawingUtils } = vision;
+        /* ⚠️ La version du WebAssembly suit celle du paquet installé
+           (package-lock). « @latest » chargeait le WASM d'une autre
+           version que le code JavaScript dès qu'une nouvelle sortait. */
         const fs = await FilesetResolver.forVisionTasks(
-          "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm"
+          "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.35/wasm"
         );
         const pl = await PoseLandmarker.createFromOptions(fs, {
           baseOptions: {

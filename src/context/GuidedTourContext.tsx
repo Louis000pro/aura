@@ -4,11 +4,15 @@
  * GuidedTourContext — État global de la visite guidée.
  *
  * Une visite = un parcours linéaire de N chapitres (cf. chapitres.tsx).
+ * ⚠️ Le contexte n'importe PAS la liste des chapitres : elle tire les
+ * scènes de la visite, et ce fichier est chargé par toutes les pages au
+ * démarrage. C'est la visite qui déclare son nombre de chapitres en
+ * montant (`declarerChapitres`).
  * Le context gère :
  *  - open/closed
  *  - chapitre courant (index 0..N-1)
  *  - next / prev / skip / start / close
- *  - persistance DB (profiles.tour_completed) + fallback localStorage
+ *  - persistance DB (profiles.tour_completed)
  *
  * La visite se lance dans deux cas :
  *  1. Après l'onboarding pour un nouvel utilisateur (auto, via OnboardingWrapper)
@@ -18,26 +22,23 @@
  * on peut donc la lancer depuis n'importe quel écran sans le quitter.
  */
 
-import { createContext, useCallback, useContext, useRef, useState } from "react";
+import { createContext, useCallback, useContext, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
-import { CHAPITRES } from "@/components/GuidedTour/chapitres";
 
 type GuidedTourCtx = {
   isOpen: boolean;
   stepIndex: number;
-  totalSteps: number;
   start: (opts?: { showPlansAfter?: boolean }) => void;
   next: () => void;
   prev: () => void;
-  goTo: (index: number) => void;
   close: (markCompleted?: boolean) => void;
+  /** La visite dit combien elle a de chapitres, une fois montée. */
+  declarerChapitres: (n: number) => void;
 };
 
 const GuidedTourContext = createContext<GuidedTourCtx | null>(null);
-
-const LS_KEY = "vaiiya_tour_completed";
 
 export function GuidedTourProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
@@ -47,7 +48,8 @@ export function GuidedTourProvider({ children }: { children: React.ReactNode }) 
   // Si true, on redirige vers les 3 offres à la fin de la visite (cas nouvelle inscription)
   const showPlansAfterRef = useRef(false);
 
-  const totalSteps = CHAPITRES.length;
+  const totalRef = useRef(0);
+  const declarerChapitres = useCallback((n: number) => { totalRef.current = n; }, []);
 
   /* ── Démarrer la visite ──
      La visite se joue par-dessus l'écran courant : aucune redirection,
@@ -69,17 +71,20 @@ export function GuidedTourProvider({ children }: { children: React.ReactNode }) 
     }
   }, [router]);
 
-  /* ── Marquer comme terminé en DB + localStorage ── */
+  /* ── Marquer comme terminé en DB ──
+     L'identifiant passe par une variable : lire `user.id` dans le rappel
+     ferait dépendre le React Compiler de `user` entier, et il renoncerait à
+     optimiser ce fournisseur. */
+  const uid = user?.id;
   const markCompleted = useCallback(async () => {
-    try { localStorage.setItem(LS_KEY, "true"); } catch { /* ignore */ }
-    if (!user?.id) return;
+    if (!uid) return;
     const supabase = createClient();
     // Best-effort : si la colonne n'existe pas encore (migration pas appliquée), on ignore l'erreur silencieusement
-    await supabase.from("profiles").update({ tour_completed: true }).eq("id", user.id).then(
+    await supabase.from("profiles").update({ tour_completed: true }).eq("id", uid).then(
       () => {},
       () => {}
     );
-  }, [user?.id]);
+  }, [uid]);
 
   /* ── Fermer (« Passer » ou Échap) ──
         On retient qu'elle a été vue (on ne repropose pas ce qui a été
@@ -94,7 +99,7 @@ export function GuidedTourProvider({ children }: { children: React.ReactNode }) 
   /* ── Suivant ── */
   const next = useCallback(() => {
     setStepIndex((i) => {
-      if (i >= totalSteps - 1) {
+      if (i >= totalRef.current - 1) {
         // Visite menée à son terme → fermer, marquer, et montrer les offres
         // si c'est une inscription (on a montré la valeur avant le prix).
         setIsOpen(false);
@@ -104,24 +109,23 @@ export function GuidedTourProvider({ children }: { children: React.ReactNode }) 
       }
       return i + 1;
     });
-  }, [totalSteps, markCompleted, goToPlansIfNeeded]);
+  }, [markCompleted, goToPlansIfNeeded]);
 
   /* ── Précédent ── */
   const prev = useCallback(() => {
     setStepIndex((i) => Math.max(0, i - 1));
   }, []);
 
-  /* ── Aller à un index précis ── */
-  const goTo = useCallback((index: number) => {
-    if (index < 0 || index >= totalSteps) return;
-    setStepIndex(index);
-  }, [totalSteps]);
-
   // Le verrou de défilement vit dans GuidedTour.tsx (la coque) : c'est elle
   // qui sait quand l'écran plein est réellement monté.
 
+  const valeur = useMemo(
+    () => ({ isOpen, stepIndex, start, next, prev, close, declarerChapitres }),
+    [isOpen, stepIndex, start, next, prev, close, declarerChapitres],
+  );
+
   return (
-    <GuidedTourContext.Provider value={{ isOpen, stepIndex, totalSteps, start, next, prev, goTo, close }}>
+    <GuidedTourContext.Provider value={valeur}>
       {children}
     </GuidedTourContext.Provider>
   );

@@ -69,6 +69,10 @@ ce qui a été changé, et les règles qui empêchent d'y revenir.
 | Qwen 3.8 27B pour la vision, en mode réponse directe (`reasoning_effort: "none"`) | `lib/visionRepas.ts` |
 | `loading.tsx` pour `/profil/[username]` et `/communaute/[id]/infos` | `app/…/loading.tsx` |
 | Le fondu de 200 ms à chaque changement de page est retiré (OK de Louis, 2026-10-27) : la page arrive à 100 % tout de suite. L'enveloppe et son `will-change: opacity` restent, pour que l'empilement des fenêtres ne change pas | `app/template.tsx` |
+| Ménage du code (2026-10-27) : la table des exercices du catalogue et celle des titres sortent du lecteur de séance, donc le lecteur ne part plus avec Entraînement ni avec le profil | `lib/exercicesCatalogue.ts` |
+| La scène du passage de rang devient un morceau chargé à la demande, préchargé au repos ; son écouteur reste au démarrage | `components/rang/SceneRang.tsx`, `CelebrationRang.tsx`, `Differes.tsx` |
+| Le contexte de la visite guidée n'importe plus la liste des chapitres (elle tirait toutes les scènes) | `context/GuidedTourContext.tsx`, `GuidedTour.tsx` |
+| `PhotoRonde` vit avec le cadre de la photo : la barre du haut ne tire plus la carte de rang entière | `components/rang/IdentiteRang.tsx` |
 
 ## Les règles, pour ne pas y revenir
 
@@ -92,6 +96,19 @@ ce qui a été changé, et les règles qui empêchent d'y revenir.
   lui. Il s'éteint seul en local (pas d'identifiant).
 - **Un modèle d'IA codé en dur se vérifie sur la page « Deprecations » du
   fournisseur** avant chaque chantier qui en dépend.
+- **Une donnée ne s'importe jamais depuis un fichier de composant.** Importer
+  une table depuis `WorkoutGuideModal.tsx` y attachait tout le lecteur et ses
+  dépendances : un import statique tire le module ENTIER. Les données et les
+  règles pures vivent dans `lib/` ; un `import type` ne coûte rien.
+- **Ce qui ne s'affiche que sur un évènement se charge à la demande**, avec
+  un écouteur léger qui reste au démarrage et garde l'évènement le temps que
+  le morceau arrive (`CelebrationRang` → `SceneRang`), préchargé au repos par
+  `PrechargeDifferes`. Le chargement raté rend `null`, jamais une page en
+  erreur.
+- **Mesurer avant et après**, avec le même script, sur le HTML prérendu
+  (`.next/server/app/*.html` liste ce que chaque page charge à l'ouverture) ;
+  `next experimental-analyze --output` dit ce que pèse chaque module, chargé
+  tout de suite ou à la demande.
 
 ## Vérifié
 
@@ -118,6 +135,23 @@ Android. **Pas mesuré contre l'API** : la vision Qwen (la clé Groq n'existe qu
 sur Vercel). `addRoutes` n'est pas vu sur un vrai Android (le navigateur de test
 est un Chromium de bureau).
 
+## Mesuré : ce que chaque page charge à l'ouverture (2026-10-27)
+
+JavaScript, hors polyfills des vieux navigateurs, en Ko compressés (gzip),
+avant et après le ménage du code. Même script, même machine, deux builds.
+
+| Page | Avant | Après |
+| --- | --- | --- |
+| Commun à toutes les pages | 409 | 388 |
+| Entraînement (`/progression`) | 572 | 507 |
+| Profil | 506 | 462 |
+| Nutrition | 562 | 542 |
+| Accueil (`/`) | 449 | 429 |
+| Communauté | 439 | 419 |
+
+Le CSS ne bouge presque pas (22 → 21 Ko) : Next garde avec le layout le CSS
+des morceaux chargés à la demande.
+
 ## Ce qui reste, et pourquoi ce n'est pas fait
 
 - **Les règles d'accès de Supabase.** Le conseiller signale 161 politiques qui
@@ -136,7 +170,22 @@ est un Chromium de bureau).
   changerait l'empilement des fenêtres posées dans les pages sous la barre du
   bas : à vérifier écran par écran avant.
 - **Le cerveau de l'assistant** (`context/AssistantContext.tsx`, 3 000 lignes)
-  est chargé sur toutes les pages, parce qu'il est monté dans le layout.
+  est chargé sur toutes les pages, parce qu'il est monté dans le layout. Mesuré
+  le 2026-10-27 : il tire à lui seul 33 Ko compressés au démarrage (20 modules :
+  le planning, le moteur du Guide, la connaissance du site…). Le couper en un
+  fournisseur léger et un moteur chargé à la conversation est le plus gros gain
+  restant, et le plus risqué.
+- **Les banques du mot du jour** (`MATIN`, `CONSEILS_MATIN`, 37 Ko de source
+  dans `lib/guides.ts`) partent avec toutes les pages, parce que `guides.ts` est
+  chargé au démarrage et qu'elles y vivent. Les sortir dans un fichier lu par
+  le seul mot du jour gagnerait environ 10 Ko compressés, mais touche la règle
+  verrouillée « toute phrase passe par `lib/guides.ts` » : à trancher avec
+  Louis.
+- **La banque de recettes** part entière avec Nutrition (environ 640 Ko bruts,
+  les étapes de chaque recette comprises) ; ne charger les étapes qu'à
+  l'ouverture d'une fiche, comme les textes des cours, serait le gain de cette
+  page. Les mini-cours d'Entraînement (`adviceArticles.ts`, 65 Ko bruts) sont
+  dans le même cas.
 - **`cacheComponents` et `<Activity>`** garderaient chaque onglet visité
   monté, avec tout son état (documentation de Next 16, « Preserving UI
   state »). C'est la version complète de la mémoire de session, mais la

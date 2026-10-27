@@ -273,7 +273,9 @@ for (const fichier of [
 
 /* ── Par la source : la scène lit la carte, fige sa phrase, ignore le Bronze ── */
 {
-  const scene = lire("src/components/rang/CelebrationRang.tsx");
+  /* Depuis le 2026-10-27, l'écouteur vit dans CelebrationRang.tsx et la
+     scène dans SceneRang.tsx (chargée à la demande) : on lit les deux. */
+  const scene = lire("src/components/rang/CelebrationRang.tsx") + "\n" + lire("src/components/rang/SceneRang.tsx");
   verdict("la scène ne joue jamais le Bronze", /if \(rang && cleMontee\(rang\.id\)\) setScene/.test(scene), "CelebrationRang.tsx");
   verdict(
     "la phrase se nourrit de la carte du rang",

@@ -14,7 +14,7 @@
    Le filtre vit dans `contenuNomme`, la donnée vit ici.
 
    ⚠️ LES IDENTIFIANTS SONT CEUX DE `exerciseData` ET DE `SESSION_SLUGS`
-   (WorkoutGuideModal) : c'est ce qui permet de passer d'un titre à un
+   (lib/exercicesCatalogue.ts) : c'est ce qui permet de passer d'un titre à un
    contenu sans jamais deviner. Ajouter une séance, c'est donc TROIS
    entrées à tenir ensemble : ici, dans `exerciseData`, et dans
    `SESSION_SLUGS` si on veut que le Guide sache la nommer.
