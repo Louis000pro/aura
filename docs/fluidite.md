@@ -68,6 +68,7 @@ ce qui a été changé, et les règles qui empêchent d'y revenir.
 | La mémoire de session : un écran remontre ce qu'il a déjà montré, ses lectures repartent derrière | `lib/memoireSession.ts`, `hooks/useJournee.ts`, `app/AccueilClient.tsx`, `components/NutritionTab.tsx`, `components/communaute/ConversationListPane.tsx` |
 | Qwen 3.8 27B pour la vision, en mode réponse directe (`reasoning_effort: "none"`) | `lib/visionRepas.ts` |
 | `loading.tsx` pour `/profil/[username]` et `/communaute/[id]/infos` | `app/…/loading.tsx` |
+| Le fondu de 200 ms à chaque changement de page est retiré (OK de Louis, 2026-10-27) : la page arrive à 100 % tout de suite. L'enveloppe et son `will-change: opacity` restent, pour que l'empilement des fenêtres ne change pas | `app/template.tsx` |
 
 ## Les règles, pour ne pas y revenir
 
@@ -129,10 +130,11 @@ est un Chromium de bureau).
 - **framer-motion en `LazyMotion`.** La documentation annonce un module de
   départ sous 5 Ko au lieu de la bibliothèque entière ; c'est un passage sur
   des dizaines de fichiers (`motion.` vers `m.`).
-- **Le fondu de 200 ms entre deux pages** (`app/template.tsx`) et son
-  `will-change: opacity` permanent, qui fait de chaque page un calque et un
-  contexte d'empilement. Le retirer changerait l'empilement des fenêtres posées
-  dans les pages sous la barre du bas : à vérifier écran par écran avant.
+- **Le `will-change: opacity` permanent de l'enveloppe des pages**
+  (`app/template.tsx`), qui fait de chaque page un calque et un contexte
+  d'empilement. Le fondu qu'il servait est retiré ; le retirer lui aussi
+  changerait l'empilement des fenêtres posées dans les pages sous la barre du
+  bas : à vérifier écran par écran avant.
 - **Le cerveau de l'assistant** (`context/AssistantContext.tsx`, 3 000 lignes)
   est chargé sur toutes les pages, parce qu'il est monté dans le layout.
 - **`cacheComponents` et `<Activity>`** garderaient chaque onglet visité

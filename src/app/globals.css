@@ -537,13 +537,6 @@ b.hashtag:hover { opacity: 0.75; }
   }
 }
 
-/* La transition d'entrée des pages (`app/template.tsx`) : en mouvement réduit,
-   la page est à pleine opacité dès le premier rendu, avant même que le
-   JavaScript arrive. L'enveloppe, elle, reste la même pour tout le monde. */
-@media (prefers-reduced-motion: reduce) {
-  .vy-entree-page { opacity: 1 !important; }
-}
-
 /* ──────────── PERF-LITE — dégradation adaptative (appareils faibles) ────────────
    La classe `perf-lite` est posée sur <html> par un script inline du <head>
    (voir layout.tsx) sur les appareils peu puissants. On y réduit le rayon des

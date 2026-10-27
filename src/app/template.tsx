@@ -1,30 +1,18 @@
-"use client";
+/* L'enveloppe de chaque page. Elle portait un fondu d'entrée (de 55 % à
+   100 % d'opacité en 200 ms, depuis mai 2026) pour adoucir le passage d'un
+   onglet à l'autre et cacher un flash blanc sur l'ancien fond.
 
-import { motion, useReducedMotion } from "framer-motion";
+   ⚠️ LE FONDU EST RETIRÉ (Louis, 2026-10-27), PAS L'ENVELOPPE. Le fond vit
+   désormais derrière tout le site (`body::before`), donc il n'y a plus de
+   flash à cacher, et une page déjà visitée revient avec son contenu tout de
+   suite (`lib/memoireSession.ts`) : le fondu ne faisait que retarder ce qui
+   était déjà là, à chaque changement de page. Voir `docs/fluidite.md`.
 
-/* Transition d'entrée entre les pages. OPACITY UNIQUEMENT (jamais de transform :
-   un translate/scale laisserait un `transform` résiduel sur ce wrapper, qui
-   re-positionnerait les éléments `position: fixed` des pages, cf. le bug du
-   portail). On démarre à mi-opacité (pas 0) pour éviter le flash blanc entre
-   deux pages → navigation plus fluide.
-
-   ⚠️ L'ENVELOPPE EST LA MÊME POUR TOUT LE MONDE, MOUVEMENT RÉDUIT COMPRIS.
-   `useReducedMotion()` vaut `null` au serveur et `true` dans le navigateur
-   concerné : rendre la page nue dans ce cas faisait deux arbres différents,
-   React jetait l'hydratation et reconstruisait toute la page à chaque
-   chargement. En mouvement réduit, la durée tombe à zéro, et `globals.css`
-   (`.vy-entree-page`) pose l'opacité pleine dès le premier rendu. */
+   ⚠️ `will-change: opacity` RESTE, ET CE N'EST PAS UN OUBLI. Il fait de
+   chaque page un contexte d'empilement depuis mai : les fenêtres posées
+   dans une page (sans portail) s'empilent à l'intérieur, sous la barre du
+   bas. Le retirer changerait cet empilement sur tous les écrans ; il faudrait
+   les revoir un par un avant. */
 export default function Template({ children }: { children: React.ReactNode }) {
-  const reduce = useReducedMotion();
-  return (
-    <motion.div
-      className="vy-entree-page"
-      initial={{ opacity: 0.55 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: reduce ? 0 : 0.2, ease: "easeOut" }}
-      style={{ willChange: "opacity" }}
-    >
-      {children}
-    </motion.div>
-  );
+  return <div style={{ willChange: "opacity" }}>{children}</div>;
 }
