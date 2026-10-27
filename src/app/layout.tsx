@@ -226,6 +226,20 @@ export default function RootLayout({
             s'allègent en conséquence. Seuils auto à garder synchro avec perfMode.ts. */}
         <script dangerouslySetInnerHTML={{ __html: `(function(){try{var q;try{q=localStorage.getItem('vaiiya-quality');}catch(e){}var lite;if(q==='high'){lite=false;}else if(q==='lite'){lite=true;}else{var n=navigator,m=n.deviceMemory,c=n.hardwareConcurrency,r=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;lite=!!(r||(typeof m==='number'&&m<=4)||(typeof c==='number'&&c<=4));}if(lite){document.documentElement.classList.add('perf-lite');}}catch(e){}})();` }} />
 
+        {/* UNE APP OUVERTE NE MÉLANGE JAMAIS DEUX VERSIONS (2026-10-27).
+            Voir `DEPLOIEMENT` dans next.config.ts : chaque réponse porte la
+            version qui l'a servie. Ce script enveloppe `fetch` AVANT que
+            Next ne s'en serve, et ne regarde que les requêtes de navigation
+            (`_rsc=`). Si la réponse vient d'une autre version, il la jette
+            sans la lire et rend un refus : pour un préchargement, Next
+            l'ignore ; pour un changement de page, Next charge la page en
+            entier, donc la nouvelle version, proprement. Toute autre
+            requête (Supabase, l'API, les images) passe sans être touchée.
+            Absent en local, où il n'y a pas d'identifiant. */}
+        {process.env.NEXT_PUBLIC_DEPLOIEMENT && (
+          <script dangerouslySetInnerHTML={{ __html: `(function(){try{var m=${JSON.stringify(process.env.NEXT_PUBLIC_DEPLOIEMENT)},f=window.fetch;if(!f||f.__vy)return;var g=function(i){var p=f.apply(window,arguments);var u=typeof i==='string'?i:(i&&(i.href||i.url))||'';if(u.indexOf('_rsc=')<0)return p;return p.then(function(r){var l=r.headers.get('x-vaiiya-deploiement');if(!l||l===m)return r;try{window.__vyNouvelleVersion=l;}catch(e){}try{if(r.body)r.body.cancel();}catch(e){}return new Response('',{status:409,statusText:'Nouvelle version',headers:{'content-type':'text/plain'}});});};g.__vy=true;window.fetch=g;}catch(e){}})();` }} />
+        )}
+
         {/* Session déjà ouverte ? On le sait AVANT le premier paint. L'accueil
             est servi avec la landing publique dans le HTML (c'est ce qui la rend
             lisible sans JavaScript) ; celui qui est déjà connecté ne doit pas la

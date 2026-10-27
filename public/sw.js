@@ -1,4 +1,16 @@
-// Vaiiya Service Worker — v13 (navigation preload)
+// Vaiiya Service Worker, v14 (les navigations internes vont au réseau)
+// v14 (2026-10-27) : deux changements, et la stratégie des pages ne bouge pas.
+//   1. Une requête de navigation interne ou de préchargement de Next (marquée
+//      `_rsc=`) ne passe PLUS par le cache. Elle tombait dans le « reste »
+//      (stale-while-revalidate) : on servait la réponse d'hier, souvent d'une
+//      version précédente, et Next devait alors recharger la page en entier ;
+//      chaque préchargement écrivait en plus dans le cache. Next garde
+//      lui-même ces réponses en mémoire, il n'a pas besoin de nous.
+//   2. Sur Chrome 123+ (Android compris), les appels à l'API, à Supabase et
+//      ces navigations ne RÉVEILLENT plus le service worker (`addRoutes`) :
+//      un appui après une minute d'inactivité ne paie plus son démarrage.
+//      Ailleurs (Safari), le gestionnaire `fetch` les laisse passer comme
+//      avant.
 // v13 : au démarrage à froid (icône de l'iPhone), le navigateur doit d'abord
 // réveiller ce service worker avant qu'il ne demande la page au réseau. Avec
 // le « navigation preload », la requête part EN MÊME TEMPS que le réveil : la
@@ -26,19 +38,57 @@ const HTML_CACHE    = "vaiiya-html";     // pages (SWR)
 const DYNAMIC_CACHE = "vaiiya-dynamic";  // images, fonts, etc.
 const KEEP = [STATIC_CACHE, HTML_CACHE, DYNAMIC_CACHE];
 
+// ── Une requête de navigation interne de Next (RSC) ──
+// Next ajoute `_rsc=` à toutes, préchargements compris : c'est le repère le
+// plus sûr, l'en-tête `RSC` ne sert que de seconde lecture.
+function estNavigationInterne(url, request) {
+  return url.searchParams.has("_rsc") || request.headers.get("rsc") === "1";
+}
+
+// ── Ce qui part au réseau sans réveiller le service worker (Chrome 123+) ──
+// ⚠️ Rien ici ne peut faire échouer l'installation : un navigateur qui ne
+// connaît pas `addRoutes`, ou qui refuse une règle, garde simplement le
+// gestionnaire `fetch` ci-dessous, qui laisse passer ces mêmes requêtes.
+// Les images de Supabase (storage) ne sont PAS dans la liste : le cache les
+// garde, comme avant.
+// Les chemins s'écrivent `/api/:chemin*` (« /api, puis n'importe quoi ») et
+// pas avec une barre suivie d'une étoile : ces deux signes collés ouvrent un
+// commentaire pour les bancs qui lisent ce fichier.
+function routesDirectes(e) {
+  try {
+    if (typeof e.addRoutes !== "function" || typeof URLPattern !== "function") return Promise.resolve();
+    return Promise.resolve(e.addRoutes([
+      { condition: { urlPattern: new URLPattern({ pathname: "/api/:chemin*" }) }, source: "network" },
+      { condition: { urlPattern: new URLPattern({ search: "*_rsc=*" }) }, source: "network" },
+      { condition: { urlPattern: new URLPattern({ hostname: "*.supabase.co", pathname: "/rest/:chemin*" }) }, source: "network" },
+      { condition: { urlPattern: new URLPattern({ hostname: "*.supabase.co", pathname: "/auth/:chemin*" }) }, source: "network" },
+    ])).catch(() => {});
+  } catch {
+    return Promise.resolve();
+  }
+}
+
 // ── Install : pré-cache l'app-shell ("/") pour un 1er lancement instantané ──
 self.addEventListener("install", (e) => {
-  e.waitUntil(
-    caches.open(HTML_CACHE).then((c) => c.add("/")).catch(() => {})
-  );
+  e.waitUntil(Promise.all([
+    caches.open(HTML_CACHE).then((c) => c.add("/")).catch(() => {}),
+    routesDirectes(e),
+  ]));
   self.skipWaiting();
 });
 
 // ── Activate : supprime les anciens caches (aura-*, versions précédentes) ──
+// v14 : retire aussi les réponses de navigation interne que v13 rangeait
+// dans `vaiiya-dynamic` ; elles ne serviront plus jamais.
 self.addEventListener("activate", (e) => {
   e.waitUntil(
     caches.keys()
       .then((keys) => Promise.all(keys.filter((k) => !KEEP.includes(k)).map((k) => caches.delete(k))))
+      .then(() => caches.open(DYNAMIC_CACHE)
+        .then((c) => c.keys().then((reqs) => Promise.all(
+          reqs.filter((r) => new URL(r.url).searchParams.has("_rsc")).map((r) => c.delete(r)),
+        )))
+        .catch(() => {}))
       .then(() => self.registration.navigationPreload?.enable().catch(() => {}))
       .then(() => self.clients.claim())
   );
@@ -60,6 +110,10 @@ self.addEventListener("fetch", (e) => {
   } else if (url.pathname.startsWith("/api/") || url.pathname.startsWith("/auth/")) {
     return;
   }
+
+  // 1 bis. Navigation interne ou préchargement de Next → réseau direct,
+  //        jamais de cache (v14, voir en tête du fichier).
+  if (estNavigationInterne(url, e.request)) return;
 
   // 2. Chunks Next.js (immuables par hash) → Cache-first PERMANENT
   if (url.pathname.startsWith("/_next/static/")) {

@@ -1,5 +1,23 @@
 import type { NextConfig } from "next";
 
+/* ── L'identifiant du déploiement, pour ne jamais mélanger deux versions ──
+   Une app restée ouverte pendant une mise en ligne gardait l'ANCIEN code,
+   puis téléchargeait des morceaux du NOUVEAU au premier préchargement ou
+   au premier changement de page. Next ne compare les versions qu'APRÈS
+   avoir lu la réponse, donc après avoir chargé ces morceaux, et le runtime
+   garde le premier code reçu pour chaque module : l'app tournait avec deux
+   versions mélangées. Ce sont toutes les erreurs remontées la semaine du
+   2026-10-20 (« photoDuGuide is not a function », « workoutSessions »
+   indéfini, React #130 et #306), à chaque fois quelques minutes après un
+   push.
+   Chaque réponse porte donc cet identifiant (`x-vaiiya-deploiement`), et la
+   page connaît le sien (`NEXT_PUBLIC_DEPLOIEMENT`, lu par le script du
+   <head> dans `layout.tsx`). Une réponse de navigation d'une autre version
+   est refusée AVANT d'être lue, et Next charge alors la page en entier.
+   Unique par déploiement quand Vercel le donne, sinon le commit. Vide en
+   local : rien n'est posé, rien n'est comparé. */
+const DEPLOIEMENT = (process.env.VERCEL_DEPLOYMENT_ID || process.env.VERCEL_GIT_COMMIT_SHA || "").trim();
+
 const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: false,
@@ -41,6 +59,7 @@ const nextConfig: NextConfig = {
   env: {
     NEXT_PUBLIC_VERCEL_ENV: process.env.VERCEL_ENV ?? "",
     NEXT_PUBLIC_BUILD_ID: (process.env.VERCEL_GIT_COMMIT_SHA ?? "").slice(0, 7),
+    NEXT_PUBLIC_DEPLOIEMENT: DEPLOIEMENT,
   },
 
   // ── Non-indexation de tout ce qui n'est pas la production ─────
@@ -73,6 +92,8 @@ const nextConfig: NextConfig = {
       { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
       { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains" },
       { key: "Permissions-Policy", value: "camera=(self), microphone=(self), geolocation=(), payment=()" },
+      // La version qui a servi la réponse (voir `DEPLOIEMENT` en tête).
+      ...(DEPLOIEMENT ? [{ key: "x-vaiiya-deploiement", value: DEPLOIEMENT }] : []),
     ];
     if (process.env.VERCEL_ENV === "production") {
       return [{ source: "/:path*", headers: securite }];
