@@ -1,0 +1,1082 @@
+<title>Banque de séances Vaiiya</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,300..900&family=Martian+Mono:wdth,wght@75..112.5,400..800&display=swap">
+<style>
+/* Mise en page : un dossier en une colonne de lecture, des blocs plus larges pour les tableaux et la banque à explorer. */
+:root {
+  --bg: #FAF9FD;
+  --surface: #FFFFFF;
+  --sunk: #F1EEF8;
+  --ink: #1C1630;
+  --ink-2: #4A4362;
+  --ink-3: #6F6888;
+  --line: #E4DFEF;
+  --violet: #6D4BD6;
+  --violet-plein: #8B5CF6;
+  --magenta: #C13BC1;
+  --violet-pale: #EFE8FF;
+  --feu: #B5500C;
+  --feu-pale: #FFF0E3;
+  --teal: #0B7F61;
+  --teal-pale: #E3F6EF;
+  --or: #8A5A06;
+  --or-pale: #FFF5D9;
+  --or-trait: #E3B450;
+  --display: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  --texte: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  --chiffre: "Martian Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #110E1A; --surface: #1A1626; --sunk: #231E33; --ink: #F4F1FB; --ink-2: #CBC4DD; --ink-3: #A39CBA; --line: #322B47;
+    --violet: #C3AEFF; --violet-plein: #8B5CF6; --magenta: #D86BD8; --violet-pale: #2A2142;
+    --feu: #FFA25C; --feu-pale: #33231A; --teal: #3FE0B0; --teal-pale: #13302A;
+    --or: #F5B120; --or-pale: #2E2614; --or-trait: #B8872A;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #110E1A; --surface: #1A1626; --sunk: #231E33; --ink: #F4F1FB; --ink-2: #CBC4DD; --ink-3: #A39CBA; --line: #322B47;
+  --violet: #C3AEFF; --violet-plein: #8B5CF6; --magenta: #D86BD8; --violet-pale: #2A2142;
+  --feu: #FFA25C; --feu-pale: #33231A; --teal: #3FE0B0; --teal-pale: #13302A;
+  --or: #F5B120; --or-pale: #2E2614; --or-trait: #B8872A;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--texte);
+  font-size: 16px;
+  line-height: 1.55;
+  margin: 0;
+}
+body::before {
+  content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg);
+}
+a { color: var(--violet); text-underline-offset: 3px; }
+a:focus-visible, button:focus-visible { outline: 3px solid var(--violet-plein); outline-offset: 2px; border-radius: 6px; }
+.mono { font-family: var(--chiffre); font-variation-settings: "wdth" 82; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
+
+.page { max-width: 1080px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 0 72px; }
+.lecture { max-width: 68ch; }
+
+/* Barre des sections */
+.sections {
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 9;
+  background: var(--bg); border-bottom: 1px solid var(--line);
+}
+.sections ul { list-style: none; margin: 0 auto; max-width: 1080px; display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 10px; }
+.sections ul::-webkit-scrollbar { display: none; }
+.sections a { display: block; white-space: nowrap; font-size: 13px; font-weight: 600; color: var(--ink-2); text-decoration: none; padding: 6px 11px; border-radius: 999px; background: var(--sunk); }
+.sections a:hover { color: var(--ink); }
+
+/* Ouverture */
+.ouverture { padding-block: 44px 8px; display: grid; gap: 22px; }
+.surtitre { font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-3); margin: 0; }
+h1 { font-family: var(--display); font-variation-settings: "wdth" 122; font-weight: 850; font-size: clamp(2.5rem, 8.5vw, 4.6rem); line-height: 0.98; letter-spacing: -0.02em; margin: 0; text-wrap: balance; }
+h1 .accent { background: linear-gradient(90deg, var(--violet-plein), var(--magenta)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.chapeau { font-size: 1.15rem; color: var(--ink-2); margin: 0; max-width: 62ch; }
+
+.bandes { display: grid; gap: 14px; }
+.bande { display: grid; gap: 8px; }
+.bande-titre { font-size: 13px; font-weight: 700; color: var(--ink-2); margin: 0; }
+.tuiles { display: flex; flex-wrap: wrap; gap: 5px; }
+.tuile { font-family: var(--chiffre); font-variation-settings: "wdth" 82; letter-spacing: -0.03em; font-size: 12.5px; padding: 4px 7px; border-radius: 6px; background: var(--sunk); color: var(--ink-3); }
+.tuile.douze { color: var(--ink-3); }
+.tuile.autre { color: var(--ink); background: var(--surface); border: 1px solid var(--line); }
+.tuile.neuf { color: var(--violet); background: var(--violet-pale); }
+.tuile.sep { background: none; color: var(--ink-3); padding-inline: 2px; }
+
+.faits { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); margin-top: 6px; }
+.fait { padding: 16px 14px 16px 0; display: grid; gap: 4px; align-content: start; min-width: 0; }
+.fait + .fait { padding-left: 14px; border-left: 1px solid var(--line); }
+.fait .n { font-family: var(--chiffre); font-variation-settings: "wdth" 82; letter-spacing: -0.045em; font-weight: 700; font-size: clamp(1.6rem, 4.5vw, 2.3rem); line-height: 1; }
+.fait p { margin: 0; font-size: 13.5px; color: var(--ink-2); }
+@media (max-width: 720px) {
+  .faits { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .fait:nth-child(3) { border-left: none; padding-left: 0; }
+  .fait:nth-child(n+3) { border-top: 1px solid var(--line); }
+}
+
+/* Sections */
+section { padding-top: 56px; scroll-margin-top: 64px; }
+h2 { font-family: var(--display); font-variation-settings: "wdth" 116; font-weight: 800; font-size: clamp(1.65rem, 4.4vw, 2.35rem); line-height: 1.08; letter-spacing: -0.015em; margin: 0 0 14px; text-wrap: balance; }
+h3 { font-family: var(--display); font-variation-settings: "wdth" 110; font-weight: 750; font-size: 1.2rem; line-height: 1.2; margin: 28px 0 10px; text-wrap: balance; }
+p { margin: 0 0 12px; }
+.note { font-size: 14px; color: var(--ink-2); }
+.liste { margin: 0 0 12px; padding-left: 1.2em; }
+.liste li { margin-bottom: 6px; }
+.liste li::marker { color: var(--ink-3); }
+
+.cadre { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 18px 18px 6px; }
+.cadre + .cadre { margin-top: 12px; }
+
+/* Tableaux */
+.tableau { overflow-x: auto; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); margin: 6px 0 14px; }
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
+th, td { text-align: left; vertical-align: top; padding: 10px 12px; border-bottom: 1px solid var(--line); }
+tr:last-child td { border-bottom: none; }
+th { font-size: 12px; font-weight: 700; letter-spacing: 0.03em; color: var(--ink-3); background: var(--sunk); white-space: nowrap; }
+td.n, th.n { text-align: right; font-family: var(--chiffre); font-variation-settings: "wdth" 82; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; white-space: nowrap; }
+td.etat { white-space: nowrap; font-weight: 600; font-size: 13px; }
+.oui { color: var(--teal); }
+.deplie { color: var(--ink-2); }
+.non { color: var(--feu); }
+td .avant { color: var(--ink-3); }
+.min-w { min-width: 640px; }
+
+/* La science */
+.preuves { display: grid; gap: 0; border-top: 1px solid var(--line); }
+.preuve { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 18px; padding: 14px 0; border-bottom: 1px solid var(--line); }
+.preuve p { margin: 0; }
+.preuve .usage { color: var(--ink-2); font-size: 14.5px; }
+.preuve .usage::before { content: "Ce qu’on en fait : "; font-weight: 700; color: var(--violet); }
+@media (max-width: 720px) { .preuve { grid-template-columns: 1fr; gap: 6px; } }
+.ref { font-size: 12px; font-weight: 600; color: var(--ink-3); text-decoration: none; white-space: nowrap; border-bottom: 1px dotted var(--ink-3); }
+.ref:hover { color: var(--violet); border-color: var(--violet); }
+
+/* La banque */
+.filtres { display: grid; gap: 10px; margin: 12px 0 8px; }
+.groupe-filtres { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.groupe-filtres .lib { font-size: 12px; font-weight: 700; color: var(--ink-3); margin-right: 4px; min-width: 76px; }
+.puce { font: inherit; font-size: 13.5px; font-weight: 600; color: var(--ink-2); background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 6px 12px; cursor: pointer; }
+.puce[aria-pressed="true"] { color: #FFFFFF; background: var(--violet-plein); border-color: var(--violet-plein); }
+.compte { font-size: 14px; color: var(--ink-2); margin: 6px 0 0; }
+.compte b { font-family: var(--chiffre); font-variation-settings: "wdth" 82; letter-spacing: -0.03em; color: var(--ink); }
+
+.collection { margin-top: 26px; }
+.collection-tete { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; border-bottom: 2px solid var(--ink); padding-bottom: 6px; margin-bottom: 4px; }
+.collection-tete h3 { margin: 0; font-size: 1.3rem; }
+.collection-tete .fam { font-size: 12px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-3); }
+.collection-tete .cnt { margin-left: auto; font-size: 13px; color: var(--ink-2); }
+.collection-tete .cnt b { font-family: var(--chiffre); font-variation-settings: "wdth" 82; }
+.seances { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 28px; }
+@media (max-width: 760px) { .seances { grid-template-columns: 1fr; } }
+.seance { padding: 14px 0; border-bottom: 1px solid var(--line); min-width: 0; display: grid; gap: 6px; align-content: start; }
+.seance-tete { display: flex; gap: 10px; align-items: baseline; justify-content: space-between; }
+.seance h4 { margin: 0; font-family: var(--display); font-variation-settings: "wdth" 106; font-weight: 750; font-size: 1.03rem; line-height: 1.25; }
+.acces { flex: none; font-size: 11.5px; font-weight: 700; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line); color: var(--ink-2); }
+.acces.plus { color: var(--or); background: var(--or-pale); border-color: var(--or-trait); }
+.meta { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 13px; color: var(--ink-3); }
+.meta .duree { font-family: var(--chiffre); font-variation-settings: "wdth" 82; letter-spacing: -0.03em; color: var(--ink); font-weight: 600; }
+.meta .fmt { color: var(--violet); font-weight: 600; }
+.schema { margin: 0; font-size: 13.5px; color: var(--ink-2); }
+.pourquoi { margin: 0; font-size: 14px; }
+.dessin { margin: 0; font-size: 13px; color: var(--feu); background: var(--feu-pale); padding: 5px 9px; border-radius: 8px; justify-self: start; }
+.temoin-lien { font-size: 13px; font-weight: 600; }
+
+/* Témoins */
+.temoin { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 20px 18px 8px; margin-top: 16px; scroll-margin-top: 64px; }
+.temoin-tete { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: baseline; margin-bottom: 10px; }
+.temoin-tete h3 { margin: 0; font-size: 1.45rem; }
+.temoin .tableau { margin-top: 4px; }
+.alerte { background: var(--feu-pale); border-radius: 12px; padding: 12px 14px; font-size: 14px; margin: 6px 0 12px; }
+.alerte b { color: var(--feu); }
+.trois { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin: 6px 0 10px; }
+.trois > div { min-width: 0; }
+.trois h4 { margin: 0 0 4px; font-size: 13px; font-weight: 700; color: var(--ink-3); letter-spacing: 0.02em; }
+.trois p { font-size: 14.5px; margin: 0; }
+@media (max-width: 760px) { .trois { grid-template-columns: 1fr; gap: 10px; } }
+
+/* Packs de mouvements */
+.packs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 760px) { .packs { grid-template-columns: 1fr; } }
+.pack { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; min-width: 0; }
+.pack h4 { margin: 0 0 2px; font-size: 1.02rem; font-family: var(--display); font-variation-settings: "wdth" 106; font-weight: 750; }
+.pack .ouvre { font-size: 13px; color: var(--teal); font-weight: 600; margin: 0 0 8px; }
+.pack ul { margin: 0; padding-left: 1.1em; font-size: 14px; }
+.pack li { margin-bottom: 3px; }
+.pack li span { color: var(--ink-3); font-size: 12.5px; }
+
+/* Décisions */
+.decisions { counter-reset: d; display: grid; gap: 0; border-top: 1px solid var(--line); }
+.decision { padding: 14px 0 14px 40px; border-bottom: 1px solid var(--line); position: relative; }
+.decision::before { counter-increment: d; content: counter(d); position: absolute; left: 0; top: 13px; width: 26px; height: 26px; border-radius: 50%; background: var(--violet-pale); color: var(--violet); font-family: var(--chiffre); font-size: 13px; font-weight: 700; display: grid; place-items: center; }
+.decision p { margin: 0; }
+.decision .reco { margin-top: 4px; font-size: 14.5px; color: var(--ink-2); }
+.decision .reco b { color: var(--teal); }
+
+.lots { display: grid; gap: 0; border-top: 1px solid var(--line); counter-reset: l -1; }
+.lot { display: grid; grid-template-columns: 72px minmax(0, 1fr); gap: 12px; padding: 14px 0; border-bottom: 1px solid var(--line); }
+.lot .num { font-family: var(--chiffre); font-variation-settings: "wdth" 82; font-weight: 700; font-size: 13px; color: var(--violet); padding-top: 2px; }
+.lot p { margin: 0; }
+.lot .ce { font-size: 14.5px; color: var(--ink-2); margin-top: 3px; }
+
+.sources { font-size: 14px; }
+.sources li { margin-bottom: 8px; scroll-margin-top: 70px; }
+.sources li:target { background: var(--violet-pale); border-radius: 6px; }
+.sources .lu { color: var(--ink-3); font-size: 12.5px; }
+</style>
+
+<nav class="sections" aria-label="Sections">
+  <ul>
+    <li><a href="#constat">Le constat</a></li>
+    <li><a href="#demande">La demande</a></li>
+    <li><a href="#science">La science</a></li>
+    <li><a href="#formats">Les formats</a></li>
+    <li><a href="#banque">La banque</a></li>
+    <li><a href="#temoins">Six séances écrites</a></li>
+    <li><a href="#programmes">Les programmes</a></li>
+    <li><a href="#existant">L’existant</a></li>
+    <li><a href="#mouvements">Les mouvements</a></li>
+    <li><a href="#lecteur">Le lecteur</a></li>
+    <li><a href="#offre">Vaiiya+</a></li>
+    <li><a href="#lots">Les lots</a></li>
+    <li><a href="#trancher">À trancher</a></li>
+    <li><a href="#sources">Sources</a></li>
+  </ul>
+</nav>
+
+<main class="page">
+
+<header class="ouverture">
+  <p class="surtitre">Proposition · 27 octobre 2026</p>
+  <h1>Pourquoi toujours <span class="accent">12</span> ?</h1>
+  <p class="chapeau">Parce que ta séance du jour applique une seule règle à tout le monde : quand l’objectif n’est ni la force ni la prise de muscle, chaque exercice reçoit 3 séries de 8 à 15 répétitions, et l’écran affiche le milieu, 12. Cette page explique d’où ça vient, ce que les gens cherchent, ce que disent les études, et propose <b data-n="nouvelles"></b> nouvelles séances et <b data-n="programmes"></b> programmes.</p>
+
+  <div class="bandes">
+    <div class="bande">
+      <p class="bande-titre">Aujourd’hui : les 30 exercices des six séances du programme, à la maison, objectif « santé »</p>
+      <div class="tuiles" id="bande-avant"></div>
+    </div>
+    <div class="bande">
+      <p class="bande-titre">Proposé : la même séance « Push », trois fois de suite (lourd, volume, endurance)</p>
+      <div class="tuiles" id="bande-apres"></div>
+    </div>
+  </div>
+
+  <div class="faits">
+    <div class="fait"><span class="n">22/30</span><p>exercices du programme du jour en 3 × 12 à la maison (25 sur 30 en salle).</p></div>
+    <div class="fait"><span class="n">73 %</span><p>des exercices du catalogue comptés en répétitions sont entre 8 et 12.</p></div>
+    <div class="fait"><span class="n">0</span><p>exercice à 5 séries ou plus dans les 53 séances.</p></div>
+    <div class="fait"><span class="n">2</span><p>séances d’abdos ; aucune pour les seuls fessiers, pectoraux ou bras.</p></div>
+  </div>
+</header>
+
+<section id="constat">
+  <h2>Le constat</h2>
+  <div class="lecture">
+    <h3>D’où viennent les 12</h3>
+    <p>Ce que tu vois chaque jour, c’est l’étape de ton programme (Push, Pull, Haut du corps…). Son contenu vient de <span class="mono">banqueEtapes.ts</span>, qui donne une fourchette par objectif : « force » reçoit 5 × 5 sur les exercices repères et 3 × 10 sur les autres, « masse » 4 × 9 et 3 × 15, et tous les autres comptes (santé, perte de poids, remise en forme) reçoivent <b>3 × 8 à 15 sur chaque exercice</b>. L’écran affiche le milieu de la fourchette, arrondi : 12.</p>
+    <p>Mesuré en composant les six étapes : à la maison, 22 exercices sur 30 sortent en 3 × 12. La séance Push au poids du corps donne pompes 3 × 12, pike push-ups 3 × 12, dips 3 × 12, pompes diamant 3 × 12, pompes inclinées 3 × 12. Le niveau n’est pas lu non plus : un débutant reçoit les mêmes pompes diamant qu’un confirmé, alors que la décision 47 du planning prévoyait des fourchettes « adaptées par exercice et niveau ».</p>
+    <p>Le catalogue a le même biais, en moins fort : sur 334 exercices, 135 se font au chrono, et parmi les 196 comptés en répétitions, 144 sont entre 8 et 12 (73 %). Cinq sont à 20, un à 5, un à 3. Aucun exercice n’a plus de 4 séries.</p>
+    <p>Le chiffre 12 n’est pas faux : c’est le milieu de la zone 8 à 12 que les manuels donnent pour la prise de muscle. Le problème, c’est d’en faire la seule réponse. La section « Ce que disent les études » explique pourquoi s’en écarter.</p>
+
+    <h3>Ce qu’il y a dans le catalogue</h3>
+  </div>
+  <div class="tableau">
+    <table>
+      <thead><tr><th>Collection</th><th class="n">Séances</th><th class="n">Gratuites</th><th class="n">Vaiiya+</th></tr></thead>
+      <tbody>
+        <tr><td>Renfo musculaire</td><td class="n">26</td><td class="n">7</td><td class="n">19</td></tr>
+        <tr><td>Mobilité &amp; posture</td><td class="n">18</td><td class="n">5</td><td class="n">13</td></tr>
+        <tr><td>À la salle</td><td class="n">17</td><td class="n">4</td><td class="n">13</td></tr>
+        <tr><td>Sans matériel</td><td class="n">16</td><td class="n">6</td><td class="n">10</td></tr>
+        <tr><td>Débuter &amp; reprendre</td><td class="n">15</td><td class="n">14</td><td class="n">1</td></tr>
+        <tr><td>Séances express</td><td class="n">15</td><td class="n">6</td><td class="n">9</td></tr>
+        <tr><td>Full body</td><td class="n">12</td><td class="n">5</td><td class="n">7</td></tr>
+        <tr><td>Prise de masse</td><td class="n">10</td><td class="n">3</td><td class="n">7</td></tr>
+        <tr><td>Haut du corps</td><td class="n">10</td><td class="n">2</td><td class="n">8</td></tr>
+        <tr><td>Cardio &amp; HIIT</td><td class="n">9</td><td class="n">3</td><td class="n">6</td></tr>
+        <tr><td>Perte de poids</td><td class="n">9</td><td class="n">3</td><td class="n">6</td></tr>
+        <tr><td>Récupération</td><td class="n">9</td><td class="n">3</td><td class="n">6</td></tr>
+        <tr><td>Jambes &amp; fessiers</td><td class="n">8</td><td class="n">2</td><td class="n">6</td></tr>
+        <tr><td>Abdos &amp; gainage</td><td class="n">2</td><td class="n">0</td><td class="n">2</td></tr>
+        <tr><td>Défis</td><td class="n">2</td><td class="n">0</td><td class="n">2</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="lecture">
+    <p class="note">Une séance appartient à plusieurs collections, d’où des totaux supérieurs à 53. En tout : 18 séances gratuites et 35 Vaiiya+.</p>
+    <h3>Ce qui manque</h3>
+    <ul class="liste">
+      <li><b>Les zones les plus demandées</b> : 2 séances d’abdos (toutes Vaiiya+), et aucune séance consacrée aux seuls fessiers, pectoraux, dos ou bras.</li>
+      <li><b>Le niveau avancé</b> : 2 séances sur 53, contre 33 intermédiaires et 18 débutantes. Quelqu’un qui progresse n’a rien de plus à aller chercher.</li>
+      <li><b>Les durées extrêmes</b> : rien sous 12 minutes, rien au-delà de 50.</li>
+      <li><b>Les formats</b> : presque tout est en séries droites de 2 à 4 séries. Pas de 5 × 5, pas de séries de 25, pas d’EMOM, d’AMRAP, d’échelle, de superset ni de séance-étalon à battre.</li>
+      <li><b>Le reste de la vie</b> : aucune séance pour un sport (course, foot, ski, padel), aucune pour s’entraîner avec une gêne, presque rien de moins de 10 minutes pour le matin ou le bureau.</li>
+      <li><b>Un tiers du catalogue est de la mobilité ou de la récupération</b> (18 séances sur 53), alors que ce sont les zones musculaires que les gens cherchent.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="demande">
+  <h2>Ce que les gens cherchent</h2>
+  <div class="lecture">
+    <p>Google Trends a refusé les requêtes ce soir. Les signaux ci-dessous viennent de l’enquête française sur la pratique sportive, de l’enquête annuelle de l’ACSM et de ce que vendent les applications qui marchent.</p>
+    <ul class="liste">
+      <li><b>En France, la marche et la course dominent</b> : 48 % des 15 ans et plus en pratiquent (40 % en 2018), loin devant les activités de forme et de gymnastique (24 %). 72 % des 15-24 ans font du sport régulièrement. <a class="ref" href="#src-injep2024">INJEP 2024</a></li>
+      <li><b>À la maison, on veut choisir son heure</b> : 19 % pratiquent surtout chez eux, d’abord « pour pratiquer quand je veux » (39 %), puis pour ne pas dépendre de la météo (22 %) et parce que c’est moins cher (20 %). La santé reste la première motivation, citée par un pratiquant sur deux. <a class="ref" href="#src-injep2024">INJEP 2024</a></li>
+      <li><b>Les professionnels voient monter</b> : les programmes pour les plus âgés (2e), l’exercice pour gérer son poids (3e), l’équilibre, la mobilité et le gainage (5e), l’exercice pour la santé mentale (6e), la musculation classique (7e) et l’entraînement fonctionnel (10e). <a class="ref" href="#src-acsm2026">ACSM 2026</a></li>
+      <li><b>FizzUp, l’application française de référence</b>, vend plus de 200 programmes et 1 500 exercices en vidéo, rangés en musculation, HIIT, abdos, cardio, yoga, boxe, circuits, Pilates, Tabata, corde à sauter, haltères et callisthénie, et par zone : haut du corps, fessiers, abdos, bras, cuisses, pectoraux. Elle coûte 21,99 € par mois ou 79,99 € par an. <a class="ref" href="#src-fizzup">FizzUp</a></li>
+      <li><b>Freeletics fidélise avec des séances-étalons</b> (ses « God workouts ») : une séance fixe qu’on refait pour battre son temps. <a class="ref" href="#src-freeletics">Freeletics</a></li>
+      <li><b>Les courses hybrides explosent</b> : Hyrox annonce plus de 1,5 million de participants sur la saison 2025-2026 et en vise 2 millions. <a class="ref" href="#src-hyrox">Endurance.biz</a></li>
+      <li><b>Les muscles cherchés</b> (signal indicatif, méthode non publiée) : les abdominaux d’abord, puis les fessiers (plus de 91 000 recherches par mois), le dos et les pectoraux. <a class="ref" href="#src-protealpes">Protéalpes</a></li>
+    </ul>
+    <h3>Ce que ça veut dire pour Vaiiya</h3>
+    <ul class="liste">
+      <li>Les zones d’abord : abdos et fessiers sont en tête, et Vaiiya en a respectivement 2 et 0.</li>
+      <li>La moitié des Français marchent ou courent, et Vaiiya n’a rien pour eux : ni renfo du coureur, ni marche en intervalles, ni échauffement avant une sortie.</li>
+      <li>On s’entraîne « quand je veux » : il faut des séances de 3 à 10 minutes, faciles à caser.</li>
+      <li>Circuits, Tabata, boxe et Pilates sont la norme chez les concurrents ; chez nous, presque tout est en séries droites.</li>
+      <li>Une séance qu’on refait pour battre son temps donne une raison de revenir, et Vaiiya a déjà un système de records.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="science">
+  <h2>Ce que disent les études</h2>
+  <div class="lecture"><p>Chaque ligne vient d’une source lue (résumé original ou texte complet), listée en bas de page. À droite, ce qu’on en tire pour la banque.</p></div>
+  <div class="preuves">
+    <div class="preuve"><p>Le muscle se développe sur une très large gamme de charges, à partir d’environ 30 % du maximum, donc aussi bien à 6 qu’à 30 répétitions, si les dernières sont difficiles. Les charges moyennes restent les plus efficaces en temps : les légères demandent beaucoup de répétitions, les lourdes plus de séries. <a class="ref" href="#src-schoenfeld2021">Schoenfeld 2021</a></p><p class="usage">On varie les répétitions sans perdre en efficacité, de 5 à 30.</p></div>
+    <div class="preuve"><p>La force mesurée sur une répétition maximale progresse davantage avec des charges lourdes. Pour qui s’entraîne déjà : de 1 à 12 répétitions maximales, avec un accent sur 1 à 6, et 3 à 5 minutes de repos. <a class="ref" href="#src-schoenfeld2021">Schoenfeld 2021</a> <a class="ref" href="#src-acsm2009">ACSM 2009</a></p><p class="usage">Une famille « Force » à 3, 5 ou 6 répétitions, avec de vrais repos.</p></div>
+    <div class="preuve"><p>Pour l’endurance musculaire : charges légères, plus de 15 répétitions, moins de 90 secondes de repos. <a class="ref" href="#src-acsm2009">ACSM 2009</a></p><p class="usage">Une famille « Séries longues » : 20, 25, 30 répétitions, échelles, 300 répétitions.</p></div>
+    <div class="preuve"><p>Combiner plusieurs zones de charge pourrait apporter un plus pour le muscle ; l’effet reste à confirmer. <a class="ref" href="#src-schoenfeld2021">Schoenfeld 2021</a></p><p class="usage">Des séances « lourd puis léger » : un exercice à 5 × 5, puis des séries de 20.</p></div>
+    <div class="preuve"><p>Varier les exercices d’une séance à l’autre a amélioré la motivation sans réduire les gains de force ni de muscle. <a class="ref" href="#src-bazvalle2019">Baz-Valle 2019</a> Varier les répétitions d’une séance à l’autre donne la même prise de muscle qu’une progression linéaire. <a class="ref" href="#src-grgic2017">Grgic 2017</a></p><p class="usage">Le programme du jour tourne entre trois versions d’une même étape : lourd, volume, endurance.</p></div>
+    <div class="preuve"><p>Plus de séries par semaine pour un muscle, plus de prise de muscle : la relation est graduée. <a class="ref" href="#src-schoenfeld2017">Schoenfeld 2017</a></p><p class="usage">Des séances centrées sur une seule zone ajoutent du volume là où on en veut.</p></div>
+    <div class="preuve"><p>Aller jusqu’à l’échec complet n’apporte pas plus de muscle que s’arrêter un peu avant. <a class="ref" href="#src-refalo2023">Refalo 2023</a></p><p class="usage">La consigne « max moins 2 » : s’arrêter deux répétitions avant de ne plus pouvoir.</p></div>
+    <div class="preuve"><p>En déficit calorique, la force progresse encore alors que le muscle se construit moins ; au-delà d’environ 500 kcal par jour, les gains de muscle disparaissent. <a class="ref" href="#src-murphy2022">Murphy et Koehler 2022</a></p><p class="usage">Une séance « Pendant une sèche » qui garde les charges lourdes.</p></div>
+    <div class="preuve"><p>Sur 270 essais, l’entraînement isométrique a le plus fait baisser la tension au repos (−8,2 / −4,0 mmHg), et la chaise au mur arrive en tête des exercices isométriques. <a class="ref" href="#src-edwards2023">Edwards 2023</a></p><p class="usage">Une famille « Isométrie » et un programme de quatre semaines autour de la chaise au mur.</p></div>
+    <div class="preuve"><p>Chez 25 241 adultes qui ne faisaient pas de sport, trois courtes pointes d’effort par jour (une ou deux minutes) étaient associées à une mortalité 38 à 40 % plus basse. C’est une étude d’observation. <a class="ref" href="#src-stamatakis2022">Stamatakis 2022</a></p><p class="usage">« Trois minutes pour le cœur », à faire plusieurs fois par jour.</p></div>
+    <div class="preuve"><p>Sur cinq mois, la marche en intervalles (3 minutes rapides, 3 minutes lentes, 5 fois) a augmenté la force des cuisses de 13 % et la capacité aérobie de 8 %, plus que la marche régulière, et a davantage baissé la tension. <a class="ref" href="#src-nemoto2007">Nemoto 2007</a></p><p class="usage">« Marche japonaise », gratuite.</p></div>
+    <div class="preuve"><p>Chez des coureurs entraînés, du renfo léger à modéré avec des sauts, 2 à 3 fois par semaine pendant 8 à 12 semaines, a nettement amélioré l’économie de course. <a class="ref" href="#src-balsalobre2016">Balsalobre-Fernández 2016</a></p><p class="usage">Une collection « Course à pied » et un programme de 8 semaines.</p></div>
+    <div class="preuve"><p>Le programme d’échauffement 11+ de la FIFA a réduit les blessures de 39 % dans quatre essais. <a class="ref" href="#src-thorborg2017">Thorborg 2017</a></p><p class="usage">Un échauffement du footballeur inspiré de ce programme.</p></div>
+    <div class="preuve"><p>Pour la lombalgie commune, l’exercice est le traitement principal, avec une activité progressive et fractionnée ; certains signes demandent un médecin avant toute séance. <a class="ref" href="#src-has2019">HAS 2019</a> Pour l’arthrose du genou, l’exercice structuré fait partie des traitements de base. <a class="ref" href="#src-oarsi2019">OARSI 2019</a></p><p class="usage">Une famille « Avec une gêne », qui travaille autour de la zone et dit quand ne pas faire la séance.</p></div>
+    <div class="preuve"><p>Entraîner une jambe augmente aussi la force de l’autre jambe, non entraînée (29 études). <a class="ref" href="#src-altheyab2026">Altheyab 2026</a></p><p class="usage">« Une jambe au repos » : on continue avec la jambe valide.</p></div>
+    <div class="preuve"><p>Pour gagner en amplitude, le renfo fait aussi bien que les étirements. <a class="ref" href="#src-afonso2021">Afonso 2021</a></p><p class="usage">Pas besoin d’ajouter de la mobilité pure : la banque en a déjà 18 séances.</p></div>
+    <div class="preuve"><p>Marche ou course, yoga et renfo ont réduit les symptômes dépressifs dans 218 essais, d’autant plus que l’effort était intense ; le renfo et le yoga étaient les mieux tolérés. <a class="ref" href="#src-noetel2024">Noetel 2024</a></p><p class="usage">Une petite collection « Pour la tête », sans promesse de soin.</p></div>
+    <div class="preuve"><p>Faire des abdos ne fait pas fondre la graisse du ventre : six semaines d’exercices d’abdominaux n’ont pas réduit la graisse abdominale. <a class="ref" href="#src-vispute2011">Vispute 2011</a></p><p class="usage">Les séances d’abdos promettent une sangle plus forte, jamais un ventre plat.</p></div>
+    <div class="preuve"><p>Adultes : du renfo au moins 2 jours par semaine. Plus de 65 ans : de l’équilibre et de la force au moins 3 jours par semaine pour prévenir les chutes. Grossesse : 150 minutes d’activité modérée par semaine, du renfo, des étirements doux. <a class="ref" href="#src-who2020">OMS 2020</a></p><p class="usage">Des collections « 50 ans et plus » et « grossesse » sont possibles, plus tard (voir « À trancher »).</p></div>
+    <div class="preuve"><p>Pour le mal de dos, le Pilates aide plus que de ne rien faire, sans faire mieux que les autres exercices. <a class="ref" href="#src-yamato2016">Yamato 2016</a></p><p class="usage">Une séance « Esprit Pilates » pour ceux qui aiment ce style.</p></div>
+  </div>
+</section>
+
+<section id="formats">
+  <h2>Les formats d’une séance</h2>
+  <div class="lecture"><p>La réponse aux « toujours 12 » : une vingtaine de façons de construire une séance, chacune avec ses chiffres. La dernière colonne dit si le lecteur de séance sait déjà la jouer.</p></div>
+  <div class="tableau">
+    <table class="min-w">
+      <thead><tr><th>Format</th><th>Comment</th><th>Chiffres types</th><th>À quoi ça sert</th><th>Dans le lecteur</th></tr></thead>
+      <tbody>
+        <tr><td><b>Force</b></td><td>Peu de répétitions, charge lourde, repos long</td><td class="mono">5×5 · 6×3 · 4×6 · 2 à 3 min</td><td>Devenir plus fort sur les grands mouvements</td><td class="etat oui">Oui</td></tr>
+        <tr><td><b>Volume</b></td><td>Séries moyennes</td><td class="mono">4×8 · 4×10 · 3×12 · 90 s</td><td>Prendre du muscle</td><td class="etat oui">Oui</td></tr>
+        <tr><td><b>Séries longues</b></td><td>Beaucoup de répétitions, repos court</td><td class="mono">3×20 · 2×25 · 2×30 · 30 s</td><td>Endurance musculaire, muscle sans charge</td><td class="etat oui">Oui</td></tr>
+        <tr><td><b>Lourd puis léger</b></td><td>Un exercice lourd, puis des séries longues</td><td class="mono">5×5 puis 2×20</td><td>Les deux zones dans la même séance</td><td class="etat oui">Oui</td></tr>
+        <tr><td><b>Pyramide</b></td><td>La série grandit puis raccourcit</td><td class="mono">10-15-20-15-10 · 1→8→1</td><td>Volume sans monotonie</td><td class="etat deplie">En dépliant</td></tr>
+        <tr><td><b>Échelle</b></td><td>On ajoute une répétition à chaque marche</td><td class="mono">1, 2, 3… 15 = 120</td><td>Beaucoup de répétitions, peu de lassitude</td><td class="etat deplie">En dépliant</td></tr>
+        <tr><td><b>Descente</b></td><td>Les séries raccourcissent</td><td class="mono">30-20-10</td><td>Finir plus vite qu’on a commencé</td><td class="etat deplie">En dépliant</td></tr>
+        <tr><td><b>Circuit</b></td><td>Des tours de 4 à 6 exercices</td><td class="mono">3 à 5 tours</td><td>Cardio et renfo en même temps</td><td class="etat deplie">En dépliant</td></tr>
+        <tr><td><b>Supersets</b></td><td>Deux exercices enchaînés, repos après le duo</td><td class="mono">A1 8 + A2 8 · 3 tours</td><td>Plus de travail dans le même temps</td><td class="etat deplie">En dépliant</td></tr>
+        <tr><td><b>Complexe</b></td><td>On enchaîne sans poser la charge</td><td class="mono">5 × 6 mouvements</td><td>Toute la séance avec une paire d’haltères</td><td class="etat deplie">En dépliant</td></tr>
+        <tr><td><b>EMOM</b></td><td>Au début de chaque minute, N répétitions ; le reste de la minute est le repos</td><td class="mono">10 à 20 min</td><td>Un rythme imposé par l’horloge</td><td class="etat oui">Oui, une minute chronométrée par ligne</td></tr>
+        <tr><td><b>AMRAP</b></td><td>Le plus de tours possible en un temps donné</td><td class="mono">12 · 20 min</td><td>Un score à battre</td><td class="etat non">Non : chrono global à créer</td></tr>
+        <tr><td><b>Tabata</b></td><td>20 s d’effort, 10 s de repos, 8 fois</td><td class="mono">4 min par bloc</td><td>Intensité courte</td><td class="etat oui">Oui, déjà</td></tr>
+        <tr><td><b>Intervalles</b></td><td>Effort et récupération chronométrés</td><td class="mono">40/20 · 30/30 · 4×4 min</td><td>Le souffle, à toutes les intensités</td><td class="etat oui">Oui (chrono et repos)</td></tr>
+        <tr><td><b>21</b></td><td>7 répétitions en bas, 7 en haut, 7 complètes</td><td class="mono">3 × 21</td><td>Les bras et les épaules</td><td class="etat oui">Oui (texte de la série)</td></tr>
+        <tr><td><b>Isométrie</b></td><td>On tient une position</td><td class="mono">20 à 60 s</td><td>Force sans mouvement, tension au repos</td><td class="etat oui">Oui</td></tr>
+        <tr><td><b>Tempo</b></td><td>Descente lente</td><td class="mono">3 à 5 s</td><td>Plus dur sans charge</td><td class="etat oui">Oui (déjà une séance)</td></tr>
+        <tr><td><b>Une de plus par minute</b></td><td>1 répétition la 1re minute, 2 la 2e… jusqu’à l’échec</td><td class="mono">jusqu’à 15 min</td><td>Un score simple</td><td class="etat deplie">En dépliant, sans score</td></tr>
+        <tr><td><b>Classique</b></td><td>Une séance fixe qu’on refait pour battre son temps ou son nombre</td><td class="mono">temps · tours · reps</td><td>Une raison de revenir dans un mois</td><td class="etat non">Non : score à enregistrer</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="lecture"><p class="note">« En dépliant » : le lecteur sait déjà jouer le format si chaque série devient une ligne de la séance. Ça marche, mais la barre de progression s’allonge ; la section « Le lecteur » propose de l’apprendre proprement.</p></div>
+</section>
+
+<section id="banque">
+  <h2>La nouvelle banque</h2>
+  <div class="lecture">
+    <p><b data-n="nouvelles"></b> séances nouvelles, en plus des 53 existantes. <b data-n="faisables"></b> se font avec les 102 mouvements animés d’aujourd’hui ; les autres attendent quelques planches (section « Les mouvements »). Chaque séance appartient à une collection principale et souvent à d’autres (une séance de 15 minutes ou moins rejoint aussi « Séances express »).</p>
+    <p class="note">« Régimes » : je l’ai compris comme des séances liées à ce qu’on mange (sèche, prise de muscle, à jeun, après le repas). Elles sont dans « Un objectif ». Si tu pensais à autre chose, dis-le-moi.</p>
+  </div>
+  <div class="filtres" role="group" aria-label="Filtrer la banque">
+    <div class="groupe-filtres" id="f-famille"><span class="lib">Famille</span></div>
+    <div class="groupe-filtres" id="f-acces"><span class="lib">Accès</span></div>
+    <div class="groupe-filtres" id="f-mouv"><span class="lib">Mouvements</span></div>
+  </div>
+  <p class="compte" id="compte" aria-live="polite"></p>
+  <div id="liste-banque"></div>
+</section>
+
+<section id="temoins">
+  <h2>Six séances écrites jusqu’au bout</h2>
+  <div class="lecture"><p>Pour montrer le niveau visé : chaque séance dit ses chiffres, pourquoi ces chiffres, et ce qu’on change la fois suivante. Les noms des mouvements sont ceux de la bibliothèque animée.</p></div>
+
+  <article class="temoin" id="t-fessiers300">
+    <div class="temoin-tete"><h3>Fessiers 300</h3><span class="acces plus">Vaiiya+</span><span class="meta"><span class="duree">22 min</span><span>Intermédiaire</span><span class="fmt">Séries longues</span><span>Sans matériel</span></span></div>
+    <div class="tableau"><table>
+      <thead><tr><th>Mouvement</th><th class="n">Séries</th><th>Répétitions</th><th>Repos</th><th>Le geste</th></tr></thead>
+      <tbody>
+        <tr><td>Cercles de hanches</td><td class="n">1</td><td>8 par sens</td><td></td><td>Grands cercles lents, le buste reste fixe.</td></tr>
+        <tr><td>Pont fessier</td><td class="n">3</td><td class="mono">30</td><td>30 s</td><td>Pousse dans les talons et serre une seconde en haut.</td></tr>
+        <tr><td>Squat</td><td class="n">3</td><td class="mono">20</td><td>30 s</td><td>Descends tant que le dos reste droit, talons au sol.</td></tr>
+        <tr><td>Donkey kick</td><td class="n">3</td><td>15 par côté</td><td>30 s</td><td>Genou plié à angle droit, le talon monte vers le plafond sans creuser le dos.</td></tr>
+        <tr><td>Fentes</td><td class="n">3</td><td>10 par jambe</td><td>30 s</td><td>Un grand pas, le genou arrière frôle le sol.</td></tr>
+        <tr><td>Pigeon</td><td class="n">1</td><td>40 s par côté</td><td></td><td>Retour au calme.</td></tr>
+      </tbody>
+    </table></div>
+    <div class="trois">
+      <div><h4>Pourquoi ces chiffres</h4><p>Séries longues et repos courts. Le muscle se développe aussi à 20 ou 30 répétitions si les dernières sont vraiment difficiles. 300 répétitions en tout. <a class="ref" href="#src-schoenfeld2021">Schoenfeld 2021</a></p></div>
+      <div><h4>La fois suivante</h4><p>Cinq répétitions de plus par série. Quand le pont sur une jambe sera dessiné, il remplacera le pont classique.</p></div>
+      <div><h4>Dans le lecteur</h4><p>Faisable aujourd’hui : les six mouvements sont animés.</p></div>
+    </div>
+  </article>
+
+  <article class="temoin" id="t-cinqcinq">
+    <div class="temoin-tete"><h3>Le 5 × 5 de la salle</h3><span class="acces plus">Vaiiya+</span><span class="meta"><span class="duree">50 min</span><span>Intermédiaire</span><span class="fmt">Force</span><span>Salle</span></span></div>
+    <div class="tableau"><table>
+      <thead><tr><th>Mouvement</th><th class="n">Séries</th><th>Répétitions</th><th>Repos</th><th>Le geste</th></tr></thead>
+      <tbody>
+        <tr><td>Rameur</td><td class="n">1</td><td>5 min faciles</td><td></td><td>Échauffement : on doit pouvoir parler.</td></tr>
+        <tr><td>Squat barre</td><td class="n">5</td><td class="mono">5</td><td>2 min 30</td><td>Une charge que tu pourrais soulever 7 fois : tu t’arrêtes à 5.</td></tr>
+        <tr><td>Développé couché</td><td class="n">5</td><td class="mono">5</td><td>2 min 30</td><td>Omoplates serrées, pieds ancrés, la barre touche le bas des pectoraux.</td></tr>
+        <tr><td>Rowing barre</td><td class="n">5</td><td class="mono">5</td><td>2 min</td><td>Buste penché, dos plat, la barre monte vers le nombril.</td></tr>
+        <tr><td>Gainage</td><td class="n">2</td><td>45 s</td><td>45 s</td><td>Pour finir sur une tenue.</td></tr>
+      </tbody>
+    </table></div>
+    <div class="trois">
+      <div><h4>Pourquoi ces chiffres</h4><p>La force progresse mieux avec des charges lourdes : de 1 à 6 répétitions pour qui s’entraîne déjà. Le repos est long pour que la cinquième série soit aussi propre que la première. <a class="ref" href="#src-acsm2009">ACSM 2009</a></p></div>
+      <div><h4>La fois suivante</h4><p>Si les 25 répétitions d’un exercice passent proprement, 2,5 kg de plus. Sinon, la même charge.</p></div>
+      <div><h4>Dans le lecteur</h4><p>Faisable aujourd’hui : la charge se règle déjà pendant la séance.</p></div>
+    </div>
+  </article>
+
+  <article class="temoin" id="t-emom">
+    <div class="temoin-tete"><h3>EMOM abdos 12</h3><span class="acces plus">Vaiiya+</span><span class="meta"><span class="duree">12 min</span><span>Intermédiaire</span><span class="fmt">EMOM</span><span>Sans matériel</span></span></div>
+    <div class="tableau"><table>
+      <thead><tr><th>Minute</th><th>Mouvement</th><th>À faire</th><th>Le geste</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">1</td><td>Crunch</td><td class="mono">15</td><td>Expire en montant, les mains ne tirent pas la tête.</td></tr>
+        <tr><td class="mono">2</td><td>Gainage</td><td>30 s</td><td>Sur les avant-bras, le corps en ligne.</td></tr>
+        <tr><td class="mono">3</td><td>Russian twist</td><td>20 (10 par côté)</td><td>Pieds au sol si le dos s’arrondit.</td></tr>
+        <tr><td colspan="4">On recommence : 4 tours, 12 minutes.</td></tr>
+      </tbody>
+    </table></div>
+    <div class="trois">
+      <div><h4>Pourquoi ces chiffres</h4><p>L’horloge fixe le rythme : plus tu vas vite, plus il te reste de repos dans la minute. En tout : 60 crunchs, 2 minutes de gainage, 80 twists.</p></div>
+      <div><h4>La fois suivante</h4><p>18 crunchs, 40 s de gainage, 24 twists.</p></div>
+      <div><h4>Dans le lecteur</h4><p>Faisable aujourd’hui en douze efforts chronométrés d’une minute.</p></div>
+    </div>
+  </article>
+
+  <article class="temoin" id="t-dos">
+    <div class="temoin-tete"><h3>Dos qui tire : bouger quand même</h3><span class="acces">Gratuit</span><span class="meta"><span class="duree">15 min</span><span>Débutant</span><span class="fmt">Douce</span><span>Sans matériel</span></span></div>
+    <p class="alerte"><b>Pas de séance, et un médecin d’abord</b>, si la douleur augmente même au repos, si des signes s’étendent dans une jambe (faiblesse, perte de sensibilité), en cas de troubles urinaires, de fièvre, de perte de poids inexpliquée, ou après une chute ou un choc important. <a class="ref" href="#src-has2019">HAS 2019</a></p>
+    <div class="tableau"><table>
+      <thead><tr><th>Mouvement</th><th class="n">Séries</th><th>Répétitions</th><th>Repos</th><th>Le geste</th></tr></thead>
+      <tbody>
+        <tr><td>Cat-cow</td><td class="n">1</td><td>8 respirations</td><td></td><td>Enroule puis creuse lentement, au rythme du souffle.</td></tr>
+        <tr><td>Bird dog</td><td class="n">3</td><td>6 par côté</td><td>30 s</td><td>Bras et jambe opposés, dos plat, 2 secondes en extension.</td></tr>
+        <tr><td>Dead bug</td><td class="n">3</td><td>6 par côté</td><td>30 s</td><td>Le bas du dos reste posé au sol.</td></tr>
+        <tr><td>Pont fessier</td><td class="n">3</td><td class="mono">10</td><td>30 s</td><td>Monte jusqu’à l’alignement épaules, hanches, genoux, pas plus haut.</td></tr>
+        <tr><td>Planche latérale</td><td class="n">2</td><td>20 s par côté, genoux au sol</td><td>30 s</td><td>Le bassin reste haut.</td></tr>
+        <tr><td>Posture de l’enfant</td><td class="n">1</td><td>60 s</td><td></td><td>Respire dans le dos.</td></tr>
+      </tbody>
+    </table></div>
+    <div class="trois">
+      <div><h4>Pourquoi ces gestes</h4><p>Pour la lombalgie commune, la HAS fait de l’exercice le traitement principal, avec une activité progressive et fractionnée. Ici tout est lent, sans charge ni à-coups.</p></div>
+      <div><h4>Pendant la séance</h4><p>Une gêne qui reste stable : on continue. Une douleur qui monte : on arrête.</p></div>
+      <div><h4>Dans le lecteur</h4><p>Faisable aujourd’hui : les six mouvements sont animés.</p></div>
+    </div>
+  </article>
+
+  <article class="temoin" id="t-decompte">
+    <div class="temoin-tete"><h3>Le Décompte</h3><span class="acces">Gratuit</span><span class="meta"><span class="duree">12 min environ</span><span>Intermédiaire</span><span class="fmt">Classique</span><span>Sans matériel</span></span></div>
+    <div class="tableau"><table>
+      <thead><tr><th>Bloc</th><th>Mouvements</th><th>À faire</th></tr></thead>
+      <tbody>
+        <tr><td>Échauffement</td><td>Jumping jacks, puis squat</td><td>45 s, puis 10</td></tr>
+        <tr><td>Le Décompte</td><td>Burpees, puis squat</td><td class="mono">10+10 · 9+9 · 8+8 · 7+7 · 6+6 · 5+5 · 4+4 · 3+3 · 2+2 · 1+1</td></tr>
+        <tr><td>Score</td><td colspan="2">Le temps, du premier burpee au dernier squat.</td></tr>
+      </tbody>
+    </table></div>
+    <div class="trois">
+      <div><h4>Pourquoi ces chiffres</h4><p>Un classique se refait à l’identique : 55 burpees et 55 squats, et le temps devient la référence.</p></div>
+      <div><h4>La fois suivante</h4><p>Dans quatre semaines. Plus facile : burpees sans saut. Plus dur : départ à 15.</p></div>
+      <div><h4>Dans le lecteur</h4><p>En partie : les vingt efforts s’enchaînent, mais le temps final ne s’enregistre pas encore comme un record.</p></div>
+    </div>
+  </article>
+
+  <article class="temoin" id="t-reveil">
+    <div class="temoin-tete"><h3>Réveil en 5 minutes</h3><span class="acces">Gratuit</span><span class="meta"><span class="duree">5 min</span><span>Débutant</span><span class="fmt">Routine</span><span>Sans matériel</span></span></div>
+    <div class="tableau"><table>
+      <thead><tr><th>Mouvement</th><th>Durée</th><th>Le geste</th></tr></thead>
+      <tbody>
+        <tr><td>Cat-cow</td><td>6 respirations</td><td>Lentement, sans forcer.</td></tr>
+        <tr><td>Cercles de hanches</td><td>8 par sens</td><td>Grands cercles, mains sur les hanches.</td></tr>
+        <tr><td>World’s greatest stretch</td><td>4 par côté</td><td>Fente, une main au sol, le buste tourne vers le plafond.</td></tr>
+        <tr><td>Squat</td><td class="mono">10</td><td>Lent, pour réveiller les jambes.</td></tr>
+        <tr><td>Jumping jacks</td><td>30 s</td><td>Ou des montées de genoux, sans saut.</td></tr>
+        <tr><td>Ouverture des épaules</td><td>30 s</td><td>Grands cercles des bras.</td></tr>
+      </tbody>
+    </table></div>
+    <div class="trois">
+      <div><h4>Pourquoi ces gestes</h4><p>Six mouvements enchaînés sans repos, du sol jusqu’à debout.</p></div>
+      <div><h4>La fois suivante</h4><p>La même chose : une routine se répète, elle ne se complique pas.</p></div>
+      <div><h4>Dans le lecteur</h4><p>Faisable aujourd’hui.</p></div>
+    </div>
+  </article>
+</section>
+
+<section id="programmes">
+  <h2>Les programmes</h2>
+  <div class="lecture">
+    <p>Un programme, c’est une suite de séances de la banque sur plusieurs semaines, qui monte marche par marche. C’est ce que FizzUp vend en premier. Le moteur de programme de Vaiiya existe déjà (le cycle, les étapes, les dates) ; il lui manque de savoir faire d’une étape une séance du catalogue, et de faire évoluer cette séance de semaine en semaine.</p>
+  </div>
+  <div class="tableau">
+    <table class="min-w">
+      <thead><tr><th>Programme</th><th>Accès</th><th class="n">Semaines</th><th>Rythme</th><th>Avec les séances</th><th>Pourquoi</th></tr></thead>
+      <tbody id="table-programmes"></tbody>
+    </table>
+  </div>
+  <div class="lecture"><p class="note">À noter : le positionnement public dit aujourd’hui que le Guide ne fait pas de programme sur plusieurs semaines. Ces programmes sont écrits par Vaiiya, pas générés par le Guide ; le paragraphe sera à mettre à jour le jour où ils existent.</p></div>
+</section>
+
+<section id="existant">
+  <h2>Ce qui change dans l’existant</h2>
+  <div class="lecture">
+    <h3>1. La séance du jour sort du 3 × 12</h3>
+    <p>Deux changements dans la composition des étapes du programme. D’abord, les chiffres suivent le rôle de l’exercice : un exercice repère entre 6 et 10, un complémentaire entre 10 et 15, une isolation entre 12 et 20, un exercice sur une jambe par jambe, le gainage en secondes. Ensuite, les occurrences d’une même étape tournent entre trois versions : lourd, volume, endurance. On retrouve la même version une fois sur trois, donc les comparaisons de progrès restent faites « à prescription égale », comme le prévoit déjà le moteur.</p>
+    <p>Exemple, la séance Push à la maison : lourd (pompes 5 × 5, pike push-ups 4 × 6, dips 3 × 10, pompes inclinées 2 × 15, gainage 3 × 40 s), volume (pompes 4 × 10, pike push-ups 3 × 8, dips 3 × 12, pompes diamant 3 × 8, pompes inclinées 2 × 15), endurance (3 tours : pompes 15, pike push-ups 10, dips 20, pompes inclinées 20, gainage 40 s). Pour un débutant, les pompes diamant laissent la place aux pompes inclinées.</p>
+    <p class="note">Ça touche <span class="mono">banqueEtapes.ts</span> (la fourchette et la version de composition) et la décision 47 du planning. Un modèle déjà écrit ne bouge pas : seules les nouvelles occurrences changent.</p>
+    <h3>2. Onze séances du catalogue revues</h3>
+  </div>
+  <div class="tableau">
+    <table class="min-w">
+      <thead><tr><th>Séance</th><th>Aujourd’hui</th><th>Proposé</th></tr></thead>
+      <tbody>
+        <tr><td><b>Force Haut du Corps</b> · gratuite</td><td class="avant">Développé couché 4 × 8 · rowing barre 3 × 12 · curl 3 × 12</td><td>Développé couché 5 × 5 · tractions 5 × 3 à 5 · rowing barre 4 × 6 · élévations 2 × 20 · curl 2 × 12</td></tr>
+        <tr><td><b>Jambes &amp; Fessiers</b> · gratuite</td><td class="avant">Squat barre 4 × 10 · presse 3 × 15 · hip thrust 4 × 12</td><td>Squat barre 5 × 5 · presse 3 × 20 · hip thrust 4 × 8 · mollets 3 × 25</td></tr>
+        <tr><td><b>Full Body Intermédiaire</b></td><td class="avant">Squats sautés 4 × 12 · pompes 4 × 12 · fentes 3 × 12 · V-ups 3 × 12</td><td>Squats sautés 4 × 8 · pompes 4 × (max moins 2) · fentes 3 × 10 · V-ups 3 × 10</td></tr>
+        <tr><td><b>Dos &amp; Biceps</b></td><td class="avant">Rowing barre 4 × 10 · curl barre 3 × 12 · curl marteau 3 × 12</td><td>Rowing barre 4 × 6 · curl barre en 21 · curl marteau 2 × 15</td></tr>
+        <tr><td><b>Haut du corps en salle</b></td><td class="avant">Développé couché 4 × 8 · écarté 3 × 12</td><td>Développé couché 5 × 5 · écarté 2 × 20</td></tr>
+        <tr><td><b>Push, pectoraux et épaules</b></td><td class="avant">Développé couché 4 × 8 · élévations 3 × 15 · extension triceps 3 × 12</td><td>Développé couché 4 × 6 · élévations en 21 · extension triceps 3 × 15 · dips 2 × max</td></tr>
+        <tr><td><b>Jambes, dominante quadriceps</b></td><td class="avant">Squat barre 4 × 8 · presse 4 × 12 · leg extension 3 × 15</td><td>Squat barre 4 × 6 · presse 3 × 20 · leg extension 2 × 25</td></tr>
+        <tr><td><b>Chaîne postérieure</b></td><td class="avant">Soulevé de terre roumain 4 × 10 · pont fessier 3 × 15 · kickback 3 × 15</td><td>Soulevé de terre roumain 4 × 6 · pont fessier 2 × 30 · kickback 2 × 20</td></tr>
+        <tr><td><b>Épaules &amp; bras</b></td><td class="avant">Élévations 4 × 15 · curl EZ 3 × 10 · extension poulie 3 × 12</td><td>Élévations 3 × 20 · curl EZ 4 × 6 · extension poulie 2 × 20</td></tr>
+        <tr><td><b>Full Body Machines</b></td><td class="avant">8 machines, 3 ou 4 séries de 10 à 15</td><td>Les mêmes machines en circuit de 3 tours</td></tr>
+        <tr><td><b>Core &amp; Gainage</b></td><td class="avant">8 exercices × 3 séries</td><td>Le même contenu en circuit de 3 tours</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="lecture">
+    <p class="note">« Découverte des machines » garde ses 3 × 12 : pour une première fois, une charge qu’on soulève une douzaine de fois sert à trouver ses réglages, c’est la décision 50 du planning. La collection « Défis » devient « Les classiques ».</p>
+  </div>
+</section>
+
+<section id="mouvements">
+  <h2>Les mouvements à dessiner</h2>
+  <div class="lecture"><p>Ils sont classés en huit planches thématiques, avec le nombre de nouvelles séances que chaque pack débloque. Un mouvement manquant ne bloque que sa séance : tout le reste se fait avec les 102 mouvements actuels.</p></div>
+  <div class="packs" id="packs"></div>
+</section>
+
+<section id="lecteur">
+  <h2>Ce que le lecteur de séance doit apprendre</h2>
+  <div class="tableau">
+    <table class="min-w">
+      <thead><tr><th>Capacité</th><th>Pour quels formats</th><th>Aujourd’hui</th><th>Travail</th></tr></thead>
+      <tbody>
+        <tr><td><b>Des répétitions différentes à chaque série</b></td><td>Pyramides, échelles, descentes</td><td>Une ligne par série : ça marche, la barre s’allonge</td><td>Petit</td></tr>
+        <tr><td><b>Les tours</b> (« tour 2 sur 4 »)</td><td>Circuits, supersets, complexes</td><td>Une ligne par passage</td><td>Moyen</td></tr>
+        <tr><td><b>Un chrono pour toute la séance</b>, avec un bouton « un tour de plus »</td><td>AMRAP, EMOM en un seul bloc</td><td>Impossible pour l’AMRAP</td><td>Moyen</td></tr>
+        <tr><td><b>Le score d’une séance</b> (temps, tours) gardé comme un record</td><td>Les classiques</td><td>Les records existent par mouvement, pas par séance</td><td>Moyen</td></tr>
+        <tr><td><b>Les intervalles réglables</b></td><td>40/20, 30/30, 4 × 4</td><td>Déjà possible avec le chrono et le repos</td><td>Aucun</td></tr>
+        <tr><td><b>Dehors</b> (marche, course)</td><td>Marche japonaise, fractionné</td><td>L’écran reste allumé et les sons existent ; il manque les mouvements « Marche » et « Course »</td><td>Deux planches</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="lecture"><p class="note">Attention : <span class="mono">WorkoutGuideModal.tsx</span> est un gros fichier, un seul agent à la fois dessus.</p></div>
+</section>
+
+<section id="offre">
+  <h2>Pourquoi on paierait Vaiiya+</h2>
+  <div class="lecture">
+    <p>Aujourd’hui : 18 séances gratuites et 35 Vaiiya+. Avec la banque proposée : <b data-n="gratuites-total"></b> gratuites et <b data-n="plus-total"></b> Vaiiya+, soit à peu près un tiers et deux tiers, comme la règle actuelle.</p>
+    <h3>Ce qui reste gratuit</h3>
+    <p>De quoi s’entraîner toute l’année, partout : une ou deux séances pour commencer dans chaque zone, les routines courtes (réveil, bureau, après le repas, avant de dormir), une séance par gêne (dos, genoux, poignets), l’échauffement et le retour au calme des sports, « Sept minutes », « Marche japonaise », un classique (« Le Décompte ») et le programme « Reprendre le sport ».</p>
+    <h3>Ce que Vaiiya+ apporte</h3>
+    <ul class="liste">
+      <li><b>La séance exacte</b> : abdos, fessiers, jambes, pectoraux, dos, épaules, bras, chacun du débutant à l’avancé, de 10 à 50 minutes, sans matériel, aux haltères ou à la salle.</li>
+      <li><b>Des formats qui changent</b> : force, séries longues, EMOM, AMRAP, pyramides, supersets, 21, isométrie, tempo.</li>
+      <li><b>Les classiques</b> : des séances fixes qu’on refait pour battre son temps, branchées sur les records.</li>
+      <li><b>Les programmes</b> : <b data-n="programmes-plus"></b> programmes de 4 à 8 semaines (première traction, cent pompes, force, coureur, ski, course hybride…).</li>
+      <li><b>Ton sport</b> : course, foot, vélo, ski, tennis et padel, course hybride, boxe.</li>
+      <li><b>Les jours où ça coince</b> : une gêne, un voyage, une sèche, une mauvaise journée.</li>
+    </ul>
+    <p class="note">Repère de prix : FizzUp coûte 21,99 € par mois ou 79,99 € par an ; Vaiiya+ est à 9,99 € par mois ou 59,99 € par an. La vente reste fermée tant que l’entreprise n’est pas immatriculée.</p>
+  </div>
+</section>
+
+<section id="lots">
+  <h2>L’ordre des lots</h2>
+  <div class="lots">
+    <div class="lot"><span class="num">Lot 0</span><div><p><b>Les fondations</b>, sans nouveau mouvement</p><p class="ce">La séance du jour sort du 3 × 12 · les onze séances revues · les six séances écrites ci-dessus.</p></div></div>
+    <div class="lot"><span class="num">Lot 1</span><div><p><b>Les zones</b></p><p class="ce">Abdos, fessiers, jambes, pectoraux, dos, épaules, bras : la grande majorité se fait avec les mouvements actuels.</p></div></div>
+    <div class="lot"><span class="num">Lot 2</span><div><p><b>Les formats et les classiques</b></p><p class="ce">Avec le lecteur qui apprend les séries variables, les tours, le chrono global et le score.</p></div></div>
+    <div class="lot"><span class="num">Lot 3</span><div><p><b>Les routines et les jours sans</b></p><p class="ce">Des séances courtes, surtout gratuites : de quoi ouvrir Vaiiya chaque jour.</p></div></div>
+    <div class="lot"><span class="num">Lot 4</span><div><p><b>Les sports</b></p><p class="ce">Course, foot, vélo, ski, tennis et padel, avec le pack « Coureur et terrain ».</p></div></div>
+    <div class="lot"><span class="num">Lot 5</span><div><p><b>Avec une gêne</b></p><p class="ce">Dos, genoux, épaule, poignets, cheville, un membre au repos ; relecture recommandée par un kiné.</p></div></div>
+    <div class="lot"><span class="num">Lot 6</span><div><p><b>Le matériel</b></p><p class="ce">Haltères à la maison, élastique, kettlebell.</p></div></div>
+    <div class="lot"><span class="num">Lot 7</span><div><p><b>Les programmes</b></p><p class="ce">Le moteur de programme apprend à suivre des séances du catalogue, semaine après semaine.</p></div></div>
+    <div class="lot"><span class="num">Plus tard</span><div><p><b>Hybride complet, boxe, 50 ans et plus</b></p><p class="ce">Ils demandent les packs de mouvements les plus spécifiques.</p></div></div>
+  </div>
+</section>
+
+<section id="trancher">
+  <h2>À trancher</h2>
+  <div class="decisions">
+    <div class="decision"><p>La séance du jour : rotation lourd, volume, endurance, et des chiffres selon le rôle de l’exercice et le niveau.</p><p class="reco"><b>Recommandé : oui.</b> C’est ce que tout le monde voit chaque jour, et c’est la vraie cause des 12.</p></div>
+    <div class="decision"><p>L’ordre des lots ci-dessus.</p><p class="reco"><b>Recommandé : oui</b>, en commençant par le lot 0.</p></div>
+    <div class="decision"><p>Les séances « avec une gêne » : relecture par un kiné avant de les publier ?</p><p class="reco"><b>Recommandé : oui.</b> En attendant, elles sont écrites avec les règles de la HAS, une liste de signes qui interdisent la séance et une règle d’arrêt.</p></div>
+    <div class="decision"><p>Grossesse et post-partum.</p><p class="reco"><b>Recommandé : pas dans cette banque.</b> Plus tard, avec une sage-femme ; l’OMS recommande l’activité, mais les contre-indications demandent un professionnel.</p></div>
+    <div class="decision"><p>Le ramadan : un moment de l’année avec deux séances (avant la rupture du jeûne, après le repas) ?</p><p class="reco"><b>Recommandé : oui</b>, comme les moments de la nutrition, après lecture des sources sur le sport pendant le jeûne.</p></div>
+    <div class="decision"><p>Le nom « Hybride » plutôt que la marque Hyrox dans les titres.</p><p class="reco"><b>Recommandé : oui.</b> La marque peut apparaître dans le texte pour dire de quoi on parle.</p></div>
+    <div class="decision"><p>Le partage gratuit et Vaiiya+, avec les routines et une séance par gêne en gratuit.</p><p class="reco"><b>Recommandé : oui.</b></p></div>
+    <div class="decision"><p>Par quelles planches commencer ?</p><p class="reco"><b>Recommandé : « Hanches, fessiers, genoux » puis « Coureur et terrain »</b> : seize mouvements qui débloquent quatorze séances, sur les deux demandes les plus fortes (les fessiers, la course).</p></div>
+    <div class="decision"><p>Avec près de 190 séances, le catalogue a besoin d’un écran « Trouver ma séance » (durée, matériel, zone, niveau, format, gêne).</p><p class="reco"><b>Recommandé : une maquette d’abord</b>, avant le lot 1.</p></div>
+  </div>
+</section>
+
+<section id="sources">
+  <h2>Sources</h2>
+  <div class="lecture"><p class="note">Lues le 27 octobre 2026, sauf mention. Les études ont été lues par leur résumé original (Europe PMC) ou leur texte complet ; aucun chiffre ne vient d’un résumé de moteur de recherche.</p></div>
+  <ol class="sources" id="liste-sources"></ol>
+</section>
+
+</main>
+
+<script>
+/* ═══ Les données ═══ */
+const COLLECTIONS = [
+  { id: "abdos", nom: "Abdos & gainage", famille: "zone", existantes: 2 },
+  { id: "fessiers", nom: "Fessiers", famille: "zone" },
+  { id: "jambes", nom: "Jambes", famille: "zone", existantes: 8 },
+  { id: "pecs", nom: "Pectoraux", famille: "zone" },
+  { id: "dos", nom: "Dos", famille: "zone" },
+  { id: "epaules", nom: "Épaules", famille: "zone" },
+  { id: "bras", nom: "Bras", famille: "zone" },
+  { id: "haut", nom: "Haut du corps", famille: "zone", existantes: 10 },
+  { id: "fullbody", nom: "Corps entier", famille: "zone", existantes: 12 },
+  { id: "f-force", nom: "Force : séries courtes", famille: "format" },
+  { id: "f-endu", nom: "Séries longues", famille: "format" },
+  { id: "f-circuit", nom: "Circuits et complexes", famille: "format" },
+  { id: "f-emom", nom: "EMOM et AMRAP", famille: "format" },
+  { id: "f-inter", nom: "Intervalles", famille: "format" },
+  { id: "f-iso", nom: "Isométrie", famille: "format" },
+  { id: "f-tempo", nom: "Tempo", famille: "format", existantes: 1 },
+  { id: "f-classiques", nom: "Les classiques", famille: "format", existantes: 2 },
+  { id: "course", nom: "Course à pied", famille: "sport" },
+  { id: "foot", nom: "Football", famille: "sport" },
+  { id: "velo", nom: "Vélo", famille: "sport" },
+  { id: "ski", nom: "Ski et montagne", famille: "sport" },
+  { id: "raquette", nom: "Tennis et padel", famille: "sport" },
+  { id: "hybride", nom: "Course hybride", famille: "sport" },
+  { id: "boxe", nom: "Boxe", famille: "sport" },
+  { id: "sansmat", nom: "Sans matériel", famille: "terrain", existantes: 16 },
+  { id: "halteres", nom: "Haltères à la maison", famille: "terrain" },
+  { id: "elastique", nom: "Élastique", famille: "terrain" },
+  { id: "kettlebell", nom: "Kettlebell", famille: "terrain" },
+  { id: "salle", nom: "À la salle", famille: "terrain", existantes: 17 },
+  { id: "dehors", nom: "Dehors", famille: "terrain" },
+  { id: "voyage", nom: "En voyage", famille: "terrain" },
+  { id: "routines", nom: "Routines du quotidien", famille: "moment" },
+  { id: "joursans", nom: "Les jours sans", famille: "moment" },
+  { id: "debuter", nom: "Débuter & reprendre", famille: "moment", existantes: 15 },
+  { id: "mobilite", nom: "Mobilité & posture", famille: "moment", existantes: 18 },
+  { id: "recup", nom: "Récupération", famille: "moment", existantes: 9 },
+  { id: "g-dos", nom: "Le dos", famille: "gene" },
+  { id: "g-genou", nom: "Les genoux", famille: "gene" },
+  { id: "g-epaule", nom: "Une épaule", famille: "gene" },
+  { id: "g-poignet", nom: "Les poignets", famille: "gene" },
+  { id: "g-cheville", nom: "Une cheville", famille: "gene" },
+  { id: "g-membre", nom: "Une jambe ou un bras au repos", famille: "gene" },
+  { id: "force", nom: "Devenir plus fort", famille: "objectif" },
+  { id: "muscle", nom: "Prendre du muscle", famille: "objectif", existantes: 10 },
+  { id: "perte", nom: "Perdre du poids", famille: "objectif", existantes: 9 },
+  { id: "cardio", nom: "Cardio & HIIT", famille: "objectif", existantes: 9 },
+  { id: "renfo", nom: "Renfo musculaire", famille: "objectif", existantes: 26 },
+  { id: "tete", nom: "Pour la tête", famille: "objectif" },
+  { id: "express", nom: "Séances express", famille: "objectif", existantes: 15 },
+];
+
+const FAMILLES = [
+  { id: "zone", nom: "Une zone" },
+  { id: "format", nom: "Un format" },
+  { id: "sport", nom: "Un sport" },
+  { id: "terrain", nom: "Un terrain" },
+  { id: "moment", nom: "Un moment" },
+  { id: "gene", nom: "Avec une gêne" },
+  { id: "objectif", nom: "Un objectif" },
+];
+
+const NIVEAU = { D: "Débutant", I: "Intermédiaire", A: "Avancé" };
+
+const SEANCES = [];
+function S(t, col, cols, n, a, d, f, s, m, x, w, src, temoin) {
+  const toutes = [col, ...cols];
+  if (d <= 15 && !toutes.includes("express")) toutes.push("express");
+  SEANCES.push({ t, col, cols: toutes, n, a, d, f, s, m, x: x || [], w, src: src || [], temoin: temoin || null });
+}
+
+/* Une zone */
+S("Abdos en 8 minutes", "abdos", ["sansmat", "f-circuit", "routines"], "D", "G", 8, "Circuit", "2 tours : crunch 15 · dead bug 8 par côté · gainage 30 s · reverse crunch 12 · bird dog 8 par côté", "Sans matériel", [], "Deux tours de cinq exercices, 20 secondes entre chacun.");
+S("Gainage, les bases", "abdos", ["sansmat", "f-iso", "debuter"], "D", "G", 12, "Isométrie", "gainage 20 s, 30 s, 40 s · planche latérale 2 × 20 s par côté · hollow hold 3 × 15 s", "Sans matériel", [], "La tenue gagne 10 secondes à chaque série.");
+S("Abdos sans tirer sur la nuque", "abdos", ["sansmat"], "D", "G", 12, "Séries", "dead bug 3 × 10 par côté · reverse crunch 3 × 12 · gainage 3 × 30 s · bird dog 2 × 8 par côté · planche latérale 2 × 20 s", "Sans matériel", [], "Aucun exercice où les mains tirent la tête : la nuque reste posée ou dans l’axe.");
+S("EMOM abdos 12", "abdos", ["f-emom", "sansmat"], "I", "+", 12, "EMOM", "minute 1 : 15 crunchs · minute 2 : 30 s de gainage · minute 3 : 20 russian twists · 4 tours", "Sans matériel", [], "Chaque minute commence par sa tâche, le reste de la minute sert de repos.", [], "t-emom");
+S("Le tronc dans tous les sens", "abdos", ["sansmat", "renfo"], "I", "+", 20, "Séries", "reverse crunch 3 × 15 · hollow hold 3 × 25 s · russian twist 3 × 20 · planche latérale 3 × 30 s par côté · superman 3 × 15", "Sans matériel", [], "Cinq exercices : enrouler, résister, tourner, tenir sur le côté, redresser.");
+S("Hollow et compagnie", "abdos", ["sansmat", "f-circuit"], "A", "+", 15, "Circuit", "3 tours : hollow hold 30 s · V-ups 12 · relevés de jambes 15 · gainage dynamique 30 s", "Sans matériel", [], "Les positions de la gymnastique, pour qui enchaîne déjà 3 × 20 crunchs.");
+S("L’échelle des abdos", "abdos", ["f-endu", "sansmat"], "I", "+", 15, "Échelle", "sit-ups et reverse crunchs : 2, 4, 6, 8, 10, 8, 6, 4, 2 de chaque", "Sans matériel", [], "On monte puis on redescend : 100 répétitions en neuf marches.");
+S("Le Centurion", "abdos", ["f-classiques", "sansmat"], "I", "+", 12, "Classique", "25 crunchs · 25 bicycle crunchs · 25 reverse crunchs · 25 russian twists, au chrono", "Sans matériel", [], "Un temps à battre, à refaire dans quatre semaines.");
+S("Abdos et souffle", "abdos", ["cardio", "f-inter", "perte"], "I", "+", 20, "Intervalles 40/20", "2 tours : mountain climbers · bicycle crunch · gainage dynamique · burpees · crunch · montées de genoux", "Sans matériel", [], "Le cœur monte pendant que la sangle travaille. Faire des abdos ne fait pas fondre le ventre à cet endroit.", ["vispute2011"]);
+S("Esprit Pilates", "abdos", ["sansmat", "mobilite"], "I", "+", 20, "Lent et contrôlé", "dead bug 3 × 8 par côté · bird dog 3 × 8 par côté · pont fessier 3 × 10 (3 s en haut) · hollow hold 3 × 20 s · planche latérale 2 × 30 s par côté · cat-cow", "Sans matériel", [], "Inspirée du Pilates. Pour le mal de dos, le Pilates aide plus que de ne rien faire, sans faire mieux que les autres exercices.", ["yamato2016"]);
+S("Abdos debout", "abdos", ["sansmat"], "D", "G", 10, "Séries", "crunch debout genou-coude 3 × 12 par côté · rotations du buste 3 × 20 · montées de genoux 3 × 30 s · gainage 2 × 30 s", "Sans matériel", ["Crunch debout", "Rotation du buste debout"], "Pour les jours où l’on ne veut pas aller au sol.");
+S("Abdos de salle", "abdos", ["salle"], "I", "+", 25, "Lourd puis léger", "crunch à la poulie 4 × 10 · relevé de genoux suspendu 3 × 12 · Pallof à la poulie 3 × 10 par côté · extensions lombaires 3 × 15 · gainage 2 × 45 s", "Salle", ["Crunch à la poulie", "Relevé de genoux suspendu", "Pallof press"], "Une charge lourde sur la poulie, puis des séries longues au poids du corps.");
+S("Abdos à l’élastique", "abdos", ["elastique"], "I", "+", 15, "Séries", "Pallof 3 × 12 par côté · bûcheron 3 × 12 par côté · crunch élastique 3 × 15 · dead bug 3 × 10 par côté", "Élastique", ["Pallof press", "Bûcheron", "Crunch élastique"], "L’élastique tire sur le côté : le tronc travaille à ne pas tourner.");
+
+S("Fessiers, l’essentiel", "fessiers", ["sansmat", "debuter"], "D", "G", 15, "Séries", "pont fessier 3 × 15 · donkey kick 2 × 15 par côté · squat 3 × 12 · fentes 2 × 10 par jambe", "Sans matériel", [], "Quatre gestes de base, de quoi travailler les fessiers deux fois par semaine.");
+S("Le pont, quatre façons", "fessiers", ["sansmat", "f-iso"], "D", "G", 12, "Séries", "pont fessier en quatre versions, 2 tours : 10 lents (3 s en haut) · 40 s tenus · 20 pulsations · 15 pieds écartés", "Sans matériel", [], "Un seul mouvement, rendu plus dur par le tempo, la tenue, les pulsations et l’écart des pieds.");
+S("Fessiers 300", "fessiers", ["f-endu", "sansmat"], "I", "+", 22, "Séries longues", "pont fessier 3 × 30 · squat 3 × 20 · donkey kick 3 × 15 par côté · fentes 3 × 10 par jambe · 30 s de repos", "Sans matériel", [], "300 répétitions en séries longues, avec peu de repos.", ["schoenfeld2021"], "t-fessiers300");
+S("Fessiers lourds", "fessiers", ["salle", "f-force", "muscle"], "A", "+", 45, "Lourd puis léger", "hip thrust machine 5 × 6 · soulevé de terre roumain 4 × 8 · squat bulgare 3 × 10 par jambe · abducteurs machine 2 × 20 · kickback poulie 2 × 15 par jambe", "Salle", [], "Lourd en début de séance, séries longues à la fin.", ["schoenfeld2021"]);
+S("Fessiers aux haltères", "fessiers", ["halteres"], "I", "+", 30, "Séries", "soulevé de terre roumain 4 × 10 · squat bulgare 3 × 10 par jambe · pont fessier avec haltère 3 × 15 · goblet squat 3 × 12 · donkey kick 2 × 20 par côté", "Haltères", [], "Deux haltères, et un canapé pour poser le pied arrière du squat bulgare.");
+S("Pyramide fessiers", "fessiers", ["f-endu", "sansmat"], "I", "+", 18, "Pyramide", "pont fessier 10, 15, 20, 25, 20, 15, 10 · squat 5, 10, 15, 20, 15, 10, 5", "Sans matériel", [], "Les séries s’allongent puis raccourcissent : 115 ponts et 80 squats.");
+S("Tabata fessiers", "fessiers", ["f-inter", "sansmat"], "I", "+", 16, "Tabata", "2 blocs de 4 minutes, 20 s d’effort et 10 s de repos : squat et pont fessier, puis fentes alternées et donkey kick", "Sans matériel", [], "Deux blocs de huit intervalles, une minute de pause entre les deux.");
+S("Fessiers et gainage", "fessiers", ["abdos", "f-circuit", "sansmat"], "I", "+", 20, "Circuit", "3 tours : pont fessier 15 · planche latérale 30 s par côté · donkey kick 12 par côté · bird dog 8 par côté · superman 15", "Sans matériel", [], "Les fessiers et le tronc travaillent ensemble à tenir le bassin.");
+S("Fessiers au mini-élastique", "fessiers", ["elastique", "f-circuit"], "I", "+", 15, "Circuit", "3 tours : marche latérale 12 par côté · clamshell 15 par côté · pont fessier élastique aux genoux 20 · kickback élastique 12 par jambe", "Élastique", ["Marche latérale élastique", "Clamshell", "Kickback élastique"], "Le mini-élastique autour des genoux fait travailler le côté de la hanche.");
+S("Le côté de la hanche", "fessiers", ["sansmat", "course"], "D", "+", 15, "Séries", "clamshell 3 × 15 par côté · abduction allongée 3 × 15 par côté · fire hydrant 2 × 12 par côté · fente latérale 3 × 8 par côté · pont fessier 2 × 15", "Sans matériel", ["Clamshell", "Abduction allongée", "Fire hydrant", "Fente latérale"], "Le moyen fessier tient le bassin à chaque pas ; on le travaille couché, à quatre pattes et debout.");
+
+S("Jambes en 10 minutes", "jambes", ["sansmat", "routines"], "D", "G", 10, "Séries", "squat 3 × 15 · fentes 2 × 10 par jambe · chaise au mur 2 × 40 s · mollets 2 × 25", "Sans matériel", [], "Quatre exercices, 30 secondes de repos.");
+S("L’escalier du squat", "jambes", ["f-endu", "sansmat"], "I", "+", 15, "Échelle", "squat : 1, 2, 3… jusqu’à 15, 15 s de repos par marche", "Sans matériel", [], "120 squats rangés en quinze marches.");
+S("Jambes, la force sans matériel", "jambes", ["f-force", "sansmat", "force"], "A", "+", 30, "Force", "squat bulgare 5 × 5 par jambe (3 s de descente) · squats sautés 4 × 5 · chaise au mur 3 × 60 s · fentes lentes 3 × 8 par jambe", "Sans matériel", [], "Peu de répétitions sur des variantes dures, 90 secondes de repos.");
+S("Le 5 × 5 des jambes", "jambes", ["f-force", "salle", "force"], "A", "+", 50, "Force", "squat barre 5 × 5 (repos 2 à 3 min) · presse 3 × 10 · leg curl allongé 3 × 12 · leg extension 2 × 20 · mollets assis 3 × 15", "Salle", [], "Cinq séries de cinq sur le squat, puis le volume sur machines.", ["acsm2009"]);
+S("Cuisses 20-20-20", "jambes", ["f-endu", "sansmat"], "I", "+", 20, "Circuit", "3 tours : squat 20 · fentes 20 (10 par jambe) · step up 20 (10 par jambe)", "Sans matériel", [], "Soixante répétitions par tour, une minute entre les tours.");
+S("Ischios, les oubliés", "jambes", ["salle", "foot"], "I", "+", 35, "Séries", "soulevé de terre roumain 4 × 8 · leg curl allongé 3 × 10 · leg curl assis 3 × 15 · Nordic 3 × 4 · pont fessier 2 × 20", "Salle", ["Nordic"], "L’arrière de la cuisse, souvent moins travaillé que l’avant.");
+S("Mollets et chevilles", "jambes", ["course", "g-cheville"], "D", "+", 12, "Séries", "mollets 3 × 20 (3 s de descente) · mollet sur une jambe 2 × 12 par jambe · équilibre sur une jambe 3 × 30 s par jambe · étirement mollet au mur", "Sans matériel", ["Mollet une jambe", "Équilibre sur une jambe"], "Le bas de la jambe porte tout le corps à chaque pas.");
+S("Jambes et cardio", "jambes", ["cardio", "f-circuit", "sansmat"], "I", "+", 25, "Circuit", "4 tours : squats sautés 10 · fentes sautées 8 par jambe · skaters 30 s · chaise au mur 40 s · box jump 6", "Sans matériel", [], "Puissance et souffle ; une variante sans saut est donnée pour chaque exercice.");
+
+S("Pecs à la maison", "pecs", ["sansmat", "haut"], "D", "G", 15, "Séries", "pompes inclinées 3 × 12 · pompes 3 × (max moins 2) · pompes diamant 2 × 6 · gainage 2 × 30 s", "Sans matériel", [], "« Max moins 2 » : s’arrêter deux répétitions avant de ne plus pouvoir.", ["refalo2023"]);
+S("La pyramide de pompes", "pecs", ["f-endu", "sansmat"], "I", "+", 15, "Pyramide", "pompes : 1, 2, 3… 8, puis 7, 6… jusqu’à 1", "Sans matériel", [], "64 pompes en quinze séries ; le repos dure le temps de la série d’avant.");
+S("Cent pompes", "pecs", ["f-emom", "sansmat"], "I", "+", 10, "EMOM", "10 pompes au début de chaque minute, pendant 10 minutes", "Sans matériel", [], "Cent pompes, dix par minute ; pompes inclinées dès que la minute devient trop courte.");
+S("Pecs lourds", "pecs", ["salle", "f-force", "muscle"], "A", "+", 45, "Lourd puis léger", "développé couché 5 × 5 · développé incliné haltères 4 × 8 · écarté à la poulie 3 × 15 · pompes 2 × max", "Salle", [], "Charge lourde d’abord, séries longues ensuite.", ["schoenfeld2021"]);
+S("Pecs aux haltères", "pecs", ["halteres"], "I", "+", 30, "Séries", "développé couché haltères 4 × 10 · développé incliné haltères 3 × 12 · pullover haltère 3 × 12 · pompes 2 × 15", "Haltères", [], "Un banc, ou le sol pour le développé couché.");
+S("Pecs et triceps en supersets", "pecs", ["bras", "salle"], "I", "+", 35, "Supersets", "3 tours de chaque duo : développé couché haltères 8 + pompes diamant 8 · écarté poulie 12 + extension triceps poulie 12 · pec deck 15 + dips machine 12", "Salle", [], "Deux exercices enchaînés, repos après le duo : plus de travail dans le même temps.");
+
+S("Dos et posture à la maison", "dos", ["sansmat", "mobilite"], "D", "G", 15, "Séries", "superman 3 × 15 · bird dog 3 × 8 par côté · cat-cow 2 × 40 s · thread the needle 2 × 8 par côté", "Sans matériel", [], "Sans barre ni élastique, le dos se travaille en extension et en rotation.");
+S("Dos large", "dos", ["salle", "muscle"], "I", "+", 40, "Séries", "tirage poitrine 4 × 8 · rowing assis poulie 4 × 10 · pullover haltère 3 × 12 · face pull 3 × 15 · tractions 2 × max", "Salle", [], "Tirages vertical et horizontal, du plus lourd au plus léger.");
+S("Dos aux haltères", "dos", ["halteres"], "I", "+", 30, "Séries", "rowing haltère 4 × 10 par bras · rowing buste penché 3 × 12 · pullover haltère 3 × 12 · oiseau 3 × 15 · superman 2 × 15", "Haltères", [], "Tout le dos avec une paire d’haltères.");
+S("Soulevé de terre, la force", "dos", ["f-force", "salle", "force"], "A", "+", 45, "Force", "soulevé de terre classique 5 × 3 · rowing barre 4 × 6 · extensions lombaires 3 × 12 · face pull 3 × 15", "Salle", [], "Trois répétitions par série : la charge monte, la technique reste propre.", ["acsm2009"]);
+
+S("Épaules, le volume", "epaules", ["halteres", "muscle"], "I", "+", 35, "Séries et 21", "développé militaire haltères 4 × 8 · élévations latérales en 21, 3 séries · oiseau 3 × 15 · face pull 3 × 15 · développé Arnold 2 × 10", "Haltères ou salle", [], "En 21 : 7 répétitions sur le bas du mouvement, 7 sur le haut, 7 complètes.");
+S("Épaules sans matériel", "epaules", ["sansmat"], "I", "+", 20, "Séries", "pike push-ups 4 × 6 · pompes 3 × 10 · bear crawl 3 × 30 s · gainage dynamique 3 × 30 s", "Sans matériel", [], "Le poids du corps porté par les mains.");
+S("Cent élévations", "epaules", ["f-endu", "halteres"], "I", "+", 10, "Séries longues", "élévations latérales : 100 répétitions en séries libres, charge légère", "Haltères", [], "Dix minutes pour finir une séance d’épaules.");
+S("Épaules entretenues", "epaules", ["salle", "g-epaule"], "D", "+", 25, "Séries", "face pull 3 × 15 · rotation externe à la poulie 3 × 12 par bras · oiseau 3 × 15 · développé épaules machine 3 × 10 · ouverture des épaules 2 × 30 s", "Salle", ["Rotation externe"], "L’arrière de l’épaule et ses rotateurs, avant de pousser lourd.");
+
+S("Bras sans matériel", "bras", ["sansmat"], "D", "G", 15, "Séries", "dips sur chaise 3 × 12 · pompes diamant 3 × 6 · pompes inclinées mains serrées 3 × 12 · gainage 2 × 30 s", "Sans matériel", [], "Surtout les triceps : les biceps ont besoin d’une charge à tirer.");
+S("Les 21", "bras", ["halteres", "muscle"], "I", "+", 25, "21", "curl haltères en 21, 3 séries · extension triceps haltère 3 × 12 · curl marteau 3 × 15 · dips sur chaise 2 × max", "Haltères", [], "7 en bas, 7 en haut, 7 complètes : 21 répétitions sans pause.");
+S("Bras en supersets", "bras", ["salle"], "I", "+", 30, "Supersets", "3 tours de chaque duo : curl barre EZ 10 + extension triceps poulie 12 · curl marteau 12 + dips machine 12 · curl haltères 15 + extension triceps haltère 15", "Salle", [], "Biceps puis triceps sans pause, repos après le duo.");
+S("Bras en 10 minutes", "bras", ["f-emom", "halteres"], "I", "+", 10, "EMOM", "minutes impaires : 10 curls · minutes paires : 12 extensions triceps · 10 minutes", "Haltères", [], "Cinq séries de chaque, réglées par l’horloge.");
+S("Bras lourds", "bras", ["f-force", "salle"], "A", "+", 40, "Force", "dips barres parallèles 5 × 5 · curl barre EZ 5 × 6 · extension triceps poulie 3 × 12 · curl marteau 3 × 12", "Salle", [], "Peu de répétitions d’abord, des séries plus longues ensuite.");
+
+S("Haut du corps en circuit", "haut", ["f-circuit", "sansmat"], "I", "+", 25, "Circuit", "4 tours : pompes 10 · pike push-ups 8 · dips sur chaise 12 · bear crawl 30 s · superman 15", "Sans matériel", [], "Cinq exercices sans pause, 90 secondes entre les tours.");
+S("30-20-10", "fullbody", ["f-endu", "sansmat"], "I", "+", 25, "Descente", "squat, pompes inclinées, crunch, fentes : 30 de chaque, puis 20, puis 10", "Sans matériel", [], "240 répétitions, en séries de plus en plus courtes.");
+S("Lourd puis léger", "fullbody", ["salle", "muscle"], "I", "+", 45, "Lourd puis léger", "squat barre 4 × 6 · développé couché 4 × 6 · rowing barre 4 × 8 · puis 2 tours : goblet squat 20 · pompes 15 · kettlebell swing 20", "Salle", [], "Le corps entier, dans deux zones de répétitions.", ["schoenfeld2021"]);
+S("Sept minutes", "fullbody", ["f-classiques", "routines", "sansmat"], "D", "G", 8, "Circuit 30/10", "12 exercices de 30 s, 10 s pour changer : jumping jacks · chaise au mur · pompes · crunch · step up · squat · dips sur chaise · gainage · montées de genoux · fentes · pompes · planche latérale", "Sans matériel", [], "Le circuit de douze exercices de 30 secondes devenu célèbre en 2013.");
+
+/* Un format */
+S("Le 5 × 5 de la salle", "f-force", ["salle", "force", "fullbody"], "I", "+", 50, "Force", "squat barre 5 × 5 · développé couché 5 × 5 · rowing barre 5 × 5 · gainage 2 × 45 s · 2 à 3 min de repos", "Salle", [], "Trois mouvements, cinq séries de cinq ; 2,5 kg de plus quand toutes les répétitions passent.", ["acsm2009"], "t-cinqcinq");
+S("La force aux haltères", "f-force", ["halteres", "force"], "I", "+", 40, "Force", "goblet squat 5 × 6 · développé couché haltères 5 × 6 · rowing haltère 5 × 6 par bras · développé militaire 4 × 6", "Haltères", [], "Des haltères assez lourds pour s’arrêter à 6 avec une ou deux répétitions de marge.", ["refalo2023"]);
+S("La force sans matériel", "f-force", ["sansmat", "force"], "A", "+", 30, "Force", "pompes explosives 5 × 5 · squat bulgare 5 × 5 par jambe · pike push-ups 5 × 5 · hollow hold 4 × 20 s", "Sans matériel", [], "Des variantes difficiles pour rester sous six répétitions.");
+S("Le grand 20", "f-endu", ["sansmat", "fullbody"], "I", "+", 25, "Séries longues", "2 × 20 : squat · pompes inclinées · fentes (10 par jambe) · crunch · pont fessier · jumping jacks (40 s)", "Sans matériel", [], "Six exercices, deux séries de vingt, 45 secondes de repos.");
+S("500 répétitions", "f-endu", ["f-classiques", "sansmat"], "A", "+", 35, "Classique", "100 squats · 100 crunchs · 100 fentes · 100 ponts fessiers · 50 pompes · 50 burpees, découpés comme tu veux, au chrono", "Sans matériel", [], "Le total est fixe, le découpage est libre.");
+S("Circuit maison", "f-circuit", ["sansmat", "fullbody", "debuter"], "D", "G", 20, "Circuit", "4 tours : squat 15 · pompes inclinées 10 · pont fessier 15 · gainage 30 s · jumping jacks 30 s", "Sans matériel", [], "Quatre tours, une minute entre chacun.");
+S("Circuit machines", "f-circuit", ["salle"], "I", "+", 30, "Circuit", "3 tours : presse 15 · tirage poitrine 12 · développé épaules machine 12 · leg curl 12 · pec deck 15 · rameur 1 min", "Salle", [], "D’une machine à l’autre sans rester assis.");
+S("EMOM 20", "f-emom", ["sansmat", "fullbody"], "I", "+", 20, "EMOM", "minute 1 : 15 squats · minute 2 : 10 pompes · minute 3 : 20 mountain climbers · minute 4 : 30 s de gainage · 5 tours", "Sans matériel", [], "Quatre tâches qui tournent pendant vingt minutes.");
+S("AMRAP 12", "f-emom", ["sansmat", "f-classiques"], "I", "+", 12, "AMRAP", "5 pompes · 10 squats · 15 crunchs : le plus de tours possible en 12 minutes", "Sans matériel", [], "Le nombre de tours devient ton repère.");
+S("AMRAP 20 aux haltères", "f-emom", ["halteres"], "A", "+", 20, "AMRAP", "8 thrusters · 10 rowings · 12 fentes (6 par jambe) : le plus de tours en 20 minutes", "Haltères", [], "Vingt minutes d’enchaînement avec les mêmes haltères.");
+S("Une de plus chaque minute", "f-emom", ["f-classiques", "cardio"], "A", "+", 15, "Classique", "minute 1 : 1 burpee · minute 2 : 2 · minute 3 : 3… jusqu’à ne plus finir dans la minute", "Sans matériel", [], "Le score est la dernière minute réussie.");
+S("40/20 corps entier", "f-inter", ["cardio", "perte", "sansmat"], "I", "+", 24, "Intervalles 40/20", "3 tours : skaters · squat · mountain climbers · pompes · jumping jacks · gainage dynamique", "Sans matériel", [], "40 secondes d’effort, 20 de récupération, dix-huit intervalles.");
+S("30/30 sans saut", "f-inter", ["cardio", "debuter", "sansmat"], "D", "G", 15, "Intervalles 30/30", "2 tours : montées de genoux marchées · squat · step up · bear crawl · chaise au mur", "Sans matériel", [], "Effort et récupération de même durée, aucun saut.");
+S("Le 4 × 4", "f-inter", ["cardio", "salle"], "I", "+", 35, "Intervalles longs", "rameur, vélo ou tapis : 10 min d’échauffement, puis 4 × (4 min soutenues + 3 min faciles)", "Salle", [], "Quatre minutes à une allure où parler devient difficile, trois minutes pour récupérer.");
+S("La chaise au mur", "f-iso", ["jambes", "sansmat"], "D", "G", 10, "Isométrie", "chaise au mur 4 × 30 s, puis 2 × 45 s · 1 min de repos", "Sans matériel", [], "Dans une méta-analyse de 270 essais, l’isométrie a le plus fait baisser la tension au repos, la chaise au mur en tête.", ["edwards2023"]);
+S("Tenir partout", "f-iso", ["sansmat", "abdos"], "I", "+", 15, "Isométrie", "3 tours : gainage 45 s · chaise au mur 45 s · pont fessier tenu 45 s · hollow hold 30 s · planche latérale 30 s par côté", "Sans matériel", [], "Aucune répétition : tout se tient.");
+S("Descendre en cinq secondes", "f-tempo", ["sansmat", "renfo"], "I", "+", 25, "Tempo", "squat 4 × 6 · pompes 4 × 5 · fentes 3 × 6 par jambe · pont fessier 3 × 8 · 5 s de descente à chaque répétition", "Sans matériel", [], "Moins de répétitions, chacune beaucoup plus longue.");
+S("Le Décompte", "f-classiques", ["cardio", "sansmat"], "I", "G", 12, "Classique", "burpees et squats : 10 et 10, puis 9 et 9… jusqu’à 1 et 1", "Sans matériel", [], "110 répétitions au chrono, à refaire dans quatre semaines.", [], "t-decompte");
+S("L’Escalier", "f-classiques", ["sansmat"], "I", "+", 15, "Classique", "pompes de 1 à 10 et squats de 10 à 1 : 1 et 10, 2 et 9… jusqu’à 10 et 1", "Sans matériel", [], "55 pompes et 55 squats au chrono.");
+S("La Centaine", "f-classiques", ["sansmat"], "I", "+", 20, "Classique", "100 squats · 75 crunchs · 50 pompes · 25 burpees, dans l’ordre, au chrono", "Sans matériel", [], "250 répétitions, toujours dans le même ordre.");
+S("Le record de la chaise", "f-classiques", ["f-iso", "jambes"], "D", "+", 5, "Classique", "chaise au mur : une seule tenue, la plus longue possible", "Sans matériel", [], "Une tenue, une durée à battre.");
+S("Cinq minutes de burpees", "f-classiques", ["cardio"], "I", "+", 8, "Classique", "le plus de burpees possible en 5 minutes", "Sans matériel", [], "Un nombre à battre.");
+S("Le kilomètre de rameur", "f-classiques", ["salle", "cardio"], "I", "+", 12, "Classique", "5 min d’échauffement, puis 1 000 m au rameur, au chrono", "Salle", [], "Un temps sur une distance fixe.");
+
+/* Un sport */
+S("Avant ta sortie", "course", ["routines"], "D", "G", 6, "Échauffement", "montées de genoux 30 s · talons-fesses 30 s · fentes 6 par jambe · cercles de hanches 30 s · jumping jacks 30 s · squat 8", "Sans matériel", ["Talons-fesses"], "Six minutes pour préparer chevilles, hanches et cœur.");
+S("Après ta sortie", "course", ["recup"], "D", "G", 8, "Étirements", "mollet au mur 30 s par côté · quadriceps 30 s par côté · chaîne postérieure 40 s · pigeon 40 s par côté · cohérence cardiaque 2 min", "Sans matériel", [], "Huit minutes pour revenir au calme.");
+S("Renfo du coureur", "course", ["jambes", "sansmat"], "I", "G", 25, "Séries", "squat bulgare 3 × 8 par jambe · mollets 3 × 20 lents · pont fessier sur une jambe 3 × 10 par jambe · planche latérale 3 × 30 s · fentes sautées 3 × 6 par jambe", "Sans matériel", ["Pont fessier une jambe"], "Chez des coureurs entraînés, du renfo et des sauts deux à trois fois par semaine ont amélioré l’économie de course.", ["balsalobre2016"]);
+S("Pliométrie du coureur", "course", ["cardio"], "I", "+", 20, "Pliométrie", "corde à sauter 4 × 45 s · squats sautés 4 × 6 · skaters 4 × 8 par côté · box jump 3 × 5 · fentes sautées 3 × 6 par jambe", "Sans matériel", [], "Des sauts courts et nets, un repos complet entre les séries.", ["balsalobre2016"]);
+S("Mollets et tendons du coureur", "course", ["g-cheville"], "I", "+", 15, "Séries", "mollets 3 × 15 (3 s de descente) · mollet sur une jambe 3 × 12 · relevé de pointes 3 × 20 · équilibre sur une jambe 3 × 30 s", "Sans matériel", ["Mollet une jambe", "Relevé de pointes", "Équilibre sur une jambe"], "Descentes lentes et appuis sur une jambe.");
+S("Fractionné 30/30", "course", ["dehors", "cardio"], "I", "+", 25, "Intervalles", "10 min de footing · 10 × (30 s vite + 30 s trottinés) · 5 min au calme", "Dehors", ["Course"], "Vingt-cinq minutes de course, dont cinq vraiment rapides.");
+S("Échauffement du footballeur", "foot", [], "I", "G", 15, "Échauffement", "course légère · fentes · squat · Nordic · planche latérale · sauts · pas chassés", "Sans matériel", ["Course", "Nordic", "Pas chassés"], "Inspiré du programme 11+ de la FIFA, qui a réduit les blessures de 39 % dans quatre essais.", ["thorborg2017"]);
+S("Explosivité terrain", "foot", ["cardio"], "A", "+", 25, "Puissance", "sprint sur place 6 × 10 s · squats sautés 4 × 5 · skaters 4 × 6 par côté · box jump 4 × 4 · burpees 3 × 6", "Sans matériel", [], "Efforts très courts, repos long.");
+S("Ischios et adducteurs du footballeur", "foot", ["jambes"], "I", "+", 20, "Séries", "Nordic 3 × 5 · soulevé de terre roumain 3 × 8 · pont fessier sur une jambe 3 × 10 · planche de Copenhague 3 × 20 s par côté", "Haltères", ["Nordic", "Pont fessier une jambe", "Planche de Copenhague"], "L’arrière et l’intérieur de la cuisse.");
+S("Lendemain de match", "foot", ["recup"], "D", "G", 15, "Récupération", "cercles de hanches · étirement quadriceps · chaîne postérieure · papillon · pigeon · cohérence cardiaque", "Sans matériel", [], "Bouger doucement le jour d’après.");
+S("Renfo du cycliste", "velo", ["sansmat"], "I", "+", 25, "Séries", "squat 3 × 15 · fentes 3 × 10 par jambe · pont fessier 3 × 15 · superman 3 × 15 · gainage 3 × 40 s · planche latérale 2 × 30 s", "Sans matériel", [], "Les jambes, et le dos qui reste penché sur le guidon.");
+S("Ouvrir les hanches après le vélo", "velo", ["mobilite"], "D", "G", 12, "Mobilité", "pigeon · papillon · world’s greatest stretch · étirement quadriceps · cat-cow", "Sans matériel", [], "Après des heures en selle, hanches fermées.");
+S("Cuisses de skieur", "ski", ["jambes"], "I", "+", 25, "Mixte", "chaise au mur 3 × 60 s · skaters 4 × 30 s · squat 4 × 15 (3 s de descente) · fentes sautées 3 × 8 · gainage 3 × 45 s", "Sans matériel", [], "Tenir longtemps en flexion, puis réagir vite.");
+S("Après la journée de ski", "ski", ["recup"], "D", "G", 15, "Récupération", "étirement quadriceps · mollet au mur · chaîne postérieure · pigeon · torsion allongée · cohérence cardiaque", "Sans matériel", [], "Pour le soir à la station.");
+S("Appuis de raquette", "raquette", ["f-circuit"], "I", "+", 20, "Circuit", "3 tours : skaters 30 s · fente latérale 8 par côté · pas chassés 30 s · squats sautés 8 · russian twist 20 · planche latérale 30 s", "Sans matériel", ["Fente latérale", "Pas chassés"], "Déplacements latéraux et rotation du tronc, pour le tennis et le padel.");
+S("Épaule du joueur", "raquette", ["g-epaule"], "I", "+", 15, "Séries", "rotation externe à l’élastique 3 × 15 · face pull 3 × 15 · oiseau 3 × 15 · Y au sol 3 × 10", "Élastique ou salle", ["Rotation externe", "Y au sol"], "L’arrière de l’épaule, qui freine le bras après chaque frappe.");
+S("Hybride, découverte", "hybride", ["salle", "cardio"], "I", "+", 40, "Circuit", "4 tours : tapis 800 m · rameur 500 m · fentes 20 · burpees 10 · thrusters haltères 15", "Salle", [], "Course et ateliers en alternance, comme sur une course hybride.", ["hyrox"]);
+S("Hybride à la maison", "hybride", ["halteres", "cardio"], "I", "+", 30, "Circuit", "5 tours : corde à sauter 2 min · fentes 20 · thrusters haltères 15 · burpees 10 · gainage dynamique 40 s", "Haltères", [], "Le même principe, sans tapis ni rameur.");
+S("Les ateliers hybrides", "hybride", ["salle"], "A", "+", 50, "Circuit", "ski erg · poussée de traîneau · tirage de traîneau · burpees sauts en longueur · rameur · marche du fermier · fentes avec sac · wall balls", "Salle", ["Ski erg", "Poussée de traîneau", "Tirage de traîneau", "Burpee saut en longueur", "Marche du fermier", "Wall ball"], "Les huit ateliers d’une course hybride, entre des passages de course.");
+S("Shadow boxing", "boxe", ["cardio"], "I", "+", 15, "Rounds", "4 rounds de 3 min, 1 min de repos : jab-cross · crochets · uppercuts · esquives", "Sans matériel", ["Jab-cross", "Crochets", "Uppercuts", "Esquives"], "Des rounds de boxe sans sac ni partenaire.");
+S("Boxe et gainage", "boxe", ["abdos"], "I", "+", 20, "Intervalles", "5 rounds : 2 min de boxe, 1 min de gainage", "Sans matériel", ["Jab-cross", "Crochets"], "Les poings travaillent, le tronc tient.");
+
+/* Un terrain */
+S("Corps entier, deux haltères", "halteres", ["fullbody", "debuter"], "D", "G", 30, "Séries", "goblet squat 3 × 12 · rowing haltère 3 × 10 par bras · développé militaire 3 × 10 · soulevé de terre roumain 3 × 10 · pont fessier avec haltère 3 × 15", "Haltères", [], "Une séance complète avec une seule paire.");
+S("Le complexe", "halteres", ["f-circuit"], "A", "+", 25, "Complexe", "5 tours sans poser les haltères : 6 soulevés de terre roumains · 6 rowings · 6 développés militaires · 6 squats · 6 fentes par jambe", "Haltères", [], "Un enchaînement complet sans lâcher les haltères, 2 minutes entre les tours.");
+S("Haut du corps aux haltères", "halteres", ["haut"], "I", "+", 35, "Supersets", "3 tours par duo : développé couché haltères 10 + rowing haltère 10 · développé militaire 10 + oiseau 15 · curl 12 + extension triceps 12", "Haltères", [], "Pousser puis tirer, repos après chaque duo.");
+S("Bas du corps aux haltères", "halteres", ["jambes"], "I", "+", 35, "Lourd puis léger", "goblet squat 4 × 8 · soulevé de terre roumain 4 × 10 · squat bulgare 3 × 10 par jambe · pont fessier avec haltère 3 × 20", "Haltères", [], "De 8 à 20 répétitions selon l’exercice.");
+S("Élastique, corps entier", "elastique", ["fullbody"], "D", "G", 20, "Séries", "squat élastique 3 × 15 · rowing élastique 3 × 15 · développé élastique 3 × 12 · pull-apart 3 × 15 · Pallof 2 × 10 par côté", "Élastique", ["Squat élastique", "Rowing élastique", "Développé élastique", "Pull-apart", "Pallof press"], "Un élastique tient dans un sac et sert à tout le corps.");
+S("Le dos à l’élastique", "elastique", ["dos"], "I", "+", 20, "Séries", "rowing élastique 4 × 15 · tirage vertical élastique 3 × 12 · pull-apart 3 × 20 · superman 2 × 15", "Élastique", ["Rowing élastique", "Tirage vertical élastique", "Pull-apart"], "Ce qui manque le plus à la maison : de quoi tirer.");
+S("Épaules à l’élastique", "elastique", ["epaules"], "I", "+", 15, "Séries", "rotation externe 3 × 15 · élévations latérales à l’élastique 3 × 15 · face pull à l’élastique 3 × 15 · pull-apart 2 × 20", "Élastique", ["Rotation externe", "Élévations élastique", "Face pull élastique", "Pull-apart"], "Toutes les faces de l’épaule, sans haltère.");
+S("Kettlebell, les bases", "kettlebell", ["fullbody"], "D", "G", 20, "Séries", "soulevé de terre 3 × 10 · swing 4 × 15 · goblet squat 3 × 12 · rowing 3 × 10 par bras · développé 3 × 8 par bras", "Kettlebell", ["Soulevé de terre kettlebell"], "Un seul poids, cinq mouvements.");
+S("Cent swings", "kettlebell", ["f-emom"], "I", "+", 10, "EMOM", "10 swings au début de chaque minute, 10 minutes", "Kettlebell", [], "Cent swings réglés par l’horloge.");
+S("Kettlebell avancé", "kettlebell", ["f-circuit"], "A", "+", 30, "Complexe", "4 tours : clean 5 par côté · développé 5 par côté · goblet squat 10 · swing 15 · Turkish get-up 2 par côté", "Kettlebell", ["Clean kettlebell", "Turkish get-up"], "Les mouvements qui demandent le plus de technique, en dernier.");
+S("Marche japonaise", "dehors", ["cardio", "debuter"], "D", "G", 30, "Intervalles", "5 × (3 min de marche rapide + 3 min tranquilles)", "Dehors", ["Marche"], "Sur cinq mois, la marche en intervalles a plus fait progresser la force des cuisses et l’endurance que la marche régulière.", ["nemoto2007"]);
+S("Le banc du parc", "dehors", ["fullbody"], "I", "+", 25, "Circuit", "4 tours : step up sur le banc 10 par jambe · dips sur le banc 12 · pompes inclinées 12 · squat 15 · gainage 30 s", "Dehors", [], "Un banc suffit.");
+S("Les escaliers", "dehors", ["cardio", "jambes"], "I", "+", 20, "Intervalles", "8 montées rapides, descente en marchant · puis 3 tours : squat 15 · fentes 10 par jambe", "Dehors", ["Montée d’escaliers"], "Un escalier fait un fractionné.");
+S("Chambre d’hôtel", "voyage", ["sansmat"], "I", "+", 15, "Circuit", "3 tours, aucun saut : squat 15 · pompes 10 · fentes 10 par jambe · dips sur chaise 12 · gainage 40 s · pont fessier 15", "Sans matériel", [], "Deux mètres carrés et aucun bruit.");
+S("Après un long trajet", "voyage", ["mobilite", "recup"], "D", "G", 10, "Mobilité", "cat-cow · cercles de hanches · chaîne postérieure · pigeon · étirement du cou · ouverture des épaules", "Sans matériel", [], "Après des heures en position assise, en train, en voiture ou en avion.");
+
+/* Un moment */
+S("Réveil en 5 minutes", "routines", ["mobilite"], "D", "G", 5, "Routine", "cat-cow 6 respirations · cercles de hanches 8 par sens · world’s greatest stretch 4 par côté · squat 10 · jumping jacks 30 s · ouverture des épaules 30 s", "Sans matériel", [], "Un enchaînement sans repos, avant le café.", [], "t-reveil");
+S("Matin tonique", "routines", ["sansmat"], "D", "+", 10, "Circuit", "2 tours : jumping jacks 30 s · squat 12 · pompes inclinées 10 · montées de genoux 30 s · gainage 30 s · downward dog et cobra 6", "Sans matériel", [], "Dix minutes pour faire monter le cœur.");
+S("Trois minutes pour le cœur", "routines", ["cardio"], "D", "G", 3, "Intervalles", "3 × (40 s de montées de genoux vives + 20 s de marche sur place)", "Sans matériel", [], "Chez 25 000 adultes sans sport, trois courtes pointes d’effort par jour étaient associées à une mortalité plus basse (étude d’observation).", ["stamatakis2022"]);
+S("Pause bureau", "routines", ["mobilite"], "D", "G", 4, "Routine", "étirement du cou 20 s par côté · ouverture des épaules 30 s · pectoraux au mur 30 s par côté · mollets 15 · squat 10 · cohérence cardiaque 1 min", "Sans matériel", [], "Debout, sans transpirer, à côté du bureau.");
+S("Marcher après le repas", "routines", ["dehors", "perte"], "D", "G", 10, "Marche", "10 minutes de marche tranquille dans l’heure qui suit le repas", "Dehors", ["Marche"], "Quelques minutes de marche légère après un repas réduisent la hausse de la glycémie.", ["buffey2022"]);
+S("Cinq minutes avant de dormir", "routines", ["recup"], "D", "G", 5, "Routine", "posture de l’enfant 60 s · torsion allongée 30 s par côté · papillon 45 s · cohérence cardiaque 2 min", "Sans matériel", [], "Au sol, lumière basse.");
+S("Le grand dimanche", "routines", ["fullbody"], "I", "+", 60, "Lourd puis léger", "15 min de mobilité · 35 min de corps entier en séries · 10 min de retour au calme", "Sans matériel ou haltères", [], "Une heure entière, une fois par semaine.");
+S("Respirer, cinq minutes", "routines", ["tete", "recup"], "D", "G", 5, "Respiration", "cohérence cardiaque : 5 s d’inspiration, 5 s d’expiration", "Sans matériel", [], "Six respirations par minute pendant cinq minutes.");
+S("Pas la forme aujourd’hui", "joursans", ["debuter"], "D", "G", 10, "Douce", "cat-cow · squat 2 × 8 · pompes inclinées 2 × 8 · pont fessier 2 × 12 · posture de l’enfant · cohérence cardiaque", "Sans matériel", [], "Une petite séance qui compte dans la série comme une grande.");
+
+/* Un objectif */
+S("Après une mauvaise journée", "tete", ["joursans", "cardio"], "I", "+", 20, "Intervalles", "8 min de cardio qui monte · 6 min de renfo · 6 min de retour au calme", "Sans matériel", [], "Dans une méta-analyse de 218 essais, marche, course, yoga et renfo ont réduit les symptômes dépressifs, d’autant plus que l’effort était intense.", ["noetel2024"]);
+S("Vider la tête", "tete", ["cardio", "f-inter"], "I", "+", 25, "Intervalles 40/20", "3 tours de 6 exercices en 40/20 · 5 min de respiration", "Sans matériel", [], "Un effort franc, puis cinq minutes pour redescendre.", ["noetel2024"]);
+S("Pendant une sèche : garder la force", "perte", ["f-force", "salle", "force"], "I", "+", 40, "Force", "squat barre 4 × 5 · développé couché 4 × 5 · rowing barre 4 × 6 · 2 accessoires en 2 × 10", "Salle", [], "En déficit calorique, la force progresse encore alors que le muscle se construit moins : on garde les charges lourdes.", ["murphy2022"]);
+S("À jeun le matin", "perte", ["routines"], "D", "+", 25, "Modéré", "15 min de cardio facile · 10 min de renfo léger", "Sans matériel", [], "Un effort modéré ; le cours « S’entraîner à jeun » dit ce qui est établi et ce qui ne l’est pas.");
+
+/* Avec une gêne */
+S("Dos qui tire : bouger quand même", "g-dos", ["mobilite"], "D", "G", 15, "Douce", "cat-cow 8 respirations · bird dog 3 × 6 par côté · dead bug 3 × 6 par côté · pont fessier 3 × 10 · planche latérale sur les genoux 2 × 20 s · posture de l’enfant", "Sans matériel", [], "Pour la lombalgie commune, la HAS fait de l’exercice le traitement principal, avec une reprise progressive.", ["has2019"], "t-dos");
+S("Un dos plus solide", "g-dos", ["abdos"], "I", "+", 20, "Séries", "bird dog 3 × 8 par côté · planche latérale 3 × 25 s · dead bug 3 × 8 par côté · pont fessier 3 × 15 · superman 2 × 12 · gainage 2 × 40 s", "Sans matériel", [], "La même famille de gestes, tenus plus longtemps.", ["has2019"]);
+S("Genoux à ménager : le haut et le tronc", "g-genou", ["haut"], "D", "G", 20, "Séries", "pompes inclinées 3 × 12 · dips sur chaise 3 × 10 · pike push-ups 3 × 6 · superman 3 × 15 · dead bug 3 × 8 par côté · gainage 3 × 30 s", "Sans matériel", [], "Aucun exercice ne plie le genou sous charge.");
+S("Genoux à ménager : des jambes quand même", "g-genou", ["jambes"], "I", "+", 20, "Séries", "pont fessier 3 × 15 · chaise au mur haute 3 × 30 s · step up bas 3 × 8 par jambe · fente arrière courte 3 × 8 par jambe · clamshell 3 × 15 par côté · mollets 3 × 20", "Sans matériel", ["Fente arrière", "Clamshell"], "Petites amplitudes, tenues et travail des hanches ; pour l’arthrose du genou, l’exercice structuré fait partie des traitements de base.", ["oarsi2019"]);
+S("Poignets à ménager", "g-poignet", ["fullbody"], "D", "G", 20, "Séries", "squat 3 × 15 · fentes 3 × 10 par jambe · pont fessier 3 × 15 · gainage sur les avant-bras 3 × 30 s · dead bug 3 × 8 par côté · crunch 3 × 15 · chaise au mur 2 × 40 s", "Sans matériel", [], "Aucun appui sur les mains.");
+S("Épaule à ménager", "g-epaule", ["jambes"], "D", "+", 20, "Séries", "squat 3 × 15 · fentes 3 × 10 par jambe · pont fessier 3 × 15 · chaise au mur 3 × 40 s · crunch 3 × 15 · mollets 3 × 20", "Sans matériel", [], "Les bras restent le long du corps.");
+S("Cheville au repos", "g-cheville", ["haut", "salle"], "D", "+", 25, "Séries", "tout se fait en position assise ou couchée : développé couché haltères · rowing assis poulie · développé épaules machine · pec deck · curl · crunch", "Salle", [], "Rien ne se fait debout.");
+S("Une jambe au repos", "g-membre", ["salle"], "I", "+", 30, "Séries", "leg extension sur une jambe 4 × 10 · leg curl sur une jambe 3 × 12 · presse sur une jambe 3 × 10 · trois exercices du haut du corps, en position assise", "Salle", [], "Entraîner une jambe entretient aussi une partie de la force de l’autre.", ["altheyab2026"]);
+S("Un bras au repos", "g-membre", ["halteres"], "I", "+", 30, "Séries", "curl sur un bras 3 × 12 · rowing haltère sur un bras 3 × 10 · développé militaire sur un bras 3 × 10 · squat 3 × 15 · fentes 3 × 10 par jambe", "Haltères", [], "Les jambes en entier, et le bras qui peut travailler.");
+
+const PROGRAMMES = [
+  { t: "Reprendre le sport", a: "G", sem: 4, rythme: "3 par semaine", avec: "Reprendre en douceur · Les bases du mouvement · Circuit maison · Marche japonaise", w: "Le seul programme gratuit : la porte d’entrée." },
+  { t: "Première traction", a: "+", sem: 6, rythme: "3 par semaine", avec: "Tractions, construire le mouvement · Dos large", w: "De zéro à une traction stricte, puis à trois." },
+  { t: "Cent pompes", a: "+", sem: 6, rythme: "3 par semaine", avec: "Pompes maîtrisées · La pyramide de pompes · Cent pompes", w: "Le nombre de pompes d’affilée monte chaque semaine." },
+  { t: "La chaise au mur", a: "+", sem: 4, rythme: "3 par semaine", avec: "La chaise au mur · Tenir partout · Le record de la chaise", w: "Une tenue qui s’allonge, mesurée chaque semaine.", src: ["edwards2023"] },
+  { t: "Abdos solides", a: "+", sem: 4, rythme: "3 par semaine", avec: "Gainage, les bases · Le tronc dans tous les sens · Hollow et compagnie", w: "Des tenues d’abord, du mouvement ensuite." },
+  { t: "Fessiers", a: "+", sem: 6, rythme: "3 par semaine", avec: "Fessiers, l’essentiel · Pyramide fessiers · Fessiers 300 · Fessiers aux haltères", w: "Le volume monte, puis la charge.", src: ["schoenfeld2017"] },
+  { t: "Force 5 × 5", a: "+", sem: 8, rythme: "3 par semaine", avec: "Le 5 × 5 de la salle · Soulevé de terre, la force", w: "2,5 kg de plus à chaque séance réussie, une semaine plus légère au milieu.", src: ["acsm2009"] },
+  { t: "Renfo du coureur", a: "+", sem: 8, rythme: "2 par semaine", avec: "Renfo du coureur · Pliométrie du coureur · Mollets et tendons du coureur", w: "La durée des protocoles qui ont amélioré l’économie de course : 8 à 12 semaines.", src: ["balsalobre2016"] },
+  { t: "Prépa ski", a: "+", sem: 4, rythme: "3 par semaine", avec: "Cuisses de skieur · Jambes et cardio · Le tronc dans tous les sens", w: "À commencer un mois avant le départ ; proposé de novembre à février." },
+  { t: "Prépa course hybride", a: "+", sem: 8, rythme: "3 par semaine", avec: "Hybride, découverte · Le 4 × 4 · Les ateliers hybrides", w: "Huit semaines pour une première course hybride.", src: ["hyrox"] },
+];
+
+const PACKS = [
+  { nom: "Hanches, fessiers, genoux", mouvements: ["Fente arrière", "Fente latérale", "Pont fessier une jambe", "Clamshell", "Abduction allongée", "Fire hydrant"] },
+  { nom: "Coureur et terrain", mouvements: ["Talons-fesses", "Mollet une jambe", "Relevé de pointes", "Équilibre sur une jambe", "Nordic", "Planche de Copenhague", "Pas chassés", "Course", "Marche", "Montée d’escaliers"] },
+  { nom: "Épaules", mouvements: ["Rotation externe", "Y au sol"] },
+  { nom: "Abdos", mouvements: ["Crunch debout", "Rotation du buste debout", "Crunch à la poulie", "Relevé de genoux suspendu", "Pallof press", "Bûcheron", "Crunch élastique"] },
+  { nom: "Élastique", mouvements: ["Squat élastique", "Rowing élastique", "Développé élastique", "Pull-apart", "Tirage vertical élastique", "Élévations élastique", "Face pull élastique", "Marche latérale élastique", "Kickback élastique"] },
+  { nom: "Kettlebell", mouvements: ["Soulevé de terre kettlebell", "Clean kettlebell", "Turkish get-up"] },
+  { nom: "Course hybride", mouvements: ["Ski erg", "Poussée de traîneau", "Tirage de traîneau", "Burpee saut en longueur", "Marche du fermier", "Wall ball"] },
+  { nom: "Boxe", mouvements: ["Jab-cross", "Crochets", "Uppercuts", "Esquives"] },
+];
+
+const SOURCES = [
+  { id: "injep2024", txt: "INJEP, ministère des Sports, CRÉDOC. Baromètre national des pratiques sportives 2024 (décembre 2024).", url: "https://www.credoc.fr/download/pdf/Sou/Sou2025-5022.pdf", lu: "rapport complet" },
+  { id: "acsm2026", txt: "American College of Sports Medicine. Top Fitness Trends for 2026 (22 octobre 2025).", url: "https://acsm.org/top-fitness-trends-2026", lu: "page officielle" },
+  { id: "fizzup", txt: "FizzUp, fiche de l’application sur l’App Store France.", url: "https://apps.apple.com/FR/app/id723322796", lu: "page" },
+  { id: "freeletics", txt: "Freeletics, page « HIIT workout app » (God workouts).", url: "https://www.freeletics.com/en/hiit-workout-app/", lu: "page" },
+  { id: "hyrox", txt: "Endurance.biz, « Targeting 2 million athletes, HYROX expands global calendar for 2026/27 season » (20 juillet 2026).", url: "https://endurance.biz/2026/industry-news/targeting-2-million-athletes-hyrox-expands-global-calendar-for-2026-27-season/", lu: "article" },
+  { id: "protealpes", txt: "Protéalpes, « Analyse sociologique : quels muscles obsèdent les Français ? » (méthode non publiée, signal indicatif).", url: "https://proteine-en-poudre.fr/abdos/analyse-sociologique-quels-muscles-obsedent-les-francais/", lu: "article" },
+  { id: "schoenfeld2021", txt: "Schoenfeld BJ, Grgic J, Van Every DW, Plotkin DL. Loading Recommendations for Muscle Strength, Hypertrophy, and Local Endurance: A Re-Examination of the Repetition Continuum. Sports 2021;9(2):32.", url: "https://pmc.ncbi.nlm.nih.gov/articles/PMC7927075/", lu: "texte complet" },
+  { id: "acsm2009", txt: "American College of Sports Medicine. Progression models in resistance training for healthy adults. Med Sci Sports Exerc 2009;41(3):687-708.", url: "https://doi.org/10.1249/MSS.0b013e3181915670", lu: "résumé" },
+  { id: "bazvalle2019", txt: "Baz-Valle E, Schoenfeld BJ, Torres-Unda J, Santos-Concejero J, Balsalobre-Fernández C. The effects of exercise variation in muscle thickness, maximal strength and motivation in resistance trained men. PLoS One 2019;14(12):e0226989.", url: "https://doi.org/10.1371/journal.pone.0226989", lu: "résumé" },
+  { id: "grgic2017", txt: "Grgic J, Mikulic P, Podnar H, Pedisic Z. Effects of linear and daily undulating periodized resistance training programs on measures of muscle hypertrophy. PeerJ 2017;5:e3695.", url: "https://doi.org/10.7717/peerj.3695", lu: "résumé" },
+  { id: "schoenfeld2017", txt: "Schoenfeld BJ, Ogborn D, Krieger JW. Dose-response relationship between weekly resistance training volume and increases in muscle mass. J Sports Sci 2017;35(11):1073-1082.", url: "https://doi.org/10.1080/02640414.2016.1210197", lu: "résumé" },
+  { id: "refalo2023", txt: "Refalo MC, Helms ER, Trexler ET, Hamilton DL, Fyfe JJ. Influence of Resistance Training Proximity-to-Failure on Skeletal Muscle Hypertrophy. Sports Med 2023;53(3):649-665.", url: "https://doi.org/10.1007/s40279-022-01784-y", lu: "résumé" },
+  { id: "murphy2022", txt: "Murphy C, Koehler K. Energy deficiency impairs resistance training gains in lean mass but not strength. Scand J Med Sci Sports 2022;32(1):125-137.", url: "https://doi.org/10.1111/sms.14075", lu: "résumé" },
+  { id: "edwards2023", txt: "Edwards JJ, Deenmamode AHP, Griffiths M, et al. Exercise training and resting blood pressure: a large-scale pairwise and network meta-analysis of randomised controlled trials. Br J Sports Med 2023;57(20):1317-1326.", url: "https://doi.org/10.1136/bjsports-2022-106503", lu: "résumé" },
+  { id: "stamatakis2022", txt: "Stamatakis E, Ahmadi MN, Gill JMR, et al. Association of wearable device-measured vigorous intermittent lifestyle physical activity with mortality. Nat Med 2022;28(12):2521-2529.", url: "https://doi.org/10.1038/s41591-022-02100-x", lu: "résumé" },
+  { id: "nemoto2007", txt: "Nemoto K, Gen-no H, Masuki S, Okazaki K, Nose H. Effects of high-intensity interval walking training on physical fitness and blood pressure in middle-aged and older people. Mayo Clin Proc 2007;82(7):803-811.", url: "https://doi.org/10.4065/82.7.803", lu: "résumé" },
+  { id: "balsalobre2016", txt: "Balsalobre-Fernández C, Santos-Concejero J, Grivas GV. Effects of Strength Training on Running Economy in Highly Trained Runners. J Strength Cond Res 2016;30(8):2361-2368.", url: "https://doi.org/10.1519/JSC.0000000000001316", lu: "résumé" },
+  { id: "thorborg2017", txt: "Thorborg K, Krommes KK, Esteve E, et al. Effect of specific exercise-based football injury prevention programmes on the overall injury rate in football: the FIFA 11 and 11+ programmes. Br J Sports Med 2017;51(7):562-571.", url: "https://doi.org/10.1136/bjsports-2016-097066", lu: "résumé" },
+  { id: "has2019", txt: "Haute Autorité de santé. Prise en charge du patient présentant une lombalgie commune (2019).", url: "https://www.has-sante.fr/jcms/c_2961499/fr/prise-en-charge-du-patient-presentant-une-lombalgie-commune", lu: "fiche officielle" },
+  { id: "oarsi2019", txt: "Bannuru RR, Osani MC, Vaysbrot EE, et al. OARSI guidelines for the non-surgical management of knee, hip, and polyarticular osteoarthritis. Osteoarthritis Cartilage 2019;27(11):1578-1589.", url: "https://doi.org/10.1016/j.joca.2019.06.011", lu: "résumé" },
+  { id: "altheyab2026", txt: "Altheyab A, Alqurashi H, England TJ, Phillips BE, Piasecki M. Cross-education of lower limb muscle strength following resistance exercise training in males and females. Exp Physiol 2026;111(6):2895-2917.", url: "https://doi.org/10.1113/ep091881", lu: "résumé" },
+  { id: "afonso2021", txt: "Afonso J, Ramirez-Campillo R, Moscão J, et al. Strength Training versus Stretching for Improving Range of Motion. Healthcare 2021;9(4):427.", url: "https://doi.org/10.3390/healthcare9040427", lu: "résumé" },
+  { id: "noetel2024", txt: "Noetel M, Sanders T, Gallardo-Gómez D, et al. Effect of exercise for depression: systematic review and network meta-analysis of randomised controlled trials. BMJ 2024;384:e075847.", url: "https://doi.org/10.1136/bmj-2023-075847", lu: "résumé" },
+  { id: "who2020", txt: "Bull FC, Al-Ansari SS, Biddle S, et al. World Health Organization 2020 guidelines on physical activity and sedentary behaviour. Br J Sports Med 2020;54(24):1451-1462.", url: "https://doi.org/10.1136/bjsports-2020-102955", lu: "texte complet" },
+  { id: "yamato2016", txt: "Yamato TP, Maher CG, Saragiotto BT, et al. Pilates for low back pain. Sao Paulo Med J 2016;134(4):366-367 (résumé de la revue Cochrane).", url: "https://doi.org/10.1590/1516-3180.20161344T1", lu: "résumé" },
+  { id: "vispute2011", txt: "Vispute et al. Journal of Strength and Conditioning Research, 2011 (exercices d’abdominaux et graisse abdominale).", url: "https://pubmed.ncbi.nlm.nih.gov/21804427/", lu: "résumé, lu pour le lot 2 des cours de nutrition" },
+  { id: "buffey2022", txt: "Buffey et al. Sports Medicine, 2022 (interrompre la position assise, marche légère et glycémie).", url: "https://pmc.ncbi.nlm.nih.gov/articles/PMC9325803/", lu: "résumé, lu pour le lot 2 des cours de nutrition" },
+];
+
+/* ═══ L’affichage ═══ */
+const typo = (s) => s
+  .replace(/ ([:;!?»])/g, " $1")
+  .replace(/« /g, "« ")
+  .replace(/(\d) (min|s|kg|m|km|kcal|mmHg|%|€)(?=[\s,.;:)·]|$)/g, "$1 $2")
+  .replace(/(\d) × (\d|\()/g, "$1 × $2");
+
+function appliquerTypo(racine) {
+  const marche = document.createTreeWalker(racine, NodeFilter.SHOW_TEXT, {
+    acceptNode: (n) => (n.parentElement && n.parentElement.closest("script, style")) ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT,
+  });
+  const noeuds = [];
+  while (marche.nextNode()) noeuds.push(marche.currentNode);
+  for (const n of noeuds) {
+    const v = typo(n.nodeValue);
+    if (v !== n.nodeValue) n.nodeValue = v;
+  }
+}
+
+const echap = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+const COLL = Object.fromEntries(COLLECTIONS.map((c) => [c.id, c]));
+const SRC = Object.fromEntries(SOURCES.map((s) => [s.id, s]));
+const NOM_COURT = {
+  injep2024: "INJEP 2024", acsm2026: "ACSM 2026", fizzup: "FizzUp", freeletics: "Freeletics", hyrox: "Endurance.biz", protealpes: "Protéalpes",
+  schoenfeld2021: "Schoenfeld 2021", acsm2009: "ACSM 2009", bazvalle2019: "Baz-Valle 2019", grgic2017: "Grgic 2017", schoenfeld2017: "Schoenfeld 2017",
+  refalo2023: "Refalo 2023", murphy2022: "Murphy et Koehler 2022", edwards2023: "Edwards 2023", stamatakis2022: "Stamatakis 2022", nemoto2007: "Nemoto 2007",
+  balsalobre2016: "Balsalobre-Fernández 2016", thorborg2017: "Thorborg 2017", has2019: "HAS 2019", oarsi2019: "OARSI 2019", altheyab2026: "Altheyab 2026",
+  afonso2021: "Afonso 2021", noetel2024: "Noetel 2024", who2020: "OMS 2020", yamato2016: "Yamato 2016", vispute2011: "Vispute 2011", buffey2022: "Buffey 2022",
+};
+const refs = (ids) => (ids || []).map((id) => ` <a class="ref" href="#src-${id}">${echap(NOM_COURT[id] || id)}</a>`).join("");
+
+/* Les compteurs écrits dans la page viennent des données, jamais de la main. */
+const nouvelles = SEANCES.length;
+const faisables = SEANCES.filter((s) => s.x.length === 0).length;
+const gratuitesNeuves = SEANCES.filter((s) => s.a === "G").length;
+const COMPTEURS = {
+  "nouvelles": nouvelles,
+  "faisables": faisables,
+  "programmes": PROGRAMMES.length,
+  "programmes-plus": PROGRAMMES.filter((p) => p.a === "+").length,
+  "gratuites-total": 18 + gratuitesNeuves,
+  "plus-total": 35 + (nouvelles - gratuitesNeuves),
+};
+document.querySelectorAll("[data-n]").forEach((el) => { el.textContent = String(COMPTEURS[el.dataset.n]); });
+
+/* Les deux bandes de l’ouverture */
+const AVANT = [
+  ...Array(18).fill("3×12"), "3×12 par jambe", "3×12 par jambe", "3×12 par jambe", "3×12 par côté",
+  "3×45 s", "3×40 s", "3×30 s", "4×15", "5×40 s", "4×30 s", "4×40 s", "4×20",
+];
+document.getElementById("bande-avant").innerHTML = AVANT.map((v) => `<span class="tuile ${v.startsWith("3×12") ? "douze" : "autre"}">${echap(v)}</span>`).join("");
+const APRES = [
+  ["Lourd", ["5×5", "4×6", "3×10", "2×15", "3×40 s"]],
+  ["Volume", ["4×10", "3×8", "3×12", "3×8", "2×15"]],
+  ["Endurance", ["3 tours : 15", "10", "20", "20", "40 s"]],
+];
+document.getElementById("bande-apres").innerHTML = APRES.map(([nom, v], i) =>
+  `<span class="tuile sep">${i ? "· " : ""}${nom}</span>` + v.map((x) => `<span class="tuile neuf">${echap(x)}</span>`).join("")
+).join("");
+
+/* Les programmes */
+document.getElementById("table-programmes").innerHTML = PROGRAMMES.map((p) => `
+  <tr><td><b>${echap(p.t)}</b></td><td>${p.a === "+" ? '<span class="acces plus">Vaiiya+</span>' : '<span class="acces">Gratuit</span>'}</td>
+  <td class="n">${p.sem}</td><td>${echap(p.rythme)}</td><td>${echap(p.avec)}</td><td>${echap(p.w)}${refs(p.src)}</td></tr>`).join("");
+
+/* Les packs de mouvements, calculés sur la banque */
+document.getElementById("packs").innerHTML = PACKS.map((p) => {
+  const touchees = SEANCES.filter((s) => s.x.some((m) => p.mouvements.includes(m)));
+  const lignes = p.mouvements.map((m) => {
+    const n = SEANCES.filter((s) => s.x.includes(m)).length;
+    return `<li>${echap(m)} <span>${n} séance${n > 1 ? "s" : ""}</span></li>`;
+  }).join("");
+  const seul = touchees.filter((s) => s.x.every((m) => p.mouvements.includes(m))).length;
+  return `<div class="pack"><h4>${echap(p.nom)}</h4><p class="ouvre">${p.mouvements.length} mouvement${p.mouvements.length > 1 ? "s" : ""} · ${touchees.length} séance${touchees.length > 1 ? "s" : ""} concernée${touchees.length > 1 ? "s" : ""}, dont ${seul} débloquée${seul > 1 ? "s" : ""} par ce pack seul</p><ul>${lignes}</ul></div>`;
+}).join("");
+
+/* Les sources */
+document.getElementById("liste-sources").innerHTML = SOURCES.map((s) =>
+  `<li id="src-${s.id}">${echap(s.txt)} <a href="${s.url}" target="_blank" rel="noopener">Lien</a> <span class="lu">(${echap(s.lu)})</span></li>`).join("");
+
+/* La banque à explorer */
+const etat = { famille: "toutes", acces: "tout", mouv: "tout" };
+const CHOIX = {
+  "f-famille": [["toutes", "Toutes"], ...FAMILLES.map((f) => [f.id, f.nom])],
+  "f-acces": [["tout", "Tout"], ["G", "Gratuit"], ["+", "Vaiiya+"]],
+  "f-mouv": [["tout", "Tout"], ["ok", "Faisable maintenant"], ["dessin", "Mouvements à dessiner"]],
+};
+const CLE = { "f-famille": "famille", "f-acces": "acces", "f-mouv": "mouv" };
+for (const [groupe, options] of Object.entries(CHOIX)) {
+  const el = document.getElementById(groupe);
+  for (const [val, lib] of options) {
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "puce"; b.id = `${groupe}-${val}`;
+    b.textContent = lib; b.dataset.val = val;
+    b.setAttribute("aria-pressed", String(etat[CLE[groupe]] === val));
+    b.addEventListener("click", () => {
+      etat[CLE[groupe]] = val;
+      el.querySelectorAll(".puce").forEach((p) => p.setAttribute("aria-pressed", String(p.dataset.val === val)));
+      rendre();
+    });
+    el.appendChild(b);
+  }
+}
+
+function carte(s) {
+  const plus = s.a === "+";
+  return `<article class="seance">
+    <div class="seance-tete"><h4>${echap(s.t)}</h4><span class="acces ${plus ? "plus" : ""}">${plus ? "Vaiiya+" : "Gratuit"}</span></div>
+    <div class="meta"><span class="duree">${s.d} min</span><span>${NIVEAU[s.n]}</span><span class="fmt">${echap(s.f)}</span><span>${echap(s.m)}</span></div>
+    <p class="schema">${echap(s.s)}</p>
+    <p class="pourquoi">${echap(s.w)}${refs(s.src)}${s.temoin ? ` <a class="temoin-lien" href="#${s.temoin}">Écrite en entier plus bas</a>` : ""}</p>
+    ${s.x.length ? `<p class="dessin">À dessiner : ${s.x.map(echap).join(", ")}</p>` : ""}
+  </article>`;
+}
+
+function rendre() {
+  const liste = SEANCES.filter((s) =>
+    (etat.acces === "tout" || s.a === etat.acces) &&
+    (etat.mouv === "tout" || (etat.mouv === "ok" ? s.x.length === 0 : s.x.length > 0)));
+  const groupes = new Map();
+  for (const s of liste) {
+    const col = etat.famille === "toutes" ? s.col : s.cols.find((c) => COLL[c] && COLL[c].famille === etat.famille);
+    if (!col) continue;
+    if (!groupes.has(col)) groupes.set(col, []);
+    groupes.get(col).push(s);
+  }
+  const ordre = COLLECTIONS.filter((c) => groupes.has(c.id));
+  let total = 0;
+  const html = ordre.map((c) => {
+    const ss = groupes.get(c.id);
+    total += ss.length;
+    const fam = FAMILLES.find((f) => f.id === c.famille);
+    const deja = c.existantes ? ` · <b>${c.existantes}</b> déjà là` : "";
+    return `<div class="collection"><div class="collection-tete"><span class="fam">${echap(fam.nom)}</span><h3>${echap(c.nom)}</h3><span class="cnt"><b>${ss.length}</b> nouvelle${ss.length > 1 ? "s" : ""}${deja}</span></div><div class="seances">${ss.map(carte).join("")}</div></div>`;
+  }).join("");
+  const conteneur = document.getElementById("liste-banque");
+  conteneur.innerHTML = html || `<p class="note">Aucune séance ne répond à ces trois filtres ensemble.</p>`;
+  document.getElementById("compte").innerHTML = `<b>${total}</b> séance${total > 1 ? "s" : ""} affichée${total > 1 ? "s" : ""} sur <b>${SEANCES.length}</b> nouvelles.`;
+  appliquerTypo(conteneur);
+  appliquerTypo(document.getElementById("compte"));
+}
+
+rendre();
+appliquerTypo(document.body);
+</script>
