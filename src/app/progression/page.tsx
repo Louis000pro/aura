@@ -46,7 +46,7 @@ import {
   type LibExercise,
 } from "@/lib/exerciseLibrary";
 import { useAuth } from "@/context/AuthContext";
-import { useAssistant } from "@/context/AssistantContext";
+import { useGestesAssistant } from "@/context/AssistantContext";
 import { useWorkoutLaunch } from "@/context/WorkoutLaunchContext";
 import SeanceInterrompue from "@/components/entrainement/SeanceInterrompue";
 import { propositionAGarder } from "@/lib/garderSeanceReprise";
@@ -2629,7 +2629,7 @@ type ImproFaite = {
 
 export default function ProgressionPage() {
   const { user } = useAuth();
-  const { open: openAssistant } = useAssistant();
+  const { open: openAssistant } = useGestesAssistant();
   const { launchWorkout } = useWorkoutLaunch();
   const router = useRouter();
   const canAccessPremium = Boolean(user?.is_premium || user?.is_admin);

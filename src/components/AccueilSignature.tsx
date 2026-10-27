@@ -6,7 +6,7 @@ import { ChevronRight } from "lucide-react";
 import { VisageGuide } from "@/components/AssistantMark";
 import MaJournee from "@/components/accueil/MaJournee";
 import { useAuth } from "@/context/AuthContext";
-import { useAssistant } from "@/context/AssistantContext";
+import { useGestesAssistant } from "@/context/AssistantContext";
 import type { EtatAura } from "@/lib/aura";
 import { PRENOM_GUIDE, type GuideRef } from "@/lib/guides";
 import type { MomentAccueil } from "@/lib/momentAccueil";
@@ -118,7 +118,7 @@ export default function AccueilSignature({
   const [feuille, setFeuille] = useState(false);
   const [feuilleSerie, setFeuilleSerie] = useState(false);
   const { user } = useAuth();
-  const { open: ouvrirAssistant, ouvrirSurQuestion } = useAssistant();
+  const { open: ouvrirAssistant, ouvrirSurQuestion } = useGestesAssistant();
 
   /* ── Le mot du jour (Louis, 2026-10-17) ──
      Un mot par jour, gardé sur l'appareil avec son état « lu ». Il attend
@@ -257,7 +257,7 @@ function Entree({
   onOuvrirMot: () => void;
   reduce: boolean;
 }) {
-  const { open } = useAssistant();
+  const { open } = useGestesAssistant();
 
   /* ⭐ LE MOT DU JOUR (Louis, 2026-10-17) : tant qu'il n'est pas lu, une
      pastille sur le visage et « Sasha t'a laissé un mot » sous le bonjour,

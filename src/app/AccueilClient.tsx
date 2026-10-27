@@ -17,7 +17,7 @@ import { SeanceInterrompueAccueil } from "@/components/entrainement/SeanceInterr
 import { calculerAura, etatDepuisExp, type EtatAura } from "@/lib/aura";
 import { noterRang } from "@/lib/celebrationRang";
 import { useGuideActif } from "@/context/GuideContext";
-import { useAssistant } from "@/context/AssistantContext";
+import { useGestesAssistant } from "@/context/AssistantContext";
 import {
   lireDejaVu,
   lireSignauxAccueil,
@@ -199,7 +199,7 @@ function Dashboard() {
     return () => window.clearTimeout(t);
   }, []);
   const revele = (heroPret && missionsLues && premierAccueil.afficher !== null) || delaiPasse;
-  const { open: ouvrirAssistant } = useAssistant();
+  const { open: ouvrirAssistant } = useGestesAssistant();
   const [motGuide, setMotGuide] = useState<MomentAccueil | null>(null);
   const jourEvalueRef = useRef<string | null>(null);
   useEffect(() => {

@@ -1115,7 +1115,9 @@ verdict(
   );
   verdict(
     "V7B · toute la zone ouvre le vrai Assistant, jamais un second chat",
-    ACCUEIL.includes("useAssistant()") && !ACCUEIL.includes("sendMessage("),
+    /* `useGestesAssistant` (2026-10-27) ouvre la même feuille globale, sans
+       refaire le rendu de l'accueil à chaque changement de la conversation. */
+    (ACCUEIL.includes("useAssistant()") || ACCUEIL.includes("useGestesAssistant()")) && !ACCUEIL.includes("sendMessage("),
     "`open()` sur la feuille globale",
   );
   {

@@ -311,6 +311,23 @@ export function useAssistant(): AssistantContextValue {
   return c;
 }
 
+/** Les gestes qui ouvrent ou ferment la conversation, et rien d'autre. */
+export type GestesAssistant = Pick<AssistantContextValue, "open" | "ouvrirSurQuestion" | "close" | "toggle">;
+
+const GestesCtx = createContext<GestesAssistant | null>(null);
+
+/**
+ * Pour un écran qui ne fait qu'OUVRIR la conversation (un bouton, l'orbe) :
+ * ces fonctions ne changent jamais d'identité, donc l'écran ne refait pas son
+ * rendu quand l'assistant change. `useAssistant()` le refait à chaque
+ * changement de la conversation, y compris à chaque mot reçu d'une réponse.
+ */
+export function useGestesAssistant(): GestesAssistant {
+  const c = useContext(GestesCtx);
+  if (!c) throw new Error("useGestesAssistant doit être utilisé dans <AssistantProvider>");
+  return c;
+}
+
 let _counter = 0;
 const uid = () => `${Date.now()}-${++_counter}`;
 /* ⚠️ Le jour du journal alimentaire se calcule en heure LOCALE, jamais en
@@ -3061,9 +3078,29 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
     return () => clearTimeout(t);
   }, [memoryNotice]);
 
+  /* ⭐ LES GESTES ONT LEUR PROPRE CONTEXTE (2026-10-27). `open` dépend de
+     `sendMessage`, qui change à chaque message : passer par une référence
+     tenue à jour donne des fonctions qui ne changent jamais, et les écrans
+     qui ne font qu'ouvrir la conversation ne refont plus leur rendu à chaque
+     mot reçu. */
+  const ouvrirRef = useRef(open);
+  const ouvrirSurQuestionRef = useRef(ouvrirSurQuestion);
+  useEffect(() => {
+    ouvrirRef.current = open;
+    ouvrirSurQuestionRef.current = ouvrirSurQuestion;
+  }, [open, ouvrirSurQuestion]);
+  const gestes = useMemo<GestesAssistant>(() => ({
+    open: (prefill?: string) => ouvrirRef.current(prefill),
+    ouvrirSurQuestion: (question: string) => ouvrirSurQuestionRef.current(question),
+    close,
+    toggle,
+  }), [close, toggle]);
+
   return (
+    <GestesCtx.Provider value={gestes}>
     <Ctx.Provider value={{ isOpen, open, ouvrirSurQuestion, close, toggle, clear, messages, isStreaming, sendMessage, repondreQuestion, pseudo: user?.pseudo, memoryNotice, pendingSeance, pendingPlan, pendingRecipe, pendingMeal, actionLoading, etatGuide, noterSaisie: setSaisie, noterOuverture, bibliothequePleine, seanceAccrochee, programmerSeance, garderSeance, cancelSeance, confirmPlan, basculerEnPlus, retargetPlan, cancelPlan, chargerJours, confirmRecipe, cancelRecipe, confirmMeal, cancelMeal, quotaChat, messagesEpuises }}>
       {children}
     </Ctx.Provider>
+    </GestesCtx.Provider>
   );
 }

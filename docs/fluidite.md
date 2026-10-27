@@ -73,6 +73,7 @@ ce qui a été changé, et les règles qui empêchent d'y revenir.
 | La scène du passage de rang devient un morceau chargé à la demande, préchargé au repos ; son écouteur reste au démarrage | `components/rang/SceneRang.tsx`, `CelebrationRang.tsx`, `Differes.tsx` |
 | Le contexte de la visite guidée n'importe plus la liste des chapitres (elle tirait toutes les scènes) | `context/GuidedTourContext.tsx`, `GuidedTour.tsx` |
 | `PhotoRonde` vit avec le cadre de la photo : la barre du haut ne tire plus la carte de rang entière | `components/rang/IdentiteRang.tsx` |
+| Les gestes de l'assistant (`open`…) ont leur contexte, stable : l'accueil, Entraînement, Nutrition, le lecteur et l'orbe ne refont plus leur rendu à chaque mot d'une réponse | `context/AssistantContext.tsx` (`useGestesAssistant`) |
 
 ## Les règles, pour ne pas y revenir
 
@@ -105,6 +106,9 @@ ce qui a été changé, et les règles qui empêchent d'y revenir.
   le morceau arrive (`CelebrationRang` → `SceneRang`), préchargé au repos par
   `PrechargeDifferes`. Le chargement raté rend `null`, jamais une page en
   erreur.
+- **Un écran qui ne fait qu'ouvrir la conversation lit `useGestesAssistant()`**,
+  jamais `useAssistant()` : le contexte complet change à chaque mot reçu d'une
+  réponse, et tous ses lecteurs refont leur rendu.
 - **Mesurer avant et après**, avec le même script, sur le HTML prérendu
   (`.next/server/app/*.html` liste ce que chaque page charge à l'ouverture) ;
   `next experimental-analyze --output` dit ce que pèse chaque module, chargé

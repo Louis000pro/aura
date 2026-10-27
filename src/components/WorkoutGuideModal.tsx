@@ -63,7 +63,7 @@ import QuestionMarge from "@/components/seance/QuestionMarge";
 import LaProchaineFois from "@/components/seance/LaProchaineFois";
 import { afficheDuRecordBattu, partagerAfficheRecord } from "@/lib/recordShareExport";
 import { choixApplicable, pasDeLEffort, pasDuRepos, repsADeclarer, type PositionTunnel, type SaisieReps } from "@/lib/transitionsTunnel";
-import { useAssistant } from "@/context/AssistantContext";
+import { useGestesAssistant } from "@/context/AssistantContext";
 import { exerciseData } from "@/lib/exercicesCatalogue";
 
 /* ── LE MOMENT DE REPOS, DÉDUIT DU COMPTEUR ────────────────────────────
@@ -418,7 +418,7 @@ export default function WorkoutGuideModal({
     });
   }, [exerciseList, sessionId]);
 
-  const { open: openAssistant } = useAssistant();
+  const { open: openAssistant } = useGestesAssistant();
   const { guide } = useGuideActif();
 
   const [phase,         setPhase]         = useState<GuidePhase>(reprise?.phase ?? "intro");

@@ -25,7 +25,7 @@
 import { useCallback, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Mic } from "lucide-react";
-import { useAssistant } from "@/context/AssistantContext";
+import { useGestesAssistant } from "@/context/AssistantContext";
 import { useVoiceCapture } from "@/hooks/useVoiceCapture";
 import { MarqueAssistant } from "@/components/AssistantMark";
 import { useGuideActif } from "@/context/GuideContext";
@@ -34,7 +34,7 @@ const LONG_PRESS_MS = 350;
 
 export default function NavOrb({ size = 48, glyph }: { size?: number; glyph?: number }) {
   const px = glyph ?? Math.round(size * 0.56);
-  const { open } = useAssistant();
+  const { open } = useGestesAssistant();
   const { guide } = useGuideActif();
   const voice = useVoiceCapture({ onTranscript: (t) => open(t) });
   const [pressing, setPressing] = useState(false);

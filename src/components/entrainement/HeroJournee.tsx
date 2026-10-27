@@ -24,7 +24,7 @@ import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { X } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useAssistant } from "@/context/AssistantContext";
+import { useGestesAssistant } from "@/context/AssistantContext";
 import { lockBodyModal } from "@/lib/bodyModal";
 import { useJournee } from "@/hooks/useJournee";
 import { dayTitle, hasSeance } from "@/lib/planning";
@@ -37,7 +37,7 @@ export default function HeroJournee({ onPret }: {
   onPret?: () => void;
 } = {}) {
   const router = useRouter();
-  const { open: openAssistant } = useAssistant();
+  const { open: openAssistant } = useGestesAssistant();
   const j = useJournee();
   useEffect(() => { if (j.etat !== "loading") onPret?.(); }, [j.etat, onPret]);
   /* « Lui donner un jour » : le seul geste du héros qui écrit. */

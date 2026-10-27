@@ -42,7 +42,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Check } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useGuideActif } from "@/context/GuideContext";
-import { useAssistant } from "@/context/AssistantContext";
+import { useGestesAssistant } from "@/context/AssistantContext";
 import { createClient } from "@/lib/supabase";
 import { EVT_NUTRITION, signalerRepas } from "@/lib/guideNutrition";
 import { ecrireMemoire, lireMemoire, oublierSur } from "@/lib/memoireSession";
@@ -121,7 +121,7 @@ function lireRegime(uid: string | null): string[] {
 export default function NutritionTab() {
   const { user, session } = useAuth();
   const { guide } = useGuideActif();
-  const { open: ouvrirAssistant } = useAssistant();
+  const { open: ouvrirAssistant } = useGestesAssistant();
   const router = useRouter();
   const { goals } = useNutritionGoals();
   const moment = useMomentRepas();
