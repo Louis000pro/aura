@@ -251,6 +251,15 @@
     background-color: var(--html-bg); /* évite le flash blanc au lancement (PWA) */
   }
 
+  /* UN APPUI PART TOUT DE SUITE. Le zoom par double appui reste possible
+     ailleurs (le pincement aussi, partout) ; sur ce qui se touche, le
+     téléphone n'attend plus de savoir si un second appui arrive avant de
+     déclencher le premier. Le défilement n'est pas touché : `manipulation`
+     garde le glissé dans les deux sens. */
+  a, button, input, label, select, summary, textarea, [role="button"] {
+    touch-action: manipulation;
+  }
+
   body {
     /* Essai « verre » (2026-10-10) : le fond vit dans body::before, fixe,
        pour que le verre des cartes ait toujours des couleurs à flouter. */

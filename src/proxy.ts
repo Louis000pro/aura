@@ -42,6 +42,19 @@ export function proxy(request: NextRequest) {
   return response;
 }
 
+/* ⚠️ LE FILTRE `has` EST LA MOITIÉ UTILE DU PROXY (2026-10-27).
+   Sans lui, le proxy tournait pour TOUTES les requêtes de page, y compris
+   celles d'une navigation dans l'app et les préchargements (requêtes RSC) :
+   chacune réveillait une fonction Vercel, parfois à froid, avant d'aller
+   chercher une page pourtant statique, pour finir par `return response`
+   sans rien faire. Le filtre reprend exactement la condition testée plus
+   haut, au niveau du routage : une navigation interne n'appelle plus
+   aucune fonction. La condition dans `proxy()` reste, par sécurité. */
 export const config = {
-  matcher: ["/((?!api|_next/static|_next/image|favicon\\.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|js|css|json|txt|xml|woff2?)$).*)"],
+  matcher: [
+    {
+      source: "/((?!api|_next/static|_next/image|favicon\\.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|js|css|json|txt|xml|woff2?)$).*)",
+      has: [{ type: "header", key: "sec-fetch-dest", value: "document" }],
+    },
+  ],
 };

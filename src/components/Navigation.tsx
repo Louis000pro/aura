@@ -84,6 +84,149 @@ function UserMenuItems({
   );
 }
 
+/* ── Une icône d'onglet ──
+   ⚠️ DÉCLARÉE ICI, HORS DE `Navigation`, ET C'EST TOUT L'INTÉRÊT. Elle
+   vivait dans le corps de `Navigation` : chaque rendu de la barre (changer
+   de page, défiler sous les 12 px, le rang relu) créait un NOUVEAU type de
+   composant, donc React démontait puis remontait les cinq onglets à chaque
+   fois. Les liens rejouaient leur préchargement, la pastille qui glisse
+   d'un onglet à l'autre repartait de zéro, et un appui en cours était
+   perdu. Un composant déclaré une fois garde ses onglets montés. */
+function OngletNav({
+  href, label, icon: Icon, sub, mobile, tourAnchor, pathname, progMenu, setProgMenu,
+}: {
+  href: string; label: string; icon: LucideIcon;
+  sub?: { href: string; label: string; icon?: LucideIcon }[];
+  mobile?: boolean;
+  tourAnchor?: string;
+  pathname: string;
+  progMenu: boolean;
+  setProgMenu: (ouvert: boolean) => void;
+}) {
+  const isProgActive = pathname === "/progression";
+  const isActive = sub ? isProgActive : pathname === href;
+  const badge    = null;
+
+  if (mobile) {
+    return (
+      <Link href={href} className="flex-1" aria-label={label} data-tour-anchor={tourAnchor}>
+        <motion.div
+          className="flex h-12 items-center justify-center cursor-pointer relative"
+          whileTap={{ scale: 0.88 }} transition={{ duration: 0.12 }}
+        >
+          {/* Icônes seules (Louis, 2026-10-11) : plus aucun libellé sous les
+              onglets. Le nom reste dans `aria-label` du lien. L'onglet
+              actif se reconnaît à sa couleur et à la pastille de verre. */}
+          {/* La pastille GLISSE d'un onglet à l'autre (Louis, 2026-10-12) :
+              un seul élément partagé par `layoutId`, framer anime sa place. */}
+          {isActive && (
+            <motion.span aria-hidden layoutId="mobile-pill" className="absolute h-10 w-12 rounded-full"
+              transition={{ type: "spring", stiffness: 420, damping: 34 }}
+              style={{ background: "rgba(var(--accent-rgb),0.14)" }} />
+          )}
+          <div className="relative">
+            <Icon size={23} strokeWidth={isActive ? 2.5 : 2}
+              style={{ color: isActive ? "var(--gold)" : "var(--nav-fg-inactive)", transition: "color 0.2s ease" }} />
+            {badge && (
+              <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }}
+                className="absolute -top-1.5 -right-1.5 w-[18px] h-[18px] rounded-full flex items-center justify-center text-[11px] font-bold"
+                style={{ background: "var(--accent)", color: "#fff" }}>
+                {badge > 9 ? "9+" : badge}
+              </motion.span>
+            )}
+          </div>
+        </motion.div>
+      </Link>
+    );
+  }
+
+  /* Desktop */
+  if (sub) {
+    return (
+      <div className="relative"
+        onMouseEnter={() => setProgMenu(true)}
+        onMouseLeave={() => setProgMenu(false)}>
+        <Link href={href} aria-label={label} data-tour-anchor={tourAnchor}>
+          <motion.div
+            className="relative flex items-center justify-center w-10 h-10 rounded-2xl cursor-pointer mx-auto"
+            whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.88 }}
+            transition={{ type: "spring", bounce: 0.4, duration: 0.3 }}
+          >
+            {isActive && (
+              <motion.div layoutId="desktop-pill" className="absolute inset-0 rounded-2xl"
+                style={{ background: "rgba(var(--surface-rgb),0.5)", backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)", border: "1px solid rgba(var(--accent-rgb),0.14)", boxShadow: "0 2px 10px rgba(0,0,0,0.10)" }}
+                transition={{ type: "spring", stiffness: 500, damping: 35 }} />
+            )}
+            <Icon size={18} strokeWidth={isActive ? 2 : 1.5} style={{ color: isActive ? "var(--nav-fg-active)" : "var(--nav-fg-inactive)", filter: "drop-shadow(0 1px 2px rgba(var(--surface-rgb),0.55))", position: "relative", zIndex: 1, transition: "color 0.2s ease" }} />
+          </motion.div>
+        </Link>
+
+        {/* Flyout sous-menu */}
+        <AnimatePresence>
+          {progMenu && (
+            <motion.div
+              initial={{ opacity: 0, x: -8, scale: 0.95 }}
+              animate={{ opacity: 1, x: 0, scale: 1 }}
+              exit={{ opacity: 0, x: -8, scale: 0.95 }}
+              transition={{ type: "spring", bounce: 0.2, duration: 0.25 }}
+              className="absolute left-[56px] top-0 rounded-2xl overflow-hidden z-50 min-w-[200px]"
+              style={{
+                background: "rgba(var(--surface-rgb),0.97)",
+                boxShadow: "0 8px 32px rgba(var(--accent-rgb),0.18), 0 2px 8px rgba(0,0,0,0.08)",
+                border: "1px solid rgba(196,168,255,0.2)",
+              }}
+            >
+              {sub.map((item) => {
+                const SubIcon = item.icon;
+                const subActive = pathname === item.href;
+                return (
+                  <Link key={item.href} href={item.href}
+                    className="flex items-center gap-3 px-4 py-3 text-[16px] font-semibold transition-colors hover:bg-purple-50"
+                    style={{ color: subActive ? "#7C5CFA" : "var(--text-1)" }}
+                    onClick={() => setProgMenu(false)}
+                  >
+                    {SubIcon && <SubIcon size={14} strokeWidth={2} style={{ color: subActive ? "#7C5CFA" : "var(--text-3)" }} />}
+                    {!SubIcon && <TrendingUp size={14} strokeWidth={2} style={{ color: subActive ? "#7C5CFA" : "var(--text-3)" }} />}
+                    {item.label}
+                    {subActive && <ChevronRight size={12} strokeWidth={2} className="ml-auto" style={{ color: "#7C5CFA" }} />}
+                  </Link>
+                );
+              })}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    );
+  }
+
+  return (
+    <Link href={href} aria-label={label} data-tour-anchor={tourAnchor}>
+      <motion.div
+        className="relative flex items-center justify-center w-10 h-10 rounded-2xl cursor-pointer mx-auto"
+        whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.88 }}
+        transition={{ type: "spring", bounce: 0.4, duration: 0.3 }}
+      >
+        {isActive && (
+          <motion.div layoutId="desktop-pill" className="absolute inset-0 rounded-2xl"
+            style={{ background: "rgba(var(--tint-violet-rgb),0.9)", boxShadow: "0 2px 12px -2px rgba(var(--accent-rgb),0.22)" }}
+            transition={{ type: "spring", stiffness: 500, damping: 35 }} />
+        )}
+        <div className="relative z-10">
+          <Icon size={18} strokeWidth={isActive ? 2 : 1.5} style={{ color: isActive ? "var(--nav-fg-active)" : "var(--nav-fg-inactive)", filter: "drop-shadow(0 1px 2px rgba(var(--surface-rgb),0.55))" }} />
+          {badge && !isActive && (
+            <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }}
+              transition={{ type: "spring", bounce: 0.6 }}
+              className="absolute -top-1.5 -right-1.5 w-[18px] h-[18px] rounded-full flex items-center justify-center text-[11px] font-bold"
+              style={{ background: "var(--accent)", color: "#fff" }}>
+              {badge > 9 ? "9+" : badge}
+            </motion.span>
+          )}
+        </div>
+      </motion.div>
+    </Link>
+  );
+}
+
 export default function Navigation() {
   const pathname   = usePathname();
   const router     = useRouter();
@@ -136,10 +279,14 @@ export default function Navigation() {
   /* Changer d'onglet repart du HAUT de la page (Louis, 2026-10-12). Sans ça,
      la nouvelle page héritait de la position de défilement de l'ancienne :
      le titre arrivait remonté de quelques dizaines de pixels, pile sous la
-     photo de profil et la cloche, qui elles réapparaissent à chaque page. */
+     photo de profil et la cloche, qui elles réapparaissent à chaque page.
+     ⚠️ `behavior: "instant"`, JAMAIS le défaut. `globals.css` pose
+     `scroll-behavior: smooth` sur <html> : un `scrollTo(0, 0)` nu hérite de
+     ce réglage, donc la nouvelle page arrivait en bas puis REMONTAIT en
+     glissant sous les yeux, à chaque changement d'onglet. */
   useLayoutEffect(() => {
     if (window.location.hash) return;
-    window.scrollTo(0, 0);
+    window.scrollTo({ top: 0, left: 0, behavior: "instant" });
   }, [pathname]);
   const enteteCache = defile.chemin === pathname && defile.bas;
   const styleEntete: React.CSSProperties = {
@@ -157,9 +304,11 @@ export default function Navigation() {
   const monRang = useRangMemorise(user?.id);
   const cadreAccueil = monRang ? cosmetiquesDuRang(monRang.id) : null;
 
-  /* ── Préchargement des routes principales → navigation instantanée ── */
+  /* ── Préchargement des routes principales → navigation instantanée ──
+     `/profil` en fait partie : on y entre par la photo de l'accueil, un
+     bouton (`router.push`) et pas un lien, donc rien ne le préchargeait. */
   useEffect(() => {
-    ["/", "/progression", "/nutrition", "/communaute"].forEach((r) => {
+    ["/", "/progression", "/nutrition", "/communaute", "/profil"].forEach((r) => {
       try { router.prefetch(r); } catch { /* ignore */ }
     });
   }, [router]);
@@ -198,141 +347,9 @@ export default function Navigation() {
      et la cloche flottante ferait deux barres l'une sur l'autre : sur /admin,
      la cloche venait se poser exactement sur le bouton « Actualiser ». */
 
-  const isProgActive = pathname === "/progression";
   const avatarLetter = (user?.pseudo ?? user?.name ?? "?")[0]?.toUpperCase() ?? "?";
   const isAdmin = !!user?.is_admin;
 
-  /* ── Helper: icône d'onglet ── */
-  const NavIcon = ({
-    href, label, icon: Icon, sub, mobile, tourAnchor,
-  }: {
-    href: string; label: string; icon: LucideIcon;
-    sub?: { href: string; label: string; icon?: LucideIcon }[];
-    mobile?: boolean;
-    tourAnchor?: string;
-  }) => {
-    const isActive = sub ? isProgActive : pathname === href;
-    const badge    = null;
-
-    if (mobile) {
-      return (
-        <Link href={href} className="flex-1" aria-label={label} data-tour-anchor={tourAnchor}>
-          <motion.div
-            className="flex h-12 items-center justify-center cursor-pointer relative"
-            whileTap={{ scale: 0.88 }} transition={{ duration: 0.12 }}
-          >
-            {/* Icônes seules (Louis, 2026-10-11) : plus aucun libellé sous les
-                onglets. Le nom reste dans `aria-label` du lien. L'onglet
-                actif se reconnaît à sa couleur et à la pastille de verre. */}
-            {/* La pastille GLISSE d'un onglet à l'autre (Louis, 2026-10-12) :
-                un seul élément partagé par `layoutId`, framer anime sa place. */}
-            {isActive && (
-              <motion.span aria-hidden layoutId="mobile-pill" className="absolute h-10 w-12 rounded-full"
-                transition={{ type: "spring", stiffness: 420, damping: 34 }}
-                style={{ background: "rgba(var(--accent-rgb),0.14)" }} />
-            )}
-            <div className="relative">
-              <Icon size={23} strokeWidth={isActive ? 2.5 : 2}
-                style={{ color: isActive ? "var(--gold)" : "var(--nav-fg-inactive)", transition: "color 0.2s ease" }} />
-              {badge && (
-                <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }}
-                  className="absolute -top-1.5 -right-1.5 w-[18px] h-[18px] rounded-full flex items-center justify-center text-[11px] font-bold"
-                  style={{ background: "var(--accent)", color: "#fff" }}>
-                  {badge > 9 ? "9+" : badge}
-                </motion.span>
-              )}
-            </div>
-          </motion.div>
-        </Link>
-      );
-    }
-
-    /* Desktop */
-    if (sub) {
-      return (
-        <div className="relative"
-          onMouseEnter={() => setProgMenu(true)}
-          onMouseLeave={() => setProgMenu(false)}>
-          <Link href={href} aria-label={label} data-tour-anchor={tourAnchor}>
-            <motion.div
-              className="relative flex items-center justify-center w-10 h-10 rounded-2xl cursor-pointer mx-auto"
-              whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.88 }}
-              transition={{ type: "spring", bounce: 0.4, duration: 0.3 }}
-            >
-              {isActive && (
-                <motion.div layoutId="desktop-pill" className="absolute inset-0 rounded-2xl"
-                  style={{ background: "rgba(var(--surface-rgb),0.5)", backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)", border: "1px solid rgba(var(--accent-rgb),0.14)", boxShadow: "0 2px 10px rgba(0,0,0,0.10)" }}
-                  transition={{ type: "spring", stiffness: 500, damping: 35 }} />
-              )}
-              <Icon size={18} strokeWidth={isActive ? 2 : 1.5} style={{ color: isActive ? "var(--nav-fg-active)" : "var(--nav-fg-inactive)", filter: "drop-shadow(0 1px 2px rgba(var(--surface-rgb),0.55))", position: "relative", zIndex: 1, transition: "color 0.2s ease" }} />
-            </motion.div>
-          </Link>
-
-          {/* Flyout sous-menu */}
-          <AnimatePresence>
-            {progMenu && (
-              <motion.div
-                initial={{ opacity: 0, x: -8, scale: 0.95 }}
-                animate={{ opacity: 1, x: 0, scale: 1 }}
-                exit={{ opacity: 0, x: -8, scale: 0.95 }}
-                transition={{ type: "spring", bounce: 0.2, duration: 0.25 }}
-                className="absolute left-[56px] top-0 rounded-2xl overflow-hidden z-50 min-w-[200px]"
-                style={{
-                  background: "rgba(var(--surface-rgb),0.97)",
-                  boxShadow: "0 8px 32px rgba(var(--accent-rgb),0.18), 0 2px 8px rgba(0,0,0,0.08)",
-                  border: "1px solid rgba(196,168,255,0.2)",
-                }}
-              >
-                {sub.map((item) => {
-                  const SubIcon = item.icon;
-                  const subActive = pathname === item.href;
-                  return (
-                    <Link key={item.href} href={item.href}
-                      className="flex items-center gap-3 px-4 py-3 text-[16px] font-semibold transition-colors hover:bg-purple-50"
-                      style={{ color: subActive ? "#7C5CFA" : "var(--text-1)" }}
-                      onClick={() => setProgMenu(false)}
-                    >
-                      {SubIcon && <SubIcon size={14} strokeWidth={2} style={{ color: subActive ? "#7C5CFA" : "var(--text-3)" }} />}
-                      {!SubIcon && <TrendingUp size={14} strokeWidth={2} style={{ color: subActive ? "#7C5CFA" : "var(--text-3)" }} />}
-                      {item.label}
-                      {subActive && <ChevronRight size={12} strokeWidth={2} className="ml-auto" style={{ color: "#7C5CFA" }} />}
-                    </Link>
-                  );
-                })}
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-      );
-    }
-
-    return (
-      <Link href={href} aria-label={label} data-tour-anchor={tourAnchor}>
-        <motion.div
-          className="relative flex items-center justify-center w-10 h-10 rounded-2xl cursor-pointer mx-auto"
-          whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.88 }}
-          transition={{ type: "spring", bounce: 0.4, duration: 0.3 }}
-        >
-          {isActive && (
-            <motion.div layoutId="desktop-pill" className="absolute inset-0 rounded-2xl"
-              style={{ background: "rgba(var(--tint-violet-rgb),0.9)", boxShadow: "0 2px 12px -2px rgba(var(--accent-rgb),0.22)" }}
-              transition={{ type: "spring", stiffness: 500, damping: 35 }} />
-          )}
-          <div className="relative z-10">
-            <Icon size={18} strokeWidth={isActive ? 2 : 1.5} style={{ color: isActive ? "var(--nav-fg-active)" : "var(--nav-fg-inactive)", filter: "drop-shadow(0 1px 2px rgba(var(--surface-rgb),0.55))" }} />
-            {badge && !isActive && (
-              <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }}
-                transition={{ type: "spring", bounce: 0.6 }}
-                className="absolute -top-1.5 -right-1.5 w-[18px] h-[18px] rounded-full flex items-center justify-center text-[11px] font-bold"
-                style={{ background: "var(--accent)", color: "#fff" }}>
-                {badge > 9 ? "9+" : badge}
-              </motion.span>
-            )}
-          </div>
-        </motion.div>
-      </Link>
-    );
-  };
 
   return (
     <>
@@ -424,9 +441,9 @@ export default function Navigation() {
           style={{ paddingTop: 6, paddingBottom: 6 }}
         >
           {/* 1. Accueil */}
-          <NavIcon href={TABS[0].href} label={TABS[0].label} icon={TABS[0].icon} sub={TABS[0].sub} mobile tourAnchor={TABS[0].tourAnchor} />
+          <OngletNav pathname={pathname} progMenu={progMenu} setProgMenu={setProgMenu} href={TABS[0].href} label={TABS[0].label} icon={TABS[0].icon} sub={TABS[0].sub} mobile tourAnchor={TABS[0].tourAnchor} />
           {/* 2. Progression */}
-          <NavIcon href={TABS[1].href} label={TABS[1].label} icon={TABS[1].icon} sub={TABS[1].sub} mobile tourAnchor={TABS[1].tourAnchor} />
+          <OngletNav pathname={pathname} progMenu={progMenu} setProgMenu={setProgMenu} href={TABS[1].href} label={TABS[1].label} icon={TABS[1].icon} sub={TABS[1].sub} mobile tourAnchor={TABS[1].tourAnchor} />
 
           {/* 3. Assistant — glyphe SVG, colonne calquée sur celle des onglets
                 (glyphe + hauteur de libellé réservée) → centres alignés. */}
@@ -435,9 +452,9 @@ export default function Navigation() {
           </div>
 
           {/* 4. Nutrition */}
-          <NavIcon href={TABS[2].href} label={TABS[2].label} icon={TABS[2].icon} sub={TABS[2].sub} mobile tourAnchor={TABS[2].tourAnchor} />
+          <OngletNav pathname={pathname} progMenu={progMenu} setProgMenu={setProgMenu} href={TABS[2].href} label={TABS[2].label} icon={TABS[2].icon} sub={TABS[2].sub} mobile tourAnchor={TABS[2].tourAnchor} />
           {/* 5. Communauté */}
-          <NavIcon href={TABS[3].href} label={TABS[3].label} icon={TABS[3].icon} sub={TABS[3].sub} mobile tourAnchor={TABS[3].tourAnchor} />
+          <OngletNav pathname={pathname} progMenu={progMenu} setProgMenu={setProgMenu} href={TABS[3].href} label={TABS[3].label} icon={TABS[3].icon} sub={TABS[3].sub} mobile tourAnchor={TABS[3].tourAnchor} />
         </div>
       </nav>
       )}
@@ -456,7 +473,7 @@ export default function Navigation() {
         >
           {/* Icônes de navigation */}
           {TABS.map(({ href, label, icon, sub, tourAnchor }) => (
-            <NavIcon key={href} href={href} label={label} icon={icon} sub={sub} tourAnchor={tourAnchor} />
+            <OngletNav pathname={pathname} progMenu={progMenu} setProgMenu={setProgMenu} key={href} href={href} label={label} icon={icon} sub={sub} tourAnchor={tourAnchor} />
           ))}
 
           {/* Assistant — glyphe SVG dans une case 40px comme les pastilles d'onglet */}

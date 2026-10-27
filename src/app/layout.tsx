@@ -186,7 +186,13 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="fr" translate="no" suppressHydrationWarning className={`${archivo.variable} ${chiffre.variable} h-full antialiased notranslate`} style={{ backgroundColor: "var(--html-bg)" }}>
+    /* ⚠️ `data-scroll-behavior="smooth"` N'EST PAS DÉCORATIF. `globals.css`
+       pose `scroll-behavior: smooth` sur <html> (utile pour une ancre dans
+       une page). Depuis Next 16, sans cet attribut, Next ne coupe plus ce
+       réglage pendant un changement de page : chaque navigation remontait
+       donc en haut EN GLISSANT, sous les yeux. Avec lui, l'arrivée sur une
+       page est instantanée et le défilement doux reste pour les ancres. */
+    <html lang="fr" translate="no" suppressHydrationWarning data-scroll-behavior="smooth" className={`${archivo.variable} ${chiffre.variable} h-full antialiased notranslate`} style={{ backgroundColor: "var(--html-bg)" }}>
       {/* Inline script runs before first paint — prevents dark mode flash */}
       <head>
         {/* Empêche les extensions de traduction (Google Translate, Opera) de casser React */}
