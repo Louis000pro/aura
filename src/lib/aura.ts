@@ -76,9 +76,9 @@ export const PLAFOND_JOUR_GRATUIT = 65;
 export const PLAFOND_JOUR_PREMIUM = 135;
 
 // ── Reset global de l'aura ──
-// Conservé pour mémoire : les crédits historiques repris par la migration de
-// juillet 2026 partent de cette date. Le registre ne se réécrit jamais.
-export const AURA_EPOCH = "2026-07-22";
+// Pour mémoire : les crédits historiques repris par la migration de juillet
+// 2026 partent du 2026-07-22 (AURA_EPOCH, dans la migration). Le registre ne
+// se réécrit jamais.
 
 /** Un rang = un palier de l'aura. `min` = EXP minimale pour l'atteindre. */
 export type Rang = {
@@ -355,9 +355,6 @@ export const MISSIONS_JOUR = MISSIONS.filter((m) => m.periode === "jour" && !m.p
 export const MISSIONS_PREMIUM = MISSIONS.filter((m) => m.periode === "jour" && m.premium);
 export const MISSIONS_SEMAINE = MISSIONS.filter((m) => m.periode === "semaine");
 export const MISSIONS_PREMIUM_SEMAINE = MISSIONS_SEMAINE.filter((m) => m.premium);
-
-/** Les missions qui VALIDENT la journée. La connexion n'en fait pas partie. */
-export const ACTIONS_UTILES: MissionId[] = ["seance", "repas"];
 
 // ── Récompenses de rang (refonte du 2026-10-24, maquette « Le passage de
 // rang », version 2, validée par Louis) ──

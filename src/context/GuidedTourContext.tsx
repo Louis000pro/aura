@@ -133,26 +133,3 @@ export function useGuidedTour() {
   return ctx;
 }
 
-/**
- * Helper : a-t-on déjà vu la visite ?
- * Source de vérité : DB (profiles.tour_completed). Fallback localStorage.
- */
-export async function hasTourBeenCompleted(userId: string): Promise<boolean> {
-  // Fallback localStorage (immédiat, pas de réseau)
-  try {
-    if (localStorage.getItem(LS_KEY) === "true") return true;
-  } catch { /* ignore */ }
-
-  if (!userId) return false;
-  try {
-    const supabase = createClient();
-    const { data } = await supabase
-      .from("profiles")
-      .select("tour_completed")
-      .eq("id", userId)
-      .maybeSingle();
-    return data?.tour_completed === true;
-  } catch {
-    return false;
-  }
-}

@@ -640,10 +640,6 @@ export function chargerTexte(id: string): Promise<TexteCours> {
   return p;
 }
 
-export function coursParId(id: string): Cours | undefined {
-  return COURS.find((c) => c.id === id);
-}
-
 /* ── Les règles ───────────────────────────────────────────────────── */
 
 const mots = (s: string) => s.split(/\s+/).filter((w) => /[\p{L}\d]/u.test(w)).length;

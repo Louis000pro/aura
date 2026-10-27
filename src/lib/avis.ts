@@ -52,19 +52,6 @@ async function joindreProfils(
   }));
 }
 
-/** Les avis APPROUVÉS, du plus récent au plus ancien. */
-export async function chargerAvis(): Promise<Avis[]> {
-  const supabase = createClient();
-  const { data, error } = await supabase
-    .from("avis")
-    .select("id, user_id, note, texte, created_at, statut")
-    .eq("statut", "approuve")
-    .order("created_at", { ascending: false })
-    .limit(200);
-  if (error || !data) return [];
-  return joindreProfils(supabase, data as Ligne[]);
-}
-
 /** Mon avis (quel que soit son statut), ou null si je n'en ai pas encore laissé. */
 export async function monAvis(userId: string): Promise<MonAvis | null> {
   const supabase = createClient();

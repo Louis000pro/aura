@@ -49,13 +49,6 @@ export function lieuPourEquivalents(lieuSeance: Ctx | null | undefined, nomPrevu
   return LIEUX_DU_PLUS_SOBRE.find((l) => praticableA(nomPrevu, l)) ?? "salle";
 }
 
-/** La mesure d'un exercice de la bibliothèque. */
-export function mesureDe(nom: string): MesureEx | null {
-  const lib = trouverExercice(nom);
-  if (!lib) return null;
-  return lib.mode === "temps" ? "duree" : "reps";
-}
-
 /**
  * Les équivalents d'un emplacement : même fonction, même lieu, même
  * mesure, une clé, une entrée dans la bibliothèque. Sans l'exercice

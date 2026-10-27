@@ -145,9 +145,3 @@ export function optionsIA(
   };
 }
 
-/**
- * @deprecated Passe par `optionsIA(role, maxTokens)` : elle porte aussi le
- * budget de tokens, qui n'est pas le même selon que le modèle raisonne.
- * Gardé pour ne casser aucun appelant existant.
- */
-export const CHAT_MODEL = CFG.modeles.coach;

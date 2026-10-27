@@ -40,16 +40,6 @@ export function parisHour(d: Date): number {
   return Number(hour ?? 0);
 }
 
-/** Clé de semaine ISO (ex. 2026-W30), avec semaine commençant le lundi. */
-export function isoWeekKey(dateStr: string): string {
-  const date = new Date(`${dateStr}T12:00:00Z`);
-  const day = date.getUTCDay() || 7;
-  date.setUTCDate(date.getUTCDate() + 4 - day);
-  const yearStart = new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
-  const week = Math.ceil((((date.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
-  return `${date.getUTCFullYear()}-W${String(week).padStart(2, "0")}`;
-}
-
 /** Décale une date YYYY-MM-DD sans dépendre du fuseau de l'appareil. */
 export function shiftDateStr(dateStr: string, days: number): string {
   const date = new Date(`${dateStr}T12:00:00Z`);

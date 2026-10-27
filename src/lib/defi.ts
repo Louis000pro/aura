@@ -145,12 +145,6 @@ function decaler(jour: string, jours: number): string {
   return `${date.getFullYear()}-${mm}-${dd}`;
 }
 
-/** Les jours de la fenêtre, du premier au dernier. */
-export function joursDeLaFenetre(defi: Defi): string[] {
-  if (!defi.debut) return [];
-  return Array.from({ length: defi.fenetre }, (_, i) => decaler(defi.debut!, i));
-}
-
 /* ── Lecture de l'état co-op ──────────────────────────────────
    Le relais n'est plus une alternance : les deux grimpent la MÊME échelle
    de 4 maillons, et on ne passe au suivant que quand les DEUX ont fait le
@@ -239,15 +233,6 @@ export function fenetreFinie(defi: Defi): boolean {
   if (defi.statut === "termine") return true;
   if (defi.statut !== "en_cours" || !defi.fin) return false;
   return aujourdhui() > defi.fin;
-}
-
-/** Le défi est-il encore mathématiquement gagnable ? */
-export function encoreJouable(defi: Defi): boolean {
-  // Chacun doit encore pouvoir finir ses maillons, à 2 par jour.
-  const place = joursRestants(defi) * MAILLONS_PAR_JOUR;
-  return defi.membres.every(
-    (m) => defi.objectif - defi.actions.filter((a) => a.userId === m.userId).length <= place,
-  );
 }
 
 /* ── Accès aux données ───────────────────────────────────────── */

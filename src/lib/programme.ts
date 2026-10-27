@@ -131,6 +131,12 @@ export function nomDeProgramme(objectifs: string[] | null | undefined): string {
 /**
  * L'étape SUIVANTE, dérivée et jamais stockée.
  *
+ * ⚠️ PLUS AUCUN ÉCRAN NE S'EN SERT (vérifié le 2026-10-27) : le curseur de
+ * l'app est `occurrenceSuivante` (R6, `lib/occurrences.ts`), que lisent
+ * `etapeSuivanteDe` et le Guide. Elle reste comme TÉMOIN des bancs :
+ * l'ancienne règle, que la nouvelle doit rejouer à l'identique sur un
+ * journal sans occurrence. Ne pas l'appeler depuis un écran.
+ *
  * `positionConsommee` est la position de la dernière étape refermée (la
  * dernière intention résolue qui portait un `etape_consommee_id`,
  * ordonnée par `consommee_le`). `null` = aucune étape refermée, donc on
@@ -654,14 +660,15 @@ export async function lireOccurrences(userId: string, actif: ProgrammeEtCycle): 
 /**
  * La position de la dernière étape refermée par un journal d'intentions.
  *
- * ⚠️ LES TROIS CONDITIONS DE « REFERMÉE » SONT ÉCRITES ICI, UNE FOIS, ET
- * C'EST CETTE FONCTION QUI DÉCIDE. Une intention referme une étape si
- * elle en DÉCLARE une (`etapeId`), si elle est résolue, et elle se
- * classe par `consommee_le` — jamais par `date`, une intention non datée
- * n'en ayant pas. La requête juste en dessous applique les mêmes filtres
- * en base pour ne rapatrier qu'une ligne ; elle optimise, elle ne
- * décide pas. C'est ce partage qui rend la règle vérifiable hors ligne
- * sur une app pourtant auth-gated.
+ * ⚠️ TÉMOIN DES BANCS SEULEMENT (2026-10-27) : la requête qu'elle doublait
+ * (`positionConsommee`) est partie avec R6, et le curseur de l'app se lit
+ * sur les occurrences (`positionDerniereFermee`, `occurrenceSuivante`).
+ * Elle garde la règle d'avant R6, que les bancs rejouent pour prouver que
+ * la nouvelle n'a rien changé. Ne pas l'appeler depuis un écran.
+ *
+ * Une intention referme une étape si elle en DÉCLARE une (`etapeId`), si
+ * elle est résolue, et elle se classe par `consommee_le`, jamais par
+ * `date`, une intention non datée n'en ayant pas.
  *
  * ⚠️ UNE INTENTION SANS ÉTAPE NE FAIT RIEN AVANCER, quel que soit son
  * titre : c'est ce qui garde un supplément, une séance du catalogue et

@@ -12,7 +12,7 @@
    ───────────────────────────────────────────────────────────── */
 
 import { useLayoutEffect, useRef, useState } from "react";
-import type { PerformanceData } from "@/components/PerformanceCard";
+import type { PerformanceData } from "@/lib/afficheSeance";
 
 const FONDS = [
   "radial-gradient(90% 60% at 100% 0%, rgba(193,59,193,.75) 0%, transparent 65%), radial-gradient(90% 70% at 0% 100%, rgba(139,92,246,.85) 0%, transparent 65%), #120D1A",

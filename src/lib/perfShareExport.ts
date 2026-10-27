@@ -6,9 +6,8 @@ import { motCouverture } from "@/components/profil/CouvertureSeance";
    image ; le texte (chiffre géant, marque, stats) est dessiné par-dessus au
    pixel près — donc net et exact, jamais halluciné.
 
-   Le composant PerfShareCard affiche la même compo en DOM (aperçu). Ici on
-   REDESSINE la compo sur un canvas pour l'export : la source de vérité de
-   l'image finale, c'est cette fonction. Voir [[nutrition-onmangeou-redesign]]
+   La compo est dessinée sur un canvas : la source de vérité de l'image
+   finale, c'est cette fonction. Voir [[nutrition-onmangeou-redesign]]
    pour la philosophie « on ne ment pas avec les chiffres ».
    ════════════════════════════════════════════════════════════════════ */
 

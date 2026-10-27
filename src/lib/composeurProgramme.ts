@@ -71,16 +71,6 @@ export function seancesDuChoix(n: number): number {
   return Math.max(1, Math.min(SEANCES_MAX, Math.round(Number.isFinite(n) ? n : 1)));
 }
 
-/** Les zones travaillées par une étape (par son nom). */
-export function zonesDeLEtape(nom: string): Zone[] {
-  const z = zonesDuNom(nom);
-  if (z) return z;
-  if (nom === "Haut du corps" || nom === "Push" || nom === "Pull") return [...HAUT];
-  if (nom === "Bas du corps") return [...BAS];
-  if (nom === "Full Body") return [...HAUT, ...BAS];
-  return [];
-}
-
 export function composerProgramme(choix: ChoixProgramme): ProgrammeCompose {
   const n = seancesDuChoix(choix.seances);
   const priorites = prioritesValides(choix.priorites);

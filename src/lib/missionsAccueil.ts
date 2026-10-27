@@ -18,52 +18,7 @@ import {
   MISSIONS_PREMIUM,
   type EtatAura,
   type Mission,
-  type MissionId,
 } from "@/lib/aura";
-
-/** Un marqueur du groupe « Ma journée » : un mot, et s'il est acquis. */
-export type Marqueur = { id: MissionId; libelle: string; acquis: boolean };
-
-/* ⚠️ TROIS MARQUEURS, ET « JOURNÉE COMPLÈTE » N'EN EST PAS UN.
-   Elle est comptée dans le « X / 4 » juste au-dessus, parce qu'elle est
-   bien une mission qui crédite. Mais elle n'est la CONSÉQUENCE d'aucun
-   geste propre : c'est le fait d'avoir coché les trois autres. En faire
-   un quatrième marqueur ferait lire quatre choses à faire là où il n'y en
-   a que trois, et le quatrième s'allumerait tout seul.
-
-   ⚠️ « PRÉSENCE », JAMAIS « VENU ». Le mot dit un ÉTAT (je suis là), pas
-   un exploit. C'est aussi ce qui rend lisible la règle la plus importante
-   du système : venir ne valide pas la journée, donc la présence n'est pas
-   une action qu'on propose, c'est une case déjà cochée en arrivant. */
-export const MARQUEURS: { id: MissionId; libelle: string }[] = [
-  { id: "connexion", libelle: "Présence" },
-  { id: "seance", libelle: "Séance" },
-  { id: "repas", libelle: "Repas" },
-];
-
-/* ⚠️ UNE SEULE MISSION A LE DROIT DE DEVENIR LA LIGNE D'ACTION, ET LES
-   TROIS EXCLUSIONS SONT DES RÈGLES PRODUIT, PAS UN OUBLI :
-
-   · `seance` est déjà portée par le HÉROS, en photo, en grand, avec son
-     bouton violet, à cent pixels au-dessus. La reproposer ici ne donnerait
-     pas deux chemins, juste deux fois le même.
-   · `connexion` est un état, pas une action : on ne demande à personne
-     d'ouvrir l'app qu'il vient d'ouvrir.
-   · `journee` n'a pas de geste à elle (`route: null` dans le catalogue) :
-     elle se remplit quand les autres se remplissent.
-
-   Reste `repas`, qui est une vraie action utile et qui n'existe nulle part
-   ailleurs sur cet écran. */
-const ACTIONS_PROPOSABLES: MissionId[] = ["repas"];
-
-/** Les marqueurs du jour, lus dans l'évaluation existante. */
-export function marqueursDuJour(aura: EtatAura): Marqueur[] {
-  return MARQUEURS.map(({ id, libelle }) => ({
-    id,
-    libelle,
-    acquis: !!aura.missions[id]?.complete,
-  }));
-}
 
 /**
  * « X / 4 missions ». Le dénominateur est la longueur du catalogue du jour,
@@ -80,15 +35,6 @@ export function compteMissionsJour(aura: EtatAura): { fait: number; total: numbe
     fait: MISSIONS_JOUR.filter((m) => aura.missions[m.id]?.complete).length,
     total: MISSIONS_JOUR.length,
   };
-}
-
-/** L'action utile qu'il reste, ou `null` s'il n'y a rien à proposer. */
-export function actionRestante(aura: EtatAura): Mission | null {
-  for (const id of ACTIONS_PROPOSABLES) {
-    const mission = MISSIONS_JOUR.find((m) => m.id === id);
-    if (mission && mission.route && !aura.missions[id]?.complete) return mission;
-  }
-  return null;
 }
 
 /**

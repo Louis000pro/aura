@@ -4,7 +4,7 @@ import { useState, useEffect, useSyncExternalStore, Fragment, type ReactNode } f
 import { motion, AnimatePresence } from "framer-motion";
 import AiMemoryManager from "@/components/AiMemoryManager";
 import TasteProfileModal from "@/components/TasteProfileModal";
-import { AssistantSpark, MarqueAssistant, VisageGuide } from "@/components/AssistantMark";
+import { MarqueAssistant, VisageGuide } from "@/components/AssistantMark";
 import GemmeRang from "@/components/GemmeRang";
 import { Lock, LogOut, ChevronRight, Eye, EyeOff, Check, AlertTriangle, X, Shield, Moon, Sun, Target, Compass, Gauge, Gem, Utensils, CreditCard, Sparkles, Star, Volume2, type LucideIcon } from "lucide-react";
 import { useRouter } from "next/navigation";

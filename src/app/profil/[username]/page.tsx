@@ -24,7 +24,7 @@ import LigneEnsemble from "@/components/profil/LigneEnsemble";
 import CouvertureSeance from "@/components/profil/CouvertureSeance";
 import AvecQui from "@/components/communaute/AvecQui";
 import { accepterDemandeAmi, creerConversation, demanderAmi, relationAmi, type RelationAmi } from "@/lib/messagerie";
-import type { PerformanceData } from "@/components/PerformanceCard";
+import type { PerformanceData } from "@/lib/afficheSeance";
 
 /* Les colonnes `goals` et `level` ont quitté ce type, et ce n'est pas un
    allègement : elles n'existent dans AUCUNE migration et ne sont écrites par

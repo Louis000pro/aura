@@ -350,7 +350,7 @@ function toutesLesPieces(): { id: string; texte: string }[] {
   const conseils = PIECES_CONSEIL.size;
   verdict("une banque assez grande pour ne pas se répéter", accroches >= 150 && conseils >= 120, `${accroches} accroches, ${conseils} conseils`);
 
-  const interdits = /\brat[ée]e?s?\b|manqu|oubli|dommage|attention|tu aurais|il faudrait|il fallait|il aurait fallu|en retard/i;
+  const interdits = /\brat[ée]e?s?\b|manqu|oubli|dommage|attention|tu aurais|il faudrait|il fallait|il aurait fallu|\ben retard\b/i;
   const reproches = toutes.filter((p) => interdits.test(texteBrut(p.texte)));
   verdict("aucune phrase du mot ne reproche quoi que ce soit", reproches.length === 0, reproches[0] ? `${reproches[0].id} : ${reproches[0].texte}` : "aucune");
 

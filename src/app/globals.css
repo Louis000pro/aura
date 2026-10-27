@@ -291,9 +291,6 @@
 
   ::selection { background-color: rgba(var(--tint-violet-rgb), 1); color: var(--text-1); }
 
-  /* Perf scroll : le navigateur saute le rendu des cartes hors écran */
-  .cv-auto { content-visibility: auto; contain-intrinsic-size: 0 480px; }
-
   /* Masque la barre du bas quand une modale plein écran est ouverte (évite la
      superposition de la nav par-dessus le pied de la modale sur mobile).
      `body.chat-open` a été retiré le 2026-09-03 : son seul auteur était le chat
@@ -327,15 +324,6 @@
     box-shadow: 0 10px 36px -12px rgba(0,0,0,0.22);
   }
 
-  /* Liquid glass — bouton "+" (Publier) : dégradé COLORÉ or (pas blanc) */
-  .nav-glass-yellow {
-    background: linear-gradient(135deg, rgba(var(--cream-mid-rgb),0.7) 0%, rgba(var(--gold-rgb),0.55) 100%);
-    backdrop-filter: blur(20px) saturate(200%);
-    -webkit-backdrop-filter: blur(20px) saturate(200%);
-    border: 1px solid rgba(var(--gold-rgb),0.4);
-    box-shadow: 0 4px 18px rgba(var(--gold-rgb),0.4);
-  }
-
   ::-webkit-scrollbar { width: 4px; height: 4px; }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background-color: rgba(var(--violet-mid-rgb), 0.6); border-radius: 99px; }
@@ -349,119 +337,6 @@
        donc iOS ne zoome pas non plus, et la règle du dessus ne l'écrase pas. */
     input.champ-geant { font-size: 40px !important; }
   }
-}
-
-/* ─────────────────────────── LIQUID GLASS ─────────────────────────── */
-
-@layer components {
-  /* Standard liquid glass surface */
-  .lg-surface {
-    position: relative;
-    background: rgba(var(--surface-rgb), 0.66);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(var(--accent-rgb), 0.10);
-    box-shadow: 0 10px 32px -12px rgba(var(--accent-rgb), 0.16);
-  }
-
-  /* Violet léger */
-  .lg-rose {
-    background: rgba(var(--tint-violet-rgb), 0.72);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(var(--violet-mid-rgb), 0.35);
-    box-shadow: 0 10px 32px -12px rgba(var(--accent-rgb), 0.2);
-  }
-
-  /* Jaune beige léger */
-  .lg-turquoise {
-    background: rgba(var(--tint-cream-rgb), 0.72);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(var(--cream-mid-rgb), 0.4);
-    box-shadow: 0 10px 32px -12px rgba(var(--gold-rgb), 0.2);
-  }
-
-  .lg-bicolor {
-    background: rgba(var(--tint-violet-rgb), 0.66);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(var(--violet-mid-rgb), 0.3);
-    box-shadow: 0 10px 32px -12px rgba(var(--accent-rgb), 0.16);
-  }
-
-  /* Strong (more opaque) glass — used for nav bars */
-  .lg-strong {
-    background: rgba(var(--surface-rgb), 0.82);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(var(--accent-rgb), 0.12);
-    box-shadow: 0 6px 24px -8px rgba(var(--accent-rgb), 0.14);
-  }
-
-  /* Ancien reflet blanc supprimé (rendu « bâclé / IA ») → no-op */
-  .lg-highlight::before { content: none; }
-
-  /* Ambient glow blob — to layer behind glass */
-  .lg-blob {
-    position: absolute;
-    border-radius: 50%;
-    filter: blur(60px);
-    opacity: 0.6;
-    pointer-events: none;
-  }
-}
-
-/* ─────────────────────── KEYFRAME ANIMATIONS ─────────────────────── */
-
-@keyframes float {
-  0%, 100% { transform: translateY(0px); }
-  50%       { transform: translateY(-14px); }
-}
-
-@keyframes float-slow {
-  0%, 100% { transform: translateY(0px) rotate(0deg); }
-  33%       { transform: translateY(-18px) rotate(3deg); }
-  66%       { transform: translateY(-8px) rotate(-2deg); }
-}
-
-@keyframes morph {
-  0%, 100% { border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%; }
-  25%       { border-radius: 30% 60% 70% 40% / 50% 60% 30% 60%; }
-  50%       { border-radius: 50% 60% 30% 60% / 30% 60% 70% 40%; }
-  75%       { border-radius: 60% 30% 40% 60% / 70% 40% 60% 30%; }
-}
-
-@keyframes shimmer-x {
-  0%   { background-position: -200% center; }
-  100% { background-position: 200% center; }
-}
-
-@keyframes pulse-ring {
-  0%   { transform: scale(1); opacity: 0.7; }
-  70%  { transform: scale(1.18); opacity: 0; }
-  100% { transform: scale(1.18); opacity: 0; }
-}
-
-@keyframes gradient-shift {
-  0%, 100% { background-position: 0% 50%; }
-  50%       { background-position: 100% 50%; }
-}
-
-@keyframes sparkle-pop {
-  0%   { transform: scale(0) rotate(0deg); opacity: 1; }
-  60%  { transform: scale(1.3) rotate(180deg); opacity: 1; }
-  100% { transform: scale(0) rotate(360deg); opacity: 0; }
-}
-
-@keyframes breathe {
-  0%, 100% { transform: scale(1); opacity: 0.6; }
-  50%       { transform: scale(1.08); opacity: 0.9; }
-}
-
-@keyframes spin-slow {
-  from { transform: rotate(0deg); }
-  to   { transform: rotate(360deg); }
 }
 
 /* ──────────────── PSEUDO BRILLANT (récompense du rang Éternel) ───────────────
@@ -500,34 +375,6 @@
   .pseudo-brillant { animation: none; }
 }
 
-/* ─────────────────────────── HASHTAG ─────────────────────────── */
-/* Uses <b> tag so [data-theme="dark"] span {!important} cannot override */
-.hashtag,
-b.hashtag {
-  color: var(--accent) !important;
-  font-weight: 700 !important;
-  cursor: pointer;
-  display: inline;
-  font-style: normal;
-  text-decoration: none;
-}
-.hashtag:hover,
-b.hashtag:hover { opacity: 0.75; }
-
-@layer utilities {
-  .animate-float       { animation: float 4s ease-in-out infinite; }
-  .animate-float-slow  { animation: float-slow 6s ease-in-out infinite; }
-  .animate-morph       { animation: morph 8s ease-in-out infinite; }
-  .animate-shimmer-x   { animation: shimmer-x 2.5s linear infinite; background-size: 200% auto; }
-  .animate-pulse-ring  { animation: pulse-ring 2s ease-out infinite; }
-  .animate-gradient-shift { animation: gradient-shift 5s ease infinite; background-size: 200% 200%; }
-  .animate-breathe     { animation: breathe 3s ease-in-out infinite; }
-  .animate-spin-slow   { animation: spin-slow 20s linear infinite; }
-
-  /* GPU compositing hints */
-  .gpu { transform: translateZ(0); backface-visibility: hidden; }
-}
-
 /* Respect reduced-motion preference */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
@@ -542,28 +389,11 @@ b.hashtag:hover { opacity: 0.75; }
    (voir layout.tsx) sur les appareils peu puissants. On y réduit le rayon des
    flous `backdrop-filter` — l'effet GPU le plus coûteux au scroll — tout en
    gardant l'aspect « verre dépoli ». Les appareils capables ne sont PAS touchés.
-   Règles hors @layer → elles l'emportent sur les définitions de .lg-* du layer. */
+   Règles hors @layer : elles l'emportent sur la définition de .nav-glass. */
 html.perf-lite .nav-glass {
   backdrop-filter: blur(8px) saturate(140%);
   -webkit-backdrop-filter: blur(8px) saturate(140%);
 }
-html.perf-lite .nav-glass-yellow {
-  backdrop-filter: blur(8px) saturate(150%);
-  -webkit-backdrop-filter: blur(8px) saturate(150%);
-}
-html.perf-lite .lg-surface,
-html.perf-lite .lg-rose,
-html.perf-lite .lg-turquoise,
-html.perf-lite .lg-bicolor {
-  backdrop-filter: blur(5px);
-  -webkit-backdrop-filter: blur(5px);
-}
-html.perf-lite .lg-strong {
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-}
-html.perf-lite .lg-blob { filter: blur(34px); opacity: 0.5; }
-
 /* ──────────── ACCUEIL — ce que reçoit le HTML servi par le serveur ────────────
    Le serveur ne peut pas savoir qui demande la page : il rend donc TOUJOURS la
    landing publique. C'est ce qui la met dans le HTML initial, lisible sans
@@ -943,9 +773,7 @@ html:not(.a-session) .mobile-nav { display: none !important; }
 
    Le verre ne sert QU'À ce qui flotte au-dessus d'autre chose :
    · .vy-verre        la capsule de navigation du bas ;
-   · .vy-verre-epais  les feuilles du bas (plus opaque : du texte s'y lit) ;
-   · .vy-verre-photo  les commandes posées sur une photo, claires dans les
-                      deux thèmes (c'est la photo qui commande).
+   · .vy-verre-epais  les feuilles du bas (plus opaque : du texte s'y lit).
    Jamais sur une carte posée sur le fond uni : le flou n'y montre rien.
 
    ⚠️ Sur iPhone (Safari), pas de réfraction façon Apple : c'est du verre
@@ -986,14 +814,6 @@ html:not(.a-session) .mobile-nav { display: none !important; }
   border-bottom: 0;
   box-shadow: inset 0 1px 0 var(--verre-reflet), 0 -18px 50px -20px rgba(20,10,50,.45);
 }
-.vy-verre-photo {
-  background: rgba(255,255,255,.16);
-  -webkit-backdrop-filter: blur(16px) saturate(170%);
-  backdrop-filter: blur(16px) saturate(170%);
-  border: 1px solid rgba(255,255,255,.34);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.55), 0 8px 22px -10px rgba(0,0,0,.45);
-  color: #fff;
-}
 /* LA BARRE DU BAS RESTE BLANCHE, PARTOUT (Louis, 2026-10-11).
    Avec `.vy-verre` (62 % d'opacité, saturation 180 %), la capsule prenait
    la couleur de ce qui passait dessous : grise sur une photo sombre,
@@ -1014,8 +834,7 @@ html:not([data-theme="dark"]) .vy-nav-blanc {
 html.perf-lite:not([data-theme="dark"]) .vy-nav-blanc { background: #fff; -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
 /* Qualité visuelle allégée : moins de flou, un fond plus couvrant. */
 html.perf-lite .vy-verre,
-html.perf-lite .vy-verre-epais,
-html.perf-lite .vy-verre-photo {
+html.perf-lite .vy-verre-epais {
   -webkit-backdrop-filter: blur(8px) saturate(140%);
   backdrop-filter: blur(8px) saturate(140%);
 }
@@ -1127,23 +946,6 @@ html:not([data-theme="dark"]) [style*="background: rgba(var(--tint-violet-rgb)"]
 html.perf-lite [style*="surface-rgb"] {
   -webkit-backdrop-filter: none !important;
   backdrop-filter: none !important;
-}
-
-/* Le « toit » du haut, sous la photo de profil et la cloche : un vrai verre
-   qui reste en place, et dont le bord bas s'efface progressivement. */
-.vy-toit {
-  background: linear-gradient(to bottom, var(--toit-teinte) 0%, transparent 100%);
-  -webkit-backdrop-filter: blur(18px) saturate(170%);
-  backdrop-filter: blur(18px) saturate(170%);
-  -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 62%, transparent 100%);
-  mask-image: linear-gradient(to bottom, #000 0%, #000 62%, transparent 100%);
-}
-:root { --toit-teinte: rgba(255,248,251,.55); }
-[data-theme="dark"] { --toit-teinte: rgba(13,9,24,.55); }
-html.perf-lite .vy-toit {
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
-  background: linear-gradient(to bottom, var(--html-bg) 40%, transparent 100%);
 }
 
 /* La photo de profil et la cloche restent clouées en haut : leur propre

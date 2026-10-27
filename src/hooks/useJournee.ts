@@ -654,7 +654,7 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
 
          ⚠️ ET UNE RÉPÉTITION NE DÉCLARE AUCUNE CIBLE, C'EST CE QUI LA
          REND INOFFENSIVE. Refaire une séance déjà terminée en la visant
-         par son `id` rejouerait `marquerIntention` sur elle : le fait
+         par son `id` rejouerait la fermeture (`finSeance`) sur elle : le fait
          d'origine verrait sa `date` et son `consommee_le` réécrits à
          l'instant de la répétition. Sans cible, la fin de séance n'écrit
          rien dans les intentions et le journal enregistre la séance pour

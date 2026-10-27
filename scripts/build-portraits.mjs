@@ -545,11 +545,6 @@ ${lignes || "  // Vide tant qu'aucune planche de moment n'a été générée."}
 export function aPortrait(cle: string): boolean {
   return DISPONIBLES.has(cle);
 }
-
-/** Tout ce qui existe, pour les scripts de vérification et la revue. */
-export function portraitsDisponibles(): string[] {
-  return [...DISPONIBLES].sort();
-}
 `;
 if (!CHECK) await writeFile(MANIFESTE, manifeste);
 console.log(`manifeste : ${disponibles.length} planche(s) de moment -> ${MANIFESTE}`);

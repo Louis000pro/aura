@@ -9,6 +9,15 @@
    rien dans le journal.
    ───────────────────────────────────────────────────────────── */
 
+/** Ce que porte une affiche de séance (`posts.performance_data`). */
+export type PerformanceData = {
+  type:     "workout" | "meal" | "day";
+  title:    string;
+  date:     string;
+  metrics:  { label: string; value: string; unit?: string }[];
+  highlight?: string;
+};
+
 export type ReglageAffiche = { mot?: string | null; teinte?: number };
 
 const cle = (userId: string) => `vaiiya_affiches_${userId}`;

@@ -82,13 +82,6 @@ export function ordreDuCycle<T extends { position: number }>(cycle: T[]): T[] {
   return [...cycle].sort((a, b) => a.position - b.position);
 }
 
-/** L'étape d'un rang (1-based). `null` sur un cycle vide ou un rang < 1. */
-export function etapeDuRang<T extends { position: number }>(cycle: T[], rang: number): T | null {
-  if (cycle.length === 0 || !Number.isInteger(rang) || rang < 1) return null;
-  const ordonne = ordreDuCycle(cycle);
-  return ordonne[(rang - 1) % ordonne.length];
-}
-
 /* Une fermeture imaginée a lieu maintenant, après toutes les autres. Une
    vraie fermeture sans heure n'a pas d'instant (NaN) : elle n'est « avant »
    ni « après » rien, donc aucun retard ne s'en déduit. C'est le sens de

@@ -8,7 +8,6 @@ import {
   X, Check, Lock, Camera, ChevronRight, ChevronDown,
   Pencil, Settings, Share2,
 } from "lucide-react";
-import { type PerformanceData } from "@/components/PerformanceCard";
 import Image from "next/image";
 import GemmeRang from "@/components/GemmeRang";
 import EtatVideGuide from "@/components/EtatVideGuide";
@@ -26,7 +25,7 @@ import type { ProgresBadges } from "@/lib/badges";
 import EtagereBadges from "@/components/profil/EtagereBadges";
 import CouvertureSeance from "@/components/profil/CouvertureSeance";
 import FeuilleAfficheSeance from "@/components/profil/FeuilleAfficheSeance";
-import { type ReglageAffiche, ecrireReglagesAffiches, lireReglagesAffiches } from "@/lib/afficheSeance";
+import { type PerformanceData, type ReglageAffiche, ecrireReglagesAffiches, lireReglagesAffiches } from "@/lib/afficheSeance";
 import CourbePoids from "@/components/profil/CourbePoids";
 import CarteConstance from "@/components/profil/CarteConstance";
 import RecordsProgres from "@/components/profil/RecordsProgres";

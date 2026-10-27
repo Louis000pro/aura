@@ -452,11 +452,6 @@
   outline-offset: 3px;
 }
 
-/* Le pseudo lumineux, dans un cadeau. */
-.brillantCadeau {
-  font-size: clamp(13px, 4.6cqw, 20px);
-}
-
 @keyframes tourne {
   to {
     rotate: 360deg;

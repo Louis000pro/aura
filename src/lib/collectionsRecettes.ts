@@ -596,10 +596,6 @@ export function envie(id: IdEnvie): Envie {
   return ENVIES.find((e) => e.id === id) ?? ENVIES[0];
 }
 
-export function estEnvie(id: string): id is IdEnvie {
-  return ENVIES.some((e) => e.id === id);
-}
-
 /** Les recettes d'une envie, compatibles avec le régime, et avec chaque
  *  envie ajoutée comme filtre. « Faire vite » se lit de la plus courte à
  *  la plus longue, et « Après le sport » commence par les shakers : dans

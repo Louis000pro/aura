@@ -33,7 +33,6 @@ import type { TypeCharge } from "@/lib/banqueEtapes";
 /** La réponse à « tu aurais pu en faire encore combien ? » (décision 57).
  *  `null` = jamais posée, ou ignorée : distinct de « Je ne sais pas ». */
 export type Marge = "aucune" | "1_2" | "3_plus" | "inconnue";
-export const MARGES: Marge[] = ["aucune", "1_2", "3_plus", "inconnue"];
 
 /** Une marge qui autorise une proposition. */
 export function margePositive(m: Marge | null | undefined): boolean {

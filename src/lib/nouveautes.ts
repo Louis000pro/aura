@@ -25,11 +25,6 @@ function comptes(): string[] {
   }
 }
 
-/** Ce compte a-t-il déjà vu le récap de cette vague ? */
-export function dejaVue(userId: string): boolean {
-  return comptes().includes(userId);
-}
-
 /** Le récap a été vu : la croix et le bouton appellent tous les deux ceci.
  *  Un popup qui revient parce qu'on l'a fermé par la croix serait pire
  *  que pas de popup du tout. */

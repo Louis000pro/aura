@@ -29,9 +29,6 @@ export function chargeReglable(t: TypeCharge | null | undefined): t is TypeCharg
  *  charge. Il peut différer de la prescription après un remplacement. */
 export type ExerciceEffectif = { cle: string; nom: string; chargeType: TypeCharge | null };
 
-/** Ce qu'une série prescrite en répétitions déclare au moment du « Fait ». */
-export type Declaration = { reps: number; charge: number | null };
-
 /** La prescription d'un exercice, si elle existe. */
 export function prescriptionDe(ex: { prescription?: ExercicePrescrit["prescription"] } | undefined | null) {
   return ex?.prescription ?? null;

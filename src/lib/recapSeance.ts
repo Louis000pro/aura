@@ -160,13 +160,6 @@ export function quandRelatif(termineLe: string, maintenant: Date): string {
 
 /* ── « Voir mes N exercices » ──────────────────────────────────────── */
 
-export type LigneDetail = {
-  serie: number;
-  /** « 10 × 60 kg », « 12 », « 45 s », « Passée ». */
-  texte: string;
-  faite: boolean;
-};
-
 /** Une série du journal, dite comme elle a été confirmée. */
 export function texteSerie(s: {
   statut: "terminee" | "passee" | "non_atteinte";

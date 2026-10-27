@@ -37,8 +37,6 @@ function premiereSeance(userId: string) {
   return workoutSessions.find((s) => s.id === id) ?? workoutSessions.find((s) => s.id === "express-12")!;
 }
 
-export { usePremierAccueil } from "@/components/accueil/usePremierAccueil";
-
 export default function PremierAccueil({ userId, pseudo, guide, onFermer }: {
   userId: string;
   pseudo: string;

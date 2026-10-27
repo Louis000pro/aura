@@ -45,10 +45,7 @@ import {
   MISSIONS, MISSIONS_JOUR, MISSIONS_PREMIUM, MISSIONS_PREMIUM_SEMAINE, MISSIONS_SEMAINE,
   type EtatAura, type MissionId,
 } from "@/lib/aura";
-import {
-  actionRestante, apercuPremiumDuJour, compteMissionsJour,
-  marqueursDuJour, missionDebloquee, MARQUEURS,
-} from "@/lib/missionsAccueil";
+import { apercuPremiumDuJour, compteMissionsJour, missionDebloquee } from "@/lib/missionsAccueil";
 import {
   cycleDeReference, seancesDuCycle, previewWeek, weekDates, ANCIEN, NOUVEAU,
   ordonner, parDate, principale, supplements, seancesDuJour, prochaineSeanceDuJour,
@@ -342,11 +339,12 @@ verdict(
    ⚠️ CE CONTRÔLE LIT LE SOURCE, ET C'EST VOLONTAIRE. La contrainte
    disparaît en base : un `on_conflict=user_id,date` oublié quelque part
    ne casserait pas le typecheck, il échouerait à l'exécution, sur une
-   écriture, chez quelqu'un. Et `marquerIntention` par la date créditerait
-   d'un coup la séance ET le supplément du même jour.                    */
+   écriture, chez quelqu'un. Et marquer une intention par la date
+   créditerait d'un coup la séance ET le supplément du même jour.        */
 {
   const source = readFileSync(new URL("../src/lib/planning.ts", import.meta.url), "utf8");
   const programme = readFileSync(new URL("../src/lib/programme.ts", import.meta.url), "utf8");
+  const fermeture = readFileSync(new URL("../src/lib/finSeance.ts", import.meta.url), "utf8");
 
   const fautes: string[] = [];
   const parcourir = (d: string) => {
@@ -402,11 +400,14 @@ verdict(
     "aucun appelant ne peut réintroduire un renvoi dans le vide",
   );
 
-  const corpsMarquer = source.slice(source.indexOf("export async function marquerIntention"));
-  const corps = corpsMarquer.slice(0, corpsMarquer.indexOf("\n}"));
+  /* Depuis le 2026-10-27, la seule écriture qui marque une intention
+     « faite » est `marquer` dans `finSeance.ts` (`marquerIntention`, sans
+     appelant, est supprimée). */
+  const debutMarquer = fermeture.indexOf("async marquer(");
+  const corps = debutMarquer < 0 ? "" : fermeture.slice(debutMarquer, fermeture.indexOf("async inserer(", debutMarquer));
   verdict(
-    "V6b · marquerIntention vise une intention, jamais une date",
-    corps.includes('.eq("id", intentionId)') && !corps.includes('.eq("date"'),
+    "V6b · la fermeture vise une intention, jamais une date",
+    corps.includes('.eq("id", id)') && !corps.includes('.eq("date"'),
     "cible = id",
   );
 }
@@ -1026,43 +1027,14 @@ verdict(
     "ni requête ni recomptage",
   );
 
-  /* ── Les marqueurs. « Présence » et jamais « Venu » ; trois et pas
-        quatre, parce que « Journée complète » se remplit toute seule. ── */
-  const marques = marqueursDuJour(auraAvec(["connexion", "repas"]));
+  /* ── « Présence », jamais « Venu ». Les marqueurs et l’action restante
+        de l’ancienne « Ma journée » sont partis avec elle (le bento du
+        2026-10-11 les a remplacés, le code est supprimé depuis le
+        2026-10-27) ; le mot, lui, reste interdit sur l’accueil. ── */
   verdict(
-    "V7B · trois marqueurs, et « Journée complète » n'en est pas un",
-    marques.length === 3 && !marques.some((m) => m.id === "journee") && MARQUEURS.length === 3,
-    marques.map((m) => m.libelle).join(" · "),
-  );
-  verdict(
-    "V7B · « Présence », jamais « Venu »",
-    marques[0].libelle === "Présence" && NEUFS.every((t) => !/\bVenu\b/.test(t)),
-    "le mot dit un état, pas un exploit",
-  );
-  verdict(
-    "V7B · un marqueur suit la mission qu'il nomme",
-    marques[0].acquis && !marques[1].acquis && marques[2].acquis,
-    "Présence ✓ · Séance ○ · Repas ✓",
-  );
-
-  /* ── L'action ne duplique jamais le héros. C'est la règle produit la
-        plus facile à défaire sans s'en apercevoir : reproposer la séance
-        ici, ce serait deux fois le même chemin à cent pixels d'écart. ── */
-  verdict(
-    "V7B · l'action restante ne propose jamais la séance du héros",
-    actionRestante(auraAvec([]))?.id === "repas" &&
-      actionRestante(auraAvec(["connexion"]))?.id === "repas",
-    "seul « Noter un repas » a le droit de devenir une action",
-  );
-  verdict(
-    "V7B · plus rien à proposer quand le repas est noté",
-    actionRestante(auraAvec(["repas"])) === null,
-    "aucune ligne d'action",
-  );
-  verdict(
-    "V7B · la connexion reste un état, jamais une action",
-    actionRestante(auraAvec([]))?.id !== "connexion",
-    "on ne demande pas d'ouvrir l'app qu'on vient d'ouvrir",
+    "V7B · aucun écran de l’accueil ne dit « Venu »",
+    NEUFS.every((t) => !/\bVenu\b/.test(t)),
+    "le mot dit un exploit, la présence est un état",
   );
 
   /* ── La rotation Premium. Un `Math.random()` changerait la mission entre
@@ -3459,7 +3431,7 @@ verdict(
   );
   verdict(
     "V9C · l'autorité relit, elle ne fait pas confiance au cache du Guide",
-    !/from "@\/lib\/guideMoteur"/.test(CIBLE9C) && !/etatMoteur\(/.test(CIBLE9C),
+    !/from "@\/lib\/guideMoteur"/.test(CIBLE9C) && !/\betatMoteur\(/.test(CIBLE9C),
     "`etatMoteur` est mis en cache 30 s : décider une ÉCRITURE dessus rouvrirait le double-fermage",
   );
   verdict(

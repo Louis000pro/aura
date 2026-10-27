@@ -397,74 +397,6 @@
   letter-spacing: -0.02em;
 }
 
-/* ⚠️ MESURÉ : `var(--accent)` (#A78BFA) tombe à 2,58:1 sur le fond clair,
-   très en dessous du seuil de lisibilité. Même piège que le teal
-   #2BD4A0 dans `admin.module.css`, même remède : un violet assombri en
-   clair, l'accent tel quel en sombre où il passe à 10,6:1. */
-.trait {
-  font-size: 13px;
-  font-weight: 700;
-  color: #6941C6;
-  line-height: 1.3;
-  letter-spacing: 0.01em;
-}
-
-:global([data-theme="dark"]) .trait { color: var(--accent); }
-
-.pour {
-  font-size: 13px;
-  line-height: 1.4;
-  color: var(--text-1);
-  font-weight: 600;
-  text-wrap: pretty;
-  margin-top: 2px;
-}
-
-/* La phrase de manière (« Elle structure davantage… ») est descendue
-   dans la feuille « En savoir plus ». Elle prenait deux lignes sur le
-   personnage pour dire ce que le couple trait + « tu préfères… » dit
-   déjà en un coup d'oeil. Rien n'est perdu : elle ouvre le détail. */
-/* ⚠️ LA VOIX DU GUIDE, dans la feuille « En savoir plus ». C'est la
-   seule ligne de tout l'écran où Nora ou Sasha parle à la première
-   personne, et il faut que ça se voie tout de suite : sinon « On y va,
-   je t'explique en route » se lit comme un slogan de Vaiiya.
-
-   Trois marques, toutes typographiques, aucune boîte : les guillemets,
-   le filet d'accent qui tient la citation, et un texte plus fort que la
-   description qui suit.
-
-   ⚠️ Les guillemets viennent du `<q>`, pas de la chaîne. `quotes`
-   impose les guillemets FRANÇAIS avec leurs espaces insécables : sans
-   cette ligne, Chrome rend « … » et Safari “ … ”, donc la même phrase
-   n'a pas la même ponctuation d'un téléphone à l'autre. */
-.feuilleVoix {
-  display: block;
-  quotes: "\00ab\00a0" "\00a0\00bb";
-  margin: 10px 0 0;
-  padding-left: 12px;
-  border-left: 2px solid rgba(var(--accent-rgb), 0.38);
-  font-size: 16px;
-  line-height: 1.5;
-  font-weight: 500;
-  color: var(--text-0);
-  text-wrap: pretty;
-}
-
-.enSavoirPlus {
-  align-self: center;
-  margin-top: 4px;
-  padding: 6px 8px;
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--text-soft);
-  background: none;
-  border: none;
-  text-decoration: underline;
-  text-underline-offset: 3px;
-  cursor: pointer;
-  min-height: 32px;
-}
-
 /* ── L'indicateur de deuxième Guide ──────────────────────────────── */
 /* ⚠️ Il NOMME l'autre Guide. C'est le vrai correctif du biais de
    premier slide : ce biais vient de ne pas savoir ce qu'il y a en face,
@@ -870,115 +802,6 @@
   margin-top: 28px;
 }
 
-/* ── Le détail « en savoir plus » ────────────────────────────────── */
-.voile {
-  position: fixed;
-  inset: 0;
-  z-index: 101;
-  background: rgba(10, 7, 24, 0.52);
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  /* Le voile assombrit, il ne doit pas laisser lire ce qu'il y a dessous :
-     sur fond clair, le Guide et le bouton violet restaient très présents
-     derrière une feuille qui, elle, n'avait pas de fond. */
-  backdrop-filter: blur(2px);
-  -webkit-backdrop-filter: blur(2px);
-  animation: voileEntre 0.18s ease-out;
-}
-
-.voile > * { animation: feuilleMonte 0.26s cubic-bezier(0.22, 0.61, 0.36, 1); }
-
-@keyframes voileEntre { from { opacity: 0; } to { opacity: 1; } }
-@keyframes feuilleMonte { from { transform: translateY(14px); } to { transform: none; } }
-
-/* ⚠️ `rgb(var(--surface-rgb))`, JAMAIS `var(--surface)` : ce token
-   n'existe pas dans `globals.css`, seule la base RGB y est définie. La
-   déclaration invalide était simplement ignorée, donc la feuille n'avait
-   AUCUN fond : ses puces et son bouton se dessinaient directement sur le
-   Guide et sur le bouton violet restés visibles derrière. Le même piège
-   est déjà documenté dans `PopupNouveautes.module.css`.
-
-   Un vrai panneau demande les trois : un fond opaque, un liseré qui le
-   décolle du voile, et une ombre portée qui dit qu'il est au-dessus. */
-.feuille {
-  width: 100%;
-  max-width: 560px;
-  border-radius: var(--r-feuille) var(--r-feuille) 0 0;
-  background: var(--verre-carte);
-  border-top: 1px solid rgba(var(--accent-rgb), 0.16);
-  box-shadow: 0 -14px 44px rgba(10, 5, 28, 0.30);
-  padding: 12px 20px calc(24px + env(safe-area-inset-bottom));
-  max-height: 80vh;
-  /* `dvh` sur les navigateurs mobiles : `vh` y compte la barre d'outils
-     rétractée, donc 80 vh peut dépasser ce qu'on voit réellement. */
-  max-height: 80dvh;
-  overflow-y: auto;
-  /* Le défilement de la feuille ne se propage pas à la page derrière. */
-  overscroll-behavior: contain;
-  -webkit-overflow-scrolling: touch;
-}
-
-/* La poignée. Elle ne sert pas à glisser (la fermeture se fait par le
-   bouton, par le voile ou par Échap), elle dit d'un coup d'oeil que ce
-   bloc est une feuille posée par-dessus, et pas un morceau de la page. */
-.feuille::before {
-  content: "";
-  display: block;
-  width: 36px;
-  height: 4px;
-  margin: 0 auto 14px;
-  border-radius: 999px;
-  background: rgba(var(--accent-rgb), 0.28);
-}
-
-.feuilleNom {
-  font-size: 20px;
-  font-weight: 800;
-  color: var(--text-0);
-}
-
-/* La ligne d'égalité, commune aux deux Guides. Elle se lit comme une
-   note et non comme un argument de plus : plus petite, plus douce, et
-   posée sur un filet qui la sépare des trois différences au-dessus. */
-.feuilleEgalite {
-  margin: 0 0 18px;
-  padding-top: 12px;
-  border-top: 1px solid rgba(var(--accent-rgb), 0.14);
-  font-size: 13px;
-  line-height: 1.5;
-  color: var(--text-soft);
-  text-wrap: pretty;
-}
-
-.feuilleListe {
-  margin: 12px 0 14px;
-  padding: 0;
-  list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: 9px;
-}
-
-.feuilleListe li {
-  font-size: 13px;
-  line-height: 1.45;
-  color: var(--text-soft);
-  padding-left: 16px;
-  position: relative;
-}
-
-.feuilleListe li::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  top: 8px;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--accent);
-}
-
 /* ── Écran d'attente ─────────────────────────────────────────────── */
 .attente {
   flex: 1;
@@ -1062,8 +885,6 @@
   .ligneEgalite { font-size: 13px; margin-bottom: 6px; }
   .identite { gap: 1px; }
   .nom { font-size: 26px; }
-  .pour { font-size: 13px; }
-  .enSavoirPlus { margin-top: 0; min-height: 28px; padding: 4px 8px; }
   .pg_scene { --fondu: linear-gradient(to bottom, #000 calc(100% - 196px), transparent calc(100% - 116px)); }
   .ctaSlide { margin-top: 10px; }
   .cta { min-height: 46px; padding: 12px 10px; }

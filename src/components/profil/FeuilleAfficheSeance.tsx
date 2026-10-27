@@ -14,8 +14,7 @@ import { useState } from "react";
 import { Play, Trash2 } from "lucide-react";
 import Sheet from "@/components/communaute/Sheet";
 import CouvertureSeance, { MOTS_PROPOSES, NB_FONDS, fondCouverture, motCouverture } from "./CouvertureSeance";
-import type { PerformanceData } from "@/components/PerformanceCard";
-import type { ReglageAffiche } from "@/lib/afficheSeance";
+import type { PerformanceData, ReglageAffiche } from "@/lib/afficheSeance";
 
 /* ⚠️ Ouverte depuis Collection › Affiches de séance, elle ne porte QUE
    « Supprimer » (Louis, 2026-10-14) : pas de mot, pas de fond, pas de

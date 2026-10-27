@@ -29,8 +29,3 @@ const DISPONIBLES = new Set<string>([
 export function aPortrait(cle: string): boolean {
   return DISPONIBLES.has(cle);
 }
-
-/** Tout ce qui existe, pour les scripts de vérification et la revue. */
-export function portraitsDisponibles(): string[] {
-  return [...DISPONIBLES].sort();
-}

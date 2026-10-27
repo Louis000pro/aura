@@ -56,7 +56,6 @@ import type { Origine } from "@/lib/programme";
 
 export const AXES_VERSION = 1;
 export const AXES_CONNUS = ["eviter_etapes"] as const;
-export type CleAxe = (typeof AXES_CONNUS)[number];
 
 /** Les axes d'une adaptation. V8 n'en porte qu'un.
  *

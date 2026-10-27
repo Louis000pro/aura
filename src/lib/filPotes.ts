@@ -15,7 +15,7 @@
 
 import { notifierBravo } from "@/lib/evenementsFil";
 import { createClient } from "@/lib/supabase";
-import type { PerformanceData } from "@/components/PerformanceCard";
+import type { PerformanceData } from "@/lib/afficheSeance";
 import type { Personne } from "@/lib/messagerie";
 
 export type SorteReaction = "feu" | "costaud" | "pareil";
@@ -38,8 +38,6 @@ export type AfficheDuFil = {
   /** Par sorte : qui a réagi. */
   reactions: Record<SorteReaction, string[]>;
 };
-
-export type PresenceAmi = Personne & { seanceAujourdhui: boolean };
 
 const FENETRE_JOURS = 14;
 

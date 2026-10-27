@@ -36,7 +36,6 @@ import { RANGS } from "@/lib/aura";
 export const VIOLET = "#8B5CF6";
 export const MAGENTA = "#C13BC1";
 export const OR = "#F5B120";
-export const OR_CHAUD = "#E8620C";
 export const TEAL = "#2BD4A0";
 export const OR_CLAIR = "#F5E6A3";
 
@@ -130,7 +129,6 @@ export function SceneOuverture({ pseudo, guide }: { pseudo: string; guide: Guide
             animate={reduce ? undefined : { opacity: [0.5, 0.95, 0.5], scale: [0.92, 1.06, 0.92] }}
             transition={{ duration: 4.4, repeat: Infinity, ease: "easeInOut" }}
           />
-          {/* eslint-disable-next-line @next/next/no-img-element */}
           <motion.img
             src="/marque/marque-blanc.png"
             alt="Vaiiya"

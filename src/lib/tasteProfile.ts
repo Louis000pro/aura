@@ -5,9 +5,10 @@
    bases préférées) est demandé une fois via le popup TastePrefsPrompt, puis
    modifiable à tout moment dans les Paramètres (TasteProfileModal). Les deux
    écrans partagent ce fichier pour que les questions, les bases proposées et
-   la logique d'enregistrement ne divergent JAMAIS — c'est aussi ce que lit le
-   menu généré par l'IA (/api/nutrition/menu, sans appelant depuis le gel).
-   Voir [[nutrition-unification-refonte]].
+   la logique d'enregistrement ne divergent JAMAIS. L'écran Nutrition le lit
+   pour classer les idées de repas (bases préférées). Le menu généré par
+   l'IA qui le lisait aussi (/api/nutrition/menu) est supprimé depuis le
+   2026-10-27. Voir [[nutrition-unification-refonte]].
    ════════════════════════════════════════════════════════════════════ */
 
 import { createClient } from "@/lib/supabase";

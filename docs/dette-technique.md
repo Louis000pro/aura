@@ -59,3 +59,38 @@ semaine ne doit pas écraser une modification en cours dans la feuille
 pendant le passage du dimanche au lundi, sur cet écran précis. Un
 rafraîchissement, une navigation ou une réouverture suffisent à corriger, et
 la PWA recharge le HTML au réseau d'abord.
+
+---
+
+## Des exports que seuls les bancs lisent
+
+**Relevé** le 2026-10-27, pendant le ménage du code (service de langage de
+TypeScript, références réelles). **Gardés**, volontairement.
+
+**Ce qui se passe.** Dix-huit exports de `src/lib/` n'ont plus aucun lecteur
+dans l'application : seuls les bancs les appellent. Deux familles.
+
+- **Des témoins.** `etapeSuivante` et `positionRefermee` (`programme.ts`)
+  gardent la règle du curseur d'avant R6 ; les bancs la rejouent contre
+  `occurrenceSuivante` pour prouver que les occurrences n'ont rien changé sur
+  un journal ancien. `rangPourEtape` (`occurrences.ts`) double le déclencheur
+  SQL `attribuer_rang`, `chevauchent` (`adaptation.ts`) l'`EXCLUDE` des
+  adaptations : ils rendent une règle de la base vérifiable hors ligne.
+- **Des aides de banc, ou une règle qu'aucun écran n'applique plus.**
+  `minutesDeLecture`, `formatDeLaDuree` (`coursNutrition.ts`),
+  `PIECES_ACCROCHE`, `PIECES_CONSEIL` (`motDuJour.ts`), `ditsDesIntentions`
+  (`rechercheRecettes.ts`), `MOMENTS` (`repas.ts`), `horsDuLieu`
+  (`banqueEtapes.ts`), `oublierSondageAdaptations` et `prochaineSeanceDuJour`
+  (`planning.ts`), `intentionDeLEtape` (`journee.ts`), `serieNommee`
+  (`recapSeance.ts`), `itemDeLigne` (`dureeLibre.ts`).
+
+**Ce que ça coûte.** Rien à l'exécution : un export sans lecteur ne part pas
+dans le code envoyé au téléphone. Le risque est ailleurs : une fonction au nom
+évident (`etapeSuivante`) peut être rappelée depuis un écran par quelqu'un qui
+la croit vivante. Leur commentaire le dit désormais (« ne pas l'appeler depuis
+un écran »).
+
+**Le remède, quand on le fera.** Pour chacune, soit la rebrancher là où sa
+règle doit vivre, soit retirer en même temps la fonction ET les contrôles qui
+la testent. Retirer l'une sans les autres casse un banc ; retirer les contrôles
+d'un témoin fait perdre la preuve qu'il fournit.

@@ -64,27 +64,16 @@ export async function cransConfirmes(userId: string, cles: string[], client?: Cl
 const SEANCES_EXAMINEES = 12;
 
 /**
- * La charge de référence de chaque exercice : la dernière réalisation
- * complète et comparable, à charge homogène (`chargeDeReference`).
- * `null` = on ne sait pas, et rien n'est affiché.
+ * Les séries des séances récentes qui contiennent ces exercices, lues par
+ * séances ENTIÈRES (R5 : le fait marquant de la fin s'en sert aussi).
+ * `null` = lecture ratée, jamais « aucun historique ». Le tunnel en tire
+ * la charge de référence de chaque exercice (`referencesDepuisSeries`).
  *
  * ⚠️ DEUX LECTURES, ET LA SECONDE N'EST JAMAIS FILTRÉE PAR CLÉ (tour 30).
  * La première trouve les séances récentes qui contiennent ces
  * exercices ; la seconde rapporte TOUTES leurs séries, pour que chaque
  * emplacement arrive entier (A → B → A garde son B). Si la base coupe la
  * réponse, la dernière séance lue peut être tronquée : elle est écartée.
- */
-export async function referencesDeCharge(
-  userId: string, exercices: ReferencePrescrite[], client?: ClientLike,
-): Promise<Map<string, ReferenceCharge> | null> {
-  const series = await historiqueDesExercices(userId, exercices.map((e) => e.cle), client);
-  return series === null ? null : referencesDepuisSeries(series, exercices);
-}
-
-/**
- * Les séries des séances récentes qui contiennent ces exercices, lues par
- * séances ENTIÈRES (R5 : le fait marquant de la fin s'en sert aussi).
- * `null` = lecture ratée, jamais « aucun historique ».
  */
 export async function historiqueDesExercices(
   userId: string, clesDemandees: string[], client?: ClientLike,

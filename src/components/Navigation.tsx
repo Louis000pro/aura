@@ -469,7 +469,7 @@ export default function Navigation() {
         <motion.div
           initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
-          className="nav-glass lg-highlight relative flex flex-col h-full w-[68px] py-6 px-3 gap-2 rounded-3xl"
+          className="nav-glass relative flex flex-col h-full w-[68px] py-6 px-3 gap-2 rounded-3xl"
         >
           {/* Icônes de navigation */}
           {TABS.map(({ href, label, icon, sub, tourAnchor }) => (

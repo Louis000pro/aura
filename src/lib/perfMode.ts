@@ -46,23 +46,6 @@ function applyQuality(q: VisualQuality): void {
 }
 
 /**
- * Lecture seule du mode allégé — utilisé par les composants qui adaptent leur
- * rendu React (ex : l'orbe rend moins de blobs). On part de `false` au montage
- * (= valeur serveur) puis on lit la vraie valeur en effet → aucun mismatch
- * d'hydratation. Réactif aux changements de réglage en direct.
- */
-export function usePerfMode(): boolean {
-  const [lite, setLite] = useState(false);
-  useEffect(() => {
-    const read = () => setLite(document.documentElement.classList.contains("perf-lite"));
-    read();
-    window.addEventListener(QUALITY_EVENT, read);
-    return () => window.removeEventListener(QUALITY_EVENT, read);
-  }, []);
-  return lite;
-}
-
-/**
  * Réglage de la qualité visuelle (page Paramètres) : lit la préférence
  * sauvegardée, et l'applique en direct (classe <html> + persistance) sans
  * rechargement.

@@ -2,8 +2,10 @@
    notificationPrefs.ts : CE QUE VAIIYA A LE DROIT D'ENVOYER
 
    Source unique des cinq familles de notification. Ajouter une famille
-   se fait ICI (et nulle part ailleurs) : une entrée dans CATEGORIES, une
-   colonne dans la table, et l'écran de réglages la montre tout seul.
+   se fait ICI (et nulle part ailleurs) : une valeur dans `CategorieNotif`
+   et une colonne dans la table. L'écran qui règle chaque famille n'existe
+   pas encore (les Paramètres n'ont qu'un interrupteur pour tout) ; les
+   textes écrits pour lui sont dans le commit 0cc0fc14.
 
    Le contrôle vit dans `sendPushToUser` (porte unique, comme `exigerAdmin`
    pour l'administration et `garderIA` pour les routes IA). La catégorie y
@@ -15,44 +17,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 export type CategorieNotif = "rappel" | "message" | "ami" | "relais" | "maj";
-
-/**
- * Les cinq familles, dans l'ordre où l'écran de réglages les montre.
- * `texte` décrit ce qui arrive VRAIMENT, pas la catégorie en abstrait :
- * un réglage se lit avant de s'ouvrir, et personne ne coupe une case
- * dont il ne sait pas ce qu'elle contient.
- */
-export const CATEGORIES: {
-  cle: CategorieNotif;
-  titre: string;
-  texte: string;
-}[] = [
-  {
-    cle: "rappel",
-    titre: "Le rappel du soir",
-    texte: "Un seul message à 19 h, et uniquement s’il te reste ta séance à faire.",
-  },
-  {
-    cle: "message",
-    titre: "Les messages",
-    texte: "Quand quelqu’un t’écrit dans une conversation.",
-  },
-  {
-    cle: "ami",
-    titre: "Les amis",
-    texte: "Une demande d’ami, ou quelqu’un qui t’ajoute.",
-  },
-  {
-    cle: "relais",
-    titre: "Le relais",
-    texte: "Quand ton équipier franchit un maillon, et le jour décisif.",
-  },
-  {
-    cle: "maj",
-    titre: "Vaiiya change",
-    texte: "Quelques fois par an, quand une grosse mise à jour arrive.",
-  },
-];
 
 export type Preferences = Record<CategorieNotif, boolean>;
 

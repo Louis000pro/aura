@@ -21,9 +21,9 @@
 
    ⚠️ CE MODULE NE DÉCIDE RIEN, IL COMPOSE. Chaque fait vient de
    l'autorité qui le détient déjà : `lireProgrammeActif` pour le
-   programme, `positionConsommee` + `etapeSuivante` pour le curseur,
+   programme, `lireOccurrences` + `occurrenceSuivante` pour le curseur,
    `adaptationDuJour` + `etapeMasquee` pour la couche, `fetchRange` +
-   `principale` / `supplements` pour la journée, `reservationDeLEtape`
+   `principale` / `supplements` pour la journée, `reservationDeLOccurrence`
    pour le jour déjà donné à une étape. Aucune règle du moteur n'est
    réécrite ici, et aucune identité ne se devine par un titre.
 
