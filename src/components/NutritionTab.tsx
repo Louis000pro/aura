@@ -44,7 +44,8 @@ import { useAuth } from "@/context/AuthContext";
 import { useGuideActif } from "@/context/GuideContext";
 import { useAssistant } from "@/context/AssistantContext";
 import { createClient } from "@/lib/supabase";
-import { signalerRepas } from "@/lib/guideNutrition";
+import { EVT_NUTRITION, signalerRepas } from "@/lib/guideNutrition";
+import { ecrireMemoire, lireMemoire, oublierSur } from "@/lib/memoireSession";
 import { debutHistorique, historiqueComplet } from "@/lib/historique";
 import { localDateStr } from "@/lib/dates";
 import { loadTasteProfileLocal } from "@/lib/tasteProfile";
@@ -92,6 +93,12 @@ type Vue =
   | { nom: "favoris"; plats: RecentMeal[] } | { nom: "saison"; actif: MomentActif };
 type Fiche = { liste: Recipe[]; index: number; besoins: DayNeeds | null };
 type LoggedMeal = { name: string; calories: number; proteins: number; carbs: number; fats: number };
+/* Ce que la mémoire de session garde des derniers repas (voir le journal). */
+type RecentsMemorises = { plats: RecentMeal[]; extras: RecentMeal[] };
+/* Un repas noté AILLEURS (depuis la conversation du Guide) rend le journal
+   gardé périmé : on l'oublie, et Nutrition relit comme avant. Les écritures
+   de cet écran, elles, mettent la mémoire à jour juste après. */
+oublierSur("nutrition:", [EVT_NUTRITION]);
 
 const MOMENT_PHRASE: Record<MealType, string> = {
   "petit-dejeuner": "petit-déjeuner", "dejeuner": "déjeuner", "gouter": "goûter", "diner": "dîner",
@@ -197,7 +204,11 @@ export default function NutritionTab() {
   const masque = !!jourAffiche && !!debutHisto && jourAffiche < debutHisto;
 
   /* ── Le journal, gardé par jour : revenir du détail ne relit pas l'écran ── */
-  const [journal, setJournal] = useState<Record<string, MealEntry[]>>({});
+  /* ⚡ 2026-10-27 · Revenir sur Nutrition remontre tout de suite la journée
+     déjà lue dans cette session (voir `lib/memoireSession.ts`) ; la
+     lecture ci-dessous part quand même et remplace ce qui a changé. */
+  const [journal, setJournal] = useState<Record<string, MealEntry[]>>(() => lireMemoire(uid ? `nutrition:journal:${uid}` : null) ?? {});
+  useEffect(() => { ecrireMemoire(uid ? `nutrition:journal:${uid}` : null, journal); }, [uid, journal]);
   const cleJour = (date: string) => `${uid}:${date}`;
   useEffect(() => {
     if (!uid || !jourAffiche || masque) return;
@@ -223,8 +234,12 @@ export default function NutritionTab() {
   }, [repasDuJour]);
 
   /* ── Les derniers repas (fréquence, puis récence), et les derniers extras ── */
-  const [recents, setRecents] = useState<RecentMeal[]>([]);
-  const [recentsExtras, setRecentsExtras] = useState<RecentMeal[]>([]);
+  const [recents, setRecents] = useState<RecentMeal[]>(() => lireMemoire<RecentsMemorises>(uid ? `nutrition:recents:${uid}` : null)?.plats ?? []);
+  const [recentsExtras, setRecentsExtras] = useState<RecentMeal[]>(() => lireMemoire<RecentsMemorises>(uid ? `nutrition:recents:${uid}` : null)?.extras ?? []);
+  useEffect(() => {
+    if (!recents.length && !recentsExtras.length) return;
+    ecrireMemoire<RecentsMemorises>(uid ? `nutrition:recents:${uid}` : null, { plats: recents, extras: recentsExtras });
+  }, [uid, recents, recentsExtras]);
   const [versionRecents, setVersionRecents] = useState(0);
   useEffect(() => {
     if (!uid) return;

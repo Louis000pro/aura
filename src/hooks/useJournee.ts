@@ -29,6 +29,7 @@ import { createClient } from "@/lib/supabase";
 import { levelToDifficulty } from "@/lib/assistantActions";
 import { heroImageForSeance } from "@/lib/workoutArt";
 import { EVT_JOURNEE } from "@/lib/finSeance";
+import { ecrireMemoire, lireMemoire, oublierSur } from "@/lib/memoireSession";
 import { avecEtapeVerifiee, type ContexteEtape, deplacerReservation, etatJournee, lancementDuJour, libelleReservation, repetitionDuJour } from "@/lib/journee";
 import {
   lireSemaine, saveDay, reservationDeLOccurrence, hasSeance, loadLieu, readVariant, ctxFromLieu,
@@ -59,6 +60,29 @@ import { resolutionDuProgramme, type ResolutionProgramme } from "@/lib/projectio
 import { choixSuite, libelleAttente, libelleJourProjete } from "@/lib/projection";
 
 const DAY_FULL = ["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"];
+
+/* Ce que la mémoire de session garde d'une journée lue : exactement les
+   états publiés par `charger`, rien de dérivé (le reste se recalcule). */
+type JourneeMemorisee = {
+  semaine: PlanningDay[] | null;
+  besoinSetup: boolean;
+  programme: ProgrammeEtCycle | null;
+  gen: GenInput | null;
+  etape: EtapeOccurrence | null;
+  reservation: PlanningDay | null;
+  projection: ResolutionProgramme | null;
+  indisponible: boolean;
+  modele: ModeleDeLOccurrence | null;
+  adaptation: Adaptation | null;
+  niveau: string | null;
+  doneStats: { minutes: number; kcal: number } | null;
+  recentes: SerieRecente[] | null;
+};
+/* Une écriture faite ailleurs (fin de séance, le Guide, « Organiser », un
+   changement de lieu) rend la journée gardée périmée : on l'oublie, et le
+   prochain montage relit comme avant. Branché ici, au niveau du module,
+   pour valoir même quand aucun écran n'écoute. */
+oublierSur("journee:", [EVT_JOURNEE, "lieu-updated"]);
 
 /** Traduit les objectifs de l'onboarding en libellés lisibles par le
  *  générateur. C'est la même table qu'avant, elle n'a pas bougé d'une
@@ -159,33 +183,57 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
   const { user } = useAuth();
   const { launchWorkout } = useWorkoutLaunch();
 
-  const [semaine, setSemaine] = useState<PlanningDay[] | null>(null);
-  const [pret, setPret] = useState(false);
-  const [besoinSetup, setBesoinSetup] = useState(false);
-  const [programme, setProgramme] = useState<ProgrammeEtCycle | null>(null);
-  const [gen, setGen] = useState<GenInput | null>(null);
-  const [etape, setEtape] = useState<EtapeOccurrence | null>(null);
-  const [reservation, setReservation] = useState<PlanningDay | null>(null);
-  const [projection, setProjection] = useState<ResolutionProgramme | null>(null);
-  const [indisponible, setIndisponible] = useState(false);
+  /* ⚡ 2026-10-27 · REVENIR SUR L'ACCUEIL OU SUR ENTRAÎNEMENT NE REPART PLUS
+     DE ZÉRO. Ce que ce hook a publié en dernier, dans cette session, pour ce
+     compte et ce jour, est repris tel quel au montage (voir
+     `lib/memoireSession.ts`) ; `charger` relit quand même juste après, et
+     ce qui a changé arrive par-dessus. Les gestes, eux, relisent toujours
+     leur contexte avant d'écrire (`relireContexte`) : la mémoire ne sert
+     qu'à l'affichage. Effacée par `EVT_JOURNEE` et `lieu-updated` (voir le
+     bas du fichier) : une écriture faite ailleurs ne laisse jamais
+     remontrer une journée périmée. */
+  const cleMemoire = user ? `journee:${user.id}:${todayYmd()}` : null;
+  const [memoire] = useState(() => lireMemoire<JourneeMemorisee>(cleMemoire));
+
+  const [semaine, setSemaine] = useState<PlanningDay[] | null>(memoire?.semaine ?? null);
+  const [pret, setPret] = useState(!!memoire);
+  const [besoinSetup, setBesoinSetup] = useState(memoire?.besoinSetup ?? false);
+  const [programme, setProgramme] = useState<ProgrammeEtCycle | null>(memoire?.programme ?? null);
+  const [gen, setGen] = useState<GenInput | null>(memoire?.gen ?? null);
+  const [etape, setEtape] = useState<EtapeOccurrence | null>(memoire?.etape ?? null);
+  const [reservation, setReservation] = useState<PlanningDay | null>(memoire?.reservation ?? null);
+  const [projection, setProjection] = useState<ResolutionProgramme | null>(memoire?.projection ?? null);
+  const [indisponible, setIndisponible] = useState(memoire?.indisponible ?? false);
   /* Le programme dont l'écran montre la suite : une résolution ratée ne
      garde l'affichage que pour CE programme. Une ref, lue dans `charger`
      sans en faire une dépendance. */
-  const programmeAfficheRef = useRef<string | null>(null);
+  const programmeAfficheRef = useRef<string | null>(memoire?.programme?.programme.id ?? null);
   /* R2 · le modèle de l'étape suivante pour ce lieu : écrit, ou composé
      en mémoire. `null` = pas d'étape, ou lecture ratée (on ne lance pas).
      ⚠️ Il porte l'occurrence pour laquelle il a été lu (tour 22). */
-  const [modele, setModele] = useState<ModeleDeLOccurrence | null>(null);
+  const [modele, setModele] = useState<ModeleDeLOccurrence | null>(memoire?.modele ?? null);
   /* Tour 22 · seule la DERNIÈRE lecture publie : une réponse arrivée en
      retard ne remet pas à l'écran une étape ou un modèle périmés. */
   const lectureEnCours = useRef(0);
-  const [adaptation, setAdaptation] = useState<Adaptation | null>(null);
-  const [niveau, setNiveau] = useState<string | null>(null);
-  const [doneStats, setDoneStats] = useState<{ minutes: number; kcal: number } | null>(null);
+  const enLectureRef = useRef(false);
+  const [adaptation, setAdaptation] = useState<Adaptation | null>(memoire?.adaptation ?? null);
+  const [niveau, setNiveau] = useState<string | null>(memoire?.niveau ?? null);
+  const [doneStats, setDoneStats] = useState<{ minutes: number; kcal: number } | null>(memoire?.doneStats ?? null);
 
   /* R7 · les séries faites hier et aujourd'hui, pour dire un recouvrement.
      `null` = pas lu : on se tait, rien n'est bloqué. */
-  const [recentes, setRecentes] = useState<SerieRecente[] | null>(null);
+  const [recentes, setRecentes] = useState<SerieRecente[] | null>(memoire?.recentes ?? null);
+
+  /* Ce qui est publié est gardé, une fois la journée lue au moins une fois,
+     et jamais au milieu d'une relecture. */
+  useEffect(() => {
+    if (!pret || enLectureRef.current) return;
+    ecrireMemoire<JourneeMemorisee>(cleMemoire, {
+      semaine, besoinSetup, programme, gen, etape, reservation, projection,
+      indisponible, modele, adaptation, niveau, doneStats, recentes,
+    });
+  }, [cleMemoire, pret, semaine, besoinSetup, programme, gen, etape, reservation, projection,
+    indisponible, modele, adaptation, niveau, doneStats, recentes]);
 
   const today = todayYmd();
   const semaineDates = useMemo(() => weekDates(new Date(today + "T00:00:00")), [today]);
@@ -194,181 +242,189 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
     if (!user) return;
     const numero = ++lectureEnCours.current;
     const derniere = () => numero === lectureEnCours.current;
-    const supabase = createClient();
-    /* ⚡ 2026-10-20 · LES LECTURES PARTENT ENSEMBLE. Elles s'enchaînaient
-       une par une (profil, lieu, semaine, programme, adaptation…), donc
-       l'accueil se montait morceau par morceau. Tout ce qui ne dépend de
-       rien part tout de suite ; l'ordre de PUBLICATION, lui, ne change
-       pas. Seules les lectures partent en avance : la création d'un
-       programme (`creerProgramme`) attend toujours le profil. Le `.catch`
-       vide ne fait que marquer la promesse comme suivie : l'`await` plus
-       bas reçoit l'erreur comme avant. */
-    const enAvance = <T,>(p: Promise<T>) => { p.catch(() => {}); return p; };
-    const lieuP = enAvance(loadLieu(user.id));
-    const semaineP = enAvance(lireSemaine(user.id, weekDates()));
-    const actifP = creerProgramme ? null : enAvance(lireProgrammeActif(user.id));
-    const varieteP = enAvance(lireVariete(user.id));
-    const { data: prof, error: errProfil } = await supabase
-      .from("mon_profil")
-      .select("onboarding_level, onboarding_sessions_week, onboarding_goals")
-      .eq("id", user.id)
-      .maybeSingle();
-    /* Revue finale (P2) · ERREUR ≠ ABSENCE : un profil illisible n'est pas
-       un questionnaire jamais rempli. On garde ce qui est affiché et on dit
-       que la lecture a échoué, au lieu d'ouvrir la mise en route. */
-    if (errProfil) {
-      console.error("[journee] profil illisible :", errProfil.message);
-      if (!derniere()) return;
-      setIndisponible(true);
-      setPret(true);
-      return;
-    }
-
-    const aRepondu = !!(prof && (prof.onboarding_level || prof.onboarding_sessions_week
-      || (Array.isArray(prof.onboarding_goals) && prof.onboarding_goals.length > 0)));
-    const { location, equip } = await lieuP;
-    if (!derniere()) return;
-    {
-      const debutHier = new Date(todayYmd() + "T00:00:00");
-      debutHier.setDate(debutHier.getDate() - 1);
-      void seriesRecentes(user.id, debutHier).then((r) => { if (derniere()) setRecentes(r); });
-    }
-    setNiveau(prof?.onboarding_level ?? null);
-
-    if (!aRepondu) {
-      // Vraiment rien à lire (onboarding pas fait) → héros de mise en route.
-      setBesoinSetup(true);
-      setSemaine(null);
-      setPret(true);
-      return;
-    }
-    /* Lieu OPTIONNEL : tant que la synchro cross-device n'a pas eu lieu, le
-       localStorage de cet appareil peut être vide. On retombe sur le poids
-       du corps et la personne affine son lieu via « Organiser ». */
-    const reglages: GenInput = {
-      ctx: ctxFromLieu(location, equip),
-      sessions: prof!.onboarding_sessions_week ?? 3,
-      goals: ((prof!.onboarding_goals as string[] | null) ?? []).map((g) => goalLabels[g] ?? g),
-      level: prof!.onboarding_level,
-      variant: readVariant(user.id),
-      seed: user.id,
-    };
+    /* La mémoire de session ne garde que des journées LUES EN ENTIER : pendant
+       une relecture, un état publié en avance (les séries récentes) ne doit
+       pas être gardé avec le reste encore ancien. */
+    enLectureRef.current = true;
     try {
-      /* ⚠️ LIRE N'ÉCRIT PLUS RIEN (V5). Une semaine sans ligne est une
-         semaine sans rien de prévu, et c'est une réponse valide. */
-      const lue = await semaineP;
-      if (!derniere()) return;
-      setSemaine(lue);
-      setGen(reglages);
-      setBesoinSetup(false);
-    } catch (e) {
-      console.error("Planning load error", e);
-    }
-
-    /* ⚠️ LE PROGRAMME NE NAÎT QUE LÀ OÙ ON L'AUTORISE (V7A). Il se crée
-       normalement à la sortie du questionnaire, là où la personne vient
-       de donner ses réponses. Ici c'est le REPLI, pour les comptes qui
-       ont répondu avant que le questionnaire ne sache le faire — et il
-       n'est armé que sur Entraînement. L'accueil, lui, lit. */
-    /* ⚠️ Tour 41 · TOUTE CETTE LECTURE CONVERGE VERS UN SEUL « JE NE SAIS
-       PAS ». Une panne, où qu'elle survienne (programme, adaptation,
-       occurrences, résolution, modèle), garde l'ensemble déjà affiché et
-       le dit (« Programme non relu · Réessayer »), y compris au premier
-       chargement. Seule la dernière lecture publie. Un autre programme,
-       lui, ne garde rien de l'ancien. */
-    let actifLu: ProgrammeEtCycle | null | undefined;
-    let coucheLue: Adaptation | null = null;
-    const indisponibleEtGarder = () => {
-      if (!derniere()) return;
-      const memeProgramme = actifLu === undefined
-        || (!!actifLu && programmeAfficheRef.current === actifLu.programme.id);
-      setIndisponible(true);
-      if (!memeProgramme) {
-        setProgramme(actifLu ?? null);
-        programmeAfficheRef.current = actifLu?.programme.id ?? null;
-        setAdaptation(coucheLue);
-        setEtape(null);
-        setModele(null);
-        setReservation(null);
-        setProjection(null);
+      const supabase = createClient();
+      /* ⚡ 2026-10-20 · LES LECTURES PARTENT ENSEMBLE. Elles s'enchaînaient
+         une par une (profil, lieu, semaine, programme, adaptation…), donc
+         l'accueil se montait morceau par morceau. Tout ce qui ne dépend de
+         rien part tout de suite ; l'ordre de PUBLICATION, lui, ne change
+         pas. Seules les lectures partent en avance : la création d'un
+         programme (`creerProgramme`) attend toujours le profil. Le `.catch`
+         vide ne fait que marquer la promesse comme suivie : l'`await` plus
+         bas reçoit l'erreur comme avant. */
+      const enAvance = <T,>(p: Promise<T>) => { p.catch(() => {}); return p; };
+      const lieuP = enAvance(loadLieu(user.id));
+      const semaineP = enAvance(lireSemaine(user.id, weekDates()));
+      const actifP = creerProgramme ? null : enAvance(lireProgrammeActif(user.id));
+      const varieteP = enAvance(lireVariete(user.id));
+      const { data: prof, error: errProfil } = await supabase
+        .from("mon_profil")
+        .select("onboarding_level, onboarding_sessions_week, onboarding_goals")
+        .eq("id", user.id)
+        .maybeSingle();
+      /* Revue finale (P2) · ERREUR ≠ ABSENCE : un profil illisible n'est pas
+         un questionnaire jamais rempli. On garde ce qui est affiché et on dit
+         que la lecture a échoué, au lieu d'ouvrir la mise en route. */
+      if (errProfil) {
+        console.error("[journee] profil illisible :", errProfil.message);
+        if (!derniere()) return;
+        setIndisponible(true);
+        setPret(true);
+        return;
       }
-      setPret(true);
-    };
-    try {
+  
+      const aRepondu = !!(prof && (prof.onboarding_level || prof.onboarding_sessions_week
+        || (Array.isArray(prof.onboarding_goals) && prof.onboarding_goals.length > 0)));
+      const { location, equip } = await lieuP;
+      if (!derniere()) return;
+      {
+        const debutHier = new Date(todayYmd() + "T00:00:00");
+        debutHier.setDate(debutHier.getDate() - 1);
+        void seriesRecentes(user.id, debutHier).then((r) => { if (derniere()) setRecentes(r); });
+      }
+      setNiveau(prof?.onboarding_level ?? null);
+  
+      if (!aRepondu) {
+        // Vraiment rien à lire (onboarding pas fait) → héros de mise en route.
+        setBesoinSetup(true);
+        setSemaine(null);
+        setPret(true);
+        return;
+      }
+      /* Lieu OPTIONNEL : tant que la synchro cross-device n'a pas eu lieu, le
+         localStorage de cet appareil peut être vide. On retombe sur le poids
+         du corps et la personne affine son lieu via « Organiser ». */
+      const reglages: GenInput = {
+        ctx: ctxFromLieu(location, equip),
+        sessions: prof!.onboarding_sessions_week ?? 3,
+        goals: ((prof!.onboarding_goals as string[] | null) ?? []).map((g) => goalLabels[g] ?? g),
+        level: prof!.onboarding_level,
+        variant: readVariant(user.id),
+        seed: user.id,
+      };
+      try {
+        /* ⚠️ LIRE N'ÉCRIT PLUS RIEN (V5). Une semaine sans ligne est une
+           semaine sans rien de prévu, et c'est une réponse valide. */
+        const lue = await semaineP;
+        if (!derniere()) return;
+        setSemaine(lue);
+        setGen(reglages);
+        setBesoinSetup(false);
+      } catch (e) {
+        console.error("Planning load error", e);
+      }
+  
       /* ⚠️ LE PROGRAMME NE NAÎT QUE LÀ OÙ ON L'AUTORISE (V7A). Il se crée
          normalement à la sortie du questionnaire, là où la personne vient
          de donner ses réponses. Ici c'est le REPLI, pour les comptes qui
-         ont répondu avant que le questionnaire ne sache le faire — et il
+         ont répondu avant que le questionnaire ne sache le faire, et il
          n'est armé que sur Entraînement. L'accueil, lui, lit. */
-      const actif = actifP ? await actifP : await getOrCreateProgramme(user.id);
-      actifLu = actif;
-      /* ⚠️ V8 · L'ADAPTATION SE LIT AVANT L'ÉTAPE, PARCE QU'ELLE DÉCIDE
-         DE L'ÉTAPE. Une requête, et seulement s'il y a un programme :
-         sans programme il n'y a pas de cycle à adapter. Elle est
-         rattachée au programme ACTIF, donc une nouvelle version du
-         programme cesse d'être adaptée d'elle-même, sans écriture. */
-      /* La résolution ne dépend pas de l'adaptation : les deux partent
-         ensemble, et c'est l'étape suivante qui les attend toutes les deux. */
-      const projP = enAvance(resolutionDuProgramme(user.id, actif, todayYmd()));
-      const couche = actif ? await adaptationDuJour(user.id, actif.programme.id, todayYmd()) : null;
-      coucheLue = couche;
-      /* R9a · AVEC UN CALENDRIER CHOISI, LA SÉANCE PROPOSÉE VIENT DE LA
-         RÉSOLUTION PARTAGÉE (décision 21) : la tête de la suite hors
-         réservations futures. Sans calendrier choisi, la suite brute fait
-         foi, et elle ne se lit QUE dans ce cas (tour 41). */
-      const proj = await projP;
-      const choix = choixSuite(proj);
-      /* ⚠️ Tour 40 · RÉSOLUTION INDISPONIBLE : jamais la suite brute à sa
-         place, ce serait annoncer autre chose que le calendrier. */
-      if (choix.genre === "indisponible") { indisponibleEtGarder(); return; }
-      const suivante = choix.genre === "historique"
-        ? (actif ? await etapeSuivanteDe(user.id, actif, (e) => etapeMasquee(e.id, couche)) : null)
-        : choix.proposee ? { ...choix.proposee.etape, rang: choix.proposee.rang } : null;
-      /* ⚠️ R2 · tour 22 · L'ÉTAPE ET SON MODÈLE SE PUBLIENT ENSEMBLE.
-         Publier l'étape avant d'avoir lu son modèle laissait l'écran,
-         le temps d'une requête, avec l'étape B et le modèle de A. */
-      const ctxModele = contexteDe(reglages);
-      /* Le modèle, la variété et la réservation ne dépendent que de
-         l'étape : ils se lisent en même temps. */
-      const [lu, varieteLue, resa] = suivante
-        ? await Promise.all([
-            modeleDeLEtape({ id: suivante.id, nom: suivante.nom }, ctxModele),
-            varieteP,
-            actif ? reservationDeLOccurrence(user.id, actif.programme.id, suivante.rang) : Promise.resolve(null),
-          ])
-        : [null, null, null];
-      /* R7 · le réglage de variété décide des complémentaires : illisible,
-         on ne publie pas un contenu que l'écriture ne reprendrait pas. */
-      const variete = suivante ? varieteLue : null;
-      if (suivante && !variete) { indisponibleEtGarder(); return; }
-      /* ⚠️ R9a · tour 43 · `modeleDeLEtape` rend `null` quand il ne sait
-         pas (panne, modèle sans lignes) ; l'absence de modèle, elle, rend
-         la composition. Une étape sans modèle lisible n'est donc pas
-         publiable : on garde ce qui est affiché et on le dit. */
-      if (suivante && !lu) { indisponibleEtGarder(); return; }
-      /* ⚠️ ET ON DEMANDE À LA BASE SI CETTE ÉTAPE A DÉJÀ UN JOUR.
-         C'est la réparation du défaut du 2026-09-06 : une étape réservée
-         pour mardi ne doit pas être reproposée « quand tu veux ». On la
-         cherche en base, jamais dans la semaine chargée.
-         R6 · LA RÉSERVATION DE CETTE OCCURRENCE-LÀ, pas de l'étape en
-         général : une occurrence = une ligne (`uniq_occurrence`). */
-      if (!derniere()) return;
-      setIndisponible(false);
-      setProjection(proj);
-      setProgramme(actif);
-      programmeAfficheRef.current = actif?.programme.id ?? null;
-      setAdaptation(couche);
-      setEtape(suivante);
-      setModele(suivante && lu && variete
-        ? modeleDeLOccurrence(lu, suivante, ctxModele, variete, actif?.cycle.length ?? 1)
-        : null);
-      setReservation(resa);
-    } catch (e) {
-      console.error("Programme load error", e);
-      indisponibleEtGarder();
-      return;
+      /* ⚠️ Tour 41 · TOUTE CETTE LECTURE CONVERGE VERS UN SEUL « JE NE SAIS
+         PAS ». Une panne, où qu'elle survienne (programme, adaptation,
+         occurrences, résolution, modèle), garde l'ensemble déjà affiché et
+         le dit (« Programme non relu · Réessayer »), y compris au premier
+         chargement. Seule la dernière lecture publie. Un autre programme,
+         lui, ne garde rien de l'ancien. */
+      let actifLu: ProgrammeEtCycle | null | undefined;
+      let coucheLue: Adaptation | null = null;
+      const indisponibleEtGarder = () => {
+        if (!derniere()) return;
+        const memeProgramme = actifLu === undefined
+          || (!!actifLu && programmeAfficheRef.current === actifLu.programme.id);
+        setIndisponible(true);
+        if (!memeProgramme) {
+          setProgramme(actifLu ?? null);
+          programmeAfficheRef.current = actifLu?.programme.id ?? null;
+          setAdaptation(coucheLue);
+          setEtape(null);
+          setModele(null);
+          setReservation(null);
+          setProjection(null);
+        }
+        setPret(true);
+      };
+      try {
+        /* ⚠️ LE PROGRAMME NE NAÎT QUE LÀ OÙ ON L'AUTORISE (V7A). Il se crée
+           normalement à la sortie du questionnaire, là où la personne vient
+           de donner ses réponses. Ici c'est le REPLI, pour les comptes qui
+           ont répondu avant que le questionnaire ne sache le faire, et il
+           n'est armé que sur Entraînement. L'accueil, lui, lit. */
+        const actif = actifP ? await actifP : await getOrCreateProgramme(user.id);
+        actifLu = actif;
+        /* ⚠️ V8 · L'ADAPTATION SE LIT AVANT L'ÉTAPE, PARCE QU'ELLE DÉCIDE
+           DE L'ÉTAPE. Une requête, et seulement s'il y a un programme :
+           sans programme il n'y a pas de cycle à adapter. Elle est
+           rattachée au programme ACTIF, donc une nouvelle version du
+           programme cesse d'être adaptée d'elle-même, sans écriture. */
+        /* La résolution ne dépend pas de l'adaptation : les deux partent
+           ensemble, et c'est l'étape suivante qui les attend toutes les deux. */
+        const projP = enAvance(resolutionDuProgramme(user.id, actif, todayYmd()));
+        const couche = actif ? await adaptationDuJour(user.id, actif.programme.id, todayYmd()) : null;
+        coucheLue = couche;
+        /* R9a · AVEC UN CALENDRIER CHOISI, LA SÉANCE PROPOSÉE VIENT DE LA
+           RÉSOLUTION PARTAGÉE (décision 21) : la tête de la suite hors
+           réservations futures. Sans calendrier choisi, la suite brute fait
+           foi, et elle ne se lit QUE dans ce cas (tour 41). */
+        const proj = await projP;
+        const choix = choixSuite(proj);
+        /* ⚠️ Tour 40 · RÉSOLUTION INDISPONIBLE : jamais la suite brute à sa
+           place, ce serait annoncer autre chose que le calendrier. */
+        if (choix.genre === "indisponible") { indisponibleEtGarder(); return; }
+        const suivante = choix.genre === "historique"
+          ? (actif ? await etapeSuivanteDe(user.id, actif, (e) => etapeMasquee(e.id, couche)) : null)
+          : choix.proposee ? { ...choix.proposee.etape, rang: choix.proposee.rang } : null;
+        /* ⚠️ R2 · tour 22 · L'ÉTAPE ET SON MODÈLE SE PUBLIENT ENSEMBLE.
+           Publier l'étape avant d'avoir lu son modèle laissait l'écran,
+           le temps d'une requête, avec l'étape B et le modèle de A. */
+        const ctxModele = contexteDe(reglages);
+        /* Le modèle, la variété et la réservation ne dépendent que de
+           l'étape : ils se lisent en même temps. */
+        const [lu, varieteLue, resa] = suivante
+          ? await Promise.all([
+              modeleDeLEtape({ id: suivante.id, nom: suivante.nom }, ctxModele),
+              varieteP,
+              actif ? reservationDeLOccurrence(user.id, actif.programme.id, suivante.rang) : Promise.resolve(null),
+            ])
+          : [null, null, null];
+        /* R7 · le réglage de variété décide des complémentaires : illisible,
+           on ne publie pas un contenu que l'écriture ne reprendrait pas. */
+        const variete = suivante ? varieteLue : null;
+        if (suivante && !variete) { indisponibleEtGarder(); return; }
+        /* ⚠️ R9a · tour 43 · `modeleDeLEtape` rend `null` quand il ne sait
+           pas (panne, modèle sans lignes) ; l'absence de modèle, elle, rend
+           la composition. Une étape sans modèle lisible n'est donc pas
+           publiable : on garde ce qui est affiché et on le dit. */
+        if (suivante && !lu) { indisponibleEtGarder(); return; }
+        /* ⚠️ ET ON DEMANDE À LA BASE SI CETTE ÉTAPE A DÉJÀ UN JOUR.
+           C'est la réparation du défaut du 2026-09-06 : une étape réservée
+           pour mardi ne doit pas être reproposée « quand tu veux ». On la
+           cherche en base, jamais dans la semaine chargée.
+           R6 · LA RÉSERVATION DE CETTE OCCURRENCE-LÀ, pas de l'étape en
+           général : une occurrence = une ligne (`uniq_occurrence`). */
+        if (!derniere()) return;
+        setIndisponible(false);
+        setProjection(proj);
+        setProgramme(actif);
+        programmeAfficheRef.current = actif?.programme.id ?? null;
+        setAdaptation(couche);
+        setEtape(suivante);
+        setModele(suivante && lu && variete
+          ? modeleDeLOccurrence(lu, suivante, ctxModele, variete, actif?.cycle.length ?? 1)
+          : null);
+        setReservation(resa);
+      } catch (e) {
+        console.error("Programme load error", e);
+        indisponibleEtGarder();
+        return;
+      }
+      if (derniere()) setPret(true);
+    } finally {
+      if (derniere()) enLectureRef.current = false;
     }
-    if (derniere()) setPret(true);
   }, [user, creerProgramme]);
 
   useEffect(() => { void charger(); }, [charger]);

@@ -32,6 +32,15 @@ import { aiFetch } from "@/lib/aiFetch";
 import { bornesHier, journeeVide, lireRecap, noterRecap, type FaitsRecap, type Recap } from "@/lib/recapJour";
 import { usePremierAccueil } from "@/components/accueil/usePremierAccueil";
 import SqueletteAccueil from "@/components/accueil/SqueletteAccueil";
+import { ecrireMemoire, lireMemoire, oublierSur } from "@/lib/memoireSession";
+import { EVT_JOURNEE } from "@/lib/finSeance";
+import { EVT_NUTRITION } from "@/lib/guideNutrition";
+
+/* Ce que la mémoire de session garde de l'accueil (voir `Dashboard`). */
+type AccueilMemorise = { aura: EtatAura; relais: RelaisAccueil | null; heroPret: boolean };
+/* Une séance terminée ou un repas noté change le rang et les missions : on
+   oublie l'accueil gardé, et le prochain montage relit comme avant. */
+oublierSur("accueil:", [EVT_JOURNEE, EVT_NUTRITION]);
 
 import dynamic from "next/dynamic";
 // Trois écrans qui ne s'affichent qu'à la demande (ou presque jamais) : ils ne
@@ -72,8 +81,18 @@ function Dashboard() {
   // (connexion du jour). On recalcule l'aura APRÈS, sinon la connexion du jour ne
   // serait pas comptée (0 EXP, Jour 0) à cause de la race entre les deux effets.
   const [statsTick, setStatsTick] = useState(0);
-  const [aura, setAura] = useState<EtatAura>(() => etatDepuisExp(0));
-  const [auraLoaded, setAuraLoaded] = useState(false);
+  /* ⚡ 2026-10-27 · REVENIR SUR L'ACCUEIL NE REMONTRE PLUS LE SQUELETTE.
+     Ce que l'accueil a montré en dernier dans cette session (le rang AVEC
+     ses missions, le relais, et le fait que le héros était prêt) est repris
+     au montage, pour ce compte et ce jour parisien ; les lectures partent
+     quand même et corrigent ce qui a changé. Effacé par toute écriture
+     faite ailleurs (séance, repas : voir `oublierSur` en tête de fichier).
+     Voir `lib/memoireSession.ts`. */
+  const [memoire] = useState(() =>
+    lireMemoire<AccueilMemorise>(user ? `accueil:${user.id}:${parisDateStr()}` : null));
+  const cleMemoire = user ? `accueil:${user.id}:${parisDay}` : null;
+  const [aura, setAura] = useState<EtatAura>(() => memoire?.aura ?? etatDepuisExp(0));
+  const [auraLoaded, setAuraLoaded] = useState(!!memoire);
   /* ⚠️ DEUX DRAPEAUX, ET LA NUANCE COMPTE DEPUIS V7B. `auraLoaded` autorise
      l'affichage du RANG, et il passe à vrai dès le cache localStorage : c'est
      tout l'intérêt de ce cache, montrer tout de suite le dernier rang connu au
@@ -82,7 +101,7 @@ function Dashboard() {
      « 0 / 4 » et « Noter un repas » à quelqu'un qui vient de le noter, le
      temps d'un aller-retour. `missionsLues` ne passe à vrai que sur la
      réponse RÉELLE de la base. */
-  const [missionsLues, setMissionsLues] = useState(false);
+  const [missionsLues, setMissionsLues] = useState(!!memoire);
   const didInitAuraRef = useRef(false);
   useEffect(() => {
     if (!user) return;
@@ -94,7 +113,9 @@ function Dashboard() {
     // Affichage OPTIMISTE : au tout premier chargement, on montre tde suite le
     // dernier rang connu (cache localStorage) au lieu d'un « — » le temps que
     // les 5 requêtes de calculerAura reviennent. Le vrai calcul rafraîchit juste après.
-    if (firstRun) {
+    // ⚠️ Pas quand la mémoire de session a déjà donné le rang COMPLET : ce
+    // cache-ci ne garde que l'EXP, il viderait les missions affichées.
+    if (firstRun && !memoire) {
       try {
         const cached = localStorage.getItem(cacheKey);
         if (cached != null) {
@@ -123,7 +144,7 @@ function Dashboard() {
         noterRang(user.id, etat.rang);
       })
       .catch(() => { /* silencieux : on garde l'affichage précédent */ });
-  }, [user, statsTick, parisDay]);
+  }, [user, statsTick, parisDay, memoire]);
 
   // Animation quand l'EXP augmente : un « +N EXP » s'envole au-dessus du compteur
   // et la pastille pulse. On garde la 1re valeur en référence (pas d'anim au chargement).
@@ -170,7 +191,7 @@ function Dashboard() {
      montre ce qu'on a, plutôt qu'un écran qui a l'air bloqué. Les deux
      signaux ne redescendent jamais, donc l'accueil ne se recache pas
      quand il se relit après une séance. */
-  const [heroPret, setHeroPret] = useState(false);
+  const [heroPret, setHeroPret] = useState(() => !!memoire?.heroPret);
   const signalerHero = useCallback(() => setHeroPret(true), []);
   const [delaiPasse, setDelaiPasse] = useState(false);
   useEffect(() => {
@@ -277,7 +298,13 @@ function Dashboard() {
      `chargerRelaisAccueil`) : l'accueil est l'écran le plus ouvert de
      l'app, et `chargerDefi` en coûte six. Relu au changement de jour
      parisien, parce que « c'est à toi » change à minuit. */
-  const [relais, setRelais] = useState<RelaisAccueil | null>(null);
+  const [relais, setRelais] = useState<RelaisAccueil | null>(() => memoire?.relais ?? null);
+
+  /* Ce que l'accueil montre est gardé dès que le rang réel est lu. */
+  useEffect(() => {
+    if (!missionsLues) return;
+    ecrireMemoire<AccueilMemorise>(cleMemoire, { aura, relais, heroPret });
+  }, [cleMemoire, missionsLues, aura, relais, heroPret]);
   useEffect(() => {
     if (!user) return;
     let vivant = true;

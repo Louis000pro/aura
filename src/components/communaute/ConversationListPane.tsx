@@ -10,6 +10,7 @@
    ───────────────────────────────────────────────────────────── */
 
 import { useState, useEffect, useCallback, useMemo } from "react";
+import { ecrireMemoire, lireMemoire } from "@/lib/memoireSession";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
@@ -44,8 +45,11 @@ export default function ConversationListPane({
   const { user, session, isLoading: authLoading } = useAuth();
   const router = useRouter();
 
-  const [convs, setConvs]     = useState<Conversation[]>([]);
-  const [charge, setCharge]   = useState(true);
+  /* ⚡ 2026-10-27 · Revenir sur Communauté remontre tout de suite la liste
+     déjà lue dans cette session (voir `lib/memoireSession.ts`) : la
+     lecture et le temps réel ci-dessous la remettent à jour comme avant. */
+  const [convs, setConvs]     = useState<Conversation[]>(() => lireMemoire<Conversation[]>(user ? `communaute:convs:${user.id}` : null) ?? []);
+  const [charge, setCharge]   = useState(() => lireMemoire(user ? `communaute:convs:${user.id}` : null) === undefined);
   const [sheet, setSheet]     = useState<"non" | "choix" | "avecqui" | "nouvelle" | "actions">("non");
   const [occupe, setOccupe]   = useState(false);
   const [erreur, setErreur]   = useState<string | null>(null);
@@ -68,6 +72,9 @@ export default function ConversationListPane({
     setOnglet(o);
     try { sessionStorage.setItem("vaiiya:communaute:onglet", o); } catch { /* stockage bloqué */ }
   };
+  useEffect(() => {
+    if (!charge) ecrireMemoire<Conversation[]>(user ? `communaute:convs:${user.id}` : null, convs);
+  }, [user, charge, convs]);
   const nonLusTotal = convs.reduce((n, c) => n + (c.archivee || c.sourde ? 0 : c.nonLus), 0);
 
   const recharger = useCallback(async () => {
