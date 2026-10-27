@@ -14,32 +14,21 @@
    ════════════════════════════════════════════════════════════════════ */
 
 import { ADVICE_ARTICLES } from "./adviceArticles";
+import { workoutSessions } from "./catalogueSeances";
 import { COURS } from "./coursNutrition";
 import { EXERCISE_LIBRARY } from "./exerciseLibrary";
 import { RECIPES } from "./recipeBank";
 import { fichesPubliees } from "./exercicesPublics";
 
 /**
- * Le catalogue de séances, lui, n'est pas dérivable aujourd'hui : il vit dans
- * `workoutSessions`, un tableau interne à `app/progression/page.tsx` qui n'est
- * pas exporté, dans un composant de page de 2 800 lignes. L'importer depuis
- * ailleurs tirerait tout l'écran Entraînement dans la landing.
- *
- * Le nombre a donc été recompté sur la source, le 2026-08-10 : **53 `id`
- * uniques** dans le tableau littéral `workoutSessions`. Les mini-cours n'y
- * sont pas comptés : ils arrivent par un `...ADVICE_ARTICLES` étalé dans le
- * même tableau, et ils ont leur propre chiffre ci-dessous.
- *
- * Pour le revérifier : isoler le tableau depuis `const workoutSessions:
- * WorkoutSession[] = [` jusqu'à son crochet fermant (en comptant les
- * crochets, pas en cherchant le premier `]` : l'annotation de type en
- * contient un), puis compter les `id: "…"` distincts.
- *
- * À revérifier à chaque vague de contenu. Le jour où le catalogue sortira de
- * la page vers un module de données, cette constante devra disparaître au
- * profit d'un `.length`.
+ * Les séances du catalogue, comptées sur `workoutSessions`
+ * (lib/catalogueSeances.ts). Il était écrit à la main (53, recompté le
+ * 2026-08-10) tant que le catalogue vivait dans l'écran Entraînement ; il
+ * en est sorti, donc il se compte. Les mini-cours étalés dans le même
+ * tableau n'y entrent pas : ils ont leur propre chiffre ci-dessous.
+ * 80 séances le 2026-10-27, avec les séances par zone (vague 7).
  */
-const SEANCES_CATALOGUE = 53;
+const SEANCES_CATALOGUE = workoutSessions.filter((s) => s.contentType !== "article").length;
 
 export type ChiffresPublics = {
   /** Séances guidées du catalogue permanent. Compté à la main, voir ci-dessus. */

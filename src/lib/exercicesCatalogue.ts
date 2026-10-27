@@ -17,6 +17,7 @@ import { WAVE_3_EXERCISES } from "@/lib/workoutWave3";
 import { WAVE_4_EXERCISES } from "@/lib/workoutWave4";
 import { WAVE_5_EXERCISES } from "@/lib/workoutWave5";
 import { WAVE_6_EXERCISES } from "@/lib/workoutWave6";
+import { WAVE_7_EXERCISES } from "@/lib/workoutWave7";
 
 /* « Défi Animations » — les ateliers qui enchaînent les gestes animés,
    un thème par séance (la liste unique vit dans src/lib/guideSections.ts).
@@ -437,7 +438,7 @@ export const exerciseData: Record<string, Exercise[]> = {
       muscles: ["Obliques"] },
     { name: "Hollow hold", sets: 3, reps: "30 sec", rest: 30, auto: 30,
       tip: "Sur le dos, bas du dos plaqué au sol. Décolle épaules et jambes tendues, bras vers l’arrière. Si c’est trop dur, plie les genoux ou rapproche les bras du corps.",
-      benefit: "Le gainage anti-extension des gymnastes. Verrouille toute la sangle abdominale sous tension et crée un ventre plat et solide, base de tous les mouvements dynamiques.",
+      benefit: "Le gainage anti-extension des gymnastes. Verrouille toute la sangle abdominale sous tension et la rend plus solide, base de tous les mouvements dynamiques.",
       muscles: ["Abdominaux"] },
     { name: "Relevés de jambes lents", sets: 3, reps: "12 reps", rest: 30,
       tip: "Allongé, mains sous les fessiers. Monte les jambes tendues à la verticale, puis descends en 4 secondes sans que le bas du dos se creuse. Contrôle absolu, zéro élan.",
@@ -451,6 +452,8 @@ export const exerciseData: Record<string, Exercise[]> = {
 
   // Placée à la fin pour moderniser aussi la séance cardio-endurance historique.
   ...WAVE_4_EXERCISES,
+  // Les séances par zone (lot 1 de la banque, 2026-10-27).
+  ...WAVE_7_EXERCISES,
 };
 
 /* ⚠️ CETTE TABLE PORTE DES ALIAS, ET CE N'EST PAS DU DOUBLON. Un titre de
@@ -533,6 +536,34 @@ export const SESSION_SLUGS: Record<string, string> = {
   "Unilatéral — Maîtriser les appuis": "unilateral-maitrise",
   "Tempo, ralentir pour progresser": "tempo-controle",
   "Tempo — Ralentir pour progresser": "tempo-controle",
+  // Les séances par zone (vague 7).
+  "Gainage, les bases": "gainage-bases",
+  "Abdos sans tirer sur la nuque": "abdos-nuque",
+  "Le tronc dans tous les sens": "tronc-sens",
+  "Abdos et souffle": "abdos-souffle",
+  "Esprit Pilates": "esprit-pilates",
+  "Fessiers, l’essentiel": "fessiers-essentiel",
+  "Le pont, quatre façons": "pont-quatre-facons",
+  "Fessiers 300": "fessiers-300",
+  "Fessiers lourds": "fessiers-lourds",
+  "Fessiers aux haltères": "fessiers-halteres",
+  "Tabata fessiers": "tabata-fessiers",
+  "Jambes, l’essentiel": "jambes-essentiel",
+  "Jambes, la force sans matériel": "jambes-force",
+  "Le 5 × 5 des jambes": "jambes-5x5",
+  "Pecs à la maison": "pecs-maison",
+  "Pecs lourds": "pecs-lourds",
+  "Pecs aux haltères": "pecs-halteres",
+  "Dos et posture à la maison": "dos-posture",
+  "Dos large": "dos-large",
+  "Dos aux haltères": "dos-halteres",
+  "Soulevé de terre, la force": "souleve-force",
+  "Épaules, le volume": "epaules-volume",
+  "Épaules sans matériel": "epaules-sans-materiel",
+  "Cent élévations": "cent-elevations",
+  "Bras sans matériel": "bras-sans-materiel",
+  "Les 21": "les-21",
+  "Bras lourds": "bras-lourds",
 };
 
 /**

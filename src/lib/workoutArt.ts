@@ -52,6 +52,32 @@ const IMG_RULES: { re: RegExp; img: string; fam: Family }[] = [
   { re: /sprint|course|\brun\b|vélo|velo|\bbike|assault|cardio|endurance|hiit/, img: "cardio-sprint", fam: "cardio" },
 ];
 
+/** Les séances du catalogue dont les règles tombent à côté (« Bras sans
+ *  matériel » lisait « pectoraux » dans ses muscles et montrait un
+ *  développé couché). Le titre décide alors, avant toute règle, même suivi
+ *  du type de séance comme dans la semaine. Titres en minuscules, et une
+ *  photo d'une des familles ci-dessus, sinon la famille est inconnue. */
+export const PHOTO_PAR_TITRE: Record<string, string> = {
+  "abdos sans tirer sur la nuque": "core-releve",
+  "le tronc dans tous les sens": "core-twist",
+  "esprit pilates": "core-lateral",
+  "fessiers, l’essentiel": "legs-goblet",
+  "le pont, quatre façons": "legs-hipthrust",
+  "fessiers lourds": "legs-hipthrust",
+  "fessiers aux haltères": "legs-goblet",
+  "tabata fessiers": "legs-fentes",
+  "pecs à la maison": "push-pompes",
+  "pecs aux haltères": "push-halteres",
+  "cent élévations": "push-halteres",
+  "bras sans matériel": "push-dips",
+  "bras lourds": "push-dips",
+};
+
+/** La famille d'une photo de la banque. */
+function familleDePhoto(img: string): Family | null {
+  return (Object.keys(FAMILY) as Family[]).find((f) => FAMILY[f].variants.includes(img)) ?? null;
+}
+
 const CAT_FAMILY: Record<WorkoutCategory, Family> = {
   force: "push", fullbody: "full", cardio: "cardio", mobilite: "core",
 };
@@ -68,7 +94,14 @@ export type Art = { img: string; base: string; glow: string; label: string; fam:
     Le TITRE prime : « Dos de Fer » reste Tirage même si les muscles listent
     les épaules — c'est le nom que l'utilisateur a choisi. */
 export function resolveArt(input: { title?: string; category?: WorkoutCategory; muscles?: string[] }): Art {
-  const hays = [(input.title ?? "").toLowerCase(), (input.muscles ?? []).join(" ").toLowerCase()];
+  const titre = (input.title ?? "").toLowerCase();
+  const exacte = Object.entries(PHOTO_PAR_TITRE).find(([t]) => titre === t || titre.startsWith(`${t} `));
+  const famExacte = exacte ? familleDePhoto(exacte[1]) : null;
+  if (exacte && famExacte) {
+    const f = FAMILY[famExacte];
+    return { img: exacte[1], base: f.base, glow: f.glow, label: f.label, fam: famExacte };
+  }
+  const hays = [titre, (input.muscles ?? []).join(" ").toLowerCase()];
   for (const hay of hays) {
     if (!hay) continue;
     for (const r of IMG_RULES) {

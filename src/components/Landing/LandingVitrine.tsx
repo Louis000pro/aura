@@ -118,14 +118,18 @@ function useTitreQuiSouvre(titre: React.RefObject<HTMLHeadingElement | null>) {
 }
 
 /* ⚠️ CES TROIS MENTIONS SONT DES FAITS, ET CHACUNE EST UN CLAIM AUTORISÉ
-   (`docs/positionnement-public-vaiiya.md` §13). Les deux nombres ont été
-   recomptés dans le code le 2026-10-19 : `workoutSessions` en porte 53 et
-   `EXERCISE_LIBRARY` 102. Les modules ne sont pas importés ici pour ne pas
-   charger leurs données sur une page publique ; à revérifier avant d'y
-   toucher. Aucun chiffre d'utilisateurs, jamais. */
-const PREUVES = ["102 mouvements animés", "53 séances guidées", "Gratuit, sans carte bancaire"];
+   (`docs/positionnement-public-vaiiya.md` §13). Les deux nombres viennent
+   de `chiffresPublics`, comptés côté serveur sur `EXERCISE_LIBRARY` et
+   `workoutSessions` : ils étaient écrits ici à la main et le catalogue
+   avait grandi sans eux (53 séances annoncées pour 80 le 2026-10-27).
+   Aucun chiffre d'utilisateurs, jamais. */
+const preuves = (c: ChiffresPublics) => [
+  `${c.mouvements} mouvements animés`,
+  `${c.seances} séances guidées`,
+  "Gratuit, sans carte bancaire",
+];
 
-function Heros() {
+function Heros({ chiffres }: { chiffres: ChiffresPublics }) {
   const titre = useRef<HTMLHeadingElement>(null);
   useTitreQuiSouvre(titre);
   return (
@@ -161,7 +165,7 @@ function Heros() {
           <a href={`#${DISCOVER_ANCHOR}`} className={s.lienDoux}>Voir ce qu’il y a dedans</a>
         </div>
         <p className={s.preuve}>
-          {PREUVES.map((p) => <span key={p}>{p}</span>)}
+          {preuves(chiffres).map((p) => <span key={p}>{p}</span>)}
         </p>
       </div>
 
@@ -670,7 +674,7 @@ export default function LandingVitrine({ chiffres, avis }: { chiffres: ChiffresP
   useRevelation(racine);
   return (
     <div ref={racine} className={s.page}>
-      <Heros />
+      <Heros chiffres={chiffres} />
       <Mouvements chiffres={chiffres} />
       <Guide />
       <ToutRelie />

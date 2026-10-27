@@ -28,7 +28,8 @@ export type { WorkoutCategory };
 
 export type CatalogCollection =
   | "express" | "masse" | "perte" | "renfo" | "cardiohiit"
-  | "abdos" | "jambes" | "haut" | "fullbody" | "salle"
+  | "abdos" | "fessiers" | "jambes" | "pecs" | "dos" | "epaules" | "bras"
+  | "haut" | "fullbody" | "salle"
   | "sansmateriel" | "debuter" | "mobilite" | "recup"
   | "defis" | "conseils";
 
@@ -189,13 +190,241 @@ export const workoutSessions: WorkoutSession[] = [
     collections: ["cardiohiit", "perte", "salle", "renfo", "fullbody"],
     previewExercises: ["Thruster haltères", "Kettlebell swing", "Goblet squat"],
   },
+  /* ── Les séances par zone (vague 7, lot 1 de la banque, 2026-10-27) ──
+     ⚠️ L'ORDRE DU TABLEAU EST L'ORDRE DES RANGÉES, ET LA PREMIÈRE CARTE
+     VAIIYA+ D'UNE RANGÉE EST LA GRANDE. Ce bloc est rangé ici, avant
+     « Jambes & Fessiers », pour que chaque zone s'ouvre sur ses séances à
+     elle (et pas sur une séance plus ancienne qui l'a rejointe), tout en
+     laissant les collections d'avant s'ouvrir sur les mêmes cartes. Les
+     deux séances qui rejoignent aussi « Mobilité & posture » sont en fin
+     de tableau, pour la même raison.
+     La durée affichée est l'estimation de l'app (`estimerMinutes`,
+     échauffement compris), et une séance de 15 minutes ou moins entre
+     dans « Séances express » : `npm run check:catalogue` vérifie les deux. */
+  {
+    id: "gainage-bases", category: "fullbody",
+    title: "Gainage, les bases", subtitle: "Planche · Planche latérale · Hollow hold",
+    duration: 12, difficulty: "Débutant", exercises: 5,
+    muscles: ["Core", "Abdominaux", "Obliques"],
+    accent: "#8B5CF6", icon: Sparkles, access: "free",
+    collections: ["abdos", "sansmateriel", "debuter", "express"],
+  },
+  {
+    id: "abdos-nuque", category: "fullbody",
+    title: "Abdos sans tirer sur la nuque", subtitle: "Tête posée · Dead bug · Reverse crunch",
+    duration: 18, difficulty: "Débutant", exercises: 5,
+    muscles: ["Abdominaux", "Core", "Obliques"],
+    accent: "#8B5CF6", icon: Sparkles, access: "free",
+    collections: ["abdos", "sansmateriel"],
+  },
+  {
+    id: "tronc-sens", category: "fullbody",
+    title: "Le tronc dans tous les sens", subtitle: "Enrouler · Tourner · Redresser",
+    duration: 25, difficulty: "Intermédiaire", exercises: 5,
+    muscles: ["Abdominaux", "Obliques", "Lombaires"],
+    accent: "#8B5CF6", icon: Sparkles, access: "premium",
+    collections: ["abdos", "sansmateriel", "renfo"],
+    previewExercises: ["Reverse crunch", "Hollow hold", "Russian twist"],
+  },
+  {
+    id: "abdos-souffle", category: "cardio",
+    title: "Abdos et souffle", subtitle: "Intervalles 40/20 · Sangle · Cardio",
+    duration: 17, difficulty: "Intermédiaire", exercises: 6,
+    muscles: ["Abdominaux", "Cardio", "Corps entier"],
+    accent: "#8B5CF6", icon: Flame, access: "premium",
+    collections: ["abdos", "cardiohiit", "perte", "sansmateriel"],
+    previewExercises: ["Mountain climbers", "Bicycle crunch", "Gainage dynamique"],
+  },
+  {
+    id: "fessiers-essentiel", category: "force",
+    title: "Fessiers, l’essentiel", subtitle: "Pont · Donkey kick · Squat · Fentes",
+    duration: 19, difficulty: "Débutant", exercises: 4,
+    muscles: ["Fessiers", "Quadriceps"],
+    accent: "#8B5CF6", icon: Dumbbell, access: "free",
+    collections: ["fessiers", "sansmateriel", "debuter"],
+  },
+  {
+    id: "pont-quatre-facons", category: "force",
+    title: "Le pont, quatre façons", subtitle: "Lent · Tenu · Pulsations · Pieds écartés",
+    duration: 14, difficulty: "Débutant", exercises: 4,
+    muscles: ["Fessiers", "Ischio-jambiers"],
+    accent: "#8B5CF6", icon: Zap, access: "free",
+    collections: ["fessiers", "sansmateriel", "express"],
+  },
+  {
+    id: "fessiers-300", category: "force",
+    title: "Fessiers 300", subtitle: "300 répétitions · Séries longues · Repos courts",
+    duration: 24, difficulty: "Intermédiaire", exercises: 4,
+    muscles: ["Fessiers", "Quadriceps"],
+    accent: "#8B5CF6", icon: Flame, access: "premium",
+    collections: ["fessiers", "sansmateriel"],
+    previewExercises: ["Pont fessier", "Squat", "Donkey kick"],
+  },
+  {
+    id: "fessiers-lourds", category: "force",
+    title: "Fessiers lourds", subtitle: "Hip thrust · Soulevé roumain · Machines",
+    duration: 39, difficulty: "Avancé", exercises: 5,
+    muscles: ["Fessiers", "Ischio-jambiers"],
+    accent: "#8B5CF6", icon: Dumbbell, access: "premium",
+    collections: ["fessiers", "salle", "masse", "renfo"],
+    previewExercises: ["Hip thrust machine", "Soulevé de terre roumain", "Squat bulgare"],
+  },
+  {
+    id: "fessiers-halteres", category: "force",
+    title: "Fessiers aux haltères", subtitle: "Deux haltères · Un banc ou un canapé",
+    duration: 30, difficulty: "Intermédiaire", exercises: 5,
+    muscles: ["Fessiers", "Ischio-jambiers", "Quadriceps"],
+    accent: "#8B5CF6", icon: Dumbbell, access: "premium",
+    collections: ["fessiers", "salle"],
+    previewExercises: ["Soulevé de terre roumain", "Squat bulgare", "Goblet squat"],
+  },
+  {
+    id: "tabata-fessiers", category: "cardio",
+    title: "Tabata fessiers", subtitle: "2 blocs de 4 min · 20 sec d’effort · 10 sec de repos",
+    duration: 13, difficulty: "Intermédiaire", exercises: 4,
+    muscles: ["Fessiers", "Cardio"],
+    accent: "#8B5CF6", icon: Flame, access: "premium",
+    collections: ["fessiers", "cardiohiit", "sansmateriel", "express"],
+    previewExercises: ["Squat", "Pont fessier", "Fentes"],
+  },
+  {
+    id: "jambes-essentiel", category: "force",
+    title: "Jambes, l’essentiel", subtitle: "Squat · Fentes · Chaise · Mollets",
+    duration: 15, difficulty: "Débutant", exercises: 4,
+    muscles: ["Quadriceps", "Fessiers", "Mollets"],
+    accent: "#8B5CF6", icon: Zap, access: "free",
+    collections: ["jambes", "sansmateriel", "express"],
+  },
+  {
+    id: "jambes-force", category: "force",
+    title: "Jambes, la force sans matériel", subtitle: "Bulgare lent · Sauts · Chaise au mur",
+    duration: 36, difficulty: "Avancé", exercises: 4,
+    muscles: ["Quadriceps", "Fessiers"],
+    accent: "#8B5CF6", icon: Dumbbell, access: "premium",
+    collections: ["jambes", "sansmateriel", "renfo"],
+    previewExercises: ["Squat bulgare", "Squats sautés", "Chaise au mur"],
+  },
+  {
+    id: "jambes-5x5", category: "force",
+    title: "Le 5 × 5 des jambes", subtitle: "Squat barre 5 × 5 · Presse · Machines",
+    duration: 37, difficulty: "Avancé", exercises: 5,
+    muscles: ["Quadriceps", "Ischio-jambiers", "Mollets"],
+    accent: "#8B5CF6", icon: Dumbbell, access: "premium",
+    collections: ["jambes", "salle", "renfo"],
+    previewExercises: ["Squat barre", "Presse à cuisses", "Leg curl allongé"],
+  },
+  {
+    id: "pecs-maison", category: "force",
+    title: "Pecs à la maison", subtitle: "Pompes inclinées · Pompes · Diamant",
+    duration: 18, difficulty: "Débutant", exercises: 4,
+    muscles: ["Pectoraux", "Triceps"],
+    accent: "#8B5CF6", icon: Home, access: "free",
+    collections: ["pecs", "haut", "sansmateriel"],
+  },
+  {
+    id: "pecs-lourds", category: "force",
+    title: "Pecs lourds", subtitle: "Développé couché 5 × 5 · Incliné · Poulie",
+    duration: 34, difficulty: "Avancé", exercises: 4,
+    muscles: ["Pectoraux", "Triceps", "Épaules"],
+    accent: "#8B5CF6", icon: Dumbbell, access: "premium",
+    collections: ["pecs", "haut", "salle", "masse", "renfo"],
+    previewExercises: ["Développé couché", "Développé incliné haltères", "Écarté à la poulie"],
+  },
+  {
+    id: "pecs-halteres", category: "force",
+    title: "Pecs aux haltères", subtitle: "Développé · Incliné · Pullover",
+    duration: 25, difficulty: "Intermédiaire", exercises: 4,
+    muscles: ["Pectoraux", "Triceps", "Épaules"],
+    accent: "#8B5CF6", icon: Dumbbell, access: "premium",
+    collections: ["pecs", "haut", "salle"],
+    previewExercises: ["Développé couché haltères", "Développé incliné haltères", "Pullover haltère"],
+  },
+  {
+    id: "dos-large", category: "force",
+    title: "Dos large", subtitle: "Tirage · Rowing · Pullover · Face pull",
+    duration: 31, difficulty: "Intermédiaire", exercises: 5,
+    muscles: ["Dos", "Biceps"],
+    accent: "#8B5CF6", icon: Dumbbell, access: "premium",
+    collections: ["dos", "haut", "salle", "masse"],
+    previewExercises: ["Tirage poitrine", "Rowing assis poulie", "Pullover haltère"],
+  },
+  {
+    id: "dos-halteres", category: "force",
+    title: "Dos aux haltères", subtitle: "Rowing · Pullover · Oiseau",
+    duration: 30, difficulty: "Intermédiaire", exercises: 5,
+    muscles: ["Dos", "Épaules"],
+    accent: "#8B5CF6", icon: Dumbbell, access: "premium",
+    collections: ["dos", "haut", "salle"],
+    previewExercises: ["Rowing haltère", "Rowing buste penché haltères", "Oiseau haltères"],
+  },
+  {
+    id: "souleve-force", category: "force",
+    title: "Soulevé de terre, la force", subtitle: "Soulevé 5 × 3 · Rowing barre · Lombaires",
+    duration: 39, difficulty: "Avancé", exercises: 4,
+    muscles: ["Dos", "Fessiers", "Ischio-jambiers"],
+    accent: "#8B5CF6", icon: Dumbbell, access: "premium",
+    collections: ["dos", "salle", "renfo"],
+    previewExercises: ["Soulevé de terre classique", "Rowing barre", "Extensions lombaires banc"],
+  },
+  {
+    id: "epaules-volume", category: "force",
+    title: "Épaules, le volume", subtitle: "Militaire · Élévations en 21 · Arrière d’épaule",
+    duration: 30, difficulty: "Intermédiaire", exercises: 5,
+    muscles: ["Épaules", "Triceps"],
+    accent: "#8B5CF6", icon: Dumbbell, access: "premium",
+    collections: ["epaules", "haut", "salle", "masse"],
+    previewExercises: ["Développé militaire haltères", "Élévations latérales", "Développé Arnold"],
+  },
+  {
+    id: "epaules-sans-materiel", category: "force",
+    title: "Épaules sans matériel", subtitle: "Pike push-ups · Pompes · Bear crawl",
+    duration: 20, difficulty: "Intermédiaire", exercises: 4,
+    muscles: ["Épaules", "Triceps", "Core"],
+    accent: "#8B5CF6", icon: Home, access: "free",
+    collections: ["epaules", "haut", "sansmateriel"],
+  },
+  {
+    id: "cent-elevations", category: "force",
+    title: "Cent élévations", subtitle: "100 élévations latérales · Charge légère",
+    duration: 12, difficulty: "Intermédiaire", exercises: 1,
+    muscles: ["Épaules"],
+    accent: "#8B5CF6", icon: Zap, access: "premium",
+    collections: ["epaules", "haut", "salle", "express"],
+    previewExercises: ["Élévations latérales"],
+  },
+  {
+    id: "bras-sans-materiel", category: "force",
+    title: "Bras sans matériel", subtitle: "Triceps · Chaise · Poids du corps",
+    duration: 19, difficulty: "Débutant", exercises: 4,
+    muscles: ["Triceps", "Pectoraux"],
+    accent: "#8B5CF6", icon: Home, access: "free",
+    collections: ["bras", "haut", "sansmateriel"],
+  },
+  {
+    id: "les-21", category: "force",
+    title: "Les 21", subtitle: "Curl en 21 · Triceps · Marteau",
+    duration: 24, difficulty: "Intermédiaire", exercises: 4,
+    muscles: ["Biceps", "Triceps"],
+    accent: "#8B5CF6", icon: Dumbbell, access: "premium",
+    collections: ["bras", "haut", "salle", "masse"],
+    previewExercises: ["Curl haltères", "Extension triceps haltère", "Curl marteau"],
+  },
+  {
+    id: "bras-lourds", category: "force",
+    title: "Bras lourds", subtitle: "Dips 5 × 5 · Curl barre · Poulie",
+    duration: 34, difficulty: "Avancé", exercises: 4,
+    muscles: ["Triceps", "Biceps"],
+    accent: "#8B5CF6", icon: Dumbbell, access: "premium",
+    collections: ["bras", "haut", "salle", "renfo"],
+    previewExercises: ["Dips barres parallèles", "Curl barre EZ", "Extension triceps poulie"],
+  },
   {
     id: "jambes", category: "force",
     title: "Jambes & Fessiers", subtitle: "Squats · Fentes · Hip Thrust",
     duration: 55, difficulty: "Intermédiaire", exercises: 5,
     muscles: ["Quadriceps", "Fessiers"],
     accent: "#8B5CF6", icon: Dumbbell, access: "free",
-    collections: ["salle", "masse", "renfo", "jambes"],
+    collections: ["salle", "masse", "renfo", "jambes", "fessiers"],
   },
   {
     id: "mobilite", category: "mobilite",
@@ -273,7 +502,7 @@ export const workoutSessions: WorkoutSession[] = [
     duration: 40, difficulty: "Intermédiaire", exercises: 6,
     muscles: ["Dos", "Biceps"],
     accent: "#8B5CF6", icon: Dumbbell, access: "premium",
-    collections: ["salle", "masse", "renfo", "haut"],
+    collections: ["salle", "masse", "renfo", "haut", "dos", "bras"],
     previewExercises: ["Tractions supination", "Rowing barre buste penché", "Curl marteau"],
   },
   {
@@ -308,7 +537,7 @@ export const workoutSessions: WorkoutSession[] = [
     duration: 45, difficulty: "Intermédiaire", exercises: 6,
     muscles: ["Pectoraux", "Épaules", "Triceps"],
     accent: "#8B5CF6", icon: Dumbbell, access: "premium",
-    collections: ["salle", "masse", "renfo", "haut"],
+    collections: ["salle", "masse", "renfo", "haut", "pecs", "epaules"],
     previewExercises: ["Développé couché", "Développé incliné haltères", "Développé militaire haltères"],
   },
   {
@@ -326,7 +555,7 @@ export const workoutSessions: WorkoutSession[] = [
     duration: 45, difficulty: "Intermédiaire", exercises: 6,
     muscles: ["Ischio-jambiers", "Fessiers", "Dos"],
     accent: "#8B5CF6", icon: Dumbbell, access: "premium",
-    collections: ["salle", "masse", "renfo", "jambes"],
+    collections: ["salle", "masse", "renfo", "jambes", "fessiers"],
     previewExercises: ["Soulevé de terre roumain", "Hip thrust machine", "Leg curl allongé"],
   },
   {
@@ -335,7 +564,7 @@ export const workoutSessions: WorkoutSession[] = [
     duration: 40, difficulty: "Intermédiaire", exercises: 7,
     muscles: ["Épaules", "Biceps", "Triceps"],
     accent: "#8B5CF6", icon: Dumbbell, access: "premium",
-    collections: ["salle", "masse", "renfo", "haut"],
+    collections: ["salle", "masse", "renfo", "haut", "epaules", "bras"],
     previewExercises: ["Développé Arnold", "Élévations latérales", "Oiseau haltères"],
   },
   {
@@ -462,7 +691,7 @@ export const workoutSessions: WorkoutSession[] = [
     duration: 20, difficulty: "Débutant", exercises: 5,
     muscles: ["Pectoraux", "Triceps", "Épaules"],
     accent: "#8B5CF6", icon: Dumbbell, access: "free",
-    collections: ["debuter", "haut", "renfo", "sansmateriel"],
+    collections: ["debuter", "haut", "renfo", "sansmateriel", "pecs"],
   },
   {
     id: "tractions-progression", category: "force",
@@ -470,7 +699,7 @@ export const workoutSessions: WorkoutSession[] = [
     duration: 30, difficulty: "Intermédiaire", exercises: 6,
     muscles: ["Dos", "Biceps", "Épaules"],
     accent: "#8B5CF6", icon: Sparkles, access: "premium",
-    collections: ["haut", "renfo", "salle"],
+    collections: ["haut", "renfo", "salle", "dos"],
     previewExercises: ["Ouverture des épaules", "Face pull poulie", "Rowing inversé"],
   },
   {
@@ -479,7 +708,7 @@ export const workoutSessions: WorkoutSession[] = [
     duration: 30, difficulty: "Intermédiaire", exercises: 6,
     muscles: ["Fessiers", "Ischio-jambiers", "Dos"],
     accent: "#8B5CF6", icon: Sparkles, access: "premium",
-    collections: ["jambes", "renfo", "salle"],
+    collections: ["jambes", "renfo", "salle", "fessiers"],
     previewExercises: ["Cat-cow", "Pont fessier", "Soulevé de terre roumain"],
   },
   {
@@ -497,7 +726,7 @@ export const workoutSessions: WorkoutSession[] = [
     duration: 28, difficulty: "Intermédiaire", exercises: 6,
     muscles: ["Épaules", "Haut du dos", "Triceps"],
     accent: "#8B5CF6", icon: Sparkles, access: "premium",
-    collections: ["haut", "renfo", "salle", "mobilite"],
+    collections: ["haut", "renfo", "salle", "mobilite", "epaules"],
     previewExercises: ["Ouverture des épaules", "Étirement pectoraux au mur", "Pike push-ups"],
   },
   {
@@ -524,5 +753,25 @@ export const workoutSessions: WorkoutSession[] = [
     duration: 15, difficulty: "Intermédiaire", exercises: 5,
     muscles: ["Core", "Abdominaux", "Gainage"],
     accent: "#8B5CF6", icon: Flame,
+  },
+  /* Vague 7, suite : les deux séances par zone qui rejoignent aussi
+     « Mobilité & posture ». En fin de tableau, elles s'ajoutent aux
+     rangées de la mobilité sans prendre la place de leur première carte. */
+  {
+    id: "esprit-pilates", category: "fullbody",
+    title: "Esprit Pilates", subtitle: "Lent et contrôlé · Centre · Respiration",
+    duration: 20, difficulty: "Intermédiaire", exercises: 6,
+    muscles: ["Core", "Abdominaux", "Lombaires"],
+    accent: "#8B5CF6", icon: Wind, access: "premium",
+    collections: ["abdos", "sansmateriel", "mobilite"],
+    previewExercises: ["Dead bug", "Bird dog", "Hollow hold"],
+  },
+  {
+    id: "dos-posture", category: "force",
+    title: "Dos et posture à la maison", subtitle: "Superman · Bird dog · Colonne mobile",
+    duration: 14, difficulty: "Débutant", exercises: 4,
+    muscles: ["Dos", "Lombaires"],
+    accent: "#8B5CF6", icon: Wind, access: "free",
+    collections: ["dos", "sansmateriel", "mobilite", "express"],
   },
 ];
