@@ -40,17 +40,35 @@ export type AnalyseRepas = {
 };
 
 /* ── Les modèles, du meilleur au repli ──────────────────────────────────
-   Maverick voit nettement mieux que Scout (plus d'experts, meilleure
-   reconnaissance fine). Si un identifiant disparaît chez le fournisseur,
-   on passe au suivant au lieu d'échouer. `VISION_MODELS` (liste séparée
-   par des virgules) permet d'en changer sans toucher au code. */
+   Si un identifiant disparaît chez le fournisseur, on passe au suivant au
+   lieu d'échouer. `VISION_MODELS` (liste séparée par des virgules) permet
+   d'en changer sans toucher au code.
+
+   ⚠️ 2026-10-27 · LES DEUX LLAMA 4 SONT RETIRÉS CHEZ GROQ (Maverick le
+   2026-03-09, Scout le 2026-07-17, page « Deprecations » de Groq), et
+   aucune variable `VISION_MODELS` n'était posée sur Vercel : chaque photo
+   de repas et chaque photo de carte de resto faisait quatre appels refusés
+   (`model_not_found`), puis échouait. Vu dans les erreurs du 2026-10-26.
+   Qwen 3.8 27B est le seul modèle d'images de Groq ouvert à tous (page
+   « Vision » de Groq) ; il lit le JSON avec une image. */
 export const MODELES_VISION = (process.env.VISION_MODELS ?? "")
   .split(",").map((m) => m.trim()).filter(Boolean);
 if (MODELES_VISION.length === 0) {
-  MODELES_VISION.push(
-    "meta-llama/llama-4-maverick-17b-128e-instruct",
-    "meta-llama/llama-4-scout-17b-16e-instruct",
-  );
+  MODELES_VISION.push("qwen/qwen3.8-27b");
+}
+
+/* Qwen 3.8 réfléchit avant de répondre si on ne lui dit rien : du temps en
+   plus pour une photo qui n'en demande pas, et un texte de réflexion qui
+   gênerait la lecture du JSON. `reasoning_effort: "none"` le fait répondre
+   directement ; le dernier essai, sans ce réglage, cache la réflexion. */
+function essaisPour(model: string): Record<string, unknown>[] {
+  const json = { response_format: { type: "json_object" } };
+  if (!/qwen/i.test(model)) return [json, {}];
+  return [
+    { ...json, reasoning_effort: "none" },
+    { reasoning_effort: "none" },
+    { reasoning_format: "hidden" },
+  ];
 }
 
 export const PROMPT_VISION = `Tu es diététicien. Tu analyses la photo d'un repas pour estimer ce qu'il apporte, comme le ferait un professionnel qui pèse chaque élément.
@@ -185,20 +203,23 @@ export async function appelerVision(
   }];
   let derniere: unknown = null;
   for (const model of MODELES_VISION) {
-    for (const jsonStrict of [true, false]) {
+    for (const essai of essaisPour(model)) {
       try {
         const r = await client.chat.completions.create({
           model,
           messages,
           max_tokens: options.maxTokens,
           temperature: options.temperature,
-          ...(jsonStrict ? { response_format: { type: "json_object" } } : {}),
+          ...essai,
         });
         const texte = r.choices[0]?.message?.content ?? "";
         if (texte) return texte;
       } catch (err) {
         derniere = err;
-        console.warn(`[vision] ${model}${jsonStrict ? " (json)" : ""} a échoué :`, String((err as Error)?.message ?? err).slice(0, 200));
+        console.warn(`[vision] ${model} ${JSON.stringify(essai)} a échoué :`, String((err as Error)?.message ?? err).slice(0, 200));
+        /* Un modèle retiré ne reviendra pas au deuxième essai : on passe
+           directement au suivant au lieu de payer deux refus de plus. */
+        if (/model_not_found|does not exist/i.test(String((err as Error)?.message ?? err))) break;
       }
     }
   }
