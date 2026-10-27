@@ -50,7 +50,7 @@ export const WAVE_2_EXERCISES: Record<string, Exercise[]> = {
 
   "push-salle": [
     {
-      name: "Développé couché", sets: 4, reps: "8 reps", rest: 90,
+      name: "Développé couché", sets: 4, reps: "6 reps", rest: 120,
       tip: "Ancre les pieds, rapproche les omoplates et descends la barre avec contrôle vers le milieu de la poitrine.",
       benefit: "Pose le mouvement principal de force pour les pectoraux et les triceps.",
       muscles: ["Pectoraux", "Triceps"],
@@ -68,20 +68,20 @@ export const WAVE_2_EXERCISES: Record<string, Exercise[]> = {
       muscles: ["Épaules", "Triceps"],
     },
     {
-      name: "Élévations latérales", sets: 3, reps: "15 reps", rest: 50,
-      tip: "Monte les coudes jusqu’à l’horizontale avec une charge légère et une descente lente.",
+      name: "Élévations latérales", sets: 3, reps: "21 (7 + 7 + 7)", rest: 60,
+      tip: "Sept répétitions du bas jusqu’à mi-hauteur, sept de mi-hauteur jusqu’à l’horizontale, puis sept complètes, sans poser les haltères. Charge légère.",
       benefit: "Ajoute un travail ciblé du faisceau latéral de l’épaule.",
       muscles: ["Épaules"],
     },
     {
-      name: "Extension triceps poulie", sets: 3, reps: "12 reps", rest: 50,
+      name: "Extension triceps poulie", sets: 3, reps: "15 reps", rest: 50,
       tip: "Garde les coudes près du buste et termine l’extension sans avancer les épaules.",
       benefit: "Isole les triceps après les mouvements de poussée lourds.",
       muscles: ["Triceps"],
     },
     {
-      name: "Dips machine", sets: 3, reps: "10 reps", rest: 60,
-      tip: "Descends les poignées en gardant les épaules basses et adapte l’assistance à une exécution fluide.",
+      name: "Dips machine", sets: 2, reps: "Max reps", rest: 75,
+      tip: "Descends les poignées en gardant les épaules basses et adapte l’assistance à une exécution fluide. Arrête la série quand la descente n’est plus contrôlée.",
       benefit: "Termine la poussée avec un mouvement guidé pour les triceps et les pectoraux.",
       muscles: ["Triceps", "Pectoraux"],
     },
@@ -89,14 +89,14 @@ export const WAVE_2_EXERCISES: Record<string, Exercise[]> = {
 
   "jambes-quadriceps": [
     {
-      name: "Squat barre", sets: 4, reps: "8 reps", rest: 100,
+      name: "Squat barre", sets: 4, reps: "6 reps", rest: 120,
       tip: "Crée un appui stable avant chaque répétition et garde les genoux dans l’axe des pieds.",
       benefit: "Installe le mouvement principal de la séance pour tout le bas du corps.",
       muscles: ["Quadriceps", "Fessiers"],
     },
     {
-      name: "Presse à cuisses", sets: 4, reps: "12 reps", rest: 80,
-      tip: "Descends jusqu’à l’amplitude où le bassin reste entièrement posé contre le dossier.",
+      name: "Presse à cuisses", sets: 3, reps: "20 reps", rest: 75,
+      tip: "Descends jusqu’à l’amplitude où le bassin reste entièrement posé contre le dossier. Charge plus légère, les 20 doivent passer.",
       benefit: "Ajoute du volume aux quadriceps sur une trajectoire guidée.",
       muscles: ["Quadriceps", "Fessiers"],
     },
@@ -107,7 +107,7 @@ export const WAVE_2_EXERCISES: Record<string, Exercise[]> = {
       muscles: ["Quadriceps", "Fessiers"],
     },
     {
-      name: "Leg extension", sets: 3, reps: "15 reps", rest: 55,
+      name: "Leg extension", sets: 2, reps: "25 reps", rest: 50,
       tip: "Aligne les genoux avec l’axe de la machine et marque une courte contraction en haut.",
       benefit: "Cible directement les quadriceps après les mouvements globaux.",
       muscles: ["Quadriceps"],
@@ -128,7 +128,7 @@ export const WAVE_2_EXERCISES: Record<string, Exercise[]> = {
 
   "chaine-posterieure": [
     {
-      name: "Soulevé de terre roumain", sets: 4, reps: "10 reps", rest: 90,
+      name: "Soulevé de terre roumain", sets: 4, reps: "6 reps", rest: 120,
       tip: "Recule les hanches avec le dos long et garde la barre proche des jambes pendant toute la descente.",
       benefit: "Pose le mouvement principal pour les ischio-jambiers, les fessiers et le dos.",
       muscles: ["Ischio-jambiers", "Fessiers", "Dos"],
@@ -146,7 +146,7 @@ export const WAVE_2_EXERCISES: Record<string, Exercise[]> = {
       muscles: ["Ischio-jambiers"],
     },
     {
-      name: "Pont fessier", sets: 3, reps: "15 reps", rest: 50,
+      name: "Pont fessier", sets: 2, reps: "30 reps", rest: 45,
       tip: "Pousse dans les talons et marque une seconde en haut, côtes rentrées.",
       benefit: "Prolonge le travail des fessiers avec une charge corporelle contrôlée.",
       muscles: ["Fessiers", "Ischio-jambiers"],
@@ -158,7 +158,7 @@ export const WAVE_2_EXERCISES: Record<string, Exercise[]> = {
       muscles: ["Lombaires", "Fessiers"],
     },
     {
-      name: "Kickback fessier poulie", sets: 3, reps: "15 par jambe", rest: 45,
+      name: "Kickback fessier poulie", sets: 2, reps: "20 par jambe", rest: 45,
       tip: "Garde le bassin face à la machine et pousse la jambe vers l’arrière sans élan.",
       benefit: "Termine par un travail ciblé de chaque fessier.",
       muscles: ["Fessiers"],
@@ -173,7 +173,7 @@ export const WAVE_2_EXERCISES: Record<string, Exercise[]> = {
       muscles: ["Épaules", "Triceps"],
     },
     {
-      name: "Élévations latérales", sets: 4, reps: "15 reps", rest: 50,
+      name: "Élévations latérales", sets: 3, reps: "20 reps", rest: 45,
       tip: "Utilise une charge qui permet de contrôler entièrement la descente.",
       benefit: "Accumule du volume sur le faisceau latéral des épaules.",
       muscles: ["Épaules"],
@@ -185,7 +185,7 @@ export const WAVE_2_EXERCISES: Record<string, Exercise[]> = {
       muscles: ["Épaules", "Haut du dos"],
     },
     {
-      name: "Curl barre EZ", sets: 3, reps: "10 reps", rest: 60,
+      name: "Curl barre EZ", sets: 4, reps: "6 reps", rest: 90,
       tip: "Garde les coudes fixes et descends la barre lentement jusqu’à presque tendre les bras.",
       benefit: "Apporte le mouvement principal de flexion pour les biceps.",
       muscles: ["Biceps"],
@@ -203,7 +203,7 @@ export const WAVE_2_EXERCISES: Record<string, Exercise[]> = {
       muscles: ["Triceps"],
     },
     {
-      name: "Extension triceps poulie", sets: 3, reps: "12 reps", rest: 50,
+      name: "Extension triceps poulie", sets: 2, reps: "20 reps", rest: 45,
       tip: "Verrouille les coudes près du corps et termine chaque répétition avec contrôle.",
       benefit: "Ajoute une dernière série de tension continue pour les triceps.",
       muscles: ["Triceps"],
@@ -212,7 +212,7 @@ export const WAVE_2_EXERCISES: Record<string, Exercise[]> = {
 
   "fullbody-machines": [
     {
-      name: "Presse à cuisses", sets: 4, reps: "12 reps", rest: 75,
+      name: "Presse à cuisses", sets: 4, reps: "8 reps", rest: 90,
       tip: "Garde le bassin posé et pousse la plateforme sans verrouiller brutalement les genoux.",
       benefit: "Donne le principal travail de jambes sur une trajectoire stable.",
       muscles: ["Quadriceps", "Fessiers"],
@@ -224,37 +224,37 @@ export const WAVE_2_EXERCISES: Record<string, Exercise[]> = {
       muscles: ["Épaules", "Triceps"],
     },
     {
-      name: "Tirage poitrine", sets: 4, reps: "10 reps", rest: 70,
+      name: "Tirage poitrine", sets: 4, reps: "8 reps", rest: 75,
       tip: "Amène la barre vers le haut de la poitrine en dirigeant les coudes vers le sol.",
       benefit: "Travaille la largeur du dos avec une charge facile à ajuster.",
       muscles: ["Dos", "Biceps"],
     },
     {
-      name: "Rowing assis poulie", sets: 3, reps: "12 reps", rest: 65,
+      name: "Rowing assis poulie", sets: 3, reps: "15 reps", rest: 60,
       tip: "Tire vers le nombril et marque une seconde quand les omoplates se rapprochent.",
       benefit: "Complète le dos par une traction horizontale.",
       muscles: ["Dos", "Biceps"],
     },
     {
-      name: "Hip thrust machine", sets: 3, reps: "12 reps", rest: 65,
+      name: "Hip thrust machine", sets: 3, reps: "10 reps", rest: 65,
       tip: "Monte le bassin jusqu’à l’alignement et garde les côtes basses.",
       benefit: "Ajoute un mouvement guidé puissant pour les fessiers.",
       muscles: ["Fessiers"],
     },
     {
-      name: "Dips machine", sets: 3, reps: "10 reps", rest: 60,
+      name: "Dips machine", sets: 2, reps: "15 reps", rest: 60,
       tip: "Garde les épaules basses et pousse les poignées sans décoller le dos du dossier.",
       benefit: "Renforce les triceps et les pectoraux sur une trajectoire contrôlée.",
       muscles: ["Triceps", "Pectoraux"],
     },
     {
-      name: "Abducteurs machine", sets: 3, reps: "15 reps", rest: 50,
+      name: "Abducteurs machine", sets: 2, reps: "20 reps", rest: 45,
       tip: "Ouvre les genoux sans donner d’élan et reviens lentement vers le centre.",
       benefit: "Cible les muscles latéraux des hanches utiles à la stabilité.",
       muscles: ["Fessiers", "Hanches"],
     },
     {
-      name: "Mollets assis", sets: 3, reps: "15 reps", rest: 45,
+      name: "Mollets assis", sets: 3, reps: "20 reps", rest: 45,
       tip: "Cherche une amplitude complète et une courte pause en haut.",
       benefit: "Termine la séance avec un travail précis des mollets.",
       muscles: ["Mollets"],

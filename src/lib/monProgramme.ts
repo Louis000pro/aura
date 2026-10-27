@@ -12,7 +12,7 @@
 
 import { createClient } from "@/lib/supabase";
 import { composerEtape } from "@/lib/banqueEtapes";
-import { varierLignes, type Variete } from "@/lib/variete";
+import { lignesDeLOccurrence, type Variete } from "@/lib/variete";
 import { contexteDe, type GenInput } from "@/lib/planning";
 import {
   planDesRemplacements,
@@ -86,7 +86,7 @@ export function preparerActivation(
     sortie[r.id] = rep
       ? {
         choix: c, position: rep.position, rang: rep.rang, titre: rep.nom, type: "Force", approuve,
-        lignes: varierLignes(modeles.get(rep.position) ?? [], rep.rang, variete, ctx, compose.etapes.length),
+        lignes: lignesDeLOccurrence(modeles.get(rep.position) ?? [], rep.rang, variete, ctx, compose.etapes.length).lignes,
       }
       : { choix: c, approuve };
   }

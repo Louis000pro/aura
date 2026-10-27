@@ -36,13 +36,20 @@
 
 import { exercicesDisponibles, trouverExercice } from "@/lib/exerciseLibrary";
 import { cleExercice } from "@/lib/exerciceCle";
+import { chiffres, cibleCompat } from "@/lib/rythmeSeance";
 import type { Exercise } from "@/components/WorkoutGuideModal";
+
+export { cibleCompat };
 
 /** Le lieu, identique à `Ctx` de `planning.ts` (pas d'import : cycle). */
 export type Lieu = "salle" | "halteres" | "poids";
 
-/** La version des règles de composition. Un modèle porte la sienne. */
-export const COMPOSITION_VERSION = 1;
+/** La version des règles de composition. Un modèle porte la sienne.
+ *  Version 2 (2026-10-27) : les chiffres suivent le profil de l'exercice
+ *  et le niveau (`rythmeSeance.ts`) au lieu d'une fourchette par objectif.
+ *  Un modèle écrit en version 1 reste tel quel en base ; ses occurrences
+ *  reçoivent les chiffres de leur passage (`rythmerLignes`). */
+export const COMPOSITION_VERSION = 2;
 
 /** Combien d'exercices une étape propose. */
 export const EXERCICES_PAR_ETAPE = 5;
@@ -256,16 +263,13 @@ export function orientationDe(objectifs: string[]): Orientation {
   return "general";
 }
 
-/** Fourchettes de départ (décision 47), par orientation et statut. */
+/** Fourchettes de départ (décision 47), par orientation et statut. Depuis
+ *  la version 2, elles ne servent plus que de repli à un exercice sans
+ *  profil dans `rythmeSeance.ts` (le banc vérifie qu'il n'y en a aucun). */
 export function fourchette(o: Orientation, statut: StatutExercice): { series: number; min: number; max: number } {
   if (o === "force") return statut === "repere" ? { series: 5, min: 4, max: 6 } : { series: 3, min: 8, max: 12 };
   if (o === "masse") return statut === "repere" ? { series: 4, min: 6, max: 12 } : { series: 3, min: 10, max: 20 };
   return { series: 3, min: 8, max: 15 };
-}
-
-/** La cible unique de compatibilité : le milieu de la fourchette, arrondi. */
-export function cibleCompat(min: number, max: number): number {
-  return Math.round((min + max) / 2);
 }
 
 /* ── R9c · LES ZONES : une séance composée autour de ce qu'on veut travailler ──
@@ -422,10 +426,12 @@ export function prescrire(e: EntreeBanque, emplacement: number, ctx: ContexteCom
       charge_type: prop.charge, unite: "",
     };
   }
+  /* Le modèle porte la version « volume » : celle du premier passage. */
+  const c = e.reps !== undefined ? null : chiffres(e.nom, e.statut, "volume", ctx);
   const f = e.reps !== undefined
     ? { series: e.series ?? lib.sets, min: e.reps, max: e.reps }
-    : fourchette(ctx.orientation, e.statut);
-  const repos = ctx.orientation === "force" && e.statut === "repere" ? Math.max(lib.rest, 150) : lib.rest;
+    : c ?? fourchette(ctx.orientation, e.statut);
+  const repos = c ? c.repos : ctx.orientation === "force" && e.statut === "repere" ? Math.max(lib.rest, 150) : lib.rest;
   return {
     emplacement, exercice_cle: cle, exercice_nom: lib.name, fonction: prop.fonction, statut: e.statut,
     series: f.series, mesure: "reps",

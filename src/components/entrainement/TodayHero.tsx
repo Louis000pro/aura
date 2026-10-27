@@ -27,6 +27,7 @@ import { resolveArt } from "@/lib/workoutArt";
 import { dayTitle, lieuLabel, type PlanningDay } from "@/lib/planning";
 import type { EtatJournee } from "@/lib/journee";
 import type { EtapeCycle } from "@/lib/programme";
+import { LIBELLE_RYTHME, type Rythme } from "@/lib/rythmeSeance";
 import { Photo, WIDGET, photoHerosRetenue, retenirPhotoHeros } from "./PhotoSeance";
 
 /* ════════════════════════════════════════════════════════════════════
@@ -70,7 +71,7 @@ function Fait({ texte }: { texte: string }) {
 const sansAbonnement = () => () => {};
 
 export default function TodayHero({
-  state, day, etape, reserveLe, prevuLe = null, attendait = null, indisponible = false, onRetry, nbExos, nextLabel, doneStats, adaptationJusquau,
+  state, day, etape, reserveLe, prevuLe = null, attendait = null, indisponible = false, onRetry, nbExos, rythme = null, nextLabel, doneStats, adaptationJusquau,
   onStart, onRedo, onImprovise, onOrganise, onShift, onReplace, onAdaptation,
   recouvrement = null, onLeger, dureeMin = null, onCourt,
 }: {
@@ -91,6 +92,9 @@ export default function TodayHero({
   indisponible?: boolean;
   onRetry?: () => void;
   nbExos: number;                                 // taille de son instance, calculée sans rien écrire
+  /** Lot 0 · la version de l'étape : ses complémentaires tournent d'un
+   *  passage à l'autre (volume, lourde, endurance). */
+  rythme?: Rythme | null;
   nextLabel: string | null;                       // « Jambes · demain » (état repos)
   doneStats: { minutes: number; kcal: number } | null;
   /* ⚠️ V8 · UNE LIGNE, JAMAIS UN BANDEAU. Une adaptation en cours est un
@@ -251,7 +255,7 @@ export default function TodayHero({
         {state === "etape" && etape && (
           <>
             <p className="text-[11px] font-semibold mb-1" style={{ color: "#C9B8FF" }}>
-              Ta prochaine séance
+              Ta prochaine séance{rythme && <><S />{LIBELLE_RYTHME[rythme]}</>}
             </p>
             <h2 className="text-[34px] md:text-[38px] leading-[1.02] font-extralight text-white">{etape.nom}</h2>
             <p className="mt-2.5 mb-4 text-[16px] font-normal" style={{ color: "rgba(255,255,255,0.82)" }}>

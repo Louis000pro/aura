@@ -17,7 +17,6 @@
    ════════════════════════════════════════════════════════════════════ */
 import { readFileSync, readdirSync } from "node:fs";
 import { createHash } from "node:crypto";
-import { sqlRemplissage } from "./r2-remplissage";
 import { empreinteModele, modeleDeLEtape, type ModeleDeLOccurrence } from "@/lib/prescription";
 import {
   lignesDuJournal, seriesConfirmees, exercicesFaits, repsPrescrites, type MarquesSeance,
@@ -6271,8 +6270,11 @@ verdict(
      changer la banque ou les règles SANS changer COMPOSITION_VERSION fait
      échouer ce contrôle. */
   const empreinte = createHash("sha256").update(JSON.stringify(tousLesModeles)).digest("hex").slice(0, 16);
-  verdict("R2 · la version 1 de la composition n'a pas bougé",
-    COMPOSITION_VERSION !== 1 || empreinte === "2b10ae76ef73b800", `empreinte ${empreinte}`);
+  /* La version 1 (empreinte 2b10ae76ef73b800) a été remplacée le
+     2026-10-27 par la version 2 : les chiffres suivent le profil de
+     l'exercice et le niveau (lot 0 de la banque de séances). */
+  verdict("R2 · la version 2 de la composition n'a pas bougé",
+    COMPOSITION_VERSION === 2 && empreinte === "9947f5f4dfaf85bc", `empreinte ${empreinte}`);
 
   /* La projection. */
   const proj = projeterPrescription(composerEtape("Push", { lieu: "halteres", orientation: "masse", niveau: null, version: 1 })) as ExercicePrescrit[];
@@ -6296,7 +6298,7 @@ verdict(
   const lj = lignesDuJournal(proj, marques);
   verdict("R2 · le journal recopie la prescription de départ",
     lj[0].exercice_cle === proj[0].prescription!.cle && lj[0].statut_prescrit === "repere"
-      && lj[0].reps_min_prescrites === 6 && lj[0].reps_max_prescrites === 12 && lj[0].reps_declarees === null,
+      && lj[0].reps_min_prescrites === 6 && lj[0].reps_max_prescrites === 10 && lj[0].reps_declarees === null,
     "statut, fonction, fourchette ; aucune répétition réelle déduite du bouton");
   const ancien = lignesDuJournal([{ name: "Squat", sets: 1, reps: "10", rest: 60, tip: "", benefit: "", muscles: [] }], {});
   verdict("R2 · une séance sans prescription garde le journal de R1",
@@ -6428,9 +6430,16 @@ verdict(
   verdict("R2 · SQL · un contenu qui change emporte sa prescription, explicitement",
     sqlR2.includes("new.exercise_list is distinct from old.exercise_list") && sqlR2.includes("delete from public.occurrence_exercices where intention_id = old.id"),
     "jamais une liste qui contredit des lignes restées en base");
-  verdict("R2 · le remplissage des programmes existants est la génération, mot pour mot",
-    lire1("supabase/migrations/20261005_r2_modeles_existants.sql") === sqlRemplissage().replace(/\r\n/g, "\n"),
-    "jamais une seconde banque écrite à la main en SQL");
+  /* Le remplissage des programmes déjà actifs a été GÉNÉRÉ depuis la
+     composition version 1 (par `scripts/r2-remplissage.ts`, retiré le
+     2026-10-27) et collé le 2026-10-05 : 65 modèles écrits en version 1
+     en base au 2026-10-27. Depuis la version 2, ce fichier est de
+     l'histoire. Il ne bouge plus et ne se régénère plus : le régénérer
+     réécrirait une migration déjà collée. */
+  const remplissage = lire1("supabase/migrations/20261005_r2_modeles_existants.sql");
+  verdict("R2 · le remplissage des programmes existants reste celui qui a été collé (version 1, figé)",
+    createHash("sha256").update(remplissage).digest("hex").slice(0, 16) === "9847751d373aae86" && remplissage.includes("(version 1)"),
+    "une migration collée ne se réécrit pas");
   verdict("R2 · SQL · un modèle écrit ne se recompose pas",
     sqlR2.includes("on conflict (programme_seance_id, lieu) do nothing") && sqlR2.includes("'cree', false"), "idempotent");
 }
@@ -7769,7 +7778,7 @@ verdict(
   const ctxG = contexteDe(gen);
   verdict("R7 · l'activation : chaque séance remplacée porte les exercices de son rang, la première est le modèle",
     !!dem && JSON.stringify(dem.choix.a.lignes) === JSON.stringify(B.composerEtape(prog.etapes[0].nom, ctxG))
-      && JSON.stringify(dem.choix.d.lignes) === JSON.stringify(V.varierLignes(B.composerEtape(prog.etapes[0].nom, ctxG), 4, "beaucoup", ctxG, prog.etapes.length))
+      && JSON.stringify(dem.choix.d.lignes) === JSON.stringify(V.lignesDeLOccurrence(B.composerEtape(prog.etapes[0].nom, ctxG), 4, "beaucoup", ctxG, prog.etapes.length).lignes)
       && JSON.stringify(dem.choix.d.lignes) !== JSON.stringify(dem.choix.a.lignes)
       && JSON.stringify(dem.choix.b.lignes) === JSON.stringify(B.composerEtape(prog.etapes[1].nom, ctxG))
       && JSON.stringify(dem.choix.c.lignes) === JSON.stringify(B.composerEtape(prog.etapes[2].nom, ctxG)), "");
@@ -7844,6 +7853,107 @@ verdict(
   verdict("R7 · le héros : un fait, puis « La faire comme prévu », la version légère, et changer de jour",
     hero.includes('recouvrement ? "La faire comme prévu"') && hero.includes("{recouvrement.leger}")
       && (hero.match(/<Fait texte=\{recouvrement\.phrase\} \/>/g) ?? []).length === 2, "");
+}
+
+/* ── LOT 0 DE LA BANQUE DE SÉANCES (2026-10-27) · LE RYTHME. « Pourquoi
+   c'est tout le temps 12 ? » : les chiffres suivent maintenant le profil
+   de l'exercice et le niveau, les complémentaires tournent volume →
+   lourd → endurance d'un passage à l'autre, et les repères ne bougent
+   pas (une hausse acceptée vise la prochaine occurrence à fourchette
+   égale). La VRAIE banque, tous lieux, objectifs et niveaux. ── */
+{
+  const B = await import("@/lib/banqueEtapes");
+  const V = await import("@/lib/variete");
+  const RS = await import("@/lib/rythmeSeance");
+  const { trouverExercice } = await import("@/lib/exerciseLibrary");
+  const lieux = ["salle", "halteres", "poids"] as const;
+  const orients = ["general", "masse", "force"] as const;
+  const niveaux = ["debutant", "intermediaire", "avance", null] as const;
+  const etapes = [...Object.keys(B.BANQUE.salle), "Dos & fessiers", "Pectoraux & épaules", "Jambes & abdos", "Bras & dos", "Fessiers & dos"];
+
+  verdict("Lot 0 · la version suit le passage : volume (le modèle), lourd, endurance, puis volume",
+    JSON.stringify([0, 1, 2, 3, 4, -1].map(RS.rythmeDuPassage)) === JSON.stringify(["volume", "lourd", "endurance", "volume", "lourd", "volume"]), "");
+
+  const sansProfil = new Set<string>();
+  for (const lieu of lieux) for (const liste of Object.values(B.BANQUE[lieu])) for (const e of liste) {
+    const prop = B.PROPRIETES[e.nom];
+    if (!prop || prop.fonction === "cardio" || prop.fonction === "pliometrie" || e.reps !== undefined || e.dureeS !== undefined) continue;
+    if (trouverExercice(e.nom)?.mode === "temps") continue;
+    if (!RS.PROFIL[e.nom]) sansProfil.add(e.nom);
+  }
+  verdict("Lot 0 · chaque exercice de la banque compté en répétitions a un profil (la fourchette d'objectif n'est plus qu'un repli)",
+    sansProfil.size === 0, [...sansProfil].join(", ") || `${Object.keys(RS.PROFIL).length} profils`);
+
+  let premierModele = true, cycleTrois = true, reperesFixes = true, compTournent = true, intacts = true, contraintes = true;
+  let lignesReps = 0, douze = 0;
+  for (const lieu of lieux) for (const nom of etapes) for (const o of orients) for (const niveau of niveaux) {
+    const ctx = { lieu, orientation: o, niveau, version: B.COMPOSITION_VERSION };
+    const modele = B.composerEtape(nom, ctx);
+    const passages = [0, 1, 2, 3].map((p) => RS.rythmerLignes(modele, p, ctx));
+    if (JSON.stringify(passages[0]) !== JSON.stringify(modele)) premierModele = false;
+    if (JSON.stringify(passages[3]) !== JSON.stringify(passages[0])) cycleTrois = false;
+    modele.forEach((m, i) => {
+      const vus = passages.map((p) => p[i]);
+      if (m.mesure !== "reps" || !RS.PROFIL[m.exercice_nom]) {
+        if (vus.some((x) => JSON.stringify(x) !== JSON.stringify(m))) intacts = false;
+        return;
+      }
+      if (m.statut === "repere" && vus.some((x) => JSON.stringify(x) !== JSON.stringify(m))) reperesFixes = false;
+      if (m.statut === "complementaire" && new Set(vus.slice(0, 3).map((x) => `${x.reps_min}-${x.reps_max}`)).size !== 3) compTournent = false;
+      for (const x of vus.slice(0, 3)) {
+        lignesReps++;
+        if (x.reps_cible === 12) douze++;
+        if (!(x.series >= 1 && x.series <= 12 && x.reps_min! >= 1 && x.reps_min! <= x.reps_cible! && x.reps_cible! <= x.reps_max! && x.reps_max! <= 100)) contraintes = false;
+      }
+    });
+  }
+  verdict("Lot 0 · le premier passage d'une étape est son modèle, et le cycle revient au bout de trois passages", premierModele && cycleTrois, "");
+  verdict("Lot 0 · les repères gardent exactement leurs chiffres à chaque passage (R4 : une hausse acceptée vise la prochaine occurrence à fourchette égale)",
+    reperesFixes, "");
+  verdict("Lot 0 · chaque complémentaire profilé prend trois fourchettes différentes sur trois passages", compTournent, "");
+  verdict("Lot 0 · le cardio, les sauts et les exercices tenus ne bougent jamais", intacts, "");
+  verdict("Lot 0 · toutes les lignes respectent les contraintes de la base (1 à 12 séries, 1 ≤ min ≤ cible ≤ max ≤ 100)", contraintes, `${lignesReps} lignes`);
+  verdict("Lot 0 · 12 répétitions n'est plus la règle : moins d'une ligne sur dix", douze / lignesReps < 0.1, `${douze} sur ${lignesReps}`);
+
+  const pushPoids = [0, 1, 2].map((p) => B.projeterPrescription(RS.rythmerLignes(B.composerEtape("Push", { lieu: "poids", orientation: "general", niveau: null, version: B.COMPOSITION_VERSION }), p, { orientation: "general", niveau: null }))
+    .map((e) => `${e.sets}×${e.reps}`).join(" · "));
+  verdict("Lot 0 · le cas de Louis : Push au poids du corps n'est plus cinq fois 3 × 12, et ses trois passages diffèrent",
+    pushPoids.every((s) => !/^(3×12 reps · ){4}3×12 reps$/.test(s)) && new Set(pushPoids).size === 3, pushPoids.join(" | "));
+
+  /* La base refuse une proposition sur un repère qui a moins de séries
+     que son modèle écrit (`version_reduite`) : jamais moins que la
+     version 1 (force 5, masse 4, général 3), à aucun niveau. */
+  let seriesOk = true;
+  for (const o of orients) for (const niveau of niveaux) for (const nom of Object.keys(RS.PROFIL)) for (const r of RS.RYTHMES) {
+    const c = RS.chiffres(nom, "repere", r, { orientation: o, niveau });
+    if (!c || c.series < B.fourchette(o, "repere").series) seriesOk = false;
+  }
+  const ligneV1 = { ...B.composerEtape("Push", { lieu: "salle", orientation: "general", niveau: null, version: B.COMPOSITION_VERSION })[0], series: 6 };
+  verdict("Lot 0 · un repère ne perd jamais de séries face à un modèle écrit en version 1",
+    seriesOk && RS.rythmerLignes([ligneV1], 1, { orientation: "general", niveau: null })[0].series === 6, "");
+  verdict("Lot 0 · la force garde la décision 47 sur ses repères chargés (5 × 4 à 6) ; un débutant ne descend jamais sous 6 répétitions chargées",
+    JSON.stringify(RS.chiffres("Développé couché", "repere", "lourd", { orientation: "force", niveau: "intermediaire" })) === JSON.stringify({ series: 5, min: 4, max: 6, repos: 180 })
+      && orients.every((o) => RS.RYTHMES.every((r) => (["repere", "complementaire"] as const).every((s) => (RS.chiffres("Rowing haltère", s, r, { orientation: o, niveau: "debutant" })?.min ?? 0) >= 6))),
+    "");
+  verdict("Lot 0 · le niveau change les chiffres : débutant, intermédiaire et avancé ne reçoivent pas les mêmes",
+    new Set((["debutant", "intermediaire", "avance"] as const).map((n) => JSON.stringify(RS.chiffres("Rowing haltère", "complementaire", "lourd", { orientation: "general", niveau: n })))).size === 3, "");
+
+  /* Le chemin : un seul passage pour toutes les occurrences. */
+  const srcRythme = readFileSync("src/lib/rythmeSeance.ts", "utf8").replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
+  verdict("Lot 0 · le rythme est pur : ni hasard, ni horloge, ni stockage, ni base",
+    !/Math\.random|new Date|Date\.now|localStorage|createClient|\.from\(/.test(srcRythme), "");
+  const directs = ["src/lib/prescription.ts", "src/lib/monProgramme.ts", "src/lib/semaineGestes.ts", "src/hooks/useJournee.ts", "src/components/semaine/MaSemaineSheet.tsx"]
+    .filter((f) => readFileSync(f, "utf8").includes("varierLignes("));
+  verdict("Lot 0 · l'occurrence passe toujours par `lignesDeLOccurrence` (exercices PUIS chiffres), jamais par la seule variété",
+    directs.length === 0 && readFileSync("src/lib/prescription.ts", "utf8").includes("lignesDeLOccurrence(lu.lignes, occ.rang")
+      && readFileSync("src/lib/monProgramme.ts", "utf8").includes("lignesDeLOccurrence(modeles.get(rep.position)"), directs.join(", "));
+  verdict("Lot 0 · le modèle composé porte la version « volume » de `rythmeSeance`",
+    readFileSync("src/lib/banqueEtapes.ts", "utf8").includes('chiffres(e.nom, e.statut, "volume", ctx)'), "");
+  const occ = V.lignesDeLOccurrence(B.composerEtape("Push", { lieu: "poids", orientation: "general", niveau: null, version: B.COMPOSITION_VERSION }), 2, "habituels",
+    { lieu: "poids", orientation: "general", niveau: null, version: B.COMPOSITION_VERSION }, 1);
+  verdict("Lot 0 · l'occurrence dit sa version (le deuxième passage d'une étape seule est la version lourde)", occ.rythme === "lourd", occ.rythme);
+  const hero = readFileSync("src/components/entrainement/TodayHero.tsx", "utf8");
+  verdict("Lot 0 · le héros nomme la version de la séance", hero.includes("LIBELLE_RYTHME[rythme]"), "");
 }
 
 /* ── R8 · LA DURÉE LIBRE. La VRAIE banque, raccourcie minute par minute,

@@ -200,19 +200,19 @@ export const WAVE_1_EXERCISES: Record<string, Exercise[]> = {
 
   "fullbody-inter": [
     {
-      name: "Squats sautés", sets: 4, reps: "12 reps", rest: 60,
-      tip: "Saute avec intention, puis amortis silencieusement avant la répétition suivante.",
+      name: "Squats sautés", sets: 4, reps: "8 reps", rest: 60,
+      tip: "Saute avec intention, puis amortis silencieusement avant la répétition suivante. Huit sauts hauts valent mieux que douze sauts bas.",
       benefit: "Ouvre la séance avec un travail de puissance des jambes.",
       muscles: ["Quadriceps", "Fessiers"],
     },
     {
-      name: "Pompes", sets: 4, reps: "12 reps", rest: 60,
-      tip: "Conserve la même ligne du corps du début à la fin de chaque série.",
+      name: "Pompes", sets: 4, reps: "Max moins 2", rest: 75,
+      tip: "Conserve la même ligne du corps du début à la fin de chaque série. Arrête-toi deux répétitions avant de ne plus pouvoir.",
       benefit: "Apporte un volume solide au haut du corps.",
       muscles: ["Pectoraux", "Triceps"],
     },
     {
-      name: "Fentes", sets: 3, reps: "12 par jambe", rest: 60,
+      name: "Fentes", sets: 3, reps: "10 par jambe", rest: 60,
       tip: "Contrôle chaque appui même quand le souffle accélère.",
       benefit: "Ajoute un travail unilatéral exigeant pour les jambes.",
       muscles: ["Quadriceps", "Fessiers"],
@@ -236,7 +236,7 @@ export const WAVE_1_EXERCISES: Record<string, Exercise[]> = {
       muscles: ["Core", "Épaules"],
     },
     {
-      name: "V-ups", sets: 3, reps: "12 reps", rest: 45,
+      name: "V-ups", sets: 3, reps: "10 reps", rest: 45,
       tip: "Monte bras et jambes ensemble sans lancer le mouvement avec la nuque.",
       benefit: "Termine par un travail dynamique de toute la sangle abdominale.",
       muscles: ["Abdominaux"],

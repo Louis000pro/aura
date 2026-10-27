@@ -83,6 +83,7 @@ export default function HeroJournee({ onPret }: {
         indisponible={j.indisponible}
         onRetry={j.recharger}
         nbExos={j.nbExos}
+        rythme={j.rythme}
         nextLabel={j.nextLabel}
         doneStats={j.doneStats}
         adaptationJusquau={j.adaptationJusquau}

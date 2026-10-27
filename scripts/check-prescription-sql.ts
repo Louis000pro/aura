@@ -13,7 +13,7 @@
 import { PGlite } from "@electric-sql/pglite";
 import { readFileSync } from "node:fs";
 import {
-  BANQUE, composerEtape, projeterPrescription, type Lieu, type Orientation,
+  BANQUE, COMPOSITION_VERSION, composerEtape, fourchette, projeterPrescription, type Lieu, type Orientation,
 } from "@/lib/banqueEtapes";
 import { lignesDuJournal, type MarquesSeance } from "@/lib/journalSeance";
 import { remplacer } from "@/lib/remplacement";
@@ -191,10 +191,15 @@ t("un programme archivé ne reçoit rien",
   (await q(`select count(*)::int n from etape_modeles m join programme_seances ps on ps.id=m.programme_seance_id where ps.programme_id=$1`, [archive])).rows[0].n === 0);
 const pull = etW.find((e: { nom: string }) => e.nom === "Pull").id;
 const lusW = (await q(`select e.* from etape_exercices e join etape_modeles m on m.id=e.modele_id where m.programme_seance_id=$1 order by emplacement`, [pull])).rows;
-const attendu = composerEtape("Pull", { lieu: "salle", orientation: "force", niveau: "debutant", version: 1 });
-t("le remplissage écrit exactement la composition TypeScript (salle, force d'abord)",
+/* Le remplissage a été généré en version 1 et collé le 2026-10-05 : il
+   écrit les exercices de la composition (la version 2 n'en change aucun,
+   seulement les chiffres) avec les chiffres de la version 1, et le dit. */
+const attendu = composerEtape("Pull", { lieu: "salle", orientation: "force", niveau: "debutant", version: COMPOSITION_VERSION });
+t("le remplissage écrit les exercices de la composition TypeScript, aux chiffres de la version 1 (salle, force d'abord)",
   lusW.length === attendu.length && lusW.every((r: Record<string, unknown>, i: number) => r.exercice_cle === attendu[i].exercice_cle
-    && r.reps_min === attendu[i].reps_min && r.series === attendu[i].series && r.statut === attendu[i].statut));
+    && r.statut === attendu[i].statut && r.series === fourchette("force", attendu[i].statut).series
+    && r.reps_min === fourchette("force", attendu[i].statut).min && r.reps_max === fourchette("force", attendu[i].statut).max)
+  && (await q(`select composition_version v from etape_modeles where programme_seance_id=$1`, [pull])).rows[0]?.v === 1);
 const inconnu = etW.find((e: { nom: string }) => e.nom === "Nom inconnu").id;
 t("une étape au nom inconnu reçoit le repli Full Body, comme le code",
   (await q(`select e.exercice_cle from etape_exercices e join etape_modeles m on m.id=e.modele_id where m.programme_seance_id=$1 order by emplacement limit 1`, [inconnu])).rows[0]?.exercice_cle

@@ -55,7 +55,7 @@ export const workoutSessions: WorkoutSession[] = [
   {
     id: "force-haut", category: "force",
     title: "Force Haut du Corps", subtitle: "Pectoraux · Dos · Épaules",
-    duration: 45, difficulty: "Intermédiaire", exercises: 6,
+    duration: 55, difficulty: "Intermédiaire", exercises: 6,
     muscles: ["Pectoraux", "Dos", "Épaules"],
     accent: "#8B5CF6", icon: Dumbbell, access: "free",
     collections: ["salle", "masse", "renfo", "haut"],
@@ -192,7 +192,7 @@ export const workoutSessions: WorkoutSession[] = [
   {
     id: "jambes", category: "force",
     title: "Jambes & Fessiers", subtitle: "Squats · Fentes · Hip Thrust",
-    duration: 50, difficulty: "Intermédiaire", exercises: 5,
+    duration: 55, difficulty: "Intermédiaire", exercises: 5,
     muscles: ["Quadriceps", "Fessiers"],
     accent: "#8B5CF6", icon: Dumbbell, access: "free",
     collections: ["salle", "masse", "renfo", "jambes"],
@@ -296,7 +296,7 @@ export const workoutSessions: WorkoutSession[] = [
   {
     id: "salle-haut", category: "force",
     title: "Haut du corps en salle", subtitle: "Barre · Machines · Poulie",
-    duration: 50, difficulty: "Intermédiaire", exercises: 6,
+    duration: 55, difficulty: "Intermédiaire", exercises: 6,
     muscles: ["Pectoraux", "Dos", "Épaules"],
     accent: "#8B5CF6", icon: Dumbbell, access: "premium",
     collections: ["salle", "masse", "renfo", "haut"],

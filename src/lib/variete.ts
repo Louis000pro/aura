@@ -46,6 +46,7 @@ import {
   BANQUE, FONCTIONS_DE_ZONE, LIBELLE_ZONE, PROPRIETES, prescrire,
   type ContexteComposition, type EntreeBanque, type Fonction, type LignePrescription, type Zone,
 } from "@/lib/banqueEtapes";
+import { rythmeDuPassage, rythmerLignes, type Rythme } from "@/lib/rythmeSeance";
 
 export const VARIETES = ["habituels", "peu", "beaucoup"] as const;
 export type Variete = (typeof VARIETES)[number];
@@ -154,6 +155,27 @@ export function varierLignes(
     if (cran > 0) remplacer(i, alt[cran - 1]);
   });
   return lignes;
+}
+
+/**
+ * Les lignes d'UNE occurrence, telles que tout le produit les reçoit :
+ * les exercices de son passage (`varierLignes`), puis les chiffres de son
+ * passage (`rythmerLignes`, lot 0 de la banque de séances). L'affichage,
+ * le lancement, la réservation et l'activation passent tous par ici, pour
+ * ne jamais montrer une séance et en lancer une autre.
+ */
+export function lignesDeLOccurrence(
+  modele: readonly LignePrescription[],
+  rang: number | null,
+  variete: Variete,
+  ctx: ContexteComposition,
+  longueurCycle: number,
+): { lignes: LignePrescription[]; rythme: Rythme } {
+  const passage = rang === null ? 0 : passageDuRang(rang, longueurCycle);
+  return {
+    lignes: rythmerLignes(varierLignes(modele, rang, variete, ctx, longueurCycle), passage, ctx),
+    rythme: rythmeDuPassage(passage),
+  };
 }
 
 /* ── « Ton dos a travaillé hier » (décision 36, maquette 05 écran 07) ──

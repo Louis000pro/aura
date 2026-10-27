@@ -48,6 +48,7 @@ import {
 import type { EtatJournee } from "@/lib/journee";
 import { projeterPrescription } from "@/lib/banqueEtapes";
 import { ecrireOccurrence, empreinteModele, modeleDeLEtape, modeleDeLOccurrence, type ModeleDeLOccurrence } from "@/lib/prescription";
+import type { Rythme } from "@/lib/rythmeSeance";
 import { lireVariete, seriesRecentes } from "@/lib/varieteBase";
 import type { Exercise } from "@/components/WorkoutGuideModal";
 import { estimerMinutes, exercicesCourts, itemDExercice, lignesCourtes, raccourcir } from "@/lib/dureeLibre";
@@ -142,6 +143,9 @@ export type Journee = {
   cycleSemaine: CycleSemaine | null;
   /** La taille de l'instance de l'étape, calculée sans rien écrire. */
   nbExos: number;
+  /** Lot 0 · la version de la prochaine étape (volume, lourde, endurance),
+   *  celle de ses complémentaires. `null` tant que son modèle n'est pas lu. */
+  rythme: Rythme | null;
   nextLabel: string | null;
   doneStats: { minutes: number; kcal: number } | null;
   semaine: PlanningDay[] | null;
@@ -858,7 +862,7 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
     adaptation,
     adaptationJusquau: adaptation ? libelleJour(adaptation.fin) : null,
     cycleSemaine,
-    nbExos: instance.length, nextLabel, doneStats,
+    nbExos: instance.length, rythme: modeleDeLEtapeAffichee?.rythme ?? null, nextLabel, doneStats,
     semaine, setSemaine, gen, programme, besoinSetup, niveau,
     recharger: () => { void charger(); },
     lancerAujourdhui, lancerIntention, refaire, daterEtape,

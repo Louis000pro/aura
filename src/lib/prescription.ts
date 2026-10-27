@@ -12,8 +12,10 @@
    ⚠️ SANS MODÈLE ÉCRIT, ON COMPOSE EN MÉMOIRE, ET C'EST STABLE PAR
    CONSTRUCTION. La composition est pure et versionnée : la même version
    donne le même modèle sur tous les appareils, et le banc tient une
-   empreinte de la version 1 (changer la banque sans changer la version
-   fait échouer le contrôle). C'est ce qui garantit qu'un changement de
+   empreinte de la version en cours (la 2 depuis le 2026-10-27 : changer
+   la banque sans changer la version fait échouer le contrôle). Un modèle
+   écrit en version 1 garde ses exercices ; ses occurrences reçoivent les
+   chiffres de `rythmeSeance.ts`. C'est ce qui garantit qu'un changement de
    lieu ne bloque personne : le modèle de l'autre lieu existe toujours,
    écrit ou composé.
 
@@ -27,7 +29,8 @@ import { createClient } from "@/lib/supabase";
 import {
   composerEtape, type ContexteComposition, type LignePrescription,
 } from "@/lib/banqueEtapes";
-import { varierLignes, type Variete } from "@/lib/variete";
+import { lignesDeLOccurrence, type Variete } from "@/lib/variete";
+import type { Rythme } from "@/lib/rythmeSeance";
 
 /** Ce qu'une étape propose, avec ce qui permet de savoir d'où ça vient. */
 export type ModeleEtape = {
@@ -40,14 +43,16 @@ export type ModeleEtape = {
  * R2 · tour 22 · un modèle RATTACHÉ à l'occurrence pour laquelle il a été
  * lu. Le hook ne publie jamais l'un sans l'autre, et un geste refuse un
  * modèle qui appartient à une autre étape.
+ * `rythme` : la version de ses complémentaires (lot 0), pour l'écran.
  */
-export type ModeleDeLOccurrence = ModeleEtape & { etapeId: string; rang: number; lieu: string };
+export type ModeleDeLOccurrence = ModeleEtape & { etapeId: string; rang: number; lieu: string; rythme?: Rythme };
 
 /**
  * R7 · LE MODÈLE D'UNE ÉTAPE DEVIENT LA PRESCRIPTION D'UNE OCCURRENCE :
- * ses complémentaires sont choisis selon le réglage et le RANG (pure,
- * identique sur tous les appareils). C'est le seul passage : l'affichage,
- * le lancement et la réservation reçoivent les mêmes lignes.
+ * ses complémentaires sont choisis selon le réglage et le RANG, et ses
+ * chiffres suivent son passage (pure, identique sur tous les appareils).
+ * C'est le seul passage : l'affichage, le lancement et la réservation
+ * reçoivent les mêmes lignes.
  */
 export function modeleDeLOccurrence(
   lu: ModeleEtape,
@@ -56,7 +61,8 @@ export function modeleDeLOccurrence(
   variete: Variete,
   longueurCycle: number,
 ): ModeleDeLOccurrence {
-  return { modeleId: lu.modeleId, lignes: varierLignes(lu.lignes, occ.rang, variete, ctx, longueurCycle), etapeId: occ.id, rang: occ.rang, lieu: ctx.lieu };
+  const { lignes, rythme } = lignesDeLOccurrence(lu.lignes, occ.rang, variete, ctx, longueurCycle);
+  return { modeleId: lu.modeleId, lignes, etapeId: occ.id, rang: occ.rang, lieu: ctx.lieu, rythme };
 }
 
 /** Ce qui distingue deux prescriptions : l'étape, le lieu, le modèle, ses lignes. */
