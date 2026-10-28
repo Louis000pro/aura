@@ -26,7 +26,8 @@ import { fichesPubliees } from "./exercicesPublics";
  * 2026-08-10) tant que le catalogue vivait dans l'écran Entraînement ; il
  * en est sorti, donc il se compte. Les mini-cours étalés dans le même
  * tableau n'y entrent pas : ils ont leur propre chiffre ci-dessous.
- * 80 séances le 2026-10-27, avec les séances par zone (vague 7).
+ * 80 séances le 2026-10-27, avec les séances par zone (vague 7), puis 111
+ * le 2026-10-28 avec les formats (vague 8).
  */
 const SEANCES_CATALOGUE = workoutSessions.filter((s) => s.contentType !== "article").length;
 

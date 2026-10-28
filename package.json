@@ -33,6 +33,7 @@
     "check:secours": "node --experimental-strip-types --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --import ./scripts/check-ia-alias.mjs scripts/check-secours.ts",
     "check:programme": "node --experimental-strip-types --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --import ./scripts/check-ia-alias.mjs scripts/check-programme.ts",
     "check:catalogue": "node --experimental-strip-types --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --import ./scripts/check-ia-alias.mjs scripts/check-catalogue.ts",
+    "check:tours": "node --experimental-strip-types --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --import ./scripts/check-ia-alias.mjs scripts/check-tours.ts",
     "check:reprise": "node --experimental-strip-types --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --import ./scripts/check-ia-alias.mjs scripts/check-reprise.ts",
     "check:ia": "node --env-file-if-exists=.env.local --experimental-strip-types --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --import ./scripts/check-ia-alias.mjs scripts/check-ia.ts",
     "check:prescription-sql": "node --experimental-strip-types --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --import ./scripts/check-ia-alias.mjs scripts/check-prescription-sql.ts",

@@ -210,53 +210,55 @@ export const WAVE_2_EXERCISES: Record<string, Exercise[]> = {
     },
   ],
 
+  /* Circuit de 3 tours depuis le lot 2 (2026-10-28) : les mêmes huit
+     machines, 20 s pour passer de l'une à l'autre. */
   "fullbody-machines": [
     {
-      name: "Presse à cuisses", sets: 4, reps: "8 reps", rest: 90,
-      tip: "Garde le bassin posé et pousse la plateforme sans verrouiller brutalement les genoux.",
+      name: "Presse à cuisses", sets: 3, reps: "10 reps", rest: 20, bloc: "machines",
+      tip: "Garde le bassin posé et pousse la plateforme sans verrouiller brutalement les genoux. Puis passe à la machine suivante sans t’asseoir longtemps.",
       benefit: "Donne le principal travail de jambes sur une trajectoire stable.",
       muscles: ["Quadriceps", "Fessiers"],
     },
     {
-      name: "Développé épaules machine", sets: 3, reps: "10 reps", rest: 65,
+      name: "Développé épaules machine", sets: 3, reps: "10 reps", rest: 20, bloc: "machines",
       tip: "Règle le siège pour démarrer sans hausser les épaules, puis pousse verticalement.",
       benefit: "Ajoute une poussée guidée pour le haut du corps.",
       muscles: ["Épaules", "Triceps"],
     },
     {
-      name: "Tirage poitrine", sets: 4, reps: "8 reps", rest: 75,
+      name: "Tirage poitrine", sets: 3, reps: "10 reps", rest: 20, bloc: "machines",
       tip: "Amène la barre vers le haut de la poitrine en dirigeant les coudes vers le sol.",
       benefit: "Travaille la largeur du dos avec une charge facile à ajuster.",
       muscles: ["Dos", "Biceps"],
     },
     {
-      name: "Rowing assis poulie", sets: 3, reps: "15 reps", rest: 60,
+      name: "Rowing assis poulie", sets: 3, reps: "15 reps", rest: 20, bloc: "machines",
       tip: "Tire vers le nombril et marque une seconde quand les omoplates se rapprochent.",
       benefit: "Complète le dos par une traction horizontale.",
       muscles: ["Dos", "Biceps"],
     },
     {
-      name: "Hip thrust machine", sets: 3, reps: "10 reps", rest: 65,
+      name: "Hip thrust machine", sets: 3, reps: "10 reps", rest: 20, bloc: "machines",
       tip: "Monte le bassin jusqu’à l’alignement et garde les côtes basses.",
       benefit: "Ajoute un mouvement guidé puissant pour les fessiers.",
       muscles: ["Fessiers"],
     },
     {
-      name: "Dips machine", sets: 2, reps: "15 reps", rest: 60,
+      name: "Dips machine", sets: 3, reps: "15 reps", rest: 20, bloc: "machines",
       tip: "Garde les épaules basses et pousse les poignées sans décoller le dos du dossier.",
       benefit: "Renforce les triceps et les pectoraux sur une trajectoire contrôlée.",
       muscles: ["Triceps", "Pectoraux"],
     },
     {
-      name: "Abducteurs machine", sets: 2, reps: "20 reps", rest: 45,
+      name: "Abducteurs machine", sets: 3, reps: "20 reps", rest: 20, bloc: "machines",
       tip: "Ouvre les genoux sans donner d’élan et reviens lentement vers le centre.",
       benefit: "Cible les muscles latéraux des hanches utiles à la stabilité.",
       muscles: ["Fessiers", "Hanches"],
     },
     {
-      name: "Mollets assis", sets: 3, reps: "20 reps", rest: 45,
+      name: "Mollets assis", sets: 3, reps: "20 reps", rest: 90, bloc: "machines",
       tip: "Cherche une amplitude complète et une courte pause en haut.",
-      benefit: "Termine la séance avec un travail précis des mollets.",
+      benefit: "Termine chaque tour avec un travail précis des mollets, puis une minute et demie de repos.",
       muscles: ["Mollets"],
     },
   ],

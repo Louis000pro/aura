@@ -58,7 +58,7 @@ on ne compare jamais les corps.
 **Quatre façons de s'entraîner, toutes réelles, à présenter ensemble.** Ne jamais
 présenter Vaiiya comme un catalogue fermé.
 
-1. **Suivre une séance du catalogue** (80 séances guidées).
+1. **Suivre une séance du catalogue** (111 séances guidées).
 2. **Construire entièrement sa propre séance**, en piochant dans la bibliothèque des
    102 mouvements animés (ou en tapant un nom libre).
 3. **Demander une séance à l'assistant**, qui la propose sur une carte à valider.
@@ -148,7 +148,7 @@ Vérifiés sur `main` le 2026-08-10. À revérifier avant réemploi.
 
 | Chiffre | Valeur | Source dans le code |
 |---|---|---|
-| Séances guidées au catalogue | 80 : 27 incluses et 53 Vaiiya+, recomptées le 2026-10-27 | `lib/catalogueSeances.ts`, compté par `lib/chiffresPublics.ts` |
+| Séances guidées au catalogue | 111 : 32 incluses et 79 Vaiiya+, recomptées le 2026-10-28 | `lib/catalogueSeances.ts`, compté par `lib/chiffresPublics.ts` |
 | Mini-cours | 83 : 21 conseils d’entraînement (13 gratuits, 8 Vaiiya+) et 62 cours de nutrition (43 gratuits, 19 Vaiiya+), recomptés le 2026-10-26 | `lib/adviceArticles.ts` et `lib/coursNutrition.ts`, additionnés par `lib/chiffresPublics.ts` |
 | Mouvements animés | 102 | `lib/exerciseLibrary.ts` |
 | Fiches exercices publiques | 8 | `lib/exercicesPublics.ts` |
@@ -196,7 +196,7 @@ fermée.
 ## 13. Claims autorisés
 
 - « Application web française d'entraînement et de nutrition, avec un assistant IA. »
-- « Un catalogue de 80 séances guidées, montrées mouvement par mouvement. »
+- « Un catalogue de 111 séances guidées, montrées mouvement par mouvement. »
 - « 102 mouvements animés, consultables librement. »
 - « Compose ta propre séance, ou demande-la à l'assistant. »
 - « L'assistant agit : il propose, tu valides. Rien ne s'écrit sans ton accord. »

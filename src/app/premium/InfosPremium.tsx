@@ -55,8 +55,8 @@ export default function InfosPremium({ premiumDebloque = false }: { premiumDeblo
         </h2>
         <p className="text-[16px] font-light leading-relaxed" style={{ color: "var(--text-body)" }}>
           Un compte Vaiiya est gratuit et ne demande pas de carte bancaire. Il ouvre le catalogue de
-          séances guidées, avec dans chaque collection des séances accessibles sans rien payer, du
-          renforcement à la mobilité en passant par le cardio et la récupération. Les 102 mouvements
+          séances guidées, avec pour chaque objectif et chaque zone du corps des séances accessibles
+          sans rien payer, du renforcement à la mobilité en passant par le cardio et la récupération. Les 102 mouvements
           de la bibliothèque sont montrés par un personnage animé, avec leur consigne et
           les muscles travaillés : ça ne se paye pas et ça ne se payera pas.
         </p>

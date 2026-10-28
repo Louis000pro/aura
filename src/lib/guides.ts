@@ -831,6 +831,11 @@ const REPLIQUES = {
     nora:   "On change d’exercice après cette pause. Prends vraiment ce temps-là.",
     sasha:  "Nouvel exercice après la pause. Récupère, on enchaîne.",
   },
+  "seance.repos.tour": {
+    commun: "Un tour de fait. Le suivant repart au début, prends ce temps.",
+    nora:   "Un tour de fait. Respire, le suivant repart du premier exercice.",
+    sasha:  "Tour bouclé. Récupère, on repart du début.",
+  },
   "seance.repos.fin": {
     commun: "Dernier exercice, garde le même rythme.",
     nora:   "C’est le dernier exercice. Garde la même qualité de mouvement jusqu’au bout.",

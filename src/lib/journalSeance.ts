@@ -50,6 +50,7 @@ import type { Remplacements } from "@/lib/remplacement";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Exercise } from "@/components/WorkoutGuideModal";
 import { cleExercice } from "@/lib/exerciceCle";
+import { repsDeLaSerie } from "@/lib/toursSeance";
 import {
   faitDeLaSeance, fermetureTerminee, terminerSeance,
   type CibleSeance, type FaitSeance, type ResultatFermeture,
@@ -205,7 +206,8 @@ export function lignesDuJournal(exercices: Exercise[], marques: MarquesSeance, r
         serie: s + 1,
         statut: m ? m.statut : "non_atteinte",
         mesure: duree ? "duree" : "reps",
-        reps_prescrites: duree ? null : repsPrescrites(ex.reps),
+        /* Une pyramide prévoit autre chose à chaque série (lib/toursSeance). */
+        reps_prescrites: duree ? null : repsPrescrites(repsDeLaSerie(ex, s)),
         duree_prescrite_s: duree ? (ex.auto ?? DUREE_EFFORT_HIIT) : null,
         reps_declarees: reps,
         duree_s: terminee?.dureeS ?? null,

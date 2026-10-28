@@ -6,6 +6,7 @@ import { useWorkoutLaunch } from "@/context/WorkoutLaunchContext";
 import { positionDeReprise, type SeanceInterrompue as Brouillon } from "@/lib/seanceInterrompue";
 import { lockBodyModal } from "@/lib/bodyModal";
 import { exerciceAffiche } from "@/lib/remplacement";
+import { blocDe, repsDeLaSerie } from "@/lib/toursSeance";
 
 const chrono = (s: number) => `${Math.floor(s / 60).toString().padStart(2, "0")}:${(s % 60).toString().padStart(2, "0")}`;
 const encre = { color: "var(--text-2)" };
@@ -20,6 +21,8 @@ function RepriseCard({ brouillon, erreur, supplement, onReprendre, onAbandonner 
   const pos = positionDeReprise(brouillon);
   const ex = exerciceAffiche(brouillon.seance.exerciseList[pos.exerciseIdx], pos.exerciseIdx, brouillon.avancement.remplacements ?? {});
   const a = brouillon.avancement;
+  /* Lot 2 · dans un circuit, la série d'un exercice est son tour. */
+  const bloc = blocDe(brouillon.seance.exerciseList, pos.exerciseIdx);
   if (replie) return (
     <div className="mb-5 flex flex-wrap items-center justify-between gap-2 text-[13px]" style={encre}>
       <span>Séance en pause · {brouillon.seance.title}</span>
@@ -35,7 +38,7 @@ function RepriseCard({ brouillon, erreur, supplement, onReprendre, onAbandonner 
         <div className="py-4 my-4 border-y" style={{ borderColor: "rgba(var(--text-3-rgb),0.22)" }}>
           <p className="text-[13px]" style={encre}>Exercice <span className="vy-nombre">{pos.exerciseIdx + 1}</span> sur <span className="vy-nombre">{brouillon.seance.exerciseList.length}</span></p>
           <p className="vy-sous my-1">{ex.name}</p>
-          <p className="text-[13px]" style={encre}>Série <span className="vy-nombre">{pos.setIdx + 1}</span> sur <span className="vy-nombre">{ex.sets}</span>{a.phase !== "resting" && <> · {ex.reps}</>}</p>
+          <p className="text-[13px]" style={encre}>{bloc ? "Tour" : "Série"} <span className="vy-nombre">{pos.setIdx + 1}</span> sur <span className="vy-nombre">{bloc ? bloc.tours : ex.sets}</span>{a.phase !== "resting" && <> · {repsDeLaSerie(ex, pos.setIdx)}</>}</p>
           {a.phase === "resting" && <p className="text-[13px] mt-1" style={encre}>Repos · <span className="vy-nombre">{chrono(a.restCountdown)}</span> restantes</p>}
           {a.phase === "exercising" && (ex.auto || ex.hiit) && <p className="text-[13px] mt-1" style={encre}>{ex.hiit && a.hiitSub === "rest" ? "Récupération" : "Effort"} · <span className="vy-nombre">{chrono(a.autoCountdown)}</span> restantes</p>}
         </div>

@@ -10,6 +10,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import { useWorkoutLaunch } from "@/context/WorkoutLaunchContext";
+import { doseDe } from "@/lib/toursSeance";
 import {
   lireSemaine, reposerLaSemaine, ctxFromLieu, dayTitle, persistLieu, loadLieu,
   weekDatesForOffset, weekOffsetOf, weekdayIndex, todayWeekIndex, parDate, principale, supplements,
@@ -200,7 +201,7 @@ function DayDetail({ day, onTuto, onStart }: { day: PlanningDay; onTuto: (ex: st
               >
                 <div className="rounded-full flex-shrink-0" style={{ width: 4, height: 4, background: "var(--accent)", opacity: 0.8 }} />
                 <p className="text-[11px] leading-snug flex-1" style={{ color: "var(--text-body)" }}>{ex.name}</p>
-                <span className="text-[11px] font-medium flex-shrink-0" style={{ color: "var(--text-3)" }}>{ex.sets}×{ex.reps}</span>
+                <span className="text-[11px] font-medium flex-shrink-0" style={{ color: "var(--text-3)" }}>{doseDe(ex)}</span>
                 <span className="flex items-center gap-1 flex-shrink-0 rounded-full px-2 py-0.5"
                   style={{ background: "rgba(var(--accent-rgb),0.12)" }}>
                   <Play size={9} strokeWidth={2.5} style={{ color: "var(--exp-encre)" }} fill="currentColor" />

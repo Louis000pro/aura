@@ -2,7 +2,7 @@
 
 import { cheminDuGuide } from "@/lib/photosGuide";
 import { jouerSon } from "@/lib/sons";
-import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { Fragment, useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { marquesDeReprise, type AvancementSeance } from "@/lib/seanceInterrompue";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
@@ -40,6 +40,10 @@ import {
   type EtatFin, type JournalSeance, type MarquesSeance, type Validation,
 } from "@/lib/journalSeance";
 import { secondesDeReps } from "@/lib/dureeLibre";
+import {
+  attenteApresSerie, blocDe, blocsDe, doseDe, enTeteDuBloc, pasPrecedent, pasSuivant, repsDeLaSerie,
+  reperesDuPas, resteApres, type FormatBloc, type MarquesTours,
+} from "@/lib/toursSeance";
 import type { ExercicePrescrit } from "@/lib/banqueEtapes";
 import {
   chargeReglable, cibleReps, crancherReps, declareDesRepetitions,
@@ -86,6 +90,18 @@ function cleRepos(exerciseIdx: number, setIdx: number, sets: number, total: numb
   return dernierSet ? "seance.repos.exo" : "seance.repos.serie";
 }
 
+/* Dans un bloc ou un EMOM (lot 2) : « dernier exercice » devient le
+   dernier tour d'un bloc qui finit la séance, la fin d'un tour a sa phrase,
+   et on change d'exercice dès que la série qui vient est celle d'un autre. */
+function cleReposTours(exos: Exercise[], exerciseIdx: number, setIdx: number, prochain: { e: number; s: number } | null): CleVoix {
+  const b = blocDe(exos, exerciseIdx);
+  const dernier = b ? b.fin === exos.length && setIdx === b.tours - 1 : exerciseIdx === exos.length - 1;
+  if (dernier) return "seance.repos.fin";
+  if (exerciseIdx === 0 && setIdx === 0) return "seance.repos.debut";
+  if (b && prochain && prochain.e >= b.debut && prochain.e < b.fin && prochain.s > setIdx) return "seance.repos.tour";
+  return prochain && prochain.e === exerciseIdx ? "seance.repos.serie" : "seance.repos.exo";
+}
+
 /* ─── Types ──────────────────────────────────────────────── */
 export interface Exercise {
   name: string;
@@ -98,6 +114,17 @@ export interface Exercise {
   tip: string;
   benefit: string;
   muscles: string[];
+  /** Les exercices CONSÉCUTIFS qui portent le même `bloc` se jouent en
+   *  tours : une série de chacun, dans l'ordre (lib/toursSeance.ts). */
+  bloc?: string;
+  /** Le nom du bloc à l'écran, lu sur son premier exercice. */
+  format?: FormatBloc;
+  /** Les répétitions de chaque série (pyramide, échelle, descente) ;
+   *  `reps` reste le résumé d'une ligne. */
+  repsParSerie?: string[];
+  /** EMOM : chaque série dispose de ce nombre de secondes, et ce qui en
+   *  reste est le repos. */
+  emom?: number;
 }
 
 export interface WorkoutGuideModalProps {
@@ -479,6 +506,11 @@ export default function WorkoutGuideModal({
   const finReposVibreeRef = useRef(false);
   const [startMs,       setStartMs]       = useState(() => reprise ? Date.now() - reprise.elapsed * 1000 : 0);
   const [elapsed,       setElapsed]       = useState(reprise?.elapsed ?? 0);
+  /* EMOM (lib/toursSeance) : le temps passé sur la série en cours, compté
+     sur le chrono de la séance, pauses exclues. Une reprise repart d'une
+     minute neuve. */
+  const elapsedRef = useRef(reprise?.elapsed ?? 0);
+  const debutPasRef = useRef(reprise?.elapsed ?? 0);
   const [paused,        setPaused]        = useState(false);
   /* La fiche d'un mouvement, ouverte depuis la scène ou « Au programme ». */
   const [fiche,         setFiche]         = useState<LibExercise | null>(null);
@@ -830,6 +862,15 @@ export default function WorkoutGuideModal({
   const isHiit   = !!cur?.hiit;
   const isTimered = !!(cur?.auto || cur?.hiit);
   const totalSets = exercises.reduce((a, e) => a + e.sets, 0);
+  /* Lot 2 · le bloc de l'exercice en cours (circuit, superset, EMOM) et,
+     pendant un repos, la série qui vient (lib/toursSeance). Un exercice
+     joué seul garde l'affichage d'avant. */
+  const blocsDuProgramme = useMemo(() => blocsDe(exercises), [exercises]);
+  const blocCur = blocDe(exercises, exerciseIdx);
+  const enTours = !!blocCur || (cur?.emom ?? 0) > 0;
+  const prochainPas = phase === "resting" && enTours
+    ? pasSuivant(exercises, doneMap as MarquesTours, exerciseIdx, setIdx, "serie") : null;
+  const reperes = reperesDuPas(exercises, exerciseIdx, setIdx);
 
   /* R4 · les réponses de l'écran de fin s'écrivent une fois la séance
      enregistrée, sans bloquer sa finalisation. */
@@ -841,7 +882,12 @@ export default function WorkoutGuideModal({
   /* ── Elapsed clock ── */
   useEffect(() => {
     if (phase === "intro" || phase === "done" || startMs === 0 || paused) return;
-    const t = setInterval(() => { if (!document.hidden) setElapsed(Math.floor((Date.now() - startMs) / 1000)); }, 1000);
+    const t = setInterval(() => {
+      if (document.hidden) return;
+      const s = Math.floor((Date.now() - startMs) / 1000);
+      elapsedRef.current = s;
+      setElapsed(s);
+    }, 1000);
     return () => clearInterval(t);
   }, [phase, startMs, paused]);
 
@@ -850,12 +896,10 @@ export default function WorkoutGuideModal({
      séries TERMINÉES quand on y entre. On reprend à la première qui ne
      l'est pas, et un exercice entièrement terminé ne se refait pas tout
      seul en avançant. Une série « passée » reste ouverte : la passer
-     n'est pas l'avoir faite. */
-  const premiereOuverte = useCallback((e: number): number => {
-    const n = exercises[e]?.sets ?? 1;
-    for (let s = 0; s < n; s++) if (doneMap[e]?.[s]?.statut !== "terminee") return s;
-    return -1;
-  }, [exercises, doneMap]);
+     n'est pas l'avoir faite.
+     Depuis le lot 2, cette règle vit dans `lib/toursSeance` (`pasSuivant`,
+     `pasPrecedent`) : la même pour un exercice seul, et elle joue un bloc
+     (circuit, superset) tour après tour. */
 
   /** Pose le tunnel sur une série, chrono et décompte compris. */
   const entrerDans = useCallback((e: number, s: number) => {
@@ -865,46 +909,57 @@ export default function WorkoutGuideModal({
     setExerciseIdx(e); setSetIdx(s);
     setAutoCountdown(0); setHiitSub("work");
     setPhase("exercising");
+    debutPasRef.current = elapsedRef.current;
     const ex = exercises[e];
     if (ex?.auto)      { setAutoCountdown(ex.auto); setPrep(3); }
     else if (ex?.hiit) { setHiitSub("work"); setAutoCountdown(HIIT_WORK); setPrep(3); }
   }, [exercises]);
 
-  /* ── Skip the entire current exercise ── */
-  const skipExercise = useCallback(() => {
-    for (let e = exerciseIdx + 1; e < exercises.length; e++) {
-      const s = premiereOuverte(e);
-      if (s >= 0) { entrerDans(e, s); return; }
-    }
+  /* ── Quitter l'exercice en cours ──
+     Les marques se passent quand l'appelant vient de les changer
+     (« Passer l'exercice ») : l'état n'est pas encore à jour, et un
+     exercice passé reviendrait au tour suivant d'un bloc. */
+  const skipExercise = useCallback((marques?: MarquesSeance) => {
+    const p = pasSuivant(exercises, (marques ?? doneMap) as MarquesTours, exerciseIdx, setIdx, "exercice");
+    if (p) { entrerDans(p.e, p.s); return; }
     setFiche(null); setChanger(null); setEditReps(false);
     setPhase("done");
-  }, [exercises, exerciseIdx, premiereOuverte, entrerDans]);
+  }, [exercises, exerciseIdx, setIdx, doneMap, entrerDans]);
 
   /* ── Revenir à l'exercice précédent ──
      Le geste inverse de « Passer l'exercice ». On reprend l'exercice
      d'avant à sa première série non terminée (ou au début s'il était
      fini, pour pouvoir le refaire). Ses séries marquées « passées » sont
      effacées : on est revenu dessus, il n'est plus sauté. Les séries
-     terminées ne bougent pas ; en refaire une remplace sa marque. */
+     terminées ne bougent pas ; en refaire une remplace sa marque. Dans un
+     bloc, c'est la série d'avant dans l'ordre du jeu. */
   const revenirExercice = useCallback(() => {
-    const prev = exerciseIdx - 1;
-    if (prev < 0) return;
+    const p = pasPrecedent(exercises, doneMap as MarquesTours, exerciseIdx, setIdx);
+    if (!p) return;
     setDoneMap(m => {
-      const parSerie = { ...(m[prev] ?? {}) };
+      const parSerie = { ...(m[p.e] ?? {}) };
       for (const k of Object.keys(parSerie)) if (parSerie[Number(k)]?.statut === "passee") delete parSerie[Number(k)];
-      return { ...m, [prev]: parSerie };
+      return { ...m, [p.e]: parSerie };
     });
-    const s = premiereOuverte(prev);
-    entrerDans(prev, s >= 0 ? s : 0);
-  }, [exerciseIdx, premiereOuverte, entrerDans]);
+    entrerDans(p.e, p.s);
+  }, [exercises, exerciseIdx, setIdx, doneMap, entrerDans]);
 
   /* ── Advance to next set / exercise ── */
   const advance = useCallback(() => {
     const nextSet = setIdx + 1;
     const nextEx  = exerciseIdx + 1;
     setFiche(null);
+    /* Un bloc se joue tour après tour : la série suivante est celle de
+       l'exercice suivant du tour, ou du tour d'après. */
+    if (blocDe(exercises, exerciseIdx)) {
+      const p = pasSuivant(exercises, doneMap as MarquesTours, exerciseIdx, setIdx, "serie");
+      if (p) entrerDans(p.e, p.s);
+      else { setChanger(null); setEditReps(false); setPhase("done"); }
+      return;
+    }
     if (nextSet < (exercises[exerciseIdx]?.sets ?? 1)) {
       setSetIdx(nextSet); setPhase("exercising");
+      debutPasRef.current = elapsedRef.current;
       const e = exercises[exerciseIdx];
       if (e?.auto)      { setAutoCountdown(e.auto); setPrep(3); }
       else if (e?.hiit) { setHiitSub("work"); setAutoCountdown(HIIT_WORK); setPrep(3); }
@@ -917,7 +972,7 @@ export default function WorkoutGuideModal({
     } else {
       setPhase("done");
     }
-  }, [exercises, exerciseIdx, setIdx, skipExercise]);
+  }, [exercises, exerciseIdx, setIdx, skipExercise, doneMap, entrerDans]);
 
   /* ── Complete a set ──
 
@@ -968,6 +1023,20 @@ export default function WorkoutGuideModal({
         setQuestionsPosees((prev) => poserQuestion(prev, exerciseIdx, questionUtile(series, p)));
       }
     }
+    /* Un bloc ou un EMOM (lib/toursSeance) : la série suivante peut être
+       celle d'un autre exercice, et l'attente vient de la règle des tours
+       (EMOM : ce qui reste de la minute). Le repos finit par `advance`,
+       qui sait jouer un bloc. */
+    if (blocDe(exercises, exerciseIdx) || (ex?.emom ?? 0) > 0) {
+      const marques = { ...doneMap, [exerciseIdx]: { ...(doneMap[exerciseIdx] ?? {}), [setIdx]: marque } };
+      const prochain = pasSuivant(exercises, marques as MarquesTours, exerciseIdx, setIdx, "serie");
+      const attenteTour = attenteApresSerie(exercises, exerciseIdx, setIdx, prochain, elapsedRef.current - debutPasRef.current);
+      if (prochain && attenteTour > 0) {
+        setRestMode("set");
+        setRestTotal(attenteTour); setRestCountdown(attenteTour); setPhase("resting");
+      } else advance();
+      return;
+    }
     const resteUnExo = exerciseIdx + 1 < exercises.length;
     if (dernierSet && !resteUnExo) { advance(); return; }
     const attente = dernierSet
@@ -984,14 +1053,14 @@ export default function WorkoutGuideModal({
      la seule différence entre sauter et ne pas avoir eu le temps. */
   const passerExercice = useCallback(() => {
     const ex = exercises[exerciseIdx];
-    setDoneMap(prev => {
-      const parSerie = { ...(prev[exerciseIdx] ?? {}) };
-      for (let s = setIdx; s < (ex?.sets ?? 1); s++) if (!parSerie[s]) parSerie[s] = { statut: "passee" };
-      return { ...prev, [exerciseIdx]: parSerie };
-    });
+    const parSerie = { ...(doneMap[exerciseIdx] ?? {}) };
+    for (let s = setIdx; s < (ex?.sets ?? 1); s++) if (!parSerie[s]) parSerie[s] = { statut: "passee" };
+    const marques = { ...doneMap, [exerciseIdx]: parSerie };
+    setDoneMap(marques);
     validationRef.current = null;
-    skipExercise();
-  }, [exercises, exerciseIdx, setIdx, skipExercise]);
+    /* Dans un bloc, l'exercice passé ne revient pas aux tours suivants. */
+    skipExercise(marques);
+  }, [exercises, exerciseIdx, setIdx, doneMap, skipExercise]);
 
   /* ── R3 · Corriger la série qu'on vient d'enregistrer ──
      Facultatif : sans y toucher, la série reste telle que le bouton l'a
@@ -1195,6 +1264,7 @@ export default function WorkoutGuideModal({
   const startWorkout = () => {
     setStartMs(Date.now());
     debutRef.current = Date.now();
+    elapsedRef.current = 0; debutPasRef.current = 0;
     proprietaireRef.current = user?.id ?? null;
     setExerciseIdx(0); setSetIdx(0); setDoneMap({}); setPaused(false); setFiche(null);
     setRemplacements({}); setChargeCourante({}); setCorrection(null); setEditCharge(false); setChanger(null);
@@ -1221,8 +1291,10 @@ export default function WorkoutGuideModal({
   const kcalEst  = Math.round(duration * 6.5);
   const muscleSummary = Array.from(new Set(exercises.flatMap(e => e.muscles)))
     .slice(0, 3).join(" · ").toUpperCase();
-  const repsMatch = cur?.reps.match(/^(\d+)\s*(.*)$/);
-  const repsHero  = repsMatch ? repsMatch[1] : (cur?.reps ?? "");
+  /* Une pyramide prévoit autre chose à chaque série (lib/toursSeance). */
+  const repsTexte = cur ? repsDeLaSerie(cur, setIdx) : "";
+  const repsMatch = repsTexte.match(/^(\d+)\s*(.*)$/);
+  const repsHero  = repsMatch ? repsMatch[1] : repsTexte;
   const repsSub   = repsMatch ? (repsMatch[2] || "répétitions") : "";
 
   /* ─────────────────────────────────────────────────────── */
@@ -1257,12 +1329,15 @@ export default function WorkoutGuideModal({
                 en cours), le temps, le Guide, la pause, fermer ══ */}
             <div className="flex-shrink-0 px-4" style={{ paddingTop: "max(14px, env(safe-area-inset-top))" }}>
               <div className="flex gap-[5px]">
-                {exercises.map((_, e) => {
-                  const done   = e < exerciseIdx;
-                  const curSeg = e === exerciseIdx;
-                  const fill   = curSeg
-                    ? Math.min(100, ((setIdx + (phase === "resting" ? 1 : 0)) / (cur?.sets || 1)) * 100)
-                    : 0;
+                {exercises.map((ex, e) => {
+                  /* Un segment par exercice, rempli par ses séries déjà
+                     marquées : dans un circuit, plusieurs exercices avancent
+                     ensemble, tour après tour. */
+                  const marquees = Object.values(doneMap[e] ?? {}).filter(Boolean).length;
+                  const part   = Math.min(1, marquees / Math.max(1, ex.sets));
+                  const done   = part >= 1;
+                  const curSeg = !done && (e === exerciseIdx || marquees > 0);
+                  const fill   = part * 100;
                   return (
                     <span key={e} className="h-1 flex-1 rounded-full overflow-hidden"
                       style={{ background: done ? CLAIR.teal : CLAIR.piste }}>
@@ -1310,7 +1385,9 @@ export default function WorkoutGuideModal({
                 fiche du mouvement (la démo YouTube n'existe plus). ══ */}
             {(() => {
               const dernierSet = setIdx === (cur?.sets ?? 1) - 1;
-              const ensuite = phase === "resting" ? (dernierSet ? exercisesAff[exerciseIdx + 1] : cur) : null;
+              const ensuite = phase !== "resting" ? null
+                : enTours ? (prochainPas ? exercisesAff[prochainPas.e] : null)
+                : (dernierSet ? exercisesAff[exerciseIdx + 1] : cur);
               const nomScene = phase === "resting" ? (ensuite?.name ?? cur?.name ?? "") : (cur?.name ?? "");
               const exoScene = trouverExercice(nomScene);
               const enPrep = phase === "exercising" && isTimered && prep > 0;
@@ -1322,7 +1399,10 @@ export default function WorkoutGuideModal({
                     <span className="flex-shrink-0" style={{ color: CLAIR.feuEncre }}>Ensuite</span>
                     {/* Un nom long se coupe : la pastille ne passe jamais sous « Voir en grand ». */}
                     <span className="min-w-0 truncate">
-                      {dernierSet ? `· ${ensuite.name}, ${ensuite.sets} × ${ensuite.reps}` : `· série ${setIdx + 2} sur ${cur?.sets ?? 1}`}
+                      {enTours && prochainPas
+                        ? `· ${ensuite.name}, ${repsDeLaSerie(exercises[prochainPas.e], prochainPas.s)}`
+                        : dernierSet ? `· ${ensuite.name}, ${doseDe(ensuite)}`
+                        : `· série ${setIdx + 2} sur ${cur?.sets ?? 1}${cur?.repsParSerie ? `, ${repsDeLaSerie(cur, setIdx + 1)}` : ""}`}
                     </span>
                   </PastilleScene>
                 ) : null
@@ -1368,7 +1448,7 @@ export default function WorkoutGuideModal({
             <div className="flex-shrink-0 overflow-y-auto px-5 pt-3" style={{ minHeight: "min(210px, 32dvh)", maxHeight: "52dvh", scrollbarWidth: "none" }}>
               {phase === "exercising" && cur && (
                 <div>
-                  <p className="text-[13px] font-bold" style={{ color: CLAIR.exp }}>Exercice {exerciseIdx + 1} sur {exercises.length}</p>
+                  <p className="text-[13px] font-bold" style={{ color: CLAIR.exp }}>{reperes.titre}</p>
                   <h2 className="font-black uppercase leading-[1.04] tracking-tight mt-1" style={{ fontSize: 26, color: CLAIR.t0, textWrap: "balance" }}>{cur.name}</h2>
                   {/* Un exercice écrit à la main n'a ni animation ni fiche : il
                       garde un simple lien, qui ouvre YouTube à part. */}
@@ -1448,7 +1528,7 @@ export default function WorkoutGuideModal({
                       )}
                     </div>
                     <div className="flex flex-col items-end gap-2 flex-shrink-0 pb-1.5">
-                      <span className="text-[13px] font-semibold" style={{ color: CLAIR.t2 }}>Série {setIdx + 1} sur {cur.sets}</span>
+                      <span className="text-[13px] font-semibold" style={{ color: CLAIR.t2 }}>{reperes.position}</span>
                       <span className="flex flex-wrap justify-end gap-[7px]">
                         {Array.from({ length: cur.sets }).map((_, i) => {
                           const isDone = doneMap[exerciseIdx]?.[i]?.statut === "terminee";
@@ -1544,7 +1624,7 @@ export default function WorkoutGuideModal({
                   <div className="flex items-end gap-2.5 mt-1">
                     <span className="vy-nombre leading-none" style={{ fontSize: 80, fontWeight: 800, color: CLAIR.t0 }}>{fmt(Math.max(0, restCountdown))}</span>
                     <span className="text-[13px] font-semibold mb-2" style={{ color: CLAIR.t3 }}>
-                      {restCountdown <= 0 ? "terminé" : `sur ${fmt(restTotal)}`}
+                      {restCountdown <= 0 ? "terminé" : (cur?.emom ?? 0) > 0 ? "avant la minute suivante" : `sur ${fmt(restTotal)}`}
                     </span>
                   </div>
                   <div className="mt-3 h-1.5 rounded-full overflow-hidden" style={{ background: CLAIR.piste }}>
@@ -1618,7 +1698,8 @@ export default function WorkoutGuideModal({
                         visage={guide ? <VisageGuide guide={guide} etat="listen" size={30} /> : <AssistantSpark px={16} />} />
                     </div>
                   ) : (() => {
-                    const cle = cleRepos(exerciseIdx, setIdx, cur?.sets ?? 1, exercises.length);
+                    const cle = enTours ? cleReposTours(exercises, exerciseIdx, setIdx, prochainPas)
+                      : cleRepos(exerciseIdx, setIdx, cur?.sets ?? 1, exercises.length);
                     const etat = cle === "seance.repos.fin" ? "encourage" : "explain";
                     return (
                       <div className="flex gap-3 items-center mt-4">
@@ -1681,8 +1762,8 @@ export default function WorkoutGuideModal({
               <div className="min-h-[40px] mt-1">
                 {phase === "exercising" && !paused && (
                   <NavExercice
-                    precedent={exerciseIdx > 0 ? revenirExercice : null}
-                    suivant={exerciseIdx < exercises.length - 1 ? passerExercice : null}
+                    precedent={pasPrecedent(exercises, doneMap as MarquesTours, exerciseIdx, setIdx) ? revenirExercice : null}
+                    suivant={resteApres(exercises, exerciseIdx, setIdx) ? passerExercice : null}
                   />
                 )}
               </div>
@@ -1793,9 +1874,9 @@ export default function WorkoutGuideModal({
                     )}
                     <div className="flex gap-1.5 mt-3">
                       <span className="text-[11px] font-bold text-white px-2.5 py-1.5 rounded-full"
-                        style={{ background: "rgba(255,255,255,0.13)", backdropFilter: "blur(4px)", border: "1px solid rgba(255,255,255,0.16)" }}>{exercises.length} exercices</span>
+                        style={{ background: "rgba(255,255,255,0.13)", backdropFilter: "blur(4px)", border: "1px solid rgba(255,255,255,0.16)" }}>{exercises.length} exercice{exercises.length > 1 ? "s" : ""}</span>
                       <span className="text-[11px] font-bold text-white px-2.5 py-1.5 rounded-full"
-                        style={{ background: "rgba(255,255,255,0.13)", backdropFilter: "blur(4px)", border: "1px solid rgba(255,255,255,0.16)" }}>{totalSets} séries</span>
+                        style={{ background: "rgba(255,255,255,0.13)", backdropFilter: "blur(4px)", border: "1px solid rgba(255,255,255,0.16)" }}>{totalSets} série{totalSets > 1 ? "s" : ""}</span>
                       <span className="text-[11px] font-bold px-2.5 py-1.5 rounded-full"
                         style={{ color: "#FFC96B", background: "rgba(255,255,255,0.13)", backdropFilter: "blur(4px)", border: "1px solid rgba(245,177,32,0.35)" }}>~{kcalEst} kcal</span>
                     </div>
@@ -1813,7 +1894,14 @@ export default function WorkoutGuideModal({
                   <div className="flex flex-col">
                     {exercises.map((ex, i) => {
                       const exo = trouverExercice(ex.name);
-                      const dose = `${ex.sets} × ${ex.reps.replace(/\s*reps?/i, "").replace(/\s*sec/i, " s")}`;
+                      /* Lot 2 · un bloc (circuit, superset, EMOM) a son en-tête,
+                         qui dit les tours ; ses lignes ne disent que la dose
+                         d'un tour. Un EMOM seul se présente pareil. */
+                      const bloc = blocsDuProgramme.find((b) => i >= b.debut && i < b.fin) ?? null;
+                      const emomSeul = !bloc && (ex.emom ?? 0) > 0;
+                      const enTete = bloc && bloc.debut === i ? enTeteDuBloc(exercises, bloc)
+                        : emomSeul ? `EMOM · ${ex.sets} minute${ex.sets > 1 ? "s" : ""}` : null;
+                      const dose = doseDe(ex, !!bloc || emomSeul);
                       const contenu = (
                         <>
                           <span className="flex-shrink-0 rounded-2xl overflow-hidden flex items-center justify-center"
@@ -1830,18 +1918,32 @@ export default function WorkoutGuideModal({
                             : <ArrowUpRight size={15} strokeWidth={2.2} className="flex-shrink-0" style={{ color: "var(--text-3)" }} />}
                         </>
                       );
-                      const style = { borderTop: i > 0 ? "1px solid rgba(var(--accent-rgb),0.1)" : "none" };
-                      return exo ? (
-                        <button key={i} type="button" onClick={() => setFiche(exo)}
-                          className="w-full flex items-center gap-3 py-2 cursor-pointer text-left" style={style}>
-                          {contenu}
-                        </button>
-                      ) : (
-                        <a key={i} href={`https://www.youtube.com/results?search_query=${encodeURIComponent(`${ex.name} technique`)}`}
-                          target="_blank" rel="noopener noreferrer"
-                          className="w-full flex items-center gap-3 py-2 text-left" style={style}>
-                          {contenu}
-                        </a>
+                      const filet = "1px solid rgba(var(--accent-rgb),0.1)";
+                      /* Les lignes d'un bloc se tiennent derrière un trait, sous leur en-tête. */
+                      const style = {
+                        borderTop: i > 0 && !enTete ? filet : "none",
+                        ...(bloc || emomSeul ? { paddingLeft: 10, boxShadow: "inset 2px 0 0 rgba(var(--accent-rgb),0.22)" } : {}),
+                      };
+                      return (
+                        <Fragment key={i}>
+                          {enTete && (
+                            <p className="text-[13px] font-bold pt-3 pb-1 px-1" style={{ color: "var(--exp-encre)", borderTop: i > 0 ? filet : "none" }}>
+                              {enTete}
+                            </p>
+                          )}
+                          {exo ? (
+                            <button type="button" onClick={() => setFiche(exo)}
+                              className="w-full flex items-center gap-3 py-2 cursor-pointer text-left" style={style}>
+                              {contenu}
+                            </button>
+                          ) : (
+                            <a href={`https://www.youtube.com/results?search_query=${encodeURIComponent(`${ex.name} technique`)}`}
+                              target="_blank" rel="noopener noreferrer"
+                              className="w-full flex items-center gap-3 py-2 text-left" style={style}>
+                              {contenu}
+                            </a>
+                          )}
+                        </Fragment>
                       );
                     })}
                   </div>

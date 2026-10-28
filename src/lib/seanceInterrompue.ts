@@ -5,6 +5,7 @@ import type { Marque } from "@/lib/journalSeance";
 import type { Remplacements } from "@/lib/remplacement";
 import type { SaisieReps } from "@/lib/transitionsTunnel";
 import type { Marge } from "@/lib/progression";
+import { blocDe, pasSuivant, type MarquesTours } from "@/lib/toursSeance";
 
 /** Le brouillon du lecteur, pas une séance faite ni une copie du journal. */
 export type SeanceAReprendre = {
@@ -71,6 +72,10 @@ function exercicesValides(v: unknown): v is Exercise[] {
     && entier(e.rest) && (e.restAfter === undefined || entier(e.restAfter))
     && (e.auto === undefined || entier(e.auto, 1))
     && (e.hiit === undefined || typeof e.hiit === "boolean")
+    && (e.bloc === undefined || texte(e.bloc, 40))
+    && (e.format === undefined || texte(e.format, 20))
+    && (e.repsParSerie === undefined || (Array.isArray(e.repsParSerie) && e.repsParSerie.length <= 100 && e.repsParSerie.every((r) => texte(r, 40))))
+    && (e.emom === undefined || entier(e.emom, 1, 600))
     && typeof e.tip === "string" && e.tip.length <= 8_000
     && typeof e.benefit === "string" && e.benefit.length <= 8_000
     && Array.isArray(e.muscles) && e.muscles.length <= 30 && e.muscles.every((m) => texte(m, 150)));
@@ -276,6 +281,13 @@ export function marquesDeReprise(a?: AvancementSeance): Record<number, Record<nu
 export function positionDeReprise(b: SeanceInterrompue): { exerciseIdx: number; setIdx: number } {
   const a = b.avancement;
   if (a.phase !== "resting") return a;
+  /* Lot 2 · dans un bloc (circuit, superset) ou un EMOM, la série d'après
+     est celle de l'ordre du jeu (lib/toursSeance), souvent un autre exercice. */
+  const liste = b.seance.exerciseList;
+  if (blocDe(liste, a.exerciseIdx) || (liste[a.exerciseIdx]?.emom ?? 0) > 0) {
+    const p = pasSuivant(liste, marquesDeReprise(a) as MarquesTours, a.exerciseIdx, a.setIdx, "serie");
+    return p ? { exerciseIdx: p.e, setIdx: p.s } : { exerciseIdx: a.exerciseIdx, setIdx: a.setIdx };
+  }
   if (a.restMode === "exercise") {
     // Le tunnel saute les exercices déjà terminés, y compris après un retour en arrière.
     for (let e = a.exerciseIdx + 1; e < b.seance.exerciseList.length; e++) {

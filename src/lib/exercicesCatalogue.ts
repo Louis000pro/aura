@@ -18,6 +18,7 @@ import { WAVE_4_EXERCISES } from "@/lib/workoutWave4";
 import { WAVE_5_EXERCISES } from "@/lib/workoutWave5";
 import { WAVE_6_EXERCISES } from "@/lib/workoutWave6";
 import { WAVE_7_EXERCISES } from "@/lib/workoutWave7";
+import { WAVE_8_EXERCISES } from "@/lib/workoutWave8";
 
 /* « Défi Animations » — les ateliers qui enchaînent les gestes animés,
    un thème par séance (la liste unique vit dans src/lib/guideSections.ts).
@@ -315,36 +316,43 @@ export const exerciseData: Record<string, Exercise[]> = {
       muscles: ["Biceps"] },
   ],
 
+  /* Circuit de 3 tours depuis le lot 2 (2026-10-28) : le même contenu,
+     une série de chaque exercice à chaque tour. La planche latérale tient
+     un côté par ligne, parce que le chrono ne compte qu'un côté. */
   "core": [
-    { name: "Planche frontale", sets: 3, reps: "45 sec", rest: 30, auto: 45,
+    { name: "Planche frontale", sets: 3, reps: "45 sec", rest: 15, auto: 45, bloc: "core",
       tip: "Avant-bras au sol, corps en ligne parfaite. Rentre le nombril, serre les fessiers. Pense à te grandir vers l’avant.",
       benefit: "Active le transverse de l’abdomen, véritable corset naturel du corps. Protège le bas du dos, améliore la posture et stabilise la colonne pour tous les mouvements.",
       muscles: ["Core", "Épaules"] },
-    { name: "Crunch", sets: 3, reps: "25 reps", rest: 30,
+    { name: "Crunch", sets: 3, reps: "25 reps", rest: 15, bloc: "core",
       tip: "Mains à peine derrière les tempes. Expire en montant. Soulève les épaules, pas le bas du dos.",
       benefit: "Renforce le droit de l’abdomen pour une ceinture abdominale solide. Améliore la stabilité lombaire et la capacité à maintenir une bonne posture debout.",
       muscles: ["Abdominaux"] },
-    { name: "Russian Twist", sets: 3, reps: "20 reps (10/côté)", rest: 45,
+    { name: "Russian Twist", sets: 3, reps: "20 reps (10/côté)", rest: 15, bloc: "core",
       tip: "Pieds au sol ou levés. Torse à 45°. Tourne depuis la taille, pas les épaules.",
       benefit: "Cible les obliques internes et externes pour un core fonctionnel à 360°. Améliore la rotation du tronc essentielle dans tous les sports et mouvements quotidiens.",
       muscles: ["Obliques"] },
-    { name: "Relevés de jambes", sets: 3, reps: "10 reps", rest: 45,
+    { name: "Relevés de jambes", sets: 3, reps: "10 reps", rest: 15, bloc: "core",
       tip: "Mains sous les fesses pour protéger le bas du dos. Monte les jambes à 90° puis descends en 3 secondes.",
       benefit: "Renforce la portion inférieure des abdominaux et les fléchisseurs de hanche. Améliore la stabilité pelvienne et la force pour les mouvements de kick et de course.",
       muscles: ["Abdominaux"] },
-    { name: "Planche latérale", sets: 3, reps: "30 sec par côté", rest: 30, auto: 30,
-      tip: "Corps droit de la tête aux pieds, hanche décollée du sol. Pour faciliter : genou inférieur au sol.",
+    { name: "Planche latérale", sets: 3, reps: "30 sec · côté droit", rest: 5, auto: 30, bloc: "core",
+      tip: "Sur l’avant-bras droit. Corps droit de la tête aux pieds, hanche décollée du sol. Pour faciliter : genou inférieur au sol.",
       benefit: "Renforce les obliques et le carré des lombes pour prévenir les douleurs lombaires latérales. Améliore la stabilité du tronc dans le plan frontal, souvent négligée.",
       muscles: ["Obliques", "Core"] },
-    { name: "Dead Bug", sets: 3, reps: "16 reps (8/côté)", rest: 45,
+    { name: "Planche latérale", sets: 3, reps: "30 sec · côté gauche", rest: 15, auto: 30, bloc: "core",
+      tip: "La même tenue sur l’avant-bras gauche.",
+      benefit: "L’autre côté, pour ne pas en favoriser un.",
+      muscles: ["Obliques", "Core"] },
+    { name: "Dead Bug", sets: 3, reps: "16 reps (8/côté)", rest: 15, bloc: "core",
       tip: "Bas du dos collé au sol. Étends le bras opposé à la jambe en simultané, 2 secondes à l’aller et 2 au retour.",
       benefit: "Améliore la coordination et la stabilité du core profond en conditions de charge asymétrique. Excellent pour la prévention des blessures lombaires lors des sports.",
       muscles: ["Core"] },
-    { name: "Bird Dog", sets: 3, reps: "10 reps (5/côté)", rest: 45,
+    { name: "Bird Dog", sets: 3, reps: "10 reps (5/côté)", rest: 15, bloc: "core",
       tip: "À quatre pattes. Étends le bras droit et la jambe gauche simultanément. Maintiens 3 secondes.",
       benefit: "Renforce les muscles stabilisateurs de la colonne tout en améliorant l’équilibre et la coordination. Idéal pour réhabiliter et prévenir les douleurs lombaires.",
       muscles: ["Core", "Dos"] },
-    { name: "Superman", sets: 2, reps: "20 reps", rest: 45,
+    { name: "Superman", sets: 3, reps: "20 reps", rest: 60, bloc: "core",
       tip: "Ventre au sol, bras devant. Décolle bras ET jambes simultanément. Maintiens 2 secondes.",
       benefit: "Renforce les érecteurs spinaux, souvent négligés. Prévient les douleurs lombaires, améliore la posture et compense les effets néfastes de la position assise.",
       muscles: ["Dos", "Lombaires"] },
@@ -454,6 +462,8 @@ export const exerciseData: Record<string, Exercise[]> = {
   ...WAVE_4_EXERCISES,
   // Les séances par zone (lot 1 de la banque, 2026-10-27).
   ...WAVE_7_EXERCISES,
+  // Les formats (lot 2 de la banque, 2026-10-28).
+  ...WAVE_8_EXERCISES,
 };
 
 /* ⚠️ CETTE TABLE PORTE DES ALIAS, ET CE N'EST PAS DU DOUBLON. Un titre de
@@ -564,6 +574,38 @@ export const SESSION_SLUGS: Record<string, string> = {
   "Bras sans matériel": "bras-sans-materiel",
   "Les 21": "les-21",
   "Bras lourds": "bras-lourds",
+  // Les formats (lot 2 de la banque).
+  "Le 5 × 5 de la salle": "cinq-cinq-salle",
+  "La force aux haltères": "force-halteres",
+  "La force sans matériel": "force-sans-materiel",
+  "Circuit maison": "circuit-maison",
+  "Abdos en deux tours": "abdos-deux-tours",
+  "Haut du corps en circuit": "haut-circuit",
+  "Jambes et cardio": "jambes-cardio",
+  "Fessiers et gainage": "fessiers-gainage",
+  "Hollow et compagnie": "hollow-compagnie",
+  "Circuit machines": "circuit-machines",
+  "Pecs et triceps en supersets": "supersets-pecs",
+  "Bras en supersets": "supersets-bras",
+  "Lourd puis léger": "lourd-leger",
+  "EMOM 20": "emom-20",
+  "EMOM abdos 12": "emom-abdos",
+  "Cent pompes": "cent-pompes",
+  "Bras en EMOM": "emom-bras",
+  "Le grand 20": "grand-20",
+  "30-20-10": "descente-30-20-10",
+  "L’échelle des abdos": "echelle-abdos",
+  "Pyramide fessiers": "pyramide-fessiers",
+  "Cuisses 20-20-20": "cuisses-20",
+  "L’escalier du squat": "escalier-squat",
+  "La pyramide de pompes": "pyramide-pompes",
+  "Le circuit 30/10": "circuit-30-10",
+  "30/30 sans saut": "intervalles-30-30",
+  "40/20 corps entier": "intervalles-40-20",
+  "Le 4 × 4": "quatre-quatre",
+  "La chaise au mur": "chaise-au-mur",
+  "Tenir partout": "tenir-partout",
+  "Descendre en cinq secondes": "descendre-cinq",
 };
 
 /**

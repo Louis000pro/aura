@@ -110,20 +110,36 @@ export function itemDeLigne(l: LignePrescription): ItemDuree {
  *  l'exercice n'est pas un repère déclaré. */
 export function itemDExercice(e: {
   name: string; sets: number; reps?: string; rest?: number; restAfter?: number; auto?: number; hiit?: boolean;
+  repsParSerie?: string[]; emom?: number;
   prescription?: { statut: StatutExercice };
 }): ItemDuree {
   const reps = String(e.reps ?? "");
-  const n = Number.parseInt(reps, 10);
+  const series = Math.max(1, e.sets || 1);
+  const statut = e.prescription?.statut ?? "complementaire";
+  /* EMOM (lib/toursSeance.ts) : chaque série dispose de sa minute, le
+     repos est ce qui en reste. Rien ne s'ajoute entre deux séries. */
+  if ((e.emom ?? 0) > 0) {
+    return { nom: e.name, statut, series, effortS: e.emom as number, cotes: 1, reposS: 0, transitionS: attenteApres(e.restAfter, 0) };
+  }
   /* Les mêmes durées que le tunnel : `auto`, sinon ce que « 45s » veut
-     dire pour lui, et l'effort HIIT ; sinon des répétitions au tempo. */
-  const chrono = e.hiit ? HIIT_EFFORT_S : (e.auto ?? secondesDeReps(reps));
-  const effort = chrono ?? (Number.isFinite(n) && n > 0 ? n * TEMPO_REP_S : 30);
+     dire pour lui, et l'effort HIIT ; sinon des répétitions au tempo.
+     Une pyramide (`repsParSerie`) compte chacune de ses séries. */
+  const effortDe = (r: string) => {
+    const n = Number.parseInt(r, 10);
+    const chrono = e.hiit ? HIIT_EFFORT_S : (e.auto ?? secondesDeReps(r));
+    return chrono ?? (Number.isFinite(n) && n > 0 ? n * TEMPO_REP_S : 30);
+  };
+  let total = 0;
+  for (let s = 0; s < series; s++) {
+    const r = e.repsParSerie?.[s];
+    total += effortDe(typeof r === "string" && r.trim() ? r : reps);
+  }
   const repos = e.hiit && !(e.rest && e.rest > 0) ? HIIT_RECUP_S : (e.rest ?? 0);
   return {
     nom: e.name,
-    statut: e.prescription?.statut ?? "complementaire",
-    series: Math.max(1, e.sets || 1),
-    effortS: effort,
+    statut,
+    series,
+    effortS: total / series,
     cotes: unilateral(reps) ? 2 : 1,
     reposS: repos,
     transitionS: attenteApres(e.restAfter, e.rest),

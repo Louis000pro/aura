@@ -11,9 +11,11 @@ import type { Exercise } from "@/components/WorkoutGuideModal";
    mais plus de fiche. La variante se dit donc dans les répétitions et
    dans la consigne, jamais dans le nom.
 
-   ⚠️ LE LECTEUR FAIT TOUTES LES SÉRIES D'UN EXERCICE AVANT LE SUIVANT.
-   Les formats qui tournent (circuit, échelle, pyramide, EMOM, supersets)
-   attendent le lot 2. Deux façons d'écrire ce qu'il sait faire :
+   ⚠️ UN EXERCICE SEUL SE JOUE SÉRIE APRÈS SÉRIE. Depuis le lot 2
+   (2026-10-28), des exercices consécutifs qui portent le même `bloc` se
+   jouent en tours (lib/toursSeance.ts) : « Abdos et souffle », « Le pont,
+   quatre façons » et « Tabata fessiers » tournent ainsi. Deux façons
+   d'écrire ce qu'un exercice seul sait faire :
    · une tenue « par côté » s'écrit en séries qui alternent (planche
      latérale 2 × 20 s par côté = 4 séries de 20 s, 10 s pour changer de
      côté) : le chrono ne compte qu'un côté à la fois ;
@@ -126,37 +128,37 @@ export const WAVE_7_EXERCISES: Record<string, Exercise[]> = {
 
   "abdos-souffle": [
     {
-      name: "Mountain climbers", sets: 2, reps: "40 sec", rest: 20, auto: 40,
+      name: "Mountain climbers", sets: 2, reps: "40 sec", rest: 20, auto: 40, bloc: "souffle", format: "intervalles",
       tip: "Mains sous les épaules, ramène les genoux vite sans laisser les hanches monter.",
       benefit: "Le souffle monte pendant que la sangle tient le bassin.",
       muscles: ["Cardio", "Core"],
     },
     {
-      name: "Bicycle crunch", sets: 2, reps: "40 sec", rest: 20, auto: 40,
+      name: "Bicycle crunch", sets: 2, reps: "40 sec", rest: 20, auto: 40, bloc: "souffle",
       tip: "Coude vers le genou opposé, mains légères derrière la tête sans tirer dessus.",
       benefit: "Enroulement et rotation à un rythme soutenu.",
       muscles: ["Abdominaux", "Obliques"],
     },
     {
-      name: "Gainage dynamique", sets: 2, reps: "40 sec", rest: 20, auto: 40,
+      name: "Gainage dynamique", sets: 2, reps: "40 sec", rest: 20, auto: 40, bloc: "souffle",
       tip: "Passe des avant-bras aux mains puis reviens, en gardant le bassin immobile.",
       benefit: "Un gainage en mouvement qui garde le cœur haut.",
       muscles: ["Core", "Épaules"],
     },
     {
-      name: "Burpees", sets: 2, reps: "40 sec", rest: 20, auto: 40,
+      name: "Burpees", sets: 2, reps: "40 sec", rest: 20, auto: 40, bloc: "souffle",
       tip: "Garde un rythme que tu tiens sur toute la série, le saut final est facultatif.",
       benefit: "Le moment le plus intense de la séance, tout le corps travaille.",
       muscles: ["Corps entier", "Cardio"],
     },
     {
-      name: "Crunch", sets: 2, reps: "40 sec", rest: 20, auto: 40,
+      name: "Crunch", sets: 2, reps: "40 sec", rest: 20, auto: 40, bloc: "souffle",
       tip: "Décolle les épaules en expirant, menton loin de la poitrine, nuque relâchée.",
       benefit: "Un enroulement plus calme, le temps de reprendre son souffle.",
       muscles: ["Abdominaux"],
     },
     {
-      name: "Montées de genoux", sets: 2, reps: "40 sec", rest: 20, auto: 40,
+      name: "Montées de genoux", sets: 2, reps: "40 sec", rest: 20, auto: 40, bloc: "souffle",
       tip: "Genoux à hauteur de hanches, buste droit, bras actifs.",
       benefit: "Termine sur le cardio, la sangle gainée.",
       muscles: ["Cardio", "Abdominaux"],
@@ -232,25 +234,25 @@ export const WAVE_7_EXERCISES: Record<string, Exercise[]> = {
 
   "pont-quatre-facons": [
     {
-      name: "Pont fessier", sets: 2, reps: "10 reps", rest: 30,
+      name: "Pont fessier", sets: 2, reps: "10 reps", rest: 30, bloc: "pont",
       tip: "Tiens trois secondes en haut à chaque répétition, puis redescends lentement.",
       benefit: "Le tempo lent rend le mouvement plus dur sans ajouter de charge.",
       muscles: ["Fessiers"],
     },
     {
-      name: "Pont fessier", sets: 2, reps: "40 sec", rest: 30, auto: 40,
+      name: "Pont fessier", sets: 2, reps: "40 sec", rest: 30, bloc: "pont", auto: 40,
       tip: "Monte et reste en haut, fessiers serrés, sans cambrer le bas du dos.",
       benefit: "La tenue garde les fessiers sous tension pendant toute la série.",
       muscles: ["Fessiers"],
     },
     {
-      name: "Pont fessier", sets: 2, reps: "20 pulsations", rest: 30,
+      name: "Pont fessier", sets: 2, reps: "20 pulsations", rest: 30, bloc: "pont",
       tip: "Reste en haut et fais de petites pulsations de quelques centimètres.",
       benefit: "Des répétitions courtes dans la partie la plus difficile du mouvement.",
       muscles: ["Fessiers"],
     },
     {
-      name: "Pont fessier", sets: 2, reps: "15 reps", rest: 30,
+      name: "Pont fessier", sets: 2, reps: "15 reps", rest: 30, bloc: "pont",
       tip: "Pieds plus écartés que les hanches, genoux poussés vers l’extérieur.",
       benefit: "Les genoux ouverts font aussi travailler le côté de la hanche.",
       muscles: ["Fessiers"],
@@ -354,27 +356,27 @@ export const WAVE_7_EXERCISES: Record<string, Exercise[]> = {
      minute de pause entre les deux : la transition du pont la porte. */
   "tabata-fessiers": [
     {
-      name: "Squat", sets: 4, reps: "20 sec effort", rest: 0, hiit: true,
+      name: "Squat", sets: 4, reps: "20 sec effort", rest: 0, hiit: true, bloc: "tabata1", format: "tabata",
       tip: "Rythme vif mais contrôlé, cuisses parallèles au sol si tu peux.",
-      benefit: "Le premier bloc commence par les jambes entières.",
+      benefit: "Le premier bloc alterne les jambes entières et les fessiers.",
       muscles: ["Quadriceps", "Fessiers"],
     },
     {
-      name: "Pont fessier", sets: 4, reps: "20 sec effort", rest: 0, restAfter: 60, hiit: true,
+      name: "Pont fessier", sets: 4, reps: "20 sec effort", rest: 0, restAfter: 60, hiit: true, bloc: "tabata1",
       tip: "Monte et descends sans pause, fessiers serrés en haut.",
-      benefit: "Termine le premier bloc, puis une minute de pause.",
+      benefit: "Après le quatrième tour, une minute de pause avant le second bloc.",
       muscles: ["Fessiers"],
     },
     {
-      name: "Fentes", sets: 4, reps: "20 sec effort", rest: 0, hiit: true,
+      name: "Fentes", sets: 4, reps: "20 sec effort", rest: 0, hiit: true, bloc: "tabata2", format: "tabata",
       tip: "Alterne les jambes à chaque répétition, genou arrière vers le sol.",
       benefit: "Le second bloc, une jambe après l’autre.",
       muscles: ["Fessiers", "Quadriceps"],
     },
     {
-      name: "Donkey kick", sets: 4, reps: "20 sec effort", rest: 0, hiit: true,
+      name: "Donkey kick", sets: 4, reps: "20 sec effort", rest: 0, hiit: true, bloc: "tabata2",
       tip: "Change de jambe à chaque intervalle, dos plat.",
-      benefit: "Termine la séance en isolant les fessiers.",
+      benefit: "Termine chaque tour en isolant les fessiers.",
       muscles: ["Fessiers"],
     },
   ],

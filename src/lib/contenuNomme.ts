@@ -127,6 +127,12 @@ export function copierExercices(raw: unknown): Exercise[] {
     if (Number.isFinite(Number(e.restAfter)) && e.restAfter !== undefined && e.restAfter !== null) copie.restAfter = Number(e.restAfter);
     if (Number.isFinite(Number(e.auto)) && e.auto !== undefined && e.auto !== null) copie.auto = Number(e.auto);
     if (typeof e.hiit === "boolean") copie.hiit = e.hiit;
+    /* Lot 2 · un circuit, une pyramide ou un EMOM se recopient avec leur
+       format : sinon la séance posée par le Guide se jouerait série par série. */
+    if (typeof e.bloc === "string" && e.bloc.trim()) copie.bloc = e.bloc;
+    if (typeof e.format === "string" && e.format.trim()) copie.format = e.format as Exercise["format"];
+    if (Array.isArray(e.repsParSerie)) copie.repsParSerie = (e.repsParSerie as unknown[]).filter((r): r is string => typeof r === "string");
+    if (Number.isFinite(Number(e.emom)) && e.emom !== undefined && e.emom !== null) copie.emom = Number(e.emom);
     out.push(copie);
   }
   return out;

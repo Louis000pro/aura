@@ -59,6 +59,7 @@ import { lockBodyModal } from "@/lib/bodyModal";
 import { PLANS, VENTE_OUVERTE } from "@/lib/plans";
 import { levelToDifficulty, normalizeDifficulty } from "@/lib/assistantActions";
 import { FAMILY, resolveArt, heroImageForSeance, type Family } from "@/lib/workoutArt";
+import { doseDe } from "@/lib/toursSeance";
 import {
   ADVICE_THEMES,
   getAdviceArticle,
@@ -1139,7 +1140,7 @@ function ManageSheet({ session, onClose, onEdit, onDelete, onVisibilityChange, o
                   <span className="flex-1 min-w-0">
                     <span className="block text-[13px] font-semibold truncate" style={{ color: "var(--text-1)" }}>{e.name}</span>
                     <span className="block text-[11px] font-medium mt-0.5" style={{ color: "var(--text-3)" }}>
-                      {e.sets} × {e.reps}
+                      {doseDe(e)}
                     </span>
                   </span>
                 </div>
@@ -1490,7 +1491,7 @@ function PremiumSessionRow({ count, children, title = "Continue avec Vaiiya+", u
    ouverte : on la montre « Bientôt », on ne la cache pas — la banque se
    remplira. Les photos sont naturelles, les titres blancs font le reste.
    ════════════════════════════════════════════════════════════════════ */
-type CatFamille = "objectif" | "zone" | "terrain" | "moment" | "lire";
+type CatFamille = "objectif" | "zone" | "format" | "terrain" | "moment" | "lire";
 
 type CatDef = {
   id: string;
@@ -1504,12 +1505,14 @@ type CatDef = {
   match: (s: MergedSession, hay: string) => boolean;
 };
 
-/** Les quatre familles, dans l'ordre où l'on cherche : ce qu'on veut,
- *  ce qu'on travaille, où on est, et où on en est. « Pour comprendre »
- *  ferme la marche parce qu'elle ne contient pas de séance du tout. */
+/** Les familles, dans l'ordre où l'on cherche : ce qu'on veut, ce qu'on
+ *  travaille, comment la séance se joue (depuis le lot 2), où on est, et
+ *  où on en est. « Pour comprendre » ferme la marche parce qu'elle ne
+ *  contient pas de séance du tout. */
 const FAMILLES: { id: CatFamille; label: string }[] = [
   { id: "objectif", label: "Un objectif" },
   { id: "zone", label: "Une zone" },
+  { id: "format", label: "Un format" },
   { id: "terrain", label: "Un terrain" },
   { id: "moment", label: "Un moment" },
   { id: "lire", label: "Pour comprendre" },
@@ -1571,6 +1574,21 @@ const CATALOG: CatDef[] = [
     img: "cat-haut", match: matchCollection("haut", (_s, hay) => /pec|\bdos\b|épaule|epaule|bras|biceps|triceps|haut du corps|push|pull|tirage|traction|rowing|upper|poussé/.test(hay)) },
   { id: "fullbody", famille: "zone", name: "Full body", tag: "Tout le corps, une seule séance.",
     img: "cat-fullbody", match: matchCollection("fullbody", (s, hay) => s.category === "fullbody" || /full|complet|corps entier|total/.test(hay)) },
+  /* Un format (lot 2 de la banque, 2026-10-28) : comment la séance se joue.
+     Rien qu'en collections déclarées : une création perso n'y entre pas.
+     Les AMRAP et les séances à battre viendront avec le chrono global. */
+  { id: "force", famille: "format", name: "Force", tag: "Des séries courtes et lourdes, avec le repos qu’il faut.",
+    img: "legs-souleve", match: matchCollection("force", () => false) },
+  { id: "longues", famille: "format", name: "Séries longues", tag: "Vingt répétitions et plus, des pyramides et des échelles.",
+    img: "legs-goblet", match: matchCollection("longues", () => false) },
+  { id: "circuits", famille: "format", name: "Circuits et supersets", tag: "Plusieurs exercices à la suite, puis un nouveau tour.",
+    img: "full-kettlebell", match: matchCollection("circuits", () => false) },
+  { id: "emom", famille: "format", name: "EMOM", tag: "Une tâche au début de chaque minute, le reste est ton repos.",
+    img: "full-thruster", match: matchCollection("emom", () => false) },
+  { id: "intervalles", famille: "format", name: "Intervalles", tag: "Des temps d’effort et des temps de pause, au chrono.",
+    img: "cardio-ropes", match: matchCollection("intervalles", () => false) },
+  { id: "isometrie", famille: "format", name: "Tenir et ralentir", tag: "Des positions tenues et des descentes lentes.",
+    img: "core-lateral", match: matchCollection("isometrie", () => false) },
   { id: "salle", famille: "terrain", name: "À la salle", tag: "Machines, barres, charges, ton terrain.",
     img: "cat-salle", match: matchCollection("salle", (_s, hay) => /salle|machine|barre|rack|poulie|banc/.test(hay)) },
   { id: "sansmateriel", famille: "terrain", name: "Sans matériel", tag: "Ton corps suffit, partout, tout le temps.",
