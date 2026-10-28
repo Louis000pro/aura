@@ -133,6 +133,8 @@ export function copierExercices(raw: unknown): Exercise[] {
     if (typeof e.format === "string" && e.format.trim()) copie.format = e.format as Exercise["format"];
     if (Array.isArray(e.repsParSerie)) copie.repsParSerie = (e.repsParSerie as unknown[]).filter((r): r is string => typeof r === "string");
     if (Number.isFinite(Number(e.emom)) && e.emom !== undefined && e.emom !== null) copie.emom = Number(e.emom);
+    /* Lot 3 · une routine douce garde sa durée sans échauffement. */
+    if (typeof e.sansEchauffement === "boolean") copie.sansEchauffement = e.sansEchauffement;
     out.push(copie);
   }
   return out;

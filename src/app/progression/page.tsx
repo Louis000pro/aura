@@ -68,7 +68,7 @@ import {
 } from "@/lib/adviceArticles";
 import {
   lireSemaine, saveDay, ajouterIntention, retirerReservationDuJour, hasSeance, seanceNonFaite, readLieu, ctxFromLieu,
-  weekDates, weekDatesForOffset, todayYmd, weekOffsetOf, dayTitle, lieuLabel, normalizeExercises,
+  weekDates, weekDatesForOffset, todayYmd, weekOffsetOf, dayTitle, dureeIntention, lieuLabel, normalizeExercises,
   parDate, principale, seancesDuJour, ordonner,
   dayLabelLong, PLANNING_TYPE_BY_CATEGORY,
   type PlanningDay, type CycleSemaine,
@@ -1556,6 +1556,9 @@ const CATALOG: CatDef[] = [
     img: "cat-renfo", match: matchCollection("renfo", (s, hay) => s.category === "force" || /renfo|force|muscu/.test(hay)) },
   { id: "cardiohiit", famille: "objectif", name: "Cardio & HIIT", tag: "Le souffle court, le cœur solide.",
     img: "cat-cardiohiit", match: matchCollection("cardiohiit", (s, hay) => s.category === "cardio" || /cardio|hiit|fractionn|endurance|sprint|course|vélo|velo/.test(hay)) },
+  /* Lot 3 de la banque (2026-10-28) : se défouler ou souffler. */
+  { id: "tete", famille: "objectif", name: "Pour la tête", tag: "Se défouler ou souffler, selon le jour.",
+    img: "full-slam", match: matchCollection("tete", () => false) },
   { id: "abdos", famille: "zone", name: "Abdos & gainage", tag: "Le centre qui tient tout le reste.",
     img: "cat-abdos", match: matchCollection("abdos", (_s, hay) => /abdo|gainage|core|planche|oblique|sangle|ventre/.test(hay)) },
   { id: "fessiers", famille: "zone", name: "Fessiers", tag: "Ponts, hip thrust, fentes et squats.",
@@ -1593,12 +1596,18 @@ const CATALOG: CatDef[] = [
     img: "cat-salle", match: matchCollection("salle", (_s, hay) => /salle|machine|barre|rack|poulie|banc/.test(hay)) },
   { id: "sansmateriel", famille: "terrain", name: "Sans matériel", tag: "Ton corps suffit, partout, tout le temps.",
     img: "cat-sansmateriel", match: matchCollection("sansmateriel", (_s, hay) => /sans mat|poids du corps|maison|nomade/.test(hay)) },
+  { id: "voyage", famille: "terrain", name: "En voyage", tag: "Pour une chambre d’hôtel ou après des heures de trajet.",
+    img: "push-pompes", match: matchCollection("voyage", () => false) },
   { id: "debuter", famille: "moment", name: "Débuter & reprendre", tag: "Le premier pas compte double.",
     img: "cat-debuter", match: matchCollection("debuter", (s, hay) => s.difficulty === "Débutant" || /débutant|debutant|starter|reprise|découverte|decouverte|doux/.test(hay)) },
   { id: "mobilite", famille: "moment", name: "Mobilité & posture", tag: "Bouger mieux avant de bouger plus.",
     img: "cat-mobilite", match: matchCollection("mobilite", (s, hay) => s.category === "mobilite" || /mobilit|étirement|etirement|souplesse|posture|stretch/.test(hay)) },
   { id: "recup", famille: "moment", name: "Récupération", tag: "Le muscle se construit au repos.",
     img: "cat-recup", match: matchCollection("recup", (_s, hay) => /récup|recup|détente|detente|relax|respiration|repos/.test(hay)) },
+  { id: "routines", famille: "moment", name: "Routines du quotidien", tag: "Quelques minutes, au réveil, au bureau ou au coucher.",
+    img: "cardio-stepper", match: matchCollection("routines", () => false) },
+  { id: "joursans", famille: "moment", name: "Les jours sans", tag: "Bouger un peu quand l’envie n’y est pas.",
+    img: "repos", pos: "62% 50%", match: matchCollection("joursans", () => false) },
   { id: "defis", famille: "moment", name: "Défis", tag: "Un max, un chrono, un record à battre.",
     img: "cat-defis", match: matchCollection("defis", (_s, hay) => /défi|defi|challenge|\bmax\b|record/.test(hay)) },
   { id: "conseils", famille: "lire", name: "Conseils & progresser", tag: "Des conseils francs et utiles, à lire partout.",
@@ -2251,7 +2260,7 @@ function SemaineSheet({ week, today, fetchWeekAt, onClose, onStartDay, onAsk, on
 
   /* ── Verdict d'équilibre + charge (lus depuis les familles en coulisse) ── */
   const seances = (days ?? []).filter(hasSeance);
-  const totalMin = seances.reduce((s, d) => s + (d.type === "HIIT" ? 30 : 45), 0);
+  const totalMin = seances.reduce((s, d) => s + dureeIntention(d), 0);
   const buckets = new Map<string, number>();
   for (const d of seances) {
     const b = BALANCE_BUCKET[resolveArt({ title: `${d.title} ${d.type}` }).fam];
@@ -2503,7 +2512,7 @@ function CarteJournee({ intention, date, idx, isToday, dropHover, open, onToggle
             <p className="text-[13px] font-bold truncate" style={{ color: "var(--text-1)" }}>{titre}</p>
             <p className="text-[11px] font-semibold mt-0.5 truncate" style={{ color: dropHover ? "#C9B8FF" : "var(--text-3)" }}>
               {dropHover ? "Dépose la séance ici ✦"
-                : isSeance ? (d!.type === "HIIT" ? 30 : 45) + " min" + (lieuLabel(d!.location) ? " · " + lieuLabel(d!.location) : "")
+                : isSeance ? dureeIntention(d!) + " min" + (lieuLabel(d!.location) ? " · " + lieuLabel(d!.location) : "")
                 : d ? "Ton corps construit" : "Libre"}
             </p>
           </div>

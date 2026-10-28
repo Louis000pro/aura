@@ -19,6 +19,7 @@ import { WAVE_5_EXERCISES } from "@/lib/workoutWave5";
 import { WAVE_6_EXERCISES } from "@/lib/workoutWave6";
 import { WAVE_7_EXERCISES } from "@/lib/workoutWave7";
 import { WAVE_8_EXERCISES } from "@/lib/workoutWave8";
+import { WAVE_9_EXERCISES } from "@/lib/workoutWave9";
 
 /* « Défi Animations » — les ateliers qui enchaînent les gestes animés,
    un thème par séance (la liste unique vit dans src/lib/guideSections.ts).
@@ -464,6 +465,8 @@ export const exerciseData: Record<string, Exercise[]> = {
   ...WAVE_7_EXERCISES,
   // Les formats (lot 2 de la banque, 2026-10-28).
   ...WAVE_8_EXERCISES,
+  // Les routines, les jours sans et les petites séances à part (lot 3, 2026-10-28).
+  ...WAVE_9_EXERCISES,
 };
 
 /* ⚠️ CETTE TABLE PORTE DES ALIAS, ET CE N'EST PAS DU DOUBLON. Un titre de
@@ -606,6 +609,20 @@ export const SESSION_SLUGS: Record<string, string> = {
   "La chaise au mur": "chaise-au-mur",
   "Tenir partout": "tenir-partout",
   "Descendre en cinq secondes": "descendre-cinq",
+  // Les routines, les jours sans et les petites séances à part (lot 3).
+  "Chambre d’hôtel": "chambre-hotel",
+  "Après un long trajet": "apres-trajet",
+  "Réveil en 5 minutes": "reveil",
+  "Matin tonique": "matin-tonique",
+  "Trois minutes pour le cœur": "trois-minutes-coeur",
+  "Pause bureau": "pause-bureau",
+  "Cinq minutes avant de dormir": "avant-dormir",
+  "Pas la forme aujourd’hui": "pas-la-forme",
+  "Respirer, cinq minutes": "respirer",
+  "Le grand dimanche": "grand-dimanche",
+  "Après une mauvaise journée": "mauvaise-journee",
+  "Vider la tête": "vider-la-tete",
+  "Le banc du parc": "banc-parc",
 };
 
 /**

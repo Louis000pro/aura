@@ -15,6 +15,7 @@
 import { createClient } from "@/lib/supabase";
 import { levelToDifficulty, type WorkoutDifficulty, type WorkoutCategory } from "@/lib/assistantActions";
 import type { Exercise } from "@/components/WorkoutGuideModal";
+import { estimerMinutes, itemDExercice } from "@/lib/dureeLibre";
 import {
   COMPOSITION_VERSION, EXERCICES_PAR_ETAPE, entreesDe, orientationDe, prescrire,
   projeterPrescription, type ContexteComposition,
@@ -439,6 +440,13 @@ export function previewWeek(gen: GenInput, dates: string[] = weekDates(), cycle:
 /** Titre lisible d'un jour de planning (pour le lancement / l'historique). */
 export function dayTitle(day: PlanningDay): string {
   return day.title || day.type;
+}
+/** La durée qu'on annonce pour une intention : l'estimation de sa liste
+ *  (lib/dureeLibre.ts), la même que le catalogue et le lecteur. Sans liste,
+ *  le repli d'avant : 30 minutes pour un HIIT, 45 sinon. Avant le lot 3,
+ *  toute intention s'annonçait à 30 ou 45 minutes, même une routine de cinq. */
+export function dureeIntention(day: Pick<PlanningDay, "type" | "exerciseList">): number {
+  return day.exerciseList?.length ? estimerMinutes(day.exerciseList.map(itemDExercice)) : day.type === "HIIT" ? 30 : 45;
 }
 /** Label du jour de la semaine pour une date (Lundi…Dimanche). */
 /** Lieu lisible d'une séance du planning. Il vit ici, avec `dayTitle`,

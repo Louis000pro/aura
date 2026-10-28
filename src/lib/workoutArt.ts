@@ -71,6 +71,20 @@ export const PHOTO_PAR_TITRE: Record<string, string> = {
   "cent élévations": "push-halteres",
   "bras sans matériel": "push-dips",
   "bras lourds": "push-dips",
+  /* Lot 3 : les routines et les séances douces tombaient sur un kettlebell. */
+  "chambre d’hôtel": "legs-squat",
+  "après un long trajet": "core-twist",
+  "réveil en 5 minutes": "cardio-saut",
+  "matin tonique": "push-pompes",
+  "trois minutes pour le cœur": "cardio-sprint",
+  "pause bureau": "cardio-stepper",
+  "cinq minutes avant de dormir": "core-releve",
+  "pas la forme aujourd’hui": "core-lateral",
+  "respirer, cinq minutes": "core-twist",
+  "le grand dimanche": "legs-fentes",
+  "après une mauvaise journée": "cardio-ropes",
+  "vider la tête": "full-slam",
+  "le banc du parc": "push-dips",
 };
 
 /** La famille d'une photo de la banque. */

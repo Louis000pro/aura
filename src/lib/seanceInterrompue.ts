@@ -76,6 +76,7 @@ function exercicesValides(v: unknown): v is Exercise[] {
     && (e.format === undefined || texte(e.format, 20))
     && (e.repsParSerie === undefined || (Array.isArray(e.repsParSerie) && e.repsParSerie.length <= 100 && e.repsParSerie.every((r) => texte(r, 40))))
     && (e.emom === undefined || entier(e.emom, 1, 600))
+    && (e.sansEchauffement === undefined || typeof e.sansEchauffement === "boolean")
     && typeof e.tip === "string" && e.tip.length <= 8_000
     && typeof e.benefit === "string" && e.benefit.length <= 8_000
     && Array.isArray(e.muscles) && e.muscles.length <= 30 && e.muscles.every((m) => texte(m, 150)));

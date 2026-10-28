@@ -32,7 +32,8 @@ export type CatalogCollection =
   | "haut" | "fullbody" | "salle"
   | "sansmateriel" | "debuter" | "mobilite" | "recup"
   | "defis" | "conseils"
-  | "force" | "longues" | "circuits" | "emom" | "intervalles" | "isometrie";
+  | "force" | "longues" | "circuits" | "emom" | "intervalles" | "isometrie"
+  | "routines" | "joursans" | "tete" | "voyage" | "dehors";
 
 export type WorkoutSession = {
   id: string;
@@ -1056,5 +1057,123 @@ export const workoutSessions: WorkoutSession[] = [
     muscles: ["Dos", "Lombaires"],
     accent: "#8B5CF6", icon: Wind, access: "free",
     collections: ["dos", "sansmateriel", "mobilite", "express"],
+  },
+  /* Vague 9 : les routines, les jours sans et les petites séances à part
+     (lot 3 de la banque, GO de Louis le 2026-10-28). En fin de tableau,
+     elles s'ajoutent aux rangées existantes sans prendre la place de leur
+     première carte ; l'ordre ci-dessous ouvre les cinq collections neuves
+     (« En voyage » sur Après un long trajet et Chambre d’hôtel, les
+     routines sur le Réveil et Matin tonique, « Les jours sans » sur Pas la
+     forme aujourd’hui, « Pour la tête » sur Respirer). Les routines douces
+     ne comptent pas d'échauffement (`sansEchauffement`, lib/workoutWave9.ts). */
+  {
+    id: "chambre-hotel", category: "fullbody",
+    title: "Chambre d’hôtel", subtitle: "3 tours · Aucun saut · Six exercices",
+    duration: 24, difficulty: "Intermédiaire", exercises: 6,
+    muscles: ["Corps entier"],
+    accent: "#8B5CF6", icon: Home, access: "premium",
+    collections: ["voyage", "sansmateriel", "circuits"],
+    previewExercises: ["Fentes", "Dips sur chaise", "Pont fessier"],
+  },
+  {
+    id: "apres-trajet", category: "mobilite",
+    title: "Après un long trajet", subtitle: "Dos · Hanches · Nuque · Épaules",
+    duration: 10, difficulty: "Débutant", exercises: 6,
+    muscles: ["Dos", "Hanches", "Nuque"],
+    accent: "#8B5CF6", icon: Wind, access: "free",
+    collections: ["voyage", "mobilite", "recup", "express"],
+  },
+  {
+    id: "reveil", category: "mobilite",
+    title: "Réveil en 5 minutes", subtitle: "Six mouvements enchaînés · Du sol à debout",
+    duration: 5, difficulty: "Débutant", exercises: 6,
+    muscles: ["Corps entier", "Mobilité"],
+    accent: "#8B5CF6", icon: Sun, access: "free",
+    collections: ["routines", "mobilite", "voyage", "express"],
+  },
+  {
+    id: "matin-tonique", category: "fullbody",
+    title: "Matin tonique", subtitle: "2 tours · Jumping jacks · Squat · Gainage",
+    duration: 10, difficulty: "Débutant", exercises: 6,
+    muscles: ["Corps entier", "Cardio"],
+    accent: "#8B5CF6", icon: Sun, access: "premium",
+    collections: ["routines", "sansmateriel", "circuits", "express"],
+    previewExercises: ["Jumping jacks", "Pompes inclinées", "Downward dog / cobra"],
+  },
+  {
+    id: "trois-minutes-coeur", category: "cardio",
+    title: "Trois minutes pour le cœur", subtitle: "3 efforts de 40 secondes · Montées de genoux",
+    duration: 3, difficulty: "Débutant", exercises: 1,
+    muscles: ["Cardio"],
+    accent: "#8B5CF6", icon: Zap, access: "free",
+    collections: ["routines", "cardiohiit", "intervalles", "express"],
+  },
+  {
+    id: "pause-bureau", category: "mobilite",
+    title: "Pause bureau", subtitle: "Debout · Nuque · Épaules · Jambes",
+    duration: 5, difficulty: "Débutant", exercises: 6,
+    muscles: ["Nuque", "Épaules", "Jambes"],
+    accent: "#8B5CF6", icon: Wind, access: "free",
+    collections: ["routines", "mobilite", "express"],
+  },
+  {
+    id: "avant-dormir", category: "mobilite",
+    title: "Cinq minutes avant de dormir", subtitle: "Au sol · Étirements doux · Respiration",
+    duration: 5, difficulty: "Débutant", exercises: 4,
+    muscles: ["Dos", "Hanches", "Respiration"],
+    accent: "#8B5CF6", icon: Moon, access: "free",
+    collections: ["routines", "recup", "express"],
+  },
+  {
+    id: "pas-la-forme", category: "fullbody",
+    title: "Pas la forme aujourd’hui", subtitle: "Six mouvements doux · À ton rythme",
+    duration: 10, difficulty: "Débutant", exercises: 6,
+    muscles: ["Corps entier"],
+    accent: "#8B5CF6", icon: Sparkles, access: "free",
+    collections: ["joursans", "debuter", "express"],
+  },
+  {
+    id: "respirer", category: "mobilite",
+    title: "Respirer, cinq minutes", subtitle: "Cohérence cardiaque · Six respirations par minute",
+    duration: 5, difficulty: "Débutant", exercises: 1,
+    muscles: ["Respiration"],
+    accent: "#8B5CF6", icon: Wind, access: "free",
+    collections: ["routines", "tete", "joursans", "recup", "express"],
+  },
+  {
+    id: "grand-dimanche", category: "fullbody",
+    title: "Le grand dimanche", subtitle: "Mobilité · Séries lourdes puis légères · Retour au calme",
+    duration: 60, difficulty: "Intermédiaire", exercises: 21,
+    muscles: ["Corps entier", "Mobilité"],
+    accent: "#8B5CF6", icon: Dumbbell, access: "premium",
+    collections: ["routines", "fullbody", "sansmateriel"],
+    previewExercises: ["World's greatest stretch", "Squat bulgare", "Pike push-ups"],
+  },
+  {
+    id: "mauvaise-journee", category: "cardio",
+    title: "Après une mauvaise journée", subtitle: "Cardio qui monte · Renfo · Respiration",
+    duration: 23, difficulty: "Intermédiaire", exercises: 12,
+    muscles: ["Cardio", "Corps entier"],
+    accent: "#8B5CF6", icon: Flame, access: "premium",
+    collections: ["tete", "joursans", "cardiohiit"],
+    previewExercises: ["Skaters", "Burpees", "Cohérence cardiaque"],
+  },
+  {
+    id: "vider-la-tete", category: "cardio",
+    title: "Vider la tête", subtitle: "3 tours en 40/20 · Puis 5 minutes de respiration",
+    duration: 30, difficulty: "Intermédiaire", exercises: 7,
+    muscles: ["Cardio", "Corps entier"],
+    accent: "#8B5CF6", icon: Zap, access: "premium",
+    collections: ["tete", "cardiohiit", "intervalles"],
+    previewExercises: ["Squats sautés", "Burpees", "Mountain climbers"],
+  },
+  {
+    id: "banc-parc", category: "fullbody",
+    title: "Le banc du parc", subtitle: "4 tours · Step up · Dips · Pompes inclinées",
+    duration: 26, difficulty: "Intermédiaire", exercises: 5,
+    muscles: ["Corps entier"],
+    accent: "#8B5CF6", icon: Layers, access: "premium",
+    collections: ["fullbody", "circuits", "dehors"],
+    previewExercises: ["Step up banc", "Dips sur chaise", "Pompes inclinées"],
   },
 ];

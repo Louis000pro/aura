@@ -33,7 +33,7 @@ import { ecrireMemoire, lireMemoire, oublierSur } from "@/lib/memoireSession";
 import { avecEtapeVerifiee, type ContexteEtape, deplacerReservation, etatJournee, lancementDuJour, libelleReservation, repetitionDuJour } from "@/lib/journee";
 import {
   lireSemaine, saveDay, reservationDeLOccurrence, hasSeance, loadLieu, readVariant, ctxFromLieu,
-  weekDates, todayYmd, dayTitle, parDate, principale, supplements, seancesDuJour,
+  weekDates, todayYmd, dayTitle, dureeIntention, parDate, principale, supplements, seancesDuJour,
   weekdayIndex, prochainsJours, contexteDe, appliquerRegleDuJour,
   type PlanningDay, type GenInput, type CycleSemaine,
 } from "@/lib/planning";
@@ -639,7 +639,7 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
     launchWorkout({
       sessionId: `planning-${d.id ?? d.date}`,
       title: titre,
-      duration: d.type === "HIIT" ? 30 : 45,
+      duration: courte?.minutes ?? dureeIntention(d),
       difficulty: d.difficulty,
       category: d.type,
       /* ⚠️ LA PHOTO SE RÉSOUT PAR LE TITRE, PAS PAR LA CATÉGORIE. Le

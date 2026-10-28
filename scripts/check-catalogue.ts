@@ -12,11 +12,13 @@
    ou elle disparaît de l'historique.
 
    Il vérifie tout le catalogue sur ce qui le tient ensemble, puis les
-   séances par zone (vague 7, lot 1 de la banque, 2026-10-27) et les
-   formats (vague 8, lot 2, 2026-10-28) sur leurs règles d'écriture :
+   séances par zone (vague 7, lot 1 de la banque, 2026-10-27), les
+   formats (vague 8, lot 2, 2026-10-28) et les routines (vague 9, lot 3,
+   2026-10-28) sur leurs règles d'écriture :
    chaque mouvement animé ET avec sa fiche, la durée affichée égale à
    l'estimation de l'app, la typographie, aucune promesse sur le ventre,
-   une base incluse dans chaque zone, une tuile par format. L'ordre des
+   une base incluse dans chaque zone, une tuile par format, et les
+   routines douces sans échauffement compté. L'ordre des
    tours lui-même est vérifié par `npm run check:tours`.
    ═══════════════════════════════════════════════════════════════════════ */
 import { existsSync, readFileSync } from "node:fs";
@@ -31,10 +33,11 @@ import { WAVE_5_EXERCISES } from "@/lib/workoutWave5";
 import { WAVE_6_EXERCISES } from "@/lib/workoutWave6";
 import { WAVE_7_EXERCISES } from "@/lib/workoutWave7";
 import { WAVE_8_EXERCISES } from "@/lib/workoutWave8";
+import { WAVE_9_EXERCISES } from "@/lib/workoutWave9";
 import { GUIDE_SECTIONS, sectionSessionId } from "@/lib/guideSections";
 import { resolveGuide } from "@/lib/exerciseGuides";
 import { trouverExercice } from "@/lib/exerciseLibrary";
-import { estimerMinutes, itemDExercice } from "@/lib/dureeLibre";
+import { ECHAUFFEMENT_S, estimerMinutes, estimerSecondes, itemDExercice } from "@/lib/dureeLibre";
 import { FAMILY, PHOTO_PAR_TITRE, resolveArt } from "@/lib/workoutArt";
 
 const RACINE = process.cwd();
@@ -121,6 +124,51 @@ const vague8 = ids8.map((id) => parId.get(id)).filter((s): s is WorkoutSession =
   verdict("exerciseData lit bien les exercices de la vague 8", pasLesSiens.length === 0, liste(pasLesSiens));
 }
 
+/* ── Les routines et les petites séances à part (vague 9) ────────────── */
+
+const LOT3: CatalogCollection[] = ["routines", "joursans", "tete", "voyage"];
+const ids9 = Object.keys(WAVE_9_EXERCISES);
+const vague9 = ids9.map((id) => parId.get(id)).filter((s): s is WorkoutSession => !!s);
+
+{
+  verdict("chaque séance de la vague 9 a sa fiche au catalogue", vague9.length === ids9.length,
+    liste(ids9.filter((id) => !parId.has(id))));
+
+  const autres = new Set([
+    ...Object.keys(WAVE_1_EXERCISES), ...Object.keys(WAVE_2_EXERCISES), ...Object.keys(WAVE_3_EXERCISES),
+    ...Object.keys(WAVE_4_EXERCISES), ...Object.keys(WAVE_5_EXERCISES), ...Object.keys(WAVE_6_EXERCISES),
+    ...Object.keys(WAVE_7_EXERCISES), ...Object.keys(WAVE_8_EXERCISES), ...GUIDE_SECTIONS.map(sectionSessionId),
+  ]);
+  const ecrasees = ids9.filter((id) => autres.has(id));
+  verdict("aucune séance de la vague 9 n’écrase les exercices d’une autre", ecrasees.length === 0, liste(ecrasees));
+
+  const pasLesSiens = ids9.filter((id) => exerciseData[id] !== WAVE_9_EXERCISES[id]);
+  verdict("exerciseData lit bien les exercices de la vague 9", pasLesSiens.length === 0, liste(pasLesSiens));
+}
+
+/* Les séances qui se passent d'échauffement sont DÉCIDÉES : une routine
+   douce, ou une séance qui commence par le sien. Le drapeau est sur
+   chacun de leurs exercices (une copie, une version courte ou une reprise
+   peut garder n'importe lequel d'entre eux), et nulle part ailleurs : une
+   séance chargée ou intense garde ses cinq minutes. */
+{
+  const SANS_ECHAUFFEMENT = [
+    "apres-trajet", "reveil", "matin-tonique", "trois-minutes-coeur", "pause-bureau",
+    "avant-dormir", "pas-la-forme", "respirer", "grand-dimanche", "mauvaise-journee",
+  ];
+  const marquees = Object.entries(exerciseData).filter(([, exos]) => exos.some((e) => e.sansEchauffement)).map(([id]) => id);
+  verdict("les séances sans échauffement sont celles qu’on a décidées",
+    marquees.length === SANS_ECHAUFFEMENT.length && SANS_ECHAUFFEMENT.every((id) => marquees.includes(id)), liste(marquees));
+  const amoitie = marquees.filter((id) => !exerciseData[id].every((e) => e.sansEchauffement === true));
+  verdict("une séance sans échauffement le dit sur chacun de ses exercices", amoitie.length === 0, liste(amoitie));
+
+  const exo = { name: "Squat", sets: 2, reps: "10 reps", rest: 30 };
+  const avec = estimerSecondes([itemDExercice(exo)]);
+  const sans = estimerSecondes([itemDExercice({ ...exo, sansEchauffement: true })]);
+  verdict("le témoin : une séance sans échauffement compte cinq minutes de moins", avec - sans === ECHAUFFEMENT_S,
+    `${avec} s puis ${sans} s`);
+}
+
 /* Les deux séances d'avant que la proposition passait en circuit de trois
    tours : leur fiche suit leur nouveau contenu. */
 for (const id of ["core", "fullbody-machines"]) {
@@ -132,7 +180,19 @@ for (const id of ["core", "fullbody-machines"]) {
     s ? `${s.duration} min pour ${estime} estimées, ${s.exercises} pour ${exos.length} lignes` : "absente");
 }
 
-for (const s of [...vague7, ...vague8]) {
+/** Les minutes qu'un titre annonce (« Réveil en 5 minutes », « Trois
+ *  minutes pour le cœur »), sinon null. */
+const NOMBRES: Record<string, number> = {
+  une: 1, deux: 2, trois: 3, quatre: 4, cinq: 5, six: 6, sept: 7, huit: 8, neuf: 9, dix: 10,
+  douze: 12, quinze: 15, vingt: 20, trente: 30, quarante: 40, soixante: 60,
+};
+function minutesDuTitre(titre: string): number | null {
+  const m = titre.toLowerCase().match(/(\d+|\p{L}+)\s+minutes?(?!\p{L})/u);
+  if (!m) return null;
+  return /^\d+$/.test(m[1]) ? Number(m[1]) : (NOMBRES[m[1]] ?? Number.NaN);
+}
+
+for (const s of [...vague7, ...vague8, ...vague9]) {
   const exos = exerciseData[s.id];
 
   const sansFiche = exos.filter((e) => !resolveGuide(e.name) || !trouverExercice(e.name)).map((e) => e.name);
@@ -148,7 +208,10 @@ for (const s of [...vague7, ...vague8]) {
     `${s.duration} min, ${express ? "dans" : "hors de"} express`);
 
   const tete = s.collections?.[0];
-  if (vague7.includes(s)) {
+  if (vague9.includes(s)) {
+    verdict(`${s.title} · sa première collection est une collection du lot 3 (ou Full body pour une séance du dehors)`,
+      !!tete && (LOT3.includes(tete) || (tete === "fullbody" && !!s.collections?.includes("dehors"))), String(tete));
+  } else if (vague7.includes(s)) {
     verdict(`${s.title} · sa zone est sa première collection`, !!tete && ZONES.includes(tete), String(tete));
   } else {
     verdict(`${s.title} · sa première collection est sa zone ou son format, et elle entre dans un format`,
@@ -158,8 +221,12 @@ for (const s of [...vague7, ...vague8]) {
 
   /* Le titre ne promet pas une durée que la carte contredit : la durée
      affichée compte l'échauffement (« Jambes en 10 minutes » est devenue
-     « Jambes, l’essentiel » au lot 1 pour cette raison). */
-  verdict(`${s.title} · son titre n’annonce pas de minutes`, !/\d+\s*minutes?\b/i.test(s.title), s.title);
+     « Jambes, l’essentiel » au lot 1 pour cette raison). Depuis le lot 3,
+     un titre peut annoncer ses minutes si ce sont celles de la carte
+     (« Réveil en 5 minutes », une routine sans échauffement compté). */
+  const annonce = minutesDuTitre(s.title);
+  verdict(`${s.title} · son titre n’annonce que les minutes de sa carte`, annonce === null || annonce === s.duration,
+    annonce === null ? "aucune" : `${annonce} annoncées, ${s.duration} affichées`);
 
   verdict(`${s.title} · son titre retrouve la séance`, SESSION_SLUGS[s.title] === s.id && resolveSessionId(s.title) === s.id,
     String(resolveSessionId(s.title)));
@@ -169,7 +236,7 @@ for (const s of [...vague7, ...vague8]) {
 
 {
   const textes: { ou: string; texte: string }[] = [];
-  for (const s of [...vague7, ...vague8]) {
+  for (const s of [...vague7, ...vague8, ...vague9]) {
     textes.push({ ou: `${s.id} (titre)`, texte: s.title }, { ou: `${s.id} (sous-titre)`, texte: s.subtitle });
     exerciseData[s.id].forEach((e, i) => {
       textes.push(
@@ -213,10 +280,22 @@ for (const s of [...vague7, ...vague8]) {
 
   /* Une durée écrite dans les répétitions déclenche le chrono du lecteur :
      elle doit être voulue, donc portée par `auto` ou `hiit`. */
-  const chronoCache = [...vague7, ...vague8].flatMap((s) => exerciseData[s.id]
+  const chronoCache = [...vague7, ...vague8, ...vague9].flatMap((s) => exerciseData[s.id]
     .filter((e) => /\d+\s*(?:secondes?|sec|s|min)\b/i.test(e.reps) && !e.auto && !e.hiit)
     .map((e) => `${s.id} · ${e.name} (${e.reps})`));
   verdict("une durée dans les répétitions a toujours son chrono déclaré", chronoCache.length === 0, liste(chronoCache));
+
+  /* L'estimation compte deux côtés pour « par jambe », « par bras » ou
+     « par main », pas pour « par côté » (lib/dureeLibre.ts). Le lot 3
+     écrit donc ce qu'elle lit, et une tenue d'un côté puis de l'autre en
+     deux séries qui alternent. */
+  const parCote = vague9.flatMap((s) => exerciseData[s.id]
+    .filter((e) => /par\s+c[ôo]t[ée]/i.test(e.reps)).map((e) => `${s.id} · ${e.name} (${e.reps})`));
+  verdict("le lot 3 n’écrit pas « par côté » dans les répétitions", parCote.length === 0, liste(parCote));
+  const alterne = vague9.flatMap((s) => exerciseData[s.id]
+    .filter((e) => e.tip.startsWith("Un côté puis l’autre") && (e.sets % 2 !== 0 || !e.auto))
+    .map((e) => `${s.id} · ${e.name}`));
+  verdict("une tenue d’un côté puis de l’autre a un nombre pair de séries, au chrono", alterne.length === 0, liste(alterne));
 }
 
 /* ── Les zones ────────────────────────────────────────────────────────── */
@@ -258,11 +337,32 @@ for (const format of FORMATS) {
     !!tuile && existsSync(path.join(RACINE, "public/entrainement", `${tuile[1]}.webp`)), tuile ? tuile[1] : "pas de tuile");
 }
 
+/* ── Les collections du lot 3 ─────────────────────────────────────────
+   Une collection n'a sa tuile qu'avec trois séances au moins : une tuile
+   qui dirait « Bientôt » serait un chantier visible. « Dehors » attend
+   donc les séances qui demandent des mouvements à dessiner (la marche,
+   l'escalier). */
+{
+  const FAMILLE_LOT3: Record<string, string> = { routines: "moment", joursans: "moment", tete: "objectif", voyage: "terrain", dehors: "terrain" };
+  for (const [col, fam] of Object.entries(FAMILLE_LOT3)) {
+    const dedans = seances.filter((s) => s.collections?.includes(col as CatalogCollection));
+    const tuile = new RegExp(`id: "${col}", famille: "${fam}", name: "[^"]+", tag: "[^"]+",\\s*img: "([a-z0-9-]+)"(?:, pos: "[^"]+")?, match: matchCollection\\("${col}", \\(\\) => false\\)`).exec(page);
+    const ailleurs = page.includes(`id: "${col}",`);
+    if (dedans.length >= 3) {
+      verdict(`${col} · au moins trois séances et une tuile, avec une photo qui existe`,
+        !!tuile && existsSync(path.join(RACINE, "public/entrainement", `${tuile[1]}.webp`)),
+        `${dedans.length} séances, ${tuile ? tuile[1] : "pas de tuile"}`);
+    } else {
+      verdict(`${col} · pas de tuile tant qu’il n’y a pas trois séances`, !ailleurs, `${dedans.length} séance(s)`);
+    }
+  }
+}
+
 /* La page Premium (InfosPremium) promet « pour chaque objectif et chaque
    zone du corps des séances accessibles sans rien payer ». Un format peut
    être tout Vaiiya+ (EMOM, séries longues) ; un objectif ou une zone, non. */
 {
-  const promises: CatalogCollection[] = ["express", "masse", "perte", "renfo", "cardiohiit", ...ZONES, "haut", "fullbody"];
+  const promises: CatalogCollection[] = ["express", "masse", "perte", "renfo", "cardiohiit", "tete", ...ZONES, "haut", "fullbody"];
   const sansBase = promises.filter((c) => !seances.some((s) => s.collections?.includes(c) && s.access !== "premium"));
   verdict("chaque objectif et chaque zone garde une séance incluse (page Premium)", sansBase.length === 0, liste(sansBase));
 }
@@ -320,6 +420,11 @@ for (const format of FORMATS) {
     recup: ["recup-active", "recup-jambes"],
     haut: ["force-haut", "haut-corps-sol"],
     jambes: ["jambes-essentiel", "jambes-poids-corps"],
+    /* Le lot 3 (2026-10-28) : ses collections s'ouvrent sur ses séances. */
+    routines: ["reveil", "matin-tonique"],
+    joursans: ["pas-la-forme", "mauvaise-journee"],
+    tete: ["respirer", "mauvaise-journee"],
+    voyage: ["apres-trajet", "chambre-hotel"],
   };
   for (const [col, [libre, plus]] of Object.entries(TETES)) {
     const dedans = seances.filter((s) => s.collections?.includes(col as CatalogCollection));

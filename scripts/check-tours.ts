@@ -218,7 +218,8 @@ const serieDe = (it: ItemDuree) => estimerSecondes([{ ...it, series: 1, transiti
 function jouee(exos: readonly ExoTour[]): number {
   const items = exos.map((e) => itemDExercice({ name: e.name ?? "", sets: e.sets, reps: e.reps, rest: e.rest, restAfter: e.restAfter, auto: e.auto, hiit: e.hiit, repsParSerie: e.repsParSerie, emom: e.emom }));
   const pas = ordreDeJeu(exos);
-  let total = ECHAUFFEMENT_S;
+  /* Une routine douce ne compte pas d'échauffement (lot 3). */
+  let total = exos.some((e) => (e as { sansEchauffement?: boolean }).sansEchauffement) ? 0 : ECHAUFFEMENT_S;
   pas.forEach((p, i) => {
     /* Un exercice HIIT joue sa récupération DANS l'effort (20 s, puis 10 s). */
     const effort = serieDe(items[p.e]) + (exos[p.e].hiit ? HIIT_RECUP_S : 0);

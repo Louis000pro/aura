@@ -27,7 +27,7 @@ import FeuilleBas from "@/components/semaine/FeuilleBas";
 import ChoixJour from "@/components/entrainement/ChoixJour";
 import { Photo } from "@/components/entrainement/PhotoSeance";
 import { resolveArt } from "@/lib/workoutArt";
-import { contexteDe, dayTitle, fetchRange, type GenInput, type PlanningDay } from "@/lib/planning";
+import { contexteDe, dayTitle, dureeIntention, fetchRange, type GenInput, type PlanningDay } from "@/lib/planning";
 import { modeleDeLEtape, modeleDeLOccurrence } from "@/lib/prescription";
 import { lireVariete } from "@/lib/varieteBase";
 import { projeterPrescription } from "@/lib/banqueEtapes";
@@ -304,7 +304,7 @@ function ElementLigne({ element: el, touchable, onOuvrir }: {
     : el.genre === "prevu" ? el.projete.etape.nom : "";
   const duree = el.genre === "realisee" ? (el.seance.dureeMin ?? 45)
     : el.genre === "prevu" && !intention ? (el.projete.etape.dureeMin ?? 45)
-    : intention?.type === "HIIT" ? 30 : 45;
+    : intention ? dureeIntention(intention) : 45;
   const art = resolveArt({ title: titre });
   const p = el.genre === "prevu" ? el.projete : null;
   const fait = el.genre === "fait" || el.genre === "realisee";

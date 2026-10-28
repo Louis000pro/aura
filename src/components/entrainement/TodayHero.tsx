@@ -24,7 +24,7 @@ import { motion } from "framer-motion";
 import { Check, Moon, Play } from "lucide-react";
 import { AssistantSpark } from "@/components/AssistantMark";
 import { resolveArt } from "@/lib/workoutArt";
-import { dayTitle, lieuLabel, type PlanningDay } from "@/lib/planning";
+import { dayTitle, dureeIntention, lieuLabel, type PlanningDay } from "@/lib/planning";
 import type { EtatJournee } from "@/lib/journee";
 import type { EtapeCycle } from "@/lib/programme";
 import { LIBELLE_RYTHME, type Rythme } from "@/lib/rythmeSeance";
@@ -203,7 +203,7 @@ export default function TodayHero({
             </p>
             <h2 className="text-[34px] md:text-[38px] leading-[1.02] font-extralight text-white">{dayTitle(day)}</h2>
             <p className="mt-2.5 mb-4 text-[16px] font-normal" style={{ color: "rgba(255,255,255,0.82)" }}>
-              <V>{dureeMin ?? (day.type === "HIIT" ? 30 : 45)}</V> min<S /><V>{day.exerciseList.length}</V> exercices<S />{day.difficulty}
+              <V>{dureeMin ?? dureeIntention(day)}</V> min<S /><V>{day.exerciseList.length}</V> exercices<S />{day.difficulty}
             </p>
             {recouvrement && <Fait texte={recouvrement.phrase} />}
             <motion.button

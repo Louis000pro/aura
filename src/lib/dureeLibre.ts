@@ -9,6 +9,9 @@
       EXACTEMENT les attentes que le tunnel pose (revue finale) ; le tempo
       et l'échauffement sont des hypothèses annoncées, à calibrer. Une estimation, pas un chronomètre : elle sert à
       dire « ≈ 16 min » honnêtement, et à raccourcir.
+      Une séance qui se déclare sans échauffement à part (`sansEchauffement` :
+      une routine douce, ou une séance qui commence par le sien) ne compte
+      pas ces cinq minutes.
    2. RACCOURCIR une séance jusqu'à une durée : on retire d'abord des
       exercices et des séries, selon les priorités de la séance. Les
       REPOS ne bougent jamais (une séance courte n'est pas une séance
@@ -85,6 +88,9 @@ export type ItemDuree = {
   reposS: number;
   /** L'attente vers l'exercice suivant, telle que le tunnel la pose. */
   transitionS: number;
+  /** La séance ne demande pas d'échauffement à part : elle est douce, ou
+   *  elle commence par le sien. Posé sur chacun de ses exercices. */
+  sansEchauffement?: true;
 };
 
 const unilateral = (texte: string) => /\bpar\s+(jambe|côté|cote|bras|main)\b/i.test(texte);
@@ -110,16 +116,17 @@ export function itemDeLigne(l: LignePrescription): ItemDuree {
  *  l'exercice n'est pas un repère déclaré. */
 export function itemDExercice(e: {
   name: string; sets: number; reps?: string; rest?: number; restAfter?: number; auto?: number; hiit?: boolean;
-  repsParSerie?: string[]; emom?: number;
+  repsParSerie?: string[]; emom?: number; sansEchauffement?: boolean;
   prescription?: { statut: StatutExercice };
 }): ItemDuree {
   const reps = String(e.reps ?? "");
   const series = Math.max(1, e.sets || 1);
   const statut = e.prescription?.statut ?? "complementaire";
+  const doux = e.sansEchauffement ? { sansEchauffement: true as const } : {};
   /* EMOM (lib/toursSeance.ts) : chaque série dispose de sa minute, le
      repos est ce qui en reste. Rien ne s'ajoute entre deux séries. */
   if ((e.emom ?? 0) > 0) {
-    return { nom: e.name, statut, series, effortS: e.emom as number, cotes: 1, reposS: 0, transitionS: attenteApres(e.restAfter, 0) };
+    return { nom: e.name, statut, series, effortS: e.emom as number, cotes: 1, reposS: 0, transitionS: attenteApres(e.restAfter, 0), ...doux };
   }
   /* Les mêmes durées que le tunnel : `auto`, sinon ce que « 45s » veut
      dire pour lui, et l'effort HIIT ; sinon des répétitions au tempo.
@@ -143,13 +150,15 @@ export function itemDExercice(e: {
     cotes: unilateral(reps) ? 2 : 1,
     reposS: repos,
     transitionS: attenteApres(e.restAfter, e.rest),
+    ...doux,
   };
 }
 
-/** L'estimation, en secondes, échauffement compris. Pure. */
+/** L'estimation, en secondes, échauffement compris (sauf pour une séance
+ *  qui s'en passe). Pure. */
 export function estimerSecondes(items: readonly ItemDuree[]): number {
   if (items.length === 0) return 0;
-  let total = ECHAUFFEMENT_S;
+  let total = items.some((it) => it.sansEchauffement) ? 0 : ECHAUFFEMENT_S;
   items.forEach((it, i) => {
     const serie = it.cotes * it.effortS + (it.cotes - 1) * CHANGEMENT_COTE_S;
     total += it.series * serie + (it.series - 1) * it.reposS;

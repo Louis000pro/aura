@@ -125,6 +125,10 @@ export interface Exercise {
   /** EMOM : chaque série dispose de ce nombre de secondes, et ce qui en
    *  reste est le repos. */
   emom?: number;
+  /** La séance ne demande pas d'échauffement à part : elle est douce, ou
+   *  elle commence par le sien. Posé sur chacun de ses exercices, il retire
+   *  les cinq minutes d'échauffement de sa durée (lib/dureeLibre.ts). */
+  sansEchauffement?: boolean;
 }
 
 export interface WorkoutGuideModalProps {

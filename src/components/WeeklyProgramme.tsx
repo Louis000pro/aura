@@ -12,7 +12,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useWorkoutLaunch } from "@/context/WorkoutLaunchContext";
 import { doseDe } from "@/lib/toursSeance";
 import {
-  lireSemaine, reposerLaSemaine, ctxFromLieu, dayTitle, persistLieu, loadLieu,
+  lireSemaine, reposerLaSemaine, ctxFromLieu, dayTitle, dureeIntention, persistLieu, loadLieu,
   weekDatesForOffset, weekOffsetOf, weekdayIndex, todayWeekIndex, parDate, principale, supplements,
   type PlanningDay, type GenInput, type CycleSemaine,
 } from "@/lib/planning";
@@ -320,7 +320,7 @@ export default function WeeklyProgramme({ cycle = null }: { cycle?: CycleSemaine
   const { launchWorkout } = useWorkoutLaunch();
   const lancerJour = (jour: PlanningDay) => launchWorkout({
     sessionId: `planning-${jour.id ?? jour.date}`, title: dayTitle(jour),
-    duration: jour.type === "HIIT" ? 30 : 45, difficulty: jour.difficulty,
+    duration: dureeIntention(jour), difficulty: jour.difficulty,
     category: jour.type, exerciseList: jour.exerciseList,
     // Refaire est un supplément : ne jamais déplacer le fait d'origine.
     cible: jour.id && jour.status !== "done" && jour.status !== "skipped"
