@@ -34,7 +34,8 @@ export type CatalogCollection =
   | "defis" | "conseils"
   | "force" | "longues" | "circuits" | "emom" | "intervalles" | "isometrie"
   | "routines" | "joursans" | "tete" | "voyage" | "dehors"
-  | "halteres" | "kettlebell";
+  | "halteres" | "kettlebell"
+  | "course" | "foot" | "velo" | "ski";
 
 export type WorkoutSession = {
   id: string;
@@ -487,7 +488,7 @@ export const workoutSessions: WorkoutSession[] = [
     duration: 25, difficulty: "Intermédiaire", exercises: 5,
     muscles: ["Quadriceps", "Fessiers", "Cardio"],
     accent: "#8B5CF6", icon: Flame, access: "premium",
-    collections: ["jambes", "circuits", "cardiohiit", "sansmateriel"],
+    collections: ["jambes", "circuits", "cardiohiit", "sansmateriel", "foot"],
     previewExercises: ["Squats sautés", "Skaters", "Box jump"],
   },
   {
@@ -683,7 +684,7 @@ export const workoutSessions: WorkoutSession[] = [
     duration: 14, difficulty: "Débutant", exercises: 2,
     muscles: ["Quadriceps"],
     accent: "#8B5CF6", icon: Sparkles, access: "free",
-    collections: ["isometrie", "jambes", "sansmateriel", "express"],
+    collections: ["isometrie", "jambes", "sansmateriel", "express", "ski"],
   },
   {
     id: "tenir-partout", category: "fullbody",
@@ -1020,7 +1021,7 @@ export const workoutSessions: WorkoutSession[] = [
     duration: 28, difficulty: "Intermédiaire", exercises: 6,
     muscles: ["Jambes", "Fessiers", "Core"],
     accent: "#8B5CF6", icon: Sparkles, access: "premium",
-    collections: ["jambes", "renfo", "sansmateriel"],
+    collections: ["jambes", "renfo", "sansmateriel", "course"],
     previewExercises: ["Bird dog", "Step up banc", "Fentes"],
   },
   {
@@ -1057,7 +1058,7 @@ export const workoutSessions: WorkoutSession[] = [
     duration: 14, difficulty: "Débutant", exercises: 4,
     muscles: ["Dos", "Lombaires"],
     accent: "#8B5CF6", icon: Wind, access: "free",
-    collections: ["dos", "sansmateriel", "mobilite", "express"],
+    collections: ["dos", "sansmateriel", "mobilite", "express", "velo"],
   },
   /* Vague 9 : les routines, les jours sans et les petites séances à part
      (lot 3 de la banque, GO de Louis le 2026-10-28). En fin de tableau,
@@ -1225,5 +1226,80 @@ export const workoutSessions: WorkoutSession[] = [
     accent: "#8B5CF6", icon: Flame, access: "premium",
     collections: ["emom", "kettlebell", "salle", "express"],
     previewExercises: ["Kettlebell swing"],
+  },
+  /* Vague 11 : un sport à côté (lot 4 de la banque, la partie qui
+     n'attend aucun dessin). Chaque sport a une séance pour s'y préparer
+     et une pour récupérer ; une séance d'avant qui lui va le rejoint, pour
+     qu'aucune tuile n'ait moins de trois séances : Unilatéral, maîtriser
+     les appuis (course), Jambes et cardio (football), Dos et posture à la
+     maison (vélo), La chaise au mur (ski). Les récupérations ne comptent
+     pas d'échauffement. */
+  {
+    id: "apres-sortie", category: "mobilite",
+    title: "Après ta sortie", subtitle: "Mollets · Cuisses · Hanches · Respiration",
+    duration: 7, difficulty: "Débutant", exercises: 5,
+    muscles: ["Mollets", "Quadriceps", "Hanches"],
+    accent: "#8B5CF6", icon: Wind, access: "free",
+    collections: ["course", "recup", "express"],
+  },
+  {
+    id: "pliometrie-coureur", category: "cardio",
+    title: "Pliométrie du coureur", subtitle: "Corde · Sauts · Bonds · Repos complet",
+    duration: 28, difficulty: "Intermédiaire", exercises: 5,
+    muscles: ["Quadriceps", "Fessiers", "Mollets"],
+    accent: "#8B5CF6", icon: Zap, access: "premium",
+    collections: ["course", "cardiohiit", "jambes"],
+    previewExercises: ["Corde à sauter", "Squats sautés", "Box jump"],
+  },
+  {
+    id: "explosivite-terrain", category: "cardio",
+    title: "Explosivité terrain", subtitle: "Sprints courts · Sauts · Appuis · Repos long",
+    duration: 32, difficulty: "Avancé", exercises: 5,
+    muscles: ["Quadriceps", "Fessiers", "Cardio"],
+    accent: "#8B5CF6", icon: Zap, access: "premium",
+    collections: ["foot", "cardiohiit", "jambes"],
+    previewExercises: ["Sprint sur place", "Skaters", "Box jump"],
+  },
+  {
+    id: "lendemain-match", category: "mobilite",
+    title: "Lendemain de match", subtitle: "Hanches · Cuisses · Adducteurs · Respiration",
+    duration: 11, difficulty: "Débutant", exercises: 6,
+    muscles: ["Hanches", "Quadriceps", "Ischio-jambiers"],
+    accent: "#8B5CF6", icon: Wind, access: "free",
+    collections: ["foot", "recup", "express"],
+  },
+  {
+    id: "renfo-cycliste", category: "force",
+    title: "Renfo du cycliste", subtitle: "Jambes · Fessiers · Dos · Gainage",
+    duration: 30, difficulty: "Intermédiaire", exercises: 6,
+    muscles: ["Quadriceps", "Fessiers", "Lombaires", "Core"],
+    accent: "#8B5CF6", icon: Dumbbell, access: "premium",
+    collections: ["velo", "sansmateriel", "renfo"],
+    previewExercises: ["Fentes", "Superman", "Planche latérale"],
+  },
+  {
+    id: "hanches-velo", category: "mobilite",
+    title: "Ouvrir les hanches après le vélo", subtitle: "Dos · Hanches · Cuisses",
+    duration: 9, difficulty: "Débutant", exercises: 5,
+    muscles: ["Hanches", "Quadriceps", "Dos"],
+    accent: "#8B5CF6", icon: Wind, access: "free",
+    collections: ["velo", "mobilite", "express"],
+  },
+  {
+    id: "cuisses-skieur", category: "force",
+    title: "Cuisses de skieur", subtitle: "Chaise au mur · Bonds · Squat lent · Gainage",
+    duration: 29, difficulty: "Intermédiaire", exercises: 5,
+    muscles: ["Quadriceps", "Fessiers", "Core"],
+    accent: "#8B5CF6", icon: Flame, access: "premium",
+    collections: ["ski", "jambes", "sansmateriel"],
+    previewExercises: ["Chaise au mur", "Skaters", "Fentes sautées"],
+  },
+  {
+    id: "apres-ski", category: "mobilite",
+    title: "Après la journée de ski", subtitle: "Cuisses · Mollets · Hanches · Respiration",
+    duration: 11, difficulty: "Débutant", exercises: 6,
+    muscles: ["Quadriceps", "Mollets", "Hanches"],
+    accent: "#8B5CF6", icon: Moon, access: "free",
+    collections: ["ski", "recup", "express"],
   },
 ];

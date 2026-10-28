@@ -90,6 +90,16 @@ export const PHOTO_PAR_TITRE: Record<string, string> = {
   "le complexe": "full-thruster",
   "haut du corps aux haltères": "push-halteres",
   "bas du corps aux haltères": "legs-souleve",
+  /* Lot 4 : les récupérations n'ont pas de règle, et « hanches » visait
+     un soulevé de terre. */
+  "après ta sortie": "cardio-sprint",
+  "pliométrie du coureur": "cardio-saut",
+  "explosivité terrain": "full-burpee",
+  "lendemain de match": "core-releve",
+  "renfo du cycliste": "cardio-bike",
+  "ouvrir les hanches après le vélo": "core-twist",
+  "cuisses de skieur": "legs-squat",
+  "après la journée de ski": "core-lateral",
 };
 
 /** La famille d'une photo de la banque. */

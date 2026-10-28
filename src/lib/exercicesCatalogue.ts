@@ -21,6 +21,7 @@ import { WAVE_7_EXERCISES } from "@/lib/workoutWave7";
 import { WAVE_8_EXERCISES } from "@/lib/workoutWave8";
 import { WAVE_9_EXERCISES } from "@/lib/workoutWave9";
 import { WAVE_10_EXERCISES } from "@/lib/workoutWave10";
+import { WAVE_11_EXERCISES } from "@/lib/workoutWave11";
 
 /* « Défi Animations » — les ateliers qui enchaînent les gestes animés,
    un thème par séance (la liste unique vit dans src/lib/guideSections.ts).
@@ -470,6 +471,8 @@ export const exerciseData: Record<string, Exercise[]> = {
   ...WAVE_9_EXERCISES,
   // Les haltères à la maison (lot 6, 2026-10-28).
   ...WAVE_10_EXERCISES,
+  // Un sport à côté (lot 4, 2026-10-28).
+  ...WAVE_11_EXERCISES,
 };
 
 /* ⚠️ CETTE TABLE PORTE DES ALIAS, ET CE N'EST PAS DU DOUBLON. Un titre de
@@ -632,6 +635,15 @@ export const SESSION_SLUGS: Record<string, string> = {
   "Haut du corps aux haltères": "haut-halteres",
   "Bas du corps aux haltères": "bas-halteres",
   "Cent swings": "cent-swings",
+  // Un sport à côté (lot 4).
+  "Après ta sortie": "apres-sortie",
+  "Pliométrie du coureur": "pliometrie-coureur",
+  "Explosivité terrain": "explosivite-terrain",
+  "Lendemain de match": "lendemain-match",
+  "Renfo du cycliste": "renfo-cycliste",
+  "Ouvrir les hanches après le vélo": "hanches-velo",
+  "Cuisses de skieur": "cuisses-skieur",
+  "Après la journée de ski": "apres-ski",
 };
 
 /**

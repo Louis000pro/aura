@@ -1491,7 +1491,7 @@ function PremiumSessionRow({ count, children, title = "Continue avec Vaiiya+", u
    ouverte : on la montre « Bientôt », on ne la cache pas — la banque se
    remplira. Les photos sont naturelles, les titres blancs font le reste.
    ════════════════════════════════════════════════════════════════════ */
-type CatFamille = "objectif" | "zone" | "format" | "terrain" | "moment" | "lire";
+type CatFamille = "objectif" | "zone" | "format" | "terrain" | "sport" | "moment" | "lire";
 
 type CatDef = {
   id: string;
@@ -1506,14 +1506,15 @@ type CatDef = {
 };
 
 /** Les familles, dans l'ordre où l'on cherche : ce qu'on veut, ce qu'on
- *  travaille, comment la séance se joue (depuis le lot 2), où on est, et
- *  où on en est. « Pour comprendre » ferme la marche parce qu'elle ne
+ *  travaille, comment la séance se joue (depuis le lot 2), où on est, le
+ *  sport qu'on fait à côté (depuis le lot 4), et où on en est. « Pour comprendre » ferme la marche parce qu'elle ne
  *  contient pas de séance du tout. */
 const FAMILLES: { id: CatFamille; label: string }[] = [
   { id: "objectif", label: "Un objectif" },
   { id: "zone", label: "Une zone" },
   { id: "format", label: "Un format" },
   { id: "terrain", label: "Un terrain" },
+  { id: "sport", label: "Un sport" },
   { id: "moment", label: "Un moment" },
   { id: "lire", label: "Pour comprendre" },
 ];
@@ -1600,6 +1601,15 @@ const CATALOG: CatDef[] = [
     img: "push-pompes", match: matchCollection("voyage", () => false) },
   { id: "halteres", famille: "terrain", name: "Haltères à la maison", tag: "Une paire d’haltères et une chaise suffisent.",
     img: "pull-marteau", match: matchCollection("halteres", () => false) },
+  /* Un sport (lot 4 de la banque, 2026-10-28) : se préparer et récupérer. */
+  { id: "course", famille: "sport", name: "Course à pied", tag: "Des appuis qui rebondissent, et la récupération après la sortie.",
+    img: "cardio-sprint", match: matchCollection("course", () => false) },
+  { id: "foot", famille: "sport", name: "Football", tag: "L’explosivité des premiers mètres, et le lendemain du match.",
+    img: "legs-fentes", match: matchCollection("foot", () => false) },
+  { id: "velo", famille: "sport", name: "Vélo", tag: "Les jambes, le dos et les hanches du cycliste.",
+    img: "cardio-bike", match: matchCollection("velo", () => false) },
+  { id: "ski", famille: "sport", name: "Ski et montagne", tag: "Des cuisses qui tiennent, et le soir à la station.",
+    img: "legs-squat", match: matchCollection("ski", () => false) },
   { id: "debuter", famille: "moment", name: "Débuter & reprendre", tag: "Le premier pas compte double.",
     img: "cat-debuter", match: matchCollection("debuter", (s, hay) => s.difficulty === "Débutant" || /débutant|debutant|starter|reprise|découverte|decouverte|doux/.test(hay)) },
   { id: "mobilite", famille: "moment", name: "Mobilité & posture", tag: "Bouger mieux avant de bouger plus.",

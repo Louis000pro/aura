@@ -14,8 +14,8 @@
    Il vérifie tout le catalogue sur ce qui le tient ensemble, puis les
    séances par zone (vague 7, lot 1 de la banque, 2026-10-27), les
    formats (vague 8, lot 2, 2026-10-28), les routines (vague 9, lot 3,
-   2026-10-28) et les haltères à la maison (vague 10, lot 6) sur leurs
-   règles d'écriture :
+   2026-10-28), les haltères à la maison (vague 10, lot 6) et les sports
+   (vague 11, lot 4) sur leurs règles d'écriture :
    chaque mouvement animé ET avec sa fiche, la durée affichée égale à
    l'estimation de l'app, la typographie, aucune promesse sur le ventre,
    une base incluse dans chaque zone, une tuile par format, et les
@@ -36,6 +36,7 @@ import { WAVE_7_EXERCISES } from "@/lib/workoutWave7";
 import { WAVE_8_EXERCISES } from "@/lib/workoutWave8";
 import { WAVE_9_EXERCISES } from "@/lib/workoutWave9";
 import { WAVE_10_EXERCISES } from "@/lib/workoutWave10";
+import { WAVE_11_EXERCISES } from "@/lib/workoutWave11";
 import { GUIDE_SECTIONS, sectionSessionId } from "@/lib/guideSections";
 import { resolveGuide } from "@/lib/exerciseGuides";
 import { exercicesDisponibles, trouverExercice } from "@/lib/exerciseLibrary";
@@ -157,6 +158,8 @@ const vague9 = ids9.map((id) => parId.get(id)).filter((s): s is WorkoutSession =
   const SANS_ECHAUFFEMENT = [
     "apres-trajet", "reveil", "matin-tonique", "trois-minutes-coeur", "pause-bureau",
     "avant-dormir", "pas-la-forme", "respirer", "grand-dimanche", "mauvaise-journee",
+    /* Le lot 4 : les récupérations, faites après l'effort. */
+    "apres-sortie", "lendemain-match", "hanches-velo", "apres-ski",
   ];
   const marquees = Object.entries(exerciseData).filter(([, exos]) => exos.some((e) => e.sansEchauffement)).map(([id]) => id);
   verdict("les séances sans échauffement sont celles qu’on a décidées",
@@ -205,6 +208,38 @@ const vague10 = ids10.map((id) => parId.get(id)).filter((s): s is WorkoutSession
   verdict("« Haltères à la maison » ne demande que des haltères et une chaise", horsMaison.length === 0, liste(horsMaison));
 }
 
+/* ── Un sport à côté (vague 11) ──────────────────────────────────────── */
+
+const SPORTS: CatalogCollection[] = ["course", "foot", "velo", "ski"];
+const ids11 = Object.keys(WAVE_11_EXERCISES);
+const vague11 = ids11.map((id) => parId.get(id)).filter((s): s is WorkoutSession => !!s);
+
+{
+  verdict("chaque séance de la vague 11 a sa fiche au catalogue", vague11.length === ids11.length,
+    liste(ids11.filter((id) => !parId.has(id))));
+
+  const autres = new Set([
+    ...Object.keys(WAVE_1_EXERCISES), ...Object.keys(WAVE_2_EXERCISES), ...Object.keys(WAVE_3_EXERCISES),
+    ...Object.keys(WAVE_4_EXERCISES), ...Object.keys(WAVE_5_EXERCISES), ...Object.keys(WAVE_6_EXERCISES),
+    ...Object.keys(WAVE_7_EXERCISES), ...Object.keys(WAVE_8_EXERCISES), ...Object.keys(WAVE_9_EXERCISES),
+    ...Object.keys(WAVE_10_EXERCISES), ...GUIDE_SECTIONS.map(sectionSessionId),
+  ]);
+  const ecrasees = ids11.filter((id) => autres.has(id));
+  verdict("aucune séance de la vague 11 n’écrase les exercices d’une autre", ecrasees.length === 0, liste(ecrasees));
+
+  const pasLesSiens = ids11.filter((id) => exerciseData[id] !== WAVE_11_EXERCISES[id]);
+  verdict("exerciseData lit bien les exercices de la vague 11", pasLesSiens.length === 0, liste(pasLesSiens));
+
+  /* Chaque sport garde une séance incluse et une Vaiiya+ écrites pour lui :
+     une séance d'avant qui le rejoint ne remplace pas les siennes. */
+  for (const sport of SPORTS) {
+    const siennes = vague11.filter((s) => s.collections?.[0] === sport);
+    verdict(`${sport} · une séance incluse et une Vaiiya+ écrites pour ce sport`,
+      siennes.some((s) => s.access !== "premium") && siennes.some((s) => s.access === "premium"),
+      siennes.map((s) => s.title).join(", ") || "aucune");
+  }
+}
+
 /* Les deux séances d'avant que la proposition passait en circuit de trois
    tours : leur fiche suit leur nouveau contenu. */
 for (const id of ["core", "fullbody-machines"]) {
@@ -228,7 +263,7 @@ function minutesDuTitre(titre: string): number | null {
   return /^\d+$/.test(m[1]) ? Number(m[1]) : (NOMBRES[m[1]] ?? Number.NaN);
 }
 
-for (const s of [...vague7, ...vague8, ...vague9, ...vague10]) {
+for (const s of [...vague7, ...vague8, ...vague9, ...vague10, ...vague11]) {
   const exos = exerciseData[s.id];
 
   const sansFiche = exos.filter((e) => !resolveGuide(e.name) || !trouverExercice(e.name)).map((e) => e.name);
@@ -244,7 +279,9 @@ for (const s of [...vague7, ...vague8, ...vague9, ...vague10]) {
     `${s.duration} min, ${express ? "dans" : "hors de"} express`);
 
   const tete = s.collections?.[0];
-  if (vague10.includes(s)) {
+  if (vague11.includes(s)) {
+    verdict(`${s.title} · sa première collection est son sport`, !!tete && SPORTS.includes(tete), String(tete));
+  } else if (vague10.includes(s)) {
     verdict(`${s.title} · sa première collection est « Haltères à la maison » ou son format`,
       !!tete && (tete === "halteres" || FORMATS.includes(tete))
       && !!s.collections?.some((c) => c === "halteres" || c === "kettlebell"), (s.collections ?? []).join(", "));
@@ -276,7 +313,7 @@ for (const s of [...vague7, ...vague8, ...vague9, ...vague10]) {
 
 {
   const textes: { ou: string; texte: string }[] = [];
-  for (const s of [...vague7, ...vague8, ...vague9, ...vague10]) {
+  for (const s of [...vague7, ...vague8, ...vague9, ...vague10, ...vague11]) {
     textes.push({ ou: `${s.id} (titre)`, texte: s.title }, { ou: `${s.id} (sous-titre)`, texte: s.subtitle });
     exerciseData[s.id].forEach((e, i) => {
       textes.push(
@@ -320,7 +357,7 @@ for (const s of [...vague7, ...vague8, ...vague9, ...vague10]) {
 
   /* Une durée écrite dans les répétitions déclenche le chrono du lecteur :
      elle doit être voulue, donc portée par `auto` ou `hiit`. */
-  const chronoCache = [...vague7, ...vague8, ...vague9, ...vague10].flatMap((s) => exerciseData[s.id]
+  const chronoCache = [...vague7, ...vague8, ...vague9, ...vague10, ...vague11].flatMap((s) => exerciseData[s.id]
     .filter((e) => /\d+\s*(?:secondes?|sec|s|min)\b/i.test(e.reps) && !e.auto && !e.hiit)
     .map((e) => `${s.id} · ${e.name} (${e.reps})`));
   verdict("une durée dans les répétitions a toujours son chrono déclaré", chronoCache.length === 0, liste(chronoCache));
@@ -329,10 +366,10 @@ for (const s of [...vague7, ...vague8, ...vague9, ...vague10]) {
      « par main », pas pour « par côté » (lib/dureeLibre.ts). Le lot 3
      écrit donc ce qu'elle lit, et une tenue d'un côté puis de l'autre en
      deux séries qui alternent. */
-  const parCote = [...vague9, ...vague10].flatMap((s) => exerciseData[s.id]
+  const parCote = [...vague9, ...vague10, ...vague11].flatMap((s) => exerciseData[s.id]
     .filter((e) => /par\s+c[ôo]t[ée]/i.test(e.reps)).map((e) => `${s.id} · ${e.name} (${e.reps})`));
-  verdict("les lots 3 et 6 n’écrivent pas « par côté » dans les répétitions", parCote.length === 0, liste(parCote));
-  const alterne = vague9.flatMap((s) => exerciseData[s.id]
+  verdict("les lots 3, 4 et 6 n’écrivent pas « par côté » dans les répétitions", parCote.length === 0, liste(parCote));
+  const alterne = [...vague9, ...vague11].flatMap((s) => exerciseData[s.id]
     .filter((e) => e.tip.startsWith("Un côté puis l’autre") && (e.sets % 2 !== 0 || !e.auto))
     .map((e) => `${s.id} · ${e.name}`));
   verdict("une tenue d’un côté puis de l’autre a un nombre pair de séries, au chrono", alterne.length === 0, liste(alterne));
@@ -364,6 +401,8 @@ for (const zone of ZONES) {
 
 /* ── Les formats ──────────────────────────────────────────────────────── */
 
+verdict("« Un sport » se range entre « Un terrain » et « Un moment »",
+  /\{ id: "terrain", label: "Un terrain" \},\s*\{ id: "sport", label: "Un sport" \},\s*\{ id: "moment"/.test(page), "FAMILLES");
 verdict("« Un format » se range entre « Une zone » et « Un terrain »",
   /\{ id: "zone", label: "Une zone" \},\s*\{ id: "format", label: "Un format" \},\s*\{ id: "terrain"/.test(page), "FAMILLES");
 for (const format of FORMATS) {
@@ -386,6 +425,7 @@ for (const format of FORMATS) {
   const FAMILLE_LOT3: Record<string, string> = {
     routines: "moment", joursans: "moment", tete: "objectif", voyage: "terrain", dehors: "terrain",
     halteres: "terrain", kettlebell: "terrain",
+    course: "sport", foot: "sport", velo: "sport", ski: "sport",
   };
   for (const [col, fam] of Object.entries(FAMILLE_LOT3)) {
     const dedans = seances.filter((s) => s.collections?.includes(col as CatalogCollection));
@@ -471,6 +511,14 @@ for (const format of FORMATS) {
     /* Le lot 6 : « Haltères à la maison » s'ouvre sur sa séance incluse et
        sur « La force aux haltères » (lot 2), la première du tableau. */
     halteres: ["corps-entier-halteres", "force-halteres"],
+    /* Le lot 4 : une séance d'avant ouvre une rangée quand elle vient plus
+       haut dans le tableau (Unilatéral pour la course, Jambes et cardio
+       pour le football, Dos et posture pour le vélo, La chaise au mur
+       pour le ski) ; l'autre carte est écrite pour le sport. */
+    course: ["apres-sortie", "unilateral-maitrise"],
+    foot: ["lendemain-match", "jambes-cardio"],
+    velo: ["dos-posture", "renfo-cycliste"],
+    ski: ["chaise-au-mur", "cuisses-skieur"],
   };
   for (const [col, [libre, plus]] of Object.entries(TETES)) {
     const dedans = seances.filter((s) => s.collections?.includes(col as CatalogCollection));
