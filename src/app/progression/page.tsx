@@ -1598,6 +1598,8 @@ const CATALOG: CatDef[] = [
     img: "cat-sansmateriel", match: matchCollection("sansmateriel", (_s, hay) => /sans mat|poids du corps|maison|nomade/.test(hay)) },
   { id: "voyage", famille: "terrain", name: "En voyage", tag: "Pour une chambre d’hôtel ou après des heures de trajet.",
     img: "push-pompes", match: matchCollection("voyage", () => false) },
+  { id: "halteres", famille: "terrain", name: "Haltères à la maison", tag: "Une paire d’haltères et une chaise suffisent.",
+    img: "pull-marteau", match: matchCollection("halteres", () => false) },
   { id: "debuter", famille: "moment", name: "Débuter & reprendre", tag: "Le premier pas compte double.",
     img: "cat-debuter", match: matchCollection("debuter", (s, hay) => s.difficulty === "Débutant" || /débutant|debutant|starter|reprise|découverte|decouverte|doux/.test(hay)) },
   { id: "mobilite", famille: "moment", name: "Mobilité & posture", tag: "Bouger mieux avant de bouger plus.",

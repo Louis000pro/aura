@@ -33,7 +33,8 @@ export type CatalogCollection =
   | "sansmateriel" | "debuter" | "mobilite" | "recup"
   | "defis" | "conseils"
   | "force" | "longues" | "circuits" | "emom" | "intervalles" | "isometrie"
-  | "routines" | "joursans" | "tete" | "voyage" | "dehors";
+  | "routines" | "joursans" | "tete" | "voyage" | "dehors"
+  | "halteres" | "kettlebell";
 
 export type WorkoutSession = {
   id: string;
@@ -211,7 +212,7 @@ export const workoutSessions: WorkoutSession[] = [
     duration: 47, difficulty: "Intermédiaire", exercises: 4,
     muscles: ["Quadriceps", "Pectoraux", "Dos", "Épaules"],
     accent: "#8B5CF6", icon: Dumbbell, access: "premium",
-    collections: ["force", "salle", "fullbody", "renfo"],
+    collections: ["force", "salle", "fullbody", "renfo", "halteres"],
     previewExercises: ["Goblet squat", "Développé couché haltères", "Rowing haltère"],
   },
   {
@@ -308,7 +309,7 @@ export const workoutSessions: WorkoutSession[] = [
     duration: 30, difficulty: "Intermédiaire", exercises: 5,
     muscles: ["Fessiers", "Ischio-jambiers", "Quadriceps"],
     accent: "#8B5CF6", icon: Dumbbell, access: "premium",
-    collections: ["fessiers", "salle"],
+    collections: ["fessiers", "salle", "halteres"],
     previewExercises: ["Soulevé de terre roumain", "Squat bulgare", "Goblet squat"],
   },
   {
@@ -369,7 +370,7 @@ export const workoutSessions: WorkoutSession[] = [
     duration: 25, difficulty: "Intermédiaire", exercises: 4,
     muscles: ["Pectoraux", "Triceps", "Épaules"],
     accent: "#8B5CF6", icon: Dumbbell, access: "premium",
-    collections: ["pecs", "haut", "salle"],
+    collections: ["pecs", "haut", "salle", "halteres"],
     previewExercises: ["Développé couché haltères", "Développé incliné haltères", "Pullover haltère"],
   },
   {
@@ -387,7 +388,7 @@ export const workoutSessions: WorkoutSession[] = [
     duration: 30, difficulty: "Intermédiaire", exercises: 5,
     muscles: ["Dos", "Épaules"],
     accent: "#8B5CF6", icon: Dumbbell, access: "premium",
-    collections: ["dos", "haut", "salle"],
+    collections: ["dos", "haut", "salle", "halteres"],
     previewExercises: ["Rowing haltère", "Rowing buste penché haltères", "Oiseau haltères"],
   },
   {
@@ -422,7 +423,7 @@ export const workoutSessions: WorkoutSession[] = [
     duration: 12, difficulty: "Intermédiaire", exercises: 1,
     muscles: ["Épaules"],
     accent: "#8B5CF6", icon: Zap, access: "premium",
-    collections: ["epaules", "haut", "salle", "express", "longues"],
+    collections: ["epaules", "haut", "salle", "express", "longues", "halteres"],
     previewExercises: ["Élévations latérales"],
   },
   {
@@ -439,7 +440,7 @@ export const workoutSessions: WorkoutSession[] = [
     duration: 24, difficulty: "Intermédiaire", exercises: 4,
     muscles: ["Biceps", "Triceps"],
     accent: "#8B5CF6", icon: Dumbbell, access: "premium",
-    collections: ["bras", "haut", "salle", "masse"],
+    collections: ["bras", "haut", "salle", "masse", "halteres"],
     previewExercises: ["Curl haltères", "Extension triceps haltère", "Curl marteau"],
   },
   {
@@ -576,7 +577,7 @@ export const workoutSessions: WorkoutSession[] = [
     duration: 15, difficulty: "Intermédiaire", exercises: 2,
     muscles: ["Biceps", "Triceps"],
     accent: "#8B5CF6", icon: Zap, access: "premium",
-    collections: ["bras", "emom", "salle", "express"],
+    collections: ["bras", "emom", "salle", "express", "halteres"],
     previewExercises: ["Curl haltères", "Extension triceps haltère"],
   },
   {
@@ -1175,5 +1176,54 @@ export const workoutSessions: WorkoutSession[] = [
     accent: "#8B5CF6", icon: Layers, access: "premium",
     collections: ["fullbody", "circuits", "dehors"],
     previewExercises: ["Step up banc", "Dips sur chaise", "Pompes inclinées"],
+  },
+  /* Vague 10 : les haltères à la maison (lot 6 de la banque, la partie
+     qui n'attend aucun dessin). « Haltères à la maison » s'ouvre sur
+     « Corps entier, deux haltères » (incluse) et sur « La force aux
+     haltères », plus haut dans le tableau : sept séances d'avant, faites
+     avec une paire d'haltères et une chaise, ont rejoint la collection. */
+  {
+    id: "corps-entier-halteres", category: "fullbody",
+    title: "Corps entier, deux haltères", subtitle: "Goblet squat · Rowing · Développé · Soulevé de terre",
+    duration: 29, difficulty: "Débutant", exercises: 5,
+    muscles: ["Corps entier"],
+    accent: "#8B5CF6", icon: Dumbbell, access: "free",
+    collections: ["halteres", "fullbody", "debuter"],
+  },
+  {
+    id: "complexe", category: "fullbody",
+    title: "Le complexe", subtitle: "5 tours · Cinq mouvements sans poser les haltères",
+    duration: 23, difficulty: "Avancé", exercises: 5,
+    muscles: ["Corps entier"],
+    accent: "#8B5CF6", icon: Layers, access: "premium",
+    collections: ["halteres", "circuits", "fullbody"],
+    previewExercises: ["Soulevé de terre roumain", "Rowing buste penché haltères", "Développé militaire haltères"],
+  },
+  {
+    id: "haut-halteres", category: "force",
+    title: "Haut du corps aux haltères", subtitle: "3 supersets · Pousser puis tirer",
+    duration: 30, difficulty: "Intermédiaire", exercises: 6,
+    muscles: ["Pectoraux", "Dos", "Épaules", "Bras"],
+    accent: "#8B5CF6", icon: Dumbbell, access: "premium",
+    collections: ["halteres", "haut", "circuits"],
+    previewExercises: ["Développé couché haltères", "Rowing haltère", "Oiseau haltères"],
+  },
+  {
+    id: "bas-halteres", category: "force",
+    title: "Bas du corps aux haltères", subtitle: "Lourd puis léger · Squat · Soulevé de terre · Pont",
+    duration: 32, difficulty: "Intermédiaire", exercises: 4,
+    muscles: ["Quadriceps", "Fessiers", "Ischio-jambiers"],
+    accent: "#8B5CF6", icon: Dumbbell, access: "premium",
+    collections: ["halteres", "jambes", "fessiers"],
+    previewExercises: ["Goblet squat", "Soulevé de terre roumain", "Squat bulgare"],
+  },
+  {
+    id: "cent-swings", category: "fullbody",
+    title: "Cent swings", subtitle: "EMOM · 10 swings par minute",
+    duration: 15, difficulty: "Intermédiaire", exercises: 1,
+    muscles: ["Fessiers", "Ischio-jambiers", "Cardio"],
+    accent: "#8B5CF6", icon: Flame, access: "premium",
+    collections: ["emom", "kettlebell", "salle", "express"],
+    previewExercises: ["Kettlebell swing"],
   },
 ];

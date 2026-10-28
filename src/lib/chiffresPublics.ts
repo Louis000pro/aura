@@ -28,7 +28,8 @@ import { fichesPubliees } from "./exercicesPublics";
  * tableau n'y entrent pas : ils ont leur propre chiffre ci-dessous.
  * 80 séances le 2026-10-27, avec les séances par zone (vague 7), puis 111
  * le 2026-10-28 avec les formats (vague 8), puis 124 le même jour avec les
- * routines et les petites séances à part (vague 9).
+ * routines et les petites séances à part (vague 9), puis 129 avec les
+ * haltères à la maison (vague 10).
  */
 const SEANCES_CATALOGUE = workoutSessions.filter((s) => s.contentType !== "article").length;
 

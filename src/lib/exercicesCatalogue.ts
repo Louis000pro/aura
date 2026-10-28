@@ -20,6 +20,7 @@ import { WAVE_6_EXERCISES } from "@/lib/workoutWave6";
 import { WAVE_7_EXERCISES } from "@/lib/workoutWave7";
 import { WAVE_8_EXERCISES } from "@/lib/workoutWave8";
 import { WAVE_9_EXERCISES } from "@/lib/workoutWave9";
+import { WAVE_10_EXERCISES } from "@/lib/workoutWave10";
 
 /* « Défi Animations » — les ateliers qui enchaînent les gestes animés,
    un thème par séance (la liste unique vit dans src/lib/guideSections.ts).
@@ -467,6 +468,8 @@ export const exerciseData: Record<string, Exercise[]> = {
   ...WAVE_8_EXERCISES,
   // Les routines, les jours sans et les petites séances à part (lot 3, 2026-10-28).
   ...WAVE_9_EXERCISES,
+  // Les haltères à la maison (lot 6, 2026-10-28).
+  ...WAVE_10_EXERCISES,
 };
 
 /* ⚠️ CETTE TABLE PORTE DES ALIAS, ET CE N'EST PAS DU DOUBLON. Un titre de
@@ -623,6 +626,12 @@ export const SESSION_SLUGS: Record<string, string> = {
   "Après une mauvaise journée": "mauvaise-journee",
   "Vider la tête": "vider-la-tete",
   "Le banc du parc": "banc-parc",
+  // Les haltères à la maison (lot 6).
+  "Corps entier, deux haltères": "corps-entier-halteres",
+  "Le complexe": "complexe",
+  "Haut du corps aux haltères": "haut-halteres",
+  "Bas du corps aux haltères": "bas-halteres",
+  "Cent swings": "cent-swings",
 };
 
 /**

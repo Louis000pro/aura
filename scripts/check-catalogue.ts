@@ -13,8 +13,9 @@
 
    Il vérifie tout le catalogue sur ce qui le tient ensemble, puis les
    séances par zone (vague 7, lot 1 de la banque, 2026-10-27), les
-   formats (vague 8, lot 2, 2026-10-28) et les routines (vague 9, lot 3,
-   2026-10-28) sur leurs règles d'écriture :
+   formats (vague 8, lot 2, 2026-10-28), les routines (vague 9, lot 3,
+   2026-10-28) et les haltères à la maison (vague 10, lot 6) sur leurs
+   règles d'écriture :
    chaque mouvement animé ET avec sa fiche, la durée affichée égale à
    l'estimation de l'app, la typographie, aucune promesse sur le ventre,
    une base incluse dans chaque zone, une tuile par format, et les
@@ -34,9 +35,10 @@ import { WAVE_6_EXERCISES } from "@/lib/workoutWave6";
 import { WAVE_7_EXERCISES } from "@/lib/workoutWave7";
 import { WAVE_8_EXERCISES } from "@/lib/workoutWave8";
 import { WAVE_9_EXERCISES } from "@/lib/workoutWave9";
+import { WAVE_10_EXERCISES } from "@/lib/workoutWave10";
 import { GUIDE_SECTIONS, sectionSessionId } from "@/lib/guideSections";
 import { resolveGuide } from "@/lib/exerciseGuides";
-import { trouverExercice } from "@/lib/exerciseLibrary";
+import { exercicesDisponibles, trouverExercice } from "@/lib/exerciseLibrary";
 import { ECHAUFFEMENT_S, estimerMinutes, estimerSecondes, itemDExercice } from "@/lib/dureeLibre";
 import { FAMILY, PHOTO_PAR_TITRE, resolveArt } from "@/lib/workoutArt";
 
@@ -169,6 +171,40 @@ const vague9 = ids9.map((id) => parId.get(id)).filter((s): s is WorkoutSession =
     `${avec} s puis ${sans} s`);
 }
 
+/* ── Les haltères à la maison (vague 10) ─────────────────────────────── */
+
+const ids10 = Object.keys(WAVE_10_EXERCISES);
+const vague10 = ids10.map((id) => parId.get(id)).filter((s): s is WorkoutSession => !!s);
+
+{
+  verdict("chaque séance de la vague 10 a sa fiche au catalogue", vague10.length === ids10.length,
+    liste(ids10.filter((id) => !parId.has(id))));
+
+  const autres = new Set([
+    ...Object.keys(WAVE_1_EXERCISES), ...Object.keys(WAVE_2_EXERCISES), ...Object.keys(WAVE_3_EXERCISES),
+    ...Object.keys(WAVE_4_EXERCISES), ...Object.keys(WAVE_5_EXERCISES), ...Object.keys(WAVE_6_EXERCISES),
+    ...Object.keys(WAVE_7_EXERCISES), ...Object.keys(WAVE_8_EXERCISES), ...Object.keys(WAVE_9_EXERCISES),
+    ...GUIDE_SECTIONS.map(sectionSessionId),
+  ]);
+  const ecrasees = ids10.filter((id) => autres.has(id));
+  verdict("aucune séance de la vague 10 n’écrase les exercices d’une autre", ecrasees.length === 0, liste(ecrasees));
+
+  const pasLesSiens = ids10.filter((id) => exerciseData[id] !== WAVE_10_EXERCISES[id]);
+  verdict("exerciseData lit bien les exercices de la vague 10", pasLesSiens.length === 0, liste(pasLesSiens));
+
+  /* « Haltères à la maison » ne demande qu'une paire d'haltères et une
+     chaise : les gestes que le Guide propose à quelqu'un qui n'a que ça
+     (exercicesDisponibles), plus le soulevé de terre roumain, rangé avec
+     la barre par la bibliothèque, quand sa consigne dit qu'il se fait
+     aux haltères. Les sept séances d'avant qui ont rejoint la collection
+     passent par la même règle. */
+  const maison = new Set(exercicesDisponibles("halteres").map((e) => e.name));
+  const horsMaison = seances.filter((s) => s.collections?.includes("halteres")).flatMap((s) => (exerciseData[s.id] ?? [])
+    .filter((e) => !maison.has(e.name) && !(e.name === "Soulevé de terre roumain" && /haltère/.test(e.tip)))
+    .map((e) => `${s.id} · ${e.name}`));
+  verdict("« Haltères à la maison » ne demande que des haltères et une chaise", horsMaison.length === 0, liste(horsMaison));
+}
+
 /* Les deux séances d'avant que la proposition passait en circuit de trois
    tours : leur fiche suit leur nouveau contenu. */
 for (const id of ["core", "fullbody-machines"]) {
@@ -192,7 +228,7 @@ function minutesDuTitre(titre: string): number | null {
   return /^\d+$/.test(m[1]) ? Number(m[1]) : (NOMBRES[m[1]] ?? Number.NaN);
 }
 
-for (const s of [...vague7, ...vague8, ...vague9]) {
+for (const s of [...vague7, ...vague8, ...vague9, ...vague10]) {
   const exos = exerciseData[s.id];
 
   const sansFiche = exos.filter((e) => !resolveGuide(e.name) || !trouverExercice(e.name)).map((e) => e.name);
@@ -208,7 +244,11 @@ for (const s of [...vague7, ...vague8, ...vague9]) {
     `${s.duration} min, ${express ? "dans" : "hors de"} express`);
 
   const tete = s.collections?.[0];
-  if (vague9.includes(s)) {
+  if (vague10.includes(s)) {
+    verdict(`${s.title} · sa première collection est « Haltères à la maison » ou son format`,
+      !!tete && (tete === "halteres" || FORMATS.includes(tete))
+      && !!s.collections?.some((c) => c === "halteres" || c === "kettlebell"), (s.collections ?? []).join(", "));
+  } else if (vague9.includes(s)) {
     verdict(`${s.title} · sa première collection est une collection du lot 3 (ou Full body pour une séance du dehors)`,
       !!tete && (LOT3.includes(tete) || (tete === "fullbody" && !!s.collections?.includes("dehors"))), String(tete));
   } else if (vague7.includes(s)) {
@@ -236,7 +276,7 @@ for (const s of [...vague7, ...vague8, ...vague9]) {
 
 {
   const textes: { ou: string; texte: string }[] = [];
-  for (const s of [...vague7, ...vague8, ...vague9]) {
+  for (const s of [...vague7, ...vague8, ...vague9, ...vague10]) {
     textes.push({ ou: `${s.id} (titre)`, texte: s.title }, { ou: `${s.id} (sous-titre)`, texte: s.subtitle });
     exerciseData[s.id].forEach((e, i) => {
       textes.push(
@@ -280,7 +320,7 @@ for (const s of [...vague7, ...vague8, ...vague9]) {
 
   /* Une durée écrite dans les répétitions déclenche le chrono du lecteur :
      elle doit être voulue, donc portée par `auto` ou `hiit`. */
-  const chronoCache = [...vague7, ...vague8, ...vague9].flatMap((s) => exerciseData[s.id]
+  const chronoCache = [...vague7, ...vague8, ...vague9, ...vague10].flatMap((s) => exerciseData[s.id]
     .filter((e) => /\d+\s*(?:secondes?|sec|s|min)\b/i.test(e.reps) && !e.auto && !e.hiit)
     .map((e) => `${s.id} · ${e.name} (${e.reps})`));
   verdict("une durée dans les répétitions a toujours son chrono déclaré", chronoCache.length === 0, liste(chronoCache));
@@ -289,9 +329,9 @@ for (const s of [...vague7, ...vague8, ...vague9]) {
      « par main », pas pour « par côté » (lib/dureeLibre.ts). Le lot 3
      écrit donc ce qu'elle lit, et une tenue d'un côté puis de l'autre en
      deux séries qui alternent. */
-  const parCote = vague9.flatMap((s) => exerciseData[s.id]
+  const parCote = [...vague9, ...vague10].flatMap((s) => exerciseData[s.id]
     .filter((e) => /par\s+c[ôo]t[ée]/i.test(e.reps)).map((e) => `${s.id} · ${e.name} (${e.reps})`));
-  verdict("le lot 3 n’écrit pas « par côté » dans les répétitions", parCote.length === 0, liste(parCote));
+  verdict("les lots 3 et 6 n’écrivent pas « par côté » dans les répétitions", parCote.length === 0, liste(parCote));
   const alterne = vague9.flatMap((s) => exerciseData[s.id]
     .filter((e) => e.tip.startsWith("Un côté puis l’autre") && (e.sets % 2 !== 0 || !e.auto))
     .map((e) => `${s.id} · ${e.name}`));
@@ -343,7 +383,10 @@ for (const format of FORMATS) {
    donc les séances qui demandent des mouvements à dessiner (la marche,
    l'escalier). */
 {
-  const FAMILLE_LOT3: Record<string, string> = { routines: "moment", joursans: "moment", tete: "objectif", voyage: "terrain", dehors: "terrain" };
+  const FAMILLE_LOT3: Record<string, string> = {
+    routines: "moment", joursans: "moment", tete: "objectif", voyage: "terrain", dehors: "terrain",
+    halteres: "terrain", kettlebell: "terrain",
+  };
   for (const [col, fam] of Object.entries(FAMILLE_LOT3)) {
     const dedans = seances.filter((s) => s.collections?.includes(col as CatalogCollection));
     const tuile = new RegExp(`id: "${col}", famille: "${fam}", name: "[^"]+", tag: "[^"]+",\\s*img: "([a-z0-9-]+)"(?:, pos: "[^"]+")?, match: matchCollection\\("${col}", \\(\\) => false\\)`).exec(page);
@@ -425,6 +468,9 @@ for (const format of FORMATS) {
     joursans: ["pas-la-forme", "mauvaise-journee"],
     tete: ["respirer", "mauvaise-journee"],
     voyage: ["apres-trajet", "chambre-hotel"],
+    /* Le lot 6 : « Haltères à la maison » s'ouvre sur sa séance incluse et
+       sur « La force aux haltères » (lot 2), la première du tableau. */
+    halteres: ["corps-entier-halteres", "force-halteres"],
   };
   for (const [col, [libre, plus]] of Object.entries(TETES)) {
     const dedans = seances.filter((s) => s.collections?.includes(col as CatalogCollection));

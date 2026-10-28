@@ -248,7 +248,7 @@ function jouee(exos: readonly ExoTour[]): number {
 
 /* ── Le catalogue écrit ses blocs juste ───────────────────────────────── */
 {
-  const FORMATS = new Set(["circuit", "superset", "echelle", "pyramide", "descente", "intervalles", "tabata"]);
+  const FORMATS = new Set(["circuit", "superset", "echelle", "pyramide", "descente", "intervalles", "tabata", "complexe"]);
   const coupes: string[] = [], seuls: string[] = [], inegaux: string[] = [], pyramides: string[] = [];
   const formatsFaux: string[] = [], emomFaux: string[] = [], cotes: string[] = [];
   for (const [id, exos] of Object.entries(exerciseData)) {

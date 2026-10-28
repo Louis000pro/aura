@@ -85,6 +85,11 @@ export const PHOTO_PAR_TITRE: Record<string, string> = {
   "après une mauvaise journée": "cardio-ropes",
   "vider la tête": "full-slam",
   "le banc du parc": "push-dips",
+  /* Lot 6 : « corps entier » et « haut du corps » visaient une barre. */
+  "corps entier, deux haltères": "legs-goblet",
+  "le complexe": "full-thruster",
+  "haut du corps aux haltères": "push-halteres",
+  "bas du corps aux haltères": "legs-souleve",
 };
 
 /** La famille d'une photo de la banque. */

@@ -29,7 +29,7 @@
    ════════════════════════════════════════════════════════════════════ */
 
 /** Le nom d'un bloc à l'écran. */
-export type FormatBloc = "circuit" | "superset" | "echelle" | "pyramide" | "descente" | "intervalles" | "tabata";
+export type FormatBloc = "circuit" | "superset" | "echelle" | "pyramide" | "descente" | "intervalles" | "tabata" | "complexe";
 
 /** Ce que l'ordre de jeu lit d'un exercice. */
 export type ExoTour = {
@@ -265,7 +265,7 @@ function marchesCourtes(n: number[]): string {
 
 const NOMS: Record<FormatBloc, string> = {
   circuit: "Circuit", superset: "Superset", echelle: "Échelle", pyramide: "Pyramide", descente: "Descente",
-  intervalles: "Intervalles", tabata: "Tabata",
+  intervalles: "Intervalles", tabata: "Tabata", complexe: "Complexe",
 };
 
 /** Le nom d'un bloc : écrit sur son premier exercice, sinon « Superset » à deux et « Circuit » au-delà. EMOM d'abord. */
