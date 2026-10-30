@@ -44,6 +44,33 @@ type Etape = "pret" | "3" | "2" | "1" | "go";
 const PLAN: [Etape, number][] = [["pret", 0], ["3", 1000], ["2", 1700], ["1", 2400], ["go", 3100]];
 const FIN = 3800;
 
+/* ⚠️ Sur ordinateur (et sur une tablette), tout était compté en largeur
+   d'écran, donc l'intro se dessinait trois fois trop grande : le Guide
+   faisait 1 700 px de large et seules ses jambes restaient visibles, les
+   chiffres sortaient par le bas. Dès que l'écran n'est plus un téléphone
+   debout, la scène se compte en HAUTEUR : le Guide tient en entier, le mot
+   reste au-dessus de sa tête, et les tailles du téléphone ne changent pas. */
+type Mise = {
+  pret: React.CSSProperties; chiffre: React.CSSProperties;
+  go: React.CSSProperties; guide: React.CSSProperties;
+};
+const TELEPHONE: Mise = {
+  pret: { top: "20cqh", fontSize: "19cqw", paddingInline: "4cqw" },
+  chiffre: { top: "9cqh", fontSize: "78cqw" },
+  go: { fontSize: "52cqw" },
+  guide: { bottom: "-2cqh", width: "118cqw" },
+};
+const GRAND: Mise = {
+  pret: { top: "7cqh", fontSize: "min(19cqw, 22cqh)", paddingInline: "4cqw" },
+  chiffre: { top: "1cqh", fontSize: "min(78cqw, 50cqh)" },
+  go: { fontSize: "min(52cqw, 58cqh)" },
+  /* Le portrait est en 3:4 : 74 % de la hauteur, c'est 55,5 % en largeur. */
+  guide: { bottom: "-2cqh", width: "min(118cqw, 55.5cqh)" },
+};
+/* Un téléphone debout fait moins de 0,65 de large pour 1 de haut. */
+const miseDeLEcran = (): Mise =>
+  typeof window !== "undefined" && window.innerWidth / window.innerHeight > 0.65 ? GRAND : TELEPHONE;
+
 const MOT: React.CSSProperties = {
   fontWeight: 900, fontVariationSettings: "'wdth' 125", letterSpacing: "-0.05em",
   lineHeight: 0.82, whiteSpace: "nowrap", color: "#1D1530", textTransform: "uppercase",
@@ -59,6 +86,12 @@ export default function IntroSeance({ guide, onFin }: { guide: GuideId; onFin: (
   useEffect(() => { finir.current = onFin; }, [onFin]);
   const src = `/guides/${guide}-master-v1.webp`;
   const [portrait, animer] = useAnimate();
+  const [mise, setMise] = useState(miseDeLEcran);
+  useEffect(() => {
+    const suivre = () => setMise(miseDeLEcran());
+    window.addEventListener("resize", suivre);
+    return () => window.removeEventListener("resize", suivre);
+  }, []);
 
   useEffect(() => {
     let vivant = true;
@@ -109,7 +142,7 @@ export default function IntroSeance({ guide, onFin }: { guide: GuideId; onFin: (
         {charge && etape === "pret" && (
           <motion.div key="pret" aria-hidden
             className="absolute inset-x-0 flex justify-center"
-            style={{ ...MOT, top: "20cqh", fontSize: "19cqw", paddingInline: "4cqw" }}
+            style={{ ...MOT, ...mise.pret }}
             initial={{ opacity: 0, scale: 1.25 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, transition: { duration: 0.1 } }}
             transition={{ duration: 0.48, delay: 0.08, ease: [0.2, 0.8, 0.2, 1] }}
           >Prêt ?</motion.div>
@@ -117,7 +150,7 @@ export default function IntroSeance({ guide, onFin }: { guide: GuideId; onFin: (
         {(etape === "3" || etape === "2" || etape === "1") && (
           <motion.div key={etape} aria-hidden
             className="absolute inset-x-0 flex justify-center"
-            style={{ ...MOT, top: "9cqh", fontSize: "78cqw" }}
+            style={{ ...MOT, ...mise.chiffre }}
             initial={{ opacity: 0, scale: 1.35 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, transition: { duration: 0.08 } }}
             transition={{ duration: 0.22, ease: [0.2, 0.9, 0.2, 1] }}
           >{etape}</motion.div>
@@ -125,7 +158,7 @@ export default function IntroSeance({ guide, onFin }: { guide: GuideId; onFin: (
         {etape === "go" && (
           <motion.div key="go" aria-hidden
             className="absolute inset-0 flex items-center justify-center"
-            style={{ ...MOT, fontSize: "52cqw" }}
+            style={{ ...MOT, ...mise.go }}
             initial={{ opacity: 0, scale: 0.6 }} animate={{ opacity: 1, scale: [0.6, 1.06, 1] }}
             transition={{ duration: 0.36, times: [0, 0.6, 1] }}
           >Go</motion.div>
@@ -137,7 +170,7 @@ export default function IntroSeance({ guide, onFin }: { guide: GuideId; onFin: (
           <motion.div key="guide" aria-hidden
             className="absolute"
             style={{
-              left: "50%", bottom: "-2cqh", width: "118cqw", x: "-50%",
+              left: "50%", ...mise.guide, x: "-50%",
               WebkitMaskImage: "linear-gradient(180deg,#000 72%,transparent 96%)",
               maskImage: "linear-gradient(180deg,#000 72%,transparent 96%)",
             }}
