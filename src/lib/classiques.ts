@@ -542,6 +542,44 @@ export function bonMoment(dernier: Date): { du: Date; au: Date } {
   return { du: jour(21), au: jour(35) };
 }
 
+/* ── Au planning : le prochain essai ─────────────────────────────────── */
+
+/** Le prochain classique posé au planning, d'aujourd'hui en avant : le
+ *  plus proche encore à faire. Une séance faite ou passée, une date
+ *  écoulée et un autre titre ne comptent pas. */
+export function prochainClassique(
+  intentions: readonly { date: string; title?: string | null; status?: string | null }[],
+  aujourdhui: string,
+): { classique: Classique; date: string } | null {
+  let proche: { classique: Classique; date: string } | null = null;
+  for (const i of intentions) {
+    if (i.status !== "planned" || i.date < aujourdhui) continue;
+    const c = classiqueParTitre(i.title);
+    if (c && (!proche || i.date < proche.date)) proche = { classique: c, date: i.date };
+  }
+  return proche;
+}
+
+const lendemain = (iso: string) => {
+  const [a, m, j] = iso.split("-").map(Number);
+  return new Date(Date.UTC(a, m - 1, j + 1)).toISOString().slice(0, 10);
+};
+
+/** « samedi 21 novembre ». */
+function jourDuPlanning(iso: string): string {
+  return new Date(`${iso}T12:00:00`).toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })
+    .replace(/ (\S+)$/, `${NB}$1`);
+}
+
+/** La ligne du profil : « Le Décompte revient le samedi 21 novembre »,
+ *  ou le premier essai d'un classique pas encore fait. Aucun accord : un
+ *  titre peut être féminin (« La Centaine »). */
+export function lignePrevu(c: Classique, date: string, aujourdhui: string, dejaFait: boolean): { titre: string; detail: string } {
+  const proche = date === aujourdhui ? "aujourd'hui" : date === lendemain(aujourdhui) ? "demain" : null;
+  if (dejaFait) return { titre: `${c.titre} revient ${proche ?? `le ${jourDuPlanning(date)}`}`, detail: "Dans ton planning" };
+  return { titre: `${c.titre}, ${proche ?? jourDuPlanning(date)}`, detail: "Ton premier essai, dans ton planning" };
+}
+
 /* ── Pendant l'effort : ce que l'écran dit de ton meilleur ───────────── */
 
 /** Les répétitions d'avance sur ton meilleur à l'instant t, ou 0. Une

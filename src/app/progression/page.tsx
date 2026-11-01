@@ -37,6 +37,7 @@ import ExerciseGuide from "@/components/ExerciseGuide";
 import CreateSessionModal, { type SessionDraft } from "@/components/seance/CreateSessionModal";
 import MouvementsRow from "@/components/seance/MouvementsRow";
 import TrouverSeance from "@/components/catalogue/TrouverSeance";
+import LesClassiques from "@/components/catalogue/LesClassiques";
 import { aLaUne, exercicesDe } from "@/lib/trouverSeance";
 import { Photo, WIDGET } from "@/components/entrainement/PhotoSeance";
 import ExerciseLibrarySheet from "@/components/seance/ExerciseLibrarySheet";
@@ -1630,6 +1631,9 @@ function ChooseSheet({ sessions, loading, canAccessPremium, maxSeances, catIniti
     .filter((c): c is CatDef => !!c)
     .map((c) => ({ id: c.id, name: c.name, img: c.img, pos: c.pos }));
   const ouvrirCollection = (id: string, depuis: boolean) => { setCatId(id); setDepuisToutes(depuis); setAdviceTheme("Tous"); };
+  /* Revenir d'une collection : à « Tout le catalogue » si on en vient. */
+  const retour = () => { setCatId(cat && depuisToutes ? "toutes" : null); setDepuisToutes(false); setAdviceTheme("Tous"); };
+  const libelleRetour = cat && depuisToutes ? "Retour à tout le catalogue" : "Retour à Je choisis";
 
   /* Multi-appartenance : chaque collection filtre la banque par prédicat. */
   const matchedAll = cat ? sessions.filter((s) => cat.match(s, hayOf(s))) : [];
@@ -1688,15 +1692,17 @@ function ChooseSheet({ sessions, loading, canAccessPremium, maxSeances, catIniti
   return (
     <>
     <Sheet onClose={onClose} height="94dvh" maxHeight="94dvh">
-      {/* Header — niveau 1 : l'invitation. Niveau 2 : retour + nom + promesse. */}
+      {/* Header — niveau 1 : l'invitation. Niveau 2 : retour + nom + promesse.
+          « Les classiques » porte les siens sur sa photo. */}
+      {cat?.id !== "classiques" && (
       <div className="px-5 pt-2 pb-3 flex-shrink-0 flex items-center gap-3">
         {cat || toutes ? (
           <>
             <motion.button whileTap={{ scale: 0.9 }}
-              onClick={() => { setCatId(cat && depuisToutes ? "toutes" : null); setDepuisToutes(false); setAdviceTheme("Tous"); }}
+              onClick={retour}
               className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer flex-shrink-0"
               style={{ background: "rgba(var(--tint-violet-rgb),0.7)" }}
-              aria-label={cat && depuisToutes ? "Retour à tout le catalogue" : "Retour à Je choisis"}>
+              aria-label={libelleRetour}>
               <ChevronLeft size={15} strokeWidth={2.2} style={{ color: "var(--text-2)" }} />
             </motion.button>
             <div className="flex-1 min-w-0">
@@ -1723,6 +1729,7 @@ function ChooseSheet({ sessions, loading, canAccessPremium, maxSeances, catIniti
           <X size={14} strokeWidth={2} style={{ color: "var(--text-3)" }} />
         </motion.button>
       </div>
+      )}
 
       {/* En mode « ajouter à un jour », on le dit avant le premier toucher :
           sinon toucher une carte lancerait la séance, comme partout ailleurs. */}
@@ -1848,6 +1855,19 @@ function ChooseSheet({ sessions, loading, canAccessPremium, maxSeances, catIniti
             {createCard}
           </div>
           </>
+        ) : cat.id === "classiques" ? (
+          /* ── Niveau 2, « Les classiques » : leur page à eux ── */
+          <LesClassiques
+            seances={vaiiya}
+            tag={cat.tag}
+            userId={userId}
+            canAccessPremium={canAccessPremium}
+            libelleRetour={libelleRetour}
+            onStart={onStart}
+            onPremium={setPremiumPreview}
+            onRetour={retour}
+            onFermer={onClose}
+          />
         ) : matched.length === 0 ? (
           /* ── Niveau 2, collection vide : la porte reste ouverte ── */
           <div className="flex flex-col items-center text-center pt-12 px-6">
@@ -2707,7 +2727,7 @@ export default function ProgressionPage() {
     if (typeof window === "undefined") return;
     const params = new URLSearchParams(window.location.search);
     const voulue = params.get("ouvrir");
-    if (voulue !== "organiser" && voulue !== "improviser" && voulue !== "adaptation") return;
+    if (voulue !== "organiser" && voulue !== "improviser" && voulue !== "adaptation" && voulue !== "classiques") return;
     params.delete("ouvrir");
     const reste = params.toString();
     window.history.replaceState(null, "", window.location.pathname + (reste ? `?${reste}` : ""));
@@ -2715,7 +2735,12 @@ export default function ProgressionPage() {
        glisser par-dessus un écran déjà peint : ouverte dans le corps de
        l'effet, elle serait là avant l'écran d'où elle vient, et ça se lit
        comme un saut plutôt que comme une arrivée. */
-    const frame = requestAnimationFrame(() => setSheet(voulue));
+    const frame = requestAnimationFrame(() => {
+      /* « Les 11 classiques », depuis « Tes classiques » du profil : le
+         catalogue, ouvert sur leur page. */
+      if (voulue === "classiques") { setChoisirCible("classiques"); setSheet("choisir"); }
+      else setSheet(voulue);
+    });
     return () => cancelAnimationFrame(frame);
   }, []);
 

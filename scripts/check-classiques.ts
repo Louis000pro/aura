@@ -18,7 +18,7 @@ import { readFileSync } from "node:fs";
 import { PGlite } from "@electric-sql/pglite";
 import {
   CLASSIQUES, avanceSurMeilleur, bilanDe, bonMoment, chrono, classiqueDe, classiqueParTitre, ecartProgres,
-  exercicesDuClassique, feuillePremiereFois, journalDuClassique, meilleurQue, meta, minuteEnCours, minuteRatee,
+  exercicesDuClassique, feuillePremiereFois, journalDuClassique, lignePrevu, meilleurQue, meta, minuteEnCours, minuteRatee, prochainClassique,
   morceauNumero, morceauxAuChrono, mouvements, pourBattre, regleComplete, repsApres, repsAuTotal, repsDuTour,
   scoreCourt, scoreLong, scoreMinute, scoreReps, scoreTemps, scoreTenue, scoreTours, surtitre, typo, unite,
   type Classique, type ScoreDate,
@@ -305,6 +305,62 @@ for (const x of CLASSIQUES) {
   const tes = lire("src/components/profil/TesClassiques.tsx");
   verdict("le profil montre « Tes classiques », ton meilleur sur chacun", profil.includes("<TesClassiques userId={user.id} />")
     && tes.includes("bilanDe(") && tes.includes("if (!data?.length) return null;"));
+}
+
+/* ── Le prochain essai, au planning ─────────────────────────────────── */
+{
+  const plan = [
+    { date: "2026-11-21", title: "Le Décompte", status: "planned" },
+    { date: "2026-11-10", title: "Push", status: "planned" },
+    { date: "2026-11-05", title: "L’Escalier", status: "done" },
+    { date: "2026-10-30", title: "Le Centurion", status: "planned" },
+    { date: "2026-11-15", title: "La Centaine", status: "planned" },
+  ];
+  const p = prochainClassique(plan, "2026-11-01");
+  verdict("le prochain essai : le classique le plus proche encore à faire, d'aujourd'hui en avant",
+    p?.classique.id === "la-centaine" && p.date === "2026-11-15", `${p?.classique.titre} le ${p?.date}`);
+  verdict("une séance faite, une date passée ou un autre titre ne sont pas un prochain essai",
+    prochainClassique(plan.filter((x) => x.title !== "La Centaine" && x.title !== "Le Décompte"), "2026-11-01") === null);
+  verdict("aujourd'hui compte", prochainClassique([{ date: "2026-11-01", title: "Le Décompte", status: "planned" }], "2026-11-01")?.date === "2026-11-01");
+
+  const revient = lignePrevu(c("decompte"), "2026-11-21", "2026-11-01", true);
+  verdict("la ligne du profil : « Le Décompte revient le samedi 21 novembre »",
+    revient.titre === `Le Décompte revient le samedi 21${NB}novembre` && revient.detail === "Dans ton planning", revient.titre);
+  verdict("aujourd'hui et demain se disent en mots, au passage d'un mois aussi",
+    lignePrevu(c("decompte"), "2026-11-01", "2026-11-01", true).titre === "Le Décompte revient aujourd'hui"
+      && lignePrevu(c("decompte"), "2026-12-01", "2026-11-30", true).titre === "Le Décompte revient demain");
+  const premier = lignePrevu(c("la-centaine"), "2026-11-15", "2026-11-01", false);
+  verdict("un classique jamais fait : son premier essai, sans accord (« La Centaine » est féminin)",
+    premier.titre === `La Centaine, dimanche 15${NB}novembre` && premier.detail === "Ton premier essai, dans ton planning"
+      && !/prévue?s?\b/.test(premier.titre + premier.detail + revient.titre), premier.titre);
+}
+
+/* ── La page « Les classiques » et « Tes classiques » ───────────────── */
+{
+  const lire = (p: string) => readFileSync(new URL(`../${p}`, import.meta.url), "utf8");
+  const page = lire("src/app/progression/page.tsx");
+  const les = lire("src/components/catalogue/LesClassiques.tsx");
+  const tes = lire("src/components/profil/TesClassiques.tsx");
+  verdict("la collection « Les classiques » s'ouvre sur sa page", page.includes(`cat.id === "classiques" ? (`) && page.includes("<LesClassiques"));
+  verdict("sa page porte son retour et sa fermeture, l'en-tête commun s'efface",
+    page.includes(`{cat?.id !== "classiques" && (`) && les.includes("onClick={onRetour}") && les.includes("onClick={onFermer}"));
+  verdict("« Un classique, c'est quoi ? » rouvre la feuille de la première fois, et la règle complète",
+    les.includes("Un classique, c'est quoi ?") && les.includes("<FeuillePremiereFois") && les.includes("<PageRegle"));
+  verdict("lue ici, la feuille ne s'ouvrira plus d'elle-même", les.includes("noterFeuilleVue(userId, feuille.c.format)"));
+  const sortes = ["temps", "tours", "reps", "tenue", "minute"];
+  verdict("cinq façons de compter, une par sorte de score, et chacune rouvre sa feuille",
+    les.includes("Cinq façons de compter") && sortes.every((s) => les.includes(`sorte: "${s}"`)) && les.includes("onClick={() => relire(exemplaire)}"));
+  verdict("chaque sorte a un classique ouvert pour l'expliquer", sortes.every((s) => CLASSIQUES.some((x) => x.sorte === s && x.ouvert)));
+  verdict("la page ne lit que les scores et n'écrit rien", !/createClient|\.from\(|\.rpc\(|insert|upsert/.test(les) && les.includes("lireScores(userId)"));
+  verdict("les futurs Vaiiya+ disent « Bientôt » tant que la vente est fermée",
+    les.includes(`VENTE_OUVERTE ? "Avec Vaiiya+" : "Bientôt dans Vaiiya+"`) && les.includes(`VENTE_OUVERTE ? "Vaiiya+" : "Bientôt Vaiiya+"`));
+  verdict("le profil lit le planning pour le prochain essai, et une lecture ratée ne cache que cette ligne",
+    tes.includes("prochainClassique(jours, aujourdhui)") && tes.includes("setPrevu({ pour: userId, jours: null })"));
+  verdict("« À tenter » : les classiques pas encore faits, et le lien vers leur page",
+    tes.includes("CLASSIQUES.filter((c) => !faitsIds.has(c.id))") && tes.includes(`router.push("/progression?ouvrir=classiques")`)
+      && page.includes(`voulue === "classiques"`) && page.includes(`setChoisirCible("classiques"); setSheet("choisir");`));
+  verdict("une couverture, la ligne du prochain essai et « À tenter » ouvrent la fiche par le lanceur global",
+    (tes.match(/onClick=\{\(\) => ouvrir\(/g) ?? []).length === 3 && tes.includes("launchWorkout({"));
 }
 
 /* ── La migration du score, jouée pour de vrai ──────────────────────── */
