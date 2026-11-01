@@ -40,10 +40,10 @@ import { cleExercice } from "@/lib/exerciceCle";
 import { EXERCISE_LIBRARY, exercicesDisponibles, trouverExercice, type LibExercise } from "@/lib/exerciseLibrary";
 import type { RecordMouvement } from "@/lib/records";
 import { cleDe, decouper, normaliser, phonetique, procheDe, type Mot } from "@/lib/texteRecherche";
-import { WAVE_9_EXERCISES } from "@/lib/workoutWave9";
 import { WAVE_10_EXERCISES } from "@/lib/workoutWave10";
 import { WAVE_11_EXERCISES } from "@/lib/workoutWave11";
 import { WAVE_12_EXERCISES } from "@/lib/workoutWave12";
+import { WAVE_13_EXERCISES } from "@/lib/workoutWave13";
 
 const NB = String.fromCharCode(160);
 
@@ -617,10 +617,11 @@ export function aLaUne<T>(xs: T[], jour: string): T[] {
 
 /** Hors des propositions générales : les classiques se battent, les
  *  routines et les jours sans ont leur moment, et les séances écrites pour
- *  un sport (le lot 4) leur rangée. Une séance d’avant qui a rejoint un
- *  sport (« Dos et posture à la maison », le vélo) reste proposable. */
+ *  un sport (le lot 4, la course hybride comprise) leur rangée. Une séance
+ *  d’avant qui a rejoint un sport (« Dos et posture à la maison », le vélo)
+ *  reste proposable. */
 const A_PART: CatalogCollection[] = ["classiques", "routines", "joursans"];
-const POUR_UN_SPORT = new Set(Object.keys(WAVE_11_EXERCISES));
+const POUR_UN_SPORT = new Set([...Object.keys(WAVE_11_EXERCISES), ...Object.keys(WAVE_13_EXERCISES)]);
 const vivier = <S extends SeanceTrouvable>(xs: S[]) =>
   xs.filter((s) => !s.perso && estSeance(s) && !POUR_UN_SPORT.has(s.id) && !s.collections?.some((c) => A_PART.includes(c)));
 
@@ -793,10 +794,11 @@ export function courtes<S extends SeanceTrouvable>(seances: S[], ctx: Contexte, 
     && !s.collections?.includes("classiques") && faisableAvec(s, m)), ctx.jour).slice(0, n);
 }
 
-/** Les lots les plus récents, le plus neuf d'abord. L'ordre du tableau du
- *  catalogue ne dit pas l'âge : des séances neuves y ont été rangées plus
- *  haut pour ouvrir leur rangée. */
-const LOTS_RECENTS: string[][] = [WAVE_12_EXERCISES, WAVE_11_EXERCISES, WAVE_10_EXERCISES, WAVE_9_EXERCISES].map((w) => Object.keys(w));
+/** Les quatre lots les plus récents, le plus neuf d'abord : un lot qui
+ *  arrive fait sortir le plus ancien, la rangée garde huit cartes. L'ordre
+ *  du tableau du catalogue ne dit pas l'âge : des séances neuves y ont été
+ *  rangées plus haut pour ouvrir leur rangée. */
+const LOTS_RECENTS: string[][] = [WAVE_13_EXERCISES, WAVE_12_EXERCISES, WAVE_11_EXERCISES, WAVE_10_EXERCISES].map((w) => Object.keys(w));
 
 /** « Nouvelles séances » : deux par lot récent, qui tournent chaque jour. */
 export function nouvelles<S extends SeanceTrouvable>(seances: S[], ctx: Contexte, parLot = 2): S[] {

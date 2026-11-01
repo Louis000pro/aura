@@ -37,7 +37,7 @@ export type CatalogCollection =
   | "force" | "longues" | "circuits" | "emom" | "intervalles" | "isometrie"
   | "routines" | "joursans" | "tete" | "voyage" | "dehors"
   | "halteres" | "kettlebell"
-  | "course" | "foot" | "velo" | "ski";
+  | "course" | "foot" | "velo" | "ski" | "hybride";
 
 export type WorkoutSession = {
   id: string;
@@ -1344,6 +1344,27 @@ export const workoutSessions: WorkoutSession[] = [
     muscles: ["Quadriceps", "Mollets", "Hanches"],
     accent: "#8B5CF6", icon: Moon, access: "free",
     collections: ["ski", "recup", "express"],
+  },
+  /* Vague 13 : la course hybride (lot 4, la suite), avec les mouvements
+     déjà dessinés. « Hybride » n'a pas de tuile tant qu'il n'y a pas trois
+     séances : « Les ateliers hybrides » attend ses dessins. */
+  {
+    id: "hybride-decouverte", category: "cardio",
+    title: "Hybride, découverte", subtitle: "Tapis · Rameur · Fentes · Burpees · Thrusters",
+    duration: 47, difficulty: "Intermédiaire", exercises: 5,
+    muscles: ["Cardio", "Jambes", "Épaules"],
+    accent: "#8B5CF6", icon: Zap, access: "premium",
+    collections: ["hybride", "circuits", "salle", "cardiohiit"],
+    previewExercises: ["Tapis de course", "Rameur", "Thruster haltères"],
+  },
+  {
+    id: "hybride-maison", category: "cardio",
+    title: "Hybride à la maison", subtitle: "Jumping jacks · Fentes · Thrusters · Burpees · Gainage",
+    duration: 39, difficulty: "Intermédiaire", exercises: 5,
+    muscles: ["Cardio", "Jambes", "Core"],
+    accent: "#8B5CF6", icon: Zap, access: "premium",
+    collections: ["hybride", "circuits", "halteres", "cardiohiit"],
+    previewExercises: ["Jumping jacks", "Thruster haltères", "Burpees"],
   },
   /* Les classiques, en fin de tableau (voir `seanceDuClassique`). */
   ...CLASSIQUES.map(seanceDuClassique),

@@ -112,6 +112,10 @@ export const PHOTO_PAR_TITRE: Record<string, string> = {
   "ouvrir les hanches après le vélo": "core-twist",
   "cuisses de skieur": "legs-squat",
   "après la journée de ski": "core-lateral",
+  /* La course hybride : le rameur pour la séance de salle, le thruster pour
+     celle de la maison (sans règle, le titre ne disait rien). */
+  "hybride, découverte": "cardio-rameur",
+  "hybride à la maison": "full-thruster",
 };
 
 /** La famille d'une photo de la banque. */

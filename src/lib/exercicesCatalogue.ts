@@ -23,6 +23,7 @@ import { WAVE_9_EXERCISES } from "@/lib/workoutWave9";
 import { WAVE_10_EXERCISES } from "@/lib/workoutWave10";
 import { WAVE_11_EXERCISES } from "@/lib/workoutWave11";
 import { WAVE_12_EXERCISES } from "@/lib/workoutWave12";
+import { WAVE_13_EXERCISES } from "@/lib/workoutWave13";
 
 /* « Défi Animations » — les ateliers qui enchaînent les gestes animés,
    un thème par séance (la liste unique vit dans src/lib/guideSections.ts).
@@ -476,6 +477,8 @@ export const exerciseData: Record<string, Exercise[]> = {
   ...WAVE_11_EXERCISES,
   // Les classiques (« Le chrono et le score », 2026-11-01).
   ...WAVE_12_EXERCISES,
+  // La course hybride (lot 4, la suite, 2026-11-01).
+  ...WAVE_13_EXERCISES,
 };
 
 /* ⚠️ CETTE TABLE PORTE DES ALIAS, ET CE N'EST PAS DU DOUBLON. Un titre de
@@ -660,6 +663,9 @@ export const SESSION_SLUGS: Record<string, string> = {
   "500 répétitions": "cinq-cents",
   "Le max en 20 minutes aux haltères": "max-20-halteres",
   "Le kilomètre de rameur": "kilometre-rameur",
+  // La course hybride (lot 4, la suite).
+  "Hybride, découverte": "hybride-decouverte",
+  "Hybride à la maison": "hybride-maison",
 };
 
 /**

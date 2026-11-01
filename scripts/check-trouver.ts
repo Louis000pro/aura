@@ -20,10 +20,10 @@ import {
   faisableAvec, filtrer, lireSaisie, nouvelles, phrasePourToi, pourEquilibrer, pourToi, prochainPalier,
   type Contexte, type Filtres, type SeanceTrouvable,
 } from "@/lib/trouverSeance";
-import { WAVE_9_EXERCISES } from "@/lib/workoutWave9";
 import { WAVE_10_EXERCISES } from "@/lib/workoutWave10";
 import { WAVE_11_EXERCISES } from "@/lib/workoutWave11";
 import { WAVE_12_EXERCISES } from "@/lib/workoutWave12";
+import { WAVE_13_EXERCISES } from "@/lib/workoutWave13";
 
 const RACINE = process.cwd();
 const lire = (f: string) => readFileSync(path.join(RACINE, f), "utf8");
@@ -141,7 +141,7 @@ const en = (s: SeanceTrouvable, c: string) => !s.collections || s.collections.in
   verdict("« Pour toi » : trois cartes au plus, faisables avec ce qu'on a", !!toi && toi.seances.length > 0 && toi.seances.length <= 3
     && toi.seances.every((s) => faisableAvec(s, "halteres")), titres(toi?.seances ?? []));
   verdict("pour un compte gratuit, la grande carte est toujours incluse", toi?.seances[0]?.access !== "premium", toi?.seances[0]?.title ?? "");
-  const aPart = toi?.seances.filter((s) => s.collections?.some((c) => ["classiques", "routines", "joursans"].includes(c)) || s.id in WAVE_11_EXERCISES) ?? [];
+  const aPart = toi?.seances.filter((s) => s.collections?.some((c) => ["classiques", "routines", "joursans"].includes(c)) || s.id in WAVE_11_EXERCISES || s.id in WAVE_13_EXERCISES) ?? [];
   verdict("ni classique, ni routine, ni séance écrite pour un sport", aPart.length === 0, titres(aPart));
   verdict("la même toute la journée", JSON.stringify(pourToi(S, ctx)?.seances.map((s) => s.id)) === JSON.stringify(toi?.seances.map((s) => s.id)));
   const semaine = Array.from({ length: 7 }, (_, i) => pourToi(S, { ...ctx, jour: `2026-11-0${i + 1}` })?.seances[0]?.id);
@@ -192,9 +192,9 @@ const en = (s: SeanceTrouvable, c: string) => !s.collections || s.collections.in
   verdict("« Moins de 15 minutes » : quatre séances de 15 min au plus, sans classique", c.length === 4
     && c.every((s) => s.duration <= 15 && !s.collections?.includes("classiques")), titres(c));
 
-  const lots = [WAVE_12_EXERCISES, WAVE_11_EXERCISES, WAVE_10_EXERCISES, WAVE_9_EXERCISES].map((w) => new Set(Object.keys(w)));
+  const lots = [WAVE_13_EXERCISES, WAVE_12_EXERCISES, WAVE_11_EXERCISES, WAVE_10_EXERCISES].map((w) => new Set(Object.keys(w)));
   const n = nouvelles(S, ctx);
-  verdict("« Nouvelles séances » : deux par lot récent, le plus neuf d'abord", n.length === 8 && new Set(n.map((s) => s.id)).size === 8
+  verdict("« Nouvelles séances » : deux par lot, les quatre lots les plus récents, le plus neuf d'abord", n.length === 8 && new Set(n.map((s) => s.id)).size === 8
     && n.every((s, i) => lots[Math.floor(i / 2)].has(s.id)), titres(n));
   verdict("la liste tourne d'un jour à l'autre", JSON.stringify(aLaUne([1, 2, 3], "2026-11-01")) !== JSON.stringify(aLaUne([1, 2, 3], "2026-11-02")));
 }
