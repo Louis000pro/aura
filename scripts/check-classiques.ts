@@ -249,6 +249,60 @@ for (const x of CLASSIQUES) {
   verdict("témoin : un recul ne devient pas un écart", ecartProgres(c("max-12"), { valeur: 200 }, { sorte: "tours", valeur: 190 }) === null);
 }
 
+/* ── Au catalogue : la fiche, les exercices, le titre, la photo ─────── */
+{
+  const { workoutSessions } = await import("@/lib/catalogueSeances");
+  const { exerciseData, SESSION_SLUGS, resolveSessionId } = await import("@/lib/exercicesCatalogue");
+  const { WAVE_12_EXERCISES } = await import("@/lib/workoutWave12");
+  const { PHOTO_PAR_TITRE } = await import("@/lib/workoutArt");
+  const { VENTE_OUVERTE } = await import("@/lib/plans");
+  const { dureeIntention } = await import("@/lib/planning");
+  const parId = new Map(workoutSessions.map((s) => [s.id, s]));
+  for (const x of CLASSIQUES) {
+    const s = parId.get(x.id);
+    verdict(`${x.titre} · une fiche au catalogue, dans « Les classiques » d'abord`, !!s && s.collections?.[0] === "classiques" && s.title === x.titre,
+      s ? (s.collections ?? []).join(", ") : "absente");
+    verdict(`${x.titre} · la durée affichée est celle du classique`, s?.duration === x.minutes, `${s?.duration} pour ${x.minutes}`);
+    verdict(`${x.titre} · ouvert tant que la vente est fermée, « Bientôt Vaiiya+ » pour les futurs`,
+      !!s && (VENTE_OUVERTE ? s.access === (x.ouvert ? "free" : "premium") : s.access === "free" && !!s.bientotPlus === !x.ouvert),
+      `${s?.access}${s?.bientotPlus ? " · bientôt" : ""}`);
+    verdict(`${x.titre} · ses exercices viennent du classique`, exerciseData[x.id] === WAVE_12_EXERCISES[x.id]
+      && JSON.stringify(exerciseData[x.id]) === JSON.stringify(exercicesDuClassique(x)));
+    verdict(`${x.titre} · son titre retrouve la séance (« Refaire », le Guide)`, SESSION_SLUGS[x.titre] === x.id && resolveSessionId(x.titre) === x.id);
+    verdict(`${x.titre} · sa photo est choisie`, !!PHOTO_PAR_TITRE[x.titre.toLowerCase()]);
+    verdict(`${x.titre} · posé au planning, il s'annonce à sa durée`,
+      dureeIntention({ title: x.titre, type: "Force", exerciseList: exerciseData[x.id] ?? [] }) === x.minutes);
+  }
+  const classiquesAuCatalogue = workoutSessions.filter((s) => s.collections?.includes("classiques"));
+  verdict("« Les classiques » ne contient que les onze", classiquesAuCatalogue.length === 11 && classiquesAuCatalogue.every((s) => !!classiqueDe(s.id)),
+    String(classiquesAuCatalogue.length));
+  const derniers = workoutSessions.slice(-11).map((s) => s.id);
+  verdict("les classiques sont en fin de tableau (les premières cartes des autres rangées ne bougent pas)",
+    JSON.stringify(derniers) === JSON.stringify(CLASSIQUES.map((x) => x.id)));
+}
+
+/* ── Le chemin : le lecteur de séance ───────────────────────────────── */
+{
+  const lire = (p: string) => readFileSync(new URL(`../${p}`, import.meta.url), "utf8");
+  const t = lire("src/components/WorkoutGuideModal.tsx");
+  verdict("le lecteur reconnaît un classique par son identifiant, puis par son titre",
+    t.includes("classiqueDe(sessionId) ?? classiqueParTitre(title)"));
+  verdict("aucun minuteur de l'effort ordinaire ne tourne derrière un classique",
+    t.includes("if (classique) return base.map((e) => ({ ...e, auto: undefined, hiit: undefined, emom: undefined }));"));
+  verdict("un classique ne laisse pas de brouillon de reprise", /const memoriser = useCallback\(\(\) => \{[\s\S]{0,200}if \(classique\) return;/.test(t));
+  verdict("l'essai part au journal par l'autorité unique (`enregistrer`), avec son score",
+    t.includes("score: scoreClassiqueRef.current,") && t.includes("exercices: journalClassiqueRef.current?.exercices ?? exercises,")
+      && t.includes("marques: doneMap,") && !/from\("workout_sessions"\)\s*\.(insert|update|upsert)/.test(t));
+  verdict("la fin d'un classique garde le relais, les badges et l'échec d'enregistrement",
+    t.indexOf("<FinClassique") > 0 && t.indexOf("<FinClassique") < t.indexOf("<BandeMaillon") && t.indexOf("<FinClassique") < t.indexOf("finIncomplete.texte"));
+  const tunnel = lire("src/components/seance/classique/TunnelClassique.tsx");
+  verdict("le chrono des classiques n'écrit rien en base", !/createClient|supabase|\.rpc\(|\.from\("/.test(tunnel));
+  verdict("le chrono se mesure pour tenir dans la largeur", tunnel.includes("<TexteAjuste plafond={116}"));
+  const page = lire("src/app/progression/page.tsx");
+  verdict("la rangée « Les classiques » remplace « Défis »", page.includes(`{ id: "classiques", famille: "moment", name: "Les classiques"`) && !page.includes(`id: "defis"`));
+  verdict("une carte « Bientôt Vaiiya+ » le dit", page.includes("session.bientotPlus") && page.includes("Bientôt Vaiiya+"));
+}
+
 /* ── La migration du score, jouée pour de vrai ──────────────────────── */
 {
   const db = new PGlite();

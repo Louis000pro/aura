@@ -33,6 +33,7 @@
 import type { Exercise } from "@/components/WorkoutGuideModal";
 import type { MarquesSeance } from "@/lib/journalSeance";
 import { trouverExercice } from "@/lib/exerciseLibrary";
+import type { WorkoutCategory } from "@/lib/assistantActions";
 
 const NB = String.fromCharCode(160);
 
@@ -68,6 +69,10 @@ export type Classique = {
    *  score s'y accroche. */
   id: string;
   titre: string;
+  /** La catégorie au catalogue et au planning. */
+  categorie: WorkoutCategory;
+  /** Le mot géant de la fin de séance (« Décompte », « Le max »). */
+  mot: string;
   /** Le titre en géant, ligne par ligne. */
   lignes: string[];
   promesse: string;
@@ -101,7 +106,7 @@ const de10a1 = (a: string, b: string): Morceau[][] =>
 
 export const CLASSIQUES: Classique[] = [
   {
-    id: "decompte", titre: "Le Décompte", lignes: ["Le", "Décompte"],
+    id: "decompte", categorie: "cardio", mot: "Décompte", titre: "Le Décompte", lignes: ["Le", "Décompte"],
     promesse: "Burpees et squats, de 10 à 1, le plus vite possible.",
     sorte: "temps", format: "temps", ouvert: true, minutes: 12, niveau: "Intermédiaire", materiel: "sans matériel",
     etapes: de10a1("Burpees", "Squat"), derniere: "sur le dernier squat",
@@ -115,7 +120,7 @@ export const CLASSIQUES: Classique[] = [
     ],
   },
   {
-    id: "escalier", titre: "L’Escalier", lignes: ["L’Escalier"],
+    id: "escalier", categorie: "fullbody", mot: "Escalier", titre: "L’Escalier", lignes: ["L’Escalier"],
     promesse: "Pompes de 1 à 10, squats de 10 à 1, le plus vite possible.",
     sorte: "temps", format: "temps", ouvert: true, minutes: 15, niveau: "Intermédiaire", materiel: "sans matériel",
     etapes: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((k) => [{ exercice: "Pompes", nombre: k }, { exercice: "Squat", nombre: 11 - k }]),
@@ -130,7 +135,7 @@ export const CLASSIQUES: Classique[] = [
     ],
   },
   {
-    id: "centurion", titre: "Le Centurion", lignes: ["Le", "Centurion"],
+    id: "centurion", categorie: "force", mot: "Centurion", titre: "Le Centurion", lignes: ["Le", "Centurion"],
     promesse: "100 abdos en quatre exercices, le plus vite possible.",
     sorte: "temps", format: "temps", ouvert: true, minutes: 12, niveau: "Intermédiaire", materiel: "sans matériel",
     etapes: [
@@ -148,7 +153,7 @@ export const CLASSIQUES: Classique[] = [
     ],
   },
   {
-    id: "max-12", titre: "Le max en 12 minutes", lignes: ["Le max en", "12 minutes"],
+    id: "max-12", categorie: "fullbody", mot: "Le max", titre: "Le max en 12 minutes", lignes: ["Le max en", "12 minutes"],
     promesse: "Le plus de tours de pompes, squats et crunchs en 12 minutes.",
     sorte: "tours", format: "max", ouvert: true, minutes: 12, niveau: "Intermédiaire", materiel: "sans matériel",
     tour: [{ exercice: "Pompes", nombre: 5 }, { exercice: "Squat", nombre: 10 }, { exercice: "Crunch", nombre: 15 }],
@@ -163,7 +168,7 @@ export const CLASSIQUES: Classique[] = [
     ],
   },
   {
-    id: "cinq-minutes-burpees", titre: "Cinq minutes de burpees", lignes: ["Cinq minutes", "de burpees"],
+    id: "cinq-minutes-burpees", categorie: "cardio", mot: "Burpees", titre: "Cinq minutes de burpees", lignes: ["Cinq minutes", "de burpees"],
     promesse: "Le plus de burpees possible en cinq minutes.",
     sorte: "reps", format: "compte", ouvert: true, minutes: 5, niveau: "Intermédiaire", materiel: "sans matériel",
     mouvement: "Burpees", plafond: 5 * 60,
@@ -177,7 +182,7 @@ export const CLASSIQUES: Classique[] = [
     ],
   },
   {
-    id: "record-chaise", titre: "Le record de la chaise", lignes: ["Le record", "de la chaise"],
+    id: "record-chaise", categorie: "force", mot: "Chaise", titre: "Le record de la chaise", lignes: ["Le record", "de la chaise"],
     promesse: "Tenir la chaise au mur le plus longtemps possible.",
     sorte: "tenue", format: "tenue", ouvert: true, minutes: 5, niveau: "Débutant", materiel: "un mur",
     mouvement: "Chaise au mur",
@@ -191,7 +196,7 @@ export const CLASSIQUES: Classique[] = [
     ],
   },
   {
-    id: "une-de-plus", titre: "Une de plus chaque minute", lignes: ["Une de plus", "chaque minute"],
+    id: "une-de-plus", categorie: "cardio", mot: "Minute", titre: "Une de plus chaque minute", lignes: ["Une de plus", "chaque minute"],
     promesse: "Un burpee la première minute, deux la deuxième… jusqu'où ?",
     sorte: "minute", format: "minute", ouvert: true, minutes: 15, niveau: "Avancé", materiel: "sans matériel",
     mouvement: "Burpees", plafond: 30 * 60,
@@ -206,7 +211,7 @@ export const CLASSIQUES: Classique[] = [
   },
   /* ── Les quatre futurs Vaiiya+ (Louis, 2026-11-01) ── */
   {
-    id: "la-centaine", titre: "La Centaine", lignes: ["La", "Centaine"],
+    id: "la-centaine", categorie: "fullbody", mot: "Centaine", titre: "La Centaine", lignes: ["La", "Centaine"],
     promesse: "100 squats, 75 crunchs, 50 pompes, 25 burpees, dans l'ordre.",
     sorte: "temps", format: "temps", ouvert: false, minutes: 20, niveau: "Intermédiaire", materiel: "sans matériel",
     etapes: [
@@ -224,7 +229,7 @@ export const CLASSIQUES: Classique[] = [
     ],
   },
   {
-    id: "cinq-cents", titre: "500 répétitions", lignes: ["500", "répétitions"],
+    id: "cinq-cents", categorie: "fullbody", mot: "500", titre: "500 répétitions", lignes: ["500", "répétitions"],
     promesse: "Six exercices, 500 répétitions, découpées comme tu veux.",
     sorte: "temps", format: "temps", ouvert: false, minutes: 35, niveau: "Avancé", materiel: "sans matériel",
     etapes: [
@@ -242,7 +247,7 @@ export const CLASSIQUES: Classique[] = [
     ],
   },
   {
-    id: "max-20-halteres", titre: "Le max en 20 minutes aux haltères", lignes: ["Le max en 20 minutes", "aux haltères"],
+    id: "max-20-halteres", categorie: "force", mot: "Le max", titre: "Le max en 20 minutes aux haltères", lignes: ["Le max en 20 minutes", "aux haltères"],
     promesse: "Thrusters, rowings et fentes : le plus de tours en 20 minutes.",
     sorte: "tours", format: "max", ouvert: false, minutes: 20, niveau: "Avancé", materiel: "deux haltères",
     tour: [
@@ -260,7 +265,7 @@ export const CLASSIQUES: Classique[] = [
     ],
   },
   {
-    id: "kilometre-rameur", titre: "Le kilomètre de rameur", lignes: ["Le kilomètre", "de rameur"],
+    id: "kilometre-rameur", categorie: "cardio", mot: "Rameur", titre: "Le kilomètre de rameur", lignes: ["Le kilomètre", "de rameur"],
     promesse: "1 000 mètres de rameur, le plus vite possible.",
     sorte: "temps", format: "temps", ouvert: false, minutes: 12, niveau: "Intermédiaire", materiel: "un rameur",
     etapes: [1, 2, 3, 4].map(() => [{ exercice: "Rameur", nombre: 250 }]),
@@ -600,6 +605,42 @@ export function scoreTenue(c: Classique, secondes: number): ScoreClassique | nul
 export function scoreMinute(c: Classique, passages: readonly number[]): ScoreClassique | null {
   if (!passages.length) return null;
   return { v: 1, classique: c.id, sorte: "minute", valeur: passages.length, passages: passages.map(arrondi) };
+}
+
+/* ── Ce que la fin de séance raconte ────────────────────────────────── */
+
+/** « a, b et c ». */
+const enListe = (xs: string[]) => (xs.length < 2 ? xs.join("") : `${xs.slice(0, -1).join(", ")} et ${xs[xs.length - 1]}`);
+
+/** La ligne sous le score : ce qui a été fait (« 55 burpees et 55 squats. »). */
+export function recapEssai(c: Classique, s: Pick<ScoreClassique, "valeur">): string {
+  switch (c.sorte) {
+    case "temps": {
+      const ms = mouvements(c).map((m) => {
+        const n = Number(m.detail.replace(/\D/g, ""));
+        return m.exercice === "Rameur" ? `${milliers(n)}${NB}mètres de rameur` : `${milliers(n)}${NB}${unite(m.exercice, n)}`;
+      });
+      return `${enListe(ms)}.`;
+    }
+    case "tours": return `${milliers(s.valeur)}${NB}${s.valeur > 1 ? "répétitions" : "répétition"} en ${c.minutes}${NB}minutes`;
+    case "reps": return `${unite(c.mouvement ?? "", s.valeur)} en ${enLettres(c.minutes)} minutes`;
+    case "tenue": return "à la chaise au mur, en une seule fois";
+    case "minute": return "la dernière minute finie à temps";
+  }
+}
+
+/** Le max : combien de chaque exercice, tour en cours compris. */
+export function totauxDuMax(c: Classique, faits: number, partiel = 0): { exercice: string; total: number }[] {
+  const tour = c.tour ?? [];
+  const L = tour.length;
+  if (!L) return [];
+  const totaux = tour.map((m) => ({ exercice: m.exercice, total: 0 }));
+  for (let k = 0; k < faits; k++) totaux[k % L].total += tour[k % L].nombre;
+  totaux[faits % L].total += Math.max(0, Math.min(partiel, tour[faits % L].nombre));
+  /* Un même exercice deux fois dans le tour se compte une fois. */
+  const fusion = new Map<string, number>();
+  for (const x of totaux) fusion.set(x.exercice, (fusion.get(x.exercice) ?? 0) + x.total);
+  return [...fusion].map(([exercice, total]) => ({ exercice, total }));
 }
 
 /* ── La minute : où on en est ───────────────────────────────────────── */

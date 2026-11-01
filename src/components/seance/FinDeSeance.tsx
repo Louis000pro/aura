@@ -45,9 +45,13 @@ const CONFETTIS = [
   { x: 89, c: "#8B5CF6", d: 0.1 },
 ];
 
-export function CouvertureFin({ titre, guide, fete }: { titre: string; guide: ReactNode | null; fete: boolean }) {
+export function CouvertureFin({ titre, guide, fete, motImpose }: {
+  titre: string; guide: ReactNode | null; fete: boolean;
+  /** Un classique a son mot (« Décompte », « Le max ») : on ne le devine pas. */
+  motImpose?: string;
+}) {
   const reduit = useReducedMotion();
-  const mot = motCouverture(titre || "Séance").toUpperCase();
+  const mot = (motImpose ?? motCouverture(titre || "Séance")).toUpperCase();
   const { boite, mesure, taille } = useMotAjuste(mot, 132);
   return (
     <div className="relative w-full" style={{ height: guide ? 320 : 170 }}>

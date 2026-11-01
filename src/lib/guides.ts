@@ -112,6 +112,9 @@ export type ContexteVoix = {
   /** L'ouverture · la flamme qui arrive AUJOURD'HUI, avec son article
    *  (« le Feu »). Absente les autres jours. */
   flamme?: string;
+  /** Un classique · ton meilleur, tel qu'il s'affiche (« 12:30 »,
+   *  « 6 tours + 11 »). */
+  meilleur?: string;
 };
 
 /** « Une séance posée », « Trois séances posées ». Le nombre s'écrit en
@@ -881,6 +884,28 @@ const REPLIQUES = {
   },
   "seance.fin.calme": {
     commun: "Pas de nouveau record aujourd’hui, et c’est comme ça qu’on avance.",
+  },
+
+  /* ── Les classiques (maquette « Le chrono et le score », GO du
+     2026-11-01) ──
+     Sur la fiche, le Guide montre ton meilleur comme une chose qu'on a
+     posée soi-même, et qu'on a envie de battre. La première fois, il
+     annonce l'explication en trois points. Jamais un reproche, jamais une
+     comparaison avec quelqu'un d'autre. */
+  "classique.fiche.temps": {
+    commun: (c) => `Ce ${c.meilleur ?? ""}, c’est toi qui l’as posé. On passe dessous aujourd’hui ?`,
+  },
+  "classique.fiche.plus": {
+    commun: (c) => `« ${c.meilleur ?? ""} », c’est toi qui l’as posé. On va plus loin aujourd’hui ?`,
+  },
+  "classique.fiche.premier": {
+    commun: "Ta première fois pose ton repère. Les suivantes, tu essaies de le battre.",
+  },
+  "classique.premiere.classique": {
+    commun: "Première fois sur un classique ? Je t’explique en trois points.",
+  },
+  "classique.premiere.format": {
+    commun: "Première fois sur celui-là ? Trois points, et on y va.",
   },
 
   /* ── La visite guidée ──

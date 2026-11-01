@@ -22,6 +22,7 @@ import { WAVE_8_EXERCISES } from "@/lib/workoutWave8";
 import { WAVE_9_EXERCISES } from "@/lib/workoutWave9";
 import { WAVE_10_EXERCISES } from "@/lib/workoutWave10";
 import { WAVE_11_EXERCISES } from "@/lib/workoutWave11";
+import { WAVE_12_EXERCISES } from "@/lib/workoutWave12";
 
 /* « Défi Animations » — les ateliers qui enchaînent les gestes animés,
    un thème par séance (la liste unique vit dans src/lib/guideSections.ts).
@@ -473,6 +474,8 @@ export const exerciseData: Record<string, Exercise[]> = {
   ...WAVE_10_EXERCISES,
   // Un sport à côté (lot 4, 2026-10-28).
   ...WAVE_11_EXERCISES,
+  // Les classiques (« Le chrono et le score », 2026-11-01).
+  ...WAVE_12_EXERCISES,
 };
 
 /* ⚠️ CETTE TABLE PORTE DES ALIAS, ET CE N'EST PAS DU DOUBLON. Un titre de
@@ -644,6 +647,19 @@ export const SESSION_SLUGS: Record<string, string> = {
   "Ouvrir les hanches après le vélo": "hanches-velo",
   "Cuisses de skieur": "cuisses-skieur",
   "Après la journée de ski": "apres-ski",
+  // Les classiques (« Le chrono et le score »).
+  "Le Décompte": "decompte",
+  "L’Escalier": "escalier",
+  "L'Escalier": "escalier",
+  "Le Centurion": "centurion",
+  "Le max en 12 minutes": "max-12",
+  "Cinq minutes de burpees": "cinq-minutes-burpees",
+  "Le record de la chaise": "record-chaise",
+  "Une de plus chaque minute": "une-de-plus",
+  "La Centaine": "la-centaine",
+  "500 répétitions": "cinq-cents",
+  "Le max en 20 minutes aux haltères": "max-20-halteres",
+  "Le kilomètre de rameur": "kilometre-rameur",
 };
 
 /**

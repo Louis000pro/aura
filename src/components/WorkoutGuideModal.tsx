@@ -40,6 +40,14 @@ import {
   type EtatFin, type JournalSeance, type MarquesSeance, type Validation,
 } from "@/lib/journalSeance";
 import { secondesDeReps } from "@/lib/dureeLibre";
+import { classiqueDe, classiqueParTitre, journalDuClassique, type ScoreClassique, type ScoreDate } from "@/lib/classiques";
+import { lireScores } from "@/lib/scoresClassiques";
+import { partagerAfficheClassique } from "@/lib/classiqueShareExport";
+import TunnelClassique, { type ResultatClassique } from "@/components/seance/classique/TunnelClassique";
+import FinClassique from "@/components/seance/classique/FinClassique";
+import FicheClassique from "@/components/seance/classique/FicheClassique";
+import { FeuillePremiereFois, PageRegle, feuilleVue, noterFeuilleVue } from "@/components/seance/classique/ExplicationsClassique";
+import ChoisirJour from "@/components/seance/classique/ChoisirJour";
 import {
   attenteApresSerie, blocDe, blocsDe, doseDe, enTeteDuBloc, pasPrecedent, pasSuivant, repsDeLaSerie,
   reperesDuPas, resteApres, type FormatBloc, type MarquesTours,
@@ -440,14 +448,18 @@ export default function WorkoutGuideModal({
   const router = useRouter();
   // On injecte un `auto` (durée) déduit des reps pour les exos chronométrés d'une
   // séance custom (gainage « 45s », tenue « 30 sec »…) qui n'en portent pas.
+  /* Un classique (lib/classiques.ts) a sa fiche, son chrono et sa fin à
+     lui. Aucun minuteur de l'effort ordinaire ne tourne derrière lui. */
+  const classique = useMemo(() => classiqueDe(sessionId) ?? classiqueParTitre(title), [sessionId, title]);
   const exercises = useMemo<Exercise[]>(() => {
     const base = (exerciseList && exerciseList.length > 0) ? exerciseList : (exerciseData[sessionId] ?? []);
+    if (classique) return base.map((e) => ({ ...e, auto: undefined, hiit: undefined, emom: undefined }));
     return base.map((e) => {
       if (e.auto || e.hiit) return e;
       const sec = secondesDeReps(e.reps);
       return sec ? { ...e, auto: sec } : e;
     });
-  }, [exerciseList, sessionId]);
+  }, [exerciseList, sessionId, classique]);
 
   const { open: openAssistant } = useGestesAssistant();
   const { guide } = useGuideActif();
@@ -570,7 +582,40 @@ export default function WorkoutGuideModal({
   /** L'instant réel du départ : `startMs` se décale à chaque pause. */
   const debutRef = useRef<number | null>(reprise ? demarreeLe ?? null : null);
 
+  /* ── Un classique : ses scores d'avant, son essai, ses explications ──
+     L'historique se lit à l'ouverture et sert à la fiche, au chrono (ton
+     meilleur) et à la fin. `null` : la base n'a pas répondu. */
+  const [histoClassique, setHistoClassique] = useState<{ pour: string; data: ScoreDate[] | null } | null>(null);
+  useEffect(() => {
+    if (!classique || !user?.id) return;
+    let vivant = true;
+    void lireScores(user.id, classique.id).then((data) => { if (vivant) setHistoClassique({ pour: classique.id, data }); });
+    return () => { vivant = false; };
+  }, [classique, user?.id]);
+  const historiqueClassique = classique && histoClassique?.pour === classique.id ? histoClassique.data : null;
+  const meilleurClassique = useMemo(() => {
+    if (!historiqueClassique?.length) return null;
+    return historiqueClassique.reduce<ScoreDate | null>((m, s) => (!m || (s.sorte === "temps" ? s.valeur < m.valeur : s.valeur > m.valeur) ? s : m), null);
+  }, [historiqueClassique]);
+  const [resultatClassique, setResultatClassique] = useState<ResultatClassique | null>(null);
+  const [finClassiqueLe, setFinClassiqueLe] = useState<string>("");
+  const journalClassiqueRef = useRef<{ exercices: Exercise[]; marques: MarquesSeance } | null>(null);
+  const scoreClassiqueRef = useRef<ScoreClassique | null>(null);
+  const [departSansDecompte, setDepartSansDecompte] = useState(false);
+  const [premiereOuverte, setPremiereOuverte] = useState(() => !!classique && phase === "intro" && !feuilleVue(user?.id, classique.format));
+  const [regleOuverte, setRegleOuverte] = useState(false);
+  /* Le prochain essai : « depuis » vaut l'essai qui vient d'être fait, ou
+     le dernier essai lu, ou rien (pas encore d'essai). */
+  const [choixJour, setChoixJour] = useState<{ depuis: Date | null } | null>(null);
+  const [jourChoisi, setJourChoisi] = useState<string | null>(null);
+  const fermerPremiere = () => {
+    if (classique) noterFeuilleVue(user?.id, classique.format);
+    setPremiereOuverte(false);
+  };
+
   const memoriser = useCallback(() => {
+    /* Un classique ne se reprend pas : son chrono n'a pas de sens après coup. */
+    if (classique) return;
     if (phase !== "exercising" && phase !== "resting") return;
     onProgress?.(exercises, { phase, exerciseIdx, setIdx, doneMap,
       elapsed: paused || !startMs ? elapsed : Math.max(elapsed, Math.floor((Date.now() - startMs) / 1000)),
@@ -578,7 +623,7 @@ export default function WorkoutGuideModal({
       remplacements, chargeCourante, repsSaisie, correction, margesFin, questionsPosees,
       validationEnCours: validationRef.current,
     }, debutRef.current ?? Date.now());
-  }, [phase, exerciseIdx, setIdx, doneMap, paused, startMs, elapsed, restCountdown, restTotal, restMode, autoCountdown, prep, hiitSub, exercises, onProgress, remplacements, chargeCourante, repsSaisie, correction, margesFin, questionsPosees]);
+  }, [classique, phase, exerciseIdx, setIdx, doneMap, paused, startMs, elapsed, restCountdown, restTotal, restMode, autoCountdown, prep, hiitSub, exercises, onProgress, remplacements, chargeCourante, repsSaisie, correction, margesFin, questionsPosees]);
   useEffect(() => { memoriser(); }, [memoriser]);
   useEffect(() => {
     const interrompre = () => {
@@ -622,9 +667,12 @@ export default function WorkoutGuideModal({
          finie à 9 h 10 ne comptait pas pour « Lève-tôt ». */
       debutMs: debutRef.current,
       dureeS: elapsed,
-      exercices: exercises,
+      /* Un classique donne ses exercices tels qu'ils ont été joués (les
+         tours du max, les minutes) et son score (lib/classiques.ts). */
+      exercices: journalClassiqueRef.current?.exercices ?? exercises,
       marques: doneMap,
       remplacements,
+      score: scoreClassiqueRef.current,
     });
     const finalisation = finaliserSeance(dependancesReelles(supabase), nouvelleAttente({
       journal: journalRef.current,
@@ -1276,9 +1324,28 @@ export default function WorkoutGuideModal({
     setPhase("exercising");
     const prep0 = sansDecompteRef.current ? 0 : 3;
     sansDecompteRef.current = false;
+    /* Un classique joue son propre 3-2-1, sauf si l'intro vient du sien. */
+    setDepartSansDecompte(prep0 === 0);
+    setResultatClassique(null); journalClassiqueRef.current = null; scoreClassiqueRef.current = null;
+    setPremiereOuverte(false); setRegleOuverte(false);
     if (exercises[0]?.auto)      { setAutoCountdown(exercises[0].auto); setPrep(prep0); }
     else if (exercises[0]?.hiit) { setHiitSub("work"); setAutoCountdown(HIIT_WORK); setPrep(prep0); }
   };
+
+  /* ── Un classique fini : le tunnel donne l'essai au journal ──
+     Ses exercices tels qu'ils ont été joués et ses marques partent par
+     `enregistrer`, l'autorité unique de la fin de séance. */
+  const finirClassique = (r: ResultatClassique) => {
+    if (!classique) return;
+    const j = journalDuClassique(classique, r);
+    journalClassiqueRef.current = j;
+    scoreClassiqueRef.current = r.score;
+    setResultatClassique(r);
+    setFinClassiqueLe(new Date().toISOString());
+    setDoneMap(j.marques);
+    setPhase("done");
+  };
+  const secondesTunnel = () => (paused || !startMs ? elapsed : (Date.now() - startMs) / 1000);
 
   /* ── Timers ── */
   const autoTotal  = isHiit ? (hiitSub === "work" ? HIIT_WORK : HIIT_REST) : (cur?.auto ?? 0);
@@ -1327,7 +1394,21 @@ export default function WorkoutGuideModal({
           maxHeight: "94dvh",
         }}
       >
-        {tunnelActif ? (
+        {tunnelActif && classique ? (
+          <div className="flex-1 min-h-0" style={{ paddingTop: "env(safe-area-inset-top)" }}>
+            <TunnelClassique
+              classique={classique}
+              elapsed={elapsed}
+              secondes={secondesTunnel}
+              paused={paused}
+              onPause={togglePause}
+              onQuitter={quitter}
+              onFin={finirClassique}
+              meilleur={meilleurClassique}
+              sansDecompte={departSansDecompte}
+            />
+          </div>
+        ) : tunnelActif ? (
           <>
             {/* ══ L'EN-TÊTE : les segments « stories » (teal = fait, violet =
                 en cours), le temps, le Guide, la pause, fermer ══ */}
@@ -1843,8 +1924,26 @@ export default function WorkoutGuideModal({
         <div className="flex-1 overflow-y-auto" style={{ scrollbarWidth: "none" }}>
           <AnimatePresence mode="wait">
 
+            {/* ─────────── 01 bis · LA FICHE D'UN CLASSIQUE : ton meilleur en héros ─────────── */}
+            {phase === "intro" && classique && (
+              <FicheClassique key="fiche-classique"
+                classique={classique}
+                heroImage={heroImage}
+                guide={guide}
+                historique={historiqueClassique}
+                onLancer={lancerSeance}
+                onProgrammer={user?.id ? () => {
+                  const dernier = historiqueClassique?.[historiqueClassique.length - 1];
+                  setChoixJour({ depuis: dernier ? new Date(dernier.quand) : null });
+                } : undefined}
+                onRegle={() => setRegleOuverte(true)}
+                onMouvement={(nom) => { const exo = trouverExercice(nom); if (exo) setFiche(exo); }}
+                onFermer={quitter}
+              />
+            )}
+
             {/* ─────────── 01 · LA FICHE — l'affiche (thème clair/sombre) ─────────── */}
-            {phase === "intro" && (
+            {phase === "intro" && !classique && (
               <motion.div key="intro"
                 initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, y: -12 }}
                 className="flex flex-col"
@@ -1974,6 +2073,22 @@ export default function WorkoutGuideModal({
                     chiffres, le progrès et la série. Les morceaux vivent
                     dans `seance/FinDeSeance.tsx` ; le tunnel ne leur donne
                     que ce que le journal a enregistré. */}
+                {/* Un classique : son score en héros (seance/classique/FinClassique). */}
+                {classique && resultatClassique ? (
+                  <FinClassique
+                    classique={classique}
+                    score={resultatClassique.score}
+                    historique={historiqueClassique}
+                    faits={resultatClassique.passages.length}
+                    partiel={resultatClassique.partiel ?? 0}
+                    guide={guide}
+                    aujourdhui={finClassiqueLe}
+                    serie={serieDuJour}
+                    exp={expFin}
+                    onChoisirJour={user?.id ? () => setChoixJour({ depuis: new Date(finClassiqueLe || Date.now()) }) : undefined}
+                    jourChoisi={jourChoisi}
+                  />
+                ) : (<>
                 <CouvertureFin titre={title} fete={!!gainFin || !!recordFin}
                   guide={guide ? <CelebrationGuide guide={guide} hauteur="clamp(210px, 32vh, 260px)" /> : null} />
                 <TitreFin
@@ -2020,6 +2135,7 @@ export default function WorkoutGuideModal({
                     <ChevronRight size={16} strokeWidth={2.2} />
                   </button>
                 )}
+                </>)}
 
                 {/* En secondaire : le relais et les badges, à leur place. */}
                 <AnimatePresence>
@@ -2076,7 +2192,7 @@ export default function WorkoutGuideModal({
         </div>
 
         {/* ══ CTA bas : la fiche et la fin (l'effort et le repos ont le leur) ══ */}
-        {(phase === "intro" || phase === "done") && (
+        {((phase === "intro" && !classique) || phase === "done") && (
         <div className="px-5 pb-6 pt-3 flex-shrink-0"
           style={{ borderTop: `1px solid ${isTunnel ? TUN.line : "rgba(var(--accent-rgb),0.08)"}` }}>
           <AnimatePresence mode="wait">
@@ -2186,7 +2302,11 @@ export default function WorkoutGuideModal({
                   </button>
                 )}
                 {partageOuvert && afficheSaved && (
-                  <button type="button" onClick={() => setEnvoyerOuvert(true)}
+                  <button type="button"
+                    onClick={() => (classique && resultatClassique?.score
+                      /* Un classique a son affiche à lui : le score, ton meilleur d'avant, l'escalier. */
+                      ? void partagerAfficheClassique(classique, resultatClassique.score, historiqueClassique, user?.pseudo)
+                      : setEnvoyerOuvert(true))}
                     className="text-[13px] font-bold min-h-[44px] cursor-pointer" style={{ color: TUN.lav }}>
                     {recordFin ? "Partager l’affiche de la séance ›" : "Partager l’affiche ›"}
                   </button>
@@ -2216,6 +2336,19 @@ export default function WorkoutGuideModal({
           )}
         </AnimatePresence>,
         document.body,
+      )}
+
+      {/* Un classique : l'explication de la première fois, puis la règle complète. */}
+      {classique && (
+        <>
+          <FeuillePremiereFois classique={classique} guide={guide} ouverte={premiereOuverte && phase === "intro"}
+            onFermer={fermerPremiere} onRegle={() => { fermerPremiere(); setRegleOuverte(true); }} />
+          <PageRegle classique={classique} ouverte={regleOuverte}
+            onFermer={() => setRegleOuverte(false)}
+            onLancer={phase === "intro" ? () => { setRegleOuverte(false); lancerSeance(); } : undefined} />
+          <ChoisirJour classique={classique} userId={user?.id ?? null} depuis={choixJour?.depuis ?? null}
+            ouverte={!!choixJour} onFermer={() => setChoixJour(null)} onChoisi={setJourChoisi} />
+        </>
       )}
 
       {/* R5 · le détail et l'envoi de l'affiche, au-dessus du tunnel. */}

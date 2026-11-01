@@ -828,7 +828,16 @@ function SessionTile({ session, onStart, onManage, onPremium, canAccessPremium, 
             }}>
             {advice?.theme ?? muscles}
           </p>
-          {!session.perso && !isPremium && (
+          {/* Un futur Vaiiya+ reste ouvert tant que la vente est fermée, et
+              le dit (Louis, 2026-10-31 : rien ne se bloque qu'on ne puisse
+              débloquer). */}
+          {!session.perso && !isPremium && session.bientotPlus && (
+            <span className="mt-1.5 px-[5px] py-[2px] rounded-[5px] text-[11px] font-semibold"
+              style={{ background: PREMIUM_PUCE, color: "#3A2402" }}>
+              Bientôt Vaiiya+
+            </span>
+          )}
+          {!session.perso && !isPremium && !session.bientotPlus && (
             <span className="mt-1.5 text-[11px] font-bold"
               style={{ color: "rgba(255,255,255,0.68)", textShadow: "0 1px 6px rgba(0,0,0,0.55)" }}>
               Incluse
@@ -1620,8 +1629,10 @@ const CATALOG: CatDef[] = [
     img: "cardio-stepper", match: matchCollection("routines", () => false) },
   { id: "joursans", famille: "moment", name: "Les jours sans", tag: "Bouger un peu quand l’envie n’y est pas.",
     img: "repos", pos: "62% 50%", match: matchCollection("joursans", () => false) },
-  { id: "defis", famille: "moment", name: "Défis", tag: "Un max, un chrono, un record à battre.",
-    img: "cat-defis", match: matchCollection("defis", (_s, hay) => /défi|defi|challenge|\bmax\b|record/.test(hay)) },
+  /* Les classiques (« Le chrono et le score », 2026-11-01) remplacent
+     « Défis ». Rien qu'en collection déclarée. */
+  { id: "classiques", famille: "moment", name: "Les classiques", tag: "La même séance, d’un mois sur l’autre. Ton score te dit où tu en es.",
+    img: "cat-defis", match: matchCollection("classiques", () => false) },
   { id: "conseils", famille: "lire", name: "Conseils & progresser", tag: "Des conseils francs et utiles, à lire partout.",
     img: "cat-conseils", match: matchCollection("conseils", () => false) },
 ];

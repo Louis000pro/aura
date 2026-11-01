@@ -16,6 +16,7 @@ import { createClient } from "@/lib/supabase";
 import { levelToDifficulty, type WorkoutDifficulty, type WorkoutCategory } from "@/lib/assistantActions";
 import type { Exercise } from "@/components/WorkoutGuideModal";
 import { estimerMinutes, itemDExercice } from "@/lib/dureeLibre";
+import { classiqueParTitre } from "@/lib/classiques";
 import {
   COMPOSITION_VERSION, EXERCICES_PAR_ETAPE, entreesDe, orientationDe, prescrire,
   projeterPrescription, type ContexteComposition,
@@ -445,7 +446,10 @@ export function dayTitle(day: PlanningDay): string {
  *  (lib/dureeLibre.ts), la même que le catalogue et le lecteur. Sans liste,
  *  le repli d'avant : 30 minutes pour un HIIT, 45 sinon. Avant le lot 3,
  *  toute intention s'annonçait à 30 ou 45 minutes, même une routine de cinq. */
-export function dureeIntention(day: Pick<PlanningDay, "type" | "exerciseList">): number {
+export function dureeIntention(day: Pick<PlanningDay, "type" | "exerciseList"> & { title?: string }): number {
+  /* Un classique a sa durée à lui : son chrono ne suit pas ses exercices. */
+  const classique = classiqueParTitre(day.title);
+  if (classique) return classique.minutes;
   return day.exerciseList?.length ? estimerMinutes(day.exerciseList.map(itemDExercice)) : day.type === "HIIT" ? 30 : 45;
 }
 /** Label du jour de la semaine pour une date (Lundi…Dimanche). */

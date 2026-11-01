@@ -19,10 +19,12 @@
    entrées à tenir ensemble : ici, dans `exerciseData`, et dans
    `SESSION_SLUGS` si on veut que le Guide sache la nommer.
    ════════════════════════════════════════════════════════════════════ */
-import { BookOpen, Dumbbell, Flame, Home, Layers, Moon, Sparkles, Sun, Wind, Zap } from "lucide-react";
+import { BookOpen, Dumbbell, Flame, Home, Layers, Moon, Sparkles, Sun, Timer, Wind, Zap } from "lucide-react";
 import type { Exercise } from "@/components/WorkoutGuideModal";
 import type { WorkoutCategory } from "@/lib/assistantActions";
 import { ADVICE_ARTICLES } from "@/lib/adviceArticles";
+import { CLASSIQUES, FACON, exercicesDuClassique, type Classique } from "@/lib/classiques";
+import { VENTE_OUVERTE } from "@/lib/plans";
 
 export type { WorkoutCategory };
 
@@ -31,7 +33,7 @@ export type CatalogCollection =
   | "abdos" | "fessiers" | "jambes" | "pecs" | "dos" | "epaules" | "bras"
   | "haut" | "fullbody" | "salle"
   | "sansmateriel" | "debuter" | "mobilite" | "recup"
-  | "defis" | "conseils"
+  | "classiques" | "conseils"
   | "force" | "longues" | "circuits" | "emom" | "intervalles" | "isometrie"
   | "routines" | "joursans" | "tete" | "voyage" | "dehors"
   | "halteres" | "kettlebell"
@@ -54,7 +56,48 @@ export type WorkoutSession = {
   collections?: CatalogCollection[];
   previewExercises?: string[];
   contentType?: "article";
+  /** Un futur Vaiiya+, ouvert tant que la vente est fermée : la carte dit
+   *  « Bientôt Vaiiya+ » (Louis, 2026-10-31 : rien ne se bloque qu'on ne
+   *  puisse débloquer). */
+  bientotPlus?: boolean;
 };
+
+/* ── Les classiques (« Le chrono et le score », GO du 2026-11-01) ──
+   Leurs fiches se DÉRIVENT de lib/classiques.ts, la seule écriture. Les
+   quatre futurs Vaiiya+ restent ouverts tant que la vente est fermée, et
+   passent en Vaiiya+ le jour où `VENTE_OUVERTE` passe à vrai. Ils sont
+   à la fin du tableau : les premières cartes des autres rangées ne
+   bougent pas. */
+const COLLECTIONS_CLASSIQUE: Record<string, CatalogCollection[]> = {
+  "decompte": ["cardiohiit", "sansmateriel", "fullbody"],
+  "escalier": ["sansmateriel", "fullbody"],
+  "centurion": ["abdos", "sansmateriel"],
+  "max-12": ["sansmateriel", "fullbody", "cardiohiit"],
+  "cinq-minutes-burpees": ["cardiohiit", "sansmateriel"],
+  "record-chaise": ["jambes", "isometrie"],
+  "une-de-plus": ["cardiohiit", "sansmateriel"],
+  "la-centaine": ["sansmateriel", "fullbody"],
+  "cinq-cents": ["sansmateriel", "fullbody"],
+  "max-20-halteres": ["fullbody"],
+  "kilometre-rameur": ["salle", "cardiohiit"],
+};
+
+function seanceDuClassique(c: Classique): WorkoutSession {
+  const exos = exercicesDuClassique(c);
+  const ferme = !c.ouvert && VENTE_OUVERTE;
+  return {
+    id: c.id, category: c.categorie,
+    title: c.titre, subtitle: `${FACON[c.sorte].charAt(0).toUpperCase()}${FACON[c.sorte].slice(1)} · ${c.materiel}`,
+    duration: c.minutes, difficulty: c.niveau, exercises: exos.length,
+    muscles: [...new Set(exos.flatMap((e) => e.muscles))].slice(0, 3),
+    accent: "#8B5CF6", icon: Timer, access: ferme ? "premium" : "free",
+    collections: ["classiques", ...(COLLECTIONS_CLASSIQUE[c.id] ?? [])],
+    ...(c.ouvert ? {} : {
+      bientotPlus: !VENTE_OUVERTE,
+      previewExercises: [...new Set(exos.map((e) => e.name))].slice(0, 3),
+    }),
+  };
+}
 
 export const workoutSessions: WorkoutSession[] = [
   {
@@ -139,7 +182,7 @@ export const workoutSessions: WorkoutSession[] = [
     duration: 22, difficulty: "Avancé", exercises: 5,
     muscles: ["Corps entier", "Cardio"],
     accent: "#8B5CF6", icon: Flame, access: "premium",
-    collections: ["sansmateriel", "fullbody", "cardiohiit", "perte", "defis"],
+    collections: ["sansmateriel", "fullbody", "cardiohiit", "perte"],
     previewExercises: ["Sprint sur place", "Fentes sautées", "Pompes explosives"],
   },
   {
@@ -182,7 +225,7 @@ export const workoutSessions: WorkoutSession[] = [
     duration: 22, difficulty: "Intermédiaire", exercises: 8,
     muscles: ["Cardio", "Corps entier"],
     accent: "#8B5CF6", icon: Sparkles, access: "premium",
-    collections: ["cardiohiit", "perte", "sansmateriel", "defis"],
+    collections: ["cardiohiit", "perte", "sansmateriel"],
     previewExercises: ["Jumping jacks", "Mountain climbers", "Montées de genoux"],
   },
   {
@@ -1302,4 +1345,6 @@ export const workoutSessions: WorkoutSession[] = [
     accent: "#8B5CF6", icon: Moon, access: "free",
     collections: ["ski", "recup", "express"],
   },
+  /* Les classiques, en fin de tableau (voir `seanceDuClassique`). */
+  ...CLASSIQUES.map(seanceDuClassique),
 ];

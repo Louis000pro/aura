@@ -1,0 +1,46 @@
+/* ─────────────────────────────────────────────────────────────────────
+   LE CHRONO DES CLASSIQUES. Toujours clair, comme tout le tunnel : les
+   encres sont écrites en dur. On n'anime que l'opacité et `transform`.
+   ───────────────────────────────────────────────────────────────────── */
+
+/* Le point qui bat à côté du chrono : il tourne. */
+.point {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #FF7A1A;
+  animation: pouls 1.2s ease-in-out infinite;
+}
+@keyframes pouls {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.7); opacity: 0.35; }
+}
+
+/* La dernière minute : l'écran chauffe, d'en haut et d'en bas. */
+.chaleur {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 1.2s ease;
+  background:
+    radial-gradient(120% 55% at 50% 0%, rgba(255, 122, 26, 0.20), rgba(255, 122, 26, 0) 62%),
+    radial-gradient(90% 40% at 50% 100%, rgba(245, 177, 32, 0.16), rgba(245, 177, 32, 0) 70%);
+}
+.chaleur[data-on="1"] { opacity: 1; }
+
+/* « TEMPS ! » arrive d'un coup, puis se pose. */
+.temps {
+  animation: frappe 520ms cubic-bezier(0.2, 0.9, 0.25, 1.2) both;
+}
+@keyframes frappe {
+  0% { transform: scale(1.35); opacity: 0; }
+  60% { transform: scale(0.97); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .point, .temps { animation: none; }
+  .chaleur { transition: none; }
+}

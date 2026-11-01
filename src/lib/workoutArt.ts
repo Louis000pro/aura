@@ -58,6 +58,18 @@ const IMG_RULES: { re: RegExp; img: string; fam: Family }[] = [
  *  du type de séance comme dans la semaine. Titres en minuscules, et une
  *  photo d'une des familles ci-dessus, sinon la famille est inconnue. */
 export const PHOTO_PAR_TITRE: Record<string, string> = {
+  /* Les classiques (« Le chrono et le score », 2026-11-01). */
+  "le décompte": "full-burpee",
+  "l’escalier": "push-pompes",
+  "le centurion": "core-abdos",
+  "le max en 12 minutes": "full-slam",
+  "cinq minutes de burpees": "cardio-saut",
+  "le record de la chaise": "legs-squat",
+  "une de plus chaque minute": "cardio-sprint",
+  "la centaine": "legs-fentes",
+  "500 répétitions": "core-twist",
+  "le max en 20 minutes aux haltères": "full-thruster",
+  "le kilomètre de rameur": "cardio-rameur",
   "abdos sans tirer sur la nuque": "core-releve",
   "le tronc dans tous les sens": "core-twist",
   "esprit pilates": "core-lateral",
