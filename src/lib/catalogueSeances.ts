@@ -1366,6 +1366,26 @@ export const workoutSessions: WorkoutSession[] = [
     collections: ["hybride", "circuits", "halteres", "cardiohiit"],
     previewExercises: ["Jumping jacks", "Thruster haltères", "Burpees"],
   },
+  /* Vague 14 : deux séances liées à ce qu'on mange (lot 3, la suite ; GO
+     de Louis le 2026-11-01). Rangées dans « Perte de poids » d'abord. */
+  {
+    id: "force-regime", category: "force",
+    title: "Garder sa force pendant un régime", subtitle: "Squat · Développé couché · Rowing · Charges lourdes",
+    duration: 43, difficulty: "Intermédiaire", exercises: 5,
+    muscles: ["Quadriceps", "Pectoraux", "Dos"],
+    accent: "#8B5CF6", icon: Dumbbell, access: "premium",
+    collections: ["perte", "force", "salle"],
+    previewExercises: ["Squat barre", "Développé couché", "Rowing barre"],
+  },
+  {
+    id: "a-jeun-matin", category: "cardio",
+    title: "À jeun le matin", subtitle: "Cardio facile · Renfo léger",
+    duration: 26, difficulty: "Débutant", exercises: 7,
+    muscles: ["Cardio", "Jambes", "Core"],
+    accent: "#8B5CF6", icon: Sun, access: "premium",
+    collections: ["perte", "routines", "sansmateriel"],
+    previewExercises: ["Montées de genoux", "Step up banc", "Pont fessier"],
+  },
   /* Les classiques, en fin de tableau (voir `seanceDuClassique`). */
   ...CLASSIQUES.map(seanceDuClassique),
 ];

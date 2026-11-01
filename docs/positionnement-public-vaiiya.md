@@ -58,7 +58,7 @@ on ne compare jamais les corps.
 **Quatre façons de s'entraîner, toutes réelles, à présenter ensemble.** Ne jamais
 présenter Vaiiya comme un catalogue fermé.
 
-1. **Suivre une séance du catalogue** (150 séances guidées).
+1. **Suivre une séance du catalogue** (152 séances guidées).
 2. **Construire entièrement sa propre séance**, en piochant dans la bibliothèque des
    102 mouvements animés (ou en tapant un nom libre).
 3. **Demander une séance à l'assistant**, qui la propose sur une carte à valider.
@@ -148,7 +148,7 @@ Vérifiés sur `main` le 2026-08-10. À revérifier avant réemploi.
 
 | Chiffre | Valeur | Source dans le code |
 |---|---|---|
-| Séances guidées au catalogue | 150 : 55 incluses et 95 Vaiiya+, recomptées le 2026-11-01 après les onze classiques et les deux séances Hybride (quatre futurs Vaiiya+ restent inclus tant que la vente est fermée) | `lib/catalogueSeances.ts`, compté par `lib/chiffresPublics.ts` |
+| Séances guidées au catalogue | 152 : 55 incluses et 97 Vaiiya+, recomptées le 2026-11-01 après les onze classiques, les deux séances Hybride et les deux liées à ce qu’on mange (quatre futurs Vaiiya+ restent inclus tant que la vente est fermée) | `lib/catalogueSeances.ts`, compté par `lib/chiffresPublics.ts` |
 | Mini-cours | 83 : 21 conseils d’entraînement (13 gratuits, 8 Vaiiya+) et 62 cours de nutrition (43 gratuits, 19 Vaiiya+), recomptés le 2026-10-26 | `lib/adviceArticles.ts` et `lib/coursNutrition.ts`, additionnés par `lib/chiffresPublics.ts` |
 | Mouvements animés | 102 | `lib/exerciseLibrary.ts` |
 | Fiches exercices publiques | 8 | `lib/exercicesPublics.ts` |
@@ -196,7 +196,7 @@ fermée.
 ## 13. Claims autorisés
 
 - « Application web française d'entraînement et de nutrition, avec un assistant IA. »
-- « Un catalogue de 150 séances guidées, montrées mouvement par mouvement. »
+- « Un catalogue de 152 séances guidées, montrées mouvement par mouvement. »
 - « 102 mouvements animés, consultables librement. »
 - « Compose ta propre séance, ou demande-la à l'assistant. »
 - « L'assistant agit : il propose, tu valides. Rien ne s'écrit sans ton accord. »

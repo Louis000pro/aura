@@ -116,6 +116,9 @@ export const PHOTO_PAR_TITRE: Record<string, string> = {
      celle de la maison (sans règle, le titre ne disait rien). */
   "hybride, découverte": "cardio-rameur",
   "hybride à la maison": "full-thruster",
+  /* Liées à ce qu'on mange : le squat lourd, et la marche du step au réveil. */
+  "garder sa force pendant un régime": "legs-squat",
+  "à jeun le matin": "cardio-stepper",
 };
 
 /** La famille d'une photo de la banque. */

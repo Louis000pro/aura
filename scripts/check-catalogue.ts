@@ -40,6 +40,7 @@ import { WAVE_10_EXERCISES } from "@/lib/workoutWave10";
 import { WAVE_11_EXERCISES } from "@/lib/workoutWave11";
 import { WAVE_12_EXERCISES } from "@/lib/workoutWave12";
 import { WAVE_13_EXERCISES } from "@/lib/workoutWave13";
+import { WAVE_14_EXERCISES } from "@/lib/workoutWave14";
 import { GUIDE_SECTIONS, sectionSessionId } from "@/lib/guideSections";
 import { resolveGuide } from "@/lib/exerciseGuides";
 import { exercicesDisponibles, trouverExercice } from "@/lib/exerciseLibrary";
@@ -163,6 +164,8 @@ const vague9 = ids9.map((id) => parId.get(id)).filter((s): s is WorkoutSession =
     "avant-dormir", "pas-la-forme", "respirer", "grand-dimanche", "mauvaise-journee",
     /* Le lot 4 : les récupérations, faites après l'effort. */
     "apres-sortie", "lendemain-match", "hanches-velo", "apres-ski",
+    /* À jeun le matin : le cardio facile du début sert d'échauffement. */
+    "a-jeun-matin",
   ];
   const marquees = Object.entries(exerciseData).filter(([, exos]) => exos.some((e) => e.sansEchauffement)).map(([id]) => id);
   verdict("les séances sans échauffement sont celles qu’on a décidées",
@@ -272,6 +275,34 @@ const vague13 = ids13.map((id) => parId.get(id)).filter((s): s is WorkoutSession
   verdict("la course hybride compte la course et le rameur en minutes, jamais en mètres", distances.length === 0, liste(distances));
 }
 
+/* ── Liées à ce qu'on mange (vague 14) ───────────────────────────────── */
+
+const ids14 = Object.keys(WAVE_14_EXERCISES);
+const vague14 = ids14.map((id) => parId.get(id)).filter((s): s is WorkoutSession => !!s);
+
+{
+  verdict("chaque séance de la vague 14 a sa fiche au catalogue", vague14.length === ids14.length,
+    liste(ids14.filter((id) => !parId.has(id))));
+
+  const autres = new Set([
+    ...Object.keys(WAVE_1_EXERCISES), ...Object.keys(WAVE_2_EXERCISES), ...Object.keys(WAVE_3_EXERCISES),
+    ...Object.keys(WAVE_4_EXERCISES), ...Object.keys(WAVE_5_EXERCISES), ...Object.keys(WAVE_6_EXERCISES),
+    ...Object.keys(WAVE_7_EXERCISES), ...Object.keys(WAVE_8_EXERCISES), ...Object.keys(WAVE_9_EXERCISES),
+    ...Object.keys(WAVE_10_EXERCISES), ...Object.keys(WAVE_11_EXERCISES), ...Object.keys(WAVE_12_EXERCISES),
+    ...Object.keys(WAVE_13_EXERCISES), ...GUIDE_SECTIONS.map(sectionSessionId),
+  ]);
+  const ecrasees = ids14.filter((id) => autres.has(id));
+  verdict("aucune séance de la vague 14 n’écrase les exercices d’une autre", ecrasees.length === 0, liste(ecrasees));
+
+  const pasLesSiens = ids14.filter((id) => exerciseData[id] !== WAVE_14_EXERCISES[id]);
+  verdict("exerciseData lit bien les exercices de la vague 14", pasLesSiens.length === 0, liste(pasLesSiens));
+
+  /* Le nom dit ce qu'on fait : le mot du métier (« sèche ») ne remplace
+     jamais le nom (Louis, 2026-11-01). */
+  const jargon = vague14.filter((s) => /s[èe]che/i.test(s.title)).map((s) => s.title);
+  verdict("aucun titre de la vague 14 ne dit « sèche »", jargon.length === 0, liste(jargon));
+}
+
 /* Les deux séances d'avant que la proposition passait en circuit de trois
    tours : leur fiche suit leur nouveau contenu. */
 for (const id of ["core", "fullbody-machines"]) {
@@ -295,7 +326,7 @@ function minutesDuTitre(titre: string): number | null {
   return /^\d+$/.test(m[1]) ? Number(m[1]) : (NOMBRES[m[1]] ?? Number.NaN);
 }
 
-for (const s of [...vague7, ...vague8, ...vague9, ...vague10, ...vague11, ...vague13]) {
+for (const s of [...vague7, ...vague8, ...vague9, ...vague10, ...vague11, ...vague13, ...vague14]) {
   const exos = exerciseData[s.id];
 
   const sansFiche = exos.filter((e) => !resolveGuide(e.name) || !trouverExercice(e.name)).map((e) => e.name);
@@ -311,7 +342,9 @@ for (const s of [...vague7, ...vague8, ...vague9, ...vague10, ...vague11, ...vag
     `${s.duration} min, ${express ? "dans" : "hors de"} express`);
 
   const tete = s.collections?.[0];
-  if (vague13.includes(s)) {
+  if (vague14.includes(s)) {
+    verdict(`${s.title} · sa première collection est « Perte de poids »`, tete === "perte", (s.collections ?? []).join(", "));
+  } else if (vague13.includes(s)) {
     verdict(`${s.title} · sa première collection est « hybride », et elle est dans « Circuits et supersets »`,
       tete === "hybride" && !!s.collections?.includes("circuits"), (s.collections ?? []).join(", "));
   } else if (vague11.includes(s)) {
@@ -348,7 +381,7 @@ for (const s of [...vague7, ...vague8, ...vague9, ...vague10, ...vague11, ...vag
 
 {
   const textes: { ou: string; texte: string }[] = [];
-  for (const s of [...vague7, ...vague8, ...vague9, ...vague10, ...vague11, ...vague13]) {
+  for (const s of [...vague7, ...vague8, ...vague9, ...vague10, ...vague11, ...vague13, ...vague14]) {
     textes.push({ ou: `${s.id} (titre)`, texte: s.title }, { ou: `${s.id} (sous-titre)`, texte: s.subtitle });
     exerciseData[s.id].forEach((e, i) => {
       textes.push(
@@ -392,7 +425,7 @@ for (const s of [...vague7, ...vague8, ...vague9, ...vague10, ...vague11, ...vag
 
   /* Une durée écrite dans les répétitions déclenche le chrono du lecteur :
      elle doit être voulue, donc portée par `auto` ou `hiit`. */
-  const chronoCache = [...vague7, ...vague8, ...vague9, ...vague10, ...vague11, ...vague13].flatMap((s) => exerciseData[s.id]
+  const chronoCache = [...vague7, ...vague8, ...vague9, ...vague10, ...vague11, ...vague13, ...vague14].flatMap((s) => exerciseData[s.id]
     .filter((e) => /\d+\s*(?:secondes?|sec|s|min)\b/i.test(e.reps) && !e.auto && !e.hiit)
     .map((e) => `${s.id} · ${e.name} (${e.reps})`));
   verdict("une durée dans les répétitions a toujours son chrono déclaré", chronoCache.length === 0, liste(chronoCache));
