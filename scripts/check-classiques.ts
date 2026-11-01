@@ -301,6 +301,10 @@ for (const x of CLASSIQUES) {
   const page = lire("src/app/progression/page.tsx");
   verdict("la rangée « Les classiques » remplace « Défis »", page.includes(`{ id: "classiques", famille: "moment", name: "Les classiques"`) && !page.includes(`id: "defis"`));
   verdict("une carte « Bientôt Vaiiya+ » le dit", page.includes("session.bientotPlus") && page.includes("Bientôt Vaiiya+"));
+  const profil = lire("src/app/profil/page.tsx");
+  const tes = lire("src/components/profil/TesClassiques.tsx");
+  verdict("le profil montre « Tes classiques », ton meilleur sur chacun", profil.includes("<TesClassiques userId={user.id} />")
+    && tes.includes("bilanDe(") && tes.includes("if (!data?.length) return null;"));
 }
 
 /* ── La migration du score, jouée pour de vrai ──────────────────────── */

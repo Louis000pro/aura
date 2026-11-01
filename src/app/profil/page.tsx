@@ -29,6 +29,7 @@ import { type PerformanceData, type ReglageAffiche, ecrireReglagesAffiches, lire
 import CourbePoids from "@/components/profil/CourbePoids";
 import CarteConstance from "@/components/profil/CarteConstance";
 import RecordsProgres from "@/components/profil/RecordsProgres";
+import TesClassiques from "@/components/profil/TesClassiques";
 import HistoriqueMasque from "@/components/historique/HistoriqueMasque";
 import { debutHistorique, estVisible, historiqueComplet } from "@/lib/historique";
 import WeighInPrompt from "@/components/WeighInPrompt";
@@ -1204,6 +1205,9 @@ export default function ProfilPage() {
 
             {/* Les records : ce que le journal des séries a de meilleur, mouvement par mouvement. */}
             {user && <RecordsProgres userId={user.id} />}
+
+            {/* Les classiques : ton meilleur sur chacun (« Le chrono et le score »). */}
+            {user && <TesClassiques userId={user.id} />}
 
             {historiqueMasque && <HistoriqueMasque className="mb-6" />}
 
