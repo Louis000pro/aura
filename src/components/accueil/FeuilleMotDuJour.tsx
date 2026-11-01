@@ -153,11 +153,14 @@ export default function FeuilleMotDuJour({
     return () => clearTimeout(t);
   }, []);
 
+  /* LES PROGRAMMES · la prochaine séance du programme tient le rôle de
+     l'étape : le cycle est en pause, le mot n'en parle pas. */
+  const enProgramme = j.etat === "parcours" && !!j.parcours;
   const plan = j.etat === "loading" ? null : {
-    etat: j.etat,
+    etat: enProgramme ? "etape" as const : j.etat,
     titre: j.jour ? dayTitle(j.jour) : null,
-    etape: j.etape?.nom ?? null,
-    jour: j.reserveLe ?? j.prevuLe ?? null,
+    etape: enProgramme ? j.parcours?.titre ?? null : j.etape?.nom ?? null,
+    jour: enProgramme ? j.parcours?.quand ?? null : j.reserveLe ?? j.prevuLe ?? null,
     mouvements: j.aLancer?.exercices.map((x) => x.name) ?? [],
     minutes: j.doneStats?.minutes ?? null,
   };

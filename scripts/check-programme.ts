@@ -833,7 +833,10 @@ verdict(
     "V7A · « Refaire la séance » a sa propre action, pas celle du héros",
     /onClick=\{onRedo\}[\s\S]*Refaire la séance/.test(heroDone)
       && heroJournee.includes("onRedo={j.refaire}")
-      && journee.includes("repetitionDuJour(jour)"),
+      /* LES PROGRAMMES · la journée affichée est le fait du programme
+         quand un programme est en cours, sinon l’intention du jour. */
+      && journee.includes("repetitionDuJour(jourAffiche)")
+      && journee.includes("const jourAffiche = enCours ? jourParcoursFait : jour;"),
     "le bouton ne passe plus par `lancementDuJour`",
   );
   verdict(
@@ -7234,7 +7237,10 @@ verdict(
     hook.includes('if (choix.genre === "indisponible") { indisponibleEtGarder(); return; }') && hook.includes('if (choix.genre === "indisponible") throw new Error("resolution_illisible");')
       && !hook.includes("proposee.rang } : brute;") && hook.includes("programmeAfficheRef.current === actifLu.programme.id"), "tour 40");
   verdict("R9a · cron : les réservations du programme passent par la résolution, et une panne les fait taire",
-    cron.includes("if (!p.seancePrevue || p.seanceProgramme) candidats.push(id);") && cron.includes("taire(candidats)") && cron.includes("seanceARappeler({ seancePrevue: p.seancePrevue, seanceProgramme: p.seanceProgramme, resolution })"), "tour 40");
+    cron.includes("if (!p.seancePrevue || p.seanceProgramme) candidats.push(id);") && cron.includes("taire(aResoudre)") && cron.includes("seanceARappeler({ seancePrevue: p.seancePrevue, seanceProgramme: p.seanceProgramme, resolution })"), "tour 40");
+  verdict("LES PROGRAMMES · cron : un programme en cours met la projection du cycle en pause",
+    cron.includes("from(\"parcours\").select(\"user_id\").in(\"user_id\", candidats).eq(\"statut\", \"en_cours\")")
+      && cron.includes("const aResoudre = candidats.filter((id) => !enPause.has(id));"), "le rappel du soir ne relance pas une étape du cycle en pause");
   const guide9 = lire9("src/lib/guideMoteur.ts");
   verdict("R9a · le Guide ne présente pas la suite brute quand la résolution a raté",
     guide9.includes("resolutionIndisponible = true;") && guide9.includes("etat.programme && !etat.resolutionIndisponible"), "tour 40");

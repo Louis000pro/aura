@@ -25,6 +25,12 @@ import {
 import WeeklyProgramme from "@/components/WeeklyProgramme";
 import AdaptationSheet from "@/components/entrainement/AdaptationSheet";
 import MaSemaineSheet, { type ALiberer } from "@/components/semaine/MaSemaineSheet";
+import dynamic from "next/dynamic";
+import RangeeProgrammes from "@/components/parcours/RangeeProgrammes";
+import type { VueParcours } from "@/components/parcours/ParcoursEcrans";
+import { titreCreneau } from "@/lib/parcours";
+/* Les écrans d’un programme (fiche, semaine, test, fin) se chargent à l’ouverture. */
+const ParcoursEcrans = dynamic(() => import("@/components/parcours/ParcoursEcrans"), { ssr: false });
 import VersionCourteSheet from "@/components/entrainement/VersionCourteSheet";
 import MesJoursSheet from "@/components/semaine/MesJoursSheet";
 import MonProgrammeSheet from "@/components/programme/MonProgrammeSheet";
@@ -1582,7 +1588,9 @@ function CatTile({ cat, count, freeCount, premiumCount, large, onOpen }: {
   );
 }
 
-function ChooseSheet({ sessions, loading, canAccessPremium, maxSeances, catInitial, pourDate, userId, niveau, onClose, onStart, onUpgrade, onCreate, onEdit, onDelete, onVisibilityChange, onInspirer, onPlanifier, onDemander, onMouvement }: {
+function ChooseSheet({ sessions, loading, canAccessPremium, maxSeances, catInitial, pourDate, userId, niveau, onClose, onStart, onUpgrade, onCreate, onEdit, onDelete, onVisibilityChange, onInspirer, onPlanifier, onDemander, onMouvement, apresPourToi }: {
+  /** LES PROGRAMMES · la rangée « Suivre un programme », posée après « Pour toi ». */
+  apresPourToi?: React.ReactNode;
   sessions: MergedSession[];
   loading: boolean;
   canAccessPremium: boolean;
@@ -1786,6 +1794,7 @@ function ChooseSheet({ sessions, loading, canAccessPremium, maxSeances, catIniti
             onToutesCollections={() => ouvrirCollection("toutes", false)}
             onDemander={onDemander}
             onMouvement={onMouvement}
+            apresPourToi={pourDate ? undefined : apresPourToi}
           />
         ) : !cat ? (
           /* ── Tout le catalogue : la grille des collections, par familles ── */
@@ -2654,6 +2663,8 @@ export default function ProgressionPage() {
      sortie du questionnaire ; ici c'est le repli pour les comptes qui
      avaient répondu avant que le questionnaire ne sache le faire. */
   const journee = useJournee({ creerProgramme: true });
+  /* LES PROGRAMMES · l’écran du programme ouvert (fiche, semaine, test, fin). */
+  const [vueParcours, setVueParcours] = useState<VueParcours>(null);
   const { semaine: week, setSemaine: setWeek, niveau: profileLevel, recharger: loadWeek } = journee;
 
   /* ── UI ── */
@@ -3227,10 +3238,16 @@ export default function ProgressionPage() {
           }}
         >
           <div data-tour-anchor="prog-semaine" className="vy-filet">
-            <WeekStrip week={week} dates={semaineDates} today={today} onOrganise={() => setSheet("semaine")}
-              prevues={journee.projection?.resolution?.jours
-                .filter((j) => !j.reservee && !j.conflit)
-                .map((j) => ({ date: j.date, nom: j.etape.nom }))} />
+            {/* Pendant un programme, la semaine est la sienne : ses séances à
+                venir, et « Organiser » ouvre la semaine du programme. Le cycle
+                est en pause, il ne prévoit rien. */}
+            <WeekStrip week={week} dates={semaineDates} today={today}
+              onOrganise={() => (journee.parcours ? setVueParcours({ genre: "semaine" }) : setSheet("semaine"))}
+              prevues={journee.parcours
+                ? journee.parcours.cal.creneaux.filter((c) => !c.fait).map((c) => ({ date: c.date, nom: titreCreneau(c) }))
+                : journee.projection?.resolution?.jours
+                  .filter((j) => !j.reservee && !j.conflit)
+                  .map((j) => ({ date: j.date, nom: j.etape.nom }))} />
           </div>
           {journee.programme && (
             <div className="vy-filet">
@@ -3250,6 +3267,10 @@ export default function ProgressionPage() {
       </div>
 
       {/* ══ Sheets ══ */}
+      {vueParcours && (
+        <ParcoursEcrans vue={vueParcours} onVue={setVueParcours} j={journee}
+          premium={canAccessPremium} onPremium={() => { setVueParcours(null); router.push("/premium"); }} />
+      )}
       <AnimatePresence>
         {court && (
           <VersionCourteSheet
@@ -3364,6 +3385,11 @@ export default function ProgressionPage() {
         {sheet === "choisir" && (
           <ChooseSheet
             key={choisirCible ?? "collections"}
+            apresPourToi={(
+              <RangeeProgrammes lecture={journee.lectureParcours} parcours={journee.parcours}
+                premium={canAccessPremium} aujourdhui={today}
+                onOuvrir={(id) => setVueParcours({ genre: "fiche", id })} />
+            )}
             sessions={allSessions}
             loading={loadingCustom}
             canAccessPremium={canAccessPremium}

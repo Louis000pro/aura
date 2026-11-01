@@ -48,6 +48,8 @@ import {
   type Adaptation,
 } from "@/lib/adaptation";
 import { lireProgrammeActif, lireOccurrences, type EtapeCycle } from "@/lib/programme";
+import { faitsDuParcours, lireParcours } from "@/lib/parcoursBase";
+import { calendrierParcours, dateEnLettres, quandDit, rangDit, titreCreneau } from "@/lib/parcours";
 import { occurrenceSuivante } from "@/lib/occurrences";
 import {
   fetchRange, reservationDeLOccurrence, todayYmd, dayTitle, principale,
@@ -124,6 +126,9 @@ export type EtatMoteur = {
   joursChoisis?: boolean;
   /** R9a · une absence en cours ou à venir dans la semaine. */
   absence?: { debut: string; fin: string } | null;
+  /** LES PROGRAMMES · le programme de quelques semaines en cours : le
+   *  cycle est en pause tant qu’il dure. */
+  parcours?: { titre: string; rang: string | null; prochain: string | null; quand: string | null; fin: string } | null;
 };
 
 /* ═══════════════════ La lecture ═══════════════════ */
@@ -174,6 +179,7 @@ async function lireEtatMoteur(userId: string): Promise<EtatMoteur | null> {
      parallèle de la chaîne du programme. */
   const planningPromis = fetchRange(userId, fenetre).catch(() => ({} as Record<string, PlanningDay[]>));
   const contextePromis = lireContexte(userId);
+  const parcoursPromis = lireParcours(userId);
 
   let programme: EtatMoteur["programme"] = null;
   let cycle: EtatMoteur["cycle"] = [];
@@ -275,12 +281,28 @@ async function lireEtatMoteur(userId: string): Promise<EtatMoteur | null> {
 
   const contexte = await contextePromis;
 
-  if (!programme && aVenir.length === 0 && recent.length === 0 && !contexte) return null;
+  /* LES PROGRAMMES · un programme en cours met le cycle en pause : le
+     Guide le sait, et le cycle ne projette rien pendant ce temps. */
+  const lecture = await parcoursPromis;
+  let parcours: EtatMoteur["parcours"] = null;
+  if (lecture?.enCours) {
+    const cal = calendrierParcours(lecture.enCours.def, faitsDuParcours(lecture.enCours), aujourdhui);
+    parcours = {
+      titre: lecture.enCours.def.titre,
+      rang: cal.prochain ? rangDit(cal.prochain.rang, cal.total) : null,
+      prochain: cal.prochain ? titreCreneau(cal.prochain) : null,
+      quand: cal.prochain ? quandDit(cal.prochain.date, aujourdhui) : null,
+      fin: dateEnLettres(cal.fin),
+    };
+    projetees = [];
+  }
+
+  if (!programme && !parcours && aVenir.length === 0 && recent.length === 0 && !contexte) return null;
 
   return {
     aujourdhui, programme, cycle, etapeBrute, etape, reserveLe,
     adaptation, masquees, aVenir, recent, contexte,
-    joursEntrainement, joursChoisis, projetees, absence, resolutionIndisponible,
+    joursEntrainement, joursChoisis, projetees, absence, resolutionIndisponible, parcours,
   };
 }
 
@@ -349,6 +371,16 @@ function pluriel(n: number, mot: string): string {
 export function resumeMoteur(etat: EtatMoteur | null): string | null {
   if (!etat) return null;
   const lignes: string[] = [];
+
+  if (etat.parcours) {
+    const p = etat.parcours;
+    lignes.push(
+      "Programme de quelques semaines en cours : " + p.titre + (p.rang ? ", " + p.rang.toLowerCase() : "") + "."
+      + (p.prochain ? " Prochaine séance du programme : " + p.prochain + (p.quand ? ", " + p.quand : "") + "." : "")
+      + " Fin prévue le " + p.fin + "."
+      + " Pendant ce programme, le cycle ci-dessous est en pause : ne le propose pas comme séance du jour, il reprendra là où il était à la fin du programme.",
+    );
+  }
 
   if (etat.programme) {
     const noms = etat.cycle.map((e) => e.nom).join(", ");

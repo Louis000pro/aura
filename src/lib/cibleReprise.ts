@@ -39,6 +39,16 @@ async function lireCibleReprise(b: SeanceInterrompue, signal: AbortSignal): Prom
       return verdictCibleReprise(!!ligne, !!ligne && ligne[sc.colStatut] !== sc.versBase.planned,
         !!ligne?.updated_at && new Date(ligne.updated_at).getTime() > b.demarreeLe);
     }
+    /* Un programme : toujours en cours, et ce créneau pas encore fait. */
+    if (cible.genre === "parcours") {
+      const [parcours, faits] = await Promise.all([
+        client.from("parcours").select("id,statut").eq("user_id", b.userId).eq("id", cible.parcoursId).abortSignal(signal).maybeSingle(),
+        client.from(sc.table).select("id").eq("user_id", b.userId).eq("parcours_id", cible.parcoursId)
+          .eq("parcours_rang", cible.rang).limit(1).abortSignal(signal),
+      ]);
+      if (parcours.error || faits.error) return "inconnu";
+      return verdictCibleReprise(!!parcours.data, !!faits.data?.length, parcours.data?.statut !== "en_cours");
+    }
     let faitsDeLOccurrence = client.from(sc.table).select("id").eq("user_id", b.userId).eq("programme_id", cible.programmeId)
       .eq("etape_consommee_id", cible.etapeId).in(sc.colStatut, [sc.versBase.done, sc.versBase.skipped])
       .gte("consommee_le", new Date(b.demarreeLe).toISOString());

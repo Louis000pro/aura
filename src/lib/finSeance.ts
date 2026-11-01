@@ -84,6 +84,23 @@ export type CibleSeance =
          comme avant, sans prescription. */
       prescription?: LignePrescription[] | null;
       modeleId?: string | null;
+    }
+  /* LES PROGRAMMES (GO du 2026-11-01) · une séance d'un programme en cours.
+     Rien n'était écrit d'avance : la fin de séance écrit le FAIT, porté par
+     le programme et son créneau, et ne referme AUCUNE étape du cycle (il
+     est en pause, il reprendra au même endroit). */
+  | {
+      genre: "parcours";
+      parcoursId: string;
+      /** Le créneau du programme, figé au lancement. */
+      rang: number;
+      /** La séance du catalogue. */
+      seanceId: string;
+      type: string;
+      title: string;
+      difficulty: string;
+      location: Ctx | null;
+      exerciseList: Exercise[];
     };
 
 /** Ce que la fermeture écrit, tiré du JOURNAL et jamais de l'horloge. */
@@ -125,6 +142,11 @@ export type StoreFermeture = {
   marquer(userId: string, id: string, fait: FaitSeance): Promise<{ ok: true; touchees: number } | { ok: false }>;
   /** Écrit le fait d'une étape sans réservation. `doublon` : ce lancement l'a déjà écrit. */
   inserer(userId: string, cible: Extract<CibleSeance, { genre: "etape" }>, fait: FaitSeance): Promise<"ok" | "doublon" | "echec">;
+  /** Écrit le fait d'un créneau de programme. `doublon` : déjà écrit ;
+   *  `clos` : le programme n'est plus en cours (arrêté entre-temps), il n'y
+   *  a plus rien à refermer. Facultatif : un banc qui ne joue pas les
+   *  programmes n'a pas à le fournir. */
+  insererParcours?(userId: string, cible: Extract<CibleSeance, { genre: "parcours" }>, fait: FaitSeance): Promise<"ok" | "doublon" | "clos" | "echec">;
 };
 
 /** Marque une intention prévue, et vérifie que c'est bien fait. */
@@ -153,6 +175,12 @@ export async function fermerCible(
     const dejaFaite = await store.parLancement(userId, fait.lancementId);
     if (!dejaFaite.ok) return "echec";
     if (dejaFaite.id) return "deja";
+
+    if (cible.genre === "parcours") {
+      if (!store.insererParcours) return "echec";
+      const r = await store.insererParcours(userId, cible, fait);
+      return r === "ok" ? "fermee" : r === "doublon" ? "deja" : r === "clos" ? "introuvable" : "echec";
+    }
 
     if (cible.genre === "intention") {
       const ligne = await store.intention(userId, cible.intentionId);
@@ -263,6 +291,36 @@ export function storeFermeture(): StoreFermeture {
         location: cible.location,
         exerciseList: cible.exerciseList,
       }, fait, cible.rang ?? null, cible.adaptationId ?? null);
+    },
+    async insererParcours(userId, cible, fait) {
+      /* Un fait, daté par le journal, porté par son programme et son
+         créneau. Aucune étape, aucun modèle de bibliothèque (une séance du
+         catalogue n'en a pas). La base refuse un créneau déjà fait et un
+         programme qui n'est plus en cours (`verifier_fait_parcours`). */
+      const sc = await schemaIntentions();
+      const { error } = await supabase.from(sc.table).insert({
+        user_id: userId,
+        date: fait.date,
+        type: cible.type,
+        title: cible.title,
+        difficulty: cible.difficulty,
+        location: cible.location,
+        exercise_list: cible.exerciseList,
+        session_id: null,
+        [sc.colStatut]: sc.versBase.done,
+        nature: "seance",
+        origine: "utilisateur",
+        consommee_le: fait.consommeeLe,
+        lancement_id: fait.lancementId,
+        parcours_id: cible.parcoursId,
+        parcours_rang: cible.rang,
+        updated_at: new Date().toISOString(),
+      });
+      if (!error) return "ok";
+      if (error.code === "23505" && /uniq_intention_lancement|uniq_parcours_creneau/.test(error.message)) return "doublon";
+      if (/parcours_clos|parcours_inconnu|creneau_hors_parcours/.test(error.message)) return "clos";
+      console.error("[finSeance] séance de programme non écrite :", error.message);
+      return "echec";
     },
   };
 }

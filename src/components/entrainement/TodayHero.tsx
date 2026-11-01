@@ -28,6 +28,8 @@ import { dayTitle, dureeIntention, lieuLabel, type PlanningDay } from "@/lib/pla
 import type { EtatJournee } from "@/lib/journee";
 import type { EtapeCycle } from "@/lib/programme";
 import { LIBELLE_RYTHME, type Rythme } from "@/lib/rythmeSeance";
+import { SEANCES, capitale, typoParcours } from "@/lib/parcours";
+import type { EtatParcours } from "@/hooks/useJournee";
 import { Photo, WIDGET, photoHerosRetenue, retenirPhotoHeros } from "./PhotoSeance";
 
 /* ════════════════════════════════════════════════════════════════════
@@ -74,7 +76,15 @@ export default function TodayHero({
   state, day, etape, reserveLe, prevuLe = null, attendait = null, indisponible = false, onRetry, nbExos, rythme = null, nextLabel, doneStats, adaptationJusquau,
   onStart, onRedo, onImprovise, onOrganise, onShift, onReplace, onAdaptation,
   recouvrement = null, onLeger, dureeMin = null, onCourt,
+  parcours = null, onTest, onSemaineParcours,
 }: {
+  /** LES PROGRAMMES · le programme en cours (état « parcours », et la
+   *  ligne « Ensuite » de l'état « done »). */
+  parcours?: EtatParcours | null;
+  /** Ouvre le test du programme (premier et dernier créneau). */
+  onTest?: () => void;
+  /** Ouvre la semaine du programme. */
+  onSemaineParcours?: () => void;
   state: HeroState;
   day: PlanningDay | null;
   etape: EtapeCycle | null;                       // l'étape du cycle (état « etape »)
@@ -131,6 +141,9 @@ export default function TodayHero({
     : state === "done" ? WIDGET.done
     : state === "repos" || state === "libre" || state === "aucune_compatible" || state === "indisponible" ? WIDGET.repos
     : state === "etape" ? { img: resolveArt({ title: etape?.nom ?? "" }).img, pos: "center 24%" }
+    /* Le programme : la photo de sa séance, ou celle du programme pour un test. */
+    : state === "parcours" && parcours
+      ? { img: resolveArt({ title: parcours.seance?.titre ?? SEANCES[parcours.lu.def.photo]?.titre ?? parcours.lu.def.titre }).img, pos: "center 20%" }
     : { img: resolveArt({ title: day ? `${day.title} ${day.type}` : "" }).img, pos: "center 24%" };
 
   /* ⚠️ LA PHOTO N'ATTEND PAS LA JOURNÉE (Louis, 2026-10-20 : « l'image
@@ -170,7 +183,7 @@ export default function TodayHero({
       initial={photoVue ? false : { opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.45 }}
       className="overflow-hidden relative"
-      style={{ minHeight: state === "seance" || state === "etape" ? 400 : 320, borderRadius: "var(--r-affiche)", boxShadow: "var(--ombre-pose)" }}
+      style={{ minHeight: state === "seance" || state === "etape" || state === "parcours" ? 400 : 320, borderRadius: "var(--r-affiche)", boxShadow: "var(--ombre-pose)" }}
     >
       <Photo img={viz.img} pos={viz.pos} prioritaire style={{ position: "absolute", inset: 0 }} />
 
@@ -180,6 +193,7 @@ export default function TodayHero({
           style={{ background: "var(--verre-photo)", color: "#fff", border: "1px solid var(--verre-photo-bord)", backdropFilter: "blur(16px) saturate(170%)", WebkitBackdropFilter: "blur(16px) saturate(170%)" }}>
           {state === "setup" ? "Première fois ici"
             : state === "etape" ? "Ton programme"
+            : (state === "parcours" || state === "done") && parcours ? typoParcours(parcours.pastille)
             : "Aujourd’hui"}
         </span>
         {state === "done" && (
@@ -301,6 +315,50 @@ export default function TodayHero({
           </>
         )}
 
+        {/* LES PROGRAMMES (GO du 2026-11-01) · le prochain créneau du
+            programme en cours. Le cycle est en pause : rien de lui ici. Le
+            jour se dit seulement quand ce n'est pas aujourd'hui, et « venue
+            de lundi » quand la séance a glissé. Un test ouvre son écran. */}
+        {state === "parcours" && parcours && parcours.prochain && (
+          <>
+            <p className="text-[11px] font-semibold mb-1" style={{ color: "#C9B8FF" }}>
+              {parcours.rang}
+            </p>
+            <h2 className="text-[34px] md:text-[38px] leading-[1.02] font-extralight text-white">{typoParcours(parcours.titre)}</h2>
+            <p className="mt-2.5 mb-4 text-[16px] font-normal" style={{ color: "rgba(255,255,255,0.82)" }}>
+              {(() => {
+                const morceaux: React.ReactNode[] = [];
+                if (parcours.quand && parcours.quand !== "aujourd’hui") morceaux.push(capitale(parcours.quand));
+                if (parcours.venueDe) morceaux.push(parcours.venueDe);
+                if (parcours.seance) {
+                  morceaux.push(<><V>{dureeMin ?? parcours.seance.minutes}</V> min</>);
+                  morceaux.push(<><V>{parcours.seance.exercices}</V> exercice{parcours.seance.exercices > 1 ? "s" : ""}</>);
+                  morceaux.push(parcours.seance.difficulte);
+                } else {
+                  morceaux.push(typoParcours(parcours.lu.def.test.titre));
+                }
+                return morceaux.map((m, i) => <span key={i}>{i > 0 && <S />}{m}</span>);
+              })()}
+            </p>
+            <motion.button
+              whileTap={{ scale: 0.97 }}
+              onClick={parcours.prochain.genre === "seance" ? onStart : onTest}
+              className="w-full py-3.5 rounded-2xl flex items-center justify-center gap-2 cursor-pointer text-[16px] font-extrabold text-white"
+              style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", boxShadow: "var(--ombre-action)" }}
+            >
+              <Play size={14} strokeWidth={2.5} fill="#fff" /> {parcours.prochain.genre === "seance" ? <>C&apos;est parti</> : "Faire le test"}
+            </motion.button>
+            {onSemaineParcours && (
+              <div className="flex justify-center gap-5 mt-2.5">
+                <button onClick={onSemaineParcours} className="text-[13px] font-semibold cursor-pointer bg-transparent border-none"
+                  style={{ color: "rgba(255,255,255,0.6)" }}>
+                  Ma semaine du programme
+                </button>
+              </div>
+            )}
+          </>
+        )}
+
         {/* ⚠️ V8 · « RIEN DE COMPATIBLE » N'EST PAS « RIEN DE PRÉVU ».
             L'adaptation masque toutes les étapes du cycle : le programme
             a bien quelque chose à proposer, c'est la couche qui l'en
@@ -410,6 +468,12 @@ export default function TodayHero({
               {doneStats && doneStats.minutes > 0 && <><S /><V>{doneStats.minutes}</V> min</>}
               {doneStats && doneStats.kcal > 0 && <><S /><span style={{ color: "#EF9F27" }}><V couleur="#EF9F27">{doneStats.kcal}</V> kcal</span></>}
             </p>
+            {/* Pendant un programme, la suite se dit dès que c'est fait. */}
+            {parcours?.prochain && parcours.quand && (
+              <p className="-mt-1.5 mb-3.5 text-[13px] font-semibold" style={{ color: "#fff" }}>
+                {typoParcours(`Ensuite : ${parcours.titre} · ${parcours.quand}`)}
+              </p>
+            )}
             <motion.button
               whileTap={{ scale: 0.97 }}
               onClick={onRedo}

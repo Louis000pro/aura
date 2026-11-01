@@ -86,6 +86,13 @@ function cibleValide(c: unknown): c is CibleSeance | undefined {
   if (c === undefined) return true;
   if (!objet(c)) return false;
   if (c.genre === "intention") return identifiant(c.intentionId);
+  /* Les programmes : le créneau et la séance du catalogue, figés au lancement. */
+  if (c.genre === "parcours") {
+    return identifiant(c.parcoursId) && entier(c.rang, 2, 79) && texte(c.seanceId, 80)
+      && texte(c.type) && texte(c.title) && texte(c.difficulty)
+      && [null, "salle", "halteres", "poids"].includes(c.location as null)
+      && exercicesValides(c.exerciseList);
+  }
   return c.genre === "etape" && identifiant(c.programmeId) && identifiant(c.etapeId)
     && texte(c.type) && texte(c.title) && texte(c.difficulty)
     && [null, "salle", "halteres", "poids"].includes(c.location as null)

@@ -75,17 +75,24 @@ export default function OuvertureGuide() {
   const repriseIdx = reprise?.avancement.exerciseIdx ?? 0;
   const repriseTotal = reprise?.seance.exerciseList.length ?? 0;
   const titreJour = j.jour ? dayTitle(j.jour) : null;
-  const etapeNom = j.etape?.nom ?? null;
-  const quand = j.prevuLe ?? j.reserveLe;
+  /* LES PROGRAMMES · la prochaine séance du programme tient le rôle de
+     l'étape (le cycle est en pause). Un test ne se lance pas depuis la
+     conversation : il a son écran sur l'accueil, on n'en parle pas ici. */
+  const prochainParcours = j.parcours?.prochain ?? null;
+  const enProgramme = j.etat === "parcours";
+  const seanceProgramme = enProgramme && prochainParcours?.genre === "seance";
+  const etatOuverture = enProgramme ? (seanceProgramme ? "etape" : "indisponible") : j.etat;
+  const etapeNom = enProgramme ? (seanceProgramme ? j.parcours?.titre ?? null : null) : j.etape?.nom ?? null;
+  const quand = enProgramme ? j.parcours?.quand ?? null : j.prevuLe ?? j.reserveLe;
 
   const situation = useMemo(() => situationDuJour({
     reprise: repriseTitre ? { titre: repriseTitre, exerciceIdx: repriseIdx, total: repriseTotal } : null,
-    etat: j.etat,
+    etat: etatOuverture,
     titreJour,
     etape: etapeNom,
     quand,
     minutes: j.dureeMin,
-  }), [repriseTitre, repriseIdx, repriseTotal, j.etat, titreJour, etapeNom, quand, j.dureeMin]);
+  }), [repriseTitre, repriseIdx, repriseTotal, etatOuverture, titreJour, etapeNom, quand, j.dureeMin]);
 
   /* Il parle quand il sait (la journée ET la série), ou au bout du délai
      avec ce qu'il a : la situation générale s'il n'a rien lu. */

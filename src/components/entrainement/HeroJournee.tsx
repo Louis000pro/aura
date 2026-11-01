@@ -21,16 +21,24 @@
    ════════════════════════════════════════════════════════════════════ */
 
 import { useEffect, useState } from "react";
+import dynamic from "next/dynamic";
 import { AnimatePresence, motion } from "framer-motion";
 import { X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useGestesAssistant } from "@/context/AssistantContext";
+import { useAuth } from "@/context/AuthContext";
 import { lockBodyModal } from "@/lib/bodyModal";
 import { useJournee } from "@/hooks/useJournee";
-import { dayTitle, hasSeance } from "@/lib/planning";
+import { dayTitle, hasSeance, todayYmd } from "@/lib/planning";
+import BandeSemaine from "@/components/parcours/BandeSemaine";
+import type { VueParcours } from "@/components/parcours/ParcoursEcrans";
 import ChoixJour from "./ChoixJour";
 import TodayHero from "./TodayHero";
 import VersionCourteSheet from "./VersionCourteSheet";
+
+/* Les écrans d'un programme (semaine, test, fin, fiche) ne se téléchargent
+   que quand on en ouvre un : l'accueil reste léger. */
+const ParcoursEcrans = dynamic(() => import("@/components/parcours/ParcoursEcrans"), { ssr: false });
 
 export default function HeroJournee({ onPret }: {
   /** L'accueil attend ce signal pour se montrer d'un seul bloc. */
@@ -38,7 +46,10 @@ export default function HeroJournee({ onPret }: {
 } = {}) {
   const router = useRouter();
   const { open: openAssistant } = useGestesAssistant();
+  const { user } = useAuth();
   const j = useJournee();
+  /* LES PROGRAMMES · l'écran du programme ouvert, s'il y en a un. */
+  const [vueParcours, setVueParcours] = useState<VueParcours>(null);
   useEffect(() => { if (j.etat !== "loading") onPret?.(); }, [j.etat, onPret]);
   /* « Lui donner un jour » : le seul geste du héros qui écrit. */
   const [quand, setQuand] = useState(false);
@@ -100,7 +111,19 @@ export default function HeroJournee({ onPret }: {
         onLeger={j.lancerAllege}
         dureeMin={j.dureeMin}
         onCourt={j.aLancer ? () => setCourt(true) : undefined}
+        parcours={j.parcours}
+        onTest={() => setVueParcours({ genre: "test" })}
+        onSemaineParcours={() => setVueParcours({ genre: "semaine" })}
       />
+
+      {/* LES PROGRAMMES · « Ta semaine 2 », sous le héros. */}
+      {j.parcours && (j.etat === "parcours" || j.etat === "done") && (
+        <BandeSemaine parcours={j.parcours} aujourdhui={todayYmd()} onOuvrir={() => setVueParcours({ genre: "semaine" })} />
+      )}
+      {vueParcours && (
+        <ParcoursEcrans vue={vueParcours} onVue={setVueParcours} j={j}
+          premium={!!(user?.is_premium || user?.is_admin)} onPremium={() => router.push("/premium")} />
+      )}
 
       {/* ⚠️ CE QUI VIENT EN PLUS AUJOURD'HUI (V6b). Le héros ne montre
           qu'une séance, et c'est très bien : il répond à « je fais quoi

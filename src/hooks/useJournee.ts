@@ -34,7 +34,7 @@ import { avecEtapeVerifiee, type ContexteEtape, deplacerReservation, etatJournee
 import {
   lireSemaine, saveDay, reservationDeLOccurrence, hasSeance, loadLieu, readVariant, ctxFromLieu,
   weekDates, todayYmd, dayTitle, dureeIntention, parDate, principale, supplements, seancesDuJour,
-  weekdayIndex, prochainsJours, contexteDe, appliquerRegleDuJour,
+  weekdayIndex, prochainsJours, contexteDe, appliquerRegleDuJour, PLANNING_TYPE_BY_CATEGORY,
   type PlanningDay, type GenInput, type CycleSemaine,
 } from "@/lib/planning";
 import {
@@ -59,6 +59,35 @@ import {
 import type { Zone } from "@/lib/banqueEtapes";
 import { resolutionDuProgramme, type ResolutionProgramme } from "@/lib/projectionBase";
 import { choixSuite, libelleAttente, libelleJourProjete } from "@/lib/projection";
+import { faitsDuParcours, lireParcours, type LectureParcours, type ParcoursLu } from "@/lib/parcoursBase";
+import {
+  SEANCES, calendrierParcours, nomDuJour, quandDit, rangDit, semaineDuCalendrier, titreCreneau,
+  type CalendrierParcours, type CreneauDate, type JourDeSemaine, type SeanceParcours,
+} from "@/lib/parcours";
+
+/** LES PROGRAMMES (GO du 2026-11-01) · le programme en cours, vu pour
+ *  aujourd'hui. Le cycle est en pause tant qu'il existe : le héros montre
+ *  le prochain créneau du programme, et rien du cycle. */
+export type EtatParcours = {
+  lu: ParcoursLu;
+  cal: CalendrierParcours;
+  /** Le prochain créneau, ou `null` quand tout est fait. */
+  prochain: CreneauDate | null;
+  /** « Première traction · semaine 2 ». */
+  pastille: string;
+  /** « Séance 5 sur 18 ». */
+  rang: string | null;
+  /** « Dos large », « Le test », « Le test final ». */
+  titre: string;
+  /** « aujourd’hui », « demain », « mercredi 12 ». */
+  quand: string | null;
+  /** « venue de lundi », quand la séance a glissé. */
+  venueDe: string | null;
+  /** La semaine de calendrier, vue par le programme. */
+  semaine: JourDeSemaine[];
+  /** La séance du prochain créneau (`null` pour un test). */
+  seance: SeanceParcours | null;
+};
 
 const DAY_FULL = ["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"];
 
@@ -78,6 +107,7 @@ type JourneeMemorisee = {
   niveau: string | null;
   doneStats: { minutes: number; kcal: number } | null;
   recentes: SerieRecente[] | null;
+  parcours: LectureParcours | null;
 };
 /* Une écriture faite ailleurs (fin de séance, le Guide, « Organiser », un
    changement de lieu) rend la journée gardée périmée : on l'oublie, et le
@@ -181,6 +211,14 @@ export type Journee = {
   /** R8 · la même séance raccourcie à `minutes`. Elle ne referme la
    *  séance prévue que si elle en garde le rôle (décision 38). */
   lancerCourt: (minutes: number) => void;
+  /** LES PROGRAMMES · le programme en cours vu pour aujourd'hui, ou `null`. */
+  parcours: EtatParcours | null;
+  /** Ce que la base a dit des programmes (`null` : pas encore lu, ou on ne
+   *  sait pas). La pause du cycle et la rangée s'en servent. */
+  lectureParcours: LectureParcours | null;
+  /** Lance la séance du prochain créneau. Un test ne se lance pas ici :
+   *  il a son écran, ouvert par l'accueil. */
+  lancerParcours: () => void;
 };
 
 export function useJournee({ creerProgramme = false }: { creerProgramme?: boolean } = {}): Journee {
@@ -228,16 +266,23 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
      `null` = pas lu : on se tait, rien n'est bloqué. */
   const [recentes, setRecentes] = useState<SerieRecente[] | null>(memoire?.recentes ?? null);
 
+  /* LES PROGRAMMES · ce que la base a dit (`null` : pas encore lu, ou on
+     ne sait pas). Une lecture ratée garde ce qui était affiché. */
+  const [parcoursLecture, setParcoursLecture] = useState<LectureParcours | null>(memoire?.parcours ?? null);
+  /* Les exercices de la prochaine séance du programme, chargés à part :
+     l'accueil ne télécharge pas le catalogue entier pour une seule séance. */
+  const [exosParcours, setExosParcours] = useState<{ id: string; liste: Exercise[] } | null>(null);
+
   /* Ce qui est publié est gardé, une fois la journée lue au moins une fois,
      et jamais au milieu d'une relecture. */
   useEffect(() => {
     if (!pret || enLectureRef.current) return;
     ecrireMemoire<JourneeMemorisee>(cleMemoire, {
       semaine, besoinSetup, programme, gen, etape, reservation, projection,
-      indisponible, modele, adaptation, niveau, doneStats, recentes,
+      indisponible, modele, adaptation, niveau, doneStats, recentes, parcours: parcoursLecture,
     });
   }, [cleMemoire, pret, semaine, besoinSetup, programme, gen, etape, reservation, projection,
-    indisponible, modele, adaptation, niveau, doneStats, recentes]);
+    indisponible, modele, adaptation, niveau, doneStats, recentes, parcoursLecture]);
 
   const today = todayYmd();
   const semaineDates = useMemo(() => weekDates(new Date(today + "T00:00:00")), [today]);
@@ -263,6 +308,8 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
       const enAvance = <T,>(p: Promise<T>) => { p.catch(() => {}); return p; };
       const lieuP = enAvance(loadLieu(user.id));
       const semaineP = enAvance(lireSemaine(user.id, weekDates()));
+      /* LES PROGRAMMES · ne lève jamais : `undefined` = on ne sait pas. */
+      const parcoursP = lireParcours(user.id);
       const actifP = creerProgramme ? null : enAvance(lireProgrammeActif(user.id));
       const varieteP = enAvance(lireVariete(user.id));
       const { data: prof, error: errProfil } = await supabase
@@ -294,8 +341,16 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
   
       if (!aRepondu) {
         // Vraiment rien à lire (onboarding pas fait) → héros de mise en route.
+        /* Un programme commencé sans questionnaire se montre quand même. */
+        const lp = await parcoursP;
+        if (!derniere()) return;
+        if (lp !== undefined) setParcoursLecture(lp);
+        if (lp?.enCours) {
+          try { setSemaine(await semaineP); } catch { setSemaine(null); }
+        } else {
+          setSemaine(null);
+        }
         setBesoinSetup(true);
-        setSemaine(null);
         setPret(true);
         return;
       }
@@ -320,6 +375,13 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
         setBesoinSetup(false);
       } catch (e) {
         console.error("Planning load error", e);
+      }
+      {
+        /* LES PROGRAMMES · publié avant le cycle : une panne du cycle ne
+           doit pas cacher le programme en cours. */
+        const lp = await parcoursP;
+        if (!derniere()) return;
+        if (lp !== undefined) setParcoursLecture(lp);
       }
   
       /* ⚠️ LE PROGRAMME NE NAÎT QUE LÀ OÙ ON L'AUTORISE (V7A). Il se crée
@@ -480,7 +542,59 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
     !!adaptation && !!programme && programme.cycle.length > 0
     && etapesCompatibles(programme.cycle, adaptation).length === 0;
 
-  const etat = etatJournee({ pret, besoinSetup, jour, etape, adaptationBloque, indisponible });
+  const etatBase = etatJournee({ pret, besoinSetup, jour, etape, adaptationBloque, indisponible });
+
+  /* ── LES PROGRAMMES (GO du 2026-11-01) ──
+     ⚠️ TANT QU'UN PROGRAMME EST EN COURS, LE CYCLE EST EN PAUSE. Le héros
+     montre le prochain créneau du programme ; une séance du programme
+     faite aujourd'hui donne l'état « fait » ; les séances posées
+     aujourd'hui hors du programme passent « en plus ». Le cycle, lui, ne
+     bouge pas d'une ligne : il reprendra au même endroit. */
+  const enCours = parcoursLecture?.enCours ?? null;
+  const calParcours = useMemo(
+    () => (enCours ? calendrierParcours(enCours.def, faitsDuParcours(enCours), today) : null),
+    [enCours, today],
+  );
+  const prochainParcours = calParcours?.prochain ?? null;
+  const faitParcoursDuJour = enCours?.faits.find((f) => f.date === today) ?? null;
+  const jourParcoursFait = faitParcoursDuJour
+    ? (parJour[today] ?? []).find((d) => d.id === faitParcoursDuJour.id) ?? null
+    : null;
+  const etat: EtatJournee = !enCours || etatBase === "loading" ? etatBase
+    : jourParcoursFait ? "done"
+    : prochainParcours ? "parcours" : etatBase;
+  const jourAffiche = enCours ? jourParcoursFait : jour;
+  const extrasAffiches = useMemo(
+    () => (enCours ? intentionsDuJour.filter((d) => d.id !== jourParcoursFait?.id) : extras),
+    [enCours, intentionsDuJour, jourParcoursFait, extras],
+  );
+  const seanceParcoursId = prochainParcours?.genre === "seance" ? prochainParcours.seance : null;
+  /* Les exercices de la prochaine séance du programme, à part. */
+  useEffect(() => {
+    if (!seanceParcoursId) return;
+    let vivant = true;
+    void import("@/lib/exercicesCatalogue").then((m) => {
+      if (vivant) setExosParcours({ id: seanceParcoursId, liste: m.exerciseData[seanceParcoursId] ?? [] });
+    });
+    return () => { vivant = false; };
+  }, [seanceParcoursId]);
+  const listeParcours = seanceParcoursId && exosParcours?.id === seanceParcoursId ? exosParcours.liste : null;
+  const etatParcours = useMemo<EtatParcours | null>(() => {
+    if (!enCours || !calParcours) return null;
+    const p = calParcours.prochain;
+    return {
+      lu: enCours,
+      cal: calParcours,
+      prochain: p,
+      pastille: `${enCours.def.titre} · semaine ${p?.semaine ?? enCours.def.semaines}`,
+      rang: p ? rangDit(p.rang, calParcours.total) : null,
+      titre: p ? titreCreneau(p) : enCours.def.titre,
+      quand: p ? quandDit(p.date, today) : null,
+      venueDe: p?.venueDe ? `venue de ${nomDuJour(p.venueDe)}` : null,
+      semaine: semaineDuCalendrier(calParcours, today),
+      seance: p?.seance ? SEANCES[p.seance] ?? null : null,
+    };
+  }, [enCours, calParcours, today]);
 
   /* R9a · la projection ne parle de la prochaine séance que si c'est la
      MÊME occurrence que celle du héros (même rang). */
@@ -616,6 +730,12 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
      résolution que `lancer`, donc l'aperçu de la version courte porte sur
      la séance qui partira, et pas sur une voisine. */
   const aLancer = useMemo(() => {
+    /* Le programme : sa prochaine séance (un test n'a rien à estimer). */
+    if (etat === "parcours") {
+      return etatParcours?.seance && listeParcours?.length
+        ? { titre: etatParcours.seance.titre, exercices: listeParcours }
+        : null;
+    }
     if (etat !== "seance" && etat !== "etape") return null;
     const quoi = lancementDuJour({ jour, reservation, etape, instancePrete: instance.length > 0 });
     if (!quoi) return null;
@@ -625,7 +745,7 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
         : null;
     }
     return etape && instance.length > 0 ? { titre: etape.nom, exercices: instance } : null;
-  }, [etat, jour, reservation, etape, instance]);
+  }, [etat, jour, reservation, etape, instance, etatParcours, listeParcours]);
 
   const lancerIntention = useCallback((d: PlanningDay, options?: { repetition?: boolean; allegerZone?: Zone; courte?: number }) => {
     if (!hasSeance(d)) return;
@@ -672,11 +792,49 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
      vient ensuite » ; « Refaire la séance » demande l'inverse. Le bouton
      promettait donc une action et en exécutait une autre. */
   const refaire = useCallback(() => {
-    const quoi = repetitionDuJour(jour);
+    const quoi = repetitionDuJour(jourAffiche);
     if (quoi) lancerIntention(quoi, { repetition: true });
-  }, [jour, lancerIntention]);
+  }, [jourAffiche, lancerIntention]);
+
+  /* LES PROGRAMMES · lance la séance du prochain créneau, avec sa cible :
+     la fin de séance écrira le fait, porté par le programme et son
+     créneau, et ne refermera aucune étape du cycle. */
+  const lancerParcours = useCallback(() => {
+    const p = prochainParcours;
+    if (!enCours || !p || p.genre !== "seance" || !p.seance) return;
+    const id = p.seance;
+    const s = SEANCES[id];
+    if (!s) return;
+    const partir = (exos: Exercise[]) => {
+      if (!exos.length) return;
+      launchWorkout({
+        sessionId: id,
+        title: s.titre,
+        duration: s.minutes,
+        difficulty: s.difficulte,
+        category: s.categorie,
+        heroImage: heroImageForSeance({ title: s.titre, category: s.categorie }),
+        exerciseList: exos,
+        cible: {
+          genre: "parcours",
+          parcoursId: enCours.id,
+          rang: p.rang,
+          seanceId: id,
+          type: PLANNING_TYPE_BY_CATEGORY[s.categorie] ?? "Force",
+          title: s.titre,
+          difficulty: s.difficulte,
+          location: gen?.ctx ?? null,
+          exerciseList: exos,
+        },
+      });
+    };
+    if (listeParcours) partir(listeParcours);
+    else void import("@/lib/exercicesCatalogue").then((m) => partir(m.exerciseData[id] ?? []));
+  }, [enCours, prochainParcours, listeParcours, launchWorkout, gen]);
 
   const lancer = useCallback((allegerZone: Zone | null, courteMin: number | null = null) => {
+    /* Un programme en cours : le cycle est en pause, on lance son créneau. */
+    if (enCours) { lancerParcours(); return; }
     /* ⚠️ LA DÉCISION EST UNE FONCTION PURE, ET ELLE VIT DANS `journee.ts`.
        Elle porte l'ordre qui compte : la séance datée aujourd'hui, puis
        la RÉSERVATION de l'étape où qu'elle soit posée, puis l'étape libre
@@ -752,7 +910,7 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
       },
       });
     }).then((v) => { if (!v.ok) refuser(v.raison); });
-  }, [jour, reservation, lancerIntention, etape, instance, programme, gen, launchWorkout, contexteAffiche, relireContexte, refuser]);
+  }, [jour, reservation, lancerIntention, etape, instance, programme, gen, launchWorkout, contexteAffiche, relireContexte, refuser, enCours, lancerParcours]);
 
   const lancerAujourdhui = useCallback(() => lancer(null), [lancer]);
   const lancerCourt = useCallback((minutes: number) => lancer(null, minutes), [lancer]);
@@ -849,27 +1007,41 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
     return true;
   }, [user, programme, gen, contexteAffiche, relireContexte, refuser]);
 
+  /* « t'attendait mercredi » ne se dit pas d'un jour passé pendant un
+     programme : le cycle était en pause. */
+  const finParcours = parcoursLecture?.dernierFiniLe ?? null;
+  const attendaitLe = prochaine?.attendaitLe && !(finParcours && finParcours >= prochaine.attendaitLe)
+    ? prochaine.attendaitLe : null;
+
   return {
-    etat, jour, extras, etape, reservation,
+    etat, jour: jourAffiche, extras: extrasAffiches, etape, reservation,
     /* ⚠️ AUCUNE DATE À AFFICHER SI ELLE EST DÉJÀ AUJOURD'HUI : dans ce
        cas l'intention EST celle du jour, donc l'état vaut « seance » et
        le héros ne montre plus l'étape. */
     reserveLe: reservation?.date ? libelleReservation(reservation.date, today) : null,
     projection,
     indisponible,
-    prevuLe: prochaine ? libelleJourProjete(prochaine.date, today) : null,
-    attendait: prochaine?.attendaitLe ? libelleAttente(prochaine.attendaitLe) : null,
+    /* Le cycle en pause ne prévoit rien pendant un programme. */
+    prevuLe: prochaine && !enCours ? libelleJourProjete(prochaine.date, today) : null,
+    attendait: attendaitLe && !enCours ? libelleAttente(attendaitLe) : null,
     adaptation,
     adaptationJusquau: adaptation ? libelleJour(adaptation.fin) : null,
     cycleSemaine,
-    nbExos: instance.length, rythme: modeleDeLEtapeAffichee?.rythme ?? null, nextLabel, doneStats,
+    nbExos: enCours ? (etatParcours?.seance?.exercices ?? 0) : instance.length,
+    rythme: enCours ? null : modeleDeLEtapeAffichee?.rythme ?? null, nextLabel, doneStats,
     semaine, setSemaine, gen, programme, besoinSetup, niveau,
     recharger: () => { void charger(); },
     lancerAujourdhui, lancerIntention, refaire, daterEtape,
     recouvrement: recouvre ? { phrase: phraseRecouvrement(recouvre), leger: libelleAllege(recouvre.zone) } : null,
     lancerAllege,
     aLancer,
-    dureeMin: aLancer ? estimerMinutes(aLancer.exercices.map(itemDExercice)) : null,
+    /* La durée d'une séance du programme est celle de sa carte au
+       catalogue (l'estimation de l'app, échauffement compris). */
+    dureeMin: etat === "parcours" ? (etatParcours?.seance?.minutes ?? null)
+      : aLancer ? estimerMinutes(aLancer.exercices.map(itemDExercice)) : null,
     lancerCourt,
+    parcours: etatParcours,
+    lectureParcours: parcoursLecture,
+    lancerParcours,
   };
 }

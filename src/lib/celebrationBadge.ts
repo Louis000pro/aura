@@ -68,3 +68,22 @@ export function noterBadges(userId: string, slugs: Iterable<string>): Badge[] {
   for (const b of neufs) publierEvenement(userId, "badge", `badge:${b.slug}`, { slug: b.slug });
   return neufs;
 }
+
+/**
+ * Un badge déjà fêté ailleurs (la fin d'un programme, qui le montre en
+ * grand) : il entre dans le repère, pour que la prochaine fin de séance ne
+ * le fête pas une seconde fois, et il se raconte dans le fil des potes.
+ */
+export function marquerBadgeVu(userId: string, slug: string): void {
+  if (typeof window === "undefined") return;
+  try {
+    const brut = localStorage.getItem(cle(userId));
+    if (brut !== null) {
+      const vus = JSON.parse(brut) as unknown;
+      if (Array.isArray(vus) && !vus.includes(slug)) localStorage.setItem(cle(userId), JSON.stringify([...vus, slug].sort()));
+    }
+  } catch {
+    /* stockage refusé : la fin de séance le fêtera, ce n'est pas grave */
+  }
+  if (badgeParSlug(slug)) publierEvenement(userId, "badge", `badge:${slug}`, { slug });
+}

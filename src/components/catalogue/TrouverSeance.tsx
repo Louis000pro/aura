@@ -58,8 +58,11 @@ type S0 = SeanceTrouvable & SeanceCarte;
 
 export default function TrouverSeance<S extends S0>({
   seances, userId, niveau, canAccessPremium, collections, nbCollections, loupeAuDepart = false,
-  onStart, onPremium, onManage, onCollection, onToutesCollections, onDemander, onMouvement,
+  onStart, onPremium, onManage, onCollection, onToutesCollections, onDemander, onMouvement, apresPourToi,
 }: {
+  /** LES PROGRAMMES · la rangée « Suivre un programme », posée par
+   *  Entraînement après « Pour toi » (maquette « Les programmes », v2). */
+  apresPourToi?: ReactNode;
   seances: S[];
   userId: string | null;
   niveau: Niveau | null;
@@ -291,6 +294,8 @@ export default function TrouverSeance<S extends S0>({
               </div>
             )}
           </Rangee>
+
+          {apresPourToi}
 
           {equilibre && (
             <Rangee titre="Pour équilibrer ta semaine" phrase={equilibre.phrase}>

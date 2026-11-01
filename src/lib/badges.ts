@@ -23,6 +23,7 @@
    ───────────────────────────────────────────────────────────── */
 
 import { imageEtat, SERIES } from "@/lib/defi";
+import { PROGRAMMES, programmeParId } from "@/lib/parcours";
 
 export type Badge = {
   slug: string;
@@ -103,9 +104,27 @@ export const BADGES_DERIVES: BadgeDerive[] = [
   derive("repas",   100,  "repas",      "Cent repas",        "Noter cent repas"),
 ];
 
+/* ── Les badges des programmes (GO de Louis, 2026-11-01) ──────
+   Un par programme terminé, test final compris. Posé par
+   `noter_test_parcours` dans `profile_badges` (lu par `badges_aura`),
+   sous le préfixe `programme-`, qui ne rencontre jamais celui des
+   affiches. Refaire un programme ne pose pas un second badge. */
+export function badgeProgramme(id: string): Badge | null {
+  const def = programmeParId(id);
+  if (!def) return null;
+  return {
+    slug: `programme-${def.id}`,
+    nom: def.titre,
+    condition: "Terminer le programme, test final compris",
+    image: null,
+    degrade: VIOLET,
+  };
+}
+
 /** L'ordre d'affichage complet : le mérite seul d'abord, le lien ensuite. */
 const CATALOGUE: Badge[] = [
   ...BADGES_DERIVES,
+  ...PROGRAMMES.map((p) => badgeProgramme(p.id) as Badge),
   BADGE_PREMIER_RELAIS,
 ];
 
@@ -113,6 +132,7 @@ const CATALOGUE: Badge[] = [
 export function badgeParSlug(slug: string): Badge | null {
   if (slug === BADGE_PREMIER_RELAIS.slug) return BADGE_PREMIER_RELAIS;
   if (slug.startsWith("serie-")) return badgeSerie(slug.slice("serie-".length));
+  if (slug.startsWith("programme-")) return badgeProgramme(slug.slice("programme-".length));
   return BADGES_DERIVES.find((b) => b.slug === slug) ?? null;
 }
 

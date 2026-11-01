@@ -642,8 +642,17 @@ async function appliquerJoursEntrainement(
   }
   if (candidats.length === 0) return;
 
-  const progs = await admin.from("programmes").select("id, user_id, rang_depart, position_initiale").in("user_id", candidats).eq("statut", "actif");
-  if (progs.error) { taire(candidats); return; }
+  /* LES PROGRAMMES (GO du 2026-11-01) · un programme de quelques semaines
+     en cours met le cycle en pause : sa projection ne se rappelle pas. Une
+     séance datée à la main, elle, garde son rappel. Table absente (SQL pas
+     encore collé) ou lecture ratée : personne n’est en pause. */
+  const enProgramme = await admin.from("parcours").select("user_id").in("user_id", candidats).eq("statut", "en_cours");
+  const enPause = new Set(enProgramme.error ? [] : (enProgramme.data ?? []).map((x) => x.user_id as string));
+  const aResoudre = candidats.filter((id) => !enPause.has(id));
+  if (aResoudre.length === 0) return;
+
+  const progs = await admin.from("programmes").select("id, user_id, rang_depart, position_initiale").in("user_id", aResoudre).eq("statut", "actif");
+  if (progs.error) { taire(aResoudre); return; }
   const progIds = (progs.data ?? []).map((x) => x.id as string);
   if (progIds.length === 0) return;
   const [etapes, lignes, adapt] = await Promise.all([
@@ -652,7 +661,7 @@ async function appliquerJoursEntrainement(
     admin.from("adaptations_entrainement").select("programme_id, debut, fin, axes, statut").in("programme_id", progIds).eq("statut", "active"),
   ]);
   const adaptAbsente = adapt.error?.code === "42P01" || adapt.error?.code === "PGRST205";
-  if (etapes.error || lignes.error || (adapt.error && !adaptAbsente)) { taire(candidats); return; }
+  if (etapes.error || lignes.error || (adapt.error && !adaptAbsente)) { taire(aResoudre); return; }
   for (const prog of progs.data ?? []) {
     const p = carte.get(prog.user_id as string);
     const cal = calendriers.get(prog.user_id as string);

@@ -49,7 +49,14 @@ export type EtatJournee =
    *  on ne dit ni « rien de prévu » ni une séance au hasard. */
   | "indisponible"
   /** La séance principale du jour est terminée. */
-  | "done";
+  | "done"
+  /**
+   * LES PROGRAMMES (GO du 2026-11-01) · un programme est en cours : le
+   * cycle est en pause et le héros montre le prochain créneau du
+   * programme. `etatJournee` ne le rend jamais : c'est `useJournee` qui le
+   * pose, par-dessus, quand la base dit qu'un programme est en cours.
+   */
+  | "parcours";
 
 export function etatJournee(input: {
   /** La lecture est-elle revenue ? */

@@ -115,6 +115,13 @@ export type ContexteVoix = {
   /** Un classique · ton meilleur, tel qu'il s'affiche (« 12:30 »,
    *  « 6 tours + 11 »). */
   meilleur?: string;
+  /** Les programmes · le jour où une séance était prévue, avec sa
+   *  majuscule (« Lundi »). */
+  prevu?: string;
+  /** Les programmes · le test du départ et le test final, déjà dits
+   *  (« Aucune traction », « 2 tractions »). */
+  avant?: string;
+  apres?: string;
 };
 
 /** « Une séance posée », « Trois séances posées ». Le nombre s'écrit en
@@ -906,6 +913,31 @@ const REPLIQUES = {
   },
   "classique.premiere.format": {
     commun: "Première fois sur celui-là ? Trois points, et on y va.",
+  },
+
+  /* ── Les programmes (maquette « Les programmes », GO du 2026-11-01) ──
+     Le Guide annonce le but sur la fiche, dit qu'une séance a glissé sans
+     en faire un reproche, et dit le chemin parcouru à la fin. Un test moins
+     bon ne s'affiche jamais comme un recul : la fin dit alors ce qui a été
+     fait. Écrites avec des espaces ordinaires et sans « : ; ? ! », pour que
+     la typographie se pose au rendu. */
+  "parcours.fiche": {
+    commun: (c) => `${c.duree ?? ""} pour ${c.titre ?? ""}. On commence par voir où tu en es.`,
+  },
+  "parcours.glisse": {
+    commun: (c) => `${c.prevu ?? ""} s’est passé sans séance. Elle t’attend ${c.jour ?? ""}, et la suite garde ses jours.`,
+  },
+  "parcours.semaine": {
+    commun: "Tes séances suivent tes jours. Une séance manquée glisse au prochain jour libre.",
+  },
+  "parcours.depart": {
+    commun: (c) => `${c.avant ?? ""} pour commencer, c’est noté. Le même test reviendra à la fin.`,
+  },
+  "parcours.fin.mieux": {
+    commun: (c) => `${c.avant ?? ""} il y a ${c.duree ?? ""}. Aujourd’hui, ${c.apres ?? ""}. Bravo.`,
+  },
+  "parcours.fin.fait": {
+    commun: (c) => `${c.duree ?? ""} et ${c.seances ?? 0} séances, c’est fait. Bravo.`,
   },
 
   /* ── La visite guidée ──
