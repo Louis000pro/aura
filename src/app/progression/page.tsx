@@ -20,7 +20,7 @@ import { useRouter } from "next/navigation";
 import {
   Clock, ChevronRight, ChevronLeft, Dumbbell, Play, Flame, Wind, Sparkles, Layers,
   Check, X, Plus, Trash2, Pencil, Globe, Lock, Users,
-  Moon, Zap, Home, Sun, CalendarDays, MoreHorizontal, GripVertical, BookOpen, Search,
+  Moon, Zap, Home, Sun, CalendarDays, MoreHorizontal, GripVertical, BookOpen, Search, Bookmark,
 } from "lucide-react";
 import WeeklyProgramme from "@/components/WeeklyProgramme";
 import AdaptationSheet from "@/components/entrainement/AdaptationSheet";
@@ -33,10 +33,11 @@ import { libelleJour, type Adaptation } from "@/lib/adaptation";
 import { EVT_ADAPTATION } from "@/lib/adaptationDemandee";
 import ChoixJour from "@/components/entrainement/ChoixJour";
 import type { Exercise } from "@/components/WorkoutGuideModal";
-import { exerciseData } from "@/lib/exercicesCatalogue";
 import ExerciseGuide from "@/components/ExerciseGuide";
 import CreateSessionModal, { type SessionDraft } from "@/components/seance/CreateSessionModal";
 import MouvementsRow from "@/components/seance/MouvementsRow";
+import TrouverSeance from "@/components/catalogue/TrouverSeance";
+import { aLaUne, exercicesDe } from "@/lib/trouverSeance";
 import { Photo, WIDGET } from "@/components/entrainement/PhotoSeance";
 import ExerciseLibrarySheet from "@/components/seance/ExerciseLibrarySheet";
 import ExerciseThumb from "@/components/seance/ExerciseThumb";
@@ -58,7 +59,8 @@ import { createClient } from "@/lib/supabase";
 import { lockBodyModal } from "@/lib/bodyModal";
 import { PLANS, VENTE_OUVERTE } from "@/lib/plans";
 import { levelToDifficulty, normalizeDifficulty } from "@/lib/assistantActions";
-import { FAMILY, resolveArt, heroImageForSeance, type Family } from "@/lib/workoutArt";
+import { resolveArt, heroImageForSeance, photosDeRangee, type Family } from "@/lib/workoutArt";
+import { Cadenas, EtincellePremium, PREMIUM_CADRE, PREMIUM_CADRE_PX, PREMIUM_LAVIS, PREMIUM_PUCE, PREMIUM_RAYON } from "@/components/catalogue/Premium";
 import { doseDe } from "@/lib/toursSeance";
 import {
   ADVICE_THEMES,
@@ -577,7 +579,7 @@ type MergedSession = WorkoutSession & { perso: boolean };
    retrouve par id. Tout ce qui montre ou recopie les exercices d'une
    séance passe par ici, sinon les deux résolutions divergent. */
 function exosDeLaSeance(s: MergedSession): Exercise[] {
-  return s.exerciseList?.length ? s.exerciseList : (exerciseData[s.id] ?? []);
+  return exercicesDe(s) as Exercise[];
 }
 
 /* Difficulté → nombre de pastilles allumées. L'orange (énergie, système D)
@@ -593,107 +595,10 @@ const DIFF_LEVEL: Record<WorkoutSession["difficulty"], number> = {
    même famille — la 1re carte garde sa photo « juste », les suivantes varient.
    Une rangée ne répète donc plus une photo tant qu'il reste des variantes. */
 function dedupeRowArt(list: MergedSession[]): Map<string, string> {
-  const used = new Set<string>();
-  const out = new Map<string, string>();
-  for (const s of list) {
-    const advice = getAdviceArticle(s.id);
-    if (advice) {
-      used.add(advice.image);
-      out.set(s.id, advice.image);
-      continue;
-    }
-    const art = resolveArt({ title: s.title, category: s.category, muscles: s.muscles });
-    let img = art.img;
-    if (used.has(img)) {
-      const variants = FAMILY[art.fam].variants;
-      const start = variants.indexOf(img);
-      for (let k = 1; k <= variants.length; k++) {
-        const cand = variants[(start + k) % variants.length];
-        if (!used.has(cand)) { img = cand; break; }
-      }
-    }
-    used.add(img);
-    out.set(s.id, img);
-  }
-  return out;
+  return photosDeRangee(list, (id) => getAdviceArticle(id)?.image ?? null);
 }
 
-/* ── LES DEUX DÉGRADÉS DE PREMIUM ─────────────────────────────────────
-   Ce sont EXACTEMENT ceux des missions de l'accueil (`.mission[data-premium]`
-   et `.tagPremium` dans AccueilSignature.module.css), recopiés ici parce
-   que cet écran s'écrit en styles en ligne. Il n'y a donc qu'une seule
-   façon de dessiner Premium dans toute l'app : or clair → or → magenta.
-   L'ancienne paire violet → or de cet écran en inventait une deuxième, et
-   le violet est déjà pris : dans le système D, il veut dire « action ».
-   Si l'un des deux change un jour, les deux changent ensemble. */
-const PREMIUM_PUCE = "linear-gradient(120deg,#FFD34E,#F5B120)";
-/* Le cadre de la carte : le liseré or → magenta des missions, en anneau.
-   ⚠️ SON ÉPAISSEUR ET LE RAYON INTÉRIEUR SONT LIÉS : `PREMIUM_RAYON` doit
-   TOUJOURS valoir 20 (le rayon extérieur) moins `PREMIUM_CADRE_PX`, sinon
-   l'anneau est plus épais dans les angles que sur les côtés, et c'est
-   exactement le défaut que Louis a vu la première fois (« l'or dépasse un
-   peu sur les cartes ») : le cadre était dessiné pour 3 px mais posé avec
-   1 px de padding, donc les coins gardaient leur épaisseur d'origine.
-   3 px n'est pas non plus un choix esthétique libre : en dessous, le
-   dégradé n'a pas la place de se voir, surtout sur fond clair, et l'anneau
-   redevient un filet uni. C'est la largeur du liseré des missions.
-
-   ⚠️ ET L'OR NE S'ÉTALE PAS POUR AUTANT : il est saturé sur des formes
-   étroites (cet anneau, la puce du bandeau, le cachet du cadenas), jamais
-   en grande surface. Deux fonds dorés ont été refusés, même cause les deux
-   fois, une carte ne fait que 150 px de large : la puce des missions
-   étirée en aplat sur toute la largeur (« c'est nul »), puis le lavis
-   or → magenta, qui sur une ligne large de 330 px s'éteint avant le bord
-   mais qui sur une carte n'en montre que sa tranche la plus dense, donc un
-   aplat crème dont les coins virent au jaune sale. Le bandeau porte la
-   surface de l'app ; tout mettre en encre a été essayé aussi et manquait
-   de couleur, d'où la puce. */
-const PREMIUM_CADRE_PX = 3;
-const PREMIUM_RAYON = 20 - PREMIUM_CADRE_PX;
-const PREMIUM_CADRE = "linear-gradient(180deg,#FFD34E,#F5B120 38%,#C13BC1)";
-/* Le lavis or → magenta des lignes Premium de l'accueil. ⚠️ Il ne sert que
-   sur des surfaces LARGES (la feuille d'aperçu), jamais sur une carte du
-   carrousel : voir `PREMIUM_TRAIT` pour la raison. Exactement horizontal,
-   comme sur les missions. */
-const PREMIUM_LAVIS = "linear-gradient(90deg,rgba(245,177,32,0.17),rgba(193,59,193,0.09) 62%,transparent)";
-/* L'étincelle de la marque, telle qu'elle est dessinée sur l'affiche
-   Premium de l'accueil (`.brandSpark`) : violet → or, deux barres. */
-const PREMIUM_SPARK = "linear-gradient(135deg,#8B5CF6,#F5B120)";
-
-function EtincellePremium({ taille = 11 }: { taille?: number }) {
-  const barre = Math.max(2, Math.round(taille * 0.23));
-  return (
-    <span aria-hidden className="relative inline-block flex-shrink-0" style={{ width: taille, height: taille }}>
-      <span className="absolute inset-0 m-auto rounded-full" style={{ width: barre, height: taille, background: PREMIUM_SPARK }} />
-      <span className="absolute inset-0 m-auto rounded-full" style={{ width: taille, height: barre, background: PREMIUM_SPARK }} />
-    </span>
-  );
-}
-
-/* Le cadenas doré, posé là où vit le ⋯ des autres cartes, et seulement sur
-   une séance ou un cours qu'on n'a pas encore. C'est le même cachet que sur
-   les missions de l'accueil (`Cadenas` dans AccueilSignature.tsx) : un seul
-   signe de verrou dans toute l'app, appris une fois.
-
-   ⚠️ Un « + » a tenu la place pendant une journée, puis Louis est revenu au
-   verrou : il ne se reconnaissait pas et ne donnait pas l'idée qu'on
-   pouvait toucher. Ne pas refaire l'aller-retour.
-
-   Il ne se touche pas : la carte entière ouvre déjà l'aperçu Premium, et
-   deux boutons superposés au même endroit ne donneraient pas deux
-   destinations, juste une cible à moitié fiable. */
-function Cadenas() {
-  return (
-    <span aria-hidden
-      className="absolute bottom-2 right-2 w-7 h-7 rounded-full flex items-center justify-center pointer-events-none"
-      style={{ background: PREMIUM_PUCE, color: "#3A2402", boxShadow: "0 3px 10px rgba(84,52,2,0.42)" }}>
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round">
-        <rect x="4" y="10.5" width="16" height="11" rx="2.6" fill="currentColor" stroke="none" />
-        <path d="M8.2 10.5V7.6a3.8 3.8 0 0 1 7.6 0v2.9" />
-      </svg>
-    </span>
-  );
-}
+/* Les pièces Premium vivent dans components/catalogue/Premium.tsx. */
 
 function SessionTile({ session, onStart, onManage, onPremium, canAccessPremium, imgOverride }: {
   session: MergedSession;
@@ -1249,7 +1154,8 @@ function MonEspaceBloc({ count, max, onComposer, onVoir }: {
   count: number;
   max: number;            // Infinity = illimité
   onComposer: () => void;
-  onVoir: () => void;
+  /** Absent en tête de « Mes séances » : on y est déjà. */
+  onVoir?: () => void;
 }) {
   const plein = count >= max;
   /* Au-dessus du plafond (ancien abonné, plafond baissé) on ne montre pas
@@ -1299,7 +1205,7 @@ function MonEspaceBloc({ count, max, onComposer, onVoir }: {
               <Plus size={14} strokeWidth={2.6} />
               <span className="text-[13px] font-bold">Composer</span>
             </motion.button>
-            {count > 0 && (
+            {count > 0 && onVoir && (
               <motion.button whileTap={{ scale: 0.96 }} onClick={onVoir}
                 className="h-9 px-3 rounded-full flex items-center gap-0.5 cursor-pointer bg-transparent flex-shrink-0"
                 style={{ border: "1px solid rgba(var(--accent-rgb),0.28)", color: "var(--accent)" }}>
@@ -1531,19 +1437,6 @@ const FAMILLES: { id: CatFamille; label: string }[] = [
 const hayOf = (s: MergedSession) =>
   `${s.title} ${s.subtitle ?? ""} ${(s.muscles ?? []).join(" ")}`.toLowerCase();
 
-/* Recherche directe : on tape « pec » ou « abdo » et on tombe sur la séance,
-   sans passer par les familles. L'aiguille et la botte de foin sont toutes
-   deux SANS ACCENT et en minuscules, sinon « épaules » ne se trouve pas en
-   tapant « epaule ». Les collections entrent dans la botte : elles portent
-   « abdos », « jambes »… que le titre ne dit pas toujours. */
-const sansAccent = (v: string) =>
-  v.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
-
-const hayRecherche = (s: MergedSession) =>
-  sansAccent(
-    `${s.title} ${s.subtitle ?? ""} ${(s.muscles ?? []).join(" ")} ${s.category} ${(s.collections ?? []).join(" ")}`,
-  );
-
 /** Les séances Vaiiya récentes déclarent leurs collections explicitement.
     Les créations perso et l'ancien catalogue gardent le prédicat historique
     en repli jusqu'à leur migration, sans perdre leur multi-appartenance. */
@@ -1688,10 +1581,16 @@ function CatTile({ cat, count, freeCount, premiumCount, large, onOpen }: {
   );
 }
 
-function ChooseSheet({ sessions, loading, canAccessPremium, maxSeances, catInitial, pourDate, onClose, onStart, onUpgrade, onCreate, onEdit, onDelete, onVisibilityChange, onInspirer, onPlanifier }: {
+function ChooseSheet({ sessions, loading, canAccessPremium, maxSeances, catInitial, pourDate, userId, niveau, onClose, onStart, onUpgrade, onCreate, onEdit, onDelete, onVisibilityChange, onInspirer, onPlanifier, onDemander, onMouvement }: {
   sessions: MergedSession[];
   loading: boolean;
   canAccessPremium: boolean;
+  userId: string | null;
+  niveau: WorkoutSession["difficulty"] | null;
+  /** Envoie au Guide la séance qui manque (la conversation s'ouvre dessus). */
+  onDemander: (demande: string) => void;
+  /** Ouvre la fiche d'un mouvement trouvé par la loupe. */
+  onMouvement: (exo: LibExercise) => void;
   maxSeances: number;
   catInitial: string | null;
   /** Ouverte depuis un jour de la semaine : toucher une séance l'AJOUTE à
@@ -1710,12 +1609,27 @@ function ChooseSheet({ sessions, loading, canAccessPremium, maxSeances, catIniti
   /* Le catalogue peut s'ouvrir directement sur une collection (« libérer
      une place » mène droit aux tiennes). Lu au montage seulement : la clé
      de l'appelant remonte la feuille quand la cible change. */
-  const [catId, setCatId] = useState<string | null>(catInitial ?? null);
+  /* « loupe » : ouverte depuis le champ de recherche d'Entraînement, le
+     curseur dans la loupe de « Je choisis ». */
+  const [catId, setCatId] = useState<string | null>(catInitial === "loupe" ? null : catInitial ?? null);
+  /* Une collection ouverte depuis « Tout le catalogue » y ramène. */
+  const [depuisToutes, setDepuisToutes] = useState(false);
   const [manage, setManage] = useState<MergedSession | null>(null);
   const [premiumPreview, setPremiumPreview] = useState<MergedSession | null>(null);
   const [adviceTheme, setAdviceTheme] = useState<AdviceTheme | "Tous">("Tous");
 
   const cat = catId ? CATALOG.find((c) => c.id === catId) ?? null : null;
+  /* « Tout le catalogue » : les collections rangées par familles, ouvertes
+     depuis le bas de « Je choisis ». */
+  const toutes = catId === "toutes";
+  const nbCollections = CATALOG.filter((c) => c.famille).length;
+  /* Une collection par famille, celle du jour (« Tout le catalogue »). */
+  const jourDuCatalogue = todayYmd();
+  const collectionsDuJour = FAMILLES.filter((f) => f.id !== "lire")
+    .map(({ id }) => aLaUne(CATALOG.filter((c) => c.famille === id), jourDuCatalogue)[0])
+    .filter((c): c is CatDef => !!c)
+    .map((c) => ({ id: c.id, name: c.name, img: c.img, pos: c.pos }));
+  const ouvrirCollection = (id: string, depuis: boolean) => { setCatId(id); setDepuisToutes(depuis); setAdviceTheme("Tous"); };
 
   /* Multi-appartenance : chaque collection filtre la banque par prédicat. */
   const matchedAll = cat ? sessions.filter((s) => cat.match(s, hayOf(s))) : [];
@@ -1776,28 +1690,31 @@ function ChooseSheet({ sessions, loading, canAccessPremium, maxSeances, catIniti
     <Sheet onClose={onClose} height="94dvh" maxHeight="94dvh">
       {/* Header — niveau 1 : l'invitation. Niveau 2 : retour + nom + promesse. */}
       <div className="px-5 pt-2 pb-3 flex-shrink-0 flex items-center gap-3">
-        {cat ? (
+        {cat || toutes ? (
           <>
-            <motion.button whileTap={{ scale: 0.9 }} onClick={() => { setCatId(null); setAdviceTheme("Tous"); }}
+            <motion.button whileTap={{ scale: 0.9 }}
+              onClick={() => { setCatId(cat && depuisToutes ? "toutes" : null); setDepuisToutes(false); setAdviceTheme("Tous"); }}
               className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer flex-shrink-0"
-              style={{ background: "rgba(var(--tint-violet-rgb),0.7)" }} aria-label="Retour aux collections">
+              style={{ background: "rgba(var(--tint-violet-rgb),0.7)" }}
+              aria-label={cat && depuisToutes ? "Retour à tout le catalogue" : "Retour à Je choisis"}>
               <ChevronLeft size={15} strokeWidth={2.2} style={{ color: "var(--text-2)" }} />
             </motion.button>
             <div className="flex-1 min-w-0">
-              <h2 className="vy-sous leading-tight truncate" style={{ color: "var(--text-0)" }}>{cat.name}</h2>
-              <p className="vy-label mt-0.5 truncate">{cat.tag}</p>
+              <h2 className="vy-sous leading-tight truncate" style={{ color: "var(--text-0)" }}>{cat ? cat.name : "Tout le catalogue"}</h2>
+              <p className="vy-label mt-0.5 truncate">{cat ? cat.tag : "Un but, une envie : chaque collection range ses séances."}</p>
             </div>
           </>
         ) : (
-          <div className="flex-1">
-            <h2 className="vy-titre leading-tight" style={{ color: "var(--text-0)" }}>
-              Entraînements
-            </h2>
-            {/* ⚠️ `.vy-corps` pose `--text-body` : l'emphase qu'il contient etait
-                en `--text-2`, donc PLUS CLAIRE que la phrase autour. */}
-            <p className="vy-corps mt-1">
-              Un but, une envie. <span className="font-semibold" style={{ color: "var(--text-0)" }}>{sessions.length} séances et cours</span>
-            </p>
+          /* « Je choisis » (maquette « Trouver ma séance ») : « Mes séances »
+             et « Composer » passent dans le bouton en haut à droite. */
+          <div className="flex-1 min-w-0 flex items-center justify-between gap-2">
+            <h2 className="vy-titre leading-tight" style={{ color: "var(--text-0)" }}>Je choisis</h2>
+            <motion.button whileTap={{ scale: 0.95 }} onClick={() => ouvrirCollection("tiennes", false)}
+              className="h-9 px-3 rounded-full inline-flex items-center gap-1.5 text-[13px] font-semibold cursor-pointer flex-shrink-0"
+              style={{ border: "1px solid rgba(var(--accent-rgb),0.16)", background: "rgb(var(--surface-rgb))", color: "var(--text-0)" }}>
+              <Bookmark size={16} strokeWidth={2.1} aria-hidden />
+              Mes séances
+            </motion.button>
           </div>
         )}
         <motion.button whileTap={{ scale: 0.9 }} onClick={onClose}
@@ -1817,8 +1734,8 @@ function ChooseSheet({ sessions, loading, canAccessPremium, maxSeances, catIniti
 
       {/* Le corps — remonté par clé : l'entrée glisse dans le sens du voyage */}
       <motion.div
-        key={cat ? cat.id : "collections"}
-        initial={{ opacity: 0, x: cat ? 26 : -26 }} animate={{ opacity: 1, x: 0 }}
+        key={cat ? cat.id : toutes ? "toutes" : "choisir"}
+        initial={{ opacity: 0, x: cat || toutes ? 26 : -26 }} animate={{ opacity: 1, x: 0 }}
         transition={{ duration: 0.22, ease: "easeOut" }}
         className="overflow-y-auto px-5 flex-1"
         style={{ scrollbarWidth: "none", paddingBottom: "calc(1.5rem + env(safe-area-inset-bottom))" }}
@@ -1845,8 +1762,26 @@ function ChooseSheet({ sessions, loading, canAccessPremium, maxSeances, catIniti
             })}
           </div>
         )}
-        {!cat ? (
-          /* ── Niveau 1 : la grille des collections ── */
+        {!cat && !toutes ? (
+          /* ── Niveau 1 : « Je choisis », le catalogue qui propose ── */
+          <TrouverSeance
+            seances={sessions}
+            userId={userId}
+            niveau={niveau}
+            canAccessPremium={canAccessPremium}
+            collections={collectionsDuJour}
+            nbCollections={nbCollections}
+            loupeAuDepart={catInitial === "loupe"}
+            onStart={onStart}
+            onPremium={setPremiumPreview}
+            onManage={setManage}
+            onCollection={(id) => ouvrirCollection(id, false)}
+            onToutesCollections={() => ouvrirCollection("toutes", false)}
+            onDemander={onDemander}
+            onMouvement={onMouvement}
+          />
+        ) : !cat ? (
+          /* ── Tout le catalogue : la grille des collections, par familles ── */
           loading ? (
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
               {Array.from({ length: 6 }).map((_, i) => (
@@ -1856,14 +1791,6 @@ function ChooseSheet({ sessions, loading, canAccessPremium, maxSeances, catIniti
             </div>
           ) : (
             <>
-            {/* ── Deux univers : le tien d'abord, les collections ensuite ── */}
-            <MonEspaceBloc
-              count={mesSeances.length}
-              max={maxSeances}
-              onComposer={onCreate}
-              onVoir={() => setCatId("tiennes")}
-            />
-
             {FAMILLES.map(({ id: famille, label }) => {
               const cats = CATALOG.filter((c) => c.famille === famille);
               if (cats.length === 0) return null;
@@ -1892,7 +1819,7 @@ function ChooseSheet({ sessions, loading, canAccessPremium, maxSeances, catIniti
                           freeCount={freeCount}
                           premiumCount={premiumCount}
                           large={seule}
-                          onOpen={() => { setCatId(c.id); setAdviceTheme("Tous"); }}
+                          onOpen={() => ouvrirCollection(c.id, true)}
                         />
                       );
                     })}
@@ -1904,6 +1831,8 @@ function ChooseSheet({ sessions, loading, canAccessPremium, maxSeances, catIniti
           )
         ) : cat.id === "tiennes" ? (
           /* ── Niveau 2, « Les tiennes » : ta bibliothèque + créer ── */
+          <>
+          <MonEspaceBloc count={mesSeances.length} max={maxSeances} onComposer={onCreate} />
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
             {perso.map((s) => (
               <SessionTile
@@ -1918,6 +1847,7 @@ function ChooseSheet({ sessions, loading, canAccessPremium, maxSeances, catIniti
             ))}
             {createCard}
           </div>
+          </>
         ) : matched.length === 0 ? (
           /* ── Niveau 2, collection vide : la porte reste ouverte ── */
           <div className="flex flex-col items-center text-center pt-12 px-6">
@@ -2915,21 +2845,6 @@ export default function ProgressionPage() {
     ...workoutSessions.map((s) => ({ ...s, perso: false })),
   ], [customSessions]);
 
-  /* Barre de recherche : trouver une séance parmi les ~94 sans dérouler les
-     familles. On ne cherche que dans les vraies séances (pas les mini-cours),
-     dès deux caractères, chaque mot devant être présent (« haut abdo »
-     retrouve une séance qui parle des deux). */
-  const [recherche, setRecherche] = useState("");
-  const resultatsRecherche = useMemo<MergedSession[]>(() => {
-    const q = sansAccent(recherche.trim());
-    if (q.length < 2) return [];
-    const mots = q.split(/\s+/);
-    return allSessions.filter((s) => {
-      if (s.contentType === "article") return false;
-      const hay = hayRecherche(s);
-      return mots.every((m) => hay.includes(m));
-    });
-  }, [recherche, allSessions]);
 
   /* ── Lancements ──
      ⚠️ TOUT PASSE PAR LE LANCEUR GLOBAL (V7A). Cet écran avait son propre
@@ -2970,6 +2885,7 @@ export default function ProgressionPage() {
       return;
     }
     setSheet(null);
+    setChoisirCible(null);
     /* Une séance du catalogue ou de ta bibliothèque ne referme AUCUNE
        étape : pas de `cible`. C'est la règle « une séance hors programme
        ne fait pas avancer le cycle ». */
@@ -3219,75 +3135,23 @@ export default function ProgressionPage() {
             le plan d'entraînement et sa bibliothèque. */}
         <SeanceInterrompue />
 
-        {/* ── ① bis · Recherche directe ──
-            94 séances, la plupart dures à retrouver dans les familles :
-            on tape « pec », « abdo », « haut du corps » et on tombe dessus. */}
+        {/* ── ① bis · Chercher une séance ou un exercice ──
+            La loupe vit dans « Je choisis » (maquette « Trouver ma séance ») :
+            ce champ l'ouvre, le curseur dedans. Une seule façon de chercher,
+            avec les mêmes règles (lib/trouverSeance). */}
         <motion.div
           initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.16 }}
           className="mt-2"
         >
-          <div className="relative flex items-center gap-2.5 px-4 py-3 rounded-2xl"
+          <button type="button" onClick={() => { setChoisirCible("loupe"); setSheet("choisir"); }}
+            className="w-full flex items-center gap-2.5 px-4 py-3 rounded-2xl text-left cursor-pointer"
             style={{
               background: "rgba(var(--tint-violet-rgb),0.55)",
               border: "1px solid rgba(var(--accent-rgb),0.16)",
             }}>
             <Search size={16} style={{ color: "var(--text-3)", flexShrink: 0 }} />
-            <input
-              value={recherche}
-              onChange={(e) => setRecherche(e.target.value)}
-              placeholder="Chercher une séance (pec, abdo, jambes…)"
-              className="flex-1 bg-transparent text-[16px] outline-none placeholder:text-[var(--text-3)]"
-              style={{ color: "var(--text-1)" }}
-              aria-label="Chercher une séance"
-            />
-            {recherche && (
-              <button type="button" onClick={() => setRecherche("")} aria-label="Effacer" className="flex-shrink-0 cursor-pointer">
-                <X size={15} style={{ color: "var(--text-3)" }} />
-              </button>
-            )}
-          </div>
-
-          <AnimatePresence>
-            {recherche.trim().length >= 2 && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}
-                transition={{ duration: 0.2 }} style={{ overflow: "hidden" }}
-              >
-                <div className="mt-2 rounded-2xl overflow-hidden"
-                  style={{ background: "rgba(var(--surface-rgb),0.9)", border: "1px solid rgba(var(--accent-rgb),0.12)" }}>
-                  {resultatsRecherche.length === 0 ? (
-                    <p className="px-4 py-4 text-[14px]" style={{ color: "var(--text-3)" }}>
-                      Aucune séance pour « {recherche.trim()} ».
-                    </p>
-                  ) : (
-                    <div className="max-h-[46vh] overflow-y-auto">
-                      {resultatsRecherche.map((s, i) => {
-                        const verrou = s.access === "premium" && !canAccessPremium;
-                        return (
-                          <button key={s.id} type="button"
-                            onClick={() => { startSession(s); setRecherche(""); }}
-                            className="w-full flex items-center gap-3 px-4 py-3 text-left cursor-pointer"
-                            style={{ borderTop: i === 0 ? "none" : "1px solid rgba(var(--accent-rgb),0.08)" }}>
-                            <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: s.accent || "var(--accent)" }} />
-                            <span className="flex-1 min-w-0">
-                              <span className="flex items-center gap-1.5">
-                                <b className="text-[15px] font-semibold truncate" style={{ color: "var(--text-1)" }}>{s.title}</b>
-                                {verrou && <Lock size={12} style={{ color: "var(--gold)", flexShrink: 0 }} />}
-                              </span>
-                              <span className="text-[12px] truncate block" style={{ color: "var(--text-3)" }}>
-                                {s.duration} min · {s.difficulty}{s.perso ? " · à toi" : ""}
-                              </span>
-                            </span>
-                            <ChevronRight size={16} style={{ color: "var(--text-3)", flexShrink: 0 }} />
-                          </button>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
+            <span className="flex-1 text-[16px]" style={{ color: "var(--text-3)" }}>Une séance, un exercice, 20 min…</span>
+          </button>
         </motion.div>
 
         {/* ── ② Bifurcation ──
@@ -3303,7 +3167,7 @@ export default function ProgressionPage() {
           className="grid grid-cols-2 gap-3 mt-2"
         >
           <ForkCard kind="improvise" onClick={() => setSheet("improviser")} />
-          <ForkCard kind="choisis" count={allSessions.length} onClick={() => setSheet("choisir")} />
+          <ForkCard kind="choisis" count={allSessions.length} onClick={() => { setChoisirCible(null); setSheet("choisir"); }} />
         </motion.div>
 
         {/* ── ③ Les mouvements ──
@@ -3481,6 +3345,13 @@ export default function ProgressionPage() {
             maxSeances={maxSeances}
             catInitial={choisirCible}
             pourDate={pourDate}
+            userId={user?.id ?? null}
+            niveau={profileLevel ? levelToDifficulty(profileLevel) : null}
+            onDemander={(demande) => {
+              setSheet(null); setChoisirCible(null); setPourDate(null); setALiberer(null);
+              openAssistant(demande);
+            }}
+            onMouvement={(exo) => setMouvements({ fiche: exo })}
             onClose={() => {
               /* Venu d'un jour de la semaine : on y revient, pas au vide. */
               setSheet(pourDate ? "semaine" : null);

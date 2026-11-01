@@ -162,3 +162,34 @@ export function resolveArt(input: { title?: string; category?: WorkoutCategory; 
 export function heroImageForSeance(input: { title?: string; category?: WorkoutCategory; muscles?: string[] }): string {
   return `/entrainement/${resolveArt(input).img}.webp`;
 }
+
+/* Une photo par séance, sans doublon DANS une rangée. resolveArt est
+   déterministe : deux séances qui tombent sur la même règle reçoivent la
+   même photo. On parcourt la rangée dans l'ordre et, dès qu'une image est
+   prise, on tourne vers une autre variante libre de la même famille : la
+   première carte garde sa photo « juste », les suivantes varient.
+   `fixe` impose une image (un mini-cours a la sienne). */
+export function photosDeRangee(
+  list: { id: string; title: string; category?: string; muscles?: string[] }[],
+  fixe?: (id: string) => string | null,
+): Map<string, string> {
+  const used = new Set<string>();
+  const out = new Map<string, string>();
+  for (const s of list) {
+    const impose = fixe?.(s.id);
+    if (impose) { used.add(impose); out.set(s.id, impose); continue; }
+    const art = resolveArt({ title: s.title, category: s.category as WorkoutCategory | undefined, muscles: s.muscles });
+    let img = art.img;
+    if (used.has(img)) {
+      const variants = FAMILY[art.fam].variants;
+      const start = variants.indexOf(img);
+      for (let k = 1; k <= variants.length; k++) {
+        const cand = variants[(start + k) % variants.length];
+        if (!used.has(cand)) { img = cand; break; }
+      }
+    }
+    used.add(img);
+    out.set(s.id, img);
+  }
+  return out;
+}
