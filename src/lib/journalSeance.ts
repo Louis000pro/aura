@@ -49,6 +49,7 @@ import { chargeReglable, type ExerciceEffectif } from "@/lib/saisieSerie";
 import type { Remplacements } from "@/lib/remplacement";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Exercise } from "@/components/WorkoutGuideModal";
+import type { ScoreClassique } from "@/lib/classiques";
 import { cleExercice } from "@/lib/exerciceCle";
 import { repsDeLaSerie } from "@/lib/toursSeance";
 import {
@@ -128,6 +129,10 @@ export type JournalSeance = {
   /** La prescription telle qu'elle était au lancement. */
   exercices: Exercise[];
   series: LigneSerie[];
+  /** Un classique (lib/classiques.ts) : le score de l'essai, s'il en a
+   *  un. Absent pour toute autre séance. La base l'ignore tant que
+   *  `20261101_score_classiques.sql` n'est pas collé. */
+  score?: ScoreClassique;
 };
 
 /** Durée d'un effort HIIT, recopiée du tunnel pour que la prescription la porte. */
@@ -243,6 +248,8 @@ export function journalDe(e: {
   remplacements?: Remplacements;
   /** L'instant de fin ; par défaut, maintenant. */
   finMs?: number;
+  /** Un classique : son score, quand l'essai en a un. */
+  score?: ScoreClassique | null;
 }): JournalSeance {
   const finMs = e.finMs ?? Date.now();
   return {
@@ -257,6 +264,7 @@ export function journalDe(e: {
     calories: Math.round((e.dureeS / 60) * 6.5),
     exercices: e.exercices,
     series: lignesDuJournal(e.exercices, e.marques, e.remplacements ?? {}),
+    ...(e.score ? { score: e.score } : {}),
   };
 }
 
