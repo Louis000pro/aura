@@ -290,7 +290,7 @@ export const workoutSessions: WorkoutSession[] = [
   {
     id: "abdos-nuque", category: "fullbody",
     title: "Abdos sans tirer sur la nuque", subtitle: "Tête posée · Dead bug · Reverse crunch",
-    duration: 18, difficulty: "Débutant", exercises: 5,
+    duration: 21, difficulty: "Débutant", exercises: 5,
     muscles: ["Abdominaux", "Core", "Obliques"],
     accent: "#8B5CF6", icon: Sparkles, access: "free",
     collections: ["abdos", "sansmateriel"],
@@ -316,7 +316,7 @@ export const workoutSessions: WorkoutSession[] = [
   {
     id: "fessiers-essentiel", category: "force",
     title: "Fessiers, l’essentiel", subtitle: "Pont · Donkey kick · Squat · Fentes",
-    duration: 19, difficulty: "Débutant", exercises: 4,
+    duration: 21, difficulty: "Débutant", exercises: 4,
     muscles: ["Fessiers", "Quadriceps"],
     accent: "#8B5CF6", icon: Dumbbell, access: "free",
     collections: ["fessiers", "sansmateriel", "debuter"],
@@ -332,7 +332,7 @@ export const workoutSessions: WorkoutSession[] = [
   {
     id: "fessiers-300", category: "force",
     title: "Fessiers 300", subtitle: "300 répétitions · Séries longues · Repos courts",
-    duration: 24, difficulty: "Intermédiaire", exercises: 4,
+    duration: 27, difficulty: "Intermédiaire", exercises: 4,
     muscles: ["Fessiers", "Quadriceps"],
     accent: "#8B5CF6", icon: Flame, access: "premium",
     collections: ["fessiers", "sansmateriel", "longues"],
@@ -350,7 +350,7 @@ export const workoutSessions: WorkoutSession[] = [
   {
     id: "fessiers-halteres", category: "force",
     title: "Fessiers aux haltères", subtitle: "Deux haltères · Un banc ou un canapé",
-    duration: 30, difficulty: "Intermédiaire", exercises: 5,
+    duration: 33, difficulty: "Intermédiaire", exercises: 5,
     muscles: ["Fessiers", "Ischio-jambiers", "Quadriceps"],
     accent: "#8B5CF6", icon: Dumbbell, access: "premium",
     collections: ["fessiers", "salle", "halteres"],
@@ -511,7 +511,7 @@ export const workoutSessions: WorkoutSession[] = [
   {
     id: "abdos-deux-tours", category: "fullbody",
     title: "Abdos en deux tours", subtitle: "Crunch · Dead bug · Gainage · Bird dog",
-    duration: 13, difficulty: "Débutant", exercises: 5,
+    duration: 15, difficulty: "Débutant", exercises: 5,
     muscles: ["Abdominaux", "Core", "Lombaires"],
     accent: "#8B5CF6", icon: Sparkles, access: "free",
     collections: ["abdos", "circuits", "sansmateriel", "express"],
@@ -537,7 +537,7 @@ export const workoutSessions: WorkoutSession[] = [
   {
     id: "fessiers-gainage", category: "force",
     title: "Fessiers et gainage", subtitle: "3 tours · Pont · Planche latérale · Donkey kick",
-    duration: 20, difficulty: "Intermédiaire", exercises: 6,
+    duration: 24, difficulty: "Intermédiaire", exercises: 6,
     muscles: ["Fessiers", "Core", "Obliques"],
     accent: "#8B5CF6", icon: Layers, access: "premium",
     collections: ["fessiers", "circuits", "abdos", "sansmateriel"],
@@ -1089,7 +1089,7 @@ export const workoutSessions: WorkoutSession[] = [
   {
     id: "esprit-pilates", category: "fullbody",
     title: "Esprit Pilates", subtitle: "Lent et contrôlé · Centre · Respiration",
-    duration: 20, difficulty: "Intermédiaire", exercises: 6,
+    duration: 23, difficulty: "Intermédiaire", exercises: 6,
     muscles: ["Core", "Abdominaux", "Lombaires"],
     accent: "#8B5CF6", icon: Wind, access: "premium",
     collections: ["abdos", "sansmateriel", "mobilite"],
@@ -1098,10 +1098,10 @@ export const workoutSessions: WorkoutSession[] = [
   {
     id: "dos-posture", category: "force",
     title: "Dos et posture à la maison", subtitle: "Superman · Bird dog · Colonne mobile",
-    duration: 14, difficulty: "Débutant", exercises: 4,
+    duration: 17, difficulty: "Débutant", exercises: 4,
     muscles: ["Dos", "Lombaires"],
     accent: "#8B5CF6", icon: Wind, access: "free",
-    collections: ["dos", "sansmateriel", "mobilite", "express", "velo"],
+    collections: ["dos", "sansmateriel", "mobilite", "velo"],
   },
   /* Vague 9 : les routines, les jours sans et les petites séances à part
      (lot 3 de la banque, GO de Louis le 2026-10-28). En fin de tableau,

@@ -362,13 +362,16 @@ for (const s of [...vague7, ...vague8, ...vague9, ...vague10, ...vague11]) {
     .map((e) => `${s.id} · ${e.name} (${e.reps})`));
   verdict("une durée dans les répétitions a toujours son chrono déclaré", chronoCache.length === 0, liste(chronoCache));
 
-  /* L'estimation compte deux côtés pour « par jambe », « par bras » ou
-     « par main », pas pour « par côté » (lib/dureeLibre.ts). Le lot 3
-     écrit donc ce qu'elle lit, et une tenue d'un côté puis de l'autre en
-     deux séries qui alternent. */
-  const parCote = [...vague9, ...vague10, ...vague11].flatMap((s) => exerciseData[s.id]
-    .filter((e) => /par\s+c[ôo]t[ée]/i.test(e.reps)).map((e) => `${s.id} · ${e.name} (${e.reps})`));
-  verdict("les lots 3, 4 et 6 n’écrivent pas « par côté » dans les répétitions", parCote.length === 0, liste(parCote));
+  /* L'estimation compte deux côtés pour « par jambe », « par bras »,
+     « par main » et « par côté » (lib/dureeLibre.ts). « par côté » n'était
+     pas lu avant le 2026-11-01 : la frontière de mot ne connaît pas « é ».
+     Une tenue d'un côté puis de l'autre s'écrit toujours en deux séries
+     qui alternent, parce que le chrono ne compte qu'un côté. */
+  const nonLus = ["8 par côté", "12 par côtés", "10 par jambe", "6 par bras", "5 par main"]
+    .filter((reps) => itemDExercice({ name: "Témoin", sets: 1, reps }).cotes !== 2);
+  const lusATort = ["10 reps", "3 par séance"].filter((reps) => itemDExercice({ name: "Témoin", sets: 1, reps }).cotes !== 1);
+  verdict("l’estimation compte deux côtés pour « par côté », « par jambe », « par bras » et « par main », et pour rien d’autre",
+    nonLus.length === 0 && lusATort.length === 0, liste([...nonLus, ...lusATort], "tous lus"));
   const alterne = [...vague9, ...vague11].flatMap((s) => exerciseData[s.id]
     .filter((e) => e.tip.startsWith("Un côté puis l’autre") && (e.sets % 2 !== 0 || !e.auto))
     .map((e) => `${s.id} · ${e.name}`));

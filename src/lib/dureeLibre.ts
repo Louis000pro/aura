@@ -93,7 +93,11 @@ export type ItemDuree = {
   sansEchauffement?: true;
 };
 
-const unilateral = (texte: string) => /\bpar\s+(jambe|côté|cote|bras|main)\b/i.test(texte);
+/* « par jambe », « par côté », « par bras », « par main », au pluriel aussi.
+   La fin du mot se vérifie par une lettre qui ne suit pas : `\b` ne connaît
+   que les lettres ASCII, et « 8 par côté » n'était pas lu (jusqu'au
+   2026-11-01, un seul côté compté). */
+const unilateral = (texte: string) => /\bpar\s+(?:jambe|côté|cote|bras|main)s?(?![a-zà-öø-ÿ])/i.test(texte);
 
 /** Une ligne de prescription (R2) → ce que l'estimation lit. */
 export function itemDeLigne(l: LignePrescription): ItemDuree {
