@@ -10,9 +10,9 @@ import styles from "./LigneMission.module.css";
    serveur ne donnera pas.
 
    Ce composant vivait dans `AccueilSignature.tsx`. Il en est sorti en V7B :
-   l'accueil n'empile plus de missions, mais trois surfaces les rendent
-   désormais (la feuille « Missions », la zone de constance du profil,
-   /premium). Une seule écriture, partout la même. */
+   l'accueil n'empile plus de missions, mais deux surfaces les rendent
+   (la feuille « Missions » et /premium). Une seule écriture, partout la
+   même. */
 
 /** L'empilement qui contient des lignes de mission : un cadre, des filets. */
 export const listeMissions = styles.missionStack;
@@ -42,7 +42,7 @@ export default function LigneMission({
   etat,
   debloquee,
   exp,
-  onNavigate,
+  onOuvrir,
 }: {
   mission: Mission;
   /** La progression réelle, lue dans `aura.missions`.
@@ -63,10 +63,12 @@ export default function LigneMission({
   debloquee: boolean;
   /** Ce que la mission rapporte aujourd’hui, si ça diffère du catalogue. */
   exp?: number;
-  onNavigate: (path: string) => void;
+  /** Toucher la ligne ouvre la fiche de la quête (FicheQuete.tsx) : comment
+   *  la faire, et le bouton qui mène au bon écran (Louis, 2026-11-02). La
+   *  ligne ne navigue plus elle-même. Absent : la ligne ne se touche pas. */
+  onOuvrir?: () => void;
 }) {
   const premium = mission.premium;
-  const route = debloquee ? mission.route : "/premium";
 
   /* ⚠️ LA CONDITION RESTE SOUS LE TITRE, elle ne se fait remplacer par
      rien. « Ouvrir Vaiiya. Tient ta série. » porte la règle la
@@ -124,9 +126,9 @@ export default function LigneMission({
   );
 
   const marque = premium ? "" : undefined;
-  if (!route) return <div className={styles.mission} data-premium={marque}>{contenu}</div>;
+  if (!onOuvrir) return <div className={styles.mission} data-premium={marque}>{contenu}</div>;
   return (
-    <button type="button" className={styles.mission} data-premium={marque} onClick={() => onNavigate(route)}>
+    <button type="button" className={styles.mission} data-premium={marque} onClick={onOuvrir}>
       {contenu}
     </button>
   );

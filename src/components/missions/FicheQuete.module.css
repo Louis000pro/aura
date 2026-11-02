@@ -1,0 +1,208 @@
+/* ─────────────────────────────────────────────────────────────────────
+   La fiche d'une quête. Le composant `Sheet` porte déjà la surface, le
+   rayon, la poignée et la marge de sécurité du bas : il ne reste ici que
+   la tête, l'avancée, les étapes et le bouton. La puce « Vaiiya+ » et le
+   texte réservé aux lecteurs d'écran viennent de `LigneMission.module.css`,
+   pour qu'une quête se dessine pareil dans la liste et dans sa fiche.
+   ───────────────────────────────────────────────────────────────────── */
+
+.retour {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  margin: -6px 0 12px -6px;
+  padding: 6px;
+  border: 0;
+  background: none;
+  color: var(--exp-encre);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.tete {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+/* Le rayon arrondit aussi les trois pictogrammes du jour, livrés sans
+   transparence : sans lui, leurs coins carrés se voient sur le sombre. */
+.picto {
+  display: block;
+  width: 56px;
+  height: 56px;
+  flex: 0 0 56px;
+  border-radius: 16px;
+  object-fit: cover;
+}
+
+.titres {
+  min-width: 0;
+  flex: 1;
+}
+
+.titres h2 {
+  margin: 0;
+  color: var(--text-0);
+  font-family: var(--titrage);
+  font-variation-settings: var(--w-voix);
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+
+.insecable {
+  white-space: nowrap;
+}
+
+.meta {
+  margin: 4px 0 0;
+  color: var(--text-2);
+  font-size: 13px;
+}
+
+/* ⚠️ `--exp-encre` ET PAS `--accent` : c'est un chiffre qu'on lit, et le
+   violet décoratif tombe à 2,6:1 sur le blanc. */
+.meta b {
+  color: var(--exp-encre);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Le même tampon que le sceau d'une mission gagnée (LigneMission) : un
+   aplat violet plein, texte blanc, sur le clair comme sur le sombre. */
+.validee {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 16px 0 0;
+  padding: 7px 12px;
+  border-radius: 999px;
+  color: #fff;
+  background: linear-gradient(135deg, #8b5cf6, #c13bc1);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.avance {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.barre {
+  position: relative;
+  height: 6px;
+  flex: 1;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(var(--accent-rgb), 0.14);
+}
+
+.barre i {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #8b5cf6, #c13bc1);
+}
+
+.avance small {
+  flex: none;
+  color: var(--text-2);
+  font-size: 13px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ⚠️ L'OR EST UNE ENCRE : `--gold` tombe à 2:1 sur le blanc. */
+.reserve {
+  margin: 12px 0 0;
+  color: var(--or-encre);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+.section {
+  margin: 24px 0 12px;
+  color: var(--text-1);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.etapes {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.etapes li {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  color: var(--text-1);
+  font-size: 16px;
+  line-height: 1.45;
+}
+
+.marque {
+  display: grid;
+  width: 24px;
+  height: 24px;
+  flex: 0 0 24px;
+  place-items: center;
+  border: 1.5px solid var(--exp-trait);
+  border-radius: 999px;
+  color: var(--exp-encre);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+/* Une étape qui est elle-même une quête déjà remplie : la coche prend la
+   place du numéro, et le texte passe en retrait. */
+.etapes li[data-faite] {
+  color: var(--text-3);
+}
+
+.etapes li[data-faite] .marque {
+  border-color: transparent;
+  color: #fff;
+  background: linear-gradient(135deg, #8b5cf6, #c13bc1);
+}
+
+.note {
+  margin: 14px 0 0;
+  color: var(--text-2);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+/* Le violet plein est l'action, partout. Sur une quête Vaiiya+ verrouillée
+   aussi : l'or dit « Vaiiya+ », il ne dit jamais « appuie ici ». */
+.bouton {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  margin-top: 24px;
+  padding: 14px 16px;
+  border: 0;
+  border-radius: var(--r-bloc);
+  color: #fff;
+  background: linear-gradient(135deg, #8b5cf6, #c13bc1);
+  box-shadow: var(--ombre-action);
+  font-size: 16px;
+  font-weight: 800;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.bouton:active {
+  transform: scale(0.98);
+}

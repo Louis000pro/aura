@@ -1235,6 +1235,34 @@ verdict(
     );
   }
 
+  /* ── La fiche d'une quête (Louis, 2026-11-02). Toucher une quête ouvre
+        ses étapes : une quête sans étape ouvrirait une fiche vide, et une
+        quête qui mène à un écran sans le mot de son bouton perdrait ce
+        bouton en silence. ── */
+  verdict(
+    "Fiche · chaque quête dit comment la faire",
+    MISSIONS.every((m) => m.etapes.length > 0 && m.etapes.every((e) => e.texte.trim().length > 0)),
+    MISSIONS.map((m) => m.etapes.length).join(" · ") + " étapes",
+  );
+  verdict(
+    "Fiche · une quête qui mène à un écran a le mot de son bouton",
+    MISSIONS.every((m) => !m.route || !!m.action),
+    "route ⇒ action",
+  );
+  verdict(
+    "Fiche · une étape cochable est une quête gratuite du jour",
+    MISSIONS.every((m) => m.etapes.every((e) => !e.quete || MISSIONS_JOUR.some((j) => j.id === e.quete))),
+    "connexion, séance, repas",
+  );
+  verdict(
+    "Fiche · les trois surfaces ouvrent la fiche, la ligne ne navigue plus",
+    JOURNEE.includes("FicheQuete") &&
+      FEUILLE.includes("FicheQuete") &&
+      OFFRE.includes("FicheQuete") &&
+      !net(lire("src/components/missions/LigneMission.tsx")).includes("onNavigate"),
+    "le rail, « Voir tout », /premium",
+  );
+
   verdict(
     "V7B · une seule écriture de la ligne de mission dans tout le produit",
     [

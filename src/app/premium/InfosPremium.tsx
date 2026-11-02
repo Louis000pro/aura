@@ -1,7 +1,15 @@
+"use client";
+
+import { useState } from "react";
 import Link from "next/link";
+import dynamic from "next/dynamic";
+import { AnimatePresence } from "framer-motion";
 import LigneMission, { listeMissions } from "@/components/missions/LigneMission";
-import { MISSIONS_PREMIUM, MISSIONS_PREMIUM_SEMAINE } from "@/lib/aura";
+import { MISSIONS_PREMIUM, MISSIONS_PREMIUM_SEMAINE, type Mission } from "@/lib/aura";
 import { PLANS, VENTE_OUVERTE, formatPrice } from "@/lib/plans";
+
+// La fiche d'une quête, chargée au premier toucher d'une ligne.
+const FeuilleQuete = dynamic(() => import("@/components/missions/FicheQuete"), { ssr: false });
 
 /**
  * Le contenu écrit de /premium.
@@ -46,6 +54,10 @@ export default function InfosPremium({ premiumDebloque = false }: { premiumDeblo
      quotidien que personne ne peut atteindre en une journée. */
   const expPremiumJour = MISSIONS_PREMIUM.reduce((total, m) => total + m.exp, 0);
   const expPremiumSemaine = MISSIONS_PREMIUM_SEMAINE.reduce((total, m) => total + m.exp, 0);
+
+  // Toucher une mission ouvre sa fiche : comment la faire. Sans bouton, on
+  // est déjà sur la page où elle s'achète.
+  const [quete, setQuete] = useState<Mission | null>(null);
 
   return (
     <section className="mt-12 md:mt-16 flex flex-col gap-4 md:gap-5" aria-label="Comprendre l’offre Vaiiya">
@@ -130,7 +142,7 @@ export default function InfosPremium({ premiumDebloque = false }: { premiumDeblo
               key={mission.id}
               mission={mission}
               debloquee={premiumDebloque}
-              onNavigate={() => {}}
+              onOuvrir={() => setQuete(mission)}
             />
           ))}
         </div>
@@ -147,10 +159,20 @@ export default function InfosPremium({ premiumDebloque = false }: { premiumDeblo
               key={mission.id}
               mission={mission}
               debloquee={premiumDebloque}
-              onNavigate={() => {}}
+              onOuvrir={() => setQuete(mission)}
             />
           ))}
         </div>
+        <AnimatePresence>
+          {quete && (
+            <FeuilleQuete
+              key={quete.id}
+              mission={quete}
+              debloquee={premiumDebloque}
+              onFermer={() => setQuete(null)}
+            />
+          )}
+        </AnimatePresence>
         <p className="mt-3 text-[16px] font-light leading-relaxed" style={{ color: "var(--text-body)" }}>
           Celle-ci se compte sur la semaine, à côté des deux missions hebdomadaires que tout le monde
           a. Elle n&apos;entre pas dans le total du jour.

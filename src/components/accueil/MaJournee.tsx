@@ -32,6 +32,7 @@
 import type React from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
+import dynamic from "next/dynamic";
 import { AnimatePresence, motion } from "framer-motion";
 import { ChevronRight } from "lucide-react";
 import GemmeRang from "@/components/GemmeRang";
@@ -44,6 +45,9 @@ import { publierFlamme } from "@/lib/evenementsFil";
 import { apercuPremiumDuJour, compteMissionsJour, missionDebloquee } from "@/lib/missionsAccueil";
 import { nJokers, type EtatJokers } from "@/lib/jokers";
 import styles from "./MaJournee.module.css";
+
+// Chargée au premier toucher d'une quête, comme la feuille « Missions ».
+const FeuilleQuete = dynamic(() => import("@/components/missions/FicheQuete"), { ssr: false });
 
 /** Le jour parisien, `YYYY-MM-DD` : la clé d'une flamme dans le fil. */
 const jourParis = () => new Date().toLocaleDateString("fr-CA", { timeZone: "Europe/Paris" });
@@ -197,6 +201,9 @@ export default function MaJournee({
   const restantes = MISSIONS_JOUR.filter((m) => m.id !== "journee" && !aura.missions[m.id]?.complete);
   const premium = apercuPremiumDuJour(jour);
   const rail: Mission[] = [...restantes, ...(premium && !aura.missions[premium.id]?.complete ? [premium] : [])];
+  // Toucher une carte ouvre la fiche de sa quête (Louis, 2026-11-02) : c'est
+  // la fiche qui porte le bouton vers le bon écran.
+  const [quete, setQuete] = useState<Mission | null>(null);
 
   // La même mesure que la galerie des rangs et le profil.
   const { part: progres, suivant, rang: rangActuel } = progressionRang(aura.exp);
@@ -427,13 +434,26 @@ export default function MaJournee({
               mission={m}
               reste={resteMission(m, aura.missions[m.id])}
               debloquee={missionDebloquee(m, premiumDebloque)}
-              onNavigate={onNavigate}
+              onOuvrir={() => setQuete(m)}
             />
           ))}
         </div>
       ) : (
         <div className={styles.fini}>Toutes tes quêtes du jour sont faites.</div>
       )}
+
+      <AnimatePresence>
+        {quete && (
+          <FeuilleQuete
+            key={quete.id}
+            mission={quete}
+            aura={aura}
+            debloquee={missionDebloquee(quete, premiumDebloque)}
+            onNavigate={onNavigate}
+            onFermer={() => setQuete(null)}
+          />
+        )}
+      </AnimatePresence>
     </section>
   );
 }
@@ -442,21 +462,19 @@ function CarteQuete({
   mission,
   reste,
   debloquee,
-  onNavigate,
+  onOuvrir,
 }: {
   mission: Mission;
   reste: string | null;
   debloquee: boolean;
-  onNavigate: (path: string) => void;
+  onOuvrir: () => void;
 }) {
-  const cible = !debloquee ? "/premium" : mission.route;
   return (
     <button
       type="button"
       className={styles.carte}
       data-premium={mission.premium ? "" : undefined}
-      onClick={() => cible && onNavigate(cible)}
-      disabled={!cible}
+      onClick={onOuvrir}
     >
       <span className={styles.picto}>
         <Image src={mission.image} alt="" width={46} height={46} />

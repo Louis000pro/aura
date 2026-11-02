@@ -191,11 +191,31 @@ export type MissionId =
   | "semaineReguliere"
   | "semaineParfaite";
 
+/** Une étape de « Comment la faire », dans la fiche d'une quête. */
+export type EtapeMission = {
+  texte: string;
+  /** L'étape EST une autre quête du jour (« Termine une séance ») : la fiche
+   *  la coche quand cette quête est remplie, au lieu de lui mettre son numéro. */
+  quete?: MissionId;
+};
+
 export type Mission = {
   id: MissionId;
   titre: string;
   /** Ce qu'il faut faire, écrit pour être compris AVANT d'agir. */
   condition: string;
+  /** Comment la faire, pas à pas : ce que montre la fiche d'une quête quand
+   *  on la touche (components/missions/FicheQuete.tsx).
+   *
+   *  ⚠️ Chaque étape dit une règle que la base applique vraiment (5 min
+   *  minimum, l'heure de début avant 9 h, un jour validé = une séance ou un
+   *  repas) : une étape qui promet plus que le crédit réel est un mensonge.
+   *  Espaces ordinaires : la fiche pose les espaces insécables au rendu. */
+  etapes: EtapeMission[];
+  /** Une règle de plus, seulement si elle évite une surprise. */
+  note?: string;
+  /** Ce que dit le bouton de la fiche qui mène à `route`. */
+  action?: string;
   /** Ce que ça rapporte. Un nombre fixe, jamais un calcul. */
   exp: number;
   periode: "jour" | "semaine";
@@ -222,6 +242,18 @@ export type Mission = {
   route: string | null;
 };
 
+/** Les trois quêtes de la semaine se font pareil : seul le nombre de jours
+ *  change. Un jour validé, c'est une séance ou un repas (`jours_actifs_aura`). */
+function etapesSemaine(jours: number): EtapeMission[] {
+  return [
+    { texte: "Termine une séance ou note un repas : ce jour est validé." },
+    { texte: jours === 7 ? "Valide les 7 jours, du lundi au dimanche." : `Valide ${jours} jours entre lundi et dimanche.` },
+  ];
+}
+/* Venir tient la flamme depuis le 2026-10-14, pas les quêtes de la semaine :
+   c'est exactement la confusion que cette note évite. */
+const NOTE_SEMAINE = "Ouvrir Vaiiya ne suffit pas à valider un jour.";
+
 export const MISSIONS: Mission[] = [
   {
     id: "connexion",
@@ -229,6 +261,8 @@ export const MISSIONS: Mission[] = [
     // Depuis le 2026-10-14 (Louis), venir tient la série (`serie_aura`).
     // Les missions de la semaine, elles, comptent toujours séance ou repas.
     condition: "Ouvrir Vaiiya. Double dès le 2ᵉ jour d’affilée.",
+    etapes: [{ texte: "Ouvre Vaiiya. La quête se valide dès ton arrivée." }],
+    note: `${EXP_CONNEXION} EXP le premier jour, puis ${EXP_CONNEXION_SUITE} chaque jour d’affilée. Un jour sans venir la ramène à ${EXP_CONNEXION}.`,
     exp: EXP_CONNEXION,
     periode: "jour",
     premium: false,
@@ -239,6 +273,11 @@ export const MISSIONS: Mission[] = [
     id: "seance",
     titre: "Terminer une séance",
     condition: "Une séance menée jusqu’au bout.",
+    etapes: [
+      { texte: "Ouvre Entraînement et lance une séance : celle du jour, une du catalogue ou une des tiennes." },
+      { texte: "Va jusqu’au bout. La quête se valide sur l’écran de fin." },
+    ],
+    action: "Ouvrir Entraînement",
     exp: EXP_SEANCE,
     periode: "jour",
     premium: false,
@@ -249,6 +288,12 @@ export const MISSIONS: Mission[] = [
     id: "repas",
     titre: "Noter un repas",
     condition: "Un repas enregistré dans ton journal.",
+    etapes: [
+      { texte: "Ouvre Nutrition et touche « Ajouter un repas »." },
+      { texte: "Prends ton assiette en photo, scanne un code-barres ou écris ce que tu as mangé." },
+    ],
+    note: "Un extra compte aussi.",
+    action: "Noter un repas",
     exp: EXP_REPAS,
     periode: "jour",
     premium: false,
@@ -262,6 +307,12 @@ export const MISSIONS: Mission[] = [
     id: "journee",
     titre: "Journée complète",
     condition: "Connexion, séance et repas dans la même journée.",
+    etapes: [
+      { texte: "Ouvre Vaiiya.", quete: "connexion" },
+      { texte: "Termine une séance.", quete: "seance" },
+      { texte: "Note un repas.", quete: "repas" },
+    ],
+    note: "Elle se valide toute seule dès que les trois étapes sont faites.",
     unite: ["étape", "étapes"] as [string, string],
     exp: EXP_JOURNEE,
     periode: "jour",
@@ -273,6 +324,11 @@ export const MISSIONS: Mission[] = [
     id: "double",
     titre: "Double séance",
     condition: "Deux séances de 5 min minimum aujourd’hui.",
+    etapes: [
+      { texte: "Termine une première séance d’au moins 5 min." },
+      { texte: "Termine une deuxième séance d’au moins 5 min, le même jour." },
+    ],
+    action: "Ouvrir Entraînement",
     unite: ["séance", "séances"] as [string, string],
     exp: EXP_DOUBLE,
     periode: "jour",
@@ -284,6 +340,14 @@ export const MISSIONS: Mission[] = [
     id: "matin",
     titre: "Lève-tôt",
     condition: "Une séance de 5 min minimum avant 9 h.",
+    etapes: [
+      { texte: "Commence une séance avant 9 h." },
+      { texte: "Va jusqu’au bout. Elle doit durer au moins 5 min." },
+    ],
+    // `crediter_seance_aura` lit `started_at` : une séance commencée à
+    // 8 h 50 et finie à 9 h 20 compte.
+    note: "C’est l’heure du début qui compte.",
+    action: "Ouvrir Entraînement",
     exp: EXP_MATIN,
     periode: "jour",
     premium: true,
@@ -294,6 +358,14 @@ export const MISSIONS: Mission[] = [
     id: "nutrition",
     titre: "Nutrition complète",
     condition: "Petit-déjeuner, déjeuner et dîner notés.",
+    etapes: [
+      { texte: "Note ton petit-déjeuner." },
+      { texte: "Note ton déjeuner." },
+      { texte: "Note ton dîner." },
+    ],
+    // La base ne compte que les trois repas principaux (`crediter_repas_aura`).
+    note: "Un repas noté en extra ne compte pas pour celle-ci.",
+    action: "Ouvrir Nutrition",
     unite: ["repas", "repas"] as [string, string],
     exp: EXP_NUTRITION,
     periode: "jour",
@@ -309,6 +381,11 @@ export const MISSIONS: Mission[] = [
     // seule définition de « faire quelque chose » dans tout le produit, et
     // c'est ce qui rend le système explicable en une phrase.
     condition: "Une séance et un repas dans la même journée.",
+    etapes: [
+      { texte: "Termine une séance.", quete: "seance" },
+      { texte: "Note un repas.", quete: "repas" },
+    ],
+    note: "Ouvrir Vaiiya ne compte pas pour celle-ci.",
     unite: ["étape", "étapes"] as [string, string],
     exp: EXP_OBJECTIF,
     periode: "jour",
@@ -320,6 +397,8 @@ export const MISSIONS: Mission[] = [
     id: "semaineActive",
     titre: "Semaine active",
     condition: "3 jours validés cette semaine.",
+    etapes: etapesSemaine(3),
+    note: NOTE_SEMAINE,
     unite: ["jour", "jours"] as [string, string],
     exp: EXP_SEMAINE_ACTIVE,
     periode: "semaine",
@@ -331,6 +410,8 @@ export const MISSIONS: Mission[] = [
     id: "semaineReguliere",
     titre: "Semaine régulière",
     condition: "5 jours validés cette semaine.",
+    etapes: etapesSemaine(5),
+    note: NOTE_SEMAINE,
     unite: ["jour", "jours"] as [string, string],
     exp: EXP_SEMAINE_REGULIERE,
     periode: "semaine",
@@ -342,6 +423,8 @@ export const MISSIONS: Mission[] = [
     id: "semaineParfaite",
     titre: "Semaine parfaite",
     condition: "7 jours validés cette semaine.",
+    etapes: etapesSemaine(7),
+    note: NOTE_SEMAINE,
     unite: ["jour", "jours"] as [string, string],
     exp: EXP_SEMAINE_PARFAITE,
     periode: "semaine",

@@ -17,10 +17,16 @@
    ⚠️ AUCUN SECOND MOTEUR DE MISSIONS. Les trois listes sont les trois
    constantes du catalogue, les lignes sont le composant partagé, l'état
    vient d'`aura.missions`. Ce fichier ne décide de rien.
+
+   Toucher une ligne ouvre la fiche de la quête (2026-11-02) DANS cette
+   feuille, à la place de la liste, avec un retour : une feuille posée sur
+   une feuille, sur téléphone, on ne sait plus d'où l'on vient.
    ───────────────────────────────────────────────────────────────────── */
 
+import { useState } from "react";
 import Sheet from "@/components/communaute/Sheet";
 import LigneMission, { listeMissions } from "@/components/missions/LigneMission";
+import { FicheQuete } from "@/components/missions/FicheQuete";
 import {
   MISSIONS_JOUR,
   MISSIONS_PREMIUM,
@@ -46,6 +52,8 @@ export default function FeuilleMissions({
   onNavigate: (path: string) => void;
   onFermer: () => void;
 }) {
+  const [ouverte, setOuverte] = useState<Mission | null>(null);
+
   /* Ce qui a réellement été crédité aujourd'hui, et le maximum atteignable.
      On affiche les deux : « 35 / 50 EXP » se comprend d'un coup d'œil, un
      total seul ne dit pas où il s'arrête. C'est le seul endroit du produit
@@ -69,10 +77,7 @@ export default function FeuilleMissions({
           etat={aura.missions[mission.id]}
           debloquee={missionDebloquee(mission, premiumDebloque)}
           exp={expMission(mission, aura)}
-          onNavigate={(path) => {
-            onFermer();
-            onNavigate(path);
-          }}
+          onOuvrir={() => setOuverte(mission)}
         />
       ))}
     </div>
@@ -80,49 +85,64 @@ export default function FeuilleMissions({
 
   return (
     <Sheet onFermer={onFermer}>
-      <div className={styles.head}>
-        <h2>Missions</h2>
-        <span className={styles.headExp}>
-          {expDuJour} / {plafondDuJour} EXP
-        </span>
-      </div>
-
-      {/* ⚠️ C'EST LE CORPS QUI DÉFILE, PAS LA PAGE. La feuille est déjà
-          `fixed` en bas de l'écran : sans hauteur bornée ici, onze lignes
-          la feraient dépasser du haut du téléphone, et l'en-tête sortirait
-          de l'écran avec elle. */}
-      <div className={styles.corps}>
-        <section className={styles.sec}>
-          <div className={styles.lab}>
-            Aujourd’hui
-            <span>
-              {MISSIONS_JOUR.filter((m) => aura.missions[m.id]?.complete).length} / {MISSIONS_JOUR.length}
+      {ouverte ? (
+        <FicheQuete
+          mission={ouverte}
+          aura={aura}
+          debloquee={missionDebloquee(ouverte, premiumDebloque)}
+          onNavigate={(path) => {
+            onFermer();
+            onNavigate(path);
+          }}
+          onRetour={() => setOuverte(null)}
+        />
+      ) : (
+        <>
+          <div className={styles.head}>
+            <h2>Missions</h2>
+            <span className={styles.headExp}>
+              {expDuJour} / {plafondDuJour} EXP
             </span>
           </div>
-          {rendre(MISSIONS_JOUR)}
-        </section>
 
-        <section className={styles.sec}>
-          <div className={styles.lab}>
-            {premiumDebloque ? "Tes missions Vaiiya+" : "Avec Vaiiya+"}
-            <span className={styles.labOr}>+{expPremiumJour} EXP / jour</span>
+          {/* ⚠️ C'EST LE CORPS QUI DÉFILE, PAS LA PAGE. La feuille est déjà
+              `fixed` en bas de l'écran : sans hauteur bornée ici, onze lignes
+              la feraient dépasser du haut du téléphone, et l'en-tête sortirait
+              de l'écran avec elle. */}
+          <div className={styles.corps}>
+            <section className={styles.sec}>
+              <div className={styles.lab}>
+                Aujourd’hui
+                <span>
+                  {MISSIONS_JOUR.filter((m) => aura.missions[m.id]?.complete).length} / {MISSIONS_JOUR.length}
+                </span>
+              </div>
+              {rendre(MISSIONS_JOUR)}
+            </section>
+
+            <section className={styles.sec}>
+              <div className={styles.lab}>
+                {premiumDebloque ? "Tes missions Vaiiya+" : "Avec Vaiiya+"}
+                <span className={styles.labOr}>+{expPremiumJour} EXP / jour</span>
+              </div>
+              {rendre(MISSIONS_PREMIUM)}
+            </section>
+
+            <section className={styles.sec}>
+              <div className={styles.lab}>
+                Cette semaine
+                <span>{aura.detail.joursActifsSemaine} / 7 jours</span>
+              </div>
+              {rendre(MISSIONS_SEMAINE)}
+            </section>
+
+            {/* La règle qui explique tout le reste, une fois, en bas. Elle ne
+                se dit nulle part ailleurs depuis que l'accueil ne liste plus
+                les missions. */}
+            <p className={styles.regle}>Ouvrir Vaiiya chaque jour suffit à tenir ta série.</p>
           </div>
-          {rendre(MISSIONS_PREMIUM)}
-        </section>
-
-        <section className={styles.sec}>
-          <div className={styles.lab}>
-            Cette semaine
-            <span>{aura.detail.joursActifsSemaine} / 7 jours</span>
-          </div>
-          {rendre(MISSIONS_SEMAINE)}
-        </section>
-
-        {/* La règle qui explique tout le reste, une fois, en bas. Elle ne
-            se dit nulle part ailleurs depuis que l'accueil ne liste plus
-            les missions. */}
-        <p className={styles.regle}>Ouvrir Vaiiya chaque jour suffit à tenir ta série.</p>
-      </div>
+        </>
+      )}
     </Sheet>
   );
 }
