@@ -1,4 +1,11 @@
-// Vaiiya Service Worker, v14 (les navigations internes vont au réseau)
+// Vaiiya Service Worker, v15 (l'app s'installe dès la première visite)
+// v15 (2026-11-03) : à l'installation, le service worker ne garde plus
+//   seulement le HTML de « / » : il lit ce HTML, et celui des quatre onglets,
+//   et met en cache tous les fichiers `_next/static` qu'ils réclament (code et
+//   styles), plus les icônes de l'app. Une fois la première visite faite,
+//   l'ouverture suivante n'attend plus que la page elle-même : tout le reste
+//   est déjà sur l'appareil. Les stratégies de cache ne changent pas (pages en
+//   réseau strict, donc un déploiement reste visible tout de suite).
 // v14 (2026-10-27) : deux changements, et la stratégie des pages ne bouge pas.
 //   1. Une requête de navigation interne ou de préchargement de Next (marquée
 //      `_rsc=`) ne passe PLUS par le cache. Elle tombait dans le « reste »
@@ -69,9 +76,40 @@ function routesDirectes(e) {
 }
 
 // ── Install : pré-cache l'app-shell ("/") pour un 1er lancement instantané ──
+// Les écrans dont on garde le code d'avance. Les pages derrière la connexion
+// rendent leur coquille sans session : on n'en garde que les fichiers statiques.
+const COQUILLE = ["/", "/progression", "/nutrition", "/communaute", "/profil"];
+const ICONES = ["/icons/icon-192.png", "/manifest.json"];
+
+// Lit un document HTML et met en cache chaque fichier `_next/static` qu'il
+// réclame. Rien ici ne peut faire échouer l'installation.
+async function installerCoquille() {
+  const html = await caches.open(HTML_CACHE);
+  const statique = await caches.open(STATIC_CACHE);
+  const fichiers = new Set();
+  await Promise.all(COQUILLE.map(async (chemin) => {
+    try {
+      const res = await fetch(chemin, { credentials: "same-origin" });
+      if (!res.ok) return;
+      if (chemin === "/") await html.put("/", res.clone());
+      const texte = await res.text();
+      for (const m of texte.matchAll(/["'(](\/_next\/static\/[^"'()\s\\]+)/g)) fichiers.add(m[1]);
+    } catch { /* hors ligne : on réessaiera à la prochaine installation */ }
+  }));
+  await Promise.all([...fichiers].map(async (f) => {
+    try {
+      if (await statique.match(f)) return;
+      const res = await fetch(f);
+      if (res.ok) await statique.put(f, res);
+    } catch { /* ignore */ }
+  }));
+  const dyn = await caches.open(DYNAMIC_CACHE);
+  await Promise.all(ICONES.map((f) => dyn.add(f).catch(() => {})));
+}
+
 self.addEventListener("install", (e) => {
   e.waitUntil(Promise.all([
-    caches.open(HTML_CACHE).then((c) => c.add("/")).catch(() => {}),
+    installerCoquille().catch(() => {}),
     routesDirectes(e),
   ]));
   self.skipWaiting();

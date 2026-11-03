@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { chargerRelaisAccueil, type RelaisAccueil } from "@/lib/defi";
-import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import LandingVitrine from "@/components/Landing/LandingVitrine";
 /* Le type seul : la coquille serveur (`app/page.tsx`) fait le comptage et
@@ -187,7 +186,7 @@ function Dashboard() {
   /* ── L'accueil se montre d'un seul bloc (Louis, 2026-10-20) ──
      Il se montait morceau par morceau. On attend les deux pièces qui
      prennent le plus de place, le héros et la journée, et on les montre
-     ensemble. Jamais plus d'une seconde et demie : passé ce délai, on
+     ensemble. Jamais plus de 0,7 s (1,5 s avant le 2026-11-03) : passé ce délai, on
      montre ce qu'on a, plutôt qu'un écran qui a l'air bloqué. Les deux
      signaux ne redescendent jamais, donc l'accueil ne se recache pas
      quand il se relit après une séance. */
@@ -195,7 +194,7 @@ function Dashboard() {
   const signalerHero = useCallback(() => setHeroPret(true), []);
   const [delaiPasse, setDelaiPasse] = useState(false);
   useEffect(() => {
-    const t = window.setTimeout(() => setDelaiPasse(true), 1500);
+    const t = window.setTimeout(() => setDelaiPasse(true), 700);
     return () => window.clearTimeout(t);
   }, []);
   const revele = (heroPret && missionsLues && premierAccueil.afficher !== null) || delaiPasse;
@@ -411,19 +410,6 @@ function Dashboard() {
   );
 }
 
-/* ─── Spinner de chargement ─── */
-function LoadingSpinner() {
-  return (
-    <div className="fixed inset-0 flex items-center justify-center" style={{ background: "var(--page-bg)" }}>
-      <motion.div
-        className="w-10 h-10 rounded-full border-2"
-        style={{ borderColor: "rgba(var(--accent-rgb),0.2)", borderTopColor: "var(--accent)" }}
-        animate={{ rotate: 360 }}
-        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-      />
-    </div>
-  );
-}
 
 /* ─── Page principale ───
    Le serveur ignore qui demande la page : il rend donc la landing publique,
@@ -460,7 +446,18 @@ export default function AccueilClient({ chiffres, avis }: { chiffres: ChiffresPu
   return (
     <>
       <div className="accueil-landing"><LandingPage chiffres={chiffres} avis={avis} /></div>
-      {isLoading && <div className="accueil-attente"><LoadingSpinner /></div>}
+      {/* Un membre voit tout de suite la forme de son accueil (le squelette),
+          pas un rond qui tourne : la page paraît déjà là pendant que la
+          session se résout (Louis, 2026-11-03). */}
+      {isLoading && (
+        <div className="accueil-attente">
+          <div className="fixed inset-0 md:left-[88px] overflow-hidden" style={{ background: "var(--page-bg)" }}>
+            <div className="mx-auto w-full max-w-2xl px-4" style={{ paddingTop: "calc(env(safe-area-inset-top) + 62px)" }}>
+              <SqueletteAccueil />
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
