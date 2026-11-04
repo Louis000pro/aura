@@ -496,8 +496,10 @@
 .mvtSuite { display: block; margin-top: 12px; font-size: 26px; line-height: 1.2; font-weight: 500; font-variation-settings: "wdth" 100; text-transform: none; letter-spacing: -.02em; color: var(--encre-2); }
 .plateau { container-type: inline-size; margin: 48px -20px 0; }
 .vedettes { --cote: 100cqw; position: relative; width: var(--cote); height: calc(var(--cote) + 156px); overflow: hidden; }
-.vedette { position: absolute; inset: 0; margin: 0; opacity: 0; visibility: hidden; transition: opacity .35s ease, visibility 0s .35s; }
-.vedette.on { opacity: 1; visibility: visible; transition: opacity .35s ease; }
+/* Le mouvement d'avant part d'abord, le suivant arrive ensuite : deux personnages
+   l'un sur l'autre se lisent comme une image floue. */
+.vedette { position: absolute; inset: 0; margin: 0; opacity: 0; visibility: hidden; transition: opacity .08s linear, visibility 0s .08s; }
+.vedette.on { opacity: 1; visibility: visible; transition: opacity .16s ease .06s; }
 /* Le nom derrière le geste, de la largeur de la scène. */
 .motFond {
   position: absolute;
@@ -522,19 +524,19 @@
 .poses img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; opacity: 0; }
 .poses img:first-child { opacity: 1; }
 .vedette:not(.on) .poses img { animation-play-state: paused; }
-/* ⚠️ UNE POSE S'ALLUME D'UN COUP ET LAISSE UNE TRACE QUI S'ÉTEINT. Un long fondu
-   entre deux poses se lit comme un diaporama ; ici le geste se lit comme une
-   chronophotographie. `(i - n)` rend le délai négatif : toutes les poses tournent
-   dès la première image, dans le bon ordre. */
+/* ⚠️ UNE POSE CÈDE SA PLACE EN 60 MS, ET AUCUNE TRACE NE RESTE. Une traînée de la pose
+   d'avant se lit comme une image floue et fatigue l'œil (Louis, 2026-11-05 : « l'ancien
+   mouvement n'est pas effacé assez vite »). `(i - n)` rend le délai négatif : toutes
+   les poses tournent dès la première image, dans le bon ordre. */
 .poses[data-n] img { animation-duration: calc(var(--n) * .62s); animation-timing-function: linear; animation-iteration-count: infinite; animation-delay: calc((var(--i) - var(--n)) * .62s); }
 .poses[data-n="2"] img { animation-name: strobo2; }
 .poses[data-n="3"] img { animation-name: strobo3; }
 .poses[data-n="4"] img { animation-name: strobo4; }
 .poses[data-n="5"] img { animation-name: strobo5; }
-@keyframes strobo2 { 0% { opacity: 0; } 3%, 46% { opacity: 1; } 53% { opacity: .2; } 80% { opacity: .06; } 92%, 100% { opacity: 0; } }
-@keyframes strobo3 { 0% { opacity: 0; } 2%, 31% { opacity: 1; } 36% { opacity: .22; } 58% { opacity: .07; } 66%, 100% { opacity: 0; } }
-@keyframes strobo4 { 0% { opacity: 0; } 1.5%, 23% { opacity: 1; } 27% { opacity: .24; } 44% { opacity: .08; } 50%, 100% { opacity: 0; } }
-@keyframes strobo5 { 0% { opacity: 0; } 1.2%, 18.5% { opacity: 1; } 22% { opacity: .24; } 36% { opacity: .08; } 40%, 100% { opacity: 0; } }
+@keyframes strobo2 { 0% { opacity: 0; } 4.839%, 50% { opacity: 1; } 54.839%, 100% { opacity: 0; } }
+@keyframes strobo3 { 0% { opacity: 0; } 3.226%, 33.333% { opacity: 1; } 36.559%, 100% { opacity: 0; } }
+@keyframes strobo4 { 0% { opacity: 0; } 2.419%, 25% { opacity: 1; } 27.419%, 100% { opacity: 0; } }
+@keyframes strobo5 { 0% { opacity: 0; } 1.935%, 20% { opacity: 1; } 21.935%, 100% { opacity: 0; } }
 /* Le sol du dessin : 972 sur 1024. */
 .sol { position: absolute; left: 20px; right: 20px; top: calc(var(--cote) * .9492); height: 1px; background: rgba(28, 22, 38, .16); }
 .vedette figcaption { position: absolute; left: 20px; right: 20px; top: calc(var(--cote) * .9492 + 20px); }

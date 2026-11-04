@@ -113,6 +113,13 @@ for (const g of ["nora", "sasha"]) {
 }
 
 /* Une pose de plus que ce que les keyframes savent jouer laisserait un trou. */
+/* Aucune traînée : une pose passe de 1 à 0 d'un seul trait, jamais par un entre-deux. */
+for (const n of [2, 3, 4, 5]) verifie(!/opacity: \.\d/.test((css.match(new RegExp(`@keyframes strobo${n} [^\\n]*`)) ?? [""])[0]), `la pose ${n} laisse une traînée : l'ancien mouvement doit partir tout de suite`);
+{
+  const lire = (f) => readFileSync(f, "utf8");
+  verifie(/FONDU_POSE_MS = \d{2}\b/.test(lire("src/lib/exerciseGuides.ts")), "le passage d'une pose à l'autre reste sous 100 ms");
+  for (const f of ["src/components/ExerciseGuide.tsx", "src/components/seance/ExerciseThumb.tsx"]) verifie(/FONDU_POSE_MS/.test(lire(f)), `${f} n'a plus sa durée propre de fondu`);
+}
 for (const n of [2, 3, 4, 5]) verifie(new RegExp(`@keyframes strobo${n} `).test(css), `les poses à ${n} images n'ont plus leurs keyframes`);
 
 /* Le relais montre les trois changements de l'affiche, sans étape dans le vide. */
