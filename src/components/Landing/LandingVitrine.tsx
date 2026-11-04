@@ -9,8 +9,15 @@
  * propositions de couleurs et de polices n'ont PAS été reprises : la
  * palette, Archivo et Martian Mono sont verrouillés.
  *
+ * Rendue vivante le 2026-11-04 (maquette « La vitrine vivante », GO de Louis) :
+ * le logo en fond, une conversation qui s'écrit, des phrases qui défilent. Ce
+ * fichier écrit toute la page, et `vivant/` ne fait que la jouer : il se charge
+ * à part, quand la vitrine est à l'écran, et tout reste lisible sans lui.
+ *
  * ⚠️ DÉCISIONS DE LOUIS À NE PAS DÉFAIRE.
- *   · Toujours CLAIRE : couleurs écrites en dur dans le module CSS.
+ *   · La page dure une journée : la nuit au héros et à la fin, le clair entre
+ *     les deux, deux dégradés droits dans l'ordre du logo pour passer de l'un
+ *     à l'autre. Couleurs écrites en dur dans le module CSS.
  *   · Les mots d'accent prennent le dégradé du LOGO ; le bouton reste violet.
  *   · Les photos de `/public/vitrine/` sont retouchées aux couleurs du logo :
  *     exception réservée à cette page.
@@ -28,13 +35,14 @@
  * l'app, pas une personne réelle.
  */
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, type CSSProperties, type ReactNode } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, Camera, Check, ChefHat, Dumbbell, MessageCircle, Store, Trophy } from "lucide-react";
+import { ArrowRight, ArrowUp, Camera, Check, ChefHat, Dumbbell, MessageCircle, Store, Trophy } from "lucide-react";
 import AnimationExercice from "@/components/exercices/AnimationExercice";
 import { resolveGuide } from "@/lib/exerciseGuides";
 import { RANGS } from "@/lib/aura";
+import { PRENOM_GUIDE, roleGuide, voix, type GuideId } from "@/lib/guides";
 import { PLANS, formatPrice } from "@/lib/plans";
 import { SEO_PAGES, LEGAL_PAGES } from "@/lib/seoPages";
 import { SEUIL_AVIS_PUBLIC, type ResumeAvis } from "@/lib/avisTypes";
@@ -55,29 +63,51 @@ function useRevelation(racine: React.RefObject<HTMLDivElement | null>) {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     if (!("IntersectionObserver" in window)) return;
 
-    const cibles = Array.from(el.querySelectorAll<HTMLElement>("[data-reveal], [data-conversation]"));
+    const cibles = Array.from(el.querySelectorAll<HTMLElement>("[data-reveal]"));
     const pli = window.innerHeight * 0.92;
     const io = new IntersectionObserver((entrees) => {
       for (const e of entrees) {
         if (!e.isIntersecting) continue;
         const t = e.target as HTMLElement;
-        if (t.hasAttribute("data-conversation")) t.setAttribute("data-vu", "");
-        else requestAnimationFrame(() => t.removeAttribute("data-attente"));
+        requestAnimationFrame(() => t.removeAttribute("data-attente"));
         io.unobserve(t);
       }
     }, { rootMargin: "0px 0px -8% 0px" });
 
     for (const t of cibles) {
-      if (t.getBoundingClientRect().top < pli) {
-        // Déjà visible : on la joue tout de suite, sans jamais la masquer.
-        if (t.hasAttribute("data-conversation")) t.setAttribute("data-vu", "");
-        continue;
-      }
-      if (t.hasAttribute("data-conversation")) t.setAttribute("data-armee", "");
-      else { t.classList.add(s.revele); t.setAttribute("data-attente", ""); }
+      if (t.getBoundingClientRect().top < pli) continue;
+      t.classList.add(s.revele);
+      t.setAttribute("data-attente", "");
       io.observe(t);
     }
     return () => io.disconnect();
+  }, [racine]);
+}
+
+/* ═══════════════ Ce qui vit par script ═══════════════
+   `vivant/` se charge à part et seulement quand la vitrine est à l'écran.
+   ⚠️ `a-session` la garde masquée chez un membre le temps de lire sa session :
+   l'observateur ne répond alors jamais, et un membre ne charge rien. Si le jeton
+   était périmé, la classe se lève et la vitrine démarre à ce moment-là. */
+function useVivante(racine: React.RefObject<HTMLDivElement | null>) {
+  useEffect(() => {
+    const el = racine.current;
+    if (!el) return;
+    let parti = false;
+    let arreter: (() => void) | undefined;
+    const io = new IntersectionObserver(([e]) => {
+      if (!e?.isIntersecting) return;
+      io.disconnect();
+      import("./vivant/vitrineVivante")
+        .then(({ animerVitrine }) => { if (!parti) arreter = animerVitrine(el, s); })
+        .catch((erreur) => console.warn("Vitrine : la page reste sans animation.", erreur));
+    });
+    io.observe(el);
+    return () => {
+      parti = true;
+      io.disconnect();
+      arreter?.();
+    };
   }, [racine]);
 }
 
@@ -98,25 +128,6 @@ function Surtitre({ children }: { children: React.ReactNode }) {
 
 /* ═══════════════ 1 · LE HÉROS ═══════════════ */
 
-/* Les deux lignes du titre s'écartent un peu au défilement. Elles partent
-   de leur place : rien n'est déplacé au premier affichage. */
-function useTitreQuiSouvre(titre: React.RefObject<HTMLHeadingElement | null>) {
-  useEffect(() => {
-    const h1 = titre.current;
-    if (!h1 || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    const lignes = Array.from(h1.querySelectorAll<HTMLElement>("[data-sens]"));
-    let attente = false;
-    const bouger = () => {
-      attente = false;
-      const k = Math.min(window.scrollY / window.innerHeight, 1);
-      for (const l of lignes) l.style.transform = `translate3d(${Number(l.dataset.sens) * k * 18}vw,0,0)`;
-    };
-    const auDefilement = () => { if (!attente) { attente = true; requestAnimationFrame(bouger); } };
-    window.addEventListener("scroll", auDefilement, { passive: true });
-    return () => window.removeEventListener("scroll", auDefilement);
-  }, [titre]);
-}
-
 /* ⚠️ CES TROIS MENTIONS SONT DES FAITS, ET CHACUNE EST UN CLAIM AUTORISÉ
    (`docs/positionnement-public-vaiiya.md` §13). Les deux nombres viennent
    de `chiffresPublics`, comptés côté serveur sur `EXERCISE_LIBRARY` et
@@ -130,13 +141,14 @@ const preuves = (c: ChiffresPublics) => [
 ];
 
 function Heros({ chiffres }: { chiffres: ChiffresPublics }) {
-  const titre = useRef<HTMLHeadingElement>(null);
-  useTitreQuiSouvre(titre);
   return (
-    <section className={s.heros}>
+    <section className={s.heros} data-heros data-vivant>
+      {/* Le logo en fond (`vivant/fondLogo.ts`). Tant qu'il n'est pas dessiné,
+          le canevas est transparent et la nuit du CSS est déjà là. */}
+      <canvas className={s.fond} aria-hidden />
       <nav className={s.nav} aria-label="Vaiiya">
         <span className={s.marque}>
-          <Image src="/marque/logo-degrade.png" alt="" width={34} height={34} priority />
+          <Image src="/marque/logo-degrade.png" alt="" width={34} height={25} preload />
           Vaiiya
         </span>
         <Link href="/auth?mode=login" className={s.connexion}>
@@ -149,7 +161,7 @@ function Heros({ chiffres }: { chiffres: ChiffresPublics }) {
           sous le pli : c'est le défaut de la version d'avant, où le titre
           se réglait sur la largeur seule. */}
       <div className={s.herosBloc}>
-        <h1 ref={titre} className={s.h1}>
+        <h1 className={s.h1}>
           <span data-sens="-1"><span className={s.mot}>Deviens</span></span>
           <span data-sens="1"><span className={s.mot} style={{ animationDelay: ".1s" }}>qui tu veux</span></span>
         </h1>
@@ -174,12 +186,13 @@ function Heros({ chiffres }: { chiffres: ChiffresPublics }) {
       <div className={s.scene}>
         <div className={s.duoHeros}>
           <div className={`${s.guideHeros} ${s.noraHeros}`}>
-            <Image src="/guides/nora-master-v1.webp" alt="Nora, Guide Vaiiya" fill sizes="(min-width: 960px) 420px, 60vw" priority />
+            <Image src="/guides/nora-master-v1.webp" alt="Nora, Guide Vaiiya" fill sizes="(min-width: 960px) 420px, 60vw" preload />
           </div>
           <div className={`${s.guideHeros} ${s.sashaHeros}`}>
-            <Image src="/guides/sasha-master-v1.webp" alt="Sasha, Guide Vaiiya" fill sizes="(min-width: 960px) 420px, 60vw" priority />
+            <Image src="/guides/sasha-master-v1.webp" alt="Sasha, Guide Vaiiya" fill sizes="(min-width: 960px) 420px, 60vw" preload />
           </div>
         </div>
+        <div className={s.jourMonte} data-monte aria-hidden />
         <div className={s.prenoms} aria-hidden><span>Nora</span><span>Sasha</span></div>
       </div>
     </section>
@@ -203,7 +216,7 @@ function Rangee({ noms, inverse = false }: { noms: string[]; inverse?: boolean }
   const liste = noms.filter(anime);
   const moitie = Array.from({ length: TOURS_PAR_MOITIE }, () => liste).flat();
   return (
-    <div className={`${s.rail} ${inverse ? s.railInverse : ""}`} style={{ "--cartes": moitie.length } as React.CSSProperties}>
+    <div className={`${s.rail} ${inverse ? s.railInverse : ""}`} style={{ "--cartes": moitie.length } as CSSProperties}>
       {/* Deux moitiés identiques : le rail recule d'exactement une moitié, puis
           repart du début sans raccord. Seul le premier tour se lit à voix haute. */}
       {[0, 1].map((copie) => (
@@ -238,7 +251,7 @@ function Mouvements({ chiffres }: { chiffres: ChiffresPublics }) {
           ou tu composes la tienne en deux minutes.
         </p>
       </div>
-      <div className={s.bandeau}>
+      <div className={s.bandeau} data-vivant>
         <Rangee noms={RANGEE_1} />
         <Rangee noms={RANGEE_2} inverse />
       </div>
@@ -248,6 +261,89 @@ function Mouvements({ chiffres }: { chiffres: ChiffresPublics }) {
 
 /* ═══════════════ 3 · LE GUIDE ═══════════════ */
 
+const GUIDES: GuideId[] = ["nora", "sasha"];
+const ETATS_VISAGE = ["listen", "think", "explain", "encourage"] as const;
+const MOUVEMENTS_PROPOSES = ["Développé militaire haltères", "Rowing haltère", "Élévations latérales", "Curl haltères"];
+
+/* Les trois cartes de la conversation. Elles sont écrites ici, avec le reste
+   de la page, et `vivant/conversation.ts` les recopie dans le fil. */
+function PieceSeance() {
+  return (
+    <div className={s.piece} data-piece="seance">
+      <div className={s.piecePoses}>
+        {MOUVEMENTS_PROPOSES.map((n) => <div key={n}><AnimationExercice nom={n} taille="100%" label={n} /></div>)}
+      </div>
+      <div className={s.pieceLigne}><b>Haut du corps</b><span className="vy-nombre">30 min</span></div>
+      <div className={s.pieceBouton} data-bouton>On y va</div>
+    </div>
+  );
+}
+
+function PieceRepas() {
+  return (
+    <div className={s.piece} data-piece="repas">
+      <div className={s.pieceRepas}>
+        <div className={s.pieceRepasPhoto}>
+          <Image src="/recipes/poke-bowl-saumon-avocat.jpg" alt="" fill sizes="76px" className="object-cover" />
+        </div>
+        <div>
+          <small>Repas à noter · Déjeuner</small>
+          <b>Poke bowl saumon-avocat</b>
+          <p>~<span className="vy-nombre">640</span> kcal · <span className="vy-nombre">39</span> g de protéines</p>
+        </div>
+      </div>
+      <div className={s.pieceBouton} data-bouton>Noter le repas</div>
+    </div>
+  );
+}
+
+function PieceDeplacer() {
+  return (
+    <div className={s.piece} data-piece="deplacer">
+      <p className={s.pieceEtiquette}>Ta semaine</p>
+      <div className={s.pieceLigne} style={{ marginTop: 0 }}><b>Push</b><span className="vy-nombre">45 min</span></div>
+      <div className={s.pieceJours}><s>mercredi</s><ArrowRight size={18} strokeWidth={2.4} aria-hidden /><span>jeudi</span></div>
+      <div className={s.pieceBouton} data-bouton>Déplacer à jeudi</div>
+    </div>
+  );
+}
+
+function Conversation() {
+  return (
+    <div className={s.conv} data-conv data-vivant role="group" aria-label="Exemple de conversation avec ton Guide">
+      <div className={s.convHalo} aria-hidden />
+      <div className={s.convTete}>
+        <div className={s.convVisage} aria-hidden>
+          {GUIDES.flatMap((g) => ETATS_VISAGE.map((e) => (
+            <Image key={`${g}-${e}`} src={`/guides/${g}-${e}-entete-v1.webp`} alt="" fill sizes="44px"
+              data-visage={`${g}-${e}`} className={g === "nora" && e === "listen" ? s.on : undefined} />
+          )))}
+        </div>
+        <div className={s.convNoms}>
+          <div className={s.convNom} data-conv-nom>{PRENOM_GUIDE.nora}</div>
+          <div className={s.convStatut} data-conv-statut>{roleGuide("nora")} · <b>t’écoute</b></div>
+        </div>
+      </div>
+      <div className={s.convFil} data-conv-fil>
+        <div className={s.convPile} data-conv-repli>
+          <div className={`${s.bulle} ${s.moi}`}>J’ai 30 minutes ce soir, et des haltères.</div>
+          <div className={`${s.bulle} ${s.lui}`}>{voix("nora", "vitrine.seance")}</div>
+          <PieceSeance />
+        </div>
+        <div className={s.convPile} data-conv-pile aria-hidden />
+      </div>
+      <div className={s.convSaisie} data-conv-saisie>
+        <div className={s.convTexte} data-conv-texte><em>Écris à {PRENOM_GUIDE.nora}…</em></div>
+        <span className={s.convEnvoi} aria-hidden><ArrowUp size={18} strokeWidth={2.6} /></span>
+      </div>
+      <div hidden>
+        <PieceRepas />
+        <PieceDeplacer />
+      </div>
+    </div>
+  );
+}
+
 function Guide() {
   return (
     <section className={`${s.section} ${s.guide}`}>
@@ -256,54 +352,92 @@ function Guide() {
           <Surtitre>Ton Guide personnel</Surtitre>
           <h2 className={s.titre}>Nora ou Sasha. <span className={s.accent}>Tu choisis qui t’accompagne.</span></h2>
           <p className={s.chapo}>
-            Tu lui dis ce que tu as, ce que tu veux, ce que tu as mangé. Il prépare, tu valides :
+            Tu lui dis ce que tu as, ce que tu veux, ce que tu as mangé. Il prépare, tu valides :
             rien ne s’écrit sans ton accord.
           </p>
-          <div className={s.duo}>
-            {(["nora", "sasha"] as const).map((g) => (
-              <div key={g} className={s.portrait}>
-                <Image src={`/guides/${g}-buste-v1.webp`} alt={`Portrait de ${g === "nora" ? "Nora" : "Sasha"}`} fill sizes="210px" className="object-cover" />
-                <span>{g === "nora" ? "Nora" : "Sasha"}</span>
-              </div>
+          <div className={s.duo} role="group" aria-label="Choisir le Guide de la conversation">
+            {GUIDES.map((g) => (
+              <button key={g} type="button" className={s.portrait} data-guide={g} aria-pressed={g === "nora"}>
+                <Image src={`/guides/${g}-buste-v1.webp`} alt={`Portrait de ${PRENOM_GUIDE[g]}`} fill sizes="210px" className="object-cover" />
+                <span>{PRENOM_GUIDE[g]}</span>
+              </button>
             ))}
           </div>
         </div>
+        <Conversation />
+      </div>
+    </section>
+  );
+}
 
-        <div className={s.conversation} data-conversation aria-label="Exemple de conversation avec ton Guide">
-          <div className={`${s.message} ${s.moi}`} data-pas="1">J’ai 30 minutes ce soir, et des haltères.</div>
-          <div className={`${s.message} ${s.lui}`} data-pas="2">
-            <span className={s.avatarGuide} style={{ width: 32, height: 40 }}><Image src="/guides/nora-buste-v1.webp" alt="" width={64} height={80} /></span>
-            <p>Parfait, de quoi faire une belle séance. Je te prépare ça.</p>
+/* ═══════════════ 3 BIS · LES PHRASES ═══════════════
+   Chaque phrase correspond à une action réelle du Guide : ce qu'on écrit ici
+   doit rester vrai dans la conversation de l'app. */
+
+const PHRASES = [
+  ["J’ai 30 minutes ce soir", "Décale ma séance à demain", "Je mange quoi ce midi ?", "Refais ma semaine", "Mets du dos jeudi", "J’ai mangé un burger ce midi"],
+  ["Une recette avec du riz et des œufs", "Note un yaourt à mes repas", "Ajoute une petite séance cardio samedi", "Passe en mode sombre", "Remplace ma séance par Express 12"],
+  ["Je n’ai que des haltères à la maison", "Saute ma prochaine étape", "J’ai 20 minutes et pas de matériel", "Évite le Push pendant 10 jours", "Une séance sans saut, mes voisins dorment"],
+  ["Au petit-déj, deux œufs", "Retire ma séance de vendredi", "Il me reste du poulet et des courgettes", "Fais-moi une séance jambes de 30 minutes", "Je m’entraîne à la salle maintenant"],
+  ["Montre-moi ma progression", "Une idée de dîner léger", "Ce soir je suis à la maison", "Déplace Pull à samedi", "Une séance de mobilité ce soir"],
+];
+
+function Parler() {
+  return (
+    <section className={s.parler}>
+      <div className={s.wrap}>
+        <div className={s.parlerPanneau} data-vivant data-reveal>
+          <div className={s.parlerTete}>
+            <h2>Écris-lui comme tu parles.</h2>
+            <p>Une phrase suffit. Ton Guide comprend ce que tu veux et prépare une carte à valider.</p>
           </div>
-          <div className={s.carteProp} data-pas="3">
-            <div className={s.carteCorps}>
-              <small>Séance proposée · 30 min</small>
-              <b>Haut du corps · Haltères</b>
-              <div className={s.carteMvts}>
-                {["Développé couché", "Rowing barre", "Élévations latérales", "Pompes"].map((n) => (
-                  <div key={n} style={{ aspectRatio: "1" }}>
-                    <AnimationExercice nom={n} taille="100%" label="" />
+          <div className={s.lignes} aria-hidden>
+            {PHRASES.map((liste, i) => (
+              <div key={liste[0]} className={`${s.ligne} ${i % 2 ? s.ligneInverse : ""}`} style={{ "--d": `${52 + (i * 13) % 24}s` } as CSSProperties}>
+                {[0, 1].map((copie) => (
+                  <div key={copie} className={s.ligneMoitie}>
+                    {[...liste, ...liste].map((t, k) => <span key={`${k}-${t}`}>{t}</span>)}
                   </div>
                 ))}
               </div>
-              <span className={s.carteBouton}>Garder la séance <Check size={14} strokeWidth={3} /></span>
-              <span className={s.carteNote}>Tu valides, il l’ajoute.</span>
-            </div>
+            ))}
           </div>
-          <div className={`${s.message} ${s.moi}`} data-pas="4">Top, je la fais maintenant.</div>
         </div>
       </div>
     </section>
   );
 }
 
-/* ═══════════════ 4 · TOUT EST RELIÉ ═══════════════ */
+/* ═══════════════ 4 · TOUT SE PARLE ═══════════════ */
 
-const NOEUDS = [
-  { x: 24, y: 20, titre: "Ta séance", texte: "Terminée, elle coche ta mission du jour.", icone: Dumbbell, fond: "#F1EBFF", couleur: "#7C4FE0" },
-  { x: 76, y: 20, titre: "Tes repas", texte: "Notés, ils tiennent ta série.", icone: ChefHat, fond: "#FFF0E2", couleur: "#E8620C" },
-  { x: 24, y: 80, titre: "Ton Guide", texte: "Il sait tout ça sans que tu recopies.", icone: MessageCircle, fond: "#FBE6FF", couleur: "#C13BC1" },
-  { x: 76, y: 80, titre: "Ton rang", texte: "Ton EXP monte à ton rythme.", icone: Trophy, fond: "#E3FAF2", couleur: "#0B8A68" },
+type Noeud = {
+  x: number;
+  y: number;
+  titre: string;
+  texte: string;
+  icone: typeof Dumbbell;
+  fond: string;
+  couleur: string;
+  classe: string;
+  pouls: string;
+  pastilles: { classe: string; contenu: ReactNode }[];
+};
+
+const NOEUDS: Noeud[] = [
+  { x: 24, y: 20, titre: "Ta séance", texte: "Terminée, elle coche ta mission du jour.", icone: Dumbbell, fond: "#F1EBFF", couleur: "#7C4FE0",
+    classe: s.nSeance, pouls: s.pSeance, pastilles: [{ classe: `${s.fait} ${s.tA1}`, contenu: "Séance terminée ✓" }] },
+  { x: 76, y: 20, titre: "Tes repas", texte: "Notés, ils tiennent ta série.", icone: ChefHat, fond: "#FFF0E2", couleur: "#E8620C",
+    classe: s.nRepas, pouls: s.pRepas, pastilles: [{ classe: `${s.fait} ${s.tB1}`, contenu: "Repas noté ✓" }] },
+  { x: 24, y: 80, titre: "Ton Guide", texte: "Il sait tout ça sans que tu recopies.", icone: MessageCircle, fond: "#FBE6FF", couleur: "#C13BC1",
+    classe: s.nGuide, pouls: s.pGuide, pastilles: [
+      { classe: `${s.sait} ${s.tA2}`, contenu: "Il voit ta séance" },
+      { classe: `${s.sait} ${s.tB2}`, contenu: "Il voit ton repas" },
+    ] },
+  { x: 76, y: 80, titre: "Ton rang", texte: "Ton EXP monte à ton rythme.", icone: Trophy, fond: "#E3FAF2", couleur: "#0B8A68",
+    classe: s.nRang, pouls: s.pRang, pastilles: [
+      { classe: `${s.exp} ${s.tA2}`, contenu: <><span className="vy-nombre" style={{ fontWeight: 700 }}>+30</span> EXP</> },
+      { classe: `${s.exp} ${s.tB2}`, contenu: <><span className="vy-nombre" style={{ fontWeight: 700 }}>+5</span> EXP</> },
+    ] },
 ];
 
 function ToutRelie() {
@@ -314,36 +448,40 @@ function ToutRelie() {
           <Surtitre>Tout au même endroit</Surtitre>
           <h2 className={s.titre}>Et <span className={s.accent}>tout se parle.</span></h2>
           <p className={s.chapo}>
-            Comme les branches du logo qui se rejoignent en un point : une séance terminée fait avancer ta semaine,
+            Comme les branches du logo qui se rejoignent en un point : une séance terminée fait avancer ta semaine,
             nourrit ton rang, et ton Guide le sait déjà.
           </p>
         </div>
-        <div className={s.constellation} data-reveal>
-          <svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden>
+        <div className={s.constellation} data-constellation data-vivant>
+          {/* Les fils se tracent en pixels réels, une fois la taille connue
+              (`vivant/vitrineVivante.ts`). */}
+          <svg aria-hidden>
             <defs>
               <linearGradient id="vitrine-fil" x1="0" y1="0" x2="1" y2="1">
                 <stop offset="0" stopColor="#A66CF4" />
                 <stop offset=".55" stopColor="#E68FC6" />
                 <stop offset="1" stopColor="#FEB86E" />
               </linearGradient>
+              <linearGradient id="vitrine-pouls" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0" stopColor="#8B5CF6" />
+                <stop offset="1" stopColor="#C13BC1" />
+              </linearGradient>
             </defs>
-            {NOEUDS.map((n) => {
-              const d = `M${n.x} ${n.y} Q ${(n.x + 50) / 2} ${n.y < 50 ? 50 : 50} 50 50`;
-              return (
-                <g key={n.titre}>
-                  <path className={s.fil} d={d} vectorEffect="non-scaling-stroke" />
-                  <path className={s.flux} d={d} vectorEffect="non-scaling-stroke" pathLength={242} />
-                </g>
-              );
-            })}
+            {NOEUDS.map((n) => (
+              <g key={n.titre} data-x={n.x} data-y={n.y}>
+                <path className={s.fil} />
+                <path className={`${s.pouls} ${n.pouls}`} pathLength={100} />
+              </g>
+            ))}
           </svg>
           <div className={s.coeur}>
-            <Image src="/marque/logo-degrade.png" alt="Le logo Vaiiya" width={120} height={120} />
+            <Image src="/marque/logo-degrade.png" alt="Le logo Vaiiya" width={173} height={128} />
           </div>
           {NOEUDS.map((n) => {
             const Icone = n.icone;
             return (
-              <div key={n.titre} className={s.noeud} style={{ left: `${n.x}%`, top: `${n.y}%` }}>
+              <div key={n.titre} className={`${s.noeud} ${n.classe}`} style={{ left: `${n.x}%`, top: `${n.y}%` }}>
+                {n.pastilles.map((p, i) => <em key={i} className={`${s.pastille} ${p.classe}`}>{p.contenu}</em>)}
                 <b><i style={{ background: n.fond, color: n.couleur }}><Icone size={15} /></i>{n.titre}</b>
                 <span>{n.texte}</span>
               </div>
@@ -395,13 +533,13 @@ function Chemin() {
           <Surtitre>Dans trois mois</Surtitre>
           <h2 className={s.titre}>Tu iras t’entraîner <span className={s.accent}>sans y penser.</span></h2>
           <p className={s.chapo}>
-            Vaiiya transforme l’envie en habitude : une séance à ta mesure, des repas suivis,
+            Vaiiya transforme l’envie en habitude : une séance à ta mesure, des repas suivis,
             et quelqu’un pour te relancer au bon moment.
           </p>
         </div>
-        <ol className={s.etapes}>
+        <ol className={s.etapes} data-vivant>
           {ETAPES.map((e, i) => (
-            <li key={e.quand} className={s.etape} data-derniere={i === ETAPES.length - 1 || undefined} data-reveal>
+            <li key={e.quand} className={s.etape} style={{ "--i": i } as CSSProperties} data-reveal>
               <div className={s.etapePhoto}>
                 <Image src={e.photo} alt="" fill sizes="(min-width: 960px) 25vw, 78vw" className="object-cover" />
                 <span className={s.etapeRepere}>
@@ -419,9 +557,7 @@ function Chemin() {
             </li>
           ))}
         </ol>
-        <p className="mt-4 text-center text-[13px]" style={{ color: "#7B7389" }}>
-          Exemple de parcours. Le tien ira à ton rythme, et c’est très bien comme ça.
-        </p>
+        <p className={s.note}>Exemple de parcours. Le tien ira à ton rythme, et c’est très bien comme ça.</p>
       </div>
     </section>
   );
@@ -429,24 +565,53 @@ function Chemin() {
 
 /* ═══════════════ 6 · NUTRITION ═══════════════ */
 
+/* `x` et `y` : le centre de l'aliment sur la photo recadrée, en %. */
+const PLATS = [
+  { photo: "/recipes/poke-bowl-saumon-avocat.jpg", kcal: 640, macros: [
+    { nom: "Saumon", g: 120, x: 24, y: 35 },
+    { nom: "Avocat", g: 60, x: 62, y: 47 },
+    { nom: "Riz", g: 150, x: 32, y: 71 },
+  ] },
+  { photo: "/recipes/saumon-roti-et-patate-douce.jpg", kcal: 560, macros: [
+    { nom: "Saumon", g: 130, x: 70, y: 30 },
+    { nom: "Patate douce", g: 150, x: 26, y: 42 },
+    { nom: "Brocoli", g: 120, x: 50, y: 70 },
+  ] },
+  { photo: "/recipes/steak-hache-patate-douce-rotie-et-haricots-verts.jpg", kcal: 430, macros: [
+    { nom: "Patate douce", g: 120, x: 33, y: 29 },
+    { nom: "Haricots verts", g: 120, x: 72, y: 50 },
+    { nom: "Steak haché", g: 125, x: 36, y: 66 },
+  ] },
+];
+
 function Nutrition() {
   return (
     <section className={`${s.section} ${s.nutrition}`}>
       <div className={`${s.wrap} ${s.nutriGrille}`}>
-        <div className={s.assiette} data-reveal>
-          <Image src="/recipes/poke-bowl-saumon-avocat.jpg" alt="Un poke bowl au saumon et à l’avocat, analysé par Vaiiya" fill sizes="(min-width: 960px) 460px, 100vw" className="object-cover" />
+        <div className={s.assiette} data-assiette data-vivant role="img"
+          aria-label="Trois assiettes analysées l’une après l’autre, avec les aliments reconnus et l’estimation des calories">
+          {/* Le premier plat arrive déjà analysé : sans script, il le reste. */}
+          {PLATS.map((p, i) => (
+            <div key={p.photo} className={`${s.plat} ${i === 0 ? s.on : ""}`} data-plat={p.kcal}>
+              <Image src={p.photo} alt="" fill sizes="(min-width: 960px) 460px, 100vw" className="object-cover" />
+              {p.macros.map((m) => (
+                <span key={m.nom} className={`${s.macro} ${i === 0 ? s.vu : ""}`} data-y={m.y} style={{ left: `${m.x}%`, top: `${m.y}%` }}>
+                  {m.nom} · <b className="vy-nombre">{m.g}</b> g
+                </span>
+              ))}
+            </div>
+          ))}
           <span className={s.scan} aria-hidden />
-          <span className={s.ligneScan} aria-hidden />
-          <span className={`${s.macro} ${s.macroA}`} aria-hidden>Riz · <b className="vy-nombre">150</b> g</span>
-          <span className={`${s.macro} ${s.macroB}`} aria-hidden>Saumon · <b className="vy-nombre">120</b> g</span>
-          <span className={`${s.macro} ${s.macroC}`} aria-hidden>Avocat · <b className="vy-nombre">60</b> g</span>
-          <span className={s.resultat} aria-hidden>Estimation · ~<b className="vy-nombre">640</b>kcal</span>
+          <span className={s.ligneScan} data-ligne-scan aria-hidden />
+          <span className={`${s.resultat} ${s.vu}`} data-resultat aria-hidden>
+            Estimation · ~<b className="vy-nombre" data-total>{PLATS[0].kcal}</b>kcal
+          </span>
         </div>
         <div data-reveal>
           <Surtitre>Tes repas, sans prise de tête</Surtitre>
           <h2 className={s.titre}>Une photo, <span className={s.accent}>et c’est noté.</span></h2>
           <p className={s.chapo}>
-            Prends ton assiette en photo : Vaiiya estime les calories et les macros, élément par élément.
+            Prends ton assiette en photo : Vaiiya estime les calories et les macros, élément par élément.
           </p>
           <ul className={s.listeNutri}>
             <li><i style={{ background: "#FFF0E2", color: "#E8620C" }}><Camera size={17} /></i><div><b>Ton assiette en photo</b><span>Calories et macros estimées.</span></div></li>
@@ -470,23 +635,26 @@ function Rangs() {
           <Surtitre>Ta progression</Surtitre>
           <h2 className={s.titre}>Six rangs. <span className={s.accent}>Chacun se mérite en revenant.</span></h2>
           <p className={s.chapo}>
-            Chaque séance et chaque repas noté te rapportent de l’EXP. Personne contre qui te comparer :
+            Chaque séance et chaque repas noté te rapportent de l’EXP. Personne contre qui te comparer :
             tu montes à ton rythme.
           </p>
         </div>
-        <ol className={s.escalier} data-reveal>
-          {rangs.map((r, i) => (
-            <li key={r.id} className={s.marche}>
-              <div className={s.gemme} style={{ maxWidth: 64 + i * 10 }}>
-                <Image src={r.image!} alt="" fill sizes="120px" style={{ objectFit: "contain", filter: "drop-shadow(0 14px 18px rgba(0,0,0,.35))" }} />
-              </div>
-              <div className={s.socle} style={{ height: 50 + i * 26 }}>
-                <b>{r.nom}</b>
-                <span className="vy-nombre">{r.min} EXP</span>
-              </div>
-            </li>
-          ))}
-        </ol>
+        <div data-rangs data-vivant>
+          <p className={s.compteur} aria-hidden><b className="vy-nombre" data-exp>{rangs[rangs.length - 1].min}</b> EXP</p>
+          <ol className={s.escalier} data-escalier>
+            {rangs.map((r, i) => (
+              <li key={r.id} className={`${s.marche} ${s.atteint}`} data-min={r.min}>
+                <div className={s.gemme} style={{ maxWidth: 64 + i * 10 }}>
+                  <Image src={r.image!} alt="" fill sizes="120px" style={{ objectFit: "contain", filter: "drop-shadow(0 14px 18px rgba(0,0,0,.3))" }} />
+                </div>
+                <div className={s.socle} style={{ height: 50 + i * 26 }}>
+                  <b>{r.nom}</b>
+                  <span className="vy-nombre">{r.min} EXP</span>
+                </div>
+              </li>
+            ))}
+          </ol>
+        </div>
       </div>
     </section>
   );
@@ -498,7 +666,7 @@ function Relais() {
   return (
     <section className={`${s.section} ${s.relais}`}>
       <div className={`${s.wrap} ${s.relaisGrille}`}>
-        <div className={s.affiche} data-reveal aria-label="L’affiche Sillage qui se dévoile en quatre étapes" role="img">
+        <div className={s.affiche} data-vivant aria-label="L’affiche Sillage qui se dévoile en quatre étapes" role="img">
           {["01", "02", "03", "04"].map((n) => (
             <div key={n}>
               <Image src={`/defis/sillage/${n}.webp`} alt="" fill sizes="300px" className="object-cover" />
@@ -508,12 +676,12 @@ function Relais() {
         </div>
         <div data-reveal>
           <Surtitre>À deux, c’est plus facile</Surtitre>
-          <h2 className={s.titre}>Le relais : <span className={s.accent}>une affiche qui se révèle</span> à chaque séance.</h2>
+          <h2 className={s.titre}>Le relais : <span className={s.accent}>une affiche qui se révèle</span> à chaque séance.</h2>
           <p className={s.chapo}>
             Lance-le avec un ami. Quatre séances à vous deux dans la semaine, et l’affiche est à vous.
-            Pas de classement, pas de reproche : on avance ensemble.
+            Pas de classement, pas de reproche : on avance ensemble.
           </p>
-          <div className={s.maillons} aria-hidden><i /><i /><i /><i /></div>
+          <div className={s.maillons} data-vivant aria-hidden><i /><i /><i /><i /></div>
         </div>
       </div>
     </section>
@@ -540,7 +708,7 @@ function Offre() {
         <div className={s.centre} data-reveal>
           <Surtitre>Le compte gratuit</Surtitre>
           <h2 className={s.titre}>Tu commences avec <span className={s.accent}>tout ça.</span></h2>
-          <p className={s.chapo}>Pas une version bridée le temps d’un essai : le compte gratuit, c’est le produit, pour de vrai.</p>
+          <p className={s.chapo}>Pas une version bridée le temps d’un essai : le compte gratuit, c’est le produit, pour de vrai.</p>
         </div>
         <div className={s.offreGrille}>
           <div className={s.offreCarte} data-reveal>
@@ -623,15 +791,19 @@ function Avis({ avis }: { avis: ResumeAvis }) {
 
 function Fin() {
   return (
-    <section className={s.fin}>
-      <div className={s.wrap} data-reveal>
-        <Image src="/marque/logo-degrade.png" alt="" width={76} height={76} className={s.finLogo} />
+    <section className={s.fin} data-fin data-vivant>
+      <Image src="/marque/logo-degrade.png" alt="" width={173} height={128} className={s.finLogo} />
+      {/* Le néon : le logo évidé, une lumière qui fait le tour de sa forme. */}
+      <canvas className={s.fond} aria-hidden />
+      <div className={s.soirDescend} aria-hidden />
+      <i className={s.sonde} data-sonde aria-hidden />
+      <div className={`${s.wrap} ${s.finCorps}`}>
         <h2 className={s.finTitre}>Commence là où <span className={s.accent}>tu en es.</span></h2>
-        <p className={s.chapo} style={{ margin: "18px auto 30px" }}>Une séance suffit pour savoir si Vaiiya est fait pour toi.</p>
+        <p className={s.finTexte}>Une séance suffit pour savoir si Vaiiya est fait pour toi.</p>
         <Bouton label="Créer mon compte gratuit" />
-        <p className="mt-4 text-[13px]" style={{ color: "#7B7389" }}>
-          Sans carte bancaire · Déjà un compte ?{" "}
-          <Link href="/auth?mode=login" style={{ color: "#5B3FC4", fontWeight: 700 }}>Se connecter</Link>
+        <p className={s.finNote}>
+          Sans carte bancaire · Déjà un compte ?{" "}
+          <Link href="/auth?mode=login">Se connecter</Link>
         </p>
       </div>
     </section>
@@ -645,7 +817,7 @@ function Pied() {
         <div className={s.piedGrille}>
           <div>
             <span className={s.marque}>
-              <Image src="/marque/logo-degrade.png" alt="" width={28} height={28} />
+              <Image src="/marque/logo-degrade.png" alt="" width={28} height={21} />
               Vaiiya
             </span>
             <p>Tes séances, tes repas et ton Guide au même endroit. Application web, en français.</p>
@@ -672,18 +844,22 @@ function Pied() {
 export default function LandingVitrine({ chiffres, avis }: { chiffres: ChiffresPublics; avis: ResumeAvis }) {
   const racine = useRef<HTMLDivElement>(null);
   useRevelation(racine);
+  useVivante(racine);
   return (
     <div ref={racine} className={s.page}>
       <Heros chiffres={chiffres} />
-      <Mouvements chiffres={chiffres} />
-      <Guide />
-      <ToutRelie />
-      <Chemin />
-      <Nutrition />
-      <Rangs />
-      <Relais />
-      <Offre />
-      <Avis avis={avis} />
+      <div className={s.jour}>
+        <Mouvements chiffres={chiffres} />
+        <Guide />
+        <Parler />
+        <ToutRelie />
+        <Chemin />
+        <Nutrition />
+        <Rangs />
+        <Relais />
+        <Offre />
+        <Avis avis={avis} />
+      </div>
       <Fin />
       <Pied />
     </div>

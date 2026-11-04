@@ -1,8 +1,12 @@
 /* ════════════════════════════════════════════════════════════════════
-   La vitrine de vaiiya.fr (visiteur non connecté), refaite le 2026-10-12.
+   La vitrine de vaiiya.fr (visiteur non connecté), refaite le 2026-10-12,
+   rendue vivante le 2026-11-04 (maquette « La vitrine vivante »).
 
-   ⚠️ TOUJOURS CLAIRE (décision de Louis) : les couleurs sont écrites en
-   dur et ne suivent pas le mode sombre de l'app.
+   ⚠️ LA PAGE DURE UNE JOURNÉE (décisions de Louis, 2026-11-03 et 04). Le
+   héros et la fin sont en nuit, le milieu est clair, et les couleurs sont
+   écrites en dur : la vitrine ne suit pas le mode sombre de l'app. La
+   raison vient du logo : son dégradé est un ciel d'aube, son point est le
+   soleil sur l'horizon, ses branches sont les rayons.
 
    ⚠️ RIEN N'EST JAMAIS CACHÉ AU PREMIER AFFICHAGE. C'est la correction du
    « bug à l'entrée » : une page qui arrive vide puis se remplit, ou qui se
@@ -13,7 +17,8 @@
    JavaScript, tout est simplement visible.
 
    ⚠️ PERFORMANCE : on n'anime que `transform` et `opacity`. Aucun flou
-   animé, aucun `backdrop-filter` sur une grande surface.
+   animé, aucun `backdrop-filter` sur une grande surface. Tout ce qui vit
+   porte `data-vivant`, et ne tourne que lorsqu'il est à l'écran.
    ════════════════════════════════════════════════════════════════════ */
 
 .page {
@@ -24,14 +29,44 @@
   --violet: #8B5CF6;
   --lien: #5B3FC4;
   --creme: #FFFFFF;
+  --nuit: #0B0814;
+  --voile: #F0EBFF;
+  --bulle-moi: #251E47;
+  --fait-fond: #E3FAF2;
+  --fait-encre: #0B7A5C;
   --logo: linear-gradient(120deg, #8B5CF6 0%, #C13BC1 100%);
   --action: linear-gradient(135deg, #8B5CF6 0%, #C13BC1 100%);
   --ease: cubic-bezier(.22, 1, .36, 1);
+  /* La hauteur du passage entre la nuit et le jour : une bande, jamais un écran. */
+  --crete: clamp(52px, 6vw, 92px);
+  --aube: clamp(150px, 22vh, 230px);
+  --jour: clamp(220px, 33vh, 340px);
+  --crepuscule: clamp(150px, 22vh, 230px);
+  /* ⚠️ LE CIEL EST UN DÉGRADÉ DROIT, DANS L'ORDRE DU LOGO (Louis, 2026-11-04 :
+     « assez droit et linéaire »). Ni courbe, ni grille, ni motif. Le haut est
+     transparent : on voit la nuit à travers, et l'opacité monte doucement
+     pour qu'aucun début ne se voie. Le bas est la couleur exacte de la page :
+     blanc à l'aube, `#FFF2F5` au crépuscule. */
+  --ciel: rgba(40, 24, 110, 0) 0%, rgba(46, 28, 124, .1) 9%, rgba(60, 36, 146, .24) 18%, rgba(84, 52, 178, .42) 27%,
+    rgba(118, 74, 212, .62) 36%, rgba(156, 94, 226, .82) 45%, rgba(192, 112, 226, .95) 52%, #DE88CC 59%, #F09AB8 65%, #F9AFB0 71%,
+    #FCC4A8 77%, #FEDABE 83%, #FFEBDC 89%, #FFF6EF 95%, #fff 100%;
+  --ciel-soir: rgba(40, 24, 110, 0) 0%, rgba(46, 28, 124, .1) 9%, rgba(60, 36, 146, .24) 18%, rgba(84, 52, 178, .42) 27%,
+    rgba(118, 74, 212, .62) 36%, rgba(156, 94, 226, .82) 45%, rgba(192, 112, 226, .95) 52%, #DE88CC 59%, #F09AB8 65%, #F9AFB0 71%,
+    #FCC4A8 77%, #FEDABE 83%, #FFE9E0 89%, #FFEFEA 95%, #FFF2F5 100%;
   position: relative;
   color: var(--encre);
   background: var(--creme);
   overflow-x: clip;
 }
+
+/* ═══ UN ÉCRAN AU REPOS NE TRAVAILLE PAS ═══
+   Hors de l'écran, le script pose `data-repos` et chaque animation CSS
+   s'arrête là où elle en est (`vivant/veilleur.ts`). */
+.page [data-repos] *, .page [data-repos]::before, .page [data-repos]::after,
+.page [data-repos] *::before, .page [data-repos] *::after { animation-play-state: paused !important; }
+
+/* Le jour : tout le clair de la page tient entre les deux passages. */
+.jour { position: relative; z-index: 11; background: var(--creme); }
 
 .accent {
   background-image: var(--logo);
@@ -40,8 +75,16 @@
   color: transparent;
 }
 
-.wrap { position: relative; max-width: 1180px; margin: 0 auto; padding: 0 20px; }
-@media (min-width: 768px) { .wrap { padding: 0 44px; } }
+.wrap {
+  position: relative;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding-left: max(20px, env(safe-area-inset-left, 0px));
+  padding-right: max(20px, env(safe-area-inset-right, 0px));
+}
+@media (min-width: 768px) {
+  .wrap { padding-left: max(44px, env(safe-area-inset-left, 0px)); padding-right: max(44px, env(safe-area-inset-right, 0px)); }
+}
 
 /* ── Titres et textes communs ── */
 .surtitre {
@@ -109,7 +152,7 @@
 }
 .bouton:hover { transform: translateY(-2px); box-shadow: 0 22px 40px -14px rgba(139, 92, 246, .9); }
 .bouton:active { transform: scale(.98); }
-.bouton:focus-visible, .lienDoux:focus-visible, .connexion:focus-visible {
+.bouton:focus-visible, .lienDoux:focus-visible, .connexion:focus-visible, .portrait:focus-visible {
   outline: 3px solid #A66CF4;
   outline-offset: 3px;
 }
@@ -123,8 +166,9 @@
   padding: 0 6px;
   font-size: 16px;
   font-weight: 650;
-  color: var(--lien);
+  color: var(--h-lien, var(--lien));
   border-radius: 10px;
+  text-shadow: 0 0 2px var(--h-fond, #fff), 0 0 10px var(--h-fond, #fff), 0 0 22px var(--h-fond, #fff);
 }
 
 /* ═══════════════ NAV ═══════════════ */
@@ -135,7 +179,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: calc(env(safe-area-inset-top, 0px) + 14px) 16px 0;
+  padding: calc(env(safe-area-inset-top, 0px) + 14px) max(16px, env(safe-area-inset-right, 0px)) 0 max(16px, env(safe-area-inset-left, 0px));
 }
 @media (min-width: 768px) { .nav { padding: 22px 44px 0; } }
 .marque {
@@ -145,7 +189,7 @@
   font-size: 20px;
   font-weight: 300;
   letter-spacing: .14em;
-  color: var(--encre);
+  color: var(--h-encre, var(--encre));
 }
 .connexion {
   display: inline-flex;
@@ -159,7 +203,7 @@
   color: var(--encre);
   border: 1.5px solid transparent;
   background:
-    linear-gradient(rgba(255, 255, 255, .9), rgba(255, 255, 255, .9)) padding-box,
+    linear-gradient(rgba(255, 255, 255, .92), rgba(255, 255, 255, .92)) padding-box,
     linear-gradient(120deg, #8B5CF6, #C13BC1) border-box;
   box-shadow: 0 10px 24px -14px rgba(120, 70, 200, .55);
 }
@@ -177,30 +221,42 @@
    Maquette `docs/maquettes/vitrine-nora-sasha.html`, validée par Louis le
    2026-10-12 : un titre géant en condensé noir, ENTIÈREMENT au-dessus des
    têtes (« on doit tout pouvoir lire »), une phrase courte, puis Nora et
-   Sasha côte à côte qui regardent vers nous, le bas fondu dans la page.
-   Le fond est blanc : aucun dégradé. */
+   Sasha côte à côte qui regardent vers nous. Depuis le 2026-11-04, c'est la
+   nuit, le logo en fond (WebGL, `vivant/fondLogo.ts`), et le jour qui monte
+   devant eux. */
 .heros {
+  --h-fond: var(--nuit);
+  --h-encre: #fff;
+  --h-encre-2: rgba(255, 255, 255, .78);
+  --h-encre-3: rgba(255, 255, 255, .62);
+  --h-lien: #D9C8FF;
   position: relative;
   overflow: hidden;
-  /* Le héros tient dans UN écran, Nora et Sasha compris. Avant, le titre
-     se réglait sur la seule largeur : sur un écran large et court il
-     mangeait toute la hauteur et les Guides arrivaient sous le pli,
-     coupés au front (Louis, 2026-10-19 : « on voit quasi rien »).
-     ⚠️ `height`, et pas `min-height` : avec une hauteur minimale, le bloc
-     de texte pouvait pousser la scène au-delà de l'écran et les Guides
-     repassaient dessous. Ici c'est la SCÈNE qui absorbe ce qui reste, et
-     elle ne descend jamais sous son plancher. Mesuré à 1440 x 900 :
-     1002 px de héros avant, 900 après. */
-  height: 100vh;
-  height: 100svh;
-  min-height: 600px;
+  /* Le héros tient dans UN écran, Nora et Sasha compris, et le passage vers
+     le jour commence sous le pli. Avant, le titre se réglait sur la seule
+     largeur : sur un écran large et court il mangeait toute la hauteur et
+     les Guides arrivaient sous le pli, coupés au front (Louis, 2026-10-19 :
+     « on voit quasi rien »).
+     ⚠️ `height`, et pas `min-height` : avec une hauteur minimale, le bloc de
+     texte pouvait pousser la scène au-delà de l'écran et les Guides
+     repassaient dessous. Ici c'est la SCÈNE qui absorbe ce qui reste, et elle
+     ne descend jamais sous son plancher. */
+  height: calc(100vh + var(--aube));
+  height: calc(100svh + var(--aube));
+  min-height: calc(600px + var(--aube));
   display: flex;
   flex-direction: column;
-  padding: calc(env(safe-area-inset-top, 0px) + 80px) 0 0;
-  background: var(--creme);
+  padding: calc(env(safe-area-inset-top, 0px) + 80px) 0 var(--aube);
+  color: var(--h-encre);
+  /* ⚠️ Le bas du héros est déjà de la couleur de la page sur 24 px, et le
+     canevas s'arrête au-dessus (`clip-path`) : sans ça, une ligne grise
+     apparaît sur une hauteur fractionnaire, vue sur téléphone. */
+  background: linear-gradient(to bottom, var(--nuit) calc(100% - 24px), #fff calc(100% - 24px));
   text-align: center;
 }
 @media (min-width: 768px) { .heros { padding-top: 88px; } }
+.fond { position: absolute; inset: 0; width: 100%; height: 100%; display: block; z-index: 0; pointer-events: none; }
+.heros .fond { clip-path: inset(0 0 24px 0); }
 
 .herosBloc { position: relative; z-index: 20; flex: 0 0 auto; }
 
@@ -228,10 +284,11 @@
   padding: 0 20px;
   font-size: 16px;
   line-height: 1.55;
-  color: var(--encre-2);
+  color: var(--h-encre-2);
+  text-shadow: 0 0 2px var(--h-fond), 0 0 12px var(--h-fond), 0 0 26px var(--h-fond);
   animation: monte .8s var(--ease) .25s both;
 }
-.herosTexte b { color: var(--encre); font-weight: 700; }
+.herosTexte b { color: var(--h-encre); font-weight: 700; }
 /* 52ch plutôt que 40 : la phrase tient alors en deux lignes au lieu de
    trois, et c'est trente pixels rendus aux Guides. */
 @media (min-width: 768px) { .herosTexte { font-size: 20px; max-width: 52ch; } }
@@ -250,19 +307,24 @@
 
 /* Trois faits sous le bouton, à la place de la rangée de logos clients
    du modèle : on n'en a pas, et on n'en invente pas. Chacun est un claim
-   autorisé du positionnement public. */
+   autorisé du positionnement public. La pastille les garde lisibles quand
+   une branche du logo passe derrière. */
 .preuve {
-  margin: 14px auto 0;
+  width: fit-content;
+  max-width: calc(100% - 32px);
+  margin: 12px auto 0;
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
   gap: 6px 14px;
-  padding: 0 20px;
+  padding: 7px 16px;
+  border-radius: 999px;
+  background: rgba(11, 8, 20, .78);
   font-size: 11px;
   font-weight: 750;
   letter-spacing: .1em;
   text-transform: uppercase;
-  color: var(--encre-3);
+  color: var(--h-encre-3);
   animation: monte .8s var(--ease) .45s both;
 }
 .preuve span { display: inline-flex; align-items: center; gap: 14px; }
@@ -275,7 +337,7 @@
    et le point médian se retrouvait alors en TÊTE de ligne, comme une puce
    de liste orpheline. On empile proprement et on retire les points. */
 @media (max-width: 520px) {
-  .preuve { flex-direction: column; align-items: center; gap: 4px; }
+  .preuve { flex-direction: column; align-items: center; gap: 4px; border-radius: 18px; padding: 8px 16px; }
   .preuve span { gap: 0; }
   .preuve span + span::before { display: none; }
 }
@@ -304,6 +366,7 @@
   flex: 1 1 auto;
   min-height: 200px;
   margin-top: 10px;
+  margin-bottom: calc(var(--aube) * -.7);
 }
 /* Les deux Guides : Nora garde son geste vers la gauche, Sasha est
    retourné pour ouvrir vers la droite, leurs dos se rejoignent au centre.
@@ -316,45 +379,58 @@
   z-index: 2;
   animation: monte 1s var(--ease) .15s both;
 }
-.duoHeros::after {
-  content: "";
-  position: absolute; inset: auto 0 0 0; height: 26%; z-index: 3;
-  background: linear-gradient(to bottom, rgba(255, 255, 255, 0), var(--creme) 86%);
-}
 .guideHeros {
   position: absolute;
   bottom: 0;
   height: 100%;
   aspect-ratio: 1086 / 1448;
   left: 50%;
-  filter: drop-shadow(0 22px 30px rgba(60, 30, 110, .15));
+  filter: drop-shadow(0 -4px 26px rgba(186, 128, 250, .22));
 }
+/* ⚠️ Sur téléphone, leurs bras sortiraient de l'écran au-delà de 88vw de haut. */
+@media (max-width: 767px) { .guideHeros { height: min(100%, 88vw); } }
 .guideHeros img { width: 100%; height: 100%; object-fit: contain; }
 .noraHeros { transform: translateX(-79%); z-index: 2; }
 .sashaHeros { transform: translateX(-21%) scaleX(-1); z-index: 1; }
 .prenoms {
-  position: absolute; z-index: 4; inset: auto 0 14px 0;
-  display: flex; justify-content: center; gap: clamp(76px, 19vw, 230px);
+  position: absolute; z-index: 4; inset: auto 0 calc(var(--aube) * .86) 0;
+  display: flex; justify-content: center; gap: clamp(190px, 31vw, 420px);
   font-size: 11px; font-weight: 900; font-variation-settings: "wdth" 80;
-  letter-spacing: .3em; text-transform: uppercase; color: var(--encre-3);
+  letter-spacing: .3em; text-transform: uppercase;
+  color: rgba(255, 255, 255, .88);
+  text-shadow: 0 1px 10px rgba(40, 20, 90, .5);
 }
 
-/* La tête du Guide dans la conversation : ni cercle, ni fond, un fondu en bas. */
-.avatarGuide {
-  position: relative;
-  width: 40px; height: 50px; flex-shrink: 0;
-  -webkit-mask-image: linear-gradient(#000 62%, transparent);
-  mask-image: linear-gradient(#000 62%, transparent);
+/* ═══ LES DEUX PASSAGES ═══
+   Le dégradé passe DEVANT Nora et Sasha : ils se fondent dans la même couleur
+   que le ciel, à la même hauteur, sans masque, et la partie opaque couvre le
+   bord droit de leur image, qui s'arrête à mi-cuisse.
+   ⚠️ Le dégradé et l'aplat blanc qui le prolonge se chevauchent (84 px dans
+   une rallonge de 80), sinon leur couture laisse une ligne grise sur une
+   hauteur fractionnaire. */
+.jourMonte, .soirDescend { position: absolute; pointer-events: none; }
+.jourMonte {
+  z-index: 3;
+  left: 50%;
+  width: 100vw;
+  margin-left: -50vw;
+  height: calc(var(--jour) + 80px);
+  bottom: calc(var(--aube) * -.3 - 80px);
+  transform: translate3d(0, calc(var(--monte, 0) * -44px), 0);
 }
-.avatarGuide img { width: 100%; height: 100%; object-fit: cover; object-position: top; }
-
-@keyframes flotte {
-  0%, 100% { transform: translate3d(0, 0, 0) rotate(-1.2deg); }
-  50% { transform: translate3d(0, -12px, 0) rotate(.6deg); }
+.soirDescend { z-index: 1; left: 0; width: 100%; top: 0; height: var(--jour); overflow: hidden; }
+.jourMonte::before, .soirDescend::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  animation: respire 7s ease-in-out infinite alternate;
 }
+.jourMonte::before { background: linear-gradient(to bottom, var(--ciel)) top / 100% var(--jour) no-repeat, linear-gradient(#fff, #fff) bottom / 100% 84px no-repeat; }
+.soirDescend::before { background: linear-gradient(to top, var(--ciel-soir)); }
+@keyframes respire { from { transform: translate3d(0, 10px, 0); } to { transform: translate3d(0, -10px, 0); } }
 
 /* ═══════════════ 2 · LES MOUVEMENTS QUI DÉFILENT ═══════════════ */
-.mouvements { padding: 64px 0 72px; background: var(--creme); }
+.mouvements { position: relative; z-index: 11; padding: 32px 0 72px; background: var(--creme); }
 /* ⚠️ LA BOUCLE EST CONTINUE SI ET SEULEMENT SI -50 % VAUT UNE MOITIÉ EXACTE.
    Avec le `gap` posé sur le rail, il y avait un écart de moins entre les
    deux moitiés qu'à l'intérieur : la boucle sautait d'un demi-écart. Le
@@ -394,98 +470,291 @@
   background: #fff;
   box-shadow: 0 1px 2px rgba(60, 30, 10, .05), 0 14px 30px -24px rgba(110, 70, 160, .45);
 }
-.mvtImage {
-  aspect-ratio: 1;
-  border-radius: 16px;
-  background: linear-gradient(160deg, #F4EEFF, #FFF1F6);
-}
+.mvtImage { aspect-ratio: 1; border-radius: 16px; }
+/* Quatre teintes du logo, en boucle sur les cartes. */
+.mvt:nth-child(4n+1) .mvtImage { background: linear-gradient(160deg, #EFE7FF, #F9F4FF); }
+.mvt:nth-child(4n+2) .mvtImage { background: linear-gradient(160deg, #FFE9F4, #FFF6FA); }
+.mvt:nth-child(4n+3) .mvtImage { background: linear-gradient(160deg, #FFF0E0, #FFF9F1); }
+.mvt:nth-child(4n+4) .mvtImage { background: linear-gradient(160deg, #E8EEFF, #F6F4FF); }
 .mvt b { display: block; margin-top: 8px; font-size: 13px; font-weight: 750; text-align: center; }
 
 /* ═══════════════ 3 · LE GUIDE ═══════════════ */
-.guide {
-  background:
-    #FBF9FF;
-}
+.guide { background: #FBF9FF; }
 .guideGrille { display: grid; gap: 44px; align-items: center; }
+.guideGrille > * { min-width: 0; }
 @media (min-width: 960px) { .guideGrille { grid-template-columns: 1fr 1fr; gap: 64px; } }
 .duo { display: flex; justify-content: center; gap: 4px; margin-top: 30px; }
 .portrait {
   position: relative;
+  display: block;
   width: min(44%, 210px);
   aspect-ratio: 4 / 5;
+  cursor: pointer;
   -webkit-mask-image: linear-gradient(#000 72%, transparent);
   mask-image: linear-gradient(#000 72%, transparent);
+  transition: opacity .4s ease, transform .4s var(--ease);
+  opacity: .58;
+  transform: scale(.95);
 }
+.portrait[aria-pressed="true"] { opacity: 1; transform: none; }
 .portrait span {
   position: absolute; bottom: 10%; left: 50%; transform: translateX(-50%);
   font-size: 20px; font-weight: 850; font-variation-settings: var(--w-voix);
 }
-.conversation {
-  border-radius: 28px;
-  padding: 18px;
-  background: #fff;
-  box-shadow: 0 40px 70px -46px rgba(80, 40, 140, .55), 0 0 0 1px rgba(120, 90, 180, .08);
+
+/* La conversation : le même dessin que dans l'app, version 3.
+   ⚠️ LA PILE QUI TOURNE EST VIDE DANS LE HTML. La scène écrite juste à côté
+   (`data-conv-repli`) reste à l'écran sans JavaScript et en mouvement réduit ;
+   quand la boucle tourne, elle reste lue par un lecteur d'écran (`data-lecteur`
+   la rend invisible sans la retirer de l'arbre d'accessibilité). */
+.conv {
+  position: relative;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-}
-.message {
-  max-width: 82%;
-  padding: 11px 14px;
-  border-radius: 18px;
-  font-size: 16px;
-  line-height: 1.4;
-}
-.moi { align-self: flex-end; color: #fff; background: var(--action); border-bottom-right-radius: 6px; }
-.lui {
-  align-self: flex-start;
-  display: flex; gap: 8px; align-items: flex-end;
-  max-width: 92%;
-  padding: 0;
-  background: none;
-}
-.lui p { margin: 0; padding: 11px 14px; border-radius: 18px; border-bottom-left-radius: 6px; background: #F3EEFF; }
-.carteProp {
-  margin-left: 40px;
-  border-radius: 20px;
+  height: 580px;
+  max-height: 88vh;
+  min-height: 520px;
+  border-radius: 28px;
   overflow: hidden;
-  border: 1px solid rgba(139, 92, 246, .18);
   background: #fff;
+  box-shadow: 0 40px 70px -46px rgba(80, 40, 140, .55), 0 0 0 1px rgba(120, 90, 180, .08);
 }
-.carteProp::before { content: ""; display: block; height: 3px; background: var(--action); }
-.carteCorps { padding: 12px 14px 14px; }
-.carteCorps small { font-size: 11px; font-weight: 700; color: var(--lien); }
-.carteCorps b { display: block; margin-top: 2px; font-size: 20px; font-weight: 850; font-variation-settings: var(--w-voix); }
-.carteMvts { display: flex; gap: 6px; margin: 10px 0 12px; }
-.carteMvts > div { width: 54px; border-radius: 12px; background: #F6F1FF; }
-.carteBouton {
-  display: inline-flex; align-items: center; gap: 6px;
-  padding: 9px 14px; border-radius: 12px;
-  font-size: 13px; font-weight: 800; color: #fff;
+.convHalo {
+  position: absolute; inset: -30% -20% auto -20%; height: 70%; z-index: 0; pointer-events: none;
+  background: radial-gradient(50% 50% at 50% 50%, rgba(166, 108, 244, .16), transparent 70%);
+}
+.convTete {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px 10px;
+  border-bottom: 1px solid rgba(120, 90, 180, .1);
+}
+.convVisage {
+  position: relative;
+  width: 44px;
+  height: 55px;
+  flex: none;
+  -webkit-mask-image: linear-gradient(#000 72%, transparent);
+  mask-image: linear-gradient(#000 72%, transparent);
+}
+.convVisage img { object-fit: cover; object-position: top; opacity: 0; transition: opacity .22s ease; }
+.convVisage img.on { opacity: 1; }
+.convNoms { min-width: 0; display: grid; gap: 1px; }
+.convNom { font-size: 16px; font-weight: 800; line-height: 1.15; font-variation-settings: var(--w-voix); }
+.convStatut { font-size: 13px; line-height: 1.2; color: var(--encre-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.convStatut b { font-weight: 700; color: var(--cuivre); }
+.convFil { position: relative; z-index: 1; flex: 1 1 auto; min-height: 0; overflow: hidden; }
+.convFil[data-deborde] {
+  -webkit-mask-image: linear-gradient(transparent, #000 30px);
+  mask-image: linear-gradient(transparent, #000 30px);
+}
+.convPile {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px 14px 10px;
+  transition: transform .42s var(--ease), opacity .32s ease;
+}
+.convPile.efface { opacity: 0; }
+.convPile[data-lecteur] { opacity: 0; pointer-events: none; }
+.convPile[data-lecteur] * { animation-play-state: paused !important; }
+.bulle {
+  max-width: 84%;
+  padding: 10px 14px;
+  font-size: 16px;
+  line-height: 1.42;
+  animation: bulle .34s var(--ease) both;
+}
+@keyframes bulle { from { opacity: 0; transform: translate3d(0, 10px, 0) scale(.98); } to { opacity: 1; transform: none; } }
+.moi { align-self: flex-end; color: #fff; background: var(--bulle-moi); border-radius: 20px 20px 6px 20px; }
+.lui { align-self: flex-start; background: var(--voile); border-radius: 6px 20px 20px 20px; }
+.ecrit { display: flex; gap: 5px; align-items: center; height: 42px; }
+.ecrit i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--cuivre);
+  animation: saute 1s ease-in-out infinite;
+}
+.ecrit i:nth-child(2) { animation-delay: .15s; }
+.ecrit i:nth-child(3) { animation-delay: .3s; }
+@keyframes saute { 0%, 60%, 100% { transform: translateY(0); opacity: .4; } 30% { transform: translateY(-4px); opacity: 1; } }
+.piece {
+  align-self: flex-start;
+  width: 88%;
+  max-width: 340px;
+  padding: 12px;
+  margin-top: -2px;
+  border-radius: 18px;
+  background: #fff;
+  border: 1px solid rgba(139, 92, 246, .18);
+  box-shadow: 0 10px 26px -18px rgba(80, 40, 140, .5);
+  animation: bulle .4s var(--ease) both;
+}
+.piecePoses { display: flex; gap: 6px; padding: 8px; border-radius: 10px; background: var(--voile); overflow: hidden; }
+.piecePoses > div { flex: 0 0 72px; height: 72px; }
+.pieceLigne { margin-top: 10px; display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.pieceLigne b { font-size: 20px; line-height: 1.1; font-weight: 800; font-variation-settings: var(--w-voix); letter-spacing: -.015em; min-width: 0; }
+.pieceLigne span { font-size: 16px; font-weight: 700; flex: none; }
+.pieceBouton {
+  position: relative;
+  overflow: hidden;
+  margin-top: 10px;
+  width: 100%;
+  min-height: 44px;
+  padding: 0 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 700;
+  color: #fff;
   background: var(--action);
+  transition: transform .18s var(--ease), background .3s ease;
 }
-.carteNote { margin-left: 8px; font-size: 11px; color: var(--encre-3); }
-
-/* La conversation se joue quand elle entre à l'écran.
-   ⚠️ C'ÉTAIT LE « GRAND CARRÉ BLANC » (Louis, 2026-10-13) : `pop` n'était
-   défini nulle part dans ce module. Un nom de keyframes est LOCAL dans un
-   module CSS, donc il ne retrouvait pas non plus une animation globale :
-   l'animation n'existait pas, les messages restaient à l'opacité 0 posée
-   par `data-armee`, et seule la carte blanche vide s'affichait. D'où, en
-   plus de l'animation, l'état final écrit en clair sur `data-vu` : si
-   l'animation venait encore à manquer, les messages resteraient visibles. */
-.conversation [data-pas] { opacity: 1; }
-.conversation[data-armee] [data-pas] { opacity: 0; transform: translate3d(0, 12px, 0); }
-.conversation[data-vu] [data-pas] { opacity: 1; transform: none; animation: pop .55s var(--ease) both; }
-@keyframes pop {
-  from { opacity: 0; transform: translate3d(0, 12px, 0) scale(.98); }
-  to { opacity: 1; transform: none; }
+.piece[data-fait] .pieceBouton { background: #0B8A68; }
+.pieceRepas { display: grid; grid-template-columns: 76px 1fr; gap: 12px; align-items: center; }
+.pieceRepasPhoto { position: relative; width: 76px; height: 76px; border-radius: 12px; overflow: hidden; }
+.pieceRepas small { display: block; font-size: 13px; color: var(--cuivre); font-weight: 700; }
+.pieceRepas b { display: block; font-size: 16px; font-weight: 800; line-height: 1.2; }
+.pieceRepas p { margin: 4px 0 0; font-size: 13px; color: var(--encre-2); }
+.pieceEtiquette { margin: 0 0 6px; font-size: 13px; font-weight: 700; color: var(--cuivre); }
+.pieceJours { display: flex; align-items: center; gap: 10px; margin-top: 6px; font-size: 16px; font-weight: 700; }
+.pieceJours s { color: var(--encre-3); font-weight: 500; text-decoration-thickness: 1.5px; }
+.pieceJours svg { flex: none; color: var(--cuivre); }
+.appuie { animation: appui .42s var(--ease) both; }
+@keyframes appui { 0% { transform: scale(1); } 40% { transform: scale(.955); } 100% { transform: scale(1); } }
+.appuie::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 30px;
+  height: 30px;
+  margin: -15px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, .5);
+  animation: rond .5s ease-out both;
 }
-.conversation[data-vu] [data-pas="2"] { animation-delay: .7s; }
-.conversation[data-vu] [data-pas="3"] { animation-delay: 1.5s; }
-.conversation[data-vu] [data-pas="4"] { animation-delay: 2.2s; }
+@keyframes rond { from { transform: scale(.3); opacity: .9; } to { transform: scale(6); opacity: 0; } }
+.reponses { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; animation: bulle .3s var(--ease) both; }
+.brouillon {
+  position: relative;
+  overflow: hidden;
+  padding: 9px 14px;
+  min-height: 42px;
+  border-radius: 20px 20px 6px 20px;
+  border: 1.5px dashed rgba(139, 92, 246, .6);
+  background: rgba(255, 255, 255, .9);
+  color: var(--cuivre);
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+.brouillon.appuie::after { background: rgba(139, 92, 246, .22); }
+.convSaisie {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 6px 12px 12px;
+  padding: 7px 7px 7px 16px;
+  min-height: 54px;
+  border-radius: 22px;
+  background: #F7F4FE;
+  box-shadow: inset 0 0 0 1px rgba(120, 90, 180, .12);
+}
+.convTexte { flex: 1 1 auto; min-width: 0; font-size: 16px; line-height: 1.3; }
+.convTexte em { font-style: normal; color: var(--encre-3); }
+.caret {
+  display: inline-block;
+  width: 2px;
+  height: 1.1em;
+  margin-left: 1px;
+  vertical-align: -.16em;
+  background: var(--violet);
+  border-radius: 1px;
+  animation: caret 1.05s steps(1) infinite;
+}
+@keyframes caret { 50% { opacity: 0; } }
+.convEnvoi {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: var(--cuivre);
+  background: rgba(139, 92, 246, .12);
+  transition: background .2s ease, color .2s ease, transform .2s var(--ease);
+}
+.convSaisie[data-pret] .convEnvoi { color: #fff; background: var(--action); }
+.convSaisie[data-part] .convEnvoi { transform: scale(.88); }
 
-/* ═══════════════ 4 · TOUT EST RELIÉ ═══════════════ */
+/* ═══════════════ 3 BIS · LES PHRASES QUI DÉFILENT ═══════════════
+   Chaque phrase correspond à une action réelle du Guide. Deux moitiés
+   identiques : la ligne recule d'exactement une moitié, puis repart. */
+.parler { background: #FBF9FF; padding: 0 0 88px; }
+@media (min-width: 768px) { .parler { padding: 0 0 120px; } }
+.parlerPanneau {
+  position: relative;
+  overflow: hidden;
+  border-radius: 32px;
+  color: #fff;
+  padding: 44px 0 42px;
+  background:
+    radial-gradient(70% 90% at 82% 0%, rgba(232, 120, 190, .55), transparent 70%),
+    radial-gradient(80% 110% at 12% 10%, #9E68F6 0%, transparent 72%),
+    linear-gradient(160deg, #6E3FE0 0%, #4726B4 60%, #2B1579 100%);
+  box-shadow: 0 50px 80px -50px rgba(70, 30, 160, .8);
+}
+.parlerTete { position: relative; padding: 0 24px; }
+@media (min-width: 768px) { .parlerTete { padding: 0 48px; } }
+.parlerTete h2 {
+  margin: 0;
+  font-size: clamp(34px, 4.6vw, 52px);
+  line-height: 1.02;
+  font-weight: 850;
+  font-variation-settings: var(--w-voix);
+  letter-spacing: -.02em;
+  text-wrap: balance;
+}
+.parlerTete p { margin: 12px 0 0; max-width: 52ch; font-size: 16px; line-height: 1.55; color: rgba(255, 255, 255, .84); }
+.lignes {
+  position: relative;
+  margin-top: 30px;
+  display: grid;
+  gap: 8px;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 10%, #000 90%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 10%, #000 90%, transparent);
+}
+.ligne { display: flex; width: max-content; animation: defile var(--d, 70s) linear infinite; will-change: transform; }
+.ligneInverse { animation-direction: reverse; }
+.ligneMoitie { display: flex; flex-shrink: 0; gap: 40px; padding-right: 40px; }
+.ligne span {
+  font-size: clamp(20px, 3vw, 34px);
+  line-height: 1.32;
+  font-weight: 560;
+  letter-spacing: -.012em;
+  white-space: nowrap;
+}
+.ligne span:nth-child(3n+1) { color: rgba(255, 255, 255, .96); }
+.ligne span:nth-child(3n+2) { color: rgba(255, 255, 255, .46); }
+.ligne span:nth-child(3n+3) { color: #FFD9B8; }
+
+/* ═══════════════ 4 · TOUT SE PARLE ═══════════════
+   Une seule horloge de 11 s, deux temps : la séance, puis le repas. Le signal
+   passe par le logo, et le rang gagne 30 puis 5 EXP. */
 .relie { background: var(--creme); }
 .constellation {
   position: relative;
@@ -494,19 +763,45 @@
   aspect-ratio: 1 / 1;
 }
 @media (min-width: 768px) { .constellation { aspect-ratio: 16 / 10; } }
-.constellation > svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
-.fil { fill: none; stroke: url(#vitrine-fil); stroke-width: 2; stroke-linecap: round; opacity: .55; }
-.flux {
-  fill: none;
-  stroke: url(#vitrine-fil);
-  stroke-width: 3.5;
-  stroke-linecap: round;
-  stroke-dasharray: 12 230;
-  animation: coule 3.2s linear infinite;
+/* L'aurore derrière le logo : les quatre couleurs des blocs, qui tournent lentement. */
+.constellation::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: min(100%, 620px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  background: conic-gradient(from 0deg, #CDB8FF, #F8C7E4, #FFD8B5, #BDF0DF, #CDB8FF);
+  -webkit-mask-image: radial-gradient(closest-side, #000 14%, transparent 100%);
+  mask-image: radial-gradient(closest-side, #000 14%, transparent 100%);
+  opacity: .6;
+  animation: tourne 28s linear infinite;
 }
-.flux:nth-of-type(2n) { animation-delay: -.8s; }
-.flux:nth-of-type(3n) { animation-delay: -1.6s; }
-@keyframes coule { from { stroke-dashoffset: 242; } to { stroke-dashoffset: 0; } }
+@keyframes tourne { to { transform: translate(-50%, -50%) rotate(360deg); } }
+.constellation > svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.fil { fill: none; stroke: url(#vitrine-fil); stroke-width: 2.5; stroke-linecap: round; opacity: .55; }
+.pouls {
+  fill: none;
+  stroke: url(#vitrine-pouls);
+  stroke-width: 5;
+  stroke-linecap: round;
+  stroke-dasharray: 16 100;
+  stroke-dashoffset: 16;
+}
+.pSeance { animation: pouls1 11s linear infinite; }
+.pRepas { animation: pouls2 11s linear infinite; }
+.pRang, .pGuide { animation: pouls3 11s linear infinite; stroke-dashoffset: -100; }
+@keyframes pouls1 { 0%, 4% { stroke-dashoffset: 16; } 13%, 100% { stroke-dashoffset: -100; } }
+@keyframes pouls2 { 0%, 54% { stroke-dashoffset: 16; } 63%, 100% { stroke-dashoffset: -100; } }
+@keyframes pouls3 {
+  0%, 14% { stroke-dashoffset: -100; }
+  24% { stroke-dashoffset: 16; }
+  24.01%, 64% { stroke-dashoffset: -100; }
+  74% { stroke-dashoffset: 16; }
+  74.01%, 100% { stroke-dashoffset: -100; }
+}
 .coeur {
   position: absolute;
   left: 50%; top: 50%;
@@ -524,12 +819,25 @@
   position: absolute;
   inset: -18%;
   border-radius: 50%;
-  background: radial-gradient(closest-side, rgba(167, 139, 250, .22), transparent);
-  animation: pulse 3.2s ease-in-out infinite;
+  background: radial-gradient(closest-side, rgba(167, 139, 250, .34), transparent);
+  animation: battement 11s ease-out infinite;
   z-index: -1;
 }
-@keyframes pulse { 0%, 100% { transform: scale(.9); opacity: .7; } 50% { transform: scale(1.12); opacity: 1; } }
-.coeur img { width: 58%; height: auto; }
+@keyframes battement {
+  0%, 12% { transform: scale(.9); opacity: .5; }
+  16% { transform: scale(1.3); opacity: 1; }
+  26%, 62% { transform: scale(.9); opacity: .5; }
+  66% { transform: scale(1.3); opacity: 1; }
+  76%, 100% { transform: scale(.9); opacity: .5; }
+}
+.coeur img { width: 58%; height: auto; animation: coeurImg 11s ease-out infinite; }
+@keyframes coeurImg {
+  0%, 12% { transform: scale(1); }
+  15% { transform: scale(1.12); }
+  22%, 62% { transform: scale(1); }
+  65% { transform: scale(1.12); }
+  72%, 100% { transform: scale(1); }
+}
 .noeud {
   position: absolute;
   width: 38%;
@@ -541,28 +849,65 @@
   box-shadow: 0 24px 40px -28px rgba(80, 40, 140, .6), 0 0 0 1px rgba(120, 90, 180, .08);
   text-align: left;
 }
+.noeud::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  box-shadow: 0 0 0 2px #A66CF4, 0 0 26px 2px rgba(166, 108, 244, .4);
+  opacity: 0;
+}
+.nSeance::after { animation: anneauA 11s ease-out infinite; }
+.nRepas::after { animation: anneauB 11s ease-out infinite; }
+.nRang::after, .nGuide::after { animation: anneauC 11s ease-out infinite; }
+@keyframes anneauA { 0%, 1% { opacity: 0; } 3%, 12% { opacity: 1; } 22%, 100% { opacity: 0; } }
+@keyframes anneauB { 0%, 51% { opacity: 0; } 53%, 62% { opacity: 1; } 72%, 100% { opacity: 0; } }
+@keyframes anneauC { 0%, 23% { opacity: 0; } 25%, 34% { opacity: 1; } 44%, 73% { opacity: 0; } 75%, 84% { opacity: 1; } 94%, 100% { opacity: 0; } }
 .noeud b { display: flex; align-items: center; gap: 7px; font-size: 16px; font-weight: 800; }
-.noeud b i { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 9px; font-style: normal; font-size: 13px; }
-.noeud span { display: block; margin-top: 3px; font-size: 13px; line-height: 1.35; color: var(--encre-2); }
+.noeud b i { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 9px; font-style: normal; flex: none; }
+.noeud > span { display: block; margin-top: 3px; font-size: 13px; line-height: 1.35; color: var(--encre-2); }
+.pastille {
+  position: absolute;
+  z-index: 2;
+  left: 12px;
+  top: -14px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 800;
+  line-height: 1.3;
+  white-space: nowrap;
+  opacity: 0;
+}
+.fait { color: var(--fait-encre); background: var(--fait-fond); }
+.exp { color: #5B3FC4; background: #F3EEFF; box-shadow: 0 0 0 1px rgba(139, 92, 246, .25); }
+.sait { color: #A0309E; background: #FDEBFB; }
+.tA1 { animation: pastA1 11s var(--ease) infinite; }
+.tA2 { animation: pastA2 11s var(--ease) infinite; }
+.tB1 { animation: pastB1 11s var(--ease) infinite; }
+.tB2 { animation: pastB2 11s var(--ease) infinite; }
+@keyframes pastA1 { 0%, 1% { opacity: 0; transform: translateY(6px); } 3%, 44% { opacity: 1; transform: none; } 47%, 100% { opacity: 0; transform: translateY(-4px); } }
+@keyframes pastA2 { 0%, 23% { opacity: 0; transform: translateY(6px) scale(.9); } 25.5% { opacity: 1; transform: scale(1.08); } 28%, 44% { opacity: 1; transform: none; } 47%, 100% { opacity: 0; transform: translateY(-4px); } }
+@keyframes pastB1 { 0%, 51% { opacity: 0; transform: translateY(6px); } 53%, 94% { opacity: 1; transform: none; } 97%, 100% { opacity: 0; transform: translateY(-4px); } }
+@keyframes pastB2 { 0%, 73% { opacity: 0; transform: translateY(6px) scale(.9); } 75.5% { opacity: 1; transform: scale(1.08); } 78%, 94% { opacity: 1; transform: none; } 97%, 100% { opacity: 0; transform: translateY(-4px); } }
 @media (max-width: 520px) {
   .noeud { width: 44%; padding: 10px; }
-  .noeud span { display: none; }
+  .noeud > span { display: none; }
+  .pastille { left: 6px; }
 }
 
 /* ═══════════════ 5 · LE CHEMIN ═══════════════ */
-.chemin {
-  background:
-    #FFFFFF;
-}
+.chemin { background: var(--creme); }
 .etapes {
   margin: 44px 0 0;
-  padding: 0;
+  padding: 0 0 14px;
   list-style: none;
   display: flex;
   gap: 14px;
   overflow-x: auto;
   scroll-snap-type: x mandatory;
-  padding-bottom: 14px;
   scrollbar-width: none;
 }
 .etapes::-webkit-scrollbar { display: none; }
@@ -570,16 +915,30 @@
   .etapes { display: grid; grid-template-columns: repeat(4, 1fr); overflow: visible; }
 }
 .etape {
+  position: relative;
   flex: 0 0 78%;
   scroll-snap-align: center;
   border-radius: 26px;
   overflow: hidden;
   background: #fff;
   box-shadow: 0 30px 50px -40px rgba(80, 40, 140, .55), 0 0 0 1px rgba(120, 90, 180, .07);
-  transition: transform .35s var(--ease);
 }
-.etape:hover { transform: translateY(-6px); }
-.etape[data-derniere] { box-shadow: 0 0 0 2px #C9A7FF, 0 30px 50px -30px rgba(139, 92, 246, .6); }
+.etape::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  box-shadow: inset 0 0 0 2px #C9A7FF;
+  opacity: 0;
+}
+/* Sur ordinateur, les quatre cartes s'allument à tour de rôle. */
+@media (min-width: 960px) {
+  .etape { animation: etapeMonte 12s var(--ease) infinite; animation-delay: calc(var(--i) * 3s - 12s); }
+  .etape::after { animation: etapeAnneau 12s ease infinite; animation-delay: calc(var(--i) * 3s - 12s); }
+}
+@keyframes etapeMonte { 0%, 25%, 100% { transform: none; } 3%, 22% { transform: translateY(-8px); } }
+@keyframes etapeAnneau { 0%, 25%, 100% { opacity: 0; } 3%, 22% { opacity: 1; } }
 .etapePhoto { position: relative; aspect-ratio: 4 / 3; }
 .etapeRepere {
   position: absolute; left: 12px; bottom: -22px; z-index: 2;
@@ -593,10 +952,12 @@
 .etapeCorps p { margin: 6px 0 0; font-size: 13px; line-height: 1.5; color: var(--encre-2); }
 .pastilles { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
 .pastilles span { padding: 4px 10px; border-radius: 999px; font-size: 11px; font-weight: 800; }
+.note { margin: 16px 0 0; text-align: center; font-size: 13px; color: var(--encre-3); }
 
 /* ═══════════════ 6 · NUTRITION ═══════════════ */
-.nutrition { background: #FBF9FF; }
+.nutrition { background: #FFF9F3; }
 .nutriGrille { display: grid; gap: 44px; align-items: center; }
+.nutriGrille > * { min-width: 0; }
 @media (min-width: 960px) { .nutriGrille { grid-template-columns: .95fr 1.05fr; gap: 64px; } }
 .assiette {
   position: relative;
@@ -605,31 +966,28 @@
   aspect-ratio: 4 / 5;
   border-radius: 32px;
   overflow: hidden;
-  box-shadow: 0 50px 80px -50px rgba(80, 30, 40, .55);
+  background: #F3E8DA;
+  box-shadow: 0 50px 80px -50px rgba(120, 60, 20, .6);
 }
+.plat { position: absolute; inset: 0; opacity: 0; transition: opacity .7s ease; }
+.plat.on { opacity: 1; }
 .scan {
-  position: absolute;
-  inset: 0;
-  z-index: 2;
-  pointer-events: none;
-  background:
-    linear-gradient(rgba(255, 255, 255, .9), rgba(255, 255, 255, .9)) 0 0 / 34px 3px no-repeat,
-    linear-gradient(rgba(255, 255, 255, .9), rgba(255, 255, 255, .9)) 0 0 / 3px 34px no-repeat,
-    linear-gradient(rgba(255, 255, 255, .9), rgba(255, 255, 255, .9)) 100% 0 / 34px 3px no-repeat,
-    linear-gradient(rgba(255, 255, 255, .9), rgba(255, 255, 255, .9)) 100% 0 / 3px 34px no-repeat,
-    linear-gradient(rgba(255, 255, 255, .9), rgba(255, 255, 255, .9)) 0 100% / 34px 3px no-repeat,
-    linear-gradient(rgba(255, 255, 255, .9), rgba(255, 255, 255, .9)) 0 100% / 3px 34px no-repeat,
-    linear-gradient(rgba(255, 255, 255, .9), rgba(255, 255, 255, .9)) 100% 100% / 34px 3px no-repeat,
-    linear-gradient(rgba(255, 255, 255, .9), rgba(255, 255, 255, .9)) 100% 100% / 3px 34px no-repeat;
-  margin: 22px;
-}
-.ligneScan {
   position: absolute;
   inset: 22px;
   z-index: 2;
   pointer-events: none;
-  animation: balaie 3.4s ease-in-out infinite;
+  background:
+    linear-gradient(rgba(255, 255, 255, .92), rgba(255, 255, 255, .92)) 0 0 / 34px 3px no-repeat,
+    linear-gradient(rgba(255, 255, 255, .92), rgba(255, 255, 255, .92)) 0 0 / 3px 34px no-repeat,
+    linear-gradient(rgba(255, 255, 255, .92), rgba(255, 255, 255, .92)) 100% 0 / 34px 3px no-repeat,
+    linear-gradient(rgba(255, 255, 255, .92), rgba(255, 255, 255, .92)) 100% 0 / 3px 34px no-repeat,
+    linear-gradient(rgba(255, 255, 255, .92), rgba(255, 255, 255, .92)) 0 100% / 34px 3px no-repeat,
+    linear-gradient(rgba(255, 255, 255, .92), rgba(255, 255, 255, .92)) 0 100% / 3px 34px no-repeat,
+    linear-gradient(rgba(255, 255, 255, .92), rgba(255, 255, 255, .92)) 100% 100% / 34px 3px no-repeat,
+    linear-gradient(rgba(255, 255, 255, .92), rgba(255, 255, 255, .92)) 100% 100% / 3px 34px no-repeat;
 }
+.ligneScan { position: absolute; inset: 22px; z-index: 2; pointer-events: none; opacity: 0; }
+.ligneScan.passe { opacity: 1; animation: balaie 2.4s cubic-bezier(.45, 0, .55, 1) both; }
 .ligneScan::before {
   content: "";
   position: absolute;
@@ -639,7 +997,9 @@
   background: linear-gradient(90deg, transparent, #fff, transparent);
   box-shadow: 0 0 22px 6px rgba(255, 255, 255, .7);
 }
-@keyframes balaie { 0%, 100% { transform: translate3d(0, 0, 0); } 50% { transform: translate3d(0, 100%, 0); } }
+@keyframes balaie { from { transform: translate3d(0, 0, 0); } to { transform: translate3d(0, 100%, 0); } }
+/* Chaque étiquette est CENTRÉE sur son aliment (Louis, 2026-10-13 : « le
+   saumon sur le riz »). Changer de photo = refaire ces positions, dans `PLATS`. */
 .macro {
   position: absolute;
   z-index: 3;
@@ -647,35 +1007,33 @@
   border-radius: 14px;
   font-size: 13px;
   font-weight: 750;
-  background: rgba(255, 255, 255, .95);
+  background: rgba(255, 255, 255, .96);
   box-shadow: 0 14px 28px -16px rgba(40, 20, 30, .7);
   white-space: nowrap;
+  transform: translate(-50%, -50%) scale(.8);
+  opacity: 0;
+  transition: opacity .25s ease, transform .4s cubic-bezier(.3, 1.6, .5, 1);
 }
+.macro.vu { opacity: 1; transform: translate(-50%, -50%); }
 .macro b { font-weight: 800; }
-/* Chaque étiquette est CENTRÉE sur son aliment (Louis, 2026-10-13 : « le
-   saumon sur le riz »). La photo est carrée et le cadre en 4:5 en
-   `object-cover` : elle est rognée de 12,5 % de chaque côté, donc un point
-   (x, y) de l'image de 800 px tombe à x / 640 − 0,125 et y / 800 du cadre.
-   Points visés sur `poke-bowl-saumon-avocat.jpg` : riz (272, 568),
-   saumon (221, 280), avocat (464, 376). Changer de photo = refaire ces calculs. */
-.macroA, .macroB, .macroC { transform: translate(-50%, -50%); }
-.macroA { left: 30%; top: 71%; }
-.macroB { left: 22%; top: 35%; }
-.macroC { left: 60%; top: 47%; }
 .resultat {
   position: absolute;
   z-index: 3;
-  left: 50%; bottom: 22px;
-  transform: translateX(-50%);
+  left: 50%;
+  bottom: 22px;
   padding: 10px 16px;
   border-radius: 18px;
   color: #fff;
   font-size: 13px;
   font-weight: 700;
-  background: rgba(28, 22, 38, .82);
+  background: rgba(28, 22, 38, .84);
   white-space: nowrap;
+  transform: translate(-50%, 10px);
+  opacity: 0;
+  transition: opacity .3s ease, transform .4s var(--ease);
 }
-.resultat b { font-size: 20px; margin-right: 4px; }
+.resultat.vu { opacity: 1; transform: translate(-50%, 0); }
+.resultat b { font-size: 20px; margin: 0 2px 0 4px; }
 .listeNutri { margin: 24px 0 0; padding: 0; list-style: none; display: grid; gap: 10px; }
 .listeNutri li {
   display: flex; gap: 12px; align-items: flex-start;
@@ -688,38 +1046,54 @@
 .listeNutri b { display: block; font-size: 16px; }
 .listeNutri span { font-size: 13px; color: var(--encre-2); }
 
-/* ═══════════════ 7 · LES RANGS ═══════════════ */
-.rangs {
-  /* Clair, comme le reste de la page (Louis, 2026-10-12). */
-  background: #FFFFFF;
+/* ═══════════════ 7 · LES RANGS ═══════════════
+   Le compteur monte de 0 au dernier seuil, et chaque rang s'allume quand il
+   est atteint. Sans script, ils sont tous allumés : `data-anime` les éteint. */
+.rangs { background: radial-gradient(60% 30% at 50% 74%, rgba(245, 177, 32, .13), transparent 100%), #FFFFFF; }
+.compteur {
+  margin: 34px auto 0;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 8px 18px;
+  border-radius: 999px;
+  background: #F6F1FF;
+  color: #5B3FC4;
+  font-size: 16px;
+  font-weight: 700;
 }
+.compteur b { font-size: 26px; font-weight: 700; min-width: 4ch; text-align: right; }
 .escalier {
-  margin: 56px auto 0;
+  margin: 26px auto 0;
   max-width: 900px;
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   align-items: end;
   gap: 6px;
   padding: 0;
   list-style: none;
 }
-.marche { display: flex; flex-direction: column; align-items: center; text-align: center; }
-.gemme { position: relative; width: 100%; max-width: 110px; aspect-ratio: 1; }
+.marche { display: flex; flex-direction: column; align-items: center; text-align: center; min-width: 0; }
+.gemme {
+  position: relative;
+  width: 100%;
+  max-width: 110px;
+  aspect-ratio: 1;
+  transition: opacity .45s ease, transform .55s cubic-bezier(.3, 1.7, .5, 1);
+}
 .gemme::after {
   content: "";
   position: absolute;
-  inset: 12%;
+  inset: 2%;
   border-radius: 50%;
-  background: radial-gradient(closest-side, rgba(167, 139, 250, .28), transparent);
+  background: radial-gradient(closest-side, rgba(167, 139, 250, .6), transparent);
   z-index: -1;
-  animation: pulse 4s ease-in-out infinite;
+  opacity: 0;
+  transition: opacity .5s ease;
 }
-.marche:nth-child(2) .gemme::after { animation-delay: -.6s; }
-.marche:nth-child(3) .gemme::after { animation-delay: -1.2s; }
-.marche:nth-child(4) .gemme::after { animation-delay: -1.8s; }
-.marche:nth-child(5) .gemme::after { animation-delay: -2.4s; }
-.marche:nth-child(6) .gemme::after { animation-delay: -3s; }
 .socle {
+  position: relative;
+  overflow: hidden;
   width: 100%;
   margin-top: 8px;
   border-radius: 14px 14px 0 0;
@@ -728,13 +1102,30 @@
   border-bottom: 0;
   padding-top: 10px;
 }
-.socle b { display: block; font-size: 13px; font-weight: 800; }
+.socle::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: linear-gradient(180deg, #C9A7FF, #F0E6FF);
+  transform: translateY(100%);
+  transition: transform .7s var(--ease);
+}
+.socle b, .socle span { position: relative; z-index: 1; }
+.socle b { display: block; font-size: 13px; font-weight: 800; font-variation-settings: "wdth" 86; letter-spacing: -.01em; }
 .socle span { display: block; margin-top: 2px; font-size: 11px; color: var(--encre-3); }
-@media (min-width: 768px) { .socle b { font-size: 16px; } }
+@media (min-width: 768px) { .socle b { font-size: 16px; font-variation-settings: "wdth" 100; } }
+.escalier[data-anime] .marche .gemme { opacity: .28; transform: scale(.86); }
+.escalier[data-anime] .marche.atteint .gemme { opacity: 1; transform: none; }
+.escalier[data-anime] .marche.atteint .socle::before { transform: none; }
+.escalier[data-anime] .marche.atteint .socle span { color: #4A3596; }
+.escalier[data-anime] .marche.ici .gemme { transform: scale(1.1); }
+.escalier[data-anime] .marche.ici .gemme::after { opacity: 1; }
 
 /* ═══════════════ 8 · LE RELAIS ═══════════════ */
-.relais { background: #FBF9FF; }
+.relais { background: #FFF6F2; }
 .relaisGrille { display: grid; gap: 44px; align-items: center; }
+.relaisGrille > * { min-width: 0; }
 @media (min-width: 960px) { .relaisGrille { grid-template-columns: 1fr 1fr; gap: 64px; } }
 .affiche {
   position: relative;
@@ -787,9 +1178,11 @@
 @keyframes trait3 { 0%, 50% { transform: scaleX(0); } 54%, 95% { transform: scaleX(1); } 100% { transform: scaleX(0); } }
 @keyframes trait4 { 0%, 66.667% { transform: scaleX(0); } 70.667%, 95% { transform: scaleX(1); } 100% { transform: scaleX(0); } }
 
-/* ═══════════════ 9 · LE COMPTE GRATUIT + VAIIYA+ ═══════════════ */
-.offre { background: var(--creme); }
+/* ═══════════════ 9 · LE COMPTE GRATUIT + VAIIYA+ ═══════════════
+   Le fond se réchauffe vers le bas de la page : c'est le soir qui approche. */
+.offre { background: linear-gradient(#FFF6F2 0, var(--creme) 22%, var(--creme) 62%, #FFF2F5 100%); }
 .offreGrille { display: grid; gap: 16px; margin-top: 44px; }
+.offreGrille > * { min-width: 0; }
 @media (min-width: 900px) { .offreGrille { grid-template-columns: 1.3fr 1fr; } }
 .offreCarte {
   border-radius: 30px;
@@ -809,8 +1202,7 @@
 .plus {
   position: relative;
   overflow: hidden;
-  background:
-    #FFFFFF;
+  background: #FFFFFF;
   box-shadow: 0 0 0 1.5px rgba(245, 177, 32, .55), 0 30px 60px -44px rgba(80, 40, 140, .4);
 }
 .plus ul { grid-template-columns: 1fr !important; }
@@ -821,11 +1213,12 @@
   display: inline-block; margin-top: 10px;
   padding: 5px 11px; border-radius: 999px;
   font-size: 11px; font-weight: 800;
-  color: #8A5A06; background: rgba(255, 255, 255, .7);
+  color: #8A5A06; background: #FFF5DF;
 }
 
 /* ═══════════════ 10 · AVIS + FIN ═══════════════ */
-.avis { background: #FBF8FF; }
+/* La couleur exacte du bas de l'offre et du haut du crépuscule. */
+.avis { background: #FFF2F5; }
 .avisGrille { margin-top: 40px; display: grid; gap: 14px; text-align: left; }
 @media (min-width: 900px) { .avisGrille { grid-template-columns: repeat(3, 1fr); } }
 .avisCarte {
@@ -834,16 +1227,45 @@
 }
 .avisCarte p { margin: 10px 0 0; font-size: 16px; line-height: 1.55; color: var(--encre-2); }
 
+/* Le même ciel, retourné, puis le néon quand la nuit tombe. */
+.fin, .pied {
+  --f-fond: var(--nuit);
+  --f-encre: #fff;
+  --f-encre-2: rgba(255, 255, 255, .76);
+  --f-encre-3: rgba(255, 255, 255, .6);
+  --f-lien: #D9C8FF;
+  --f-filet: rgba(255, 255, 255, .12);
+}
 .fin {
   position: relative;
   overflow: hidden;
   text-align: center;
-  padding: 110px 0 120px;
-  background:
-    radial-gradient(70% 60% at 50% 110%, rgba(167, 139, 250, .2), transparent 70%),
-    #FFFFFF;
+  padding: 0 0 110px;
+  color: var(--f-encre);
+  /* ⚠️ Le haut de la fin est déjà de la couleur de la page sur 24 px, et le
+     canevas commence en dessous (`clip-path`), pour la même raison qu'au bas
+     du héros : une hauteur fractionnaire laisserait une ligne. */
+  background: linear-gradient(#FFF2F5 24px, var(--f-fond) 24px);
 }
-.finLogo { width: 76px; height: auto; margin: 0 auto 22px; animation: flotte 7s ease-in-out infinite; }
+.fin .fond { clip-path: inset(24px 0 0 0); }
+/* Mesure la hauteur du passage pour le script. */
+.sonde { position: absolute; top: 0; left: 0; width: 0; height: var(--crepuscule); pointer-events: none; }
+/* Sans WebGL, le logo reste là, sous le canevas qui le recouvre d'habitude. */
+.finLogo {
+  position: absolute;
+  z-index: 0;
+  left: 50%;
+  top: calc(var(--crepuscule) + 34px);
+  width: 300px;
+  height: auto;
+  transform: translateX(-50%);
+}
+.fin .fond { z-index: 0; }
+.finCorps { position: relative; z-index: 2; padding-top: calc(var(--crepuscule) + 292px); }
+@media (min-width: 768px) {
+  .finLogo { top: calc(var(--crepuscule) + 44px); width: 370px; }
+  .finCorps { padding-top: calc(var(--crepuscule) + 356px); }
+}
 .finTitre {
   margin: 0 auto;
   max-width: 16ch;
@@ -854,16 +1276,29 @@
   letter-spacing: -.03em;
   text-wrap: balance;
 }
+.finTitre .accent { background-image: linear-gradient(100deg, #C9A7FF 0%, #F2A6D6 55%, #FFC58C 100%); }
+.finTexte { margin: 18px auto 30px; max-width: 44ch; font-size: 16px; line-height: 1.6; color: var(--f-encre-2); }
+.finNote { margin: 16px 0 0; font-size: 13px; color: var(--f-encre-3); }
+.finNote a { color: var(--f-lien); font-weight: 700; }
 
-.pied { padding: 48px 0 40px; background: #fff; border-top: 1px solid rgba(120, 90, 180, .1); }
+.pied {
+  position: relative;
+  z-index: 2;
+  padding: 44px 0 40px;
+  background: var(--f-fond);
+  text-align: left;
+  color: var(--f-encre-2);
+  border-top: 1px solid var(--f-filet);
+}
 .piedGrille { display: grid; gap: 32px; }
 @media (min-width: 700px) { .piedGrille { grid-template-columns: 1.2fr 1fr 1fr; } }
-.pied p { margin: 8px 0 0; max-width: 30ch; font-size: 13px; line-height: 1.6; color: var(--encre-3); }
-.pied h4 { margin: 0 0 12px; font-size: 11px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; color: var(--encre-3); }
+.pied .marque { color: var(--f-encre); }
+.pied p { margin: 8px 0 0; max-width: 30ch; font-size: 13px; line-height: 1.6; color: var(--f-encre-3); }
+.pied h4 { margin: 0 0 12px; font-size: 11px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; color: var(--f-encre-3); }
 .pied ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 4px; }
-.pied li a { display: inline-block; padding: 4px 0; font-size: 13px; color: var(--encre-2); }
-.pied li a:hover { color: var(--lien); }
-.copyright { margin-top: 36px; padding-top: 20px; font-size: 13px; color: var(--encre-3); border-top: 1px solid rgba(120, 90, 180, .08); }
+.pied li a { display: inline-block; padding: 4px 0; font-size: 13px; color: var(--f-encre-2); }
+.pied li a:hover { color: var(--f-lien); }
+.pied .copyright { margin: 36px 0 0; max-width: none; padding-top: 20px; font-size: 13px; color: var(--f-encre-3); border-top: 1px solid var(--f-filet); }
 
 /* ═══════════════ RÉVÉLATION AU DÉFILEMENT ═══════════════
    `data-attente` n'est posé QUE par le script, et QUE sur ce qui est sous le
@@ -878,11 +1313,11 @@
     transition: none !important;
   }
   .revele[data-attente] { opacity: 1; transform: none; }
-  .conversation[data-armee] [data-pas] { opacity: 1; transform: none; }
   .rail { flex-wrap: nowrap; }
-  .bandeau { overflow-x: auto; }
+  .bandeau, .lignes { overflow-x: auto; }
   /* Sans mouvement, l'affiche finie et les quatre traits pleins disent la
      même chose : le relais gagné. */
   .maillons i::after { transform: scaleX(1); }
-  .affiche > div:last-child { opacity: 1; }
+  .affiche > div:last-of-type { opacity: 1; }
+  .pouls { display: none; }
 }

@@ -159,6 +159,7 @@ type Replique = { commun: Rendu; nora?: Rendu; sasha?: Rendu };
      nutrition.* la question d'entrée du pilier nutrition
      semaine.*  ce qu'il lit dans la semaine qu'on regarde
      rang.*     ce qu'il dit au moment où un rang se gagne
+     vitrine.*  ce qu'il répond dans la démonstration de vaiiya.fr
    ------------------------------------------------------------------ */
 const REPLIQUES = {
   /* ── Les cartes ──
@@ -725,6 +726,23 @@ const REPLIQUES = {
   },
   "proposition.programmee": {
     commun: (c: ContexteVoix) => `C’est calé : « ${c.titre ?? ""} » ${c.jour ?? ""}.`,
+  },
+
+  /* ── La conversation de la vitrine ──
+     Sur vaiiya.fr, le Guide joue trois scènes en boucle. Dans l'app, ces
+     réponses-là viennent du coach ; le reste de la scène reprend les vraies
+     phrases (`ouverture.*`, `proposition.programmee`). */
+  "vitrine.seance": {
+    commun: "Parfait, de quoi faire une belle séance.",
+  },
+  "vitrine.repas": {
+    commun: "Voilà mon estimation. Je le note ?",
+  },
+  "vitrine.repas_note": {
+    commun: "C’est noté dans ton déjeuner.",
+  },
+  "vitrine.deplacer": {
+    commun: "Je la mets à jeudi. Tu valides ?",
   },
 
   /* ── Quand ça ne répond pas ──
