@@ -17,6 +17,17 @@
     linear-gradient(180deg, #F3EEFF 0%, #FAF8FF 45%, #FFF6FB 100%);
 }
 
+/* ⚠️ UN CHAMP D'ICI NE SUIT PAS LE MODE SOMBRE (Louis, 2026-11-04 : des champs
+   grisés sur un téléphone en sombre). La règle `[data-theme="dark"] input` de
+   globals.css n'est dans aucune couche, elle l'emportait sur `bg-transparent`
+   et sur le `placeholder:` de Tailwind, qui en sont une. */
+.page input.champ { background: transparent; color: #1C1626; }
+.page input.champ::placeholder { color: #7B7389; opacity: 1; }
+.page input.champ:-webkit-autofill {
+  -webkit-text-fill-color: #1C1626;
+  transition: background-color 9999s ease-out;
+}
+
 /* Le texte du côté gauche, sur ordinateur seulement. */
 .cote { display: none; }
 

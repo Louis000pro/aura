@@ -242,9 +242,8 @@ function Mouvements({ chiffres }: { chiffres: ChiffresPublics }) {
   return (
     <section id={DISCOVER_ANCHOR} className={`${s.mouvements} scroll-mt-4`}>
       <div className={`${s.wrap} ${s.centre}`} data-reveal>
-        <Surtitre>Montrés, pas expliqués</Surtitre>
         <h2 className={s.titre}>
-          <span className="vy-nombre" style={{ fontWeight: 800 }}>{chiffres.mouvements}</span> mouvements <span className={s.accent}>qui bougent.</span>
+          <span className="vy-nombre" style={{ fontWeight: 800 }}>{chiffres.mouvements}</span> mouvements, <span className={s.accent}>montrés et expliqués.</span>
         </h2>
         <p className={s.chapo}>
           Chaque exercice est montré pose après pose. Tu suis une des {chiffres.seances} séances guidées,
@@ -289,7 +288,7 @@ function PieceRepas() {
         <div>
           <small>Repas à noter · Déjeuner</small>
           <b>Poke bowl saumon-avocat</b>
-          <p>~<span className="vy-nombre">640</span> kcal · <span className="vy-nombre">39</span> g de protéines</p>
+          <p>~<span className="vy-nombre">745</span> kcal · <span className="vy-nombre">37</span> g de protéines</p>
         </div>
       </div>
       <div className={s.pieceBouton} data-bouton>Noter le repas</div>
@@ -508,15 +507,15 @@ const ETAPES: Etape[] = [
   { quand: "Jour 1", titre: "12 minutes dans ton salon.", texte: "Ta première séance, sans matériel. Tu la fais en entier.",
     photo: "/entrainement/cat-sansmateriel.webp", repere: "/rangs/rank-01-bronze.png",
     pastilles: [{ texte: "+30 EXP", ton: "violet" }, { texte: "Bronze", ton: "violet" }] },
-  { quand: "Semaine 2", titre: "Ta série tient, même les jours chargés.", texte: "Une séance ou un repas noté suffit pour la garder.",
+  { quand: "Semaine 1", titre: "Ta série tient, même les jours chargés.", texte: "Une séance ou un repas noté suffit pour la garder.",
     photo: "/entrainement/cardio-saut.webp", repere: "/rangs/rank-02-argent.png",
-    pastilles: [{ texte: "10 jours", ton: "feu" }, { texte: "Argent", ton: "violet" }] },
+    pastilles: [{ texte: "7 jours", ton: "feu" }, { texte: "Argent", ton: "violet" }] },
   { quand: "Mois 1", titre: "Tu entraînes un ami avec toi.", texte: "Votre relais révèle une affiche, séance après séance.",
-    photo: "/vitrine/course-ville.webp", repere: "/defis/sillage/04.webp",
-    pastilles: [{ texte: "Relais gagné", ton: "teal" }] },
-  { quand: "Mois 3", titre: "Tu y vas sans te poser la question.", texte: "C’est devenu une partie de toi.",
-    photo: "/vitrine/coureuse-aube.webp", repere: "/rangs/rank-03-or.png",
-    pastilles: [{ texte: "Or", ton: "violet" }, { texte: "63 jours", ton: "feu" }] },
+    photo: "/vitrine/course-ville.webp", repere: "/rangs/rank-03-or.png",
+    pastilles: [{ texte: "Relais gagné", ton: "teal" }, { texte: "Or", ton: "violet" }] },
+  { quand: "Mois 6", titre: "Le dernier rang est à toi.", texte: "Ton pseudo passe en lumière sur ton profil.",
+    photo: "/vitrine/coureuse-aube.webp", repere: "/rangs/rank-06-eternel.png",
+    pastilles: [{ texte: "Éternel", ton: "violet" }] },
 ];
 
 const TON = {
@@ -530,11 +529,10 @@ function Chemin() {
     <section className={`${s.section} ${s.chemin}`}>
       <div className={s.wrap}>
         <div className={s.centre} data-reveal>
-          <Surtitre>Dans trois mois</Surtitre>
-          <h2 className={s.titre}>Tu iras t’entraîner <span className={s.accent}>sans y penser.</span></h2>
+          <Surtitre>Dans six mois</Surtitre>
+          <h2 className={s.titre}>Tu commences Bronze. <span className={s.accent}>Tu vises Éternel.</span></h2>
           <p className={s.chapo}>
-            Vaiiya transforme l’envie en habitude : une séance à ta mesure, des repas suivis,
-            et quelqu’un pour te relancer au bon moment.
+            Une séance à ta mesure, des repas suivis, et quelqu’un pour te relancer au bon moment.
           </p>
         </div>
         <ol className={s.etapes} data-vivant>
@@ -565,21 +563,28 @@ function Chemin() {
 
 /* ═══════════════ 6 · NUTRITION ═══════════════ */
 
-/* `x` et `y` : le centre de l'aliment sur la photo recadrée, en %. */
+/* `x` et `y` : le centre de l'aliment sur la photo recadrée, en %.
+   ⚠️ CHAQUE ALIMENT DE LA PHOTO EST COMPTÉ (Louis, 2026-11-04 : on ne vend pas
+   une estimation qui oublie la moitié de l'assiette). Le total est la somme de
+   ce qu'on voit, poids estimés sur la photo, valeurs proches de Ciqual, sauce
+   et huile comprises, comme le fait l'analyse de l'app (`calculerRepas`). */
 const PLATS = [
-  { photo: "/recipes/poke-bowl-saumon-avocat.jpg", kcal: 640, macros: [
-    { nom: "Saumon", g: 120, x: 24, y: 35 },
-    { nom: "Avocat", g: 60, x: 62, y: 47 },
-    { nom: "Riz", g: 150, x: 32, y: 71 },
+  { photo: "/recipes/poke-bowl-saumon-avocat.jpg", kcal: 745, macros: [
+    { nom: "Concombre", g: 70, x: 66, y: 21 },
+    { nom: "Saumon", g: 130, x: 20, y: 37 },
+    { nom: "Avocat", g: 70, x: 56, y: 46 },
+    { nom: "Chou rouge", g: 40, x: 80, y: 56 },
+    { nom: "Riz", g: 150, x: 30, y: 72 },
+    { nom: "Edamame", g: 35, x: 62, y: 79 },
   ] },
-  { photo: "/recipes/saumon-roti-et-patate-douce.jpg", kcal: 560, macros: [
-    { nom: "Saumon", g: 130, x: 70, y: 30 },
-    { nom: "Patate douce", g: 150, x: 26, y: 42 },
-    { nom: "Brocoli", g: 120, x: 50, y: 70 },
+  { photo: "/recipes/saumon-roti-et-patate-douce.jpg", kcal: 612, macros: [
+    { nom: "Saumon", g: 160, x: 68, y: 30 },
+    { nom: "Patate douce", g: 180, x: 26, y: 42 },
+    { nom: "Brocoli", g: 130, x: 50, y: 70 },
   ] },
-  { photo: "/recipes/steak-hache-patate-douce-rotie-et-haricots-verts.jpg", kcal: 430, macros: [
-    { nom: "Patate douce", g: 120, x: 33, y: 29 },
-    { nom: "Haricots verts", g: 120, x: 72, y: 50 },
+  { photo: "/recipes/steak-hache-patate-douce-rotie-et-haricots-verts.jpg", kcal: 438, macros: [
+    { nom: "Patate douce", g: 200, x: 33, y: 29 },
+    { nom: "Haricots verts", g: 150, x: 72, y: 50 },
     { nom: "Steak haché", g: 125, x: 36, y: 66 },
   ] },
 ];
@@ -666,7 +671,7 @@ function Relais() {
   return (
     <section className={`${s.section} ${s.relais}`}>
       <div className={`${s.wrap} ${s.relaisGrille}`}>
-        <div className={s.affiche} data-vivant aria-label="L’affiche Sillage qui se dévoile en quatre étapes" role="img">
+        <div className={s.affiche} data-vivant aria-label="L’affiche Sillage qui se dévoile en trois temps" role="img">
           {["01", "02", "03", "04"].map((n) => (
             <div key={n}>
               <Image src={`/defis/sillage/${n}.webp`} alt="" fill sizes="300px" className="object-cover" />
@@ -678,10 +683,9 @@ function Relais() {
           <Surtitre>À deux, c’est plus facile</Surtitre>
           <h2 className={s.titre}>Le relais : <span className={s.accent}>une affiche qui se révèle</span> à chaque séance.</h2>
           <p className={s.chapo}>
-            Lance-le avec un ami. Quatre séances à vous deux dans la semaine, et l’affiche est à vous.
-            Pas de classement, pas de reproche : on avance ensemble.
+            Lance-le avec un ami. Vos séances dévoilent l’affiche en trois temps, et elle est à vous deux.
           </p>
-          <div className={s.maillons} data-vivant aria-hidden><i /><i /><i /><i /></div>
+          <div className={s.maillons} data-vivant aria-hidden><i /><i /><i /></div>
         </div>
       </div>
     </section>
@@ -846,7 +850,7 @@ export default function LandingVitrine({ chiffres, avis }: { chiffres: ChiffresP
   useRevelation(racine);
   useVivante(racine);
   return (
-    <div ref={racine} className={s.page}>
+    <div ref={racine} className={`${s.page} vitrine-racine`}>
       <Heros chiffres={chiffres} />
       <div className={s.jour}>
         <Mouvements chiffres={chiffres} />

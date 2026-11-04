@@ -1137,23 +1137,22 @@
   box-shadow: 0 50px 80px -40px rgba(40, 20, 80, .6);
   transform: rotate(-3deg);
 }
-/* ⚠️ L'AFFICHE ET LES QUATRE TRAITS SUIVENT UNE SEULE HORLOGE DE 12 s, ET
-   C'EST LA RÈGLE DE L'APP (`etatPoster` dans lib/defi.ts) : zéro séance =
-   état 01, puis 1 → 02, 2 → 03, 3 → 03, 4 → 04. Une séance toutes les 2 s,
-   l'affiche complète tient jusqu'à 95 %, puis tout repart d'un coup.
-   Avant (Louis, 2026-10-13 : « ils ne se suivent pas »), chaque trait
-   avait sa propre boucle décalée : le 4ᵉ restait plein pendant que le 1ᵉʳ
-   se vidait, et l'affiche ne parlait pas aux traits.
+/* ⚠️ L'AFFICHE ET SES TROIS TRAITS SUIVENT UNE SEULE HORLOGE DE 12 s. L'app
+   compte quatre maillons, mais l'affiche ne change que trois fois
+   (`etatPoster`, lib/defi.ts) : le troisième maillon laissait donc un trait se
+   remplir devant une image qui ne bougeait pas (Louis, 2026-11-04 : « une étape
+   dans le vide »). La vitrine montre les trois changements de l'affiche, un
+   toutes les 3 s, et l'affiche complète tient jusqu'à 95 %.
    Les états s'EMPILENT (02 sur 01, 03 sur 02, 04 sur 03) : l'état 01 reste
    en dessous, sans animation, et tous les autres s'effacent ensemble. */
 .affiche > div { position: absolute; inset: 0; opacity: 0; }
 .affiche > div:first-child { opacity: 1; }
 .affiche > div:nth-child(2) { animation: seance1 12s linear infinite; }
 .affiche > div:nth-child(3) { animation: seance2 12s linear infinite; }
-.affiche > div:nth-child(4) { animation: seance4 12s linear infinite; }
-@keyframes seance1 { 0%, 16.667% { opacity: 0; } 20.667%, 95% { opacity: 1; } 100% { opacity: 0; } }
-@keyframes seance2 { 0%, 33.333% { opacity: 0; } 37.333%, 95% { opacity: 1; } 100% { opacity: 0; } }
-@keyframes seance4 { 0%, 66.667% { opacity: 0; } 70.667%, 95% { opacity: 1; } 100% { opacity: 0; } }
+.affiche > div:nth-child(4) { animation: seance3 12s linear infinite; }
+@keyframes seance1 { 0%, 21% { opacity: 0; } 25%, 95% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes seance2 { 0%, 46% { opacity: 0; } 50%, 95% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes seance3 { 0%, 71% { opacity: 0; } 75%, 95% { opacity: 1; } 100% { opacity: 0; } }
 .afficheSignature {
   position: absolute; z-index: 2; inset: auto 0 18px; text-align: center;
   color: #fff; font-size: 13px; font-weight: 300; letter-spacing: .3em;
@@ -1172,11 +1171,9 @@
 .maillons i:nth-child(1)::after { animation: trait1 12s linear infinite; }
 .maillons i:nth-child(2)::after { animation: trait2 12s linear infinite; }
 .maillons i:nth-child(3)::after { animation: trait3 12s linear infinite; }
-.maillons i:nth-child(4)::after { animation: trait4 12s linear infinite; }
-@keyframes trait1 { 0%, 16.667% { transform: scaleX(0); } 20.667%, 95% { transform: scaleX(1); } 100% { transform: scaleX(0); } }
-@keyframes trait2 { 0%, 33.333% { transform: scaleX(0); } 37.333%, 95% { transform: scaleX(1); } 100% { transform: scaleX(0); } }
-@keyframes trait3 { 0%, 50% { transform: scaleX(0); } 54%, 95% { transform: scaleX(1); } 100% { transform: scaleX(0); } }
-@keyframes trait4 { 0%, 66.667% { transform: scaleX(0); } 70.667%, 95% { transform: scaleX(1); } 100% { transform: scaleX(0); } }
+@keyframes trait1 { 0%, 21% { transform: scaleX(0); } 25%, 95% { transform: scaleX(1); } 100% { transform: scaleX(0); } }
+@keyframes trait2 { 0%, 46% { transform: scaleX(0); } 50%, 95% { transform: scaleX(1); } 100% { transform: scaleX(0); } }
+@keyframes trait3 { 0%, 71% { transform: scaleX(0); } 75%, 95% { transform: scaleX(1); } 100% { transform: scaleX(0); } }
 
 /* ═══════════════ 9 · LE COMPTE GRATUIT + VAIIYA+ ═══════════════
    Le fond se réchauffe vers le bas de la page : c'est le soir qui approche. */
@@ -1315,7 +1312,7 @@
   .revele[data-attente] { opacity: 1; transform: none; }
   .rail { flex-wrap: nowrap; }
   .bandeau, .lignes { overflow-x: auto; }
-  /* Sans mouvement, l'affiche finie et les quatre traits pleins disent la
+  /* Sans mouvement, l'affiche finie et les trois traits pleins disent la
      même chose : le relais gagné. */
   .maillons i::after { transform: scaleX(1); }
   .affiche > div:last-of-type { opacity: 1; }

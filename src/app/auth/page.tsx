@@ -69,7 +69,7 @@ function Field({
         spellCheck={name === "username" || name === "email" ? false : undefined}
         onFocus={() => setFocused(true)} onBlur={() => setFocused(false)}
         required={required} autoFocus={autoFocus}
-        className="flex-1 min-w-0 bg-transparent text-[16px] outline-none placeholder:text-[#7B7389]"
+        className={`flex-1 min-w-0 text-[16px] outline-none ${s.champ}`}
         style={{ color: ENCRE }} />
       {suffix}
     </div>
@@ -425,10 +425,10 @@ export default function AuthPage() {
 
   // Déjà connecté (ou en train d'entrer) : la redirection est en route, on
   // ne repeint pas un formulaire qui va disparaître dans la seconde.
-  if (entree || (!isLoading && user)) return <div className={s.page} aria-busy="true" />;
+  if (entree || (!isLoading && user)) return <div className={`${s.page} auth-racine`} aria-busy="true" />;
 
   return (
-    <div className={s.page}>
+    <div className={`${s.page} auth-racine`}>
 
       {/* ── Ordinateur : la phrase et les signes du chemin ── */}
       <div className={s.cote}>

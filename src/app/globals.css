@@ -411,6 +411,18 @@ html.perf-lite .nav-glass {
 html.a-session .accueil-attente { display: block; }
 html.a-session .accueil-landing { display: none; }
 
+/* LE DESSOUS DES PAGES QUI ONT LEUR PROPRE LUMIÈRE (Louis, 2026-11-04 : une
+   bande pâle sous le pied de la vitrine, une bande sombre sous /auth). La
+   vitrine et /auth écrivent leurs couleurs en dur, mais le fond de l'app reste
+   fixé derrière elles (`body::before`) et il suit le thème : dès que la page
+   rebondit, au pavé tactile ou au doigt, c'est lui qu'on voit. On retire donc
+   ce fond sur ces deux pages, le dessous prend leur couleur, et l'élastique
+   s'arrête : `overscroll-behavior` ne vaut pour la page entière que sur <html>. */
+html:not(.a-session):has(.vitrine-racine) { --html-bg: #0B0814; overscroll-behavior: none; }
+html:has(.auth-racine) { --html-bg: #FFF6FB; overscroll-behavior: none; color-scheme: light; }
+html:not(.a-session):has(.vitrine-racine) body::before,
+html:has(.auth-racine) body::before { display: none; }
+
 /* Le rail desktop des pages à double vie (« / », /premium, pages légales), et
    les 88 px que le contenu lui laisse. Ces pages sont vitrine pour un visiteur
    et écran de l'application pour un membre ; le serveur ne sait pas lequel des

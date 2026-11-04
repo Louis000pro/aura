@@ -53,7 +53,11 @@ export default function MainWrapper({ children }: { children: React.ReactNode })
 
   return (
     <main
-      className={noNav ? "min-h-screen" : `md:pb-0 min-h-screen${pousse}`}
+      /* ⚠️ `min-h-dvh` et pas `min-h-screen` là où la page occupe l'écran seule :
+         `100vh` compte la barre d'adresse repliée sur Android. <main> dépassait
+         donc la page de la hauteur de cette barre, et le fond de l'app apparaissait
+         dessous (Louis, 2026-11-04, sur /auth). */
+      className={noNav ? "min-h-dvh" : `md:pb-0 min-h-screen${pousse}`}
       style={fullBleed ? {} : { paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(7rem + env(safe-area-inset-bottom))" }}
     >
       {children}
