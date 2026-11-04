@@ -174,7 +174,7 @@ function Heros({ chiffres }: { chiffres: ChiffresPublics }) {
       <div className={s.herosBloc}>
         <h1 className={s.h1}>
           <span data-sens="-1"><span className={s.mot}>Deviens</span></span>
-          <span data-sens="1"><span className={s.mot} style={{ animationDelay: ".1s" }}>qui tu veux</span></span>
+          <span data-sens="1"><span className={`${s.mot} ${s.orNuit}`} style={{ animationDelay: ".1s" }}>qui tu veux</span></span>
         </h1>
         <p className={s.herosTexte}>
           Tes séances, tes repas et <b>un Guide qui te connaît</b>, dans une seule appli.
@@ -244,8 +244,7 @@ function Silhouette({ nom }: { nom: string }) {
   const guide = resolveGuide(nom);
   if (!guide) return null;
   return (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img src={frameSrc(guide, pickGenre(guide), Math.floor(guide.frames / 2))} alt="" width={1024} height={1024} loading="lazy" decoding="async" />
+    <i className={s.silhouette} style={{ "--img": `url(${frameSrc(guide, pickGenre(guide), Math.floor(guide.frames / 2))})` } as CSSProperties} />
   );
 }
 
@@ -281,9 +280,9 @@ function Mouvements({ chiffres }: { chiffres: ChiffresPublics }) {
 
       <div className={`${s.wrap} ${s.mvtGrille}`}>
         <div className={s.mvtTete}>
-          <Grand className={s.mvtTitre} lignes={[<b key="n">{chiffres.mouvements}</b>, "mouvements", <span key="s" className={s.mvtSuite}>montrés et expliqués.</span>]} />
+          <Grand className={s.mvtTitre} lignes={[<b key="n" className={s.or}>{chiffres.mouvements}</b>, "mouvements", <span key="s" className={s.mvtSuite}>montrés et expliqués.</span>]} />
           <p className={s.texte}>
-            Tu suis une des {chiffres.seances} séances guidées, ou tu composes la tienne en deux minutes.
+            Tu suis une des <b>{chiffres.seances} séances guidées</b>, ou tu composes la tienne en deux minutes.
           </p>
         </div>
 
@@ -385,7 +384,7 @@ function Parler() {
        dans la conversation juste au-dessus, et sur ordinateur le Guide à côté d'elle. */
     <div className={s.grandeBulle} data-vivant>
           <div className={s.parlerTete}>
-            <Grand lignes={["Écris-lui", "comme tu parles."]} />
+            <Grand lignes={["Écris-lui", <span key="s" className={s.orNuit}>comme tu parles.</span>]} />
             <p>Une phrase suffit. Ton Guide comprend ce que tu veux et prépare une carte à valider.</p>
           </div>
           <div className={s.lignes} aria-hidden>
@@ -452,7 +451,7 @@ function Guide() {
               <button type="button" className={s.prenom} data-guide="sasha" aria-pressed="false">Sasha</button>.
             </span></span>
           </h2>
-          <p className={s.texte}>Tu lui dis ce que tu as, ce que tu veux, ce que tu as mangé. Il prépare, tu valides.</p>
+          <p className={s.texte}>Tu lui dis ce que tu as, ce que tu veux, ce que tu as mangé. <b>Il prépare, tu valides.</b></p>
         </div>
       </div>
       <Conversation />
@@ -502,7 +501,7 @@ function Nutrition() {
     <section className={s.nutrition}>
       <div className={s.nutriGrille}>
         <div className={s.nutriTete}>
-          <Grand lignes={["Une photo,", "et c’est noté."]} />
+          <Grand lignes={["Une photo,", <>et c’est <span className={s.or}>noté.</span></>]} />
         </div>
 
         <div className={s.assiette} data-assiette data-vivant role="img"
@@ -558,7 +557,7 @@ function Nutrition() {
         <div className={s.nutriSuite}>
           <p className={s.texte}>
             Vaiiya reconnaît chaque aliment, estime son poids d’après la taille de l’assiette, puis additionne ligne par ligne.
-            Tu peux tout ajuster avant de noter.
+            <b>Tu peux tout ajuster avant de noter.</b>
           </p>
           <dl className={s.aussi}>
             <div><dt>Tes restes</dt><dd>Tu dis ce que tu as, il propose une recette.</dd></div>
@@ -581,8 +580,8 @@ function Relais() {
     <section className={s.relais} data-relais data-vivant>
       <div className={s.relaisScene}>
         <div className={s.relaisTexte}>
-          <Grand lignes={["À deux,", "une affiche", "se dévoile."]} />
-          <p className={s.texte}>Lance le relais avec un ami. Vos séances révèlent l’affiche en trois temps, et elle est à vous deux.</p>
+          <Grand lignes={["À deux,", "une affiche", <span key="s" className={s.vio}>se dévoile.</span>]} />
+          <p className={s.texte}>Lance le relais avec un ami. Vos séances révèlent l’affiche en trois temps, et <b>elle est à vous deux.</b></p>
         </div>
         <div className={s.afficheCadre}>
           <div className={s.barres} aria-hidden><i /><i /><i /></div>
@@ -624,8 +623,8 @@ function ToutRelie() {
     <section className={s.relie} data-relie data-vivant>
       <div className={`${s.wrap} ${s.relieGrille}`}>
         <div className={s.relieTete}>
-          <Grand lignes={["Et tout", "se parle."]} />
-          <p className={s.texte}>Une séance terminée fait avancer ta semaine, nourrit ton rang, et ton Guide le sait déjà.</p>
+          <Grand lignes={["Et tout", <span key="s" className={s.or}>se parle.</span>]} />
+          <p className={s.texte}>Une séance terminée fait avancer ta semaine, nourrit ton rang, et <b>ton Guide le sait déjà.</b></p>
         </div>
         <div className={s.relieScene} data-relie-scene>
           <div className={s.relieFigure} aria-hidden>
@@ -674,13 +673,13 @@ function ToutRelie() {
    dans le sens du geste. Les mois sont un exemple à deux séances par semaine : le
    barème réel y mène plus tôt, et chaque récompense est celle de `RECOMPENSES_RANG`. */
 
-const MONTEE: { quand: string; texte: string; gain: string; ciel: [string, string] }[] = [
-  { quand: "Jour 1", texte: "12 minutes dans ton salon. Ta première séance.", gain: "Ta première carte de rang", ciel: ["#FDEBDB", "#F6CDA8"] },
-  { quand: "Semaine 1", texte: "Ta série tient, même les jours chargés.", gain: "Un joker par mois pour ta série", ciel: ["#F1F4F9", "#D3DDEA"] },
-  { quand: "Mois 1", texte: "Tu lances un relais avec un ami.", gain: "Un cadre or autour de ta photo", ciel: ["#FFF3CF", "#FFDD86"] },
-  { quand: "Mois 2", texte: "Tes séances ont trouvé leur place dans ta semaine.", gain: "Une lumière tourne autour de ta photo", ciel: ["#E2F7F3", "#B4E6DC"] },
-  { quand: "Mois 4", texte: "Tu y vas sans qu’on te le rappelle.", gain: "Le titre Inarrêtable sous ton nom", ciel: ["#E1F3FF", "#AEDDFF"] },
-  { quand: "Mois 6", texte: "Tu es là où tu voulais aller.", gain: "Ton pseudo passe en lumière", ciel: ["#EFE4FF", "#D2B6FF"] },
+const MONTEE: { quand: string; texte: string; gain: string; ciel: [string, string]; encre: string }[] = [
+  { quand: "Jour 1", texte: "12 minutes dans ton salon. Ta première séance.", gain: "Ta première carte de rang", ciel: ["#FDEBDB", "#F6CDA8"], encre: "#8F4E1A" },
+  { quand: "Semaine 1", texte: "Ta série tient, même les jours chargés.", gain: "Un joker par mois pour ta série", ciel: ["#F1F4F9", "#D3DDEA"], encre: "#56657A" },
+  { quand: "Mois 1", texte: "Tu lances un relais avec un ami.", gain: "Un cadre or autour de ta photo", ciel: ["#FFF3CF", "#FFDD86"], encre: "#94650A" },
+  { quand: "Mois 2", texte: "Tes séances ont trouvé leur place dans ta semaine.", gain: "Une lumière tourne autour de ta photo", ciel: ["#E2F7F3", "#B4E6DC"], encre: "#157567" },
+  { quand: "Mois 4", texte: "Tu y vas sans qu’on te le rappelle.", gain: "Le titre Inarrêtable sous ton nom", ciel: ["#E1F3FF", "#AEDDFF"], encre: "#1E6AB0" },
+  { quand: "Mois 6", texte: "Tu es là où tu voulais aller.", gain: "Ton pseudo passe en lumière", ciel: ["#EFE4FF", "#D2B6FF"], encre: "#6D3BE8" },
 ];
 
 function Rangs() {
@@ -694,7 +693,7 @@ function Rangs() {
           ))}
         </div>
         <div className={`${s.wrap} ${s.rangsTete}`}>
-          <Grand lignes={["Tu commences Bronze.", "Tu vises Éternel."]} />
+          <Grand lignes={["Tu commences Bronze.", <>Tu vises <span className={s.vio}>Éternel.</span></>]} />
         </div>
         <ol className={s.rangsListe}>
           {rangs.map((r, i) => (
@@ -703,7 +702,7 @@ function Rangs() {
                 <Image src={r.image!} alt="" fill sizes="(min-width: 960px) 300px, 240px" style={{ objectFit: "contain" }} />
                 <i className={s.rangOmbre} aria-hidden />
               </div>
-              <div className={s.rangTexte} data-texte>
+              <div className={s.rangTexte} data-texte style={{ "--r": MONTEE[i].encre } as CSSProperties}>
                 <p className={s.rangQuand}>{MONTEE[i].quand}</p>
                 <h3>{r.nom}</h3>
                 <p>{MONTEE[i].texte}</p>
@@ -765,7 +764,7 @@ function Offre({ chiffres }: { chiffres: ChiffresPublics }) {
     <section className={s.offre}>
       <div className={`${s.wrap} ${s.offreGrille}`}>
         <div className={s.offreTete}>
-          <Grand lignes={["Tu commences", "avec tout ça."]} />
+          <Grand lignes={["Tu commences", <span key="s" className={s.vio}>avec tout ça.</span>]} />
         </div>
         <div className={s.plans}>
           <article className={`${s.plan} ${s.planClair}`}>
@@ -813,7 +812,7 @@ function Avis({ avis }: { avis: ResumeAvis }) {
   return (
     <section className={s.avis}>
       <div className={s.wrap}>
-        <Grand lignes={["Ils utilisent Vaiiya", "au quotidien."]} />
+        <Grand lignes={["Ils utilisent Vaiiya", <span key="s" className={s.or}>au quotidien.</span>]} />
         <p className={s.avisNote}>
           <b className="vy-nombre">{avis.moyenne.toFixed(1).replace(".", ",")}</b>
           <Etoiles note={Math.round(avis.moyenne)} />

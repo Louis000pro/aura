@@ -113,6 +113,16 @@
   color: transparent;
 }
 
+/* ⭐ LE VIOLET ET L'OR DU LOGO (Louis, 2026-11-05 : « un peu trop fade », « mettre en
+   avant ce qui a vraiment de l'importance à lire »). Un seul mot ou groupe de mots par
+   titre, jamais tout le titre : c'est ce qui le fait ressortir.
+   ⚠️ L'or du logo est illisible sur le clair : `.or` est un or foncé, réservé aux grands
+   titres, et une phrase courante se met en avant en violet. */
+.or { background-image: linear-gradient(180deg, #E09A14 0%, #B06E06 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.vio { color: #6D3BE8; }
+.orNuit { color: #FFC964; }
+.texte b { font-weight: 700; color: #6D3BE8; }
+
 .wrap {
   position: relative;
   max-width: 1180px;
@@ -318,7 +328,7 @@
   text-shadow: 0 0 2px var(--h-fond), 0 0 12px var(--h-fond), 0 0 26px var(--h-fond);
   animation: monte .8s var(--ease) .25s both;
 }
-.herosTexte b { color: var(--h-encre); font-weight: 700; }
+.herosTexte b { color: #FFC964; font-weight: 700; }
 /* 52ch plutôt que 40 : la phrase tient alors en deux lignes au lieu de
    trois, et c'est trente pixels rendus aux Guides. */
 @media (min-width: 768px) { .herosTexte { font-size: 20px; max-width: 52ch; } }
@@ -476,17 +486,21 @@
 .friseRail { display: flex; width: max-content; animation: defile calc(var(--n, 12) * 8s) linear infinite; will-change: transform; }
 .friseMoitie { display: flex; flex-shrink: 0; }
 /* Le sol des figures est à 95 % de leur image : la marge du bas les pose sur le filet. */
-.friseMoitie img {
+/* Quatre nuances du logo, à tour de rôle. Le dessin vient du masque, la couleur du fond. */
+.silhouette {
   display: block;
   flex: none;
   width: 92px;
   height: 92px;
   margin: 0 7px -5px;
-  object-fit: contain;
-  filter: brightness(0);
-  opacity: .82;
+  background: linear-gradient(170deg, #9B6CFA, #6236DE);
+  -webkit-mask: var(--img) center / contain no-repeat;
+  mask: var(--img) center / contain no-repeat;
 }
-@media (min-width: 768px) { .friseMoitie img { width: 128px; height: 128px; margin: 0 12px -6px; } }
+.silhouette:nth-child(4n + 2) { background: linear-gradient(170deg, #F5BE3C, #CB830B); }
+.silhouette:nth-child(4n + 3) { background: linear-gradient(170deg, #CF8DF0, #9B5CE8); }
+.silhouette:nth-child(4n) { background: linear-gradient(170deg, #FEC175, #E98E3E); }
+@media (min-width: 768px) { .silhouette { width: 128px; height: 128px; margin: 0 12px -6px; } }
 @keyframes defile { to { transform: translate3d(-50%, 0, 0); } }
 
 .mvtTete { padding-top: 64px; }
@@ -589,7 +603,7 @@
   cursor: pointer;
   transition: color .3s ease;
 }
-.prenom[aria-pressed="true"] { color: var(--encre); }
+.prenom[aria-pressed="true"] { color: #6D3BE8; }
 .prenom:focus-visible { outline: 3px solid #A66CF4; outline-offset: 3px; }
 
 .convScene { position: relative; height: 640px; margin-top: 36px; }
@@ -923,7 +937,7 @@
 .ticketLigne span:nth-of-type(2) { font-size: 13px; color: var(--encre-3); }
 .ticketLigne span:nth-of-type(3) { font-size: 13px; font-weight: 700; text-align: right; }
 .ticketTotal { display: flex; align-items: baseline; gap: 8px; margin: 12px 0 0; font-size: 16px; font-weight: 700; }
-.ticketTotal b { margin-left: auto; font-size: 34px; line-height: 1; font-weight: 800; }
+.ticketTotal b { margin-left: auto; font-size: 34px; line-height: 1; font-weight: 800; color: #6D3BE8; }
 .ticketMacros { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 2px 12px; margin: 8px 0 0; font-size: 13px; color: var(--encre-2); }
 .ticketMacros b { font-weight: 700; color: var(--encre); }
 
@@ -1116,7 +1130,7 @@
 .rangGemme { position: relative; aspect-ratio: 320 / 512; }
 .rangOmbre { display: none; }
 .rangQuand { margin: 0; font-size: 13px; color: var(--encre-2); }
-.rangTexte h3 { margin: 2px 0 6px; font-size: 60px; line-height: .92; font-weight: 900; font-variation-settings: "wdth" 62; text-transform: uppercase; letter-spacing: -.012em; color: var(--encre); }
+.rangTexte h3 { color: var(--r, inherit); margin: 2px 0 6px; font-size: 60px; line-height: .92; font-weight: 900; font-variation-settings: "wdth" 62; text-transform: uppercase; letter-spacing: -.012em; }
 .rangTexte p:not(.rangQuand) { margin: 0; font-size: 16px; line-height: 1.45; color: var(--encre); }
 .rangTexte small { display: block; margin-top: 6px; font-size: 13px; color: var(--encre-2); }
 .echelle, .rangsExp { display: none; }
@@ -1274,7 +1288,7 @@
   letter-spacing: -.03em;
   text-wrap: balance;
 }
-.finTitre .accent { background-image: linear-gradient(100deg, #C9A7FF 0%, #F2A6D6 55%, #FFC58C 100%); }
+.finTitre .accent { background-image: linear-gradient(180deg, #FFDC92 0%, #FEB84E 100%); }
 .finTexte { margin: 18px auto 30px; max-width: 44ch; font-size: 16px; line-height: 1.6; color: var(--f-encre-2); }
 .finNote { margin: 16px 0 0; font-size: 13px; color: var(--f-encre-3); }
 .finNote a { color: var(--f-lien); font-weight: 700; }
