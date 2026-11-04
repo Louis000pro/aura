@@ -24,13 +24,11 @@ import { useEffect } from "react";
 const charger = {
   assistant: () => import("@/components/AssistantSheet"),
   visite: () => import("@/components/GuidedTour/GuidedTour"),
-  nouveautes: () => import("@/components/maj/PopupNouveautes"),
   consentement: () => import("@/components/DemandeConsentement"),
 };
 
 export const AssistantSheetDiffere = dynamic(charger.assistant, { ssr: false });
 export const GuidedTourDiffere = dynamic(charger.visite, { ssr: false });
-export const PopupNouveautesDiffere = dynamic(charger.nouveautes, { ssr: false });
 export const DemandeConsentementDiffere = dynamic(charger.consentement, { ssr: false });
 
 /** Précharge tout ce qui est différé une fois l'app affichée et au repos, pour

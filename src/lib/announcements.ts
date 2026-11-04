@@ -22,8 +22,6 @@ export type Announcement = {
   title: string;
   intro?: string;
   items: AnnouncementItem[];
-  /** Bouton en bas de la carte : ouvre le récap complet en grand. */
-  recapComplet?: boolean;
   /**
    * Présent UNIQUEMENT sur une grosse mise à jour : le soir du déploiement,
    * une notification part à tous ceux qui ont accepté la famille « Vaiiya

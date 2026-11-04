@@ -10,7 +10,7 @@ import GardeGuide from "@/components/GardeGuide";
 import GardePseudo from "@/components/GardePseudo";
 import GardeConnexion from "@/components/GardeConnexion";
 import PWARegister from "@/components/PWARegister";
-import { AssistantSheetDiffere, DemandeConsentementDiffere, GuidedTourDiffere, PopupNouveautesDiffere, PrechargeDifferes } from "@/components/Differes";
+import { AssistantSheetDiffere, DemandeConsentementDiffere, GuidedTourDiffere, PrechargeDifferes } from "@/components/Differes";
 import PremiumBanner from "@/components/PremiumBanner";
 import PresenceDuJour from "@/components/PresenceDuJour";
 import CelebrationRang from "@/components/rang/CelebrationRang";
@@ -434,10 +434,6 @@ export default function RootLayout({
                 <RappelProfil />
                 <DemandeConsentementDiffere />
                 <GuidedTourDiffere />
-                {/* Le récap de mise à jour : une fois par compte, puis dans
-                    Paramètres. Il vit DANS le fournisseur de la visite guidée
-                    pour ne jamais s'ouvrir par dessus elle. */}
-                <PopupNouveautesDiffere />
                 <PWARegister />
                 <AssistantSheetDiffere />
                 <PrechargeDifferes />

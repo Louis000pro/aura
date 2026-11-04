@@ -6,7 +6,7 @@ import AiMemoryManager from "@/components/AiMemoryManager";
 import TasteProfileModal from "@/components/TasteProfileModal";
 import { MarqueAssistant, VisageGuide } from "@/components/AssistantMark";
 import GemmeRang from "@/components/GemmeRang";
-import { Lock, LogOut, ChevronRight, Eye, EyeOff, Check, AlertTriangle, X, Shield, Moon, Sun, Target, Compass, Gauge, Gem, Utensils, CreditCard, Sparkles, Star, Volume2, type LucideIcon } from "lucide-react";
+import { Lock, LogOut, ChevronRight, Eye, EyeOff, Check, AlertTriangle, X, Shield, Moon, Sun, Target, Compass, Gauge, Gem, Utensils, CreditCard, Star, Volume2, type LucideIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
@@ -21,7 +21,6 @@ import { fetchTasteProfile } from "@/lib/tasteProfile";
 import { calculerAura, type EtatAura } from "@/lib/aura";
 import { libelleObjectif } from "@/lib/profilOnboarding";
 import { PLANS, VENTE_OUVERTE } from "@/lib/plans";
-import { ouvrirNouveautes } from "@/lib/nouveautes";
 import { sonsActifs, reglerSons, EVT_SONS } from "@/lib/sons";
 import { useGuideActif } from "@/context/GuideContext";
 import { PRENOM_GUIDE, type GuideId } from "@/lib/guides";
@@ -814,14 +813,6 @@ export default function ParametresPage() {
               // La visite se joue par-dessus l'écran courant : on ne quitte
               // plus les paramètres pour la lancer.
               onClick={() => startTour()}
-            />
-            {/* Le récap ne se voit qu'une fois tout seul : il doit rester
-                retrouvable, sinon un message important disparaît d'un clic. */}
-            <Ligne
-              icon={Sparkles}
-              label="Nouveautés"
-              sub="Le récap de la dernière mise à jour"
-              onClick={() => ouvrirNouveautes()}
             />
             <Ligne
               icon={Star}
