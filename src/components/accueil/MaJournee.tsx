@@ -10,8 +10,9 @@
        l'accueil) et la barre jusqu'au rang suivant ;
      · la SÉRIE, avec ses jours en sept traits (jour 1 à jour 7) ;
      · l'avancée des QUÊTES du jour, en anneau ;
-     · le rail : les quêtes du jour pas encore remplies, plus la mission
-       Premium du jour.
+     · le rail : les quêtes du jour et de la semaine qui restent
+       (`quetesDuRail`). Il défile au doigt, et par deux flèches sur
+       ordinateur quand il dépasse.
 
    Il ne décide RIEN : tout vient de `aura` (l'évaluation de la base) et de
    `missionsAccueil.ts`. Une quête déjà remplie quitte le rail ; la grille
@@ -34,15 +35,15 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import dynamic from "next/dynamic";
 import { AnimatePresence, motion } from "framer-motion";
-import { ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import GemmeRang from "@/components/GemmeRang";
 import { IconeJoker, RangeeJokers } from "@/components/rang/Joker";
 import FlammeSerie from "@/components/serie/FlammeSerie";
-import { MISSIONS_JOUR, progressionRang, resteMission, type EtatAura, type Mission } from "@/lib/aura";
+import { progressionRang, resteMission, type EtatAura, type Mission } from "@/lib/aura";
 import { etatFlamme } from "@/lib/flammesSerie";
 import { decideMontee, lireVuSerie, noterVuSerie, type Montee } from "@/lib/monteeSerie";
 import { publierFlamme } from "@/lib/evenementsFil";
-import { apercuPremiumDuJour, compteMissionsJour, missionDebloquee } from "@/lib/missionsAccueil";
+import { compteMissionsJour, missionDebloquee, quetesDuRail } from "@/lib/missionsAccueil";
 import { nJokers, type EtatJokers } from "@/lib/jokers";
 import styles from "./MaJournee.module.css";
 
@@ -196,11 +197,20 @@ export default function MaJournee({
   // La flamme et l'habit de la tuile suivent le palier de la série.
   const flamme = etatFlamme(serieVue);
 
-  // « Journée complète » se remplit toute seule : elle reste dans le compte,
-  // pas dans le rail, où elle se lirait comme un geste à faire.
-  const restantes = MISSIONS_JOUR.filter((m) => m.id !== "journee" && !aura.missions[m.id]?.complete);
-  const premium = apercuPremiumDuJour(jour);
-  const rail: Mission[] = [...restantes, ...(premium && !aura.missions[premium.id]?.complete ? [premium] : [])];
+  const rail = quetesDuRail(aura, jour, premiumDebloque);
+  // Les flèches n'existent que si le rail dépasse : sinon elles ne feraient rien.
+  const refRail = useRef<HTMLDivElement>(null);
+  const [depasse, setDepasse] = useState(false);
+  useEffect(() => {
+    const el = refRail.current;
+    if (!el) return;
+    const mesure = () => setDepasse(el.scrollWidth > el.clientWidth + 1);
+    const obs = new ResizeObserver(mesure);
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [rail.length]);
+  const pousser = (sens: 1 | -1) =>
+    refRail.current?.scrollBy({ left: sens * 284, behavior: "smooth" });
   // Toucher une carte ouvre la fiche de sa quête (Louis, 2026-11-02) : c'est
   // la fiche qui porte le bouton vers le bon écran.
   const [quete, setQuete] = useState<Mission | null>(null);
@@ -419,15 +429,27 @@ export default function MaJournee({
         )}
       </div>
 
-      <button type="button" className={styles.titre} onClick={onVoirTout}>
-        <span>Tes quêtes</span>
-        <span className={styles.voir}>
-          Voir tout <ChevronRight size={14} strokeWidth={2.6} aria-hidden="true" />
-        </span>
-      </button>
+      <div className={styles.teteQuetes}>
+        <button type="button" className={styles.titre} onClick={onVoirTout}>
+          <span>Tes quêtes</span>
+          <span className={styles.voir}>
+            Voir tout <ChevronRight size={14} strokeWidth={2.6} aria-hidden="true" />
+          </span>
+        </button>
+        {depasse && (
+          <div className={styles.fleches}>
+            <button type="button" aria-label="Quêtes précédentes" onClick={() => pousser(-1)}>
+              <ChevronLeft size={14} strokeWidth={2.4} aria-hidden="true" />
+            </button>
+            <button type="button" aria-label="Quêtes suivantes" onClick={() => pousser(1)}>
+              <ChevronRight size={14} strokeWidth={2.4} aria-hidden="true" />
+            </button>
+          </div>
+        )}
+      </div>
 
       {rail.length > 0 ? (
-        <div className={styles.rail}>
+        <div ref={refRail} className={styles.rail}>
           {rail.map((m) => (
             <CarteQuete
               key={m.id}

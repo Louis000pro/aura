@@ -44,7 +44,7 @@ import {
   MISSIONS, MISSIONS_JOUR, MISSIONS_PREMIUM, MISSIONS_PREMIUM_SEMAINE, MISSIONS_SEMAINE,
   type EtatAura, type MissionId,
 } from "@/lib/aura";
-import { apercuPremiumDuJour, compteMissionsJour, missionDebloquee } from "@/lib/missionsAccueil";
+import { apercuPremiumDuJour, compteMissionsJour, joursRestantsSemaine, missionDebloquee, quetesDuRail } from "@/lib/missionsAccueil";
 import {
   cycleDeReference, seancesDuCycle, previewWeek, weekDates, ANCIEN, NOUVEAU,
   ordonner, parDate, principale, supplements, seancesDuJour, prochaineSeanceDuJour,
@@ -1066,6 +1066,49 @@ verdict(
       "V7B · sur 60 jours, elle sort toujours du catalogue Premium",
       toutes && !REGLES.includes("Math.random"),
       "déterministe, jamais tirée au sort",
+    );
+  }
+
+  /* ── Le rail de l'accueil montre tout ce qui reste à faire. ── */
+  {
+    const lundi = "2026-11-02";
+    const jeudi = "2026-11-05";
+    const dimanche = "2026-11-08";
+    const ids = (a: EtatAura, j: string, p: boolean) => quetesDuRail(a, j, p).map((m) => m.id);
+    verdict(
+      "Rail · les jours restants vont de 7 le lundi à 1 le dimanche",
+      joursRestantsSemaine(lundi) === 7 && joursRestantsSemaine(jeudi) === 4 && joursRestantsSemaine(dimanche) === 1,
+      "aujourd'hui compris",
+    );
+    const abonne = ids(auraAvec(["connexion"]), lundi, true);
+    verdict(
+      "Rail · un abonné voit le jour, ses quatre Vaiiya+, puis la semaine",
+      abonne.length === 9 && abonne[0] === "seance" && MISSIONS_PREMIUM.every((m) => abonne.includes(m.id)) &&
+        abonne.includes("semaineParfaite") && !abonne.includes("journee"),
+      abonne.join(", "),
+    );
+    const gratuit = ids(auraAvec(["connexion"]), lundi, false);
+    verdict(
+      "Rail · un compte gratuit voit une seule quête verrouillée, en dernier",
+      gratuit.filter((id) => MISSIONS_PREMIUM.some((m) => m.id === id)).length === 1 &&
+        MISSIONS_PREMIUM.some((m) => m.id === gratuit[gratuit.length - 1]) &&
+        !gratuit.includes("semaineReguliere"),
+      gratuit.join(", "),
+    );
+    const semaineAvec = (faits: number): EtatAura => {
+      const a = auraAvec(["seance"]);
+      return { ...a, missions: { ...a.missions, semaineParfaite: { ...a.missions.semaineParfaite, progress: faits, target: 7 } } };
+    };
+    verdict(
+      "Rail · une semaine qui ne peut plus se finir n'est pas proposée",
+      ids(semaineAvec(4), jeudi, false).includes("semaineParfaite") &&
+        !ids(semaineAvec(3), jeudi, false).includes("semaineParfaite"),
+      "jeudi validé : 3 jours à venir",
+    );
+    verdict(
+      "Rail · le rail vient de la règle, pas de l'écran",
+      JOURNEE.includes("quetesDuRail(aura, jour, premiumDebloque)") && !JOURNEE.includes("apercuPremiumDuJour"),
+      "une seule liste",
     );
   }
 

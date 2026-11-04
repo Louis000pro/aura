@@ -468,11 +468,43 @@
   transition: stroke-dasharray 0.6s ease;
 }
 
+.teteQuetes {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 2px 2px 0;
+}
+
+/* Sur ordinateur seulement : au doigt, le rail se pousse tout seul. */
+.fleches {
+  display: none;
+  gap: 4px;
+}
+
+.fleches button {
+  display: grid;
+  width: 26px;
+  height: 26px;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(var(--tint-violet-rgb), 0.6);
+  color: var(--text-2);
+  cursor: pointer;
+}
+
+@media (min-width: 768px) {
+  .fleches {
+    display: flex;
+  }
+}
+
 .titre {
   display: flex;
+  flex: 1;
   align-items: baseline;
   justify-content: space-between;
-  margin: 2px 2px 0;
   padding: 0;
   border: 0;
   background: transparent;
@@ -512,10 +544,11 @@
   display: none;
 }
 
+/* 132 px au minimum, et les cartes se partagent la place quand elles sont
+   peu nombreuses : le rail va toujours jusqu'au bout. */
 .carte {
   display: flex;
-  width: 132px;
-  flex: none;
+  flex: 1 0 132px;
   flex-direction: column;
   align-items: flex-start;
   gap: 6px;

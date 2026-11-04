@@ -16,6 +16,7 @@
 import {
   MISSIONS_JOUR,
   MISSIONS_PREMIUM,
+  MISSIONS_SEMAINE,
   type EtatAura,
   type Mission,
 } from "@/lib/aura";
@@ -77,4 +78,40 @@ export function apercuPremiumDuJour(jour: string): Mission | null {
  */
 export function missionDebloquee(mission: Mission, premiumDebloque: boolean): boolean {
   return !mission.premium || premiumDebloque;
+}
+
+/** Les jours qu'il reste dans la semaine (lundi à dimanche), aujourd'hui compris. */
+export function joursRestantsSemaine(jour: string): number {
+  return 7 - ((indexDuJour(jour) + 3) % 7);
+}
+
+/**
+ * Les quêtes du rail de l'accueil (Louis, 2026-11-04 : voir l'entièreté des
+ * quêtes disponibles) : celles du jour, puis celles de la semaine. Une quête
+ * remplie quitte le rail, et « Journée complète » n'y entre pas : elle se
+ * remplit toute seule, ce n'est pas un geste à faire.
+ *
+ * Un abonné voit ses quatre quêtes Vaiiya+ du jour. Un compte gratuit voit la
+ * quête Vaiiya+ du jour, en dernier : quatre cartes à cadenas d'affilée
+ * seraient un mur.
+ *
+ * Une quête de la semaine qui ne peut plus se finir n'est pas proposée : un
+ * jeudi, personne ne peut encore faire sept jours sur sept. Elle reste dans
+ * « Voir tout ». Aujourd'hui ne compte plus s'il est déjà validé (une séance
+ * ou un repas, la même règle que la base).
+ */
+export function quetesDuRail(aura: EtatAura, jour: string, premiumDebloque: boolean): Mission[] {
+  const aFaire = (m: Mission) => !aura.missions[m.id]?.complete;
+  const duJour = MISSIONS_JOUR.filter((m) => m.id !== "journee" && aFaire(m));
+
+  const valide = !!aura.missions.seance?.complete || !!aura.missions.repas?.complete;
+  const jours = joursRestantsSemaine(jour) - (valide ? 1 : 0);
+  const semaine = MISSIONS_SEMAINE.filter((m) => {
+    const etat = aura.missions[m.id];
+    return missionDebloquee(m, premiumDebloque) && aFaire(m) && (!etat || etat.target - etat.progress <= jours);
+  });
+
+  if (premiumDebloque) return [...duJour, ...MISSIONS_PREMIUM.filter(aFaire), ...semaine];
+  const apercu = apercuPremiumDuJour(jour);
+  return [...duJour, ...semaine, ...(apercu && aFaire(apercu) ? [apercu] : [])];
 }
