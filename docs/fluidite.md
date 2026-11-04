@@ -77,6 +77,14 @@ ce qui a été changé, et les règles qui empêchent d'y revenir.
 
 ## Les règles, pour ne pas y revenir
 
+- **Jamais de `:has()` dans `globals.css`.** Une règle qui dépend d'une page vit dans
+  un `<style>` rendu par cette page.
+- **Une animation arrêtée hors de l'écran se déclare dans une liste, jamais avec
+  `*`.** L'étoile fait recalculer tout le sous-arbre.
+- **`content-visibility: auto` : la réserve de hauteur est celle du contenu.** Le padding
+  s'y ajoute, et une réserve trop haute fait bouger la fin de la page.
+- **Une position se mesure une fois, puis quand la page change de taille.** Jamais
+  pendant le défilement, et `scrollY` se lit dans l'évènement.
 - **Jamais un composant déclaré dans le corps d'un autre.** Il serait recréé à
   chaque rendu. Le lint le dit (`react-hooks/static-components`).
 - **Tout `scrollTo` ou `scrollIntoView` d'une navigation porte
@@ -138,6 +146,49 @@ l'accueil, d'Entraînement, de Nutrition et de Communauté, ni sur iPhone ni sur
 Android. **Pas mesuré contre l'API** : la vision Qwen (la clé Groq n'existe que
 sur Vercel). `addRoutes` n'est pas vu sur un vrai Android (le navigateur de test
 est un Chromium de bureau).
+
+## La vitrine, mesurée le 2026-11-04
+
+Louis : « Elle doit être fluide et le slide naturel. » Sauf `:has()`, retiré tout de
+suite de la production, ce qui suit vit sur la branche `vitrine-seconde-passe` jusqu'à
+son GO. Mesuré sur le vrai build, dans un Chrome sans fenêtre ralenti quatre fois,
+page entière à 900 px/s.
+
+| Poste | Avant | Après |
+| --- | --- | --- |
+| Tri des styles (`SelectorStats`, 6 000 premiers px) | 1 719 ms | 267 ms |
+| Préparation des couches (`Layerize`, page entière) | 1 545 ms | 669 ms |
+| Plus gros recalcul d'un coup | 283 éléments | 147 éléments |
+
+⚠️ **Le nombre d'images par seconde ne prouve rien sur cette machine** : la même
+version a donné de 294 à 744 images sur la même descente. On lit les postes de
+travail d'une trace, jamais une cadence. Ce qui marche : défiler depuis la page, dans
+une boucle d'image (`Input.synthesizeScrollGesture` ne bouge pas `scrollY` ici, et
+le premier essai a mesuré le haut de la page sans le savoir) ; `--disable-3d-apis`
+pour retirer le logo WebGL, que le rendu logiciel rend lent pour rien ; la catégorie
+`disabled-by-default-blink.debug` pour le coût de chaque sélecteur. Sans
+`recordMode` léger, `disabled-by-default-devtools.timeline` produit une trace que
+Node n'arrive plus à relire.
+
+Ce qui coûtait, du plus lourd au plus léger :
+
+- **`html:has(...)` dans `globals.css`.** Le navigateur reparcourt toute la page à
+  chaque recalcul de style de `<body>`. C'était 88 % du tri des styles, sur tous les
+  écrans de l'app. La règle vit désormais dans un `<style>` rendu par la page.
+- **La page entière à chaque image.** `Layerize` et `PrePaint` suivent la longueur de
+  la page, pas ce qui bouge. `content-visibility: auto` retire les sections à plus d'un
+  écran et demi du doigt.
+- **`[data-repos] *`.** Chaque section qui entrait ou sortait recalculait tout son
+  sous-arbre, pseudo-éléments compris : jusqu'à 283 éléments d'un coup, en plein
+  défilement. La mise au repos est maintenant une liste de ce qui tourne.
+- **`scrollY` lu dans la boucle d'image**, juste avant que les scènes n'écrivent : deux
+  recalculs par image au lieu d'un.
+- **Un écouteur de défilement permanent** dans la vitrine, et un autre dans
+  `Navigation`, qui ne s'affiche pas sur la vitrine pour un visiteur.
+- **Des attentes réveillées 25 fois par seconde** (`veilleur.horloge`), passées à 4.
+- **`clip-path` sur un canevas et `filter` sur le ticket** : une passe de plus pour
+  la carte graphique à chaque image, ou à chaque ligne qui sort. Non mesurable ici
+  (rendu logiciel), retirés par principe.
 
 ## Mesuré : ce que chaque page charge à l'ouverture (2026-10-27)
 
