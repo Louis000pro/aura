@@ -845,12 +845,17 @@ function Pied() {
   );
 }
 
+/** Le dessous de la page : voir la note de globals.css (« le dessous des pages »).
+    Un membre garde son fond : la vitrine est là, masquée, le temps de lire sa session. */
+const DESSOUS = "html:not(.a-session){--html-bg:#0B0814;overscroll-behavior:none}html:not(.a-session) body::before{display:none}";
+
 export default function LandingVitrine({ chiffres, avis }: { chiffres: ChiffresPublics; avis: ResumeAvis }) {
   const racine = useRef<HTMLDivElement>(null);
   useRevelation(racine);
   useVivante(racine);
   return (
-    <div ref={racine} className={`${s.page} vitrine-racine`}>
+    <div ref={racine} className={s.page}>
+      <style>{DESSOUS}</style>
       <Heros chiffres={chiffres} />
       <div className={s.jour}>
         <Mouvements chiffres={chiffres} />
