@@ -43,6 +43,11 @@ export function pickGenre(guide: Guide, want?: Genre): Genre {
 }
 
 /** Le chemin d'une frame. Seul endroit qui connaît la forme du nom. */
+/** Le passage d'une pose à la suivante, en millisecondes. Pendant un fondu, les deux
+    poses se voient en même temps : au-delà de 100 ms, l'œil lit une image floue
+    (Louis, 2026-11-05 : « ça fait comme si on voyait flou »). */
+export const FONDU_POSE_MS = 80;
+
 export function frameSrc(guide: Guide, genre: Genre, i: number): string {
   return `/entrainement/guides/${guide.key}-${genre}-${i + 1}.webp`;
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { resolveGuide, pickGenre, frameSrc, type Genre } from "@/lib/exerciseGuides";
+import { resolveGuide, pickGenre, frameSrc, FONDU_POSE_MS, type Genre } from "@/lib/exerciseGuides";
 
 /* ════════════════════════════════════════════════════════════════════
    La vignette animée d'un exercice, pour les listes (bibliothèque,
@@ -80,7 +80,7 @@ export default function ExerciseThumb({
           loading="lazy"
           decoding="async"
           className="absolute inset-0 w-full h-full object-contain"
-          style={{ opacity: i === frame ? 1 : 0, transition: "opacity 420ms ease-in-out" }}
+          style={{ opacity: i === frame ? 1 : 0, transition: `opacity ${FONDU_POSE_MS}ms linear` }}
         />
       ))}
     </div>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { resolveGuide, pickGenre, frameSrc, type Genre } from "@/lib/exerciseGuides";
+import { resolveGuide, pickGenre, frameSrc, FONDU_POSE_MS, type Genre } from "@/lib/exerciseGuides";
 
 /* ════════════════════════════════════════════════════════════════════
    Le personnage-guide du « tunnel » de séance : rejoue le geste de l'exo
@@ -61,7 +61,7 @@ export default function ExerciseGuide({
         // eslint-disable-next-line @next/next/no-img-element
         <img key={i} src={frameSrc(guide, g, i)} alt="" loading={loading} decoding="async"
           className="absolute top-0 h-full w-auto object-contain"
-          style={{ opacity: i === frame ? 1 : 0, transition: "opacity 500ms ease-in-out" }} />
+          style={{ opacity: i === frame ? 1 : 0, transition: `opacity ${FONDU_POSE_MS}ms linear` }} />
       ))}
     </div>
   );

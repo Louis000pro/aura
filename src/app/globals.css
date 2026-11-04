@@ -557,9 +557,10 @@ html:not(.a-session) .mobile-nav { display: none !important; }
    croisent, y compris entre la dernière pose et la première.
 
    D'où quatre jeux de keyframes plutôt qu'un seul : une position en
-   pourcentage ne peut pas être calculée depuis une variable CSS. Le palier
-   plein vaut (100/N - 10)%, le retour se fait toujours de 90% à 100%, ce qui
-   tombe exactement sur la sortie de la dernière pose quel que soit N.
+   pourcentage ne peut pas être calculée depuis une variable CSS. Le passage
+   dure 80 ms quel que soit N (`FONDU_POSE_MS`, 80 ms / durée du cycle) : pendant
+   un fondu, les deux poses se voient en même temps, et un fondu plus long se
+   lit comme une image floue (Louis, 2026-11-05).
 
    Durée d'une pose : 0,9 s, la même que le tunnel, pour que le geste ait le
    même rythme partout dans l'app.                                          */
@@ -583,10 +584,10 @@ html:not(.a-session) .mobile-nav { display: none !important; }
 .vy-anim[data-poses="4"] > img { animation: vy-poses-4 3.6s linear infinite; }
 .vy-anim[data-poses="5"] > img { animation: vy-poses-5 4.5s linear infinite; }
 
-@keyframes vy-poses-2 { 0%, 40%     { opacity: 1 } 50%, 90%    { opacity: 0 } 100% { opacity: 1 } }
-@keyframes vy-poses-3 { 0%, 23.333% { opacity: 1 } 33.333%, 90%{ opacity: 0 } 100% { opacity: 1 } }
-@keyframes vy-poses-4 { 0%, 15%     { opacity: 1 } 25%, 90%    { opacity: 0 } 100% { opacity: 1 } }
-@keyframes vy-poses-5 { 0%, 10%     { opacity: 1 } 20%, 90%    { opacity: 0 } 100% { opacity: 1 } }
+@keyframes vy-poses-2 { 0%, 45.556% { opacity: 1 } 50%, 95.556%     { opacity: 0 } 100% { opacity: 1 } }
+@keyframes vy-poses-3 { 0%, 30.37%  { opacity: 1 } 33.333%, 97.037%  { opacity: 0 } 100% { opacity: 1 } }
+@keyframes vy-poses-4 { 0%, 22.778% { opacity: 1 } 25%, 97.778%     { opacity: 0 } 100% { opacity: 1 } }
+@keyframes vy-poses-5 { 0%, 18.222% { opacity: 1 } 20%, 98.222%     { opacity: 0 } 100% { opacity: 1 } }
 
 /* Mouvement réduit : on ne ralentit pas, on arrête. Le repli ci-dessus
    laisse la première pose, qui reste une illustration juste du mouvement. */
