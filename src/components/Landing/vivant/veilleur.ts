@@ -70,3 +70,28 @@ export function trouve<T extends Element = HTMLElement>(dans: ParentNode, select
 }
 
 export const borne = (v: number, a: number, b: number) => Math.min(b, Math.max(a, v));
+
+/* ═══ UN SEUL ÉCOUTEUR DE DÉFILEMENT ═══
+   Tout ce qui suit le doigt passe par ici : une seule lecture par image, quel que
+   soit le nombre de scènes. */
+export type Suivre = (f: () => void) => void;
+
+export function creerDefile(signal: AbortSignal): Suivre {
+  const abonnes: (() => void)[] = [];
+  let attente = false;
+  const tout = () => {
+    attente = false;
+    for (const f of abonnes) f();
+  };
+  const demande = () => {
+    if (attente) return;
+    attente = true;
+    requestAnimationFrame(tout);
+  };
+  window.addEventListener("scroll", demande, { passive: true, signal });
+  window.addEventListener("resize", demande, { signal });
+  return (f) => {
+    abonnes.push(f);
+    f();
+  };
+}

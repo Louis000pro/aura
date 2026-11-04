@@ -1,12 +1,19 @@
 /* ════════════════════════════════════════════════════════════════════
    La vitrine de vaiiya.fr (visiteur non connecté), refaite le 2026-10-12,
-   rendue vivante le 2026-11-04 (maquette « La vitrine vivante »).
+   rendue vivante puis recomposée le 2026-11-04.
 
    ⚠️ LA PAGE DURE UNE JOURNÉE (décisions de Louis, 2026-11-03 et 04). Le
-   héros et la fin sont en nuit, le milieu est clair, et les couleurs sont
-   écrites en dur : la vitrine ne suit pas le mode sombre de l'app. La
-   raison vient du logo : son dégradé est un ciel d'aube, son point est le
-   soleil sur l'horizon, ses branches sont les rayons.
+   héros est la nuit, le jour tient le mouvement, le Guide et les repas, le
+   crépuscule tombe avant le relais, et le soir porte ce qui s'additionne.
+   Les couleurs sont écrites en dur : la vitrine ne suit pas le mode sombre de
+   l'app. La raison vient du logo : son dégradé est un ciel d'aube, son point
+   est le soleil sur l'horizon, ses branches sont les rayons.
+
+   ⚠️ UNE SECTION N'EST PAS UN BLOC (Louis, 2026-11-04 : « moins de blocs en
+   dessous de mêmes blocs », « sortir du vibe coding »). Pas de surtitre, pas de
+   titre centré suivi d'une grille, pas de carte à icône, pas de pastille, pas
+   de pavé blanc autour d'une phrase. Le titre parle comme celui du héros, et
+   chaque section a sa propre structure, d'abord sur un téléphone.
 
    ⚠️ RIEN N'EST JAMAIS CACHÉ AU PREMIER AFFICHAGE. C'est la correction du
    « bug à l'entrée » : une page qui arrive vide puis se remplit, ou qui se
@@ -32,16 +39,12 @@
   --nuit: #0B0814;
   --voile: #F0EBFF;
   --bulle-moi: #251E47;
-  --fait-fond: #E3FAF2;
-  --fait-encre: #0B7A5C;
   --logo: linear-gradient(120deg, #8B5CF6 0%, #C13BC1 100%);
   --action: linear-gradient(135deg, #8B5CF6 0%, #C13BC1 100%);
   --ease: cubic-bezier(.22, 1, .36, 1);
   /* La hauteur du passage entre la nuit et le jour : une bande, jamais un écran. */
-  --crete: clamp(52px, 6vw, 92px);
   --aube: clamp(150px, 22vh, 230px);
   --jour: clamp(220px, 33vh, 340px);
-  --crepuscule: clamp(150px, 22vh, 230px);
   /* ⚠️ LE CIEL EST UN DÉGRADÉ DROIT, DANS L'ORDRE DU LOGO (Louis, 2026-11-04 :
      « assez droit et linéaire »). Ni courbe, ni grille, ni motif. Le haut est
      transparent : on voit la nuit à travers, et l'opacité monte doucement
@@ -55,7 +58,7 @@
     #FCC4A8 77%, #FEDABE 83%, #FFE9E0 89%, #FFEFEA 95%, #FFF2F5 100%;
   position: relative;
   color: var(--encre);
-  background: var(--creme);
+  background: var(--nuit);
   overflow-x: clip;
 }
 
@@ -65,8 +68,14 @@
 .page [data-repos] *, .page [data-repos]::before, .page [data-repos]::after,
 .page [data-repos] *::before, .page [data-repos] *::after { animation-play-state: paused !important; }
 
-/* Le jour : tout le clair de la page tient entre les deux passages. */
-.jour { position: relative; z-index: 11; background: var(--creme); }
+/* Le jour : un seul fond, du matin au soir. Des fonds par section dessinaient
+   une ligne à chaque changement, et c'est ce qui faisait des blocs. Il finit
+   sur la couleur exacte du haut du crépuscule. */
+.jour {
+  position: relative;
+  z-index: 11;
+  background: linear-gradient(#fff 0, #fff 12%, #FBF8FF 34%, #FFFBF6 62%, #FFF5EE 86%, #FFF2F5 100%);
+}
 
 .accent {
   background-image: var(--logo);
@@ -86,43 +95,32 @@
   .wrap { padding-left: max(44px, env(safe-area-inset-left, 0px)); padding-right: max(44px, env(safe-area-inset-right, 0px)); }
 }
 
-/* ── Titres et textes communs ── */
-.surtitre {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  margin: 0 0 12px;
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--cuivre);
-}
-.surtitre::before {
-  content: "";
-  width: 18px;
-  height: 2px;
-  border-radius: 2px;
-  background: var(--logo);
-}
-.titre {
+/* ── Le titre parle comme celui du héros ──
+   Condensé, noir, en capitales, et très grand : un téléphone tient ainsi trois
+   mots de plus par ligne, et le titre commande l'écran. Le texte courant reste
+   court et se pose à côté de ce qu'il explique. */
+.grand {
   margin: 0;
-  font-size: clamp(34px, 5.2vw, 56px);
-  line-height: 1.02;
-  font-weight: 850;
-  font-variation-settings: var(--w-voix);
-  letter-spacing: -.02em;
-  text-wrap: balance;
+  font-size: clamp(54px, 15.2vw, 118px);
+  line-height: .86;
+  font-weight: 900;
+  font-variation-settings: "wdth" 62;
+  text-transform: uppercase;
+  letter-spacing: -.012em;
 }
-.chapo {
+/* Une ligne monte depuis sous sa propre ligne de base, une seule fois. Les
+   marges négatives rendent ce que le masque prend pour garder les accents. */
+.titreLigne { display: block; overflow: hidden; padding: .12em 0 .05em; margin: -.12em 0 -.05em; }
+.titreLigne > span { display: block; transition: transform .9s var(--ease) calc(var(--l, 0) * 80ms); }
+.grand[data-attente] .titreLigne > span { transform: translate3d(0, 116%, 0); }
+
+.texte {
   margin: 14px 0 0;
-  max-width: 44ch;
+  max-width: 34ch;
   font-size: 16px;
-  line-height: 1.6;
+  line-height: 1.5;
   color: var(--encre-2);
 }
-.centre { text-align: center; }
-.centre .chapo { margin-left: auto; margin-right: auto; }
-.section { position: relative; padding: 88px 0; }
-@media (min-width: 768px) { .section { padding: 120px 0; } }
 
 /* ── Boutons ── */
 .bouton {
@@ -401,14 +399,14 @@
   text-shadow: 0 1px 10px rgba(40, 20, 90, .5);
 }
 
-/* ═══ LES DEUX PASSAGES ═══
+/* ═══ LE PASSAGE DE LA NUIT AU JOUR ═══
    Le dégradé passe DEVANT Nora et Sasha : ils se fondent dans la même couleur
    que le ciel, à la même hauteur, sans masque, et la partie opaque couvre le
    bord droit de leur image, qui s'arrête à mi-cuisse.
    ⚠️ Le dégradé et l'aplat blanc qui le prolonge se chevauchent (84 px dans
    une rallonge de 80), sinon leur couture laisse une ligne grise sur une
    hauteur fractionnaire. */
-.jourMonte, .soirDescend { position: absolute; pointer-events: none; }
+.jourMonte { position: absolute; pointer-events: none; }
 .jourMonte {
   z-index: 3;
   left: 50%;
@@ -418,88 +416,184 @@
   bottom: calc(var(--aube) * -.3 - 80px);
   transform: translate3d(0, calc(var(--monte, 0) * -44px), 0);
 }
-.soirDescend { z-index: 1; left: 0; width: 100%; top: 0; height: var(--jour); overflow: hidden; }
-.jourMonte::before, .soirDescend::before {
+.jourMonte::before {
   content: "";
   position: absolute;
   inset: 0;
   animation: respire 7s ease-in-out infinite alternate;
 }
 .jourMonte::before { background: linear-gradient(to bottom, var(--ciel)) top / 100% var(--jour) no-repeat, linear-gradient(#fff, #fff) bottom / 100% 84px no-repeat; }
-.soirDescend::before { background: linear-gradient(to top, var(--ciel-soir)); }
 @keyframes respire { from { transform: translate3d(0, 10px, 0); } to { transform: translate3d(0, -10px, 0); } }
 
-/* ═══════════════ 2 · LES MOUVEMENTS QUI DÉFILENT ═══════════════ */
-.mouvements { position: relative; z-index: 11; padding: 32px 0 72px; background: var(--creme); }
-/* ⚠️ LA BOUCLE EST CONTINUE SI ET SEULEMENT SI -50 % VAUT UNE MOITIÉ EXACTE.
-   Avec le `gap` posé sur le rail, il y avait un écart de moins entre les
-   deux moitiés qu'à l'intérieur : la boucle sautait d'un demi-écart. Le
-   `gap` vit donc DANS chaque moitié, et chacune finit par un écart
-   (`padding-right`), si bien que la seconde commence exactement là où la
-   première a commencé.
-   La vitesse ne dépend pas du nombre de cartes : la durée en découle
-   (`--cartes`, posé par le composant), soit 28 px/s à l'aller et 25 au
-   retour. Plafonné à 2 400 px : une moitié en fait 2 624. */
-.bandeau {
-  margin: 36px auto 0;
-  max-width: 2400px;
-  overflow: hidden;
-  -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
-  mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
-}
-.rail {
-  display: flex;
-  width: max-content;
-  animation: defile calc(var(--cartes, 16) * 5.75s) linear infinite;
-  will-change: transform;
-}
-.railMoitie { display: flex; flex-shrink: 0; gap: 14px; padding-right: 14px; }
-.railInverse { animation-direction: reverse; animation-duration: calc(var(--cartes, 16) * 6.5s); margin-top: 14px; }
-/* La pause au survol ne vaut que pour une vraie souris : sur téléphone, un
-   toucher laisse `:hover` collé et le rail restait figé jusqu'au toucher
-   suivant. */
-@media (hover: hover) and (pointer: fine) {
-  .bandeau:hover .rail { animation-play-state: paused; }
-}
-@keyframes defile { to { transform: translate3d(-50%, 0, 0); } }
-.mvt {
-  width: 150px;
-  flex-shrink: 0;
-  border-radius: 22px;
-  padding: 10px 10px 12px;
-  background: #fff;
-  box-shadow: 0 1px 2px rgba(60, 30, 10, .05), 0 14px 30px -24px rgba(110, 70, 160, .45);
-}
-.mvtImage { aspect-ratio: 1; border-radius: 16px; }
-/* Quatre teintes du logo, en boucle sur les cartes. */
-.mvt:nth-child(4n+1) .mvtImage { background: linear-gradient(160deg, #EFE7FF, #F9F4FF); }
-.mvt:nth-child(4n+2) .mvtImage { background: linear-gradient(160deg, #FFE9F4, #FFF6FA); }
-.mvt:nth-child(4n+3) .mvtImage { background: linear-gradient(160deg, #FFF0E0, #FFF9F1); }
-.mvt:nth-child(4n+4) .mvtImage { background: linear-gradient(160deg, #E8EEFF, #F6F4FF); }
-.mvt b { display: block; margin-top: 8px; font-size: 13px; font-weight: 750; text-align: center; }
 
-/* ═══════════════ 3 · LE GUIDE ═══════════════ */
-.guide { background: #FBF9FF; }
-.guideGrille { display: grid; gap: 44px; align-items: center; }
-.guideGrille > * { min-width: 0; }
-@media (min-width: 960px) { .guideGrille { grid-template-columns: 1fr 1fr; gap: 64px; } }
-.duo { display: flex; justify-content: center; gap: 4px; margin-top: 30px; }
-.portrait {
+/* ═══════════════ 2 · LES MOUVEMENTS ═══════════════
+   ⚠️ UN MOUVEMENT N'EST NI UNE VIGNETTE NI UNE CARTE (Louis, 2026-11-04 : « un
+   peu enfantin et bâclé »). Une frise de silhouettes sur l'horizon, puis un seul
+   mouvement à la fois, en très grand.
+
+   ⚠️ LA BOUCLE DE LA FRISE EST CONTINUE SI ET SEULEMENT SI -50 % VAUT UNE MOITIÉ
+   EXACTE : aucun `gap` entre les deux moitiés, chaque figure porte ses marges. */
+.mouvements { position: relative; padding: 0 0 56px; }
+.frise {
   position: relative;
-  display: block;
-  width: min(44%, 210px);
-  aspect-ratio: 4 / 5;
-  cursor: pointer;
-  -webkit-mask-image: linear-gradient(#000 72%, transparent);
-  mask-image: linear-gradient(#000 72%, transparent);
-  transition: opacity .4s ease, transform .4s var(--ease);
-  opacity: .58;
-  transform: scale(.95);
+  overflow: hidden;
+  border-bottom: 1px solid rgba(28, 22, 38, .16);
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent);
 }
-.portrait[aria-pressed="true"] { opacity: 1; transform: none; }
-.portrait span {
-  position: absolute; bottom: 10%; left: 50%; transform: translateX(-50%);
-  font-size: 20px; font-weight: 850; font-variation-settings: var(--w-voix);
+.friseRail { display: flex; width: max-content; animation: defile calc(var(--n, 12) * 8s) linear infinite; will-change: transform; }
+.friseMoitie { display: flex; flex-shrink: 0; }
+/* Le sol des figures est à 95 % de leur image : la marge du bas les pose sur le filet. */
+.friseMoitie img {
+  display: block;
+  flex: none;
+  width: 92px;
+  height: 92px;
+  margin: 0 7px -5px;
+  object-fit: contain;
+  filter: brightness(0);
+  opacity: .82;
+}
+@media (min-width: 768px) { .friseMoitie img { width: 128px; height: 128px; margin: 0 12px -6px; } }
+@keyframes defile { to { transform: translate3d(-50%, 0, 0); } }
+
+.mvtTete { padding-top: 30px; }
+/* Le nombre est le titre. */
+.mvtTitre b { display: block; font-size: 2.5em; line-height: .84; font-weight: 900; margin-bottom: .02em; }
+.plateau { container-type: inline-size; margin: 18px -20px 0; }
+.vedettes { --cote: 100cqw; position: relative; width: var(--cote); height: calc(var(--cote) + 118px); overflow: hidden; }
+.vedette { position: absolute; inset: 0; margin: 0; opacity: 0; visibility: hidden; transition: opacity .35s ease, visibility 0s .35s; }
+.vedette.on { opacity: 1; visibility: visible; transition: opacity .35s ease; }
+/* Le nom derrière le geste, de la largeur de la scène. */
+.motFond {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 7%;
+  text-align: center;
+  white-space: nowrap;
+  font-size: calc(var(--cote) * .94 / var(--l));
+  line-height: 1;
+  padding-top: .12em;
+  font-weight: 900;
+  font-variation-settings: "wdth" 62;
+  text-transform: uppercase;
+  letter-spacing: -.012em;
+  color: transparent;
+  background: linear-gradient(180deg, #D9C7FF 0%, #F6C9DF 48%, #FFE3CF 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+.poses { position: absolute; left: 0; top: 0; width: var(--cote); height: var(--cote); }
+.poses img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; opacity: 0; }
+.poses img:first-child { opacity: 1; }
+/* ⚠️ UNE POSE S'ALLUME D'UN COUP ET LAISSE UNE TRACE QUI S'ÉTEINT. Un long fondu
+   entre deux poses se lit comme un diaporama ; ici le geste se lit comme une
+   chronophotographie. `(i - n)` rend le délai négatif : toutes les poses tournent
+   dès la première image, dans le bon ordre. */
+.poses[data-n] img { animation-duration: calc(var(--n) * .62s); animation-timing-function: linear; animation-iteration-count: infinite; animation-delay: calc((var(--i) - var(--n)) * .62s); }
+.poses[data-n="2"] img { animation-name: strobo2; }
+.poses[data-n="3"] img { animation-name: strobo3; }
+.poses[data-n="4"] img { animation-name: strobo4; }
+.poses[data-n="5"] img { animation-name: strobo5; }
+@keyframes strobo2 { 0% { opacity: 0; } 3%, 46% { opacity: 1; } 53% { opacity: .2; } 80% { opacity: .06; } 92%, 100% { opacity: 0; } }
+@keyframes strobo3 { 0% { opacity: 0; } 2%, 31% { opacity: 1; } 36% { opacity: .22; } 58% { opacity: .07; } 66%, 100% { opacity: 0; } }
+@keyframes strobo4 { 0% { opacity: 0; } 1.5%, 23% { opacity: 1; } 27% { opacity: .24; } 44% { opacity: .08; } 50%, 100% { opacity: 0; } }
+@keyframes strobo5 { 0% { opacity: 0; } 1.2%, 18.5% { opacity: 1; } 22% { opacity: .24; } 36% { opacity: .08; } 40%, 100% { opacity: 0; } }
+/* Le sol du dessin : 972 sur 1024. */
+.sol { position: absolute; left: 20px; right: 20px; top: calc(var(--cote) * .9492); height: 1px; background: rgba(28, 22, 38, .16); }
+.vedette figcaption { position: absolute; left: 20px; right: 20px; top: calc(var(--cote) * .9492 + 12px); }
+.vedette figcaption b { display: block; font-size: 20px; line-height: 1.15; font-weight: 800; }
+.vedette figcaption p { margin: 4px 0 0; font-size: 16px; line-height: 1.4; color: var(--encre-2); }
+.vedette figcaption small { display: block; margin-top: 4px; font-size: 13px; color: var(--encre-3); }
+
+.noms { display: flex; gap: 20px; overflow-x: auto; padding: 8px 20px 0; scrollbar-width: none; }
+.noms::-webkit-scrollbar { display: none; }
+.noms button {
+  position: relative;
+  flex: none;
+  min-height: 44px;
+  padding: 0 0 6px;
+  font-size: 26px;
+  line-height: 1;
+  font-weight: 900;
+  font-variation-settings: "wdth" 62;
+  text-transform: uppercase;
+  color: rgba(28, 22, 38, .3);
+  cursor: pointer;
+  transition: color .3s ease;
+}
+.noms button[aria-pressed="true"] { color: var(--encre); }
+.noms button i { position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: var(--encre); transform: scaleX(0); transform-origin: left; }
+.noms button[aria-pressed="true"] i { animation: remplit 5s linear both; }
+@keyframes remplit { to { transform: scaleX(1); } }
+
+@media (min-width: 960px) {
+  .mouvements { padding-bottom: 72px; }
+  .mvtGrille { display: grid; grid-template-columns: minmax(0, .7fr) minmax(0, 1.3fr); gap: 28px; align-items: start; padding-top: 44px; }
+  .mvtTete { padding-top: 12px; }
+  .mvtTitre { font-size: clamp(56px, 4.6vw, 70px); }
+  .plateau { margin: 0; display: grid; grid-template-columns: 1fr 150px; gap: 20px; align-items: center; }
+  .vedettes { --cote: calc(100cqw - 170px); height: calc(var(--cote) + 104px); }
+  .noms { flex-direction: column; gap: 6px; padding: 0; overflow: visible; }
+  .noms button { min-height: 40px; text-align: left; font-size: 34px; }
+  .sol, .vedette figcaption { left: 0; right: 0; }
+}
+
+/* ═══════════════ 3 · LE GUIDE ═══════════════
+   Le Guide se tient en grand au bord de l'écran, et la conversation se pose sur
+   lui, sans cadre. Les deux prénoms du titre sont les commandes. */
+.guide { position: relative; padding-top: 24px; overflow: hidden; }
+.guideTitre { font-size: clamp(50px, 14.2vw, 118px); white-space: nowrap; }
+.prenom {
+  font: inherit;
+  font-variation-settings: inherit;
+  text-transform: inherit;
+  letter-spacing: inherit;
+  color: rgba(28, 22, 38, .2);
+  cursor: pointer;
+  transition: color .3s ease;
+}
+.prenom[aria-pressed="true"] { color: var(--encre); }
+.prenom:focus-visible { outline: 3px solid #A66CF4; outline-offset: 3px; }
+
+.convScene { position: relative; height: 660px; margin-top: 6px; }
+.geant {
+  position: absolute;
+  right: -76px;
+  top: -6px;
+  width: 316px;
+  aspect-ratio: 3 / 4;
+  pointer-events: none;
+  -webkit-mask-image: linear-gradient(#000 62%, transparent 96%);
+  mask-image: linear-gradient(#000 62%, transparent 96%);
+}
+.geant img { opacity: 0; object-fit: contain; object-position: top; transition: opacity .22s ease; }
+.geant img.on { opacity: 1; }
+.convColonne { position: absolute; inset: 0; display: flex; flex-direction: column; padding: 0 12px 10px; }
+/* Le texte se pose à côté du Guide, dans le vide que laisse son épaule. */
+.convIntro { margin: 0; max-width: 54%; padding: 10px 8px 0; font-size: 16px; line-height: 1.42; color: var(--encre-2); }
+.convStatut { margin: 0; max-width: 54%; padding: 8px 8px 0; font-size: 13px; line-height: 1.3; color: var(--encre-3); }
+.convStatut b { font-weight: 700; color: var(--cuivre); }
+.convFil { position: relative; z-index: 1; flex: 1 1 auto; min-height: 0; margin-top: 6px; overflow: hidden; }
+.convFil[data-deborde] {
+  -webkit-mask-image: linear-gradient(transparent, #000 34px);
+  mask-image: linear-gradient(transparent, #000 34px);
+}
+@media (min-width: 960px) {
+  /* Le Guide tient toute la hauteur : la conversation et la grande bulle sont côte à
+     côte avec lui, et plus rien n'est posé seul au milieu de la page. */
+  .guide { padding-top: 56px; }
+  .guideTitre { font-size: clamp(50px, 5.8vw, 84px); }
+  .guide > .wrap { z-index: 2; }
+  .conv { max-width: 1180px; margin: -94px auto 0; padding: 0 44px; display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); grid-template-rows: auto auto; column-gap: 40px; row-gap: 18px; }
+  .convScene { display: contents; }
+  .geant { position: relative; right: auto; top: auto; grid-column: 1; grid-row: 1 / span 2; width: auto; height: calc(100% - 92px); min-height: 640px; aspect-ratio: auto; margin-top: 92px; -webkit-mask-image: linear-gradient(#000 70%, transparent 98%); mask-image: linear-gradient(#000 70%, transparent 98%); }
+  .geant img { object-position: top center; }
+  .convColonne { position: relative; inset: auto; grid-column: 2; grid-row: 1; height: 470px; padding: 0; }
+  .convFil { margin-top: 8px; }
+  .convIntro { max-width: 36ch; padding: 0; }
+  .convStatut { max-width: none; padding: 8px 0 0; }
 }
 
 /* La conversation : le même dessin que dans l'app, version 3.
@@ -507,60 +601,18 @@
    (`data-conv-repli`) reste à l'écran sans JavaScript et en mouvement réduit ;
    quand la boucle tourne, elle reste lue par un lecteur d'écran (`data-lecteur`
    la rend invisible sans la retirer de l'arbre d'accessibilité). */
-.conv {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  height: 580px;
-  max-height: 88vh;
-  min-height: 520px;
-  border-radius: 28px;
-  overflow: hidden;
-  background: #fff;
-  box-shadow: 0 40px 70px -46px rgba(80, 40, 140, .55), 0 0 0 1px rgba(120, 90, 180, .08);
-}
-.convHalo {
-  position: absolute; inset: -30% -20% auto -20%; height: 70%; z-index: 0; pointer-events: none;
-  background: radial-gradient(50% 50% at 50% 50%, rgba(166, 108, 244, .16), transparent 70%);
-}
-.convTete {
-  position: relative;
-  z-index: 2;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 12px 16px 10px;
-  border-bottom: 1px solid rgba(120, 90, 180, .1);
-}
-.convVisage {
-  position: relative;
-  width: 44px;
-  height: 55px;
-  flex: none;
-  -webkit-mask-image: linear-gradient(#000 72%, transparent);
-  mask-image: linear-gradient(#000 72%, transparent);
-}
-.convVisage img { object-fit: cover; object-position: top; opacity: 0; transition: opacity .22s ease; }
-.convVisage img.on { opacity: 1; }
-.convNoms { min-width: 0; display: grid; gap: 1px; }
-.convNom { font-size: 16px; font-weight: 800; line-height: 1.15; font-variation-settings: var(--w-voix); }
-.convStatut { font-size: 13px; line-height: 1.2; color: var(--encre-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.convStatut b { font-weight: 700; color: var(--cuivre); }
-.convFil { position: relative; z-index: 1; flex: 1 1 auto; min-height: 0; overflow: hidden; }
-.convFil[data-deborde] {
-  -webkit-mask-image: linear-gradient(transparent, #000 30px);
-  mask-image: linear-gradient(transparent, #000 30px);
-}
+/* La pile tient par le bas, au-dessus de la saisie : le Guide reste entier tant que
+   la conversation est courte, et les bulles montent sur lui à mesure qu'elle s'écrit. */
 .convPile {
   position: absolute;
   left: 0;
   right: 0;
-  top: 0;
+  bottom: 0;
   display: flex;
   flex-direction: column;
   gap: 8px;
-  padding: 16px 14px 10px;
-  transition: transform .42s var(--ease), opacity .32s ease;
+  padding: 16px 2px 10px;
+  transition: opacity .32s ease;
 }
 .convPile.efface { opacity: 0; }
 .convPile[data-lecteur] { opacity: 0; pointer-events: none; }
@@ -701,530 +753,422 @@
 .convSaisie[data-pret] .convEnvoi { color: #fff; background: var(--action); }
 .convSaisie[data-part] .convEnvoi { transform: scale(.88); }
 
-/* ═══════════════ 3 BIS · LES PHRASES QUI DÉFILENT ═══════════════
-   Chaque phrase correspond à une action réelle du Guide. Deux moitiés
-   identiques : la ligne recule d'exactement une moitié, puis repart. */
-.parler { background: #FBF9FF; padding: 0 0 88px; }
-@media (min-width: 768px) { .parler { padding: 0 0 120px; } }
-.parlerPanneau {
+
+/* ═══════════════ 3 BIS · ÉCRIS-LUI COMME TU PARLES ═══════════════
+   ⚠️ CE N'EST PLUS UN PANNEAU, C'EST UN MESSAGE (Louis, 2026-11-04 : « un gros
+   bloc connecté à rien »). Même encre et même coin que tes bulles dans la
+   conversation juste au-dessus. Chaque phrase dit ce qu'elle donne, et sur
+   ordinateur la bulle garde sa largeur de message.
+
+   Deux moitiés identiques : la ligne recule d'exactement une moitié, puis repart. */
+.grandeBulle {
   position: relative;
   overflow: hidden;
-  border-radius: 32px;
+  margin: 14px 12px 0 auto;
+  padding: 34px 0 32px;
+  border-radius: 34px 34px 8px 34px;
   color: #fff;
-  padding: 44px 0 42px;
   background:
-    radial-gradient(70% 90% at 82% 0%, rgba(232, 120, 190, .55), transparent 70%),
-    radial-gradient(80% 110% at 12% 10%, #9E68F6 0%, transparent 72%),
-    linear-gradient(160deg, #6E3FE0 0%, #4726B4 60%, #2B1579 100%);
-  box-shadow: 0 50px 80px -50px rgba(70, 30, 160, .8);
+    radial-gradient(90% 110% at 100% 0%, rgba(193, 59, 193, .46), transparent 70%),
+    radial-gradient(90% 120% at 0% 100%, rgba(139, 92, 246, .5), transparent 72%),
+    var(--bulle-moi);
+  box-shadow: 0 40px 70px -46px rgba(37, 30, 71, .9);
 }
-.parlerTete { position: relative; padding: 0 24px; }
-@media (min-width: 768px) { .parlerTete { padding: 0 48px; } }
-.parlerTete h2 {
-  margin: 0;
-  font-size: clamp(34px, 4.6vw, 52px);
-  line-height: 1.02;
-  font-weight: 850;
-  font-variation-settings: var(--w-voix);
-  letter-spacing: -.02em;
-  text-wrap: balance;
+.parlerTete { padding: 0 22px; }
+.parlerTete .grand { font-size: clamp(50px, 14.8vw, 68px); }
+@media (min-width: 960px) {
+  .grandeBulle { grid-column: 2; grid-row: 2; margin: 0; padding: 28px 0 26px; }
+  .parlerTete { padding: 0 28px; }
 }
-.parlerTete p { margin: 12px 0 0; max-width: 52ch; font-size: 16px; line-height: 1.55; color: rgba(255, 255, 255, .84); }
+.parlerTete p { margin: 14px 0 0; max-width: 36ch; font-size: 16px; line-height: 1.5; color: rgba(255, 255, 255, .78); }
 .lignes {
   position: relative;
-  margin-top: 30px;
+  margin-top: 26px;
   display: grid;
-  gap: 8px;
-  -webkit-mask-image: linear-gradient(90deg, transparent, #000 10%, #000 90%, transparent);
-  mask-image: linear-gradient(90deg, transparent, #000 10%, #000 90%, transparent);
+  gap: 12px;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
 }
 .ligne { display: flex; width: max-content; animation: defile var(--d, 70s) linear infinite; will-change: transform; }
 .ligneInverse { animation-direction: reverse; }
-.ligneMoitie { display: flex; flex-shrink: 0; gap: 40px; padding-right: 40px; }
-.ligne span {
-  font-size: clamp(20px, 3vw, 34px);
-  line-height: 1.32;
-  font-weight: 560;
-  letter-spacing: -.012em;
-  white-space: nowrap;
-}
-.ligne span:nth-child(3n+1) { color: rgba(255, 255, 255, .96); }
-.ligne span:nth-child(3n+2) { color: rgba(255, 255, 255, .46); }
-.ligne span:nth-child(3n+3) { color: #FFD9B8; }
+.ligneMoitie { display: flex; flex-shrink: 0; gap: 34px; padding-right: 34px; }
+.ligne span { font-size: 20px; line-height: 1.3; font-weight: 600; letter-spacing: -.01em; white-space: nowrap; }
+/* Ce que la phrase donne : la même chaleur que le bas du logo. */
+.ligne i { margin-left: 12px; font-size: 13px; font-style: normal; font-weight: 700; letter-spacing: 0; color: #FFC58C; }
 
-/* ═══════════════ 4 · TOUT SE PARLE ═══════════════
-   Une seule horloge de 11 s, deux temps : la séance, puis le repas. Le signal
-   passe par le logo, et le rang gagne 30 puis 5 EXP. */
-.relie { background: var(--creme); }
-.constellation {
-  position: relative;
-  margin: 48px auto 0;
-  max-width: 760px;
-  aspect-ratio: 1 / 1;
-}
-@media (min-width: 768px) { .constellation { aspect-ratio: 16 / 10; } }
-/* L'aurore derrière le logo : les quatre couleurs des blocs, qui tournent lentement. */
-.constellation::before {
-  content: "";
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: min(100%, 620px);
-  aspect-ratio: 1;
-  border-radius: 50%;
-  transform: translate(-50%, -50%);
-  background: conic-gradient(from 0deg, #CDB8FF, #F8C7E4, #FFD8B5, #BDF0DF, #CDB8FF);
-  -webkit-mask-image: radial-gradient(closest-side, #000 14%, transparent 100%);
-  mask-image: radial-gradient(closest-side, #000 14%, transparent 100%);
-  opacity: .6;
-  animation: tourne 28s linear infinite;
-}
-@keyframes tourne { to { transform: translate(-50%, -50%) rotate(360deg); } }
-.constellation > svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
-.fil { fill: none; stroke: url(#vitrine-fil); stroke-width: 2.5; stroke-linecap: round; opacity: .55; }
-.pouls {
-  fill: none;
-  stroke: url(#vitrine-pouls);
-  stroke-width: 5;
-  stroke-linecap: round;
-  stroke-dasharray: 16 100;
-  stroke-dashoffset: 16;
-}
-.pSeance { animation: pouls1 11s linear infinite; }
-.pRepas { animation: pouls2 11s linear infinite; }
-.pRang, .pGuide { animation: pouls3 11s linear infinite; stroke-dashoffset: -100; }
-@keyframes pouls1 { 0%, 4% { stroke-dashoffset: 16; } 13%, 100% { stroke-dashoffset: -100; } }
-@keyframes pouls2 { 0%, 54% { stroke-dashoffset: 16; } 63%, 100% { stroke-dashoffset: -100; } }
-@keyframes pouls3 {
-  0%, 14% { stroke-dashoffset: -100; }
-  24% { stroke-dashoffset: 16; }
-  24.01%, 64% { stroke-dashoffset: -100; }
-  74% { stroke-dashoffset: 16; }
-  74.01%, 100% { stroke-dashoffset: -100; }
-}
-.coeur {
-  position: absolute;
-  left: 50%; top: 50%;
-  width: 26%;
-  aspect-ratio: 1;
-  transform: translate(-50%, -50%);
-  border-radius: 50%;
-  display: grid;
-  place-items: center;
-  background: #fff;
-  box-shadow: 0 0 0 10px rgba(255, 255, 255, .6), 0 30px 60px -24px rgba(139, 92, 246, .6);
-}
-.coeur::before {
-  content: "";
-  position: absolute;
-  inset: -18%;
-  border-radius: 50%;
-  background: radial-gradient(closest-side, rgba(167, 139, 250, .34), transparent);
-  animation: battement 11s ease-out infinite;
-  z-index: -1;
-}
-@keyframes battement {
-  0%, 12% { transform: scale(.9); opacity: .5; }
-  16% { transform: scale(1.3); opacity: 1; }
-  26%, 62% { transform: scale(.9); opacity: .5; }
-  66% { transform: scale(1.3); opacity: 1; }
-  76%, 100% { transform: scale(.9); opacity: .5; }
-}
-.coeur img { width: 58%; height: auto; animation: coeurImg 11s ease-out infinite; }
-@keyframes coeurImg {
-  0%, 12% { transform: scale(1); }
-  15% { transform: scale(1.12); }
-  22%, 62% { transform: scale(1); }
-  65% { transform: scale(1.12); }
-  72%, 100% { transform: scale(1); }
-}
-.noeud {
-  position: absolute;
-  width: 38%;
-  max-width: 220px;
-  transform: translate(-50%, -50%);
-  border-radius: 20px;
-  padding: 12px 14px;
-  background: #fff;
-  box-shadow: 0 24px 40px -28px rgba(80, 40, 140, .6), 0 0 0 1px rgba(120, 90, 180, .08);
-  text-align: left;
-}
-.noeud::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  pointer-events: none;
-  box-shadow: 0 0 0 2px #A66CF4, 0 0 26px 2px rgba(166, 108, 244, .4);
-  opacity: 0;
-}
-.nSeance::after { animation: anneauA 11s ease-out infinite; }
-.nRepas::after { animation: anneauB 11s ease-out infinite; }
-.nRang::after, .nGuide::after { animation: anneauC 11s ease-out infinite; }
-@keyframes anneauA { 0%, 1% { opacity: 0; } 3%, 12% { opacity: 1; } 22%, 100% { opacity: 0; } }
-@keyframes anneauB { 0%, 51% { opacity: 0; } 53%, 62% { opacity: 1; } 72%, 100% { opacity: 0; } }
-@keyframes anneauC { 0%, 23% { opacity: 0; } 25%, 34% { opacity: 1; } 44%, 73% { opacity: 0; } 75%, 84% { opacity: 1; } 94%, 100% { opacity: 0; } }
-.noeud b { display: flex; align-items: center; gap: 7px; font-size: 16px; font-weight: 800; }
-.noeud b i { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 9px; font-style: normal; flex: none; }
-.noeud > span { display: block; margin-top: 3px; font-size: 13px; line-height: 1.35; color: var(--encre-2); }
-.pastille {
-  position: absolute;
-  z-index: 2;
-  left: 12px;
-  top: -14px;
-  padding: 4px 10px;
-  border-radius: 999px;
-  font-size: 11px;
-  font-style: normal;
-  font-weight: 800;
-  line-height: 1.3;
-  white-space: nowrap;
-  opacity: 0;
-}
-.fait { color: var(--fait-encre); background: var(--fait-fond); }
-.exp { color: #5B3FC4; background: #F3EEFF; box-shadow: 0 0 0 1px rgba(139, 92, 246, .25); }
-.sait { color: #A0309E; background: #FDEBFB; }
-.tA1 { animation: pastA1 11s var(--ease) infinite; }
-.tA2 { animation: pastA2 11s var(--ease) infinite; }
-.tB1 { animation: pastB1 11s var(--ease) infinite; }
-.tB2 { animation: pastB2 11s var(--ease) infinite; }
-@keyframes pastA1 { 0%, 1% { opacity: 0; transform: translateY(6px); } 3%, 44% { opacity: 1; transform: none; } 47%, 100% { opacity: 0; transform: translateY(-4px); } }
-@keyframes pastA2 { 0%, 23% { opacity: 0; transform: translateY(6px) scale(.9); } 25.5% { opacity: 1; transform: scale(1.08); } 28%, 44% { opacity: 1; transform: none; } 47%, 100% { opacity: 0; transform: translateY(-4px); } }
-@keyframes pastB1 { 0%, 51% { opacity: 0; transform: translateY(6px); } 53%, 94% { opacity: 1; transform: none; } 97%, 100% { opacity: 0; transform: translateY(-4px); } }
-@keyframes pastB2 { 0%, 73% { opacity: 0; transform: translateY(6px) scale(.9); } 75.5% { opacity: 1; transform: scale(1.08); } 78%, 94% { opacity: 1; transform: none; } 97%, 100% { opacity: 0; transform: translateY(-4px); } }
-@media (max-width: 520px) {
-  .noeud { width: 44%; padding: 10px; }
-  .noeud > span { display: none; }
-  .pastille { left: 6px; }
-}
-
-/* ═══════════════ 5 · LE CHEMIN ═══════════════ */
-.chemin { background: var(--creme); }
-.etapes {
-  margin: 44px 0 0;
-  padding: 0 0 14px;
-  list-style: none;
-  display: flex;
-  gap: 14px;
-  overflow-x: auto;
-  scroll-snap-type: x mandatory;
-  scrollbar-width: none;
-}
-.etapes::-webkit-scrollbar { display: none; }
-@media (min-width: 960px) {
-  .etapes { display: grid; grid-template-columns: repeat(4, 1fr); overflow: visible; }
-}
-.etape {
-  position: relative;
-  flex: 0 0 78%;
-  scroll-snap-align: center;
-  border-radius: 26px;
-  overflow: hidden;
-  background: #fff;
-  box-shadow: 0 30px 50px -40px rgba(80, 40, 140, .55), 0 0 0 1px rgba(120, 90, 180, .07);
-}
-.etape::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  pointer-events: none;
-  box-shadow: inset 0 0 0 2px #C9A7FF;
-  opacity: 0;
-}
-/* Sur ordinateur, les quatre cartes s'allument à tour de rôle. */
-@media (min-width: 960px) {
-  .etape { animation: etapeMonte 12s var(--ease) infinite; animation-delay: calc(var(--i) * 3s - 12s); }
-  .etape::after { animation: etapeAnneau 12s ease infinite; animation-delay: calc(var(--i) * 3s - 12s); }
-}
-@keyframes etapeMonte { 0%, 25%, 100% { transform: none; } 3%, 22% { transform: translateY(-8px); } }
-@keyframes etapeAnneau { 0%, 25%, 100% { opacity: 0; } 3%, 22% { opacity: 1; } }
-.etapePhoto { position: relative; aspect-ratio: 4 / 3; }
-.etapeRepere {
-  position: absolute; left: 12px; bottom: -22px; z-index: 2;
-  width: 52px; height: 52px; border-radius: 50%;
-  display: grid; place-items: center;
-  background: #fff;
-  box-shadow: 0 10px 20px -10px rgba(80, 40, 140, .6);
-}
-.etapeCorps { padding: 30px 16px 18px; }
-.etapeCorps h3 { margin: 4px 0 0; font-size: 20px; line-height: 1.12; font-weight: 850; font-variation-settings: var(--w-voix); }
-.etapeCorps p { margin: 6px 0 0; font-size: 13px; line-height: 1.5; color: var(--encre-2); }
-.pastilles { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
-.pastilles span { padding: 4px 10px; border-radius: 999px; font-size: 11px; font-weight: 800; }
-.note { margin: 16px 0 0; text-align: center; font-size: 13px; color: var(--encre-3); }
-
-/* ═══════════════ 6 · NUTRITION ═══════════════ */
-.nutrition { background: #FFF9F3; }
-.nutriGrille { display: grid; gap: 44px; align-items: center; }
+/* ═══════════════ 4 · NUTRITION ═══════════════
+   La photo prend toute la largeur, et le ticket sort dessous, ligne par ligne.
+   Le total est la somme des lignes, comme dans l'analyse de l'app. */
+.nutrition { position: relative; padding: 84px 0 92px; }
+.nutriGrille { display: grid; }
 .nutriGrille > * { min-width: 0; }
-@media (min-width: 960px) { .nutriGrille { grid-template-columns: .95fr 1.05fr; gap: 64px; } }
-.assiette {
-  position: relative;
-  width: min(100%, 460px);
-  margin: 0 auto;
-  aspect-ratio: 4 / 5;
-  border-radius: 32px;
-  overflow: hidden;
-  background: #F3E8DA;
-  box-shadow: 0 50px 80px -50px rgba(120, 60, 20, .6);
-}
+.nutriTete { padding: 0 20px 20px; }
+.assiette { position: relative; width: 100%; aspect-ratio: 1; overflow: hidden; background: #F3E8DA; }
 .plat { position: absolute; inset: 0; opacity: 0; transition: opacity .7s ease; }
 .plat.on { opacity: 1; }
-.scan {
+/* Un numéro posé sur l'aliment, le même que sur sa ligne du ticket : la photo
+   reste une photo, et on lit le détail à côté. */
+.repere {
   position: absolute;
-  inset: 22px;
-  z-index: 2;
-  pointer-events: none;
-  background:
-    linear-gradient(rgba(255, 255, 255, .92), rgba(255, 255, 255, .92)) 0 0 / 34px 3px no-repeat,
-    linear-gradient(rgba(255, 255, 255, .92), rgba(255, 255, 255, .92)) 0 0 / 3px 34px no-repeat,
-    linear-gradient(rgba(255, 255, 255, .92), rgba(255, 255, 255, .92)) 100% 0 / 34px 3px no-repeat,
-    linear-gradient(rgba(255, 255, 255, .92), rgba(255, 255, 255, .92)) 100% 0 / 3px 34px no-repeat,
-    linear-gradient(rgba(255, 255, 255, .92), rgba(255, 255, 255, .92)) 0 100% / 34px 3px no-repeat,
-    linear-gradient(rgba(255, 255, 255, .92), rgba(255, 255, 255, .92)) 0 100% / 3px 34px no-repeat,
-    linear-gradient(rgba(255, 255, 255, .92), rgba(255, 255, 255, .92)) 100% 100% / 34px 3px no-repeat,
-    linear-gradient(rgba(255, 255, 255, .92), rgba(255, 255, 255, .92)) 100% 100% / 3px 34px no-repeat;
+  z-index: 3;
+  width: 26px;
+  height: 26px;
+  margin: -13px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  font-size: 11px;
+  font-weight: 700;
+  color: #fff;
+  background: rgba(20, 14, 30, .78);
+  box-shadow: 0 0 0 1.5px rgba(255, 255, 255, .85);
+  opacity: 0;
+  transform: scale(.4);
+  transition: opacity .2s ease, transform .4s cubic-bezier(.3, 1.6, .5, 1);
 }
-.ligneScan { position: absolute; inset: 22px; z-index: 2; pointer-events: none; opacity: 0; }
-.ligneScan.passe { opacity: 1; animation: balaie 2.4s cubic-bezier(.45, 0, .55, 1) both; }
+.repere.vu { opacity: 1; transform: none; }
+.ligneScan { position: absolute; inset: 0; z-index: 2; pointer-events: none; opacity: 0; }
+.ligneScan.passe { opacity: 1; animation: balaie 2.6s cubic-bezier(.45, 0, .55, 1) both; }
 .ligneScan::before {
   content: "";
   position: absolute;
   inset: 0 0 auto 0;
-  height: 3px;
-  border-radius: 3px;
-  background: linear-gradient(90deg, transparent, #fff, transparent);
-  box-shadow: 0 0 22px 6px rgba(255, 255, 255, .7);
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #fff 18%, #fff 82%, transparent);
+  box-shadow: 0 0 24px 7px rgba(255, 255, 255, .75);
 }
 @keyframes balaie { from { transform: translate3d(0, 0, 0); } to { transform: translate3d(0, 100%, 0); } }
-/* Chaque étiquette est CENTRÉE sur son aliment (Louis, 2026-10-13 : « le
-   saumon sur le riz »). Changer de photo = refaire ces positions, dans `PLATS`. */
-.macro {
-  position: absolute;
-  z-index: 3;
-  padding: 8px 12px;
-  border-radius: 14px;
-  font-size: 13px;
-  font-weight: 750;
-  background: rgba(255, 255, 255, .96);
-  box-shadow: 0 14px 28px -16px rgba(40, 20, 30, .7);
-  white-space: nowrap;
-  transform: translate(-50%, -50%) scale(.8);
-  opacity: 0;
-  transition: opacity .25s ease, transform .4s cubic-bezier(.3, 1.6, .5, 1);
-}
-.macro.vu { opacity: 1; transform: translate(-50%, -50%); }
-.macro b { font-weight: 800; }
-.resultat {
-  position: absolute;
-  z-index: 3;
-  left: 50%;
-  bottom: 22px;
-  padding: 10px 16px;
-  border-radius: 18px;
-  color: #fff;
-  font-size: 13px;
-  font-weight: 700;
-  background: rgba(28, 22, 38, .84);
-  white-space: nowrap;
-  transform: translate(-50%, 10px);
-  opacity: 0;
-  transition: opacity .3s ease, transform .4s var(--ease);
-}
-.resultat.vu { opacity: 1; transform: translate(-50%, 0); }
-.resultat b { font-size: 20px; margin: 0 2px 0 4px; }
-.listeNutri { margin: 24px 0 0; padding: 0; list-style: none; display: grid; gap: 10px; }
-.listeNutri li {
-  display: flex; gap: 12px; align-items: flex-start;
-  padding: 14px 16px;
-  border-radius: 18px;
-  background: #fff;
-  box-shadow: 0 1px 2px rgba(60, 30, 10, .05);
-}
-.listeNutri li i { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 11px; font-style: normal; flex-shrink: 0; }
-.listeNutri b { display: block; font-size: 16px; }
-.listeNutri span { font-size: 13px; color: var(--encre-2); }
 
-/* ═══════════════ 7 · LES RANGS ═══════════════
-   Le compteur monte de 0 au dernier seuil, et chaque rang s'allume quand il
-   est atteint. Sans script, ils sont tous allumés : `data-anime` les éteint. */
-.rangs { background: radial-gradient(60% 30% at 50% 74%, rgba(245, 177, 32, .13), transparent 100%), #FFFFFF; }
-.compteur {
-  margin: 34px auto 0;
-  display: inline-flex;
-  align-items: baseline;
-  gap: 8px;
-  padding: 8px 18px;
-  border-radius: 999px;
-  background: #F6F1FF;
-  color: #5B3FC4;
-  font-size: 16px;
-  font-weight: 700;
-}
-.compteur b { font-size: 26px; font-weight: 700; min-width: 4ch; text-align: right; }
-.escalier {
-  margin: 26px auto 0;
-  max-width: 900px;
-  display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
-  align-items: end;
-  gap: 6px;
-  padding: 0;
-  list-style: none;
-}
-.marche { display: flex; flex-direction: column; align-items: center; text-align: center; min-width: 0; }
-.gemme {
-  position: relative;
-  width: 100%;
-  max-width: 110px;
-  aspect-ratio: 1;
-  transition: opacity .45s ease, transform .55s cubic-bezier(.3, 1.7, .5, 1);
-}
-.gemme::after {
-  content: "";
+/* Le ticket : du papier, un bord dentelé, et rien d'autre. L'ombre vit sur le
+   parent, parce qu'un masque couperait celle du papier. */
+.ticket { position: relative; z-index: 4; margin: -46px 14px 0; min-height: 524px; filter: drop-shadow(0 22px 26px rgba(70, 40, 20, .2)); }
+.ticketPlat {
   position: absolute;
-  inset: 2%;
-  border-radius: 50%;
-  background: radial-gradient(closest-side, rgba(167, 139, 250, .6), transparent);
-  z-index: -1;
+  left: 0;
+  right: 0;
+  top: 0;
+  padding: 18px 16px 24px;
+  background: #fff;
   opacity: 0;
-  transition: opacity .5s ease;
+  visibility: hidden;
+  transition: opacity .4s ease, visibility 0s .4s;
+  -webkit-mask:
+    conic-gradient(from -45deg at 50% 100%, transparent 0deg, #000 1deg 89deg, transparent 90deg) bottom / 14px 8px repeat-x,
+    linear-gradient(#000 0 0) top / 100% calc(100% - 7.5px) no-repeat;
+  mask:
+    conic-gradient(from -45deg at 50% 100%, transparent 0deg, #000 1deg 89deg, transparent 90deg) bottom / 14px 8px repeat-x,
+    linear-gradient(#000 0 0) top / 100% calc(100% - 7.5px) no-repeat;
 }
-.socle {
+.ticketPlat.on { opacity: 1; visibility: visible; transition: opacity .4s ease; }
+.ticketTete { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin: 0; padding-bottom: 10px; border-bottom: 1px dashed rgba(28, 22, 38, .25); font-size: 13px; color: var(--encre-3); }
+.ticketTete b { font-size: 20px; font-weight: 800; color: var(--encre); }
+.ticketPlat ol { margin: 0; padding: 8px 0; list-style: none; border-bottom: 1px dashed rgba(28, 22, 38, .25); }
+.ticketLigne {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr) auto 38px;
+  gap: 8px;
+  align-items: baseline;
+  padding: 4px 0;
+  font-size: 16px;
+  line-height: 1.25;
+  opacity: 0;
+  transform: translate3d(0, 6px, 0);
+  transition: opacity .25s ease, transform .3s var(--ease);
+}
+.ticketLigne.vu { opacity: 1; transform: none; }
+.ticketLigne i { font-size: 11px; font-style: normal; font-weight: 700; color: var(--encre-3); }
+.ticketLigne span:nth-of-type(2) { font-size: 13px; color: var(--encre-3); }
+.ticketLigne span:nth-of-type(3) { font-size: 13px; font-weight: 700; text-align: right; }
+.ticketTotal { display: flex; align-items: baseline; gap: 8px; margin: 12px 0 0; font-size: 16px; font-weight: 700; }
+.ticketTotal b { margin-left: auto; font-size: 34px; line-height: 1; font-weight: 800; }
+.ticketMacros { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 2px 12px; margin: 8px 0 0; font-size: 13px; color: var(--encre-2); }
+.ticketMacros b { font-weight: 700; color: var(--encre); }
+
+.nutriSuite { padding: 26px 20px 0; }
+/* Le reste de la nutrition : deux lignes de texte et un filet, sans aucune boîte. */
+.aussi { margin: 26px 0 0; display: grid; }
+.aussi > div { padding: 14px 0; border-top: 1px solid rgba(28, 22, 38, .14); }
+.aussi dt { font-size: 26px; line-height: 1; font-weight: 900; font-variation-settings: "wdth" 62; text-transform: uppercase; }
+.aussi dd { margin: 4px 0 0; font-size: 16px; color: var(--encre-2); }
+
+@media (min-width: 960px) {
+  .nutrition { padding: 120px 0 128px; }
+  .nutriGrille { max-width: 1180px; margin: 0 auto; padding: 0 44px; grid-template-columns: minmax(0, 1fr) 420px; column-gap: 56px; }
+  .nutriTete { grid-column: 1 / -1; padding: 0 0 28px; }
+  .assiette { grid-column: 1; grid-row: 2 / span 2; border-radius: 6px; }
+  .ticket { grid-column: 2; grid-row: 2; margin: 0 0 0 -120px; min-height: 524px; }
+  .nutriSuite { grid-column: 2; grid-row: 3; padding: 0; }
+}
+
+/* ═══════════════ LE CRÉPUSCULE ═══════════════
+   Le même ciel, retourné. ⚠️ Le haut est déjà de la couleur de la page sur 24 px :
+   une hauteur fractionnaire laisserait une ligne. */
+.crepuscule {
   position: relative;
+  z-index: 11;
+  height: var(--jour);
   overflow: hidden;
-  width: 100%;
-  margin-top: 8px;
-  border-radius: 14px 14px 0 0;
-  background: linear-gradient(180deg, #F3EEFF, #FBF9FF);
-  border: 1px solid rgba(139, 92, 246, .14);
-  border-bottom: 0;
-  padding-top: 10px;
+  background: linear-gradient(#FFF2F5 24px, var(--nuit) 24px);
 }
-.socle::before {
+.crepuscule::before {
   content: "";
   position: absolute;
   inset: 0;
-  z-index: 0;
-  background: linear-gradient(180deg, #C9A7FF, #F0E6FF);
-  transform: translateY(100%);
-  transition: transform .7s var(--ease);
+  background: linear-gradient(to top, var(--ciel-soir));
+  animation: respire 7s ease-in-out infinite alternate;
 }
-.socle b, .socle span { position: relative; z-index: 1; }
-.socle b { display: block; font-size: 13px; font-weight: 800; font-variation-settings: "wdth" 86; letter-spacing: -.01em; }
-.socle span { display: block; margin-top: 2px; font-size: 11px; color: var(--encre-3); }
-@media (min-width: 768px) { .socle b { font-size: 16px; font-variation-settings: "wdth" 100; } }
-.escalier[data-anime] .marche .gemme { opacity: .28; transform: scale(.86); }
-.escalier[data-anime] .marche.atteint .gemme { opacity: 1; transform: none; }
-.escalier[data-anime] .marche.atteint .socle::before { transform: none; }
-.escalier[data-anime] .marche.atteint .socle span { color: #4A3596; }
-.escalier[data-anime] .marche.ici .gemme { transform: scale(1.1); }
-.escalier[data-anime] .marche.ici .gemme::after { opacity: 1; }
 
-/* ═══════════════ 8 · LE RELAIS ═══════════════ */
-.relais { background: #FFF6F2; }
-.relaisGrille { display: grid; gap: 44px; align-items: center; }
-.relaisGrille > * { min-width: 0; }
-@media (min-width: 960px) { .relaisGrille { grid-template-columns: 1fr 1fr; gap: 64px; } }
-.affiche {
+/* ═══════════════ LE SOIR ═══════════════
+   Des étoiles en CSS, pour ne pas allumer un canevas de plus : trois tailles de
+   motif, pour qu'aucune répétition ne se voie. */
+.nuit {
   position: relative;
-  width: min(72vw, 300px);
-  margin: 0 auto;
-  aspect-ratio: 9 / 16;
-  border-radius: 26px;
-  overflow: hidden;
-  box-shadow: 0 50px 80px -40px rgba(40, 20, 80, .6);
-  transform: rotate(-3deg);
+  z-index: 11;
+  color: #fff;
+  background-color: var(--nuit);
+  background-image:
+    radial-gradient(1px 1px at 31px 44px, rgba(255, 255, 255, .7), transparent 100%),
+    radial-gradient(1px 1px at 170px 120px, rgba(255, 255, 255, .45), transparent 100%),
+    radial-gradient(1.4px 1.4px at 240px 16px, rgba(255, 255, 255, .6), transparent 100%),
+    radial-gradient(1px 1px at 80px 210px, rgba(255, 255, 255, .5), transparent 100%),
+    radial-gradient(1px 1px at 300px 260px, rgba(255, 255, 255, .35), transparent 100%);
+  background-size: 313px 277px, 379px 331px, 457px 389px, 293px 353px, 347px 419px;
 }
-/* ⚠️ L'AFFICHE ET SES TROIS TRAITS SUIVENT UNE SEULE HORLOGE DE 12 s. L'app
-   compte quatre maillons, mais l'affiche ne change que trois fois
-   (`etatPoster`, lib/defi.ts) : le troisième maillon laissait donc un trait se
-   remplir devant une image qui ne bougeait pas (Louis, 2026-11-04 : « une étape
-   dans le vide »). La vitrine montre les trois changements de l'affiche, un
-   toutes les 3 s, et l'affiche complète tient jusqu'à 95 %.
-   Les états s'EMPILENT (02 sur 01, 03 sur 02, 04 sur 03) : l'état 01 reste
-   en dessous, sans animation, et tous les autres s'effacent ensemble. */
-.affiche > div { position: absolute; inset: 0; opacity: 0; }
-.affiche > div:first-child { opacity: 1; }
-.affiche > div:nth-child(2) { animation: seance1 12s linear infinite; }
-.affiche > div:nth-child(3) { animation: seance2 12s linear infinite; }
-.affiche > div:nth-child(4) { animation: seance3 12s linear infinite; }
-@keyframes seance1 { 0%, 21% { opacity: 0; } 25%, 95% { opacity: 1; } 100% { opacity: 0; } }
-@keyframes seance2 { 0%, 46% { opacity: 0; } 50%, 95% { opacity: 1; } 100% { opacity: 0; } }
-@keyframes seance3 { 0%, 71% { opacity: 0; } 75%, 95% { opacity: 1; } 100% { opacity: 0; } }
-.afficheSignature {
-  position: absolute; z-index: 2; inset: auto 0 18px; text-align: center;
-  color: #fff; font-size: 13px; font-weight: 300; letter-spacing: .3em;
-}
-.maillons { display: flex; gap: 8px; margin-top: 22px; }
-.maillons i {
-  flex: 1; height: 8px; border-radius: 4px;
-  background: rgba(139, 92, 246, .14);
-  overflow: hidden; position: relative;
-}
-.maillons i::after {
-  content: ""; position: absolute; inset: 0;
-  background: #8B5CF6;
-  transform: scaleX(0); transform-origin: left;
-}
-.maillons i:nth-child(1)::after { animation: trait1 12s linear infinite; }
-.maillons i:nth-child(2)::after { animation: trait2 12s linear infinite; }
-.maillons i:nth-child(3)::after { animation: trait3 12s linear infinite; }
-@keyframes trait1 { 0%, 21% { transform: scaleX(0); } 25%, 95% { transform: scaleX(1); } 100% { transform: scaleX(0); } }
-@keyframes trait2 { 0%, 46% { transform: scaleX(0); } 50%, 95% { transform: scaleX(1); } 100% { transform: scaleX(0); } }
-@keyframes trait3 { 0%, 71% { transform: scaleX(0); } 75%, 95% { transform: scaleX(1); } 100% { transform: scaleX(0); } }
+.nuit .texte { color: rgba(255, 255, 255, .76); }
 
-/* ═══════════════ 9 · LE COMPTE GRATUIT + VAIIYA+ ═══════════════
-   Le fond se réchauffe vers le bas de la page : c'est le soir qui approche. */
-.offre { background: linear-gradient(#FFF6F2 0, var(--creme) 22%, var(--creme) 62%, #FFF2F5 100%); }
-.offreGrille { display: grid; gap: 16px; margin-top: 44px; }
+/* ═══════════════ 5 · LE RELAIS ═══════════════
+   Sans script, l'affiche est finie et les trois traits sont pleins. `data-anime`
+   la fait dévoiler sous le doigt : `--p` va de 0 à 1 sur toute la section. */
+.relais { position: relative; }
+.relaisScene { position: relative; display: flex; flex-direction: column; justify-content: flex-end; height: 100vh; height: 100svh; min-height: 560px; overflow: hidden; }
+.relais[data-anime] { height: 280vh; height: 280svh; }
+.relais[data-anime] .relaisScene { position: sticky; top: 0; }
+.affiche { position: absolute; inset: 0; }
+.affiche > div { position: absolute; inset: 0; }
+.affiche::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(var(--nuit) 0, rgba(11, 8, 20, .25) 18%, transparent 34%, transparent 46%, rgba(11, 8, 20, .82) 72%, var(--nuit) 100%);
+}
+.relais[data-anime] .affiche > div:nth-child(2) { opacity: clamp(0, calc((var(--p, 0) - .08) * 9), 1); }
+.relais[data-anime] .affiche > div:nth-child(3) { opacity: clamp(0, calc((var(--p, 0) - .36) * 9), 1); }
+.relais[data-anime] .affiche > div:nth-child(4) { opacity: clamp(0, calc((var(--p, 0) - .64) * 9), 1); }
+.afficheSignature { position: absolute; z-index: 2; left: 0; right: 0; top: calc(env(safe-area-inset-top, 0px) + 34px); text-align: center; color: rgba(255, 255, 255, .8); font-size: 13px; font-weight: 300; letter-spacing: .3em; }
+.barres { position: absolute; z-index: 3; left: max(16px, env(safe-area-inset-left, 0px)); right: max(16px, env(safe-area-inset-right, 0px)); top: calc(env(safe-area-inset-top, 0px) + 16px); display: flex; gap: 6px; }
+.barres i { position: relative; flex: 1; height: 3px; border-radius: 2px; overflow: hidden; background: rgba(255, 255, 255, .24); }
+.barres i::after { content: ""; position: absolute; inset: 0; background: #fff; transform-origin: left; }
+.relais[data-anime] .barres i:nth-child(1)::after { transform: scaleX(clamp(0, calc(var(--p, 0) / .17), 1)); }
+.relais[data-anime] .barres i:nth-child(2)::after { transform: scaleX(clamp(0, calc((var(--p, 0) - .28) / .19), 1)); }
+.relais[data-anime] .barres i:nth-child(3)::after { transform: scaleX(clamp(0, calc((var(--p, 0) - .56) / .19), 1)); }
+.relaisTexte { position: relative; z-index: 2; padding: 0 20px calc(env(safe-area-inset-bottom, 0px) + 34px); }
+.relaisTexte p { margin: 14px 0 0; max-width: 34ch; font-size: 16px; line-height: 1.5; color: rgba(255, 255, 255, .8); }
+@media (min-width: 960px) {
+  .relaisScene { max-width: 1180px; margin: 0 auto; justify-content: center; padding: 0 44px; }
+  .affiche { left: auto; right: 44px; top: 6vh; bottom: 6vh; width: calc(88vh * .5625); overflow: hidden; border-radius: 6px; }
+  .affiche::after { background: linear-gradient(rgba(11, 8, 20, .5), transparent 16%, transparent 80%, rgba(11, 8, 20, .5)); }
+  .barres { left: auto; right: 60px; top: calc(6vh + 16px); width: calc(88vh * .5625 - 32px); }
+  .afficheSignature { top: calc(100% - 44px); }
+  .relaisTexte { max-width: 560px; padding: 0; }
+}
+
+/* ═══════════════ 6 · TOUT SE PARLE ═══════════════
+   ⚠️ LE LOGO EST LE SCHÉMA. `.ancre` est mesurée par le script : son haut est le
+   point du logo, sa hauteur celle du V, sa largeur celle d'une demi-branche. Le
+   dessin se règle donc ici, dans la feuille de style, et nulle part ailleurs. */
+.relie { position: relative; overflow: hidden; padding-bottom: 56px; }
+.relie .fond { z-index: 0; }
+.relieLogo { display: none; position: absolute; z-index: 0; height: auto; }
+.relieTete { z-index: 2; padding-top: 72px; }
+.relieTete p { margin: 14px 0 0; max-width: 34ch; font-size: 16px; line-height: 1.5; color: rgba(255, 255, 255, .76); }
+.relieScene { position: relative; z-index: 2; max-width: 1040px; height: 610px; margin: 78px auto 0; }
+.ancre { position: absolute; left: 50%; top: 318px; width: 146px; height: 252px; pointer-events: none; }
+.relieFils { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+.relieFils path { fill: none; stroke: url(#vitrine-fil); stroke-width: 1.5; stroke-linecap: round; opacity: .28; }
+.relieFils path.pouls { stroke-width: 3; opacity: 1; stroke-dasharray: 20 100; stroke-dashoffset: 20; }
+.relieFils path.passe { animation: fil .8s cubic-bezier(.3, 0, .4, 1) both; }
+@keyframes fil { from { stroke-dashoffset: 20; } to { stroke-dashoffset: -100; } }
+.objet { position: absolute; z-index: 3; width: 42%; max-width: 230px; }
+.objet b { display: block; font-size: 20px; line-height: 1.1; font-weight: 800; }
+.objet small { display: block; margin-top: 2px; min-height: 18px; font-size: 13px; color: rgba(255, 255, 255, .72); }
+.oImage { position: relative; aspect-ratio: 1; margin-bottom: 4px; }
+/* En haut, le nom passe au-dessus de l'image : dessous, il tombait sur la branche. */
+.oSeance, .oRepas { display: flex; flex-direction: column; }
+.oSeance .oImage, .oRepas .oImage { order: 3; margin: 2px 0 0; }
+.oRepas .oImage { width: 100%; }
+.oSeance { left: 10px; top: -64px; }
+.oRepas { right: 12px; top: -46px; width: 36%; text-align: right; }
+.oGuide { left: 12px; top: 372px; width: 38%; }
+.oRang { right: 16px; top: 384px; width: 34%; text-align: right; }
+/* Un personnage en leggings bleu nuit disparaîtrait sur la nuit : un fil de
+   lumière le détache, comme un contre-jour. */
+.oSeance .oImage { filter: drop-shadow(0 0 1px rgba(255, 255, 255, .7)) drop-shadow(0 0 16px rgba(166, 108, 244, .55)); }
+.oRepas .oImage img { clip-path: circle(45.6% at 50% 49%); }
+.oRepas .oImage { filter: drop-shadow(0 0 22px rgba(255, 170, 120, .34)); }
+.oGuide .oImage { filter: drop-shadow(0 0 18px rgba(166, 108, 244, .4)); -webkit-mask-image: linear-gradient(#000 70%, transparent); mask-image: linear-gradient(#000 70%, transparent); }
+.oRang .oImage { aspect-ratio: 1 / 1.15; filter: drop-shadow(0 0 22px rgba(120, 200, 255, .4)); transition: transform .5s cubic-bezier(.3, 1.8, .5, 1); }
+.objet .oImage { transition: filter .4s ease, transform .5s var(--ease); }
+.objet.actif .oImage { transform: scale(1.06); }
+.relie[data-anime] .objet small { opacity: 0; transform: translate3d(0, 6px, 0); transition: opacity .3s ease, transform .4s var(--ease); }
+.relie[data-anime] .objet.recu small, .relie[data-anime] .objet.actif small { opacity: 1; transform: none; }
+.objet.recu.oRang .oImage { transform: scale(1.12); }
+.oRang small span { font-size: 16px; font-weight: 800; color: #FFD9A8; }
+@media (min-width: 960px) {
+  .relieTete { padding-top: 96px; text-align: center; }
+  .relieTete p { margin-left: auto; margin-right: auto; }
+  .relieTete { padding-top: 64px; }
+  .relieScene { height: 640px; margin-top: -96px; }
+  .ancre { top: 470px; width: 300px; height: 372px; }
+  .objet { max-width: none; width: 230px; }
+  .oSeance { left: 70px; top: -28px; width: 210px; }
+  .oRepas { right: 90px; top: -14px; width: 180px; }
+  .oGuide { left: 200px; top: 440px; width: 160px; }
+  .oRang { right: 210px; top: 452px; width: 130px; }
+  .relie { padding-bottom: 40px; }
+}
+
+/* ═══════════════ 7 · DE BRONZE À ÉTERNEL ═══════════════
+   Sans script ou en mouvement réduit, c'est une liste : tout se lit. `data-anime`
+   en fait une scène : l'écran reste en place, et chaque rang y apporte sa lumière
+   pendant qu'on descend. `--a` et `--b` sont les couleurs du rang, lues dans `RANGS`. */
+.rangs { position: relative; }
+.rangsScene { position: relative; padding: 72px 0 40px; }
+.rangsTete .grand { font-size: clamp(40px, 11.2vw, 84px); }
+.rangsListe { list-style: none; margin: 30px 0 0; padding: 0 20px; display: grid; gap: 34px; }
+.rang { position: relative; display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 16px; align-items: center; }
+.rangGemme { position: relative; aspect-ratio: 320 / 512; }
+.rangLumiere { display: none; }
+.rangQuand { display: flex; justify-content: space-between; gap: 12px; margin: 0; font-size: 13px; color: rgba(255, 255, 255, .72); }
+.rangTexte h3 { margin: 2px 0 4px; font-size: 60px; line-height: .9; font-weight: 900; font-variation-settings: "wdth" 62; text-transform: uppercase; letter-spacing: -.012em; color: var(--a); }
+.rangTexte p:not(.rangQuand) { margin: 0; font-size: 16px; line-height: 1.4; color: rgba(255, 255, 255, .86); }
+.rangTexte small { display: block; margin-top: 4px; font-size: 13px; color: rgba(255, 255, 255, .62); }
+.echelle, .rangsExp { display: none; }
+.note { margin: 24px 20px 0; font-size: 13px; color: rgba(255, 255, 255, .56); }
+
+.rangs[data-anime] { height: 400vh; height: 400svh; }
+.rangs[data-anime] .rangsScene { position: sticky; top: 0; height: 100vh; height: 100svh; min-height: 560px; padding: 0; overflow: hidden; }
+.rangs[data-anime] .rangsTete { position: absolute; z-index: 3; left: 0; right: 0; top: calc(env(safe-area-inset-top, 0px) + 28px); }
+.rangs[data-anime] .rangsListe { position: absolute; inset: 0; margin: 0; padding: 0; display: block; }
+.rangs[data-anime] .rang { position: absolute; inset: 0; display: block; opacity: 0; visibility: hidden; transition: opacity .28s ease, visibility 0s .28s; }
+.rangs[data-anime] .rang.ici { opacity: 1; visibility: visible; transition: opacity .28s ease; }
+/* La lumière du rang : une nappe et des rayons qui tournent. */
+.rangs[data-anime] .rangLumiere { display: block; position: absolute; inset: 0; overflow: hidden; }
+.rangLumiere i { position: absolute; left: 50%; top: 40%; aspect-ratio: 1; border-radius: 50%; }
+.rangLumiere i:first-child { width: 170vmax; margin: -85vmax; background: radial-gradient(closest-side, var(--b), transparent 62%); opacity: .62; }
+.rangs[data-anime] .rang.ici .rangLumiere i:first-child { animation: nappe .8s var(--ease) both; }
+@keyframes nappe { from { opacity: 0; transform: scale(.72); } to { opacity: .62; transform: none; } }
+.rangLumiere i:last-child {
+  width: 150vmin;
+  margin: -75vmin;
+  background: repeating-conic-gradient(from 0deg, var(--a) 0deg 2deg, transparent 2deg 16deg);
+  -webkit-mask-image: radial-gradient(closest-side, #000 18%, transparent 92%);
+  mask-image: radial-gradient(closest-side, #000 18%, transparent 92%);
+  opacity: .26;
+  animation: tourne 26s linear infinite;
+}
+@keyframes tourne { to { transform: rotate(360deg); } }
+.rangs[data-anime] .rangGemme { position: absolute; left: 50%; top: 40%; height: min(36svh, 340px); margin-top: calc(min(36svh, 340px) / -2); transform: translateX(-50%); filter: drop-shadow(0 18px 40px rgba(0, 0, 0, .5)); }
+.rangs[data-anime] .rang.ici .rangGemme { animation: gemme .75s cubic-bezier(.2, 1.5, .4, 1) both; }
+@keyframes gemme { from { opacity: 0; transform: translateX(-50%) scale(.6) rotate(-6deg); } to { opacity: 1; transform: translateX(-50%); } }
+.rangs[data-anime] .rangTexte { position: absolute; left: 20px; right: 20px; bottom: calc(env(safe-area-inset-bottom, 0px) + 54px); }
+.rangs[data-anime] .rangTexte h3 { font-size: clamp(64px, 18vw, 110px); color: #fff; }
+.rangs[data-anime] .echelle { position: absolute; z-index: 3; right: max(12px, env(safe-area-inset-right, 0px)); top: 40%; transform: translateY(-50%); display: flex; flex-direction: column-reverse; gap: 8px; }
+.echelle span { display: block; width: 22px; opacity: .3; transition: opacity .3s ease, transform .4s var(--ease); }
+.echelle span.atteint { opacity: .7; }
+.echelle span.ici { opacity: 1; transform: scale(1.3); }
+.echelle img { display: block; width: 100%; height: auto; }
+.rangs[data-anime] .rangsExp { display: block; position: absolute; z-index: 3; left: 20px; top: calc(40% - min(18svh, 170px)); margin: 0; font-size: 13px; color: rgba(255, 255, 255, .8); }
+.rangsExp b { font-size: 26px; font-weight: 700; color: #fff; }
+.rangs[data-anime] .note { position: absolute; z-index: 3; left: 0; right: 0; bottom: calc(env(safe-area-inset-bottom, 0px) + 14px); margin: 0 20px; }
+.rangs[data-anime] .rangQuand span:last-child { display: none; }
+@media (min-width: 960px) {
+  .rangs[data-anime] .rangsTete { top: 44px; }
+  .rangs[data-anime] .rangGemme { left: 34%; }
+  .rangs[data-anime] .rangLumiere i { left: 34%; }
+  .rangs[data-anime] .rangTexte { left: 58%; right: 96px; bottom: 26%; }
+  .rangs[data-anime] .echelle { right: 44px; }
+  .rangs[data-anime] .rangsExp { left: 58%; top: 26%; }
+  .rangs[data-anime] .note { left: auto; right: 96px; bottom: 28px; text-align: right; }
+}
+
+/* ═══════════════ 8 · L'OFFRE ═══════════════ */
+.offre { position: relative; padding: 88px 0 64px; }
+.offreGrille { display: grid; gap: 44px; }
 .offreGrille > * { min-width: 0; }
-@media (min-width: 900px) { .offreGrille { grid-template-columns: 1.3fr 1fr; } }
-.offreCarte {
-  border-radius: 30px;
-  padding: 26px;
-  background: #fff;
-  box-shadow: 0 30px 60px -44px rgba(80, 40, 140, .5), 0 0 0 1px rgba(120, 90, 180, .08);
-}
-.offreCarte h3 { margin: 0; font-size: 26px; font-weight: 850; font-variation-settings: var(--w-voix); }
-.offreCarte ul { margin: 18px 0 0; padding: 0; list-style: none; display: grid; gap: 11px; }
-@media (min-width: 600px) { .offreCarte ul { grid-template-columns: 1fr 1fr; } }
-.offreCarte li { display: flex; gap: 10px; align-items: flex-start; font-size: 16px; color: var(--encre-2); }
-.coche {
-  display: grid; place-items: center;
-  width: 20px; height: 20px; margin-top: 2px; border-radius: 50%;
-  flex-shrink: 0; background: #2BD4A0;
-}
-.plus {
+.gratuit { min-width: 0; }
+/* Le gratuit : un mur de mots. Ils s'allument chacun leur tour, sans une coche. */
+.mur { margin: 22px 0 0; padding: 0; list-style: none; font-size: 34px; line-height: 1.12; font-weight: 700; letter-spacing: -.02em; }
+.mur li { display: inline; opacity: .46; animation: mur 16s linear infinite; animation-delay: calc(var(--i) * 2s - 16s); }
+.mur li::after { content: ". "; }
+@keyframes mur { 0%, 9% { opacity: 1; } 15%, 100% { opacity: .46; } }
+/* Vaiiya+ : une carte noire, gravée, avec un reflet qui passe. C'est le seul
+   endroit de la page où l'or parle. */
+.carteNoire {
   position: relative;
   overflow: hidden;
-  background: #FFFFFF;
-  box-shadow: 0 0 0 1.5px rgba(245, 177, 32, .55), 0 30px 60px -44px rgba(80, 40, 140, .4);
+  width: 100%;
+  max-width: 480px;
+  padding: 22px 22px 20px;
+  border-radius: 20px;
+  color: #EFE3C6;
+  background: linear-gradient(150deg, #1D170D 0%, #0D0A06 46%, #17110A 100%);
+  box-shadow: 0 0 0 1px rgba(245, 205, 120, .55), inset 0 1px 0 rgba(255, 240, 200, .18), 0 44px 80px -44px rgba(245, 177, 32, .5);
 }
-.plus ul { grid-template-columns: 1fr !important; }
-.prix { margin-top: 18px; display: flex; align-items: baseline; gap: 6px; color: #8A5A06; }
-.prix b { font-size: 34px; }
-.prix span { font-size: 13px; }
-.bientot {
-  display: inline-block; margin-top: 10px;
-  padding: 5px 11px; border-radius: 999px;
-  font-size: 11px; font-weight: 800;
-  color: #8A5A06; background: #FFF5DF;
+.carteNoire::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: repeating-radial-gradient(circle at 86% 118%, transparent 0 7px, rgba(245, 205, 120, .08) 7px 8px);
+  pointer-events: none;
+}
+.carteNoire::after {
+  content: "";
+  position: absolute;
+  inset: -40% -60%;
+  background: linear-gradient(112deg, transparent 44%, rgba(255, 232, 170, .16) 50%, transparent 56%);
+  transform: translate3d(-46%, 0, 0);
+  animation: revers 7s var(--ease) infinite;
+  pointer-events: none;
+}
+@keyframes revers { 0%, 54% { transform: translate3d(-46%, 0, 0); } 100% { transform: translate3d(46%, 0, 0); } }
+.carteNoire > * { position: relative; z-index: 1; }
+.carteTete { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin: 0; }
+.carteTete b {
+  font-size: 44px;
+  line-height: .95;
+  font-weight: 900;
+  font-variation-settings: var(--w-affiche);
+  letter-spacing: -.03em;
+  color: transparent;
+  background: linear-gradient(100deg, #F6D98E 0%, #FFF3CC 34%, #C99A3A 62%, #FFE7A8 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+.carteTete span { padding-top: 6px; font-size: 13px; color: rgba(239, 227, 198, .72); white-space: nowrap; }
+.carteNoire ul { margin: 22px 0 0; padding: 0; list-style: none; }
+.carteNoire li { padding: 9px 0; font-size: 16px; line-height: 1.25; border-top: 1px solid rgba(245, 205, 120, .2); }
+.prix { display: flex; align-items: baseline; justify-content: flex-end; gap: 8px; margin: 12px 0 0; }
+.prix { gap: 4px; }
+.prix b { font-size: 34px; font-weight: 700; color: #F6D98E; }
+.prix span { margin-left: 6px; }
+.prix span { font-size: 13px; color: rgba(239, 227, 198, .72); }
+@media (min-width: 960px) {
+  .offre { padding: 120px 0 88px; }
+  .offreGrille { grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 72px; align-items: end; }
+  .gratuit .grand { font-size: clamp(64px, 7.4vw, 96px); }
+  .mur { font-size: 44px; }
 }
 
-/* ═══════════════ 10 · AVIS + FIN ═══════════════ */
-/* La couleur exacte du bas de l'offre et du haut du crépuscule. */
-.avis { background: #FFF2F5; }
-.avisGrille { margin-top: 40px; display: grid; gap: 14px; text-align: left; }
-@media (min-width: 900px) { .avisGrille { grid-template-columns: repeat(3, 1fr); } }
-.avisCarte {
-  border-radius: 24px; padding: 20px; background: #fff;
-  box-shadow: 0 24px 40px -34px rgba(80, 40, 140, .5), 0 0 0 1px rgba(120, 90, 180, .07);
-}
-.avisCarte p { margin: 10px 0 0; font-size: 16px; line-height: 1.55; color: var(--encre-2); }
+/* ═══════════════ 9 · AVIS + FIN ═══════════════ */
+.avis { position: relative; padding: 72px 0; }
+.avisNote { display: flex; align-items: center; gap: 12px; margin: 16px 0 0; font-size: 13px; color: rgba(255, 255, 255, .72); }
+.avisNote b { font-size: 26px; color: #fff; }
+.avisGrille { margin-top: 28px; display: grid; }
+@media (min-width: 900px) { .avisGrille { grid-template-columns: repeat(3, 1fr); column-gap: 36px; } }
+.avisLigne { padding: 18px 0; border-top: 1px solid rgba(255, 255, 255, .14); }
+.avisLigne p { margin: 10px 0 0; font-size: 16px; line-height: 1.5; color: rgba(255, 255, 255, .78); }
 
-/* Le même ciel, retourné, puis le néon quand la nuit tombe. */
+/* Le néon, à la fin du soir. */
 .fin, .pied {
   --f-fond: var(--nuit);
   --f-encre: #fff;
@@ -1239,29 +1183,22 @@
   text-align: center;
   padding: 0 0 110px;
   color: var(--f-encre);
-  /* ⚠️ Le haut de la fin est déjà de la couleur de la page sur 24 px, et le
-     canevas commence en dessous (`clip-path`), pour la même raison qu'au bas
-     du héros : une hauteur fractionnaire laisserait une ligne. */
-  background: linear-gradient(#FFF2F5 24px, var(--f-fond) 24px);
 }
-.fin .fond { clip-path: inset(24px 0 0 0); }
-/* Mesure la hauteur du passage pour le script. */
-.sonde { position: absolute; top: 0; left: 0; width: 0; height: var(--crepuscule); pointer-events: none; }
 /* Sans WebGL, le logo reste là, sous le canevas qui le recouvre d'habitude. */
 .finLogo {
   position: absolute;
   z-index: 0;
   left: 50%;
-  top: calc(var(--crepuscule) + 34px);
+  top: 74px;
   width: 300px;
   height: auto;
   transform: translateX(-50%);
 }
 .fin .fond { z-index: 0; }
-.finCorps { position: relative; z-index: 2; padding-top: calc(var(--crepuscule) + 292px); }
+.finCorps { position: relative; z-index: 2; padding-top: 332px; }
 @media (min-width: 768px) {
-  .finLogo { top: calc(var(--crepuscule) + 44px); width: 370px; }
-  .finCorps { padding-top: calc(var(--crepuscule) + 356px); }
+  .finLogo { top: 84px; width: 370px; }
+  .finCorps { padding-top: 396px; }
 }
 .finTitre {
   margin: 0 auto;
@@ -1297,11 +1234,9 @@
 .pied li a:hover { color: var(--f-lien); }
 .pied .copyright { margin: 36px 0 0; max-width: none; padding-top: 20px; font-size: 13px; color: var(--f-encre-3); border-top: 1px solid var(--f-filet); }
 
-/* ═══════════════ RÉVÉLATION AU DÉFILEMENT ═══════════════
+/* ═══════════════ RÉVÉLATION DES TITRES ═══════════════
    `data-attente` n'est posé QUE par le script, et QUE sur ce qui est sous le
    pli à ce moment-là. Sans script : rien n'est caché. */
-.revele[data-attente] { opacity: 0; transform: translate3d(0, 34px, 0); }
-.revele { transition: opacity .9s var(--ease), transform .9s var(--ease); }
 
 /* ═══════════════ MOUVEMENT RÉDUIT ═══════════════ */
 @media (prefers-reduced-motion: reduce) {
@@ -1309,12 +1244,10 @@
     animation: none !important;
     transition: none !important;
   }
-  .revele[data-attente] { opacity: 1; transform: none; }
-  .rail { flex-wrap: nowrap; }
-  .bandeau, .lignes { overflow-x: auto; }
-  /* Sans mouvement, l'affiche finie et les trois traits pleins disent la
-     même chose : le relais gagné. */
-  .maillons i::after { transform: scaleX(1); }
-  .affiche > div:last-of-type { opacity: 1; }
-  .pouls { display: none; }
+  .grand[data-attente] .titreLigne > span { transform: none; }
+  .frise, .lignes { overflow-x: auto; }
+  .poses img { opacity: 0; }
+  .poses img:first-child { opacity: 1; }
+  .mur li { opacity: 1; }
+  .noms button i { transform: scaleX(1); }
 }

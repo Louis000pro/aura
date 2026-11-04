@@ -151,6 +151,7 @@ const CADRAGES = {
   avatar:    { l: 256, h: 256, hauteurTete: 0.55, largeurTete: 0.80, air: 0.10 },
   pose:      { l: 512, h: 640, hauteurTete: 0.40, largeurTete: 0.66, air: 0.07 },
   entete:    { l: 400, h: 500, hauteurTete: 0.40, largeurTete: 0.95, air: 0.07, centrage: "crane" },
+  scene:     { l: 660, h: 880, hauteurTete: 0.30, largeurTete: 0.95, air: 0.05, centrage: "crane", marge: 240 },
 };
 
 /** Qui recoit quoi. Un cadrage coute un fichier a telecharger : on ne genere
@@ -166,6 +167,8 @@ const ETATS_PAR_CADRAGE = {
   buste: ["welcome"],
   celebration: ["encourage"],
   entete: ["welcome", "listen", "think", "explain", "encourage"],
+  // Le Guide en grand sur la vitrine : il change de pose avec la conversation.
+  scene: ["listen", "think", "explain", "encourage"],
   // `pose` n'appartient a aucun etat : c'est le cadrage des MOMENTS, voir
   // CADRAGES_MOMENT plus bas. La liste vide n'est pas un oubli.
   pose: [],
@@ -349,17 +352,23 @@ async function fenetre(buf, boite, t, cadrage) {
   const largeur = Math.round((hauteur * cadrage.l) / cadrage.h);
 
   const cx = cadrage.centrage === "crane" ? t.axeCrane : (t.gauche + t.droite) / 2;
-  const left = Math.round(cx - largeur / 2);
+  // `marge` : un cadrage qui garde un bras tendu a le droit de sortir de la
+  // toile sur les cotes. La marge est transparente, le dessin n'est pas touche.
+  const marge = cadrage.marge ?? 0;
+  const left = Math.round(cx - largeur / 2) + marge;
   const top = Math.round(t.crane - cadrage.air * hauteur);
 
   // On refuse plutot que de rogner en silence : une illustration qui ne
   // rentre pas doit se voir a la generation, pas sur le telephone de
   // quelqu'un.
-  if (left < 0 || top < 0 || left + largeur > boite.w || top + hauteur > boite.h) {
+  if (left < 0 || top < 0 || left + largeur > boite.w + 2 * marge || top + hauteur > boite.h) {
     throw new Error(`fenetre hors toile (${left},${top} ${largeur}x${hauteur} sur ${boite.w}x${boite.h}) : le personnage est trop pres d'un bord`);
   }
 
-  const sortie = await sharp(buf)
+  const toile = marge
+    ? await sharp(buf).extend({ left: marge, right: marge, background: { r: 0, g: 0, b: 0, alpha: 0 } }).png().toBuffer()
+    : buf;
+  const sortie = await sharp(toile)
     .extract({ left, top, width: largeur, height: hauteur })
     .resize({ width: cadrage.l, height: cadrage.h, kernel: "lanczos3" })
     .png()
