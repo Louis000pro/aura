@@ -33,9 +33,6 @@ uniform float uNe;     /* 0 à 2 : les branches poussent depuis le point */
 uniform float uJour;   /* 0 nuit noire, 1 plein jour */
 uniform float uAllume; /* le néon : 0 éteint, 1 allumé */
 uniform float uPr;     /* pixels du canevas par pixel d'écran */
-uniform float uOndeG;  /* une lumière qui descend la branche gauche : 1 le bout, 0 le point, négatif éteint */
-uniform float uOndeD;  /* la même sur la branche droite */
-uniform float uEclat;  /* 0 à 1 : le point du logo s'allume quand la lumière y arrive */
 
 float h11(float n){ return fract(sin(n*127.1)*43758.5453); }
 float hs(vec2 p){ return fract(sin(dot(mod(p,1024.),vec2(12.9898,78.233)))*43758.5453); }
@@ -113,11 +110,8 @@ void main(){
   vec3 cl=degrade(h);
   float vagueH=.5+.5*sin(h*7.+t*.75);
   float balaye=exp(-pow((fract(h*.5+t*.06)-.5)*7.,2.));
-  float o0=q.x<0.?uOndeG:uOndeD;
-  float onde=o0<-.5?0.:exp(-pow((h-o0)*11.,2.))*smoothstep(-.02,.06,h)*(1.-smoothstep(1.,1.12,h));
 
   float halo=exp(-dehors*7.)*.5*smoothstep(0.,.07,h)*(1.-smoothstep(1.,1.25,h));
-  halo*=1.+onde*2.4;
   if(uNeon>.5) halo*=.55*uAllume;
   halo*=pousse;
   if(halo>0.){ col=mix(col,cl,smoothstep(0.,1.,halo/(a+halo+1e-4))); a=max(a,a*.6+halo*(.45+.55*vagueH)+halo*main_); }
@@ -130,7 +124,6 @@ void main(){
       vec3 c2=cl*mix(.72,1.,cote3)*(.82+.18*vagueH);
       c2=mix(c2,vec3(1.,.97,.93),balaye*.5);
       c2=mix(c2,vec3(1.,.97,.94),tete*.8);
-      c2=mix(c2,vec3(1.,.98,.95),onde);
       col=mix(col,c2,m);
       a=mix(a,mix(.94,1.,balaye),m);
     }
@@ -174,15 +167,6 @@ void main(){
   a*=smoothstep(mix(-.3,-.42,uRond),mix(-.02,-.2,uRond),q.y);
   }
 
-  /* Le point s'allume, et la lumière s'ouvre autour de lui. */
-  if(uEclat>0.){
-    vec2 dp=vec2(q.x,q.y+.1069);
-    float e2=dot(dp,dp);
-    float e=uEclat*(exp(-e2*90.)+.42*exp(-e2*7.));
-    col=mix(col,vec3(1.,.9,.78),clamp(e*1.4,0.,1.));
-    a=max(a,clamp(e,0.,1.));
-  }
-
   float gros=.04+.07*smoothstep(0.,.5,a)*(1.-smoothstep(.6,1.,a));
   a=clamp(a+(gr-.5)*gros*2.,0.,1.);
 
@@ -195,9 +179,9 @@ void main(){
 }
 `;
 
-const UNIFORMES = ["uP", "uS", "uX", "uT", "uNeon", "uRond", "uOuvre", "uMain", "uNe", "uJour", "uAllume", "uPr", "uOndeG", "uOndeD", "uEclat"] as const;
+const UNIFORMES = ["uP", "uS", "uX", "uT", "uNeon", "uRond", "uOuvre", "uMain", "uNe", "uJour", "uAllume", "uPr"] as const;
 
-export type Reglage = { neon: number; rond: number; ouvre: number; jour: number; allume: number; ondeG: number; ondeD: number; eclat: number };
+export type Reglage = { neon: number; rond: number; ouvre: number; jour: number; allume: number };
 export type Place = (largeur: number, hauteur: number) => { x: number; y: number; S: number; X: number };
 
 export type Fond = {
@@ -246,8 +230,9 @@ export function creerFond(canvas: HTMLCanvasElement, place: Place, depart: Parti
   }
   if (!preparer()) return null;
 
-  const r: Reglage = { neon: 0, rond: 0, ouvre: 0, jour: .2, allume: 1, ondeG: -1, ondeD: -1, eclat: 0, ...depart };
-  const pasImage = matchMedia("(pointer: coarse)").matches ? 32 : 15;
+  const r: Reglage = { neon: 0, rond: 0, ouvre: 0, jour: .2, allume: 1, ...depart };
+  const tactile = matchMedia("(pointer: coarse)").matches;
+  const pasImage = tactile ? 32 : 15;
   let w = 0, h = 0, pr = 0, temps = 8, raf = 0, actif = false, avant = 0;
   /* À la première apparition, les branches poussent depuis le point : il n'y
      a donc aucune image à remplacer au premier affichage. */
@@ -260,7 +245,7 @@ export function creerFond(canvas: HTMLCanvasElement, place: Place, depart: Parti
     const b = canvas.getBoundingClientRect();
     w = Math.max(1, b.width);
     h = Math.max(1, b.height);
-    pr = Math.min(pr || 9, Math.min(devicePixelRatio || 1, 1.5));
+    pr = Math.min(pr || 9, Math.min(devicePixelRatio || 1, tactile ? 1.25 : 1.5));
     canvas.width = Math.round(w * pr);
     canvas.height = Math.round(h * pr);
     contexte.viewport(0, 0, canvas.width, canvas.height);
@@ -283,9 +268,6 @@ export function creerFond(canvas: HTMLCanvasElement, place: Place, depart: Parti
     contexte.uniform1f(U.uNeon, r.neon);
     contexte.uniform1f(U.uRond, r.rond);
     contexte.uniform1f(U.uOuvre, r.ouvre);
-    contexte.uniform1f(U.uOndeG, r.ondeG);
-    contexte.uniform1f(U.uOndeD, r.ondeD);
-    contexte.uniform1f(U.uEclat, r.eclat);
     contexte.uniform1f(U.uNe, ne);
     contexte.uniform3f(U.uMain, (main.x - p.x) / p.S, (p.y - main.y) / p.S, main.z);
     contexte.drawArrays(contexte.TRIANGLES, 0, 3);
@@ -308,8 +290,11 @@ export function creerFond(canvas: HTMLCanvasElement, place: Place, depart: Parti
         }
       }
       if (ne < 2) {
-        if (!debut) debut = n;
-        ne = 2 * Math.pow(Math.min(1, (n - debut) / 3000), 1.2);
+        /* ⚠️ LE V N'ATTEND PAS LE SCRIPT (Louis, 2026-11-04 : « c'est un peu long
+           l'attente »). `n` compte depuis l'ouverture de la page : le temps passé à
+           charger ce code est rendu au V, jusqu'à 900 ms, et il arrive déjà poussé. */
+        if (!debut) debut = n - Math.min(n, 900);
+        ne = 2 * Math.pow(Math.min(1, (n - debut) / 2600), 1.1);
       }
       main.x += (main.cx - main.x) * .08;
       main.y += (main.cy - main.y) * .08;

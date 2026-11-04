@@ -256,6 +256,7 @@ export default function Navigation() {
         `data-defile-page`) : jamais un panneau, une feuille ou un rail.
         L'état porte le chemin où il a été lu : changer de page repart d'un
         haut visible sans effet de remise à zéro. ── */
+  const connecte = !!user;
   const [defile, setDefile] = useState<{ chemin: string; bas: boolean }>({ chemin: "", bas: false });
   useEffect(() => {
     const surDefilement = (e: Event) => {
@@ -272,9 +273,11 @@ export default function Navigation() {
       const bas = y > 12;
       setDefile((p) => (p.bas === bas && p.chemin === pathname ? p : { chemin: pathname, bas }));
     };
+    /* Sur la vitrine, un visiteur n'a pas cette barre : rien à écouter pendant qu'il lit. */
+    if (!connecte && pathname === "/") return;
     document.addEventListener("scroll", surDefilement, { capture: true, passive: true });
     return () => document.removeEventListener("scroll", surDefilement, { capture: true });
-  }, [pathname]);
+  }, [pathname, connecte]);
   /* Changer d'onglet repart du HAUT de la page (Louis, 2026-10-12). Sans ça,
      la nouvelle page héritait de la position de défilement de l'ancienne :
      le titre arrivait remonté de quelques dizaines de pixels, pile sous la

@@ -23,6 +23,8 @@ const ENCRE = "#1C1626";
 const ENCRE_2 = "#5C5468";
 const ENCRE_3 = "#7B7389";
 const LIEN = "#5B3FC4";
+/** Le dessous de la page : voir la note de globals.css (« le dessous des pages »). */
+const DESSOUS = "html:root{--html-bg:#FFF6FB;overscroll-behavior:none;color-scheme:light}body::before{display:none}";
 /* Les champs en verre (Louis, 2026-10-12) : pas de liseré coloré, une
    surface claire et translucide avec un reflet en haut. */
 const VERRE = {
@@ -425,10 +427,11 @@ export default function AuthPage() {
 
   // Déjà connecté (ou en train d'entrer) : la redirection est en route, on
   // ne repeint pas un formulaire qui va disparaître dans la seconde.
-  if (entree || (!isLoading && user)) return <div className={`${s.page} auth-racine`} aria-busy="true" />;
+  if (entree || (!isLoading && user)) return <div className={s.page} aria-busy="true"><style>{DESSOUS}</style></div>;
 
   return (
-    <div className={`${s.page} auth-racine`}>
+    <div className={s.page}>
+      <style>{DESSOUS}</style>
 
       {/* ── Ordinateur : la phrase et les signes du chemin ── */}
       <div className={s.cote}>

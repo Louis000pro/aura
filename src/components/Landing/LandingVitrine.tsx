@@ -12,9 +12,9 @@
  * quand la vitrine est à l'écran, et tout reste lisible sans lui.
  *
  * ⚠️ DÉCISIONS DE LOUIS À NE PAS DÉFAIRE.
- *   · La page dure une journée. Le héros est la nuit, le jour tient le mouvement,
- *     le Guide et les repas, puis le crépuscule tombe avant le relais, et le soir
- *     porte ce qui s'additionne : tout se parle, les rangs, l'offre, la fin.
+ *   · La page dure une journée. La nuit n'existe qu'aux deux bouts, le héros et la
+ *     fin (Louis, 2026-11-04 : « ça change de couleur en plein milieu », « c'est
+ *     mieux que les tarifs soient sur fond clair »). Tout le reste est le jour.
  *   · Deux dégradés droits dans l'ordre du logo pour passer de la nuit au jour et
  *     du jour à la nuit. Couleurs écrites en dur dans le module CSS.
  *   · Le bouton reste violet.
@@ -99,6 +99,8 @@ function useVivante(racine: React.RefObject<HTMLDivElement | null>) {
     const io = new IntersectionObserver(([e]) => {
       if (!e?.isIntersecting) return;
       io.disconnect();
+      /* ⚠️ Rien n'attend ici : le V du héros dessine sa première image dès que ce
+         module arrive, et chaque centaine de millisecondes se voit. */
       import("./vivant/vitrineVivante")
         .then(({ animerVitrine }) => { if (!parti) arreter = animerVitrine(el, s); })
         .catch((erreur) => console.warn("Vitrine : la page reste sans animation.", erreur));
@@ -154,7 +156,7 @@ function Heros({ chiffres }: { chiffres: ChiffresPublics }) {
     <section className={s.heros} data-heros data-vivant>
       {/* Le logo en fond (`vivant/fondLogo.ts`). Tant qu'il n'est pas dessiné,
           le canevas est transparent et la nuit du CSS est déjà là. */}
-      <canvas className={s.fond} aria-hidden />
+      <div className={s.fondCadre}><canvas className={s.fond} aria-hidden /></div>
       <nav className={s.nav} aria-label="Vaiiya">
         <span className={s.marque}>
           <Image src="/marque/logo-degrade.png" alt="" width={34} height={25} preload />
@@ -279,7 +281,7 @@ function Mouvements({ chiffres }: { chiffres: ChiffresPublics }) {
 
       <div className={`${s.wrap} ${s.mvtGrille}`}>
         <div className={s.mvtTete}>
-          <Grand className={s.mvtTitre} lignes={[<b key="n">{chiffres.mouvements}</b>, "mouvements", "montrés et", "expliqués."]} />
+          <Grand className={s.mvtTitre} lignes={[<b key="n">{chiffres.mouvements}</b>, "mouvements", <span key="s" className={s.mvtSuite}>montrés et expliqués.</span>]} />
           <p className={s.texte}>
             Tu suis une des {chiffres.seances} séances guidées, ou tu composes la tienne en deux minutes.
           </p>
@@ -407,14 +409,11 @@ function Conversation() {
       <div className={s.convScene}>
       <div className={s.geant} aria-hidden>
         {GUIDES.flatMap((g) => ETATS_VISAGE.map((e) => (
-          <Image key={`${g}-${e}`} src={`/guides/${g}-${e}-scene-v1.webp`} alt="" fill sizes="(min-width: 960px) 660px, 441px"
+          <Image key={`${g}-${e}`} src={`/guides/${g}-${e}-scene-v1.webp`} alt="" fill sizes="(min-width: 960px) 800px, 441px"
             data-visage={`${g}-${e}`} className={g === "nora" && e === "listen" ? s.on : undefined} />
         )))}
       </div>
       <div className={s.convColonne}>
-        <p className={s.convIntro}>
-          Tu lui dis ce que tu as, ce que tu veux, ce que tu as mangé. Il prépare, tu valides.
-        </p>
         <p className={s.convStatut} data-conv-statut>
           <span data-conv-nom>{PRENOM_GUIDE.nora}</span>, {roleGuide("nora").charAt(0).toLowerCase() + roleGuide("nora").slice(1)} · <b>t’écoute</b>
         </p>
@@ -445,13 +444,16 @@ function Guide() {
   return (
     <section className={s.guide}>
       <div className={s.wrap}>
-        <h2 className={`${s.grand} ${s.guideTitre}`} data-titre>
-          <span className={s.titreLigne}><span>
-            <button type="button" className={s.prenom} data-guide="nora" aria-pressed="true">Nora</button>
-            {" ou "}
-            <button type="button" className={s.prenom} data-guide="sasha" aria-pressed="false">Sasha</button>.
-          </span></span>
-        </h2>
+        <div className={s.guideTete}>
+          <h2 className={`${s.grand} ${s.guideTitre}`} data-titre>
+            <span className={s.titreLigne}><span>
+              <button type="button" className={s.prenom} data-guide="nora" aria-pressed="true">Nora</button>
+              {" ou "}
+              <button type="button" className={s.prenom} data-guide="sasha" aria-pressed="false">Sasha</button>.
+            </span></span>
+          </h2>
+          <p className={s.texte}>Tu lui dis ce que tu as, ce que tu veux, ce que tu as mangé. Il prépare, tu valides.</p>
+        </div>
       </div>
       <Conversation />
     </section>
@@ -526,6 +528,7 @@ function Nutrition() {
             let n = 0;
             return (
               <div key={p.photo} className={`${s.ticketPlat} ${i === 0 ? s.on : ""}`} data-ticket-plat data-total={p.kcal}>
+                <div className={s.ticketPapier}>
                 <p className={s.ticketTete}><b>{p.nom}</b><span>Estimation</span></p>
                 <ol>
                   {p.lignes.map((l) => {
@@ -546,6 +549,7 @@ function Nutrition() {
                   <span><b className="vy-nombre">{p.g}</b> g de glucides</span>
                   <span><b className="vy-nombre">{p.l}</b> g de lipides</span>
                 </p>
+                </div>
               </div>
             );
           })}
@@ -567,27 +571,29 @@ function Nutrition() {
 }
 
 /* ═══════════════ 5 · LE RELAIS ═══════════════
-   L'affiche prend tout l'écran d'un téléphone, et elle se dévoile sous le doigt.
+   L'affiche est un objet posé dans le jour, et elle se dévoile sous le doigt.
    L'app compte quatre maillons mais l'affiche ne change que trois fois
    (`etatPoster`, lib/defi.ts) : la vitrine montre ces trois changements (Louis,
-   2026-11-04 : « une étape dans le vide »). C'est le coucher de soleil de la page. */
+   2026-11-04 : « une étape dans le vide »). */
 
 function Relais() {
   return (
     <section className={s.relais} data-relais data-vivant>
       <div className={s.relaisScene}>
-        <div className={s.affiche} role="img" aria-label="L’affiche Sillage qui se dévoile en trois temps">
-          {["01", "02", "03", "04"].map((n) => (
-            <div key={n}>
-              <Image src={`/defis/sillage/${n}.webp`} alt="" fill sizes="(min-width: 960px) 480px, 100vw" className="object-cover" />
-            </div>
-          ))}
-          <span className={s.afficheSignature}>✦ VAIIYA</span>
-        </div>
-        <div className={s.barres} aria-hidden><i /><i /><i /></div>
         <div className={s.relaisTexte}>
           <Grand lignes={["À deux,", "une affiche", "se dévoile."]} />
-          <p>Lance le relais avec un ami. Vos séances révèlent l’affiche en trois temps, et elle est à vous deux.</p>
+          <p className={s.texte}>Lance le relais avec un ami. Vos séances révèlent l’affiche en trois temps, et elle est à vous deux.</p>
+        </div>
+        <div className={s.afficheCadre}>
+          <div className={s.barres} aria-hidden><i /><i /><i /></div>
+          <div className={s.affiche} role="img" aria-label="L’affiche Sillage qui se dévoile en trois temps">
+            {["01", "02", "03", "04"].map((n) => (
+              <div key={n}>
+                <Image src={`/defis/sillage/${n}.webp`} alt="" fill sizes="(min-width: 960px) 400px, 80vw" className="object-cover" />
+              </div>
+            ))}
+            <span className={s.afficheSignature}>✦ VAIIYA</span>
+          </div>
         </div>
       </div>
     </section>
@@ -595,60 +601,66 @@ function Relais() {
 }
 
 /* ═══════════════ 6 · TOUT SE PARLE ═══════════════
-   ⚠️ LE LOGO EST LE SCHÉMA. Ses deux branches sont les deux choses qu'on fait
-   (une séance, un repas), elles se rejoignent en son point, et ce point nourrit
-   le rang et le Guide. La lumière descend vraiment dans les branches du logo
-   (`ondeG`, `ondeD`, `eclat` dans `vivant/fondLogo.ts`). Aucun bloc, aucune
-   icône : de vrais objets du produit, posés au bout des branches. */
+   ⚠️ LE LOGO EST LE SCHÉMA, DESSINÉ SOBREMENT (Louis, 2026-11-04 : le logo détaillé
+   « vole la vedette » à celui de la fin). Une aile par chose qu'on fait, le cœur où
+   elles se rejoignent, et deux ailes symétriques vers le Guide et le rang. Chaque
+   aile vient de la mesure du logo (`public/marque/aile.svg`). La lumière part du
+   bout de l'aile et descend jusqu'au cœur : c'est du CSS, joué par la carte
+   graphique, et aucune couture n'est possible puisque chaque aile a sa propre forme. */
+
+/** Une aile : sa forme, la lumière qui la traverse, et le halo qui suit la lumière. */
+function Aile({ nom, classe }: { nom: string; classe: string }) {
+  return (
+    <i className={`${s.aile} ${classe}`} data-aile={nom}>
+      <i className={s.forme}><b /></i>
+      <i className={s.lueur} />
+    </i>
+  );
+}
 
 function ToutRelie() {
   const rang = RANGS[RANGS.length - 2];
   return (
     <section className={s.relie} data-relie data-vivant>
-      <Image src="/marque/logo-degrade.png" alt="" width={173} height={128} className={s.relieLogo} />
-      <canvas className={s.fond} aria-hidden />
-      <div className={`${s.wrap} ${s.relieTete}`}>
-        <Grand lignes={["Et tout", "se parle."]} />
-        <p>Une séance terminée fait avancer ta semaine, nourrit ton rang, et ton Guide le sait déjà.</p>
-      </div>
-      <div className={s.relieScene} data-relie-scene>
-        <i className={s.ancre} data-ancre aria-hidden />
-        <svg className={s.relieFils} aria-hidden>
-          <defs>
-            <linearGradient id="vitrine-fil" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0" stopColor="#FEC175" />
-              <stop offset="1" stopColor="#C770E8" />
-            </linearGradient>
-          </defs>
-          <path data-fil="guide" /><path data-fil="rang" />
-          <path data-fil="guide" data-pouls className={s.pouls} pathLength={100} />
-          <path data-fil="rang" data-pouls className={s.pouls} pathLength={100} />
-        </svg>
-        <div className={`${s.objet} ${s.oSeance}`} data-objet="seance">
-          <div className={s.oImage}><AnimationExercice nom="Kettlebell swing" taille="100%" label="Une séance en cours" /></div>
-          <b>Ta séance</b>
-          <small>Terminée</small>
+      <div className={`${s.wrap} ${s.relieGrille}`}>
+        <div className={s.relieTete}>
+          <Grand lignes={["Et tout", "se parle."]} />
+          <p className={s.texte}>Une séance terminée fait avancer ta semaine, nourrit ton rang, et ton Guide le sait déjà.</p>
         </div>
-        <div className={`${s.objet} ${s.oRepas}`} data-objet="repas">
-          <div className={s.oImage}>
-            <Image src="/recipes/poke-bowl-saumon-avocat.jpg" alt="Un poke bowl" fill sizes="170px" className="object-cover" />
+        <div className={s.relieScene} data-relie-scene>
+          <div className={s.relieFigure} aria-hidden>
+            <Aile nom="seance" classe={s.aileG} />
+            <Aile nom="repas" classe={s.aileD} />
+            <Aile nom="guide" classe={`${s.aileBas} ${s.aileG}`} />
+            <Aile nom="rang" classe={`${s.aileBas} ${s.aileD}`} />
+            <i className={s.coeur} data-coeur />
           </div>
-          <b>Ton repas</b>
-          <small>Noté</small>
-        </div>
-        <div className={`${s.objet} ${s.oGuide}`} data-objet="guide">
-          <div className={s.oImage}>
-            <Image src="/guides/nora-listen-entete-v1.webp" alt="Nora" fill sizes="150px" className="object-contain" />
+          <div className={`${s.objet} ${s.oSeance}`} data-objet="seance">
+            <b>Ta séance</b>
+            <small>Terminée</small>
+            <div className={s.oImage}><AnimationExercice nom="Kettlebell swing" taille="100%" label="Une séance en cours" /></div>
           </div>
-          <b>Ton Guide</b>
-          <small data-recu-guide>Il le sait déjà</small>
-        </div>
-        <div className={`${s.objet} ${s.oRang}`} data-objet="rang">
-          <div className={s.oImage}>
-            <Image src={rang.image!} alt={`Le rang ${rang.nom}`} fill sizes="130px" style={{ objectFit: "contain" }} />
+          <div className={`${s.objet} ${s.oRepas}`} data-objet="repas">
+            <b>Ton repas</b>
+            <small>Noté</small>
+            <div className={s.oImage}>
+              <Image src="/recipes/poke-bowl-saumon-avocat.jpg" alt="Un poke bowl" fill sizes="170px" className="object-cover" />
+            </div>
           </div>
-          <b>Ton rang</b>
-          <small><span className="vy-nombre" data-recu-exp>+30</span> EXP</small>
+          <div className={`${s.objet} ${s.oGuide}`} data-objet="guide">
+            <div className={s.oImage}>
+              <Image src="/guides/nora-listen-entete-v1.webp" alt="Nora" fill sizes="170px" className="object-contain" />
+            </div>
+            <b>Ton Guide</b>
+            <small data-recu-guide>Il le sait déjà</small>
+          </div>
+          <div className={`${s.objet} ${s.oRang}`} data-objet="rang">
+            <div className={s.oImage}>
+              <Image src={rang.image!} alt={`Le rang ${rang.nom}`} fill sizes="170px" style={{ objectFit: "contain" }} />
+            </div>
+            <b>Ton rang</b>
+            <small><span className="vy-nombre" data-recu-exp>+30</span> EXP</small>
+          </div>
         </div>
       </div>
     </section>
@@ -656,19 +668,19 @@ function ToutRelie() {
 }
 
 /* ═══════════════ 7 · DE BRONZE À ÉTERNEL ═══════════════
-   ⚠️ ON VEND LE HAUT DE L'ÉCHELLE (Louis, 2026-11-04 : « il faut donner du
-   rêve », l'Or arrive vers le premier mois). Le chemin et les six rangs sont une
-   seule scène, dans la nuit, et chaque rang y apporte sa lumière. Les mois sont
-   un exemple à deux séances par semaine : le barème réel y mène plus tôt, et
-   chaque récompense est celle de `RECOMPENSES_RANG`. */
+   ⚠️ ON VEND LE HAUT DE L'ÉCHELLE (Louis, 2026-11-04 : « il faut donner du rêve »,
+   l'Or arrive vers le premier mois). Une scène qui suit le doigt : la gemme monte,
+   le ciel change de couleur sans à-coup, et l'échelle descend de Bronze à Éternel,
+   dans le sens du geste. Les mois sont un exemple à deux séances par semaine : le
+   barème réel y mène plus tôt, et chaque récompense est celle de `RECOMPENSES_RANG`. */
 
-const MONTEE: { quand: string; texte: string; gain: string }[] = [
-  { quand: "Jour 1", texte: "12 minutes dans ton salon. Ta première séance.", gain: "Ta première carte de rang" },
-  { quand: "Semaine 1", texte: "Ta série tient, même les jours chargés.", gain: "Un joker par mois pour ta série" },
-  { quand: "Mois 1", texte: "Tu lances un relais avec un ami.", gain: "Un cadre or autour de ta photo" },
-  { quand: "Mois 2", texte: "Tes séances ont trouvé leur place dans ta semaine.", gain: "Une lumière tourne autour de ta photo" },
-  { quand: "Mois 4", texte: "Tu y vas sans qu’on te le rappelle.", gain: "Le titre Inarrêtable sous ton nom" },
-  { quand: "Mois 6", texte: "Tu es là où tu voulais aller.", gain: "Ton pseudo passe en lumière" },
+const MONTEE: { quand: string; texte: string; gain: string; ciel: [string, string] }[] = [
+  { quand: "Jour 1", texte: "12 minutes dans ton salon. Ta première séance.", gain: "Ta première carte de rang", ciel: ["#FDEBDB", "#F6CDA8"] },
+  { quand: "Semaine 1", texte: "Ta série tient, même les jours chargés.", gain: "Un joker par mois pour ta série", ciel: ["#F1F4F9", "#D3DDEA"] },
+  { quand: "Mois 1", texte: "Tu lances un relais avec un ami.", gain: "Un cadre or autour de ta photo", ciel: ["#FFF3CF", "#FFDD86"] },
+  { quand: "Mois 2", texte: "Tes séances ont trouvé leur place dans ta semaine.", gain: "Une lumière tourne autour de ta photo", ciel: ["#E2F7F3", "#B4E6DC"] },
+  { quand: "Mois 4", texte: "Tu y vas sans qu’on te le rappelle.", gain: "Le titre Inarrêtable sous ton nom", ciel: ["#E1F3FF", "#AEDDFF"] },
+  { quand: "Mois 6", texte: "Tu es là où tu voulais aller.", gain: "Ton pseudo passe en lumière", ciel: ["#EFE4FF", "#D2B6FF"] },
 ];
 
 function Rangs() {
@@ -676,19 +688,23 @@ function Rangs() {
   return (
     <section className={s.rangs} data-rangs data-vivant>
       <div className={s.rangsScene}>
+        <div className={s.rangsCiels} aria-hidden>
+          {rangs.map((r, i) => (
+            <i key={r.id} data-ciel style={{ "--c1": MONTEE[i].ciel[0], "--c2": MONTEE[i].ciel[1] } as CSSProperties} />
+          ))}
+        </div>
         <div className={`${s.wrap} ${s.rangsTete}`}>
           <Grand lignes={["Tu commences Bronze.", "Tu vises Éternel."]} />
         </div>
         <ol className={s.rangsListe}>
           {rangs.map((r, i) => (
-            <li key={r.id} className={`${s.rang} ${i === rangs.length - 1 ? s.ici : ""}`} data-min={r.min}
-              style={{ "--a": r.neon[0], "--b": r.neon[1] } as CSSProperties}>
-              <div className={s.rangLumiere} aria-hidden><i /><i /></div>
-              <div className={s.rangGemme}>
-                <Image src={r.image!} alt="" fill sizes="(min-width: 960px) 300px, 200px" style={{ objectFit: "contain" }} />
+            <li key={r.id} className={s.rang} data-min={r.min}>
+              <div className={s.rangGemme} data-gemme>
+                <Image src={r.image!} alt="" fill sizes="(min-width: 960px) 300px, 240px" style={{ objectFit: "contain" }} />
+                <i className={s.rangOmbre} aria-hidden />
               </div>
-              <div className={s.rangTexte}>
-                <p className={s.rangQuand}><span>{MONTEE[i].quand}</span><span className="vy-nombre">{r.min} EXP</span></p>
+              <div className={s.rangTexte} data-texte>
+                <p className={s.rangQuand}>{MONTEE[i].quand}</p>
                 <h3>{r.nom}</h3>
                 <p>{MONTEE[i].texte}</p>
                 <small>{MONTEE[i].gain}</small>
@@ -697,23 +713,25 @@ function Rangs() {
           ))}
         </ol>
         <div className={s.echelle} aria-hidden>
-          {rangs.map((r, i) => (
-            <span key={r.id} className={i === rangs.length - 1 ? s.ici : ""} data-marche>
+          {rangs.map((r) => (
+            <span key={r.id} data-marche>
               <Image src={r.image!} alt="" width={40} height={64} />
             </span>
           ))}
         </div>
-        <p className={s.rangsExp} aria-hidden><b className="vy-nombre" data-exp>{rangs[rangs.length - 1].min}</b> EXP</p>
-        <p className={s.note}>Exemple à deux séances par semaine. Ton rythme sera le tien.</p>
+        <p className={s.rangsExp} aria-hidden><b className="vy-nombre" data-exp>{rangs[0].min}</b> EXP</p>
+        <p className={s.note}>Exemple à deux séances par semaine.</p>
       </div>
     </section>
   );
 }
 
 /* ═══════════════ 8 · L'OFFRE ═══════════════
-   Le gratuit est un mur de mots, sans une coche. Vaiiya+ est un objet : une carte
-   noire et or, parce que c'est le seul endroit de la page où l'or veut dire
-   Vaiiya+. */
+   Deux cartes de même structure, comme les pages d'abonnement les mieux tenues :
+   le nom, une phrase, le prix, l'action, puis ce qui est inclus. Les lignes se
+   répondent d'une carte à l'autre. Le gratuit est de l'ivoire, Vaiiya+ un noir et
+   or, le seul endroit de la page où l'or parle.
+   ⚠️ Vaiiya+ n'a pas de bouton : la vente n'est pas ouverte (`VENTE_OUVERTE`). */
 
 const INCLUS = (c: ChiffresPublics) => [
   "Les séances guidées",
@@ -726,25 +744,49 @@ const INCLUS = (c: ChiffresPublics) => [
   "Zéro pub",
 ];
 
+const AJOUTS = ["Les séances spécialisées", "Les missions en plus", "Le Guide sans limite"];
+
+function Coche() {
+  return (
+    <svg width={16} height={16} viewBox="0 0 16 16" fill="none" aria-hidden>
+      <path d="M2.8 8.6l3.3 3.2L13.2 4.6" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+/** ⚠️ En chasse fixe, la virgule occupe une case entière et coupe le prix en deux. */
+function Prix({ valeur }: { valeur: string }) {
+  const [euros, centimes] = valeur.replace(/\s*€/, "").split(",");
+  return <b className="vy-nombre">{euros}<span className={s.virgule}>,</span>{centimes}</b>;
+}
+
 function Offre({ chiffres }: { chiffres: ChiffresPublics }) {
   return (
     <section className={s.offre}>
       <div className={`${s.wrap} ${s.offreGrille}`}>
-        <div className={s.gratuit}>
+        <div className={s.offreTete}>
           <Grand lignes={["Tu commences", "avec tout ça."]} />
-          <ul className={s.mur} data-vivant>
-            {INCLUS(chiffres).map((b, i) => <li key={b} style={{ "--i": i } as CSSProperties}>{b}</li>)}
-          </ul>
-          <p className={s.texte}>Le compte gratuit dure aussi longtemps que tu veux, sans carte bancaire.</p>
         </div>
-        <div className={s.carteNoire} data-vivant>
-          <p className={s.carteTete}><b>Vaiiya+</b><span>Arrive bientôt</span></p>
-          <ul>
-            <li>Les séances spécialisées</li>
-            <li>Les missions en plus</li>
-            <li>Le Guide sans limite</li>
-          </ul>
-          <p className={s.prix}><b className="vy-nombre">{formatPrice(PLANS.premium.priceCents).replace(/\s*€/, "")}</b><b>€</b><span>par mois, à l’ouverture</span></p>
+        <div className={s.plans}>
+          <article className={`${s.plan} ${s.planClair}`}>
+            <h3 className={s.planNom}>Gratuit</h3>
+            <p className={s.planPhrase}>Aussi longtemps que tu veux.</p>
+            <p className={s.prix}><b className="vy-nombre">0</b><b>€</b><span>sans carte bancaire</span></p>
+            <Bouton label="Créer mon compte" />
+            <ul className={s.planListe}>
+              {INCLUS(chiffres).map((b) => <li key={b}><Coche />{b}</li>)}
+            </ul>
+          </article>
+          <article className={`${s.plan} ${s.carteNoire}`} data-vivant>
+            <h3 className={s.planNom}>Vaiiya+</h3>
+            <p className={s.planPhrase}>Pour aller plus loin, quand tu voudras.</p>
+            <p className={s.prix}><Prix valeur={formatPrice(PLANS.premium.priceCents)} /><b>€</b><span>par mois, à l’ouverture</span></p>
+            <p className={s.planBientot}>Arrive bientôt</p>
+            <ul className={s.planListe}>
+              <li><Coche />Tout ce qui est gratuit</li>
+              {AJOUTS.map((b) => <li key={b}><Coche />{b}</li>)}
+            </ul>
+          </article>
         </div>
       </div>
     </section>
@@ -835,14 +877,14 @@ function Pied() {
           </div>
           <div>
             <h4>Comprendre</h4>
-            <ul>{SEO_PAGES.map((l) => <li key={l.href}><Link href={l.href}>{l.label}</Link></li>)}</ul>
+            <ul>{SEO_PAGES.map((l) => <li key={l.href}><Link href={l.href} prefetch={false}>{l.label}</Link></li>)}</ul>
           </div>
           <div>
             <h4>Vaiiya</h4>
             <ul>
-              <li><Link href="/auth?mode=login">Se connecter</Link></li>
-              <li><Link href="/premium">Vaiiya+</Link></li>
-              {LEGAL_PAGES.map((l) => <li key={l.href}><Link href={l.href}>{l.label}</Link></li>)}
+              <li><Link href="/auth?mode=login" prefetch={false}>Se connecter</Link></li>
+              <li><Link href="/premium" prefetch={false}>Vaiiya+</Link></li>
+              {LEGAL_PAGES.map((l) => <li key={l.href}><Link href={l.href} prefetch={false}>{l.label}</Link></li>)}
             </ul>
           </div>
         </div>
@@ -852,25 +894,30 @@ function Pied() {
   );
 }
 
+/** Le dessous de la page : voir la note de globals.css (« le dessous des pages »).
+    Un membre garde son fond : la vitrine est là, masquée, le temps de lire sa session. */
+const DESSOUS = "html:not(.a-session){--html-bg:#0B0814;overscroll-behavior:none}html:not(.a-session) body::before{display:none}";
+
 export default function LandingVitrine({ chiffres, avis }: { chiffres: ChiffresPublics; avis: ResumeAvis }) {
   const racine = useRef<HTMLDivElement>(null);
   useRevelation(racine);
   useVivante(racine);
   return (
-    <div ref={racine} className={`${s.page} vitrine-racine`}>
+    <div ref={racine} className={s.page}>
+      <style>{DESSOUS}</style>
       <Heros chiffres={chiffres} />
       <div className={s.jour}>
         <Mouvements chiffres={chiffres} />
         <Guide />
         <Nutrition />
-      </div>
-      <div className={s.crepuscule} data-vivant aria-hidden />
-      <div className={s.nuit}>
         <Relais />
         <ToutRelie />
         <Rangs />
         <Offre chiffres={chiffres} />
         <Avis avis={avis} />
+      </div>
+      <div className={s.crepuscule} data-vivant aria-hidden />
+      <div className={s.nuit}>
         <Fin />
       </div>
       <Pied />

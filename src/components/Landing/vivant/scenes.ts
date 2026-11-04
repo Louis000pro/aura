@@ -3,7 +3,6 @@
    lisible sans script, et n'en change le dessin qu'en posant `data-anime` : sans
    script et en mouvement réduit, on lit tout, sans rien attendre. */
 
-import { creerFond, type Place } from "./fondLogo";
 import { borne, trouve, type Classes, type Suivre, type Veilleur } from "./veilleur";
 
 /* ═══ LES MOUVEMENTS ═══
@@ -105,152 +104,142 @@ export function jouerRelais(racine: HTMLElement, suivre: Suivre, reduit: boolean
   if (reduit) return;
   const zone = trouve(racine, "[data-relais]");
   zone.setAttribute("data-anime", "");
-  let avant = -1;
-  suivre(() => {
-    const b = zone.getBoundingClientRect();
-    if (b.bottom < -innerHeight || b.top > innerHeight * 2) return;
-    const p = borne(-b.top / Math.max(1, b.height - innerHeight), 0, 1);
+  let haut = 0, course = 1, avant = -1;
+  suivre(zone, (y) => {
+    const p = borne((y - haut) / course, 0, 1);
     if (Math.abs(p - avant) < .001) return;
     avant = p;
     zone.style.setProperty("--p", p.toFixed(3));
+  }, () => {
+    const b = zone.getBoundingClientRect();
+    haut = b.top + window.scrollY;
+    course = Math.max(1, b.height - innerHeight);
   });
 }
 
 /* ═══ DE BRONZE À ÉTERNEL ═══
-   L'écran reste en place, et chaque rang occupe une part égale du défilement. Le
-   compteur avance d'un seuil à l'autre sous le doigt : un compteur qui tourne seul
-   se regarde, celui-ci se pousse. */
+   Tout suit le doigt, sans seuil : la gemme du rang monte, celle d'avant s'en va par
+   le haut, et les deux ciels se croisent. Revenir en arrière déroule la même scène à
+   l'envers. Chaque rang se tient un moment à l'écran : le mouvement ne se fait que
+   sur le milieu de sa part de défilement.
+   ⚠️ Seuls `transform` et `opacity` s'écrivent ici, et seulement sur les deux rangs
+   visibles : le reste est masqué, et ne coûte rien. */
+const douce = (x: number) => {
+  const t = borne(x, 0, 1);
+  return t * t * (3 - 2 * t);
+};
+
 export function jouerRangs(racine: HTMLElement, s: Classes, suivre: Suivre, reduit: boolean) {
   if (reduit) return;
   const zone = trouve(racine, "[data-rangs]");
   const rangs = Array.from(zone.querySelectorAll<HTMLElement>("[data-min]"));
+  const gemmes = rangs.map((r) => trouve(r, "[data-gemme]"));
+  const textes = rangs.map((r) => trouve(r, "[data-texte]"));
+  const ciels = Array.from(zone.querySelectorAll<HTMLElement>("[data-ciel]"));
   const marches = Array.from(zone.querySelectorAll<HTMLElement>("[data-marche]"));
   const exp = trouve(zone, "[data-exp]");
   const seuils = rangs.map((r) => Number(r.dataset.min));
   const n = rangs.length;
   zone.setAttribute("data-anime", "");
 
-  let ici = -1;
-  let ecrit = -1;
-  suivre(() => {
-    const b = zone.getBoundingClientRect();
-    if (b.bottom < -innerHeight || b.top > innerHeight * 2) return;
-    const p = borne(-b.top / Math.max(1, b.height - innerHeight), 0, .9999);
-    const k = Math.floor(p * n);
-    const part = p * n - k;
-    const valeur = k < n - 1 ? Math.round(seuils[k] + (seuils[k + 1] - seuils[k]) * part) : seuils[n - 1];
+  const montres = new Set<number>();
+  const montrer = (i: number, vu: boolean) => {
+    if (vu === montres.has(i)) return;
+    if (vu) montres.add(i);
+    else montres.delete(i);
+    const v = vu ? "visible" : "hidden";
+    gemmes[i].style.visibility = v;
+    textes[i].style.visibility = v;
+    ciels[i].style.visibility = v;
+  };
+
+  let haut = 0, course = 1, H = 1, ici = -1, ecrit = -1, avant = -9;
+  suivre(zone, (y) => {
+    const t = borne((y - haut) / course, 0, 1) * (n - 1);
+    const k = Math.min(n - 2, Math.floor(t));
+    const part = t - k;
+    const pos = k + douce((part - .2) / .6);
+
+    if (Math.abs(pos - avant) > .001) {
+      avant = pos;
+      for (let i = 0; i < n; i++) {
+        const d = i - pos;
+        const a = Math.abs(d);
+        montrer(i, a < 1);
+        if (a >= 1) continue;
+        gemmes[i].style.transform = `translate3d(0, ${(d * H * .58).toFixed(1)}px, 0) scale(${(1 - a * .14).toFixed(3)})`;
+        gemmes[i].style.opacity = borne(1 - a * 1.15, 0, 1).toFixed(3);
+        textes[i].style.transform = `translate3d(0, ${(d * 64).toFixed(1)}px, 0)`;
+        textes[i].style.opacity = borne(1 - a * 2.2, 0, 1).toFixed(3);
+        ciels[i].style.opacity = (1 - a).toFixed(3);
+      }
+    }
+
+    const valeur = Math.round(seuils[k] + (seuils[k + 1] - seuils[k]) * part);
     if (valeur !== ecrit) {
       ecrit = valeur;
       exp.textContent = String(valeur);
     }
-    if (k === ici) return;
-    ici = k;
-    rangs.forEach((r, i) => r.classList.toggle(s.ici, i === k));
+    const proche = Math.round(pos);
+    if (proche === ici) return;
+    ici = proche;
     marches.forEach((m, i) => {
-      m.classList.toggle(s.ici, i === k);
-      m.classList.toggle(s.atteint, i < k);
+      m.classList.toggle(s.ici, i === proche);
+      m.classList.toggle(s.atteint, i < proche);
     });
+  }, () => {
+    const b = zone.getBoundingClientRect();
+    H = innerHeight;
+    haut = b.top + window.scrollY;
+    course = Math.max(1, b.height - H);
+    avant = -9;
   });
 }
 
 /* ═══ TOUT SE PARLE ═══
-   Le logo est le schéma : une séance descend la branche gauche, un repas la branche
-   droite, et ce qui arrive au point repart vers le rang et le Guide. La lumière est
-   dans le fond (`ondeG`, `ondeD`, `eclat`), le reste dans le module CSS. */
-export function jouerRelie(racine: HTMLElement, s: Classes, veilleur: Veilleur, reduit: boolean, fondFixe: boolean, signal: AbortSignal) {
+   Une séance descend l'aile gauche, un repas l'aile droite. Quand la lumière touche
+   le cœur, il bat, et elle repart par les deux ailes du bas vers le Guide et le rang.
+   Le script ne fait que poser les classes au bon moment : la lumière elle-même est
+   une animation CSS, jouée par la carte graphique. */
+export function jouerRelie(racine: HTMLElement, s: Classes, veilleur: Veilleur, reduit: boolean) {
+  if (reduit) return;
   const zone = trouve(racine, "[data-relie]");
   const scene = trouve(zone, "[data-relie-scene]");
-  const ancre = trouve(zone, "[data-ancre]");
-  const canvas = trouve<HTMLCanvasElement>(zone, "canvas");
-  const svg = trouve<SVGSVGElement>(scene, "svg");
-  const objets = {
-    seance: trouve(scene, '[data-objet="seance"]'),
-    repas: trouve(scene, '[data-objet="repas"]'),
-    guide: trouve(scene, '[data-objet="guide"]'),
-    rang: trouve(scene, '[data-objet="rang"]'),
-  };
+  const objet = (nom: string) => trouve(scene, `[data-objet="${nom}"]`);
+  const aile = (nom: string) => trouve(scene, `[data-aile="${nom}"]`);
+  const [seance, repas, guide, rang] = ["seance", "repas", "guide", "rang"].map(objet);
+  const [aileSeance, aileRepas, aileGuide, aileRang] = ["seance", "repas", "guide", "rang"].map(aile);
+  const coeur = trouve(scene, "[data-coeur]");
   const exp = trouve(scene, "[data-recu-exp]");
   const dit = trouve(scene, "[data-recu-guide]");
-
-  /* Le dessin se règle dans la feuille de style : le script lit `.ancre`. */
-  const place: Place = () => {
-    const z = canvas.getBoundingClientRect();
-    const a = ancre.getBoundingClientRect();
-    const S = Math.max(1, a.height);
-    return { x: a.left - z.left, y: a.top - z.top, S, X: a.width / (S * .7832) };
-  };
-  const fond = creerFond(canvas, place, { rond: 1, jour: 0 }, fondFixe);
-  if (fond) {
-    veilleur.surveiller(zone, (vu) => (vu ? fond.demarrer() : fond.arreter()));
-  } else {
-    /* Sans WebGL, le logo reste là, à sa place. */
-    const logo = trouve<HTMLElement>(zone, "img");
-    const p = place(0, 0);
-    logo.style.cssText = `display:block;left:${p.x - p.S * .78 * p.X}px;top:${p.y - p.S}px;width:${p.S * 1.56 * p.X}px`;
-  }
-
-  /* Deux fils partent du point : ils se tracent en pixels réels, une fois la taille
-     connue, ce qui garde une longueur de 100 sur chaque chemin. */
-  function tracer() {
-    const b = scene.getBoundingClientRect();
-    if (!b.width) return;
-    svg.setAttribute("viewBox", `0 0 ${b.width} ${b.height}`);
-    const a = ancre.getBoundingClientRect();
-    const px = a.left - b.left;
-    const py = a.top - b.top + a.height * .1069;
-    for (const nom of ["guide", "rang"] as const) {
-      const r = trouve(objets[nom], "div").getBoundingClientRect();
-      const tx = r.left - b.left + r.width / 2;
-      const ty = r.top - b.top + r.height * .2;
-      svg.querySelectorAll(`[data-fil="${nom}"]`).forEach((c) => c.setAttribute("d", `M${px} ${py} Q ${px} ${ty} ${tx} ${ty}`));
-    }
-  }
-  const ro = new ResizeObserver(tracer);
-  ro.observe(scene);
-  signal.addEventListener("abort", () => ro.disconnect(), { once: true });
-  tracer();
-
-  if (reduit) return () => fond?.detruire();
-
   zone.setAttribute("data-anime", "");
   const att = veilleur.horloge(zone);
-  const pas = async (ms: number, f: (k: number) => void) => {
-    const n = Math.max(1, Math.round(ms / 28));
-    for (let i = 1; i <= n; i++) {
-      f(i / n);
-      await att(28);
-    }
-  };
-  const pouls = Array.from(svg.querySelectorAll<SVGElement>(`[data-pouls]`));
 
-  async function coup(source: HTMLElement, cote: "ondeG" | "ondeD", gain: string, phrase: string) {
+  async function coup(source: HTMLElement, depart: HTMLElement, gain: string, phrase: string) {
     source.classList.add(s.actif);
-    await att(650);
-    await pas(1000, (k) => fond?.regler({ [cote]: 1.04 - k * 1.06 }));
-    fond?.regler({ [cote]: -1 });
-    await pas(160, (k) => fond?.regler({ eclat: k }));
-    for (const f of pouls) {
-      f.classList.remove(s.passe);
-      f.getBoundingClientRect();
-      f.classList.add(s.passe);
-    }
+    await att(520);
+    depart.classList.add(s.passe);
+    await att(1000);
+    coeur.classList.add(s.bat);
+    aileGuide.classList.add(s.passe);
+    aileRang.classList.add(s.passe);
     exp.textContent = gain;
     dit.textContent = phrase;
-    await pas(780, (k) => fond?.regler({ eclat: 1 - k }));
-    objets.rang.classList.add(s.recu);
-    objets.guide.classList.add(s.recu);
-    await att(2600);
-    for (const o of [source, objets.rang, objets.guide]) o.classList.remove(s.actif, s.recu);
-    await att(700);
+    await att(820);
+    guide.classList.add(s.recu);
+    rang.classList.add(s.recu);
+    await att(2300);
+    for (const o of [source, guide, rang]) o.classList.remove(s.actif, s.recu);
+    for (const a of [depart, aileGuide, aileRang]) a.classList.remove(s.passe);
+    coeur.classList.remove(s.bat);
+    await att(520);
   }
 
   void (async function boucle() {
-    await att(900);
+    await att(600);
     for (;;) {
-      await coup(objets.seance, "ondeG", "+30", "Il voit ta séance");
-      await coup(objets.repas, "ondeD", "+5", "Il voit ton repas");
+      await coup(seance, aileSeance, "+30", "Il voit ta séance");
+      await coup(repas, aileRepas, "+5", "Il voit ton repas");
     }
   })();
-
-  return () => fond?.detruire();
 }

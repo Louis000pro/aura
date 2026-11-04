@@ -417,11 +417,11 @@ html.a-session .accueil-landing { display: none; }
    fixé derrière elles (`body::before`) et il suit le thème : dès que la page
    rebondit, au pavé tactile ou au doigt, c'est lui qu'on voit. On retire donc
    ce fond sur ces deux pages, le dessous prend leur couleur, et l'élastique
-   s'arrête : `overscroll-behavior` ne vaut pour la page entière que sur <html>. */
-html:not(.a-session):has(.vitrine-racine) { --html-bg: #0B0814; overscroll-behavior: none; }
-html:has(.auth-racine) { --html-bg: #FFF6FB; overscroll-behavior: none; color-scheme: light; }
-html:not(.a-session):has(.vitrine-racine) body::before,
-html:has(.auth-racine) body::before { display: none; }
+   s'arrête : `overscroll-behavior` ne vaut pour la page entière que sur <html>.
+   ⚠️ Ces règles vivent DANS les deux pages, dans un <style> qu'elles rendent, et
+   jamais ici avec `html:has(...)`. Mesuré le 2026-11-04 : un `:has()` sur <html>
+   reparcourt toute la page à chaque recalcul de style de <body>, sur TOUS les écrans
+   de l'app, et il pesait à lui seul 88 % du tri des styles pendant un défilement. */
 
 /* Le rail desktop des pages à double vie (« / », /premium, pages légales), et
    les 88 px que le contenu lui laisse. Ces pages sont vitrine pour un visiteur

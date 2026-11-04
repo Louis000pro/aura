@@ -8,19 +8,19 @@
    la vitrine sans recharger la page. Aucune boucle, aucun écouteur, aucun
    contexte WebGL ne doit lui survivre.
 
-   Ce qui tourne sans script (la frise, les phrases, les poses, le mur de mots)
+   Ce qui tourne sans script (la frise, les phrases, les poses, les lumières)
    vit dans le module CSS, et le veilleur le fige hors de l'écran. */
 
 import { creerFond, type Fond, type Place } from "./fondLogo";
 import { jouerConversation } from "./conversation";
 import { jouerPlateau, jouerRangs, jouerRelais, jouerRelie, scannerAssiette } from "./scenes";
-import { borne, creerDefile, creerVeilleur, trouve, type Veilleur } from "./veilleur";
+import { borne, creerDefile, creerVeilleur, trouve, type Suivre, type Veilleur } from "./veilleur";
 import type { Classes } from "./veilleur";
 
 /* ═══ LE JOUR SE LÈVE AU DÉFILEMENT ═══
    En haut, le ciel s'éclaire à mesure que le jour monte : le soleil se lève
    parce qu'on avance. À la fin, le néon s'allume quand tout le logo est à l'écran. */
-function journee(racine: HTMLElement, veilleur: Veilleur, reduit: boolean, fondFixe: boolean, signal: AbortSignal) {
+function journee(racine: HTMLElement, veilleur: Veilleur, suivre: Suivre, reduit: boolean, fondFixe: boolean, signal: AbortSignal) {
   const heros = trouve(racine, "[data-heros]");
   const fin = trouve(racine, "[data-fin]");
   const monte = trouve(heros, "[data-monte]");
@@ -73,24 +73,31 @@ function journee(racine: HTMLElement, veilleur: Veilleur, reduit: boolean, fondF
   }
   signal.addEventListener("abort", () => minuteries.forEach(clearTimeout), { once: true });
 
-  let dernier = -1;
-  const bouger = () => {
-    const k = borne(window.scrollY / (heros.offsetHeight - aube()), 0, 1);
-    /* Une fois le héros parti, plus rien à écrire ici. */
-    if (k !== dernier) {
-      dernier = k;
-      if (!reduit) {
-        for (const l of lignes) l.style.transform = `translate3d(${Number(l.dataset.sens) * k * 18}vw,0,0)`;
-        monte.style.setProperty("--monte", k.toFixed(3));
-      }
-      if (!fondFixe) fondHeros?.regler({ ouvre: k, jour: .16 + .84 * k });
-    }
-    /* Le néon s'allume quand tout le logo est à l'écran. */
-    if (!neonAllume && fin.getBoundingClientRect().top + placeFin(innerWidth, 0).y < innerHeight * .96) allumerNeon();
+  /* Ces trois nombres ne se relisent qu'au changement de taille de la page. */
+  let hautHeros = 1, hautFin = 0, H = 1;
+  const mesurer = () => {
+    H = innerHeight;
+    hautHeros = Math.max(1, heros.offsetHeight - aube());
+    hautFin = fin.getBoundingClientRect().top + window.scrollY + placeFin(innerWidth, 0).y;
   };
 
+  let dernier = -1;
+  suivre(heros, (y) => {
+    const k = borne(y / hautHeros, 0, 1);
+    if (k === dernier) return;
+    dernier = k;
+    if (!reduit) {
+      for (const l of lignes) l.style.transform = `translate3d(${Number(l.dataset.sens) * k * 18}vw,0,0)`;
+      monte.style.setProperty("--monte", k.toFixed(3));
+    }
+    if (!fondFixe) fondHeros?.regler({ ouvre: k, jour: .16 + .84 * k });
+  }, mesurer);
+  /* Le néon s'allume quand tout le logo est à l'écran. */
+  suivre(fin, (y) => {
+    if (!neonAllume && hautFin - y < H * .96) allumerNeon();
+  });
+
   return {
-    bouger,
     eteindre() {
       fondHeros?.detruire();
       fondFin?.detruire();
@@ -108,20 +115,18 @@ export function animerVitrine(racine: HTMLElement, s: Classes): () => void {
 
   const veilleur = creerVeilleur(signal);
   racine.querySelectorAll("[data-vivant]").forEach((el) => veilleur.surveiller(el));
-  const suivre = creerDefile(signal);
+  const suivre = creerDefile(racine, veilleur, signal);
 
-  const jour = journee(racine, veilleur, reduit, fondFixe, signal);
-  suivre(jour.bouger);
+  const jour = journee(racine, veilleur, suivre, reduit, fondFixe, signal);
   jouerPlateau(racine, s, veilleur, reduit, signal);
   jouerConversation(racine, s, veilleur, reduit, signal);
   scannerAssiette(racine, s, veilleur, reduit);
   jouerRelais(racine, suivre, reduit);
-  const relie = jouerRelie(racine, s, veilleur, reduit, fondFixe, signal);
+  jouerRelie(racine, s, veilleur, reduit);
   jouerRangs(racine, s, suivre, reduit);
 
   return () => {
     fin.abort();
     jour.eteindre();
-    relie();
   };
 }
