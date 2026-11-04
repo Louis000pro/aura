@@ -558,12 +558,13 @@
 .prenom:focus-visible { outline: 3px solid #A66CF4; outline-offset: 3px; }
 
 .convScene { position: relative; height: 660px; margin-top: 6px; }
+/* ⚠️ L'image est plus large que la silhouette : aucun bras ne se coupe sur son bord. */
 .geant {
   position: absolute;
-  right: -76px;
+  right: -139px;
   top: -6px;
-  width: 316px;
-  aspect-ratio: 3 / 4;
+  width: 441px;
+  aspect-ratio: 23 / 22;
   pointer-events: none;
   -webkit-mask-image: linear-gradient(#000 62%, transparent 96%);
   mask-image: linear-gradient(#000 62%, transparent 96%);
@@ -588,7 +589,7 @@
   .guide > .wrap { z-index: 2; }
   .conv { max-width: 1180px; margin: -94px auto 0; padding: 0 44px; display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); grid-template-rows: auto auto; column-gap: 40px; row-gap: 18px; }
   .convScene { display: contents; }
-  .geant { position: relative; right: auto; top: auto; grid-column: 1; grid-row: 1 / span 2; width: auto; height: calc(100% - 92px); min-height: 640px; aspect-ratio: auto; margin-top: 92px; -webkit-mask-image: linear-gradient(#000 70%, transparent 98%); mask-image: linear-gradient(#000 70%, transparent 98%); }
+  .geant { position: relative; right: auto; top: auto; grid-column: 1; grid-row: 1 / span 2; width: 140%; height: calc(100% - 92px); min-height: 640px; aspect-ratio: auto; margin: 92px 0 0 -20%; -webkit-mask-image: linear-gradient(#000 70%, transparent 98%); mask-image: linear-gradient(#000 70%, transparent 98%); }
   .geant img { object-position: top center; }
   .convColonne { position: relative; inset: auto; grid-column: 2; grid-row: 1; height: 470px; padding: 0; }
   .convFil { margin-top: 8px; }

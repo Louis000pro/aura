@@ -407,7 +407,7 @@ function Conversation() {
       <div className={s.convScene}>
       <div className={s.geant} aria-hidden>
         {GUIDES.flatMap((g) => ETATS_VISAGE.map((e) => (
-          <Image key={`${g}-${e}`} src={`/guides/${g}-${e}-scene-v1.webp`} alt="" fill sizes="(min-width: 960px) 520px, 300px"
+          <Image key={`${g}-${e}`} src={`/guides/${g}-${e}-scene-v1.webp`} alt="" fill sizes="(min-width: 960px) 660px, 441px"
             data-visage={`${g}-${e}`} className={g === "nora" && e === "listen" ? s.on : undefined} />
         )))}
       </div>

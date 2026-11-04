@@ -151,7 +151,7 @@ const CADRAGES = {
   avatar:    { l: 256, h: 256, hauteurTete: 0.55, largeurTete: 0.80, air: 0.10 },
   pose:      { l: 512, h: 640, hauteurTete: 0.40, largeurTete: 0.66, air: 0.07 },
   entete:    { l: 400, h: 500, hauteurTete: 0.40, largeurTete: 0.95, air: 0.07, centrage: "crane" },
-  scene:     { l: 660, h: 880, hauteurTete: 0.30, largeurTete: 0.95, air: 0.05, centrage: "crane", marge: 240 },
+  scene:     { l: 920, h: 880, hauteurTete: 0.30, largeurTete: 0.95, air: 0.05, centrage: "crane", marge: 300 },
 };
 
 /** Qui recoit quoi. Un cadrage coute un fichier a telecharger : on ne genere
