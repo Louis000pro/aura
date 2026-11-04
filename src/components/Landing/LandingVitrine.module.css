@@ -1052,7 +1052,8 @@
 .rangs[data-anime] .rang { position: absolute; inset: 0; display: block; opacity: 0; visibility: hidden; transition: opacity .28s ease, visibility 0s .28s; }
 .rangs[data-anime] .rang.ici { opacity: 1; visibility: visible; transition: opacity .28s ease; }
 /* La lumière du rang : une nappe et des rayons qui tournent. */
-.rangs[data-anime] .rangLumiere { display: block; position: absolute; inset: 0; overflow: hidden; }
+/* Le haut et le bas fondent dans la nuit : la scène n'a pas de bord quand elle arrive et quand elle part. */
+.rangs[data-anime] .rangLumiere { display: block; position: absolute; inset: 0; overflow: hidden; -webkit-mask-image: linear-gradient(transparent, #000 16%, #000 80%, transparent); mask-image: linear-gradient(transparent, #000 16%, #000 80%, transparent); }
 .rangLumiere i { position: absolute; left: 50%; top: 40%; aspect-ratio: 1; border-radius: 50%; }
 .rangLumiere i:first-child { width: 170vmax; margin: -85vmax; background: radial-gradient(closest-side, var(--b), transparent 62%); opacity: .62; }
 .rangs[data-anime] .rang.ici .rangLumiere i:first-child { animation: nappe .8s var(--ease) both; }
