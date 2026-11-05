@@ -232,7 +232,6 @@ fermée.
   le produit. Ne jamais les mentionner.
 - **Le « niveau » d'un exercice** : aucune taxonomie de difficulté validée, donc
   aucun niveau public attribué à un exercice (voir `docs/lot-seo-3-fiches-exercices.md`).
-- **Séries d'affiches du relais autres que `sillage`** : en cours.
 - **Discord** : pas de serveur public, donc absent de `sameAs`.
 
 ## 16. Instantanés et faits temporaires à revalider

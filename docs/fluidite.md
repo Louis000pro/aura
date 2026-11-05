@@ -186,7 +186,7 @@ Ce qui coûtait, du plus lourd au plus léger :
 - **Un écouteur de défilement permanent** dans la vitrine, et un autre dans
   `Navigation`, qui ne s'affiche pas sur la vitrine pour un visiteur.
 - **Des attentes réveillées 25 fois par seconde** (`veilleur.horloge`), passées à 4.
-- **`clip-path` sur un canevas et `filter` sur le ticket** : une passe de plus pour
+- **`clip-path` sur un canevas et `filter` sur le ticket (devenu le bilan)** : une passe de plus pour
   la carte graphique à chaque image, ou à chaque ligne qui sort. Non mesurable ici
   (rendu logiciel), retirés par principe.
 

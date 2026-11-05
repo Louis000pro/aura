@@ -24,7 +24,8 @@ export function jouerConversation(racine: HTMLElement, s: Classes, veilleur: Vei
   const zone = trouve(conv, "[data-conv-texte]");
   const saisie = trouve(conv, "[data-conv-saisie]");
   const nomEl = trouve(conv, "[data-conv-nom]");
-  const statutEl = trouve(conv, "[data-conv-statut] b");
+  const statutBloc = trouve(conv, "[data-conv-statut]");
+  const statutEl = trouve(statutBloc, "b");
   const visages = Array.from(conv.querySelectorAll<HTMLElement>("[data-visage]"));
   const portraits = Array.from(racine.querySelectorAll<HTMLElement>("[data-guide]"));
   const modeles = {
@@ -66,6 +67,8 @@ export function jouerConversation(racine: HTMLElement, s: Classes, veilleur: Vei
   }
   function statut(t: string) {
     statutEl.textContent = t;
+    /* Le voyant suit ce qu'il fait : il écoute, il travaille, ou c'est fait. */
+    statutBloc.dataset.etat = t === "t’écoute" ? "ecoute" : t === "c’est fait" ? "fait" : "travaille";
   }
   function repos() {
     const invite = document.createElement("em");

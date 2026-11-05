@@ -41,58 +41,69 @@ export function jouerPlateau(racine: HTMLElement, s: Classes, veilleur: Veilleur
 }
 
 /* ═══ L'ASSIETTE SCANNÉE ═══
-   La ligne passe, chaque aliment reçoit son numéro à son passage, sa ligne sort
-   du ticket, et le total monte de ce que la ligne ajoute. La dernière ligne, qui
-   n'a pas de repère sur la photo (la sauce, l'huile), sort à la fin. */
+   La ligne passe, chaque aliment reçoit son numéro à son passage, et sa ligne
+   s'allume dans le bilan. Les lignes y sont rangées par calories, le balayage va de
+   haut en bas : elles s'allument donc dans le désordre, à leur place. Le total, les
+   macros et l'anneau suivent tous la même part, pour qu'aucun chiffre ne soit en
+   avance sur un autre. Ce qui n'a pas de repère (la sauce, l'huile) arrive à la fin. */
 export function scannerAssiette(racine: HTMLElement, s: Classes, veilleur: Veilleur, reduit: boolean) {
   if (reduit) return;
   const box = trouve(racine, "[data-assiette]");
   const plats = Array.from(box.querySelectorAll<HTMLElement>("[data-plat]"));
-  const tickets = Array.from(trouve(racine, "[data-ticket]").querySelectorAll<HTMLElement>("[data-ticket-plat]"));
+  const bilans = Array.from(trouve(racine, "[data-bilan]").querySelectorAll<HTMLElement>("[data-bilan-plat]"));
   const ligne = trouve(box, "[data-ligne-scan]");
   const att = veilleur.horloge(box);
   const SCAN = 2600;
 
+  const poser = (b: HTMLElement, total: number) => {
+    const part = total / Number(b.dataset.total);
+    b.style.setProperty("--fait", part.toFixed(3));
+    trouve(b, "[data-somme]").textContent = String(total);
+    b.querySelectorAll<HTMLElement>("[data-macro]").forEach((m) => {
+      m.textContent = String(Math.round(Number(m.dataset.macro) * part));
+    });
+  };
   const effacer = (i: number) => {
     plats[i].querySelectorAll("[data-y]").forEach((m) => m.classList.remove(s.vu));
-    tickets[i].querySelectorAll("[data-kcal]").forEach((m) => m.classList.remove(s.vu));
-    trouve(tickets[i], "[data-somme]").textContent = "0";
+    bilans[i].querySelectorAll("[data-kcal]").forEach((m) => m.classList.remove(s.vu));
+    poser(bilans[i], 0);
   };
   plats.forEach((_, i) => effacer(i));
 
   void (async function boucle() {
+    let avant = -1;
     for (let i = 0; ; i = (i + 1) % plats.length) {
       const p = plats[i];
-      const t = tickets[i];
-      const somme = trouve(t, "[data-somme]");
+      const b = bilans[i];
       for (const x of plats) x.classList.toggle(s.on, x === p);
-      for (const x of tickets) x.classList.toggle(s.on, x === t);
-      await att(800);
+      for (const x of bilans) x.classList.toggle(s.on, x === b);
+      await att(700);
+      /* Le plat d'avant s'est effacé : on le vide sans que personne ne le voie. */
+      if (avant >= 0) effacer(avant);
+      avant = i;
       ligne.classList.remove(s.passe);
       ligne.getBoundingClientRect();
       ligne.classList.add(s.passe);
 
-      const reperes = Array.from(p.querySelectorAll<HTMLElement>("[data-y]"));
-      const lignes = Array.from(t.querySelectorAll<HTMLElement>("[data-kcal]"));
+      const etapes = Array.from(b.querySelectorAll<HTMLElement>("[data-kcal]"))
+        .map((l) => {
+          const r = p.querySelector<HTMLElement>(`[data-y][data-aliment="${l.dataset.aliment}"]`);
+          return { l, r, moment: r ? SCAN * borne(Number(r.dataset.y) / 100, 0, 1) : SCAN + 220 };
+        })
+        .sort((x, y) => x.moment - y.moment);
       let total = 0;
       let quand = 0;
-      for (let k = 0; k < lignes.length; k++) {
-        const r = reperes[k];
-        /* Le repère s'allume quand la ligne passe sur lui. Une ligne sans repère
-           arrive juste après la dernière. */
-        const moment = r ? SCAN * borne(Number(r.dataset.y) / 100, 0, 1) : SCAN + 220;
-        await att(Math.max(30, moment - quand));
-        quand = moment;
-        r?.classList.add(s.vu);
-        lignes[k].classList.add(s.vu);
-        total += Number(lignes[k].dataset.kcal);
-        somme.textContent = String(total);
+      for (const e of etapes) {
+        await att(Math.max(30, e.moment - quand));
+        quand = e.moment;
+        e.r?.classList.add(s.vu);
+        e.l.classList.add(s.vu);
+        total += Number(e.l.dataset.kcal);
+        poser(b, total);
       }
       await att(Math.max(0, SCAN - quand) + 80);
       ligne.classList.remove(s.passe);
       await att(4600);
-      effacer(i);
-      await att(260);
     }
   })();
 }

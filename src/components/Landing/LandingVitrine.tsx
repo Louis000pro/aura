@@ -178,7 +178,7 @@ function Heros({ chiffres }: { chiffres: ChiffresPublics }) {
         </h1>
         <p className={s.herosTexte}>
           Tes séances, tes repas et <b>un Guide qui te connaît</b>, dans une seule appli.
-          Tu choisis Nora ou Sasha, et tu y vas.
+          <span className={s.surOrdi}> Tu choisis Nora ou Sasha, et tu y vas.</span>
         </p>
         {/* Le bouton et son lien passent l'un SOUS l'autre : côte à côte,
             ils se disputaient la ligne et le lien se lisait comme un second
@@ -281,7 +281,7 @@ function Mouvements({ chiffres }: { chiffres: ChiffresPublics }) {
       <div className={`${s.wrap} ${s.mvtGrille}`}>
         <div className={s.mvtTete}>
           <Grand className={s.mvtTitre} lignes={[<b key="n" className={s.or}>{chiffres.mouvements}</b>, "mouvements", <span key="s" className={s.mvtSuite}>montrés et expliqués.</span>]} />
-          <p className={s.texte}>
+          <p className={`${s.texte} ${s.surOrdi}`}>
             Chaque geste se voit, avec <b>sa consigne et les muscles</b> qu’il travaille.
           </p>
         </div>
@@ -316,7 +316,8 @@ function Mouvements({ chiffres }: { chiffres: ChiffresPublics }) {
         <Grand className={s.mentionTitre} lignes={[<span key="n" className={s.vio}>{chiffres.seances} séances</span>, "guidées", "de bout en bout."]} />
         <div className={s.mentionCorps}>
           <p className={s.texte}>
-            Le geste montré, <b>tes séries comptées, ton repos chronométré.</b> Tu suis une séance toute prête, ou tu composes la tienne en deux minutes.
+            Le geste montré, <b>tes séries comptées, ton repos chronométré.</b>
+            <span className={s.surOrdi}> Tu suis une séance toute prête, ou tu composes la tienne en deux minutes.</span>
           </p>
           <p className={s.mentionObjectifs}>
             <span>Prise de masse</span><span>Perte de poids</span><span>Force</span><span>Mobilité</span><span>Cardio</span><span>Express</span><span>À la salle</span><span>Sans matériel</span>
@@ -398,7 +399,7 @@ function Parler() {
     <div className={s.grandeBulle} data-vivant>
           <div className={s.parlerTete}>
             <Grand lignes={["Écris-lui", <span key="s" className={s.orNuit}>comme tu parles.</span>]} />
-            <p>Une phrase suffit. Ton Guide comprend ce que tu veux et prépare une carte à valider.</p>
+            <p>Une phrase suffit.<span className={s.surOrdi}> Ton Guide comprend ce que tu veux et prépare une carte à valider.</span></p>
           </div>
           <div className={s.lignes} aria-hidden>
             {PHRASES.map((liste, i) => (
@@ -426,8 +427,9 @@ function Conversation() {
         )))}
       </div>
       <div className={s.convColonne}>
-        <p className={s.convStatut} data-conv-statut>
-          <span data-conv-nom>{PRENOM_GUIDE.nora}</span>, {roleGuide("nora").charAt(0).toLowerCase() + roleGuide("nora").slice(1)} · <b>t’écoute</b>
+        <p className={s.convStatut} data-conv-statut data-etat="ecoute">
+          <span data-conv-nom>{PRENOM_GUIDE.nora}</span>, {roleGuide("nora").charAt(0).toLowerCase() + roleGuide("nora").slice(1)}
+          <span className={s.convEtat}><i className={s.voyant} aria-hidden /><b>t’écoute</b></span>
         </p>
         <div className={s.convFil} data-conv-fil>
           <div className={s.convPile} data-conv-repli>
@@ -464,7 +466,7 @@ function Guide() {
               <button type="button" className={s.prenom} data-guide="sasha" aria-pressed="false">Sasha</button>.
             </span></span>
           </h2>
-          <p className={s.texte}>Tu lui dis ce que tu as, ce que tu veux, ce que tu as mangé. <b>Il prépare, tu valides.</b></p>
+          <p className={s.texte}><span className={s.surOrdi}>Tu lui dis ce que tu as, ce que tu veux, ce que tu as mangé. </span><b>Il prépare, tu valides.</b></p>
         </div>
       </div>
       <Conversation />
@@ -478,35 +480,117 @@ function Guide() {
    l'assiette). Poids estimés sur la photo, valeurs proches de Ciqual, sauce et
    huile comprises : c'est ce que fait l'analyse de l'app (`calculerRepas`), et
    `check:vitrine` refait l'addition. `x` et `y` : l'aliment sur la photo, en %.
-   Une ligne sans `x` n'a pas de repère : l'huile ne se pointe pas du doigt. */
+   Une ligne sans `x` n'a pas de repère : l'huile ne se pointe pas du doigt.
+
+   ⚠️ UN BILAN, PLUS UN TICKET (Louis, 2026-11-05 : « on dirait ticket de course »,
+   « un constat nutritif »). L'anneau dit de quoi le repas est fait, et il ne compare
+   à rien : ce n'est pas l'anneau d'objectif retiré de l'app. Les lignes sont rangées
+   de ce qui pèse le plus à ce qui pèse le moins, et le filet sous chacune devient sa
+   part de calories. Les macros gardent les couleurs de `MacroTiles`. */
 
 type LigneRepas = { nom: string; q: string; kcal: number; x?: number; y?: number };
 
 const PLATS: { photo: string; nom: string; kcal: number; p: number; g: number; l: number; lignes: LigneRepas[] }[] = [
   { photo: "/recipes/poke-bowl-saumon-avocat.jpg", nom: "Poke bowl", kcal: 745, p: 37, g: 55, l: 40, lignes: [
-    { nom: "Oignon nouveau", q: "10 g", kcal: 3, x: 46, y: 13 },
-    { nom: "Concombre", q: "70 g", kcal: 8, x: 66, y: 21 },
     { nom: "Saumon", q: "130 g", kcal: 260, x: 25, y: 41 },
-    { nom: "Avocat", q: "70 g", kcal: 144, x: 53, y: 44 },
-    { nom: "Chou rouge", q: "40 g", kcal: 12, x: 80, y: 52 },
-    { nom: "Sésame", q: "3 g", kcal: 18, x: 44, y: 61 },
     { nom: "Riz", q: "150 g", kcal: 210, x: 36, y: 74 },
-    { nom: "Edamame", q: "35 g", kcal: 42, x: 59, y: 77 },
+    { nom: "Avocat", q: "70 g", kcal: 144, x: 53, y: 44 },
     { nom: "Sauce soja-sésame", q: "10 ml", kcal: 48 },
+    { nom: "Edamame", q: "35 g", kcal: 42, x: 59, y: 77 },
+    { nom: "Sésame", q: "3 g", kcal: 18, x: 44, y: 61 },
+    { nom: "Chou rouge", q: "40 g", kcal: 12, x: 80, y: 52 },
+    { nom: "Concombre", q: "70 g", kcal: 8, x: 66, y: 21 },
+    { nom: "Oignon nouveau", q: "10 g", kcal: 3, x: 46, y: 13 },
   ] },
   { photo: "/recipes/saumon-roti-et-patate-douce.jpg", nom: "Saumon rôti", kcal: 612, p: 39, g: 42, l: 32, lignes: [
     { nom: "Saumon", q: "160 g", kcal: 320, x: 58, y: 24 },
-    { nom: "Citron", q: "10 g", kcal: 3, x: 72, y: 35 },
     { nom: "Patate douce", q: "180 g", kcal: 155, x: 25, y: 42 },
-    { nom: "Brocoli", q: "130 g", kcal: 44, x: 50, y: 70 },
     { nom: "Huile d’olive", q: "10 ml", kcal: 90 },
+    { nom: "Brocoli", q: "130 g", kcal: 44, x: 50, y: 70 },
+    { nom: "Citron", q: "10 g", kcal: 3, x: 72, y: 35 },
   ] },
   { photo: "/recipes/steak-hache-patate-douce-rotie-et-haricots-verts.jpg", nom: "Steak et patate douce", kcal: 438, p: 32, g: 45, l: 14, lignes: [
     { nom: "Patate douce", q: "200 g", kcal: 172, x: 37, y: 30 },
-    { nom: "Haricots verts", q: "150 g", kcal: 38, x: 72, y: 50 },
     { nom: "Steak haché 5 %", q: "125 g", kcal: 156, x: 42, y: 66 },
     { nom: "Huile d’olive", q: "8 ml", kcal: 72 },
+    { nom: "Haricots verts", q: "150 g", kcal: 38, x: 72, y: 50 },
   ] },
+];
+
+/** Ce que pèse chaque macro dans le repas, en part de ses calories, pour l'anneau. */
+function partsMacros(p: number, g: number, l: number) {
+  const kcal = [p * 4, g * 4, l * 9];
+  const total = kcal[0] + kcal[1] + kcal[2];
+  let debut = 0;
+  return kcal.map((v) => {
+    const part = (v / total) * 100;
+    const arc = { part: part.toFixed(2), debut: debut.toFixed(2) };
+    debut += part;
+    return arc;
+  });
+}
+
+const MACROS = [
+  { cle: "p", nom: "Protéines", classe: s.macroP },
+  { cle: "g", nom: "Glucides", classe: s.macroG },
+  { cle: "l", nom: "Lipides", classe: s.macroL },
+] as const;
+
+/** Le bilan d'une assiette : l'anneau, les trois macros, puis chaque aliment. */
+function Bilan({ plat, premier }: { plat: (typeof PLATS)[number]; premier: boolean }) {
+  const parts = partsMacros(plat.p, plat.g, plat.l);
+  const plusLourd = Math.max(...plat.lignes.map((l) => l.kcal));
+  let n = 0;
+  return (
+    <div className={`${s.bilanPlat} ${premier ? s.on : ""}`} data-bilan-plat data-total={plat.kcal}>
+      <div className={s.bilanTete}>
+        <div className={s.anneau}>
+          <svg viewBox="0 0 120 120" aria-hidden>
+            <circle className={s.anneauFond} cx={60} cy={60} r={52} />
+            {MACROS.map((m, i) => (
+              <circle key={m.cle} className={`${s.arc} ${m.classe}`} cx={60} cy={60} r={52} pathLength={100}
+                style={{ "--part": parts[i].part, "--debut": parts[i].debut } as CSSProperties} />
+            ))}
+          </svg>
+          <p><b className="vy-nombre"><i>~</i><span data-somme>{plat.kcal}</span></b><span>kcal</span></p>
+        </div>
+        <div className={s.bilanInfos}>
+          <p className={s.bilanNom}>{plat.nom}</p>
+          <dl className={s.macros}>
+            {MACROS.map((m) => (
+              <div key={m.cle} className={m.classe}>
+                <dt>{m.nom}</dt>
+                <dd><b className="vy-nombre" data-macro={plat[m.cle]}>{plat[m.cle]}</b> g</dd>
+              </div>
+            ))}
+          </dl>
+        </div>
+      </div>
+      <ol className={s.aliments}>
+        {plat.lignes.map((l) => {
+          const numero = l.x !== undefined ? ++n : undefined;
+          return (
+            <li key={l.nom} className={`${s.aliment} ${premier ? s.vu : ""}`} data-kcal={l.kcal} data-aliment={numero}
+              style={{ "--part": (l.kcal / plusLourd).toFixed(3) } as CSSProperties}>
+              <i className="vy-nombre">{numero}</i>
+              <span>{l.nom}</span>
+              <span className="vy-nombre">{l.q}</span>
+              <span className="vy-nombre">{l.kcal}</span>
+            </li>
+          );
+        })}
+      </ol>
+    </div>
+  );
+}
+
+/* Ce que Vaiiya repère sur les deux photos du bas, avec les mêmes numéros que sur
+   l'assiette : c'est le même regard, avant que l'assiette existe. */
+const PORTES = [
+  { photo: "/nutrition/maison-finir.jpg", alt: "Une courgette, de la feta, deux œufs et un oignon sur une planche",
+    nom: "Tes restes", dit: "Il en fait une recette.", reperes: [[48, 33], [26, 51], [76, 50], [60, 71]] },
+  { photo: "/nutrition/resto-carte.jpg", alt: "La carte d’un restaurant, tenue à la main",
+    nom: "La carte du resto", dit: "Rangée selon ton objectif.", reperes: [[19, 35], [16, 46], [12, 57]] },
 ];
 
 function Nutrition() {
@@ -527,7 +611,7 @@ function Nutrition() {
                 {p.lignes.map((l) => {
                   if (l.x === undefined) return null;
                   n += 1;
-                  return <span key={l.nom} className={`${s.repere} vy-nombre ${i === 0 ? s.vu : ""}`} data-y={l.y} style={{ left: `${l.x}%`, top: `${l.y}%` }}>{n}</span>;
+                  return <span key={l.nom} className={`${s.repere} vy-nombre ${i === 0 ? s.vu : ""}`} data-y={l.y} data-aliment={n} style={{ left: `${l.x}%`, top: `${l.y}%` }}>{n}</span>;
                 })}
               </div>
             );
@@ -535,47 +619,27 @@ function Nutrition() {
           <span className={s.ligneScan} data-ligne-scan aria-hidden />
         </div>
 
-        <div className={s.ticket} data-ticket>
-          {PLATS.map((p, i) => {
-            let n = 0;
-            return (
-              <div key={p.photo} className={`${s.ticketPlat} ${i === 0 ? s.on : ""}`} data-ticket-plat data-total={p.kcal}>
-                <div className={s.ticketPapier}>
-                <p className={s.ticketTete}><b>{p.nom}</b><span>Estimation</span></p>
-                <ol>
-                  {p.lignes.map((l) => {
-                    if (l.x !== undefined) n += 1;
-                    return (
-                      <li key={l.nom} className={`${s.ticketLigne} ${i === 0 ? s.vu : ""}`} data-kcal={l.kcal} data-repere={l.x !== undefined || undefined}>
-                        <i className="vy-nombre">{l.x !== undefined ? n : ""}</i>
-                        <span>{l.nom}</span>
-                        <span className="vy-nombre">{l.q}</span>
-                        <span className="vy-nombre">{l.kcal}</span>
-                      </li>
-                    );
-                  })}
-                </ol>
-                <p className={s.ticketTotal}><span>Total</span><b className="vy-nombre">~<span data-somme>{p.kcal}</span></b><span>kcal</span></p>
-                <p className={s.ticketMacros}>
-                  <span><b className="vy-nombre">{p.p}</b> g de protéines</span>
-                  <span><b className="vy-nombre">{p.g}</b> g de glucides</span>
-                  <span><b className="vy-nombre">{p.l}</b> g de lipides</span>
-                </p>
-                </div>
-              </div>
-            );
-          })}
+        <div className={s.bilan} data-bilan>
+          {PLATS.map((p, i) => <Bilan key={p.photo} plat={p} premier={i === 0} />)}
         </div>
 
         <div className={s.nutriSuite}>
-          <p className={s.texte}>
-            Vaiiya reconnaît chaque aliment, estime son poids d’après la taille de l’assiette, puis additionne ligne par ligne.
-            <b>Tu peux tout ajuster avant de noter.</b>
+          <p className={s.bilanNote}>
+            <span className={s.surOrdi}>Vaiiya reconnaît chaque aliment, estime son poids d’après la taille de l’assiette, puis additionne ligne par ligne. </span>
+            Une estimation, que tu ajustes avant de noter.
           </p>
-          <dl className={s.aussi}>
-            <div><dt>Tes restes</dt><dd>Tu dis ce que tu as, il propose une recette.</dd></div>
-            <div><dt>La carte du resto</dt><dd>Les plats rangés selon ton objectif.</dd></div>
-          </dl>
+          <h3 className={s.suiteTitre}>Pas encore <span className={s.vio}>d’assiette ?</span></h3>
+          <div className={s.portes}>
+            {PORTES.map((p) => (
+              <figure key={p.nom} className={s.porte} data-vivant>
+                <Image src={p.photo} alt={p.alt} fill sizes="(min-width: 960px) 240px, 50vw" className="object-cover" />
+                {p.reperes.map(([x, y], i) => (
+                  <span key={i} className={`${s.repere} vy-nombre`} style={{ left: `${x}%`, top: `${y}%`, "--k": i } as CSSProperties} aria-hidden>{i + 1}</span>
+                ))}
+                <figcaption><b>{p.nom}</b><span>{p.dit}</span></figcaption>
+              </figure>
+            ))}
+          </div>
         </div>
       </div>
     </section>
@@ -586,7 +650,13 @@ function Nutrition() {
    L'affiche est un objet posé dans le jour, et elle se dévoile sous le doigt.
    L'app compte quatre maillons mais l'affiche ne change que trois fois
    (`etatPoster`, lib/defi.ts) : la vitrine montre ces trois changements (Louis,
-   2026-11-04 : « une étape dans le vide »). */
+   2026-11-04 : « une étape dans le vide »).
+
+   ⚠️ TROIS AFFICHES, ET LE DESSIN DE CELLES DE L'APP (Louis, 2026-11-05 : « un peu
+   sobre », « un peu vide », « pas très convaincante »). Au milieu Aurore, la plus
+   spectaculaire, et derrière elle les deux autres de la série, ouvertes en éventail
+   (les vrais fichiers de `public/defis`). La marque, le nom de la série et les deux
+   prénoms sont ceux de `PosterDefi` : une affiche sans son nom n'est qu'une image. */
 
 function Relais() {
   return (
@@ -594,17 +664,25 @@ function Relais() {
       <div className={s.relaisScene}>
         <div className={s.relaisTexte}>
           <Grand lignes={["À deux,", "une affiche", <span key="s" className={s.vio}>se dévoile.</span>]} />
-          <p className={s.texte}>Lance le relais avec un ami. Vos séances révèlent l’affiche en trois temps, et <b>elle est à vous deux.</b></p>
+          <p className={s.texte}><span className={s.surOrdi}>Lance le relais avec un ami. </span>Vos séances révèlent l’affiche<span className={s.surOrdi}> en trois temps</span>, et <b>elle est à vous deux.</b></p>
         </div>
         <div className={s.afficheCadre}>
           <div className={s.barres} aria-hidden><i /><i /><i /></div>
-          <div className={s.affiche} role="img" aria-label="L’affiche Sillage qui se dévoile en trois temps">
-            {["01", "02", "03", "04"].map((n) => (
-              <div key={n}>
-                <Image src={`/defis/sillage/${n}.webp`} alt="" fill sizes="(min-width: 960px) 400px, 80vw" className="object-cover" />
+          <div className={s.eventail}>
+            {[{ nom: "Sillage", photo: "/defis/sillage/04.webp", cote: s.coteG }, { nom: "Brume", photo: "/defis/brume/04.webp", cote: s.coteD }].map((a) => (
+              <div key={a.nom} className={`${s.affiche} ${s.afficheCote} ${a.cote}`} aria-hidden>
+                <div><Image src={a.photo} alt="" fill sizes="(min-width: 960px) 340px, 60vw" className="object-cover" /></div>
               </div>
             ))}
-            <span className={s.afficheSignature}>✦ VAIIYA</span>
+            <div className={s.affiche} role="img" aria-label="L’affiche Aurore qui se dévoile en trois temps">
+              {["01", "02", "03", "04"].map((n) => (
+                <div key={n}>
+                  <Image src={`/defis/aurore/${n}.webp`} alt="" fill sizes="(min-width: 960px) 400px, 80vw" className="object-cover" />
+                </div>
+              ))}
+              <p className={s.afficheSignature}>Vaiiya<Image src="/marque/marque-blanc.png" alt="" width={22} height={20} /></p>
+              <p className={s.afficheBas}><b>Aurore</b><span>Toi · Sam</span></p>
+            </div>
           </div>
         </div>
       </div>
@@ -637,7 +715,7 @@ function ToutRelie() {
       <div className={`${s.wrap} ${s.relieGrille}`}>
         <div className={s.relieTete}>
           <Grand lignes={["Et tout", <span key="s" className={s.or}>se parle.</span>]} />
-          <p className={s.texte}>Une séance terminée fait avancer ta semaine, nourrit ton rang, et <b>ton Guide le sait déjà.</b></p>
+          <p className={s.texte}>Une séance<span className={s.surOrdi}> terminée fait avancer ta semaine,</span> nourrit ton rang, et <b>ton Guide le sait déjà.</b></p>
         </div>
         <div className={s.relieScene} data-relie-scene>
           <div className={s.relieFigure} aria-hidden>

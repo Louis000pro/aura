@@ -106,6 +106,43 @@ for (const [, nom, kcal, lignes] of plats) {
   verifie(somme === Number(kcal), `${nom} : le total annonce ${kcal} kcal et les lignes en font ${somme}`);
 }
 
+/* ⚠️ UN BILAN, PLUS UN TICKET (Louis, 2026-11-05 : « on dirait ticket de course »). */
+verifie(!/\.ticket|data-ticket/.test(css + page + script), "le ticket a quitté la page : c'est un bilan, avec l'anneau et les macros");
+{
+  const macros = readFileSync("src/components/MacroTiles.tsx", "utf8");
+  const couleur = (cle) => (new RegExp(`${cle}: "(#[0-9A-Fa-f]{6})"`).exec(macros) ?? [])[1];
+  for (const [cle, nom] of [["proteins", "p"], ["carbs", "g"], ["fats", "l"]]) {
+    verifie(css.includes(`--macro-${nom}: ${couleur(cle)};`), `les macros gardent les couleurs de MacroTiles : ${cle}`);
+  }
+}
+for (const [, nom, , lignes] of plats) {
+  const kcal = [...lignes.matchAll(/kcal: (\d+)/g)].map((m) => Number(m[1]));
+  verifie(kcal.every((v, i) => i === 0 || kcal[i - 1] >= v), `${nom} : les aliments se rangent du plus lourd au plus léger`);
+}
+verifie(/\[data-y\]\[data-aliment=/.test(script), "chaque ligne du bilan retrouve son repère par son numéro : elles ne sont plus dans le même ordre");
+
+/* ⭐ SUR TÉLÉPHONE, LE TITRE ET L'IMAGE FONT LE TRAVAIL (Louis, 2026-11-05 : « il faut
+   aller au minimum »). Ce qui reste d'une phrase sur téléphone tient en deux lignes. */
+for (const m of page.matchAll(/<p className=\{s\.texte\}>([^]*?)<\/p>/g)) {
+  const reste = m[1].replace(/<span className=\{s\.surOrdi\}>[^]*?<\/span>/g, "").replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim();
+  verifie(reste.length <= 64, `trop de texte sur téléphone (${reste.length} signes) : ${reste}`);
+}
+verifie(/@media \(max-width: 959px\) \{ \.surOrdi \{ display: none/.test(css), "ce qui allonge une phrase n'existe que sur ordinateur");
+
+/* ⚠️ LE GUIDE RESTE EN GRAND PENDANT L'ÉCHANGE (Louis, 2026-11-05 : la conversation
+   finit par le cacher). Sur téléphone, le fil commence sous sa taille. */
+verifie(Number((/\.convFil \{[^}]*margin-top: (\d+)px/.exec(css) ?? [])[1]) >= 160, "le fil ne doit pas remonter sur le Guide");
+verifie(/\.convFil\[data-deborde\] \{[^}]*mask-image/.test(css), "ce qui dépasse du fil s'efface avant d'arriver sur le Guide");
+
+/* Le voyant bat quand le Guide est là, et il s'arrête hors de l'écran. */
+verifie(/s\.voyant/.test(page) && /dataset\.etat/.test(script), "le voyant suit ce que fait le Guide");
+verifie(/:is\([^)]*\.voyant[^)]*\)(?!::)/.test(repos) && /:is\([^)]*\.voyant[^)]*\)::after/.test(repos), "le voyant et son onde s'arrêtent hors de l'écran");
+
+/* L'affiche : trois affiches, et le dessin de celles de l'app. */
+for (const f of ["/defis/sillage/04.webp", "/defis/brume/04.webp"]) verifie(page.includes(f) && existsSync(`public${f}`), `l'éventail a perdu ${f}`);
+for (const n of ["01", "02", "03", "04"]) verifie(existsSync(`public/defis/aurore/${n}.webp`), `l'affiche Aurore a perdu son état ${n}`);
+verifie(/s\.afficheBas/.test(page) && /s\.afficheSignature/.test(page), "une affiche porte sa marque, son nom et ses deux prénoms, comme dans l'app");
+
 /* Le Guide en grand existe pour les deux, dans ses quatre poses. */
 for (const g of ["nora", "sasha"]) {
   for (const e of ["listen", "think", "explain", "encourage"]) {
@@ -155,7 +192,7 @@ verifie(/creerDefile\(racine, veilleur, signal\)/.test(script), "tout ce qui sui
 verifie(/brancher\(actifs\.size > 0\)/.test(script), "l'écouteur de défilement n'existe que pendant qu'une scène liée au doigt est à l'écran");
 verifie(/content-visibility: auto/.test(css) && /contain-intrinsic-block-size: auto/.test(css), "ce qui est loin du doigt ne se calcule pas");
 verifie(!/clip-path/.test(css.replace(/\/\*[^]*?\*\//g, "")), "pas de clip-path sur un canevas qui change à chaque image : une passe de plus sur tout l'écran");
-verifie(!/\.ticket[^{]*\{[^}]*filter:/.test(css), "pas de filtre sur le ticket : il se recalcule à chaque ligne qui sort");
+verifie(!/\.bilan[^{]*\{[^}]*filter:/.test(css), "pas de filtre sur le bilan : il se recalcule à chaque ligne qui sort");
 verifie(/y = window\.scrollY;\s*if \(attente\) return;/.test(script), "scrollY se lit dans l'évènement, jamais dans la boucle d'image");
 const globaux = readFileSync("src/app/globals.css", "utf8").replace(/\/\*[^]*?\*\//g, "");
 verifie(!/:has\(/.test(globaux), "aucun :has() dans globals.css : il reparcourt toute la page à chaque recalcul de style");
