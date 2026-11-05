@@ -285,8 +285,14 @@ export default function Navigation() {
      ⚠️ `behavior: "instant"`, JAMAIS le défaut. `globals.css` pose
      `scroll-behavior: smooth` sur <html> : un `scrollTo(0, 0)` nu hérite de
      ce réglage, donc la nouvelle page arrivait en bas puis REMONTAIT en
-     glissant sous les yeux, à chaque changement d'onglet. */
+     glissant sous les yeux, à chaque changement d'onglet.
+     ⚠️ SEULEMENT QUAND LA PAGE CHANGE, JAMAIS AU PREMIER MONTAGE. Cet effet tournait
+     aussi à la fin du chargement : quelqu'un qui descendait la vitrine avant que la
+     page soit prête était ramené tout en haut, d'un coup. */
+  const cheminVu = useRef(pathname);
   useLayoutEffect(() => {
+    if (cheminVu.current === pathname) return;
+    cheminVu.current = pathname;
     if (window.location.hash) return;
     window.scrollTo({ top: 0, left: 0, behavior: "instant" });
   }, [pathname]);
