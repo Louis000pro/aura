@@ -475,7 +475,7 @@
 
    ⚠️ LA BOUCLE DE LA FRISE EST CONTINUE SI ET SEULEMENT SI -50 % VAUT UNE MOITIÉ
    EXACTE : aucun `gap` entre les deux moitiés, chaque figure porte ses marges. */
-.mouvements { position: relative; padding: 0 0 56px; }
+.mouvements { position: relative; padding: 0 0 46px; }
 .frise {
   position: relative;
   overflow: hidden;
@@ -510,14 +510,17 @@
 .mentionCorps .texte { margin-top: 16px; }
 .mentionObjectifs { display: flex; flex-wrap: wrap; gap: 4px 18px; margin: 20px 0 0; font-size: 20px; line-height: 1.3; font-weight: 800; color: #6D3BE8; }
 .mentionObjectifs span:nth-child(even) { color: #A86C06; }
-/* Le liseré qui ferme la mention avant le Guide : le dégradé du logo. */
+/* Le liseré qui ferme la mention avant le Guide : un fuseau, un fil aux deux
+   bouts qui s’épaissit au centre, dans le dégradé du logo, sur une lueur rose.
+   Le dessin s’étire avec la largeur, sa hauteur reste fixe. */
 .mention::after {
   content: "";
   display: block;
-  height: 2px;
-  margin-top: 56px;
-  border-radius: 2px;
-  background: linear-gradient(90deg, #BA80FA, #CF8DF0, #E696D4, #F99FB0, #FEB091, #FDBA7D, #FEC175);
+  height: 24px;
+  margin-top: 46px;
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1000 12' preserveAspectRatio='none'%3E%3ClinearGradient id='l'%3E%3Cstop stop-color='%23BA80FA'/%3E%3Cstop offset='.17' stop-color='%23CF8DF0'/%3E%3Cstop offset='.33' stop-color='%23E696D4'/%3E%3Cstop offset='.5' stop-color='%23F99FB0'/%3E%3Cstop offset='.67' stop-color='%23FEB091'/%3E%3Cstop offset='.83' stop-color='%23FDBA7D'/%3E%3Cstop offset='1' stop-color='%23FEC175'/%3E%3C/linearGradient%3E%3Cpath fill='url(%23l)' d='M0 6C300 5.9 400 0 500 0C600 0 700 5.9 1000 6C700 6.1 600 12 500 12C400 12 300 6.1 0 6Z'/%3E%3C/svg%3E") center / 100% 5px no-repeat,
+    radial-gradient(50% 50% at 50% 50%, rgba(249, 159, 176, .22), rgba(249, 159, 176, 0)) center / 62% 100% no-repeat;
 }
 /* Le nombre est le titre, le mot le suit, et la fin se dit calmement : trois
    voix, parce qu'un bloc de capitales condensées ne laisse l'œil se poser nulle part. */
@@ -593,12 +596,12 @@
 @keyframes remplit { to { transform: scaleX(1); } }
 
 @media (min-width: 960px) {
-  .mouvements { padding-bottom: 56px; }
+  .mouvements { padding-bottom: 46px; }
   .mvtGrille { display: grid; grid-template-columns: minmax(0, .7fr) minmax(0, 1.3fr); gap: 28px; align-items: start; padding-top: 44px; }
   .mvtTete { padding-top: 12px; }
   .mention { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, .95fr); gap: 56px; align-items: end; margin-top: 88px; }
   .mentionTitre { font-size: clamp(56px, 5vw, 76px); }
-  .mention::after { grid-column: 1 / -1; margin-top: 0; }
+  .mention::after { grid-column: 1 / -1; margin-top: -10px; background-size: 100% 6px, 62% 100%; }
   .mentionCorps .texte { margin-top: 0; }
   .mvtTitre { font-size: clamp(56px, 4.6vw, 70px); }
   .plateau { margin: 0; display: grid; grid-template-columns: 1fr 150px; gap: 20px; align-items: center; }
