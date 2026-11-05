@@ -149,7 +149,7 @@ void main(){
 
   /* LE POINT DU LOGO. */
   if(uRond>.5){
-    float dt=length(vec2(q.x/uX,q.y+.1069));
+    float dt=length(vec2(q.x,q.y+.1069));
     if(uNeon>.5){
       float ad=abs(dt-.0549);
       float large=px*3.4;
@@ -231,7 +231,8 @@ export function creerFond(canvas: HTMLCanvasElement, place: Place, depart: Parti
   if (!preparer()) return null;
 
   const r: Reglage = { neon: 0, rond: 0, ouvre: 0, jour: .2, allume: 1, ...depart };
-  const pasImage = matchMedia("(pointer: coarse)").matches ? 32 : 15;
+  const tactile = matchMedia("(pointer: coarse)").matches;
+  const pasImage = tactile ? 32 : 15;
   let w = 0, h = 0, pr = 0, temps = 8, raf = 0, actif = false, avant = 0;
   /* À la première apparition, les branches poussent depuis le point : il n'y
      a donc aucune image à remplacer au premier affichage. */
@@ -244,7 +245,7 @@ export function creerFond(canvas: HTMLCanvasElement, place: Place, depart: Parti
     const b = canvas.getBoundingClientRect();
     w = Math.max(1, b.width);
     h = Math.max(1, b.height);
-    pr = Math.min(pr || 9, Math.min(devicePixelRatio || 1, 1.5));
+    pr = Math.min(pr || 9, Math.min(devicePixelRatio || 1, tactile ? 1.25 : 1.5));
     canvas.width = Math.round(w * pr);
     canvas.height = Math.round(h * pr);
     contexte.viewport(0, 0, canvas.width, canvas.height);
@@ -289,8 +290,11 @@ export function creerFond(canvas: HTMLCanvasElement, place: Place, depart: Parti
         }
       }
       if (ne < 2) {
-        if (!debut) debut = n;
-        ne = 2 * Math.pow(Math.min(1, (n - debut) / 3000), 1.2);
+        /* ⚠️ LE V N'ATTEND PAS LE SCRIPT (Louis, 2026-11-04 : « c'est un peu long
+           l'attente »). `n` compte depuis l'ouverture de la page : le temps passé à
+           charger ce code est rendu au V, jusqu'à 900 ms, et il arrive déjà poussé. */
+        if (!debut) debut = n - Math.min(n, 900);
+        ne = 2 * Math.pow(Math.min(1, (n - debut) / 2600), 1.1);
       }
       main.x += (main.cx - main.x) * .08;
       main.y += (main.cy - main.y) * .08;

@@ -74,9 +74,7 @@ export function jouerConversation(racine: HTMLElement, s: Classes, veilleur: Vei
     saisie.removeAttribute("data-pret");
   }
   function recaler() {
-    const trop = Math.max(0, pile.offsetHeight - fil.clientHeight);
-    fil.toggleAttribute("data-deborde", trop > 0);
-    pile.style.transform = trop ? `translateY(${-trop}px)` : "none";
+    fil.toggleAttribute("data-deborde", pile.offsetHeight > fil.clientHeight);
   }
   function ajouter<T extends HTMLElement>(el: T): T {
     pile.append(el);
