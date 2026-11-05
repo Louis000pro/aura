@@ -80,7 +80,7 @@
    `auto` retient ensuite la vraie. Le héros et la fin en sont exclus : ils sont courts
    et le logo s'y arrête déjà tout seul. */
 .mouvements, .guide, .nutrition, .relais, .relie, .rangs, .offre { content-visibility: auto; }
-.mouvements { contain-intrinsic-block-size: auto 1122px; }
+.mouvements { contain-intrinsic-block-size: auto 1557px; }
 .guide { contain-intrinsic-block-size: auto 1305px; }
 .nutrition { contain-intrinsic-block-size: auto 1391px; }
 .relais { contain-intrinsic-block-size: auto 1857px; }
@@ -88,7 +88,7 @@
 .rangs { contain-intrinsic-block-size: auto 2870px; }
 .offre { contain-intrinsic-block-size: auto 1218px; }
 @media (min-width: 960px) {
-  .mouvements { contain-intrinsic-block-size: auto 793px; }
+  .mouvements { contain-intrinsic-block-size: auto 1087px; }
   .guide { contain-intrinsic-block-size: auto 1040px; }
   .nutrition { contain-intrinsic-block-size: auto 1116px; }
   .relais { contain-intrinsic-block-size: auto 1980px; }
@@ -504,6 +504,12 @@
 @keyframes defile { to { transform: translate3d(-50%, 0, 0); } }
 
 .mvtTete { padding-top: 64px; }
+/* La mention de l'entraînement : du texte qui prend de la place, sans cadre. */
+.mention { margin-top: 72px; }
+.mentionTitre { font-size: clamp(44px, 12.4vw, 60px); }
+.mentionCorps .texte { margin-top: 16px; }
+.mentionObjectifs { display: flex; flex-wrap: wrap; gap: 4px 18px; margin: 20px 0 0; font-size: 20px; line-height: 1.3; font-weight: 800; color: #6D3BE8; }
+.mentionObjectifs span:nth-child(even) { color: #A86C06; }
 /* Le nombre est le titre, le mot le suit, et la fin se dit calmement : trois
    voix, parce qu'un bloc de capitales condensées ne laisse l'œil se poser nulle part. */
 .mvtTitre b { display: block; font-size: 2.5em; line-height: .86; font-weight: 900; margin-bottom: .06em; }
@@ -581,6 +587,9 @@
   .mouvements { padding-bottom: 72px; }
   .mvtGrille { display: grid; grid-template-columns: minmax(0, .7fr) minmax(0, 1.3fr); gap: 28px; align-items: start; padding-top: 44px; }
   .mvtTete { padding-top: 12px; }
+  .mention { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, .95fr); gap: 56px; align-items: end; margin-top: 88px; }
+  .mentionTitre { font-size: clamp(56px, 5vw, 76px); }
+  .mentionCorps .texte { margin-top: 0; }
   .mvtTitre { font-size: clamp(56px, 4.6vw, 70px); }
   .plateau { margin: 0; display: grid; grid-template-columns: 1fr 150px; gap: 20px; align-items: center; }
   .vedettes { --cote: calc(100cqw - 170px); height: calc(var(--cote) + 104px); }

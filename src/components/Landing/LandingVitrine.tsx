@@ -282,7 +282,7 @@ function Mouvements({ chiffres }: { chiffres: ChiffresPublics }) {
         <div className={s.mvtTete}>
           <Grand className={s.mvtTitre} lignes={[<b key="n" className={s.or}>{chiffres.mouvements}</b>, "mouvements", <span key="s" className={s.mvtSuite}>montrés et expliqués.</span>]} />
           <p className={s.texte}>
-            Tu suis une des <b>{chiffres.seances} séances guidées</b>, ou tu composes la tienne en deux minutes.
+            Chaque geste se voit, avec <b>sa consigne et les muscles</b> qu’il travaille.
           </p>
         </div>
 
@@ -308,6 +308,19 @@ function Mouvements({ chiffres }: { chiffres: ChiffresPublics }) {
               </button>
             ))}
           </div>
+        </div>
+      </div>
+
+      {/* Ce qu'on fait de ces mouvements : une mention, pas un module de plus. */}
+      <div className={`${s.wrap} ${s.mention}`}>
+        <Grand className={s.mentionTitre} lignes={[<span key="n" className={s.vio}>{chiffres.seances} séances</span>, "guidées", "de bout en bout."]} />
+        <div className={s.mentionCorps}>
+          <p className={s.texte}>
+            Le geste montré, <b>tes séries comptées, ton repos chronométré.</b> Tu suis une séance toute prête, ou tu composes la tienne en deux minutes.
+          </p>
+          <p className={s.mentionObjectifs}>
+            <span>Prise de masse</span><span>Perte de poids</span><span>Force</span><span>Mobilité</span><span>Cardio</span><span>Express</span><span>À la salle</span><span>Sans matériel</span>
+          </p>
         </div>
       </div>
     </section>
