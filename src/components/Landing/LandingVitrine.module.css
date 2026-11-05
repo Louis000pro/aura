@@ -475,7 +475,7 @@
 
    ⚠️ LA BOUCLE DE LA FRISE EST CONTINUE SI ET SEULEMENT SI -50 % VAUT UNE MOITIÉ
    EXACTE : aucun `gap` entre les deux moitiés, chaque figure porte ses marges. */
-.mouvements { position: relative; padding: 0 0 104px; }
+.mouvements { position: relative; padding: 0 0 56px; }
 .frise {
   position: relative;
   overflow: hidden;
@@ -510,6 +510,15 @@
 .mentionCorps .texte { margin-top: 16px; }
 .mentionObjectifs { display: flex; flex-wrap: wrap; gap: 4px 18px; margin: 20px 0 0; font-size: 20px; line-height: 1.3; font-weight: 800; color: #6D3BE8; }
 .mentionObjectifs span:nth-child(even) { color: #A86C06; }
+/* Le liseré qui ferme la mention avant le Guide : le dégradé du logo. */
+.mention::after {
+  content: "";
+  display: block;
+  height: 2px;
+  margin-top: 56px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, #BA80FA, #CF8DF0, #E696D4, #F99FB0, #FEB091, #FDBA7D, #FEC175);
+}
 /* Le nombre est le titre, le mot le suit, et la fin se dit calmement : trois
    voix, parce qu'un bloc de capitales condensées ne laisse l'œil se poser nulle part. */
 .mvtTitre b { display: block; font-size: 2.5em; line-height: .86; font-weight: 900; margin-bottom: .06em; }
@@ -584,11 +593,12 @@
 @keyframes remplit { to { transform: scaleX(1); } }
 
 @media (min-width: 960px) {
-  .mouvements { padding-bottom: 72px; }
+  .mouvements { padding-bottom: 56px; }
   .mvtGrille { display: grid; grid-template-columns: minmax(0, .7fr) minmax(0, 1.3fr); gap: 28px; align-items: start; padding-top: 44px; }
   .mvtTete { padding-top: 12px; }
   .mention { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, .95fr); gap: 56px; align-items: end; margin-top: 88px; }
   .mentionTitre { font-size: clamp(56px, 5vw, 76px); }
+  .mention::after { grid-column: 1 / -1; margin-top: 0; }
   .mentionCorps .texte { margin-top: 0; }
   .mvtTitre { font-size: clamp(56px, 4.6vw, 70px); }
   .plateau { margin: 0; display: grid; grid-template-columns: 1fr 150px; gap: 20px; align-items: center; }
