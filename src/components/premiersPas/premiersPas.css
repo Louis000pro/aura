@@ -313,7 +313,7 @@
 .pp-tel .lig.repos { height: 36px; padding: 0 14px; font-size: 13px; font-weight: 600; color: #6B6176; }
 .pp-tel .lig.seance { height: 92px; overflow: hidden; border-radius: 20px; color: #fff; cursor: grab; background: #281B4A; box-shadow: 0 16px 28px -18px rgba(35, 15, 80, .7); animation: pp-lig .7s var(--ease) both; animation-delay: calc(var(--i) * 70ms + 240ms); }
 @keyframes pp-lig { from { opacity: 0; filter: blur(0); margin-top: 18px; } }
-.pp-tel .lig.seance img { position: absolute; inset: 0 auto 0 0; width: 150%; height: 100%; max-width: none; object-fit: cover; object-position: var(--op, 50% 10%); }
+.pp-tel .lig.seance img { pointer-events: none; position: absolute; inset: 0 auto 0 0; width: 150%; height: 100%; max-width: none; object-fit: cover; object-position: var(--op, 50% 10%); }
 .pp-tel .lig.seance::before { content: ""; position: absolute; inset: 0; z-index: 1; background: linear-gradient(90deg, rgba(12, 6, 28, .88), rgba(12, 6, 28, .5) 44%, transparent 68%); }
 .pp-tel .lig.seance > div { position: relative; z-index: 2; padding: 0 16px; }
 .pp-tel .lig.seance small { display: block; font-size: 13px; font-weight: 700; opacity: .9; }

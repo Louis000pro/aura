@@ -21,6 +21,7 @@ import { EXP_BIENVENUE, EXP_CONNEXION, EXP_CONNEXION_SUITE, EXP_JOURNEE, EXP_REP
 import { EXERCISE_LIBRARY } from "@/lib/exerciseLibrary";
 import { voix, type CleVoix } from "@/lib/guides";
 import { PROGRAMMES } from "@/lib/parcours";
+import { etapesDansLOrdre, etapesDuCycle } from "@/lib/programme";
 import { cycleDeReference } from "@/lib/planning";
 import { DONNEES } from "@/lib/premiersPas/donnees";
 import { etatVide, regimeDes, regimesDe, versLieu, versProfil } from "@/lib/premiersPas/reponses";
@@ -189,6 +190,17 @@ const appels = [...regles.matchAll(/animation(?:-name)?:\s*([^;}]+)/g)].flatMap(
 t("chaque animation appelée existe", appels.every((a) => nomsAnim.has(a)), appels.filter((a) => !nomsAnim.has(a)).join());
 
 t("le dossier d'images existe", existsSync("public/premiers-pas"));
+{
+  const moteur = readFileSync("src/components/premiersPas/moteur.ts", "utf8");
+  const manquants = [...moteur.matchAll(/\$\{A\}\$\{S\.guide \|\| "nora"\}-([a-z-]+)\.webp/g)].map((m) => m[1]).filter((n) => !present.has(`nora-${n}.webp`) || !present.has(`sasha-${n}.webp`));
+  t("chaque image du Guide existe pour les deux Guides", manquants.length === 0, manquants.join(", "));
+  t("deux séances peuvent échanger leur jour", /\[s\[ici\], s\[cible\]\] = \[s\[cible\], s\[ici\]\]/.test(moteur));
+  t("l'ordre de la semaine devient celui du cycle", /getOrCreateProgramme\(id, undefined, e\.semaine/.test(readFileSync("src/components/premiersPas/PremiersPas.tsx", "utf8")));
+  const quatre = etapesDuCycle(4)!;
+  const inverse = [...quatre].reverse().map((e) => e.nom);
+  t("le cycle suit l'ordre choisi", etapesDansLOrdre(quatre, inverse).map((e) => e.nom).join() === inverse.join() && etapesDansLOrdre(quatre, inverse)[0].position === quatre[0].position);
+  t("un ordre étranger ne change rien", etapesDansLOrdre(quatre, ["Inconnue"]) === quatre);
+}
 
 /* ── La bascule : une seule porte d'entrée ── */
 const lire = (f: string) => readFileSync(f, "utf8");

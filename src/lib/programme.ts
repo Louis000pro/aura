@@ -120,6 +120,20 @@ export function etapesDuCycle(seancesCible: number | null | undefined): EtapeNeu
   }));
 }
 
+/**
+ * Le cycle dans l'ordre que la personne a choisi en déplaçant ses séances.
+ * Pure. On ne fait que réordonner : un ordre qui ne contient pas exactement
+ * les mêmes étapes est ignoré. Au-delà de six séances, le cycle revient sur sa
+ * première étape : seule la première apparition de chaque nom compte.
+ */
+export function etapesDansLOrdre(etapes: EtapeNeuve[], ordre?: readonly string[]): EtapeNeuve[] {
+  if (!ordre?.length) return etapes;
+  const noms = [...new Set(ordre)];
+  const memes = noms.length === etapes.length && noms.every((n) => etapes.some((e) => e.nom === n));
+  if (!memes) return etapes;
+  return noms.map((nom, i) => ({ ...etapes.find((e) => e.nom === nom)!, position: POSITION_INITIALE + i }));
+}
+
 /** Le nom du programme, à partir de ce que la personne a déjà dit. On ne
  *  met jamais le nombre de séances dedans : il vit dans le contexte, et
  *  un nom qui porte un chiffre devient faux le jour où le chiffre bouge. */
@@ -282,6 +296,7 @@ export async function lireProgrammeActif(
 export async function getOrCreateProgramme(
   userId: string,
   client?: ClientProgramme,
+  ordre?: readonly string[],
 ): Promise<ProgrammeEtCycle | null> {
   if (!userId) return null;
 
@@ -305,8 +320,9 @@ export async function getOrCreateProgramme(
   // Une réponse illisible n'est pas « aucune réponse » : on ne décide rien.
   if (errCtx) throw new Error("contexte_illisible: " + errCtx.message);
 
-  const etapes = etapesDuCycle((ctx as { seances_cible: number | null } | null)?.seances_cible);
-  if (!etapes) return null;
+  const reference = etapesDuCycle((ctx as { seances_cible: number | null } | null)?.seances_cible);
+  if (!reference) return null;
+  const etapes = etapesDansLOrdre(reference, ordre);
 
   // L'objectif ne sert qu'à NOMMER le programme. Sa lecture ne doit donc
   // jamais empêcher de le créer : on prend ce qu'on trouve, et sinon un

@@ -119,9 +119,9 @@ export default function PremiersPas() {
         await supabase.from("contexte_entrainement").upsert({ user_id: id, duree_cible_min: e.duree }, { onConflict: "user_id" });
       });
       /* ⚠️ La semaine ne s'écrit pas : Vaiiya garde les jours choisis, et le
-         programme se projette dessus. C'est la semaine que l'écran vient de montrer. */
+         programme se projette dessus, dans l'ordre que la personne a laissé à l'écran. */
       await tenter("les jours", () => enregistrerJours(id, e.jours.map((j) => j + 1), localDateStr()));
-      await tenter("le programme", () => getOrCreateProgramme(id));
+      await tenter("le programme", () => getOrCreateProgramme(id, undefined, e.semaine?.flatMap((n) => (n ? [n] : []))));
       /* Ce qu'on ne mange pas : sur l'appareil pour les recettes, et dans le
          compte pour le retrouver ailleurs. */
       try { localStorage.setItem(`vaiiya_diet_${id}`, JSON.stringify(regimesDe(e.sans))); } catch { /* stockage bloqué */ }

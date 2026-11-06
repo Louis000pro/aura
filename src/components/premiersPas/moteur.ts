@@ -986,6 +986,8 @@ function dessinerSemaine() {
     ? `<div class="lig seance" data-jour="${j}" style="height:${hS}px;--i:${j}"><img src="${A}${photoSeance(nom)}.webp" alt="" style="--op:${CADRE[nom] || "50% 12%"}"><div><small>${nomLigne(j)}</small><b>${fr(nom)}</b></div><u></u></div>`
     : `<div class="lig repos" data-jour="${j}" style="height:${H_REPOS}px"><span>${nomLigne(j)}</span></div>`).join("");
   poserLignes();
+  /* Sur Android, un appui long sur une photo ouvre son menu et coupe le geste. */
+  zone.oncontextmenu = (e) => e.preventDefault();
   $$(".lig.seance").forEach(tenirSeance);
 }
 function tenirSeance(el: HTMLElement) {
@@ -1008,23 +1010,18 @@ function tenirSeance(el: HTMLElement) {
         cumul += h;
       }
       const ici = Number(el.dataset.jour);
-      /* ⚠️ Une séance ne passe pas devant une autre : c'est le cycle qui dit ce
-         qui vient ensuite, et l'écran doit montrer ce qui arrivera vraiment. */
-      const sens = cible > ici ? 1 : -1;
-      let vers = ici;
-      for (let p = ici + sens; p !== cible + sens; p += sens) {
-        if (sem()[p]) break;
-        vers = p;
-      }
-      if (vers !== ici) {
+      /* Deux lignes échangent leur jour, repos ou séance. ⚠️ L'ordre montré ici
+         devient l'ordre du cycle à la création du compte (`getOrCreateProgramme`) :
+         l'écran dit bien ce qui arrivera. */
+      if (cible !== ici) {
         if (depart === null) depart = ici;
-        sem()[vers] = sem()[ici];
-        sem()[ici] = null;
-        const autre = $(`.lig[data-jour="${vers}"]`);
+        const s = sem();
+        [s[ici], s[cible]] = [s[cible], s[ici]];
+        const autre = $(`.lig[data-jour="${cible}"]`);
         autre.dataset.jour = String(ici);
-        $("span", autre).textContent = nomLigne(ici);
-        el.dataset.jour = String(vers);
-        $("small", el).textContent = nomLigne(vers);
+        $("small, span", autre).textContent = nomLigne(ici);
+        el.dataset.jour = String(cible);
+        $("small", el).textContent = nomLigne(cible);
         poserLignes(el);
       }
     };
@@ -1038,7 +1035,7 @@ function tenirSeance(el: HTMLElement) {
       if (depart !== null && fin !== depart) {
         const nom = $("b", el).textContent ?? "";
         $(".sem-h span").textContent = fr(V("pas.semaine.deplace", { titre: nom, jour: JOURS[jourDe(fin)], avant: JOURS[jourDe(depart)] }));
-        $<HTMLImageElement>(".sem-h img").src = `${A}${S.guide || "nora"}-avatar-encourage.webp`;
+        $<HTMLImageElement>(".sem-h img").src = `/guides/${S.guide || "nora"}-encourage-avatar-v1.webp`;
       }
     };
   };
