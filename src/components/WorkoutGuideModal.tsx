@@ -26,6 +26,7 @@ import {
 } from "@/lib/defi";
 import { calculerAura } from "@/lib/aura";
 import { noterRang, rangMemorise } from "@/lib/celebrationRang";
+import { noterFlamme } from "@/lib/cartes/appareil";
 import { jouerFinSeance } from "@/lib/musiqueRang";
 import { noterBadges } from "@/lib/celebrationBadge";
 import { peutProposerAvis, proposerAvis, SEANCES_AVANT_AVIS } from "@/lib/invitationAvis";
@@ -725,6 +726,7 @@ export default function WorkoutGuideModal({
       .then((etat) => {
         if (!etat) return;
         noterRang(user.id, etat.rang);
+        noterFlamme(user.id, etat.serie);
         setExpFin(etat.exp);
         if (etat.jourValide) setSerieDuJour(etat.serie);
       })

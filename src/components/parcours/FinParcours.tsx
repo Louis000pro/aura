@@ -12,11 +12,16 @@
    sans flèche ni dégradé, et le Guide dit ce qui a été fait.
    ════════════════════════════════════════════════════════════════════ */
 
-import { useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { useGuideActif } from "@/context/GuideContext";
 import { voix } from "@/lib/guides";
 import { marquerBadgeVu } from "@/lib/celebrationBadge";
+import GainCarte from "@/components/cartes/GainCarte";
+import VignetteCarte from "@/components/cartes/VignetteCarte";
+import { deposerPochette, lirePochettes, versCollection } from "@/lib/cartes/appareil";
+import { carteProgramme } from "@/lib/cartes/catalogue";
 import {
   capitale, dansLaPhrase, nbCreneaux, programmeParId, semainesDites, testMieux, typoParcours, valeurCourte, valeurDite, type IdParcours,
 } from "@/lib/parcours";
@@ -45,6 +50,20 @@ export default function FinParcours({ lu, valeur, cycle, onFermer, onProgramme }
   /* Le badge est montré ici : la prochaine fin de séance ne le refête pas. */
   const compte = user?.id;
   useEffect(() => { if (compte) marquerBadgeVu(compte, `programme-${def.id}`); }, [compte, def.id]);
+
+  /* La carte du programme, dans sa pochette : si on repart sans la déchirer,
+     elle attend scellée dans la collection. */
+  const router = useRouter();
+  const [ouverte, setOuverte] = useState(false);
+  const [dechiree, setDechiree] = useState(false);
+  const [aujourdhui] = useState(() => new Date().toLocaleDateString("fr-CA", { timeZone: "Europe/Paris" }));
+  const carte = useMemo(() => carteProgramme(def.id, {
+    pseudo: user?.pseudo ?? "",
+    guide,
+    gagnee: true,
+    detail: { id: def.id, finiLe: aujourdhui, depart, fin: valeur },
+  }), [def.id, user?.pseudo, guide, aujourdhui, depart, valeur]);
+  useEffect(() => { if (compte) deposerPochette(compte, carte.id); }, [compte, carte.id]);
 
   const phrase = mieux
     ? voix(guide, "parcours.fin.mieux", { avant: capitale(valeurDite(def.test, depart)), duree: semainesDites(def.semaines), apres: valeurDite(def.test, valeur) })
@@ -90,7 +109,22 @@ export default function FinParcours({ lu, valeur, cycle, onFermer, onProgramme }
         </div>
 
         <div className="mt-4"><BulleGuide guide={guide} etat="encourage" texte={phrase} /></div>
-        <p className="m-0 mt-3 text-[13px]" style={{ color: E.t3 }}>{typoParcours(`Ton badge « ${def.titre} » est sur ton profil.`)}</p>
+        {compte && !dechiree ? (
+          <button
+            type="button"
+            onClick={() => setOuverte(true)}
+            className="mt-3 flex w-full items-center gap-3 text-left text-white cursor-pointer border-none"
+            style={{ padding: "10px 14px", borderRadius: 16, background: DEGRADE, boxShadow: "var(--ombre-action)" }}
+          >
+            <span className="w-10 shrink-0"><VignetteCarte carte={carte} scellee /></span>
+            <span className="min-w-0">
+              <b className="block text-[16px] font-bold">Une carte t’attend</b>
+              <span className="block text-[13px]" style={{ opacity: 0.85 }}>{typoParcours(`Déchire ta pochette ${def.titre}`)}</span>
+            </span>
+          </button>
+        ) : (
+          <p className="m-0 mt-3 text-[13px]" style={{ color: E.t3 }}>{typoParcours(`Ta carte « ${def.titre} » est dans ta collection.`)}</p>
+        )}
 
         <p className="m-0 mt-[22px] text-[20px] leading-[26px]" style={SOUS}>Et après</p>
         <div className="mt-2.5" style={GROUPE}>
@@ -107,6 +141,14 @@ export default function FinParcours({ lu, valeur, cycle, onFermer, onProgramme }
         <div className="flex-1 min-h-[16px]" />
         <Bouton onClick={onFermer}>{cycle ? "Reprendre mon programme" : "Continuer"}</Bouton>
       </div>
+      {ouverte && compte && (
+        <GainCarte
+          carte={carte}
+          userId={compte}
+          onFermer={() => { setOuverte(false); setDechiree(!lirePochettes(compte).attente.includes(carte.id)); }}
+          onCollection={() => { setOuverte(false); setDechiree(true); onFermer(); versCollection(router.push); }}
+        />
+      )}
     </Ecran>
   );
 }

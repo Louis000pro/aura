@@ -1,15 +1,18 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { VisageGuide } from "@/components/AssistantMark";
 import { useGuideActif } from "@/context/GuideContext";
 import { voix } from "@/lib/guides";
 import { createClient } from "@/lib/supabase";
-import { cartesDuCompte } from "@/lib/cartesRang";
+import { cartesDuCompte, donneesCarte, type CartesRang } from "@/lib/cartesRang";
 import { cleMontee, contexteMontee } from "@/lib/motRang";
 import VisuelCadeau from "@/components/rang/VisuelCadeau";
-import FeuilleCarte from "@/components/rang/FeuilleCarte";
+import GainCarte from "@/components/cartes/GainCarte";
+import { carteRang } from "@/lib/cartes/catalogue";
+import { deposerPochette, versCollection } from "@/lib/cartes/appareil";
 import { moteurParticules, type MoteurParticules } from "@/components/rang/particulesRang";
 import { RANGS, RECOMPENSES_RANG, indexRang, rangPrecedent, type Rang } from "@/lib/aura";
 import { jokersActifs } from "@/lib/jokers";
@@ -87,6 +90,7 @@ function vibrer(motif: number | number[]) {
 
 export default function SceneRang({ rang, onFermer }: { rang: Rang; onFermer: () => void }) {
   const { user } = useAuth();
+  const router = useRouter();
   const { guide } = useGuideActif();
   const [reduit] = useState(() => typeof window !== "undefined" && !!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches);
   const [T] = useState(() => chrono(rang.id, reduit));
@@ -109,14 +113,30 @@ export default function SceneRang({ rang, onFermer }: { rang: Rang; onFermer: ()
   const cleMot = cleMontee(rang.id);
   const [mot, setMot] = useState(() => (cleMot ? voix(guide, cleMot) : ""));
   const bulleVue = useRef(false);
+  const [lues, setLues] = useState<CartesRang | null>(null);
   useEffect(() => {
     if (!cleMot || !userId) return;
     let vivant = true;
     void cartesDuCompte(createClient(), userId).then((cartes) => {
-      if (vivant && !bulleVue.current) setMot(voix(guide, cleMot, contexteMontee(cartes, rang.id)));
+      if (!vivant) return;
+      setLues(cartes);
+      if (!bulleVue.current) setMot(voix(guide, cleMot, contexteMontee(cartes, rang.id)));
     });
     return () => { vivant = false; };
   }, [cleMot, userId, guide, rang.id]);
+
+  /* La carte du rang attend dans sa pochette : « Continuer » ne la perd pas,
+     elle reste scellée dans la collection. */
+  useEffect(() => {
+    if (userId) deposerPochette(userId, `rang-${rang.id}`);
+  }, [userId, rang.id]);
+
+  // Si la base n'a pas encore écrit le rang, son atteinte, c'est aujourd'hui.
+  const [aujourdhui] = useState(() => new Date().toLocaleDateString("fr-CA", { timeZone: "Europe/Paris" }));
+  const carteGagnee = useMemo(() => {
+    const d = donneesCarte(lues, rang.id, pseudo);
+    return carteRang(rang.id, { ...d, atteintLe: d.atteintLe ?? aujourdhui });
+  }, [lues, rang.id, pseudo, aujourdhui]);
 
   const racine = useRef<HTMLDivElement>(null);
   const secousse = useRef<HTMLDivElement>(null);
@@ -447,7 +467,7 @@ export default function SceneRang({ rang, onFermer }: { rang: Rang; onFermer: ()
               Continuer
             </button>
             <button type="button" className={styles.voirCarte} ref={voirCarte} onClick={() => setCarte(true)} disabled={!fini || !user?.id}>
-              Voir ma carte
+              Ouvrir ma carte
             </button>
           </div>
         </div>
@@ -456,7 +476,12 @@ export default function SceneRang({ rang, onFermer }: { rang: Rang; onFermer: ()
       <p className="sr-only" aria-live="polite">{annonce}</p>
 
       {carte && user?.id && (
-        <FeuilleCarte rang={rang} userId={user.id} pseudo={pseudo} neuve onFermer={() => setCarte(false)} />
+        <GainCarte
+          carte={carteGagnee}
+          userId={user.id}
+          onFermer={() => setCarte(false)}
+          onCollection={() => { onFermer(); versCollection(router.push); }}
+        />
       )}
     </div>
   );

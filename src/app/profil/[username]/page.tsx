@@ -4,9 +4,8 @@ import { useState, useEffect, useLayoutEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  UserPlus, UserCheck, ArrowLeft, Check, Lock, UserMinus, Share2, MessageCircle, Loader2,
+  UserPlus, UserCheck, ArrowLeft, Check, UserMinus, Share2, MessageCircle, Loader2,
 } from "lucide-react";
-import Image from "next/image";
 import { createClient } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import FollowListModal from "@/components/FollowListModal";
@@ -17,9 +16,10 @@ import { calculerAura, cosmetiquesDuRang, etatDepuisExp, progressionRang, type E
 import { chargerRang } from "@/lib/rangsPublics";
 import { chargerProfilPublic, type ProfilPublic } from "@/lib/profilPublic";
 import { libelleObjectif, LEVELS } from "@/lib/profilOnboarding";
-import { SERIES, imageEtat, relaisPartage, type SerieSlug, type RelaisPartage } from "@/lib/defi";
+import { relaisPartage, type RelaisPartage } from "@/lib/defi";
 import { chargerBadgesAura } from "@/lib/badgesAura";
 import EtagereBadges from "@/components/profil/EtagereBadges";
+import VitrinePublique from "@/components/cartes/VitrinePublique";
 import LigneEnsemble from "@/components/profil/LigneEnsemble";
 import CouvertureSeance from "@/components/profil/CouvertureSeance";
 import AvecQui from "@/components/communaute/AvecQui";
@@ -659,50 +659,11 @@ export default function PublicProfilePage() {
 
       <div className="mt-8 md:mt-6">
       {/* IL N'Y A PAS D'ONGLETS : une seule page. Ce qui reste est ce qui se
-          gagne à deux, ou ce qui se voit par nature : ses affiches de relais,
-          les affiches qu'il ou elle partage avec ses potes, ses badges.
-          Jamais un fil d'activité, jamais une comparaison. */}
-      <div className="flex items-baseline justify-between mb-3">
-        <h2 className="vy-sous" style={{ margin: 0, color: "var(--text-0)" }}>Affiches du relais</h2>
-        <span className="vy-nombre text-[13px]" style={{ color: "var(--text-2)" }}>
-          {(Object.keys(SERIES) as SerieSlug[]).filter((s) => badgeSlugs.has(`serie-${s}`)).length} / {Object.keys(SERIES).length}
-        </span>
-      </div>
-      <div className="grid grid-cols-3 gap-2 md:max-w-[520px] md:gap-3.5">
-        {(Object.keys(SERIES) as SerieSlug[]).map((slug) => {
-          const serie = SERIES[slug];
-          const gagnee = badgeSlugs.has(`serie-${slug}`);
-          return (
-            <div
-              key={slug}
-              className="relative overflow-hidden"
-              style={{ borderRadius: "var(--r-bloc)", aspectRatio: "9/16", boxShadow: "var(--ombre-pose)", background: "#2A2536" }}
-            >
-              <Image
-                src={imageEtat(slug, 4)}
-                alt={gagnee ? `Affiche ${serie.nom}` : `Affiche ${serie.nom}, pas encore dévoilée`}
-                fill
-                sizes="(max-width:768px) 30vw, 170px"
-                className="object-cover"
-                style={{ filter: gagnee ? "none" : "grayscale(1) brightness(0.45)" }}
-              />
-              {gagnee && <div className="absolute inset-0" style={{ background: "linear-gradient(180deg, rgba(10,6,18,0) 55%, rgba(10,6,18,0.7) 100%)" }} />}
-              {gagnee && <div className="absolute top-2 right-2.5 text-[13px]" style={{ color: "#fff" }}>&#10022;</div>}
-              {!gagnee && (
-                <div className="absolute inset-0 grid place-items-center">
-                  <Lock size={20} strokeWidth={2} style={{ color: "rgba(255,255,255,0.6)" }} />
-                </div>
-              )}
-              <div className="absolute left-2.5 right-2 bottom-2.5" style={{ color: "#fff" }}>
-                <p className="text-[13px] font-extrabold leading-tight">{serie.nom}</p>
-                <p className="text-[11px] mt-0.5" style={{ opacity: gagnee ? 0.8 : 0.7 }}>
-                  {gagnee ? "Dévoilée à deux" : "À dévoiler"}
-                </p>
-              </div>
-            </div>
-          );
-        })}
-      </div>
+          voit par nature : sa vitrine, les affiches qu'il ou elle partage avec
+          ses potes, ses badges. Jamais un fil d'activité, jamais une comparaison. */}
+      {profile && (
+        <VitrinePublique userId={profile.id} pseudo={displayPseudo} rangId={aura?.rang.id ?? null} serie={pub?.serie ?? 0} slugs={badgeSlugs} />
+      )}
       {!isOwnProfile && user && relation === "ami" && (
         <button
           type="button"

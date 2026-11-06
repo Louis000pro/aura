@@ -443,7 +443,7 @@ export const MISSIONS_PREMIUM_SEMAINE = MISSIONS_SEMAINE.filter((m) => m.premium
 // rang », version 2, validée par Louis) ──
 //
 // Trois choses à chaque passage, et rien d'invisible :
-//   · LA CARTE, gravée à ton nom avec la date du rang (CarteRang) ;
+//   · LA CARTE, gravée à ton nom avec la date du rang (lib/cartes/catalogue.ts) ;
 //   · LE CADRE de ta photo, propre à chaque rang dès l'Argent (AvatarRang),
 //     sur l'accueil, le profil et dans les conversations ;
 //   · LES JOKERS de série, rechargés le 1er du mois : 1 à Argent, 2 à Or,

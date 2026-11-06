@@ -1,10 +1,11 @@
 "use client";
 
 import type { CSSProperties } from "react";
-import CarteRang from "@/components/rang/CarteRang";
+import VignetteCarte from "@/components/cartes/VignetteCarte";
 import { AvatarRang, PhotoRonde, TitreRang } from "@/components/rang/IdentiteRang";
 import { RangeeJokers } from "@/components/rang/Joker";
 import { TITRE_DIAMANT, type GenreCadeau, type Rang } from "@/lib/aura";
+import { carteRang } from "@/lib/cartes/catalogue";
 import type { DonneesCarte } from "@/lib/cartesRang";
 
 /**
@@ -40,7 +41,7 @@ export default function VisuelCadeau({
   if (genre === "carte") {
     return (
       <div style={{ width: `calc(${t} * 0.72)` }}>
-        <CarteRang rang={rang} donnees={carte} decor />
+        <VignetteCarte carte={carteRang(rang.id, carte)} />
       </div>
     );
   }

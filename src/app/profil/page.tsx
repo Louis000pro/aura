@@ -2,24 +2,24 @@
 
 import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  X, Check, Lock, Camera, ChevronRight, ChevronDown,
+  X, Check, Camera, ChevronRight, ChevronDown,
   Pencil, Settings, Share2,
 } from "lucide-react";
-import Image from "next/image";
 import GemmeRang from "@/components/GemmeRang";
 import EtatVideGuide from "@/components/EtatVideGuide";
 import RangsModal from "@/components/rang/RangsModal";
-import CarteRang from "@/components/rang/CarteRang";
-import FeuilleCarte from "@/components/rang/FeuilleCarte";
-import { TEINTE_CARTE, cartesDuCompte, dateCourteCarte, donneesCarte, rangsDesCartes, type CartesRang } from "@/lib/cartesRang";
+import EtageCartes from "@/components/cartes/EtageCartes";
+import { EVT_COLLECTION, noterFlamme } from "@/lib/cartes/appareil";
+import { rangsGagnes } from "@/lib/cartes/catalogue";
+import { TEINTE_CARTE, cartesDuCompte, type CartesRang } from "@/lib/cartesRang";
 import { AvatarRang, PseudoRang, TitreRang } from "@/components/rang/IdentiteRang";
 import FlammeSerie from "@/components/serie/FlammeSerie";
 import { calculerAura, cosmetiquesDuRang, progressionRang, RANGS, type EtatAura } from "@/lib/aura";
 import { noterRang } from "@/lib/celebrationRang";
-import { SERIES, imageEtat, type SerieSlug } from "@/lib/defi";
 import { chargerBadgesAura } from "@/lib/badgesAura";
 import type { ProgresBadges } from "@/lib/badges";
 import EtagereBadges from "@/components/profil/EtagereBadges";
@@ -34,6 +34,9 @@ import HistoriqueMasque from "@/components/historique/HistoriqueMasque";
 import { debutHistorique, estVisible, historiqueComplet } from "@/lib/historique";
 import WeighInPrompt from "@/components/WeighInPrompt";
 import AvecQui from "@/components/communaute/AvecQui";
+
+/* Arrive à l'ouverture : le moteur des cartes n'a rien à faire dans le profil. */
+const FeuilleCarte = dynamic(() => import("@/components/cartes/FeuilleCarte"), { ssr: false });
 
 /* ─────────────── Tab data types ─────────────── */
 type UserPost = {
@@ -509,6 +512,18 @@ export default function ProfilPage() {
   /* Les cartes de rang (2026-10-24) : une par rang atteint, gravée au pseudo. */
   const [cartes, setCartes] = useState<CartesRang | null>(null);
   const [carteOuverte, setCarteOuverte] = useState<string | null>(null);
+  /* La collection s'ouvre depuis l'étage des cartes, et depuis la fin d'un
+     gain : `?ouvrir=collection` en arrivant, un évènement si on y est déjà. */
+  const [collectionOuverte, setCollectionOuverte] = useState(false);
+  useEffect(() => {
+    const ouvrir = () => { setActiveTab("collection"); setCollectionOuverte(true); };
+    if (new URLSearchParams(window.location.search).get("ouvrir") === "collection") {
+      window.history.replaceState(null, "", "/profil");
+      queueMicrotask(ouvrir);
+    }
+    window.addEventListener(EVT_COLLECTION, ouvrir);
+    return () => window.removeEventListener(EVT_COLLECTION, ouvrir);
+  }, []);
   const [toast, setToast] = useState<string | null>(null);
   const [profilePseudo, setProfilePseudo] = useState(user?.pseudo ?? "");
   const [profileAvatar, setProfileAvatar] = useState(user?.avatar ?? "");
@@ -589,6 +604,7 @@ export default function ProfilPage() {
         if (!etat) return;
         setAura(etat);
         noterRang(uid, etat.rang); // passage de rang : la célébration part du layout
+        noterFlamme(uid, etat.serie);
       })
       .catch(() => {});
 
@@ -1010,7 +1026,6 @@ export default function ProfilPage() {
 
       {/* ─── Tab content ─── */}
       <AnimatePresence mode="wait">
-        {/* ─── Sillages : les affiches ─── */}
         {activeTab === "collection" && (
           <motion.div
             key="collection"
@@ -1020,105 +1035,24 @@ export default function ProfilPage() {
             transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
             className="px-5 md:px-8 max-w-3xl mx-auto"
           >
-            {/* Tes cartes de rang, de la dernière à la première. Toucher en
-                ouvre une en grand, prête à partager. */}
-            {aura && (
-              <>
-                <div className="flex items-baseline justify-between mb-3.5">
-                  <h2 className="vy-sous" style={{ margin: 0, color: "var(--text-0)" }}>Tes cartes</h2>
-                  <span className="vy-nombre text-[13px]" style={{ color: "var(--text-2)" }}>{rangsDesCartes(aura.rang.id).length}</span>
-                </div>
-                <div className="-mx-5 mb-8 flex gap-3 overflow-x-auto px-5 pb-2" style={{ scrollbarWidth: "none" }}>
-                  {rangsDesCartes(aura.rang.id).map((id, k) => {
-                    const r = RANGS.find((x) => x.id === id) ?? RANGS[0];
-                    const d = donneesCarte(cartes, id, displayPseudo);
-                    const quand = dateCourteCarte(id === "bronze" ? d.inscritLe : d.atteintLe);
-                    return (
-                      <button
-                        key={id}
-                        type="button"
-                        onClick={() => setCarteOuverte(id)}
-                        className="flex shrink-0 cursor-pointer flex-col items-center gap-1.5 text-center"
-                        style={{ width: 84 }}
-                        aria-label={`Ta carte ${r.nom}`}
-                      >
-                        <span className="block w-full" style={{ borderRadius: 7, boxShadow: k === 0 ? "0 0 0 2px #8B5CF6, 0 8px 18px -8px rgba(60,30,120,0.5)" : "none" }}>
-                          <CarteRang rang={r} donnees={d} decor />
-                        </span>
-                        <span style={{ fontSize: 11, lineHeight: 1.25, color: "var(--text-2)" }}>
-                          {r.nom}{quand ? ` · ${quand}` : ""}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </>
+            {/* Les cartes : la vitrine, ce qui attend, la collection. Un toucher
+                ouvre une carte en grand, ou déchire sa pochette. */}
+            {aura && user?.id && (
+              <EtageCartes
+                userId={user.id}
+                pseudo={displayPseudo}
+                rangId={aura.rang.id}
+                serie={serieJours}
+                record={progresBadges?.serie ?? null}
+                slugs={badgeSlugs}
+                cartes={cartes}
+                collectionOuverte={collectionOuverte}
+                onCollection={setCollectionOuverte}
+                onRelais={() => setAvecQui(true)}
+              />
             )}
 
-            {/* Affiches du relais — gagnées en clair, verrouillées en cadenas.
-                Trois de front : la série tient en une rangée, on voit d'un
-                coup d'œil ce qui est gagné et ce qui reste. */}
-            <div className="flex items-baseline justify-between mb-3.5">
-              <h2 className="vy-sous" style={{ margin: 0, color: "var(--text-0)" }}>Affiches du relais</h2>
-              <span className="vy-nombre text-[13px]" style={{ color: "var(--text-2)" }}>
-                {(Object.keys(SERIES) as SerieSlug[]).filter((s) => badgeSlugs.has(`serie-${s}`)).length} / {Object.keys(SERIES).length}
-              </span>
-            </div>
-            <div className="grid grid-cols-3 gap-2.5 mb-8">
-              {(Object.keys(SERIES) as SerieSlug[]).map((slug) => {
-                const serie = SERIES[slug];
-                const gagnee = badgeSlugs.has(`serie-${slug}`);
-                // ⚠️ C'est l'affiche VERROUILLÉE qui s'ouvre, pas celle qu'on a
-                // gagnée : la galerie arrête d'être une vitrine et devient une
-                // porte, exactement comme une carte Premium verrouillée ouvre
-                // l'aperçu au lieu de ne rien faire. Une affiche déjà gagnée n'a
-                // rien à ouvrir, elle reste donc inerte et sans affordance.
-                const Cadre = gagnee ? "div" : "button";
-                return (
-                  <Cadre
-                    key={slug}
-                    {...(gagnee ? {} : {
-                      type: "button" as const,
-                      onClick: () => setAvecQui(true),
-                      "aria-label": `Lancer un relais pour dévoiler ${serie.nom}`,
-                    })}
-                    /* Une affiche est une IMAGE : c'est le grand rayon, celui
-                       qu'aucun bloc ni aucun contrôle ne porte. Le liseré blanc
-                       à 6 % ne séparait rien, il décorait. */
-                    className={`relative overflow-hidden w-full text-left${gagnee ? "" : " cursor-pointer"}`}
-                    style={{ aspectRatio: "9/16", borderRadius: "var(--r-bloc)", boxShadow: "var(--ombre-pose)", background: "#1C1626" }}
-                  >
-                    <Image
-                      src={imageEtat(slug, 4)}
-                      alt={serie.nom}
-                      fill
-                      sizes="(max-width:768px) 31vw, 200px"
-                      className="object-cover"
-                      style={{ filter: gagnee ? "none" : "grayscale(1) brightness(0.45)" }}
-                    />
-                    {gagnee ? (
-                      <>
-                        <div className="absolute inset-0" style={{ background: "var(--voile-affiche)" }} />
-                        <div className="absolute left-2.5 right-2.5 bottom-2.5" style={{ color: "#fff" }}>
-                          <p style={{ margin: 0, fontSize: 13, fontWeight: 800, fontVariationSettings: "var(--w-voix)" }}>{serie.nom}</p>
-                          <p style={{ margin: "2px 0 0", fontSize: 11, color: "rgba(255,255,255,0.78)" }}>Dévoilée à deux</p>
-                        </div>
-                      </>
-                    ) : (
-                      <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 p-2.5 text-center">
-                        <span className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: "rgba(255,255,255,0.16)", border: "1px solid rgba(255,255,255,0.3)" }}>
-                          <Lock size={14} strokeWidth={2.2} style={{ color: "#fff" }} />
-                        </span>
-                        <span style={{ fontSize: 13, fontWeight: 800, color: "#fff", fontVariationSettings: "var(--w-voix)" }}>{serie.nom}</span>
-                        <span style={{ fontSize: 11, color: "rgba(255,255,255,0.8)" }}>Avec qui ?</span>
-                      </div>
-                    )}
-                  </Cadre>
-                );
-              })}
-            </div>
-
-            {/* L'étagère : ce que le relais a donné en plus des affiches.
+            {/* L'étagère : ce que le relais a donné en plus des cartes.
                 Muette tant qu'on n'a rien gagné. */}
             <EtagereBadges slugs={badgeSlugs} titre="Badges" progres={progresBadges} />
 
@@ -1299,14 +1233,10 @@ export default function ProfilPage() {
           saisie écrirait la même colonne avec ses propres règles. */}
       <WeighInPrompt ouvert={pesee} onFermer={() => setPesee(false)} />
 
-      {carteOuverte && user?.id && (
-        <FeuilleCarte
-          rang={RANGS.find((r) => r.id === carteOuverte) ?? RANGS[0]}
-          userId={user.id}
-          pseudo={displayPseudo}
-          onFermer={() => setCarteOuverte(null)}
-        />
-      )}
+      {carteOuverte && aura && (() => {
+        const rail = rangsGagnes(aura.rang.id, cartes, displayPseudo);
+        return <FeuilleCarte carte={rail[rail.length - 1]} rail={rail} onFermer={() => setCarteOuverte(null)} />;
+      })()}
 
       <RangsModal
         open={showRangs}

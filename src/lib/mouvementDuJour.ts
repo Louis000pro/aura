@@ -26,6 +26,7 @@
 
 import { EXERCISE_LIBRARY, libelleReps, ZONES, type LibExercise } from "@/lib/exerciseLibrary";
 import { indexDuJour } from "@/lib/missionsAccueil";
+import { cleCarnet as cle } from "@/lib/cartes/appareil";
 import type { Exercise } from "@/components/WorkoutGuideModal";
 import type { createClient } from "@/lib/supabase";
 
@@ -61,8 +62,6 @@ export function zoneDuMouvement(m: LibExercise): string {
 }
 
 /* ── Le carnet ── */
-
-const cle = (userId: string) => `vaiiya_carnet_mouvements_${userId}`;
 
 export function lireCarnet(userId: string): string[] {
   try {

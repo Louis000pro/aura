@@ -54,13 +54,6 @@ export function dateLongue(jour?: string | null): string | null {
   return new Date(Date.UTC(a, m - 1, j)).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
 }
 
-/** « 24 août », plus court, pour une légende sous une carte. */
-export function dateCourteCarte(jour?: string | null): string | null {
-  if (!jour || !/^\d{4}-\d{2}-\d{2}$/.test(jour)) return null;
-  const [a, m, j] = jour.split("-").map(Number);
-  return new Date(Date.UTC(a, m - 1, j)).toLocaleDateString("fr-FR", { day: "numeric", month: "short", timeZone: "UTC" });
-}
-
 const jourParis = (iso?: string | null): string | null => {
   if (!iso) return null;
   const d = new Date(iso);
@@ -140,11 +133,4 @@ export function donneesCarte(cartes: CartesRang | null, rangId: string, pseudo: 
     seances: c?.seances ?? null,
     jours: c?.jours ?? null,
   };
-}
-
-/** Les rangs dont on a la carte, du plus haut au premier : tous ceux
- *  jusqu'au rang actuel (la base, quand elle répond, ne dit pas autre chose). */
-export function rangsDesCartes(rangActuelId: string): string[] {
-  const i = RANGS.findIndex((r) => r.id === rangActuelId);
-  return RANGS.slice(0, Math.max(0, i) + 1).map((r) => r.id).reverse();
 }

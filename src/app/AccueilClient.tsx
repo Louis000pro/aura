@@ -15,6 +15,7 @@ import HeroJournee from "@/components/entrainement/HeroJournee";
 import { SeanceInterrompueAccueil } from "@/components/entrainement/SeanceInterrompue";
 import { calculerAura, etatDepuisExp, type EtatAura } from "@/lib/aura";
 import { noterRang } from "@/lib/celebrationRang";
+import { noterFlamme } from "@/lib/cartes/appareil";
 import { useGuideActif } from "@/context/GuideContext";
 import { useGestesAssistant } from "@/context/AssistantContext";
 import {
@@ -141,6 +142,7 @@ function Dashboard() {
         try { localStorage.setItem(cacheKey, String(etat.exp)); } catch { /* ignore */ }
         // Passage de rang : on note le rang FRAIS (jamais celui du cache d'affichage).
         noterRang(user.id, etat.rang);
+        noterFlamme(user.id, etat.serie);
       })
       .catch(() => { /* silencieux : on garde l'affichage précédent */ });
   }, [user, statsTick, parisDay, memoire]);

@@ -1,6 +1,6 @@
-"use strict";
 /* ─────────────────────────────────────────────────────────────────────
-   LE MOTEUR DES CARTES. Un seul fragment shader, sans bibliothèque.
+   LE MOTEUR DES CARTES (Louis, 2026-11-06 : « TCG Vaiiya sobre », « waouh,
+   j'ai eu ça »). Un seul fragment shader WebGL2, sans bibliothèque.
 
    Une face, c'est trois textures :
      tArt  le paysage (opaque)
@@ -8,15 +8,49 @@
      tFx   R = métal (cadre, nom, gravures)  G = relief  B = vernis  A = encre
 
    Le relief donne une normale par pixel. Cette normale, plus l'inclinaison
-   de la carte, dit quelle partie d'un studio photo le métal reflète :
-   c'est ce qui fait glisser la lumière sur les lettres quand on penche.
+   de la carte, dit quelle partie d'un studio photo le métal reflète : c'est
+   ce qui fait glisser la lumière sur les lettres quand on penche.
+
+   ⚠️ CE FICHIER NE SE CHARGE QU'AU MOMENT OÙ UNE CARTE S'OUVRE (`import()`
+   dans `CarteVivante`) : il n'a rien à faire dans le code du démarrage.
+   ⚠️ PIÈGES PAYÉS. `smoothstep` à bornes inversées ou égales et `pow` d'une
+   base négative rendent des NaN, donc des points noirs : `fwidth` vaut 0 sur
+   la diagonale d'une distance de coin, d'où le plancher de `bordAA`. Un
+   identifiant accentué ne compile pas en GLSL. Une lueur additive de 0,05 en
+   linéaire devient 0,25 après le gamma. Un grain plus fin que le pixel fait
+   des paillettes parasites : sa fréquence suit la définition (`uBruit`).
+   ⚠️ PAS DE `preserveDrawingBuffer`, il coûte cher sur téléphone : pour
+   photographier la carte, on dessine puis on lit dans la même tâche.
    ───────────────────────────────────────────────────────────────────── */
-(function () {
-  const VERT = `#version 300 es
+
+export type Face = {
+  art: TexImageSource;
+  emblem: (TexImageSource & { naturalHeight?: number }) | null;
+  fx: { data: Uint8Array; w: number; h: number };
+  m: readonly [string, string, string, string];
+  lueur: string;
+  encre: string;
+  /** x irisation, y paillettes, z soleillé, w vivant. */
+  f: readonly [number, number, number, number];
+  ir?: readonly [string, string, string];
+  emB?: readonly [number, number, number, number];
+  emG?: number;
+  emF?: number;
+  emL?: number;
+  lum?: number;
+  par?: number;
+  scrim?: number;
+  froisse?: number;
+  coin?: number;
+};
+
+export type FacePreparee = { f: Face; art: WebGLTexture; fx: WebGLTexture; em: WebGLTexture };
+
+const VERT = `#version 300 es
 in vec2 p;out vec2 v;
 void main(){v=vec2(p.x*.5+.5,.5-p.y*.5);gl_Position=vec4(p,0.,1.);}`;
 
-  const FRAG = `#version 300 es
+const FRAG = `#version 300 es
 precision highp float;
 in vec2 v;out vec4 o;
 uniform sampler2D tArt,tFx,tEm;
@@ -206,107 +240,148 @@ void main(){
  o=vec4(col*masque,masque);
 }`;
 
-  const hex = (h) => [parseInt(h.slice(1, 3), 16) / 255, parseInt(h.slice(3, 5), 16) / 255, parseInt(h.slice(5, 7), 16) / 255];
-  const NOMS = ["tArt", "tFx", "tEm", "uTilt", "uTexel", "uT", "uM0", "uM1", "uM2", "uM3", "uLueur", "uEncre", "uEmB", "uF", "uEm", "uEmG", "uEmF", "uEmL", "uLum", "uPar", "uScrim", "uBruit", "uFroisse", "uCoin", "uFlash", "uI0", "uI1", "uI2"];
+const hex = (h: string): [number, number, number] => [
+  parseInt(h.slice(1, 3), 16) / 255,
+  parseInt(h.slice(3, 5), 16) / 255,
+  parseInt(h.slice(5, 7), 16) / 255,
+];
 
-  class Carte {
-    constructor(canvas) {
-      this.canvas = canvas;
-      const gl = canvas.getContext("webgl2", { alpha: true, premultipliedAlpha: true, antialias: false, preserveDrawingBuffer: true });
-      if (!gl) throw new Error("WebGL2 absent");
-      this.gl = gl;
-      const mk = (t, s) => {
-        const o = gl.createShader(t); gl.shaderSource(o, s); gl.compileShader(o);
-        if (!gl.getShaderParameter(o, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(o));
-        return o;
-      };
-      const pr = gl.createProgram();
-      gl.attachShader(pr, mk(gl.VERTEX_SHADER, VERT));
-      gl.attachShader(pr, mk(gl.FRAGMENT_SHADER, FRAG));
-      gl.linkProgram(pr);
-      if (!gl.getProgramParameter(pr, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(pr));
-      gl.useProgram(pr);
-      const b = gl.createBuffer();
-      gl.bindBuffer(gl.ARRAY_BUFFER, b);
-      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
-      const l = gl.getAttribLocation(pr, "p");
-      gl.enableVertexAttribArray(l);
-      gl.vertexAttribPointer(l, 2, gl.FLOAT, false, 0, 0);
-      this.u = {};
-      for (const n of NOMS) this.u[n] = gl.getUniformLocation(pr, n);
-      gl.uniform1i(this.u.tArt, 0); gl.uniform1i(this.u.tFx, 1); gl.uniform1i(this.u.tEm, 2);
-      this.flash = 0;
-      this.vide = this._tex(null);
-    }
+const NOMS = [
+  "tArt", "tFx", "tEm", "uTilt", "uTexel", "uT", "uM0", "uM1", "uM2", "uM3", "uLueur", "uEncre", "uEmB", "uF", "uEm", "uEmG",
+  "uEmF", "uEmL", "uLum", "uPar", "uScrim", "uBruit", "uFroisse", "uCoin", "uFlash", "uI0", "uI1", "uI2",
+] as const;
+type Nom = (typeof NOMS)[number];
 
-    _tex(source, mip, w, h) {
-      const gl = this.gl;
-      const t = gl.createTexture();
-      gl.activeTexture(gl.TEXTURE3);
-      gl.bindTexture(gl.TEXTURE_2D, t);
-      gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
-      if (source === null) gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array(4));
-      else if (source instanceof Uint8Array) gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, w, h, 0, gl.RGBA, gl.UNSIGNED_BYTE, source);
-      else gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, source);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, mip ? gl.LINEAR_MIPMAP_LINEAR : gl.LINEAR);
-      if (mip) gl.generateMipmap(gl.TEXTURE_2D);
-      return t;
-    }
+const BLANC = ["#FFFFFF", "#FFFFFF", "#FFFFFF"] as const;
 
-    /* Prépare une face une fois pour toutes : la retourner ne recharge rien. */
-    preparer(f) {
-      return {
-        f,
-        art: this._tex(f.art, true),
-        fx: this._tex(f.fx.data, true, f.fx.w, f.fx.h),
-        em: f.emblem ? this._tex(f.emblem, true) : this.vide,
-      };
-    }
+export class MoteurCarte {
+  readonly canvas: HTMLCanvasElement;
+  readonly gl: WebGL2RenderingContext;
+  active: FacePreparee | null = null;
+  flash = 0;
+  private readonly u = {} as Record<Nom, WebGLUniformLocation | null>;
+  private readonly vide: WebGLTexture;
+  private w = 0;
+  private h = 0;
 
-    activer(p) {
-      const gl = this.gl, u = this.u, f = p.f;
-      this.active = p;
-      gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, p.art);
-      gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, p.fx);
-      gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, p.em);
-      gl.uniform2f(u.uTexel, 1 / f.fx.w, 1 / f.fx.h);
-      gl.uniform3fv(u.uM0, hex(f.m[0])); gl.uniform3fv(u.uM1, hex(f.m[1]));
-      gl.uniform3fv(u.uM2, hex(f.m[2])); gl.uniform3fv(u.uM3, hex(f.m[3]));
-      gl.uniform3fv(u.uLueur, hex(f.lueur)); gl.uniform3fv(u.uEncre, hex(f.encre));
-      gl.uniform4fv(u.uEmB, f.emB || [0, 0, 1, 1]);
-      gl.uniform4fv(u.uF, f.f);
-      gl.uniform1f(u.uEm, f.emblem ? 1 : 0);
-      gl.uniform1f(u.uEmG, f.emG || 1);
-      gl.uniform1f(u.uEmF, f.emF ?? 1);
-      gl.uniform1f(u.uEmL, f.emL ?? 1);
-      gl.uniform1f(u.uLum, f.lum || 0);
-      gl.uniform1f(u.uPar, f.par ?? 1);
-      gl.uniform1f(u.uScrim, f.scrim || 0);
-      gl.uniform1f(u.uFroisse, f.froisse || 0);
-      gl.uniform1f(u.uCoin, f.coin ?? .046);
-      const ir = f.ir || ["#FFFFFF", "#FFFFFF", "#FFFFFF"];
-      gl.uniform3fv(u.uI0, hex(ir[0])); gl.uniform3fv(u.uI1, hex(ir[1])); gl.uniform3fv(u.uI2, hex(ir[2]));
-    }
-
-    liberer(p) {
-      const gl = this.gl;
-      gl.deleteTexture(p.art); gl.deleteTexture(p.fx);
-      if (p.em !== this.vide) gl.deleteTexture(p.em);
-    }
-
-    dessiner(tx, ty, t) {
-      const gl = this.gl, c = this.canvas;
-      if (c.width !== this._w || c.height !== this._h) { this._w = c.width; this._h = c.height; gl.viewport(0, 0, c.width, c.height); }
-      gl.uniform2f(this.u.uTilt, tx, ty);
-      gl.uniform1f(this.u.uT, t);
-      gl.uniform1f(this.u.uBruit, Math.min(760, c.width * .42));
-      gl.uniform1f(this.u.uFlash, this.flash);
-      gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT);
-      gl.drawArrays(gl.TRIANGLES, 0, 3);
-    }
+  constructor(canvas: HTMLCanvasElement) {
+    this.canvas = canvas;
+    const gl = canvas.getContext("webgl2", { alpha: true, premultipliedAlpha: true, antialias: false });
+    if (!gl) throw new Error("WebGL2 absent");
+    this.gl = gl;
+    const mk = (t: number, s: string) => {
+      const o = gl.createShader(t);
+      if (!o) throw new Error("shader");
+      gl.shaderSource(o, s);
+      gl.compileShader(o);
+      if (!gl.getShaderParameter(o, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(o) ?? "shader");
+      return o;
+    };
+    const pr = gl.createProgram();
+    if (!pr) throw new Error("programme");
+    gl.attachShader(pr, mk(gl.VERTEX_SHADER, VERT));
+    gl.attachShader(pr, mk(gl.FRAGMENT_SHADER, FRAG));
+    gl.linkProgram(pr);
+    if (!gl.getProgramParameter(pr, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(pr) ?? "programme");
+    gl.useProgram(pr);
+    gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+    const l = gl.getAttribLocation(pr, "p");
+    gl.enableVertexAttribArray(l);
+    gl.vertexAttribPointer(l, 2, gl.FLOAT, false, 0, 0);
+    for (const n of NOMS) this.u[n] = gl.getUniformLocation(pr, n);
+    gl.uniform1i(this.u.tArt, 0);
+    gl.uniform1i(this.u.tFx, 1);
+    gl.uniform1i(this.u.tEm, 2);
+    this.vide = this.texture(null);
   }
-  window.CarteGL = Carte;
-})();
+
+  /** Une texture. `null` : un pixel vide, `Uint8Array` : des octets RGBA. */
+  texture(source: TexImageSource | Uint8Array | null, mip = false, w = 1, h = 1): WebGLTexture {
+    const gl = this.gl;
+    const t = gl.createTexture();
+    if (!t) throw new Error("texture");
+    gl.activeTexture(gl.TEXTURE3);
+    gl.bindTexture(gl.TEXTURE_2D, t);
+    gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
+    if (source === null) gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array(4));
+    else if (source instanceof Uint8Array) gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, w, h, 0, gl.RGBA, gl.UNSIGNED_BYTE, source);
+    else gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, source);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, mip ? gl.LINEAR_MIPMAP_LINEAR : gl.LINEAR);
+    if (mip) gl.generateMipmap(gl.TEXTURE_2D);
+    return t;
+  }
+
+  /** Prépare une face une fois pour toutes : la retourner ne recharge rien. */
+  preparer(f: Face): FacePreparee {
+    return {
+      f,
+      art: this.texture(f.art, true),
+      fx: this.texture(f.fx.data, true, f.fx.w, f.fx.h),
+      em: f.emblem ? this.texture(f.emblem, true) : this.vide,
+    };
+  }
+
+  activer(p: FacePreparee) {
+    const gl = this.gl, u = this.u, f = p.f;
+    this.active = p;
+    gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, p.art);
+    gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, p.fx);
+    gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, p.em);
+    gl.uniform2f(u.uTexel, 1 / f.fx.w, 1 / f.fx.h);
+    gl.uniform3fv(u.uM0, hex(f.m[0])); gl.uniform3fv(u.uM1, hex(f.m[1]));
+    gl.uniform3fv(u.uM2, hex(f.m[2])); gl.uniform3fv(u.uM3, hex(f.m[3]));
+    gl.uniform3fv(u.uLueur, hex(f.lueur)); gl.uniform3fv(u.uEncre, hex(f.encre));
+    gl.uniform4fv(u.uEmB, f.emB ?? [0, 0, 1, 1]);
+    gl.uniform4fv(u.uF, f.f);
+    gl.uniform1f(u.uEm, f.emblem ? 1 : 0);
+    gl.uniform1f(u.uEmG, f.emG ?? 1);
+    gl.uniform1f(u.uEmF, f.emF ?? 1);
+    gl.uniform1f(u.uEmL, f.emL ?? 1);
+    gl.uniform1f(u.uLum, f.lum ?? 0);
+    gl.uniform1f(u.uPar, f.par ?? 1);
+    gl.uniform1f(u.uScrim, f.scrim ?? 0);
+    gl.uniform1f(u.uFroisse, f.froisse ?? 0);
+    gl.uniform1f(u.uCoin, f.coin ?? 0.046);
+    const ir = f.ir ?? BLANC;
+    gl.uniform3fv(u.uI0, hex(ir[0])); gl.uniform3fv(u.uI1, hex(ir[1])); gl.uniform3fv(u.uI2, hex(ir[2]));
+  }
+
+  /** Remplace l'emblème affiché : les poses d'un mouvement. */
+  poserEmbleme(t: WebGLTexture) {
+    const gl = this.gl;
+    gl.activeTexture(gl.TEXTURE2);
+    gl.bindTexture(gl.TEXTURE_2D, t);
+  }
+
+  liberer(p: FacePreparee) {
+    const gl = this.gl;
+    gl.deleteTexture(p.art);
+    gl.deleteTexture(p.fx);
+    if (p.em !== this.vide) gl.deleteTexture(p.em);
+  }
+
+  dessiner(tx: number, ty: number, t: number) {
+    const gl = this.gl, c = this.canvas;
+    if (c.width !== this.w || c.height !== this.h) {
+      this.w = c.width;
+      this.h = c.height;
+      gl.viewport(0, 0, c.width, c.height);
+    }
+    gl.uniform2f(this.u.uTilt, tx, ty);
+    gl.uniform1f(this.u.uT, t);
+    gl.uniform1f(this.u.uBruit, Math.min(760, c.width * 0.42));
+    gl.uniform1f(this.u.uFlash, this.flash);
+    gl.clearColor(0, 0, 0, 0);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+  }
+
+  /** Rend la mémoire de la carte tout de suite, sans attendre le ramasse-miettes. */
+  detruire() {
+    this.gl.getExtension("WEBGL_lose_context")?.loseContext();
+  }
+}

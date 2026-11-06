@@ -47,6 +47,8 @@
     "check:r4-concurrence": "node --experimental-strip-types --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --import ./scripts/check-ia-alias.mjs scripts/check-r4-concurrence.ts",
     "check:css": "node scripts/check-css.mjs",
     "check:vitrine": "node scripts/check-vitrine.mjs",
+    "cartes": "node --experimental-strip-types --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --import ./scripts/check-ia-alias.mjs scripts/cartes/vignettes.ts",
+    "check:cartes": "node --experimental-strip-types --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --import ./scripts/check-ia-alias.mjs scripts/check-cartes.ts",
     "check:premiers-pas": "node --experimental-strip-types --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --import ./scripts/check-ia-alias.mjs scripts/check-premiers-pas.ts",
     "premiers-pas:donnees": "node --experimental-strip-types --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --import ./scripts/check-ia-alias.mjs scripts/check-premiers-pas.ts --ecrire"
   },

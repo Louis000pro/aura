@@ -24,6 +24,11 @@ import { chargerBadges } from "@/lib/messagerie";
 import RangeeBadges from "@/components/defi/RangeeBadges";
 import { partagerAffiche } from "@/lib/defiShareExport";
 import { proposerAvis } from "@/lib/invitationAvis";
+import GainCarte from "@/components/cartes/GainCarte";
+import VignetteCarte from "@/components/cartes/VignetteCarte";
+import { deposerPochette, lirePochettes, versCollection } from "@/lib/cartes/appareil";
+import { carteRelais } from "@/lib/cartes/catalogue";
+import { duoDe } from "@/lib/cartes/lecture";
 import { createClient } from "@/lib/supabase";
 import { useWorkoutLaunch } from "@/context/WorkoutLaunchContext";
 import { refusRelais } from "@/lib/defiErreurs";
@@ -50,6 +55,8 @@ export default function DefiPage() {
   const [carte, setCarte] = useState<"repos" | "occupe" | "fait" | "rate">("repos");
   const [confirmeArret, setConfirmeArret] = useState(false);
   const [sortie, setSortie] = useState<string | null>(null);
+  const [pochette, setPochette] = useState(false);
+  const [scellee, setScellee] = useState(false);
 
   /* /defi?apercu=1..4 ou ?apercu=gagne → on REGARDE un écran sans
      jouer la semaine. Rien n'est lu ni écrit en base. */
@@ -104,6 +111,16 @@ export default function DefiPage() {
     if (apercu || !user?.id) return;
     if (defi?.statut === "reussi") proposerAvis(user.id, { pourquoi: "relais", surtitre: "Relais gagné", mot: "Relais" });
   }, [apercu, user?.id, defi?.statut]);
+
+  /* Un relais gagné donne une carte, dans sa pochette : elle attend là, puis
+     dans la collection, tant qu'on ne l'a pas déchirée. */
+  const idCarte = defi?.statut === "reussi" ? `relais-${defi.serie}` : null;
+  useEffect(() => {
+    if (apercu || !user?.id || !idCarte) return;
+    const uid = user.id;
+    deposerPochette(uid, idCarte);
+    queueMicrotask(() => setScellee(lirePochettes(uid).attente.includes(idCarte)));
+  }, [apercu, user?.id, idCarte]);
 
   /* Le maillon vient d'être franchi à la fin d'une séance :
      l'affiche bascule sous les yeux, une seule fois. */
@@ -402,6 +419,19 @@ export default function DefiPage() {
   /* ── Fini : gagné, ou semaine passée ────────────────────── */
   if (defi.statut === "reussi" || defi.statut === "termine" || finie) {
     const gagne = defi.statut === "reussi";
+    const carteGagnee = gagne
+      ? carteRelais(defi.serie, {
+          pseudo: user?.pseudo ?? "",
+          gagnee: true,
+          detail: {
+            serie: defi.serie,
+            jour: defi.finiLe ? new Date(defi.finiLe).toLocaleDateString("fr-CA", { timeZone: "Europe/Paris" }) : defi.fin,
+            duo: duoDe(user?.pseudo ?? "", defi.membres.filter((m) => m.userId !== user?.id).map((m) => m.pseudo)),
+            objectif: defi.objectif,
+            aDeux: defi.membres.length <= 2,
+          },
+        })
+      : null;
     return (
       <Cadre equipier={equipier} fil={fil} effectif={defi.membres.length}>
         <div className="mx-auto w-full max-w-[360px]">
@@ -448,6 +478,21 @@ export default function DefiPage() {
             </p>
           )}
 
+          {/* La carte du relais : la pochette tant qu'elle n'est pas ouverte. */}
+          {carteGagnee && scellee && (
+            <button
+              onClick={() => setPochette(true)}
+              className="mt-6 flex w-full items-center gap-3 rounded-2xl px-3.5 py-3 text-left text-white transition-transform active:scale-[.98]"
+              style={{ background: "linear-gradient(135deg, #8B5CF6, #C13BC1)", boxShadow: "var(--ombre-action)" }}
+            >
+              <span className="w-10 shrink-0"><VignetteCarte carte={carteGagnee} scellee /></span>
+              <span className="min-w-0">
+                <b className="block text-[16px] font-semibold">Une carte t’attend</b>
+                <span className="block text-[13px]" style={{ opacity: 0.85 }}>Déchire ta pochette {carteGagnee.nom}</span>
+              </span>
+            </button>
+          )}
+
           {gagne && (
             <button
               onClick={async () => {
@@ -464,8 +509,10 @@ export default function DefiPage() {
                 setTimeout(() => setCarte("repos"), 2200);
               }}
               disabled={carte === "occupe"}
-              className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl px-5 py-4 text-[16px] font-semibold text-white transition-transform active:scale-[.98] disabled:opacity-70"
-              style={{ background: "linear-gradient(135deg, #8B5CF6, #C13BC1)" }}
+              className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl px-5 py-3 text-[16px] font-semibold transition-transform active:scale-[.98] disabled:opacity-70"
+              style={scellee
+                ? { color: "var(--text-2)", background: "none" }
+                : { color: "#fff", background: "linear-gradient(135deg, #8B5CF6, #C13BC1)" }}
             >
               {carte === "occupe" ? <Loader2 className="h-5 w-5 animate-spin" />
                : carte === "fait" ? <Check className="h-5 w-5" />
@@ -473,8 +520,17 @@ export default function DefiPage() {
               {carte === "occupe" ? "Génération…"
                : carte === "fait" ? "Enregistré ✦"
                : carte === "rate" ? "Réessaie"
-               : "Télécharger la carte"}
+               : "Télécharger l’affiche"}
             </button>
+          )}
+
+          {pochette && carteGagnee && user && (
+            <GainCarte
+              carte={carteGagnee}
+              userId={user.id}
+              onFermer={() => { setPochette(false); setScellee(lirePochettes(user.id).attente.includes(carteGagnee.id)); }}
+              onCollection={() => { setPochette(false); setScellee(false); versCollection(router.push); }}
+            />
           )}
 
           <div className="mt-8">
