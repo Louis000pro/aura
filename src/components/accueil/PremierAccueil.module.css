@@ -1,0 +1,49 @@
+/* La première journée. Sur l'accueil, elle suit le thème : ses encres sont les
+   jetons de l'app, et seules les cartes photo gardent leur blanc. */
+
+.journee { position: relative; display: flex; flex-direction: column; min-height: calc(100dvh - 190px); padding-top: 8px; }
+
+.guide {
+  position: absolute; right: -22px; top: -34px; z-index: 0; width: 198px; height: 198px; max-width: none; object-fit: contain; object-position: 50% 0;
+  -webkit-mask-image: linear-gradient(#000 52%, transparent 78%); mask-image: linear-gradient(#000 52%, transparent 78%);
+  animation: monte .9s cubic-bezier(.22, 1, .36, 1) .1s both; pointer-events: none;
+}
+.guide[data-guide="sasha"] { translate: -22px 0; }
+
+.titre {
+  position: relative; z-index: 1; margin: 0; max-width: 8.6em; font-size: 34px; line-height: 1.02; font-weight: 900;
+  font-variation-settings: var(--w-affiche); color: var(--text-0);
+}
+.titre em { font-style: normal; color: var(--exp-encre); }
+
+.rang { position: relative; z-index: 1; margin-top: 36px; display: grid; grid-template-columns: 56px minmax(0, 1fr) 56px; gap: 8px; align-items: center; }
+.rang img { width: 56px; height: 56px; object-fit: contain; }
+.rang img:last-child { filter: grayscale(.2) opacity(.72); }
+.piste { position: relative; height: 12px; border-radius: 12px; overflow: hidden; background: rgba(var(--accent-rgb, 139, 92, 246), .14); }
+.piste i { position: absolute; inset: 0 auto 0 0; border-radius: 12px; background: linear-gradient(90deg, #BA80FA, #F99FB0, #FEC175); transition: width 1s cubic-bezier(.22, 1, .36, 1); }
+
+.exp { position: relative; z-index: 1; margin: 4px 0 0; text-align: center; font-size: 13px; font-weight: 600; color: var(--text-2); }
+.exp b { font-size: 16px; line-height: 1; font-weight: 700; color: var(--text-0); }
+
+.actions { margin-top: 14px; display: grid; grid-auto-rows: 148px; gap: 10px; }
+.action {
+  position: relative; display: block; width: 100%; overflow: hidden; border-radius: var(--r-affiche); color: #fff; text-align: left;
+  box-shadow: var(--ombre-flottant); animation: monte .6s cubic-bezier(.22, 1, .36, 1) both; touch-action: manipulation; transition: transform .15s;
+}
+.action:nth-child(2) { animation-delay: .12s; }
+.action:active { transform: scale(.985); }
+.action img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 30%; }
+.action::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(10, 5, 26, .82), rgba(10, 5, 26, .1) 76%); }
+.action span { position: absolute; z-index: 2; left: 16px; right: 16px; bottom: 14px; display: block; }
+.action small { display: block; font-size: 13px; font-weight: 700; }
+.action b { display: block; margin-top: 1px; max-width: 13em; font-size: 20px; line-height: 1.08; font-weight: 800; }
+.action i { position: absolute; z-index: 2; right: 14px; top: 12px; padding: 6px 8px; border-radius: 9px; font-size: 13px; line-height: 1; font-style: normal; font-weight: 700; color: #2B1B00; background: #FFD98A; }
+.action[data-fait="true"]::after { background: rgba(9, 64, 49, .66); }
+.action[data-fait="true"] i { color: #05352A; background: #2BD4A0; }
+
+.note { margin: 10px 0 0; text-align: center; font-size: 13px; font-weight: 600; color: var(--text-2); }
+.note b { font-size: 16px; line-height: 1; font-weight: 700; color: var(--exp-encre); }
+.passer { align-self: center; min-height: 40px; padding: 0 16px; font-size: 16px; font-weight: 600; color: var(--text-2); }
+
+@keyframes monte { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .guide, .action { animation: none; } .piste i { transition: none; } }

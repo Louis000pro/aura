@@ -42,7 +42,6 @@ import { useRouter } from "next/navigation";
 import { useReducedMotion } from "framer-motion";
 import { useAuth } from "@/context/AuthContext";
 import { useGuideActif } from "@/context/GuideContext";
-import { useGuidedTour } from "@/context/GuidedTourContext";
 import { createClient } from "@/lib/supabase";
 import { lockBodyModal } from "@/lib/bodyModal";
 import { destinationDepuisUrl } from "@/lib/destinationInterne";
@@ -67,7 +66,6 @@ export default function ParcoursBienvenue() {
   const router = useRouter();
   const { user, isLoading } = useAuth();
   const { etat, guide, choisirGuide } = useGuideActif();
-  const { start: demarrerVisite } = useGuidedTour();
   const reduit = useReducedMotion();
 
   /* Lu une seule fois : le mode ne doit pas pouvoir changer en cours de
@@ -377,12 +375,9 @@ export default function ParcoursBienvenue() {
     if (index > 0) setEtape(ORDRE[index - 1]);
   };
 
-  /* ⚠️ LES DEUX SORTIES SONT FERMÉES EN REVUE, et c'est la dernière fuite
-     qui restait. « Découvrir Vaiiya » lançait la VRAIE visite guidée,
-     dont l'achèvement écrit `profiles.tour_completed` : la revue n'était
-     donc hermétique que tant qu'on ne touchait pas ce bouton. « Entrer »
-     quitte le mode et rend la main à l'app, qui marque la présence du
-     jour (`marquerPresence`) et écrit donc elle aussi.
+  /* ⚠️ LES DEUX SORTIES SONT FERMÉES EN REVUE. « Découvrir Vaiiya » ouvre la
+     visite des premiers pas, et « Entrer » rend la main à l'app, qui marque
+     la présence du jour (`marquerPresence`) : l'une et l'autre écrivent.
 
      Les boutons restent VISIBLES et réagissent : il faut pouvoir juger
      l'écran tel qu'il sera, et un bouton qui ne répond pas ne dit pas
@@ -401,12 +396,7 @@ export default function ParcoursBienvenue() {
       setNoteRevue("En revue, la visite guidée n’est pas lancée : la terminer enregistrerait un réglage sur ton compte.");
       return;
     }
-    router.replace(destination);
-    /* La visite se joue PAR-DESSUS l'écran courant, sans redirection : on
-       arrive donc d'abord à destination, puis on la lance. Sans ce court
-       délai, le premier chapitre s'ouvrirait sur /bienvenue, c'est-à-dire
-       sur l'écran qu'on vient de quitter. */
-    setTimeout(() => demarrerVisite(), 450);
+    router.replace(`/premiers-pas?visite=1&next=${encodeURIComponent(destination)}`);
   };
 
   /* ── Rendu ────────────────────────────────────────────────────── */

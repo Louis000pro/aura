@@ -294,6 +294,7 @@ Statistiques du jour :
     "sante": "santé générale",
     "sante_generale": "santé générale",
     "souplesse": "souplesse",
+    "reprendre": "reprise du sport",
   };
 
   if (!ctx || ctx.skipped) {

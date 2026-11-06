@@ -20,10 +20,10 @@ import { useAuth } from "@/context/AuthContext";
 import { useGuideActif } from "@/context/GuideContext";
 import { enregistrerConsentement } from "@/lib/consentementSante";
 import { localDateStr } from "@/lib/dates";
-import { destinationDepuisUrl } from "@/lib/destinationInterne";
+import { destinationDepuisUrl, destinationInterne } from "@/lib/destinationInterne";
 import { enregistrerJours } from "@/lib/joursEntrainement";
 import { persistLieu } from "@/lib/planning";
-import { etatVide, lireParcours, marquerPremiersPas, oublierParcours, regimesDe, versLieu, versProfil, type EtatParcours } from "@/lib/premiersPas/reponses";
+import { etatVide, lireParcours, lireSuite, marquerPremiersPas, oublierParcours, regimesDe, retenirSuite, versLieu, versProfil, type EtatParcours } from "@/lib/premiersPas/reponses";
 import { enregistrerProfil } from "@/lib/profilOnboarding";
 import { getOrCreateProgramme } from "@/lib/programme";
 import { subscribeToPush } from "@/lib/push";
@@ -62,15 +62,23 @@ export default function PremiersPas() {
   useEffect(() => { fraiche.current = { user, etat, guide, signIn, signInWithGoogle, choisirGuide, router }; });
 
   /* ⚠️ Le moteur démarre une seule fois, quand la session ET le Guide sont
-     connus : le relancer effacerait ce que la personne est en train de faire. */
+     connus : le relancer effacerait ce que la personne est en train de faire.
+     `pret` retombe à faux au moment où le compte se crée, le temps de lire son
+     Guide : c'est `moteur` qui empêche de repartir, et seul le départ de la page
+     l'arrête. */
   const pret = !isLoading && (!user || etat !== "chargement");
+  const moteur = useRef<{ vivant: boolean; arret?: () => void } | null>(null);
   useEffect(() => {
     const el = racine.current;
-    if (!pret || !el) return;
+    if (!pret || !el || moteur.current) return;
+    const m: { vivant: boolean; arret?: () => void } = { vivant: true };
+    moteur.current = m;
 
     const gardee = lireParcours();
-    const visite = new URLSearchParams(window.location.search).get("visite") === "1";
     const f = () => fraiche.current;
+    /* ⚠️ La visite suppose un Guide choisi : sans lui, elle en montrerait un que
+       personne n'a choisi. Le parcours repart alors du choix. */
+    const visite = new URLSearchParams(window.location.search).get("visite") === "1" && !!f().user && f().etat !== "aucun";
     /* ⚠️ UN COMPTE QUI A DÉJÀ SON GUIDE REJOUE LE PARCOURS, IL NE LE REFAIT PAS.
        Louis le teste sur Vercel avec son vrai compte : ses réponses, son lieu et
        ses jours ne doivent pas être écrasés par un essai. Le parcours ne s'écrit
@@ -94,8 +102,11 @@ export default function PremiersPas() {
       if (!id) return { numero: null };
       const supabase = createClient();
       const numero = async () => {
-        const { data } = await supabase.from("profiles").select("member_number").eq("id", id).maybeSingle();
-        return { numero: (data as { member_number?: number | null } | null)?.member_number ?? null };
+        const { data } = await supabase.from("profiles").select("member_number, pseudo, pseudo_choisi").eq("id", id).maybeSingle();
+        const p = data as { member_number?: number | null; pseudo?: string | null; pseudo_choisi?: boolean } | null;
+        /* Un compte Google choisit son pseudo en arrivant dans l'app : d'ici là,
+           la carte garde le prénom plutôt qu'un pseudo fabriqué. */
+        return { numero: p?.member_number ?? null, pseudo: p?.pseudo_choisi === false ? null : p?.pseudo ?? null };
       };
       essai = f().etat === "actif";
       if (essai) return numero();
@@ -119,7 +130,9 @@ export default function PremiersPas() {
     };
 
     const cfg: ConfigParcours = {
-      depart: visite ? "visite" : gardee?.ecran ?? "guide",
+      /* ⚠️ « apres-compte » sans compte : Google a été refermé en chemin. On
+         repart de la semaine, sinon la carte arriverait sans aucun compte. */
+      depart: visite ? "visite" : gardee?.ecran === "apres-compte" && !f().user ? "semaine" : gardee?.ecran ?? "guide",
       etat: visite ? { ...etatVide(), guide: f().guide, prenom: f().user?.pseudo ?? "" } : gardee?.etat,
       prenomDefaut: f().user?.pseudo ?? "",
       connecte: () => !!f().user,
@@ -143,6 +156,7 @@ export default function PremiersPas() {
         return { erreur: null };
       },
       google: async () => {
+        retenirSuite(destinationDepuisUrl());
         const erreur = await f().signInWithGoogle();
         return { erreur: erreur?.message ?? null };
       },
@@ -162,28 +176,31 @@ export default function PremiersPas() {
       terminer: () => {
         const id = f().user?.id;
         if (id) marquerPremiersPas(id);
+        const suite = destinationInterne(lireSuite(), destinationDepuisUrl());
         oublierParcours();
-        f().router.replace(destinationDepuisUrl());
+        f().router.replace(suite);
       },
     };
 
     /* ⚠️ Un compte qui a déjà répondu à l'ancien questionnaire choisit son Guide,
        et passe directement à la visite : il ne repasse pas les questions. */
-    let arret: (() => void) | undefined;
-    let vivant = true;
     void (async () => {
       let dejaRepondu = false;
       if (f().user && f().etat === "aucun" && !gardee && !visite) {
         const { data } = await createClient().from("mon_profil").select("onboarding_completed").maybeSingle();
         dejaRepondu = (data as { onboarding_completed?: boolean } | null)?.onboarding_completed === true;
       }
-      if (!vivant) return;
-      arret = demarrerParcours(el, dejaRepondu
+      if (!m.vivant) return;
+      m.arret = demarrerParcours(el, dejaRepondu
         ? { ...cfg, apresGuide: "visite", surGuide: (g) => { void tenter("le Guide", () => f().choisirGuide(g)); } }
         : cfg);
     })();
-    return () => { vivant = false; arret?.(); };
   }, [pret]);
+  useEffect(() => () => {
+    const m = moteur.current;
+    if (m) { m.vivant = false; m.arret?.(); }
+    moteur.current = null;
+  }, []);
 
   return (
     <div className="pp-fond">

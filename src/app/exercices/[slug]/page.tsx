@@ -358,7 +358,7 @@ export default async function FicheExercicePage({
           avec ces mêmes personnages. Gratuit.
         </p>
         <Link
-          href="/auth"
+          href="/premiers-pas"
           className="inline-block px-7 py-3.5 rounded-2xl text-[16px] font-semibold"
           style={{
             background: "linear-gradient(135deg,#A78BFA,#D4A843)",

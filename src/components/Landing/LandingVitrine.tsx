@@ -116,7 +116,7 @@ function useVivante(racine: React.RefObject<HTMLDivElement | null>) {
 
 /* ═══════════════ Petites briques ═══════════════ */
 
-function Bouton({ label, href = "/auth?mode=signup" }: { label: string; href?: string }) {
+function Bouton({ label, href = "/premiers-pas" }: { label: string; href?: string }) {
   return (
     <Link href={href} className={s.bouton}>
       {label}

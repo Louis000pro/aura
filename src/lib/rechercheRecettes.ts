@@ -32,6 +32,7 @@
    check:nutrition rejoue tout ça (section « La loupe »).
    ════════════════════════════════════════════════════════════════════ */
 
+import { OEUFS, POISSONS, PORC, VIANDES } from "@/lib/alimentsRecettes";
 import { RECIPES, type DietKey, type Recipe } from "@/lib/recipeBank";
 import { cleDe, decouper, distance, normaliser, phonetique, procheDe, tolerance, type Mot } from "@/lib/texteRecherche";
 import {
@@ -216,11 +217,8 @@ const surLigne = (motif: RegExp, sauf?: RegExp) => (l: string) => motif.test(l) 
 const aLeRegime = (d: DietKey) => (r: Recipe) => r.diet.includes(d);
 
 /* Les motifs se lisent sur une ligne d’ingrédient normalisée : « jaune d oeuf », « noix de saint jacques ». */
-const PORC = /\b(porc|jambon|lardons?|bacon|guanciale|pancetta|chorizo|saucisses?|petit sale|filet mignon)\b/;
 const BOEUF = /\b(boeuf|steaks?)\b/;
 const VOLAILLE = /\b(poulet|dinde|volaille)\b/;
-const VIANDES = /\b(boeuf|veau|agneau|porc|steaks?|saucisses?|lardons?|canard|magret|guanciale|pancetta|chorizo|jambon|bacon|poulet|dinde|volaille|lapin|merguez)\b/;
-const POISSONS = /\b(saumon|cabillaud|thon|crevettes?|gambas|moules?|saint jacques|poissons?|sardines?|maquereau|truite|dorade|merlu|colin|crabe|calamars?|anchois|nuoc mam)\b/;
 const FROMAGES = /\b(fromages?|emmental|parmesan|mozzarella|reblochon|comte|gruyere|raclette|cheddar|chevre|feta|ricotta|burrata|halloumi|mascarpone|camembert|brie|roquefort|pecorino|beaufort)\b/;
 const ALCOOLS = /\b(vin|vins|biere|rhum|cognac|calvados|cointreau|grand marnier|liqueur|alcool|whisky|vodka|porto|madere|kirsch|amaretto)\b/;
 const SUCRES = /\b(sucre|cassonade|vergeoise|sirop|miel|caramel|confiture|chocolat|pepites?|nutella)\b/;
@@ -299,7 +297,7 @@ const RETIRE: Partial<Record<IdEnvie, (ligne: string) => boolean>> = {
   poulet: surLigne(VOLAILLE),
   poisson: surLigne(POISSONS),
   viande: surLigne(VIANDES),
-  oeufs: surLigne(/\boeufs?\b/),
+  oeufs: surLigne(OEUFS),
 };
 
 const sansCesure = (t: string) => t.replace(/\u00ad/g, "");

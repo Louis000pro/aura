@@ -15,9 +15,9 @@
    n'existe pas, la lecture échoue, et personne n'est envoyé nulle part.
    L'app se comporte exactement comme avant.
 
-   ⚠️ Elle PRÉCÈDE le choix du Guide : elle ne s'exempte pas de
-   `/bienvenue`, donc un compte Google choisit d'abord son pseudo, puis son
-   Guide. L'ordre est : pseudo → guide → profil.
+   ⚠️ Elle attend la fin des premiers pas : un compte Google y a déjà donné son
+   prénom, et la scène de la carte ne doit pas être coupée par un formulaire.
+   Il choisit son pseudo en arrivant dans l'app.
    ════════════════════════════════════════════════════════════════════ */
 
 import { useEffect, useRef, useState } from "react";
@@ -29,8 +29,8 @@ import { estSurfacePublique } from "@/lib/surfacesPubliques";
 export const ROUTE_PSEUDO = "/choisir-pseudo";
 
 /* On ne s'impose ni sur l'écran lui-même (sinon boucle), ni là où il n'y a
-   pas encore de compte. `/bienvenue` n'y est PAS : le pseudo passe avant. */
-const EXEMPTES = [ROUTE_PSEUDO, "/auth", "/rejoindre"];
+   pas encore de compte, ni pendant les premiers pas. */
+const EXEMPTES = [ROUTE_PSEUDO, "/premiers-pas", "/auth", "/rejoindre"];
 
 function estExempte(pathname: string): boolean {
   return EXEMPTES.some((r) => pathname === r || pathname.startsWith(`${r}/`));

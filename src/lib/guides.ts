@@ -16,8 +16,8 @@
    Le parcours d'entrée (`bienvenue.*`), TOUTE la conversation
    (`action.*`, `question.*`, `impasse.*`, `accueil.*`, `memoire.*`,
    `attente.*`), la séance (`seance.*`), l'arrivée sur l'accueil
-   (`retour.*`), les rappels du soir (`RAPPELS`), la visite guidée
-   (`visite.*`), les écrans vides (`vide.*`), l'entrée de la nutrition
+   (`retour.*`), les rappels du soir (`RAPPELS`), les premiers pas
+   (`pas.*`), les écrans vides (`vide.*`), l'entrée de la nutrition
    (`nutrition.*`), la lecture de la semaine (`semaine.*`), la montée de
    rang (`rang.*`) et l'écran de sa mémoire (`memoire.*`) sont
    différenciés. Restent
@@ -161,7 +161,7 @@ type Replique = { commun: Rendu; nora?: Rendu; sasha?: Rendu };
      proposition.* ce qu'il répond autour d'une séance qu'il propose
      panne.*    quand la réponse ne vient pas
      seance.*   pendant l'entraînement
-     visite.*   les chapitres de la visite guidée
+     pas.*      les premiers pas, du choix du Guide à la visite
      vide.*     ce qu'il dit quand un écran n'a rien à montrer
      nutrition.* la question d'entrée du pilier nutrition
      semaine.*  ce qu'il lit dans la semaine qu'on regarde
@@ -809,12 +809,6 @@ const REPLIQUES = {
     nora:   "Si tu utilises aussi la partie nutrition, ces quelques repères permettront de mieux l’adapter.",
     sasha:  "Si tu veux utiliser la nutrition aussi, on règle rapidement tes repères ici.",
   },
-  /* Le premier accueil (Louis, 2026-10-12) : la page d'accueil dit bonjour
-     à un nouvel inscrit, puis il choisit. Rien n'est imposé, et la phrase le
-     dit. Aucun accord de genre. */
-  "accueil.premier": {
-    commun: "Ça me fait plaisir que tu sois là. J’ai préparé une première séance à ta mesure, mais rien ne presse : tu peux aussi faire le tour d’abord.",
-  },
   "bienvenue.fin": {
     commun: "C’est enregistré. Vaiiya est adapté à ce que tu as indiqué.",
     nora:   "C’est enregistré. J’ai de quoi adapter Vaiiya à ce que tu m’as indiqué.",
@@ -965,67 +959,6 @@ const REPLIQUES = {
     commun: (c) => `${c.duree ?? ""} et ${c.seances ?? 0} séances, c’est fait. Bravo.`,
   },
 
-  /* ── La visite guidée ──
-     Le mot « guidée » était dans le nom depuis toujours, et pourtant les
-     neuf chapitres parlaient d'une voix qui n'appartenait à personne :
-     on venait de choisir Nora, elle posait cinq écrans de questions, puis
-     un narrateur anonyme prenait la parole pour présenter le produit.
-
-     ⚠️ LE FOND NE CHANGE PAS D'UN CHAPITRE À L'AUTRE, SEULE LA BOUCHE
-     CHANGE. `commun` est le texte exact d'avant ce chantier : sans Guide
-     résolu (choix pas fait, SQL pas collé, hors ligne), la visite est
-     rigoureusement celle que Louis a validée.
-
-     ⚠️ LA CLÉ EST DÉRIVÉE DE L'ID DU CHAPITRE (`visite.<id>`, cf.
-     `chapitres.tsx`). Un chapitre sans phrase ne compile pas, et une
-     phrase sans chapitre se voit tout de suite : c'est ce qui empêche la
-     visite de repartir avec un texte en dur dans l'écran. */
-  "visite.ouverture": {
-    commun: "Une minute pour voir ce que Vaiiya sait faire. Tu peux passer, la visite t’attendra dans tes paramètres.",
-    nora:   "Je te fais le tour en une minute, le temps de voir ce que Vaiiya sait faire. Si tu préfères plus tard, la visite t’attendra dans tes paramètres.",
-    sasha:  "Une minute, je te montre ce que Vaiiya sait faire. Tu peux passer, ça reste dans tes paramètres.",
-  },
-  "visite.seance": {
-    commun: "Le mouvement s’anime à l’écran, le compte à rebours part, le repos s’enchaîne. Tu n’as qu’à suivre. Cent-deux mouvements sont dessinés, pas un seul n’est une photo prise au hasard.",
-    nora:   "Regarde bien : le mouvement s’anime, le compte à rebours part, le repos s’enchaîne tout seul. Tu n’as qu’à suivre, je m’occupe du reste. Cent-deux mouvements sont dessinés un par un.",
-    sasha:  "Le mouvement s’anime, le compte à rebours part, le repos s’enchaîne. Tu suis, je gère le reste. Cent-deux mouvements dessinés un par un.",
-  },
-  "visite.catalogue": {
-    commun: "Sans matériel, à la salle, mobilité, cardio, récupération. Vingt et un mini-cours pour comprendre ce que tu fais. Et si rien ne te va, tu pioches parmi les mouvements animés pour composer la tienne.",
-    nora:   "Sans matériel, à la salle, mobilité, cardio, récupération, plus vingt et un mini-cours pour comprendre ce que tu fais. Et si rien ne te va, dis-le-moi : on compose la tienne à partir des mouvements animés.",
-    sasha:  "Sans matériel, salle, mobilité, cardio, récupération. Vingt et un mini-cours en plus. Rien ne te va ? Dis-le-moi, on compose la tienne.",
-  },
-  "visite.assistant": {
-    commun: "Demande-lui de poser une séance jeudi, de noter ton repas, de refaire ta semaine : elle le prépare dans la foulée. Rien ne s’enregistre tant que tu n’as pas touché la carte.",
-    nora:   "C’est là qu’on se parle. Demande-moi de poser une séance jeudi, de noter ton repas, de refaire ta semaine : je le prépare dans la foulée. Rien ne s’enregistre tant que tu n’as pas touché la carte.",
-    sasha:  "C’est là qu’on se parle. Une séance jeudi, un repas à noter, la semaine à refaire : je prépare, tu valides. Rien ne s’enregistre sans ton clic.",
-  },
-  "visite.nutrition": {
-    commun: "Pas de tableau à remplir : on te demande simplement où tu manges. À la maison, au resto, ou un sandwich acheté en chemin. Une photo de ton assiette suffit à estimer le reste.",
-    nora:   "Pas de tableau à remplir : je te demande simplement où tu manges. À la maison, au resto, ou un sandwich acheté en chemin. Une photo de ton assiette me suffit pour estimer le reste.",
-    sasha:  "Pas de tableau à remplir. Je demande juste où tu manges : maison, resto, ou sandwich en chemin. Une photo de l’assiette, j’estime le reste.",
-  },
-  "visite.rang": {
-    commun: "Une présence, une séance, un repas : tout se transforme en EXP et fait monter ta gemme. On mesure ta constance, jamais ton corps, et il n’y a aucun classement.",
-    nora:   "Une présence, une séance, un repas : tout se transforme en EXP et fait monter ta gemme. Je compte ta constance, jamais ton corps, et il n’y a aucun classement.",
-    sasha:  "Présence, séance, repas : tout devient de l’EXP et fait monter ta gemme. Je compte ta constance, jamais ton corps. Aucun classement.",
-  },
-  "visite.relais": {
-    commun: "Invite quelqu’un, un maillon chacun son tour. À chaque séance l’image se dévoile un peu plus, jusqu’à être entière. Aucun score, et on ne nomme jamais celui qui a lâché.",
-    nora:   "Invite quelqu’un, et vous prenez un maillon chacun votre tour. À chaque séance l’image se dévoile un peu plus, jusqu’à être entière. Aucun score, et on ne nomme jamais celui qui a lâché.",
-    sasha:  "Invite quelqu’un, un maillon chacun son tour. Chaque séance dévoile un bout de l’image. Aucun score, et personne n’est montré du doigt.",
-  },
-  "visite.repere": {
-    commun: "Ton accueil, tes entraînements, ta nutrition, tes discussions. Et le bouton au centre de la barre, disponible depuis n’importe quel écran.",
-    nora:   "Ton accueil, tes entraînements, ta nutrition, tes discussions. Et le bouton au centre de la barre : c’est par là que tu me trouves, depuis n’importe quel écran.",
-    sasha:  "Accueil, entraînements, nutrition, discussions. Le bouton au centre de la barre : c’est par là que tu me trouves, depuis n’importe quel écran.",
-  },
-  "visite.final": {
-    commun: "Commence par ce que tu veux. Si tu ne sais pas, touche le bouton au centre de la barre et dis-lui simplement ce que tu as envie de faire aujourd’hui.",
-    nora:   "Commence par ce que tu veux. Et si tu ne sais pas, touche le bouton au centre de la barre et dis-moi simplement ce que tu as envie de faire aujourd’hui.",
-    sasha:  "Commence par ce que tu veux. Si tu ne sais pas, touche le bouton au centre de la barre et dis-moi ce que tu as envie de faire.",
-  },
-
   /* ── Les états vides ──
      Un écran vide tombe précisément sur quelqu'un qui ne sait pas quoi
      faire, et il lui répondait par un texte gris dans un cadre en
@@ -1128,8 +1061,7 @@ const REPLIQUES = {
 
   /* ── Le seuil du relais ──
      Les règles du relais n'étaient écrites nulle part où l'on puisse
-     revenir : la visite guidée les résume une fois, au tout premier
-     jour, avant même d'avoir un ami. Ensuite « quatre jours sur sept »,
+     revenir : « quatre jours sur sept »,
      « jamais deux jours de suite » et « dix minutes » n'apparaissaient
      qu'en creux, dans une phrase d'état, et seulement quand c'était
      ton tour.

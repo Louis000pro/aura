@@ -42,7 +42,7 @@ export default function MarketingShell({ children }: { children: React.ReactNode
             Compte gratuit, sans carte bancaire. Ta première séance guidée dès l&apos;inscription.
           </p>
           <Link
-            href="/auth"
+            href="/premiers-pas"
             className="inline-block px-7 py-3.5 rounded-2xl text-[16px] font-semibold"
             style={{ background: "linear-gradient(135deg,#A78BFA,#D4A843)", color: "#fff", boxShadow: "0 6px 24px rgba(167,139,250,0.4)" }}
           >

@@ -90,7 +90,7 @@ export default function FormAvis() {
         <p className="text-[13px] mb-4" style={{ color: "var(--text-3)" }}>
           Crée ton compte (ou connecte-toi) pour laisser un avis sur Vaiiya.
         </p>
-        <Link href="/auth?mode=signup&next=/avis">
+        <Link href="/premiers-pas?next=/avis">
           <span className="inline-flex items-center justify-center py-3 px-6 rounded-2xl text-[15px] font-semibold cursor-pointer"
             style={{ background: ACTION, color: "#fff" }}>
             Laisser un avis

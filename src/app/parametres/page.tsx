@@ -15,7 +15,6 @@ import { supprimerRepriseDuCompte } from "@/lib/seanceInterrompue";
 import { oublierCompte, effacerDonneesLocales } from "@/lib/comptesConnus";
 import { useTheme, type ThemePreference } from "@/hooks/useTheme";
 import { useVisualQuality, type VisualQuality } from "@/lib/perfMode";
-import { useGuidedTour } from "@/context/GuidedTourContext";
 import { subscribeToPush, unsubscribeFromPush, getPushPermission } from "@/lib/push";
 import { fetchTasteProfile } from "@/lib/tasteProfile";
 import { calculerAura, type EtatAura } from "@/lib/aura";
@@ -542,7 +541,6 @@ export default function ParametresPage() {
   const router = useRouter();
   const { isDark, preference, setPreference } = useTheme();
   const { quality, setQuality } = useVisualQuality();
-  const { start: startTour } = useGuidedTour();
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [portail, setPortail]                     = useState(false);
   const [portailErreur, setPortailErreur]         = useState<string | null>(null);
@@ -810,9 +808,8 @@ export default function ParametresPage() {
               icon={Compass}
               label="Refaire la visite"
               sub="Tout ce que Vaiiya sait faire, en une minute"
-              // La visite se joue par-dessus l'écran courant : on ne quitte
-              // plus les paramètres pour la lancer.
-              onClick={() => startTour()}
+              // La visite des premiers pas, qui ramène ici une fois finie.
+              onClick={() => router.push("/premiers-pas?visite=1&next=/parametres")}
             />
             <Ligne
               icon={Star}

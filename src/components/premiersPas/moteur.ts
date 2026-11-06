@@ -33,7 +33,7 @@ export type ConfigParcours = {
   verifierCode: (d: { jeton: string; code: string; pseudo: string; email: string; motDePasse: string; prenom: string }) => Promise<ResultatCompte>;
   google: () => Promise<ResultatCompte>;
   /** Écrit les réponses en base, une fois le compte là. Rend le numéro de membre. */
-  ecrire: (etat: EtatParcours) => Promise<{ numero: number | null }>;
+  ecrire: (etat: EtatParcours) => Promise<{ numero: number | null; pseudo?: string | null }>;
   activerRappels: () => Promise<void>;
   enregistrerSource: (source: string) => Promise<void>;
   /** Déclenche l'installation. `true` si le navigateur l'a proposée. */
@@ -62,7 +62,7 @@ const SQUELETTE = `<div class="ciel"></div>
   <div id="appel" hidden></div>`;
 
 let cfg: ConfigParcours;
-let infos: { numero: number | null } = { numero: null };
+let infos: { numero: number | null; pseudo?: string | null } = { numero: null };
 let tel: HTMLElement, vue: HTMLElement, perso: HTMLElement, bulle: HTMLElement, appelZone: HTMLElement, fil: HTMLElement, gd: HTMLElement, gdIn: HTMLElement;
 let imgs: HTMLImageElement[] = [];
 let reduit = false;
@@ -1268,6 +1268,11 @@ E.carte = () => {
   contexte();
   const p = S.prenom || cfg.prenomDefaut, g = S.guide || "nora";
   const ouverture = fr(V("pas.bienvenue.ouverture", { prenom: p })), dernier = fr(V("pas.bienvenue.fin"));
+  /* La carte porte le pseudo du compte, comme dans la collection. Le rendu
+     vient du moteur des cartes (`npm run cartes`) : ce qui s'écrit dessus est
+     posé aux mêmes endroits que la carte de secours de `CarteVivante`. */
+  const surCarte = propre(infos.pseudo || p).toUpperCase();
+  const dateCarte = new Date().toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" }).toUpperCase();
   vue.innerHTML = `<div class="bv">
     <div class="bv-ciel"></div>
     <img class="bv-g" src="${srcPose("fier", g)}" alt="">
@@ -1280,11 +1285,10 @@ E.carte = () => {
       <div class="zone-carte">
         <i class="bv-rayons"></i><i class="bv-soleil"></i><i class="bv-onde"></i>
         <div class="bv-cadre"><div class="carte" role="img" aria-label="${fr(`Carte Bronze de ${p}${infos.numero ? `, membre numéro ${infos.numero}` : ""}`)}">
-          <div class="mat"></div><div class="mot"></div><div class="ref"></div>
-          <div class="c-h"><span>Vaiiya</span><span class="vy-nombre">${infos.numero ? `N°${NB}${String(infos.numero).padStart(3, "0")}` : ""}</span></div>
-          <img class="gem" src="${A}bronze.webp" alt="">
-          <div class="nom">Bronze</div><div class="tr"></div><div class="ps">${p}</div>
-          <div class="dt">${fr(`Depuis le ${new Date().toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}`)}</div><div class="dp">Le point de départ</div><div class="bord"></div>
+          <img class="face" src="/cartes/v/rang-bronze.webp" alt=""><div class="ref"></div>
+          <span class="ps">${surCarte}</span>
+          <span class="dt vy-nombre">${dateCarte}</span>
+          ${infos.numero ? `<span class="nu vy-nombre">N°${NB}${String(infos.numero).padStart(3, "0")}</span>` : ""}
           <i class="bv-reflet"></i>
         </div></div>
       </div>

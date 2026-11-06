@@ -4,8 +4,8 @@
 
    Louis, 2026-10-20 : depuis l'icône de l'iPhone, l'app mettait plusieurs
    secondes à répondre. Le layout chargeait d'un bloc environ 2 Mo de
-   JavaScript, dont la feuille de l'assistant, la visite guidée et le récap
-   de mise à jour : trois écrans fermés à l'ouverture de l'app, mais que
+   JavaScript, dont la feuille de l'assistant et d'autres écrans fermés à
+   l'ouverture de l'app, mais que
    l'iPhone devait télécharger, analyser et exécuter avant que le premier
    bouton réponde. Ils arrivent maintenant en morceaux séparés, préchargés
    dès que le téléphone a fini de démarrer, donc ils sont prêts bien avant
@@ -23,12 +23,10 @@ import { useEffect } from "react";
 
 const charger = {
   assistant: () => import("@/components/AssistantSheet"),
-  visite: () => import("@/components/GuidedTour/GuidedTour"),
   consentement: () => import("@/components/DemandeConsentement"),
 };
 
 export const AssistantSheetDiffere = dynamic(charger.assistant, { ssr: false });
-export const GuidedTourDiffere = dynamic(charger.visite, { ssr: false });
 export const DemandeConsentementDiffere = dynamic(charger.consentement, { ssr: false });
 
 /** Précharge tout ce qui est différé une fois l'app affichée et au repos, pour

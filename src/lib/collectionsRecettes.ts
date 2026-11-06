@@ -20,7 +20,9 @@
    moins » doit rester vrai, donc le repos entre dans le compte.
    ════════════════════════════════════════════════════════════════════ */
 
+import { OEUFS, POISSONS, PORC, VIANDES } from "@/lib/alimentsRecettes";
 import { RECIPES, rankRecipes, type Recipe, type DayNeeds, type DietKey } from "@/lib/recipeBank";
+import { normaliser } from "@/lib/texteRecherche";
 import { EXTRA, momentDuRepas, type MealType } from "@/lib/repas";
 
 export type NatureRecette = "plat" | "petit-dej" | "entree" | "encas" | "dessert" | "boisson";
@@ -312,7 +314,13 @@ export function dureeRecette(r: Recipe): string {
 /* ── Le régime ─────────────────────────────────────────────────────────
    Végétalien vaut aussi végétarien. Une clé qu'on ne connaît pas ne filtre
    RIEN : `pickRecipes` vidait toute la banque devant un régime inconnu. */
-const REGIMES: DietKey[] = ["vegetarien", "vegan", "sans-gluten", "sans-lactose"];
+const REGIMES: DietKey[] = ["vegetarien", "vegan", "sans-gluten", "sans-lactose", "sans-viande", "sans-porc", "sans-poisson", "sans-oeufs"];
+
+/* Ce qu'on a dit ne pas manger dans les premiers pas (Louis, 2026-11-05) : aucune
+   recette ne le déclare, ça se lit dans ses ingrédients. */
+const LU_DANS_LES_INGREDIENTS: Partial<Record<DietKey, RegExp>> = {
+  "sans-viande": VIANDES, "sans-porc": PORC, "sans-poisson": POISSONS, "sans-oeufs": OEUFS,
+};
 
 export function regimeConnu(brut: unknown): DietKey[] {
   if (!Array.isArray(brut)) return [];
@@ -321,7 +329,11 @@ export function regimeConnu(brut: unknown): DietKey[] {
 }
 
 export function convient(r: Recipe, regime: DietKey[]): boolean {
-  return regime.every((d) => r.diet.includes(d) || (d === "vegetarien" && r.diet.includes("vegan")));
+  return regime.every((d) => {
+    const motif = LU_DANS_LES_INGREDIENTS[d];
+    if (motif) return !r.ingredients.some((i) => motif.test(normaliser(i.nom)));
+    return r.diet.includes(d) || (d === "vegetarien" && r.diet.includes("vegan"));
+  });
 }
 
 /* ── Les envies (Louis, 2026-10-25) ───────────────────────────────────

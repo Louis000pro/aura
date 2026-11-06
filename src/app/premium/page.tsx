@@ -140,7 +140,7 @@ function PremiumInner() {
 
   const subscribe = async (plan: PlanId) => {
     if (plan === "free") return;
-    if (!user) { router.push("/auth?mode=signup"); return; }
+    if (!user) { router.push("/premiers-pas?next=/premium"); return; }
     // Le compte est identifié par le token côté serveur : on n'envoie plus
     // d'identifiant dans le corps de la requête.
     if (!session?.access_token) { setMsg("Reconnecte-toi pour continuer"); return; }

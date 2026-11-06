@@ -29,11 +29,10 @@ import { useGuideActif } from "@/context/GuideContext";
 import { estSurfacePublique } from "@/lib/surfacesPubliques";
 import { destinationInterne } from "@/lib/destinationInterne";
 
-/** La route du questionnaire d'entrée : le choix du Guide, puis le
- *  profil. C'est la SEULE porte, depuis le 2026-08-22 : la ligne « Mon
- *  corps et mes objectifs » des Paramètres et le rappel du Guide y
- *  mènent aussi. */
-export const ROUTE_BIENVENUE = "/bienvenue";
+/** La route de l'entrée dans Vaiiya : le choix du Guide, les questions, le
+ *  compte, puis la visite. `/bienvenue` ne sert plus qu'à corriger ses
+ *  réponses depuis les Paramètres (`?edit=1`). */
+export const ROUTE_BIENVENUE = "/premiers-pas";
 
 /* Routes où la question ne doit jamais s'imposer, en plus des surfaces
    publiques (vitrine, pages SEO, légal, /premium pour un anonyme) :
@@ -41,7 +40,7 @@ export const ROUTE_BIENVENUE = "/bienvenue";
      · l'authentification, où l'on n'a pas encore de compte à écrire ;
      · l'invitation au relais, qui se lit sans compte et dont c'est tout
        l'intérêt (voir la page publique /rejoindre). */
-const EXEMPTES = [ROUTE_BIENVENUE, "/premiers-pas", "/choisir-pseudo", "/auth", "/rejoindre"];
+const EXEMPTES = [ROUTE_BIENVENUE, "/bienvenue", "/choisir-pseudo", "/auth", "/rejoindre"];
 
 function estExempte(pathname: string): boolean {
   return EXEMPTES.some((r) => pathname === r || pathname.startsWith(`${r}/`));

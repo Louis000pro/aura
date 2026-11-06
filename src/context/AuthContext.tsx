@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase";
 import { fetchAuth } from "@/lib/fetchAuth";
 import type { Session, User as SBUser } from "@supabase/supabase-js";
 import { retenirCompte } from "@/lib/comptesConnus";
+import { hydraterRegimes } from "@/lib/premiersPas/reponses";
 
 export type User = {
   id: string;
@@ -70,6 +71,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const enrichUser = (sbUser: SBUser) => {
     // D'abord on set avec les metadata (immédiat, sans attendre la DB)
     setUser(mapUser(sbUser));
+    // Ce qu'on ne mange pas suit le compte : un appareil neuf le retrouve ici.
+    hydraterRegimes(sbUser.id, sbUser.user_metadata?.aliments_exclus);
     // Puis on fetch le profil DB et on met à jour (async, non-bloquant)
     // Sélection défensive : si la colonne is_banned n'existe pas encore, on refetch sans.
     (async () => {

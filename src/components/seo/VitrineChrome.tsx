@@ -23,7 +23,7 @@ export function VitrineHeader() {
         <span className="text-[20px] font-light tracking-[0.18em]" style={{ color: "#1A1535" }}>VAIIYA</span>
       </Link>
       <Link
-        href="/auth"
+        href="/premiers-pas"
         className="px-4 py-2 rounded-full text-[13px] font-semibold"
         style={{ background: "linear-gradient(135deg,#A78BFA,#D4A843)", color: "#fff", boxShadow: "0 4px 16px rgba(167,139,250,0.32)" }}
       >

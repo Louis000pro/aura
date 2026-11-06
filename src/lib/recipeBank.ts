@@ -14,7 +14,10 @@
 
 export type MealType = "petit-dejeuner" | "dejeuner" | "gouter" | "diner";
 export type Difficulty = "facile" | "moyen" | "difficile";
-export type DietKey = "vegetarien" | "vegan" | "sans-gluten" | "sans-lactose";
+/* Les quatre dernières ne se déclarent pas sur une recette : elles se lisent dans
+   ses ingrédients (`convient`, collectionsRecettes.ts). */
+export type DietKey = "vegetarien" | "vegan" | "sans-gluten" | "sans-lactose"
+  | "sans-viande" | "sans-porc" | "sans-poisson" | "sans-oeufs";
 
 export type RecipeIngredient = { nom: string; qte: number; unite: string };
 

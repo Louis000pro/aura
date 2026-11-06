@@ -66,7 +66,18 @@ export function garderParcours(etat: EtatParcours, ecran: string): void {
 }
 
 export function oublierParcours(): void {
-  try { localStorage.removeItem(CLE); } catch { /* rien à effacer */ }
+  try { localStorage.removeItem(CLE); localStorage.removeItem(SUITE); } catch { /* rien à effacer */ }
+}
+
+const SUITE = "vaiiya_premiers_pas_suite";
+
+/** Google ramène à `/` : le `?next=` (une invitation au relais…) se perdrait. */
+export function retenirSuite(chemin: string): void {
+  try { localStorage.setItem(SUITE, chemin); } catch { /* sans gravité */ }
+}
+
+export function lireSuite(): string | null {
+  try { return localStorage.getItem(SUITE); } catch { return null; }
 }
 
 const VUS = (id: string) => `vaiiya_premiers_pas_vus_${id}`;
@@ -95,16 +106,28 @@ export function regimeDes(sans: readonly Aliment[]): string {
   return "omnivore";
 }
 
-/** Ce que les écrans de recettes savent filtrer aujourd'hui (`vaiiya_diet_<id>`).
- *  ⚠️ Le porc, le poisson ou les œufs seuls n'ont pas de régime : ils restent
- *  dans `aliments_exclus`, sur le compte. */
+const FILTRE: Record<Aliment, DietKey> = {
+  viande: "sans-viande", porc: "sans-porc", poisson: "sans-poisson",
+  oeufs: "sans-oeufs", lait: "sans-lactose", gluten: "sans-gluten",
+};
+
+/** Ce que les écrans de recettes filtrent (`vaiiya_diet_<id>`). Une tuile vaut un
+ *  filtre : le nombre de recettes annoncé par le Guide est donc celui que la
+ *  personne retrouvera dans Nutrition. */
 export function regimesDe(sans: readonly Aliment[]): DietKey[] {
-  const a = (x: Aliment) => sans.includes(x);
-  const r: DietKey[] = [];
-  if (a("viande") && a("poisson")) r.push(a("oeufs") && a("lait") ? "vegan" : "vegetarien");
-  if (a("gluten")) r.push("sans-gluten");
-  if (a("lait")) r.push("sans-lactose");
-  return r;
+  return sans.map((a) => FILTRE[a]);
+}
+
+/** `aliments_exclus` suit le compte, `vaiiya_diet_<id>` vit sur l'appareil : un
+ *  appareil neuf retrouve ici ce qu'on a répondu. ⚠️ Rien n'écrase une valeur déjà
+ *  posée, et une réponse illisible ne filtre rien. */
+export function hydraterRegimes(id: string, brut: unknown): void {
+  if (!Array.isArray(brut)) return;
+  const sans = brut.filter((x): x is Aliment => Object.keys(FILTRE).includes(x));
+  try {
+    const cle = `vaiiya_diet_${id}`;
+    if (localStorage.getItem(cle) === null) localStorage.setItem(cle, JSON.stringify(regimesDe(sans)));
+  } catch { /* stockage bloqué : les recettes restent sans filtre sur cet appareil */ }
 }
 
 /** Le profil tel que `enregistrerProfil` l'écrit. ⚠️ Le nombre de repas n'est

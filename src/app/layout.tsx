@@ -4,13 +4,12 @@ import "./globals.css";
 import Navigation from "@/components/Navigation";
 import MainWrapper from "@/components/MainWrapper";
 import { AuthProvider } from "@/context/AuthContext";
-import { GuidedTourProvider } from "@/context/GuidedTourContext";
 import RappelProfil from "@/components/RappelProfil";
 import GardeGuide from "@/components/GardeGuide";
 import GardePseudo from "@/components/GardePseudo";
 import GardeConnexion from "@/components/GardeConnexion";
 import PWARegister from "@/components/PWARegister";
-import { AssistantSheetDiffere, DemandeConsentementDiffere, GuidedTourDiffere, PrechargeDifferes } from "@/components/Differes";
+import { AssistantSheetDiffere, DemandeConsentementDiffere, PrechargeDifferes } from "@/components/Differes";
 import PremiumBanner from "@/components/PremiumBanner";
 import PresenceDuJour from "@/components/PresenceDuJour";
 import CelebrationRang from "@/components/rang/CelebrationRang";
@@ -416,29 +415,26 @@ export default function RootLayout({
           <InvitationAvis />
           <AssistantProvider>
             <WorkoutLaunchProvider>
-              <GuidedTourProvider>
-                {/* ⚠️ LA GARDE, montée le 2026-08-22 (phase 1C). Elle
-                    n'envoie vers `/bienvenue` que sur l'état « aucun »,
-                    c'est-à-dire quand la base a bel et bien répondu que
-                    personne n'a choisi de Guide. « inconnu » (colonne pas
-                    encore là, hors ligne) ne redirige jamais : c'est ce qui
-                    empêche d'enfermer quelqu'un dans un écran qui a besoin
-                    du réseau pour en sortir. */}
-                {/* Le pseudo passe AVANT le Guide : un compte Google choisit
-                    d'abord son pseudo (GardePseudo), puis son Guide. */}
-                <GardeConnexion />
-                <GardePseudo />
-                <GardeGuide />
-                <Navigation />
-                <MainWrapper>{children}</MainWrapper>
-                <RappelProfil />
-                <DemandeConsentementDiffere />
-                <GuidedTourDiffere />
-                <PWARegister />
-                <AssistantSheetDiffere />
-                <PrechargeDifferes />
-                <PremiumBanner />
-              </GuidedTourProvider>
+              {/* ⚠️ LA GARDE, montée le 2026-08-22 (phase 1C). Elle
+                  n'envoie vers les premiers pas que sur l'état « aucun »,
+                  c'est-à-dire quand la base a bel et bien répondu que
+                  personne n'a choisi de Guide. « inconnu » (colonne pas
+                  encore là, hors ligne) ne redirige jamais : c'est ce qui
+                  empêche d'enfermer quelqu'un dans un écran qui a besoin
+                  du réseau pour en sortir. */}
+              {/* Le pseudo passe AVANT le Guide : un compte Google choisit
+                  d'abord son pseudo (GardePseudo), puis son Guide. */}
+              <GardeConnexion />
+              <GardePseudo />
+              <GardeGuide />
+              <Navigation />
+              <MainWrapper>{children}</MainWrapper>
+              <RappelProfil />
+              <DemandeConsentementDiffere />
+              <PWARegister />
+              <AssistantSheetDiffere />
+              <PrechargeDifferes />
+              <PremiumBanner />
             </WorkoutLaunchProvider>
           </AssistantProvider>
           </GuideProvider>

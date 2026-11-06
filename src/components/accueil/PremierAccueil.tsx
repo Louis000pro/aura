@@ -1,57 +1,85 @@
 "use client";
 
 /* ════════════════════════════════════════════════════════════════════
-   LE PREMIER ACCUEIL (Louis, 2026-10-12, maquette « premier-accueil »,
-   piste A). Un nouvel inscrit arrive sur l'accueil et c'est l'accueil
-   lui-même qui lui dit bonjour : son Guide en grand, son prénom, une
-   phrase, puis DEUX choix de même importance visuelle :
-     · commencer sa première séance (courte, gratuite, choisie d'après
-       son lieu d'entraînement) ;
-     · entrer dans Vaiiya et regarder d'abord.
-   Rien n'est imposé, et c'est la consigne : pas de gros bouton qui
-   oblige à faire la séance.
+   LA PREMIÈRE JOURNÉE (Louis, 2026-11-05, maquette « Les premiers pas »).
+   Après le parcours, le premier accueil montre une seule chose : ce qu'il
+   reste pour passer Argent. Une séance et un repas le même jour y mènent.
 
-   ⚠️ IL NE REVIENT JAMAIS UNE FOIS UN CHOIX FAIT. Le repère vit dans les
-   métadonnées du COMPTE (Supabase Auth, aucune migration), donc il suit
-   la personne sur tous ses appareils ; le localStorage n'est qu'un cache
-   qui évite de le revoir clignoter pendant que la session se lit.
-   ⚠️ IL NE S'ADRESSE QU'À UN NOUVEAU : compte de moins de 30 jours ET
-   aucune séance enregistrée. Dire « Bienvenue » à quelqu'un qui est là
-   depuis des mois, ou qui s'entraîne déjà, sonnerait faux.
+   ⚠️ TOUT EST VRAI ICI. L'EXP vient de la base (`calculerAura`), la séance se
+   lance dans le vrai lecteur, le repas se note dans la vraie Nutrition, et le
+   passage d'Argent est la vraie scène (`CelebrationRang`). Aucune règle d'EXP
+   n'est écrite dans cet écran : les gains et le seuil d'Argent viennent de
+   `aura.ts`.
+
+   ⚠️ « PLUS TARD » FERME L'ÉCRAN POUR DE BON. Rien n'est imposé. Le repère vit
+   dans les métadonnées du compte (`usePremierAccueil`), donc il suit la
+   personne sur tous ses appareils.
+   ⚠️ IL NE S'ADRESSE QU'À UN COMPTE QUI N'A ENCORE RIEN FAIT.
    ════════════════════════════════════════════════════════════════════ */
 
-import { motion } from "framer-motion";
-import { ChevronRight } from "lucide-react";
-import { readLieu } from "@/lib/planning";
+import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { calculerAura, EXP_JOURNEE, EXP_REPAS, EXP_SEANCE, RANGS, type EtatAura } from "@/lib/aura";
 import { workoutSessions } from "@/lib/catalogueSeances";
-import { heroImageForSeance } from "@/lib/workoutArt";
+import type { GuideRef } from "@/lib/guides";
 import { cheminDuGuide } from "@/lib/photosGuide";
-import { voix, nomGuide, type GuideRef } from "@/lib/guides";
-import { BusteGuide } from "@/components/AssistantMark";
+import { readLieu } from "@/lib/planning";
+import { marquerPresence } from "@/lib/presence";
+import { createClient } from "@/lib/supabase";
+import { heroImageForSeance } from "@/lib/workoutArt";
 import { useWorkoutLaunch } from "@/context/WorkoutLaunchContext";
+import s from "./PremierAccueil.module.css";
+
+const NB = String.fromCharCode(160);
+const A = "/premiers-pas/";
 
 /** La première séance proposée : courte, gratuite, et adaptée au lieu. */
 function premiereSeance(userId: string) {
   const { location } = readLieu(userId);
   const id = location === "salle" ? "salle-decouverte" : "express-12";
-  return workoutSessions.find((s) => s.id === id) ?? workoutSessions.find((s) => s.id === "express-12")!;
+  return workoutSessions.find((x) => x.id === id) ?? workoutSessions.find((x) => x.id === "express-12")!;
 }
 
-export default function PremierAccueil({ userId, pseudo, guide, onFermer }: {
+export default function PremierAccueil({ userId, guide, onFermer }: {
   userId: string;
   pseudo: string;
   guide: GuideRef;
   onFermer: () => void;
 }) {
-  const { launchWorkout } = useWorkoutLaunch();
-  const seance = premiereSeance(userId);
+  const router = useRouter();
+  const { launchWorkout, lecteurOuvert } = useWorkoutLaunch();
+  const seance = useMemo(() => premiereSeance(userId), [userId]);
   const photo = heroImageForSeance({ title: seance.title, category: seance.category });
+  const [aura, setAura] = useState<EtatAura | null>(null);
 
-  /* Choisir la séance compte comme un choix : l'accueil habituel prend le
-     relais derrière le lecteur. Si la séance est interrompue, c'est la
-     reprise de l'accueil qui la repropose, pas ce seuil. */
-  const commencer = () => {
-    onFermer();
+  /* Relu à l'arrivée et à la fermeture du lecteur : c'est là que l'EXP bouge. */
+  useEffect(() => {
+    if (lecteurOuvert) return;
+    let vivant = true;
+    const supabase = createClient();
+    void (async () => {
+      await marquerPresence(supabase, userId).catch(() => null);
+      const etat = await calculerAura(supabase, userId).catch(() => null);
+      if (vivant && etat) setAura(etat);
+    })();
+    return () => { vivant = false; };
+  }, [userId, lecteurOuvert]);
+
+  const seanceFaite = !!aura?.missions.seance?.complete;
+  const repasFait = !!aura?.missions.repas?.complete;
+
+  /* Les deux sont faits : l'accueil habituel reprend, et la scène d'Argent
+     joue d'elle-même. */
+  useEffect(() => {
+    if (seanceFaite && repasFait) onFermer();
+  }, [seanceFaite, repasFait, onFermer]);
+
+  const seuil = RANGS[1]?.min ?? 100;
+  const exp = aura?.exp ?? 0;
+  const reste = Math.max(0, seuil - exp);
+
+  const lancer = () => {
+    if (seanceFaite) return;
     launchWorkout({
       sessionId: seance.id,
       title: seance.title,
@@ -63,65 +91,48 @@ export default function PremierAccueil({ userId, pseudo, guide, onFermer }: {
   };
 
   return (
-    <motion.section
-      initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}
-      className="flex flex-col"
-      aria-label="Bienvenue dans Vaiiya"
-    >
-      {/* Le Guide, sans cadre : son bas se dissout dans la page. */}
-      <div className="relative -mt-4 flex justify-center" style={{ height: 260 }}>
-        <BusteGuide guide={guide} hauteur={280} />
+    <section className={s.journee} aria-label="Ta première journée">
+      {guide && (
+        /* eslint-disable-next-line @next/next/no-img-element */
+        <img className={s.guide} data-guide={guide} src={`${A}${guide}-designe.webp`} alt="" />
+      )}
+      <h1 className={s.titre}>Ta <em>première</em> journée</h1>
+
+      <div className={s.rang}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={`${A}bronze.webp`} alt="Bronze" />
+        <div className={s.piste}><i style={{ width: `${Math.min(1, exp / seuil) * 100}%` }} /></div>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={`${A}argent.webp`} alt="Argent" />
       </div>
-
-      <div className="relative -mt-8 text-center">
-        {guide && (
-          <p className="vy-label" style={{ color: "var(--exp-encre)" }}>{nomGuide(guide)}, ton Guide</p>
-        )}
-        <h1 className="mt-1 text-[34px] leading-[1.05]"
-          style={{ color: "var(--text-0)", fontWeight: 800, fontVariationSettings: "var(--w-voix)", textWrap: "balance" }}>
-          Bienvenue,{" "}
-          <em style={{
-            background: "var(--degrade-titre)",
-            WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
-            fontStyle: "italic", display: "inline-block", paddingRight: "0.14em",
-          }}>{pseudo}</em>
-        </h1>
-        <p className="vy-corps mx-auto mt-2 max-w-[30ch]" style={{ color: "var(--text-2)" }}>
-          {voix(guide, "accueil.premier")}
-        </p>
-      </div>
-
-      <div className="mt-6 flex flex-col gap-2.5">
-        <button
-          type="button"
-          onClick={commencer}
-          className="flex w-full items-center gap-3 p-2.5 pr-4 text-left text-white active:scale-[.98] transition-transform"
-          style={{ borderRadius: "var(--r-bloc)", background: "linear-gradient(135deg, #8B5CF6, #C13BC1)", boxShadow: "var(--ombre-action)" }}
-        >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={cheminDuGuide(photo, guide)} alt="" className="h-14 w-14 shrink-0 object-cover" style={{ borderRadius: "var(--r-controle)" }} />
-          <span className="min-w-0 flex-1">
-            <b className="block text-[16px]" style={{ fontWeight: 800 }}>Commencer ma première séance</b>
-            <span className="vy-nombre block text-[11px] opacity-90">
-              {seance.title} · {seance.duration} min · {seance.id === "salle-decouverte" ? "en salle" : "sans matériel"}
-            </span>
-          </span>
-          <ChevronRight className="h-5 w-5 shrink-0" />
-        </button>
-
-        <button
-          type="button"
-          onClick={onFermer}
-          className="w-full py-3.5 text-[16px] font-bold active:scale-[.98] transition-transform"
-          style={{ borderRadius: "var(--r-bloc)", background: "rgba(var(--surface-rgb), .85)", color: "var(--exp-encre)", boxShadow: "var(--ombre-pose)" }}
-        >
-          Entrer dans Vaiiya
-        </button>
-      </div>
-
-      <p className="mt-3 text-center text-[13px]" style={{ color: "var(--text-3)" }}>
-        Tu retrouveras cette séance dans Entraînement.
+      <p className={s.exp}>
+        <b className="vy-nombre">{aura ? exp : "–"}</b> / {seuil}{NB}EXP
+        {aura && reste > 0 ? ` · Encore ${reste}${NB}EXP pour passer Argent.` : ""}
       </p>
-    </motion.section>
+
+      <div className={s.actions}>
+        <button type="button" className={s.action} data-fait={seanceFaite} onClick={lancer}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={cheminDuGuide(photo, guide)} alt="" />
+          <i className="vy-nombre">{seanceFaite ? "Fait" : `+${EXP_SEANCE}${NB}EXP`}</i>
+          <span>
+            <small>{seance.duration}{NB}min</small>
+            <b>{seanceFaite ? "Séance faite" : `Faire ${seance.title}`}</b>
+          </span>
+        </button>
+        <button type="button" className={s.action} data-fait={repasFait} onClick={() => { if (!repasFait) router.push("/nutrition"); }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={`${A}assiette.webp`} alt="" />
+          <i className="vy-nombre">{repasFait ? "Fait" : `+${EXP_REPAS}${NB}EXP`}</i>
+          <span>
+            <small>Une photo ou un mot suffit</small>
+            <b>{repasFait ? "Repas noté" : "Noter mon premier repas"}</b>
+          </span>
+        </button>
+      </div>
+
+      <p className={s.note}>Les deux le même jour{NB}: <b className="vy-nombre">+{EXP_JOURNEE}</b>{NB}EXP de plus.</p>
+      <button type="button" className={s.passer} onClick={onFermer}>Plus tard</button>
+    </section>
   );
 }

@@ -17,15 +17,16 @@
 
 import { existsSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { workoutSessions } from "@/lib/catalogueSeances";
+import { EXP_BIENVENUE, EXP_CONNEXION, EXP_CONNEXION_SUITE, EXP_JOURNEE, EXP_REPAS, EXP_SEANCE, RANGS } from "@/lib/aura";
 import { EXERCISE_LIBRARY } from "@/lib/exerciseLibrary";
 import { voix, type CleVoix } from "@/lib/guides";
 import { PROGRAMMES } from "@/lib/parcours";
 import { cycleDeReference } from "@/lib/planning";
 import { DONNEES } from "@/lib/premiersPas/donnees";
-import { etatVide, regimeDes, versLieu, versProfil } from "@/lib/premiersPas/reponses";
+import { etatVide, regimeDes, regimesDe, versLieu, versProfil } from "@/lib/premiersPas/reponses";
+import { convient, regimeConnu } from "@/lib/collectionsRecettes";
 import { GOALS } from "@/lib/profilVocabulaire";
-import { RECIPES } from "@/lib/recipeBank";
-import { chercherRecettes, preparerRecherche } from "@/lib/rechercheRecettes";
+import { RECIPES, type DietKey } from "@/lib/recipeBank";
 import { exercicesDe, faisableAvec, materielDe } from "@/lib/trouverSeance";
 
 let ok = 0, ko = 0;
@@ -61,27 +62,10 @@ function calculer() {
       return [s.duration, l, NIVEAUX[s.difficulty] ?? 1, s.access === "premium" ? 1 : 0, buts];
     });
 
-  preparerRecherche();
-  const indexDe = new Map(RECIPES.map((r, i) => [r.id, i]));
-  const masques: number[] = new Array(RECIPES.length).fill(0);
-  const exclues = (mot: string) => {
-    const garde = new Set(chercherRecettes(`sans ${mot}`).recettes.map((r) => r.id));
-    return RECIPES.filter((r) => !garde.has(r.id)).map((r) => r.id);
-  };
-  const poser = (ids: string[], bit: number, sauf = new Set<string>()) => {
-    for (const id of ids) {
-      if (sauf.has(id)) continue;
-      const i = indexDe.get(id);
-      if (i != null) masques[i] |= bit;
-    }
-  };
-  const poisson = new Set(exclues("poisson"));
-  poser(exclues("viande"), 1, poisson);
-  poser(exclues("porc"), 2);
-  poser([...poisson], 4);
-  poser(exclues("oeufs"), 8);
-  poser(exclues("lait"), 16);
-  poser(exclues("gluten"), 32);
+  /* Le nombre annoncé par le Guide suit le filtre que les écrans appliquent
+     ensuite : une seule règle, celle de `convient`. */
+  const FILTRES: [DietKey, number][] = [["sans-viande", 1], ["sans-porc", 2], ["sans-poisson", 4], ["sans-oeufs", 8], ["sans-lactose", 16], ["sans-gluten", 32]];
+  const masques = RECIPES.map((r) => FILTRES.reduce((m, [cle, bit]) => (convient(r, [cle]) ? m : m | bit), 0));
 
   const cycles: Record<number, string[]> = {};
   for (let n = 1; n <= 7; n++) cycles[n] = cycleDeReference(n);
@@ -177,6 +161,17 @@ t("sans rien exclure, omnivore", regimeDes([]) === "omnivore");
 t("sans viande ni poisson, végétarien", regimeDes(["viande", "porc", "poisson"]) === "vegetarien");
 t("sans rien d'animal, végan", regimeDes(["viande", "porc", "poisson", "oeufs", "lait"]) === "vegan");
 t("sans gluten seul", regimeDes(["gluten"]) === "sansgluten");
+t("chaque tuile devient un filtre connu", regimeConnu(regimesDe(["viande", "porc", "poisson", "oeufs", "lait", "gluten"])).length === 6);
+t("sans porc, aucune recette n'en contient", RECIPES.filter((r) => convient(r, regimesDe(["porc"]))).every((r) => !r.ingredients.some((i) => /jambon|lardon|bacon|chorizo/i.test(i.nom))));
+t("sans viande, le compte annoncé est le compte filtré", RECIPES.filter((r) => convient(r, regimesDe(["viande"]))).length === DONNEES.recettes.filter((m) => !(m & 1)).length);
+
+/* ── Le barème qu'écrit la scène de bienvenue ── */
+t("le socle de bienvenue vaut 50", EXP_BIENVENUE === 50);
+t("la connexion vaut 10, puis 20 le lendemain", EXP_CONNEXION === 10 && EXP_CONNEXION_SUITE === 20);
+t("une séance vaut 30, un repas 5, une journée complète 10", EXP_SEANCE === 30 && EXP_REPAS === 5 && EXP_JOURNEE === 10);
+t("Argent se gagne à 100", RANGS[1].min === 100);
+t("une journée de première fois mène à Argent", EXP_BIENVENUE + EXP_CONNEXION + EXP_SEANCE + EXP_REPAS + EXP_JOURNEE >= RANGS[1].min);
+t("une séance seule n'y mène pas", EXP_BIENVENUE + EXP_CONNEXION + EXP_SEANCE < RANGS[1].min);
 
 /* ── Le CSS ── */
 const css = readFileSync("src/components/premiersPas/premiersPas.css", "utf8");
@@ -194,5 +189,16 @@ const appels = [...regles.matchAll(/animation(?:-name)?:\s*([^;}]+)/g)].flatMap(
 t("chaque animation appelée existe", appels.every((a) => nomsAnim.has(a)), appels.filter((a) => !nomsAnim.has(a)).join());
 
 t("le dossier d'images existe", existsSync("public/premiers-pas"));
+
+/* ── La bascule : une seule porte d'entrée ── */
+const lire = (f: string) => readFileSync(f, "utf8");
+t("la garde mène aux premiers pas", /ROUTE_BIENVENUE = "\/premiers-pas"/.test(lire("src/components/GardeGuide.tsx")));
+t("la vitrine mène aux premiers pas", /href = "\/premiers-pas"/.test(lire("src/components/Landing/LandingVitrine.tsx")));
+t("un compte sans action retrouve la visite, jamais les questions", lire("src/components/accueil/usePremierAccueil.ts").includes('"/premiers-pas?visite=1"'));
+t("/bienvenue ne reste que pour corriger ses réponses", /edit/.test(lire("src/app/bienvenue/page.tsx")) && lire("src/app/bienvenue/page.tsx").includes('"/premiers-pas'));
+t("créer le compte ne remonte pas la page", lire("src/context/WorkoutLaunchContext.tsx").includes('surParcours ? "premiers-pas"'));
+t("le moteur ne repart pas quand le Guide se relit", lire("src/components/premiersPas/PremiersPas.tsx").includes("moteur.current) return;"));
+t("l'ancienne visite n'existe plus", !existsSync("src/components/GuidedTour") && !existsSync("src/context/GuidedTourContext.tsx"));
+t("la première journée lit les gains, elle n'en écrit aucun", !/\+\d+/.test(lire("src/components/accueil/PremierAccueil.tsx").replace(/\/\*[\s\S]*?\*\//g, "")));
 console.log(`\n${ok} contrôles passés, ${ko} en échec.`);
 if (ko) process.exit(1);

@@ -1,13 +1,10 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  Eye, EyeOff,
-  User, Mail, Lock, CheckCircle2, AtSign, UserCheck, ArrowRight,
-} from "lucide-react";
+import { Eye, EyeOff, Mail, Lock, CheckCircle2, ArrowRight } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { destinationDepuisUrl } from "@/lib/destinationInterne";
 import s from "./auth.module.css";
@@ -16,7 +13,6 @@ import { compteConnu } from "@/lib/comptesConnus";
 /* Système « D » : le bouton d'action principal est TOUJOURS violet vers magenta,
    jamais violet vers or. Même couleur que le CTA de la page de présentation. */
 const ACTION_BG = "linear-gradient(135deg,#8B5CF6 0%,#C13BC1 100%)";
-const TEAL = "#2BD4A0"; // réussite
 /* L'entrée est toujours claire, comme la vitrine (Louis, 2026-10-12) : ses
    encres sont écrites en dur et ne suivent pas le mode sombre. */
 const ENCRE = "#1C1626";
@@ -78,108 +74,18 @@ function Field({
   );
 }
 
-/* ── Indicateur de force du mot de passe ── */
-function pwdStrength(p: string) {
-  if (!p) return null;
-  let s = 0;
-  if (p.length >= 8)  s++;
-  if (p.length >= 12) s++;
-  if (/[A-Z]/.test(p)) s++;
-  if (/[0-9]/.test(p)) s++;
-  if (/[^A-Za-z0-9]/.test(p)) s++;
-  /* Rouge tant que ça ne tient pas, or quand c'est passable, teal dès que
-     c'est solide : les mêmes rôles de couleur que partout ailleurs. */
-  const levels = [
-    { label: "Trop court",      color: "#E86A6A", bars: 1 },
-    { label: "Faible",          color: "#E86A6A", bars: 1 },
-    { label: "Passable",        color: "#D9900A", bars: 2 },
-    { label: "Sécurisé",        color: TEAL, bars: 3 },
-    { label: "Très sécurisé",   color: TEAL, bars: 4 },
-    { label: "Excellent",       color: TEAL, bars: 5 },
-  ];
-  return { score: s, ...levels[Math.min(s, 5)] };
-}
-
-function PasswordStrengthBar({ password }: { password: string }) {
-  const s = pwdStrength(password);
-  if (!s) return null;
-  return (
-    <motion.div initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col gap-1.5">
-      <div className="flex gap-1">
-        {[1,2,3,4,5].map(i => (
-          <div key={i} className="flex-1 h-1 rounded-full"
-            style={{ background: i <= s.bars ? s.color : "rgba(28,22,38,0.1)", transition: "background 0.3s ease" }} />
-        ))}
-      </div>
-      <p className="text-[11px] font-semibold" style={{ color: s.color, transition: "color 0.3s ease" }}>
-        {s.label}
-      </p>
-    </motion.div>
-  );
-}
-
-/* ── Saisie du code OTP 6 chiffres ── */
-function OtpInput({ value, onChange }: { value: string; onChange: (v: string) => void }) {
-  const refs = useRef<(HTMLInputElement | null)[]>([]);
-
-  const handleChange = (i: number, raw: string) => {
-    const digit = raw.replace(/\D/g, "").slice(-1);
-    const arr = Array.from({ length: 6 }, (_, k) => value[k] ?? "");
-    arr[i] = digit;
-    onChange(arr.join(""));
-    if (digit && i < 5) refs.current[i + 1]?.focus();
-  };
-
-  const handleKeyDown = (i: number, e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Backspace") {
-      e.preventDefault();
-      const arr = Array.from({ length: 6 }, (_, k) => value[k] ?? "");
-      if (arr[i]) { arr[i] = ""; onChange(arr.join("")); }
-      else if (i > 0) { arr[i - 1] = ""; onChange(arr.join("")); refs.current[i - 1]?.focus(); }
-    } else if (e.key === "ArrowLeft" && i > 0) refs.current[i - 1]?.focus();
-    else if (e.key === "ArrowRight" && i < 5) refs.current[i + 1]?.focus();
-  };
-
-  const handlePaste = (e: React.ClipboardEvent) => {
-    e.preventDefault();
-    const pasted = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
-    onChange(pasted);
-    if (pasted.length > 0) refs.current[Math.min(pasted.length - 1, 5)]?.focus();
-  };
-
-  return (
-    <div className="flex gap-2 justify-center">
-      {[0,1,2,3,4,5].map(i => {
-        const digit = value[i] ?? "";
-        return (
-          <input key={i}
-            ref={el => { refs.current[i] = el; }}
-            type="text" inputMode="numeric" maxLength={1}
-            value={digit}
-            onChange={e => handleChange(i, e.target.value)}
-            onKeyDown={e => handleKeyDown(i, e)}
-            onPaste={handlePaste}
-            onFocus={e => e.target.select()}
-            className="w-11 h-14 text-center text-[20px] font-bold rounded-2xl outline-none"
-            style={{
-              background: "#fff",
-              border: digit ? "1.5px solid rgba(139,92,246,0.55)" : "1.5px solid rgba(28,22,38,0.12)",
-              color: ENCRE,
-              boxShadow: digit ? "0 4px 16px rgba(139,92,246,0.18)" : "none",
-              transition: "all 0.15s ease",
-            }}
-          />
-        );
-      })}
-    </div>
-  );
-}
-
 /* Destination après connexion : ?next=/chemin (invitation à un relais…).
    On n'accepte qu'un chemin interne, jamais une URL absolue, sinon
    n'importe qui peut fabriquer un lien de login qui renvoie ailleurs.
    Lu sur window plutôt qu'avec useSearchParams : pas de Suspense à poser. */
 const destinationApres = () => destinationDepuisUrl("/");
+
+/* Créer un compte passe par les premiers pas : les questions viennent avant le
+   compte (Louis, 2026-11-05). La destination voulue suit. */
+const versPremiersPas = () => {
+  const suite = destinationDepuisUrl("");
+  return suite ? `/premiers-pas?next=${encodeURIComponent(suite)}` : "/premiers-pas";
+};
 
 /* Connexion en deux temps : on ne passe au mot de passe que sur un email
    qui a la forme d'un email. Vérif volontairement souple (le vrai contrôle,
@@ -203,34 +109,17 @@ export default function AuthPage() {
     if (!isLoading && user) router.replace(destinationApres());
   }, [user, isLoading, router]);
 
-  const [mode, setMode]             = useState<"login"|"signup">("login");
   /* Connexion : 1 = on demande l'identifiant (email ou pseudo), 2 = le mot
      de passe. `parPseudo` mémorise si l'étape 1 a résolu un pseudo : l'étape
      2 passe alors par la route serveur au lieu du signIn email direct. */
   const [etapeConnexion, setEtapeConnexion] = useState<1|2>(1);
   const [parPseudo, setParPseudo] = useState(false);
-  const [pseudo, setPseudo]         = useState("");
-  const [name, setName]             = useState("");
-  const [lastName, setLastName]     = useState("");
   const [email, setEmail]           = useState("");
   const [password, setPassword]     = useState("");
   const [showPwd, setShowPwd]       = useState(false);
   const [loading, setLoading]       = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
-  const [signupSent, setSignupSent] = useState(false);
-  /* La session est ouverte et la navigation part : on ne remontre plus le
-     formulaire. Sans ça, l'écran « Te revoilà » clignotait entre la
-     création du mot de passe et l'arrivée dans l'app. */
-  const [entree, setEntree] = useState(false);
   const [error, setError]           = useState<string|null>(null);
-
-  /* OTP */
-  const [otpCode, setOtpCode]           = useState("");
-  const [otpToken, setOtpToken]         = useState<string|null>(null);
-  const [otpLoading, setOtpLoading]     = useState(false);
-  const [otpError, setOtpError]         = useState<string|null>(null);
-  const [resendCooldown, setResendCooldown] = useState(0);
-  const cooldownRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   /* Forgot password */
   const [forgotMode, setForgotMode]     = useState(false);
@@ -239,15 +128,11 @@ export default function AuthPage() {
   const [forgotLoading, setForgotLoading] = useState(false);
 
   useEffect(() => {
-    const p = new URLSearchParams(window.location.search);
-    if (p.get("mode") === "signup") setMode("signup");
-  }, []);
+    /* Les anciens liens `?mode=signup` mènent aux premiers pas. */
+    if (new URLSearchParams(window.location.search).get("mode") === "signup") router.replace(versPremiersPas());
+  }, [router]);
 
-  const canSubmit = mode === "signup"
-    ? !!(pseudo && name && lastName && email && password)
-    : etapeConnexion === 1
-      ? identifiantValide(email)
-      : !!(email && password);
+  const canSubmit = etapeConnexion === 1 ? identifiantValide(email) : !!(email && password);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -256,7 +141,7 @@ export default function AuthPage() {
     // Connexion en deux temps : l'étape 1 vérifie VRAIMENT que le compte
     // existe avant d'ouvrir le mot de passe. On ne montre jamais « c'est bon »
     // sur un compte inexistant. L'identifiant peut être un email OU un pseudo.
-    if (mode === "login" && etapeConnexion === 1) {
+    if (etapeConnexion === 1) {
       setLoading(true);
       setError(null);
       const identifiant = email.trim();
@@ -299,29 +184,10 @@ export default function AuthPage() {
     setLoading(true);
     setError(null);
 
-    if (mode === "signup") {
-      // Étape 1 : envoyer l'OTP via notre API Resend (avant de créer le compte)
-      const res = await fetch("/api/auth/send-otp", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
-      });
-      const json = await res.json();
-      if (!res.ok || json.error) {
-        setError(json.error ?? "Erreur lors de l’envoi du code.");
-        setLoading(false);
-        return;
-      }
-      setOtpToken(json.token);
-      setLoading(false);
-      setSignupSent(true);
-      return;
-    } else {
-      const err = parPseudo
-        ? await signInIdentifiant({ identifiant: email.trim(), password })
-        : await signIn({ email, password });
-      if (err) { setError(err.message === "Invalid login credentials" ? "Identifiant ou mot de passe incorrect." : err.message); setLoading(false); return; }
-    }
+    const err = parPseudo
+      ? await signInIdentifiant({ identifiant: email.trim(), password })
+      : await signIn({ email, password });
+    if (err) { setError(err.message === "Invalid login credentials" ? "Identifiant ou mot de passe incorrect." : err.message); setLoading(false); return; }
 
     // Pas d'écran « Bon retour » (Louis, 2026-09-25) : on entre directement.
     // Le bouton reste en chargement le temps de la navigation.
@@ -335,67 +201,6 @@ export default function AuthPage() {
     // Si OK → redirect géré par Supabase
   };
 
-  const handleVerifyOtp = async () => {
-    if (otpCode.length < 6 || !otpToken) return;
-    setOtpLoading(true);
-    setOtpError(null);
-
-    // Étape 2 : le serveur vérifie le code ET crée le compte. La page ne
-    // crée plus rien elle-même : sans le bon code, aucun compte n'existe.
-    const verifyRes = await fetch("/api/auth/verify-otp", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ token: otpToken, otp: otpCode, pseudo, name, lastName, password }),
-    });
-    const verifyJson = await verifyRes.json().catch(() => ({}));
-    if (!verifyRes.ok || verifyJson.error) {
-      setOtpError(verifyJson.error ?? "Code incorrect ou expiré.");
-      setOtpCode("");
-      setOtpLoading(false);
-      return;
-    }
-
-    // Étape 4 : forcer la connexion immédiatement pour créer la session
-    // (sinon l'utilisateur est rebouclé sur /auth car la confirmation
-    // Supabase peut être encore active)
-    const signInErr = await signIn({ email, password });
-    setOtpLoading(false);
-    if (signInErr) {
-      // L'inscription a fonctionné mais la connexion auto a échoué :
-      // demander à l'utilisateur de se reconnecter manuellement.
-      setOtpError("Compte créé. Connecte-toi avec ton email et ton mot de passe.");
-      setSignupSent(false);
-      return;
-    }
-
-    // ⚠️ On garde l'écran du code affiché : le refermer ici remontrait le
-    // formulaire de connexion le temps que la navigation se fasse.
-    setEntree(true);
-    router.push(destinationApres());
-  };
-
-  const handleResendOtp = async () => {
-    if (resendCooldown > 0) return;
-    setOtpError(null);
-    const res = await fetch("/api/auth/send-otp", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email }),
-    });
-    const json = await res.json();
-    if (!res.ok || json.error) { setOtpError(json.error ?? "Erreur d’envoi."); return; }
-    setOtpToken(json.token);
-    setOtpCode("");
-    setResendCooldown(60);
-    if (cooldownRef.current) clearInterval(cooldownRef.current);
-    cooldownRef.current = setInterval(() => {
-      setResendCooldown(v => {
-        if (v <= 1) { clearInterval(cooldownRef.current!); return 0; }
-        return v - 1;
-      });
-    }, 1000);
-  };
-
   const handleForgot = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!forgotEmail.trim()) return;
@@ -407,27 +212,16 @@ export default function AuthPage() {
   };
 
   /* Le titre suit l'étape : c'est lui qui dit où l'on en est. */
-  const titre = mode === "signup"
-    ? <>Deviens la personne <span className={s.grad}>qui y va.</span></>
-    : etapeConnexion === 2
-      ? <>Plus qu’une <span className={s.grad}>étape.</span></>
-      : <>Te <span className={s.grad}>revoilà.</span></>;
-  const sousTitre = mode === "signup"
-    ? "Gratuit, sans carte bancaire."
-    : etapeConnexion === 2
-      ? null
-      : "Ta série t’attend là où tu l’as laissée.";
+  const titre = etapeConnexion === 2
+    ? <>Plus qu’une <span className={s.grad}>étape.</span></>
+    : <>Te <span className={s.grad}>revoilà.</span></>;
 
   /* Déjà connecté sur cet appareil ? Sa photo au lieu d'une initiale. */
-  const connu = mode === "login" && etapeConnexion === 2 ? compteConnu(email) : null;
+  const connu = etapeConnexion === 2 ? compteConnu(email) : null;
 
-  const changerMode = (m: "login" | "signup") => {
-    setMode(m); setError(null); setEtapeConnexion(1); setForgotMode(false);
-  };
-
-  // Déjà connecté (ou en train d'entrer) : la redirection est en route, on
-  // ne repeint pas un formulaire qui va disparaître dans la seconde.
-  if (entree || (!isLoading && user)) return <div className={s.page} aria-busy="true"><style>{DESSOUS}</style></div>;
+  // Déjà connecté : la redirection est en route, on ne repeint pas un
+  // formulaire qui va disparaître dans la seconde.
+  if (!isLoading && user) return <div className={s.page} aria-busy="true"><style>{DESSOUS}</style></div>;
 
   return (
     <div className={s.page}>
@@ -436,11 +230,7 @@ export default function AuthPage() {
       {/* ── Ordinateur : la phrase et les signes du chemin ── */}
       <div className={s.cote}>
         <h1 className={s.coteTitre}>{titre}</h1>
-        <p className={s.coteSous}>
-          {mode === "signup"
-            ? "Tes séances, tes repas et un assistant qui te connaît, réunis dans une seule appli. Gratuit, sans carte bancaire."
-            : "Ta série, ton rang et ta séance du jour t’attendent là où tu les as laissés."}
-        </p>
+        <p className={s.coteSous}>Ta série, ton rang et ta séance du jour t’attendent là où tu les as laissés.</p>
       </div>
 
       <div className={s.zone}>
@@ -448,79 +238,10 @@ export default function AuthPage() {
           transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
           className={s.carte}>
 
-          {/* Overlay OTP (inscription) */}
-          <AnimatePresence>
-            {signupSent && (
-              <motion.div initial={{ opacity:0,scale:0.96 }} animate={{ opacity:1,scale:1 }} exit={{ opacity:0,scale:0.96 }}
-                transition={{ duration:0.3,ease:[0.25,0.46,0.45,0.94] }}
-                className="absolute inset-0 z-50 flex flex-col items-center justify-center gap-5 px-6 py-8"
-                style={{ background:"rgba(255,255,255,0.97)" }}>
-
-                <motion.div initial={{ scale:0,rotate:-180 }} animate={{ scale:1,rotate:0 }}
-                  transition={{ type:"spring",bounce:0.5,delay:0.1 }}
-                  className="w-16 h-16 rounded-2xl flex items-center justify-center"
-                  style={{ background:ACTION_BG,boxShadow:"0 8px 28px rgba(139,92,246,0.35)" }}>
-                  <Mail size={26} strokeWidth={1.6} color="#fff" />
-                </motion.div>
-
-                <div className="text-center">
-                  <p className="text-[20px] font-bold mb-1" style={{ color:ENCRE }}>Code de confirmation</p>
-                  <p className="text-[13px] leading-relaxed" style={{ color:ENCRE_2 }}>
-                    Un code à 6 chiffres a été envoyé à<br/>
-                    <strong style={{ color:ENCRE }}>{email}</strong>
-                  </p>
-                </div>
-
-                <div className="w-full">
-                  <OtpInput value={otpCode} onChange={v => { setOtpCode(v); setOtpError(null); }} />
-                </div>
-
-                <AnimatePresence>
-                  {otpError && (
-                    <motion.p initial={{ opacity:0,y:-4,height:0 }} animate={{ opacity:1,y:0,height:"auto" }} exit={{ opacity:0,height:0 }}
-                      className="text-[13px] font-medium text-center -mt-2" style={{ color:"#C53030" }}>
-                      {otpError}
-                    </motion.p>
-                  )}
-                </AnimatePresence>
-
-                <motion.button
-                  disabled={otpCode.length < 6 || otpLoading}
-                  whileTap={otpCode.length === 6 && !otpLoading ? { scale:0.97 } : {}}
-                  onClick={handleVerifyOtp}
-                  className="w-full py-4 rounded-2xl text-[16px] font-semibold cursor-pointer"
-                  style={{ background:ACTION_BG, color:"#fff", opacity: otpCode.length < 6 || otpLoading ? 0.5 : 1, boxShadow:"0 12px 24px -12px rgba(139,92,246,0.9)", transition:"opacity 0.2s" }}>
-                  {otpLoading ? (
-                    <motion.div className="w-4 h-4 rounded-full border-2 mx-auto"
-                      style={{ borderColor:"rgba(255,255,255,0.3)",borderTopColor:"#fff" }}
-                      animate={{ rotate:360 }} transition={{ duration:0.8,repeat:Infinity,ease:"linear" }} />
-                  ) : (
-                    <span className="flex items-center justify-center gap-2">
-                      <CheckCircle2 size={15} strokeWidth={2}/>
-                      Vérifier le code
-                    </span>
-                  )}
-                </motion.button>
-
-                <div className="flex flex-col items-center gap-1.5">
-                  <button onClick={handleResendOtp} disabled={resendCooldown > 0}
-                    className="text-[13px] font-semibold cursor-pointer"
-                    style={{ color: resendCooldown > 0 ? ENCRE_3 : LIEN }}>
-                    {resendCooldown > 0 ? `Renvoyer dans ${resendCooldown}s` : "Renvoyer le code"}
-                  </button>
-                  <button onClick={() => { setSignupSent(false); setOtpCode(""); setOtpError(null); }}
-                    className="text-[13px] cursor-pointer" style={{ color:ENCRE_3 }}>
-                    Annuler
-                  </button>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
           {/* Sur téléphone, le titre vit dans la carte ; sur ordinateur, à gauche. */}
           <div className={s.titreMobile}>
             <h1 className={s.titre}>{titre}</h1>
-            {sousTitre && <p className={s.sous} style={{ marginTop: 8 }}>{sousTitre}</p>}
+            {etapeConnexion === 1 && <p className={s.sous} style={{ marginTop: 8 }}>Ta série t’attend là où tu l’as laissée.</p>}
           </div>
 
           {/* Erreur globale */}
@@ -536,7 +257,7 @@ export default function AuthPage() {
 
           {/* À l'étape 2, l'identifiant validé se rappelle en haut, avec la
              porte pour le corriger. */}
-          {mode === "login" && etapeConnexion === 2 ? (
+          {etapeConnexion === 2 ? (
             <div className="flex items-center gap-3 rounded-2xl py-2 pl-2 pr-3.5" style={VERRE}>
               <PhotoConnue avatar={connu?.avatar} lettre={((connu?.pseudo ?? email.trim())[0] ?? "?").toUpperCase()} />
               <span className="min-w-0 flex flex-col">
@@ -568,7 +289,7 @@ export default function AuthPage() {
                     <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
                   </svg>
                 )}
-                {mode === "signup" ? "S’inscrire avec Google" : "Continuer avec Google"}
+                Continuer avec Google
               </motion.button>
 
               <div className="flex items-center gap-3">
@@ -581,54 +302,43 @@ export default function AuthPage() {
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="flex flex-col gap-2.5">
-            {mode === "signup" && (
-              <>
-                <Field icon={<AtSign size={15}/>} type="text" placeholder="Pseudo (ex : atlas92)" value={pseudo} onChange={setPseudo} required autoFocus name="pseudo" autoComplete="nickname" />
-                <div className="grid grid-cols-2 gap-2.5">
-                  <Field icon={<User size={15}/>} type="text" placeholder="Prénom" value={name} onChange={setName} required name="given-name" autoComplete="given-name" />
-                  <Field icon={<UserCheck size={15}/>} type="text" placeholder="Nom" value={lastName} onChange={setLastName} required name="family-name" autoComplete="family-name" />
-                </div>
-              </>
-            )}
-
             {/* À l'étape 2, l'email est validé et disparaît : on ne montre plus
                que le mot de passe. On revient en arrière par « Changer ». */}
-            {!(mode === "login" && etapeConnexion === 2) && (
+            {etapeConnexion === 1 && (
               <Field
                 icon={<Mail size={15}/>}
-                type={mode === "login" ? "text" : "email"}
-                placeholder={mode === "login" ? "Ton email ou ton pseudo" : "Ton email"}
+                type="text"
+                placeholder="Ton email ou ton pseudo"
                 value={email}
                 onChange={setEmail}
                 required
-                autoFocus={mode==="login"}
-                name={mode === "login" ? "username" : "email"}
-                autoComplete={mode === "login" ? "username" : "email"}
+                autoFocus
+                name="username"
+                autoComplete="username"
               />
             )}
             {/* À l’étape 2, le champ email a disparu de l’écran : sans lui, le
                gestionnaire de mots de passe ne sait pas À QUEL compte rattacher
                le mot de passe, et ne propose pas de l’enregistrer. On le garde
                donc dans le formulaire, invisible et non modifiable. */}
-            {mode === "login" && etapeConnexion === 2 && (
+            {etapeConnexion === 2 && (
               <input type="text" name="username" autoComplete="username" value={email} readOnly
                 tabIndex={-1} aria-hidden="true"
                 style={{ position: "absolute", width: 1, height: 1, opacity: 0, pointerEvents: "none" }} />
             )}
 
-            {(mode === "signup" || etapeConnexion === 2) && (
+            {etapeConnexion === 2 && (
               <div className="flex flex-col gap-2">
                 <Field icon={<Lock size={15}/>}
                   type={showPwd?"text":"password"} placeholder="Mot de passe" value={password} onChange={setPassword} required
-                  name="password" autoComplete={mode === "signup" ? "new-password" : "current-password"}
-                  autoFocus={mode==="login" && etapeConnexion===2}
+                  name="password" autoComplete="current-password"
+                  autoFocus
                   suffix={
                     <button type="button" onClick={() => setShowPwd(v=>!v)} className="cursor-pointer flex-shrink-0"
                       aria-label={showPwd ? "Masquer le mot de passe" : "Afficher le mot de passe"}>
                       {showPwd ? <EyeOff size={15} style={{ color:ENCRE_3 }}/> : <Eye size={15} style={{ color:ENCRE_3 }}/>}
                     </button>
                   } />
-                {mode === "signup" && <PasswordStrengthBar password={password} />}
               </div>
             )}
 
@@ -640,17 +350,17 @@ export default function AuthPage() {
                 <>
                   <motion.span className="w-4 h-4 rounded-full border-2" style={{ borderColor:"rgba(255,255,255,0.3)",borderTopColor:"#fff" }}
                     animate={{ rotate:360 }} transition={{ duration:0.8,repeat:Infinity,ease:"linear" }} />
-                  <span>{mode==="signup" ? "Création…" : etapeConnexion===1 ? "Vérification…" : "Connexion…"}</span>
+                  <span>{etapeConnexion===1 ? "Vérification…" : "Connexion…"}</span>
                 </>
               ) : (
                 <>
-                  <span>{mode==="signup" ? "Créer mon compte" : etapeConnexion===1 ? "Continuer" : "Se connecter"}</span>
+                  <span>{etapeConnexion===1 ? "Continuer" : "Se connecter"}</span>
                   <ArrowRight size={16} strokeWidth={2.5} />
                 </>
               )}
             </motion.button>
 
-            {mode === "login" && etapeConnexion === 2 && (
+            {etapeConnexion === 2 && (
               <button type="button" onClick={() => setForgotMode(v=>!v)}
                 className="text-[13px] font-semibold cursor-pointer mx-auto py-1" style={{ color:LIEN }}>
                 Mot de passe oublié ?
@@ -700,14 +410,14 @@ export default function AuthPage() {
             )}
           </AnimatePresence>
 
-          {/* Passer de la connexion à l'inscription : une ligne, plus d'onglets. */}
-          {!(mode === "login" && etapeConnexion === 2) && (
+          {/* Créer un compte passe par les premiers pas. */}
+          {etapeConnexion === 1 && (
             <p className="text-center text-[13px] font-semibold" style={{ color:ENCRE_2 }}>
-              {mode === "login" ? "Pas encore de compte ? " : "Déjà un compte ? "}
-              <button type="button" onClick={() => changerMode(mode === "login" ? "signup" : "login")}
+              Pas encore de compte ?{" "}
+              <button type="button" onClick={() => router.push(versPremiersPas())}
                 className="font-extrabold cursor-pointer underline underline-offset-4 decoration-2"
                 style={{ color:ENCRE, textDecorationColor:"rgba(28,22,38,0.25)" }}>
-                {mode === "login" ? "Créer un compte" : "Se connecter"}
+                Créer un compte
               </button>
             </p>
           )}

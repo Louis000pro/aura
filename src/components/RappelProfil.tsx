@@ -31,7 +31,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { X } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useGuideActif } from "@/context/GuideContext";
-import { useGuidedTour } from "@/context/GuidedTourContext";
 import { VisageGuide } from "@/components/AssistantMark";
 import { createClient } from "@/lib/supabase";
 import { voix } from "@/lib/guides";
@@ -45,7 +44,6 @@ const MUETTES = ["/bienvenue", "/premiers-pas", "/choisir-pseudo", "/auth", "/re
 export default function RappelProfil() {
   const { user, isLoading } = useAuth();
   const { guide } = useGuideActif();
-  const { isOpen: visiteOuverte } = useGuidedTour();
   const pathname = usePathname();
   const router = useRouter();
 
@@ -81,7 +79,7 @@ export default function RappelProfil() {
   const muette = MUETTES.some((r) => pathname === r || pathname.startsWith(`${r}/`))
     || estSurfacePublique(pathname, true);
 
-  if (!user || !aRepondre || ecarte || muette || visiteOuverte) return null;
+  if (!user || !aRepondre || ecarte || muette) return null;
 
   return (
     <AnimatePresence>

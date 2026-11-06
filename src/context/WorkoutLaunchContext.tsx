@@ -4,6 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useRef, useState, us
 import { createPortal } from "react-dom";
 import { AnimatePresence } from "framer-motion";
 import dynamic from "next/dynamic";
+import { usePathname } from "next/navigation";
 import type { Exercise } from "@/components/WorkoutGuideModal";
 // Le lecteur de séance pèse ~300 Ko : il ne se télécharge plus au lancement
 // de l'app (voir `Differes.tsx`, qui le précharge une fois l'app au repos).
@@ -44,6 +45,8 @@ type Value = {
   abandonner: (executionId: string) => void;
   erreurReprise: string | null;
   repriseSupplement: boolean;
+  /** Le lecteur est à l'écran. Passe à faux quand une séance se referme. */
+  lecteurOuvert: boolean;
 };
 const Ctx = createContext<Value | null>(null);
 const RIEN = () => null;
@@ -57,8 +60,13 @@ export function useWorkoutLaunch(): Value {
 /** Tous les accès ouvrent le même lecteur, porté dans body hors des transforms. */
 export function WorkoutLaunchProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
+  /* ⚠️ Cette clé remonte TOUTE la page quand le compte change. Les premiers pas
+     créent le compte en plein parcours : remontés à ce moment-là, ils perdaient
+     leur écran et plus aucune réponse ne partait en base (vu le 2026-11-06). Il
+     n'y a aucun lecteur à détruire sur cette route. */
+  const surParcours = usePathname() === "/premiers-pas";
   // Un changement de compte détruit le lecteur, ses callbacks et son verrou.
-  return <WorkoutLaunchSession key={user?.id ?? "sans-compte"} user={user}>{children}</WorkoutLaunchSession>;
+  return <WorkoutLaunchSession key={surParcours ? "premiers-pas" : user?.id ?? "sans-compte"} user={user}>{children}</WorkoutLaunchSession>;
 }
 
 function WorkoutLaunchSession({ children, user }: { children: React.ReactNode; user: User | null }) {
@@ -193,7 +201,8 @@ function WorkoutLaunchSession({ children, user }: { children: React.ReactNode; u
   return (
     <Ctx.Provider value={{ launchWorkout, reprise: lecteur ? null : brouillon, reprendre, abandonner,
       erreurReprise: messageReprise,
-      repriseSupplement: !!brouillon && supplement === brouillon.executionId }}>
+      repriseSupplement: !!brouillon && supplement === brouillon.executionId,
+      lecteurOuvert: !!lecteur }}>
       {children}
       {visible && createPortal(
         <>
