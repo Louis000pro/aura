@@ -18,7 +18,7 @@ import { enregistrerConsentement, lireConsentement } from "@/lib/consentementSan
 import { lockBodyModal } from "@/lib/bodyModal";
 
 const CLE_PLUS_TARD = "vaiiya:consentement-plus-tard";
-const SANS_DEMANDE = ["/bienvenue", "/auth", "/rejoindre", "/confidentialite", "/conditions", "/mentions-legales"];
+const SANS_DEMANDE = ["/bienvenue", "/premiers-pas", "/auth", "/rejoindre", "/confidentialite", "/conditions", "/mentions-legales"];
 
 export default function DemandeConsentement() {
   const { user } = useAuth();

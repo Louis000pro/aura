@@ -2,7 +2,25 @@
 
 import { useEffect } from "react";
 
+/** L'invitation d'installation du navigateur. Elle n'arrive qu'une fois, tôt,
+ *  et les premiers pas la rejouent bien plus tard : on la garde de côté. */
+export type InviteInstallation = { prompt: () => Promise<void> };
+
+declare global {
+  interface Window { __vaiiyaInstallation?: InviteInstallation | null }
+}
+
 export default function PWARegister() {
+  useEffect(() => {
+    const garder = (e: Event) => {
+      /* Ailleurs, le navigateur garde sa propre invitation. */
+      if (window.location.pathname === "/premiers-pas") e.preventDefault();
+      window.__vaiiyaInstallation = e as unknown as InviteInstallation;
+    };
+    window.addEventListener("beforeinstallprompt", garder);
+    return () => window.removeEventListener("beforeinstallprompt", garder);
+  }, []);
+
   useEffect(() => {
     if (!("serviceWorker" in navigator)) return;
 

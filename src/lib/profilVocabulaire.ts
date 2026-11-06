@@ -9,6 +9,7 @@ export const GOALS = [
   { id: "endurance",  label: "Endurance",       emoji: "⚡" },
   { id: "sante",      label: "Santé générale",  emoji: "🌿" },
   { id: "souplesse",  label: "Souplesse",       emoji: "🧘" },
+  { id: "reprendre",  label: "Reprendre le sport", emoji: "🌱" },
 ] as const;
 
 export const LEVELS = [

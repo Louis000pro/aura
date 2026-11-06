@@ -24,7 +24,7 @@ export default function MainWrapper({ children }: { children: React.ReactNode })
 
   const isAuth = pathname === "/auth";
   // Le parcours d'entrée n'a ni barre du bas ni rail (voir Navigation).
-  const isBienvenue = pathname === "/bienvenue";
+  const isBienvenue = pathname === "/bienvenue" || pathname === "/premiers-pas";
   const isLanding = pathname === "/" && !user && !isLoading;
   // Invitation à un relais : page publique, sans navigation, pour un
   // visiteur qui n'a pas encore de compte.

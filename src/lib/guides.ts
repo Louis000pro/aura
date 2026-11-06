@@ -122,6 +122,13 @@ export type ContexteVoix = {
    *  (« Aucune traction », « 2 tractions »). */
   avant?: string;
   apres?: string;
+  /** Les premiers pas · le prénom donné, et celui du Guide. */
+  prenom?: string;
+  nomGuide?: string;
+  /** Les premiers pas · un nombre de séances ou de recettes. */
+  nombre?: number;
+  /** Les premiers pas · une liste de jours, déjà jointe. */
+  liste?: string;
 };
 
 /** « Une séance posée », « Trois séances posées ». Le nombre s'écrit en
@@ -1203,6 +1210,85 @@ const REPLIQUES = {
   "avis.question.relais":  { commun: "Relais gagné. Vaiiya te plaît\u00a0?" },
   "avis.ecrire": { commun: "Merci\u00a0! Tu veux dire en une phrase ce qui t’aide, ou ce qui manque\u00a0?" },
   "avis.merci":  { commun: "On lit chaque avis. Si tu veux aller plus loin, tu peux aussi le dire sur Trustpilot\u00a0: c’est là que les gens nous découvrent." },
+
+  /* ── Les premiers pas ─────────────────────────────────
+     Le chemin entre l'arrivée et la première action. Ce que le Guide dit
+     est un fait de Vaiiya, jamais un compliment. `premiersPas/moteur.ts`
+     les choisit, et elles portent du HTML (<b>) : il les écrit lui-même. */
+  "pas.salut": { commun: (c) => `Salut, moi c’est <b>${c.nomGuide}</b>. Je te pose neuf questions et je prépare ta semaine.` },
+  "pas.prenom": { commun: "Comment je t’appelle\u00a0?" },
+  "pas.prenom.ok": { commun: (c) => `Salut <b>${c.prenom}</b>. On commence par l’essentiel.` },
+  "pas.prenom.raison": { commun: "Ton prénom, ou le nom que tu préfères." },
+  "pas.but.masse": { commun: "Noté. On suivra tes charges, série après série." },
+  "pas.but.force": { commun: "J’ai un programme pour ça\u00a0: <b>Force 5 × 5</b>." },
+  "pas.but.poids": { commun: "Noté. Je t’aide à suivre tes séances et tes repas." },
+  "pas.but.endurance": { commun: (c) => `<b>${c.nombre} séances</b> de cardio et d’intervalles sont ouvertes.` },
+  "pas.but.souplesse": { commun: (c) => `<b>${c.nombre} séances</b> de mobilité sont ouvertes pour toi.` },
+  "pas.but.sante": { commun: "Noté. Routines du matin, jours sans\u00a0: tout est là." },
+  "pas.but.reprendre": { commun: "J’ai un programme fait pour ça\u00a0: <b>Reprendre le sport</b>." },
+  "pas.but": { commun: (c) => `Qu’est-ce qui t’amène, ${c.prenom}\u00a0? Un ou deux choix.` },
+  "pas.but.raison": { commun: "Choisis au moins une réponse." },
+  "pas.niveau.debutant": { commun: "Je te montre chaque mouvement avant que tu le fasses." },
+  "pas.niveau.reprise": { commun: "On repart en douceur, avec des séances simples." },
+  "pas.niveau.intermediaire": { commun: "Je varie tes séries\u00a0: lourd, volume, endurance." },
+  "pas.niveau.avance": { commun: "Alors séries lourdes et classiques au chrono." },
+  "pas.niveau": { commun: "Tu en es où aujourd’hui\u00a0?" },
+  "pas.niveau.raison": { commun: "Touche la marche où tu en es." },
+  "pas.lieu.salle": { commun: (c) => `À la salle, <b>${c.nombre} séances</b> sont ouvertes pour toi.` },
+  "pas.lieu.deux": { commun: (c) => `Salle et maison\u00a0: <b>${c.nombre} séances</b> sont ouvertes pour toi.` },
+  "pas.lieu.halteres": { commun: (c) => `Avec des haltères, <b>${c.nombre} séances</b> sont ouvertes pour toi.` },
+  "pas.lieu.poids": { commun: (c) => `Sans matériel, <b>${c.nombre} séances</b> sont ouvertes pour toi.` },
+  "pas.lieu.maison": { commun: "Tu as quelque chose à la maison\u00a0?" },
+  "pas.lieu": { commun: "Tu t’entraînes où\u00a0?" },
+  "pas.lieu.raison": { commun: "Touche l’endroit où tu t’entraînes." },
+  "pas.jours.vide": { commun: "Touche les jours qui te vont." },
+  "pas.jours.un": { commun: (c) => `${c.liste}. Une séance par semaine, je la fais compter.` },
+  "pas.jours.tous": { commun: "Tous les jours. Je glisse des séances plus légères pour que tu récupères." },
+  "pas.jours.espaces": { commun: (c) => `${c.liste}. Un jour de repos entre chaque séance.` },
+  "pas.jours.varie": { commun: (c) => `${c.liste}. Je varie les muscles d’un jour à l’autre.` },
+  "pas.jours": { commun: "Quels jours tu veux t’entraîner\u00a0?" },
+  "pas.jours.raison": { commun: "Touche au moins un jour." },
+  "pas.duree": { commun: "Combien de temps par séance\u00a0?" },
+  "pas.duree.ok": { commun: (c) => `${c.minutes} minutes. Je garde aussi du plus court pour les jours chargés.` },
+  "pas.accord": { commun: "Deux questions sur toi, puis je compose ta semaine." },
+  "pas.age": { commun: "Quel âge as-tu\u00a0?" },
+  "pas.age.refus": { commun: "Vaiiya est ouvert à partir de 15\u00a0ans. En dessous, il faut l’accord d’un parent." },
+  "pas.age.raison": { commun: "Il manque ton genre." },
+  "pas.mesures": { commun: "Ta taille et ton poids\u00a0? Glisse pour régler." },
+  "pas.mesures.ok": { commun: "Merci. Tu pourras les changer quand tu veux." },
+  "pas.aliments.vide": { commun: "Touche ce que tu ne manges pas. Les recettes suivent." },
+  "pas.aliments.vegetal": { commun: (c) => `Cuisine végétale\u00a0: <b>${c.nombre} recettes</b> pour toi.` },
+  "pas.aliments.vegetarien": { commun: (c) => `Cuisine végétarienne\u00a0: <b>${c.nombre} recettes</b> pour toi.` },
+  "pas.aliments.note": { commun: (c) => `Noté. <b>${c.nombre} recettes</b> restent pour toi.` },
+  "pas.aliments": { commun: "Touche ce que tu ne manges pas." },
+  "pas.compo": { commun: "Je compose ta semaine." },
+  "pas.semaine.astuce": { commun: "Glisse une séance pour changer de jour." },
+  "pas.semaine.deplace": { commun: (c) => `${c.titre}, ${c.jour} plutôt que ${c.avant}. C’est noté.` },
+  "pas.bienvenue.ouverture": { commun: (c) => `${c.prenom}, j’ai quelque chose pour toi.` },
+  "pas.bienvenue.fin": { commun: "Ça y est. À nous deux." },
+  "pas.rappels": { commun: (c) => `Je te préviens ${c.liste}\u00a0?` },
+  "pas.visite.accueil.fin": { commun: "Je te guide mouvement par mouvement. Touche <b>Entraînement</b>." },
+  "pas.visite.fiche": { commun: "Le geste, ce qu’il travaille, comment le faire." },
+  "pas.visite.mouvements.fin": { commun: "Tous les mouvements ont leur fiche. Et moi, je suis au milieu de la barre\u00a0: touche-moi." },
+  "pas.visite.nutrition.regarde": { commun: "Je regarde ton assiette." },
+  "pas.visite.nutrition.fin": { commun: "Chaque aliment estimé, puis additionné. Touche <b>Communauté</b>." },
+  "pas.visite.accueil": { commun: "Ta séance t’attend ici, avec ta flamme et ton rang. Touche-la." },
+  "pas.visite.mouvements": { commun: "Chaque mouvement est montré et expliqué. Touches-en un." },
+  "pas.visite.guide": { commun: "Demande-moi ce que tu veux. Touche cette phrase." },
+  "pas.visite.guide.prepare": { commun: "Je prépare ça." },
+  "pas.visite.guide.carte": { commun: "Voilà ce que je propose. C’est toi qui valides." },
+  "pas.visite.guide.fin": { commun: "Rien ne bouge sans ton accord. Touche <b>Nutrition</b>." },
+  "pas.visite.nutrition": { commun: "Une photo suffit. Prends ton assiette." },
+  "pas.visite.relais.gagne": { commun: "Aurore est à vous deux. Elle reste sur vos profils." },
+  "pas.visite.fin": { commun: "Tu sais où tout se trouve. Il reste une chose." },
+  "pas.visite.relais": { commun: "Avec un ami, disons Marc, vous dévoilez une affiche. Fais ta séance." },
+  "pas.visite.relais.1": { commun: "Marc a fait la sienne. Un maillon se gagne à deux." },
+  "pas.visite.relais.2": { commun: "Quatre maillons en une semaine. Vous êtes à la moitié." },
+  "pas.visite.relais.3": { commun: "Plus qu’un. Le dernier dévoile toute l’affiche." },
+  "pas.source": { commun: "Dernière question. Comment tu as connu Vaiiya\u00a0?" },
+  "pas.source.merci": { commun: "Merci, ça m’aide à savoir où te retrouver." },
+  "pas.installer": { commun: "Garde-moi sur ton écran d’accueil." },
+  "pas.installer.ios": { commun: "Touche Partager en bas de l’écran, puis Sur l’écran d’accueil." },
 } satisfies Record<string, Replique>;
 
 /** Toutes les clés existantes. Une faute de frappe ne compile pas. */

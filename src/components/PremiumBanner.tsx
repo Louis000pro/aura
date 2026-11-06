@@ -69,6 +69,7 @@ export default function PremiumBanner() {
     pathname === "/" ||
     pathname.startsWith("/premium") ||
     pathname.startsWith("/auth") ||
+    pathname.startsWith("/premiers-pas") ||
     pathname.startsWith("/rejoindre");
 
   useEffect(() => {
