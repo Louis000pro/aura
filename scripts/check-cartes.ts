@@ -25,8 +25,8 @@ import { EXERCISE_LIBRARY } from "@/lib/exerciseLibrary";
 import { PROGRAMMES } from "@/lib/parcours";
 import { resolveGuide } from "@/lib/exerciseGuides";
 import {
-  GRAVURES_PROGRAMME, NOMBRE_MOUVEMENTS, carteRang, compterGagnees, construireCollection, dateGravee, derniereCarte,
-  rangsGagnes, totalCollection, toutes, vitrineDe, type SourcesCollection,
+  GRAVURES_PROGRAMME, NOMBRE_MOUVEMENTS, PLACES_VITRINE, basculerChoix, carteRang, choixPossibles, compterGagnees, construireCollection,
+  dateGravee, derniereCarte, rangsGagnes, totalCollection, toutes, vitrineDe, type CarteDef, type SourcesCollection,
 } from "@/lib/cartes/catalogue";
 import { cartesMouvements, titreMouvement } from "@/lib/cartes/mouvements";
 import { MATIERES_FLAMME, MATIERES_RANG, MATIERES_RELAIS } from "@/lib/cartes/matieres";
@@ -144,6 +144,59 @@ verdict("une flamme sans date connue n'en écrit pas", c.flammes.every((x) => x.
   verdict("le compte des cartes gagnées", compterGagnees(riche) === 3 + 3 + 1 + 1, String(compterGagnees(riche)));
 }
 
+/* ── La vitrine choisie ────────────────────────────────────────────────── */
+
+{
+  const ids = (l: readonly CarteDef[]) => l.map((x) => x.id).join();
+  const riche = construireCollection({
+    ...base,
+    slugs: new Set(["serie-sillage", "programme-fessiers"]),
+    relais: [{ serie: "sillage", jour: "2026-09-14", duo: "LOUIS & MARC", objectif: 4, aDeux: true }],
+    programmes: [{ id: "fessiers", finiLe: "2026-10-01", depart: 1, fin: 2 }],
+  });
+  const auto = vitrineDe(riche, { combler: true });
+  verdict("sans choix, Vaiiya compose comme avant", ids(vitrineDe(riche, { combler: true, choix: null })) === ids(auto), ids(auto));
+  verdict(
+    "les cartes choisies, dans leur ordre",
+    ids(vitrineDe(riche, { combler: true, choix: ["prog-fessiers", "flamme-feu", "rang-argent"] })) === "prog-fessiers,flamme-feu,rang-argent",
+  );
+  verdict(
+    "une place libre, Vaiiya la remplit",
+    ids(vitrineDe(riche, { combler: true, choix: ["rang-bronze"] })) === "rang-bronze,rang-or,relais-sillage",
+    ids(vitrineDe(riche, { combler: true, choix: ["rang-bronze"] })),
+  );
+  verdict(
+    "une carte choisie n'est pas posée deux fois",
+    ids(vitrineDe(riche, { combler: true, choix: ["rang-or", "rang-or", "flamme-feu"] })) === "rang-or,flamme-feu,relais-sillage",
+    ids(vitrineDe(riche, { combler: true, choix: ["rang-or", "rang-or", "flamme-feu"] })),
+  );
+  const force = vitrineDe(riche, { combler: false, choix: ["rang-eternel", "flamme-sacre", "relais-brume", "prog-cent-pompes"] });
+  verdict("une carte pas gagnée n'entre pas, même écrite à la main", force.every((x) => x.gagnee), ids(force));
+  verdict("sans rien de valable, on retombe sur Vaiiya", ids(force) === ids(vitrineDe(riche, { combler: false })), ids(force));
+  verdict("un identifiant inconnu ne casse rien", ids(vitrineDe(riche, { combler: true, choix: ["n-importe-quoi"] })) === ids(auto));
+  verdict(
+    "jamais plus de trois cartes",
+    vitrineDe(riche, { combler: true, choix: ["rang-or", "rang-argent", "rang-bronze", "flamme-feu"] }).length === PLACES_VITRINE,
+  );
+
+  // Un autre membre ne connaît que ce que la base dit de ce compte.
+  const vuDehors = (flamme: number) => construireCollection({ pseudo: "Marc", rangId: "argent", serie: 0, flammeMax: flamme, slugs: new Set(), guide: null, public: true });
+  verdict("chez un ami, une flamme se prouve par le palier de la base", vitrineDe(vuDehors(3), { combler: false, choix: ["flamme-flamme"] })[0]?.id === "flamme-flamme");
+  verdict("sans cette preuve, sa flamme ne s'affiche pas", !vitrineDe(vuDehors(0), { combler: false, choix: ["flamme-flamme"] }).some((x) => x.id === "flamme-flamme"));
+
+  const familles = choixPossibles(riche);
+  verdict("on choisit parmi les quatre familles gagnées", familles.map((f) => f.titre).join() === "Les rangs,Les flammes,Les programmes,Les relais", familles.map((f) => f.titre).join());
+  verdict("uniquement ce qui est gagné", familles.every((f) => f.cartes.every((x) => x.gagnee)));
+  verdict("la plus haute carte d'abord", familles[0].cartes[0].id === "rang-or" && familles[1].cartes[0].id === "flamme-feu", familles[1].cartes[0].id);
+  verdict("une famille sans carte ne s'affiche pas", choixPossibles(construireCollection({ ...base, rangId: "bronze", serie: 1, cartes: null })).map((f) => f.titre).join() === "Les rangs,Les flammes");
+  verdict("pas de mouvements : leur carnet vit sur l'appareil", familles.flatMap((f) => f.cartes).every((x) => x.famille !== "mouvements"));
+  verdict("le compte du profil est celui du choix", compterGagnees(riche) === familles.flatMap((f) => f.cartes).length);
+
+  verdict("toucher une carte l'ajoute à la suite", basculerChoix(["a"], "b").join() === "a,b");
+  verdict("la toucher encore la retire", basculerChoix(["a", "b"], "a").join() === "b");
+  verdict("places pleines, elle prend la dernière", basculerChoix(["a", "b", "c"], "d").join() === "a,b,d", basculerChoix(["a", "b", "c"], "d").join());
+}
+
 /* ── Les mouvements ────────────────────────────────────────────────────── */
 
 verdict("102 cartes de mouvement", mouvements.length === 102);
@@ -210,6 +263,25 @@ verdict("la pochette carrée ne reste pas derrière la carte arrondie", /fond=\{
   // `mouvementDuJour.ts` lit ce dossier, et une route serveur le lit : un hook y casserait le build.
   const avecHook = sources.filter(({ f, s }) => f.includes("/lib/cartes/") && /(?:from|import) "(?:react"|@\/hooks\/)/.test(s)).map(({ f }) => f);
   verdict("aucun hook dans les règles des cartes", avecHook.length === 0, avecHook.join());
+}
+
+{
+  const etage = lire("src/components/cartes/EtageCartes.tsx");
+  const publique = lire("src/components/cartes/VitrinePublique.tsx");
+  const choix = lire("src/components/cartes/ChoixVitrine.tsx");
+  const lecture = lire("src/lib/cartes/lecture.ts");
+  verdict("« Changer » n'existe que si la base a répondu et qu'il y a à choisir", /vitrineLue && compterGagnees\(collection\) > PLACES_VITRINE/.test(etage));
+  verdict("le profil ne paie pas l'écran de choix", /dynamic\(\(\) => import\("\.\/ChoixVitrine"\)/.test(etage) && !/^import ChoixVitrine/m.test(etage));
+  verdict("sa vitrine suit son choix", /combler: true, choix/.test(etage));
+  verdict("celle d'un ami aussi", /combler: false, choix: vue\.vitrine\?\.choix/.test(publique));
+  verdict("elle attend le rang et les badges", /if \(!pret/.test(publique) && /pret=\{!!aura && badgesLus\}/.test(lire("src/app/profil/[username]/page.tsx")));
+  verdict("sa flamme est celle que dit la base", /flammeMax: vue\.vitrine\?\.flamme/.test(publique));
+  verdict("rien ne s'écrit avant « Enregistrer »", !/createClient|enregistrerVitrine/.test(choix) && (choix.match(/onEnregistrer\(/g) ?? []).length === 1);
+  verdict("un refus se dit", /role="alert"/.test(choix));
+  verdict("la vitrine reste une colonne à part : l'accueil du compte ne la lit pas", !/vitrine_cartes/.test(lire("src/context/AuthContext.tsx")));
+  const lecteurs = sources.filter(({ s }) => /\bvitrine_cartes\b/.test(s)).map(({ f }) => path.basename(f));
+  verdict("une seule porte vers la colonne", lecteurs.join() === "lecture.ts", lecteurs.join());
+  verdict("elle se lit par la fonction, jamais dans la table", /rpc\("vitrine_profil"/.test(lecture) && !/select\([^)]*vitrine_cartes/.test(lecture));
 }
 
 console.log(echecs ? `\n✗ ${echecs} échec(s) sur ${total} contrôles` : `✓ ${total} contrôles, tout passe`);

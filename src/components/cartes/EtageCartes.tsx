@@ -7,12 +7,13 @@ import { ChevronRight } from "lucide-react";
 import { useCollectionCompte } from "@/hooks/useCollectionCompte";
 import { apresRetour } from "@/lib/cartes/appareil";
 import { dateLongue, type CartesRang } from "@/lib/cartesRang";
-import { compterGagnees, derniereCarte, toutes, totalCollection, vitrineDe, type CarteDef } from "@/lib/cartes/catalogue";
+import { PLACES_VITRINE, compterGagnees, derniereCarte, toutes, totalCollection, vitrineDe, type CarteDef } from "@/lib/cartes/catalogue";
 import VignetteCarte from "./VignetteCarte";
 import VitrineCartes from "./VitrineCartes";
 import s from "./Cartes.module.css";
 
 /* Tout ce qui s'ouvre arrive à l'ouverture : le profil ne porte que des images. */
+const ChoixVitrine = dynamic(() => import("./ChoixVitrine"), { ssr: false });
 const CollectionCartes = dynamic(() => import("./CollectionCartes"), { ssr: false });
 const FeuilleCarte = dynamic(() => import("./FeuilleCarte"), { ssr: false });
 const GainCarte = dynamic(() => import("./GainCarte"), { ssr: false });
@@ -22,7 +23,8 @@ const GainCarte = dynamic(() => import("./GainCarte"), { ssr: false });
  * carte gagnée, puis l'entrée de la collection.
  *
  * Toucher une carte l'ouvre en grand, sauf si sa pochette attend : on la
- * déchire d'abord.
+ * déchire d'abord. « Changer » n'apparaît que si la base a répondu et qu'il
+ * y a plus de cartes gagnées que de places.
  */
 export default function EtageCartes({
   userId,
@@ -48,9 +50,10 @@ export default function EtageCartes({
   onRelais: () => void;
 }) {
   const router = useRouter();
-  const { collection, attente, carnet } = useCollectionCompte({ userId, pseudo, rangId, serie, record, slugs, cartes });
+  const { collection, attente, carnet, choix, vitrineLue, enregistrerChoix } = useCollectionCompte({ userId, pseudo, rangId, serie, record, slugs, cartes });
   const [feuille, setFeuille] = useState<CarteDef | null>(null);
   const [gain, setGain] = useState<CarteDef | null>(null);
+  const [changer, setChanger] = useState(false);
 
   const enAttente = toutes(collection).filter((c) => c.gagnee && c.pochette && attente.includes(c.id));
   const voir = (c: CarteDef) => {
@@ -63,7 +66,14 @@ export default function EtageCartes({
 
   return (
     <div className="mb-8">
-      <VitrineCartes titre="Ma vitrine" cartes={vitrineDe(collection, { combler: true })} scellees={attente} onVoir={voir} />
+      {/* Trois cartes ou moins, elles y sont toutes : il n'y a rien à choisir. */}
+      <VitrineCartes
+        titre="Ma vitrine"
+        cartes={vitrineDe(collection, { combler: true, choix })}
+        scellees={attente}
+        onVoir={voir}
+        onChanger={vitrineLue && compterGagnees(collection) > PLACES_VITRINE ? () => setChanger(true) : undefined}
+      />
 
       <div className={s.groupeCartes}>
         {enAttente[0] && (
@@ -92,6 +102,15 @@ export default function EtageCartes({
         </button>
       </div>
 
+      {changer && (
+        <ChoixVitrine
+          collection={collection}
+          choix={choix}
+          attente={attente}
+          onEnregistrer={enregistrerChoix}
+          onFermer={() => setChanger(false)}
+        />
+      )}
       {collectionOuverte && (
         <CollectionCartes
           collection={collection}

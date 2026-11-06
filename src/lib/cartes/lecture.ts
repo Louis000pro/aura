@@ -6,8 +6,13 @@
    vient des badges, publics. Une lecture ratée la laisse simplement sans
    date et sans le nom de l'équipier.
 
-   ⚠️ AUCUNE MIGRATION : `parcours` est lisible par son propriétaire, et la
-   RLS de `challenge_run_members` ne rend que mes propres relais.
+   `parcours` est lisible par son propriétaire, et la RLS de
+   `challenge_run_members` ne rend que mes propres relais.
+
+   La vitrine, elle, se lit par `vitrine_profil` (20261106_vitrine_choisie.sql) :
+   la colonne est privée, et la fonction est la seule à dire la plus haute
+   flamme d'un compte. Tant que ce SQL n'est pas passé, la lecture rend `null`
+   et Vaiiya compose la vitrine toute seule.
    ───────────────────────────────────────────────────────────────────── */
 
 import { createClient } from "@/lib/supabase";
@@ -97,6 +102,26 @@ async function relaisGagnes(userId: string, pseudo: string): Promise<DetailRelai
     });
   }
   return sortie;
+}
+
+/** Ce que la base dit d'une vitrine : le choix (`null` : Vaiiya compose) et
+ *  le palier de la plus haute flamme tenue. */
+export type VitrineProfil = { choix: string[] | null; flamme: number };
+
+export async function lireVitrine(userId: string): Promise<VitrineProfil | null> {
+  const { data, error } = await createClient().rpc("vitrine_profil", { p_user: userId });
+  if (error) return null;
+  const ligne = (data as { v_cartes: string[] | null; v_flamme: number | null }[] | null)?.[0];
+  return ligne ? { choix: ligne.v_cartes, flamme: Number(ligne.v_flamme) || 0 } : null;
+}
+
+/** Une liste vide rend la vitrine à Vaiiya : « pas de choix » s'écrit NULL. */
+export async function enregistrerVitrine(userId: string, choix: readonly string[]): Promise<boolean> {
+  const { error } = await createClient()
+    .from("profiles")
+    .update({ vitrine_cartes: choix.length ? choix : null })
+    .eq("id", userId);
+  return !error;
 }
 
 export async function chargerDetailsCartes(userId: string, pseudo: string): Promise<DetailsCartes> {

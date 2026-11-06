@@ -1,7 +1,8 @@
 /* ─────────────────────────────────────────────────────────────────────
    CE QUE LES CARTES GARDENT SUR L'APPAREIL.
 
-   Les pochettes pas encore ouvertes, et la plus haute flamme vue.
+   Les pochettes pas encore ouvertes, la plus haute flamme vue, et une copie
+   de la vitrine choisie.
 
    ⚠️ UNE POCHETTE QU'ON N'A PAS OUVERTE ATTEND. « Continuer » pendant une
    scène ne fait rien perdre : elle reste scellée dans la collection. Sur
@@ -58,9 +59,36 @@ function tailleCarnet(userId: string): number {
   }
 }
 
+const cleVitrine = (u: string) => `vaiiya_vitrine_${u}`;
+
+function lireVitrineAppareil(userId: string): string[] | null {
+  try {
+    const v = JSON.parse(localStorage.getItem(cleVitrine(userId)) ?? "null") as unknown;
+    return Array.isArray(v) ? v.filter((x) => typeof x === "string") : null;
+  } catch {
+    return null;
+  }
+}
+
+/** La dernière vitrine lue en base. Elle pose les bonnes cartes dès l'ouverture
+ *  du profil : sans elle, celles de Vaiiya s'affichent puis changent sous les
+ *  yeux. La base reste l'autorité. */
+export function noterVitrine(userId: string, choix: readonly string[] | null) {
+  try {
+    if (choix) localStorage.setItem(cleVitrine(userId), JSON.stringify(choix));
+    else localStorage.removeItem(cleVitrine(userId));
+    window.dispatchEvent(new Event(EVT_POCHETTES));
+  } catch { /* Stockage refusé : la vitrine arrive avec la lecture. */ }
+}
+
 /** Tout ce que l'appareil garde, en une chaîne stable pour `useSyncExternalStore`. */
 export function instantaneAppareil(userId: string): string {
-  return JSON.stringify({ attente: lirePochettes(userId).attente, flammes: lireFlammes(userId), carnet: tailleCarnet(userId) });
+  return JSON.stringify({
+    attente: lirePochettes(userId).attente,
+    flammes: lireFlammes(userId),
+    carnet: tailleCarnet(userId),
+    vitrine: lireVitrineAppareil(userId),
+  });
 }
 
 type Pochettes = { attente: string[]; ouvertes: string[] };

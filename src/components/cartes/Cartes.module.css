@@ -692,6 +692,19 @@ button.gAide {
   font-weight: 800;
   font-variation-settings: var(--w-nombre);
 }
+/* Une action secondaire : du texte, sans surface. La marge négative donne 44 px
+   au doigt sans agrandir l'en-tête. */
+.changer {
+  appearance: none;
+  border: 0;
+  background: none;
+  margin: -15px -6px;
+  padding: 15px 6px;
+  font-size: 13px;
+  font-weight: 650;
+  color: rgba(255, 255, 255, 0.72);
+  cursor: pointer;
+}
 .etals {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -808,6 +821,103 @@ button.gAide {
   font-size: 13px;
   color: var(--text-2);
   white-space: nowrap;
+}
+
+/* ═══ Changer sa vitrine ═══ */
+/* Les trois places restent à l'écran pendant qu'on parcourt les cartes. */
+.places {
+  position: sticky;
+  top: env(safe-area-inset-top, 0px);
+  z-index: 3;
+  margin: 14px -18px 0;
+  padding: 12px 18px 14px;
+  background: linear-gradient(180deg, #120b22 0%, #0b0814 100%);
+  box-shadow: 0 14px 18px -14px #000;
+}
+/* Ce qui défile ne passe pas derrière l'heure et la batterie. */
+.places::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 100%;
+  height: env(safe-area-inset-top, 0px);
+  background: #120b22;
+}
+.places ol {
+  display: grid;
+  grid-template-columns: repeat(3, 84px);
+  justify-content: center;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.places p {
+  margin: 10px 0 0;
+  text-align: center;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.62);
+}
+.placeLibre {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 5 / 7;
+  border-radius: 6px;
+  border: 1.5px dashed rgba(255, 255, 255, 0.32);
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.62);
+}
+.retirer {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  color: #17102c;
+  background: #fff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+}
+.case[data-choisie] .vignette {
+  border-radius: 5%;
+  outline: 3px solid #a78bfa;
+  outline-offset: 2px;
+}
+.rangChoix {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  font-size: 13px;
+  color: #fff;
+  background: linear-gradient(135deg, #8b5cf6, #c13bc1);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+}
+.barreChoix {
+  position: sticky;
+  bottom: 0;
+  z-index: 3;
+  display: grid;
+  gap: 2px;
+  margin: 22px -18px 0;
+  padding: 26px 18px calc(env(safe-area-inset-bottom, 0px) + 10px);
+  background: linear-gradient(180deg, transparent 0%, #0b0814 26px);
+}
+.barreChoix p {
+  margin: 0 0 8px;
+  text-align: center;
+  font-size: 13px;
+  color: #ffc9c9;
+}
+.barreChoix .lien {
+  justify-self: center;
 }
 
 @media (prefers-reduced-motion: reduce) {

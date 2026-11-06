@@ -4,39 +4,69 @@ import { useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import { createClient } from "@/lib/supabase";
 import { construireCollection, vitrineDe, type CarteDef } from "@/lib/cartes/catalogue";
+import { lireVitrine, type VitrineProfil } from "@/lib/cartes/lecture";
+import type { GuideId } from "@/lib/guides";
 import VitrineCartes from "./VitrineCartes";
 
 const FeuilleCarte = dynamic(() => import("./FeuilleCarte"), { ssr: false });
 
+type Vue = { pour: string; numero: number | null; guide: GuideId | null; vitrine: VitrineProfil | null };
+
 /**
  * LA VITRINE D'UN AUTRE MEMBRE. Une carte se voit du dehors, sinon elle ne
  * décore personne : tout vient de ce qui est public (le rang, la série, les
- * badges). Pas de date ni de fiche détaillée, elles restent à son
- * propriétaire. Pas de Guide non plus : le sien est une colonne privée.
+ * badges, la plus haute flamme). Pas de date ni de fiche détaillée, elles
+ * restent à son propriétaire.
  *
- * Elle ne montre que ce qui est gagné, et elle se tait s'il n'y a rien.
+ * ⚠️ `pret` : le rang et les badges sont arrivés. Sans ça, ses cartes choisies
+ * passeraient pour pas gagnées, et la vitrine changerait sous les yeux.
+ * ⚠️ Son choix ne prouve rien : une carte n'entre que si ces données disent
+ * qu'elle est gagnée. Elle ne montre que ça, et elle se tait s'il n'y a rien.
  */
-export default function VitrinePublique({ userId, pseudo, rangId, serie, slugs }: {
+export default function VitrinePublique({ userId, pseudo, rangId, serie, slugs, pret }: {
   userId: string;
   pseudo: string;
   rangId: string | null;
   serie: number;
   slugs: ReadonlySet<string>;
+  pret: boolean;
 }) {
-  const [numero, setNumero] = useState<number | null>(null);
+  const [vue, setVue] = useState<Vue | null>(null);
   const [ouverte, setOuverte] = useState<CarteDef | null>(null);
 
   useEffect(() => {
     let vivant = true;
-    void createClient().from("profiles").select("member_number").eq("id", userId).maybeSingle()
-      .then(({ data }) => { if (vivant) setNumero((data?.member_number as number | null) ?? null); });
+    void Promise.all([
+      createClient().from("profiles").select("member_number, guide_id").eq("id", userId).maybeSingle(),
+      lireVitrine(userId).catch(() => null),
+    ]).then(([{ data }, vitrine]) => {
+      if (!vivant) return;
+      const g = data?.guide_id as string | null | undefined;
+      setVue({
+        pour: userId,
+        numero: (data?.member_number as number | null) ?? null,
+        // Sa carte de programme porte son Guide, comme chez lui.
+        guide: g === "nora" || g === "sasha" ? g : null,
+        vitrine,
+      });
+    });
     return () => { vivant = false; };
   }, [userId]);
 
-  const cartes = useMemo(
-    () => vitrineDe(construireCollection({ pseudo, numero, rangId, serie, slugs, guide: null, public: true }), { combler: false }),
-    [pseudo, numero, rangId, serie, slugs],
-  );
+  const cartes = useMemo(() => {
+    if (!pret || vue?.pour !== userId) return [];
+    const collection = construireCollection({
+      pseudo,
+      numero: vue.numero,
+      rangId,
+      serie,
+      flammeMax: vue.vitrine?.flamme ?? 0,
+      slugs,
+      guide: vue.guide,
+      public: true,
+    });
+    return vitrineDe(collection, { combler: false, choix: vue.vitrine?.choix });
+  }, [pret, vue, userId, pseudo, rangId, serie, slugs]);
   if (cartes.length === 0) return null;
 
   return (

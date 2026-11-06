@@ -321,36 +321,72 @@ export const toutes = (c: Collection): CarteDef[] => [...c.rangs, ...c.flammes, 
 const gagnees = (l: CarteDef[]) => l.filter((x) => x.gagnee);
 const plusRecente = (l: CarteDef[]) => [...l].sort((a, b) => (b.jour ?? "").localeCompare(a.jour ?? ""))[0];
 
+/** Les places de la vitrine. La base n'en garde pas plus (`profiles_vitrine_cartes_forme`). */
+export const PLACES_VITRINE = 3;
+
 /**
- * La vitrine : les trois plus belles cartes gagnées. Le rang d'abord, puis
- * ce qui se gagne le plus dur, une famille à la fois tant qu'il y en a.
+ * La vitrine. Les cartes choisies d'abord, dans leur ordre, puis les plus
+ * belles cartes gagnées : le rang, puis ce qui se gagne le plus dur, une
+ * famille à la fois tant qu'il y en a.
+ *
+ * ⚠️ UN CHOIX NE PROUVE RIEN : il s'écrit depuis le navigateur, n'importe qui
+ * peut y poser une carte qu'il n'a pas. Seule une carte gagnée entre, et chez
+ * un ami « gagnée » se calcule sur ce que la base dit de ce compte.
  *
  * `combler` : sur son propre profil, un étal vide ne dit rien, donc le rang
  * suivant attend à sa place, éteint. Chez un ami, on ne montre que ce qui
  * est gagné.
  */
-export function vitrineDe(c: Collection, opts: { combler: boolean }): CarteDef[] {
+export function vitrineDe(c: Collection, opts: { combler: boolean; choix?: readonly string[] | null }): CarteDef[] {
+  const parId = new Map(toutes(c).map((x) => [x.id, x]));
+  const choisies = (opts.choix ?? []).flatMap((id) => {
+    const x = parId.get(id);
+    return x?.gagnee ? [x] : [];
+  });
   const rangs = gagnees(c.rangs).reverse();
   const flammes = gagnees(c.flammes).reverse();
   const ordre = [
+    ...choisies,
     rangs[0], plusRecente(gagnees(c.relais)), plusRecente(gagnees(c.programmes)), flammes[0],
     ...rangs.slice(1), ...gagnees(c.relais), ...gagnees(c.programmes), ...flammes.slice(1),
   ].filter((x): x is CarteDef => !!x);
   const vus = new Set<string>();
   const trois: CarteDef[] = [];
   for (const x of ordre) {
-    if (trois.length === 3) break;
+    if (trois.length === PLACES_VITRINE) break;
     if (vus.has(x.id)) continue;
     vus.add(x.id);
     trois.push(x);
   }
   if (opts.combler) {
     for (const x of [...c.rangs.filter((r) => !r.gagnee), ...c.flammes.filter((f) => !f.gagnee)]) {
-      if (trois.length === 3) break;
+      if (trois.length === PLACES_VITRINE) break;
       trois.push(x);
     }
   }
   return trois;
+}
+
+/**
+ * Ce qu'on peut poser dans sa vitrine, famille par famille, le plus haut
+ * d'abord. Pas les mouvements : leur carnet vit sur l'appareil, donc personne
+ * d'autre ne pourrait vérifier qu'ils sont gagnés.
+ */
+export function choixPossibles(c: Collection): { titre: string; cartes: CarteDef[] }[] {
+  return [
+    { titre: "Les rangs", cartes: gagnees(c.rangs).reverse() },
+    { titre: "Les flammes", cartes: gagnees(c.flammes).reverse() },
+    { titre: "Les programmes", cartes: gagnees(c.programmes) },
+    { titre: "Les relais", cartes: gagnees(c.relais) },
+  ].filter((f) => f.cartes.length > 0);
+}
+
+/** Toucher une carte : elle sort si elle y est, sinon elle entre. Places
+ *  pleines, elle prend la dernière : un toucher n'est jamais refusé. */
+export function basculerChoix(choix: readonly string[], id: string): string[] {
+  if (choix.includes(id)) return choix.filter((x) => x !== id);
+  const places = choix.length < PLACES_VITRINE ? choix : choix.slice(0, PLACES_VITRINE - 1);
+  return [...places, id];
 }
 
 /** La dernière carte gagnée dont on connaît le jour. */

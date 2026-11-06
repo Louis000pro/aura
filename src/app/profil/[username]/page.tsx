@@ -81,6 +81,7 @@ export default function PublicProfilePage() {
   const [certified, setCertified] = useState(false); // is_certified (fetch défensif)
   const [aura, setAura] = useState<EtatAura | null>(null);
   const [badgeSlugs, setBadgeSlugs] = useState<Set<string>>(new Set());
+  const [badgesLus, setBadgesLus] = useState(false);
   // ⚠️ La réponse porte le profil qu'elle décrit. Remettre l'état à zéro
   // dans l'effet serait un setState synchrone (et un avertissement React) ;
   // et ne rien remettre laisserait, le temps d'une requête, la ligne d'un
@@ -179,7 +180,10 @@ export default function PublicProfilePage() {
         /* Pas de `progres` ici : le serveur ne le rend que pour soi. Un
            badge est fait pour se voir de l'extérieur, le détail de ce qui
            reste à quelqu'un d'autre ne l'est pas. */
-        void chargerBadgesAura(data.id).then(({ slugs }) => setBadgeSlugs(slugs)).catch(() => {});
+        void chargerBadgesAura(data.id)
+          .then(({ slugs }) => setBadgeSlugs(slugs))
+          .catch(() => {})
+          .finally(() => setBadgesLus(true));
 
         /* Ses affiches de séance partagées avec ses potes. La policy de
            `posts` filtre déjà : seuls les amis réciproques les reçoivent. */
@@ -662,7 +666,7 @@ export default function PublicProfilePage() {
           voit par nature : sa vitrine, les affiches qu'il ou elle partage avec
           ses potes, ses badges. Jamais un fil d'activité, jamais une comparaison. */}
       {profile && (
-        <VitrinePublique userId={profile.id} pseudo={displayPseudo} rangId={aura?.rang.id ?? null} serie={pub?.serie ?? 0} slugs={badgeSlugs} />
+        <VitrinePublique userId={profile.id} pseudo={displayPseudo} rangId={aura?.rang.id ?? null} serie={pub?.serie ?? 0} slugs={badgeSlugs} pret={!!aura && badgesLus} />
       )}
       {!isOwnProfile && user && relation === "ami" && (
         <button

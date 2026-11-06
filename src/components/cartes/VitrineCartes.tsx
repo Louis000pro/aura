@@ -10,25 +10,31 @@ import s from "./Cartes.module.css";
  * carte gradée. La seule partie sombre du profil : c'est là que la lumière
  * des cartes se voit.
  *
- * Vaiiya pose les trois plus belles (`vitrineDe`). Une carte pas encore
- * gagnée n'y entre que sur son propre profil, éteinte, pour ne pas laisser
- * un étal vide.
+ * Les cartes choisies d'abord, puis Vaiiya pose les plus belles (`vitrineDe`).
+ * Une carte pas encore gagnée n'y entre que sur son propre profil, éteinte,
+ * pour ne pas laisser un étal vide.
  */
 export default function VitrineCartes({
   titre,
   cartes,
   scellees,
   onVoir,
+  onChanger,
 }: {
   titre: string;
   cartes: readonly CarteDef[];
   /** Les cartes dont la pochette attend d'être ouverte. */
   scellees?: readonly string[];
   onVoir: (c: CarteDef) => void;
+  /** Sans lui, pas de bouton : il n'y a rien à choisir, ou ce n'est pas la nôtre. */
+  onChanger?: () => void;
 }) {
   return (
     <section className={s.presentoir} aria-label={titre}>
-      <header><h3>{titre}</h3></header>
+      <header>
+        <h3>{titre}</h3>
+        {onChanger && <button type="button" className={s.changer} onClick={onChanger}>Changer</button>}
+      </header>
       <div className={s.etals} data-n={cartes.length} style={{ "--n": cartes.length } as CSSProperties}>
         {cartes.map((c) => {
           const scellee = c.gagnee && !!scellees?.includes(c.id);
