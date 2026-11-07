@@ -31,8 +31,12 @@ export const WIDGET: Record<"repos" | "done" | "setup" | "improvise", {
     reçoit jamais de priorité réseau. `prioritaire` la passe en
     `fetchPriority="high"` : c'est le héros de l'accueil, la première
     chose qu'on regarde. */
-export function Photo({ img, pos = "center 25%", className, style, children, prioritaire = false }: {
+export function Photo({ img, fichier, pos = "center 25%", className, style, children, prioritaire = false }: {
   img: string; pos?: string;
+  /** Nom de fichier déjà résolu pour le Guide (sans dossier ni extension) :
+      il passe tel quel, sans relire le Guide. Sert au squelette, qui
+      s'affiche avant que la session et le Guide soient connus. */
+  fichier?: string;
   className?: string; style?: React.CSSProperties; children?: React.ReactNode;
   prioritaire?: boolean;
 }) {
@@ -41,7 +45,7 @@ export function Photo({ img, pos = "center 25%", className, style, children, pri
     <div className={className} style={{ position: "relative", overflow: "hidden", background: "#101018", ...style }}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        src={`/entrainement/${photoDuGuide(img, guide)}.webp`}
+        src={`/entrainement/${fichier ?? photoDuGuide(img, guide)}.webp`}
         alt=""
         aria-hidden
         decoding="async"
@@ -58,10 +62,16 @@ export function Photo({ img, pos = "center 25%", className, style, children, pri
  *  montrer : on retient la dernière montrée sur cet appareil et on la
  *  télécharge pendant le squelette. Le jour suivant, c'est presque
  *  toujours la même famille de séance, donc l'image est déjà là. */
-const CLE_DERNIERE = "vaiiya_photo_heros";
+/* ⚠️ On retient le FICHIER déjà résolu pour Nora ou Sasha (2026-11-07,
+   Louis : « l'image d'une version d'avant s'affiche en preload »). Le
+   squelette s'affiche avant la session, donc avant le Guide : avec le seul
+   nom de base, il montrait la photo neutre. La clé change (`_v2`) pour
+   oublier les anciens noms de base. Le script du <head> lit la même clé
+   pour lancer le téléchargement avant même React. */
+const CLE_DERNIERE = "vaiiya_photo_heros_v2";
 
-export function retenirPhotoHeros(img: string) {
-  try { localStorage.setItem(CLE_DERNIERE, img); } catch { /* stockage bloqué */ }
+export function retenirPhotoHeros(fichier: string) {
+  try { localStorage.setItem(CLE_DERNIERE, fichier); } catch { /* stockage bloqué */ }
 }
 
 /** La dernière photo montrée sur cet appareil, ou `null`. */

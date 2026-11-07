@@ -31,6 +31,8 @@ import { LIBELLE_RYTHME, type Rythme } from "@/lib/rythmeSeance";
 import { SEANCES, capitale, typoParcours } from "@/lib/parcours";
 import type { EtatParcours } from "@/hooks/useJournee";
 import { Photo, WIDGET, photoHerosRetenue, retenirPhotoHeros } from "./PhotoSeance";
+import { useGuideActif } from "@/context/GuideContext";
+import { photoDuGuide } from "@/lib/photosGuide";
 
 /* ════════════════════════════════════════════════════════════════════
    LA VALEUR MESURÉE PORTE LE VISAGE DU CHIFFRE.
@@ -155,12 +157,16 @@ export default function TodayHero({
      dans un effet : le serveur ne connaît pas le localStorage. */
   const chargement = state === "loading";
   const photoVue = useSyncExternalStore(sansAbonnement, photoHerosRetenue, () => null);
-  useEffect(() => { if (!chargement) retenirPhotoHeros(viz.img); }, [chargement, viz.img]);
+  const { guide: guideHeros, etat: etatGuideHeros } = useGuideActif();
+  useEffect(() => {
+    // On ne retient qu'une fois le Guide connu : sinon on garderait la photo neutre.
+    if (!chargement && etatGuideHeros !== "chargement") retenirPhotoHeros(photoDuGuide(viz.img, guideHeros));
+  }, [chargement, viz.img, guideHeros, etatGuideHeros]);
 
   /* Skeleton — même silhouette que la carte, aucune culpabilité d'attente */
   if (state === "loading" && photoVue) {
     return (
-      <Photo img={photoVue} prioritaire style={{ height: 400, borderRadius: "var(--r-affiche)", boxShadow: "var(--ombre-pose)" }}>
+      <Photo img={photoVue} fichier={photoVue} prioritaire style={{ height: 400, borderRadius: "var(--r-affiche)", boxShadow: "var(--ombre-pose)" }}>
         <div aria-hidden style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(10,8,20,0) 45%, rgba(10,8,20,0.55) 100%)" }} />
       </Photo>
     );

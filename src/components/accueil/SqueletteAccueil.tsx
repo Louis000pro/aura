@@ -32,7 +32,7 @@ export default function SqueletteAccueil() {
         </div>
       </div>
       {photoVue ? (
-        <Photo img={photoVue} prioritaire style={{ height: 400, borderRadius: "var(--r-affiche)", boxShadow: "var(--ombre-pose)" }} />
+        <Photo img={photoVue} fichier={photoVue} prioritaire style={{ height: 400, borderRadius: "var(--r-affiche)", boxShadow: "var(--ombre-pose)" }} />
       ) : (
         <div style={{ height: 400, borderRadius: "var(--r-affiche)", background: PALE }} />
       )}

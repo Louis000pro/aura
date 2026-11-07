@@ -246,7 +246,7 @@ export default function RootLayout({
             `sb-<projet>-auth-token`, avec repli sur le localStorage. La bascule
             se fait en CSS (voir `.accueil-attente` dans globals.css), donc le
             rendu React reste identique serveur et client. */}
-        <script dangerouslySetInnerHTML={{ __html: `(function(){try{var s=/(^|;\\s*)sb-[^=]*-auth-token/.test(document.cookie);if(!s){try{for(var i=0;i<localStorage.length;i++){var k=localStorage.key(i);if(k&&k.indexOf('sb-')===0&&k.indexOf('-auth-token')>0){s=true;break;}}}catch(e){}}if(s){document.documentElement.classList.add('a-session');}}catch(e){}})();` }} />
+        <script dangerouslySetInnerHTML={{ __html: `(function(){try{var s=/(^|;\\s*)sb-[^=]*-auth-token/.test(document.cookie);if(!s){try{for(var i=0;i<localStorage.length;i++){var k=localStorage.key(i);if(k&&k.indexOf('sb-')===0&&k.indexOf('-auth-token')>0){s=true;break;}}}catch(e){}}if(s){document.documentElement.classList.add('a-session');try{var f=localStorage.getItem('vaiiya_photo_heros_v2');if(f&&/^[a-z0-9-]+$/i.test(f)){var l=document.createElement('link');l.rel='preload';l.as='image';l.href='/entrainement/'+f+'.webp';l.setAttribute('fetchpriority','high');document.head.appendChild(l);}}catch(e){}}}catch(e){}})();` }} />
 
         {/* LA PAGE SANS STYLE SE RÉPARE TOUTE SEULE (bug vu par Louis le
             2026-10-18 sur /auth : du texte brut, aucune mise en page). Une
