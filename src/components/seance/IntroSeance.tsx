@@ -127,7 +127,10 @@ export default function IntroSeance({ guide, onFin }: { guide: GuideId; onFin: (
             className="absolute inset-0 flex items-center justify-center"
             style={{ ...MOT, fontSize: "52cqw" }}
             initial={{ opacity: 0, scale: 0.6 }} animate={{ opacity: 1, scale: [0.6, 1.06, 1] }}
-            transition={{ duration: 0.36, times: [0, 0.6, 1] }}
+            /* ⚠️ Le rebond (`times`) ne vaut que pour l'échelle : appliqué aussi à
+               l'opacité, il la faisait remonter, retomber à zéro puis revenir,
+               et GO apparaissait deux fois (Louis, 2026-11-07). */
+            transition={{ scale: { duration: 0.36, times: [0, 0.6, 1] }, opacity: { duration: 0.15 } }}
           >Go</motion.div>
         )}
       </AnimatePresence>
