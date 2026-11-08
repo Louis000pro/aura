@@ -22,6 +22,12 @@ export const revalidate = 600;
  * exporter de `metadata`.
  */
 export const metadata: Metadata = {
+  // Le titre que Google affiche pour l’accueil. Le slogan, lui, reste une
+  // émotion sur la page ; c’est ici que vont les mots que les gens tapent
+  // (« application », « musculation », « nutrition », « gratuit »), sans le
+  // suffixe « · Vaiiya » du gabarit, puisque le nom ouvre déjà le titre.
+  title: { absolute: "Vaiiya : application de musculation et de nutrition gratuite" },
+  description: `L’application de musculation et de nutrition avec un coach IA : ${CHIFFRES_PUBLICS.seances} séances guidées, tes repas compris d’une photo. Gratuite, sans carte bancaire.`,
   alternates: { canonical: "https://vaiiya.fr/" },
 };
 

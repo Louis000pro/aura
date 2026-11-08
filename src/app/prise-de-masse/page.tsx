@@ -10,7 +10,7 @@ import MarketingShell from "@/components/seo/MarketingShell";
 export const metadata: Metadata = {
   title: "Programme prise de masse : prendre du muscle",
   description:
-    "Programme de prise de masse : entraînement en surcharge progressive, surplus calorique et apport en protéines. Vaiiya compose tes séances et suit tes repas au quotidien.",
+    "Prendre du muscle : surcharge progressive, surplus calorique et protéines. Vaiiya, l’application gratuite, guide tes séances et suit tes repas.",
   alternates: { canonical: "https://vaiiya.fr/prise-de-masse" },
   openGraph: {
     title: "Programme prise de masse · Vaiiya",

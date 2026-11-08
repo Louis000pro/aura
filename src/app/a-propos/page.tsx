@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import MarketingShell from "@/components/seo/MarketingShell";
-import { CHIFFRES_PUBLICS } from "@/lib/chiffresPublics";
+import { CHIFFRES_PUBLICS, PROGRAMMES_PUBLICS } from "@/lib/chiffresPublics";
 
 /**
  * /a-propos : la page qui explique l'entité Vaiiya.
@@ -26,14 +26,14 @@ import { CHIFFRES_PUBLICS } from "@/lib/chiffresPublics";
  */
 
 export const metadata: Metadata = {
-  title: "À propos de Vaiiya",
+  title: { absolute: "À propos de Vaiiya, l’application de musculation et de nutrition" },
   description:
-    "Vaiiya est une application web française d’entraînement et de nutrition où l’entraînement, les repas, l’assistant IA et la progression communiquent. Son histoire, ce qu’elle contient et où elle va.",
+    "Vaiiya, application web française de musculation et de nutrition avec un coach IA : ce qu’elle contient, pourquoi tout est relié, comment elle a commencé.",
   alternates: { canonical: "https://vaiiya.fr/a-propos" },
   openGraph: {
-    title: "À propos de Vaiiya",
+    title: "À propos de Vaiiya, l’application de musculation et de nutrition",
     description:
-      "Une application web française d’entraînement et de nutrition, où chaque partie communique avec les autres. Développée par deux lycéens en région lyonnaise.",
+      "Une application web française de musculation et de nutrition, où chaque partie communique avec les autres. Développée par deux lycéens en région lyonnaise.",
     url: "https://vaiiya.fr/a-propos",
     images: ["/og-image.png"],
   },
@@ -70,6 +70,7 @@ const PORTES = [
 
 export default function AProposPage() {
   const c = CHIFFRES_PUBLICS;
+  const prog = PROGRAMMES_PUBLICS;
 
   const donneesStructurees = {
     "@context": "https://schema.org",
@@ -199,6 +200,10 @@ export default function AProposPage() {
         <li>
           <strong>{c.seances} séances guidées</strong>, du sans-matériel à la salle, de la mobilité à la
           récupération.
+        </li>
+        <li>
+          <strong>{prog.nombre} programmes</strong>{" "}de {prog.semainesMin} à {prog.semainesMax} semaines, comme la
+          première traction ou les cent pompes, avec un test au départ et le même à la fin.
         </li>
         <li>
           <strong>{c.miniCours} mini-cours</strong>{" "}pour comprendre l&apos;entraînement, la récupération et

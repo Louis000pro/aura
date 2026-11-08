@@ -19,6 +19,7 @@ import { COURS } from "./coursNutrition";
 import { EXERCISE_LIBRARY } from "./exerciseLibrary";
 import { RECIPES } from "./recipeBank";
 import { fichesPubliees } from "./exercicesPublics";
+import { PROGRAMMES } from "./parcours";
 
 /**
  * Les séances du catalogue, comptées sur `workoutSessions`
@@ -55,4 +56,23 @@ export const CHIFFRES_PUBLICS: ChiffresPublics = {
   mouvements: EXERCISE_LIBRARY.length,
   recettes: RECIPES.length,
   fiches: fichesPubliees().length,
+};
+
+/** Les séances du catalogue accessibles avec le compte gratuit (`access`
+ *  n'est pas « premium »). Les futurs Vaiiya+ en font partie tant que la
+ *  vente est fermée, et en sortent tout seuls le jour où elle ouvre. 55 sur
+ *  152 le 2026-11-08. Lu par `/llms.txt`, pas par la landing. */
+export const SEANCES_INCLUSES = workoutSessions.filter(
+  (s) => s.contentType !== "article" && s.access !== "premium",
+).length;
+
+/** Les programmes écrits par Vaiiya (`lib/parcours.ts`) : combien, de
+ *  combien de semaines, et leurs titres. Lus par `/a-propos` et
+ *  `/llms.txt` ; gardés hors de `CHIFFRES_PUBLICS`, que la landing reçoit
+ *  en props et n'en a pas besoin. */
+export const PROGRAMMES_PUBLICS = {
+  nombre: PROGRAMMES.length,
+  semainesMin: Math.min(...PROGRAMMES.map((p) => p.semaines)),
+  semainesMax: Math.max(...PROGRAMMES.map((p) => p.semaines)),
+  titres: PROGRAMMES.map((p) => p.titre),
 };

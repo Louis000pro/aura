@@ -7,7 +7,7 @@ import { fichesPubliees, libelleCategorie, verifierFiches } from "@/lib/exercice
 export const metadata: Metadata = {
   title: "Exercices de musculation : la bibliothèque animée",
   description:
-    "Chaque exercice de musculation montré en mouvement, avec les muscles travaillés, la technique et les erreurs à éviter. Fiches claires, sans jargon.",
+    "Chaque exercice de musculation montré en mouvement, avec les muscles travaillés, la technique et les erreurs à éviter. Fiches gratuites, lisibles sans compte.",
   alternates: { canonical: "https://vaiiya.fr/exercices" },
   openGraph: {
     title: "Exercices de musculation, montrés en mouvement",

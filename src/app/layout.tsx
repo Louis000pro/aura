@@ -80,13 +80,17 @@ export const metadata: Metadata = {
     default: "Vaiiya ✦ · Coach IA · Musculation · Nutrition",
     template: "%s · Vaiiya",
   },
-  description: "Vaiiya réunit tes séances guidées, ta nutrition et ton coach IA dans une seule application web. Un catalogue de séances montrées mouvement par mouvement, la nutrition comprise d’une photo, et un rang qui monte à chaque effort.",
+  description: "Vaiiya, l’application de musculation et de nutrition avec un coach IA : séances guidées, repas compris d’une photo. Gratuite, sans carte bancaire.",
   applicationName: "Vaiiya",
+  // Les moteurs principaux ignorent cette balise, mais elle se lit : elle
+  // disait « programme d’entraînement personnalisé » et « suivi progression »,
+  // deux promesses que ChatGPT répétait encore le 2026-11-08 et que le
+  // positionnement interdit (§5). Elle ne dit plus que ce qui existe.
   keywords: [
-    "coach IA", "coach sportif IA", "musculation", "nutrition", "fitness",
-    "programme d’entraînement personnalisé", "suivi progression", "perte de poids",
-    "prise de masse", "application fitness", "coach nutrition", "salle de sport",
-    "entraînement maison", "Vaiiya",
+    "application musculation", "application nutrition", "coach sportif IA", "coach IA",
+    "musculation", "nutrition", "séances guidées", "exercices de musculation",
+    "programme musculation", "musculation maison", "prise de masse", "perte de poids",
+    "calories", "Vaiiya",
   ],
   authors: [{ name: "Vaiiya" }],
   creator: "Vaiiya",
@@ -135,8 +139,8 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     siteName: "Vaiiya",
-    title: "Vaiiya ✦ · Coach IA · Musculation · Nutrition",
-    description: "Séances guidées mouvement par mouvement, nutrition comprise d’une photo, coach IA qui agit. Une seule application pour t’entraîner, manger mieux et tenir dans le temps.",
+    title: "Vaiiya : l’application de musculation et de nutrition",
+    description: "Séances guidées mouvement par mouvement, repas compris d’une photo et un coach IA qui agit. Gratuite, sans carte bancaire.",
     locale: "fr_FR",
     images: [
       {
@@ -149,8 +153,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Vaiiya ✦ · Coach IA · Musculation · Nutrition",
-    description: "Séances guidées, nutrition comprise d’une photo et coach IA. Une seule application pour t’entraîner et tenir dans le temps.",
+    title: "Vaiiya : l’application de musculation et de nutrition",
+    description: "Séances guidées, repas compris d’une photo et un coach IA. Gratuite, sans carte bancaire.",
     images: ["/og-image.png"],
   },
 };
@@ -279,7 +283,7 @@ export default function RootLayout({
                     height: 512,
                   },
                   image: "https://vaiiya.fr/icons/icon-512.png",
-                  description: "Vaiiya édite une application web française d’entraînement et de nutrition, guidée par un assistant IA.",
+                  description: "Vaiiya édite une application web française de musculation et de nutrition, avec un coach IA.",
                   // Seul contact confirmé, celui des mentions légales.
                   email: "bonjour@vaiiya.fr",
                   contactPoint: {
@@ -323,6 +327,11 @@ export default function RootLayout({
                   "@id": "https://vaiiya.fr/#website",
                   url: "https://vaiiya.fr",
                   name: "Vaiiya",
+                  // Le nom que Google peut afficher au-dessus du lien, et la phrase
+                  // qui dit ce qu’est le site : le nom est partagé (THE FINALS,
+                  // une agence néerlandaise), la description lève le doute.
+                  alternateName: "vaiiya.fr",
+                  description: "L’application de musculation et de nutrition avec un coach IA.",
                   inLanguage: "fr-FR",
                   publisher: { "@id": "https://vaiiya.fr/#organization" },
                   about: { "@id": "https://vaiiya.fr/#application" },
@@ -338,13 +347,29 @@ export default function RootLayout({
                   publisher: { "@id": "https://vaiiya.fr/#organization" },
                   provider: { "@id": "https://vaiiya.fr/#organization" },
                   applicationCategory: "HealthApplication",
+                  applicationSubCategory: "Musculation et nutrition",
                   // « Web » seulement : les applications iOS et Android sont
                   // prévues mais n'existent pas. L'annoncer ici serait un fait
                   // faux porté par une donnée structurée, donc repris tel quel
                   // par les moteurs et par les assistants IA.
                   operatingSystem: "Web",
                   inLanguage: "fr-FR",
-                  description: "Séances guidées montrées mouvement par mouvement, nutrition estimée à partir d’une photo, coach IA qui agit sur le planning et les repas, et une progression par rangs sans classement entre utilisateurs.",
+                  description: "Application web française de musculation et de nutrition avec un coach IA : séances guidées montrées mouvement par mouvement, repas estimés à partir d’une photo, et une progression par rangs sans classement entre utilisateurs.",
+                  // Ce que l’application contient, en clair, pour les moteurs et
+                  // les IA qui lisent ce graphe. Sans chiffres : ils changent à
+                  // chaque vague de contenu, et le layout racine ne doit pas
+                  // charger les catalogues pour les compter (`/llms.txt` le fait).
+                  featureList: [
+                    "Séances guidées, montrées mouvement par mouvement par un personnage animé",
+                    "Bibliothèque de mouvements animés pour composer sa propre séance",
+                    "Programmes de plusieurs semaines, avec un test au départ et à la fin",
+                    "Coach IA en français : il propose, l’utilisateur valide",
+                    "Calories et macros d’un repas estimées à partir d’une photo",
+                    "Objectif calorique et macros calculés",
+                    "Recettes écrites et photographiées, avec leurs macros",
+                    "Rang personnel, missions et série de jours, sans classement",
+                  ],
+                  isAccessibleForFree: true,
                   // Le prix n'est jamais écrit à la main : il vient de plans.ts,
                   // comme la page /conditions. Tant que `VENTE_OUVERTE` est faux
                   // (verrou juridique), rien n'est vendable, donc la seule offre

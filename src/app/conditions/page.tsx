@@ -135,7 +135,7 @@ export default function ConditionsPage() {
           <p>
             <strong>Historique.</strong>{" "}Avec un compte gratuit, l&apos;application affiche les{" "}
             <strong>{free.limits.historiqueJours} derniers jours</strong>{" "}de votre historique (séances
-            réalisées, repas, pesées). <strong>Les données plus anciennes ne sont pas effacées</strong> :
+            réalisées, repas, pesées). <strong>Les données plus anciennes ne sont pas effacées</strong>&nbsp;:
             elles sont conservées et seulement masquées, votre série et vos badges continuent d&apos;en
             tenir compte, et l&apos;abonnement les rend de nouveau visibles dans leur intégralité. Elles
             restent supprimables à tout moment avec votre compte (article 2), et vous pouvez en demander

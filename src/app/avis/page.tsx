@@ -22,7 +22,7 @@ export const metadata: Metadata = {
   // Le gabarit racine ajoute « · Vaiiya ».
   title: "Avis des membres",
   description:
-    "Ce que les membres pensent de Vaiiya, l'application web française d'entraînement et de nutrition avec assistant IA. Avis publics laissés par des membres connectés, relus avant publication.",
+    "Ce que les membres pensent de Vaiiya, l’application de musculation et de nutrition avec un coach IA : avis de membres connectés, relus avant publication.",
   alternates: { canonical: "https://vaiiya.fr/avis" },
 };
 

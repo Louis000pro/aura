@@ -13,7 +13,7 @@ import { CHIFFRES_PUBLICS } from "@/lib/chiffresPublics";
 export const metadata: Metadata = {
   title: "Musculation à la maison : poids du corps et haltères",
   description:
-    "Musculation à la maison : exercices au poids du corps et aux haltères pour progresser sans salle. Vaiiya compose la séance avec ce que tu as, ou tu la construis toi-même. Gratuit.",
+    "Des exercices au poids du corps et aux haltères pour progresser sans salle. Vaiiya, l’application gratuite, guide chaque séance mouvement par mouvement.",
   alternates: { canonical: "https://vaiiya.fr/musculation-maison" },
   openGraph: {
     title: "Musculation à la maison · Vaiiya",

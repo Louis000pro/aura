@@ -16,7 +16,7 @@ import MarketingShell from "@/components/seo/MarketingShell";
 export const metadata: Metadata = {
   title: "Programme musculation 3 fois par semaine",
   description:
-    "Programme de musculation 3 fois par semaine : le format full body, un exemple de séances lundi-mercredi-vendredi, séries et répétitions. Vaiiya compose tes séances et suit ta progression.",
+    "Trois séances full body par semaine : un exemple lundi, mercredi et vendredi, avec séries et répétitions. Vaiiya, l’application gratuite, guide chaque séance.",
   alternates: { canonical: "https://vaiiya.fr/programme-musculation-3-fois-par-semaine" },
   openGraph: {
     title: "Programme musculation 3 fois par semaine · Vaiiya",
@@ -119,7 +119,7 @@ export default function Programme3FoisParSemainePage() {
 
       <h2>Combien de séries et de répétitions&nbsp;?</h2>
       <p>
-        Un format courant est de <strong>3 à 4 séries de 8 à 12 répétitions</strong> par exercice, avec une
+        Un format courant est de <strong>3 à 4 séries de 8 à 12 répétitions</strong>{" "}par exercice, avec une
         charge qui te laisse une ou deux répétitions en réserve. L&apos;important est la{" "}
         <strong>surcharge progressive</strong>&nbsp;: viser un peu plus de charge ou de répétitions au fil des
         semaines, plutôt que de tout donner à chaque séance.

@@ -11,7 +11,7 @@ import MarketingShell from "@/components/seo/MarketingShell";
 export const metadata: Metadata = {
   title: "Perte de poids : programme pour maigrir durablement",
   description:
-    "Perdre du poids durablement : déficit calorique, musculation et cardio. Vaiiya compose tes séances de sèche, calcule tes calories et suit tes repas au quotidien.",
+    "Perdre du poids durablement : déficit calorique, musculation et cardio. Vaiiya, l’application gratuite, calcule ton objectif calorique et guide tes séances.",
   alternates: { canonical: "https://vaiiya.fr/perte-de-poids" },
   openGraph: {
     title: "Perte de poids et sèche · Vaiiya",

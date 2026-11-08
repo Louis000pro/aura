@@ -16,7 +16,7 @@ import { CHIFFRES_PUBLICS } from "@/lib/chiffresPublics";
 export const metadata: Metadata = {
   title: "Nutrition sportive : calories, protéines et repas équilibrés",
   description:
-    "Nutrition sportive : calcul des calories, des protéines, des glucides et des lipides, et repas équilibrés adaptés à tes objectifs. Vaiiya suit tes repas par photo, code-barres ou saisie.",
+    "Calories, protéines, glucides et lipides : bien manger selon ton objectif. Vaiiya, l’application gratuite, estime tes repas à partir d’une photo.",
   alternates: { canonical: "https://vaiiya.fr/nutrition-sportive" },
   openGraph: {
     title: "Nutrition sportive · Vaiiya",

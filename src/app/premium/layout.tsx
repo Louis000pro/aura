@@ -16,7 +16,7 @@ export const metadata: Metadata = {
   // donnerait « Vaiiya Premium · Vaiiya ».
   title: "Vaiiya+, prix et offre",
   description:
-    "Ce que le compte gratuit Vaiiya contient, ce que Vaiiya+ ajoute et combien il coûte. L’abonnement n’est pas encore ouvert à la souscription.",
+    "Ce que le compte gratuit de l’application Vaiiya contient, ce que Vaiiya+ ajoute et combien il coûte. L’abonnement n’est pas encore ouvert à la souscription.",
   alternates: { canonical: "https://vaiiya.fr/premium" },
 };
 
