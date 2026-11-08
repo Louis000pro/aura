@@ -12,10 +12,17 @@ import { CHIFFRES_PUBLICS } from "@/lib/chiffresPublics";
  * l'utilisateur valide. C'est le geste distinctif du produit, il valait mieux
  * que la promesse qu'il remplace.
  */
+/* Le titre vise la recherche « ia musculation » : la Search Console
+   (2026-11-08) y plaçait cette page autour de la 8e position, avec 49
+   apparitions et aucun clic. Le titre d’avant ne réunissait pas ces deux
+   mots. « Coach sportif IA » reste dedans pour les recherches voisines
+   (« coach ia », « coach sportif ia »). La description dit « appli » parce
+   que Vaiiya en est une, et ne promet rien que le positionnement interdise
+   (`docs/positionnement-public-vaiiya.md`). */
 export const metadata: Metadata = {
-  title: "Coach sportif IA : musculation et nutrition",
+  title: "IA musculation : ton coach sportif IA gratuit",
   description:
-    "Vaiiya est ton coach sportif IA : il compose tes séances de musculation, suit tes calories et tes macros, et te guide pendant l’effort. Tu peux aussi construire tes séances toi-même. Gratuit pour commencer.",
+    "L’appli de musculation et de nutrition avec un coach IA : il compose tes séances, suit tes repas en photo et te guide pendant l’effort. Gratuite, en français.",
   alternates: { canonical: "https://vaiiya.fr/coach-ia" },
   openGraph: {
     title: "Coach sportif IA · Vaiiya",

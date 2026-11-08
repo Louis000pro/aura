@@ -105,6 +105,17 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+
+  // ── Les adresses qui ont existé gardent une destination ──────
+  // `/coach` était le chat de l'assistant, supprimé le 2026-09-03. Google
+  // l'affichait encore en novembre (32 apparitions relevées dans la Search
+  // Console le 2026-11-08) et menait à une erreur 404. Une redirection
+  // permanente envoie ces visiteurs, et la confiance que Google accordait à
+  // l'adresse, vers la page vitrine du coach IA. Une page supprimée qui a été
+  // indexée s'ajoute ici plutôt que de répondre 404.
+  async redirects() {
+    return [{ source: "/coach", destination: "/coach-ia", permanent: true }];
+  },
 };
 
 export default nextConfig;
