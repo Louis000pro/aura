@@ -3,6 +3,12 @@
 **But :** que Vaiiya soit trouvé sur Google **et** cité par les IA (ChatGPT, Perplexity,
 Google AI Overviews), et qu'il se fasse connaître par de **vrais avis**.
 
+**Mise à jour du 2026-11-08** : état des lieux mesuré (Search Console, Google, Bing,
+Brave, ChatGPT, Google Trends, stores) et plan étendu aux applications natives, aux IA
+et à la bibliothèque publique, dans la présentation
+https://claude.ai/artifact/MY35Z9aFPvrCTvv9rdmMvi et dans `AGENTS.md` (chantier
+« Le référencement »).
+
 ⚠️ **À lire avec `docs/positionnement-public-vaiiya.md`.** Rien dans ce plan
 n'autorise un claim interdit (plan nutrition, adaptation automatique, iOS/Android,
 « abonne-toi », records, réseau social, faux avis, balisage d'étoiles auto-décerné).

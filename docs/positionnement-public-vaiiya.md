@@ -173,6 +173,14 @@ Il n'existe **aucune application App Store ni Google Play**. Ne jamais l'annonce
 ni en texte, ni en donnée structurée, ni en bouton. `operatingSystem: "Web"` dans le
 JSON-LD est la formulation exacte et correcte.
 
+**Décision de Louis (2026-11-08) : des applications natives Google Play et App Store
+sont en préparation**, et Vaiiya va beaucoup miser dessus. Jusqu’à leur publication,
+tout ce qui précède reste vrai : rien n’annonce une disponibilité dans un store. Le mot
+**« application »** (et « appli »), lui, est vrai aujourd’hui et se travaille dès
+maintenant dans le référencement : « l’application de musculation et de nutrition avec
+un coach IA ». Le jour de la sortie, les badges, la bannière sur iPhone, les liens qui
+ouvrent l’application et le JSON-LD basculent ensemble.
+
 ## 12. Vaiiya+ (l'offre payante)
 
 **L'offre payante s'appelle Vaiiya+** (décision de Louis, 2026-09-25), plus « Premium » :
@@ -251,7 +259,9 @@ avant chaque réutilisation** :
   légales, les conditions, la désignation d'un médiateur et l'ouverture de la vente) ;
 - l'**ouverture de la vente Vaiiya+** et son prix ;
 - les **chiffres du §10**, qui bougent à chaque vague de contenu ;
-- la décision de **ne pas publier les prénoms** des fondateurs ;
+- la décision de **ne pas publier les prénoms** des fondateurs (au 2026-11-08, la
+  fiche J’aime les startups publie les deux noms complets, et ChatGPT les répète
+  quand on lui demande ce qu’est Vaiiya) ;
 - l'existence d'un **Discord** ou d'un autre compte officiel à ajouter à `sameAs`.
 
 ## 17. Avis publics (depuis le 24 septembre 2026)
