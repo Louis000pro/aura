@@ -11,8 +11,8 @@ Deux règles au-dessus de tout le reste :
 2. **On n'écrit publiquement que ce qui est vérifiable aujourd'hui**, par n'importe
    qui, en créant un compte. Pas de fonctionnalité prévue racontée au présent.
 
-Faits fondateur communiqués le 2026-08-10. Chiffres produit vérifiés sur `main`
-le 2026-08-10.
+Faits fondateur communiqués le 2026-08-10. Chiffres produit revérifiés sur `main`
+le 2026-11-08.
 
 ---
 
@@ -38,6 +38,12 @@ soit.
 
 Formulation de référence : *« Tes séances, tes repas, ton assistant et ta
 progression au même endroit, et tout communique. »*
+
+**Le slogan (choisi par Louis le 2026-11-08) : « Le sport qui te connaît. »** Il
+remplace « Deviens qui tu veux » sur l’accueil le jour où l’accueil refait est en
+ligne (maquette d’abord). Le slogan reste une émotion : c’est la phrase juste en
+dessous qui porte les mots que les gens cherchent (« application de musculation et
+de nutrition », « coach IA »).
 
 ## 3. Philosophie « tout est relié »
 
@@ -65,6 +71,14 @@ présenter Vaiiya comme un catalogue fermé.
 4. **Improviser**, et garder la séance à la fin si on veut.
 
 La création de séance est une **fonctionnalité importante**, pas une option cachée.
+
+**Et depuis le 2026-11-01, des programmes** : 8 programmes écrits par Vaiiya, de 4
+à 8 semaines (Première traction, Cent pompes, Force 5 × 5, Reprendre le sport…),
+sur les jours qu’on choisit, avec un test au départ et le même à la fin
+(`lib/parcours.ts`). Ce sont des programmes fixes : ils ne s’adaptent pas tout
+seuls, et ce n’est pas l’IA qui les fabrique (voir §5). « Reprendre le sport » est
+inclus pour toujours ; les sept autres sont des futurs Vaiiya+, ouverts tant que la
+vente est fermée.
 
 ## 5. IA : ce qu'elle fait, ce qu'elle ne fait pas
 
@@ -125,7 +139,9 @@ marque, jamais comme argument de fonctionnalité.
 - Vaiiya a commencé le **1er mai 2026**.
 - Le projet est développé par **deux lycéens de la région lyonnaise**, en parallèle
   du lycée.
-- **Aucun prénom ni nom** n'est publié pour l'instant.
+- **Aucun prénom ni nom** n'est publié sur vaiiya.fr pour l'instant. La fiche
+  J’aime les startups publie les deux noms complets, et c’est voulu (Louis,
+  2026-11-08) : ne pas les retirer de là-bas, ne pas les recopier ici sans son accord.
 - L'idée initiale a été **suggérée par une IA**, ce qui peut se raconter simplement.
 - Ambition entrepreneuriale assumée, étape par étape. Pas de récit héroïque, pas de
   levée de fonds, pas d'équipe fantôme, pas de « nous sommes une startup ».
@@ -151,6 +167,8 @@ Vérifiés sur `main` le 2026-08-10. À revérifier avant réemploi.
 | Séances guidées au catalogue | 152 : 55 incluses et 97 Vaiiya+, recomptées le 2026-11-01 après les onze classiques, les deux séances Hybride et les deux liées à ce qu’on mange (quatre futurs Vaiiya+ restent inclus tant que la vente est fermée) | `lib/catalogueSeances.ts`, compté par `lib/chiffresPublics.ts` |
 | Mini-cours | 83 : 21 conseils d’entraînement (13 gratuits, 8 Vaiiya+) et 62 cours de nutrition (43 gratuits, 19 Vaiiya+), recomptés le 2026-10-26 | `lib/adviceArticles.ts` et `lib/coursNutrition.ts`, additionnés par `lib/chiffresPublics.ts` |
 | Mouvements animés | 102 | `lib/exerciseLibrary.ts` |
+| Recettes de la banque | 200, comptées le 2026-11-08 | `lib/recipeBank.ts`, compté par `lib/chiffresPublics.ts` |
+| Programmes | 8, de 4 à 8 semaines, comptés le 2026-11-08 | `lib/parcours.ts`, compté par `lib/chiffresPublics.ts` |
 | Fiches exercices publiques | 8 | `lib/exercicesPublics.ts` |
 | Rangs | 6 | `lib/aura.ts` |
 | Prix Vaiiya+ | 9,99 €/mois ou 59,99 €/an | `lib/plans.ts` (jamais réécrit à la main) |
@@ -181,6 +199,13 @@ maintenant dans le référencement : « l’application de musculation et de nut
 un coach IA ». Le jour de la sortie, les badges, la bannière sur iPhone, les liens qui
 ouvrent l’application et le JSON-LD basculent ensemble.
 
+**Le nom dans les stores (Louis, 2026-11-08) : « Musculation », jamais « Muscu »**,
+parce que c’est plus professionnel. Les deux stores limitent le nom à 30 caractères :
+la proposition est « Vaiiya : Musculation Nutrition » (30), avec « IA » dans le
+sous-titre de l’App Store (« Coach sportif IA en français ») et « muscu », le mot que
+les gens tapent, dans les mots-clés qu’Apple ne montre pas. Aucun mot de prix
+(« gratuit ») dans le nom ni dans le sous-titre : Apple et Google Play le refusent.
+
 ## 12. Vaiiya+ (l'offre payante)
 
 **L'offre payante s'appelle Vaiiya+** (décision de Louis, 2026-09-25), plus « Premium » :
@@ -204,6 +229,8 @@ fermée.
 ## 13. Claims autorisés
 
 - « Application web française d'entraînement et de nutrition, avec un assistant IA. »
+- « L’application de musculation et de nutrition avec un coach IA. »
+- « 8 programmes de 4 à 8 semaines, avec un test au départ et à la fin. »
 - « Un catalogue de 152 séances guidées, montrées mouvement par mouvement. »
 - « 102 mouvements animés, consultables librement. »
 - « Compose ta propre séance, ou demande-la à l'assistant. »
@@ -259,9 +286,9 @@ avant chaque réutilisation** :
   légales, les conditions, la désignation d'un médiateur et l'ouverture de la vente) ;
 - l'**ouverture de la vente Vaiiya+** et son prix ;
 - les **chiffres du §10**, qui bougent à chaque vague de contenu ;
-- la décision de **ne pas publier les prénoms** des fondateurs (au 2026-11-08, la
-  fiche J’aime les startups publie les deux noms complets, et ChatGPT les répète
-  quand on lui demande ce qu’est Vaiiya) ;
+- les **noms des fondateurs** : publiés exprès sur la fiche J’aime les startups
+  (Louis, 2026-11-08), et ChatGPT les répète quand on lui demande ce qu’est Vaiiya ;
+  toujours absents de vaiiya.fr ;
 - l'existence d'un **Discord** ou d'un autre compte officiel à ajouter à `sameAs`.
 
 ## 17. Avis publics (depuis le 24 septembre 2026)
