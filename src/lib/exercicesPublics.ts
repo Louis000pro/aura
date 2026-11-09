@@ -79,7 +79,7 @@ import { resolveGuide } from "./exerciseGuides";
    d'Ariane, qui lui, existe déjà.                                    */
 
 export type CategoriePublique =
-  | "pectoraux" | "dos" | "epaules" | "bras" | "jambes" | "abdos" | "cardio";
+  | "pectoraux" | "dos" | "epaules" | "bras" | "jambes" | "abdos" | "cardio" | "mobilite";
 
 export const CATEGORIES: { id: CategoriePublique; label: string }[] = [
   { id: "pectoraux", label: "Pectoraux" },
@@ -89,6 +89,7 @@ export const CATEGORIES: { id: CategoriePublique; label: string }[] = [
   { id: "jambes",    label: "Jambes" },
   { id: "abdos",     label: "Abdos" },
   { id: "cardio",    label: "Cardio" },
+  { id: "mobilite",  label: "Mobilité" },
 ];
 
 /** Les mots que la catégorie s'est réservés sur le segment `/exercices/…`.
@@ -6182,6 +6183,303 @@ export const FICHES: FichePublique[] = [
       materielCourt: "Vélo",
       promesse: "Assis, on pédale contre une résistance réglable : le cœur travaille, sans aucun choc au sol.",
       nomDansLeTitre: "du vélo d’appartement",
+    },
+  },
+  {
+    slug: "posture-du-pigeon",
+    exercice: "Pigeon",
+    categorie: "mobilite",
+    title: "Posture du pigeon : la position et les erreurs",
+    description:
+      "Comment faire la posture du pigeon : la jambe avant pliée devant soi, la jambe arrière allongée, le buste droit, la respiration et les erreurs fréquentes. En animation.",
+    contenu: {
+      definition:
+        "À la posture du pigeon, on est au sol, une jambe pliée devant soi, le tibia en travers, et l’autre jambe allongée derrière, le buste droit et les mains posées de chaque côté : le fessier de la jambe avant et l’avant de la hanche de la jambe arrière s’étirent.",
+      gabarit: "tenue",
+      etapes: [
+        {
+          titre: "Se placer",
+          texte:
+            "À quatre pattes, avance un genou vers la main du même côté et pose le tibia en travers devant toi, le pied vers la hanche opposée.",
+        },
+        {
+          titre: "Allonger la jambe arrière",
+          texte:
+            "Fais glisser l’autre jambe vers l’arrière, bien droite, et pose les mains au sol de chaque côté du bassin.",
+        },
+        {
+          titre: "Tenir",
+          texte:
+            "Redresse le buste, garde les hanches de face et respire lentement le temps de la tenue, puis change de côté.",
+        },
+      ],
+      erreurs: [
+        {
+          titre: "Forcer sur le genou avant",
+          pourquoi:
+            "Un genou qui tire ou fait mal signale une position trop poussée. Rapproche le pied de l’aine pour réduire l’angle du tibia.",
+        },
+        {
+          titre: "Laisser le bassin basculer",
+          pourquoi:
+            "Un bassin qui tombe vers la jambe avant enlève l’étirement de la hanche arrière. Garde les deux hanches de face, quitte à glisser un coussin sous la fesse.",
+        },
+        {
+          titre: "Bloquer la respiration",
+          pourquoi:
+            "Retenir son souffle crispe tout le corps. Respire lentement et laisse le corps se poser un peu plus à chaque expiration.",
+        },
+      ],
+      variantes: [
+        {
+          angle: "Assis, les deux hanches à la fois",
+          exercice: "Papillon hanches",
+          texte:
+            "Assis, plantes de pieds jointes, on laisse les genoux descendre vers le sol sans les pousser.",
+        },
+        {
+          angle: "Debout, l’avant de la cuisse",
+          exercice: "Étirement quadriceps",
+          texte:
+            "Debout sur une jambe, on ramène l’autre talon vers la fesse.",
+        },
+        {
+          angle: "L’arrière des jambes",
+          exercice: "Étirement chaîne postérieure",
+          texte:
+            "Assis, jambes tendues, on penche le buste vers les pieds.",
+        },
+      ],
+      titreVariantes: "Variantes et étirements proches",
+      placement:
+        "La posture du pigeon se place en fin de séance, après les jambes ou la course, ou dans une routine de mobilité, en tenue de quarante-cinq secondes à une minute par côté.",
+      materiel: "Aucun, un tapis pour le confort",
+      materielCourt: "Sans matériel",
+      promesse: "Une jambe pliée devant, l’autre allongée derrière : le fessier et l’avant de la hanche s’étirent.",
+      nomDansLeTitre: "la posture du pigeon",
+    },
+  },
+  {
+    slug: "cat-cow",
+    exercice: "Cat-cow",
+    categorie: "mobilite",
+    title: "Cat-cow, ou chat-vache : le mouvement et les erreurs",
+    description:
+      "Comment faire le cat-cow, ou chat-vache : à quatre pattes, le dos qui se creuse puis s’arrondit au rythme de la respiration, et les erreurs fréquentes. En animation.",
+    contenu: {
+      definition:
+        "Au cat-cow, qu’on appelle aussi chat-vache, on est à quatre pattes et on alterne lentement deux positions : le dos creusé, le regard vers l’avant, puis le dos arrondi, la tête vers le sol. La colonne bouge sur toute sa longueur, au rythme de la respiration.",
+      gabarit: "mouvement",
+      etapes: [
+        {
+          titre: "Se placer",
+          texte:
+            "À quatre pattes, mains sous les épaules, genoux sous les hanches, le dos à plat.",
+        },
+        {
+          titre: "Creuser le dos",
+          texte:
+            "En inspirant, laisse le ventre descendre vers le sol et lève le regard vers l’avant.",
+        },
+        {
+          titre: "Arrondir le dos",
+          texte:
+            "En expirant, pousse le dos vers le plafond en rentrant le menton, puis repars dans l’autre sens.",
+        },
+      ],
+      erreurs: [
+        {
+          titre: "Aller trop vite",
+          pourquoi:
+            "Un enchaînement rapide transforme le mouvement en balancement. Chaque position suit une respiration complète.",
+        },
+        {
+          titre: "Ne bouger que la tête",
+          pourquoi:
+            "Lever et baisser la tête sans bouger le dos laisse la colonne immobile. Le mouvement part du bassin et remonte jusqu’à la nuque.",
+        },
+        {
+          titre: "Plier les coudes",
+          pourquoi:
+            "Des bras qui fléchissent font descendre les épaules. Les bras restent tendus, les mains bien à plat.",
+        },
+      ],
+      variantes: [
+        {
+          angle: "À quatre pattes, en stabilité",
+          exercice: "Bird dog",
+          texte:
+            "On tend un bras et la jambe opposée : le dos travaille pour rester immobile.",
+        },
+        {
+          angle: "Assis, l’arrière des jambes",
+          exercice: "Étirement chaîne postérieure",
+          texte:
+            "Jambes tendues, on penche le buste vers les pieds et on tient la position.",
+        },
+        {
+          angle: "Les hanches",
+          exercice: "Pigeon",
+          texte:
+            "Une jambe pliée devant, l’autre allongée derrière : le fessier et l’avant de la hanche s’étirent.",
+        },
+      ],
+      titreVariantes: "Variantes et mouvements proches",
+      muscles: ["Dos", "Épaules"],
+      placement:
+        "Le cat-cow se place en échauffement, avant une séance de dos ou de jambes, ou au réveil, sur dix à quinze respirations.",
+      materiel: "Aucun, un tapis pour le confort",
+      materielCourt: "Sans matériel",
+      promesse: "À quatre pattes, on creuse puis on arrondit le dos en respirant : la colonne bouge sur toute sa longueur.",
+      nomDansLeTitre: "le cat-cow",
+    },
+  },
+  {
+    slug: "etirement-quadriceps",
+    exercice: "Étirement quadriceps",
+    categorie: "mobilite",
+    title: "Étirement des quadriceps : la position et les erreurs",
+    description:
+      "Comment étirer les quadriceps debout : le talon ramené vers la fesse, les genoux côte à côte, le bassin rentré, l’équilibre et les erreurs fréquentes. En animation.",
+    contenu: {
+      definition:
+        "Pour étirer les quadriceps, on se tient debout sur une jambe et on ramène l’autre talon vers la fesse en tenant la cheville : l’avant de la cuisse s’étire.",
+      gabarit: "tenue",
+      etapes: [
+        {
+          titre: "Se placer",
+          texte:
+            "Debout, prends appui sur un mur ou une chaise si besoin. Plie une jambe et attrape la cheville avec la main du même côté.",
+        },
+        {
+          titre: "Ramener le talon",
+          texte:
+            "Ramène le talon vers la fesse, le genou plié pointé vers le sol, à côté de l’autre genou.",
+        },
+        {
+          titre: "Tenir",
+          texte:
+            "Rentre légèrement le bassin pour sentir l’étirement à l’avant de la cuisse, tiens en respirant, puis change de jambe.",
+        },
+      ],
+      erreurs: [
+        {
+          titre: "Écarter le genou",
+          pourquoi:
+            "Un genou qui part vers l’avant ou sur le côté réduit l’étirement. Il reste à côté de l’autre genou, pointé vers le sol.",
+        },
+        {
+          titre: "Cambrer le dos",
+          pourquoi:
+            "Un bas du dos qui se creuse enlève l’étirement de l’avant de la cuisse. Rentre légèrement le bassin.",
+        },
+        {
+          titre: "Tirer trop fort sur la cheville",
+          pourquoi:
+            "Forcer le talon contre la fesse charge le genou. On cherche une sensation d’étirement, jamais la douleur.",
+        },
+      ],
+      variantes: [
+        {
+          angle: "Au sol, la hanche",
+          exercice: "Pigeon",
+          texte:
+            "Une jambe pliée devant, l’autre allongée derrière : l’avant de la hanche s’étire aussi.",
+        },
+        {
+          angle: "L’arrière des jambes",
+          exercice: "Étirement chaîne postérieure",
+          texte:
+            "Assis, jambes tendues, on penche le buste vers les pieds.",
+        },
+        {
+          angle: "L’intérieur des cuisses",
+          exercice: "Papillon hanches",
+          texte:
+            "Assis, plantes de pieds jointes, on laisse les genoux descendre vers le sol.",
+        },
+      ],
+      titreVariantes: "Variantes et étirements proches",
+      placement:
+        "L’étirement des quadriceps se place en fin de séance de jambes ou après une course, en tenue de trente secondes par jambe.",
+      materiel: "Aucun, un mur ou une chaise pour l’équilibre si besoin",
+      materielCourt: "Sans matériel",
+      promesse: "Debout, le talon ramené vers la fesse : l’avant de la cuisse s’étire.",
+      nomDansLeTitre: "un étirement des quadriceps",
+    },
+  },
+  {
+    slug: "etirement-chaine-posterieure",
+    exercice: "Étirement chaîne postérieure",
+    categorie: "mobilite",
+    title: "Étirement de la chaîne postérieure : la position et les erreurs",
+    description:
+      "Comment étirer la chaîne postérieure, assis jambes tendues : le buste qui se penche vers les pieds, les ischio-jambiers qui s’étirent et les erreurs fréquentes. En animation.",
+    contenu: {
+      definition:
+        "Pour étirer la chaîne postérieure, on s’assoit au sol, jambes tendues devant soi, et on penche le buste vers les pieds en allongeant les bras : l’arrière des jambes, les ischio-jambiers, et le bas du dos s’étirent.",
+      gabarit: "tenue",
+      etapes: [
+        {
+          titre: "S’asseoir",
+          texte:
+            "Assis au sol, jambes tendues et serrées devant toi, sans bloquer les genoux, les pointes de pieds vers le plafond.",
+        },
+        {
+          titre: "Se pencher",
+          texte:
+            "Penche le buste vers l’avant en partant des hanches, les bras allongés vers les pieds.",
+        },
+        {
+          titre: "Tenir",
+          texte:
+            "Arrête-toi là où tu sens l’étirement, sans forcer, et respire lentement le temps de la tenue.",
+        },
+      ],
+      erreurs: [
+        {
+          titre: "Enrouler le dos pour toucher les pieds",
+          pourquoi:
+            "Chercher à toucher les orteils à tout prix fait enrouler le dos au lieu d’étirer l’arrière des jambes. Penche-toi depuis les hanches, le dos allongé.",
+        },
+        {
+          titre: "Bloquer les genoux",
+          pourquoi:
+            "Des genoux verrouillés tirent sur l’arrière de l’articulation. Garde les jambes tendues, les genoux souples.",
+        },
+        {
+          titre: "Donner des à-coups",
+          pourquoi:
+            "Rebondir vers l’avant pour aller plus loin crispe les muscles. On descend doucement et on tient la position.",
+        },
+      ],
+      variantes: [
+        {
+          angle: "Debout, l’avant de la cuisse",
+          exercice: "Étirement quadriceps",
+          texte:
+            "Debout sur une jambe, on ramène l’autre talon vers la fesse.",
+        },
+        {
+          angle: "L’intérieur des cuisses",
+          exercice: "Papillon hanches",
+          texte:
+            "Assis, plantes de pieds jointes, on laisse les genoux descendre vers le sol.",
+        },
+        {
+          angle: "En mouvement, le dos",
+          exercice: "Cat-cow",
+          texte:
+            "À quatre pattes, on creuse puis on arrondit le dos en respirant.",
+        },
+      ],
+      titreVariantes: "Variantes et étirements proches",
+      placement:
+        "L’étirement de la chaîne postérieure se place en fin de séance, après les jambes ou la course, en tenue de trente à quarante secondes.",
+      materiel: "Aucun, un tapis pour le confort",
+      materielCourt: "Sans matériel",
+      promesse: "Assis, jambes tendues, on penche le buste vers les pieds : l’arrière des jambes et le bas du dos s’étirent.",
+      nomDansLeTitre: "un étirement de la chaîne postérieure",
     },
   },
 ];
