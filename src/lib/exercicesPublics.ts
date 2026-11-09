@@ -6482,6 +6482,304 @@ export const FICHES: FichePublique[] = [
       nomDansLeTitre: "un étirement de la chaîne postérieure",
     },
   },
+  {
+    slug: "thread-the-needle",
+    exercice: "Thread the needle",
+    categorie: "mobilite",
+    title: "Thread the needle : le mouvement et les erreurs",
+    description:
+      "Comment faire le thread the needle, ou passage de l’aiguille : à quatre pattes, le bras qui s’ouvre vers le plafond puis glisse sous le corps, et les erreurs fréquentes. En animation.",
+    contenu: {
+      definition:
+        "Au thread the needle, qu’on appelle aussi passage de l’aiguille, on est à quatre pattes : un bras s’ouvre vers le plafond, puis glisse sous le corps jusqu’à poser l’épaule au sol. Le haut du dos tourne dans un sens, puis dans l’autre.",
+      gabarit: "mouvement",
+      etapes: [
+        {
+          titre: "Se placer",
+          texte:
+            "À quatre pattes, mains sous les épaules, genoux sous les hanches.",
+        },
+        {
+          titre: "Ouvrir",
+          texte:
+            "Lève un bras vers le plafond en tournant la poitrine du même côté, le regard qui suit la main.",
+        },
+        {
+          titre: "Passer sous le corps",
+          texte:
+            "Fais glisser ce bras sous le corps, paume vers le haut, jusqu’à poser l’épaule au sol, puis reviens. Fais tous les passages d’un côté, puis change.",
+        },
+      ],
+      erreurs: [
+        {
+          titre: "Tourner les hanches",
+          pourquoi:
+            "Des hanches qui pivotent avec le buste enlèvent la rotation du haut du dos. Elles restent au-dessus des genoux.",
+        },
+        {
+          titre: "Aller trop vite",
+          pourquoi:
+            "Un enchaînement rapide transforme le mouvement en balancier. Chaque passage se fait lentement, en respirant.",
+        },
+        {
+          titre: "S’écraser sur l’épaule",
+          pourquoi:
+            "Laisser tout le poids tomber sur l’épaule posée la comprime. La main restée au sol garde une partie du poids.",
+        },
+      ],
+      variantes: [
+        {
+          angle: "La colonne d’avant en arrière",
+          exercice: "Cat-cow",
+          texte:
+            "À quatre pattes, on creuse puis on arrondit le dos en respirant.",
+        },
+        {
+          angle: "À quatre pattes, en stabilité",
+          exercice: "Bird dog",
+          texte:
+            "On tend un bras et la jambe opposée : le dos travaille pour rester immobile.",
+        },
+        {
+          angle: "Tout le corps, d’une posture à l’autre",
+          exercice: "Downward dog / cobra",
+          texte:
+            "On passe du chien tête en bas au cobra, au rythme du souffle.",
+        },
+      ],
+      titreVariantes: "Variantes et mouvements proches",
+      placement:
+        "Le thread the needle se place en échauffement avant une séance de haut du corps, ou en fin de séance, sur cinq à huit passages de chaque côté.",
+      materiel: "Aucun, un tapis pour le confort",
+      materielCourt: "Sans matériel",
+      promesse: "À quatre pattes, un bras s’ouvre vers le plafond puis glisse sous le corps : le haut du dos tourne.",
+      nomDansLeTitre: "le thread the needle",
+    },
+  },
+  {
+    slug: "downward-dog-cobra",
+    exercice: "Downward dog / cobra",
+    categorie: "mobilite",
+    title: "Chien tête en bas et cobra : le mouvement et les erreurs",
+    description:
+      "Comment enchaîner le chien tête en bas et le cobra : les fesses vers le plafond, puis la poitrine qui se soulève, au rythme du souffle, et les erreurs fréquentes. En animation.",
+    contenu: {
+      definition:
+        "On passe ici d’une posture de yoga à l’autre : le chien tête en bas, mains et pieds au sol, les fesses vers le plafond, le corps en V renversé, puis le cobra, allongé sur le ventre, la poitrine soulevée sur les mains. L’arrière des jambes s’étire dans la première, l’avant du corps dans la seconde.",
+      gabarit: "mouvement",
+      etapes: [
+        {
+          titre: "Le chien tête en bas",
+          texte:
+            "Mains et pieds au sol, pousse les fesses vers le plafond pour former un V renversé, bras tendus, la tête entre les bras.",
+        },
+        {
+          titre: "Descendre",
+          texte:
+            "Avance le corps et descends jusqu’à t’allonger sur le ventre, les mains sous les épaules.",
+        },
+        {
+          titre: "Le cobra",
+          texte:
+            "Pousse dans les mains pour soulever la poitrine, les épaules basses, le bassin au sol, puis repars vers le chien tête en bas.",
+        },
+      ],
+      erreurs: [
+        {
+          titre: "Arrondir le dos dans le chien",
+          pourquoi:
+            "Un dos rond met tout l’effort dans les épaules. Plie un peu les genoux pour garder le dos allongé.",
+        },
+        {
+          titre: "Hausser les épaules dans le cobra",
+          pourquoi:
+            "Des épaules qui montent vers les oreilles pincent le haut du dos. Garde-les basses, loin des oreilles.",
+        },
+        {
+          titre: "Forcer la cambrure",
+          pourquoi:
+            "Pousser le cobra jusqu’à la gêne dans le bas du dos va trop loin. Monte la poitrine seulement jusqu’où c’est confortable.",
+        },
+      ],
+      variantes: [
+        {
+          angle: "À quatre pattes",
+          exercice: "Cat-cow",
+          texte:
+            "On creuse puis on arrondit le dos en respirant : la colonne bouge sans quitter les genoux.",
+        },
+        {
+          angle: "Assis, l’arrière des jambes",
+          exercice: "Étirement chaîne postérieure",
+          texte:
+            "Jambes tendues, on penche le buste vers les pieds et on tient la position.",
+        },
+        {
+          angle: "Allongé sur le ventre, en force",
+          exercice: "Superman",
+          texte:
+            "On décolle bras et jambes de quelques centimètres : le bas du dos travaille au lieu de s’étirer.",
+        },
+      ],
+      titreVariantes: "Variantes et mouvements proches",
+      muscles: ["Dos", "Ischio-jambiers", "Épaules"],
+      placement:
+        "Ce passage se place en échauffement ou en fin de séance, sur cinq à huit allers-retours, au rythme de la respiration.",
+      materiel: "Aucun, un tapis pour le confort",
+      materielCourt: "Sans matériel",
+      promesse: "On passe du chien tête en bas au cobra en respirant : l’arrière des jambes, puis l’avant du corps s’étirent.",
+      nomDansLeTitre: "le chien tête en bas et le cobra",
+    },
+  },
+  {
+    slug: "papillon-hanches",
+    exercice: "Papillon hanches",
+    categorie: "mobilite",
+    title: "Posture du papillon : la position et les erreurs",
+    description:
+      "Comment faire la posture du papillon : assis, plantes de pieds jointes, les genoux qui descendent vers le sol sans les pousser, le dos droit et les erreurs fréquentes. En animation.",
+    contenu: {
+      definition:
+        "À la posture du papillon, on est assis au sol, les plantes de pieds jointes devant soi et les genoux ouverts sur les côtés : l’intérieur des cuisses et les hanches s’étirent. Les mains tiennent les pieds, et le dos reste droit.",
+      gabarit: "tenue",
+      etapes: [
+        {
+          titre: "S’asseoir",
+          texte:
+            "Assis au sol, joins les plantes de pieds devant toi et rapproche les talons du bassin, sans forcer.",
+        },
+        {
+          titre: "Ouvrir les genoux",
+          texte:
+            "Tiens tes pieds avec les mains et laisse les genoux descendre vers le sol, sans appuyer dessus.",
+        },
+        {
+          titre: "Tenir",
+          texte:
+            "Redresse le dos et respire lentement le temps de la tenue.",
+        },
+      ],
+      erreurs: [
+        {
+          titre: "Appuyer sur les genoux",
+          pourquoi:
+            "Pousser les genoux vers le sol avec les mains force sur l’intérieur des hanches. On les laisse descendre seuls.",
+        },
+        {
+          titre: "Arrondir le dos",
+          pourquoi:
+            "Un dos enroulé enlève l’étirement des hanches. Assieds-toi sur un coussin si le dos s’arrondit.",
+        },
+        {
+          titre: "Coller les talons au bassin",
+          pourquoi:
+            "Des talons trop près du bassin rendent la position inconfortable pour les genoux. Éloigne un peu les pieds.",
+        },
+      ],
+      variantes: [
+        {
+          angle: "Une hanche à la fois",
+          exercice: "Pigeon",
+          texte:
+            "Une jambe pliée devant, l’autre allongée derrière : le fessier et l’avant de la hanche s’étirent.",
+        },
+        {
+          angle: "Les jambes tendues",
+          exercice: "Étirement chaîne postérieure",
+          texte:
+            "Assis, jambes tendues, on penche le buste vers les pieds.",
+        },
+        {
+          angle: "Debout, en mouvement",
+          exercice: "Cercles de hanches",
+          texte:
+            "Mains sur les hanches, le bassin dessine de grands cercles lents.",
+        },
+      ],
+      titreVariantes: "Variantes et étirements proches",
+      placement:
+        "La posture du papillon se place en fin de séance, après les jambes, ou dans une routine de mobilité, en tenue de quarante-cinq secondes à une minute.",
+      materiel: "Aucun, un tapis ou un coussin pour le confort",
+      materielCourt: "Sans matériel",
+      promesse: "Assis, plantes de pieds jointes, on laisse les genoux descendre : l’intérieur des cuisses et les hanches s’étirent.",
+      nomDansLeTitre: "la posture du papillon",
+    },
+  },
+  {
+    slug: "cercles-de-hanches",
+    exercice: "Cercles de hanches",
+    categorie: "mobilite",
+    title: "Cercles de hanches : le mouvement et les erreurs",
+    description:
+      "Comment faire les cercles de hanches : debout, mains sur les hanches, le bassin qui tourne en grands cercles lents dans un sens puis dans l’autre, et les erreurs fréquentes. En animation.",
+    contenu: {
+      definition:
+        "Aux cercles de hanches, on est debout, les mains sur les hanches, et on fait tourner le bassin en grands cercles : les hanches bougent dans toutes les directions, sans charge. C’est un mouvement d’échauffement.",
+      gabarit: "mouvement",
+      etapes: [
+        {
+          titre: "Se placer",
+          texte:
+            "Debout, pieds écartés de la largeur des hanches, genoux légèrement fléchis, mains sur les hanches.",
+        },
+        {
+          titre: "Tourner",
+          texte:
+            "Avance le bassin, puis passe sur un côté, vers l’arrière et sur l’autre côté, en un grand cercle lent.",
+        },
+        {
+          titre: "Changer de sens",
+          texte:
+            "Après quelques cercles, repars dans l’autre sens, les épaules aussi immobiles que possible.",
+        },
+      ],
+      erreurs: [
+        {
+          titre: "Bouger les épaules à la place du bassin",
+          pourquoi:
+            "Un buste qui balance donne l’impression du mouvement sans que les hanches tournent. Les épaules restent au-dessus des pieds.",
+        },
+        {
+          titre: "Faire de petits cercles rapides",
+          pourquoi:
+            "Des cercles serrés et rapides ne font bouger qu’une partie de la hanche. Agrandis-les et ralentis.",
+        },
+        {
+          titre: "Bloquer les genoux",
+          pourquoi:
+            "Des jambes raides limitent le mouvement du bassin. Garde les genoux légèrement fléchis.",
+        },
+      ],
+      variantes: [
+        {
+          angle: "Assis, en tenue",
+          exercice: "Papillon hanches",
+          texte:
+            "Plantes de pieds jointes, on laisse les genoux descendre vers le sol.",
+        },
+        {
+          angle: "Au sol, une hanche à la fois",
+          exercice: "Pigeon",
+          texte:
+            "Une jambe pliée devant, l’autre allongée derrière, et on tient la position.",
+        },
+        {
+          angle: "Pour monter en température",
+          exercice: "Jumping jacks",
+          texte:
+            "Un saut sur place qui écarte les pieds et monte les bras : le cœur monte.",
+        },
+      ],
+      titreVariantes: "Variantes et mouvements proches",
+      muscles: ["Hanches", "Bas du dos"],
+      placement:
+        "Les cercles de hanches se placent en début de séance, dans l’échauffement, sur une trentaine de secondes dans chaque sens.",
+      materiel: "Aucun",
+      materielCourt: "Sans matériel",
+      promesse: "Debout, mains sur les hanches, le bassin tourne en grands cercles lents : les hanches bougent dans toutes les directions.",
+      nomDansLeTitre: "des cercles de hanches",
+    },
+  },
 ];
 
 /* ──────────────────────────── Accès ──────────────────────────────── */
