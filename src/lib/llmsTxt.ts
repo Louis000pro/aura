@@ -23,6 +23,7 @@
 
 import { CHIFFRES_PUBLICS, PROGRAMMES_PUBLICS, SEANCES_INCLUSES } from "./chiffresPublics";
 import { fichesPubliees } from "./exercicesPublics";
+import { categoriesPubliees, descriptionCategorie } from "./categoriesExercices";
 import { programmesPublies } from "./programmesPublics";
 import { defisPublies } from "./defisPublics";
 import { COURS, typoCours } from "./coursNutrition";
@@ -114,6 +115,7 @@ export function texteLlms(): string {
     "",
     "## Fiches d'exercices",
     "",
+    ...categoriesPubliees().map((c) => lien(c.h1, `/exercices/${c.id}`, descriptionCategorie(c))),
     ...fichesPubliees().map((f) => lien(f.exercice, `/exercices/${f.slug}`, f.description)),
     "",
     "## Programmes",

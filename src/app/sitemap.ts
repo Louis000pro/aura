@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 import { fichesPubliees } from "@/lib/exercicesPublics";
+import { categoriesPubliees } from "@/lib/categoriesExercices";
 import { programmesPublies } from "@/lib/programmesPublics";
 import { defisPublies } from "@/lib/defisPublics";
 import { recettesPubliees } from "@/lib/recettesPubliques";
@@ -99,6 +100,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
      C'est la seule liste du fichier qu'on peut se permettre de générer,
      précisément parce qu'elle est adossée à `generateStaticParams`. */
   const fiches = fichesPubliees().map((f) => `/exercices/${f.slug}`);
+  const zones = categoriesPubliees().map((c) => `/exercices/${c.id}`);
 
   const programmes = programmesPublies().map((p) => `/programmes/${p.slug}`);
   const defis = defisPublies().map((d) => `/defis/${d.slug}`);
@@ -110,5 +112,5 @@ export default function sitemap(): MetadataRoute.Sitemap {
 
   const conseils = conseilsPublies().map((a) => `/conseils/${slugConseil(a)}`);
 
-  return [...PAGES, ...fiches, ...programmes, ...defis, ...recettes, ...cours, ...seances, ...conseils].map((chemin) => ({ url: `${base}${chemin}` }));
+  return [...PAGES, ...zones, ...fiches, ...programmes, ...defis, ...recettes, ...cours, ...seances, ...conseils].map((chemin) => ({ url: `${base}${chemin}` }));
 }
