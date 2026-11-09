@@ -447,8 +447,15 @@ function lignesDuHero(fiche: FicheResolue, materiel: string): [string, string][]
     réglages de départ, propres à chaque exercice. Rien n'est inventé
     pour la page, et surtout rien n'est recopié d'une fiche à l'autre. */
 function ligneExemple(lib: LibExercise): string {
-  const effort =
-    lib.mode === "temps" ? `${lib.seconds} s` : `${lib.reps} ${lib.unite}`;
+  // Un effort de plusieurs minutes (rameur, vélo, tapis) se lit en
+  // minutes : « 300 s » oblige à compter. Et une seule série n'a pas de
+  // repos à annoncer, donc « 1 × 5 min · 60 s de repos » devient « 5 min ».
+  const duree =
+    lib.seconds >= 120 && lib.seconds % 60 === 0
+      ? `${lib.seconds / 60} min`
+      : `${lib.seconds} s`;
+  const effort = lib.mode === "temps" ? duree : `${lib.reps} ${lib.unite}`;
+  if (lib.sets === 1) return effort;
   return `${lib.sets} × ${effort} · ${lib.rest} s de repos`;
 }
 

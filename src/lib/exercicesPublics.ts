@@ -3152,6 +3152,300 @@ export const FICHES: FichePublique[] = [
       nomDansLeTitre: "le bird dog",
     },
   },
+  {
+    slug: "hip-thrust-machine",
+    exercice: "Hip thrust machine",
+    categorie: "jambes",
+    title: "Hip thrust à la machine : technique et erreurs",
+    description:
+      "Comment faire le hip thrust à la machine : le réglage, la poussée des hanches, l’alignement en haut, le menton rentré et les erreurs fréquentes. En animation.",
+    contenu: {
+      definition:
+        "Au hip thrust à la machine, on est assis, le haut du dos calé contre un dossier et un coussin posé sur les hanches, et on pousse le bassin vers le haut jusqu’à aligner les cuisses et le buste : les fessiers font l’essentiel du travail. La machine guide la trajectoire, et la charge se règle en quelques secondes.",
+      gabarit: "mouvement",
+      etapes: [
+        {
+          titre: "S’installer",
+          texte:
+            "Assis sur la machine, le haut du dos contre le dossier, le coussin posé sur le haut des cuisses, au pli des hanches. Pieds à plat, écartés de la largeur des hanches, genoux pliés.",
+        },
+        {
+          titre: "Pousser les hanches",
+          texte:
+            "Pousse dans les talons pour monter le bassin jusqu’à ce que les cuisses et le buste forment une ligne. Serre les fessiers une seconde en haut, menton rentré.",
+        },
+        {
+          titre: "Redescendre",
+          texte:
+            "Redescends lentement, sans laisser la charge retomber, puis remonte pour la répétition suivante.",
+        },
+      ],
+      erreurs: [
+        {
+          titre: "Cambrer en haut",
+          pourquoi:
+            "Monter le bassin au-delà de l’alignement creuse le bas du dos, et les fessiers travaillent moins. Arrête-toi quand cuisses et buste sont alignés.",
+        },
+        {
+          titre: "Pousser sur la pointe des pieds",
+          pourquoi:
+            "Un poids qui part vers les orteils fait travailler l’avant des cuisses. Pousse dans les talons, les orteils peuvent presque se décoller.",
+        },
+        {
+          titre: "Relever la tête",
+          pourquoi:
+            "Regarder vers le plafond pousse le dos à se cambrer. Garde le menton rentré, le regard vers l’avant, au-dessus des genoux.",
+        },
+      ],
+      variantes: [
+        {
+          angle: "Au sol, sans machine",
+          exercice: "Pont fessier",
+          texte:
+            "Allongé sur le dos, on monte le bassin en poussant dans les talons : le même travail des fessiers, avec le poids du corps.",
+        },
+        {
+          angle: "La jambe vers l’arrière, à la poulie",
+          exercice: "Kickback fessier poulie",
+          texte:
+            "Une jambe à la fois, on pousse la cheville vers l’arrière contre la poulie : le fessier travaille d’un côté puis de l’autre.",
+        },
+        {
+          angle: "Avec de l’élan",
+          exercice: "Kettlebell swing",
+          texte:
+            "Les hanches lancent une kettlebell devant soi : les fessiers travaillent aussi, de façon explosive, avec le souffle en plus.",
+        },
+      ],
+      titreVariantes: "Variantes et mouvements proches",
+      placement:
+        "Le hip thrust à la machine se place dans une séance de jambes ou de fessiers, après un mouvement comme le squat ou le soulevé de terre roumain, ou comme mouvement principal d’une séance centrée sur les fessiers.",
+      materiel: "Une machine à hip thrust",
+      materielCourt: "Machine",
+      promesse: "Le dos calé contre le dossier, on pousse le bassin vers le haut contre une charge guidée : les fessiers font le travail.",
+      nomDansLeTitre: "le hip thrust à la machine",
+    },
+  },
+  {
+    slug: "pec-deck",
+    exercice: "Pec deck",
+    categorie: "pectoraux",
+    title: "Pec deck : technique et erreurs",
+    description:
+      "Comment faire le pec deck : le réglage du siège, les poignées à hauteur d’épaules, le rapprochement lent devant la poitrine et les erreurs fréquentes. En animation.",
+    contenu: {
+      definition:
+        "Au pec deck, aussi appelé butterfly, on est assis dos au dossier et on rapproche devant la poitrine deux poignées placées sur les côtés, en décrivant un arc de cercle : les pectoraux travaillent sur une trajectoire guidée par la machine. Les bras restent presque tendus, le mouvement vient des épaules.",
+      gabarit: "mouvement",
+      etapes: [
+        {
+          titre: "Régler la machine",
+          texte:
+            "Règle le siège pour que les poignées soient à hauteur d’épaules. Assis, le dos contre le dossier, saisis les poignées, coudes légèrement fléchis.",
+        },
+        {
+          titre: "Rapprocher",
+          texte:
+            "Rapproche les poignées devant ta poitrine en un arc de cercle, lentement, jusqu’à ce qu’elles se rejoignent presque. Serre une seconde.",
+        },
+        {
+          titre: "Revenir",
+          texte:
+            "Laisse les bras s’ouvrir lentement jusqu’à sentir l’étirement de la poitrine, sans laisser la charge tirer les bras vers l’arrière.",
+        },
+      ],
+      erreurs: [
+        {
+          titre: "Décoller le dos du dossier",
+          pourquoi:
+            "Avancer le buste pour rapprocher les poignées fait travailler l’élan et les épaules. Le dos reste collé au dossier.",
+        },
+        {
+          titre: "Claquer les bras devant",
+          pourquoi:
+            "Des poignées qui se cognent en fin de mouvement relâchent la tension des pectoraux. Rapproche lentement, sans choc.",
+        },
+        {
+          titre: "Ouvrir trop loin derrière",
+          pourquoi:
+            "Laisser les bras partir loin derrière les épaules étire fortement l’avant de l’épaule. Arrête l’ouverture quand les mains arrivent à hauteur du buste.",
+        },
+      ],
+      variantes: [
+        {
+          angle: "À la poulie, debout",
+          exercice: "Écarté à la poulie",
+          texte:
+            "Debout entre deux poulies, on rapproche les mains devant soi : la même ouverture des bras, avec plus de liberté dans la trajectoire.",
+        },
+        {
+          angle: "Allongé, aux haltères",
+          exercice: "Développé couché haltères",
+          texte:
+            "Allongé sur un banc, on pousse deux haltères vers le haut : les pectoraux travaillent avec les triceps et l’avant des épaules.",
+        },
+        {
+          angle: "Au sol, sans machine",
+          exercice: "Pompes",
+          texte:
+            "En planche, on descend la poitrine vers le sol puis on remonte : les pectoraux travaillent avec le poids du corps.",
+        },
+      ],
+      titreVariantes: "Variantes et mouvements proches",
+      placement:
+        "Le pec deck se place en fin de séance de pectoraux, après les mouvements de poussée comme le développé couché ou les pompes, avec une charge qui permet des répétitions lentes.",
+      materiel: "Une machine pec deck",
+      materielCourt: "Machine",
+      promesse: "Assis, on rapproche les poignées devant la poitrine sur une trajectoire guidée : les pectoraux travaillent.",
+      nomDansLeTitre: "le pec deck",
+    },
+  },
+  {
+    slug: "bicycle-crunch",
+    exercice: "Bicycle crunch",
+    categorie: "abdos",
+    title: "Bicycle crunch : technique et erreurs",
+    description:
+      "Comment faire le bicycle crunch : le coude vers le genou opposé, le pédalage des jambes, le rythme lent et les erreurs fréquentes. Le mouvement en animation.",
+    contenu: {
+      definition:
+        "Au bicycle crunch, on est allongé sur le dos, mains derrière la tête, et on amène un coude vers le genou opposé pendant que l’autre jambe s’allonge, puis on change de côté, comme en pédalant : les abdominaux enroulent le buste et les obliques le font tourner, dans le même mouvement.",
+      gabarit: "mouvement",
+      etapes: [
+        {
+          titre: "S’installer",
+          texte:
+            "Allongé sur le dos, mains derrière la tête sans serrer la nuque, jambes levées, genoux pliés. Décolle légèrement les épaules du sol.",
+        },
+        {
+          titre: "Croiser",
+          texte:
+            "Amène le coude droit vers le genou gauche en tournant le buste, pendant que la jambe droite s’allonge devant toi, sans toucher le sol.",
+        },
+        {
+          titre: "Changer de côté",
+          texte:
+            "Passe de l’autre côté, coude gauche vers genou droit, et enchaîne lentement. Chaque côté compte pour une répétition.",
+        },
+      ],
+      erreurs: [
+        {
+          titre: "Tirer sur la tête",
+          pourquoi:
+            "Des mains qui tirent la nuque vers l’avant la fatiguent sans faire travailler le ventre. Elles soutiennent seulement la tête, les doigts à peine posés.",
+        },
+        {
+          titre: "Pédaler trop vite",
+          pourquoi:
+            "Un rythme rapide transforme la rotation en balancement des jambes. Va lentement, en marquant chaque côté.",
+        },
+        {
+          titre: "Ne bouger que les coudes",
+          pourquoi:
+            "Rapprocher le coude du genou sans tourner le buste réduit le travail des obliques. C’est l’épaule qui tourne vers le genou opposé.",
+        },
+      ],
+      variantes: [
+        {
+          angle: "Sans rotation",
+          exercice: "Crunch",
+          texte:
+            "Allongé, on enroule seulement le haut du dos : le grand droit de l’abdomen travaille, sans tourner.",
+        },
+        {
+          angle: "En rotation, assis",
+          exercice: "Russian twist",
+          texte:
+            "Assis, buste incliné, on tourne les épaules d’un côté puis de l’autre : les obliques travaillent sans le pédalage.",
+        },
+        {
+          angle: "Les jambes seulement",
+          exercice: "Relevés de jambes",
+          texte:
+            "On monte et on redescend les deux jambes tendues, le buste au sol : le ventre travaille pour garder le dos plaqué.",
+        },
+      ],
+      titreVariantes: "Variantes et mouvements proches",
+      placement:
+        "Le bicycle crunch se place en fin de séance, avec les autres exercices d’abdos, ou dans un circuit au poids du corps. Un tapis rend la position plus confortable.",
+      materiel: "Aucun, un tapis pour le confort",
+      materielCourt: "Sans matériel",
+      nomDansLeTitre: "le bicycle crunch",
+    },
+  },
+  {
+    slug: "rameur",
+    exercice: "Rameur",
+    categorie: "cardio",
+    title: "Rameur : la technique du mouvement et les erreurs",
+    description:
+      "Comment ramer sur un rameur : l’ordre jambes, buste, bras, le retour dans l’ordre inverse, le rythme et les erreurs fréquentes. Le mouvement en animation.",
+    contenu: {
+      definition:
+        "Sur un rameur, on pousse avec les jambes, puis on bascule légèrement le buste en arrière, puis on tire la poignée vers le bas des côtes, avant de revenir dans l’ordre inverse : les jambes, le dos et les bras travaillent tour à tour, sans aucun impact. C’est une machine de cardio qui fait travailler presque tout le corps.",
+      gabarit: "mouvement",
+      etapes: [
+        {
+          titre: "La position de départ",
+          texte:
+            "Pieds sanglés, genoux pliés contre la poitrine, bras tendus devant toi sur la poignée, buste légèrement penché vers l’avant, dos droit.",
+        },
+        {
+          titre: "Jambes, buste, bras",
+          texte:
+            "Pousse d’abord avec les jambes. Quand elles sont presque tendues, bascule légèrement le buste vers l’arrière, puis tire la poignée vers le bas de tes côtes, coudes près du corps.",
+        },
+        {
+          titre: "Le retour, dans l’ordre inverse",
+          texte:
+            "Tends d’abord les bras, penche le buste vers l’avant, puis plie les genoux pour revenir à la position de départ. Le retour prend environ deux fois plus de temps que la poussée.",
+        },
+      ],
+      erreurs: [
+        {
+          titre: "Tirer avec les bras d’abord",
+          pourquoi:
+            "Commencer par les bras fait faire le travail aux muscles les plus petits. La force vient des jambes : les bras finissent le mouvement.",
+        },
+        {
+          titre: "Arrondir le dos",
+          pourquoi:
+            "Un dos qui s’enroule en début de mouvement fatigue le bas du dos. Garde le buste droit, penché depuis les hanches.",
+        },
+        {
+          titre: "Revenir trop vite",
+          pourquoi:
+            "Un retour précipité casse le rythme et essouffle sans faire avancer. Le retour est calme, la poussée est franche.",
+        },
+      ],
+      variantes: [
+        {
+          angle: "En pédalant",
+          exercice: "Vélo",
+          texte:
+            "Assis, on pédale à une résistance réglable : le cardio se fait surtout avec les jambes, sans le haut du corps.",
+        },
+        {
+          angle: "En courant",
+          exercice: "Tapis de course",
+          texte:
+            "On marche ou on court à une allure réglée par la machine : les jambes et le souffle travaillent, avec des impacts au sol.",
+        },
+        {
+          angle: "Le tirage, assis à la poulie",
+          exercice: "Rowing assis poulie",
+          texte:
+            "Assis, on tire une poignée vers le ventre contre une charge : le dos travaille en force plutôt qu’en cardio.",
+        },
+      ],
+      titreVariantes: "Variantes et mouvements proches",
+      placement:
+        "Le rameur sert d’échauffement, cinq minutes avant une séance, ou de séance cardio à part entière, en continu ou en intervalles. Il se combine bien avec une séance de musculation du haut du corps.",
+      materiel: "Un rameur",
+      materielCourt: "Rameur",
+      nomDansLeTitre: "du rameur",
+    },
+  },
 ];
 
 /* ──────────────────────────── Accès ──────────────────────────────── */
