@@ -53,6 +53,7 @@ const PUBLIQUES_TOUJOURS = [
   "/recettes",
   "/cours-nutrition",
   "/seances",
+  "/conseils",
   "/a-propos",
   "/coach-ia",
   "/prise-de-masse",

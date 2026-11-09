@@ -22,6 +22,7 @@ export const SEO_PAGES: { href: string; label: string }[] = [
   { href: "/exercices", label: "Exercices" },
   // Les séances guidées du catalogue, vague 4.
   { href: "/seances", label: "Séances" },
+  { href: "/conseils", label: "Conseils" },
   // Les programmes et les défis, vague 2 de la bibliothèque publique.
   { href: "/programmes", label: "Programmes" },
   { href: "/defis", label: "Défis" },
