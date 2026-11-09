@@ -5516,6 +5516,526 @@ export const FICHES: FichePublique[] = [
       nomDansLeTitre: "un kickback fessier à la poulie",
     },
   },
+  {
+    slug: "mollets-assis",
+    exercice: "Mollets assis",
+    categorie: "jambes",
+    title: "Mollets assis à la machine : technique et erreurs",
+    description:
+      "Comment faire les mollets assis à la machine : les coussins posés sur les genoux, la montée sur la pointe des pieds, l’amplitude complète et les erreurs fréquentes. En animation.",
+    contenu: {
+      definition:
+        "Aux mollets assis, on est assis sur une machine, les coussins posés sur le haut des genoux et l’avant des pieds sur une marche, et on monte sur la pointe des pieds avant de redescendre talons bas : le mollet travaille genou plié, une position où son muscle profond, le soléaire, prend une plus grande part de l’effort.",
+      gabarit: "mouvement",
+      etapes: [
+        {
+          titre: "S’installer",
+          texte:
+            "Assis sur la machine, pose l’avant des pieds sur la marche. Règle les coussins pour qu’ils appuient sur le haut des genoux, et tiens les poignées.",
+        },
+        {
+          titre: "Monter",
+          texte:
+            "Monte sur la pointe des pieds le plus haut possible, en poussant les coussins vers le haut, et marque un temps en haut.",
+        },
+        {
+          titre: "Redescendre",
+          texte:
+            "Redescends lentement jusqu’à sentir l’étirement du mollet, talons bas, puis remonte sans rebondir.",
+        },
+      ],
+      erreurs: [
+        {
+          titre: "Rebondir en bas",
+          pourquoi:
+            "Un rebond au fond du mouvement remplace le travail du muscle par de l’élan. Marque un court temps talons bas avant de remonter.",
+        },
+        {
+          titre: "Faire des demi-mouvements",
+          pourquoi:
+            "Monter et descendre de quelques centimètres seulement fait perdre une bonne partie du travail. Va bien bas et bien haut à chaque répétition.",
+        },
+        {
+          titre: "Laisser le pied rouler vers l’extérieur",
+          pourquoi:
+            "Un appui qui part sur le bord extérieur du pied fait travailler la cheville de travers. Pousse dans la base du gros orteil, le pied bien droit.",
+        },
+      ],
+      variantes: [
+        {
+          angle: "Debout, jambes tendues",
+          exercice: "Mollets",
+          texte:
+            "On monte sur la pointe des pieds debout : les jumeaux, la partie visible du mollet, travaillent davantage.",
+        },
+        {
+          angle: "En sautant",
+          exercice: "Corde à sauter",
+          texte:
+            "On saute à petits bonds sur l’avant des pieds : les mollets amortissent et relancent à chaque saut.",
+        },
+        {
+          angle: "L’arrière des cuisses",
+          exercice: "Leg curl assis",
+          texte:
+            "Sur une machine voisine, on ramène les talons sous le siège : ce sont les ischio-jambiers qui travaillent.",
+        },
+      ],
+      titreVariantes: "Variantes et mouvements proches",
+      placement:
+        "Les mollets assis se placent en fin de séance de jambes, en séries de quinze à vingt répétitions, souvent en complément des mollets debout.",
+      materiel: "Une machine à mollets assis",
+      materielCourt: "Machine",
+      promesse: "Assis, les genoux calés sous les coussins, on monte sur la pointe des pieds : le mollet travaille genou plié.",
+      nomDansLeTitre: "les mollets assis",
+    },
+  },
+  {
+    slug: "leg-curl-allonge",
+    exercice: "Leg curl allongé",
+    categorie: "jambes",
+    title: "Leg curl allongé : technique et erreurs",
+    description:
+      "Comment faire le leg curl allongé à la machine : la position sur le ventre, le rouleau à l’arrière des chevilles, les hanches qui restent posées et les erreurs fréquentes. En animation.",
+    contenu: {
+      definition:
+        "Au leg curl allongé, on est allongé sur le ventre sur une machine, le rouleau posé à l’arrière des chevilles, et on ramène les talons vers les fesses en pliant les genoux : l’arrière des cuisses, les ischio-jambiers, travaille. Les hanches restent collées au banc pendant tout le mouvement.",
+      gabarit: "mouvement",
+      etapes: [
+        {
+          titre: "S’installer",
+          texte:
+            "Allongé sur le ventre, les genoux juste au-delà du bord du banc, alignés avec l’axe de la machine. Le rouleau se pose à l’arrière des chevilles, et les mains tiennent les poignées à l’avant.",
+        },
+        {
+          titre: "Plier les genoux",
+          texte:
+            "Ramène les talons vers les fesses en pliant les genoux, le plus loin possible, sans décoller les hanches du banc.",
+        },
+        {
+          titre: "Revenir",
+          texte:
+            "Laisse les jambes se tendre lentement jusqu’aux genoux presque droits, sans que la charge les tire d’un coup.",
+        },
+      ],
+      erreurs: [
+        {
+          titre: "Décoller les hanches",
+          pourquoi:
+            "Des hanches qui montent laissent le bas du dos aider le mouvement. Elles restent collées au banc : si elles décollent, la charge est trop lourde.",
+        },
+        {
+          titre: "Mal placer les genoux",
+          pourquoi:
+            "Des genoux posés sur le banc, ou décalés par rapport à l’axe, font travailler l’articulation de travers. Ils dépassent juste du bord, alignés avec l’axe.",
+        },
+        {
+          titre: "Laisser retomber la charge",
+          pourquoi:
+            "Un retour lâché fait perdre la moitié du travail. Les jambes se tendent lentement, au même rythme que la flexion.",
+        },
+      ],
+      variantes: [
+        {
+          angle: "Assis",
+          exercice: "Leg curl assis",
+          texte:
+            "Assis, on ramène les talons sous le siège : le même muscle travaille, la cuisse calée par un coussin.",
+        },
+        {
+          angle: "Debout, avec une charge",
+          exercice: "Soulevé de terre roumain",
+          texte:
+            "On descend la charge le long des jambes en poussant les fesses vers l’arrière : l’arrière des cuisses travaille en s’étirant, avec les fessiers.",
+        },
+        {
+          angle: "Au sol, sans machine",
+          exercice: "Pont fessier",
+          texte:
+            "Allongé sur le dos, on monte le bassin en poussant dans les talons : les fessiers et l’arrière des cuisses travaillent.",
+        },
+      ],
+      titreVariantes: "Variantes et mouvements proches",
+      placement:
+        "Le leg curl allongé se place dans une séance de jambes, souvent après la presse ou le squat, avec une charge qui permet des répétitions lentes et contrôlées.",
+      materiel: "Une machine à leg curl allongé",
+      materielCourt: "Machine",
+      promesse: "Allongé sur le ventre, on ramène les talons vers les fesses contre un rouleau : l’arrière des cuisses travaille.",
+      nomDansLeTitre: "le leg curl allongé",
+    },
+  },
+  {
+    slug: "developpe-epaules-machine",
+    exercice: "Développé épaules machine",
+    categorie: "epaules",
+    title: "Développé épaules à la machine : technique et erreurs",
+    description:
+      "Comment faire le développé épaules à la machine : le réglage du siège, les poignées à hauteur d’épaules, la poussée au-dessus de la tête et les erreurs fréquentes. En animation.",
+    contenu: {
+      definition:
+        "Au développé épaules à la machine, on est assis, le dos contre le dossier, et on pousse deux poignées depuis la hauteur des épaules jusqu’au-dessus de la tête : les épaules et les triceps travaillent. La machine guide la trajectoire, et le dossier soutient le dos.",
+      gabarit: "mouvement",
+      etapes: [
+        {
+          titre: "Régler le siège",
+          texte:
+            "Règle la hauteur du siège pour que les poignées arrivent à hauteur des épaules. Assieds-toi le dos contre le dossier, les pieds à plat au sol.",
+        },
+        {
+          titre: "Pousser",
+          texte:
+            "Pousse les poignées vers le haut jusqu’aux bras presque tendus, sans verrouiller les coudes.",
+        },
+        {
+          titre: "Redescendre",
+          texte:
+            "Redescends lentement jusqu’à ce que les poignées reviennent à hauteur des épaules, puis repousse.",
+        },
+      ],
+      erreurs: [
+        {
+          titre: "Décoller le dos du dossier",
+          pourquoi:
+            "Un dos qui se cambre et quitte le dossier fait passer l’effort dans le bas du dos. Il reste plaqué, le ventre serré.",
+        },
+        {
+          titre: "Verrouiller les coudes en haut",
+          pourquoi:
+            "Des coudes bloqués en haut font reposer la charge sur l’articulation, et les épaules se relâchent. Arrête-toi juste avant.",
+        },
+        {
+          titre: "Mal régler le siège",
+          pourquoi:
+            "Des poignées trop hautes au départ raccourcissent le mouvement, trop basses elles font descendre l’épaule trop loin. Elles partent à hauteur d’épaules.",
+        },
+      ],
+      variantes: [
+        {
+          angle: "Aux haltères",
+          exercice: "Développé militaire haltères",
+          texte:
+            "On pousse deux haltères au-dessus de la tête : sans guide, chaque bras doit aussi se stabiliser.",
+        },
+        {
+          angle: "En tournant les paumes",
+          exercice: "Développé Arnold",
+          texte:
+            "Les haltères partent paumes vers soi et les paumes tournent vers l’avant pendant la poussée.",
+        },
+        {
+          angle: "Sans matériel",
+          exercice: "Pike push-ups",
+          texte:
+            "Les fesses hautes, on descend la tête vers le sol puis on repousse : une poussée vers le haut, au poids du corps.",
+        },
+      ],
+      titreVariantes: "Variantes et mouvements proches",
+      placement:
+        "Le développé épaules à la machine se place en début de séance d’épaules, ou après les développés de pectoraux, en séries de huit à douze répétitions.",
+      materiel: "Une machine de développé épaules",
+      materielCourt: "Machine",
+      promesse: "Assis, le dos calé, on pousse deux poignées au-dessus de la tête : les épaules travaillent sur une trajectoire guidée.",
+      nomDansLeTitre: "le développé épaules à la machine",
+    },
+  },
+  {
+    slug: "dips-machine",
+    exercice: "Dips machine",
+    categorie: "bras",
+    title: "Dips assistés à la machine : technique et erreurs",
+    description:
+      "Comment faire les dips à la machine assistée : le réglage de l’assistance, les genoux sur le plateau, la descente coudes vers l’arrière et les erreurs fréquentes. En animation.",
+    contenu: {
+      definition:
+        "Sur la machine de dips assistés, on se met à genoux sur un plateau relié à une charge, les mains sur deux barres parallèles, et on descend en pliant les coudes avant de remonter bras tendus : les triceps et le bas des pectoraux travaillent. La charge choisie porte une partie du poids du corps : plus elle est lourde, plus l’exercice est facile.",
+      gabarit: "mouvement",
+      etapes: [
+        {
+          titre: "Régler l’assistance",
+          texte:
+            "Choisis la charge d’assistance : plus elle est lourde, plus la machine t’aide. Prends les poignées, puis pose les genoux sur le plateau, bras tendus, le buste droit.",
+        },
+        {
+          titre: "Descendre",
+          texte:
+            "Plie les coudes vers l’arrière, près du corps, jusqu’à ce qu’ils forment un angle droit.",
+        },
+        {
+          titre: "Remonter",
+          texte:
+            "Pousse sur les poignées jusqu’aux bras tendus, puis redescends lentement.",
+        },
+      ],
+      erreurs: [
+        {
+          titre: "Ouvrir les coudes sur les côtés",
+          pourquoi:
+            "Des coudes qui s’écartent font passer l’effort sur l’avant des épaules. Ils restent le long du corps, vers l’arrière.",
+        },
+        {
+          titre: "Descendre trop bas",
+          pourquoi:
+            "Au-delà de l’angle droit, l’avant de l’épaule s’étire fortement. Arrête-toi quand les coudes forment un angle droit.",
+        },
+        {
+          titre: "Hausser les épaules",
+          pourquoi:
+            "Des épaules qui remontent vers les oreilles en bas du mouvement pincent le haut des épaules. Garde-les basses, loin des oreilles.",
+        },
+      ],
+      variantes: [
+        {
+          angle: "Sans assistance",
+          exercice: "Dips barres parallèles",
+          texte:
+            "Le corps entier entre les barres, sans plateau : tout le poids du corps est à pousser.",
+        },
+        {
+          angle: "À la maison",
+          exercice: "Dips sur chaise",
+          texte:
+            "Les mains sur une chaise derrière soi, les pieds au sol : les jambes portent une partie du poids.",
+        },
+        {
+          angle: "Les triceps seuls",
+          exercice: "Extension triceps poulie",
+          texte:
+            "Debout face à une poulie haute, on pousse une corde ou une barre vers le bas : seuls les triceps travaillent.",
+        },
+      ],
+      titreVariantes: "Variantes et mouvements proches",
+      placement:
+        "Les dips assistés se placent après les développés, dans une séance de pectoraux ou de bras. Pour progresser, on baisse l’assistance petit à petit, jusqu’aux dips aux barres sans machine.",
+      materiel: "Une machine de dips assistés",
+      materielCourt: "Machine",
+      promesse: "À genoux sur le plateau, on descend et on remonte entre deux barres : la machine porte une partie du poids du corps.",
+      nomDansLeTitre: "des dips assistés à la machine",
+    },
+  },
+  {
+    slug: "overhead-squat",
+    exercice: "Overhead squat",
+    categorie: "jambes",
+    title: "Overhead squat : technique et erreurs",
+    description:
+      "Comment faire l’overhead squat : la prise large, la barre tenue bras tendus au-dessus de la tête, la descente en squat buste droit et les erreurs fréquentes. En animation.",
+    contenu: {
+      definition:
+        "À l’overhead squat, on tient une barre bras tendus au-dessus de la tête, les mains écartées bien plus large que les épaules, et on descend en squat avant de remonter : les cuisses et les fessiers poussent, pendant que les épaules et le tronc gardent la barre stable. Il demande de la mobilité aux épaules, aux hanches et aux chevilles.",
+      gabarit: "mouvement",
+      etapes: [
+        {
+          titre: "Se placer",
+          texte:
+            "Debout, pieds un peu plus écartés que les hanches. Tiens la barre bras tendus au-dessus de la tête, les mains écartées bien plus large que les épaules.",
+        },
+        {
+          titre: "Descendre",
+          texte:
+            "Descends en squat en gardant la barre à la verticale des pieds, le buste droit, jusqu’à ce que les cuisses arrivent vers l’horizontale.",
+        },
+        {
+          titre: "Remonter",
+          texte:
+            "Remonte en poussant dans les pieds, bras toujours tendus, la barre immobile au-dessus de la tête.",
+        },
+      ],
+      erreurs: [
+        {
+          titre: "Laisser la barre partir vers l’avant",
+          pourquoi:
+            "Une barre qui passe devant les pieds déséquilibre tout le corps et charge les épaules. Elle reste à la verticale du milieu des pieds.",
+        },
+        {
+          titre: "Plier les coudes",
+          pourquoi:
+            "Des coudes qui fléchissent font descendre la barre et la rendent instable. Les bras restent tendus, et les épaules poussent la barre vers le haut.",
+        },
+        {
+          titre: "Pencher le buste en avant",
+          pourquoi:
+            "Un buste qui tombe vers l’avant fait partir la barre avec lui. Garde la poitrine haute, et descends moins bas si le buste bascule.",
+        },
+      ],
+      variantes: [
+        {
+          angle: "La barre sur le haut du dos",
+          exercice: "Squat barre",
+          texte:
+            "On peut charger plus lourd, et les épaules n’ont pas à tenir la barre au-dessus de la tête.",
+        },
+        {
+          angle: "Un haltère contre la poitrine",
+          exercice: "Goblet squat",
+          texte:
+            "Avec une charge tenue devant soi, le buste reste droit plus facilement.",
+        },
+        {
+          angle: "Le squat puis la poussée",
+          exercice: "Thruster haltères",
+          texte:
+            "Les haltères partent des épaules et montent au-dessus de la tête à chaque remontée.",
+        },
+      ],
+      titreVariantes: "Variantes et mouvements proches",
+      muscles: ["Quadriceps", "Fessiers", "Épaules", "Muscles profonds du tronc"],
+      placement:
+        "L’overhead squat se place en début de séance, quand le corps est frais, en séries courtes de cinq à huit répétitions, avec une barre légère.",
+      materiel: "Une barre et des disques",
+      materielCourt: "Barre",
+      precaution:
+        "Commence avec la barre à vide, ou même un manche à balai : c’est la mobilité qui limite ce mouvement avant la force. Si la barre part vers l’avant, la charge ou la profondeur est trop grande.",
+      promesse: "Barre tenue bras tendus au-dessus de la tête, on descend en squat : les jambes poussent pendant que les épaules et le tronc gardent la barre stable.",
+      nomDansLeTitre: "l’overhead squat",
+    },
+  },
+  {
+    slug: "pompes-explosives",
+    exercice: "Pompes explosives",
+    categorie: "pectoraux",
+    title: "Pompes explosives : technique et erreurs",
+    description:
+      "Comment faire les pompes explosives : la descente contrôlée, la poussée qui décolle les mains du sol, la réception bras souples et les erreurs fréquentes. En animation.",
+    contenu: {
+      definition:
+        "Aux pompes explosives, on descend comme pour une pompe classique, puis on pousse assez fort pour que les mains décollent du sol, avant de se recevoir bras souples : les pectoraux et les triceps travaillent vite et fort. Elles demandent de bien maîtriser la pompe classique.",
+      gabarit: "mouvement",
+      etapes: [
+        {
+          titre: "Se placer",
+          texte:
+            "En planche, bras tendus, mains un peu plus écartées que les épaules, le corps droit des épaules aux talons.",
+        },
+        {
+          titre: "Descendre",
+          texte:
+            "Descends de façon contrôlée jusqu’à ce que la poitrine frôle le sol, coudes vers l’arrière.",
+        },
+        {
+          titre: "Pousser et se recevoir",
+          texte:
+            "Pousse fort pour décoller les mains du sol, puis reçois-toi bras légèrement fléchis et enchaîne sur la descente suivante.",
+        },
+      ],
+      erreurs: [
+        {
+          titre: "Se recevoir bras tendus",
+          pourquoi:
+            "Des bras bloqués à la réception font encaisser le choc aux coudes et aux poignets. Ils plient dès que les mains touchent le sol.",
+        },
+        {
+          titre: "Laisser le bassin tomber",
+          pourquoi:
+            "Un bassin qui s’affaisse pendant la poussée creuse le bas du dos. Le corps reste droit, le ventre serré, comme en planche.",
+        },
+        {
+          titre: "Enchaîner trop de répétitions",
+          pourquoi:
+            "Avec la fatigue, les mains ne décollent plus et le mouvement redevient une pompe lente. Fais des séries courtes, avec du repos.",
+        },
+      ],
+      variantes: [
+        {
+          angle: "Sans décoller",
+          exercice: "Pompes",
+          texte:
+            "La pompe classique : la même position, à un rythme contrôlé.",
+        },
+        {
+          angle: "Tout le corps",
+          exercice: "Burpees",
+          texte:
+            "Une descente au sol puis un saut vers le haut : le souffle monte vite.",
+        },
+        {
+          angle: "Pour les jambes",
+          exercice: "Squats sautés",
+          texte:
+            "La même poussée rapide, à partir d’un squat : on décolle du sol à chaque répétition.",
+        },
+      ],
+      titreVariantes: "Variantes et mouvements proches",
+      placement:
+        "Les pompes explosives se placent en début de séance, après l’échauffement, en séries courtes de cinq à huit répétitions avec du repos, quand les bras sont frais.",
+      materiel: "Aucun",
+      materielCourt: "Sans matériel",
+      nomDansLeTitre: "des pompes explosives",
+    },
+  },
+  {
+    slug: "sprint-sur-place",
+    exercice: "Sprint sur place",
+    categorie: "cardio",
+    title: "Sprint sur place : le mouvement et les erreurs",
+    description:
+      "Comment faire le sprint sur place : la course sur place le plus vite possible, les bras qui accompagnent, les intervalles de vingt secondes et les erreurs fréquentes. En animation.",
+    contenu: {
+      definition:
+        "Au sprint sur place, on court sur place le plus vite possible pendant une vingtaine de secondes, sur l’avant des pieds, les bras pliés qui accompagnent, puis on récupère : le souffle monte très vite. On répète ce format court plusieurs fois.",
+      gabarit: "mouvement",
+      etapes: [
+        {
+          titre: "Se placer",
+          texte:
+            "Debout, pieds écartés de la largeur des hanches, bras pliés à angle droit, le buste droit.",
+        },
+        {
+          titre: "Sprinter",
+          texte:
+            "Cours sur place le plus vite possible pendant vingt secondes, sur l’avant des pieds, en montant les genoux devant toi et en balançant les bras.",
+        },
+        {
+          titre: "Récupérer",
+          texte:
+            "Arrête-toi et récupère, en marchant si besoin, avant le sprint suivant.",
+        },
+      ],
+      erreurs: [
+        {
+          titre: "Garder un rythme de footing",
+          pourquoi:
+            "Un rythme qu’on pourrait tenir longtemps change l’exercice en échauffement. Les vingt secondes se font le plus vite possible.",
+        },
+        {
+          titre: "Écourter la récupération",
+          pourquoi:
+            "Repartir essoufflé fait baisser la vitesse du sprint suivant. La récupération dure le temps qu’il faut pour sprinter aussi vite.",
+        },
+        {
+          titre: "Courir sur les talons",
+          pourquoi:
+            "Des appuis sur les talons ralentissent la course et secouent le corps à chaque pas. Reste sur l’avant des pieds.",
+        },
+      ],
+      variantes: [
+        {
+          angle: "Un rythme plus long",
+          exercice: "Montées de genoux",
+          texte:
+            "On court sur place en montant les genoux devant soi, à un rythme qu’on tient plus longtemps.",
+        },
+        {
+          angle: "Les mains au sol",
+          exercice: "Mountain climbers",
+          texte:
+            "En planche, on ramène les genoux vers la poitrine l’un après l’autre, le plus vite possible.",
+        },
+        {
+          angle: "En sautant",
+          exercice: "Corde à sauter",
+          texte:
+            "On saute à petits bonds sur l’avant des pieds, sur des séries plus longues.",
+        },
+      ],
+      titreVariantes: "Variantes et mouvements proches",
+      placement:
+        "Le sprint sur place se place dans un circuit cardio ou en fin de séance, en trois à six sprints de vingt secondes, avec assez de récupération pour sprinter aussi vite à chaque fois.",
+      materiel: "Aucun",
+      materielCourt: "Sans matériel",
+      promesse: "On court sur place le plus vite possible pendant vingt secondes, puis on récupère : le souffle monte très vite.",
+      nomDansLeTitre: "le sprint sur place",
+    },
+  },
 ];
 
 /* ──────────────────────────── Accès ──────────────────────────────── */
