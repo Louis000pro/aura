@@ -2556,6 +2556,896 @@ export const FICHES: FichePublique[] = [
       nomDansLeTitre: "des dips sur chaise",
     },
   },
+  {
+    slug: "kettlebell-swing",
+    exercice: "Kettlebell swing",
+    categorie: "jambes",
+    title: "Kettlebell swing : technique et erreurs",
+    description:
+      "Comment faire le kettlebell swing : la charnière de hanche, l’impulsion des fessiers, les bras qui guident, le dos droit et les erreurs fréquentes. En animation.",
+    contenu: {
+      definition:
+        "Au kettlebell swing, on balance une kettlebell entre les jambes puis devant soi, jusqu’à hauteur de poitrine, en poussant les hanches vers l’avant : ce sont les fessiers et l’arrière des cuisses qui la font monter, les bras ne font que la tenir. Le mouvement s’enchaîne sans pause, et le souffle monte vite.",
+      gabarit: "mouvement",
+      etapes: [
+        {
+          titre: "Se placer",
+          texte:
+            "Pieds un peu plus larges que les hanches, la kettlebell posée au sol devant toi. Penche le buste en poussant les fesses vers l’arrière, dos droit, et saisis la poignée à deux mains.",
+        },
+        {
+          titre: "Lancer avec les hanches",
+          texte:
+            "Fais passer la kettlebell entre tes jambes, puis tends vivement les hanches vers l’avant : elle monte devant toi jusqu’à hauteur de poitrine, bras tendus et relâchés.",
+        },
+        {
+          titre: "Laisser redescendre",
+          texte:
+            "Laisse-la retomber entre tes jambes en repoussant les fesses vers l’arrière, dos droit, et enchaîne le lancer suivant sans t’arrêter.",
+        },
+      ],
+      erreurs: [
+        {
+          titre: "Soulever avec les bras",
+          pourquoi:
+            "Des bras qui tirent la kettlebell vers le haut transforment le mouvement en élévation d’épaules. Ce sont les hanches qui la lancent : les bras restent tendus et relâchés.",
+        },
+        {
+          titre: "Faire un squat",
+          pourquoi:
+            "Plier beaucoup les genoux fait travailler les cuisses à la place des fessiers. Les genoux restent souples, et ce sont les fesses qui partent vers l’arrière.",
+        },
+        {
+          titre: "Arrondir le dos en bas",
+          pourquoi:
+            "Un dos qui s’enroule quand la kettlebell passe entre les jambes met la charge sur le bas du dos. Garde la poitrine ouverte et le regard un peu devant toi.",
+        },
+      ],
+      variantes: [
+        {
+          angle: "La même charnière, lentement",
+          exercice: "Soulevé de terre roumain",
+          texte:
+            "On descend la charge le long des jambes en poussant les fesses vers l’arrière, puis on remonte, sans élan : la charnière de hanche s’apprend en douceur.",
+        },
+        {
+          angle: "En pliant les genoux",
+          exercice: "Goblet squat",
+          texte:
+            "La même kettlebell tenue contre la poitrine, on descend en squat : les cuisses travaillent davantage que l’arrière des jambes.",
+        },
+        {
+          angle: "Les hanches qui poussent, sans élan",
+          exercice: "Hip thrust machine",
+          texte:
+            "Le dos posé sur un appui, on monte le bassin contre une charge guidée : les fessiers travaillent, sans le balancier.",
+        },
+      ],
+      titreVariantes: "Variantes et mouvements proches",
+      placement:
+        "Le kettlebell swing se place en début de séance, quand on est frais pour apprendre le geste, ou dans un circuit cardio, en séries courtes. Il demande de la place devant soi.",
+      materiel: "Une kettlebell",
+      materielCourt: "Kettlebell",
+      precaution:
+        "Apprends le mouvement avec une kettlebell légère : tant que les bras tirent pour la faire monter, elle est trop lourde. Garde aussi de la place devant toi, la kettlebell passe à hauteur de poitrine.",
+      promesse: "Les hanches lancent la kettlebell, les bras la guident : les fessiers, l’arrière des cuisses et le souffle travaillent ensemble.",
+      nomDansLeTitre: "le kettlebell swing",
+    },
+  },
+  {
+    slug: "superman",
+    exercice: "Superman",
+    categorie: "dos",
+    title: "Superman : l’exercice du bas du dos et ses erreurs",
+    description:
+      "Comment faire le superman : allongé sur le ventre, décoller bras et jambes, le regard vers le sol, la respiration et les erreurs fréquentes. En animation.",
+    contenu: {
+      definition:
+        "Au superman, on est allongé sur le ventre, bras tendus devant soi, et on décolle en même temps les bras, la poitrine et les jambes de quelques centimètres, avant de reposer : les muscles du bas du dos et les fessiers travaillent. Le mouvement est petit, et c’est voulu : il ne s’agit pas de se cambrer au maximum.",
+      gabarit: "mouvement",
+      etapes: [
+        {
+          titre: "S’installer",
+          texte:
+            "Allongé sur le ventre, bras tendus devant toi, jambes tendues, le front ou le nez tourné vers le sol.",
+        },
+        {
+          titre: "Décoller",
+          texte:
+            "Soulève en même temps les bras, la poitrine et les jambes de quelques centimètres, en serrant les fessiers. Le regard reste vers le sol, la nuque dans le prolongement du dos.",
+        },
+        {
+          titre: "Reposer",
+          texte:
+            "Marque une courte pause en haut, puis repose bras et jambes doucement, sans les laisser tomber, avant la répétition suivante.",
+        },
+      ],
+      erreurs: [
+        {
+          titre: "Monter trop haut",
+          pourquoi:
+            "Chercher la plus grande hauteur possible creuse fortement le bas du dos. Quelques centimètres suffisent : c’est la tenue en haut qui fait le travail.",
+        },
+        {
+          titre: "Relever la tête",
+          pourquoi:
+            "Regarder devant soi plie la nuque vers l’arrière. Le regard reste vers le sol, la tête dans l’alignement du dos.",
+        },
+        {
+          titre: "Aller trop vite",
+          pourquoi:
+            "Des répétitions enchaînées par à-coups laissent l’élan faire le mouvement. Monte, tiens une seconde, et repose lentement.",
+        },
+      ],
+      variantes: [
+        {
+          angle: "À quatre pattes, en croisé",
+          exercice: "Bird dog",
+          texte:
+            "À quatre pattes, on tend un bras et la jambe opposée : le dos travaille aussi, avec de l’équilibre en plus.",
+        },
+        {
+          angle: "Sur un banc",
+          exercice: "Extensions lombaires banc",
+          texte:
+            "Les hanches calées sur un banc à lombaires, on descend le buste puis on le remonte dans l’alignement des jambes : l’amplitude est plus grande.",
+        },
+        {
+          angle: "Sur le dos, bassin qui monte",
+          exercice: "Pont fessier",
+          texte:
+            "Allongé sur le dos, on monte le bassin en poussant dans les talons : les fessiers prennent la plus grande part du travail.",
+        },
+      ],
+      titreVariantes: "Variantes et mouvements proches",
+      placement:
+        "Le superman se place en fin de séance, avec les exercices d’abdos, pour faire travailler aussi l’arrière du tronc. Il se glisse bien dans une séance à la maison, sur un tapis.",
+      materiel: "Aucun, un tapis pour le confort",
+      materielCourt: "Sans matériel",
+      promesse: "Allongé sur le ventre, on décolle bras et jambes de quelques centimètres : le bas du dos et les fessiers travaillent.",
+      nomDansLeTitre: "le superman",
+    },
+  },
+  {
+    slug: "pompes-diamant",
+    exercice: "Pompes diamant",
+    categorie: "bras",
+    title: "Pompes diamant : technique et erreurs",
+    description:
+      "Comment faire les pompes diamant : les mains jointes sous la poitrine, les coudes le long du corps, la descente et les erreurs fréquentes. En animation.",
+    contenu: {
+      definition:
+        "La pompe diamant se fait les mains rapprochées sous la poitrine, pouces et index qui se touchent en formant un losange : avec cette prise serrée, les triceps, à l’arrière du bras, prennent une plus grande part du travail qu’à la pompe classique. Elle demande aussi plus de force.",
+      gabarit: "mouvement",
+      etapes: [
+        {
+          titre: "Se placer",
+          texte:
+            "En planche sur les mains, corps aligné des épaules aux talons. Rapproche les mains sous la poitrine, pouces et index qui se touchent.",
+        },
+        {
+          titre: "Descendre",
+          texte:
+            "Plie les coudes en les gardant le long du corps, vers l’arrière, et descends la poitrine vers tes mains, le corps toujours aligné.",
+        },
+        {
+          titre: "Remonter",
+          texte:
+            "Pousse dans les mains pour tendre les bras et remonter, sans laisser le bassin descendre ou monter.",
+        },
+      ],
+      erreurs: [
+        {
+          titre: "Ouvrir les coudes",
+          pourquoi:
+            "Des coudes qui partent sur les côtés font travailler davantage les épaules et les pectoraux. Ils restent serrés, le long du corps.",
+        },
+        {
+          titre: "Laisser le bassin s’affaisser",
+          pourquoi:
+            "Un ventre qui descend vers le sol cambre le bas du dos. Le corps reste droit comme une planche, du début à la fin.",
+        },
+        {
+          titre: "Raccourcir le mouvement",
+          pourquoi:
+            "Ne descendre que de quelques centimètres réduit beaucoup le travail. Si la pompe complète est trop dure, pose les genoux au sol plutôt que de raccourcir.",
+        },
+      ],
+      variantes: [
+        {
+          angle: "Les mains plus écartées",
+          exercice: "Pompes",
+          texte:
+            "La pompe classique, mains un peu plus larges que les épaules : les pectoraux travaillent davantage.",
+        },
+        {
+          angle: "Les mains sur un support",
+          exercice: "Pompes inclinées",
+          texte:
+            "Les mains posées sur un banc ou une table : une plus petite part du poids du corps passe dans les bras.",
+        },
+        {
+          angle: "Dos à une chaise",
+          exercice: "Dips sur chaise",
+          texte:
+            "Les mains sur le bord d’une chaise derrière soi, on plie les coudes vers l’arrière : les triceps travaillent aussi.",
+        },
+      ],
+      titreVariantes: "Variantes et mouvements proches",
+      placement:
+        "Les pompes diamant se placent après les pompes classiques dans une séance de haut du corps, ou en fin de séance pour les triceps. Elles se font partout, sans matériel.",
+      materiel: "Aucun",
+      materielCourt: "Sans matériel",
+      promesse: "Une pompe les mains jointes sous la poitrine : les triceps prennent une plus grande part du travail.",
+      nomDansLeTitre: "des pompes diamant",
+    },
+  },
+  {
+    slug: "mollets-debout",
+    exercice: "Mollets",
+    categorie: "jambes",
+    title: "Mollets debout : la montée sur pointe et les erreurs",
+    description:
+      "Comment faire les mollets debout : la montée sur la pointe des pieds, la descente lente, l’amplitude complète et les erreurs fréquentes. En animation.",
+    contenu: {
+      definition:
+        "Pour travailler les mollets debout, on monte sur la pointe des pieds le plus haut possible, puis on redescend lentement : les muscles de l’arrière de la jambe, sous le genou, font tout le travail. Le mouvement se fait au sol, sur une marche pour plus d’amplitude, ou avec une charge dans les mains.",
+      gabarit: "mouvement",
+      etapes: [
+        {
+          titre: "Se placer",
+          texte:
+            "Debout, pieds écartés de la largeur des hanches, jambes tendues sans bloquer les genoux. Une main contre un mur aide à garder l’équilibre.",
+        },
+        {
+          titre: "Monter",
+          texte:
+            "Monte sur la pointe des pieds le plus haut possible, en poussant dans le gros orteil, et marque une seconde en haut.",
+        },
+        {
+          titre: "Redescendre",
+          texte:
+            "Redescends lentement jusqu’à poser les talons, ou plus bas que la marche si tu travailles sur une marche, puis remonte.",
+        },
+      ],
+      erreurs: [
+        {
+          titre: "Rebondir",
+          pourquoi:
+            "Des répétitions rapides, qui rebondissent sur les talons, laissent l’élastique des tendons faire le travail. Monte, tiens une seconde, redescends lentement.",
+        },
+        {
+          titre: "Monter à moitié",
+          pourquoi:
+            "S’arrêter à mi-hauteur réduit le travail des mollets. Va chercher la pointe la plus haute à chaque répétition.",
+        },
+        {
+          titre: "Basculer vers l’extérieur du pied",
+          pourquoi:
+            "Un poids qui part sur le bord extérieur du pied fragilise la cheville. Pousse dans le gros orteil, les chevilles bien droites.",
+        },
+      ],
+      variantes: [
+        {
+          angle: "Assis, à la machine",
+          exercice: "Mollets assis",
+          texte:
+            "Genoux pliés, une charge posée sur les cuisses : le travail passe davantage sur le muscle profond du mollet.",
+        },
+        {
+          angle: "En sautant",
+          exercice: "Corde à sauter",
+          texte:
+            "De petits sauts sur l’avant du pied : les mollets travaillent à chaque rebond, avec le souffle en plus.",
+        },
+        {
+          angle: "Pour étirer ensuite",
+          exercice: "Étirement mollet au mur",
+          texte:
+            "Les mains contre un mur, une jambe tendue derrière, talon au sol : le mollet s’étire après la série.",
+        },
+      ],
+      titreVariantes: "Variantes et mouvements proches",
+      placement:
+        "Les mollets se travaillent en fin de séance de jambes, ou à la maison, entre deux autres mouvements : il suffit d’un sol plat, ou d’une marche.",
+      materiel: "Aucun, une marche pour plus d’amplitude",
+      materielCourt: "Sans matériel",
+      nomDansLeTitre: "les mollets debout",
+    },
+  },
+  {
+    slug: "squat-barre",
+    exercice: "Squat barre",
+    categorie: "jambes",
+    title: "Squat à la barre : technique et erreurs",
+    description:
+      "Comment faire le squat à la barre : le placement de la barre, la descente entre les pieds, la poitrine haute, la remontée et les erreurs fréquentes. En animation.",
+    contenu: {
+      definition:
+        "Au squat à la barre, la barre repose sur le haut du dos, et on descend en pliant les genoux et les hanches, comme pour s’asseoir entre ses talons, avant de remonter : les cuisses et les fessiers font le travail, et le tronc tient le buste droit sous la charge. C’est l’exercice de force des jambes que l’on retrouve dans presque tous les programmes.",
+      gabarit: "mouvement",
+      etapes: [
+        {
+          titre: "Placer la barre",
+          texte:
+            "Passe sous la barre posée sur les supports, à hauteur d’épaules, et cale-la sur le haut du dos, sur les trapèzes, pas sur la nuque. Mains un peu plus larges que les épaules, recule de deux pas.",
+        },
+        {
+          titre: "Descendre",
+          texte:
+            "Pieds un peu plus larges que les hanches, pointes légèrement ouvertes. Descends en poussant les hanches vers l’arrière et en pliant les genoux, poitrine haute, jusqu’à ce que les cuisses soient au moins parallèles au sol si ta mobilité le permet.",
+        },
+        {
+          titre: "Remonter",
+          texte:
+            "Pousse dans tout le pied pour remonter, genoux dans l’axe des orteils, en gardant le dos droit jusqu’en haut.",
+        },
+      ],
+      erreurs: [
+        {
+          titre: "Laisser les genoux rentrer",
+          pourquoi:
+            "Des genoux qui se rapprochent en remontant perdent l’alignement avec les pieds et chargent mal l’articulation. Pousse-les dans la direction des orteils.",
+        },
+        {
+          titre: "Arrondir le bas du dos",
+          pourquoi:
+            "Un bas du dos qui s’enroule en bas du mouvement met la charge sur la colonne. Descends seulement jusqu’où le dos reste droit, et travaille la profondeur avec une charge plus légère.",
+        },
+        {
+          titre: "Décoller les talons",
+          pourquoi:
+            "Des talons qui se lèvent font basculer le poids sur l’avant du pied et sur les genoux. Garde tout le pied au sol, du début à la fin.",
+        },
+      ],
+      variantes: [
+        {
+          angle: "La charge devant",
+          exercice: "Goblet squat",
+          texte:
+            "Un haltère tenu contre la poitrine : le buste reste droit plus facilement, et le geste s’apprend avec une charge modérée.",
+        },
+        {
+          angle: "Le dos appuyé, à la machine",
+          exercice: "Presse à cuisses",
+          texte:
+            "On pousse une plateforme avec les pieds, le dos calé contre un dossier : les cuisses travaillent sans que le tronc porte la charge.",
+        },
+        {
+          angle: "Une jambe à la fois",
+          exercice: "Squat bulgare",
+          texte:
+            "Le pied arrière posé sur un banc : la jambe avant porte l’essentiel du poids, avec de l’équilibre à trouver.",
+        },
+      ],
+      titreVariantes: "Variantes et mouvements proches",
+      muscles: ["Quadriceps", "Fessiers", "Abdominaux"],
+      placement:
+        "Le squat à la barre se place en début de séance de jambes, quand on est frais, souvent en séries courtes et lourdes. Les mouvements plus guidés, comme la presse ou les fentes, viennent après.",
+      materiel: "Une barre, des disques et une cage à squat",
+      materielCourt: "Barre",
+      precaution:
+        "Travaille dans une cage à squat, avec les barres de sécurité réglées juste sous le point le plus bas de ta descente : une répétition ratée se pose dessus au lieu de rester sur ton dos.",
+      promesse: "La barre sur le haut du dos, on descend entre les pieds : les cuisses et les fessiers travaillent avec une charge qui peut monter.",
+      nomDansLeTitre: "un squat à la barre",
+    },
+  },
+  {
+    slug: "corde-a-sauter",
+    exercice: "Corde à sauter",
+    categorie: "cardio",
+    title: "Corde à sauter : la technique et les erreurs",
+    description:
+      "Comment sauter à la corde : la longueur de la corde, les poignets qui la font tourner, les petits sauts sur l’avant du pied et les erreurs fréquentes. En animation.",
+    contenu: {
+      definition:
+        "À la corde à sauter, on fait tourner la corde avec les poignets et on la laisse passer sous les pieds par de petits sauts réguliers : le cœur monte vite, et les mollets travaillent à chaque rebond. Il ne faut qu’une corde et un peu de place, dedans comme dehors.",
+      gabarit: "mouvement",
+      etapes: [
+        {
+          titre: "Régler la corde",
+          texte:
+            "Debout, un pied sur le milieu de la corde : les poignées doivent arriver à peu près sous les aisselles. Tiens-les les mains basses, à hauteur de hanches, coudes près du corps.",
+        },
+        {
+          titre: "Faire tourner avec les poignets",
+          texte:
+            "Lance la corde par-dessus la tête d’un mouvement des poignets, pas des bras entiers, qui restent presque immobiles.",
+        },
+        {
+          titre: "Sauter juste assez",
+          texte:
+            "Saute de quelques centimètres, sur l’avant du pied, genoux souples, au moment où la corde arrive aux pieds. Garde un rythme régulier.",
+        },
+      ],
+      erreurs: [
+        {
+          titre: "Sauter trop haut",
+          pourquoi:
+            "De grands sauts fatiguent vite et cassent le rythme. Quelques centimètres suffisent pour laisser passer la corde.",
+        },
+        {
+          titre: "Faire tourner avec les bras",
+          pourquoi:
+            "De grands cercles des bras ralentissent la corde et fatiguent les épaules. Ce sont les poignets qui la font tourner, coudes près du corps.",
+        },
+        {
+          titre: "Retomber sur les talons",
+          pourquoi:
+            "Atterrir sur les talons, jambes tendues, fait encaisser le choc aux articulations. Reste sur l’avant du pied, genoux souples.",
+        },
+      ],
+      variantes: [
+        {
+          angle: "Sans corde, bras et jambes qui s’écartent",
+          exercice: "Jumping jacks",
+          texte:
+            "Un saut sur place qui écarte les pieds et monte les bras au-dessus de la tête : aucune coordination avec une corde à trouver.",
+        },
+        {
+          angle: "Sur place, genoux hauts",
+          exercice: "Montées de genoux",
+          texte:
+            "On court sur place en montant les genoux à hauteur des hanches : le souffle monte aussi, sans corde.",
+        },
+        {
+          angle: "Les mollets, sans saut",
+          exercice: "Mollets",
+          texte:
+            "Debout, on monte sur la pointe des pieds puis on redescend lentement : les mollets travaillent sans aucun impact.",
+        },
+      ],
+      titreVariantes: "Variantes et mouvements proches",
+      placement:
+        "La corde à sauter se place en échauffement, quelques minutes avant la séance, ou dans un circuit cardio, en alternance avec des mouvements au sol. Les débutants avancent souvent par séries courtes, le temps que le rythme s’installe.",
+      materiel: "Une corde à sauter",
+      materielCourt: "Corde",
+      nomDansLeTitre: "la corde à sauter",
+    },
+  },
+  {
+    slug: "dead-bug",
+    exercice: "Dead bug",
+    categorie: "abdos",
+    title: "Dead bug : l’exercice de gainage et ses erreurs",
+    description:
+      "Comment faire le dead bug : sur le dos, bras et jambe opposés qui s’éloignent, le bas du dos au sol, la respiration et les erreurs fréquentes. En animation.",
+    contenu: {
+      definition:
+        "Au dead bug, on est allongé sur le dos, bras tendus vers le plafond et genoux pliés au-dessus des hanches, et on éloigne lentement un bras et la jambe opposée, avant de revenir et de changer de côté : les abdominaux travaillent pour garder le bas du dos au sol pendant que les membres bougent. C’est un exercice de gainage en mouvement.",
+      gabarit: "mouvement",
+      etapes: [
+        {
+          titre: "S’installer",
+          texte:
+            "Allongé sur le dos, bras tendus vers le plafond, genoux pliés à angle droit au-dessus des hanches. Plaque le bas du dos contre le sol.",
+        },
+        {
+          titre: "Éloigner bras et jambe opposés",
+          texte:
+            "Descends lentement un bras vers l’arrière de la tête et tends la jambe opposée vers l’avant, jusqu’à frôler le sol, sans que le bas du dos décolle.",
+        },
+        {
+          titre: "Revenir et changer",
+          texte:
+            "Ramène le bras et la jambe à la position de départ, puis fais la même chose de l’autre côté. Chaque côté compte pour une répétition.",
+        },
+      ],
+      erreurs: [
+        {
+          titre: "Laisser le dos se creuser",
+          pourquoi:
+            "Quand le bras et la jambe descendent trop bas, le bas du dos décolle et le ventre lâche. Arrête la descente plus haut, là où le dos reste plaqué.",
+        },
+        {
+          titre: "Aller trop vite",
+          pourquoi:
+            "Des bras et des jambes qui retombent rapidement laissent l’élan faire le travail. Le mouvement est lent, contrôlé de bout en bout.",
+        },
+        {
+          titre: "Bloquer la respiration",
+          pourquoi:
+            "Retenir son souffle rigidifie tout le corps au lieu d’apprendre au ventre à travailler. Expire en éloignant bras et jambe, inspire en revenant.",
+        },
+      ],
+      variantes: [
+        {
+          angle: "À quatre pattes, en croisé",
+          exercice: "Bird dog",
+          texte:
+            "Le même croisé de bras et de jambe, mais à quatre pattes : le dos travaille pour rester stable, avec de l’équilibre en plus.",
+        },
+        {
+          angle: "En tenue",
+          exercice: "Hollow hold",
+          texte:
+            "Jambes et épaules décollées du sol, on tient la position sans bouger, le bas du dos plaqué.",
+        },
+        {
+          angle: "Les deux jambes ensemble",
+          exercice: "Relevés de jambes",
+          texte:
+            "On monte et on redescend les deux jambes tendues : elles font un plus grand levier, et le ventre travaille davantage pour garder le dos au sol.",
+        },
+      ],
+      titreVariantes: "Variantes et mouvements proches",
+      muscles: ["Abdominaux", "Muscles profonds du tronc"],
+      placement:
+        "Le dead bug se place en échauffement, pour réveiller le tronc avant une séance, ou en fin de séance avec les exercices d’abdos. Il se fait sur un tapis, à la maison comme en salle.",
+      materiel: "Aucun, un tapis pour le confort",
+      materielCourt: "Sans matériel",
+      promesse: "Sur le dos, on éloigne un bras et la jambe opposée : le ventre travaille pour garder le bas du dos au sol.",
+      nomDansLeTitre: "le dead bug",
+    },
+  },
+  {
+    slug: "bird-dog",
+    exercice: "Bird dog",
+    categorie: "abdos",
+    title: "Bird dog : la position et les erreurs",
+    description:
+      "Comment faire le bird dog : à quatre pattes, bras et jambe opposés tendus, le bassin stable, le dos droit et les erreurs fréquentes. En animation.",
+    contenu: {
+      definition:
+        "Au bird dog, on est à quatre pattes et on tend en même temps un bras devant soi et la jambe opposée derrière, avant de revenir et de changer de côté : le tronc travaille pour que le bassin et le dos ne bougent pas pendant que les membres s’allongent. Le mouvement est lent, et le défi est surtout de rester stable.",
+      gabarit: "mouvement",
+      etapes: [
+        {
+          titre: "Se placer",
+          texte:
+            "À quatre pattes, mains sous les épaules, genoux sous les hanches, dos droit, regard vers le sol.",
+        },
+        {
+          titre: "Tendre bras et jambe opposés",
+          texte:
+            "Tends lentement un bras vers l’avant et la jambe opposée vers l’arrière, jusqu’à ce qu’ils soient dans le prolongement du dos. Le bassin reste parallèle au sol.",
+        },
+        {
+          titre: "Revenir et changer",
+          texte:
+            "Marque une courte pause, ramène le bras et le genou sous toi sans les poser, puis tends de nouveau, ou change de côté.",
+        },
+      ],
+      erreurs: [
+        {
+          titre: "Laisser le bassin tourner",
+          pourquoi:
+            "Une hanche qui s’ouvre vers le plafond quand la jambe monte fait perdre le travail du tronc. Les deux hanches restent à la même hauteur, parallèles au sol.",
+        },
+        {
+          titre: "Monter la jambe trop haut",
+          pourquoi:
+            "Une jambe levée au-dessus du dos creuse les lombaires. Elle s’arrête dans le prolongement du corps.",
+        },
+        {
+          titre: "Se précipiter",
+          pourquoi:
+            "Un mouvement rapide se fait sur l’élan et le déséquilibre. Tends lentement, tiens une seconde, reviens lentement.",
+        },
+      ],
+      variantes: [
+        {
+          angle: "Sur le dos",
+          exercice: "Dead bug",
+          texte:
+            "Le même croisé de bras et de jambe, allongé sur le dos : le ventre travaille pour garder le bas du dos au sol.",
+        },
+        {
+          angle: "Sur le ventre",
+          exercice: "Superman",
+          texte:
+            "Allongé sur le ventre, on décolle bras et jambes en même temps : le bas du dos et les fessiers travaillent davantage.",
+        },
+        {
+          angle: "En tenue, face au sol",
+          exercice: "Gainage",
+          texte:
+            "On tient la planche sur les avant-bras, sans bouger : tout l’avant du tronc travaille.",
+        },
+      ],
+      titreVariantes: "Variantes et mouvements proches",
+      muscles: ["Lombaires", "Fessiers", "Muscles profonds du tronc"],
+      placement:
+        "Le bird dog se place en échauffement, avant une séance de jambes ou de dos, ou en fin de séance avec le gainage. Il se fait partout, sur un tapis.",
+      materiel: "Aucun, un tapis pour le confort",
+      materielCourt: "Sans matériel",
+      nomDansLeTitre: "le bird dog",
+    },
+  },
+  {
+    slug: "hip-thrust-machine",
+    exercice: "Hip thrust machine",
+    categorie: "jambes",
+    title: "Hip thrust à la machine : technique et erreurs",
+    description:
+      "Comment faire le hip thrust à la machine : le réglage, la poussée des hanches, l’alignement en haut, le menton rentré et les erreurs fréquentes. En animation.",
+    contenu: {
+      definition:
+        "Au hip thrust à la machine, on est assis, le haut du dos calé contre un dossier et un coussin posé sur les hanches, et on pousse le bassin vers le haut jusqu’à aligner les cuisses et le buste : les fessiers font l’essentiel du travail. La machine guide la trajectoire, et la charge se règle en quelques secondes.",
+      gabarit: "mouvement",
+      etapes: [
+        {
+          titre: "S’installer",
+          texte:
+            "Assis sur la machine, le haut du dos contre le dossier, le coussin posé sur le haut des cuisses, au pli des hanches. Pieds à plat, écartés de la largeur des hanches, genoux pliés.",
+        },
+        {
+          titre: "Pousser les hanches",
+          texte:
+            "Pousse dans les talons pour monter le bassin jusqu’à ce que les cuisses et le buste forment une ligne. Serre les fessiers une seconde en haut, menton rentré.",
+        },
+        {
+          titre: "Redescendre",
+          texte:
+            "Redescends lentement, sans laisser la charge retomber, puis remonte pour la répétition suivante.",
+        },
+      ],
+      erreurs: [
+        {
+          titre: "Cambrer en haut",
+          pourquoi:
+            "Monter le bassin au-delà de l’alignement creuse le bas du dos, et les fessiers travaillent moins. Arrête-toi quand cuisses et buste sont alignés.",
+        },
+        {
+          titre: "Pousser sur la pointe des pieds",
+          pourquoi:
+            "Un poids qui part vers les orteils fait travailler l’avant des cuisses. Pousse dans les talons, les orteils peuvent presque se décoller.",
+        },
+        {
+          titre: "Relever la tête",
+          pourquoi:
+            "Regarder vers le plafond pousse le dos à se cambrer. Garde le menton rentré, le regard vers l’avant, au-dessus des genoux.",
+        },
+      ],
+      variantes: [
+        {
+          angle: "Au sol, sans machine",
+          exercice: "Pont fessier",
+          texte:
+            "Allongé sur le dos, on monte le bassin en poussant dans les talons : le même travail des fessiers, avec le poids du corps.",
+        },
+        {
+          angle: "La jambe vers l’arrière, à la poulie",
+          exercice: "Kickback fessier poulie",
+          texte:
+            "Une jambe à la fois, on pousse la cheville vers l’arrière contre la poulie : le fessier travaille d’un côté puis de l’autre.",
+        },
+        {
+          angle: "Avec de l’élan",
+          exercice: "Kettlebell swing",
+          texte:
+            "Les hanches lancent une kettlebell devant soi : les fessiers travaillent aussi, de façon explosive, avec le souffle en plus.",
+        },
+      ],
+      titreVariantes: "Variantes et mouvements proches",
+      placement:
+        "Le hip thrust à la machine se place dans une séance de jambes ou de fessiers, après un mouvement comme le squat ou le soulevé de terre roumain, ou comme mouvement principal d’une séance centrée sur les fessiers.",
+      materiel: "Une machine à hip thrust",
+      materielCourt: "Machine",
+      promesse: "Le dos calé contre le dossier, on pousse le bassin vers le haut contre une charge guidée : les fessiers font le travail.",
+      nomDansLeTitre: "le hip thrust à la machine",
+    },
+  },
+  {
+    slug: "pec-deck",
+    exercice: "Pec deck",
+    categorie: "pectoraux",
+    title: "Pec deck : technique et erreurs",
+    description:
+      "Comment faire le pec deck : le réglage du siège, les poignées à hauteur d’épaules, le rapprochement lent devant la poitrine et les erreurs fréquentes. En animation.",
+    contenu: {
+      definition:
+        "Au pec deck, aussi appelé butterfly, on est assis dos au dossier et on rapproche devant la poitrine deux poignées placées sur les côtés, en décrivant un arc de cercle : les pectoraux travaillent sur une trajectoire guidée par la machine. Les bras restent presque tendus, le mouvement vient des épaules.",
+      gabarit: "mouvement",
+      etapes: [
+        {
+          titre: "Régler la machine",
+          texte:
+            "Règle le siège pour que les poignées soient à hauteur d’épaules. Assis, le dos contre le dossier, saisis les poignées, coudes légèrement fléchis.",
+        },
+        {
+          titre: "Rapprocher",
+          texte:
+            "Rapproche les poignées devant ta poitrine en un arc de cercle, lentement, jusqu’à ce qu’elles se rejoignent presque. Serre une seconde.",
+        },
+        {
+          titre: "Revenir",
+          texte:
+            "Laisse les bras s’ouvrir lentement jusqu’à sentir l’étirement de la poitrine, sans laisser la charge tirer les bras vers l’arrière.",
+        },
+      ],
+      erreurs: [
+        {
+          titre: "Décoller le dos du dossier",
+          pourquoi:
+            "Avancer le buste pour rapprocher les poignées fait travailler l’élan et les épaules. Le dos reste collé au dossier.",
+        },
+        {
+          titre: "Claquer les bras devant",
+          pourquoi:
+            "Des poignées qui se cognent en fin de mouvement relâchent la tension des pectoraux. Rapproche lentement, sans choc.",
+        },
+        {
+          titre: "Ouvrir trop loin derrière",
+          pourquoi:
+            "Laisser les bras partir loin derrière les épaules étire fortement l’avant de l’épaule. Arrête l’ouverture quand les mains arrivent à hauteur du buste.",
+        },
+      ],
+      variantes: [
+        {
+          angle: "À la poulie, debout",
+          exercice: "Écarté à la poulie",
+          texte:
+            "Debout entre deux poulies, on rapproche les mains devant soi : la même ouverture des bras, avec plus de liberté dans la trajectoire.",
+        },
+        {
+          angle: "Allongé, aux haltères",
+          exercice: "Développé couché haltères",
+          texte:
+            "Allongé sur un banc, on pousse deux haltères vers le haut : les pectoraux travaillent avec les triceps et l’avant des épaules.",
+        },
+        {
+          angle: "Au sol, sans machine",
+          exercice: "Pompes",
+          texte:
+            "En planche, on descend la poitrine vers le sol puis on remonte : les pectoraux travaillent avec le poids du corps.",
+        },
+      ],
+      titreVariantes: "Variantes et mouvements proches",
+      placement:
+        "Le pec deck se place en fin de séance de pectoraux, après les mouvements de poussée comme le développé couché ou les pompes, avec une charge qui permet des répétitions lentes.",
+      materiel: "Une machine pec deck",
+      materielCourt: "Machine",
+      promesse: "Assis, on rapproche les poignées devant la poitrine sur une trajectoire guidée : les pectoraux travaillent.",
+      nomDansLeTitre: "le pec deck",
+    },
+  },
+  {
+    slug: "bicycle-crunch",
+    exercice: "Bicycle crunch",
+    categorie: "abdos",
+    title: "Bicycle crunch : technique et erreurs",
+    description:
+      "Comment faire le bicycle crunch : le coude vers le genou opposé, le pédalage des jambes, le rythme lent et les erreurs fréquentes. Le mouvement en animation.",
+    contenu: {
+      definition:
+        "Au bicycle crunch, on est allongé sur le dos, mains derrière la tête, et on amène un coude vers le genou opposé pendant que l’autre jambe s’allonge, puis on change de côté, comme en pédalant : les abdominaux enroulent le buste et les obliques le font tourner, dans le même mouvement.",
+      gabarit: "mouvement",
+      etapes: [
+        {
+          titre: "S’installer",
+          texte:
+            "Allongé sur le dos, mains derrière la tête sans serrer la nuque, jambes levées, genoux pliés. Décolle légèrement les épaules du sol.",
+        },
+        {
+          titre: "Croiser",
+          texte:
+            "Amène le coude droit vers le genou gauche en tournant le buste, pendant que la jambe droite s’allonge devant toi, sans toucher le sol.",
+        },
+        {
+          titre: "Changer de côté",
+          texte:
+            "Passe de l’autre côté, coude gauche vers genou droit, et enchaîne lentement. Chaque côté compte pour une répétition.",
+        },
+      ],
+      erreurs: [
+        {
+          titre: "Tirer sur la tête",
+          pourquoi:
+            "Des mains qui tirent la nuque vers l’avant la fatiguent sans faire travailler le ventre. Elles soutiennent seulement la tête, les doigts à peine posés.",
+        },
+        {
+          titre: "Pédaler trop vite",
+          pourquoi:
+            "Un rythme rapide transforme la rotation en balancement des jambes. Va lentement, en marquant chaque côté.",
+        },
+        {
+          titre: "Ne bouger que les coudes",
+          pourquoi:
+            "Rapprocher le coude du genou sans tourner le buste réduit le travail des obliques. C’est l’épaule qui tourne vers le genou opposé.",
+        },
+      ],
+      variantes: [
+        {
+          angle: "Sans rotation",
+          exercice: "Crunch",
+          texte:
+            "Allongé, on enroule seulement le haut du dos : le grand droit de l’abdomen travaille, sans tourner.",
+        },
+        {
+          angle: "En rotation, assis",
+          exercice: "Russian twist",
+          texte:
+            "Assis, buste incliné, on tourne les épaules d’un côté puis de l’autre : les obliques travaillent sans le pédalage.",
+        },
+        {
+          angle: "Les jambes seulement",
+          exercice: "Relevés de jambes",
+          texte:
+            "On monte et on redescend les deux jambes tendues, le buste au sol : le ventre travaille pour garder le dos plaqué.",
+        },
+      ],
+      titreVariantes: "Variantes et mouvements proches",
+      placement:
+        "Le bicycle crunch se place en fin de séance, avec les autres exercices d’abdos, ou dans un circuit au poids du corps. Un tapis rend la position plus confortable.",
+      materiel: "Aucun, un tapis pour le confort",
+      materielCourt: "Sans matériel",
+      nomDansLeTitre: "le bicycle crunch",
+    },
+  },
+  {
+    slug: "rameur",
+    exercice: "Rameur",
+    categorie: "cardio",
+    title: "Rameur : la technique du mouvement et les erreurs",
+    description:
+      "Comment ramer sur un rameur : l’ordre jambes, buste, bras, le retour dans l’ordre inverse, le rythme et les erreurs fréquentes. Le mouvement en animation.",
+    contenu: {
+      definition:
+        "Sur un rameur, on pousse avec les jambes, puis on bascule légèrement le buste en arrière, puis on tire la poignée vers le bas des côtes, avant de revenir dans l’ordre inverse : les jambes, le dos et les bras travaillent tour à tour, sans aucun impact. C’est une machine de cardio qui fait travailler presque tout le corps.",
+      gabarit: "mouvement",
+      etapes: [
+        {
+          titre: "La position de départ",
+          texte:
+            "Pieds sanglés, genoux pliés contre la poitrine, bras tendus devant toi sur la poignée, buste légèrement penché vers l’avant, dos droit.",
+        },
+        {
+          titre: "Jambes, buste, bras",
+          texte:
+            "Pousse d’abord avec les jambes. Quand elles sont presque tendues, bascule légèrement le buste vers l’arrière, puis tire la poignée vers le bas de tes côtes, coudes près du corps.",
+        },
+        {
+          titre: "Le retour, dans l’ordre inverse",
+          texte:
+            "Tends d’abord les bras, penche le buste vers l’avant, puis plie les genoux pour revenir à la position de départ. Le retour prend environ deux fois plus de temps que la poussée.",
+        },
+      ],
+      erreurs: [
+        {
+          titre: "Tirer avec les bras d’abord",
+          pourquoi:
+            "Commencer par les bras fait faire le travail aux muscles les plus petits. La force vient des jambes : les bras finissent le mouvement.",
+        },
+        {
+          titre: "Arrondir le dos",
+          pourquoi:
+            "Un dos qui s’enroule en début de mouvement fatigue le bas du dos. Garde le buste droit, penché depuis les hanches.",
+        },
+        {
+          titre: "Revenir trop vite",
+          pourquoi:
+            "Un retour précipité casse le rythme et essouffle sans faire avancer. Le retour est calme, la poussée est franche.",
+        },
+      ],
+      variantes: [
+        {
+          angle: "En pédalant",
+          exercice: "Vélo",
+          texte:
+            "Assis, on pédale à une résistance réglable : le cardio se fait surtout avec les jambes, sans le haut du corps.",
+        },
+        {
+          angle: "En courant",
+          exercice: "Tapis de course",
+          texte:
+            "On marche ou on court à une allure réglée par la machine : les jambes et le souffle travaillent, avec des impacts au sol.",
+        },
+        {
+          angle: "Le tirage, assis à la poulie",
+          exercice: "Rowing assis poulie",
+          texte:
+            "Assis, on tire une poignée vers le ventre contre une charge : le dos travaille en force plutôt qu’en cardio.",
+        },
+      ],
+      titreVariantes: "Variantes et mouvements proches",
+      placement:
+        "Le rameur sert d’échauffement, cinq minutes avant une séance, ou de séance cardio à part entière, en continu ou en intervalles. Il se combine bien avec une séance de musculation du haut du corps.",
+      materiel: "Un rameur",
+      materielCourt: "Rameur",
+      nomDansLeTitre: "du rameur",
+    },
+  },
 ];
 
 /* ──────────────────────────── Accès ──────────────────────────────── */
