@@ -26,9 +26,6 @@
   container-type: size; background: var(--nuit); color: var(--t1); font-family: var(--titre);
   user-select: none; -webkit-user-select: none;
 }
-@media (min-width: 641px) {
-  .pp-tel { width: 390px; height: min(844px, calc(100dvh - 32px)); border-radius: 42px; box-shadow: 0 0 0 1px rgba(255, 255, 255, .09), 0 40px 80px -30px rgba(0, 0, 0, .8); }
-}
 .pp-tel *, .pp-tel *::before, .pp-tel *::after { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 .pp-tel button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; touch-action: manipulation; }
 .pp-tel img { display: block; -webkit-user-drag: none; user-select: none; }
@@ -839,3 +836,70 @@
 .pp-tel .compte-err { margin: 2px 0 6px; font-size: 13px; line-height: 1.3; font-weight: 600; color: #B4261E; }
 .pp-tel .compte-f .lien { display: block; width: 100%; color: #5C5468; }
 .pp-tel .accord { color-scheme: light; accent-color: var(--violet); }
+
+/* ═══ Sur ordinateur, la scène prend tout l'écran ═══
+   Louis, 2026-11-09 : sur PC, le parcours s'affichait dans un cadre de téléphone
+   posé au milieu du noir. Le ciel, les étoiles, la vague, la nuit de la bienvenue
+   et le fond de la visite vont désormais jusqu'aux bords de l'écran ; le contenu
+   garde une colonne à la proportion d'un grand téléphone, parce que chaque écran
+   se compose en `cqw` / `cqh` et que le geste du Guide se cale dessus (`--ligne`).
+   ⚠️ RIEN ICI NE S'APPLIQUE SOUS 641 PX : le téléphone ne bouge pas d'un pixel
+   (Louis : « on ne bouge pas la version téléphone »).
+   ⚠️ LA COLONNE NE COUPE PLUS (`overflow: visible`). Un fond qui doit couvrir
+   l'écran s'étend par `calc(50% - 50vw)` sur les côtés et `calc(100% - 100dvh)`
+   vers le haut, sinon on verrait les bords de la colonne. Un nouveau fond plein
+   écran dans un écran du parcours doit s'étendre de la même façon.
+   ⚠️ AU-DELÀ DE 1 000 PX DE HAUT, LA COLONNE S'ARRÊTE ET SE POSE EN BAS DE L'ÉCRAN :
+   plus haute, ce qui se compose en `cqh` s'étirerait (les jours, la roue de l'âge) ;
+   centrée, le sol des arches, l'escalier et les strates flotteraient au-dessus d'une
+   bande de ciel. Le haut de l'écran reste du ciel. */
+@media (min-width: 641px) {
+  .pp-fond { place-items: end center; }
+  .pp-tel { width: clamp(360px, 50dvh, 500px); height: min(100dvh, 1000px); overflow: visible; }
+  .pp-tel .ciel { left: calc(50% - 50vw); right: calc(50% - 50vw); top: calc(100% - 100dvh); height: 500dvh; }
+  .pp-tel .vague { left: calc(50% - 50vw); right: calc(50% - 50vw); bottom: -46dvh; height: 46dvh; animation-name: pp-vagueEcran; }
+  .pp-tel .a-sol { left: calc(50% - 50vw); right: calc(50% - 50vw); }
+  /* La lueur du sol reste sous les arches : 72 % de la colonne, comme sur téléphone. */
+  .pp-tel .a-sol::after { left: calc(50vw - 36cqw); right: auto; width: 72cqw; }
+  /* La bienvenue : la nuit couvre l'écran, le soleil et ses rayons débordent de la colonne. */
+  .pp-tel .bv { overflow: visible; box-shadow: 0 0 0 100vmax #07050F; }
+  .pp-tel .bv-ciel, .pp-tel .bv-flash { left: calc(50% - 50vw); right: calc(50% - 50vw); }
+  .pp-tel .bv-flash { top: calc(100% - 100dvh); background: radial-gradient(circle at 50% calc(var(--cy1, 50cqh) + 100dvh - 100cqh), #fff 0, rgba(255, 240, 214, .92) 28%, rgba(255, 214, 170, .4) 58%, transparent 86%); }
+  /* La visite : son fond (le dégradé reste calé sur la colonne), sa nuit et le voile
+     qui baisse quand le Guide parle. */
+  .pp-tel .mini::before { content: ""; position: absolute; z-index: -1; top: calc(100% - 100dvh); bottom: 0; left: calc(50% - 50vw); right: calc(50% - 50vw); background: linear-gradient(#FFFAF5 calc(100% - 100cqh), #fff calc(100% - 70cqh)); }
+  .pp-tel .mini.nuit::before { background: #07050F; }
+  .pp-tel .v-nuit { left: calc(50% - 50vw); right: calc(50% - 50vw); }
+  /* La nuit du relais et ses rayons vivent dans la scène, qui coupait aux bords de la
+     colonne : elle ne coupe plus qu'en haut et en bas. */
+  @supports (overflow: clip) {
+    .pp-tel .mini-scene { overflow-x: visible; overflow-y: clip; }
+  }
+  .pp-tel .m-voile { left: calc(50% - 50vw); right: calc(50% - 50vw); top: calc(100% - 100dvh); }
+  .pp-tel .mini.vise .m-voile { background: radial-gradient(circle at calc(var(--sx, 50cqw) + 50vw - 50cqw) calc(var(--sy, 50cqh) + 100dvh - 100cqh), transparent var(--sr, 120px), rgba(58, 34, 150, .13) calc(var(--sr, 120px) + 170px)); }
+  /* Une feuille collée au bas de l'écran se lit comme une appli de téléphone : sur
+     ordinateur, elle flotte. */
+  .pp-tel .compte-f, .pp-tel .accord { bottom: 16px; border-radius: 28px; box-shadow: 0 30px 70px -28px rgba(30, 10, 80, .65); }
+}
+@keyframes pp-vagueEcran { from { transform: translateY(0); opacity: 1; } to { transform: translateY(-150dvh); opacity: 0; } }
+
+/* À la souris, ce qui se touche répond au survol. ⚠️ Jamais sur un écran tactile :
+   un survol y reste collé après le toucher. */
+@media (min-width: 641px) and (hover: hover) and (pointer: fine) {
+  .pp-tel .cta:not([aria-disabled="true"]):hover { filter: brightness(1.08); }
+  .pp-tel .lien:hover, .pp-tel #retour:hover { color: var(--t1); opacity: 1; }
+  .pp-tel .fig:not(.elu):not(.loin):hover img { filter: brightness(1.1) drop-shadow(0 0 26px rgba(186, 128, 250, .5)); }
+  .pp-tel .fig:not(.elu):not(.loin):hover span { color: var(--or-clair); }
+  .pp-tel .strate[aria-pressed="false"]:hover { filter: brightness(1.1); }
+  .pp-tel .m-pas:not(.allume):hover .m-aura { opacity: .5; stroke-width: 12; }
+  .pp-tel .m-pas:not(.allume):hover .m-neon { stroke-width: 3; }
+  .pp-tel .arche[aria-pressed="false"]:hover .a-cadre { box-shadow: 0 0 40px rgba(255, 214, 170, .55); }
+  .pp-tel .arches:not([data-choix]) .arche:hover .a-cadre img { transform: scale(1.03); }
+  .pp-tel .arches[data-choix] .arche[aria-pressed="false"]:hover .a-cadre img { filter: brightness(.72) saturate(.8); }
+  .pp-tel .jour[aria-pressed="false"]:hover { transform: translateY(-3px); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .26), inset 0 1px 0 rgba(255, 255, 255, .3); }
+  .pp-tel .mets[aria-pressed="false"]:hover { filter: brightness(1.12); }
+  .pp-tel .genres button[aria-pressed="false"]:hover, .pp-tel .matos button[aria-pressed="false"]:hover { background: rgba(255, 255, 255, .17); }
+  .pp-tel .source[aria-pressed="false"]:hover { background: #fff; }
+  .pp-tel .google:hover { background: #F7F4FC; }
+  .pp-tel .lig.seance:hover { box-shadow: 0 20px 32px -16px rgba(35, 15, 80, .8); }
+}
