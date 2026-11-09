@@ -3743,6 +3743,301 @@ export const FICHES: FichePublique[] = [
       nomDansLeTitre: "le leg extension",
     },
   },
+  {
+    slug: "developpe-arnold",
+    exercice: "Développé Arnold",
+    categorie: "epaules",
+    title: "Développé Arnold : technique et erreurs",
+    description:
+      "Comment faire le développé Arnold : le départ paumes vers soi, la rotation pendant la montée et les erreurs fréquentes. Le mouvement en animation.",
+    contenu: {
+      definition:
+        "Le développé Arnold part des haltères tenus devant les épaules, paumes tournées vers soi, et on les pousse au-dessus de la tête en tournant les paumes vers l’avant pendant la montée : l’avant et le côté de l’épaule travaillent, avec les triceps. La rotation se refait en sens inverse à la descente.",
+      gabarit: "mouvement",
+      etapes: [
+        {
+          titre: "Se placer",
+          texte:
+            "Debout ou assis sur un banc à dossier, les haltères devant les épaules, paumes tournées vers toi, coudes devant le buste.",
+        },
+        {
+          titre: "Pousser en tournant",
+          texte:
+            "Écarte les coudes sur les côtés en tournant les paumes vers l’avant, puis pousse les haltères au-dessus de la tête jusqu’aux bras presque tendus.",
+        },
+        {
+          titre: "Revenir",
+          texte:
+            "Redescends lentement en refaisant la rotation à l’envers, jusqu’à retrouver les haltères devant les épaules, paumes vers toi.",
+        },
+      ],
+      erreurs: [
+        {
+          titre: "Cambrer le dos",
+          pourquoi:
+            "Un bas du dos qui se creuse pour pousser plus haut fait passer la charge sur la colonne. Serre le ventre et les fessiers, ou fais le mouvement assis contre un dossier.",
+        },
+        {
+          titre: "Tourner d’un coup",
+          pourquoi:
+            "Une rotation brusque en haut ou en bas sollicite l’épaule par à-coups. La rotation se fait pendant toute la montée, au même rythme que la poussée.",
+        },
+        {
+          titre: "Hausser les épaules",
+          pourquoi:
+            "Des épaules qui remontent vers les oreilles font travailler le haut des trapèzes. Garde la nuque longue, les épaules basses au départ.",
+        },
+      ],
+      variantes: [
+        {
+          angle: "Sans rotation",
+          exercice: "Développé militaire haltères",
+          texte:
+            "On pousse les haltères au-dessus de la tête, paumes vers l’avant du début à la fin : le geste est plus simple et la charge peut être un peu plus lourde.",
+        },
+        {
+          angle: "Les bras sur les côtés",
+          exercice: "Élévations latérales",
+          texte:
+            "Bras presque tendus, on monte les haltères sur les côtés jusqu’à l’horizontale : le côté de l’épaule travaille seul.",
+        },
+        {
+          angle: "Les bras devant soi",
+          exercice: "Élévations frontales",
+          texte:
+            "On monte les haltères devant soi jusqu’à hauteur des épaules : l’avant de l’épaule travaille seul.",
+        },
+      ],
+      titreVariantes: "Variantes et mouvements proches",
+      placement:
+        "Le développé Arnold se place en début de séance d’épaules, comme mouvement principal, ou à la place du développé militaire dans une séance de haut du corps.",
+      materiel: "Une paire d’haltères, un banc à dossier si tu le fais assis",
+      materielCourt: "Haltères",
+      promesse: "On pousse deux haltères au-dessus de la tête en tournant les paumes : l’avant et le côté de l’épaule travaillent.",
+      nomDansLeTitre: "le développé Arnold",
+    },
+  },
+  {
+    slug: "oiseau-halteres",
+    exercice: "Oiseau haltères",
+    categorie: "epaules",
+    title: "Oiseau aux haltères : technique et erreurs",
+    description:
+      "Comment faire l’oiseau aux haltères : le buste penché, l’ouverture des bras sur les côtés, les épaules basses, la descente lente et les erreurs fréquentes. En animation.",
+    contenu: {
+      definition:
+        "À l’oiseau, on se penche en avant, dos droit, et on ouvre les bras sur les côtés avec un haltère dans chaque main, comme des ailes : l’arrière des épaules et le haut du dos travaillent, des muscles que les mouvements de poussée sollicitent peu. Les charges sont légères.",
+      gabarit: "mouvement",
+      etapes: [
+        {
+          titre: "Se placer",
+          texte:
+            "Debout, genoux fléchis, penche le buste vers l’avant en poussant les fesses vers l’arrière, dos droit. Les haltères pendent sous les épaules, paumes face à face.",
+        },
+        {
+          titre: "Ouvrir les bras",
+          texte:
+            "Ouvre les bras sur les côtés, coudes légèrement fléchis, jusqu’à hauteur des épaules, en rapprochant un peu les omoplates.",
+        },
+        {
+          titre: "Redescendre",
+          texte:
+            "Redescends lentement jusqu’aux bras sous les épaules, sans laisser les haltères tomber, le buste toujours penché.",
+        },
+      ],
+      erreurs: [
+        {
+          titre: "Se redresser en montant",
+          pourquoi:
+            "Un buste qui se relève à chaque répétition donne de l’élan et fait travailler le bas du dos. Le buste reste penché du début à la fin de la série.",
+        },
+        {
+          titre: "Plier les coudes de plus en plus",
+          pourquoi:
+            "Des coudes qui se plient transforment le mouvement en rowing, et le milieu du dos prend le relais. Les coudes gardent le même léger angle.",
+        },
+        {
+          titre: "Charger trop lourd",
+          pourquoi:
+            "Trop lourd, les épaules remontent vers les oreilles et l’amplitude se raccourcit. Des haltères légers et un mouvement contrôlé suffisent.",
+        },
+      ],
+      variantes: [
+        {
+          angle: "À la poulie, vers le visage",
+          exercice: "Face pull poulie",
+          texte:
+            "Debout face à une poulie haute, on tire une corde vers le visage, coudes hauts : l’arrière des épaules travaille aussi.",
+        },
+        {
+          angle: "Debout, bras sur les côtés",
+          exercice: "Élévations latérales",
+          texte:
+            "Buste droit, on monte les bras sur les côtés : c’est le milieu de l’épaule qui travaille.",
+        },
+        {
+          angle: "Un bras, vers la hanche",
+          exercice: "Rowing haltère",
+          texte:
+            "Une main et un genou sur un banc, on tire un haltère vers la hanche : le dos travaille davantage.",
+        },
+      ],
+      titreVariantes: "Variantes et mouvements proches",
+      placement:
+        "L’oiseau se place en fin de séance d’épaules ou de dos, en séries de douze à quinze répétitions avec des haltères légers.",
+      materiel: "Une paire d’haltères légers",
+      materielCourt: "Haltères",
+      promesse: "Buste penché, on ouvre les bras sur les côtés : l’arrière des épaules et le haut du dos travaillent.",
+      nomDansLeTitre: "l’oiseau aux haltères",
+    },
+  },
+  {
+    slug: "elevations-frontales",
+    exercice: "Élévations frontales",
+    categorie: "epaules",
+    title: "Élévations frontales : technique et erreurs",
+    description:
+      "Comment faire les élévations frontales aux haltères : la montée des bras devant soi, la hauteur des épaules, la descente lente et les erreurs fréquentes. En animation.",
+    contenu: {
+      definition:
+        "Aux élévations frontales, on est debout et on monte les haltères devant soi, bras presque tendus, jusqu’à hauteur des épaules : l’avant de l’épaule travaille seul. C’est un mouvement d’isolation, qui se fait avec des charges légères.",
+      gabarit: "mouvement",
+      etapes: [
+        {
+          titre: "Se placer",
+          texte:
+            "Debout, pieds écartés de la largeur des hanches, un haltère dans chaque main devant les cuisses, coudes très légèrement fléchis.",
+        },
+        {
+          titre: "Monter",
+          texte:
+            "Monte les haltères devant toi jusqu’à hauteur des épaules, bras presque tendus, sans bouger le buste.",
+        },
+        {
+          titre: "Redescendre",
+          texte:
+            "Redescends lentement jusqu’aux cuisses. Les deux bras peuvent monter ensemble, comme sur l’animation, ou l’un après l’autre.",
+        },
+      ],
+      erreurs: [
+        {
+          titre: "Balancer le buste",
+          pourquoi:
+            "Un coup de reins lance les haltères et fait travailler le bas du dos. Le buste reste immobile : si tu dois te balancer, prends plus léger.",
+        },
+        {
+          titre: "Monter trop haut",
+          pourquoi:
+            "Au-dessus de la tête, ce sont surtout les trapèzes qui prennent le relais. La hauteur des épaules suffit.",
+        },
+        {
+          titre: "Lâcher la descente",
+          pourquoi:
+            "Des haltères qui retombent font perdre la moitié du travail. La descente prend au moins le temps de la montée.",
+        },
+      ],
+      variantes: [
+        {
+          angle: "Les bras sur les côtés",
+          exercice: "Élévations latérales",
+          texte:
+            "On monte les bras sur les côtés jusqu’à l’horizontale : le milieu de l’épaule travaille à la place de l’avant.",
+        },
+        {
+          angle: "Au-dessus de la tête",
+          exercice: "Développé militaire haltères",
+          texte:
+            "On pousse les haltères au-dessus de la tête : toute l’épaule travaille, avec les triceps, et la charge peut être plus lourde.",
+        },
+        {
+          angle: "En tournant les paumes",
+          exercice: "Développé Arnold",
+          texte:
+            "On pousse les haltères au-dessus de la tête en tournant les paumes : l’avant et le côté de l’épaule travaillent ensemble.",
+        },
+      ],
+      titreVariantes: "Variantes et mouvements proches",
+      placement:
+        "Les élévations frontales se placent en fin de séance d’épaules. L’avant de l’épaule travaille déjà dans les développés et les pompes : quelques séries légères suffisent.",
+      materiel: "Une paire d’haltères légers",
+      materielCourt: "Haltères",
+      nomDansLeTitre: "des élévations frontales",
+    },
+  },
+  {
+    slug: "leg-curl-assis",
+    exercice: "Leg curl assis",
+    categorie: "jambes",
+    title: "Leg curl assis : technique et erreurs",
+    description:
+      "Comment faire le leg curl assis à la machine : le réglage du siège et du rouleau, la flexion des genoux, le retour lent et les erreurs fréquentes. En animation.",
+    contenu: {
+      definition:
+        "Au leg curl assis, on est assis sur une machine, les jambes tendues posées sur un rouleau, et on ramène les talons sous le siège en pliant les genoux : l’arrière des cuisses, les ischio-jambiers, travaille seul. La machine guide le mouvement.",
+      gabarit: "mouvement",
+      etapes: [
+        {
+          titre: "Régler la machine",
+          texte:
+            "Règle le dossier pour que tes genoux soient alignés avec l’axe de la machine, le rouleau posé sous les mollets, juste au-dessus des talons. Baisse le coussin sur le haut des cuisses.",
+        },
+        {
+          titre: "Plier les genoux",
+          texte:
+            "Ramène les talons sous le siège en pliant les genoux, le plus loin possible, en tenant les poignées sur les côtés.",
+        },
+        {
+          titre: "Revenir",
+          texte:
+            "Laisse les jambes se tendre lentement, sans que la charge les tire d’un coup, jusqu’aux genoux presque droits.",
+        },
+      ],
+      erreurs: [
+        {
+          titre: "Mal régler la machine",
+          pourquoi:
+            "Des genoux décalés par rapport à l’axe font travailler l’articulation de travers. Aligne-les avant la première série.",
+        },
+        {
+          titre: "Soulever les hanches",
+          pourquoi:
+            "Des cuisses qui décollent du siège laissent le bassin aider le mouvement. Le coussin les maintient : serre-le assez.",
+        },
+        {
+          titre: "Laisser remonter la charge",
+          pourquoi:
+            "Un retour lâché fait perdre la moitié du travail. Les jambes se tendent lentement, au même rythme que la flexion.",
+        },
+      ],
+      variantes: [
+        {
+          angle: "L’avant des cuisses",
+          exercice: "Leg extension",
+          texte:
+            "Sur la machine voisine, on tend les jambes contre un rouleau : ce sont les quadriceps qui travaillent.",
+        },
+        {
+          angle: "Debout, avec une charge",
+          exercice: "Soulevé de terre roumain",
+          texte:
+            "On descend la charge le long des jambes en poussant les fesses vers l’arrière : l’arrière des cuisses travaille en s’étirant, avec les fessiers.",
+        },
+        {
+          angle: "Au sol, sans machine",
+          exercice: "Pont fessier",
+          texte:
+            "Allongé sur le dos, on monte le bassin en poussant dans les talons : les fessiers et l’arrière des cuisses travaillent.",
+        },
+      ],
+      titreVariantes: "Variantes et mouvements proches",
+      placement:
+        "Le leg curl assis se place dans une séance de jambes, souvent après le leg extension ou la presse, avec une charge qui permet des répétitions lentes et contrôlées.",
+      materiel: "Une machine à leg curl assis",
+      materielCourt: "Machine",
+      promesse: "Assis, on ramène les talons sous le siège contre un rouleau : l’arrière des cuisses travaille seul.",
+      nomDansLeTitre: "le leg curl assis",
+    },
+  },
 ];
 
 /* ──────────────────────────── Accès ──────────────────────────────── */
