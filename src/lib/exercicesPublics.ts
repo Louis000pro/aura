@@ -2556,6 +2556,303 @@ export const FICHES: FichePublique[] = [
       nomDansLeTitre: "des dips sur chaise",
     },
   },
+  {
+    slug: "kettlebell-swing",
+    exercice: "Kettlebell swing",
+    categorie: "jambes",
+    title: "Kettlebell swing : technique et erreurs",
+    description:
+      "Comment faire le kettlebell swing : la charnière de hanche, l’impulsion des fessiers, les bras qui guident, le dos droit et les erreurs fréquentes. En animation.",
+    contenu: {
+      definition:
+        "Au kettlebell swing, on balance une kettlebell entre les jambes puis devant soi, jusqu’à hauteur de poitrine, en poussant les hanches vers l’avant : ce sont les fessiers et l’arrière des cuisses qui la font monter, les bras ne font que la tenir. Le mouvement s’enchaîne sans pause, et le souffle monte vite.",
+      gabarit: "mouvement",
+      etapes: [
+        {
+          titre: "Se placer",
+          texte:
+            "Pieds un peu plus larges que les hanches, la kettlebell posée au sol devant toi. Penche le buste en poussant les fesses vers l’arrière, dos droit, et saisis la poignée à deux mains.",
+        },
+        {
+          titre: "Lancer avec les hanches",
+          texte:
+            "Fais passer la kettlebell entre tes jambes, puis tends vivement les hanches vers l’avant : elle monte devant toi jusqu’à hauteur de poitrine, bras tendus et relâchés.",
+        },
+        {
+          titre: "Laisser redescendre",
+          texte:
+            "Laisse-la retomber entre tes jambes en repoussant les fesses vers l’arrière, dos droit, et enchaîne le lancer suivant sans t’arrêter.",
+        },
+      ],
+      erreurs: [
+        {
+          titre: "Soulever avec les bras",
+          pourquoi:
+            "Des bras qui tirent la kettlebell vers le haut transforment le mouvement en élévation d’épaules. Ce sont les hanches qui la lancent : les bras restent tendus et relâchés.",
+        },
+        {
+          titre: "Faire un squat",
+          pourquoi:
+            "Plier beaucoup les genoux fait travailler les cuisses à la place des fessiers. Les genoux restent souples, et ce sont les fesses qui partent vers l’arrière.",
+        },
+        {
+          titre: "Arrondir le dos en bas",
+          pourquoi:
+            "Un dos qui s’enroule quand la kettlebell passe entre les jambes met la charge sur le bas du dos. Garde la poitrine ouverte et le regard un peu devant toi.",
+        },
+      ],
+      variantes: [
+        {
+          angle: "La même charnière, lentement",
+          exercice: "Soulevé de terre roumain",
+          texte:
+            "On descend la charge le long des jambes en poussant les fesses vers l’arrière, puis on remonte, sans élan : la charnière de hanche s’apprend en douceur.",
+        },
+        {
+          angle: "En pliant les genoux",
+          exercice: "Goblet squat",
+          texte:
+            "La même kettlebell tenue contre la poitrine, on descend en squat : les cuisses travaillent davantage que l’arrière des jambes.",
+        },
+        {
+          angle: "Les hanches qui poussent, sans élan",
+          exercice: "Hip thrust machine",
+          texte:
+            "Le dos posé sur un appui, on monte le bassin contre une charge guidée : les fessiers travaillent, sans le balancier.",
+        },
+      ],
+      titreVariantes: "Variantes et mouvements proches",
+      placement:
+        "Le kettlebell swing se place en début de séance, quand on est frais pour apprendre le geste, ou dans un circuit cardio, en séries courtes. Il demande de la place devant soi.",
+      materiel: "Une kettlebell",
+      materielCourt: "Kettlebell",
+      precaution:
+        "Apprends le mouvement avec une kettlebell légère : tant que les bras tirent pour la faire monter, elle est trop lourde. Garde aussi de la place devant toi, la kettlebell passe à hauteur de poitrine.",
+      promesse: "Les hanches lancent la kettlebell, les bras la guident : les fessiers, l’arrière des cuisses et le souffle travaillent ensemble.",
+      nomDansLeTitre: "le kettlebell swing",
+    },
+  },
+  {
+    slug: "superman",
+    exercice: "Superman",
+    categorie: "dos",
+    title: "Superman : l’exercice du bas du dos et ses erreurs",
+    description:
+      "Comment faire le superman : allongé sur le ventre, décoller bras et jambes, le regard vers le sol, la respiration et les erreurs fréquentes. En animation.",
+    contenu: {
+      definition:
+        "Au superman, on est allongé sur le ventre, bras tendus devant soi, et on décolle en même temps les bras, la poitrine et les jambes de quelques centimètres, avant de reposer : les muscles du bas du dos et les fessiers travaillent. Le mouvement est petit, et c’est voulu : il ne s’agit pas de se cambrer au maximum.",
+      gabarit: "mouvement",
+      etapes: [
+        {
+          titre: "S’installer",
+          texte:
+            "Allongé sur le ventre, bras tendus devant toi, jambes tendues, le front ou le nez tourné vers le sol.",
+        },
+        {
+          titre: "Décoller",
+          texte:
+            "Soulève en même temps les bras, la poitrine et les jambes de quelques centimètres, en serrant les fessiers. Le regard reste vers le sol, la nuque dans le prolongement du dos.",
+        },
+        {
+          titre: "Reposer",
+          texte:
+            "Marque une courte pause en haut, puis repose bras et jambes doucement, sans les laisser tomber, avant la répétition suivante.",
+        },
+      ],
+      erreurs: [
+        {
+          titre: "Monter trop haut",
+          pourquoi:
+            "Chercher la plus grande hauteur possible creuse fortement le bas du dos. Quelques centimètres suffisent : c’est la tenue en haut qui fait le travail.",
+        },
+        {
+          titre: "Relever la tête",
+          pourquoi:
+            "Regarder devant soi plie la nuque vers l’arrière. Le regard reste vers le sol, la tête dans l’alignement du dos.",
+        },
+        {
+          titre: "Aller trop vite",
+          pourquoi:
+            "Des répétitions enchaînées par à-coups laissent l’élan faire le mouvement. Monte, tiens une seconde, et repose lentement.",
+        },
+      ],
+      variantes: [
+        {
+          angle: "À quatre pattes, en croisé",
+          exercice: "Bird dog",
+          texte:
+            "À quatre pattes, on tend un bras et la jambe opposée : le dos travaille aussi, avec de l’équilibre en plus.",
+        },
+        {
+          angle: "Sur un banc",
+          exercice: "Extensions lombaires banc",
+          texte:
+            "Les hanches calées sur un banc à lombaires, on descend le buste puis on le remonte dans l’alignement des jambes : l’amplitude est plus grande.",
+        },
+        {
+          angle: "Sur le dos, bassin qui monte",
+          exercice: "Pont fessier",
+          texte:
+            "Allongé sur le dos, on monte le bassin en poussant dans les talons : les fessiers prennent la plus grande part du travail.",
+        },
+      ],
+      titreVariantes: "Variantes et mouvements proches",
+      placement:
+        "Le superman se place en fin de séance, avec les exercices d’abdos, pour faire travailler aussi l’arrière du tronc. Il se glisse bien dans une séance à la maison, sur un tapis.",
+      materiel: "Aucun, un tapis pour le confort",
+      materielCourt: "Sans matériel",
+      promesse: "Allongé sur le ventre, on décolle bras et jambes de quelques centimètres : le bas du dos et les fessiers travaillent.",
+      nomDansLeTitre: "le superman",
+    },
+  },
+  {
+    slug: "pompes-diamant",
+    exercice: "Pompes diamant",
+    categorie: "bras",
+    title: "Pompes diamant : technique et erreurs",
+    description:
+      "Comment faire les pompes diamant : les mains jointes sous la poitrine, les coudes le long du corps, la descente et les erreurs fréquentes. En animation.",
+    contenu: {
+      definition:
+        "La pompe diamant se fait les mains rapprochées sous la poitrine, pouces et index qui se touchent en formant un losange : avec cette prise serrée, les triceps, à l’arrière du bras, prennent une plus grande part du travail qu’à la pompe classique. Elle demande aussi plus de force.",
+      gabarit: "mouvement",
+      etapes: [
+        {
+          titre: "Se placer",
+          texte:
+            "En planche sur les mains, corps aligné des épaules aux talons. Rapproche les mains sous la poitrine, pouces et index qui se touchent.",
+        },
+        {
+          titre: "Descendre",
+          texte:
+            "Plie les coudes en les gardant le long du corps, vers l’arrière, et descends la poitrine vers tes mains, le corps toujours aligné.",
+        },
+        {
+          titre: "Remonter",
+          texte:
+            "Pousse dans les mains pour tendre les bras et remonter, sans laisser le bassin descendre ou monter.",
+        },
+      ],
+      erreurs: [
+        {
+          titre: "Ouvrir les coudes",
+          pourquoi:
+            "Des coudes qui partent sur les côtés font travailler davantage les épaules et les pectoraux. Ils restent serrés, le long du corps.",
+        },
+        {
+          titre: "Laisser le bassin s’affaisser",
+          pourquoi:
+            "Un ventre qui descend vers le sol cambre le bas du dos. Le corps reste droit comme une planche, du début à la fin.",
+        },
+        {
+          titre: "Raccourcir le mouvement",
+          pourquoi:
+            "Ne descendre que de quelques centimètres réduit beaucoup le travail. Si la pompe complète est trop dure, pose les genoux au sol plutôt que de raccourcir.",
+        },
+      ],
+      variantes: [
+        {
+          angle: "Les mains plus écartées",
+          exercice: "Pompes",
+          texte:
+            "La pompe classique, mains un peu plus larges que les épaules : les pectoraux travaillent davantage.",
+        },
+        {
+          angle: "Les mains sur un support",
+          exercice: "Pompes inclinées",
+          texte:
+            "Les mains posées sur un banc ou une table : une plus petite part du poids du corps passe dans les bras.",
+        },
+        {
+          angle: "Dos à une chaise",
+          exercice: "Dips sur chaise",
+          texte:
+            "Les mains sur le bord d’une chaise derrière soi, on plie les coudes vers l’arrière : les triceps travaillent aussi.",
+        },
+      ],
+      titreVariantes: "Variantes et mouvements proches",
+      placement:
+        "Les pompes diamant se placent après les pompes classiques dans une séance de haut du corps, ou en fin de séance pour les triceps. Elles se font partout, sans matériel.",
+      materiel: "Aucun",
+      materielCourt: "Sans matériel",
+      promesse: "Une pompe les mains jointes sous la poitrine : les triceps prennent une plus grande part du travail.",
+      nomDansLeTitre: "des pompes diamant",
+    },
+  },
+  {
+    slug: "mollets-debout",
+    exercice: "Mollets",
+    categorie: "jambes",
+    title: "Mollets debout : la montée sur pointe et les erreurs",
+    description:
+      "Comment faire les mollets debout : la montée sur la pointe des pieds, la descente lente, l’amplitude complète et les erreurs fréquentes. En animation.",
+    contenu: {
+      definition:
+        "Pour travailler les mollets debout, on monte sur la pointe des pieds le plus haut possible, puis on redescend lentement : les muscles de l’arrière de la jambe, sous le genou, font tout le travail. Le mouvement se fait au sol, sur une marche pour plus d’amplitude, ou avec une charge dans les mains.",
+      gabarit: "mouvement",
+      etapes: [
+        {
+          titre: "Se placer",
+          texte:
+            "Debout, pieds écartés de la largeur des hanches, jambes tendues sans bloquer les genoux. Une main contre un mur aide à garder l’équilibre.",
+        },
+        {
+          titre: "Monter",
+          texte:
+            "Monte sur la pointe des pieds le plus haut possible, en poussant dans le gros orteil, et marque une seconde en haut.",
+        },
+        {
+          titre: "Redescendre",
+          texte:
+            "Redescends lentement jusqu’à poser les talons, ou plus bas que la marche si tu travailles sur une marche, puis remonte.",
+        },
+      ],
+      erreurs: [
+        {
+          titre: "Rebondir",
+          pourquoi:
+            "Des répétitions rapides, qui rebondissent sur les talons, laissent l’élastique des tendons faire le travail. Monte, tiens une seconde, redescends lentement.",
+        },
+        {
+          titre: "Monter à moitié",
+          pourquoi:
+            "S’arrêter à mi-hauteur réduit le travail des mollets. Va chercher la pointe la plus haute à chaque répétition.",
+        },
+        {
+          titre: "Basculer vers l’extérieur du pied",
+          pourquoi:
+            "Un poids qui part sur le bord extérieur du pied fragilise la cheville. Pousse dans le gros orteil, les chevilles bien droites.",
+        },
+      ],
+      variantes: [
+        {
+          angle: "Assis, à la machine",
+          exercice: "Mollets assis",
+          texte:
+            "Genoux pliés, une charge posée sur les cuisses : le travail passe davantage sur le muscle profond du mollet.",
+        },
+        {
+          angle: "En sautant",
+          exercice: "Corde à sauter",
+          texte:
+            "De petits sauts sur l’avant du pied : les mollets travaillent à chaque rebond, avec le souffle en plus.",
+        },
+        {
+          angle: "Pour étirer ensuite",
+          exercice: "Étirement mollet au mur",
+          texte:
+            "Les mains contre un mur, une jambe tendue derrière, talon au sol : le mollet s’étire après la série.",
+        },
+      ],
+      titreVariantes: "Variantes et mouvements proches",
+      placement:
+        "Les mollets se travaillent en fin de séance de jambes, ou à la maison, entre deux autres mouvements : il suffit d’un sol plat, ou d’une marche.",
+      materiel: "Aucun, une marche pour plus d’amplitude",
+      materielCourt: "Sans matériel",
+      nomDansLeTitre: "les mollets debout",
+    },
+  },
 ];
 
 /* ──────────────────────────── Accès ──────────────────────────────── */
