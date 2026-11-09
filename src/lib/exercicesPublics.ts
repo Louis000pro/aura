@@ -4332,6 +4332,301 @@ export const FICHES: FichePublique[] = [
       nomDansLeTitre: "le gainage dynamique",
     },
   },
+  {
+    slug: "sit-ups",
+    exercice: "Sit-ups",
+    categorie: "abdos",
+    title: "Sit-ups : technique et erreurs",
+    description:
+      "Comment faire les sit-ups : la position, l’enroulement du buste jusqu’à s’asseoir, la descente vertèbre par vertèbre et les erreurs fréquentes. En animation.",
+    contenu: {
+      definition:
+        "Au sit-up, on est allongé sur le dos, genoux pliés, et on enroule le buste jusqu’à s’asseoir, avant de redescendre en déroulant le dos : les abdominaux travaillent sur toute l’amplitude. Le mouvement va plus loin que le crunch, qui ne décolle que le haut du dos.",
+      gabarit: "mouvement",
+      etapes: [
+        {
+          titre: "S’installer",
+          texte:
+            "Allongé sur le dos, genoux pliés, pieds à plat au sol. Les mains se posent derrière la tête sans la tirer, ou se croisent sur la poitrine.",
+        },
+        {
+          titre: "Monter",
+          texte:
+            "Enroule le buste en décollant d’abord la tête, puis les épaules, puis le dos, jusqu’à être assis.",
+        },
+        {
+          titre: "Redescendre",
+          texte:
+            "Déroule le dos vertèbre par vertèbre jusqu’au sol, sans te laisser tomber, puis enchaîne.",
+        },
+      ],
+      erreurs: [
+        {
+          titre: "Tirer sur la nuque",
+          pourquoi:
+            "Des mains qui tirent la tête vers l’avant fatiguent la nuque sans aider le ventre. Elles soutiennent seulement la tête, ou restent croisées sur la poitrine.",
+        },
+        {
+          titre: "Se lancer avec les bras",
+          pourquoi:
+            "Un élan des bras pour monter fait faire le travail à l’inertie. La montée vient de l’enroulement du buste.",
+        },
+        {
+          titre: "Se laisser retomber",
+          pourquoi:
+            "Une descente lâchée fait perdre la moitié du travail et cogne le dos contre le sol. Elle se fait lentement, en déroulant.",
+        },
+      ],
+      variantes: [
+        {
+          angle: "Seulement le haut du dos",
+          exercice: "Crunch",
+          texte:
+            "On n’enroule que le haut du dos, sans s’asseoir : le mouvement est plus court, le grand droit de l’abdomen travaille.",
+        },
+        {
+          angle: "Les jambes qui montent",
+          exercice: "Relevés de jambes",
+          texte:
+            "Le buste reste au sol, ce sont les jambes tendues qui montent puis redescendent.",
+        },
+        {
+          angle: "Jambes et buste ensemble",
+          exercice: "V-ups",
+          texte:
+            "On monte les jambes et le buste en même temps pour toucher les pieds : tout l’avant du tronc travaille d’un coup.",
+        },
+      ],
+      titreVariantes: "Variantes et mouvements proches",
+      placement:
+        "Les sit-ups se placent en fin de séance, avec les autres exercices d’abdos, ou dans un circuit au poids du corps. Un tapis rend la position plus confortable pour le dos.",
+      materiel: "Aucun, un tapis pour le confort",
+      materielCourt: "Sans matériel",
+      nomDansLeTitre: "des sit-ups",
+    },
+  },
+  {
+    slug: "hollow-hold",
+    exercice: "Hollow hold",
+    categorie: "abdos",
+    title: "Hollow hold : la position et les erreurs",
+    description:
+      "Comment faire le hollow hold : allongé, épaules et jambes décollées, le bas du dos plaqué au sol, la respiration et les erreurs fréquentes. La position illustrée.",
+    contenu: {
+      definition:
+        "Le hollow hold se tient allongé sur le dos, bras tendus au-dessus de la tête et jambes tendues : on décolle les épaules et les jambes de quelques centimètres en gardant le bas du dos plaqué au sol, et on tient. Tout l’avant du tronc travaille, sans bouger, pendant toute la tenue.",
+      gabarit: "tenue",
+      etapes: [
+        {
+          titre: "S’installer",
+          texte:
+            "Allongé sur le dos, bras tendus au-dessus de la tête, jambes tendues et serrées.",
+        },
+        {
+          titre: "Décoller",
+          texte:
+            "Plaque le bas du dos contre le sol, puis décolle les épaules et les jambes de quelques centimètres. Les bras restent près des oreilles.",
+        },
+        {
+          titre: "Tenir et respirer",
+          texte:
+            "Respire normalement pendant toute la tenue. Si le bas du dos décolle, monte les jambes un peu plus haut ou plie les genoux.",
+        },
+      ],
+      erreurs: [
+        {
+          titre: "Laisser le bas du dos se creuser",
+          pourquoi:
+            "Un bas du dos qui décolle du sol fait passer l’effort sur la colonne. Plus les jambes sont hautes, plus il est facile de le garder plaqué.",
+        },
+        {
+          titre: "Relever la tête vers les pieds",
+          pourquoi:
+            "Une tête qui monte fatigue la nuque sans aider le ventre. Le regard reste vers le plafond, le menton à peine rentré.",
+        },
+        {
+          titre: "Bloquer la respiration",
+          pourquoi:
+            "Retenir son souffle écourte la tenue. Une respiration lente aide à tenir plus longtemps.",
+        },
+      ],
+      variantes: [
+        {
+          angle: "Face au sol",
+          exercice: "Gainage",
+          texte:
+            "La planche sur les avant-bras : le tronc travaille aussi sans bouger, face au sol.",
+        },
+        {
+          angle: "En bougeant bras et jambes",
+          exercice: "Dead bug",
+          texte:
+            "Sur le dos, on éloigne un bras et la jambe opposée, puis on change : le ventre garde le bas du dos au sol pendant que les membres bougent.",
+        },
+        {
+          angle: "Les jambes qui montent",
+          exercice: "Relevés de jambes",
+          texte:
+            "On monte et on redescend les deux jambes tendues, le buste au sol.",
+        },
+      ],
+      titreVariantes: "Variantes et mouvements proches",
+      muscles: ["Abdominaux", "Muscles profonds du tronc"],
+      placement:
+        "Le hollow hold se place en fin de séance, avec le gainage, ou en échauffement pour réveiller le tronc. Une série dure tant que le bas du dos reste plaqué.",
+      materiel: "Aucun, un tapis pour le confort",
+      materielCourt: "Sans matériel",
+      promesse: "Allongé, épaules et jambes décollées du sol, on tient : tout l’avant du tronc travaille, le bas du dos plaqué.",
+      nomDansLeTitre: "le hollow hold",
+    },
+  },
+  {
+    slug: "step-up",
+    exercice: "Step up banc",
+    categorie: "jambes",
+    title: "Step up sur un banc : technique et erreurs",
+    description:
+      "Comment faire le step up sur un banc : le pied posé en entier, la poussée dans le talon, la montée sans élan, la descente et les erreurs fréquentes. En animation.",
+    contenu: {
+      definition:
+        "Au step up, on monte sur un banc ou une marche stable en poussant sur la jambe posée dessus, puis on redescend : chaque jambe travaille à son tour, les cuisses et les fessiers en tête. Le geste ressemble à la montée d’un escalier, avec une marche plus haute.",
+      gabarit: "mouvement",
+      etapes: [
+        {
+          titre: "Se placer",
+          texte:
+            "Face à un banc stable, à une hauteur où le genou arrive à peu près à angle droit quand le pied est posé dessus. Pose un pied en entier sur le banc.",
+        },
+        {
+          titre: "Monter",
+          texte:
+            "Pousse dans le talon du pied posé sur le banc pour monter, sans t’aider de la jambe restée au sol, jusqu’à être debout sur le banc.",
+        },
+        {
+          titre: "Redescendre",
+          texte:
+            "Redescends lentement le pied arrière au sol, puis remonte avec la même jambe, ou alterne les jambes.",
+        },
+      ],
+      erreurs: [
+        {
+          titre: "Pousser avec la jambe du bas",
+          pourquoi:
+            "Un rebond sur la jambe restée au sol donne de l’élan et soulage la jambe qui travaille. La jambe du bas ne fait que suivre.",
+        },
+        {
+          titre: "Poser seulement l’avant du pied",
+          pourquoi:
+            "Un talon dans le vide charge l’avant du genou et déséquilibre. Tout le pied se pose sur le banc.",
+        },
+        {
+          titre: "Laisser le genou rentrer",
+          pourquoi:
+            "Un genou qui part vers l’intérieur pendant la montée perd l’alignement avec le pied. Il reste dans l’axe des orteils.",
+        },
+      ],
+      variantes: [
+        {
+          angle: "Un grand pas au sol",
+          exercice: "Fentes",
+          texte:
+            "On avance d’un grand pas et on descend le genou arrière vers le sol : chaque jambe travaille à son tour, sans banc.",
+        },
+        {
+          angle: "Le pied arrière sur le banc",
+          exercice: "Squat bulgare",
+          texte:
+            "Le pied arrière posé sur le banc, on descend sur la jambe avant : le travail se concentre sur une seule jambe.",
+        },
+        {
+          angle: "En sautant",
+          exercice: "Box jump",
+          texte:
+            "On saute à pieds joints sur une caisse stable, puis on redescend en marchant : les deux jambes travaillent de façon explosive.",
+        },
+      ],
+      titreVariantes: "Variantes et mouvements proches",
+      placement:
+        "Le step up se place dans une séance de jambes, après le squat ou les fentes, ou dans un circuit au poids du corps. Des haltères dans les mains le rendent plus exigeant.",
+      materiel: "Un banc ou une marche stable",
+      materielCourt: "Banc",
+      nomDansLeTitre: "un step up",
+    },
+  },
+  {
+    slug: "rowing-inverse",
+    exercice: "Rowing inversé",
+    categorie: "dos",
+    title: "Rowing inversé : technique et erreurs",
+    description:
+      "Comment faire le rowing inversé : sous une barre basse, le corps gainé, la poitrine tirée vers la barre, la descente et les erreurs fréquentes. En animation.",
+    contenu: {
+      definition:
+        "Au rowing inversé, on se suspend sous une barre basse, les talons au sol et le corps tendu, et on tire la poitrine vers la barre avant de redescendre : le dos et les biceps travaillent, avec le poids du corps. Plus le corps est proche de l’horizontale, plus le mouvement est exigeant.",
+      gabarit: "mouvement",
+      etapes: [
+        {
+          titre: "Se placer",
+          texte:
+            "Sous une barre bien fixée à hauteur de hanches, une barre de rack ou une barre guidée, saisis-la mains un peu plus écartées que les épaules. Avance les pieds jusqu’à avoir le corps tendu, talons au sol.",
+        },
+        {
+          titre: "Tirer",
+          texte:
+            "Tire la poitrine vers la barre en rapprochant les omoplates, coudes vers l’arrière, le corps gainé des épaules aux talons.",
+        },
+        {
+          titre: "Redescendre",
+          texte:
+            "Redescends lentement jusqu’aux bras tendus, sans laisser le bassin tomber.",
+        },
+      ],
+      erreurs: [
+        {
+          titre: "Casser les hanches",
+          pourquoi:
+            "Un bassin qui descend raccourcit le mouvement et fait perdre le gainage. Le corps reste droit comme une planche.",
+        },
+        {
+          titre: "Tendre le menton vers la barre",
+          pourquoi:
+            "Allonger le cou pour toucher la barre donne l’impression de monter plus haut, sans faire travailler le dos. C’est la poitrine qui vient à la barre.",
+        },
+        {
+          titre: "Ne descendre qu’à moitié",
+          pourquoi:
+            "S’arrêter les coudes pliés réduit le travail. Redescends jusqu’aux bras tendus à chaque répétition.",
+        },
+      ],
+      variantes: [
+        {
+          angle: "Suspendu, à la verticale",
+          exercice: "Tractions",
+          texte:
+            "Pendu à une barre haute, on monte le menton au-dessus de la barre : tout le poids du corps passe dans les bras.",
+        },
+        {
+          angle: "Un bras à la fois, aux haltères",
+          exercice: "Rowing haltère",
+          texte:
+            "Une main et un genou sur un banc, on tire un haltère vers la hanche : chaque côté travaille seul, avec une charge qu’on choisit.",
+        },
+        {
+          angle: "Assis, à la poulie",
+          exercice: "Rowing assis poulie",
+          texte:
+            "Assis face à une poulie basse, on tire une poignée vers le ventre : le même tirage, avec une charge réglable.",
+        },
+      ],
+      titreVariantes: "Variantes et mouvements proches",
+      placement:
+        "Le rowing inversé se place dans une séance de dos ou de haut du corps, souvent avant ou à la place des tractions quand elles sont encore difficiles.",
+      materiel: "Une barre fixée à hauteur de hanches",
+      materielCourt: "Barre basse",
+      promesse: "Suspendu sous une barre basse, on tire la poitrine vers elle : le dos travaille avec le poids du corps.",
+      nomDansLeTitre: "un rowing inversé",
+    },
+  },
 ];
 
 /* ──────────────────────────── Accès ──────────────────────────────── */
