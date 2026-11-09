@@ -48,6 +48,8 @@
     par `MarketingShell` ou `PageVitrine`, gabarits sans branche d'authentification. */
 const PUBLIQUES_TOUJOURS = [
   "/exercices",
+  "/programmes",
+  "/defis",
   "/a-propos",
   "/coach-ia",
   "/prise-de-masse",

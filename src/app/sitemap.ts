@@ -1,5 +1,7 @@
 import type { MetadataRoute } from "next";
 import { fichesPubliees } from "@/lib/exercicesPublics";
+import { programmesPublies } from "@/lib/programmesPublics";
+import { defisPublies } from "@/lib/defisPublics";
 
 /**
  * Sitemap des pages publiques indexables de Vaiiya.
@@ -60,6 +62,11 @@ const PAGES: string[] = [
   // fiche sans contenu n'a pas de route, elle n'a donc rien à faire ici.
   "/exercices",
 
+  // Les hubs des programmes et des défis (vague 2 de la bibliothèque
+  // publique) ; leurs pages sont ajoutées plus bas, depuis leurs sources.
+  "/programmes",
+  "/defis",
+
   // L'offre. Indexable même vente fermée : « prix Vaiiya » se cherche de toute
   // façon, mieux vaut y répondre nous-mêmes.
   "/premium",
@@ -81,5 +88,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
      précisément parce qu'elle est adossée à `generateStaticParams`. */
   const fiches = fichesPubliees().map((f) => `/exercices/${f.slug}`);
 
-  return [...PAGES, ...fiches].map((chemin) => ({ url: `${base}${chemin}` }));
+  const programmes = programmesPublies().map((p) => `/programmes/${p.slug}`);
+  const defis = defisPublies().map((d) => `/defis/${d.slug}`);
+
+  return [...PAGES, ...fiches, ...programmes, ...defis].map((chemin) => ({ url: `${base}${chemin}` }));
 }

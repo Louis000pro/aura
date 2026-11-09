@@ -20,6 +20,9 @@ export const SEO_PAGES: { href: string; label: string }[] = [
   // une page que personne ne lie ne reçoit aucun poids interne, et c'est
   // exactement ce qui avait rendu /guides invisible et inutile.
   { href: "/exercices", label: "Exercices" },
+  // Les programmes et les défis, vague 2 de la bibliothèque publique.
+  { href: "/programmes", label: "Programmes" },
+  { href: "/defis", label: "Défis" },
   // La page qui explique l'entité elle-même. Elle est en dernier parce qu'elle
   // ne répond pas à une question d'entraînement : on y va quand on se demande
   // qui est derrière, pas quand on cherche un programme.

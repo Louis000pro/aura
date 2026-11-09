@@ -23,6 +23,8 @@
 
 import { CHIFFRES_PUBLICS, PROGRAMMES_PUBLICS, SEANCES_INCLUSES } from "./chiffresPublics";
 import { fichesPubliees } from "./exercicesPublics";
+import { programmesPublies } from "./programmesPublics";
+import { defisPublies } from "./defisPublics";
 import { PLANS, VENTE_OUVERTE } from "./plans";
 
 const SITE = "https://vaiiya.fr";
@@ -96,6 +98,8 @@ export function texteLlms(): string {
     lien("À propos de Vaiiya", "/a-propos", "ce qu'est Vaiiya, ce qu'elle contient et comment le projet a commencé."),
     lien("Coach sportif IA", "/coach-ia", "ce que fait le coach IA de Vaiiya, et ce qu'il ne fait pas."),
     lien("Exercices de musculation", "/exercices", "les fiches d'exercices, avec l'animation du mouvement, la technique et les erreurs fréquentes, lisibles sans compte."),
+    lien("Programmes", "/programmes", "les programmes de plusieurs semaines, avec un test au départ et le même à la fin."),
+    lien("Défis", "/defis", "des défis à refaire d'un mois sur l'autre pour battre son propre score, sans classement."),
     lien("Programme musculation 3 fois par semaine", "/programme-musculation-3-fois-par-semaine", "organiser trois séances par semaine, avec un exemple en full body."),
     lien("Prise de masse", "/prise-de-masse", "prendre du muscle : surcharge progressive, surplus calorique et protéines."),
     lien("Perte de poids", "/perte-de-poids", "perdre du poids durablement : déficit calorique, musculation et cardio."),
@@ -106,6 +110,14 @@ export function texteLlms(): string {
     "## Fiches d'exercices",
     "",
     ...fichesPubliees().map((f) => lien(f.exercice, `/exercices/${f.slug}`, f.description)),
+    "",
+    "## Programmes",
+    "",
+    ...programmesPublies().map((p) => lien(p.def.titre, `/programmes/${p.slug}`, p.description)),
+    "",
+    "## Défis",
+    "",
+    ...defisPublies().map((d) => lien(d.c.titre, `/defis/${d.slug}`, d.description)),
     "",
     "## Optional",
     "",
