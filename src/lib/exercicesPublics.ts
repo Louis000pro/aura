@@ -2261,6 +2261,301 @@ export const FICHES: FichePublique[] = [
       nomDansLeTitre: "le face pull",
     },
   },
+  {
+    slug: "chaise-au-mur",
+    exercice: "Chaise au mur",
+    categorie: "jambes",
+    title: "Chaise au mur : la position et les erreurs",
+    description:
+      "Comment faire la chaise au mur : le dos plaqué, l’angle des genoux, la position des pieds, la respiration et les erreurs fréquentes. La position illustrée.",
+    contenu: {
+      definition:
+        "La chaise au mur se tient sans bouger : le dos plaqué contre un mur, on descend jusqu’à avoir les cuisses parallèles au sol, comme assis sur une chaise invisible, et on reste dans cette position. Les cuisses travaillent pendant toute la tenue, sans aucun saut ni impact, et sans autre matériel qu’un mur.",
+      gabarit: "tenue",
+      etapes: [
+        {
+          titre: "Se placer",
+          texte:
+            "Dos contre le mur, pieds écartés de la largeur des hanches et avancés d’environ un pas. Laisse-toi glisser le long du mur en pliant les genoux.",
+        },
+        {
+          titre: "Trouver l’angle",
+          texte:
+            "Arrête-toi quand les cuisses sont parallèles au sol, les genoux au-dessus des chevilles. Si c’est trop dur au début, reste un peu plus haut : l’angle se gagne avec les semaines.",
+        },
+        {
+          titre: "Tenir et respirer",
+          texte:
+            "Le dos et la tête restent collés au mur, les bras le long du corps. Respire calmement, sans bloquer, jusqu’à la fin de la tenue, puis remonte en poussant dans les talons.",
+        },
+      ],
+      erreurs: [
+        {
+          titre: "Placer les pieds trop près du mur",
+          pourquoi:
+            "Des pieds trop proches font passer les genoux devant les orteils et chargent l’avant du genou. Avance-les jusqu’à ce que les genoux se trouvent au-dessus des chevilles.",
+        },
+        {
+          titre: "Pousser avec les mains",
+          pourquoi:
+            "Des mains posées sur les cuisses soulagent les jambes et raccourcissent le travail. Laisse les bras le long du corps, ou croisés sur la poitrine.",
+        },
+        {
+          titre: "Bloquer la respiration",
+          pourquoi:
+            "Retenir son souffle fait monter la tension et écourte la tenue. Une respiration lente et régulière aide à tenir plus longtemps.",
+        },
+      ],
+      variantes: [
+        {
+          angle: "En mouvement, debout",
+          exercice: "Squat",
+          texte:
+            "Le même angle, mais on descend et on remonte sans mur : les cuisses et les fessiers travaillent en mouvement.",
+        },
+        {
+          angle: "Assis, à la machine",
+          exercice: "Leg extension",
+          texte:
+            "Assis, on tend les jambes contre un rouleau chargé : l’avant des cuisses travaille seul, sans le reste du corps.",
+        },
+        {
+          angle: "Une jambe à la fois",
+          exercice: "Fentes",
+          texte:
+            "Un grand pas, puis on descend le genou arrière vers le sol : chaque jambe travaille à son tour, avec plus d’équilibre à trouver.",
+        },
+      ],
+      titreVariantes: "Variantes et mouvements proches",
+      placement:
+        "La chaise au mur se place en fin de séance de jambes, quand les cuisses sont déjà chaudes, ou dans un circuit au poids du corps entre deux mouvements. Elle se fait aussi à la maison, partout où il y a un mur libre.",
+      materiel: "Un mur",
+      materielCourt: "Sans matériel",
+      promesse: "Le dos contre le mur, les cuisses à l’horizontale, on tient : les cuisses travaillent sans aucun impact.",
+      nomDansLeTitre: "la chaise au mur",
+    },
+  },
+  {
+    slug: "releves-de-jambes",
+    exercice: "Relevés de jambes",
+    categorie: "abdos",
+    title: "Relevés de jambes : technique et erreurs",
+    description:
+      "Comment faire les relevés de jambes au sol : la position, la montée des jambes, la descente contrôlée, le dos plaqué et les erreurs fréquentes. En animation.",
+    contenu: {
+      definition:
+        "Aux relevés de jambes, on est allongé sur le dos et on monte les jambes tendues jusqu’à la verticale, puis on les redescend lentement : les abdominaux travaillent pour garder le bas du dos au sol pendant que les jambes bougent. Plus les jambes descendent près du sol, plus le travail est intense.",
+      gabarit: "mouvement",
+      etapes: [
+        {
+          titre: "S’installer",
+          texte:
+            "Allongé sur le dos, jambes tendues et serrées, bras le long du corps, paumes au sol. Plaque le bas du dos contre le sol avant de commencer.",
+        },
+        {
+          titre: "Monter les jambes",
+          texte:
+            "Monte les jambes tendues jusqu’à ce qu’elles soient à la verticale, au-dessus des hanches, sans élan.",
+        },
+        {
+          titre: "Redescendre lentement",
+          texte:
+            "Redescends en contrôlant, jusqu’à frôler le sol, ou moins bas si le bas du dos décolle. C’est le dos plaqué qui fixe l’amplitude, pas le sol.",
+        },
+      ],
+      erreurs: [
+        {
+          titre: "Laisser le bas du dos se creuser",
+          pourquoi:
+            "Quand les jambes descendent trop bas pour le ventre, le bas du dos décolle et se cambre. Arrête la descente plus haut, ou plie légèrement les genoux.",
+        },
+        {
+          titre: "Prendre de l’élan",
+          pourquoi:
+            "Des jambes lancées vers le haut puis lâchées font travailler l’élan à la place du ventre. Monte et descends au même rythme, sans à-coup.",
+        },
+        {
+          titre: "Pousser sur les mains",
+          pourquoi:
+            "Appuyer fort sur les paumes soulage les abdominaux. Les mains restent posées pour l’équilibre, sans pousser le sol.",
+        },
+      ],
+      variantes: [
+        {
+          angle: "Genoux pliés, bassin qui s’enroule",
+          exercice: "Reverse crunch",
+          texte:
+            "On ramène les genoux vers la poitrine en décollant légèrement le bassin : le mouvement est plus court, le bas du dos moins sollicité.",
+        },
+        {
+          angle: "En tenue",
+          exercice: "Hollow hold",
+          texte:
+            "Jambes et épaules décollées du sol, on tient la position sans bouger, le bas du dos plaqué.",
+        },
+        {
+          angle: "Jambes et buste ensemble",
+          exercice: "V-ups",
+          texte:
+            "On monte les jambes et le buste en même temps pour toucher les pieds : tout l’avant du tronc travaille d’un coup.",
+        },
+      ],
+      titreVariantes: "Variantes et mouvements proches",
+      placement:
+        "Les relevés de jambes se placent en fin de séance, avec les autres exercices d’abdos, ou dans un circuit au poids du corps. Un tapis rend la position plus confortable pour le dos.",
+      materiel: "Aucun, un tapis pour le confort",
+      materielCourt: "Sans matériel",
+      promesse: "Allongé, on monte les jambes tendues puis on les redescend lentement : le ventre travaille pour garder le dos au sol.",
+      nomDansLeTitre: "des relevés de jambes",
+    },
+  },
+  {
+    slug: "jumping-jacks",
+    exercice: "Jumping jacks",
+    categorie: "cardio",
+    title: "Jumping jacks : le mouvement et les erreurs",
+    description:
+      "Comment faire les jumping jacks : le saut pieds écartés, les bras au-dessus de la tête, la réception souple, le rythme et les erreurs fréquentes. En animation.",
+    contenu: {
+      definition:
+        "Le jumping jack est un saut sur place : on écarte les pieds en levant les bras au-dessus de la tête, puis on revient pieds joints, bras le long du corps, et on enchaîne. Il fait monter le cœur et réveille tout le corps en quelques secondes, c’est pour ça qu’on le trouve si souvent au début d’un échauffement.",
+      gabarit: "mouvement",
+      etapes: [
+        {
+          titre: "Se placer",
+          texte:
+            "Debout, pieds joints, bras le long du corps, genoux légèrement fléchis.",
+        },
+        {
+          titre: "Sauter en écartant",
+          texte:
+            "Saute en écartant les pieds un peu plus large que les épaules, pendant que les bras montent sur les côtés jusqu’au-dessus de la tête.",
+        },
+        {
+          titre: "Revenir",
+          texte:
+            "Saute de nouveau pour revenir pieds joints, bras le long du corps, et enchaîne. Le rythme reste régulier, du début à la fin de la série.",
+        },
+      ],
+      erreurs: [
+        {
+          titre: "Atterrir jambes tendues",
+          pourquoi:
+            "Retomber genoux bloqués, sur les talons, fait encaisser le choc par les articulations. Reçois-toi sur l’avant du pied, genoux souples.",
+        },
+        {
+          titre: "Lever les bras à moitié",
+          pourquoi:
+            "Des bras qui s’arrêtent à hauteur d’épaules réduisent le mouvement et le travail du cœur. Ils montent jusqu’au-dessus de la tête à chaque saut.",
+        },
+        {
+          titre: "Partir trop vite",
+          pourquoi:
+            "Un départ très rapide essouffle en quelques secondes et casse le rythme de la série. Commence à une allure que tu peux tenir, puis accélère si tu veux.",
+        },
+      ],
+      variantes: [
+        {
+          angle: "Sur place, genoux hauts",
+          exercice: "Montées de genoux",
+          texte:
+            "On court sur place en montant les genoux à hauteur des hanches : le travail se concentre sur les jambes et le souffle.",
+        },
+        {
+          angle: "Avec une corde",
+          exercice: "Corde à sauter",
+          texte:
+            "De petits sauts réguliers, les poignets font tourner la corde : il faut un peu de coordination, et le rythme s’installe vite.",
+        },
+        {
+          angle: "Avec un passage au sol",
+          exercice: "Burpees",
+          texte:
+            "On ajoute une descente en planche entre deux sauts : tout le corps travaille, et le souffle monte plus vite.",
+        },
+      ],
+      titreVariantes: "Variantes et mouvements proches",
+      placement:
+        "Les jumping jacks ouvrent souvent un échauffement, une ou deux minutes avant les premiers mouvements. Ils trouvent aussi leur place dans un circuit cardio, en alternance avec des mouvements au sol. Sur un sol dur ou en appartement, des baskets qui amortissent rendent les sauts plus confortables.",
+      materiel: "Aucun",
+      materielCourt: "Sans matériel",
+      nomDansLeTitre: "des jumping jacks",
+    },
+  },
+  {
+    slug: "dips-sur-chaise",
+    exercice: "Dips sur chaise",
+    categorie: "bras",
+    title: "Dips sur chaise : technique et erreurs",
+    description:
+      "Comment faire des dips sur une chaise : la position des mains, la descente coudes vers l’arrière, la remontée et les erreurs fréquentes. Le mouvement en animation.",
+    contenu: {
+      definition:
+        "Les dips sur chaise se font dos à une chaise, les mains posées sur le bord de l’assise : en pliant les coudes, on fait descendre le corps, puis on remonte en tendant les bras. Ce sont surtout les triceps, à l’arrière du bras, qui font le travail, avec un simple meuble stable à la maison.",
+      gabarit: "mouvement",
+      etapes: [
+        {
+          titre: "Se placer",
+          texte:
+            "Dos à une chaise stable, calée contre un mur si possible, mains posées sur le bord de l’assise, doigts vers l’avant. Avance les pieds : jambes pliées pour commencer, tendues comme sur l’animation quand le mouvement devient facile.",
+        },
+        {
+          titre: "Descendre",
+          texte:
+            "Plie les coudes vers l’arrière pour faire descendre le corps, le dos proche de la chaise, jusqu’à ce que les bras forment un angle droit.",
+        },
+        {
+          titre: "Remonter",
+          texte:
+            "Pousse dans les paumes pour tendre les bras et remonter, épaules basses, loin des oreilles.",
+        },
+      ],
+      erreurs: [
+        {
+          titre: "Ouvrir les coudes sur les côtés",
+          pourquoi:
+            "Des coudes qui s’écartent font passer le travail des triceps vers les épaules. Ils pointent vers l’arrière pendant toute la descente.",
+        },
+        {
+          titre: "Descendre trop bas",
+          pourquoi:
+            "Au-delà de l’angle droit, l’avant de l’épaule se retrouve très étiré. Arrête-toi quand les bras forment un angle droit.",
+        },
+        {
+          titre: "S’éloigner de la chaise",
+          pourquoi:
+            "Un bassin qui part vers l’avant fait basculer le poids sur les épaules. Garde le dos près du bord de l’assise, presque à le frôler.",
+        },
+      ],
+      variantes: [
+        {
+          angle: "Aux barres parallèles",
+          exercice: "Dips barres parallèles",
+          texte:
+            "Le corps entier est suspendu entre deux barres : tout le poids passe dans les bras, et les pectoraux participent davantage.",
+        },
+        {
+          angle: "Au sol, mains serrées",
+          exercice: "Pompes diamant",
+          texte:
+            "Une pompe les mains rapprochées sous la poitrine : les triceps travaillent beaucoup, et le sol suffit.",
+        },
+        {
+          angle: "Avec un haltère",
+          exercice: "Extension triceps haltère",
+          texte:
+            "L’haltère descend derrière la tête puis remonte bras tendus : les triceps travaillent seuls, sans le poids du corps.",
+        },
+      ],
+      titreVariantes: "Variantes et mouvements proches",
+      placement:
+        "Les dips sur chaise se placent en fin de séance de haut du corps, après les pompes, ou dans un circuit au poids du corps à la maison. Ils se combinent bien avec des pompes, pour enchaîner poussée et triceps.",
+      materiel: "Une chaise stable ou un banc",
+      materielCourt: "Une chaise",
+      promesse: "Les mains sur le bord d’une chaise, on plie les coudes vers l’arrière : les triceps travaillent avec un simple meuble.",
+      nomDansLeTitre: "des dips sur chaise",
+    },
+  },
 ];
 
 /* ──────────────────────────── Accès ──────────────────────────────── */
