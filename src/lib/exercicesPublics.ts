@@ -4924,6 +4924,598 @@ export const FICHES: FichePublique[] = [
       nomDansLeTitre: "un pullover à l’haltère",
     },
   },
+  {
+    slug: "v-ups",
+    exercice: "V-ups",
+    categorie: "abdos",
+    title: "V-ups : technique et erreurs",
+    description:
+      "Comment faire les V-ups : allongé, monter bras et jambes en même temps pour former un V, la descente contrôlée et les erreurs fréquentes. En animation.",
+    contenu: {
+      definition:
+        "Aux V-ups, on part allongé sur le dos, bras tendus au-dessus de la tête, et on monte en même temps les jambes tendues et le buste pour aller toucher les pieds, le corps formant un V, avant de redescendre : tout l’avant du tronc travaille d’un coup. C’est un mouvement exigeant.",
+      gabarit: "mouvement",
+      etapes: [
+        {
+          titre: "S’installer",
+          texte:
+            "Allongé sur le dos, bras tendus au-dessus de la tête, jambes tendues et serrées.",
+        },
+        {
+          titre: "Monter en V",
+          texte:
+            "Monte en même temps les jambes et le buste, bras tendus vers les pieds, jusqu’à t’équilibrer sur les fesses. Plie les genoux si les jambes tendues sont trop difficiles.",
+        },
+        {
+          titre: "Redescendre",
+          texte:
+            "Redescends lentement bras et jambes jusqu’à frôler le sol, puis enchaîne.",
+        },
+      ],
+      erreurs: [
+        {
+          titre: "Se lancer avec les bras",
+          pourquoi:
+            "Un grand élan des bras fait monter le buste sans que le ventre travaille vraiment. Bras et jambes montent ensemble, de façon contrôlée.",
+        },
+        {
+          titre: "Laisser le dos se creuser à la descente",
+          pourquoi:
+            "Des jambes qui retombent tendues creusent le bas du dos. Contrôle la descente, et plie les genoux si le dos décolle.",
+        },
+        {
+          titre: "Arrondir les épaules vers l’avant",
+          pourquoi:
+            "Des épaules qui s’enroulent raccourcissent le mouvement sans travailler plus. Garde la poitrine ouverte en montant.",
+        },
+      ],
+      variantes: [
+        {
+          angle: "Le buste seul",
+          exercice: "Sit-ups",
+          texte:
+            "Genoux pliés, pieds au sol, on enroule le buste jusqu’à s’asseoir.",
+        },
+        {
+          angle: "Les jambes seules",
+          exercice: "Relevés de jambes",
+          texte:
+            "Le buste reste au sol, ce sont les jambes tendues qui montent puis redescendent.",
+        },
+        {
+          angle: "En tenue",
+          exercice: "Hollow hold",
+          texte:
+            "Épaules et jambes décollées du sol, on tient la position sans bouger.",
+        },
+      ],
+      titreVariantes: "Variantes et mouvements proches",
+      muscles: ["Abdominaux", "Muscles profonds du tronc"],
+      placement:
+        "Les V-ups se placent en fin de séance, avec les autres exercices d’abdos, en séries courtes. Un tapis rend la position plus confortable.",
+      materiel: "Aucun, un tapis pour le confort",
+      materielCourt: "Sans matériel",
+      nomDansLeTitre: "des V-ups",
+    },
+  },
+  {
+    slug: "reverse-crunch",
+    exercice: "Reverse crunch",
+    categorie: "abdos",
+    title: "Reverse crunch : technique et erreurs",
+    description:
+      "Comment faire le reverse crunch : allongé, genoux pliés, l’enroulement du bassin vers la poitrine, la descente lente et les erreurs fréquentes. En animation.",
+    contenu: {
+      definition:
+        "Au reverse crunch, on est allongé sur le dos, genoux pliés au-dessus des hanches, et on enroule le bassin vers la poitrine en décollant légèrement les fesses du sol, avant de revenir : les abdominaux travaillent, et la tête reste posée, sans tirer sur la nuque.",
+      gabarit: "mouvement",
+      etapes: [
+        {
+          titre: "S’installer",
+          texte:
+            "Allongé sur le dos, bras le long du corps, paumes au sol. Monte les jambes, genoux pliés à angle droit au-dessus des hanches.",
+        },
+        {
+          titre: "Enrouler le bassin",
+          texte:
+            "Ramène les genoux vers la poitrine en enroulant le bassin, jusqu’à décoller légèrement les fesses du sol.",
+        },
+        {
+          titre: "Revenir",
+          texte:
+            "Redescends lentement le bassin jusqu’au sol, les genoux revenant au-dessus des hanches, puis enchaîne.",
+        },
+      ],
+      erreurs: [
+        {
+          titre: "Lancer les jambes",
+          pourquoi:
+            "Un élan des jambes soulève le bassin sans que le ventre travaille. Enroule lentement, comme si tu voulais amener le pubis vers le nombril.",
+        },
+        {
+          titre: "Pousser sur les mains",
+          pourquoi:
+            "Des paumes qui poussent fort le sol aident le mouvement. Elles restent posées pour l’équilibre.",
+        },
+        {
+          titre: "Laisser retomber le bassin",
+          pourquoi:
+            "Une descente lâchée fait perdre une bonne partie du travail. Le bassin redescend aussi lentement qu’il est monté.",
+        },
+      ],
+      variantes: [
+        {
+          angle: "Le haut du dos qui s’enroule",
+          exercice: "Crunch",
+          texte:
+            "On enroule le haut du dos vers les genoux, le bassin au sol : le mouvement inverse.",
+        },
+        {
+          angle: "Les jambes tendues",
+          exercice: "Relevés de jambes",
+          texte:
+            "On monte et on redescend les deux jambes tendues : le levier est plus grand.",
+        },
+        {
+          angle: "En pédalant",
+          exercice: "Bicycle crunch",
+          texte:
+            "On amène un coude vers le genou opposé pendant que l’autre jambe s’allonge : la rotation s’ajoute.",
+        },
+      ],
+      titreVariantes: "Variantes et mouvements proches",
+      placement:
+        "Le reverse crunch se place en fin de séance, avec les autres exercices d’abdos. Il convient bien à qui sent sa nuque pendant les crunchs.",
+      materiel: "Aucun, un tapis pour le confort",
+      materielCourt: "Sans matériel",
+      promesse: "Allongé, on enroule le bassin vers la poitrine : le ventre travaille sans tirer sur la nuque.",
+      nomDansLeTitre: "un reverse crunch",
+    },
+  },
+  {
+    slug: "donkey-kick",
+    exercice: "Donkey kick",
+    categorie: "jambes",
+    title: "Donkey kick : technique et erreurs",
+    description:
+      "Comment faire le donkey kick : à quatre pattes, le talon qui monte vers le plafond, le dos qui reste droit, le rythme et les erreurs fréquentes. En animation.",
+    contenu: {
+      definition:
+        "Au donkey kick, on est à quatre pattes et on monte un talon vers le plafond, genou plié à angle droit, avant de le redescendre : le fessier de la jambe qui monte travaille, une jambe après l’autre. Le dos reste droit pendant tout le mouvement.",
+      gabarit: "mouvement",
+      etapes: [
+        {
+          titre: "Se placer",
+          texte:
+            "À quatre pattes, mains sous les épaules, genoux sous les hanches, dos droit, regard vers le sol.",
+        },
+        {
+          titre: "Monter le talon",
+          texte:
+            "Garde le genou plié à angle droit et monte le talon vers le plafond, jusqu’à ce que la cuisse arrive dans le prolongement du dos. Serre le fessier en haut.",
+        },
+        {
+          titre: "Redescendre",
+          texte:
+            "Ramène le genou sous la hanche sans le poser, puis remonte. Fais toutes les répétitions d’une jambe, puis change.",
+        },
+      ],
+      erreurs: [
+        {
+          titre: "Cambrer le bas du dos",
+          pourquoi:
+            "Monter la jambe trop haut fait creuser le bas du dos, et le fessier travaille moins. La cuisse s’arrête dans le prolongement du dos.",
+        },
+        {
+          titre: "Laisser le bassin tourner",
+          pourquoi:
+            "Une hanche qui s’ouvre vers le côté donne de l’amplitude sans travail. Les deux hanches restent à la même hauteur.",
+        },
+        {
+          titre: "Lancer la jambe",
+          pourquoi:
+            "Un coup de pied rapide laisse l’élan faire le mouvement. Monte et redescends de façon contrôlée.",
+        },
+      ],
+      variantes: [
+        {
+          angle: "Debout, à la poulie",
+          exercice: "Kickback fessier poulie",
+          texte:
+            "Debout face à une poulie basse, on pousse la jambe vers l’arrière contre une charge : le même travail, avec une charge réglable.",
+        },
+        {
+          angle: "Sur le dos",
+          exercice: "Pont fessier",
+          texte:
+            "Allongé sur le dos, on monte le bassin en poussant dans les talons : les deux fessiers travaillent ensemble.",
+        },
+        {
+          angle: "Bras et jambe opposés",
+          exercice: "Bird dog",
+          texte:
+            "À quatre pattes, on tend un bras et la jambe opposée : le tronc travaille pour rester stable.",
+        },
+      ],
+      titreVariantes: "Variantes et mouvements proches",
+      placement:
+        "Le donkey kick se place en fin de séance de jambes ou de fessiers, ou en échauffement avant le squat et le soulevé de terre.",
+      materiel: "Aucun, un tapis pour le confort",
+      materielCourt: "Sans matériel",
+      promesse: "À quatre pattes, on monte un talon vers le plafond : le fessier travaille, une jambe après l’autre.",
+      nomDansLeTitre: "un donkey kick",
+    },
+  },
+  {
+    slug: "extensions-lombaires",
+    exercice: "Extensions lombaires banc",
+    categorie: "dos",
+    title: "Extensions lombaires au banc : technique et erreurs",
+    description:
+      "Comment faire les extensions lombaires au banc : le réglage, la descente du buste, la remontée jusqu’à l’alignement et les erreurs fréquentes. En animation.",
+    contenu: {
+      definition:
+        "Aux extensions lombaires, on se place sur un banc à lombaires incliné, les hanches calées sur le coussin et les chevilles sous les rouleaux, et on descend le buste vers le sol avant de remonter jusqu’à l’alignement des jambes : le bas du dos, les fessiers et l’arrière des cuisses travaillent.",
+      gabarit: "mouvement",
+      etapes: [
+        {
+          titre: "Régler le banc",
+          texte:
+            "Règle le coussin pour que le haut des cuisses soit calé dessus et que les hanches restent libres de plier. Les chevilles se placent sous les rouleaux, mains croisées sur la poitrine.",
+        },
+        {
+          titre: "Descendre",
+          texte:
+            "Penche le buste vers le sol en pliant les hanches, dos droit, aussi loin que le dos reste droit.",
+        },
+        {
+          titre: "Remonter",
+          texte:
+            "Remonte en serrant les fessiers jusqu’à ce que le corps forme une ligne droite, sans partir en arrière.",
+        },
+      ],
+      erreurs: [
+        {
+          titre: "Remonter trop haut",
+          pourquoi:
+            "Dépasser l’alignement pour se cambrer charge fortement le bas du dos. Arrête-toi quand le corps est droit.",
+        },
+        {
+          titre: "Arrondir le dos en bas",
+          pourquoi:
+            "Un dos qui s’enroule au bas du mouvement fait travailler la colonne au lieu des hanches. Descends seulement tant que le dos reste droit.",
+        },
+        {
+          titre: "Aller trop vite",
+          pourquoi:
+            "Un mouvement par à-coups laisse l’élan faire le travail. Descends et remonte de façon contrôlée.",
+        },
+      ],
+      variantes: [
+        {
+          angle: "Au sol, sans banc",
+          exercice: "Superman",
+          texte:
+            "Allongé sur le ventre, on décolle bras et jambes de quelques centimètres : le bas du dos travaille avec une plus petite amplitude.",
+        },
+        {
+          angle: "Debout, avec une charge",
+          exercice: "Soulevé de terre roumain",
+          texte:
+            "On descend la charge le long des jambes en poussant les fesses vers l’arrière : la même charnière de hanche, debout.",
+        },
+        {
+          angle: "À quatre pattes",
+          exercice: "Bird dog",
+          texte:
+            "On tend un bras et la jambe opposée : le dos travaille pour rester stable, sans charge.",
+        },
+      ],
+      titreVariantes: "Variantes et mouvements proches",
+      muscles: ["Lombaires", "Fessiers", "Ischio-jambiers"],
+      placement:
+        "Les extensions lombaires se placent en fin de séance de dos ou de jambes, en séries de douze à quinze répétitions, au poids du corps pour commencer.",
+      materiel: "Un banc à lombaires",
+      materielCourt: "Banc à lombaires",
+      nomDansLeTitre: "des extensions lombaires",
+    },
+  },
+  {
+    slug: "thruster-halteres",
+    exercice: "Thruster haltères",
+    categorie: "cardio",
+    title: "Thruster aux haltères : technique et erreurs",
+    description:
+      "Comment faire le thruster aux haltères : le squat haltères aux épaules, la remontée qui enchaîne sur la poussée au-dessus de la tête et les erreurs fréquentes. En animation.",
+    contenu: {
+      definition:
+        "Le thruster enchaîne un squat et une poussée au-dessus de la tête en un seul mouvement : les haltères aux épaules, on descend en squat, puis on remonte en poussant les haltères vers le haut grâce à l’élan des jambes. Tout le corps travaille, et le souffle monte vite.",
+      gabarit: "mouvement",
+      etapes: [
+        {
+          titre: "Se placer",
+          texte:
+            "Debout, pieds un peu plus écartés que les hanches, un haltère dans chaque main à hauteur d’épaules, coudes devant.",
+        },
+        {
+          titre: "Descendre en squat",
+          texte:
+            "Descends en squat, cuisses vers l’horizontale, buste droit, les haltères restant aux épaules.",
+        },
+        {
+          titre: "Remonter et pousser",
+          texte:
+            "Remonte avec force et, dans le même élan, pousse les haltères au-dessus de la tête jusqu’aux bras tendus. Redescends les haltères aux épaules en repartant dans le squat suivant.",
+        },
+      ],
+      erreurs: [
+        {
+          titre: "Couper le mouvement en deux",
+          pourquoi:
+            "Un squat, un arrêt, puis une poussée font travailler les bras seuls sur la montée des haltères. L’élan des jambes doit passer dans la poussée.",
+        },
+        {
+          titre: "Laisser les coudes tomber",
+          pourquoi:
+            "Des coudes qui pointent vers le sol en bas du squat font basculer le buste vers l’avant. Garde-les devant, sous les haltères.",
+        },
+        {
+          titre: "Cambrer en haut",
+          pourquoi:
+            "Un bas du dos qui se creuse quand les bras sont tendus fait passer la charge sur la colonne. Serre le ventre et les fessiers en haut.",
+        },
+      ],
+      variantes: [
+        {
+          angle: "Le squat seul",
+          exercice: "Goblet squat",
+          texte:
+            "Un haltère tenu contre la poitrine, on descend en squat, sans poussée.",
+        },
+        {
+          angle: "La poussée seule",
+          exercice: "Développé militaire haltères",
+          texte:
+            "On pousse les haltères au-dessus de la tête, sans l’élan des jambes.",
+        },
+        {
+          angle: "Sans matériel",
+          exercice: "Burpees",
+          texte:
+            "Une descente au sol et un saut : tout le corps travaille aussi, au poids du corps.",
+        },
+      ],
+      titreVariantes: "Variantes et mouvements proches",
+      muscles: ["Jambes", "Épaules", "Fessiers"],
+      placement:
+        "Le thruster se place dans un circuit ou une séance de cardio aux haltères, en séries de dix à quinze, avec des charges modérées.",
+      materiel: "Une paire d’haltères",
+      materielCourt: "Haltères",
+      precaution:
+        "Commence léger : la fatigue arrive vite, et c’est la forme du squat qui se perd en premier. La série s’arrête quand le buste commence à basculer vers l’avant.",
+      nomDansLeTitre: "un thruster aux haltères",
+    },
+  },
+  {
+    slug: "skaters",
+    exercice: "Skaters",
+    categorie: "cardio",
+    title: "Skaters : le mouvement et les erreurs",
+    description:
+      "Comment faire les skaters : les sauts d’un pied sur l’autre en largeur, la réception amortie sur la jambe d’appui, le rythme et les erreurs fréquentes. En animation.",
+    contenu: {
+      definition:
+        "Aux skaters, on saute d’un pied sur l’autre en largeur, comme un patineur, en se recevant à chaque fois sur une seule jambe : les fessiers et les cuisses travaillent, l’équilibre aussi, et le souffle monte.",
+      gabarit: "mouvement",
+      etapes: [
+        {
+          titre: "Se placer",
+          texte:
+            "Debout sur une jambe, l’autre croisée derrière, le buste légèrement penché vers l’avant, genou d’appui fléchi.",
+        },
+        {
+          titre: "Sauter de côté",
+          texte:
+            "Pousse sur la jambe d’appui pour sauter latéralement vers l’autre côté, les bras qui balancent pour accompagner.",
+        },
+        {
+          titre: "Se recevoir",
+          texte:
+            "Reçois-toi sur l’autre jambe, genou souple, l’autre jambe croisant derrière, puis repars de l’autre côté.",
+        },
+      ],
+      erreurs: [
+        {
+          titre: "Se recevoir jambe tendue",
+          pourquoi:
+            "Une réception genou bloqué fait encaisser le choc à l’articulation. Le genou plie dès que le pied touche le sol.",
+        },
+        {
+          titre: "Laisser le genou rentrer",
+          pourquoi:
+            "Un genou qui part vers l’intérieur à la réception perd l’alignement avec le pied. Il reste au-dessus du pied.",
+        },
+        {
+          titre: "Sauter trop loin trop tôt",
+          pourquoi:
+            "Des sauts très larges au début rendent la réception instable. Commence par de petits sauts et allonge-les quand la réception est sûre.",
+        },
+      ],
+      variantes: [
+        {
+          angle: "Sur place, sans saut latéral",
+          exercice: "Jumping jacks",
+          texte:
+            "Un saut sur place qui écarte les pieds et monte les bras : les deux jambes travaillent ensemble.",
+        },
+        {
+          angle: "En fente",
+          exercice: "Fentes sautées",
+          texte:
+            "On saute en fente et on change de jambe en l’air : chaque jambe travaille à son tour, d’avant en arrière.",
+        },
+        {
+          angle: "Genoux hauts",
+          exercice: "Montées de genoux",
+          texte:
+            "On court sur place en montant les genoux : le souffle monte, avec des appuis légers.",
+        },
+      ],
+      titreVariantes: "Variantes et mouvements proches",
+      placement:
+        "Les skaters se placent dans un circuit cardio ou un échauffement, en intervalles de trente à quarante secondes.",
+      materiel: "Aucun",
+      materielCourt: "Sans matériel",
+      nomDansLeTitre: "des skaters",
+    },
+  },
+  {
+    slug: "bear-crawl",
+    exercice: "Bear crawl",
+    categorie: "cardio",
+    title: "Bear crawl : le mouvement et les erreurs",
+    description:
+      "Comment faire le bear crawl : à quatre pattes genoux décollés, avancer bras et jambe opposés, le dos plat et les erreurs fréquentes. En animation.",
+    contenu: {
+      definition:
+        "Au bear crawl, on se déplace à quatre pattes, les genoux décollés de quelques centimètres du sol, en avançant en même temps une main et le pied opposé : le tronc tient le dos plat, les épaules et les jambes travaillent, et le souffle monte.",
+      gabarit: "mouvement",
+      etapes: [
+        {
+          titre: "Se placer",
+          texte:
+            "À quatre pattes, mains sous les épaules, genoux sous les hanches. Décolle les genoux de quelques centimètres, dos plat.",
+        },
+        {
+          titre: "Avancer",
+          texte:
+            "Avance en même temps la main droite et le pied gauche d’un petit pas, puis la main gauche et le pied droit.",
+        },
+        {
+          titre: "Garder la position",
+          texte:
+            "Les genoux restent près du sol et le dos reste plat pendant tout le déplacement, vers l’avant puis vers l’arrière.",
+        },
+      ],
+      erreurs: [
+        {
+          titre: "Monter les fesses",
+          pourquoi:
+            "Un bassin qui monte rend la position plus facile et soulage le tronc. Les genoux restent à quelques centimètres du sol.",
+        },
+        {
+          titre: "Faire de grands pas",
+          pourquoi:
+            "Des pas trop grands font balancer les hanches. Des petits pas gardent le dos plat.",
+        },
+        {
+          titre: "Avancer main et pied du même côté",
+          pourquoi:
+            "Bouger le bras et la jambe du même côté déséquilibre le corps. Ce sont la main et le pied opposés qui avancent ensemble.",
+        },
+      ],
+      variantes: [
+        {
+          angle: "Sur place, en planche",
+          exercice: "Mountain climbers",
+          texte:
+            "Les mains au sol, on ramène les genoux vers la poitrine l’un après l’autre, sans avancer.",
+        },
+        {
+          angle: "En tenue",
+          exercice: "Gainage",
+          texte:
+            "La planche sur les avant-bras, tenue sans bouger : tout le travail est pour le tronc.",
+        },
+        {
+          angle: "Bras et jambe opposés, sur place",
+          exercice: "Bird dog",
+          texte:
+            "À quatre pattes, on tend un bras et la jambe opposée : le même croisé, lentement.",
+        },
+      ],
+      titreVariantes: "Variantes et mouvements proches",
+      muscles: ["Muscles profonds du tronc", "Épaules", "Jambes"],
+      placement:
+        "Le bear crawl se place en échauffement ou dans un circuit cardio, en intervalles de vingt à trente secondes. Il demande quelques mètres de place.",
+      materiel: "Aucun",
+      materielCourt: "Sans matériel",
+      nomDansLeTitre: "le bear crawl",
+    },
+  },
+  {
+    slug: "kickback-fessier-poulie",
+    exercice: "Kickback fessier poulie",
+    categorie: "jambes",
+    title: "Kickback fessier à la poulie : technique et erreurs",
+    description:
+      "Comment faire le kickback fessier à la poulie : la sangle à la cheville, la jambe qui part vers l’arrière, le buste stable et les erreurs fréquentes. En animation.",
+    contenu: {
+      definition:
+        "Au kickback à la poulie, on est debout face à une poulie basse, une sangle attachée à la cheville, et on pousse la jambe vers l’arrière contre la charge avant de la ramener : le fessier de la jambe qui travaille fait l’essentiel de l’effort, avec une tension qui ne s’arrête pas.",
+      gabarit: "mouvement",
+      etapes: [
+        {
+          titre: "S’installer",
+          texte:
+            "Attache la sangle à la cheville, la poulie au plus bas. Face à la machine, tiens-toi au montant, le buste légèrement penché vers l’avant.",
+        },
+        {
+          titre: "Pousser vers l’arrière",
+          texte:
+            "Pousse la jambe vers l’arrière, genou presque tendu, jusqu’à sentir le fessier se contracter, sans cambrer le dos.",
+        },
+        {
+          titre: "Revenir",
+          texte:
+            "Ramène la jambe lentement sous la hanche, sans laisser la charge la tirer. Fais toutes les répétitions d’une jambe, puis change.",
+        },
+      ],
+      erreurs: [
+        {
+          titre: "Cambrer le bas du dos",
+          pourquoi:
+            "Monter la jambe trop haut fait creuser le bas du dos, et le fessier travaille moins. La jambe s’arrête quand le dos commence à bouger.",
+        },
+        {
+          titre: "Balancer la jambe",
+          pourquoi:
+            "Un coup de pied rapide laisse l’élan faire le travail. Pousse et ramène de façon contrôlée.",
+        },
+        {
+          titre: "Tourner le bassin",
+          pourquoi:
+            "Une hanche qui s’ouvre vers le côté donne de l’amplitude sans travail. Les deux hanches restent face à la machine.",
+        },
+      ],
+      variantes: [
+        {
+          angle: "À quatre pattes, sans machine",
+          exercice: "Donkey kick",
+          texte:
+            "À quatre pattes, on monte un talon vers le plafond : le même travail du fessier, au poids du corps.",
+        },
+        {
+          angle: "Le bassin qui pousse, à la machine",
+          exercice: "Hip thrust machine",
+          texte:
+            "Le dos calé, on pousse le bassin vers le haut : les deux fessiers travaillent ensemble, avec une charge plus lourde.",
+        },
+        {
+          angle: "Au sol, sur le dos",
+          exercice: "Pont fessier",
+          texte:
+            "Allongé, on monte le bassin en poussant dans les talons, sans matériel.",
+        },
+      ],
+      titreVariantes: "Variantes et mouvements proches",
+      placement:
+        "Le kickback à la poulie se place en fin de séance de jambes ou de fessiers, après le hip thrust ou le squat, avec une charge qui permet des répétitions lentes.",
+      materiel: "Une poulie basse et une sangle de cheville",
+      materielCourt: "Poulie",
+      nomDansLeTitre: "un kickback fessier à la poulie",
+    },
+  },
 ];
 
 /* ──────────────────────────── Accès ──────────────────────────────── */
