@@ -824,6 +824,287 @@ export const FICHES: FichePublique[] = [
         "Les burpees servent rarement de plat principal. Ils viennent en général dans un circuit, entre deux exercices de renforcement, ou en fin de séance sur un format court et minuté. Comme ils fatiguent le corps entier d’un coup, les placer avant un mouvement technique ou chargé peut réduire la qualité de ce qui suit.",
     },
   },
+  {
+    slug: "pompes",
+    exercice: "Pompes",
+    categorie: "pectoraux",
+    title: "Pompes : position, amplitude et erreurs fréquentes",
+    description:
+      "Comment faire des pompes : position des mains, corps gainé, amplitude, trajet des coudes, erreurs fréquentes et variantes. Le mouvement en animation.",
+    contenu: {
+      definition:
+        "Une pompe ressemble à un développé couché retourné : les mains restent au sol et c’est le corps entier qui monte et descend, poussé par les pectoraux, les triceps et l’avant des épaules. Le tronc travaille pendant toute la série, parce qu’il doit garder le corps droit comme une planche pendant que les bras poussent.",
+      gabarit: "mouvement",
+      etapes: [
+        {
+          titre: "Se placer",
+          texte:
+            "Mains au sol un peu plus larges que les épaules, doigts vers l’avant. Pieds joints ou légèrement écartés. Serre le ventre et les fessiers : des talons à la tête, le corps forme une ligne.",
+        },
+        {
+          titre: "Descendre",
+          texte:
+            "Plie les coudes et laisse la poitrine descendre vers le sol, les coudes orientés en diagonale vers l’arrière plutôt qu’à l’horizontale. Descends jusqu’à frôler le sol avec la poitrine, ou aussi bas que tu peux en gardant la ligne du corps.",
+        },
+        {
+          titre: "Pousser",
+          texte:
+            "Pousse le sol pour revenir bras tendus. Le corps remonte d’un seul bloc : les épaules et le bassin arrivent en haut en même temps.",
+        },
+      ],
+      erreurs: [
+        {
+          titre: "Laisser le bassin s’affaisser",
+          pourquoi:
+            "Le milieu du corps descend vers le sol et le bas du dos se creuse : le corps ne monte plus d’un seul bloc. Serre les fessiers et le ventre, et si la ligne lâche, pose les genoux plutôt que de continuer.",
+        },
+        {
+          titre: "Écarter les coudes à l’horizontale",
+          pourquoi:
+            "Quand les coudes partent sur les côtés, perpendiculaires au corps, l’avant des épaules encaisse une grande part de l’effort. Vu de dessus, le corps doit dessiner une flèche plutôt qu’un T.",
+        },
+        {
+          titre: "Raccourcir l’amplitude",
+          pourquoi:
+            "Des pompes qui s’arrêtent à mi-chemin se comptent vite, mais elles laissent de côté le bas du mouvement, là où les pectoraux travaillent le plus étirés. Mieux vaut moins de répétitions jusqu’en bas, quitte à surélever les mains pour y arriver.",
+        },
+      ],
+      variantes: [
+        {
+          angle: "Mains surélevées",
+          exercice: "Pompes inclinées",
+          texte:
+            "Les mains sur un banc ou une marche, le corps incliné. Une partie du poids passe sur les pieds : les bras poussent moins lourd, avec exactement le même geste. Plus les mains sont hautes, plus la part des pieds grandit.",
+        },
+        {
+          angle: "Mains rapprochées",
+          exercice: "Pompes diamant",
+          texte:
+            "Les mains se touchent sous la poitrine, les pouces et les index dessinent un losange. Les coudes restent près du corps, et les triceps prennent une plus grande part du travail.",
+        },
+        {
+          angle: "Avec une impulsion",
+          exercice: "Pompes explosives",
+          texte:
+            "On pousse assez fort pour que les mains quittent le sol un instant. Le mouvement devient un travail de puissance, et la réception demande des poignets et des épaules habitués.",
+        },
+      ],
+      placement:
+        "À la maison, les pompes sont souvent le mouvement de poussée principal de la séance : elles se placent alors tôt, quand les bras sont frais. Dans une séance de salle qui commence par le développé couché, elles servent plutôt de finition. Elles se glissent aussi dans un circuit, entre un exercice de jambes et un exercice de tirage.",
+      materiel: "Aucun, le sol suffit",
+      materielCourt: "Sans matériel",
+      nomDansLeTitre: "des pompes",
+    },
+  },
+  {
+    slug: "tractions",
+    exercice: "Tractions",
+    categorie: "dos",
+    title: "Tractions : la prise, le tirage, les erreurs",
+    description:
+      "Comment faire une traction : la prise, le départ bras tendus, le trajet des coudes, la descente contrôlée et les erreurs fréquentes. Le mouvement en animation.",
+    contenu: {
+      definition:
+        "Une traction hisse tout le corps jusqu’à une barre fixe, sans appui sous les pieds : le grand dorsal tire les coudes vers les côtes, les biceps et les avant-bras aident à plier les bras. On soulève son propre poids en entier, ce qui rend le mouvement exigeant même sans aucune charge.",
+      gabarit: "mouvement",
+      etapes: [
+        {
+          titre: "S’accrocher",
+          texte:
+            "Mains sur la barre paumes vers l’avant, un peu plus larges que les épaules. Pars suspendu bras tendus, puis, sans plier les bras, tire légèrement les épaules vers le bas pour ne pas rester affaissé dans les articulations.",
+        },
+        {
+          titre: "Tirer",
+          texte:
+            "Tire les coudes vers les côtes, comme pour les ranger dans tes poches, et monte jusqu’à ce que le menton passe au-dessus de la barre. Les jambes peuvent être tendues ou croisées, mais elles restent calmes : elles ne lancent rien.",
+        },
+        {
+          titre: "Redescendre sous contrôle",
+          texte:
+            "Redescends jusqu’aux bras tendus, plus lentement que tu n’es monté. Une traction se compte du bas jusqu’en haut : repartir à mi-chemin, c’est s’arrêter avant la partie la plus dure.",
+        },
+      ],
+      erreurs: [
+        {
+          titre: "Lancer les jambes pour monter",
+          pourquoi:
+            "Le balancement donne un élan qui fait passer la barre sans que le dos ait fait le travail. Si tu ne montes plus qu’en te balançant, la série est terminée, ou c’est le moment de prendre une assistance.",
+        },
+        {
+          titre: "Partir les bras à moitié pliés",
+          pourquoi:
+            "Commencer et finir chaque répétition à mi-hauteur retire la partie basse du mouvement, celle où le dos travaille le plus. Repars bras tendus, épaules engagées, à chaque répétition.",
+        },
+        {
+          titre: "Tendre le cou vers la barre",
+          pourquoi:
+            "Le menton passe la barre en avançant la tête, et le corps, lui, n’est pas monté plus haut. Regarde devant toi et laisse la poitrine venir vers la barre.",
+        },
+      ],
+      variantes: [
+        {
+          angle: "À la machine",
+          exercice: "Tirage poitrine",
+          texte:
+            "Assis, cuisses calées, on tire une barre vers le haut de la poitrine. Le geste ressemble à la traction, mais la charge se règle : on peut travailler le mouvement avec moins que son propre poids.",
+        },
+        {
+          angle: "Pieds au sol, tirage horizontal",
+          exercice: "Rowing inversé",
+          texte:
+            "Allongé sous une barre basse, talons au sol, on tire la poitrine vers la barre. Le corps reste incliné, une partie du poids repose sur les pieds, et le tirage se fait vers l’avant plutôt que vers le haut.",
+        },
+      ],
+      titreVariantes: "Alternatives proches",
+      placement:
+        "La traction demande de la fraîcheur : tôt dans une séance de dos, avant les rowings et les exercices plus légers, elle se fait mieux qu’en fin de séance. Comme elle fatigue aussi les biceps et les avant-bras, elle passe avant les curls plutôt qu’après.",
+      materiel: "Une barre de traction fixe",
+      materielCourt: "Barre fixe",
+      promesse: "Un tirage vertical au poids du corps : le dos et les biceps te hissent jusqu’à la barre.",
+      nomDansLeTitre: "une traction",
+    },
+  },
+  {
+    slug: "fentes",
+    exercice: "Fentes",
+    categorie: "jambes",
+    title: "Fentes : le pas, la descente et les erreurs",
+    description:
+      "Comment faire des fentes : la longueur du pas, la descente à la verticale, le genou avant, la poussée et les erreurs fréquentes. Le mouvement en animation.",
+    contenu: {
+      definition:
+        "Dans une fente, une jambe avance d’un grand pas et le corps descend entre les deux pieds : la jambe de devant porte l’essentiel du poids, celle de derrière sert d’appui et d’équilibre. On travaille une jambe à la fois, et c’est souvent là qu’on découvre qu’un côté est plus fort ou plus stable que l’autre.",
+      gabarit: "mouvement",
+      etapes: [
+        {
+          titre: "Faire le pas",
+          texte:
+            "Debout, pieds sous les hanches, avance un pied d’un grand pas. Assez long pour pouvoir descendre avec le pied avant bien à plat, sans te retrouver en grand écart. Garde un écart de la largeur des hanches entre les deux pieds, comme sur deux rails.",
+        },
+        {
+          titre: "Descendre à la verticale",
+          texte:
+            "Descends en pliant les deux genoux, le buste droit, comme si tu t’asseyais entre tes pieds. Le genou arrière vient frôler le sol sans s’y poser lourdement, et le genou avant suit la direction des orteils.",
+        },
+        {
+          titre: "Pousser pour revenir",
+          texte:
+            "Pousse dans le talon et le milieu du pied avant pour remonter et ramener la jambe. Change de jambe à chaque répétition, ou fais toute la série d’un côté puis de l’autre.",
+        },
+      ],
+      erreurs: [
+        {
+          titre: "Un pas trop court",
+          pourquoi:
+            "Le talon avant se décolle et la jambe de devant travaille en déséquilibre, sur la pointe du pied. Allonge le pas jusqu’à pouvoir descendre avec le pied à plat.",
+        },
+        {
+          titre: "Les deux pieds sur une même ligne",
+          pourquoi:
+            "Avec les pieds alignés comme sur une corde, l’équilibre devient la principale difficulté et le bassin vacille. Garde la largeur des hanches entre les pieds, du début à la fin de la série.",
+        },
+        {
+          titre: "Plonger le buste pour se relever",
+          pourquoi:
+            "Le buste part en avant pour aider à remonter, et la jambe de devant pousse moins. Garde la poitrine haute et pousse dans le pied avant.",
+        },
+      ],
+      variantes: [
+        {
+          angle: "Avec un saut",
+          exercice: "Fentes sautées",
+          texte:
+            "On change de jambe en l’air, d’un saut, et on se réceptionne directement en fente. Le mouvement devient dynamique et fait monter le rythme cardiaque, et la réception demande du contrôle.",
+        },
+        {
+          angle: "Pied arrière surélevé",
+          exercice: "Squat bulgare",
+          texte:
+            "Le pied de derrière repose sur un banc et ne bouge plus. La jambe avant porte une part encore plus grande du poids, et on reste sur la même jambe pendant toute la série.",
+        },
+        {
+          angle: "En montant sur un banc",
+          exercice: "Step up banc",
+          texte:
+            "Au lieu d’avancer, on monte sur un banc d’une jambe, puis on redescend. Le travail reste une jambe à la fois, avec une montée qui ressemble davantage à un escalier.",
+        },
+      ],
+      titreVariantes: "Variantes et mouvements proches",
+      placement:
+        "En salle, les fentes viennent souvent après le mouvement principal de jambes, un squat ou une presse, pour travailler chaque côté séparément. À la maison, sans charge, elles peuvent être le cœur de la séance. Comme elles demandent de l’équilibre, mieux vaut ne pas les garder pour le moment où les jambes ne tiennent plus.",
+      materiel: "Aucun, des haltères si tu veux charger",
+      materielCourt: "Sans matériel",
+      nomDansLeTitre: "des fentes",
+    },
+  },
+  {
+    slug: "dips",
+    exercice: "Dips barres parallèles",
+    categorie: "bras",
+    title: "Dips aux barres parallèles : technique et erreurs",
+    description:
+      "Comment faire des dips aux barres parallèles : position de départ, profondeur, épaules, inclinaison du buste et erreurs fréquentes. Le mouvement en animation.",
+    contenu: {
+      definition:
+        "Aux dips, le corps est en appui entre deux barres, bras tendus, et descend en pliant les coudes avant de remonter : les triceps, le bas des pectoraux et l’avant des épaules poussent ensemble tout le poids du corps. L’inclinaison du buste change la répartition : plus droit, les triceps travaillent davantage ; légèrement penché vers l’avant, les pectoraux prennent une plus grande part.",
+      gabarit: "mouvement",
+      etapes: [
+        {
+          titre: "Se mettre en appui",
+          texte:
+            "Mains sur les barres, bras tendus, épaules basses et loin des oreilles. Les jambes pendent ou se croisent derrière toi, et le corps reste calme avant de descendre.",
+        },
+        {
+          titre: "Descendre",
+          texte:
+            "Plie les coudes et laisse le corps descendre, coudes dirigés vers l’arrière. Descends jusqu’à ce que les bras forment à peu près un angle droit, ou moins bas si la position n’est plus confortable pour tes épaules.",
+        },
+        {
+          titre: "Pousser",
+          texte:
+            "Pousse les barres vers le bas pour remonter jusqu’aux bras tendus, sans donner de coup sec dans les coudes en haut du mouvement.",
+        },
+      ],
+      erreurs: [
+        {
+          titre: "Laisser les épaules remonter vers les oreilles",
+          pourquoi:
+            "Les épaules s’enfoncent et la position devient instable au point le plus bas. Garde-les basses et pousse les barres comme pour t’en éloigner, du début à la fin.",
+        },
+        {
+          titre: "Descendre plus bas que l’épaule ne l’accepte",
+          pourquoi:
+            "Forcer la profondeur ne rend pas la répétition meilleure si l’avant de l’épaule tire. L’angle droit des coudes est un repère raisonnable : adapte-le à ce que tu contrôles.",
+        },
+        {
+          titre: "Battre des jambes pour remonter",
+          pourquoi:
+            "Les jambes qui battent donnent un élan qui fait le travail à la place des bras. Si la remontée n’est plus possible sans élan, la série est finie.",
+        },
+      ],
+      variantes: [
+        {
+          angle: "Sur une chaise",
+          exercice: "Dips sur chaise",
+          texte:
+            "Les mains sur le bord d’une chaise ou d’un banc derrière soi, pieds au sol. Une partie du poids reste sur les jambes, et le mouvement se fait sans matériel spécial.",
+        },
+        {
+          angle: "À la machine",
+          exercice: "Dips machine",
+          texte:
+            "Assis, on pousse deux poignées vers le bas avec une charge réglable. Le geste reste le même, sans avoir à porter tout son poids ni à tenir l’équilibre.",
+        },
+      ],
+      muscles: ["Triceps", "Pectoraux", "Épaules"],
+      placement:
+        "Dans une séance de poussée, les dips trouvent leur place après le développé couché ou les pompes, avant les exercices d’isolation des triceps. Placés en premier, ils fatigueraient les triceps dont le développé couché a besoin.",
+      materiel: "Des barres parallèles ou une station de dips",
+      materielCourt: "Barres parallèles",
+      promesse: "Le corps descend entre deux barres et remonte à la force des bras : triceps, pectoraux et épaules poussent ensemble.",
+      nomDansLeTitre: "des dips",
+    },
+  },
 ];
 
 /* ──────────────────────────── Accès ──────────────────────────────── */

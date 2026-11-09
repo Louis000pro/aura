@@ -43,8 +43,12 @@ export async function generateMetadata({
     description: fiche.description,
     alternates: { canonical: url },
     openGraph: {
-      title: `${fiche.lib.name} : technique et erreurs`,
-      description: fiche.lib.benefit,
+      title: fiche.title,
+      /* La phrase du héros, donc la promesse de la fiche quand elle en a
+         une : `lib.benefit` a été écrite pour un écran d'application, et
+         certaines (« le meilleur mouvement de tirage ») sont exactement
+         les superlatifs que la fiche a remplacés. */
+      description: fiche.contenu.promesse ?? fiche.lib.benefit,
       url,
       images: ["/og-image.png"],
     },
