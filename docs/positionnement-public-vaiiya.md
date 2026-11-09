@@ -171,7 +171,7 @@ Vérifiés sur `main` le 2026-08-10. À revérifier avant réemploi.
 | Mouvements animés | 102 | `lib/exerciseLibrary.ts` |
 | Recettes de la banque | 200, comptées le 2026-11-08 | `lib/recipeBank.ts`, compté par `lib/chiffresPublics.ts` |
 | Programmes | 8, de 4 à 8 semaines, comptés le 2026-11-08 | `lib/parcours.ts`, compté par `lib/chiffresPublics.ts` |
-| Fiches exercices publiques | 20, comptées le 2026-11-09 (douze ajoutées dans la nuit : pompes, tractions, fentes, dips, pont fessier, crunch, élévations latérales, rowing haltère, tirage poitrine, mountain climbers, presse à cuisses, squat bulgare) | `lib/exercicesPublics.ts`, compté par `lib/chiffresPublics.ts` |
+| Fiches exercices publiques | 28, comptées le 2026-11-09 (vingt ajoutées dans la nuit : pompes, tractions, fentes, dips, pont fessier, crunch, élévations latérales, rowing haltère, tirage poitrine, mountain climbers, presse à cuisses, squat bulgare, soulevé de terre roumain, développé incliné aux haltères, extension des triceps à la poulie, planche latérale, russian twist, curl marteau, goblet squat, face pull) | `lib/exercicesPublics.ts`, compté par `lib/chiffresPublics.ts` |
 | Rangs | 6 | `lib/aura.ts` |
 | Prix Vaiiya+ | 9,99 €/mois ou 59,99 €/an | `lib/plans.ts` (jamais réécrit à la main) |
 

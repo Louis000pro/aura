@@ -1974,6 +1974,293 @@ export const FICHES: FichePublique[] = [
       nomDansLeTitre: "la planche latérale",
     },
   },
+  {
+    slug: "russian-twist",
+    exercice: "Russian twist",
+    categorie: "abdos",
+    title: "Russian twist : la rotation et les erreurs",
+    description:
+      "Comment faire le russian twist : la position assise, la rotation des épaules, le rythme, les erreurs fréquentes et les variantes. Le mouvement en animation.",
+    contenu: {
+      definition:
+        "Au russian twist, on est assis, le buste incliné vers l’arrière, et on tourne les épaules d’un côté puis de l’autre : les obliques, sur les côtés du ventre, font la rotation pendant que le reste du tronc tient l’inclinaison. Il se fait les mains jointes, ou avec un poids tenu contre la poitrine pour le rendre plus exigeant.",
+      gabarit: "mouvement",
+      etapes: [
+        {
+          titre: "S’installer",
+          texte:
+            "Assis au sol, genoux pliés, talons posés ou légèrement décollés. Incline le buste vers l’arrière, dos droit, jusqu’à sentir le ventre travailler pour tenir la position.",
+        },
+        {
+          titre: "Tourner",
+          texte:
+            "Tourne les épaules et le buste d’un côté, les mains jointes devant toi, jusqu’à ce qu’elles passent à côté de la hanche. Le regard suit les mains.",
+        },
+        {
+          titre: "Changer de côté",
+          texte:
+            "Repasse par le centre et tourne de l’autre côté. Chaque côté touché compte pour une répétition.",
+        },
+      ],
+      erreurs: [
+        {
+          titre: "Ne bouger que les bras",
+          pourquoi:
+            "Des mains qui balaient de gauche à droite pendant que les épaules restent face à l’avant ne font presque pas tourner le tronc. Ce sont les épaules qui tournent, les bras suivent.",
+        },
+        {
+          titre: "Arrondir le dos",
+          pourquoi:
+            "Un dos qui s’enroule fait perdre l’inclinaison et tire sur le bas du dos. Garde la poitrine ouverte, quitte à moins t’incliner.",
+        },
+        {
+          titre: "Aller trop vite",
+          pourquoi:
+            "Un rythme rapide transforme la rotation en balancement, et l’élan fait le travail. Tourne de façon contrôlée, avec un léger temps de chaque côté.",
+        },
+      ],
+      variantes: [
+        {
+          angle: "Allongé, en pédalant",
+          exercice: "Bicycle crunch",
+          texte:
+            "Allongé sur le dos, on amène un coude vers le genou opposé pendant que l’autre jambe s’allonge : la rotation s’ajoute à l’enroulement du buste.",
+        },
+        {
+          angle: "En tenue, sur un côté",
+          exercice: "Planche latérale",
+          texte:
+            "Les obliques travaillent sans bouger : on tient le corps de profil sur un appui, hanches hautes.",
+        },
+        {
+          angle: "Sans rotation",
+          exercice: "Crunch",
+          texte:
+            "Allongé, on enroule seulement le haut du dos : le grand droit de l’abdomen travaille, sans tourner.",
+        },
+      ],
+      titreVariantes: "Variantes et mouvements proches",
+      muscles: ["Obliques", "Abdominaux"],
+      placement:
+        "Le russian twist se place en fin de séance, avec les autres exercices d’abdos, souvent après un exercice de gainage. Il se glisse aussi dans un circuit au poids du corps, entre deux mouvements de jambes.",
+      materiel: "Aucun, un poids léger si tu veux charger",
+      materielCourt: "Sans matériel",
+      nomDansLeTitre: "le russian twist",
+    },
+  },
+  {
+    slug: "curl-marteau",
+    exercice: "Curl marteau",
+    categorie: "bras",
+    title: "Curl marteau : technique et erreurs",
+    description:
+      "Comment faire le curl marteau : la prise neutre, les coudes fixes, la montée, la descente contrôlée et les erreurs fréquentes. Le mouvement en animation.",
+    contenu: {
+      definition:
+        "Le curl marteau se fait les paumes tournées l’une vers l’autre, comme on tiendrait un marteau : en pliant les coudes, le biceps travaille avec le brachial et les muscles de l’avant-bras. Cette prise neutre est souvent plus confortable pour les poignets que la prise paumes vers le haut.",
+      gabarit: "mouvement",
+      etapes: [
+        {
+          titre: "Se placer",
+          texte:
+            "Debout, un haltère dans chaque main le long du corps, paumes tournées vers les cuisses. Coudes près des côtes, épaules basses.",
+        },
+        {
+          titre: "Monter",
+          texte:
+            "Plie les coudes pour monter les haltères vers les épaules, en gardant les paumes face à face du début à la fin. Les coudes restent à la même place.",
+        },
+        {
+          titre: "Redescendre",
+          texte:
+            "Redescends lentement jusqu’aux bras tendus, sans laisser les haltères tomber. Les deux bras peuvent travailler ensemble ou en alternance.",
+        },
+      ],
+      erreurs: [
+        {
+          titre: "Balancer le buste",
+          pourquoi:
+            "Un coup de reins lance les haltères et fait passer une charge trop lourde pour les bras. Le buste reste immobile : si tu dois te balancer, prends plus léger.",
+        },
+        {
+          titre: "Avancer les coudes",
+          pourquoi:
+            "Des coudes qui partent vers l’avant à la montée font travailler l’avant de l’épaule. Ils restent collés aux côtes.",
+        },
+        {
+          titre: "Lâcher la descente",
+          pourquoi:
+            "La descente compte autant que la montée. Laisser tomber les haltères fait perdre une bonne partie du travail.",
+        },
+      ],
+      variantes: [
+        {
+          angle: "Paumes vers le haut",
+          exercice: "Curl haltères",
+          texte:
+            "La prise classique, paumes tournées vers le haut : le biceps travaille davantage, l’avant-bras un peu moins.",
+        },
+        {
+          angle: "À la barre coudée",
+          exercice: "Curl barre EZ",
+          texte:
+            "Les deux mains sur une barre coudée : la charge peut être plus lourde qu’aux haltères, et les poignets restent dans l’axe.",
+        },
+      ],
+      placement:
+        "Le curl marteau se place en fin de séance de bras ou de tirage, après les mouvements de dos qui sollicitent déjà les biceps. Il se combine bien avec un curl classique, pour varier la prise.",
+      materiel: "Une paire d’haltères",
+      materielCourt: "Haltères",
+      promesse: "Les paumes face à face, on plie les coudes : le biceps et l’avant-bras travaillent ensemble.",
+      nomDansLeTitre: "le curl marteau",
+    },
+  },
+  {
+    slug: "goblet-squat",
+    exercice: "Goblet squat",
+    categorie: "jambes",
+    title: "Goblet squat : technique et erreurs",
+    description:
+      "Comment faire le goblet squat : la prise de l’haltère, la descente entre les pieds, le buste droit et les erreurs fréquentes. Le mouvement en animation.",
+    contenu: {
+      definition:
+        "Au goblet squat, on tient un haltère ou une kettlebell contre la poitrine, comme une coupe, et on descend en squat : le poids placé devant aide à garder le buste droit et à descendre entre les pieds. C’est souvent la première façon de charger un squat, avant de passer à la barre.",
+      gabarit: "mouvement",
+      etapes: [
+        {
+          titre: "Se placer",
+          texte:
+            "Debout, pieds un peu plus larges que les hanches, pointes légèrement ouvertes. Tiens l’haltère contre la poitrine, les mains sous sa tête, coudes vers le bas.",
+        },
+        {
+          titre: "Descendre",
+          texte:
+            "Descends en pliant les genoux et les hanches, comme pour t’asseoir entre tes talons. Le buste reste droit, et les coudes passent à l’intérieur des genoux en bas.",
+        },
+        {
+          titre: "Remonter",
+          texte:
+            "Pousse dans tout le pied pour remonter, genoux dans l’axe des pieds, jusqu’à te retrouver debout.",
+        },
+      ],
+      erreurs: [
+        {
+          titre: "Laisser l’haltère s’éloigner",
+          pourquoi:
+            "Un haltère qui part vers l’avant tire le buste avec lui. Garde-le collé à la poitrine pendant toute la série.",
+        },
+        {
+          titre: "Laisser les genoux rentrer",
+          pourquoi:
+            "Des genoux qui se rapprochent en remontant perdent l’alignement avec les pieds. Pousse-les légèrement vers l’extérieur, dans la direction des orteils.",
+        },
+        {
+          titre: "Décoller les talons",
+          pourquoi:
+            "Les talons qui se lèvent en bas font basculer le poids sur l’avant du pied. Garde tout le pied au sol, quitte à descendre un peu moins bas.",
+        },
+      ],
+      variantes: [
+        {
+          angle: "Au poids du corps",
+          exercice: "Squat",
+          texte:
+            "Le même geste sans charge : les bras tendus devant aident à l’équilibre, et le mouvement se fait partout.",
+        },
+        {
+          angle: "La barre sur le dos",
+          exercice: "Squat barre",
+          texte:
+            "La charge passe sur le haut du dos : elle peut être bien plus lourde, et le mouvement demande plus de technique.",
+        },
+        {
+          angle: "Sur une jambe",
+          exercice: "Squat bulgare",
+          texte:
+            "Le pied arrière posé sur un banc : la jambe avant porte l’essentiel du poids, une jambe à la fois.",
+        },
+      ],
+      placement:
+        "À la maison, le goblet squat peut être le mouvement principal d’une séance de jambes avec un seul haltère. En salle, il sert d’échauffement avant le squat à la barre, ou de deuxième mouvement après lui.",
+      materiel: "Un haltère ou une kettlebell",
+      materielCourt: "Haltère",
+      promesse: "Un haltère tenu contre la poitrine, on descend en squat : le poids devant aide à garder le buste droit.",
+      nomDansLeTitre: "un goblet squat",
+    },
+  },
+  {
+    slug: "face-pull",
+    exercice: "Face pull poulie",
+    categorie: "epaules",
+    title: "Face pull à la poulie : technique et erreurs",
+    description:
+      "Comment faire le face pull : la hauteur de la poulie, la prise de la corde, le tirage vers le visage et les erreurs fréquentes. Le mouvement en animation.",
+    contenu: {
+      definition:
+        "Au face pull, on tire une corde fixée à une poulie haute vers le visage, en écartant les mains : l’arrière des épaules et le haut du dos travaillent, des muscles que les mouvements de poussée sollicitent peu. Le tirage finit coudes hauts, mains à hauteur des tempes.",
+      gabarit: "mouvement",
+      etapes: [
+        {
+          titre: "Régler la poulie",
+          texte:
+            "Place la poulie à hauteur du visage, avec une corde. Saisis les deux bouts et recule d’un pas, pour que les bras soient tendus devant toi.",
+        },
+        {
+          titre: "Tirer vers le visage",
+          texte:
+            "Tire la corde vers ton visage en écartant les mains, coudes hauts, jusqu’à ce que les mains arrivent à côté des tempes. Serre les omoplates en fin de mouvement.",
+        },
+        {
+          titre: "Revenir",
+          texte:
+            "Laisse revenir la corde jusqu’aux bras tendus, lentement, sans laisser la charge t’entraîner vers l’avant.",
+        },
+      ],
+      erreurs: [
+        {
+          titre: "Tirer coudes bas",
+          pourquoi:
+            "Des coudes qui descendent transforment le face pull en rowing, et le milieu du dos prend le relais sur l’arrière des épaules. Garde les coudes à hauteur des épaules.",
+        },
+        {
+          titre: "Se pencher en arrière",
+          pourquoi:
+            "Basculer le buste pour tirer fait travailler le dos et le poids du corps à la place des épaules. Reste droit, et allège la charge si besoin.",
+        },
+        {
+          titre: "Charger trop lourd",
+          pourquoi:
+            "Trop lourd, le mouvement se raccourcit et les épaules remontent vers les oreilles. Une charge modérée et un tirage contrôlé suffisent.",
+        },
+      ],
+      variantes: [
+        {
+          angle: "Aux haltères, buste penché",
+          exercice: "Oiseau haltères",
+          texte:
+            "Penché en avant, on ouvre les bras sur les côtés : l’arrière des épaules travaille, sans poulie.",
+        },
+        {
+          angle: "Bras sur les côtés",
+          exercice: "Élévations latérales",
+          texte:
+            "Debout, on monte les bras sur les côtés jusqu’à l’horizontale : c’est le milieu de l’épaule qui travaille.",
+        },
+        {
+          angle: "Assis, vers le ventre",
+          exercice: "Rowing assis poulie",
+          texte:
+            "On tire une poignée vers le ventre, coudes bas : le milieu du dos prend la plus grande part.",
+        },
+      ],
+      titreVariantes: "Variantes et mouvements proches",
+      placement:
+        "Le face pull se place en fin de séance de poussée ou d’épaules, pour équilibrer les mouvements où l’on pousse devant soi. Avec une charge légère, il sert aussi d’échauffement des épaules avant un développé.",
+      materiel: "Une poulie haute avec une corde",
+      materielCourt: "Poulie",
+      nomDansLeTitre: "le face pull",
+    },
+  },
 ];
 
 /* ──────────────────────────── Accès ──────────────────────────────── */
