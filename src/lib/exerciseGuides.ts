@@ -117,7 +117,10 @@ export const GUIDE_RULES: { re: RegExp; guide: Guide }[] = [
   { re: /sit.?ups?/i,                         guide: { key: "situps",         frames: 2, genres: ["f"] } },
   { re: /skater|patineur/i,                   guide: { key: "skaters",        frames: 3, genres: ["f"] } },
   { re: /sprint/i,                            guide: { key: "sprintsurplace", frames: 2, genres: ["f"] } },
-  { re: /ecarte.*poulie|cable.?(cross|fly)/i, guide: { key: "ecartepoulie",   frames: 3, genres: ["h"] } },
+  /* Deux poses, pas trois : la troisième image de la planche (`ecartepoulie-h-3.webp`)
+     n'est qu'un montant de la poulie, sans personnage. Jouée, elle faisait disparaître
+     le personnage une pose sur trois. */
+  { re: /ecarte.*poulie|cable.?(cross|fly)/i, guide: { key: "ecartepoulie",   frames: 2, genres: ["h"] } },
   { re: /elevation.*frontal|front.?raise/i,   guide: { key: "elevationsfrontales", frames: 2, genres: ["h"] } },
   { re: /kettlebell/i,                        guide: { key: "kettlebellswing", frames: 2, genres: ["h"] } },
   // ── Vague 2 (2026-07-17) — machines & variantes ────────────────────
