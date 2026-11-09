@@ -120,11 +120,11 @@ export default async function CoursPage({
         </p>
         <h1
           className="font-light leading-[1.1]"
-          style={{ fontSize: "clamp(2rem,6.5vw,2.75rem)", letterSpacing: "-0.015em", color: "#1A1535" }}
+          style={{ fontSize: "clamp(2.125rem,6.5vw,2.75rem)", letterSpacing: "-0.015em", color: "#1A1535" }}
         >
           {typoCours(c.titre)}
         </h1>
-        <p className="mt-4 text-[1.125rem] leading-[1.6]" style={{ color: "#4A5568" }}>
+        <p className="mt-4 text-[1.25rem] leading-[1.6]" style={{ color: "#4A5568" }}>
           {typoCours(c.sousTitre)}
         </p>
 
@@ -139,7 +139,7 @@ export default async function CoursPage({
           <>
             {texte.sections.map((s) => (
               <section key={s.titre}>
-                <h2 className="mt-10 mb-4 text-[1.5rem] font-medium" style={{ color: "#2D2150" }}>{typoCours(s.titre)}</h2>
+                <h2 className="mt-10 mb-4 text-[1.625rem] font-medium" style={{ color: "#2D2150" }}>{typoCours(s.titre)}</h2>
                 {s.paragraphes.map(p)}
               </section>
             ))}
@@ -208,7 +208,7 @@ export default async function CoursPage({
 
       {recettes.length > 0 && (
         <section className="mt-14">
-          <h2 className="text-[1.5rem] font-medium mb-5" style={{ color: "#2D2150" }}>Des recettes pour aller avec</h2>
+          <h2 className="text-[1.625rem] font-medium mb-5" style={{ color: "#2D2150" }}>Des recettes pour aller avec</h2>
           <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 max-w-[860px]">
             {recettes.map((r) => (
               <Link
@@ -222,7 +222,7 @@ export default async function CoursPage({
                   <img src={r.image} alt="" width={400} height={400} loading="lazy" className="absolute inset-0 w-full h-full" style={{ objectFit: "cover" }} />
                 </span>
                 <span className="block p-3.5">
-                  <span className="block text-[15px] font-semibold leading-snug" style={{ color: "#1A1535" }}>{r.nom}</span>
+                  <span className="block text-[16px] font-semibold leading-snug" style={{ color: "#1A1535" }}>{r.nom}</span>
                   <span className="block mt-1 text-[13px]" style={{ color: "#8B84A8" }}>{typoCours(dureeDite(r))} · {r.calories}{NB}kcal</span>
                 </span>
               </Link>
@@ -233,7 +233,7 @@ export default async function CoursPage({
 
       {memeTheme.length > 0 && (
         <section className="mt-14">
-          <h2 className="text-[1.5rem] font-medium mb-5" style={{ color: "#2D2150" }}>Dans le même thème</h2>
+          <h2 className="text-[1.625rem] font-medium mb-5" style={{ color: "#2D2150" }}>Dans le même thème</h2>
           <div className="grid gap-4 sm:grid-cols-3 max-w-[860px]">
             {memeTheme.map((x) => (
               <Link

@@ -100,7 +100,7 @@ export default function SeancesPage() {
                       />
                     </span>
                     <span className="block p-3.5">
-                      <span className="block text-[15px] font-semibold leading-snug" style={{ color: "#1A1535" }}>{s.title}</span>
+                      <span className="block text-[16px] font-semibold leading-snug" style={{ color: "#1A1535" }}>{s.title}</span>
                       <span className="block mt-1 text-[13px]" style={{ color: "#8B84A8" }}>
                         {s.duration}{NB}min{m ? ` · ${m}` : ""}{seanceOuverte(s) ? "" : " · Vaiiya+"}
                       </span>

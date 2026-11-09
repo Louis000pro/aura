@@ -243,7 +243,7 @@ export default async function SeancePage({
                   <img src={photoDe(v)} alt="" width={750} height={1000} loading="lazy" className="absolute inset-0 w-full h-full" style={{ objectFit: "cover", objectPosition: "50% 35%" }} />
                 </span>
                 <span className="block p-3.5">
-                  <span className="block text-[15px] font-semibold leading-snug" style={{ color: "#1A1535" }}>{v.title}</span>
+                  <span className="block text-[16px] font-semibold leading-snug" style={{ color: "#1A1535" }}>{v.title}</span>
                   <span className="block mt-1 text-[13px]" style={{ color: "#8B84A8" }}>
                     {v.duration}{NB}min · {v.difficulty}{seanceOuverte(v) ? "" : " · Vaiiya+"}
                   </span>

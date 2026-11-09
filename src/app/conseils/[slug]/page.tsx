@@ -106,11 +106,11 @@ export default async function ConseilPage({
         </p>
         <h1
           className="font-light leading-[1.1]"
-          style={{ fontSize: "clamp(2rem,6.5vw,2.75rem)", letterSpacing: "-0.015em", color: "#1A1535" }}
+          style={{ fontSize: "clamp(2.125rem,6.5vw,2.75rem)", letterSpacing: "-0.015em", color: "#1A1535" }}
         >
           {typoCours(a.title)}
         </h1>
-        <p className="mt-4 text-[1.125rem] leading-[1.6]" style={{ color: "#4A5568" }}>{typoCours(a.subtitle)}</p>
+        <p className="mt-4 text-[1.25rem] leading-[1.6]" style={{ color: "#4A5568" }}>{typoCours(a.subtitle)}</p>
 
         <div className="mt-8">{p(a.intro, 0)}</div>
 
@@ -130,7 +130,7 @@ export default async function ConseilPage({
           <>
             {a.sections.map((s) => (
               <section key={s.title}>
-                <h2 className="mt-10 mb-4 text-[1.5rem] font-medium" style={{ color: "#2D2150" }}>{typoCours(s.title)}</h2>
+                <h2 className="mt-10 mb-4 text-[1.625rem] font-medium" style={{ color: "#2D2150" }}>{typoCours(s.title)}</h2>
                 {s.paragraphs.map(p)}
                 {s.bullets && s.bullets.length > 0 && (
                   <ul className="mb-4 pl-5 list-disc">
@@ -185,7 +185,7 @@ export default async function ConseilPage({
 
       {memeTheme.length > 0 && (
         <section className="mt-14">
-          <h2 className="text-[1.5rem] font-medium mb-5" style={{ color: "#2D2150" }}>Dans le même thème</h2>
+          <h2 className="text-[1.625rem] font-medium mb-5" style={{ color: "#2D2150" }}>Dans le même thème</h2>
           <div className="grid gap-4 sm:grid-cols-3 max-w-[860px]">
             {memeTheme.map((x) => (
               <Link

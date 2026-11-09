@@ -97,7 +97,7 @@ export default function RecettesPage() {
                     />
                   </span>
                   <span className="block p-3.5">
-                    <span className="block text-[15px] font-semibold leading-snug" style={{ color: "#1A1535" }}>{r.nom}</span>
+                    <span className="block text-[16px] font-semibold leading-snug" style={{ color: "#1A1535" }}>{r.nom}</span>
                     <span className="block mt-1 text-[13px]" style={{ color: "#8B84A8" }}>
                       {typoFr(dureeDite(r))} · {r.calories}{NB}kcal · {r.proteins}{NB}g de protéines
                     </span>

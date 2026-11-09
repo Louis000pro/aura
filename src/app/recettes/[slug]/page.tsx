@@ -106,7 +106,7 @@ export default async function RecettePage({
           </p>
           <h1
             className="font-light leading-[1.05]"
-            style={{ fontSize: "clamp(2rem,6.5vw,2.9rem)", letterSpacing: "-0.015em", color: "#1A1535" }}
+            style={{ fontSize: "clamp(2.125rem,6.5vw,2.9rem)", letterSpacing: "-0.015em", color: "#1A1535" }}
           >
             {r.nom}
           </h1>
@@ -129,7 +129,7 @@ export default async function RecettePage({
         </div>
 
         <div className="order-3 md:order-none md:col-start-2 md:row-start-2">
-          <p className="text-[1.125rem] leading-[1.6] mb-6" style={{ color: "#4A5568" }}>
+          <p className="text-[1.25rem] leading-[1.6] mb-6" style={{ color: "#4A5568" }}>
             {typoFr(r.description)}
           </p>
           <dl className="text-[13px]">
