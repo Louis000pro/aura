@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { PageVitrine } from "@/components/seo/VitrineChrome";
 import CarteExercice from "@/components/exercices/CarteExercice";
-import { fichesPubliees, libelleCategorie, verifierFiches } from "@/lib/exercicesPublics";
+import { CATEGORIES, fichesPubliees, libelleCategorie, verifierFiches } from "@/lib/exercicesPublics";
 
 export const metadata: Metadata = {
   title: "Exercices de musculation : la bibliothèque animée",
@@ -50,6 +50,10 @@ export default function ExercicesPage() {
   if (soucis.length) throw new Error(`Fiches d’exercices : ${soucis.join(" | ")}`);
 
   const publiees = fichesPubliees();
+  const parCategorie = CATEGORIES.map((c) => ({
+    ...c,
+    fiches: publiees.filter((f) => f.categorie === c.id),
+  })).filter((c) => c.fiches.length > 0);
 
   const filAriane = {
     "@context": "https://schema.org",
@@ -97,19 +101,34 @@ export default function ExercicesPage() {
           Choisis un exercice pour voir le mouvement et ses repères.
         </p>
 
-        {/* Les quatre premières cartes sont prioritaires : ce sont elles
+        {/* Rangées par catégorie depuis qu'il y en a vingt : une grille à
+            plat se lisait comme une liste au hasard. Une catégorie sans
+            fiche publiée ne s'affiche pas (jamais de chantier visible), et
+            la zone quitte la carte, puisque le titre de section la dit.
+
+            Les quatre premières cartes restent prioritaires : ce sont elles
             qu'on voit en arrivant, et une grille qui s'ouvre sur des cases
             vides annulerait tout l'intérêt de la page. */}
-        <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
-          {publiees.map((f, i) => (
-            <CarteExercice
-              key={f.slug}
-              lib={f.lib}
-              href={`/exercices/${f.slug}`}
-              materiel={f.contenu.materielCourt}
-              zone={libelleCategorie(f.categorie)}
-              priorite={i < 4}
-            />
+        <div className="flex flex-col gap-10">
+          {parCategorie.map((c, ic) => (
+            <div key={c.id}>
+              <h3 className="text-[20px] font-medium mb-4" style={{ color: "#2D2150" }}>
+                {c.label}
+              </h3>
+              <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
+                {c.fiches.map((f, i) => (
+                  <CarteExercice
+                    key={f.slug}
+                    lib={f.lib}
+                    href={`/exercices/${f.slug}`}
+                    materiel={f.contenu.materielCourt}
+                    zone={libelleCategorie(f.categorie)}
+                    sansZone
+                    priorite={ic === 0 && i < 4}
+                  />
+                ))}
+              </div>
+            </div>
           ))}
         </div>
       </section>

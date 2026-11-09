@@ -35,10 +35,10 @@ import { EQUIPS, ZONES, type LibExercise } from "@/lib/exerciseLibrary";
    passer le libellé public aligne les trois.
 
    Sans précision, on retombe sur les libellés de la bibliothèque. */
-function meta(lib: LibExercise, materiel?: string, zone?: string): string {
+function meta(lib: LibExercise, materiel?: string, zone?: string, sansZone = false): string {
   const z = zone ?? ZONES.find((x) => x.id === lib.zone)?.label ?? lib.zone;
   const equip = materiel ?? EQUIPS.find((e) => e.id === lib.equip)?.label ?? lib.equip;
-  return `${z} · ${equip}`;
+  return sansZone ? equip : `${z} · ${equip}`;
 }
 
 export default function CarteExercice({
@@ -48,6 +48,7 @@ export default function CarteExercice({
   zone,
   taille = 148,
   priorite = false,
+  sansZone = false,
 }: {
   lib: LibExercise;
   /** Le matériel en libellé court, quand la fiche en donne un de plus
@@ -64,6 +65,9 @@ export default function CarteExercice({
       de suite, sinon la page s'ouvre sur des cases vides. Tout le reste
       attend le défilement, et c'est très bien. */
   priorite?: boolean;
+  /** Dans une grille déjà rangée par catégorie, la zone redirait le titre
+      de sa section : la ligne ne garde que le matériel. */
+  sansZone?: boolean;
 }) {
   return (
     <Link
@@ -88,7 +92,7 @@ export default function CarteExercice({
         {lib.name}
       </p>
       <p className="mt-0.5 text-[13px]" style={{ color: "#8B84A8" }}>
-        {meta(lib, materiel, zone)}
+        {meta(lib, materiel, zone, sansZone)}
       </p>
     </Link>
   );
