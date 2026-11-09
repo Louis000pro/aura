@@ -46,7 +46,11 @@ export type ConfigParcours = {
 };
 
 type Appel = { label: string; actif?: boolean; clic: () => void; raison?: string; lien?: string; surLien?: () => void };
-type Tirage = { val: number; min: number; max: number; pas: number; px: number; axe: (e: PointerEvent) => number; pose: (v: number, fini: boolean) => void };
+type Tirage = {
+  val: number; min: number; max: number; pas: number; px: number; axe: (e: PointerEvent) => number; pose: (v: number, fini: boolean) => void;
+  /** Garde la valeur sans rien dire : un cran de molette, avant que la main ne s'arrête. */
+  garde?: (v: number) => void;
+};
 type Regle = { min: number; max: number; pas: number; grad: number; major: number; px: number };
 type Fini = (phrase: string) => void;
 
@@ -125,13 +129,23 @@ function ciel(p: number) {
   tel.style.setProperty("--p", String(p));
   tel.dataset.ton = p >= .66 ? "jour" : "nuit";
 }
+/* Sur ordinateur (voir la fin de `premiersPas.css`), la scène couvre l'écran
+   entier autour de la colonne, posée en bas de l'écran : les étoiles aussi, à la
+   même densité que sur un téléphone. Sous 641 px, rien ne change. */
+const surOrdinateur = () => matchMedia("(min-width: 641px)").matches;
 function dessinerEtoiles() {
   const r = (n: number) => Math.abs(Math.sin(n * 91.7) * 43758.5) % 1;
+  const ecran = surOrdinateur();
+  const n = ecran ? Math.min(200, Math.round((34 * innerWidth * innerHeight) / (390 * 844))) : 34;
+  const saut = ecran ? 400 : 40;
   $$(".etoiles i").forEach((el, c) => {
     const pts: string[] = [];
-    for (let i = 0; i < 34; i++) {
-      const x = r(i + c * 40 + 1), y = r(i + c * 40 + 2) * .86, a = .3 + r(i + 3 + c) * .7;
-      pts.push(`calc(${(x * 100).toFixed(1)}cqw) calc(${(y * 100).toFixed(1)}cqh) 0 ${c === 0 ? .2 : .1}px rgba(255,255,255,${a.toFixed(2)})`);
+    for (let i = 0; i < n; i++) {
+      const x = r(i + c * saut + 1), y = r(i + c * saut + 2) * .86, a = .3 + r(i + 3 + c) * .7;
+      const pos = ecran
+        ? `calc(50cqw - 50vw + ${(x * 100).toFixed(2)}vw) calc(100cqh - 100dvh + ${(y * 100).toFixed(2)}dvh)`
+        : `calc(${(x * 100).toFixed(1)}cqw) calc(${(y * 100).toFixed(1)}cqh)`;
+      pts.push(`${pos} 0 ${c === 0 ? .2 : .1}px rgba(255,255,255,${a.toFixed(2)})`);
     }
     el.style.boxShadow = pts.join(",");
   });
@@ -662,14 +676,55 @@ E.duree = () => {
     if (e.key === "ArrowUp" && k < PALIERS.length - 1) { S.duree = PALIERS[k + 1]; dessiner(); }
     if (e.key === "ArrowDown" && k > 0) { S.duree = PALIERS[k - 1]; dessiner(); }
   };
+  /* La jauge se remplit vers le haut : la molette vers le haut ajoute des minutes. */
+  const molette = { reste: 0 };
+  let arret: ReturnType<typeof setTimeout> | undefined;
+  j.onwheel = (e) => {
+    const sens = cranMolette(e, molette);
+    const k = PALIERS.indexOf(S.duree), k2 = Math.max(0, Math.min(PALIERS.length - 1, k - sens));
+    if (!sens || k2 === k) return;
+    S.duree = PALIERS[k2];
+    dessiner();
+    if (arret) clearTimeout(arret);
+    arret = plus_tard(() => { ciel(.27); dire(V("pas.duree.ok", { minutes: S.duree }), { pose: "montre", hop: true }); }, 400);
+  };
   dessiner();
   appel({ label: "Continuer", clic: () => aller("age") });
 };
+
+/* À la souris, la molette avance d'un cran par tour, et les petits pas d'un pavé
+   tactile s'additionnent. Rend −1, 0 ou 1 : vers le bas ou vers la droite, 1.
+   Un écran tactile n'envoie pas de molette : le téléphone ne voit rien de tout ça. */
+function cranMolette(e: WheelEvent, m: { reste: number }) {
+  e.preventDefault();
+  const brut = Math.abs(e.deltaY) >= Math.abs(e.deltaX) ? e.deltaY : e.deltaX;
+  const d = e.deltaMode === 1 ? brut * 40 : e.deltaMode === 2 ? brut * 400 : brut;
+  if (Math.abs(d) >= 40) { m.reste = 0; return Math.sign(d); }
+  m.reste += d;
+  if (Math.abs(m.reste) < 40) return 0;
+  const sens = Math.sign(m.reste);
+  m.reste = 0;
+  return sens;
+}
 
 /* La roue et les règles se pilotent au doigt, avec un peu d'élan. */
 function tirer(el: HTMLElement, o: Tirage) {
   let v = o.val, prise: number | null = null, dernier = 0, vitesse = 0, t0 = 0, raf = 0;
   const fin = () => { const s = o.pas * Math.round(v / o.pas); o.pose(s, true); };
+  const molette = { reste: 0 };
+  let arret: ReturnType<typeof setTimeout> | undefined;
+  el.onwheel = (e) => {
+    const sens = cranMolette(e, molette);
+    if (!sens || prise != null) return;
+    cancelAnimationFrame(raf);
+    v = Math.max(o.min, Math.min(o.max, o.pas * Math.round(v / o.pas) + sens * o.pas));
+    o.pose(v, false);
+    /* La valeur est gardée tout de suite : « Continuer » peut venir avant la fin du
+       délai. Seul ce que le Guide en dit attend que la molette s'arrête. */
+    o.garde?.(v);
+    if (arret) clearTimeout(arret);
+    arret = plus_tard(fin, 200);
+  };
   el.onpointerdown = (e) => {
     cancelAnimationFrame(raf);
     el.setPointerCapture(e.pointerId);
@@ -749,6 +804,7 @@ E.age = () => {
   dessiner(S.age);
   tirer(roue, {
     val: S.age, min: 13, max: 90, pas: 1, px: PAS, axe: (e) => e.clientY,
+    garde: (v) => { S.age = v; roue.setAttribute("aria-valuenow", String(v)); activer(ok()); },
     pose: (v, fini) => {
       dessiner(v);
       if (!fini) return;
@@ -843,6 +899,7 @@ E.mesures = () => {
     };
     tirer(cv, {
       val: S[cle], min: o.min, max: o.max, pas: o.pas, px: o.px, axe: (e) => e.clientX,
+      garde: (v) => { S[cle] = v; cv.setAttribute("aria-valuenow", String(v)); },
       pose: (v, fini) => {
         dessinerRegle(cv, v, o);
         const s = Math.round(v / o.pas) * o.pas;

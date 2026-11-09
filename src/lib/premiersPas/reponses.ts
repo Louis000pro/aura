@@ -46,23 +46,32 @@ export const etatVide = (): EtatParcours => ({
 
 const CLE = "vaiiya_premiers_pas";
 
-export type Sauvegarde = { etat: EtatParcours; ecran: string };
+export type Sauvegarde = { etat: EtatParcours; ecran: string; le?: number };
 
-/** ⚠️ Lu à chaque ouverture : une valeur illisible vaut « rien de gardé ». */
+/** Le temps de faire l'aller-retour chez Google. */
+const RETOUR_GOOGLE_MS = 10 * 60 * 1000;
+
+/** ⚠️ QUITTER LA PAGE AVANT LA FIN, C'EST RECOMMENCER (Louis, 2026-11-09 : « dès
+ *  qu'on quitte la page et qu'on revient dessus, si on n'a pas terminé
+ *  l'inscription, on doit tout refaire » ; c'est court, et ça permet de changer
+ *  un pseudo en rechargeant). Une seule reprise : le retour de Google, qui fait
+ *  quitter la page par construction, et seulement dans les 10 minutes. Tout le
+ *  reste est effacé à l'ouverture. Une valeur illisible vaut « rien de gardé ». */
 export function lireParcours(): Sauvegarde | null {
   try {
     const brut = localStorage.getItem(CLE);
     if (!brut) return null;
     const v = JSON.parse(brut) as Partial<Sauvegarde>;
-    if (!v || typeof v.ecran !== "string" || !v.etat) return null;
-    return { ecran: v.ecran, etat: { ...etatVide(), ...v.etat } };
+    const retour = !!v && v.ecran === "apres-compte" && !!v.etat && typeof v.le === "number" && Date.now() - v.le < RETOUR_GOOGLE_MS;
+    if (!retour) { oublierParcours(); return null; }
+    return { ecran: "apres-compte", etat: { ...etatVide(), ...v.etat }, le: v.le };
   } catch {
     return null;
   }
 }
 
 export function garderParcours(etat: EtatParcours, ecran: string): void {
-  try { localStorage.setItem(CLE, JSON.stringify({ etat, ecran })); } catch { /* stockage bloqué : on continue en mémoire */ }
+  try { localStorage.setItem(CLE, JSON.stringify({ etat, ecran, le: Date.now() })); } catch { /* stockage bloqué : on continue en mémoire */ }
 }
 
 export function oublierParcours(): void {
