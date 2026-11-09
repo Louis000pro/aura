@@ -2853,6 +2853,305 @@ export const FICHES: FichePublique[] = [
       nomDansLeTitre: "les mollets debout",
     },
   },
+  {
+    slug: "squat-barre",
+    exercice: "Squat barre",
+    categorie: "jambes",
+    title: "Squat à la barre : technique et erreurs",
+    description:
+      "Comment faire le squat à la barre : le placement de la barre, la descente entre les pieds, la poitrine haute, la remontée et les erreurs fréquentes. En animation.",
+    contenu: {
+      definition:
+        "Au squat à la barre, la barre repose sur le haut du dos, et on descend en pliant les genoux et les hanches, comme pour s’asseoir entre ses talons, avant de remonter : les cuisses et les fessiers font le travail, et le tronc tient le buste droit sous la charge. C’est l’exercice de force des jambes que l’on retrouve dans presque tous les programmes.",
+      gabarit: "mouvement",
+      etapes: [
+        {
+          titre: "Placer la barre",
+          texte:
+            "Passe sous la barre posée sur les supports, à hauteur d’épaules, et cale-la sur le haut du dos, sur les trapèzes, pas sur la nuque. Mains un peu plus larges que les épaules, recule de deux pas.",
+        },
+        {
+          titre: "Descendre",
+          texte:
+            "Pieds un peu plus larges que les hanches, pointes légèrement ouvertes. Descends en poussant les hanches vers l’arrière et en pliant les genoux, poitrine haute, jusqu’à ce que les cuisses soient au moins parallèles au sol si ta mobilité le permet.",
+        },
+        {
+          titre: "Remonter",
+          texte:
+            "Pousse dans tout le pied pour remonter, genoux dans l’axe des orteils, en gardant le dos droit jusqu’en haut.",
+        },
+      ],
+      erreurs: [
+        {
+          titre: "Laisser les genoux rentrer",
+          pourquoi:
+            "Des genoux qui se rapprochent en remontant perdent l’alignement avec les pieds et chargent mal l’articulation. Pousse-les dans la direction des orteils.",
+        },
+        {
+          titre: "Arrondir le bas du dos",
+          pourquoi:
+            "Un bas du dos qui s’enroule en bas du mouvement met la charge sur la colonne. Descends seulement jusqu’où le dos reste droit, et travaille la profondeur avec une charge plus légère.",
+        },
+        {
+          titre: "Décoller les talons",
+          pourquoi:
+            "Des talons qui se lèvent font basculer le poids sur l’avant du pied et sur les genoux. Garde tout le pied au sol, du début à la fin.",
+        },
+      ],
+      variantes: [
+        {
+          angle: "La charge devant",
+          exercice: "Goblet squat",
+          texte:
+            "Un haltère tenu contre la poitrine : le buste reste droit plus facilement, et le geste s’apprend avec une charge modérée.",
+        },
+        {
+          angle: "Le dos appuyé, à la machine",
+          exercice: "Presse à cuisses",
+          texte:
+            "On pousse une plateforme avec les pieds, le dos calé contre un dossier : les cuisses travaillent sans que le tronc porte la charge.",
+        },
+        {
+          angle: "Une jambe à la fois",
+          exercice: "Squat bulgare",
+          texte:
+            "Le pied arrière posé sur un banc : la jambe avant porte l’essentiel du poids, avec de l’équilibre à trouver.",
+        },
+      ],
+      titreVariantes: "Variantes et mouvements proches",
+      muscles: ["Quadriceps", "Fessiers", "Abdominaux"],
+      placement:
+        "Le squat à la barre se place en début de séance de jambes, quand on est frais, souvent en séries courtes et lourdes. Les mouvements plus guidés, comme la presse ou les fentes, viennent après.",
+      materiel: "Une barre, des disques et une cage à squat",
+      materielCourt: "Barre",
+      precaution:
+        "Travaille dans une cage à squat, avec les barres de sécurité réglées juste sous le point le plus bas de ta descente : une répétition ratée se pose dessus au lieu de rester sur ton dos.",
+      promesse: "La barre sur le haut du dos, on descend entre les pieds : les cuisses et les fessiers travaillent avec une charge qui peut monter.",
+      nomDansLeTitre: "un squat à la barre",
+    },
+  },
+  {
+    slug: "corde-a-sauter",
+    exercice: "Corde à sauter",
+    categorie: "cardio",
+    title: "Corde à sauter : la technique et les erreurs",
+    description:
+      "Comment sauter à la corde : la longueur de la corde, les poignets qui la font tourner, les petits sauts sur l’avant du pied et les erreurs fréquentes. En animation.",
+    contenu: {
+      definition:
+        "À la corde à sauter, on fait tourner la corde avec les poignets et on la laisse passer sous les pieds par de petits sauts réguliers : le cœur monte vite, et les mollets travaillent à chaque rebond. Il ne faut qu’une corde et un peu de place, dedans comme dehors.",
+      gabarit: "mouvement",
+      etapes: [
+        {
+          titre: "Régler la corde",
+          texte:
+            "Debout, un pied sur le milieu de la corde : les poignées doivent arriver à peu près sous les aisselles. Tiens-les les mains basses, à hauteur de hanches, coudes près du corps.",
+        },
+        {
+          titre: "Faire tourner avec les poignets",
+          texte:
+            "Lance la corde par-dessus la tête d’un mouvement des poignets, pas des bras entiers, qui restent presque immobiles.",
+        },
+        {
+          titre: "Sauter juste assez",
+          texte:
+            "Saute de quelques centimètres, sur l’avant du pied, genoux souples, au moment où la corde arrive aux pieds. Garde un rythme régulier.",
+        },
+      ],
+      erreurs: [
+        {
+          titre: "Sauter trop haut",
+          pourquoi:
+            "De grands sauts fatiguent vite et cassent le rythme. Quelques centimètres suffisent pour laisser passer la corde.",
+        },
+        {
+          titre: "Faire tourner avec les bras",
+          pourquoi:
+            "De grands cercles des bras ralentissent la corde et fatiguent les épaules. Ce sont les poignets qui la font tourner, coudes près du corps.",
+        },
+        {
+          titre: "Retomber sur les talons",
+          pourquoi:
+            "Atterrir sur les talons, jambes tendues, fait encaisser le choc aux articulations. Reste sur l’avant du pied, genoux souples.",
+        },
+      ],
+      variantes: [
+        {
+          angle: "Sans corde, bras et jambes qui s’écartent",
+          exercice: "Jumping jacks",
+          texte:
+            "Un saut sur place qui écarte les pieds et monte les bras au-dessus de la tête : aucune coordination avec une corde à trouver.",
+        },
+        {
+          angle: "Sur place, genoux hauts",
+          exercice: "Montées de genoux",
+          texte:
+            "On court sur place en montant les genoux à hauteur des hanches : le souffle monte aussi, sans corde.",
+        },
+        {
+          angle: "Les mollets, sans saut",
+          exercice: "Mollets",
+          texte:
+            "Debout, on monte sur la pointe des pieds puis on redescend lentement : les mollets travaillent sans aucun impact.",
+        },
+      ],
+      titreVariantes: "Variantes et mouvements proches",
+      placement:
+        "La corde à sauter se place en échauffement, quelques minutes avant la séance, ou dans un circuit cardio, en alternance avec des mouvements au sol. Les débutants avancent souvent par séries courtes, le temps que le rythme s’installe.",
+      materiel: "Une corde à sauter",
+      materielCourt: "Corde",
+      nomDansLeTitre: "la corde à sauter",
+    },
+  },
+  {
+    slug: "dead-bug",
+    exercice: "Dead bug",
+    categorie: "abdos",
+    title: "Dead bug : l’exercice de gainage et ses erreurs",
+    description:
+      "Comment faire le dead bug : sur le dos, bras et jambe opposés qui s’éloignent, le bas du dos au sol, la respiration et les erreurs fréquentes. En animation.",
+    contenu: {
+      definition:
+        "Au dead bug, on est allongé sur le dos, bras tendus vers le plafond et genoux pliés au-dessus des hanches, et on éloigne lentement un bras et la jambe opposée, avant de revenir et de changer de côté : les abdominaux travaillent pour garder le bas du dos au sol pendant que les membres bougent. C’est un exercice de gainage en mouvement.",
+      gabarit: "mouvement",
+      etapes: [
+        {
+          titre: "S’installer",
+          texte:
+            "Allongé sur le dos, bras tendus vers le plafond, genoux pliés à angle droit au-dessus des hanches. Plaque le bas du dos contre le sol.",
+        },
+        {
+          titre: "Éloigner bras et jambe opposés",
+          texte:
+            "Descends lentement un bras vers l’arrière de la tête et tends la jambe opposée vers l’avant, jusqu’à frôler le sol, sans que le bas du dos décolle.",
+        },
+        {
+          titre: "Revenir et changer",
+          texte:
+            "Ramène le bras et la jambe à la position de départ, puis fais la même chose de l’autre côté. Chaque côté compte pour une répétition.",
+        },
+      ],
+      erreurs: [
+        {
+          titre: "Laisser le dos se creuser",
+          pourquoi:
+            "Quand le bras et la jambe descendent trop bas, le bas du dos décolle et le ventre lâche. Arrête la descente plus haut, là où le dos reste plaqué.",
+        },
+        {
+          titre: "Aller trop vite",
+          pourquoi:
+            "Des bras et des jambes qui retombent rapidement laissent l’élan faire le travail. Le mouvement est lent, contrôlé de bout en bout.",
+        },
+        {
+          titre: "Bloquer la respiration",
+          pourquoi:
+            "Retenir son souffle rigidifie tout le corps au lieu d’apprendre au ventre à travailler. Expire en éloignant bras et jambe, inspire en revenant.",
+        },
+      ],
+      variantes: [
+        {
+          angle: "À quatre pattes, en croisé",
+          exercice: "Bird dog",
+          texte:
+            "Le même croisé de bras et de jambe, mais à quatre pattes : le dos travaille pour rester stable, avec de l’équilibre en plus.",
+        },
+        {
+          angle: "En tenue",
+          exercice: "Hollow hold",
+          texte:
+            "Jambes et épaules décollées du sol, on tient la position sans bouger, le bas du dos plaqué.",
+        },
+        {
+          angle: "Les deux jambes ensemble",
+          exercice: "Relevés de jambes",
+          texte:
+            "On monte et on redescend les deux jambes tendues : elles font un plus grand levier, et le ventre travaille davantage pour garder le dos au sol.",
+        },
+      ],
+      titreVariantes: "Variantes et mouvements proches",
+      muscles: ["Abdominaux", "Muscles profonds du tronc"],
+      placement:
+        "Le dead bug se place en échauffement, pour réveiller le tronc avant une séance, ou en fin de séance avec les exercices d’abdos. Il se fait sur un tapis, à la maison comme en salle.",
+      materiel: "Aucun, un tapis pour le confort",
+      materielCourt: "Sans matériel",
+      promesse: "Sur le dos, on éloigne un bras et la jambe opposée : le ventre travaille pour garder le bas du dos au sol.",
+      nomDansLeTitre: "le dead bug",
+    },
+  },
+  {
+    slug: "bird-dog",
+    exercice: "Bird dog",
+    categorie: "abdos",
+    title: "Bird dog : la position et les erreurs",
+    description:
+      "Comment faire le bird dog : à quatre pattes, bras et jambe opposés tendus, le bassin stable, le dos droit et les erreurs fréquentes. En animation.",
+    contenu: {
+      definition:
+        "Au bird dog, on est à quatre pattes et on tend en même temps un bras devant soi et la jambe opposée derrière, avant de revenir et de changer de côté : le tronc travaille pour que le bassin et le dos ne bougent pas pendant que les membres s’allongent. Le mouvement est lent, et le défi est surtout de rester stable.",
+      gabarit: "mouvement",
+      etapes: [
+        {
+          titre: "Se placer",
+          texte:
+            "À quatre pattes, mains sous les épaules, genoux sous les hanches, dos droit, regard vers le sol.",
+        },
+        {
+          titre: "Tendre bras et jambe opposés",
+          texte:
+            "Tends lentement un bras vers l’avant et la jambe opposée vers l’arrière, jusqu’à ce qu’ils soient dans le prolongement du dos. Le bassin reste parallèle au sol.",
+        },
+        {
+          titre: "Revenir et changer",
+          texte:
+            "Marque une courte pause, ramène le bras et le genou sous toi sans les poser, puis tends de nouveau, ou change de côté.",
+        },
+      ],
+      erreurs: [
+        {
+          titre: "Laisser le bassin tourner",
+          pourquoi:
+            "Une hanche qui s’ouvre vers le plafond quand la jambe monte fait perdre le travail du tronc. Les deux hanches restent à la même hauteur, parallèles au sol.",
+        },
+        {
+          titre: "Monter la jambe trop haut",
+          pourquoi:
+            "Une jambe levée au-dessus du dos creuse les lombaires. Elle s’arrête dans le prolongement du corps.",
+        },
+        {
+          titre: "Se précipiter",
+          pourquoi:
+            "Un mouvement rapide se fait sur l’élan et le déséquilibre. Tends lentement, tiens une seconde, reviens lentement.",
+        },
+      ],
+      variantes: [
+        {
+          angle: "Sur le dos",
+          exercice: "Dead bug",
+          texte:
+            "Le même croisé de bras et de jambe, allongé sur le dos : le ventre travaille pour garder le bas du dos au sol.",
+        },
+        {
+          angle: "Sur le ventre",
+          exercice: "Superman",
+          texte:
+            "Allongé sur le ventre, on décolle bras et jambes en même temps : le bas du dos et les fessiers travaillent davantage.",
+        },
+        {
+          angle: "En tenue, face au sol",
+          exercice: "Gainage",
+          texte:
+            "On tient la planche sur les avant-bras, sans bouger : tout l’avant du tronc travaille.",
+        },
+      ],
+      titreVariantes: "Variantes et mouvements proches",
+      muscles: ["Lombaires", "Fessiers", "Muscles profonds du tronc"],
+      placement:
+        "Le bird dog se place en échauffement, avant une séance de jambes ou de dos, ou en fin de séance avec le gainage. Il se fait partout, sur un tapis.",
+      materiel: "Aucun, un tapis pour le confort",
+      materielCourt: "Sans matériel",
+      nomDansLeTitre: "le bird dog",
+    },
+  },
 ];
 
 /* ──────────────────────────── Accès ──────────────────────────────── */
