@@ -101,6 +101,7 @@ export function texteLlms(): string {
     lien("Exercices de musculation", "/exercices", "les fiches d'exercices, avec l'animation du mouvement, la technique et les erreurs fréquentes, lisibles sans compte."),
     lien("Programmes", "/programmes", "les programmes de plusieurs semaines, avec un test au départ et le même à la fin."),
     lien("Défis", "/defis", "des défis à refaire d'un mois sur l'autre pour battre son propre score, sans classement."),
+    lien("Séances", "/seances", "les séances guidées du catalogue ; le programme des séances gratuites se lit en entier."),
     lien("Recettes", "/recettes", "les recettes de la banque, avec leurs calories et leurs protéines par portion, leurs ingrédients et leurs étapes."),
     lien("Cours de nutrition", "/cours-nutrition", "des cours courts et sourcés sur la nutrition ; les cours gratuits se lisent en entier."),
     lien("Programme musculation 3 fois par semaine", "/programme-musculation-3-fois-par-semaine", "organiser trois séances par semaine, avec un exemple en full body."),

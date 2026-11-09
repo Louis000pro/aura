@@ -4,6 +4,7 @@ import { programmesPublies } from "@/lib/programmesPublics";
 import { defisPublies } from "@/lib/defisPublics";
 import { recettesPubliees } from "@/lib/recettesPubliques";
 import { COURS } from "@/lib/coursNutrition";
+import { seancesPubliees } from "@/lib/seancesPubliques";
 
 /**
  * Sitemap des pages publiques indexables de Vaiiya.
@@ -73,6 +74,9 @@ const PAGES: string[] = [
   "/recettes",
   "/cours-nutrition",
 
+  // Les séances du catalogue (vague 4).
+  "/seances",
+
   // L'offre. Indexable même vente fermée : « prix Vaiiya » se cherche de toute
   // façon, mieux vaut y répondre nous-mêmes.
   "/premium",
@@ -100,5 +104,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   const recettes = recettesPubliees().map((r) => `/recettes/${r.id}`);
   const cours = COURS.map((c) => `/cours-nutrition/${c.id}`);
 
-  return [...PAGES, ...fiches, ...programmes, ...defis, ...recettes, ...cours].map((chemin) => ({ url: `${base}${chemin}` }));
+  const seances = seancesPubliees().map((s) => `/seances/${s.id}`);
+
+  return [...PAGES, ...fiches, ...programmes, ...defis, ...recettes, ...cours, ...seances].map((chemin) => ({ url: `${base}${chemin}` }));
 }
