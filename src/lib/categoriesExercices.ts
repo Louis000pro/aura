@@ -68,6 +68,11 @@ const TEXTES: Record<CategoriePublique, TexteCategorie> = {
     intro:
       "Sauts sur place, corde à sauter et rameur : les mouvements qui font monter le cœur, montrés en animation.",
   },
+  mobilite: {
+    pour: "de mobilité et d’étirement",
+    intro:
+      "Étirements tenus et mouvements lents de la colonne et des hanches : de quoi finir une séance ou se réveiller, montrés en animation.",
+  },
 };
 
 export type PageCategorieExercices = TexteCategorie & {
