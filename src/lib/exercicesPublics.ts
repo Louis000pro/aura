@@ -3446,6 +3446,303 @@ export const FICHES: FichePublique[] = [
       nomDansLeTitre: "du rameur",
     },
   },
+  {
+    slug: "developpe-couche-halteres",
+    exercice: "Développé couché haltères",
+    categorie: "pectoraux",
+    title: "Développé couché aux haltères : technique et erreurs",
+    description:
+      "Comment faire le développé couché aux haltères : l’installation sur le banc, la descente contrôlée, la poussée, les coudes et les erreurs fréquentes. En animation.",
+    contenu: {
+      definition:
+        "Au développé couché aux haltères, on est allongé sur un banc plat et on pousse deux haltères depuis la poitrine jusqu’au-dessus des épaules : les pectoraux, les triceps et l’avant des épaules travaillent. Chaque bras porte son haltère, et la descente peut aller un peu plus bas qu’avec une barre.",
+      gabarit: "mouvement",
+      etapes: [
+        {
+          titre: "S’installer",
+          texte:
+            "Assis au bout du banc, les haltères posés sur les cuisses, allonge-toi en les gardant contre la poitrine. Pieds à plat au sol, omoplates serrées contre le banc.",
+        },
+        {
+          titre: "Pousser",
+          texte:
+            "Pousse les haltères vers le haut jusqu’aux bras presque tendus, au-dessus des épaules, en les rapprochant légèrement l’un de l’autre.",
+        },
+        {
+          titre: "Redescendre",
+          texte:
+            "Redescends lentement jusqu’à sentir l’étirement de la poitrine, les coudes à environ 45 degrés du buste, puis pousse de nouveau.",
+        },
+      ],
+      erreurs: [
+        {
+          titre: "Ouvrir les coudes à l’horizontale",
+          pourquoi:
+            "Des coudes écartés à 90 degrés du buste mettent l’avant de l’épaule en position fragile. Garde-les un peu plus près du corps, vers 45 degrés.",
+        },
+        {
+          titre: "Descendre trop bas",
+          pourquoi:
+            "Laisser les coudes plonger loin sous le banc étire fortement l’épaule. Arrête la descente quand la poitrine est bien étirée.",
+        },
+        {
+          titre: "Décoller les fesses du banc",
+          pourquoi:
+            "Un bassin qui se soulève pour pousser plus lourd cambre le bas du dos. Les fesses restent sur le banc, et la charge baisse si besoin.",
+        },
+      ],
+      variantes: [
+        {
+          angle: "À la barre",
+          exercice: "Développé couché",
+          texte:
+            "Les deux mains sur la même barre : la charge peut être plus lourde, avec un geste plus guidé.",
+        },
+        {
+          angle: "Le banc incliné",
+          exercice: "Développé incliné haltères",
+          texte:
+            "Le dossier relevé, on pousse vers le haut et légèrement en arrière : le haut de la poitrine travaille davantage.",
+        },
+        {
+          angle: "Au sol, sans matériel",
+          exercice: "Pompes",
+          texte:
+            "On pousse le sol au lieu des haltères : les mêmes muscles, avec le poids du corps.",
+        },
+      ],
+      titreVariantes: "Variantes et mouvements proches",
+      placement:
+        "Le développé couché aux haltères se place en début de séance de pectoraux ou de haut du corps, comme mouvement principal, ou juste après le développé couché à la barre.",
+      materiel: "Une paire d’haltères et un banc plat",
+      materielCourt: "Haltères et banc",
+      precaution:
+        "Pour t’installer, assieds-toi au bout du banc, les haltères sur les cuisses, et allonge-toi en les gardant contre la poitrine. À la fin, ramène-les sur la poitrine avant de te redresser.",
+      promesse: "Allongé sur un banc, on pousse deux haltères vers le haut : chaque bras travaille seul, avec un peu plus d’amplitude qu’à la barre.",
+      nomDansLeTitre: "le développé couché aux haltères",
+    },
+  },
+  {
+    slug: "pompes-inclinees",
+    exercice: "Pompes inclinées",
+    categorie: "pectoraux",
+    title: "Pompes inclinées : technique et erreurs",
+    description:
+      "Comment faire les pompes inclinées : les mains sur un banc ou une table, le corps aligné, la descente, la remontée et les erreurs fréquentes. En animation.",
+    contenu: {
+      definition:
+        "Aux pompes inclinées, les mains sont posées sur un support plus haut que les pieds, un banc ou une table, et on fait une pompe : les pectoraux, les triceps et les épaules travaillent avec une plus petite part du poids du corps. Plus le support est haut, plus la pompe est accessible.",
+      gabarit: "mouvement",
+      etapes: [
+        {
+          titre: "Se placer",
+          texte:
+            "Les mains sur le bord d’un banc ou d’une table stable, un peu plus écartées que les épaules. Recule les pieds jusqu’à former une ligne droite des épaules aux talons.",
+        },
+        {
+          titre: "Descendre",
+          texte:
+            "Plie les coudes pour amener la poitrine vers le bord du support, les coudes à environ 45 degrés du buste, le corps toujours aligné.",
+        },
+        {
+          titre: "Remonter",
+          texte:
+            "Pousse dans les mains pour tendre les bras, sans laisser le bassin descendre ni monter.",
+        },
+      ],
+      erreurs: [
+        {
+          titre: "Plier le bassin",
+          pourquoi:
+            "Des fesses qui montent raccourcissent le mouvement et soulagent les bras. Serre les fessiers et le ventre pour rester droit.",
+        },
+        {
+          titre: "Choisir un support instable",
+          pourquoi:
+            "Une chaise qui glisse ou une table légère peut partir sous les mains. Prends un appui calé, contre un mur si possible.",
+        },
+        {
+          titre: "Ne descendre qu’à moitié",
+          pourquoi:
+            "S’arrêter loin du support réduit le travail de la poitrine. Descends jusqu’à frôler le bord avec la poitrine.",
+        },
+      ],
+      variantes: [
+        {
+          angle: "Les mains au sol",
+          exercice: "Pompes",
+          texte:
+            "La pompe classique : tout le haut du corps porte une plus grande part du poids.",
+        },
+        {
+          angle: "Les mains serrées",
+          exercice: "Pompes diamant",
+          texte:
+            "Les mains jointes sous la poitrine : les triceps prennent une plus grande part du travail.",
+        },
+        {
+          angle: "Allongé, avec des haltères",
+          exercice: "Développé couché haltères",
+          texte:
+            "Sur un banc, on pousse deux haltères vers le haut : les mêmes muscles, avec une charge qu’on choisit.",
+        },
+      ],
+      titreVariantes: "Variantes et mouvements proches",
+      placement:
+        "Les pompes inclinées se placent au début d’une séance de haut du corps à la maison, ou après des pompes au sol pour terminer les séries quand la fatigue arrive.",
+      materiel: "Un banc, une table ou un plan de travail stable",
+      materielCourt: "Un support",
+      promesse: "Les mains sur un banc ou une table, on fait une pompe : la poitrine et les bras travaillent avec une plus petite part du poids du corps.",
+      nomDansLeTitre: "des pompes inclinées",
+    },
+  },
+  {
+    slug: "rowing-assis-poulie",
+    exercice: "Rowing assis poulie",
+    categorie: "dos",
+    title: "Rowing assis à la poulie : technique et erreurs",
+    description:
+      "Comment faire le rowing assis à la poulie : la position, le buste droit, le tirage vers le ventre, les omoplates et les erreurs fréquentes. En animation.",
+    contenu: {
+      definition:
+        "Au rowing assis à la poulie, on est assis face à une poulie basse, les pieds calés, et on tire une poignée vers le ventre en rapprochant les omoplates : le milieu du dos travaille, avec l’arrière des épaules et les biceps. Le buste reste droit, c’est la charge qui vient vers soi.",
+      gabarit: "mouvement",
+      etapes: [
+        {
+          titre: "S’installer",
+          texte:
+            "Assis sur le banc, les pieds calés sur les appuis, genoux légèrement fléchis. Saisis la poignée bras tendus, buste droit.",
+        },
+        {
+          titre: "Tirer",
+          texte:
+            "Tire la poignée vers le bas de tes côtes, coudes près du corps, en rapprochant les omoplates. Le buste reste droit.",
+        },
+        {
+          titre: "Revenir",
+          texte:
+            "Laisse les bras se tendre lentement, en laissant les épaules avancer un peu, sans arrondir le dos.",
+        },
+      ],
+      erreurs: [
+        {
+          titre: "Se balancer d’avant en arrière",
+          pourquoi:
+            "Un buste qui bascule loin vers l’arrière pour tirer fait travailler l’élan et le bas du dos. Le buste bouge à peine : ce sont les bras et les omoplates qui travaillent.",
+        },
+        {
+          titre: "Hausser les épaules",
+          pourquoi:
+            "Des épaules qui montent vers les oreilles font travailler le haut des trapèzes. Garde-les basses, loin des oreilles.",
+        },
+        {
+          titre: "Tirer trop haut",
+          pourquoi:
+            "Une poignée tirée vers la poitrine ouvre les coudes et change le travail. Elle vient vers le bas des côtes, coudes près du corps.",
+        },
+      ],
+      variantes: [
+        {
+          angle: "Un bras à la fois, aux haltères",
+          exercice: "Rowing haltère",
+          texte:
+            "Une main et un genou sur un banc, on tire un haltère vers la hanche : chaque côté travaille seul.",
+        },
+        {
+          angle: "Debout, à la barre",
+          exercice: "Rowing barre",
+          texte:
+            "Buste penché, on tire une barre vers le ventre : le bas du dos travaille aussi pour tenir la position.",
+        },
+        {
+          angle: "Vers le bas, à la poulie haute",
+          exercice: "Tirage poitrine",
+          texte:
+            "Assis, on tire une barre de la poulie haute vers le haut de la poitrine : le travail passe sur les grands dorsaux.",
+        },
+      ],
+      titreVariantes: "Variantes et mouvements proches",
+      placement:
+        "Le rowing assis à la poulie se place dans une séance de dos, après les tractions ou le tirage poitrine, ou dans une séance de haut du corps pour équilibrer les mouvements de poussée.",
+      materiel: "Une poulie basse avec une poignée",
+      materielCourt: "Poulie",
+      promesse: "Assis, on tire une poignée vers le ventre en rapprochant les omoplates : le milieu du dos travaille.",
+      nomDansLeTitre: "le rowing assis à la poulie",
+    },
+  },
+  {
+    slug: "leg-extension",
+    exercice: "Leg extension",
+    categorie: "jambes",
+    title: "Leg extension : technique et erreurs",
+    description:
+      "Comment faire le leg extension à la machine : le réglage du siège et du rouleau, l’extension des jambes, la descente lente et les erreurs fréquentes. En animation.",
+    contenu: {
+      definition:
+        "Au leg extension, on est assis sur une machine, un rouleau calé devant le bas des tibias, et on tend les jambes en poussant le rouleau vers le haut : l’avant des cuisses, les quadriceps, travaille seul. La machine guide le mouvement, et la charge se règle en quelques secondes.",
+      gabarit: "mouvement",
+      etapes: [
+        {
+          titre: "Régler la machine",
+          texte:
+            "Règle le dossier pour que tes genoux soient au bord du siège, alignés avec l’axe de la machine, et le rouleau posé juste au-dessus des chevilles.",
+        },
+        {
+          titre: "Tendre les jambes",
+          texte:
+            "Tends les jambes jusqu’à les avoir presque droites, en tenant les poignées sur les côtés, et marque une seconde en haut.",
+        },
+        {
+          titre: "Redescendre",
+          texte:
+            "Redescends lentement, sans laisser la charge retomber, jusqu’aux genoux pliés à angle droit.",
+        },
+      ],
+      erreurs: [
+        {
+          titre: "Donner un coup de jambes",
+          pourquoi:
+            "Un mouvement lancé laisse l’élan monter la charge et sollicite le genou par à-coups. Tends les jambes de façon régulière, sans rebond.",
+        },
+        {
+          titre: "Mal régler le siège",
+          pourquoi:
+            "Des genoux décalés par rapport à l’axe de la machine font travailler l’articulation de travers. Aligne-les avant la première série.",
+        },
+        {
+          titre: "Laisser retomber la charge",
+          pourquoi:
+            "Une descente lâchée fait perdre la moitié du travail. Elle dure au moins aussi longtemps que la montée.",
+        },
+      ],
+      variantes: [
+        {
+          angle: "Toute la jambe, à la machine",
+          exercice: "Presse à cuisses",
+          texte:
+            "On pousse une plateforme avec les pieds : les cuisses et les fessiers travaillent ensemble.",
+        },
+        {
+          angle: "En tenue, contre un mur",
+          exercice: "Chaise au mur",
+          texte:
+            "Le dos contre un mur, les cuisses à l’horizontale, on tient sans bouger : l’avant des cuisses travaille sans machine.",
+        },
+        {
+          angle: "L’arrière des cuisses",
+          exercice: "Leg curl assis",
+          texte:
+            "Assis sur une machine voisine, on ramène les talons sous le siège : ce sont les ischio-jambiers qui travaillent.",
+        },
+      ],
+      titreVariantes: "Variantes et mouvements proches",
+      placement:
+        "Le leg extension se place en fin de séance de jambes, après les squats ou la presse, avec une charge qui permet des répétitions lentes et contrôlées.",
+      materiel: "Une machine à leg extension",
+      materielCourt: "Machine",
+      nomDansLeTitre: "le leg extension",
+    },
+  },
 ];
 
 /* ──────────────────────────── Accès ──────────────────────────────── */
