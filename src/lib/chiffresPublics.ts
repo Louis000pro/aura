@@ -61,9 +61,16 @@ export const CHIFFRES_PUBLICS: ChiffresPublics = {
 /** Les séances du catalogue accessibles avec le compte gratuit (`access`
  *  n'est pas « premium »). Les futurs Vaiiya+ en font partie tant que la
  *  vente est fermée, et en sortent tout seuls le jour où elle ouvre. 55 sur
- *  152 le 2026-11-08. Lu par `/llms.txt`, pas par la landing. */
+ *  152 le 2026-11-08. Lu par `/llms.txt` et par les questions de l'accueil
+ *  (`lib/questionsAccueil.ts`), jamais par un composant client. */
 export const SEANCES_INCLUSES = workoutSessions.filter(
   (s) => s.contentType !== "article" && s.access !== "premium",
+).length;
+
+/** Les séances rangées dans la collection « Sans matériel », gratuites ou
+ *  Vaiiya+ : 68 sur 152 le 2026-11-09. Lu par les questions de l'accueil. */
+export const SEANCES_SANS_MATERIEL = workoutSessions.filter(
+  (s) => s.contentType !== "article" && (s.collections ?? []).includes("sansmateriel"),
 ).length;
 
 /** Les programmes écrits par Vaiiya (`lib/parcours.ts`) : combien, de

@@ -8,6 +8,7 @@ import LandingVitrine from "@/components/Landing/LandingVitrine";
    descend trois entiers, pour que les données ne traversent pas jusqu'ici. */
 import type { ChiffresPublics } from "@/lib/chiffresPublics";
 import type { ResumeAvis } from "@/lib/avisTypes";
+import type { QuestionAccueil } from "@/lib/questionsAccueil";
 import { useAuth } from "@/context/AuthContext";
 import { createClient } from "@/lib/supabase";
 import AccueilSignature from "@/components/AccueilSignature";
@@ -54,10 +55,10 @@ const PremierAccueil = dynamic(() => import("@/components/accueil/PremierAccueil
    Hero + présentation vivent dans src/components/Landing/ pour garder
    ce fichier (partagé entre agents) le plus petit possible.
 ───────────────────────────────────────────────── */
-function LandingPage({ chiffres, avis }: { chiffres: ChiffresPublics; avis: ResumeAvis }) {
+function LandingPage({ chiffres, avis, questions }: { chiffres: ChiffresPublics; avis: ResumeAvis; questions: QuestionAccueil[] }) {
   return (
     <div className="relative w-full" style={{ overflowX: "clip", background: "transparent" }}>
-      <LandingVitrine chiffres={chiffres} avis={avis} />
+      <LandingVitrine chiffres={chiffres} avis={avis} questions={questions} />
     </div>
   );
 }
@@ -427,7 +428,7 @@ function Dashboard() {
    classe `a-session`, posée avant le premier paint par le script du <head>,
    masque la landing et révèle l'attente (voir globals.css). La bascule est en
    CSS et non en React, pour que le rendu reste identique serveur et client. */
-export default function AccueilClient({ chiffres, avis }: { chiffres: ChiffresPublics; avis: ResumeAvis }) {
+export default function AccueilClient({ chiffres, avis, questions }: { chiffres: ChiffresPublics; avis: ResumeAvis; questions: QuestionAccueil[] }) {
   const { user, isLoading, justLoggedIn, isNewUser, clearWelcome } = useAuth();
   // Le popup animé "Bonsoir" est retiré.
   void justLoggedIn; void isNewUser; void clearWelcome;
@@ -447,7 +448,7 @@ export default function AccueilClient({ chiffres, avis }: { chiffres: ChiffresPu
   // n'est pas remontée, donc les animations du hero ne rejouent pas.
   return (
     <>
-      <div className="accueil-landing"><LandingPage chiffres={chiffres} avis={avis} /></div>
+      <div className="accueil-landing"><LandingPage chiffres={chiffres} avis={avis} questions={questions} /></div>
       {/* Un membre voit tout de suite la forme de son accueil (le squelette),
           pas un rond qui tourne : la page paraît déjà là pendant que la
           session se résout (Louis, 2026-11-03). */}

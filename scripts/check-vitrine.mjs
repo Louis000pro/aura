@@ -174,8 +174,35 @@ verifie(!/uOndeG|uEclat/.test(script), "le fond du logo n'a plus à porter la lu
 /* ⚠️ LA NUIT N'EXISTE QU'AUX DEUX BOUTS (Louis, 2026-11-04 : « ça change de couleur
    en plein milieu », « c'est mieux que les tarifs soient sur fond clair »). */
 verifie(/<div className=\{s\.nuit\}>\s*<Fin \/>\s*<\/div>/.test(page), "la nuit ne porte que la fin : le reste de la page est le jour");
-const ordre = ["<Mouvements", "<Guide />", "<Nutrition />", "<Relais />", "<ToutRelie />", "<Rangs />", "<Offre", "<Avis", "s.crepuscule", "<Fin />"].map((m) => page.lastIndexOf(m));
-verifie(ordre.every((v, i) => v >= 0 && (i === 0 || v > ordre[i - 1])), "l'ordre de la journée a changé : le crépuscule tombe juste avant la fin");
+const ordre = ["<Mouvements", "<Guide />", "<Nutrition />", "<Relais />", "<ToutRelie />", "<Rangs />", "<Offre", "<Avis", "<Questions", "s.crepuscule", "<Fin />"].map((m) => page.lastIndexOf(m));
+verifie(ordre.every((v, i) => v >= 0 && (i === 0 || v > ordre[i - 1])), "l'ordre de la journée a changé : les questions viennent après les avis, et le crépuscule tombe juste avant la fin");
+
+/* ⭐ LE SLOGAN (Louis, 2026-11-08), sur deux lignes (maquette du 2026-11-09). */
+verifie(/<span className=\{s\.mot\}>Le sport qui<\/span>/.test(page) && /te connaît\.<\/span>/.test(page), "le héros dit « Le sport qui / te connaît. »");
+verifie(/\.h1 > \.ligneAccent \{ margin-top: \.2em; \}/.test(css), "la seconde ligne du slogan garde son air : sans lui, l'accent du Î touche le Q de « qui »");
+verifie(/L’application de musculation et de nutrition, avec <b>ton coach IA<\/b>/.test(page), "la phrase sous le slogan dit ce qu'est Vaiiya, avec les mots qu'on tape");
+/* Une ligne de titre est un bloc : sans espace, le texte lu par les IA collait
+   « Le sport quite connaît. » et « Vaiiya enhuit questions. ». */
+verifie(/Le sport qui<\/span><\/span>\{" "\}/.test(page), "une espace sépare les deux lignes du slogan dans le texte de la page");
+verifie(/\{i > 0 && " "\}/.test(page), "une espace sépare les lignes d'un grand titre dans le texte de la page");
+
+/* ⭐ « VAIIYA EN HUIT QUESTIONS » (GO de Louis, 2026-11-09). Le bloc se replie, mais les
+   réponses restent écrites dans la page : Google et les IA lisent le HTML. */
+{
+  const debut = page.indexOf("function Questions(");
+  const corps = page.slice(debut, page.indexOf("\nfunction ", debut + 10));
+  verifie(debut >= 0, "la section des questions a disparu");
+  verifie(!/ouvert(es)? &&|ouvert \?|visible &&|visible \?/.test(corps.replace(/data-ouvert(e)?=\{[^}]*\}/g, "")), "une réponse repliée reste dans le HTML : seul le CSS la cache, jamais un rendu conditionnel");
+  verifie(/\.questionsPanneau \{ display: none;/.test(css) && /\.questions\[data-ouvert\] \.questionsPanneau \{ display: block;/.test(css), "tout le bloc des questions se replie derrière son titre");
+  verifie(/aria-expanded=\{ouvert\}/.test(corps) && /aria-controls="questions-liste"/.test(corps), "le titre qui ouvre le bloc dit s'il est ouvert");
+  const coquille = lireTexte("src/app/page.tsx");
+  verifie(/questionsAccueil\(\)/.test(coquille) && /"@type": "FAQPage"/.test(coquille) && /questions=\{questions\}/.test(coquille), "les données structurées FAQPage et l'écran lisent les mêmes questions");
+  const sansNotes = (t) => t.replace(/\/\*[^]*?\*\//g, "").replace(/\{\/\*[^]*?\*\/\}/g, "").replace(/^\s*\/\/.*$/gm, "");
+  const textes = sansNotes(lireTexte("src/lib/questionsAccueil.ts"));
+  verifie(!/lycé/i.test(sansNotes(page) + textes), "l'accueil ne dit pas qui fait Vaiiya (Louis, 2026-11-09) : c'est pour /a-propos");
+  verifie(!/\b\d+ (séances|mouvements|programmes|messages|analyses)/.test(textes), "les chiffres des réponses se lisent dans le code, jamais écrits à la main");
+  verifie(!/disponible sur|App Store|Google Play/.test(textes), "aucune réponse n'annonce un store avant la sortie des applications");
+}
 
 /* Les rangs suivent le doigt : Bronze en haut de l'échelle, Éternel en bas. */
 verifie(!/column-reverse/.test(css), "l'échelle des rangs descend dans le sens du geste, Bronze en haut");

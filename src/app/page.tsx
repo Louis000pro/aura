@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import AccueilClient from "./AccueilClient";
 import { CHIFFRES_PUBLICS } from "@/lib/chiffresPublics";
 import { resumeAvisPublics } from "@/lib/avisPublics";
+import { questionsAccueil } from "@/lib/questionsAccueil";
 
 /* La landing lit les avis approuvés côté serveur : on met le rendu en cache
    10 min plutôt que de frapper la base à chaque visite de l'écran le plus
@@ -38,7 +39,30 @@ export default async function Page() {
      qu'un nombre. Voir `lib/chiffresPublics.ts`.
 
      Les avis approuvés se lisent en base (lecture serveur, jamais côté client :
-     voir `lib/avisPublics.ts`). */
+     voir `lib/avisPublics.ts`).
+
+     Les huit questions de l'accueil se composent ici aussi : la vitrine les
+     affiche, et les données structurées `FAQPage` les répètent mot pour mot,
+     pour Google comme pour les IA. Repliées à l'écran, elles sont pourtant
+     dans le HTML dès le chargement (voir `lib/questionsAccueil.ts`). */
   const avis = await resumeAvisPublics();
-  return <AccueilClient chiffres={CHIFFRES_PUBLICS} avis={avis} />;
+  const questions = questionsAccueil();
+  const faq = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: questions.map((q) => ({
+      "@type": "Question",
+      name: q.question,
+      acceptedAnswer: { "@type": "Answer", text: q.reponse },
+    })),
+  };
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faq).replace(/</g, "\\u003c") }}
+      />
+      <AccueilClient chiffres={CHIFFRES_PUBLICS} avis={avis} questions={questions} />
+    </>
+  );
 }

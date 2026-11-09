@@ -143,6 +143,8 @@ marque, jamais comme argument de fonctionnalité.
   J’aime les startups publie les deux noms complets, et c’est voulu (Louis,
   2026-11-08) : ne pas les retirer de là-bas, ne pas les recopier ici sans son accord.
 - L'idée initiale a été **suggérée par une IA**, ce qui peut se raconter simplement.
+- **Pas sur la page d’accueil** (Louis, 2026-11-09) : l’accueil ne dit ni qui fait
+  Vaiiya ni « deux lycéens ». Ces faits restent pour /a-propos et les autres pages.
 - Ambition entrepreneuriale assumée, étape par étape. Pas de récit héroïque, pas de
   levée de fonds, pas d'équipe fantôme, pas de « nous sommes une startup ».
 
@@ -197,7 +199,8 @@ tout ce qui précède reste vrai : rien n’annonce une disponibilité dans un s
 **« application »** (et « appli »), lui, est vrai aujourd’hui et se travaille dès
 maintenant dans le référencement : « l’application de musculation et de nutrition avec
 un coach IA ». Le jour de la sortie, les badges, la bannière sur iPhone, les liens qui
-ouvrent l’application et le JSON-LD basculent ensemble.
+ouvrent l’application, le JSON-LD et la réponse « Faut-il télécharger une
+application ? » de l’accueil (`lib/questionsAccueil.ts`) basculent ensemble.
 
 **Le nom dans les stores (Louis, 2026-11-08) : « Musculation », jamais « Muscu »**,
 parce que c’est plus professionnel. Les deux stores limitent le nom à 30 caractères :

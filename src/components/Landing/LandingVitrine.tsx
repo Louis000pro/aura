@@ -37,7 +37,7 @@
  * l'app, pas une personne réelle.
  */
 
-import { useEffect, useRef, type CSSProperties, type ReactNode } from "react";
+import { Fragment, useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, ArrowUp } from "lucide-react";
@@ -49,6 +49,7 @@ import { PLANS, formatPrice } from "@/lib/plans";
 import { SEO_PAGES, LEGAL_PAGES } from "@/lib/seoPages";
 import { SEUIL_AVIS_PUBLIC, type ResumeAvis } from "@/lib/avisTypes";
 import type { ChiffresPublics } from "@/lib/chiffresPublics";
+import type { QuestionAccueil } from "@/lib/questionsAccueil";
 import s from "./LandingVitrine.module.css";
 
 /** Ancre de la section qui suit le héros (le lien « Voir ce qu'il y a dedans »). */
@@ -127,11 +128,18 @@ function Bouton({ label, href = "/premiers-pas" }: { label: string; href?: strin
 
 /** Le titre de section parle comme celui du héros. Chaque ligne monte depuis
     sous sa propre ligne de base, une seule fois. */
+/* ⚠️ UNE ESPACE ENTRE DEUX LIGNES D'UN TITRE. Chaque ligne est un bloc : à l'écran
+   l'espace ne se voit pas, mais sans elle le texte du titre colle deux mots
+   (« Vaiiya enhuit questions. »), et c'est ce texte-là que lisent les IA et les
+   lecteurs d'écran. */
 function Grand({ lignes, className = "" }: { lignes: ReactNode[]; className?: string }) {
   return (
     <h2 className={`${s.grand} ${className}`} data-titre>
       {lignes.map((l, i) => (
-        <span key={i} className={s.titreLigne} style={{ "--l": i } as CSSProperties}><span>{l}</span></span>
+        <Fragment key={i}>
+          {i > 0 && " "}
+          <span className={s.titreLigne} style={{ "--l": i } as CSSProperties}><span>{l}</span></span>
+        </Fragment>
       ))}
     </h2>
   );
@@ -172,12 +180,16 @@ function Heros({ chiffres }: { chiffres: ChiffresPublics }) {
           sous le pli : c'est le défaut de la version d'avant, où le titre
           se réglait sur la largeur seule. */}
       <div className={s.herosBloc}>
+        {/* ⭐ LE SLOGAN (Louis, 2026-11-08), coupé après « qui » (maquette du
+            2026-11-09) : « Le sport / qui te connaît. » prenait trois lignes
+            sur téléphone. La phrase dessous porte les mots qu'on tape dans
+            Google ou qu'on demande à une IA : le titre, lui, donne envie. */}
         <h1 className={s.h1}>
-          <span data-sens="-1"><span className={s.mot}>Deviens</span></span>
-          <span data-sens="1"><span className={`${s.mot} ${s.orNuit}`} style={{ animationDelay: ".1s" }}>qui tu veux</span></span>
+          <span data-sens="-1"><span className={s.mot}>Le sport qui</span></span>{" "}
+          <span data-sens="1" className={s.ligneAccent}><span className={`${s.mot} ${s.orNuit}`} style={{ animationDelay: ".1s" }}>te connaît.</span></span>
         </h1>
         <p className={s.herosTexte}>
-          Tes séances, tes repas et <b>un Guide qui te connaît</b>, dans une seule appli.
+          L’application de musculation et de nutrition, avec <b>ton coach IA</b>.
           <span className={s.surOrdi}> Tu choisis Nora ou Sasha, et tu y vas.</span>
         </p>
         {/* Le bouton et son lien passent l'un SOUS l'autre : côte à côte,
@@ -934,6 +946,64 @@ function Avis({ avis }: { avis: ResumeAvis }) {
   );
 }
 
+/* ═══════════════ 10 · LES QUESTIONS ═══════════════
+   « Vaiiya en huit questions » (maquette du 2026-11-09, GO de Louis). Les textes
+   viennent de `lib/questionsAccueil.ts` par la coquille serveur, qui les répète
+   dans les données structurées `FAQPage`.
+
+   ⚠️ TOUT LE BLOC SE REPLIE (Louis, 2026-11-09 : « si on n'a pas de questions, on
+   passe directement à la fin »). Fermé par défaut, le titre l'ouvre. À l'ouverture,
+   le téléphone montre la première réponse et l'ordinateur les montre toutes ;
+   chaque question se replie ensuite d'un toucher.
+
+   ⚠️ REPLIÉ N'EST PAS ABSENT. Les réponses sont toujours écrites dans la page et
+   seul le CSS les cache : un rendu conditionnel (`{ouvert && …}`) les retirerait
+   du HTML, donc de ce que lisent Google et les IA. */
+function Questions({ questions }: { questions: QuestionAccueil[] }) {
+  const [ouvert, setOuvert] = useState(false);
+  const [ouvertes, setOuvertes] = useState<number[]>([0]);
+  const basculerBloc = () => {
+    if (!ouvert) setOuvertes(window.matchMedia("(min-width: 960px)").matches ? questions.map((_, i) => i) : [0]);
+    setOuvert(!ouvert);
+  };
+  const basculer = (i: number) =>
+    setOuvertes((liste) => (liste.includes(i) ? liste.filter((x) => x !== i) : [...liste, i]));
+  return (
+    <section id="questions" className={s.questions} data-ouvert={ouvert ? "" : undefined}>
+      <div className={s.wrap}>
+        <h2 className={`${s.grand} ${s.questionsTitre}`} data-titre>
+          <button type="button" className={s.questionsBouton} aria-expanded={ouvert} aria-controls="questions-liste" onClick={basculerBloc}>
+            <span className={s.questionsLignes}>
+              <span className={s.titreLigne} style={{ "--l": 0 } as CSSProperties}><span>Vaiiya en</span></span>{" "}
+              <span className={s.titreLigne} style={{ "--l": 1 } as CSSProperties}><span className={s.vio}>huit questions.</span></span>
+            </span>
+            <i className={s.questionsPlus} aria-hidden />
+          </button>
+        </h2>
+        <div id="questions-liste" className={s.questionsPanneau}>
+          <div className={s.questionsListe}>
+            {questions.map((q, i) => {
+              const visible = ouvertes.includes(i);
+              return (
+                <div key={q.question} className={s.question} data-ouverte={visible ? "" : undefined}>
+                  <h3>
+                    <button type="button" aria-expanded={visible} aria-controls={`reponse-${i}`} onClick={() => basculer(i)}>
+                      <span>{q.question}</span>
+                      <i aria-hidden />
+                    </button>
+                  </h3>
+                  <div id={`reponse-${i}`} className={s.reponse}><p>{q.reponse}</p></div>
+                </div>
+              );
+            })}
+          </div>
+          <p className={s.texte}>Une autre question&nbsp;? <a href="mailto:bonjour@vaiiya.fr" className={s.questionsMail}>bonjour@vaiiya.fr</a></p>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function Fin() {
   return (
     <section className={s.fin} data-fin data-vivant>
@@ -963,7 +1033,7 @@ function Pied() {
               <Image src="/marque/logo-degrade.png" alt="" width={28} height={21} />
               Vaiiya
             </span>
-            <p>Tes séances, tes repas et ton Guide au même endroit. Application web, en français.</p>
+            <p>L’application de musculation et de nutrition, avec ton coach IA. En français, dans ton navigateur.</p>
           </div>
           <div>
             <h4>Comprendre</h4>
@@ -988,7 +1058,7 @@ function Pied() {
     Un membre garde son fond : la vitrine est là, masquée, le temps de lire sa session. */
 const DESSOUS = "html:not(.a-session){--html-bg:#0B0814;overscroll-behavior:none}html:not(.a-session) body::before{display:none}";
 
-export default function LandingVitrine({ chiffres, avis }: { chiffres: ChiffresPublics; avis: ResumeAvis }) {
+export default function LandingVitrine({ chiffres, avis, questions }: { chiffres: ChiffresPublics; avis: ResumeAvis; questions: QuestionAccueil[] }) {
   const racine = useRef<HTMLDivElement>(null);
   useRevelation(racine);
   useVivante(racine);
@@ -1005,6 +1075,7 @@ export default function LandingVitrine({ chiffres, avis }: { chiffres: ChiffresP
         <Rangs />
         <Offre chiffres={chiffres} />
         <Avis avis={avis} />
+        <Questions questions={questions} />
       </div>
       <div className={s.crepuscule} data-vivant aria-hidden />
       <div className={s.nuit}>

@@ -325,6 +325,12 @@
   letter-spacing: -.012em;
 }
 .h1 > span { display: block; will-change: transform; }
+/* ⚠️ LE « Î » DE « CONNAÎT » MONTE AU-DESSUS DES CAPITALES, et la queue du « Q » de
+   « qui » descend sous la ligne : avec cette ligne serrée, ils se touchaient. La
+   seconde ligne garde son air, et sous 340 px le titre resserre ses marges pour
+   rester sur deux lignes (vu le 2026-11-09 à 320, 360, 390 et 1 440 px). */
+.h1 > .ligneAccent { margin-top: .2em; }
+@media (max-width: 340px) { .h1 { padding: 0 4px; } }
 .mot { display: inline-block; animation: monte .8s var(--ease) both; }
 
 .herosTexte {
@@ -1460,6 +1466,103 @@
 /* ═══════════════ RÉVÉLATION DES TITRES ═══════════════
    `data-attente` n'est posé QUE par le script, et QUE sur ce qui est sous le
    pli à ce moment-là. Sans script : rien n'est caché. */
+
+/* ═══════════════ 10 · LES QUESTIONS ═══════════════
+   Une liste à filets, sans cartes : l'offre, juste avant, a déjà les siennes.
+   Tout le bloc se replie derrière son titre (Louis, 2026-11-09), et les réponses
+   restent écrites dans la page : seul ce CSS les cache. */
+.questions { position: relative; padding: 0 0 104px; }
+.questionsTitre { font-size: clamp(40px, 11.2vw, 84px); }
+.questionsBouton {
+  width: 100%;
+  display: flex;
+  align-items: flex-end;
+  gap: 16px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-variation-settings: inherit;
+  letter-spacing: inherit;
+  line-height: inherit;
+  text-transform: inherit;
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.questionsBouton:focus-visible { outline: 2px solid #6D3BE8; outline-offset: 6px; border-radius: 12px; }
+.questionsLignes { display: block; min-width: 0; }
+.questionsPlus { position: relative; flex: 0 0 auto; width: 52px; height: 52px; margin-bottom: .08em; border: 2px solid #6D3BE8; border-radius: 50%; }
+.questionsPlus::before,
+.questionsPlus::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 20px;
+  height: 2px;
+  margin: -1px 0 0 -10px;
+  border-radius: 2px;
+  background: #6D3BE8;
+  transition: transform .35s var(--ease);
+}
+.questionsPlus::after { transform: rotate(90deg); }
+.questions[data-ouvert] .questionsPlus::after { transform: rotate(0deg); }
+.questionsPanneau { display: none; margin-top: 28px; }
+.questions[data-ouvert] .questionsPanneau { display: block; animation: monte .45s var(--ease) both; }
+.questionsListe { border-bottom: 1px solid rgba(28, 22, 38, .12); }
+.question { border-top: 1px solid rgba(28, 22, 38, .12); }
+.question h3 { margin: 0; }
+.question button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 18px 0;
+  border: 0;
+  background: none;
+  text-align: left;
+  font: inherit;
+  font-size: 16px;
+  line-height: 1.35;
+  font-weight: 700;
+  color: var(--encre);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.question button:focus-visible { outline: 2px solid #6D3BE8; outline-offset: 4px; border-radius: 8px; }
+.question button i { position: relative; flex: 0 0 auto; width: 14px; height: 14px; }
+.question button i::before,
+.question button i::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 6px;
+  width: 14px;
+  height: 2px;
+  border-radius: 2px;
+  background: #6D3BE8;
+  transition: transform .35s var(--ease);
+}
+.question button i::after { transform: rotate(90deg); }
+.question[data-ouverte] button i::after { transform: rotate(0deg); }
+.reponse { display: none; padding: 0 32px 22px 0; }
+.question[data-ouverte] .reponse { display: block; }
+.reponse p { margin: 0; max-width: 62ch; font-size: 16px; line-height: 1.6; color: var(--encre-2); }
+.questions .texte { margin-top: 24px; }
+.questionsMail { color: #6D3BE8; font-weight: 700; text-decoration: none; border-bottom: 1px solid rgba(109, 59, 232, .35); }
+@media (min-width: 960px) {
+  .questions { padding: 16px 0 136px; }
+  .questionsTitre { font-size: clamp(56px, 5.6vw, 84px); }
+  .questionsBouton { gap: 24px; }
+  .questionsPlus { width: 60px; height: 60px; }
+  .questionsPanneau { margin-top: 40px; }
+  .questionsListe { display: grid; grid-template-columns: 1fr 1fr; column-gap: 56px; }
+  .question button { padding: 24px 0 12px; font-size: 20px; }
+  .reponse { padding: 0 0 26px; }
+}
 
 /* ═══════════════ MOUVEMENT RÉDUIT ═══════════════ */
 @media (prefers-reduced-motion: reduce) {
