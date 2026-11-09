@@ -1681,6 +1681,299 @@ export const FICHES: FichePublique[] = [
       nomDansLeTitre: "un squat bulgare",
     },
   },
+  {
+    slug: "souleve-de-terre-roumain",
+    exercice: "Soulevé de terre roumain",
+    categorie: "jambes",
+    title: "Soulevé de terre roumain : technique et erreurs",
+    description:
+      "Comment faire un soulevé de terre roumain : charnière de hanches, dos plat, barre près des cuisses, amplitude et erreurs fréquentes. Le mouvement en animation.",
+    contenu: {
+      definition:
+        "Le soulevé de terre roumain part debout, la charge en main, une barre ou deux haltères, et descend en poussant les hanches vers l’arrière, jambes presque tendues : l’arrière des cuisses et les fessiers travaillent, étirés en bas puis contractés pour revenir. Contrairement au soulevé de terre classique, la charge ne repose jamais au sol entre deux répétitions.",
+      gabarit: "mouvement",
+      etapes: [
+        {
+          titre: "Se placer",
+          texte:
+            "Debout, pieds à largeur de hanches, la barre ou les haltères tenus juste devant les cuisses, bras tendus. Les genoux sont très légèrement fléchis, et ils le restent pendant toute la série.",
+        },
+        {
+          titre: "Descendre en reculant les hanches",
+          texte:
+            "Pousse les hanches vers l’arrière, comme pour fermer une porte avec les fesses, et laisse le buste s’incliner. La charge glisse le long des cuisses puis des tibias, le dos reste plat. Descends jusqu’à sentir l’étirement à l’arrière des cuisses, souvent vers le milieu des tibias.",
+        },
+        {
+          titre: "Remonter",
+          texte:
+            "Ramène les hanches vers l’avant en serrant les fessiers, jusqu’à te retrouver debout. La charge reste près des jambes à la montée comme à la descente.",
+        },
+      ],
+      erreurs: [
+        {
+          titre: "Plier les genoux comme pour un squat",
+          pourquoi:
+            "Si les genoux avancent et que les hanches descendent, le mouvement devient un soulevé de terre classique raccourci, et l’arrière des cuisses n’est plus étiré. Le geste se fait par les hanches, les genoux bougent à peine.",
+        },
+        {
+          titre: "Arrondir le dos pour descendre plus bas",
+          pourquoi:
+            "La bonne amplitude s’arrête là où le dos reste plat. Gagner quelques centimètres en enroulant le dos déplace l’effort vers le bas du dos au lieu de l’arrière des cuisses.",
+        },
+        {
+          titre: "Laisser la charge s’éloigner des jambes",
+          pourquoi:
+            "Une charge qui part vers l’avant allonge le levier et tire sur le bas du dos. Garde-la près des cuisses, presque à les frôler.",
+        },
+      ],
+      variantes: [
+        {
+          angle: "Depuis le sol, à chaque répétition",
+          exercice: "Soulevé de terre classique",
+          texte:
+            "La barre repart du sol à chaque répétition, et les genoux plient davantage : les jambes poussent aussi, et la charge peut être plus lourde.",
+        },
+        {
+          angle: "Une poussée de hanches explosive",
+          exercice: "Kettlebell swing",
+          texte:
+            "La même charnière de hanches, mais rapide : les hanches projettent la kettlebell vers l’avant, et le rythme cardiaque monte avec.",
+        },
+        {
+          angle: "L’arrière des cuisses seul, à la machine",
+          exercice: "Leg curl allongé",
+          texte:
+            "Allongé, on plie les genoux contre un boudin. Seul le genou bouge : l’arrière des cuisses travaille sans charnière de hanches ni charge sur le dos.",
+        },
+      ],
+      titreVariantes: "Variantes et mouvements proches",
+      placement:
+        "Dans une séance de jambes, le soulevé de terre roumain vient souvent après un squat ou une presse, pour l’arrière des cuisses que ces mouvements travaillent moins. Il peut aussi ouvrir une séance de bas du corps centrée sur les fessiers et l’arrière des cuisses.",
+      materiel: "Une barre chargée, ou deux haltères",
+      materielCourt: "Barre ou haltères",
+      nomDansLeTitre: "un soulevé de terre roumain",
+    },
+  },
+  {
+    slug: "developpe-incline-halteres",
+    exercice: "Développé incliné haltères",
+    categorie: "pectoraux",
+    title: "Développé incliné haltères : réglage et technique",
+    description:
+      "Comment faire le développé incliné aux haltères : inclinaison du banc, placement, trajectoire, amplitude et erreurs fréquentes. Le mouvement en animation.",
+    contenu: {
+      definition:
+        "Le développé incliné se fait allongé sur un banc relevé, un haltère dans chaque main : on pousse vers le haut, et le haut des pectoraux prend une plus grande part qu’à plat. Avec des haltères, chaque bras pousse seul, et les mains peuvent descendre un peu plus bas qu’avec une barre.",
+      gabarit: "mouvement",
+      etapes: [
+        {
+          titre: "Régler le banc et s’installer",
+          texte:
+            "Incline le dossier autour de 30 degrés. Assieds-toi les haltères posés sur les cuisses, puis allonge-toi en les ramenant à hauteur de poitrine. Pieds à plat, omoplates serrées contre le dossier.",
+        },
+        {
+          titre: "Descendre",
+          texte:
+            "Descends les haltères de chaque côté du haut de la poitrine, poignets au-dessus des coudes, jusqu’à sentir un léger étirement à l’avant des épaules et des pectoraux.",
+        },
+        {
+          titre: "Pousser",
+          texte:
+            "Pousse les haltères vers le haut en les rapprochant légèrement, sans les cogner l’un contre l’autre. Les poignets restent droits du début à la fin.",
+        },
+      ],
+      erreurs: [
+        {
+          titre: "Un banc trop relevé",
+          pourquoi:
+            "Au-delà de 45 degrés, le mouvement se rapproche d’un développé militaire : les épaules prennent le relais sur les pectoraux. Autour de 30 degrés, la poitrine reste le moteur.",
+        },
+        {
+          titre: "Décoller les fesses du banc",
+          pourquoi:
+            "Cambrer jusqu’à soulever le bassin aplatit l’inclinaison et permet de passer une charge trop lourde. Les fesses restent sur le banc, les pieds au sol.",
+        },
+        {
+          titre: "Écarter les coudes à l’horizontale",
+          pourquoi:
+            "Des coudes alignés avec les épaules placent l’avant de l’épaule en première ligne. Garde-les un peu plus bas, entre le corps et l’horizontale.",
+        },
+      ],
+      variantes: [
+        {
+          angle: "À plat, à la barre",
+          exercice: "Développé couché",
+          texte:
+            "Le banc à plat et une barre : les deux bras poussent ensemble, le milieu des pectoraux travaille davantage, et la charge se règle par disques.",
+        },
+        {
+          angle: "À plat, aux haltères",
+          exercice: "Développé couché haltères",
+          texte:
+            "Le même geste sur un banc plat : l’inclinaison disparaît, et chaque bras pousse toujours seul.",
+        },
+        {
+          angle: "Bras ouverts, à la poulie",
+          exercice: "Écarté à la poulie",
+          texte:
+            "Les bras restent presque tendus et se referment devant la poitrine contre la résistance d’un câble : les pectoraux travaillent sans l’aide des triceps.",
+        },
+      ],
+      titreVariantes: "Variantes et mouvements proches",
+      placement:
+        "Le développé incliné se place en début ou en milieu de séance de poussée, juste après le développé couché, ou à sa place une séance sur deux. Les mouvements plus légers comme les écartés viennent après.",
+      materiel: "Un banc inclinable et deux haltères",
+      materielCourt: "Haltères et banc",
+      nomDansLeTitre: "le développé incliné aux haltères",
+    },
+  },
+  {
+    slug: "extension-triceps-poulie",
+    exercice: "Extension triceps poulie",
+    categorie: "bras",
+    title: "Extension triceps à la poulie : technique et erreurs",
+    description:
+      "Comment faire l’extension des triceps à la poulie : la position des coudes, l’extension complète, le rythme et les erreurs fréquentes. Le mouvement en animation.",
+    contenu: {
+      definition:
+        "À l’extension des triceps à la poulie, on se tient debout face à une poulie haute et on pousse une corde ou une barre vers le bas en tendant les bras, coudes immobiles contre le corps : le triceps fait tout le travail. Le câble garde de la résistance jusqu’aux bras tendus, là où un haltère n’en offre presque plus.",
+      gabarit: "mouvement",
+      etapes: [
+        {
+          titre: "Se placer",
+          texte:
+            "Face à la poulie, pieds à largeur de hanches, la corde ou la barre en main. Coudes collés au corps, avant-bras à peu près à l’horizontale, buste très légèrement penché vers l’avant.",
+        },
+        {
+          titre: "Tendre les bras",
+          texte:
+            "Pousse vers le bas jusqu’à ce que les bras soient complètement tendus. Avec une corde, écarte un peu les mains en bas du mouvement.",
+        },
+        {
+          titre: "Remonter sous contrôle",
+          texte:
+            "Laisse remonter les mains jusqu’à ce que les avant-bras reviennent à l’horizontale, lentement, sans que les coudes ne quittent les côtes.",
+        },
+      ],
+      erreurs: [
+        {
+          titre: "Laisser les coudes bouger",
+          pourquoi:
+            "Des coudes qui avancent et reculent transforment le mouvement en tirage, et les épaules viennent aider. Imagine-les vissés contre tes côtes : seuls les avant-bras bougent.",
+        },
+        {
+          titre: "Se pencher sur la poulie",
+          pourquoi:
+            "Le poids du corps qui appuie sur la corde fait descendre une charge trop lourde pour les triceps seuls. Garde le buste presque droit, et allège si tu dois te jeter dessus.",
+        },
+        {
+          titre: "S’arrêter avant l’extension complète",
+          pourquoi:
+            "Les derniers centimètres, bras tendus, sont ceux où le triceps est le plus contracté. Va jusqu’en bas à chaque répétition.",
+        },
+      ],
+      variantes: [
+        {
+          angle: "Aux haltères, bras au-dessus de la tête",
+          exercice: "Extension triceps haltère",
+          texte:
+            "Le bras monte au-dessus de la tête et l’avant-bras descend derrière : la longue portion du triceps travaille en position étirée.",
+        },
+        {
+          angle: "Au poids du corps",
+          exercice: "Dips barres parallèles",
+          texte:
+            "Le corps entier descend entre deux barres : les triceps poussent avec les pectoraux et les épaules, et la charge est celle du corps.",
+        },
+        {
+          angle: "Mains serrées, au sol",
+          exercice: "Pompes diamant",
+          texte:
+            "Des pompes mains jointes sous la poitrine : les coudes restent près du corps et les triceps prennent une grande part du travail, sans aucun matériel.",
+        },
+      ],
+      titreVariantes: "Variantes et mouvements proches",
+      placement:
+        "L’extension à la poulie se place en fin de séance de poussée ou de bras, après les mouvements qui sollicitent déjà les triceps, comme le développé couché ou les dips. Facile à doser, elle se prête bien aux séries longues.",
+      materiel: "Une poulie haute, avec une corde ou une barre",
+      materielCourt: "Poulie",
+      nomDansLeTitre: "l’extension des triceps à la poulie",
+    },
+  },
+  {
+    slug: "planche-laterale",
+    exercice: "Planche latérale",
+    categorie: "abdos",
+    title: "Planche latérale : la position et les erreurs",
+    description:
+      "Comment faire la planche latérale : l’appui sur le coude, l’alignement, les hanches hautes, la respiration et les erreurs fréquentes. Le placement illustré.",
+    contenu: {
+      definition:
+        "La planche latérale se tient sur un seul appui, l’avant-bras ou la main, et sur le côté d’un pied, le corps de profil : ce sont les muscles du côté du tronc, les obliques, qui empêchent les hanches de tomber. On la tient d’un côté puis de l’autre, et l’écart entre les deux côtés se sent souvent dès la première fois.",
+      gabarit: "tenue",
+      etapes: [
+        {
+          titre: "Se placer",
+          texte:
+            "Allongé sur le côté, en appui sur l’avant-bras, coude juste sous l’épaule. La version sur la main, bras tendu comme sur l’animation, se place de la même façon, la main sous l’épaule. Jambes tendues, pieds posés l’un sur l’autre, ou décalés pour plus de stabilité.",
+        },
+        {
+          titre: "Monter les hanches",
+          texte:
+            "Pousse le sol avec ton appui et soulève les hanches jusqu’à former une ligne de la tête aux pieds. La main libre se pose sur la hanche, ou le bras se tend vers le plafond.",
+        },
+        {
+          titre: "Tenir et respirer",
+          texte:
+            "Respire normalement, sans bloquer. La série dure tant que les hanches restent hautes : quand elles s’affaissent, change de côté, même si le chronomètre n’a pas fini.",
+        },
+      ],
+      erreurs: [
+        {
+          titre: "Laisser les hanches s’affaisser",
+          pourquoi:
+            "Quand le bassin descend vers le sol, ce sont l’épaule et les articulations qui portent le corps, et les obliques travaillent moins. Remonte les hanches, ou raccourcis la tenue.",
+        },
+        {
+          titre: "Placer l’appui loin de l’épaule",
+          pourquoi:
+            "Un coude, ou une main, décalé devant ou derrière l’épaule met l’appui en porte-à-faux. Il se place à l’aplomb de l’épaule.",
+        },
+        {
+          titre: "Pivoter vers le sol ou vers le plafond",
+          pourquoi:
+            "Un corps qui tourne trouve une position plus facile à tenir, et le côté du tronc se relâche. Les hanches et les épaules restent de profil, empilées l’une sur l’autre.",
+        },
+      ],
+      variantes: [
+        {
+          angle: "Face au sol, sur les deux coudes",
+          exercice: "Gainage",
+          texte:
+            "La planche classique, sur les deux avant-bras : le travail se répartit sur tout l’avant du tronc au lieu d’un seul côté.",
+        },
+        {
+          angle: "Avec du mouvement",
+          exercice: "Gainage dynamique",
+          texte:
+            "On passe de la planche sur les coudes à la planche sur les mains, et retour : le tronc tient la position pendant que les bras bougent.",
+        },
+        {
+          angle: "En rotation, assis",
+          exercice: "Russian twist",
+          texte:
+            "Assis, buste incliné, on tourne les épaules d’un côté puis de l’autre : les obliques travaillent en mouvement plutôt qu’en tenue.",
+        },
+      ],
+      titreVariantes: "Variantes et mouvements proches",
+      muscles: ["Obliques", "Abdominaux", "Épaules"],
+      placement:
+        "La planche latérale se glisse en fin de séance avec le gainage, ou dans un échauffement pour réveiller le tronc avant des mouvements debout. Comme elle se fait d’un côté puis de l’autre, une série compte les deux côtés.",
+      materiel: "Aucun, un tapis pour le confort",
+      materielCourt: "Sans matériel",
+      nomDansLeTitre: "la planche latérale",
+    },
+  },
 ];
 
 /* ──────────────────────────── Accès ──────────────────────────────── */
