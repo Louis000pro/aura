@@ -50,6 +50,8 @@ const PUBLIQUES_TOUJOURS = [
   "/exercices",
   "/programmes",
   "/defis",
+  "/recettes",
+  "/cours-nutrition",
   "/a-propos",
   "/coach-ia",
   "/prise-de-masse",
