@@ -6036,6 +6036,154 @@ export const FICHES: FichePublique[] = [
       nomDansLeTitre: "le sprint sur place",
     },
   },
+  {
+    slug: "tapis-de-course",
+    exercice: "Tapis de course",
+    categorie: "cardio",
+    title: "Tapis de course : allure, réglages et erreurs",
+    description:
+      "Comment courir sur un tapis de course : la vitesse qui monte petit à petit, l’allure où l’on peut encore parler, les bras libres et les erreurs fréquentes. En animation.",
+    contenu: {
+      definition:
+        "Sur un tapis de course, on marche ou on court sur une bande qui défile, à une vitesse et une pente qu’on règle soi-même : le cœur et les jambes travaillent, pendant une durée choisie à l’avance. L’allure de base est celle où l’on peut encore parler par phrases courtes.",
+      gabarit: "mouvement",
+      etapes: [
+        {
+          titre: "Démarrer",
+          texte:
+            "Pose les pieds sur les côtés du tapis, attache la clé de sécurité à ton vêtement s’il y en a une, puis démarre à une vitesse de marche.",
+        },
+        {
+          titre: "Monter l’allure",
+          texte:
+            "Augmente la vitesse petit à petit pendant les premières minutes, jusqu’à une allure où tu peux encore parler par phrases courtes.",
+        },
+        {
+          titre: "Tenir puis ralentir",
+          texte:
+            "Garde cette allure le temps prévu, au milieu de la bande, puis ralentis jusqu’à la marche avant d’arrêter le tapis.",
+        },
+      ],
+      erreurs: [
+        {
+          titre: "Se tenir aux barres",
+          pourquoi:
+            "Courir les mains sur les barres change la posture et allège le travail des jambes. Les bras balancent librement, comme dehors.",
+        },
+        {
+          titre: "Courir collé à l’avant",
+          pourquoi:
+            "Rester tout contre le tableau de bord raccourcit la foulée. Reste au milieu de la bande.",
+        },
+        {
+          titre: "Partir trop vite",
+          pourquoi:
+            "Une vitesse élevée dès la première minute essouffle avant la fin. On démarre en marchant et on monte l’allure petit à petit.",
+        },
+      ],
+      variantes: [
+        {
+          angle: "Assis, sans choc au sol",
+          exercice: "Vélo",
+          texte:
+            "On pédale assis, contre une résistance réglable : les jambes travaillent sans impact.",
+        },
+        {
+          angle: "Les bras en plus",
+          exercice: "Rameur",
+          texte:
+            "Assis, on pousse avec les jambes et on tire une poignée : tout le corps travaille.",
+        },
+        {
+          angle: "Court et rapide, sans machine",
+          exercice: "Sprint sur place",
+          texte:
+            "On court sur place le plus vite possible pendant vingt secondes, puis on récupère.",
+        },
+      ],
+      titreVariantes: "Variantes et mouvements proches",
+      placement:
+        "Le tapis de course se place en début de séance pour s’échauffer, quelques minutes en marchant, ou seul, pour une séance d’endurance de vingt à quarante minutes.",
+      materiel: "Un tapis de course",
+      materielCourt: "Tapis",
+      promesse: "On court ou on marche sur une bande qui défile, à la vitesse choisie : le souffle travaille dans la durée.",
+      nomDansLeTitre: "du tapis de course",
+    },
+  },
+  {
+    slug: "velo-appartement",
+    exercice: "Vélo",
+    categorie: "cardio",
+    title: "Vélo d’appartement : réglages, allure et erreurs",
+    description:
+      "Comment faire du vélo d’appartement : la hauteur de la selle, la résistance, une cadence régulière et les erreurs fréquentes. En animation.",
+    contenu: {
+      definition:
+        "Sur un vélo d’appartement, on pédale assis contre une résistance qu’on règle soi-même, à une cadence régulière : le cœur et les cuisses travaillent, sans aucun choc au sol. L’effort se dose avec la résistance et la durée.",
+      gabarit: "mouvement",
+      etapes: [
+        {
+          titre: "Régler la selle",
+          texte:
+            "Règle la hauteur de la selle pour que la jambe reste légèrement fléchie quand la pédale est tout en bas. Les mains se posent sur le guidon, le dos droit.",
+        },
+        {
+          titre: "Choisir la résistance",
+          texte:
+            "Commence avec une résistance faible pendant quelques minutes, puis augmente-la jusqu’à un rythme soutenu que tu tiens sans forcer.",
+        },
+        {
+          titre: "Garder la cadence",
+          texte:
+            "Pédale à une cadence régulière le temps prévu, puis baisse la résistance pour finir en douceur.",
+        },
+      ],
+      erreurs: [
+        {
+          titre: "Une selle trop basse",
+          pourquoi:
+            "Des genoux qui remontent haut à chaque tour chargent l’avant du genou. La jambe reste presque tendue en bas du coup de pédale.",
+        },
+        {
+          titre: "Une résistance trop forte",
+          pourquoi:
+            "Pédaler lentement, en force, fait travailler surtout les cuisses et peu le souffle. Choisis une résistance qui laisse tourner les jambes régulièrement.",
+        },
+        {
+          titre: "Balancer les hanches",
+          pourquoi:
+            "Des hanches qui roulent sur la selle à chaque tour signalent une selle trop haute. Baisse-la d’un cran : le bassin reste stable.",
+        },
+      ],
+      variantes: [
+        {
+          angle: "Debout, en courant",
+          exercice: "Tapis de course",
+          texte:
+            "On marche ou on court sur un tapis : les jambes portent le poids du corps à chaque pas.",
+        },
+        {
+          angle: "Les bras en plus",
+          exercice: "Rameur",
+          texte:
+            "Assis, on pousse avec les jambes et on tire une poignée : tout le corps travaille.",
+        },
+        {
+          angle: "Sans machine",
+          exercice: "Corde à sauter",
+          texte:
+            "On saute à petits bonds sur l’avant des pieds : le souffle monte vite.",
+        },
+      ],
+      titreVariantes: "Variantes et mouvements proches",
+      placement:
+        "Le vélo d’appartement se place en échauffement, quelques minutes à faible résistance, ou seul, pour une séance d’endurance de vingt à quarante-cinq minutes.",
+      materiel: "Un vélo d’appartement",
+      materielCourt: "Vélo",
+      promesse: "Assis, on pédale contre une résistance réglable : le cœur travaille, sans aucun choc au sol.",
+      nomDansLeTitre: "du vélo d’appartement",
+    },
+  },
 ];
 
 /* ──────────────────────────── Accès ──────────────────────────────── */
