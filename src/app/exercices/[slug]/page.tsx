@@ -16,6 +16,13 @@ import {
   type Variante,
 } from "@/lib/exercicesPublics";
 import { EQUIPS, trouverExercice, type LibExercise } from "@/lib/exerciseLibrary";
+import {
+  categorieParSlug,
+  categoriesPubliees,
+  descriptionCategorie,
+  titreCategorie,
+} from "@/lib/categoriesExercices";
+import PageCategorie from "@/components/exercices/PageCategorie";
 
 /* Seules les fiches RÉDIGÉES existent en tant qu'URL. Les sept autres
    slugs sont déjà réservés côté données, mais un slug réservé n'est pas
@@ -24,8 +31,14 @@ import { EQUIPS, trouverExercice, type LibExercise } from "@/lib/exerciseLibrary
    pire chose à montrer à un moteur comme à un lecteur. */
 export const dynamicParams = false;
 
+/* Le même segment porte les fiches ET les pages de catégorie
+   (/exercices/abdos) : les slugs de catégorie sont réservés, aucune fiche
+   ne peut les prendre, donc il n'y a jamais rien à arbitrer. */
 export function generateStaticParams() {
-  return fichesPubliees().map((f) => ({ slug: f.slug }));
+  return [
+    ...fichesPubliees().map((f) => ({ slug: f.slug })),
+    ...categoriesPubliees().map((c) => ({ slug: c.id })),
+  ];
 }
 
 export async function generateMetadata({
@@ -34,6 +47,23 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
+
+  const categorie = categorieParSlug(slug);
+  if (categorie) {
+    const url = `https://vaiiya.fr/exercices/${categorie.id}`;
+    return {
+      title: titreCategorie(categorie),
+      description: descriptionCategorie(categorie),
+      alternates: { canonical: url },
+      openGraph: {
+        title: categorie.h1,
+        description: descriptionCategorie(categorie),
+        url,
+        images: ["/og-image.png"],
+      },
+    };
+  }
+
   const fiche = ficheParSlug(slug);
   if (!fiche) return {};
 
@@ -64,11 +94,18 @@ export default async function FicheExercicePage({
   if (soucis.length) throw new Error(`Fiches d’exercices : ${soucis.join(" | ")}`);
 
   const { slug } = await params;
+
+  const pageCategorie = categorieParSlug(slug);
+  if (pageCategorie) return <PageCategorie categorie={pageCategorie} />;
+
   const fiche = ficheParSlug(slug);
   if (!fiche) notFound();
 
   const { lib, contenu } = fiche;
   const categorie = libelleCategorie(fiche.categorie);
+  /* La page de la catégorie, quand elle existe (trois fiches au moins) :
+     le fil d'Ariane passe par elle, et la fiche y renvoie en bas. */
+  const zone = categorieParSlug(fiche.categorie);
   const voisins = voisinsPublies(fiche);
   const familleMateriel = EQUIPS.find((e) => e.id === lib.equip)?.label ?? lib.equip;
   const materiel = contenu.materiel ?? familleMateriel;
@@ -89,9 +126,12 @@ export default async function FicheExercicePage({
     itemListElement: [
       { "@type": "ListItem", position: 1, name: "Accueil", item: "https://vaiiya.fr" },
       { "@type": "ListItem", position: 2, name: "Exercices", item: "https://vaiiya.fr/exercices" },
+      ...(zone
+        ? [{ "@type": "ListItem", position: 3, name: zone.label, item: `https://vaiiya.fr/exercices/${zone.id}` }]
+        : []),
       {
         "@type": "ListItem",
-        position: 3,
+        position: zone ? 4 : 3,
         name: lib.name,
         item: `https://vaiiya.fr/exercices/${fiche.slug}`,
       },
@@ -111,6 +151,12 @@ export default async function FicheExercicePage({
         <span className="mx-1.5">›</span>
         <Link href="/exercices" className="hover:underline">Exercices</Link>
         <span className="mx-1.5">›</span>
+        {zone && (
+          <>
+            <Link href={`/exercices/${zone.id}`} className="hover:underline">{zone.label}</Link>
+            <span className="mx-1.5">›</span>
+          </>
+        )}
         <span style={{ color: "#4A5568" }}>{lib.name}</span>
       </nav>
 
@@ -400,7 +446,12 @@ export default async function FicheExercicePage({
         </section>
       )}
 
-      <p className="mt-12 text-[16px]">
+      <p className="mt-12 flex flex-wrap gap-x-6 gap-y-2 text-[16px]">
+        {zone && (
+          <Link href={`/exercices/${zone.id}`} className="font-medium hover:underline" style={{ color: "#7C5CFA" }}>
+            {zone.h1}
+          </Link>
+        )}
         <Link href="/exercices" className="font-medium hover:underline" style={{ color: "#7C5CFA" }}>
           Voir tous les exercices
         </Link>

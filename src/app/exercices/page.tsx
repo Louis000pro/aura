@@ -3,6 +3,7 @@ import Link from "next/link";
 import { PageVitrine } from "@/components/seo/VitrineChrome";
 import CarteExercice from "@/components/exercices/CarteExercice";
 import { CATEGORIES, fichesPubliees, libelleCategorie, verifierFiches } from "@/lib/exercicesPublics";
+import { categoriesPubliees } from "@/lib/categoriesExercices";
 
 export const metadata: Metadata = {
   title: "Exercices de musculation : la bibliothèque animée",
@@ -50,6 +51,8 @@ export default function ExercicesPage() {
   if (soucis.length) throw new Error(`Fiches d’exercices : ${soucis.join(" | ")}`);
 
   const publiees = fichesPubliees();
+  /* Les zones qui ont leur page (trois fiches au moins) : leur titre y mène. */
+  const avecPage = new Set(categoriesPubliees().map((c) => c.id));
   const parCategorie = CATEGORIES.map((c) => ({
     ...c,
     fiches: publiees.filter((f) => f.categorie === c.id),
@@ -113,7 +116,13 @@ export default function ExercicesPage() {
           {parCategorie.map((c, ic) => (
             <div key={c.id}>
               <h3 className="text-[20px] font-medium mb-4" style={{ color: "#2D2150" }}>
-                {c.label}
+                {avecPage.has(c.id) ? (
+                  <Link href={`/exercices/${c.id}`} className="hover:underline">
+                    {c.label} <span aria-hidden="true" style={{ color: "#A78BFA" }}>›</span>
+                  </Link>
+                ) : (
+                  c.label
+                )}
               </h3>
               <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
                 {c.fiches.map((f, i) => (

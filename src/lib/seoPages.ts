@@ -20,6 +20,15 @@ export const SEO_PAGES: { href: string; label: string }[] = [
   // une page que personne ne lie ne reçoit aucun poids interne, et c'est
   // exactement ce qui avait rendu /guides invisible et inutile.
   { href: "/exercices", label: "Exercices" },
+  // Les séances guidées du catalogue, vague 4.
+  { href: "/seances", label: "Séances" },
+  { href: "/conseils", label: "Conseils" },
+  // Les programmes et les défis, vague 2 de la bibliothèque publique.
+  { href: "/programmes", label: "Programmes" },
+  { href: "/defis", label: "Défis" },
+  // Les recettes et les cours de nutrition, vague 3.
+  { href: "/recettes", label: "Recettes" },
+  { href: "/cours-nutrition", label: "Cours de nutrition" },
   // La page qui explique l'entité elle-même. Elle est en dernier parce qu'elle
   // ne répond pas à une question d'entraînement : on y va quand on se demande
   // qui est derrière, pas quand on cherche un programme.
