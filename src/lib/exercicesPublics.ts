@@ -4038,6 +4038,300 @@ export const FICHES: FichePublique[] = [
       nomDansLeTitre: "le leg curl assis",
     },
   },
+  {
+    slug: "pike-push-ups",
+    exercice: "Pike push-ups",
+    categorie: "epaules",
+    title: "Pike push-ups : technique et erreurs",
+    description:
+      "Comment faire les pike push-ups : la position en V inversé, la tête qui descend entre les mains, les coudes, la remontée et les erreurs fréquentes. En animation.",
+    contenu: {
+      definition:
+        "Le pike push-up est une pompe faite les hanches hautes, le corps en V inversé : en pliant les coudes, on descend la tête vers le sol entre les mains, puis on remonte. Ce sont surtout les épaules et les triceps qui travaillent, comme dans un développé au-dessus de la tête, avec le poids du corps.",
+      gabarit: "mouvement",
+      etapes: [
+        {
+          titre: "Se placer",
+          texte:
+            "Pars en planche, puis remonte les hanches jusqu’à former un V inversé. Mains un peu plus écartées que les épaules, jambes tendues ou légèrement pliées.",
+        },
+        {
+          titre: "Descendre",
+          texte:
+            "Plie les coudes pour amener le haut de la tête vers le sol, un peu devant les mains, les coudes vers l’arrière en diagonale.",
+        },
+        {
+          titre: "Remonter",
+          texte:
+            "Pousse dans les mains pour tendre les bras, en gardant les hanches hautes du début à la fin.",
+        },
+      ],
+      erreurs: [
+        {
+          titre: "Laisser les hanches descendre",
+          pourquoi:
+            "Des hanches qui baissent transforment le mouvement en pompe classique, et la poitrine prend le relais. Garde le V inversé.",
+        },
+        {
+          titre: "Ouvrir les coudes sur les côtés",
+          pourquoi:
+            "Des coudes écartés à l’horizontale mettent l’épaule en position fragile. Ils partent vers l’arrière, en diagonale.",
+        },
+        {
+          titre: "Descendre la tête à l’aplomb des mains",
+          pourquoi:
+            "Une tête qui descend à l’aplomb des mains fait basculer le poids vers l’avant. Elle arrive un peu devant elles, pour former un triangle avec les mains.",
+        },
+      ],
+      variantes: [
+        {
+          angle: "Avec des haltères",
+          exercice: "Développé militaire haltères",
+          texte:
+            "Debout ou assis, on pousse deux haltères au-dessus de la tête : la même poussée verticale, avec une charge qu’on choisit.",
+        },
+        {
+          angle: "Le corps à l’horizontale",
+          exercice: "Pompes",
+          texte:
+            "La pompe classique, corps droit : la poitrine travaille davantage que les épaules.",
+        },
+        {
+          angle: "En tournant les paumes",
+          exercice: "Développé Arnold",
+          texte:
+            "Aux haltères, on pousse au-dessus de la tête en tournant les paumes : l’avant et le côté de l’épaule travaillent.",
+        },
+      ],
+      titreVariantes: "Variantes et mouvements proches",
+      placement:
+        "Les pike push-ups se placent dans une séance de haut du corps à la maison, après les pompes, ou au début d’une séance d’épaules sans matériel.",
+      materiel: "Aucun",
+      materielCourt: "Sans matériel",
+      promesse: "Les hanches hautes, on descend la tête vers le sol entre les mains : les épaules et les triceps travaillent, sans matériel.",
+      nomDansLeTitre: "des pike push-ups",
+    },
+  },
+  {
+    slug: "montees-de-genoux",
+    exercice: "Montées de genoux",
+    categorie: "cardio",
+    title: "Montées de genoux : le mouvement et les erreurs",
+    description:
+      "Comment faire les montées de genoux : la course sur place, les genoux vers la hauteur des hanches, les appuis légers, le rythme et les erreurs fréquentes. En animation.",
+    contenu: {
+      definition:
+        "Aux montées de genoux, on court sur place en montant les genoux devant soi, les bras qui accompagnent comme dans une course : le cœur monte vite, et l’avant des cuisses travaille. Les appuis restent légers, sur l’avant du pied.",
+      gabarit: "mouvement",
+      etapes: [
+        {
+          titre: "Se placer",
+          texte:
+            "Debout, pieds écartés de la largeur des hanches, buste droit, bras pliés le long du corps.",
+        },
+        {
+          titre: "Monter les genoux",
+          texte:
+            "Monte un genou devant toi, vers la hauteur des hanches, puis l’autre, en enchaînant comme une course sur place. Les bras accompagnent, en opposition.",
+        },
+        {
+          titre: "Garder le rythme",
+          texte:
+            "Reste sur l’avant du pied, appuis légers, et garde le même rythme jusqu’à la fin de la série.",
+        },
+      ],
+      erreurs: [
+        {
+          titre: "Se pencher en arrière",
+          pourquoi:
+            "Un buste qui part vers l’arrière pour monter les genoux plus haut fatigue le bas du dos. Le buste reste droit, quitte à monter les genoux un peu moins.",
+        },
+        {
+          titre: "Retomber sur les talons",
+          pourquoi:
+            "Des talons qui frappent le sol font encaisser chaque appui aux articulations. Reste sur l’avant du pied.",
+        },
+        {
+          titre: "Laisser les genoux descendre",
+          pourquoi:
+            "Avec la fatigue, les genoux montent de moins en moins et le mouvement perd son intérêt. Ralentis plutôt que de baisser la hauteur.",
+        },
+      ],
+      variantes: [
+        {
+          angle: "Bras et jambes qui s’écartent",
+          exercice: "Jumping jacks",
+          texte:
+            "Un saut sur place qui écarte les pieds et monte les bras au-dessus de la tête.",
+        },
+        {
+          angle: "Avec une corde",
+          exercice: "Corde à sauter",
+          texte:
+            "De petits sauts réguliers, les poignets font tourner la corde : il faut un peu de coordination.",
+        },
+        {
+          angle: "En planche",
+          exercice: "Mountain climbers",
+          texte:
+            "Les mains au sol, on ramène les genoux vers la poitrine l’un après l’autre : le tronc travaille en plus.",
+        },
+      ],
+      titreVariantes: "Variantes et mouvements proches",
+      placement:
+        "Les montées de genoux ouvrent souvent un échauffement, ou se placent dans un circuit cardio, en intervalles de trente secondes. Sans saut, en marchant vite, elles se font aussi en appartement.",
+      materiel: "Aucun",
+      materielCourt: "Sans matériel",
+      nomDansLeTitre: "des montées de genoux",
+    },
+  },
+  {
+    slug: "squats-sautes",
+    exercice: "Squats sautés",
+    categorie: "jambes",
+    title: "Squats sautés : technique et erreurs",
+    description:
+      "Comment faire les squats sautés : la descente en squat, la poussée pour décoller, la réception genoux souples et les erreurs fréquentes. Le mouvement en animation.",
+    contenu: {
+      definition:
+        "Le squat sauté est un squat qui se termine par un saut : on descend, on pousse fort dans le sol pour décoller, puis on se reçoit en souplesse pour enchaîner le suivant. Les cuisses et les fessiers travaillent de façon explosive, et le souffle monte vite.",
+      gabarit: "mouvement",
+      etapes: [
+        {
+          titre: "Descendre",
+          texte:
+            "Pieds un peu plus écartés que les hanches, descends en squat, cuisses vers l’horizontale, bras tendus devant toi pour l’équilibre.",
+        },
+        {
+          titre: "Sauter",
+          texte:
+            "Pousse fort dans tout le pied pour décoller, en tendant les jambes et en ramenant les bras le long du corps.",
+        },
+        {
+          titre: "Se recevoir",
+          texte:
+            "Reçois-toi sur l’avant du pied, genoux souples, puis tout le pied, et redescends directement dans le squat suivant.",
+        },
+      ],
+      erreurs: [
+        {
+          titre: "Se recevoir jambes tendues",
+          pourquoi:
+            "Retomber genoux bloqués fait encaisser le choc aux articulations. Les genoux plient dès que les pieds touchent le sol.",
+        },
+        {
+          titre: "Laisser les genoux rentrer",
+          pourquoi:
+            "Des genoux qui se rapprochent à la réception perdent l’alignement avec les pieds. Ils restent dans l’axe des orteils.",
+        },
+        {
+          titre: "Enchaîner trop vite",
+          pourquoi:
+            "Accélérer au détriment de la réception fait perdre le contrôle. Une réception propre compte plus que le nombre de sauts.",
+        },
+      ],
+      variantes: [
+        {
+          angle: "Sans saut",
+          exercice: "Squat",
+          texte:
+            "Le même mouvement, sans décoller : aucun impact, et le geste se travaille plus lentement.",
+        },
+        {
+          angle: "Une jambe devant",
+          exercice: "Fentes sautées",
+          texte:
+            "On saute en fente et on change de jambe en l’air : chaque jambe travaille à son tour, avec plus d’équilibre à trouver.",
+        },
+        {
+          angle: "Sur une caisse",
+          exercice: "Box jump",
+          texte:
+            "On saute à pieds joints sur une caisse stable, puis on redescend en marchant : la réception se fait en hauteur.",
+        },
+      ],
+      titreVariantes: "Variantes et mouvements proches",
+      placement:
+        "Les squats sautés se placent dans un circuit cardio ou une séance de jambes au poids du corps, en séries courtes. Sur un sol dur ou en appartement, le squat sans saut prend le relais.",
+      materiel: "Aucun",
+      materielCourt: "Sans matériel",
+      nomDansLeTitre: "des squats sautés",
+    },
+  },
+  {
+    slug: "gainage-dynamique",
+    exercice: "Gainage dynamique",
+    categorie: "abdos",
+    title: "Gainage dynamique : le mouvement et les erreurs",
+    description:
+      "Comment faire le gainage dynamique : passer des avant-bras aux mains et revenir, les hanches stables, les appuis sous les épaules et les erreurs fréquentes. En animation.",
+    contenu: {
+      definition:
+        "Au gainage dynamique, on part en planche sur les avant-bras, puis on monte sur une main, puis sur l’autre, jusqu’à la planche bras tendus, avant de redescendre sur les coudes : le tronc tient la position pendant que les bras bougent, et les épaules travaillent aussi.",
+      gabarit: "mouvement",
+      etapes: [
+        {
+          titre: "Se placer",
+          texte:
+            "En planche sur les avant-bras, coudes sous les épaules, corps aligné des épaules aux talons, pieds un peu écartés pour la stabilité.",
+        },
+        {
+          titre: "Monter sur les mains",
+          texte:
+            "Pose une main au sol sous l’épaule, puis l’autre, et pousse jusqu’à la planche bras tendus, sans balancer les hanches.",
+        },
+        {
+          titre: "Redescendre",
+          texte:
+            "Repose un avant-bras, puis l’autre. À la répétition suivante, commence par l’autre bras.",
+        },
+      ],
+      erreurs: [
+        {
+          titre: "Balancer les hanches",
+          pourquoi:
+            "Des hanches qui tournent à chaque changement d’appui font perdre le travail du tronc. Écarte un peu plus les pieds et va plus lentement.",
+        },
+        {
+          titre: "Laisser les fesses monter",
+          pourquoi:
+            "Un bassin qui monte rend la position plus facile et soulage le ventre. Le corps reste droit comme une planche.",
+        },
+        {
+          titre: "Poser les mains loin des épaules",
+          pourquoi:
+            "Des mains placées devant les épaules mettent l’appui en porte-à-faux. Elles se posent à l’aplomb des épaules.",
+        },
+      ],
+      variantes: [
+        {
+          angle: "Sans bouger",
+          exercice: "Gainage",
+          texte:
+            "La planche sur les avant-bras, tenue sans mouvement : tout le travail est pour le tronc.",
+        },
+        {
+          angle: "Sur un côté",
+          exercice: "Planche latérale",
+          texte:
+            "Le corps de profil, sur un seul appui : les obliques travaillent davantage.",
+        },
+        {
+          angle: "Les genoux qui bougent",
+          exercice: "Mountain climbers",
+          texte:
+            "En planche sur les mains, on ramène les genoux vers la poitrine : le souffle monte en plus.",
+        },
+      ],
+      titreVariantes: "Variantes et mouvements proches",
+      muscles: ["Abdominaux", "Muscles profonds du tronc", "Épaules"],
+      placement:
+        "Le gainage dynamique se place en fin de séance, avec les exercices d’abdos, ou dans un circuit au poids du corps, en séries de trente secondes.",
+      materiel: "Aucun, un tapis pour le confort",
+      materielCourt: "Sans matériel",
+      nomDansLeTitre: "le gainage dynamique",
+    },
+  },
 ];
 
 /* ──────────────────────────── Accès ──────────────────────────────── */
