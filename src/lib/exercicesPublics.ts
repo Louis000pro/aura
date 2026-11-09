@@ -4627,6 +4627,303 @@ export const FICHES: FichePublique[] = [
       nomDansLeTitre: "un rowing inversé",
     },
   },
+  {
+    slug: "box-jump",
+    exercice: "Box jump",
+    categorie: "jambes",
+    title: "Box jump : technique et erreurs",
+    description:
+      "Comment faire le box jump : la hauteur de la caisse, l’élan des bras, la réception en squat sur la caisse, la descente en marchant et les erreurs fréquentes. En animation.",
+    contenu: {
+      definition:
+        "Au box jump, on saute à pieds joints sur une caisse stable, on se reçoit en squat sur le dessus, puis on se redresse et on redescend en marchant : les cuisses et les fessiers travaillent de façon explosive. Se recevoir en hauteur limite le choc de la réception.",
+      gabarit: "mouvement",
+      etapes: [
+        {
+          titre: "Se placer",
+          texte:
+            "Face à une caisse stable, à environ un pas, pieds écartés de la largeur des hanches. Choisis une hauteur où tu te reçois en douceur.",
+        },
+        {
+          titre: "Sauter",
+          texte:
+            "Fléchis les jambes en lançant les bras vers l’arrière, puis saute en ramenant les bras devant toi, genoux qui montent vers la poitrine.",
+        },
+        {
+          titre: "Se recevoir et redescendre",
+          texte:
+            "Pose les deux pieds en entier sur la caisse, genoux souples, redresse-toi, puis redescends en marchant, un pied après l’autre.",
+        },
+      ],
+      erreurs: [
+        {
+          titre: "Choisir une caisse trop haute",
+          pourquoi:
+            "Une caisse trop haute oblige à se recevoir en squat très profond, ou fait rater la marche. La bonne hauteur est celle où la réception reste souple.",
+        },
+        {
+          titre: "Redescendre en sautant",
+          pourquoi:
+            "Sauter en arrière depuis la caisse ajoute un choc à chaque répétition. On redescend en marchant.",
+        },
+        {
+          titre: "Se recevoir au bord de la caisse",
+          pourquoi:
+            "Des pieds posés à moitié dans le vide peuvent glisser. Tout le pied se pose sur la caisse, loin du bord.",
+        },
+      ],
+      variantes: [
+        {
+          angle: "Sur place, sans caisse",
+          exercice: "Squats sautés",
+          texte:
+            "On saute à partir d’un squat et on se reçoit au sol : la même poussée, avec une réception plus forte.",
+        },
+        {
+          angle: "Sans saut, une jambe à la fois",
+          exercice: "Step up banc",
+          texte:
+            "On monte sur un banc en poussant sur une seule jambe : aucun impact, et chaque jambe travaille à son tour.",
+        },
+        {
+          angle: "En fente",
+          exercice: "Fentes sautées",
+          texte:
+            "On saute en fente et on change de jambe en l’air : chaque jambe travaille à son tour, avec de la coordination.",
+        },
+      ],
+      titreVariantes: "Variantes et mouvements proches",
+      placement:
+        "Le box jump se place en début de séance, quand les jambes sont fraîches, en séries courtes avec du repos, ou dans un circuit de jambes.",
+      materiel: "Une caisse de saut ou un support très stable",
+      materielCourt: "Caisse",
+      nomDansLeTitre: "un box jump",
+    },
+  },
+  {
+    slug: "fentes-sautees",
+    exercice: "Fentes sautées",
+    categorie: "jambes",
+    title: "Fentes sautées : technique et erreurs",
+    description:
+      "Comment faire les fentes sautées : la position de fente, le changement de jambe en l’air, la réception amortie, le buste droit et les erreurs fréquentes. En animation.",
+    contenu: {
+      definition:
+        "Aux fentes sautées, on part en fente, on saute et on change de jambe en l’air, pour se recevoir en fente sur l’autre jambe : les cuisses et les fessiers travaillent de façon explosive, avec de la coordination, et le souffle monte vite.",
+      gabarit: "mouvement",
+      etapes: [
+        {
+          titre: "Se placer",
+          texte:
+            "En fente, la jambe avant pliée à angle droit, le genou arrière près du sol, le buste droit.",
+        },
+        {
+          titre: "Sauter et changer",
+          texte:
+            "Pousse sur les deux jambes pour décoller, et inverse les jambes en l’air.",
+        },
+        {
+          titre: "Se recevoir",
+          texte:
+            "Reçois-toi en fente sur l’autre jambe, genoux souples, en amortissant jusqu’à la position de départ, puis enchaîne.",
+        },
+      ],
+      erreurs: [
+        {
+          titre: "Se recevoir jambes tendues",
+          pourquoi:
+            "Retomber genoux bloqués fait encaisser le choc aux articulations. Les genoux plient dès que les pieds touchent le sol.",
+        },
+        {
+          titre: "Laisser le genou avant rentrer",
+          pourquoi:
+            "Un genou qui part vers l’intérieur à la réception perd l’alignement avec le pied. Il reste dans l’axe des orteils.",
+        },
+        {
+          titre: "Pencher le buste en avant",
+          pourquoi:
+            "Un buste qui tombe vers l’avant déséquilibre la réception. Il reste droit, le regard devant toi.",
+        },
+      ],
+      variantes: [
+        {
+          angle: "Sans saut",
+          exercice: "Fentes",
+          texte:
+            "La fente au sol, sans décoller : aucun impact, et le geste se travaille plus lentement.",
+        },
+        {
+          angle: "Pieds joints",
+          exercice: "Squats sautés",
+          texte:
+            "On saute à partir d’un squat : les deux jambes poussent ensemble.",
+        },
+        {
+          angle: "Le pied arrière sur un banc",
+          exercice: "Squat bulgare",
+          texte:
+            "On descend sur la jambe avant, le pied arrière posé sur un banc : une jambe à la fois, sans saut.",
+        },
+      ],
+      titreVariantes: "Variantes et mouvements proches",
+      placement:
+        "Les fentes sautées se placent dans un circuit cardio ou une séance de jambes au poids du corps, en séries courtes. Sur un sol dur ou en appartement, les fentes sans saut prennent le relais.",
+      materiel: "Aucun",
+      materielCourt: "Sans matériel",
+      nomDansLeTitre: "des fentes sautées",
+    },
+  },
+  {
+    slug: "tirage-menton-halteres",
+    exercice: "Tirage menton haltères",
+    categorie: "epaules",
+    title: "Tirage menton aux haltères : technique et erreurs",
+    description:
+      "Comment faire le tirage menton aux haltères : les coudes qui montent en premier, la hauteur des épaules, la descente lente et les erreurs fréquentes. En animation.",
+    contenu: {
+      definition:
+        "Au tirage menton aux haltères, on est debout et on tire deux haltères le long du buste, coudes qui montent en premier, jusqu’à ce que les coudes arrivent à hauteur des épaules : le côté des épaules et les trapèzes travaillent ensemble.",
+      gabarit: "mouvement",
+      etapes: [
+        {
+          titre: "Se placer",
+          texte:
+            "Debout, pieds écartés de la largeur des hanches, les haltères devant les cuisses, paumes tournées vers toi.",
+        },
+        {
+          titre: "Tirer",
+          texte:
+            "Monte les haltères le long du buste en levant d’abord les coudes, jusqu’à ce qu’ils arrivent à hauteur des épaules, les haltères près du corps.",
+        },
+        {
+          titre: "Redescendre",
+          texte:
+            "Redescends lentement jusqu’aux bras tendus, sans laisser les haltères tomber.",
+        },
+      ],
+      erreurs: [
+        {
+          titre: "Monter les coudes trop haut",
+          pourquoi:
+            "Au-delà de la hauteur des épaules, le mouvement serre l’avant de l’épaule. Les coudes s’arrêtent à cette hauteur.",
+        },
+        {
+          titre: "Balancer le buste",
+          pourquoi:
+            "Un coup de reins lance les haltères et fait travailler le bas du dos. Le buste reste immobile : si tu dois te balancer, prends plus léger.",
+        },
+        {
+          titre: "Monter les mains avant les coudes",
+          pourquoi:
+            "Des poignets qui mènent le mouvement font travailler les avant-bras. Ce sont les coudes qui montent en premier.",
+        },
+      ],
+      variantes: [
+        {
+          angle: "Les bras sur les côtés",
+          exercice: "Élévations latérales",
+          texte:
+            "Bras presque tendus, on monte les haltères sur les côtés jusqu’à l’horizontale : le côté de l’épaule travaille sans les trapèzes.",
+        },
+        {
+          angle: "À la poulie, vers le visage",
+          exercice: "Face pull poulie",
+          texte:
+            "On tire une corde vers le visage, coudes hauts : l’arrière des épaules et le haut du dos travaillent.",
+        },
+        {
+          angle: "Au-dessus de la tête",
+          exercice: "Développé militaire haltères",
+          texte:
+            "On pousse les haltères au-dessus de la tête : toute l’épaule travaille, avec les triceps.",
+        },
+      ],
+      titreVariantes: "Variantes et mouvements proches",
+      placement:
+        "Le tirage menton aux haltères se place en fin de séance d’épaules, après les développés, avec des charges modérées.",
+      materiel: "Une paire d’haltères",
+      materielCourt: "Haltères",
+      precaution:
+        "Si l’avant de l’épaule pince en haut du mouvement, arrête-toi plus bas, ou remplace l’exercice par des élévations latérales.",
+      nomDansLeTitre: "un tirage menton aux haltères",
+    },
+  },
+  {
+    slug: "pullover-haltere",
+    exercice: "Pullover haltère",
+    categorie: "dos",
+    title: "Pullover à l’haltère : technique et erreurs",
+    description:
+      "Comment faire le pullover à l’haltère : la prise à deux mains, la descente derrière la tête en arc de cercle, les coudes et les erreurs fréquentes. En animation.",
+    contenu: {
+      definition:
+        "Au pullover, on est allongé sur un banc, un haltère tenu à deux mains au-dessus de la poitrine, et on le descend derrière la tête, bras presque tendus, avant de le ramener : les grands dorsaux et les pectoraux travaillent ensemble, sur une grande amplitude.",
+      gabarit: "mouvement",
+      etapes: [
+        {
+          titre: "S’installer",
+          texte:
+            "Allongé sur un banc plat, pieds au sol. Tiens l’haltère à deux mains, les paumes sous le disque du haut, bras tendus au-dessus de la poitrine.",
+        },
+        {
+          titre: "Descendre",
+          texte:
+            "Descends l’haltère derrière la tête en arc de cercle, coudes légèrement fléchis, aussi loin que l’épaule reste confortable.",
+        },
+        {
+          titre: "Ramener",
+          texte:
+            "Ramène l’haltère au-dessus de la poitrine par le même arc, en gardant le même angle aux coudes.",
+        },
+      ],
+      erreurs: [
+        {
+          titre: "Plier les coudes de plus en plus",
+          pourquoi:
+            "Des coudes qui se plient transforment le mouvement en extension des triceps. Ils gardent le même léger angle du début à la fin.",
+        },
+        {
+          titre: "Descendre trop loin",
+          pourquoi:
+            "Chercher la plus grande amplitude étire fortement l’épaule. Arrête-toi là où elle reste confortable.",
+        },
+        {
+          titre: "Cambrer le dos",
+          pourquoi:
+            "Un bas du dos qui décolle du banc à la descente fait passer l’effort sur la colonne. Garde le ventre serré et le dos posé.",
+        },
+      ],
+      variantes: [
+        {
+          angle: "À la poulie haute",
+          exercice: "Tirage poitrine",
+          texte:
+            "Assis, on tire une barre vers le haut de la poitrine : les grands dorsaux travaillent, avec une charge réglable.",
+        },
+        {
+          angle: "En poussant les haltères",
+          exercice: "Développé couché haltères",
+          texte:
+            "Sur le même banc, on pousse deux haltères vers le haut : les pectoraux travaillent avec les triceps.",
+        },
+        {
+          angle: "Un bras, vers la hanche",
+          exercice: "Rowing haltère",
+          texte:
+            "Une main et un genou sur un banc, on tire un haltère vers la hanche : le milieu du dos travaille davantage.",
+        },
+      ],
+      titreVariantes: "Variantes et mouvements proches",
+      placement:
+        "Le pullover se place en fin de séance de dos ou de pectoraux, avec une charge modérée et des répétitions lentes.",
+      materiel: "Un haltère et un banc plat",
+      materielCourt: "Haltère et banc",
+      precaution:
+        "Commence avec un haltère léger et tiens-le fermement à deux mains : il passe au-dessus du visage pendant tout le mouvement.",
+      promesse: "Allongé, on descend un haltère derrière la tête puis on le ramène au-dessus de la poitrine : le dos et les pectoraux travaillent ensemble.",
+      nomDansLeTitre: "un pullover à l’haltère",
+    },
+  },
 ];
 
 /* ──────────────────────────── Accès ──────────────────────────────── */
