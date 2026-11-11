@@ -15,7 +15,7 @@
 import type { GuideRef } from "./guides";
 
 const PHOTOS_PAR_GUIDE: Record<string, string> = {
-  "push-couche-v5": "push-couche-v8",
+  "push-couche-v5": "push-couche-v9",
   /* Accueil (repos, jour libre, premier lieu), séance faite et
      « J’improvise » : la même photo, Guide debout bras croisés
      (Louis, 2026-10-20, « pour le moment »). */
@@ -29,6 +29,7 @@ const PHOTOS_PAR_GUIDE: Record<string, string> = {
   "legs-fentes": "legs-fentes-v2",
   "legs-squat": "legs-squat-v2",
   "haut-corps": "haut-corps-v2",
+  "core-abdos": "core-abdos-v1",
 };
 
 /** Le nom de fichier (sans `.webp`) à montrer pour ce Guide. */
