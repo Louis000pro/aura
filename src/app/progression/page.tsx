@@ -193,7 +193,7 @@ function ForkCard({ kind, count, onClick }: {
         <div aria-hidden className="absolute inset-0 grid grid-cols-4 gap-[2px]" style={{ background: "#0b0a10" }}>
           {CHOISIS_TRANCHES.map((c) => (
             <div key={c.img} style={{
-              backgroundImage: `url(/entrainement/${photoDuGuide(c.img, guide)}.webp)`,
+              backgroundImage: `url(/entrainement/m/${photoDuGuide(c.img, guide)}.webp)`,
               backgroundSize: "cover", backgroundPosition: c.pos,
             }} />
           ))}

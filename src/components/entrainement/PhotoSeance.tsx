@@ -31,7 +31,7 @@ export const WIDGET: Record<"repos" | "done" | "setup" | "improvise", {
     reçoit jamais de priorité réseau. `prioritaire` la passe en
     `fetchPriority="high"` : c'est le héros de l'accueil, la première
     chose qu'on regarde. */
-export function Photo({ img, fichier, pos = "center 25%", className, style, children, prioritaire = false }: {
+export function Photo({ img, fichier, pos = "center 25%", className, style, children, prioritaire = false, sizes }: {
   img: string; pos?: string;
   /** Nom de fichier déjà résolu pour le Guide (sans dossier ni extension) :
       il passe tel quel, sans relire le Guide. Sert au squelette, qui
@@ -39,13 +39,20 @@ export function Photo({ img, fichier, pos = "center 25%", className, style, chil
   fichier?: string;
   className?: string; style?: React.CSSProperties; children?: React.ReactNode;
   prioritaire?: boolean;
+  /** Largeur affichée, pour que le navigateur prenne la version 720 px sur une carte. */
+  sizes?: string;
 }) {
   const { guide } = useGuideActif();
+  const nom = fichier ?? photoDuGuide(img, guide);
   return (
     <div className={className} style={{ position: "relative", overflow: "hidden", background: "#101018", ...style }}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        src={`/entrainement/${fichier ?? photoDuGuide(img, guide)}.webp`}
+        src={`/entrainement/${nom}.webp`}
+        /* Version 720 px pour les cartes (≈ 25 Ko au lieu de 200) : le
+           2048 px ne part que pour un grand affichage. */
+        srcSet={`/entrainement/m/${nom}.webp 720w, /entrainement/${nom}.webp 2048w`}
+        sizes={sizes ?? (prioritaire ? "100vw" : "(max-width: 640px) 50vw, 360px")}
         alt=""
         aria-hidden
         decoding="async"
