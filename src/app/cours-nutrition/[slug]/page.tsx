@@ -13,10 +13,11 @@ import { VENTE_OUVERTE } from "@/lib/plans";
    publique).
 
    Un cours gratuit se lit en entier, sources comprises : c'est le même
-   texte que dans l'application (`lib/textesCours/<id>.ts`), avec sa date
-   de vérification. Un cours Vaiiya+ se lit en aperçu, comme dans
-   l'application pour un compte gratuit (`ApercuCours`) : l'introduction
-   et les premières parties, sans la suite.
+   texte que dans l'application (un module par cours, rendu par
+   `chargerTexte`), avec sa date de vérification. Un cours Vaiiya+ se lit
+   en aperçu, comme dans l'application pour un compte gratuit
+   (`ApercuCours`) : l'introduction et les premières parties, sans la
+   suite.
 
    ⚠️ L'adresse est l'identifiant du cours, figé pour toujours.
    ⚠️ /nutrition est un écran de l'application : les cours vivent donc

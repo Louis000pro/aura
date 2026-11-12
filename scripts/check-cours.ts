@@ -215,6 +215,10 @@ const sourcesSrc: string[] = [];
     else if (/\.(tsx?|mjs)$/.test(e.name)) sourcesSrc.push(p);
   }
 })("src");
+/* ⚠️ Ce contrôle lit le texte brut, exprès : il refuse toute mention du
+   dossier des textes, commentaires compris. Ne chercher que les imports
+   laisserait passer en silence une forme d'import oubliée. Un commentaire
+   qui écrit ce chemin se reformule (il renvoie à `chargerTexte`). */
 const importeTextes = sourcesSrc.filter((p) => !p.endsWith("lib/coursNutrition.ts") && !p.includes("lib/textesCours/")
   && /textesCours\//.test(lire(p)));
 verdict("seul lib/coursNutrition charge les textes (rien ne les embarque dans l'écran)", importeTextes.length === 0, importeTextes.join(", "));
