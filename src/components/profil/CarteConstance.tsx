@@ -36,6 +36,7 @@
    ───────────────────────────────────────────────────────────────────── */
 
 import { useEffect, useMemo, useState } from "react";
+import { lireMemoire, ecrireMemoire } from "@/lib/memoireSession";
 import { createClient } from "@/lib/supabase";
 import { parisDateStr, shiftDateStr } from "@/lib/dates";
 
@@ -63,7 +64,8 @@ export default function CarteConstance({ userId, inscritLe, serieRecord, debut =
   /** Signale qu'une journée active plus ancienne existe. */
   onMasques?: (oui: boolean) => void;
 }) {
-  const [actifs, setActifs] = useState<Set<string> | null>(null);
+  const [actifs, setActifs] = useState<Set<string> | null>(() => lireMemoire<Set<string>>(`constance:${userId}`) ?? null);
+  useEffect(() => { if (actifs) ecrireMemoire(`constance:${userId}`, actifs); }, [actifs, userId]);
 
   useEffect(() => {
     if (!userId) return;

@@ -37,6 +37,7 @@
    ───────────────────────────────────────────────────────────────────── */
 
 import { useEffect, useMemo, useState } from "react";
+import { lireMemoire, ecrireMemoire } from "@/lib/memoireSession";
 import { createClient } from "@/lib/supabase";
 
 type Pesee = { date: string; kg: number };
@@ -115,7 +116,8 @@ export default function CourbePoids({ userId, onPeser, debut = null, onMasques }
   /** Signale qu'une pesée plus ancienne existe, pour l'encart unique de l'écran. */
   onMasques?: (oui: boolean) => void;
 }) {
-  const [pesees, setPesees] = useState<Pesee[] | null>(null);
+  const [pesees, setPesees] = useState<Pesee[] | null>(() => lireMemoire<Pesee[]>(`pesees:${userId}`) ?? null);
+  useEffect(() => { if (pesees) ecrireMemoire(`pesees:${userId}`, pesees); }, [pesees, userId]);
 
   useEffect(() => {
     if (!userId) return;

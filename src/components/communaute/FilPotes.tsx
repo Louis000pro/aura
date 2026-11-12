@@ -40,6 +40,7 @@ import {
   mesAmis, chargerFilPotes, presenceAmis, basculerReaction, chargerSemaineEnsemble, type SemaineEnsemble as Semaine, poserBrouillon, quandAffiche,
   ecrireMot, retirerDuFil, supprimerAffiche, MOT_MAX, SORTES, type AfficheDuFil, type SorteReaction,
 } from "@/lib/filPotes";
+import { lireMemoire, ecrireMemoire } from "@/lib/memoireSession";
 
 export default function FilPotes({ moi, monPseudo, monAvatar, onAjouterAmi }: {
   moi: string;
@@ -48,14 +49,19 @@ export default function FilPotes({ moi, monPseudo, monAvatar, onAjouterAmi }: {
   onAjouterAmi: () => void;
 }) {
   const router = useRouter();
-  const [amis, setAmis] = useState<Personne[] | null>(null);
-  const [fil, setFil] = useState<AfficheDuFil[]>([]);
-  const [evts, setEvts] = useState<EvenementFil[]>([]);
+  /* Revenir sur le fil le remontre tout de suite (Louis, 2026-11-12). */
+  const cleMem = `fil:${moi}`;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [mem] = useState(() => lireMemoire<Record<string, any>>(cleMem) ?? {});
+  const [amis, setAmis] = useState<Personne[] | null>(mem.amis ?? null);
+  const [fil, setFil] = useState<AfficheDuFil[]>(mem.fil ?? []);
+  const [evts, setEvts] = useState<EvenementFil[]>(mem.evts ?? []);
   const [montrer, setMontrer] = useState<boolean | null>(null);
   /** Mon affiche dont le menu « ⋯ » est ouvert. */
   const [gerer, setGerer] = useState<AfficheDuFil | null>(null);
-  const [presence, setPresence] = useState<Map<string, boolean>>(new Map());
-  const [semaine, setSemaine] = useState<Semaine | null>(null);
+  const [presence, setPresence] = useState<Map<string, boolean>>(() => mem.presence ?? new Map());
+  const [semaine, setSemaine] = useState<Semaine | null>(mem.semaine ?? null);
+  useEffect(() => { if (amis) ecrireMemoire(cleMem, { amis, fil, evts, presence, semaine }); }, [cleMem, amis, fil, evts, presence, semaine]);
   const [erreur, setErreur] = useState(false);
   const [ouverture, setOuverture] = useState<string | null>(null);
 

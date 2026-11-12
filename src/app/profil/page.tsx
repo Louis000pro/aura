@@ -1,6 +1,7 @@
 ﻿"use client";
 
 import { useState, useEffect, useRef } from "react";
+import { lireMemoire, ecrireMemoire } from "@/lib/memoireSession";
 import { createPortal } from "react-dom";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
@@ -492,25 +493,31 @@ export default function ProfilPage() {
   const { user, refreshProfile } = useAuth();
   const { launchWorkout } = useWorkoutLaunch();
   const router = useRouter();
+  /* Revenir sur le profil remontre tout de suite ce qu'il affichait
+     (Louis, 2026-11-12 : « des blocs gris puis les données » à chaque
+     changement de page). Les lectures repartent quand même derrière. */
+  const cleMem = user?.id ? `profil:${user.id}` : null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [mem] = useState(() => lireMemoire<Record<string, any>>(cleMem) ?? {});
   const [activeTab, setActiveTab] = useState<"collection" | "progres" | "amis">("collection");
   const [objectifsOuverts, setObjectifsOuverts] = useState(false);
   const [avecQui, setAvecQui] = useState(false);
-  const [aura, setAura] = useState<EtatAura | null>(null);
-  const [amis, setAmis] = useState<{ id: string; pseudo: string; avatar_url?: string }[] | null>(null);
-  const [badgeSlugs, setBadgeSlugs] = useState<Set<string>>(new Set());
+  const [aura, setAura] = useState<EtatAura | null>(mem.aura ?? null);
+  const [amis, setAmis] = useState<{ id: string; pseudo: string; avatar_url?: string }[] | null>(mem.amis ?? null);
+  const [badgeSlugs, setBadgeSlugs] = useState<Set<string>>(() => new Set<string>(mem.badgeSlugs ?? []));
   /* Ce qu'il reste à faire pour le prochain badge. Le serveur ne le rend
      que pour soi : sur le profil de quelqu'un d'autre, il vaut `null` et
      l'étagère se tait là-dessus. */
-  const [progresBadges, setProgresBadges] = useState<ProgresBadges | null>(null);
+  const [progresBadges, setProgresBadges] = useState<ProgresBadges | null>(mem.progresBadges ?? null);
   /* La carte de constance ne remonte jamais avant l'inscription : des
      semaines vides d'avant l'arrivée dessineraient un échec pour une
      période où la personne ne connaissait pas Vaiiya. */
-  const [inscritLe, setInscritLe] = useState<string | null>(null);
+  const [inscritLe, setInscritLe] = useState<string | null>(mem.inscritLe ?? null);
   const [pesee, setPesee] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
   const [showRangs, setShowRangs] = useState(false);
   /* Les cartes de rang (2026-10-24) : une par rang atteint, gravée au pseudo. */
-  const [cartes, setCartes] = useState<CartesRang | null>(null);
+  const [cartes, setCartes] = useState<CartesRang | null>(mem.cartes ?? null);
   const [carteOuverte, setCarteOuverte] = useState<string | null>(null);
   /* La collection s'ouvre depuis l'étage des cartes, et depuis la fin d'un
      gain : `?ouvrir=collection` en arrivant, un évènement si on y est déjà. */
@@ -527,14 +534,14 @@ export default function ProfilPage() {
   const [toast, setToast] = useState<string | null>(null);
   const [profilePseudo, setProfilePseudo] = useState(user?.pseudo ?? "");
   const [profileAvatar, setProfileAvatar] = useState(user?.avatar ?? "");
-  const [profileFullName, setProfileFullName] = useState("");
-  const [profileBio, setProfileBio] = useState("");
-  const [profileGoals, setProfileGoals] = useState<string[]>([]);
-  const [profileLevel, setProfileLevel] = useState<string>("");
-  const [followingCount, setFollowingCount] = useState<number | null>(null);
-  const [sessionCount, setSessionCount] = useState<number | null>(null);
-  const [userPosts, setUserPosts] = useState<UserPost[]>([]);
-  const [workoutSessions, setWorkoutSessions] = useState<WorkoutSessionItem[]>([]);
+  const [profileFullName, setProfileFullName] = useState(mem.profileFullName ?? "");
+  const [profileBio, setProfileBio] = useState(mem.profileBio ?? "");
+  const [profileGoals, setProfileGoals] = useState<string[]>(mem.profileGoals ?? []);
+  const [profileLevel, setProfileLevel] = useState<string>(mem.profileLevel ?? "");
+  const [followingCount, setFollowingCount] = useState<number | null>(mem.followingCount ?? null);
+  const [sessionCount, setSessionCount] = useState<number | null>(mem.sessionCount ?? null);
+  const [userPosts, setUserPosts] = useState<UserPost[]>(mem.userPosts ?? []);
+  const [workoutSessions, setWorkoutSessions] = useState<WorkoutSessionItem[]>(mem.workoutSessions ?? []);
   const [afficheOuverte, setAfficheOuverte] = useState<WorkoutSessionItem | null>(null);
   const [afficheGardee, setAfficheGardee] = useState<{ post: UserPost; numero: number; teinte: number } | null>(null);
   const [reglagesAffiches, setReglagesAffiches] = useState<Record<string, ReglageAffiche>>({});
@@ -553,6 +560,12 @@ export default function ProfilPage() {
   const [constanceMasquee, setConstanceMasquee] = useState(false);
   const historiqueMasque = !!debutHisto
     && (poidsMasque || constanceMasquee || seancesVisibles.length < workoutSessions.length);
+
+  useEffect(() => {
+    ecrireMemoire(cleMem, { aura, amis, progresBadges, inscritLe, cartes, profileFullName, profileBio, profileGoals,
+      profileLevel, followingCount, sessionCount, userPosts, workoutSessions, badgeSlugs: [...badgeSlugs] });
+  }, [cleMem, aura, amis, progresBadges, inscritLe, cartes, profileFullName, profileBio, profileGoals,
+      profileLevel, followingCount, sessionCount, userPosts, workoutSessions, badgeSlugs]);
 
   /* Fetch profile + stats */
   useEffect(() => {
