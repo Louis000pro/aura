@@ -73,7 +73,7 @@ export default function ProgrammesPage() {
               <span className="relative block overflow-hidden" style={{ aspectRatio: "4 / 3", background: "#1A1424" }}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src={`/entrainement/${p.photo}.webp`}
+                  src={`/entrainement/m/${p.photo}.webp`}
                   alt=""
                   width={750}
                   height={1000}

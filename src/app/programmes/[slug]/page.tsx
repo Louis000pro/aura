@@ -161,7 +161,7 @@ export default async function ProgrammePage({
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src={`/entrainement/${p.photo}.webp`}
+            src={`/entrainement/m/${p.photo}.webp`}
             alt=""
             width={750}
             height={1000}
@@ -294,7 +294,7 @@ export default async function ProgrammePage({
               <span className="relative shrink-0 overflow-hidden rounded-xl" style={{ width: 72, height: 90, background: "#1A1424" }}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src={`/entrainement/${suivant.photo}.webp`}
+                  src={`/entrainement/m/${suivant.photo}.webp`}
                   alt=""
                   width={72}
                   height={90}

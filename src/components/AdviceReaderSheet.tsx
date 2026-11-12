@@ -93,7 +93,7 @@ export default function AdviceReaderSheet({
               aria-hidden
               className="absolute inset-0"
               style={{
-                backgroundImage: `url(/entrainement/${photoDuGuide(article.image, guide)}.webp)`,
+                backgroundImage: `url(/entrainement/m/${photoDuGuide(article.image, guide)}.webp)`,
                 backgroundPosition: article.imagePosition ?? "center 28%",
                 backgroundSize: "cover",
               }}

@@ -90,7 +90,7 @@ export default function SeancesPage() {
                     <span className="relative block" style={{ aspectRatio: "4 / 3", background: "#1A1424" }}>
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
-                        src={`/entrainement/${f.photos.get(s.id)}.webp`}
+                        src={`/entrainement/m/${f.photos.get(s.id)}.webp`}
                         alt=""
                         width={750}
                         height={1000}
