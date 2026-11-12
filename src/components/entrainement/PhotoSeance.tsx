@@ -10,7 +10,7 @@
    ════════════════════════════════════════════════════════════════════ */
 
 import { useGuideActif } from "@/context/GuideContext";
-import { photoDuGuide } from "@/lib/photosGuide";
+import { cadrageDeLaPhoto, photoDuGuide } from "@/lib/photosGuide";
 
 /** Ambiances des états fixes (widgets) — couleur appliquée in-app, comme la banque. */
 export const WIDGET: Record<"repos" | "done" | "setup" | "improvise", {
@@ -58,7 +58,7 @@ export function Photo({ img, fichier, pos = "center 25%", className, style, chil
         decoding="async"
         loading={prioritaire ? "eager" : "lazy"}
         fetchPriority={prioritaire ? "high" : "auto"}
-        style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: pos }}
+        style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: cadrageDeLaPhoto(nom, pos) }}
       />
       {children}
     </div>

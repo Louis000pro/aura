@@ -21,6 +21,7 @@
     "guides:normalize": "node scripts/normalize-guides.mjs",
     "guides:recaler": "node scripts/recaler-guides.mjs && node scripts/normalize-guides.mjs",
     "portraits": "node scripts/build-portraits.mjs",
+    "photos": "node scripts/build-photos.mjs",
     "rangs": "node scripts/build-rangs.mjs",
     "check:portraits": "node scripts/check-portraits.mjs",
     "check:animations": "node scripts/recaler-guides.mjs --check && node scripts/normalize-guides.mjs --check",
