@@ -836,7 +836,7 @@ html:not(.a-session) .mobile-nav { display: none !important; }
   --nav-verre-ombre: 0 5px 16px rgba(16,6,34,.10);
   position: relative;
   isolation: isolate;
-  height: 54px;
+  height: 60px;
   padding: 4px 7px;
   gap: 3px;
   color: var(--nav-verre-encre);

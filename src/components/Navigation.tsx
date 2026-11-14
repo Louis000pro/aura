@@ -110,7 +110,7 @@ function OngletNav({
     return (
       <Link href={href} className="flex-1" aria-label={label} aria-current={isActive ? "page" : undefined} data-tour-anchor={tourAnchor}>
         <motion.div
-          className="vy-nav-liquid-tab flex h-11 items-center justify-center cursor-pointer relative"
+          className="vy-nav-liquid-tab flex h-12 items-center justify-center cursor-pointer relative"
           whileTap={{ scale: 0.88 }} transition={{ duration: 0.12 }}
         >
           {/* Icônes seules (Louis, 2026-10-11) : plus aucun libellé sous les
@@ -436,7 +436,7 @@ export default function Navigation() {
           c'est lui offrir des portes qui le renvoient à la connexion. */}
       {user && !isLoading && !surfacePublique && (
       <nav
-        className="mobile-nav fixed left-3 right-3 z-50 md:hidden"
+        className="mobile-nav fixed left-2 right-2 z-50 md:hidden"
         style={{ bottom: "calc(10px + env(safe-area-inset-bottom))" }}
       >
         {/* Verre transparent, arête fine et reflet localisé : pas de voile
@@ -451,7 +451,7 @@ export default function Navigation() {
 
           {/* 3. Assistant — glyphe SVG, colonne calquée sur celle des onglets
                 (glyphe + hauteur de libellé réservée) → centres alignés. */}
-          <div className="flex-1 flex h-11 items-center justify-center" data-tour-anchor="nav-assistant">
+          <div className="flex-1 flex h-12 items-center justify-center" data-tour-anchor="nav-assistant">
             <NavOrb size={44} glyph={25} />
           </div>
 
