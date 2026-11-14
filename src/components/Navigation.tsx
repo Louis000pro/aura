@@ -108,24 +108,22 @@ function OngletNav({
 
   if (mobile) {
     return (
-      <Link href={href} className="flex-1" aria-label={label} data-tour-anchor={tourAnchor}>
+      <Link href={href} className="flex-1" aria-label={label} aria-current={isActive ? "page" : undefined} data-tour-anchor={tourAnchor}>
         <motion.div
-          className="flex h-12 items-center justify-center cursor-pointer relative"
+          className="vy-nav-liquid-tab flex h-11 items-center justify-center cursor-pointer relative"
           whileTap={{ scale: 0.88 }} transition={{ duration: 0.12 }}
         >
           {/* Icônes seules (Louis, 2026-10-11) : plus aucun libellé sous les
               onglets. Le nom reste dans `aria-label` du lien. L'onglet
-              actif se reconnaît à sa couleur et à la pastille de verre. */}
+              actif garde une icône blanche, au trait renforcé et une pastille discrète. */}
           {/* La pastille GLISSE d'un onglet à l'autre (Louis, 2026-10-12) :
               un seul élément partagé par `layoutId`, framer anime sa place. */}
           {isActive && (
-            <motion.span aria-hidden layoutId="mobile-pill" className="absolute h-10 w-12 rounded-full"
-              transition={{ type: "spring", stiffness: 420, damping: 34 }}
-              style={{ background: "rgba(var(--accent-rgb),0.14)" }} />
+            <motion.span aria-hidden layoutId="mobile-pill" className="vy-nav-liquid-active absolute h-10 w-12 rounded-full"
+              transition={{ type: "spring", stiffness: 420, damping: 34 }} />
           )}
           <div className="relative">
-            <Icon size={23} strokeWidth={isActive ? 2.5 : 2}
-              style={{ color: isActive ? "var(--gold)" : "var(--nav-fg-inactive)", transition: "color 0.2s ease" }} />
+            <Icon className="vy-nav-liquid-icon" size={22} strokeWidth={isActive ? 2.4 : 1.7} />
             {badge && (
               <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }}
                 className="absolute -top-1.5 -right-1.5 w-[18px] h-[18px] rounded-full flex items-center justify-center text-[11px] font-bold"
@@ -429,7 +427,7 @@ export default function Navigation() {
         </div>
       )}
 
-      {/* ══ Mobile Bottom Bar — barre pleine, opaque, edge-to-edge (façon TikTok / Insta / ShapeYou)
+      {/* ══ Mobile Bottom Bar — capsule Liquid Glass validée par Louis.
             Absente des surfaces publiques : elle donnait à un visiteur venu
             d'un moteur de recherche l'impression d'être déjà dans l'app. ══ */}
       {/* ⚠️ Jamais sans compte connecté (Louis, 2026-09-26 : la barre s'affichait
@@ -441,12 +439,10 @@ export default function Navigation() {
         className="mobile-nav fixed left-3 right-3 z-50 md:hidden"
         style={{ bottom: "calc(10px + env(safe-area-inset-bottom))" }}
       >
-        {/* Le verre (essai du 2026-10-10) : la barre devient une capsule qui
-            flotte, et l'écran défile dessous au lieu de s'arrêter sur un
-            trait. Classe `vy-verre`, définie une fois dans globals.css. */}
+        {/* Verre transparent, arête fine et reflet localisé : pas de voile
+            sur la page. Les couches décoratives ne capturent aucun appui. */}
         <div
-          className="vy-verre vy-nav-blanc relative flex items-center justify-around px-2 rounded-full"
-          style={{ paddingTop: 6, paddingBottom: 6 }}
+          className="vy-nav-liquid relative flex items-center justify-around rounded-full"
         >
           {/* 1. Accueil */}
           <OngletNav pathname={pathname} progMenu={progMenu} setProgMenu={setProgMenu} href={TABS[0].href} label={TABS[0].label} icon={TABS[0].icon} sub={TABS[0].sub} mobile tourAnchor={TABS[0].tourAnchor} />
@@ -455,7 +451,7 @@ export default function Navigation() {
 
           {/* 3. Assistant — glyphe SVG, colonne calquée sur celle des onglets
                 (glyphe + hauteur de libellé réservée) → centres alignés. */}
-          <div className="flex-1 flex h-12 items-center justify-center" data-tour-anchor="nav-assistant">
+          <div className="flex-1 flex h-11 items-center justify-center" data-tour-anchor="nav-assistant">
             <NavOrb size={44} glyph={25} />
           </div>
 

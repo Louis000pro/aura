@@ -56,6 +56,18 @@ fonctionnalités ; ce document est la source de vérité de ce qu'on en dit deho
 - **Auth = Supabase, et rien d'autre.** Google passe par `supabase.auth.signInWithOAuth({ provider: "google" })` dans `AuthContext`, et les codes de confirmation par `/api/auth/send-otp` + `/api/auth/verify-otp` (envoi Resend, jeton scellé en HMAC avec `AUTH_SECRET`). `next-auth` figurait dans `package.json` sans être importé nulle part : retiré le 2026-08-11, **ne pas le réinstaller** en croyant réparer quelque chose. Plus Stripe et web-push. **L'app est auth-gated : non testable en local.** Vérification standard = `npx tsc --noEmit` + build qui passe ; la validation visuelle, c'est Louis sur Vercel.
 - Secrets : `.env.local` (`AUTH_SECRET`, `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`, `COACH_AURA_KEY`) — à demander à Louis, jamais commité.
 
+## Navigation mobile — décision de Louis du 2026-11-14
+
+Maquette Liquid Glass validée puis GO explicite pour intégration et publication.
+La capsule du bas devient transparente (54 px), avec un contour très fin et
+un reflet lumineux localisé sur son bord supérieur. Les quatre icônes sont
+**blanches, même actives** : cette décision remplace la capsule blanche de
+2026-10-11 et fait exception aux couleurs de navigation du système D.
+L'onglet actif se distingue par son trait renforcé et sa pastille glissante
+très discrète. L'ordre des onglets, le Guide au centre, les interactions et
+la sidebar desktop restent inchangés. `.vy-nav-liquid` dans `globals.css`
+isole ce matériau ; les modes allégé et transparence réduite ont un repli fumé.
+
 ## Design system « D » (VERROUILLÉ)
 
 3 rôles de couleur FIXES, identiques clair/sombre, chaque couleur a UN sens partout :
