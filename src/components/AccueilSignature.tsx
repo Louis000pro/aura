@@ -5,6 +5,7 @@ import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { ChevronRight } from "lucide-react";
 import { VisageGuide } from "@/components/AssistantMark";
 import MaJournee from "@/components/accueil/MaJournee";
+import BoosterQuotidien from "@/components/accueil/BoosterQuotidien";
 import { useAuth } from "@/context/AuthContext";
 import { useGestesAssistant } from "@/context/AssistantContext";
 import type { EtatAura } from "@/lib/aura";
@@ -169,6 +170,7 @@ export default function AccueilSignature({
           onVoirTout={() => setFeuille(true)}
           onOpenRangs={onOpenRangs}
           onOpenSerie={() => setFeuilleSerie(true)}
+          booster={user?.id && <BoosterQuotidien key={user.id + jour} guide={guide} jour={jour} />}
         />
       )}
 
