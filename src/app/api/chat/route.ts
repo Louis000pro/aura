@@ -428,6 +428,9 @@ export async function POST(req: NextRequest) {
 
   const systemPrompt =
     buildSystemPrompt(userContext, pseudo, liveStats, moteur, richProfile, lieu, lieuEquip, currentPage, memories, memoryEnabled, guide) +
+    (garde.acces.premium
+      ? "\n\nACCÈS DU COMPTE CONNECTÉ : les avantages Vaiiya+ sont actifs pour cette personne. Si elle demande si elle a Vaiiya+, confirme son accès. L’état de la souscription publique ne change pas ce statut. Ne déduis ni paiement ni abonnement facturé de cet accès."
+      : "\n\nACCÈS DU COMPTE CONNECTÉ : Vaiiya+ n’est pas actif pour cette personne.") +
     (recapHier
       ? `\n\nSON RÉCAP D’HIER (affiché dans un popup Vaiiya+ à l’ouverture de l’app ce matin) :\n${recapHier}\nSi la personne parle de « mon récap », « ma journée d’hier » ou de ce popup, c’est de ça qu’il s’agit : réponds directement à partir de ces chiffres, avec enthousiasme et uniquement du positif. Ne lui demande jamais de te le partager.`
       : "") +
