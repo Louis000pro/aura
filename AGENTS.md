@@ -66,7 +66,10 @@ un reflet lumineux localisé sur son bord supérieur. Les quatre icônes sont
 L'onglet actif se distingue par son trait renforcé et sa pastille glissante
 très discrète. L'ordre des onglets, le Guide au centre, les interactions et
 la sidebar desktop restent inchangés. `.vy-nav-liquid` dans `globals.css`
-isole ce matériau ; les modes allégé et transparence réduite ont un repli fumé.
+isole ce matériau. Correction demandée par Louis après sa capture de référence :
+le mode allégé garde le verre transparent clair, avec un flou de 6 px au lieu
+de 10 px, et ne devient jamais une plaque noire. Sans support du flou, repli
+nacré translucide ; en transparence réduite, repli opaque gris-lilas.
 
 ## Design system « D » (VERROUILLÉ)
 

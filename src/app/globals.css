@@ -870,19 +870,21 @@ html:not(.a-session) .mobile-nav { display: none !important; }
 .vy-nav-liquid-tab { color: var(--nav-verre-encre); }
 .vy-nav-liquid-icon { filter: drop-shadow(0 1px 3px rgba(0,0,0,.65)); }
 .vy-nav-liquid-active { background: rgba(255,255,255,.035); }
-/* Sans flou, ou en mode allégé, un fond fumé garde les icônes lisibles. */
+/* Le mode allégé conserve le verre clair validé : moins de flou,
+   jamais de plaque noire. Sans support du flou, repli nacré translucide. */
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .vy-nav-liquid::before { background: rgba(30,28,34,.88); border-color: rgba(255,255,255,.30); }
+  .vy-nav-liquid::before {
+    background: linear-gradient(118deg, rgba(224,217,234,.65), rgba(152,143,166,.42) 45%, rgba(235,223,248,.60));
+    border-color: rgba(255,255,255,.50);
+  }
 }
 html.perf-lite .vy-nav-liquid::before {
-  background: rgba(30,28,34,.88);
-  border-color: rgba(255,255,255,.30);
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
+  -webkit-backdrop-filter: blur(6px) saturate(155%) brightness(.78);
+  backdrop-filter: blur(6px) saturate(155%) brightness(.78);
 }
 @media (prefers-reduced-transparency: reduce) {
   .vy-nav-liquid::before {
-    background: rgb(30,28,34);
+    background: linear-gradient(118deg, #a69dad, #817887 45%, #a99bb6);
     border-color: rgba(255,255,255,.30);
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
