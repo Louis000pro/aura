@@ -266,9 +266,6 @@
 .grille .logo { width:clamp(10px,3vw,15px); }
 .grille .etoiles i { scale:.64; }
 .recapitulatif { margin:22px 0 10px;gap:clamp(5px,2vw,12px); }
-.dialog[data-ouverture] { background:#121523;color:#f6f1ff; }
-.dialog[data-ouverture]::backdrop { background:#121523; }
-.dialog[data-ouverture] .fermer { background:#252b40;color:white; }
 .aura {
   position:absolute;
   inset:-16% -10%;
