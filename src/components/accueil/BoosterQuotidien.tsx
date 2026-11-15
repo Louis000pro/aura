@@ -48,6 +48,9 @@ function CarteBooster({ carte, guide, avancer, derniere = false, prioritaire = f
   const image = guide === "sasha" && illustrationSasha
     ? `/premiers-pas/m-${carte.exercice}-2.webp`
     : `/boosters/nora/${carte.exercice}.webp?v=2`;
+  const chromatique = carte.rarete === "chromatique";
+  const plancheOriginale = carte.exercice === "crunch" && !chromatique;
+  const fond = (chromatique ? "epique" : carte.rarete) + (plancheOriginale ? "-crunch" : "");
   const geste = useRef<{ id: number; bounds: DOMRect; x: number; y: number } | null>(null);
   const clicApresGlissement = useRef(false);
 
@@ -102,7 +105,7 @@ function CarteBooster({ carte, guide, avancer, derniere = false, prioritaire = f
       onPointerCancel={relacher}
       onLostPointerCapture={relacher}>
       <div className={styles.cadre}>
-        <div className={styles.face}>
+        <div className={styles.face} data-planche={plancheOriginale ? "" : undefined}>
           <div aria-hidden="true" className={styles.etoiles}>
             {etoiles.map(etoile => <i key={etoile.key} style={etoile.style} />)}
           </div>
@@ -110,13 +113,15 @@ function CarteBooster({ carte, guide, avancer, derniere = false, prioritaire = f
             {etoiles.map(etoile => <i key={etoile.key} style={etoile.style} />)}
           </div>
           <div aria-hidden="true" className={styles.spectre} />
-          <Image className={styles.logo} src="/marque/logo-degrade.png" alt="" width={24} height={18} />
-          <div className={styles.exercice} data-pose={pose}>
+          <div className={styles.planche} aria-hidden="true"
+            style={{ backgroundImage: `url("/boosters/cartes-prisme/${fond}.webp")` }} />
+          {chromatique && <span className={styles.badgeChromatique}>✦ Chromatique</span>}
+          {!plancheOriginale && <div className={styles.exercice} data-pose={pose}>
             <Image src={image} alt="" width={420} height={420} unoptimized
               className={styles.mouvement} draggable={false} loading={avancer || prioritaire ? "eager" : "lazy"} />
-          </div>
-          <strong>{nom}</strong>
-          <small>{rarete}</small>
+          </div>}
+          <strong className={styles.nomCarte} data-long={nom.length > 15 ? "" : undefined}>{nom}</strong>
+          <span className={styles.rareteAccessible}>{rarete}</span>
         </div>
       </div>
       {avancer && <button type="button" className={styles.suivante}

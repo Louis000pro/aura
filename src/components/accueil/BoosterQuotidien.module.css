@@ -18,8 +18,6 @@
   translate:-50% 0;
 }
 .carteSortante .carte { width:100%; }
-.carteSortante .cadre { padding:4px; }
-.carteSortante .face strong { font-size:clamp(.8rem,4.2vw,1.2rem); }
 
 .ouvrir {
   color: #58370d;
@@ -66,7 +64,7 @@
   --relief:1;
   box-sizing:border-box;
   width:min(84vw,350px,55dvh);
-  aspect-ratio:270/378;
+  aspect-ratio:820/1290;
   margin:0 auto;
   user-select:none;
 }
@@ -75,13 +73,7 @@
   height:100%;
   display:grid;
   grid-template-rows:minmax(0,1fr);
-  padding:clamp(4px,1.4vw,8px);
-  border:1px solid #fff9;
-  border-radius:clamp(10px,4vw,22px);
-  background:
-    linear-gradient(119deg,transparent 30%,#ffffff05 39%,#e6fbffb3 47%,#fff 50%,#ffd6efb3 53%,transparent 68%)
-    var(--reflet) var(--lumiere-y) / 230% 180%,
-    var(--cadre);
+  border-radius:10% / 6%;
   box-shadow:inset 0 0 0 1px #fffd,0 4px 0 color-mix(in srgb,var(--lueur) 55%,#1a1234),
     0 13px 23px #21153556,0 0 22px color-mix(in srgb,var(--lueur) 65%,transparent);
   transform:perspective(760px)
@@ -98,18 +90,31 @@
   position:relative;
   isolation:isolate;
   overflow:hidden;
-  display:grid;
-  grid-template-rows:auto minmax(0,1fr) auto auto;
-  align-items:center;
-  justify-items:center;
-  gap:4px;
-  padding:5%;
-  border:1px solid #fff9;
+  container-type:inline-size;
   border-radius:inherit;
-  background:
-    linear-gradient(180deg,#15101b28,transparent 27% 62%,#211726 85%),
-    url("/boosters/salle-vaiiya.webp") 27% top / auto 85% no-repeat #211726;
-  color:white;
+  color:#35165e;
+}
+.planche {
+  position:absolute;
+  inset:0;
+  z-index:-3;
+  background:#d2b9ee center / 100% 100% no-repeat;
+}
+.carte[data-rarete="chromatique"] .planche { filter:hue-rotate(-32deg) saturate(.64); }
+.badgeChromatique {
+  position:absolute;
+  inset:5.1% 5.9% auto auto;
+  min-height:8.4%;
+  width:58%;
+  display:grid;
+  place-items:center;
+  border:1px solid #fff;
+  border-radius:100px;
+  background:linear-gradient(125deg,#65589e,#5e2c87 42%,#237681);
+  color:#fff;
+  font:850 italic 5.4cqw/1 system-ui,sans-serif;
+  text-transform:uppercase;
+  box-shadow:0 0 3px #fff,0 0 10px #ecc7ff;
 }
 .face::before {
   content:"";
@@ -174,21 +179,13 @@
   transition:opacity .17s ease;
 }
 .carte[data-eclairee] .etoilesEclairees { opacity:1; }
-.logo {
-  justify-self:start;
-  width:clamp(15px,5vw,24px);
-  height:auto;
-  filter:drop-shadow(0 1px 1px #29183599);
-}
 .exercice {
   --sol:5%;
   --saut:0%;
   --largeur:80%;
   --ombre:45%;
-  position:relative;
-  align-self:stretch;
-  justify-self:stretch;
-  min-height:0;
+  position:absolute;
+  inset:20% 5% 50%;
 }
 .exercice:is([data-pose="sol"],[data-pose="pompes"]) { --sol:3%;--largeur:94%;--ombre:85%; }
 .exercice[data-pose="machine"] { --largeur:89%;--ombre:73%; }
@@ -221,23 +218,19 @@
   object-position:center bottom;
   filter:drop-shadow(1px 2px 1px #170d1d4d);
 }
-.face strong,.face small {
-  max-width:100%;
+.nomCarte {
+  position:absolute;
+  inset:53.6% 11% 38.2%;
+  display:grid;
+  place-items:center;
   text-align:center;
   text-transform:uppercase;
-  overflow-wrap:anywhere;
-  font-weight:900;
-  line-height:1.05;
-  text-shadow:0 1px 3px #211630;
+  text-wrap:balance;
+  font:900 italic 8cqw/.98 system-ui,sans-serif;
 }
-.face strong { font-size:clamp(1.15rem,6vw,2rem); }
-.face small {
-  justify-self:stretch;
-  border-top:1px solid #fff7;
-  padding:7px 0 2px;
-  font-size:.72rem;
-  letter-spacing:.04em;
-}
+.nomCarte[data-long] { font-size:5.6cqw; }
+.carte[data-rarete="legendaire"] .nomCarte { color:#fff;text-shadow:0 1px 3px #39236a96; }
+.rareteAccessible,.face[data-planche] .nomCarte { position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%); }
 .suivante {
   position:absolute;
   inset:0;
@@ -249,11 +242,6 @@
 }
 .suivante:focus-visible { outline:2px solid #e3baff;outline-offset:4px; }
 .grille .carte { width:100%; }
-.grille .cadre { padding:3px;border-radius:clamp(7px,2.5vw,13px); }
-.grille .face { gap:2px; }
-.grille .face strong { font-size:clamp(.59rem,2.55vw,.8rem); }
-.grille .face small { padding:4px 0 1px;font-size:clamp(.5rem,2.05vw,.65rem);letter-spacing:0; }
-.grille .logo { width:clamp(10px,3vw,15px); }
 .grille .etoiles i { scale:.64; }
 .recapitulatif { margin:22px 0 10px;gap:clamp(5px,2vw,12px); }
 .aura {
