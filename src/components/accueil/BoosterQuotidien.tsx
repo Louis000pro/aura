@@ -331,8 +331,8 @@ export default function BoosterQuotidien({ guide, jour }: { guide: GuideRef; jou
               </motion.div>
             )}</div>
             {illimite
-              ? <button className={styles.ouvrir} data-ouvert type="button" onClick={reinitialiserEssai}>Ouvrir un autre booster</button>
-              : <Link className={styles.ouvrir} data-ouvert href="/profil#cartes-exercices" onClick={() => dialog.current?.close()}>Voir mes cartes</Link>}
+              ? <button className={styles.ouvrir} type="button" onClick={reinitialiserEssai}>Ouvrir un autre booster</button>
+              : <Link className={styles.ouvrir} href="/profil#cartes-exercices" onClick={() => dialog.current?.close()}>Voir mes cartes</Link>}
           </>}
         </div>
       </dialog>

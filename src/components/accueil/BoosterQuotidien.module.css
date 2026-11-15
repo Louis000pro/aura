@@ -1,6 +1,6 @@
 .bloc{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:12px;padding:14px 18px;border:1px solid var(--verre-carte-bord);border-radius:var(--r-bloc);background:linear-gradient(145deg,#c4aaff35,#ffb8de24,#ffde8226),var(--verre-carte);color:var(--text-0)}
 .bloc h2{font-size:1.15rem;font-weight:800;margin:2px 0 8px}
-.ouvrir{min-height:44px;padding:8px 13px;border:0;border-radius:12px;color:#fff;font-weight:750;background:linear-gradient(110deg,#7950df,#af2bae)}
+.ouvrir{min-height:44px;padding:8px 13px;border:0;border-radius:12px;font-weight:750}
 .dialog{box-sizing:border-box;width:100%;height:100%;max-width:none;max-height:none;margin:0;padding:0;border:0;background:white;color:#271841}
 .dialog::backdrop{background:white}
 .ecran{position:relative;text-align:center;width:min(100%,450px);margin:auto;padding:calc(35px + env(safe-area-inset-top)) 14px 25px}
@@ -21,7 +21,7 @@
 .carteSortante .cadre { padding:4px; }
 .carteSortante .face strong { font-size:clamp(.8rem,4.2vw,1.2rem); }
 
-.ouvrir[data-ouvert] {
+.ouvrir {
   color: #58370d;
   background: linear-gradient(135deg, #fffbee, #ffe5a0 42%, #fff6ce 62%, #f5cf76);
   box-shadow: inset 0 0 0 1px #ffeeb5, inset 0 1px #fff, 0 3px 8px #ac75233d;
