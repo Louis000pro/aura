@@ -33,7 +33,7 @@
   background:radial-gradient(ellipse,#a290c18c 0%,transparent 74%);
   pointer-events:none;
 }
-.camera,.profondeur,.modele,.dechirure {
+.camera,.modele,.dechirure {
   position:absolute;
   inset:0;
   pointer-events:none;
@@ -42,11 +42,8 @@
   z-index:2;
   perspective:900px;
 }
-.profondeur {
-  transform:translateZ(calc(var(--epaisseur) * -.5));
-  transform-style:preserve-3d;
-}
 .modele {
+  transform:translateZ(calc(var(--epaisseur) * -.5)) rotateY(0deg) rotateX(0deg);
   transform-style:preserve-3d;
   will-change:transform;
 }

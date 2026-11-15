@@ -36,6 +36,8 @@ export function MiniSachetBooster({ guide }: { guide: GuideId | null }) {
 
 type Point = [x: number, y: number];
 type Orientation = { lacet: number; tangage: number };
+type SuiteRotation = { animation: Animation; depart: Orientation; cible: Orientation };
+type GesteRotation = { id: number; largeur: number; x: number; y: number; mesures: { x: number; temps: number }[] };
 type Dechirure = { trace: Point[]; sens: 1 | -1; cadre: DOMRect; id: number };
 const neutre: Orientation = { lacet: 0, tangage: 0 };
 const raccourcis: Record<string, Point> = {
@@ -45,6 +47,27 @@ const raccourcis: Record<string, Point> = {
 const borner = (valeur: number, min: number, max: number) => Math.max(min, Math.min(max, valeur));
 const tourProche = (angle: number) => Math.round(angle / 360) * 360;
 const estDeFace = ({ lacet, tangage }: Orientation) => Math.abs(lacet - tourProche(lacet)) < 12 && Math.abs(tangage) < 4;
+const transformation = ({ lacet, tangage }: Orientation) =>
+  "translateZ(calc(var(--epaisseur) * -.5)) rotateY(" + lacet + "deg) rotateX(" + tangage + "deg)";
+
+function memoriserGeste(geste: GesteRotation, event: Pick<PointerEvent, "clientX" | "timeStamp">) {
+  const debut = event.timeStamp - 85;
+  geste.mesures = geste.mesures.filter(mesure => mesure.temps >= debut);
+  const derniere = geste.mesures.at(-1);
+  if (!derniere || derniere.x !== event.clientX || event.timeStamp - derniere.temps >= 24) {
+    geste.mesures.push({ x: event.clientX, temps: event.timeStamp });
+  }
+}
+
+function vitesseRelachement(geste: GesteRotation, temps: number) {
+  const derniere = geste.mesures.at(-1);
+  if (!derniere || temps - derniere.temps >= 65) return 0;
+  const premiere = geste.mesures.find(mesure => derniere.temps - mesure.temps >= 12);
+  if (!premiere) return 0;
+  const maintien = borner((65 - (temps - derniere.temps)) / 49, 0, 1);
+  return borner((derniere.x - premiere.x) * 240 / geste.largeur / (derniere.temps - premiere.temps), -1.4, 1.4) * maintien;
+}
+
 const pointsSvg = (points: Point[]) => points.map(([x, y]) => x.toFixed(2) + "," + y.toFixed(2)).join(" ");
 
 function bordDechire(trace: Point[]) {
@@ -89,10 +112,10 @@ export default function SachetBooster({ guide, ouvrir, chargement, sortie, revel
   const bord = useRef<SVGPolylineElement>(null);
   const angles = useRef<Orientation>(neutre);
   const orientationAffichee = useRef<Orientation>(neutre);
-  const derniereImage = useRef<number | null>(null);
+  const suite = useRef<SuiteRotation | null>(null);
   const imageRotation = useRef<number | null>(null);
   const imageDechirure = useRef<number | null>(null);
-  const rotation = useRef<{ id: number; x: number; y: number; largeur: number; temps: number; vitesse: number } | null>(null);
+  const rotation = useRef<GesteRotation | null>(null);
   const dechirure = useRef<Dechirure | null>(null);
   const enCours = useRef(false);
   const [detache, setDetache] = useState(false);
@@ -100,60 +123,72 @@ export default function SachetBooster({ guide, ouvrir, chargement, sortie, revel
   useEffect(() => () => {
     if (imageRotation.current !== null) cancelAnimationFrame(imageRotation.current);
     if (imageDechirure.current !== null) cancelAnimationFrame(imageDechirure.current);
+    suite.current?.animation.cancel();
   }, []);
 
   function peindreOrientation(orientation = angles.current) {
     if (!modele.current) return;
     orientationAffichee.current = orientation;
-    const { lacet, tangage } = orientation;
-    modele.current.style.transform = "rotateY(" + (lacet % 360) + "deg) rotateX(" + tangage + "deg)";
+    modele.current.style.transform = transformation(orientation);
   }
 
   function arreterRotation() {
     if (imageRotation.current !== null) cancelAnimationFrame(imageRotation.current);
     imageRotation.current = null;
-    derniereImage.current = null;
+    const mouvement = suite.current;
+    if (!mouvement) return;
+    const { animation, depart, cible } = mouvement;
+    const progression = animation.effect?.getComputedTiming().progress ?? 0;
+    angles.current = {
+      lacet: depart.lacet + (cible.lacet - depart.lacet) * progression,
+      tangage: depart.tangage + (cible.tangage - depart.tangage) * progression,
+    };
+    peindreOrientation();
+    suite.current = null;
+    animation.cancel();
   }
 
-  function suivreRotation(temps: number) {
-    const cible = angles.current;
-    const precedente = orientationAffichee.current;
-    const delai = derniereImage.current === null ? 12 : temps - derniereImage.current;
-    const suivi = 1 - Math.exp(-delai / 10);
-    derniereImage.current = temps;
-    const arrivee = Math.abs(cible.lacet - precedente.lacet) < .14 && Math.abs(cible.tangage - precedente.tangage) < .12;
-    peindreOrientation(arrivee ? cible : {
-      lacet: precedente.lacet + (cible.lacet - precedente.lacet) * suivi,
-      tangage: precedente.tangage + (cible.tangage - precedente.tangage) * suivi,
-    });
-    imageRotation.current = arrivee ? null : requestAnimationFrame(suivreRotation);
-    if (arrivee) derniereImage.current = null;
-  }
-
-  function tournerVers(lacet: number, tangage: number, duree = 290) {
+  function tournerVers(lacet: number, tangage: number, duree = 260, easing = "cubic-bezier(.2,.6,.44,1)") {
     arreterRotation();
-    const avant = orientationAffichee.current;
-    const cible = borner(tangage, -8, 8);
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      angles.current = { lacet, tangage: cible };
+    const cible = { lacet, tangage: borner(tangage, -8, 8) };
+    const depart = orientationAffichee.current;
+    const element = modele.current;
+    if (!element) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches
+      || (Math.abs(cible.lacet - depart.lacet) < .1 && Math.abs(cible.tangage - depart.tangage) < .1)) {
+      angles.current = cible;
       peindreOrientation();
-      setDeFace(estDeFace(angles.current));
+      setDeFace(estDeFace(cible));
       return;
     }
-    let debut: number | undefined;
-    function image(temps: number) {
-      debut ??= temps;
-      const valeur = Math.min(1, (temps - debut) / duree);
-      const progression = 1 - (1 - valeur) ** 3;
-      angles.current = {
-        lacet: avant.lacet + (lacet - avant.lacet) * progression,
-        tangage: avant.tangage + (cible - avant.tangage) * progression,
-      };
+
+    const animation = element.animate(
+      [{ transform: transformation(depart) }, { transform: transformation(cible) }],
+      { duration: duree, easing, fill: "forwards" },
+    );
+    suite.current = { animation, depart, cible };
+    angles.current = cible;
+    animation.onfinish = () => {
+      if (suite.current?.animation !== animation) return;
+      suite.current = null;
+      angles.current = { lacet: cible.lacet % 360, tangage: cible.tangage };
       peindreOrientation();
-      imageRotation.current = valeur < 1 ? requestAnimationFrame(image) : null;
-      if (valeur === 1) setDeFace(estDeFace(angles.current));
-    }
-    imageRotation.current = requestAnimationFrame(image);
+      animation.cancel();
+      setDeFace(estDeFace(angles.current));
+    };
+  }
+
+  function deplacerRotation(geste: GesteRotation, event: PointerEvent<HTMLButtonElement>) {
+    const { clientX, clientY } = event;
+    if (clientX === geste.x && clientY === geste.y) return;
+    const dx = (clientX - geste.x) * 240 / geste.largeur;
+    const dy = (clientY - geste.y) * .18;
+    geste.x = clientX;
+    geste.y = clientY;
+    angles.current = {
+      lacet: angles.current.lacet + dx,
+      tangage: borner(angles.current.tangage - dy, -8, 8),
+    };
   }
 
   function peindreDechirure(trace: Point[], sens: 1 | -1, terminee: boolean) {
@@ -216,8 +251,7 @@ export default function SachetBooster({ guide, ouvrir, chargement, sortie, revel
     <div className={styles.scene} ref={scene} data-sachet="" data-coach={guide}
       data-face={deFace ? "" : undefined} data-sortie={sortie ? "" : undefined}>
       <div className={styles.camera} aria-hidden="true">
-        <div className={styles.profondeur}>
-          <div ref={modele} className={styles.modele}>
+        <div ref={modele} className={styles.modele}>
             <div className={styles.face3d + " " + styles.face}>
               <Image className={styles.image} src={portrait} width={720} height={1183} alt="" loading="eager" unoptimized draggable={false} />
             </div>
@@ -227,7 +261,6 @@ export default function SachetBooster({ guide, ouvrir, chargement, sortie, revel
                   loading="eager" unoptimized draggable={false} />
               </div>
             ))}
-          </div>
         </div>
       </div>
       <svg className={styles.dechirure} viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
@@ -267,40 +300,43 @@ export default function SachetBooster({ guide, ouvrir, chargement, sortie, revel
           angles.current = orientationAffichee.current;
           rotation.current = {
             id: event.pointerId, x: event.clientX, y: event.clientY,
-            largeur: event.currentTarget.offsetWidth, temps: event.timeStamp, vitesse: 0,
+            largeur: event.currentTarget.offsetWidth, mesures: [{ x: event.clientX, temps: event.timeStamp }],
           };
           event.currentTarget.setPointerCapture(event.pointerId);
         }}
         onPointerMove={event => {
           const geste = rotation.current;
           if (!geste || geste.id !== event.pointerId) return;
-          const dx = (event.clientX - geste.x) * 240 / geste.largeur;
-          const dy = (event.clientY - geste.y) * .18;
-          const duree = Math.max(1, event.timeStamp - geste.temps);
-          geste.x = event.clientX;
-          geste.y = event.clientY;
-          geste.temps = event.timeStamp;
-          geste.vitesse = duree > 90 ? 0 : geste.vitesse * .35 + (dx / duree) * .65;
-          angles.current = { lacet: angles.current.lacet + dx, tangage: borner(angles.current.tangage - dy, -8, 8) };
-          if (imageRotation.current === null) imageRotation.current = requestAnimationFrame(suivreRotation);
+          const mesures = event.nativeEvent.getCoalescedEvents?.() ?? [];
+          for (const mesure of mesures) memoriserGeste(geste, mesure);
+          memoriserGeste(geste, event);
+          deplacerRotation(geste, event);
+          if (imageRotation.current === null) imageRotation.current = requestAnimationFrame(() => {
+            imageRotation.current = null;
+            peindreOrientation();
+          });
         }}
         onPointerUp={event => {
           const geste = rotation.current;
           if (!geste || geste.id !== event.pointerId) return;
           rotation.current = null;
+          deplacerRotation(geste, event);
           const { lacet, tangage } = angles.current;
-          const inertie = event.timeStamp - geste.temps < 80
-            ? borner(geste.vitesse * 72, -65, 65) : 0;
+          const vitesse = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : vitesseRelachement(geste, event.timeStamp);
+          // La pente initiale de cubic-bezier(.2,.6,.44,1) est 3 : le
+          // déplacement conserve la vitesse du doigt au départ de l'inertie.
+          const duree = 145 + Math.abs(vitesse) * 55;
+          const inertie = Math.abs(vitesse) < .075 ? 0 : vitesse * duree / 3;
           const cible = lacet + inertie;
           const face = tourProche(cible);
-          if (Math.abs(cible - face) < 12 && Math.abs(tangage) < 4) tournerVers(face, 0);
-          else if (inertie && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) tournerVers(cible, tangage);
-          else tournerVers(lacet, tangage, 95);
+          if (Math.abs(cible - face) < 9 && Math.abs(tangage) < 4 && inertie * (face - lacet) >= 0) tournerVers(face, 0, inertie ? duree : 140);
+          else if (inertie) tournerVers(cible, tangage, duree);
+          else tournerVers(lacet, tangage, 70);
         }}
         onLostPointerCapture={event => {
           if (rotation.current?.id !== event.pointerId) return;
           rotation.current = null;
-          tournerVers(angles.current.lacet, angles.current.tangage, 95);
+          tournerVers(angles.current.lacet, angles.current.tangage, 70);
         }}
         onClick={event => {
           if (event.detail === 0) tournerVers(angles.current.lacet + 36, angles.current.tangage);
@@ -309,12 +345,12 @@ export default function SachetBooster({ guide, ouvrir, chargement, sortie, revel
       {deFace && <button type="button" className={styles.soudure} aria-label="Ouvrir le booster par la soudure"
         disabled={chargement || detache}
         onClick={event => {
-          if (event.detail !== 0 || !estDeFace(angles.current)) return;
+          if (event.detail !== 0 || suite.current || !estDeFace(angles.current)) return;
           arreterRotation();
           ouvrirSachet([[0, 8], [28, 8.9], [53, 7.7], [76, 8.5]], 1);
         }}
         onPointerDown={event => {
-          if (!event.isPrimary || event.button !== 0 || enCours.current || !estDeFace(angles.current)) return;
+          if (!event.isPrimary || event.button !== 0 || enCours.current || suite.current || !estDeFace(angles.current)) return;
           arreterRotation();
           angles.current = neutre;
           peindreOrientation();
