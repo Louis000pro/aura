@@ -77,3 +77,19 @@
 }
 .sachet strong,.sachet span { z-index: 1; }
 .mini img { mask-image: linear-gradient(#000 68%, transparent); }
+
+.bloc { flex-wrap: wrap; }
+.statut { display:flex; align-items:center; gap:8px; margin-left:auto; }
+.compte { text-align:center; font-variant-numeric:tabular-nums; }
+.compte small,.compte strong { display:block; }
+.compte small { font-size:.7rem; }
+.ouvrir:disabled { opacity:.55; cursor:default; }
+.ecran a.ouvrir { display:inline-flex; align-items:center; margin-top:20px; }
+.sachet strong,.mini strong { position:absolute; inset:auto 5% 12%; margin:0; text-align:center; }
+.sachet span { top:14px; font-size:clamp(16px,5vw,22px); line-height:1; }
+.sachet img { top:14%; height:64%; }
+.mini span { position:absolute; top:10%; font-size:9px; font-weight:900; }
+.mini img { position:absolute; top:17%; left:7%; width:86%; height:59%; }
+.collection { margin:20px 0; scroll-margin-top:80px; }
+.collection h2 { margin-bottom:10px; font-weight:800; }
+.collection .grille { row-gap:16px; }

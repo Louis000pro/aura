@@ -13,6 +13,7 @@ import {
 import GemmeRang from "@/components/GemmeRang";
 import EtatVideGuide from "@/components/EtatVideGuide";
 import RangsModal from "@/components/rang/RangsModal";
+import { CollectionBoosters } from "@/components/accueil/BoosterQuotidien";
 import EtageCartes from "@/components/cartes/EtageCartes";
 import { EVT_COLLECTION, noterFlamme } from "@/lib/cartes/appareil";
 import { rangsGagnes } from "@/lib/cartes/catalogue";
@@ -1067,6 +1068,7 @@ export default function ProfilPage() {
 
             {/* L'étagère : ce que le relais a donné en plus des cartes.
                 Muette tant qu'on n'a rien gagné. */}
+            {user?.id && <CollectionBoosters key={user.id} userId={user.id} />}
             <EtagereBadges slugs={badgeSlugs} titre="Badges" progres={progresBadges} />
 
             {/* Tes affiches de perf (posts séance) */}

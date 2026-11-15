@@ -1,9 +1,12 @@
 "use client";
 
+import Link from "next/link";
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { MotionConfig, motion } from "framer-motion";
 import { createClient } from "@/lib/supabase";
+import { useGuideActif } from "@/context/GuideContext";
+import { shiftDateStr } from "@/lib/dates";
 import type { GuideRef } from "@/lib/guides";
 import styles from "./BoosterQuotidien.module.css";
 
@@ -35,9 +38,72 @@ const mouvements = {
 const raretes = { commune: "Commune", rare: "Rare", epique: "Épique", legendaire: "Légendaire", chromatique: "Chromatique" } as const;
 type Carte = { exercice: keyof typeof mouvements; rarete: keyof typeof raretes };
 
+function face(carte: Carte, profil: GuideRef) {
+  const [nom, nora, sasha] = mouvements[carte.exercice];
+  return <>
+    <strong>{nom}</strong>
+    <Image src={profil === "sasha" ? sasha : nora} alt="" width={240} height={210} />
+    <small>{raretes[carte.rarete]}</small>
+  </>;
+}
+
+
+const fuseauParis = new Intl.DateTimeFormat("en", {timeZone:"Europe/Paris",timeZoneName:"longOffset"});
+function tempsRestant(jour: string) {
+  const demain = shiftDateStr(jour, 1);
+  const minuitUTC = new Date(demain + "T00:00:00Z");
+  const decalage = fuseauParis.formatToParts(minuitUTC)
+    .find(part => part.type === "timeZoneName")?.value.slice(3) || "+00:00";
+  const secondes = Math.max(0, Math.ceil((Date.parse(demain + "T00:00:00" + decalage) - Date.now()) / 1000));
+  return [Math.floor(secondes / 3600), Math.floor(secondes / 60) % 60, secondes % 60]
+    .map(valeur => String(valeur).padStart(2, "0")).join(":");
+}
+
+export function CollectionBoosters({ userId }: { userId: string }) {
+  const { guide } = useGuideActif();
+  const [cartes, setCartes] = useState<Carte[] | null>(null);
+  const [erreur, setErreur] = useState(false);
+  useEffect(() => {
+    let actif = true;
+    async function charger() {
+      const client = createClient();
+      const collection = new Map<string, Carte>();
+      const taillePage = 100;
+      for (let debut = 0; actif; debut += taillePage) {
+        const { data, error } = await client.from("boosters_exercices").select("cartes")
+          .eq("user_id", userId).order("jour", { ascending: false }).range(debut, debut + taillePage - 1);
+        if (!actif) return;
+        if (error) { setErreur(true); return; }
+        for (const tirage of data) {
+          for (const carte of tirage.cartes as Carte[]) {
+            collection.set(carte.exercice + ":" + carte.rarete, carte);
+          }
+        }
+        if (data.length < taillePage) {
+          setCartes([...collection.values()]);
+          return;
+        }
+      }
+    }
+    void charger();
+    return () => { actif = false; };
+  }, [userId]);
+  useEffect(() => {
+    if (window.location.hash === "#cartes-exercices") {
+      document.getElementById("cartes-exercices")?.scrollIntoView();
+    }
+  }, [userId]);
+  return <section id="cartes-exercices" className={styles.collection}>
+    <h2>Mes cartes d’exercices</h2>
+    {erreur ? <p>Impossible de charger les cartes.</p> : !cartes ? <p>Chargement…</p> : !cartes.length ? <p>Ouvre ton premier booster pour commencer ta collection.</p> :
+      <div className={styles.grille}>{cartes.map(carte => <article key={carte.exercice + ":" + carte.rarete} className={styles.carte} data-rarete={carte.rarete}>{face(carte, guide)}</article>)}</div>}
+  </section>;
+}
+
 export default function BoosterQuotidien({ guide, jour }: { guide: GuideRef; jour: string }) {
   const [disponible, setDisponible] = useState(false);
   const [cartes, setCartes] = useState<Carte[] | null>(null);
+  const [compteRebours, setCompteRebours] = useState("");
   const [index, setIndex] = useState(0);
   const [dechirure, setDechirure] = useState(0);
   const [erreur, setErreur] = useState(false);
@@ -60,6 +126,14 @@ export default function BoosterQuotidien({ guide, jour }: { guide: GuideRef; jou
     });
     return () => { vivant = false; };
   }, [jour]);
+
+  useEffect(() => {
+    if (!cartes) return;
+    const tick = () => setCompteRebours(tempsRestant(jour));
+    tick();
+    const timer = window.setInterval(tick, 1000);
+    return () => window.clearInterval(timer);
+  }, [cartes, jour]);
 
   async function ouvrir() {
     if (actif.current || cartes) return;
@@ -84,15 +158,6 @@ export default function BoosterQuotidien({ guide, jour }: { guide: GuideRef; jou
     }
   }
 
-  function face(carte: Carte) {
-    const [nom, nora, sasha] = mouvements[carte.exercice];
-    return <>
-      <strong>{nom}</strong>
-      <Image src={profil === "sasha" ? sasha : nora} alt="" width={240} height={210} />
-      <small>{raretes[carte.rarete]}</small>
-    </>;
-  }
-
   function avancer() {
     setIndex(index + 1);
   }
@@ -105,11 +170,13 @@ export default function BoosterQuotidien({ guide, jour }: { guide: GuideRef; jou
     <MotionConfig reducedMotion="user">
       <section className={styles.bloc} aria-label="Booster du jour">
         <div><small>3 cartes d’exercices</small><h2>Ton booster du jour</h2>
-          <button type="button" className={styles.ouvrir} data-ouvert={cartes ? "" : undefined} onClick={() => dialog.current?.showModal()}>
-            {cartes ? "Voir mes cartes" : "Ouvrir mon booster"}
+          <button type="button" className={styles.ouvrir} disabled={!!cartes} onClick={() => dialog.current?.showModal()}>
+            Ouvrir le booster
           </button>
         </div>
-        <div className={styles.mini}>{sachet}</div>
+        <div className={styles.statut}><div className={styles.mini}>{sachet}</div>
+          {cartes && <div className={styles.compte}><small>Prochain booster</small><strong>{compteRebours}</strong></div>}
+        </div>
       </section>
       <dialog ref={dialog} className={styles.dialog} aria-labelledby="titre-booster">
         <div className={styles.ecran}>
@@ -155,11 +222,15 @@ export default function BoosterQuotidien({ guide, jour }: { guide: GuideRef; jou
             className={styles.carte} data-rarete={carte.rarete}
             aria-label={index === 2 ? "Voir les trois cartes" : "Découvrir la carte suivante"}
             onClick={avancer}>
-            {face(carte)}
+            {face(carte, profil)}
           </motion.button>}
-          {cartes && !carte && <div className={styles.grille}>{cartes.map(item =>
-            <article key={item.exercice} className={styles.carte} data-rarete={item.rarete}>{face(item)}</article>
-          )}</div>}
+          {cartes && !carte && <>
+            <p>Retrouve ces cartes dans ton profil.</p>
+            <div className={styles.grille}>{cartes.map(item =>
+            <article key={item.exercice} className={styles.carte} data-rarete={item.rarete}>{face(item, profil)}</article>
+          )}</div>
+            <Link className={styles.ouvrir} data-ouvert href="/profil#cartes-exercices" onClick={() => dialog.current?.close()}>Voir mes cartes</Link>
+          </>}
         </div>
       </dialog>
     </MotionConfig>
