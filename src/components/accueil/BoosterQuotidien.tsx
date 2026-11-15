@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useEffect, useRef, useState } from "react";
-import { MotionConfig, motion } from "framer-motion";
+import { useEffect, useRef, useState, type CSSProperties, type PointerEvent } from "react";
+import { MotionConfig, motion, useReducedMotion } from "framer-motion";
 import { createClient } from "@/lib/supabase";
 import { useGuideActif } from "@/context/GuideContext";
 import { shiftDateStr } from "@/lib/dates";
@@ -11,40 +11,122 @@ import type { GuideRef } from "@/lib/guides";
 import styles from "./BoosterQuotidien.module.css";
 
 const mouvements = {
-  pompes: ["Pompes", "/entrainement/guides/pompes-f-2.webp", "/premiers-pas/m-pompes-2.webp"],
-  crunch: ["Crunch", "/entrainement/guides/crunch-f-2.webp", "/entrainement/guides/crunch-f-2.webp"],
-  fentes: ["Fentes", "/entrainement/guides/fentes-f-2.webp", "/premiers-pas/m-fentes-2.webp"],
-  squat: ["Squat", "/premiers-pas/f-squat-2.webp", "/premiers-pas/m-squat-2.webp"],
-  pompesdiamant: ["Pompes diamant","/entrainement/guides/pompesdiamant-f-2.webp","/entrainement/guides/pompesdiamant-f-2.webp"],
-  pompesinclinees: ["Pompes inclinées","/entrainement/guides/pompesinclinees-f-2.webp","/entrainement/guides/pompesinclinees-f-2.webp"],
-  pompesexplosives: ["Pompes explosives","/entrainement/guides/pompesexplosives-f-2.webp","/entrainement/guides/pompesexplosives-f-2.webp"],
-  squatsaute: ["Squat sauté","/entrainement/guides/squatsaute-f-2.webp","/entrainement/guides/squatsaute-f-2.webp"],
-  squatbulgare: ["Squat bulgare","/entrainement/guides/squatbulgare-f-2.webp","/entrainement/guides/squatbulgare-f-2.webp"],
-  fentessautees: ["Fentes sautées","/entrainement/guides/fentessautees-f-2.webp","/entrainement/guides/fentessautees-f-2.webp"],
-  bicyclecrunch: ["Crunch vélo","/entrainement/guides/bicyclecrunch-f-2.webp","/entrainement/guides/bicyclecrunch-f-2.webp"],
-  reversecrunch: ["Crunch inversé","/entrainement/guides/reversecrunch-f-2.webp","/entrainement/guides/reversecrunch-f-2.webp"],
-  relevesjambes: ["Relevés de jambes","/entrainement/guides/relevesjambes-f-2.webp","/entrainement/guides/relevesjambes-f-2.webp"],
-  deadbug: ["Dead bug","/entrainement/guides/deadbug-f-2.webp","/entrainement/guides/deadbug-f-2.webp"],
-  birddog: ["Bird dog","/entrainement/guides/birddog-f-2.webp","/entrainement/guides/birddog-f-2.webp"],
-  hipthrust: ["Hip thrust","/entrainement/guides/hipthrust-f-2.webp","/entrainement/guides/hipthrust-f-2.webp"],
-  dips: ["Dips","/entrainement/guides/dips-f-2.webp","/entrainement/guides/dips-f-2.webp"],
-  rowinginverse: ["Rowing inversé","/entrainement/guides/rowinginverse-f-2.webp","/entrainement/guides/rowinginverse-f-2.webp"],
-  stepupbanc: ["Step-up sur banc","/entrainement/guides/stepupbanc-f-2.webp","/entrainement/guides/stepupbanc-f-2.webp"],
-  mountainclimbers: ["Mountain climbers","/entrainement/guides/mountainclimbers-f-2.webp","/entrainement/guides/mountainclimbers-f-2.webp"],
-  burpees: ["Burpees","/entrainement/guides/burpees-f-2.webp","/entrainement/guides/burpees-f-2.webp"],
-  abducteursmachine: ["Abducteurs à la machine","/entrainement/guides/abducteursmachine-f-2.webp","/entrainement/guides/abducteursmachine-f-2.webp"],
-  corde: ["Corde à sauter","/entrainement/guides/corde-f-2.webp","/entrainement/guides/corde-f-2.webp"],
-} as const;
+  pompes: ["Pompes", "pompes", true],
+  crunch: ["Crunch", "sol"],
+  fentes: ["Fentes", "fente", true],
+  squat: ["Squat", "debout", true],
+  pompesdiamant: ["Pompes diamant", "pompes"],
+  pompesinclinees: ["Pompes inclinées", "machine"],
+  pompesexplosives: ["Pompes explosives", "pompes"],
+  squatsaute: ["Squat sauté", "saut"],
+  squatbulgare: ["Squat bulgare", "machine"],
+  fentessautees: ["Fentes sautées", "saut"],
+  bicyclecrunch: ["Crunch vélo", "sol"],
+  reversecrunch: ["Crunch inversé", "sol"],
+  relevesjambes: ["Relevés de jambes", "sol"],
+  deadbug: ["Dead bug", "sol"],
+  birddog: ["Bird dog", "sol"],
+  hipthrust: ["Hip thrust", "sol"],
+  dips: ["Dips", "machine"],
+  rowinginverse: ["Rowing inversé", "machine"],
+  stepupbanc: ["Step-up sur banc", "machine"],
+  mountainclimbers: ["Mountain climbers", "sol"],
+  burpees: ["Burpees", "sol"],
+  abducteursmachine: ["Abducteurs à la machine", "machine"],
+  corde: ["Corde à sauter", "saut"],
+} satisfies Record<string, [nom: string, pose: string, illustrationSasha?: boolean]>;
 const raretes = { commune: "Commune", rare: "Rare", epique: "Épique", legendaire: "Légendaire", chromatique: "Chromatique" } as const;
 type Carte = { exercice: keyof typeof mouvements; rarete: keyof typeof raretes };
 
-function face(carte: Carte, profil: GuideRef) {
-  const [nom, nora, sasha] = mouvements[carte.exercice];
-  return <>
-    <strong>{nom}</strong>
-    <Image src={profil === "sasha" ? sasha : nora} alt="" width={240} height={210} />
-    <small>{raretes[carte.rarete]}</small>
-  </>;
+const etoiles = [
+  [19, 3, 3], [79, 4, 4], [24, 8, 7], [57, 8, 4], [96, 8, 6], [24, 19, 3],
+  [57, 17, 8], [96, 24, 3], [24, 29, 7], [58, 33, 4], [96, 41, 7],
+  [7, 35, 4], [16, 43, 3], [38, 44, 4], [25, 50, 5], [56, 51, 7], [96, 50, 4],
+  [92, 57, 7], [59, 58, 5], [21, 56, 4], [25, 61, 7], [57, 66, 8], [91, 66, 5],
+  [12, 65, 4], [27, 71, 4], [83, 72, 3], [53, 73, 4], [72, 77, 3],
+].map(([x, y, taille]) => ({
+  key: x + ":" + y,
+  style: { "--etoile-x": x + "%", "--etoile-y": y + "%", "--etoile-taille": taille + "px" } as CSSProperties,
+}));
+
+function CarteBooster({ carte, guide, avancer, derniere = false }: {
+  carte: Carte;
+  guide: GuideRef;
+  avancer?: () => void;
+  derniere?: boolean;
+}) {
+  const [nom, pose, illustrationSasha] = mouvements[carte.exercice];
+  const rarete = raretes[carte.rarete];
+  const image = guide === "sasha" && illustrationSasha
+    ? `/premiers-pas/m-${carte.exercice}-2.webp`
+    : `/boosters/nora/${carte.exercice}.webp`;
+  const geste = useRef<{ bounds: DOMRect; x: number; y: number; glisse: boolean } | null>(null);
+
+  function eclairer(event: PointerEvent<HTMLElement>) {
+    if (!event.isPrimary || (event.pointerType === "touch" && !geste.current)) return;
+    const element = event.currentTarget;
+    const { left, top, width, height } = geste.current?.bounds ?? element.getBoundingClientRect();
+    const x = Math.max(0, Math.min(1, (event.clientX - left) / width));
+    const y = Math.max(0, Math.min(1, (event.clientY - top) / height));
+    if (geste.current && event.buttons && Math.hypot(event.clientX - geste.current.x, event.clientY - geste.current.y) > 6) {
+      geste.current.glisse = true;
+    }
+    element.dataset.eclairee = "";
+    element.style.setProperty("--lumiere-x", x * 100 + "%");
+    element.style.setProperty("--lumiere-y", y * 100 + "%");
+    element.style.setProperty("--reflet", (1 - x) * 100 + "%");
+    element.style.setProperty("--inclinaison-x", (.5 - y) * 21 + "deg");
+    element.style.setProperty("--inclinaison-y", (x - .5) * 25 + "deg");
+  }
+
+  function relacher(event: PointerEvent<HTMLElement>) {
+    if (!event.isPrimary) return;
+    if (geste.current && Math.hypot(event.clientX - geste.current.x, event.clientY - geste.current.y) > 6) {
+      geste.current.glisse = true;
+    }
+    const element = event.currentTarget;
+    delete element.dataset.eclairee;
+    for (const property of ["--lumiere-x", "--lumiere-y", "--reflet", "--inclinaison-x", "--inclinaison-y"]) {
+      element.style.removeProperty(property);
+    }
+  }
+
+  return (
+    <article className={styles.carte} data-rarete={carte.rarete} data-revelation={avancer ? "" : undefined}
+      onPointerDown={event => {
+        if (!event.isPrimary || event.button !== 0) return;
+        geste.current = { bounds: event.currentTarget.getBoundingClientRect(), x: event.clientX, y: event.clientY, glisse: false };
+        eclairer(event);
+      }}
+      onPointerMove={eclairer}
+      onPointerUp={relacher}
+      onPointerLeave={event => { relacher(event); geste.current = null; }}
+      onPointerCancel={event => { relacher(event); geste.current = null; }}>
+      <div className={styles.cadre}>
+        <div className={styles.face}>
+          <div aria-hidden="true" className={styles.etoiles}>
+            {etoiles.map(etoile => <i key={etoile.key} style={etoile.style} />)}
+          </div>
+          <div aria-hidden="true" className={`${styles.etoiles} ${styles.etoilesEclairees}`}>
+            {etoiles.map(etoile => <i key={etoile.key} style={etoile.style} />)}
+          </div>
+          <Image className={styles.logo} src="/marque/logo-degrade.png" alt="" width={24} height={18} />
+          <div className={styles.exercice} data-pose={pose}>
+            <Image src={image} alt="" width={240} height={240} sizes={avancer ? "(max-width: 420px) 80vw, 330px" : "135px"}
+              className={styles.mouvement} draggable={false} loading={avancer ? "eager" : "lazy"} />
+          </div>
+          <strong>{nom}</strong>
+          <small>{rarete}</small>
+        </div>
+      </div>
+      {avancer && <button type="button" className={styles.suivante}
+        aria-label={`${nom}, ${rarete}. ${derniere ? "Voir les trois cartes" : "Découvrir la carte suivante"}`}
+        onClick={event => {
+          if (event.detail === 0 || !geste.current?.glisse) avancer();
+          geste.current = null;
+        }} />}
+    </article>
+  );
 }
 
 
@@ -96,7 +178,9 @@ export function CollectionBoosters({ userId }: { userId: string }) {
   return <section id="cartes-exercices" className={styles.collection}>
     <h2>Mes cartes d’exercices</h2>
     {erreur ? <p>Impossible de charger les cartes.</p> : !cartes ? <p>Chargement…</p> : !cartes.length ? <p>Ouvre ton premier booster pour commencer ta collection.</p> :
-      <div className={styles.grille}>{cartes.map(carte => <article key={carte.exercice + ":" + carte.rarete} className={styles.carte} data-rarete={carte.rarete}>{face(carte, guide)}</article>)}</div>}
+      <div className={styles.grille}>{cartes.map(carte =>
+        <CarteBooster key={carte.exercice + ":" + carte.rarete} carte={carte} guide={guide} />
+      )}</div>}
   </section>;
 }
 
@@ -108,6 +192,7 @@ export default function BoosterQuotidien({ guide, jour }: { guide: GuideRef; jou
   const [dechirure, setDechirure] = useState(0);
   const [erreur, setErreur] = useState(false);
   const [chargement, setChargement] = useState(false);
+  const mouvementReduit = useReducedMotion();
   const dialog = useRef<HTMLDialogElement>(null);
   const actif = useRef(false);
   const trace = useRef<Array<[number, number]>>([]);
@@ -178,10 +263,10 @@ export default function BoosterQuotidien({ guide, jour }: { guide: GuideRef; jou
           {cartes && <div className={styles.compte}><small>Prochain booster</small><strong>{compteRebours}</strong></div>}
         </div>
       </section>
-      <dialog ref={dialog} className={styles.dialog} aria-labelledby="titre-booster">
+      <dialog ref={dialog} className={styles.dialog} data-ouverture={carte ? "" : undefined} aria-labelledby="titre-booster">
         <div className={styles.ecran}>
           <button type="button" className={styles.fermer} aria-label="Fermer" onClick={() => dialog.current?.close()}>×</button>
-          <h2 id="titre-booster">{cartes ? carte ? "Carte " + (index + 1) + " sur 3" : "Tes 3 cartes" : "Ton booster du jour"}</h2>
+          <h2 id="titre-booster" aria-live="polite">{cartes ? carte ? "Carte " + (index + 1) + " sur 3" : "Booster ouvert" : "Ton booster du jour"}</h2>
           {!cartes && <>
             <div className={styles.scene}>
               <motion.div className={styles.sachet} animate={chargement ? { y: 240, rotate: 16, opacity: 0 } : { y: 0, rotate: 0, opacity: 1 }}
@@ -216,19 +301,23 @@ export default function BoosterQuotidien({ guide, jour }: { guide: GuideRef; jou
             <p>{chargement ? "Ouverture…" : "Glisse sur la soudure de gauche à droite."}</p>
             {erreur && <p role="alert">Le booster est indisponible. Réessaie dans un instant.</p>}
           </>}
-          {carte && <motion.button key={index} type="button"
-            initial={{ opacity: 0, y: 45, scale: .94 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ duration: index === 2 ? .55 : .3 }}
-            className={styles.carte} data-rarete={carte.rarete}
-            aria-label={index === 2 ? "Voir les trois cartes" : "Découvrir la carte suivante"}
-            onClick={avancer}>
-            {face(carte, profil)}
-          </motion.button>}
+          {carte && <div key={index} className={styles.revelation} data-rarete={carte.rarete}>
+            {index === 2 && !mouvementReduit && <div className={styles.aura} aria-hidden="true" />}
+            <motion.div
+              initial={mouvementReduit ? false : { opacity: 0, y: 40, scale: .94, visibility: "hidden" }}
+              animate={{ opacity: 1, y: 0, scale: 1, visibility: "visible" }}
+              transition={{ delay: index === 2 ? .64 : 0, duration: index === 2 ? .48 : .3 }}>
+              <CarteBooster carte={carte} guide={profil} avancer={avancer} derniere={index === 2} />
+            </motion.div>
+          </div>}
           {cartes && !carte && <>
-            <p>Retrouve ces cartes dans ton profil.</p>
-            <div className={styles.grille}>{cartes.map(item =>
-            <article key={item.exercice} className={styles.carte} data-rarete={item.rarete}>{face(item, profil)}</article>
-          )}</div>
+            <p>Tes trois cartes ont rejoint ta collection.</p>
+            <div className={`${styles.grille} ${styles.recapitulatif}`}>{cartes.map((item, position) =>
+              <motion.div key={item.exercice} initial={mouvementReduit ? false : { opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }} transition={{ delay: position * .075, duration: .32 }}>
+                <CarteBooster carte={item} guide={profil} />
+              </motion.div>
+            )}</div>
             <Link className={styles.ouvrir} data-ouvert href="/profil#cartes-exercices" onClick={() => dialog.current?.close()}>Voir mes cartes</Link>
           </>}
         </div>
