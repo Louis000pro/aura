@@ -6,8 +6,8 @@ import { useRef, useState, type PointerEvent, type ReactNode } from "react";
 import styles from "./SachetBooster.module.css";
 
 const textures = {
-  face: ["face",235,386,"polygon(.5% 1%,99.5% 0,99.5% 7%,97% 25%,97% 76%,100% 94%,100% 99%,1% 99%,1% 94%,3% 76%,3% 25%,0 7%)"],
-  dos: ["dos",211,362,"polygon(0 1%,100% 0,100% 8%,96% 27%,96% 76%,100% 94%,100% 99%,0 99%,0 94%,4% 76%,4% 27%,0 8%)"],
+  face: ["face-hd",1024,1682,"polygon(.5% 1%,99.5% 0,99.5% 7%,97% 25%,97% 76%,100% 94%,100% 99%,1% 99%,1% 94%,3% 76%,3% 25%,0 7%)"],
+  dos: ["dos-hd",1024,1756,"polygon(0 1%,100% 0,100% 8%,96% 27%,96% 76%,100% 94%,100% 99%,0 99%,0 94%,4% 76%,4% 27%,0 8%)"],
   gauche: ["cote-gauche",39,397,"polygon(41% 0,49% 11%,85% 19%,99% 30%,100% 76%,79% 91%,58% 100%,34% 97%,9% 83%,0 73%,1% 29%,17% 16%)"],
   droite: ["cote-droit",43,398,"polygon(47% 0,55% 10%,84% 19%,96% 30%,99% 76%,84% 89%,62% 98%,40% 100%,16% 90%,2% 77%,0 30%,20% 16%)"],
   dessus: ["dessus",196,32,"polygon(0 70%,9% 39%,25% 15%,45% 3%,62% 3%,84% 18%,97% 51%,100% 71%,86% 87%,62% 97%,39% 98%,12% 87%)"],
@@ -20,15 +20,15 @@ const angleHorizontalMax = 180;
 const angleVerticalMax = 8;
 const bornerAngle = (angle: number, max: number) => Math.max(-max, Math.min(max, angle));
 
-function ImageSachet({ cote }: { cote: Texture }) {
+function ImageSachet({ cote, miniature = false }: { cote: Texture; miniature?: boolean }) {
   const [fichier, largeur, hauteur, clipPath] = textures[cote];
-  return <Image className={styles.image} src={`/boosters/sachet-360/${fichier}.webp`}
-    alt="" width={largeur} height={hauteur} unoptimized draggable={false}
+  return <Image className={styles.image} src={`/boosters/sachet-360/${miniature ? "face" : fichier}.webp`}
+    alt="" width={miniature ? 235 : largeur} height={miniature ? 386 : hauteur} unoptimized draggable={false}
     loading="eager" style={{ clipPath }} />;
 }
 
 export function MiniSachetBooster() {
-  return <div className={styles.mini} aria-hidden="true"><ImageSachet cote="face" /></div>;
+  return <div className={styles.mini} aria-hidden="true"><ImageSachet cote="face" miniature /></div>;
 }
 
 type Point = [x: number, y: number];
