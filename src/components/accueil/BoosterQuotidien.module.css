@@ -281,8 +281,43 @@
   58% { opacity:.83;transform:scale(1); }
   100% { opacity:0;transform:scale(1.12); }
 }
+@media (hover:none), (pointer:coarse) {
+  .carte {
+    --lumiere-x:60%;
+    --lumiere-y:39%;
+    --reflet:51%;
+  }
+  .cadre { transform:none; }
+  .face::before { opacity:.78; }
+  .etoiles { opacity:1; }
+  .etoilesEclairees {
+    opacity:.5;
+    filter:drop-shadow(0 0 1px #fff) drop-shadow(0 0 5px #ffe3ff) drop-shadow(0 0 9px #a1d7ff);
+  }
+  .carte[data-revelation] .face::after {
+    content:"";
+    position:absolute;
+    inset:0;
+    z-index:-2;
+    pointer-events:none;
+    background:linear-gradient(124deg,transparent 29%,#ad99ff17 39%,#8adeffad 44%,#c5b2fac9 48%,
+      #fff 50%,#ffbce8be 52%,#ffe9a690 57%,transparent 67%) -90% 42% / 310% 100% no-repeat;
+    mask-image:linear-gradient(#000 0 62%,#0009 72%,transparent 83%);
+    mix-blend-mode:screen;
+    opacity:0;
+    animation:balayage 1.05s .16s ease-out both;
+  }
+  .carte[data-derniere] .face::after { animation-delay:.85s; }
+}
+@keyframes balayage {
+  0% { opacity:0;background-position:100% 42%; }
+  25% { opacity:.86; }
+  68% { opacity:.78; }
+  100% { opacity:0;background-position:0 42%; }
+}
 @media (prefers-reduced-motion:reduce) {
   .cadre { transform:none;transition:none; }
   .face::before,.etoilesEclairees { transition:none; }
+  .carte[data-revelation] .face::after { animation:none; }
   .aura { display:none; }
 }

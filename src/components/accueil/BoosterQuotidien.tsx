@@ -45,7 +45,7 @@ function CarteBooster({ carte, guide, avancer, derniere = false }: {
   const rarete = raretes[carte.rarete];
   const image = guide === "sasha" && illustrationSasha
     ? `/premiers-pas/m-${carte.exercice}-2.webp`
-    : `/boosters/nora/${carte.exercice}.webp`;
+    : `/boosters/nora/${carte.exercice}.webp?v=2`;
   const geste = useRef<{ bounds: DOMRect; x: number; y: number; glisse: boolean } | null>(null);
 
   function eclairer(event: PointerEvent<HTMLElement>) {
@@ -79,6 +79,7 @@ function CarteBooster({ carte, guide, avancer, derniere = false }: {
 
   return (
     <article className={styles.carte} data-rarete={carte.rarete} data-revelation={avancer ? "" : undefined}
+      data-derniere={derniere ? "" : undefined}
       onPointerDown={event => {
         if (!event.isPrimary || event.button !== 0) return;
         geste.current = { bounds: event.currentTarget.getBoundingClientRect(), x: event.clientX, y: event.clientY, glisse: false };
@@ -98,7 +99,7 @@ function CarteBooster({ carte, guide, avancer, derniere = false }: {
           </div>
           <Image className={styles.logo} src="/marque/logo-degrade.png" alt="" width={24} height={18} />
           <div className={styles.exercice} data-pose={pose}>
-            <Image src={image} alt="" width={240} height={240} sizes={avancer ? "(max-width: 420px) 80vw, 330px" : "135px"}
+            <Image src={image} alt="" width={420} height={420} unoptimized
               className={styles.mouvement} draggable={false} loading={avancer ? "eager" : "lazy"} />
           </div>
           <strong>{nom}</strong>
