@@ -30,10 +30,11 @@
 .sachet{position:absolute;inset:0;padding:62px 16px 12px;box-sizing:border-box;background:linear-gradient(132deg,#6d29c8,#b344eb 46%,#fb65d2 82%,#a631d4);box-shadow:inset 0 0 0 2px #fff8,0 13px 30px #622a9d50;color:white}
 .sachet strong,.sachet span,.mini strong,.mini span{color:#fff;text-shadow:0 1px 4px #57117d}
 .sachet strong,.sachet span{position:absolute;left:4px;right:4px;text-align:center}
-.sachet strong{top:11px;font-size:.85rem}
+.sachet strong{top:15px;font-size:clamp(14px,4.4vw,21px);line-height:1;font-weight:900;letter-spacing:.06em}
 .sachet span{top:46px;font-size:1.35rem;font-weight:900;letter-spacing:.12em}
 .sachet img{width:100%;height:100%;min-height:0;object-fit:contain;mask-image:linear-gradient(#000 65%,transparent)}
-.mini{background:linear-gradient(132deg,#7731d0,#ee64d6)}
+.mini{position:relative;background:linear-gradient(132deg,#7731d0,#ee64d6)}
+.mini strong{margin-top:4px;font-size:11px;line-height:1;font-weight:900;letter-spacing:.06em}
 .mini img{height:55px}
 .soudure{inset:0 0 auto;height:44px}
 .soudure::after{top:40px}
@@ -49,6 +50,6 @@
 /* Le détourage de Sasha est plus large et décalé à droite dans le même carré. */
 .sachet img[data-guide="sasha"],
 .mini img[data-guide="sasha"] {
-  transform: translateX(-5.4%) scale(.83);
+  transform: translateX(-6%) scaleX(.96);
   transform-origin: center bottom;
 }
