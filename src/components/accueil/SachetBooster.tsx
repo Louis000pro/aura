@@ -16,6 +16,9 @@ const textures = {
 
 type Texture = keyof typeof textures;
 const faces = Object.keys(textures) as Texture[];
+const angleHorizontalMax = 180;
+const angleVerticalMax = 8;
+const bornerAngle = (angle: number, max: number) => Math.max(-max, Math.min(max, angle));
 
 function ImageSachet({ cote }: { cote: Texture }) {
   const [fichier, largeur, hauteur, clipPath] = textures[cote];
@@ -64,13 +67,12 @@ export default function SachetBooster({ ouvrir, chargement, sortie, enfants }: {
   const faceCourante = useRef(true);
   const orientation = useMotionTemplate`translateZ(calc(var(--epaisseur) * -.5)) rotateY(${lacet}deg) rotateX(${tangage}deg)`;
   const reduire = useReducedMotion();
-  const rotation = useRef<{ x: number; y: number; lacet: number; tangage: number; dernierGeste: number } | null>(null);
+  const rotation = useRef<{ x: number; y: number; dernierGeste: number } | null>(null);
   const dechirure = useRef<{ trace: Point[]; versDroite: boolean } | null>(null);
   const scene = useRef<HTMLDivElement>(null);
   const enCours = useRef(false);
 
-  const tourProche = () => Math.round(lacet.get() / 360) * 360;
-  const estDeFace = () => Math.abs(lacet.get() - tourProche()) < 14 && Math.abs(tangage.get()) < 16;
+  const estDeFace = () => Math.abs(lacet.get()) < 12 && Math.abs(tangage.get()) < 4;
   const suivreOrientation = () => {
     const face = estDeFace();
     if (face === faceCourante.current) return;
@@ -83,14 +85,16 @@ export default function SachetBooster({ ouvrir, chargement, sortie, enfants }: {
   function tournerVers(horizontal: number, vertical: number) {
     lacet.stop();
     tangage.stop();
+    const cibleHorizontale = bornerAngle(horizontal, angleHorizontalMax);
+    const cibleVerticale = bornerAngle(vertical, angleVerticalMax);
     if (reduire) {
-      lacet.set(horizontal);
-      tangage.set(vertical);
+      lacet.set(cibleHorizontale);
+      tangage.set(cibleVerticale);
       return;
     }
-    const ressort = { type: "spring", stiffness: 122, damping: 22, restDelta: .12 } as const;
-    animate(lacet, horizontal, ressort);
-    animate(tangage, vertical, ressort);
+    const transition = { type: "tween", duration: .34, ease: "easeOut" } as const;
+    animate(lacet, cibleHorizontale, transition);
+    animate(tangage, cibleVerticale, transition);
   }
 
   function ouvrirSachet(trace: Point[], versDroite: boolean) {
@@ -130,30 +134,34 @@ export default function SachetBooster({ ouvrir, chargement, sortie, enfants }: {
           transition={{ duration: sortie ? .54 : 0, ease: "easeOut" }}><ImageSachet cote="face" /></motion.div>}
       </>}
       <button type="button" className={styles.rotation} disabled={chargement}
-        aria-label="Tourner le booster à 360 degrés"
+        aria-label="Tourner le booster"
         onKeyDown={event => {
           const deplacements: Record<string, [number, number]> = {
-            ArrowLeft: [-36, 0], ArrowRight: [36, 0], ArrowUp: [0, -20], ArrowDown: [0, 20],
+            ArrowLeft: [-36, 0], ArrowRight: [36, 0], ArrowUp: [0, -4], ArrowDown: [0, 4],
           };
           const pas = deplacements[event.key];
           if (!pas && event.key !== "Home") return;
           event.preventDefault();
-          if (pas) tournerVers(lacet.get() + pas[0], Math.max(-88, Math.min(88, tangage.get() + pas[1])));
-          else tournerVers(tourProche(), 0);
+          if (pas) tournerVers(lacet.get() + pas[0], tangage.get() + pas[1]);
+          else tournerVers(0, 0);
         }}
         onPointerDown={event => {
           if (!event.isPrimary || event.button !== 0) return;
           lacet.stop();
           tangage.stop();
-          rotation.current = { x: event.clientX, y: event.clientY, lacet: lacet.get(), tangage: tangage.get(), dernierGeste: 0 };
+          rotation.current = { x: event.clientX, y: event.clientY, dernierGeste: 0 };
           event.currentTarget.setPointerCapture(event.pointerId);
         }}
         onPointerMove={event => {
           const geste = rotation.current;
           if (!geste || !event.currentTarget.hasPointerCapture(event.pointerId)) return;
+          const dx = event.clientX - geste.x;
+          const dy = event.clientY - geste.y;
+          geste.x = event.clientX;
+          geste.y = event.clientY;
           geste.dernierGeste = performance.now();
-          lacet.set(geste.lacet + (event.clientX - geste.x) * 360 / event.currentTarget.offsetWidth);
-          tangage.set(Math.max(-88, Math.min(88, geste.tangage + (geste.y - event.clientY) * .75)));
+          lacet.set(bornerAngle(lacet.get() + dx * 240 / event.currentTarget.offsetWidth, angleHorizontalMax));
+          tangage.set(bornerAngle(tangage.get() - dy * .18, angleVerticalMax));
         }}
         onPointerUp={event => {
           if (!event.isPrimary || !rotation.current) return;
@@ -162,9 +170,8 @@ export default function SachetBooster({ ouvrir, chargement, sortie, enfants }: {
           const angle = lacet.get();
           const rapide = geste.dernierGeste > 0 && performance.now() - geste.dernierGeste < 100 && !reduire;
           const inertie = rapide ? Math.max(-95, Math.min(95, lacet.getVelocity() * .13)) : 0;
-          const cible = angle + inertie;
-          const tour = Math.round(cible / 360) * 360;
-          if (Math.abs(cible - tour) < 14 && Math.abs(tangage.get()) < 16) tournerVers(tour, 0);
+          const cible = bornerAngle(angle + inertie, angleHorizontalMax);
+          if (Math.abs(cible) < 12 && Math.abs(tangage.get()) < 4) tournerVers(0, 0);
           else if (inertie) tournerVers(cible, tangage.get());
         }}
         onPointerCancel={() => { rotation.current = null; }}
@@ -177,7 +184,7 @@ export default function SachetBooster({ ouvrir, chargement, sortie, enfants }: {
           if (!event.isPrimary || event.button !== 0 || enCours.current || !estDeFace()) return;
           lacet.stop();
           tangage.stop();
-          lacet.set(tourProche());
+          lacet.set(0);
           tangage.set(0);
           const [x, y] = position(event);
           const versDroite = x <= 50;
@@ -203,7 +210,7 @@ export default function SachetBooster({ ouvrir, chargement, sortie, enfants }: {
         }} />}
     </div>
     {!chargement && !deFace && <button type="button" className={styles.revenir}
-      onClick={() => tournerVers(tourProche(), 0)}>Revenir de face</button>}
-    <p>{chargement ? "Ouverture…" : deFace ? "Glisse pour tourner à 360°. Déchire le haut pour ouvrir." : "Reviens de face pour déchirer le haut."}</p>
+      onClick={() => tournerVers(0, 0)}>Revenir de face</button>}
+    <p>{chargement ? "Ouverture…" : deFace ? "Glisse pour retourner le sachet. Déchire le haut pour ouvrir." : "Reviens de face pour déchirer le haut."}</p>
   </>;
 }
