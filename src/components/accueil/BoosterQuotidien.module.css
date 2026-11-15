@@ -53,3 +53,27 @@
   transform: translateX(-6%) scaleX(.96);
   transform-origin: center bottom;
 }
+
+.ouvrir[data-ouvert] {
+  color: #58370d;
+  background: linear-gradient(135deg, #fffbee, #ffe5a0 42%, #fff6ce 62%, #f5cf76);
+  box-shadow: inset 0 0 0 1px #ffeeb5, inset 0 1px #fff, 0 3px 8px #ac75233d;
+}
+
+.mini,.sachet {
+  background:
+    repeating-linear-gradient(90deg, #59208380 0 1px, #ffd7faad 1px 2px, #a65bdf 2px 4px) top / 100% 6% no-repeat,
+    repeating-linear-gradient(90deg, #59208380 0 1px, #ffd7faad 1px 2px, #a65bdf 2px 4px) bottom / 100% 6% no-repeat,
+    linear-gradient(90deg, #4e148362, transparent 8%, #ffdeff62 11%, transparent 16% 86%, #ffdfff59 93%, #53128475),
+    radial-gradient(ellipse at 74% 75%, #ff69df, transparent 56%),
+    linear-gradient(137deg, #8619b5, #a63ad4 37%, #c94cd4 65%, #ed58cc);
+}
+.sachet img {
+  position: absolute;
+  top: 24%;
+  left: 5.5%;
+  width: 89%;
+  height: 68%;
+}
+.sachet strong,.sachet span { z-index: 1; }
+.mini img { mask-image: linear-gradient(#000 68%, transparent); }

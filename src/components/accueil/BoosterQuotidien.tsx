@@ -105,7 +105,7 @@ export default function BoosterQuotidien({ guide, jour }: { guide: GuideRef; jou
     <MotionConfig reducedMotion="user">
       <section className={styles.bloc} aria-label="Booster du jour">
         <div><small>3 cartes d’exercices</small><h2>Ton booster du jour</h2>
-          <button type="button" className={styles.ouvrir} onClick={() => dialog.current?.showModal()}>
+          <button type="button" className={styles.ouvrir} data-ouvert={cartes ? "" : undefined} onClick={() => dialog.current?.showModal()}>
             {cartes ? "Voir mes cartes" : "Ouvrir mon booster"}
           </button>
         </div>
