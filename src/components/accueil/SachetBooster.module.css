@@ -3,6 +3,10 @@
   height:100px;
   width:62px;
   flex:none;
+  overflow:hidden;
+  border-radius:5px;
+  background:linear-gradient(137deg,#f5ddff 10%,#9379cc 30%,#ebdcff 44%,#bcdeff 48%,#a593dd 56%,#faddff 80%,#997acb);
+
 }
 .image {
   display:block;

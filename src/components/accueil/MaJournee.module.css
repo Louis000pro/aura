@@ -632,3 +632,9 @@
   font-size: 13px;
   font-weight: 700;
 }
+
+.bentoChargement {
+  min-height:196px;
+  border-radius:var(--r-bloc);
+  background:rgba(var(--accent-rgb),0.09);
+}

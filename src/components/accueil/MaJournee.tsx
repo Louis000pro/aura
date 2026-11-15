@@ -144,6 +144,8 @@ export default function MaJournee({
   onVoirTout,
   onOpenRangs,
   onOpenSerie,
+  missionsLues,
+  booster,
 }: {
   aura: EtatAura;
   /** Le compte : la montée compare à ce que CET appareil a déjà montré. */
@@ -159,6 +161,8 @@ export default function MaJournee({
   onOpenRangs: () => void;
   /** La flamme ouvre les jours de la série, jamais les rangs (Louis, 2026-10-15). */
   onOpenSerie: () => void;
+  missionsLues: boolean;
+  booster?: React.ReactNode;
 }) {
   const { fait, total } = compteMissionsJour(aura);
   const part = total > 0 ? fait / total : 0;
@@ -181,7 +185,7 @@ export default function MaJournee({
       a: { x: e.left - b.left + e.width / 2 - 32, y: e.top - b.top - 6 },
     };
   }, []);
-  const { montee, bascule } = useMontee(userId, serie, aura.exp, reduce, mesurer);
+  const { montee, bascule } = useMontee(missionsLues ? userId : undefined, serie, aura.exp, reduce, mesurer);
   // Pendant la montée, la tuile montre HIER jusqu'à la bascule, puis aujourd'hui.
   const avant = !!montee && !bascule;
   const serieVue = montee && avant ? montee.deSerie : serie;
@@ -208,7 +212,7 @@ export default function MaJournee({
     const obs = new ResizeObserver(mesure);
     obs.observe(el);
     return () => obs.disconnect();
-  }, [rail.length]);
+  }, [missionsLues, rail.length]);
   const pousser = (sens: 1 | -1) =>
     refRail.current?.scrollBy({ left: sens * 284, behavior: "smooth" });
   // Toucher une carte ouvre la fiche de sa quête (Louis, 2026-11-02) : c'est
@@ -226,7 +230,7 @@ export default function MaJournee({
 
   return (
     <section className={styles.bloc} aria-label="Ma journée">
-      <div className={styles.bento} ref={bentoRef}>
+      {missionsLues ? <div className={styles.bento} ref={bentoRef}>
         {/* Le RANG prend la grande tuile (Louis, 2026-10-11). Son halo prend
             la couleur de la gemme : Bronze cuivré, Argent froid, Or chaud…
             donc la tuile change d'ambiance à chaque montée de rang. */}
@@ -427,8 +431,11 @@ export default function MaJournee({
             +{gagne}
           </motion.span>
         )}
-      </div>
+      </div> : <div className={styles.bentoChargement} aria-hidden="true" />}
 
+      {booster}
+
+      {missionsLues && <>
       <div className={styles.teteQuetes}>
         <button type="button" className={styles.titre} onClick={onVoirTout}>
           <span>Tes quêtes</span>
@@ -463,6 +470,8 @@ export default function MaJournee({
       ) : (
         <div className={styles.fini}>Toutes tes quêtes du jour sont faites.</div>
       )}
+
+      </>}
 
       <AnimatePresence>
         {quete && (

@@ -28,11 +28,9 @@ const FeuilleMissions = dynamic(() => import("@/components/accueil/FeuilleMissio
    Les blocs de l’accueil, dans l’ordre :
 
      ① l'entrée      qui m'accompagne, et un mot s'il a une raison
-     ② le booster   accessible dès l’arrivée
-     ③ le héros     ce que je fais maintenant
-     ④ ma journée    en bento (essai verre, 2026-10-11) : série, rang et
-                     EXP, quêtes en anneau, puis le rail des quêtes
-     ⑤ le relais     conditionnel, rare, humain
+     ② le héros     ce que je fais maintenant
+     ③ ma journée   statistiques, booster, puis quêtes
+     ④ le relais    conditionnel, rare, humain
 
    ⚠️ CE QUI A QUITTÉ CET ÉCRAN, ET IL NE FAUT PAS LE RAMENER : la liste
    complète des missions du jour, la section « Cette semaine », le coffre
@@ -152,15 +150,12 @@ export default function AccueilSignature({
     <div className={styles.home}>
       <Entree guide={guide} greeting={greeting} pseudo={pseudo} moment={moment} motNonLu={motNonLu} onOuvrirMot={ouvrirMot} reduce={!!reduce} />
 
-      {user?.id && <BoosterQuotidien key={user.id + jour} userId={user.id} jour={jour} onGain={onAuraChange} />}
-
       {heros}
 
-      {/* ④ Ma journée. Tant que l'aura n'est pas lue, le groupe ne se rend
-          pas : afficher « 0 / 4 » à quelqu'un qui a tout fait serait pire
-          que d'attendre une seconde. Même règle que la série. */}
-      {missionsLues && (
+      {(missionsLues || user?.id) && (
         <MaJournee
+          missionsLues={missionsLues}
+          booster={user?.id && <BoosterQuotidien key={user.id + jour} userId={user.id} jour={jour} onGain={onAuraChange} />}
           aura={aura}
           userId={user?.id}
           jour={jour}

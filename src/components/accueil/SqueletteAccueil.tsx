@@ -31,13 +31,13 @@ export default function SqueletteAccueil() {
           <div className="rounded-full" style={{ width: 150, height: 20, background: PALE }} />
         </div>
       </div>
-      <div style={{ height: 130, borderRadius: "var(--r-bloc)", background: PALE }} />
       {photoVue ? (
         <Photo img={photoVue} fichier={photoVue} prioritaire style={{ height: 400, borderRadius: "var(--r-affiche)", boxShadow: "var(--ombre-pose)" }} />
       ) : (
         <div style={{ height: 400, borderRadius: "var(--r-affiche)", background: PALE }} />
       )}
       <div style={{ height: 196, borderRadius: "var(--r-bloc)", background: PALE }} />
+      <div style={{ height: 130, borderRadius: "var(--r-bloc)", background: PALE }} />
     </div>
   );
 }
