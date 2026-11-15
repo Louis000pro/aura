@@ -32,15 +32,40 @@ export function MiniSachetBooster() {
 }
 
 type Point = [x: number, y: number];
-type Coupe = { haut: string; bas: string; fil: string; avancee: number };
+type Coupe = {
+  haut: string; bas: string; fil: string; ouverture: string;
+  avancee: number; charniere: Point; sens: number;
+};
 const polygone = (points: Point[]) => `polygon(${points.map(([x, y]) => `${x}% ${y}%`).join(",")})`;
 
+function fibrePlastique(points: Point[]): Point[] {
+  const ligne: Point[] = [points[0]];
+  const dents = [.18, -.28, .05, .26, -.19, .12];
+  for (let i = 1; i < points.length; i++) {
+    const [x0, y0] = points[i - 1];
+    const [x1, y1] = points[i];
+    const pas = Math.ceil(Math.abs(x1 - x0) / 1.35);
+    for (let j = 1; j < pas; j++) {
+      const x = x0 + (x1 - x0) * j / pas;
+      const y = y0 + (y1 - y0) * j / pas + dents[Math.floor(x * .8) % dents.length];
+      ligne.push([x, Math.max(4, Math.min(12, y))]);
+    }
+    ligne.push(points[i]);
+  }
+  return ligne;
+}
+
 function suivreDechirure(points: Point[], versDroite: boolean): Coupe {
-  const [x] = points[points.length - 1];
+  const charniere = points[points.length - 1];
+  const [x] = charniere;
   const gauche = versDroite ? 0 : x;
   const droite = versDroite ? x : 100;
-  const ligne = versDroite ? points : [...points].reverse();
+  const ligne = fibrePlastique(versDroite ? points : [...points].reverse());
   const inverse = [...ligne].reverse();
+  const avancee = (droite - gauche) / 100;
+  const ouverture = inverse.map(([a, b]): Point => [
+    a, b - Math.sin(Math.PI * (a - gauche) / Math.max(1, droite - gauche)) * (1 + avancee * 2.6),
+  ]);
   return {
     haut: polygone([[gauche, 0], [droite, 0], ...inverse]),
     bas: polygone([
@@ -49,8 +74,9 @@ function suivreDechirure(points: Point[], versDroite: boolean): Coupe {
       ...(versDroite ? [[x, 0], [100, 0]] as Point[] : []),
       [100, 100], [0, 100],
     ]),
-    fil: polygone([...ligne, ...inverse.map(([a, b]): Point => [a, b + .72])]),
-    avancee: (droite - gauche) / 100,
+    fil: polygone([...ligne, ...inverse.map(([a, b]): Point => [a, b + .75])]),
+    ouverture: polygone([...ligne, ...ouverture]),
+    avancee, charniere, sens: versDroite ? 1 : -1,
   };
 }
 
@@ -62,19 +88,22 @@ export default function SachetBooster({ ouvrir, chargement, sortie, reveler }: {
 }) {
   const [deFace, setDeFace] = useState(true);
   const [coupe, setCoupe] = useState<Coupe>();
+  const [detache, setDetache] = useState(false);
   const modele = useRef<HTMLDivElement>(null);
   const angles = useRef({ lacet: 0, tangage: 0 });
   const imageEnAttente = useRef<number | null>(null);
   const animation = useRef<ReturnType<typeof animate> | null>(null);
   const reduire = useReducedMotion();
   const rotation = useRef<{ id: number; x: number; y: number; largeur: number; temps: number; vitesse: number } | null>(null);
-  const dechirure = useRef<{ trace: Point[]; versDroite: boolean } | null>(null);
+  const dechirure = useRef<{ trace: Point[]; versDroite: boolean; cadre: DOMRect } | null>(null);
+  const imageDechirure = useRef<number | null>(null);
   const scene = useRef<HTMLDivElement>(null);
   const enCours = useRef(false);
 
   useEffect(() => () => {
     if (imageEnAttente.current !== null) cancelAnimationFrame(imageEnAttente.current);
     animation.current?.stop();
+    if (imageDechirure.current !== null) cancelAnimationFrame(imageDechirure.current);
   }, []);
 
   const estDeFace = () => {
@@ -122,12 +151,14 @@ export default function SachetBooster({ ouvrir, chargement, sortie, reveler }: {
   function ouvrirSachet(trace: Point[], versDroite: boolean) {
     if (enCours.current || chargement) return;
     enCours.current = true;
+    setDetache(true);
+    if (imageDechirure.current !== null) cancelAnimationFrame(imageDechirure.current);
+    imageDechirure.current = null;
     setCoupe(suivreDechirure([...trace, [versDroite ? 100 : 0, trace[trace.length - 1][1]]], versDroite));
     ouvrir();
   }
 
-  function position(event: PointerEvent): Point {
-    const { left, top, width, height } = scene.current!.getBoundingClientRect();
+  function position(event: PointerEvent, { left, top, width, height }: DOMRect): Point {
     return [
       Math.max(0, Math.min(100, (event.clientX - left) / width * 100)),
       Math.max(4, Math.min(12, (event.clientY - top) / height * 100)),
@@ -143,17 +174,28 @@ export default function SachetBooster({ ouvrir, chargement, sortie, reveler }: {
           </div>)}
         </div>
       </div> : <>
-        <motion.div className={styles.corps} style={{ clipPath: coupe?.bas }}
-          animate={sortie ? { y: "83%", rotate: -13, opacity: 0 } : { y: 0, rotate: 0, opacity: 1 }}
-          transition={{ duration: .38, ease: [.48, .06, .8, .42] }}
+        <motion.div className={styles.corps}
+          animate={sortie ? { y: ["0%", "-1.8%", "97%"], rotate: [0, coupe.sens * 2, coupe.sens * -14], opacity: [1, 1, 0] }
+            : { y: "0%", rotate: 0, opacity: 1 }}
+          transition={{ duration: .47, times: [0, .19, 1], ease: ["easeOut", "easeIn"] }}
           onAnimationComplete={() => { if (sortie) reveler(); }}>
-          <ImageSachet cote="face" />
-          {coupe && <div className={styles.fil} style={{ clipPath: coupe.fil }} />}
+          <div className={styles.ouverture} data-ouverture-sachet="" style={{ clipPath: coupe.ouverture }} />
+          <div className={styles.foil} style={{ clipPath: coupe.bas }}>
+            <ImageSachet cote="face" />
+            <div className={styles.fil} style={{ clipPath: coupe.fil }} />
+          </div>
         </motion.div>
-        {coupe && <motion.div className={styles.bande} style={{ clipPath: coupe.haut }}
-          animate={sortie ? { y: -95, x: 85, rotate: 18, opacity: 0 }
-            : { y: -coupe.avancee * 8, x: 0, rotate: 0, opacity: 1 }}
-          transition={{ duration: sortie ? .32 : 0, ease: "easeOut" }}><ImageSachet cote="face" /></motion.div>}
+        <motion.div className={styles.bande} data-bande-detachee={detache ? "" : undefined}
+          style={{ clipPath: coupe.haut, transformOrigin: coupe.charniere[0] + "% " + coupe.charniere[1] + "%" }}
+          animate={detache ? {
+            y: ["-1%", "-9%", "-19%"], x: ["0%", coupe.sens * 8 + "%", coupe.sens * 31 + "%"],
+            rotate: [coupe.sens * coupe.avancee * 8, coupe.sens * 17, coupe.sens * 41],
+            rotateX: [-12, -38, -73], opacity: [1, 1, 0],
+          } : { y: -coupe.avancee * 2, rotate: coupe.sens * coupe.avancee * 8, rotateX: -coupe.avancee * 18 }}
+          transition={detache ? { duration: .46, times: [0, .43, 1], ease: "easeOut" } : { duration: 0 }}>
+          <ImageSachet cote="face" />
+          <div className={styles.pli} style={{ opacity: Math.min(.7, coupe.avancee) }} />
+        </motion.div>
       </>}
       <button type="button" className={styles.rotation} disabled={chargement}
         aria-label="Tourner le booster"
@@ -226,26 +268,32 @@ export default function SachetBooster({ ouvrir, chargement, sortie, reveler }: {
           animation.current?.stop();
           angles.current = { lacet: tourProche(angles.current.lacet), tangage: 0 };
           terminerImage();
-          const [x, y] = position(event);
+          const cadre = scene.current!.getBoundingClientRect();
+          const [x, y] = position(event, cadre);
           const versDroite = x <= 50;
-          dechirure.current = { trace: [[versDroite ? 0 : 100, y]], versDroite };
+          dechirure.current = { trace: [[versDroite ? 0 : 100, y]], versDroite, cadre };
           event.currentTarget.setPointerCapture(event.pointerId);
         }}
         onPointerMove={event => {
           const geste = dechirure.current;
           if (!geste || enCours.current || !event.currentTarget.hasPointerCapture(event.pointerId)) return;
-          const [x, y] = position(event);
+          const [x, y] = position(event, geste.cadre);
           const precedent = geste.trace[geste.trace.length - 1][0];
           if ((geste.versDroite ? x - precedent : precedent - x) < .7) return;
           geste.trace.push([x, y]);
           if (geste.versDroite ? x >= 94 : x <= 6) {
             ouvrirSachet(geste.trace, geste.versDroite);
-          } else {
-            setCoupe(suivreDechirure(geste.trace, geste.versDroite));
+          } else if (imageDechirure.current === null) {
+            imageDechirure.current = requestAnimationFrame(() => {
+              imageDechirure.current = null;
+              setCoupe(suivreDechirure(geste.trace, geste.versDroite));
+            });
           }
         }}
         onLostPointerCapture={() => {
           dechirure.current = null;
+          if (imageDechirure.current !== null) cancelAnimationFrame(imageDechirure.current);
+          imageDechirure.current = null;
           if (!enCours.current) setCoupe(undefined);
         }} />}
     </div>

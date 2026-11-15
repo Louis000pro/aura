@@ -170,7 +170,7 @@ export default function AccueilSignature({
           onVoirTout={() => setFeuille(true)}
           onOpenRangs={onOpenRangs}
           onOpenSerie={() => setFeuilleSerie(true)}
-          booster={user?.id && <BoosterQuotidien key={user.id + jour} guide={guide} jour={jour} onGain={onAuraChange} />}
+          booster={user?.id && <BoosterQuotidien key={user.id + jour} userId={user.id} jour={jour} onGain={onAuraChange} />}
         />
       )}
 

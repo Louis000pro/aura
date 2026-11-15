@@ -7,7 +7,7 @@ import { MotionConfig, motion, useReducedMotion } from "framer-motion";
 import { createClient } from "@/lib/supabase";
 import { useGuideActif } from "@/context/GuideContext";
 import { shiftDateStr } from "@/lib/dates";
-import type { GuideRef } from "@/lib/guides";
+import type { GuideId } from "@/lib/guides";
 import { mouvements, raretes, type Carte } from "@/lib/cartesBooster";
 import SachetBooster, { MiniSachetBooster } from "./SachetBooster";
 import styles from "./BoosterQuotidien.module.css";
@@ -45,15 +45,21 @@ const zonesEtoiles = Array.from({ length: 6 }, (_, index) => {
     etoiles: etoiles.filter(etoile => etoile.colonne === colonne && etoile.ligne === ligne) };
 });
 
-function imageCarte(carte: Carte, guide: GuideRef) {
-  if (guide !== "sasha" && carte.exercice === "crunch" && carte.rarete !== "chromatique") {
-    return "/boosters/cartes-prisme/" + carte.rarete + "-crunch.webp";
-  }
-  const portrait = guide === "sasha" ? "sasha" : "nora";
-  return "/boosters/cartes-completes-v1/" + [portrait, carte.exercice, carte.rarete].join("-") + ".webp";
+async function lireGuideCartes(userId: string): Promise<GuideId | null> {
+  const { data, error } = await createClient().from("profiles").select("guide_id").eq("id", userId).maybeSingle();
+  if (error) throw new Error("Lecture du coach indisponible");
+  const guide = data?.guide_id;
+  return guide === "sasha" || guide === "nora" ? guide : null;
 }
 
-async function decoderCarte(carte: Carte, guide: GuideRef) {
+function imageCarte(carte: Carte, guide: GuideId) {
+  if (guide === "nora" && carte.exercice === "crunch" && carte.rarete !== "chromatique") {
+    return "/boosters/cartes-prisme/" + carte.rarete + "-crunch.webp";
+  }
+  return "/boosters/cartes-completes-v1/" + [guide, carte.exercice, carte.rarete].join("-") + ".webp";
+}
+
+async function decoderCarte(carte: Carte, guide: GuideId) {
   const image = new window.Image();
   image.src = imageCarte(carte, guide);
   let timer: number | undefined;
@@ -72,7 +78,7 @@ async function decoderCarte(carte: Carte, guide: GuideRef) {
 
 function CarteBooster({ carte, guide, avancer, derniere = false, prioritaire = false }: {
   carte: Carte;
-  guide: GuideRef;
+  guide: GuideId;
   avancer?: () => void;
   derniere?: boolean;
   prioritaire?: boolean;
@@ -190,6 +196,16 @@ export function CollectionBoosters({ userId }: { userId: string }) {
   const { guide } = useGuideActif();
   const [cartes, setCartes] = useState<Carte[] | null>(null);
   const [erreur, setErreur] = useState(false);
+  const cleGuide = userId + ":" + guide;
+  const [portrait, setPortrait] = useState<{ cle: string; choix: GuideId | null } | null>(null);
+  const profil = portrait?.cle === cleGuide ? portrait : null;
+  useEffect(() => {
+    let actif = true;
+    void lireGuideCartes(userId)
+      .then(choix => { if (actif) setPortrait({ cle: cleGuide, choix }); })
+      .catch(() => { if (actif) setPortrait({ cle: cleGuide, choix: null }); });
+    return () => { actif = false; };
+  }, [cleGuide, userId]);
   useEffect(() => {
     let actif = true;
     async function charger() {
@@ -229,8 +245,9 @@ export function CollectionBoosters({ userId }: { userId: string }) {
   return <section id="cartes-exercices" className={styles.collection}>
     <h2>Mes cartes d’exercices</h2>
     {erreur ? <p>Impossible de charger les cartes.</p> : !cartes ? <p>Chargement…</p> : !cartes.length ? <p>Ouvre ton premier booster pour commencer ta collection.</p> :
+      !profil ? <p>Chargement de ton coach…</p> : !profil.choix ? <p>Impossible d’identifier ton coach. Vérifie ton choix dans les paramètres.</p> :
       <div className={styles.grille}>{cartes.map(carte =>
-        <CarteBooster key={carte.exercice + ":" + carte.rarete} carte={carte} guide={guide} />
+        <CarteBooster key={carte.exercice + ":" + carte.rarete} carte={carte} guide={profil.choix!} />
       )}</div>}
   </section>;
 }
@@ -247,14 +264,14 @@ function disposerCartes(cartes: Carte[]) {
   return resultat;
 }
 
-export default function BoosterQuotidien({ guide, jour, onGain }: { guide: GuideRef; jour: string; onGain?: () => void }) {
+export default function BoosterQuotidien({ userId, jour, onGain }: { userId: string; jour: string; onGain?: () => void }) {
   const [disponible, setDisponible] = useState(false);
   const [illimite, setIllimite] = useState(false);
   const [cartes, setCartes] = useState<Carte[] | null>(null);
   const [compteRebours, setCompteRebours] = useState("");
   const [index, setIndex] = useState(0);
   const [exp, setExp] = useState(0);
-  const [erreur, setErreur] = useState(false);
+  const [erreur, setErreur] = useState("");
   const [chargement, setChargement] = useState(false);
   const [sortie, setSortie] = useState<Carte[] | null>(null);
   const [essaiSachet, setEssaiSachet] = useState(0);
@@ -264,7 +281,7 @@ export default function BoosterQuotidien({ guide, jour, onGain }: { guide: Guide
   const tirageEnAttente = useRef<{ cartes: Carte[]; exp: number } | null>(null);
   const requeteEssai = useRef<string | null>(null);
   const imagesDecodees = useRef<HTMLImageElement[]>([]);
-  const profil = guide ?? "nora";
+  const [profil, setProfil] = useState<GuideId | null>(null);
 
   useEffect(() => {
     let vivant = true;
@@ -304,15 +321,23 @@ export default function BoosterQuotidien({ guide, jour, onGain }: { guide: Guide
     setCartes(null);
     setExp(0);
     setIndex(0);
-    setErreur(false);
+    setErreur("");
+    setProfil(null);
   }
 
   async function ouvrir() {
     if (actif.current || cartes) return;
     actif.current = true;
-    setErreur(false);
+    setErreur("");
     setChargement(true);
+    let message = "Impossible de vérifier ton coach. Réessaie dans un instant.";
     try {
+      const guideConfirme = await lireGuideCartes(userId);
+      if (!guideConfirme) {
+        message = "Choisis ton coach dans les paramètres pour ouvrir ton booster.";
+        throw new Error(message);
+      }
+      message = "Le booster est indisponible. Réessaie dans un instant.";
       let tirage = tirageEnAttente.current;
       if (!tirage) {
         let nouvellesCartes: unknown;
@@ -339,15 +364,16 @@ export default function BoosterQuotidien({ guide, jour, onGain }: { guide: Guide
         tirage = { cartes: nouvellesCartes as Carte[], exp: gain };
         tirageEnAttente.current = tirage;
       }
-      imagesDecodees.current = await Promise.all(tirage.cartes.map(carte => decoderCarte(carte, profil)));
+      imagesDecodees.current = await Promise.all(tirage.cartes.map(carte => decoderCarte(carte, guideConfirme)));
       tirageEnAttente.current = null;
       requeteEssai.current = null;
+      setProfil(guideConfirme);
       setExp(tirage.exp);
       if (tirage.exp > 0) onGain?.();
       if (!mouvementReduit && dialog.current?.open) setSortie(tirage.cartes);
       else setCartes(tirage.cartes);
     } catch {
-      setErreur(true);
+      setErreur(message);
       setEssaiSachet(essai => essai + 1);
       actif.current = false;
     } finally {
@@ -367,8 +393,8 @@ export default function BoosterQuotidien({ guide, jour, onGain }: { guide: Guide
 
   if (!disponible) return null;
 
-  const carte = cartes?.[index];
-  const recapitulatif = cartes && !carte ? disposerCartes(cartes) : null;
+  const carte = profil ? cartes?.[index] : undefined;
+  const recapitulatif = profil && cartes && !carte ? disposerCartes(cartes) : null;
   return (
     <MotionConfig reducedMotion="user">
       <section className={styles.bloc} aria-label="Booster du jour">
@@ -394,9 +420,9 @@ export default function BoosterQuotidien({ guide, jour, onGain }: { guide: Guide
             <SachetBooster key={essaiSachet} ouvrir={() => { void ouvrir(); }}
               chargement={chargement || !!sortie} sortie={!!sortie} reveler={terminerChute} />
             {!illimite && <p>Prochain booster demain à 00 h 00 · heure de Paris</p>}
-            {erreur && <p role="alert">Le booster est indisponible. Réessaie dans un instant.</p>}
+            {erreur && <p role="alert">{erreur}</p>}
           </>}
-          {carte && <div key={index} className={styles.revelation} data-rarete={carte.rarete}>
+          {carte && profil && <div key={index} className={styles.revelation} data-rarete={carte.rarete}>
             {index === 2 && !mouvementReduit && <div className={styles.aura} aria-hidden="true" />}
             <motion.div
               initial={mouvementReduit ? false : { opacity: 0, y: 32, scale: .91, rotate: index % 2 ? 3 : -3, visibility: "hidden" }}
@@ -409,7 +435,7 @@ export default function BoosterQuotidien({ guide, jour, onGain }: { guide: Guide
               <CarteBooster carte={carte} guide={profil} avancer={avancer} derniere={index === 2} />
             </motion.div>
           </div>}
-          {recapitulatif && <>
+          {recapitulatif && profil && <>
             <p className={styles.nombreCartes}>Tu as obtenu <strong>{recapitulatif.length} cartes</strong></p>
             {exp > 0 && <p className={styles.gainBooster}>+{exp} EXP</p>}
             <div className={styles.recapitulatif} aria-label="Cartes obtenues">
