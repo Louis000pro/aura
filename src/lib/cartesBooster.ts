@@ -1,8 +1,8 @@
 export const mouvements = {
-  pompes: ["Pompes", "pompes", true],
+  pompes: ["Pompes", "pompes"],
   crunch: ["Crunch", "sol"],
-  fentes: ["Fentes", "fente", true],
-  squat: ["Squat", "debout", true],
+  fentes: ["Fentes", "fente"],
+  squat: ["Squat", "debout"],
   pompesdiamant: ["Pompes diamant", "pompes"],
   pompesinclinees: ["Pompes inclinées", "machine"],
   pompesexplosives: ["Pompes explosives", "pompes"],
@@ -22,7 +22,7 @@ export const mouvements = {
   burpees: ["Burpees", "sol"],
   abducteursmachine: ["Abducteurs à la machine", "machine"],
   corde: ["Corde à sauter", "saut"],
-} satisfies Record<string, [nom: string, pose: string, illustrationSasha?: boolean]>;
+} satisfies Record<string, [nom: string, pose: string]>;
 
 export const raretes = { commune: "Commune", rare: "Rare", epique: "Épique", legendaire: "Légendaire", chromatique: "Chromatique" } as const;
 export type Carte = { exercice: keyof typeof mouvements; rarete: keyof typeof raretes };

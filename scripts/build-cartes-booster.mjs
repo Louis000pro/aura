@@ -7,16 +7,21 @@ const largeur = 820;
 const hauteur = 1290;
 const dossier = "public/boosters";
 const sortie = path.join(dossier, "cartes-completes-v1");
+const guides = process.argv.slice(2);
+if (guides.some(guide => guide !== "sasha" && guide !== "nora")) {
+  throw new Error("Guides acceptés : nora, sasha");
+}
+const anciensVisuelsSasha = new Set(["pompes", "fentes", "squat"]);
 const svg = contenu => Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="${largeur}" height="${hauteur}">${contenu}</svg>`);
 const position = (pourcent, dimension) => Math.round(pourcent * dimension / 100);
 
 await mkdir(sortie, { recursive: true });
 
-for (const [exercice, [nom, pose, illustrationSasha]] of Object.entries(mouvements)) {
-  for (const guide of illustrationSasha ? ["nora", "sasha"] : ["nora"]) {
-    const source = guide === "sasha"
+for (const [exercice, [nom, pose]] of Object.entries(mouvements)) {
+  for (const guide of guides.length ? guides : ["nora", "sasha"]) {
+    const source = guide === "sasha" && anciensVisuelsSasha.has(exercice)
       ? `public/premiers-pas/m-${exercice}-2.webp`
-      : path.join(dossier, "nora", `${exercice}.webp`);
+      : path.join(dossier, guide, `${exercice}.webp`);
     const auSol = pose === "sol" || pose === "pompes";
     const saut = pose === "saut" ? 10 : 0;
     const sol = auSol ? 3 : 5;
@@ -32,7 +37,7 @@ for (const [exercice, [nom, pose, illustrationSasha]] of Object.entries(mouvemen
       <ellipse cx="${largeur / 2}" cy="${top + visuel.info.height}" rx="${Math.round(visuel.info.width * .44)}" ry="15" fill="url(#ombre)"/>`);
 
     for (const rarete of Object.keys(raretes)) {
-      if (exercice === "crunch" && rarete !== "chromatique") continue;
+      if (guide === "nora" && exercice === "crunch" && rarete !== "chromatique") continue;
       const chromatique = rarete === "chromatique";
       const or = rarete === "legendaire";
       const fond = sharp(path.join(dossier, "cartes-prisme", `${chromatique ? "epique" : rarete}.webp`));

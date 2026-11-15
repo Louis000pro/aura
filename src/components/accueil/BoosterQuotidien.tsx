@@ -46,10 +46,10 @@ const zonesEtoiles = Array.from({ length: 6 }, (_, index) => {
 });
 
 function imageCarte(carte: Carte, guide: GuideRef) {
-  if (carte.exercice === "crunch" && carte.rarete !== "chromatique") {
+  if (guide !== "sasha" && carte.exercice === "crunch" && carte.rarete !== "chromatique") {
     return "/boosters/cartes-prisme/" + carte.rarete + "-crunch.webp";
   }
-  const portrait = guide === "sasha" && mouvements[carte.exercice][2] ? "sasha" : "nora";
+  const portrait = guide === "sasha" ? "sasha" : "nora";
   return "/boosters/cartes-completes-v1/" + [portrait, carte.exercice, carte.rarete].join("-") + ".webp";
 }
 
