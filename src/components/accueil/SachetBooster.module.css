@@ -1,0 +1,96 @@
+.mini {
+  position:relative;
+  height:100px;
+  width:62px;
+  flex:none;
+  filter:drop-shadow(0 4px 5px #67409340);
+}
+.image {
+  position:absolute;
+  top:0;
+  left:50%;
+  translate:-50% 0;
+  display:block;
+  width:auto;
+  max-width:none;
+  height:100%;
+  pointer-events:none;
+}
+.scene {
+  position:relative;
+  isolation:isolate;
+  width:min(76vw,300px,36dvh);
+  aspect-ratio:353/587;
+  margin:32px auto 10px;
+  user-select:none;
+}
+.scene::before {
+  content:"";
+  position:absolute;
+  inset:auto 5% -1% 5%;
+  height:6%;
+  z-index:-2;
+  background:radial-gradient(ellipse,#a290c18c 0%,transparent 74%);
+  pointer-events:none;
+}
+.corps,.bande,.vue {
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+}
+.corps,.bande { z-index:2; }
+.bande { z-index:3; }
+.vue { opacity:0;visibility:hidden; }
+.vue[data-visible] { opacity:1;visibility:visible; }
+.scene:not([data-sortie]) .image {
+  transform:perspective(520px) rotateY(var(--pivot,0deg));
+  transition:transform .1s ease-out;
+}
+.fil {
+  position:absolute;
+  inset:0;
+  background:linear-gradient(90deg,#eaf6ff,#c2eaff,#fff,#ffc6ed,#fff8d1);
+}
+.rotation,.soudure {
+  position:absolute;
+  inset:0;
+  z-index:4;
+  border:0;
+  padding:0;
+  background:none;
+  touch-action:none;
+  cursor:grab;
+}
+.rotation:active,.soudure:active { cursor:grabbing; }
+.scene[data-vue="0"] .rotation { top:max(44px,14%); }
+.soudure { bottom:auto;height:max(44px,14%); }
+.rotation:focus-visible,.soudure:focus-visible {
+  outline:2px solid #8142cc;
+  outline-offset:4px;
+}
+.commandes {
+  display:grid;
+  grid-template-columns:44px minmax(118px,auto) 44px;
+  justify-content:center;
+  align-items:center;
+  gap:8px;
+  font-size:.82rem;
+  font-weight:750;
+}
+.commandes button {
+  display:grid;
+  place-items:center;
+  width:44px;
+  height:44px;
+  padding:0;
+  border:0;
+  border-radius:50%;
+  background:#f3edf8;
+  color:#45286b;
+  font:600 1.45rem/1 system-ui,sans-serif;
+}
+.commandes button:disabled { opacity:.38; }
+.cartes { position:absolute;inset:0;z-index:1;pointer-events:none; }
+@media (prefers-reduced-motion:reduce) {
+  .scene:not([data-sortie]) .image { transform:none;transition:none; }
+}

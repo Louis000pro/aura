@@ -9,6 +9,7 @@ import { useGuideActif } from "@/context/GuideContext";
 import { shiftDateStr } from "@/lib/dates";
 import type { GuideRef } from "@/lib/guides";
 import { mouvements, raretes, type Carte } from "@/lib/cartesBooster";
+import SachetBooster, { MiniSachetBooster } from "./SachetBooster";
 import styles from "./BoosterQuotidien.module.css";
 
 async function demanderEssai(methode: "GET" | "POST", signal?: AbortSignal) {
@@ -35,11 +36,12 @@ const etoiles = [
   style: { "--etoile-x": x + "%", "--etoile-y": y + "%", "--etoile-taille": taille + "px" } as CSSProperties,
 }));
 
-function CarteBooster({ carte, guide, avancer, derniere = false }: {
+function CarteBooster({ carte, guide, avancer, derniere = false, prioritaire = false }: {
   carte: Carte;
   guide: GuideRef;
   avancer?: () => void;
   derniere?: boolean;
+  prioritaire?: boolean;
 }) {
   const [nom, pose, illustrationSasha] = mouvements[carte.exercice];
   const rarete = raretes[carte.rarete];
@@ -111,7 +113,7 @@ function CarteBooster({ carte, guide, avancer, derniere = false }: {
           <Image className={styles.logo} src="/marque/logo-degrade.png" alt="" width={24} height={18} />
           <div className={styles.exercice} data-pose={pose}>
             <Image src={image} alt="" width={420} height={420} unoptimized
-              className={styles.mouvement} draggable={false} loading={avancer ? "eager" : "lazy"} />
+              className={styles.mouvement} draggable={false} loading={avancer || prioritaire ? "eager" : "lazy"} />
           </div>
           <strong>{nom}</strong>
           <small>{rarete}</small>
@@ -188,16 +190,14 @@ export default function BoosterQuotidien({ guide, jour }: { guide: GuideRef; jou
   const [cartes, setCartes] = useState<Carte[] | null>(null);
   const [compteRebours, setCompteRebours] = useState("");
   const [index, setIndex] = useState(0);
-  const [dechirure, setDechirure] = useState(0);
   const [erreur, setErreur] = useState(false);
   const [chargement, setChargement] = useState(false);
+  const [sortie, setSortie] = useState<Carte[] | null>(null);
+  const [essaiSachet, setEssaiSachet] = useState(0);
   const mouvementReduit = useReducedMotion();
   const dialog = useRef<HTMLDialogElement>(null);
   const actif = useRef(false);
-  const trace = useRef<Array<[number, number]>>([]);
-  const [decoupe, setDecoupe] = useState<string>();
   const profil = guide ?? "nora";
-  const portrait = "/guides/" + profil + "-welcome-avatar-v1.webp";
 
   useEffect(() => {
     let vivant = true;
@@ -233,11 +233,8 @@ export default function BoosterQuotidien({ guide, jour }: { guide: GuideRef; jou
 
   function reinitialiserEssai() {
     actif.current = false;
-    trace.current = [];
     setCartes(null);
     setIndex(0);
-    setDechirure(0);
-    setDecoupe(undefined);
     setErreur(false);
   }
 
@@ -246,7 +243,6 @@ export default function BoosterQuotidien({ guide, jour }: { guide: GuideRef; jou
     actif.current = true;
     setErreur(false);
     setChargement(true);
-    setDechirure(1);
     try {
       let tirage: unknown;
       if (illimite) {
@@ -257,16 +253,18 @@ export default function BoosterQuotidien({ guide, jour }: { guide: GuideRef; jou
         tirage = data;
       }
       if (!Array.isArray(tirage) || tirage.length !== 3) throw new Error("Tirage indisponible");
-      if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-        await new Promise(resolve => window.setTimeout(resolve, 550));
+      const nouvellesCartes = tirage as Carte[];
+      if (!mouvementReduit) {
+        setSortie(nouvellesCartes);
+        await new Promise(resolve => window.setTimeout(resolve, 1100));
       }
-      setCartes(tirage as Carte[]);
+      setCartes(nouvellesCartes);
     } catch {
       setErreur(true);
-      setDechirure(0);
-      setDecoupe(undefined);
+      setEssaiSachet(essai => essai + 1);
       actif.current = false;
     } finally {
+      setSortie(null);
       setChargement(false);
     }
   }
@@ -277,7 +275,6 @@ export default function BoosterQuotidien({ guide, jour }: { guide: GuideRef; jou
 
   if (!disponible) return null;
 
-  const sachet = <><strong>BOOSTER</strong><span>VAIIYA</span><Image src={portrait} data-guide={profil} alt="" width={250} height={250} /></>;
   const carte = cartes?.[index];
   return (
     <MotionConfig reducedMotion="user">
@@ -291,46 +288,24 @@ export default function BoosterQuotidien({ guide, jour }: { guide: GuideRef; jou
             Ouvrir le booster
           </button>
         </div>
-        <div className={styles.statut}><div className={styles.mini}>{sachet}</div>
+        <div className={styles.statut}><MiniSachetBooster />
           {cartes && !illimite && <div className={styles.compte}><small>Prochain booster</small><strong>{compteRebours}</strong></div>}
         </div>
       </section>
       <dialog ref={dialog} className={styles.dialog} data-ouverture={carte ? "" : undefined} aria-labelledby="titre-booster">
-        <div className={styles.ecran}>
+        <div className={styles.ecran} data-sortie={sortie ? "" : undefined}>
           <button type="button" className={styles.fermer} aria-label="Fermer" onClick={() => dialog.current?.close()}>×</button>
           <h2 id="titre-booster" aria-live="polite">{cartes ? carte ? "Carte " + (index + 1) + " sur 3" : "Booster ouvert" : illimite ? "Booster d’essai" : "Ton booster du jour"}</h2>
           {!cartes && <>
-            <div className={styles.scene}>
-              <motion.div className={styles.sachet} animate={chargement ? { y: 240, rotate: 16, opacity: 0 } : { y: 0, rotate: 0, opacity: 1 }}
-                style={{ clipPath: decoupe }}>
-                {sachet}
-              </motion.div>
-              <button type="button" className={styles.soudure} aria-label="Ouvrir le booster par la soudure"
-                disabled={chargement}
-                onClick={event => { if (event.detail === 0) void ouvrir(); }}
-                onPointerDown={event => {
-                  if (!event.isPrimary || event.button !== 0) return;
-                  const y = Math.min(40, Math.max(5, event.clientY - event.currentTarget.getBoundingClientRect().top));
-                  trace.current = [[0, y]];
-                  event.currentTarget.setPointerCapture(event.pointerId);
-                }}
-                onPointerMove={event => {
-                  if (!event.currentTarget.hasPointerCapture(event.pointerId)) return;
-                  const { left, top, width } = event.currentTarget.getBoundingClientRect();
-                  const part = Math.max(0, Math.min(1, (event.clientX - left) / width));
-                  const y = Math.min(40, Math.max(5, event.clientY - top));
-                  if (part * 100 > (trace.current.at(-1)?.[0] ?? 0)) trace.current.push([part * 100, y]);
-                  const chemin = trace.current.map(([x, hauteur]) => x + "% " + hauteur + "px").join(",");
-                  setDecoupe("polygon(" + chemin + "," + part * 100 + "% 0,100% 0,100% 100%,0 100%)");
-                  setDechirure(part);
-                  if (part >= .92) { event.currentTarget.releasePointerCapture(event.pointerId); void ouvrir(); }
-                }}
-                onPointerUp={() => { if (!actif.current) { setDechirure(0); setDecoupe(undefined); } }}
-                onPointerCancel={() => { if (!actif.current) { setDechirure(0); setDecoupe(undefined); } }}
-              ><span style={{ width: dechirure * 100 + "%" }} /></button>
-            </div>
+            <SachetBooster key={essaiSachet} ouvrir={() => { void ouvrir(); }} chargement={chargement} sortie={!!sortie}
+              enfants={sortie?.map((item, position) => <motion.div key={item.exercice} className={styles.carteSortante} aria-hidden="true"
+                initial={{ y: "4%", x: 0, rotate: 0, opacity: 0 }}
+                animate={{ y: ["4%", "-63%", "-53%"], x: [0, 0, (position - 1) * 48],
+                  rotate: [0, 0, (position - 1) * 12], opacity: [0, 1, 1] }}
+                transition={{ delay: .12 + position * .04, duration: .86, times: [0, .62, 1], ease: "easeOut" }}>
+                <CarteBooster carte={item} guide={profil} prioritaire />
+              </motion.div>)} />
             {!illimite && <p>Prochain booster demain à 00 h 00 · heure de Paris</p>}
-            <p>{chargement ? "Ouverture…" : "Glisse sur la soudure de gauche à droite."}</p>
             {erreur && <p role="alert">Le booster est indisponible. Réessaie dans un instant.</p>}
           </>}
           {carte && <div key={index} className={styles.revelation} data-rarete={carte.rarete}>
