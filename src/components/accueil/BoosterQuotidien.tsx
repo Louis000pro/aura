@@ -201,6 +201,18 @@ export function CollectionBoosters({ userId }: { userId: string }) {
   </section>;
 }
 
+const ordreRarete: Carte["rarete"][] = ["commune", "rare", "epique", "legendaire", "chromatique"];
+
+function disposerCartes(cartes: Carte[]) {
+  if (cartes.length !== 3) return cartes;
+  const resultat = [...cartes];
+  const vedette = cartes.reduce((meilleure, carte, index) =>
+    ordreRarete.indexOf(carte.rarete) >= ordreRarete.indexOf(cartes[meilleure].rarete) ? index : meilleure, 0);
+  const [carte] = resultat.splice(vedette, 1);
+  resultat.splice(1, 0, carte);
+  return resultat;
+}
+
 export default function BoosterQuotidien({ guide, jour }: { guide: GuideRef; jour: string }) {
   const [disponible, setDisponible] = useState(false);
   const [illimite, setIllimite] = useState(false);
@@ -280,19 +292,21 @@ export default function BoosterQuotidien({ guide, jour }: { guide: GuideRef; jou
       }
       imagesDecodees.current = await Promise.all(nouvellesCartes.map(carte => decoderCarte(carte, profil)));
       tirageEnAttente.current = null;
-      if (!mouvementReduit) {
-        setSortie(nouvellesCartes);
-        await new Promise(resolve => window.setTimeout(resolve, 1100));
-      }
-      setCartes(nouvellesCartes);
+      if (!mouvementReduit && dialog.current?.open) setSortie(nouvellesCartes);
+      else setCartes(nouvellesCartes);
     } catch {
       setErreur(true);
       setEssaiSachet(essai => essai + 1);
       actif.current = false;
     } finally {
-      setSortie(null);
       setChargement(false);
     }
+  }
+
+  function terminerChute() {
+    if (!sortie) return;
+    setCartes(sortie);
+    setSortie(null);
   }
 
   function avancer() {
@@ -302,12 +316,13 @@ export default function BoosterQuotidien({ guide, jour }: { guide: GuideRef; jou
   if (!disponible) return null;
 
   const carte = cartes?.[index];
+  const recapitulatif = cartes && !carte ? disposerCartes(cartes) : null;
   return (
     <MotionConfig reducedMotion="user">
       <section className={styles.bloc} aria-label="Booster du jour">
         <div><small>{illimite ? "Mode test · ouvertures illimitées" : "3 cartes d’exercices"}</small>
           <h2>{illimite ? "Tes boosters d’essai" : "Ton booster du jour"}</h2>
-          <button type="button" className={styles.ouvrir} disabled={chargement || (!illimite && !!cartes)} onClick={() => {
+          <button type="button" className={styles.ouvrir} disabled={chargement || !!sortie || (!illimite && !!cartes)} onClick={() => {
             if (illimite) reinitialiserEssai();
             dialog.current?.showModal();
           }}>
@@ -318,19 +333,14 @@ export default function BoosterQuotidien({ guide, jour }: { guide: GuideRef; jou
           {cartes && !illimite && <div className={styles.compte}><small>Prochain booster</small><strong>{compteRebours}</strong></div>}
         </div>
       </section>
-      <dialog ref={dialog} className={styles.dialog} data-ouverture={carte ? "" : undefined} aria-labelledby="titre-booster">
+      <dialog ref={dialog} className={styles.dialog} data-ouverture={carte ? "" : undefined}
+        data-recapitulatif={recapitulatif ? "" : undefined} onClose={terminerChute} aria-labelledby="titre-booster">
         <div className={styles.ecran} data-sortie={sortie ? "" : undefined}>
           <button type="button" className={styles.fermer} aria-label="Fermer" onClick={() => dialog.current?.close()}>×</button>
-          <h2 id="titre-booster" aria-live="polite">{cartes ? carte ? "Carte " + (index + 1) + " sur 3" : "Booster ouvert" : illimite ? "Booster d’essai" : "Ton booster du jour"}</h2>
+          <h2 id="titre-booster" aria-live="polite">{cartes ? carte ? "Carte " + (index + 1) + " sur 3" : "Booster ouvert !" : illimite ? "Booster d’essai" : "Ton booster du jour"}</h2>
           {!cartes && <>
-            <SachetBooster key={essaiSachet} ouvrir={() => { void ouvrir(); }} chargement={chargement} sortie={!!sortie}
-              enfants={sortie?.map((item, position) => <motion.div key={item.exercice} className={styles.carteSortante} aria-hidden="true"
-                initial={{ y: "4%", x: 0, rotate: 0, opacity: 0 }}
-                animate={{ y: ["4%", "-63%", "-53%"], x: [0, 0, (position - 1) * 48],
-                  rotate: [0, 0, (position - 1) * 12], opacity: [0, 1, 1] }}
-                transition={{ delay: .12 + position * .04, duration: .86, times: [0, .62, 1], ease: "easeOut" }}>
-                <CarteBooster carte={item} guide={profil} prioritaire />
-              </motion.div>)} />
+            <SachetBooster key={essaiSachet} ouvrir={() => { void ouvrir(); }}
+              chargement={chargement || !!sortie} sortie={!!sortie} reveler={terminerChute} />
             {!illimite && <p>Prochain booster demain à 00 h 00 · heure de Paris</p>}
             {erreur && <p role="alert">Le booster est indisponible. Réessaie dans un instant.</p>}
           </>}
@@ -347,18 +357,28 @@ export default function BoosterQuotidien({ guide, jour }: { guide: GuideRef; jou
               <CarteBooster carte={carte} guide={profil} avancer={avancer} derniere={index === 2} />
             </motion.div>
           </div>}
-          {cartes && !carte && <>
-            <p>{illimite ? "Tirage d’essai · tu peux en ouvrir un autre tout de suite." : "Tes trois cartes ont rejoint ta collection."}</p>
-            <div className={`${styles.grille} ${styles.recapitulatif}`}>{cartes.map((item, position) =>
-              <motion.div key={item.exercice} initial={mouvementReduit ? false : { opacity: 0, y: 24, rotate: (position - 1) * 5 }}
-                animate={{ opacity: 1, y: 0, rotate: 0 }} transition={{ delay: mouvementReduit ? 0 : position * .09,
-                  duration: mouvementReduit ? 0 : .43, ease: [.2, .85, .26, 1] }}>
-                <CarteBooster carte={item} guide={profil} />
-              </motion.div>
-            )}</div>
-            {illimite
-              ? <button className={styles.ouvrir} type="button" onClick={reinitialiserEssai}>Ouvrir un autre booster</button>
-              : <Link className={styles.ouvrir} href="/profil#cartes-exercices" onClick={() => dialog.current?.close()}>Voir mes cartes</Link>}
+          {recapitulatif && <>
+            <p className={styles.nombreCartes}>Tu as obtenu <strong>{recapitulatif.length} cartes</strong></p>
+            <div className={styles.recapitulatif} aria-label="Cartes obtenues">
+              {recapitulatif.map((item, position) =>
+                <div key={item.exercice + ":" + item.rarete + ":" + position} className={styles.carteRecap}>
+                  <motion.div initial={mouvementReduit ? false : { opacity: 0, y: 26, scale: .94 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    transition={{ delay: mouvementReduit ? 0 : position === 1 ? .15 : .06, duration: .45,
+                      ease: [.2, .85, .26, 1] }}>
+                    <CarteBooster carte={item} guide={profil} prioritaire />
+                  </motion.div>
+                </div>
+              )}
+            </div>
+            <div className={styles.actionsRecap}>
+              <Link className={styles.collectionOr} href="/profil#cartes-exercices" onClick={() => dialog.current?.close()}>
+                Voir ma collection <span aria-hidden="true">›</span>
+              </Link>
+              {illimite && <button className={styles.autreBooster} type="button" onClick={reinitialiserEssai}>
+                Ouvrir un autre booster
+              </button>}
+            </div>
           </>}
         </div>
       </dialog>

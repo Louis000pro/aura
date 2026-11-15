@@ -1,8 +1,8 @@
 "use client";
 
 import Image from "next/image";
-import { animate, motion, useMotionTemplate, useMotionValue, useMotionValueEvent, useReducedMotion } from "framer-motion";
-import { useRef, useState, type PointerEvent, type ReactNode } from "react";
+import { animate, motion, useReducedMotion } from "framer-motion";
+import { useEffect, useRef, useState, type PointerEvent } from "react";
 import styles from "./SachetBooster.module.css";
 
 const textures = {
@@ -54,46 +54,69 @@ function suivreDechirure(points: Point[], versDroite: boolean): Coupe {
   };
 }
 
-export default function SachetBooster({ ouvrir, chargement, sortie, enfants }: {
+export default function SachetBooster({ ouvrir, chargement, sortie, reveler }: {
   ouvrir: () => void;
   chargement: boolean;
   sortie: boolean;
-  enfants?: ReactNode;
+  reveler: () => void;
 }) {
   const [deFace, setDeFace] = useState(true);
   const [coupe, setCoupe] = useState<Coupe>();
-  const lacet = useMotionValue(0);
-  const tangage = useMotionValue(0);
-  const faceCourante = useRef(true);
-  const orientation = useMotionTemplate`translateZ(calc(var(--epaisseur) * -.5)) rotateY(${lacet}deg) rotateX(${tangage}deg)`;
+  const modele = useRef<HTMLDivElement>(null);
+  const angles = useRef({ lacet: 0, tangage: 0 });
+  const imageEnAttente = useRef<number | null>(null);
+  const animation = useRef<ReturnType<typeof animate> | null>(null);
   const reduire = useReducedMotion();
-  const rotation = useRef<{ x: number; y: number; dernierGeste: number } | null>(null);
+  const rotation = useRef<{ id: number; x: number; y: number; largeur: number; temps: number; vitesse: number } | null>(null);
   const dechirure = useRef<{ trace: Point[]; versDroite: boolean } | null>(null);
   const scene = useRef<HTMLDivElement>(null);
   const enCours = useRef(false);
 
-  const estDeFace = () => Math.abs(lacet.get() - tourProche(lacet.get())) < 12 && Math.abs(tangage.get()) < 4;
-  const suivreOrientation = () => {
-    const face = estDeFace();
-    if (face === faceCourante.current) return;
-    faceCourante.current = face;
-    setDeFace(face);
+  useEffect(() => () => {
+    if (imageEnAttente.current !== null) cancelAnimationFrame(imageEnAttente.current);
+    animation.current?.stop();
+  }, []);
+
+  const estDeFace = () => {
+    const { lacet, tangage } = angles.current;
+    return Math.abs(lacet - tourProche(lacet)) < 12 && Math.abs(tangage) < 4;
   };
-  useMotionValueEvent(lacet, "change", suivreOrientation);
-  useMotionValueEvent(tangage, "change", suivreOrientation);
+
+  function peindreOrientation() {
+    if (!modele.current) return;
+    const { lacet, tangage } = angles.current;
+    modele.current.style.transform =
+      "translateZ(calc(var(--epaisseur) * -.5)) rotateY(" + lacet + "deg) rotateX(" + tangage + "deg)";
+  }
+
+  function terminerImage() {
+    if (imageEnAttente.current !== null) cancelAnimationFrame(imageEnAttente.current);
+    imageEnAttente.current = null;
+    peindreOrientation();
+  }
 
   function tournerVers(horizontal: number, vertical: number) {
-    lacet.stop();
-    tangage.stop();
-    const cibleVerticale = bornerTangage(vertical);
+    animation.current?.stop();
+    const depart = angles.current;
+    const cible = bornerTangage(vertical);
     if (reduire) {
-      lacet.set(horizontal);
-      tangage.set(cibleVerticale);
+      angles.current = { lacet: horizontal, tangage: cible };
+      peindreOrientation();
+      setDeFace(estDeFace());
       return;
     }
-    const transition = { type: "tween", duration: .34, ease: "easeOut" } as const;
-    animate(lacet, horizontal, transition);
-    animate(tangage, cibleVerticale, transition);
+    animation.current = animate(0, 1, {
+      duration: .32,
+      ease: "easeOut",
+      onUpdate: progression => {
+        angles.current = {
+          lacet: depart.lacet + (horizontal - depart.lacet) * progression,
+          tangage: depart.tangage + (cible - depart.tangage) * progression,
+        };
+        peindreOrientation();
+      },
+      onComplete: () => setDeFace(estDeFace()),
+    });
   }
 
   function ouvrirSachet(trace: Point[], versDroite: boolean) {
@@ -113,24 +136,24 @@ export default function SachetBooster({ ouvrir, chargement, sortie, enfants }: {
 
   return <>
     <div className={styles.scene} ref={scene} data-sachet="" data-face={deFace ? "" : undefined} data-sortie={sortie ? "" : undefined}>
-      {sortie && <div className={styles.cartes}>{enfants}</div>}
       {!coupe ? <div className={styles.camera} aria-hidden="true">
-        <motion.div className={styles.modele} style={{ transform: orientation }}>
+        <div ref={modele} className={styles.modele}>
           {faces.map(cote => <div className={`${styles.face3d} ${styles[cote]}`} key={cote}>
             <ImageSachet cote={cote} />
           </div>)}
-        </motion.div>
+        </div>
       </div> : <>
         <motion.div className={styles.corps} style={{ clipPath: coupe?.bas }}
-          animate={sortie ? { y: "32%", rotate: -10, opacity: 0 } : { y: 0, rotate: 0, opacity: 1 }}
-          transition={{ delay: sortie ? .34 : 0, duration: .62, ease: "easeInOut" }}>
+          animate={sortie ? { y: "83%", rotate: -13, opacity: 0 } : { y: 0, rotate: 0, opacity: 1 }}
+          transition={{ duration: .38, ease: [.48, .06, .8, .42] }}
+          onAnimationComplete={() => { if (sortie) reveler(); }}>
           <ImageSachet cote="face" />
           {coupe && <div className={styles.fil} style={{ clipPath: coupe.fil }} />}
         </motion.div>
         {coupe && <motion.div className={styles.bande} style={{ clipPath: coupe.haut }}
           animate={sortie ? { y: -95, x: 85, rotate: 18, opacity: 0 }
             : { y: -coupe.avancee * 8, x: 0, rotate: 0, opacity: 1 }}
-          transition={{ duration: sortie ? .54 : 0, ease: "easeOut" }}><ImageSachet cote="face" /></motion.div>}
+          transition={{ duration: sortie ? .32 : 0, ease: "easeOut" }}><ImageSachet cote="face" /></motion.div>}
       </>}
       <button type="button" className={styles.rotation} disabled={chargement}
         aria-label="Tourner le booster"
@@ -141,51 +164,68 @@ export default function SachetBooster({ ouvrir, chargement, sortie, enfants }: {
           const pas = deplacements[event.key];
           if (!pas && event.key !== "Home") return;
           event.preventDefault();
-          if (pas) tournerVers(lacet.get() + pas[0], tangage.get() + pas[1]);
-          else tournerVers(tourProche(lacet.get()), 0);
+          const { lacet, tangage } = angles.current;
+          if (pas) tournerVers(lacet + pas[0], tangage + pas[1]);
+          else tournerVers(tourProche(lacet), 0);
         }}
         onPointerDown={event => {
           if (!event.isPrimary || event.button !== 0) return;
-          lacet.stop();
-          tangage.stop();
-          rotation.current = { x: event.clientX, y: event.clientY, dernierGeste: 0 };
+          animation.current?.stop();
+          rotation.current = {
+            id: event.pointerId, x: event.clientX, y: event.clientY,
+            largeur: event.currentTarget.offsetWidth, temps: event.timeStamp, vitesse: 0,
+          };
           event.currentTarget.setPointerCapture(event.pointerId);
         }}
         onPointerMove={event => {
           const geste = rotation.current;
-          if (!geste || !event.currentTarget.hasPointerCapture(event.pointerId)) return;
-          const dx = event.clientX - geste.x;
-          const dy = event.clientY - geste.y;
+          if (!geste || geste.id !== event.pointerId) return;
+          const dx = (event.clientX - geste.x) * 240 / geste.largeur;
+          const dy = (event.clientY - geste.y) * .18;
+          const duree = Math.max(1, event.timeStamp - geste.temps);
           geste.x = event.clientX;
           geste.y = event.clientY;
-          geste.dernierGeste = performance.now();
-          lacet.set(lacet.get() + dx * 240 / event.currentTarget.offsetWidth);
-          tangage.set(bornerTangage(tangage.get() - dy * .18));
+          geste.temps = event.timeStamp;
+          geste.vitesse = duree > 90 ? 0 : geste.vitesse * .35 + (dx / duree) * .65;
+          angles.current.lacet += dx;
+          angles.current.tangage = bornerTangage(angles.current.tangage - dy);
+          if (imageEnAttente.current === null) imageEnAttente.current = requestAnimationFrame(() => {
+            imageEnAttente.current = null;
+            peindreOrientation();
+          });
         }}
         onPointerUp={event => {
-          if (!event.isPrimary || !rotation.current) return;
           const geste = rotation.current;
+          if (!geste || geste.id !== event.pointerId) return;
           rotation.current = null;
-          const angle = lacet.get();
-          const rapide = geste.dernierGeste > 0 && performance.now() - geste.dernierGeste < 100 && !reduire;
-          const inertie = rapide ? Math.max(-95, Math.min(95, lacet.getVelocity() * .13)) : 0;
-          const cible = angle + inertie;
+          terminerImage();
+          const { lacet, tangage } = angles.current;
+          const inertie = !reduire && event.timeStamp - geste.temps < 80
+            ? Math.max(-65, Math.min(65, geste.vitesse * 72)) : 0;
+          const cible = lacet + inertie;
           const face = tourProche(cible);
-          if (Math.abs(cible - face) < 12 && Math.abs(tangage.get()) < 4) tournerVers(face, 0);
-          else if (inertie) tournerVers(cible, tangage.get());
+          setDeFace(estDeFace());
+          if (Math.abs(cible - face) < 12 && Math.abs(tangage) < 4) tournerVers(face, 0);
+          else if (inertie) tournerVers(cible, tangage);
         }}
-        onPointerCancel={() => { rotation.current = null; }}
-        onClick={event => { if (event.detail === 0) tournerVers(lacet.get() + 36, tangage.get()); }}
+        onLostPointerCapture={event => {
+          if (rotation.current?.id !== event.pointerId) return;
+          rotation.current = null;
+          terminerImage();
+          setDeFace(estDeFace());
+        }}
+        onClick={event => {
+          if (event.detail === 0) tournerVers(angles.current.lacet + 36, angles.current.tangage);
+        }}
       />
       {deFace && <button type="button" className={styles.soudure} aria-label="Ouvrir le booster par la soudure"
         disabled={chargement}
         onClick={event => { if (event.detail === 0) ouvrirSachet([[0, 8], [28, 8.9], [53, 7.7], [76, 8.5]], true); }}
         onPointerDown={event => {
           if (!event.isPrimary || event.button !== 0 || enCours.current || !estDeFace()) return;
-          lacet.stop();
-          tangage.stop();
-          lacet.set(tourProche(lacet.get()));
-          tangage.set(0);
+          animation.current?.stop();
+          angles.current = { lacet: tourProche(angles.current.lacet), tangage: 0 };
+          terminerImage();
           const [x, y] = position(event);
           const versDroite = x <= 50;
           dechirure.current = { trace: [[versDroite ? 0 : 100, y]], versDroite };
@@ -210,7 +250,7 @@ export default function SachetBooster({ ouvrir, chargement, sortie, enfants }: {
         }} />}
     </div>
     {!chargement && !deFace && <button type="button" className={styles.revenir}
-      onClick={() => tournerVers(tourProche(lacet.get()), 0)}>Revenir de face</button>}
+      onClick={() => tournerVers(tourProche(angles.current.lacet), 0)}>Revenir de face</button>}
     <p>{chargement ? "Ouverture…" : deFace ? "Glisse pour tourner à 360°. Déchire le haut pour ouvrir." : "Reviens de face pour déchirer le haut."}</p>
   </>;
 }
