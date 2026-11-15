@@ -46,16 +46,18 @@ function CarteBooster({ carte, guide, avancer, derniere = false }: {
   const image = guide === "sasha" && illustrationSasha
     ? `/premiers-pas/m-${carte.exercice}-2.webp`
     : `/boosters/nora/${carte.exercice}.webp?v=2`;
-  const geste = useRef<{ bounds: DOMRect; x: number; y: number; glisse: boolean } | null>(null);
+  const geste = useRef<{ id: number; bounds: DOMRect; x: number; y: number } | null>(null);
+  const clicApresGlissement = useRef(false);
 
   function eclairer(event: PointerEvent<HTMLElement>) {
-    if (!event.isPrimary || (event.pointerType === "touch" && !geste.current)) return;
+    const enCours = geste.current;
+    if (!event.isPrimary || (event.pointerType === "touch" && enCours?.id !== event.pointerId)) return;
     const element = event.currentTarget;
-    const { left, top, width, height } = geste.current?.bounds ?? element.getBoundingClientRect();
+    const { left, top, width, height } = enCours?.bounds ?? element.getBoundingClientRect();
     const x = Math.max(0, Math.min(1, (event.clientX - left) / width));
     const y = Math.max(0, Math.min(1, (event.clientY - top) / height));
-    if (geste.current && event.buttons && Math.hypot(event.clientX - geste.current.x, event.clientY - geste.current.y) > 6) {
-      geste.current.glisse = true;
+    if (enCours && Math.hypot(event.clientX - enCours.x, event.clientY - enCours.y) > 6) {
+      clicApresGlissement.current = true;
     }
     element.dataset.eclairee = "";
     element.style.setProperty("--lumiere-x", x * 100 + "%");
@@ -67,8 +69,12 @@ function CarteBooster({ carte, guide, avancer, derniere = false }: {
 
   function relacher(event: PointerEvent<HTMLElement>) {
     if (!event.isPrimary) return;
-    if (geste.current && Math.hypot(event.clientX - geste.current.x, event.clientY - geste.current.y) > 6) {
-      geste.current.glisse = true;
+    const enCours = geste.current;
+    if (enCours?.id === event.pointerId) {
+      if (event.type !== "pointerup" || Math.hypot(event.clientX - enCours.x, event.clientY - enCours.y) > 6) {
+        clicApresGlissement.current = true;
+      }
+      geste.current = null;
     }
     const element = event.currentTarget;
     delete element.dataset.eclairee;
@@ -82,13 +88,17 @@ function CarteBooster({ carte, guide, avancer, derniere = false }: {
       data-derniere={derniere ? "" : undefined}
       onPointerDown={event => {
         if (!event.isPrimary || event.button !== 0) return;
-        geste.current = { bounds: event.currentTarget.getBoundingClientRect(), x: event.clientX, y: event.clientY, glisse: false };
+        const { currentTarget, target, pointerId, clientX, clientY } = event;
+        geste.current = { id: pointerId, bounds: currentTarget.getBoundingClientRect(), x: clientX, y: clientY };
+        clicApresGlissement.current = false;
+        if (avancer && target instanceof HTMLButtonElement) target.setPointerCapture(pointerId);
         eclairer(event);
       }}
       onPointerMove={eclairer}
       onPointerUp={relacher}
-      onPointerLeave={event => { relacher(event); geste.current = null; }}
-      onPointerCancel={event => { relacher(event); geste.current = null; }}>
+      onPointerLeave={relacher}
+      onPointerCancel={relacher}
+      onLostPointerCapture={relacher}>
       <div className={styles.cadre}>
         <div className={styles.face}>
           <div aria-hidden="true" className={styles.etoiles}>
@@ -97,6 +107,7 @@ function CarteBooster({ carte, guide, avancer, derniere = false }: {
           <div aria-hidden="true" className={`${styles.etoiles} ${styles.etoilesEclairees}`}>
             {etoiles.map(etoile => <i key={etoile.key} style={etoile.style} />)}
           </div>
+          <div aria-hidden="true" className={styles.spectre} />
           <Image className={styles.logo} src="/marque/logo-degrade.png" alt="" width={24} height={18} />
           <div className={styles.exercice} data-pose={pose}>
             <Image src={image} alt="" width={420} height={420} unoptimized
@@ -109,8 +120,8 @@ function CarteBooster({ carte, guide, avancer, derniere = false }: {
       {avancer && <button type="button" className={styles.suivante}
         aria-label={`${nom}, ${rarete}. ${derniere ? "Voir les trois cartes" : "Découvrir la carte suivante"}`}
         onClick={event => {
-          if (event.detail === 0 || !geste.current?.glisse) avancer();
-          geste.current = null;
+          if (event.detail === 0 || !clicApresGlissement.current) avancer();
+          clicApresGlissement.current = false;
         }} />}
     </article>
   );
@@ -325,17 +336,22 @@ export default function BoosterQuotidien({ guide, jour }: { guide: GuideRef; jou
           {carte && <div key={index} className={styles.revelation} data-rarete={carte.rarete}>
             {index === 2 && !mouvementReduit && <div className={styles.aura} aria-hidden="true" />}
             <motion.div
-              initial={mouvementReduit ? false : { opacity: 0, y: 40, scale: .94, visibility: "hidden" }}
-              animate={{ opacity: 1, y: 0, scale: 1, visibility: "visible" }}
-              transition={{ delay: index === 2 ? .64 : 0, duration: index === 2 ? .48 : .3 }}>
+              initial={mouvementReduit ? false : { opacity: 0, y: 32, scale: .91, rotate: index % 2 ? 3 : -3, visibility: "hidden" }}
+              animate={mouvementReduit ? { opacity: 1, y: 0, scale: 1, rotate: 0, visibility: "visible" } : {
+                opacity: [0, 1, 1], y: [32, -5, 0], scale: [.91, 1.023, 1],
+                rotate: [index % 2 ? 3 : -3, index % 2 ? -.6 : .6, 0], visibility: "visible",
+              }}
+              transition={{ delay: index === 2 && !mouvementReduit ? .59 : 0, duration: mouvementReduit ? 0 : index === 2 ? .63 : .46,
+                times: [0, .7, 1], ease: ["easeOut", "easeInOut"] }}>
               <CarteBooster carte={carte} guide={profil} avancer={avancer} derniere={index === 2} />
             </motion.div>
           </div>}
           {cartes && !carte && <>
             <p>{illimite ? "Tirage d’essai · tu peux en ouvrir un autre tout de suite." : "Tes trois cartes ont rejoint ta collection."}</p>
             <div className={`${styles.grille} ${styles.recapitulatif}`}>{cartes.map((item, position) =>
-              <motion.div key={item.exercice} initial={mouvementReduit ? false : { opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }} transition={{ delay: position * .075, duration: .32 }}>
+              <motion.div key={item.exercice} initial={mouvementReduit ? false : { opacity: 0, y: 24, rotate: (position - 1) * 5 }}
+                animate={{ opacity: 1, y: 0, rotate: 0 }} transition={{ delay: mouvementReduit ? 0 : position * .09,
+                  duration: mouvementReduit ? 0 : .43, ease: [.2, .85, .26, 1] }}>
                 <CarteBooster carte={item} guide={profil} />
               </motion.div>
             )}</div>

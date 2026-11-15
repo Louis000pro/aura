@@ -102,13 +102,14 @@
   --lumiere-x:44%;
   --lumiere-y:37%;
   --reflet:38%;
+  --relief:1;
   box-sizing:border-box;
   width:min(84vw,350px,55dvh);
   aspect-ratio:270/378;
   margin:0 auto;
   user-select:none;
 }
-.carte[data-revelation] { touch-action:none; }
+.dialog .carte { touch-action:none; }
 .cadre {
   height:100%;
   display:grid;
@@ -116,13 +117,22 @@
   padding:clamp(4px,1.4vw,8px);
   border:1px solid #fff9;
   border-radius:clamp(10px,4vw,22px);
-  background:var(--cadre);
+  background:
+    linear-gradient(119deg,transparent 30%,#ffffff05 39%,#e6fbffb3 47%,#fff 50%,#ffd6efb3 53%,transparent 68%)
+    var(--reflet) var(--lumiere-y) / 230% 180%,
+    var(--cadre);
   box-shadow:inset 0 0 0 1px #fffd,0 4px 0 color-mix(in srgb,var(--lueur) 55%,#1a1234),
     0 13px 23px #21153556,0 0 22px color-mix(in srgb,var(--lueur) 65%,transparent);
-  transform:perspective(760px) rotateX(var(--inclinaison-x,0deg)) rotateY(var(--inclinaison-y,0deg));
-  transition:transform .26s ease-out;
+  transform:perspective(760px)
+    rotateX(calc(var(--inclinaison-x,0deg) * var(--relief)))
+    rotateY(calc(var(--inclinaison-y,0deg) * var(--relief)));
+  transition:transform .28s ease-out,box-shadow .22s ease-out;
 }
-.carte[data-eclairee] .cadre { transition-duration:.075s; }
+.carte[data-eclairee] .cadre {
+  transition-duration:.075s,.22s;
+  box-shadow:inset 0 0 0 1px #fff,0 4px 0 color-mix(in srgb,var(--lueur) 55%,#1a1234),
+    0 15px 27px #21153548,0 0 32px color-mix(in srgb,var(--lueur) 78%,transparent);
+}
 .face {
   position:relative;
   isolation:isolate;
@@ -159,6 +169,25 @@
   transition:opacity .2s ease;
 }
 .carte[data-eclairee] .face::before { opacity:1; }
+.spectre {
+  position:absolute;
+  inset:0;
+  z-index:-2;
+  pointer-events:none;
+  background:
+    radial-gradient(ellipse 22% 16% at var(--lumiere-x) var(--lumiere-y),#fff9 0%,#fae4ff35 39%,transparent 100%),
+    linear-gradient(125deg,transparent 25%,#32aafa1a 34%,#76e9ffb8 42%,#ccb5fff0 46%,#fff 49%,
+      #ff96d5e0 53%,#ffc785c9 58%,#88ffe37a 65%,transparent 75%)
+      var(--reflet) var(--lumiere-y) / 224% 186%;
+  mask-image:
+    radial-gradient(ellipse 83% 70% at var(--lumiere-x) var(--lumiere-y),#000 10%,#000e 55%,transparent),
+    linear-gradient(#000 0 60%,#000c 71%,transparent 86%);
+  mask-composite:intersect;
+  mix-blend-mode:screen;
+  opacity:.17;
+  transition:opacity .18s ease-out;
+}
+.carte:is([data-eclairee],:has(.suivante:focus-visible)) .spectre { opacity:.9; }
 .etoiles {
   position:absolute;
   inset:0;
@@ -179,8 +208,8 @@
 }
 .etoilesEclairees {
   opacity:0;
-  filter:drop-shadow(0 0 1px #fff) drop-shadow(0 0 5px #f3aaff) drop-shadow(0 0 8px #95d4ff);
-  mask-image:radial-gradient(ellipse 39% 36% at var(--lumiere-x) var(--lumiere-y),#000 10%,#000e 39%,#0005 72%,transparent);
+  filter:drop-shadow(0 0 1px #fff) drop-shadow(0 0 4px #ffe0ff) drop-shadow(0 0 9px #a7e8ff);
+  mask-image:radial-gradient(ellipse 45% 42% at var(--lumiere-x) var(--lumiere-y),#000 12%,#000e 47%,#0005 76%,transparent);
   transition:opacity .17s ease;
 }
 .carte[data-eclairee] .etoilesEclairees { opacity:1; }
@@ -270,13 +299,21 @@
   position:absolute;
   inset:-16% -10%;
   pointer-events:none;
-  background:radial-gradient(ellipse at center,var(--lueur) 2%,transparent 65%);
-  animation:apparition .98s ease-out both;
+  background:radial-gradient(ellipse at center,var(--lueur) 15%,transparent 69%);
+  animation:apparition 1.32s ease-out both;
+}
+.aura::before {
+  content:"";
+  position:absolute;
+  inset:-8%;
+  background:repeating-conic-gradient(from 8deg,var(--lueur) 0deg,transparent 5deg 19deg);
+  mask-image:radial-gradient(ellipse,#000 12%,#0009 42%,transparent 69%);
 }
 @keyframes apparition {
-  0% { opacity:0;transform:scale(.75); }
-  58% { opacity:.83;transform:scale(1); }
-  100% { opacity:0;transform:scale(1.12); }
+  0% { opacity:0;transform:scale(.71) rotate(-5deg); }
+  43% { opacity:.94;transform:scale(.98) rotate(0); }
+  56% { opacity:.84; }
+  100% { opacity:0;transform:scale(1.18) rotate(9deg); }
 }
 @media (max-width:640px), (pointer:coarse) and (max-height:540px) {
   .dialog[data-ouverture] .ecran {
@@ -303,38 +340,36 @@
     --lumiere-x:60%;
     --lumiere-y:39%;
     --reflet:51%;
+    --relief:.74;
   }
-  .cadre { transform:none; }
   .face::before { opacity:.78; }
+  .spectre { opacity:.36; }
   .etoiles { opacity:1; }
-  .etoilesEclairees {
-    opacity:.5;
-    filter:drop-shadow(0 0 1px #fff) drop-shadow(0 0 5px #ffe3ff) drop-shadow(0 0 9px #a1d7ff);
-  }
-  .carte[data-revelation] .face::after {
-    content:"";
-    position:absolute;
-    inset:0;
-    z-index:-2;
-    pointer-events:none;
-    background:linear-gradient(124deg,transparent 29%,#ad99ff17 39%,#8adeffad 44%,#c5b2fac9 48%,
-      #fff 50%,#ffbce8be 52%,#ffe9a690 57%,transparent 67%) -90% 42% / 310% 100% no-repeat;
-    mask-image:linear-gradient(#000 0 62%,#0009 72%,transparent 83%);
-    mix-blend-mode:screen;
-    opacity:0;
-    animation:balayage 1.05s .16s ease-out both;
-  }
-  .carte[data-derniere] .face::after { animation-delay:.85s; }
+  .etoilesEclairees { opacity:.56; }
 }
+.carte[data-revelation] .face::after {
+  content:"";
+  position:absolute;
+  inset:0;
+  z-index:-2;
+  pointer-events:none;
+  background:linear-gradient(124deg,transparent 27%,#ad99ff24 37%,#8adeffc7 44%,#c5b2fad9 48%,
+    #fff 50%,#ffbce8ce 52%,#ffe9b1a1 57%,transparent 70%) 100% 42% / 310% 100% no-repeat;
+  mask-image:linear-gradient(#000 0 62%,#0009 72%,transparent 86%);
+  mix-blend-mode:screen;
+  opacity:0;
+  animation:balayage 1.05s .13s ease-out both;
+}
+.carte[data-derniere] .face::after { animation-delay:.76s; }
 @keyframes balayage {
   0% { opacity:0;background-position:100% 42%; }
-  25% { opacity:.86; }
-  68% { opacity:.78; }
+  25% { opacity:1; }
+  68% { opacity:.88; }
   100% { opacity:0;background-position:0 42%; }
 }
 @media (prefers-reduced-motion:reduce) {
   .cadre { transform:none;transition:none; }
-  .face::before,.etoilesEclairees { transition:none; }
+  .face::before,.etoilesEclairees,.spectre { transition:none; }
   .carte[data-revelation] .face::after { animation:none; }
   .aura { display:none; }
 }
