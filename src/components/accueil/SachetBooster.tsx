@@ -6,12 +6,12 @@ import { useEffect, useRef, useState, type PointerEvent } from "react";
 import styles from "./SachetBooster.module.css";
 
 const textures = {
-  face: ["face-hd",1024,1682,"polygon(.5% 1%,99.5% 0,99.5% 7%,97% 25%,97% 76%,100% 94%,100% 99%,1% 99%,1% 94%,3% 76%,3% 25%,0 7%)"],
-  dos: ["dos-hd",1024,1756,"polygon(0 1%,100% 0,100% 8%,96% 27%,96% 76%,100% 94%,100% 99%,0 99%,0 94%,4% 76%,4% 27%,0 8%)"],
-  gauche: ["cote-gauche",39,397,"polygon(41% 0,49% 11%,85% 19%,99% 30%,100% 76%,79% 91%,58% 100%,34% 97%,9% 83%,0 73%,1% 29%,17% 16%)"],
-  droite: ["cote-droit",43,398,"polygon(47% 0,55% 10%,84% 19%,96% 30%,99% 76%,84% 89%,62% 98%,40% 100%,16% 90%,2% 77%,0 30%,20% 16%)"],
-  dessus: ["dessus",196,32,"polygon(0 70%,9% 39%,25% 15%,45% 3%,62% 3%,84% 18%,97% 51%,100% 71%,86% 87%,62% 97%,39% 98%,12% 87%)"],
-  dessous: ["dessous",194,31,"polygon(0 72%,9% 42%,25% 14%,45% 4%,65% 4%,84% 21%,97% 54%,100% 73%,84% 87%,60% 97%,37% 98%,12% 87%)"],
+  face: ["face-hd",1024,1682],
+  dos: ["dos-hd",1024,1756],
+  gauche: ["cote-gauche",39,397],
+  droite: ["cote-droit",43,398],
+  dessus: ["dessus",196,32],
+  dessous: ["dessous",194,31],
 } as const;
 
 type Texture = keyof typeof textures;
@@ -21,10 +21,10 @@ const bornerTangage = (angle: number) => Math.max(-angleVerticalMax, Math.min(an
 const tourProche = (angle: number) => Math.round(angle / 360) * 360;
 
 function ImageSachet({ cote, miniature = false }: { cote: Texture; miniature?: boolean }) {
-  const [fichier, largeur, hauteur, clipPath] = textures[cote];
-  return <Image className={styles.image} src={`/boosters/sachet-360/${miniature ? "face" : fichier}.webp`}
+  const [fichier, largeur, hauteur] = textures[cote];
+  return <Image className={styles.image} src={`/boosters/sachet-360/${miniature ? "face" : fichier + "-alpha"}.webp`}
     alt="" width={miniature ? 235 : largeur} height={miniature ? 386 : hauteur} unoptimized draggable={false}
-    loading="eager" style={{ clipPath }} />;
+    loading="eager" />;
 }
 
 export function MiniSachetBooster() {

@@ -50,10 +50,6 @@
   --lueur:#bcccff;
 }
 .carte {
-  --lumiere-x:44%;
-  --lumiere-y:37%;
-  --reflet:38%;
-  --relief:1;
   box-sizing:border-box;
   width:min(84vw,350px,55dvh);
   aspect-ratio:820/1290;
@@ -68,16 +64,10 @@
   border-radius:10% / 6%;
   box-shadow:inset 0 0 0 1px #fffd,0 4px 0 color-mix(in srgb,var(--lueur) 55%,#1a1234),
     0 13px 23px #21153556,0 0 22px color-mix(in srgb,var(--lueur) 65%,transparent);
-  transform:perspective(760px)
-    rotateX(calc(var(--inclinaison-x,0deg) * var(--relief)))
-    rotateY(calc(var(--inclinaison-y,0deg) * var(--relief)));
-  transition:transform .28s ease-out,box-shadow .22s ease-out;
+  transform:perspective(760px) rotateX(0deg) rotateY(0deg);
+  transition:transform .22s ease-out;
 }
-.carte[data-eclairee] .cadre {
-  transition-duration:.075s,.22s;
-  box-shadow:inset 0 0 0 1px #fff,0 4px 0 color-mix(in srgb,var(--lueur) 55%,#1a1234),
-    0 15px 27px #21153548,0 0 32px color-mix(in srgb,var(--lueur) 78%,transparent);
-}
+.carte[data-eclairee] .cadre { transition:none;will-change:transform; }
 .face {
   position:relative;
   isolation:isolate;
@@ -94,53 +84,32 @@
   height:100%;
   object-fit:fill;
 }
-.face::before {
-  content:"";
+.spectre,.etoiles,.etoilesEclairees,.zoneEtoiles {
   position:absolute;
   inset:0;
-  z-index:-2;
   pointer-events:none;
-  background:
-    radial-gradient(ellipse 8% 26% at 24% 33%,#ff9dff80,transparent),
-    radial-gradient(ellipse 7% 24% at 57% 28%,#d8c3ff80,transparent),
-    radial-gradient(ellipse 10% 14% at 58% 63%,#ffa3f999,transparent),
-    radial-gradient(ellipse 13% 15% at 95% 62%,#8ceaff87,transparent),
-    linear-gradient(129deg,transparent 25%,#a1c9ff20 33%,#a2e5ff86 42%,#c2a0ff82 48%,
-      #ffc7e39e 54%,#ffe3b56d 59%,transparent 72%) var(--reflet) var(--lumiere-y)/238% 190%;
-  mask-image:linear-gradient(#000 0 62%,#000a 72%,transparent 83%);
-  mix-blend-mode:screen;
-  opacity:.46;
-  transition:opacity .2s ease;
 }
-.carte[data-eclairee] .face::before { opacity:1; }
 .spectre {
-  position:absolute;
-  inset:0;
   z-index:-2;
-  pointer-events:none;
-  background:
-    radial-gradient(ellipse 22% 16% at var(--lumiere-x) var(--lumiere-y),#fff9 0%,#fae4ff35 39%,transparent 100%),
-    linear-gradient(125deg,transparent 25%,#32aafa1a 34%,#76e9ffb8 42%,#ccb5fff0 46%,#fff 49%,
-      #ff96d5e0 53%,#ffc785c9 58%,#88ffe37a 65%,transparent 75%)
-      var(--reflet) var(--lumiere-y) / 224% 186%;
-  mask-image:
-    radial-gradient(ellipse 83% 70% at var(--lumiere-x) var(--lumiere-y),#000 10%,#000e 55%,transparent),
-    linear-gradient(#000 0 60%,#000c 71%,transparent 86%);
-  mask-composite:intersect;
-  mix-blend-mode:screen;
-  opacity:.17;
-  transition:opacity .18s ease-out;
+  overflow:hidden;
+  opacity:.21;
+  transition:opacity .16s ease-out;
 }
-.carte:is([data-eclairee],:has(.suivante:focus-visible)) .spectre { opacity:.9; }
-.etoiles {
+.carte:is([data-eclairee],:has(.suivante:focus-visible)) .spectre { opacity:.85; }
+.reflet {
   position:absolute;
-  inset:0;
-  z-index:-1;
-  pointer-events:none;
-  opacity:.74;
-  filter:drop-shadow(0 0 1px #fff) drop-shadow(0 0 4px #e982ff);
+  inset:-32%;
+  background:
+    radial-gradient(ellipse at 49% 50%,#fff6 0%,#e0eaff21 20%,transparent 43%),
+    linear-gradient(127deg,transparent 39%,#87eaff22 43%,#b4c9fc95 46%,#fff9 48%,
+      #ffb6de78 50%,#ffdc9c44 53%,transparent 57%);
+  transform:translate3d(0,0,0);
+  transition:transform .18s ease-out;
 }
-.etoiles i {
+.carte[data-eclairee] .reflet { transition:none;will-change:transform; }
+.etoiles,.etoilesEclairees { z-index:-1; }
+.etoiles { opacity:.64; }
+.etoiles i,.zoneEtoiles i {
   position:absolute;
   left:var(--etoile-x);
   top:var(--etoile-y);
@@ -150,13 +119,9 @@
   background:linear-gradient(#d7bbff,#fff 42% 57%,#a7eaff);
   clip-path:polygon(50% 0%,59% 39%,100% 50%,60% 60%,50% 100%,40% 60%,0% 50%,41% 39%);
 }
-.etoilesEclairees {
-  opacity:0;
-  filter:drop-shadow(0 0 1px #fff) drop-shadow(0 0 4px #ffe0ff) drop-shadow(0 0 9px #a7e8ff);
-  mask-image:radial-gradient(ellipse 45% 42% at var(--lumiere-x) var(--lumiere-y),#000 12%,#000e 47%,#0005 76%,transparent);
-  transition:opacity .17s ease;
-}
-.carte[data-eclairee] .etoilesEclairees { opacity:1; }
+.zoneEtoiles { opacity:0;transition:opacity .16s ease; }
+.zoneEtoiles i { scale:1.45; }
+.carte[data-eclairee] .zoneEtoiles { transition:none;will-change:opacity; }
 .suivante {
   position:absolute;
   inset:0;
@@ -209,18 +174,6 @@
   }
   .dialog[data-ouverture] .fermer { z-index:1; }
 }
-@media (hover:none), (pointer:coarse) {
-  .carte {
-    --lumiere-x:60%;
-    --lumiere-y:39%;
-    --reflet:51%;
-    --relief:.74;
-  }
-  .face::before { opacity:.78; }
-  .spectre { opacity:.36; }
-  .etoiles { opacity:1; }
-  .etoilesEclairees { opacity:.56; }
-}
 .carte[data-revelation] .face::after {
   content:"";
   position:absolute;
@@ -242,8 +195,8 @@
   100% { opacity:0;background-position:0 42%; }
 }
 @media (prefers-reduced-motion:reduce) {
-  .cadre { transform:none;transition:none; }
-  .face::before,.etoilesEclairees,.spectre { transition:none; }
+  .cadre { transform:none !important;transition:none; }
+  .reflet,.zoneEtoiles,.spectre { transition:none; }
   .carte[data-revelation] .face::after { animation:none; }
   .aura { display:none; }
 }
@@ -373,3 +326,14 @@
 .collectionOr span { font-size:1.65em;line-height:.66; }
 .autreBooster { border:2px solid #8b28c9;color:#7220aa;background:#fff9; }
 .collectionOr:focus-visible,.autreBooster:focus-visible { outline:2px solid #7220aa;outline-offset:5px; }
+
+.ecran .gainBooster {
+  margin:10px auto 0;
+  padding:4px 12px;
+  border:1px solid #f6d284;
+  border-radius:20px;
+  background:#fff1c8;
+  color:#633906;
+  font-weight:850;
+  font-variant-numeric:tabular-nums;
+}

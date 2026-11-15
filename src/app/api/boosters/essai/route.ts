@@ -1,5 +1,6 @@
-import { randomInt } from "node:crypto";
+import { randomInt, randomUUID } from "node:crypto";
 import { compteAppelant, refusAuth } from "@/lib/apiAuth";
+import { createAdminClient } from "@/lib/supabase-admin";
 import { mouvements, type Carte } from "@/lib/cartesBooster";
 
 // Compte Vaiiya vérifié de Louis. Cette exception autorise uniquement les tirages d’essai.
@@ -17,6 +18,11 @@ export async function POST(req: Request) {
   if (!appelant) return refusAuth();
   if (appelant.id !== compteEssai) return Response.json({ error: "acces_refuse" }, { ...prive, status: 403 });
 
+  const requete = req.headers.get("X-Booster-Request-Id") ?? randomUUID();
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(requete)) {
+    return Response.json({ error: "invalid_request" }, { ...prive, status: 400 });
+  }
+
   // Mêmes combinaisons que le booster quotidien (ouvrir_booster_exercices_v2).
   const chance = randomInt(100);
   const raretes: Carte["rarete"][] = chance < 60 ? ["commune", "commune", "epique"]
@@ -29,5 +35,10 @@ export async function POST(req: Request) {
     exercice: pool.splice(randomInt(pool.length), 1)[0],
     rarete,
   }));
-  return Response.json({ cartes }, prive);
+  const { data, error } = await createAdminClient().rpc("enregistrer_booster_illimite", {
+    p_compte: appelant.id, p_requete: requete, p_cartes: cartes,
+  });
+  if (error?.code === "PGRST202") return Response.json({ cartes, exp: 0 }, prive);
+  if (error || !data) return Response.json({ error: "enregistrement_indisponible" }, { ...prive, status: 503 });
+  return Response.json(data, prive);
 }

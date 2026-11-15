@@ -12,17 +12,17 @@ import { mouvements, raretes, type Carte } from "@/lib/cartesBooster";
 import SachetBooster, { MiniSachetBooster } from "./SachetBooster";
 import styles from "./BoosterQuotidien.module.css";
 
-async function demanderEssai(methode: "GET" | "POST", signal?: AbortSignal) {
+async function demanderEssai(methode: "GET" | "POST", signal?: AbortSignal, requete?: string) {
   const { data: { session } } = await createClient().auth.getSession();
   if (!session) return null;
   const response = await fetch("/api/boosters/essai", {
     method: methode,
-    headers: { Authorization: `Bearer ${session.access_token}` },
+    headers: { Authorization: `Bearer ${session.access_token}`, ...(requete ? { "X-Booster-Request-Id": requete } : {}) },
     cache: "no-store",
     signal,
   });
   if (!response.ok) return null;
-  return await response.json() as { illimite?: boolean; cartes?: Carte[] };
+  return await response.json() as { illimite?: boolean; cartes?: Carte[]; exp?: number };
 }
 
 const etoiles = [
@@ -33,8 +33,17 @@ const etoiles = [
   [12, 65, 4], [27, 71, 4], [83, 72, 3], [53, 73, 4], [72, 77, 3],
 ].map(([x, y, taille]) => ({
   key: x + ":" + y,
+  colonne: Math.min(2, Math.floor(x / (100 / 3))),
+  ligne: y < 50 ? 0 : 1,
   style: { "--etoile-x": x + "%", "--etoile-y": y + "%", "--etoile-taille": taille + "px" } as CSSProperties,
 }));
+
+const zonesEtoiles = Array.from({ length: 6 }, (_, index) => {
+  const colonne = index % 3;
+  const ligne = Math.floor(index / 3);
+  return { x: (colonne + .5) / 3, y: (ligne + .5) / 2,
+    etoiles: etoiles.filter(etoile => etoile.colonne === colonne && etoile.ligne === ligne) };
+});
 
 function imageCarte(carte: Carte, guide: GuideRef) {
   if (carte.exercice === "crunch" && carte.rarete !== "chromatique") {
@@ -70,25 +79,39 @@ function CarteBooster({ carte, guide, avancer, derniere = false, prioritaire = f
 }) {
   const [nom] = mouvements[carte.exercice];
   const rarete = raretes[carte.rarete];
-  const geste = useRef<{ id: number; bounds: DOMRect; x: number; y: number } | null>(null);
+  const geste = useRef<{ id: number; x: number; y: number } | null>(null);
+  const zone = useRef<DOMRect | null>(null);
+  const position = useRef({ x: .5, y: .5 });
+  const frame = useRef<number | null>(null);
+  const reflet = useRef<HTMLDivElement>(null);
+  const cadre = useRef<HTMLDivElement>(null);
+  const zones = useRef<(HTMLDivElement | null)[]>([]);
   const clicApresGlissement = useRef(false);
+
+  useEffect(() => () => { if (frame.current !== null) cancelAnimationFrame(frame.current); }, []);
 
   function eclairer(event: PointerEvent<HTMLElement>) {
     const enCours = geste.current;
     if (!event.isPrimary || (event.pointerType === "touch" && enCours?.id !== event.pointerId)) return;
     const element = event.currentTarget;
-    const { left, top, width, height } = enCours?.bounds ?? element.getBoundingClientRect();
-    const x = Math.max(0, Math.min(1, (event.clientX - left) / width));
-    const y = Math.max(0, Math.min(1, (event.clientY - top) / height));
-    if (enCours && Math.hypot(event.clientX - enCours.x, event.clientY - enCours.y) > 6) {
-      clicApresGlissement.current = true;
-    }
-    element.dataset.eclairee = "";
-    element.style.setProperty("--lumiere-x", x * 100 + "%");
-    element.style.setProperty("--lumiere-y", y * 100 + "%");
-    element.style.setProperty("--reflet", (1 - x) * 100 + "%");
-    element.style.setProperty("--inclinaison-x", (.5 - y) * 21 + "deg");
-    element.style.setProperty("--inclinaison-y", (x - .5) * 25 + "deg");
+    const { left, top, width, height } = zone.current ??= element.getBoundingClientRect();
+    position.current = {
+      x: Math.max(0, Math.min(1, (event.clientX - left) / width)),
+      y: Math.max(0, Math.min(1, (event.clientY - top) / height)),
+    };
+    if (enCours && Math.hypot(event.clientX - enCours.x, event.clientY - enCours.y) > 6) clicApresGlissement.current = true;
+    if (frame.current !== null) return;
+    frame.current = requestAnimationFrame(() => {
+      frame.current = null;
+      const { x, y } = position.current;
+      if (!element.hasAttribute("data-eclairee")) element.dataset.eclairee = "";
+      cadre.current!.style.transform = "perspective(760px) rotateX(" + ((.5 - y) * 17) + "deg) rotateY(" + ((x - .5) * 21) + "deg)";
+      reflet.current!.style.transform = "translate3d(" + ((x - .5) * 47) + "%," + ((y - .5) * 32) + "%,0)";
+      for (let i = 0; i < zonesEtoiles.length; i++) {
+        const point = zonesEtoiles[i];
+        zones.current[i]!.style.opacity = String(Math.max(0, 1 - Math.hypot(x - point.x, y - point.y) * 1.72));
+      }
+    });
   }
 
   function relacher(event: PointerEvent<HTMLElement>) {
@@ -100,11 +123,13 @@ function CarteBooster({ carte, guide, avancer, derniere = false, prioritaire = f
       }
       geste.current = null;
     }
-    const element = event.currentTarget;
-    delete element.dataset.eclairee;
-    for (const property of ["--lumiere-x", "--lumiere-y", "--reflet", "--inclinaison-x", "--inclinaison-y"]) {
-      element.style.removeProperty(property);
-    }
+    if (frame.current !== null) cancelAnimationFrame(frame.current);
+    frame.current = null;
+    zone.current = null;
+    delete event.currentTarget.dataset.eclairee;
+    cadre.current?.style.removeProperty("transform");
+    reflet.current?.style.removeProperty("transform");
+    for (const etoiles of zones.current) etoiles?.style.removeProperty("opacity");
   }
 
   return (
@@ -113,7 +138,8 @@ function CarteBooster({ carte, guide, avancer, derniere = false, prioritaire = f
       onPointerDown={event => {
         if (!event.isPrimary || event.button !== 0) return;
         const { currentTarget, target, pointerId, clientX, clientY } = event;
-        geste.current = { id: pointerId, bounds: currentTarget.getBoundingClientRect(), x: clientX, y: clientY };
+        zone.current = currentTarget.getBoundingClientRect();
+        geste.current = { id: pointerId, x: clientX, y: clientY };
         clicApresGlissement.current = false;
         if (avancer && target instanceof HTMLButtonElement) target.setPointerCapture(pointerId);
         eclairer(event);
@@ -123,15 +149,17 @@ function CarteBooster({ carte, guide, avancer, derniere = false, prioritaire = f
       onPointerLeave={relacher}
       onPointerCancel={relacher}
       onLostPointerCapture={relacher}>
-      <div className={styles.cadre}>
+      <div ref={cadre} className={styles.cadre}>
         <div className={styles.face}>
           <div aria-hidden="true" className={styles.etoiles}>
             {etoiles.map(etoile => <i key={etoile.key} style={etoile.style} />)}
           </div>
-          <div aria-hidden="true" className={`${styles.etoiles} ${styles.etoilesEclairees}`}>
-            {etoiles.map(etoile => <i key={etoile.key} style={etoile.style} />)}
+          <div aria-hidden="true" className={styles.etoilesEclairees}>
+            {zonesEtoiles.map((point, i) => <div key={i} ref={element => { zones.current[i] = element; }} className={styles.zoneEtoiles}>
+              {point.etoiles.map(etoile => <i key={etoile.key} style={etoile.style} />)}
+            </div>)}
           </div>
-          <div aria-hidden="true" className={styles.spectre} />
+          <div aria-hidden="true" className={styles.spectre}><div ref={reflet} className={styles.reflet} /></div>
           <Image className={styles.planche} src={imageCarte(carte, guide)} alt={nom + ", " + rarete}
             width={820} height={1290} unoptimized draggable={false} loading={avancer || prioritaire ? "eager" : "lazy"} />
         </div>
@@ -168,21 +196,27 @@ export function CollectionBoosters({ userId }: { userId: string }) {
       const client = createClient();
       const collection = new Map<string, Carte>();
       const taillePage = 100;
-      for (let debut = 0; actif; debut += taillePage) {
-        const { data, error } = await client.from("boosters_exercices").select("cartes")
-          .eq("user_id", userId).order("jour", { ascending: false }).range(debut, debut + taillePage - 1);
-        if (!actif) return;
-        if (error) { setErreur(true); return; }
-        for (const tirage of data) {
-          for (const carte of tirage.cartes as Carte[]) {
-            collection.set(carte.exercice + ":" + carte.rarete, carte);
+      for (const table of ["boosters_exercices", "boosters_illimites"]) {
+        for (let debut = 0; actif; debut += taillePage) {
+          const lecture = client.from(table).select("cartes").eq("user_id", userId);
+          const { data, error } = await (table === "boosters_exercices"
+            ? lecture.order("jour", { ascending: false })
+            : lecture.order("ouvert_le", { ascending: false }).order("requete_id"))
+            .range(debut, debut + taillePage - 1);
+          if (!actif) return;
+          if (error?.code === "PGRST205" || error?.code === "42P01") {
+            if (table === "boosters_illimites") break;
           }
-        }
-        if (data.length < taillePage) {
-          setCartes([...collection.values()]);
-          return;
+          if (error) { setErreur(true); return; }
+          for (const tirage of data) {
+            for (const carte of tirage.cartes as Carte[]) {
+              collection.set(carte.exercice + ":" + carte.rarete, carte);
+            }
+          }
+          if (data.length < taillePage) break;
         }
       }
+      if (actif) setCartes([...collection.values()]);
     }
     void charger();
     return () => { actif = false; };
@@ -213,12 +247,13 @@ function disposerCartes(cartes: Carte[]) {
   return resultat;
 }
 
-export default function BoosterQuotidien({ guide, jour }: { guide: GuideRef; jour: string }) {
+export default function BoosterQuotidien({ guide, jour, onGain }: { guide: GuideRef; jour: string; onGain?: () => void }) {
   const [disponible, setDisponible] = useState(false);
   const [illimite, setIllimite] = useState(false);
   const [cartes, setCartes] = useState<Carte[] | null>(null);
   const [compteRebours, setCompteRebours] = useState("");
   const [index, setIndex] = useState(0);
+  const [exp, setExp] = useState(0);
   const [erreur, setErreur] = useState(false);
   const [chargement, setChargement] = useState(false);
   const [sortie, setSortie] = useState<Carte[] | null>(null);
@@ -226,7 +261,8 @@ export default function BoosterQuotidien({ guide, jour }: { guide: GuideRef; jou
   const mouvementReduit = useReducedMotion();
   const dialog = useRef<HTMLDialogElement>(null);
   const actif = useRef(false);
-  const tirageEnAttente = useRef<Carte[] | null>(null);
+  const tirageEnAttente = useRef<{ cartes: Carte[]; exp: number } | null>(null);
+  const requeteEssai = useRef<string | null>(null);
   const imagesDecodees = useRef<HTMLImageElement[]>([]);
   const profil = guide ?? "nora";
 
@@ -266,6 +302,7 @@ export default function BoosterQuotidien({ guide, jour }: { guide: GuideRef; jou
     actif.current = false;
     imagesDecodees.current = [];
     setCartes(null);
+    setExp(0);
     setIndex(0);
     setErreur(false);
   }
@@ -276,24 +313,39 @@ export default function BoosterQuotidien({ guide, jour }: { guide: GuideRef; jou
     setErreur(false);
     setChargement(true);
     try {
-      let nouvellesCartes = tirageEnAttente.current;
-      if (!nouvellesCartes) {
-        let tirage: unknown;
+      let tirage = tirageEnAttente.current;
+      if (!tirage) {
+        let nouvellesCartes: unknown;
+        let gain = 0;
         if (illimite) {
-          tirage = (await demanderEssai("POST"))?.cartes;
+          requeteEssai.current ??= crypto.randomUUID();
+          const resultat = await demanderEssai("POST", undefined, requeteEssai.current);
+          nouvellesCartes = resultat?.cartes;
+          gain = resultat?.exp ?? 0;
         } else {
-          const { data, error } = await createClient().rpc("ouvrir_booster_exercices_v2");
-          if (error) throw new Error("Tirage indisponible");
-          tirage = data;
+          const client = createClient();
+          const { data, error } = await client.rpc("ouvrir_booster_exercices_v3");
+          if (error?.code === "PGRST202") {
+            const ancien = await client.rpc("ouvrir_booster_exercices_v2");
+            if (ancien.error) throw new Error("Tirage indisponible");
+            nouvellesCartes = ancien.data;
+          } else {
+            if (error) throw new Error("Tirage indisponible");
+            nouvellesCartes = data?.cartes;
+            gain = data?.exp ?? 0;
+          }
         }
-        if (!Array.isArray(tirage) || tirage.length !== 3) throw new Error("Tirage indisponible");
-        nouvellesCartes = tirage as Carte[];
-        tirageEnAttente.current = nouvellesCartes;
+        if (!Array.isArray(nouvellesCartes) || nouvellesCartes.length !== 3) throw new Error("Tirage indisponible");
+        tirage = { cartes: nouvellesCartes as Carte[], exp: gain };
+        tirageEnAttente.current = tirage;
       }
-      imagesDecodees.current = await Promise.all(nouvellesCartes.map(carte => decoderCarte(carte, profil)));
+      imagesDecodees.current = await Promise.all(tirage.cartes.map(carte => decoderCarte(carte, profil)));
       tirageEnAttente.current = null;
-      if (!mouvementReduit && dialog.current?.open) setSortie(nouvellesCartes);
-      else setCartes(nouvellesCartes);
+      requeteEssai.current = null;
+      setExp(tirage.exp);
+      if (tirage.exp > 0) onGain?.();
+      if (!mouvementReduit && dialog.current?.open) setSortie(tirage.cartes);
+      else setCartes(tirage.cartes);
     } catch {
       setErreur(true);
       setEssaiSachet(essai => essai + 1);
@@ -359,6 +411,7 @@ export default function BoosterQuotidien({ guide, jour }: { guide: GuideRef; jou
           </div>}
           {recapitulatif && <>
             <p className={styles.nombreCartes}>Tu as obtenu <strong>{recapitulatif.length} cartes</strong></p>
+            {exp > 0 && <p className={styles.gainBooster}>+{exp} EXP</p>}
             <div className={styles.recapitulatif} aria-label="Cartes obtenues">
               {recapitulatif.map((item, position) =>
                 <div key={item.exercice + ":" + item.rarete + ":" + position} className={styles.carteRecap}>
