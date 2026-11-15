@@ -3,17 +3,12 @@
   height:100px;
   width:62px;
   flex:none;
-  filter:drop-shadow(0 4px 5px #67409340);
 }
 .image {
-  position:absolute;
-  top:0;
-  left:50%;
-  translate:-50% 0;
   display:block;
-  width:auto;
-  max-width:none;
+  width:100%;
   height:100%;
+  max-width:none;
   pointer-events:none;
 }
 .scene {
@@ -34,27 +29,28 @@
   background:radial-gradient(ellipse,#a290c18c 0%,transparent 74%);
   pointer-events:none;
 }
-.corps,.bande,.camera,.modele {
+.camera,.profondeur,.modele,.dechirure {
   position:absolute;
   inset:0;
   pointer-events:none;
 }
-.corps,.bande { z-index:2; }
-.bande { z-index:3; }
 .camera {
   z-index:2;
   perspective:900px;
 }
+.profondeur {
+  transform:translateZ(calc(var(--epaisseur) * -.5));
+  transform-style:preserve-3d;
+}
 .modele {
   transform-style:preserve-3d;
-  transform:translateZ(calc(var(--epaisseur) * -.5));
   will-change:transform;
 }
 .face3d {
   position:absolute;
+  -webkit-backface-visibility:hidden;
   backface-visibility:hidden;
 }
-.face3d .image { width:100%; }
 .face,.dos {
   inset:0;
   transform:translateZ(calc(var(--epaisseur) * .5));
@@ -66,10 +62,32 @@
 .dessus,.dessous { inset-inline:0;height:var(--epaisseur); }
 .dessus { top:1%;transform:translateY(-50%) rotateX(90deg); }
 .dessous { bottom:1%;transform:translateY(50%) rotateX(-90deg); }
-.fil {
-  position:absolute;
-  inset:0;
-  background:linear-gradient(90deg,#eaf6ff,#c2eaff,#fff,#ffc6ed,#fff8d1);
+
+.dechirure {
+  z-index:2;
+  width:100%;
+  height:100%;
+  overflow:visible;
+  visibility:hidden;
+}
+.scene[data-trace] .camera { visibility:hidden; }
+.scene[data-trace] .dechirure { visibility:visible; }
+.corps,.bande { transform-box:view-box; }
+.bande { transform:translateY(var(--levee,0%)) rotate(var(--pli,0deg)); }
+.scene[data-trace="terminee"] .bande { animation:envol .36s cubic-bezier(.22,.69,.38,1) both; }
+.scene[data-trace="terminee"][data-sortie] .corps {
+  transform-origin:50% 50%;
+  animation:chute .39s cubic-bezier(.55,.06,.79,.61) both;
+}
+@keyframes envol {
+  0% { transform:translateY(var(--levee)) rotate(var(--pli));opacity:1; }
+  48% { transform:translate(calc(var(--sens) * 5%),-8%) rotate(calc(var(--sens) * 14deg)) scaleY(.77);opacity:1; }
+  100% { transform:translate(calc(var(--sens) * 13%),-16%) rotate(calc(var(--sens) * 32deg)) scaleY(.32);opacity:0; }
+}
+@keyframes chute {
+  0% { transform:translateY(0);opacity:1; }
+  65% { opacity:1; }
+  100% { transform:translateY(60%) rotate(-11deg);opacity:0; }
 }
 .rotation,.soudure {
   position:absolute;
@@ -88,6 +106,10 @@
   outline:2px solid #8142cc;
   outline-offset:4px;
 }
+.aide {
+  /* Le bouton de retour peut apparaître pendant l'inertie, sans déplacer le sachet. */
+  min-height:56px;
+}
 .revenir {
   min-height:44px;
   padding:0 14px;
@@ -101,16 +123,7 @@
 @media (max-height:520px) {
   .scene { margin-block:14px 22px; }
 }
-
-.foil,.ouverture,.pli {
-  position:absolute;
-  inset:0;
-  pointer-events:none;
-}
-.ouverture {
-  background:linear-gradient(178deg,#b89cc4 4%,#3d2b54 7%,#110d25 9.5%,#796883 12%);
-}
-.pli {
-  background:linear-gradient(112deg,#1a0f4280,transparent 24%,#e8defb7d 53%,transparent 74%,#cab7e140);
-  mix-blend-mode:multiply;
+@media (prefers-reduced-motion: reduce) {
+  .scene[data-trace="terminee"] .bande,
+  .scene[data-trace="terminee"][data-sortie] .corps { animation-duration:1ms; }
 }

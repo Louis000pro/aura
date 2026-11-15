@@ -192,20 +192,31 @@ function tempsRestant(jour: string) {
     .map(valeur => String(valeur).padStart(2, "0")).join(":");
 }
 
-export function CollectionBoosters({ userId }: { userId: string }) {
+function useGuideCartes(userId: string) {
   const { guide } = useGuideActif();
-  const [cartes, setCartes] = useState<Carte[] | null>(null);
-  const [erreur, setErreur] = useState(false);
-  const cleGuide = userId + ":" + guide;
+  const [revision, setRevision] = useState(0);
+  const cle = userId + ":" + guide + ":" + revision;
   const [portrait, setPortrait] = useState<{ cle: string; choix: GuideId | null } | null>(null);
-  const profil = portrait?.cle === cleGuide ? portrait : null;
+  const profil = portrait?.cle === cle ? portrait : null;
   useEffect(() => {
     let actif = true;
     void lireGuideCartes(userId)
-      .then(choix => { if (actif) setPortrait({ cle: cleGuide, choix }); })
-      .catch(() => { if (actif) setPortrait({ cle: cleGuide, choix: null }); });
+      .then(choix => { if (actif) setPortrait({ cle, choix }); })
+      .catch(() => { if (actif) setPortrait({ cle, choix: null }); });
     return () => { actif = false; };
-  }, [cleGuide, userId]);
+  }, [cle, userId]);
+  return { profil, verifier: () => setRevision(revision => revision + 1) };
+}
+
+const ordreRarete: Carte["rarete"][] = ["commune", "rare", "epique", "legendaire", "chromatique"];
+const raretesCollection = [...ordreRarete].reverse();
+const triMouvement = new Intl.Collator("fr");
+
+export function CollectionBoosters({ userId }: { userId: string }) {
+  const { profil, verifier } = useGuideCartes(userId);
+  const guide = profil?.choix;
+  const [cartes, setCartes] = useState<Carte[] | null>(null);
+  const [erreur, setErreur] = useState(false);
   useEffect(() => {
     let actif = true;
     async function charger() {
@@ -232,7 +243,8 @@ export function CollectionBoosters({ userId }: { userId: string }) {
           if (data.length < taillePage) break;
         }
       }
-      if (actif) setCartes([...collection.values()]);
+      if (actif) setCartes([...collection.values()].sort((a, b) =>
+        triMouvement.compare(mouvements[a.exercice][0], mouvements[b.exercice][0])));
     }
     void charger();
     return () => { actif = false; };
@@ -245,14 +257,19 @@ export function CollectionBoosters({ userId }: { userId: string }) {
   return <section id="cartes-exercices" className={styles.collection}>
     <h2>Mes cartes d’exercices</h2>
     {erreur ? <p>Impossible de charger les cartes.</p> : !cartes ? <p>Chargement…</p> : !cartes.length ? <p>Ouvre ton premier booster pour commencer ta collection.</p> :
-      !profil ? <p>Chargement de ton coach…</p> : !profil.choix ? <p>Impossible d’identifier ton coach. Vérifie ton choix dans les paramètres.</p> :
-      <div className={styles.grille}>{cartes.map(carte =>
-        <CarteBooster key={carte.exercice + ":" + carte.rarete} carte={carte} guide={profil.choix!} />
-      )}</div>}
+      !profil ? <p>Chargement de ton coach…</p> : !guide ? <p>Coach indisponible. <button type="button" onClick={verifier}>Réessayer</button></p> :
+      raretesCollection.map(rarete => {
+        const groupe = cartes.filter(carte => carte.rarete === rarete);
+        if (!groupe.length) return null;
+        return <section key={rarete} className={styles.groupeCollection} aria-labelledby={"collection-" + rarete}>
+          <h3 id={"collection-" + rarete}>{raretes[rarete]} <span>{groupe.length}</span></h3>
+          <div className={styles.grille}>{groupe.map(carte =>
+            <CarteBooster key={carte.exercice} carte={carte} guide={guide} />
+          )}</div>
+        </section>;
+      })}
   </section>;
 }
-
-const ordreRarete: Carte["rarete"][] = ["commune", "rare", "epique", "legendaire", "chromatique"];
 
 function disposerCartes(cartes: Carte[]) {
   if (cartes.length !== 3) return cartes;
@@ -265,7 +282,10 @@ function disposerCartes(cartes: Carte[]) {
 }
 
 export default function BoosterQuotidien({ userId, jour, onGain }: { userId: string; jour: string; onGain?: () => void }) {
-  const [disponible, setDisponible] = useState(false);
+  const { profil: portrait, verifier: verifierCoach } = useGuideCartes(userId);
+  const coach = portrait?.choix ?? null;
+  const [statut, setStatut] = useState<"chargement" | "pret" | "erreur">("chargement");
+  const [revisionStatut, setRevisionStatut] = useState(0);
   const [illimite, setIllimite] = useState(false);
   const [cartes, setCartes] = useState<Carte[] | null>(null);
   const [compteRebours, setCompteRebours] = useState("");
@@ -282,30 +302,37 @@ export default function BoosterQuotidien({ userId, jour, onGain }: { userId: str
   const requeteEssai = useRef<string | null>(null);
   const imagesDecodees = useRef<HTMLImageElement[]>([]);
   const [profil, setProfil] = useState<GuideId | null>(null);
+  const [guideSachet, setGuideSachet] = useState<GuideId | null>(null);
+  const [preparation, setPreparation] = useState(false);
+  const [erreurCoach, setErreurCoach] = useState("");
 
   useEffect(() => {
     let vivant = true;
     const controle = new AbortController();
     async function charger() {
-      const essai = await demanderEssai("GET", controle.signal).catch(() => null);
+      const client = createClient();
+      const [essai, apercu] = await Promise.all([
+        demanderEssai("GET", controle.signal).catch(() => null),
+        client.rpc("ouvrir_booster_exercices_v2", { p_apercu: true }).abortSignal(controle.signal),
+      ]);
       if (!vivant) return;
       if (essai?.illimite) {
         setIllimite(true);
-        setDisponible(true);
+        setStatut("pret");
         return;
       }
-      const { data, error } = await createClient().rpc("ouvrir_booster_exercices_v2", { p_apercu: true });
-      if (!vivant || error) return;
+      if (apercu.error) { setStatut("erreur"); return; }
+      const { data } = apercu;
       setIllimite(false);
-      setDisponible(true);
+      setStatut("pret");
       if (data) {
         setCartes(ancien => ancien ?? data as Carte[]);
         if (!actif.current) setIndex(3);
       }
     }
-    void charger();
+    void charger().catch(() => { if (vivant) setStatut("erreur"); });
     return () => { vivant = false; controle.abort(); };
-  }, [jour]);
+  }, [jour, revisionStatut]);
 
   useEffect(() => {
     if (!cartes || illimite) return;
@@ -325,19 +352,33 @@ export default function BoosterQuotidien({ userId, jour, onGain }: { userId: str
     setProfil(null);
   }
 
-  async function ouvrir() {
-    if (actif.current || cartes) return;
-    actif.current = true;
-    setErreur("");
-    setChargement(true);
-    let message = "Impossible de vérifier ton coach. Réessaie dans un instant.";
+  async function preparerSachet() {
+    if (preparation) return;
+    setPreparation(true);
+    setErreurCoach("");
     try {
       const guideConfirme = await lireGuideCartes(userId);
       if (!guideConfirme) {
-        message = "Choisis ton coach dans les paramètres pour ouvrir ton booster.";
-        throw new Error(message);
+        setErreurCoach("Choisis ton coach dans les paramètres pour ouvrir ton booster.");
+        return;
       }
-      message = "Le booster est indisponible. Réessaie dans un instant.";
+      if (guideConfirme !== coach) verifierCoach();
+      if (illimite) reinitialiserEssai();
+      setGuideSachet(guideConfirme);
+      if (dialog.current && !dialog.current.open) dialog.current.showModal();
+    } catch {
+      setErreurCoach("Impossible de vérifier ton coach. Réessaie dans un instant.");
+    } finally {
+      setPreparation(false);
+    }
+  }
+
+  async function ouvrir() {
+    if (!guideSachet || actif.current || cartes) return;
+    actif.current = true;
+    setErreur("");
+    setChargement(true);
+    try {
       let tirage = tirageEnAttente.current;
       if (!tirage) {
         let nouvellesCartes: unknown;
@@ -364,16 +405,16 @@ export default function BoosterQuotidien({ userId, jour, onGain }: { userId: str
         tirage = { cartes: nouvellesCartes as Carte[], exp: gain };
         tirageEnAttente.current = tirage;
       }
-      imagesDecodees.current = await Promise.all(tirage.cartes.map(carte => decoderCarte(carte, guideConfirme)));
+      imagesDecodees.current = await Promise.all(tirage.cartes.map(carte => decoderCarte(carte, guideSachet)));
       tirageEnAttente.current = null;
       requeteEssai.current = null;
-      setProfil(guideConfirme);
+      setProfil(guideSachet);
       setExp(tirage.exp);
       if (tirage.exp > 0) onGain?.();
       if (!mouvementReduit && dialog.current?.open) setSortie(tirage.cartes);
       else setCartes(tirage.cartes);
     } catch {
-      setErreur(message);
+      setErreur("Le booster est indisponible. Réessaie dans un instant.");
       setEssaiSachet(essai => essai + 1);
       actif.current = false;
     } finally {
@@ -391,8 +432,6 @@ export default function BoosterQuotidien({ userId, jour, onGain }: { userId: str
     setIndex(index + 1);
   }
 
-  if (!disponible) return null;
-
   const carte = profil ? cartes?.[index] : undefined;
   const recapitulatif = profil && cartes && !carte ? disposerCartes(cartes) : null;
   return (
@@ -400,14 +439,22 @@ export default function BoosterQuotidien({ userId, jour, onGain }: { userId: str
       <section className={styles.bloc} aria-label="Booster du jour">
         <div><small>{illimite ? "Mode test · ouvertures illimitées" : "3 cartes d’exercices"}</small>
           <h2>{illimite ? "Tes boosters d’essai" : "Ton booster du jour"}</h2>
-          <button type="button" className={styles.ouvrir} disabled={chargement || !!sortie || (!illimite && !!cartes)} onClick={() => {
-            if (illimite) reinitialiserEssai();
-            dialog.current?.showModal();
-          }}>
-            Ouvrir le booster
+          <button type="button" className={styles.ouvrir}
+            aria-busy={preparation}
+            disabled={statut === "chargement" || !portrait || preparation || chargement || !!sortie || (!illimite && !!cartes)}
+            onClick={() => {
+              if (statut === "erreur") {
+                setStatut("chargement");
+                setRevisionStatut(revision => revision + 1);
+                return;
+              }
+              void preparerSachet();
+            }}>
+            {statut === "erreur" || (portrait && !coach) ? "Réessayer" : "Ouvrir le booster"}
           </button>
+          {erreurCoach && !cartes && <p role="alert">{erreurCoach}</p>}
         </div>
-        <div className={styles.statut}><MiniSachetBooster />
+        <div className={styles.statut}><MiniSachetBooster guide={coach} />
           {cartes && !illimite && <div className={styles.compte}><small>Prochain booster</small><strong>{compteRebours}</strong></div>}
         </div>
       </section>
@@ -417,8 +464,8 @@ export default function BoosterQuotidien({ userId, jour, onGain }: { userId: str
           <button type="button" className={styles.fermer} aria-label="Fermer" onClick={() => dialog.current?.close()}>×</button>
           <h2 id="titre-booster" aria-live="polite">{cartes ? carte ? "Carte " + (index + 1) + " sur 3" : "Booster ouvert !" : illimite ? "Booster d’essai" : "Ton booster du jour"}</h2>
           {!cartes && <>
-            <SachetBooster key={essaiSachet} ouvrir={() => { void ouvrir(); }}
-              chargement={chargement || !!sortie} sortie={!!sortie} reveler={terminerChute} />
+            {guideSachet && <SachetBooster key={essaiSachet + ":" + guideSachet} guide={guideSachet} ouvrir={() => { void ouvrir(); }}
+              chargement={chargement || !!sortie} sortie={!!sortie} reveler={terminerChute} />}
             {!illimite && <p>Prochain booster demain à 00 h 00 · heure de Paris</p>}
             {erreur && <p role="alert">{erreur}</p>}
           </>}
@@ -457,6 +504,7 @@ export default function BoosterQuotidien({ userId, jour, onGain }: { userId: str
               {illimite && <button className={styles.autreBooster} type="button" onClick={reinitialiserEssai}>
                 Ouvrir un autre booster
               </button>}
+              {erreurCoach && <p role="alert">{erreurCoach}</p>}
             </div>
           </>}
         </div>

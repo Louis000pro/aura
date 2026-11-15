@@ -23,7 +23,14 @@ export async function POST(req: Request) {
     return Response.json({ error: "invalid_request" }, { ...prive, status: 400 });
   }
 
-  // Mêmes combinaisons que le booster quotidien (ouvrir_booster_exercices_v2).
+  const db = createAdminClient();
+  const tirage = await db.rpc("ouvrir_booster_illimite", { p_compte: appelant.id, p_requete: requete });
+  if (!tirage.error && tirage.data) return Response.json(tirage.data, prive);
+  if (tirage.error?.code !== "PGRST202") {
+    return Response.json({ error: "enregistrement_indisponible" }, { ...prive, status: 503 });
+  }
+
+  // Compatibilité temporaire avec la base avant la migration des raretés.
   const chance = randomInt(100);
   const raretes: Carte["rarete"][] = chance < 60 ? ["commune", "commune", "epique"]
     : chance < 90 ? ["commune", "epique", "epique"]
@@ -35,7 +42,7 @@ export async function POST(req: Request) {
     exercice: pool.splice(randomInt(pool.length), 1)[0],
     rarete,
   }));
-  const { data, error } = await createAdminClient().rpc("enregistrer_booster_illimite", {
+  const { data, error } = await db.rpc("enregistrer_booster_illimite", {
     p_compte: appelant.id, p_requete: requete, p_cartes: cartes,
   });
   if (error?.code === "PGRST202") return Response.json({ cartes, exp: 0 }, prive);

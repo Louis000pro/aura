@@ -10,8 +10,8 @@
    très pâle. La photo de la dernière séance vue est déjà là (elle est
    en cache), donc le plus gros de l'écran ne change pas à l'arrivée.
 
-   Ce n'est pas un écran d'attente : l'accueil n'attend jamais plus
-   d'une seconde et demie (`AccueilClient`), puis montre ce qu'il a.
+   Ce n'est pas un écran d'attente : l’accueil montre les données disponibles au plus tard
+   après 700 ms (`AccueilClient`).
    ════════════════════════════════════════════════════════════════════ */
 
 import { useSyncExternalStore } from "react";
@@ -31,6 +31,7 @@ export default function SqueletteAccueil() {
           <div className="rounded-full" style={{ width: 150, height: 20, background: PALE }} />
         </div>
       </div>
+      <div style={{ height: 130, borderRadius: "var(--r-bloc)", background: PALE }} />
       {photoVue ? (
         <Photo img={photoVue} fichier={photoVue} prioritaire style={{ height: 400, borderRadius: "var(--r-affiche)", boxShadow: "var(--ombre-pose)" }} />
       ) : (

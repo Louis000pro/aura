@@ -144,7 +144,6 @@ export default function MaJournee({
   onVoirTout,
   onOpenRangs,
   onOpenSerie,
-  booster,
 }: {
   aura: EtatAura;
   /** Le compte : la montée compare à ce que CET appareil a déjà montré. */
@@ -160,7 +159,6 @@ export default function MaJournee({
   onOpenRangs: () => void;
   /** La flamme ouvre les jours de la série, jamais les rangs (Louis, 2026-10-15). */
   onOpenSerie: () => void;
-  booster?: React.ReactNode;
 }) {
   const { fait, total } = compteMissionsJour(aura);
   const part = total > 0 ? fait / total : 0;
@@ -431,7 +429,6 @@ export default function MaJournee({
         )}
       </div>
 
-      {booster}
       <div className={styles.teteQuetes}>
         <button type="button" className={styles.titre} onClick={onVoirTout}>
           <span>Tes quêtes</span>

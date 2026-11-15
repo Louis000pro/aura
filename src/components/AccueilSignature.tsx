@@ -25,13 +25,14 @@ const FeuilleMissions = dynamic(() => import("@/components/accueil/FeuilleMissio
 /* ═══════════════════════════════════════════════════════════════════════
    V7B · L'ACCUEIL RÉPOND À LA JOURNÉE.
 
-   Cinq blocs, dans cet ordre, et l'ordre EST la décision :
+   Les blocs de l’accueil, dans l’ordre :
 
      ① l'entrée      qui m'accompagne, et un mot s'il a une raison
-     ② le héros      ce que je fais maintenant  (V7A, inchangé)
-     ③ ma journée    en bento (essai verre, 2026-10-11) : série, rang et
+     ② le booster   accessible dès l’arrivée
+     ③ le héros     ce que je fais maintenant
+     ④ ma journée    en bento (essai verre, 2026-10-11) : série, rang et
                      EXP, quêtes en anneau, puis le rail des quêtes
-     ④ le relais     conditionnel, rare, humain
+     ⑤ le relais     conditionnel, rare, humain
 
    ⚠️ CE QUI A QUITTÉ CET ÉCRAN, ET IL NE FAUT PAS LE RAMENER : la liste
    complète des missions du jour, la section « Cette semaine », le coffre
@@ -104,9 +105,7 @@ export default function AccueilSignature({
   jour: string;
   /** Le héros « Aujourd'hui », arrivé d'Entraînement en V7A. L'accueil ne
    *  le fabrique pas et ne touche pas à son moteur : il lui donne sa
-   *  place, juste après l'entrée, parce que la première question de la
-   *  journée est « je fais quoi maintenant » et non « où en est mon
-   *  EXP ». V7B ne change rien à ses états ni à ses règles. */
+   *  place avant les quêtes et les statistiques de la journée. */
   heros?: React.ReactNode;
   onNavigate: (path: string) => void;
   onOpenRangs: () => void;
@@ -153,9 +152,11 @@ export default function AccueilSignature({
     <div className={styles.home}>
       <Entree guide={guide} greeting={greeting} pseudo={pseudo} moment={moment} motNonLu={motNonLu} onOuvrirMot={ouvrirMot} reduce={!!reduce} />
 
+      {user?.id && <BoosterQuotidien key={user.id + jour} userId={user.id} jour={jour} onGain={onAuraChange} />}
+
       {heros}
 
-      {/* ③ Ma journée. Tant que l'aura n'est pas lue, le groupe ne se rend
+      {/* ④ Ma journée. Tant que l'aura n'est pas lue, le groupe ne se rend
           pas : afficher « 0 / 4 » à quelqu'un qui a tout fait serait pire
           que d'attendre une seconde. Même règle que la série. */}
       {missionsLues && (
@@ -170,7 +171,6 @@ export default function AccueilSignature({
           onVoirTout={() => setFeuille(true)}
           onOpenRangs={onOpenRangs}
           onOpenSerie={() => setFeuilleSerie(true)}
-          booster={user?.id && <BoosterQuotidien key={user.id + jour} userId={user.id} jour={jour} onGain={onAuraChange} />}
         />
       )}
 
