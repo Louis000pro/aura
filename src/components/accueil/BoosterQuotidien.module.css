@@ -98,23 +98,9 @@
   position:absolute;
   inset:0;
   z-index:-3;
-  background:#d2b9ee center / 100% 100% no-repeat;
-}
-.carte[data-rarete="chromatique"] .planche { filter:hue-rotate(-32deg) saturate(.64); }
-.badgeChromatique {
-  position:absolute;
-  inset:5.1% 5.9% auto auto;
-  min-height:8.4%;
-  width:58%;
-  display:grid;
-  place-items:center;
-  border:1px solid #fff;
-  border-radius:100px;
-  background:linear-gradient(125deg,#65589e,#5e2c87 42%,#237681);
-  color:#fff;
-  font:850 italic 5.4cqw/1 system-ui,sans-serif;
-  text-transform:uppercase;
-  box-shadow:0 0 3px #fff,0 0 10px #ecc7ff;
+  width:100%;
+  height:100%;
+  object-fit:fill;
 }
 .face::before {
   content:"";
@@ -179,58 +165,6 @@
   transition:opacity .17s ease;
 }
 .carte[data-eclairee] .etoilesEclairees { opacity:1; }
-.exercice {
-  --sol:5%;
-  --saut:0%;
-  --largeur:80%;
-  --ombre:45%;
-  position:absolute;
-  inset:20% 5% 50%;
-}
-.exercice:is([data-pose="sol"],[data-pose="pompes"]) { --sol:3%;--largeur:94%;--ombre:85%; }
-.exercice[data-pose="machine"] { --largeur:89%;--ombre:73%; }
-.exercice[data-pose="saut"] { --saut:10%;--ombre:36%; }
-.exercice::before {
-  content:"";
-  position:absolute;
-  left:50%;
-  bottom:var(--sol);
-  width:var(--ombre);
-  height:8%;
-  transform:translate(-50%,48%);
-  background:radial-gradient(ellipse,#09050bc9 0%,#1007119c 37%,transparent 72%);
-}
-.exercice[data-pose="pompes"]::before {
-  width:100%;
-  background:
-    radial-gradient(ellipse at 35% 44%,#09050be0,transparent 66%) left center / 57% 100% no-repeat,
-    radial-gradient(ellipse,#09050bd9,transparent 70%) 94% center / 23% 100% no-repeat;
-}
-.exercice[data-pose="fente"]::before { left:33%;width:31%; }
-.mouvement {
-  position:absolute;
-  left:50%;
-  bottom:calc(var(--sol) + var(--saut) - 2%);
-  translate:-50% 0;
-  width:var(--largeur);
-  height:calc(100% - var(--sol) - var(--saut) - 5%);
-  object-fit:contain;
-  object-position:center bottom;
-  filter:drop-shadow(1px 2px 1px #170d1d4d);
-}
-.nomCarte {
-  position:absolute;
-  inset:53.6% 11% 38.2%;
-  display:grid;
-  place-items:center;
-  text-align:center;
-  text-transform:uppercase;
-  text-wrap:balance;
-  font:900 italic 8cqw/.98 system-ui,sans-serif;
-}
-.nomCarte[data-long] { font-size:5.6cqw; }
-.carte[data-rarete="legendaire"] .nomCarte { color:#fff;text-shadow:0 1px 3px #39236a96; }
-.rareteAccessible,.face[data-planche] .nomCarte { position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%); }
 .suivante {
   position:absolute;
   inset:0;

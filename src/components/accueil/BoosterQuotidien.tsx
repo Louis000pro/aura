@@ -36,6 +36,31 @@ const etoiles = [
   style: { "--etoile-x": x + "%", "--etoile-y": y + "%", "--etoile-taille": taille + "px" } as CSSProperties,
 }));
 
+function imageCarte(carte: Carte, guide: GuideRef) {
+  if (carte.exercice === "crunch" && carte.rarete !== "chromatique") {
+    return "/boosters/cartes-prisme/" + carte.rarete + "-crunch.webp";
+  }
+  const portrait = guide === "sasha" && mouvements[carte.exercice][2] ? "sasha" : "nora";
+  return "/boosters/cartes-completes-v1/" + [portrait, carte.exercice, carte.rarete].join("-") + ".webp";
+}
+
+async function decoderCarte(carte: Carte, guide: GuideRef) {
+  const image = new window.Image();
+  image.src = imageCarte(carte, guide);
+  let timer: number | undefined;
+  try {
+    await Promise.race([
+      image.decode(),
+      new Promise<never>((_, reject) => {
+        timer = window.setTimeout(() => reject(new Error("Image indisponible")), 15000);
+      }),
+    ]);
+    return image;
+  } finally {
+    window.clearTimeout(timer);
+  }
+}
+
 function CarteBooster({ carte, guide, avancer, derniere = false, prioritaire = false }: {
   carte: Carte;
   guide: GuideRef;
@@ -43,14 +68,8 @@ function CarteBooster({ carte, guide, avancer, derniere = false, prioritaire = f
   derniere?: boolean;
   prioritaire?: boolean;
 }) {
-  const [nom, pose, illustrationSasha] = mouvements[carte.exercice];
+  const [nom] = mouvements[carte.exercice];
   const rarete = raretes[carte.rarete];
-  const image = guide === "sasha" && illustrationSasha
-    ? `/premiers-pas/m-${carte.exercice}-2.webp`
-    : `/boosters/nora/${carte.exercice}.webp?v=2`;
-  const chromatique = carte.rarete === "chromatique";
-  const plancheOriginale = carte.exercice === "crunch" && !chromatique;
-  const fond = (chromatique ? "epique" : carte.rarete) + (plancheOriginale ? "-crunch" : "");
   const geste = useRef<{ id: number; bounds: DOMRect; x: number; y: number } | null>(null);
   const clicApresGlissement = useRef(false);
 
@@ -105,7 +124,7 @@ function CarteBooster({ carte, guide, avancer, derniere = false, prioritaire = f
       onPointerCancel={relacher}
       onLostPointerCapture={relacher}>
       <div className={styles.cadre}>
-        <div className={styles.face} data-planche={plancheOriginale ? "" : undefined}>
+        <div className={styles.face}>
           <div aria-hidden="true" className={styles.etoiles}>
             {etoiles.map(etoile => <i key={etoile.key} style={etoile.style} />)}
           </div>
@@ -113,15 +132,8 @@ function CarteBooster({ carte, guide, avancer, derniere = false, prioritaire = f
             {etoiles.map(etoile => <i key={etoile.key} style={etoile.style} />)}
           </div>
           <div aria-hidden="true" className={styles.spectre} />
-          <div className={styles.planche} aria-hidden="true"
-            style={{ backgroundImage: `url("/boosters/cartes-prisme/${fond}.webp")` }} />
-          {chromatique && <span className={styles.badgeChromatique}>✦ Chromatique</span>}
-          {!plancheOriginale && <div className={styles.exercice} data-pose={pose}>
-            <Image src={image} alt="" width={420} height={420} unoptimized
-              className={styles.mouvement} draggable={false} loading={avancer || prioritaire ? "eager" : "lazy"} />
-          </div>}
-          <strong className={styles.nomCarte} data-long={nom.length > 15 ? "" : undefined}>{nom}</strong>
-          <span className={styles.rareteAccessible}>{rarete}</span>
+          <Image className={styles.planche} src={imageCarte(carte, guide)} alt={nom + ", " + rarete}
+            width={820} height={1290} unoptimized draggable={false} loading={avancer || prioritaire ? "eager" : "lazy"} />
         </div>
       </div>
       {avancer && <button type="button" className={styles.suivante}
@@ -202,6 +214,8 @@ export default function BoosterQuotidien({ guide, jour }: { guide: GuideRef; jou
   const mouvementReduit = useReducedMotion();
   const dialog = useRef<HTMLDialogElement>(null);
   const actif = useRef(false);
+  const tirageEnAttente = useRef<Carte[] | null>(null);
+  const imagesDecodees = useRef<HTMLImageElement[]>([]);
   const profil = guide ?? "nora";
 
   useEffect(() => {
@@ -238,6 +252,7 @@ export default function BoosterQuotidien({ guide, jour }: { guide: GuideRef; jou
 
   function reinitialiserEssai() {
     actif.current = false;
+    imagesDecodees.current = [];
     setCartes(null);
     setIndex(0);
     setErreur(false);
@@ -249,16 +264,22 @@ export default function BoosterQuotidien({ guide, jour }: { guide: GuideRef; jou
     setErreur(false);
     setChargement(true);
     try {
-      let tirage: unknown;
-      if (illimite) {
-        tirage = (await demanderEssai("POST"))?.cartes;
-      } else {
-        const { data, error } = await createClient().rpc("ouvrir_booster_exercices_v2");
-        if (error) throw new Error("Tirage indisponible");
-        tirage = data;
+      let nouvellesCartes = tirageEnAttente.current;
+      if (!nouvellesCartes) {
+        let tirage: unknown;
+        if (illimite) {
+          tirage = (await demanderEssai("POST"))?.cartes;
+        } else {
+          const { data, error } = await createClient().rpc("ouvrir_booster_exercices_v2");
+          if (error) throw new Error("Tirage indisponible");
+          tirage = data;
+        }
+        if (!Array.isArray(tirage) || tirage.length !== 3) throw new Error("Tirage indisponible");
+        nouvellesCartes = tirage as Carte[];
+        tirageEnAttente.current = nouvellesCartes;
       }
-      if (!Array.isArray(tirage) || tirage.length !== 3) throw new Error("Tirage indisponible");
-      const nouvellesCartes = tirage as Carte[];
+      imagesDecodees.current = await Promise.all(nouvellesCartes.map(carte => decoderCarte(carte, profil)));
+      tirageEnAttente.current = null;
       if (!mouvementReduit) {
         setSortie(nouvellesCartes);
         await new Promise(resolve => window.setTimeout(resolve, 1100));
