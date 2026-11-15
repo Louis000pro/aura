@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { ChevronRight } from "lucide-react";
 import { VisageGuide } from "@/components/AssistantMark";
+import BoosterQuotidien from "@/components/accueil/BoosterQuotidien";
 import MaJournee from "@/components/accueil/MaJournee";
 import { useAuth } from "@/context/AuthContext";
 import { useGestesAssistant } from "@/context/AssistantContext";
@@ -169,6 +170,7 @@ export default function AccueilSignature({
           onVoirTout={() => setFeuille(true)}
           onOpenRangs={onOpenRangs}
           onOpenSerie={() => setFeuilleSerie(true)}
+          booster={user?.id && <BoosterQuotidien key={user.id + jour} guide={guide} jour={jour} />}
         />
       )}
 

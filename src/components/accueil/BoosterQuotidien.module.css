@@ -26,3 +26,22 @@
 .grille{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
 .grille .carte{min-height:145px;padding:5px}
 .grille .carte strong,.grille .carte small{font-size:.72rem}
+.scene{width:min(72vw,310px,48dvh);height:auto;aspect-ratio:.65;margin:42px auto 26px}
+.sachet{position:absolute;inset:0;padding:62px 16px 12px;box-sizing:border-box;background:linear-gradient(132deg,#6d29c8,#b344eb 46%,#fb65d2 82%,#a631d4);box-shadow:inset 0 0 0 2px #fff8,0 13px 30px #622a9d50;color:white}
+.sachet strong,.sachet span,.mini strong,.mini span{color:#fff;text-shadow:0 1px 4px #57117d}
+.sachet strong,.sachet span{position:absolute;left:4px;right:4px;text-align:center}
+.sachet strong{top:11px;font-size:.85rem}
+.sachet span{top:46px;font-size:1.35rem;font-weight:900;letter-spacing:.12em}
+.sachet img{width:100%;height:100%;min-height:0;object-fit:contain;mask-image:linear-gradient(#000 65%,transparent)}
+.mini{background:linear-gradient(132deg,#7731d0,#ee64d6)}
+.mini img{height:55px}
+.soudure{inset:0 0 auto;height:44px}
+.soudure::after{top:40px}
+.carte{width:min(84vw,360px,57dvh);min-height:0;aspect-ratio:.69;grid-template-rows:auto minmax(0,1fr) auto;align-content:stretch}
+.carte img{height:100%;min-height:0;aspect-ratio:auto}
+.carte strong,.carte small{color:#fff;text-shadow:0 1px 4px #342344;text-align:center}
+.carte[data-rarete="commune"]{--face:#b6ddfa;--rim:#cceaff;--edge:#83a5c8}
+.carte[data-rarete="epique"]{--face:#d498ec;--rim:#f5bfec;--edge:#9955bd}
+.carte[data-rarete="legendaire"]{--face:#ffe396;--rim:#fff4bc;--edge:#bc8b38}
+.carte[data-rarete="chromatique"]{--edge:#9b77c5;border-color:transparent;background:linear-gradient(145deg,#c492f2,#ffe2f4,#b7cbff,#fff,#a4f4ea,#fff1d5,#96d9fa) padding-box,linear-gradient(130deg,#f4c5ff,#c2fff5,#fff,#ffe5fa,#97e8f1) border-box}
+.grille .carte{width:100%;min-height:0}
