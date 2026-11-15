@@ -99,7 +99,7 @@ export default function BoosterQuotidien({ guide, jour }: { guide: GuideRef; jou
 
   if (!disponible) return null;
 
-  const sachet = <><strong>BOOSTER</strong><span>VAIIYA</span><Image src={portrait} alt="" width={250} height={250} /></>;
+  const sachet = <><strong>BOOSTER</strong><span>VAIIYA</span><Image src={portrait} data-guide={profil} alt="" width={250} height={250} /></>;
   const carte = cartes?.[index];
   return (
     <MotionConfig reducedMotion="user">

@@ -45,3 +45,10 @@
 .carte[data-rarete="legendaire"]{--face:#ffe396;--rim:#fff4bc;--edge:#bc8b38}
 .carte[data-rarete="chromatique"]{--edge:#9b77c5;border-color:transparent;background:linear-gradient(145deg,#c492f2,#ffe2f4,#b7cbff,#fff,#a4f4ea,#fff1d5,#96d9fa) padding-box,linear-gradient(130deg,#f4c5ff,#c2fff5,#fff,#ffe5fa,#97e8f1) border-box}
 .grille .carte{width:100%;min-height:0}
+
+/* Le détourage de Sasha est plus large et décalé à droite dans le même carré. */
+.sachet img[data-guide="sasha"],
+.mini img[data-guide="sasha"] {
+  transform: translateX(-5.4%) scale(.83);
+  transform-origin: center bottom;
+}
