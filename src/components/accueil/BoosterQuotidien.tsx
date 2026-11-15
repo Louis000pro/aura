@@ -8,35 +8,21 @@ import { createClient } from "@/lib/supabase";
 import { useGuideActif } from "@/context/GuideContext";
 import { shiftDateStr } from "@/lib/dates";
 import type { GuideRef } from "@/lib/guides";
+import { mouvements, raretes, type Carte } from "@/lib/cartesBooster";
 import styles from "./BoosterQuotidien.module.css";
 
-const mouvements = {
-  pompes: ["Pompes", "pompes", true],
-  crunch: ["Crunch", "sol"],
-  fentes: ["Fentes", "fente", true],
-  squat: ["Squat", "debout", true],
-  pompesdiamant: ["Pompes diamant", "pompes"],
-  pompesinclinees: ["Pompes inclinées", "machine"],
-  pompesexplosives: ["Pompes explosives", "pompes"],
-  squatsaute: ["Squat sauté", "saut"],
-  squatbulgare: ["Squat bulgare", "machine"],
-  fentessautees: ["Fentes sautées", "saut"],
-  bicyclecrunch: ["Crunch vélo", "sol"],
-  reversecrunch: ["Crunch inversé", "sol"],
-  relevesjambes: ["Relevés de jambes", "sol"],
-  deadbug: ["Dead bug", "sol"],
-  birddog: ["Bird dog", "sol"],
-  hipthrust: ["Hip thrust", "sol"],
-  dips: ["Dips", "machine"],
-  rowinginverse: ["Rowing inversé", "machine"],
-  stepupbanc: ["Step-up sur banc", "machine"],
-  mountainclimbers: ["Mountain climbers", "sol"],
-  burpees: ["Burpees", "sol"],
-  abducteursmachine: ["Abducteurs à la machine", "machine"],
-  corde: ["Corde à sauter", "saut"],
-} satisfies Record<string, [nom: string, pose: string, illustrationSasha?: boolean]>;
-const raretes = { commune: "Commune", rare: "Rare", epique: "Épique", legendaire: "Légendaire", chromatique: "Chromatique" } as const;
-type Carte = { exercice: keyof typeof mouvements; rarete: keyof typeof raretes };
+async function demanderEssai(methode: "GET" | "POST", signal?: AbortSignal) {
+  const { data: { session } } = await createClient().auth.getSession();
+  if (!session) return null;
+  const response = await fetch("/api/boosters/essai", {
+    method: methode,
+    headers: { Authorization: `Bearer ${session.access_token}` },
+    cache: "no-store",
+    signal,
+  });
+  if (!response.ok) return null;
+  return await response.json() as { illimite?: boolean; cartes?: Carte[] };
+}
 
 const etoiles = [
   [19, 3, 3], [79, 4, 4], [24, 8, 7], [57, 8, 4], [96, 8, 6], [24, 19, 3],
@@ -186,6 +172,7 @@ export function CollectionBoosters({ userId }: { userId: string }) {
 
 export default function BoosterQuotidien({ guide, jour }: { guide: GuideRef; jour: string }) {
   const [disponible, setDisponible] = useState(false);
+  const [illimite, setIllimite] = useState(false);
   const [cartes, setCartes] = useState<Carte[] | null>(null);
   const [compteRebours, setCompteRebours] = useState("");
   const [index, setIndex] = useState(0);
@@ -202,23 +189,45 @@ export default function BoosterQuotidien({ guide, jour }: { guide: GuideRef; jou
 
   useEffect(() => {
     let vivant = true;
-    void createClient().rpc("ouvrir_booster_exercices_v2", { p_apercu: true }).then(({ data, error }) => {
-      if (vivant && !error) setDisponible(true);
-      if (vivant && data) {
+    const controle = new AbortController();
+    async function charger() {
+      const essai = await demanderEssai("GET", controle.signal).catch(() => null);
+      if (!vivant) return;
+      if (essai?.illimite) {
+        setIllimite(true);
+        setDisponible(true);
+        return;
+      }
+      const { data, error } = await createClient().rpc("ouvrir_booster_exercices_v2", { p_apercu: true });
+      if (!vivant || error) return;
+      setIllimite(false);
+      setDisponible(true);
+      if (data) {
         setCartes(ancien => ancien ?? data as Carte[]);
         if (!actif.current) setIndex(3);
       }
-    });
-    return () => { vivant = false; };
+    }
+    void charger();
+    return () => { vivant = false; controle.abort(); };
   }, [jour]);
 
   useEffect(() => {
-    if (!cartes) return;
+    if (!cartes || illimite) return;
     const tick = () => setCompteRebours(tempsRestant(jour));
     tick();
     const timer = window.setInterval(tick, 1000);
     return () => window.clearInterval(timer);
-  }, [cartes, jour]);
+  }, [cartes, illimite, jour]);
+
+  function reinitialiserEssai() {
+    actif.current = false;
+    trace.current = [];
+    setCartes(null);
+    setIndex(0);
+    setDechirure(0);
+    setDecoupe(undefined);
+    setErreur(false);
+  }
 
   async function ouvrir() {
     if (actif.current || cartes) return;
@@ -227,12 +236,19 @@ export default function BoosterQuotidien({ guide, jour }: { guide: GuideRef; jou
     setChargement(true);
     setDechirure(1);
     try {
-      const { data, error } = await createClient().rpc("ouvrir_booster_exercices_v2");
-      if (error || !Array.isArray(data) || data.length !== 3) throw new Error("Tirage indisponible");
+      let tirage: unknown;
+      if (illimite) {
+        tirage = (await demanderEssai("POST"))?.cartes;
+      } else {
+        const { data, error } = await createClient().rpc("ouvrir_booster_exercices_v2");
+        if (error) throw new Error("Tirage indisponible");
+        tirage = data;
+      }
+      if (!Array.isArray(tirage) || tirage.length !== 3) throw new Error("Tirage indisponible");
       if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
         await new Promise(resolve => window.setTimeout(resolve, 550));
       }
-      setCartes(data as Carte[]);
+      setCartes(tirage as Carte[]);
     } catch {
       setErreur(true);
       setDechirure(0);
@@ -254,19 +270,23 @@ export default function BoosterQuotidien({ guide, jour }: { guide: GuideRef; jou
   return (
     <MotionConfig reducedMotion="user">
       <section className={styles.bloc} aria-label="Booster du jour">
-        <div><small>3 cartes d’exercices</small><h2>Ton booster du jour</h2>
-          <button type="button" className={styles.ouvrir} disabled={!!cartes} onClick={() => dialog.current?.showModal()}>
+        <div><small>{illimite ? "Mode test · ouvertures illimitées" : "3 cartes d’exercices"}</small>
+          <h2>{illimite ? "Tes boosters d’essai" : "Ton booster du jour"}</h2>
+          <button type="button" className={styles.ouvrir} disabled={chargement || (!illimite && !!cartes)} onClick={() => {
+            if (illimite) reinitialiserEssai();
+            dialog.current?.showModal();
+          }}>
             Ouvrir le booster
           </button>
         </div>
         <div className={styles.statut}><div className={styles.mini}>{sachet}</div>
-          {cartes && <div className={styles.compte}><small>Prochain booster</small><strong>{compteRebours}</strong></div>}
+          {cartes && !illimite && <div className={styles.compte}><small>Prochain booster</small><strong>{compteRebours}</strong></div>}
         </div>
       </section>
       <dialog ref={dialog} className={styles.dialog} data-ouverture={carte ? "" : undefined} aria-labelledby="titre-booster">
         <div className={styles.ecran}>
           <button type="button" className={styles.fermer} aria-label="Fermer" onClick={() => dialog.current?.close()}>×</button>
-          <h2 id="titre-booster" aria-live="polite">{cartes ? carte ? "Carte " + (index + 1) + " sur 3" : "Booster ouvert" : "Ton booster du jour"}</h2>
+          <h2 id="titre-booster" aria-live="polite">{cartes ? carte ? "Carte " + (index + 1) + " sur 3" : "Booster ouvert" : illimite ? "Booster d’essai" : "Ton booster du jour"}</h2>
           {!cartes && <>
             <div className={styles.scene}>
               <motion.div className={styles.sachet} animate={chargement ? { y: 240, rotate: 16, opacity: 0 } : { y: 0, rotate: 0, opacity: 1 }}
@@ -297,7 +317,7 @@ export default function BoosterQuotidien({ guide, jour }: { guide: GuideRef; jou
                 onPointerCancel={() => { if (!actif.current) { setDechirure(0); setDecoupe(undefined); } }}
               ><span style={{ width: dechirure * 100 + "%" }} /></button>
             </div>
-            <p>Prochain booster demain à 00 h 00 · heure de Paris</p>
+            {!illimite && <p>Prochain booster demain à 00 h 00 · heure de Paris</p>}
             <p>{chargement ? "Ouverture…" : "Glisse sur la soudure de gauche à droite."}</p>
             {erreur && <p role="alert">Le booster est indisponible. Réessaie dans un instant.</p>}
           </>}
@@ -311,14 +331,16 @@ export default function BoosterQuotidien({ guide, jour }: { guide: GuideRef; jou
             </motion.div>
           </div>}
           {cartes && !carte && <>
-            <p>Tes trois cartes ont rejoint ta collection.</p>
+            <p>{illimite ? "Tirage d’essai · tu peux en ouvrir un autre tout de suite." : "Tes trois cartes ont rejoint ta collection."}</p>
             <div className={`${styles.grille} ${styles.recapitulatif}`}>{cartes.map((item, position) =>
               <motion.div key={item.exercice} initial={mouvementReduit ? false : { opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }} transition={{ delay: position * .075, duration: .32 }}>
                 <CarteBooster carte={item} guide={profil} />
               </motion.div>
             )}</div>
-            <Link className={styles.ouvrir} data-ouvert href="/profil#cartes-exercices" onClick={() => dialog.current?.close()}>Voir mes cartes</Link>
+            {illimite
+              ? <button className={styles.ouvrir} data-ouvert type="button" onClick={reinitialiserEssai}>Ouvrir un autre booster</button>
+              : <Link className={styles.ouvrir} data-ouvert href="/profil#cartes-exercices" onClick={() => dialog.current?.close()}>Voir mes cartes</Link>}
           </>}
         </div>
       </dialog>
