@@ -1,27 +1,31 @@
 "use client";
 
 import Image from "next/image";
-import { motion } from "framer-motion";
+import { animate, motion, useMotionTemplate, useMotionValue, useMotionValueEvent, useReducedMotion } from "framer-motion";
 import { useRef, useState, type PointerEvent, type ReactNode } from "react";
 import styles from "./SachetBooster.module.css";
 
-const vues = [
-  { fichier: "face", nom: "Face", largeur: 353, hauteur: 587, contour: "0 0,100% 0,100% 6%,97% 21%,96% 70%,98% 88%,100% 94%,100% 100%,0 100%,0 94%,3% 88%,4% 70%,3% 21%,0 6%" },
-  { fichier: "trois-quarts", nom: "Trois quarts", largeur: 238, hauteur: 603, contour: ".6% 0,98% 11%,99% 16%,96% 24%,96% 71%,99% 90%,99.5% 96%,2.3% 100%,2% 94%,3% 87%,1% 20%,0 7%" },
-  { fichier: "profil", nom: "Côté", largeur: 47, hauteur: 603, contour: "40% 0,49% 8%,74% 14%,86% 24%,96% 57%,100% 78%,90% 90%,74% 97%,57% 100%,28% 97%,12% 87%,5% 73%,0 38%,8% 20%,27% 12%" },
-  { fichier: "trois-quarts-arriere", nom: "Trois quarts arrière", largeur: 173, hauteur: 591, contour: "2% 0,98% 11%,98% 15%,95% 26%,95% 72%,99% 90%,99.5% 94%,2% 100%,1.5% 94%,1% 75%,0 22%,2% 8%" },
-  { fichier: "dos", nom: "Dos", largeur: 316, hauteur: 565, contour: ".5% 1%,99.5% 0,99.5% 6%,96% 20%,95% 69%,98% 87%,100% 94%,100% 100%,0 100%,0 94%,3% 86%,5% 69%,4% 22%,0 7%" },
-];
+const textures = {
+  face: ["face",235,386,"polygon(.5% 1%,99.5% 0,99.5% 7%,97% 25%,97% 76%,100% 94%,100% 99%,1% 99%,1% 94%,3% 76%,3% 25%,0 7%)"],
+  dos: ["dos",211,362,"polygon(0 1%,100% 0,100% 8%,96% 27%,96% 76%,100% 94%,100% 99%,0 99%,0 94%,4% 76%,4% 27%,0 8%)"],
+  gauche: ["cote-gauche",39,397,"polygon(41% 0,49% 11%,85% 19%,99% 30%,100% 76%,79% 91%,58% 100%,34% 97%,9% 83%,0 73%,1% 29%,17% 16%)"],
+  droite: ["cote-droit",43,398,"polygon(47% 0,55% 10%,84% 19%,96% 30%,99% 76%,84% 89%,62% 98%,40% 100%,16% 90%,2% 77%,0 30%,20% 16%)"],
+  dessus: ["dessus",196,32,"polygon(0 70%,9% 39%,25% 15%,45% 3%,62% 3%,84% 18%,97% 51%,100% 71%,86% 87%,62% 97%,39% 98%,12% 87%)"],
+  dessous: ["dessous",194,31,"polygon(0 72%,9% 42%,25% 14%,45% 4%,65% 4%,84% 21%,97% 54%,100% 73%,84% 87%,60% 97%,37% 98%,12% 87%)"],
+} as const;
 
-function VueSachet({ index }: { index: number }) {
-  const vue = vues[index];
-  return <Image className={styles.image} src={`/boosters/sachet/${vue.fichier}.webp`}
-    alt="" width={vue.largeur} height={vue.hauteur} unoptimized draggable={false}
-    loading="eager" style={{ clipPath: `polygon(${vue.contour})` }} />;
+type Texture = keyof typeof textures;
+const faces = Object.keys(textures) as Texture[];
+
+function ImageSachet({ cote }: { cote: Texture }) {
+  const [fichier, largeur, hauteur, clipPath] = textures[cote];
+  return <Image className={styles.image} src={`/boosters/sachet-360/${fichier}.webp`}
+    alt="" width={largeur} height={hauteur} unoptimized draggable={false}
+    loading="eager" style={{ clipPath }} />;
 }
 
 export function MiniSachetBooster() {
-  return <div className={styles.mini} aria-hidden="true"><VueSachet index={0} /></div>;
+  return <div className={styles.mini} aria-hidden="true"><ImageSachet cote="face" /></div>;
 }
 
 type Point = [x: number, y: number];
@@ -53,25 +57,40 @@ export default function SachetBooster({ ouvrir, chargement, sortie, enfants }: {
   sortie: boolean;
   enfants?: ReactNode;
 }) {
-  const [vue, setVue] = useState(0);
+  const [deFace, setDeFace] = useState(true);
   const [coupe, setCoupe] = useState<Coupe>();
-  const angle = useRef(0);
-  const rotation = useRef<{ x: number; angle: number; pas: number; glisse: boolean } | null>(null);
+  const lacet = useMotionValue(0);
+  const tangage = useMotionValue(0);
+  const faceCourante = useRef(true);
+  const orientation = useMotionTemplate`translateZ(calc(var(--epaisseur) * -.5)) rotateY(${lacet}deg) rotateX(${tangage}deg)`;
+  const reduire = useReducedMotion();
+  const rotation = useRef<{ x: number; y: number; lacet: number; tangage: number; dernierGeste: number } | null>(null);
   const dechirure = useRef<{ trace: Point[]; versDroite: boolean } | null>(null);
   const scene = useRef<HTMLDivElement>(null);
   const enCours = useRef(false);
 
-  function montrer(prochaine: number) {
-    const phase = ((prochaine % 8) + 8) % 8;
-    const positionVue = phase <= 4 ? phase : 8 - phase;
-    const index = Math.round(positionVue);
-    scene.current?.style.setProperty("--pivot", `${(positionVue - index) * 25}deg`);
-    setVue(index);
-  }
+  const tourProche = () => Math.round(lacet.get() / 360) * 360;
+  const estDeFace = () => Math.abs(lacet.get() - tourProche()) < 14 && Math.abs(tangage.get()) < 16;
+  const suivreOrientation = () => {
+    const face = estDeFace();
+    if (face === faceCourante.current) return;
+    faceCourante.current = face;
+    setDeFace(face);
+  };
+  useMotionValueEvent(lacet, "change", suivreOrientation);
+  useMotionValueEvent(tangage, "change", suivreOrientation);
 
-  function aller(prochaine: number) {
-    angle.current = prochaine;
-    montrer(prochaine);
+  function tournerVers(horizontal: number, vertical: number) {
+    lacet.stop();
+    tangage.stop();
+    if (reduire) {
+      lacet.set(horizontal);
+      tangage.set(vertical);
+      return;
+    }
+    const ressort = { type: "spring", stiffness: 122, damping: 22, restDelta: .12 } as const;
+    animate(lacet, horizontal, ressort);
+    animate(tangage, vertical, ressort);
   }
 
   function ouvrirSachet(trace: Point[], versDroite: boolean) {
@@ -90,58 +109,76 @@ export default function SachetBooster({ ouvrir, chargement, sortie, enfants }: {
   }
 
   return <>
-    <div className={styles.scene} ref={scene} data-vue={vue} data-sortie={sortie ? "" : undefined}>
+    <div className={styles.scene} ref={scene} data-sachet="" data-face={deFace ? "" : undefined} data-sortie={sortie ? "" : undefined}>
       {sortie && <div className={styles.cartes}>{enfants}</div>}
-      {vue === 0 && <>
+      {!coupe ? <div className={styles.camera} aria-hidden="true">
+        <motion.div className={styles.modele} style={{ transform: orientation }}>
+          {faces.map(cote => <div className={`${styles.face3d} ${styles[cote]}`} key={cote}>
+            <ImageSachet cote={cote} />
+          </div>)}
+        </motion.div>
+      </div> : <>
         <motion.div className={styles.corps} style={{ clipPath: coupe?.bas }}
           animate={sortie ? { y: "32%", rotate: -10, opacity: 0 } : { y: 0, rotate: 0, opacity: 1 }}
           transition={{ delay: sortie ? .34 : 0, duration: .62, ease: "easeInOut" }}>
-          <VueSachet index={0} />
+          <ImageSachet cote="face" />
           {coupe && <div className={styles.fil} style={{ clipPath: coupe.fil }} />}
         </motion.div>
         {coupe && <motion.div className={styles.bande} style={{ clipPath: coupe.haut }}
           animate={sortie ? { y: -95, x: 85, rotate: 18, opacity: 0 }
             : { y: -coupe.avancee * 8, x: 0, rotate: 0, opacity: 1 }}
-          transition={{ duration: sortie ? .54 : 0, ease: "easeOut" }}><VueSachet index={0} /></motion.div>}
+          transition={{ duration: sortie ? .54 : 0, ease: "easeOut" }}><ImageSachet cote="face" /></motion.div>}
       </>}
-      {vues.slice(1).map((item, index) =>
-        <div className={styles.vue} key={item.fichier} data-visible={vue === index + 1 ? "" : undefined}>
-          <VueSachet index={index + 1} />
-        </div>
-      )}
       <button type="button" className={styles.rotation} disabled={chargement}
-        aria-label={`Tourner le booster · ${vues[vue].nom}`}
+        aria-label="Tourner le booster à 360 degrés"
         onKeyDown={event => {
-          if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+          const deplacements: Record<string, [number, number]> = {
+            ArrowLeft: [-36, 0], ArrowRight: [36, 0], ArrowUp: [0, -20], ArrowDown: [0, 20],
+          };
+          const pas = deplacements[event.key];
+          if (!pas && event.key !== "Home") return;
           event.preventDefault();
-          aller(Math.max(0, Math.min(4, vue + (event.key === "ArrowRight" ? 1 : -1))));
+          if (pas) tournerVers(lacet.get() + pas[0], Math.max(-88, Math.min(88, tangage.get() + pas[1])));
+          else tournerVers(tourProche(), 0);
         }}
         onPointerDown={event => {
           if (!event.isPrimary || event.button !== 0) return;
-          rotation.current = { x: event.clientX, angle: angle.current, pas: event.currentTarget.offsetWidth / 4.7, glisse: false };
+          lacet.stop();
+          tangage.stop();
+          rotation.current = { x: event.clientX, y: event.clientY, lacet: lacet.get(), tangage: tangage.get(), dernierGeste: 0 };
           event.currentTarget.setPointerCapture(event.pointerId);
         }}
         onPointerMove={event => {
           const geste = rotation.current;
           if (!geste || !event.currentTarget.hasPointerCapture(event.pointerId)) return;
-          const distance = geste.x - event.clientX;
-          if (Math.abs(distance) > 6) geste.glisse = true;
-          if (geste.glisse) aller(geste.angle + distance / geste.pas);
+          geste.dernierGeste = performance.now();
+          lacet.set(geste.lacet + (event.clientX - geste.x) * 360 / event.currentTarget.offsetWidth);
+          tangage.set(Math.max(-88, Math.min(88, geste.tangage + (geste.y - event.clientY) * .75)));
         }}
         onPointerUp={event => {
-          if (event.isPrimary && rotation.current?.glisse) aller(Math.round(angle.current));
+          if (!event.isPrimary || !rotation.current) return;
+          const geste = rotation.current;
+          rotation.current = null;
+          const angle = lacet.get();
+          const rapide = geste.dernierGeste > 0 && performance.now() - geste.dernierGeste < 100 && !reduire;
+          const inertie = rapide ? Math.max(-95, Math.min(95, lacet.getVelocity() * .13)) : 0;
+          const cible = angle + inertie;
+          const tour = Math.round(cible / 360) * 360;
+          if (Math.abs(cible - tour) < 14 && Math.abs(tangage.get()) < 16) tournerVers(tour, 0);
+          else if (inertie) tournerVers(cible, tangage.get());
         }}
         onPointerCancel={() => { rotation.current = null; }}
-        onClick={() => {
-          if (!rotation.current?.glisse) aller(Math.round(angle.current) + 1);
-          rotation.current = null;
-        }}
+        onClick={event => { if (event.detail === 0) tournerVers(lacet.get() + 36, tangage.get()); }}
       />
-      {vue === 0 && <button type="button" className={styles.soudure} aria-label="Ouvrir le booster par la soudure"
+      {deFace && <button type="button" className={styles.soudure} aria-label="Ouvrir le booster par la soudure"
         disabled={chargement}
         onClick={event => { if (event.detail === 0) ouvrirSachet([[0, 8], [28, 8.9], [53, 7.7], [76, 8.5]], true); }}
         onPointerDown={event => {
-          if (!event.isPrimary || event.button !== 0 || enCours.current) return;
+          if (!event.isPrimary || event.button !== 0 || enCours.current || !estDeFace()) return;
+          lacet.stop();
+          tangage.stop();
+          lacet.set(tourProche());
+          tangage.set(0);
           const [x, y] = position(event);
           const versDroite = x <= 50;
           dechirure.current = { trace: [[versDroite ? 0 : 100, y]], versDroite };
@@ -165,11 +202,8 @@ export default function SachetBooster({ ouvrir, chargement, sortie, enfants }: {
           if (!enCours.current) setCoupe(undefined);
         }} />}
     </div>
-    {!chargement && <div className={styles.commandes}>
-      <button type="button" disabled={vue === 0} onClick={() => aller(vue - 1)} aria-label="Vue précédente">‹</button>
-      <span aria-live="polite">{vues[vue].nom}</span>
-      <button type="button" disabled={vue === 4} onClick={() => aller(vue + 1)} aria-label="Vue suivante">›</button>
-    </div>}
-    <p>{chargement ? "Ouverture…" : vue === 0 ? "Glisse pour tourner. Déchire le haut pour ouvrir." : "Glisse ou reviens de face pour déchirer le haut."}</p>
+    {!chargement && !deFace && <button type="button" className={styles.revenir}
+      onClick={() => tournerVers(tourProche(), 0)}>Revenir de face</button>}
+    <p>{chargement ? "Ouverture…" : deFace ? "Glisse pour tourner à 360°. Déchire le haut pour ouvrir." : "Reviens de face pour déchirer le haut."}</p>
   </>;
 }
