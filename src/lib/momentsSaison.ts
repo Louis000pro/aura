@@ -201,7 +201,7 @@ export const MOMENTS_SAISON: MomentSaison[] = [
     phrase: "Des recettes aux agrumes",
     demande: "Tu as une autre idée de recette aux agrumes ?",
     periode: fixe(1, 1, 1, 19),
-    recettes: ["salade-d-agrumes-et-grenade", "bowl-de-skyr-kiwi-et-clementine", "magret-de-canard-a-l-orange", "verrines-avocat-crevettes", "vin-chaud-sans-alcool", "poulet-au-citron-et-aux-olives", "tartare-de-saumon-aux-agrumes", "salade-de-fenouil-a-l-orange-et-aux-olives", "gateau-moelleux-a-l-orange-et-aux-amandes", "crepes-suzette-sans-alcool", "tarte-au-citron-meringuee"],
+    recettes: ["salade-d-agrumes-et-grenade", "bowl-de-skyr-kiwi-et-clementine", "magret-de-canard-a-l-orange", "verrines-avocat-crevettes", "vin-chaud-sans-alcool", "poulet-au-citron-et-aux-olives", "tartare-de-saumon-aux-agrumes", "salade-de-fenouil-a-l-orange-et-aux-olives", "gateau-moelleux-a-l-orange-et-aux-amandes", "crepes-suzette-sans-alcool", "tarte-au-citron-meringuee", "papillotes-de-saumon-au-fenouil-et-a-l-orange"],
     produits: nature([
       { nom: "pamplemousse-rose", cx: 128, w: 140 },
       { nom: "orange", cx: 232, h: 132 },
@@ -215,7 +215,7 @@ export const MOMENTS_SAISON: MomentSaison[] = [
     phrase: "Des crêpes, des galettes et des pancakes",
     demande: "Tu as une autre idée de crêpes ou de pancakes ?",
     periode: fixe(1, 20, 2, 2),
-    recettes: ["crepes-moelleuses", "crepes-suzette-sans-alcool", "galettes-de-sarrasin-completes", "galettes-de-sarrasin-poireaux-et-chevre", "crepes-au-jambon-gratinees", "galette-saucisse", "crepes-aux-epinards-et-a-la-ricotta", "galettes-au-saumon-fume-et-creme-a-l-aneth", "crepes-aux-pommes-et-caramel-au-beurre-sale", "gateau-de-crepes-au-chocolat", "crepes-vegetales-aux-poires-et-au-sirop-d-erable", "crepes-proteinees-au-skyr", "pancakes-proteines"],
+    recettes: ["crepes-moelleuses", "crepes-suzette-sans-alcool", "galettes-de-sarrasin-completes", "galettes-de-sarrasin-poireaux-et-chevre", "crepes-au-jambon-gratinees", "galette-saucisse", "crepes-aux-epinards-et-a-la-ricotta", "galettes-au-saumon-fume-et-creme-a-l-aneth", "crepes-aux-pommes-et-caramel-au-beurre-sale", "gateau-de-crepes-au-chocolat", "galettes-de-sarrasin-aux-champignons-et-oignons-confits", "crepes-vegetales-aux-poires-et-au-sirop-d-erable", "crepes-proteinees-au-skyr", "pancakes-proteines"],
     produits: nature([
       { nom: "lait", cx: 220, h: 150 },
       { nom: "caramels", cx: 106, w: 90, devant: 2 },
@@ -229,7 +229,7 @@ export const MOMENTS_SAISON: MomentSaison[] = [
     phrase: "Des petits-déjeuners pour les matins froids",
     demande: "Tu as une autre idée de petit-déjeuner chaud pour l’hiver ?",
     periode: (a) => [iso(a, 2, 3), iso(a, 2, finFevrier(a))],
-    recettes: ["porridge-poire-cannelle", "chocolat-chaud-proteine", "pain-perdu-proteine-a-la-cannelle", "oeufs-cocotte-epinards-jambon", "granola-maison-pomme-cannelle", "bowl-de-skyr-kiwi-et-clementine", "golden-latte-au-curcuma", "porridge-de-quinoa-pomme-cannelle", "oeufs-brouilles-au-saumon-fume-et-a-l-avocat", "banana-bread-aux-noix", "chai-latte-maison", "bowl-cake-pomme-cannelle", "omelette-aux-blancs-d-oeufs-epinards-et-feta"],
+    recettes: ["porridge-poire-cannelle", "chocolat-chaud-proteine", "pain-perdu-proteine-a-la-cannelle", "oeufs-cocotte-epinards-jambon", "granola-maison-pomme-cannelle", "bowl-de-skyr-kiwi-et-clementine", "golden-latte-au-curcuma", "porridge-de-quinoa-pomme-cannelle", "oeufs-brouilles-au-saumon-fume-et-a-l-avocat", "banana-bread-aux-noix", "chai-latte-maison", "bowl-cake-pomme-cannelle", "omelette-aux-blancs-d-oeufs-epinards-et-feta", "riz-chaud-aux-chataignes-et-noisettes", "semoule-chaude-a-l-orange-et-aux-amandes", "pommes-chaudes-au-granola-et-yaourt-de-soja", "tartines-chaudes-aux-champignons-et-oeuf", "pain-perdu-a-la-clementine-et-au-chocolat-noir"],
     produits: nature([
       { nom: "lait", cx: 250, h: 150 },
       { nom: "poire", cx: 196, h: 118 },
@@ -315,7 +315,7 @@ export const MOMENTS_SAISON: MomentSaison[] = [
     phrase: "Des soupes et des veloutés",
     demande: "Tu as une autre idée de soupe ou de velouté ?",
     periode: fixe(10, 20, 11, 9),
-    recettes: ["veloute-de-potimarron-et-chataignes", "minestrone-d-hiver", "harira-aux-lentilles-et-pois-chiches", "pho-au-boeuf", "ramen-au-poulet-et-oeuf-mollet", "veloute-de-carottes", "soupe-poireaux-pommes-de-terre", "soupe-de-pois-casses", "veloute-de-champignons", "soupe-thaie-au-poulet-et-au-lait-de-coco", "veloute-de-chou-fleur-au-curry-et-lait-de-coco"],
+    recettes: ["veloute-de-potimarron-et-chataignes", "minestrone-d-hiver", "harira-aux-lentilles-et-pois-chiches", "pho-au-boeuf", "ramen-au-poulet-et-oeuf-mollet", "veloute-de-carottes", "soupe-poireaux-pommes-de-terre", "soupe-de-pois-casses", "veloute-de-champignons", "soupe-thaie-au-poulet-et-au-lait-de-coco", "veloute-de-chou-fleur-au-curry-et-lait-de-coco", "soupe-de-lentilles-vertes-et-carottes-au-cumin", "soupe-de-poulet-riz-et-citron", "veloute-de-panais-aux-noisettes-grillees"],
     produits: nature([
       { nom: "poireau", cx: 214, h: 150 },
       { nom: "potimarron", cx: 246, w: 146, devant: 2 },
@@ -329,7 +329,7 @@ export const MOMENTS_SAISON: MomentSaison[] = [
     phrase: "Des plats qui gratinent au four",
     demande: "Tu as une autre idée de gratin ?",
     periode: fixe(11, 10, 11, 30),
-    recettes: ["gratin-de-chou-fleur", "tartiflette-allegee", "lasagnes-epinards-ricotta", "endives-au-jambon-gratinees", "hachis-parmentier-a-la-patate-douce", "soupe-a-l-oignon-gratinee", "gratin-dauphinois-leger", "parmentier-vegetarien-aux-lentilles", "brandade-de-cabillaud-gratinee", "gratin-de-pates-au-poulet-et-au-brocoli", "crepes-au-jambon-gratinees", "gratin-de-butternut-au-lait-de-coco-et-aux-noisettes"],
+    recettes: ["gratin-de-chou-fleur", "tartiflette-allegee", "lasagnes-epinards-ricotta", "endives-au-jambon-gratinees", "hachis-parmentier-a-la-patate-douce", "soupe-a-l-oignon-gratinee", "gratin-dauphinois-leger", "parmentier-vegetarien-aux-lentilles", "brandade-de-cabillaud-gratinee", "gratin-de-pates-au-poulet-et-au-brocoli", "crepes-au-jambon-gratinees", "gratin-de-butternut-au-lait-de-coco-et-aux-noisettes", "gratin-de-pommes-de-terre-et-poireaux-a-la-moutarde", "parmentier-de-champignons-et-puree-de-celeri", "gratin-de-chou-fleur-et-pommes-de-terre-au-curry", "gratin-de-gnocchis-epinards-et-mozzarella", "gratin-de-brocoli-riz-et-cheddar", "pommes-de-terre-farcies-aux-poireaux-et-comte"],
     produits: nature([
       { nom: "emmental", cx: 244, h: 128 },
       { nom: "pomme-de-terre", cx: 150, w: 150, devant: 2 },
@@ -343,7 +343,7 @@ export const MOMENTS_SAISON: MomentSaison[] = [
     phrase: "Des plats qui mijotent longtemps",
     demande: "Tu as une autre idée de plat mijoté ?",
     periode: fixe(12, 1, 12, 14),
-    recettes: ["pot-au-feu", "boeuf-bourguignon", "blanquette-de-veau-legere", "petit-sale-aux-lentilles", "mafe-de-poulet", "poulet-tikka-masala", "chili-con-carne", "chili-sin-carne", "tajine-d-agneau-aux-abricots-citron-confit-et-couscous", "bourguignon-de-champignons", "curry-de-pois-chiches-et-patate-douce", "haricots-blancs-mijotes-a-la-tomate-et-au-romarin", "coq-au-vin", "poulet-au-citron-et-aux-olives"],
+    recettes: ["pot-au-feu", "boeuf-bourguignon", "blanquette-de-veau-legere", "petit-sale-aux-lentilles", "mafe-de-poulet", "poulet-tikka-masala", "chili-con-carne", "chili-sin-carne", "tajine-d-agneau-aux-abricots-citron-confit-et-couscous", "bourguignon-de-champignons", "curry-de-pois-chiches-et-patate-douce", "haricots-blancs-mijotes-a-la-tomate-et-au-romarin", "coq-au-vin", "poulet-au-citron-et-aux-olives", "cocotte-de-poulet-aux-pruneaux-et-carottes", "boeuf-mijote-a-la-biere-et-oignons-fondants", "lentilles-mijotees-au-potimarron-et-au-thym"],
     produits: nature([
       { nom: "thym", cx: 210, h: 140 },
       { nom: "champignons", cx: 134, h: 104, devant: 2 },
@@ -357,7 +357,7 @@ export const MOMENTS_SAISON: MomentSaison[] = [
     phrase: "De l’entrée à la bûche",
     demande: "Tu as une autre idée de recette pour les fêtes ?",
     periode: fixe(12, 15, 12, 31),
-    recettes: ["blinis-au-saumon-fume", "noix-de-saint-jacques-puree-de-celeri", "buche-roulee-au-chocolat", "magret-de-canard-a-l-orange", "verrines-avocat-crevettes", "salade-d-agrumes-et-grenade", "vin-chaud-sans-alcool", "chocolat-chaud-proteine", "roti-de-dinde-aux-marrons", "tartare-de-saumon-aux-agrumes", "truffes-au-chocolat-noir", "gateau-a-la-creme-de-marrons", "potimarron-farci-au-quinoa-et-aux-chataignes"],
+    recettes: ["blinis-au-saumon-fume", "noix-de-saint-jacques-puree-de-celeri", "buche-roulee-au-chocolat", "magret-de-canard-a-l-orange", "verrines-avocat-crevettes", "salade-d-agrumes-et-grenade", "vin-chaud-sans-alcool", "chocolat-chaud-proteine", "roti-de-dinde-aux-marrons", "tartare-de-saumon-aux-agrumes", "truffes-au-chocolat-noir", "gateau-a-la-creme-de-marrons", "potimarron-farci-au-quinoa-et-aux-chataignes", "crumble-de-poires-au-chocolat-et-aux-amandes"],
     produits: nature([
       { nom: "orange", cx: 226, h: 128 },
       { nom: "graines-de-grenade", cx: 124, w: 130, devant: 2 },

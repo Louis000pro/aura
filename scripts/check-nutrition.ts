@@ -123,7 +123,7 @@ const fichierPublic = (chemin: string) => existsSync(new URL("../public" + chemi
 
   /* Les puces : elles s'additionnent, et chacune change vraiment la liste. */
   const cas = recettesDe("sucre", [], ["chocolat", "vite"]);
-  verdict("Sucré, puis chocolat et faire vite : la liste de la maquette", cas.length === 6, cas.map((r) => r.id).join(", "));
+  verdict("Sucré, puis chocolat et faire vite : le pain perdu rejoint les six recettes de la maquette", cas.length === 7 && cas.some((r) => r.id === "pain-perdu-a-la-clementine-et-au-chocolat-noir"), cas.map((r) => r.id).join(", "));
   const p = pucesDe("sucre", [], ["chocolat", "vite"]);
   verdict("les puces choisies passent en tête", p[0]?.id === "chocolat" && p[0].choisie && p[1]?.id === "vite" && p[1].choisie && !p[2]?.choisie,
     p.map((x) => (x.choisie ? `[${x.label}]` : x.label)).join(" · "));

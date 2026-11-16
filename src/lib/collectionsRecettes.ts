@@ -230,6 +230,26 @@ export const NATURE: Record<string, NatureRecette> = {
   "tarte-au-citron-meringuee": "dessert",
   "falafels-au-four-et-sauce-tahini": "plat",
   "veloute-de-chou-fleur-au-curry-et-lait-de-coco": "entree",
+  "riz-chaud-aux-chataignes-et-noisettes": "petit-dej",
+  "semoule-chaude-a-l-orange-et-aux-amandes": "petit-dej",
+  "pommes-chaudes-au-granola-et-yaourt-de-soja": "petit-dej",
+  "gratin-de-pommes-de-terre-et-poireaux-a-la-moutarde": "plat",
+  "parmentier-de-champignons-et-puree-de-celeri": "plat",
+  "gratin-de-chou-fleur-et-pommes-de-terre-au-curry": "plat",
+  "soupe-de-lentilles-vertes-et-carottes-au-cumin": "plat",
+  "soupe-de-poulet-riz-et-citron": "plat",
+  "veloute-de-panais-aux-noisettes-grillees": "plat",
+  "cocotte-de-poulet-aux-pruneaux-et-carottes": "plat",
+  "boeuf-mijote-a-la-biere-et-oignons-fondants": "plat",
+  "lentilles-mijotees-au-potimarron-et-au-thym": "plat",
+  "gratin-de-gnocchis-epinards-et-mozzarella": "plat",
+  "gratin-de-brocoli-riz-et-cheddar": "plat",
+  "tartines-chaudes-aux-champignons-et-oeuf": "petit-dej",
+  "pain-perdu-a-la-clementine-et-au-chocolat-noir": "petit-dej",
+  "pommes-de-terre-farcies-aux-poireaux-et-comte": "plat",
+  "papillotes-de-saumon-au-fenouil-et-a-l-orange": "plat",
+  "galettes-de-sarrasin-aux-champignons-et-oignons-confits": "plat",
+  "crumble-de-poires-au-chocolat-et-aux-amandes": "dessert",
 };
 
 /** La nature d'une recette. Sans entrée écrite (une recette toute neuve),
@@ -290,6 +310,7 @@ export const REPOS: Record<string, { min: number; texte?: string }> = {
   "brochettes-de-legumes-et-tofu-marine": { min: 30 },
   "cotelettes-d-agneau-grillees-au-romarin": { min: 30 },
   "tarte-au-citron-meringuee": { min: 60, texte: "1 h de repos" },
+  "galettes-de-sarrasin-aux-champignons-et-oignons-confits": { min: 30, texte: "Repos de la pâte à galettes" },
 };
 
 /** Le temps que la recette demande vraiment, repos compris. */
@@ -400,6 +421,7 @@ const parmi = (...ids: string[]) => { const s = new Set(ids); return (r: Recipe)
 export const MATINS_SALES = new Set([
   "avocado-toast", "oeufs-cocotte-epinards-jambon", "oeufs-brouilles-au-saumon-fume-et-a-l-avocat",
   "omelette-aux-blancs-d-oeufs-epinards-et-feta", "muffins-sales-epinards-feta-tomates-sechees",
+  "tartines-chaudes-aux-champignons-et-oeuf",
 ]);
 export const estSale = (r: Recipe) => { const n = natureDe(r); return n === "plat" || n === "entree" || MATINS_SALES.has(r.id); };
 const sucre = (r: Recipe) => !estSale(r);
