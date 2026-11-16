@@ -250,6 +250,26 @@ export const NATURE: Record<string, NatureRecette> = {
   "papillotes-de-saumon-au-fenouil-et-a-l-orange": "plat",
   "galettes-de-sarrasin-aux-champignons-et-oignons-confits": "plat",
   "crumble-de-poires-au-chocolat-et-aux-amandes": "dessert",
+  "tacos-aux-pois-chiches-ecrases-et-au-chou": "plat",
+  "oeufs-brouilles-aux-tomates-et-au-cheddar": "petit-dej",
+  "tartines-de-ricotta-poire-et-noix": "petit-dej",
+  "nouilles-de-riz-au-poulet-et-au-citron-vert": "plat",
+  "tartines-de-haricots-blancs-au-citron": "plat",
+  "pates-au-citron-ricotta-et-epinards": "plat",
+  "mais-poele-au-paprika-et-au-citron-vert": "entree",
+  "skyr-cacao-et-banane": "dessert",
+  "riz-saute-au-brocoli-et-aux-oeufs": "plat",
+  "concombres-au-yaourt-de-soja-et-aux-cacahuetes": "plat",
+  "carottes-roties-a-l-orange-et-au-tahini": "plat",
+  "galettes-de-sarrasin-aux-epinards-citronnes": "plat",
+  "crepes-au-cacao-et-aux-pommes-poelees": "plat",
+  "ananas-grille-au-citron-vert": "dessert",
+  "steaks-de-chou-au-barbecue-sauce-tahini": "plat",
+  "sorbet-mangue-et-citron-vert": "dessert",
+  "verrines-de-chocolat-noir-et-clementine": "dessert",
+  "poires-roties-au-cacao-et-aux-noisettes": "dessert",
+  "salade-de-chou-rouge-pomme-et-noix": "plat",
+  "boulgour-aux-poivrons-rotis-et-aux-amandes": "plat",
 };
 
 /** La nature d'une recette. Sans entrée écrite (une recette toute neuve),
@@ -311,6 +331,10 @@ export const REPOS: Record<string, { min: number; texte?: string }> = {
   "cotelettes-d-agneau-grillees-au-romarin": { min: 30 },
   "tarte-au-citron-meringuee": { min: 60, texte: "1 h de repos" },
   "galettes-de-sarrasin-aux-champignons-et-oignons-confits": { min: 30, texte: "Repos de la pâte à galettes" },
+  "galettes-de-sarrasin-aux-epinards-citronnes": { min: 30, texte: "Repos de la pâte" },
+  "crepes-au-cacao-et-aux-pommes-poelees": { min: 30, texte: "Repos de la pâte" },
+  "sorbet-mangue-et-citron-vert": { min: 240, texte: "Congélation" },
+  "verrines-de-chocolat-noir-et-clementine": { min: 120, texte: "Repos au frais" },
 };
 
 /** Le temps que la recette demande vraiment, repos compris. */
@@ -422,6 +446,7 @@ export const MATINS_SALES = new Set([
   "avocado-toast", "oeufs-cocotte-epinards-jambon", "oeufs-brouilles-au-saumon-fume-et-a-l-avocat",
   "omelette-aux-blancs-d-oeufs-epinards-et-feta", "muffins-sales-epinards-feta-tomates-sechees",
   "tartines-chaudes-aux-champignons-et-oeuf",
+  "oeufs-brouilles-aux-tomates-et-au-cheddar",
 ]);
 export const estSale = (r: Recipe) => { const n = natureDe(r); return n === "plat" || n === "entree" || MATINS_SALES.has(r.id); };
 const sucre = (r: Recipe) => !estSale(r);
@@ -540,7 +565,7 @@ export const ENVIES: Envie[] = [
     garde: (r) => /tajine|harira|houmous|falafel|taboule|tzatziki|grecque|shakshuka|caviar d'aubergine|aubergines grillees|halloumi|citron et aux olives|fenouil a l'orange|pasteque, feta/.test(nom(r)) },
   { id: "mexique", label: "Mexique", famille: "ailleurs", tuile: "guacamole-nachos", demande: "mexicaine",
     sousTitre: "Des recettes tex-mex et mexicaines.",
-    garde: (r) => /chili|mexicain|quesadilla|guacamole|nachos|fajita/.test(nom(r)) },
+    garde: (r) => /chili|mexicain|quesadilla|guacamole|nachos|fajita|tacos/.test(nom(r)) },
   { id: "classique", label: "Un classique", famille: "ailleurs", tuile: "boeuf-bourguignon", demande: "d’un grand classique français",
     sousTitre: "Les grands classiques de la cuisine française.",
     garde: parmi("boeuf-bourguignon", "blanquette-de-veau-legere", "pot-au-feu", "coq-au-vin", "petit-sale-aux-lentilles",
@@ -582,7 +607,7 @@ export const ENVIES: Envie[] = [
     garde: parmi("tzatziki-concombre-yaourt", "melon-jambon-cru", "bruschetta-tomate-basilic", "guacamole-nachos", "blinis-au-saumon-fume",
       "verrines-avocat-crevettes", "houmous-de-betterave", "caviar-d-aubergine", "tartare-de-saumon-aux-agrumes",
       "epis-de-mais-grilles-au-beurre-et-au-paprika", "salade-de-pasteque-feta-et-menthe", "muffins-sales-epinards-feta-tomates-sechees",
-      "aubergines-grillees-au-yaourt-et-a-la-menthe") },
+      "aubergines-grillees-au-yaourt-et-a-la-menthe", "mais-poele-au-paprika-et-au-citron-vert") },
   { id: "recevoir", label: "Recevoir", famille: "moment", tuile: "magret-de-canard-a-l-orange", demande: "pour recevoir",
     sousTitre: "Des recettes pour les fêtes et les invités.", garde: (r) => aTag(r, "festif") },
   { id: "sport", label: "Après le sport", famille: "moment", tuile: "steak-hache-patate-douce-rotie-et-haricots-verts",
