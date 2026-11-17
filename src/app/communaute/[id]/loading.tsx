@@ -1,6 +1,6 @@
 export default function ChargementConversation() {
   return (
-    <div className="flex h-[100dvh] min-w-0 flex-1 animate-pulse flex-col" style={{ background: "rgb(var(--bg-rgb))" }}>
+    <div className="flex h-[var(--vy-hauteur-fil)] min-w-0 flex-1 animate-pulse flex-col" style={{ background: "rgb(var(--bg-rgb))" }}>
       <div className="flex items-center gap-3 border-b px-4 py-3"
         style={{ borderColor: "rgba(var(--text-3-rgb), .12)" }}>
         <div className="h-8 w-8 rounded-full" style={{ background: "rgba(var(--text-3-rgb), .14)" }} />

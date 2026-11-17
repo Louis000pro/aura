@@ -30,9 +30,8 @@ export default function MainWrapper({ children }: { children: React.ReactNode })
   // visiteur qui n'a pas encore de compte.
   const isInvitation = pathname.startsWith("/rejoindre") && !user && !isLoading;
   const noNav = isAuth || isBienvenue || isLanding || isInvitation;
-  // Le fil d'une conversation occupe toute la hauteur et masque la barre du
-  // bas (comme le tunnel de séance) → aucun padding global.
-  const isFil = /^\/communaute\/[^/]+$/.test(pathname);
+  // Le fil et ses infos réservent eux-mêmes la place de la navigation.
+  const isFil = pathname.startsWith("/communaute/");
   // Les surfaces publiques n'ont pas de barre du bas : la réserve de 7 rem
   // laisserait un vide au pied de la page. Elles portent déjà leur propre
   // respiration haut et bas (`PageVitrine`), donc aucun padding global.
@@ -57,7 +56,7 @@ export default function MainWrapper({ children }: { children: React.ReactNode })
          `100vh` compte la barre d'adresse repliée sur Android. <main> dépassait
          donc la page de la hauteur de cette barre, et le fond de l'app apparaissait
          dessous (Louis, 2026-11-04, sur /auth). */
-      className={noNav ? "min-h-dvh" : `md:pb-0 min-h-screen${pousse}`}
+      className={noNav ? "min-h-dvh" : `md:pb-0 ${isFil ? "min-h-dvh" : "min-h-screen"}${pousse}`}
       style={fullBleed ? {} : { paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(7rem + env(safe-area-inset-bottom))" }}
     >
       {children}

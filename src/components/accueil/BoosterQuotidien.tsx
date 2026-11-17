@@ -9,6 +9,7 @@ import { useGuideActif } from "@/context/GuideContext";
 import { shiftDateStr } from "@/lib/dates";
 import type { GuideId } from "@/lib/guides";
 import { mouvements, raretes, type Carte } from "@/lib/cartesBooster";
+import { lireCollectionBoosters } from "@/lib/collectionBoosters";
 import SachetBooster, { MiniSachetBooster, demanderMouvementAppareil } from "./SachetBooster";
 import OuvertureCartes from "./OuvertureCartes";
 import styles from "./BoosterQuotidien.module.css";
@@ -211,30 +212,17 @@ function useGuideCartes(userId: string) {
 
 const ordreRarete: Carte["rarete"][] = ["commune", "rare", "epique", "legendaire", "chromatique"];
 const raretesCollection = [...ordreRarete].reverse();
-const triMouvement = new Intl.Collator("fr");
-
-// Ce que le compte possède déjà (« mouvement:rareté »), dans ses boosters du jour et d'essai.
-async function lireCollection(userId: string, actif: () => boolean = () => true) {
-  const client = createClient();
-  const collection = new Map<string, Carte>();
-  const taillePage = 100;
-  for (const table of ["boosters_exercices", "boosters_illimites"]) {
-    for (let debut = 0; actif(); debut += taillePage) {
-      const lecture = client.from(table).select("cartes").eq("user_id", userId);
-      const { data, error } = await (table === "boosters_exercices"
-        ? lecture.order("jour", { ascending: false })
-        : lecture.order("ouvert_le", { ascending: false }).order("requete_id"))
-        .range(debut, debut + taillePage - 1);
-      if (!actif()) return null;
-      if ((error?.code === "PGRST205" || error?.code === "42P01") && table === "boosters_illimites") break;
-      if (error) throw new Error("Collection indisponible");
-      for (const tirage of data) {
-        for (const carte of tirage.cartes as Carte[]) collection.set(carte.exercice + ":" + carte.rarete, carte);
-      }
-      if (data.length < taillePage) break;
-    }
-  }
-  return collection;
+function GrilleCollectionBoosters({ cartes, guide }: { cartes: Carte[]; guide: GuideId }) {
+  return raretesCollection.map(rarete => {
+    const groupe = cartes.filter(carte => carte.rarete === rarete);
+    if (!groupe.length) return null;
+    return <section key={rarete} className={styles.groupeCollection} aria-labelledby={"collection-" + rarete}>
+      <h3 id={"collection-" + rarete}>{raretes[rarete]} <span>{groupe.length}</span></h3>
+      <div className={styles.grille}>{groupe.map(carte =>
+        <CarteBooster key={carte.exercice} carte={carte} guide={guide} />
+      )}</div>
+    </section>;
+  });
 }
 
 export function CollectionBoosters({ userId }: { userId: string }) {
@@ -243,15 +231,11 @@ export function CollectionBoosters({ userId }: { userId: string }) {
   const [cartes, setCartes] = useState<Carte[] | null>(null);
   const [erreur, setErreur] = useState(false);
   useEffect(() => {
-    let actif = true;
-    async function charger() {
-      let collection: Map<string, Carte> | null;
-      try { collection = await lireCollection(userId, () => actif); } catch { if (actif) setErreur(true); return; }
-      if (actif && collection) setCartes([...collection.values()].sort((a, b) =>
-        triMouvement.compare(mouvements[a.exercice][0], mouvements[b.exercice][0])));
-    }
-    void charger();
-    return () => { actif = false; };
+    const controle = new AbortController();
+    void lireCollectionBoosters(createClient(), userId, controle.signal)
+      .then(cartes => { if (!controle.signal.aborted) setCartes(cartes); })
+      .catch(() => { if (!controle.signal.aborted) setErreur(true); });
+    return () => controle.abort();
   }, [userId]);
   useEffect(() => {
     if (window.location.hash === "#cartes-exercices") {
@@ -262,16 +246,39 @@ export function CollectionBoosters({ userId }: { userId: string }) {
     <h2>Mes cartes d’exercices</h2>
     {erreur ? <p>Impossible de charger les cartes.</p> : !cartes ? <p>Chargement…</p> : !cartes.length ? <p>Ouvre ton premier booster pour commencer ta collection.</p> :
       !profil ? <p>Chargement de ton coach…</p> : !guide ? <p>Coach indisponible. <button type="button" onClick={verifier}>Réessayer</button></p> :
-      raretesCollection.map(rarete => {
-        const groupe = cartes.filter(carte => carte.rarete === rarete);
-        if (!groupe.length) return null;
-        return <section key={rarete} className={styles.groupeCollection} aria-labelledby={"collection-" + rarete}>
-          <h3 id={"collection-" + rarete}>{raretes[rarete]} <span>{groupe.length}</span></h3>
-          <div className={styles.grille}>{groupe.map(carte =>
-            <CarteBooster key={carte.exercice} carte={carte} guide={guide} />
-          )}</div>
-        </section>;
-      })}
+      <GrilleCollectionBoosters cartes={cartes} guide={guide} />}
+  </section>;
+}
+
+export function CollectionBoostersProfil({ userId }: { userId: string }) {
+  const [collection, setCollection] = useState<{ cartes: Carte[]; guide: GuideId | null } | null>(null);
+  const [erreur, setErreur] = useState(false);
+  useEffect(() => {
+    const controle = new AbortController();
+    async function charger() {
+      const { data: { session } } = await createClient().auth.getSession();
+      if (controle.signal.aborted) return;
+      if (!session) throw new Error("Session indisponible");
+      const reponse = await fetch("/api/boosters/collection?" + new URLSearchParams({ membre: userId }), {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+        signal: controle.signal,
+      });
+      if (!reponse.ok) throw new Error("Collection indisponible");
+      const resultat = await reponse.json();
+      if (!controle.signal.aborted) setCollection(resultat);
+    }
+    void charger().catch(() => { if (!controle.signal.aborted) setErreur(true); });
+    return () => controle.abort();
+  }, [userId]);
+
+  return <section className={styles.collection}>
+    <h2>Ses cartes d’exercices</h2>
+    {erreur ? <p>Impossible de charger ses cartes.</p> : !collection ? <p>Chargement…</p> :
+      !collection.cartes.length ? <p>Aucune carte débloquée pour le moment.</p> :
+      collection.guide ? <GrilleCollectionBoosters cartes={collection.cartes} guide={collection.guide} /> :
+      <ul>{collection.cartes.map(carte => <li key={carte.exercice + ":" + carte.rarete}>
+        {mouvements[carte.exercice][0]} · {raretes[carte.rarete]}
+      </li>)}</ul>}
   </section>;
 }
 
@@ -287,7 +294,7 @@ export default function BoosterQuotidien({ userId, jour, onGain }: { userId: str
   const [tirageId, setTirageId] = useState(0);
   const [nouvelles, setNouvelles] = useState<boolean[] | null>(null);
   const [rectSachet, setRectSachet] = useState<DOMRect | null>(null);
-  const collectionAvant = useRef<Promise<Map<string, Carte> | null> | null>(null);
+  const collectionAvant = useRef<Promise<Set<string> | null> | null>(null);
   const [exp, setExp] = useState(0);
   const [erreur, setErreur] = useState("");
   const [chargement, setChargement] = useState(false);
@@ -362,7 +369,9 @@ export default function BoosterQuotidien({ userId, jour, onGain }: { userId: str
       }
       if (guideConfirme !== coach) verifierCoach();
       // Ce qu'on possède avant l'ouverture : c'est ce qui dira quelles cartes sont « Nouvelle ».
-      collectionAvant.current = lireCollection(userId).catch(() => null);
+      collectionAvant.current = lireCollectionBoosters(createClient(), userId)
+        .then(cartes => new Set(cartes.map(carte => carte.exercice + ":" + carte.rarete)))
+        .catch(() => null);
       if (illimite) reinitialiserEssai();
       setGuideSachet(guideConfirme);
       if (dialog.current && !dialog.current.open) dialog.current.showModal();

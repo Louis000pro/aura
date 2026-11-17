@@ -248,7 +248,7 @@ export default function InfosPage() {
   const dejaLa  = conv.membres.map((m) => m.id);
 
   return (
-    <div className="h-[100dvh] min-w-0 overflow-y-auto pb-10">
+    <div className="h-[var(--vy-hauteur-fil)] min-w-0 overflow-y-auto pb-10">
       {/* ─── Barre ─── */}
       <div className="flex items-center gap-2 px-3 py-3" style={{ paddingTop: "max(.75rem, env(safe-area-inset-top))" }}>
         <button onClick={() => router.push(`/communaute/${convId}`)} aria-label="Retour" className="p-1">

@@ -20,6 +20,7 @@ import { relaisPartage, type RelaisPartage } from "@/lib/defi";
 import { chargerBadgesAura } from "@/lib/badgesAura";
 import EtagereBadges from "@/components/profil/EtagereBadges";
 import VitrinePublique from "@/components/cartes/VitrinePublique";
+import { CollectionBoostersProfil } from "@/components/accueil/BoosterQuotidien";
 import LigneEnsemble from "@/components/profil/LigneEnsemble";
 import CouvertureSeance from "@/components/profil/CouvertureSeance";
 import AvecQui from "@/components/communaute/AvecQui";
@@ -678,6 +679,8 @@ export default function PublicProfilePage() {
           Lancer un relais avec {displayPseudo} →
         </button>
       )}
+
+      {user && profile && <CollectionBoostersProfil key={profile.id} userId={profile.id} />}
 
       {/* Les affiches de séance qu'il ou elle partage avec ses potes. La
           policy de `posts` ne les rend qu'aux amis réciproques : un inconnu

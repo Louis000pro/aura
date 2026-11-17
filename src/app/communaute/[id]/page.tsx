@@ -60,7 +60,7 @@ function AppareilPlein() {
 
 function FilSkeleton() {
   return (
-    <div className="flex h-[100dvh] min-w-0 flex-1 animate-pulse flex-col" style={{ background: "rgb(var(--bg-rgb))" }}>
+    <div className="flex h-[var(--vy-hauteur-fil)] min-w-0 flex-1 animate-pulse flex-col" style={{ background: "rgb(var(--bg-rgb))" }}>
       <div className="flex items-center gap-3 border-b px-4 py-3"
         style={{ borderColor: "rgba(var(--text-3-rgb), .12)" }}>
         <div className="h-8 w-8 rounded-full" style={{ background: "rgba(var(--text-3-rgb), .14)" }} />
@@ -515,7 +515,7 @@ export default function FilPage() {
 
   if (erreurChargement) {
     return (
-      <div className="flex h-[100dvh] flex-col items-center justify-center gap-4 px-8 text-center">
+      <div className="flex h-[var(--vy-hauteur-fil)] flex-col items-center justify-center gap-4 px-8 text-center">
         <p className="text-[16px]" style={{ color: "var(--text-body)" }}>{erreurChargement}</p>
         <button
           onClick={() => { setCharge(true); void recharger(); }}
@@ -530,7 +530,7 @@ export default function FilPage() {
 
   if (!conv) {
     return (
-      <div className="flex h-[100dvh] flex-col items-center justify-center gap-4 px-8 text-center">
+      <div className="flex h-[var(--vy-hauteur-fil)] flex-col items-center justify-center gap-4 px-8 text-center">
         <p className="text-[16px]" style={{ color: "var(--text-body)" }}>Cette conversation n&apos;existe plus.</p>
         <button onClick={() => router.replace("/communaute")}
           className="rounded-2xl px-5 py-3 text-[16px] font-semibold text-white"
@@ -565,7 +565,7 @@ export default function FilPage() {
     && autres.every((p) => !!p.luA && p.luA >= monDernier.createdAt);
 
   return (
-    <div className="relative flex h-[100dvh] min-w-0 flex-1 flex-col">
+    <div className="relative flex h-[var(--vy-hauteur-fil)] min-w-0 flex-1 flex-col">
       {/* ─── Le fond : l'affiche à son état courant ─── */}
       {surAffiche && (
         <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden">

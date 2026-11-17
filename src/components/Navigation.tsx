@@ -314,6 +314,7 @@ export default function Navigation() {
   const connecte = !!user;
   const [defile, setDefile] = useState<{ chemin: string; bas: boolean }>({ chemin: "", bas: false });
   useEffect(() => {
+    if (!connecte || pathname !== "/") return;
     const surDefilement = (e: Event) => {
       const cible = e.target;
       let y: number;
@@ -328,8 +329,6 @@ export default function Navigation() {
       const bas = y > 12;
       setDefile((p) => (p.bas === bas && p.chemin === pathname ? p : { chemin: pathname, bas }));
     };
-    /* Sur la vitrine, un visiteur n'a pas cette barre : rien à écouter pendant qu'il lit. */
-    if (!connecte && pathname === "/") return;
     document.addEventListener("scroll", surDefilement, { capture: true, passive: true });
     return () => document.removeEventListener("scroll", surDefilement, { capture: true });
   }, [pathname, connecte]);
@@ -493,8 +492,8 @@ export default function Navigation() {
           c'est lui offrir des portes qui le renvoient à la connexion. */}
       {user && !isLoading && !surfacePublique && (
       <nav
-        className="mobile-nav fixed left-2 right-2 z-50 md:hidden"
-        style={{ bottom: "calc(10px + env(safe-area-inset-bottom))" }}
+        className="mobile-nav vy-fixe fixed left-2 right-2 z-50 md:hidden"
+        style={{ bottom: "var(--vy-nav-bas)" }}
       >
         {/* Verre transparent, arête fine et reflet localisé : pas de voile
             sur la page. Les couches décoratives ne capturent aucun appui. */}

@@ -296,8 +296,7 @@
      `body.chat-open` a été retiré le 2026-09-03 : son seul auteur était le chat
      historique de l'accueil, injoignable puis supprimé. `modal-open` reste, il
      est posé par `lockBodyModal`. */
-  .mobile-nav { transition: transform 0.25s ease, opacity 0.2s ease; }
-  body.modal-open .mobile-nav { transform: translateY(140%); opacity: 0; pointer-events: none; }
+  body.modal-open .mobile-nav { visibility: hidden; }
 
   /* Le lecteur de conseils possède sa propre commande de fermeture. L'en-tête
      flottant global (avatar, cloche et voile) disparaît pour ne pas superposer
@@ -830,13 +829,24 @@ html:not(.a-session) .mobile-nav { display: none !important; }
 /* Liquid Glass — maquette validée par Louis le 2026-11-14.
    Matériau propre à la navigation mobile : les autres surfaces gardent
    leur verre. Reflets neutres et goutte translucide. */
+:root {
+  --vy-nav-hauteur: 60px;
+  --vy-nav-bas: calc(10px + env(safe-area-inset-bottom));
+}
+.communaute-fil {
+  --vy-hauteur-fil: calc(100dvh - var(--vy-nav-hauteur) - var(--vy-nav-bas) - 10px);
+}
+@media (min-width: 768px) {
+  .communaute-fil { --vy-hauteur-fil: 100dvh; }
+}
+
 .vy-nav-liquid {
   --nav-verre-encre: light-dark(#251b37, #fff);
   --nav-verre-rayon: 30px;
   --nav-verre-ombre: 0 4px 12px #160e2520;
   position: relative;
   isolation: isolate;
-  height: 60px;
+  height: var(--vy-nav-hauteur);
   padding: 4px 7px;
   gap: 3px;
   color: var(--nav-verre-encre);
@@ -1030,7 +1040,7 @@ html.perf-lite [style*="surface-rgb"] {
   backdrop-filter: none !important;
 }
 
-/* La photo de profil et la cloche restent clouées en haut : leur propre
-   calque, et pas de rebond élastique de la page qui les entraînerait. */
+/* La navigation et les boutons flottants ont leur propre calque pour que
+   Safari les garde dans la fenêtre pendant le défilement. */
 .vy-fixe { transform: translateZ(0); -webkit-transform: translateZ(0); }
 html { overscroll-behavior: none; }
