@@ -1,5 +1,5 @@
 -- Le pack d'exception (Louis, 2026-11-17) : 0,5 % des boosters n'ont que des épiques, légendaires
--- ou chromatiques (pour chaque carte : 75 % épique, 22 % légendaire, 3 % chromatique), la meilleure
+-- ou chromatiques (pour chaque carte : 50 % épique, 40 % légendaire, 10 % chromatique), la meilleure
 -- en dernier. Sinon, les chances cumulées habituelles. Rejouable.
 create or replace function public.tirer_booster_exercices(p_user uuid)
 returns jsonb language sql volatile set search_path = '' as $$
@@ -7,7 +7,7 @@ returns jsonb language sql volatile set search_path = '' as $$
   tirage as (
     select case when exception then (
       select array_agg(r order by array_position(array['epique','legendaire','chromatique'], r))
-      from (select case when x < .75 then 'epique' when x < .97 then 'legendaire' else 'chromatique' end as r
+      from (select case when x < .5 then 'epique' when x < .9 then 'legendaire' else 'chromatique' end as r
             from (select random() as x from generate_series(1, 3)) a) b)
     else array['commune', 'rare', case
       when t < (ch->>'rare')::numeric then 'rare'
