@@ -64,7 +64,7 @@ async function traiter(req: NextRequest) {
     try {
       const n = await pousserA(admin, id, {
         title: "Ton booster est prêt",
-        body: "Trois nouvelles cartes t’attendent. Viens l’ouvrir.",
+        body: "Un nouveau booster t’attend. Tu peux en garder jusqu’à trois.",
         url: "/",
         icon: iconeGuide(guides.get(id)),
       });

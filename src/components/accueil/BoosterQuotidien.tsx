@@ -313,6 +313,8 @@ export default function BoosterQuotidien({ userId, jour, onGain }: { userId: str
   const [illimite, setIllimite] = useState(false);
   const [cartes, setCartes] = useState<Carte[] | null>(null);
   const [prochain, setProchain] = useState<number | null>(null);
+  // Réserve : jusqu’à 3 boosters gardés, un de plus toutes les 3 heures. null = ancienne cadence.
+  const [stock, setStock] = useState<number | null>(null);
   const [compteRebours, setCompteRebours] = useState("");
   const [ancienneCadence, setAncienneCadence] = useState(false);
   const [modeScene, setModeScene] = useState<"ouverture" | "recap">("recap");
@@ -361,6 +363,7 @@ export default function BoosterQuotidien({ userId, jour, onGain }: { userId: str
         if (apercu.error || !apercu.data) { setStatut("erreur"); return; }
         setAncienneCadence(false);
         setProchain(echeanceBooster(apercu.data));
+        setStock(typeof apercu.data.stock === "number" ? apercu.data.stock : null);
       }
       setIllimite(false);
       setStatut("pret");
@@ -375,6 +378,7 @@ export default function BoosterQuotidien({ userId, jour, onGain }: { userId: str
     const tick = () => {
       if (Date.now() >= echeance) {
         setProchain(null);
+        setRevisionStatut(revision => revision + 1);
         setCompteRebours("");
       } else setCompteRebours(tempsRestant(echeance));
     };
@@ -439,7 +443,9 @@ export default function BoosterQuotidien({ userId, jour, onGain }: { userId: str
           if (error || !data) throw new Error("Tirage indisponible");
           const echeance = echeanceBooster(data);
           setProchain(echeance);
-          if (!data.cartes && echeance) {
+          const reste = typeof data.stock === "number" ? data.stock : null;
+          setStock(reste);
+          if (!data.cartes && (reste === 0 || (reste === null && echeance))) {
             requeteOuverture.current = null;
             actif.current = false;
             libererCelebration();
@@ -509,7 +515,7 @@ export default function BoosterQuotidien({ userId, jour, onGain }: { userId: str
           <h2>{illimite ? "Tes boosters d’essai" : ancienneCadence ? "Ton booster du jour" : "Ton booster"}</h2>
           <button type="button" className={styles.ouvrir}
             aria-busy={preparation}
-            disabled={statut === "chargement" || !portrait || preparation || chargement || !!sortie || (!illimite && prochain !== null)}
+            disabled={statut === "chargement" || !portrait || preparation || chargement || !!sortie || (!illimite && (stock !== null ? stock === 0 : prochain !== null))}
             onClick={() => {
               if (statut === "erreur") {
                 setStatut("chargement");
@@ -525,6 +531,7 @@ export default function BoosterQuotidien({ userId, jour, onGain }: { userId: str
           {erreurCoach && <p role="alert">{erreurCoach}</p>}
         </div>
         <div className={styles.statut}><MiniSachetBooster guide={coach} />
+          {!illimite && stock !== null && <div className={styles.compte}><small>En réserve</small><strong>{stock} / 3</strong></div>}
           {prochain !== null && !illimite && <div className={styles.compte}><small>Prochain booster</small><strong>{compteRebours}</strong></div>}
         </div>
       </section>
@@ -535,7 +542,7 @@ export default function BoosterQuotidien({ userId, jour, onGain }: { userId: str
             <h2 id="titre-booster" aria-live="polite">{illimite ? "Booster d’essai" : ancienneCadence ? "Ton booster du jour" : "Ton booster"}</h2>
             {guideSachet && <SachetBooster key={essaiSachet + ":" + guideSachet} guide={guideSachet} ouvrir={() => { void ouvrir(); }}
               chargement={chargement || !!sortie} sortie={!!sortie} reveler={terminerChute} />}
-            {!illimite && <p>{ancienneCadence ? "Prochain booster demain à minuit" : "Prochain booster 3 h après l’ouverture"}</p>}
+            {!illimite && <p>{ancienneCadence ? "Prochain booster demain à minuit" : "Un booster de plus toutes les 3 h, jusqu’à 3 en réserve"}</p>}
             {erreur && <p role="alert">{erreur}</p>}
           </>}
         </div>
@@ -543,7 +550,7 @@ export default function BoosterQuotidien({ userId, jour, onGain }: { userId: str
           images={tirageAffiche.map(item => imageCarte(item, profil))}
           libelles={tirageAffiche.map(item => mouvements[item.exercice][0] + " · " + raretes[item.rarete])}
           exp={exp} nouvelles={nouvelles} mode={modeScene} sachet={rectSachet}
-          prochain={!illimite && prochain !== null ? compteRebours : null}
+          prochain={!illimite && prochain !== null && !stock ? compteRebours : null}
           onFermer={() => dialog.current?.close()}
           onRecap={libererCelebration}
           actions={<>
