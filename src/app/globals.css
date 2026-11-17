@@ -829,11 +829,11 @@ html:not(.a-session) .mobile-nav { display: none !important; }
 }
 /* Liquid Glass — maquette validée par Louis le 2026-11-14.
    Matériau propre à la navigation mobile : les autres surfaces gardent
-   leur verre. Blanc optique et reflets identiques dans les deux thèmes. */
+   leur verre. Reflets neutres et goutte translucide. */
 .vy-nav-liquid {
-  --nav-verre-encre: #fff;
+  --nav-verre-encre: light-dark(#251b37, #fff);
   --nav-verre-rayon: 30px;
-  --nav-verre-ombre: 0 5px 16px rgba(16,6,34,.10);
+  --nav-verre-ombre: 0 4px 12px #160e2520;
   position: relative;
   isolation: isolate;
   height: 60px;
@@ -853,23 +853,41 @@ html:not(.a-session) .mobile-nav { display: none !important; }
 .vy-nav-liquid::before {
   border: 1px solid transparent;
   background:
-    linear-gradient(118deg, rgba(255,255,255,.08), rgba(255,255,255,.01) 40%, rgba(255,255,255,.035) 70%, rgba(255,255,255,.045)) padding-box,
-    linear-gradient(128deg, rgba(255,255,255,.75), rgba(255,255,255,.21) 13%, rgba(255,255,255,.03) 38%, rgba(255,255,255,.03) 63%, rgba(255,255,255,.50) 86%, rgba(255,255,255,.13)) border-box;
-  -webkit-backdrop-filter: blur(10px) saturate(155%) brightness(.78);
-  backdrop-filter: blur(10px) saturate(155%) brightness(.78);
-  box-shadow: inset 0 1px 1px rgba(255,255,255,.25),
-              inset 0 -1px 1px rgba(255,255,255,.05), var(--nav-verre-ombre);
+    linear-gradient(132deg,#ffffff0d,#ffffff02 48%,#ffffff09) padding-box,
+    linear-gradient(134deg,#ffffffe0,#ffffff3b 17%,#ffffff0d 48%,#ffffff58 83%,#ffffff21) border-box;
+  -webkit-backdrop-filter: blur(5px) brightness(.96);
+  backdrop-filter: blur(5px) brightness(.96);
+  box-shadow: inset 0 1px 1px #ffffff66, inset 0 -1px 1px #ffffff22, var(--nav-verre-ombre);
 }
 .vy-nav-liquid::after {
-  opacity: .65;
+  opacity: .63;
   background:
-    radial-gradient(ellipse 42% 65% at 85% 0%, rgba(233,216,255,.69), rgba(223,204,255,.31) 24%, transparent 72%),
-    radial-gradient(ellipse 30% 65% at 0% 95%, rgba(215,221,255,.13), transparent 85%);
-  box-shadow: inset -2px 2px 5px rgba(255,255,255,.07);
+    radial-gradient(ellipse 36% 48% at 83% -4%,#ffffff86,transparent 85%),
+    radial-gradient(ellipse 26% 54% at 4% 104%,#ffffff52,transparent 84%);
 }
 .vy-nav-liquid-tab { color: var(--nav-verre-encre); }
-.vy-nav-liquid-icon { filter: drop-shadow(0 1px 3px rgba(0,0,0,.65)); }
-.vy-nav-liquid-active { background: rgba(255,255,255,.035); }
+.vy-nav-liquid-icon { filter: drop-shadow(0 1px 2px light-dark(#fff9,#000b)); }
+.vy-nav-liquid-active {
+  position: absolute;
+  left: 0;
+  top: 11px;
+  width: 48px;
+  height: 38px;
+  border-radius: 999px;
+  pointer-events: none;
+  background: linear-gradient(145deg,#ffffff10,#ffffff02 55%,#ffffff08);
+  box-shadow: inset 0 1px 1px #ffffff59,inset 0 -1px 1px #ffffff20,0 1px 3px #221a341e;
+  -webkit-backdrop-filter: blur(1px) brightness(1.04);
+  backdrop-filter: blur(1px) brightness(1.04);
+}
+.vy-nav-liquid-active::after {
+  content: "";
+  position: absolute;
+  inset: 1px 20% auto;
+  height: 1px;
+  opacity: .66;
+  background: linear-gradient(90deg,transparent,#ffffff85,transparent);
+}
 /* Le mode allégé conserve le verre clair validé : moins de flou,
    jamais de plaque noire. Sans support du flou, repli nacré translucide. */
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
@@ -878,11 +896,17 @@ html:not(.a-session) .mobile-nav { display: none !important; }
     border-color: rgba(255,255,255,.50);
   }
 }
+html.perf-lite .vy-nav-liquid-active { -webkit-backdrop-filter: none; backdrop-filter: none; }
 html.perf-lite .vy-nav-liquid::before {
-  -webkit-backdrop-filter: blur(6px) saturate(155%) brightness(.78);
-  backdrop-filter: blur(6px) saturate(155%) brightness(.78);
+  -webkit-backdrop-filter: blur(3px) brightness(.96);
+  backdrop-filter: blur(3px) brightness(.96);
 }
 @media (prefers-reduced-transparency: reduce) {
+  .vy-nav-liquid-active {
+    background: light-dark(#ded6ea,#58496b);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
   .vy-nav-liquid::before {
     background: linear-gradient(118deg, #a69dad, #817887 45%, #a99bb6);
     border-color: rgba(255,255,255,.30);

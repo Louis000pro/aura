@@ -91,6 +91,69 @@ function UserMenuItems({
    fois. Les liens rejouaient leur préchargement, la pastille qui glisse
    d'un onglet à l'autre repartait de zéro, et un appui en cours était
    perdu. Un composant déclaré une fois garde ses onglets montés. */
+function BulleNavigation({ pathname }: { pathname: string }) {
+  const bulle = useRef<HTMLSpanElement>(null);
+  const cible = useRef<number | null>(null);
+  const glissement = useRef<Animation | null>(null);
+
+  useLayoutEffect(() => {
+    const pastille = bulle.current;
+    const barre = pastille?.parentElement;
+    if (!pastille || !barre) return;
+
+    function positionner(animer: boolean) {
+      if (!pastille || !barre) return;
+      const onglet = barre.querySelector<HTMLAnchorElement>('a[aria-current="page"]');
+      if (!onglet || !barre.offsetWidth) {
+        glissement.current?.cancel();
+        glissement.current = null;
+        cible.current = null;
+        pastille.hidden = true;
+        return;
+      }
+      pastille.hidden = false;
+      const arrivee = onglet.offsetLeft + (onglet.offsetWidth - pastille.offsetWidth) / 2;
+      if (cible.current === arrivee) return;
+      const visible = cible.current !== null;
+      const style = getComputedStyle(pastille);
+      const transformation = style.transform;
+      const rayonInitial = style.borderRadius;
+      const depart = visible && transformation !== "none" ? new DOMMatrixReadOnly(transformation).m41 : arrivee;
+      const distance = arrivee - depart;
+      const pose = (x: number) => `translate3d(${x}px,0,0)`;
+
+      glissement.current?.cancel();
+      glissement.current = null;
+      cible.current = arrivee;
+      pastille.style.transform = pose(arrivee);
+      if (!animer || !visible || Math.abs(distance) < 2 ||
+        window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+      const direction = Math.sign(distance);
+      const extension = Math.min(1.57, 1.18 + Math.abs(distance) / 690);
+      const rayon = direction > 0 ? "66% 38% 40% 64% / 54% 48% 52% 46%" : "38% 66% 64% 40% / 48% 54% 46% 52%";
+      const forme = (x: number, largeur: number, hauteur: number, inclinaison: number) =>
+        `${pose(x)} scale(${largeur},${hauteur}) skewX(${inclinaison}deg)`;
+      glissement.current = pastille.animate([
+        { transform: transformation === "none" ? pose(depart) : transformation, borderRadius: rayonInitial },
+        { transform: forme(depart + distance * .22, extension, .76, -direction * 6), borderRadius: rayon, offset: .26 },
+        { transform: forme(depart + distance * .76, extension - .12, .86, -direction * 2), borderRadius: rayon, offset: .58 },
+        { transform: forme(arrivee + direction * 3, .94, 1.035, 0), borderRadius: "999px", offset: .84 },
+        { transform: pose(arrivee), borderRadius: "999px" },
+      ], { duration: Math.min(490, 365 + Math.abs(distance) * .35), easing: "cubic-bezier(.23,.56,.30,1)" });
+    }
+
+    positionner(true);
+    const observation = new ResizeObserver(() => positionner(false));
+    observation.observe(barre);
+    return () => observation.disconnect();
+  }, [pathname]);
+
+  useEffect(() => () => glissement.current?.cancel(), []);
+
+  return <span ref={bulle} className="vy-nav-liquid-active" aria-hidden="true" hidden />;
+}
+
 function OngletNav({
   href, label, icon: Icon, sub, mobile, tourAnchor, pathname, progMenu, setProgMenu,
 }: {
@@ -116,12 +179,6 @@ function OngletNav({
           {/* Icônes seules (Louis, 2026-10-11) : plus aucun libellé sous les
               onglets. Le nom reste dans `aria-label` du lien. L'onglet
               actif garde une icône blanche, au trait renforcé et une pastille discrète. */}
-          {/* La pastille GLISSE d'un onglet à l'autre (Louis, 2026-10-12) :
-              un seul élément partagé par `layoutId`, framer anime sa place. */}
-          {isActive && (
-            <motion.span aria-hidden layoutId="mobile-pill" className="vy-nav-liquid-active absolute h-10 w-12 rounded-full"
-              transition={{ type: "spring", stiffness: 420, damping: 34 }} />
-          )}
           <div className="relative">
             <Icon className="vy-nav-liquid-icon" size={22} strokeWidth={isActive ? 2.4 : 1.7} />
             {badge && (
@@ -444,6 +501,7 @@ export default function Navigation() {
         <div
           className="vy-nav-liquid relative flex items-center justify-around rounded-full"
         >
+          <BulleNavigation pathname={pathname} />
           {/* 1. Accueil */}
           <OngletNav pathname={pathname} progMenu={progMenu} setProgMenu={setProgMenu} href={TABS[0].href} label={TABS[0].label} icon={TABS[0].icon} sub={TABS[0].sub} mobile tourAnchor={TABS[0].tourAnchor} />
           {/* 2. Progression */}
