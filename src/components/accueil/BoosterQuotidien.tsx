@@ -184,12 +184,22 @@ function CarteBooster({ carte, guide, avancer, derniere = false, prioritaire = f
 
 
 const fuseauParis = new Intl.DateTimeFormat("en", {timeZone:"Europe/Paris",timeZoneName:"longOffset"});
-function tempsRestant(jour: string) {
+function prochainMinuit(jour: string) {
   const demain = shiftDateStr(jour, 1);
   const minuitUTC = new Date(demain + "T00:00:00Z");
   const decalage = fuseauParis.formatToParts(minuitUTC)
     .find(part => part.type === "timeZoneName")?.value.slice(3) || "+00:00";
-  const secondes = Math.max(0, Math.ceil((Date.parse(demain + "T00:00:00" + decalage) - Date.now()) / 1000));
+  return Date.parse(demain + "T00:00:00" + decalage);
+}
+
+function echeanceBooster(data: { prochain: string | null; maintenant: string }) {
+  if (!data.prochain) return null;
+  const reste = Date.parse(data.prochain) - Date.parse(data.maintenant);
+  return Number.isFinite(reste) && reste > 0 ? Date.now() + reste : null;
+}
+
+function tempsRestant(prochain: number) {
+  const secondes = Math.max(0, Math.ceil((prochain - Date.now()) / 1000));
   return [Math.floor(secondes / 3600), Math.floor(secondes / 60) % 60, secondes % 60]
     .map(valeur => String(valeur).padStart(2, "0")).join(":");
 }
@@ -289,7 +299,9 @@ export default function BoosterQuotidien({ userId, jour, onGain }: { userId: str
   const [revisionStatut, setRevisionStatut] = useState(0);
   const [illimite, setIllimite] = useState(false);
   const [cartes, setCartes] = useState<Carte[] | null>(null);
+  const [prochain, setProchain] = useState<number | null>(null);
   const [compteRebours, setCompteRebours] = useState("");
+  const [ancienneCadence, setAncienneCadence] = useState(false);
   const [modeScene, setModeScene] = useState<"ouverture" | "recap">("recap");
   const [tirageId, setTirageId] = useState(0);
   const [nouvelles, setNouvelles] = useState<boolean[] | null>(null);
@@ -304,7 +316,7 @@ export default function BoosterQuotidien({ userId, jour, onGain }: { userId: str
   const dialog = useRef<HTMLDialogElement>(null);
   const actif = useRef(false);
   const tirageEnAttente = useRef<{ cartes: Carte[]; exp: number } | null>(null);
-  const requeteEssai = useRef<string | null>(null);
+  const requeteOuverture = useRef<string | null>(null);
   const imagesDecodees = useRef<HTMLImageElement[]>([]);
   const [profil, setProfil] = useState<GuideId | null>(null);
   const [guideSachet, setGuideSachet] = useState<GuideId | null>(null);
@@ -318,7 +330,7 @@ export default function BoosterQuotidien({ userId, jour, onGain }: { userId: str
       const client = createClient();
       const [essai, apercu] = await Promise.all([
         demanderEssai("GET", controle.signal).catch(() => null),
-        client.rpc("ouvrir_booster_exercices_v2", { p_apercu: true }).abortSignal(controle.signal),
+        client.rpc("ouvrir_booster_exercices_v4").abortSignal(controle.signal),
       ]);
       if (!vivant) return;
       if (essai?.illimite) {
@@ -326,28 +338,39 @@ export default function BoosterQuotidien({ userId, jour, onGain }: { userId: str
         setStatut("pret");
         return;
       }
-      if (apercu.error) { setStatut("erreur"); return; }
-      const { data } = apercu;
+      if (apercu.error?.code === "PGRST202") {
+        const ancien = await client.rpc("ouvrir_booster_exercices_v2", { p_apercu: true }).abortSignal(controle.signal);
+        if (!vivant) return;
+        if (ancien.error) { setStatut("erreur"); return; }
+        setAncienneCadence(true);
+        setProchain(ancien.data ? prochainMinuit(jour) : null);
+      } else {
+        if (apercu.error || !apercu.data) { setStatut("erreur"); return; }
+        setAncienneCadence(false);
+        setProchain(echeanceBooster(apercu.data));
+      }
       setIllimite(false);
       setStatut("pret");
-      if (data) {
-        setCartes(ancien => ancien ?? data as Carte[]);
-        if (!actif.current) { setModeScene("recap"); setNouvelles(null); }
-      }
     }
     void charger().catch(() => { if (vivant) setStatut("erreur"); });
     return () => { vivant = false; controle.abort(); };
   }, [jour, revisionStatut]);
 
   useEffect(() => {
-    if (!cartes || illimite) return;
-    const tick = () => setCompteRebours(tempsRestant(jour));
+    if (prochain === null || illimite) return;
+    const echeance = prochain;
+    const tick = () => {
+      if (Date.now() >= echeance) {
+        setProchain(null);
+        setCompteRebours("");
+      } else setCompteRebours(tempsRestant(echeance));
+    };
     tick();
     const timer = window.setInterval(tick, 1000);
     return () => window.clearInterval(timer);
-  }, [cartes, illimite, jour]);
+  }, [prochain, illimite]);
 
-  function reinitialiserEssai() {
+  function reinitialiserScene() {
     actif.current = false;
     imagesDecodees.current = [];
     setCartes(null);
@@ -372,7 +395,7 @@ export default function BoosterQuotidien({ userId, jour, onGain }: { userId: str
       collectionAvant.current = lireCollectionBoosters(createClient(), userId)
         .then(cartes => new Set(cartes.map(carte => carte.exercice + ":" + carte.rarete)))
         .catch(() => null);
-      if (illimite) reinitialiserEssai();
+      reinitialiserScene();
       setGuideSachet(guideConfirme);
       if (dialog.current && !dialog.current.open) dialog.current.showModal();
     } catch {
@@ -392,11 +415,24 @@ export default function BoosterQuotidien({ userId, jour, onGain }: { userId: str
       if (!tirage) {
         let nouvellesCartes: unknown;
         let gain = 0;
+        requeteOuverture.current ??= crypto.randomUUID();
         if (illimite) {
-          requeteEssai.current ??= crypto.randomUUID();
-          const resultat = await demanderEssai("POST", undefined, requeteEssai.current);
+          const resultat = await demanderEssai("POST", undefined, requeteOuverture.current);
           nouvellesCartes = resultat?.cartes;
           gain = resultat?.exp ?? 0;
+        } else if (!ancienneCadence) {
+          const { data, error } = await createClient().rpc("ouvrir_booster_exercices_v4", { p_requete: requeteOuverture.current });
+          if (error || !data) throw new Error("Tirage indisponible");
+          const echeance = echeanceBooster(data);
+          setProchain(echeance);
+          if (!data.cartes && echeance) {
+            requeteOuverture.current = null;
+            actif.current = false;
+            dialog.current?.close();
+            return;
+          }
+          nouvellesCartes = data.cartes;
+          gain = data.exp;
         } else {
           const client = createClient();
           const { data, error } = await client.rpc("ouvrir_booster_exercices_v3");
@@ -409,6 +445,7 @@ export default function BoosterQuotidien({ userId, jour, onGain }: { userId: str
             nouvellesCartes = data?.cartes;
             gain = data?.exp ?? 0;
           }
+          setProchain(prochainMinuit(jour));
         }
         if (!Array.isArray(nouvellesCartes) || nouvellesCartes.length !== 3) throw new Error("Tirage indisponible");
         tirage = { cartes: nouvellesCartes as Carte[], exp: gain };
@@ -416,7 +453,7 @@ export default function BoosterQuotidien({ userId, jour, onGain }: { userId: str
       }
       imagesDecodees.current = await Promise.all(tirage.cartes.map(carte => decoderCarte(carte, guideSachet)));
       tirageEnAttente.current = null;
-      requeteEssai.current = null;
+      requeteOuverture.current = null;
       const avant = await Promise.race([
         collectionAvant.current ?? Promise.resolve(null),
         new Promise<null>(resoudre => window.setTimeout(() => resoudre(null), 1500)),
@@ -449,12 +486,12 @@ export default function BoosterQuotidien({ userId, jour, onGain }: { userId: str
   const tirageAffiche = profil ? sortie ?? cartes : null;
   return (
     <MotionConfig reducedMotion="user">
-      <section className={styles.bloc} aria-label="Booster du jour">
+      <section className={styles.bloc} aria-label="Booster d’exercices">
         <div><small>{illimite ? "Mode test · ouvertures illimitées" : "3 cartes d’exercices"}</small>
-          <h2>{illimite ? "Tes boosters d’essai" : "Ton booster du jour"}</h2>
+          <h2>{illimite ? "Tes boosters d’essai" : ancienneCadence ? "Ton booster du jour" : "Ton booster"}</h2>
           <button type="button" className={styles.ouvrir}
             aria-busy={preparation}
-            disabled={statut === "chargement" || !portrait || preparation || chargement || !!sortie || (!illimite && !!cartes)}
+            disabled={statut === "chargement" || !portrait || preparation || chargement || !!sortie || (!illimite && prochain !== null)}
             onClick={() => {
               if (statut === "erreur") {
                 setStatut("chargement");
@@ -467,20 +504,20 @@ export default function BoosterQuotidien({ userId, jour, onGain }: { userId: str
             }}>
             {statut === "erreur" || (portrait && !coach) ? "Réessayer" : "Ouvrir le booster"}
           </button>
-          {erreurCoach && !cartes && <p role="alert">{erreurCoach}</p>}
+          {erreurCoach && <p role="alert">{erreurCoach}</p>}
         </div>
         <div className={styles.statut}><MiniSachetBooster guide={coach} />
-          {cartes && !illimite && <div className={styles.compte}><small>Prochain booster</small><strong>{compteRebours}</strong></div>}
+          {prochain !== null && !illimite && <div className={styles.compte}><small>Prochain booster</small><strong>{compteRebours}</strong></div>}
         </div>
       </section>
       <dialog ref={dialog} className={styles.dialog} onClose={terminerChute} aria-labelledby="titre-booster">
         <div className={styles.ecran} data-sortie={sortie ? "" : undefined}>
           {!cartes && <>
             <button type="button" className={styles.fermer} aria-label="Fermer" onClick={() => dialog.current?.close()}>×</button>
-            <h2 id="titre-booster" aria-live="polite">{illimite ? "Booster d’essai" : "Ton booster du jour"}</h2>
+            <h2 id="titre-booster" aria-live="polite">{illimite ? "Booster d’essai" : ancienneCadence ? "Ton booster du jour" : "Ton booster"}</h2>
             {guideSachet && <SachetBooster key={essaiSachet + ":" + guideSachet} guide={guideSachet} ouvrir={() => { void ouvrir(); }}
               chargement={chargement || !!sortie} sortie={!!sortie} reveler={terminerChute} />}
-            {!illimite && <p>Prochain booster demain à 00 h 00 · heure de Paris</p>}
+            {!illimite && <p>{ancienneCadence ? "Prochain booster demain à minuit" : "Prochain booster 3 h après l’ouverture"}</p>}
             {erreur && <p role="alert">{erreur}</p>}
           </>}
         </div>
@@ -488,13 +525,13 @@ export default function BoosterQuotidien({ userId, jour, onGain }: { userId: str
           images={tirageAffiche.map(item => imageCarte(item, profil))}
           libelles={tirageAffiche.map(item => mouvements[item.exercice][0] + " · " + raretes[item.rarete])}
           exp={exp} nouvelles={nouvelles} mode={modeScene} sachet={rectSachet}
-          prochain={!illimite && compteRebours ? compteRebours : null}
+          prochain={!illimite && prochain !== null ? compteRebours : null}
           onFermer={() => dialog.current?.close()}
           actions={<>
             <Link className={styles.collectionOr} href="/profil#cartes-exercices" onClick={() => dialog.current?.close()}>
               Voir ma collection <span aria-hidden="true">›</span>
             </Link>
-            {illimite && <button className={styles.autreBooster} type="button" onClick={reinitialiserEssai}>
+            {illimite && <button className={styles.autreBooster} type="button" onClick={reinitialiserScene}>
               Ouvrir un autre booster
             </button>}
             {erreurCoach && <p role="alert">{erreurCoach}</p>}

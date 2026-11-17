@@ -155,7 +155,7 @@ export default function AccueilSignature({
       {(missionsLues || user?.id) && (
         <MaJournee
           missionsLues={missionsLues}
-          booster={user?.id && <BoosterQuotidien key={user.id + jour} userId={user.id} jour={jour} onGain={onAuraChange} />}
+          booster={user?.id && <BoosterQuotidien key={user.id} userId={user.id} jour={jour} onGain={onAuraChange} />}
           aura={aura}
           userId={user?.id}
           jour={jour}

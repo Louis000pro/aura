@@ -139,23 +139,23 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     siteName: "Vaiiya",
-    title: "Vaiiya : l’application de musculation et de nutrition",
+    title: "Vaiiya : L’application de musculation et de nutrition",
     description: "Séances guidées mouvement par mouvement, repas compris d’une photo et un coach IA qui agit. Gratuite, sans carte bancaire.",
     locale: "fr_FR",
     images: [
       {
-        url: "/og-image.png",
+        url: "/og-vaiiya-partage.png",
         width: 1200,
         height: 630,
-        alt: "Vaiiya · Coach IA · Musculation · Nutrition",
+        alt: "Vaiiya – Le sport qui te connaît. Nora et Sacha présentent la nutrition et la musculation.",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Vaiiya : l’application de musculation et de nutrition",
+    title: "Vaiiya : L’application de musculation et de nutrition",
     description: "Séances guidées, repas compris d’une photo et un coach IA. Gratuite, sans carte bancaire.",
-    images: ["/og-image.png"],
+    images: ["/og-vaiiya-partage.png"],
   },
 };
 
