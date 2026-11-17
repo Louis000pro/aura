@@ -543,6 +543,12 @@ export default function BoosterQuotidien({ userId, jour, onGain }: { userId: str
             {guideSachet && <SachetBooster key={essaiSachet + ":" + guideSachet} guide={guideSachet} ouvrir={() => { void ouvrir(); }}
               chargement={chargement || !!sortie} sortie={!!sortie} reveler={terminerChute} />}
             {!illimite && <p>{ancienneCadence ? "Prochain booster demain à minuit" : "Un booster de plus toutes les 3 h, jusqu’à 3 en réserve"}</p>}
+            <dl className={styles.chances} aria-label="Chances de la meilleure carte">
+              {[["Rare", "60 %"], ["Épique", "30 %"], ["Légendaire", "8 %"], ["Chromatique", "2 %"]].map(([nom, part]) => (
+                <div key={nom}><dt>{nom}</dt><dd>{part}</dd></div>
+              ))}
+            </dl>
+            <p className={styles.chancesNote}>Chances de ta meilleure carte. Jamais de commune.</p>
             {erreur && <p role="alert">{erreur}</p>}
           </>}
         </div>

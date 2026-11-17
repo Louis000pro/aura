@@ -360,3 +360,9 @@
 }
 .collection .carte[role="button"] { cursor:pointer; }
 .collection .carte[role="button"]:focus-visible { outline:2px solid #8b5cf6; outline-offset:4px; border-radius:10% / 6%; }
+
+.chances { display: flex; gap: 14px; justify-content: center; margin: 10px 0 0; position: relative; z-index: 2; }
+.chances div { text-align: center; }
+.chances dt { font-size: 11px; opacity: .75; }
+.chances dd { margin: 2px 0 0; font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.chancesNote { font-size: 11px !important; opacity: .7; margin-top: 4px !important; }
