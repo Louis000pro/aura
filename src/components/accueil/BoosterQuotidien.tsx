@@ -3,13 +3,14 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useEffect, useRef, useState, type CSSProperties, type PointerEvent } from "react";
-import { MotionConfig, motion, useReducedMotion } from "framer-motion";
+import { MotionConfig, useReducedMotion } from "framer-motion";
 import { createClient } from "@/lib/supabase";
 import { useGuideActif } from "@/context/GuideContext";
 import { shiftDateStr } from "@/lib/dates";
 import type { GuideId } from "@/lib/guides";
 import { mouvements, raretes, type Carte } from "@/lib/cartesBooster";
 import SachetBooster, { MiniSachetBooster, demanderMouvementAppareil } from "./SachetBooster";
+import OuvertureCartes from "./OuvertureCartes";
 import styles from "./BoosterQuotidien.module.css";
 
 async function demanderEssai(methode: "GET" | "POST", signal?: AbortSignal, requete?: string) {
@@ -212,6 +213,30 @@ const ordreRarete: Carte["rarete"][] = ["commune", "rare", "epique", "legendaire
 const raretesCollection = [...ordreRarete].reverse();
 const triMouvement = new Intl.Collator("fr");
 
+// Ce que le compte possède déjà (« mouvement:rareté »), dans ses boosters du jour et d'essai.
+async function lireCollection(userId: string, actif: () => boolean = () => true) {
+  const client = createClient();
+  const collection = new Map<string, Carte>();
+  const taillePage = 100;
+  for (const table of ["boosters_exercices", "boosters_illimites"]) {
+    for (let debut = 0; actif(); debut += taillePage) {
+      const lecture = client.from(table).select("cartes").eq("user_id", userId);
+      const { data, error } = await (table === "boosters_exercices"
+        ? lecture.order("jour", { ascending: false })
+        : lecture.order("ouvert_le", { ascending: false }).order("requete_id"))
+        .range(debut, debut + taillePage - 1);
+      if (!actif()) return null;
+      if ((error?.code === "PGRST205" || error?.code === "42P01") && table === "boosters_illimites") break;
+      if (error) throw new Error("Collection indisponible");
+      for (const tirage of data) {
+        for (const carte of tirage.cartes as Carte[]) collection.set(carte.exercice + ":" + carte.rarete, carte);
+      }
+      if (data.length < taillePage) break;
+    }
+  }
+  return collection;
+}
+
 export function CollectionBoosters({ userId }: { userId: string }) {
   const { profil, verifier } = useGuideCartes(userId);
   const guide = profil?.choix;
@@ -220,30 +245,9 @@ export function CollectionBoosters({ userId }: { userId: string }) {
   useEffect(() => {
     let actif = true;
     async function charger() {
-      const client = createClient();
-      const collection = new Map<string, Carte>();
-      const taillePage = 100;
-      for (const table of ["boosters_exercices", "boosters_illimites"]) {
-        for (let debut = 0; actif; debut += taillePage) {
-          const lecture = client.from(table).select("cartes").eq("user_id", userId);
-          const { data, error } = await (table === "boosters_exercices"
-            ? lecture.order("jour", { ascending: false })
-            : lecture.order("ouvert_le", { ascending: false }).order("requete_id"))
-            .range(debut, debut + taillePage - 1);
-          if (!actif) return;
-          if (error?.code === "PGRST205" || error?.code === "42P01") {
-            if (table === "boosters_illimites") break;
-          }
-          if (error) { setErreur(true); return; }
-          for (const tirage of data) {
-            for (const carte of tirage.cartes as Carte[]) {
-              collection.set(carte.exercice + ":" + carte.rarete, carte);
-            }
-          }
-          if (data.length < taillePage) break;
-        }
-      }
-      if (actif) setCartes([...collection.values()].sort((a, b) =>
+      let collection: Map<string, Carte> | null;
+      try { collection = await lireCollection(userId, () => actif); } catch { if (actif) setErreur(true); return; }
+      if (actif && collection) setCartes([...collection.values()].sort((a, b) =>
         triMouvement.compare(mouvements[a.exercice][0], mouvements[b.exercice][0])));
     }
     void charger();
@@ -271,16 +275,6 @@ export function CollectionBoosters({ userId }: { userId: string }) {
   </section>;
 }
 
-function disposerCartes(cartes: Carte[]) {
-  if (cartes.length !== 3) return cartes;
-  const resultat = [...cartes];
-  const vedette = cartes.reduce((meilleure, carte, index) =>
-    ordreRarete.indexOf(carte.rarete) >= ordreRarete.indexOf(cartes[meilleure].rarete) ? index : meilleure, 0);
-  const [carte] = resultat.splice(vedette, 1);
-  resultat.splice(1, 0, carte);
-  return resultat;
-}
-
 export default function BoosterQuotidien({ userId, jour, onGain }: { userId: string; jour: string; onGain?: () => void }) {
   const { profil: portrait, verifier: verifierCoach } = useGuideCartes(userId);
   const coach = portrait?.choix ?? null;
@@ -289,7 +283,11 @@ export default function BoosterQuotidien({ userId, jour, onGain }: { userId: str
   const [illimite, setIllimite] = useState(false);
   const [cartes, setCartes] = useState<Carte[] | null>(null);
   const [compteRebours, setCompteRebours] = useState("");
-  const [index, setIndex] = useState(0);
+  const [modeScene, setModeScene] = useState<"ouverture" | "recap">("recap");
+  const [tirageId, setTirageId] = useState(0);
+  const [nouvelles, setNouvelles] = useState<boolean[] | null>(null);
+  const [rectSachet, setRectSachet] = useState<DOMRect | null>(null);
+  const collectionAvant = useRef<Promise<Map<string, Carte> | null> | null>(null);
   const [exp, setExp] = useState(0);
   const [erreur, setErreur] = useState("");
   const [chargement, setChargement] = useState(false);
@@ -327,7 +325,7 @@ export default function BoosterQuotidien({ userId, jour, onGain }: { userId: str
       setStatut("pret");
       if (data) {
         setCartes(ancien => ancien ?? data as Carte[]);
-        if (!actif.current) setIndex(3);
+        if (!actif.current) { setModeScene("recap"); setNouvelles(null); }
       }
     }
     void charger().catch(() => { if (vivant) setStatut("erreur"); });
@@ -347,7 +345,7 @@ export default function BoosterQuotidien({ userId, jour, onGain }: { userId: str
     imagesDecodees.current = [];
     setCartes(null);
     setExp(0);
-    setIndex(0);
+    setNouvelles(null);
     setErreur("");
     setProfil(null);
   }
@@ -363,6 +361,8 @@ export default function BoosterQuotidien({ userId, jour, onGain }: { userId: str
         return;
       }
       if (guideConfirme !== coach) verifierCoach();
+      // Ce qu'on possède avant l'ouverture : c'est ce qui dira quelles cartes sont « Nouvelle ».
+      collectionAvant.current = lireCollection(userId).catch(() => null);
       if (illimite) reinitialiserEssai();
       setGuideSachet(guideConfirme);
       if (dialog.current && !dialog.current.open) dialog.current.showModal();
@@ -408,11 +408,20 @@ export default function BoosterQuotidien({ userId, jour, onGain }: { userId: str
       imagesDecodees.current = await Promise.all(tirage.cartes.map(carte => decoderCarte(carte, guideSachet)));
       tirageEnAttente.current = null;
       requeteEssai.current = null;
+      const avant = await Promise.race([
+        collectionAvant.current ?? Promise.resolve(null),
+        new Promise<null>(resoudre => window.setTimeout(() => resoudre(null), 1500)),
+      ]);
+      const cartesTirees = tirage.cartes;
+      setNouvelles(avant ? cartesTirees.map(carte => !avant.has(carte.exercice + ":" + carte.rarete)) : null);
+      setRectSachet(dialog.current?.querySelector("[data-sachet]")?.getBoundingClientRect() ?? null);
+      setModeScene("ouverture");
+      setTirageId(id => id + 1);
       setProfil(guideSachet);
       setExp(tirage.exp);
       if (tirage.exp > 0) onGain?.();
-      if (!mouvementReduit && dialog.current?.open) setSortie(tirage.cartes);
-      else setCartes(tirage.cartes);
+      if (!mouvementReduit && dialog.current?.open) setSortie(cartesTirees);
+      else setCartes(cartesTirees);
     } catch {
       setErreur("Le booster est indisponible. Réessaie dans un instant.");
       setEssaiSachet(essai => essai + 1);
@@ -428,12 +437,7 @@ export default function BoosterQuotidien({ userId, jour, onGain }: { userId: str
     setSortie(null);
   }
 
-  function avancer() {
-    setIndex(index + 1);
-  }
-
-  const carte = profil ? cartes?.[index] : undefined;
-  const recapitulatif = profil && cartes && !carte ? disposerCartes(cartes) : null;
+  const tirageAffiche = profil ? sortie ?? cartes : null;
   return (
     <MotionConfig reducedMotion="user">
       <section className={styles.bloc} aria-label="Booster du jour">
@@ -460,56 +464,32 @@ export default function BoosterQuotidien({ userId, jour, onGain }: { userId: str
           {cartes && !illimite && <div className={styles.compte}><small>Prochain booster</small><strong>{compteRebours}</strong></div>}
         </div>
       </section>
-      <dialog ref={dialog} className={styles.dialog} data-ouverture={carte ? "" : undefined}
-        data-recapitulatif={recapitulatif ? "" : undefined} onClose={terminerChute} aria-labelledby="titre-booster">
+      <dialog ref={dialog} className={styles.dialog} onClose={terminerChute} aria-labelledby="titre-booster">
         <div className={styles.ecran} data-sortie={sortie ? "" : undefined}>
-          <button type="button" className={styles.fermer} aria-label="Fermer" onClick={() => dialog.current?.close()}>×</button>
-          <h2 id="titre-booster" aria-live="polite">{cartes ? carte ? "Carte " + (index + 1) + " sur 3" : "Booster ouvert !" : illimite ? "Booster d’essai" : "Ton booster du jour"}</h2>
           {!cartes && <>
+            <button type="button" className={styles.fermer} aria-label="Fermer" onClick={() => dialog.current?.close()}>×</button>
+            <h2 id="titre-booster" aria-live="polite">{illimite ? "Booster d’essai" : "Ton booster du jour"}</h2>
             {guideSachet && <SachetBooster key={essaiSachet + ":" + guideSachet} guide={guideSachet} ouvrir={() => { void ouvrir(); }}
               chargement={chargement || !!sortie} sortie={!!sortie} reveler={terminerChute} />}
             {!illimite && <p>Prochain booster demain à 00 h 00 · heure de Paris</p>}
             {erreur && <p role="alert">{erreur}</p>}
           </>}
-          {carte && profil && <div key={index} className={styles.revelation} data-rarete={carte.rarete}>
-            {index === 2 && !mouvementReduit && <div className={styles.aura} aria-hidden="true" />}
-            <motion.div
-              initial={mouvementReduit ? false : { opacity: 0, y: 32, scale: .91, rotate: index % 2 ? 3 : -3, visibility: "hidden" }}
-              animate={mouvementReduit ? { opacity: 1, y: 0, scale: 1, rotate: 0, visibility: "visible" } : {
-                opacity: [0, 1, 1], y: [32, -5, 0], scale: [.91, 1.023, 1],
-                rotate: [index % 2 ? 3 : -3, index % 2 ? -.6 : .6, 0], visibility: "visible",
-              }}
-              transition={{ delay: index === 2 && !mouvementReduit ? .59 : 0, duration: mouvementReduit ? 0 : index === 2 ? .63 : .46,
-                times: [0, .7, 1], ease: ["easeOut", "easeInOut"] }}>
-              <CarteBooster carte={carte} guide={profil} avancer={avancer} derniere={index === 2} />
-            </motion.div>
-          </div>}
-          {recapitulatif && profil && <>
-            <p className={styles.nombreCartes}>Tu as obtenu <strong>{recapitulatif.length} cartes</strong></p>
-            {exp > 0 && <p className={styles.gainBooster}>+{exp} EXP</p>}
-            <div className={styles.recapitulatif} aria-label="Cartes obtenues">
-              {recapitulatif.map((item, position) =>
-                <div key={item.exercice + ":" + item.rarete + ":" + position} className={styles.carteRecap}>
-                  <motion.div initial={mouvementReduit ? false : { opacity: 0, y: 26, scale: .94 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    transition={{ delay: mouvementReduit ? 0 : position === 1 ? .15 : .06, duration: .45,
-                      ease: [.2, .85, .26, 1] }}>
-                    <CarteBooster carte={item} guide={profil} prioritaire />
-                  </motion.div>
-                </div>
-              )}
-            </div>
-            <div className={styles.actionsRecap}>
-              <Link className={styles.collectionOr} href="/profil#cartes-exercices" onClick={() => dialog.current?.close()}>
-                Voir ma collection <span aria-hidden="true">›</span>
-              </Link>
-              {illimite && <button className={styles.autreBooster} type="button" onClick={reinitialiserEssai}>
-                Ouvrir un autre booster
-              </button>}
-              {erreurCoach && <p role="alert">{erreurCoach}</p>}
-            </div>
-          </>}
         </div>
+        {tirageAffiche && profil && <OuvertureCartes key={tirageId} cartes={tirageAffiche}
+          images={tirageAffiche.map(item => imageCarte(item, profil))}
+          libelles={tirageAffiche.map(item => mouvements[item.exercice][0] + " · " + raretes[item.rarete])}
+          exp={exp} nouvelles={nouvelles} mode={modeScene} sachet={rectSachet}
+          prochain={!illimite && compteRebours ? compteRebours : null}
+          onFermer={() => dialog.current?.close()}
+          actions={<>
+            <Link className={styles.collectionOr} href="/profil#cartes-exercices" onClick={() => dialog.current?.close()}>
+              Voir ma collection <span aria-hidden="true">›</span>
+            </Link>
+            {illimite && <button className={styles.autreBooster} type="button" onClick={reinitialiserEssai}>
+              Ouvrir un autre booster
+            </button>}
+            {erreurCoach && <p role="alert">{erreurCoach}</p>}
+          </>} />}
       </dialog>
     </MotionConfig>
   );

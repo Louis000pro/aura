@@ -1,0 +1,264 @@
+/* La scène de l'ouverture couvre tout le dialogue. Pendant la sortie, elle passe sous le sachet :
+   les cartes, posées derrière sa face, en sortent par l'ouverture. */
+.scene {
+  --cw:260px;
+  --ch:calc(var(--cw) * 1290 / 820);
+  --lueur:#8bd5ff;
+  position:fixed;
+  inset:0;
+  z-index:0;
+  overflow:hidden;
+  pointer-events:none;
+  color:#271841;
+}
+.scene:not([data-etat="sortie"]) { z-index:2; }
+.scene[data-rarete="rare"] { --lueur:#58b0ff; }
+.scene[data-rarete="epique"] { --lueur:#c07cff; }
+.scene[data-rarete="legendaire"] { --lueur:#ffcf5a; }
+.scene[data-rarete="chromatique"] { --lueur:#b7c8ff; }
+
+.nuit,.halo,.socle,.rail { position:absolute;pointer-events:none; }
+.nuit { inset:0;opacity:0;background:radial-gradient(95% 60% at 50% 46%,#45238a 0%,#1f1145 52%,#0c0620 100%); }
+/* Une lumière douce derrière la carte, sans aucun rayon. */
+.halo {
+  left:50%;
+  top:46%;
+  width:calc(var(--cw) * 2.2);
+  height:calc(var(--cw) * 2.2);
+  margin:calc(var(--cw) * -1.1) 0 0 calc(var(--cw) * -1.1);
+  border-radius:50%;
+  opacity:0;
+  background:radial-gradient(circle,color-mix(in srgb,var(--lueur) 85%,#fff) 0%,color-mix(in srgb,var(--lueur) 40%,transparent) 32%,transparent 66%);
+}
+.scene[data-rarete="chromatique"] .halo {
+  background:radial-gradient(circle,#fff 0%,#c9d6ff99 22%,transparent 64%),
+    conic-gradient(from 20deg,#9be8ff80,#ffb6de80,#ffe08a80,#c5b2fa80,#9be8ff80);
+  mask-image:radial-gradient(circle,#000 18%,transparent 66%);
+}
+.socle {
+  left:8%;
+  right:8%;
+  top:50%;
+  height:calc(var(--cw) * .18);
+  border-radius:50%;
+  opacity:0;
+  background:radial-gradient(ellipse,#f7d8ff,#c895ec9c 58%,#a389d900 76%);
+}
+.rail { inset:0;opacity:0;transition:opacity .3s; }
+.rail[data-on] { opacity:1; }
+.rail i {
+  position:absolute;
+  top:90%;
+  left:calc(50% + var(--k) * min(19vw,80px));
+  width:calc(var(--cw) * .2);
+  height:calc(var(--ch) * .2);
+  margin:calc(var(--ch) * -.1) 0 0 calc(var(--cw) * -.1);
+  border-radius:6px;
+  border:1.5px dashed #b9a6dc;
+  opacity:.6;
+}
+.rail i:nth-child(1) { --k:-1; }
+.rail i:nth-child(2) { --k:0; }
+.rail i:nth-child(3) { --k:1; }
+.scene[data-sombre] .rail i { border-color:#ffffff66; }
+
+.carte {
+  --lc:#8bd5ff;
+  position:absolute;
+  left:0;
+  top:0;
+  width:var(--cw);
+  aspect-ratio:820/1290;
+  perspective:calc(var(--cw) * 3.5);
+  visibility:hidden;
+  will-change:transform;
+  transition:opacity .25s;
+  outline:none;
+}
+.carte[data-on] { visibility:visible; }
+.carte[data-actif] { pointer-events:auto;touch-action:none;cursor:pointer; }
+.carte:focus-visible .face { outline:3px solid #e3baff;outline-offset:3px; }
+.carte[data-rarete="rare"] { --lc:#58b0ff; }
+.carte[data-rarete="epique"] { --lc:#c07cff; }
+.carte[data-rarete="legendaire"] { --lc:#ffcf5a; }
+.carte[data-rarete="chromatique"] { --lc:#a9d4ff; }
+.scene[data-etat="zoom"] .carte:not([data-zoom]) { opacity:.18; }
+
+/* La lueur qui monte autour de la carte : la forme de la carte, très floutée. */
+.aura {
+  position:absolute;
+  inset:-9%;
+  border-radius:16% / 10%;
+  opacity:0;
+  background:var(--lc);
+  filter:blur(calc(var(--cw) * .09));
+}
+.carte[data-rarete="chromatique"] .aura {
+  background:conic-gradient(from 30deg,#9be8ff,#ffb6de,#ffe08a,#c5b2fa,#9be8ff);
+}
+.tilt,.int { position:absolute;inset:0;transform-style:preserve-3d; }
+.tilt { transition:transform .2s ease-out; }
+.int { transform:rotateY(180deg); }
+.face,.dos {
+  position:absolute;
+  inset:0;
+  overflow:hidden;
+  border-radius:10% / 6.36%;
+  -webkit-backface-visibility:hidden;
+  backface-visibility:hidden;
+  box-shadow:0 calc(var(--cw) * .013) 0 color-mix(in srgb,var(--lc) 55%,#1a1234),0 calc(var(--cw) * .045) calc(var(--cw) * .08) #21153556;
+}
+.face img { position:absolute;inset:0;display:block;width:100%;height:100%; }
+/* Le dos des cartes, dessiné en code en attendant une image : le film du sachet, le logo, un reflet. */
+.dos {
+  transform:rotateY(180deg);
+  background:repeating-linear-gradient(45deg,#ffffff1c 0 2px,transparent 2px 8px),
+    linear-gradient(137deg,#f5ddff 6%,#a78de0 27%,#ebdcff 43%,#bcdeff 50%,#a593dd 59%,#faddff 80%,#967acb);
+}
+.dos::before {
+  content:"";
+  position:absolute;
+  inset:3.4%;
+  border-radius:8% / 5%;
+  border:2px solid #ffffffd9;
+  box-shadow:inset 0 0 calc(var(--cw) * .09) #ffffff73;
+}
+.dos::after {
+  content:"";
+  position:absolute;
+  left:50%;
+  top:50%;
+  width:36%;
+  aspect-ratio:256/224;
+  transform:translate(-50%,-50%);
+  background:url(/marque/marque-blanc.png) center/contain no-repeat;
+  filter:drop-shadow(0 3px 6px #5b2bb08c);
+}
+.dos i {
+  position:absolute;
+  inset:0 -60%;
+  background:linear-gradient(110deg,transparent 43%,#ffffff8c 50%,transparent 57%);
+  transform:translate3d(-70%,0,0);
+}
+.carte[data-on] .dos i { animation:eclat 3s ease-in-out infinite; }
+@keyframes eclat { 0%,30% { transform:translate3d(-70%,0,0); } 80%,100% { transform:translate3d(70%,0,0); } }
+.balai {
+  position:absolute;
+  inset:0 -110%;
+  opacity:0;
+  pointer-events:none;
+  background:linear-gradient(118deg,transparent 42%,#8adeff8c 46%,#c5b2faa8 48.5%,#ffffffcc 50%,#ffbce8a0 51.5%,#ffe9b17a 54%,transparent 58%);
+}
+
+/* Ce qui s'écrit par-dessus */
+.ui { position:absolute;inset:0;pointer-events:none;transition:color .5s; }
+.scene[data-sombre] .ui { color:#fff; }
+.titre {
+  position:absolute;
+  left:56px;
+  right:56px;
+  top:calc(34px + env(safe-area-inset-top));
+  margin:0;
+  text-align:center;
+  font-size:1.25rem;
+  font-weight:800;
+}
+.scene:is([data-etat="recap"],[data-etat="recapAnim"],[data-etat="zoom"]) .titre {
+  left:12px;
+  right:12px;
+  top:calc(30px + env(safe-area-inset-top));
+  font-size:min(8.6vw,2.2rem);
+  font-weight:900;
+  font-style:italic;
+  letter-spacing:-.035em;
+  white-space:nowrap;
+  padding:0 .2em;
+  background:linear-gradient(175deg,#9a4cf0 0%,#6522c7 45%,#7b16c4 63%,#c42fe0 100%);
+  -webkit-background-clip:text;
+  background-clip:text;
+  -webkit-text-fill-color:transparent;
+}
+.fermer {
+  position:absolute;
+  right:12px;
+  top:calc(12px + env(safe-area-inset-top));
+  width:44px;
+  height:44px;
+  border-radius:50%;
+  border:0;
+  background:#f3edf8;
+  color:#271841;
+  font-size:1.5rem;
+  pointer-events:auto;
+}
+.scene[data-etat="sortie"] .fermer { visibility:hidden; }
+.scene[data-sombre] .fermer { background:#ffffff26;color:#fff; }
+.aide {
+  position:absolute;
+  left:8%;
+  right:8%;
+  top:calc(46% + var(--ch) / 2 + 14px);
+  margin:0;
+  text-align:center;
+  font-size:.875rem;
+  font-weight:600;
+}
+.recap {
+  position:absolute;
+  left:0;
+  right:0;
+  top:calc(38.5% + var(--ch) * .25 + 48px);
+  display:grid;
+  justify-items:center;
+  gap:12px;
+  padding:0 16px;
+  opacity:0;
+}
+.scene:not(:is([data-etat="recap"],[data-etat="recapAnim"])) .recap { visibility:hidden; }
+.recap a,.recap button { pointer-events:auto; }
+.exp {
+  display:inline-flex;
+  align-items:baseline;
+  gap:6px;
+  padding:6px 18px;
+  border:1px solid #f6d284;
+  border-radius:30px;
+  background:#fff1c8;
+  color:#633906;
+}
+.exp b { font-family:var(--chiffre);font-size:1.75rem;font-weight:600;letter-spacing:-.045em;font-variant-numeric:tabular-nums; }
+.exp span { font-size:.85rem;font-weight:850; }
+.prochain { margin:0;font-size:.8rem;color:#59456e; }
+.prochain b { font-family:var(--chiffre);font-weight:600;letter-spacing:-.04em;font-variant-numeric:tabular-nums; }
+.etiquette {
+  position:absolute;
+  left:0;
+  top:0;
+  padding:3px 9px;
+  border-radius:20px;
+  background:#2bd4a0;
+  color:#06382a;
+  font-size:.7rem;
+  font-weight:800;
+  white-space:nowrap;
+  opacity:0;
+}
+.jeton {
+  position:absolute;
+  left:0;
+  top:0;
+  white-space:nowrap;
+  font-family:var(--chiffre);
+  font-size:1.2rem;
+  font-weight:700;
+  letter-spacing:-.04em;
+  color:#8a5a00;
+  opacity:0;
+  text-shadow:0 1px 0 #fff;
+}
+.scene[data-etat="zoom"] :is(.recap,.etiquette) { opacity:0 !important; }
+
+@media (prefers-reduced-motion:reduce) {
+  .carte[data-on] .dos i { animation:none; }
+  .tilt { transition:none; }
+}

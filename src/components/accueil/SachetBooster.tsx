@@ -137,6 +137,7 @@ export default function SachetBooster({ guide, ouvrir, chargement, sortie, revel
   const contourHaut = useRef<SVGPolygonElement>(null);
   const ouverture = useRef<SVGPolygonElement>(null);
   const bord = useRef<SVGPolylineElement>(null);
+  const lumiere = useRef<HTMLDivElement>(null);
   const angles = useRef<Orientation>(neutre);
   const orientationAffichee = useRef<Orientation>(neutre);
   const suite = useRef<SuiteRotation | null>(null);
@@ -306,7 +307,31 @@ export default function SachetBooster({ guide, ouvrir, chargement, sortie, revel
       bande.current.style.setProperty("--pli", (sens * taille * .072) + "deg");
       bande.current.style.setProperty("--levee", (-taille * .018) + "%");
     }
+    // De la lumière sort de l'ouverture, d'autant plus que la déchirure avance.
+    if (lumiere.current && !terminee) {
+      const part = taille / 100;
+      lumiere.current.style.transformOrigin = (sens === 1 ? "12%" : "88%") + " 50%";
+      lumiere.current.style.transform = "scale(" + (.1 + part * .9).toFixed(3) + "," + (.6 + part * .5).toFixed(3) + ")";
+      lumiere.current.style.opacity = Math.min(1, part * 1.7).toFixed(3);
+    }
     if (scene.current) scene.current.dataset.trace = terminee ? "terminee" : "en-cours";
+  }
+
+  // Lâchée après la moitié, la déchirure se termine toute seule ; avant, le film se referme.
+  function finirDechirure(geste: Dechirure) {
+    const [x0, y] = geste.trace[geste.trace.length - 1];
+    const x1 = geste.sens === 1 ? 95 : 5;
+    const debut = performance.now();
+    const pas = (temps: number) => {
+      if (enCours.current) return;
+      const k = Math.min(1, (temps - debut) / 200);
+      const x = x0 + (x1 - x0) * k;
+      if ((x - geste.trace[geste.trace.length - 1][0]) * geste.sens >= 1.8) geste.trace.push([x, y]);
+      if (k >= 1) { ouvrirSachet(geste.trace, geste.sens); return; }
+      peindreDechirure(geste.trace, geste.sens, false);
+      requestAnimationFrame(pas);
+    };
+    requestAnimationFrame(pas);
   }
 
   function ouvrirSachet(trace: Point[], sens: 1 | -1) {
@@ -385,6 +410,8 @@ export default function SachetBooster({ guide, ouvrir, chargement, sortie, revel
           <use href={"#" + idSvg + "-portrait"} clipPath={"url(#" + idSvg + "-haut)"} />
         </g>
       </svg>
+      <div ref={lumiere} className={styles.lumiere} aria-hidden="true" />
+      {deFace && !chargement && !detache && <div className={styles.repere} aria-hidden="true"><i /></div>}
       <button type="button" className={styles.rotation} disabled={chargement || detache}
         aria-label="Tourner le booster"
         onKeyDown={event => {
@@ -462,11 +489,19 @@ export default function SachetBooster({ guide, ouvrir, chargement, sortie, revel
           event.currentTarget.setPointerCapture(event.pointerId);
         }}
         onPointerMove={avancerDechirure}
-        onPointerUp={avancerDechirure}
+        onPointerUp={event => {
+          avancerDechirure(event);
+          const geste = dechirure.current;
+          if (!geste || geste.id !== event.pointerId || enCours.current) return;
+          const fait = geste.sens === 1 ? geste.trace[geste.trace.length - 1][0] : 100 - geste.trace[geste.trace.length - 1][0];
+          if (fait > 55) { dechirure.current = null; finirDechirure(geste); }
+        }}
         onLostPointerCapture={() => {
+          if (!dechirure.current) return;
           dechirure.current = null;
           if (imageDechirure.current !== null) cancelAnimationFrame(imageDechirure.current);
           imageDechirure.current = null;
+          if (lumiere.current) lumiere.current.style.opacity = "0";
           if (!enCours.current && scene.current) delete scene.current.dataset.trace;
         }} />}
     </div>

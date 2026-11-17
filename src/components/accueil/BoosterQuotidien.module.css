@@ -3,7 +3,7 @@
 .ouvrir{min-height:44px;padding:8px 13px;border:0;border-radius:12px;font-weight:750}
 .dialog{box-sizing:border-box;width:100%;height:100%;max-width:none;max-height:none;margin:0;padding:0;border:0;background:white;color:#271841}
 .dialog::backdrop{background:white}
-.ecran{position:relative;text-align:center;width:min(100%,450px);margin:auto;padding:calc(35px + env(safe-area-inset-top)) 14px 25px}
+.ecran{position:relative;z-index:1;text-align:center;width:min(100%,450px);margin:auto;padding:calc(35px + env(safe-area-inset-top)) 14px 25px}
 .ecran h2{font-size:1.25rem;font-weight:800;margin:0 42px 20px}
 .ecran[data-sortie] > h2 { opacity:0; }
 .ecran[data-sortie] .fermer { z-index:1; }

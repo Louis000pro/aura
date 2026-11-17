@@ -75,20 +75,76 @@
 .scene[data-trace] .dechirure { visibility:visible; }
 .corps,.bande { transform-box:view-box; }
 .bande { transform:translateY(var(--levee,0%)) rotate(var(--pli,0deg)); }
-.scene[data-trace="terminee"] .bande { animation:envol .36s cubic-bezier(.22,.69,.38,1) both; }
+.scene[data-trace="terminee"] .bande { animation:envol .52s cubic-bezier(.22,.69,.38,1) both; }
+/* Le sachet ne tombe qu'une fois les cartes sorties (elles montent pendant ce délai). */
 .scene[data-trace="terminee"][data-sortie] .corps {
   transform-origin:50% 50%;
-  animation:chute .39s cubic-bezier(.55,.06,.79,.61) both;
+  animation:chute .52s .33s cubic-bezier(.5,0,.85,.5) both;
 }
+.scene[data-sortie] [data-ouverture-sachet] { opacity:0; }
 @keyframes envol {
   0% { transform:translateY(var(--levee)) rotate(var(--pli));opacity:1; }
-  48% { transform:translate(calc(var(--sens) * 5%),-8%) rotate(calc(var(--sens) * 14deg)) scaleY(.77);opacity:1; }
-  100% { transform:translate(calc(var(--sens) * 13%),-16%) rotate(calc(var(--sens) * 32deg)) scaleY(.32);opacity:0; }
+  45% { transform:translate(calc(var(--sens) * 8%),-11%) rotate(calc(var(--sens) * 22deg)) scaleY(.8);opacity:1; }
+  100% { transform:translate(calc(var(--sens) * 24%),-27%) rotate(calc(var(--sens) * 52deg)) scaleY(.45);opacity:0; }
 }
 @keyframes chute {
   0% { transform:translateY(0);opacity:1; }
-  65% { opacity:1; }
-  100% { transform:translateY(60%) rotate(-11deg);opacity:0; }
+  72% { opacity:0; }
+  100% { transform:translateY(55%) rotate(-5deg);opacity:0; }
+}
+/* La lumière qui sort de l'ouverture : elle suit la déchirure, puis jaillit quand le sachet s'ouvre. */
+.lumiere {
+  position:absolute;
+  left:-14%;
+  right:-14%;
+  top:-6%;
+  height:28%;
+  z-index:3;
+  pointer-events:none;
+  opacity:0;
+  background:radial-gradient(ellipse 50% 50% at 50% 50%,#fff 0%,rgba(255,250,255,.75) 34%,rgba(232,200,255,.35) 58%,transparent 74%);
+}
+.scene[data-trace="terminee"] .lumiere { animation:jaillit .9s ease-out forwards; }
+@keyframes jaillit {
+  0% { opacity:1;transform:scale(1,1.1); }
+  30% { opacity:1;transform:scale(1.15,2.6); }
+  100% { opacity:0;transform:scale(1.3,4.4); }
+}
+/* Où déchirer : un trait pointillé le long de la soudure, et un point qui le parcourt. */
+.repere {
+  position:absolute;
+  left:5%;
+  right:5%;
+  top:6.5%;
+  height:0;
+  z-index:3;
+  container-type:inline-size;
+  pointer-events:none;
+}
+.repere::before {
+  content:"";
+  position:absolute;
+  inset:0 0 auto;
+  border-top:2px dashed rgba(255,255,255,.95);
+  filter:drop-shadow(0 0 2px #7a45d6);
+}
+.repere i {
+  position:absolute;
+  left:0;
+  top:0;
+  width:18px;
+  height:18px;
+  margin:-9px;
+  border-radius:50%;
+  background:#fff;
+  box-shadow:0 0 0 4px rgba(139,92,246,.35),0 0 14px #8b5cf6;
+  animation:doigt 2.4s cubic-bezier(.6,0,.3,1) infinite;
+}
+@keyframes doigt {
+  0% { transform:translate3d(0,0,0) scale(.5);opacity:0; }
+  14% { transform:translate3d(0,0,0) scale(1);opacity:1; }
+  70% { transform:translate3d(100cqw,0,0) scale(1);opacity:1; }
+  86%,100% { transform:translate3d(100cqw,0,0) scale(.5);opacity:0; }
 }
 /* Le reflet holographique est cuit dans 5 images par face ; la boucle du sachet ne change que
    leur opacité, ce que le téléphone compose sans rien recalculer. De face, l'image du milieu. */
@@ -122,6 +178,8 @@
   outline:2px solid #8142cc;
   outline-offset:4px;
 }
+/* Pendant que les cartes sortent, la consigne sous le sachet s'efface avec lui. */
+.scene[data-sortie] + .aide { opacity:0;transition:opacity .3s; }
 .aide {
   /* Le bouton de retour peut apparaître pendant l'inertie, sans déplacer le sachet. */
   min-height:56px;
@@ -141,5 +199,7 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .scene[data-trace="terminee"] .bande,
-  .scene[data-trace="terminee"][data-sortie] .corps { animation-duration:1ms; }
+  .scene[data-trace="terminee"][data-sortie] .corps { animation-duration:1ms;animation-delay:0s; }
+  .repere i { animation:none;opacity:1; }
+  .scene[data-trace="terminee"] .lumiere { animation:none; }
 }
