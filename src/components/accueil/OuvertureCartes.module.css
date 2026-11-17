@@ -38,7 +38,7 @@
 .socle {
   left:8%;
   right:8%;
-  top:50%;
+  top:57.5%;
   height:calc(var(--cw) * .18);
   border-radius:50%;
   opacity:0;
@@ -166,7 +166,7 @@
 .scene:is([data-etat="recap"],[data-etat="recapAnim"],[data-etat="zoom"]) .titre {
   left:12px;
   right:12px;
-  top:calc(30px + env(safe-area-inset-top));
+  top:calc(72px + env(safe-area-inset-top));
   font-size:min(8.6vw,2.2rem);
   font-weight:900;
   font-style:italic;
@@ -207,7 +207,7 @@
   position:absolute;
   left:0;
   right:0;
-  top:calc(38.5% + var(--ch) * .25 + 48px);
+  top:calc(46% + var(--ch) * .25 + 48px);
   display:grid;
   justify-items:center;
   gap:12px;

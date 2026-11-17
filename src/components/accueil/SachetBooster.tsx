@@ -279,6 +279,8 @@ export default function SachetBooster({ guide, ouvrir, chargement, sortie, revel
       lacet: angles.current.lacet + dx,
       tangage: borner(angles.current.tangage - dy, -8, 8),
     };
+    // La lueur de la soudure s'éteint dès que le sachet quitte la face, sans attendre le lâcher.
+    if (!estDeFace(angles.current)) setDeFace(false);
   }
 
   function peindreDechirure(trace: Point[], sens: 1 | -1, terminee: boolean) {
@@ -377,6 +379,7 @@ export default function SachetBooster({ guide, ouvrir, chargement, sortie, revel
         <div ref={modele} className={styles.modele}>
             <div className={styles.face3d + " " + styles.face}>
               <span data-calques=""><Angles fichier={fichierFace} largeur={largeurFace} hauteur={hauteurFace} /></span>
+              {!chargement && !detache && <i className={styles.lueurSoudure} />}
             </div>
             <div className={styles.face3d + " " + styles.dos}>
               <span data-calques=""><Angles fichier={dos[0]} largeur={dos[1]} hauteur={dos[2]} /></span>
@@ -411,7 +414,6 @@ export default function SachetBooster({ guide, ouvrir, chargement, sortie, revel
         </g>
       </svg>
       <div ref={lumiere} className={styles.lumiere} aria-hidden="true" />
-      {deFace && !chargement && !detache && <div className={styles.repere} aria-hidden="true"><i /></div>}
       <button type="button" className={styles.rotation} disabled={chargement || detache}
         aria-label="Tourner le booster"
         onKeyDown={event => {

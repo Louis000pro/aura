@@ -20,7 +20,7 @@ type Etat = "sortie" | "flip" | "carte" | "range" | "recapAnim" | "recap" | "zoo
 const EXP: Record<Rarete, number> = { commune: 5, rare: 8, epique: 10, legendaire: 20, chromatique: 30 };
 const RAR: Record<Rarete, { nuit: number; attente: number; tours: number; flip: number; vibre: number[] }> = {
   commune: { nuit: 0, attente: 260, tours: 0, flip: 560, vibre: [10] },
-  rare: { nuit: 0, attente: 520, tours: 0, flip: 620, vibre: [14] },
+  rare: { nuit: .45, attente: 760, tours: 0, flip: 700, vibre: [16, 40, 16] },
   epique: { nuit: .72, attente: 820, tours: 0, flip: 700, vibre: [18, 40, 18] },
   legendaire: { nuit: .82, attente: 1150, tours: 1, flip: 980, vibre: [24, 40, 24, 40, 60] },
   chromatique: { nuit: .88, attente: 1500, tours: 1, flip: 1040, vibre: [30, 40, 30, 40, 30, 40, 90] },
@@ -104,9 +104,9 @@ export default function OuvertureCartes({ cartes, images, libelles, exp, nouvell
         s: sDedans, r: (i - 1) * 7,
       }),
       eventail: (p: number): Pose => [
-        { x: W * .2, y: H * .4, s: .4, r: -7 }, { x: W * .5, y: H * .385, s: .5, r: 0 }, { x: W * .8, y: H * .4, s: .4, r: 7 },
+        { x: W * .2, y: H * .475, s: .4, r: -7 }, { x: W * .5, y: H * .46, s: .5, r: 0 }, { x: W * .8, y: H * .475, s: .4, r: 7 },
       ][p],
-      zoom: (): Pose => ({ x: W / 2, y: H * .47, s: 1, r: 0 }),
+      zoom: (): Pose => ({ x: W / 2, y: H * .52, s: 1, r: 0 }),
     };
     const tf = (p: Pose) => "translate3d(" + (p.x - CW / 2).toFixed(2) + "px," + (p.y - CH / 2).toFixed(2) + "px,0) rotate(" + p.r + "deg) scale(" + p.s + ")";
     const attendre = (ms: number) => new Promise<void>(r => window.setTimeout(r, reduit ? Math.min(ms, 80) : ms));
@@ -168,7 +168,7 @@ export default function OuvertureCartes({ cartes, images, libelles, exp, nouvell
         fixe(nuit.current!, [{ opacity: getComputedStyle(nuit.current!).opacity }, { opacity: o.nuit }], { duration: d, easing: "ease-in" });
         window.setTimeout(() => { if (vivant) setSombre(true); }, d * .5);
       }
-      if (cartes[i].rarete !== "commune") {
+      {
         // La lueur monte autour de la carte encore de dos, et elle respire avant le retournement.
         joue(morceau(i, styles.aura), [
           { opacity: 0, transform: "scale(.86)" }, { opacity: .55, transform: "scale(.98)", offset: .45 },
@@ -198,14 +198,14 @@ export default function OuvertureCartes({ cartes, images, libelles, exp, nouvell
       joue(morceau(i, styles.tilt), [{ transform: "translate3d(0,0,0) scale(1)" }, { transform: "translate3d(0," + (-H * .02) + "px,0) scale(" + (grande ? 1.08 : 1.04) + ")", offset: .5 }, { transform: "translate3d(0,0,0) scale(1)" }],
         { duration: d, easing: "ease-in-out", fill: "none" });
       const aura = morceau(i, styles.aura);
-      joue(aura, [{ opacity: getComputedStyle(aura).opacity }, { opacity: grande && carte.rarete !== "commune" ? .75 : 0 }], { duration: d, easing: "ease-out" });
+      joue(aura, [{ opacity: getComputedStyle(aura).opacity }, { opacity: grande ? .75 : 0 }], { duration: d, easing: "ease-out" });
       await attendre(d * (grande && o.tours ? .62 : .42)); if (!vivant) return;
       // La carte vue : un reflet la traverse, et une lumière douce s'épanouit derrière elle.
       vibrer(grande ? o.vibre : [8]);
       joue(morceau(i, styles.balai), [{ opacity: 0, transform: "translate3d(-45%,0,0)" }, { opacity: .85, offset: .25 }, { opacity: .7, offset: .7 }, { opacity: 0, transform: "translate3d(45%,0,0)" }],
         { duration: 950, easing: "ease-out", delay: 120 });
       racine!.dataset.rarete = carte.rarete;
-      if (carte.rarete !== "commune") {
+      if (grande || carte.rarete !== "commune") {
         joue(halo.current!, [{ opacity: 0, transform: "scale(.6)" }, { opacity: grande ? .9 : .5, transform: "scale(1)", offset: .35 }, { opacity: grande ? .55 : 0, transform: "scale(1.08)" }],
           { duration: 1300, easing: "ease-out" });
       }
