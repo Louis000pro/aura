@@ -328,6 +328,7 @@ export default function BoosterQuotidien({ userId, jour, onGain }: { userId: str
   const [sortie, setSortie] = useState<Carte[] | null>(null);
   const [essaiSachet, setEssaiSachet] = useState(0);
   const mouvementReduit = useReducedMotion();
+  const [chancesOuvertes, setChancesOuvertes] = useState(false);
   const dialog = useRef<HTMLDialogElement>(null);
   const actif = useRef(false);
   const tirageEnAttente = useRef<{ cartes: Carte[]; exp: number } | null>(null);
@@ -543,12 +544,22 @@ export default function BoosterQuotidien({ userId, jour, onGain }: { userId: str
             {guideSachet && <SachetBooster key={essaiSachet + ":" + guideSachet} guide={guideSachet} ouvrir={() => { void ouvrir(); }}
               chargement={chargement || !!sortie} sortie={!!sortie} reveler={terminerChute} />}
             {!illimite && <p>{ancienneCadence ? "Prochain booster demain à minuit" : "Un booster de plus toutes les 3 h, jusqu’à 3 en réserve"}</p>}
-            <dl className={styles.chances} aria-label="Chances de la meilleure carte">
-              {[["Rare", "60 %"], ["Épique", "30 %"], ["Légendaire", "8 %"], ["Chromatique", "2 %"]].map(([nom, part]) => (
-                <div key={nom}><dt>{nom}</dt><dd>{part}</dd></div>
-              ))}
-            </dl>
-            <p className={styles.chancesNote}>Chances de ta meilleure carte. Jamais de commune.</p>
+            <button type="button" className={styles.chancesBouton} onClick={() => setChancesOuvertes(true)}>Mes chances de rareté</button>
+            {chancesOuvertes && <div className={styles.chancesFond} onClick={() => setChancesOuvertes(false)}>
+              <div className={styles.chancesFiche} role="dialog" aria-label="Mes chances de rareté" onClick={e => e.stopPropagation()}>
+                <button type="button" className={styles.chancesFermer} aria-label="Fermer" onClick={() => setChancesOuvertes(false)}>×</button>
+                <h3>Ta meilleure carte</h3>
+                <ul>
+                  {([["rare", "60 %"], ["epique", "30 %"], ["legendaire", "8 %"], ["chromatique", "2 %"]] as const).map(([r, part]) => (
+                    <li key={r}>
+                      <img src={`/boosters/cartes-completes-v1/${guideSachet ?? "sasha"}-squat-${r}.webp`} alt="" />
+                      <span>{raretes[r]}</span><strong>{part}</strong>
+                    </li>
+                  ))}
+                </ul>
+                <p>Jamais de commune.</p>
+              </div>
+            </div>}
             {erreur && <p role="alert">{erreur}</p>}
           </>}
         </div>

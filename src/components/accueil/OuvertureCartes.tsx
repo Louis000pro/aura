@@ -58,6 +58,7 @@ export default function OuvertureCartes({ cartes, images, libelles, exp, nouvell
   const scene = useRef<HTMLDivElement>(null);
   const nuit = useRef<HTMLDivElement>(null);
   const halo = useRef<HTMLDivElement>(null);
+  const gloire = useRef<HTMLDivElement>(null);
   const rail = useRef<HTMLDivElement>(null);
   const socle = useRef<HTMLDivElement>(null);
   const recap = useRef<HTMLDivElement>(null);
@@ -211,6 +212,22 @@ export default function OuvertureCartes({ cartes, images, libelles, exp, nouvell
         joue(halo.current!, [{ opacity: 0, transform: "scale(.6)" }, { opacity: grande ? .9 : .5, transform: "scale(1)", offset: .35 }, { opacity: grande ? .55 : 0, transform: "scale(1.08)" }],
           { duration: 1300, easing: "ease-out" });
       }
+      // Légendaire et chromatique : une gloire douce qui tourne derrière la carte, la carte qui
+      // s'élève en se balançant, et le film holographique qui la traverse trois fois. Aucun rayon.
+      if (grande && o.tours && !reduit) {
+        gloire.current!.dataset.on = carte.rarete;
+        joue(gloire.current!, [{ opacity: 0, transform: "scale(.5) rotate(0deg)" }, { opacity: 1, transform: "scale(1.05) rotate(120deg)", offset: .3 },
+          { opacity: .85, transform: "scale(.96) rotate(240deg)", offset: .65 }, { opacity: .7, transform: "scale(1) rotate(360deg)" }],
+          { duration: 3200, easing: "cubic-bezier(.2,.7,.3,1)" });
+        joue(morceau(i, styles.tilt), [
+          { transform: "translate3d(0,0,0) rotateY(0deg) rotateX(0deg) scale(1)" },
+          { transform: "translate3d(0," + (-H * .035) + "px,0) rotateY(14deg) rotateX(4deg) scale(1.1)", offset: .3 },
+          { transform: "translate3d(0," + (-H * .03) + "px,0) rotateY(-12deg) rotateX(-3deg) scale(1.1)", offset: .62 },
+          { transform: "translate3d(0,0,0) rotateY(0deg) rotateX(0deg) scale(1)" }],
+        { duration: 2400, easing: "ease-in-out", fill: "none", delay: 200 });
+        for (const k of [0, 1, 2]) joue(morceau(i, styles.balai), [{ opacity: 0, transform: "translate3d(-45%,0,0)" }, { opacity: .9, offset: .25 }, { opacity: .7, offset: .7 }, { opacity: 0, transform: "translate3d(45%,0,0)" }],
+          { duration: 800, easing: "ease-out", delay: 1100 + k * 650 });
+      }
       await attendre(d * .5); if (!vivant) return;
       els[i].dataset.actif = "";
       definir("carte");
@@ -233,6 +250,7 @@ export default function OuvertureCartes({ cartes, images, libelles, exp, nouvell
     function calmer(d = 900) {
       fixe(nuit.current!, [{ opacity: getComputedStyle(nuit.current!).opacity }, { opacity: 0 }], { duration: d, easing: "ease-out" });
       fixe(halo.current!, [{ opacity: getComputedStyle(halo.current!).opacity }, { opacity: 0 }], { duration: d * .6, easing: "ease-out" });
+      fixe(gloire.current!, [{ opacity: getComputedStyle(gloire.current!).opacity }, { opacity: 0 }], { duration: d * .6, easing: "ease-out" });
       window.setTimeout(() => { if (vivant) setSombre(false); }, d * .35);
     }
 
@@ -333,6 +351,7 @@ export default function OuvertureCartes({ cartes, images, libelles, exp, nouvell
     <div ref={scene} className={styles.scene} data-etat={etatAffiche} data-sombre={sombre ? "" : undefined}>
       <div ref={nuit} className={styles.nuit} />
       <div ref={halo} className={styles.halo} />
+      <div ref={gloire} className={styles.gloire} />
       <div ref={socle} className={styles.socle} />
       <div ref={rail} className={styles.rail} aria-hidden="true"><i /><i /><i /></div>
       {cartes.map((carte, i) => (
