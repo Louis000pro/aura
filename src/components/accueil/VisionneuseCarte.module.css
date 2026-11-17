@@ -1,0 +1,97 @@
+.voile {
+  position:fixed;
+  inset:0;
+  z-index:140;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:22px;
+  padding:calc(64px + env(safe-area-inset-top)) 16px calc(28px + env(safe-area-inset-bottom));
+  background:radial-gradient(ellipse at 50% 42%,#3a2a5c 0%,#170f28 62%,#0d0818 100%);
+  color:#f6f1ff;
+  animation:arrivee .22s ease-out;
+}
+@keyframes arrivee { from { opacity:0; } }
+.fermer {
+  position:absolute;
+  right:14px;
+  top:calc(14px + env(safe-area-inset-top));
+  width:44px;
+  height:44px;
+  border:0;
+  border-radius:50%;
+  background:#ffffff1f;
+  color:#fff;
+  font-size:1.6rem;
+  line-height:1;
+  cursor:pointer;
+}
+.scene {
+  --lueur:#8bd5ff;
+  width:min(76vw,360px,52dvh);
+  aspect-ratio:820/1290;
+  perspective:1100px;
+  touch-action:none;
+  user-select:none;
+  cursor:grab;
+}
+.scene:active { cursor:grabbing; }
+.scene[data-rarete="rare"] { --lueur:#6cb9ff; }
+.scene[data-rarete="epique"] { --lueur:#d3a0ff; }
+.scene[data-rarete="legendaire"] { --lueur:#ffdc87; }
+.scene[data-rarete="chromatique"] { --lueur:#bcccff; }
+.carte {
+  position:relative;
+  width:100%;
+  height:100%;
+  transform-style:preserve-3d;
+  will-change:transform;
+  animation:entree .45s cubic-bezier(.2,.9,.3,1.2);
+}
+@keyframes entree { from { scale:.6; } }
+.face,.dos {
+  position:absolute;
+  inset:0;
+  overflow:hidden;
+  border-radius:10% / 6.36%;
+  -webkit-backface-visibility:hidden;
+  backface-visibility:hidden;
+  box-shadow:0 0 34px color-mix(in srgb,var(--lueur) 55%,transparent);
+}
+.face img { position:absolute;inset:0;display:block;width:100%;height:100%;pointer-events:none; }
+.dos {
+  transform:rotateY(180deg);
+  background:repeating-linear-gradient(45deg,#ffffff1c 0 2px,transparent 2px 8px),
+    linear-gradient(137deg,#f5ddff 6%,#a78de0 27%,#ebdcff 43%,#bcdeff 50%,#a593dd 59%,#faddff 80%,#967acb);
+}
+.dos::before {
+  content:"";
+  position:absolute;
+  inset:3.4%;
+  border-radius:8% / 5%;
+  border:2px solid #ffffffd9;
+  box-shadow:inset 0 0 30px #ffffff73;
+}
+.dos::after {
+  content:"";
+  position:absolute;
+  left:50%;
+  top:50%;
+  width:36%;
+  aspect-ratio:256/224;
+  transform:translate(-50%,-50%);
+  background:url(/marque/marque-blanc.png) center/contain no-repeat;
+  filter:drop-shadow(0 3px 6px #5b2bb08c);
+}
+.reflet {
+  position:absolute;
+  inset:-20% -80%;
+  pointer-events:none;
+  background:linear-gradient(110deg,transparent 40%,#ffffff40 48%,#ffffff70 50%,#ffffff40 52%,transparent 60%);
+}
+.legende { margin:0; text-align:center; font-size:.95rem; }
+.legende small { color:#cfc3e6; font-size:.8rem; }
+@media (prefers-reduced-motion: reduce) {
+  .voile,.carte { animation:none; }
+}

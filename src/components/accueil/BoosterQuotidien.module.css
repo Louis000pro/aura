@@ -358,3 +358,5 @@
   font-size:.78em;
   font-variant-numeric:tabular-nums;
 }
+.collection .carte[role="button"] { cursor:pointer; }
+.collection .carte[role="button"]:focus-visible { outline:2px solid #8b5cf6; outline-offset:4px; border-radius:10% / 6%; }

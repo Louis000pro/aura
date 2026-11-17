@@ -12,6 +12,7 @@ import { mouvements, raretes, type Carte } from "@/lib/cartesBooster";
 import { lireCollectionBoosters } from "@/lib/collectionBoosters";
 import SachetBooster, { MiniSachetBooster, demanderMouvementAppareil } from "./SachetBooster";
 import OuvertureCartes from "./OuvertureCartes";
+import VisionneuseCarte from "./VisionneuseCarte";
 import styles from "./BoosterQuotidien.module.css";
 
 async function demanderEssai(methode: "GET" | "POST", signal?: AbortSignal, requete?: string) {
@@ -78,10 +79,11 @@ async function decoderCarte(carte: Carte, guide: GuideId) {
   }
 }
 
-function CarteBooster({ carte, guide, avancer, derniere = false, prioritaire = false }: {
+function CarteBooster({ carte, guide, avancer, onOuvrir, derniere = false, prioritaire = false }: {
   carte: Carte;
   guide: GuideId;
   avancer?: () => void;
+  onOuvrir?: () => void;
   derniere?: boolean;
   prioritaire?: boolean;
 }) {
@@ -143,6 +145,11 @@ function CarteBooster({ carte, guide, avancer, derniere = false, prioritaire = f
   return (
     <article className={styles.carte} data-rarete={carte.rarete} data-revelation={avancer ? "" : undefined}
       data-derniere={derniere ? "" : undefined}
+      role={onOuvrir ? "button" : undefined}
+      tabIndex={onOuvrir ? 0 : undefined}
+      aria-label={onOuvrir ? `Voir ${nom}, ${rarete}, en grand` : undefined}
+      onClick={onOuvrir ? () => { if (!clicApresGlissement.current) onOuvrir(); clicApresGlissement.current = false; } : undefined}
+      onKeyDown={onOuvrir ? event => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); onOuvrir(); } } : undefined}
       onPointerDown={event => {
         if (!event.isPrimary || event.button !== 0) return;
         const { currentTarget, target, pointerId, clientX, clientY } = event;
@@ -223,16 +230,21 @@ function useGuideCartes(userId: string) {
 const ordreRarete: Carte["rarete"][] = ["commune", "rare", "epique", "legendaire", "chromatique"];
 const raretesCollection = [...ordreRarete].reverse();
 function GrilleCollectionBoosters({ cartes, guide }: { cartes: Carte[]; guide: GuideId }) {
-  return raretesCollection.map(rarete => {
+  const [enGrand, setEnGrand] = useState<Carte | null>(null);
+  return <>{raretesCollection.map(rarete => {
     const groupe = cartes.filter(carte => carte.rarete === rarete);
     if (!groupe.length) return null;
     return <section key={rarete} className={styles.groupeCollection} aria-labelledby={"collection-" + rarete}>
       <h3 id={"collection-" + rarete}>{raretes[rarete]} <span>{groupe.length}</span></h3>
       <div className={styles.grille}>{groupe.map(carte =>
-        <CarteBooster key={carte.exercice} carte={carte} guide={guide} />
+        <CarteBooster key={carte.exercice} carte={carte} guide={guide} onOuvrir={() => setEnGrand(carte)} />
       )}</div>
     </section>;
-  });
+  })}
+  {enGrand && <VisionneuseCarte src={imageCarte(enGrand, guide)} rarete={enGrand.rarete}
+    nom={mouvements[enGrand.exercice][0]} libelleRarete={raretes[enGrand.rarete]}
+    alt={mouvements[enGrand.exercice][0] + ", " + raretes[enGrand.rarete]} onFermer={() => setEnGrand(null)} />}
+  </>;
 }
 
 export function CollectionBoosters({ userId }: { userId: string }) {
