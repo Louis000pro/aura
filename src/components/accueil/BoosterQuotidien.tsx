@@ -9,7 +9,7 @@ import { useGuideActif } from "@/context/GuideContext";
 import { shiftDateStr } from "@/lib/dates";
 import type { GuideId } from "@/lib/guides";
 import { mouvements, raretes, type Carte } from "@/lib/cartesBooster";
-import SachetBooster, { MiniSachetBooster } from "./SachetBooster";
+import SachetBooster, { MiniSachetBooster, demanderMouvementAppareil } from "./SachetBooster";
 import styles from "./BoosterQuotidien.module.css";
 
 async function demanderEssai(methode: "GET" | "POST", signal?: AbortSignal, requete?: string) {
@@ -448,6 +448,8 @@ export default function BoosterQuotidien({ userId, jour, onGain }: { userId: str
                 setRevisionStatut(revision => revision + 1);
                 return;
               }
+              // Pendant le geste : sur iPhone, c'est la seule façon de faire bouger le reflet avec le téléphone.
+              demanderMouvementAppareil();
               void preparerSachet();
             }}>
             {statut === "erreur" || (portrait && !coach) ? "Réessayer" : "Ouvrir le booster"}

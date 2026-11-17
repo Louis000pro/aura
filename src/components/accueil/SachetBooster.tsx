@@ -1,28 +1,49 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useId, useRef, useState, type PointerEvent } from "react";
+import { useEffect, useId, useRef, useState, type CSSProperties, type PointerEvent } from "react";
 import type { GuideId } from "@/lib/guides";
 import styles from "./SachetBooster.module.css";
 
 const dossier = "/boosters/sachet-360/";
-// Un sachet par Guide : Nora tend une carte sur le sien, Sasha sur le sien (planche du 2026-11-17).
-const faces: Record<GuideId, [fichier: string, largeur: number, hauteur: number]> = {
-  nora: ["face-nora-v2", 624, 1029],
-  sasha: ["face-sasha-v2", 615, 993],
+// Un sachet par Guide : Nora tend une carte sur le sien, Sasha sur le sien (planche du 2026-11-17,
+// agrandie par quatre avec Real-ESRGAN). Le « holo » de chaque face est le masque du film métallisé :
+// le reflet y brille fort, et à peine sur le Guide et sur le texte.
+const faces: Record<GuideId, [fichier: string, largeur: number, hauteur: number, holo: string]> = {
+  nora: ["face-nora-v3", 831, 1369, "holo-nora-v3"],
+  sasha: ["face-sasha-v3", 817, 1321, "holo-sasha-v3"],
 };
 const textures = {
-  dos: ["dos-v2", 516, 927],
-  gauche: ["cote-gauche-v2", 87, 933],
-  droite: ["cote-droit-v2", 87, 948],
-  dessus: ["dessus-v2", 404, 68],
-  dessous: ["dessous-v2", 406, 63],
+  dos: ["dos-v3", 683, 1233],
+  gauche: ["cote-gauche-v3", 110, 1000],
+  droite: ["cote-droit-v3", 92, 1000],
+  dessus: ["dessus-v3", 540, 85],
+  dessous: ["dessous-v3", 540, 82],
 } as const;
+const holoDos = "holo-dos-v3";
+
+// Le reflet holographique : un arc-en-ciel, un trait de lumière et des paillettes, chacun dans sa
+// couche masquée par le film. Ils se déplacent avec --hx, --hy et --hp, que pose la boucle du sachet.
+function Reflets({ holo, className }: { holo: string; className?: string }) {
+  const masque = { "--masque": "url(" + dossier + holo + ".webp)" } as CSSProperties;
+  return <span className={styles.reflets + (className ? " " + className : "")} style={masque} aria-hidden="true">
+    <span className={styles.arcEnCiel} /><span className={styles.trait} /><span className={styles.paillettes} />
+  </span>;
+}
+
+// Sur iPhone, l'inclinaison du téléphone ne se lit qu'après un accord, demandé pendant un geste.
+let mouvementDemande = false;
+export function demanderMouvementAppareil() {
+  if (mouvementDemande || typeof window === "undefined") return;
+  mouvementDemande = true;
+  const orientation = window.DeviceOrientationEvent as unknown as { requestPermission?: () => Promise<string> } | undefined;
+  if (typeof orientation?.requestPermission === "function") orientation.requestPermission().catch(() => {});
+}
 
 const autresFaces = Object.entries(textures) as [keyof typeof textures, typeof textures[keyof typeof textures]][];
 
 export function MiniSachetBooster({ guide }: { guide: GuideId | null }) {
-  const miniature = dossier + "mini-" + (guide ?? "neutre") + "-v2.webp";
+  const miniature = dossier + "mini-" + (guide ?? "neutre") + "-v3.webp";
   const pleineTaille = dossier + (guide ? faces[guide][0] : textures.dos[0]) + ".webp";
   const [miniatureIndisponible, setMiniatureIndisponible] = useState<string | null>(null);
   const [photoIndisponible, setPhotoIndisponible] = useState<string | null>(null);
@@ -106,7 +127,7 @@ export default function SachetBooster({ guide, ouvrir, chargement, sortie, revel
   reveler: () => void;
 }) {
   const idSvg = useId();
-  const [fichierFace, largeurFace, hauteurFace] = faces[guide];
+  const [fichierFace, largeurFace, hauteurFace, holoFace] = faces[guide];
   const portrait = dossier + fichierFace + ".webp";
   const [deFace, setDeFace] = useState(true);
   const scene = useRef<HTMLDivElement>(null);
@@ -130,6 +151,57 @@ export default function SachetBooster({ guide, ouvrir, chargement, sortie, revel
     if (imageRotation.current !== null) cancelAnimationFrame(imageRotation.current);
     if (imageDechirure.current !== null) cancelAnimationFrame(imageDechirure.current);
     suite.current?.animation.cancel();
+  }, []);
+
+  // Le reflet suit trois choses : la rotation du sachet (doigt, élan, retour de face), l'inclinaison
+  // du téléphone, et la souris sur ordinateur. Une seule boucle, qui n'écrit que ce qui a changé.
+  const survol = useRef({ x: 0, y: 0 });
+  useEffect(() => {
+    let image = 0;
+    let precedent = "";
+    const cible = { x: 0, y: 0 };
+    const incline = { x: 0, y: 0 };
+    const doux = { x: 0, y: 0 };
+    const surOrientation = (event: DeviceOrientationEvent) => {
+      if (event.beta == null || event.gamma == null) return;
+      // Tenu devant soi : beta autour de 45°, gamma autour de 0.
+      cible.x = borner(event.gamma / 22, -1, 1);
+      cible.y = borner((event.beta - 45) / 30, -1, 1);
+    };
+    window.addEventListener("deviceorientation", surOrientation);
+    const boucle = () => {
+      image = requestAnimationFrame(boucle);
+      const element = scene.current;
+      if (!element) return;
+      incline.x += (cible.x - incline.x) * .14;
+      incline.y += (cible.y - incline.y) * .14;
+      doux.x += (survol.current.x - doux.x) * .18;
+      doux.y += (survol.current.y - doux.y) * .18;
+      let orientation = orientationAffichee.current;
+      const mouvement = suite.current;
+      if (mouvement) {
+        const progression = mouvement.animation.effect?.getComputedTiming().progress ?? 0;
+        orientation = {
+          lacet: mouvement.depart.lacet + (mouvement.cible.lacet - mouvement.depart.lacet) * progression,
+          tangage: mouvement.depart.tangage + (mouvement.cible.tangage - mouvement.depart.tangage) * progression,
+        };
+      }
+      const lacet = orientation.lacet * Math.PI / 180;
+      const hx = borner(Math.sin(lacet) * 1.15 + incline.x * .8 + doux.x * .6, -1.15, 1.15);
+      const hy = borner(orientation.tangage / 8 * .7 + incline.y * .7 + doux.y * .45, -1.15, 1.15);
+      const hp = .5 + .5 * Math.sin(lacet * 2 + hx * 2.4 + hy * 1.6);
+      const valeur = hx.toFixed(3) + "|" + hy.toFixed(3) + "|" + hp.toFixed(3);
+      if (valeur === precedent) return;
+      precedent = valeur;
+      element.style.setProperty("--hx", hx.toFixed(3));
+      element.style.setProperty("--hy", hy.toFixed(3));
+      element.style.setProperty("--hp", hp.toFixed(3));
+    };
+    image = requestAnimationFrame(boucle);
+    return () => {
+      cancelAnimationFrame(image);
+      window.removeEventListener("deviceorientation", surOrientation);
+    };
   }, []);
 
   function peindreOrientation(orientation = angles.current) {
@@ -255,16 +327,27 @@ export default function SachetBooster({ guide, ouvrir, chargement, sortie, revel
 
   return <>
     <div className={styles.scene} ref={scene} data-sachet="" data-coach={guide}
-      data-face={deFace ? "" : undefined} data-sortie={sortie ? "" : undefined}>
+      data-face={deFace ? "" : undefined} data-sortie={sortie ? "" : undefined}
+      onPointerMove={event => {
+        if (event.pointerType !== "mouse") return;
+        const cadre = event.currentTarget.getBoundingClientRect();
+        survol.current = {
+          x: borner((event.clientX - cadre.left) / cadre.width * 2 - 1, -1, 1),
+          y: borner((event.clientY - cadre.top) / cadre.height * 2 - 1, -1, 1),
+        };
+      }}
+      onPointerLeave={() => { survol.current = { x: 0, y: 0 }; }}>
       <div className={styles.camera} aria-hidden="true">
         <div ref={modele} className={styles.modele}>
             <div className={styles.face3d + " " + styles.face}>
               <Image className={styles.image} src={portrait} width={largeurFace} height={hauteurFace} alt="" loading="eager" unoptimized draggable={false} />
+              <Reflets holo={holoFace} />
             </div>
             {autresFaces.map(([cote, [fichier, largeur, hauteur]]) => (
               <div className={styles.face3d + " " + styles[cote]} key={cote}>
                 <Image className={styles.image} src={dossier + fichier + ".webp"} width={largeur} height={hauteur} alt=""
                   loading="eager" unoptimized draggable={false} />
+                {cote === "dos" && <Reflets holo={holoDos} />}
               </div>
             ))}
         </div>
@@ -290,6 +373,7 @@ export default function SachetBooster({ guide, ouvrir, chargement, sortie, revel
           <use href={"#" + idSvg + "-portrait"} clipPath={"url(#" + idSvg + "-haut)"} />
         </g>
       </svg>
+      <Reflets holo={holoFace} className={styles.refletsDechirure} />
       <button type="button" className={styles.rotation} disabled={chargement || detache}
         aria-label="Tourner le booster"
         onKeyDown={event => {

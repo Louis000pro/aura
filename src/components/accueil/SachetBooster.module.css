@@ -90,6 +90,54 @@
   65% { opacity:1; }
   100% { transform:translateY(60%) rotate(-11deg);opacity:0; }
 }
+/* Le reflet holographique. Chaque couche porte son propre masque (le film métallisé de la face)
+   et son propre mode de fusion : une couche masquée isole ses enfants, donc un mode de fusion posé
+   sur un enfant ne verrait plus l'image dessous. Seul le contenu de chaque couche bouge, en
+   transform : rien ne se repeint quand on tourne. --hx, --hy et --hp viennent de la boucle du sachet. */
+.reflets,.reflets > span {
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+}
+.reflets > span {
+  overflow:hidden;
+  -webkit-mask:var(--masque) center/100% 100% no-repeat;
+  mask:var(--masque) center/100% 100% no-repeat;
+}
+/* Les couches débordent juste assez pour leur course (--hx et --hy restent entre -1,15 et 1,15) :
+   plus grandes, elles coûteraient de la mémoire graphique pour rien sur un téléphone. */
+.reflets > span::before {
+  content:"";
+  position:absolute;
+  inset:-30%;
+  will-change:transform;
+}
+.arcEnCiel { mix-blend-mode:overlay;opacity:.5; }
+.arcEnCiel::before {
+  background:repeating-linear-gradient(115deg,#ff2fb8 0%,#ffb800 7%,#00e5c8 14%,#3d6bff 21%,#b64bff 28%,#ff2fb8 35%);
+  transform:translate3d(calc(var(--hx,0) * 16%),calc(var(--hy,0) * 10%),0);
+}
+.trait { mix-blend-mode:screen;opacity:.85; }
+.trait::before {
+  background:linear-gradient(115deg,transparent 36%,rgba(255,255,255,.35) 44%,rgba(255,255,255,.9) 49.6%,rgba(255,255,255,.35) 55%,transparent 63%);
+  transform:translate3d(calc(var(--hx,0) * -40%),calc(var(--hy,0) * -14%),0);
+}
+.paillettes { mix-blend-mode:color-dodge;opacity:calc(.15 + var(--hp,.5) * .65); }
+.reflets > .paillettes::before {
+  inset:-5%;
+  background:url(/boosters/sachet-360/paillettes-v3.webp) 0 0/40% auto repeat;
+  transform:translate3d(calc(var(--hx,0) * 3%),calc(var(--hy,0) * 3%),0);
+}
+/* Pendant la déchirure, la face 3D laisse la place au dessin de la déchirure : son reflet s'éteint en
+   fondu au lieu de disparaître d'un coup. */
+.refletsDechirure { z-index:3;visibility:hidden; }
+.scene[data-trace] .refletsDechirure {
+  visibility:visible;
+  animation:refletEteint .32s ease-out forwards;
+}
+@keyframes refletEteint { to { opacity:0; } }
+:global(html.perf-lite) .paillettes,:global(html.perf-lite) .trait { display:none; }
+
 .rotation,.soudure {
   position:absolute;
   inset:0;
