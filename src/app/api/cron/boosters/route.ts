@@ -1,11 +1,11 @@
 /**
  * /api/cron/boosters — une fois par jour, prévient ceux qui n'ont pas encore ouvert le booster du jour.
- * Le booster se renouvelle à minuit (heure de Paris) ; on prévient en fin de matinée, jamais la nuit.
+ * Le booster revient 3 h après l'ouverture (`ouvrir_booster_exercices_v4`) ; Vercel Hobby ne lance
+ * qu'une fois par jour, donc on prévient en fin de matinée ceux dont le booster est prêt à ce moment-là.
  * Respecte l'interrupteur « rappels » des préférences de notification.
  */
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase-admin";
-import { parisDateStr } from "@/lib/dates";
 import { preferencesDeLot, PAR_DEFAUT } from "@/lib/notificationPrefs";
 import { iconeGuide, pousserA } from "@/lib/pushServeur";
 
@@ -15,14 +15,15 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "non_autorisé" }, { status: 401 });
   }
   const admin = createAdminClient();
-  const jour = parisDateStr(new Date());
 
   const { data: subs } = await admin.from("push_subscriptions").select("user_id");
   const ids = [...new Set((subs ?? []).map(s => s.user_id as string))];
   if (!ids.length) return NextResponse.json({ ok: true, envoyes: 0 });
 
   const [ouverts, prefs, profils] = await Promise.all([
-    admin.from("boosters_exercices").select("user_id").eq("jour", jour).in("user_id", ids),
+    // Cadence de 3 heures : un booster est prêt si le dernier a été ouvert il y a plus de 3 h.
+    admin.from("boosters_illimites").select("user_id").eq("cadence_3h", true)
+      .gt("ouvert_le", new Date(Date.now() - 3 * 3600_000).toISOString()).in("user_id", ids),
     preferencesDeLot(admin, ids),
     admin.from("profiles").select("id, guide_id").in("id", ids),
   ]);
@@ -37,7 +38,7 @@ export async function GET(req: NextRequest) {
     try {
       envoyes += await pousserA(admin, id, {
         title: "Ton booster est prêt",
-        body: "Trois nouvelles cartes t’attendent aujourd’hui. Viens l’ouvrir.",
+        body: "Trois nouvelles cartes t’attendent. Viens l’ouvrir.",
         url: "/",
         icon: iconeGuide(guides.get(id)),
       });
