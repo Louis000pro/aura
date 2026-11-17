@@ -11,10 +11,6 @@
     {
       "path": "/api/cron/inactifs",
       "schedule": "0 9 1 * *"
-    },
-    {
-      "path": "/api/cron/boosters",
-      "schedule": "0 10 * * *"
     }
   ]
 }
