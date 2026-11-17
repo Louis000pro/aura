@@ -645,6 +645,21 @@ export default function ParametresPage() {
     }
   };
 
+  async function envoyerNotifTest() {
+    const { data: { session } } = await createClient().auth.getSession();
+    if (!session?.access_token) { showToast("Reconnecte-toi pour tester"); return; }
+    const envoyer = (genre: string) => fetch("/api/admin/notif-test", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+      body: JSON.stringify({ genre }),
+    }).then(r => r.json()).catch(() => null);
+    const r = await envoyer("rappel");
+    if (!r?.ok) { showToast("Envoi impossible"); return; }
+    if (!r.envoyes) { showToast("Aucun appareil abonné : active d'abord les notifications push"); return; }
+    showToast("Notification envoyée, la suivante dans 5 s");
+    setTimeout(() => { void envoyer("booster"); }, 5000);
+  }
+
   const handleLogout = async () => {
     await logout();
     router.replace("/auth");
@@ -859,6 +874,15 @@ export default function ParametresPage() {
                 sub="Gérer les utilisateurs, bannir, certifier"
                 right={<Pastille texte="Admin" />}
                 onClick={() => router.push("/admin")}
+              />
+            )}
+            {user?.is_admin && (
+              <Ligne
+                icon={Shield}
+                label="Tester les notifications"
+                sub="Rappel du Guide, puis booster prêt, sur tes appareils"
+                right={<Pastille texte="Admin" />}
+                onClick={envoyerNotifTest}
               />
             )}
             <Ligne
