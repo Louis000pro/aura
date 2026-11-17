@@ -18,12 +18,13 @@ type Pose = { x: number; y: number; s: number; r: number };
 type Etat = "sortie" | "flip" | "carte" | "range" | "recapAnim" | "recap" | "zoom";
 
 const EXP: Record<Rarete, number> = { commune: 5, rare: 8, epique: 10, legendaire: 20, chromatique: 30 };
-const RAR: Record<Rarete, { nuit: number; attente: number; tours: number; flip: number; vibre: number[] }> = {
-  commune: { nuit: 0, attente: 260, tours: 0, flip: 560, vibre: [10] },
-  rare: { nuit: .45, attente: 760, tours: 0, flip: 700, vibre: [16, 40, 16] },
-  epique: { nuit: .72, attente: 820, tours: 0, flip: 700, vibre: [18, 40, 18] },
-  legendaire: { nuit: .82, attente: 1150, tours: 1, flip: 980, vibre: [24, 40, 24, 40, 60] },
-  chromatique: { nuit: .88, attente: 1500, tours: 1, flip: 1040, vibre: [30, 40, 30, 40, 30, 40, 90] },
+// lueur : durée de la grosse lueur de la dernière carte, taille : son ampleur, tremble : force du tremblement.
+const RAR: Record<Rarete, { nuit: number; attente: number; tours: number; flip: number; vibre: number[]; lueur: number; taille: number; tremble: number }> = {
+  commune: { nuit: 0, attente: 260, tours: 0, flip: 560, vibre: [10], lueur: 900, taille: .9, tremble: .1 },
+  rare: { nuit: .45, attente: 760, tours: 0, flip: 700, vibre: [16, 40, 16], lueur: 1100, taille: 1, tremble: .1 },
+  epique: { nuit: .72, attente: 900, tours: 0, flip: 700, vibre: [18, 40, 18], lueur: 1800, taille: 1.15, tremble: .2 },
+  legendaire: { nuit: .82, attente: 1500, tours: 1, flip: 980, vibre: [24, 40, 24, 40, 60], lueur: 3000, taille: 1.35, tremble: .3 },
+  chromatique: { nuit: .88, attente: 1900, tours: 1, flip: 1040, vibre: [30, 40, 30, 40, 30, 40, 90], lueur: 3700, taille: 1.6, tremble: .5 },
 };
 
 // Une courbe de ressort calculée une fois, jouée par le navigateur (linear()), sinon une approximation.
@@ -179,7 +180,7 @@ export default function OuvertureCartes({ cartes, images, libelles, exp, nouvell
           { opacity: .38, transform: "scale(.95)", offset: .6 }, { opacity: 1, transform: "scale(1.04)" },
         ], { duration: d, easing: "ease-in" });
         if (!reduit) joue(morceau(i, styles.tilt), [0, 1, 2, 3, 4, 5, 6, 7, 8].map(k =>
-          ({ transform: "rotate(" + ((k % 2 ? 1 : -1) * k * (o.nuit > .5 ? .2 : .1)) + "deg) scale(" + (1 + k * .004) + ")" })),
+          ({ transform: "rotate(" + ((k % 2 ? 1 : -1) * k * o.tremble) + "deg) scale(" + (1 + k * .004) + ")" })),
         { duration: d, easing: "ease-in", fill: "none" });
         const pas = Math.max(90, d / 7);
         for (let t = pas; t < d; t += pas) window.setTimeout(() => { if (vivant) vibrer([5]); }, t);
@@ -217,12 +218,22 @@ export default function OuvertureCartes({ cartes, images, libelles, exp, nouvell
       // puis respire. Seuls transform et opacity bougent, aucun filtre.
       if (grande && !reduit) {
         gloire.current!.dataset.on = carte.rarete;
-        joue(gloire.current!, [{ opacity: 0, transform: "scale(.35)" }, { opacity: 1, transform: "scale(1.12)", offset: .4 }, { opacity: .85, transform: "scale(1)" }],
-          { duration: 1400, easing: "cubic-bezier(.2,.8,.3,1)" });
-        respire.current = gloire.current!.animate([{ opacity: .85, transform: "scale(1)" }, { opacity: 1, transform: "scale(1.07)" }, { opacity: .85, transform: "scale(1)" }],
-          { duration: 2600, delay: 1400, iterations: Infinity, easing: "ease-in-out" });
+        const t = o.taille;
+        joue(gloire.current!, [{ opacity: 0, transform: "scale(.3)" }, { opacity: 1, transform: "scale(" + (t * 1.15) + ")", offset: .35 },
+          { opacity: .95, transform: "scale(" + (t * .97) + ")", offset: .7 }, { opacity: .85, transform: "scale(" + t + ")" }],
+          { duration: o.lueur, easing: "cubic-bezier(.2,.8,.3,1)" });
+        respire.current = gloire.current!.animate([{ opacity: .85, transform: "scale(" + t + ")" }, { opacity: 1, transform: "scale(" + (t * 1.07) + ")" }, { opacity: .85, transform: "scale(" + t + ")" }],
+          { duration: 2600, delay: o.lueur, iterations: Infinity, easing: "ease-in-out" });
+        // Légendaire et chromatique : la carte tremble pendant que la lueur s'épanouit.
+        if (o.tours) {
+          const n = Math.round(o.lueur * .55 / 45), a = H * .004 * o.tremble * 2;
+          joue(morceau(i, styles.tilt), Array.from({ length: n + 1 }, (_, k) => {
+            const f = k === n ? 0 : (1 - k / n) * (k % 2 ? 1 : -1);
+            return { transform: "translate3d(" + (f * a) + "px," + (-Math.abs(f) * a * .5) + "px,0) rotate(" + (f * o.tremble * 2) + "deg)" };
+          }), { duration: o.lueur * .55, easing: "linear", fill: "none", delay: 80 });
+        }
       }
-      await attendre(d * .5); if (!vivant) return;
+      await attendre(grande ? Math.max(d * .5, o.lueur * .7) : d * .5); if (!vivant) return;
       els[i].dataset.actif = "";
       definir("carte");
       setAide(grande ? libelles[i] + " · Touche la carte pour voir tes trois cartes" : "Touche la carte pour passer à la suivante");

@@ -555,7 +555,7 @@ export default function BoosterQuotidien({ userId, jour, onGain }: { userId: str
                 <button type="button" className={styles.chancesFermer} aria-label="Fermer" onClick={() => setChancesOuvertes(false)}>×</button>
                 <h3>Ta meilleure carte</h3>
                 <ul>
-                  {([["rare", 60], ["epique", 30], ["legendaire", 9], ["chromatique", 1]] as const).map(([r, base]) => { const part = (Math.round((chances?.[r] ?? base) * 10) / 10).toLocaleString("fr-FR") + "\u00a0%"; return (
+                  {([["rare", 60], ["epique", 30], ["legendaire", 9], ["chromatique", 1]] as const).map(([r, base]) => { const part = (Math.round((chances?.[r] ?? base) * 10) / 10).toLocaleString("fr-FR") + " %"; return (
                     <li key={r}>
                       <img src={`/boosters/cartes-completes-v1/${guideSachet ?? "sasha"}-squat-${r}.webp`} alt="" />
                       <span>{raretes[r]}</span><strong>{part}</strong>
@@ -563,7 +563,7 @@ export default function BoosterQuotidien({ userId, jour, onGain }: { userId: str
                   ); })}
                 </ul>
                 <p>{chances?.affilee ? `Tu as eu ${chances.affilee === 1 ? "une rare" : chances.affilee + " rares"} d’affilée : tes chances montent.` : "Jamais de commune. Chaque rare d’affilée fait monter tes chances."}</p>
-                <p>Et 0,5\u00a0% de chances de tomber sur un pack d’exception : trois cartes épiques ou mieux.</p>
+                <p>Et 0,5 % de chances de tomber sur un pack d’exception : trois cartes épiques ou mieux.</p>
               </div>
             </div>}
             {erreur && <p role="alert">{erreur}</p>}
