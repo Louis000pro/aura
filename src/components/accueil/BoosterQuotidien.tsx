@@ -329,6 +329,11 @@ export default function BoosterQuotidien({ userId, jour, onGain }: { userId: str
   const [essaiSachet, setEssaiSachet] = useState(0);
   const mouvementReduit = useReducedMotion();
   const [chancesOuvertes, setChancesOuvertes] = useState(false);
+  const [chances, setChances] = useState<Record<string, number> | null>(null);
+  const ouvrirChances = () => {
+    setChancesOuvertes(true);
+    void createClient().rpc("mes_chances_booster").then(({ data }) => { if (data) setChances(data as Record<string, number>); });
+  };
   const dialog = useRef<HTMLDialogElement>(null);
   const actif = useRef(false);
   const tirageEnAttente = useRef<{ cartes: Carte[]; exp: number } | null>(null);
@@ -544,20 +549,20 @@ export default function BoosterQuotidien({ userId, jour, onGain }: { userId: str
             {guideSachet && <SachetBooster key={essaiSachet + ":" + guideSachet} guide={guideSachet} ouvrir={() => { void ouvrir(); }}
               chargement={chargement || !!sortie} sortie={!!sortie} reveler={terminerChute} />}
             {!illimite && <p>{ancienneCadence ? "Prochain booster demain à minuit" : "Un booster de plus toutes les 3 h, jusqu’à 3 en réserve"}</p>}
-            <button type="button" className={styles.chancesBouton} onClick={() => setChancesOuvertes(true)}>Mes chances de rareté</button>
+            <button type="button" className={styles.chancesBouton} onClick={ouvrirChances}>Mes chances de rareté</button>
             {chancesOuvertes && <div className={styles.chancesFond} onClick={() => setChancesOuvertes(false)}>
               <div className={styles.chancesFiche} role="dialog" aria-label="Mes chances de rareté" onClick={e => e.stopPropagation()}>
                 <button type="button" className={styles.chancesFermer} aria-label="Fermer" onClick={() => setChancesOuvertes(false)}>×</button>
                 <h3>Ta meilleure carte</h3>
                 <ul>
-                  {([["rare", "60 %"], ["epique", "30 %"], ["legendaire", "8 %"], ["chromatique", "2 %"]] as const).map(([r, part]) => (
+                  {([["rare", 60], ["epique", 30], ["legendaire", 9], ["chromatique", 1]] as const).map(([r, base]) => { const part = (Math.round((chances?.[r] ?? base) * 10) / 10).toLocaleString("fr-FR") + "\u00a0%"; return (
                     <li key={r}>
                       <img src={`/boosters/cartes-completes-v1/${guideSachet ?? "sasha"}-squat-${r}.webp`} alt="" />
                       <span>{raretes[r]}</span><strong>{part}</strong>
                     </li>
-                  ))}
+                  ); })}
                 </ul>
-                <p>Jamais de commune.</p>
+                <p>{chances?.affilee ? `Tu as eu ${chances.affilee === 1 ? "une rare" : chances.affilee + " rares"} d’affilée : tes chances montent.` : "Jamais de commune. Chaque rare d’affilée fait monter tes chances."}</p>
               </div>
             </div>}
             {erreur && <p role="alert">{erreur}</p>}
