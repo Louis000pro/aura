@@ -18,9 +18,9 @@ import styles from "./IdentiteRang.module.css";
  */
 
 /* ─────────────────────────────────────────────────────────────────────────────
- * La photo et son cadre (refonte du 2026-10-24) : un cadre par rang, dès
- * l'Argent. L'Or ajoute une lueur, le Platine une lumière qui tourne, le
- * Diamant des facettes, l'Éternel son aura. Le dessin vit dans le module CSS.
+ * Une lueur continue autour de la photo dès l'Argent (2026-11-18).
+ * Sa couleur dépend du rang, avec un reflet doux qui tourne.
+ * La galerie et le passage de rang utilisent ce même composant.
  * ────────────────────────────────────────────────────────────────────────── */
 
 export function AvatarRang({
@@ -43,7 +43,6 @@ export function AvatarRang({
       data-cadre={cosmetiques.cadre ?? undefined}
       style={{ width: taille, height: taille, "--s": taille } as CSSProperties}
     >
-      {cosmetiques.cadre && <span aria-hidden="true" className={styles.aura} />}
       {children}
       {cosmetiques.cadre && (
         <>

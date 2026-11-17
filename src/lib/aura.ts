@@ -516,42 +516,42 @@ export const RECOMPENSES_RANG: Record<string, RecompensesRang> = {
   argent: {
     cadeaux: [
       { genre: "carte", titre: "Ta carte Argent" },
-      { genre: "cadre", titre: "Ton cadre Argent" },
+      { genre: "cadre", titre: "Ta lueur Argent" },
       { genre: "joker", titre: "1 joker par mois", n: 1 },
     ],
-    galerie: { carte: "Carte Argent, un reflet la traverse", cadre: "Cadre argent", plus: null },
+    galerie: { carte: "Carte Argent, un reflet la traverse", cadre: "Lueur argent autour de ta photo", plus: null },
   },
   or: {
     cadeaux: [
       { genre: "carte", titre: "Ta carte Or" },
-      { genre: "cadre", titre: "Ton cadre Or" },
+      { genre: "cadre", titre: "Ta lueur Or" },
       { genre: "joker", titre: "2 jokers par mois", n: 2 },
     ],
-    galerie: { carte: "Carte Or, gravée de cercles", cadre: "Cadre or, avec sa lueur", plus: null },
+    galerie: { carte: "Carte Or, gravée de cercles", cadre: "Lueur dorée autour de ta photo", plus: null },
   },
   platine: {
     cadeaux: [
       { genre: "carte", titre: "Ta carte Platine" },
-      { genre: "cadre", titre: "Ton cadre Platine" },
+      { genre: "cadre", titre: "Ta lueur Platine" },
       { genre: "joker", titre: "3 jokers par mois", n: 3 },
     ],
-    galerie: { carte: "Carte Platine, nacrée", cadre: "Cadre platine, une lumière tourne autour", plus: null },
+    galerie: { carte: "Carte Platine, nacrée", cadre: "Lueur lilas autour de ta photo", plus: null },
   },
   diamant: {
     cadeaux: [
       { genre: "carte", titre: "Ta carte Diamant" },
-      { genre: "cadre", titre: "Ton cadre Diamant" },
+      { genre: "cadre", titre: "Ta lueur Diamant" },
       { genre: "titre", titre: `Le titre ${TITRE_DIAMANT}` },
     ],
-    galerie: { carte: "Carte Diamant, holographique", cadre: "Cadre diamant, taillé en facettes", plus: "sous ton nom, sur ton profil" },
+    galerie: { carte: "Carte Diamant, holographique", cadre: "Lueur bleu glacier autour de ta photo", plus: "sous ton nom, sur ton profil" },
   },
   eternel: {
     cadeaux: [
       { genre: "carte", titre: "Ta carte Éternel" },
-      { genre: "cadre", titre: "Ton cadre Éternel" },
+      { genre: "cadre", titre: "Ta lueur Éternel" },
       { genre: "brillant", titre: "Ton pseudo en lumière" },
     ],
-    galerie: { carte: "Carte Éternel, vivante", cadre: "Cadre éternel, or et violet, avec son halo", plus: "en lumière, visible par les autres" },
+    galerie: { carte: "Carte Éternel, vivante", cadre: "Lueur or et violet autour de ta photo", plus: "en lumière, visible par les autres" },
   },
 };
 
