@@ -90,7 +90,7 @@ function vitesseRelachement(geste: GesteRotation, temps: number) {
   const premiere = geste.mesures.find(mesure => derniere.temps - mesure.temps >= 12);
   if (!premiere) return 0;
   const maintien = borner((65 - (temps - derniere.temps)) / 49, 0, 1);
-  return borner((derniere.x - premiere.x) * 240 / geste.largeur / (derniere.temps - premiere.temps), -1.4, 1.4) * maintien;
+  return borner((derniere.x - premiere.x) * 240 / geste.largeur / (derniere.temps - premiere.temps), -3, 3) * maintien;
 }
 
 const pointsSvg = (points: Point[]) => points.map(([x, y]) => x.toFixed(2) + "," + y.toFixed(2)).join(" ");
@@ -453,14 +453,14 @@ export default function SachetBooster({ guide, ouvrir, chargement, sortie, revel
           deplacerRotation(geste, event);
           const { lacet, tangage } = angles.current;
           const vitesse = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : vitesseRelachement(geste, event.timeStamp);
-          // La pente initiale de cubic-bezier(.2,.6,.44,1) est 3 : le
-          // déplacement conserve la vitesse du doigt au départ de l'inertie.
-          const duree = 145 + Math.abs(vitesse) * 55;
-          const inertie = Math.abs(vitesse) < .075 ? 0 : vitesse * duree / 3;
-          const cible = lacet + inertie;
-          const face = tourProche(cible);
-          if (Math.abs(cible - face) < 9 && Math.abs(tangage) < 4 && inertie * (face - lacet) >= 0) tournerVers(face, 0, inertie ? duree : 140);
-          else if (inertie) tournerVers(cible, tangage, duree);
+          // Lancé fort, le sachet glisse longtemps puis ralentit doucement jusqu'à une face.
+          // La pente initiale de cubic-bezier(.12,.72,.24,1) vaut 6 : le départ garde la vitesse du doigt.
+          const duree = 420 + Math.abs(vitesse) * 650;
+          const inertie = Math.abs(vitesse) < .075 ? 0 : vitesse * duree / 6;
+          const face = tourProche(lacet + inertie);
+          if (inertie && Math.abs(vitesse) > .5) tournerVers(face, 0, duree + Math.abs(face - lacet - inertie) * 4, "cubic-bezier(.12,.72,.24,1)");
+          else if (Math.abs(lacet + inertie - face) < 9 && Math.abs(tangage) < 4 && inertie * (face - lacet) >= 0) tournerVers(face, 0, inertie ? duree : 140, "cubic-bezier(.12,.72,.24,1)");
+          else if (inertie) tournerVers(lacet + inertie, tangage, duree, "cubic-bezier(.12,.72,.24,1)");
           else tournerVers(lacet, tangage, 70);
         }}
         onLostPointerCapture={event => {

@@ -563,6 +563,7 @@ export default function BoosterQuotidien({ userId, jour, onGain }: { userId: str
                   ); })}
                 </ul>
                 <p>{chances?.affilee ? `Tu as eu ${chances.affilee === 1 ? "une rare" : chances.affilee + " rares"} d’affilée : tes chances montent.` : "Jamais de commune. Chaque rare d’affilée fait monter tes chances."}</p>
+                <p>Et 0,5\u00a0% de chances de tomber sur un pack d’exception : trois cartes épiques ou mieux.</p>
               </div>
             </div>}
             {erreur && <p role="alert">{erreur}</p>}

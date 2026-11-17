@@ -206,10 +206,10 @@ export default function OuvertureCartes({ cartes, images, libelles, exp, nouvell
       await attendre(d * (grande && o.tours ? .62 : .42)); if (!vivant) return;
       // La carte vue : un reflet la traverse, et une lumière douce s'épanouit derrière elle.
       vibrer(grande ? o.vibre : [8]);
-      joue(morceau(i, styles.balai), [{ opacity: 0, transform: "translate3d(-45%,0,0)" }, { opacity: .85, offset: .25 }, { opacity: .7, offset: .7 }, { opacity: 0, transform: "translate3d(45%,0,0)" }],
+      if (grande) joue(morceau(i, styles.balai), [{ opacity: 0, transform: "translate3d(-45%,0,0)" }, { opacity: .85, offset: .25 }, { opacity: .7, offset: .7 }, { opacity: 0, transform: "translate3d(45%,0,0)" }],
         { duration: 950, easing: "ease-out", delay: 120 });
       racine!.dataset.rarete = carte.rarete;
-      if (grande || carte.rarete !== "commune") {
+      if (grande) {
         joue(halo.current!, [{ opacity: 0, transform: "scale(.6)" }, { opacity: grande ? .9 : .5, transform: "scale(1)", offset: .35 }, { opacity: grande ? .55 : 0, transform: "scale(1.08)" }],
           { duration: 1300, easing: "ease-out" });
       }
