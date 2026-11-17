@@ -6,27 +6,31 @@ import type { GuideId } from "@/lib/guides";
 import styles from "./SachetBooster.module.css";
 
 const dossier = "/boosters/sachet-360/";
-const fichierCoach: Record<GuideId, string> = { nora: "nora", sasha: "sacha" };
+// Un sachet par Guide : Nora tend une carte sur le sien, Sasha sur le sien (planche du 2026-11-17).
+const faces: Record<GuideId, [fichier: string, largeur: number, hauteur: number]> = {
+  nora: ["face-nora-v2", 624, 1029],
+  sasha: ["face-sasha-v2", 615, 993],
+};
 const textures = {
-  dos: ["dos-720", 720, 1235],
-  gauche: ["cote-gauche-alpha", 39, 397],
-  droite: ["cote-droit-alpha", 43, 398],
-  dessus: ["dessus-alpha", 196, 32],
-  dessous: ["dessous-alpha", 194, 31],
+  dos: ["dos-v2", 516, 927],
+  gauche: ["cote-gauche-v2", 87, 933],
+  droite: ["cote-droit-v2", 87, 948],
+  dessus: ["dessus-v2", 404, 68],
+  dessous: ["dessous-v2", 406, 63],
 } as const;
 
 const autresFaces = Object.entries(textures) as [keyof typeof textures, typeof textures[keyof typeof textures]][];
 
 export function MiniSachetBooster({ guide }: { guide: GuideId | null }) {
-  const miniature = dossier + "mini-" + (guide ? fichierCoach[guide] : "neutre") + ".webp";
-  const pleineTaille = dossier + (guide ? "face-" + fichierCoach[guide] : "dos-720") + ".webp";
+  const miniature = dossier + "mini-" + (guide ?? "neutre") + "-v2.webp";
+  const pleineTaille = dossier + (guide ? faces[guide][0] : textures.dos[0]) + ".webp";
   const [miniatureIndisponible, setMiniatureIndisponible] = useState<string | null>(null);
   const [photoIndisponible, setPhotoIndisponible] = useState<string | null>(null);
   const source = miniatureIndisponible === miniature ? pleineTaille : miniature;
 
   return <div className={styles.mini} aria-hidden="true">
     {photoIndisponible !== source && <Image key={source} className={styles.image} src={source}
-      width={186} height={306} alt="" unoptimized draggable={false} loading="eager"
+      width={186} height={300} alt="" unoptimized draggable={false} loading="eager"
       onError={() => {
         if (source === miniature) setMiniatureIndisponible(miniature);
         else setPhotoIndisponible(source);
@@ -89,7 +93,8 @@ function bordDechire(trace: Point[]) {
 function position({ clientX, clientY }: PointerEvent, { left, top, width, height }: DOMRect): Point {
   return [
     borner((clientX - left) / width * 100, 0, 100),
-    borner((clientY - top) / height * 100, 4, 12),
+    // Sous la soudure (4 %), au-dessus du logo « Vaiiya » (10 %).
+    borner((clientY - top) / height * 100, 4, 9),
   ];
 }
 
@@ -101,7 +106,8 @@ export default function SachetBooster({ guide, ouvrir, chargement, sortie, revel
   reveler: () => void;
 }) {
   const idSvg = useId();
-  const portrait = dossier + "face-" + fichierCoach[guide] + ".webp";
+  const [fichierFace, largeurFace, hauteurFace] = faces[guide];
+  const portrait = dossier + fichierFace + ".webp";
   const [deFace, setDeFace] = useState(true);
   const scene = useRef<HTMLDivElement>(null);
   const modele = useRef<HTMLDivElement>(null);
@@ -253,7 +259,7 @@ export default function SachetBooster({ guide, ouvrir, chargement, sortie, revel
       <div className={styles.camera} aria-hidden="true">
         <div ref={modele} className={styles.modele}>
             <div className={styles.face3d + " " + styles.face}>
-              <Image className={styles.image} src={portrait} width={720} height={1183} alt="" loading="eager" unoptimized draggable={false} />
+              <Image className={styles.image} src={portrait} width={largeurFace} height={hauteurFace} alt="" loading="eager" unoptimized draggable={false} />
             </div>
             {autresFaces.map(([cote, [fichier, largeur, hauteur]]) => (
               <div className={styles.face3d + " " + styles[cote]} key={cote}>
