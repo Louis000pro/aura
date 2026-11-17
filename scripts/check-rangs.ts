@@ -144,19 +144,19 @@ for (const fichier of [
 
   const sansCarteNiCadre = RANGS.slice(1).filter((r) => {
     const genres = RECOMPENSES_RANG[r.id].cadeaux.map((c) => c.genre);
-    return genres[0] !== "carte" || genres[1] !== "cadre" || genres.length !== 3;
+    return genres[0] !== "carte" || genres[1] !== "cadre" || genres.length !== (r.id === "eternel" ? 2 : 3);
   });
   verdict(
-    "chaque passage ouvre trois cadeaux : la carte, le cadre, puis le reste",
+    "chaque passage ouvre ses cadeaux actifs, deux à l’Éternel",
     sansCarteNiCadre.length === 0 && RECOMPENSES_RANG.bronze.cadeaux.length === 0,
     sansCarteNiCadre.map((r) => r.id).join(", ") || "de l'Argent à l'Éternel, rien au Bronze",
   );
 
   const c = (id: string) => cosmetiquesDuRang(id);
   verdict(
-    "le cadre dès l'Argent, le titre au Diamant, la lumière à l'Éternel",
+    "la lueur dès l’Argent et le pseudo normal à tous les rangs",
     c("bronze").cadre === null && c("argent").cadre === "argent" && c("eternel").cadre === "eternel"
-      && c("platine").titre === null && c("diamant").titre === TITRE_DIAMANT && !c("diamant").brillant && c("eternel").brillant,
+      && c("platine").titre === null && c("diamant").titre === TITRE_DIAMANT && RANGS.every(rang => !c(rang.id).brillant),
     "cumulé, déduit du rang",
   );
 }

@@ -484,7 +484,7 @@ export function jokersParMois(rangId: string): number {
   return JOKERS_PAR_MOIS[rangId] ?? 0;
 }
 
-export type GenreCadeau = "carte" | "cadre" | "joker" | "titre" | "brillant";
+export type GenreCadeau = "carte" | "cadre" | "joker" | "titre";
 
 export type Cadeau = {
   genre: GenreCadeau;
@@ -502,7 +502,7 @@ export type RecompensesRang = {
   galerie: {
     carte: string;
     cadre: string | null;
-    /** Ce qui suit le titre ou le pseudo lumineux, montrés en vrai juste
+    /** Ce qui suit le titre, montré en vrai juste
      *  avant (« sous ton nom »). Les jokers s'ajoutent à part. */
     plus: string | null;
   };
@@ -549,9 +549,8 @@ export const RECOMPENSES_RANG: Record<string, RecompensesRang> = {
     cadeaux: [
       { genre: "carte", titre: "Ta carte Éternel" },
       { genre: "cadre", titre: "Ta lueur Éternel" },
-      { genre: "brillant", titre: "Ton pseudo en lumière" },
     ],
-    galerie: { carte: "Carte Éternel, vivante", cadre: "Lueur or et violet autour de ta photo", plus: "en lumière, visible par les autres" },
+    galerie: { carte: "Carte Éternel, vivante", cadre: "Lueur or et violet autour de ta photo", plus: null },
   },
 };
 
@@ -561,7 +560,7 @@ export type Cosmetiques = {
   cadre: string | null;
   /** Titre sous le pseudo (Diamant et plus), ou null. */
   titre: string | null;
-  /** Pseudo en dégradé lumineux (Éternel). */
+  /** Conservé pour les appelants existants. Le pseudo garde son apparence. */
   brillant: boolean;
 };
 
@@ -575,7 +574,7 @@ export function cosmetiquesDuRang(rangId: string): Cosmetiques {
   return {
     cadre: i >= indexRang("argent") ? rangId : null,
     titre: i >= indexRang("diamant") ? TITRE_DIAMANT : null,
-    brillant: i >= indexRang("eternel"),
+    brillant: false,
   };
 }
 

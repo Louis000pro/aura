@@ -1,6 +1,5 @@
 "use client";
 
-import type { CSSProperties } from "react";
 import VignetteCarte from "@/components/cartes/VignetteCarte";
 import { AvatarRang, PhotoRonde, TitreRang } from "@/components/rang/IdentiteRang";
 import { RangeeJokers } from "@/components/rang/Joker";
@@ -10,7 +9,7 @@ import type { DonneesCarte } from "@/lib/cartesRang";
 
 /**
  * Le visuel d'un cadeau de rang, joué avec les VRAIS composants : la carte,
- * le cadre autour de TA photo, les jokers, le titre, le pseudo lumineux.
+ * le cadre autour de TA photo, les jokers et le titre.
  * Un aperçu ne peut donc jamais mentir sur ce qu'on reçoit (règle du
  * 2026-07-29). Partagé par la scène de passage et la galerie des rangs.
  */
@@ -60,12 +59,5 @@ export default function VisuelCadeau({
     return <TitreRang cosmetiques={{ cadre: null, titre: TITRE_DIAMANT, brillant: false }} nuit={nuit} />;
   }
 
-  return (
-    <span
-      className="pseudo-brillant"
-      style={{ fontSize: `calc(${t} * 0.3)`, fontWeight: 900, fontVariationSettings: "var(--w-voix)", maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } as CSSProperties}
-    >
-      {pseudo}
-    </span>
-  );
+  return null;
 }

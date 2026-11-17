@@ -56,6 +56,13 @@ fonctionnalités ; ce document est la source de vérité de ce qu'on en dit deho
 - **Auth = Supabase, et rien d'autre.** Google passe par `supabase.auth.signInWithOAuth({ provider: "google" })` dans `AuthContext`, et les codes de confirmation par `/api/auth/send-otp` + `/api/auth/verify-otp` (envoi Resend, jeton scellé en HMAC avec `AUTH_SECRET`). `next-auth` figurait dans `package.json` sans être importé nulle part : retiré le 2026-08-11, **ne pas le réinstaller** en croyant réparer quelque chose. Plus Stripe et web-push. **L'app est auth-gated : non testable en local.** Vérification standard = `npx tsc --noEmit` + build qui passe ; la validation visuelle, c'est Louis sur Vercel.
 - Secrets : `.env.local` (`AUTH_SECRET`, `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`, `COACH_AURA_KEY`) — à demander à Louis, jamais commité.
 
+## Pseudo — décision du 2026-11-18
+
+Le pseudo garde la même couleur et la même typographie à tous les rangs.
+L’effet jaune-violet de l’Éternel est supprimé, ainsi que sa récompense dans
+la galerie et la célébration. L’Éternel reçoit sa carte et sa lueur d’avatar.
+Cette décision remplace les anciennes consignes sur le pseudo lumineux.
+
 ## Lueur des avatars — validée le 2026-11-18
 
 Le contour du rang est une lueur continue et diffuse autour de la photo,

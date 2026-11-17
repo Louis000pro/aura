@@ -6,7 +6,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Check, ChevronLeft, ChevronRight, X } from "lucide-react";
 import GemmeRang from "@/components/GemmeRang";
 import VisuelCadeau from "@/components/rang/VisuelCadeau";
-import { PseudoRang, TitreRang } from "@/components/rang/IdentiteRang";
+import { TitreRang } from "@/components/rang/IdentiteRang";
 import { rejouerCelebration } from "@/lib/celebrationRang";
 import { cleMontee } from "@/lib/motRang";
 import { RANGS, RECOMPENSES_RANG, TITRE_DIAMANT, jokersParMois, progressionRang, type GenreCadeau, type Rang } from "@/lib/aura";
@@ -360,8 +360,7 @@ function Ecran({
   );
 }
 
-/** Ce que le rang donne : la carte, le cadre, les jokers, puis le titre ou
- *  le pseudo lumineux. Une ligne par cadeau, dans un seul groupe à filets. */
+/** Ce que le rang donne : la carte, la lueur, les jokers et le titre. Une ligne par cadeau, dans un seul groupe à filets. */
 function CeQueDonne({
   rang,
   atteint,
@@ -381,7 +380,7 @@ function CeQueDonne({
   const lignes: { genre: GenreCadeau | null; texte: string }[] = [{ genre: "carte", texte: r.galerie.carte }];
   if (r.galerie.cadre) lignes.push({ genre: "cadre", texte: r.galerie.cadre });
   if (jokers > 0) lignes.push({ genre: "joker", texte: `${nJokers(jokers)} par mois` });
-  if (r.galerie.plus) lignes.push({ genre: rang.id === "eternel" ? "brillant" : "titre", texte: r.galerie.plus });
+  if (r.galerie.plus) lignes.push({ genre: "titre", texte: r.galerie.plus });
   if (!r.galerie.cadre) {
     lignes.push({ genre: null, texte: jokersBase ? "Le cadre et les jokers arrivent avec l’Argent." : "Le cadre arrive avec l’Argent." });
   }
@@ -417,11 +416,8 @@ function CeQueDonne({
               )}
             </span>
             <span className="flex min-w-0 flex-1 flex-wrap items-center gap-x-1.5 gap-y-1 text-[13px] leading-snug" style={{ color: l.genre ? "var(--text-0)" : "var(--text-3)" }}>
-              {/* Le titre et le pseudo lumineux se montrent tels qu'ils se posent. */}
+              {/* Le titre se montre tel qu’il se pose. */}
               {l.genre === "titre" && <TitreRang cosmetiques={{ cadre: null, titre: TITRE_DIAMANT, brillant: false }} />}
-              {l.genre === "brillant" && (
-                <PseudoRang cosmetiques={{ cadre: null, titre: null, brillant: true }} pseudo={pseudo.trim() || "toi"} className="text-[16px] font-black" />
-              )}
               <span>{l.texte}</span>
             </span>
           </li>

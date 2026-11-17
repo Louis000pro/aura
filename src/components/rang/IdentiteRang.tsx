@@ -6,7 +6,7 @@ import styles from "./IdentiteRang.module.css";
 
 /**
  * Le rendu RÉEL de ce qu'un rang met sur l'identité : le cadre de la photo,
- * le titre sous le pseudo, le pseudo lumineux.
+ * le titre sous le pseudo.
  *
  * Règle posée le 2026-07-29 et toujours vraie : la galerie des rangs et la
  * scène de passage n'annoncent que ce qui existe et se voit. Elles utilisent
@@ -54,42 +54,18 @@ export function AvatarRang({
   );
 }
 
-/* ─────────────────────────────────────────────────────────────────────────────
- * Le pseudo : en dégradé lumineux à l'Éternel, normal sinon.
- *
- * ⚠️ L'animation est 100 % CSS (`.pseudo-brillant` dans `globals.css`), surtout
- * PAS framer-motion : la première version pilotait `backgroundPosition` en JS
- * et saccadait dès que le fil principal travaillait. Ne pas repasser en JS.
- * ────────────────────────────────────────────────────────────────────────── */
-
+/* Le pseudo garde sa couleur et sa typographie à tous les rangs. */
 export function PseudoRang({
-  cosmetiques,
   pseudo,
   className,
   style,
 }: {
   cosmetiques: Cosmetiques;
   pseudo: string;
-  /** Classes du TEXTE (c'est lui qui tronque dans une liste). */
   className?: string;
   style?: CSSProperties;
 }) {
-  if (!cosmetiques.brillant) {
-    return (
-      <span className={className} style={style}>
-        {pseudo}
-      </span>
-    );
-  }
-
-  // `color` viendrait écraser la transparence qui laisse voir le dégradé.
-  const reste: CSSProperties = { ...style };
-  delete reste.color;
-  return (
-    <span className={`pseudo-brillant${className ? ` ${className}` : ""}`} style={reste}>
-      {pseudo}
-    </span>
-  );
+  return <span className={className} style={style}>{pseudo}</span>;
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
