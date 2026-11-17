@@ -1,34 +1,34 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useId, useRef, useState, type CSSProperties, type PointerEvent } from "react";
+import { useEffect, useId, useRef, useState, type PointerEvent } from "react";
 import type { GuideId } from "@/lib/guides";
 import styles from "./SachetBooster.module.css";
 
 const dossier = "/boosters/sachet-360/";
 // Un sachet par Guide : Nora tend une carte sur le sien, Sasha sur le sien (planche du 2026-11-17,
-// agrandie par quatre avec Real-ESRGAN). Le « holo » de chaque face est le masque du film métallisé :
-// le reflet y brille fort, et à peine sur le Guide et sur le texte.
-const faces: Record<GuideId, [fichier: string, largeur: number, hauteur: number, holo: string]> = {
-  nora: ["face-nora-v3", 831, 1369, "holo-nora-v3"],
-  sasha: ["face-sasha-v3", 817, 1321, "holo-sasha-v3"],
+// agrandie par quatre avec Real-ESRGAN). Le reflet holographique est cuit dans 5 images par face,
+// une par inclinaison (de -1 à 1) : en mouvement, le téléphone ne fait que les fondre l'une dans
+// l'autre. Des couches CSS masquées et fusionnées, recalculées à chaque image dans un objet 3D,
+// saccadaient sur iPhone et faisaient recharger la page (2026-11-17).
+const faces: Record<GuideId, [fichier: string, largeur: number, hauteur: number]> = {
+  nora: ["face-nora-v4", 831, 1369],
+  sasha: ["face-sasha-v4", 817, 1321],
 };
+const dos = ["dos-v4", 683, 1233] as const;
 const textures = {
-  dos: ["dos-v3", 683, 1233],
   gauche: ["cote-gauche-v3", 110, 1000],
   droite: ["cote-droit-v3", 92, 1000],
   dessus: ["dessus-v3", 540, 85],
   dessous: ["dessous-v3", 540, 82],
 } as const;
-const holoDos = "holo-dos-v3";
+const ANGLES = [0, 1, 2, 3, 4];
+const DE_FACE = 2;
+const angle = (fichier: string, k: number) => dossier + fichier + "-" + k + ".webp";
 
-// Le reflet holographique : un arc-en-ciel, un trait de lumière et des paillettes, chacun dans sa
-// couche masquée par le film. Ils se déplacent avec --hx, --hy et --hp, que pose la boucle du sachet.
-function Reflets({ holo, className }: { holo: string; className?: string }) {
-  const masque = { "--masque": "url(" + dossier + holo + ".webp)" } as CSSProperties;
-  return <span className={styles.reflets + (className ? " " + className : "")} style={masque} aria-hidden="true">
-    <span className={styles.arcEnCiel} /><span className={styles.trait} /><span className={styles.paillettes} />
-  </span>;
+function Angles({ fichier, largeur, hauteur }: { fichier: string; largeur: number; hauteur: number }) {
+  return <>{ANGLES.map(k => <Image key={k} className={styles.angle} data-angle={k} src={angle(fichier, k)}
+    width={largeur} height={hauteur} alt="" loading="eager" unoptimized draggable={false} />)}</>;
 }
 
 // Sur iPhone, l'inclinaison du téléphone ne se lit qu'après un accord, demandé pendant un geste.
@@ -44,7 +44,7 @@ const autresFaces = Object.entries(textures) as [keyof typeof textures, typeof t
 
 export function MiniSachetBooster({ guide }: { guide: GuideId | null }) {
   const miniature = dossier + "mini-" + (guide ?? "neutre") + "-v3.webp";
-  const pleineTaille = dossier + (guide ? faces[guide][0] : textures.dos[0]) + ".webp";
+  const pleineTaille = angle(guide ? faces[guide][0] : dos[0], DE_FACE);
   const [miniatureIndisponible, setMiniatureIndisponible] = useState<string | null>(null);
   const [photoIndisponible, setPhotoIndisponible] = useState<string | null>(null);
   const source = miniatureIndisponible === miniature ? pleineTaille : miniature;
@@ -127,8 +127,8 @@ export default function SachetBooster({ guide, ouvrir, chargement, sortie, revel
   reveler: () => void;
 }) {
   const idSvg = useId();
-  const [fichierFace, largeurFace, hauteurFace, holoFace] = faces[guide];
-  const portrait = dossier + fichierFace + ".webp";
+  const [fichierFace, largeurFace, hauteurFace] = faces[guide];
+  const portrait = angle(fichierFace, DE_FACE);
   const [deFace, setDeFace] = useState(true);
   const scene = useRef<HTMLDivElement>(null);
   const modele = useRef<HTMLDivElement>(null);
@@ -158,7 +158,8 @@ export default function SachetBooster({ guide, ouvrir, chargement, sortie, revel
   const survol = useRef({ x: 0, y: 0 });
   useEffect(() => {
     let image = 0;
-    let precedent = "";
+    let precedent = -1;
+    let calques: HTMLElement[][] = [];
     const cible = { x: 0, y: 0 };
     const incline = { x: 0, y: 0 };
     const doux = { x: 0, y: 0 };
@@ -169,6 +170,8 @@ export default function SachetBooster({ guide, ouvrir, chargement, sortie, revel
       cible.y = borner((event.beta - 45) / 30, -1, 1);
     };
     window.addEventListener("deviceorientation", surOrientation);
+    // Les angles sont décodés d'avance : sinon le premier fondu vers une image attendrait son décodage.
+    scene.current?.querySelectorAll("img").forEach(img => { img.decode?.().catch(() => {}); });
     const boucle = () => {
       image = requestAnimationFrame(boucle);
       const element = scene.current;
@@ -189,13 +192,21 @@ export default function SachetBooster({ guide, ouvrir, chargement, sortie, revel
       const lacet = orientation.lacet * Math.PI / 180;
       const hx = borner(Math.sin(lacet) * 1.15 + incline.x * .8 + doux.x * .6, -1.15, 1.15);
       const hy = borner(orientation.tangage / 8 * .7 + incline.y * .7 + doux.y * .45, -1.15, 1.15);
-      const hp = .5 + .5 * Math.sin(lacet * 2 + hx * 2.4 + hy * 1.6);
-      const valeur = hx.toFixed(3) + "|" + hy.toFixed(3) + "|" + hp.toFixed(3);
-      if (valeur === precedent) return;
-      precedent = valeur;
-      element.style.setProperty("--hx", hx.toFixed(3));
-      element.style.setProperty("--hy", hy.toFixed(3));
-      element.style.setProperty("--hp", hp.toFixed(3));
+      // Une seule valeur de 0 à 4 : l'image du dessous à pleine opacité, la suivante par-dessus en fondu.
+      const position = Math.round((borner(hx * .85 + hy * .35, -1, 1) + 1) * 2 * 200) / 200;
+      if (position === precedent) return;
+      precedent = position;
+      if (!calques.length) {
+        calques = [...element.querySelectorAll<HTMLElement>("[data-calques]")].map(groupe =>
+          [...groupe.querySelectorAll<HTMLElement>("[data-angle]")]);
+      }
+      const bas = Math.min(3, Math.floor(position));
+      const fondu = position - bas;
+      for (const groupe of calques) {
+        groupe.forEach((img, k) => {
+          img.style.opacity = k === bas ? "1" : k === bas + 1 ? fondu.toFixed(3) : "0";
+        });
+      }
     };
     image = requestAnimationFrame(boucle);
     return () => {
@@ -340,14 +351,15 @@ export default function SachetBooster({ guide, ouvrir, chargement, sortie, revel
       <div className={styles.camera} aria-hidden="true">
         <div ref={modele} className={styles.modele}>
             <div className={styles.face3d + " " + styles.face}>
-              <Image className={styles.image} src={portrait} width={largeurFace} height={hauteurFace} alt="" loading="eager" unoptimized draggable={false} />
-              <Reflets holo={holoFace} />
+              <span data-calques=""><Angles fichier={fichierFace} largeur={largeurFace} hauteur={hauteurFace} /></span>
+            </div>
+            <div className={styles.face3d + " " + styles.dos}>
+              <span data-calques=""><Angles fichier={dos[0]} largeur={dos[1]} hauteur={dos[2]} /></span>
             </div>
             {autresFaces.map(([cote, [fichier, largeur, hauteur]]) => (
               <div className={styles.face3d + " " + styles[cote]} key={cote}>
                 <Image className={styles.image} src={dossier + fichier + ".webp"} width={largeur} height={hauteur} alt=""
                   loading="eager" unoptimized draggable={false} />
-                {cote === "dos" && <Reflets holo={holoDos} />}
               </div>
             ))}
         </div>
@@ -373,7 +385,6 @@ export default function SachetBooster({ guide, ouvrir, chargement, sortie, revel
           <use href={"#" + idSvg + "-portrait"} clipPath={"url(#" + idSvg + "-haut)"} />
         </g>
       </svg>
-      <Reflets holo={holoFace} className={styles.refletsDechirure} />
       <button type="button" className={styles.rotation} disabled={chargement || detache}
         aria-label="Tourner le booster"
         onKeyDown={event => {
