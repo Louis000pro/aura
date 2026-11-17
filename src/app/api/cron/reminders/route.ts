@@ -555,7 +555,8 @@ export async function GET(req: NextRequest) {
     const payload = JSON.stringify({
       title: rappel.title,
       body: rappel.body,
-      icon: "/icons/icon-192.png",
+      // Le visage du Guide choisi (Louis, 2026-11-17) ; sans Guide, l'icône de Vaiiya.
+      icon: p?.guide ? `/guides/push/${p.guide}-v1.png` : "/icons/icon-192.png",
       url: rappel.url,
     });
 
