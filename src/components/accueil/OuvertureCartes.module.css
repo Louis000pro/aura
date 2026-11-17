@@ -35,23 +35,22 @@
     conic-gradient(from 20deg,#9be8ff80,#ffb6de80,#ffe08a80,#c5b2fa80,#9be8ff80);
   mask-image:radial-gradient(circle,#000 18%,transparent 66%);
 }
-/* La gloire des légendaires et des chromatiques : une couronne de lumière floutée qui tourne. */
+/* La lueur de la meilleure carte : un grand dégradé radial à sa couleur, sans filtre. */
 .gloire {
   position:absolute;
   left:50%;
   top:46%;
-  width:calc(var(--cw) * 2.6);
-  height:calc(var(--cw) * 2.6);
-  margin:calc(var(--cw) * -1.3) 0 0 calc(var(--cw) * -1.3);
+  width:calc(var(--cw) * 3.4);
+  height:calc(var(--cw) * 3.4);
+  margin:calc(var(--cw) * -1.7) 0 0 calc(var(--cw) * -1.7);
   border-radius:50%;
   opacity:0;
   pointer-events:none;
-  filter:blur(28px);
-  mask-image:radial-gradient(circle,transparent 16%,#000 34%,transparent 70%);
-  background:conic-gradient(from 0deg,#ffd36e,#fff2c4,#ffb23e,#ffe9a3,#ffd36e);
+  will-change:transform,opacity;
+  background:radial-gradient(circle,color-mix(in srgb,var(--lueur) 70%,#fff) 0%,color-mix(in srgb,var(--lueur) 75%,transparent) 18%,color-mix(in srgb,var(--lueur) 30%,transparent) 38%,transparent 66%);
 }
 .gloire[data-on="chromatique"] {
-  background:conic-gradient(from 0deg,#ff7ad9,#ffd36e,#8dffc6,#6fd8ff,#a98bff,#ff7ad9);
+  background:radial-gradient(circle,#fff 0%,#ffd6f2cc 14%,#b9e6ff99 28%,#d9c4ff55 44%,transparent 66%);
 }
 .socle {
   left:8%;
@@ -108,11 +107,10 @@
   inset:-9%;
   border-radius:16% / 10%;
   opacity:0;
-  background:var(--lc);
-  filter:blur(calc(var(--cw) * .09));
+  background:radial-gradient(closest-side,var(--lc) 55%,transparent);
 }
-.carte[data-rarete="chromatique"] .aura {
-  background:conic-gradient(from 30deg,#9be8ff,#ffb6de,#ffe08a,#c5b2fa,#9be8ff);
+  .carte[data-rarete="chromatique"] .aura {
+  background:radial-gradient(closest-side,#ffd6f2 40%,#b9e6ff 62%,transparent);
 }
 .tilt,.int { position:absolute;inset:0;transform-style:preserve-3d; }
 .tilt { transition:transform .2s ease-out; }
