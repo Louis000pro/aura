@@ -144,9 +144,9 @@ export const metadata: Metadata = {
     locale: "fr_FR",
     images: [
       {
-        url: "/og-vaiiya-partage.png",
-        width: 1200,
-        height: 630,
+        url: "/og-vaiiya-invitation.jpg",
+        width: 1734,
+        height: 907,
         alt: "Vaiiya – Le sport qui te connaît. Nora et Sacha présentent la nutrition et la musculation.",
       },
     ],
@@ -155,7 +155,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Vaiiya : L’application de musculation et de nutrition",
     description: "Séances guidées, repas compris d’une photo et un coach IA. Gratuite, sans carte bancaire.",
-    images: ["/og-vaiiya-partage.png"],
+    images: ["/og-vaiiya-invitation.jpg"],
   },
 };
 
