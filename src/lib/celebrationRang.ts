@@ -59,9 +59,31 @@ export function noterRang(userId: string, rang: Rang): void {
   // La montée se raconte aussi dans le fil des potes (une seule fois par rang).
   publierEvenement(userId, "rang", `rang:${rang.id}`, { rang: rang.id });
 
-  window.dispatchEvent(
-    new CustomEvent<DetailRangMonte>(EVENEMENT_RANG_MONTE, { detail: { rangId: rang.id } }),
-  );
+  annoncer(rang.id);
+}
+
+// Une montée de rang qui arrive pendant l'ouverture d'un booster attend la fin de l'ouverture
+// (Louis, 2026-11-17) : sinon la scène du rang recouvre les cartes et le booster semble perdu.
+let retenue = false;
+let enAttente: string | null = null;
+
+function annoncer(rangId: string) {
+  if (retenue) { enAttente = rangId; return; }
+  window.dispatchEvent(new CustomEvent<DetailRangMonte>(EVENEMENT_RANG_MONTE, { detail: { rangId } }));
+}
+
+/** Le booster commence à s'ouvrir : une montée de rang attendra. */
+export function retenirCelebration(): void {
+  retenue = true;
+}
+
+/** Le booster est fini (récapitulatif affiché, ou fermé) : la montée en attente se joue maintenant. */
+export function libererCelebration(): void {
+  if (!retenue) return;
+  retenue = false;
+  const rangId = enAttente;
+  enAttente = null;
+  if (rangId && typeof window !== "undefined") window.setTimeout(() => annoncer(rangId), 400);
 }
 
 /**

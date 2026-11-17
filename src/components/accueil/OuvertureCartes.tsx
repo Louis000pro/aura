@@ -41,7 +41,7 @@ function ressort(k: number, c: number) {
   return lineaire ? { e: "linear(" + s.join(",") + ")", d: Math.round(t * 1000) } : { e: "cubic-bezier(.3,1.35,.5,1)", d: Math.round(t * 760) };
 }
 
-export default function OuvertureCartes({ cartes, images, libelles, exp, nouvelles, mode, sachet, prochain, actions, onFermer }: {
+export default function OuvertureCartes({ cartes, images, libelles, exp, nouvelles, mode, sachet, prochain, actions, onFermer, onRecap }: {
   cartes: Carte[];
   images: string[];
   libelles: string[];
@@ -52,6 +52,8 @@ export default function OuvertureCartes({ cartes, images, libelles, exp, nouvell
   prochain: string | null;
   actions: ReactNode;
   onFermer: () => void;
+  /** Le récapitulatif est à l'écran : le booster est fini. */
+  onRecap?: () => void;
 }) {
   const scene = useRef<HTMLDivElement>(null);
   const nuit = useRef<HTMLDivElement>(null);
@@ -275,6 +277,7 @@ export default function OuvertureCartes({ cartes, images, libelles, exp, nouvell
       poserNouvelles(true);
       els.forEach(e => { e.dataset.actif = ""; });
       definir("recap");
+      onRecap?.();
     }
 
     function poserNouvelles(anime: boolean) {

@@ -12,6 +12,7 @@ import { mouvements, raretes, type Carte } from "@/lib/cartesBooster";
 import { lireCollectionBoosters } from "@/lib/collectionBoosters";
 import SachetBooster, { MiniSachetBooster, demanderMouvementAppareil } from "./SachetBooster";
 import OuvertureCartes from "./OuvertureCartes";
+import { libererCelebration, retenirCelebration } from "@/lib/celebrationRang";
 import VisionneuseCarte from "./VisionneuseCarte";
 import styles from "./BoosterQuotidien.module.css";
 
@@ -420,6 +421,7 @@ export default function BoosterQuotidien({ userId, jour, onGain }: { userId: str
   async function ouvrir() {
     if (!guideSachet || actif.current || cartes) return;
     actif.current = true;
+    retenirCelebration();
     setErreur("");
     setChargement(true);
     try {
@@ -440,6 +442,7 @@ export default function BoosterQuotidien({ userId, jour, onGain }: { userId: str
           if (!data.cartes && echeance) {
             requeteOuverture.current = null;
             actif.current = false;
+            libererCelebration();
             dialog.current?.close();
             return;
           }
@@ -481,6 +484,7 @@ export default function BoosterQuotidien({ userId, jour, onGain }: { userId: str
       if (!mouvementReduit && dialog.current?.open) setSortie(cartesTirees);
       else setCartes(cartesTirees);
     } catch {
+      libererCelebration();
       setErreur("Le booster est indisponible. Réessaie dans un instant.");
       setEssaiSachet(essai => essai + 1);
       actif.current = false;
@@ -494,6 +498,8 @@ export default function BoosterQuotidien({ userId, jour, onGain }: { userId: str
     setCartes(sortie);
     setSortie(null);
   }
+
+  useEffect(() => () => libererCelebration(), []);
 
   const tirageAffiche = profil ? sortie ?? cartes : null;
   return (
@@ -522,7 +528,7 @@ export default function BoosterQuotidien({ userId, jour, onGain }: { userId: str
           {prochain !== null && !illimite && <div className={styles.compte}><small>Prochain booster</small><strong>{compteRebours}</strong></div>}
         </div>
       </section>
-      <dialog ref={dialog} className={styles.dialog} onClose={terminerChute} aria-labelledby="titre-booster">
+      <dialog ref={dialog} className={styles.dialog} onClose={() => { terminerChute(); libererCelebration(); }} aria-labelledby="titre-booster">
         <div className={styles.ecran} data-sortie={sortie ? "" : undefined}>
           {!cartes && <>
             <button type="button" className={styles.fermer} aria-label="Fermer" onClick={() => dialog.current?.close()}>×</button>
@@ -539,6 +545,7 @@ export default function BoosterQuotidien({ userId, jour, onGain }: { userId: str
           exp={exp} nouvelles={nouvelles} mode={modeScene} sachet={rectSachet}
           prochain={!illimite && prochain !== null ? compteRebours : null}
           onFermer={() => dialog.current?.close()}
+          onRecap={libererCelebration}
           actions={<>
             <Link className={styles.collectionOr} href="/profil#cartes-exercices" onClick={() => dialog.current?.close()}>
               Voir ma collection <span aria-hidden="true">›</span>
