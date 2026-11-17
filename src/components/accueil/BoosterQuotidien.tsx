@@ -546,7 +546,7 @@ export default function BoosterQuotidien({ userId, jour, onGain }: { userId: str
           {!cartes && <>
             <button type="button" className={styles.fermer} aria-label="Fermer" onClick={() => dialog.current?.close()}>×</button>
             <h2 id="titre-booster" aria-live="polite">{illimite ? "Booster d’essai" : ancienneCadence ? "Ton booster du jour" : "Ton booster"}</h2>
-            {guideSachet && <SachetBooster key={essaiSachet + ":" + guideSachet} guide={guideSachet} ouvrir={() => { void ouvrir(); }}
+            {guideSachet && <SachetBooster key={essaiSachet + ":" + guideSachet} guide={guideSachet} rarete={sortie?.[2]?.rarete} ouvrir={() => { void ouvrir(); }}
               chargement={chargement || !!sortie} sortie={!!sortie} reveler={terminerChute} />}
             {!illimite && <p>{ancienneCadence ? "Prochain booster demain à minuit" : "Un booster de plus toutes les 3 h, jusqu’à 3 en réserve"}</p>}
             <button type="button" className={styles.chancesBouton} onClick={ouvrirChances}>Mes chances de rareté</button>

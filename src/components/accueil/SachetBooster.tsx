@@ -95,20 +95,38 @@ function vitesseRelachement(geste: GesteRotation, temps: number) {
 
 const pointsSvg = (points: Point[]) => points.map(([x, y]) => x.toFixed(2) + "," + y.toFixed(2)).join(" ");
 
+// Un bruit fixe par abscisse : le bord ne bouge pas d'une image à l'autre pendant que le doigt avance.
+const bruit = (x: number) => { const v = Math.sin(x * 127.1 + 311.7) * 43758.5453; return v - Math.floor(v); };
+const PAS_BORD = 1.15;
+
+// Un vrai bord déchiré : des dents irrégulières, quelques accrocs plus profonds, sur une grille fixe.
 function bordDechire(trace: Point[]) {
-  const dents = [.17, -.28, .04, .25, -.16];
   const ligne: Point[] = [trace[0]];
   for (let i = 1; i < trace.length; i++) {
     const [x0, y0] = trace[i - 1];
     const [x1, y1] = trace[i];
-    const pas = Math.ceil((x1 - x0) / 2.1);
-    for (let j = 1; j < pas; j++) {
-      const t = j / pas;
-      ligne.push([x0 + (x1 - x0) * t, y0 + (y1 - y0) * t + dents[ligne.length % dents.length]]);
+    const sens = x1 >= x0 ? 1 : -1;
+    let g = sens === 1 ? Math.ceil(x0 / PAS_BORD) : Math.floor(x0 / PAS_BORD);
+    for (let x = g * PAS_BORD; sens === 1 ? x < x1 : x > x1; g += sens, x = g * PAS_BORD) {
+      if (x === x0) continue;
+      const t = (x - x0) / (x1 - x0), b = bruit(g), accroc = bruit(g * 3.7) > .9 ? .55 : 0;
+      ligne.push([x, y0 + (y1 - y0) * t + (b - .5) * .7 + (b > .5 ? accroc : -accroc)]);
     }
     ligne.push(trace[i]);
   }
   return ligne;
+}
+
+// Quelques fibres du film qui dépassent du bord, aux mêmes endroits à chaque image.
+function fibres(ligne: Point[]) {
+  let d = "";
+  for (const [x, y] of ligne) {
+    const g = Math.round(x / PAS_BORD), b = bruit(g * 5.3);
+    if (b < .78) continue;
+    const l = .5 + (b - .78) * 4, h = (bruit(g * 9.1) - .5) * .9;
+    d += "M" + x.toFixed(2) + " " + y.toFixed(2) + "l" + h.toFixed(2) + " " + (-l).toFixed(2);
+  }
+  return d;
 }
 
 function position({ clientX, clientY }: PointerEvent, { left, top, width, height }: DOMRect): Point {
@@ -119,8 +137,9 @@ function position({ clientX, clientY }: PointerEvent, { left, top, width, height
   ];
 }
 
-export default function SachetBooster({ guide, ouvrir, chargement, sortie, reveler }: {
+export default function SachetBooster({ guide, ouvrir, chargement, sortie, reveler, rarete }: {
   guide: GuideId;
+  rarete?: string;
   ouvrir: () => void;
   chargement: boolean;
   sortie: boolean;
@@ -137,6 +156,9 @@ export default function SachetBooster({ guide, ouvrir, chargement, sortie, revel
   const contourHaut = useRef<SVGPolygonElement>(null);
   const ouverture = useRef<SVGPolygonElement>(null);
   const bord = useRef<SVGPolylineElement>(null);
+  const bordOmbre = useRef<SVGPolylineElement>(null);
+  const bordHaut = useRef<SVGPolylineElement>(null);
+  const fibresBord = useRef<SVGPathElement>(null);
   const lumiere = useRef<HTMLDivElement>(null);
   const angles = useRef<Orientation>(neutre);
   const orientationAffichee = useRef<Orientation>(neutre);
@@ -303,6 +325,9 @@ export default function SachetBooster({ guide, ouvrir, chargement, sortie, revel
     ]));
     ouverture.current?.setAttribute("points", pointsSvg([...ligne, ...interieur]));
     bord.current?.setAttribute("points", pointsSvg(ligne));
+    bordOmbre.current?.setAttribute("points", pointsSvg(ligne.map(([x, y]): Point => [x, y + .55])));
+    bordHaut.current?.setAttribute("points", pointsSvg(ligne));
+    fibresBord.current?.setAttribute("d", fibres(ligne));
     if (bande.current) {
       bande.current.style.transformOrigin = charniere[0] + "% " + charniere[1] + "%";
       bande.current.style.setProperty("--sens", String(sens));
@@ -407,13 +432,17 @@ export default function SachetBooster({ guide, ouvrir, chargement, sortie, revel
         <g className={styles.corps} onAnimationEnd={() => { if (sortie) reveler(); }}>
           <polygon ref={ouverture} data-ouverture-sachet="" fill={"url(#" + idSvg + "-cavite)"} />
           <use href={"#" + idSvg + "-portrait"} clipPath={"url(#" + idSvg + "-bas)"} />
-          <polyline ref={bord} fill="none" stroke={"url(#" + idSvg + "-bord)"} strokeWidth=".52" strokeLinejoin="round" />
+          <polyline ref={bordOmbre} fill="none" stroke="#2a1840" strokeOpacity=".32" strokeWidth=".9" strokeLinejoin="round" />
+          <polyline ref={bord} fill="none" stroke={"url(#" + idSvg + "-bord)"} strokeWidth=".62" strokeLinejoin="round" />
+          <path ref={fibresBord} fill="none" stroke="#fff" strokeOpacity=".85" strokeWidth=".16" strokeLinecap="round" />
         </g>
         <g ref={bande} className={styles.bande} data-bande-detachee={detache ? "" : undefined}>
           <use href={"#" + idSvg + "-portrait"} clipPath={"url(#" + idSvg + "-haut)"} />
+          <polyline ref={bordHaut} fill="none" stroke={"url(#" + idSvg + "-bord)"} strokeWidth=".5" strokeLinejoin="round" />
         </g>
       </svg>
       <div ref={lumiere} className={styles.lumiere} aria-hidden="true" />
+      {sortie && rarete && <div className={styles.lueurRarete} data-rarete={rarete} aria-hidden="true" />}
       <button type="button" className={styles.rotation} disabled={chargement || detache}
         aria-label="Tourner le booster"
         onKeyDown={event => {
