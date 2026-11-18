@@ -516,7 +516,8 @@ export default function BoosterQuotidien({ userId, jour, onGain }: { userId: str
   const tirageAffiche = profil ? sortie ?? cartes : null;
   return (
     <MotionConfig reducedMotion="user">
-      <section className={styles.bloc} aria-label="Booster d’exercices">
+      <section className={styles.bloc} aria-label="Booster d’exercices"
+        data-accueil-charge={statut !== "chargement" && portrait ? "oui" : "non"}>
         <div><small>{illimite ? "Mode test · ouvertures illimitées" : "3 cartes d’exercices"}</small>
           <h2>{illimite ? "Tes boosters d’essai" : ancienneCadence ? "Ton booster du jour" : "Ton booster"}</h2>
           <button type="button" className={styles.ouvrir}

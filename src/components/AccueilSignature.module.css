@@ -32,7 +32,7 @@
 .entree {
   display: flex;
   width: 100%;
-  min-height: 44px;
+  min-height: 50px;
   align-items: center;
   gap: 11px;
   padding: 4px 0 0;
@@ -54,7 +54,10 @@
    visage du Guide, comme un message pas encore lu. */
 .visage {
   position: relative;
-  display: block;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
   flex: none;
 }
 

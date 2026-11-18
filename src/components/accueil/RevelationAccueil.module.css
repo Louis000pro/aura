@@ -1,0 +1,42 @@
+.scene { display: grid; position: relative; }
+.attente, .contenu { grid-area: 1 / 1; min-width: 0; }
+.attente { position: relative; z-index: 1; }
+.contenu { opacity: 0; pointer-events: none; transition: opacity .28s ease; }
+.scene[data-visible] .contenu { opacity: 1; pointer-events: auto; }
+.statut {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: center;
+  gap: 8px; margin: 12px 0; color: var(--text-2); font-size: 13px;
+}
+.statut button {
+  min-height: 44px; padding: 8px 14px; border-radius: var(--r-controle);
+  border: 1px solid rgba(var(--accent-rgb), .2);
+  background: rgb(var(--surface-rgb)); color: var(--exp-encre); font-weight: 600;
+}
+.squelette { display: flex; flex-direction: column; gap: 16px; }
+.entree { display: flex; align-items: center; gap: 12px; min-height: 50px; }
+.texte { display: grid; gap: 8px; }
+.bloc {
+  position: relative; overflow: hidden;
+  background: rgba(var(--accent-rgb), .09); border-radius: var(--r-bloc);
+}
+.bloc::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(100deg, transparent 20%, rgba(var(--surface-rgb), .55) 50%, transparent 80%);
+  transform: translateX(-100%); animation: refletChargement 1.65s ease-in-out infinite;
+}
+.portrait { width: 40px; height: 40px; border-radius: 50%; flex: none; }
+.ligne { height: 12px; width: 150px; border-radius: 8px; }
+.ligneCourte { width: 96px; height: 10px; }
+.heros { height: 400px; border-radius: var(--r-affiche); }
+.bento { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.rang { grid-row: span 2; min-height: 210px; }
+.tuile { min-height: 100px; }
+.booster { height: 116px; }
+.quetes { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.quete { height: 160px; }
+@keyframes refletChargement { to { transform: translateX(100%); } }
+@media (prefers-reduced-motion: reduce) {
+  .bloc::after { animation: none; opacity: .35; transform: none; }
+  .contenu { transition: none; }
+}
+:global(html.perf-lite) .bloc::after { animation: none; opacity: .35; transform: none; }

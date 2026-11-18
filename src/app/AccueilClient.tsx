@@ -33,6 +33,7 @@ import { aiFetch } from "@/lib/aiFetch";
 import { bornesHier, journeeVide, lireRecap, noterRecap, type FaitsRecap, type Recap } from "@/lib/recapJour";
 import { usePremierAccueil } from "@/components/accueil/usePremierAccueil";
 import SqueletteAccueil from "@/components/accueil/SqueletteAccueil";
+import RevelationAccueil from "@/components/accueil/RevelationAccueil";
 import { ecrireMemoire, lireMemoire, oublierSur } from "@/lib/memoireSession";
 import { EVT_JOURNEE } from "@/lib/finSeance";
 import { EVT_NUTRITION } from "@/lib/guideNutrition";
@@ -186,21 +187,9 @@ function Dashboard() {
   const { guide, etat: etatGuide } = useGuideActif();
   const premierAccueil = usePremierAccueil(user?.id);
 
-  /* ── L'accueil se montre d'un seul bloc (Louis, 2026-10-20) ──
-     Il se montait morceau par morceau. On attend les deux pièces qui
-     prennent le plus de place, le héros et la journée, et on les montre
-     ensemble. Jamais plus de 0,7 s (1,5 s avant le 2026-11-03) : passé ce délai, on
-     montre ce qu'on a, plutôt qu'un écran qui a l'air bloqué. Les deux
-     signaux ne redescendent jamais, donc l'accueil ne se recache pas
-     quand il se relit après une séance. */
+  // Les données et les images de l'accueil se révèlent ensemble.
   const [heroPret, setHeroPret] = useState(() => !!memoire?.heroPret);
   const signalerHero = useCallback(() => setHeroPret(true), []);
-  const [delaiPasse, setDelaiPasse] = useState(false);
-  useEffect(() => {
-    const t = window.setTimeout(() => setDelaiPasse(true), 700);
-    return () => window.clearTimeout(t);
-  }, []);
-  const revele = (heroPret && missionsLues && premierAccueil.afficher !== null) || delaiPasse;
   const { open: ouvrirAssistant } = useGestesAssistant();
   const [motGuide, setMotGuide] = useState<MomentAccueil | null>(null);
   const jourEvalueRef = useRef<string | null>(null);
@@ -301,6 +290,7 @@ function Dashboard() {
      l'app, et `chargerDefi` en coûte six. Relu au changement de jour
      parisien, parce que « c'est à toi » change à minuit. */
   const [relais, setRelais] = useState<RelaisAccueil | null>(() => memoire?.relais ?? null);
+  const [relaisLu, setRelaisLu] = useState(!!memoire);
 
   /* Ce que l'accueil montre est gardé dès que le rang réel est lu. */
   useEffect(() => {
@@ -312,7 +302,8 @@ function Dashboard() {
     let vivant = true;
     void chargerRelaisAccueil(user.id)
       .then((r) => { if (vivant) setRelais(r); })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => { if (vivant) setRelaisLu(true); });
     return () => { vivant = false; };
   }, [user, parisDay, statsTick]);
 
@@ -363,9 +354,10 @@ function Dashboard() {
             onFermer={premierAccueil.fermer}
           />
         ) : premierAccueil.afficher !== true && (
-        <div className="relative" aria-busy={!revele}>
-        {!revele && <div className="absolute inset-x-0 top-0"><SqueletteAccueil /></div>}
-        <div style={{ opacity: revele ? 1 : 0, transition: "opacity 0.28s ease" }}>
+        <RevelationAccueil
+          pret={heroPret && missionsLues && relaisLu && etatGuide !== "chargement" && premierAccueil.afficher === false}
+          dejaVu={!!memoire?.heroPret && premierAccueil.afficher === false}
+        >
         {premierAccueil.afficher === false && (
         <AccueilSignature
           greeting={greeting}
@@ -386,8 +378,7 @@ function Dashboard() {
           onAuraChange={() => setStatsTick((t) => t + 1)}
         />
         )}
-        </div>
-        </div>
+        </RevelationAccueil>
         )}
 
         <RangsModal
