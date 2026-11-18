@@ -62,6 +62,6 @@ export default function QuiLaCarte({ carte, onFermer }: { carte: Carte; onFermer
         </>}
       </div>
     </div>,
-    document.body,
+    (document.querySelector("dialog[open]") ?? document.body),
   );
 }

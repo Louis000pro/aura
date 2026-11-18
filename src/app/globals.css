@@ -1008,3 +1008,7 @@ html.perf-lite [style*="surface-rgb"] {
    Safari les garde dans la fenêtre pendant le défilement. */
 .vy-fixe { transform: translateZ(0); -webkit-transform: translateZ(0); }
 html { overscroll-behavior: none; }
+
+/* Le booster ouvert couvre tout l'écran : rien d'autre n'est peint derrière
+   lui (la fenêtre se remet visible, voir BoosterQuotidien.module.css). */
+html[data-booster-ouvert] body { visibility: hidden; }

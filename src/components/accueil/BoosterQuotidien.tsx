@@ -322,6 +322,8 @@ export default function BoosterQuotidien({ userId, jour, onGain }: { userId: str
   // Réserve : jusqu’à 3 boosters gardés, un de plus toutes les 3 heures. null = ancienne cadence.
   const [stock, setStock] = useState<number | null>(null);
   const [compteRebours, setCompteRebours] = useState("");
+  const sceneEnCours = useRef(false);
+  const gainEnAttente = useRef(false);
   const [ancienneCadence, setAncienneCadence] = useState(false);
   const [modeScene, setModeScene] = useState<"ouverture" | "recap">("recap");
   const [tirageId, setTirageId] = useState(0);
@@ -396,7 +398,9 @@ export default function BoosterQuotidien({ userId, jour, onGain }: { userId: str
       } else setCompteRebours(tempsRestant(echeance));
     };
     tick();
-    const timer = window.setInterval(tick, 1000);
+    /* Pendant l'ouverture, le compte à rebours ne redessine pas le booster
+       chaque seconde : il est derrière la scène, personne ne le voit. */
+    const timer = window.setInterval(() => { if (!sceneEnCours.current) tick(); }, 1000);
     return () => window.clearInterval(timer);
   }, [prochain, illimite]);
 
@@ -419,6 +423,7 @@ export default function BoosterQuotidien({ userId, jour, onGain }: { userId: str
   }
 
   function ouvrirSuivant() {
+    sceneEnCours.current = true;
     lireCollectionAvant();
     reinitialiserScene();
     setEssaiSachet(essai => essai + 1);
@@ -439,7 +444,12 @@ export default function BoosterQuotidien({ userId, jour, onGain }: { userId: str
       lireCollectionAvant();
       reinitialiserScene();
       setGuideSachet(guideConfirme);
-      if (dialog.current && !dialog.current.open) dialog.current.showModal();
+      if (dialog.current && !dialog.current.open) {
+        sceneEnCours.current = true;
+        // L'écran derrière la scène n'est plus peint (voir `.dialog` dans le CSS).
+        document.documentElement.dataset.boosterOuvert = "";
+        dialog.current.showModal();
+      }
     } catch {
       setErreurCoach("Impossible de vérifier ton coach. Réessaie dans un instant.");
     } finally {
@@ -512,7 +522,11 @@ export default function BoosterQuotidien({ userId, jour, onGain }: { userId: str
       setTirageId(id => id + 1);
       setProfil(guideSachet);
       setExp(tirage.exp);
-      if (tirage.exp > 0) onGain?.();
+      /* ⚠️ PAS ICI, PENDANT QUE LES CARTES SORTENT (2026-11-18, Louis : « le
+         booster est redevenu saccadé »). Prévenir l'accueil relance le calcul
+         du rang et redessine tout l'écran derrière la scène, en pleine
+         animation. On le fait quand la page de fin est là, ou à la fermeture. */
+      gainEnAttente.current = tirage.exp > 0;
       if (!mouvementReduit && dialog.current?.open) setSortie(cartesTirees);
       else setCartes(cartesTirees);
     } catch {
@@ -525,13 +539,21 @@ export default function BoosterQuotidien({ userId, jour, onGain }: { userId: str
     }
   }
 
+  /* La scène est finie (page de fin, ou fermeture) : l'accueil peut
+     recompter l'EXP et le compte à rebours reprendre. */
+  function finScene() {
+    sceneEnCours.current = false;
+    libererCelebration();
+    if (gainEnAttente.current) { gainEnAttente.current = false; onGain?.(); }
+  }
+
   function terminerChute() {
     if (!sortie) return;
     setCartes(sortie);
     setSortie(null);
   }
 
-  useEffect(() => () => libererCelebration(), []);
+  useEffect(() => () => { libererCelebration(); delete document.documentElement.dataset.boosterOuvert; }, []);
 
   const tirageAffiche = profil ? sortie ?? cartes : null;
   return (
@@ -564,7 +586,7 @@ export default function BoosterQuotidien({ userId, jour, onGain }: { userId: str
         </div>
         {prochain !== null && !illimite && <div className={styles.prochain}><small>Prochain booster</small><strong>{compteRebours}</strong></div>}
       </section>
-      <dialog ref={dialog} className={styles.dialog} onClose={() => { terminerChute(); libererCelebration(); }} aria-labelledby="titre-booster">
+      <dialog ref={dialog} className={styles.dialog} onClose={() => { delete document.documentElement.dataset.boosterOuvert; terminerChute(); finScene(); }} aria-labelledby="titre-booster">
         <div className={styles.ecran} data-sortie={sortie ? "" : undefined}>
           {!cartes && <>
             <button type="button" className={styles.fermer} aria-label="Fermer" onClick={() => dialog.current?.close()}>×</button>
@@ -597,7 +619,7 @@ export default function BoosterQuotidien({ userId, jour, onGain }: { userId: str
           libelles={tirageAffiche.map(item => mouvements[item.exercice][0] + " · " + raretes[item.rarete])}
           exp={exp} exemplaires={exemplaires} mode={modeScene} sachet={rectSachet}
           onFermer={() => dialog.current?.close()}
-          onRecap={libererCelebration}
+          onRecap={finScene}
           infos={<InfosFin cartes={tirageAffiche} exemplaires={exemplaires} avant={tailleAvant} />}
           actions={<>
             <ActionsFin stock={stock} illimite={illimite} prochainMs={prochain} compte={compteRebours}

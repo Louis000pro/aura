@@ -56,6 +56,20 @@ fonctionnalités ; ce document est la source de vérité de ce qu'on en dit deho
 - **Auth = Supabase, et rien d'autre.** Google passe par `supabase.auth.signInWithOAuth({ provider: "google" })` dans `AuthContext`, et les codes de confirmation par `/api/auth/send-otp` + `/api/auth/verify-otp` (envoi Resend, jeton scellé en HMAC avec `AUTH_SECRET`). `next-auth` figurait dans `package.json` sans être importé nulle part : retiré le 2026-08-11, **ne pas le réinstaller** en croyant réparer quelque chose. Plus Stripe et web-push. **L'app est auth-gated : non testable en local.** Vérification standard = `npx tsc --noEmit` + build qui passe ; la validation visuelle, c'est Louis sur Vercel.
 - Secrets : `.env.local` (`AUTH_SECRET`, `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`, `COACH_AURA_KEY`) — à demander à Louis, jamais commité.
 
+## Le booster refluidifié — 2026-11-18
+
+Louis : « le booster est redevenu saccadé ». Trois causes, aucune dans la
+scène elle-même : l'EXP était signalée à l'accueil (`onGain`) au moment où
+les cartes sortaient, ce qui relançait le calcul du rang et redessinait tout
+l'accueil en pleine animation (désormais à la page de fin ou à la fermeture,
+`finScene`) ; le compte à rebours redessinait le booster chaque seconde
+(suspendu pendant la scène, `sceneEnCours`) ; et l'accueil, la barre en verre
+et les ronds du haut restaient peints derrière le blanc opaque de la fenêtre
+(`html[data-booster-ouvert] body { visibility: hidden }`, la fenêtre se remet
+visible). ⚠️ Ce qu'on affiche par-dessus la scène se pose DANS la fenêtre
+ouverte, pas dans `body` : « Qui l'a » s'y pose désormais (avant, il
+s'ouvrait derrière la fenêtre, invisible). Pas vu sur un vrai téléphone.
+
 ## L'ouverture instantanée — 2026-11-18
 
 Louis : ouvrir l'app prenait environ 2,5 s, il veut « quasiment instantané »
