@@ -590,30 +590,6 @@ button.gAide {
   pointer-events: none;
   background: linear-gradient(118deg, rgba(255, 255, 255, 0.1) 0%, transparent 26%, transparent 66%, rgba(255, 255, 255, 0.05) 100%);
 }
-.pano {
-  position: relative;
-  height: 62px;
-  margin-top: 10px;
-  border-radius: var(--r-controle);
-  overflow: hidden;
-  background: #000 url(/cartes/panorama.webp) center / 100% 100% no-repeat;
-}
-.pano i {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  right: 0;
-  background: rgba(7, 5, 14, 0.86);
-  box-shadow: -8px 0 12px -6px rgba(7, 5, 14, 0.9);
-}
-.pano span {
-  position: absolute;
-  left: 10px;
-  bottom: 7px;
-  font-size: 13px;
-  font-weight: 700;
-  text-shadow: 0 1px 6px #000;
-}
 .note {
   margin: 7px 2px 0;
   font-size: 13px;

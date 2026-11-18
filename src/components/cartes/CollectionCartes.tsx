@@ -77,7 +77,6 @@ export default function CollectionCartes({
   const gagnees = compterGagnees(collection) + nbMouvements;
   const total = toutes(collection).length + mouvements.length;
   const compte = (l: CarteDef[]) => `${l.filter((c) => c.gagnee).length}/${l.length}`;
-  const rangsVus = collection.rangs.filter((c) => c.gagnee).length;
   const commun = { attente, onVoir };
 
   return createPortal(
@@ -94,11 +93,6 @@ export default function CollectionCartes({
           <div className={s.classeur}>
             {collection.rangs.map((c) => <div key={c.id} className={s.etuiClasseur}><Case carte={c} {...commun} /></div>)}
           </div>
-          <div className={s.pano}>
-            <i style={{ width: `${((collection.rangs.length - rangsVus) / collection.rangs.length) * 100}%` }} />
-            <span>Le panorama</span>
-          </div>
-          <p className={s.note}>Les six cartes forment un seul paysage. Il se dévoile à chaque rang.</p>
         </section>
 
         <section className={s.fam}>

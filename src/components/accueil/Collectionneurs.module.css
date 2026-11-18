@@ -53,7 +53,8 @@
 .classement li[data-coupe] { border-top:1px dashed #cdc3dd; }
 .rangee { display:flex; align-items:center; gap:10px; padding:10px 6px; color:inherit; text-decoration:none; border-radius:10px; }
 .classement li[data-moi] .rangee { background:rgb(var(--tint-violet-rgb)); }
-.rangNum { width:22px; text-align:center; font-size:16px; font-weight:700; color:var(--text-1); }
+.rangNum { min-width:32px; text-align:center; font-size:16px; font-weight:700; color:var(--text-1); }
+.voirPlus { display:block; min-height:44px; margin:12px auto; padding:8px 16px; border:1px solid var(--verre-carte-bord); border-radius:22px; background:transparent; color:var(--text-0); font-weight:700; }
 .classement li:nth-child(1) .rangNum { color:var(--or-encre); }
 .qui { flex:1; min-width:0; display:grid; gap:2px; font-size:16px; font-weight:700; color:var(--text-0); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .mini { display:flex; gap:8px; font-size:11px; font-weight:600; color:var(--text-1); }

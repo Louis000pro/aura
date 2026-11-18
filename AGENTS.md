@@ -71,6 +71,17 @@ zéro. Aucun SQL.
 
 ## Boosters : page de fin, album et collectionneurs, CODÉS — 2026-11-18
 
+**Correction demandée ensuite par Louis (2026-11-18)** : supprimer le panorama
+des rangs de `cartes/CollectionCartes`. Le classement des collectionneurs ouvre
+sur « Tout Vaiiya », inclut aussi les membres sans carte, et n'est plus limité
+au top 10 : affichage par 50, avec sa propre ligne toujours visible.
+`/api/boosters/classement` authentifie l'appelant et calcule les scores côté
+serveur depuis les tables existantes, sans dépendre de la RPC du classement.
+Les points et l'exclusion des essais restent identiques. Les lectures sont
+paginées ; les données privées des ouvertures ne sont jamais renvoyées.
+Cette correction remplace les mentions de top 10 et de dépendance SQL du
+classement ci-dessous ; « Qui l'a » garde sa fonction SQL.
+
 Louis : « une belle page de fin, parce que c'est juste ouvrir un autre booster », et sur le profil « voir un top des personnes qui ont certaines cartes ». Maquette guidée (https://claude.ai/artifact/4ezFPsXQ16Ej4QxaEuTuZ9), GO le même jour (« c'est parti »). ⚠️ **Aucun vert dans ces écrans** (Louis : « j'aime pas le vert ») : la collection qui avance (« +2 » et le morceau de barre) est violette, « Nouvelle » est un dégradé violet → magenta, « ×N » une pastille sombre.
 - **La page de fin** (`OuvertureCartes` + `FinBooster.tsx`), toujours claire : le titre dit la meilleure carte (« Une légendaire ! », sinon « Booster ouvert »), l'éventail monte, « Nouvelle » ou « ×N » sous chaque carte (`exemplaires`, lus dans la collection au toucher d'« Ouvrir le booster »), « Seuls N membres ont … » et « Voir qui l'a › » pour une épique ou mieux, « Ta collection N / 115 +K », la place chez les amis, l'EXP, puis **« Ouvrir le suivant · N en réserve » en or** (`ouvrirSuivant`, et « Ouvrir un autre booster » pour l'essai) ou, réserve vide, l'anneau doré du prochain booster et « Voir ma collection » en violet. Le bas défile si l'écran est court.
 - **Le profil** (`CollectionCartes.tsx`) : l'anneau N sur 115 et les points, les comptes par rareté, la vitrine des trois plus belles, puis trois onglets, Album (23 mouvements × 5 raretés, vides en pointillés, « ×N »), Par rareté (l'ancienne grille), Les collectionneurs (Amis / Tout Vaiiya, ta ligne toujours visible, les dix premiers). Chez un autre membre : « Vous deux », ce qu'il te manque de sa collection, sa vitrine. Une carte en grand porte « Qui l'a › » (`QuiLaCarte.tsx` : combien de membres, tes amis en visage avec leurs exemplaires, les autres en nombre, le jour de la première sortie et chez qui, si c'est toi ou un ami).

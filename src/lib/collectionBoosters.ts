@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { fetchAuth } from "./fetchAuth";
 import { mouvements, raretes, type Carte } from "@/lib/cartesBooster";
 
 const taillePage = 100;
@@ -50,12 +51,16 @@ export type Collectionneur = {
   commune: number; rare: number; epique: number; legendaire: number; chromatique: number; rang: number; moi: boolean;
 };
 
-/** Le classement des collectionneurs. null : la fonction n'existe pas encore ou la base ne répond pas. */
-export async function lireClassement(client: SupabaseClient, portee: "amis" | "tous", signal?: AbortSignal) {
-  const appel = client.rpc("classement_collection", { p_portee: portee });
-  const { data, error } = await (signal ? appel.abortSignal(signal) : appel);
-  if (error || !Array.isArray(data)) return null;
-  return data as Collectionneur[];
+/** Le serveur ne rend que les scores et les identités publiques. */
+export async function lireClassement(_client: SupabaseClient, portee: "amis" | "tous", signal?: AbortSignal) {
+  try {
+    const reponse = await fetchAuth("/api/boosters/classement?portee=" + portee, { signal, cache: "no-store" });
+    if (!reponse.ok) return null;
+    const data = await reponse.json();
+    return Array.isArray(data.liste) ? data.liste as Collectionneur[] : null;
+  } catch {
+    return null;
+  }
 }
 
 export type Detenteurs = {
