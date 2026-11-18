@@ -262,7 +262,7 @@ self.addEventListener("push", (e) => {
       body,
       icon,
       badge: "/icons/icon-192.png",
-      data: { url },
+      data: { url, suivi: data.suivi },
       vibrate: [100, 50, 100],
     })
   );
@@ -270,6 +270,15 @@ self.addEventListener("push", (e) => {
 
 self.addEventListener("notificationclick", (e) => {
   e.notification.close();
+  const suivi = e.notification.data?.suivi;
+  if (suivi?.id && suivi?.token) {
+    const controle = new AbortController();
+    const limite = setTimeout(() => controle.abort(), 4000);
+    e.waitUntil(fetch("/api/notifications/touchee", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(suivi), signal: controle.signal,
+    }).catch(() => {}).finally(() => clearTimeout(limite)));
+  }
   const url = e.notification.data?.url ?? "/";
   e.waitUntil(
     self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clients) => {

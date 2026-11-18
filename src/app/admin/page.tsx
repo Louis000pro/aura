@@ -32,6 +32,7 @@ import {
 import { createClient } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import s from "./admin.module.css";
+import SuiviBoosters from "@/components/admin/SuiviBoosters";
 
 /* ═══════════ Ce que rend /api/admin/stats ═══════════ */
 type Compte = {
@@ -77,7 +78,7 @@ type Stats = {
   };
 };
 
-type Onglet = "pouls" | "gens" | "usage" | "ia";
+type Onglet = "pouls" | "gens" | "usage" | "ia" | "suivi";
 type Filtre = "tous" | "actifs" | "endormis" | "jamais" | "premium" | "bannis";
 
 /* ═══════════ Petits blocs ═══════════ */
@@ -340,7 +341,7 @@ export default function AdminPage() {
       <div className="px-4 pb-6 max-w-3xl mx-auto">
         <div className={s.onglets} role="tablist">
           {([
-            ["pouls", "Pouls"], ["gens", "Gens"], ["usage", "Usage"], ["ia", "IA"],
+            ["pouls", "Pouls"], ["gens", "Gens"], ["usage", "Usage"], ["ia", "IA"], ["suivi", "Suivi"],
           ] as const).map(([cle, libelle]) => (
             <button key={cle} role="tab" aria-selected={onglet === cle}
               className={`${s.onglet} ${onglet === cle ? s.ongletActif : ""}`}
@@ -356,7 +357,8 @@ export default function AdminPage() {
           </div>
         )}
 
-        {!stats && chargement && (
+        {onglet === "suivi" && <SuiviBoosters />}
+        {!stats && chargement && onglet !== "suivi" && (
           <div className={s.vide}>Lecture des données…</div>
         )}
 

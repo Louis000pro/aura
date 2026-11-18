@@ -36,6 +36,7 @@ export async function sendPushToUser(params: {
     // elle ne regarde pas l'appareil, seulement la décision d'envoyer.
     const charge = {
       user_id: params.user_id,
+      categorie: params.categorie,
       title:   params.title,
       body:    params.body,
       url:     params.url,

@@ -18,7 +18,7 @@ export async function POST(req: Request) {
   };
   const msg = messages[genre ?? "rappel"] ?? messages.rappel;
   try {
-    const envoyes = await pousserA(v.admin, v.userId, msg);
+    const envoyes = await pousserA(v.admin, v.userId, { ...msg, categorie: "test" });
     return NextResponse.json({ ok: true, envoyes });
   } catch (e) {
     return NextResponse.json({ ok: false, error: String(e) }, { status: 500 });

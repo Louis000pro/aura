@@ -1,3 +1,4 @@
+import { debutPush, finPush } from "@/lib/journalPush";
 /**
  * GET /api/cron/reminders : LE RAPPEL DU SOIR
  *
@@ -552,7 +553,9 @@ export async function GET(req: NextRequest) {
 
     if (!rappel) { silencieux += 1; continue; }
 
+    const suivi = await debutPush(admin, uid, rappel.title, pourAnnonce ? "maj" : duRelais ? "relais" : "rappel", userSubs.length);
     const payload = JSON.stringify({
+      suivi,
       title: rappel.title,
       body: rappel.body,
       // Le visage du Guide choisi (Louis, 2026-11-17) ; sans Guide, l'icône de Vaiiya.
@@ -573,6 +576,7 @@ export async function GET(req: NextRequest) {
         })
       )
     );
+    await finPush(admin, suivi, results);
     const ok = results.filter((r) => r.status === "fulfilled").length;
     sent += ok;
     if (ok === 0) continue;

@@ -7,17 +7,12 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import webpush from "web-push";
+import { pousserA } from "@/lib/pushServeur";
 import { createAdminClient } from "@/lib/supabase-admin";
 import { compteAppelant, refusAuth } from "@/lib/apiAuth";
 
 const VAPID_PUBLIC_KEY  = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? "";
 const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY ?? "";
-const VAPID_SUBJECT     = process.env.VAPID_SUBJECT ?? "mailto:contact@aura.app";
-
-if (VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY) {
-  webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
-}
 
 /* La table `push_subscriptions` se crée par migration, comme tout le reste.
    Il y avait ici un `ensureTable()` qui tentait de la créer à chaud en
@@ -92,56 +87,20 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ error: "VAPID non configuré" }, { status: 500 });
     }
 
-    const { user_id, title, body, url, icon } = await req.json() as {
+    const { user_id, title, body, url, icon, categorie } = await req.json() as {
       user_id: string;
       title: string;
       body: string;
       url?: string;
       icon?: string;
+      categorie?: string;
     };
 
     if (!user_id || !title || !body) {
       return NextResponse.json({ error: "Paramètres manquants" }, { status: 400 });
     }
 
-    const supabase = createAdminClient();
-    const { data: subs } = await supabase
-      .from("push_subscriptions")
-      .select("endpoint, p256dh, auth")
-      .eq("user_id", user_id);
-
-    if (!subs || subs.length === 0) {
-      return NextResponse.json({ ok: true, sent: 0 });
-    }
-
-    const payload = JSON.stringify({
-      title,
-      body,
-      icon:  icon  ?? "/icons/icon-192.png",
-      url:   url   ?? "/",
-    });
-
-    const results = await Promise.allSettled(
-      subs.map((sub) =>
-        webpush.sendNotification(
-          {
-            endpoint: sub.endpoint,
-            keys: { p256dh: sub.p256dh, auth: sub.auth },
-          },
-          payload
-        ).catch(async (err: { statusCode?: number }) => {
-          // 410 Gone / 404 Not Found → abonnement mort, on le retire.
-          // Le cron traitait déjà les deux ; ici seul 410 l'était, donc un
-          // endpoint en 404 restait en base et on le réessayait chaque jour.
-          if (err?.statusCode === 410 || err?.statusCode === 404) {
-            await supabase.from("push_subscriptions").delete().match({ endpoint: sub.endpoint });
-          }
-          throw err;
-        })
-      )
-    );
-
-    const sent = results.filter((r) => r.status === "fulfilled").length;
+    const sent = await pousserA(createAdminClient(), user_id, { title, body, url, icon, categorie });
     return NextResponse.json({ ok: true, sent });
   } catch (e) {
     return NextResponse.json({ ok: false, error: String(e) }, { status: 500 });

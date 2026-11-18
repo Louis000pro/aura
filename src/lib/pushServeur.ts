@@ -4,9 +4,10 @@
  */
 import webpush from "web-push";
 import type { createAdminClient } from "./supabase-admin";
+import { debutPush, finPush } from "./journalPush";
 
 type Admin = ReturnType<typeof createAdminClient>;
-export type MessagePush = { title: string; body: string; url?: string; icon?: string };
+export type MessagePush = { title: string; body: string; url?: string; icon?: string; categorie?: string };
 
 let pret = false;
 function preparer(): boolean {
@@ -27,9 +28,11 @@ export function iconeGuide(guide: string | null | undefined): string {
 
 export async function pousserA(admin: Admin, userId: string, msg: MessagePush): Promise<number> {
   if (!preparer()) throw new Error("VAPID non configuré");
-  const { data: subs } = await admin.from("push_subscriptions").select("endpoint, p256dh, auth").eq("user_id", userId);
-  if (!subs?.length) return 0;
-  const payload = JSON.stringify({ title: msg.title, body: msg.body, url: msg.url ?? "/", icon: msg.icon ?? "/icons/icon-192.png" });
+  const { data: subs, error } = await admin.from("push_subscriptions").select("endpoint, p256dh, auth").eq("user_id", userId);
+  if (error) throw error;
+  const suivi = await debutPush(admin, userId, msg.title, msg.categorie ?? "notification", subs?.length ?? 0);
+  if (!subs?.length) { await finPush(admin, suivi, []); return 0; }
+  const payload = JSON.stringify({ title: msg.title, body: msg.body, url: msg.url ?? "/", icon: msg.icon ?? "/icons/icon-192.png", suivi });
   const res = await Promise.allSettled(subs.map(s =>
     webpush.sendNotification({ endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } }, payload)
       .catch(async (err: { statusCode?: number }) => {
@@ -38,6 +41,7 @@ export async function pousserA(admin: Admin, userId: string, msg: MessagePush): 
         }
         throw err;
       })));
+  await finPush(admin, suivi, res);
   return res.filter(r => r.status === "fulfilled").length;
 }
 

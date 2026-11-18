@@ -26,6 +26,7 @@
     "check:portraits": "node scripts/check-portraits.mjs",
     "check:animations": "node scripts/recaler-guides.mjs --check && node scripts/normalize-guides.mjs --check",
     "check:rappels": "node --experimental-strip-types --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --import ./scripts/check-ia-alias.mjs scripts/check-rappels.ts",
+    "check:admin-suivi": "node scripts/check-admin-suivi.cjs",
     "check:rangs": "node --experimental-strip-types --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --import ./scripts/check-ia-alias.mjs scripts/check-rangs.ts",
     "check:flammes": "node --experimental-strip-types --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --import ./scripts/check-ia-alias.mjs scripts/check-flammes.ts",
     "check:trainee": "node --experimental-strip-types --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --import ./scripts/check-ia-alias.mjs scripts/check-trainee.ts",

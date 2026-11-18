@@ -71,6 +71,24 @@ zéro. Aucun SQL.
 
 ## Boosters : page de fin, album et collectionneurs, CODÉS — 2026-11-18
 
+### Administration : heures des boosters et notifications — 2026-11-18
+
+Maquette validée par Louis, puis demande d'intégration. Onglet « Suivi » dans
+`/admin`, composant `admin/SuiviBoosters`, API `/api/admin/suivi` derrière
+`exigerAdmin`. Heures de Paris, filtres 24 h / 7 j / 30 j, membre et événement.
+Les anciennes ouvertures quotidiennes n'ont pas d'heure : ne jamais inventer
+minuit comme heure réelle. La réserve utilise la RPC `reserve_booster`.
+`journal_push` nécessite `20261118_admin_notifications.sql` (activation séparée,
+non appliquée par cet agent faute d'accès Supabase). Sans elle, l'écran montre
+les ouvertures et le dernier rappel connu, signale le suivi détaillé inactif,
+et les envois continuent. Les deux chemins d'envoi sont instrumentés.
+Ne jamais confondre acceptation par le service push et réception sur téléphone.
+Un clic est signalé par le SW avec une preuve aléatoire par notification (hash
+gardé côté serveur, valable 30 jours) ; sa date est celle du serveur, pas une
+preuve de lecture. Le journal ne garde ni contenu de message, ni endpoint,
+ni clé d'appareil. RLS sans accès anon/authenticated ; API réservée aux admins.
+Tests : `npm run check:admin-suivi` ; rendu vérifié à 320 / 390 / 736 px.
+
 **Correction demandée ensuite par Louis (2026-11-18)** : supprimer le panorama
 des rangs de `cartes/CollectionCartes`. Le classement des collectionneurs ouvre
 sur « Tout Vaiiya », inclut aussi les membres sans carte, et n'est plus limité
