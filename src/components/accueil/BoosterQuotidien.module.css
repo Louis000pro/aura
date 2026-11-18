@@ -1,5 +1,15 @@
-.bloc{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:12px;padding:14px 18px;border:1px solid var(--verre-carte-bord);border-radius:var(--r-bloc);background:linear-gradient(145deg,#c4aaff35,#ffb8de24,#ffde8226),var(--verre-carte);color:var(--text-0)}
-.bloc h2{font-size:1.15rem;font-weight:800;margin:2px 0 8px}
+.bloc{display:grid;grid-template-columns:64px minmax(0,1fr);align-items:center;column-gap:12px;row-gap:10px;padding:14px;border:1px solid var(--verre-carte-bord);border-radius:var(--r-bloc);background:linear-gradient(145deg,#c4aaff35,#ffb8de24,#ffde8226),var(--verre-carte);color:var(--text-0)}
+.bloc h2{font-size:1.125rem;line-height:1.2;font-weight:800;margin:0 0 4px;text-wrap:balance}
+.miniature{grid-column:1;grid-row:1 / span 2;align-self:center}
+.miniature > div{width:64px;height:106px}
+.informations{grid-column:2;min-width:0}
+.informations > small{display:block;font-size:.75rem;line-height:1.4;color:var(--text-1)}
+.actionsAccueil{display:flex;align-items:center;flex-wrap:wrap;gap:6px 10px;margin-top:10px}
+.actionsAccueil .ouvrir{white-space:nowrap;font-size:.8125rem}
+.reserve{font-size:.6875rem;white-space:nowrap;color:var(--text-1);font-variant-numeric:tabular-nums}
+.prochain{grid-column:2;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:4px 8px;padding-top:8px;border-top:1px solid var(--verre-carte-bord);font-size:.75rem;font-variant-numeric:tabular-nums}
+.prochain small{font-size:.6875rem;color:var(--text-1)}
+.prochain strong{white-space:nowrap}
 .ouvrir{min-height:44px;padding:8px 13px;border:0;border-radius:12px;font-weight:750}
 .dialog{box-sizing:border-box;width:100%;height:100%;max-width:none;max-height:none;margin:0;padding:0;border:0;background:white;color:#271841}
 .dialog::backdrop{background:white}
@@ -17,10 +27,6 @@
   box-shadow: inset 0 0 0 1px #ffeeb5, inset 0 1px #fff, 0 3px 8px #ac75233d;
 }
 
-.statut { display:flex; align-items:center; gap:8px; margin-left:auto; }
-.compte { text-align:center; font-variant-numeric:tabular-nums; }
-.compte small,.compte strong { display:block; }
-.compte small { font-size:.7rem; }
 .ouvrir:disabled { opacity:.55; cursor:default; }
 .ecran a.ouvrir { display:inline-flex; align-items:center; margin-top:20px; }
 .collection { margin:20px 0; scroll-margin-top:80px; }

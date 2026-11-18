@@ -518,8 +518,11 @@ export default function BoosterQuotidien({ userId, jour, onGain }: { userId: str
     <MotionConfig reducedMotion="user">
       <section className={styles.bloc} aria-label="Booster d’exercices"
         data-accueil-charge={statut !== "chargement" && portrait ? "oui" : "non"}>
-        <div><small>{illimite ? "Mode test · ouvertures illimitées" : "3 cartes d’exercices"}</small>
+        <div className={styles.miniature}><MiniSachetBooster guide={coach} /></div>
+        <div className={styles.informations}>
           <h2>{illimite ? "Tes boosters d’essai" : ancienneCadence ? "Ton booster du jour" : "Ton booster"}</h2>
+          <small>{illimite ? "Mode test · ouvertures illimitées" : "3 cartes d’exercices"}</small>
+          <div className={styles.actionsAccueil}>
           <button type="button" className={styles.ouvrir}
             aria-busy={preparation}
             disabled={statut === "chargement" || !portrait || preparation || chargement || !!sortie || (!illimite && (stock !== null ? stock === 0 : prochain !== null))}
@@ -535,12 +538,11 @@ export default function BoosterQuotidien({ userId, jour, onGain }: { userId: str
             }}>
             {statut === "erreur" || (portrait && !coach) ? "Réessayer" : "Ouvrir le booster"}
           </button>
+          {!illimite && stock !== null && <small className={styles.reserve}>{stock} / 3 en réserve</small>}
+          </div>
           {erreurCoach && <p role="alert">{erreurCoach}</p>}
         </div>
-        <div className={styles.statut}><MiniSachetBooster guide={coach} />
-          {!illimite && stock !== null && <div className={styles.compte}><small>En réserve</small><strong>{stock} / 3</strong></div>}
-          {prochain !== null && !illimite && <div className={styles.compte}><small>Prochain booster</small><strong>{compteRebours}</strong></div>}
-        </div>
+        {prochain !== null && !illimite && <div className={styles.prochain}><small>Prochain booster</small><strong>{compteRebours}</strong></div>}
       </section>
       <dialog ref={dialog} className={styles.dialog} onClose={() => { terminerChute(); libererCelebration(); }} aria-labelledby="titre-booster">
         <div className={styles.ecran} data-sortie={sortie ? "" : undefined}>
