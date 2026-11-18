@@ -18,9 +18,13 @@
  * hors ligne avec `npm run check:vision`.
  */
 
+import { referenceDe } from "./tableAliments";
+
 export type ElementRepas = {
   nom: string;
   grammes: number;
+  /** Vrai quand les valeurs pour 100 g viennent de la table de référence. */
+  reference?: boolean;
   calories: number;
   proteins: number;
   carbs: number;
@@ -71,18 +75,21 @@ function essaisPour(model: string): Record<string, unknown>[] {
   ];
 }
 
-export const PROMPT_VISION = `Tu es diététicien. Tu analyses la photo d'un repas pour estimer ce qu'il apporte, comme le ferait un professionnel qui pèse chaque élément.
+export const PROMPT_VISION = `Tu es diététicien. Tu analyses la photo d'un repas pour estimer ce qu'il apporte, comme le ferait un professionnel qui pèse chaque élément. La quantité est ce qui compte le plus : une erreur de poids fausse tout le reste.
 
 MÉTHODE, dans cet ordre :
-1. Liste CHAQUE élément comestible visible séparément : féculent, protéine, légumes, sauce, fromage, pain, boisson, dessert. Une sauce, un filet d'huile ou du beurre visible est un élément à part entière.
-2. Estime le poids de chaque élément en grammes, TEL QUE SERVI (cuit si c'est cuit). Appuie-toi sur les repères de la photo : une assiette plate fait environ 26 cm, une assiette creuse ou un bol environ 15 à 18 cm, une fourchette environ 19 cm, une main adulte environ 18 cm. Compare la surface et l'épaisseur de chaque aliment à ces repères.
-3. Pour chaque élément, donne ses valeurs pour 100 g dans cet état (table Ciqual ou USDA) : calories, protéines, glucides, lipides.
-4. Compte la matière grasse de cuisson quand l'aliment est poêlé, frit, rôti ou brillant : ajoute-la comme élément (ex. « huile de cuisson », 5 à 15 g).
+1. Liste CHAQUE élément comestible visible séparément : féculent, protéine, légumes, sauce, fromage, pain, boisson, dessert. Une sauce, un filet d'huile ou du beurre visible est un élément à part entière. Ne fusionne pas deux aliments dans un élément.
+2. Trouve l'échelle avant d'estimer quoi que ce soit : repère le contenant et les objets connus. Assiette plate ≈ 26 cm de diamètre, assiette à dessert ≈ 20 cm, assiette creuse ≈ 22 cm, bol ≈ 15 cm, ramequin ≈ 9 cm, fourchette ≈ 19 cm, cuillère à soupe ≈ 17 cm, verre ≈ 25 cl, canette 33 cl, main adulte ≈ 18 cm.
+3. Pour ce qui se COMPTE (œufs, tranches, nuggets, boulettes, sushis, biscuits, fruits entiers, carrés de chocolat), compte les pièces et donne "pieces" en plus des grammes.
+4. Pour le reste, estime la surface occupée dans l'assiette (quelle fraction ?) et l'épaisseur, puis convertis en grammes TELS QUE SERVIS (cuit si c'est cuit). Repères : une assiette plate pleine de féculents cuits, sur 2 cm d'épaisseur ≈ 350 g ; un quart d'assiette de riz ou de pâtes cuits ≈ 120 à 180 g ; un filet de poulet ou un steak de la taille d'une paume ≈ 120 à 150 g ; un pavé de poisson ≈ 130 g ; une poignée de salade ≈ 30 g ; une cuillère à soupe d'huile ≈ 10 g, de sauce ≈ 15 g ; une tranche de pain ≈ 35 g ; un bol rempli de soupe ≈ 300 g.
+5. Pour chaque élément, donne ses valeurs pour 100 g dans cet état (table Ciqual) : calories, protéines, glucides, lipides. Attention cuit / cru : 100 g de riz cuit ≈ 130 kcal, pas 350.
+6. Compte la matière grasse de cuisson quand l'aliment est poêlé, frit, rôti ou brillant : ajoute-la comme élément (ex. « huile de cuisson », 5 à 15 g par portion). Une salade assaisonnée a sa vinaigrette (≈ 15 g).
+7. Ce qui est caché compte aussi quand le plat l'implique : le fromage dans un gratin, la sauce dans un plat mijoté, le beurre sur une tartine.
 
 RÈGLES :
-- Ne confonds pas les aliments proches : gnocchis, riz, pâtes, quinoa, semoule, boulgour ; poulet, dinde, porc ; crème et sauce blanche. Regarde la forme, la texture, la couleur.
-- Nomme précisément, en français (« spaghetti bolognaise », pas « pâtes »).
-- Sois réaliste, ni généreux ni avare : une portion de restaurant est plus grosse qu'une portion maison.
+- Ne confonds pas les aliments proches : gnocchis, riz, pâtes, quinoa, semoule, boulgour ; poulet, dinde, porc ; crème et sauce blanche ; patate douce et carotte. Regarde la forme, la texture, la couleur.
+- Nomme chaque élément simplement, comme dans une table d'aliments (« riz basmati cuit », « blanc de poulet grillé », « huile d'olive »), et le plat précisément en français (« spaghetti bolognaise », pas « pâtes »).
+- Sois réaliste, ni généreux ni avare : une portion de restaurant est plus grosse qu'une portion maison. Ce qui sort du cadre ou se cache sous un autre aliment ne compte que si on le devine clairement.
 - Si la photo ne montre pas de nourriture, mets "aucun_repas": true et une liste vide.
 
 Réponds UNIQUEMENT avec un objet JSON, sans texte autour :
@@ -91,7 +98,8 @@ Réponds UNIQUEMENT avec un objet JSON, sans texte autour :
   "plat": "nom précis du plat en français",
   "description": "description courte en français, 12 mots maximum",
   "elements": [
-    { "nom": "riz basmati cuit", "grammes": 180, "kcal_100g": 130, "proteines_100g": 2.7, "glucides_100g": 28, "lipides_100g": 0.3 }
+    { "nom": "riz basmati cuit", "grammes": 180, "kcal_100g": 130, "proteines_100g": 2.7, "glucides_100g": 28, "lipides_100g": 0.3 },
+    { "nom": "œuf au plat", "pieces": 2, "grammes": 110, "kcal_100g": 190, "proteines_100g": 13, "glucides_100g": 0.5, "lipides_100g": 15 }
   ],
   "confiance": 0.8
 }`;
@@ -127,27 +135,45 @@ export function calculerRepas(brut: Record<string, unknown>): AnalyseRepas | nul
     if (!e || typeof e !== "object") continue;
     const r = e as Record<string, unknown>;
     const nom = String(r.nom ?? "").trim().slice(0, 60);
-    const g = borne(nombre(r.grammes), 0, 1500);
-    if (!nom || g <= 0) continue;
+    if (!nom) continue;
+    const ref = referenceDe(nom);
 
-    // Valeurs pour 100 g, bornées à ce qui existe physiquement.
-    let p = borne(nombre(r.proteines_100g), 0, 100);
-    let c = borne(nombre(r.glucides_100g), 0, 100);
-    let f = borne(nombre(r.lipides_100g), 0, 100);
+    /* Le poids. Ce qui se compte se pèse mieux par le compte que par la
+       surface : quand le modèle donne des pièces et que l'aliment a un poids
+       standard, un poids qui s'en écarte de plus de 40 % cède au compte. */
+    let g = borne(nombre(r.grammes), 0, 1500);
+    const pieces = borne(nombre(r.pieces), 0, 60);
+    if (pieces > 0 && ref?.piece) {
+      const parCompte = pieces * ref.piece;
+      if (g <= 0 || Math.abs(g - parCompte) / parCompte > 0.4) g = parCompte;
+    } else if (pieces > 0 && g <= 0) {
+      g = pieces * borne(nombre(r.grammes_piece), 0, 500);
+    }
+    /* Une portion au-delà du plausible pour CET aliment est une erreur
+       d'échelle (200 g d'huile, 1 kg de fromage) : on la ramène au plafond. */
+    if (ref?.max) g = Math.min(g, ref.max);
+    if (g <= 0) continue;
+
+    /* Valeurs pour 100 g : la table quand l'aliment y est (c'est un fait,
+       pas une estimation), sinon celles du modèle, bornées au possible. */
+    let p = ref ? ref.p : borne(nombre(r.proteines_100g), 0, 100);
+    let c = ref ? ref.c : borne(nombre(r.glucides_100g), 0, 100);
+    let f = ref ? ref.f : borne(nombre(r.lipides_100g), 0, 100);
     const somme = p + c + f;
     if (somme > 100) { p = (p * 100) / somme; c = (c * 100) / somme; f = (f * 100) / somme; }
-    let kcal = borne(nombre(r.kcal_100g), 0, 900);
+    let kcal = ref ? ref.kcal : borne(nombre(r.kcal_100g), 0, 900);
 
     /* Un élément dont les calories contredisent ses propres macros de plus
        de 25 % : on croit les macros (elles portent plus d'information), et
        on recalcule. Tolérance large, parce que les fibres et l'alcool
        expliquent des écarts réels. */
     const kcalMacros = p * 4 + c * 4 + f * 9;
-    if (kcalMacros > 0 && (kcal <= 0 || Math.abs(kcal - kcalMacros) / kcalMacros > 0.25)) kcal = kcalMacros;
+    if (!ref && kcalMacros > 0 && (kcal <= 0 || Math.abs(kcal - kcalMacros) / kcalMacros > 0.25)) kcal = kcalMacros;
 
     items.push({
       nom,
       grammes: Math.round(g),
+      ...(ref ? { reference: true } : {}),
       calories: Math.round((kcal * g) / 100),
       proteins: Math.round(((p * g) / 100) * 10) / 10,
       carbs: Math.round(((c * g) / 100) * 10) / 10,
