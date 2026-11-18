@@ -50,11 +50,25 @@ fonctionnalités ; ce document est la source de vérité de ce qu'on en dit deho
 
 - **Next.js 16.2.4 App Router** (breaking changes → lire `node_modules/next/dist/docs/`), React 19, TypeScript, Tailwind v4, lucide-react, framer-motion.
 - **Supabase** (`@supabase/ssr`) : base + RLS. ⚠️ **Les migrations SQL ne s'appliquent PAS automatiquement** : tout SQL ajouté au repo doit être collé à la main par Louis dans le SQL Editor Supabase — le lui signaler à chaque migration. Piège RLS vécu : un compteur qui plafonne à 0/1 sur les données d'autrui = policy SELECT trop restrictive au lieu de `USING (true)`.
-- **PWA** : service worker maison (`public/sw.js`, v14 depuis le 2026-10-27) : les pages en réseau strict (cache seulement hors ligne), les fichiers `_next/static` en cache permanent, images et polices en stale-while-revalidate, et les navigations internes de Next (`_rsc`) toujours au réseau, jamais en cache. Au test on peut voir un code en retard ; vérifier que le bon commit est « Ready » sur Vercel. Voir le chantier « La fluidité ».
+- **PWA** : service worker maison (`public/sw.js`, v16 depuis le 2026-11-18) : l'accueil et les onglets s'ouvrent depuis la copie gardée, les autres pages en réseau strict (cache seulement hors ligne), les fichiers `_next/static` en cache permanent, images et polices en stale-while-revalidate, et les navigations internes de Next (`_rsc`) toujours au réseau, jamais en cache. Au test on peut voir un code en retard ; vérifier que le bon commit est « Ready » sur Vercel. Voir le chantier « La fluidité ».
 - `/api/chat` (l'assistant) tourne sur **Groq** depuis le 2026-09-05 — pas Claude, pas OpenAI. Le fournisseur est **interchangeable par `AI_PROVIDER`** (`groq` | `mistral`) et vit dans `src/lib/llm.ts` : voir le chantier « Le fournisseur d'IA devient interchangeable ».
 - **PostHog est SUPPRIMÉ (décision de Louis, 2026-07-29)** : il enregistrait les sessions en prod sans consentement RGPD, et poser un bandeau de consentement aurait retardé la mise à jour. Retiré en entier (`instrumentation-client.ts`, `lib/analytics.ts`, l'`identify` de `AuthContext`, la dépendance `posthog-js`, et l'interrupteur « Analytiques » du profil qui ne pilotait rien). Ne pas le réintroduire sans bandeau de consentement ET mention dans `/confidentialite`. `@vercel/analytics` reste dans `layout.tsx` : anonyme et sans cookie, il ne demande pas de consentement.
 - **Auth = Supabase, et rien d'autre.** Google passe par `supabase.auth.signInWithOAuth({ provider: "google" })` dans `AuthContext`, et les codes de confirmation par `/api/auth/send-otp` + `/api/auth/verify-otp` (envoi Resend, jeton scellé en HMAC avec `AUTH_SECRET`). `next-auth` figurait dans `package.json` sans être importé nulle part : retiré le 2026-08-11, **ne pas le réinstaller** en croyant réparer quelque chose. Plus Stripe et web-push. **L'app est auth-gated : non testable en local.** Vérification standard = `npx tsc --noEmit` + build qui passe ; la validation visuelle, c'est Louis sur Vercel.
 - Secrets : `.env.local` (`AUTH_SECRET`, `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`, `COACH_AURA_KEY`) — à demander à Louis, jamais commité.
+
+## L'ouverture instantanée — 2026-11-18
+
+Louis : ouvrir l'app prenait environ 2,5 s, il veut « quasiment instantané »
+et qu'un retour d'onglet ne recharge rien. Service worker v16 : l'accueil et
+les onglets s'ouvrent depuis la copie gardée sur l'appareil, la page fraîche
+arrive derrière ; une nouvelle version jette les copies et recharge la page
+si personne n'a encore touché l'écran. Le dernier compte affiché
+(`AuthContext`, `CLE_INSTANTANE`) et la mémoire des écrans du démarrage
+(`memoireSession.ts`, `PERSISTES`) sont gardés sur l'appareil. ⚠️ Changer la
+forme gardée par l'un de ces écrans = monter `VERSION_MEMOIRE`. L'installation
+du service worker restait bloquée dans un Chrome de test (53 téléchargements
+d'un coup) : file de 4, limite de 15 s. `cacheComponents` essayé et écarté.
+Détail et mesures dans `docs/fluidite.md`. Aucun SQL.
 
 ## Précision de l'analyse nutrition — 2026-11-18
 

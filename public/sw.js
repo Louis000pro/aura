@@ -1,4 +1,18 @@
-// Vaiiya Service Worker, v15 (l'app s'installe dès la première visite)
+// Vaiiya Service Worker, v16 (l'app s'ouvre depuis l'appareil)
+// v16 (2026-11-18, Louis : « que ce soit quasiment instantané ») : les écrans
+//   de l'app (l'accueil et les onglets, liste `ECRANS_INSTANTANES`) ne
+//   s'ouvrent plus en attendant le réseau. Le service worker rend tout de
+//   suite la page gardée sur l'appareil, et va chercher la fraîche EN MÊME
+//   TEMPS, qu'il range pour la fois suivante. Ces pages sont statiques (la
+//   même coquille pour tout le monde, les données arrivent ensuite de
+//   Supabase), donc rendre la copie gardée ne montre rien de faux.
+//   ⚠️ UNE MISE EN LIGNE N'EST PAS RATÉE POUR AUTANT : quand la page fraîche
+//   vient d'une autre version que la copie gardée (`x-vaiiya-deploiement`),
+//   toutes les autres copies sont jetées et la page ouverte est prévenue.
+//   Le premier changement de page se fait alors en entier, sur la nouvelle
+//   version (voir le script du <head> dans `app/layout.tsx`). Une copie de
+//   plus de sept jours n'est plus rendue : on attend le réseau.
+//   Toutes les autres pages restent en réseau strict, comme avant.
 // v15 (2026-11-03) : à l'installation, le service worker ne garde plus
 //   seulement le HTML de « / » : il lit ce HTML, et celui des quatre onglets,
 //   et met en cache tous les fichiers `_next/static` qu'ils réclament (code et
@@ -32,7 +46,9 @@
 // les chunks en cache-first permanent, les assets en stale-while-revalidate.
 //
 // Stratégie :
-//   - Navigation (HTML) → Réseau STRICT d'abord : on sert toujours la page
+//   - Écrans de l'app (v16) → la copie gardée tout de suite, la fraîche
+//     derrière, et toutes les copies jetées quand une version change.
+//   - Autres navigations (HTML) → Réseau STRICT d'abord : on sert toujours la page
 //     fraîche quand on est en ligne (un déploiement est visible immédiatement),
 //     cache en secours UNIQUEMENT si le réseau échoue (hors-ligne).
 //   - _next/static/ (chunks hashés, immuables) → Cache-first, cache PERMANENT
@@ -91,18 +107,28 @@ async function installerCoquille() {
     try {
       const res = await fetch(chemin, { credentials: "same-origin" });
       if (!res.ok) return;
-      if (chemin === "/") await html.put("/", res.clone());
+      if (ECRANS_INSTANTANES.has(chemin)) await garderPage(html, chemin, res.clone());
       const texte = await res.text();
-      for (const m of texte.matchAll(/["'(](\/_next\/static\/[^"'()\s\\]+)/g)) fichiers.add(m[1]);
+      for (const m of texte.matchAll(/["'(](\/_next\/static\/[^"'()\s\\]+\.(?:js|css|woff2))(?=["')\\])/g)) fichiers.add(m[1]);
     } catch { /* hors ligne : on réessaiera à la prochaine installation */ }
   }));
-  await Promise.all([...fichiers].map(async (f) => {
-    try {
-      if (await statique.match(f)) return;
-      const res = await fetch(f);
-      if (res.ok) await statique.put(f, res);
-    } catch { /* ignore */ }
-  }));
+  // Quatre téléchargements à la fois, pas cinquante : un téléphone en 4G ne
+  // gagne rien à tout lancer d'un coup, et chaque fichier a sa limite de
+  // temps (une requête qui ne répond pas ne doit pas bloquer l'installation).
+  const file = [...fichiers];
+  const ouvrier = async () => {
+    while (file.length) {
+      const f = file.shift();
+      try {
+        if (await statique.match(f)) continue;
+        const ctrl = new AbortController();
+        const limite = setTimeout(() => ctrl.abort(), 15000);
+        const res = await fetch(f, { signal: ctrl.signal }).finally(() => clearTimeout(limite));
+        if (res.ok) await statique.put(f, res);
+      } catch { /* ignore */ }
+    }
+  };
+  await Promise.all([ouvrier(), ouvrier(), ouvrier(), ouvrier()]);
   const dyn = await caches.open(DYNAMIC_CACHE);
   await Promise.all(ICONES.map((f) => dyn.add(f).catch(() => {})));
 }
@@ -131,6 +157,76 @@ self.addEventListener("activate", (e) => {
       .then(() => self.clients.claim())
   );
 });
+
+// ── Les écrans qui s'ouvrent depuis l'appareil (v16) ─────────
+// Seulement des pages STATIQUES de l'app : leur HTML est le même pour tout le
+// monde (`○` au build), les données de la personne arrivent après, de
+// Supabase. Une page rendue par le serveur pour quelqu'un (le profil d'un ami,
+// une discussion) n'a rien à faire ici.
+const ECRANS_INSTANTANES = new Set(["/", "/progression", "/nutrition", "/communaute", "/profil", "/parametres"]);
+const ENTETE_VERSION = "x-vaiiya-deploiement";
+const ENTETE_GARDE = "x-vy-garde-le";
+const AGE_MAX_COPIE = 7 * 24 * 3600 * 1000;
+
+// Un rechargement demandé (le bouton « Recharger » de l'écran de secours
+// purge d'abord le cache, mais un navigateur peut aussi le dire) part au
+// réseau.
+function rechargementDemande(request) {
+  return request.cache === "reload" || request.cache === "no-store";
+}
+
+// Garde une page fraîche, avec l'heure où on l'a gardée. La clé est le chemin
+// seul : les paramètres (`?ouvrir=…`) ne changent pas le HTML d'une page
+// statique, l'écran les lit lui-même dans l'adresse.
+async function garderPage(cache, chemin, res) {
+  const entetes = new Headers(res.headers);
+  entetes.set(ENTETE_GARDE, String(Date.now()));
+  const corps = await res.blob();
+  await cache.put(chemin, new Response(corps, { status: res.status, statusText: res.statusText, headers: entetes }));
+}
+
+async function ouvrirInstantane(e, chemin) {
+  const cache = await caches.open(HTML_CACHE);
+  const gardee = await cache.match(chemin).catch(() => undefined);
+  const age = gardee ? Date.now() - Number(gardee.headers.get(ENTETE_GARDE) || 0) : Infinity;
+
+  // La page fraîche, toujours demandée (le préchargement de navigation est
+  // déjà parti pendant le réveil du service worker).
+  const fraiche = (async () => {
+    const pre = await Promise.resolve(e.preloadResponse).catch(() => undefined);
+    const res = pre || (await fetch(e.request));
+    if (!res || !res.ok || res.redirected || res.type === "opaqueredirect") return res;
+    const avant = gardee && gardee.headers.get(ENTETE_VERSION);
+    const apres = res.headers.get(ENTETE_VERSION);
+    if (avant && apres && avant !== apres) {
+      // Nouvelle version en ligne : les autres copies sont d'une version
+      // disparue, on les jette toutes avant de garder la fraîche.
+      await caches.delete(HTML_CACHE).catch(() => {});
+      const neuf = await caches.open(HTML_CACHE);
+      await garderPage(neuf, chemin, res.clone());
+      prevenirNouvelleVersion(apres);
+    } else {
+      await garderPage(cache, chemin, res.clone());
+    }
+    return res;
+  })();
+
+  if (gardee && age < AGE_MAX_COPIE) {
+    e.waitUntil(fraiche.catch(() => {}));
+    return gardee;
+  }
+  try {
+    const res = await fraiche;
+    if (res) return res;
+  } catch { /* hors ligne */ }
+  return gardee || (await cache.match("/")) || Response.error();
+}
+
+function prevenirNouvelleVersion(version) {
+  self.clients.matchAll({ type: "window", includeUncontrolled: true })
+    .then((liste) => { for (const c of liste) c.postMessage({ type: "vaiiya-nouvelle-version", version }); })
+    .catch(() => {});
+}
 
 // ── Fetch ────────────────────────────────────────────────────
 self.addEventListener("fetch", (e) => {
@@ -168,6 +264,13 @@ self.addEventListener("fetch", (e) => {
         )
       )
     );
+    return;
+  }
+
+  // 2 bis. Les écrans de l'app → la copie gardée tout de suite, la fraîche
+  //        derrière (v16, voir en tête du fichier).
+  if (e.request.mode === "navigate" && ECRANS_INSTANTANES.has(url.pathname) && !rechargementDemande(e.request)) {
+    e.respondWith(ouvrirInstantane(e, url.pathname));
     return;
   }
 

@@ -238,9 +238,14 @@ export default function RootLayout({
             l'ignore ; pour un changement de page, Next charge la page en
             entier, donc la nouvelle version, proprement. Toute autre
             requête (Supabase, l'API, les images) passe sans être touchée.
+            ⚠️ Avant de rendre ce refus, il demande au service worker de jeter
+            ses copies de pages (attente bornée à 0,7 s) : depuis la v16,
+            l'accueil et les onglets s'ouvrent depuis ces copies, et le
+            chargement complet qui suit doit venir du réseau, sur la nouvelle
+            version, sinon il rouvrirait l'ancienne.
             Absent en local, où il n'y a pas d'identifiant. */}
         {process.env.NEXT_PUBLIC_DEPLOIEMENT && (
-          <script dangerouslySetInnerHTML={{ __html: `(function(){try{var m=${JSON.stringify(process.env.NEXT_PUBLIC_DEPLOIEMENT)},f=window.fetch;if(!f||f.__vy)return;var g=function(i){var p=f.apply(window,arguments);var u=typeof i==='string'?i:(i&&(i.href||i.url))||'';if(u.indexOf('_rsc=')<0)return p;return p.then(function(r){var l=r.headers.get('x-vaiiya-deploiement');if(!l||l===m)return r;try{window.__vyNouvelleVersion=l;}catch(e){}try{if(r.body)r.body.cancel();}catch(e){}return new Response('',{status:409,statusText:'Nouvelle version',headers:{'content-type':'text/plain'}});});};g.__vy=true;window.fetch=g;}catch(e){}})();` }} />
+          <script dangerouslySetInnerHTML={{ __html: `(function(){try{var m=${JSON.stringify(process.env.NEXT_PUBLIC_DEPLOIEMENT)},f=window.fetch;if(!f||f.__vy)return;var g=function(i){var p=f.apply(window,arguments);var u=typeof i==='string'?i:(i&&(i.href||i.url))||'';if(u.indexOf('_rsc=')<0)return p;return p.then(function(r){var l=r.headers.get('x-vaiiya-deploiement');if(!l||l===m)return r;try{window.__vyNouvelleVersion=l;}catch(e){}try{if(r.body)r.body.cancel();}catch(e){}return new Promise(function(ok){try{var c=navigator.serviceWorker&&navigator.serviceWorker.controller;if(!c)return ok();var k=new MessageChannel();k.port1.onmessage=function(){ok();};c.postMessage({type:'vaiiya-purge'},[k.port2]);setTimeout(ok,700);}catch(e){ok();}}).then(function(){return new Response('',{status:409,statusText:'Nouvelle version',headers:{'content-type':'text/plain'}});});});};g.__vy=true;window.fetch=g;}catch(e){}})();` }} />
         )}
 
         {/* Session déjà ouverte ? On le sait AVANT le premier paint. L'accueil

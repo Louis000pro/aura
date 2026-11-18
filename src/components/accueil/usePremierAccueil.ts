@@ -64,6 +64,11 @@ export function usePremierAccueil(userId: string | undefined) {
         router.replace("/premiers-pas?visite=1");
         return;
       }
+      /* Un compte qui n'a plus rien à voir ici ne redevient pas « neuf » (ses
+         séances et son âge ne font que monter) : on le retient, pour que la
+         prochaine ouverture de l'accueil ne refasse pas ces deux comptages
+         avant de s'afficher. */
+      if (!neuf) { try { localStorage.setItem(CLE_LOCALE(userId), "1"); } catch { /* sans gravité */ } }
       setAfficher(neuf);
     })().catch(() => { if (vivant) setAfficher(false); });
     return () => { vivant = false; };

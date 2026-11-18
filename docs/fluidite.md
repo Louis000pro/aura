@@ -147,6 +147,57 @@ Android. **Pas mesuré contre l'API** : la vision Qwen (la clé Groq n'existe qu
 sur Vercel). `addRoutes` n'est pas vu sur un vrai Android (le navigateur de test
 est un Chromium de bureau).
 
+## L'ouverture instantanée (2026-11-18)
+
+Louis : « quand on ouvre le site ou le raccourci, ça prend environ 2,5
+secondes ; je veux que ce soit quasiment instantané, et qu'en revenant sur
+l'accueil depuis Nutrition, rien ne se recharge ».
+
+Ce que l'ouverture attendait, dans l'ordre : le HTML au réseau (service worker
+en réseau strict), puis `getSession()`, qui part au serveur d'authentification
+quand le jeton a expiré (l'app rouverte après plus d'une heure), puis les
+lectures de la journée, puis le décodage des images avant la révélation de
+l'accueil.
+
+| Quoi | Où |
+| --- | --- |
+| Service worker v16 : l'accueil et les onglets (`ECRANS_INSTANTANES`) s'ouvrent depuis la copie gardée sur l'appareil, la page fraîche est demandée en même temps et rangée pour la fois suivante. Une copie d'une autre version jette toutes les autres et prévient la page ; une copie de plus de 7 jours n'est plus rendue | `public/sw.js` |
+| Une mise en ligne se rattrape : si personne n'a encore touché l'écran, la page se recharge aussitôt sur la nouvelle version (une fois au plus par 30 s) ; sinon le prochain changement de page se fait en entier | `components/PWARegister.tsx`, script du `<head>` (il purge le cache avant de rendre son refus) |
+| L'installation du service worker télécharge 4 fichiers à la fois, chacun limité à 15 s, et ne relève plus que de vrais fichiers (`.js`, `.css`, `.woff2`) | `public/sw.js` |
+| Le dernier compte affiché est gardé sur l'appareil et montré tout de suite si un jeton est présent ; Supabase confirme derrière | `context/AuthContext.tsx` (`CLE_INSTANTANE`) |
+| La mémoire de session de l'accueil, de la journée, de Nutrition et des discussions est aussi gardée sur l'appareil (`vaiiya_mem:`), 36 h au plus, effacée à la déconnexion et par l'écran de secours | `lib/memoireSession.ts` (`PERSISTES`, `VERSION_MEMOIRE`) |
+| Un compte qui n'a plus de « première journée » à voir est retenu sur l'appareil : l'accueil ne refait plus deux comptages avant de s'afficher | `components/accueil/usePremierAccueil.ts` |
+
+⚠️ **Le service worker restait bloqué à l'installation** dans un Chrome sans
+fenêtre, avec la v15 comme avec la v16 telle qu'écrite au départ : une
+vingtaine des 53 téléchargements lancés d'un coup ne se terminaient jamais,
+donc il ne prenait jamais la main. Avec la file de 4 et la limite de 15 s,
+il est actif en moins de 5 secondes. Pas vérifié sur vaiiya.fr (le navigateur
+de test n'y accède pas) : il est possible qu'il ne se soit jamais activé chez
+une partie des gens.
+
+Mesuré en local, sur le build de production, deux versions servies l'une
+après l'autre : la réouverture rend la page en 40 à 70 ms (servie par le
+service worker) ; après une mise en ligne, l'ancienne page s'affiche, se
+recharge une fois sur la nouvelle, puis plus rien ne bouge.
+
+**Écarté : `cacheComponents` et `<Activity>`.** Essayé le 2026-11-18 : la
+moindre date lue dans un composant client sans `<Suspense>` fait échouer le
+build, et la réponse prévue rend chaque page en partie au serveur à chaque
+requête, donc une ouverture plus lente, l'inverse du but.
+
+**Règles.**
+- Si tu changes la forme gardée par un écran de `PERSISTES`, monte
+  `VERSION_MEMOIRE`.
+- `ECRANS_INSTANTANES` ne contient que des pages statiques (`○` au build).
+- `secoursErreur.ts` recopie le préfixe `vaiiya_mem:` (il n'importe rien) : les
+  deux se changent ensemble.
+- Le premier écran du jour passe encore par la révélation de l'accueil (la
+  mémoire de l'accueil porte le jour) : ce sont les ouvertures suivantes qui
+  sont instantanées.
+
+**Pas vu sur un vrai téléphone**, ni derrière la connexion.
+
 ## La vitrine, mesurée le 2026-11-04
 
 Louis : « Elle doit être fluide et le slide naturel. » Sauf `:has()`, retiré tout de

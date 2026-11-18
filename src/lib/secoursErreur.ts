@@ -243,6 +243,23 @@ export function signalerErreur(e: unknown, origine: string, decision: Decision):
 
 /* ── 4. La récupération, et les sorties manuelles ─────────────────────── */
 
+/** Efface la mémoire des écrans gardée sur l'appareil (`lib/memoireSession.ts`,
+ *  préfixe `vaiiya_mem:`). Recopiée ici plutôt qu'importée : ce fichier
+ *  n'importe RIEN. Si une mémoire d'une forme ancienne faisait planter un
+ *  écran, le secours ne doit pas la remettre au rechargement suivant. */
+function effacerMemoirePersistee(): void {
+  try {
+    const cles: string[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && k.startsWith("vaiiya_mem:")) cles.push(k);
+    }
+    for (const k of cles) localStorage.removeItem(k);
+  } catch {
+    /* stockage bloqué : rien à effacer */
+  }
+}
+
 /** Borne une attente. Rend `null` au délai dépassé, sans jamais rejeter : un
  *  service worker muet ne doit pas suspendre l'écran. */
 function borner<T>(p: Promise<T>, ms: number): Promise<T | null> {
@@ -313,6 +330,7 @@ export function lancerSecours(envoiDuJournal?: Promise<void>): void {
   void (async () => {
     try {
       if (envoiDuJournal) await borner(envoiDuJournal, MS_ENVOI);
+      effacerMemoirePersistee();
       await purgerCaches();
     } catch {
       /* Un `catch` en plus du `finally`, et il n'est pas décoratif : sans lui,
@@ -334,23 +352,29 @@ export function lancerSecours(envoiDuJournal?: Promise<void>): void {
   })();
 }
 
-/** Rechargement réel, demandé par l'utilisateur. Passe par le réseau, donc par
- *  la branche « navigation » de `sw.js`, qui est en réseau strict. */
+/** Rechargement réel, demandé par l'utilisateur.
+ *  ⚠️ Depuis la v16 de `sw.js`, l'accueil et les onglets s'ouvrent depuis la
+ *  copie gardée sur l'appareil : on la jette d'abord (attente bornée), pour
+ *  que le rechargement vienne du réseau, sur le build courant. Et la mémoire
+ *  des écrans gardée sur l'appareil part avec : si c'est elle qui faisait
+ *  planter un écran, le rechargement repart de la base. */
 export function rechargerVaiiya(): void {
-  try {
-    location.reload();
-  } catch {
-    /* ignoré */
-  }
+  void (async () => {
+    try { effacerMemoirePersistee(); await purgerCaches(); } catch { /* on recharge quand même */ }
+    finally {
+      try { location.reload(); } catch { /* ignoré */ }
+    }
+  })();
 }
 
 /** Retour à l'accueil par une VRAIE navigation, jamais par le routeur client :
  *  si le bundle est en cause, le routeur client est précisément ce à quoi on
- *  ne peut plus se fier. */
+ *  ne peut plus se fier. Même purge que `rechargerVaiiya`. */
 export function allerAccueil(): void {
-  try {
-    location.assign("/");
-  } catch {
-    /* ignoré */
-  }
+  void (async () => {
+    try { effacerMemoirePersistee(); await purgerCaches(); } catch { /* on y va quand même */ }
+    finally {
+      try { location.assign("/"); } catch { /* ignoré */ }
+    }
+  })();
 }

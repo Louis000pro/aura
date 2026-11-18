@@ -6,6 +6,7 @@ import { fetchAuth } from "@/lib/fetchAuth";
 import type { Session, User as SBUser } from "@supabase/supabase-js";
 import { retenirCompte } from "@/lib/comptesConnus";
 import { hydraterRegimes } from "@/lib/premiersPas/reponses";
+import { effacerMemoire } from "@/lib/memoireSession";
 
 export type User = {
   id: string;
@@ -43,6 +44,49 @@ type AuthCtx = {
 
 const AuthContext = createContext<AuthCtx | null>(null);
 
+/* ⚡ LE COMPTE EST CONNU AVANT LA RÉPONSE DE SUPABASE (2026-11-18, Louis :
+   « quand on ouvre l'app, ça prend 2,5 secondes »).
+   `getSession()` est rapide tant que le jeton est valide, mais l'app rouverte
+   après plus d'une heure le trouve expiré : il faut alors un aller-retour au
+   serveur d'authentification avant de savoir qui est là, et tout l'écran
+   l'attendait. On garde donc sur l'appareil le dernier compte affiché, et si
+   un jeton de session est présent (même test que le script du <head>), on
+   l'affiche tout de suite. Les lectures de la base attendent d'elles-mêmes
+   le jeton rafraîchi ; si la session s'avère partie, le compte retombe à
+   `null` et la garde de connexion fait son travail.
+   ⚠️ Ce n'est qu'un affichage : les droits (admin, premium) sont toujours
+   relus en base juste après, et le serveur ne croit jamais le navigateur. */
+const CLE_INSTANTANE = "vaiiya_compte_instantane";
+
+function jetonPresent(): boolean {
+  try {
+    if (/(^|;\s*)sb-[^=]*-auth-token/.test(document.cookie)) return true;
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && k.startsWith("sb-") && k.includes("-auth-token")) return true;
+    }
+  } catch { /* stockage bloqué */ }
+  return false;
+}
+
+function lireInstantane(): User | null {
+  try {
+    if (!jetonPresent()) return null;
+    const u = JSON.parse(localStorage.getItem(CLE_INSTANTANE) ?? "null") as User | null;
+    return u && typeof u.id === "string" && typeof u.pseudo === "string" ? u : null;
+  } catch { return null; }
+}
+
+function oublierInstantane(): void {
+  try { localStorage.removeItem(CLE_INSTANTANE); } catch { /* ignore */ }
+}
+
+/* Même contenu, même objet : beaucoup d'écrans relisent la base quand
+   `user` change d'identité, et le compte instantané puis le compte relu
+   sont le plus souvent identiques. */
+const memeCompte = (a: User | null, b: User | null) =>
+  a === b || (!!a && !!b && JSON.stringify(a) === JSON.stringify(b));
+
 function mapUser(sbUser: SBUser, profile?: { pseudo?: string; avatar_url?: string; is_admin?: boolean; is_certified?: boolean; is_premium?: boolean } | null): User {
   const m = sbUser.user_metadata ?? {};
   return {
@@ -68,9 +112,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const initialized = useRef(false);
 
   // Enrichit l'utilisateur avec le pseudo/avatar depuis la table profiles (non-bloquant)
+  const poserUser = (suivant: User | null) => setUser((prev) => (memeCompte(prev, suivant) ? prev : suivant));
+
   const enrichUser = (sbUser: SBUser) => {
-    // D'abord on set avec les metadata (immédiat, sans attendre la DB)
-    setUser(mapUser(sbUser));
+    // D'abord on set avec les metadata (immédiat, sans attendre la DB).
+    // Le même compte déjà affiché garde son pseudo, sa photo et ses droits
+    // le temps que la base réponde : sinon le pseudo clignote.
+    setUser((prev) => {
+      const base = mapUser(sbUser);
+      const suivant = prev && prev.id === base.id
+        ? { ...base, pseudo: prev.pseudo, avatar: prev.avatar, is_admin: prev.is_admin, is_certified: prev.is_certified, is_premium: prev.is_premium }
+        : base;
+      return memeCompte(prev, suivant) ? prev : suivant;
+    });
     // Ce qu'on ne mange pas suit le compte : un appareil neuf le retrouve ici.
     hydraterRegimes(sbUser.id, sbUser.user_metadata?.aliments_exclus);
     // Puis on fetch le profil DB et on met à jour (async, non-bloquant)
@@ -102,10 +156,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       {
         if (data && data.pseudo && String(data.pseudo).trim()) {
-          setUser(mapUser(sbUser, data));
+          poserUser(mapUser(sbUser, data));
         } else {
           // Profil manquant OU pseudo vide (compte Google) → création / réparation
-          if (data) setUser(mapUser(sbUser, data)); // affichage immédiat avec ce qu'on a
+          if (data) poserUser(mapUser(sbUser, data)); // affichage immédiat avec ce qu'on a
           // `fetchAuth` pose le jeton : la route identifie le compte par là,
           // elle n'accepte plus d'identifiant venu du client.
           void fetchAuth("/api/me/ensure-profile", {
@@ -118,7 +172,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               avatar_url: (sbUser.user_metadata?.avatar_url as string | undefined) ?? null,
             }),
           }).then((r) => r.json()).then((res) => {
-            if (res?.profile) setUser(mapUser(sbUser, res.profile));
+            if (res?.profile) poserUser(mapUser(sbUser, res.profile));
           }).catch(() => {});
         }
       }
@@ -126,10 +180,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
+    // Le dernier compte connu, tout de suite (voir `CLE_INSTANTANE`).
+    // (Dans une micro-tâche : après l'hydratation, avant la première image.)
+    const instantane = lireInstantane();
+    if (instantane) {
+      void Promise.resolve().then(() => {
+        if (!initialized.current) { setUser((prev) => prev ?? instantane); setIsLoading(false); }
+      });
+    }
+
+    supabase.auth.getSession().then(({ data, error }) => {
       if (data.session) {
         setSession(data.session);
         enrichUser(data.session.user);
+      } else if (!error) {
+        // Plus de session : le compte affiché d'avance n'était plus valable.
+        oublierInstantane();
+        setUser(null);
       }
       setIsLoading(false);
       initialized.current = true;
@@ -160,6 +227,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setSession(null);
         setUser(null);
         setJustLoggedIn(false);
+        if (event === "SIGNED_OUT") {
+          // Rien de ce compte ne reste affichable sur l'appareil.
+          oublierInstantane();
+          effacerMemoire();
+        }
       }
       if (!initialized.current) {
         setIsLoading(false);
@@ -268,6 +340,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
      photo quand on retapera son email ou son pseudo (voir comptesConnus). */
   useEffect(() => {
     if (user) retenirCompte({ email: user.email, pseudo: user.pseudo, avatar: user.avatar });
+    // Le compte affiché, pour la prochaine ouverture (voir `CLE_INSTANTANE`).
+    if (user) { try { localStorage.setItem(CLE_INSTANTANE, JSON.stringify(user)); } catch { /* ignore */ } }
   }, [user]);
 
   return (
