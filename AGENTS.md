@@ -101,6 +101,17 @@ zéro. Aucun SQL.
 
 ## Boosters : page de fin, album et collectionneurs, CODÉS — 2026-11-18
 
+### Invitation d'installation après l'inscription — 2026-11-18
+
+Louis demande un petit message pour ajouter Vaiiya à l'écran d'accueil du
+téléphone. L'étape `installer`, à la fin des premiers pas (visite terminée ou
+passée), montre « Ajouter Vaiiya » / « Plus tard » sur Android et iOS, même
+sans `beforeinstallprompt`. Sur iPhone/iPad : instructions Safari ; sans
+invitation native Android : instructions du menu du navigateur. Le choix
+réel de `userChoice` est respecté, y compris un refus. Pas de nouvelle demande
+après un choix sur cet appareil (`vaiiya_installation_proposee`), ni en mode
+standalone, ni sur ordinateur. L'iPad avec agent utilisateur de Mac est reconnu.
+
 ### Administration : heures des boosters et notifications — 2026-11-18
 
 Maquette validée par Louis, puis demande d'intégration. Onglet « Suivi » dans

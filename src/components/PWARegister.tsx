@@ -4,7 +4,10 @@ import { useEffect } from "react";
 
 /** L'invitation d'installation du navigateur. Elle n'arrive qu'une fois, tôt,
  *  et les premiers pas la rejouent bien plus tard : on la garde de côté. */
-export type InviteInstallation = { prompt: () => Promise<void> };
+export type InviteInstallation = {
+  prompt: () => Promise<unknown>;
+  userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
+};
 
 declare global {
   interface Window { __vaiiyaInstallation?: InviteInstallation | null }
@@ -18,7 +21,15 @@ export default function PWARegister() {
       window.__vaiiyaInstallation = e as unknown as InviteInstallation;
     };
     window.addEventListener("beforeinstallprompt", garder);
-    return () => window.removeEventListener("beforeinstallprompt", garder);
+    const installee = () => {
+      window.__vaiiyaInstallation = null;
+      try { localStorage.setItem("vaiiya_installation_proposee", "oui"); } catch { /* stockage indisponible */ }
+    };
+    window.addEventListener("appinstalled", installee);
+    return () => {
+      window.removeEventListener("beforeinstallprompt", garder);
+      window.removeEventListener("appinstalled", installee);
+    };
   }, []);
 
   useEffect(() => {

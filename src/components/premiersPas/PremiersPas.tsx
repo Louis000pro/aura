@@ -168,10 +168,13 @@ export default function PremiersPas() {
       peutInstaller: () => !!window.__vaiiyaInstallation,
       installer: async () => {
         const invite = window.__vaiiyaInstallation;
-        if (!invite) return false;
+        if (!invite) return "indisponible";
         window.__vaiiyaInstallation = null;
-        await invite.prompt();
-        return true;
+        try {
+          await invite.prompt();
+          const choix = await invite.userChoice;
+          return choix?.outcome === "accepted" ? "acceptee" : "refusee";
+        } catch { return "indisponible"; }
       },
       terminer: () => {
         const id = f().user?.id;
