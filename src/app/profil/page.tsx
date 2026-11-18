@@ -1226,7 +1226,7 @@ export default function ProfilPage() {
                 {amis.map((ami) => (
                   <Link key={ami.id} href={`/profil/${ami.pseudo}`} className="flex flex-col items-center gap-2">
                     <div className="w-14 h-14 rounded-full overflow-hidden flex items-center justify-center text-[20px] font-bold"
-                      style={{ background: ami.avatar_url ? "transparent" : "linear-gradient(135deg,var(--violet-mid),var(--cream-mid))", color: "var(--text-1)", border: "2px solid rgba(var(--surface-rgb),1)" }}>
+                      style={{ background: ami.avatar_url ? "transparent" : "linear-gradient(135deg,#8B5CF6,#C13BC1)", color: "#fff", border: "2px solid rgba(var(--surface-rgb),1)" }}>
                       {ami.avatar_url
                         // eslint-disable-next-line @next/next/no-img-element
                         ? <img loading="lazy" decoding="async" src={ami.avatar_url} alt={ami.pseudo} className="w-full h-full object-cover" />
