@@ -13,6 +13,7 @@
    sous une ligne calculée (`--ligne`, `--ligne-b`, `--ligne-t`). */
 
 import { voix, type CleVoix, type ContexteVoix, type GuideId } from "@/lib/guides";
+import { melangerAudio } from "@/lib/sessionAudio";
 import { DONNEES as D } from "@/lib/premiersPas/donnees";
 import { etatVide, garderParcours, type Aliment, type EtatParcours } from "@/lib/premiersPas/reponses";
 
@@ -1206,6 +1207,7 @@ let audio: AudioContext | null = null;
 const contexte = () => {
   if (reduit) return null;
   try {
+    melangerAudio();
     audio = audio || new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
     if (audio.state === "suspended") audio.resume();
     return audio;

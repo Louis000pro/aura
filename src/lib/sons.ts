@@ -12,12 +12,15 @@
  * bande passante (l'egress a déjà explosé une fois).
  *
  * ⚠️ iOS NE JOUE RIEN TANT QU'UN GESTE N'A PAS RÉVEILLÉ L'AUDIO. Le premier
- * toucher sur la page réveille le contexte (`amorcer`), sinon le premier
- * 3-2-1, qui part d'un minuteur et pas d'un geste, serait muet.
+ * toucher réveille le contexte seulement si le navigateur permet le mélange
+ * avec la musique extérieure. Sinon, attendre un véritable son plutôt que
+ * prendre la main sur Spotify dès la navigation.
  *
  * Coupable dans Paramètres → Sons. La préférence vit sur l'appareil
  * (comme le thème) : c'est un réglage de l'appareil, pas du compte.
  */
+
+import { melangerAudio } from "./sessionAudio";
 
 export type Son = "tic" | "go" | "finEffort" | "finRepos";
 
@@ -45,6 +48,7 @@ export function contexteAudio(): AudioContext | null {
 
 function contexte(): AudioContext | null {
   if (typeof window === "undefined") return null;
+  melangerAudio();
   if (!ctx) {
     const C = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
     if (!C) return null;
@@ -57,7 +61,9 @@ function contexte(): AudioContext | null {
 /* Le premier geste réveille l'audio, une seule fois. */
 if (typeof window !== "undefined") {
   const amorcer = () => {
-    contexte();
+    // Sans mélange explicite, un contexte même silencieux peut couper Spotify
+    // sur iPhone. Dans ce cas, attendre un véritable son, pas la navigation.
+    if (sonsActifs() && melangerAudio()) contexte();
     window.removeEventListener("pointerdown", amorcer);
     window.removeEventListener("keydown", amorcer);
   };
