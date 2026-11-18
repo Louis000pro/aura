@@ -84,6 +84,9 @@
   background:url(/marque/marque-blanc.png) center/contain no-repeat;
   filter:drop-shadow(0 3px 6px #5b2bb08c);
 }
+/* La chromatique a son dos doré (scripts/build-fond-chromatique.mjs). */
+.scene[data-rarete="chromatique"] .dos { background:url(/boosters/dos-chromatique.webp) center/100% 100%; }
+.scene[data-rarete="chromatique"] .dos::before,.scene[data-rarete="chromatique"] .dos::after { content:none; }
 .reflet {
   position:absolute;
   inset:-20% -80%;

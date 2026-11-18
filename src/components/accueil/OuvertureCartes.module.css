@@ -157,6 +157,17 @@
   transform:translate3d(-70%,0,0);
 }
 .carte[data-on] .dos i { animation:eclat 3s ease-in-out infinite; }
+/* Le dos doré de la chromatique (scripts/build-fond-chromatique.mjs), qui monte pendant l'attente. */
+.dos b {
+  position:absolute;
+  inset:0;
+  opacity:0;
+  background:url(/boosters/dos-chromatique.webp) center/100% 100%;
+  transition:opacity .7s ease-in;
+}
+.dos::before,.dos::after { transition:opacity .5s ease-in; }
+.carte[data-dore] .dos b { opacity:1; }
+.carte[data-dore] .dos::before,.carte[data-dore] .dos::after { opacity:0; }
 @keyframes eclat { 0%,30% { transform:translate3d(-70%,0,0); } 80%,100% { transform:translate3d(70%,0,0); } }
 .balai {
   position:absolute;

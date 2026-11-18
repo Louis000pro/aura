@@ -174,6 +174,9 @@ export default function OuvertureCartes({ cartes, images, libelles, exp, nouvell
         window.setTimeout(() => { if (vivant) setSombre(true); }, d * .5);
       }
       {
+        // Une chromatique se trahit par son dos, qui passe à l'or pendant l'attente (jamais avant :
+        // les trois cartes sortent du sachet avec le même dos).
+        if (cartes[i].rarete === "chromatique") els[i].dataset.dore = "";
         // La lueur monte autour de la carte encore de dos, et elle respire avant le retournement.
         joue(morceau(i, styles.aura), [
           { opacity: 0, transform: "scale(.86)" }, { opacity: .55, transform: "scale(.98)", offset: .45 },
@@ -396,7 +399,7 @@ export default function OuvertureCartes({ cartes, images, libelles, exp, nouvell
           <div className={styles.aura} />
           <div className={styles.tilt}>
             <div className={styles.int}>
-              <div className={styles.dos}><i /></div>
+              <div className={styles.dos}><b /><i /></div>
               <div className={styles.face}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={images[i]} alt="" draggable={false} />
