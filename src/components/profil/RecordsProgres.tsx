@@ -15,15 +15,16 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AnimatePresence } from "framer-motion";
-import { ChevronRight, Share2, X } from "lucide-react";
+import { ChevronRight, Plus, Share2, X } from "lucide-react";
 import ExerciseThumb from "@/components/seance/ExerciseThumb";
 import ExerciseDetailSheet from "@/components/seance/ExerciseDetailSheet";
 import Sheet from "@/components/communaute/Sheet";
+import AjoutRecord from "@/components/profil/AjoutRecord";
 import { useAuth } from "@/context/AuthContext";
 import { partagerAfficheRecord } from "@/lib/recordShareExport";
 import { trouverExercice } from "@/lib/exerciseLibrary";
 import {
-  lireRecords, valeurRecord, uniteRecord, texteRecord, dateRecord, dateCourte, phraseChemin,
+  lireRecords, retirerRecordManuel, valeurRecord, uniteRecord, texteRecord, dateRecord, dateCourte, phraseChemin,
   type RecordMouvement,
 } from "@/lib/records";
 
@@ -48,15 +49,31 @@ export default function RecordsProgres({ userId }: { userId: string }) {
   const [records, setRecords] = useState<{ pour: string; liste: RecordMouvement[] | null } | null>(null);
   const [ouvert, setOuvert] = useState<RecordMouvement | null>(null);
   const [tout, setTout] = useState(false);
+  const [ajout, setAjout] = useState(false);
+  /* Relire les records après un ajout ou un retrait. */
+  const [version, setVersion] = useState(0);
 
   useEffect(() => {
     let vivant = true;
     void lireRecords(userId).then((liste) => { if (vivant) setRecords({ pour: userId, liste }); });
     return () => { vivant = false; };
-  }, [userId]);
+  }, [userId, version]);
 
   const liste = records?.pour === userId ? records.liste : undefined;
   if (liste === undefined || liste === null) return null;
+
+  const feuilleAjout = ajout && (
+    <AjoutRecord userId={userId} records={liste} onFermer={() => setAjout(false)}
+      onAjoute={() => { setAjout(false); setVersion((v) => v + 1); }} />
+  );
+  /* L'action est secondaire : du texte violet, sans surface propre. */
+  const boutonAjout = (
+    <button type="button" onClick={() => setAjout(true)}
+      className="-mr-1 flex min-h-[40px] items-center gap-1 px-1 text-[13px] font-semibold cursor-pointer"
+      style={{ color: "var(--exp-encre)" }}>
+      <Plus size={16} strokeWidth={2.4} /> Ajouter un record
+    </button>
+  );
 
   if (liste.length === 0) {
     return (
@@ -71,7 +88,7 @@ export default function RecordsProgres({ userId }: { userId: string }) {
             <div className="min-w-0">
               <p className="text-[16px] font-semibold" style={{ color: "var(--text-0)" }}>Ton premier record t’attend</p>
               <p className="mt-1 text-[13px] leading-snug" style={{ color: "var(--text-2)" }}>
-                Pendant une séance, note tes répétitions ou ta charge quand on te les demande : le meilleur chiffre de chaque mouvement devient ton record.
+                Ajoute un chiffre que tu connais déjà, ou note tes répétitions et ta charge pendant une séance : le meilleur de chaque mouvement devient ton record.
               </p>
             </div>
           </div>
@@ -80,15 +97,22 @@ export default function RecordsProgres({ userId }: { userId: string }) {
             <span><b className="font-semibold">Charge</b> : le plus lourd, au même nombre de répétitions.</span>
             <span><b className="font-semibold">Gainage</b> : le plus long, au chrono.</span>
           </div>
-          <button type="button" onClick={() => router.push("/progression")}
-            className="min-h-[48px] rounded-2xl text-[16px] font-semibold text-white cursor-pointer"
-            style={{ background: DEGRADE }}>
-            Lancer une séance
-          </button>
+          <div className="flex flex-col gap-1">
+            <button type="button" onClick={() => setAjout(true)}
+              className="flex min-h-[48px] items-center justify-center gap-2 rounded-2xl text-[16px] font-semibold text-white cursor-pointer"
+              style={{ background: DEGRADE }}>
+              <Plus size={18} strokeWidth={2.4} /> Ajouter un record
+            </button>
+            <button type="button" onClick={() => router.push("/progression")}
+              className="min-h-[44px] text-[16px] font-medium cursor-pointer" style={{ color: "var(--text-2)" }}>
+              Lancer une séance
+            </button>
+          </div>
         </div>
         <p className="mt-3 text-[13px] leading-relaxed" style={{ color: "var(--text-2)" }}>
           Tes records ne se comparent à ceux de personne. Ils ne rapportent pas d’EXP : ce sont les tiens, c’est tout.
         </p>
+        {feuilleAjout}
       </section>
     );
   }
@@ -100,9 +124,11 @@ export default function RecordsProgres({ userId }: { userId: string }) {
 
   return (
     <section className="mb-6">
-      <div className="mb-3 flex items-baseline justify-between">
-        <h2 className="vy-sous">Tes records</h2>
-        <span className="vy-nombre text-[13px]" style={{ color: "var(--text-2)" }}>{liste.length}</span>
+      <div className="mb-3 flex items-center justify-between">
+        <h2 className="vy-sous">
+          Tes records <span className="vy-nombre ml-1 text-[13px] font-normal" style={{ color: "var(--text-2)" }}>{liste.length}</span>
+        </h2>
+        {boutonAjout}
       </div>
 
       {/* Le héros : le dernier record battu. */}
@@ -166,13 +192,22 @@ export default function RecordsProgres({ userId }: { userId: string }) {
         </div>
       )}
 
-      {ouvert && <FicheRecord record={ouvert} onFermer={() => setOuvert(null)} />}
+      {ouvert && (
+        <FicheRecord record={ouvert} onFermer={() => setOuvert(null)}
+          onRetire={() => { setOuvert(null); setVersion((v) => v + 1); }} />
+      )}
+      {feuilleAjout}
     </section>
   );
 }
 
 /** La fiche d'un record : le chiffre, l'escalier de ses marches, le chemin. */
-export function FicheRecord({ record: r, onFermer }: { record: RecordMouvement; onFermer: () => void }) {
+export function FicheRecord({ record: r, onFermer, onRetire }: {
+  record: RecordMouvement;
+  onFermer: () => void;
+  /** Donné seulement là où on peut retirer une valeur ajoutée à la main. */
+  onRetire?: () => void;
+}) {
   const [mouvement, setMouvement] = useState(false);
   const exo = trouverExercice(r.nom);
   const marches = r.marches.slice(-5);
@@ -183,6 +218,16 @@ export function FicheRecord({ record: r, onFermer }: { record: RecordMouvement; 
 
   const { user } = useAuth();
   const [envoi, setEnvoi] = useState(false);
+  const [retrait, setRetrait] = useState<"repos" | "confirmer" | "envoi" | "rate">("repos");
+  /* Seule une valeur ajoutée à la main se retire : une séance se supprime
+     depuis son affiche, et ses séries partent avec elle. */
+  const idManuel = onRetire ? r.meilleur.manuel : undefined;
+  const retirer = async () => {
+    if (!idManuel || retrait === "envoi") return;
+    setRetrait("envoi");
+    const ok = await retirerRecordManuel(idManuel);
+    if (ok) onRetire?.(); else setRetrait("rate");
+  };
   /* L'affiche du record (`recordShareExport`) : le chiffre, ce qu'il y
      avait avant, l'escalier. Le texte seul ne reste qu'en dernier recours. */
   const partager = async () => {
@@ -267,6 +312,19 @@ export function FicheRecord({ record: r, onFermer }: { record: RecordMouvement; 
                 className="min-h-[44px] text-[16px] font-medium cursor-pointer" style={{ color: "var(--text-2)" }}>
                 Voir le mouvement
               </button>
+            )}
+            {idManuel && (
+              retrait === "repos" ? (
+                <button type="button" onClick={() => setRetrait("confirmer")}
+                  className="min-h-[44px] text-[13px] font-medium cursor-pointer" style={{ color: "var(--text-3)" }}>
+                  Retirer ce chiffre ajouté à la main
+                </button>
+              ) : (
+                <button type="button" onClick={retirer}
+                  className="min-h-[44px] text-[13px] font-semibold cursor-pointer" style={{ color: "#E5484D" }}>
+                  {retrait === "envoi" ? "Un instant…" : retrait === "rate" ? "Ça n’a pas marché, réessayer" : "Toucher encore pour retirer"}
+                </button>
+              )
             )}
           </div>
         </div>

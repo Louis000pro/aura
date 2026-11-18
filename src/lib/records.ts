@@ -31,12 +31,14 @@ export type LigneRecord = {
   charge: number | null;
   /** ISO. */
   quand: string;
+  /** L'identifiant d'une valeur ajoutée à la main (`records_manuels`). */
+  manuel?: string;
 };
 
 /** Une performance : la valeur principale, et les répétitions pour une charge. */
 export type Perf = { valeur: number; reps: number | null };
 
-export type Marche = Perf & { quand: string };
+export type Marche = Perf & { quand: string; manuel?: string };
 
 export type RecordMouvement = {
   cle: string;
@@ -97,7 +99,7 @@ export function recordsDepuisLignes(lignes: LigneRecord[]): RecordMouvement[] {
       const p = perfDe(mesure, l);
       if (!p) continue;
       const deja = parSeance.get(l.seance);
-      if (!deja || depasse(mesure, p, deja)) parSeance.set(l.seance, { ...p, quand: l.quand });
+      if (!deja || depasse(mesure, p, deja)) parSeance.set(l.seance, { ...p, quand: l.quand, ...(l.manuel ? { manuel: l.manuel } : {}) });
     }
     const chrono = [...parSeance.values()].sort((a, b) => a.quand.localeCompare(b.quand));
     if (chrono.length === 0) continue;
@@ -109,7 +111,9 @@ export function recordsDepuisLignes(lignes: LigneRecord[]): RecordMouvement[] {
     const plusRecente = [...ls].sort((a, b) => b.quand.localeCompare(a.quand))[0];
     sortie.push({
       cle, nom: plusRecente.nom, mesure,
-      meilleur: marches[marches.length - 1], marches, seances: chrono.length,
+      meilleur: marches[marches.length - 1], marches,
+      /* Une valeur ajoutée à la main n'est pas une séance. */
+      seances: chrono.filter((m) => !m.manuel).length,
     });
   }
   return sortie.sort((a, b) => b.meilleur.quand.localeCompare(a.meilleur.quand));
@@ -185,19 +189,19 @@ export function phraseChemin(r: RecordMouvement): string | null {
   if (r.marches.length < 2) return null;
   const premiere = r.marches[0];
   const quand = dateRecord(premiere.quand);
-  const seances = `en ${r.seances} séance${r.seances > 1 ? "s" : ""}`;
+  const seances = r.seances > 0 ? `, en ${r.seances} séance${r.seances > 1 ? "s" : ""}` : "";
   if (r.mesure === "charge") {
     const ecart = r.meilleur.valeur - premiere.valeur;
-    if (ecart > 0) return `${nombreFr(ecart)} kg de plus qu’au ${quand}, ${seances}.`;
+    if (ecart > 0) return `${nombreFr(ecart)} kg de plus qu’au ${quand}${seances}.`;
     const reps = (r.meilleur.reps ?? 0) - (premiere.reps ?? 0);
-    return `${reps} répétition${reps > 1 ? "s" : ""} de plus à la même charge qu’au ${quand}, ${seances}.`;
+    return `${reps} répétition${reps > 1 ? "s" : ""} de plus à la même charge qu’au ${quand}${seances}.`;
   }
   if (r.mesure === "duree") {
     const ecart = Math.round(r.meilleur.valeur - premiere.valeur);
-    return `${ecart} secondes de plus qu’au ${quand}, ${seances}.`;
+    return `${ecart} secondes de plus qu’au ${quand}${seances}.`;
   }
   const ecart = r.meilleur.valeur - premiere.valeur;
-  return `${ecart} répétition${ecart > 1 ? "s" : ""} de plus qu’au ${quand}, ${seances}.`;
+  return `${ecart} répétition${ecart > 1 ? "s" : ""} de plus qu’au ${quand}${seances}.`;
 }
 
 /** L'écart affiché sur la carte de fin : « +1 », « +2,5 ». */
@@ -228,7 +232,7 @@ export async function lireRecords(userId: string, cles?: string[], client?: Clie
     if (cles && cles.length > 0) q = q.in("exercice_cle", [...new Set(cles)]);
     const { data, error } = await q;
     if (error) { console.warn("[records] illisibles :", error.message); return null; }
-    const lignes: LigneRecord[] = (data ?? []).map((r) => ({
+    const journal: LigneRecord[] = (data ?? []).map((r) => ({
       seance: String(r.workout_session_id),
       cle: (r.exercice_cle ?? null) as string | null,
       nom: String(r.exercice_nom ?? ""),
@@ -238,9 +242,100 @@ export async function lireRecords(userId: string, cles?: string[], client?: Clie
       charge: r.charge == null ? null : Number(r.charge),
       quand: String(r.created_at),
     }));
-    return recordsDepuisLignes(lignes);
+    const manuels = await lireRecordsManuels(supabase, userId, cles);
+    return recordsDepuisLignes([...journal, ...manuels]);
   } catch (e) {
     console.warn("[records] illisibles :", e);
     return null;
+  }
+}
+
+/* ── Les records ajoutés à la main (`records_manuels`) ─────────── */
+
+type LigneManuelle = {
+  id: string; exercice_cle: string | null; exercice_nom: string;
+  mesure: MesureRecord; valeur: number | string; reps: number | null; fait_le: string;
+};
+
+/** Une valeur ajoutée à la main, écrite comme une ligne du journal. */
+export function ligneDepuisManuel(m: LigneManuelle): LigneRecord {
+  const valeur = Number(m.valeur);
+  return {
+    seance: `manuel:${m.id}`,
+    cle: m.exercice_cle ?? null,
+    nom: String(m.exercice_nom ?? ""),
+    mesure: m.mesure === "duree" ? "duree" : "reps",
+    reps: m.mesure === "reps" ? valeur : m.mesure === "charge" ? (m.reps ?? null) : null,
+    dureeS: m.mesure === "duree" ? valeur : null,
+    charge: m.mesure === "charge" ? valeur : null,
+    quand: String(m.fait_le),
+    manuel: String(m.id),
+  };
+}
+
+/**
+ * Les valeurs ajoutées à la main. Une lecture ratée (table pas encore
+ * créée, réseau) rend une liste vide : le journal suffit à lui seul.
+ */
+async function lireRecordsManuels(supabase: ClientLike, userId: string, cles?: string[]): Promise<LigneRecord[]> {
+  try {
+    let q = supabase
+      .from("records_manuels")
+      .select("id, exercice_cle, exercice_nom, mesure, valeur, reps, fait_le")
+      .eq("user_id", userId)
+      .order("fait_le", { ascending: true })
+      .limit(2000);
+    if (cles && cles.length > 0) q = q.in("exercice_cle", [...new Set(cles)]);
+    const { data, error } = await q;
+    if (error) return [];
+    return ((data ?? []) as LigneManuelle[]).map(ligneDepuisManuel);
+  } catch {
+    return [];
+  }
+}
+
+export type NouveauRecord = {
+  cle: string | null;
+  nom: string;
+  mesure: MesureRecord;
+  /** Répétitions, kilos ou secondes. */
+  valeur: number;
+  /** Les répétitions à cette charge (mesure « charge »). */
+  reps: number | null;
+  /** ISO. */
+  quand: string;
+};
+
+/** Ajoute un record à la main. Rend un message d'échec, ou `null` si c'est gardé. */
+export async function ajouterRecordManuel(userId: string, r: NouveauRecord, client?: ClientLike): Promise<string | null> {
+  try {
+    const supabase = client ?? createClient();
+    const { error } = await supabase.from("records_manuels").insert({
+      user_id: userId,
+      exercice_cle: r.cle,
+      exercice_nom: r.nom.trim().slice(0, 80),
+      mesure: r.mesure,
+      valeur: r.valeur,
+      reps: r.mesure === "charge" ? r.reps : null,
+      fait_le: r.quand,
+    });
+    if (error) {
+      console.warn("[records] ajout refusé :", error.message);
+      return "Le record n’a pas pu être enregistré. Réessaie dans un instant.";
+    }
+    return null;
+  } catch {
+    return "Le record n’a pas pu être enregistré. Vérifie ta connexion.";
+  }
+}
+
+/** Retire une valeur ajoutée à la main. `true` si c'est fait. */
+export async function retirerRecordManuel(id: string, client?: ClientLike): Promise<boolean> {
+  try {
+    const supabase = client ?? createClient();
+    const { error } = await supabase.from("records_manuels").delete().eq("id", id);
+    return !error;
+  } catch {
+    return false;
   }
 }

@@ -56,6 +56,19 @@ fonctionnalités ; ce document est la source de vérité de ce qu'on en dit deho
 - **Auth = Supabase, et rien d'autre.** Google passe par `supabase.auth.signInWithOAuth({ provider: "google" })` dans `AuthContext`, et les codes de confirmation par `/api/auth/send-otp` + `/api/auth/verify-otp` (envoi Resend, jeton scellé en HMAC avec `AUTH_SECRET`). `next-auth` figurait dans `package.json` sans être importé nulle part : retiré le 2026-08-11, **ne pas le réinstaller** en croyant réparer quelque chose. Plus Stripe et web-push. **L'app est auth-gated : non testable en local.** Vérification standard = `npx tsc --noEmit` + build qui passe ; la validation visuelle, c'est Louis sur Vercel.
 - Secrets : `.env.local` (`AUTH_SECRET`, `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`, `COACH_AURA_KEY`) — à demander à Louis, jamais commité.
 
+## Records ajoutés à la main — 2026-11-18
+
+Louis : « on ne sait pas comment ajouter des progrès ». Profil › Progrès,
+« Tes records » a un bouton « Ajouter un record » (`AjoutRecord.tsx`) :
+choisir le mouvement (bibliothèque ou nom libre), la mesure (répétitions,
+charge avec répétitions facultatives, durée) et le jour. Les valeurs vivent
+dans `records_manuels` (`20261118_records_manuels.sql`, RLS sur ses lignes) et
+`lireRecords` les mélange au journal des séries : une séance qui dépasse un
+record ajouté à la main le fête. Une note, pas une séance : ni EXP, ni flamme,
+ni quête. La fiche d'un record permet de retirer le meilleur chiffre s'il a
+été ajouté à la main. Si la table n'existe pas, la lecture l'ignore et l'ajout
+affiche un message d'échec.
+
 ## Chargement de l’accueil — décision du 2026-11-18
 
 Les emplacements du Guide, du héros, des statistiques, du booster et des quêtes
