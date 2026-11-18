@@ -29,6 +29,7 @@ const ECRANS_APP = [
   "/nutrition",
   "/communaute",
   "/profil",
+  "/parrainage",
   "/parametres",
   "/notifications",
   "/defi",

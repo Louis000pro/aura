@@ -1210,6 +1210,9 @@ export default function ProfilPage() {
             transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
             className="px-5 md:px-8 max-w-3xl mx-auto"
           >
+            <Link href="/parrainage" className="block mb-5 rounded-2xl border p-4" style={{ borderColor: "var(--verre-carte-bord)", color: "var(--accent)", background: "var(--verre-carte)" }}>
+              <strong>Inviter un ami · gagner des boosters ↗</strong>
+            </Link>
             {amis === null ? (
               <div className="flex justify-center py-16">
                 <motion.div className="w-6 h-6 rounded-full border-2"

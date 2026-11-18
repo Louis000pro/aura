@@ -115,6 +115,34 @@ zéro. Aucun SQL.
 
 ## Boosters : page de fin, album et collectionneurs, CODÉS — 2026-11-18
 
+### Parrainage — maquette validée, lancement le 19 novembre 2026
+
+Louis valide l'annonce « Invite un ami. Gagne des boosters. » sans la barre
+dégradée décorative du bas. Paliers cumulés : 1 ami = 3, 2 = 6, 3 = 10, puis
+3 de plus par nouvel ami (bonus unique de 1 au troisième). Annonce d'accueil
+à partir du 19/11 à 00 h, Europe/Paris, après activation SQL ; une fois par
+compte/appareil. Lien permanent : Profil → Amis → Inviter un ami, `/parrainage`.
+Images du coach choisi, partage natif ou copie du lien personnel.
+
+Migration `20261119_parrainage.sql` à appliquer séparément dans Supabase (pas
+d'accès utilisable pour cet agent). Sans elle, pas d'annonce ni de promesse
+de récompense ; l'ouverture habituelle reste compatible avec la v4.
+Invitation `/invitation/[code]` → premiers pas, cookie HTTP-only signé (7 j,
+premier lien conservé, survit à Google). Validation serveur après vérification
+de l'e-mail et complétion du profil : aucun ancien compte ni auto-parrainage.
+Unique filleul et empreinte d'e-mail : une recréation de compte ne redonne pas
+de gain ; les crédits du parrain survivent à la suppression du filleul.
+
+La réserve bonus est séparée du plafond habituel de 3. `ouvrir_booster_exercices_v5`
+consomme d'abord un bonus et garde les cartes/EXP dans la même transaction et
+les mêmes tables que les boosters habituels. Un identifiant d'ouverture rejoué
+ne consomme rien de plus. `reserve_booster` et le cron ignorent les ouvertures
+bonus pour la recharge de 3 heures. Ces cartes comptent dans la collection et
+son classement ; les essais administrateur restent exclus.
+Tests : `npm run check:parrainage` (API, cookie, PostgreSQL isolé, gains,
+recréation, réserve, EXP, permissions, cron). Rendu réel vérifié à 320/390 px
+avec Nora/Sacha ; annonce inactive avant lancement et fermeture vérifiée.
+
 ### Invitation d'installation après l'inscription — 2026-11-18
 
 Louis demande un petit message pour ajouter Vaiiya à l'écran d'accueil du

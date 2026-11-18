@@ -12,6 +12,18 @@ import { iconeGuide, pousserA } from "@/lib/pushServeur";
 
 const TROIS_H = 3 * 3600_000;
 
+async function ouverturesBonus(admin: ReturnType<typeof createAdminClient>, ids: string[]) {
+  const cles = new Set<string>();
+  for (let debut = 0; ; debut += 500) {
+    const { data, error } = await admin.from("boosters_bonus_ouverts").select("user_id,requete_id")
+      .in("user_id", ids).order("user_id").order("requete_id").range(debut, debut + 499);
+    if (error && ["PGRST205", "42P01"].includes(error.code)) return cles;
+    if (error) throw error;
+    for (const b of data ?? []) cles.add(b.user_id + ":" + b.requete_id);
+    if (!data || data.length < 500) return cles;
+  }
+}
+
 function autorise(req: NextRequest) {
   const cle = process.env.BOOSTER_CRON_KEY;
   if (cle && req.headers.get("x-cron-key") === cle) return true;
@@ -33,11 +45,12 @@ async function traiter(req: NextRequest) {
   const ids = [...new Set((subs ?? []).map(s => s.user_id as string))];
   if (!ids.length) return NextResponse.json({ ok: true, envoyes: 0 });
 
-  const [ouverts, notifies, prefs, profils] = await Promise.all([
-    admin.from("boosters_illimites").select("user_id, ouvert_le").eq("cadence_3h", true).in("user_id", ids),
+  const [ouverts, notifies, prefs, profils, bonus] = await Promise.all([
+    admin.from("boosters_illimites").select("user_id, ouvert_le, requete_id").eq("cadence_3h", true).in("user_id", ids),
     admin.from("boosters_notifies").select("user_id, dernier_envoi").in("user_id", ids),
     preferencesDeLot(admin, ids),
     admin.from("profiles").select("id, guide_id").in("id", ids),
+    ouverturesBonus(admin, ids),
   ]);
   if (ouverts.error || notifies.error) {
     return NextResponse.json({ ok: false, error: (ouverts.error ?? notifies.error)?.message }, { status: 500 });
@@ -45,6 +58,7 @@ async function traiter(req: NextRequest) {
 
   const dernier = new Map<string, number>();
   for (const o of ouverts.data ?? []) {
+    if (bonus.has(o.user_id + ":" + o.requete_id)) continue;
     const t = Date.parse(o.ouvert_le as string);
     if (t > (dernier.get(o.user_id as string) ?? 0)) dernier.set(o.user_id as string, t);
   }
