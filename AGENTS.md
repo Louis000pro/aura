@@ -146,8 +146,10 @@ Tests : `npm run check:admin-suivi` ; rendu vérifié à 320 / 390 / 736 px.
 
 **Correction demandée ensuite par Louis (2026-11-18)** : supprimer le panorama
 des rangs de `cartes/CollectionCartes`. Le classement des collectionneurs ouvre
-sur « Tout Vaiiya », inclut aussi les membres sans carte, et n'est plus limité
-au top 10 : affichage par 50, avec sa propre ligne toujours visible.
+sur « Tout Vaiiya » et inclut aussi les membres sans carte. À la demande de
+Louis, « Tout Vaiiya » affiche les cinq premières lignes, puis « Toi » si tu
+es hors du top 5. L'onglet « Amis » affiche les membres par 50, avec sa propre
+ligne toujours visible.
 `/api/boosters/classement` authentifie l'appelant et calcule les scores côté
 serveur depuis les tables existantes, sans dépendre de la RPC du classement.
 Les points et l'exclusion des essais restent identiques. Les lectures sont

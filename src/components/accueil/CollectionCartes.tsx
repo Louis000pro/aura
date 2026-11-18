@@ -126,7 +126,7 @@ export function Classement({ portee: porteeDepart = "tous" }: { portee?: "amis" 
           </li>;
         })}
       </ol>}
-    {liste && liste.length > limite && <button type="button" className={styles.voirPlus} onClick={() => setLimite(n => n + 50)}>Voir plus de membres</button>}
+    {portee === "amis" && liste && liste.length > limite && <button type="button" className={styles.voirPlus} onClick={() => setLimite(n => n + 50)}>Voir plus de membres</button>}
     <p className={styles.note}>Commune 1 · rare 2 · épique 5 · légendaire 10 · chromatique 25. Les doublons ne comptent pas.</p>
   </div>;
 }
