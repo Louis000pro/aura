@@ -4,15 +4,15 @@
 // quand on la retourne. Lâchée, elle garde son élan puis ralentit. Seul `transform` bouge, sur la carte
 // et sur le reflet, rien d'autre (une opacité ou un mode de fusion dans un objet 3D saccade sur iPhone).
 
-import { useEffect, useRef, type PointerEvent } from "react";
+import { useEffect, useRef, type PointerEvent, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import styles from "./VisionneuseCarte.module.css";
 
-type Props = { src: string; alt: string; rarete: string; nom: string; libelleRarete: string; onFermer: () => void };
+type Props = { src: string; alt: string; rarete: string; nom: string; libelleRarete: string; onFermer: () => void; bas?: ReactNode };
 
 const INCLINAISON_MAX = 75;
 
-export default function VisionneuseCarte({ src, alt, rarete, nom, libelleRarete, onFermer }: Props) {
+export default function VisionneuseCarte({ src, alt, rarete, nom, libelleRarete, onFermer, bas }: Props) {
   const carte = useRef<HTMLDivElement>(null);
   const reflets = useRef<HTMLSpanElement[]>([]);
   const angles = useRef({ x: -8, y: -22 });
@@ -131,6 +131,7 @@ export default function VisionneuseCarte({ src, alt, rarete, nom, libelleRarete,
       </div>
       <p className={styles.legende}><strong>{nom}</strong> · {libelleRarete}<br />
         <small>Fais-la tourner du doigt pour la voir sous tous les angles.</small></p>
+      {bas}
     </div>,
     document.body,
   );

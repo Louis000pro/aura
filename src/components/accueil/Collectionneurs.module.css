@@ -1,0 +1,96 @@
+/* La collection, l'album, le classement et « Qui l'a ». Violet = action et progression, or = rareté. Aucun vert. */
+.bloc {
+  margin:0 0 12px; padding:14px; border:1px solid var(--verre-carte-bord, #ece6f5);
+  border-radius:var(--r-bloc); background:rgb(var(--surface-rgb)); box-shadow:var(--ombre-pose);
+}
+.gros { display:flex; align-items:center; gap:14px; }
+.gros b { display:block; font-size:16px; color:var(--text-0); }
+.gros > div > span { display:block; margin-top:2px; font-size:13px; color:var(--text-1); }
+.anneau { flex:none; display:grid; place-items:center; width:64px; height:64px; border-radius:50%; }
+.anneau > span { display:grid; place-items:center; width:50px; height:50px; border-radius:50%; background:rgb(var(--surface-rgb)); font-size:13px; font-weight:700; color:var(--text-0); white-space:nowrap; }
+.raretes { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:4px; margin-top:12px; text-align:center; font-size:11px; color:var(--text-1); }
+.raretes > div { display:grid; justify-items:center; gap:2px; }
+.raretes b { font-size:16px; color:var(--text-0); }
+.point { display:inline-block; width:8px; height:8px; border-radius:50%; background:#b9b2c6; }
+.point[data-rarete="rare"] { background:#3c87ea; }
+.point[data-rarete="epique"] { background:#9b5cf6; }
+.point[data-rarete="legendaire"] { background:#f5b120; }
+.point[data-rarete="chromatique"] { background:conic-gradient(#ffd34e,#ff9ad5,#9fc8ff,#c9a6ff,#ffd34e); }
+.etiquette { display:flex; justify-content:space-between; align-items:baseline; margin:0 0 10px; font-size:13px; font-weight:800; color:var(--text-0); }
+.etiquette button { border:0; background:none; padding:0; color:var(--exp-encre); font-size:13px; font-weight:700; cursor:pointer; }
+.vitrine, .manquantes { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }
+.manquantes { grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px; }
+.vignette {
+  position:relative; display:block; width:100%; padding:0; border:0; background:none; cursor:pointer;
+  aspect-ratio:820 / 1290; border-radius:9% / 6%; overflow:hidden; box-shadow:0 2px 6px #21153533;
+}
+.vignette img { width:100%; height:100%; object-fit:cover; display:block; }
+.fois {
+  position:absolute; right:3px; bottom:3px; padding:1px 5px; border-radius:20px;
+  background:#221a33; color:#fff; font-size:11px; font-weight:700;
+}
+.onglets, .selecteur {
+  display:grid; grid-auto-flow:column; grid-auto-columns:1fr; gap:4px; margin:0 0 12px; padding:4px;
+  border-radius:var(--r-controle); background:rgb(var(--tint-violet-rgb));
+}
+.onglets button, .selecteur button {
+  min-height:40px; border:0; border-radius:8px; background:none; color:var(--text-1);
+  font-size:13px; font-weight:700; cursor:pointer;
+}
+.onglets button[aria-selected="true"], .selecteur button[aria-selected="true"] {
+  background:rgb(var(--surface-rgb)); color:var(--exp-encre); box-shadow:var(--ombre-pose);
+}
+.albumTete, .ligneAlbum { display:grid; grid-template-columns:minmax(0,1.5fr) repeat(5,minmax(0,1fr)); gap:5px; align-items:center; }
+.albumTete { margin-bottom:6px; text-align:center; font-size:11px; font-weight:800; color:var(--text-1); }
+.album { display:grid; gap:6px; }
+.nomMouvement { font-size:11px; font-weight:700; color:var(--text-0); line-height:1.2; overflow-wrap:anywhere; }
+.vide {
+  display:block; aspect-ratio:820 / 1290; border:1.5px dashed #cdc3dd; border-radius:9% / 6%;
+  background:transparent;
+}
+.classement { margin:0; padding:0; list-style:none; }
+.classement li + li { border-top:1px solid var(--verre-carte-bord, #ece6f5); }
+.classement li[data-coupe] { border-top:1px dashed #cdc3dd; }
+.rangee { display:flex; align-items:center; gap:10px; padding:10px 6px; color:inherit; text-decoration:none; border-radius:10px; }
+.classement li[data-moi] .rangee { background:rgb(var(--tint-violet-rgb)); }
+.rangNum { width:22px; text-align:center; font-size:16px; font-weight:700; color:var(--text-1); }
+.classement li:nth-child(1) .rangNum { color:var(--or-encre); }
+.qui { flex:1; min-width:0; display:grid; gap:2px; font-size:16px; font-weight:700; color:var(--text-0); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.mini { display:flex; gap:8px; font-size:11px; font-weight:600; color:var(--text-1); }
+.mini i { display:inline-flex; align-items:center; gap:3px; font-style:normal; }
+.score { display:grid; justify-items:end; font-size:16px; font-weight:700; color:var(--exp-encre); }
+.score small { font-size:11px; font-weight:600; color:var(--text-1); }
+.note { margin:10px 0 0; font-size:11px; line-height:1.4; color:var(--text-1); }
+.barreDuo { display:grid; grid-template-columns:72px minmax(0,1fr) 32px; align-items:center; gap:8px; margin-top:8px; font-size:13px; color:var(--text-0); }
+.barreDuo > span:first-child { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.barreDuo b { text-align:right; font-size:13px; }
+.piste { height:8px; border-radius:8px; background:#eee8f6; overflow:hidden; }
+.piste i { display:block; height:100%; border-radius:8px; background:linear-gradient(90deg,#8b5cf6,#c13bc1); }
+.barreDuo[data-moi] .piste i { background:#5b3fb8; }
+.visage {
+  flex:none; display:inline-grid; place-items:center; overflow:hidden; border-radius:50%;
+  background:#7c5cfa; color:#fff; font-size:13px; font-weight:800;
+}
+.visage img { width:100%; height:100%; object-fit:cover; }
+.quiLa {
+  margin-top:10px; min-height:44px; padding:8px 18px; border:0; border-radius:30px;
+  background:#ffffff26; color:#fff; font-size:16px; font-weight:800; cursor:pointer;
+}
+/* « Qui l'a » : une feuille du bas, toujours claire, au-dessus de la carte en grand. */
+.voile { position:fixed; inset:0; z-index:150; display:flex; align-items:flex-end; justify-content:center; background:#120a2466; }
+.feuille {
+  position:relative; box-sizing:border-box; width:min(100%,480px); max-height:80dvh; overflow-y:auto;
+  padding:22px 18px calc(22px + env(safe-area-inset-bottom)); border-radius:var(--r-feuille) var(--r-feuille) 0 0;
+  background:#fff; color:#221a33; box-shadow:0 -12px 60px #0003;
+}
+.feuille h3 { margin:0 44px 4px 0; font-size:20px; font-weight:800; }
+.sous { margin:0 0 10px; font-size:13px; color:#6b6280; }
+.croix { position:absolute; right:12px; top:12px; width:40px; height:40px; border:0; border-radius:50%; background:#f3edf8; color:#271841; font-size:20px; cursor:pointer; }
+.puce { display:inline-block; padding:5px 12px; border-radius:20px; background:#fff1c8; color:#633906; font-size:13px; font-weight:700; }
+.gens { margin:12px 0 0; padding:0; list-style:none; }
+.gens li { display:flex; align-items:center; gap:10px; padding:8px 0; font-size:16px; font-weight:700; }
+.gens li + li { border-top:1px solid #f0ebf6; }
+.gens li > span:nth-child(2) { flex:1; display:grid; }
+.gens small { font-size:11px; font-weight:600; color:#6b6280; }
+.gens b { font-size:13px; color:#221a33; }
+.pied { margin:12px 0 0; font-size:13px; color:#6b6280; }

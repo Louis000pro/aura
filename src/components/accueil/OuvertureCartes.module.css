@@ -193,8 +193,8 @@
 .scene:is([data-etat="recap"],[data-etat="recapAnim"],[data-etat="zoom"]) .titre {
   left:12px;
   right:12px;
-  top:calc(72px + env(safe-area-inset-top));
-  font-size:min(8.6vw,2.2rem);
+  top:calc(58px + env(safe-area-inset-top));
+  font-size:34px;
   font-weight:900;
   font-style:italic;
   letter-spacing:-.035em;
@@ -230,17 +230,36 @@
   font-size:.875rem;
   font-weight:600;
 }
+.sousTitre {
+  position:absolute;
+  left:0;
+  right:0;
+  top:calc(104px + env(safe-area-inset-top));
+  margin:0;
+  text-align:center;
+  font-size:13px;
+  font-weight:700;
+  color:#6b6280;
+  visibility:hidden;
+}
+.scene:is([data-etat="recap"],[data-etat="recapAnim"]) .sousTitre { visibility:visible; }
+/* La page de fin est toujours claire (Louis, 2026-11-18) : sous l'éventail, ce qui défile si l'écran est court. */
 .recap {
   position:absolute;
   left:0;
   right:0;
-  top:calc(46% + var(--ch) * .25 + 48px);
+  top:calc(37% + var(--ch) * .23 + 44px);
+  bottom:0;
+  overflow-y:auto;
   display:grid;
+  align-content:start;
   justify-items:center;
   gap:12px;
-  padding:0 16px;
+  padding:0 16px calc(18px + env(safe-area-inset-bottom));
   opacity:0;
+  pointer-events:auto;
 }
+.scene[data-etat="zoom"] .recap { pointer-events:none; }
 .scene:not(:is([data-etat="recap"],[data-etat="recapAnim"])) .recap { visibility:hidden; }
 .recap a,.recap button { pointer-events:auto; }
 .exp {
@@ -255,18 +274,17 @@
 }
 .exp b { font-family:var(--chiffre);font-size:1.75rem;font-weight:600;letter-spacing:-.045em;font-variant-numeric:tabular-nums; }
 .exp span { font-size:.85rem;font-weight:850; }
-.prochain { margin:0;font-size:.8rem;color:#59456e; }
-.prochain b { font-family:var(--chiffre);font-weight:600;letter-spacing:-.04em;font-variant-numeric:tabular-nums; }
 .etiquette {
   position:absolute;
   left:0;
   top:0;
   padding:3px 9px;
   border-radius:20px;
-  background:#2bd4a0;
-  color:#06382a;
-  font-size:.7rem;
-  font-weight:800;
+  background:#221a33;
+  color:#fff;
+  font-family:var(--chiffre);
+  font-size:11px;
+  font-weight:700;
   white-space:nowrap;
   opacity:0;
 }
@@ -283,6 +301,13 @@
   opacity:0;
   text-shadow:0 1px 0 #fff;
 }
+.etiquette[data-neuve] {
+  font-family:inherit;
+  font-weight:800;
+  background:linear-gradient(135deg,#8b5cf6,#c13bc1);
+  box-shadow:0 2px 6px #8b5cf64d;
+}
+.etiquette:empty { display:none; }
 .scene[data-etat="zoom"] :is(.recap,.etiquette) { opacity:0 !important; }
 
 @media (prefers-reduced-motion:reduce) {

@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import Image from "next/image";
 import { useEffect, useRef, useState, type CSSProperties, type PointerEvent } from "react";
 import { MotionConfig, useReducedMotion } from "framer-motion";
@@ -12,8 +11,10 @@ import { mouvements, raretes, type Carte } from "@/lib/cartesBooster";
 import { lireCollectionBoosters } from "@/lib/collectionBoosters";
 import SachetBooster, { MiniSachetBooster, demanderMouvementAppareil } from "./SachetBooster";
 import OuvertureCartes from "./OuvertureCartes";
+import { InfosFin, ActionsFin } from "./FinBooster";
 import { libererCelebration, retenirCelebration } from "@/lib/celebrationRang";
-import VisionneuseCarte from "./VisionneuseCarte";
+import { MaCollection, SaCollection } from "./CollectionCartes";
+import type { CarteDetenue } from "@/lib/collectionBoosters";
 import styles from "./BoosterQuotidien.module.css";
 
 async function demanderEssai(methode: "GET" | "POST", signal?: AbortSignal, requete?: string) {
@@ -230,28 +231,27 @@ function useGuideCartes(userId: string) {
 
 const ordreRarete: Carte["rarete"][] = ["commune", "rare", "epique", "legendaire", "chromatique"];
 const raretesCollection = [...ordreRarete].reverse();
-function GrilleCollectionBoosters({ cartes, guide }: { cartes: Carte[]; guide: GuideId }) {
-  const [enGrand, setEnGrand] = useState<Carte | null>(null);
+function GrilleCollectionBoosters({ cartes, guide, onOuvrir }: { cartes: CarteDetenue[]; guide: GuideId; onOuvrir: (carte: CarteDetenue) => void }) {
   return <>{raretesCollection.map(rarete => {
     const groupe = cartes.filter(carte => carte.rarete === rarete);
     if (!groupe.length) return null;
     return <section key={rarete} className={styles.groupeCollection} aria-labelledby={"collection-" + rarete}>
       <h3 id={"collection-" + rarete}>{raretes[rarete]} <span>{groupe.length}</span></h3>
       <div className={styles.grille}>{groupe.map(carte =>
-        <CarteBooster key={carte.exercice} carte={carte} guide={guide} onOuvrir={() => setEnGrand(carte)} />
+        <div key={carte.exercice} className={styles.carteGrille}>
+          <CarteBooster carte={carte} guide={guide} onOuvrir={() => onOuvrir(carte)} />
+          {carte.n > 1 && <span className={styles.fois}>×{carte.n}</span>}
+        </div>
       )}</div>
     </section>;
   })}
-  {enGrand && <VisionneuseCarte src={imageCarte(enGrand, guide)} rarete={enGrand.rarete}
-    nom={mouvements[enGrand.exercice][0]} libelleRarete={raretes[enGrand.rarete]}
-    alt={mouvements[enGrand.exercice][0] + ", " + raretes[enGrand.rarete]} onFermer={() => setEnGrand(null)} />}
   </>;
 }
 
 export function CollectionBoosters({ userId }: { userId: string }) {
   const { profil, verifier } = useGuideCartes(userId);
   const guide = profil?.choix;
-  const [cartes, setCartes] = useState<Carte[] | null>(null);
+  const [cartes, setCartes] = useState<CarteDetenue[] | null>(null);
   const [erreur, setErreur] = useState(false);
   useEffect(() => {
     const controle = new AbortController();
@@ -269,19 +269,24 @@ export function CollectionBoosters({ userId }: { userId: string }) {
     <h2>Mes cartes d’exercices</h2>
     {erreur ? <p>Impossible de charger les cartes.</p> : !cartes ? <p>Chargement…</p> : !cartes.length ? <p>Ouvre ton premier booster pour commencer ta collection.</p> :
       !profil ? <p>Chargement de ton coach…</p> : !guide ? <p>Coach indisponible. <button type="button" onClick={verifier}>Réessayer</button></p> :
-      <GrilleCollectionBoosters cartes={cartes} guide={guide} />}
+      <MaCollection cartes={cartes} image={carte => imageCarte(carte, guide)}
+        parRarete={onOuvrir => <GrilleCollectionBoosters cartes={cartes} guide={guide} onOuvrir={onOuvrir} />} />}
   </section>;
 }
 
-export function CollectionBoostersProfil({ userId }: { userId: string }) {
-  const [collection, setCollection] = useState<{ cartes: Carte[]; guide: GuideId | null } | null>(null);
+export function CollectionBoostersProfil({ userId, pseudo }: { userId: string; pseudo: string }) {
+  const [collection, setCollection] = useState<{ cartes: CarteDetenue[]; guide: GuideId | null } | null>(null);
+  const [miennes, setMiennes] = useState<CarteDetenue[] | null>(null);
   const [erreur, setErreur] = useState(false);
   useEffect(() => {
     const controle = new AbortController();
     async function charger() {
-      const { data: { session } } = await createClient().auth.getSession();
+      const client = createClient();
+      const { data: { session } } = await client.auth.getSession();
       if (controle.signal.aborted) return;
       if (!session) throw new Error("Session indisponible");
+      if (session.user.id !== userId) void lireCollectionBoosters(client, session.user.id, controle.signal)
+        .then(m => { if (!controle.signal.aborted) setMiennes(m); }).catch(() => {});
       const reponse = await fetch("/api/boosters/collection?" + new URLSearchParams({ membre: userId }), {
         headers: { Authorization: `Bearer ${session.access_token}` },
         signal: controle.signal,
@@ -298,7 +303,8 @@ export function CollectionBoostersProfil({ userId }: { userId: string }) {
     <h2>Ses cartes d’exercices</h2>
     {erreur ? <p>Impossible de charger ses cartes.</p> : !collection ? <p>Chargement…</p> :
       !collection.cartes.length ? <p>Aucune carte débloquée pour le moment.</p> :
-      collection.guide ? <GrilleCollectionBoosters cartes={collection.cartes} guide={collection.guide} /> :
+      collection.guide ? <SaCollection cartes={collection.cartes.map(c => ({ ...c, n: c.n ?? 1 }))} miennes={miennes} pseudo={pseudo}
+        image={carte => imageCarte(carte, collection.guide!)} /> :
       <ul>{collection.cartes.map(carte => <li key={carte.exercice + ":" + carte.rarete}>
         {mouvements[carte.exercice][0]} · {raretes[carte.rarete]}
       </li>)}</ul>}
@@ -319,9 +325,10 @@ export default function BoosterQuotidien({ userId, jour, onGain }: { userId: str
   const [ancienneCadence, setAncienneCadence] = useState(false);
   const [modeScene, setModeScene] = useState<"ouverture" | "recap">("recap");
   const [tirageId, setTirageId] = useState(0);
-  const [nouvelles, setNouvelles] = useState<boolean[] | null>(null);
+  const [exemplaires, setExemplaires] = useState<number[] | null>(null);
+  const [tailleAvant, setTailleAvant] = useState<number | null>(null);
   const [rectSachet, setRectSachet] = useState<DOMRect | null>(null);
-  const collectionAvant = useRef<Promise<Set<string> | null> | null>(null);
+  const collectionAvant = useRef<Promise<Map<string, number> | null> | null>(null);
   const [exp, setExp] = useState(0);
   const [erreur, setErreur] = useState("");
   const [chargement, setChargement] = useState(false);
@@ -398,9 +405,23 @@ export default function BoosterQuotidien({ userId, jour, onGain }: { userId: str
     imagesDecodees.current = [];
     setCartes(null);
     setExp(0);
-    setNouvelles(null);
+    setExemplaires(null);
+    setTailleAvant(null);
     setErreur("");
     setProfil(null);
+  }
+
+  // Ce qu'on possède avant l'ouverture : c'est ce qui dira « Nouvelle » ou « ×N », et où en est la collection.
+  function lireCollectionAvant() {
+    collectionAvant.current = lireCollectionBoosters(createClient(), userId)
+      .then(cartes => new Map(cartes.map(carte => [carte.exercice + ":" + carte.rarete, carte.n])))
+      .catch(() => null);
+  }
+
+  function ouvrirSuivant() {
+    lireCollectionAvant();
+    reinitialiserScene();
+    setEssaiSachet(essai => essai + 1);
   }
 
   async function preparerSachet() {
@@ -415,9 +436,7 @@ export default function BoosterQuotidien({ userId, jour, onGain }: { userId: str
       }
       if (guideConfirme !== coach) verifierCoach();
       // Ce qu'on possède avant l'ouverture : c'est ce qui dira quelles cartes sont « Nouvelle ».
-      collectionAvant.current = lireCollectionBoosters(createClient(), userId)
-        .then(cartes => new Set(cartes.map(carte => carte.exercice + ":" + carte.rarete)))
-        .catch(() => null);
+      lireCollectionAvant();
       reinitialiserScene();
       setGuideSachet(guideConfirme);
       if (dialog.current && !dialog.current.open) dialog.current.showModal();
@@ -486,7 +505,8 @@ export default function BoosterQuotidien({ userId, jour, onGain }: { userId: str
         new Promise<null>(resoudre => window.setTimeout(() => resoudre(null), 1500)),
       ]);
       const cartesTirees = tirage.cartes;
-      setNouvelles(avant ? cartesTirees.map(carte => !avant.has(carte.exercice + ":" + carte.rarete)) : null);
+      setExemplaires(avant ? cartesTirees.map(carte => (avant.get(carte.exercice + ":" + carte.rarete) ?? 0) + 1) : null);
+      setTailleAvant(avant ? avant.size : null);
       setRectSachet(dialog.current?.querySelector("[data-sachet]")?.getBoundingClientRect() ?? null);
       setModeScene("ouverture");
       setTirageId(id => id + 1);
@@ -575,17 +595,13 @@ export default function BoosterQuotidien({ userId, jour, onGain }: { userId: str
         {tirageAffiche && profil && <OuvertureCartes key={tirageId} cartes={tirageAffiche}
           images={tirageAffiche.map(item => imageCarte(item, profil))}
           libelles={tirageAffiche.map(item => mouvements[item.exercice][0] + " · " + raretes[item.rarete])}
-          exp={exp} nouvelles={nouvelles} mode={modeScene} sachet={rectSachet}
-          prochain={!illimite && prochain !== null && !stock ? compteRebours : null}
+          exp={exp} exemplaires={exemplaires} mode={modeScene} sachet={rectSachet}
           onFermer={() => dialog.current?.close()}
           onRecap={libererCelebration}
+          infos={<InfosFin cartes={tirageAffiche} exemplaires={exemplaires} avant={tailleAvant} />}
           actions={<>
-            <Link className={styles.collectionOr} href="/profil#cartes-exercices" onClick={() => dialog.current?.close()}>
-              Voir ma collection <span aria-hidden="true">›</span>
-            </Link>
-            {illimite && <button className={styles.autreBooster} type="button" onClick={reinitialiserScene}>
-              Ouvrir un autre booster
-            </button>}
+            <ActionsFin stock={stock} illimite={illimite} prochainMs={prochain} compte={compteRebours}
+              onSuivant={ouvrirSuivant} onCollection={() => dialog.current?.close()} />
             {erreurCoach && <p role="alert">{erreurCoach}</p>}
           </>} />}
       </dialog>

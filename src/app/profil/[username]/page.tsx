@@ -680,7 +680,7 @@ export default function PublicProfilePage() {
         </button>
       )}
 
-      {user && profile && <CollectionBoostersProfil key={profile.id} userId={profile.id} />}
+      {user && profile && <CollectionBoostersProfil key={profile.id} userId={profile.id} pseudo={profile.pseudo ?? username} />}
 
       {/* Les affiches de séance qu'il ou elle partage avec ses potes. La
           policy de `posts` ne les rend qu'aux amis réciproques : un inconnu

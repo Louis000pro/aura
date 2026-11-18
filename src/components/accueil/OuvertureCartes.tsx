@@ -42,15 +42,20 @@ function ressort(k: number, c: number) {
   return lineaire ? { e: "linear(" + s.join(",") + ")", d: Math.round(t * 1000) } : { e: "cubic-bezier(.3,1.35,.5,1)", d: Math.round(t * 760) };
 }
 
-export default function OuvertureCartes({ cartes, images, libelles, exp, nouvelles, mode, sachet, prochain, actions, onFermer, onRecap }: {
+const TITRE: Partial<Record<Rarete, string>> = { epique: "Une épique !", legendaire: "Une légendaire !", chromatique: "Une chromatique !" };
+const RANG_RARETE: Rarete[] = ["commune", "rare", "epique", "legendaire", "chromatique"];
+
+export default function OuvertureCartes({ cartes, images, libelles, exp, exemplaires, mode, sachet, infos, actions, onFermer, onRecap }: {
   cartes: Carte[];
   images: string[];
   libelles: string[];
   exp: number;
-  nouvelles: boolean[] | null;
+  /** Exemplaires de chaque carte après ce booster : 1 = « Nouvelle », plus = « ×N ». null si inconnu. */
+  exemplaires: number[] | null;
   mode: "ouverture" | "recap";
   sachet: DOMRect | null;
-  prochain: string | null;
+  /** Ce que la page de fin dit avant l'EXP (rareté, collection). */
+  infos?: ReactNode;
   actions: ReactNode;
   onFermer: () => void;
   /** Le récapitulatif est à l'écran : le booster est fini. */
@@ -70,7 +75,9 @@ export default function OuvertureCartes({ cartes, images, libelles, exp, nouvell
   const etiquettes = useRef<(HTMLSpanElement | null)[]>([]);
   const jetons = useRef<(HTMLSpanElement | null)[]>([]);
   const commandes = useRef<{ toucher: (i: number) => void } | null>(null);
-  const [titre, setTitre] = useState(mode === "recap" ? "Booster ouvert !" : "");
+  const meilleure = cartes.reduce((m, c) => RANG_RARETE.indexOf(c.rarete) > RANG_RARETE.indexOf(m) ? c.rarete : m, cartes[0].rarete);
+  const titreFin = TITRE[meilleure] ?? "Booster ouvert";
+  const [titre, setTitre] = useState(mode === "recap" ? titreFin : "");
   const [aide, setAide] = useState("");
   const [total, setTotal] = useState(mode === "recap" ? exp : 0);
   const [etatAffiche, setEtatAffiche] = useState<Etat>(mode === "recap" ? "recap" : "sortie");
@@ -108,8 +115,9 @@ export default function OuvertureCartes({ cartes, images, libelles, exp, nouvell
         y: pack.top + pack.h * .1 + CH * sDedans / 2 - CH * sDedans * .43 + Math.abs(i - 1) * H * .012,
         s: sDedans, r: (i - 1) * 7,
       }),
+      // La page de fin : l'éventail monte pour laisser la place à ce qui suit.
       eventail: (p: number): Pose => [
-        { x: W * .2, y: H * .475, s: .4, r: -7 }, { x: W * .5, y: H * .46, s: .5, r: 0 }, { x: W * .8, y: H * .475, s: .4, r: 7 },
+        { x: W * .2, y: H * .385, s: .37, r: -7 }, { x: W * .5, y: H * .37, s: .46, r: 0 }, { x: W * .8, y: H * .385, s: .37, r: 7 },
       ][p],
       zoom: (): Pose => ({ x: W / 2, y: H * .52, s: 1, r: 0 }),
     };
@@ -278,7 +286,7 @@ export default function OuvertureCartes({ cartes, images, libelles, exp, nouvell
       els.forEach((e, i) => { delete e.dataset.actif; const a = morceau(i, styles.aura); joue(a, [{ opacity: getComputedStyle(a).opacity }, { opacity: 0 }], { duration: 300 }); });
       delete rail.current!.dataset.on;
       poserRecap(true);
-      setTitre("Booster ouvert !");
+      setTitre(titreFin);
       fixe(socle.current!, [{ opacity: 0, transform: "scale(.6)" }, { opacity: 1, transform: "scale(1)" }], { duration: 600, easing: "ease-out", delay: 250 });
       await attendre(560); if (!vivant) return;
       fixe(recap.current!, [{ opacity: 0, transform: "translate3d(0,12px,0)" }, { opacity: 1, transform: "translate3d(0,0,0)" }], { duration: 380, easing: "cubic-bezier(.2,.8,.2,1)" });
@@ -308,10 +316,10 @@ export default function OuvertureCartes({ cartes, images, libelles, exp, nouvell
     }
 
     function poserNouvelles(anime: boolean) {
-      if (!nouvelles) return;
+      if (!exemplaires) return;
       cartes.forEach((_, i) => {
         const e = etiquettes.current[i];
-        if (!nouvelles[i] || !e) return;
+        if (!exemplaires[i] || !e) return;
         const p = poses[i];
         e.style.transform = "translate3d(" + p.x.toFixed(1) + "px," + (p.y + CH * p.s / 2 + H * .026).toFixed(1) + "px,0) translate(-50%,-50%)";
         if (anime) fixe(e, [{ opacity: 0, scale: ".6" }, { opacity: 1, scale: "1" }], { duration: rebond.d, easing: rebond.e, delay: i * 90 });
@@ -411,14 +419,16 @@ export default function OuvertureCartes({ cartes, images, libelles, exp, nouvell
       ))}
       <div className={styles.ui}>
         <h2 ref={titreEl} className={styles.titre} aria-live="polite">{titre}</h2>
+        {titreFin !== "Booster ouvert" && <p className={styles.sousTitre}>Booster ouvert</p>}
         <button type="button" className={styles.fermer} aria-label="Fermer" onClick={onFermer}>×</button>
         <p className={styles.aide}>{aide}</p>
         <div ref={recap} className={styles.recap}>
+          {infos}
           {exp > 0 && <div ref={pastille} className={styles.exp}><b>+{total}</b><span>EXP</span></div>}
           {actions}
-          {prochain && <p className={styles.prochain}>Prochain booster dans <b>{prochain}</b></p>}
         </div>
-        {cartes.map((_, i) => <span key={i} ref={e => { etiquettes.current[i] = e; }} className={styles.etiquette}>Nouvelle</span>)}
+        {cartes.map((_, i) => <span key={i} ref={e => { etiquettes.current[i] = e; }} className={styles.etiquette}
+          data-neuve={exemplaires?.[i] === 1 ? "" : undefined}>{exemplaires?.[i] === 1 ? "Nouvelle" : exemplaires?.[i] ? "×" + exemplaires[i] : ""}</span>)}
         {cartes.map((_, i) => <span key={i} ref={e => { jetons.current[i] = e; }} className={styles.jeton} />)}
       </div>
     </div>

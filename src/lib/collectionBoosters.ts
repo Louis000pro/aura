@@ -4,8 +4,16 @@ import { mouvements, raretes, type Carte } from "@/lib/cartesBooster";
 const taillePage = 100;
 const triMouvement = new Intl.Collator("fr");
 
-export async function lireCollectionBoosters(client: SupabaseClient, userId: string, signal?: AbortSignal) {
-  const collection = new Map<string, Carte>();
+/** Une carte de la collection, avec le nombre d'exemplaires tirés (les doublons). */
+export type CarteDetenue = Carte & { n: number };
+
+export const TOTAL_CARTES = Object.keys(mouvements).length * Object.keys(raretes).length;
+export const ORDRE_RARETES: Carte["rarete"][] = ["commune", "rare", "epique", "legendaire", "chromatique"];
+export const POINTS_RARETE: Record<Carte["rarete"], number> = { commune: 1, rare: 2, epique: 5, legendaire: 10, chromatique: 25 };
+export const cleCarte = (carte: Carte) => carte.exercice + ":" + carte.rarete;
+
+export async function lireCollectionBoosters(client: SupabaseClient, userId: string, signal?: AbortSignal): Promise<CarteDetenue[]> {
+  const collection = new Map<string, CarteDetenue>();
   for (const table of ["boosters_exercices", "boosters_illimites"]) {
     for (let debut = 0; ; debut += taillePage) {
       const lecture = client.from(table).select("cartes").eq("user_id", userId);
@@ -23,7 +31,10 @@ export async function lireCollectionBoosters(client: SupabaseClient, userId: str
         for (const carte of cartes) {
           if (!carte || !Object.hasOwn(mouvements, carte.exercice) || !Object.hasOwn(raretes, carte.rarete)) continue;
           const { exercice, rarete } = carte as Carte;
-          collection.set(exercice + ":" + rarete, { exercice, rarete });
+          const cle = exercice + ":" + rarete;
+          const deja = collection.get(cle);
+          if (deja) deja.n++;
+          else collection.set(cle, { exercice, rarete, n: 1 });
         }
       }
       if (data.length < taillePage) break;
@@ -33,3 +44,32 @@ export async function lireCollectionBoosters(client: SupabaseClient, userId: str
   return [...collection.values()].sort((a, b) =>
     triMouvement.compare(mouvements[a.exercice][0], mouvements[b.exercice][0]));
 }
+
+export type Collectionneur = {
+  user_id: string; pseudo: string | null; avatar_url: string | null; points: number; cartes: number;
+  commune: number; rare: number; epique: number; legendaire: number; chromatique: number; rang: number; moi: boolean;
+};
+
+/** Le classement des collectionneurs. null : la fonction n'existe pas encore ou la base ne répond pas. */
+export async function lireClassement(client: SupabaseClient, portee: "amis" | "tous", signal?: AbortSignal) {
+  const appel = client.rpc("classement_collection", { p_portee: portee });
+  const { data, error } = await (signal ? appel.abortSignal(signal) : appel);
+  if (error || !Array.isArray(data)) return null;
+  return data as Collectionneur[];
+}
+
+export type Detenteurs = {
+  total: number; membres: number; moi: number;
+  amis: { user_id: string; pseudo: string | null; avatar_url: string | null; n: number }[];
+  premier_le: string | null; premier_pseudo: string | null;
+};
+
+export async function lireDetenteurs(client: SupabaseClient, carte: Carte, signal?: AbortSignal) {
+  const appel = client.rpc("detenteurs_carte", { p_exercice: carte.exercice, p_rarete: carte.rarete });
+  const { data, error } = await (signal ? appel.abortSignal(signal) : appel);
+  if (error || !data || typeof data !== "object") return null;
+  return data as Detenteurs;
+}
+
+/** Les points d'une collection : chaque carte différente compte une fois. */
+export const pointsCollection = (cartes: Carte[]) => cartes.reduce((n, c) => n + POINTS_RARETE[c.rarete], 0);

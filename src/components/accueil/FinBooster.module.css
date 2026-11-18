@@ -1,0 +1,40 @@
+/* La page de fin d'un booster : toujours claire, l'or pour ouvrir, le violet pour la collection. Aucun vert. */
+.rarete { margin:0; text-align:center; font-size:13px; line-height:1.45; color:#4a3f60; }
+.rarete b { color:#221a33; }
+.rarete button {
+  margin-top:2px; padding:4px 8px; border:0; background:none;
+  color:#6d4bd6; font-size:13px; font-weight:800; cursor:pointer;
+}
+.progression {
+  width:min(100%,340px); box-sizing:border-box; padding:10px 14px 12px;
+  border:1px solid #ece6f5; border-radius:var(--r-bloc); background:#fff;
+}
+.ligne { display:flex; justify-content:space-between; align-items:baseline; font-size:13px; font-weight:700; color:#4a3f60; }
+.compte { display:inline-flex; align-items:baseline; gap:6px; color:#221a33; }
+.compte em { font-style:normal; font-weight:700; color:#6d4bd6; }
+.barre { position:relative; height:8px; margin-top:8px; border-radius:8px; background:#eee8f6; overflow:hidden; }
+.barre i { position:absolute; top:0; bottom:0; left:0; border-radius:8px; background:linear-gradient(90deg,#8b5cf6,#a77ef8); }
+.barre i.gain { min-width:4px; background:linear-gradient(90deg,#c13bc1,#8b5cf6); animation:gain 1s .4s ease-out both; }
+@keyframes gain { from { opacity:0; transform:scaleX(0); transform-origin:left; } to { opacity:1; transform:scaleX(1); } }
+.rang { margin:0; font-size:13px; color:#6b6280; }
+.rang b { color:#221a33; }
+.actions { display:grid; justify-items:center; gap:10px; width:min(100%,340px); margin-top:2px; }
+.or, .violet {
+  display:inline-flex; align-items:center; justify-content:center; gap:.4em;
+  width:100%; min-height:50px; padding:8px 18px; box-sizing:border-box;
+  border:0; border-radius:var(--r-controle); font-size:16px; font-weight:800; text-decoration:none; cursor:pointer;
+}
+.or {
+  color:#58370d;
+  background:linear-gradient(135deg,#fffbee,#ffe5a0 42%,#fff6ce 62%,#f5cf76);
+  box-shadow:inset 0 0 0 1px #ffeeb5,inset 0 1px #fff,0 3px 8px #ac75233d;
+}
+.or small { font-size:13px; font-weight:700; opacity:.75; }
+.violet { color:#fff; background:linear-gradient(135deg,#8b5cf6,#c13bc1); box-shadow:var(--ombre-action); }
+.lien { padding:6px 10px; color:#6d4bd6; font-size:13px; font-weight:800; text-decoration:none; }
+.attente { display:flex; align-items:center; gap:14px; width:100%; text-align:left; }
+.attente b { display:block; font-size:16px; color:#221a33; }
+.attente small { display:block; margin-top:2px; font-size:13px; color:#6b6280; }
+.anneau { flex:none; display:grid; place-items:center; width:52px; height:52px; border-radius:50%; }
+.anneau span { width:40px; height:40px; border-radius:50%; background:#fff; }
+@media (prefers-reduced-motion:reduce) { .barre i.gain { animation:none; } }
