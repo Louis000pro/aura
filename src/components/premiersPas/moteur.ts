@@ -37,8 +37,8 @@ export type ConfigParcours = {
   ecrire: (etat: EtatParcours) => Promise<{ numero: number | null; pseudo?: string | null }>;
   activerRappels: () => Promise<void>;
   enregistrerSource: (source: string) => Promise<void>;
-  /** Déclenche l'installation. `true` si le navigateur l'a proposée. */
-  installer: () => Promise<boolean>;
+  /** Une invitation affichée puis refusée n'est pas une installation. */
+  installer: () => Promise<"acceptee" | "refusee" | "indisponible">;
   peutInstaller: () => boolean;
   terminer: (visiteFinie: boolean) => void;
   /** Un compte qui a déjà répondu choisit son Guide, puis passe à la visite. */
@@ -2100,32 +2100,50 @@ E.source = () => {
 
 const estInstallee = () => matchMedia("(display-mode: standalone)").matches
   || (navigator as Navigator & { standalone?: boolean }).standalone === true;
-const estIOS = () => /iPhone|iPad|iPod/.test(navigator.userAgent);
+const estIOS = () => /iPhone|iPad|iPod/.test(navigator.userAgent)
+  || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
 
 E.installer = () => {
-  if (estInstallee() || (!cfg.peutInstaller() && !estIOS())) { cfg.terminer(true); return; }
+  let dejaProposee = false;
+  try { dejaProposee = localStorage.getItem("vaiiya_installation_proposee") === "oui"; } catch { /* stockage indisponible */ }
+  if (estInstallee() || dejaProposee || (!estIOS() && !/Android/i.test(navigator.userAgent))) { cfg.terminer(true); return; }
   ciel(1);
   place("milieu");
   gd.style.setProperty("--gy", telBas() ? "112px" : "140px");
   gd.style.setProperty("--gs", telBas() ? ".5" : ".62");
   caseBulle({ ql: "calc(50% - 10px)", qp: "50%" });
   dire(V("pas.installer"), { pose: "telephone" });
-  const cases = Array.from({ length: 11 }, (_, i) => (i === 6 ? `<img src="${A}logo.webp" alt="Vaiiya">` : "<i></i>")).join("");
-  vue.innerHTML = `<div class="ecran-tel">${cases}</div>`;
-  const passer = () => cfg.terminer(true);
-  appel({
-    label: "Installer Vaiiya", lien: "Plus tard", surLien: passer,
-    clic: async () => {
-      const propose = await cfg.installer();
-      if (propose) { passer(); return; }
-      if (estIOS()) {
-        dire(V("pas.installer.ios"), { pose: "telephone" });
-        appel({ label: "C'est fait", clic: passer });
-        return;
-      }
-      passer();
-    },
-  });
+  appel(null);
+  vue.innerHTML = `<section class="installation" aria-labelledby="installation-titre">
+    <img src="/icons/icon-192.png?v=7" alt="" width="54" height="54">
+    <h2 id="installation-titre">Ajouter Vaiiya à ton écran d’accueil ?</h2>
+    <p>Retrouve ton coach, tes séances et tes boosters en un seul geste.</p>
+    <div class="installation-aide" hidden></div>
+    <button type="button" class="cta installation-ajouter">Ajouter Vaiiya</button>
+    <button type="button" class="installation-plus-tard">Plus tard</button>
+  </section>`;
+  const ajouter = $<HTMLButtonElement>(".installation-ajouter");
+  const passer = () => {
+    try { localStorage.setItem("vaiiya_installation_proposee", "oui"); } catch { /* stockage indisponible */ }
+    cfg.terminer(true);
+  };
+  $(".installation-plus-tard").onclick = passer;
+  ajouter.onclick = async () => {
+    ajouter.disabled = true;
+    ajouter.setAttribute("aria-busy", "true");
+    const resultat = await cfg.installer();
+    if (resultat !== "indisponible") { passer(); return; }
+    const aide = $(".installation-aide");
+    aide.hidden = false;
+    aide.setAttribute("role", "status");
+    aide.innerHTML = estIOS()
+      ? `<p>Dans Safari :</p><ol><li>Ouvre le menu <b>Partager</b>.</li><li>Choisis <b>Sur l’écran d’accueil</b>.</li><li>Confirme avec <b>Ajouter</b>.</li></ol>`
+      : `<ol><li>Ouvre le menu <b>⋮</b> de ton navigateur.</li><li>Choisis <b>Installer l’application</b> ou <b>Ajouter à l’écran d’accueil</b>.</li><li>Confirme l’ajout.</li></ol><p>Si cette option est absente, ouvre vaiiya.fr dans Chrome.</p>`;
+    ajouter.disabled = false;
+    ajouter.removeAttribute("aria-busy");
+    ajouter.textContent = "Continuer";
+    ajouter.onclick = passer;
+  };
 };
 
 /** Monte le parcours dans `racine` et rend la fonction qui l'arrête. */
