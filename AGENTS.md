@@ -69,6 +69,10 @@ somme ; dans la Communauté, « Le fil » et « Messages » ont chacun la leur.
 Ouvrir le fil remet sa pastille à zéro. Une lecture ratée ne remet rien à
 zéro. Aucun SQL.
 
+## Boosters : page de fin, album et collectionneurs, EN MAQUETTE — 2026-11-18
+
+Louis : « une belle page de fin, parce que c'est juste ouvrir un autre booster », et sur le profil « voir un top des personnes qui ont certaines cartes ». Maquette guidée (https://claude.ai/artifact/4ezFPsXQ16Ej4QxaEuTuZ9, 9 diapositives). **Rien n'est codé, en attente du GO de Louis (six décisions à la fin).** La page de fin : le titre dit la meilleure carte, « Nouvelle » ou « ×N » sous chaque carte, « Seuls N membres ont … » pour la meilleure, la collection qui avance (« 32 / 115 »), « Ouvrir le suivant · N en réserve » en action principale, sinon « Voir ma collection » et l'anneau de la prochaine recharge. Le profil : un album de 115 emplacements (23 mouvements × 5 raretés, les vides en pointillés, sans cadenas), une vitrine de trois cartes, « Qui l'a » sur chaque carte (amis en visage, les autres en nombre), un classement des collectionneurs (points par carte différente : 1, 2, 5, 10, 25 ; amis par défaut, tout Vaiiya en onglet, sa ligne toujours visible, jamais les derniers). ⚠️ Ce classement lève « jamais de classement » pour les cartes seulement : à faire trancher par Louis. Base au 2026-11-18 : 8 membres ont des cartes, 127 boosters, 1 chromatique. Demandera un SQL (lectures SECURITY DEFINER : classement, détenteurs d'une carte).
+
 ## Records ajoutés à la main — 2026-11-18
 
 Louis : « on ne sait pas comment ajouter des progrès ». Profil › Progrès,
