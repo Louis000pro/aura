@@ -34,6 +34,7 @@ import {
   creerConversation, reglerConversation, heureCourte, prechargerFil,
   type Conversation, type Personne,
 } from "@/lib/messagerie";
+import { useBadgesCommunaute, libellePastille, marquerFilVu, poserNonLus } from "@/lib/badgesCommunaute";
 
 export default function ConversationListPane({
   activeId,
@@ -76,6 +77,19 @@ export default function ConversationListPane({
     if (!charge) ecrireMemoire<Conversation[]>(user ? `communaute:convs:${user.id}` : null, convs);
   }, [user, charge, convs]);
   const nonLusTotal = convs.reduce((n, c) => n + (c.archivee || c.sourde ? 0 : c.nonLus), 0);
+  /* La barre du bas lit le même compte : on le lui donne dès qu'il change. */
+  useEffect(() => {
+    if (user && !charge) poserNonLus(user.id, nonLusTotal);
+  }, [user, charge, nonLusTotal]);
+  const badges = useBadgesCommunaute(user?.id);
+  /* Regarder le fil, c'est l'avoir vu : sa pastille repart de zéro, à
+     l'ouverture comme en le quittant (ce qui est arrivé pendant compte). */
+  const filOuvert = onglet === "fil" && !!user;
+  useEffect(() => {
+    if (!filOuvert || !user) return;
+    marquerFilVu(user.id);
+    return () => marquerFilVu(user.id);
+  }, [filOuvert, user]);
 
   const recharger = useCallback(async () => {
     if (!user) return;
@@ -302,12 +316,16 @@ export default function ConversationListPane({
             className="-mb-px flex items-center gap-1.5 border-b-2 pb-2 text-[16px] font-semibold"
             style={{ borderColor: onglet === o ? "var(--accent)" : "transparent", color: onglet === o ? "var(--text-0)" : "var(--text-3)" }}>
             {o === "fil" ? "Le fil" : "Messages"}
-            {o === "messages" && nonLusTotal > 0 && (
-              <span className="vy-nombre flex min-w-5 items-center justify-center rounded-full px-1.5 text-[11px] text-white"
-                style={{ background: "linear-gradient(135deg, #8B5CF6, #C13BC1)", fontWeight: 700 }}>
-                {nonLusTotal > 9 ? "9+" : nonLusTotal}
-              </span>
-            )}
+            {(() => {
+              const pastille = libellePastille(o === "messages" ? nonLusTotal : (onglet === "fil" ? 0 : badges.fil));
+              return pastille && (
+                <span className="vy-nombre flex min-w-5 items-center justify-center rounded-full px-1.5 text-[11px] text-white"
+                  aria-label={o === "messages" ? `${pastille} non lus` : `${pastille} nouveautés`}
+                  style={{ background: "linear-gradient(135deg, #8B5CF6, #C13BC1)", fontWeight: 700 }}>
+                  {pastille}
+                </span>
+              );
+            })()}
           </button>
         ))}
       </div>

@@ -16,6 +16,7 @@ import NavOrb from "@/components/NavOrb";
 import { AvatarRang, PhotoRonde } from "@/components/rang/IdentiteRang";
 import { useRangMemorise } from "@/lib/celebrationRang";
 import { cosmetiquesDuRang } from "@/lib/aura";
+import { useBadgesCommunaute, libellePastille } from "@/lib/badgesCommunaute";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 type TabItem = {
@@ -155,7 +156,7 @@ function BulleNavigation({ pathname }: { pathname: string }) {
 }
 
 function OngletNav({
-  href, label, icon: Icon, sub, mobile, tourAnchor, pathname, progMenu, setProgMenu,
+  href, label, icon: Icon, sub, mobile, tourAnchor, pathname, progMenu, setProgMenu, pastille = null,
 }: {
   href: string; label: string; icon: LucideIcon;
   sub?: { href: string; label: string; icon?: LucideIcon }[];
@@ -164,14 +165,16 @@ function OngletNav({
   pathname: string;
   progMenu: boolean;
   setProgMenu: (ouvert: boolean) => void;
+  /** « 1 » à « 9 », puis « 9+ » ; `null` = rien à montrer. */
+  pastille?: string | null;
 }) {
   const isProgActive = pathname === "/progression";
   const isActive = sub ? isProgActive : pathname === href;
-  const badge    = null;
+  const badge    = pastille;
 
   if (mobile) {
     return (
-      <Link href={href} className="flex-1" aria-label={label} aria-current={isActive ? "page" : undefined} data-tour-anchor={tourAnchor}>
+      <Link href={href} className="flex-1" aria-label={badge ? `${label}, ${badge} nouveautés` : label} aria-current={isActive ? "page" : undefined} data-tour-anchor={tourAnchor}>
         <motion.div
           className="vy-nav-liquid-tab flex h-12 items-center justify-center cursor-pointer relative"
           whileTap={{ scale: 0.88 }} transition={{ duration: 0.12 }}
@@ -183,9 +186,10 @@ function OngletNav({
             <Icon className="vy-nav-liquid-icon" size={22} strokeWidth={isActive ? 2.4 : 1.7} />
             {badge && (
               <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }}
-                className="absolute -top-1.5 -right-1.5 w-[18px] h-[18px] rounded-full flex items-center justify-center text-[11px] font-bold"
+                aria-hidden="true"
+                className="absolute -top-1.5 -right-2 min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center text-[11px] font-bold leading-none"
                 style={{ background: "var(--accent)", color: "#fff" }}>
-                {badge > 9 ? "9+" : badge}
+                {badge}
               </motion.span>
             )}
           </div>
@@ -254,7 +258,7 @@ function OngletNav({
   }
 
   return (
-    <Link href={href} aria-label={label} data-tour-anchor={tourAnchor}>
+    <Link href={href} aria-label={badge ? `${label}, ${badge} nouveautés` : label} data-tour-anchor={tourAnchor}>
       <motion.div
         className="relative flex items-center justify-center w-10 h-10 rounded-2xl cursor-pointer mx-auto"
         whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.88 }}
@@ -270,9 +274,10 @@ function OngletNav({
           {badge && !isActive && (
             <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }}
               transition={{ type: "spring", bounce: 0.6 }}
-              className="absolute -top-1.5 -right-1.5 w-[18px] h-[18px] rounded-full flex items-center justify-center text-[11px] font-bold"
+              aria-hidden="true"
+                className="absolute -top-1.5 -right-2 min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center text-[11px] font-bold leading-none"
               style={{ background: "var(--accent)", color: "#fff" }}>
-              {badge > 9 ? "9+" : badge}
+              {badge}
             </motion.span>
           )}
         </div>
@@ -285,6 +290,9 @@ export default function Navigation() {
   const pathname   = usePathname();
   const router     = useRouter();
   const { user, isLoading, logout } = useAuth();
+  /* Messages non lus + nouveautés du fil, sur l'onglet Communauté. */
+  const badgesCommu = useBadgesCommunaute(user?.id, pathname);
+  const pastilleCommunaute = libellePastille(badgesCommu.messages + badgesCommu.fil);
 
   const [userMenu,    setUserMenu]    = useState(false);
   const [progMenu,    setProgMenu]    = useState(false);
@@ -515,7 +523,7 @@ export default function Navigation() {
           {/* 4. Nutrition */}
           <OngletNav pathname={pathname} progMenu={progMenu} setProgMenu={setProgMenu} href={TABS[2].href} label={TABS[2].label} icon={TABS[2].icon} sub={TABS[2].sub} mobile tourAnchor={TABS[2].tourAnchor} />
           {/* 5. Communauté */}
-          <OngletNav pathname={pathname} progMenu={progMenu} setProgMenu={setProgMenu} href={TABS[3].href} label={TABS[3].label} icon={TABS[3].icon} sub={TABS[3].sub} mobile tourAnchor={TABS[3].tourAnchor} />
+          <OngletNav pathname={pathname} progMenu={progMenu} setProgMenu={setProgMenu} href={TABS[3].href} label={TABS[3].label} icon={TABS[3].icon} sub={TABS[3].sub} mobile tourAnchor={TABS[3].tourAnchor} pastille={pastilleCommunaute} />
         </div>
       </nav>
       )}
@@ -534,7 +542,7 @@ export default function Navigation() {
         >
           {/* Icônes de navigation */}
           {TABS.map(({ href, label, icon, sub, tourAnchor }) => (
-            <OngletNav pathname={pathname} progMenu={progMenu} setProgMenu={setProgMenu} key={href} href={href} label={label} icon={icon} sub={sub} tourAnchor={tourAnchor} />
+            <OngletNav pathname={pathname} progMenu={progMenu} setProgMenu={setProgMenu} key={href} href={href} label={label} icon={icon} sub={sub} tourAnchor={tourAnchor} pastille={href === "/communaute" ? pastilleCommunaute : null} />
           ))}
 
           {/* Assistant — glyphe SVG dans une case 40px comme les pastilles d'onglet */}
