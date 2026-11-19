@@ -69,8 +69,12 @@ repère aux proportions du sachet (`H`, `K` dans `SachetBooster.tsx`), les cinq
 images du reflet dans le SVG avec les mêmes opacités (figées pendant la
 déchirure), sachet 3D effacé 0,1 s après, bande qui pivote seulement, bord en
 trois échelles de bruit fixé par abscisse (`relief`), traits en
-`non-scaling-stroke`, et la déchirure se referme en 0,17 s. Vu dans un Chrome
-sans fenêtre à 390 px ; pas vu sur un vrai téléphone.
+`non-scaling-stroke`, et la déchirure se referme en 0,17 s. **Le même jour, Louis : « pas de petites bosses, fine comme sur Pokémon TCG ».**
+La coupe est une ligne presque droite, à la hauteur où le doigt s'est posé
+(elle ne suit plus le doigt en hauteur), avec un liseré blanc lumineux ; plus
+de fibres ni d'accrocs, une ouverture à peine entrouverte. Ne pas remettre de
+bord en dents de scie.
+Vu dans un Chrome sans fenêtre à 390 px ; pas vu sur un vrai téléphone.
 
 ## Le booster refluidifié — 2026-11-18
 

@@ -108,15 +108,12 @@ const bruitLisse = (x: number, graine: number) => {
   return bruit(i + graine) * (1 - t) + bruit(i + 1 + graine) * t;
 };
 const PAS_BORD = .9;
-// Décalage vertical du bord à cette abscisse : une ondulation lente, des dents moyennes, un grain
-// fin, et de rares accrocs qui mordent dans le film. Tout dépend de x seul.
+// Une coupe nette, comme un sachet qu'on ouvre d'un geste (Louis, 2026-11-19 : « pas de petites
+// bosses, fine comme sur Pokémon TCG ») : une ligne presque droite, avec juste ce qu'il faut de
+// vie pour ne pas paraître tracée à la règle. Tout dépend de x seul.
 function relief(g: number) {
   const x = g * PAS_BORD;
-  const lent = (bruitLisse(x / 11, 17) - .5) * 1.5;
-  const moyen = (bruitLisse(x / 2.6, 41) - .5) * .7;
-  const grain = (bruit(g) - .5) * .26;
-  const accroc = bruit(g * 3.7) > .94 ? .55 : 0;
-  return lent + moyen + grain + accroc;
+  return (bruitLisse(x / 16, 17) - .5) * .22 + (bruit(g) - .5) * .05;
 }
 
 // Un vrai bord déchiré, sur une grille fixe : le bord déjà ouvert ne bouge plus.
@@ -135,18 +132,6 @@ function bordDechire(trace: Point[]) {
     ligne.push(trace[i]);
   }
   return ligne;
-}
-
-// Quelques fibres du film qui dépassent du bord, aux mêmes endroits à chaque image.
-function fibres(ligne: Point[]) {
-  let d = "";
-  for (const [x, y] of ligne) {
-    const g = Math.round(x / PAS_BORD), b = bruit(g * 5.3);
-    if (b < .86) continue;
-    const l = (.35 + (b - .86) * 4) * K, h = (bruit(g * 9.1) - .5) * .7;
-    d += "M" + x.toFixed(2) + " " + (y * K).toFixed(2) + "l" + h.toFixed(2) + " " + (-l).toFixed(2);
-  }
-  return d;
 }
 
 function position({ clientX, clientY }: PointerEvent, { left, top, width, height }: DOMRect): Point {
@@ -177,7 +162,6 @@ export default function SachetBooster({ guide, ouvrir, chargement, sortie, revel
   const bord = useRef<SVGPolylineElement>(null);
   const bordOmbre = useRef<SVGPolylineElement>(null);
   const bordHaut = useRef<SVGPolylineElement>(null);
-  const fibresBord = useRef<SVGPathElement>(null);
   const lumiere = useRef<HTMLDivElement>(null);
   const angles = useRef<Orientation>(neutre);
   const orientationAffichee = useRef<Orientation>(neutre);
@@ -333,7 +317,7 @@ export default function SachetBooster({ guide, ouvrir, chargement, sortie, revel
     const charniere = trace[trace.length - 1];
     const inverse = [...ligne].reverse();
     const interieur = inverse.map(([x, y]): Point => [
-      x, y - Math.sin(Math.PI * (x - gauche) / Math.max(taille, 1)) * (1.2 + taille * .03),
+      x, y - Math.sin(Math.PI * (x - gauche) / Math.max(taille, 1)) * (.25 + taille * .007),
     ]);
 
     contourHaut.current?.setAttribute("points", pointsSvg([[gauche, 0], [droite, 0], ...inverse]));
@@ -345,15 +329,14 @@ export default function SachetBooster({ guide, ouvrir, chargement, sortie, revel
     ]));
     ouverture.current?.setAttribute("points", pointsSvg([...ligne, ...interieur]));
     bord.current?.setAttribute("points", pointsSvg(ligne));
-    bordOmbre.current?.setAttribute("points", pointsSvg(ligne.map(([x, y]): Point => [x, y + .3])));
+    bordOmbre.current?.setAttribute("points", pointsSvg(ligne));
     bordHaut.current?.setAttribute("points", pointsSvg(ligne));
-    fibresBord.current?.setAttribute("d", fibres(ligne));
     if (bande.current) {
       bande.current.style.transformOrigin = charniere[0] + "% " + charniere[1] + "%";
       bande.current.style.setProperty("--sens", String(sens));
       // La bande pivote autour de la pointe de la déchirure, sans se décoller d'un bloc : sinon une
       // marche apparaissait à la charnière, là où le film tient encore.
-      bande.current.style.setProperty("--pli", (sens * Math.min(taille, 90) * .12) + "deg");
+      bande.current.style.setProperty("--pli", (sens * Math.min(taille, 90) * .045) + "deg");
     }
     // De la lumière sort de l'ouverture, d'autant plus que la déchirure avance.
     if (lumiere.current && !terminee) {
@@ -421,8 +404,9 @@ export default function SachetBooster({ guide, ouvrir, chargement, sortie, revel
     const [x, yDoigt] = position(event, geste.cadre);
     const [precedent, yPrecedent] = geste.trace[geste.trace.length - 1];
     if ((x - precedent) * geste.sens < 1.8) return;
-    // Le doigt tremble : la ligne suit sa hauteur en douceur, sinon le bord faisait des marches.
-    const y = yPrecedent + (yDoigt - yPrecedent) * .3;
+    // La coupe reste à la hauteur où le doigt s'est posé : une ligne fine, jamais des marches.
+    void yDoigt;
+    const y = yPrecedent;
     geste.trace.push([x, y]);
     if (geste.sens === 1 ? x >= 94 : x <= 6) {
       ouvrirSachet(geste.trace, geste.sens);
@@ -483,12 +467,10 @@ export default function SachetBooster({ guide, ouvrir, chargement, sortie, revel
         <g className={styles.corps} onAnimationEnd={() => { if (sortie) reveler(); }}>
           <polygon ref={ouverture} data-ouverture-sachet="" fill={"url(#" + idSvg + "-cavite)"} />
           <use href={"#" + idSvg + "-portrait"} clipPath={"url(#" + idSvg + "-bas)"} />
-          <polyline ref={bordOmbre} fill="none" stroke="#2a1840" strokeOpacity=".22" strokeWidth="2.6"
+          <polyline ref={bordOmbre} fill="none" stroke="#fff" strokeOpacity=".35" strokeWidth="4"
             strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
           <polyline ref={bord} fill="none" stroke={"url(#" + idSvg + "-bord)"} strokeWidth="1.4"
             strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
-          <path ref={fibresBord} fill="none" stroke="#fff" strokeOpacity=".7" strokeWidth=".8"
-            strokeLinecap="round" vectorEffect="non-scaling-stroke" />
         </g>
         <g ref={bande} className={styles.bande} data-bande-detachee={detache ? "" : undefined}>
           <use href={"#" + idSvg + "-portrait"} clipPath={"url(#" + idSvg + "-haut)"} />
@@ -561,7 +543,7 @@ export default function SachetBooster({ guide, ouvrir, chargement, sortie, revel
         onClick={event => {
           if (event.detail !== 0 || suite.current || !estDeFace(angles.current)) return;
           arreterRotation();
-          ouvrirSachet([[0, 8], [28, 8.9], [53, 7.7], [76, 8.5]], 1);
+          ouvrirSachet([[0, 7], [76, 7]], 1);
         }}
         onPointerDown={event => {
           if (!event.isPrimary || event.button !== 0 || enCours.current || suite.current || !estDeFace(angles.current)) return;
