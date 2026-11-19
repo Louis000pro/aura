@@ -93,13 +93,33 @@ function vitesseRelachement(geste: GesteRotation, temps: number) {
   return borner((derniere.x - premiere.x) * 240 / geste.largeur / (derniere.temps - premiere.temps), -3, 3) * maintien;
 }
 
-const pointsSvg = (points: Point[]) => points.map(([x, y]) => x.toFixed(2) + "," + y.toFixed(2)).join(" ");
+// Les points se calculent en % de la largeur et de la hauteur, mais le dessin se fait dans un repère
+// aux proportions du sachet (100 de large, H de haut). Avec un viewBox carré étiré, la bande qui se
+// soulève était cisaillée et les traits n'avaient pas la même épaisseur selon leur direction.
+const H = 100 * 386 / 235;
+const K = H / 100;
+const pointsSvg = (points: Point[]) => points.map(([x, y]) => x.toFixed(2) + "," + (y * K).toFixed(2)).join(" ");
 
 // Un bruit fixe par abscisse : le bord ne bouge pas d'une image à l'autre pendant que le doigt avance.
 const bruit = (x: number) => { const v = Math.sin(x * 127.1 + 311.7) * 43758.5453; return v - Math.floor(v); };
-const PAS_BORD = 1.15;
+// Le même bruit, lissé entre deux points de la grille : il donne les grandes ondulations du bord.
+const bruitLisse = (x: number, graine: number) => {
+  const i = Math.floor(x), f = x - i, t = f * f * (3 - 2 * f);
+  return bruit(i + graine) * (1 - t) + bruit(i + 1 + graine) * t;
+};
+const PAS_BORD = .9;
+// Décalage vertical du bord à cette abscisse : une ondulation lente, des dents moyennes, un grain
+// fin, et de rares accrocs qui mordent dans le film. Tout dépend de x seul.
+function relief(g: number) {
+  const x = g * PAS_BORD;
+  const lent = (bruitLisse(x / 11, 17) - .5) * 1.5;
+  const moyen = (bruitLisse(x / 2.6, 41) - .5) * .7;
+  const grain = (bruit(g) - .5) * .26;
+  const accroc = bruit(g * 3.7) > .94 ? .55 : 0;
+  return lent + moyen + grain + accroc;
+}
 
-// Un vrai bord déchiré : des dents irrégulières, quelques accrocs plus profonds, sur une grille fixe.
+// Un vrai bord déchiré, sur une grille fixe : le bord déjà ouvert ne bouge plus.
 function bordDechire(trace: Point[]) {
   const ligne: Point[] = [trace[0]];
   for (let i = 1; i < trace.length; i++) {
@@ -109,8 +129,8 @@ function bordDechire(trace: Point[]) {
     let g = sens === 1 ? Math.ceil(x0 / PAS_BORD) : Math.floor(x0 / PAS_BORD);
     for (let x = g * PAS_BORD; sens === 1 ? x < x1 : x > x1; g += sens, x = g * PAS_BORD) {
       if (x === x0) continue;
-      const t = (x - x0) / (x1 - x0), b = bruit(g), accroc = bruit(g * 3.7) > .9 ? .55 : 0;
-      ligne.push([x, y0 + (y1 - y0) * t + (b - .5) * .7 + (b > .5 ? accroc : -accroc)]);
+      const t = (x - x0) / (x1 - x0);
+      ligne.push([x, y0 + (y1 - y0) * t + relief(g)]);
     }
     ligne.push(trace[i]);
   }
@@ -122,9 +142,9 @@ function fibres(ligne: Point[]) {
   let d = "";
   for (const [x, y] of ligne) {
     const g = Math.round(x / PAS_BORD), b = bruit(g * 5.3);
-    if (b < .78) continue;
-    const l = .5 + (b - .78) * 4, h = (bruit(g * 9.1) - .5) * .9;
-    d += "M" + x.toFixed(2) + " " + y.toFixed(2) + "l" + h.toFixed(2) + " " + (-l).toFixed(2);
+    if (b < .86) continue;
+    const l = (.35 + (b - .86) * 4) * K, h = (bruit(g * 9.1) - .5) * .7;
+    d += "M" + x.toFixed(2) + " " + (y * K).toFixed(2) + "l" + h.toFixed(2) + " " + (-l).toFixed(2);
   }
   return d;
 }
@@ -147,7 +167,6 @@ export default function SachetBooster({ guide, ouvrir, chargement, sortie, revel
 }) {
   const idSvg = useId();
   const [fichierFace, largeurFace, hauteurFace] = faces[guide];
-  const portrait = angle(fichierFace, DE_FACE);
   const [deFace, setDeFace] = useState(true);
   const scene = useRef<HTMLDivElement>(null);
   const modele = useRef<HTMLDivElement>(null);
@@ -198,7 +217,8 @@ export default function SachetBooster({ guide, ouvrir, chargement, sortie, revel
     const boucle = () => {
       image = requestAnimationFrame(boucle);
       const element = scene.current;
-      if (!element) return;
+      // Pendant la déchirure, le reflet reste celui du moment où le doigt s'est posé.
+      if (!element || element.dataset.trace) return;
       incline.x += (cible.x - incline.x) * .14;
       incline.y += (cible.y - incline.y) * .14;
       doux.x += (survol.current.x - doux.x) * .18;
@@ -313,7 +333,7 @@ export default function SachetBooster({ guide, ouvrir, chargement, sortie, revel
     const charniere = trace[trace.length - 1];
     const inverse = [...ligne].reverse();
     const interieur = inverse.map(([x, y]): Point => [
-      x, y - Math.sin(Math.PI * (x - gauche) / Math.max(taille, 1)) * (1 + taille * .021),
+      x, y - Math.sin(Math.PI * (x - gauche) / Math.max(taille, 1)) * (1.2 + taille * .03),
     ]);
 
     contourHaut.current?.setAttribute("points", pointsSvg([[gauche, 0], [droite, 0], ...inverse]));
@@ -325,14 +345,15 @@ export default function SachetBooster({ guide, ouvrir, chargement, sortie, revel
     ]));
     ouverture.current?.setAttribute("points", pointsSvg([...ligne, ...interieur]));
     bord.current?.setAttribute("points", pointsSvg(ligne));
-    bordOmbre.current?.setAttribute("points", pointsSvg(ligne.map(([x, y]): Point => [x, y + .55])));
+    bordOmbre.current?.setAttribute("points", pointsSvg(ligne.map(([x, y]): Point => [x, y + .3])));
     bordHaut.current?.setAttribute("points", pointsSvg(ligne));
     fibresBord.current?.setAttribute("d", fibres(ligne));
     if (bande.current) {
       bande.current.style.transformOrigin = charniere[0] + "% " + charniere[1] + "%";
       bande.current.style.setProperty("--sens", String(sens));
-      bande.current.style.setProperty("--pli", (sens * taille * .072) + "deg");
-      bande.current.style.setProperty("--levee", (-taille * .018) + "%");
+      // La bande pivote autour de la pointe de la déchirure, sans se décoller d'un bloc : sinon une
+      // marche apparaissait à la charnière, là où le film tient encore.
+      bande.current.style.setProperty("--pli", (sens * Math.min(taille, 90) * .12) + "deg");
     }
     // De la lumière sort de l'ouverture, d'autant plus que la déchirure avance.
     if (lumiere.current && !terminee) {
@@ -361,6 +382,29 @@ export default function SachetBooster({ guide, ouvrir, chargement, sortie, revel
     requestAnimationFrame(pas);
   }
 
+  // Lâchée trop tôt, la déchirure se referme en suivant le chemin inverse, au lieu de disparaître d'un coup.
+  function refermerDechirure(geste: Dechirure) {
+    const trace = geste.trace;
+    const depart = trace[0][0];
+    const bout = trace[trace.length - 1][0];
+    const debut = performance.now();
+    const fin = () => {
+      if (lumiere.current) lumiere.current.style.opacity = "0";
+      if (!enCours.current && scene.current) delete scene.current.dataset.trace;
+    };
+    if (trace.length < 2 || !scene.current?.dataset.trace) { fin(); return; }
+    const pas = (temps: number) => {
+      if (enCours.current || dechirure.current) return;
+      const k = Math.min(1, (temps - debut) / 170);
+      const limite = bout + (depart - bout) * k * (2 - k);
+      const reste = trace.filter(([x]) => (x - limite) * geste.sens <= 0);
+      if (k >= 1 || reste.length < 2) { fin(); return; }
+      peindreDechirure([...reste, [limite, reste[reste.length - 1][1]]], geste.sens, false);
+      requestAnimationFrame(pas);
+    };
+    requestAnimationFrame(pas);
+  }
+
   function ouvrirSachet(trace: Point[], sens: 1 | -1) {
     if (enCours.current || chargement) return;
     enCours.current = true;
@@ -374,9 +418,11 @@ export default function SachetBooster({ guide, ouvrir, chargement, sortie, revel
   function avancerDechirure(event: PointerEvent<HTMLButtonElement>) {
     const geste = dechirure.current;
     if (!geste || geste.id !== event.pointerId || enCours.current) return;
-    const [x, y] = position(event, geste.cadre);
-    const precedent = geste.trace[geste.trace.length - 1][0];
+    const [x, yDoigt] = position(event, geste.cadre);
+    const [precedent, yPrecedent] = geste.trace[geste.trace.length - 1];
     if ((x - precedent) * geste.sens < 1.8) return;
+    // Le doigt tremble : la ligne suit sa hauteur en douceur, sinon le bord faisait des marches.
+    const y = yPrecedent + (yDoigt - yPrecedent) * .3;
     geste.trace.push([x, y]);
     if (geste.sens === 1 ? x >= 94 : x <= 6) {
       ouvrirSachet(geste.trace, geste.sens);
@@ -417,28 +463,37 @@ export default function SachetBooster({ guide, ouvrir, chargement, sortie, revel
             ))}
         </div>
       </div>
-      <svg className={styles.dechirure} viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+      <svg className={styles.dechirure} viewBox={"0 0 100 " + H} preserveAspectRatio="none" aria-hidden="true">
         <defs>
-          <image id={idSvg + "-portrait"} href={portrait} width="100" height="100" preserveAspectRatio="none" />
+          {/* Les mêmes cinq images que la face 3D, avec les mêmes opacités : à l'instant où le doigt se
+              pose, le sachet dessiné ici est exactement celui qu'on voyait, reflet compris. */}
+          <g id={idSvg + "-portrait"} data-calques="">
+            {ANGLES.map(k => <image key={k} data-angle={k} href={angle(fichierFace, k)} width="100" height={H}
+              preserveAspectRatio="none" style={{ opacity: k === DE_FACE ? 1 : 0 }} />)}
+          </g>
           <clipPath id={idSvg + "-bas"}><polygon ref={contourBas} /></clipPath>
           <clipPath id={idSvg + "-haut"}><polygon ref={contourHaut} /></clipPath>
-          <linearGradient id={idSvg + "-cavite"} x2="0%" y2="100%">
+          <linearGradient id={idSvg + "-cavite"} gradientUnits="userSpaceOnUse" x1="0" y1={2 * K} x2="0" y2={11 * K}>
             <stop stopColor="#8e7599" /><stop offset=".58" stopColor="#3d2b54" /><stop offset="1" stopColor="#110d25" />
           </linearGradient>
-          <linearGradient id={idSvg + "-bord"}>
+          <linearGradient id={idSvg + "-bord"} gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="100" y2="0">
             <stop stopColor="#dcecff" /><stop offset=".6" stopColor="#fff" /><stop offset="1" stopColor="#ffc8ed" />
           </linearGradient>
         </defs>
         <g className={styles.corps} onAnimationEnd={() => { if (sortie) reveler(); }}>
           <polygon ref={ouverture} data-ouverture-sachet="" fill={"url(#" + idSvg + "-cavite)"} />
           <use href={"#" + idSvg + "-portrait"} clipPath={"url(#" + idSvg + "-bas)"} />
-          <polyline ref={bordOmbre} fill="none" stroke="#2a1840" strokeOpacity=".32" strokeWidth=".9" strokeLinejoin="round" />
-          <polyline ref={bord} fill="none" stroke={"url(#" + idSvg + "-bord)"} strokeWidth=".62" strokeLinejoin="round" />
-          <path ref={fibresBord} fill="none" stroke="#fff" strokeOpacity=".85" strokeWidth=".16" strokeLinecap="round" />
+          <polyline ref={bordOmbre} fill="none" stroke="#2a1840" strokeOpacity=".22" strokeWidth="2.6"
+            strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
+          <polyline ref={bord} fill="none" stroke={"url(#" + idSvg + "-bord)"} strokeWidth="1.4"
+            strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
+          <path ref={fibresBord} fill="none" stroke="#fff" strokeOpacity=".7" strokeWidth=".8"
+            strokeLinecap="round" vectorEffect="non-scaling-stroke" />
         </g>
         <g ref={bande} className={styles.bande} data-bande-detachee={detache ? "" : undefined}>
           <use href={"#" + idSvg + "-portrait"} clipPath={"url(#" + idSvg + "-haut)"} />
-          <polyline ref={bordHaut} fill="none" stroke={"url(#" + idSvg + "-bord)"} strokeWidth=".5" strokeLinejoin="round" />
+          <polyline ref={bordHaut} fill="none" stroke={"url(#" + idSvg + "-bord)"} strokeWidth="1.2"
+            strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
         </g>
       </svg>
       <div ref={lumiere} className={styles.lumiere} aria-hidden="true" />
@@ -528,12 +583,12 @@ export default function SachetBooster({ guide, ouvrir, chargement, sortie, revel
           if (fait > 55) { dechirure.current = null; finirDechirure(geste); }
         }}
         onLostPointerCapture={() => {
-          if (!dechirure.current) return;
+          const geste = dechirure.current;
+          if (!geste) return;
           dechirure.current = null;
           if (imageDechirure.current !== null) cancelAnimationFrame(imageDechirure.current);
           imageDechirure.current = null;
-          if (lumiere.current) lumiere.current.style.opacity = "0";
-          if (!enCours.current && scene.current) delete scene.current.dataset.trace;
+          refermerDechirure(geste);
         }} />}
     </div>
     <div className={styles.aide}>

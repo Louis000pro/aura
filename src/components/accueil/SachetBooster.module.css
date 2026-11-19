@@ -71,10 +71,12 @@
   overflow:visible;
   visibility:hidden;
 }
-.scene[data-trace] .camera { visibility:hidden; }
+/* Le sachet 3D ne s'efface qu'une fois le dessin de la déchirure peint par-dessus : sans ce délai,
+   le sachet pouvait disparaître une image, le temps que le dessin soit prêt. */
+.scene[data-trace] .camera { visibility:hidden;transition:visibility 0s .1s; }
 .scene[data-trace] .dechirure { visibility:visible; }
 .corps,.bande { transform-box:view-box; }
-.bande { transform:translateY(var(--levee,0%)) rotate(var(--pli,0deg)); }
+.bande { transform:rotate(var(--pli,0deg)); }
 .scene[data-trace="terminee"] .bande { animation:envol .52s cubic-bezier(.22,.69,.38,1) both; }
 /* Le sachet ne tombe qu'une fois les cartes sorties (elles montent pendant ce délai). */
 .scene[data-trace="terminee"][data-sortie] .corps {
@@ -83,7 +85,7 @@
 }
 .scene[data-sortie] [data-ouverture-sachet] { opacity:0; }
 @keyframes envol {
-  0% { transform:translateY(var(--levee)) rotate(var(--pli));opacity:1; }
+  0% { transform:rotate(var(--pli));opacity:1; }
   45% { transform:translate(calc(var(--sens) * 8%),-11%) rotate(calc(var(--sens) * 22deg)) scaleY(.8);opacity:1; }
   100% { transform:translate(calc(var(--sens) * 24%),-27%) rotate(calc(var(--sens) * 52deg)) scaleY(.45);opacity:0; }
 }

@@ -56,6 +56,22 @@ fonctionnalités ; ce document est la source de vérité de ce qu'on en dit deho
 - **Auth = Supabase, et rien d'autre.** Google passe par `supabase.auth.signInWithOAuth({ provider: "google" })` dans `AuthContext`, et les codes de confirmation par `/api/auth/send-otp` + `/api/auth/verify-otp` (envoi Resend, jeton scellé en HMAC avec `AUTH_SECRET`). `next-auth` figurait dans `package.json` sans être importé nulle part : retiré le 2026-08-11, **ne pas le réinstaller** en croyant réparer quelque chose. Plus Stripe et web-push. **L'app est auth-gated : non testable en local.** Vérification standard = `npx tsc --noEmit` + build qui passe ; la validation visuelle, c'est Louis sur Vercel.
 - Secrets : `.env.local` (`AUTH_SECRET`, `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`, `COACH_AURA_KEY`) — à demander à Louis, jamais commité.
 
+## La déchirure du booster refaite — 2026-11-19
+
+Louis : la déchirure « fait glitch ». Causes : le dessin de la déchirure (SVG)
+était un viewBox carré étiré, donc la bande qui se soulève était cisaillée et
+les traits changeaient d'épaisseur ; le sachet 3D s'effaçait avant que ce
+dessin soit peint (une image vide) ; le dessin n'utilisait qu'une image du
+reflet, d'où un saut de couleur au premier contact ; la bande se décollait
+d'un bloc (une marche à la charnière) ; le bord suivait les tremblements du
+doigt ; lâchée trop tôt, la déchirure disparaissait d'un coup. Désormais :
+repère aux proportions du sachet (`H`, `K` dans `SachetBooster.tsx`), les cinq
+images du reflet dans le SVG avec les mêmes opacités (figées pendant la
+déchirure), sachet 3D effacé 0,1 s après, bande qui pivote seulement, bord en
+trois échelles de bruit fixé par abscisse (`relief`), traits en
+`non-scaling-stroke`, et la déchirure se referme en 0,17 s. Vu dans un Chrome
+sans fenêtre à 390 px ; pas vu sur un vrai téléphone.
+
 ## Le booster refluidifié — 2026-11-18
 
 Louis : « le booster est redevenu saccadé ». Trois causes, aucune dans la
