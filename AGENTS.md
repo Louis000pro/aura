@@ -56,6 +56,17 @@ fonctionnalités ; ce document est la source de vérité de ce qu'on en dit deho
 - **Auth = Supabase, et rien d'autre.** Google passe par `supabase.auth.signInWithOAuth({ provider: "google" })` dans `AuthContext`, et les codes de confirmation par `/api/auth/send-otp` + `/api/auth/verify-otp` (envoi Resend, jeton scellé en HMAC avec `AUTH_SECRET`). `next-auth` figurait dans `package.json` sans être importé nulle part : retiré le 2026-08-11, **ne pas le réinstaller** en croyant réparer quelque chose. Plus Stripe et web-push. **L'app est auth-gated : non testable en local.** Vérification standard = `npx tsc --noEmit` + build qui passe ; la validation visuelle, c'est Louis sur Vercel.
 - Secrets : `.env.local` (`AUTH_SECRET`, `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`, `COACH_AURA_KEY`) — à demander à Louis, jamais commité.
 
+## La page de fin du booster harmonisée — 2026-11-19
+
+Louis : « des incohérences ». Le titre dit toujours la meilleure carte, dans
+la couleur de sa rareté (« Une rare ! » bleu, épique violet, légendaire or,
+chromatique irisé), avec « Booster ouvert » dessous ; avant, une rare donnait
+« Booster ouvert » en gros sans sous-titre. Les étiquettes « Nouvelle » / « ×N »
+sont sur une même ligne ; le socle lumineux est sous l'éventail (il flottait
+derrière « Ta collection ») ; l'EXP est violette comme partout dans l'app
+(l'or reste réservé à « Ouvrir le suivant ») ; « Voir ma collection » dans les
+deux cas. Vu sur une page d'essai (supprimée) à 390 et 360 px.
+
 ## La déchirure du booster refaite — 2026-11-19
 
 Louis : la déchirure « fait glitch ». Causes : le dessin de la déchirure (SVG)

@@ -42,7 +42,8 @@ function ressort(k: number, c: number) {
   return lineaire ? { e: "linear(" + s.join(",") + ")", d: Math.round(t * 1000) } : { e: "cubic-bezier(.3,1.35,.5,1)", d: Math.round(t * 760) };
 }
 
-const TITRE: Partial<Record<Rarete, string>> = { epique: "Une épique !", legendaire: "Une légendaire !", chromatique: "Une chromatique !" };
+// Le titre dit toujours la meilleure carte, dans la couleur de sa rareté ; « Booster ouvert » vient dessous.
+const TITRE: Partial<Record<Rarete, string>> = { rare: "Une rare !", epique: "Une épique !", legendaire: "Une légendaire !", chromatique: "Une chromatique !" };
 const RANG_RARETE: Rarete[] = ["commune", "rare", "epique", "legendaire", "chromatique"];
 
 export default function OuvertureCartes({ cartes, images, libelles, exp, exemplaires, mode, sachet, infos, actions, onFermer, onRecap }: {
@@ -101,6 +102,8 @@ export default function OuvertureCartes({ cartes, images, libelles, exp, exempla
     const { width: W, height: H, left: L, top: T } = racine.getBoundingClientRect();
     const CW = Math.min(W * .74, H * .55 * 820 / 1290, 360), CH = CW * 1290 / 820;
     racine.style.setProperty("--cw", CW + "px");
+    // Le socle lumineux se pose sous l'éventail de la page de fin, pas au milieu de ce qui suit.
+    racine.style.setProperty("--socle", (H * .37 + CH * .23) + "px");
     const pack = sachet && sachet.width > 0
       ? { x: sachet.left - L + sachet.width / 2, top: sachet.top - T, h: sachet.height, w: sachet.width }
       : { x: W / 2, top: H * .46 - CW * .6, h: CW * 1.2, w: CW * .86 };
@@ -317,11 +320,13 @@ export default function OuvertureCartes({ cartes, images, libelles, exp, exempla
 
     function poserNouvelles(anime: boolean) {
       if (!exemplaires) return;
+      // Les trois étiquettes sur une même ligne, sous la carte du centre (la plus basse de l'éventail).
+      const ligne = Math.max(...poses.map(p => p.y + CH * p.s / 2)) + H * .026;
       cartes.forEach((_, i) => {
         const e = etiquettes.current[i];
         if (!exemplaires[i] || !e) return;
         const p = poses[i];
-        e.style.transform = "translate3d(" + p.x.toFixed(1) + "px," + (p.y + CH * p.s / 2 + H * .026).toFixed(1) + "px,0) translate(-50%,-50%)";
+        e.style.transform = "translate3d(" + p.x.toFixed(1) + "px," + ligne.toFixed(1) + "px,0) translate(-50%,-50%)";
         if (anime) fixe(e, [{ opacity: 0, scale: ".6" }, { opacity: 1, scale: "1" }], { duration: rebond.d, easing: rebond.e, delay: i * 90 });
         else e.style.opacity = "1";
       });
@@ -418,7 +423,7 @@ export default function OuvertureCartes({ cartes, images, libelles, exp, exempla
         </div>
       ))}
       <div className={styles.ui}>
-        <h2 ref={titreEl} className={styles.titre} aria-live="polite">{titre}</h2>
+        <h2 ref={titreEl} className={styles.titre} data-fin={meilleure} aria-live="polite">{titre}</h2>
         {titreFin !== "Booster ouvert" && <p className={styles.sousTitre}>Booster ouvert</p>}
         <button type="button" className={styles.fermer} aria-label="Fermer" onClick={onFermer}>×</button>
         <p className={styles.aide}>{aide}</p>

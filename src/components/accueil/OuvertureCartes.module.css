@@ -55,8 +55,9 @@
 .socle {
   left:8%;
   right:8%;
-  top:57.5%;
+  top:var(--socle,57.5%);
   height:calc(var(--cw) * .18);
+  margin-top:calc(var(--cw) * -.07);
   border-radius:50%;
   opacity:0;
   background:radial-gradient(ellipse,#f7d8ff,#c895ec9c 58%,#a389d900 76%);
@@ -205,6 +206,10 @@
   background-clip:text;
   -webkit-text-fill-color:transparent;
 }
+/* La couleur du titre est celle de la rareté de la meilleure carte (les mêmes que les cartes). */
+.scene .titre[data-fin="rare"] { background-image:linear-gradient(175deg,#4d9cff 0%,#1f5fd6 55%,#4a7bf0 100%); }
+.scene .titre[data-fin="legendaire"] { background-image:linear-gradient(175deg,#e0a21c 0%,#a8650a 50%,#c98612 70%,#e9b33a 100%); }
+.scene .titre[data-fin="chromatique"] { background-image:linear-gradient(100deg,#c98612 0%,#e04fb4 35%,#6b5cf0 65%,#2f9fd6 100%); }
 .fermer {
   position:absolute;
   right:12px;
@@ -267,10 +272,10 @@
   align-items:baseline;
   gap:6px;
   padding:6px 18px;
-  border:1px solid #f6d284;
+  border:1px solid #ddd0fb;
   border-radius:30px;
-  background:#fff1c8;
-  color:#633906;
+  background:#f4eeff;
+  color:#5b38c9;
 }
 .exp b { font-family:var(--chiffre);font-size:1.75rem;font-weight:600;letter-spacing:-.045em;font-variant-numeric:tabular-nums; }
 .exp span { font-size:.85rem;font-weight:850; }

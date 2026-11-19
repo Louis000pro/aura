@@ -79,7 +79,7 @@ export function ActionsFin({ stock, illimite, prochainMs, compte, onSuivant, onC
     <button type="button" className={styles.or} onClick={onSuivant}>
       {illimite ? "Ouvrir un autre booster" : <>Ouvrir le suivant <small>· {stock} en réserve</small></>}
     </button>
-    <Link className={styles.lien} href="/profil#cartes-exercices" onClick={onCollection}>Ma collection</Link>
+    <Link className={styles.lien} href="/profil#cartes-exercices" onClick={onCollection}>Voir ma collection</Link>
   </div>;
 
   // Le temps qui reste vient du compte à rebours (« 01:52:07 »), déjà tenu à jour chaque seconde.
