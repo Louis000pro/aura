@@ -13,6 +13,16 @@ export const ORDRE_RARETES: Carte["rarete"][] = ["commune", "rare", "epique", "l
 export const POINTS_RARETE: Record<Carte["rarete"], number> = { commune: 1, rare: 2, epique: 5, legendaire: 10, chromatique: 25 };
 export const cleCarte = (carte: Carte) => carte.exercice + ":" + carte.rarete;
 
+/** La vitrine choisie : trois clés de carte au plus, gardées dans les métadonnées du compte
+ *  (`vitrine_boosters`). Une clé mal formée est ignorée ; celui qui regarde ne garde ensuite que
+ *  les cartes vraiment détenues (`composerVitrine`). */
+export const MAX_VITRINE = 3;
+export function lireChoixVitrine(brut: unknown): string[] | null {
+  if (!Array.isArray(brut)) return null;
+  const cles = brut.filter((c): c is string => typeof c === "string" && /^[a-z]+:(commune|rare|epique|legendaire|chromatique)$/.test(c));
+  return [...new Set(cles)].slice(0, MAX_VITRINE);
+}
+
 export async function lireCollectionBoosters(client: SupabaseClient, userId: string, signal?: AbortSignal): Promise<CarteDetenue[]> {
   const collection = new Map<string, CarteDetenue>();
   for (const table of ["boosters_exercices", "boosters_illimites"]) {

@@ -285,7 +285,7 @@ export function CollectionBoosters({ userId }: { userId: string }) {
 }
 
 export function CollectionBoostersProfil({ userId, pseudo }: { userId: string; pseudo: string }) {
-  const [collection, setCollection] = useState<{ cartes: CarteDetenue[]; guide: GuideId | null } | null>(null);
+  const [collection, setCollection] = useState<{ cartes: CarteDetenue[]; guide: GuideId | null; vitrine?: string[] | null } | null>(null);
   const [miennes, setMiennes] = useState<CarteDetenue[] | null>(null);
   const [erreur, setErreur] = useState(false);
   useEffect(() => {
@@ -314,6 +314,7 @@ export function CollectionBoostersProfil({ userId, pseudo }: { userId: string; p
     {erreur ? <p>Impossible de charger ses cartes.</p> : !collection ? <p>Chargement…</p> :
       !collection.cartes.length ? <p>Aucune carte débloquée pour le moment.</p> :
       collection.guide ? <SaCollection cartes={collection.cartes.map(c => ({ ...c, n: c.n ?? 1 }))} miennes={miennes} pseudo={pseudo}
+        vitrine={collection.vitrine ?? null}
         image={carte => imageCarte(carte, collection.guide!)} /> :
       <ul>{collection.cartes.map(carte => <li key={carte.exercice + ":" + carte.rarete}>
         {mouvements[carte.exercice][0]} · {raretes[carte.rarete]}

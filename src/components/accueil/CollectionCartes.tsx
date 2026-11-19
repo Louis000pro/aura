@@ -10,9 +10,10 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase";
 import { mouvements, raretes, type Carte } from "@/lib/cartesBooster";
 import {
-  lireClassement, pointsCollection, cleCarte, TOTAL_CARTES, ORDRE_RARETES,
+  lireClassement, pointsCollection, cleCarte, lireChoixVitrine, TOTAL_CARTES, ORDRE_RARETES, MAX_VITRINE,
   type CarteDetenue, type Collectionneur,
 } from "@/lib/collectionBoosters";
+import Sheet from "@/components/communaute/Sheet";
 import VisionneuseCarte from "./VisionneuseCarte";
 import QuiLaCarte, { Visage } from "./QuiLaCarte";
 import styles from "./Collectionneurs.module.css";
@@ -29,10 +30,18 @@ export function Point({ rarete }: { rarete: Carte["rarete"] }) {
   return <span className={styles.point} data-rarete={rarete} aria-hidden="true" />;
 }
 
-/** Les trois plus belles : la rareté d'abord, puis les doublons. */
-const vitrine = (cartes: CarteDetenue[]) => [...cartes]
-  .sort((a, b) => ORDRE_RARETES.indexOf(b.rarete) - ORDRE_RARETES.indexOf(a.rarete) || b.n - a.n)
-  .slice(0, 3);
+/** Les plus belles d'abord : la rareté, puis les doublons. */
+const parBeaute = (cartes: CarteDetenue[]) => [...cartes]
+  .sort((a, b) => ORDRE_RARETES.indexOf(b.rarete) - ORDRE_RARETES.indexOf(a.rarete) || b.n - a.n);
+
+/** La vitrine : les cartes choisies (seulement celles qu'on détient), puis les places libres
+ *  complétées par les plus belles. Sans choix, les trois plus belles. */
+function composerVitrine(cartes: CarteDetenue[], choix: string[] | null) {
+  const parCle = new Map(cartes.map(c => [cleCarte(c), c]));
+  const choisies = (choix ?? []).map(k => parCle.get(k)).filter((c): c is CarteDetenue => !!c);
+  const prises = new Set(choisies.map(cleCarte));
+  return [...choisies, ...parBeaute(cartes).filter(c => !prises.has(cleCarte(c)))].slice(0, MAX_VITRINE);
+}
 
 export function Anneau({ part, children }: { part: number; children: ReactNode }) {
   return <span className={styles.anneau} style={{ background: `conic-gradient(#8b5cf6 0 ${part * 100}%, #eee8f6 ${part * 100}% 100%)` }}>
@@ -62,13 +71,59 @@ function Vignette({ carte, image, n, onOuvrir }: { carte: Carte; image: string; 
   </button>;
 }
 
-export function Vitrine({ cartes, image, onOuvrir, titre }: { cartes: CarteDetenue[]; image: (c: Carte) => string; onOuvrir: (c: CarteDetenue) => void; titre: string }) {
-  const trois = vitrine(cartes);
+export function Vitrine({ cartes, image, onOuvrir, titre, choix = null, onChanger }: {
+  cartes: CarteDetenue[]; image: (c: Carte) => string; onOuvrir: (c: CarteDetenue) => void; titre: string;
+  choix?: string[] | null; onChanger?: () => void;
+}) {
+  const trois = composerVitrine(cartes, choix);
   if (!trois.length) return null;
   return <div className={styles.bloc}>
-    <p className={styles.etiquette}>{titre}</p>
+    <p className={styles.etiquette}>{titre}{onChanger && cartes.length > 1 && <button type="button" onClick={onChanger}>Changer</button>}</p>
     <div className={styles.vitrine}>{trois.map(c => <Vignette key={cleCarte(c)} carte={c} image={image(c)} onOuvrir={() => onOuvrir(c)} />)}</div>
   </div>;
+}
+
+/** Choisir sa vitrine : trois places, les cartes détenues dessous. Rien ne s'écrit avant « Enregistrer ». */
+function ChoixVitrineCartes({ cartes, image, choix, onFermer, onEnregistre }: {
+  cartes: CarteDetenue[]; image: (c: Carte) => string; choix: string[] | null;
+  onFermer: () => void; onEnregistre: (choix: string[] | null) => void;
+}) {
+  const [places, setPlaces] = useState<string[]>(() => composerVitrine(cartes, choix).map(cleCarte));
+  const [envoi, setEnvoi] = useState(false);
+  const [erreur, setErreur] = useState(false);
+  const parCle = useMemo(() => new Map(cartes.map(c => [cleCarte(c), c])), [cartes]);
+  const toutes = useMemo(() => parBeaute(cartes), [cartes]);
+  const basculer = (cle: string) => setPlaces(p => p.includes(cle) ? p.filter(k => k !== cle)
+    // Places pleines : la carte prend la dernière place (un toucher n'est jamais refusé).
+    : p.length < MAX_VITRINE ? [...p, cle] : [...p.slice(0, MAX_VITRINE - 1), cle]);
+  async function enregistrer(valeur: string[] | null) {
+    setEnvoi(true); setErreur(false);
+    const { error } = await createClient().auth.updateUser({ data: { vitrine_boosters: valeur } });
+    setEnvoi(false);
+    if (error) { setErreur(true); return; }
+    onEnregistre(valeur);
+  }
+  return <Sheet onFermer={onFermer}>
+    <p className={styles.etiquette}>Ma vitrine</p>
+    <div className={styles.vitrine}>{Array.from({ length: MAX_VITRINE }, (_, i) => {
+      const c = places[i] ? parCle.get(places[i]) : undefined;
+      return c ? <Vignette key={places[i]} carte={c} image={image(c)} onOuvrir={() => basculer(places[i])} />
+        : <span key={"vide" + i} className={styles.placeVide} aria-label="Place libre" />;
+    })}</div>
+    <p className={styles.aideChoix}>Touche une carte pour la poser ou la retirer.</p>
+    <div className={styles.manquantes}>{toutes.map(c => {
+      const cle = cleCarte(c), choisie = places.includes(cle);
+      return <div key={cle} className={styles.choix} data-choisie={choisie ? "" : undefined}>
+        <Vignette carte={c} image={image(c)} n={c.n} onOuvrir={() => basculer(cle)} />
+        {choisie && <span className={styles.coche} aria-hidden="true">{places.indexOf(cle) + 1}</span>}
+      </div>;
+    })}</div>
+    {erreur && <p role="alert" className={styles.aideChoix}>Impossible d’enregistrer. Réessaie.</p>}
+    <div className={styles.actionsChoix}>
+      <button type="button" className={styles.enregistrer} disabled={envoi} onClick={() => enregistrer(places)}>Enregistrer</button>
+      <button type="button" className={styles.auto} disabled={envoi} onClick={() => enregistrer(null)}>Laisser Vaiiya choisir</button>
+    </div>
+  </Sheet>;
 }
 
 function Album({ cartes, image, onOuvrir }: { cartes: CarteDetenue[]; image: (c: Carte) => string; onOuvrir: (c: CarteDetenue) => void }) {
@@ -151,6 +206,15 @@ export function MaCollection({ cartes, image, parRarete }: {
   const [onglet, setOnglet] = useState<Onglet>("album");
   const [enGrand, setEnGrand] = useState<CarteDetenue | null>(null);
   const [place, setPlace] = useState<{ rang: number; amis: number; points: number } | null>(null);
+  const [choix, setChoix] = useState<string[] | null>(null);
+  const [choisir, setChoisir] = useState(false);
+  useEffect(() => {
+    let actif = true;
+    void createClient().auth.getUser().then(({ data }) => {
+      if (actif) setChoix(lireChoixVitrine(data.user?.user_metadata?.vitrine_boosters));
+    });
+    return () => { actif = false; };
+  }, []);
   useEffect(() => {
     const controle = new AbortController();
     void lireClassement(createClient(), "amis", controle.signal).then(liste => {
@@ -163,7 +227,9 @@ export function MaCollection({ cartes, image, parRarete }: {
   const ligne = place && place.amis > 1 ? <>{ordinal(place.rang)} place chez tes amis · <span className="vy-nombre">{points}</span> points</> : <><span className="vy-nombre">{points}</span> points</>;
   return <>
     <EnTeteCollection cartes={cartes} ligne={ligne} />
-    <Vitrine titre="Ma vitrine" cartes={cartes} image={image} onOuvrir={setEnGrand} />
+    <Vitrine titre="Ma vitrine" cartes={cartes} image={image} onOuvrir={setEnGrand} choix={choix} onChanger={() => setChoisir(true)} />
+    {choisir && <ChoixVitrineCartes cartes={cartes} image={image} choix={choix} onFermer={() => setChoisir(false)}
+      onEnregistre={valeur => { setChoix(valeur); setChoisir(false); }} />}
     <div className={styles.onglets} role="tablist">
       {([["album", "Album"], ["rarete", "Par rareté"], ["collectionneurs", "Les collectionneurs"]] as const).map(([id, nom]) =>
         <button key={id} type="button" role="tab" aria-selected={onglet === id} onClick={() => setOnglet(id)}>{nom}</button>)}
@@ -176,8 +242,10 @@ export function MaCollection({ cartes, image, parRarete }: {
 }
 
 /** La collection d'un autre membre : où il en est, vous deux, ce qu'il a que tu n'as pas, sa vitrine. */
-export function SaCollection({ cartes, image, miennes, pseudo }: {
+export function SaCollection({ cartes, image, miennes, pseudo, vitrine = null }: {
   cartes: CarteDetenue[];
+  /** La vitrine qu'il a choisie, null s'il laisse Vaiiya choisir. */
+  vitrine?: string[] | null;
   image: (c: Carte) => string;
   /** Ma collection, null si je regarde ou si elle ne se lit pas. */
   miennes: CarteDetenue[] | null;
@@ -201,7 +269,7 @@ export function SaCollection({ cartes, image, miennes, pseudo }: {
       <div className={styles.manquantes}>{(tout ? manquantes : manquantes.slice(0, 4)).map(c =>
         <Vignette key={cleCarte(c)} carte={c} image={image(c)} onOuvrir={() => setEnGrand(c)} />)}</div>
     </div>}
-    <Vitrine titre="Sa vitrine" cartes={cartes} image={image} onOuvrir={setEnGrand} />
+    <Vitrine titre="Sa vitrine" cartes={cartes} image={image} onOuvrir={setEnGrand} choix={vitrine} />
     {enGrand && <CarteEnGrand carte={enGrand} image={image(enGrand)} onFermer={() => setEnGrand(null)} />}
   </>;
 }

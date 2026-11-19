@@ -1,5 +1,5 @@
 import { compteAppelant, refusAuth } from "@/lib/apiAuth";
-import { lireCollectionBoosters } from "@/lib/collectionBoosters";
+import { lireChoixVitrine, lireCollectionBoosters } from "@/lib/collectionBoosters";
 import { createAdminClient } from "@/lib/supabase-admin";
 
 const prive = { headers: { "Cache-Control": "private, no-store" } };
@@ -23,7 +23,10 @@ export async function GET(req: Request) {
     // La collection ne contient que les cartes distinctes. Les dates et les
     // identifiants des ouvertures restent dans les tables privées.
     const cartes = await lireCollectionBoosters(db, membre, req.signal);
-    return Response.json({ cartes, guide }, prive);
+    // La vitrine qu'il a choisie (trois clés de carte, rien d'autre de ses métadonnées ne sort).
+    const { data: compte } = await db.auth.admin.getUserById(membre);
+    const vitrine = lireChoixVitrine(compte?.user?.user_metadata?.vitrine_boosters);
+    return Response.json({ cartes, guide, vitrine }, prive);
   } catch {
     return Response.json({ error: "collection_indisponible" }, { ...prive, status: 503 });
   }

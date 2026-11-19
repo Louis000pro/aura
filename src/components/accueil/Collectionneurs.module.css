@@ -95,3 +95,20 @@
 .gens small { font-size:11px; font-weight:600; color:#6b6280; }
 .gens b { font-size:13px; color:#221a33; }
 .pied { margin:12px 0 0; font-size:13px; color:#6b6280; }
+
+/* Choisir sa vitrine (2026-11-19) : trois places, les cartes dessous, un numéro sur les choisies. */
+.placeVide { display:block; aspect-ratio:820 / 1290; border-radius:9% / 6%; border:2px dashed #d9cdef; }
+.aideChoix { margin:10px 0; font-size:13px; color:var(--text-2); text-align:center; }
+.choix { position:relative; }
+.choix[data-choisie] .vignette { outline:3px solid #8b5cf6; outline-offset:1px; }
+.coche {
+  position:absolute; top:-6px; left:-6px; display:grid; place-items:center; width:22px; height:22px;
+  border-radius:50%; background:linear-gradient(135deg,#8b5cf6,#c13bc1); color:#fff; font-size:12px; font-weight:800;
+}
+.actionsChoix { display:grid; gap:6px; margin-top:16px; }
+.enregistrer {
+  min-height:48px; border:0; border-radius:var(--r-controle); color:#fff; font-size:16px; font-weight:800;
+  background:linear-gradient(135deg,#8b5cf6,#c13bc1); box-shadow:var(--ombre-action); cursor:pointer;
+}
+.auto { min-height:44px; border:0; background:none; color:var(--exp-encre); font-size:13px; font-weight:700; cursor:pointer; }
+.enregistrer:disabled, .auto:disabled { opacity:.6; }
