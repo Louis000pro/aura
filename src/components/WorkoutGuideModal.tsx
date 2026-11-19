@@ -1,6 +1,7 @@
 "use client";
 
 import { cheminDuGuide } from "@/lib/photosGuide";
+import { useReglagesProgramme } from "@/hooks/useReglagesProgramme";
 import { jouerSon } from "@/lib/sons";
 import { Fragment, useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { marquesDeReprise, type AvancementSeance } from "@/lib/seanceInterrompue";
@@ -839,6 +840,7 @@ export default function WorkoutGuideModal({
   /* ── R4 · la question et la proposition, avec les mêmes critères ──
      Les séries de chaque emplacement telles que le journal les écrirait,
      puis les emplacements où la question a sa place (au plus deux). */
+  const reglagesFin = useReglagesProgramme(user?.id);
   const prescriptionsR4 = useMemo(() => exercises.map((e) => prescriptionDe(e as ExercicePrescrit)), [exercises]);
   /* Le partage appartient au propriétaire du journal, jamais au compte
      connecté par hasard (R5, tour 35). */
@@ -874,7 +876,8 @@ export default function WorkoutGuideModal({
     emplacement: idDe(e), nom: exercises[e].name, prescription: p,
     series: lignesCourantes.filter((l) => l.emplacement === idDe(e)),
   }] : []);
-  const propositionsFin = propositionsDeSeance(
+  /* Lot 3 · la règle « Vaiiya ne propose rien » : pas de proposition à la fin. */
+  const propositionsFin = reglagesFin?.hausse === "rien" ? [] : propositionsDeSeance(
     emplacementsFinis.map((x) => ({ ...x, marge: margeDe(x.emplacement) })),
     (cle, type) => crans?.get(cleCharge(cle, type)) ?? null,
   );

@@ -7737,7 +7737,7 @@ verdict(
   // (« pas super clair »). Le contrôle s'inverse : l'entrée ne revient pas
   // en tête sans décision.
   verdict("R9c · l'entrée « Mon programme » vit dans la vue Programme, plus en haut d'Entraînement",
-    pageProg.indexOf('onClick={() => setSheet("programme")}') > pageProg.indexOf('{vue === "programme" && ('), "");
+    pageProg.indexOf('onMonProgramme={() => setSheet("programme")}') > pageProg.indexOf('{vue === "programme" && user && (') && pageProg.indexOf('{vue === "programme" && user && (') > 0, "");
   const base = readFileSync("src/lib/projectionBase.ts", "utf8");
   const PB = await import("@/lib/projectionBase");
   const occ = PB.joursOccupes([
@@ -8208,7 +8208,7 @@ verdict(
       && hook.includes('cible: !options?.repetition && compte && d.id ?'), "");
   verdict("R8 · le lancement recalcule sur la liste relue, avec la règle de l'aperçu",
     hook.includes("raccourcir(projeterPrescription(pleines).map(itemDExercice), minutesCourtes)")
-      && hook.includes("const minutesCourtes = courteMin ?? minutesSituation;")
+      && hook.includes("const minutesCourtes = courteMin ?? minutesSituation ?? minutesCible;")
       && hook.includes("raccourcir(base.map(itemDExercice), minutesVoulues)")
       && hook.includes("const minutesVoulues = options?.courte ??"), "");
   const hero = readFileSync("src/components/entrainement/TodayHero.tsx", "utf8");
@@ -8342,6 +8342,107 @@ verdict(
   const idsQ = (t: string) => CQ.filtrerGestes(t).map((g) => g.id);
   verdict("Lot 2 · « j'ai des partiels » mène à « moins de temps »", idsQ("j’ai des partiels").includes("temps"), idsQ("j’ai des partiels").join(","));
   verdict("Lot 2 · « je suis malade » mène à l'énergie", idsQ("je suis malade").includes("energie"), idsQ("je suis malade").join(","));
+}
+
+/* ══ Entraînement repensé · lot 3 : « Programme » ══ */
+{
+  const lire = (rel: string) => readFileSync(rel, "utf8").replace(/\r\n/g, "\n");
+  const V = await import("@/lib/vueProgramme");
+  const RG = await import("@/lib/reglagesProgramme");
+  const BE = await import("@/lib/banqueEtapes");
+  const PL = await import("@/lib/planning");
+  const VA = await import("@/lib/variete");
+
+  verdict("Lot 3 · les jours se disent en toutes lettres", V.motJours([6, 1, 4, 2]) === "lundi, mardi, jeudi et samedi" && V.motJours([3]) === "mercredi", V.motJours([6, 1, 4, 2]));
+  verdict("Lot 3 · « 4 fois », « une fois »", V.motFois(4) === "4 fois" && V.motFois(1) === "une fois", "");
+  verdict("Lot 3 · la durée visée et « sans limite »", V.motDuree(45) === "environ 45 min" && V.motDuree(null) === "sans limite de temps", "");
+  verdict("Lot 3 · l'objectif se dit comme une envie", V.motBut(["Prise de masse"]) === "prendre du muscle" && V.motBut([]) === "être en forme", "");
+  verdict("Lot 3 · la zone : tout le corps, ou les priorités", V.motZone(null) === "sur tout le corps" && V.motZone(["dos", "bras"]) === "surtout le dos et les bras", V.motZone(["dos", "bras"]));
+  verdict("Lot 3 · chaque lieu de la phrase écrit un lieu connu", V.LIEUX.every((l) => PL.ctxFromLieu(l.patch.location, l.patch.equip) === l.ctx), "");
+
+  const cyc = [{ id: "c", position: 3 }, { id: "a", position: 1 }, { id: "b", position: 2 }, { id: "d", position: 4 }];
+  verdict("Lot 3 · la pile commence par la prochaine et boucle", V.pileDuCycle(cyc, "c").map((e) => e.id).join("") === "cdab", V.pileDuCycle(cyc, "c").map((e) => e.id).join(""));
+  verdict("Lot 3 · sans prochaine connue, la pile suit l'ordre du cycle", V.pileDuCycle(cyc, null).map((e) => e.id).join("") === "abcd", "");
+
+  const ctx = { lieu: "salle" as const, orientation: "general" as const, niveau: null, version: BE.COMPOSITION_VERSION };
+  const push = BE.composerEtape("Push", ctx);
+  verdict("Lot 3 · rien de changé, rien à enregistrer", V.texteChangementSeance("Push", push, push.map((l) => ({ ...l }))) === null, "");
+  const remplace = push.map((l, i) => (i === 2 ? { ...l, exercice_cle: "x", exercice_nom: "Pompes" } : l));
+  const t1 = V.texteChangementSeance("Push", push, remplace) ?? "";
+  verdict("Lot 3 · un remplacement se dit comme tel", t1.startsWith("Push : ") && t1.includes("remplacé par pompes"), t1);
+  const plus = push.map((l, i) => (i === 0 ? { ...l, series: l.series + 1 } : l));
+  const t2 = V.texteChangementSeance("Push", push, plus) ?? "";
+  verdict("Lot 3 · une série de plus se dit avec le nouveau nombre", t2.includes(`en ${push[0].series + 1} séries`), t2);
+  const ajoute = [...push, BE.prescrire({ nom: "Curl haltères", statut: "complementaire" }, push.length, ctx)];
+  verdict("Lot 3 · un ajout se dit", (V.texteChangementSeance("Push", push, ajoute) ?? "").includes("curl haltères ajouté"), V.texteChangementSeance("Push", push, ajoute) ?? "");
+  verdict("Lot 3 · la dose d'une ligne", V.doseLigne({ ...push[0], series: 4, reps_min: 6, reps_max: 8 }) === "4 × 6 à 8", V.doseLigne(push[0]));
+  for (const lieu of ["salle", "halteres", "poids"] as const) {
+    const presents = BE.composerEtape("Full Body", { ...ctx, lieu }).map((l) => l.exercice_nom);
+    const possibles = V.ajoutsPossibles(lieu, presents);
+    let ok = possibles.length > 0 && possibles.every((e) => !presents.includes(e.nom) && e.statut === "complementaire");
+    try { possibles.forEach((e, i) => BE.prescrire(e, i, { ...ctx, lieu })); } catch { ok = false; }
+    verdict(`Lot 3 · ce qu'on peut ajouter (${lieu}) se prescrit, sans doublon`, ok, String(possibles.length));
+  }
+
+  const j = (id: string, genre: string, creeLe: string, o: Partial<{ annuleeLe: string; programmeId: string }> = {}) => ({
+    id, programmeId: o.programmeId ?? "P2", genre: genre as "duree", texte: id, auteur: "toi" as const, avant: {}, apres: {}, creeLe, annuleeLe: o.annuleeLe ?? null,
+  });
+  const progs = [{ id: "P1", nom: "Full Body", origine: "systeme" as const, creeLe: "2026-08-12T10:00:00Z" }, { id: "P2", nom: "Dos & bras", origine: "guide" as const, creeLe: "2026-09-14T10:00:00Z" }];
+  const lv = V.lignesVersions([j("a", "duree", "2026-10-01T10:00:00Z"), j("b", "jours", "2026-10-12T10:00:00Z")], progs, "P2", "Sasha");
+  verdict("Lot 3 · les versions vont du plus récent au plus ancien, programmes compris",
+    lv.map((l) => l.texte).join("|") === "b|a|Nouveau programme : Dos & bras|Programme créé", lv.map((l) => l.texte).join("|"));
+  verdict("Lot 3 · seule la dernière version se défait", !!lv[0].annulable && lv.slice(1).every((l) => !l.annulable), "");
+  verdict("Lot 3 · l'auteur se dit (toi, avec le Guide, Vaiiya)", lv[2].auteur === "avec Sasha" && lv[3].auteur === "Vaiiya" && lv[0].auteur === "toi", "");
+  verdict("Lot 3 · un retour ne se défait pas", !V.lignesVersions([j("r", "retour", "2026-10-12T10:00:00Z")], progs, "P2", null)[0].annulable, "");
+  verdict("Lot 3 · une version annulée ne se défait pas deux fois", !V.lignesVersions([j("x", "duree", "2026-10-12T10:00:00Z", { annuleeLe: "2026-10-13" })], progs, "P2", null)[0].annulable, "");
+  verdict("Lot 3 · le changement d'un ancien programme ne se défait pas", !V.lignesVersions([j("y", "seance", "2026-10-12T10:00:00Z", { programmeId: "P1" })], progs, "P2", null)[0].annulable, "");
+  verdict("Lot 3 · un programme entier ne se défait pas d'un toucher", !V.lignesVersions([], progs, "P2", null)[0].annulable, "");
+
+  verdict("Lot 3 · sans ligne, les règles valent le défaut", JSON.stringify(RG.reglagesDe(null)) === JSON.stringify(RG.REGLAGES_PAR_DEFAUT), "");
+  verdict("Lot 3 · une valeur inconnue vaut le défaut", RG.reglagesDe({ rotation: "?", hausse: 3, prevenir: "x", duree_cible_min: 5 }).rotation === "alterner"
+    && RG.reglagesDe({ duree_cible_min: 5 }).dureeMin === null && RG.reglagesDe({ prevenir: false }).prevenir === false, "");
+  verdict("Lot 3 · chaque mot d'une règle tourne et revient", RG.REGLES.every((r) => {
+    let v = r.choix[0].valeur;
+    for (let k = 0; k < r.choix.length; k++) v = RG.valeurSuivante(r.cle, v);
+    return v === r.choix[0].valeur;
+  }), "");
+  verdict("Lot 3 · la variété de la phrase est celle du moteur", RG.REGLES.find((r) => r.cle === "variete")!.choix.every((c) => (VA.VARIETES as readonly string[]).includes(c.valeur)), "");
+  verdict("Lot 3 · « me prévient » écrit un booléen", RG.colonneRegle("prevenir", "non").prevenir === false && RG.colonneRegle("rotation", "garder").rotation === "garder", "");
+  verdict("Lot 3 · aucune règle affichée ne reste sans effet (pas de « quand je manque une séance »)",
+    !RG.REGLES.some((r) => /manque/.test(r.avant)), "");
+
+  const genBase = { ctx: "salle" as const, goals: ["Prise de masse"], level: null };
+  verdict("Lot 3 · par défaut, le contexte de composition ne change pas", !("rotation" in PL.contexteDe(genBase)), JSON.stringify(PL.contexteDe(genBase)));
+  verdict("Lot 3 · « garder » passe dans le contexte", PL.contexteDe({ ...genBase, rotation: "garder" }).rotation === "garder", "");
+  const ctxG = { ...ctx, rotation: "garder" as const };
+  let rangLourd = -1;
+  for (let r = 0; r < 20 && rangLourd < 0; r++) if (VA.lignesDeLOccurrence(push, r, "peu", ctx, 4).rythme !== "volume") rangLourd = r;
+  const alt = VA.lignesDeLOccurrence(push, rangLourd, "peu", ctx, 4);
+  const gar = VA.lignesDeLOccurrence(push, rangLourd, "peu", ctxG, 4);
+  verdict("Lot 3 · « garde les mêmes chiffres » : le volume à chaque passage", rangLourd >= 0 && gar.rythme === "volume" && alt.rythme !== "volume", `${rangLourd} ${alt.rythme} ${gar.rythme}`);
+  verdict("Lot 3 · « garde les mêmes chiffres » ne change pas les exercices du passage",
+    gar.lignes.map((l) => l.exercice_cle).join() === alt.lignes.map((l) => l.exercice_cle).join(), "");
+
+  const hook = lire("src/hooks/useJournee.ts");
+  verdict("Lot 3 · « ne dit rien » coupe le signal de la veille", hook.includes("if (regl && !regl.prevenir) return null;"), "");
+  verdict("Lot 3 · la durée visée raccourcit une étape au lancement, après la situation",
+    hook.includes("const minutesCourtes = courteMin ?? minutesSituation ?? minutesCible;"), "");
+  verdict("Lot 3 · la rotation passe par les réglages de composition", hook.includes(`reglagesLus?.rotation === "garder"`), "");
+  const modal = lire("src/components/WorkoutGuideModal.tsx");
+  verdict("Lot 3 · « Vaiiya ne propose rien » : aucune proposition à la fin", modal.includes(`reglagesFin?.hausse === "rien" ? [] : propositionsDeSeance(`), "");
+  const vue = lire("src/components/programme/VueProgramme.tsx");
+  const feuilleS = lire("src/components/programme/FeuilleSeanceProgramme.tsx");
+  verdict("Lot 3 · la vue n'écrit le journal que par `noterVersion`", !vue.includes(`from("programme_versions")`) && vue.includes("noterVersion("), "");
+  verdict("Lot 3 · l'éditeur n'écrit que par `modifierSeance`", feuilleS.includes("modifierSeance(") && !/createClient|\.from\(|\.rpc\(/.test(feuilleS), "");
+  verdict("Lot 3 · l'éditeur dit que les séances déjà posées gardent leurs exercices", feuilleS.includes("Une séance déjà posée dans ton planning garde ses exercices."), "");
+  const sql = lire("supabase/migrations/20261120_programme_versions.sql");
+  verdict("Lot 3 · le journal ne se modifie ni ne s'efface depuis le navigateur",
+    sql.includes("revoke update, delete on public.programme_versions from anon, authenticated;")
+      && sql.includes("genre <> 'retour' and annulee_le is null and retour_de is null"), "");
+  verdict("Lot 3 · une séance se réécrit et se note dans la même fonction",
+    sql.includes("delete from public.etape_exercices where modele_id = v_modele;") && sql.includes("insert into public.programme_versions"), "");
+  const page = lire("src/app/progression/page.tsx");
+  verdict("Lot 3 · un changement de jours devient une version", page.includes(`genre: "jours"`) && page.includes("onEnregistre={(nouveaux) =>"), "");
 }
 
 console.log("\n" + (echecs === 0 ? "Tout passe." : echecs + " échec(s)."));

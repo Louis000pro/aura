@@ -217,6 +217,9 @@ export type ContexteComposition = {
   orientation: Orientation;
   niveau: string | null;
   version: number;
+  /** Lot 3 · la règle « chaque séance alterne lourd, volume et
+   *  endurance ». Absente = elle alterne (le défaut). */
+  rotation?: "alterner" | "garder";
 };
 
 /** Une ligne de prescription : celle d'un modèle, ou celle, figée, d'une occurrence. */

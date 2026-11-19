@@ -31,7 +31,8 @@ export default function MesJoursSheet({ userId, calendrier, aujourdhui, onClose,
   calendrier: Calendrier;
   aujourdhui: string;
   onClose: () => void;
-  onEnregistre: () => void;
+  /** Lot 3 · les jours enregistrés (`[]` = « ça dépend des semaines »). */
+  onEnregistre: (jours: number[]) => void;
 }) {
   const [jours, setJours] = useState<number[]>(normaliserJours(calendrier.jours));
   const [mobilier, setMobilier] = useState<PlanningDay[] | null>(calendrier.choisi ? [] : null);
@@ -81,12 +82,12 @@ export default function MesJoursSheet({ userId, calendrier, aujourdhui, onClose,
         return;
       }
     }
-    onEnregistre();
+    onEnregistre(jours);
   };
 
   const revenir = async () => {
     setEnvoi(true); setErreur(null);
-    try { await oublierJours(userId); onEnregistre(); }
+    try { await oublierJours(userId); onEnregistre([]); }
     catch { setErreur("Ça n’a pas pris. Réessaie dans un instant."); setEnvoi(false); }
   };
 

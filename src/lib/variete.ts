@@ -172,9 +172,12 @@ export function lignesDeLOccurrence(
   longueurCycle: number,
 ): { lignes: LignePrescription[]; rythme: Rythme } {
   const passage = rang === null ? 0 : passageDuRang(rang, longueurCycle);
+  /* Lot 3 · « garder les mêmes chiffres » : les exercices varient
+     toujours selon le passage, les chiffres restent ceux du volume. */
+  const passageChiffres = ctx.rotation === "garder" ? 0 : passage;
   return {
-    lignes: rythmerLignes(varierLignes(modele, rang, variete, ctx, longueurCycle), passage, ctx),
-    rythme: rythmeDuPassage(passage),
+    lignes: rythmerLignes(varierLignes(modele, rang, variete, ctx, longueurCycle), passageChiffres, ctx),
+    rythme: rythmeDuPassage(passageChiffres),
   };
 }
 

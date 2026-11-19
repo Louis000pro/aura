@@ -76,6 +76,8 @@ import type { Zone } from "@/lib/banqueEtapes";
 import { resolutionDuProgramme, type ResolutionProgramme } from "@/lib/projectionBase";
 import { choixSuite, libelleAttente, libelleJourProjete } from "@/lib/projection";
 import { faitsDuParcours, lireParcours, type LectureParcours, type ParcoursLu } from "@/lib/parcoursBase";
+import { reglagesEnCache } from "@/lib/reglagesProgramme";
+import { useReglagesProgramme } from "@/hooks/useReglagesProgramme";
 import {
   SEANCES, calendrierParcours, nomDuJour, quandDit, rangDit, semaineDuCalendrier, titreCreneau,
   type CalendrierParcours, type CreneauDate, type JourDeSemaine, type SeanceParcours,
@@ -282,6 +284,12 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
   /* Lue au lancement (un geste), jamais pendant le rendu. */
   const situationsRef = useRef<Situation[] | null>(null);
   useEffect(() => { situationsRef.current = situations; }, [situations]);
+  /* Lot 3 · les règles du programme : le signal « zone travaillée la
+     veille » et la durée visée se lisent ici ; la rotation passe par les
+     réglages de composition (`gen.rotation`). */
+  const regl = useReglagesProgramme(user?.id);
+  const dureeCibleRef = useRef<number | null>(null);
+  useEffect(() => { dureeCibleRef.current = regl?.dureeMin ?? null; }, [regl]);
   const [niveau, setNiveau] = useState<string | null>(memoire?.niveau ?? null);
   const [doneStats, setDoneStats] = useState<{ minutes: number; kcal: number } | null>(memoire?.doneStats ?? null);
 
@@ -338,6 +346,7 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
       /* Lot 2 · « pas mon matériel » change le lieu de composition : elle
          se lit avant les réglages. Illisible, on compose comme d'habitude. */
       const situationsP = lireSituations(user.id, todayYmd()).catch(() => null);
+      const reglagesP = reglagesEnCache(user.id);
       const { data: prof, error: errProfil } = await supabase
         .from("mon_profil")
         .select("onboarding_level, onboarding_sessions_week, onboarding_goals")
@@ -384,6 +393,7 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
          localStorage de cet appareil peut être vide. On retombe sur le poids
          du corps et la personne affine son lieu via « Organiser ». */
       const situationsLues = await situationsP;
+      const reglagesLus = await reglagesP;
       const lieuSituation = situationsLues ? lieuDuJour(situationsLues, todayYmd()) : null;
       const reglages: GenInput = {
         ctx: lieuSituation ?? ctxFromLieu(location, equip),
@@ -392,6 +402,7 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
         level: prof!.onboarding_level,
         variant: readVariant(user.id),
         seed: user.id,
+        ...(reglagesLus?.rotation === "garder" ? { rotation: "garder" as const } : {}),
       };
       try {
         /* ⚠️ LIRE N'ÉCRIT PLUS RIEN (V5). Une semaine sans ligne est une
@@ -897,7 +908,11 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
       const sit = appliquerSituations(brutes, situationsRef.current ?? [], todayYmd(), c.etapeId, ACCES_LIGNE);
       const pleines = sit.liste;
       const minutesSituation = sit.minutes && sit.minutes < estimerMinutes(projeterPrescription(pleines).map(itemDExercice)) ? sit.minutes : null;
-      const minutesCourtes = courteMin ?? minutesSituation;
+      /* Lot 3 · la durée visée : une séance du programme plus longue se
+         raccourcit avec la même règle, sans toucher au programme. */
+      const estimee = estimerMinutes(projeterPrescription(pleines).map(itemDExercice));
+      const minutesCible = dureeCibleRef.current && dureeCibleRef.current < estimee ? dureeCibleRef.current : null;
+      const minutesCourtes = courteMin ?? minutesSituation ?? minutesCible;
       /* R8 · la version courte, calculée sur la liste RELUE avec la règle
          de l'aperçu. Les emplacements gardés restent les leurs : le
          journal les relie toujours à leur ligne. */
@@ -962,6 +977,8 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
      quand le héros propose une séance à faire. */
   const recouvre = useMemo(() => {
     if (!recentes || (etat !== "seance" && etat !== "etape")) return null;
+    /* Lot 3 · « ne dit rien » : la règle coupe le signal. */
+    if (regl && !regl.prevenir) return null;
     const quoi = lancementDuJour({ jour, reservation, etape, instancePrete: instance.length > 0 });
     if (!quoi) return null;
     const liste = quoi.genre === "intention" ? quoi.intention.exerciseList : instance;
@@ -970,7 +987,7 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
     const p = (n: number) => String(n).padStart(2, "0");
     const hierYmd = `${hier.getFullYear()}-${p(hier.getMonth() + 1)}-${p(hier.getDate())}`;
     return recouvrement(fonctionsDe(liste), recentes, today, hierYmd);
-  }, [recentes, etat, jour, reservation, etape, instance, today]);
+  }, [recentes, etat, jour, reservation, etape, instance, today, regl]);
   const lancerAllege = useCallback(() => { if (recouvre) lancer(recouvre.zone); }, [recouvre, lancer]);
 
   /* ⚠️ LE SEUL ENDROIT DU PRODUIT QUI DATE UNE ÉTAPE, ET DONC LE SEUL

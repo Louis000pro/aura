@@ -31,7 +31,6 @@ import { poserBrouillonGuide } from "@/lib/brouillonGuide";
 import BilletsMoment from "@/components/situations/BilletsMoment";
 import FeuilleSituation from "@/components/situations/FeuilleSituation";
 import { deGenre, situationsVisibles, type GenreSituation, type Situation } from "@/lib/situations";
-import { ABR_JOURS } from "@/lib/semaine";
 import dynamic from "next/dynamic";
 import RangeeProgrammes from "@/components/parcours/RangeeProgrammes";
 import type { VueParcours } from "@/components/parcours/ParcoursEcrans";
@@ -41,6 +40,10 @@ const ParcoursEcrans = dynamic(() => import("@/components/parcours/ParcoursEcran
 import VersionCourteSheet from "@/components/entrainement/VersionCourteSheet";
 import MesJoursSheet from "@/components/semaine/MesJoursSheet";
 import MonProgrammeSheet from "@/components/programme/MonProgrammeSheet";
+import VueProgramme from "@/components/programme/VueProgramme";
+import { noterVersion } from "@/lib/programmeVersions";
+import { motJours } from "@/lib/vueProgramme";
+import { nomGuide } from "@/lib/guides";
 import AbsenceSheet from "@/components/semaine/AbsenceSheet";
 import { libelleJour, type Adaptation } from "@/lib/adaptation";
 import { EVT_ADAPTATION } from "@/lib/adaptationDemandee";
@@ -3283,29 +3286,29 @@ export default function ProgressionPage() {
           </>
         )}
 
-        {vue === "programme" && (
+        {vue === "programme" && user && (
           <>
-            <div className="mt-4 overflow-hidden" style={{ borderRadius: "var(--r-bloc)", background: "rgba(var(--surface-rgb),0.9)", border: "1px solid rgba(var(--text-3-rgb),0.16)" }}>
-              {journee.programme && (
-                <LigneVue titre="Mon programme"
-                  sous={[...journee.programme.cycle].sort((a, b) => a.position - b.position).map((e) => e.nom).join(" · ")}
-                  onClick={() => setSheet("programme")} />
-              )}
-              {calendrier && (
-                <LigneVue titre="Mes jours"
-                  sous={joursChoisis && calendrier.jours.length ? calendrier.jours.map((j) => ABR_JOURS[j - 1]).join(" · ") : "Pas encore choisis"}
-                  onClick={() => setSheet("jours")} />
-              )}
-              {journee.programme && (
-                <div className="vy-filet">
-                  <AdaptationStrip etapes={journee.programme.cycle} adaptation={journee.adaptation} onOpen={() => setSheet("adaptation")} />
-                </div>
-              )}
-              {calendrier && joursChoisis && (
-                <LigneVue titre="Je m’absente" sous="Ton programme se met en pause, rien n’est perdu" onClick={() => setSheet("absence")} />
-              )}
-            </div>
-            <div className="mt-6">
+            {journee.programme || journee.parcours ? (
+              <VueProgramme
+                userId={user.id}
+                programme={journee.programme}
+                prochaine={journee.etape}
+                rythme={journee.rythme}
+                gen={journee.gen}
+                calendrier={calendrier}
+                parcours={journee.parcours}
+                aujourdhui={today}
+                guide={guideActif ? nomGuide(guideActif) : null}
+                onMesJours={() => setSheet(calendrier ? "jours" : "semaine")}
+                onMonProgramme={() => setSheet("programme")}
+                onSemaineParcours={() => setVueParcours({ genre: "semaine" })}
+                onChange={() => void loadWeek()}
+                onToast={showToast}
+              />
+            ) : (
+              <p className="vy-corps mt-4" style={{ color: "var(--text-2)" }}>Ton programme apparaît dès que tu as répondu aux premières questions.</p>
+            )}
+            <div className="mt-8">
               <RangeeProgrammes lecture={journee.lectureParcours} parcours={journee.parcours}
                 premium={canAccessPremium} aujourdhui={today}
                 onOuvrir={(id) => setVueParcours({ genre: "fiche", id })} />
@@ -3411,7 +3414,19 @@ export default function ProgressionPage() {
             calendrier={calendrier}
             aujourdhui={today}
             onClose={() => { setSheet(joursDepuisProgramme ? "programme" : null); setJoursDepuisProgramme(false); }}
-            onEnregistre={() => { void loadWeek(); setSheet(joursDepuisProgramme ? "programme" : null); setJoursDepuisProgramme(false); }}
+            onEnregistre={(nouveaux) => {
+              /* Lot 3 · un changement de jours est une version du programme. */
+              const avant = calendrier.choisi ? calendrier.jours : [];
+              if (avant.join() !== nouveaux.join()) {
+                const dit = (j: number[]) => (j.length ? `le ${motJours(j)}` : "quand ça me va");
+                void noterVersion(user.id, {
+                  programmeId: journee.programme?.programme.id ?? null, genre: "jours",
+                  texte: `Jours : ${dit(nouveaux)} au lieu de ${dit(avant)}`,
+                  avant: { jours: avant }, apres: { jours: nouveaux },
+                });
+              }
+              void loadWeek(); setSheet(joursDepuisProgramme ? "programme" : null); setJoursDepuisProgramme(false);
+            }}
           />
         )}
       </AnimatePresence>

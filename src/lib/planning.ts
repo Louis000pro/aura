@@ -150,6 +150,8 @@ export interface GenInput {
   level: string | null;         // niveau onboarding
   variant: number;              // incrémenté par « Régénérer »
   seed: string;                 // graine déterministe (= user.id)
+  /** Lot 3 · la règle de rotation (contexte_entrainement.rotation). */
+  rotation?: "alterner" | "garder";
 }
 
 /* ═══════════════════════════ Banque d'exercices ═══════════════════════════
@@ -428,8 +430,12 @@ function generateWeek(gen: GenInput, dates: string[], cycle: CycleSemaine | null
 
 /** R2 · Les réglages de composition d'une personne. Sans `variant` ni
  *  graine : deux appareils composent le même modèle. */
-export function contexteDe(gen: Pick<GenInput, "ctx" | "goals" | "level">): ContexteComposition {
-  return { lieu: gen.ctx, orientation: orientationDe(gen.goals), niveau: gen.level ?? null, version: COMPOSITION_VERSION };
+export function contexteDe(gen: Pick<GenInput, "ctx" | "goals" | "level"> & { rotation?: GenInput["rotation"] }): ContexteComposition {
+  const ctx: ContexteComposition = { lieu: gen.ctx, orientation: orientationDe(gen.goals), niveau: gen.level ?? null, version: COMPOSITION_VERSION };
+  /* Lot 3 · seulement quand la règle change quelque chose : le contexte
+     par défaut reste identique à celui d'avant. */
+  if (gen.rotation === "garder") ctx.rotation = "garder";
+  return ctx;
 }
 
 /** Génère la semaine SANS rien écrire — pour préparer une carte de
