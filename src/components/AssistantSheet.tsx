@@ -9,6 +9,7 @@
    via les design tokens.
    ════════════════════════════════════════════════════════════════════ */
 
+import { EVT_BROUILLON_GUIDE, prendreBrouillonGuide } from "@/lib/brouillonGuide";
 import { Fragment, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
@@ -431,6 +432,25 @@ export default function AssistantSheet() {
     setInput(v);
     noterSaisie(v.trim().length > 0);
   };
+
+  /* Lot 1 du Planning · une phrase posée par un autre écran arrive dans
+     la saisie, sans être envoyée (`lib/brouillonGuide`). */
+  useEffect(() => {
+    if (!isOpen) return;
+    const prendre = () => {
+      const p = prendreBrouillonGuide();
+      if (p === null) return;
+      setInput(p);
+      noterSaisie(p.trim().length > 0);
+      requestAnimationFrame(() => {
+        const el = taRef.current;
+        if (el) { el.focus(); el.setSelectionRange(p.length, p.length); }
+      });
+    };
+    prendre();
+    window.addEventListener(EVT_BROUILLON_GUIDE, prendre);
+    return () => window.removeEventListener(EVT_BROUILLON_GUIDE, prendre);
+  }, [isOpen, noterSaisie]);
 
   const submit = (e: { preventDefault: () => void }) => {
     e.preventDefault();

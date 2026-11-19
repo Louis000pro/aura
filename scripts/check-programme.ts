@@ -7436,13 +7436,14 @@ verdict(
   verdict("R9b · « t'attendait » ne se déduit pas d'une tête précédée par une réservation plus tardive",
     !!cVendredi && cVendredi.attendaitLe === null, JSON.stringify(cVendredi ?? null));
 
-  const ecran = lireB("src/components/semaine/MaSemaineSheet.tsx");
+  const ecran = lireB("src/components/planning/FilPlanning.tsx") + lireB("src/components/planning/FeuilleJour.tsx");
   const gestes = lireB("src/lib/semaineGestes.ts");
   const feuille = lireB("src/components/semaine/FeuilleBas.tsx");
   const absence = lireB("src/components/semaine/AbsenceSheet.tsx");
   const page = lireB("src/app/progression/page.tsx");
   const assistant = lireB("src/context/AssistantContext.tsx");
-  const composants = ["MaSemaineSheet", "MesJoursSheet", "AbsenceSheet", "FeuilleBas"].map((n) => lireB(`src/components/semaine/${n}.tsx`)).join("\n");
+  const composants = ["MesJoursSheet", "AbsenceSheet", "FeuilleBas"].map((n) => lireB(`src/components/semaine/${n}.tsx`))
+    .concat(["FilPlanning", "FeuilleJour", "ChangerQuelqueChose"].map((n) => lireB(`src/components/planning/${n}.tsx`))).join("\n");
   verdict("R9b · l'écran n'écrit aucune table lui-même (les gestes passent par les autorités)",
     !/createClient|supabase\.|\.insert\(|\.update\(|\.upsert\(/.test(composants), "");
   verdict("R9b · « Refais ma semaine » n'existe pas pour un compte qui a choisi ses jours",
@@ -7474,9 +7475,9 @@ verdict(
   verdict("R9b · « Mettre une autre séance » ne retire rien avant l'enregistrement de la nouvelle",
     !ecran.includes("retirerIntention") && page.includes("const ok = await planifierSeance(s, date);")
       && page.indexOf("const ok = await planifierSeance(s, date);") < page.indexOf("await retirerReservationDuJour(user.id, liberer.id, liberer.date)")
-      && ecran.includes("elle n&apos;est ni faite, ni sautée"), "tour 42");
+      && ecran.includes("elle n&apos;est ni faite, ni passée"), "tour 42");
   verdict("R9b · « Voir les exercices » d'une réservation lit sa prescription figée",
-    ecran.includes("if (reservation) { setExos((reservation.exerciseList ?? []).map((e) => e.name)); return; }"), "tour 42");
+    ecran.includes("const fixee = pose ?? reservation;") && ecran.includes("if (fixee) { setExos((fixee.exerciseList ?? []).map((e) => e.name)); return; }"), "tour 42");
   const mesJours = lireB("src/components/semaine/MesJoursSheet.tsx");
   verdict("R9b · premier choix des jours : lecture ratée ≠ rien, retrait par identité, deux échecs distincts",
     mesJours.includes("setMobilierIllisible(true)") && !mesJours.includes("setMobilier([]); });")
@@ -7493,7 +7494,7 @@ verdict(
   verdict("R9b · « Je m'absente », jamais « absente » ni « absent·e »",
     absence.includes("Je m&apos;absente") && !/absent·e|\babsente?\b/i.test(absence.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "").replace(/Je m&apos;absente/g, "")), "");
   verdict("R9b · une lecture ratée dit qu'elle n'a pas pu lire, jamais une semaine vide",
-    ecran.includes("if (!proj) { setIllisible(true); return; }") && ecran.includes("Je n&apos;arrive pas à lire ta semaine"), "");
+    ecran.includes("if (!proj) { setIllisible(true); return; }") && ecran.includes("Je n&apos;arrive pas à lire ton planning"), "");
   /* R9c · une réservation GARDÉE d'une version archivée peut porter le même
      rang qu'une occurrence du nouveau programme : l'appariement se fait par
      le rang ET l'étape. */
@@ -7734,8 +7735,8 @@ verdict(
   // Louis, 2026-10-11 : « Mon programme » a quitté le haut d'Entraînement
   // (« pas super clair »). Le contrôle s'inverse : l'entrée ne revient pas
   // en tête sans décision.
-  verdict("R9c · l'entrée « Mon programme » n'est plus en haut d'Entraînement",
-    !pageProg.includes('onClick={() => setSheet("programme")}'), "");
+  verdict("R9c · l'entrée « Mon programme » vit dans la vue Programme, plus en haut d'Entraînement",
+    pageProg.indexOf('onClick={() => setSheet("programme")}') > pageProg.indexOf('{vue === "programme" && ('), "");
   const base = readFileSync("src/lib/projectionBase.ts", "utf8");
   const PB = await import("@/lib/projectionBase");
   const occ = PB.joursOccupes([
@@ -8019,7 +8020,7 @@ verdict(
   const srcRythme = readFileSync("src/lib/rythmeSeance.ts", "utf8").replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
   verdict("Lot 0 · le rythme est pur : ni hasard, ni horloge, ni stockage, ni base",
     !/Math\.random|new Date|Date\.now|localStorage|createClient|\.from\(/.test(srcRythme), "");
-  const directs = ["src/lib/prescription.ts", "src/lib/monProgramme.ts", "src/lib/semaineGestes.ts", "src/hooks/useJournee.ts", "src/components/semaine/MaSemaineSheet.tsx"]
+  const directs = ["src/lib/prescription.ts", "src/lib/monProgramme.ts", "src/lib/semaineGestes.ts", "src/hooks/useJournee.ts", "src/components/planning/FilPlanning.tsx", "src/components/planning/FeuilleJour.tsx"]
     .filter((f) => readFileSync(f, "utf8").includes("varierLignes("));
   verdict("Lot 0 · l'occurrence passe toujours par `lignesDeLOccurrence` (exercices PUIS chiffres), jamais par la seule variété",
     directs.length === 0 && readFileSync("src/lib/prescription.ts", "utf8").includes("lignesDeLOccurrence(lu.lignes, occ.rang")
@@ -8208,13 +8209,56 @@ verdict(
     hook.includes("raccourcir(projeterPrescription(pleines).map(itemDExercice), courteMin)")
       && hook.includes("raccourcir(d.exerciseList.map(itemDExercice), options.courte)"), "");
   const hero = readFileSync("src/components/entrainement/TodayHero.tsx", "utf8");
-  const jourSrc = readFileSync("src/components/semaine/MaSemaineSheet.tsx", "utf8");
+  const jourSrc = readFileSync("src/components/planning/FeuilleJour.tsx", "utf8");
   const feuille = readFileSync("src/components/entrainement/VersionCourteSheet.tsx", "utf8");
   verdict("R8 · « J'ai moins de temps » sur le héros, « Version courte » sur la feuille d'un jour",
-    (hero.match(/J&apos;ai moins de temps/g) ?? []).length === 2 && jourSrc.includes('label="Version courte"'), "");
+    (hero.match(/J&apos;ai moins de temps/g) ?? []).length === 2 && jourSrc.includes("Version courte") && jourSrc.includes("onLancerCourt("), "");
   verdict("R8 · la feuille dit ce qui reste, ce qui part, la durée et si ça compte",
     feuille.includes("Échauffement compris ≈") && feuille.includes("Compte comme ta séance") && feuille.includes("reste à faire")
       && feuille.includes("phraseRetires("), "");
+}
+
+/* ══ Entraînement repensé · lot 1 : le Planning ══ */
+{
+  const lire = (rel: string) => readFileSync(rel, "utf8").replace(/\r\n/g, "\n");
+  const CQ = await import("@/lib/changerQuelqueChose");
+  const ids = (t: string) => CQ.filtrerGestes(t).map((g) => g.id);
+  verdict("Lot 1 · « Changer quelque chose » : une saisie vide montre tous les gestes", ids("").length === CQ.GESTES.length, "");
+  verdict("Lot 1 · « je pars 4 jours » mène à l'absence", ids("je pars 4 jours").includes("absence"), ids("je pars 4 jours").join(","));
+  verdict("Lot 1 · les accents et les majuscules ne comptent pas (« DÉCALER »)", ids("DÉCALER ma séance").includes("deplacer"), ids("DÉCALER ma séance").join(","));
+  verdict("Lot 1 · « j'ai mal à l'épaule » propose de mettre une séance de côté", ids("j’ai mal à l’épaule").includes("gene"), ids("j’ai mal à l’épaule").join(","));
+  verdict("Lot 1 · un mot inconnu ne rend rien (le Guide est proposé)", ids("kangourou").length === 0, ids("kangourou").join(","));
+  verdict("Lot 1 · chaque geste a une porte et un groupe connus",
+    CQ.GESTES.every((g) => CQ.GROUPES.some((x) => x.id === g.groupe)) && new Set(CQ.GESTES.map((g) => g.id)).size === CQ.GESTES.length, "");
+  const cqSrc = lire("src/lib/changerQuelqueChose.ts").replace(/\/\*[\s\S]*?\*\//g, "");
+  verdict("Lot 1 · le champ est compris sans IA : aucune requête, aucun appel",
+    !/fetch\(|aiFetch|createClient|import\(/.test(cqSrc), "");
+
+  const gestes = lire("src/lib/semaineGestes.ts");
+  const ech = gestes.slice(gestes.indexOf("export async function echangerDeJour"));
+  verdict("Lot 1 · échanger = deux « Changer de jour », la seconde séance relue par son identité, jamais une écriture à part",
+    (ech.match(/await changerDeJour\(/g) ?? []).length === 2 && ech.includes("j.etape.id === b.etapeId && j.rang === b.rang")
+      && !/ecrireOccurrence|\.update\(|\.insert\(/.test(ech.slice(0, ech.indexOf("export async function passerLaSeance"))), "");
+  verdict("Lot 1 · un échange à moitié se dit « partiel »", ech.includes('return second.ok ? second : { ok: false, raison: "partiel" };'), "");
+  const pas = gestes.slice(gestes.indexOf("export async function passerLaSeance"));
+  verdict("Lot 1 · « Passer » relit la prochaine étape juste avant d'écrire, et refuse si ce n'est plus elle",
+    pas.indexOf('viserEtape(userId, null, "prochaine")') > 0 && pas.indexOf("v.etape.id !== cible.etapeId") < pas.indexOf("sauterEtape("), "");
+  const feuille = lire("src/components/planning/FeuilleJour.tsx");
+  verdict("Lot 1 · « Passer » n'est proposé que pour la séance que l'app propose (la prochaine)",
+    feuille.includes('const passable = !!p && element?.genre === "prevu" && element.proposee && !p.conflit;'), "");
+  const fil = lire("src/components/planning/FilPlanning.tsx");
+  verdict("Lot 1 · le fil n'écrit rien lui-même : il passe par les gestes",
+    !/createClient|supabase\.|\.insert\(|\.update\(|\.upsert\(/.test(fil + feuille), "");
+  verdict("Lot 1 · glisser ne vise ni un jour passé, ni un jour d'absence, ni un jour déjà fait",
+    fil.includes('if (date === de || date < aujourdhui || !lignes) return false;') && fil.includes('l.etat === "absence"')
+      && fil.includes('e.genre === "fait" || e.genre === "realisee"'), "");
+  verdict("Lot 1 · une lecture ratée ne montre pas deux semaines vides", fil.includes("Je n&apos;arrive pas à lire ton planning"), "");
+  const page = lire("src/app/progression/page.tsx");
+  verdict("Lot 1 · quatre vues, Planning d'abord, et pas de bouton de lancement du jour dans le fil",
+    page.includes('useState<VueEntrainement>("planning")') && !fil.includes("C’est parti") && !fil.includes("Lancer la séance"), "");
+  const brouillon = lire("src/lib/brouillonGuide.ts");
+  verdict("Lot 1 · « Demander à … » pose la phrase dans la saisie sans l'envoyer",
+    page.includes("poserBrouillonGuide(phrase)") && page.includes("openAssistant();") && !brouillon.includes("sendMessage"), "");
 }
 
 console.log("\n" + (echecs === 0 ? "Tout passe." : echecs + " échec(s)."));

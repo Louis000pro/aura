@@ -1,0 +1,439 @@
+"use client";
+
+/* ════════════════════════════════════════════════════════════════════
+   LE FIL DES DEUX SEMAINES (maquette « Entraînement repensé », lot 1)
+
+   La vue Planning d'Entraînement. Une ligne par jour, sur deux
+   semaines : la date en chiffre, un rail, et la séance avec sa photo et
+   la raison de sa place. Ce qui est fait est en teal, aujourd'hui est mis
+   en lumière, SANS gros bouton : la séance du jour se lance depuis
+   l'accueil (Louis, 2026-11-09 : pas de doublon).
+
+   Il remplace « Ma semaine » (R9b), qui était une feuille ouverte depuis
+   une bande de sept pastilles. Les règles n'ont pas bougé et ne vivent
+   pas ici :
+   · les lignes viennent de `lignesSemaine` (pure) ;
+   · la projection de `resolutionDuProgramme`, la même que l'accueil et
+     le Guide ;
+   · chaque geste de `semaineGestes`, qui relit avant d'écrire.
+
+   ⚠️ « JE NE SAIS PAS » N'EST PAS « RIEN ». Une lecture ratée affiche
+   « Je n'arrive pas à lire ton planning » et « Réessayer », jamais deux
+   semaines vides.
+   ════════════════════════════════════════════════════════════════════ */
+
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { Check, GripVertical } from "lucide-react";
+import { Photo } from "@/components/entrainement/PhotoSeance";
+import { resolveArt } from "@/lib/workoutArt";
+import { dayTitle, fetchRange, type GenInput, type PlanningDay } from "@/lib/planning";
+import type { EtapeCycle, ProgrammeEtCycle } from "@/lib/programme";
+import { resolutionDuProgramme, type ResolutionProgramme } from "@/lib/projectionBase";
+import { decaler } from "@/lib/projection";
+import { ABR_JOURS, lignesSemaine, semaineDe, type ElementJour, type LigneSemaine, type SeanceJournal } from "@/lib/semaine";
+import { changerDeJour, echangerDeJour, lireJournal, type CibleAffichee, type ResultatGeste } from "@/lib/semaineGestes";
+import { rangEnAttente } from "@/lib/occurrences";
+import FeuilleJour, { type Cible } from "@/components/planning/FeuilleJour";
+import { RAISONS, descriptionElement, type ALiberer } from "@/components/planning/ligneSeance";
+
+export type { ALiberer };
+
+type Donnees = { intentions: PlanningDay[]; journal: SeanceJournal[]; proj: ResolutionProgramme };
+
+export default function FilPlanning({
+  userId, programme, gen, aujourdhui, relecture,
+  onLancerTete, onLancerIntention, onLancerCourt, onChoisirSeance, onDemander, onChange,
+}: {
+  userId: string;
+  programme: ProgrammeEtCycle | null;
+  gen: GenInput | null;
+  aujourdhui: string;
+  /** Change quand l'écran a relu sa journée : le fil se relit aussi. */
+  relecture: unknown;
+  onLancerTete: () => void;
+  onLancerIntention: (d: PlanningDay) => void;
+  /** La séance de ce jour, pour le temps qu'on a. `null` = la tête. */
+  onLancerCourt: (d: PlanningDay | null, minutes: number) => void;
+  onChoisirSeance: (date: string, liberer: ALiberer) => void;
+  /** Ouvre la conversation, la phrase déjà écrite dans la saisie. */
+  onDemander: (phrase: string) => void;
+  onChange: () => void;
+}) {
+  const [donnees, setDonnees] = useState<Donnees | null>(null);
+  const [illisible, setIllisible] = useState(false);
+  const [lecture, setLecture] = useState(0);
+  const [cible, setCible] = useState<Cible | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
+  const [envoi, setEnvoi] = useState(false);
+
+  const semaines = useMemo(() => {
+    const a = semaineDe(aujourdhui);
+    return [a, semaineDe(decaler(a[0], 7))];
+  }, [aujourdhui]);
+
+  useEffect(() => {
+    let vivant = true;
+    const toutes = semaines.flat();
+    const horizon = Math.max(1, toutes.filter((d) => d >= aujourdhui).length);
+    Promise.all([
+      fetchRange(userId, toutes),
+      resolutionDuProgramme(userId, programme, aujourdhui, horizon),
+      lireJournal(userId, toutes),
+    ]).then(([m, proj, journal]) => {
+      if (!vivant) return;
+      if (!proj) { setIllisible(true); return; }
+      setIllisible(false);
+      setDonnees({ intentions: Object.values(m).flat(), journal, proj });
+    }).catch(() => { if (vivant) setIllisible(true); });
+    return () => { vivant = false; };
+  }, [userId, programme, aujourdhui, semaines, lecture, relecture]);
+
+  const relire = useCallback(() => setLecture((n) => n + 1), []);
+
+  const lignes = useMemo(() => {
+    if (!donnees) return null;
+    const res = donnees.proj.resolution;
+    return semaines.map((dates) => lignesSemaine<EtapeCycle>({
+      dates, aujourdhui,
+      intentions: donnees.intentions,
+      projetes: res?.jours ?? [],
+      journal: donnees.journal,
+      calendrier: donnees.proj.calendrier,
+      rangPropose: res?.proposee?.rang ?? null,
+    }));
+  }, [donnees, semaines, aujourdhui]);
+
+  const proposee = donnees?.proj.resolution?.proposee ?? null;
+  const proposeeAilleurs = !!proposee && proposee.date !== aujourdhui;
+
+  /* Une prévision ne se réserve que si elle est l'occurrence en attente
+     de son étape (tour 42) ; une réservation se déplace toujours. */
+  const reservable = useCallback((etapeId: string, rang: number) =>
+    !!programme && !!donnees?.proj.etat && rangEnAttente(programme.cycle, donnees.proj.etat, etapeId) === rang,
+  [programme, donnees]);
+
+  const deplacable = useCallback((el: ElementJour<EtapeCycle> | null): el is Extract<ElementJour<EtapeCycle>, { genre: "prevu" }> => {
+    if (!el || el.genre !== "prevu") return false;
+    const p = el.projete;
+    if (p.conflit) return false;
+    return p.reservee ? !!el.intention : reservable(p.etape.id, p.rang);
+  }, [reservable]);
+
+  const cibleDe = useCallback((el: Extract<ElementJour<EtapeCycle>, { genre: "prevu" }>, date: string): CibleAffichee | null => {
+    if (!programme) return null;
+    return { programmeId: programme.programme.id, etapeId: el.projete.etape.id, rang: el.projete.rang, date, reservationId: el.intention?.id ?? null };
+  }, [programme]);
+
+  const dire = useCallback((t: string) => {
+    setMessage(t);
+    setTimeout(() => setMessage(null), 2800);
+  }, []);
+
+  const apres = useCallback((r: ResultatGeste, ok: string) => {
+    setCible(null);
+    dire(r.ok ? ok : RAISONS[r.raison]);
+    relire();
+    onChange();
+  }, [dire, relire, onChange]);
+
+  /** Glisser (ou choisir un jour dans la feuille) : déplace, ou échange
+   *  si le jour visé porte déjà une séance du programme. */
+  const deplacer = useCallback(async (de: { element: Extract<ElementJour<EtapeCycle>, { genre: "prevu" }>; date: string }, vers: string) => {
+    if (!gen || !lignes || envoi) return;
+    const a = cibleDe(de.element, de.date);
+    if (!a) return;
+    const ligneVers = lignes.flat().find((l) => l.date === vers);
+    const occupant = ligneVers?.elements.find((e) => deplacable(e)) ?? null;
+    setEnvoi(true);
+    try {
+      const nomA = de.element.intention ? dayTitle(de.element.intention) : de.element.projete.etape.nom;
+      const jourVers = new Date(vers + "T00:00:00").toLocaleDateString("fr-FR", { weekday: "long" });
+      if (occupant && occupant.genre === "prevu") {
+        const b = cibleDe(occupant, vers);
+        if (!b) return;
+        const nomB = occupant.intention ? dayTitle(occupant.intention) : occupant.projete.etape.nom;
+        const jourDe = new Date(de.date + "T00:00:00").toLocaleDateString("fr-FR", { weekday: "long" });
+        const r = await echangerDeJour({ userId, a, b, aujourdhui, gen });
+        apres(r, `${nomA} passe à ${jourVers}, ${nomB} prend ${jourDe}.`);
+      } else {
+        const r = await changerDeJour({ userId, cible: a, vers, aujourdhui, gen });
+        apres(r, `${nomA} passe à ${jourVers}. Les autres séances suivent.`);
+      }
+    } finally {
+      setEnvoi(false);
+    }
+  }, [gen, lignes, envoi, cibleDe, deplacable, userId, aujourdhui, apres]);
+
+  /* ── Le glisser, par la poignée ──
+     Une copie de la ligne suit le doigt ; le jour sous le doigt s'allume
+     s'il peut la recevoir (aujourd'hui ou plus tard, pas un jour d'absence,
+     pas un jour déjà fait). Rien ne s'écrit avant de lâcher. */
+  const [glisse, setGlisse] = useState<{ element: Extract<ElementJour<EtapeCycle>, { genre: "prevu" }>; date: string; y: number; dy: number; largeur: number; gauche: number; vers: string | null } | null>(null);
+  const glisseRef = useRef(glisse);
+  useEffect(() => { glisseRef.current = glisse; }, [glisse]);
+
+  const recevable = useCallback((date: string, de: string) => {
+    if (date === de || date < aujourdhui || !lignes) return false;
+    const l = lignes.flat().find((x) => x.date === date);
+    if (!l || l.etat === "absence") return false;
+    return !l.elements.some((e) => e.genre === "fait" || e.genre === "realisee");
+  }, [aujourdhui, lignes]);
+
+  const debutGlisse = (e: React.PointerEvent, element: Extract<ElementJour<EtapeCycle>, { genre: "prevu" }>, date: string) => {
+    if (envoi) return;
+    e.preventDefault();
+    const ligne = (e.currentTarget as HTMLElement).closest("[data-seance]") as HTMLElement | null;
+    const r = ligne?.getBoundingClientRect();
+    try { (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId); } catch { /* sans capture, le geste marche quand même */ }
+    setGlisse({ element, date, y: e.clientY, dy: r ? e.clientY - r.top : 30, largeur: r?.width ?? 300, gauche: r?.left ?? 0, vers: null });
+  };
+  const bougeGlisse = (e: React.PointerEvent) => {
+    const g = glisseRef.current;
+    if (!g) return;
+    const sous = document.elementsFromPoint(e.clientX, e.clientY).find((n) => (n as HTMLElement).dataset?.jour) as HTMLElement | undefined;
+    const date = sous?.dataset.jour ?? null;
+    setGlisse({ ...g, y: e.clientY, vers: date && recevable(date, g.date) ? date : null });
+  };
+  const finGlisse = () => {
+    const g = glisseRef.current;
+    setGlisse(null);
+    if (g?.vers) void deplacer({ element: g.element, date: g.date }, g.vers);
+  };
+
+  const cycle = programme?.cycle ?? null;
+
+  return (
+    <div className="relative" onPointerMove={glisse ? bougeGlisse : undefined} onPointerUp={glisse ? finGlisse : undefined} onPointerCancel={glisse ? () => setGlisse(null) : undefined}>
+      {illisible ? (
+        <div className="py-10 text-center">
+          <p className="vy-corps" style={{ color: "var(--text-2)" }}>Je n&apos;arrive pas à lire ton planning pour l&apos;instant.</p>
+          <button onClick={relire} className="mt-3 text-[13px] font-semibold bg-transparent border-none cursor-pointer" style={{ color: "var(--exp-encre)" }}>
+            Réessayer
+          </button>
+        </div>
+      ) : !lignes ? (
+        <p className="vy-corps py-10 text-center" style={{ color: "var(--text-3)" }}>Je lis ton planning…</p>
+      ) : (
+        lignes.map((semaine, w) => {
+          const faites = semaine.reduce((n, l) => n + l.elements.filter((e) => e.genre === "fait" || e.genre === "realisee").length, 0);
+          const avenir = semaine.filter((l) => !l.passe).reduce((n, l) => n + l.elements.filter((e) => e.genre === "prevu" || e.genre === "pose").length, 0);
+          const minutes = semaine.filter((l) => !l.passe).reduce((n, l) => n + l.elements
+            .filter((e) => e.genre === "prevu" || e.genre === "pose")
+            .reduce((m, e) => m + descriptionElement(e, cycle).duree, 0), 0);
+          return (
+            <section key={w} className="mt-5">
+              <div className="flex items-baseline justify-between mb-1.5">
+                <h2 className="text-[20px]" style={{ color: "var(--text-0)", fontWeight: 800, fontVariationSettings: "var(--w-voix)" }}>
+                  {w === 0 ? "Cette semaine" : "Semaine prochaine"}
+                </h2>
+                <span className="text-[13px]" style={{ color: "var(--text-2)" }}>
+                  {w === 0 ? (
+                    <><b className="vy-nombre" style={{ color: "var(--text-0)" }}>{faites}</b> faite{faites > 1 ? "s" : ""} · <b className="vy-nombre" style={{ color: "var(--text-0)" }}>{avenir}</b> à venir</>
+                  ) : (
+                    <><b className="vy-nombre" style={{ color: "var(--text-0)" }}>{avenir}</b> séance{avenir > 1 ? "s" : ""}{minutes > 0 && <> · <DureeTotale minutes={minutes} /></>}</>
+                  )}
+                </span>
+              </div>
+              {semaine.map((l) => (
+                <LigneJour key={l.date} ligne={l} cycle={cycle}
+                  cible={glisse?.vers === l.date}
+                  prise={glisse?.date === l.date ? glisse.element : null}
+                  laFaireAujourdhui={l.aujourdhui && l.etat === "libre" && proposeeAilleurs}
+                  deplacable={deplacable}
+                  onLancerTete={onLancerTete}
+                  onPoignee={(e, el) => debutGlisse(e, el, l.date)}
+                  onOuvrir={(element) => setCible({ ligne: l, element })} />
+              ))}
+            </section>
+          );
+        })
+      )}
+
+      {/* La copie qui suit le doigt. */}
+      {glisse && (
+        <div className="fixed z-[95] pointer-events-none px-2 rounded-[18px]"
+          style={{
+            top: glisse.y - glisse.dy, left: glisse.gauche, width: glisse.largeur,
+            background: "rgb(var(--surface-rgb))", boxShadow: "var(--ombre-flottant)",
+          }}>
+          <ElementLigne element={glisse.element} cycle={cycle} poignee={false} />
+        </div>
+      )}
+
+      <AnimatePresence>
+        {message && (
+          <motion.p initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+            role="status"
+            className="fixed left-1/2 -translate-x-1/2 bottom-28 z-[96] px-4 py-2 rounded-2xl text-[13px] font-medium text-center"
+            style={{ background: "rgb(var(--surface-rgb))", boxShadow: "var(--ombre-flottant)", color: "var(--text-1)", maxWidth: "min(92vw, 420px)" }}>
+            {message}
+          </motion.p>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {cible && donnees && lignes && (
+          <FeuilleJour
+            cible={cible}
+            userId={userId}
+            programme={programme}
+            gen={gen}
+            aujourdhui={aujourdhui}
+            lignes={lignes.flat()}
+            deplacable={deplacable}
+            envoi={envoi}
+            onClose={() => setCible(null)}
+            onDeplacer={(el, vers) => void deplacer({ element: el, date: cible.ligne.date }, vers)}
+            onLancerTete={() => { setCible(null); onLancerTete(); }}
+            onLancerIntention={(d) => { setCible(null); onLancerIntention(d); }}
+            onLancerCourt={(d, m) => { setCible(null); onLancerCourt(d, m); }}
+            onChoisirSeance={(date, liberer) => { setCible(null); onChoisirSeance(date, liberer); }}
+            onDemander={(phrase) => { setCible(null); onDemander(phrase); }}
+            onResultat={apres}
+          />
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+function DureeTotale({ minutes }: { minutes: number }) {
+  if (minutes < 60) return <><b className="vy-nombre" style={{ color: "var(--text-0)" }}>{minutes}</b> min</>;
+  return <><b className="vy-nombre" style={{ color: "var(--text-0)" }}>{Math.floor(minutes / 60)}</b> h <b className="vy-nombre" style={{ color: "var(--text-0)" }}>{String(minutes % 60).padStart(2, "0")}</b></>;
+}
+
+/* ─── Une ligne par jour ─────────────────────────────────────────── */
+
+const RAIL_PREVU = "repeating-linear-gradient(to bottom, rgba(139,92,246,.42) 0 4px, transparent 4px 8px)";
+const RAIL_FAIT = "rgba(43,212,160,.6)";
+
+function LigneJour({ ligne, cycle, cible, prise, laFaireAujourdhui, deplacable, onLancerTete, onPoignee, onOuvrir }: {
+  ligne: LigneSemaine<EtapeCycle>;
+  cycle: EtapeCycle[] | null;
+  /** Le jour sous le doigt pendant un glisser. */
+  cible: boolean;
+  /** La séance qu'on est en train de glisser depuis ce jour. */
+  prise: ElementJour<EtapeCycle> | null;
+  laFaireAujourdhui: boolean;
+  deplacable: (el: ElementJour<EtapeCycle> | null) => boolean;
+  onLancerTete: () => void;
+  onPoignee: (e: React.PointerEvent, el: Extract<ElementJour<EtapeCycle>, { genre: "prevu" }>) => void;
+  onOuvrir: (element: ElementJour<EtapeCycle> | null) => void;
+}) {
+  const l = ligne;
+  const fait = l.elements.some((e) => e.genre === "fait" || e.genre === "realisee");
+  const prevu = l.elements.some((e) => e.genre === "prevu" || e.genre === "pose");
+  const touchable = !l.passe;
+  const date = new Date(l.date + "T00:00:00");
+  const rail = l.aujourdhui
+    ? `linear-gradient(to bottom, ${RAIL_FAIT} 0 50%, transparent 50%), ${RAIL_PREVU}`
+    : l.passe ? RAIL_FAIT : RAIL_PREVU;
+
+  let point: React.ReactNode = <i className="absolute rounded-full" style={{ left: 11, top: "50%", transform: "translate(-50%,-50%)", width: 5, height: 5, background: "var(--text-3)" }} />;
+  if (fait) point = (
+    <i className="absolute rounded-full grid place-items-center" style={{ left: 11, top: "50%", transform: "translate(-50%,-50%)", width: 18, height: 18, background: "#2BD4A0", color: "#fff" }}>
+      <Check size={11} strokeWidth={3.2} />
+    </i>
+  );
+  else if (l.aujourdhui) point = (
+    <i className="absolute rounded-full" style={{ left: 11, top: "50%", transform: "translate(-50%,-50%)", width: 14, height: 14, background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", boxShadow: "0 0 0 4px rgba(139,92,246,.2), 0 0 14px rgba(193,59,193,.55)" }} />
+  );
+  else if (prevu) point = (
+    <i className="absolute rounded-full" style={{ left: 11, top: "50%", transform: "translate(-50%,-50%)", width: 12, height: 12, background: "rgb(var(--surface-rgb))", border: "2.5px solid #8B5CF6" }} />
+  );
+
+  const vide = l.etat === "absence" ? "Tu n’es pas là"
+    : l.etat === "pas_de_seance" ? "Pas d’entraînement ce jour-là"
+    : l.passe ? ""
+    : l.aujourdhui ? "Aujourd’hui, rien de prévu"
+    : "Libre";
+
+  return (
+    <div data-jour={l.date} className="grid relative rounded-2xl"
+      style={{
+        gridTemplateColumns: "38px 22px minmax(0,1fr)", minHeight: 40,
+        background: cible ? "rgba(139,92,246,.16)" : l.aujourdhui ? "linear-gradient(90deg, rgba(139,92,246,.13), rgba(139,92,246,.02) 85%)" : undefined,
+        boxShadow: cible ? "inset 0 0 0 1.5px #8B5CF6" : undefined,
+      }}>
+      <div className="flex flex-col items-end justify-center pr-1" style={{ lineHeight: 1.05 }}
+        aria-label={date.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })}>
+        <span className="text-[11px] font-semibold" style={{ color: l.aujourdhui ? "var(--exp-encre)" : "var(--text-3)" }}>{ABR_JOURS[l.jour - 1]}</span>
+        <b className="vy-nombre text-[16px]" style={{ color: l.aujourdhui ? "var(--exp-encre)" : l.passe ? "var(--text-3)" : "var(--text-1)" }}>{Number(l.date.slice(8, 10))}</b>
+      </div>
+      <div className="relative" aria-hidden>
+        <span className="absolute" style={{ left: 10, top: 0, bottom: 0, width: 2, background: rail }} />
+        {point}
+      </div>
+      <div className="min-w-0 flex flex-col justify-center">
+        {l.elements.length === 0 ? (
+          <button disabled={!touchable} onClick={() => onOuvrir(null)}
+            className="text-left bg-transparent border-none py-2 pl-1.5 flex items-center justify-between min-h-[40px]"
+            style={{ cursor: touchable ? "pointer" : "default" }}>
+            <span className="text-[13px]" style={{ color: "var(--text-3)" }}>{vide}</span>
+            {laFaireAujourdhui && (
+              <span role="button" tabIndex={0}
+                onClick={(e) => { e.stopPropagation(); onLancerTete(); }}
+                onKeyDown={(e) => { if (e.key === "Enter") { e.stopPropagation(); onLancerTete(); } }}
+                className="text-[13px] font-semibold pr-1" style={{ color: "var(--exp-encre)" }}>
+                La faire aujourd&apos;hui
+              </span>
+            )}
+          </button>
+        ) : l.elements.map((el, n) => {
+          const peutBouger = !l.passe && deplacable(el);
+          return (
+            <div key={n} data-seance style={{ opacity: prise === el ? 0.25 : 1 }}>
+              <ElementLigne element={el} cycle={cycle}
+                touchable={!l.passe && el.genre !== "fait" && el.genre !== "realisee"}
+                poignee={peutBouger}
+                onPoignee={peutBouger && el.genre === "prevu" ? (e) => onPoignee(e, el) : undefined}
+                onOuvrir={() => onOuvrir(el)} />
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function ElementLigne({ element: el, cycle, touchable = false, poignee, onPoignee, onOuvrir }: {
+  element: ElementJour<EtapeCycle>;
+  cycle: EtapeCycle[] | null;
+  touchable?: boolean;
+  poignee: boolean;
+  onPoignee?: (e: React.PointerEvent) => void;
+  onOuvrir?: () => void;
+}) {
+  const d = descriptionElement(el, cycle);
+  const art = resolveArt({ title: d.titre });
+  /* ⚠️ Photos naturelles, toujours (verrou du 2026-07-13) : l'état se dit
+     par le texte et le chrome, jamais par une photo atténuée. */
+  return (
+    <div className="flex items-center w-full min-w-0">
+      <button disabled={!touchable} onClick={onOuvrir}
+        className="flex items-center gap-[11px] text-left bg-transparent border-none py-[7px] pl-1.5 flex-1 min-w-0"
+        style={{ cursor: touchable ? "pointer" : "default" }}>
+        <Photo img={art.img} pos="center 22%" className="flex-shrink-0" style={{ width: 50, height: 50, borderRadius: 15 }} />
+        <span className="flex-1 min-w-0" style={{ lineHeight: 1.25 }}>
+          <span className="block text-[16px] font-bold truncate" style={{ color: d.fait ? "var(--teal-encre)" : "var(--text-0)", fontVariationSettings: "var(--w-nombre)" }}>{d.titre}</span>
+          <span className="block text-[13px] truncate" style={{ color: "var(--text-2)" }}>
+            {d.fait ? <>fait · <span className="vy-nombre">{d.duree}</span> min</>
+              : <><span className="vy-nombre">{d.duree}</span> min{d.nbExos > 0 && <> · <span className="vy-nombre">{d.nbExos}</span> exercices</>}</>}
+          </span>
+          {!d.fait && d.raison && (
+            <span className="block text-[11px] font-semibold truncate mt-px" style={{ color: d.p?.conflit ? "var(--feu-encre)" : "var(--exp-encre)" }}>{d.raison}</span>
+          )}
+        </span>
+      </button>
+      {poignee && (
+        <span role="button" tabIndex={-1} aria-label={`Déplacer ${d.titre}`}
+          onPointerDown={onPoignee}
+          className="flex-shrink-0 grid place-items-center"
+          style={{ width: 30, height: 44, color: "var(--text-3)", touchAction: "none", cursor: "grab" }}>
+          <GripVertical size={16} />
+        </span>
+      )}
+    </div>
+  );
+}

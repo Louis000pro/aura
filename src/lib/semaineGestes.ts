@@ -30,7 +30,8 @@ import { appliquerCibles } from "@/lib/progression";
 import { ciblesOuvertes } from "@/lib/progressionBase";
 import { ecrireOccurrence, modeleDeLEtape, modeleDeLOccurrence } from "@/lib/prescription";
 import { lireVariete } from "@/lib/varieteBase";
-import { lireProgrammeActif } from "@/lib/programme";
+import { lireProgrammeActif, sauterEtape } from "@/lib/programme";
+import { viserEtape } from "@/lib/etapeCiblee";
 import { jourParis, resolutionDuProgramme } from "@/lib/projectionBase";
 import { poserException } from "@/lib/joursEntrainement";
 import { rangEnAttente } from "@/lib/occurrences";
@@ -230,4 +231,69 @@ export async function lireJournal(userId: string, dates: string[]): Promise<Sean
       lancementId: (r.lancement_id as string | null) ?? null,
     }))
     .filter((s) => voulues.has(s.date));
+}
+
+/**
+ * Lot 1 du Planning · glisser une séance sur un jour déjà pris : les deux
+ * échangent leur place (maquette « Entraînement repensé », le fil).
+ *
+ * Deux `changerDeJour`, jamais une écriture à part : chacun relit et
+ * vérifie sa cible comme partout. Entre les deux, la projection a bougé
+ * (la première séance a pris le jour de la seconde, qui a glissé) : on
+ * relit donc où la seconde se trouve MAINTENANT, par son identité
+ * (étape et rang), jamais par sa place d'avant.
+ *
+ * ⚠️ JAMAIS À MOITIÉ SANS LE DIRE. Si la première passe et pas la
+ * seconde, on rend `partiel` : l'écran relit et montre ce qui a bougé.
+ */
+export async function echangerDeJour(input: {
+  userId: string;
+  a: CibleAffichee;
+  b: CibleAffichee;
+  aujourdhui: string;
+  gen: GenInput;
+}): Promise<ResultatGeste> {
+  const { userId, a, b, aujourdhui, gen } = input;
+  const premier = await changerDeJour({ userId, cible: a, vers: b.date, aujourdhui, gen });
+  if (!premier.ok) return premier;
+  try {
+    const actif = await lireProgrammeActif(userId);
+    if (!actif || actif.programme.id !== b.programmeId) return { ok: false, raison: "partiel" };
+    const proj = await resolutionDuProgramme(userId, actif, aujourdhui, 28);
+    const ici = proj?.resolution?.jours.find((j) => j.etape.id === b.etapeId && j.rang === b.rang) ?? null;
+    if (!ici) return { ok: false, raison: "partiel" };
+    const reservation = ici.reservee ? await reservationDeLOccurrence(userId, actif.programme.id, b.rang) : null;
+    const second = await changerDeJour({
+      userId,
+      cible: { ...b, date: ici.date, reservationId: reservation?.id ?? null },
+      vers: a.date, aujourdhui, gen,
+    });
+    return second.ok ? second : { ok: false, raison: "partiel" };
+  } catch (e) {
+    console.error("[semaine] échanger :", e);
+    return { ok: false, raison: "partiel" };
+  }
+}
+
+/**
+ * Lot 1 du Planning · « Passer cette séance » depuis la feuille d'un jour.
+ *
+ * Le même saut que celui du Guide (V9C) : seule la PROCHAINE étape se
+ * passe, elle est refermée en `passee`, sans séance enregistrée ni EXP,
+ * et le cycle avance tout de suite. L'autorité qui la désigne est
+ * `viserEtape`, relue juste avant d'écrire (jamais un état gardé) : si
+ * l'étape affichée n'est plus la prochaine, rien ne s'écrit.
+ */
+export async function passerLaSeance(userId: string, cible: { etapeId: string; rang: number }): Promise<ResultatGeste> {
+  try {
+    const r = await viserEtape(userId, null, "prochaine");
+    if (!r.ok) return { ok: false, raison: r.refus === "masquee" ? "masquee" : "changee" };
+    const v = r.visee;
+    if (v.etape.id !== cible.etapeId || v.rang !== cible.rang) return { ok: false, raison: "changee" };
+    await sauterEtape(userId, v.programmeId, { id: v.etape.id, nom: v.etape.nom }, v.reservation?.id ?? null, v.adaptation?.id ?? null, v.rang);
+    return { ok: true };
+  } catch (e) {
+    console.error("[semaine] passer la séance :", e);
+    return { ok: false, raison: "echec" };
+  }
 }

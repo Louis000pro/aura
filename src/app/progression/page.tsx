@@ -24,7 +24,11 @@ import {
 } from "lucide-react";
 import WeeklyProgramme from "@/components/WeeklyProgramme";
 import AdaptationSheet from "@/components/entrainement/AdaptationSheet";
-import MaSemaineSheet, { type ALiberer } from "@/components/semaine/MaSemaineSheet";
+import FilPlanning, { type ALiberer } from "@/components/planning/FilPlanning";
+import ChangerQuelqueChose from "@/components/planning/ChangerQuelqueChose";
+import OngletsEntrainement, { LigneVue, estVue, type VueEntrainement } from "@/components/planning/OngletsEntrainement";
+import { poserBrouillonGuide } from "@/lib/brouillonGuide";
+import { ABR_JOURS } from "@/lib/semaine";
 import dynamic from "next/dynamic";
 import RangeeProgrammes from "@/components/parcours/RangeeProgrammes";
 import type { VueParcours } from "@/components/parcours/ParcoursEcrans";
@@ -2668,7 +2672,21 @@ export default function ProgressionPage() {
   const { semaine: week, setSemaine: setWeek, niveau: profileLevel, recharger: loadWeek } = journee;
 
   /* ── UI ── */
-  const [sheet, setSheet] = useState<null | "choisir" | "improviser" | "organiser" | "elan" | "semaine" | "adaptation" | "jours" | "absence" | "programme">(null);
+  const [sheet, setSheet] = useState<null | "choisir" | "improviser" | "organiser" | "elan" | "semaine" | "adaptation" | "jours" | "absence" | "programme" | "hub">(null);
+  /* Les quatre vues (maquette « Entraînement repensé ») : Planning d'abord. */
+  const [vue, setVue] = useState<VueEntrainement>("planning");
+  const changerVue = useCallback((v: VueEntrainement) => {
+    setVue(v);
+    if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "instant" });
+  }, []);
+  const { guide: guideActif } = useGuideActif();
+  /* Le Guide s'ouvre sur une phrase déjà écrite dans sa saisie. Rien
+     n'est envoyé : c'est la personne qui complète et envoie. */
+  const demanderAuGuide = useCallback((phrase: string) => {
+    setSheet(null);
+    if (phrase.trim()) poserBrouillonGuide(phrase);
+    openAssistant();
+  }, [openAssistant]);
   /* R8 · la version courte ouverte depuis la feuille d'un jour. */
   const [court, setCourt] = useState<{ titre: string; exercices: Exercise[]; lancer: (minutes: number) => void } | null>(null);
   /* R9c · « Mes jours » ouvert depuis « Mon programme » y revient. */
@@ -2679,7 +2697,6 @@ export default function ProgressionPage() {
      d'avant, avec une porte vers « Mes jours ». */
   const calendrier = journee.projection?.calendrier ?? null;
   const joursChoisis = !!calendrier?.choisi;
-  const voirSemaine = sheet === "semaine" || (sheet === "organiser" && joursChoisis);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editSession, setEditSession] = useState<WorkoutSession | null>(null);
   /* Séance pré-remplie : arrive de la bibliothèque (mouvements cochés) ou
@@ -2737,6 +2754,14 @@ export default function ProgressionPage() {
   useEffect(() => {
     if (typeof window === "undefined") return;
     const params = new URLSearchParams(window.location.search);
+    const vueDemandee = params.get("vue");
+    if (estVue(vueDemandee)) {
+      params.delete("vue");
+      const reste = params.toString();
+      window.history.replaceState(null, "", window.location.pathname + (reste ? `?${reste}` : ""));
+      const f = requestAnimationFrame(() => setVue(vueDemandee));
+      return () => cancelAnimationFrame(f);
+    }
     const voulue = params.get("ouvrir");
     if (voulue !== "organiser" && voulue !== "improviser" && voulue !== "adaptation" && voulue !== "classiques") return;
     params.delete("ouvrir");
@@ -3145,10 +3170,10 @@ export default function ProgressionPage() {
     <div className="min-h-screen flex flex-col px-5 pt-7 pb-36 md:pl-28 md:pr-8 md:pt-10 md:pb-16 relative overflow-x-hidden">
       <div className="w-full max-w-xl flex flex-col">
 
-        {/* ── En-tête : date + titre ── */}
+        {/* ── En-tête : le titre, puis les quatre vues ── */}
         <motion.div
           initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
-          className="mb-4"
+          className="mb-1"
         >
           <h1 className="text-[34px] leading-none" style={{ color: "var(--text-1)", fontWeight: 800, fontVariationSettings: "var(--w-voix)" }}>
             <em className="not-italic" style={{
@@ -3158,112 +3183,151 @@ export default function ProgressionPage() {
               display: "inline-block", paddingRight: "0.14em",  // même traitement que « nutrition »
             }}>Entraînement</em>
           </h1>
+          <OngletsEntrainement vue={vue} onVue={changerVue} />
         </motion.div>
 
-        {/* « Mon programme » n'est plus en tête d'Entraînement (Louis,
-            2026-10-11 : « pas super clair »). ⚠️ C'était la seule entrée de
-            la feuille « programme » (`sheet === "programme"`), qui reste dans
-            le code mais ne s'ouvre plus d'ici. */}
-
-        {/* ⚠️ LE HÉROS « AUJOURD'HUI » N'EST PLUS ICI (V7A). Il vit sur
-            l'accueil, l'écran où l'on arrive et où la question de la
-            journée se pose vraiment. Entraînement redevient ce qu'il est :
-            le plan d'entraînement et sa bibliothèque. */}
+        {/* ⚠️ LE HÉROS « AUJOURD'HUI » N'EST PAS ICI (V7A, et la maquette
+            « Entraînement repensé » le redit) : la séance du jour se lance
+            depuis l'accueil. Le Planning la met en lumière, sans bouton. */}
         <SeanceInterrompue />
 
-        {/* ── ① bis · Chercher une séance ou un exercice ──
-            La loupe vit dans « Je choisis » (maquette « Trouver ma séance ») :
-            ce champ l'ouvre, le curseur dedans. Une seule façon de chercher,
-            avec les mêmes règles (lib/trouverSeance). */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.16 }}
-          className="mt-2"
-        >
-          <button type="button" onClick={() => { setChoisirCible("loupe"); setSheet("choisir"); }}
-            className="w-full flex items-center gap-2.5 px-4 py-3 rounded-2xl text-left cursor-pointer"
-            style={{
-              background: "rgba(var(--tint-violet-rgb),0.55)",
-              border: "1px solid rgba(var(--accent-rgb),0.16)",
-            }}>
-            <Search size={16} style={{ color: "var(--text-3)", flexShrink: 0 }} />
-            <span className="flex-1 text-[16px]" style={{ color: "var(--text-3)" }}>Une séance, un exercice, 20 min…</span>
-          </button>
-        </motion.div>
+        {vue === "planning" && (
+          <>
+            {/* « Changer quelque chose » : compris sans IA, comme la loupe
+                des recettes. Le Guide n'est appelé que si on le demande. */}
+            <button type="button" onClick={() => setSheet("hub")}
+              className="w-full flex items-center gap-2.5 mt-3.5 pl-3.5 pr-2 rounded-2xl text-left cursor-pointer"
+              style={{ height: 48, background: "rgba(var(--tint-violet-rgb),0.55)", border: "1px solid rgba(var(--accent-rgb),0.16)" }}>
+              <Pencil size={16} style={{ color: "var(--text-3)", flexShrink: 0 }} />
+              <span className="flex-1 text-[16px]" style={{ color: "var(--text-2)" }}>Changer quelque chose…</span>
+              <VisageGuide guide={guideActif} etat="listen" size={32} />
+            </button>
 
-        {/* ── ② Bifurcation ──
-            ⚠️ LA PHRASE D'INVITE EST PARTIE AVEC LE HÉROS (V7A). Elle
-            s'écrivait AUTOUR de lui (« Pas ce qui était prévu ? », « Ou
-            autre chose : ») : sans la carte du jour au-dessus, elle
-            désigne quelque chose qui n'est plus à l'écran. Les deux
-            cartes se nomment elles-mêmes, et « ne pas sur-expliquer les
-            écrans » est une règle de composition verrouillée. */}
-        <motion.div
-          data-tour-anchor="prog-forks"
-          initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.2 }}
-          className="grid grid-cols-2 gap-3 mt-2"
-        >
-          <ForkCard kind="improvise" onClick={() => setSheet("improviser")} />
-          <ForkCard kind="choisis" count={allSessions.length} onClick={() => { setChoisirCible(null); setSheet("choisir"); }} />
-        </motion.div>
+            {journee.adaptation && journee.programme && (
+              <div className="mt-3 overflow-hidden" style={{ borderRadius: "var(--r-bloc)", background: "rgba(var(--surface-rgb),0.9)", border: "1px solid rgba(var(--text-3-rgb),0.16)" }}>
+                <AdaptationStrip etapes={journee.programme.cycle} adaptation={journee.adaptation} onOpen={() => setSheet("adaptation")} />
+              </div>
+            )}
 
-        {/* ── ③ Les mouvements ──
-           La vitrine passe APRÈS la bifurcation : on répond d'abord à
-           « je fais quoi maintenant », on donne envie ensuite. */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.22 }}
-          className="mt-6"
-        >
-          <MouvementsRow onOuvrir={(exo) => setMouvements({ fiche: exo ?? null })} />
-        </motion.div>
+            {journee.parcours ? (
+              /* Un programme daté (« Première traction ») : le cycle est en
+                 pause, la semaine est celle du programme. */
+              <div className="mt-5 overflow-hidden" style={{ borderRadius: "var(--r-bloc)", background: "rgba(var(--surface-rgb),0.9)", border: "1px solid rgba(var(--text-3-rgb),0.16)" }}>
+                <WeekStrip week={week} dates={semaineDates} today={today}
+                  onOrganise={() => setVueParcours({ genre: "semaine" })}
+                  prevues={journee.parcours.cal.creneaux.filter((c) => !c.fait).map((c) => ({ date: c.date, nom: titreCreneau(c) }))} />
+              </div>
+            ) : (
+              <>
+                {!joursChoisis && calendrier && (
+                  /* Les jours, pour tout le monde (décision 2) : sans eux, le
+                     programme ne sait pas où poser ses séances. */
+                  <button type="button" onClick={() => setSheet("jours")}
+                    className="w-full mt-4 flex items-center gap-3 text-left bg-transparent border-none cursor-pointer p-0">
+                    <CalendarDays size={18} style={{ color: "var(--exp-encre)", flexShrink: 0 }} />
+                    <span className="flex-1 min-w-0">
+                      <span className="block text-[16px] font-semibold" style={{ color: "var(--text-0)" }}>Choisis tes jours d&apos;entraînement</span>
+                      <span className="block text-[13px]" style={{ color: "var(--text-2)" }}>Ton programme posera ses séances dessus.</span>
+                    </span>
+                    <ChevronRight size={15} strokeWidth={2.4} style={{ color: "var(--text-3)" }} />
+                  </button>
+                )}
+                {user && (
+                  <div data-tour-anchor="prog-semaine">
+                    <FilPlanning
+                      userId={user.id}
+                      programme={journee.programme}
+                      gen={journee.gen}
+                      aujourdhui={today}
+                      relecture={week}
+                      onLancerTete={() => journee.lancerAujourdhui()}
+                      onLancerIntention={(d) => startDay(d)}
+                      onLancerCourt={(d, m) => { if (d) journee.lancerIntention(d, { courte: m }); else journee.lancerCourt(m); }}
+                      onChoisirSeance={(date, liberer) => { setPourDate(date); setALiberer(liberer); setSheet("choisir"); }}
+                      onDemander={demanderAuGuide}
+                      onChange={() => void loadWeek()}
+                    />
+                  </div>
+                )}
+                {!joursChoisis && (
+                  <button type="button" onClick={() => setSheet("semaine")}
+                    className="mt-4 ml-[60px] flex items-center gap-1.5 text-[13px] font-semibold bg-transparent border-none cursor-pointer p-0"
+                    style={{ color: "var(--exp-encre)" }}>
+                    <CalendarDays size={14} strokeWidth={2.2} /> Organiser ma semaine
+                  </button>
+                )}
+              </>
+            )}
+          </>
+        )}
 
-        {/* ── ④ Ma semaine · ⑤ Ton élan ──
-           Un seul groupe, deux sections separees par un filet. Les deux blocs
-           portaient EXACTEMENT le meme dessin (meme surface pleine, meme rayon
-           de 20, meme halo a 0,08) a 12 px l'un de l'autre : seule la TEINTE
-           changeait, violet puis teal. Deux surfaces pour une seule idee, c'est
-           la forme qui fait « tableau de bord genere ».
+        {vue === "programme" && (
+          <>
+            <div className="mt-4 overflow-hidden" style={{ borderRadius: "var(--r-bloc)", background: "rgba(var(--surface-rgb),0.9)", border: "1px solid rgba(var(--text-3-rgb),0.16)" }}>
+              {journee.programme && (
+                <LigneVue titre="Mon programme"
+                  sous={[...journee.programme.cycle].sort((a, b) => a.position - b.position).map((e) => e.nom).join(" · ")}
+                  onClick={() => setSheet("programme")} />
+              )}
+              {calendrier && (
+                <LigneVue titre="Mes jours"
+                  sous={joursChoisis && calendrier.jours.length ? calendrier.jours.map((j) => ABR_JOURS[j - 1]).join(" · ") : "Pas encore choisis"}
+                  onClick={() => setSheet("jours")} />
+              )}
+              {journee.programme && (
+                <div className="vy-filet">
+                  <AdaptationStrip etapes={journee.programme.cycle} adaptation={journee.adaptation} onOpen={() => setSheet("adaptation")} />
+                </div>
+              )}
+              {calendrier && joursChoisis && (
+                <LigneVue titre="Je m’absente" sous="Ton programme se met en pause, rien n’est perdu" onClick={() => setSheet("absence")} />
+              )}
+            </div>
+            <div className="mt-6">
+              <RangeeProgrammes lecture={journee.lectureParcours} parcours={journee.parcours}
+                premium={canAccessPremium} aujourdhui={today}
+                onOuvrir={(id) => setVueParcours({ genre: "fiche", id })} />
+            </div>
+          </>
+        )}
 
-           Le filet vient de `.vy-filet + .vy-filet`, donc c'est le SECOND enfant
-           qui le porte : quand l'elan n'a rien a dire, il n'y a pas de trait
-           orphelin. D'ou aussi le `{elan && ...}` ici, et pas seulement le
-           `return null` interne du composant : un enfant vide porterait quand
-           meme sa bordure. */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.25 }}
-          className="mt-6 overflow-hidden"
-          style={{
-            borderRadius: "var(--r-bloc)",
-            background: "rgba(var(--surface-rgb),0.9)",
-            border: "1px solid rgba(var(--text-3-rgb),0.16)",
-          }}
-        >
-          <div data-tour-anchor="prog-semaine" className="vy-filet">
-            {/* Pendant un programme, la semaine est la sienne : ses séances à
-                venir, et « Organiser » ouvre la semaine du programme. Le cycle
-                est en pause, il ne prévoit rien. */}
-            <WeekStrip week={week} dates={semaineDates} today={today}
-              onOrganise={() => (journee.parcours ? setVueParcours({ genre: "semaine" }) : setSheet("semaine"))}
-              prevues={journee.parcours
-                ? journee.parcours.cal.creneaux.filter((c) => !c.fait).map((c) => ({ date: c.date, nom: titreCreneau(c) }))
-                : journee.projection?.resolution?.jours
-                  .filter((j) => !j.reservee && !j.conflit)
-                  .map((j) => ({ date: j.date, nom: j.etape.nom }))} />
+        {vue === "progres" && (
+          <div className="mt-4 overflow-hidden" style={{ borderRadius: "var(--r-bloc)", background: "rgba(var(--surface-rgb),0.9)", border: "1px solid rgba(var(--text-3-rgb),0.16)" }}>
+            {elan ? (
+              <div data-tour-anchor="prog-elan" className="vy-filet">
+                <ElanStrip data={elan} onOpen={() => setSheet("elan")} />
+              </div>
+            ) : (
+              <p className="vy-filet vy-corps px-4 py-4" style={{ color: "var(--text-2)" }}>Ton élan apparaît dès tes premières séances.</p>
+            )}
+            <LigneVue titre="Tes records, ta constance et ton poids" sous="Dans ton profil, pour l’instant" onClick={() => router.push("/profil")} />
           </div>
-          {journee.programme && (
-            <div className="vy-filet">
-              <AdaptationStrip
-                etapes={journee.programme.cycle}
-                adaptation={journee.adaptation}
-                onOpen={() => setSheet("adaptation")}
-              />
+        )}
+
+        {vue === "catalogue" && (
+          <>
+            {/* La loupe vit dans « Je choisis » (maquette « Trouver ma séance ») :
+                ce champ l'ouvre, le curseur dedans. */}
+            <button type="button" onClick={() => { setChoisirCible("loupe"); setSheet("choisir"); }}
+              className="w-full flex items-center gap-2.5 px-4 py-3 mt-4 rounded-2xl text-left cursor-pointer"
+              style={{ background: "rgba(var(--tint-violet-rgb),0.55)", border: "1px solid rgba(var(--accent-rgb),0.16)" }}>
+              <Search size={16} style={{ color: "var(--text-3)", flexShrink: 0 }} />
+              <span className="flex-1 text-[16px]" style={{ color: "var(--text-3)" }}>Une séance, un exercice, 20 min…</span>
+            </button>
+            <div data-tour-anchor="prog-forks" className="grid grid-cols-2 gap-3 mt-3">
+              <ForkCard kind="improvise" onClick={() => setSheet("improviser")} />
+              <ForkCard kind="choisis" count={allSessions.length} onClick={() => { setChoisirCible(null); setSheet("choisir"); }} />
             </div>
-          )}
-          {elan && (
-            <div data-tour-anchor="prog-elan" className="vy-filet">
-              <ElanStrip data={elan} onOpen={() => setSheet("elan")} />
+            <div className="mt-6">
+              <RangeeProgrammes lecture={journee.lectureParcours} parcours={journee.parcours}
+                premium={canAccessPremium} aujourdhui={today}
+                onOuvrir={(id) => setVueParcours({ genre: "fiche", id })} />
             </div>
-          )}
-        </motion.div>
+            <div className="mt-6">
+              <MouvementsRow onOuvrir={(exo) => setMouvements({ fiche: exo ?? null })} />
+            </div>
+          </>
+        )}
       </div>
 
       {/* ══ Sheets ══ */}
@@ -3282,26 +3346,22 @@ export default function ProgressionPage() {
         )}
       </AnimatePresence>
       <AnimatePresence>
-        {voirSemaine && joursChoisis && user && (
-          <MaSemaineSheet
-            userId={user.id}
-            programme={journee.programme}
-            gen={journee.gen}
-            aujourdhui={today}
-            onClose={() => { setSheet(null); void loadWeek(); }}
-            onLancerTete={() => { setSheet(null); journee.lancerAujourdhui(); }}
-            onLancerIntention={(d) => { setSheet(null); startDay(d); }}
-            onVersionCourte={(d) => {
-              setSheet(null);
-              /* La séance de tête : ce que le héros lancerait. Une intention :
-                 elle-même, raccourcie au lancement avec la même règle. */
-              if (d) setCourt({ titre: dayTitle(d), exercices: d.exerciseList, lancer: (m) => journee.lancerIntention(d, { courte: m }) });
-              else if (journee.aLancer) setCourt({ ...journee.aLancer, lancer: journee.lancerCourt });
+        {sheet === "hub" && (
+          <ChangerQuelqueChose
+            onClose={() => setSheet(null)}
+            onDemander={demanderAuGuide}
+            onGeste={(g) => {
+              switch (g.porte) {
+                case "fil_deplacer": setSheet(null); setVue("planning"); showToast("Glisse une séance par sa poignée, ou touche-la pour choisir son jour."); break;
+                case "fil_echanger": setSheet(null); setVue("planning"); showToast("Touche une séance, puis « Échanger contre une autre séance »."); break;
+                case "fil_raccourcir": setSheet(null); setVue("planning"); showToast("Touche ta séance du jour pour régler sa durée."); break;
+                case "ajouter": setSheet(null); setVue("planning"); showToast("Touche un jour libre pour y poser une séance."); break;
+                case "absence": if (calendrier) setSheet("absence"); else { setSheet(null); showToast("Choisis d’abord tes jours d’entraînement."); } break;
+                case "jours": if (calendrier) setSheet("jours"); else setSheet(null); break;
+                case "adaptation": setSheet("adaptation"); break;
+                case "programme": setSheet(null); setVue("programme"); break;
+              }
             }}
-            onChoisirSeance={(date, liberer) => { setPourDate(date); setALiberer(liberer); setSheet("choisir"); }}
-            onMesJours={() => setSheet("jours")}
-            onAbsence={() => setSheet("absence")}
-            onChange={() => void loadWeek()}
           />
         )}
       </AnimatePresence>
@@ -3311,8 +3371,8 @@ export default function ProgressionPage() {
             userId={user.id}
             calendrier={calendrier}
             aujourdhui={today}
-            onClose={() => { setSheet(joursDepuisProgramme ? "programme" : joursChoisis ? "semaine" : null); setJoursDepuisProgramme(false); }}
-            onEnregistre={() => { void loadWeek(); setSheet(joursDepuisProgramme ? "programme" : "semaine"); setJoursDepuisProgramme(false); }}
+            onClose={() => { setSheet(joursDepuisProgramme ? "programme" : null); setJoursDepuisProgramme(false); }}
+            onEnregistre={() => { void loadWeek(); setSheet(joursDepuisProgramme ? "programme" : null); setJoursDepuisProgramme(false); }}
           />
         )}
       </AnimatePresence>
@@ -3336,8 +3396,8 @@ export default function ProgressionPage() {
             userId={user.id}
             calendrier={calendrier}
             aujourdhui={today}
-            onClose={() => setSheet("semaine")}
-            onEnregistre={() => { void loadWeek(); setSheet("semaine"); }}
+            onClose={() => setSheet(null)}
+            onEnregistre={() => { void loadWeek(); setSheet(null); }}
           />
         )}
       </AnimatePresence>
@@ -3405,7 +3465,7 @@ export default function ProgressionPage() {
             onMouvement={(exo) => setMouvements({ fiche: exo })}
             onClose={() => {
               /* Venu d'un jour de la semaine : on y revient, pas au vide. */
-              setSheet(pourDate ? "semaine" : null);
+              setSheet(pourDate && !joursChoisis ? "semaine" : null);
               setChoisirCible(null); setPourDate(null); setALiberer(null);
             }}
             onStart={pourDate
