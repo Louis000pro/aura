@@ -12,6 +12,8 @@
    faire annoncer une séance qu'une adaptation masque.
    ════════════════════════════════════════════════════════════════════ */
 
+import { etapesEnPause, type Situation } from "@/lib/situations";
+import { lireSituations } from "@/lib/situationsBase";
 import { lireOccurrences, type EtapeCycle, type ProgrammeEtCycle } from "@/lib/programme";
 import { lireAdaptations, adaptationActive, etapeMasquee, type Adaptation } from "@/lib/adaptation";
 import { lireCalendrier } from "@/lib/joursEntrainement";
@@ -40,6 +42,9 @@ export type FaitsResolution<T> = {
   nbJours: number;
   /** Jours portant une séance ou un repos posés hors du programme. */
   occupes: string[];
+  /** Lot 2 · les situations « En ce moment » : une gêne met des étapes en
+   *  pause, comme une adaptation les masque. Absentes = aucune. */
+  situations?: Situation[];
 };
 
 /** PURE : les faits → l'entrée du résolveur. Écran, Guide et cron. */
@@ -56,7 +61,8 @@ export function entreeResolution<T extends { id: string; position: number }>(f: 
     faitAujourdhui: dernierJourFait === f.aujourdhui,
     dernierJourFait,
     occupes: f.occupes,
-    masqueeLe: (e, date) => etapeMasquee(e.id, adaptationActive(f.adaptations as Adaptation[], date)),
+    masqueeLe: (e, date) => etapeMasquee(e.id, adaptationActive(f.adaptations as Adaptation[], date))
+      || (!!f.situations && etapesEnPause(f.situations, date).has(e.id)),
   };
 }
 
@@ -88,16 +94,19 @@ export async function resolutionDuProgramme(
   if (!actif || actif.cycle.length === 0) return vide;
   const dates = Array.from({ length: nbJours }, (_, i) => decaler(aujourdhui, i));
   try {
-    const [etat, adaptations, planning] = await Promise.all([
+    const [etat, adaptations, planning, situations] = await Promise.all([
       lireOccurrences(userId, actif),
       /* ⚠️ STRICTE : une panne lève, et la résolution est indisponible. */
       lireAdaptations(userId, actif.programme.id, "stricte"),
       lireOccupes(userId, dates, actif.programme.id),
+      /* Lot 2 · une gêne met des séances en pause : illisible, la
+         résolution est indisponible plutôt que de les reproposer. */
+      lireSituations(userId, aujourdhui),
     ]);
-    if (!etat) return null;
+    if (!etat || !situations) return null;
     const occupes = planning;
     const resolution = resoudreJournee(entreeResolution({
-      cycle: actif.cycle, etat, calendrier, adaptations, aujourdhui, nbJours, occupes,
+      cycle: actif.cycle, etat, calendrier, adaptations, aujourdhui, nbJours, occupes, situations,
     }));
     return { ...vide, resolution, etat };
   } catch (e) {

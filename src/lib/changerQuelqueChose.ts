@@ -9,10 +9,9 @@
    ⚠️ PUR : aucune lecture, aucune écriture, aucun DOM. L'écran ne fait
    que montrer ce que `filtrerGestes` rend et ouvrir la porte du geste.
 
-   ⚠️ UN GESTE LISTÉ EST UN GESTE QUI MARCHE. Les situations du lot 2
-   (moins de temps, énergie, matériel, événement, autre sport) n'entrent
-   ici qu'avec leur écran : une ligne qui n'ouvre rien serait un chantier
-   visible.
+   ⚠️ UN GESTE LISTÉ EST UN GESTE QUI MARCHE. Un événement et un autre
+   sport (les dernières situations de la maquette) n'entrent ici qu'avec
+   leur écran : une ligne qui n'ouvre rien serait un chantier visible.
    ════════════════════════════════════════════════════════════════════ */
 
 export type PorteGeste =
@@ -23,6 +22,11 @@ export type PorteGeste =
   /** Le catalogue, en mode « poser sur un jour ». */
   | "ajouter"
   | "absence"
+  /** Lot 2 · une situation « En ce moment » de ce genre. */
+  | "moins_de_temps"
+  | "gene"
+  | "energie"
+  | "materiel"
   | "adaptation"
   | "jours"
   | "programme";
@@ -48,8 +52,18 @@ export const GESTES: Geste[] = [
     mots: ["ajouter", "rajouter", "plus", "supplement", "nouvelle", "seance"] },
   { id: "absence", groupe: "periode", libelle: "Je pars quelques jours", porte: "absence",
     mots: ["pars", "partir", "vacances", "voyage", "absent", "absente", "absence", "week-end", "weekend", "deplacement", "conge"] },
-  { id: "gene", groupe: "periode", libelle: "Mettre une séance de côté un moment", porte: "adaptation",
-    mots: ["mal", "douleur", "gene", "blessure", "eviter", "pause", "cote", "epaule", "genou", "dos", "poignet", "cheville", "pec", "pecs"] },
+  { id: "temps", groupe: "periode", libelle: "J’ai moins de temps", porte: "moins_de_temps",
+    mots: ["temps", "examens", "partiels", "travail", "boulot", "charge", "chargee", "presse", "occupe", "occupee"] },
+  { id: "gene", groupe: "periode", libelle: "J’ai une gêne ou une douleur", porte: "gene",
+    mots: ["mal", "douleur", "gene", "blessure", "courbature", "dechirure", "tendinite", "entorse", "claquage", "epaule", "genou",
+      "dos", "poignet", "cheville", "coude", "pec", "pecs", "pectoraux", "main", "pied", "cou", "nuque", "hanche", "cuisse",
+      "mollet", "tibia", "cotes", "abdos", "biceps", "triceps", "fessiers", "adducteurs"] },
+  { id: "energie", groupe: "periode", libelle: "Je manque d’énergie ou je suis malade", porte: "energie",
+    mots: ["fatigue", "fatiguee", "energie", "malade", "rhume", "grippe", "sommeil", "dors", "creve", "crevee", "epuise", "epuisee"] },
+  { id: "materiel", groupe: "periode", libelle: "Je n’ai pas mon matériel", porte: "materiel",
+    mots: ["materiel", "salle", "fermee", "hotel", "halteres", "maison", "equipement"] },
+  { id: "cote", groupe: "periode", libelle: "Mettre une séance de côté un moment", porte: "adaptation",
+    mots: ["eviter", "pause", "cote"] },
   { id: "jours", groupe: "periode", libelle: "Mes jours changent", porte: "jours",
     mots: ["jours", "horaires", "emploi", "stage", "lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"] },
   { id: "rythme", groupe: "programme", libelle: "Mes jours et ma durée", porte: "programme",
@@ -60,7 +74,7 @@ export const GESTES: Geste[] = [
 
 /** Les mots qui ne disent rien de ce qu'on veut changer. */
 const VIDES = new Set([
-  "pour", "les", "des", "une", "mes", "mon", "que", "pas", "quelques", "je", "veux", "voudrais",
+  "jours", "pour", "les", "des", "une", "mes", "mon", "que", "pas", "quelques", "je", "veux", "voudrais",
   "aimerais", "faire", "suis", "mais", "avec", "dans", "cette", "ces", "est", "sur", "par", "aux",
 ]);
 

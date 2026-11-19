@@ -36,13 +36,15 @@ import { changerDeJour, echangerDeJour, lireJournal, type CibleAffichee, type Re
 import { rangEnAttente } from "@/lib/occurrences";
 import FeuilleJour, { type Cible } from "@/components/planning/FeuilleJour";
 import { RAISONS, descriptionElement, type ALiberer } from "@/components/planning/ligneSeance";
+import { BANDE, genreDe } from "@/components/situations/BilletsMoment";
+import { situationsDuJour, type Situation } from "@/lib/situations";
 
 export type { ALiberer };
 
 type Donnees = { intentions: PlanningDay[]; journal: SeanceJournal[]; proj: ResolutionProgramme };
 
 export default function FilPlanning({
-  userId, programme, gen, aujourdhui, relecture,
+  userId, programme, gen, aujourdhui, relecture, situations,
   onLancerTete, onLancerIntention, onLancerCourt, onChoisirSeance, onDemander, onChange,
 }: {
   userId: string;
@@ -51,6 +53,9 @@ export default function FilPlanning({
   aujourdhui: string;
   /** Change quand l'écran a relu sa journée : le fil se relit aussi. */
   relecture: unknown;
+  /** Lot 2 · les situations « En ce moment » : une bande le long des
+   *  jours qu’elles touchent, et une ligne sur la séance qu’elles changent. */
+  situations: Situation[] | null;
   onLancerTete: () => void;
   onLancerIntention: (d: PlanningDay) => void;
   /** La séance de ce jour, pour le temps qu'on a. `null` = la tête. */
@@ -237,6 +242,7 @@ export default function FilPlanning({
               </div>
               {semaine.map((l) => (
                 <LigneJour key={l.date} ligne={l} cycle={cycle}
+                  situations={l.passe ? [] : situationsDuJour(situations ?? [], l.date)}
                   cible={glisse?.vers === l.date}
                   prise={glisse?.date === l.date ? glisse.element : null}
                   laFaireAujourdhui={l.aujourdhui && l.etat === "libre" && proposeeAilleurs}
@@ -308,9 +314,11 @@ function DureeTotale({ minutes }: { minutes: number }) {
 const RAIL_PREVU = "repeating-linear-gradient(to bottom, rgba(139,92,246,.42) 0 4px, transparent 4px 8px)";
 const RAIL_FAIT = "rgba(43,212,160,.6)";
 
-function LigneJour({ ligne, cycle, cible, prise, laFaireAujourdhui, deplacable, onLancerTete, onPoignee, onOuvrir }: {
+function LigneJour({ ligne, cycle, situations, cible, prise, laFaireAujourdhui, deplacable, onLancerTete, onPoignee, onOuvrir }: {
   ligne: LigneSemaine<EtapeCycle>;
   cycle: EtapeCycle[] | null;
+  /** Les situations actives ce jour-là. */
+  situations: Situation[];
   /** Le jour sous le doigt pendant un glisser. */
   cible: boolean;
   /** La séance qu'on est en train de glisser depuis ce jour. */
@@ -352,7 +360,7 @@ function LigneJour({ ligne, cycle, cible, prise, laFaireAujourdhui, deplacable, 
   return (
     <div data-jour={l.date} className="grid relative rounded-2xl"
       style={{
-        gridTemplateColumns: "38px 22px minmax(0,1fr)", minHeight: 40,
+        gridTemplateColumns: "38px 14px 22px minmax(0,1fr)", minHeight: 40,
         background: cible ? "rgba(139,92,246,.16)" : l.aujourdhui ? "linear-gradient(90deg, rgba(139,92,246,.13), rgba(139,92,246,.02) 85%)" : undefined,
         boxShadow: cible ? "inset 0 0 0 1.5px #8B5CF6" : undefined,
       }}>
@@ -360,6 +368,10 @@ function LigneJour({ ligne, cycle, cible, prise, laFaireAujourdhui, deplacable, 
         aria-label={date.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })}>
         <span className="text-[11px] font-semibold" style={{ color: l.aujourdhui ? "var(--exp-encre)" : "var(--text-3)" }}>{ABR_JOURS[l.jour - 1]}</span>
         <b className="vy-nombre text-[16px]" style={{ color: l.aujourdhui ? "var(--exp-encre)" : l.passe ? "var(--text-3)" : "var(--text-1)" }}>{Number(l.date.slice(8, 10))}</b>
+      </div>
+      <div className="flex gap-[2px] justify-center" aria-hidden>
+        {situations.map((s) => <i key={s.id} className="block" style={{ width: 4, ...BANDE[genreDe(s)] }} />)}
+        {l.etat === "absence" && <i className="block" style={{ width: 4, ...BANDE.absence }} />}
       </div>
       <div className="relative" aria-hidden>
         <span className="absolute" style={{ left: 10, top: 0, bottom: 0, width: 2, background: rail }} />
@@ -384,7 +396,7 @@ function LigneJour({ ligne, cycle, cible, prise, laFaireAujourdhui, deplacable, 
           const peutBouger = !l.passe && deplacable(el);
           return (
             <div key={n} data-seance style={{ opacity: prise === el ? 0.25 : 1 }}>
-              <ElementLigne element={el} cycle={cycle}
+              <ElementLigne element={el} cycle={cycle} situations={situations}
                 touchable={!l.passe && el.genre !== "fait" && el.genre !== "realisee"}
                 poignee={peutBouger}
                 onPoignee={peutBouger && el.genre === "prevu" ? (e) => onPoignee(e, el) : undefined}
@@ -397,9 +409,10 @@ function LigneJour({ ligne, cycle, cible, prise, laFaireAujourdhui, deplacable, 
   );
 }
 
-function ElementLigne({ element: el, cycle, touchable = false, poignee, onPoignee, onOuvrir }: {
+function ElementLigne({ element: el, cycle, situations = [], touchable = false, poignee, onPoignee, onOuvrir }: {
   element: ElementJour<EtapeCycle>;
   cycle: EtapeCycle[] | null;
+  situations?: Situation[];
   touchable?: boolean;
   poignee: boolean;
   onPoignee?: (e: React.PointerEvent) => void;
@@ -407,6 +420,7 @@ function ElementLigne({ element: el, cycle, touchable = false, poignee, onPoigne
 }) {
   const d = descriptionElement(el, cycle);
   const art = resolveArt({ title: d.titre });
+  const note = d.fait ? null : noteSituation(situations, d.duree, el.genre === "prevu" && !el.intention);
   /* ⚠️ Photos naturelles, toujours (verrou du 2026-07-13) : l'état se dit
      par le texte et le chrome, jamais par une photo atténuée. */
   return (
@@ -421,6 +435,11 @@ function ElementLigne({ element: el, cycle, touchable = false, poignee, onPoigne
             {d.fait ? <>fait · <span className="vy-nombre">{d.duree}</span> min</>
               : <><span className="vy-nombre">{d.duree}</span> min{d.nbExos > 0 && <> · <span className="vy-nombre">{d.nbExos}</span> exercices</>}</>}
           </span>
+          {note && (
+            <span className="flex items-center gap-[5px] text-[11px] font-semibold truncate mt-px" style={{ color: note.genre === "moins_de_temps" ? "var(--feu-encre)" : "var(--exp-encre)" }}>
+              <i aria-hidden className="block flex-none rounded-[2px]" style={{ width: 8, height: 8, ...BANDE[note.genre] }} />{note.texte}
+            </span>
+          )}
           {!d.fait && d.raison && (
             <span className="block text-[11px] font-semibold truncate mt-px" style={{ color: d.p?.conflit ? "var(--feu-encre)" : "var(--exp-encre)" }}>{d.raison}</span>
           )}
@@ -436,4 +455,20 @@ function ElementLigne({ element: el, cycle, touchable = false, poignee, onPoigne
       )}
     </div>
   );
+}
+
+/** Ce qu'une situation change sur cette séance, en une ligne. La plus
+ *  utile d'abord : la durée, puis la gêne, l'énergie, le matériel. */
+function noteSituation(situations: Situation[], duree: number, seComposera: boolean): { genre: Situation["reglages"]["genre"]; texte: string } | null {
+  for (const s of situations) {
+    const r = s.reglages;
+    if (r.genre === "moins_de_temps" && duree > r.minutes) return { genre: r.genre, texte: `${r.minutes} min au lieu de ${duree}` };
+  }
+  for (const s of situations) {
+    const r = s.reglages;
+    if (r.genre === "gene") return { genre: r.genre, texte: "adaptée à ta gêne" };
+    if (r.genre === "energie") return { genre: r.genre, texte: "une série de moins par exercice" };
+    if (r.genre === "materiel" && seComposera) return { genre: r.genre, texte: r.lieu === "halteres" ? "aux haltères" : "sans matériel" };
+  }
+  return null;
 }

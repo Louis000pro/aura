@@ -6387,7 +6387,8 @@ verdict(
     "`instanceDeLEtape` supprimée");
   verdict("R2 · la prescription se fige au lancement et voyage avec lui",
     /* R4 · la copie figée porte désormais les cibles acceptées recopiées. */
-    journee.includes("prescription: lignesFigees.map((l) => ({ ...l })),") && journee.includes("const pleines = appliquerCibles(c.modele.lignes,")
+    journee.includes("prescription: lignesFigees.map((l) => ({ ...l })),") && journee.includes("const brutes = appliquerCibles(c.modele.lignes,")
+      && journee.includes("const pleines = sit.liste;")
       && journee.includes(": allegerZone ? allegerPourZone(pleines, allegerZone) : pleines;")
       && journee.includes("modeleId: c.modele.modeleId,"),
     "dans la cible, donc dans l'attente locale");
@@ -8206,8 +8207,10 @@ verdict(
       && !hook.slice(hook.indexOf("if (courte && !courte.compte)"), hook.indexOf("if (courte && !courte.compte)") + 600).split("return;")[0].includes("cible")
       && hook.includes('cible: !options?.repetition && compte && d.id ?'), "");
   verdict("R8 · le lancement recalcule sur la liste relue, avec la règle de l'aperçu",
-    hook.includes("raccourcir(projeterPrescription(pleines).map(itemDExercice), courteMin)")
-      && hook.includes("raccourcir(d.exerciseList.map(itemDExercice), options.courte)"), "");
+    hook.includes("raccourcir(projeterPrescription(pleines).map(itemDExercice), minutesCourtes)")
+      && hook.includes("const minutesCourtes = courteMin ?? minutesSituation;")
+      && hook.includes("raccourcir(base.map(itemDExercice), minutesVoulues)")
+      && hook.includes("const minutesVoulues = options?.courte ??"), "");
   const hero = readFileSync("src/components/entrainement/TodayHero.tsx", "utf8");
   const jourSrc = readFileSync("src/components/planning/FeuilleJour.tsx", "utf8");
   const feuille = readFileSync("src/components/entrainement/VersionCourteSheet.tsx", "utf8");
@@ -8259,6 +8262,86 @@ verdict(
   const brouillon = lire("src/lib/brouillonGuide.ts");
   verdict("Lot 1 · « Demander à … » pose la phrase dans la saisie sans l'envoyer",
     page.includes("poserBrouillonGuide(phrase)") && page.includes("openAssistant();") && !brouillon.includes("sendMessage"), "");
+}
+
+/* ══ Entraînement repensé · lot 2 : « En ce moment » ══ */
+{
+  const lire = (rel: string) => readFileSync(rel, "utf8").replace(/\r\n/g, "\n");
+  const Z = await import("@/lib/zonesMouvements");
+  const ST = await import("@/lib/situations");
+  verdict("Lot 2 · la silhouette a 39 zones", Z.ZONES_SILHOUETTE.length === 39, String(Z.ZONES_SILHOUETTE.length));
+  verdict("Lot 2 · les 102 mouvements de la bibliothèque ont leur ligne", Z.mouvementsSansLigne().length === 0, Z.mouvementsSansLigne().join(", "));
+  verdict("Lot 2 · chaque code de la table désigne un endroit connu", Z.codesInconnus().length === 0, Z.codesInconnus().join(","));
+  verdict("Lot 2 · chaque zone de la silhouette se lit sans son côté", Z.ZONES_SILHOUETTE.every((z) => Z.baseZone(z) !== null), "");
+  verdict("Lot 2 · une gêne aux pectoraux touche le développé couché et les pompes, pas le squat",
+    Z.sollicite("Développé couché", ["Pectoraux"]) === true && Z.sollicite("Pompes", ["Pectoraux"]) === true && Z.sollicite("Squat", ["Pectoraux"]) === false, "");
+  verdict("Lot 2 · une gêne au poignet touche les pompes (on s'appuie dessus)", Z.sollicite("Pompes", ["Poignet gauche"]) === true, "");
+  verdict("Lot 2 · un mouvement inconnu rend « je ne sais pas », jamais « rien »", Z.endroitsDe("Truc inventé") === null && Z.sollicite("Truc inventé", ["Cou"]) === null, "");
+
+  const gene = { genre: "gene" as const, zones: ["Genou droit"], mode: "eviter" as const, choix: {}, pauses: {} };
+  const seances = [
+    { id: "J", nom: "Jambes", exercices: ["Squat barre", "Presse à cuisses", "Leg extension", "Fentes", "Leg curl assis", "Mollets"] },
+    { id: "H", nom: "Haut du corps", exercices: ["Développé couché", "Tirage poitrine", "Élévations latérales", "Curl haltères"] },
+  ];
+  const ef = ST.effetGene(seances, gene);
+  const j = ef.find((x) => x.id === "J")!, h = ef.find((x) => x.id === "H")!;
+  verdict("Lot 2 · un genou met Jambes en pause (moins de la moitié des mouvements reste)", j.pause && j.reste * 2 < j.total, JSON.stringify({ reste: j.reste, total: j.total }));
+  verdict("Lot 2 · un genou ne touche pas le haut du corps", !h.pause && h.evites === 0, "");
+  const gardee = ST.effetGene(seances, { ...gene, pauses: { J: false } }).find((x) => x.id === "J")!;
+  verdict("Lot 2 · une séance en pause peut être gardée quand même", !gardee.pause, "");
+  const allege = ST.effetGene(seances, { ...gene, mode: "alleger" }).find((x) => x.id === "J")!;
+  verdict("Lot 2 · « les alléger » ne retire rien et ne met rien en pause", allege.evites === 0 && allege.legers > 0 && !allege.pause, "");
+  const unParUn = ST.effetGene(seances, { ...gene, mode: "un", choix: { "J/Squat barre": "garder" } }).find((x) => x.id === "J")!;
+  verdict("Lot 2 · « un par un » : un mouvement gardé reste dans la séance", !unParUn.touches.some((t) => t.nom === "Squat barre" && t.etat !== "garder"), "");
+
+  const sit = (reglages: Parameters<typeof ST.effetCourt>[0]["reglages"], debut = "2026-11-18", fin = "2026-11-30"): Parameters<typeof ST.effetCourt>[0] =>
+    ({ id: reglages.genre, debut, fin, statut: "active", motif: null, reglages });
+  const liste = [{ name: "Squat barre", sets: 4 }, { name: "Développé couché", sets: 4 }, { name: "Mollets", sets: 3 }];
+  const acces = { nom: (x: { name: string }) => x.name, series: (x: { sets: number }) => x.sets, avecSeries: (x: { name: string; sets: number }, n: number) => ({ ...x, sets: n }) };
+  const a1 = ST.appliquerSituations(liste, [sit({ ...gene, pauses: { J: true } })], "2026-11-20", "J", acces);
+  verdict("Lot 2 · au lancement, une gêne au genou retire le squat et garde le développé couché",
+    !a1.liste.some((x) => x.name === "Squat barre") && a1.liste.some((x) => x.name === "Développé couché"), a1.liste.map((x) => x.name).join(","));
+  const a2 = ST.appliquerSituations(liste, [sit({ genre: "energie", mode: "leger" })], "2026-11-20", null, acces);
+  verdict("Lot 2 · moins d'énergie : une série de moins par exercice", a2.liste.every((x, i) => x.sets === liste[i].sets - 1), "");
+  const a3 = ST.appliquerSituations(liste, [sit({ genre: "moins_de_temps", minutes: 25 })], "2026-11-20", null, acces);
+  verdict("Lot 2 · moins de temps : la durée passe par la règle de la version courte", a3.minutes === 25 && a3.liste.length === liste.length, "");
+  const a4 = ST.appliquerSituations(liste, [sit({ genre: "moins_de_temps", minutes: 25 }, "2026-11-18", "2026-11-19")], "2026-11-20", null, acces);
+  verdict("Lot 2 · une situation finie n'agit plus, même si sa ligne dit encore « active »", a4.minutes === null, "");
+  const tout = ST.appliquerSituations([{ name: "Squat barre", sets: 3 }], [sit({ ...gene })], "2026-11-20", null, acces);
+  verdict("Lot 2 · on ne retire jamais tout : la liste reste, avec une note", tout.liste.length === 1 && tout.notes.length === 1, "");
+  verdict("Lot 2 · une gêne en pause masque son étape, les autres non",
+    ST.etapesEnPause([sit({ ...gene, pauses: { J: true, H: false } })], "2026-11-20").has("J")
+      && !ST.etapesEnPause([sit({ ...gene, pauses: { J: true, H: false } })], "2026-11-20").has("H"), "");
+  verdict("Lot 2 · « pas mon matériel » donne le lieu du jour", ST.lieuDuJour([sit({ genre: "materiel", lieu: "poids" })], "2026-11-20") === "poids", "");
+  verdict("Lot 2 · une ligne mal formée ne devient pas une situation",
+    ST.situationDeLigne({ id: "x", genre: "gene", debut: "2026-11-18", fin: "2026-11-20", statut: "active", motif: null, reglages: { zones: "Cou" } }) === null, "");
+
+  const PB = await import("@/lib/projectionBase");
+  const cycle = [{ id: "J", nom: "Jambes", position: 1 }, { id: "H", nom: "Haut", position: 2 }];
+  const entree = PB.entreeResolution({
+    cycle, etat: { depart: 1, fermes: [], reserves: [] },
+    calendrier: { choisi: true, jours: [1, 2, 3, 4, 5, 6, 7], effetLe: null, exceptions: [], absences: [] },
+    adaptations: [], aujourdhui: "2026-11-20", nbJours: 3, occupes: [],
+    situations: [sit({ ...gene, pauses: { J: true } })],
+  });
+  verdict("Lot 2 · la projection traverse une étape mise en pause par une gêne", !!entree.masqueeLe && entree.masqueeLe(cycle[0], "2026-11-20") && !entree.masqueeLe(cycle[1], "2026-11-20"), "");
+
+  const base = lire("src/lib/projectionBase.ts");
+  verdict("Lot 2 · des situations illisibles rendent la résolution indisponible (jamais « aucune »)",
+    base.includes("lireSituations(userId, aujourdhui)") && base.includes("if (!etat || !situations) return null;"), "");
+  const cron = lire("src/app/api/cron/reminders/route.ts");
+  verdict("Lot 2 · le rappel du soir lit aussi les situations", cron.includes("situations, aujourdhui: today"), "");
+  const hook = lire("src/hooks/useJournee.ts");
+  verdict("Lot 2 · le lancement applique les situations, pour une séance écrite comme pour une étape",
+    (hook.match(/appliquerSituations\(/g) ?? []).length === 2 && hook.includes("lieuSituation ?? ctxFromLieu(location, equip)"), "");
+  const feuille = lire("src/components/situations/FeuilleSituation.tsx");
+  verdict("Lot 2 · la feuille montre « Ce que ça change » et n'écrit qu'au bouton",
+    feuille.includes("Ce que ça change") && !/createClient|\.insert\(|\.update\(/.test(feuille), "");
+  verdict("Lot 2 · la gêne rappelle de consulter si la douleur dure", feuille.includes("parle-en à un professionnel de santé"), "");
+  const CQ = await import("@/lib/changerQuelqueChose");
+  const idsQ = (t: string) => CQ.filtrerGestes(t).map((g) => g.id);
+  verdict("Lot 2 · « j'ai des partiels » mène à « moins de temps »", idsQ("j’ai des partiels").includes("temps"), idsQ("j’ai des partiels").join(","));
+  verdict("Lot 2 · « je suis malade » mène à l'énergie", idsQ("je suis malade").includes("energie"), idsQ("je suis malade").join(","));
 }
 
 console.log("\n" + (echecs === 0 ? "Tout passe." : echecs + " échec(s)."));

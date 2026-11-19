@@ -52,6 +52,22 @@ import type { Rythme } from "@/lib/rythmeSeance";
 import { lireVariete, seriesRecentes } from "@/lib/varieteBase";
 import type { Exercise } from "@/components/WorkoutGuideModal";
 import { estimerMinutes, exercicesCourts, itemDExercice, lignesCourtes, raccourcir } from "@/lib/dureeLibre";
+import { appliquerSituations, lieuDuJour, type Situation } from "@/lib/situations";
+import { lireSituations } from "@/lib/situationsBase";
+import type { LignePrescription } from "@/lib/banqueEtapes";
+
+/* Lot 2 · la même règle des situations pour une séance écrite et pour une
+   prescription : seuls le nom et les séries changent de champ. */
+const ACCES_EXO = {
+  nom: (e: Exercise) => e.name,
+  series: (e: Exercise) => e.sets,
+  avecSeries: (e: Exercise, n: number): Exercise => ({ ...e, sets: n }),
+};
+const ACCES_LIGNE = {
+  nom: (l: LignePrescription) => l.exercice_nom,
+  series: (l: LignePrescription) => l.series,
+  avecSeries: (l: LignePrescription, n: number): LignePrescription => ({ ...l, series: n, reduite: true, series_completes: l.series_completes ?? l.series }),
+};
 import {
   allegerPourZone, allegerExercices, fonctionsDe, libelleAllege, phraseRecouvrement, recouvrement,
   type SerieRecente,
@@ -219,6 +235,9 @@ export type Journee = {
   /** Lance la séance du prochain créneau. Un test ne se lance pas ici :
    *  il a son écran, ouvert par l'accueil. */
   lancerParcours: () => void;
+  /** Lot 2 · les situations « En ce moment » encore en cours ou à venir.
+   *  `null` = pas encore lues, ou illisibles. */
+  situations: Situation[] | null;
 };
 
 export function useJournee({ creerProgramme = false }: { creerProgramme?: boolean } = {}): Journee {
@@ -259,6 +278,10 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
   const lectureEnCours = useRef(0);
   const enLectureRef = useRef(false);
   const [adaptation, setAdaptation] = useState<Adaptation | null>(memoire?.adaptation ?? null);
+  const [situations, setSituations] = useState<Situation[] | null>(null);
+  /* Lue au lancement (un geste), jamais pendant le rendu. */
+  const situationsRef = useRef<Situation[] | null>(null);
+  useEffect(() => { situationsRef.current = situations; }, [situations]);
   const [niveau, setNiveau] = useState<string | null>(memoire?.niveau ?? null);
   const [doneStats, setDoneStats] = useState<{ minutes: number; kcal: number } | null>(memoire?.doneStats ?? null);
 
@@ -312,6 +335,9 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
       const parcoursP = lireParcours(user.id);
       const actifP = creerProgramme ? null : enAvance(lireProgrammeActif(user.id));
       const varieteP = enAvance(lireVariete(user.id));
+      /* Lot 2 · « pas mon matériel » change le lieu de composition : elle
+         se lit avant les réglages. Illisible, on compose comme d'habitude. */
+      const situationsP = lireSituations(user.id, todayYmd()).catch(() => null);
       const { data: prof, error: errProfil } = await supabase
         .from("mon_profil")
         .select("onboarding_level, onboarding_sessions_week, onboarding_goals")
@@ -357,8 +383,10 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
       /* Lieu OPTIONNEL : tant que la synchro cross-device n'a pas eu lieu, le
          localStorage de cet appareil peut être vide. On retombe sur le poids
          du corps et la personne affine son lieu via « Organiser ». */
+      const situationsLues = await situationsP;
+      const lieuSituation = situationsLues ? lieuDuJour(situationsLues, todayYmd()) : null;
       const reglages: GenInput = {
-        ctx: ctxFromLieu(location, equip),
+        ctx: lieuSituation ?? ctxFromLieu(location, equip),
         sessions: prof!.onboarding_sessions_week ?? 3,
         goals: ((prof!.onboarding_goals as string[] | null) ?? []).map((g) => goalLabels[g] ?? g),
         level: prof!.onboarding_level,
@@ -372,6 +400,7 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
         if (!derniere()) return;
         setSemaine(lue);
         setGen(reglages);
+        setSituations(situationsLues);
         setBesoinSetup(false);
       } catch (e) {
         console.error("Planning load error", e);
@@ -754,7 +783,12 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
        la même règle que l'aperçu. Elle ne déclare la séance prévue comme
        cible que si elle en garde le rôle : sinon elle se fait en plus et la
        séance prévue reste à faire (décision 45). */
-    const courte = options?.courte ? raccourcir(d.exerciseList.map(itemDExercice), options.courte) : null;
+    /* Lot 2 · les situations du jour d'abord (gêne, énergie), puis la durée :
+       « moins de temps » passe par la même règle que la version courte. */
+    const sit = appliquerSituations(d.exerciseList, situationsRef.current ?? [], todayYmd(), d.etapeId ?? null, ACCES_EXO);
+    const base = sit.liste;
+    const minutesVoulues = options?.courte ?? (sit.minutes && !options?.repetition && sit.minutes < dureeIntention(d) ? sit.minutes : null);
+    const courte = minutesVoulues ? raccourcir(base.map(itemDExercice), minutesVoulues) : null;
     const compte = !courte || courte.compte;
     launchWorkout({
       sessionId: `planning-${d.id ?? d.date}`,
@@ -770,8 +804,8 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
       heroImage: heroImageForSeance({ title: `${titre} ${d.type}` }),
       /* R7 · « Version plus légère » : moins de séries là où ça vient de
          travailler, mêmes exercices, même séance. */
-      exerciseList: courte ? exercicesCourts(d.exerciseList, courte)
-        : options?.allegerZone ? allegerExercices(d.exerciseList, options.allegerZone) : d.exerciseList,
+      exerciseList: courte ? exercicesCourts(base, courte)
+        : options?.allegerZone ? allegerExercices(base, options.allegerZone) : base,
       /* Sans identité, rien à refermer : une ligne sans `id` ne peut pas
          être marquée, et la marquer par sa date créditerait aussi le
          supplément du même jour (V6b).
@@ -856,12 +890,18 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
     void avecEtapeVerifiee(contexteAffiche, relireContexte, (c) => {
       /* La liste ET la prescription viennent du modèle RELU (tour 22). */
       /* R4 · les cibles acceptées se recopient dans la prescription figée. */
-      const pleines = appliquerCibles(c.modele.lignes, c.cibles ?? [], c.rang)
+      const brutes = appliquerCibles(c.modele.lignes, c.cibles ?? [], c.rang)
         .slice().sort((a, b) => a.emplacement - b.emplacement);
+      /* Lot 2 · les situations du jour, sur la prescription elle-même : les
+         lignes gardées gardent leur emplacement, le journal les relie. */
+      const sit = appliquerSituations(brutes, situationsRef.current ?? [], todayYmd(), c.etapeId, ACCES_LIGNE);
+      const pleines = sit.liste;
+      const minutesSituation = sit.minutes && sit.minutes < estimerMinutes(projeterPrescription(pleines).map(itemDExercice)) ? sit.minutes : null;
+      const minutesCourtes = courteMin ?? minutesSituation;
       /* R8 · la version courte, calculée sur la liste RELUE avec la règle
          de l'aperçu. Les emplacements gardés restent les leurs : le
          journal les relie toujours à leur ligne. */
-      const courte = courteMin ? raccourcir(projeterPrescription(pleines).map(itemDExercice), courteMin) : null;
+      const courte = minutesCourtes ? raccourcir(projeterPrescription(pleines).map(itemDExercice), minutesCourtes) : null;
       const lignesFigees = courte ? lignesCourtes(pleines, courte)
         : allegerZone ? allegerPourZone(pleines, allegerZone) : pleines;
       const liste = projeterPrescription(lignesFigees);
@@ -1043,5 +1083,6 @@ export function useJournee({ creerProgramme = false }: { creerProgramme?: boolea
     parcours: etatParcours,
     lectureParcours: parcoursLecture,
     lancerParcours,
+    situations,
   };
 }

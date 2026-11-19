@@ -1,3 +1,4 @@
+import { situationDeLigne, type Situation } from "@/lib/situations";
 import { debutPush, finPush } from "@/lib/journalPush";
 /**
  * GET /api/cron/reminders : LE RAPPEL DU SOIR
@@ -660,13 +661,17 @@ async function appliquerJoursEntrainement(
   if (progs.error) { taire(aResoudre); return; }
   const progIds = (progs.data ?? []).map((x) => x.id as string);
   if (progIds.length === 0) return;
-  const [etapes, lignes, adapt] = await Promise.all([
+  const comptes = (progs.data ?? []).map((x) => x.user_id as string);
+  const [etapes, lignes, adapt, sits] = await Promise.all([
     admin.from("programme_seances").select("id, programme_id, nom, position").in("programme_id", progIds),
     admin.from(sc.table).select(`programme_id, rang, etape_consommee_id, consommee_le, date, ${sc.colStatut}`).in("programme_id", progIds).not("rang", "is", null),
     admin.from("adaptations_entrainement").select("programme_id, debut, fin, axes, statut").in("programme_id", progIds).eq("statut", "active"),
+    /* Lot 2 · une gêne met une séance en pause : on ne la rappelle pas. */
+    admin.from("situations").select("id, user_id, genre, debut, fin, statut, motif, reglages").in("user_id", comptes).eq("statut", "active").gte("fin", today),
   ]);
+  const sitAbsente = sits.error?.code === "42P01" || sits.error?.code === "PGRST205";
   const adaptAbsente = adapt.error?.code === "42P01" || adapt.error?.code === "PGRST205";
-  if (etapes.error || lignes.error || (adapt.error && !adaptAbsente)) { taire(aResoudre); return; }
+  if (etapes.error || lignes.error || (adapt.error && !adaptAbsente) || (sits.error && !sitAbsente)) { taire(aResoudre); return; }
   for (const prog of progs.data ?? []) {
     const p = carte.get(prog.user_id as string);
     const cal = calendriers.get(prog.user_id as string);
@@ -689,7 +694,9 @@ async function appliquerJoursEntrainement(
       else etat.fermes.push({ rang: l.rang, etapeId: l.etape_consommee_id, consommeeLe: (l.consommee_le as string | null) ?? null });
     }
     const adaptations = adaptAbsente ? [] : (adapt.data ?? []).filter((a) => a.programme_id === prog.id) as unknown as FaitsResolution<{ id: string; position: number }>["adaptations"];
-    const resolution = resoudreJournee(entreeResolution({ cycle, etat, calendrier: cal, adaptations, aujourdhui: today, nbJours: 1, occupes: joursOccupes(p.intentionsDuJour.map((l) => ({ ...l, date: today })), prog.id as string) }));
+    const situations = sitAbsente ? [] : ((sits.data ?? []) as { id: string; user_id: string; genre: string; debut: string; fin: string; statut: string; motif: string | null; reglages: unknown }[])
+      .filter((x) => x.user_id === prog.user_id).map(situationDeLigne).filter((x): x is Situation => !!x);
+    const resolution = resoudreJournee(entreeResolution({ cycle, etat, calendrier: cal, adaptations, situations, aujourdhui: today, nbJours: 1, occupes: joursOccupes(p.intentionsDuJour.map((l) => ({ ...l, date: today })), prog.id as string) }));
     p.seancePrevue = seanceARappeler({ seancePrevue: p.seancePrevue, seanceProgramme: p.seanceProgramme, resolution });
   }
 }

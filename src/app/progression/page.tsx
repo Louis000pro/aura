@@ -28,6 +28,9 @@ import FilPlanning, { type ALiberer } from "@/components/planning/FilPlanning";
 import ChangerQuelqueChose from "@/components/planning/ChangerQuelqueChose";
 import OngletsEntrainement, { LigneVue, estVue, type VueEntrainement } from "@/components/planning/OngletsEntrainement";
 import { poserBrouillonGuide } from "@/lib/brouillonGuide";
+import BilletsMoment from "@/components/situations/BilletsMoment";
+import FeuilleSituation from "@/components/situations/FeuilleSituation";
+import { deGenre, situationsVisibles, type GenreSituation, type Situation } from "@/lib/situations";
 import { ABR_JOURS } from "@/lib/semaine";
 import dynamic from "next/dynamic";
 import RangeeProgrammes from "@/components/parcours/RangeeProgrammes";
@@ -2675,6 +2678,14 @@ export default function ProgressionPage() {
   const [sheet, setSheet] = useState<null | "choisir" | "improviser" | "organiser" | "elan" | "semaine" | "adaptation" | "jours" | "absence" | "programme" | "hub">(null);
   /* Les quatre vues (maquette « Entraînement repensé ») : Planning d'abord. */
   const [vue, setVue] = useState<VueEntrainement>("planning");
+  /* Lot 2 · la situation qu'on déclare ou qu'on change. */
+  const [situationOuverte, setSituationOuverte] = useState<{ genre: GenreSituation; existante: Situation | null } | null>(null);
+  /* Une situation du même genre déjà en cours s'ouvre pour être changée,
+     jamais une seconde (la base refuserait les jours partagés). */
+  const ouvrirSituation = (genre: GenreSituation) => {
+    setSheet(null);
+    setSituationOuverte({ genre, existante: deGenre(journee.situations ?? [], genre) });
+  };
   const changerVue = useCallback((v: VueEntrainement) => {
     setVue(v);
     if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "instant" });
@@ -3203,6 +3214,16 @@ export default function ProgressionPage() {
               <VisageGuide guide={guideActif} etat="listen" size={32} />
             </button>
 
+            {/* « En ce moment » : ce que le planning sait de ta vie. */}
+            <BilletsMoment
+              situations={situationsVisibles(journee.situations ?? [], today)}
+              absences={(calendrier?.absences ?? []).filter((a) => a.fin >= today)}
+              aujourdhui={today}
+              nomEtape={(id) => journee.programme?.cycle.find((e) => e.id === id)?.nom ?? null}
+              onOuvrir={(sit) => setSituationOuverte({ genre: sit.reglages.genre, existante: sit })}
+              onAbsence={() => setSheet(calendrier ? "absence" : "jours")}
+              onAjouter={() => setSheet("hub")} />
+
             {journee.adaptation && journee.programme && (
               <div className="mt-3 overflow-hidden" style={{ borderRadius: "var(--r-bloc)", background: "rgba(var(--surface-rgb),0.9)", border: "1px solid rgba(var(--text-3-rgb),0.16)" }}>
                 <AdaptationStrip etapes={journee.programme.cycle} adaptation={journee.adaptation} onOpen={() => setSheet("adaptation")} />
@@ -3240,6 +3261,7 @@ export default function ProgressionPage() {
                       gen={journee.gen}
                       aujourdhui={today}
                       relecture={week}
+                      situations={journee.situations}
                       onLancerTete={() => journee.lancerAujourdhui()}
                       onLancerIntention={(d) => startDay(d)}
                       onLancerCourt={(d, m) => { if (d) journee.lancerIntention(d, { courte: m }); else journee.lancerCourt(m); }}
@@ -3346,6 +3368,22 @@ export default function ProgressionPage() {
         )}
       </AnimatePresence>
       <AnimatePresence>
+        {situationOuverte && user && (
+          <FeuilleSituation
+            key={situationOuverte.genre + (situationOuverte.existante?.id ?? "")}
+            userId={user.id}
+            genre={situationOuverte.genre}
+            existante={situationOuverte.existante}
+            programme={journee.programme}
+            gen={journee.gen}
+            aujourdhui={today}
+            onClose={() => setSituationOuverte(null)}
+            onFini={(m) => { setSituationOuverte(null); showToast(m); void loadWeek(); }}
+            onAbsence={calendrier ? () => { setSituationOuverte(null); setSheet("absence"); } : undefined}
+          />
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
         {sheet === "hub" && (
           <ChangerQuelqueChose
             onClose={() => setSheet(null)}
@@ -3359,6 +3397,7 @@ export default function ProgressionPage() {
                 case "absence": if (calendrier) setSheet("absence"); else { setSheet(null); showToast("Choisis d’abord tes jours d’entraînement."); } break;
                 case "jours": if (calendrier) setSheet("jours"); else setSheet(null); break;
                 case "adaptation": setSheet("adaptation"); break;
+                case "moins_de_temps": case "gene": case "energie": case "materiel": ouvrirSituation(g.porte); break;
                 case "programme": setSheet(null); setVue("programme"); break;
               }
             }}

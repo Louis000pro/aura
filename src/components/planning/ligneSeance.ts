@@ -21,7 +21,7 @@ export const RAISONS: Record<Exclude<ResultatGeste, { ok: true }>["raison"], str
 export const CONFLITS = {
   absence: "en pause pendant ton absence",
   jour_retire: "jour retiré, elle passera au suivant",
-  adaptation: "mise de côté par ton adaptation",
+  adaptation: "mise de côté pour l’instant",
 } as const;
 
 /** Ce que la ligne dit d'une séance : son titre, sa durée, pourquoi elle est là. */
