@@ -9,6 +9,7 @@ import GardeGuide from "@/components/GardeGuide";
 import GardePseudo from "@/components/GardePseudo";
 import GardeConnexion from "@/components/GardeConnexion";
 import PWARegister from "@/components/PWARegister";
+import AnnonceParrainage from "@/components/parrainage/Parrainage";
 import { AssistantSheetDiffere, DemandeConsentementDiffere, PrechargeDifferes } from "@/components/Differes";
 import PremiumBanner from "@/components/PremiumBanner";
 import PresenceDuJour from "@/components/PresenceDuJour";
@@ -462,6 +463,7 @@ export default function RootLayout({
               <RappelProfil />
               <DemandeConsentementDiffere />
               <PWARegister />
+              <AnnonceParrainage />
               <AssistantSheetDiffere />
               <PrechargeDifferes />
               <PremiumBanner />

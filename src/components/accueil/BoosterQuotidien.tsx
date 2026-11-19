@@ -30,6 +30,16 @@ async function demanderEssai(methode: "GET" | "POST", signal?: AbortSignal, requ
   return await response.json() as { illimite?: boolean; cartes?: Carte[]; exp?: number };
 }
 
+async function lireBooster(requete?: string, signal?: AbortSignal) {
+  const client = createClient();
+  const lire = (version: string) => {
+    const q = client.rpc(version, requete ? { p_requete: requete } : {});
+    return signal ? q.abortSignal(signal) : q;
+  };
+  const nouveau = await lire("ouvrir_booster_exercices_v5");
+  return nouveau.error?.code === "PGRST202" ? await lire("ouvrir_booster_exercices_v4") : nouveau;
+}
+
 const etoiles = [
   [19, 3, 3], [79, 4, 4], [24, 8, 7], [57, 8, 4], [96, 8, 6], [24, 19, 3],
   [57, 17, 8], [96, 24, 3], [24, 29, 7], [58, 33, 4], [96, 41, 7],
@@ -321,6 +331,8 @@ export default function BoosterQuotidien({ userId, jour, onGain }: { userId: str
   const [prochain, setProchain] = useState<number | null>(null);
   // Réserve : jusqu’à 3 boosters gardés, un de plus toutes les 3 heures. null = ancienne cadence.
   const [stock, setStock] = useState<number | null>(null);
+  const [bonus, setBonus] = useState(0);
+  const [stockHabituel, setStockHabituel] = useState<number | null>(null);
   const [compteRebours, setCompteRebours] = useState("");
   const sceneEnCours = useRef(false);
   const gainEnAttente = useRef(false);
@@ -360,7 +372,7 @@ export default function BoosterQuotidien({ userId, jour, onGain }: { userId: str
       const client = createClient();
       const [essai, apercu] = await Promise.all([
         demanderEssai("GET", controle.signal).catch(() => null),
-        client.rpc("ouvrir_booster_exercices_v4").abortSignal(controle.signal),
+        lireBooster(undefined, controle.signal),
       ]);
       if (!vivant) return;
       if (essai?.illimite) {
@@ -379,6 +391,8 @@ export default function BoosterQuotidien({ userId, jour, onGain }: { userId: str
         setAncienneCadence(false);
         setProchain(echeanceBooster(apercu.data));
         setStock(typeof apercu.data.stock === "number" ? apercu.data.stock : null);
+        setStockHabituel(typeof apercu.data.stock_habituel === "number" ? apercu.data.stock_habituel : null);
+        setBonus(typeof apercu.data.bonus === "number" ? apercu.data.bonus : 0);
       }
       setIllimite(false);
       setStatut("pret");
@@ -386,6 +400,12 @@ export default function BoosterQuotidien({ userId, jour, onGain }: { userId: str
     void charger().catch(() => { if (vivant) setStatut("erreur"); });
     return () => { vivant = false; controle.abort(); };
   }, [jour, revisionStatut]);
+
+  useEffect(() => {
+    const actualiser = () => setRevisionStatut(n => n + 1);
+    window.addEventListener("vaiiya:bonus-boosters", actualiser);
+    return () => window.removeEventListener("vaiiya:bonus-boosters", actualiser);
+  }, []);
 
   useEffect(() => {
     if (prochain === null || illimite) return;
@@ -474,12 +494,14 @@ export default function BoosterQuotidien({ userId, jour, onGain }: { userId: str
           nouvellesCartes = resultat?.cartes;
           gain = resultat?.exp ?? 0;
         } else if (!ancienneCadence) {
-          const { data, error } = await createClient().rpc("ouvrir_booster_exercices_v4", { p_requete: requeteOuverture.current });
+          const { data, error } = await lireBooster(requeteOuverture.current);
           if (error || !data) throw new Error("Tirage indisponible");
           const echeance = echeanceBooster(data);
           setProchain(echeance);
           const reste = typeof data.stock === "number" ? data.stock : null;
           setStock(reste);
+          setStockHabituel(typeof data.stock_habituel === "number" ? data.stock_habituel : null);
+          setBonus(typeof data.bonus === "number" ? data.bonus : 0);
           if (!data.cartes && (reste === 0 || (reste === null && echeance))) {
             requeteOuverture.current = null;
             actif.current = false;
@@ -580,7 +602,7 @@ export default function BoosterQuotidien({ userId, jour, onGain }: { userId: str
             }}>
             {statut === "erreur" || (portrait && !coach) ? "Réessayer" : "Ouvrir le booster"}
           </button>
-          {!illimite && stock !== null && <small className={styles.reserve}>{stock} / 3 en réserve</small>}
+          {!illimite && stock !== null && <small className={styles.reserve}>{stockHabituel ?? stock} / 3 en réserve{bonus > 0 && <> · +{bonus} bonus</>}</small>}
           </div>
           {erreurCoach && <p role="alert">{erreurCoach}</p>}
         </div>

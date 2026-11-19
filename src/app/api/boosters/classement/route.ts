@@ -52,7 +52,11 @@ export async function GET(req: Request) {
       const amis = new Set(suivis.filter(p => retour.has(p.following_id)).map(p => p.following_id));
       membres = profils.filter(p => p.id === compte.id || amis.has(p.id));
     }
-    return Response.json({ liste: classerCollections(membres, collections, compte.id) }, prive);
+    const classement = classerCollections(membres, collections, compte.id);
+    const liste = portee === "tous"
+      ? classement.filter((ligne, index) => index < 5 || ligne.moi)
+      : classement;
+    return Response.json({ liste }, prive);
   } catch {
     return Response.json({ error: "classement_indisponible" }, { ...prive, status: 503 });
   }
