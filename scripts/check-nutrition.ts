@@ -471,12 +471,15 @@ const fichierPublic = (chemin: string) => existsSync(new URL("../public" + chemi
     `crêpes ${momentDuJour("2027-01-25", [])?.recettes.length ?? 0}, mijoté végétarien ${momentDuJour("2026-12-05", ["vegetarien"])?.recettes.length ?? 0}`);
   const paques = MOMENTS_SAISON.find((m) => m.id === "paques")!;
   const debutPaques = paques.periode(2027)[0];
+  const paquesSousSeuil = { ...paques, recettes: recettesDuMoment(paques, ["vegan"]).slice(0, SEUIL_MOMENT - 1).map((r) => r.id) };
   verdict(`un moment qui garde moins de ${SEUIL_MOMENT} recettes pour le régime ne s'affiche pas`,
-    recettesDuMoment(paques, ["vegan"]).length < SEUIL_MOMENT
-      && momentActif(paques, debutPaques, ["vegan"]) === null && momentActif(paques, debutPaques, []) !== null,
-    "Pâques reste sous le seuil en végan");
+    momentActif(paquesSousSeuil, debutPaques, ["vegan"]) === null,
+    "trois recettes véganes dans un moment témoin");
+  verdict("Pâques atteint le seuil en végan et sans lactose",
+    ["vegan", "sans-lactose"].every((regime) => momentActif(paques, debutPaques, [regime as DietKey]) !== null),
+    "au moins quatre recettes pour chaque régime");
   verdict("les agrumes atteignent le seuil en végan",
-    momentDuJour("2027-01-10", ["vegan"])?.recettes.length === SEUIL_MOMENT, "quatre recettes");
+    (momentDuJour("2027-01-10", ["vegan"])?.recettes.length ?? 0) >= SEUIL_MOMENT, "au moins quatre recettes");
   const vege = momentDuJour("2026-10-24", ["vegetarien"]);
   const soupes0 = MOMENTS_SAISON.find((m) => m.id === "soupes")!.recettes.map((id) => RECIPES.find((r) => r.id === id)!);
   verdict("le rail ne garde que ce qui convient au régime",
@@ -653,7 +656,7 @@ const fichierPublic = (chemin: string) => existsSync(new URL("../public" + chemi
   const ratees = Object.entries(fautes).filter(([q, id]) => !ids(q).includes(id)).map(([q]) => q);
   verdict("une faute de frappe, ou un mot écrit comme il se prononce, trouve la recette", ratees.length === 0, ratees.join(", ") || Object.keys(fautes).join(", "));
   verdict("une correction garde sa première lettre : « quiche » ne devient pas « riche », ni « raclette » « galette »",
-    lu("quiche") === "oeufs" && lu("raclette") === "fromage", `${lu("quiche")} · ${lu("raclette")}`);
+    ids("quiche").includes("quiche-aux-poireaux-et-au-saumon") && lu("quiche") !== "riche" && lu("raclette") === "fromage", `${lu("quiche")} · ${lu("raclette")}`);
 
   /* Les régimes, et leurs façons de les dire. */
   const sansGluten = RECIPES.filter((r) => r.diet.includes("sans-gluten"));

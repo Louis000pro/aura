@@ -290,6 +290,26 @@ export const NATURE: Record<string, NatureRecette> = {
   "buche-glacee-aux-marrons-et-a-la-vanille": "dessert",
   "tarte-aux-noix-et-au-caramel": "dessert",
   "brioches-roulees-a-la-cannelle": "petit-dej",
+  "salade-d-endives-a-l-orange-et-aux-noix": "entree",
+  "cabillaud-poele-au-pamplemousse-et-au-riz": "plat",
+  "tofu-a-l-orange-et-au-sesame": "plat",
+  "cake-au-citron-et-a-l-huile-d-olive": "dessert",
+  "pancakes-au-sarrasin-et-a-la-pomme": "petit-dej",
+  "oeufs-brouilles-aux-poireaux-et-au-chevre": "petit-dej",
+  "flocons-d-avoine-au-four-poire-et-chocolat": "petit-dej",
+  "polenta-cremeuse-champignons-et-oeuf-au-plat": "plat",
+  "soupe-de-patate-douce-a-la-cacahuete": "entree",
+  "poelee-de-chou-pommes-de-terre-et-saucisse": "plat",
+  "quiche-aux-poireaux-et-au-saumon": "plat",
+  "coquillettes-gratinees-aux-petits-pois-et-au-jambon": "plat",
+  "risotto-aux-asperges-et-au-citron": "plat",
+  "poulet-aux-petits-pois-et-aux-carottes": "plat",
+  "salade-de-grenailles-radis-et-oeufs": "plat",
+  "navarin-d-agneau-aux-legumes-de-printemps": "plat",
+  "cremes-au-chocolat-et-au-cafe": "dessert",
+  "rochers-coco-au-chocolat-noir": "dessert",
+  "tartelettes-au-chocolat-et-a-la-cacahuete": "dessert",
+  "crumble-de-rhubarbe-aux-amandes": "dessert",
 };
 
 /** La nature d'une recette. Sans entrée écrite (une recette toute neuve),
@@ -369,6 +389,13 @@ export const REPOS: Record<string, { min: number; texte?: string }> = {
   "buche-glacee-aux-marrons-et-a-la-vanille": { min: 495, texte: "8 h au congélateur, puis 15 minutes au réfrigérateur" },
   "tarte-aux-noix-et-au-caramel": { min: 80, texte: "20 minutes au frais, puis 1 h de refroidissement" },
   "brioches-roulees-a-la-cannelle": { min: 150, texte: "1 h 30 de première pousse, 45 minutes de seconde pousse et 15 minutes pour tiédir" },
+  "cake-au-citron-et-a-l-huile-d-olive": { min: 45, texte: "15 minutes dans le moule puis 30 minutes sur une grille" },
+  "flocons-d-avoine-au-four-poire-et-chocolat": { min: 5, texte: "5 minutes pour laisser tiédir" },
+  "quiche-aux-poireaux-et-au-saumon": { min: 10, texte: "10 minutes pour laisser tiédir" },
+  "cremes-au-chocolat-et-au-cafe": { min: 140, texte: "20 minutes pour tiédir puis 2 h au réfrigérateur" },
+  "rochers-coco-au-chocolat-noir": { min: 50, texte: "30 minutes de refroidissement puis 20 minutes au réfrigérateur" },
+  "tartelettes-au-chocolat-et-a-la-cacahuete": { min: 161, texte: "20 minutes pour la pâte, 20 minutes pour les fonds, 1 minute pour la ganache et 2 h au frais" },
+  "crumble-de-rhubarbe-aux-amandes": { min: 15, texte: "15 minutes pour laisser tiédir" },
 };
 
 /** Le temps que la recette demande vraiment, repos compris. */
@@ -481,6 +508,7 @@ export const MATINS_SALES = new Set([
   "omelette-aux-blancs-d-oeufs-epinards-et-feta", "muffins-sales-epinards-feta-tomates-sechees",
   "tartines-chaudes-aux-champignons-et-oeuf",
   "oeufs-brouilles-aux-tomates-et-au-cheddar",
+  "oeufs-brouilles-aux-poireaux-et-au-chevre",
 ]);
 export const estSale = (r: Recipe) => { const n = natureDe(r); return n === "plat" || n === "entree" || MATINS_SALES.has(r.id); };
 const sucre = (r: Recipe) => !estSale(r);
@@ -495,7 +523,7 @@ const FROMAGE = /emmental|parmesan|mozzarella|reblochon|comte|gruyere|raclette|c
 const FRUIT = /pomme|poire|banane|fraise|framboise|myrtille|mangue|citron|orange|agrume|kiwi|clementine|peche|passion|fruits rouges|grenade|abricot|cerise|ananas/;
 const POISSON = /saumon|cabillaud|thon|crevette|gambas|\bmoules?\b|saint-jacques|poisson|sardine|maquereau|truite|dorade|merlu|colin|crabe|calamar/;
 const VIANDE = /boeuf|\bveau\b|agneau|porc|steak|saucisse|lardon|canard|magret|guanciale|chorizo|jambon|bacon/;
-const PATES = /\b(pates|rigatoni|fusilli|spaghetti|penne|tagliatelle|lasagnes?|gnocchis?)\b/;
+const PATES = /\b(pates|coquillettes|rigatoni|fusilli|spaghetti|penne|tagliatelle|lasagnes?|gnocchis?)\b/;
 
 export const ENVIES: Envie[] = [
   /* Une saveur */
@@ -595,7 +623,7 @@ export const ENVIES: Envie[] = [
       "risotto-cremeux-aux-champignons", "bruschetta-tomate-basilic", "tartare-tomates-burrata", "panzanella-toscane",
       "minestrone-d-hiver", "lasagnes-epinards-ricotta", "gnocchis-poeles-a-la-butternut-et-a-la-sauge", "tiramisu-proteine-au-skyr",
       "spaghetti-aux-boulettes-de-dinde", "pates-completes-au-thon-tomates-cerises-et-capres", "frittata-aux-legumes",
-      "risotto-aux-poireaux-et-aux-saint-jacques") },
+      "risotto-aux-poireaux-et-aux-saint-jacques", "risotto-aux-asperges-et-au-citron", "polenta-cremeuse-champignons-et-oeuf-au-plat") },
   { id: "mediterranee", label: "Méditer­ranée", famille: "ailleurs", tuile: "falafels-au-four-et-sauce-tahini", demande: "méditerranéenne",
     sousTitre: "Du Maroc au Liban, en passant par la Grèce.",
     garde: (r) => /tajine|harira|houmous|falafel|taboule|tzatziki|grecque|shakshuka|caviar d'aubergine|aubergines grillees|halloumi|citron et aux olives|fenouil a l'orange|pasteque, feta/.test(nom(r)) },
@@ -612,7 +640,7 @@ export const ENVIES: Envie[] = [
       "financiers-amande", "pain-d-epices", "gateau-au-yaourt-moelleux", "riz-au-lait-vanille", "tarte-fine-aux-pommes",
       "tarte-au-citron-meringuee", "galette-des-rois-frangipane", "buche-roulee-au-chocolat", "croque-monsieur-poulet-pesto-revisite",
       "soupe-poireaux-pommes-de-terre", "magret-de-canard-a-l-orange", "filet-mignon-aux-deux-pommes", "crumble-pomme-poire-a-l-avoine",
-      "gougeres-au-comte", "vol-au-vent-au-poulet-et-aux-champignons", "gratin-de-cardons-au-parmesan") },
+      "gougeres-au-comte", "vol-au-vent-au-poulet-et-aux-champignons", "gratin-de-cardons-au-parmesan", "navarin-d-agneau-aux-legumes-de-printemps", "quiche-aux-poireaux-et-au-saumon") },
 
   /* Le temps qu'on a */
   { id: "vite", label: "Faire vite", famille: "temps", tuile: "wrap-poulet-crudites-sauce-yaourt", demande: `prête en ${MINUTES_RAPIDE} minutes ou moins`,
