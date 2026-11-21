@@ -1089,6 +1089,47 @@ const REPLIQUES = {
     commun: "Une semaine sans séance. La suivante repart d’où tu veux.",
   },
 
+  /* ── Les propositions du Guide (Entraînement, lot 5) ──
+     Choisies par `propositionsGuide.ts`, une à la fois, posées sur le jour
+     concerné. Aucune ne compte ce qui manque ni ne reproche quoi que ce
+     soit : elles disent ce que le Guide propose, et le bouton le fait. */
+  "proposition.manquee": {
+    commun: (c) => `${c.etape ?? "Ta séance"} t’attendait ${c.jour ?? ""}. Elle est passée à ${c.prevu ?? ""}. Tu veux la faire aujourd’hui ?`,
+  },
+  "proposition.semaine": {
+    commun: (c) => `Semaine chargée ? Je peux passer tes séances à ${c.minutes ?? 25} min jusqu’à dimanche.`,
+  },
+  "proposition.retour": {
+    commun: (c) => `On reprend en douceur ? Je te propose ${c.etape ?? "ta prochaine séance"} en ${c.minutes ?? 30} minutes.`,
+  },
+  "proposition.fin.gene": {
+    commun: "Ta gêne, on en est où ? Les séances adaptées s’arrêtent demain.",
+  },
+  "proposition.fin.moins_de_temps": {
+    commun: "Tes séances plus courtes s’arrêtent demain. Tu as retrouvé du temps ?",
+  },
+  "proposition.fin.energie": {
+    commun: "Tes séances plus légères s’arrêtent demain. Ça va mieux ?",
+  },
+  "proposition.fin.materiel": {
+    commun: "Tes séances sans ton matériel habituel s’arrêtent demain. Tu l’as retrouvé ?",
+  },
+  "proposition.raccourcies": {
+    commun: (c) => `Tes trois dernières séances ont duré autour de ${c.minutes ?? 30} min. Je règle ton programme sur ${c.minutes ?? 30} min ?`,
+  },
+  "proposition.evitee": {
+    commun: (c) => `${c.etape ?? "Une séance"} a été passée deux fois de suite. Tu veux la changer ?`,
+  },
+  "proposition.jours": {
+    commun: (c) => `Tu t’entraînes plutôt le ${c.jour ?? ""}. Je le mets à la place du ${c.prevu ?? ""} ?`,
+  },
+  "proposition.renouveler": {
+    commun: (c) => `Tu gardes les mêmes exercices depuis ${enMots(c.total ?? 8)} semaines. Envie d’en changer quelques-uns ?`,
+  },
+  "proposition.fin_programme": {
+    commun: (c) => `Tu termines ${c.titre ?? "ton programme"} ${c.jour ?? ""}. Et après ?`,
+  },
+
   /* ── Le seuil du relais ──
      Les règles du relais n'étaient écrites nulle part où l'on puisse
      revenir : « quatre jours sur sept »,

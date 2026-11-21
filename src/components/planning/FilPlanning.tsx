@@ -38,6 +38,15 @@ import FeuilleJour, { type Cible } from "@/components/planning/FeuilleJour";
 import { RAISONS, descriptionElement, type ALiberer } from "@/components/planning/ligneSeance";
 import { BANDE, genreDe } from "@/components/situations/BilletsMoment";
 import { situationsDuJour, type Situation } from "@/lib/situations";
+import { creerSituation, modifierSituation } from "@/lib/situationsBase";
+import { enregistrerJours } from "@/lib/joursEntrainement";
+import { ecrireReglages } from "@/lib/reglagesProgramme";
+import { useReglagesProgramme } from "@/hooks/useReglagesProgramme";
+import { useGuideActif } from "@/context/GuideContext";
+import { EVT_JOURNEE } from "@/lib/finSeance";
+import { propositionDuMoment, type Proposition } from "@/lib/propositionsGuide";
+import { lireEcartees, lireFaitsPropositions, noterEcartee, type FaitsLus } from "@/lib/propositionsBase";
+import PropositionGuide from "@/components/planning/PropositionGuide";
 
 export type { ALiberer };
 
@@ -45,7 +54,7 @@ type Donnees = { intentions: PlanningDay[]; journal: SeanceJournal[]; proj: Reso
 
 export default function FilPlanning({
   userId, programme, gen, aujourdhui, relecture, situations,
-  onLancerTete, onLancerIntention, onLancerCourt, onChoisirSeance, onDemander, onChange,
+  onLancerTete, onLancerIntention, onLancerCourt, onChoisirSeance, onDemander, onOuvrirProgramme, onChange,
 }: {
   userId: string;
   programme: ProgrammeEtCycle | null;
@@ -63,8 +72,14 @@ export default function FilPlanning({
   onChoisirSeance: (date: string, liberer: ALiberer) => void;
   /** Ouvre la conversation, la phrase déjà écrite dans la saisie. */
   onDemander: (phrase: string) => void;
+  /** Lot 5 · « Ouvrir mon programme », depuis une proposition du Guide. */
+  onOuvrirProgramme: () => void;
   onChange: () => void;
 }) {
+  const { guide } = useGuideActif();
+  const reglages = useReglagesProgramme(userId);
+  const [faits, setFaits] = useState<FaitsLus | null>(null);
+  const [ecartees, setEcartees] = useState<Set<string>>(() => (typeof window === "undefined" ? new Set() : lireEcartees(userId)));
   const [donnees, setDonnees] = useState<Donnees | null>(null);
   const [illisible, setIllisible] = useState(false);
   const [lecture, setLecture] = useState(0);
@@ -96,6 +111,14 @@ export default function FilPlanning({
 
   const relire = useCallback(() => setLecture((n) => n + 1), []);
 
+  /* Lot 5 · les faits des propositions du Guide. Une lecture ratée rend
+     `null` : aucune proposition plutôt qu'une proposition fausse. */
+  useEffect(() => {
+    let vivant = true;
+    void lireFaitsPropositions(userId, programme?.programme.id ?? null, programme?.cycle ?? []).then((f) => { if (vivant) setFaits(f); });
+    return () => { vivant = false; };
+  }, [userId, programme, lecture, relecture]);
+
   const lignes = useMemo(() => {
     if (!donnees) return null;
     const res = donnees.proj.resolution;
@@ -111,6 +134,33 @@ export default function FilPlanning({
 
   const proposee = donnees?.proj.resolution?.proposee ?? null;
   const proposeeAilleurs = !!proposee && proposee.date !== aujourdhui;
+
+  /* Lot 5 · la proposition du moment : une seule, posée sur son jour. */
+  const proposition = useMemo<Proposition | null>(() => {
+    if (!donnees || !lignes || !faits || situations === null || reglages === undefined) return null;
+    const ligneAuj = lignes.flat().find((l) => l.date === aujourdhui);
+    const durees = (programme?.cycle ?? []).map((e) => e.dureeMin).filter((d): d is number => typeof d === "number");
+    return propositionDuMoment({
+      aujourdhui,
+      calendrier: donnees.proj.calendrier,
+      proposee: proposee?.date ? { etapeId: proposee.etape.id, nom: proposee.etape.nom, date: proposee.date, attendaitLe: proposee.attendaitLe } : null,
+      aujourdhuiLibre: !!ligneAuj && ligneAuj.elements.length === 0,
+      joursFaits: faits.joursFaits,
+      derniereSeance: faits.derniereSeance,
+      situations,
+      etapesRefermees: faits.etapesRefermees,
+      dureePrevue: durees.length > 0 ? Math.round(durees.reduce((n, d) => n + d, 0) / durees.length) : 45,
+      dureeVisee: reglages?.dureeMin ?? null,
+      variete: reglages?.variete ?? null,
+      programmeDepuis: faits.programmeDepuis,
+      vues: ecartees,
+    }, guide);
+  }, [donnees, lignes, faits, situations, reglages, aujourdhui, programme, proposee, ecartees, guide]);
+
+  const ecarter = useCallback((cle: string) => {
+    noterEcartee(userId, cle);
+    setEcartees((v) => new Set(v).add(cle));
+  }, [userId]);
 
   /* Une prévision ne se réserve que si elle est l'occurrence en attente
      de son étape (tour 42) ; une réservation se déplace toujours. */
@@ -169,6 +219,49 @@ export default function FilPlanning({
       setEnvoi(false);
     }
   }, [gen, lignes, envoi, cibleDe, deplacable, userId, aujourdhui, apres]);
+
+  /** Lot 5 · le bouton d'une proposition : il agit tout de suite, par
+   *  l'écriture qui existe déjà pour ce geste. */
+  const agir = useCallback(async (p: Proposition) => {
+    const a = p.action;
+    if (a.genre === "reprendre_court") { ecarter(p.cle); onLancerCourt(null, a.minutes); return; }
+    if (a.genre === "ouvrir_programme") { ecarter(p.cle); onOuvrirProgramme(); return; }
+    if (a.genre === "voir_suite") return;
+    if (a.genre === "faire_aujourdhui") {
+      const el = lignes?.flat().flatMap((l) => l.elements.map((e) => ({ e, date: l.date })))
+        .find((x) => x.e.genre === "prevu" && x.e.proposee);
+      if (el && el.e.genre === "prevu") { ecarter(p.cle); await deplacer({ element: el.e, date: el.date }, aujourdhui); }
+      else dire(RAISONS.changee);
+      return;
+    }
+    setEnvoi(true);
+    let ok = false;
+    let texte = "";
+    try {
+      if (a.genre === "raccourcir_semaine") {
+        ok = (await creerSituation(userId, { debut: aujourdhui, fin: a.fin, reglages: { genre: "moins_de_temps", minutes: a.minutes } })).ok;
+        texte = `Tes séances passent à ${a.minutes} min jusqu’à dimanche.`;
+      } else if (a.genre === "prolonger_situation") {
+        const s = a.situation;
+        ok = (await modifierSituation(userId, s.id, { debut: s.debut, fin: a.fin, reglages: s.reglages, motif: s.motif })).ok;
+        texte = "C’est prolongé d’une semaine.";
+      } else if (a.genre === "duree_visee") {
+        ok = await ecrireReglages(userId, { duree_cible_min: a.minutes });
+        texte = `Ton programme vise maintenant ${a.minutes} min par séance.`;
+      } else if (a.genre === "renouveler") {
+        ok = await ecrireReglages(userId, { variete: "peu" });
+        texte = "Tes prochaines séances changeront quelques exercices secondaires.";
+      } else if (a.genre === "changer_jours") {
+        ok = await enregistrerJours(userId, a.jours, aujourdhui).then(() => true, () => false);
+        if (ok && typeof window !== "undefined") window.dispatchEvent(new Event(EVT_JOURNEE));
+        texte = "Tes jours sont changés. Les séances suivent.";
+      }
+    } finally {
+      setEnvoi(false);
+    }
+    if (ok) { ecarter(p.cle); dire(texte); relire(); onChange(); }
+    else dire(RAISONS.echec);
+  }, [ecarter, onLancerCourt, onOuvrirProgramme, lignes, deplacer, aujourdhui, dire, userId, relire, onChange]);
 
   /* ── Le glisser, par la poignée ──
      Une copie de la ligne suit le doigt ; le jour sous le doigt s'allume
@@ -241,15 +334,25 @@ export default function FilPlanning({
                 </span>
               </div>
               {semaine.map((l) => (
-                <LigneJour key={l.date} ligne={l} cycle={cycle}
+                <div key={l.date}>
+                <LigneJour ligne={l} cycle={cycle}
                   situations={l.passe ? [] : situationsDuJour(situations ?? [], l.date)}
                   cible={glisse?.vers === l.date}
                   prise={glisse?.date === l.date ? glisse.element : null}
-                  laFaireAujourdhui={l.aujourdhui && l.etat === "libre" && proposeeAilleurs}
+                  laFaireAujourdhui={l.aujourdhui && l.etat === "libre" && proposeeAilleurs && proposition?.genre !== "manquee"}
                   deplacable={deplacable}
                   onLancerTete={onLancerTete}
                   onPoignee={(e, el) => debutGlisse(e, el, l.date)}
                   onOuvrir={(element) => setCible({ ligne: l, element })} />
+                {proposition && proposition.date === l.date && (
+                  <div className="ml-[74px]">
+                    <PropositionGuide proposition={proposition} guide={guide} envoi={envoi}
+                      onGeste={() => void agir(proposition)}
+                      onLaisser={() => ecarter(proposition.cle)}
+                      onParler={() => { ecarter(proposition.cle); onDemander(proposition.parler); }} />
+                  </div>
+                )}
+                </div>
               ))}
             </section>
           );

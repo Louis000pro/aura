@@ -8540,5 +8540,109 @@ verdict(
   verdict("Lot 4 · le poids garde son masquage de l'offre gratuite", vue.includes("debut={debutHisto}") && page.includes("debutHistorique(historiqueComplet(user))"), "");
 }
 
+/* ══ Entraînement repensé · lot 5 : les propositions du Guide ══ */
+{
+  const lire = (rel: string) => readFileSync(rel, "utf8").replace(/\r\n/g, "\n");
+  const PG = await import("@/lib/propositionsGuide");
+  const G = await import("@/lib/guides");
+  /* Mercredi 11 novembre 2026. Jours choisis : lundi, mardi, jeudi. */
+  const auj = "2026-11-11";
+  const cal = { choisi: true, jours: [1, 2, 4], effetLe: "2026-09-01", exceptions: [], absences: [] };
+  const base: import("@/lib/propositionsGuide").FaitsPropositions = {
+    aujourdhui: auj, calendrier: cal, proposee: null, aujourdhuiLibre: true,
+    joursFaits: ["2026-11-09", "2026-11-10"], derniereSeance: "2026-11-10", situations: [],
+    etapesRefermees: [], dureePrevue: 45, dureeVisee: null, variete: "peu",
+    programmeDepuis: "2026-10-20", vues: new Set<string>(),
+  };
+  const P = (o: Partial<import("@/lib/propositionsGuide").FaitsPropositions>) => PG.propositionDuMoment({ ...base, ...o }, null);
+
+  verdict("Lot 5 · une semaine sans rien à dire : aucune proposition", P({}) === null, JSON.stringify(P({})));
+
+  const glissee = { etapeId: "e2", nom: "Pull", date: "2026-11-12", attendaitLe: "2026-11-10" };
+  const m = P({ proposee: glissee, joursFaits: ["2026-11-09"], derniereSeance: "2026-11-09" });
+  verdict("Lot 5 · une séance qui a glissé : la faire aujourd'hui, posée sur aujourd'hui",
+    m?.genre === "manquee" && m.date === auj && m.action.genre === "faire_aujourdhui" && m.laisser === "Laisser à demain", JSON.stringify(m));
+  verdict("Lot 5 · sa phrase est celle de la maquette", m?.phrase === "Pull t’attendait hier. Elle est passée à demain. Tu veux la faire aujourd’hui ?", m?.phrase ?? "");
+  verdict("Lot 5 · aujourd'hui déjà pris : on ne propose pas de la faire aujourd'hui",
+    P({ proposee: glissee, joursFaits: ["2026-11-09"], aujourdhuiLibre: false })?.genre !== "manquee", "");
+  verdict("Lot 5 · « Laisser à demain » : elle ne revient pas",
+    P({ proposee: glissee, joursFaits: ["2026-11-09"], derniereSeance: "2026-11-09", vues: new Set([m!.cle]) }) === null, "");
+
+  const chargee = P({ joursFaits: [], derniereSeance: "2026-11-07" });
+  verdict("Lot 5 · deux jours d'entraînement passés sans séance : des séances plus courtes jusqu'à dimanche",
+    chargee?.genre === "semaine_chargee" && chargee.action.genre === "raccourcir_semaine" && chargee.action.fin === "2026-11-15" && chargee.action.minutes === 25, JSON.stringify(chargee));
+  verdict("Lot 5 · la phrase de la semaine chargée ne compte rien de manqué", !!chargee && !/manqu|rat[ée]|\d+ séance/i.test(chargee.phrase), chargee?.phrase ?? "");
+  verdict("Lot 5 · un temps réduit déjà déclaré : pas de semaine chargée",
+    P({ joursFaits: [], derniereSeance: "2026-11-07", situations: [{ id: "s", debut: "2026-11-01", fin: "2026-11-20", statut: "active", motif: null, reglages: { genre: "moins_de_temps", minutes: 30 } }] })?.genre !== "semaine_chargee", "");
+
+  const ret = P({ proposee: { ...glissee, attendaitLe: null, date: auj }, joursFaits: ["2026-10-30"], derniereSeance: "2026-10-30" });
+  verdict("Lot 5 · le retour après une semaine sans séance : une séance de 30 minutes",
+    ret?.genre === "retour" && ret.action.genre === "reprendre_court" && ret.action.minutes === 30 && !/jours|semaine sans|manqu/i.test(ret.phrase), JSON.stringify(ret));
+  verdict("Lot 5 · six jours sans séance ne font pas un retour",
+    P({ proposee: { ...glissee, attendaitLe: null, date: auj }, joursFaits: ["2026-11-05"], derniereSeance: "2026-11-05" })?.genre !== "retour", "");
+
+  const sit = { id: "g", debut: "2026-10-30", fin: "2026-11-12", statut: "active" as const, motif: null, reglages: { genre: "gene" as const, zones: ["Pectoraux"], mode: "eviter" as const } };
+  const fin = P({ situations: [sit], proposee: glissee, joursFaits: ["2026-11-09"] });
+  verdict("Lot 5 · une situation qui finit demain passe avant tout, posée sur demain",
+    fin?.genre === "fin_situation" && fin.date === "2026-11-12" && fin.action.genre === "prolonger_situation" && fin.action.fin === "2026-11-19", JSON.stringify(fin));
+  verdict("Lot 5 · on ne prolonge pas au-delà des 120 jours de la base",
+    P({ situations: [{ ...sit, debut: "2026-07-20" }] })?.genre !== "fin_situation", "");
+
+  const passe = (le: string) => ({ etapeId: "e3", nom: "Jambes", statut: "passee" as const, le, dureeMin: null });
+  const ev = P({ etapesRefermees: [passe("2026-11-10"), { etapeId: "e1", nom: "Push", statut: "faite" as const, le: "2026-11-09", dureeMin: 44 }, passe("2026-11-05")] });
+  verdict("Lot 5 · la même séance passée deux fois de suite : ouvrir le programme",
+    ev?.genre === "evitee" && ev.action.genre === "ouvrir_programme" && ev.phrase.startsWith("Jambes a été passée deux fois"), JSON.stringify(ev));
+  verdict("Lot 5 · passée puis faite : rien",
+    P({ etapesRefermees: [passe("2026-11-10"), { ...passe("2026-11-05"), statut: "faite" as const }] }) === null, "");
+
+  const courte = (le: string, d: number) => ({ etapeId: "e" + le, nom: "X", statut: "faite" as const, le, dureeMin: d });
+  const rc = P({ etapesRefermees: [courte("2026-11-10", 28), courte("2026-11-09", 31), courte("2026-11-05", 30)] });
+  verdict("Lot 5 · trois séances de suite nettement plus courtes : régler le programme sur leur durée",
+    rc?.genre === "raccourcies" && rc.action.genre === "duree_visee" && rc.action.minutes === 30 && rc.geste === "Passer à 30 min", JSON.stringify(rc));
+  verdict("Lot 5 · une durée visée déjà réglée sur ça : rien",
+    P({ etapesRefermees: [courte("2026-11-10", 28), courte("2026-11-09", 31), courte("2026-11-05", 30)], dureeVisee: 30 }) === null, "");
+  verdict("Lot 5 · une durée inconnue ne fait pas une séance courte",
+    P({ etapesRefermees: [courte("2026-11-10", 28), { ...courte("2026-11-09", 31), dureeMin: null }, courte("2026-11-05", 30)] }) === null, "");
+
+  /* Le mercredi pris trois fois, le jeudi jamais, sur quatre semaines. */
+  const jf = ["2026-10-14", "2026-10-21", "2026-11-04", "2026-10-19", "2026-10-26", "2026-11-02", "2026-11-09", "2026-10-20", "2026-10-27", "2026-11-03", "2026-11-10"];
+  const jr = P({ joursFaits: jf });
+  verdict("Lot 5 · tes jours réels ne sont plus tes jours prévus : mercredi à la place du jeudi",
+    jr?.genre === "jours" && jr.action.genre === "changer_jours" && JSON.stringify(jr.action.jours) === "[1,2,3]" && jr.phrase === "Tu t’entraînes plutôt le mercredi. Je le mets à la place du jeudi ?", JSON.stringify(jr));
+
+  const rn = P({ variete: "habituels", programmeDepuis: "2026-09-01" });
+  verdict("Lot 5 · les mêmes exercices depuis huit semaines : les renouveler",
+    rn?.genre === "renouveler" && rn.action.genre === "renouveler", JSON.stringify(rn));
+  verdict("Lot 5 · un peu de nouveauté déjà réglé : rien", P({ variete: "peu", programmeDepuis: "2026-09-01" }) === null, "");
+
+  const fp = PG.propositionFinProgramme({ aujourdhui: auj, parcoursId: "p1", titre: "Première traction", fin: "2026-11-14", suivant: { id: "cent-pompes", titre: "Cent pompes" }, vues: new Set() }, null);
+  verdict("Lot 5 · un programme de Vaiiya finit samedi : voir la suite",
+    fp?.phrase === "Tu termines Première traction samedi. Et après ?" && fp.action.genre === "voir_suite" && fp.date === "2026-11-14", JSON.stringify(fp));
+  verdict("Lot 5 · plus d'une semaine avant la fin : rien",
+    PG.propositionFinProgramme({ aujourdhui: auj, parcoursId: "p1", titre: "X", fin: "2026-11-25", suivant: { id: "y", titre: "Y" }, vues: new Set() }, null) === null, "");
+
+  const cles = ["proposition.manquee", "proposition.semaine", "proposition.retour", "proposition.fin.gene", "proposition.fin.moins_de_temps", "proposition.fin.energie",
+    "proposition.fin.materiel", "proposition.raccourcies", "proposition.evitee", "proposition.jours", "proposition.renouveler", "proposition.fin_programme"] as const;
+  const phrases = cles.map((k) => G.voix(null, k, { etape: "Pull", jour: "mardi", prevu: "jeudi", minutes: 30, titre: "Cent pompes", total: 8 }));
+  verdict("Lot 5 · les phrases : aucun reproche, aucun accord de genre, aucun tiret cadratin",
+    phrases.every((p) => !/rat[ée]|manqu|dommage|il faudrait|—|prêt|fier|content|tu n.as pas/i.test(p)), phrases.join(" | "));
+
+  const regle = lire("src/lib/propositionsGuide.ts");
+  const base2 = lire("src/lib/propositionsBase.ts");
+  const fil = lire("src/components/planning/FilPlanning.tsx");
+  const carte = lire("src/components/planning/PropositionGuide.tsx");
+  verdict("Lot 5 · la règle est pure (aucune lecture, aucune horloge)", !/createClient|supabase|new Date\(\)|Date\.now/.test(regle), "");
+  verdict("Lot 5 · la lecture des faits ne fait que lire", !/\.insert\(|\.update\(|\.upsert\(|\.delete\(/.test(base2), "");
+  verdict("Lot 5 · aucune IA appelée par les propositions", !/aiFetch|\/api\//.test(regle + base2 + carte + fil), "");
+  verdict("Lot 5 · « En parler » pose la phrase dans la saisie, sans l'envoyer", fil.includes("onDemander(proposition.parler)") && !fil.includes("sendMessage"), "");
+  verdict("Lot 5 · une seule proposition à la fois, posée sur son jour", fil.includes("proposition.date === l.date") && /const proposition = useMemo<Proposition \| null>/.test(fil), "");
+  verdict("Lot 5 · chaque bouton passe par une écriture qui existe",
+    ["creerSituation(", "modifierSituation(", "ecrireReglages(", "enregistrerJours(", "deplacer({ element: el.e"].every((x) => fil.includes(x)), "");
+  verdict("Lot 5 · « La faire aujourd'hui » n'est pas dit deux fois", fil.includes(`proposition?.genre !== "manquee"`), "");
+  const page = lire("src/app/progression/page.tsx");
+  verdict("Lot 5 · pendant un programme daté, la suite est proposée au-dessus de sa semaine",
+    page.includes("<PropositionFinProgramme ") && page.includes(`setVueParcours({ genre: "fiche", id })`), "");
+}
+
 console.log("\n" + (echecs === 0 ? "Tout passe." : echecs + " échec(s)."));
 process.exit(echecs === 0 ? 0 : 1);

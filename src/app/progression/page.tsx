@@ -25,6 +25,7 @@ import {
 import WeeklyProgramme from "@/components/WeeklyProgramme";
 import AdaptationSheet from "@/components/entrainement/AdaptationSheet";
 import FilPlanning, { type ALiberer } from "@/components/planning/FilPlanning";
+import { PropositionFinProgramme } from "@/components/planning/PropositionGuide";
 import ChangerQuelqueChose from "@/components/planning/ChangerQuelqueChose";
 import OngletsEntrainement, { estVue, type VueEntrainement } from "@/components/planning/OngletsEntrainement";
 import { poserBrouillonGuide } from "@/lib/brouillonGuide";
@@ -3000,11 +3001,20 @@ export default function ProgressionPage() {
             {journee.parcours ? (
               /* Un programme daté (« Première traction ») : le cycle est en
                  pause, la semaine est celle du programme. */
+              <>
+              {user && (
+                <div className="mt-4">
+                  <PropositionFinProgramme userId={user.id} parcours={journee.parcours.lu} fin={journee.parcours.cal.fin} aujourdhui={today}
+                    onVoir={(id) => setVueParcours({ genre: "fiche", id })}
+                    onDemander={demanderAuGuide} />
+                </div>
+              )}
               <div className="mt-5 overflow-hidden" style={{ borderRadius: "var(--r-bloc)", background: "rgba(var(--surface-rgb),0.9)", border: "1px solid rgba(var(--text-3-rgb),0.16)" }}>
                 <WeekStrip week={week} dates={semaineDates} today={today}
                   onOrganise={() => setVueParcours({ genre: "semaine" })}
                   prevues={journee.parcours.cal.creneaux.filter((c) => !c.fait).map((c) => ({ date: c.date, nom: titreCreneau(c) }))} />
               </div>
+              </>
             ) : (
               <>
                 {!joursChoisis && calendrier && (
@@ -3034,6 +3044,7 @@ export default function ProgressionPage() {
                       onLancerCourt={(d, m) => { if (d) journee.lancerIntention(d, { courte: m }); else journee.lancerCourt(m); }}
                       onChoisirSeance={(date, liberer) => { setPourDate(date); setALiberer(liberer); setSheet("choisir"); }}
                       onDemander={demanderAuGuide}
+                      onOuvrirProgramme={() => changerVue("programme")}
                       onChange={() => void loadWeek()}
                     />
                   </div>
