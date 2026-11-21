@@ -28,13 +28,9 @@ import EtagereBadges from "@/components/profil/EtagereBadges";
 import CouvertureSeance from "@/components/profil/CouvertureSeance";
 import FeuilleAfficheSeance from "@/components/profil/FeuilleAfficheSeance";
 import { type PerformanceData, type ReglageAffiche, ecrireReglagesAffiches, lireReglagesAffiches } from "@/lib/afficheSeance";
-import CourbePoids from "@/components/profil/CourbePoids";
-import CarteConstance from "@/components/profil/CarteConstance";
-import RecordsProgres from "@/components/profil/RecordsProgres";
 import TesClassiques from "@/components/profil/TesClassiques";
 import HistoriqueMasque from "@/components/historique/HistoriqueMasque";
 import { debutHistorique, estVisible, historiqueComplet } from "@/lib/historique";
-import WeighInPrompt from "@/components/WeighInPrompt";
 import AvecQui from "@/components/communaute/AvecQui";
 
 /* Arrive à l'ouverture : le moteur des cartes n'a rien à faire dans le profil. */
@@ -514,7 +510,6 @@ export default function ProfilPage() {
      semaines vides d'avant l'arrivée dessineraient un échec pour une
      période où la personne ne connaissait pas Vaiiya. */
   const [inscritLe, setInscritLe] = useState<string | null>(mem.inscritLe ?? null);
-  const [pesee, setPesee] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
   const [showRangs, setShowRangs] = useState(false);
   /* Les cartes de rang (2026-10-24) : une par rang atteint, gravée au pseudo. */
@@ -557,10 +552,8 @@ export default function ProfilPage() {
      l'onglet, allumé dès qu'un des trois blocs a quelque chose de masqué. */
   const debutHisto = debutHistorique(historiqueComplet(user));
   const seancesVisibles = workoutSessions.filter((w) => !w.started_at || estVisible(w.started_at, debutHisto));
-  const [poidsMasque, setPoidsMasque] = useState(false);
-  const [constanceMasquee, setConstanceMasquee] = useState(false);
   const historiqueMasque = !!debutHisto
-    && (poidsMasque || constanceMasquee || seancesVisibles.length < workoutSessions.length);
+    && seancesVisibles.length < workoutSessions.length;
 
   useEffect(() => {
     ecrireMemoire(cleMem, { aura, amis, progresBadges, inscritLe, cartes, profileFullName, profileBio, profileGoals,
@@ -1013,7 +1006,7 @@ export default function ProfilPage() {
         <nav aria-label="Sections du profil" className="flex gap-6 mt-7 mb-6" style={{ borderBottom: "1px solid rgba(var(--text-3-rgb),0.16)" }}>
           {([
             { id: "collection" as const, label: "Collection", compte: null },
-            { id: "progres"    as const, label: "Progrès",    compte: null },
+            { id: "progres"    as const, label: "Séances",    compte: null },
             { id: "amis"       as const, label: "Amis",       compte: followingCount },
           ]).map(({ id, label, compte }) => (
             <button
@@ -1125,35 +1118,18 @@ export default function ProfilPage() {
             transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
             className="px-5 md:px-8 max-w-3xl mx-auto"
           >
-            {/* Le poids et la constance répondent à la même question, « est-ce
-                que ça bouge ? », et ils portaient DEUX fois exactement le même
-                dessin de carte. Un seul cadre, un filet entre les deux. */}
-            {user && (
-              <div
-                className="mb-6 overflow-hidden"
-                style={{
-                  borderRadius: "var(--r-bloc)",
-                  background: "rgba(var(--surface-rgb),0.9)",
-                  border: "1px solid rgba(var(--text-3-rgb),0.16)",
-                }}
-              >
-                <CourbePoids userId={user.id} onPeser={() => setPesee(true)}
-                  debut={debutHisto} onMasques={setPoidsMasque} />
-                <CarteConstance
-                  userId={user.id}
-                  debut={debutHisto}
-                  onMasques={setConstanceMasquee}
-                  inscritLe={inscritLe}
-                  /* La plus longue série vient de `badges_aura`, jamais d'un
-                     second calcul : c'est le même nombre qui débloque les
-                     badges de régularité, et il n'en existe qu'un. */
-                  serieRecord={progresBadges?.serie ?? null}
-                />
-              </div>
-            )}
-
-            {/* Les records : ce que le journal des séries a de meilleur, mouvement par mouvement. */}
-            {user && <RecordsProgres userId={user.id} />}
+            {/* Lot 4 d'Entraînement (2026-11-21) : le poids, la constance et les
+                records ont quitté le profil pour la vue Progrès d'Entraînement.
+                Une ligne y mène, l'onglet garde les classiques et les séances. */}
+            <button type="button" onClick={() => router.push("/progression?vue=progres")}
+              className="mb-6 flex w-full items-center gap-3 px-4 py-3.5 text-left cursor-pointer"
+              style={{ borderRadius: "var(--r-bloc)", background: "rgba(var(--surface-rgb),0.9)", border: "1px solid rgba(var(--text-3-rgb),0.16)" }}>
+              <span className="min-w-0 flex-1">
+                <span className="block text-[16px] font-semibold" style={{ color: "var(--text-0)" }}>Tes records, ta constance et ton poids</span>
+                <span className="block text-[13px]" style={{ color: "var(--text-2)" }}>Dans Entraînement, vue Progrès</span>
+              </span>
+              <ChevronRight size={18} strokeWidth={2} style={{ color: "var(--text-3)", flexShrink: 0 }} />
+            </button>
 
             {/* Les classiques : ton meilleur sur chacun (« Le chrono et le score »). */}
             {user && <TesClassiques userId={user.id} />}
@@ -1249,7 +1225,6 @@ export default function ProfilPage() {
       {/* La MÊME feuille que le rendez-vous mensuel de la nutrition, pilotée
           d'ici. Une seule porte pour se peser dans toute l'app : une seconde
           saisie écrirait la même colonne avec ses propres règles. */}
-      <WeighInPrompt ouvert={pesee} onFermer={() => setPesee(false)} />
 
       {carteOuverte && aura && (() => {
         const rail = rangsGagnes(aura.rang.id, cartes, displayPseudo);

@@ -15,7 +15,7 @@
    base, planning intact) se vérifie contre la vraie base, dans une
    transaction annulée.
    ════════════════════════════════════════════════════════════════════ */
-import { readFileSync, readdirSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { empreinteModele, modeleDeLEtape, type ModeleDeLOccurrence } from "@/lib/prescription";
 import {
@@ -8443,6 +8443,101 @@ verdict(
     sql.includes("delete from public.etape_exercices where modele_id = v_modele;") && sql.includes("insert into public.programme_versions"), "");
   const page = lire("src/app/progression/page.tsx");
   verdict("Lot 3 · un changement de jours devient une version", page.includes(`genre: "jours"`) && page.includes("onEnregistre={(nouveaux) =>"), "");
+}
+
+/* ══ Entraînement repensé · lot 4 : « Progrès » ══ */
+{
+  const lire = (rel: string) => readFileSync(rel, "utf8").replace(/\r\n/g, "\n");
+  const P = await import("@/lib/vueProgres");
+  const G = await import("@/lib/guides");
+
+  verdict("Lot 4 · le lundi d'un mercredi et d'un dimanche", P.lundiDe("2026-11-11") === "2026-11-09" && P.lundiDe("2026-11-15") === "2026-11-09", P.lundiDe("2026-11-15"));
+  verdict("Lot 4 · une semaine se dit en toutes lettres, à cheval sur deux mois aussi",
+    P.texteSemaine("2026-11-02") === "du 2 au 8 novembre" && P.texteSemaine("2026-10-26") === "du 26 octobre au 1er novembre", P.texteSemaine("2026-10-26"));
+  verdict("Lot 4 · les durées", P.texteDuree(45) === "45 min" && P.texteDuree(185) === "3 h 05", P.texteDuree(185));
+
+  const seances = [
+    { jour: "2026-05-01", minutes: 30 }, // avant l'inscription : première semaine
+    { jour: "2026-05-07", minutes: 40 },
+    { jour: "2026-10-20", minutes: 50 },
+    { jour: "2026-10-27", minutes: 45 }, { jour: "2026-10-29", minutes: 45 },
+    { jour: "2026-11-03", minutes: 60 },
+  ];
+  const sem = P.semainesDepuis("2026-05-06", "2026-11-11", seances);
+  verdict("Lot 4 · une semaine par semaine depuis l'inscription, la semaine en cours comprise", sem.length === 28 && sem[0].lundi === "2026-05-04" && sem[27].lundi === "2026-11-09", `${sem.length}`);
+  verdict("Lot 4 · une séance d'avant l'inscription compte dans la première semaine", sem[0].seances === 2, String(sem[0].seances));
+  const r = P.resumeDepuis(sem);
+  verdict("Lot 4 · le résumé compte ce qui a été fait", r.seances === 6 && r.minutes === 270 && r.actives === 4, JSON.stringify(r));
+  verdict("Lot 4 · la semaine en cours sans séance ne casse pas la suite", r.suite === 3, String(r.suite));
+  const ph = P.phraseDepuis(r);
+  verdict("Lot 4 · la phrase : séances, heures, semaines, et la suite d'affilée",
+    ph === "⟦6⟧ séances, ⟦5⟧ heures. Au moins une séance ⟦4⟧ semaines sur ⟦28⟧, dont les ⟦3⟧ dernières d’affilée.", ph);
+  verdict("Lot 4 · aucune séance : la phrase ne compte pas ce qui manque", !/0/.test(P.phraseDepuis(P.resumeDepuis(P.semainesDepuis("2026-11-01", "2026-11-11", [])))), "");
+  verdict("Lot 4 · chaque semaine active : la phrase le dit sans chiffre de semaines",
+    P.phraseDepuis({ semaines: 3, seances: 5, minutes: 100, actives: 3, suite: 3 }).includes("chaque semaine"), "");
+  verdict("Lot 4 · la phrase ne dit jamais « raté » ni « manqué »", !/rat[ée]|manqu|seulement|que \d/.test(ph), "");
+
+  const longues = P.semainesDepuis("2024-01-01", "2026-11-11", [{ jour: "2026-11-10", minutes: 30 }]);
+  const barres = P.barresRelief(longues, "2026-11-11");
+  verdict("Lot 4 · le relief ne montre jamais plus d'un an", barres.length === P.SEMAINES_MAX_RELIEF && barres[barres.length - 1].enCours, String(barres.length));
+  verdict("Lot 4 · une seule séance ne remplit pas le cadre", barres[barres.length - 1].part === 0.25, String(barres[barres.length - 1].part));
+  verdict("Lot 4 · une semaine sans séance est marquée vide", P.barresRelief(sem, "2026-11-11")[5].vide === true, "");
+
+  const rec = (cle: string, nom: string, mesure: "reps" | "charge" | "duree", marches: [number, number | null, string][]) => {
+    const m = marches.map(([valeur, reps, quand]) => ({ valeur, reps, quand }));
+    return { cle, nom, mesure, meilleur: m[m.length - 1], marches: m, seances: m.length };
+  };
+  const records = [
+    rec("tractions", "Tractions", "reps", [[3, null, "2026-08-20T10:00:00Z"], [7, null, "2026-10-28T10:00:00Z"], [8, null, "2026-11-05T10:00:00Z"]]),
+    rec("squat", "Squat", "charge", [[50, 5, "2026-08-12T10:00:00Z"], [67.5, 5, "2026-10-30T10:00:00Z"], [70, 5, "2026-11-07T10:00:00Z"]]),
+    rec("pompes", "Pompes", "reps", [[20, null, "2026-11-10T10:00:00Z"]]),
+  ];
+  const avm = P.avantMaintenant(records);
+  verdict("Lot 4 · avant, maintenant : ce qui a monté d'abord, le plus récent en tête", avm.map((l) => l.record.cle).join() === "squat,tractions,pompes", avm.map((l) => l.record.cle).join());
+  verdict("Lot 4 · une seule valeur notée n'a pas d'« avant »", avm[2].avant === null && avm[0].avant?.valeur === 50, "");
+  verdict("Lot 4 · « depuis août »", P.depuisQuand(avm) === "août", String(P.depuisQuand(avm)));
+  verdict("Lot 4 · les unités sous le chiffre", P.uniteAvantMaintenant(records[0]) === "d’affilée" && P.uniteAvantMaintenant(records[1]) === "kg, 5 répétitions", P.uniteAvantMaintenant(records[1]));
+
+  verdict("Lot 4 · le dimanche, le bilan raconte la semaine qui finit", P.semaineDuBilan("2026-11-08") === "2026-11-02", P.semaineDuBilan("2026-11-08"));
+  verdict("Lot 4 · en semaine, le bilan raconte la dernière semaine finie", P.semaineDuBilan("2026-11-11") === "2026-11-02", P.semaineDuBilan("2026-11-11"));
+  const prog = P.progresDeLaSemaine(records, "2026-11-02");
+  verdict("Lot 4 · ce qui a progressé : la valeur d'avant, la dernière de la semaine",
+    prog.length === 2 && prog[0].record.cle === "squat" && prog[0].avant.valeur === 67.5 && prog[1].avant.valeur === 7, prog.map((l) => l.record.cle).join());
+  const t = P.texteProgres(prog[1]);
+  verdict("Lot 4 · « Tractions : 7 puis 8 d'affilée »", t.avant + t.apres === "Tractions : 7 puis 8 d’affilée", t.avant + t.apres);
+  verdict("Lot 4 · une première valeur notée n'est pas un progrès", P.progresDeLaSemaine(records, "2026-11-09").length === 0, "");
+
+  const b = P.bilanSemaine({ lundi: "2026-11-02", seances: [...seances, { jour: "2026-11-06", minutes: 60 }], prevues: 2, records, changements: [] });
+  verdict("Lot 4 · le bilan compte les séances, le temps et les jours de la semaine", b.seances === 2 && b.minutes === 120 && b.jours.join() === "false,true,false,false,true,false,false", b.jours.join());
+  verdict("Lot 4 · « 2 séances sur 2 »", P.titreBilan(b) === "2 séances sur 2" && P.cleBilan(b) === "bilan.toutes", P.titreBilan(b));
+  const sansPlan = P.bilanSemaine({ lundi: "2026-11-02", seances, prevues: 0, records: [], changements: [] });
+  verdict("Lot 4 · rien de posé : jamais « sur 0 »", sansPlan.prevues === null && P.libelleSeances(sansPlan) === "séance", P.libelleSeances(sansPlan));
+  const calme = P.bilanSemaine({ lundi: "2026-09-07", seances, prevues: 3, records: [], changements: [] });
+  verdict("Lot 4 · une semaine sans séance se dit calme, sans reproche", calme.seances === 0 && P.cleBilan(calme) === "bilan.calme" && P.titreBilan(calme) === "Une semaine calme", P.titreBilan(calme));
+  verdict("Lot 4 · moins que prévu avec un progrès : on parle du progrès",
+    P.cleBilan(P.bilanSemaine({ lundi: "2026-11-02", seances, prevues: 4, records, changements: [] })) === "bilan.progres", "");
+
+  const phrase = G.voix(null, "bilan.toutes", { seances: 4, total: 4, titre: "tractions", paliers: 1 });
+  verdict("Lot 4 · deux paliers se disent au pluriel", G.voix(null, "bilan.progres", { seances: 3, titre: "squat", paliers: 2 }) === "Trois séances, et deux paliers de plus.", "");
+  verdict("Lot 4 · la phrase du Guide se tire des faits", phrase === "Quatre séances sur quatre, et un palier de plus : tractions.", phrase);
+  const toutes = (["bilan.toutes", "bilan.progres", "bilan.seances", "bilan.calme"] as const).map((k) => G.voix(null, k, { seances: 1, total: 2, titre: "squat", duree: "45 min" }));
+  verdict("Lot 4 · les phrases du bilan : aucun reproche, aucun accord de genre, aucun tiret cadratin",
+    toutes.every((p) => !/rat[ée]|manqu|dommage|il faudrait|—|prêt|fier|content/i.test(p)), toutes.join(" | "));
+
+  const vue = lire("src/components/progres/VueProgres.tsx");
+  const feuille = lire("src/components/progres/FeuilleBilan.tsx");
+  const lecture = lire("src/lib/progres.ts");
+  verdict("Lot 4 · la vue et le bilan n'écrivent rien", !/\.insert\(|\.update\(|\.upsert\(|\.delete\(|createClient/.test(vue + feuille), "");
+  verdict("Lot 4 · la lecture ne fait que lire", !/\.insert\(|\.update\(|\.upsert\(|\.delete\(/.test(lecture), "");
+  verdict("Lot 4 · le bilan n'appelle aucune IA", !/aiFetch|\/api\//.test(vue + feuille + lecture), "");
+  const page = lire("src/app/progression/page.tsx");
+  verdict("Lot 4 · la vue Progrès est montée dans Entraînement, l'élan est parti",
+    page.includes("<VueProgres ") && !page.includes("ElanStrip") && !page.includes("ElanSheet"), "");
+  const profil = lire("src/app/profil/page.tsx");
+  verdict("Lot 4 · les records, la constance et le poids ont quitté le profil",
+    !/CourbePoids|CarteConstance|RecordsProgres|WeighInPrompt/.test(profil) && profil.includes('router.push("/progression?vue=progres")'), "");
+  verdict("Lot 4 · la carte de constance est supprimée (le relief la remplace)", !existsSync("src/components/profil/CarteConstance.tsx"), "");
+  verdict("Lot 4 · le poids garde son masquage de l'offre gratuite", vue.includes("debut={debutHisto}") && page.includes("debutHistorique(historiqueComplet(user))"), "");
 }
 
 console.log("\n" + (echecs === 0 ? "Tout passe." : echecs + " échec(s)."));

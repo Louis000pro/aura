@@ -60,7 +60,20 @@ export type GuideRef = GuideId | null;
 
 /** Les valeurs qu'une réplique peut avoir besoin d'insérer. Toutes
  *  optionnelles : une réplique qui n'en lit aucune s'écrit en clair. */
+/** Les nombres d'une phrase du bilan, en lettres jusqu'à sept. */
+function enMots(n: number): string {
+  const L = ["zéro", "une", "deux", "trois", "quatre", "cinq", "six", "sept"];
+  return n >= 0 && n < L.length ? L[n] : String(n);
+}
+function grandeLettre(t: string): string { return t.charAt(0).toUpperCase() + t.slice(1); }
+/** « , et un palier de plus : squat », « , et deux paliers de plus ». */
+function paliersDits(c: { paliers?: number; titre?: string }): string {
+  return (c.paliers ?? 1) > 1 ? `, et ${enMots(c.paliers ?? 0)} paliers de plus` : `, et un palier de plus : ${c.titre ?? ""}`;
+}
+
 export type ContexteVoix = {
+  /** `bilan.*` : les records montés pendant la semaine. */
+  paliers?: number;
   /** Le pseudo, déjà nettoyé par l'appelant. */
   pseudo?: string;
   /** Un jour lisible (« lundi 4 »), déjà formaté par l'appelant. */
@@ -1057,6 +1070,23 @@ const REPLIQUES = {
     commun: "Rien de posé cette semaine, et c’est normal. Dis-le-moi, je te la remplis d’un coup.",
     nora:   "Rien de posé cette semaine, et c’est normal. Dis-le-moi et je te la remplis d’un coup.",
     sasha:  "Rien de posé cette semaine. Dis-le-moi, je te la remplis.",
+  },
+
+  /* ── Le bilan du dimanche (lot 4 d'Entraînement) ──
+     Calculé sans IA : la phrase se tire des faits de la semaine, dans
+     `lib/vueProgres.ts` (cleBilan). Jamais un reproche, jamais ce qui
+     manque : une semaine sans séance se dit comme un départ. */
+  "bilan.toutes": {
+    commun: (c) => `${grandeLettre(enMots(c.seances ?? 0))} séance${(c.seances ?? 0) > 1 ? "s" : ""} sur ${enMots(c.total ?? 0)}${c.titre ? paliersDits(c) : ", tout ce qui était prévu"}.`,
+  },
+  "bilan.progres": {
+    commun: (c) => `${grandeLettre(enMots(c.seances ?? 0))} séance${(c.seances ?? 0) > 1 ? "s" : ""}${paliersDits(c)}.`,
+  },
+  "bilan.seances": {
+    commun: (c) => `${grandeLettre(enMots(c.seances ?? 0))} séance${(c.seances ?? 0) > 1 ? "s" : ""}, ${c.duree ?? ""} d’entraînement.`,
+  },
+  "bilan.calme": {
+    commun: "Une semaine sans séance. La suivante repart d’où tu veux.",
   },
 
   /* ── Le seuil du relais ──

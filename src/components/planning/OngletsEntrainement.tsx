@@ -39,18 +39,3 @@ export default function OngletsEntrainement({ vue, onVue }: { vue: VueEntraineme
   );
 }
 
-/** Une ligne d'une vue : un titre, ce qu'elle dit aujourd'hui, une flèche. */
-export function LigneVue({ titre, sous, onClick }: { titre: string; sous?: string | null; onClick: () => void }) {
-  return (
-    <button type="button" onClick={onClick}
-      className="vy-filet w-full flex items-center gap-2 text-left bg-transparent border-none cursor-pointer px-4 py-3.5">
-      <span className="flex-1 min-w-0">
-        <span className="block vy-sous" style={{ color: "var(--text-0)" }}>{titre}</span>
-        {sous && <span className="block text-[13px] mt-0.5 truncate" style={{ color: "var(--text-2)" }}>{sous}</span>}
-      </span>
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden style={{ color: "var(--text-3)", flexShrink: 0 }}>
-        <path d="m9 18 6-6-6-6" />
-      </svg>
-    </button>
-  );
-}

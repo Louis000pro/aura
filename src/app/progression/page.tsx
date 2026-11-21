@@ -18,15 +18,15 @@ import { aiFetch } from "@/lib/aiFetch";
 import { motion, AnimatePresence, useDragControls } from "framer-motion";
 import { useRouter } from "next/navigation";
 import {
-  Clock, ChevronRight, ChevronLeft, Dumbbell, Play, Flame, Wind, Sparkles, Layers,
+  ChevronRight, ChevronLeft, Dumbbell, Play, Flame, Wind, Sparkles, Layers,
   Check, X, Plus, Trash2, Pencil, Globe, Lock, Users,
-  Moon, Zap, Home, Sun, CalendarDays, MoreHorizontal, GripVertical, BookOpen, Search, Bookmark,
+  Moon, Home, Sun, CalendarDays, MoreHorizontal, GripVertical, BookOpen, Search, Bookmark,
 } from "lucide-react";
 import WeeklyProgramme from "@/components/WeeklyProgramme";
 import AdaptationSheet from "@/components/entrainement/AdaptationSheet";
 import FilPlanning, { type ALiberer } from "@/components/planning/FilPlanning";
 import ChangerQuelqueChose from "@/components/planning/ChangerQuelqueChose";
-import OngletsEntrainement, { LigneVue, estVue, type VueEntrainement } from "@/components/planning/OngletsEntrainement";
+import OngletsEntrainement, { estVue, type VueEntrainement } from "@/components/planning/OngletsEntrainement";
 import { poserBrouillonGuide } from "@/lib/brouillonGuide";
 import BilletsMoment from "@/components/situations/BilletsMoment";
 import FeuilleSituation from "@/components/situations/FeuilleSituation";
@@ -44,6 +44,8 @@ import VueProgramme from "@/components/programme/VueProgramme";
 import { noterVersion } from "@/lib/programmeVersions";
 import { motJours } from "@/lib/vueProgramme";
 import { nomGuide } from "@/lib/guides";
+import VueProgres from "@/components/progres/VueProgres";
+import { debutHistorique, historiqueComplet } from "@/lib/historique";
 import AbsenceSheet from "@/components/semaine/AbsenceSheet";
 import { libelleJour, type Adaptation } from "@/lib/adaptation";
 import { EVT_ADAPTATION } from "@/lib/adaptationDemandee";
@@ -87,7 +89,7 @@ import {
 } from "@/lib/adviceArticles";
 import {
   lireSemaine, saveDay, ajouterIntention, retirerReservationDuJour, hasSeance, seanceNonFaite, readLieu, ctxFromLieu,
-  weekDates, weekDatesForOffset, todayYmd, weekOffsetOf, dayTitle, dureeIntention, lieuLabel, normalizeExercises,
+  weekDates, weekDatesForOffset, todayYmd, dayTitle, dureeIntention, lieuLabel, normalizeExercises,
   parDate, principale, seancesDuJour, ordonner,
   dayLabelLong, PLANNING_TYPE_BY_CATEGORY,
   type PlanningDay, type CycleSemaine,
@@ -365,18 +367,6 @@ function WeekStrip({ week, dates, today, onOrganise, prevues }: {
   );
 }
 
-/* ════════════════════════════════════════════════════════════════════
-   ④ Ton élan — la preuve qu'on avance. Série de semaines actives +
-   totaux de la semaine + 7 derniers jours. Teal = progrès. Aucune
-   culpabilité : un jour vide est un trait discret, jamais un reproche.
-   ════════════════════════════════════════════════════════════════════ */
-type ElanData = {
-  bars: { label: string; min: number; done: boolean; today: boolean }[];
-  sessions: number; minutes: number; kcal: number; streak: number; hasHistory: boolean;
-  prevMinutes: number;   // total de la semaine dernière (pour la comparaison)
-  record: number;        // plus longue séance sur la fenêtre (8 sem.)
-};
-
 const fmtDur = (m: number) =>
   m >= 60 ? `${Math.floor(m / 60)} h ${String(m % 60).padStart(2, "0")}` : `${m} min`;
 
@@ -418,171 +408,6 @@ function AdaptationStrip({ etapes, adaptation, onOpen }: {
         </p>
       )}
     </motion.button>
-  );
-}
-
-function ElanStrip({ data, onOpen }: { data: ElanData | null; onOpen: () => void }) {
-  if (!data) return null; // le temps du chargement : rien, pas de flash
-  const { bars, sessions, minutes, kcal, streak, hasHistory } = data;
-  const maxMin = Math.max(1, ...bars.map((b) => b.min));
-  const barH = (min: number) => (min <= 0 ? 4 : Math.round(6 + (min / maxMin) * 30));
-
-  return (
-    <motion.button
-      whileTap={{ scale: 0.98 }} onClick={onOpen}
-      className="w-full text-left cursor-pointer block px-4 pt-3.5 pb-3.5">
-      <div className="flex items-center justify-between mb-3.5">
-        <p className="vy-sous flex items-center gap-0.5" style={{ color: "var(--text-0)" }}>
-          Ton élan
-          <ChevronRight size={13} strokeWidth={2.6} style={{ color: "var(--text-3)" }} />
-        </p>
-        {streak > 0 && (
-          <span className="flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-extrabold"
-            style={{ background: "rgba(239,159,39,0.14)", color: "var(--feu-encre)" }}>
-            <Flame size={12} strokeWidth={2.4} fill="#EF9F27" />
-            {streak} sem.
-          </span>
-        )}
-      </div>
-
-      {hasHistory ? (
-        <div className="flex items-end justify-between gap-3">
-          <div className="flex items-end gap-[7px]">
-            {bars.map((b, i) => (
-              <div key={i} className="flex flex-col items-center gap-1.5">
-                <span className="w-[9px] rounded-full" style={{
-                  height: barH(b.min),
-                  background: b.today ? "#8B5CF6" : b.done ? "rgba(139,92,246,0.55)" : "rgba(var(--text-3-rgb),0.28)",
-                }} />
-                <span className="text-[11px] font-bold" style={{ color: b.today ? "#8B5CF6" : "var(--text-3)" }}>{b.label}</span>
-              </div>
-            ))}
-          </div>
-          <div className="text-right">
-            <p className="vy-label mb-1">Cette semaine</p>
-            <p className="leading-none">
-              <span className="vy-nombre text-[26px]" style={{ color: "var(--exp-encre)" }}>{sessions}</span>
-              <span className="vy-label ml-1">séance{sessions > 1 ? "s" : ""}</span>
-            </p>
-            <p className="vy-label mt-1.5 flex items-center justify-end gap-1.5">
-              <Clock size={11} strokeWidth={2.4} />{fmtDur(minutes)}
-              <span className="w-[3px] h-[3px] rounded-full" style={{ background: "var(--text-3)" }} />
-              <Zap size={11} strokeWidth={2.4} style={{ color: "#EF9F27" }} fill="#EF9F27" />
-              <span style={{ color: "var(--feu-encre)" }}>{kcal.toLocaleString("fr-FR")} kcal</span>
-            </p>
-          </div>
-        </div>
-      ) : (
-        <div className="flex items-center gap-3.5 pb-0.5">
-          <div className="flex items-end gap-[7px]">
-            {bars.map((b, i) => (
-              <div key={i} className="flex flex-col items-center gap-1.5">
-                <span className="w-[9px] rounded-full" style={{ height: 8 + (i % 3) * 6, background: "rgba(var(--text-3-rgb),0.22)" }} />
-                <span className="text-[11px] font-bold" style={{ color: "var(--text-3)" }}>{b.label}</span>
-              </div>
-            ))}
-          </div>
-          <p className="vy-corps leading-snug">
-            Ton élan démarre à la première séance.
-          </p>
-        </div>
-      )}
-    </motion.button>
-  );
-}
-
-/** Sheet « Ton élan » — le détail au tap : graphique agrandi à gauche,
-    chiffres à droite, comparaison vs semaine dernière. Unité discrète
-    (« en minutes ») pour ne pas lasser les habitués. Zéro culpabilité :
-    une semaine plus légère devient un objectif, pas un reproche. */
-function ElanSheet({ data, onClose }: { data: ElanData; onClose: () => void }) {
-  const { bars, sessions, minutes, kcal, streak, prevMinutes, record } = data;
-  const maxMin = Math.max(1, ...bars.map((b) => b.min));
-  const barH = (min: number) => (min <= 0 ? 6 : Math.round(10 + (min / maxMin) * 100));
-  const avg = sessions > 0 ? Math.round(minutes / sessions) : 0;
-  const delta = minutes - prevMinutes;
-
-  return (
-    <Sheet onClose={onClose} maxHeight="72vh">
-      <div className="px-5 pt-2 pb-6 overflow-y-auto">
-        <div className="flex items-center justify-between">
-          <p className="text-[20px] font-bold" style={{ color: "var(--text-1)" }}>Ton élan</p>
-          {streak > 0 && (
-            <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-extrabold"
-              style={{ background: "rgba(239,159,39,0.14)", color: "#EF9F27" }}>
-              <Flame size={13} strokeWidth={2.4} fill="#EF9F27" />
-              {streak} sem.
-            </span>
-          )}
-        </div>
-        <p className="vy-label mt-0.5 mb-5">
-          7 derniers jours · en minutes
-        </p>
-
-        <div className="flex items-end gap-5">
-          {/* Graphique agrandi */}
-          <div className="flex-1 flex items-end justify-between" style={{ height: 150 }}>
-            {bars.map((b, i) => (
-              <div key={i} className="flex flex-col items-center justify-end gap-1.5 h-full">
-                {b.min > 0 && b.min === maxMin && (
-                  <span className="vy-nombre text-[11px]" style={{ color: "var(--exp-encre)" }}>{b.min} min</span>
-                )}
-                <span className="w-[12px] rounded-full" style={{
-                  height: barH(b.min),
-                  background: b.today && b.min > 0 ? "#8B5CF6"
-                    : b.done ? "rgba(139,92,246,0.5)" : "rgba(255,255,255,0.09)",
-                }} />
-                <span className="text-[11px] font-bold" style={{ color: b.today ? "#8B5CF6" : "var(--text-3)" }}>{b.label}</span>
-              </div>
-            ))}
-          </div>
-
-          {/* Détails */}
-          <div style={{ width: 128 }}>
-            {/* ⚠️ LE DERNIER CHAMP DIT SI LA VALEUR PREND LE VISAGE DU CHIFFRE.
-                « Calories » est le seul à dire NON, et ce n'est pas un oubli :
-                `toLocaleString("fr-FR")` sépare les milliers par une espace
-                insécable, qui occupe une CASE ENTIÈRE en chasse fixe, donc
-                « 1 480 » se lirait comme deux valeurs. Même remarque que sur
-                l'anneau de la nutrition. La règle complète est dans
-                `globals.css`, au point de définition de `.vy-nombre`. */}
-            {([
-              ["Séances", sessions > 0 ? String(sessions) : "—", "#8B5CF6", true],
-              ["Temps", minutes > 0 ? fmtDur(minutes) : "—", "var(--text-1)", true],
-              ["Calories", kcal > 0 ? kcal.toLocaleString("fr-FR") : "—", "#EF9F27", false],
-              ["Moyenne", avg > 0 ? `${avg} min` : "—", "var(--text-1)", true],
-              ["Record", record > 0 ? `${record} min` : "—", "var(--text-1)", true],
-            ] as const).map(([k, v, c, chiffre], i, arr) => (
-              <div key={k} className="flex items-baseline justify-between py-[7px]"
-                style={{ borderBottom: i < arr.length - 1 ? "1px solid rgba(255,255,255,0.06)" : "none" }}>
-                <span className="text-[11px] font-semibold" style={{ color: "var(--text-3)" }}>{k}</span>
-                {/* ⚠️ LE POIDS EN STYLE EN LIGNE, ET C'EST OBLIGATOIRE ICI.
-                    `.vy-nombre` est définie HORS @layer pour gagner contre un
-                    utilitaire Tailwind oublié : elle écraserait donc le
-                    `font-extrabold` de cette ligne et rendrait la valeur plus
-                    légère. Le style en ligne gagne sur les deux. */}
-                <span className={`text-[13px] ${chiffre ? "vy-nombre" : "font-extrabold"}`}
-                  style={{ color: c, fontWeight: 800 }}>{v}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Comparaison vs semaine dernière — jamais un reproche */}
-        {prevMinutes > 0 && delta > 0 && (
-          <div className="flex items-center gap-2 mt-4 px-3 py-2.5 text-[13px] font-bold"
-            style={{ borderRadius: "var(--r-controle)", background: "rgba(139,92,246,0.09)", border: "1px solid rgba(139,92,246,0.22)", color: "var(--exp-encre)" }}>
-            ▲ +{delta} min vs la semaine dernière, ça monte.
-          </div>
-        )}
-        {prevMinutes > 0 && delta <= 0 && (
-          <div className="flex items-center gap-2 mt-4 px-3 py-2.5 text-[13px] font-semibold"
-            style={{ borderRadius: "var(--r-controle)", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", color: "var(--text-2)" }}>
-            Encore {Math.abs(delta) + 1} min pour égaler la semaine dernière.
-          </div>
-        )}
-      </div>
-    </Sheet>
   );
 }
 
@@ -2678,7 +2503,7 @@ export default function ProgressionPage() {
   const { semaine: week, setSemaine: setWeek, niveau: profileLevel, recharger: loadWeek } = journee;
 
   /* ── UI ── */
-  const [sheet, setSheet] = useState<null | "choisir" | "improviser" | "organiser" | "elan" | "semaine" | "adaptation" | "jours" | "absence" | "programme" | "hub">(null);
+  const [sheet, setSheet] = useState<null | "choisir" | "improviser" | "organiser" | "semaine" | "adaptation" | "jours" | "absence" | "programme" | "hub">(null);
   /* Les quatre vues (maquette « Entraînement repensé ») : Planning d'abord. */
   const [vue, setVue] = useState<VueEntrainement>("planning");
   /* Lot 2 · la situation qu'on déclare ou qu'on change. */
@@ -2746,7 +2571,6 @@ export default function ProgressionPage() {
   const maxSeances = canAccessPremium ? Infinity : PLANS.free.limits.sessionsMax;
   const peutGarderUneSeance = customSessions.length < maxSeances;
 
-  const [elan, setElan] = useState<ElanData | null>(null);
 
   const today = todayYmd();
   /* Les sept dates de la semaine affichée. On les DÉRIVE de `today` au lieu
@@ -2816,66 +2640,6 @@ export default function ProgressionPage() {
     try { return await lireSemaine(user.id, weekDatesForOffset(offset)); }
     catch (e) { console.error("Week fetch error", e); return null; }
   }, [user]);
-
-  /* ── Ton élan : agrégat des séances faites sur 8 semaines glissantes ── */
-  useEffect(() => {
-    if (!user) return;
-    let cancelled = false;
-    (async () => {
-      const supabase = createClient();
-      const since = new Date(today + "T00:00:00");
-      since.setDate(since.getDate() - 55);
-      const { data } = await supabase
-        .from("workout_sessions")
-        .select("started_at, elapsed_seconds, duration_minutes, calories_burned")
-        .eq("user_id", user.id)
-        .gte("started_at", since.toISOString())
-        .order("started_at", { ascending: true });
-      if (cancelled) return;
-
-      const ymdLocal = (d: Date) =>
-        `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-
-      const dayMin = new Map<string, number>();
-      const dayCount = new Map<string, number>();
-      const activeWeeks = new Set<number>();
-      let sessions = 0, minutes = 0, kcal = 0, prevMinutes = 0, record = 0;
-
-      for (const r of data ?? []) {
-        const started = r.started_at as string | null;
-        if (!started) continue;
-        const key = ymdLocal(new Date(started));
-        const min = r.elapsed_seconds
-          ? Math.max(1, Math.round((r.elapsed_seconds as number) / 60))
-          : ((r.duration_minutes as number) ?? 0);
-        dayMin.set(key, (dayMin.get(key) ?? 0) + min);
-        dayCount.set(key, (dayCount.get(key) ?? 0) + 1);
-        if (min > record) record = min;
-        const off = weekOffsetOf(key);
-        activeWeeks.add(off);
-        if (off === 0) { sessions += 1; minutes += min; kcal += (r.calories_burned as number) ?? 0; }
-        if (off === -1) prevMinutes += min;
-      }
-
-      // Série : semaines consécutives actives (la semaine en cours pas encore lancée ne casse rien)
-      let streak = 0;
-      let o = activeWeeks.has(0) ? 0 : -1;
-      while (activeWeeks.has(o)) { streak += 1; o -= 1; }
-
-      const DL = ["L", "M", "M", "J", "V", "S", "D"];
-      const bars: ElanData["bars"] = [];
-      for (let i = 6; i >= 0; i--) {
-        const d = new Date(today + "T00:00:00");
-        d.setDate(d.getDate() - i);
-        const key = ymdLocal(d);
-        const wd = d.getDay(); const idx = wd === 0 ? 6 : wd - 1;
-        bars.push({ label: DL[idx], min: dayMin.get(key) ?? 0, done: (dayCount.get(key) ?? 0) > 0, today: key === today });
-      }
-
-      setElan({ bars, sessions, minutes, kcal, streak, hasHistory: (data?.length ?? 0) > 0, prevMinutes, record });
-    })();
-    return () => { cancelled = true; };
-  }, [user, today]);
 
   /* ── Bibliothèque perso (Supabase) ── */
   const fetchCustomSessions = useCallback(async () => {
@@ -3316,16 +3080,13 @@ export default function ProgressionPage() {
           </>
         )}
 
-        {vue === "progres" && (
-          <div className="mt-4 overflow-hidden" style={{ borderRadius: "var(--r-bloc)", background: "rgba(var(--surface-rgb),0.9)", border: "1px solid rgba(var(--text-3-rgb),0.16)" }}>
-            {elan ? (
-              <div data-tour-anchor="prog-elan" className="vy-filet">
-                <ElanStrip data={elan} onOpen={() => setSheet("elan")} />
-              </div>
-            ) : (
-              <p className="vy-filet vy-corps px-4 py-4" style={{ color: "var(--text-2)" }}>Ton élan apparaît dès tes premières séances.</p>
-            )}
-            <LigneVue titre="Tes records, ta constance et ton poids" sous="Dans ton profil, pour l’instant" onClick={() => router.push("/profil")} />
+        {vue === "progres" && user && (
+          <div data-tour-anchor="prog-elan">
+            <VueProgres userId={user.id} aujourdhui={today} guide={guideActif}
+              nomDuGuide={guideActif ? nomGuide(guideActif) : null}
+              jours={calendrier?.choisi ? calendrier.jours : null}
+              debutHisto={debutHistorique(historiqueComplet(user))}
+              onPlanning={() => changerVue("planning")} />
           </div>
         )}
 
@@ -3491,9 +3252,6 @@ export default function ProgressionPage() {
         )}
       </AnimatePresence>
       <AnimatePresence>
-        {sheet === "elan" && elan && (
-          <ElanSheet data={elan} onClose={() => setSheet(null)} />
-        )}
       </AnimatePresence>
       <AnimatePresence>
         {sheet === "choisir" && (
